@@ -948,43 +948,6 @@ static void thermal_reset_and_initial(void)
 
 }
 
-/* Refactor */
-static int thermal_config_Bank(void)
-{
-	int i, j = 0;
-	int ret = -1;
-	UINT32 temp = 0;
-
-	/* AuxADC Initialization,ref MT6592_AUXADC.doc // TODO: check this line */
-	temp = DRV_Reg32(AUXADC_CON0_V);	/* Auto set enable for CH11 */
-	temp &= 0xFFFFF7FF;	/* 0: Not AUTOSET mode */
-	THERMAL_WRAP_WR32(temp, AUXADC_CON0_V);	/* disable auxadc channel 11 synchronous mode */
-	THERMAL_WRAP_WR32(0x800, AUXADC_CON1_CLR_V);	/* disable auxadc channel 11 immediate mode */
-
-
-	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
-		ret = tscpu_switch_bank(i);
-		thermal_reset_and_initial();
-
-		for (j = 0; j < tscpu_g_bank[i].ts_number; j++) {
-			tscpu_dprintk("%s i %d, j %d\n", __func__, i, j);
-			tscpu_thermal_tempADCPNP(tscpu_thermal_ADCValueOfMcu
-						 (tscpu_g_bank[i].ts[j].type), j);
-		}
-
-		THERMAL_WRAP_WR32(TS_CONFIGURE_P, TEMPPNPMUXADDR);
-		THERMAL_WRAP_WR32(0x3, TEMPADCWRITECTRL);
-	}
-
-	THERMAL_WRAP_WR32(0x800, AUXADC_CON1_SET_V);
-
-	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
-		ret = tscpu_switch_bank(i);
-		tscpu_thermal_enable_all_periodoc_sensing_point(i);
-	}
-
-	return ret;
-}
 
 
 /**
@@ -1218,12 +1181,44 @@ int tscpu_switch_bank(thermal_bank_name bank)
 void tscpu_thermal_initial_all_bank(void)
 {
 	unsigned long flags;
+	int i, j = 0;
+	int ret = -1;
+	UINT32 temp = 0;
 
-	mt_ptp_lock(&flags);
+	/* AuxADC Initialization,ref MT6592_AUXADC.doc // TODO: check this line */
+	temp = DRV_Reg32(AUXADC_CON0_V);	/* Auto set enable for CH11 */
+	temp &= 0xFFFFF7FF;	/* 0: Not AUTOSET mode */
+	THERMAL_WRAP_WR32(temp, AUXADC_CON0_V);	/* disable auxadc channel 11 synchronous mode */
+	THERMAL_WRAP_WR32(0x800, AUXADC_CON1_CLR_V);	/* disable auxadc channel 11 immediate mode */
 
-	thermal_config_Bank();
+	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
 
-	mt_ptp_unlock(&flags);
+		ret = tscpu_switch_bank(i);
+		thermal_reset_and_initial();
+
+		for (j = 0; j < tscpu_g_bank[i].ts_number; j++) {
+			tscpu_dprintk("%s i %d, j %d\n", __func__, i, j);
+			tscpu_thermal_tempADCPNP(tscpu_thermal_ADCValueOfMcu
+					(tscpu_g_bank[i].ts[j].type), j);
+		}
+
+		THERMAL_WRAP_WR32(TS_CONFIGURE_P, TEMPPNPMUXADDR);
+		THERMAL_WRAP_WR32(0x3, TEMPADCWRITECTRL);
+
+		mt_ptp_unlock(&flags);
+	}
+
+	THERMAL_WRAP_WR32(0x800, AUXADC_CON1_SET_V);
+
+	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
+		ret = tscpu_switch_bank(i);
+		tscpu_thermal_enable_all_periodoc_sensing_point(i);
+
+		mt_ptp_unlock(&flags);
+	}
 }
 
 void tscpu_config_tc_sw_protect(int highoffset, int lowoffset)
@@ -1300,16 +1295,15 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	       (end.tv_usec - begin.tv_usec));
 #endif
 
-	mt_ptp_lock(&flags);
-
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		/* Move thermal HW protection ahead... */
 		set_tc_trigger_hw_protect(temperature, temperature2, i);
+
+		mt_ptp_unlock(&flags);
 	}
-
-	mt_ptp_unlock(&flags);
-
 
 	/*Thermal need to config to direct reset mode
 	   this API provide by Weiqi Fu(RGU SW owner). */

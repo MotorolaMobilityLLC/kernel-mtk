@@ -30,6 +30,23 @@
 #define _BIT_(_bit_)		(unsigned)(1 << (_bit_))
 #define _BITMASK_(_bits_)	(((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
 
+#define THERMAL_TPROFILE_INIT() long long thermal_pTime_us, thermal_cTime_us, thermal_diff_us
+
+#define THERMAL_GET_PTIME() {thermal_pTime_us = thermal_get_current_time_us()}
+
+#define THERMAL_GET_CTIME() {thermal_cTime_us = thermal_get_current_time_us()}
+
+#define THERMAL_TIME_TH 3000
+
+#define THERMAL_IS_TOO_LONG()   \
+	do {                                    \
+		thermal_diff_us = thermal_cTime_us - thermal_pTime_us;	\
+		if (thermal_diff_us > THERMAL_TIME_TH) {                \
+			pr_warn(TSCPU_LOG_TAG "%s: %llu us\n", __func__, thermal_diff_us); \
+		} else if (thermal_diff_us < 0) {	\
+			pr_warn(TSCPU_LOG_TAG "Warning: tProfiling uses incorrect %s %d\n", __func__, __LINE__); \
+		}	\
+	} while (0)
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
@@ -85,8 +102,8 @@ they means one reading is a avg of X samples*/
  * Chip related
  *=============================================================*/
 /**/
-#define OTP_HIGH_OFFSET_TEMP 80000
-#define OTP_LOW_OFFSET_TEMP  70000
+#define OTP_HIGH_OFFSET_TEMP	80000
+#define OTP_LOW_OFFSET_TEMP	70000
 
 /*double check*/
 #define TS_CONFIGURE     TS_CON1_TM    /* depend on CPU design*/
@@ -254,6 +271,8 @@ extern int tscpu_next_fp_factor;
 #endif
 
 /*In common/thermal_zones/mtk_ts_cpu.c*/
+extern long long thermal_get_current_time_us(void);
+
 extern void __iomem  *therm_clk_infracfg_ao_base;
 extern int Num_of_GPU_OPP;
 extern struct mt_gpufreq_power_table_info *mtk_gpu_power;

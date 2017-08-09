@@ -308,6 +308,14 @@ mt_cpufreq_thermal_5A_limit(bool enable)
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 /*=============================================================*/
+long long thermal_get_current_time_us(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);
+}
+
 static void tscpu_fast_initial_sw_workaround(void)
 {
 	int i = 0;
@@ -316,15 +324,15 @@ static void tscpu_fast_initial_sw_workaround(void)
 
 	/* tscpu_thermal_clock_on(); */
 
-	mt_ptp_lock(&flags);
 
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		tscpu_thermal_fast_init();
+
+		mt_ptp_unlock(&flags);
 	}
-
-	mt_ptp_unlock(&flags);
-
 }
 
 void tscpu_thermal_tempADCPNP(int adc, int order)
@@ -1319,21 +1327,19 @@ static void thermal_pause_all_periodoc_temp_sensing(void)
 	int i = 0;
 	unsigned long flags;
 	int temp;
-
 	/* tscpu_printk("thermal_pause_all_periodoc_temp_sensing\n"); */
-
-	mt_ptp_lock(&flags);
 
 	/*config bank0,1,2 */
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		temp = DRV_Reg32(TEMPMSRCTL1);
 		/* set bit8=bit1=bit2=bit3=1 to pause sensing point 0,1,2,3 */
 		DRV_WriteReg32(TEMPMSRCTL1, (temp | 0x10E));
+
+		mt_ptp_unlock(&flags);
 	}
-
-	mt_ptp_unlock(&flags);
-
 }
 
 
@@ -1346,17 +1352,17 @@ static void thermal_release_all_periodoc_temp_sensing(void)
 
 	/* tscpu_printk("thermal_release_all_periodoc_temp_sensing\n"); */
 
-	mt_ptp_lock(&flags);
-
 	/*config bank0,1,2 */
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		temp = DRV_Reg32(TEMPMSRCTL1);
 		/* set bit1=bit2=bit3=0 to release sensing point 0,1,2 */
 		DRV_WriteReg32(TEMPMSRCTL1, ((temp & (~0x10E))));
-	}
 
-	mt_ptp_unlock(&flags);
+		mt_ptp_unlock(&flags);
+	}
 }
 
 void tscpu_thermal_enable_all_periodoc_sensing_point(thermal_bank_name bank_num)
@@ -1386,19 +1392,18 @@ static void thermal_disable_all_periodoc_temp_sensing(void)
 {
 	int i = 0;
 	unsigned long flags;
-
 	/* tscpu_printk("thermal_disable_all_periodoc_temp_sensing\n"); */
-
-	mt_ptp_lock(&flags);
 
 	/*config bank0,1,2 */
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		/* tscpu_printk("thermal_disable_all_periodoc_temp_sensing:Bank_%d\n",i); */
 		THERMAL_WRAP_WR32(0x00000000, TEMPMONCTL0);
-	}
 
-	mt_ptp_unlock(&flags);
+		mt_ptp_unlock(&flags);
+	}
 
 }
 
@@ -2016,16 +2021,15 @@ static void read_all_bank_temperature(void)
 	int j = 0;
 	unsigned long flags;
 
-	mt_ptp_lock(&flags);
-
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
+		mt_ptp_lock(&flags);
+
 		tscpu_switch_bank(i);
 		for (j = 0; j < tscpu_g_bank[i].ts_number; j++)
 			tscpu_thermal_read_bank_temp(i, tscpu_g_bank[i].ts[j].type, j);
+
+		mt_ptp_unlock(&flags);
 	}
-
-
-	mt_ptp_unlock(&flags);
 }
 
 void tscpu_update_tempinfo(void)
