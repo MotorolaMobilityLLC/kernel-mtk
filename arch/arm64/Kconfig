@@ -340,6 +340,38 @@ config ARCH_MT6755
 	  Support for evb6755 related projects
 	  Support for k55 related projects
 
+config ARCH_MT6757
+	bool "MediaTek MT6757"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select ARM64_ERRATUM_843419
+	select MTK_SYSTRACKER_V2
+	select MTK_GIC_V3_EXT
+	select MTK_CPU_STRESS
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select MTK_EIC_HISTORY_DUMP
+	help
+	  This enables support for MediaTek MT6757
+	  Support for aarch64/aarch32 Architecture
+	  Support for fpga6757_64 related projects
+	  Support for evb6757_64 related projects
+	  Support for k57_64 related projects
+
 config ARCH_MT6797
 	bool "MediaTek MT6797"
 	select GENERIC_TIME
