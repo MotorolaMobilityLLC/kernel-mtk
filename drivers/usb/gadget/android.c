@@ -40,10 +40,9 @@
 #include "gadget_chips.h"
 
 
-/* FIXME, 3.18 WORKAROUND */
-#if 0
 #include "f_fs.c"
 #include "f_audio_source.c"
+#ifdef CONFIG_SND_RAWMIDI
 #include "f_midi.c"
 #endif
 #include "f_mass_storage.c"
@@ -85,7 +84,7 @@ static const char longname[] = "Gadget Android";
 /* f_midi configuration */
 #define MIDI_INPUT_PORTS    1
 #define MIDI_OUTPUT_PORTS   1
-#define MIDI_BUFFER_SIZE    256
+#define MIDI_BUFFER_SIZE    512
 #define MIDI_QUEUE_LENGTH   32
 
 /* Default manufacturer and product string , overridden by userspace */
@@ -319,8 +318,6 @@ static void android_disable(struct android_dev *dev)
 
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
-/* FIXME, 3.18 WORKAROUND */
-#if 0
 struct functionfs_config {
 	bool opened;
 	bool enabled;
@@ -475,7 +472,6 @@ static void *functionfs_acquire_dev_callback(const char *dev_name)
 static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
 {
 }
-#endif
 
 struct adb_data {
 	bool opened;
@@ -1499,29 +1495,23 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	if (!config)
 		return -ENOMEM;
 
-/* FIXME, 3.18 WORKAROUND */
-#define CONFIG_MTK_MULTI_STORAGE_SUPPORT
 #ifdef CONFIG_MTK_MULTI_STORAGE_SUPPORT
-#define LUN_MULTI (1)
-#else
-#define LUN_MULTI (0)
-#endif
-
 #ifdef CONFIG_MTK_SHARED_SDCARD
-#define LUN_SHARED_SD (-1)
+#define NLUN_STORAGE 1
 #else
-#define LUN_SHARED_SD (0)
+#define NLUN_STORAGE 2
+#endif
+#else
+#define NLUN_STORAGE 1
 #endif
 
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
-#define LUN_ICUSB (1)
+#define NLUN_ICUSB (1)
 #else
-#define LUN_ICUSB (0)
+#define NLUN_ICUSB (0)
 #endif
 
-#define LUN_NUM LUN_MULTI + LUN_SHARED_SD + LUN_ICUSB + 1
-
-	config->fsg.nluns = LUN_NUM;
+	config->fsg.nluns = NLUN_STORAGE + NLUN_ICUSB;
 
 	for(i = 0; i < config->fsg.nluns; i++) {
 		config->fsg.luns[i].removable = 1;
@@ -1691,8 +1681,6 @@ static struct android_usb_function accessory_function = {
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
 
-/* FIXME, 3.18 WORKAROUND */
-#if 0
 static int audio_source_function_init(struct android_usb_function *f,
 			struct usb_composite_dev *cdev)
 {
@@ -1745,7 +1733,15 @@ static struct device_attribute *audio_source_function_attributes[] = {
 	&dev_attr_pcm,
 	NULL
 };
-#endif
+
+static struct android_usb_function audio_source_function = {
+	.name		= "audio_source",
+	.init		= audio_source_function_init,
+	.cleanup	= audio_source_function_cleanup,
+	.bind_config	= audio_source_function_bind_config,
+	.unbind_config	= audio_source_function_unbind_config,
+	.attributes	= audio_source_function_attributes,
+};
 
 #ifdef CONFIG_MTK_C2K_SUPPORT
 static int rawbulk_function_init(struct android_usb_function *f,
@@ -1825,17 +1821,8 @@ static struct android_usb_function rawbulk_gps_function = {
 };
 #endif
 
-/* FIXME, 3.18 WORKAROUND */
-#if 0
-static struct android_usb_function audio_source_function = {
-	.name		= "audio_source",
-	.init		= audio_source_function_init,
-	.cleanup	= audio_source_function_cleanup,
-	.bind_config	= audio_source_function_bind_config,
-	.unbind_config	= audio_source_function_unbind_config,
-	.attributes	= audio_source_function_attributes,
-};
 
+#ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -1891,9 +1878,8 @@ static struct android_usb_function midi_function = {
 };
 #endif
 
-/* FIXME, 3.18 WORKAROUND */
 static struct android_usb_function *supported_functions[] = {
-	/*&ffs_function,*/
+	&ffs_function,
 	&adb_function,
 	&acm_function,
 	&mtp_function,
@@ -1906,8 +1892,10 @@ static struct android_usb_function *supported_functions[] = {
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
-	/*&audio_source_function,*/
-	/*&midi_function,*/
+	&audio_source_function,
+#ifdef CONFIG_SND_RAWMIDI
+	&midi_function,
+#endif
 #ifdef CONFIG_MTK_C2K_SUPPORT
 	&rawbulk_modem_function,
 	&rawbulk_ets_function,

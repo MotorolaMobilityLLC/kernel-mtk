@@ -1162,8 +1162,7 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g, u8 ethaddr[ETH_ALEN],
 
 	net->netdev_ops = &eth_netdev_ops;
 
-	/* FIXME, 3.18 WORKAROUND */
-	//SET_ETHTOOL_OPS(net, &ops);
+	net->ethtool_ops = &ops;
 
 	dev->gadget = g;
 	SET_NETDEV_DEV(net, &g->dev);

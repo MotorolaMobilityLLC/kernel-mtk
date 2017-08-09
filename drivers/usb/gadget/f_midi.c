@@ -677,9 +677,10 @@ static int f_midi_register_card(struct f_midi *midi)
 		.dev_free = f_midi_snd_free,
 	};
 
-	err = snd_card_create(midi->index, midi->id, THIS_MODULE, 0, &card);
+	err = snd_card_new(&midi->gadget->dev, midi->index, midi->id,
+			THIS_MODULE, 0, &card);
 	if (err < 0) {
-		ERROR(midi, "snd_card_create() failed\n");
+		ERROR(midi, "snd_card_new() failed\n");
 		goto fail;
 	}
 	midi->card = card;
