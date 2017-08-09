@@ -3875,7 +3875,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			clocks =
 				<&topckgen TOP_MUX_MFG>,
 				<&topckgen TOP_MFGPLL_CK>,
-				<&topckgen TOP_UNIVPLL_D3>;
+				<&topckgen TOP_SYSPLL_D3>;
 			clock-names =
 				"clk_mux",
 				"clk_main_parent",
