@@ -934,10 +934,10 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 
 	switch (index) {
 	case 0:
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 		value = 5;
-#else
-		value = 0;
+#elif defined(CONFIG_ARCH_MT6797)
+		value = 6;
 #endif
 		spm_crit("SPM Suspend debug regs count = 0x%.8x\n",  value);
 	break;
@@ -961,6 +961,12 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 		value = spm_read(DRAMC_DBG_LATCH);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
 	break;
+#if defined(CONFIG_ARCH_MT6797)
+	case 6:
+		value = spm_read(PCM_WDT_LATCH_4);
+		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
+	break;
+#endif
 	}
 
 	return value;
