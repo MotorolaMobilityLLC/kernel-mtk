@@ -24,10 +24,6 @@
 #include "mali_kbase_cpu_vexpress.h"
 #include "mali_kbase_config_platform.h"
 
-#ifdef MTK_mt6797
-#include <../drivers/misc/mediatek/power/mt6797/fan53555.h>
-#endif
-
 #define HARD_RESET_AT_POWER_OFF 0
 
 #ifndef CONFIG_OF
@@ -42,23 +38,9 @@ static struct kbase_io_resources io_resources = {
 };
 #endif /* CONFIG_OF */
 
-#define MTKCLK_prepare_enable(clk) \
-    if (kbdev->clk && clk_prepare_enable(kbdev->clk)) \
-        pr_alert("MALI: clk_prepare_enable failed when enabling " #clk );
-
-#define MTKCLK_disable_unprepare(clk) \
-    if (kbdev->clk) clk_disable_unprepare(kbdev->clk);
-
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
-	MTKCLK_prepare_enable(clk_mfg_async);
-	MTKCLK_prepare_enable(clk_mfg);
-	MTKCLK_prepare_enable(clk_mfg_core0);
-	MTKCLK_prepare_enable(clk_mfg_core1);
-	MTKCLK_prepare_enable(clk_mfg_core2);
-	MTKCLK_prepare_enable(clk_mfg_core3);
-	MTKCLK_prepare_enable(clk_mfg_main);
-
+	/* Nothing is needed on VExpress, but we may have destroyed GPU state (if the below HARD_RESET code is active) */
 	return 1;
 }
 
@@ -75,14 +57,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
 #endif
-
-	MTKCLK_disable_unprepare(clk_mfg_main);
-	MTKCLK_disable_unprepare(clk_mfg_core3);
-	MTKCLK_disable_unprepare(clk_mfg_core2);
-	MTKCLK_disable_unprepare(clk_mfg_core1);
-	MTKCLK_disable_unprepare(clk_mfg_core0);
-	MTKCLK_disable_unprepare(clk_mfg);
-	MTKCLK_disable_unprepare(clk_mfg_async);
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -106,26 +80,6 @@ struct kbase_platform_config *kbase_get_platform_config(void)
 
 int kbase_platform_early_init(void)
 {
-#ifdef MTK_mt6797
-	volatile void * g_ldo_base = NULL;
-
-	g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
-
-	if (!IS_ERR_OR_NULL((void*)g_ldo_base))
-	{
-		/* MTK: init LDO voltage
-		 * vgpu_sram=1.2v
-		 */
-		*(volatile uint32_t*)(g_ldo_base+0xfc0) = (uint32_t)0x0f0f0f0f;
-		*(volatile uint32_t*)(g_ldo_base+0xfc4) = (uint32_t)0x0f0f0f0f;
-		*(volatile uint32_t*)(g_ldo_base+0xfbc) = (uint32_t)0xff;
-
-		iounmap(g_ldo_base);
-	}
-
-	fan53555_config_interface(0x0, 0xA7, 0xff, 0x0);
-	fan53555_config_interface(0x1, 0xA7, 0xff, 0x0);
-#endif
-
+	/* Nothing needed at this stage */
 	return 0;
 }

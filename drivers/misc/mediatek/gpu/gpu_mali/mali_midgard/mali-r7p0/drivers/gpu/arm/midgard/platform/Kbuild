@@ -13,6 +13,9 @@
 #
 
 
+#MTK port custom Kbuild
+#To Add 1.environment variable
+include $(src)/../Kbuild-mtk-custom-env
 
 ifeq ($(CONFIG_MALI_PLATFORM_THIRDPARTY),y)
 # remove begin and end quotes from the Kconfig string type

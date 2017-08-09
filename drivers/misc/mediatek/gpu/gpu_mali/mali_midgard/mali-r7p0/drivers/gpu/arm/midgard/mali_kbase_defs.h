@@ -1023,13 +1023,7 @@ struct kbase_device {
 
 
 	/* MTK */
-	struct clk *clk_mfg_async;
-	struct clk *clk_mfg;
-	struct clk *clk_mfg_core0;
-	struct clk *clk_mfg_core1;
-	struct clk *clk_mfg_core2;
-	struct clk *clk_mfg_core3;
-	struct clk *clk_mfg_main;
+	void *mtk_config;
 
 #ifdef CONFIG_MALI_DEBUG
 	wait_queue_head_t driver_inactive_wait;

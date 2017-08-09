@@ -95,6 +95,9 @@
 #include <mali_kbase_tlstream.h>
 #endif
 
+/* MTK */
+#include <platform/mtk_platform_common.h>
+
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
 #define MMU_IRQ_TAG	1
@@ -3682,22 +3685,12 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		}
 	}
 
-	/* MTK: clocks */
-	kbdev->clk_mfg_async = devm_clk_get(&pdev->dev, "mtcmos-mfg-async");
-	kbdev->clk_mfg = devm_clk_get(&pdev->dev, "mtcmos-mfg");
-	kbdev->clk_mfg_core0 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core0");
-	kbdev->clk_mfg_core1 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core1");
-	kbdev->clk_mfg_core2 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core2");
-	kbdev->clk_mfg_core3 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core3");
-	kbdev->clk_mfg_main = devm_clk_get(&pdev->dev, "mfg-main");
-
-	dev_err(kbdev->dev, "xxxx mfg_async:%p\n", kbdev->clk_mfg_async);
-	dev_err(kbdev->dev, "xxxx mfg:%p\n", kbdev->clk_mfg);
-	dev_err(kbdev->dev, "xxxx mfg_core0:%p\n", kbdev->clk_mfg_core0);
-	dev_err(kbdev->dev, "xxxx mfg_core1:%p\n", kbdev->clk_mfg_core1);
-	dev_err(kbdev->dev, "xxxx mfg_core2:%p\n", kbdev->clk_mfg_core2);
-	dev_err(kbdev->dev, "xxxx mfg_core3:%p\n", kbdev->clk_mfg_core3);
-	dev_err(kbdev->dev, "xxxx mfg_main:%p\n", kbdev->clk_mfg_main);
+	/* MTK: common */
+	if (mtk_platform_init(pdev, kbdev))
+	{
+		dev_err(kbdev->dev, "GPU: mtk_platform_init fail");
+		goto out_clock_prepare;
+	}
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)) && defined(CONFIG_OF) \
 			&& defined(CONFIG_PM_OPP)
