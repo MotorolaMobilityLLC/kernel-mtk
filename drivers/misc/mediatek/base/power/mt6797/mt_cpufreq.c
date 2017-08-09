@@ -2404,9 +2404,9 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 		return;
 
 	if (do_dvfs_stress_test)
-		cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d\n",
-			__func__, cpu_dvfs_get_name(p), cur_khz, p->idx_opp_tbl,
-			target_khz, idx, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
+		cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
+			__func__, cpu_dvfs_get_name(p), cur_khz, p->idx_opp_tbl, target_khz, idx,
+			opp_tbl_m[CUR_OPP_IDX].slot->clk_div, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
 #ifdef DCM_ENABLE
 	/* DCM (freq: high -> low) */
