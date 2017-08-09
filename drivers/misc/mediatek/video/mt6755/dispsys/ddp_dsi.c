@@ -1914,11 +1914,11 @@ int DSI_read_cmp(unsigned int index, DSI_RX_DATA_REG *read_data,
 		}
 	} else if (packet_type == 0x02) {
 		DISPCHECK("read return type is 0x02, not support re-read\n");
-		ret = 0;
+		ret = 1;
 	} else {
 		DISPCHECK("read return type is non-recognite, type = 0x%x\n",
 			packet_type);
-		ret = 0;
+		ret = 1;
 	}
 	return ret;
 }
