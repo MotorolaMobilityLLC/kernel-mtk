@@ -474,10 +474,10 @@ static unsigned short  dcinit_value;
 static void CheckDcinitValue(void)
 {
 	if (dcinit_value > (DCoffsetDefault + DCoffsetVariance)) {
-		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
+		PRINTK_AUDDRV("%s dcinit_value = %d\n", __func__, dcinit_value);
 		dcinit_value = DCoffsetDefault;
 	} else if (dcinit_value < (DCoffsetDefault - DCoffsetVariance)) {
-		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
+		PRINTK_AUDDRV("%s dcinit_value = %d\n", __func__, dcinit_value);
 		dcinit_value = DCoffsetDefault;
 	}
 }
@@ -517,7 +517,7 @@ static void ApplyDctoDl(void)
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			dcinit_value = average;
 			CheckDcinitValue();
-			pr_warn("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
+			PRINTK_AUDDRV("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
 			       value);
 
 			/*pr_debug("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
@@ -549,7 +549,7 @@ static void ApplyDctoDl(void)
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			mhp_impedance = Phase1Check(average, dcinit_value);
-			pr_warn("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
+			PRINTK_AUDDRV("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
 			       value, average, dcinit_value, mhp_impedance);
 			if (mhp_impedance)
 				break;
@@ -562,7 +562,7 @@ static void ApplyDctoDl(void)
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			mhp_impedance = Phase2Check(average, dcinit_value);
-			pr_warn("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
+			PRINTK_AUDDRV("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
 			       value, average, dcinit_value, mhp_impedance);
 			break;
 		}

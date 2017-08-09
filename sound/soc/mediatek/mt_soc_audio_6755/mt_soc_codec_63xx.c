@@ -578,7 +578,7 @@ static void Apply_Speaker_Gain(void)
 
 void setOffsetTrimMux(unsigned int Mux)
 {
-	pr_warn("%s Mux = %d\n", __func__, Mux);
+	/* pr_warn("%s Mux = %d\n", __func__, Mux); */
 	Ana_Set_Reg(AUDDEC_ANA_CON4, Mux << 8, 0xf << 8);	/* Audio offset trimming buffer mux selection */
 }
 
