@@ -193,7 +193,7 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 					gWmtIdcInfo.iit.msg_id = opcode + IPC_EL1_MSG_ID_BEGIN - LTE_MSG_ID_OFFSET + 1;
 					/*handling flag value in wmt cmd */
 					mtk_conn_md_bridge_send_msg(&gWmtIdcInfo.iit);
-					WMT_INFO_FUNC("CONN->LTE: (0x%x->0x%x)\n", opcode, gWmtIdcInfo.iit.msg_id);
+					WMT_DBG_FUNC("CONN->LTE: (0x%x->0x%x)\n", opcode, gWmtIdcInfo.iit.msg_id);
 				} else {
 					WMT_ERR_FUNC("opcode(%d)from connsys fw is out of range,drop it!\n", opcode);
 				}

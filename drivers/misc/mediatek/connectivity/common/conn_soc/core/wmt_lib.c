@@ -597,7 +597,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
 	    && (idc_infor->msg_id <= IPC_EL1_MSG_ID_BEGIN + IPC_EL1_MSG_ID_RANGE)) {
 		lxop->op.au4OpData[1] = idc_infor->msg_id - IPC_EL1_MSG_ID_BEGIN + LTE_MSG_ID_OFFSET - 1;
 
-		WMT_INFO_FUNC("LTE->CONN:(0x%x->0x%zx)\n", idc_infor->msg_id, lxop->op.au4OpData[1]);
+		WMT_DBG_FUNC("LTE->CONN:(0x%x->0x%zx)\n", idc_infor->msg_id, lxop->op.au4OpData[1]);
 		/*wake up chip first */
 		if (DISABLE_PSM_MONITOR()) {
 			WMT_ERR_FUNC("wake up failed\n");
