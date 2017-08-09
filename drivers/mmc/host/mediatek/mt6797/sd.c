@@ -2522,9 +2522,13 @@ static void msdc_dma_start(struct msdc_host *host)
 	N_MSG(DMA, "DMA start");
 	/* Schedule delayed work to check if data0 keeps busy */
 	if (host->data && host->data->flags & MMC_DATA_WRITE) {
-		host->write_timeout_ms = min_t(u32, max_t(u32,
-			host->data->blocks * 500,
-			host->data->timeout_ns / 1000000), 10 * 1000);
+		if (host->hw->host_function == MSDC_EMMC)
+			/* insure eMMC write time */
+			host->write_timeout_ms = 20 * 1000;
+		else
+			host->write_timeout_ms = min_t(u32, max_t(u32,
+				host->data->blocks * 500,
+				host->data->timeout_ns / 1000000), 10 * 1000);
 		schedule_delayed_work(&host->write_timeout,
 			msecs_to_jiffies(host->write_timeout_ms));
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
