@@ -39,6 +39,9 @@
 #ifdef CONFIG_OF
 #include <linux/of_irq.h>
 #endif
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+#include <linux/debugfs.h>
+#endif
 #include <net/net_namespace.h>
 #include <net/sock.h>
 #include <net/tcp_states.h>
@@ -1421,6 +1424,43 @@ static irqreturn_t mc_ssiq_isr(int intr, void *context)
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+uint8_t trustonic_swd_debug;
+static ssize_t debugfs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
+{
+	char mybuf[2];
+
+	if (*ppos != 0)
+		return 0;
+	mybuf[0] = trustonic_swd_debug + '0';
+	mybuf[1] = '\n';
+	if (copy_to_user(buf, mybuf + *ppos, 2))
+		return -EFAULT;
+	*ppos = 2;
+	return 2;
+}
+
+static ssize_t debugfs_write(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+{
+	uint8_t val=0;
+
+	if (len >=2) {
+		if (!copy_from_user(&val, &buf[0], 1))
+			if (val >= '0' && val <= '9') {
+				trustonic_swd_debug = val - '0';
+			}
+		return len;
+	}
+
+	return -EFAULT;
+}
+
+const struct file_operations debug_fops = {
+	.read = debugfs_read,
+	.write = debugfs_write
+};
+#endif
+
 /* function table structure of this device driver. */
 static const struct file_operations mc_admin_fops = {
 	.owner		= THIS_MODULE,
@@ -1517,6 +1557,10 @@ static int __init mobicore_init(void)
 {
 	int ret = 0;
 	dev_set_name(mcd, "mcd");
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+//	struct dentry *debug_file;
+	struct dentry *debug_root;
+#endif
 #ifdef CONFIG_OF
 	struct device_node *node;
 #if 0
@@ -1612,6 +1656,16 @@ static int __init mobicore_init(void)
 
 	memset(&ctx.mci_base, 0, sizeof(ctx.mci_base));
 	MCDRV_DBG(mcd, "initialized");
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+	debug_root = debugfs_create_dir("trustonic", NULL);
+	if (debug_root) {
+		if (!debugfs_create_file("swd_debug", 0644, debug_root, NULL, &debug_fops)) {
+			MCDRV_DBG_ERROR(mcd, "Create trustonic debugfs swd_debug failed!");
+		}
+	} else {
+		MCDRV_DBG_ERROR(mcd, "Create trustonic debugfs directory failed!");
+	}
+#endif
 	return 0;
 
 free_pm:

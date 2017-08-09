@@ -12,6 +12,12 @@ config TRUSTONIC_TEE_VERSION
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302a"
 
+config MT_TRUSTONIC_TEE_DEBUGFS
+	bool "Enable Trustonic TEE debugfs"
+	default n
+	---help---
+	  Enable Trustonic TEE debugfs
+
 #
 # MobiCore configuration
 #
