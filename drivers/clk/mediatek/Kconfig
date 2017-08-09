@@ -26,6 +26,18 @@ config COMMON_CLK_MT6735
 	---help---
 	  This driver supports Mediatek MT6735 clocks.
 
+config COMMON_CLK_MT6755
+	bool "Clock driver for Mediatek MT6755"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_V1
+	default y if ARCH_MT6755 && !MTK_CLKMGR
+	---help---
+	  This driver supports Mediatek MT6755 clocks.
+          Use the config to support CCF on MT6755,
+          instead of old clkmgr architecture.
+          MT6755 support CCF for Linux K.S Migration
+          The value is default on.
+
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"
 	depends on COMMON_CLK

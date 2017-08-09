@@ -61,7 +61,7 @@
 #define TOP_MSDCPLL_D8		43
 #define TOP_OSC_D2        44
 #define TOP_OSC_D4        45
-#define TOP_OSC_D28       46
+#define TOP_OSC_D8       46
 #define TOP_SYSPLL_D3		  47
 #define TOP_SYSPLL_D3_D3	48
 #define TOP_SYSPLL_D5		49
