@@ -39,7 +39,7 @@ extern unsigned int enable_4G(void);
 #define MAPPING_DRAM_ACCESS_ADDR(phy_addr)
 #define MT_OVERFLOW_ADDR_START 0
 
-static inline unsigned int enalbe_4G(void)
+static inline unsigned int enable_4G(void)
 {
 	return 0;
 }
