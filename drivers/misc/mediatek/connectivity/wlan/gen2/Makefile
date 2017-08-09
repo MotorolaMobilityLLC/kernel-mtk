@@ -35,7 +35,6 @@ endif
 #    ccflags-y += -D_HIF_SDIO=1
 #endif
 
-CONFIG_MTK_PASSPOINT_R1_SUPPORT = y
 ifeq ($(CONFIG_MTK_PASSPOINT_R1_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_HOTSPOT_2_0=1
     ccflags-y += -DCFG_HS20_DEBUG=1

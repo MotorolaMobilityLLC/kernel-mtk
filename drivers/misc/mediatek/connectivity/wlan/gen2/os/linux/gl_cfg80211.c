@@ -1841,16 +1841,16 @@ int mtk_cfg80211_assoc(struct wiphy *wiphy, struct net_device *ndev, struct cfg8
 
 #if CONFIG_NL80211_TESTMODE
 /*
-
-static inline test_nla_put(struct sk_buff *skb, int attrtype, int attrlen, const void *data)
-{
-
-}
+#define NLA_PUT(skb, attrtype, attrlen, data) \
+do { \
+	if (unlikely(nla_put(skb, attrtype, attrlen, data) < 0)) \
+		goto nla_put_failure; \
+} while (0)
 
 #define NLA_PUT_TYPE(skb, type, attrtype, value) \
 do { \
 	type __tmp = value; \
-	test_nla_put(skb, attrtype, sizeof(type), &__tmp); \
+	NLA_PUT(skb, attrtype, sizeof(type), &__tmp); \
 } while (0)
 
 #define NLA_PUT_U8(skb, attrtype, value) \

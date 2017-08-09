@@ -198,7 +198,6 @@ int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy,
 		sizeof(rRttCapabilities), &rRttCapabilities) < 0))
 		goto nla_put_failure;
 
-
 	i4Status = cfg80211_vendor_cmd_reply(skb);
 	return i4Status;
 
@@ -206,7 +205,6 @@ nla_put_failure:
 	kfree_skb(skb);
 	return i4Status;
 }
-
 
 static struct nla_policy nla_parse_policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
 	[GSCAN_ATTRIBUTE_NUM_BUCKETS] = {.type = NLA_U32},
@@ -378,8 +376,7 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	prWifiScanCmd = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), VIR_MEM_TYPE);
 	if (prWifiScanCmd == NULL)
 		goto nla_put_failure;
-
-	kalMemZero(prWifiScanCmd, sizeof(*prWifiScanCmd));
+	kalMemZero(prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1));
 
 	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE,
@@ -422,9 +419,10 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 					       const void *data, int data_len)
 {
 	INT_32 i4Status = -EINVAL;
-	PARAM_WIFI_SIGNIFICANT_CHANGE rWifiChangeCmd;
+	P_PARAM_WIFI_SIGNIFICANT_CHANGE prWifiChangeCmd = NULL;
 	UINT_8 flush = 0;
-	struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1];
+	/* struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1]; */
+	struct nlattr **attr = NULL;
 	struct nlattr *paplist;
 	int i, k;
 	UINT_32 len_basic, len_aplist;
@@ -438,7 +436,13 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 		DBGLOG(REQ, LOUD, "0x%x 0x%x 0x%x 0x%x \r\n",
 			*((UINT_32 *) data + i * 4), *((UINT_32 *) data + i * 4 + 1),
 			*((UINT_32 *) data + i * 4 + 2), *((UINT_32 *) data + i * 4 + 3));
-	kalMemZero(&rWifiChangeCmd, sizeof(rWifiChangeCmd));
+	prWifiChangeCmd = kalMemAlloc(sizeof(PARAM_WIFI_SIGNIFICANT_CHANGE), VIR_MEM_TYPE);
+	if (prWifiChangeCmd == NULL)
+		goto nla_put_failure;
+	kalMemZero(prWifiChangeCmd, sizeof(PARAM_WIFI_SIGNIFICANT_CHANGE));
+	attr = kalMemAlloc(sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1), VIR_MEM_TYPE);
+	if (attr == NULL)
+		goto nla_put_failure;
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 
 	nla_parse_nested(attr, GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH,
@@ -448,22 +452,22 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 		if (attr[k]) {
 			switch (k) {
 			case GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE:
-				rWifiChangeCmd.rssi_sample_size = nla_get_u16(attr[k]);
+				prWifiChangeCmd->rssi_sample_size = nla_get_u16(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
-				rWifiChangeCmd.lost_ap_sample_size = nla_get_u16(attr[k]);
+				prWifiChangeCmd->lost_ap_sample_size = nla_get_u16(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_MIN_BREACHING:
-				rWifiChangeCmd.min_breaching = nla_get_u16(attr[k]);
+				prWifiChangeCmd->min_breaching = nla_get_u16(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_NUM_AP:
-				rWifiChangeCmd.num_ap = nla_get_u16(attr[k]);
+				prWifiChangeCmd->num_ap = nla_get_u16(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				DBGLOG(REQ, TRACE, "attr=0x%x, num_ap=%d nla_len=%d, \r\n",
-				       *(UINT_32 *) attr[k], rWifiChangeCmd.num_ap, attr[k]->nla_len);
+				       *(UINT_32 *) attr[k], prWifiChangeCmd->num_ap, attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH:
 				flush = nla_get_u8(attr[k]);
@@ -478,7 +482,7 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 	if (paplist->nla_type == GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_BSSIDS)
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 
-	for (i = 0; i < rWifiChangeCmd.num_ap; i++) {
+	for (i = 0; i < prWifiChangeCmd->num_ap; i++) {
 		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 		/* request.attr_start(i) as nested attribute */
@@ -487,21 +491,21 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 			if (attr[k]) {
 				switch (k) {
 				case GSCAN_ATTRIBUTE_BSSID:
-					kalMemCopy(rWifiChangeCmd.ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
+					kalMemCopy(prWifiChangeCmd->ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				case GSCAN_ATTRIBUTE_RSSI_LOW:
-					rWifiChangeCmd.ap[i].low = nla_get_u32(attr[k]);
+					prWifiChangeCmd->ap[i].low = nla_get_u32(attr[k]);
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				case GSCAN_ATTRIBUTE_RSSI_HIGH:
-					rWifiChangeCmd.ap[i].high = nla_get_u32(attr[k]);
+					prWifiChangeCmd->ap[i].high = nla_get_u32(attr[k]);
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				}
 			}
 		}
-		if (((i + 1) % 4 == 0) || (i == rWifiChangeCmd.num_ap - 1))
+		if (((i + 1) % 4 == 0) || (i == prWifiChangeCmd->num_ap - 1))
 			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d\n", i, len_aplist);
 		else
 			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d \t", i, len_aplist);
@@ -510,15 +514,22 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 
 	DBGLOG(REQ, TRACE,
 		"flush=%d, rssi_sample_size=%d lost_ap_sample_size=%d min_breaching=%d",
-		flush, rWifiChangeCmd.rssi_sample_size, rWifiChangeCmd.lost_ap_sample_size,
-		rWifiChangeCmd.min_breaching);
+		flush, prWifiChangeCmd->rssi_sample_size, prWifiChangeCmd->lost_ap_sample_size,
+		prWifiChangeCmd->min_breaching);
 	DBGLOG(REQ, TRACE,
 		"ap[0].channel=%d low=%d high=%d, ap[1].channel=%d low=%d high=%d",
-		rWifiChangeCmd.ap[0].channel, rWifiChangeCmd.ap[0].low, rWifiChangeCmd.ap[0].high,
-		rWifiChangeCmd.ap[1].channel, rWifiChangeCmd.ap[1].low, rWifiChangeCmd.ap[1].high);
+		prWifiChangeCmd->ap[0].channel, prWifiChangeCmd->ap[0].low, prWifiChangeCmd->ap[0].high,
+		prWifiChangeCmd->ap[1].channel, prWifiChangeCmd->ap[1].low, prWifiChangeCmd->ap[1].high);
+	kalMemFree(prWifiChangeCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_SIGNIFICANT_CHANGE));
+	kalMemFree(attr, VIR_MEM_TYPE, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 	return 0;
 
 nla_put_failure:
+	if (prWifiChangeCmd)
+		kalMemFree(prWifiChangeCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_SIGNIFICANT_CHANGE));
+	if (attr)
+		kalMemFree(attr, VIR_MEM_TYPE,
+			sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 	return i4Status;
 }
 
@@ -529,9 +540,10 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 	CMD_SET_PSCAN_ADD_HOTLIST_BSSID rCmdPscnAddHotlist;
 
 	INT_32 i4Status = -EINVAL;
-	PARAM_WIFI_BSSID_HOTLIST rWifiHotlistCmd;
+	P_PARAM_WIFI_BSSID_HOTLIST prWifiHotlistCmd = NULL;
 	UINT_8 flush = 0;
-	struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1];
+	/* struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1]; */
+	struct nlattr **attr = NULL;
 	struct nlattr *paplist;
 	int i, k;
 	UINT_32 len_basic, len_aplist;
@@ -545,7 +557,13 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 		DBGLOG(REQ, LOUD, "0x%x 0x%x 0x%x 0x%x \r\n",
 			*((UINT_32 *) data + i * 4), *((UINT_32 *) data + i * 4 + 1),
 			*((UINT_32 *) data + i * 4 + 2), *((UINT_32 *) data + i * 4 + 3));
-	kalMemZero(&rWifiHotlistCmd, sizeof(rWifiHotlistCmd));
+	prWifiHotlistCmd = kalMemAlloc(sizeof(PARAM_WIFI_BSSID_HOTLIST), VIR_MEM_TYPE);
+	if (prWifiHotlistCmd == NULL)
+		goto nla_put_failure;
+	kalMemZero(prWifiHotlistCmd, sizeof(PARAM_WIFI_BSSID_HOTLIST));
+	attr = kalMemAlloc(sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1), VIR_MEM_TYPE);
+	if (attr == NULL)
+		goto nla_put_failure;
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 
 	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_AP, (struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
@@ -554,14 +572,14 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 		if (attr[k]) {
 			switch (k) {
 			case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
-				rWifiHotlistCmd.lost_ap_sample_size = nla_get_u32(attr[k]);
+				prWifiHotlistCmd->lost_ap_sample_size = nla_get_u32(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_NUM_AP:
-				rWifiHotlistCmd.num_ap = nla_get_u16(attr[k]);
+				prWifiHotlistCmd->num_ap = nla_get_u16(attr[k]);
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				DBGLOG(REQ, TRACE, "attr=0x%x, num_ap=%d nla_len=%d, \r\n",
-				       *(UINT_32 *) attr[k], rWifiHotlistCmd.num_ap, attr[k]->nla_len);
+				       *(UINT_32 *) attr[k], prWifiHotlistCmd->num_ap, attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_HOTLIST_FLUSH:
 				flush = nla_get_u8(attr[k]);
@@ -576,7 +594,7 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 	if (paplist->nla_type == GSCAN_ATTRIBUTE_HOTLIST_BSSIDS)
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 
-	for (i = 0; i < rWifiHotlistCmd.num_ap; i++) {
+	for (i = 0; i < prWifiHotlistCmd->num_ap; i++) {
 		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 		/* request.attr_start(i) as nested attribute */
@@ -585,21 +603,21 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 			if (attr[k]) {
 				switch (k) {
 				case GSCAN_ATTRIBUTE_BSSID:
-					kalMemCopy(rWifiHotlistCmd.ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
+					kalMemCopy(prWifiHotlistCmd->ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				case GSCAN_ATTRIBUTE_RSSI_LOW:
-					rWifiHotlistCmd.ap[i].low = nla_get_u32(attr[k]);
+					prWifiHotlistCmd->ap[i].low = nla_get_u32(attr[k]);
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				case GSCAN_ATTRIBUTE_RSSI_HIGH:
-					rWifiHotlistCmd.ap[i].high = nla_get_u32(attr[k]);
+					prWifiHotlistCmd->ap[i].high = nla_get_u32(attr[k]);
 					len_aplist += NLA_ALIGN(attr[k]->nla_len);
 					break;
 				}
 			}
 		}
-		if (((i + 1) % 4 == 0) || (i == rWifiHotlistCmd.num_ap - 1))
+		if (((i + 1) % 4 == 0) || (i == prWifiHotlistCmd->num_ap - 1))
 			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d\n", i, len_aplist);
 		else
 			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d \t", i, len_aplist);
@@ -608,18 +626,25 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 
 	DBGLOG(REQ, TRACE,
 	"flush=%d, lost_ap_sample_size=%d, Hotlist:ap[0].channel=%d low=%d high=%d, ap[1].channel=%d low=%d high=%d",
-		flush, rWifiHotlistCmd.lost_ap_sample_size,
-		rWifiHotlistCmd.ap[0].channel, rWifiHotlistCmd.ap[0].low, rWifiHotlistCmd.ap[0].high,
-		rWifiHotlistCmd.ap[1].channel, rWifiHotlistCmd.ap[1].low, rWifiHotlistCmd.ap[1].high);
+		flush, prWifiHotlistCmd->lost_ap_sample_size,
+		prWifiHotlistCmd->ap[0].channel, prWifiHotlistCmd->ap[0].low, prWifiHotlistCmd->ap[0].high,
+		prWifiHotlistCmd->ap[1].channel, prWifiHotlistCmd->ap[1].low, prWifiHotlistCmd->ap[1].high);
 
-	memcpy(&(rCmdPscnAddHotlist.aucMacAddr), &(rWifiHotlistCmd.ap[0].bssid), 6 * sizeof(UINT_8));
+	memcpy(&(rCmdPscnAddHotlist.aucMacAddr), &(prWifiHotlistCmd->ap[0].bssid), 6 * sizeof(UINT_8));
 	rCmdPscnAddHotlist.ucFlags = (UINT_8) TRUE;
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
+	kalMemFree(prWifiHotlistCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_BSSID_HOTLIST));
+	kalMemFree(attr, VIR_MEM_TYPE, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 	return 0;
 
 nla_put_failure:
+	if (prWifiHotlistCmd)
+		kalMemFree(prWifiHotlistCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_BSSID_HOTLIST));
+	if (attr)
+		kalMemFree(attr, VIR_MEM_TYPE,
+			sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 	return i4Status;
 }
 
@@ -952,7 +977,6 @@ int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless
 			goto nla_put_failure;
 	}
 
-
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
 
@@ -985,7 +1009,6 @@ int mtk_cfg80211_vendor_event_scan_results_available(struct wiphy *wiphy, struct
 			sizeof(unsigned int), &__tmp) < 0))
 			goto nla_put_failure;
 	}
-
 
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
@@ -1020,7 +1043,6 @@ int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wire
 	if (unlikely(nla_put(skb, GSCAN_EVENT_FULL_SCAN_RESULTS,
 		sizeof(result), &result) < 0))
 		goto nla_put_failure;
-
 
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
@@ -1063,7 +1085,6 @@ int mtk_cfg80211_vendor_event_significant_change_results(struct wiphy *wiphy, st
 		(sizeof(PARAM_WIFI_CHANGE_RESULT) * 2), result) < 0))
 		goto nla_put_failure;
 
-
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
 
@@ -1102,7 +1123,6 @@ int mtk_cfg80211_vendor_event_hotlist_ap_found(struct wiphy *wiphy, struct wirel
 	if (unlikely(nla_put(skb, GSCAN_EVENT_HOTLIST_RESULTS_FOUND,
 		(sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result) < 0))
 		goto nla_put_failure;
-
 
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
@@ -1143,7 +1163,6 @@ int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wirele
 		(sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result) < 0))
 		goto nla_put_failure;
 
-
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
 
@@ -1151,7 +1170,6 @@ nla_put_failure:
 	kfree_skb(skb);
 	return -1;
 }
-
 
 
 #endif
