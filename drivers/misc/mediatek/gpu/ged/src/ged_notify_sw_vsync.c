@@ -103,7 +103,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 {
 #ifdef ENABLE_COMMON_DVFS  
     
-    long long llDiff;
+    long long llDiff = 0;
     bool bHWEventKick = false;
     unsigned long long temp;
 
@@ -256,11 +256,9 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 {
 #ifdef ENABLE_COMMON_DVFS
     #ifdef ENABLE_TIMER_BACKUP
-
-    g_ns_gpu_on_ts = ged_get_time();
-
     if(bSwitch)
     {        
+        g_ns_gpu_on_ts = ged_get_time();
         g_bGPUClock = true;
         if( 0 == hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL))
         {

@@ -335,6 +335,7 @@ int ged_dvfs_vsync_offset_level_get()
 
 GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 {
+#ifdef ENABLE_COMMON_DVFS    
      int i32MaxLevel = 0;
      unsigned int  ui32NewFreqID;
      int i ;
@@ -347,7 +348,10 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 #ifdef GED_DVFS_UM_CAL
      mutex_lock(&gsDVFSLock);
      
+     if(g_ulCalResetTS_us  - g_ulPreDVFS_TS_us !=0)
      gpu_loading = (( gpu_loading * (g_ulCalResetTS_us - g_ulPreCalResetTS_us)  ) + 100*g_ulWorkingPeriod_us ) / (g_ulCalResetTS_us  - g_ulPreDVFS_TS_us); 
+     else
+        gpu_loading =0 ;
      gpu_pre_loading = gpu_av_loading;
      gpu_av_loading = gpu_loading;
      
@@ -405,6 +409,9 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
     
     mutex_unlock(&gsDVFSLock);            
 #endif
+#else
+    gpu_pre_loading = 0;
+#endif
     
     return GED_OK;
 }
@@ -422,8 +429,10 @@ static bool ged_dvfs_policy(
     
     if(false==bRefreshed)
     {
+        if(g_ulCalResetTS_us  - g_ulPreDVFS_TS_us !=0)
         gpu_loading = (( gpu_loading * (g_ulCalResetTS_us - g_ulPreCalResetTS_us)  ) + 100*g_ulWorkingPeriod_us ) / (g_ulCalResetTS_us  - g_ulPreDVFS_TS_us); 
-        
+        else
+            gpu_loading = 0;
         g_ulPreDVFS_TS_us = g_ulCalResetTS_us;        
 
         gpu_pre_loading = gpu_av_loading;
