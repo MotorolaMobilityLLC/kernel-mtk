@@ -2568,7 +2568,7 @@ static long mbim_ioctl(struct file *fp, unsigned cmd, unsigned long arg)
 			break;
 		}
 
-		if (sid_ifid.ifid > MAX_SESSION_NUM) {
+		if (sid_ifid.ifid >= MAX_SESSION_NUM) {
 			pr_err("Out of sessionID =%d\n", sid_ifid.ifid);
 			ret = -EFAULT;
 			break;
