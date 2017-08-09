@@ -439,6 +439,20 @@ typedef enum _ENUM_MAC_TX_QUEUE_INDEX_T {
 	MAC_TX_QUEUE_NUM
 } ENUM_MAC_TX_QUEUE_INDEX_T;
 
+typedef struct _EVENT_CHECK_REORDER_BUBBLE_T {
+	/* Event header */
+	UINT_16 u2Length;
+	UINT_16 u2Reserved1;	/* Must be filled with 0x0001 (EVENT Packet) */
+	UINT_8 ucEID;
+	UINT_8 ucSeqNum;
+	UINT_8 aucReserved2[2];
+
+	/* Event Body */
+	UINT_8 ucStaRecIdx;
+	UINT_8 ucTid;
+} EVENT_CHECK_REORDER_BUBBLE_T, *P_EVENT_CHECK_REORDER_BUBBLE_T;
+
+
 typedef struct _RX_BA_ENTRY_T {
 	BOOLEAN fgIsValid;
 	QUE_T rReOrderQue;
@@ -449,8 +463,11 @@ typedef struct _RX_BA_ENTRY_T {
 	/* For identifying the RX BA agreement */
 	UINT_8 ucStaRecIdx;
 	UINT_8 ucTid;
+	TIMER_T rReorderBubbleTimer;
+	UINT_16 u2FirstBubbleSn;
 
 	BOOLEAN fgIsWaitingForPktWithSsn;
+	BOOLEAN fgHasBubble;
 
 	/* UINT_8                  ucTxBufferSize; */
 	/* BOOL                    fgIsAcConstrain; */
@@ -893,9 +910,10 @@ qmInsertFallWithinReorderPkt(IN P_SW_RFB_T prSwRfb, IN P_RX_BA_ENTRY_T prReorder
 VOID qmInsertFallAheadReorderPkt(IN P_SW_RFB_T prSwRfb, IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue);
 
 BOOLEAN
-qmPopOutDueToFallWithin(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue, OUT BOOLEAN *fgIsTimeout);
+qmPopOutDueToFallWithin(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm,
+		OUT P_QUE_T prReturnedQue, OUT BOOLEAN *fgIsTimeout);
 
-VOID qmPopOutDueToFallAhead(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue);
+VOID qmPopOutDueToFallAhead(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue);
 
 VOID qmHandleMailboxRxMessage(IN MAILBOX_MSG_T prMailboxRxMsg);
 
@@ -958,11 +976,16 @@ VOID qmFreeAllByNetType(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T e
 
 UINT_32 qmGetRxReorderQueuedBufferCount(IN P_ADAPTER_T prAdapter);
 
+VOID qmHandleReorderBubbleTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr);
+VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+
 #if ARP_MONITER_ENABLE
 VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 VOID qmResetArpDetect(VOID);
 VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 #endif
+VOID qmHandleRxIpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, UINT_16 *flag);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

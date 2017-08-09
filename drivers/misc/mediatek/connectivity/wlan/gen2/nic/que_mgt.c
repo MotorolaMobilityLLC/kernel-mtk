@@ -594,6 +594,11 @@ VOID qmInit(IN P_ADAPTER_T prAdapter)
 		prQM->arRxBaTable[u4QueArrayIdx].u2WinEnd = 0xFFFF;
 
 		prQM->arRxBaTable[u4QueArrayIdx].fgIsWaitingForPktWithSsn = FALSE;
+		prQM->arRxBaTable[u4QueArrayIdx].fgHasBubble = FALSE;
+		cnmTimerInitTimer(prAdapter,
+				&(prQM->arRxBaTable[u4QueArrayIdx].rReorderBubbleTimer),
+				(PFN_MGMT_TIMEOUT_FUNC) qmHandleReorderBubbleTimeout,
+				(ULONG) (&prQM->arRxBaTable[u4QueArrayIdx]));
 
 	}
 	prQM->ucRxBaCount = 0;
@@ -2952,7 +2957,7 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 		}
 #endif
 
-		if (qmPopOutDueToFallWithin(prReorderQueParm, prReturnedQue, &fgIsBaTimeout) == FALSE)
+		if (qmPopOutDueToFallWithin(prAdapter, prReorderQueParm, prReturnedQue, &fgIsBaTimeout) == FALSE)
 			STATS_RX_REORDER_HOLE_INC(prStaRec);	/* record hole count */
 		STATS_RX_REORDER_HOLE_TIMEOUT_INC(prStaRec, fgIsBaTimeout);
 	}
@@ -2984,7 +2989,7 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 		    (((prReorderQueParm->u2WinEnd) - (prReorderQueParm->u2WinSize) + MAX_SEQ_NO_COUNT + 1)
 		     % MAX_SEQ_NO_COUNT);
 
-		qmPopOutDueToFallAhead(prReorderQueParm, prReturnedQue);
+		qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
 
 		STATS_RX_REORDER_FALL_AHEAD_INC(prStaRec);
 
@@ -3082,7 +3087,7 @@ VOID qmProcessBarFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, OUT P_QU
 		DBGLOG(QM, TRACE,
 		       "QM:(BAR)[%d](%u){%d,%d}\n", prSwRfb->ucTid, u4SSN, prReorderQueParm->u2WinStart,
 			prReorderQueParm->u2WinEnd);
-		qmPopOutDueToFallAhead(prReorderQueParm, prReturnedQue);
+		qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
 	} else {
 		DBGLOG(QM, TRACE, "QM:(BAR)(%d)(%u){%u,%u}\n", prSwRfb->ucTid, u4SSN, u4WinStart, u4WinEnd);
 	}
@@ -3179,7 +3184,8 @@ VOID qmInsertFallAheadReorderPkt(IN P_SW_RFB_T prSwRfb, IN P_RX_BA_ENTRY_T prReo
 }
 
 BOOLEAN
-qmPopOutDueToFallWithin(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue, OUT BOOLEAN *fgIsTimeout)
+qmPopOutDueToFallWithin(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm,
+		OUT P_QUE_T prReturnedQue, OUT BOOLEAN *fgIsTimeout)
 {
 	P_SW_RFB_T prReorderedSwRfb;
 	P_QUE_T prReorderQue;
@@ -3214,6 +3220,20 @@ qmPopOutDueToFallWithin(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prRetur
 		}
 		/* SN > WinStart, break to update WinEnd */
 		else {
+			/* Start bubble timer */
+			if (!prReorderQueParm->fgHasBubble) {
+				cnmTimerStartTimer(prAdapter,
+						   &(prReorderQueParm->rReorderBubbleTimer),
+						   QM_RX_BA_ENTRY_MISS_TIMEOUT_MS);
+				prReorderQueParm->fgHasBubble = TRUE;
+				prReorderQueParm->u2FirstBubbleSn = prReorderQueParm->u2WinStart;
+
+				DBGLOG(QM, TRACE,
+				       "QM:Bub Timer STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+					prReorderQueParm->ucStaRecIdx, prReorderedSwRfb->ucTid,
+					prReorderQueParm->u2FirstBubbleSn,
+					prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+			}
 			if ((fgMissing == TRUE) &&
 			    CHECK_FOR_TIMEOUT(rCurrentTime, (*prMissTimeout),
 					      MSEC_TO_SYSTIME(QM_RX_BA_ENTRY_MISS_TIMEOUT_MS))) {
@@ -3261,7 +3281,7 @@ qmPopOutDueToFallWithin(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prRetur
 	return QUEUE_IS_EMPTY(prReorderQue);
 }
 
-VOID qmPopOutDueToFallAhead(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue)
+VOID qmPopOutDueToFallAhead(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prReturnedQue)
 {
 	P_SW_RFB_T prReorderedSwRfb;
 	P_QUE_T prReorderQue;
@@ -3291,8 +3311,23 @@ VOID qmPopOutDueToFallAhead(IN P_RX_BA_ENTRY_T prReorderQueParm, OUT P_QUE_T prR
 			fgDequeuHead = TRUE;
 
 		/* SN > WinStart, break to update WinEnd */
-		else
+		else {
+			/* Start bubble timer */
+			if (!prReorderQueParm->fgHasBubble) {
+				cnmTimerStartTimer(prAdapter,
+						   &(prReorderQueParm->rReorderBubbleTimer),
+						   QM_RX_BA_ENTRY_MISS_TIMEOUT_MS);
+				prReorderQueParm->fgHasBubble = TRUE;
+				prReorderQueParm->u2FirstBubbleSn = prReorderQueParm->u2WinStart;
+
+				DBGLOG(QM, TRACE,
+				       "QM:(Bub Timer) STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+					prReorderQueParm->ucStaRecIdx, prReorderedSwRfb->ucTid,
+					prReorderQueParm->u2FirstBubbleSn,
+					prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+			}
 			break;
+		}
 
 		/* Dequeue the head packet */
 		if (fgDequeuHead) {
@@ -3510,6 +3545,7 @@ qmAddRxBaEntry(IN P_ADAPTER_T prAdapter,
 		prRxBaEntry->u2WinEnd = ((u2WinStart + u2WinSize - 1) % MAX_SEQ_NO_COUNT);
 		prRxBaEntry->fgIsValid = TRUE;
 		prRxBaEntry->fgIsWaitingForPktWithSsn = TRUE;
+		prRxBaEntry->fgHasBubble = FALSE;
 
 		g_arMissTimeout[ucStaRecIdx][ucTid] = 0;
 
@@ -3572,6 +3608,13 @@ VOID qmDelRxBaEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx, IN UINT_8 u
 
 			}
 
+		}
+		if (prRxBaEntry->fgHasBubble) {
+			DBGLOG(QM, TRACE, "QM:(Bub Check Cancel) STA[%u] TID[%u], DELBA\n",
+					   prRxBaEntry->ucStaRecIdx, prRxBaEntry->ucTid);
+
+			cnmTimerStopTimer(prAdapter, &prRxBaEntry->rReorderBubbleTimer);
+			prRxBaEntry->fgHasBubble = FALSE;
 		}
 #if ((QM_TEST_MODE == 0) && (QM_TEST_STA_REC_DEACTIVATION == 0))
 		/* Update RX BA entry state. Note that RX queue flush is not done here */
@@ -5035,4 +5078,158 @@ VOID qmResetArpDetect(VOID)
 	kalMemZero(apIp, sizeof(apIp));
 }
 #endif
+
+
+VOID qmHandleReorderBubbleTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
+{
+	P_RX_BA_ENTRY_T prReorderQueParm = (P_RX_BA_ENTRY_T) ulParamPtr;
+	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
+	P_EVENT_CHECK_REORDER_BUBBLE_T prCheckReorderEvent;
+
+	if (!prReorderQueParm->fgIsValid) {
+		DBGLOG(QM, TRACE, "QM:Bub Check Cancel STA[%u] TID[%u], No Rx BA entry\n",
+				   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+		return;
+	}
+
+	if (!prReorderQueParm->fgHasBubble) {
+		DBGLOG(QM, TRACE,
+		       "QM:Bub Check Cancel STA[%u] TID[%u], Bubble has been filled\n",
+			prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+		return;
+	}
+
+	DBGLOG(QM, TRACE, "QM:Bub Timeout STA[%u] TID[%u] BubSN[%u]\n",
+			   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid, prReorderQueParm->u2FirstBubbleSn);
+
+	/* Generate a self-inited event to Rx path */
+	QUEUE_REMOVE_HEAD(&prAdapter->rRxCtrl.rFreeSwRfbList, prSwRfb, P_SW_RFB_T);
+
+	if (prSwRfb) {
+		prCheckReorderEvent = (P_EVENT_CHECK_REORDER_BUBBLE_T) prSwRfb->pucRecvBuff;
+
+		prSwRfb->ucPacketType = HIF_RX_PKT_TYPE_EVENT;
+
+		prCheckReorderEvent->ucEID = EVENT_ID_CHECK_REORDER_BUBBLE;
+		prCheckReorderEvent->ucSeqNum = 0;
+
+		prCheckReorderEvent->ucStaRecIdx = prReorderQueParm->ucStaRecIdx;
+		prCheckReorderEvent->ucTid = prReorderQueParm->ucTid;
+		prCheckReorderEvent->u2Length = sizeof(EVENT_CHECK_REORDER_BUBBLE_T);
+
+		QUEUE_INSERT_TAIL(&prAdapter->rRxCtrl.rReceivedRfbList, &prSwRfb->rQueEntry);
+		RX_INC_CNT(&prAdapter->rRxCtrl, RX_MPDU_TOTAL_COUNT);
+
+		DBGLOG(QM, LOUD, "QM:Bub Check Event Sent STA[%u] TID[%u]\n",
+				  prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+
+		nicRxProcessRFBs(prAdapter);
+
+		DBGLOG(QM, LOUD, "QM:Bub Check Event Handled STA[%u] TID[%u]\n",
+				  prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+	} else {
+		DBGLOG(QM, TRACE,
+		       "QM:Bub Check Cancel STA[%u] TID[%u], Bub check event alloc failed\n",
+			prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+
+		cnmTimerStartTimer(prAdapter, &(prReorderQueParm->rReorderBubbleTimer), QM_RX_BA_ENTRY_MISS_TIMEOUT_MS);
+
+		DBGLOG(QM, TRACE, "QM:Bub Timer Restart STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+				   prReorderQueParm->ucStaRecIdx,
+				   prReorderQueParm->ucTid,
+				   prReorderQueParm->u2FirstBubbleSn,
+				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+	}
+}
+
+VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	P_EVENT_CHECK_REORDER_BUBBLE_T prCheckReorderEvent = (P_EVENT_CHECK_REORDER_BUBBLE_T) prEvent;
+	P_RX_BA_ENTRY_T prReorderQueParm;
+	P_QUE_T prReorderQue;
+	QUE_T rReturnedQue;
+	P_QUE_T prReturnedQue = &rReturnedQue;
+	P_SW_RFB_T prReorderedSwRfb, prSwRfb;
+
+	QUEUE_INITIALIZE(prReturnedQue);
+
+	/* Get target Rx BA entry */
+	prReorderQueParm = qmLookupRxBaEntry(prAdapter, prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid);
+
+	/* Sanity Check */
+	if (!prReorderQueParm || !prReorderQueParm->fgIsValid || !prReorderQueParm->fgHasBubble) {
+		DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
+				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid, prReorderQueParm,
+				   prReorderQueParm->fgIsValid, prReorderQueParm->fgHasBubble);
+		return;
+	}
+
+	prReorderQue = &(prReorderQueParm->rReOrderQue);
+
+	if (QUEUE_IS_EMPTY(prReorderQue)) {
+		prReorderQueParm->fgHasBubble = FALSE;
+
+		DBGLOG(QM, WARN,
+		       "QM:Bub Check Cancel STA[%u] TID[%u], Bubble has been filled\n",
+			prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+
+		return;
+	}
+
+	DBGLOG(QM, TRACE, "QM:Bub Check Event Got STA[%u] TID[%u]\n",
+			   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+
+	/* Expected bubble timeout => pop out packets before win_end */
+	if (prReorderQueParm->u2FirstBubbleSn == prReorderQueParm->u2WinStart) {
+
+		prReorderedSwRfb = (P_SW_RFB_T) QUEUE_GET_TAIL(prReorderQue);
+
+		prReorderQueParm->u2WinStart = prReorderedSwRfb->u2SSN + 1;
+		prReorderQueParm->u2WinEnd =
+		    ((prReorderQueParm->u2WinStart) + (prReorderQueParm->u2WinSize) - 1) % MAX_SEQ_NO_COUNT;
+
+		qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
+
+		DBGLOG(QM, TRACE, "QM:Bub Flush) STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+				   prReorderQueParm->ucStaRecIdx,
+				   prReorderQueParm->ucTid,
+				   prReorderQueParm->u2FirstBubbleSn,
+				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+
+		if (QUEUE_IS_NOT_EMPTY(prReturnedQue)) {
+			QM_TX_SET_NEXT_MSDU_INFO((P_SW_RFB_T) QUEUE_GET_TAIL(prReturnedQue), NULL);
+
+			prSwRfb = (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue);
+			while (prSwRfb) {
+				DBGLOG(QM, TRACE,
+				       "QM:Bub Flush STA[%u] TID[%u] Pop Out SN[%u]\n",
+					prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid, prSwRfb->u2SSN);
+
+				prSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prSwRfb);
+			}
+
+			wlanProcessQueuedSwRfb(prAdapter, (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue));
+		} else {
+			DBGLOG(QM, TRACE, "QM:Bub Flush STA[%u] TID[%u] Pop Out 0 packet\n",
+					   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+		}
+
+		prReorderQueParm->fgHasBubble = FALSE;
+	}
+	/* First bubble has been filled but others exist */
+	else {
+		prReorderQueParm->u2FirstBubbleSn = prReorderQueParm->u2WinStart;
+		cnmTimerStartTimer(prAdapter, &(prReorderQueParm->rReorderBubbleTimer), QM_RX_BA_ENTRY_MISS_TIMEOUT_MS);
+
+		DBGLOG(QM, TRACE, "QM:Bub Timer STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+				   prReorderQueParm->ucStaRecIdx,
+				   prReorderQueParm->ucTid,
+				   prReorderQueParm->u2FirstBubbleSn,
+				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+	}
+
+}
+
+
+
 
