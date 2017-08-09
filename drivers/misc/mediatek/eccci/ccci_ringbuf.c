@@ -129,7 +129,7 @@ struct ccci_ringbuf *ccci_create_ringbuf(int md_id, unsigned char *buf, int buf_
 		     buf, buf_size, buflen, rx_size, tx_size, CCCI_RINGBUF_CTL_LEN);
 	if (buf_size < buflen)
 		return NULL;
-	memset(buf, 0x0, buflen);
+	memset_io(buf, 0x0, buflen);
 	/*set ccif header */
 	*((unsigned int *)buf) = CCCI_RBF_HEADER;
 	*((unsigned int *)(buf + sizeof(unsigned int))) = CCCI_RBF_HEADER;
