@@ -65,6 +65,9 @@ static void ccci_aed_v2(struct md_ee *mdee, unsigned int dump_flag, char *aed_st
 	if (dump_flag & CCCI_AED_DUMP_CCIF_REG) {
 		ex_log_addr = smem_layout->ccci_exp_smem_mdss_debug_vir;
 		ex_log_len = smem_layout->ccci_exp_smem_mdss_debug_size;
+		ccci_md_dump_info(mdee->md_obj, DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG,
+				   smem_layout->ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_CCIF_SRAM,
+				   CCCC_SMEM_CCIF_SRAM_SIZE);
 	}
 	if (dump_flag & CCCI_AED_DUMP_EX_MEM) {
 		ex_log_addr = smem_layout->ccci_exp_smem_mdss_debug_vir;

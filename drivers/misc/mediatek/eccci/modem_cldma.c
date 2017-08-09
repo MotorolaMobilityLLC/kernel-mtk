@@ -132,7 +132,7 @@ static inline void cldma_tgpd_set_data_ptr(struct cldma_tgpd *tgpd, dma_addr_t d
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&tgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, data_ptr, tgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, tgpd->debug_id, val);
 }
 static inline void cldma_tgpd_set_next_ptr(struct cldma_tgpd *tgpd, dma_addr_t next_ptr)
 {
@@ -145,7 +145,7 @@ static inline void cldma_tgpd_set_next_ptr(struct cldma_tgpd *tgpd, dma_addr_t n
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&tgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, next_ptr, tgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, tgpd->debug_id, val);
 }
 
 static inline void cldma_rgpd_set_data_ptr(struct cldma_rgpd *rgpd, dma_addr_t data_ptr)
@@ -159,7 +159,7 @@ static inline void cldma_rgpd_set_data_ptr(struct cldma_rgpd *rgpd, dma_addr_t d
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&rgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, data_ptr, rgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, rgpd->debug_id, val);
 }
 
 static inline void cldma_rgpd_set_next_ptr(struct cldma_rgpd *rgpd, dma_addr_t next_ptr)
@@ -173,7 +173,7 @@ static inline void cldma_rgpd_set_next_ptr(struct cldma_rgpd *rgpd, dma_addr_t n
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&rgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, next_ptr, rgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, rgpd->debug_id, val);
 }
 
 static inline void cldma_tbd_set_data_ptr(struct cldma_tbd *tbd, dma_addr_t data_ptr)
@@ -187,7 +187,7 @@ static inline void cldma_tbd_set_data_ptr(struct cldma_tbd *tbd, dma_addr_t data
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&tbd->reserved, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, data_ptr, tbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, tbd->reserved, val);
 }
 
 static inline void cldma_tbd_set_next_ptr(struct cldma_tbd *tbd, dma_addr_t next_ptr)
@@ -201,7 +201,7 @@ static inline void cldma_tbd_set_next_ptr(struct cldma_tbd *tbd, dma_addr_t next
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&tbd->reserved, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, next_ptr, tbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, tbd->reserved, val);
 }
 
 static inline void cldma_rbd_set_data_ptr(struct cldma_rbd *rbd, dma_addr_t data_ptr)
@@ -215,7 +215,7 @@ static inline void cldma_rbd_set_data_ptr(struct cldma_rbd *rbd, dma_addr_t data
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&rbd->reserved, 0, (u32)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, data_ptr, rbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, rbd->reserved, val);
 }
 static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next_ptr)
 {
@@ -228,7 +228,7 @@ static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&rbd->reserved, 0, (u32)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%llx, 0x%x, val=0x%x\n", __func__, next_ptr, rbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, rbd->reserved, val);
 }
 
 
