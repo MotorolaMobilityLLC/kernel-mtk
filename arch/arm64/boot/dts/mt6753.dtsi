@@ -1466,13 +1466,17 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				     <0 210 8>; /*DISP_OD      */
 		};
 
-		cpu_dbgapb: cpu_dbgapb {
+		cpu_dbgapb: cpu_dbgapb@10810000 {
 			compatible = "mediatek,mt6735-dbg_debug";
-			num = <4>;
+			num = <8>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000
-				0x10A10000 0x1000
-				0x10B10000 0x1000>;
+				0x10a10000 0x1000
+				0x10b10000 0x1000
+				0x10c10000 0x1000
+				0x10d10000 0x1000
+				0x10e10000 0x1000
+				0x10f10000 0x1000>;
 		};
 
 		syscfg_pctl_a: syscfg_pctl_a {
