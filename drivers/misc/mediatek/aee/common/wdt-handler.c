@@ -500,6 +500,9 @@ void aee_wdt_fiq_info(void *arg, void *regs, void *svc_sp)
 	if (atomic_xchg(&wdt_enter_fiq, 1) != 0) {
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_FIQ_LOOP);
 		aee_wdt_percpu_printf(cpu, "Other CPU already enter WDT FIQ handler\n");
+#ifdef CONFIG_TRUSTY_WDT_FIQ_ARMV7_SUPPORT
+		aee_fiq_ipi_cpu_stop(arg, regs, svc_sp);
+#endif
 		/* loop forever here to avoid SMP deadlock risk during panic flow */
 		while (1)
 			;
