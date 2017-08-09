@@ -18,6 +18,11 @@ config MT_SND_SOC_6580
 	default n
 	help
         If you say Y, enable MT_SND_SOC_6580_driver.
+config MT_SND_SOC_6755
+    bool "MT_SND_SOC_6755"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_6755_driver.
 config MT_SND_SOC_8163
     bool "MT_SND_SOC_8163"
 	default n
