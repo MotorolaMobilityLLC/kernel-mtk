@@ -3631,12 +3631,14 @@ inline static int RegisterCAMERA_HWCharDrv(void)
 inline static void UnregisterCAMERA_HWCharDrv(void)
 {
     /* Release char driver */
-    cdev_del(g_pCAMERA_HW_CharDrv);
+	if(g_pCAMERA_HW_CharDrv != NULL)
+		cdev_del(g_pCAMERA_HW_CharDrv);
 
     unregister_chrdev_region(g_CAMERA_HWdevno, 1);
-
-    device_destroy(sensor_class, g_CAMERA_HWdevno);
-    class_destroy(sensor_class);
+	 if (!IS_ERR(sensor_class)) {
+		device_destroy(sensor_class, g_CAMERA_HWdevno);
+		class_destroy(sensor_class);
+	}
 }
 /*******************************************************************************
  * i2c relative start
@@ -3681,6 +3683,7 @@ static int CAMERA_HW_i2c_probe(struct i2c_client *client, const struct i2c_devic
 ********************************************************************************/
 static int CAMERA_HW_i2c_remove(struct i2c_client *client)
 {
+	UnregisterCAMERA_HWCharDrv();
     return 0;
 }
 
@@ -3832,12 +3835,14 @@ inline static int RegisterCAMERA_HWCharDrv2(void)
 inline static void UnregisterCAMERA_HWCharDrv2(void)
 {
     /* Release char driver */
-    cdev_del(g_pCAMERA_HW_CharDrv2);
+	if(g_pCAMERA_HW_CharDrv2 != NULL)
+		cdev_del(g_pCAMERA_HW_CharDrv2);
 
     unregister_chrdev_region(g_CAMERA_HWdevno2, 1);
-
-    device_destroy(sensor2_class, g_CAMERA_HWdevno2);
-    class_destroy(sensor2_class);
+	if (!IS_ERR(sensor2_class)) {
+		device_destroy(sensor2_class, g_CAMERA_HWdevno2);
+		class_destroy(sensor2_class);
+	}
 }
 
 
@@ -3878,6 +3883,7 @@ static int CAMERA_HW_i2c_probe2(struct i2c_client *client, const struct i2c_devi
 ********************************************************************************/
 static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 {
+	UnregisterCAMERA_HWCharDrv2();
     return 0;
 }
 
