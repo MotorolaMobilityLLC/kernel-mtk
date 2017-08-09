@@ -1069,6 +1069,34 @@ static struct logger_buffer dprec_logger_buffer[DPREC_LOGGER_PR_NUM] = {
 	{dump_buffer, 0, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
 };
 
+void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)err_buffer;
+	*size = ERROR_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
+void get_disp_fence_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)fence_buffer;
+	*size = FENCE_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
+void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)dbg_buffer;
+	*size = DEBUG_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
+void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)dump_buffer;
+	*size = DUMP_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
 static DEFINE_SPINLOCK(dprec_logger_spinlock);
 
 int dprec_logger_pr(unsigned int type, char *fmt, ...)
