@@ -195,7 +195,7 @@ define for PCM settings
 
 #define SOC_HIGH_USE_RATE        (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
 #define SOC_HIGH_USE_RATE_MIN        8000
-#define SOC_HIGH_USE_RATE_MAX       192000
+#define SOC_HIGH_USE_RATE_MAX       260000
 #define SOC_HIGH_USE_CHANNELS_MIN    1
 #define SOC_HIGH_USE_CHANNELS_MAX    8
 #ifdef AUDIO_ALLOCATE_SMP_RATE_DECLARE
@@ -214,8 +214,8 @@ const unsigned int soc_normal_supported_sample_rates[9] = {
 };
 
 /* Conventional and unconventional sample rate supported */
-const unsigned int soc_high_supported_sample_rates[13] = {
-	8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000
+const unsigned int soc_high_supported_sample_rates[14] = {
+	8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 260000
 };
 #else
 extern const unsigned int soc_fm_supported_sample_rates[3];

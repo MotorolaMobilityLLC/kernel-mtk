@@ -286,7 +286,6 @@
 #define MT_SOC_CODEC_RXDAI_NAME "mt-soc-codec-rx-dai"
 #define MT_SOC_CODEC_RXDAI2_NAME "mt-soc-codec-rx-dai2"
 #define MT_SOC_CODEC_I2S0AWB_NAME "mt-soc-codec-i2s0awb-dai"
-#define MT_SOC_CODEC_I2S2_ADC2_NAME "mt-soc-codec-i2s2adc2-dai"
 #define MT_SOC_CODEC_I2S0TXDAI_NAME "mt-soc-codec-I2s0tx-dai"
 #define MT_SOC_CODEC_DL1AWBDAI_NAME "mt-soc-codec-dl1awb-dai"
 #define MT_SOC_CODEC_VOICE_MD1DAI_NAME "mt-soc-codec-voicemd1-dai"

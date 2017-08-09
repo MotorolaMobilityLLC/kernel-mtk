@@ -203,16 +203,6 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		     }
 	 },
 	{
-	.name = MT_SOC_CODEC_I2S2_ADC2_NAME,
-	.capture = {
-		.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
-		.channels_min = 1,
-		.channels_max = 2,
-		.rates = SOC_HIGH_USE_RATE,
-		.formats = SND_SOC_ADV_MT_FMTS,
-	}
-	},
-	{
 	 .name = MT_SOC_CODEC_VOICE_MD2_BTDAI_NAME,
 	 .playback = {
 		      .stream_name = MT_SOC_VOICE_MD2_BT_STREAM_NAME,

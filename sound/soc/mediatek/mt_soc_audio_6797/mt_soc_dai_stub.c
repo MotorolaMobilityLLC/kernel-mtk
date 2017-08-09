@@ -88,6 +88,89 @@ static struct snd_soc_dai_ops mtk_dai_stub_ops = {
 	.startup    = multimedia_startup,
 };
 
+static bool i2s2_adc2_is_started;
+
+/* i2s2 adc2 data */
+static int mtk_dai_i2s2_adc2_start(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	AudioDigtalI2S DigtalI2SIn;
+
+	if (!i2s2_adc2_is_started) {
+		pr_warn("%s(), rate = %d, format = %d, channel = %d\n",
+			__func__,
+			runtime->rate, runtime->format, runtime->channels);
+
+		i2s2_adc2_is_started = true;
+
+		if (!GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN)) {
+			DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
+			DigtalI2SIn.mBuffer_Update_word = 8;
+			DigtalI2SIn.mFpga_bit_test = 0;
+			DigtalI2SIn.mFpga_bit = 0;
+			DigtalI2SIn.mloopback = 0;
+			DigtalI2SIn.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
+			DigtalI2SIn.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
+			DigtalI2SIn.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+			DigtalI2SIn.mI2S_IN_PAD_SEL = true;
+			DigtalI2SIn.mI2S_SAMPLERATE = (runtime->rate);
+
+			SetExtI2SAdcIn(&DigtalI2SIn);
+			SetExtI2SAdcInEnable(true);
+		}
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
+
+		SetConnection(Soc_Aud_InterCon_Connection,
+			      Soc_Aud_InterConnectionInput_I25,
+			      Soc_Aud_InterConnectionOutput_O21);
+		SetConnection(Soc_Aud_InterCon_Connection,
+			      Soc_Aud_InterConnectionInput_I26,
+			      Soc_Aud_InterConnectionOutput_O22);
+	}
+
+	return 0;
+}
+
+static int mtk_dai_i2s2_adc2_stop(struct snd_pcm_substream *substream)
+{
+	if (i2s2_adc2_is_started) {
+		pr_warn("%s()\n", __func__);
+		i2s2_adc2_is_started = false;
+		SetConnection(Soc_Aud_InterCon_DisConnect,
+			      Soc_Aud_InterConnectionInput_I25,
+			      Soc_Aud_InterConnectionOutput_O21);
+		SetConnection(Soc_Aud_InterCon_DisConnect,
+			      Soc_Aud_InterConnectionInput_I26,
+			      Soc_Aud_InterConnectionOutput_O22);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
+		if (!GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN))
+			SetExtI2SAdcInEnable(false);
+	}
+	return 0;
+}
+
+static int mtk_dai_i2s2_adc2_trigger(struct snd_pcm_substream *substream,
+				     int cmd,
+				     struct snd_soc_dai *dai)
+{
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		return mtk_dai_i2s2_adc2_start(substream);
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		return mtk_dai_i2s2_adc2_stop(substream);
+	}
+	return -EINVAL;
+}
+
+static struct snd_soc_dai_ops mtk_dai_i2s2_adc2_ops = {
+	.trigger = mtk_dai_i2s2_adc2_trigger,
+};
+/* i2s2 adc2 data */
+
 static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 	{
 		.playback = {
@@ -427,17 +510,17 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.ops = &mtk_dai_stub_ops,
 	},
 	{
-	.capture = {
-		.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
-		.rates = SNDRV_PCM_RATE_8000_48000,
-		.formats = SND_SOC_ADV_MT_FMTS,
-		.channels_min = 1,
-		.channels_max = 2,
-		.rate_min = 8000,
-		.rate_max = 48000,
-	},
-	.name = MT_SOC_I2S2ADC2DAI_NAME,
-	.ops = &mtk_dai_stub_ops,
+		.capture = {
+			.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
+			.rates = SOC_HIGH_USE_RATE,
+			.formats = SND_SOC_ADV_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 192000,
+		},
+		.name = MT_SOC_I2S2ADC2DAI_NAME,
+		.ops = &mtk_dai_i2s2_adc2_ops,
 	},
 	{
 		.capture = {

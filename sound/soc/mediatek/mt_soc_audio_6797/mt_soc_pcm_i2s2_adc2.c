@@ -93,37 +93,14 @@ static void StopAudioI2S2adc2Hardware(struct snd_pcm_substream *substream)
 {
 	pr_warn("StopAudioI2S2adc2Hardware\n");
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
-	SetExtI2SAdcInEnable(true);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
-
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I25, Soc_Aud_InterConnectionOutput_O21);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I26, Soc_Aud_InterConnectionOutput_O22);
-
-	EnableAfe(false);
 }
 
 static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 {
-	AudioDigtalI2S DigtalI2SIn;
-
 	pr_warn("+StartAudioI2S2ADC2Hardware\n");
-
-	DigtalI2SIn.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	DigtalI2SIn.mBuffer_Update_word = 8;
-	DigtalI2SIn.mFpga_bit_test = 0;
-	DigtalI2SIn.mFpga_bit = 0;
-	DigtalI2SIn.mloopback = 0;
-	DigtalI2SIn.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	DigtalI2SIn.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	DigtalI2SIn.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_32BITS;
-	DigtalI2SIn.mI2S_IN_PAD_SEL = true;
-	DigtalI2SIn.mI2S_SAMPLERATE = (substream->runtime->rate);
-
-	SetExtI2SAdcIn(&DigtalI2SIn);
-	SetExtI2SAdcInEnable(true);
 
 	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -139,9 +116,6 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
 	}
 
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I25, Soc_Aud_InterConnectionOutput_O21);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I26, Soc_Aud_InterConnectionOutput_O22);
-
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 
@@ -150,15 +124,6 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
-
-	EnableAfe(true);
-}
-
-static int mtk_i2s2_adc2_pcm_prepare(struct snd_pcm_substream *substream)
-{
-	pr_debug("mtk_i2s2_adc2_pcm_prepare substream->rate = %d  substream->channels = %d\n",
-		substream->runtime->rate, substream->runtime->channels);
-	return 0;
 }
 
 static int mtk_i2s2_adc2_alsa_stop(struct snd_pcm_substream *substream)
@@ -284,11 +249,6 @@ static int mtk_i2s2_adc2_capture_pcm_hw_free(struct snd_pcm_substream *substream
 	return 0;
 }
 
-static struct snd_pcm_hw_constraint_list i2s2_adc2_constraints_sample_rates = {
-	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
-	.list = soc_high_supported_sample_rates,
-};
-
 static int mtk_i2s2_adc2_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -301,8 +261,6 @@ static int mtk_i2s2_adc2_pcm_open(struct snd_pcm_substream *substream)
 	runtime->hw = mtk_I2S2_adc2_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_I2S2_adc2_hardware , sizeof(struct snd_pcm_hardware));
 
-	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
-					 &i2s2_adc2_constraints_sample_rates);
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
@@ -523,7 +481,6 @@ static struct snd_pcm_ops mtk_i2s2_adc2_ops = {
 	.ioctl =    snd_pcm_lib_ioctl,
 	.hw_params =    mtk_i2s2_adc2_pcm_hw_params,
 	.hw_free =  mtk_i2s2_adc2_capture_pcm_hw_free,
-	.prepare =  mtk_i2s2_adc2_pcm_prepare,
 	.trigger =  mtk_i2s2_adc2_pcm_trigger,
 	.pointer =  mtk_i2s2_adc2_pcm_pointer,
 	.copy =     mtk_i2s2_adc2_pcm_copy,
