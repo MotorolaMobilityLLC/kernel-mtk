@@ -51,6 +51,7 @@ bool mt_afe_set_irq_counter(uint32_t Irqmode, uint32_t Counter);
 bool mt_afe_set_irq_state(uint32_t Irqmode, bool bEnable);
 bool mt_afe_set_irq_rate(uint32_t  Irqmode, uint32_t SampleRate);
 uint32_t mt_afe_rate_to_idx(uint32_t sample_rate);
+uint32_t mt_afe_sinegen_rate_to_idx(uint32_t sample_rate);
 void mt_afe_enable_afe(bool enable);
 int mt_afe_enable_memory_path(uint32_t block);
 int mt_afe_disable_memory_path(uint32_t block);

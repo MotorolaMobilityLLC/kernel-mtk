@@ -69,19 +69,19 @@ static const char * const DAC_DL_SIDEGEN[] = { "I0I1", "I2", "I3I4",
 
 static int mDac_SampleRate = 8;
 static const char * const DAC_DL_SIDEGEN_SAMEPLRATE[] = {
-	"XX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX" };
+	"8K", "11K", "12K", "16K", "22K", "24K", "32K", "44K", "48K" };
 
 static int mDac_Sidegen_Amplitude = 6;
 static const char * const DAC_DL_SIDEGEN_AMPLITUE[] = {
-	"XXXXX", "XXXX", "XXXX", "XXXX", "XXX", "XXX", "XXX", "X" };
+	"1/128", "1/64", "1/32", "1/16", "1/8", "1/4", "1/2", "1" };
 
 static bool mEnableSidetone;
 static const char * const ENABLESIDETONE[] = { "Off", "On" };
 
 static int mAudio_Mode;
 static const char * const ANDROID_AUDIO_MODE[] = {
-	"XXXXXXXXXXX", "XXXXXXXXXXXXX", "XXXXXXXXXXX", "XXXXXXXXXXXXXXXXXX",
-	"XXXXXXXXXXXX", "Incall_External_Mode" };
+	"Normal_Mode", "Ringtone_Mode", "Incall_Mode", "Communication_Mode",
+	"Incall2_Mode", "Incall_External_Mode" };
 
 static const char * const InterModemPcm_ASRC_Switch[] = { "Off", "On" };
 static const char * const Audio_Debug_Setting[] = { "Off", "On" };

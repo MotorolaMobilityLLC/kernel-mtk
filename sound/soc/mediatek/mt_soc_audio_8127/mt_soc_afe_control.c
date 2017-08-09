@@ -1092,8 +1092,8 @@ bool SetSideGenSampleRate(uint32_t SampleRate)
 	uint32_t sine_mode_ch2 = 0;
 
 	pr_debug("+%s(), SampleRate = %d\n", __func__, SampleRate);
-	sine_mode_ch1 = mt_afe_rate_to_idx(SampleRate) << 8;
-	sine_mode_ch2 = mt_afe_rate_to_idx(SampleRate) << 20;
+	sine_mode_ch1 = mt_afe_sinegen_rate_to_idx(SampleRate) << 8;
+	sine_mode_ch2 = mt_afe_sinegen_rate_to_idx(SampleRate) << 20;
 	mt_afe_set_reg(AFE_SGEN_CON0, sine_mode_ch1, 0x00000f00);
 	mt_afe_set_reg(AFE_SGEN_CON0, sine_mode_ch2, 0x00f00000);
 	return true;
@@ -1498,20 +1498,38 @@ uint32_t mt_afe_rate_to_idx(uint32_t SampleRate)
 		return Soc_Aud_I2S_SAMPLERATE_I2S_44K;
 	case 48000:
 		return Soc_Aud_I2S_SAMPLERATE_I2S_48K;
-	case 88000:
-		return Soc_Aud_I2S_SAMPLERATE_I2S_88K;
-	case 96000:
-		return Soc_Aud_I2S_SAMPLERATE_I2S_96K;
-	case 174000:
-		return Soc_Aud_I2S_SAMPLERATE_I2S_174K;
-	case 192000:
-		return Soc_Aud_I2S_SAMPLERATE_I2S_192K;
-	case 260000:
-		return Soc_Aud_I2S_SAMPLERATE_I2S_260K;
 	default:
 		break;
 	}
 	return Soc_Aud_I2S_SAMPLERATE_I2S_44K;
+}
+
+
+uint32_t mt_afe_sinegen_rate_to_idx(uint32_t SampleRate)
+{
+	switch (SampleRate) {
+	case 8000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_8K;
+	case 11025:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_11K;
+	case 12000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_12K;
+	case 16000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_16K;
+	case 22050:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_22K;
+	case 24000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_24K;
+	case 32000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_32K;
+	case 44100:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_44K;
+	case 48000:
+		return Soc_Aud_SINEGEN_SAMPLERATE_I2S_48K;
+	default:
+		break;
+	}
+	return Soc_Aud_SINEGEN_SAMPLERATE_I2S_44K;
 }
 
 
