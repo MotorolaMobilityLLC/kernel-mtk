@@ -539,7 +539,9 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	kal_uint32 volatile u4tmpValue1;
 	kal_uint32 volatile u4tmpValue2;
 
+#if 0
 	AudDrv_Clk_On();
+#endif
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
 	u4RegValue &= 0xff;
 	u4tmpValue = Afe_Get_Reg(AFE_IRQ_MCU_EN);
@@ -593,7 +595,9 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	/* clear irq */
 	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0xff);
 AudDrv_IRQ_handler_exit:
+#if 0
 	AudDrv_Clk_Off();
+#endif
 	return IRQ_HANDLED;
 }
 
