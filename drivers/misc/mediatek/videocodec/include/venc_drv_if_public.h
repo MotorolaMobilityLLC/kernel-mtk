@@ -465,7 +465,7 @@ typedef struct __VENC_DRV_QUERY_INPUT_BUF_LIMIT {
  * @par Description
  *   This is the encoder settings and used as input or output parameter for eVEncDrvSetParam() or eVEncDrvGetParam()
  */
-typedef struct __VENC_DRV_PARAM_ENC_T {
+typedef struct __VENC_DRV_PARAM_ENC_T {      /*union extend 64bits for TEE*/
 	VENC_DRV_YUV_FORMAT_T   eVEncFormat;        /* /< [IN/OUT] YUV format */
 	VAL_UINT32_T            u4Profile;          /* /< [IN/OUT] Profile */
 	VAL_UINT32_T            u4Level;            /* /< [IN/OUT] Level */
@@ -477,7 +477,10 @@ typedef struct __VENC_DRV_PARAM_ENC_T {
 	VAL_UINT32_T            u4NumBFrm;          /* /< [IN/OUT] The number of B frame between two reference frame. */
 	VENC_DRV_FRAME_RATE_T   eFrameRate;         /* /< [IN/OUT] Frame rate */
 	VAL_BOOL_T              fgInterlace;        /* /< [IN/OUT] Interlace coding. */
-	VAL_VOID_T *pvExtraEnc;
+	union {
+		VAL_VOID_T          *pvExtraEnc;
+		VAL_UINT64_T        pvExtraEnc_ext64;
+	};
 	VAL_MEMORY_T            rExtraEncMem;       /* /< [IN/OUT] Extra Encoder Memory Info */
 	VAL_BOOL_T              fgUseMCI;           /* /< [IN/OUT] Use MCI */
 	VAL_BOOL_T              fgMultiSlice;       /* /< [IN/OUT] Is multi-slice bitstream ? */
@@ -610,10 +613,16 @@ typedef VENC_DRV_PARAM_FRM_BUF_T * P_VENC_DRV_PARAM_FRM_BUF_T;
  *   This is bitstream buffer information and used as input parameter for\n
  *   eVEncDrvEncode()\n
  */
-typedef struct __VENC_DRV_PARAM_BS_BUF_T {
+typedef struct __VENC_DRV_PARAM_BS_BUF_T {/*union extend 64bits for TEE */
 	VAL_MEM_ADDR_T          rBSAddr;        /* /< [IN] Bitstream buffer address */
-	VAL_ULONG_T             u4BSStartVA;    /* /< [IN] Bitstream fill start address */
-	VAL_ULONG_T             u4BSSize;       /* /< [IN] Bitstream size (filled bitstream in bytes) */
+	union {
+		VAL_ULONG_T         u4BSStartVA;    /* /< [IN] Bitstream fill start address */
+		VAL_UINT64_T        u4BSStartVA_ext64;
+	};
+	union {
+		VAL_ULONG_T         u4BSSize;       /* /< [IN] Bitstream size (filled bitstream in bytes) */
+		VAL_UINT64_T        u4BSSize_ext64;
+	};
 	VENC_DRV_TIMESTAMP_T    rTimeStamp;     /* /< [IN] Time stamp information */
 	VAL_UINT32_T            rSecMemHandle;  /* /< [IN/OUT] security memory handle for SVP */
 } VENC_DRV_PARAM_BS_BUF_T;
@@ -633,12 +642,17 @@ typedef VENC_DRV_PARAM_BS_BUF_T *P_VENC_DRV_PARAM_BS_BUF_T;
  * @par Description
  *   This is callback and return information and used as output parameter for eVEncDrvEncode()
  */
-typedef struct __VENC_DRV_DONE_RESULT_T {
+typedef struct __VENC_DRV_DONE_RESULT_T {        /*union extend 64bits for TEE */
 	VENC_DRV_MESSAGE_T          eMessage;           /* /< [OUT] Message, such as success or error code */
-	P_VENC_DRV_PARAM_BS_BUF_T   prBSBuf;            /* /< [OUT] Bitstream information */
-
-	/* /< [OUT] Input frame buffer information. if address is null, don't use this buffer, else reuse */
-	P_VENC_DRV_PARAM_FRM_BUF_T  prFrmBuf;
+	union {
+		P_VENC_DRV_PARAM_BS_BUF_T  prBSBuf;         /* /< [OUT] Bitstream information */
+		VAL_UINT64_T               prBSBuf_ext64;
+	};
+	union {
+		P_VENC_DRV_PARAM_FRM_BUF_T prFrmBuf;    /* /< [OUT] Input frame buffer information.*/
+	/* if address is null, don't use this buffer, else reuse */
+		VAL_UINT64_T               prFrmBuf_ext64;
+	};
 	VAL_BOOL_T                  fgIsKeyFrm;         /* /< [OUT] output is key frame or not */
 	VAL_UINT32_T                u4HWEncodeTime;     /* /< [OUT] HW encode Time */
 } VENC_DRV_DONE_RESULT_T;

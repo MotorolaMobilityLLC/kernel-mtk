@@ -79,6 +79,7 @@ typedef enum _VAL_CHIP_NAME_T {
 	VAL_CHIP_NAME_MT6570,                       /* /< Rainier (2 core) */
 	VAL_CHIP_NAME_MT6580,                       /* /< Rainier (4 core) */
 	VAL_CHIP_NAME_MT8163,
+	VAL_CHIP_NAME_MT8173,                       /* / <8173 */
 	VAL_CHIP_NAME_MT6755,                       /* / <Jade */
 	VAL_CHIP_NAME_MT6797,                       /* / <Everest */
 	VAL_CHIP_NAME_MAX = 0xFFFFFFFF              /* /< Max Value */
@@ -220,10 +221,19 @@ typedef enum _VAL_MEM_TYPE_T {
  * @par Description
  *  This is a structure for memory address
  */
-typedef struct _VAL_MEM_ADDR_T {
-	VAL_ULONG_T    u4VA;                       /* /< [IN/OUT] virtual address */
-	VAL_ULONG_T    u4PA;                       /* /< [IN/OUT] physical address */
-	VAL_ULONG_T    u4Size;                     /* /< [IN/OUT] size */
+typedef struct _VAL_MEM_ADDR_T {                 /* union extend 64bits for TEE*/
+	union {
+		VAL_ULONG_T    u4VA;                       /* /< [IN/OUT] virtual address */
+		VAL_UINT64_T u4VA_ext64;
+	};
+	union {
+		VAL_ULONG_T    u4PA;                       /* /< [IN/OUT] physical address */
+		VAL_UINT64_T u4PA_ext64;
+	};
+	union {
+		VAL_ULONG_T    u4Size;                     /* /< [IN/OUT] size */
+		VAL_UINT64_T u4Size_ext64;
+	};
 } VAL_MEM_ADDR_T;
 
 
@@ -287,21 +297,46 @@ typedef struct _VAL_VCODEC_M4U_BUFFER_CONFIG_T {
  * @par Description
  *  This is a parameter for memory usaged function
  */
-typedef struct _VAL_MEMORY_T {
+typedef struct _VAL_MEMORY_T {                /* union extend 64bits for TEE*/
 	VAL_MEM_TYPE_T  eMemType;                   /* /< [IN]     The allocation memory type */
 	VAL_ULONG_T     u4MemSize;                  /* /< [IN]     The size of memory allocation */
-	VAL_VOID_T *pvMemVa;
-	VAL_VOID_T *pvMemPa;
+	union {
+		VAL_VOID_T *pvMemVa;
+		VAL_UINT64_T pvMemVa_ext64;
+	};
+	union {
+		VAL_VOID_T *pvMemPa;
+		VAL_UINT64_T pvMemPa_ext64;
+	};
 	VAL_MEM_ALIGN_T eAlignment;                 /* /< [IN]     The memory byte alignment setting */
-	VAL_VOID_T *pvAlignMemVa;
-	VAL_VOID_T *pvAlignMemPa;
+	union {
+		VAL_VOID_T *pvAlignMemVa;
+		VAL_UINT64_T pvAlignMemVa_ext64;
+	};
+	union {
+		VAL_VOID_T *pvAlignMemPa;
+		VAL_UINT64_T pvAlignMemPa_ext64;
+	};
 	VAL_MEM_CODEC_T eMemCodec;                  /* /< [IN]     The memory codec for VENC or VDEC */
 	VAL_UINT32_T    i4IonShareFd;
-	struct ion_handle *pIonBufhandle;
-	VAL_VOID_T      *pvReserved;                /* /< [IN/OUT] The reserved parameter */
-	VAL_ULONG_T     u4ReservedSize;             /* /< [IN]     The size of reserved parameter structure */
+
+	union {
+		struct ion_handle *pIonBufhandle;
+		VAL_UINT64_T pIonBufhandle_ext64;
+	};
+	union {
+		VAL_VOID_T      *pvReserved;            /* /< [IN/OUT] The reserved parameter */
+		VAL_UINT64_T pvReserved_ext64;
+	};
+	union {
+		VAL_ULONG_T     u4ReservedSize;         /* /< [IN]     The size of reserved parameter structure */
+		VAL_UINT64_T u4ReservedSize_ext64;
+	};
 #ifdef __EARLY_PORTING__
-	VAL_VOID_T      *pvReservedPmem;            /* /< [IN/OUT] The reserved parameter */
+	union {
+		VAL_VOID_T      *pvReservedPmem;        /* /< [IN/OUT] The reserved parameter */
+		VAL_UINT64_T pvReservedPmem_ext64;
+	};
 #endif
 } VAL_MEMORY_T;
 

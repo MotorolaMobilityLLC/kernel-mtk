@@ -427,12 +427,19 @@ typedef enum __VDEC_DRV_MRESULT_T {
  *  - Store buffer base address
  *  - Store read/write pointer address
  */
-typedef struct __VDEC_DRV_RINGBUF_T {
+typedef struct __VDEC_DRV_RINGBUF_T { /* union extend 64bits for TEE*/
 	VAL_MEM_ADDR_T  rBase;         /* /< [IN]     Base address of ring buffer */
-	VAL_ULONG_T     u4Read;        /* /< [IN/OUT] Virtual address of read pointer */
-	VAL_ULONG_T     u4Write;       /* /< [IN]     Virtual address of write pointer */
+	union {
+		VAL_ULONG_T u4Read;        /* /< [IN/OUT] Virtual address of read pointer */
+		VAL_UINT64_T u4Read_ext64;
+	};
+	union {
+		VAL_ULONG_T u4Write;       /* /< [IN]     Virtual address of write pointer */
+		VAL_UINT64_T u4Write_ext64;
+	};
 	VAL_UINT32_T    u4Timestamp;   /* /< [IN/OUT] store timestamp */
 	VAL_UINT32_T    rSecMemHandle; /* /< [IN/OUT] security memory handle    // MTK_SEC_VIDEO_PATH_SUPPORT */
+	VAL_UINT32_T    u4InputFlag;   /*/ < [IN]     the property of input buffer */
 } VDEC_DRV_RINGBUF_T;
 
 /**
