@@ -3008,7 +3008,9 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	/* check if thermal sensor init completed? */
 	det->t250 = eem_read(TEMP);
 
-	if (((det->t250 & 0xff)  > 0x4b) && ((det->t250  & 0xff) < 0xd3)) {
+	/* 0x64 mappint to 100 + 25 = 125C,
+	   0xB2 mapping to 178 - 128 = 50, -50 + 25 = -25C */
+	if (((det->t250 & 0xff)  > 0x64) && ((det->t250  & 0xff) < 0xB2)) {
 		eem_error("Temperature to high ----- (%d) degree !!\n", det->t250 + 25);
 		goto out;
 	}
