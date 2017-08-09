@@ -2400,14 +2400,16 @@
 		status = "disabled";
 	};
 
-	rf_clock_buffer_ctrl: rf_clock_buffer_ctrl {
-		compatible = "mediatek, rf_clock_buffer_ctrl";
-		status = "disabled";
+	rf_clock_buffer_ctrl:rf_clock_buffer {
+		compatible = "mediatek,rf_clock_buffer";
+		mediatek,clkbuf-quantity = <4>;
+		mediatek,clkbuf-config = <2 0 1 1>;
 	};
 
-	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
-		compatible = "mediatek, pmic_clock_buffer_ctrl";
-		status = "disabled";
+	pmic_clock_buffer_ctrl:pmic_clock_buffer {
+		compatible = "mediatek,pmic_clock_buffer";
+		mediatek,clkbuf-quantity = <4>;
+		mediatek,clkbuf-config = <0 0 0 0>;
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/

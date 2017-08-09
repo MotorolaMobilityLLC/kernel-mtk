@@ -31,7 +31,7 @@
 /* #include "mach/mt_gpufreq.h" */
 /* #include "mach/mt_dormant.h" */
 /* #include "mach/mt_cpuidle.h" */
-/* #include "mach/mt_clkbuf_ctl.h" */
+#include <mt_clkbuf_ctl.h>
 /* #include "mach/mt_chip.h" */
 #include <mt-plat/mtk_rtc.h>
 
@@ -545,7 +545,7 @@ static int __init mt_pm_late_init(void)
 {
 #ifndef CONFIG_MTK_FPGA
 /*	mt_idle_init(); */
-/*	clk_buf_init(); */
+	clk_buf_init();
 #endif
 	return 0;
 }

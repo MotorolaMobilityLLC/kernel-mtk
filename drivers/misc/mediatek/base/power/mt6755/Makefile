@@ -7,7 +7,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 
 obj-y += mt_pm_init.o
-#obj-y += mt_clkbuf_ctl.o
+obj-y += mt_clkbuf_ctl.o
 obj-y += mt_dcm.o
 ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
 #obj-y += mt_clkmgr_common_legacy.o
