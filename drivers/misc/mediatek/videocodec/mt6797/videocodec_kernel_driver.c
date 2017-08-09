@@ -441,7 +441,8 @@ void enc_isr(void)
 		return;
 	}
 
-	if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) { /* hardwire */
+	if ((grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) ||
+	(grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC)) { /* hardwire */
 		gu4HwVencIrqStatus = VDO_HW_READ(KVA_VENC_IRQ_STATUS_ADDR);
 		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_PAUSE) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
@@ -467,8 +468,6 @@ void enc_isr(void)
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
 		}
-	} else if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) { /* hardwire */
-		MODULE_MFV_LOGE("[VCODEC][enc_isr] VAL_DRIVER_TYPE_HEVC_ENC!!\n");
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Invalid lock holder driver type = %d\n",
 			grVcodecEncHWLock.eDriverType);
