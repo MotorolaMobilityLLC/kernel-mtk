@@ -35,12 +35,12 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 
-
 #include <mach/mt_charging.h>
 #include <mt-plat/charging.h>
 
 #include "include/mt6336/mt6336.h"
 #include "include/mt6336/mt6336_irq.h"
+#include "include/mt6336/mt6336_efuse.h"
 #include "include/mt6336/mt6336_upmu_hw.h"
 
 
@@ -74,6 +74,9 @@ int g_mt6336_hw_exist = 0;
   *   [I2C Function For Read/Write mt6336]
   *
   *********************************************************/
+#define CODA_ADDR_WIDTH 0x100
+#define SLV_BASE_ADDR 0x52
+
 unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 {
 	unsigned char xfers = 2;
@@ -83,8 +86,8 @@ unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 
 	mutex_lock(&mt6336_i2c_access);
 
-	addr = reg / 0x100 + 0x52;
-	cmd = reg % 0x100;
+	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	cmd = reg % CODA_ADDR_WIDTH;
 
 	do {
 		struct i2c_msg msgs[2] = {
@@ -130,8 +133,8 @@ unsigned int mt6336_write_byte(unsigned int reg, unsigned char writeData)
 
 	mutex_lock(&mt6336_i2c_access);
 
-	addr = reg / 0x100 + 0x52;
-	cmd = reg % 0x100;
+	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	cmd = reg % CODA_ADDR_WIDTH;
 
 	buf[0] = cmd;
 	memcpy(&buf[1], &writeData, 1);
@@ -182,7 +185,8 @@ unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsi
 	*val = (mt6336_reg >> SHIFT);
 
 	PMICLOG("[mt6336_read_interface] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n",
-		RegNum, reg_val, *val, RegNum / 0x100 + 0x52);
+		RegNum, reg_val, *val, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
+
 
 	return ret;
 }
@@ -202,7 +206,7 @@ unsigned int mt6336_config_interface(unsigned int RegNum, unsigned char val, uns
 
 	ret = mt6336_write_byte(RegNum, mt6336_reg);
 	PMICLOG("[mt6336_config_interface] write Reg[0x%x] from 0x%x to 0x%x device_id=0x%x\n", RegNum,
-		    reg_val, mt6336_reg, RegNum / 0x100 + 0x52);
+		    reg_val, mt6336_reg, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
 
 	return ret;
 }
@@ -226,34 +230,6 @@ unsigned int mt6336_get_register_value(unsigned int RegNum)
 
 	return reg_val;
 }
-
-/* DVT */
-static ssize_t show_pmic6336_dvt(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	PMICLOG("[show_pmic_dvt] 0x%x\n", 1);
-	return sprintf(buf, "%u\n", 1);
-}
-
-static ssize_t store_pmic6336_dvt(struct device *dev, struct device_attribute *attr, const char *buf,
-			      size_t size)
-{
-	int ret = 0;
-	char *pvalue = NULL;
-	unsigned int test_item = 0;
-
-	PMICLOG("[store_pmic_dvt]\n");
-
-	if (buf != NULL && size != 0) {
-		PMICLOG("[store_pmic_dvt] buf is %s and size is %zu\n", buf, size);
-
-		/*test_item = simple_strtoul(buf, &pvalue, 10);*/
-		pvalue = (char *)buf;
-		ret = kstrtou32(pvalue, 16, (unsigned int *)&test_item);
-		PMICLOG("[store_pmic_dvt] test_item=%d\n", test_item);
-	}
-	return size;
-}
-static DEVICE_ATTR(mt6336_dvt, 0664, show_pmic6336_dvt, store_pmic6336_dvt);
 
 /**********************************************************
   *
@@ -291,39 +267,6 @@ void mt6336_hw_init(void)
 {
 	/*PMICLOG("[mt6336_hw_init] After HW init\n");*/
 	mt6336_dump_register();
-}
-
-static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	PMICLOG("[mt6336_driver_probe]\n");
-	new_client = client;
-
-	/* --------------------- */
-	mt6336_hw_component_detect();
-	mt6336_dump_register();
-/*
-#if !defined CONFIG_HAS_WAKELOCKS
-		wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
-#else
-		wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
-#endif
-*/
-
-	/*PMIC Interrupt Service*/
-	mt6336_thread_handle = kthread_create(mt6336_thread_kthread, (void *)NULL, "mt6336_thread");
-	if (IS_ERR(mt6336_thread_handle)) {
-		mt6336_thread_handle = NULL;
-		PMICLOG("[mt6336_thread_handle] creation fails\n");
-	} else {
-		PMICLOG("[mt6336_thread_handle] kthread_create Done\n");
-	}
-	MT6336_EINT_SETTING();
-	PMICLOG("[MT6336_EINT_SETTING] Done\n");
-
-	/* mt6336_hw_init(); //move to charging_hw_xxx.c */
-	chargin_hw_init_done = true;
-	PMICLOG("[mt6336_driver_probe] Done\n");
-	return 0;
 }
 
 /**********************************************************
@@ -379,6 +322,10 @@ static ssize_t store_mt6336_access(struct device *dev, struct device_attribute *
 
 static DEVICE_ATTR(mt6336_access, 0664, show_mt6336_access, store_mt6336_access);	/* 664 */
 
+
+/*****************************************************************************
+ * HW Setting
+ ******************************************************************************/
 static int proc_dump_register_show(struct seq_file *m, void *v)
 {
 	int i;
@@ -424,17 +371,19 @@ void mt6336_debug_init(void)
 	PMICLOG("proc_create pmic_dump_register_proc_fops\n");
 }
 
-
-
+/*****************************************************************************
+ * system function
+ ******************************************************************************/
 static int mt6336_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
 	PMICLOG("******** mt6336_user_space_probe!! ********\n");
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6336_access);
-	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6336_dvt);
-	mt6336_debug_init();
+	PMICLOG("[MT6336] device_create_file for EM : done.\n");
 
+	mt6336_debug_init();
+	PMICLOG("[MT6336] mt6336_debug_init : done.\n");
 
 	return 0;
 }
@@ -450,6 +399,39 @@ static struct platform_driver mt6336_user_space_driver = {
 		   .name = "mt6336-user",
 		   },
 };
+
+static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	PMICLOG("[mt6336_driver_probe]\n");
+	new_client = client;
+
+	/* --------------------- */
+	mt6336_hw_component_detect();
+	mt6336_dump_register();
+/*
+#if !defined CONFIG_HAS_WAKELOCKS
+		wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
+#else
+		wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
+#endif
+*/
+
+	/*MT6336 Interrupt Service*/
+	mt6336_thread_handle = kthread_create(mt6336_thread_kthread, (void *)NULL, "mt6336_thread");
+	if (IS_ERR(mt6336_thread_handle)) {
+		mt6336_thread_handle = NULL;
+		PMICLOG("[mt6336_thread_handle] creation fails\n");
+	} else {
+		PMICLOG("[mt6336_thread_handle] kthread_create Done\n");
+	}
+	MT6336_EINT_SETTING();
+	PMICLOG("[MT6336_EINT_SETTING] Done\n");
+
+	/* mt6336_hw_init(); //move to charging_hw_xxx.c */
+	chargin_hw_init_done = true;
+	PMICLOG("[mt6336_driver_probe] Done\n");
+	return 0;
+}
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt6336_of_match[] = {
@@ -473,6 +455,9 @@ static struct i2c_driver mt6336_driver = {
 	.id_table = mt6336_i2c_id,
 };
 
+/*****************************************************************************
+ * MT6336 mudule init/exit
+ ******************************************************************************/
 static int __init mt6336_init(void)
 {
 	int ret = 0;
@@ -521,4 +506,4 @@ module_exit(mt6336_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("I2C MT6336 Driver");
-MODULE_AUTHOR("will cai <will.cai@mediatek.com>");
+MODULE_AUTHOR("Jeter Chen");

@@ -55,6 +55,12 @@
 		.interrupts = interrupt,	\
 	}
 
+#define MT6336_CON_BIT(flagname)	\
+	({	\
+		const MT6336_PMU_FLAG_TABLE_ENTRY *pFlag = &mt6336_pmu_flags_table[flagname]; \
+		pFlag->mask << pFlag->shift;	\
+	})
+
 struct chr_interrupt_bit {
 	const char *name;
 	void (*callback)(void);
@@ -89,4 +95,6 @@ extern unsigned short mt6336_get_flag_register_value(MT6336_PMU_FLAGS_LIST_ENUM 
 /*
 extern void wake_up_mt6336(void);
 */
+
+extern const MT6336_PMU_FLAG_TABLE_ENTRY mt6336_pmu_flags_table[MT6336_PMU_COMMAND_MAX];
 #endif /* _MT_PMIC_6336_H_ */
