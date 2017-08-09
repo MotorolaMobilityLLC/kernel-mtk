@@ -29,7 +29,7 @@ extern int iMultiReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId, u8 number);
 
 #define IMX258_EEPROM_READ_ID  0xA0
 #define IMX258_EEPROM_WRITE_ID   0xA1
-#define IMX258_I2C_SPEED        100  
+#define IMX258_I2C_SPEED        100
 #define IMX258_MAX_OFFSET		0xFFFF
 
 #define DATA_SIZE 2048
@@ -70,9 +70,9 @@ static bool _read_imx258_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 	addr = 0x0763;
 	size = 1404;
-	
+
 	LOG_INF("read imx258 eeprom, size = %d\n", size);
-	
+
 	if(!get_done || last_size != size || last_offset != addr) {
 		if(!_read_imx258_eeprom(addr, imx258_eeprom_data, size)){
 			get_done = 0;
@@ -81,18 +81,18 @@ bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 			return false;
 		}
 	}
-	
+
 	memcpy(data, imx258_eeprom_data, size);
     return true;
 }
 
 bool read_imx258_eeprom_SPC( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	//int i;
+
 	addr = 0x0F73;//0x0F73;
 	size = 126;
-	
+
 	LOG_INF("read imx258 eeprom, size = %d\n", size);
-	
+
 	if(!get_done || last_size != size || last_offset != addr) {
 		if(!_read_imx258_eeprom(addr, imx258_eeprom_data, size)){
 			get_done = 0;
@@ -101,7 +101,7 @@ bool read_imx258_eeprom_SPC( kal_uint16 addr, BYTE* data, kal_uint32 size){
 			return false;
 		}
 	}
-	
+
 	memcpy(data, imx258_eeprom_data, size);
     return true;
 }
