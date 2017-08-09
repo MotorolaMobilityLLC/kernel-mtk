@@ -44,12 +44,12 @@ config MTK_SCPSYS_MT8163
 	  management related tasks in the system.
 
 config MTK_SCPSYS_MT2701
-	bool "SCPSYS Support MediaTek MT2701"
+	bool "SCPSYS Support MediaTek MT2701 and MT7623"
 	depends on MTK_INFRACFG
 	select SOC_MEDIATEK
 	select REGMAP
 	select PM_GENERIC_DOMAINS
-	default y if MACH_MT2701
+	default y if MACH_MT2701 || ARCH_MT7623
 	help
 	  Say yes here to add support for the MediaTek SCPSYS power domain
 	  driver.
