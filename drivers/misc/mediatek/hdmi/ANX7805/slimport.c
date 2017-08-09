@@ -650,7 +650,7 @@ static void anx7805_work_func(struct work_struct *work)
 	/*pr_err(" cable- GPIO-%d\n", gpio_get_value(mhl_eint_gpio_number));*/
 	SP_CTRL_Main_Procss();
 	queue_delayed_work(td->workqueue, &td->work,
-	                   msecs_to_jiffies(300));
+	                   msecs_to_jiffies(100));
 #endif
 }
 

@@ -41,8 +41,11 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 
 
 /****************************************************************/
+/*
 #define SLIMPORT_TX_EDID_READ(context,fmt,arg...) 					\
 	pr_debug(fmt, ## arg);
+*/
+#define SLIMPORT_TX_EDID_READ(context,fmt,arg...)
 
 #define SLIMPORT_TX_EDID_INFO(context,fmt,arg...) 					\
 	pr_info(fmt, ## arg);

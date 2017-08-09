@@ -3078,6 +3078,7 @@ void SP_TX_API_M_GEN_CLK_Select(BYTE bSpreading)
 			0x01 field alternative
 			0x02 line alternative
 			0x06 top-and-bottom
+			0x08 side by side(half)
 */
 void sp_tx_send_3d_vsi_packet_to_7730(BYTE video_format)
 {
@@ -5190,7 +5191,7 @@ void slimport_config_video_output(void)
 		if (three_3d_format == VIDEO_3D_TOP_AND_BOTTOM)
 			three_video_type = 0x06;
 		else if (three_3d_format == VIDEO_3D_SIDE_BY_SIDE)
-			three_video_type = 0x03;
+			three_video_type = 0x08;
 
 		pr_err("send 3D packet, format:%d, three_video_type:%x\r\n", three_3d_format, (unsigned int)three_video_type);
 		sp_tx_send_3d_vsi_packet_to_7730(three_video_type);
