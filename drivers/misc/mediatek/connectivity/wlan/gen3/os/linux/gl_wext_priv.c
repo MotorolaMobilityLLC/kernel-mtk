@@ -1686,9 +1686,14 @@ priv_get_struct(IN struct net_device *prNetDev,
 		pu4IntBuf = (PUINT_32) prIwReqData->data.pointer;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
+		if (prIwReqData->data.length > (sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent))) {
+			DBGLOG(REQ, INFO, "priv_get_struct() exceeds length limit\n");
+			return -EFAULT;
+		}
+
 		if (copy_from_user(&prNdisReq->ndisOidContent[0],
-					prIwReqData->data.pointer,
-					prIwReqData->data.length)) {
+				   prIwReqData->data.pointer,
+				   prIwReqData->data.length)) {
 			DBGLOG(REQ, INFO, "priv_get_struct() copy_from_user oidBuf fail\n");
 			return -EFAULT;
 		}
