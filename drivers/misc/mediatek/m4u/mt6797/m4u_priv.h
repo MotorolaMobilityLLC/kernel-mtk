@@ -24,7 +24,7 @@
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define M4U_FPGAPORTING
 #endif
-/*#define M4U_PROFILE */
+#define M4U_PROFILE
 /*#define M4U_4GBDRAM */
 
 #define M4U_DVT 0
