@@ -470,21 +470,21 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
    regarding below API implement on kernel-3.18
    (Below APIs are just for build pass. Added by Konrad)
  */
-int DFS_APDMA_END(void)
+__weak int DFS_APDMA_END(void)
 {
 	return 0;
 }
 
-int DFS_APDMA_Enable(void)
+__weak int DFS_APDMA_Enable(void)
 {
 	return 0;
 }
 
-void DFS_APDMA_dummy_read_preinit(void)
+__weak void DFS_APDMA_dummy_read_preinit(void)
 {
 }
 
-void DFS_APDMA_dummy_read_deinit(void)
+__weak void DFS_APDMA_dummy_read_deinit(void)
 {
 }
 
