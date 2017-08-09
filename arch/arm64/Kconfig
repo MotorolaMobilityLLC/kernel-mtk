@@ -310,6 +310,7 @@ config ARCH_MT6755
 	select ARM64_ERRATUM_836870
 	select MTK_POWER_GS
 	select MTK_SYSTRACKER_V2
+	select MTK_LM_MODE
 	help
 	  This enables support for MediaTek MT6755
 	  Support for aarch64/aarch32 Architecture

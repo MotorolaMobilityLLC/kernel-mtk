@@ -2,6 +2,8 @@
 #define __MT_LPAE_H__
 #ifdef CONFIG_MTK_LM_MODE
 
+#include <mt-plat/mt_io.h>
+
 #define INTERAL_MAPPING_OFFSET (0x40000000)
 #define INTERAL_MAPPING_LIMIT (INTERAL_MAPPING_OFFSET + 0x80000000)
 
