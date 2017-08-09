@@ -496,12 +496,15 @@ static void ApplyDctoDl(void)
 
 	unsigned short  value = 0 , average = 0;
 	unsigned short dcoffset , dcoffset2, dcoffset3;
+	int hpImpedancePhase2AdcValue = hasHpDepopHw() ?
+					HpImpedancePhase2AdcValue_DepopHw :
+					HpImpedancePhase2AdcValue;
 
 	pr_warn("%s\n", __func__);
 
 	dcinit_value = hasHpDepopHw() ?
 		       DCoffsetDefault_DepopHW : DCoffsetDefault;
-	for (value = 0; value <= (HpImpedancePhase2AdcValue + HpImpedancePhase2Step);
+	for (value = 0; value <= (hpImpedancePhase2AdcValue + HpImpedancePhase2Step);
 	     value += HpImpedancePhase1Step) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
 
@@ -569,7 +572,7 @@ static void ApplyDctoDl(void)
 			       value, average, dcinit_value, mhp_impedance);
 			if (mhp_impedance)
 				break;
-		} else if (value >= HpImpedancePhase2AdcValue) {
+		} else if (value >= hpImpedancePhase2AdcValue) {
 			/* get adc value */
 			/*msleep(1);*/
 			usleep_range(1*1000, 20*1000);
