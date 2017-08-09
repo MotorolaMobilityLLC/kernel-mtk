@@ -194,6 +194,7 @@ ret = pmic_config_interface(0xA, 0x1, 0x1, 12);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 13);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 14);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 15);
+ret = pmic_config_interface(0x12, 0x1, 0x1, 12);
 ret = pmic_config_interface(0x18, 0x1, 0x1, 5);
 ret = pmic_config_interface(0x1C, 0x1, 0x1, 7);
 ret = pmic_config_interface(0x1E, 0x1, 0x1, 0);
@@ -407,7 +408,7 @@ ret = pmic_config_interface(0xFA4, 0x0, 0x7, 4);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 6);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 7);
-
+pr_err("[PMIC] 6351 PMIC Initial Setting Done\n");
 /*****************************************************
  * below programming is used for MD setting
  *****************************************************/
