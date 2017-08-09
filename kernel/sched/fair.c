@@ -30,6 +30,7 @@
 #include <linux/mempolicy.h>
 #include <linux/migrate.h>
 #include <linux/task_work.h>
+#include <linux/stop_machine.h>
 
 #include <trace/events/sched.h>
 #ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
@@ -8580,16 +8581,20 @@ more_balance:
 			 * only after active load balance is finished.
 			 */
 			if (!busiest->active_balance) {
-				busiest->active_balance = 1;
+				busiest->active_balance = 1; /* load_balance */
 				busiest->push_cpu = this_cpu;
 				active_balance = 1;
 			}
 			raw_spin_unlock_irqrestore(&busiest->lock, flags);
 
 			if (active_balance) {
-				stop_one_cpu_nowait(cpu_of(busiest),
+				if (stop_one_cpu_dispatch(cpu_of(busiest),
 					active_load_balance_cpu_stop, busiest,
-					&busiest->active_balance_work);
+					&busiest->active_balance_work)) {
+					raw_spin_lock_irqsave(&busiest->lock, flags);
+					busiest->active_balance = 0;
+					raw_spin_unlock_irqrestore(&busiest->lock, flags);
+				}
 			}
 
 			/*
@@ -9875,7 +9880,7 @@ static void hmp_force_down_migration(int this_cpu)
 	/* Migrate light task from big to LITTLE */
 	for_each_cpu(curr_cpu, &hmp_fast_cpu_mask) {
 		/* Check whether CPU is online */
-		if (!cpu_online(curr_cpu))
+		if (!cpu_online(curr_cpu) || cpu_park(curr_cpu))
 			continue;
 
 		force = 0;
@@ -9939,7 +9944,7 @@ static void hmp_force_down_migration(int this_cpu)
 		if (!target->active_balance &&
 		    hmp_down_migration(curr_cpu, &target_cpu, se, &clbenv)) {
 			get_task_struct(p);
-			target->active_balance = 1;
+			target->active_balance = 1; /* force down */
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
 			force = 1;
@@ -9948,9 +9953,13 @@ static void hmp_force_down_migration(int this_cpu)
 		}
 		raw_spin_unlock_irqrestore(&target->lock, flags);
 		if (force) {
-			stop_one_cpu_nowait(cpu_of(target),
+			if (stop_one_cpu_dispatch(cpu_of(target),
 				hmp_active_task_migration_cpu_stop,
-				target, &target->active_balance_work);
+				target, &target->active_balance_work)) {
+				raw_spin_lock_irqsave(&target->lock, flags);
+				target->active_balance = 0;
+				raw_spin_unlock_irqrestore(&target->lock, flags);
+			}
 		}
 	}
 }
@@ -9983,7 +9992,7 @@ static void hmp_force_up_migration(int this_cpu)
 	/* Migrate heavy task from LITTLE to big */
 	for_each_cpu(curr_cpu, &hmp_slow_cpu_mask) {
 		/* Check whether CPU is online */
-		if (!cpu_online(curr_cpu))
+		if (!cpu_online(curr_cpu) || cpu_park(curr_cpu))
 			continue;
 
 		force = 0;
@@ -10037,11 +10046,12 @@ static void hmp_force_up_migration(int this_cpu)
 		if (is_light_task(p) && !is_buddy_busy(per_cpu(sd_pack_buddy, curr_cpu)))
 			goto out_force_up;
 #endif
+
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
 			get_task_struct(p);
-			target->active_balance = 1;
+			target->active_balance = 1; /* force up */
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
 			force = 1;
@@ -10055,9 +10065,13 @@ out_force_up:
 
 		raw_spin_unlock_irqrestore(&target->lock, flags);
 		if (force) {
-			stop_one_cpu_nowait(cpu_of(target),
+			if (stop_one_cpu_dispatch(cpu_of(target),
 				hmp_active_task_migration_cpu_stop,
-				target, &target->active_balance_work);
+				target, &target->active_balance_work)) {
+				raw_spin_lock_irqsave(&target->lock, flags);
+				target->active_balance = 0;
+				raw_spin_unlock_irqrestore(&target->lock, flags);
+			}
 		}
 	}
 
@@ -10151,14 +10165,18 @@ static unsigned int hmp_idle_pull(int this_cpu)
 		target->migrate_task = p;
 		trace_sched_hmp_migrate(p, target->push_cpu, 3);
 		hmp_next_up_delay(&p->se, target->push_cpu);
-		target->active_balance = 1;
+		target->active_balance = 1; /* idle pull */
 		force = 1;
 	}
 	raw_spin_unlock_irqrestore(&target->lock, flags);
 	if (force) {
-		stop_one_cpu_nowait(cpu_of(target),
+		if (stop_one_cpu_dispatch(cpu_of(target),
 			hmp_active_task_migration_cpu_stop,
-			target, &target->active_balance_work);
+			target, &target->active_balance_work)) {
+			raw_spin_lock_irqsave(&target->lock, flags);
+			target->active_balance = 0;
+			raw_spin_unlock_irqrestore(&target->lock, flags);
+		}
 	}
 
 done:
