@@ -8956,6 +8956,17 @@ static MINT32 __init ISP_Init(void)
     }
     LOG_DBG("ISP_SENINF1_BASE: %lx\n", ISP_SENINF1_BASE);
 
+    node = of_find_compatible_node(NULL, NULL, "mediatek,seninf2");
+    if (!node) {
+        LOG_ERR("find mediatek,seninf2 node failed!!!\n");
+        return -ENODEV;
+    }
+    ISP_SENINF2_BASE = of_iomap(node, 0);
+    if (!ISP_SENINF2_BASE) {
+        LOG_ERR("unable to map ISP_SENINF2_BASE registers!!!\n");
+        return -ENODEV;
+    }
+    LOG_DBG("ISP_SENINF2_BASE: %lx\n", ISP_SENINF2_BASE);
 
     /* FIX-ME: linux-3.10 procfs API changed */
     proc_create("driver/isp_reg", 0, NULL, &fcameraisp_proc_fops);

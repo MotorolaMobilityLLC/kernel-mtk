@@ -353,10 +353,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		if (pinSetIdx == 0)
 			ISP_MCLK1_EN(1);
-		//else if (pinSetIdx == 1)
-		//	ISP_MCLK2_EN(1);
-		//else
-		//	ISP_MCLK3_EN(1);
+		else if (pinSetIdx == 1)
+			ISP_MCLK2_EN(1);
+		else
+			ISP_MCLK3_EN(1);
 		
 		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
 
@@ -476,10 +476,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		PK_DBG("[PowerOFF]pinSetIdx:%d\n", pinSetIdx);
 		if (pinSetIdx == 0)
 			ISP_MCLK1_EN(0);
-		//else if (pinSetIdx == 1)
-		//	ISP_MCLK2_EN(0);
-		//else
-		//	ISP_MCLK3_EN(0);
+		else if (pinSetIdx == 1)
+			ISP_MCLK2_EN(0);
+		else
+			ISP_MCLK3_EN(0);
 #if 0
 		if ((currSensorName && (0 == strcmp(currSensorName, "ov23850mipiraw"))) ||
 		    (currSensorName && (0 == strcmp(currSensorName, "s5k3m2mipiraw"))))
