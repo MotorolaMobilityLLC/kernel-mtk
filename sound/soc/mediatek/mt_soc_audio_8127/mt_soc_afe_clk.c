@@ -506,7 +506,7 @@ void mt_afe_main_clk_on(void) /*AudDrv_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
 
 	if (aud_afe_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -523,7 +523,7 @@ void mt_afe_main_clk_off(void)/*AudDrv_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
 
 	aud_afe_clk_cntr--;
 	if (aud_afe_clk_cntr == 0) {
@@ -551,7 +551,7 @@ void mt_afe_main_clk_off(void)/*AudDrv_Clk_Off*/
 void mt_afe_ana_clk_on(void) /*AudDrv_ANA_Clk_On*/
 {
 	mutex_lock(&pmic_clk_mutex);
-	pr_debug("+%s, aud_ana_clk_cntr:%d\n", __func__, aud_ana_clk_cntr);
+	PRINTK_AUD_CLK("+%s, aud_ana_clk_cntr:%d\n", __func__, aud_ana_clk_cntr);
 	if (aud_ana_clk_cntr == 0) {
 #ifdef CONFIG_MTK_PMIC_MT6397
 		upmu_set_rg_clksq_en(1);
@@ -568,7 +568,7 @@ void mt_afe_ana_clk_on(void) /*AudDrv_ANA_Clk_On*/
 void mt_afe_ana_clk_off(void)/*AudDrv_ANA_Clk_Off*/
 {
 	mutex_lock(&pmic_clk_mutex);
-	pr_debug("+%s, aud_ana_clk_cntr:%d\n", __func__, aud_ana_clk_cntr);
+	PRINTK_AUD_CLK("+%s, aud_ana_clk_cntr:%d\n", __func__, aud_ana_clk_cntr);
 	aud_ana_clk_cntr--;
 	if (aud_ana_clk_cntr == 0) {
 		/* Disable ADC clock*/
@@ -617,7 +617,7 @@ void mt_afe_dac_clk_on(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_dac_clk_cntr:%d\n", __func__, aud_dac_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_dac_clk_cntr:%d\n", __func__, aud_dac_clk_cntr);
 
 	if (aud_dac_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -634,7 +634,7 @@ void mt_afe_dac_clk_off(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_dac_clk_cntr:%d\n", __func__, aud_dac_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_dac_clk_cntr:%d\n", __func__, aud_dac_clk_cntr);
 
 	aud_dac_clk_cntr--;
 	if (aud_dac_clk_cntr == 0) {
@@ -654,7 +654,7 @@ void mt_afe_adc_clk_on(void) /*AudDrv_ADC_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_adc_clk_cntr:%d\n", __func__, aud_adc_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_adc_clk_cntr:%d\n", __func__, aud_adc_clk_cntr);
 
 	if (aud_adc_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -671,7 +671,7 @@ void mt_afe_adc_clk_off(void) /*AudDrv_ADC_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_adc_clk_cntr:%d\n", __func__, aud_adc_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_adc_clk_cntr:%d\n", __func__, aud_adc_clk_cntr);
 
 	aud_adc_clk_cntr--;
 	if (aud_adc_clk_cntr == 0) {
@@ -691,7 +691,7 @@ void mt_afe_i2s_clk_on(void) /*AudDrv_I2S_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
 
 	if (aud_i2s_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -708,7 +708,7 @@ void mt_afe_i2s_clk_off(void) /*AudDrv_I2S_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
 
 	aud_i2s_clk_cntr--;
 	if (aud_i2s_clk_cntr == 0) {
@@ -729,7 +729,7 @@ void mt_afe_hdmi_clk_on(void)/*AudDrv_HDMI_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_hdmi_clk_cntr:%d\n", __func__, aud_hdmi_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_hdmi_clk_cntr:%d\n", __func__, aud_hdmi_clk_cntr);
 
 	if (aud_hdmi_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -746,7 +746,7 @@ void mt_afe_hdmi_clk_off(void)/*AudDrv_HDMI_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_hdmi_clk_cntr:%d\n", __func__, aud_hdmi_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_hdmi_clk_cntr:%d\n", __func__, aud_hdmi_clk_cntr);
 
 	aud_hdmi_clk_cntr--;
 	if (aud_hdmi_clk_cntr == 0) {
@@ -887,7 +887,7 @@ void mt_afe_top_apll_clk_on(void)/*AudDrv_TOP_Apll_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
 	if (aud_top_apll_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -904,7 +904,7 @@ void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
 	aud_top_apll_clk_cntr--;
 	if (aud_top_apll_clk_cntr == 0) {
@@ -926,7 +926,7 @@ void mt_afe_aplltuner_clk_on(void)/*AudDrv_APLL_TUNER_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	if (aud_top_apll_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -943,7 +943,7 @@ void mt_afe_aplltuner_clk_off(void)/*AudDrv_APLL_TUNER_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	aud_top_apll_clk_cntr--;
 	if (aud_top_apll_clk_cntr == 0) {
@@ -974,7 +974,7 @@ void mt_afe_spdif_clk_on(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_spdif_clk_cntr:%d\n", __func__, aud_spdif_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_spdif_clk_cntr:%d\n", __func__, aud_spdif_clk_cntr);
 
 	if (aud_spdif_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -991,7 +991,7 @@ void mt_afe_spdif_clk_off(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	pr_debug("%s aud_spdif_clk_cntr:%d\n", __func__, aud_spdif_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_spdif_clk_cntr:%d\n", __func__, aud_spdif_clk_cntr);
 
 	aud_spdif_clk_cntr--;
 	if (aud_spdif_clk_cntr == 0) {
@@ -1012,7 +1012,7 @@ void mt_afe_suspend_clk_on(void)/*AudDrv_Suspend_Clk_On*/
 #ifdef PM_MANAGER_API
 	unsigned long flags;
 
-	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
 
@@ -1051,7 +1051,7 @@ void mt_afe_suspend_clk_off(void)/*AudDrv_Suspend_Clk_Off*/
 #ifdef PM_MANAGER_API
 	unsigned long flags;
 
-	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
 
 	mutex_lock(&afe_clk_mutex);
 
@@ -1087,7 +1087,7 @@ void mt_afe_suspend_clk_off(void)/*AudDrv_Suspend_Clk_Off*/
 void mt_afe_apll1tuner_clk_on(void)
 {
 	mutex_lock(&afe_clk_mutex);
-	pr_debug("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
+	PRINTK_AUD_CLK("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
 
 	if (aud_apll1_tuner_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -1102,7 +1102,7 @@ void mt_afe_apll1tuner_clk_on(void)
 void mt_afe_apll1tuner_clk_off(void)
 {
 	mutex_lock(&afe_clk_mutex);
-	pr_debug("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
+	PRINTK_AUD_CLK("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
 
 	aud_apll1_tuner_cntr--;
 	if (aud_apll1_tuner_cntr == 0) {
