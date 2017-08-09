@@ -254,6 +254,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 				return 0;
 			else if (_is_early_porting_stage())
 				return 0;
+			BUG_ON(1);
 		}
 	case DISP_OPT_SWITCH_DST_MODE:
 		{
@@ -263,6 +264,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 				return 0;
 			else if (_is_early_porting_stage())
 				return 0;
+			BUG_ON(1);
 		}
 	default:
 		{

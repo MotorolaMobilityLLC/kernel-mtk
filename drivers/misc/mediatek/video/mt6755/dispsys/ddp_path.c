@@ -768,8 +768,11 @@ static void ddp_print_scenario(DDP_SCENARIO_ENUM scenario)
 	int i = 0;
 	char path[256] = { '\0' };
 	int num = ddp_get_module_num(scenario);
-	for (i = 0; i < num; i++)
+	for (i = 0; i < num; i++) {
+		ASSERT(strlen(path) + strlen(ddp_get_module_name(module_list_scenario[scenario][i])) < 256);
 		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]), sizeof(path));
+	}
+
 	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
 }
 

@@ -1550,6 +1550,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 		{
 			compat_uint_t __user *data32;
 			compat_uint_t displayid = 0;
+			compat_mtk_dispif_info_t compat_dispif_info;
 			data32 = compat_ptr(arg);
 
 			if (get_user(displayid, data32)) {
@@ -1574,9 +1575,18 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				DISPERR("information for displayid: %d is not available now\n",
 				displayid);
 			}
-
+			compat_dispif_info.displayWidth =
+				dispif_info[displayid].displayWidth;
+			compat_dispif_info.displayHeight =
+				dispif_info[displayid].displayHeight;
+			compat_dispif_info.lcmOriginalWidth =
+				dispif_info[displayid].lcmOriginalWidth;
+			compat_dispif_info.lcmOriginalHeight =
+				dispif_info[displayid].lcmOriginalHeight;
+			compat_dispif_info.displayMode =
+				dispif_info[displayid].displayMode;
 			if (copy_to_user((void __user *)arg,
-				&(dispif_info[displayid]), sizeof(compat_mtk_dispif_info_t))) {
+				&(compat_dispif_info), sizeof(compat_mtk_dispif_info_t))) {
 				pr_err("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 				return -EFAULT;
 			}

@@ -241,7 +241,6 @@ static const char *_dsi_cmd_mode_parse_state(unsigned int state)
 	default:
 		return "unknown";
 	}
-	return "unknown";
 }
 
 static const char *_dsi_vdo_mode_parse_state(unsigned int state)
