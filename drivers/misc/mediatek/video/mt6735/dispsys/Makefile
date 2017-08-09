@@ -62,7 +62,7 @@ obj-y += ddp_gamma.o
 obj-y += ddp_dither.o
 obj-y += ddp_od.o
 obj-y += ddp_dsi.o
-# obj-y += ddp_dpi.o
+obj-y += ddp_dpi.o
 
 #common
 obj-y += ddp_drv.o
