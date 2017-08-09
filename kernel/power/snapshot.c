@@ -2051,7 +2051,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
 	do {
 		pfn = memory_bm_next_pfn(bm, 0);
 		if (likely(pfn != BM_END_OF_MAP)) {
-			if (likely(pfn_valid(pfn)) && !is_nosave_page(pfn))
+			if (likely(pfn_valid(pfn)))
 				swsusp_set_page_free(pfn_to_page(pfn));
 			else
 				return -EFAULT;
