@@ -102,7 +102,7 @@ static int thermal5A_status;
 
 static int tc_mid_trip = -275000;
 /* trip_temp[0] must be initialized to the thermal HW protection point. */
-#if !defined(CONFIG_ARCH_MT6755)
+#if !defined(CONFIG_ARCH_MT6755) && !defined(CONFIG_ARCH_MT6797)
 static int trip_temp[10] = { 117000, 100000, 85000, 75000, 65000, 55000, 45000, 35000, 25000, 15000 };
 #else
 static int trip_temp[10] = { 117000,  90000, 85000, 75000, 65000, 55000, 45000, 35000, 25000, 15000 };
@@ -125,7 +125,7 @@ static int proc_write_flag;
 
 static struct thermal_zone_device *thz_dev;
 static char g_bind0[20] = "mtktscpu-sysrst";
-#if !defined(CONFIG_ARCH_MT6755)
+#if !defined(CONFIG_ARCH_MT6755) && !defined(CONFIG_ARCH_MT6797)
 static char g_bind1[20] = "cpu02";
 static char g_bind2[20] = "cpu15";
 static char g_bind3[20] = "cpu22";
