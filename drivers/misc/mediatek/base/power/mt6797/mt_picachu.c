@@ -72,7 +72,7 @@
 #define CFG_ENV_SIZE    0x40
 #define CFG_ENV_OFFSET  0x40000
 
-#define NR_CAL_OPPS	2
+#define NR_CAL_OPPS	1
 
 #undef TAG
 #define TAG     "[Picachu] "
