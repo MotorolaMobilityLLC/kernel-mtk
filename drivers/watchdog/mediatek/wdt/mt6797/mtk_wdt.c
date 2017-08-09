@@ -28,6 +28,8 @@
 #include <ext_wd_drv.h>
 
 #include <mach/wd_api.h>
+#include <mach/mt_secure_api.h>
+
 #ifdef CONFIG_OF
 void __iomem *toprgu_base = 0;
 int	wdt_irq_id = 0;
@@ -306,6 +308,8 @@ void wdt_arch_reset(char mode)
 #ifdef CONFIG_OF
 	struct device_node *np_rgu;
 #endif
+	mt_secure_call(MTK_SIP_KERNEL_DISABLE_DFD, 0, 0, 0);
+
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
 #ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
