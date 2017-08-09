@@ -639,6 +639,22 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+
+static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	void *addr =  (void *)ucontrol->value.integer.value[0];
+	uint32 size =  ucontrol->value.integer.value[1];
+
+	/* pr_warn("TEST1 %s(), addr 0x%x, size %d\n", __func__, (int)addr, size); */
+
+	mtk_dl2_copy2buffer(addr, size);
+	return 0;
+}
+
+#endif
+
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
 
 static void GetAudioTrimOffset(int channels)
@@ -858,6 +874,10 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 	Audio_Ipoh_Setting_Get, Audio_Ipoh_Setting_Set),
 	SOC_ENUM_EXT("Audio_I2S1_Setting", Audio_Routing_Enum[8],
 	AudioI2S1_Setting_Get, AudioI2S1_Setting_Set),
+#ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+	SOC_DOUBLE_EXT("Audio_DL2_DataTransfer", SND_SOC_NOPM, 0, 1, 65536, 0,
+	NULL, Audio_DL2_DataTransfer),
+#endif
 };
 
 

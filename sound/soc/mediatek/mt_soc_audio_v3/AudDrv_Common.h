@@ -134,4 +134,13 @@ typedef struct {
 } AFE_DL_ABNORMAL_CONTROL_T;
 
 
+typedef struct {
+	kal_int8 *pBufferBase;
+	kal_int8 *pBufferIndx;
+	kal_uint32 u4BufferSize;
+	kal_uint32 u4BufferSizeMax;
+
+	kal_uint32 u4IsrConsumeSize;
+} AFE_DL_ISR_COPY_T;
+
 #endif
