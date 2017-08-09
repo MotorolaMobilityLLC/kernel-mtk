@@ -568,57 +568,8 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	}
 }
 
-#if !defined(CONFIG_ARCH_MT6755)
-#ifdef CONFIG_OF
-static int dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
-{
-	const char *type = of_get_flat_dt_prop(node, "device_type", NULL);
-	const __be32 *reg;
-	u32 rank0_addr, rank1_addr, dram_rank_num;
-	const struct dram_info *dram_info = NULL;
-
-	/* We are scanning "memory" nodes only */
-	if (type == NULL) {
-		/*
-		 * The longtrail doesn't have a device_type on the
-		 * /memory node, so look for the node called /memory@0.
-		 */
-		if (depth != 1 || strcmp(uname, "memory@0") != 0)
-			return 0;
-	} else if (strcmp(type, "memory") != 0)
-		return 0;
-
-	reg = (const __be32 *)of_get_flat_dt_prop(node, "reg", NULL);
-	if (reg == NULL)
-		return 0;
-
-	if (node) {
-		/* orig_dram_info */
-		dram_info = (const struct dram_info *) of_get_flat_dt_prop(node, "orig_dram_info", NULL);
-	}
-
-	dram_rank_num = dram_info->rank_num;
-	rank0_addr = dram_info->rank_info[0].start;
-	if (dram_rank_num == 1)
-		rank1_addr = rank0_addr;
-	else
-		rank1_addr = dram_info->rank_info[1].start;
-
-	spm_crit("dram_rank_num: %d\n", dram_rank_num);
-	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
-
-	spm_write(SPM_PASR_DPD_1, rank0_addr);
-	spm_write(SPM_PASR_DPD_2, rank1_addr);
-
-	return node;
-}
-#endif
-#endif
-
 void spm_set_dummy_read_addr(void)
 {
-#if defined(CONFIG_ARCH_MT6755)
-
 	u32 rank0_addr, rank1_addr, dram_rank_num;
 
 	dram_rank_num = g_dram_info_dummy_read->rank_num;
@@ -633,20 +584,6 @@ void spm_set_dummy_read_addr(void)
 
 	spm_write(SPM_PASR_DPD_1, rank0_addr);
 	spm_write(SPM_PASR_DPD_2, rank1_addr);
-
-#else
-
-#ifdef CONFIG_OF
-	int node;
-
-	node = of_scan_flat_dt(dt_scan_memory, NULL);
-#else
-	pr_err("no rank info\n");
-	BUG();
-	/* return false; */
-#endif
-
-#endif
 }
 
 bool is_md_c2k_conn_power_off(void)
