@@ -819,3 +819,9 @@ config SND_SOC_MAX98926
   default n
   help
       for max98926 codec
+
+config SND_SOC_RT5509
+	bool "SND_SOC_RT5509"
+	default n
+	depends on I2C
+	select RT_REGMAP

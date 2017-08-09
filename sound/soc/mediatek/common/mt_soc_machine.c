@@ -575,8 +575,16 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.stream_name = MT_SOC_SPEAKER_STREAM_NAME,
 		.cpu_dai_name   = "snd-soc-dummy-dai",
 		.platform_name  = "snd-soc-dummy",
+#ifdef CONFIG_SND_SOC_MAX98926
 		.codec_dai_name = "max98926-aif1",
 		.codec_name = "MAX98926_MT",
+#elif defined(CONFIG_SND_SOC_RT5509)
+		.codec_dai_name = "rt5509-aif1",
+		.codec_name = "RT5509_MT",
+#else
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+#endif
 	},
 	{
 		.name = "I2S1_AWB_CAPTURE",
@@ -666,12 +674,11 @@ static int __init mt_soc_snd_init(void)
 
 	daiLinkNum += ARRAY_SIZE(mt_soc_dai_common);
 	node = of_find_compatible_node(NULL, NULL, "maxim,max98926L");
-	if (node != NULL) {
-		memcpy(mt_soc_dai_component + ARRAY_SIZE(mt_soc_dai_common),
-		mt_soc_extspk_dai, sizeof(mt_soc_extspk_dai));
-		daiLinkNum += ARRAY_SIZE(mt_soc_extspk_dai);
-	} else
-		pr_err("max98926L is not find");
+
+	memcpy(mt_soc_dai_component + ARRAY_SIZE(mt_soc_dai_common),
+	mt_soc_extspk_dai, sizeof(mt_soc_extspk_dai));
+	daiLinkNum += ARRAY_SIZE(mt_soc_extspk_dai);
+
 
 	snd_soc_card_mt.dai_link = mt_soc_dai_component;
 	snd_soc_card_mt.num_links = daiLinkNum;
