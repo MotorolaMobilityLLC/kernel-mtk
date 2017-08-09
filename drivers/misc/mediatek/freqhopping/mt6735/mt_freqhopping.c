@@ -18,6 +18,7 @@
 #include "mach/mt_fhreg.h"
 /* #include "mach/mt_typedefs.h" */
 #include "sync_write.h"
+#include "mt_dramc.h"
 
 #include "mt_freqhopping_drv.h"
 #include <linux/seq_file.h>
@@ -1252,7 +1253,6 @@ static int __reg_base_addr_init(void)
 {
 	struct device_node *fhctl_node;
 	struct device_node *apmixed_node;
-	struct device_node *ddrphy_node;
 
 	/* Init FHCTL base address */
 	fhctl_node = of_find_compatible_node(NULL, NULL, "mediatek,FHCTL");
@@ -1285,19 +1285,13 @@ static int __reg_base_addr_init(void)
 	}			/* if-else */
 
 	/* Init DDRPHY base address */
-	ddrphy_node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
-	if (!ddrphy_node) {
-		FH_MSG_DEBUG(" Error, Cannot find DDRPHY device tree node");
+	g_ddrphy_base = mt_ddrphy_base_get();
+	if (!g_ddrphy_base) {
+		FH_MSG_DEBUG("Error, FHCTL DDRPHY failed");
 		/* g_ddrphy_base = (void *)DDRPHY_BASE; */
 	} else {
-		g_ddrphy_base = of_iomap(ddrphy_node, 0);
-		if (!g_ddrphy_base) {
-			FH_MSG_DEBUG("Error, FHCTL DDRPHY failed");
-			/* g_ddrphy_base = (void *)DDRPHY_BASE; */
-		} else {
-			FH_MSG_DEBUG("DDRPHY base address:0x%lx", (unsigned long)g_ddrphy_base);
-		}
-	}			/* if-else */
+		FH_MSG_DEBUG("DDRPHY base address:0x%lx", (unsigned long)g_ddrphy_base);
+	}
 
 	__reg_tbl_init();
 
