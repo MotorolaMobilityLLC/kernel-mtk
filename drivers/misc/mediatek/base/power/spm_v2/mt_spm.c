@@ -546,10 +546,11 @@ int spm_module_init(void)
 #if defined(CONFIG_ARCH_MT6755)
 	u32 reg_val;
 #endif
+#if 0
 #ifdef CONFIG_MTK_WD_KICKER
 	struct wd_api *wd_api;
 #endif
-
+#endif
 	spm_register_init();
 	if (spm_irq_register() != 0)
 		r = -EPERM;
