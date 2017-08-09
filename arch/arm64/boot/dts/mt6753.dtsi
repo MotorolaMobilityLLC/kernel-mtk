@@ -1377,6 +1377,53 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		mediatek,clkbuf-quantity = <4>;
 		mediatek,clkbuf-config = <2 1 1 1>;
 	};
+/* sensor part */
+		hwmsensor@0 {
+			compatible = "mediatek,hwmsensor";
+		};
+		gsensor@0 {
+			compatible = "mediatek,gsensor";
+		};
+		als_ps@0 {
+			compatible = "mediatek,als_ps";
+		};
+		m_acc_pl@0 {
+			compatible = "mediatek,m_acc_pl";
+		};
+
+		alsps:m_alsps_pl@0 {
+			compatible = "mediatek,m_alsps_pl";
+		};
+
+		m_batch_pl@0 {
+			compatible = "mediatek,m_batch_pl";
+		};
+		batchsensor@0 {
+			compatible = "mediatek,batchsensor";
+		};
+		gyroscope@0 {
+			compatible = "mediatek,gyroscope";
+		};
+		gyro:m_gyro_pl@0 {
+			compatible = "mediatek,m_gyro_pl";
+		};
+		barometer@0 {
+			compatible = "mediatek,barometer";
+	};
+		m_baro_pl@0 {
+			compatible = "mediatek,m_baro_pl";
+		};
+		msensor@0 {
+			compatible = "mediatek,msensor";
+		};
+		m_mag_pl@0 {
+			compatible = "mediatek,m_mag_pl";
+		};
+		orientation@0 {
+			compatible = "mediatek,orientation";
+	};
+
+/* sensor end */
 };
 
 /* /include/ "cust_clk_buf.dtsi" */
