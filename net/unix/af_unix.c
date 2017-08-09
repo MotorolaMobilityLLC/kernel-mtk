@@ -2071,9 +2071,10 @@ again:
 #endif
 					} else {
 #ifdef CONFIG_MTK_NET_LOGGING
+
 			unsigned long sk_ino = SOCK_INODE(sk->sk_socket)->i_ino;
 
-			pr_debug("[mtk_net][unix]: recvmsg[%lu:null]:exit read due to timeout\n", sk__ino);
+			pr_debug("[mtk_net][unix]: recvmsg[%lu:null]:exit read due to timeout\n", sk_ino);
 #endif
 					}
 				} else {
