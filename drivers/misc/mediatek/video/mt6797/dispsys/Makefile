@@ -28,7 +28,6 @@ endif
 
 #driver
 obj-y += ddp_ovl.o
-obj-y += ddp_color.o
 obj-y += ddp_rdma.o
 obj-y += ddp_wdma.o
 obj-y += ddp_aal.o

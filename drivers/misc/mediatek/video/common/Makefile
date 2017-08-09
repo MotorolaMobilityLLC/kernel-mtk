@@ -38,6 +38,12 @@ obj-y += corr10/
 obj-y += od10/
 endif
 
+# Todo: newer chip
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6795) $(CONFIG_ARCH_MT6595)))
+obj-y += \
+	color20/
+endif
+
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/include     \
 				-I$(srctree)/drivers/misc/mediatek/video/common/IPv1     \

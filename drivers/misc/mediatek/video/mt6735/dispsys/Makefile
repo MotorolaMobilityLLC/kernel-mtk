@@ -52,7 +52,6 @@ endif
 endif
 
 #driver
-obj-y += ddp_color.o
 obj-y += ddp_wdma.o
 obj-y += ddp_aal.o
 obj-y += ddp_pwm.o

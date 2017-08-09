@@ -3,10 +3,12 @@
 #include <linux/spinlock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#ifdef CONFIG_MTK_CLKMGR
+#if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #include <mach/mt_clkmgr.h>
-#endif
+#elif defined(CONFIG_ARCH_MT6755)
 #include "ddp_clkmgr.h"
+#endif
+
 #include "ddp_reg.h"
 #include "ddp_path.h"
 #include "ddp_drv.h"
@@ -805,7 +807,7 @@ SKY_TONE_H :
 int color_dbg_en = 1;
 #define COLOR_ERR(fmt, arg...) pr_err("[COLOR] " fmt "\n", ##arg)
 #define COLOR_DBG(fmt, arg...) \
-do { if (color_dbg_en) pr_debug("[COLOR] " fmt "\n", ##arg); } while (0)
+	do { if (color_dbg_en) pr_debug("[COLOR] " fmt "\n", ##arg); } while (0)
 #define COLOR_NLOG(fmt, arg...) pr_debug("[COLOR] " fmt "\n", ##arg)
 
 static ddp_module_notify g_color_cb;
@@ -821,15 +823,23 @@ static unsigned long g_color0_dst_h;
 static unsigned long g_color1_dst_w;
 static unsigned long g_color1_dst_h;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static int g_color_bypass;
-#else
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
 static int g_color_bypass = 1;
+#else
+static int g_color_bypass;
 #endif
 static int g_tdshp_flag;	/* 0: normal, 1: tuning mode */
 int ncs_tuning_mode = 0;
 int tdshp_index_init = 0;
-#define TDSHP_PA_BASE  0x14006000
+
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#define TDSHP_PA_BASE   0x14009000
+#define TDSHP1_PA_BASE  0x1400A000
+static unsigned long g_tdshp1_va;
+#else
+#define TDSHP_PA_BASE   0x14006000
+#endif
+
 static unsigned long g_tdshp_va;
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
@@ -862,7 +872,7 @@ DISP_PQ_PARAM *get_Color_Gal_config(void)
 *g_Color_Index
 */
 
-DISPLAY_PQ_T *get_Color_index()
+DISPLAY_PQ_T *get_Color_index(void)
 {
 	return &g_Color_Index;
 }
@@ -903,7 +913,6 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 
 	if (DISP_MODULE_COLOR1 == module)
 		offset = C1_OFFSET;
-
 
 	if (g_color_bypass == 0) {
 		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
@@ -967,12 +976,7 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 		return;
 	}
 	/* COLOR_ERR("DpEngine_COLORonConfig(%d)", module); */
-	/* pr_debug("==========config COLOR g_Color_Param [%d %d %d %d %d %d %d %d %d]\n
-	   ===============\n", pq_param_p->u4SatGain, pq_param_p->u4HueAdj[PURP_TONE],
-	   pq_param_p->u4HueAdj[SKIN_TONE], pq_param_p->u4HueAdj[GRASS_TONE],
-	   pq_param_p->u4HueAdj[SKY_TONE], pq_param_p->u4SatAdj[PURP_TONE],
-	   pq_param_p->u4SatAdj[SKIN_TONE], pq_param_p->u4SatAdj[GRASS_TONE],
-	   pq_param_p->u4SatAdj[SKY_TONE]); */
+
 
 	_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, srcWidth);	/* wrapper width */
 	_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, srcHeight);	/* wrapper height */
@@ -981,8 +985,13 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 	if (g_color_bypass == 0) {
 		/* enable R2Y/Y2R in Color Wrapper */
 		_color_reg_set(cmdq, DISP_COLOR_CM1_EN + offset, 0x01);
-		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x11);	/* also set no rounding on Y2R */
+	#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x01);
+	#else
+		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x11); /* also set no rounding on Y2R */
+	#endif
 	}
+
 	/* for partial Y contour issue */
 	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
 
@@ -1005,20 +1014,22 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 	/* Partial Saturation Function */
 
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN1_0 + offset,
-		       (g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][0] |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][1] << 8 |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][2] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][0] << 24));
+		       (g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][0] | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][1] << 8 | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG1][2] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN1_1 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][1] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][2] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][3] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][4] << 24));
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][1] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][2] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][3] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][4] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN1_2 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][5] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][6] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][7] << 16 |
-			g_Color_Index.
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][5] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][6] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG1][7] << 16 | g_Color_Index.
 			GRASS_TONE_S[pq_param_p->u4SatAdj[GRASS_TONE]][SG1][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN1_3 + offset,
 		       (g_Color_Index.
@@ -1035,20 +1046,22 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 			SKY_TONE_S[pq_param_p->u4SatAdj[SKY_TONE]][SG1][2] << 24));
 
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN2_0 + offset,
-		       (g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][0] |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][1] << 8 |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][2] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][0] << 24));
+		       (g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][0] | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][1] << 8 | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG2][2] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN2_1 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][1] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][2] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][3] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][4] << 24));
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][1] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][2] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][3] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][4] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN2_2 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][5] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][6] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][7] << 16 |
-			g_Color_Index.
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][5] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][6] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG2][7] << 16 | g_Color_Index.
 			GRASS_TONE_S[pq_param_p->u4SatAdj[GRASS_TONE]][SG2][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN2_3 + offset,
 		       (g_Color_Index.
@@ -1065,20 +1078,22 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 			SKY_TONE_S[pq_param_p->u4SatAdj[SKY_TONE]][SG2][2] << 24));
 
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN3_0 + offset,
-		       (g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][0] |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][1] << 8 |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][2] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][0] << 24));
+		       (g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][0] | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][1] << 8 | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SG3][2] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN3_1 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][1] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][2] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][3] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][4] << 24));
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][1] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][2] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][3] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][4] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN3_2 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][5] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][6] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][7] << 16 |
-			g_Color_Index.
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][5] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][6] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SG3][7] << 16 | g_Color_Index.
 			GRASS_TONE_S[pq_param_p->u4SatAdj[GRASS_TONE]][SG3][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_GAIN3_3 + offset,
 		       (g_Color_Index.
@@ -1095,20 +1110,22 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 			SKY_TONE_S[pq_param_p->u4SatAdj[SKY_TONE]][SG3][2] << 24));
 
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT1_0 + offset,
-		       (g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][0] |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][1] << 8 |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][2] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][0] << 24));
+		       (g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][0] | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][1] << 8 | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP1][2] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT1_1 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][1] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][2] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][3] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][4] << 24));
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][1] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][2] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][3] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][4] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT1_2 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][5] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][6] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][7] << 16 |
-			g_Color_Index.
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][5] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][6] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP1][7] << 16 | g_Color_Index.
 			GRASS_TONE_S[pq_param_p->u4SatAdj[GRASS_TONE]][SP1][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT1_3 + offset,
 		       (g_Color_Index.
@@ -1125,20 +1142,22 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 			SKY_TONE_S[pq_param_p->u4SatAdj[SKY_TONE]][SP1][2] << 24));
 
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT2_0 + offset,
-		       (g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][0] |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][1] << 8 |
-			g_Color_Index.PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][2] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][0] << 24));
+		       (g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][0] | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][1] << 8 | g_Color_Index.
+			PURP_TONE_S[pq_param_p->u4SatAdj[PURP_TONE]][SP2][2] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT2_1 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][1] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][2] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][3] << 16 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][4] << 24));
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][1] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][2] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][3] << 16 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][4] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT2_2 + offset,
-		       (g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][5] |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][6] << 8 |
-			g_Color_Index.SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][7] << 16 |
-			g_Color_Index.
+		       (g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][5] | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][6] << 8 | g_Color_Index.
+			SKIN_TONE_S[pq_param_p->u4SatAdj[SKIN_TONE]][SP2][7] << 16 | g_Color_Index.
 			GRASS_TONE_S[pq_param_p->u4SatAdj[GRASS_TONE]][SP2][0] << 24));
 	_color_reg_set(cmdq, DISP_COLOR_PART_SAT_POINT2_3 + offset,
 		       (g_Color_Index.
@@ -1184,6 +1203,14 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 	/* color window */
 
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
+
+	/* ccorr feature : support scenario ccorr only on specified platform */
+#if defined(CCORR_SUPPORT)
+	ccorr_interface_for_color(pq_param_p->u4Ccorr,
+		g_Color_Index.CCORR_COEF[pq_param_p->u4Ccorr], cmdq);
+#endif
+
+
 }
 
 
@@ -1193,19 +1220,20 @@ static void color_trigger_refresh(DISP_MODULE_ENUM module)
 		g_color_cb(module, DISP_PATH_EVENT_TRIGGER);
 	else
 		COLOR_ERR("ddp listener is NULL!!\n");
-
 }
 
-static void ddp_color_bypass_color(int bypass, void *__cmdq)
+static void ddp_color_bypass_color(DISP_MODULE_ENUM module, int bypass, void *__cmdq)
 {
-	const int offset = C0_OFFSET;
+	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
+
+	if (DISP_MODULE_COLOR1 == module)
+		offset = C1_OFFSET;
 
 	if (bypass)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 7), 0x00000080);	/* bypass all */
 	else
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 7), 0x00000080);	/* resume all */
-
 }
 
 static void ddp_color_set_window(DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
@@ -1238,13 +1266,30 @@ static unsigned long color_get_TDSHP_VA(void)
 {
 	unsigned long VA;
 	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,MDP_TDSHP");
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp0");
+#else
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp");
+#endif
 	VA = (unsigned long)of_iomap(node, 0);
 	COLOR_DBG("TDSHP VA: 0x%lx\n", VA);
 
 	return VA;
 }
+
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+static unsigned long color_get_TDSHP1_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp1");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("TDSHP1 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+#endif
 
 static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
@@ -1253,22 +1298,28 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= dispsys_reg[i]) && (addr < (dispsys_reg[i] + 0x1000)))
 			break;
-
 	}
 
 	if (i < DISP_REG_NUM) {
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, ddp_get_reg_module_name(i));
 		return 1;
 	}
+
 	/* check if TDSHP base address */
-	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {
-		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "TDSHP");
+	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {			/* TDSHP0 */
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "TDSHP0");
 		return 2;
 	}
-	COLOR_ERR("invalid address! addr=0x%lx!\n", addr);
-	return 0;
-
-
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	else if ((addr >= g_tdshp1_va) && (addr < (g_tdshp1_va + 0x1000))) {	/* TDSHP1 */
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "TDSHP1");
+		return 2;
+	}
+#endif
+	else {
+		COLOR_ERR("invalid address! addr=0x%lx!\n", addr);
+		return 0;
+	}
 }
 
 static unsigned long color_pa2va(unsigned int addr)
@@ -1278,26 +1329,30 @@ static unsigned long color_pa2va(unsigned int addr)
 	/* check disp module */
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= ddp_reg_pa_base[i]) && (addr < (ddp_reg_pa_base[i] + 0x1000))) {
-			/*
 			COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n",
-				  addr, ddp_reg_pa_base[i], dispsys_reg[i]);
-			*/
+				  addr, (unsigned int)ddp_reg_pa_base[i], dispsys_reg[i]);
 			return dispsys_reg[i] + (addr - ddp_reg_pa_base[i]);
 		}
 	}
 
 	/* TDSHP */
 	if ((TDSHP_PA_BASE <= addr) && (addr < (TDSHP_PA_BASE + 0x1000))) {
-		/*
 		COLOR_DBG("color_pa2va(), TDSHP PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 			  TDSHP_PA_BASE, g_tdshp_va);
-		*/
 		return g_tdshp_va + (addr - TDSHP_PA_BASE);
 	}
-/*
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	/* TDSHP1 */
+	if ((TDSHP1_PA_BASE <= addr) && (addr < (TDSHP1_PA_BASE + 0x1000))) {
+		COLOR_DBG("color_pa2va(), TDSHP1 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+			  TDSHP1_PA_BASE, g_tdshp1_va);
+		return g_tdshp1_va + (addr - TDSHP1_PA_BASE);
+	}
+#endif
+
 	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
-		  ddp_reg_pa_base[0], dispsys_reg[0]);
-*/
+		  (unsigned int)ddp_reg_pa_base[0], dispsys_reg[0]);
+
 	return 0;
 }
 
@@ -1313,7 +1368,11 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	switch (reg_id) {
 	case SWREG_COLOR_BASE_ADDRESS:
 		{
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
+#else
 			ret = ddp_reg_pa_base[DISP_REG_COLOR];
+#endif
 			break;
 		}
 
@@ -1328,6 +1387,14 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 			ret = ddp_reg_pa_base[DISP_REG_AAL];
 			break;
 		}
+
+#if defined(CCORR_SUPPORT)
+	case SWREG_CCORR_BASE_ADDRESS:
+		{
+			ret = ddp_reg_pa_base[DISP_REG_CCORR];
+			break;
+		}
+#endif
 
 	case SWREG_TDSHP_BASE_ADDRESS:
 		{
@@ -1391,12 +1458,25 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #ifdef ENABLE_CLK_MGR
-#ifdef CONFIG_MTK_CLKMGR
-	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	if (module == DISP_MODULE_COLOR0) {
+		enable_clock(MT_CG_DISP0_DISP_COLOR0, "DDP");
+		COLOR_DBG("color[0]_clock_on CG 0x%x\n",
+			  DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	} else {
+		enable_clock(MT_CG_DISP0_DISP_COLOR1, "DDP");
+		COLOR_DBG("color[1]_clock_on CG 0x%x\n",
+			  DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	}
 #else
-	ddp_clk_enable(DISP0_DISP_COLOR);
-#endif
+ #ifdef CONFIG_MTK_CLKMGR
+	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+ #elif defined(CONFIG_ARCH_MT6755)
+	ddp_clk_enable(DISP0_DISP_COLOR);
+	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+ #endif
+#endif
 #endif
 
 	return 0;
@@ -1405,11 +1485,21 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #ifdef ENABLE_CLK_MGR
-	COLOR_DBG("color[0]_clock_off\n");
-#ifdef CONFIG_MTK_CLKMGR
-	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	if (module == DISP_MODULE_COLOR0) {
+		COLOR_DBG("color[0]_clock_off\n");
+		disable_clock(MT_CG_DISP0_DISP_COLOR0, "DDP");
+	} else {
+		COLOR_DBG("color[1]_clock_off\n");
+		disable_clock(MT_CG_DISP0_DISP_COLOR1, "DDP");
+	}
 #else
+	COLOR_DBG("color[0]_clock_off\n");
+ #ifdef CONFIG_MTK_CLKMGR
+	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
+ #elif defined(CONFIG_ARCH_MT6755)
 	ddp_clk_disable(DISP0_DISP_COLOR);
+ #endif
 #endif
 #endif
 	return 0;
@@ -1420,6 +1510,9 @@ static int _color_init(DISP_MODULE_ENUM module, void *cmq_handle)
 	_color_clock_on(module, cmq_handle);
 
 	g_tdshp_va = color_get_TDSHP_VA();
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+	g_tdshp1_va = color_get_TDSHP1_VA();
+#endif
 	return 0;
 }
 
@@ -1434,13 +1527,29 @@ static int _color_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	if (!pConfig->dst_dirty)
 		return 0;
 
-
 	if (module == DISP_MODULE_COLOR0) {
 		g_color0_dst_w = pConfig->dst_w;
 		g_color0_dst_h = pConfig->dst_h;
 	} else {
 		g_color1_dst_w = pConfig->dst_w;
 		g_color1_dst_h = pConfig->dst_h;
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#ifndef CONFIG_FOR_SOURCE_PQ
+		/* set bypass to COLOR1 */
+		{
+			const int offset = C1_OFFSET;
+			void *cmdq = cmq_handle;
+
+			/* disable R2Y/Y2R in Color Wrapper */
+			_color_reg_set(cmdq, DISP_COLOR_CM1_EN + offset, 0);
+			_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0);
+
+			_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 7));	/* all bypass */
+			_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000003);	/* color start */
+		}
+		return 0;
+#endif
+#endif
 	}
 
 	DpEngine_COLORonInit(module, cmq_handle);
@@ -1480,8 +1589,8 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 			return -EFAULT;
 		}
 
-		if (ncs_tuning_mode == 0) {	/* normal mode */
-
+		if (ncs_tuning_mode == 0) {
+			/* normal mode */
 			DpEngine_COLORonInit(DISP_MODULE_COLOR0, cmdq);
 			DpEngine_COLORonConfig(DISP_MODULE_COLOR0, g_color0_dst_w, g_color0_dst_h,
 					       cmdq);
@@ -1506,43 +1615,6 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		}
 
 		break;
-
-#if 0
-	case DISP_IOCTL_SET_C1_PQPARAM:
-
-		pq_param = get_Color_config(COLOR_ID_1);
-		if (copy_from_user(pq_param, (void *)arg, sizeof(DISP_PQ_PARAM))) {
-			COLOR_ERR("DISP_IOCTL_SET_PQPARAM Copy from user failed\n");
-
-			return -EFAULT;
-		}
-
-		if (ncs_tuning_mode == 0) {	/* normal mode */
-
-			DpEngine_COLORonInit(DISP_MODULE_COLOR1, cmdq);
-			DpEngine_COLORonConfig(DISP_MODULE_COLOR1, g_color1_dst_w, g_color1_dst_h,
-					       cmdq);
-
-			color_trigger_refresh(DISP_MODULE_COLOR1);
-
-			COLOR_DBG("SET_PQ_PARAM(1)\n");
-		} else {
-			/* ncs_tuning_mode = 0; */
-			COLOR_DBG("SET_PQ_PARAM(1), bypassed by ncs_tuning_mode = 1\n");
-		}
-
-		break;
-
-	case DISP_IOCTL_GET_C1_PQPARAM:
-
-		pq_param = get_Color_config(COLOR_ID_1);
-		if (copy_to_user((void *)arg, pq_param, sizeof(DISP_PQ_PARAM))) {
-			COLOR_ERR("DISP_IOCTL_GET_PQPARAM Copy to user failed\n");
-			return -EFAULT;
-		}
-
-		break;
-#endif
 
 	case DISP_IOCTL_SET_PQINDEX:
 		COLOR_DBG("DISP_IOCTL_SET_PQINDEX!\n");
@@ -1706,16 +1778,17 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 				COLOR_ERR("reg write, addr invalid, pa:0x%x(va:0x%lx)\n", pa, va);
 				return -EFAULT;
 			}
+
 			/* if TDSHP, write PA directly */
 			if (ret == 2) {
 				if (cmdq == NULL) {
 					mt_reg_sync_writel((unsigned int)(INREG32(va) &
-									  ~(wParams.mask)) |
-							   (wParams.val),
-							   (volatile unsigned long *)(va));
+									  ~(wParams.
+									    mask)) | (wParams.val),
+							   (unsigned long *)(va));
 				} else {
 					/* cmdqRecWrite(cmdq, TDSHP_PA_BASE + (wParams.reg - g_tdshp_va),
-					   wParams.val, wParams.mask); */
+					wParams.val, wParams.mask); */
 					cmdqRecWrite(cmdq, pa, wParams.val, wParams.mask);
 				}
 			} else {
@@ -1788,7 +1861,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 			return -EFAULT;
 		}
 
-		ddp_color_bypass_color(value, cmdq);
+		ddp_color_bypass_color(DISP_MODULE_COLOR0, value, cmdq);
 		color_trigger_refresh(DISP_MODULE_COLOR0);
 
 		break;
@@ -1855,6 +1928,10 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 #ifdef CONFIG_FOR_SOURCE_PQ
 void set_color_bypass(DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
 {
+#ifdef DISP_COLOR_OFF
+	COLOR_NLOG("set_color_bypass: DISP_COLOR_OFF, Color bypassed...\n");
+	return;
+#endif
 	int offset = C0_OFFSET;
 
 	g_color_bypass = bypass;
@@ -1881,11 +1958,16 @@ void set_color_bypass(DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
 		_color_reg_set(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01);
 		_color_reg_set(cmdq_handle, DISP_COLOR_CM2_EN + offset, 0x11);	/* also set no rounding on Y2R */
 	}
+
 }
 #endif
 
 static int _color_bypass(DISP_MODULE_ENUM module, int bypass)
 {
+#ifdef DISP_COLOR_OFF
+	COLOR_NLOG("_color_bypass: DISP_COLOR_OFF, Color bypassed...\n");
+	return -1;
+#endif
 	int offset = C0_OFFSET;
 
 	g_color_bypass = bypass;
@@ -1910,7 +1992,11 @@ static int _color_bypass(DISP_MODULE_ENUM module, int bypass)
 
 		/* enable R2Y/Y2R in Color Wrapper */
 		_color_reg_set(NULL, DISP_COLOR_CM1_EN + offset, 0x01);
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+		_color_reg_set(NULL, DISP_COLOR_CM2_EN + offset, 0x01);	/* also set no rounding on Y2R */
+#else
 		_color_reg_set(NULL, DISP_COLOR_CM2_EN + offset, 0x11);	/* also set no rounding on Y2R */
+#endif
 	}
 
 	return 0;
@@ -1924,13 +2010,22 @@ static int _color_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 		COLOR_ERR("cmdq_trigger_handle is NULL\n");
 		return -1;
 	}
+
 	/* only get COLOR HIST on primary display */
 	if ((module == DISP_MODULE_COLOR0) && (state == CMDQ_AFTER_STREAM_EOF)) {
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+		ret =
+		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
+					      ddp_reg_pa_base[DISP_REG_COLOR0] +
+					      (DISP_COLOR_TWO_D_W1_RESULT - DISPSYS_COLOR0_BASE),
+					      CMDQ_DATA_REG_PQ_COLOR);
+#else
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
 					      ddp_reg_pa_base[DISP_REG_COLOR] +
 					      (DISP_COLOR_TWO_D_W1_RESULT - DISPSYS_COLOR0_BASE),
 					      CMDQ_DATA_REG_PQ_COLOR);
+#endif
 	}
 
 	return ret;
