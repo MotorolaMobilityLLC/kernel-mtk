@@ -64,7 +64,11 @@ static int get_env_path(void)
 		return -1;
 	}
 
+#if defined(CONFIG_MMC_MTK)
 	snprintf(env_path, sizeof(env_path), "/dev/block/mmcblk0p%d", part->partno);
+#elif defined(CONFIG_MTK_UFS_BOOTING)
+	snprintf(env_path, sizeof(env_path), "/dev/block/sdc%d", part->partno);
+#endif
 	put_part(part);
 
 	return 0;

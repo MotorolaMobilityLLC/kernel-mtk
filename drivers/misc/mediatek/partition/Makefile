@@ -11,4 +11,8 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MMC_MTK) := partition.o
+ifeq ($(CONFIG_MMC_MTK),y)
+    obj-y += partition.o
+else ifeq ($(CONFIG_MTK_UFS_BOOTING),y)
+    obj-y += partition.o
+endif
