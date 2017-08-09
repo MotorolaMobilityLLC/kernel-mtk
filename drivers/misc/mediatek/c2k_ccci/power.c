@@ -997,8 +997,7 @@ static long misc_modem_compat_ioctl(struct file *filp, unsigned int cmd,
 				    unsigned long arg)
 {
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		printk
-		    ("[SDIO MODEM]!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
+		pr_warn("[SDIO MODEM]!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
 		return -ENOTTY;
 	}
 	pr_debug("[SDIO MODEM] compat ioctl %d\n", cmd);

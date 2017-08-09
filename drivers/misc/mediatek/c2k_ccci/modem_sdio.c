@@ -1059,9 +1059,9 @@ static void sdio_buffer_in_print(struct sdio_modem_port *port,
 		count = 20;
 
 	for (i = 0; i < count; i++)
-		pr_cont("%x-", *(packet->buffer + i));
+		pr_debug("%x-", *(packet->buffer + i));
 
-	pr_cont("\n");
+	pr_debug("\n");
 }
 
 /*when tty port is closed, modem may send data to the corresponding channel too. We buffered those data.*/

@@ -430,7 +430,7 @@ int c2k_gpio_request_irq(int gpio, irq_handler_t handler, unsigned long flags,
 	/*mt_eint_registration(des->irq, des->deb_en, des->pol, des->redirect, 0); */
 	mt_eint_registration(des->irq, des->pol, des->redirect, 0);
 #else
-	pr_info("[C2K] c2k_gpio_request_irq gpio %d irq %d\n", gpio, des->irq);
+	pr_warn("[C2K] c2k_gpio_request_irq gpio %d irq %d\n", gpio, des->irq);
 	/*mt_eint_registration(des->irq, des->pol, des->redirect, 0); */
 	ret = request_irq(des->irq, handler, flags, name, dev);
 	if (ret)
