@@ -623,14 +623,14 @@ static int m4u_debug_set(void *data, u64 val)
 		port.Virtuality = 1;
 		M4UMSG("(0) config port: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
 		m4u_config_port(&port);
-		port.ePortID = M4U_PORT_MDP_WROT1;
-		m4u_config_port(&port);
+		/* port.ePortID = M4U_PORT_MDP_WROT1;
+		m4u_config_port(&port); */
 		port.ePortID = M4U_PORT_IMGO;
 		m4u_config_port(&port);
 		port.ePortID = M4U_PORT_VENC_RCPU;
 		m4u_config_port(&port);
-		port.ePortID = M4U_PORT_MJC_MV_RD;
-		m4u_config_port(&port);
+		/* port.ePortID = M4U_PORT_MJC_MV_RD;
+		m4u_config_port(&port); */
 
 		port.ePortID = M4U_PORT_HW_VDEC_PP_EXT;
 		M4UMSG("(1) config port: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
