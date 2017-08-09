@@ -16,6 +16,7 @@
 #include <linux/init.h>         /* needed by module macros */
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/miscdevice.h>   /* needed by miscdevice* */
+#include <linux/sysfs.h>
 #include <linux/device.h>       /* needed by device_* */
 #include <linux/vmalloc.h>      /* needed by kmalloc */
 #include <linux/uaccess.h>      /* needed by copy_to_user */
@@ -326,7 +327,7 @@ int reset_scp(int reset)
 	}
 
 	scp_logger_stop();
-
+	scp_excep_reset();
 
 	pr_debug("[SCP] reset scp\n");
 	reg = (unsigned int *)scpreg.cfg;
@@ -491,7 +492,7 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-	ret = device_create_file(scp_device.this_device, &dev_attr_scp_dump);
+	ret = device_create_bin_file(scp_device.this_device, &bin_attr_scp_dump);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -643,7 +644,7 @@ static int __init scp_init(void)
 		pr_err("[SCP] scp_logger_init_fail\n");
 		return -1;
 	}
-
+	scp_ram_dump_init();
 	ret = register_pm_notifier(&scp_pm_notifier_block);
 
 	if (ret)

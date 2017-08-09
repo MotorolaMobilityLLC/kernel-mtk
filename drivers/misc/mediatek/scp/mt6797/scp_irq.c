@@ -45,7 +45,6 @@ irqreturn_t scp_irq_handler(int irq, void *dev_id)
 
 	if (reg & SCP_IRQ_WDT) {
 		scp_wdt_handler();
-		scp_aee_last_reg();
 		reboot = 1;
 		reset_type = EXCEP_RUNTIME;
 		reg &= ~SCP_IRQ_WDT;

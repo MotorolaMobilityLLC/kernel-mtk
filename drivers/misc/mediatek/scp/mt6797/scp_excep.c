@@ -13,9 +13,11 @@
 */
 
 #include <linux/slab.h>         /* needed by kmalloc */
+#include <linux/sysfs.h>
 #include <linux/device.h>       /* needed by device_* */
 #include <linux/workqueue.h>
 #include <mt-plat/aee.h>
+#include <asm/io.h>
 #include <mt-plat/sync_write.h>
 #include <linux/mutex.h>
 #include "scp_ipi.h"
@@ -24,6 +26,8 @@
 
 
 #define AED_DUMP_SIZE	0x4000
+#define SCP_LOCK_OFS	0xE0
+#define SCP_TCM_LOCK	(1 << 20)
 
 struct scp_aed_cfg {
 	int *log;
@@ -31,6 +35,8 @@ struct scp_aed_cfg {
 	int *phy;
 	int phy_size;
 	char *detail;
+	MemoryDump *pMemoryDump;
+	int memory_dump_size;
 };
 
 struct scp_status_reg {
@@ -42,9 +48,27 @@ struct scp_status_reg {
 	unsigned int h2m;
 };
 
+static unsigned char *scp_dump_buffer;
+static unsigned int scp_dump_length;
+static unsigned int task_context_address;
 static struct scp_work_struct scp_aed_work;
 static struct scp_status_reg scp_aee_status;
-static struct mutex scp_excep_mutex;
+static struct mutex scp_excep_mutex, scp_excep_dump_mutex;
+
+static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
+{
+	if (length == 0) {
+		kfree(buf);
+		return;
+	}
+
+	mutex_lock(&scp_excep_dump_mutex);
+	kfree(scp_dump_buffer);
+
+	scp_dump_buffer = buf;
+	scp_dump_length = length;
+	mutex_unlock(&scp_excep_dump_mutex);
+}
 
 /*
  * dump scp register for debugging
@@ -106,6 +130,57 @@ static int scp_aee_dump(char *buf, ssize_t buf_len)
 	return len;
 }
 
+void scp_excep_reset(void)
+{
+	task_context_address = 0;
+}
+
+static unsigned int scp_crash_dump(MemoryDump *pMemoryDump)
+{
+	unsigned int lock;
+	unsigned int *reg;
+	TaskContext *task_context;
+
+	/* check SRAM lock */
+	reg = (unsigned int *) (scpreg.cfg + SCP_LOCK_OFS);
+	lock = *reg;
+	*reg &= ~SCP_TCM_LOCK;
+	dsb(SY);
+	if ((*reg & SCP_TCM_LOCK)) {
+		pr_debug("unlock failed, skip dump\n");
+		return 0;
+	}
+
+	pr_debug("scp dump 0x%x\n", task_context_address);
+
+	pMemoryDump->flash_length = CRASH_MEMORY_LENGTH;
+
+	/* even if we don't have task context, we can still do ram dump */
+	if (task_context_address) {
+		memcpy_from_scp((void *)&(pMemoryDump->core),
+				(void *)(SCP_TCM + task_context_address), sizeof(TaskContext));
+	}
+
+	memcpy_from_scp((void *)&(pMemoryDump->memory),
+			(void *)(SCP_TCM + CRASH_MEMORY_OFFSET), (SCP_TCM_SIZE - CRASH_MEMORY_OFFSET));
+
+	task_context = (TaskContext *) &(pMemoryDump->core);
+
+	if (task_context->pc == 0x0)
+		task_context->pc = SCP_DEBUG_PC_REG;
+	if (task_context->lr == 0x0)
+		task_context->lr = SCP_DEBUG_LR_REG;
+	if (task_context->sp == 0x0)
+		task_context->sp = SCP_DEBUG_PSP_REG;
+	if (task_context->msp == 0x0)
+		task_context->msp = SCP_DEBUG_SP_REG;
+
+	*reg = lock;
+	dsb(SY);
+
+	return sizeof(*pMemoryDump);
+}
+
 /*
  * generate aee argument without dump scp register
  * @param aed_str:  exception description
@@ -147,11 +222,15 @@ static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
  */
 static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 {
-	char *detail, *log;
+	u8 *detail, *log;
 	u8 *phy, *ptr;
 	u32 log_size, phy_size;
+	u32 memory_dump_size;
+	MemoryDump *pMemoryDump = NULL;
 
-	pr_debug("scp_prepare_aed_dump\n");
+	pr_debug("scp_prepare_aed_dump: %s\n", aed_str);
+
+	scp_aee_last_reg();
 
 	detail = kmalloc(SCP_AED_STR_LEN, GFP_KERNEL);
 	ptr = detail;
@@ -189,12 +268,28 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 		memcpy_from_scp((void *)ptr, (void *)SCP_TCM, SCP_TCM_SIZE);
 		ptr += SCP_TCM_SIZE;
 	}
+	memory_dump_size = sizeof(*pMemoryDump);
+	ptr = kmalloc(memory_dump_size, GFP_KERNEL);
+	if (!ptr) {
+		pr_debug("ap allocate pMemoryDump buffer fail, size=0x%x\n", memory_dump_size);
+		memory_dump_size = 0;
+	} else {
+		pr_debug("[SCP] memory dump:0x%llx\n", (unsigned long long)ptr);
+		pMemoryDump = (MemoryDump *) ptr;
+
+		memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
+		memory_dump_size = scp_crash_dump(pMemoryDump);
+	}
+
+	scp_dump_buffer_set((unsigned char *) pMemoryDump, memory_dump_size);
 
 	aed->log = (int *)log;
 	aed->log_size = log_size;
 	aed->phy = (int *)phy;
 	aed->phy_size = phy_size;
 	aed->detail = detail;
+	aed->pMemoryDump = (MemoryDump *) pMemoryDump;
+	aed->memory_dump_size = memory_dump_size;
 
 	pr_debug("scp_prepare_aed_dump end\n");
 }
@@ -273,6 +368,16 @@ static void scp_aed_reset_ws(struct work_struct *ws)
 	scp_aed_reset_inplace(type);
 }
 
+/* IPI for ramdump config
+ * @param id:   IPI id
+ * @param data: IPI data
+ * @param len:  IPI data length
+ */
+static void scp_ram_dump_ipi_handler(int id, void *data, unsigned int len)
+{
+	task_context_address = *(unsigned int *)data;
+	pr_debug("[SCP] get task_context_address: 0x%x\n", task_context_address);
+}
 /*
  * schedule a work to generate an exception and reset scp
  * @param type: exception type
@@ -283,12 +388,34 @@ void scp_aed_reset(scp_excep_id type)
 	scp_schedule_work(&scp_aed_work);
 }
 
-static ssize_t scp_dump_show(struct device *kobj, struct device_attribute *attr, char *buf)
+static ssize_t scp_dump_show(struct file *filep, struct kobject *kobj, struct bin_attribute *attr,
+		char *buf, loff_t offset, size_t size)
 {
-	return 0;
+	unsigned int length = 0;
+
+	mutex_lock(&scp_excep_dump_mutex);
+
+	if (offset >= 0 && offset < scp_dump_length) {
+		if ((offset + size) > scp_dump_length)
+			size = scp_dump_length - offset;
+
+		memcpy(buf, scp_dump_buffer + offset, size);
+		length = size;
+	}
+
+	mutex_unlock(&scp_excep_dump_mutex);
+
+	return length;
 }
 
-DEVICE_ATTR(scp_dump, 0444, scp_dump_show, NULL);
+struct bin_attribute bin_attr_scp_dump = {
+	.attr = {
+		.name = "scp_dump",
+		.mode = 0444,
+	},
+	.size = 0,
+	.read = scp_dump_show,
+};
 
 /*
  * init a work struct
@@ -296,5 +423,18 @@ DEVICE_ATTR(scp_dump, 0444, scp_dump_show, NULL);
 void scp_excep_init(void)
 {
 	mutex_init(&scp_excep_mutex);
+	mutex_init(&scp_excep_dump_mutex);
 	INIT_WORK(&scp_aed_work.work, scp_aed_reset_ws);
+
+	scp_excep_reset();
+	scp_dump_buffer = NULL;
+	scp_dump_length = 0;
+}
+/*
+ * ram dump init
+ */
+void scp_ram_dump_init(void)
+{
+	scp_ipi_registration(IPI_RAM_DUMP, scp_ram_dump_ipi_handler, "ramdump");
+	pr_debug("[SCP] ram_dump_init() done\n");
 }

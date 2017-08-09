@@ -21,7 +21,8 @@ struct scp_work_struct {
 extern const struct file_operations scp_file_ops;
 extern struct scp_regs scpreg;
 extern struct device_attribute dev_attr_scp_log_len, dev_attr_scp_mobile_log, dev_attr_scp_log_flush;
-extern struct device_attribute dev_attr_scp_status, dev_attr_scp_dump;
+extern struct device_attribute dev_attr_scp_status;
+extern struct bin_attribute bin_attr_scp_dump;
 
 extern irqreturn_t scp_irq_handler(int irq, void *dev_id);
 extern int scp_logger_init(void);
@@ -34,6 +35,7 @@ extern void scp_register_notify(struct notifier_block *nb);
 extern void scp_unregister_notify(struct notifier_block *nb);
 extern void scp_schedule_work(struct scp_work_struct *scp_ws);
 extern unsigned int is_scp_ready(void);
+extern void scp_ram_dump_init(void);
 
 #define SCP_CFGREG_SIZE		(scpreg.cfgregsize)
 #define SCP_TCM_SIZE		(scpreg.tcmsize)

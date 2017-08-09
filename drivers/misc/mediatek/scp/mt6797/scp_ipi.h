@@ -43,6 +43,7 @@ typedef enum ipi_id {
 	IPI_SCP_READY,
 	IPI_ETM_DUMP,
 	IPI_APCCCI,
+	IPI_RAM_DUMP,
 	SCP_NR_IPI,
 } ipi_id;
 
