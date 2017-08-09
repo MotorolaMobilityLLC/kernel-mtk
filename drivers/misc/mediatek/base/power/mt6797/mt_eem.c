@@ -400,6 +400,7 @@ unsigned int gpuMb[16] = {0x29, 0x29, 0x26, 0x26, 0x21, 0x21, 0x1E, 0x1E,
 			0x1A, 0x1A, 0x17, 0x17, 0x14, 0x14, 0x10, 0x10};
 
 unsigned int gpuOutput[8];
+static unsigned int record_tbl_locked[16];
 static unsigned int *recordTbl, *gpuTbl;
 
 /**
@@ -1030,6 +1031,7 @@ struct eem_devinfo {
  * lock
  */
 static DEFINE_SPINLOCK(eem_spinlock);
+static DEFINE_MUTEX(record_mutex);
 #endif
 /**
  * EEM controllers
@@ -1797,12 +1799,12 @@ static void record(struct eem_det *det)
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
 		vSram = clamp(
-				(unsigned int)(det->volt_tbl_pmic[i] + 0xA),
+				(unsigned int)(record_tbl_locked[i] + 0xA),
 				(unsigned int)(det->ops->volt_2_pmic(det, VMIN_SRAM)),
 				(unsigned int)(det->ops->volt_2_pmic(det, VMAX_SRAM)));
 
 		det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
-			((((PMIC_2_RMIC(det, vSram) & 0x7F) << 7) | (det->volt_tbl_pmic[i] & 0x7F)) & 0x3fff);
+			((((PMIC_2_RMIC(det, vSram) & 0x7F) << 7) | (record_tbl_locked[i] & 0x7F)) & 0x3fff);
 	}
 	det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 	mb(); /* SRAM writing */
@@ -1922,29 +1924,32 @@ static int set_volt_cpu(struct eem_det *det)
 	#ifdef EARLY_PORTING
 		return value;
 	#else
+		mutex_lock(&record_mutex);
+		for (value = 0; value < NR_FREQ; value++)
+			record_tbl_locked[value] = det->volt_tbl_pmic[value];
 
 		switch (det_to_id(det)) {
 		case EEM_DET_BIG:
-			value = mt_cpufreq_update_volt_b(MT_CPU_DVFS_B, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt_b(MT_CPU_DVFS_B, record_tbl_locked, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_L:
-			value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, record_tbl_locked, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_2L:
-			value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, record_tbl_locked, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_CCI:
-			value = mt_cpufreq_update_volt(MT_CPU_DVFS_CCI, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_CCI, record_tbl_locked, det->num_freq_tbl);
 			break;
 
 		default:
 			value = 0;
 			break;
 		}
-
+		mutex_unlock(&record_mutex);
 		return value;
 	#endif
 }
