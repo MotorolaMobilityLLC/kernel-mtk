@@ -167,7 +167,6 @@ static void testcase_sync_token(void)
 
 		CMDQ_MSG("start waiting\n");
 		ret = cmdqRecFlush(hRec);
-		cmdqRecDestroy(hRec);
 		CMDQ_MSG("waiting done\n");
 
 		/* clear token */

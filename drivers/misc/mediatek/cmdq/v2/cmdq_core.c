@@ -280,6 +280,26 @@ int32_t cmdq_core_reverse_event_ENUM(const uint32_t value)
 	return eventENUM;
 }
 
+static bool cmdq_core_is_valid_in_active_list(TaskStruct *pTask)
+{
+	bool isValid = true;
+
+	do {
+		if (NULL == pTask) {
+			isValid = false;
+			break;
+		}
+
+		if (TASK_STATE_IDLE == pTask->taskState || CMDQ_INVALID_THREAD == pTask->thread
+			|| NULL == pTask->pCMDEnd || NULL == pTask->pVABase) {
+			/* check CMDQ task's contain */
+			isValid = false;
+		}
+	} while (0);
+
+	return isValid;
+}
+
 void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma_handle,
 				const gfp_t flag)
 {
@@ -828,9 +848,6 @@ static int cmdq_core_print_profile_marker(const RecordStruct *pRecord, char *_bu
 	int32_t profileMarkerCount;
 	int32_t i;
 	char *buf;
-
-	if (NULL == pRecord->profileMarkerTag)
-		return length;
 
 	buf = _buf;
 
@@ -1506,7 +1523,6 @@ static TaskStruct *cmdq_core_task_create(void)
 	pTask = (TaskStruct *) kmem_cache_alloc(gCmdqContext.taskCache, GFP_KERNEL);
 	if (NULL == pTask) {
 		CMDQ_AEE("CMDQ", "Allocate command buffer by kmem_cache_alloc failed\n");
-		kmem_cache_free(gCmdqContext.taskCache, pTask);
 		return NULL;
 	}
 
@@ -1797,22 +1813,24 @@ static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 
 	pTask = container_of(workItem, struct TaskStruct, autoReleaseWork);
 
+	if (NULL == pTask)
+		return;
+
 	CMDQ_MSG("-->Work QUEUE: TASK: Release task structure 0x%p begin\n", pTask);
-	if (pTask) {
-		pTask->taskState = TASK_STATE_IDLE;
-		pTask->thread = CMDQ_INVALID_THREAD;
 
-		cmdq_core_release_buffer(pTask);
+	pTask->taskState = TASK_STATE_IDLE;
+	pTask->thread = CMDQ_INVALID_THREAD;
 
-		mutex_lock(&gCmdqTaskMutex);
+	cmdq_core_release_buffer(pTask);
 
-		/* remove from active/waiting list */
-		list_del_init(&(pTask->listEntry));
-		/* insert into free list. Currently we don't shrink free list. */
-		list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
+	mutex_lock(&gCmdqTaskMutex);
 
-		mutex_unlock(&gCmdqTaskMutex);
-	}
+	/* remove from active/waiting list */
+	list_del_init(&(pTask->listEntry));
+	/* insert into free list. Currently we don't shrink free list. */
+	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
+
+	mutex_unlock(&gCmdqTaskMutex);
 
 	CMDQ_MSG("<--Work QUEUE: TASK: Release task structure end\n");
 }
@@ -1917,7 +1935,7 @@ static void cmdq_core_dump_all_task(void)
 	CMDQ_ERR("=============== [CMDQ] All active tasks ===============\n");
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		ptr = list_entry(p, struct TaskStruct, listEntry);
-		if (TASK_STATE_IDLE != ptr->taskState)
+		if (true == cmdq_core_is_valid_in_active_list(ptr))
 			cmdq_core_dump_task(ptr);
 	}
 
@@ -3760,7 +3778,7 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		pDumpTask = list_entry(p, struct TaskStruct, listEntry);
-		if (NULL != pDumpTask && (engineFlag & pDumpTask->engineFlag)) {
+		if (true == cmdq_core_is_valid_in_active_list(pDumpTask) && (engineFlag & pDumpTask->engineFlag)) {
 			CMDQ_ERR("Thr %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d\n",
 					   (pDumpTask->thread), (pDumpTask),
 					   (pDumpTask->pVABase), &(pDumpTask->MVABase),
@@ -4742,6 +4760,7 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 	uint32_t *hwNGPC = NULL;
 	uint64_t printEngineFlag = 0;
 	uint32_t value[10] = { 0 };
+	bool isDispScn = false;
 
 	static const char *const engineGroupName[] = {
 		CMDQ_FOREACH_GROUP(GENERATE_STRING)
@@ -4777,7 +4796,7 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 	}
 
 	/* Begin is not first, save NG task but print pTask as well */
-	if (pNGTask != pTask && NULL != pNGTask) {
+	if (NULL != pNGTask && pNGTask != pTask) {
 		CMDQ_ERR("== [CMDQ] We have NG task, so engine dumps may more than you think ==\n");
 		CMDQ_ERR("========== [CMDQ] Error Thread PC (NG Task) ==========\n");
 		hwNGPC = cmdq_core_dump_pc(pNGTask, thread, "ERR");
@@ -4841,8 +4860,13 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 	}
 
 	/* force dump DISP for DISP scenario with 0x0 engine flag */
-	if (cmdq_get_func()->isDispScenario(pTask->scenario)
-		|| cmdq_get_func()->isDispScenario(pNGTask->scenario)) {
+	if (NULL != pTask)
+		isDispScn = cmdq_get_func()->isDispScenario(pTask->scenario);
+
+	if (NULL != pNGTask)
+		isDispScn = isDispScn | cmdq_get_func()->isDispScenario(pNGTask->scenario);
+
+	if (isDispScn) {
 		index = CMDQ_GROUP_DISP;
 		if (pCallback[index].dumpInfo) {
 			pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & printEngineFlag),
@@ -4854,7 +4878,7 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 	cmdq_core_dump_GIC();
 
 	/* Begin is not first, save NG task but print pTask as well */
-	if (pNGTask != pTask && NULL != pNGTask) {
+	if (NULL != pNGTask && pNGTask != pTask) {
 		CMDQ_ERR("========== [CMDQ] Error Command Buffer (NG Task) ==========\n");
 		cmdq_core_dump_error_buffer(pNGTask, hwNGPC);
 	}
@@ -5769,15 +5793,16 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			}
 		}
 
+		if (NULL == pTask->pCMDEnd)
+			break;
+
 		pNextTask = NULL;
-		if (pTask->pCMDEnd != NULL) {
-			/* find pTask's jump destination */
-			if (0x10000001 == pTask->pCMDEnd[0]) {
-				pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
-			} else {
-				CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
-					 pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
-			}
+		/* find pTask's jump destination */
+		if (0x10000001 == pTask->pCMDEnd[0]) {
+			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
+		} else {
+			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
+				 pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
 		}
 
 		/* Then, we try remove pTask from the chain of pThread->pCurTask. */
@@ -5790,8 +5815,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 		/* . change jump to fake EOC(no IRQ) */
 		/* . insert jump to next task head and increase cmd buffer size */
 		/* . if there is no next task, set HW End Address */
-		if (pTask->pCMDEnd && threadPC >= pTask->MVABase
-		    && threadPC <= (pTask->MVABase + pTask->commandSize)) {
+		if (threadPC >= pTask->MVABase && threadPC <= (pTask->MVABase + pTask->commandSize)) {
 			if (pNextTask) {
 				/* cookie already +1 */
 				CMDQ_REG_SET32(CMDQ_THR_EXEC_CNT(thread), cookie);
@@ -6107,9 +6131,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 
 		if (loop <= 1) {
 			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
-
-			CMDQ_MSG("Original PC %pa, end %pa\n", &pPrev->MVABase,
-				 &pPrev->MVABase + pPrev->commandSize);
+			CMDQ_MSG("Original PC: %pa, size: %d\n", &pPrev->MVABase, pTask->commandSize);
 			CMDQ_MSG("Original instruction 0x%08x, 0x%08x\n", pPrev->pCMDEnd[0],
 				 pPrev->pCMDEnd[-1]);
 
@@ -6491,7 +6513,8 @@ int32_t cmdqCoreSuspend(void)
 		CMDQ_ERR("[SUSPEND] active tasks during suspend:\n");
 		list_for_each(p, &gCmdqContext.taskActiveList) {
 			pTask = list_entry(p, struct TaskStruct, listEntry);
-			cmdq_core_dump_task(pTask);
+			if (true == cmdq_core_is_valid_in_active_list(pTask))
+				cmdq_core_dump_task(pTask);
 		}
 
 		/* remove all active task from thread */
@@ -7552,7 +7575,7 @@ int cmdqCoreFreeWriteAddress(dma_addr_t paStart)
 		cmdq_core_free_hw_buffer(cmdq_dev_get(),
 					 sizeof(uint32_t) * pWriteAddr->count,
 					 pWriteAddr->va, pWriteAddr->pa);
-		memset(pWriteAddr, 0xdead, sizeof(WriteAddrStruct));
+		memset(pWriteAddr, 0xda, sizeof(WriteAddrStruct));
 	}
 
 	kfree(pWriteAddr);

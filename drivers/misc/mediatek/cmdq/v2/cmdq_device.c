@@ -192,7 +192,7 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 	int result = 0;
 
 	if (IS_ERR(clk_module))
-		return result;
+		return PTR_ERR(clk_module);
 
 	if (enable) {
 		result = clk_prepare_enable(clk_module);
