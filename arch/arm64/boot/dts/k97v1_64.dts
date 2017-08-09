@@ -448,7 +448,7 @@
 		sd-uhs-sdr25;
 		sd-uhs-sdr50;
 		sd-uhs-sdr104;
-		sd-uhs-ddr50;
+		/* sd-uhs-ddr50; */
 		pinctl = <&mmc1_pins_default>;
 		pinctl_sdr104 = <&mmc1_pins_sdr104>;
 		pinctl_sdr50 = <&mmc1_pins_sdr50>;
