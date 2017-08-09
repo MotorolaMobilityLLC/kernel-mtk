@@ -716,22 +716,11 @@ static unsigned int charging_hw_init(void *data)
 	/*PreCC mode */
 	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 4);	/* precharge current default 128mA */
 	bq25890_config_interface(bq25890_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
-	/*CC mode */
-	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
 	/*CV mode */
-	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
 	bq25890_config_interface(bq25890_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
 	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* disable ICHG termination detect */
 	bq25890_config_interface(bq25890_CON5, 0x1, 0x7, 0);	/* termianation current default 128mA */
-	/*Vbus current limit */
-	bq25890_config_interface(bq25890_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
-	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
-	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
-	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
-	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
-	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
 
-/*	upmu_set_rg_vcdt_hv_en(0);*/
 
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	if (wireless_charger_gpio_number != 0) {
@@ -804,12 +793,11 @@ static unsigned int charging_set_cv_voltage(void *data)
 	array_size = GETARRAYNUM(VBAT_CV_VTH);
 	status = STATUS_OK;
 	/*pre_register_value = -1; */
-	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage set_cv_voltage=%d\n",
-		    *(unsigned int *) data);
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, *(unsigned int *) data);
 	register_value =
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH), set_cv_voltage);
-	battery_log(BAT_LOG_FULL, "charging_set_cv_voltage register_value=0x%x\n", register_value);
+	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage register_value=0x%x %d %d\n",
+		    register_value, *(unsigned int *) data, set_cv_voltage);
 	bq25890_set_vreg(register_value);
 
 	return status;
@@ -1507,6 +1495,24 @@ static unsigned int charging_sw_init(void *data)
 		bif_checked = 1;
 	}
 #endif
+
+	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
+	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
+	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
+
+	/*CC mode */
+	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
+	/*Vbus current limit */
+	bq25890_config_interface(bq25890_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
+
+	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
+	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
+
+	/*CV mode */
+	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
+
+/*	upmu_set_rg_vcdt_hv_en(0);*/
+
 	return status;
 }
 
