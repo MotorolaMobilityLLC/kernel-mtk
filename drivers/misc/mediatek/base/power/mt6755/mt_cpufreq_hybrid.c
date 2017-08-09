@@ -451,7 +451,7 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 static int cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, enum pause_src src);
 static void cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, enum pause_src src);
 
-static int cspm_stop_dvfsp_running(struct cpuhvfs_dvfsp *dvfsp);
+static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp);
 
 static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, ...);
 
@@ -479,7 +479,7 @@ static struct cpuhvfs_dvfsp g_dvfsp = {
 	.pause_dvfsp	= cspm_pause_pcm_running,
 	.unpause_dvfsp	= cspm_unpause_pcm_to_run,
 
-	.stop_dvfsp	= cspm_stop_dvfsp_running,
+	.stop_dvfsp	= cspm_stop_pcm_running,
 
 	.dump_info	= cspm_dump_debug_info,
 };
@@ -900,7 +900,7 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 	}
 }
 
-static int cspm_stop_dvfsp_running(struct cpuhvfs_dvfsp *dvfsp)
+static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
 {
 	int r;
 	unsigned long flags;
@@ -1022,30 +1022,33 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 		spin_lock(&dvfs_lock);
 	}
 
-	/* always assign even if the cluster is off (paused) */
 	rsv4 = cspm_read(CSPM_SW_RSV4);
+	csram_write(OFFS_SW_RSV4, rsv4);
+
 	switch (cluster) {
 	case CPU_CLUSTER_LL:
-		rsv4 &= ~SW_L_F_DES_MASK;
-		cspm_write(CSPM_SW_RSV4, rsv4 | SW_L_F_ASSIGN | SW_L_F_DES(f_des));
-		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
+		if (!(rsv4 & SW_L_PAUSE)) {	/* cluster on */
+			rsv4 &= ~SW_L_F_DES_MASK;
+			cspm_write(CSPM_SW_RSV4, rsv4 | SW_L_F_ASSIGN | SW_L_F_DES(f_des));
+			csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
-		if (!(rsv4 & SW_L_PAUSE))
 			r = wait_complete_us(cspm_get_curr_freq_ll() == f_des, 10, DVFS_TIMEOUT);
+			csram_write_fw_sta();
+		}
 
-		csram_write_fw_sta();
 		v = cspm_get_curr_volt_ll();
 		break;
 	case CPU_CLUSTER_L:
 	default:
-		rsv4 &= ~SW_B_F_DES_MASK;
-		cspm_write(CSPM_SW_RSV4, rsv4 | SW_B_F_ASSIGN | SW_B_F_DES(f_des));
-		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
+		if (!(rsv4 & SW_B_PAUSE)) {	/* cluster on */
+			rsv4 &= ~SW_B_F_DES_MASK;
+			cspm_write(CSPM_SW_RSV4, rsv4 | SW_B_F_ASSIGN | SW_B_F_DES(f_des));
+			csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
-		if (!(rsv4 & SW_B_PAUSE))
 			r = wait_complete_us(cspm_get_curr_freq_l() == f_des, 10, DVFS_TIMEOUT);
+			csram_write_fw_sta();
+		}
 
-		csram_write_fw_sta();
 		v = cspm_get_curr_volt_l();
 		break;
 	}
@@ -1137,31 +1140,36 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	case CPU_CLUSTER_LL:
 		BUG_ON(!(rsv4 & L_CLUSTER_EN));		/* already off */
 
-		rsv4 &= ~(L_CLUSTER_EN | SW_L_PAUSE);
-		cspm_write(CSPM_SW_RSV4, rsv4);
+		cspm_write(CSPM_SW_RSV4, rsv4 & ~(L_CLUSTER_EN | SW_L_PAUSE));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 		/* FW will set SW_PAUSE when done */
 		r = wait_complete_us(cspm_get_curr_freq_ll() == 0 && cspm_is_ll_paused(),
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
+
+		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_L_F_DES_MASK;	/* SW_F_DES = 0 */
 		break;
 	case CPU_CLUSTER_L:
 	default:
 		BUG_ON(!(rsv4 & B_CLUSTER_EN));		/* already off */
 
-		rsv4 &= ~(B_CLUSTER_EN | SW_B_PAUSE);
-		cspm_write(CSPM_SW_RSV4, rsv4);
+		cspm_write(CSPM_SW_RSV4, rsv4 & ~(B_CLUSTER_EN | SW_B_PAUSE));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 		/* FW will set SW_PAUSE when done */
 		r = wait_complete_us(cspm_get_curr_freq_l() == 0 && cspm_is_l_paused(),
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
+
+		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_B_F_DES_MASK;	/* SW_F_DES = 0 */
 		break;
 	}
 
-	if (r < 0) {
+	if (r >= 0) {
+		cspm_write(CSPM_SW_RSV4, rsv4);
+		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
+	} else {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
 		BUG();
 	}
@@ -1661,13 +1669,10 @@ int cpuhvfs_module_init(void)
 	int r;
 	struct cpuhvfs_data *cpuhvfs = &g_cpuhvfs;
 
-	r = cpuhvfs->dvfsp->init_dvfsp(cpuhvfs->dvfsp);
-	if (r) {
-		cpuhvfs_err("FAILED TO INIT DVFS PROCESSOR (%d)\n", r);
-		return r;
+	if (!cpuhvfs->dbg_repo) {
+		cpuhvfs_err("FAILED TO PRE-INIT CPUHVFS\n");
+		return -ENODEV;
 	}
-
-	init_cpuhvfs_debug_repo(cpuhvfs);
 
 	set_dvfsp_init_done(cpuhvfs->dvfsp);
 
@@ -1680,6 +1685,23 @@ int cpuhvfs_module_init(void)
 	return 0;
 }
 
+static int cpuhvfs_pre_module_init(void)
+{
+	int r;
+	struct cpuhvfs_data *cpuhvfs = &g_cpuhvfs;
+
+	r = cpuhvfs->dvfsp->init_dvfsp(cpuhvfs->dvfsp);
+	if (r) {
+		cpuhvfs_err("FAILED TO INIT DVFS PROCESSOR (%d)\n", r);
+		return r;
+	}
+
+	init_cpuhvfs_debug_repo(cpuhvfs);
+
+	return 0;
+}
+fs_initcall(cpuhvfs_pre_module_init);
+
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.3");
