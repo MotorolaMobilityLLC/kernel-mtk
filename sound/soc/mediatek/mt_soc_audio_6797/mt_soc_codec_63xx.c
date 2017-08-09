@@ -268,7 +268,7 @@ void SetAnalogSuspend(bool bEnable)
 static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
-	pr_warn("audckbufEnable(), audck_buf_Count = %d, enable = %d\n",
+	pr_aud("audckbufEnable(), audck_buf_Count = %d, enable = %d\n",
 		audck_buf_Count, enable);
 
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
@@ -301,7 +301,7 @@ void audckbufEnable(bool enable)
 static int ClsqCount;
 static void ClsqEnable(bool enable)
 {
-	pr_warn("ClsqEnable ClsqCount = %d enable = %d\n", ClsqCount, enable);
+	pr_aud("ClsqEnable ClsqCount = %d enable = %d\n", ClsqCount, enable);
 	mutex_lock(&AudAna_lock);
 	if (enable) {
 		if (ClsqCount == 0) {
@@ -330,7 +330,7 @@ static void ClsqEnable(bool enable)
 static int TopCkCount;
 static void Topck_Enable(bool enable)
 {
-	pr_warn("Topck_Enable enable = %d TopCkCount = %d\n", enable, TopCkCount);
+	pr_aud("Topck_Enable enable = %d TopCkCount = %d\n", enable, TopCkCount);
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (TopCkCount == 0) {
@@ -348,7 +348,7 @@ static void Topck_Enable(bool enable)
 			/* Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0xFF00, 0xFF00); */
 		}
 
-		if (TopCkCount <= 0) {
+		if (TopCkCount < 0) {
 			pr_warn("TopCkCount <0 =%d\n ", TopCkCount);
 			TopCkCount = 0;
 		}
@@ -359,7 +359,7 @@ static void Topck_Enable(bool enable)
 static int NvRegCount;
 static void NvregEnable(bool enable)
 {
-	pr_warn("NvregEnable NvRegCount == %d enable = %d\n", NvRegCount, enable);
+	pr_aud("NvregEnable NvRegCount == %d enable = %d\n", NvRegCount, enable);
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (NvRegCount == 0) {
@@ -587,7 +587,7 @@ static void Apply_Speaker_Gain(void)
 
 void setOffsetTrimMux(unsigned int Mux)
 {
-	pr_warn("%s Mux = %d\n", __func__, Mux);
+	pr_aud("%s Mux = %d\n", __func__, Mux);
 	Ana_Set_Reg(AUDDEC_ANA_CON4, Mux << 8, 0xf << 8);	/* Audio offset trimming buffer mux selection */
 }
 

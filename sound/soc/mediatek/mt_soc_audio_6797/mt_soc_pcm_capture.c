@@ -96,7 +96,7 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StopAudioCaptureHardware\n");
+	pr_aud("StopAudioCaptureHardware\n");
 
 	/* here to set interrupt */
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
@@ -129,7 +129,7 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StartAudioCaptureHardware\n");
+	pr_aud("StartAudioCaptureHardware\n");
 
 	ConfigAdcI2S(substream);
 	SetI2SAdcIn(mAudioDigitalI2S);
@@ -175,7 +175,7 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Vul_Block = &(VUL_Control_context->rBlock); */
-	pr_warn("mtk_capture_alsa_stop\n");
+	pr_aud("mtk_capture_alsa_stop\n");
 	StopAudioCaptureHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	return 0;
@@ -250,7 +250,6 @@ static void SetVULBuffer(struct snd_pcm_substream *substream,
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &VUL_Control_context->rBlock;
 
-	pr_warn("SetVULBuffer\n");
 	pblock->pucPhysBufAddr =  runtime->dma_addr;
 	pblock->pucVirtBufAddr =  runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -260,7 +259,7 @@ static void SetVULBuffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+	pr_aud("u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
 	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set memory address info to memif */
 	Afe_Set_Reg(AFE_VUL_BASE , pblock->pucPhysBufAddr , 0xffffffff);
@@ -283,10 +282,10 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
 		substream->runtime->dma_bytes, substream) == 0) {
-		pr_warn("AllocateAudioSram success\n");
+		pr_aud("AllocateAudioSram success\n");
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, false);
 	} else if (Capture_dma_buf->area) {
-		pr_warn("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
+		pr_aud("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area, (long) Capture_dma_buf->addr);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
@@ -300,14 +299,14 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	SetVULBuffer(substream, hw_params);
 
-	pr_warn("mtk_capture_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_aud("mtk_capture_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
 	return ret;
 }
 
 static int mtk_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_capture_pcm_hw_free\n");
+	pr_aud("mtk_capture_pcm_hw_free\n");
 	if (Capture_dma_buf->area) {
 		if (mCaptureUseSram == true) {
 			AudDrv_Emi_Clk_Off();
@@ -352,7 +351,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 		return ret;
 	}
 
-	pr_warn("mtk_capture_pcm_open return\n");
+	pr_aud("mtk_capture_pcm_open return\n");
 	return 0;
 }
 
@@ -365,7 +364,7 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_capture_alsa_start\n");
+	pr_aud("mtk_capture_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	StartAudioCaptureHardware(substream);
 
@@ -374,7 +373,7 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_capture_pcm_trigger cmd = %d\n", cmd);
+	pr_aud("mtk_capture_pcm_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:

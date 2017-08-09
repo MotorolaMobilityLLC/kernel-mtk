@@ -47,8 +47,10 @@
 
 #ifdef DEBUG_AUDDRV
 #define PRINTK_AUDDRV(format, args...) pr_debug(format, ##args)
+#define pr_aud(format, args...) pr_debug(format, ##args)
 #else
 #define PRINTK_AUDDRV(format, args...)
+#define pr_aud(format, args...)
 #endif
 
 #ifdef DEBUG_AFE_REG

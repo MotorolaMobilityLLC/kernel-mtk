@@ -138,7 +138,7 @@ static void SetDL1Buffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+	pr_aud("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
 	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL1_BASE , pblock->pucPhysBufAddr , 0xffffffff);
@@ -154,8 +154,6 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_warn("mtk_pcm_hp_impedance_params\n");
-
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
@@ -164,7 +162,7 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true);
 	SetDL1Buffer(substream, hw_params);
 
-	pr_warn("mtk_pcm_hp_impedance_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_aud("mtk_pcm_hp_impedance_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
 	return ret;
@@ -189,7 +187,7 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	PRINTK_AUDDRV("mtk_pcm_hp_impedance_open\n");
+	pr_aud("mtk_pcm_hp_impedance_open\n");
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	pHp_impedance_MemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
@@ -201,10 +199,10 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 					 &constraints_hp_impedance_sample_rates);
 
 	if (ret < 0)
-		PRINTK_AUDDRV("snd_pcm_hw_constraint_integer failed\n");
+		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
 	if (ret < 0) {
-		PRINTK_AUDDRV("mtk_soc_pcm_hp_impedance_close\n");
+		pr_err("mtk_soc_pcm_hp_impedance_close\n");
 		mtk_soc_pcm_hp_impedance_close(substream);
 		return ret;
 	}
@@ -218,7 +216,7 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 	bool mI2SWLen;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("mtk_pcm_hp_impedance_prepare\n");
+	pr_aud("mtk_pcm_hp_impedance_prepare, mPrepareDone %d\n", mPrepareDone);
 	if (mPrepareDone == false) {
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		    runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -264,7 +262,7 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 {
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
-	pr_warn("%s\n", __func__);
+	pr_aud("%s\n", __func__);
 	if (mPrepareDone == true) {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		if (GetI2SDacEnable() == false)
@@ -282,7 +280,7 @@ static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 static int mtk_pcm_hp_impedance_trigger(struct snd_pcm_substream *substream,
 					int cmd)
 {
-	PRINTK_AUDDRV("mtk_pcm_hp_impedance_trigger cmd = %d\n", cmd);
+	pr_aud("mtk_pcm_hp_impedance_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -497,7 +495,7 @@ static void ApplyDctoDl(void)
 					HpImpedancePhase2AdcValue_DepopHw :
 					HpImpedancePhase2AdcValue;
 
-	pr_warn("%s\n", __func__);
+	pr_aud("%s\n", __func__);
 
 	dcinit_value = hasHpDepopHw() ?
 		       DCoffsetDefault_DepopHW : DCoffsetDefault;
@@ -529,7 +527,7 @@ static void ApplyDctoDl(void)
 				  AUXADC_BIT_RESOLUTION;
 			dcinit_value = average;
 			CheckDcinitValue();
-			pr_warn("dcinit_value = %d average = %d value = %d\n",
+			pr_aud("dcinit_value = %d average = %d value = %d\n",
 				dcinit_value,
 				average,
 				value);
@@ -565,7 +563,7 @@ static void ApplyDctoDl(void)
 				  AUXADC_VOLTAGE_RANGE) / 3 /
 				  AUXADC_BIT_RESOLUTION;
 			mhp_impedance = Phase1Check(average, dcinit_value);
-			pr_warn("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
+			pr_aud("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
 			       value, average, dcinit_value, mhp_impedance);
 			if (mhp_impedance)
 				break;
@@ -580,7 +578,7 @@ static void ApplyDctoDl(void)
 				  AUXADC_VOLTAGE_RANGE) / 3 /
 				  AUXADC_BIT_RESOLUTION;
 			mhp_impedance = Phase2Check(average, dcinit_value);
-			pr_warn("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
+			pr_aud("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
 			       value, average, dcinit_value, mhp_impedance);
 			break;
 		}
@@ -591,7 +589,7 @@ static void ApplyDctoDl(void)
 static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("+ %s()\n", __func__);
+	pr_aud("+ %s()\n", __func__);
 	AudDrv_Clk_On();
 	if (OpenHeadPhoneImpedanceSetting(true) == true) {
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
@@ -613,7 +611,7 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
 	AudDrv_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
-	pr_warn("- %s()\n", __func__);
+	pr_aud("- %s()\n", __func__);
 	return 0;
 }
 

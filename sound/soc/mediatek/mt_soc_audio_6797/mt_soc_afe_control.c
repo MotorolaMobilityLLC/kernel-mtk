@@ -1744,7 +1744,7 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 	/* force use 32bit for speaker codec */
 	I2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 
-	pr_warn("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
+	pr_aud("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
 		I2SWLen);
 	CleanPreDistortion();
 	SetDLSrc2(SampleRate);
@@ -2076,7 +2076,7 @@ bool EnableSideToneFilter(bool stf_on)
 
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 {
-	pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
+	pr_aud("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
 		return false;
 
@@ -2094,7 +2094,7 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 			pr_err("[AudioError] , user count < 0\n");
 		}
 	}
-	pr_debug("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__, Aud_block,
+	pr_aud("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__, Aud_block,
 		mAudioMEMIF[Aud_block]->mUserCount);
 
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
@@ -2121,7 +2121,7 @@ bool GetMemoryPathEnable(uint32 Aud_block)
 
 bool SetI2SDacEnable(bool bEnable)
 {
-	pr_warn("%s bEnable = %d", __func__, bEnable);
+	pr_aud("%s bEnable = %d", __func__, bEnable);
 
 	if (bEnable) {
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
