@@ -663,7 +663,7 @@ int spm_module_init(void)
 							spm_read(SPM_SW_RSV_5),
 							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
 							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
-	pmic_config_interface(MT6351_BUCK_VGPU_CON0, 1, 0x1, 0);
+	pmic_config_interface(MT6351_BUCK_VGPU_CON0, 0, 0x1, 0);
 #if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
 	/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
 	pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
