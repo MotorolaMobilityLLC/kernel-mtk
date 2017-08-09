@@ -79,6 +79,7 @@ static int split_deinit(DISP_MODULE_ENUM module, void *handle)
 
 static int split_start(DISP_MODULE_ENUM module, void *handle)
 {
+	DISP_REG_SET_FIELD(handle, DEBUG_FLD_PIXEL_CNT_EN, DISP_REG_SPLIT_DEBUG, 1);
 	DISP_REG_SET(handle, DISP_REG_SPLIT_ENABLE, 0x01);
 	return 0;
 }
@@ -86,6 +87,7 @@ static int split_start(DISP_MODULE_ENUM module, void *handle)
 static int split_stop(DISP_MODULE_ENUM module, void *handle)
 {
 	DISP_REG_SET(handle, DISP_REG_SPLIT_ENABLE, 0x0);
+	DISP_REG_SET_FIELD(handle, DEBUG_FLD_PIXEL_CNT_EN, DISP_REG_SPLIT_DEBUG, 0);
 	return 0;
 }
 

@@ -2521,6 +2521,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define W_RESET_FLD_SPLIT_SW_RST			REG_FLD(1, 0)
 #define DEBUG_FLD_SPLIT_FSM				REG_FLD(2, 28)
 #define DEBUG_FLD_IN_PIXEL_CNT				REG_FLD(24, 0)
+#define DEBUG_FLD_PIXEL_CNT_EN			REG_FLD(1, 31)
 
 /* ------------------------------------------------------------- */
 /* UFO */

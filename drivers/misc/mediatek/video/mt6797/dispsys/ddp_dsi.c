@@ -4132,13 +4132,12 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		if (i == 0) {
 			/* polling dsi busy */
 			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
-#if 0
-			i = DSI_MODULE_END(module);
-			if (i == 1)	/* DUAL */
-				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA,
-					      0x80000000, 0);
-#endif
 		}
+#if 1
+		i = DSI_MODULE_END(module);
+		if (i == 1)	/* DUAL */
+			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+#endif
 		/* 2.dual dsi need do reset DSI_DUAL_EN/DSI_START */
 		if (module == DISP_MODULE_DSIDUAL) {
 			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_COM_CTRL_REG,
