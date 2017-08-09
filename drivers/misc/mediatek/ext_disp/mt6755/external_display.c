@@ -638,7 +638,7 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 {
 	bool reg_flush = false;
 
-	EXT_DISP_FUNC();
+/*	EXT_DISP_FUNC();*/
 
 	if (_should_wait_path_idle())
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 2);
@@ -973,7 +973,7 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 {
 	int ret = 0;
 
-	EXT_DISP_FUNC();
+/*	EXT_DISP_FUNC(); */
 
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || pgc->need_trigger_overlay < 1) {
 		EXT_DISP_LOG("trigger ext display is already slept\n");

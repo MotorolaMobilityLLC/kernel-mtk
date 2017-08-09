@@ -104,6 +104,11 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 	pr_err("[EXTD][MHL]"fmt, ##arg); \
 	}while (0)
 
+#define MHL_WARN(fmt, arg...) \
+	do { \
+		pr_debug("[hdmi-platform]"fmt, ##arg); \
+	}while (0)
+
 static struct i2c_adapter	*i2c_bus_adapter = NULL;
 
 struct i2c_dev_info {
@@ -187,7 +192,7 @@ uint8_t reGetI2cAddress(uint8_t device_ID)
 			address = 0xA0;
 			break;
 		default:
-			MHL_DBG("Error: invaild device ID\n");
+			MHL_WARN("Error: invaild device ID\n");
 	}
 
 	return address;
@@ -209,7 +214,7 @@ uint8_t mhl_i2c_read_len_bytes(struct i2c_client *client, uint8_t offset, uint8_
 			ret = i2c_master_send(client, (const char*)&regAddress, sizeof(uint8_t));  
 			if(ret < 0)
 			{
-		        MHL_DBG("[Error]mhl i2c sends command error!\n");
+		        MHL_WARN("[Error]mhl i2c sends command error!\n");
 				return 0;
 			}
 			else
@@ -217,7 +222,7 @@ uint8_t mhl_i2c_read_len_bytes(struct i2c_client *client, uint8_t offset, uint8_
 				ret = i2c_master_recv(client, (char*)buf, MAX_I2C_READ_NUM);
 				if(ret < 0)
 				{
-			        MHL_DBG("[Error]mhl i2c recv data error!\n");
+			        MHL_WARN("[Error]mhl i2c recv data error!\n");
 				}
 
 				regAddress += MAX_I2C_READ_NUM;
@@ -272,7 +277,7 @@ uint8_t mhl_i2c_write_len_bytes(struct i2c_client *client, uint8_t offset, uint8
 			ret = i2c_master_send(client, write_data, MAX_I2C_WRITE_NUM+1);  
 			if(ret < 0)
 			{
-				MHL_DBG("[Error]mhl i2c write command/data error!\n");
+				MHL_WARN("[Error]mhl i2c write command/data error!\n");
 				return 0;
 			}
 
@@ -289,7 +294,7 @@ uint8_t mhl_i2c_write_len_bytes(struct i2c_client *client, uint8_t offset, uint8
 			ret = i2c_master_send(client, write_data, len+1);  
 			if(ret < 0)
 			{
-				MHL_DBG("[Error1]mhl i2c write command/data error!\n");
+				MHL_WARN("[Error1]mhl i2c write command/data error!\n");
 				return 0;
 			}
 
@@ -460,7 +465,7 @@ static inline int platform_write_i2c_block(struct i2c_adapter *i2c_bus
 
 	buffer = kmalloc(count + 1, GFP_KERNEL);
 	if (!buffer) {
-		MHL_DBG("%s:%d buffer allocation failed\n",__FUNCTION__,__LINE__);
+		MHL_WARN("%s:%d buffer allocation failed\n",__FUNCTION__,__LINE__);
 		return -ENOMEM;
 	}
 
@@ -870,7 +875,7 @@ int32_t sii_8348_tx_init(void)
     VBUS_state = false;
 #endif
 	ret = mhl_tx_init(&drv_info, mClient);
-	MHL_DBG("mhl sii_8348_init, mClient is %p\n", mClient);
+	MHL_WARN("mhl sii_8348_init, mClient is %p\n", mClient);
 	
 	return ret;
 }
@@ -929,7 +934,7 @@ void register_mhl_eint(void)
     mt_eint_registration(CUST_EINT_MHL_NUM, CUST_EINT_MHL_TYPE, &mhl8338_irq_handler, 0);
     MHL_DBG("%s,CUST_EINT_MHL_NUM is %d \n", __func__, CUST_EINT_MHL_NUM);
 #else
-    MHL_DBG("%s,%d Error: GPIO_MHL_RST_B_PIN is not defined\n", __func__, __LINE__);
+    MHL_WARN("%s,%d Error: GPIO_MHL_RST_B_PIN is not defined\n", __func__, __LINE__);
 #endif    
     Mask_MHL_Intr(false);    
 }
@@ -971,7 +976,7 @@ void register_mhl_eint(void)
     }
 	
     Mask_MHL_Intr(false);
-    MHL_DBG("Error: MHL EINT IRQ NOT AVAILABLE, node %p-irq %d!!\n", node, get_mhl_irq_num());
+    MHL_WARN("Error: MHL EINT IRQ NOT AVAILABLE, node %p-irq %d!!\n", node, get_mhl_irq_num());
     
 }
 
@@ -1008,7 +1013,7 @@ void dpi_gpio_ctrl(int enable)
     MHL_DBG("dpi_gpio_ctrl+  %ld !!\n",sizeof(dpi_gpio_name)); 
     if (IS_ERR(mhl_pinctrl)) {
         ret = PTR_ERR(mhl_pinctrl);
-        MHL_DBG("Cannot find MHL RST pinctrl for dpi_gpio_ctrl!\n");
+        MHL_WARN("Cannot find MHL RST pinctrl for dpi_gpio_ctrl!\n");
         return;
     }  
     
@@ -1020,7 +1025,7 @@ void dpi_gpio_ctrl(int enable)
         pin_state = pinctrl_lookup_state(mhl_pinctrl, dpi_gpio_name[offset]);
         if (IS_ERR(pin_state)) {
             ret = PTR_ERR(pin_state);
-            MHL_DBG("Cannot find MHL pinctrl--%s!!\n", dpi_gpio_name[offset]);
+            MHL_WARN("Cannot find MHL pinctrl--%s!!\n", dpi_gpio_name[offset]);
         }
         else
             pinctrl_select_state(mhl_pinctrl, pin_state); 
@@ -1038,7 +1043,7 @@ void i2s_gpio_ctrl(int enable)
     
     if (IS_ERR(mhl_pinctrl)) {
         ret = PTR_ERR(mhl_pinctrl);
-        MHL_DBG("Cannot find MHL RST pinctrl for i2s_gpio_ctrl!\n");
+        MHL_WARN("Cannot find MHL RST pinctrl for i2s_gpio_ctrl!\n");
         return;
     }  
     
@@ -1050,7 +1055,7 @@ void i2s_gpio_ctrl(int enable)
         pin_state = pinctrl_lookup_state(mhl_pinctrl, i2s_gpio_name[offset]);
         if (IS_ERR(pin_state)) {
             ret = PTR_ERR(pin_state);
-            MHL_DBG("Cannot find MHL pinctrl--%s!!\n", i2s_gpio_name[offset]);
+            MHL_WARN("Cannot find MHL pinctrl--%s!!\n", i2s_gpio_name[offset]);
         }
         else
             pinctrl_select_state(mhl_pinctrl, pin_state);   
@@ -1075,21 +1080,21 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay)
     MHL_DBG("reset_mhl_board+  %ld !!\n", sizeof(rst_gpio_name)); 
     if (IS_ERR(mhl_pinctrl)) {
         ret = PTR_ERR(mhl_pinctrl);
-        MHL_DBG("Cannot find MHL RST pinctrl for reset_mhl_board!\n");
+        MHL_WARN("Cannot find MHL RST pinctrl for reset_mhl_board!\n");
         return;
     }    
     
     rst_low_state = pinctrl_lookup_state(mhl_pinctrl, rst_gpio_name[0]);
     if (IS_ERR(rst_low_state)) {
         ret = PTR_ERR(rst_low_state);
-        MHL_DBG("Cannot find MHL pinctrl--%s!!\n", rst_gpio_name[0]);
+        MHL_WARN("Cannot find MHL pinctrl--%s!!\n", rst_gpio_name[0]);
         err_cnt++;
     }
     
     rst_high_state = pinctrl_lookup_state(mhl_pinctrl, rst_gpio_name[1]);
     if (IS_ERR(rst_high_state)) {
         ret = PTR_ERR(rst_high_state);
-        MHL_DBG("Cannot find MHL pinctrl--%s!!\n", rst_gpio_name[1]);
+        MHL_WARN("Cannot find MHL pinctrl--%s!!\n", rst_gpio_name[1]);
         err_cnt++;
     }
 
@@ -1195,7 +1200,7 @@ static int32_t si_8348_mhl_tx_i2c_probe(struct i2c_client *client, const struct 
 {
 	int ret;
  
-	MHL_DBG("%s, client=%p\n", __func__, (void *)client);
+	MHL_WARN("%s, client=%p\n", __func__, (void *)client);
    	/*client->timing = 100; */
     
     i2c_bus_adapter = to_i2c_adapter(client->dev.parent);
@@ -1288,8 +1293,8 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     retVal = strnlen(DeviceName, I2C_NAME_SIZE);
     if (retVal >= I2C_NAME_SIZE)
     {
-    	MHL_DBG("I2c device name too long!\n");
-    	return HAL_RET_PARAMETER_ERROR;
+	MHL_WARN("I2c device name too long!\n");
+	return HAL_RET_PARAMETER_ERROR;
     }
 
     /*i2c_register_board_info(get_hdmi_i2c_channel(), &i2c_mhl, 1);*/
@@ -1303,8 +1308,8 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     retVal = i2c_add_driver(&mhl_i2c_driver);
     if (retVal != 0)
     {
-    	MHL_DBG("I2C driver add failed, retVal=%d\n", retVal);
-        retStatus = HAL_RET_FAILURE;
+	MHL_WARN("I2C driver add failed, retVal=%d\n", retVal);
+	retStatus = HAL_RET_FAILURE;
     }
     else
     {
@@ -1331,7 +1336,7 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     retVal = i2c_add_driver(&mhl_i2c_driver);
     if (retVal != 0)
     {
-    	MHL_DBG("I2C driver add failed, retVal=%d\n", retVal);
+	MHL_WARN("I2C driver add failed, retVal=%d\n", retVal);
         retStatus = HAL_RET_FAILURE;
     }
     else
