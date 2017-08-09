@@ -1021,6 +1021,8 @@ struct KAL_HALT_CTRL_T {
 	else { \
 		pvAddr = vmalloc(u4Size);   \
 	} \
+	if (!pvAddr) \
+		ASSERT_NOMEM(); \
 	pvAddr; \
 })
 #endif

@@ -1188,8 +1188,8 @@ VOID nicRxInitialize(IN P_ADAPTER_T prAdapter)
 
 		pucMemHandle += ALIGN_4(sizeof(SW_RFB_T));
 	}
-
-	ASSERT(prRxCtrl->rFreeSwRfbList.u4NumElem == CFG_RX_MAX_PKT_NUM);
+	if (prRxCtrl->rFreeSwRfbList.u4NumElem == CFG_RX_MAX_PKT_NUM)
+		ASSERT_NOMEM();
 	/* Check if the memory allocation consist with this initialization function */
 	ASSERT((UINT_32) (pucMemHandle - prRxCtrl->pucRxCached) == prRxCtrl->u4RxCachedSize);
 
