@@ -99,12 +99,8 @@
 
 
 #ifndef CONFIG_MTK_CLKMGR
-
-#if 0
 /* bypass clock! */
 static struct clk *dapc_clk;
-#endif
-
 #endif
 
 static struct cdev *g_devapc_ctrl;
@@ -830,16 +826,12 @@ static int devapc_probe(struct platform_device *dev)
 	enable_clock(MT_CG_INFRA_DEVAPC, "DEVAPC");
 #else
 /* CCF */
-#if 0
-/* bypass clock! */
 	dapc_clk = devm_clk_get(&dev->dev, "devapc-main");
 	if (IS_ERR(dapc_clk)) {
-		pr_err("[DEVAPC] cannot get dapc clock.\n");
+		pr_err("[DEVAPC] cannot get devapc clock from common clock framework.\n");
 		return PTR_ERR(dapc_clk);
 	}
 	clk_prepare_enable(dapc_clk);
-#endif
-
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION

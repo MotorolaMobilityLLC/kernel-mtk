@@ -422,11 +422,6 @@
 		};
 	};
 
-	devapc_ao@1000E000 {
-		compatible = "mediatek,devapc_ao";
-		reg = <0 0x1000E000 0 0x1000>;
-	};
-
 	keypad: keypad@10010000 {
 		compatible = "mediatek,mt6757-keypad";
 		reg = <0 0x10010000 0 0x1000>;
@@ -492,6 +487,8 @@
 		compatible = "mediatek,devapc";
 		reg = <0 0x10207000 0 0x1000>;
 		interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_DEVICE_APC_CG>;
+		clock-names = "devapc-main";
 	};
 
 	bus_dbg@10208000 {
