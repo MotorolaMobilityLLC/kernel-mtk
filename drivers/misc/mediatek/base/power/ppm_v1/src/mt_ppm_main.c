@@ -491,7 +491,7 @@ int mt_ppm_main(void)
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 	enum ppm_power_state prev_state;
 	enum ppm_power_state next_state;
-	int i;
+	int i, notify_hps_first = 0;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -526,10 +526,41 @@ int mt_ppm_main(void)
 		char buf[128];
 		char *ptr = buf;
 
+		/* check need to notify hps first or not
+		   1. one or more power budget related policy is activate
+		   2. no cluster migration or on/off (state no change)
+		   3. Limits change from low freq with more core to high freq with less core
+		*/
+		if (ppm_main_info.min_power_budget != ~0 && prev_state == next_state) {
+			/* traverse each cluster's limit */
+			for (i = 0; i < c_req->cluster_num; i++) {
+				if ((c_req->cpu_limit[i].max_cpu_core != 0) &&
+				(c_req->cpu_limit[i].max_cpufreq_idx < last_req->cpu_limit[i].max_cpufreq_idx) &&
+				(c_req->cpu_limit[i].max_cpu_core < last_req->cpu_limit[i].max_cpu_core)) {
+					notify_hps_first = 1;
+					ppm_ver("notify hps first for cluster %d: F(%d)->(%d) C(%d)->(%d)\n",
+						i,
+						last_req->cpu_limit[i].max_cpufreq_idx,
+						c_req->cpu_limit[i].max_cpufreq_idx,
+						last_req->cpu_limit[i].max_cpu_core,
+						c_req->cpu_limit[i].max_cpu_core
+						);
+					break;
+				}
+			}
+		}
+
 		/* send request to client */
-		for_each_ppm_clients(i) {
-			if (ppm_main_info.client_info[i].limit_cb)
-				ppm_main_info.client_info[i].limit_cb(*c_req);
+		if (notify_hps_first) {
+			for (i = NR_PPM_CLIENTS - 1; i >= 0; i--) {
+				if (ppm_main_info.client_info[i].limit_cb)
+					ppm_main_info.client_info[i].limit_cb(*c_req);
+			}
+		} else {
+			for_each_ppm_clients(i) {
+				if (ppm_main_info.client_info[i].limit_cb)
+					ppm_main_info.client_info[i].limit_cb(*c_req);
+			}
 		}
 
 		/* print debug message */
