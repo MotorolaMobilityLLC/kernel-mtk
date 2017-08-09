@@ -2905,6 +2905,9 @@ static VOID wlanRemove(VOID)
 		free_netdev(prDev);
 		return;
 	}
+#ifdef WLAN_INCLUDE_PROC
+	procRemoveProcfs();
+#endif /* WLAN_INCLUDE_PROC */
 
 	kalFbNotifierUnReg();
 	kalPerMonDestroy(prGlueInfo);
@@ -2981,11 +2984,6 @@ static VOID wlanRemove(VOID)
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);
 #endif
-
-	/* 4 <3> Remove /proc filesystem. */
-#ifdef WLAN_INCLUDE_PROC
-	procRemoveProcfs();
-#endif /* WLAN_INCLUDE_PROC */
 
 #if (CFG_MET_PACKET_TRACE_SUPPORT == 1)
 	kalMetRemoveProcfs();
