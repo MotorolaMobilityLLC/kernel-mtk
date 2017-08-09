@@ -53,8 +53,7 @@ extern UINT_8 keyStructBuf[100];	/* add/remove key shared buffer */
 #endif
 
 extern struct delayed_work sched_workq;
-extern struct semaphore g_halt_sem;
-extern int g_u4HaltFlag;
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************

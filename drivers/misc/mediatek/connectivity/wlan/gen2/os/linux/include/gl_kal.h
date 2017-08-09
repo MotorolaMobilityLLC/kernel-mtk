@@ -564,8 +564,7 @@ extern UINT_32 TaskIsrCnt;
 extern BOOLEAN fgIsResetting;
 extern int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev);
 extern UINT_32 u4MemAllocCnt, u4MemFreeCnt;
-extern struct semaphore g_halt_sem;
-extern int g_u4HaltFlag;
+
 
 extern struct delayed_work sched_workq;
 
@@ -669,6 +668,13 @@ typedef enum _ENUM_AGPS_EVENT {
 BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data, UINT_16 dataLen);
 #endif
 
+struct KAL_HALT_CTRL_T {
+	struct semaphore lock;
+	struct task_struct *owner;
+	BOOLEAN fgHalt;
+	BOOLEAN fgHeldByKalIoctl;
+	OS_SYSTIME u4HoldStart;
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1223,6 +1229,9 @@ do { \
 #define USEC_TO_SYSTIME(_usec)      ((_usec) / USEC_PER_MSEC)
 #define MSEC_TO_SYSTIME(_msec)      (_msec)
 
+#define MSEC_TO_JIFFIES(_msec)      msecs_to_jiffies(_msec)
+
+#define KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE		3000 /* 3s */
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -1536,6 +1545,11 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
+INT_32 kalHaltLock(UINT_32 waitMs);
+INT_32 kalHaltTryLock(VOID);
+VOID kalHaltUnlock(VOID);
+VOID kalSetHalted(BOOLEAN fgHalt);
+BOOLEAN kalIsHalted(VOID);
 
 INT32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
 INT32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
