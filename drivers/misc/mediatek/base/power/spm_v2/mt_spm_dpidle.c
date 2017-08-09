@@ -79,7 +79,10 @@ static unsigned long mcucfg_phys_base;
 #define MP0_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x2C)
 #define MP1_AXI_CONFIG		(MCUCFG_BASE + 0x22C)
 #define MP1_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x22C)
+#define MP2_AXI_CONFIG		(MCUCFG_BASE + 0x20C)
+#define MP2_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x20C)
 #define ACINACTM		(1 << 4)
+#define	ACINACTM_MP2	(0x11)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #include <mach/mt_secure_api.h>
@@ -389,6 +392,9 @@ static unsigned int dpidle_log_print_prev_time;
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
+#if defined(CONFIG_ARCH_MT6797)
+	u32 v2;
+#endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
@@ -397,9 +403,19 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		v0 = reg_read(MP0_AXI_CONFIG);
 		v1 = reg_read(MP1_AXI_CONFIG);
 
+#if defined(CONFIG_ARCH_MT6797)
+		v2 = reg_read(MP2_AXI_CONFIG);
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
+#endif
+
 		/* disable snoop function */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0 | ACINACTM);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1 | ACINACTM);
+
+#if defined(CONFIG_ARCH_MT6797)
+		v2 = reg_read(MP2_AXI_CONFIG);
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
+#endif
 
 		dpidle_dbg("enter legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
@@ -409,6 +425,10 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		/* restore MP0_AXI_CONFIG */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1);
+
+#if defined(CONFIG_ARCH_MT6797)
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2);
+#endif
 
 		dpidle_dbg("exit legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
