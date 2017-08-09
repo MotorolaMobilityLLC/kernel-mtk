@@ -1847,6 +1847,13 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	CCCI_ERROR_LOG(md->index, TAG, "MD WDT IRQ\n");
+
+	if (atomic_read(&md_ctrl->ccif_irq_enabled) == 1) {
+		disable_irq_nosync(md_ctrl->ap_ccif_irq_id);
+		atomic_dec(&md_ctrl->ccif_irq_enabled);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Disable ccif irq in WDT isr_func\n");
+	}
+
 	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
 #ifndef DISABLE_MD_WDT_PROCESS
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
@@ -1906,16 +1913,36 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 	return 0;
 }
 
+void wdt_enable_irq(struct md_cd_ctrl *md_ctrl)
+{
+	if (atomic_read(&md_ctrl->wdt_enabled) == 0) {
+		enable_irq(md_ctrl->md_wdt_irq_id);
+		atomic_inc(&md_ctrl->wdt_enabled);
+	}
+}
+
+void wdt_disable_irq(struct md_cd_ctrl *md_ctrl)
+{
+	if (atomic_read(&md_ctrl->wdt_enabled) == 1) {
+		/*may be called in isr, so use disable_irq_nosync.
+		   if use disable_irq in isr, system will hang */
+		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
+		atomic_dec(&md_ctrl->wdt_enabled);
+	}
+}
+
+
 static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	volatile unsigned int SO_CFG;
 
 	CCCI_ERROR_LOG(md->index, TAG, "MD exception HIF %d\n", stage);
 	ccci_event_log("md%d:MD exception HIF %d\n", md->index, stage);
 	/* in exception mode, MD won't sleep, so we do not need to request MD resource first */
 	switch (stage) {
 	case HIF_EX_INIT:
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Disable WDT at exception enter.\n");
+		wdt_disable_irq(md_ctrl);
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 		ccci_set_exp_region_protection(md);
 #endif
@@ -1940,24 +1967,36 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		schedule_delayed_work(&md_ctrl->ccif_delayed_work, 2 * HZ);
 		break;
 	case HIF_EX_ALLQ_RESET:
-		/* re-start CLDMA */
-		cldma_reset(md);
-		/* md_cd_clear_all_queue(md, IN); move to delay work for request skb in it*/ /* purge Rx queue */
-		ccci_md_exception_notify(md, EX_INIT_DONE);
-		cldma_start(md);
-
-		SO_CFG = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG);
-		if ((SO_CFG & 0x1) == 0) {	/* write function didn't work */
-			CCCI_ERROR_LOG(md->index, TAG,
-				     "Enable AP OUTCLDMA failed. Register can't be wrote. SO_CFG=0x%x\n", SO_CFG);
-			cldma_dump_register(md);
-			cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
-				      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x05);
-		}
+		schedule_work(&md_ctrl->ccif_allQreset_work);
 		break;
 	default:
 		break;
 	};
+}
+
+static void md_cd_ccif_allQreset_work(struct work_struct *work)
+{
+	volatile unsigned int SO_CFG;
+
+	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, ccif_allQreset_work);
+	struct ccci_modem *md = md_ctrl->modem;
+
+	/*wait ccci_delay_work finish and go on then.*/
+	flush_delayed_work(&md_ctrl->ccif_delayed_work);
+	/* re-start CLDMA */
+	cldma_reset(md);
+	/* md_cd_clear_all_queue(md, IN); move to delay work for request skb in it*/ /* purge Rx queue */
+	ccci_md_exception_notify(md, EX_INIT_DONE);
+	cldma_start(md);
+
+	SO_CFG = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG);
+	if ((SO_CFG & 0x1) == 0) {	/* write function didn't work */
+		CCCI_ERROR_LOG(md->index, TAG,
+				"Enable AP OUTCLDMA failed. Register can't be wrote. SO_CFG=0x%x\n", SO_CFG);
+		cldma_dump_register(md);
+		cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
+				cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x05);
+	}
 }
 
 static void md_cd_ccif_delayed_work(struct work_struct *work)
@@ -2152,23 +2191,7 @@ static int md_cd_init(struct ccci_modem *md)
 	return 0;
 }
 
-void wdt_enable_irq(struct md_cd_ctrl *md_ctrl)
-{
-	if (atomic_read(&md_ctrl->wdt_enabled) == 0) {
-		enable_irq(md_ctrl->md_wdt_irq_id);
-		atomic_inc(&md_ctrl->wdt_enabled);
-	}
-}
 
-void wdt_disable_irq(struct md_cd_ctrl *md_ctrl)
-{
-	if (atomic_read(&md_ctrl->wdt_enabled) == 1) {
-		/*may be called in isr, so use disable_irq_nosync.
-		   if use disable_irq in isr, system will hang */
-		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
-		atomic_dec(&md_ctrl->wdt_enabled);
-	}
-}
 
 #if TRAFFIC_MONITOR_INTERVAL
 static void md_cd_clear_traffic_data(struct ccci_modem *md)
@@ -2276,6 +2299,10 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
+
+	/* clear all ccif irq before enable it.*/
+	cldma_write32(md_ctrl->md_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
+	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
 #if TRAFFIC_MONITOR_INTERVAL
 	md_cd_clear_traffic_data(md);
 #endif
@@ -2411,6 +2438,7 @@ static void md_cldma_clear(struct ccci_modem *md)
 	md_cldma_hw_reset(md);
 #endif
 }
+
 
 static int md_cd_reset(struct ccci_modem *md)
 {
@@ -3793,6 +3821,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	wake_lock_init(&md_ctrl->trm_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->trm_wakelock_name);
 	snprintf(md_ctrl->peer_wakelock_name, sizeof(md_ctrl->peer_wakelock_name), "md%d_cldma_peer", md_id + 1);
 	wake_lock_init(&md_ctrl->peer_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->peer_wakelock_name);
+	INIT_WORK(&md_ctrl->ccif_allQreset_work, md_cd_ccif_allQreset_work);
 	INIT_WORK(&md_ctrl->ccif_work, md_cd_ccif_work);
 	INIT_DELAYED_WORK(&md_ctrl->ccif_delayed_work, md_cd_ccif_delayed_work);
 	init_timer(&md_ctrl->bus_timeout_timer);

@@ -544,9 +544,6 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			md->ops->broadcast_state(md, EXCEPTION);
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_EXCEPTION, 0);
 			ccci_send_msg_to_md(md, CCCI_CONTROL_TX, MD_EX, MD_EX_CHK_ID, 1);
-
-			CCCI_NORMAL_LOG(md->index, KERN, "Disable WDT at exception enter.\n");
-			md->ops->ee_callback(md, EE_FLAG_DISABLE_WDT);
 		}
 	} else if (ccci_h->data[1] == MD_EX_REC_OK) {
 		if (unlikely
@@ -3475,7 +3472,7 @@ void md_ex_monitor2_func(unsigned long data)
 				   clear flag for reset MD later */
 	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 
-	CCCI_NORMAL_LOG(md->index, KERN, "Enable WDT at exception exit.\n");
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Enable WDT at exception exit.\n");
 	md->ops->ee_callback(md, EE_FLAG_ENABLE_WDT);
 	if (md_wdt_ee && md->index == MD_SYS3) {
 		CCCI_ERROR_LOG(md->index, KERN, "trigger force assert after WDT EE.\n");

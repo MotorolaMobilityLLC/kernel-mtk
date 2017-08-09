@@ -187,6 +187,7 @@ struct md_cd_ctrl {
 	struct wake_lock peer_wake_lock;
 	struct work_struct ccif_work;
 	struct delayed_work ccif_delayed_work;
+	struct work_struct ccif_allQreset_work;
 	struct timer_list bus_timeout_timer;
 	spinlock_t cldma_timeout_lock;	/* this lock is using to protect CLDMA, not only for timeout checking */
 	struct work_struct cldma_irq_work;
