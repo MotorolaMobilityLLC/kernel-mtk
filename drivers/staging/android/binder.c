@@ -1114,7 +1114,9 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 	struct timespec exp_timestamp;
 	struct timeval tv;
 	struct rtc_time tm;
+#if defined(CONFIG_MTK_AEE_FEATURE)
 	int db_flag = DB_OPT_BINDER_INFO;
+#endif
 	int len_s, len_r;
 	int ptr = 0;
 
