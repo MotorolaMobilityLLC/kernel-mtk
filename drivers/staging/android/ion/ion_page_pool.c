@@ -36,7 +36,7 @@ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 	if (end - start > 10000000ULL)	{ /* unit is ns, 10ms */
 		trace_printk("warn: ion page pool alloc pages order: %d time: %lld ns\n",
 			     pool->order, end - start);
-		IONMSG("warn: ion page pool alloc pages order: %d time: %lld ns\n", pool->order,
+		pr_err_ratelimited("warn: ion page pool alloc pages order: %d time: %lld ns\n", pool->order,
 		       end - start);
 		show_free_areas(0);
 	}
