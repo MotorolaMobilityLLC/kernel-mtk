@@ -2602,7 +2602,7 @@ static struct platform_driver musb_driver = {
 	.driver = {
 		   .name = (char *)musb_driver_name,
 		   .bus = &platform_bus_type,
-#if (!defined(CONFIG_MACH_MT2701)) || (!defined(CONFIG_ARCH_MT7623))
+#if (!defined(CONFIG_MACH_MT2701)) && (!defined(CONFIG_ARCH_MT7623))
 		   .of_match_table = apusb_of_ids,
 #endif
 		   .owner = THIS_MODULE,
