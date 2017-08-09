@@ -37,6 +37,7 @@ int wdt_irq_id = 0;
 
 static const struct of_device_id rgu_of_match[] = {
 	{.compatible = "mediatek,mt2701-rgu"},
+	{.compatible = "mediatek,mt8127-rgu"},
 	{.compatible = "mediatek,mt8163-rgu"},
 	{.compatible = "mediatek,mt8173-rgu"},
 	{}
@@ -202,10 +203,16 @@ void wdt_dump_reg(void)
 void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
-	struct device_node *np_rgu;
+	struct device_node *np_rgu = NULL;
+	int i;
 
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
-	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
+
+	for (i = 0; i < 4; i++) {
+		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[i].compatible);
+		if (!np_rgu)
+			break;
+	}
 
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(np_rgu, 0);
