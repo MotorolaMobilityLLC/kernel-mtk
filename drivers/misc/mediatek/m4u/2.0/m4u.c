@@ -451,6 +451,9 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 			page = phys_to_page(pa);
 			/* M4UMSG("page=0x%x, pfn=%d\n", page, __phys_to_pfn(pa)); */
 			sg_set_page(sg, page, PAGE_SIZE, 0);
+			#ifdef CONFIG_NEED_SG_DMA_LENGTH
+				sg->dma_length = sg->length;
+			#endif
 		} else {
 			sg_dma_address(sg) = pa;
 			sg_dma_len(sg) = PAGE_SIZE;
