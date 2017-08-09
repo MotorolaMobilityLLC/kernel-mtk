@@ -31,8 +31,12 @@
 #include <linux/slab.h>
 #include <linux/irqdomain.h>
 
-#define PMIC_KEYS_ID_PWR	0
-#define PMIC_KEYS_ID_HOME	1
+#define PMIC_RG_PWRKEY_RST_EN_MASK  0x1
+#define PMIC_RG_PWRKEY_RST_EN_SHIFT  6
+#define PMIC_RG_HOMEKEY_RST_EN_MASK  0x1
+#define PMIC_RG_HOMEKEY_RST_EN_SHIFT  5
+#define PMIC_RG_RST_DU_MASK  0x3
+#define PMIC_RG_RST_DU_SHIFT  8
 
 struct pmic_keys_regs {
 	u32 deb_reg;
@@ -49,14 +53,22 @@ struct pmic_keys_regs {
 	.intsel_mask		= _intsel_mask,				\
 }
 
-static const struct pmic_keys_regs mt6397_keys_regs[] = {
-	[PMIC_KEYS_ID_PWR] = PMIC_KEYS_REGS(MT6397_CHRSTATUS, 0x8, MT6397_INT_RSV, 0x10),
-	[PMIC_KEYS_ID_HOME] = PMIC_KEYS_REGS(MT6397_OCSTATUS2, 0x10, MT6397_INT_RSV, 0x8),
+struct pmic_regs {
+	const struct pmic_keys_regs pwrkey_regs;
+	const struct pmic_keys_regs homekey_regs;
+	u32 pmic_rst_reg;
 };
 
-static const struct pmic_keys_regs mt6323_keys_regs[] = {
-	[PMIC_KEYS_ID_PWR] = PMIC_KEYS_REGS(MT6323_CHRSTATUS, 0x2, MT6323_INT_MISC_CON, 0x10),
-	[PMIC_KEYS_ID_HOME] = PMIC_KEYS_REGS(MT6323_CHRSTATUS, 0x4, MT6323_INT_MISC_CON, 0x8),
+static const struct pmic_regs mt6397_regs = {
+	.pwrkey_regs = PMIC_KEYS_REGS(MT6397_CHRSTATUS, 0x8, MT6397_INT_RSV, 0x10),
+	.homekey_regs = PMIC_KEYS_REGS(MT6397_OCSTATUS2, 0x10, MT6397_INT_RSV, 0x8),
+	.pmic_rst_reg = MT6397_TOP_RST_MISC,
+};
+
+static const struct pmic_regs mt6323_regs = {
+	.pwrkey_regs = PMIC_KEYS_REGS(MT6323_CHRSTATUS, 0x2, MT6323_INT_MISC_CON, 0x10),
+	.homekey_regs = PMIC_KEYS_REGS(MT6323_CHRSTATUS, 0x4, MT6323_INT_MISC_CON, 0x8),
+	.pmic_rst_reg = MT6323_TOP_RST_MISC,
 };
 
 struct pmic_keys_info {
@@ -74,6 +86,47 @@ struct mtk_pmic_keys {
 	struct irq_domain *irq_domain;
 	struct pmic_keys_info pwrkey, homekey;
 };
+
+enum long_press_mode {
+	LP_DISABLE,
+	LP_ONEKEY,
+	LP_TWOKEY,
+};
+
+static void mtk_pmic_long_press_reset_setup(struct mtk_pmic_keys *keys, u32 pmic_rst_reg)
+{
+	int ret;
+	u32 long_press_mode, long_press_duration;
+
+	ret = of_property_read_u32(keys->dev->of_node,
+		"mediatek,long-press-duration", &long_press_duration);
+	if (ret)
+		long_press_duration = 0;
+
+	regmap_update_bits(keys->regmap, pmic_rst_reg,
+		PMIC_RG_RST_DU_MASK << PMIC_RG_RST_DU_SHIFT,
+		long_press_duration << PMIC_RG_RST_DU_SHIFT);
+	regmap_update_bits(keys->regmap, pmic_rst_reg,
+		PMIC_RG_PWRKEY_RST_EN_MASK << PMIC_RG_PWRKEY_RST_EN_SHIFT,
+		PMIC_RG_PWRKEY_RST_EN_MASK << PMIC_RG_PWRKEY_RST_EN_SHIFT);
+
+	ret = of_property_read_u32(keys->dev->of_node,
+		"mediatek,long-press-mode", &long_press_mode);
+
+	if (!ret && long_press_mode == LP_ONEKEY) {
+		regmap_update_bits(keys->regmap, pmic_rst_reg,
+			PMIC_RG_HOMEKEY_RST_EN_MASK << PMIC_RG_HOMEKEY_RST_EN_SHIFT, 0);
+	} else if (!ret && long_press_mode == LP_TWOKEY) {
+		regmap_update_bits(keys->regmap, pmic_rst_reg,
+			PMIC_RG_HOMEKEY_RST_EN_MASK << PMIC_RG_HOMEKEY_RST_EN_SHIFT,
+			PMIC_RG_HOMEKEY_RST_EN_MASK << PMIC_RG_HOMEKEY_RST_EN_SHIFT);
+	} else {
+		regmap_update_bits(keys->regmap, pmic_rst_reg,
+			PMIC_RG_PWRKEY_RST_EN_MASK << PMIC_RG_PWRKEY_RST_EN_SHIFT, 0);
+		regmap_update_bits(keys->regmap, pmic_rst_reg,
+			PMIC_RG_HOMEKEY_RST_EN_MASK << PMIC_RG_HOMEKEY_RST_EN_SHIFT, 0);
+	}
+}
 
 static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
 {
@@ -148,10 +201,10 @@ static void mtk_pmic_keys_dispose_irq(struct mtk_pmic_keys *keys)
 static const struct of_device_id of_pmic_keys_match_tbl[] = {
 	{
 		.compatible = "mediatek,mt6397-keys",
-		.data = &mt6397_keys_regs,
+		.data = &mt6397_regs,
 	}, {
 		.compatible = "mediatek,mt6323-keys",
-		.data = &mt6323_keys_regs,
+		.data = &mt6323_regs,
 	}, {
 		/* sentinel */
 	}
@@ -164,7 +217,7 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
 	struct resource *res;
 	struct mt6397_chip *pmic_chip = dev_get_drvdata(pdev->dev.parent);
 	struct mtk_pmic_keys *keys;
-	const struct pmic_keys_regs *keys_regs;
+	const struct pmic_regs *pmic_regs;
 	struct input_dev *input_dev;
 	const struct of_device_id *of_id =
 		of_match_device(of_pmic_keys_match_tbl, &pdev->dev);
@@ -177,10 +230,9 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
 	keys->regmap = pmic_chip->regmap;
 	keys->irq_domain = pmic_chip->irq_domain;
 
-	keys_regs = of_id->data;
-	keys->pwrkey.regs = &keys_regs[PMIC_KEYS_ID_PWR];
-	keys->homekey.regs = &keys_regs[PMIC_KEYS_ID_HOME];
-
+	pmic_regs = of_id->data;
+	keys->pwrkey.regs = &pmic_regs->pwrkey_regs;
+	keys->homekey.regs = &pmic_regs->homekey_regs;
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "no IRQ resource\n");
@@ -221,6 +273,8 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
 	}
 
 	input_set_drvdata(input_dev, keys);
+
+	mtk_pmic_long_press_reset_setup(keys, pmic_regs->pmic_rst_reg);
 
 	return 0;
 
