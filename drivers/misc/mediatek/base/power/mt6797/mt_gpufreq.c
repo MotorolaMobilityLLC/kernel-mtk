@@ -214,7 +214,7 @@
 	pr_warn(TAG""fmt, ##args)
 #define gpufreq_dbg(fmt, args...)	   \
 	do {								\
-		if (1)		   \
+		if (mt_gpufreq_debug)		   \
 			pr_warn(TAG""fmt, ##args);	 \
 	} while (0)
 #define gpufreq_ver(fmt, args...)	   \
