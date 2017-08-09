@@ -41,6 +41,12 @@ extern unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, 
 extern unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT);
 #endif
 
+
+extern int set_chr_boost_current_limit(unsigned int current_limit);
+extern int set_chr_enable_otg(unsigned int enable);
+
+
+
 #if defined(CONFIG_MTK_BQ25896_SUPPORT) \
 	|| defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 #define MTK_OTG_BOOST_5V_SUPPORT

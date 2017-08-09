@@ -391,6 +391,7 @@ int mtk_is_hub_active(void)
 #endif
 static void mtk_enable_otg_mode(void)
 {
+#if 0
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
 	bq25890_otg_en(0x01);
 	bq25890_set_boost_ilim(0x03);	/* 1.3A */
@@ -401,10 +402,15 @@ static void mtk_enable_otg_mode(void)
 	bq25898_otg_en(0x01);
 	bq25898_set_boost_ilim(0x01);
 #endif
+#else
+	set_chr_enable_otg(0x1);
+	set_chr_boost_current_limit(500);
+#endif
 }
 
 static void mtk_disable_otg_mode(void)
 {
+#if 0
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
 	bq25890_otg_en(0x0);
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
@@ -412,6 +418,9 @@ static void mtk_disable_otg_mode(void)
 #endif
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x0);
+#endif
+#else
+	set_chr_enable_otg(0x0);
 #endif
 }
 
