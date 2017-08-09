@@ -26,3 +26,4 @@ obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
 obj-$(CONFIG_MTK_KEYPAD) += keypad/
 obj-$(CONFIG_MTK_MEM) += mem/
+obj-$(CONFIG_MTK_CMDQ) += cmdq/
