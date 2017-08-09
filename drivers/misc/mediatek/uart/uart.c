@@ -684,8 +684,11 @@ ssize_t mtk_uart_history_show(struct kobject *kobj, char *buffer)
 /*---------------------------------------------------------------------------*/
 ssize_t mtk_uart_history_store(struct kobject *kobj, const char *buffer, size_t size)
 {
-	int tx_index = 0;
-	int rx_index = 0;
+	int tx_index, rx_index;
+	int res = sscanf(buffer, "%d %d", &tx_index, &rx_index);
+
+	if (res != 2)
+		return 0;
 
 	tx_history.index = tx_index;
 	rx_history.index = rx_index;
@@ -2799,7 +2802,9 @@ static int __init mtk_uart_init(void)
 	mtk_uart_init_ops();
 #endif
 
+#ifdef ENABLE_RAW_DATA_DUMP
 	mtk_uart_init_debug_spinlock();
+#endif
 	spin_lock_init(&mtk_uart_bt_lock);
 	return ret;
 }

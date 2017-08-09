@@ -2071,15 +2071,13 @@ void mtk_uart_enable_sleep(struct mtk_uart *uart)
 
 /*---------------------------------------------------------------------------*/
 
+#ifdef ENABLE_RAW_DATA_DUMP
 void mtk_uart_init_debug_spinlock(void)
 {
-#ifdef ENABLE_RAW_DATA_DUMP
 	spin_lock_init(&tx_history_lock);
 	spin_lock_init(&rx_history_lock);
-#endif
 }
 
-#ifdef ENABLE_RAW_DATA_DUMP
 void reset_tx_raw_data(struct mtk_uart *uart)
 {
 	unsigned long flags;
@@ -2211,6 +2209,16 @@ void dump_uart_history(void)
 	}
 }
 EXPORT_SYMBOL(dump_uart_history);
+#else
+void stop_log(void)
+{
+	/* dummy API */
+}
+
+void dump_uart_history(void)
+{
+	/* dummy API */
+}
 #endif
 
 /*---------------------------------------------------------------------------*/
