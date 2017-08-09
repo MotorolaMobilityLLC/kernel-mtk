@@ -633,7 +633,7 @@ static fm_s32 mt6630_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_p
 		if (fm_file_exist(patch_tbl[i - 1].coeff) == 0) {
 			*ppath = patch_tbl[i - 1].coeff;
 			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
-			return 1;
+			return 0;
 		}
 	}
 
@@ -939,7 +939,7 @@ static fm_s32 mt6630_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 	}
 
 	ret = mt6630_get_coeff_path(mt6630_hw_info.rom_ver, &path_coeff, patch_tbl);
-	if (ret == -FM_EPATCH) {
+	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, " mt6630_get_coeff_path failed\n");
 		goto out;
 	}

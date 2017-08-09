@@ -799,7 +799,7 @@ static fm_s32 mt6627_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_p
 		if (fm_file_exist(patch_tbl[i - 1].patch) == 0) {
 			*ppath = patch_tbl[i - 1].patch;
 			WCN_DBG(FM_WAR | CHIP, "undefined ROM version\n");
-			return 1;
+			return 0;
 		}
 	}
 
@@ -827,7 +827,7 @@ static fm_s32 mt6627_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_p
 		if (fm_file_exist(patch_tbl[i - 1].coeff) == 0) {
 			*ppath = patch_tbl[i - 1].coeff;
 			WCN_DBG(FM_WAR | CHIP, "undefined ROM version\n");
-			return 1;
+			return 0;
 		}
 	}
 
@@ -1007,6 +1007,10 @@ static fm_s32 mt6627_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 	}
 
 	ret = mt6627_get_coeff_path(mt6627_hw_info.rom_ver, &path_coeff, patch_tbl);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " mt6627_get_coeff_path failed\n");
+		goto out;
+	}
 	patch_len = fm_file_read(path_coeff, dsp_buf, PATCH_BUF_SIZE, 0);
 
 	mt6627_hw_info.rom_ver += 1;

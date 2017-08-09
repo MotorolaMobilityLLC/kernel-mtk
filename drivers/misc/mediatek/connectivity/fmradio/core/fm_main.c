@@ -404,8 +404,11 @@ fm_s32 fm_powerup(struct fm *fm, struct fm_tune_parm *parm)
 
 	/* execute power on sequence */
 	ret = fm_low_ops.bi.pwrupseq(&fm->chip_id, &fm->device_id);
-	if (ret)
+	if (ret) {
+		fm_pwr_state_set(fm, FM_PWR_OFF);
+		WCN_DBG(FM_ERR | MAIN, "powerup fail!!!\n");
 		goto out;
+	}
 
 	fm_enable_eint();
 	fm_cur_freq_set(parm->freq);
