@@ -156,6 +156,6 @@ extern unsigned int BigOTPGetiDVFSFreqpct(void);
 extern unsigned int BigOTPGetFreqpct(void);
 extern void BigOTPEnable(void);
 extern void BigOTPDisable(void);
-
+extern int BigOTPThermIRQ(int status);
 #endif  /* __MT_OTP_H__ */
 

@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 #include <linux/types.h>
 #include <linux/cpumask.h>
+#include <linux/workqueue.h>
 
 /* project includes */
 #include "mt_otp.h"
@@ -115,7 +116,6 @@ void __iomem *otp_base; /* 0x10222000 */
 
 #define DEBUG   0
 #define DUMP_FULL_LOG   0
-#define DUMP_DEBUG_LOG   0
 
 #define BIG_CORE_BANK   0
 #define MAX_TARGET_TEMP 130
@@ -128,7 +128,16 @@ void __iomem *otp_base; /* 0x10222000 */
 #define UPPER_BOUND	0x0030D4
 #define LOWER_BOUND	0x002CEC
 
+static int dump_debug_log;
+
 struct task_struct *thread;
+
+static void OTPThermHCheck(struct work_struct *);
+static void OTPThermLCheck(struct work_struct *);
+
+static struct workqueue_struct *otp_workqueue;
+static DECLARE_WORK(therm_H_check, OTPThermHCheck);
+static DECLARE_WORK(therm_L_check, OTPThermLCheck);
 
 static struct OTP_config_data otp_config_data;
 static struct OTP_debug_data otp_debug_data;
@@ -138,6 +147,7 @@ static struct OTP_score_data otp_score_data;
 struct OTP_info_data otp_info_data;
 
 static DEFINE_MUTEX(debug_mutex);
+static DEFINE_MUTEX(timer_mutex);
 
 #ifdef ENABLE_IDVFS
 int otp_enable = OTP_ENABLE;
@@ -160,10 +170,11 @@ static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x1
 unsigned int otp_reg_dump_data[ARRAY_SIZE(otp_reg_dump_addr_off)];
 #endif
 
-#define OTP_INTERVAL		(10LL)
+#define OTP_INTERVAL		(5LL)
 static wait_queue_head_t wq;
 static int condition;
 static int timer_enabled;
+static int sw_channel_status;
 static struct hrtimer otp_timer;
 unsigned int otp_debug_dump_data[10];
 /*
@@ -731,7 +742,6 @@ static void set_otp_config_data(
 	unsigned int pos_err_fifo_size
 )
 {
-	otp_config_data_reset(&otp_config_data);
 
 	otp_set_T_TARGET(&otp_config_data, t_target);
 	otp_set_ERROR_SUM_MODE(&otp_config_data, error_sum_mode);
@@ -891,46 +901,46 @@ static int otp_thread_handler(void *arg)
 
 	do {
 		wait_event_interruptible(wq, condition);
-		if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
-			if (get_piden_status() == 1) {
-				mutex_lock(&debug_mutex);
+		if (((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) &&
+		(get_piden_status() == 1)) {
+			mutex_lock(&debug_mutex);
 
-				otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
-				otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-				otp_info_data.score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
-				otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
-				otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-				otp_info_data.freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+			otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
+			otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+			otp_info_data.score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
+			otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+			otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+			otp_info_data.freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
 
-				mutex_unlock(&debug_mutex);
+			mutex_unlock(&debug_mutex);
 
-				otp_info_data.channel_status = BigiDVFSChannelGet(2);
+			otp_info_data.channel_status = BigiDVFSChannelGet(2);
 
-				score_status = (otp_info_data.score >> 23) & 0x1;
+			score_status = (otp_info_data.score >> 23) & 0x1;
 
-				if (otp_info_data.channel_status == 0) {
-					if ((otp_info_data.score != 0x0) &&
-					((otp_info_data.score < LOWER_BOUND) || (score_status == 0x1))) {
-						#if DUMP_DEBUG_LOG
+			if (otp_info_data.channel_status == 0) {
+				if ((otp_info_data.score != 0x0) &&
+				((otp_info_data.score < LOWER_BOUND) || (score_status == 0x1))) {
+					if (dump_debug_log) {
 						otp_info("Big_Temp=%d\tscore=0x%06x\tfreq=0x%05x\tchannel=%d\n",
 						get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq,
 						otp_info_data.channel_status);
 						otp_info(" Channel enable\n");
-						#endif
-						BigiDVFSChannel(2, 1);
 					}
-				} else {
-					if ((otp_info_data.score > UPPER_BOUND) && (score_status == 0x0)) {
-						#if DUMP_DEBUG_LOG
+					BigiDVFSChannel(2, 1);
+					otp_info_data.channel_status = 1;
+				}
+			} else {
+				if ((otp_info_data.score > UPPER_BOUND) && (score_status == 0x0)) {
+					if (dump_debug_log) {
 						otp_info("Big_Temp=%d\tscore=0x%06x\tfreq=0x%05x\tchannel=%d\n",
 						get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq,
 						otp_info_data.channel_status);
 						otp_info(" Channel disable\n");
-						#endif
-						BigiDVFSChannel(2, 0);
 					}
+					BigiDVFSChannel(2, 0);
+					otp_info_data.channel_status = 0;
 				}
-
 			}
 		}
 		condition = 0;
@@ -961,9 +971,30 @@ static void otp_monitor_ctrl(void)
 	/* hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL); */
 }
 
+void enable_otp_hrtimer(void)
+{
+	if (timer_enabled == 0) {
+		hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL);
+		timer_enabled = 1;
+		if (dump_debug_log)
+			otp_info("enable timer\n");
+	}
+}
+
+void disable_otp_hrtimer(void)
+{
+	if (timer_enabled == 1) {
+		hrtimer_cancel(&otp_timer);
+		timer_enabled = 0;
+		if (dump_debug_log)
+			otp_info("disenable timer\n");
+	}
+}
+
 static void enable_OTP(void)
 {
-	/* otp_info(" Enabled\n"); */
+	if (dump_debug_log)
+		otp_info(" Enabled\n");
 
 	getTHslope();
 
@@ -978,42 +1009,91 @@ static void enable_OTP(void)
 		pid_score_s, pid_score_m, pid_freq_sht, pid_calc_sht, pid_score_sht, pid_freq_s, pid_freq_m);
 	set_otp_debug_data(
 		interrupt_clr, interrupt_en, nth_debug_mux, pos_err_fifo_mux, err_fifo_mux, error_sum_fifo_mux);
-#ifdef PID_EN_enable
+	#if PID_EN_enable
 	pid_en = 0x1;
-#endif
+	#endif
+
 	otp_set_PID_EN(&otp_config_data, pid_en);
 	otp_PID_EN_apply(&otp_config_data);
 
 	/* otp_info_data_reset(&otp_info_data); */
 
-	/* otp_info(" Configuration finished\n"); */
+	if (dump_debug_log)
+		otp_info(" Configuration finished, sw_channel_status = %d, pid_en = %d\n",
+		sw_channel_status, pid_en);
 
-
-	if (timer_enabled == 0) {
-		hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL);
-		timer_enabled = 1;
-	}
+	mutex_lock(&timer_mutex);
+	if (sw_channel_status == 1)
+		enable_otp_hrtimer();
+	mutex_unlock(&timer_mutex);
 }
 
 static void disable_OTP(void)
 {
-	/* otp_info(" Disabled\n"); */
+	if (dump_debug_log)
+		otp_info(" Disabled\n");
 
 	BigiDVFSChannel(2, 0);
 	otp_info_data_reset(&otp_info_data);
 
-	if (timer_enabled == 1) {
-		hrtimer_cancel(&otp_timer);
-		timer_enabled = 0;
-	}
+	mutex_lock(&timer_mutex);
+	disable_otp_hrtimer();
+	mutex_unlock(&timer_mutex);
 
 	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_debug_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
+
 	pid_en = 0x0;
 	otp_set_PID_EN(&otp_config_data, pid_en);
 	otp_PID_EN_apply(&otp_config_data);
+}
+
+int BigOTPThermIRQ(int status)
+{
+	if (otp_workqueue) {
+		if (dump_debug_log)
+			otp_info("Thermal IRQ, schedule queue\n");
+
+		if (status == 1)
+			queue_work(otp_workqueue, &therm_H_check);
+		else
+			queue_work(otp_workqueue, &therm_L_check);
+	} else
+		otp_info("Thermal IRQ before OTP init ready, ignore\n");
+
+	return 0;
+}
+
+static void OTPThermHCheck(struct work_struct *ws)
+{
+	if (dump_debug_log)
+		otp_info("get H IRQ start\n");
+
+	mutex_lock(&timer_mutex);
+	if (sw_channel_status == 0) {
+		sw_channel_status = 1;
+		if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1))
+			enable_otp_hrtimer();
+	}
+	mutex_unlock(&timer_mutex);
+
+}
+
+static void OTPThermLCheck(struct work_struct *ws)
+{
+	if (dump_debug_log)
+		otp_info("get L IRQ start\n");
+
+	mutex_lock(&timer_mutex);
+	if (sw_channel_status == 1) {
+		sw_channel_status = 0;
+		if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1))
+			disable_otp_hrtimer();
+
+	}
+	mutex_unlock(&timer_mutex);
 }
 
 void BigOTPEnable(void)
@@ -1046,19 +1126,29 @@ int BigOTPSetTempTarget(int TempTarget)
 	return 0;
 }
 
-unsigned int BigOTPGetiDVFSFreqpct(void)
+unsigned int get_freq_pct(u32 freq)
 {
-	int i;
 	unsigned int freqpct_x100;
-	u32 freq;
-
-	freq = otp_info_data.freq;
+	int i;
 
 	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
 	for (i = 0 ; i < 6; i++) {
 		if (freq & (1 << (11-i)))
 			freqpct_x100 += (50 >> i);
-		}
+	}
+
+	return freqpct_x100;
+}
+
+unsigned int BigOTPGetiDVFSFreqpct(void)
+{
+	unsigned int freqpct_x100;
+	u32 freq;
+
+	freq = otp_info_data.freq;
+
+	freqpct_x100 = get_freq_pct(freq);
+
 	if (cpu_online(BIG_CPU_NUM0) || cpu_online(BIG_CPU_NUM1))
 		return freqpct_x100;
 
@@ -1067,17 +1157,12 @@ unsigned int BigOTPGetiDVFSFreqpct(void)
 
 unsigned int BigOTPGetFreqpct(void)
 {
-	int i;
 	unsigned int freqpct_x100;
 	u32 freq;
 
 	freq = otp_info_data.freq;
 
-	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
-	for (i = 0 ; i < 6; i++) {
-		if (freq & (1 << (11-i)))
-			freqpct_x100 += (50 >> i);
-	}
+	freqpct_x100 = get_freq_pct(freq);
 
 	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
 		if (otp_info_data.channel_status == 1)
@@ -1253,6 +1338,36 @@ out:
 
 	return NULL;
 }
+
+/* otp debug */
+static int otp_debug_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "otp_debug = %d\n", dump_debug_log);
+
+	return 0;
+}
+
+
+
+static ssize_t otp_debug_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+	char *buf = _copy_from_user_for_proc(buffer, count);
+	int val = 0;
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &val)) {
+		if (val == 0)
+			dump_debug_log = 0;
+		else
+			dump_debug_log = 1;
+	}
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 
 /* otp_enable */
 static int otp_enable_proc_show(struct seq_file *m, void *v)
@@ -1504,34 +1619,41 @@ static ssize_t otp_debug_data_proc_write(struct file *file, const char __user *b
 static int otp_curr_temp_proc_show(struct seq_file *m, void *v)
 {
 
+	unsigned int freqpct_x100_internal;
 	unsigned int freqpct_x100;
-	unsigned int freqpct_x100_idvfs;
 	unsigned int freqpct_x100_real;
+	u32 score;
 	u32 freq;
-	int i;
+	u32 info_freq;
 
-	freq = otp_info_data.freq;
+	mutex_lock(&debug_mutex);
 
-	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
-	for (i = 0 ; i < 6; i++) {
-		if (freq & (1 << (11-i)))
-			freqpct_x100 += (50 >> i);
-	}
+	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
+	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+	score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
+	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+
+	mutex_unlock(&debug_mutex);
+
+	freqpct_x100_internal = get_freq_pct(freq);
+
+	info_freq = otp_info_data.freq;
+	freqpct_x100 = get_freq_pct(info_freq);
 
 	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
-		freqpct_x100_idvfs = freqpct_x100;
 		if (otp_info_data.channel_status == 1)
 			freqpct_x100_real = freqpct_x100;
 		else
 			freqpct_x100_real = 0;
-	} else {
-		freqpct_x100_idvfs = 0;
+	} else
 		freqpct_x100_real = 0;
-	}
 
-	seq_printf(m, "%d,0x%06x,0x%05x,%d,%u,%u,%u\n",
-	get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq, otp_info_data.channel_status,
-	freqpct_x100, freqpct_x100_idvfs, freqpct_x100_real);
+	seq_printf(m, "%d,0x%06x,0x%05x,%u,%d,0x%06x,0x%05x,%u,%u\n",
+	get_immediate_big_wrap(), score, freq, freqpct_x100_internal,
+	otp_info_data.channel_status, otp_info_data.score, info_freq,
+	freqpct_x100, freqpct_x100_real);
 
 	return 0;
 }
@@ -1602,6 +1724,7 @@ static int otp_debug_status_proc_show(struct seq_file *m, void *v)
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 	PROC_FOPS_RW(otp_enable);
+	PROC_FOPS_RW(otp_debug);
 	PROC_FOPS_RW(otp_policy);
 	PROC_FOPS_RW(otp_config_data);
 	PROC_FOPS_RW(otp_ctrl_data);
@@ -1624,6 +1747,7 @@ static int _create_procfs(void)
 	const struct pentry entries[] = {
 
 	PROC_ENTRY(otp_enable),
+	PROC_ENTRY(otp_debug),
 	PROC_ENTRY(otp_policy),
 	PROC_ENTRY(otp_config_data),
 	PROC_ENTRY(otp_ctrl_data),
@@ -1679,10 +1803,27 @@ static int __init otp_init(void)
 		return err;
 	}
 	/* BigOTPEnable(); */
-
+	otp_config_data_reset(&otp_config_data);
 	otp_info_data_reset(&otp_info_data);
 
+	otp_workqueue = create_workqueue("otp_wq");
+
 	otp_monitor_ctrl();
+
+	if (get_immediate_big_wrap() < 70000)
+		sw_channel_status = 0;
+	else
+		sw_channel_status = 1;
+
+	mutex_lock(&timer_mutex);
+	if (sw_channel_status == 1)
+		enable_otp_hrtimer();
+	mutex_unlock(&timer_mutex);
+
+	if (dump_debug_log) {
+		otp_info("Big Temp = %d, sw_channel_status = %d\n",
+		get_immediate_big_wrap(), sw_channel_status);
+	}
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
@@ -1698,6 +1839,7 @@ out:
 
 static void __exit otp_exit(void)
 {
+	destroy_workqueue(otp_workqueue);
 }
 
 late_initcall(otp_init);
