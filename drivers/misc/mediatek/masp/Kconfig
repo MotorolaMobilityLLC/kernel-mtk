@@ -1,0 +1,6 @@
+config MTK_SECURITY_SW_SUPPORT
+	bool "Enable MTK SECURITY SW Support"
+	default n
+	help
+	  If yes, All security function in preloader/LK/kernel/android will
+	  be built into software images
