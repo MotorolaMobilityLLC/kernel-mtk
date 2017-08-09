@@ -34,9 +34,6 @@
 #include <mach/wd_api.h>
 #ifndef __aarch64__
 #include <smp.h>
-#ifndef CONFIG_ARCH_MT8127
-#include <mach/irqs.h>
-#endif
 #endif
 #include "aee-common.h"
 
