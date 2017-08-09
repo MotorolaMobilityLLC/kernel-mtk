@@ -331,7 +331,7 @@ void scp_aed(scp_excep_id type)
 	pr_debug("%s", aed.detail);
 
 	/* TODO: apply new scp aed api here */
-	aed_md32_exception_api(aed.log, aed.log_size, aed.phy, aed.phy_size, aed.detail, DB_OPT_DEFAULT);
+	aed_scp_exception_api(aed.log, aed.log_size, aed.phy, aed.phy_size, aed.detail, DB_OPT_DEFAULT);
 
 	kfree(aed.detail);
 	kfree(aed.phy);
