@@ -30,6 +30,7 @@ int local_wdt_enable(enum wk_wdt_en en);
 /* used for extend request */
 int mtk_local_wdt_misc_config(int bit, int set_value, int *reserved);
 void mpcore_wk_wdt_stop(void);
+extern void dump_wdk_bind_info(void);
 
 #if NR_CPUS == 1
 #define nr_cpu_ids		1

@@ -13,6 +13,7 @@
 #include <linux/cpu.h>
 #include <linux/jiffies.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_ram_console.h>
 #include <ext_wd_drv.h>
 
 #include <mach/wd_api.h>
@@ -59,6 +60,9 @@ static DEFINE_SPINLOCK(lock);
 
 #define CPU_NR (nr_cpu_ids)
 struct task_struct *wk_tsk[16] = { 0 };	/* max cpu 16 */
+static unsigned int wk_tsk_bind[16] = { 0 };	/* max cpu 16 */
+static unsigned long long wk_tsk_bind_time[16] = { 0 };	/* max cpu 16 */
+static char wk_tsk_buf[128] = { 0 };
 
 static unsigned long kick_bit;
 static unsigned long rtc_update;
@@ -296,6 +300,27 @@ void wk_start_kick_cpu(int cpu)
 	}
 }
 
+void dump_wdk_bind_info(void)
+{
+	int i = 0;
+
+	aee_sram_fiq_log("\n");
+	for (i = 0; i < CPU_NR; i++) {
+		if (wk_tsk[i] != NULL) {
+			/*
+			pr_err("[WDK]CPU %d, %d, %lld, %lu, %d, %ld\n", i, wk_tsk_bind[i], wk_tsk_bind_time[i],
+				wk_tsk[i]->cpus_allowed.bits[0], wk_tsk[i]->on_rq, wk_tsk[i]->state);
+				*/
+			memset(wk_tsk_buf, 0, sizeof(wk_tsk_buf));
+			snprintf(wk_tsk_buf, sizeof(wk_tsk_buf),
+				"[WDK]CPU %d, %d, %lld, %lu, %d, %ld\n", i, wk_tsk_bind[i], wk_tsk_bind_time[i],
+				wk_tsk[i]->cpus_allowed.bits[0], wk_tsk[i]->on_rq, wk_tsk[i]->state);
+			aee_sram_fiq_log(wk_tsk_buf);
+		}
+	}
+	aee_sram_fiq_log("\n");
+}
+
 void kicker_cpu_bind(int cpu)
 {
 	if (IS_ERR(wk_tsk[cpu]))
@@ -304,6 +329,8 @@ void kicker_cpu_bind(int cpu)
 		/* kthread_bind(wk_tsk[cpu], cpu); */
 		WARN_ON_ONCE(set_cpus_allowed_ptr(wk_tsk[cpu], cpumask_of(cpu)) < 0);
 		wake_up_process(wk_tsk[cpu]);
+		wk_tsk_bind[cpu] = 1;
+		wk_tsk_bind_time[cpu] = sched_clock();
 	}
 }
 
@@ -325,6 +352,7 @@ void wk_cpu_update_bit_flag(int cpu, int plug_status)
 		lasthpg_cpu = cpu;
 		lasthpg_act = plug_status;
 		lasthpg_t = sched_clock();
+		wk_tsk_bind[cpu] = 0;
 		spin_unlock(&lock);
 	}
 }
