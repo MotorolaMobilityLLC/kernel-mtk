@@ -500,10 +500,10 @@ void md32_dump_memory(void)
 
 	/* write to file */
 	fp = OpenFile("/sdcard/mtklog/md32_mem.dat", O_CREAT | O_WRONLY, 0);
-	if (fp != NULL)
+	if (fp != NULL) {
 		WriteFile(fp, (char *)ANC_MD32_DTCM, 16384);
-
-	CloseFile(fp);
+		CloseFile(fp);
+	}
 
 	DinitKernelEnv();
 
