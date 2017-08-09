@@ -2126,14 +2126,15 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
+	if (obj == NULL) {
+		GSE_ERR("null pointer!!\n");
+		return -EINVAL;
+	}
+
 	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
 		GSE_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
-		if (obj == NULL) {
-			GSE_ERR("null pointer!!\n");
-			return -EINVAL;
-		}
 		/* mutex_lock(&gsensor_mutex); */
 		atomic_set(&obj->suspend, 1);
 #ifndef CUSTOM_KERNEL_SENSORHUB
