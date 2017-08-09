@@ -6,6 +6,7 @@
 #include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/err.h>
+#include <linux/types.h>
 /* #include <mach/mt_pm_ldo.h> */
 #include <asm/memory.h>
 #include <mt_i2c.h>
@@ -340,7 +341,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 #else
 				pr_info("phys_addr: 0x%x\n", dma_addr);
 #endif
-				ret = i2c_trans_data(bus_id, address, (void *)dma_addr,
+				ret = i2c_trans_data(bus_id, address, (void *)(uintptr_t)dma_addr,
 						number, ext_flag, timing, operation);
 			} else {
 				ret = i2c_trans_data(bus_id, address, vir_addr, number,
