@@ -19,6 +19,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/clk.h>
 
 #define KPD_NAME	"mtk-kpd"
 #define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
@@ -767,8 +768,19 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 
 	int i, r;
 	int err = 0;
+	struct clk *kpd_clk = NULL;
 
 	kpd_info("Keypad probe start!!!\n");
+
+	/*kpd-clk should be control by kpd driver, not depend on default clock state*/
+	kpd_clk = devm_clk_get(&pdev->dev, "kpd-clk");
+	if (!IS_ERR(kpd_clk)) {
+		clk_prepare(kpd_clk);
+		clk_enable(kpd_clk);
+	} else {
+		kpd_print("get kpd-clk fail, but not return, maybe kpd-clk is set by ccf.\n");
+	}
+
 	kp_base = of_iomap(pdev->dev.of_node, 0);
 	if (!kp_base) {
 		kpd_info("KP iomap failed\n");
@@ -792,7 +804,9 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	kpd_input_dev->id.product = 0x6500;
 	kpd_input_dev->id.version = 0x0010;
 	kpd_input_dev->open = kpd_open;
+
 	kpd_get_dts_info(pdev->dev.of_node);
+
 	/* fulfill custom settings */
 	kpd_memory_setting();
 
