@@ -620,6 +620,7 @@ void _primary_display_enable_mmsys_clk(void)
 /* Share wrot sram end */
 void _vdo_mode_enter_idle(void)
 {
+	int ret = 0;
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
@@ -631,13 +632,14 @@ void _vdo_mode_enter_idle(void)
 	    (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE) ||
 	     disp_helper_get_option(DISP_OPT_SMART_OVL))) {
 		if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE))
-			pd_allocate_dc_buffer();
+			ret = pd_allocate_dc_buffer();
 		/* smart_ovl_try_switch_mode_nolock(); */
 		/* switch to decouple mode */
-		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, primary_get_sess_id(), 0, NULL, 0);
-
-		set_is_dc(1);
-
+		if (!ret) {
+			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, primary_get_sess_id(), 0, NULL, 0);
+			set_is_dc(1);
+		} else
+			DISPCHECK("pd_allocate_dc_buffer fail\n");
 		/* merge setting when the last one */
 		/*
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
@@ -897,6 +899,10 @@ unsigned int get_mipi_clk(void)
 		return 0;
 	}
 }
+void primary_display_sodi_enable(int flag)
+{
+	spm_enable_sodi(flag);
+}
 /* for met - end */
 void primary_display_sodi_rule_init(void)
 {
@@ -904,7 +910,7 @@ void primary_display_sodi_rule_init(void)
 	if (primary_display_is_video_mode())
 		;/* spm_enable_sodi(1); */
 	else
-		spm_enable_sodi(1);
+		primary_display_sodi_enable(1);
 
 }
 

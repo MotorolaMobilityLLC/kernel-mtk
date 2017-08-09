@@ -45,6 +45,8 @@
 
 static struct dentry *mtkfb_dbgfs;
 static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
+int lcm_mode_status = 0;
+LCM_DSI_MODE_CON vdo_mode_type;
 #if 0
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -252,6 +254,12 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		primary_display_switch_mode(sess_mode, session_id, 1);
+	} else if (0 == strncmp(opt, "dsi_mode:cmd", 12)) {
+		lcm_mode_status = 1;
+		DISPMSG("switch cmd\n");
+	} else if (0 == strncmp(opt, "dsi_mode:vdo", 12)) {
+		DISPMSG("switch vdo\n");
+		lcm_mode_status = 2;
 	} else if (0 == strncmp(opt, "clk_change:", 11)) {
 		char *p = (char *)opt + 11;
 		unsigned int clk = 0;

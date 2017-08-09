@@ -3510,11 +3510,13 @@ int primary_display_resume(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int use_cmdq;
 
 	DISPCHECK("primary_display_resume begin\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagStart, 0, 0);
 
 	_primary_path_lock(__func__);
+	use_cmdq = disp_helper_get_option(DISP_OPT_USE_CMDQ);
 	if (pgc->state == DISP_ALIVE) {
 		DISPCHECK("primary display path is already resume, skip\n");
 		goto done;
@@ -3528,19 +3530,49 @@ int primary_display_resume(void)
 		DISPCHECK("ESD check start[end]\n");
 		is_ipoh_bootup = false;
 		DISPDBG("[POWER]start cmdq[begin]--IPOH\n");
-		if (disp_helper_get_option(DISP_OPT_USE_CMDQ))
+		if (use_cmdq)
 			_cmdq_start_trigger_loop();
 		enable_idlemgr(1);
 		DISPDBG("[POWER]start cmdq[end]--IPOH\n");
 		goto done;
 	}
+	/* c/v switch by suspend start*/
+	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND)) {
+		if (lcm_mode_status != 0) {
+			static LCM_DSI_MODE_CON vdo_mode_type;
+			LCM_PARAMS *lcm_param_cv = NULL;
 
+			lcm_param_cv = disp_lcm_get_params(pgc->plcm);
+			DISPCHECK("lcm_mode_status=%d, lcm_param_cv->dsi.mode %d\n",
+					lcm_mode_status, lcm_param_cv->dsi.mode);
+			if (lcm_param_cv->dsi.mode != CMD_MODE)
+				vdo_mode_type = lcm_param_cv->dsi.mode;
+			if (lcm_mode_status == 1) {
+				lcm_dsi_mode = CMD_MODE;
+				primary_display_sodi_enable(1);
+			} else if (lcm_mode_status == 2) {
+				if (vdo_mode_type)
+					lcm_dsi_mode = vdo_mode_type;
+				else
+					lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
+				primary_display_sodi_enable(0);
+			}
+			DSI_ForceConfig(1);
+			lcm_param_cv->dsi.mode = lcm_dsi_mode;
+			lcm_mode_status = 0;
+		}
+		DISPCHECK("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
+	}
+	/* c/v switch by suspend end*/
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
 
 	DISPCHECK("dpmanager path power on[end]\n");
+	DISPDBG("dpmanager path reset[begin]\n");
+	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+	DISPCHECK("dpmanager path reset[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
 
@@ -3554,6 +3586,8 @@ int primary_display_resume(void)
 		 * BUT session mode may change in primary_display_switch_mode() */
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
+		DISPCHECK("cmd/video mode=%d\n", primary_display_is_video_mode());
+		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
 		dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
 		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 1, 2);
@@ -3561,6 +3595,7 @@ int primary_display_resume(void)
 
 		data_config =
 		    dpmgr_path_get_last_config(pgc->dpmgr_handle);
+		memcpy(&(data_config->dispif_config), lcm_param, sizeof(LCM_PARAMS));
 
 		data_config->dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 		data_config->dst_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
@@ -3626,15 +3661,29 @@ int primary_display_resume(void)
 		/* goto done; */
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 7);
+
+	if (use_cmdq) {
+
+		DISPCHECK("[POWER]build cmdq trigger loop[begin]\n");
+		_cmdq_build_trigger_loop();
+		DISPCHECK("[POWER]build cmdq trigger loop[end]\n");
+	}
+
 	if (primary_display_is_video_mode()) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 1, 7);
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
+		if (_should_reset_cmdq_config_handle())
+			_cmdq_reset_config_handle();
+		if (_should_insert_wait_frame_done_token())
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_RDMA0_DONE);
+		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 8);
 
-	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
+	if (use_cmdq) {
 		DISPDBG("[POWER]start cmdq[begin]\n");
 		_cmdq_start_trigger_loop();
 		DISPDBG("[POWER]start cmdq[end]\n");
@@ -3645,7 +3694,7 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 10);
 
 	if (!primary_display_is_video_mode()) {
-		DISPCHECK("[POWER]triggger cmdq[begin]\n");
+		DISPCHECK("[POWER]triggger cmdq[begin] cmd mode\n");
 		if (_should_reset_cmdq_config_handle())
 			_cmdq_reset_config_handle();
 		if (_should_insert_wait_frame_done_token())
@@ -3655,7 +3704,7 @@ int primary_display_resume(void)
 
 		/*refresh black picture of ovl bg */
 		_trigger_display_interface(1, NULL, 0);
-		DISPCHECK("[POWER]triggger cmdq[end]\n");
+		DISPCHECK("[POWER]triggger cmdq[end] cmd mode\n");
 		mdelay(16);	/* wait for one frame for pms workarround!!!! */
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 11);
@@ -3685,7 +3734,8 @@ int primary_display_resume(void)
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
-
+	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
+		DSI_ForceConfig(0);
 done:
 	primary_set_state(DISP_ALIVE);
 	_primary_path_unlock(__func__);

@@ -1058,6 +1058,9 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 			}
 			DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN,
 				      1);
+		} else {
+			DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EDGE, 0);
+			DSI_OUTREGBIT(cmdq, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
 		}
 	}
 	return DSI_STATUS_OK;
@@ -1182,7 +1185,7 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PAR
 							RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
 				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 							RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
-				DISPMSG("[dsi_drv.c] PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
+				DISPMSG("PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
 					data_Rate, txdiv, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
 					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2),
 					delta1, pdelta1);
@@ -1318,27 +1321,23 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	i = 0;
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
-		/* //because lk set
-			lnt = MIPITX_INREG32(0xf0206190);
-			MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG,DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-			RG_DSI_LNTC_RT_CODE,((lnt >> 0) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-			RG_DSI_LNT3_RT_CODE,((lnt >> 4) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-			RG_DSI_LNT2_RT_CODE,((lnt >> 8) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-			RG_DSI_LNT1_RT_CODE,((lnt >> 12) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-			RG_DSI_LNT0_RT_CODE,((lnt >> 16) & 0xf));
+		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+						RG_DSI_LNTC_RT_CODE, (clock_lane>>8) & 0xf);
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
+						RG_DSI_LNT3_RT_CODE, (data_lane3>>8) & 0xf);
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
+						RG_DSI_LNT2_RT_CODE, (data_lane2>>8) & 0xf);
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
+						RG_DSI_LNT1_RT_CODE, (data_lane1>>8) & 0xf);
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
+						RG_DSI_LNT0_RT_CODE, (data_lane0>>8) & 0xf);
 
-			DISPMSG("PLL config: LNT=0x%x,clk=0x%x,lan3=0x%x,lan2=0x%x,lan1=0x%x,lan0=0x%x\n",
-			lnt,INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0));
-		 */
+		DISPMSG("PLL config: clk=0x%x,lan3=0x%x,lan2=0x%x,lan1=0x%x,lan0=0x%x\n",
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0));
 		/* step 1 */
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
@@ -1458,7 +1457,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
 				DISPMSG
-				    ("[dsi_drv.c] PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
+				    ("PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
 				     data_Rate, txdiv, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
 								   &DSI_PHY_REG[i]->
 								   MIPITX_DSI_PLL_CON2), delta1,
@@ -2992,6 +2991,9 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
 					      TE_RDY, 1);
 				DISPDBG("DSI VDO Mode TEINT On\n");
+			} else {
+				DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
+										  TE_RDY, 0);
 			}
 		} else {
 			/*enable TE in cmd mode */

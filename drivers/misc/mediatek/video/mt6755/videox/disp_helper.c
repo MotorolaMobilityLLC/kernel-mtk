@@ -113,6 +113,8 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_DYNAMIC_DEBUG",
 	"DISP_OPT_SHOW_VISUAL_DEBUG_INFO",
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
+	"DISP_OPT_GMO_OPTIMIZE",
+	"DISP_OPT_CV_BYSUSPEND",
 };
 
 
@@ -335,6 +337,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
 	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 0);
+	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 }
 

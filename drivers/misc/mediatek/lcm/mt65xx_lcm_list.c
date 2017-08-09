@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 /* #include <mach/mt_gpio.h> */
 #endif
+LCM_DSI_MODE_CON lcm_dsi_mode;
 
 /* used to identify float ID PIN status */
 #define LCD_HW_ID_STATUS_LOW      0
