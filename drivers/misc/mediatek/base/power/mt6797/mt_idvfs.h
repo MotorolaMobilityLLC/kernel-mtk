@@ -201,11 +201,31 @@ struct CHANNEL_STATUS {
 	unsigned short status;
 };
 
+/*
+idvfs_status, status machine
+0: disable finish
+1: enable finish
+2: enable start
+3: disable start
+4: SWREQ start
+5: disable and wait SWREQ finish
+6: SWREQ finish can into disable
+
+			 4 - > 5 - > 6
+			^ |          |
+			| v          |
+0 - >  2 - > 1 - > 3 < - -
+^                  |
+|                  v
+< - - - - - - - - -
+*/
+
 struct  IDVFS_INIT_OPT {
-	unsigned int idvfs_en;
+	unsigned int idvfs_status;
 	unsigned int freq_max;
 	unsigned int freq_min;
 	unsigned int freq_cur;
+	unsigned int i2c_speed;
 	unsigned short swavg_length;
 	unsigned short swavg_endis;
 	struct CHANNEL_STATUS *channel;
@@ -221,8 +241,10 @@ struct  IDVFS_INIT_OPT {
 /* #undef IDVFS_EXTERN */
 
 /* iDVFS function */
-extern int BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100);
-extern int BigiDVFSDisable(void);
+/* extern int BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100); */
+/* extern int BigiDVFSDisable(void); */
+extern int BigiDVFSEnable_hp(void); /* chg for hot plug */
+extern int BigiDVFSDisable_hp(void); /* chg for hot plug */
 extern int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis);
 extern int BigIDVFSFreq(unsigned int Freqpct_x100);
 extern int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis);
@@ -249,9 +271,5 @@ extern int iDVFSAPB_init(void); /* it's only for DA9214 PMIC, return 0: 400K, 1:
 
 /* temp for PTP1 */
 extern void eem_init_det_tmp(void);
-
-/* add for hot plug */
-extern int BigiDVFSEnable_hp(void);
-#define BigiDVFSDisable_hp()	BigiDVFSDisable()
 
 #endif /* _MT_IDVFS_H  */

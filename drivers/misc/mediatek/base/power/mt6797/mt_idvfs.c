@@ -37,7 +37,7 @@
 /* IDVFS ADDR */ /*	TODO: include other	head file */
 #ifdef CONFIG_OF
 void __iomem				*idvfs_base;			/* (0x10220000) */
-static int					idvfs_irq_number1;		/* 331 */
+static int					idvfs_irq_number;		/* 331 */
 /* define IDVFS_BASE_ADDR	   ((unsigned long)idvfs_base) */
 #else
 #include "mach/mt_reg_base.h"
@@ -51,9 +51,10 @@ static int					idvfs_irq_number1;		/* 331 */
 #include "mt_idvfs.h"
 #endif
 
-static unsigned int func_lv_mask_idvfs;
+static int func_lv_mask_idvfs = 500;
 #define IDVFS_DREQ_ENABLE		0
 #define IDVFS_OCP_OTP_ENABLE	1
+#define IDVFS_CCF_I2CV6			1
 
 /*
  * LOG
@@ -72,8 +73,11 @@ static unsigned int func_lv_mask_idvfs;
 	#define	idvfs_debug(fmt, args...)	  pr_debug(ANDROID_LOG_DEBUG, IDVFS_TAG, fmt, ##args)
 	#define idvfs_ver(fmt, args...)	\
 		do {	\
-			if (func_lv_mask_idvfs)	\
+			if (func_lv_mask_idvfs > 0) {\
 				pr_info(ANDROID_LOG_INFO,	IDVFS_TAG, fmt,	##args);	\
+				func_lv_mask_idvfs = (func_lv_mask_idvfs == 1) ? 1 :	\
+									((func_lv_mask_idvfs == 2) ? 0 :	\
+									(func_lv_mask_idvfs - 1)); }	\
 		} while (0)
 #else
 	#define	idvfs_emerg(fmt, args...)	  pr_emerg(IDVFS_TAG fmt, ##args)
@@ -86,8 +90,11 @@ static unsigned int func_lv_mask_idvfs;
 	#define	idvfs_debug(fmt, args...)	  pr_debug(IDVFS_TAG fmt, ##args)
 	#define idvfs_ver(fmt, args...)	\
 		do {	\
-			if (func_lv_mask_idvfs)	\
+			if (func_lv_mask_idvfs > 0) {\
 				pr_info(IDVFS_TAG	fmt, ##args);	\
+				func_lv_mask_idvfs = (func_lv_mask_idvfs == 1) ? 1 :	\
+									((func_lv_mask_idvfs == 2) ? 0 :	\
+									 (func_lv_mask_idvfs - 1)); }	\
 		} while (0)
 #endif
 
@@ -397,31 +404,43 @@ void eem_init_det_tmp(void) /* struct eem_det *det, struct eem_devinfo *devinfo)
  | FUNC_LV_API | FUNC_LV_LOCAL | FUNC_LV_HELP); */
 /* static unsigned int func_lv_mask_idvfs	= 0; */
 
-static struct CHANNEL_STATUS channel_status[IDVFS_CHANNEL_NP] =	{
+static struct CHANNEL_STATUS channel_status[IDVFS_CHANNEL_NP] = {
 		[IDVFS_CHANNEL_SW] = {
-			.name  = __stringify(IDVFS_CHANNEL_SW),
+			.name = __stringify(IDVFS_CHANNEL_SW),
 			.ch_number = IDVFS_CHANNEL_SW,
 			.status = 0,
 		},
 
 		[IDVFS_CHANNEL_OTP] = {
-			.name  = __stringify(IDVFS_CHANNEL_OTP),
+			.name = __stringify(IDVFS_CHANNEL_OTP),
 			.ch_number = IDVFS_CHANNEL_OTP,
 			.status = 0,
 		},
 
 		[IDVFS_CHANNEL_OCP] = {
-			.name  = __stringify(IDVFS_CHANNEL_OCP),
+			.name = __stringify(IDVFS_CHANNEL_OCP),
 			.ch_number = IDVFS_CHANNEL_OCP,
 			.status = 0,
 		},
 	};
 
+/*
+idvfs_status, status machine
+0: disable finish
+1: enable finish
+2: enable start
+3: disable start
+4: SWREQ start
+5: disable and wait SWREQ finish
+6: SWREQ finish can into disable
+*/
+
 static struct IDVFS_INIT_OPT idvfs_init_opt = {
-	.idvfs_en = 0,
+	.idvfs_status = 0,
 	.freq_max = 2500,
 	.freq_min = 510,
 	.freq_cur = 0,
+	.i2c_speed = 0,
 	.swavg_length = 0,
 	.swavg_endis = 0,
 	.channel = channel_status,
@@ -467,6 +486,7 @@ static int iDVFSAPB_Write(unsigned int sw_pAddr, unsigned int sw_pWdata)
 	return -1;
 }
 
+#if 0
 /* it's	only for DA9214	PMIC */
 int iDVFSAPB_DA9214_write(unsigned int sw_pAddr, unsigned int sw_pWdata)
 {
@@ -495,7 +515,6 @@ int iDVFSAPB_DA9214_write(unsigned int sw_pAddr, unsigned int sw_pWdata)
 	return -1;
 }
 
-#if	0
 /* it's only for DA9214 PMIC but not work when iDVFS enable!!! */
 static int iDVFSAPB_DA9214_read(unsigned int sw_pAddr)
 {
@@ -558,7 +577,7 @@ int iDVFSAPB_init(void) /* it's only for DA9214 PMIC, return 0: 400K, 1:3.4M */
 	idvfs_write(0x11017014,	((unsigned int)(0xd9)));
 
 	/* return 0: 400K, 1:3.4M */
-	return ((i2c_spd_reg & 0x40) ? 1 : 0);
+	return ((i2c_spd_reg & 0x40) ? 3400 : 400);
 }
 
 /* iDVFSAPB function *********************************************************************** */
@@ -624,141 +643,109 @@ unsigned int _mt_get_cpu_freq_idvfs(unsigned int num)
 /* iDVFSAPB function ***********************************************************************  */
 /* iDVFS function code */
 /* if return 0:ok, -1:invalid parameter, -2: iDVFS is enable */
-int	BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100)
-{
-	int	rc = 0;
-
-	/* set VSRAM to 1000 and fix */
-	/* set Vproc to 1000 and fix */
-	/* manual ctrl freq first */
-	/* temp:: before need enable ptp1 function */
-	/* enable and initial idvfsapb i2c ctrl */
-#if 1
-	/* sync when ptp1 enable then enable iDVFS */
-	if (infoIdvfs == 0x55) {
-		/* empty eFuse, and init Big only for temp */
-		eem_init_det_tmp();
-		idvfs_ver("iDVFS enable temp ptp1.\n");
-		infoIdvfs = 0xff;
-	} else if (infoIdvfs == 0xff) {
-		idvfs_ver("iDVFS check ptp1 init ok!\n");
-	} else {
-		idvfs_ver("iDVFS enable wait ptp1 enable!\n");
-		return -6;
-	}
-#endif
-
-	/* move to prob init */
-	iDVFSAPB_init();
-
-	/* check parameter move to this API */
-	if ((Fmax < 510) || (Fmax > 3000)) {
-		idvfs_error("Fmax = %d out of 510 ~ 3000MHz range.\n", Fmax);
-		/* freq out of range */
-		return -1;
-	}
-
-	/* if (idvfs_init_opt.idvfs_en == 1) */
-	if ((idvfs_read(0x10222470) & 0x1) == 1) {
-		idvfs_error("iDVFS already enable.\n");
-		/* already enable */
-		return -2;
-	}
-	if ((cur_vproc_mv_x100 < 50000) || (cur_vproc_mv_x100 > 120000)) {
-		idvfs_error("Vproc_mv = %d(x100mv) out of range(50000 ~ 120000).\n", cur_vproc_mv_x100);
-		/* vproc out of range */
-		return -3;
-	}
-	if ((cur_vsram_mv_x100 < 50000) || (cur_vsram_mv_x100 > 120000)) {
-		idvfs_error("Vsram_mv = %d(x100mv) out of range(50000 ~ 120000).\n", cur_vsram_mv_x100);
-		/* vrram out of range */
-		return -4;
-	}
-	/* check pos div only 0	or 1 */
-	if (((idvfs_read(0x102224a0) & 0x00007000) >> 12) >= 2) {
-		idvfs_error("iDVFS enable pos div = %d, (only 0 or 1).\n",
-				 ((idvfs_read(0x102224a0) & 0x00007000) >> 12));
-		/* pos div error */
-		return -5;
-	}
-
-	/* call smc function_id = SMC_IDVFS_BigiDVFSEnable(Fmax, Vproc_mv_x100, Vsram_mv_x100) */
-	rc = SEC_BIGIDVFSENABLE(Fmax, cur_vproc_mv_x100, cur_vsram_mv_x100);
-
-	if (rc == 0) {
-		/* max freq equ input FMax */
-		idvfs_init_opt.freq_max = Fmax;
-		/* default 100% freq start and enable sw channel */
-		idvfs_init_opt.freq_cur = BigiDVFSPllGetFreq();
-
-		/* enable struct idvfs_en = 1 */
-		idvfs_init_opt.idvfs_en = 1;
-		/* enable sw channel status by struct */
-		idvfs_init_opt.channel[IDVFS_CHANNEL_SW].status = 1;
-		/* clear oct/otpl channel status by struct */
-		idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status = 0;
-		idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status = 0;
-
-		idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz (Range: 500 ~ 3000MHz), Fcur = %dMHz.\n",
-			idvfs_init_opt.freq_max, idvfs_init_opt.freq_cur);
-	} else {
-		idvfs_error("iDVFS enable fail and return = %d\n", rc);
-	}
-
-	return rc;
-}
-
-/* for cpu hot plug call */
-int BigiDVFSEnable_hp(void)
+/* int BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100) */
+int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 {
 
 #ifndef ENABLE_IDVFS
 	/* iDVFS not enable */
 	return -1;
-#else
+#else /* ENABLE_IDVFS */
 
-	unsigned char ret_val = 0;
+	unsigned char ret_volt = 0;
 	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100;
-	int ret = -1;
-
-	/* if ptp1 enable must be mark this temp function */
-	/* eem_init_det_tmp(); */
 
 #if 1
 	/* sync when ptp1 enable then enable iDVFS */
 	if (infoIdvfs == 0x55) {
-		/* empty eFuse, and init Big only for temp */
+		/* empty eFuse, and init Big ptp by temp eFuse */
 		eem_init_det_tmp();
 		idvfs_ver("iDVFS enable temp ptp1.\n");
+		/* swithc eFuse enable ptp finish */
 		infoIdvfs = 0xff;
 	} else if (infoIdvfs == 0xff) {
+		/* true eFuse enable ptp */
 		idvfs_ver("iDVFS check ptp1 init ok!\n");
 	} else {
 		idvfs_ver("iDVFS enable wait ptp1 enable!\n");
 		return -6;
 	}
+#else
+	/* if ptp1 enable must be mark this temp function */
+	/* eem_init_det_tmp(); */
 #endif
 
+#if 1
+	/* idvfs status manchine */
+	/* 0: disable finish, 1: enable finish, 2: enable start, 3: disable start */
+	if (idvfs_init_opt.idvfs_status == 0)
+		idvfs_init_opt.idvfs_status = 2;
+	else if (idvfs_init_opt.idvfs_status == 1)
+		return 0;
+	else if (idvfs_init_opt.idvfs_status == 3) {
+		udelay(100);
+		if (idvfs_init_opt.idvfs_status == 0)
+			idvfs_init_opt.idvfs_status = 2;
+		else
+			return -1;
+	}
+#else
+	/* if (idvfs_init_opt.idvfs_status == 1) */
+	if ((idvfs_read(0x10222470) & 0x1) == 1) {
+		idvfs_error("iDVFS already enable.\n");
+		/* already enable */
+		return -2;
+	}
+#endif
+
+#if IDVFS_CCF_I2CV6
+	/* I2CV6 (APPM I2C) clock CCF control enable */
+#endif
+
+	/* move to prob init */
+	if (idvfs_init_opt.i2c_speed == 0)
+		idvfs_init_opt.i2c_speed = iDVFSAPB_init();
+
+	/* check pos div only 0	or 1 */
+	if (((idvfs_read(0x102224a0) & 0x00007000) >> 12) >= 2) {
+		idvfs_error("iDVFS enable pos div = %d, (only 0 or 1).\n",
+				 ((idvfs_read(0x102224a0) & 0x00007000) >> 12));
+		/* pos div error */
+		idvfs_init_opt.idvfs_status = 0;
+		return -5;
+	}
+
 	/* get current vproc volt */
-	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
-	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_val & 0x7f)) * 100);
+	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
+	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
+	cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet();
 
 	/* set and get current vsram volt */
 #if IDVFS_DREQ_ENABLE
+	/* enable iDVFS for Vproc workaround to setting 880mv */
+	/* ...... */
+
 	/* DREQ ON */
-	BigiDVFSSRAMLDOSet(106000);
-	BigDREQHWEn(960, 940);
+	BigiDVFSSRAMLDOSet(105000);
+	BigDREQHWEn(1010, 910);
 #else
 	/* DREQ off */
 	BigiDVFSSRAMLDOSet(118000);
 #endif
-	cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet();
 
+	/* auto set AVG status*/
 	BigiDVFSSWAvg(0, 1);
-	ret = BigiDVFSEnable(2500, cur_vproc_mv_x100, cur_vsram_mv_x100);
+
+	/* call smc function_id = SMC_IDVFS_BigiDVFSEnable(Fmax, Vproc_mv_x100, Vsram_mv_x100) */
+	SEC_BIGIDVFSENABLE(2500, cur_vproc_mv_x100, cur_vsram_mv_x100);
+
+	/* enable sw channel status and clear oct/otpl channel status by struct */
+	idvfs_init_opt.channel[IDVFS_CHANNEL_SW].status = 1;
+	idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status = 0;
+	idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status = 0;
 
 #if IDVFS_OCP_OTP_ENABLE
-	idvfs_ver("iDVFS Enable OCP/OTP channel.\n");
+	/* idvfs_ver("iDVFS Enable OCP/OTP channel.\n"); */
 	/* cfg or init OCP then enable OCP channel */
 	BigOCPConfig(300, 10000);
 	BigOCPSetTarget(3, 127000);
@@ -770,49 +757,85 @@ int BigiDVFSEnable_hp(void)
 	BigiDVFSChannel(2, 1);
 #endif
 
-	return ret;
-#endif
+	/* default 100% freq start and enable sw channel */
+	BigiDVFSSWAvgStatus();
+
+	idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz (Range: 500 ~ 3000MHz), Fcur = %dMHz.\n",
+		idvfs_init_opt.freq_max, idvfs_init_opt.freq_cur);
+
+	/* enable struct idvfs_status = 1, 1: enable finish */
+	idvfs_init_opt.idvfs_status = 1;
+	return 0;
+
+#endif /* ENABLE_IDVFS */
 }
 
 /* return 0: Ok, -1: timeout */
 /* define BigiDVFSDisable_hp(void) */
-int	BigiDVFSDisable(void)
+/* int BigiDVFSDisable(void) */
+int BigiDVFSDisable_hp(void) /* chg for hot plug */
 {
 
 #ifndef ENABLE_IDVFS
 	/* iDVFS not enable */
 	return -1;
 #else
+	int i;
+	/* unsigned char ret_val = 0; */
 
-	int	rc = 0, i;
-	unsigned char ret_val = 0;
+	/* idvfs status manchine */
+	/* 1: enable finish, 3: disable start, 4: SWREQ start
+	5: disable and wait SWREQ finish 6: SWREQ finish can into disable */
+	if (idvfs_init_opt.idvfs_status == 0)
+		return -1;
+	else if (idvfs_init_opt.idvfs_status == 1)
+		idvfs_init_opt.idvfs_status = 3;
+	else if (idvfs_init_opt.idvfs_status == 4) {
+		/* wait SWREQ and into 5 fist */
+		idvfs_init_opt.idvfs_status = 5;
+		udelay(200);
+		if (idvfs_init_opt.idvfs_status != 6) {
+			idvfs_warning("iDVFS state machine = %d, but 5 next should be 6 only.\n",
+						idvfs_init_opt.idvfs_status);
+			/* return -2 */
+		}
+		idvfs_init_opt.idvfs_status = 3;
+	} else {
+		/* wait status and check equ 1 fail then return -1 */
+		udelay(100);
+		if (idvfs_init_opt.idvfs_status != 1) {
+			idvfs_warning("iDVFS state machine = %d, force into disable status.\n",
+						idvfs_init_opt.idvfs_status);
+			/* return -2; */
+		}
+		idvfs_init_opt.idvfs_status = 3;
+	}
 
-	idvfs_ver("[****]iDVFS start disable.\n");
+	/* idvfs_ver("[****]iDVFS start disable.\n"); */
 #if IDVFS_OCP_OTP_ENABLE
-	idvfs_ver("iDVFS disable OCP/OTP channel.\n");
+	/* idvfs_ver("iDVFS disable OCP/OTP channel.\n"); */
 	/* disable OCP channel */
 	BigiDVFSChannel(1, 0);
 	BigOCPDisable();
 
 	/* disable OTP channel */
-	BigOTPDisable();
 	BigiDVFSChannel(2, 0);
+	BigOTPDisable();
 #endif
 
 	/* down to 30% = 750MHz for disable */
-	BigIDVFSFreq(3000);
-	idvfs_ver("iDVFS force setting FreqREQ = 20%%.\n");
+	/* BigIDVFSFreq(3000); */
+	idvfs_write(0x10222498, (30 << 12));
+	udelay(150);
+	idvfs_ver("iDVFS force setting FreqREQ = 30%%, 750MHz.\n");
 
 	/* call smc */ /* function_id = SMC_IDVFS_BigiDVFSDisable */
-	rc = SEC_BIGIDVFSDISABLE();
+	SEC_BIGIDVFSDISABLE();
 
+#if 0
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
 	idvfs_ver("iDVFS after exit status freq = %dMhz, Vproc = %dmv, Vsarm = %dmv.\n",
 	BigiDVFSPllGetFreq(), DA9214_STEP_TO_MV(ret_val & 0x7f), (BigiDVFSSRAMLDOGet() / 100));
-
-#if IDVFS_DREQ_ENABLE
-	/* if dreq enable */
-	BigDREQSWEn(0);
 #endif
 
 	/* set Vproc = 880mv for 750MHz */
@@ -823,23 +846,31 @@ int	BigiDVFSDisable(void)
 	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
 	BigiDVFSSRAMLDOSet(105000);
 
+#if 0
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
 	idvfs_ver("iDVFS force setting freq = %dMhz, Vproc = %dmv, Vsarm = %dmv.\n",
 	BigiDVFSPllGetFreq(), DA9214_STEP_TO_MV(ret_val & 0x7f), (BigiDVFSSRAMLDOGet() / 100));
+#endif
 
-	if (rc == 0) {
-		/* disable struct */
-		idvfs_init_opt.idvfs_en = 0;
+#if IDVFS_DREQ_ENABLE
+	/* if dreq enable */
+	BigDREQSWEn(0);
+#endif
 
-		/* clear all channel status by struct */
-		for (i = 0; i < IDVFS_CHANNEL_NP; i++)
-			idvfs_init_opt.channel[i].status = 0;
+#if IDVFS_CCF_I2CV6
+	/* I2CV6 (APPM I2C) clock CCF control disable */
+#endif
 
-		idvfs_ver("[****]iDVFS disable success.\n");
-	} else {
-		idvfs_error("iDVFS disable fail and return = %d\n", rc);
-	}
-	return rc;
+	/* clear all channel status by struct */
+	for (i = 0; i < IDVFS_CHANNEL_NP; i++)
+		idvfs_init_opt.channel[i].status = 0;
+
+	/* disable struct, 0: disable finish */
+	idvfs_init_opt.idvfs_status = 0;
+
+	idvfs_ver("[****]iDVFS disable success.\n");
+	return 0;
+
 #endif
 }
 
@@ -900,10 +931,21 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		return -1;
 	}
 
+#if 1
+	/* idvfs status manchine */
+	/* 1: enable finish, 4: SWREQ start */
+	if (idvfs_init_opt.idvfs_status == 1)
+		idvfs_init_opt.idvfs_status = 4;
+	else {
+		idvfs_warning("iDVFS state machine = %d, can't into SWREQ mode.", idvfs_init_opt.idvfs_status);
+		return -2;
+	}
+#else
 	if ((idvfs_read(0x10222470) & 0x3) != 3) {
 		idvfs_error("iDVFS is disable or SW channel not select.\n");
 		return -2;
 	}
+#endif
 
 	/* get freq_swreq integer */
 	freq_swreq = (Freqpct_x100 / 100) << 12;
@@ -926,6 +968,16 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	idvfs_write(0x10222498, freq_swreq);
 	idvfs_ver("iDVFS freq cur setting success. Freq_cur = %dMHz, Freq_pct_x100 = %d, Freq_SWREQ = %x.\n",
 				idvfs_init_opt.freq_cur, Freqpct_x100, freq_swreq);
+
+	/* idvfs status manchine, 1: enable finish,
+	5: disable and wait SWREQ finish, 6: SWREQ finish can into disable*/
+	if (idvfs_init_opt.idvfs_status == 4)
+		idvfs_init_opt.idvfs_status = 1;
+	else if (idvfs_init_opt.idvfs_status == 5)
+		idvfs_init_opt.idvfs_status = 6;
+	else
+		idvfs_error("iDVFS status manchine = %d, SWREQ should be 4 or 5.", idvfs_init_opt.idvfs_status);
+
 	return 0;
 }
 
@@ -957,9 +1009,9 @@ int BigiDVFSSWAvgStatus(void)
 {
 	unsigned int i, freqpct_x100, sw_avgfreq = 0;
 
-	/* if (rg_sw_avgfreq_en_r() == 0) { */
-	/* return -1; */ /* SWAvg not enable */
-	/* } */
+	/* iDVFS not enable */
+	if ((idvfs_init_opt.idvfs_status != 1) && (idvfs_init_opt.idvfs_status != 4))
+		return -1;
 
 	/* call smc, function_id = SMC_IDVFS_BigiDVFSSWAvgStatus */
 	sw_avgfreq = ((idvfs_read(0x102224cc) >> 16) & 0x7fff);
@@ -1010,35 +1062,37 @@ int	BigiDVFSPureSWMode(unsigned int function, unsigned int parameter)
 
 int	BigiDVFSPllSetFreq(unsigned int Freq)
 {
-	int	rc = 0;
 
 	if ((Freq < 250) || (Freq > 3000)) {
 		idvfs_error("Output Freq = %d out of 250 ~ 3000MHz range.\n", Freq);
 		return -1;
 	}
 
+#if 1
+	/* chekc iDVFS status manchine */
+	/* mark because if iDVFS enable you can write PLL but can't work */
+	/* if (idvfs_init_opt.idvfs_status != 0)
+		return 0; */
+#else
 	if ((idvfs_read(0x10222470) & 0x1) == 1) {
 		/* don't display this log, when at legacy DVFS mode to enable iDVFS function */
 		/* idvfs_error("PLL cannot set when iDVFS is enable.\n"); */
 		/* return -2; */
 		return 0;
 	}
+#endif
 
-	rc = SEC_BIGIDVFSPLLSETFREQ(Freq);
+	SEC_BIGIDVFSPLLSETFREQ(Freq);
+	idvfs_ver("iDVFS setting PLL Freq success. Freq = %dMHz.\n", Freq);
 
-	if (rc >= 0)
-		idvfs_ver("iDVFS setting PLL Freq success. Freq = %dMHz.\n", Freq);
-	else
-		idvfs_error("iDVFS setting PLL Freq error and return = %d\n", rc);
-
-	return rc;
+	return 0;
 }
 
 unsigned int BigiDVFSPllGetFreq(void)
 {
 	unsigned int freq = 0, pos_div = 0;
 
-	if (idvfs_init_opt.idvfs_en == 1)
+	if (idvfs_init_opt.idvfs_status == 1)
 		idvfs_ver("iDVFS enable the Get Freq maybe not correct, pls use SWAVG");
 
 	/* default fcur = 1500MHz */
@@ -1237,10 +1291,10 @@ static int idvfs_probe(struct platform_device *pdev)
 	int	err	= 0;
 
 	idvfs_ver("IDVFS Probe Initial.\n");
-	idvfs_irq_number1 =	0;
+	idvfs_irq_number =	0;
 
 	/* set iDVFS IRQ */
-	err	= request_irq(idvfs_irq_number1, idvfs_big_isr, IRQF_TRIGGER_HIGH, "idvfs_big_isp", NULL);
+	err	= request_irq(idvfs_irq_number, idvfs_big_isr, IRQF_TRIGGER_HIGH, "idvfs_big_isp", NULL);
 	if (err) {
 		idvfs_error("iDVFS IRQ register failed: idvfs_isr_big (%d)\n", err);
 		WARN_ON(1);
@@ -1358,15 +1412,17 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 
 #if 1
 	seq_printf(m, "IDVFS_INIT_OPT\n"
-			"idvfs_en = %d\n"
+			"idvfs_status = %d\n"
 			"freq_max = %d MHz\n"
 			"freq_min = %d MHz\n"
 			"freq_cur = %d MHz\n"
+			"i2c_spd  = %d KHz\n"
 			"swavg_length = %d, enable = %d\n",
-			idvfs_init_opt.idvfs_en,
+			idvfs_init_opt.idvfs_status,
 			idvfs_init_opt.freq_max,
 			idvfs_init_opt.freq_min,
 			idvfs_init_opt.freq_cur,
+			idvfs_init_opt.i2c_speed,
 			idvfs_init_opt.swavg_length,
 			idvfs_init_opt.swavg_endis);
 
@@ -1379,7 +1435,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	}
 #endif
 
-	seq_puts(m, "================= 2015/10/01 Ver 3.1 ===================\n");
+	seq_puts(m, "================= 2015/10/12 Ver 3.2 ===================\n");
 	seq_printf(m, "iDVFS ctrl = 0x%x.\n", idvfs_read(0x10222470));
 	seq_printf(m, "iDVFS debugout = 0x%x.\n", idvfs_read(0x102224c8));
 	seq_printf(m, "SW AVG status(%%_x100) = %d, Freq = %dMHz.\n", BigiDVFSSWAvgStatus(), idvfs_init_opt.freq_cur);
@@ -1433,6 +1489,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 	char *buf = (char *)_copy_from_user_for_proc(buffer, count);
 	int rc = 0xff, err = 0;
 	unsigned int func_code, func_para[3];
+	unsigned char ret_val = 0;
 
 	if (!buf)
 		return -EINVAL;
@@ -1441,19 +1498,29 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 	err = sscanf(buf, "%d %d %d %d", &func_code, &func_para[0], &func_para[1], &func_para[2]);
 	if (err > 0) {
 		/* print input information */
-		idvfs_info("Input = %d, Para = %d, %d, %d.\n", err, func_para[0], func_para[1], func_para[2]);
+		switch (err) {
+		case 2:
+			idvfs_info("Input = %d, Para = %d.\n", err, func_para[0]);
+			break;
+		case 3:
+			idvfs_info("Input = %d, Para = %d, %d.\n", err, func_para[0], func_para[1]);
+			break;
+		case 4:
+			idvfs_info("Input = %d, Para = %d, %d, %d.\n", err, func_para[0], func_para[1], func_para[2]);
+			break;
+		}
 
 		/* switch function code */
 		switch (func_code) {
 		case 0:
 			/* FMax = 500 ~ 3000, Vproc_mv_x100 = 50000~120000, VSram_mv_x100 = 50000~120000 */
-			if (err == 4)
-				rc = BigiDVFSEnable(func_para[0], func_para[1],	func_para[2]);
+			if ((err == 4) || (err == 2))
+				rc = BigiDVFSEnable_hp();
 			break;
 		case 1:
 			/* Disable iDVFS */
 			if (err == 1)
-				rc = BigiDVFSDisable();
+				rc = BigiDVFSDisable_hp();
 			break;
 		case 2:
 			/* Manual ctrl freq */
@@ -1487,9 +1554,20 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			/* Set Big Vproc, Vsram by mv_x100 */
 			if (err == 3) {
 				/*rc = da9214_vosel_buck_b(func_para[0]); */
-				iDVFSAPB_init();
-				iDVFSAPB_DA9214_write(0xd9, DA9214_MV_TO_STEP((func_para[0] / 100)));
-				BigiDVFSSRAMLDOSet(func_para[1]);
+				/* if(idvfs_init_opt.i2c_speed == 0)
+					idvfs_init_opt.i2c_speed = iDVFSAPB_init();
+				iDVFSAPB_DA9214_write(0xd9, DA9214_MV_TO_STEP(func_para[0] / 100)); */
+				da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
+				ret_val = DA9214_STEP_TO_MV(ret_val & 0x7f);
+				if (ret_val > ((BigiDVFSSRAMLDOGet() / 100) - 100)) {
+					BigiDVFSSRAMLDOSet(func_para[1]);
+					da9214_config_interface(0xd9,
+						((DA9214_MV_TO_STEP(func_para[0] / 100)) | 0x80), 0xff, 0);
+				} else {
+					da9214_config_interface(0xd9,
+						((DA9214_MV_TO_STEP(func_para[0] / 100)) | 0x80), 0xff, 0);
+					BigiDVFSSRAMLDOSet(func_para[1]);
+				}
 			}
 			rc = 0;
 			break;
@@ -1648,13 +1726,10 @@ static int __init idvfs_init(void)
 		/* Setup IO addresses */
 		idvfs_base = of_iomap(node, 0);
 		/*get idvfs irq num*/
-		idvfs_irq_number1 = irq_of_parse_and_map(node, 0);
+		idvfs_irq_number = irq_of_parse_and_map(node, 0);
 
-		idvfs_ver("idvfs base = 0x%lx, irq = %d.\n", (unsigned long)idvfs_base, idvfs_irq_number1);
+		idvfs_ver("idvfs base = 0x%lx, irq = %d.\n", (unsigned long)idvfs_base, idvfs_irq_number);
 	}
-
-	/* log level initial */
-	func_lv_mask_idvfs = 0;
 
 	/* register platform device/driver */
 	err	= platform_device_register(&idvfs_pdev);
