@@ -587,6 +587,9 @@ static int __init fan53555_init(void)
 
 static void __exit fan53555_exit(void)
 {
+	if (new_client != NULL)
+		kfree(new_client);
+
 	i2c_del_driver(&fan53555_driver);
 }
 module_init(fan53555_init);
