@@ -880,9 +880,9 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		scp: scp@10020000 {
 			compatible = "mediatek,scp";
 			status = "disabled";
-			reg = <0 0x10020000 0 0x80000>, // sram
-			<0 0x100a0000 0 0x1000>,  // cfgreg
-			<0 0x100a4000 0 0x1000>;	// clkctrl
+			reg = <0x10020000 0x80000>,	/* sram */
+			<0x100a0000 0x1000>,		/* cfgreg */
+			<0x100a4000 0x1000>;		/* clkctrl */
 			interrupts = <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
 		};
 

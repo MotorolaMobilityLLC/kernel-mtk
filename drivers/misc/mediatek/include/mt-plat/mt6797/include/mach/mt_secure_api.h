@@ -23,7 +23,7 @@
 #define MTK_SIP_KERNEL_EMIMPU_WRITE         0x82000207
 #define MTK_SIP_KERNEL_EMIMPU_READ          0x82000208
 #define MTK_SIP_KERNEL_EMIMPU_SET           0x82000209
-
+#define MTK_SIP_KERNEL_SCP_RESET            0x8200020B
 #define MTK_SIP_KERNEL_MSG                  0x820002ff
 
 #ifdef CONFIG_ARM64

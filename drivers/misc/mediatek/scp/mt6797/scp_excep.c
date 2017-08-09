@@ -1,0 +1,292 @@
+/*
+* Copyright (C) 2011-2015 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include <linux/slab.h>         /* needed by kmalloc */
+#include <linux/workqueue.h>
+#include <linux/aee.h>
+#include <linux/mutex.h>
+#include <mach/sync_write.h>
+#include "scp_ipi.h"
+#include "scp_helper.h"
+#include "scp_excep.h"
+
+
+#define AED_DUMP_SIZE	0x4000
+
+struct scp_aed_cfg {
+	int *log;
+	int log_size;
+	int *phy;
+	int phy_size;
+	char *detail;
+};
+
+struct scp_status_reg {
+	unsigned int pc;
+	unsigned int lr;
+	unsigned int psp;
+	unsigned int sp;
+	unsigned int m2h;
+	unsigned int h2m;
+};
+
+static struct scp_work_struct scp_aed_work;
+static struct scp_status_reg scp_aee_status;
+static struct mutex scp_excep_mutex;
+
+/*
+ * dump scp register for debugging
+ */
+void scp_dump_regs(void)
+{
+}
+
+/*
+ * save scp register when scp crash
+ * these data will be used to generate EE
+ */
+void scp_aee_last_reg(void)
+{
+	pr_debug("scp_aee_last_reg\n");
+
+	scp_aee_status.pc = SCP_DEBUG_PC_REG;
+	scp_aee_status.lr = SCP_DEBUG_LR_REG;
+	scp_aee_status.psp = SCP_DEBUG_PSP_REG;
+	scp_aee_status.sp = SCP_DEBUG_SP_REG;
+	scp_aee_status.m2h = SCP_TO_HOST_REG;
+	scp_aee_status.h2m = HOST_TO_SCP_REG;
+
+	pr_debug("scp_aee_last_reg end\n");
+}
+
+/*
+ * generate exception log for aee
+ * @param buf:      log buffer
+ * @param buf_len:  size for log buffer
+ * @return:         length of log
+ */
+static int scp_aee_dump(char *buf, ssize_t buf_len)
+{
+	/* TODO: FIXME */
+	ssize_t len;
+
+	if (!buf)
+		return 0;
+
+#define neg_force_zero(x)	((((ssize_t)(x)) > 0) ? (x) : 0)
+	len = 0;
+
+	pr_debug("scp_aee_dump\n");
+	len += snprintf(buf + len, neg_force_zero(buf_len - len), "scp pc=0x%08x, lr=0x%08x, psp=0x%08x, sp=0x%08x\n",
+	scp_aee_status.pc, scp_aee_status.lr, scp_aee_status.psp, scp_aee_status.sp);
+	len += snprintf(buf + len, neg_force_zero(buf_len - len), "scp to host irq = 0x%08x\n", scp_aee_status.m2h);
+	len += snprintf(buf + len, neg_force_zero(buf_len - len), "host to scp irq = 0x%08x\n", scp_aee_status.h2m);
+
+	len += snprintf(buf + len, neg_force_zero(buf_len - len), "wdt en=%d, count=0x%08x\n",
+			(SCP_WDT_REG & 0x10000000) ? 1 : 0,
+			(SCP_WDT_REG & 0xFFFFF));
+	len += snprintf(buf + len, neg_force_zero(buf_len - len), "\n");
+
+#undef neg_force_zero
+
+	pr_debug("scp_aee_dump end\n");
+
+	return len;
+}
+
+/*
+ * generate aee argument without dump scp register
+ * @param aed_str:  exception description
+ * @param aed:      struct to store argument for aee api
+ */
+static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
+{
+	char *detail, *log;
+	u8 *phy, *ptr;
+	u32 log_size, phy_size;
+
+	pr_debug("scp_prepare_aed\n");
+
+	detail = kmalloc(SCP_AED_STR_LEN, GFP_KERNEL);
+	ptr = detail;
+	memset(detail, 0, SCP_AED_STR_LEN);
+	snprintf(detail, SCP_AED_STR_LEN, "%s\n", aed_str);
+	detail[SCP_AED_STR_LEN - 1] = '\0';
+
+	log_size = 0;
+	log = NULL;
+
+	phy_size = 0;
+	phy = NULL;
+
+	aed->log = (int *)log;
+	aed->log_size = log_size;
+	aed->phy = (int *)phy;
+	aed->phy_size = phy_size;
+	aed->detail = detail;
+
+	pr_debug("scp_prepare_aed end\n");
+}
+
+/*
+ * generate aee argument with scp register dump
+ * @param aed_str:  exception description
+ * @param aed:      struct to store argument for aee api
+ */
+static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
+{
+	char *detail, *log;
+	u8 *phy, *ptr;
+	u32 log_size, phy_size;
+
+	pr_debug("scp_prepare_aed_dump\n");
+
+	detail = kmalloc(SCP_AED_STR_LEN, GFP_KERNEL);
+	ptr = detail;
+	memset(detail, 0, SCP_AED_STR_LEN);
+	snprintf(detail, SCP_AED_STR_LEN, "%s scp pc=0x%08x, lr=0x%08x, psp=0x%08x, sp=0x%08x\n",
+	aed_str, scp_aee_status.pc, scp_aee_status.lr, scp_aee_status.psp, scp_aee_status.sp);
+	detail[SCP_AED_STR_LEN - 1] = '\0';
+
+
+	log_size = AED_DUMP_SIZE; /* 16KB */
+	log = kmalloc(log_size, GFP_KERNEL);
+	if (!log) {
+		pr_debug("ap allocate log buffer fail, size=0x%x\n", log_size);
+		log_size = 0;
+	} else {
+		memset(log, 0, log_size);
+
+		log_size = scp_aee_dump(log, log_size);
+
+		/* print log in kernel */
+		pr_debug("%s", log);
+	}
+
+	phy_size = SCP_AED_PHY_SIZE;
+	phy = kmalloc(phy_size, GFP_KERNEL);
+	if (!phy) {
+		pr_debug("ap allocate phy buffer fail, size=0x%x\n", phy_size);
+		phy_size = 0;
+	} else {
+		ptr = phy;
+
+		memcpy_from_scp((void *)ptr, (void *)SCP_BASE, SCP_CFGREG_SIZE);
+		ptr += SCP_CFGREG_SIZE;
+
+		memcpy_from_scp((void *)ptr, (void *)SCP_TCM, SCP_TCM_SIZE);
+		ptr += SCP_TCM_SIZE;
+	}
+
+	aed->log = (int *)log;
+	aed->log_size = log_size;
+	aed->phy = (int *)phy;
+	aed->phy_size = phy_size;
+	aed->detail = detail;
+
+	pr_debug("scp_prepare_aed_dump end\n");
+}
+
+/*
+ * generate an exception according to exception type
+ * @param type: exception type
+ */
+void scp_aed(scp_excep_id type)
+{
+	struct scp_aed_cfg aed;
+
+	mutex_lock(&scp_excep_mutex);
+
+	if (type == EXCEP_RUNTIME)
+		type = (is_scp_ready()) ? EXCEP_RUNTIME : EXCEP_BOOTUP;
+
+		switch (type) {
+		case EXCEP_LOAD_FIRMWARE:
+			scp_prepare_aed("scp firmware load exception", &aed);
+			break;
+		case EXCEP_RESET:
+			scp_prepare_aed_dump("scp reset exception", &aed);
+			break;
+		case EXCEP_BOOTUP:
+			scp_prepare_aed_dump("scp boot exception", &aed);
+			scp_get_log(1);
+			break;
+		case EXCEP_RUNTIME:
+			scp_prepare_aed_dump("scp runtime exception", &aed);
+			scp_get_log(1);
+			break;
+		default:
+			scp_prepare_aed_dump("scp unknown exception", &aed);
+			scp_get_log(1);
+			break;
+	}
+
+	pr_debug("%s", aed.detail);
+
+	/* TODO: apply new scp aed api here */
+	aed_md32_exception_api(aed.log, aed.log_size, aed.phy, aed.phy_size, aed.detail, DB_OPT_DEFAULT);
+
+	kfree(aed.detail);
+	kfree(aed.phy);
+	kfree(aed.log);
+
+	pr_debug("[SCP] scp exception dump is done\n");
+
+	mutex_unlock(&scp_excep_mutex);
+}
+
+/*
+ * generate an exception and reset scp right now
+ * NOTE: this function may be blocked and should not be called in interrupt context
+ * @param type: exception type
+ */
+void scp_aed_reset_inplace(scp_excep_id type)
+{
+	scp_aed(type);
+
+	reset_scp(1);
+}
+
+/*
+ * callback function for work struct
+ * generate an exception and reset scp
+ * NOTE: this function may be blocked and should not be called in interrupt context
+ * @param ws:   work struct
+ */
+static void scp_aed_reset_ws(struct work_struct *ws)
+{
+	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
+	scp_excep_id type = (scp_excep_id) sws->flags;
+
+	scp_aed_reset_inplace(type);
+}
+
+/*
+ * schedule a work to generate an exception and reset scp
+ * @param type: exception type
+ */
+void scp_aed_reset(scp_excep_id type)
+{
+	scp_aed_work.flags = (unsigned int) type;
+	scp_schedule_work(&scp_aed_work);
+}
+
+/*
+ * init a work struct
+ */
+void scp_excep_init(void)
+{
+	mutex_init(&scp_excep_mutex);
+	INIT_WORK(&scp_aed_work.work, scp_aed_reset_ws);
+}
