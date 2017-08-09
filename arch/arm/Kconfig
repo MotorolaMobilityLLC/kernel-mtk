@@ -973,10 +973,11 @@ config ARCH_MT6755
 	select COMMON_CLK if !MTK_CLKMGR
 	select PINCTRL_MT6755
 	select MTK_POWER_GS
-	select MTK_LM_MODE
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select POWER_SUPPLY
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_SYSTRACKER_V2
 	help
 	  This enable support for MediaTek MT6755
 

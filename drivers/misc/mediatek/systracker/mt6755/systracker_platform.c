@@ -116,7 +116,8 @@ int systracker_handler(unsigned long addr,
 #endif
 
 	aee_dump_backtrace(regs, NULL);
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AR_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+	    (BUS_DBG_CON_IRQ_AR_STA0|BUS_DBG_CON_IRQ_AR_STA1)) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			pr_err("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x, ",
 			       i,
@@ -127,7 +128,8 @@ int systracker_handler(unsigned long addr,
 		}
 	}
 
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AW_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+	    (BUS_DBG_CON_IRQ_AW_STA0|BUS_DBG_CON_IRQ_AW_STA1)) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			pr_err("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, ",
 			       i,
