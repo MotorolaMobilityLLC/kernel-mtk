@@ -1733,6 +1733,11 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
 
 		ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
+
+		if ((prCmdInfo->ucCID == CMD_ID_SCAN_REQ) ||
+			(prCmdInfo->ucCID == CMD_ID_SCAN_CANCEL) ||
+			(prCmdInfo->ucCID == CMD_ID_SCAN_REQ_V2))
+			DBGLOG(TX, INFO, "ucCmdSeqNum =%d, ucCID =%d\n", prCmdInfo->ucCmdSeqNum, prCmdInfo->ucCID);
 	}
 
 	/* <4> Write frame to data port */

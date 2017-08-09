@@ -3930,9 +3930,9 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	}
 
 	/* try to stop scan in CONNSYS */
-/* aisFsmStateAbort_SCAN(prAdapter); */
+	aisFsmStateAbort_SCAN(prAdapter);
 
-/* wlanQueryDebugCode(prAdapter); */ /* display current SCAN FSM in FW, debug use */
+	/* wlanQueryDebugCode(prAdapter); */ /* display current SCAN FSM in FW, debug use */
 
 	if (eNextState != prAisFsmInfo->eCurrentState)
 		aisFsmSteps(prAdapter, eNextState);
