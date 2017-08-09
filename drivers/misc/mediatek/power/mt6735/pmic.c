@@ -146,6 +146,8 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 #endif				/* End of #ifdef CONFIG_OF */
 
 static DEFINE_MUTEX(pmic_access_mutex);
+/*--- Global suspend state ---*/
+static bool pmic_suspend_state;
 
 unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
 				 unsigned int SHIFT)
@@ -155,7 +157,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 #endif
-	if (irqs_disabled())
+	if ((pmic_suspend_state == true) && irqs_disabled())
 		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
@@ -191,8 +193,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 #endif
-
-	if (irqs_disabled())
+	if ((pmic_suspend_state == true) && irqs_disabled())
 		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
@@ -4666,6 +4667,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 		PMICLOG("Get car_tune_value from cust header\n");
 	}
 #endif
+	/*--- initailize pmic_suspend_state ---*/
+	pmic_suspend_state = false;
 #ifdef DLPT_FEATURE_SUPPORT
 	pimix = NULL;
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
@@ -4825,6 +4828,7 @@ static void pmic_mt_shutdown(struct platform_device *dev)
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 {
+	pmic_suspend_state = true;
 
 	PMICLOG("******** MT pmic driver suspend!! ********\n");
 
@@ -4855,6 +4859,7 @@ static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 
 static int pmic_mt_resume(struct platform_device *dev)
 {
+	pmic_suspend_state = false;
 
 	PMICLOG("******** MT pmic driver resume!! ********\n");
 
