@@ -483,8 +483,6 @@ static irqreturn_t ATF_log_irq_handler(int irq, void *dev_id)
 {
 	if (!atf_buf_vir_ctl->info.atf_reader_alive)
 		pr_err("No alive reader, but still receive irq\n");
-	else
-		pr_info("ATF_log_irq triggered!\n");
 	wake_up_interruptible(&atf_log_wq);
 	return IRQ_HANDLED;
 }
