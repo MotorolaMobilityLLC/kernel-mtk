@@ -7,6 +7,45 @@
 #include <linux/lockdep.h>
 #include <linux/tracepoint.h>
 
+#ifdef CONFIG_DEBUG_MUTEXES
+TRACE_EVENT(mutex_contended,
+
+	TP_PROTO(struct mutex *lock, unsigned long ip),
+
+	TP_ARGS(lock, ip),
+
+	TP_STRUCT__entry(
+		__string(name, lock->name)
+		__field(void *, lockdep_addr)
+	),
+
+	TP_fast_assign(
+		__assign_str(name, lock->name);
+		__entry->lockdep_addr = lock;
+	),
+
+	TP_printk("%p %s",  __entry->lockdep_addr, __get_str(name))
+);
+
+TRACE_EVENT(mutex_acquired,
+
+	TP_PROTO(struct mutex *lock, unsigned long ip),
+
+	TP_ARGS(lock, ip),
+
+	TP_STRUCT__entry(
+		__string(name, lock->name)
+		__field(void *, lockdep_addr)
+	),
+
+	TP_fast_assign(
+		__assign_str(name, lock->name);
+		__entry->lockdep_addr = lock;
+	),
+
+	TP_printk("%p %s",  __entry->lockdep_addr, __get_str(name))
+);
+#endif
 #ifdef CONFIG_LOCKDEP
 
 TRACE_EVENT(lock_acquire,

@@ -3049,8 +3049,3 @@ static inline unsigned long rlimit_max(unsigned int limit)
 }
 
 #endif
-
-#ifdef CONFIG_MTPROF_CPUTIME
-extern bool is_mtsched_enabled(void);
-extern int cputime_proc_count(void);
-#endif
