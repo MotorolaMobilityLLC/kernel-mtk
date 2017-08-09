@@ -8,6 +8,7 @@
 #include <linux/file.h>		/*kernel write and kernel read */
 #include <linux/uaccess.h>	/*copy_to_user copy_from_user */
 #include "env.h"
+#include "partition.h"
 
 static char env_get_char(int index);
 static char *env_get_addr(int index);
@@ -23,8 +24,9 @@ struct env_struct g_env;
 static int env_valid;
 static u8 *env_buffer;
 static int env_init_done;
+static char env_path[64];
 
-#define PARA_PATH   "/dev/block/platform/mtk-msdc.0/by-name/para"
+#define ENV_NAME  "para"
 #define MODULE_NAME "KL_ENV"
 #define CFG_ENV_DATA_SIZE	\
 	(CFG_ENV_SIZE-sizeof(g_env.checksum)-sizeof(g_env.sig_head)	\
@@ -35,6 +37,25 @@ static int env_init_done;
 	(CFG_ENV_SIZE - sizeof(g_env.checksum)-sizeof(g_env.sig_tail))
 #define CFG_ENV_CHECKSUM_OFFSET		\
 	(CFG_ENV_SIZE - sizeof(g_env.checksum))
+
+static int get_env_path(void)
+{
+	struct hd_struct *part = NULL;
+
+	if (env_path[0])
+		return 0;
+
+	part = get_part(ENV_NAME);
+	if (!part) {
+		pr_err("Not find partition %s\n", ENV_NAME);
+		return -1;
+	}
+
+	snprintf(env_path, sizeof(env_path), "/dev/block/mmcblk0p%d", part->partno);
+	put_part(part);
+
+	return 0;
+}
 
 static ssize_t env_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
@@ -216,6 +237,12 @@ static void env_init(void)
 
 	pr_notice("[%s]ENV initialize\n", MODULE_NAME);
 
+	ret = get_env_path();
+	if (ret < 0) {
+		pr_err("[%s]get_env_path fail\n", MODULE_NAME);
+		goto end_path_fail;
+	}
+
 	env_buffer = kzalloc(CFG_ENV_SIZE, GFP_KERNEL);
 	if (!env_buffer)
 		return;
@@ -252,6 +279,7 @@ end:
 		memset(env_buffer, 0x00, CFG_ENV_SIZE);
 	env_init_done = 1;
 	return;
+end_path_fail:
 end_read_fail:
 	env_init_done = 0;
 }
@@ -404,7 +432,7 @@ static int write_env_area(char *env_buf)
 		checksum += *(env_buf + CFG_ENV_DATA_OFFSET + i);
 	*((int *)env_buf + CFG_ENV_CHECKSUM_OFFSET / 4) = checksum;
 
-	write_fp = filp_open(PARA_PATH, O_RDWR, 0);
+	write_fp = filp_open(env_path, O_RDWR, 0);
 	if (IS_ERR(write_fp)) {
 		result = PTR_ERR(write_fp);
 		pr_err("[%s]File open return fail,result=%d file=%p\n",
@@ -438,7 +466,7 @@ static int read_env_area(char *env_buf)
 	loff_t pos = 0;
 	struct file *read_fp;
 
-	read_fp = filp_open(PARA_PATH, O_RDWR, 0);
+	read_fp = filp_open(env_path, O_RDWR, 0);
 	if (IS_ERR(read_fp)) {
 		result = PTR_ERR(read_fp);
 		pr_err("[%s]File open return fail,result=%d,file=%p\n",
