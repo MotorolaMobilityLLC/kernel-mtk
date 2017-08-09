@@ -647,8 +647,10 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x", wakesta->raw_ext_sta,
-		  wakesta->wake_misc);
+	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x\n",
+			wakesta->raw_ext_sta,
+			wakesta->wake_misc,
+			spm_read(SPM_SW_FLAG));
 	return wr;
 }
 
