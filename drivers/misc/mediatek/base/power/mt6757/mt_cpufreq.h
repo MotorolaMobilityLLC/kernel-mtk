@@ -22,7 +22,6 @@ enum mt_cpu_dvfs_id {
 	NR_MT_CPU_DVFS,
 };
 
-/* 3 => MAIN */
 enum top_ckmuxsel {
 	TOP_CKMUXSEL_CLKSQ = 0,
 	TOP_CKMUXSEL_ARMPLL = 1,
@@ -99,14 +98,11 @@ extern int mt_cpufreq_get_ppb_state(void);
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
 extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id);
-extern unsigned int mt_cpufreq_get_org_volt(enum mt_cpu_dvfs_id id, int idx);
 
 /* Generic */
-extern int mt_cpufreq_state_set(int enabled);
 extern int mt_cpufreq_clock_switch(enum mt_cpu_dvfs_id id, enum top_ckmuxsel sel);
 extern enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_registerCB(cpuVoltsampler_func pCB);
-extern bool mt_cpufreq_earlysuspend_status_get(void);
 extern unsigned int mt_get_cpu_freq(void);
 
 /* CPUFREQ */
