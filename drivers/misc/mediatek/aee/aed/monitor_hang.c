@@ -31,6 +31,15 @@
 #include <linux/pid.h>
 #include <mt-plat/mt_boot_common.h>
 
+
+#ifdef CONFIG_MTK_ION
+#include <mtk/ion_drv.h>
+#endif
+
+#ifdef CONFIG_MTK_GPU_SUPPORT
+#include <mt-plat/mtk_gpu_utility.h>
+#endif
+
 static DEFINE_SPINLOCK(pwk_hang_lock);
 static int wdt_kick_status;
 static int hwt_kick_times;
@@ -352,7 +361,6 @@ static void show_bt_by_pid(int task_pid)
 
 static void ShowStatus(void)
 {
-
 	InDumpAllStack = 1;
 
 	LOGE("[Hang_Detect] dump system_ui all thread bt\n");
@@ -389,8 +397,22 @@ static void ShowStatus(void)
 
 	LOGE("[Hang_Detect] dump debug_show_all_locks\n");
 	debug_show_all_locks();
+
 	LOGE("[Hang_Detect] show_free_areas\n");
 	show_free_areas(0);
+
+	#ifdef CONFIG_MTK_ION
+		LOGE("[Hang_Detect] dump ion mm usage\n");
+		ion_mm_heap_memory_detail();
+		LOGE("[Hang_Detect] dump ion mm usage end.\n");
+	#endif
+	#ifdef CONFIG_MTK_GPU_SUPPORT
+		LOGE("[Hang_Detect] dump gpu mm usage\n");
+		if (mtk_dump_gpu_memory_usage() == false)
+			LOGE("[Hang_Detect] mtk_dump_gpu_memory_usage not support\n");
+		LOGE("[Hang_Detect] dump gpu mm usage end\n");
+	#endif
+	LOGE("[Hang_Detect] show status end\n");
 	system_server_pid = 0;
 	surfaceflinger_pid = 0;
 	system_ui_pid = 0;
