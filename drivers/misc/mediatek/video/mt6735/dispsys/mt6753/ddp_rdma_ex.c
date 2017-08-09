@@ -363,6 +363,10 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 
 	/* TODO: Need fine tune ultar configurations. */
 	if (idx == 0) {
+		DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_FIFO_PSEUDO_SIZE,
+			 idx*DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, 512);
+		DISP_REG_SET(handle, idx*DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0xFF);
+
 		if (width > 800) {/* FHD */
 			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0,
 				     0x1c013770);
@@ -402,6 +406,7 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 
 	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, fifo_valid_size);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_DUMMY, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY)|(1<<idx));
 
 	DDPDBG("FIFO_VALID_Size      = 0x%03x = %d\n", fifo_valid_size, fifo_valid_size);
 	DDPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
