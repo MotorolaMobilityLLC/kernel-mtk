@@ -29,6 +29,13 @@ config FPGA_EARLY_PORTING
 	   Used for FPGA early porting to separate code segments between FPGA
 	   platform and non-FPGA platform
 
+config MTK_LM_MODE
+	bool "MTK Large Memory mode"
+	select ARM_LPAE if !ARM64
+	select ARCH_PHYS_ADDR_T_64BIT
+	select ARCH_DMA_ADDR_T_64BIT
+	help
+	  Large Memory mode support for supporting more than 4GB DRAM access
 
 endif
 

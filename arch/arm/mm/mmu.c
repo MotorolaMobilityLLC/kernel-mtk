@@ -1396,8 +1396,10 @@ void __init early_paging_init(const struct machine_desc *mdesc,
 	mdesc->init_meminfo();
 
 	/* Run the patch stub to update the constants */
+#ifdef CONFIG_ARM_PATCH_PHYS_VIRT
 	fixup_pv_table(&__pv_table_begin,
 		(&__pv_table_end - &__pv_table_begin) << 2);
+#endif
 
 	/*
 	 * Cache cleaning operations for self-modifying code
