@@ -843,10 +843,9 @@ void EnableApll1(bool bEnable)
 	pr_debug("%s bEnable = %d", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
-#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_1_ck from apll1_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 16, 0x1 << 16);
-#endif
+
 			/* apll1_div0_pdn power down */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 
@@ -897,10 +896,8 @@ void EnableApll2(bool bEnable)
 	pr_debug("%s bEnable = %d\n", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
-#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_2_ck from apll2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 24, 0x1 << 24);
-#endif
 			/* apll2_div0_pdn power down */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
 			/* apll2_ck_div0, 98.3030/4 = 24.576M */
