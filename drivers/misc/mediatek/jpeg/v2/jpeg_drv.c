@@ -85,7 +85,10 @@
 #include <linux/io.h>
 #include <linux/of_device.h>
 #endif
-#include <linux/pm_runtime.h>
+#ifdef JPEG_PM_DOMAIN_ENABLE
+/*#include <linux/pm_runtime.h>*/
+#include "mt_smi.h"
+#endif
 /* ========================================================== */
 
 #include "jpeg_drv.h"
@@ -237,21 +240,20 @@ void jpeg_drv_dec_power_on(void)
 	enable_clock(MT_CG_VENC_JPGDEC, "JPEG");
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_get_sync(&pjenc_dev->dev);
-	pm_runtime_get_sync(&pjdec_dev->dev);
+	mtk_smi_larb_clock_on(3, true);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
 
 	if (clk_prepare_enable(gJpegClk.clk_venc_mtcmos))
 		JPEG_ERR("enable venc_mtcmos clk fail!");
-#endif
+
 	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
 		JPEG_ERR("enable smi clk fail!");
 
 	if (clk_prepare_enable(gJpegClk.clk_venc_larb))
 		JPEG_ERR("enable larb clk fail!");
-
+#endif
 	if (clk_prepare_enable(gJpegClk.clk_venc_jpgDec))
 		JPEG_ERR("enable jpgDec clk fail!");
 #endif
@@ -265,12 +267,11 @@ void jpeg_drv_dec_power_off(void)
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "JPEG");
 #else
 	clk_disable_unprepare(gJpegClk.clk_venc_jpgDec);
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	mtk_smi_larb_clock_off(3, true);
+#else
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
-#ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_put_sync(&pjdec_dev->dev);
-	pm_runtime_put_sync(&pjenc_dev->dev);
-#else
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
 #endif
@@ -291,20 +292,20 @@ void jpeg_drv_enc_power_on(void)
 #endif
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_get_sync(&pjenc_dev->dev);
-	pm_runtime_get_sync(&pjdec_dev->dev);
+	mtk_smi_larb_clock_on(3, true);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
 	if (clk_prepare_enable(gJpegClk.clk_venc_mtcmos))
 		JPEG_ERR("enable venc_mtcmos clk fail!");
-#endif
+
 	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
 		JPEG_ERR("enable smi clk fail!");
 
 #ifndef CONFIG_ARCH_MT6735M
 	if (clk_prepare_enable(gJpegClk.clk_venc_larb))
 		JPEG_ERR("enable larb clk fail!");
+#endif
 #endif
 	if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 		JPEG_ERR("enable jpgEnc clk fail!");
@@ -323,17 +324,18 @@ void jpeg_drv_enc_power_off(void)
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "JPEG");
 #else
 	clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	mtk_smi_larb_clock_off(3, true);
+#else
+
 #ifndef CONFIG_ARCH_MT6735M
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
 #endif
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
-#ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_put_sync(&pjenc_dev->dev);
-	pm_runtime_put_sync(&pjdec_dev->dev);
-#else
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
 #endif
+
 #endif
 }
 
@@ -1288,9 +1290,6 @@ static int jpeg_probe(struct platform_device *pdev)
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pjenc_dev = pdev;
-	pm_runtime_enable(&pdev->dev);
-	/*pm_runtime_get_sync(&pdev->dev);*/
-	/*pm_runtime_put_sync(&pdev->dev);*/
 #else
 	/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
 	gJpegClk.clk_disp_mtcmos = of_clk_get_by_name(node, "disp-mtcmos");
@@ -1300,13 +1299,13 @@ static int jpeg_probe(struct platform_device *pdev)
 	gJpegClk.clk_venc_mtcmos = of_clk_get_by_name(node, "venc-mtcmos");
 	if (IS_ERR(gJpegClk.clk_venc_mtcmos))
 		JPEG_ERR("get vencMTCMOS clk error!");
-#endif
 	gJpegClk.clk_disp_smi = of_clk_get_by_name(node, "disp-smi");
 	if (IS_ERR(gJpegClk.clk_disp_smi))
 		JPEG_ERR("get dispMI clk error!");
 	gJpegClk.clk_venc_larb = of_clk_get_by_name(node, "venc-larb");
 	if (IS_ERR(gJpegClk.clk_venc_larb))
 		JPEG_ERR("get venc-larb clk error!");
+#endif
 	gJpegClk.clk_venc_jpgEnc = of_clk_get_by_name(node, "venc-jpgenc");
 	if (IS_ERR(gJpegClk.clk_venc_jpgEnc))
 		JPEG_ERR("get jpgEnc clk error!");
@@ -1414,11 +1413,6 @@ static int jpeg_remove(struct platform_device *pdev)
 #ifdef JPEG_DEC_DRIVER
 	free_irq(gJpegqDev.decIrqId, NULL);
 #endif
-#ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_disable(&pdev->dev);
-	/* venc power */
-	pm_runtime_disable(&pjdec_dev->dev);
-#endif
 #endif
 	JPEG_MSG("Done\n");
 	return 0;
@@ -1515,7 +1509,7 @@ static struct platform_device jpeg_device = {
 		.num_resources = 0,
 };
 
-#ifdef JPEG_PM_DOMAIN_ENABLE
+#if 0 /*def JPEG_PM_DOMAIN_ENABLE*/
 
 /* Kernel interface */
 static struct file_operations const jdec_fops = {
@@ -1538,14 +1532,8 @@ static int jdec_probe(struct platform_device *pdev)
 	struct class_device *class_dev = NULL;
 #endif
 	JPEG_MSG("+jdec_probe\n");
-	if (!pdev->dev.pm_domain) {
-		JPEG_MSG("+jdec_probe ERROR pm_domain\n");
-		return -EPROBE_DEFER;
-	}
+
 	pjdec_dev = pdev;
-	pm_runtime_enable(&pdev->dev);
-	/*ret = pm_runtime_get_sync(&pjdec_dev->dev);*/
-	/*JPEG_MSG("jdec_probe  pm return %d\n", ret);*/
 #ifdef JPEG_DEV
 	ret = alloc_chrdev_region(&jdec_devno, 0, 1, JDEC_DEVNAME);
 	if (ret)
@@ -1605,7 +1593,7 @@ static int __init jpeg_init(void)
 		ret = -ENODEV;
 		return ret;
 	}
-#ifdef JPEG_PM_DOMAIN_ENABLE
+#if 0 /*def JPEG_PM_DOMAIN_ENABLE*/
 	if (platform_driver_register(&jdec_driver)) {
 		JPEG_ERR("failed to register jdec_driver codec driver\n");
 		platform_device_unregister(pjdec_dev);
@@ -1636,14 +1624,14 @@ static void __exit jpeg_exit(void)
 	platform_device_unregister(&jpeg_device);
 #ifdef JPEG_PM_DOMAIN_ENABLE
 #ifdef JPEG_DEV
-	cdev_del(jdec_cdev);
+	/*cdev_del(jdec_cdev);
 	unregister_chrdev_region(jdec_devno, 1);
 	device_destroy(jdec_class, jdec_devno);
-	class_destroy(jdec_class);
+	class_destroy(jdec_class);*/
 #else
 	remove_proc_entry("mtk_jenc", NULL);
 #endif
-	platform_driver_unregister(&jdec_driver);
+	/*platform_driver_unregister(&jdec_driver);*/
 	platform_device_unregister(pjenc_dev);
 	JPEG_MSG("jpeg_exit jdec remove\n");
 #endif
