@@ -120,7 +120,7 @@ struct mt_pcm_dl1_priv {
 	unsigned int i2s0_clock_mode;
 };
 static int mtk_soc_pcm_dl1_prestart(struct snd_pcm_substream *substream);
-static int mtk_soc_pcm_dl1_post_stop(struct snd_pcm_substream *substream);
+/*static int mtk_soc_pcm_dl1_post_stop(struct snd_pcm_substream *substream);*/
 
 
 static struct snd_pcm_hardware mtk_pcm_dl1_hardware = {
@@ -332,14 +332,33 @@ static int mtk_soc_pcm_dl1_close(struct snd_pcm_substream *substream)
 	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
 	pr_debug("%s\n", __func__);
-	if (priv->prepared) {
-		mtk_soc_pcm_dl1_post_stop(substream);
-/* mt_afe_remove_ctx_substream(MT_AFE_MEM_CTX_DL1); */
-	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
+
+	if (priv->prepared == true) {
+		/* stop DAC output */
+		mt_afe_disable_memory_path(Soc_Aud_Digital_Block_I2S_OUT_DAC);
+		if (!mt_afe_get_memory_path_state(Soc_Aud_Digital_Block_I2S_OUT_DAC))
+			mt_afe_disable_i2s_dac();
+		/* stop I2S output */
+		mt_afe_disable_memory_path(Soc_Aud_Digital_Block_I2S_OUT_2);
+		if (mt_afe_get_memory_path_state(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
+			mt_afe_set_reg(AFE_I2S_CON3, 0x0, 0x1);
+
+		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
+
+		mt_afe_enable_afe(false);
 
 		priv->prepared = false;
 	}
+	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
+		mt_afe_emi_clk_off();
+
+	afe_control_sram_lock();
+	clear_sramstate(mPlaybackSramState);
+	mPlaybackSramState = get_sramstate();
+	afe_control_sram_unlock();
 	mt_afe_main_clk_off();
+	mt_afe_ana_clk_off();
+
 	return 0;
 }
 
@@ -385,7 +404,7 @@ static int mtk_pcm_dl1_start(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-
+#if 0
 static int mtk_soc_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -428,7 +447,7 @@ static int mtk_soc_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 	mt_afe_enable_afe(false);
 	return 0;
 }
-
+#endif
 static int mtk_soc_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -651,6 +670,9 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 
 static int mtk_soc_dl1_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
+	struct mt_pcm_dl1_priv *priv;
+
 #ifndef CONFIG_OF
 	int ret = 0;
 #endif
@@ -664,6 +686,13 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_DL1_PCM);
+
+	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_dl1_priv), GFP_KERNEL);
+	if (unlikely(!priv)) {
+		pr_err("%s failed to allocate private data\n", __func__);
+		return -ENOMEM;
+	}
+	dev_set_drvdata(dev, priv);
 
 	PRINTK_AUDDRV("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 

@@ -261,7 +261,9 @@ static int mtk_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_debug("mtk_capture_pcm_hw_free\n");
 
-	if (Capture_dma_buf->area)
+	if (mCaptureUseSram == true)
+		return 0;
+	else if (Capture_dma_buf->area)
 		return 0;
 	else
 		return snd_pcm_lib_free_pages(substream);
