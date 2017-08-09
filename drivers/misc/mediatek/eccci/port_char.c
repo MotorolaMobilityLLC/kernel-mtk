@@ -1010,8 +1010,7 @@ static int port_char_init(struct ccci_port *port)
 #ifdef CONFIG_MTK_ECCCI_C2K
 static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
 {
-	return 0;
-#if 0
+
 	struct ccci_header *ccci_h = NULL;
 	int ret, read_len, read_count, full_req_done = 0;
 	unsigned long flags;
@@ -1057,7 +1056,7 @@ retry_push:
 
 exit:
 	return ret?ret:read_len;
-#endif
+
 }
 #endif
 

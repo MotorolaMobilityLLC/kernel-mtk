@@ -958,6 +958,27 @@ static int find_img_to_open(int md_id, MD_IMG_TYPE img_type, char active_file_pa
 	return -CCCI_ERR_LOAD_IMG_NOT_FOUND;
 }
 
+static inline void dump_md_image(int md_id, void *start_addr, u32 offset, u32 len)
+{
+	u32 i, _16_fix_num;
+	unsigned int *curr_p = (unsigned int *)(start_addr + offset);
+
+	if (NULL == start_addr || len == 0)
+		return;
+
+	CCCI_UTIL_NOTICE_MSG_WITH_ID(md_id, "dump image start at %p, offset 0x%x, len 0x%x\n",
+		start_addr, offset, len);
+
+	_16_fix_num = len / 16;
+	for (i = 0; i < _16_fix_num; i++) {
+		CCCI_UTIL_NOTICE_MSG_WITH_ID(md_id, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+		curr_p += 4;
+	}
+
+}
+
+
 static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_info *img)
 {
 	void __iomem *start;
