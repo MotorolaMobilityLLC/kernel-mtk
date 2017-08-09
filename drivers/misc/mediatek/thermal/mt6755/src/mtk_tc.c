@@ -136,7 +136,13 @@ int tscpu_polling_factor2 = 2;
 /* Combined fast_polling_trip_temp and fast_polling_factor,
 it means polling_delay will be 1/5 of original interval
 after mtktscpu reports > 65C w/o exit point */
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+int fast_polling_trip_temp = 50000;
+#else
 int fast_polling_trip_temp = 70000;
+#endif
+
 int fast_polling_factor = 4;
 int tscpu_cur_fp_factor = 1;
 int tscpu_next_fp_factor = 1;

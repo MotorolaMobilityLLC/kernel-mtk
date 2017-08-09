@@ -113,6 +113,12 @@ static int thermal5A_TH = 55000;
 static int thermal5A_status;
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+int thermal_6353_5A_status = 0;
+int thermal_5A_limit_H = 85000; /*85C*/
+int thermal_5A_limit_L = 83000; /*83C*/
+#endif
+
 static int tc_mid_trip = -275000;
 /* trip_temp[0] must be initialized to the thermal HW protection point. */
 #if defined(TZCPU_SET_INIT_CFG)
@@ -678,6 +684,19 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 	}
 #endif
 
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if (curr_temp >= thermal_5A_limit_H && thermal_6353_5A_status == 0) {
+		mt_ppm_set_5A_limit_throttle(1);
+		thermal_6353_5A_status = 1;
+		/*tscpu_warn("mt_ppm_set_5A_limit_throttle(1)\n");*/
+	} else if (curr_temp < thermal_5A_limit_L && thermal_6353_5A_status == 1) {
+		mt_ppm_set_5A_limit_throttle(0);
+		thermal_6353_5A_status = 0;
+		/*tscpu_warn("mt_ppm_set_5A_limit_throttle(0)\n");*/
+	}
+#endif
+
 	g_max_temp = curr_temp;
 
 	return ret;
@@ -970,6 +989,53 @@ static ssize_t tscpu_set_temperature_write(struct file *file, const char __user 
 	tscpu_warn("tscpu_set_temperature_write bad argument\n");
 	return -EINVAL;
 }
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+static int tscpu_pmic_current_limit_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "H:%d L:%d T:%d\n",
+		thermal_5A_limit_H , thermal_5A_limit_L , fast_polling_trip_temp);
+	return 0;
+}
+
+
+static ssize_t tscpu_pmic_current_limit_write(struct file *file, const char __user *buffer,
+					   size_t count, loff_t *data)
+{
+	char desc[32];
+	int lv_thermal_5A_limit_H;
+	int lv_thermal_5A_limit_L;
+	int lv_fast_polling_trip_temp;
+	int len = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	tscpu_dprintk("tscpu_pmic_current_limit_write\n");
+
+
+	if (sscanf(desc, "%d %d %d", &lv_thermal_5A_limit_H , &lv_thermal_5A_limit_L ,
+		&lv_fast_polling_trip_temp) == 3) {
+		thermal_5A_limit_H = lv_thermal_5A_limit_H;
+		thermal_5A_limit_L = lv_thermal_5A_limit_L;
+		fast_polling_trip_temp = lv_fast_polling_trip_temp;
+
+
+		tscpu_dprintk("5A_limit_H=%d,5A_limit_L=%d,Fast polling_trip_temp=%d\n",
+		thermal_5A_limit_H, thermal_5A_limit_L, fast_polling_trip_temp);
+
+		return count;
+	}
+
+	tscpu_warn("tscpu_pmic_current_limit_write bad argument\n");
+
+	return -EINVAL;
+}
+#endif
+
 
 static int tscpu_read_log(struct seq_file *m, void *v)
 {
@@ -1831,6 +1897,20 @@ static const struct file_operations mtktscpu_set_temperature_fops = {
 	.release = single_release,
 };
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+static int tscpu_pmic_current_limit_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, tscpu_pmic_current_limit_read, NULL);
+}
+static const struct file_operations mtktscpu_pmic_current_limit_fops = {
+	.owner = THIS_MODULE,
+	.open = tscpu_pmic_current_limit_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tscpu_pmic_current_limit_write,
+	.release = single_release,
+};
+#endif
 
 static int tscpu_talking_flag_open(struct inode *inode, struct file *file)
 {
@@ -2339,6 +2419,15 @@ static void tscpu_create_fs(void)
 				&mtktscpu_GPIO_out_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
+#endif
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+
+		entry =
+		    proc_create("pmic_current_limit", S_IRUGO | S_IWUSR, mtktscpu_dir,
+				&mtktscpu_pmic_current_limit_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+
 #endif
 	}
 }
