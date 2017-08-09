@@ -68,11 +68,12 @@ void Auddrv_Reg_map(void);
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
 bool SetChannels(uint32 Memory_Interface, uint32 channel);
-
+/*
+DO NOT USER DIRECTLY, use irq manager
 bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter);
 bool SetIrqEnable(uint32 Irqmode, bool bEnable);
 bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate);
-
+*/
 bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable);
 bool GetMemoryPathEnable(uint32 Aud_block);
@@ -224,9 +225,6 @@ void SetFMEnableFlag(bool bEnable);
 void SetOffloadEnableFlag(bool bEnable);
 void SetOffloadSWMode(bool bEnable);
 
-
-bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable);
-
 unsigned int Align64ByteSize(unsigned int insize);
 
 void AudDrv_checkDLISRStatus(void);
@@ -237,6 +235,21 @@ bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsig
 int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
 	unsigned int mSramLength, void *user);
 int freeAudioSram(void *user);
+
+/* IRQ Manager */
+int init_irq_manager(void);
+int irq_add_user(const void *_user,
+		 enum Soc_Aud_IRQ_MCU_MODE _irq,
+		 unsigned int _rate,
+		 unsigned int _count);
+int irq_remove_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq);
+int irq_update_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq,
+		    unsigned int _rate,
+		    unsigned int _count);
+
+/* IRQ Manager */
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 

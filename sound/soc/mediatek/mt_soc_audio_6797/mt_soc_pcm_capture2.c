@@ -100,7 +100,7 @@ static void StopAudioCapture2Hardware(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
 
 	/* here to set interrupt */
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I17, Soc_Aud_InterConnectionOutput_O21);
@@ -141,9 +141,11 @@ static void StartAudioCapture2Hardware(struct snd_pcm_substream *substream)
 	}
 
 	/* here to set interrupt */
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size);
-	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->rate);
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
+
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);

@@ -489,7 +489,7 @@ static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 
 	pr_warn("mtk_pcm_hdmi_stop\n");
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
@@ -762,7 +762,7 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 	    ("%s format =%d, rate = %d  channels = %d period_size = %lu, mHdmi_display_control=%d\n",
 	     __func__, runtime->format, runtime->rate, runtime->channels, runtime->period_size, mHdmi_display_control);
 #if 0
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
@@ -962,11 +962,13 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	copysinewavetohdmi(runtime->channels);
 #endif
 
-
+	/* here to set interrupt */
 	/* ALPS01889945 , stereo , multi channel switch A/V sync issue */
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, 1024);
 	/* 32bit , stereo , 64 BCK  for one count, (hal size)8192 bytes/(64/8) = 1024 count */
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, true);
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
+		     substream->runtime->rate,
+		     1024);
 
 	EnableAfe(true);
 

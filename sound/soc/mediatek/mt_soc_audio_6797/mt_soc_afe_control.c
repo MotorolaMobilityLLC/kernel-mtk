@@ -121,7 +121,6 @@ static AudioDigtalI2S *m2ndI2Sout;	/* output */
 static bool mFMEnable;
 static bool mOffloadEnable;
 static bool mOffloadSWMode;
-static bool mIRQ2Enable;
 
 static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
@@ -130,7 +129,6 @@ static AudioDigitalDAIBT *AudioDaiBt;
 static AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
 static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
 
-static AudioIrqMcuMode *mAudioMcuMode[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE] = { NULL };
 static AudioMemIFAttribute *mAudioMEMIF[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK] = { NULL };
 
 AFE_DL_ABNORMAL_CONTROL_T AFE_dL_Abnormal_context;
@@ -150,12 +148,13 @@ static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
 static int APLL1Counter;
 static int APLL2Counter;
-static Aud_Irq_Block mAudIrqBlock;
 static Aud_Sram_Manager mAud_Sram_Manager;
 
 static bool mExternalModemStatus;
 
 static struct mtk_dai mtk_dais[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
+
+static struct irq_manager irq_managers[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
 
 #define IrqShortCounter  512
 #define SramBlockSize (4096)
@@ -469,9 +468,6 @@ bool InitAfeControl(void)
 		m2ndI2Sout = kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
 		mHDMIOutput = kzalloc(sizeof(AudioHdmi), GFP_KERNEL);
 
-		for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++)
-			mAudioMcuMode[i] = kzalloc(sizeof(AudioIrqMcuMode), GFP_KERNEL);
-
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++)
 			mAudioMEMIF[i] = kzalloc(sizeof(AudioMemIFAttribute), GFP_KERNEL);
 
@@ -487,14 +483,13 @@ bool InitAfeControl(void)
 		memset((void *)&mtk_dais, 0, sizeof(mtk_dais));
 	}
 
-	mIRQ2Enable = false;
 
 	AudioDaiBtStatus = false;
 	AudioAdcI2SStatus = false;
 	Audio2ndAdcI2SStatus = false;
 	AudioMrgStatus = false;
-	memset((void *)&mAudIrqBlock, 0 , sizeof(Aud_Irq_Block));
 	InitSramManager(SramBlockSize);
+	init_irq_manager();
 
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
 
@@ -517,9 +512,6 @@ bool ResetAfeControl(void)
 	mAudioInit = false;
 	memset((void *)(mAudioMrg), 0, sizeof(AudioMrgIf));
 	memset((void *)(AudioDaiBt), 0, sizeof(AudioDigitalDAIBT));
-
-	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++)
-		memset((void *)(mAudioMcuMode[i]), 0, sizeof(AudioIrqMcuMode));
 
 	for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++)
 		memset((void *)(mAudioMEMIF[i]), 0, sizeof(AudioMemIFAttribute));
@@ -2240,90 +2232,58 @@ bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 }
 
 
-bool SetIrqEnable(uint32 Irqmode, bool bEnable)
+static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 {
-	bool IrqStatus = false;
-
+	pr_warn("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
 	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
-			if (checkDllinkMEMIfStatus() == false)
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
-			/* TODO: KC: this is weird, should not put here, should have a better way */
-			IrqStatus = UpdateAndCheckIrqStatus(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, bEnable);
-			if ((IrqStatus == false) && (bEnable == true)) {
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-				mIRQ2Enable = bEnable;
-			} else if ((IrqStatus == false) && (bEnable == false)) {
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-				mIRQ2Enable = bEnable;
-			}
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:{
-			/* IRQ3 is for MD32 */
-			/*Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << Irqmode), (1 << Irqmode));*/
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:{
-			/* IRQ4 is for CM4 */
-			/*Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << Irqmode), (1 << Irqmode));*/
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 12), (1 << 12));
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:{
-			/* no need to set IRQ_MCU_EN, it's default on for irq7 */
-			/*Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << Irqmode), (1 << Irqmode));*/
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
-			Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
-			Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
-			break;
-		}
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 12), (1 << 12));
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
+		break;
 	default:
+		pr_err("%s(), error, not supported IRQ %d", __func__, Irqmode);
 		break;
 	}
 
-	/* printk("-%s(), Irqmode = %d, bEnable = %d\n", __FUNCTION__, Irqmode, bEnable); */
 	return true;
 }
 
 
-bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
+static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 {
 	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
 
+	pr_warn("%s(), Irqmode %d, SampleRate %d\n",
+		__func__, Irqmode, SampleRate);
 	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 8, 0xf << 8);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 16, 0xf << 16);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 20, 0xf << 20);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:{
-			/* set by HDMI */
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 24, 0xf << 24);
-			break;
-		}
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 8, 0xf << 8);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 16, 0xf << 16);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 20, 0xf << 20);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		/* set by HDMI */
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 24, 0xf << 24);
+		break;
 	default:
 		return false;
 	}
@@ -2331,65 +2291,28 @@ bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 	return true;
 }
 
-bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
+static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
 {
-	uint32 CurrentCount = 0;
-
-	/* printk("+%s Irqmode = %d Counter = %d, mIrqMcuCounter = %d, pid %d, tid %d\n", __func__, Irqmode, Counter,
-				mAudioMcuMode[Irqmode]->mIrqMcuCounter, current->pid, current->tgid); */
-
-	if (!Counter) {
-		Counter = mAudioMcuMode[Irqmode]->mIrqMcuCounterSave;
-		mAudioMcuMode[Irqmode]->mIrqMcuCounter = 0;
-	} else if (Counter >= IrqShortCounter) {
-		mAudioMcuMode[Irqmode]->mIrqMcuCounterSave = Counter;
-	}
-
+	pr_warn("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
 	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
-			if (!mAudioMcuMode[Irqmode]->mIrqMcuCounter ||
-				Counter < mAudioMcuMode[Irqmode]->mIrqMcuCounter ||
-				mAudioMcuMode[Irqmode]->mIrqMcuCounter >= IrqShortCounter) {
-				mAudioMcuMode[Irqmode]->mIrqMcuCounter = Counter;
-				Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
-			}
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
-			/* TODO: KC: irq2 period must stay at the highest period when possible,
-				currently will stay at the lowest period if used. */
-			CurrentCount = Afe_Get_Reg(AFE_IRQ_MCU_CNT2);
-			if (mIRQ2Enable == false) {
-				Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0x0003ffff);
-			} else if (Counter < CurrentCount) {
-				pr_debug("update counter latency CurrentCount = %d Counter = %d",
-					CurrentCount, Counter);
-				Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0x0003ffff);
-			} else {
-				pr_debug
-				    ("not to add counter latency CurrentCount = %d Counter = %d",
-				     CurrentCount, Counter);
-			}
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT3, Counter, 0x0003ffff);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT4, Counter, 0x0003ffff);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT5, Counter, 0x0003ffff);
-			/* ox3BC [0~17] , ex 24bit , stereo, 48BCKs @CNT */
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT7, Counter, 0x0003ffff);
-			/* ox3BC [0~17] , ex 24bit , stereo, 48BCKs @CNT */
-			break;
-		}
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT3, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT4, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT5, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT7, Counter, 0x0003ffff);
+		break;
 	default:
 		return false;
 	}
@@ -4042,44 +3965,6 @@ unsigned int Align64ByteSize(unsigned int insize)
 	return align_size;
 }
 
-bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable)
-{
-	bool IrqStatus = false;
-
-	spin_lock(&afe_control_lock);
-	if (irq_num < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE) {
-		switch (irq_num) {
-		case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-			/* uplink path */
-			if (bEnable == true) {
-				if (mAudIrqBlock.mAud_irq_counter[irq_num] != 0)
-					IrqStatus = true;
-					mAudIrqBlock.mAud_irq_counter[irq_num]++;
-			} else {
-				mAudIrqBlock.mAud_irq_counter[irq_num]--;
-				if (mAudIrqBlock.mAud_irq_counter[irq_num] != 0)
-					IrqStatus = true;
-			}
-			break;
-		default:
-			break;
-		}
-	} else
-		pr_err("%s fail irq_num = %d\n", __func__, irq_num);
-
-	spin_unlock(&afe_control_lock);
-
-	pr_debug("%s irq_num = %d bEnable = %d mAud_irq_counter = %d\n",
-		__func__, irq_num, bEnable, mAudIrqBlock.mAud_irq_counter[Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE]);
-	if (mAudIrqBlock.mAud_irq_counter[irq_num] < 0) {
-		pr_err("%s irq_num = %d\n", __func__, irq_num);
-		mAudIrqBlock.mAud_irq_counter[irq_num] = 0;
-		AUDIO_AEE("UpdateAndCheckIrqStatus irq_num");
-	}
-
-	return IrqStatus;
-}
-
 void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 {
 	/*wLenBit : 0:Soc_Aud_I2S_WLEN_WLEN_32BITS /1:Soc_Aud_I2S_WLEN_WLEN_16BITS */
@@ -4285,6 +4170,332 @@ int freeAudioSram(void *user)
 	AfeControlSramUnLock();
 	return 0;
 }
+
+/* IRQ Manager */
+static int enable_aud_irq(const struct irq_user *_irq_user,
+			  enum Soc_Aud_IRQ_MCU_MODE _irq,
+			  unsigned int _rate,
+			  unsigned int _count)
+{
+	SetIrqMcuSampleRate(_irq, _rate);
+	SetIrqMcuCounter(_irq, _count);
+	SetIrqEnable(_irq, true);
+
+	irq_managers[_irq].is_on = true;
+	irq_managers[_irq].rate = _rate;
+	irq_managers[_irq].count = _count;
+	irq_managers[_irq].selected_user = _irq_user;
+
+	return 0;
+}
+
+static int disable_aud_irq(enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	SetIrqEnable(_irq, false);
+	SetIrqMcuCounter(_irq, 0);
+
+	irq_managers[_irq].is_on = false;
+	irq_managers[_irq].count = 0;
+	irq_managers[_irq].selected_user = NULL;
+	return 0;
+}
+
+static int update_aud_irq(const struct irq_user *_irq_user,
+			  enum Soc_Aud_IRQ_MCU_MODE _irq,
+			  unsigned int _count)
+{
+	SetIrqMcuCounter(_irq, _count);
+	irq_managers[_irq].count = _count;
+	irq_managers[_irq].selected_user = _irq_user;
+	return 0;
+}
+
+static void dump_irq_manager(void)
+{
+	struct irq_user *ptr;
+	int i;
+
+	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++) {
+		pr_warn("irq_managers[%d], is_on %d, rate %d, count %d, selected_user %p\n",
+			i,
+			irq_managers[i].is_on,
+			irq_managers[i].rate,
+			irq_managers[i].count,
+			(void *)irq_managers[i].selected_user);
+
+		list_for_each_entry(ptr, &irq_managers[i].users, list) {
+			pr_warn("\tirq_user: user %p, rate %d, count %d\n",
+				ptr->user,
+				ptr->request_rate,
+				ptr->request_count);
+		}
+	}
+}
+
+static unsigned int get_tgt_count(unsigned int _rate,
+				  unsigned int _count,
+				  unsigned int _tgt_rate)
+{
+	return ((_tgt_rate / 100) * _count) / (_rate / 100);
+}
+
+static bool is_tgt_rate_ok(unsigned int _rate,
+			   unsigned int _count,
+			   unsigned int _tgt_rate)
+{
+	unsigned int tgt_rate = _tgt_rate / 100;
+	unsigned int request_rate = _rate / 100;
+	unsigned int target_cnt = get_tgt_count(_rate, _count, _tgt_rate);
+	unsigned int val_1 = _count * tgt_rate;
+	unsigned int val_2 = target_cnt * request_rate;
+	unsigned int val_3 = (IRQ_TOLERANCE_US * tgt_rate * request_rate)
+			     / 100;
+
+	if (target_cnt <= 1)
+		return false;
+
+	if (val_1 > val_2) {
+		if (val_1 - val_2 >= val_3)
+			return false;
+	} else {
+		if (val_2 - val_1 >= val_3)
+			return false;
+	}
+
+	return true;
+}
+
+static bool is_min_rate_ok(unsigned int _rate, unsigned int _count)
+{
+	return is_tgt_rate_ok(_rate, _count, IRQ_MIN_RATE);
+}
+
+static bool is_period_smaller(enum Soc_Aud_IRQ_MCU_MODE _irq,
+			      struct irq_user *_user)
+{
+	const struct irq_user *selected_user = irq_managers[_irq].selected_user;
+
+	if (selected_user != NULL) {
+		if (get_tgt_count(_user->request_rate,
+				  _user->request_count,
+				  IRQ_MAX_RATE) >=
+		    get_tgt_count(selected_user->request_rate,
+				  selected_user->request_count,
+				  IRQ_MAX_RATE))
+			return false;
+	}
+
+	return true;
+}
+
+static const struct irq_user *get_min_period_user(
+	enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	struct irq_user *ptr;
+	struct irq_user *min_user = NULL;
+	unsigned int min_count = IRQ_MAX_RATE;
+	unsigned int cur_count;
+
+	if (list_empty(&irq_managers[_irq].users)) {
+		pr_err("error, irq_managers[%d].users is empty\n", _irq);
+		dump_irq_manager();
+		AUDIO_AEE("error, irq_managers[].users is empty\n");
+	}
+
+	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
+		cur_count = get_tgt_count(ptr->request_rate,
+					  ptr->request_count,
+					  IRQ_MAX_RATE);
+		if (cur_count < min_count) {
+			min_count = cur_count;
+			min_user = ptr;
+		}
+	}
+
+	return min_user;
+}
+
+static int check_and_update_irq(const struct irq_user *_irq_user,
+				enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	if (is_tgt_rate_ok(_irq_user->request_rate,
+			   _irq_user->request_count,
+			   irq_managers[_irq].rate)) {
+		update_aud_irq(_irq_user,
+			       _irq,
+			       get_tgt_count(_irq_user->request_rate,
+					     _irq_user->request_count,
+					     irq_managers[_irq].rate));
+	} else {
+		/* if you got here, you should reconsider your irq usage */
+		pr_err("error, irq not updated, irq %d, irq rate %d, rate %d, count %d\n",
+			_irq,
+			irq_managers[_irq].rate,
+			_irq_user->request_rate,
+			_irq_user->request_count);
+		dump_irq_manager();
+		AUDIO_AEE("error, irq not updated\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+int init_irq_manager(void)
+{
+	int i;
+
+	memset((void *)&irq_managers, 0, sizeof(irq_managers));
+	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++)
+		INIT_LIST_HEAD(&irq_managers[i].users);
+
+	return 0;
+}
+
+int irq_add_user(const void *_user,
+		 enum Soc_Aud_IRQ_MCU_MODE _irq,
+		 unsigned int _rate,
+		 unsigned int _count)
+{
+	unsigned long flags;
+	struct irq_user *new_user;
+	struct irq_user *ptr;
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
+		 __func__, _user, _irq, _rate, _count);
+	/* check if user already exist */
+	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
+		if (ptr->user == _user) {
+			pr_err("error, _user %p already exist\n", _user);
+			dump_irq_manager();
+			AUDIO_AEE("error, _user already exist\n");
+		}
+	}
+
+	/* create instance */
+	new_user = kzalloc(sizeof(*new_user), GFP_KERNEL | GFP_ATOMIC);
+	if (!new_user) {
+		spin_unlock_irqrestore(&afe_control_lock, flags);
+		return -ENOMEM;
+	}
+
+	new_user->user = _user;
+	new_user->request_rate = _rate;
+	new_user->request_count = _count;
+	INIT_LIST_HEAD(&new_user->list);
+
+	/* add user to list */
+	list_add(&new_user->list, &irq_managers[_irq].users);
+
+	/* */
+	if (irq_managers[_irq].is_on) {
+		if (is_period_smaller(_irq, new_user))
+			check_and_update_irq(new_user, _irq);
+	} else {
+		if (is_min_rate_ok(_rate, _count))
+			enable_aud_irq(new_user,
+				_irq,
+				IRQ_MIN_RATE,
+				get_tgt_count(_rate, _count, IRQ_MIN_RATE));
+		else
+			enable_aud_irq(new_user,
+				_irq,
+				IRQ_MAX_RATE,
+				get_tgt_count(_rate, _count, IRQ_MAX_RATE));
+	}
+
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+	return 0;
+}
+
+int irq_remove_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	unsigned long flags;
+	struct irq_user *ptr;
+	struct irq_user *corr_user = NULL;
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	pr_debug("%s(), user %p, irq %d\n",
+		 __func__, _user, _irq);
+	/* get _user's irq_user ptr */
+	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
+		if (ptr->user == _user) {
+			corr_user = ptr;
+			break;
+		}
+	}
+	if (corr_user == NULL) {
+		pr_err("%s(), error, _user not found\n", __func__);
+		dump_irq_manager();
+		AUDIO_AEE("error, _user not found\n");
+		spin_unlock_irqrestore(&afe_control_lock, flags);
+		return -EINVAL;
+	}
+	/* remove from irq_handler[_irq].users */
+	list_del(&corr_user->list);
+
+	/* check if is selected user */
+	if (corr_user == irq_managers[_irq].selected_user) {
+		if (list_empty(&irq_managers[_irq].users))
+			disable_aud_irq(_irq);
+		else
+			check_and_update_irq(get_min_period_user(_irq), _irq);
+	}
+	/* free */
+	kfree(corr_user);
+
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+	return 0;
+}
+
+int irq_update_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq,
+		    unsigned int _rate,
+		    unsigned int _count)
+{
+	unsigned long flags;
+	struct irq_user *ptr;
+	struct irq_user *corr_user = NULL;
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
+		 __func__, _user, _irq, _rate, _count);
+	/* get _user's irq_user ptr */
+	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
+		if (ptr->user == _user) {
+			corr_user = ptr;
+			break;
+		}
+	}
+	if (corr_user == NULL) {
+		pr_err("%s(), error, _user not found\n", __func__);
+		dump_irq_manager();
+		AUDIO_AEE("error, _user not found\n");
+		spin_unlock_irqrestore(&afe_control_lock, flags);
+		return -EINVAL;
+	}
+
+	/* if _rate == 0, just update count */
+	if (_rate)
+		corr_user->request_rate = _rate;
+	corr_user->request_count = _count;
+
+	/* update irq user */
+	if (corr_user == irq_managers[_irq].selected_user) {
+		/* selected user */
+		check_and_update_irq(get_min_period_user(_irq), _irq);
+	} else {
+		/* not selected user */
+		if (is_period_smaller(_irq, corr_user))
+			check_and_update_irq(corr_user, _irq);
+	}
+
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+	return 0;
+}
+/* IRQ Manager END*/
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram)
 {

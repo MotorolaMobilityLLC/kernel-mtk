@@ -39,6 +39,7 @@
 #ifndef _AUDIO_DIGITAL_TYPE_H
 #define _AUDIO_DIGITAL_TYPE_H
 
+#include <linux/list.h>
 
 /*****************************************************************************
  *                ENUM DEFINITION
@@ -491,14 +492,6 @@ enum Soc_Aud_ADDA_UL_SAMPLERATE {
 	Soc_Aud_ADDA_UL_SAMPLERATE_48K_HD = 6
 };
 
-/* class for irq mode and counter. */
-typedef struct {
-	unsigned int mStatus;	/* on,off */
-	unsigned int mIrqMcuCounter;
-	unsigned int mIrqMcuCounterSave;
-	unsigned int mSampleRate;
-} AudioIrqMcuMode;
-
 typedef struct {
 	int mFormat;
 	int mDirection;
@@ -910,11 +903,6 @@ typedef struct {
 	uint32 REG_AFE_ADDA4_ULCF_CFG_30_29;*/
 } AudioAfeRegCache;
 
-
-typedef struct {
-	int  mAud_irq_counter[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
-} Aud_Irq_Block;
-
 /*
   *  mUser is record for User
       using substream pointer as reach user
@@ -941,5 +929,26 @@ typedef struct {
 	Aud_Sram_Block mAud_Sram_Block[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE];
 } Aud_Sram_Manager;
 
+/*
+ * IRQ Manager
+ */
+#define IRQ_MIN_RATE 48000
+#define IRQ_MAX_RATE 260000
+#define IRQ_TOLERANCE_US 10 /* irq period difference that can be tolerated */
+
+struct irq_user {
+	const void *user;
+	unsigned int request_rate;
+	unsigned int request_count;
+	struct list_head list;
+};
+
+struct irq_manager {
+	bool is_on;
+	unsigned int rate;
+	unsigned int count;
+	struct list_head users;
+	const struct irq_user *selected_user;
+};
 
 #endif

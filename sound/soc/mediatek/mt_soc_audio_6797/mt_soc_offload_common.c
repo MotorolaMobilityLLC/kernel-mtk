@@ -297,11 +297,6 @@ static int mtk_offload_dl3_prepare(void)
 			SetI2SDacEnable(true);
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-		/* here to set interrupt_distributor */
-		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
-				afe_offload_block.period_size);
-		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
-				afe_offload_block.samplerate);
 		EnableAfe(true);
 		mPrepareDone = true;
 	}
@@ -319,7 +314,10 @@ static int mtk_offload_dl3_start(void)
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I24,
 			Soc_Aud_InterConnectionOutput_O04);
 	/*set IRQ info, only to Cm4*/
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE, true);
+	irq_add_user(&afe_offload_block,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+		     afe_offload_block.samplerate,
+		     afe_offload_block.period_size);
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3,  afe_offload_block.samplerate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
@@ -330,7 +328,8 @@ static int mtk_offload_dl3_start(void)
 static int mtk_offload_dl3_stop(void)
 {
 	pr_debug("%s\n", __func__);
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE, false);
+	irq_remove_user(&afe_offload_block, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
+
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I23,
@@ -880,7 +879,10 @@ static void mtk_compr_offload_resume(void)
 {
 	pr_debug("%s\n", __func__);
 	afe_offload_block.state = afe_offload_block.pre_state;
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE, true);
+	irq_add_user(&afe_offload_block,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+		     afe_offload_block.samplerate,
+		     afe_offload_block.period_size);
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
@@ -896,7 +898,7 @@ static void mtk_compr_offload_pause(void)
 	pr_debug("%s\n", __func__);
 	afe_offload_block.pre_state = afe_offload_block.state;
 	afe_offload_block.state = OFFLOAD_STATE_PAUSED;
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE, false);
+	irq_remove_user(&afe_offload_block, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT

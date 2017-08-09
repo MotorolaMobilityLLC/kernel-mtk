@@ -98,7 +98,7 @@ static void StopAudioI2S2adc2Hardware(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
 	SetExtI2SAdcInEnable(true);
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I25, Soc_Aud_InterConnectionOutput_O21);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I26, Soc_Aud_InterConnectionOutput_O22);
@@ -146,9 +146,11 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size);
-	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->rate);
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
+	/* here to set interrupt */
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
 
 	EnableAfe(true);
 }
