@@ -299,4 +299,5 @@ extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
 #if !defined(CONFIG_MTK_GPIO_LEGACY)
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
+extern int mtk_wdt_swsysret_config(int bit, int set_value);
 #endif /* _MTK_WCN_CMB_HW_H_ */
