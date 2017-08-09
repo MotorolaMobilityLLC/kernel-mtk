@@ -548,7 +548,7 @@ static void _mt_eem_aee_init(void)
 	#define eem_warning(fmt, args...)   pr_warn(EEM_TAG fmt, ##args)
 	#define eem_notice(fmt, args...)    pr_notice(EEM_TAG fmt, ##args)
 	#define eem_info(fmt, args...)      pr_info(EEM_TAG fmt, ##args)
-	#define eem_debug(fmt, args...)     pr_debug(EEM_TAG fmt, ##args)
+	#define eem_debug(fmt, args...)     /* pr_debug(EEM_TAG fmt, ##args) */
 #endif
 
 	#if EN_ISR_LOG /* For Interrupt use */
@@ -3009,7 +3009,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	det->t250 = eem_read(TEMP);
 
 	if (((det->t250 & 0xff)  > 0x4b) && ((det->t250  & 0xff) < 0xd3)) {
-		eem_error("Temperature to high, (%d) degree, EEM-1 stop to update voltage\n", det->t250 + 25);
+		eem_error("Temperature to high ----- (%d) degree !!\n", det->t250 + 25);
 		goto out;
 	}
 
