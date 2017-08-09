@@ -1746,6 +1746,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, wdt_work);
 	struct ccci_modem *md = md_ctrl->modem;
 	int ret = 0;
+#if 0
 	/* 1. dump RGU reg */
 	CCCI_INF_MSG(md->index, TAG, "Dump MD RGU registers\n");
 	md_cd_lock_modem_clock_src(1);
@@ -1757,6 +1758,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 	ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x30);
 #endif
 	md_cd_lock_modem_clock_src(0);
+#endif
 	if (md->md_state == INVALID) {
 		CCCI_ERR_MSG(md->index, TAG, "md_cd_wdt_work: md_state is INVALID\n");
 		return;

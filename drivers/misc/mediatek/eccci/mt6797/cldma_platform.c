@@ -253,11 +253,10 @@ void md_cd_lock_modem_clock_src(int locked)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 #if 0
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	unsigned int reg_value;
 	void __iomem *md_addr;
-#endif
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
 	md_cd_lock_modem_clock_src(1);
@@ -279,7 +278,6 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	ccci_mem_dump(md->index, (md_reg->md_pc_mon2 + 0x100), 0x380);
 	ccci_mem_dump(md->index, (md_reg->md_pc_mon2 + 0x400), 0x100);
 	ccci_write32(md_reg->md_pc_mon2, 4, 0x1);	/* restart MD PCMon */
-#if 0
 	/* 4. TO PSM */
 	CCCI_INF_MSG(md->index, TAG, "Dump MD TOPSM status 0x%x\n", MD_TOPSM_STATUS_BASE);
 	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
@@ -343,8 +341,8 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
 	ccci_mem_dump(md->index, md_reg->md_bootup_2, MD_Bootup_DUMP_LEN2);
 	ccci_mem_dump(md->index, md_reg->md_bootup_3, MD_Bootup_DUMP_LEN3);
-#endif
 	md_cd_lock_modem_clock_src(0);
+#endif
 }
 
 void md_cd_check_md_DCM(struct ccci_modem *md)
