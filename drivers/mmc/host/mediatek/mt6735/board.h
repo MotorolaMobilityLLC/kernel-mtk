@@ -79,7 +79,6 @@ enum {
 };
 
 struct msdc_ett_settings {
-	unsigned int speed_mode;
 #define MSDC_DEFAULT_MODE (0)
 #define MSDC_SDR50_MODE   (1)
 #define MSDC_DDR50_MODE   (2)
@@ -136,9 +135,13 @@ struct msdc_hw {
 	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
 	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
 
-	struct msdc_ett_settings *ett_settings;
-	unsigned int ett_count;
-	unsigned long host_function;	/* define host function */
+	struct msdc_ett_settings *ett_hs200_settings;
+	unsigned int ett_hs200_count;
+	struct msdc_ett_settings *ett_hs400_settings;
+	unsigned int ett_hs400_count;
+
+	unsigned char host_function;          /* define host function*/
+
 	bool boot;		/* define boot host */
 	bool cd_level;		/* card detection level */
 
@@ -164,8 +167,6 @@ struct msdc_hw {
 	void (*register_pm)(pm_callback_t pm_cb, void *data);
 };
 
-extern struct msdc_hw msdc0_hw;
-extern struct msdc_hw msdc1_hw;
 extern struct msdc_hw msdc2_hw;
 extern struct msdc_hw msdc3_hw;
 

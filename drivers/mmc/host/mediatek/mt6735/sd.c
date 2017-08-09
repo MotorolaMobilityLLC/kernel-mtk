@@ -56,6 +56,7 @@
 #endif /* MTK_SDIO30_ONLINE_TUNING_SUPPORT */
 
 #include <queue.h>
+#include <linux/gpio.h>
 
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/partition.h>
@@ -115,6 +116,13 @@ unsigned int sd_debug_zone[HOST_MAX_NUM] = {
 	0,
 };
 
+/* for enable/disable register dump */
+unsigned int sd_register_zone[HOST_MAX_NUM] = {
+	1,
+	1,
+	1,
+	1,
+};
 /* mode select */
 u32 dma_size[HOST_MAX_NUM] = {
 	512,
@@ -322,6 +330,7 @@ static struct device_node *apmixed_node;
 static struct device_node *topckgen_node;
 static struct device_node *eint_node;
 static unsigned int cd_irq;
+static unsigned int cd_gpio;
 
 void __iomem *gpio_reg_base;
 void __iomem *infracfg_ao_reg_base;
@@ -763,6 +772,12 @@ void msdc_dump_info(u32 id)
 
 	if (host == NULL) {
 		pr_err("msdc host<%d> null\n", id);
+		return;
+	}
+
+	/* when detect card, cmd13 will be sent which timeout log is not needed */
+	if (!sd_register_zone[id]) {
+		pr_err("msdc host<%d> is timeout when detect, so don't dump register\n", id);
 		return;
 	}
 	base = host->base;
@@ -1971,8 +1986,7 @@ static void msdc_reset_crc_tune_counter(struct msdc_host *host,	int index)
 			host->id, index);
 	}
 }
-/* weiping fix power-tune */
-#if 0
+
 static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 {
 	int got_polarity = 0;
@@ -1996,7 +2010,7 @@ static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
-		if ((host->hw->flags & MSDC_CD_PIN_EN)
+		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 			&& (got_polarity ^ host->hw->cd_level))
 			tasklet_hi_schedule(&host->card_tasklet);
 		else {
@@ -2010,7 +2024,7 @@ static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 			host->block_bad_card, host->card_inserted);
 	}
 }
-#endif
+
 /* host doesn't need the clock on */
 void msdc_gate_clock(struct msdc_host *host, int delay)
 {
@@ -2204,75 +2218,6 @@ static void msdc_eirq_sdio(void *data)
 #endif
 }
 
-/* msdc_eirq_cd will not be used!  We not using EINT for card detection. */
-static void msdc_eirq_cd(void *data)
-{
-	struct msdc_host *host = (struct msdc_host *)data;
-
-	N_MSG(INT, "CD EINT");
-
-	tasklet_hi_schedule(&host->card_tasklet);
-}
-/* weiping fix */
-#if 0
-/* detect cd interrupt */
-static void msdc_tasklet_card(unsigned long arg)
-{
-	struct msdc_host *host = (struct msdc_host *)arg;
-	struct msdc_hw *hw = host->hw;
-	/* unsigned long flags; */
-	/* void __iomem *base = host->base; */
-	u32 inserted;
-	/* u32 status = 0; */
-
-	/* spin_lock_irqsave(&host->lock, flags); */
-	/* msdc_ungate_clock(host); */
-
-	if (hw->get_cd_status) {	/* NULL */
-		inserted = hw->get_cd_status();
-	} else {
-		/* status = sdr_read32(MSDC_PS); */
-		if (hw->cd_level)
-			inserted = (host->sd_cd_polarity == 0) ? 1 : 0;
-		else
-			inserted = (host->sd_cd_polarity == 0) ? 0 : 1;
-	}
-	if (host->block_bad_card) {
-		inserted = 0;
-		if (host->mmc->card)
-			mmc_card_set_removed(host->mmc->card);
-		ERR_MSG("remove bad SD card");
-	} else {
-		ERR_MSG("card found<%s>", inserted ? "inserted" : "removed");
-	}
-
-	host->card_inserted = inserted;
-	host->mmc->f_max = HOST_MAX_MCLK;
-	host->hw->cmd_edge = 0;	/* new card tuning from 0 */
-	host->hw->rdata_edge = 0;
-	host->hw->wdata_edge = 0;
-	if (hw->flags & MSDC_UHS1) {
-		host->mmc->caps |= MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25
-			| MMC_CAP_UHS_SDR50 | MMC_CAP_UHS_SDR104;
-		host->mmc->caps2 |= MMC_CAP2_HS200_1_8V_SDR;
-	}
-
-	if (hw->flags & MSDC_DDR)
-		host->mmc->caps |= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR;
-	msdc_host_mode[host->id] = host->mmc->caps;
-	msdc_host_mode2[host->id] = host->mmc->caps2;
-	if ((hw->flags & MSDC_CD_PIN_EN) && inserted) {
-		msdc_reset_pwr_cycle_counter(host);
-		msdc_reset_crc_tune_counter(host, ALL_TUNE_CNT);
-		msdc_reset_tmo_tune_counter(host, ALL_TUNE_CNT);
-	}
-
-	ERR_MSG("host->suspend(%d)", host->suspend);
-	if (!host->suspend && host->sd_cd_insert_work)
-		mmc_detect_change(host->mmc, msecs_to_jiffies(200));
-	ERR_MSG("insert_workqueue(%d)", host->sd_cd_insert_work);
-}
-#endif
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 
 static void sdio_unreq_vcore(struct work_struct *work)
@@ -2749,7 +2694,7 @@ int msdc_reinit(struct msdc_host *host)
 	if (host->block_bad_card)
 		ERR_MSG("Need block this bad SD card from re-initialization");
 
-	if ((!(host->hw->flags & MSDC_CD_PIN_EN)) && (host->block_bad_card == 0)) {
+	if ((host->mmc->caps & MMC_CAP_NONREMOVABLE) && (host->block_bad_card == 0)) {
 		/* power cycle */
 		ERR_MSG("SD card Re-Init!");
 		mmc_claim_host(host->mmc);
@@ -2812,7 +2757,7 @@ int msdc_reinit(struct msdc_host *host)
 		ERR_MSG("Reinit %s", ret == 0 ? "success" : "fail");
 	}
 
-	if ((host->hw->flags & MSDC_CD_PIN_EN) && (host->mmc->card)
+	if ((!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) && (host->mmc->card)
 	    && mmc_card_present(host->mmc->card)
 	    && (!mmc_card_removed(host->mmc->card))
 	    && (host->block_bad_card == 0))
@@ -7804,23 +7749,22 @@ static void msdc_apply_ett_settings(struct msdc_host *host, int mode)
 {
 	unsigned int i = 0;
 	void __iomem *base = host->base;
-	struct msdc_ett_settings *ett = NULL;
+	struct msdc_ett_settings *ett = NULL, *ett_item = NULL;
+	unsigned int ett_count = 0;
 
-	if (host->hw->ett_count == 0) {
-		pr_debug("[%s][%d]\n", __func__, __LINE__);
-		return;
-	}
 	switch (emmc_id) {
 #ifdef MSDC_SUPPORT_SANDISK_COMBO_ETT
 	case SANDISK_EMMC_CHIP:
 		pr_err("--- apply sandisk emmc ett settings\n");
-		host->hw->ett_settings = msdc0_ett_settings_for_sandisk;
+		host->hw->ett_hs200_settings = msdc0_ett_hs200_settings_for_sandisk;
+		host->hw->ett_hs400_settings = msdc0_ett_hs400_settings_for_sandisk;
 		break;
 #endif
 #ifdef MSDC_SUPPORT_SAMSUNG_COMBO_ETT
 	case SAMSUNG_EMMC_CHIP:
 		pr_err("--- apply samsung emmc ett settings\n");
-		host->hw->ett_settings = msdc0_ett_settings_for_samsung;
+		host->hw->ett_hs200_settings = msdc0_ett_hs200_settings_for_samsung;
+		host->hw->ett_hs400_settings = msdc0_ett_hs400_settings_for_samsung;
 		break;
 #endif
 	default:
@@ -7828,15 +7772,29 @@ static void msdc_apply_ett_settings(struct msdc_host *host, int mode)
 		break;
 	}
 
-	for (i = 0; i < host->hw->ett_count; i++) {
-		ett = (struct msdc_ett_settings *)(host->hw->ett_settings + i);
-		if (mode == ett->speed_mode) {
-			sdr_set_field((base + ett->reg_addr),
-				ett->reg_offset, ett->value);
-			pr_err("%s:msdc%d,reg[0x%x],offset[0x%x],val[0x%x],readback[0x%x]\n"
-				, __func__, host->id, ett->reg_addr, ett->reg_offset, ett->value
-				, sdr_read32(base + ett->reg_addr));
+	if (MSDC_HS200_MODE == mode) {
+		ett_count = host->hw->ett_hs200_count;
+		ett = host->hw->ett_hs200_settings;
+		pr_err("[MSDC, %s] hs200 ett, ett_count=%d\n", __func__, host->hw->ett_hs200_count);
+	} else if (MSDC_HS400_MODE == mode) {
+		/* clear hs200 setting */
+		ett_count = host->hw->ett_hs200_count;
+		ett = host->hw->ett_hs200_settings;
+		for (i = 0; i < ett_count; i++) {
+			ett_item = (struct msdc_ett_settings *)(ett + i);
+			sdr_set_field((base + ett_item->reg_addr), ett_item->reg_offset, 0);
 		}
+		ett_count = host->hw->ett_hs400_count;
+		ett = host->hw->ett_hs400_settings;
+		pr_err("[MSDC, %s] hs400 ett, ett_count=%d\n", __func__, host->hw->ett_hs400_count);
+	}
+	for (i = 0; i < ett_count; i++) {
+		ett_item = (struct msdc_ett_settings *)(ett + i);
+		sdr_set_field((base + ett_item->reg_addr),
+				ett_item->reg_offset, ett_item->value);
+		pr_err("%s:msdc%d,reg[0x%x],offset[0x%x],val[0x%x],readback[0x%x]\n"
+				, __func__, host->id, ett_item->reg_addr, ett_item->reg_offset,
+				ett_item->value, sdr_read32(base + ett_item->reg_addr));
 	}
 	sdr_get_field(MSDC_PATCH_BIT1, MSDC_PB1_CMD_RSP_TA_CNTR,
 		host->saved_para.cmd_resp_ta_cntr);
@@ -7950,6 +7908,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base;
 	unsigned long flags;
+	int level = 0;
 	/* int present = 1; */
 
 	base = host->base;
@@ -7966,17 +7925,18 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	}
 
 	/* for emmc, MSDC_REMOVABLE not set, always return 1 */
-	if (!(host->hw->flags & MSDC_REMOVABLE)) {
+	if (mmc->caps & MMC_CAP_NONREMOVABLE) {
 		host->card_inserted = 1;
 		goto end;
 	}
 	/* msdc_ungate_clock(host); */
 
-	if (host->hw->flags & MSDC_CD_PIN_EN) {	/* for card, MSDC_CD_PIN_EN set */
+	if (!(mmc->caps & MMC_CAP_NONREMOVABLE)) {
+		level = __gpio_get_value(cd_gpio);
 		if (host->hw->cd_level)
-			host->card_inserted = (host->sd_cd_polarity == 0) ? 1 : 0;
+			host->card_inserted = (level == 0) ? 0 : 1;
 		else
-			host->card_inserted = (host->sd_cd_polarity == 0) ? 0 : 1;
+			host->card_inserted = (level == 0) ? 1 : 0;
 	} else { /* TODO Check DAT3 pins for card detection */
 		host->card_inserted = 1;
 	}
@@ -7993,8 +7953,24 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	pr_debug("Card insert<%d> Block bad card<%d>\n", host->card_inserted,
 		host->block_bad_card);
  end:
+	/* enable msdc register dump */
+	sd_register_zone[host->id] = 1;
+
 	spin_unlock_irqrestore(&host->lock, flags);
 	return host->card_inserted;
+}
+
+static void msdc_ops_card_event(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+
+	host->block_bad_card = 0;
+	msdc_reset_pwr_cycle_counter(host);
+	msdc_reset_crc_tune_counter(host, ALL_TUNE_CNT);
+	msdc_reset_tmo_tune_counter(host, ALL_TUNE_CNT);
+
+	/* when detect card, cmd13 will be sent which timeout log is not needed */
+	sd_register_zone[host->id] = 0;
 }
 
 /* ops.enable_sdio_irq */
@@ -8126,6 +8102,7 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.set_ios = msdc_ops_set_ios,
 	.get_ro = msdc_ops_get_ro,
 	.get_cd = msdc_ops_get_cd,
+	.card_event = msdc_ops_card_event,
 	.enable_sdio_irq = msdc_ops_enable_sdio_irq,
 	.start_signal_voltage_switch = msdc_ops_switch_volt,
 	.execute_tuning = msdc_execute_tuning,
@@ -8135,41 +8112,7 @@ static struct mmc_host_ops mt_msdc_ops = {
 /* interrupt handler                 */
 /*--------------------------------------------------------------------------*/
 /* static __tcmfunc irqreturn_t msdc_irq(int irq, void *dev_id) */
-/* weiping fix sd hot-plug */
-#if 0
-#ifndef FPGA_PLATFORM
-static irqreturn_t msdc1_eint_handler(void)
-{
-	struct msdc_host *host = mtk_msdc_host[1];
-	int got_bad_card = 0;
-	unsigned long flags;
 
-	spin_lock_irqsave(&host->remove_bad_card, flags);
-	if (host->hw->cd_level ^ host->sd_cd_polarity) {
-		got_bad_card = host->block_bad_card;
-		host->card_inserted = 0;
-		if (host->mmc && host->mmc->card)
-			mmc_card_set_removed(host->mmc->card);
-	}
-	host->sd_cd_polarity = (~(host->sd_cd_polarity)) & 0x1;
-	spin_unlock_irqrestore(&host->remove_bad_card, flags);
-	host->block_bad_card = 0;
-
-	if (host->sd_cd_polarity == 0)
-		irq_set_irq_type(cd_irq, IRQ_TYPE_LEVEL_LOW);
-	else
-		irq_set_irq_type(cd_irq, IRQ_TYPE_LEVEL_HIGH);
-
-	if (got_bad_card == 0)
-		tasklet_hi_schedule(&host->card_tasklet);
-	pr_err("SD card %s(%x:%x)", (host->hw->cd_level ^ host->sd_cd_polarity) ? "insert" : "remove",
-	       host->hw->cd_level, host->sd_cd_polarity);
-
-	return IRQ_HANDLED;
-}
-
-#endif
-#endif
 static irqreturn_t msdc_irq(int irq, void *dev_id)
 {
 	struct msdc_host *host = (struct msdc_host *)dev_id;
@@ -8457,101 +8400,6 @@ tune:
 /*--------------------------------------------------------------------------*/
 /* platform_driver members                                                  */
 /*--------------------------------------------------------------------------*/
-/* weiping fix sd hot-plug */
-#if 0
-/* called by msdc_drv_probe/remove */
-static void msdc_enable_cd_irq(struct msdc_host *host, int enable)
-{
-#ifndef FPGA_PLATFORM
-	struct msdc_hw *hw = host->hw;
-
-	/* struct device_node *node; */
-	unsigned int gpiopin, debounce;
-	unsigned int ints[2] = { 0, 0 };
-	void __iomem *base = host->base;
-
-	sdr_clr_bits(MSDC_PS, MSDC_PS_CDEN);
-	sdr_clr_bits(MSDC_INTEN, MSDC_INTEN_CDSC);
-	sdr_clr_bits(SDC_CFG, SDC_CFG_INSWKUP);
-
-	if ((eint_node == NULL) || (cd_irq == 0))
-		return;
-
-	if (enable) {
-		/* get gpio pin & debounce time */
-		of_property_read_u32_array(eint_node,
-			"debounce", ints, ARRAY_SIZE(ints));
-
-		/* set debounce */
-		gpiopin = ints[GPIOPIN];
-		debounce = ints[DEBOUNCE];
-		mt_gpio_set_debounce(gpiopin, debounce);
-
-		if (hw->cd_level) {
-			host->sd_cd_polarity = 1;
-			/* request irq for eint (either way) */
-			if (request_irq(cd_irq, (irq_handler_t) msdc1_eint_handler,
-				IRQF_TRIGGER_HIGH, "MSDC1_INS-eint", NULL))
-				pr_err("MSDC1 IRQ LINE NOT AVAILABLE!!\n");
-		} else {
-			host->sd_cd_polarity = 0;
-			/* request irq for eint (either way) */
-			if (request_irq(cd_irq, (irq_handler_t) msdc1_eint_handler,
-				IRQF_TRIGGER_LOW, "MSDC1_INS-eint", NULL))
-				pr_err("MSDC1 IRQ LINE NOT AVAILABLE!!\n");
-		}
-	} else {
-		disable_irq(cd_irq);
-	}
-#else
-	struct msdc_hw *hw = host->hw;
-	void __iomem *base = host->base;
-
-	/* for sdio, not set */
-	if ((hw->flags & MSDC_CD_PIN_EN) == 0) {
-		sdr_clr_bits(MSDC_PS, MSDC_PS_CDEN);
-		sdr_clr_bits(MSDC_INTEN, MSDC_INTEN_CDSC);
-		sdr_clr_bits(SDC_CFG, SDC_CFG_INSWKUP);
-		return;
-	}
-
-	N_MSG(CFG, "CD IRQ Eanable(%d)", enable);
-
-	if (enable) {
-		if (hw->enable_cd_eirq) {	/* not set, never enter */
-			hw->enable_cd_eirq();
-		} else {
-			/* card detection circuit relies on the core power so that the core
-			 * power shouldn't be turned off. Here adds a reference count to
-			 * keep the core power alive.
-			 */
-			if (hw->config_gpio_pin)	/* NULL */
-				hw->config_gpio_pin(MSDC_CD_PIN, MSDC_GPIO_PULL_UP);
-
-			sdr_set_field(MSDC_PS, MSDC_PS_CDDEBOUNCE, DEFAULT_DEBOUNCE);
-			sdr_set_bits(MSDC_PS, MSDC_PS_CDEN);
-			sdr_set_bits(MSDC_INTEN, MSDC_INTEN_CDSC);
-			sdr_set_bits(SDC_CFG, SDC_CFG_INSWKUP);
-		}
-	} else {
-		if (hw->disable_cd_eirq) {
-			hw->disable_cd_eirq();
-		} else {
-			if (hw->config_gpio_pin)	/* NULL */
-				hw->config_gpio_pin(MSDC_CD_PIN, MSDC_GPIO_PULL_DOWN);
-
-			sdr_clr_bits(SDC_CFG, SDC_CFG_INSWKUP);
-			sdr_clr_bits(MSDC_PS, MSDC_PS_CDEN);
-			sdr_clr_bits(MSDC_INTEN, MSDC_INTEN_CDSC);
-
-			/* Here decreases a reference count to core power since card
-			 * detection circuit is shutdown.
-			 */
-		}
-	}
-#endif
-}
-#endif
 
 /* Add this function to check if no interrupt back after write.         *
  * It may occur when write crc revice, but busy over data->timeout_ns   */
@@ -8761,11 +8609,7 @@ static void msdc_deinit_hw(struct msdc_host *host)
 	/* Disable and clear all interrupts */
 	sdr_clr_bits(MSDC_INTEN, sdr_read32(MSDC_INTEN));
 	sdr_write32(MSDC_INT, sdr_read32(MSDC_INT));
-/* weiping fix sd hot-plug */
-#if 0
-	/* Disable card detection */
-	msdc_enable_cd_irq(host, 0);
-#endif
+
 	msdc_set_power_mode(host, MMC_POWER_OFF);	/* make sure power down */
 }
 
@@ -9038,8 +8882,8 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 	mmc = platform_get_drvdata(pdev);
 	host = mmc_priv(mmc);
 	if (host->hw->host_function == MSDC_SD) {
-		if ((host->id == 1) && (host->hw->flags & MSDC_CD_PIN_EN)) {
-			l_polarity = mt_eint_get_polarity_external(cd_irq);
+		if ((host->id == 1) && (!(mmc->caps & MMC_CAP_NONREMOVABLE))) {
+			l_polarity = mt_eint_get_polarity_external(mmc->slot.cd_irq);
 			if (l_polarity == MT_POLARITY_LOW)
 				host->sd_cd_polarity = 0;
 			else
@@ -9050,7 +8894,7 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 				mmc_card_set_removed(host->mmc->card);
 				host->card_inserted = 0;
 			}
-		} else if ((host->id == 2) && (host->hw->flags & MSDC_CD_PIN_EN)) {
+		} else if ((host->id == 2) && (!(mmc->caps & MMC_CAP_NONREMOVABLE))) {
 			/* sdio need handle here */
 		}
 		host->block_bad_card = 0;
@@ -9111,6 +8955,214 @@ out:
 }
 #endif
 
+static int msdc_get_pinctl_settings(struct msdc_host *host)
+{
+	struct mmc_host *mmc = host->mmc;
+	struct device_node *np = mmc->parent->of_node;
+	struct device_node *pinctl_node;
+	struct device_node *pins_cmd_node;
+	struct device_node *pins_dat_node;
+	struct device_node *pins_clk_node;
+	struct device_node *pins_rst_node;
+	struct device_node *pins_ds_node;
+	struct device_node *pinctl_sdr104_node;
+	struct device_node *pinctl_sdr50_node;
+	struct device_node *pinctl_ddr50_node;
+
+	/*parse pinctl settings*/
+	pinctl_node = of_parse_phandle(np, "pinctl", 0);
+	pins_cmd_node = of_get_child_by_name(pinctl_node, "pins_cmd");
+	of_property_read_u8(pins_cmd_node, "drive-strength", &host->hw->cmd_drv);
+
+	pins_dat_node = of_get_child_by_name(pinctl_node, "pins_dat");
+	of_property_read_u8(pins_dat_node, "drive-strength", &host->hw->dat_drv);
+
+	pins_clk_node = of_get_child_by_name(pinctl_node, "pins_clk");
+	of_property_read_u8(pins_clk_node, "drive-strength", &host->hw->clk_drv);
+
+	pins_rst_node = of_get_child_by_name(pinctl_node, "pins_rst");
+	of_property_read_u8(pins_rst_node, "drive-strength", &host->hw->rst_drv);
+
+	pins_ds_node = of_get_child_by_name(pinctl_node, "pins_ds");
+	of_property_read_u8(pins_ds_node, "drive-strength", &host->hw->ds_drv);
+
+/********************************************************************************************************/
+	pinctl_sdr104_node = of_parse_phandle(np, "pinctl_sdr104", 0);
+	pins_cmd_node = of_get_child_by_name(pinctl_sdr104_node, "pins_cmd");
+	of_property_read_u8(pins_cmd_node, "drive-strength", &host->hw->cmd_drv_sd_18);
+
+	pins_dat_node = of_get_child_by_name(pinctl_sdr104_node, "pins_dat");
+	of_property_read_u8(pins_dat_node, "drive-strength", &host->hw->dat_drv_sd_18);
+
+	pins_clk_node = of_get_child_by_name(pinctl_sdr104_node, "pins_clk");
+	of_property_read_u8(pins_clk_node, "drive-strength", &host->hw->clk_drv_sd_18);
+
+/********************************************************************************************************/
+	pinctl_sdr50_node = of_parse_phandle(np, "pinctl_sdr50", 0);
+	pins_cmd_node = of_get_child_by_name(pinctl_sdr50_node, "pins_cmd");
+	of_property_read_u8(pins_cmd_node, "drive-strength", &host->hw->cmd_drv_sd_18_sdr50);
+
+	pins_dat_node = of_get_child_by_name(pinctl_sdr50_node, "pins_dat");
+	of_property_read_u8(pins_dat_node, "drive-strength", &host->hw->dat_drv_sd_18_sdr50);
+
+	pins_clk_node = of_get_child_by_name(pinctl_sdr50_node, "pins_clk");
+	of_property_read_u8(pins_clk_node, "drive-strength", &host->hw->clk_drv_sd_18_sdr50);
+
+/********************************************************************************************************/
+	pinctl_ddr50_node = of_parse_phandle(np, "pinctl_ddr50", 0);
+	pins_cmd_node = of_get_child_by_name(pinctl_ddr50_node, "pins_cmd");
+	of_property_read_u8(pins_cmd_node, "drive-strength", &host->hw->cmd_drv_sd_18_ddr50);
+
+	pins_dat_node = of_get_child_by_name(pinctl_ddr50_node, "pins_dat");
+	of_property_read_u8(pins_dat_node, "drive-strength", &host->hw->dat_drv_sd_18_ddr50);
+
+	pins_clk_node = of_get_child_by_name(pinctl_ddr50_node, "pins_clk");
+	of_property_read_u8(pins_clk_node, "drive-strength", &host->hw->clk_drv_sd_18_ddr50);
+
+	return 0;
+}
+
+static int msdc_get_rigister_settings(struct msdc_host *host)
+{
+	struct mmc_host *mmc = host->mmc;
+	struct device_node *np = mmc->parent->of_node;
+	struct device_node *register_setting_node = NULL;
+
+	/*parse hw property settings*/
+	register_setting_node = of_parse_phandle(np, "register_setting", 0);
+	if (register_setting_node) {
+		of_property_read_u8(register_setting_node, "dat0rddly", &host->hw->dat0rddly);
+		of_property_read_u8(register_setting_node, "dat1rddly", &host->hw->dat1rddly);
+		of_property_read_u8(register_setting_node, "dat2rddly", &host->hw->dat2rddly);
+		of_property_read_u8(register_setting_node, "dat3rddly", &host->hw->dat3rddly);
+		of_property_read_u8(register_setting_node, "dat4rddly", &host->hw->dat4rddly);
+		of_property_read_u8(register_setting_node, "dat5rddly", &host->hw->dat5rddly);
+		of_property_read_u8(register_setting_node, "dat6rddly", &host->hw->dat6rddly);
+		of_property_read_u8(register_setting_node, "dat7rddly", &host->hw->dat7rddly);
+
+		of_property_read_u8(register_setting_node, "datwrddly", &host->hw->datwrddly);
+		of_property_read_u8(register_setting_node, "cmdrrddly", &host->hw->cmdrrddly);
+		of_property_read_u8(register_setting_node, "cmdrddly", &host->hw->cmdrddly);
+
+		of_property_read_u8(register_setting_node, "cmd_edge", &host->hw->cmd_edge);
+		of_property_read_u8(register_setting_node, "rdata_edge", &host->hw->rdata_edge);
+		of_property_read_u8(register_setting_node, "wdata_edge", &host->hw->wdata_edge);
+	} else {
+		pr_err("[MSDC%d] register_setting is not found in DT.\n", host->id);
+		return 1;
+	}
+/*parse ett*/
+	if (of_property_read_u32(register_setting_node, "ett-hs200-cells", &host->hw->ett_hs200_count))
+		pr_err("[MSDC] ett-hs200-cells is not found in DT.\n");
+	host->hw->ett_hs200_settings =
+		kzalloc(sizeof(struct msdc_ett_settings) * host->hw->ett_hs200_count, GFP_KERNEL);
+
+	if (MSDC_EMMC == host->hw->host_function
+		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-customer",
+		host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
+		pr_err("[MSDC%d] hs200 ett setting for customer is found in DT.\n", host->id);
+	} else if (MSDC_EMMC == host->hw->host_function
+		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-default",
+		host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
+		pr_err("[MSDC%d] hs200 ett setting for default is found in DT.\n", host->id);
+	} else if (MSDC_EMMC == host->hw->host_function) {
+		pr_err("[MSDC%d]error: hs200 ett setting is not found in DT.\n", host->id);
+	}
+
+	if (of_property_read_u32(register_setting_node, "ett-hs400-cells", &host->hw->ett_hs400_count))
+		pr_err("[MSDC] ett-hs400-cells is not found in DT.\n");
+	host->hw->ett_hs400_settings =
+		kzalloc(sizeof(struct msdc_ett_settings) * host->hw->ett_hs400_count, GFP_KERNEL);
+
+	if (MSDC_EMMC == host->hw->host_function
+		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-customer",
+		host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
+		pr_err("[MSDC%d] hs400 ett setting for customer is found in DT.\n", host->id);
+	} else if (MSDC_EMMC == host->hw->host_function
+		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-default",
+		host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
+		pr_err("[MSDC%d] hs400 ett setting for default is found in DT.\n", host->id);
+	} else if (MSDC_EMMC == host->hw->host_function) {
+		pr_err("[MSDC%d]error: hs400 ett setting is not found in DT.\n", host->id);
+	}
+}
+
+/**
+ *	msdc_of_parse() - parse host's device-tree node
+ *	@host: host whose node should be parsed.
+ *
+ */
+int msdc_of_parse(struct mmc_host *mmc)
+{
+	struct device_node *np;
+	struct msdc_host *host = mmc_priv(mmc);
+	int ret, len, debug = 0;
+
+	if (!mmc->parent || !mmc->parent->of_node)
+		return 1;
+
+	np = mmc->parent->of_node;
+	host->mmc = mmc;  /* msdc_check_init_done() need */
+	host->hw = kzalloc(sizeof(struct msdc_hw), GFP_KERNEL);
+
+	/*basic settings*/
+	if (0 == strcmp(np->name, "MSDC0"))
+		host->id = 0;
+	else if (0 == strcmp(np->name, "MSDC1"))
+		host->id = 1;
+	else if (0 == strcmp(np->name, "MSDC2"))
+		host->id = 2;
+	else
+		host->id = 3;
+
+	pr_err("of msdc DT probe %s!\n", np->name);
+
+	/* iomap register */
+	host->base = of_iomap(np, 0);
+	if (!host->base) {
+		pr_err("can't of_iomap for msdc!!\n");
+		return -ENOMEM;
+	}
+	pr_err("of_iomap for msdc @ 0x%p\n", host->base);
+
+	/* get irq #  */
+	host->irq = irq_of_parse_and_map(np, 0);
+	pr_err("msdc get irq # %d\n", host->irq);
+	BUG_ON(host->irq < 0);
+
+	/* get clk_src */
+	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src))
+		pr_err("[MDSC%d] error: clk_src isn't found in DT.\n", host->id);
+
+	/* get msdc flag(caps)*/
+	if (of_find_property(np, "msdc-sys-suspend", &len))
+		host->hw->flags |= MSDC_SYS_SUSPEND;
+
+	/*Returns 0 on success, -EINVAL if the property does not exist,
+	* -ENODATA if property does not have a value, and -EOVERFLOW if the
+	* property data isn't large enough.*/
+
+	if (of_property_read_u8(np, "host_function", &host->hw->host_function))
+		pr_err("[MSDC%d] host_function isn't found in DT\n", host->id);
+
+	if (of_find_property(np, "bootable", &len))
+		host->hw->boot = 1;
+
+	/*get cd_level*/
+	of_property_read_u8(np, "cd_level", &host->hw->cd_level);
+
+	/*get cd_gpio*/
+	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
+
+	msdc_get_rigister_settings(host);
+	msdc_get_pinctl_settings(host);
+
+	return 0;
+
+out:
+	return ret;
+}
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc;
@@ -9118,15 +9170,13 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	struct device_node *msdc_node;
 #endif
 	struct msdc_host *host;
-	struct msdc_hw *hw = NULL;
 	void __iomem *base;
-	unsigned int irq;
 	int ret;
 	struct irq_data l_irq_data;
 	unsigned int msdc_hw_parameter[sizeof(struct tag_msdc_hw_para) / 4];
 	unsigned int msdc_custom[1];
 	struct device_node *msdc_cust_node = NULL;
-	unsigned int host_id = 0;
+
 #ifdef FPGA_PLATFORM
 	u16 l_val;
 #endif
@@ -9148,22 +9198,20 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 	}
 
-	pr_err("of msdc DT probe %s!\n", pdev->dev.of_node->name);
+	/* Allocate MMC host for this device */
+	mmc = mmc_alloc_host(sizeof(struct msdc_host), &pdev->dev);
+	if (!mmc)
+		return -ENOMEM;
 
-	/* iomap register */
-	base = of_iomap(pdev->dev.of_node, 0);
-	if (!base) {
-		pr_err("can't of_iomap for msdc!!\n");
-		ret =  -ENOMEM;
-		goto out;
-	} else
-		pr_err("of_iomap for msdc @ 0x%p\n", base);
+	if (mmc_of_parse(mmc) || msdc_of_parse(mmc)) {
+		pr_err("DT happens error for msdc!!\n");
+		mmc_free_host(mmc);
+		return 1;
+	}
+	host = mmc_priv(mmc);
+	base = host->base;
 
-	/* get irq #  */
-	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-	pr_debug("msdc get irq # %d\n", irq);
-	BUG_ON(irq < 0);
-	l_irq_data.irq = irq;
+	l_irq_data.irq = host->irq;
 
 	if (gpio_node == NULL) {
 		gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,GPIO");
@@ -9247,92 +9295,39 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #ifdef CFG_DEV_MSDC0
 	/* Get custom node in Device tree, if not set, use default */
 	if (strcmp(pdev->dev.of_node->name, "MSDC0") == 0) {
-		host_id = 0;
-		hw = &msdc0_hw;
 		pdev->id = 0;
-		hw->ett_settings = msdc0_ett_settings;
-		hw->ett_count = MSDC0_ETT_COUNTS;
 		msdc_cust_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,MSDC0_custom");
 	}
 #endif
 #ifdef CFG_DEV_MSDC1
 	if (strcmp(pdev->dev.of_node->name, "MSDC1") == 0) {
-		host_id = 1;
-		hw = &msdc1_hw;
 		pdev->id = 1;
 		msdc_cust_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,MSDC1_custom");
 	}
 #endif
-	if (NULL == msdc_cust_node) {
-		pr_err("No custom DTS node, Use default parameter on %s\n",
-			pdev->dev.of_node->name);
-	} else {
-		/* If use custom parameter, custom = <1>
-		 * should be setted in device tree
-		 */
-		ret = of_property_read_u32_array(msdc_cust_node, "custom", msdc_custom,
-			ARRAY_SIZE(msdc_custom));
-		if (ret == 0 && msdc_custom[0] == 1) {
-			/* Get HW parameter from Device tree */
-			if (!of_property_read_u32_array(msdc_cust_node, "hw",
-				msdc_hw_parameter, ARRAY_SIZE(msdc_hw_parameter))) {
-				if (host_id == 0) {
-					if (msdc_setting_parameter(&msdc0_hw, msdc_hw_parameter))
-						pr_err("MSDC0 hw setting custom parameter error\n");
-					else
-						pr_err("MSDC0 hw setting custom parameter OK\n");
-				} else if (host_id == 1) {
-					if (msdc_setting_parameter(&msdc1_hw, msdc_hw_parameter))
-						pr_err("MSDC1 hw setting custom parameter error\n");
-					else
-						pr_err("MSDC1 hw setting custom parameter OK\n");
-				}
-			}
-		}
-		/* Get ett seeting from device tree, only for msdc0 */
-		if (host_id == 0) {
-			/* If use custom parameter, custom_ett = <1>
-			 * should be setted in device tree
-			 */
-			ret =
-			    of_property_read_u32_array(msdc_cust_node, "custom_ett",
-			    msdc_custom, ARRAY_SIZE(msdc_custom));
-			if (ret == 0 && msdc_custom[0] == 1) {
-				if (of_property_read_u32_array(msdc_cust_node, "ett_settings",
-					(unsigned int *)msdc0_ett_settings, MSDC0_ETT_COUNTS * 4))
-					pr_err("MSDC0 set custom ett settings error\n");
-				else
-					pr_err("MSDC0 set custom ett settings OK\n");
-			}
-		}
-	}
 #if defined(CFG_DEV_MSDC2)
 	if (strcmp(pdev->dev.of_node->name, "MSDC2") == 0) {
-		hw = &msdc2_hw;
+		host->hw = &msdc2_hw;
 		pdev->id = 2;
-		pr_err("platform_data hw:0x%p, is msdc2_hw\n", hw);
+		pr_err("platform_data hw:0x%p, is msdc2_hw\n", host->hw);
 	}
 #endif
 #if defined(CFG_DEV_MSDC3)
 	if (strcmp(pdev->dev.of_node->name, "MSDC3") == 0) {
-		hw = &msdc3_hw;
+		host->hw = &msdc3_hw;
 		pdev->id = 3;
-		pr_err("platform_data hw:0x%p, is msdc3_hw\n", hw);
+		pr_err("platform_data hw:0x%p, is msdc3_hw\n", host->hw);
 	}
 #endif
 
-	if (hw == NULL)
-		return -ENODEV;
-
-	if ((pdev->id == 1) && (hw->host_function == MSDC_SD)
+	if ((pdev->id == 1) && (host->hw->host_function == MSDC_SD)
 		&& (eint_node == NULL)) {
 		eint_node = of_find_compatible_node(NULL, NULL,
 			"mediatek, MSDC1_INS-eint");
 		if (eint_node) {
 			pr_debug("find MSDC1_INS-eint node!!\n");
-			hw->flags |= (MSDC_CD_PIN_EN | MSDC_REMOVABLE);
 
 			/* get irq #  */
 			if (!cd_irq)
@@ -9345,44 +9340,19 @@ static int msdc_drv_probe(struct platform_device *pdev)
 			pr_debug("can't find MSDC1_INS-eint compatible node\n");
 	}
 
-	/* Allocate MMC host for this device */
-	mmc = mmc_alloc_host(sizeof(struct msdc_host), &pdev->dev);
-	if (!mmc)
-		return -ENOMEM;
-
 	/* Set host parameters to mmc */
 	mmc->ops = &mt_msdc_ops;
 	mmc->f_min = HOST_MIN_MCLK;
-	mmc->f_max = HOST_MAX_MCLK;
 	mmc->ocr_avail = MSDC_OCR_AVAIL;
 
 	/* For sd card: MSDC_SYS_SUSPEND | MSDC_WP_PIN_EN | MSDC_CD_PIN_EN |
 					MSDC_REMOVABLE | MSDC_HIGHSPEED,
 	   For sdio   : MSDC_EXT_SDIO_IRQ | MSDC_HIGHSPEED */
-	if (hw->flags & MSDC_HIGHSPEED)
-		mmc->caps = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED;
-	if (hw->data_pins == 4)
-		mmc->caps |= MMC_CAP_4_BIT_DATA;
-	else if (hw->data_pins == 8)
-		mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_4_BIT_DATA;
-	if ((hw->flags & MSDC_SDIO_IRQ) || (hw->flags & MSDC_EXT_SDIO_IRQ))
+	if ((host->hw->flags & MSDC_SDIO_IRQ) || (host->hw->flags & MSDC_EXT_SDIO_IRQ))
 		mmc->caps |= MMC_CAP_SDIO_IRQ;	/* yes for sdio */
-	if (hw->flags & MSDC_UHS1) {
-		mmc->caps |= MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25 | MMC_CAP_UHS_SDR50
-			| MMC_CAP_UHS_SDR104;
-		mmc->caps2 |= MMC_CAP2_HS200_1_8V_SDR;
-	}
-	pr_debug("[%s]: hw->flags=0x%lx, MSDC_HS400=0x%x\n",
-		__func__, hw->flags, MSDC_HS400);
-	if (hw->flags & MSDC_HS400)
-		mmc->caps2 |= MMC_CAP2_HS400_1_8V;
-	if (hw->flags & MSDC_DDR)
-		mmc->caps |= MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR;
-	if (!(hw->flags & MSDC_REMOVABLE))
-		mmc->caps |= MMC_CAP_NONREMOVABLE;
 
 #ifdef MTK_MSDC_USE_CMD23
-	if (hw->host_function == MSDC_EMMC)
+	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_ERASE | MMC_CAP_CMD23;
 	else
 		mmc->caps |= MMC_CAP_ERASE;
@@ -9392,7 +9362,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->max_busy_timeout = 0;
 	/* MMC core transfer sizes tunable parameters */
 	mmc->max_segs = MAX_HW_SGMTS;
-	if (hw->host_function == MSDC_SDIO)
+	if (host->hw->host_function == MSDC_SDIO)
 		mmc->max_seg_size = MAX_SGMT_SZ_SDIO;
 	else
 		mmc->max_seg_size = MAX_SGMT_SZ;
@@ -9406,18 +9376,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	else
 		hclks = hclks_msdc30;
 #endif
-
-	host = mmc_priv(mmc);
-	host->hw = hw;
-	host->mmc = mmc;	/* msdc_check_init_done() need */
-	host->id = pdev->id;
 	host->error = 0;
-	host->irq = irq;
-	host->base = base;
+
 	/* mclk: the request clock of mmc sub-system */
 	host->mclk = 0;
 	/* hclk: clock of clock source to msdc controller */
-	host->hclk = hclks[hw->clk_src];
+	host->hclk = hclks[host->hw->clk_src];
 	/* sclk: the really clock after divition */
 	host->sclk = 0;
 	host->pm_state = PMSG_RESUME;
@@ -9441,7 +9405,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	msdc_set_host_power_control(host);
 	/* work around:hot-plug project SD card LDO alway on if no SD card insert */
 	if ((host->hw->host_function == MSDC_SD)
-		&& (host->hw->flags & MSDC_CD_PIN_EN)) {
+		&& (!(host->mmc->caps & MMC_CAP_NONREMOVABLE))) {
 		msdc_sd_power(host, 1);
 		msdc_sd_power(host, 0);
 	}
@@ -9451,7 +9415,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	 * mmc_rescan if check host->caps & NONREMOVABLE not call host->ops->get_cd
 	 * host->card_inserted cat not be set to 1 for eMMC, so set this flag here
 	 */
-	host->card_inserted = hw->flags & MSDC_REMOVABLE ? 0 : 1;
+	host->card_inserted = (host->mmc->caps & MMC_CAP_NONREMOVABLE) ? 1 : 0;
 	host->timeout_ns = 0;
 	host->timeout_clks = DEFAULT_DTOC * 1048576;
 
@@ -9493,7 +9457,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		MAX_BD_NUM * sizeof(struct bd_t), &host->dma.bd_addr, GFP_KERNEL);
 	BUG_ON((!host->dma.gpd) || (!host->dma.bd));
 	msdc_init_gpd_bd(host, &host->dma);
-	msdc_clock_src[host->id] = hw->clk_src;
+	msdc_clock_src[host->id] = host->hw->clk_src;
 	msdc_host_mode[host->id] = mmc->caps;
 	msdc_host_mode2[host->id] = mmc->caps2;
 	/*for emmc */
@@ -9555,23 +9519,20 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->timer.function = msdc_timer_pm;
 	host->timer.data = (unsigned long)host;
 
-	ret = request_irq((unsigned int)irq, msdc_irq, IRQF_TRIGGER_NONE, DRV_NAME,
+	ret = request_irq((unsigned int)host->irq, msdc_irq, IRQF_TRIGGER_NONE, DRV_NAME,
 			host);
 	if (ret)
 		goto release;
 	/* not set for sdio */
-	/* msdc_eirq_cd will not be used! */
-	if ((hw->flags & MSDC_CD_PIN_EN) && (hw->request_cd_eirq))
-		hw->request_cd_eirq(msdc_eirq_cd, (void *)host);
 	/* set to combo_sdio_request_eirq() for WIFI */
 	/* msdc_eirq_sdio() will be called when EIRQ */
-	if (hw->request_sdio_eirq)
-		hw->request_sdio_eirq(msdc_eirq_sdio, (void *)host);
+	if (host->hw->request_sdio_eirq)
+		host->hw->request_sdio_eirq(msdc_eirq_sdio, (void *)host);
 
 #ifdef CONFIG_PM
-	if (hw->register_pm) {	/* yes for sdio */
-		hw->register_pm(msdc_pm, (void *)host);	/* combo_sdio_register_pm() */
-		if (hw->flags & MSDC_SYS_SUSPEND) {	/* will not set for WIFI */
+	if (host->hw->register_pm) {	/* yes for sdio */
+		host->hw->register_pm(msdc_pm, (void *)host);	/* combo_sdio_register_pm() */
+		if (host->hw->flags & MSDC_SYS_SUSPEND) {	/* will not set for WIFI */
 			ERR_MSG("MSDC_SYS_SUSPEND and register_pm both set");
 		}
 		/* pm not controlled by system but by client. */
@@ -9586,13 +9547,13 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		register_swsusp_restore_noirq_func(ID_M_MSDC, msdc_drv_pm_restore_noirq,
 			&(pdev->dev));
 #endif
-/* weiping fix sd hot-plug */
-#if 0
+
 	/* Config card detection pin and enable interrupts */
-	if (hw->flags & MSDC_CD_PIN_EN) {	/* set for card */
-		msdc_enable_cd_irq(host, 1);
+	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {	/* set for card */
+		sdr_clr_bits(MSDC_PS, MSDC_PS_CDEN);
+		sdr_clr_bits(MSDC_INTEN, MSDC_INTEN_CDSC);
+		sdr_clr_bits(SDC_CFG, SDC_CFG_INSWKUP);
 	}
-#endif
 	/*config tune at workqueue*/
 	if (!wq_tune) {
 		wq_tune = create_workqueue("msdc-tune");
@@ -9650,7 +9611,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	return 0;
 
  free_irq:
-	free_irq(irq, host);
+	free_irq(host->irq, host);
 	pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
  release:
 	platform_set_drvdata(pdev, NULL);

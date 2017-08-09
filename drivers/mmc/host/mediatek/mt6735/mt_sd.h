@@ -1534,13 +1534,6 @@ extern unsigned int mt_eint_get_polarity_external(unsigned int eint_num);
 #endif
 extern int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
-/* weiping fix */
-#if defined(CFG_DEV_MSDC0)
-extern struct msdc_hw msdc0_hw;
-#endif
-#if defined(CFG_DEV_MSDC1)
-extern struct msdc_hw msdc1_hw;
-#endif
 #if defined(CFG_DEV_MSDC2)
 extern struct msdc_hw msdc2_hw;
 #endif
