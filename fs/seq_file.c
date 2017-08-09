@@ -35,10 +35,15 @@ static void seq_set_overflow(struct seq_file *m)
 static void *seq_buf_alloc(unsigned long size)
 {
 	void *buf;
-
+/*
 	buf = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	if (!buf && size > PAGE_SIZE)
 		buf = vmalloc(size);
+*/
+	if (size > PAGE_SIZE)
+		buf = vmalloc(size);
+	else
+		buf = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	return buf;
 }
 

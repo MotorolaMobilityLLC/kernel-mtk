@@ -1,4 +1,5 @@
 ccflags-y += -I$(src)			# needed for trace events
+ccflags-y += -I$(srctree)/drivers/staging/android/ion
 
 obj-$(CONFIG_ION)			+= ion/
 obj-$(CONFIG_FIQ_DEBUGGER)		+= fiq_debugger/
