@@ -198,7 +198,7 @@ typedef struct {
 	UINT16 length;
 	UINT8 checksum;
 	UINT16 crc;
-#if 1
+#if 0
 	UINT8 wmtsubtype;
 #endif
 } mtkstp_parser_context_struct;
