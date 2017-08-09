@@ -54,7 +54,7 @@ static mali_bool insert(struct rb_root *root, int id, ump_dd_mem *mem)
 		} else if (id > this->secure_id) {
 			new = &((*new)->rb_right);
 		} else {
-			printk(KERN_ERR "UMP: ID already used %x\n", id);
+			pr_warn("UMP: ID already used %x\n", id);
 			return MALI_FALSE;
 		}
 	}

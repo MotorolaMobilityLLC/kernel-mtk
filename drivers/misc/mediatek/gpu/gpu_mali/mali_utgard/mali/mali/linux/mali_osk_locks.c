@@ -44,7 +44,7 @@ void _mali_osk_locks_debug_add(struct _mali_osk_lock_debug_s *checker)
 #ifdef LOCK_ORDER_CHECKING
 	if (!(checker->orig_flags & _MALI_OSK_LOCKFLAG_UNORDERED)) {
 		if (!add_lock_to_log_and_check(checker, _mali_osk_get_tid())) {
-			printk(KERN_ERR "%d: ERROR lock %p taken while holding a lock of a higher order.\n",
+			pr_warn("%d: ERROR lock %p taken while holding a lock of a higher order.\n",
 			       _mali_osk_get_tid(), checker);
 			dump_stack();
 		}
@@ -95,11 +95,11 @@ static void dump_lock_tracking_list(void)
 	l = lock_lookup_list;
 
 	while (NULL != l) {
-		printk(" [lock: %p, tid_owner: %d, order: %d] ->", l, l->owner, l->order);
+		pr_warn(" [lock: %p, tid_owner: %d, order: %d] ->", l, l->owner, l->order);
 		l = l->next;
 		MALI_DEBUG_ASSERT(n++ < 100);
 	}
-	printk(" NULL\n");
+	pr_warn(" NULL\n");
 }
 
 static int tracking_list_length(void)
@@ -160,15 +160,15 @@ static mali_bool add_lock_to_log_and_check(struct _mali_osk_lock_debug_s *lock, 
 	ret = highest_order_for_tid < lock->order;
 
 	if (!ret) {
-		printk(KERN_ERR "Took lock of order %d (%s) while holding lock of order %d (%s)\n",
+		pr_warn("Took lock of order %d (%s) while holding lock of order %d (%s)\n",
 		       lock->order, lock_order_to_string(lock->order),
 		       highest_order_for_tid, lock_order_to_string(highest_order_for_tid));
 		dump_lock_tracking_list();
 	}
 
 	if (len + 1 != tracking_list_length()) {
-		printk(KERN_ERR "************ lock: %p\n", lock);
-		printk(KERN_ERR "************ before: %d *** after: %d ****\n", len, tracking_list_length());
+		pr_warn("************ lock: %p\n", lock);
+		pr_warn("************ before: %d *** after: %d ****\n", len, tracking_list_length());
 		dump_lock_tracking_list();
 		MALI_DEBUG_ASSERT_POINTER(NULL);
 	}
@@ -190,7 +190,7 @@ static void remove_lock_from_log(struct _mali_osk_lock_debug_s *lock, uint32_t t
 	curr = lock_lookup_list;
 
 	if (NULL == curr) {
-		printk(KERN_ERR "Error: Lock tracking list was empty on call to remove_lock_from_log\n");
+		pr_warn("Error: Lock tracking list was empty on call to remove_lock_from_log\n");
 		dump_lock_tracking_list();
 	}
 
@@ -216,8 +216,8 @@ static void remove_lock_from_log(struct _mali_osk_lock_debug_s *lock, uint32_t t
 	lock->next = NULL;
 
 	if (len - 1 != tracking_list_length()) {
-		printk(KERN_ERR "************ lock: %p\n", lock);
-		printk(KERN_ERR "************ before: %d *** after: %d ****\n", len, tracking_list_length());
+		pr_warn("************ lock: %p\n", lock);
+		pr_warn("************ before: %d *** after: %d ****\n", len, tracking_list_length());
 		dump_lock_tracking_list();
 		MALI_DEBUG_ASSERT_POINTER(NULL);
 	}

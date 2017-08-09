@@ -281,7 +281,7 @@ extern "C" {
 		BUG_ON(NULL == lock);
 
 		if (mutex_lock_interruptible(&lock->mutex)) {
-			printk(KERN_WARNING "Mali: Can not lock mutex\n");
+			pr_warn("Mali: Can not lock mutex\n");
 			err = _MALI_OSK_ERR_RESTARTSYSCALL;
 		}
 

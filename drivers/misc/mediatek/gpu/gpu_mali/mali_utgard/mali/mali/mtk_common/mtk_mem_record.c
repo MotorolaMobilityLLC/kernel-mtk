@@ -225,21 +225,21 @@ int MTKMemRecordInit(void)
     g_gpu_pentry = proc_mkdir("gpu", NULL);
     if (!g_gpu_pentry)
     {
-        printk(KERN_WARNING "unable to create /proc/gpu entry\n");
+        pr_warn("unable to create /proc/gpu entry\n");
         return -ENOMEM;
     }
 
     g_mem_usage_pentry = proc_mkdir(NAME_MEM_USAGE, g_gpu_pentry);
     if (!g_gpu_pentry)
     {
-        printk(KERN_WARNING "unable to create /proc/gpu/%s entry\n", NAME_MEM_USAGE);
+        pr_warn("unable to create /proc/gpu/%s entry\n", NAME_MEM_USAGE);
         return -ENOMEM;
     }
  
     pentry = proc_create(NAME_MEM_USAGES, 0, g_gpu_pentry, &proc_mem_usages_operations);
     if (pentry == NULL)
     {
-        printk(KERN_WARNING "unable to create /proc/gpu/%s entry\n", NAME_MEM_USAGES);
+        pr_warn("unable to create /proc/gpu/%s entry\n", NAME_MEM_USAGES);
         return -ENOMEM;
     }
 
