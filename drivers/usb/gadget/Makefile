@@ -11,6 +11,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_boost
 
 ccflags-y				+= -I$(srctree)/drivers/usb/gadget/udc -I$(srctree)/drivers/usb/gadget/function
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/c2k_ccci/
+ccflags-y += -I$(srctree)/drivers/usb/gadget/
 
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o
