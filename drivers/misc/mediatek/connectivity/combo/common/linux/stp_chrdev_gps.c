@@ -172,9 +172,9 @@ ssize_t GPS_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 		/* if we are signaled */
 		if (val) {
 			if (-ERESTARTSYS == val)
-				GPS_INFO_FUNC("signaled by -ERESTARTSYS(%d)\n ", val);
+				GPS_DBG_FUNC("signaled by -ERESTARTSYS(%d)\n ", val);
 			else
-				GPS_INFO_FUNC("signaled by %d\n ", val);
+				GPS_DBG_FUNC("signaled by %d\n ", val);
 
 			break;
 		}
@@ -226,7 +226,7 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case 0:		/* enable/disable STP */
-		GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): disable STP control from GPS dev\n");
+		GPS_DBG_FUNC("GPS_ioctl(): disable STP control from GPS dev\n");
 		retval = -EINVAL;
 #if 1
 #else
@@ -236,7 +236,7 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 
 	case 1:		/* send raw data */
-		GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): disable raw data from GPS dev\n");
+		GPS_DBG_FUNC("GPS_ioctl(): disable raw data from GPS dev\n");
 		retval = -EINVAL;
 		break;
 
@@ -244,8 +244,7 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		/*get combo hw version */
 		hw_ver_sym = mtk_wcn_wmt_hwver_get();
 
-		GPS_INFO_FUNC(KERN_INFO
-			      "GPS_ioctl(): get hw version = %d, sizeof(hw_ver_sym) = %zd\n",
+		GPS_DBG_FUNC("GPS_ioctl(): get hw version = %d, sizeof(hw_ver_sym) = %zd\n",
 			      hw_ver_sym, sizeof(hw_ver_sym));
 		if (copy_to_user((int __user *)arg, &hw_ver_sym, sizeof(hw_ver_sym)))
 			retval = -EFAULT;
@@ -255,7 +254,7 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		/*get combo hw version from ic,  without wmt mapping */
 		hw_version = mtk_wcn_wmt_ic_info_get(WMTCHIN_HWVER);
 
-		GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): get hw version = 0x%x\n", hw_version);
+		GPS_DBG_FUNC("GPS_ioctl(): get hw version = 0x%x\n", hw_version);
 		if (copy_to_user((int __user *)arg, &hw_version, sizeof(hw_version)))
 			retval = -EFAULT;
 
@@ -265,14 +264,14 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		/*get combo fw version from ic, without wmt mapping */
 		fw_version = mtk_wcn_wmt_ic_info_get(WMTCHIN_FWVER);
 
-		GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): get fw version = 0x%x\n", fw_version);
+		GPS_DBG_FUNC("GPS_ioctl(): get fw version = 0x%x\n", fw_version);
 		if (copy_to_user((int __user *)arg, &fw_version, sizeof(fw_version)))
 			retval = -EFAULT;
 
 		break;
 	default:
 		retval = -EFAULT;
-		GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): unknown cmd (%d)\n", cmd);
+		GPS_DBG_FUNC("GPS_ioctl(): unknown cmd (%d)\n", cmd);
 		break;
 	}
 
@@ -299,20 +298,20 @@ static VOID gps_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 	 */
 	ENUM_WMTRSTMSG_TYPE_T rst_msg;
 
-	GPS_INFO_FUNC("sizeof(ENUM_WMTRSTMSG_TYPE_T) = %zd\n", sizeof(ENUM_WMTRSTMSG_TYPE_T));
+	GPS_DBG_FUNC("sizeof(ENUM_WMTRSTMSG_TYPE_T) = %zd\n", sizeof(ENUM_WMTRSTMSG_TYPE_T));
 	if (sz <= sizeof(ENUM_WMTRSTMSG_TYPE_T)) {
 		memcpy((PINT8) & rst_msg, (PINT8) buf, sz);
-		GPS_INFO_FUNC("src = %d, dst = %d, type = %d, buf = 0x%x sz = %d, max = %d\n", src,
+		GPS_DBG_FUNC("src = %d, dst = %d, type = %d, buf = 0x%x sz = %d, max = %d\n", src,
 			      dst, type, rst_msg, sz, WMTRSTMSG_RESET_MAX);
 		if ((src == WMTDRV_TYPE_WMT) && (dst == WMTDRV_TYPE_GPS)
 		    && (type == WMTMSG_TYPE_RESET)) {
 			if (rst_msg == WMTRSTMSG_RESET_START) {
-				GPS_INFO_FUNC("gps restart start!\n");
+				GPS_DBG_FUNC("gps restart start!\n");
 
 				/*reset_start message handling */
 
 			} else if ((rst_msg == WMTRSTMSG_RESET_END) || (rst_msg == WMTRSTMSG_RESET_END_FAIL)) {
-				GPS_INFO_FUNC("gps restart end!\n");
+				GPS_DBG_FUNC("gps restart end!\n");
 
 				/*reset_end message handling */
 			}
@@ -337,7 +336,7 @@ static int GPS_open(struct inode *inode, struct file *file)
 	}
 
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_GPS, gps_cdev_rst_cb);
-	GPS_INFO_FUNC("WMT turn on GPS OK!\n");
+	GPS_DBG_FUNC("WMT turn on GPS OK!\n");
 
 #endif
 
@@ -347,7 +346,7 @@ static int GPS_open(struct inode *inode, struct file *file)
 			GPS_WARN_FUNC("WMT turn on GPS fail!\n");
 			return -ENODEV;
 		}
-		GPS_INFO_FUNC("WMT turn on GPS OK!\n");
+		GPS_DBG_FUNC("WMT turn on GPS OK!\n");
 #endif
 		mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, GPS_event_cb);
 	} else {
@@ -381,7 +380,7 @@ static int GPS_close(struct inode *inode, struct file *file)
 		but we still return error code. */
 	}
 
-	GPS_INFO_FUNC("WMT turn off GPS OK!\n");
+	GPS_DBG_FUNC("WMT turn off GPS OK!\n");
 	return 0;
 }
 
