@@ -285,6 +285,12 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
+
+		spm-dummy-1@40000000{
+			compatible = "mediatek,spm-dummy-1";
+			reg = <0 0x40000000 0 0x1000>;
+		};
+
 		reserve-memory-ccci_md1 {
 			compatible = "mediatek,reserve-memory-ccci_md1";
 			no-map;
