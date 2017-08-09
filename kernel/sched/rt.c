@@ -1157,7 +1157,7 @@ static void update_curr_rt(struct rq *rq)
 	/* sched:update rt exec info*/
 	per_cpu(exec_task, cpu).pid = curr->pid;
 	per_cpu(exec_task, cpu).prio = curr->prio;
-	strcpy(per_cpu(exec_task, cpu).comm, curr->comm);
+	strncpy(per_cpu(exec_task, cpu).comm, curr->comm, sizeof(per_cpu(exec_task, cpu).comm));
 	per_cpu(exec_delta_time, cpu) = delta_exec;
 	per_cpu(clock_task, cpu) = rq->clock_task;
 	per_cpu(exec_start, cpu) = curr->se.exec_start;
