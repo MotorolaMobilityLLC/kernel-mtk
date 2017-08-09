@@ -1134,25 +1134,64 @@ OPP_TBL(CCI, M, 3, 1);
 OPP_TBL(B, M, 3, 2);
 
 #ifdef ENABLE_IDVFS
-#define IDVFS_OPP_MAP(idx) CPU_IDVFS_FREQ##idx##_B_FY
-/* #define IDVFS_OPP_MAP(idx) CPU_IDVFS_FREQ##idx##_B_SB */
-static unsigned int idvfs_opp_tbls[] = {
-	IDVFS_OPP_MAP(0),
-	IDVFS_OPP_MAP(1),
-	IDVFS_OPP_MAP(2),
-	IDVFS_OPP_MAP(3),
-	IDVFS_OPP_MAP(4),
-	IDVFS_OPP_MAP(5),
-	IDVFS_OPP_MAP(6),
-	IDVFS_OPP_MAP(7),
-	IDVFS_OPP_MAP(8),
-	IDVFS_OPP_MAP(9),
-	IDVFS_OPP_MAP(10),
-	IDVFS_OPP_MAP(11),
-	IDVFS_OPP_MAP(12),
-	IDVFS_OPP_MAP(13),
-	IDVFS_OPP_MAP(14),
-	IDVFS_OPP_MAP(15),
+#define IDVFS_OPP_MAP_FY(idx) CPU_IDVFS_FREQ##idx##_B_FY
+#define IDVFS_OPP_MAP_SB(idx) CPU_IDVFS_FREQ##idx##_B_SB
+#define IDVFS_OPP_MAP_M(idx) CPU_IDVFS_FREQ##idx##_B_M
+static unsigned int idvfs_opp_tbls[3][16] = {
+	{
+		IDVFS_OPP_MAP_FY(0),
+		IDVFS_OPP_MAP_FY(1),
+		IDVFS_OPP_MAP_FY(2),
+		IDVFS_OPP_MAP_FY(3),
+		IDVFS_OPP_MAP_FY(4),
+		IDVFS_OPP_MAP_FY(5),
+		IDVFS_OPP_MAP_FY(6),
+		IDVFS_OPP_MAP_FY(7),
+		IDVFS_OPP_MAP_FY(8),
+		IDVFS_OPP_MAP_FY(9),
+		IDVFS_OPP_MAP_FY(10),
+		IDVFS_OPP_MAP_FY(11),
+		IDVFS_OPP_MAP_FY(12),
+		IDVFS_OPP_MAP_FY(13),
+		IDVFS_OPP_MAP_FY(14),
+		IDVFS_OPP_MAP_FY(15),
+	},
+	{
+		IDVFS_OPP_MAP_SB(0),
+		IDVFS_OPP_MAP_SB(1),
+		IDVFS_OPP_MAP_SB(2),
+		IDVFS_OPP_MAP_SB(3),
+		IDVFS_OPP_MAP_SB(4),
+		IDVFS_OPP_MAP_SB(5),
+		IDVFS_OPP_MAP_SB(6),
+		IDVFS_OPP_MAP_SB(7),
+		IDVFS_OPP_MAP_SB(8),
+		IDVFS_OPP_MAP_SB(9),
+		IDVFS_OPP_MAP_SB(10),
+		IDVFS_OPP_MAP_SB(11),
+		IDVFS_OPP_MAP_SB(12),
+		IDVFS_OPP_MAP_SB(13),
+		IDVFS_OPP_MAP_SB(14),
+		IDVFS_OPP_MAP_SB(15),
+	},
+	{
+		IDVFS_OPP_MAP_M(0),
+		IDVFS_OPP_MAP_M(1),
+		IDVFS_OPP_MAP_M(2),
+		IDVFS_OPP_MAP_M(3),
+		IDVFS_OPP_MAP_M(4),
+		IDVFS_OPP_MAP_M(5),
+		IDVFS_OPP_MAP_M(6),
+		IDVFS_OPP_MAP_M(7),
+		IDVFS_OPP_MAP_M(8),
+		IDVFS_OPP_MAP_M(9),
+		IDVFS_OPP_MAP_M(10),
+		IDVFS_OPP_MAP_M(11),
+		IDVFS_OPP_MAP_M(12),
+		IDVFS_OPP_MAP_M(13),
+		IDVFS_OPP_MAP_M(14),
+		IDVFS_OPP_MAP_M(15),
+	},
 };
 #endif
 
@@ -2385,7 +2424,7 @@ static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	if (idx < 0)
 		idx = 0;
 
-	ret = BigIDVFSFreq(idvfs_opp_tbls[idx]);
+	ret = BigIDVFSFreq(idvfs_opp_tbls[p->cpu_level][idx]);
 }
 #endif
 
