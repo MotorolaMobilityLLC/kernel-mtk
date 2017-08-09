@@ -1324,11 +1324,6 @@ void mt_afe_suspend(void)
 
 	mt_afe_suspend_clk_off();
 
-	if (audio_power_status) {
-		pm_runtime_put_sync(mach_dev);
-		audio_power_status = false;
-	}
-
 	aud_drv_suspend_status = true;
 
 	pr_debug("-%s\n", __func__);
@@ -1340,16 +1335,6 @@ void mt_afe_resume(void)
 		return;
 
 	pr_debug("+%s\n", __func__);
-
-	if (!audio_power_status) {
-		int ret = pm_runtime_get_sync(mach_dev);
-
-		if (ret < 0)
-			pr_warn("%s pm_runtime_get_sync fail %d\n", __func__, ret);
-		else
-			audio_power_status = true;
-
-	}
 
 	mt_afe_suspend_clk_on();
 
