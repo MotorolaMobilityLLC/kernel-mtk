@@ -39,6 +39,7 @@
 #include <linux/cdev.h>
 #include <linux/errno.h>
 #include <linux/time.h>
+#include <linux/mutex.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include "kd_camera_typedef.h"
@@ -70,7 +71,7 @@
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "%s: " fmt, __func__ , ##arg)
 
-/*#define DEBUG_KD_STROBE*/
+#define DEBUG_KD_STROBE
 #ifdef DEBUG_KD_STROBE
 #define logI PK_DBG_FUNC
 #else
@@ -84,7 +85,7 @@ static FLASHLIGHT_FUNCTION_STRUCT
 	*g_pFlashInitFunc[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev][e_Max_Part_Num_Per_Dev];
 static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
-
+static DEFINE_MUTEX(g_mutex);
 /* ============================== */
 /* functions */
 /* ============================== */
@@ -111,6 +112,7 @@ int checkAndRelease(void)
 	int j;
 	int k;
 
+	mutex_lock(&g_mutex);
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++)
 		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++)
 			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
@@ -120,6 +122,7 @@ int checkAndRelease(void)
 					g_pFlashInitFunc[i][j][k] = 0;
 				}
 			}
+	mutex_unlock(&g_mutex);
 	return 0;
 }
 
@@ -297,6 +300,7 @@ static int closeFlash(void)
 	int j;
 	int k;
 
+	mutex_lock(&g_mutex);
 	logI("closeFlash ln=%d", __LINE__);
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++) {
 		/* logI("closeFlash ln=%d %d",__LINE__,i); */
@@ -312,6 +316,7 @@ static int closeFlash(void)
 			}
 		}
 	}
+	mutex_unlock(&g_mutex);
 	return 0;
 }
 

@@ -40,6 +40,7 @@
 #include <linux/cdev.h>
 #include <linux/errno.h>
 #include <linux/time.h>
+#include <linux/mutex.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <mach/upmu_sw.h>
@@ -89,7 +90,7 @@ static FLASHLIGHT_FUNCTION_STRUCT
 	*g_pFlashInitFunc[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev][e_Max_Part_Num_Per_Dev];
 static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
-
+static DEFINE_MUTEX(g_mutex);
 /* ============================== */
 /* Pinctrl */
 /* ============================== */
@@ -160,6 +161,7 @@ int checkAndRelease(void)
 	int j;
 	int k;
 
+	mutex_lock(&g_mutex);
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++)
 		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++)
 			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
@@ -169,6 +171,7 @@ int checkAndRelease(void)
 					g_pFlashInitFunc[i][j][k] = 0;
 				}
 			}
+	mutex_unlock(&g_mutex);
 	return 0;
 }
 
@@ -347,6 +350,7 @@ static int closeFlash(void)
 	int j;
 	int k;
 
+	mutex_lock(&g_mutex);
 	logI("closeFlash ln=%d", __LINE__);
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++) {
 		/* logI("closeFlash ln=%d %d",__LINE__,i); */
@@ -362,6 +366,7 @@ static int closeFlash(void)
 			}
 		}
 	}
+	mutex_unlock(&g_mutex);
 	return 0;
 }
 
@@ -765,7 +770,6 @@ static int flashlight_probe(struct platform_device *dev)
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
-
 	/* GPIO pinctrl initial */
 	flashlight_gpio_init(dev);
 
