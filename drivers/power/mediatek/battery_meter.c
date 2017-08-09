@@ -525,6 +525,13 @@ static void __batt_meter_parse_table(const struct device_node *np,
 			break;
 	}
 
+	/* error handle */
+	if (0 == idx) {
+		battery_log(BAT_LOG_CRTI,
+			"[%s] cannot find %s in dts\n", __func__, node_srting);
+		return;
+	}
+
 	/* use last data to fill with the rest array
 				if raw data is less than temp array */
 	/* error handle */
