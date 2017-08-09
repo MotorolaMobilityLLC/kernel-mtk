@@ -40,6 +40,8 @@ void Auddrv_Reg_map(void);
 void mt_afe_apb_bus_init(void);
 
 int mt_afe_platform_init(void *dev);
+void mt_afe_init_control(void *dev);
+
 void mt_afe_platform_deinit(void *dev);
 
 bool mt_afe_set_sample_rate(uint32_t Aud_block, uint32_t SampleRate);

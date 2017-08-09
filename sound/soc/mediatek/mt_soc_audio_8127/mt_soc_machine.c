@@ -172,7 +172,7 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 	mt_afe_main_clk_on();
 
 	pr_debug("mt_soc_debug_read\n");
-	pr_err("mt_soc_debug_read\n");
+
 	n = scnprintf(buffer + n, size - n, "AUDIO_TOP_CON0  = 0x%x\n",
 		      mt_afe_get_reg(AUDIO_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON1  = 0x%x\n",
@@ -564,29 +564,6 @@ static const struct file_operations mtaudio_debug_ops = {
 static struct snd_soc_dai_link mt_soc_dai_common[] = {
 
 	/* FrontEnd DAI Links */
-#if 1
-	{
-	 .name = "I2S0DL1OUTPUT",
-	 .stream_name = MT_SOC_I2SDL1_STREAM_NAME,
-	 .cpu_dai_name = MT_SOC_I2S0DL1_NAME,
-	 .platform_name = MT_SOC_I2S0DL1_PCM,
-	 .codec_dai_name = MT_SOC_CODEC_I2S0TXDAI_NAME,
-	 .codec_name = MT_SOC_CODEC_NAME,
-	 .init = mt_soc_audio_init,
-	 .ops = &mt_machine_audio_ops,
-	},
-	{
-	 .name = "PLATOFRM_CONTROL",
-	 .stream_name = MT_SOC_ROUTING_STREAM_NAME,
-	 .cpu_dai_name = MT_SOC_ROUTING_DAI_NAME,
-	 .platform_name = MT_SOC_ROUTING_PCM,
-	 .codec_dai_name = MT_SOC_CODEC_DUMMY_DAI_NAME,
-	 .codec_name = MT_SOC_CODEC_DUMMY_NAME,
-	 .init = mt_soc_audio_init2,
-	 .ops = &mtmachine_audio_ops2,
-	 },
-
-#else
 	{
 	 .name = "MultiMedia1",
 	 .stream_name = MT_SOC_DL1_STREAM_NAME,
@@ -717,7 +694,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	 .init = mt_soc_audio_init,
 	 .ops = &mt_machine_audio_ops,
 	 },
-#endif
 };
 
 static const char * const I2S_low_jittermode[] = { "Off", "On" };
@@ -750,6 +726,7 @@ static int mt8127_dev_probe(struct platform_device *pdev)
 	}
 
 	card->dev = dev;
+	mt_afe_init_control(dev);
 
 	ret = snd_soc_register_card(card);
 	if (ret) {

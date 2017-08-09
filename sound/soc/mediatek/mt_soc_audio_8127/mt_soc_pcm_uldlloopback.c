@@ -68,7 +68,7 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	pr_debug("%s\n", __func__);
-	mt_afe_ana_clk_on();
+	/*mt_afe_ana_clk_on();*/
 	mt_afe_main_clk_on();
 	mt_afe_adc_clk_on();
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -144,9 +144,9 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 
 	mt_afe_enable_afe(false);
 
-	mt_afe_main_clk_off();
 	mt_afe_adc_clk_off();
-	mt_afe_ana_clk_off();
+	mt_afe_main_clk_off();
+	/*mt_afe_ana_clk_off();*/
 	return 0;
 }
 

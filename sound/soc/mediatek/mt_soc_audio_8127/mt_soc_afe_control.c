@@ -121,11 +121,11 @@ static struct AudioMrgIf *mAudioMrg;
 static struct AudioDigitalDAIBT *AudioDaiBt;
 static const bool audio_adc_i2s_status;
 
-static struct AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI + 1];
-static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_MEM_HDMI + 1];
+static struct AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI + 1] = { NULL };
+static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_MEM_HDMI + 1] = { NULL };
 
-static struct AudioIrqMcuMode *audio_mcu_mode[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
-static struct mt_afe_mem_if_attribute *audio_mem_if[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
+static struct AudioIrqMcuMode *audio_mcu_mode[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE] = { NULL };
+static struct mt_afe_mem_if_attribute *audio_mem_if[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK] = { NULL };
 
 static struct AudioAfeRegCache mAudioRegCache;
 static struct AudioSramManager mAudioSramManager;
@@ -145,7 +145,6 @@ static struct device *mach_dev;
 static bool mExternalModemStatus;
 
 /*static function*/
-static void mt_afe_init_control(void *dev);
 static void mt_afe_clean_predistortion(void);
 static bool mt_afe_set_dl_src2(uint32_t sample_rate);
 /*static struct mt_afe_mem_control_t *afe_mem_control_context[MT_AFE_MEM_CTX_COUNT] = { NULL };*/
@@ -379,7 +378,7 @@ void SetExternalModemStatus(const bool bEnable)
  *****************************************************************************
  */
 
-static void mt_afe_init_control(void *dev) /*InitAfeControl*/
+void mt_afe_init_control(void *dev) /*InitAfeControl*/
 {
 
 	int i = 0;
@@ -626,7 +625,7 @@ int mt_afe_platform_init(void *dev)
 
 	mt_afe_apb_bus_init();
 
-	mt_afe_init_control(dev);
+	/*mt_afe_init_control(dev);*/
 
 	mach_dev = dev;
 
@@ -2282,6 +2281,7 @@ int afe_allocate_mem_buffer(struct device *pDev, enum Soc_Aud_Digital_Block MemB
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_HDMI:{
 			pr_debug("%s MemBlock =%d Buffer_length = %d\n", __func__, MemBlock,
 				 Buffer_length);
@@ -2302,26 +2302,6 @@ int afe_allocate_mem_buffer(struct device *pDev, enum Soc_Aud_Digital_Block MemB
 			}
 		}
 		break;
-	case Soc_Aud_Digital_Block_MEM_VUL:{
-			pr_debug("%s MemBlock =%d Buffer_length = %d\n", __func__, MemBlock,
-				 Buffer_length);
-			if (Audio_dma_buf[MemBlock] != NULL) {
-				pr_debug
-				    ("afe_allocate_mem_buffer MemBlock = %d dma_alloc_coherent\n",
-				     MemBlock);
-				if (Audio_dma_buf[MemBlock]->area == NULL) {
-					pr_debug("dma_alloc_coherent\n");
-					Audio_dma_buf[MemBlock]->area =
-					    dma_alloc_coherent(pDev, Buffer_length,
-							       &Audio_dma_buf[MemBlock]->addr,
-							       GFP_KERNEL);
-					if (Audio_dma_buf[MemBlock]->area)
-						Audio_dma_buf[MemBlock]->bytes = Buffer_length;
-				}
-				pr_debug("area = %p\n", Audio_dma_buf[MemBlock]->area);
-			}
-			break;
-		}
 	case Soc_Aud_Digital_Block_MEM_I2S:
 		pr_warn("currently not support\n");
 	default:
