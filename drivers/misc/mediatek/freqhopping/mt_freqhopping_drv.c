@@ -22,38 +22,29 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
-/* #include <asm/sched_clock.h> */
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
-/* #include <board-custom.h> */
 #include <linux/seq_file.h>
-
 #include "mach/mt_fhreg.h"
-
-/* #include <linux/xlog.h> */		/* ccyeh: for 6572 */
-
 #include "mt_freqhopping_drv.h"
 
 
 #define FREQ_HOPPING_DEVICE "mt-freqhopping"
-
 #define FH_PLL_COUNT		(g_p_fh_hal_drv->pll_cnt)
-
-/* static unsigned int           g_resume_mempll_ssc=false; */
 static struct mt_fh_hal_driver *g_p_fh_hal_drv;
 
 static fh_pll_t *g_fh_drv_pll;
 static struct freqhopping_ssc *g_fh_drv_usr_def;
 static unsigned int g_drv_pll_count;
+static int mt_freqhopping_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+
+#if !defined(DISABLE_FREQ_HOPPING)
 
 static struct miscdevice mt_fh_device = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = "mtfreqhopping",
 	/* .fops = &mt_fh_fops, //TODO: Interface for UI maybe in the future... */
 };
-
-
-static int mt_freqhopping_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
 static int mt_fh_drv_probe(struct platform_device *dev)
 {
@@ -102,6 +93,7 @@ static int mt_fh_drv_resume(struct platform_device *dev)
 	return 0;
 }
 
+
 static struct platform_driver freqhopping_driver = {
 	.probe = mt_fh_drv_probe,
 	.remove = mt_fh_drv_remove,
@@ -113,6 +105,7 @@ static struct platform_driver freqhopping_driver = {
 		   .owner = THIS_MODULE,
 		   },
 };
+#endif
 
 static int mt_fh_enable_usrdef(struct freqhopping_ioctl *fh_ctl)
 {
@@ -221,37 +214,6 @@ static int freqhopping_userdefine_proc_read(struct seq_file *m, void *v)
 
 	return 0;
 
-#if 0
-	char *p = page;
-	int len = 0;
-	int i = 0;
-
-	FH_MSG("EN: %s", __func__);
-
-	p += sprintf(p, "user defined settings:\n");
-
-	p += sprintf(p, "===============================================\r\n");
-	p += sprintf(p,
-		     "     freq ==  delta t ==  delta f ==  up bond == low bond ==      dds ==\r\n");
-
-	for (i = 0; i < g_drv_pll_count; i++) {
-		p += sprintf(p, "%10d  0x%08x  0x%08x  0x%08x  0x%08x  0x%08x\r\n",
-			     g_fh_drv_usr_def[i].freq, g_fh_drv_usr_def[i].dt,
-			     g_fh_drv_usr_def[i].df, g_fh_drv_usr_def[i].upbnd,
-			     g_fh_drv_usr_def[i].lowbnd, g_fh_drv_usr_def[i].dds);
-	}
-
-	*start = page + off;
-
-	len = p - page;
-
-	if (len > off)
-		len -= off;
-	else
-		len = 0;
-
-	return len < count ? len : count;
-#endif
 }
 
 static ssize_t freqhopping_userdefine_proc_write(struct file *file, const char *buffer,
@@ -334,52 +296,6 @@ static int freqhopping_status_proc_read(struct seq_file *m, void *v)
 	seq_puts(m, "\r\n");
 
 	return 0;
-
-#if 0
-	char *p = page;
-	int len = 0;
-	int i = 0;
-
-	FH_MSG("EN: %s", __func__);
-
-	p += sprintf(p, "FH status:\r\n");
-
-	p += sprintf(p, "===============================================\r\n");
-	p += sprintf(p,
-		     "id == fh_status == pll_status == setting_id == curr_freq == user_defined ==\r\n");
-
-
-	for (i = 0; i < g_drv_pll_count; i++) {
-		p += sprintf(p, "%2d    %8d      %8d",
-			     i, g_fh_drv_pll[i].fh_status, g_fh_drv_pll[i].pll_status);
-		p += sprintf(p, "      %8d     %8d ",
-			     g_fh_drv_pll[i].setting_id, g_fh_drv_pll[i].curr_freq);
-
-		p += sprintf(p, "        %d\r\n", g_fh_drv_pll[i].user_defined);
-	}
-#if 0
-	p += sprintf(p, "\r\nPLL status:\r\n");
-
-	for (i = 0; i < g_drv_pll_count; i++)
-		p += sprintf(p, "%d ", pll_is_on(i));
-
-#endif
-	p += sprintf(p, "\r\n");
-
-	/* TODO: unsigned int mt_get_cpu_freq(void) */
-
-
-	*start = page + off;
-
-	len = p - page;
-
-	if (len > off)
-		len -= off;
-	else
-		len = 0;
-
-	return len < count ? len : count;
-#endif
 }
 
 static ssize_t freqhopping_status_proc_write(struct file *file, const char *buffer, size_t count,
@@ -428,7 +344,6 @@ static ssize_t freqhopping_status_proc_write(struct file *file, const char *buff
 /* static int freqhopping_debug_proc_read(char *page, char **start, off_t off, int count, int *eof, void *data) */
 static int freqhopping_debug_proc_read(struct seq_file *m, void *v)
 {
-#if defined(PLATFORM_DEP_DEBUG_PROC_READ)
 	FH_IO_PROC_READ_T arg;
 
 	arg.m = m;
@@ -436,63 +351,6 @@ static int freqhopping_debug_proc_read(struct seq_file *m, void *v)
 	arg.pll = g_fh_drv_pll;
 	g_p_fh_hal_drv->ioctl(FH_IO_PROC_READ, &arg);
 	return 0;
-#else
-	FH_MSG("EN: %s", __func__);
-
-	seq_puts(m, "\r\n[freqhopping debug flag]\r\n");
-	seq_puts(m, "===============================================\r\n");
-	seq_puts(m, "id==ARMPLL==MAINPLL==MEMPLL==MSDCPLL==MMPLL==VENCPLL\r\n");
-	seq_printf(m, "   == %04d====%04d====%04d====%04d====%04d====%04d=\r\n",
-		   g_fh_drv_pll[MT658X_FH_ARM_PLL].fh_status,
-		   g_fh_drv_pll[MT658X_FH_MAIN_PLL].fh_status,
-		   g_fh_drv_pll[MT658X_FH_MEM_PLL].fh_status,
-		   g_fh_drv_pll[MT658X_FH_MSDC_PLL].fh_status,
-		   g_fh_drv_pll[MT658X_FH_MM_PLL].fh_status,
-		   g_fh_drv_pll[MT658X_FH_VENC_PLL].fh_status);
-	seq_printf(m, "   == %04d====%04d====%04d====%04d====%04d====%04d=\r\n",
-		   g_fh_drv_pll[MT658X_FH_ARM_PLL].setting_id,
-		   g_fh_drv_pll[MT658X_FH_MAIN_PLL].setting_id,
-		   g_fh_drv_pll[MT658X_FH_MEM_PLL].setting_id,
-		   g_fh_drv_pll[MT658X_FH_MSDC_PLL].setting_id,
-		   g_fh_drv_pll[MT658X_FH_MM_PLL].setting_id,
-		   g_fh_drv_pll[MT658X_FH_VENC_PLL].setting_id);
-	return 0;
-#if 0
-	char *p = page;
-	int len = 0;
-
-	FH_MSG("EN: %s", __func__);
-
-	p += sprintf(p, "\r\n[freqhopping debug flag]\r\n");
-	p += sprintf(p, "===============================================\r\n");
-	p += sprintf(p, "id==ARMPLL==MAINPLL==MEMPLL==MSDCPLL==MMPLL==VENCPLL\r\n");
-	p += sprintf(p, "   == %04d====%04d====%04d====%04d====%04d====%04d=\r\n",
-		     g_fh_drv_pll[MT658X_FH_ARM_PLL].fh_status,
-		     g_fh_drv_pll[MT658X_FH_MAIN_PLL].fh_status,
-		     g_fh_drv_pll[MT658X_FH_MEM_PLL].fh_status,
-		     g_fh_drv_pll[MT658X_FH_MSDC_PLL].fh_status,
-		     g_fh_drv_pll[MT658X_FH_MM_PLL].fh_status,
-		     g_fh_drv_pll[MT658X_FH_VENC_PLL].fh_status);
-	p += sprintf(p, "   == %04d====%04d====%04d====%04d====%04d====%04d=\r\n",
-		     g_fh_drv_pll[MT658X_FH_ARM_PLL].setting_id,
-		     g_fh_drv_pll[MT658X_FH_MAIN_PLL].setting_id,
-		     g_fh_drv_pll[MT658X_FH_MEM_PLL].setting_id,
-		     g_fh_drv_pll[MT658X_FH_MSDC_PLL].setting_id,
-		     g_fh_drv_pll[MT658X_FH_MM_PLL].setting_id,
-		     g_fh_drv_pll[MT658X_FH_VENC_PLL].setting_id);
-
-	*start = page + off;
-
-	len = p - page;
-
-	if (len > off)
-		len -= off;
-	else
-		len = 0;
-
-	return len < count ? len : count;
-#endif
-#endif
 }
 
 static ssize_t freqhopping_debug_proc_write(struct file *file, const char *buffer, size_t count,
@@ -634,6 +492,8 @@ static const struct file_operations userdef_fops = {
 	.release = single_release,
 };
 
+#if !defined(DISABLE_FREQ_HOPPING)
+
 static int freqhopping_debug_proc_init(void)
 {
 	struct proc_dir_entry *prDebugEntry;
@@ -734,21 +594,10 @@ static int freqhopping_debug_proc_init(void)
 		return 1;
 	}
 
-#if 0				/* MT_FH_CLK_GEN */
-	/* /proc/freqhopping/clkgen */
-	prUserdefEntry = create_proc_entry("clkgen", S_IRUGO | S_IWUSR | S_IWGRP, fh_proc_dir);
-	if (prUserdefEntry) {
-		prUserdefEntry->read_proc = g_p_fh_hal_drv->proc.clk_gen_read;
-		prUserdefEntry->write_proc = g_p_fh_hal_drv->proc.clk_gen_write;
-		FH_MSG("[%s]: successfully create /proc/freqhopping/clkgen", __func__);
-	} else {
-		FH_MSG("[%s]: failed to create /proc/freqhopping/clkgen", __func__);
-		return 1;
-	}
-#endif				/* MT_FH_CLK_GEN */
 
 	return 0;
 }
+#endif
 
 #if defined(DISABLE_FREQ_HOPPING)
 void mt_fh_popod_save(void)

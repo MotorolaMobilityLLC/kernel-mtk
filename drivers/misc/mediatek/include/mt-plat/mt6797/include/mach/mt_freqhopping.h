@@ -1,9 +1,7 @@
 #ifndef __MT_FREQHOPPING_H__
 #define __MT_FREQHOPPING_H__
 
-/* #include <linux/xlog.h> */
-
-#define PLATFORM_DEP_DEBUG_PROC_READ
+#define DISABLE_FREQ_HOPPING	/* Disable all FHCTL Common Interface for chip Bring-up */
 
 #define FHTAG "[FH]"
 #define VERBOSE_DEBUG 0
@@ -16,12 +14,8 @@
 
 #define FH_MSG_DEBUG   FH_MSG
 #else
-#if 1				/* log level is 6 xlog */
-#define FH_MSG(fmt, args...) pr_debug(fmt, ##args)
 
-#else				/* log level is 4 (printk) */
-#define FH_MSG(fmt, args...) printk(FHTAG""fmt"\n", ##args)
-#endif
+#define FH_MSG(fmt, args...) pr_debug(fmt, ##args)
 
 #define FH_MSG_DEBUG(fmt, args...)\
 	do {    \
@@ -33,10 +27,9 @@
 
 
 enum FH_FH_STATUS {
-	FH_FH_DISABLE = 0,
+	FH_FH_UNINIT = 0,
+	FH_FH_DISABLE,
 	FH_FH_ENABLE_SSC,
-	FH_FH_ENABLE_DFH,
-	FH_FH_ENABLE_DVFS,
 };
 
 enum FH_PLL_STATUS {
@@ -54,33 +47,46 @@ enum FH_CMD {
 };
 
 
+
+/* [PD] Need porting for platform. */
 enum FH_PLL_ID {
-	FH_MIN_PLLID = 0,
-	FH_ARM_PLLID = FH_MIN_PLLID,
-	FH_MAIN_PLLID = 1,
-	FH_MEM_PLLID = 2,
-	FH_MM_PLLID = 3,
-	FH_VENC_PLLID = 4,
-	FH_MSDC_PLLID = 5,
-	FH_TVD_PLLID = 6,
-	FH_MAX_PLLID = FH_TVD_PLLID,
-	FH_PLL_NUM
+	/* MCU FHCTL */
+	MCU_FH_PLL0 = 0,	/* CAXPLL0 */
+	MCU_FH_PLL1 = 1,	/* CAXPLL1 */
+	MCU_FH_PLL2 = 2,	/* CAXPLL2 */
+	MCU_FH_PLL3 = 3,	/* CAXPLL3 */
+	/* FHCTL */
+	FH_PLL0 = 4,		/* VDECPLL */
+	FH_PLL1 = 5,		/* MPLL */
+	FH_PLL2 = 6,		/* MAINPLL */
+	FH_PLL3 = 7,		/* MEMPLL */
+	FH_PLL4 = 8,		/* MSDCPLL */
+	FH_PLL5 = 9,		/* MFGPLL */
+	FH_PLL6 = 10,		/* IMGPLL */
+	FH_PLL7 = 11,		/* TVDPLL */
+	FH_PLL8 = 12,		/* CODECPLL */
+
+	FH_PLL_NUM,
 };
+
+#define isFHCTL(id) ((id >= FH_PLL0)?true:false)
+
 
 /* keep track the status of each PLL */
 /* TODO: do we need another "uint mode" for Dynamic FH */
 typedef struct {
+	unsigned int curr_freq;	/* Useless variable, just a legacy */
 	unsigned int fh_status;
 	unsigned int pll_status;
 	unsigned int setting_id;
-	unsigned int curr_freq;
+	unsigned int setting_idx_pattern;
 	unsigned int user_defined;
 } fh_pll_t;
 
 
-
 struct freqhopping_ssc {
-	unsigned int freq;
+	unsigned int freq;	/* useless variable, just a legacy. */
+	unsigned int idx_pattern;
 	unsigned int dt;
 	unsigned int df;
 	unsigned int upbnd;
@@ -94,7 +100,8 @@ struct freqhopping_ioctl {
 	int result;
 };
 
-int freqhopping_config(unsigned int pll_id, unsigned long vco_freq, unsigned int enable);
+/* FHCTL HAL driver Interface */
+int freqhopping_config(unsigned int pll_id, unsigned long def_set_idx, unsigned int enable);
 void mt_freqhopping_init(void);
 void mt_freqhopping_pll_init(void);
 int mt_h2l_mempll(void);
@@ -108,15 +115,9 @@ int mt_fh_dram_overclock(int clk);
 int mt_fh_get_dramc(void);
 int mt_freqhopping_devctl(unsigned int cmd, void *args);
 
-int mt_dfs_mmpll(unsigned int target_freq);
-int mt_dfs_armpll(unsigned int pll, unsigned int dds);
-int mt_dfs_vencpll(unsigned int target_dds);
 
-int mt_dfs_mempll(unsigned int target_dds);
-
-extern int DFS_APDMA_END(void);
-extern int DFS_APDMA_Enable(void);
-extern void DFS_APDMA_dummy_read_preinit(void);
-extern void DFS_APDMA_dummy_read_deinit(void);
+/* FHCTL Common driver Interface */
+int mt_dfs_mmpll(unsigned int dds);
+int mt_dfs_armpll(unsigned int current_freq, unsigned int dds);
 
 #endif				/* !__MT_FREQHOPPING_H__ */

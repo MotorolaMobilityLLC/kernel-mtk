@@ -649,6 +649,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x1001a000 0x1000>;
 		};
 
+		mcufhctl@1001af00 {
+			compatible = "mediatek,mcufhctl";
+			reg = <0x1001af00 0x100>;
+		};
+
 		c2kmisc@1001b000 {
 			compatible = "mediatek,c2kmisc";
 			reg = <0x1001b000 0x1000>;
@@ -658,7 +663,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,modem_temp";
 			reg = <0x1001c000 0x1000>;
 		};
-
 
 		scp: scp@10020000 {
 			compatible = "mediatek,scp";

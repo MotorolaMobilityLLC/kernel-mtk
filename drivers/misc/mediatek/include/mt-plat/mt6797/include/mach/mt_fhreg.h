@@ -5,27 +5,26 @@
 /* #include <mach/mt_reg_base.h> */
 
 
-/*--------------------------------------------------------------------------*/
-/* Common Macro                                                             */
-/*--------------------------------------------------------------------------*/
-#ifdef CONFIG_OF
+/* **************************************************** */
+/* IP base address */
+/* **************************************************** */
+
 
 #ifdef CONFIG_ARM64
-
-#define REG_ADDR(x)                 ((unsigned long)g_fhctl_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned long)g_apmixed_base + (x))
-#define REG_DDRPHY_ADDR(x)          ((unsigned long)g_ddrphy_base  + (x))
+#define REG_ADDR(x)             ((unsigned long)g_fhctl_base   + (x))
+#define REG_MCU_FHCTL_ADDR(x)   ((unsigned long)g_mcu_fhctl_base  + (x))
+#define REG_APMIX_ADDR(x)       ((unsigned long)g_apmixed_base + (x))
+#define REG_MCUMIX_ADDR(x)      ((unsigned long)g_mcumixed_base + (x))
 #else
-#define REG_ADDR(x)                 ((unsigned int)g_fhctl_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned int)g_apmixed_base + (x))
-#define REG_DDRPHY_ADDR(x)          ((unsigned int)g_ddrphy_base  + (x))
+#define REG_ADDR(x)             ((unsigned int)g_fhctl_base   + (x))
+#define REG_MCU_FHCTL_ADDR(x)   ((unsigned int)g_mcu_fhctl_base  + (x))
+#define REG_APMIX_ADDR(x)       ((unsigned int)g_apmixed_base + (x))
+#define REG_MCUMIX_ADDR(x)      ((unsigned int)g_mcumixed_base + (x))
 #endif
 
-#else
-#define REG_ADDR(x)                 (FHCTL_BASE   + (x))
-#define REG_APMIX_ADDR(x)           (APMIXED_BASE + (x))
-#define REG_DDRPHY_ADDR(x)          (DDRPHY_BASE  + (x))
-#endif
+/* **************************************************** */
+/* FHCTL register */
+/* **************************************************** */
 
 #define REG_FHCTL_HP_EN     REG_ADDR(0x0000)
 #define REG_FHCTL_CLK_CON   REG_ADDR(0x0004)
@@ -85,28 +84,117 @@
 #define REG_FHCTL6_DVFS     REG_ADDR(0x00BC)
 #define REG_FHCTL6_MON      REG_ADDR(0x00C0)
 
+#define REG_FHCTL7_CFG      REG_ADDR(0x00C4)
+#define REG_FHCTL7_UPDNLMT  REG_ADDR(0x00C8)
+#define REG_FHCTL7_DDS      REG_ADDR(0x00CC)
+#define REG_FHCTL7_DVFS     REG_ADDR(0x00D0)
+#define REG_FHCTL7_MON      REG_ADDR(0x00D4)
+
+#define REG_FHCTL8_CFG      REG_ADDR(0x00D8)
+#define REG_FHCTL8_UPDNLMT  REG_ADDR(0x00DC)
+#define REG_FHCTL8_DDS      REG_ADDR(0x00E0)
+#define REG_FHCTL8_DVFS     REG_ADDR(0x00E4)
+#define REG_FHCTL8_MON      REG_ADDR(0x00E8)
+
+/* **************************************************** */
+/* MCU FHCTL register */
+/* **************************************************** */
+#define REG_MCU_FHCTL_HP_EN     REG_MCU_FHCTL_ADDR(0x0000)
+#define REG_MCU_FHCTL_CLK_CON   REG_MCU_FHCTL_ADDR(0x0004)
+#define REG_MCU_FHCTL_RST_CON   REG_MCU_FHCTL_ADDR(0x0008)
+#define REG_MCU_FHCTL_SLOPE0    REG_MCU_FHCTL_ADDR(0x000C)
+#define REG_MCU_FHCTL_DSSC_CFG  REG_MCU_FHCTL_ADDR(0x0010)
+
+#define REG_MCU_FHCTL_DSSC0_CON REG_MCU_FHCTL_ADDR(0x0014)
+#define REG_MCU_FHCTL_DSSC1_CON REG_MCU_FHCTL_ADDR(0x0018)
+#define REG_MCU_FHCTL_DSSC2_CON REG_MCU_FHCTL_ADDR(0x002C)
+#define REG_MCU_FHCTL_DSSC3_CON REG_MCU_FHCTL_ADDR(0x0020)
+#define REG_MCU_FHCTL_DSSC4_CON REG_MCU_FHCTL_ADDR(0x0024)
+#define REG_MCU_FHCTL_DSSC5_CON REG_MCU_FHCTL_ADDR(0x0028)
+#define REG_MCU_FHCTL_DSSC6_CON REG_MCU_FHCTL_ADDR(0x003C)
+#define REG_MCU_FHCTL_DSSC7_CON REG_MCU_FHCTL_ADDR(0x0030)
+
+#define REG_MCU_FHCTL0_CFG      REG_MCU_FHCTL_ADDR(0x0034)
+#define REG_MCU_FHCTL0_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0038)
+#define REG_MCU_FHCTL0_DDS      REG_MCU_FHCTL_ADDR(0x004C)
+#define REG_MCU_FHCTL0_DVFS     REG_MCU_FHCTL_ADDR(0x0040)
+#define REG_MCU_FHCTL0_MON      REG_MCU_FHCTL_ADDR(0x0044)
+#define REG_MCU_FHCTL1_CFG      REG_MCU_FHCTL_ADDR(0x0048)
+#define REG_MCU_FHCTL1_UPDNLMT  REG_MCU_FHCTL_ADDR(0x005C)
+#define REG_MCU_FHCTL1_DDS      REG_MCU_FHCTL_ADDR(0x0050)
+#define REG_MCU_FHCTL1_DVFS     REG_MCU_FHCTL_ADDR(0x0054)
+#define REG_MCU_FHCTL1_MON      REG_MCU_FHCTL_ADDR(0x0058)
+#define REG_MCU_FHCTL2_CFG      REG_MCU_FHCTL_ADDR(0x006C)
+#define REG_MCU_FHCTL2_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0060)
+#define REG_MCU_FHCTL2_DDS      REG_MCU_FHCTL_ADDR(0x0064)
+#define REG_MCU_FHCTL2_DVFS     REG_MCU_FHCTL_ADDR(0x0068)
+#define REG_MCU_FHCTL2_MON      REG_MCU_FHCTL_ADDR(0x007C)
+#define REG_MCU_FHCTL3_CFG      REG_MCU_FHCTL_ADDR(0x0070)
+#define REG_MCU_FHCTL3_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0074)
+#define REG_MCU_FHCTL3_DDS      REG_MCU_FHCTL_ADDR(0x0078)
+#define REG_MCU_FHCTL3_DVFS     REG_MCU_FHCTL_ADDR(0x008C)
+#define REG_MCU_FHCTL3_MON      REG_MCU_FHCTL_ADDR(0x0080)
+
+
 /* **************************************************** */
 /* APMIXED CON0/CON1 Register */
 /* **************************************************** */
 
-/*CON0, PLL enable status */
-#define REG_ARMPLL_CON0     REG_APMIX_ADDR(0x0200)
-#define REG_MAINPLL_CON0    REG_APMIX_ADDR(0x0210)
-/* #define REG_MEMPLL_CON0     REG_DDRPHY_ADDR(0x0600) ///< Bit[28] RG_MEMPLL_EN */
-#define REG_MMPLL_CON0      REG_APMIX_ADDR(0x0230)
-#define REG_VENCPLL_CON0    REG_APMIX_ADDR(0x0250)
-#define REG_MSDCPLL_CON0    REG_APMIX_ADDR(0x0240)
-#define REG_TVDPLL_CON0     REG_APMIX_ADDR(0x0260)
+#define REG_MCU_FH_PLL0_CON0 REG_MCUMIX_ADDR(0x200)
+#define REG_MCU_FH_PLL1_CON0 REG_MCUMIX_ADDR(0x210)
+#define REG_MCU_FH_PLL2_CON0 REG_MCUMIX_ADDR(0x220)
+#define REG_MCU_FH_PLL3_CON0 REG_MCUMIX_ADDR(0x230)
+#define REG_FH_PLL0_CON0 REG_APMIX_ADDR(0x02E4)
+#define REG_FH_PLL1_CON0 REG_APMIX_ADDR(0x0280)
+#define REG_FH_PLL2_CON0 REG_APMIX_ADDR(0x0220)
+#define REG_FH_PLL3_CON0 REG_APMIX_ADDR(0)	/* MEMPLL doesn't have */
+#define REG_FH_PLL4_CON0 REG_APMIX_ADDR(0x0250)
+#define REG_FH_PLL5_CON0 REG_APMIX_ADDR(0x0240)
+#define REG_FH_PLL6_CON0 REG_APMIX_ADDR(0x0260)
+#define REG_FH_PLL7_CON0 REG_APMIX_ADDR(0x0270)
+#define REG_FH_PLL8_CON0 REG_APMIX_ADDR(0x0290)
 
-/*CON1, DDS value */
-#define REG_ARMPLL_CON1     REG_APMIX_ADDR(0x0204)
-#define REG_MAINPLL_CON1    REG_APMIX_ADDR(0x0214)
-/* /MEMPLL_CON1 field mapping. Integer: [31:25] => FHCTL_DDS[20:14] ; Fraction: [24:1] => FHCTL_DDS[13:0] */
-#define REG_MEMPLL_CON1     REG_DDRPHY_ADDR(0x0624)
-#define REG_MMPLL_CON1      REG_APMIX_ADDR(0x0234)
-#define REG_VENCPLL_CON1    REG_APMIX_ADDR(0x0254)
-#define REG_MSDCPLL_CON1    REG_APMIX_ADDR(0x0244)
-#define REG_TVDPLL_CON1     REG_APMIX_ADDR(0x0264)
+#define REG_MCU_FH_PLL0_CON1 REG_MCUMIX_ADDR(0x204)
+#define REG_MCU_FH_PLL1_CON1 REG_MCUMIX_ADDR(0x214)
+#define REG_MCU_FH_PLL2_CON1 REG_MCUMIX_ADDR(0x224)
+#define REG_MCU_FH_PLL3_CON1 REG_MCUMIX_ADDR(0x234)
+#define REG_FH_PLL0_CON1 REG_APMIX_ADDR(0x02E8)
+#define REG_FH_PLL1_CON1 REG_APMIX_ADDR(0x0284)
+#define REG_FH_PLL2_CON1 REG_APMIX_ADDR(0x0224)
+#define REG_FH_PLL3_CON1 REG_APMIX_ADDR(0)	/* MEMPLL doesn't have */
+#define REG_FH_PLL4_CON1 REG_APMIX_ADDR(0x02E4)
+#define REG_FH_PLL5_CON1 REG_APMIX_ADDR(0x0244)
+#define REG_FH_PLL6_CON1 REG_APMIX_ADDR(0x0264)
+#define REG_FH_PLL7_CON1 REG_APMIX_ADDR(0x0274)
+#define REG_FH_PLL8_CON1 REG_APMIX_ADDR(0x0294)
+
+/***************************************************** */
+
+/* **************************************************** */
+/* FHCTL Register mask */
+/* **************************************************** */
+
+#define MASK_FRDDSX_DYS         (0xFU<<20)
+#define MASK_FRDDSX_DTS         (0xFU<<16)
+#define FH_FHCTLX_SRHMODE       (0x1U<<5)
+#define FH_SFSTRX_BP            (0x1U<<4)
+#define FH_SFSTRX_EN            (0x1U<<2)
+#define FH_FRDDSX_EN            (0x1U<<1)
+#define FH_FHCTLX_EN            (0x1U<<0)
+#define FH_FRDDSX_DNLMT         (0xFFU<<16)
+#define FH_FRDDSX_UPLMT         (0xFFU)
+#define FH_FHCTLX_PLL_TGL_ORG   (0x1U<<31)
+#define FH_FHCTLX_PLL_ORG       (0xFFFFFU)
+#define FH_FHCTLX_PAUSE         (0x1U<<31)
+#define FH_FHCTLX_PRD           (0x1U<<30)
+#define FH_SFSTRX_PRD           (0x1U<<29)
+#define FH_FRDDSX_PRD           (0x1U<<28)
+#define FH_FHCTLX_STATE         (0xFU<<24)
+#define FH_FHCTLX_PLL_CHG       (0x1U<<21)
+#define FH_FHCTLX_PLL_DDS       (0xFFFFFU)
+
+/* **************************************************** */
+/* Macro */
 /* **************************************************** */
 
 
