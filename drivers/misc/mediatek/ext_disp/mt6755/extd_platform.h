@@ -22,5 +22,7 @@
 #define MM_MHL_DVFS
 #define MHL_DYNAMIC_VSYNC_OFFSET
 */
+
+#define MHL_RESOLUTION_LIMIT_1080P_30
 #endif
 
