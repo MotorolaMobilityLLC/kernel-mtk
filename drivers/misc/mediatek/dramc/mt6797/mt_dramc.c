@@ -1643,6 +1643,10 @@ unsigned int get_dram_data_rate(void)
 		MEMPLL_FOUT = 1270;
 	else if (MEMPLL_FOUT == 1040)
 		MEMPLL_FOUT = 1066;
+	else if (MEMPLL_FOUT == 3120)
+		MEMPLL_FOUT = 1600;  /* old version, do not support DFS */
+	else if (MEMPLL_FOUT == 3432)
+		MEMPLL_FOUT = 1700;  /* old version, do not support DFS */
 
 	return MEMPLL_FOUT;
 }
