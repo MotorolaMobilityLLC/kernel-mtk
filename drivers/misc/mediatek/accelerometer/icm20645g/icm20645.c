@@ -369,9 +369,40 @@ static int ICM20645_Setfilter(struct i2c_client *client, int filter_sample)
 	}
 	databuf[0] = filter_sample;
 	res = mpu_i2c_write_block(client, ICM20645_ACC_CONFIG_2, databuf, 0x1);
-	if (res <= 0) {
+	if (res < 0) {
 		GSE_ERR("ICM20645_ACC_CONFIG_2 err!\n");
 		return ICM20645_ERR_I2C;
+	}
+
+	icm20645_set_bank(client, BANK_SEL_0);
+	return ICM20645_SUCCESS;
+}
+
+static int ICM20645_lowest_power_mode(struct i2c_client *client, unsigned int on)
+{
+	u8 databuf[2] = { 0 };
+	int res = 0;
+
+	icm20645_set_bank(client, BANK_SEL_2);
+	res = mpu_i2c_read_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
+	if (res < 0) {
+		GSE_ERR("ICM20645_lowest_power_mode1 err!\n");
+		return ICM20645_ERR_I2C;
+	}
+	if (on == true) {
+		databuf[0] |= BIT_LP_EN;
+		res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
+		if (res < 0) {
+			GSE_ERR("ICM20645_lowest_power_mode2 err!\n");
+			return ICM20645_ERR_I2C;
+		}
+	} else {
+		databuf[0] &= ~BIT_LP_EN;
+		res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
+		if (res < 0) {
+			GSE_ERR("ICM20645_lowest_power_mode3 err!\n");
+			return ICM20645_ERR_I2C;
+		}
 	}
 
 	icm20645_set_bank(client, BANK_SEL_0);
@@ -392,13 +423,13 @@ static int ICM20645_SetSampleRate(struct i2c_client *client, int sample_rate)
 	databuf[0] = rate_div % 256;
 
 	res = mpu_i2c_write_block(client, ICM20645_REG_SAMRT_DIV2, databuf, 0x1);
-	if (res <= 0) {
+	if (res < 0) {
 		GSE_ERR("write sample rate register err!\n");
 		return ICM20645_ERR_I2C;
 	}
 	databuf[0] = rate_div / 256;
 	res = mpu_i2c_write_block(client, ICM20645_REG_SAMRT_DIV1, databuf, 0x1);
-	if (res <= 0) {
+	if (res < 0) {
 		GSE_ERR("write sample rate register err!\n");
 		return ICM20645_ERR_I2C;
 	}
@@ -435,8 +466,15 @@ static int ICM20645_SetPowerMode(struct i2c_client *client, bool enable)
 	databuf[0] &= ~ICM20645_SLEEP;
 
 	if (enable == false) {
-		if (ICM20645_gyro_mode() == false)
+		if (ICM20645_gyro_mode() == false) {
 			databuf[0] |= ICM20645_SLEEP;
+		} else {
+			res = ICM20645_lowest_power_mode(obj_i2c_data->client, true);
+			if (res != ICM20645_SUCCESS) {
+				GSE_ERR("ICM20645_lowest_power_mode error\n");
+				return res;
+			}
+		}
 	}
 
 	res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
@@ -823,6 +861,7 @@ static int icm20645_init_client(struct i2c_client *client, int reset_cali)
 		GSE_ERR("Check ID error\n");
 		return res;
 	}
+	res = ICM20645_SetPowerMode(client, false);
 	for (; retry_fail < 10; retry_fail++) {
 		res = ICM20645_SetPowerMode(client, true);
 		if (res != ICM20645_SUCCESS) {
@@ -836,19 +875,34 @@ static int icm20645_init_client(struct i2c_client *client, int reset_cali)
 		}
 		break;
 	}
+	res = icm20645_turn_on(client, BIT_PWR_ACCEL_STBY, true);
+	if (res != ICM20645_SUCCESS) {
+		GSE_ERR("icm20645_turn_on error\n");
+		return res;
+	}
+	res = icm20645_lp_mode(client, true);
+	if (res != ICM20645_SUCCESS) {
+		GSE_ERR("icm20645_lp_mode error\n");
+		return res;
+	}
+	res = ICM20645_lowest_power_mode(client, false);
+	if (res != ICM20645_SUCCESS) {
+		GSE_ERR("ICM20645_lowest_power_mode error\n");
+		return res;
+	}
 	res = ICM20645_SetDataFormat(client, (ACCEL_DLPFCFG | ICM20645_RANGE_16G | ACCEL_FCHOICE));
 	if (res != ICM20645_SUCCESS) {
 		GSE_ERR("set data format error\n");
 		return res;
 	}
-	res = ICM20645_SetSampleRate(client, 125);
-	if (res != ICM20645_SUCCESS) {
-		GSE_ERR("ICM20645_SetSampleRate error\n");
-		return res;
-	}
 	res = ICM20645_Setfilter(client, ACCEL_AVGCFG_8X);
 	if (res != ICM20645_SUCCESS) {
 		GSE_ERR("ICM20645_Setfilter error\n");
+		return res;
+	}
+	res = ICM20645_SetSampleRate(client, 125);
+	if (res != ICM20645_SUCCESS) {
+		GSE_ERR("ICM20645_SetSampleRate error\n");
 		return res;
 	}
 	gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = obj->reso->sensitivity;
@@ -868,14 +922,14 @@ static int icm20645_init_client(struct i2c_client *client, int reset_cali)
 #ifdef CONFIG_ICM20645_LOWPASS
 	memset(&obj->fir, 0x00, sizeof(obj->fir));
 #endif
-	res = icm20645_turn_on(client, BIT_PWR_ACCEL_STBY, true);
+	res = icm20645_turn_on(client, BIT_PWR_ACCEL_STBY, false);
 	if (res != ICM20645_SUCCESS) {
 		GSE_ERR("icm20645_turn_on error\n");
 		return res;
 	}
-	res = icm20645_lp_mode(client, true);
+	res = ICM20645_lowest_power_mode(client, true);
 	if (res != ICM20645_SUCCESS) {
-		GSE_ERR("icm20645_lp_mode error\n");
+		GSE_ERR("ICM20645_lowest_power_mode error\n");
 		return res;
 	}
 	res = ICM20645_SetPowerMode(client, false);
@@ -964,6 +1018,7 @@ static int ICM20645_ReadSensorData(struct i2c_client *client, char *buf, int buf
 
 	if (sensor_power == false) {
 		res = ICM20645_SetPowerMode(client, true);
+		res = icm20645_turn_on(client, BIT_PWR_ACCEL_STBY, true);
 		if (res)
 			GSE_ERR("Power on icm20645 error %d!\n", res);
 		msleep(50);
@@ -1811,7 +1866,12 @@ static int icm20645_suspend(struct i2c_client *client, pm_message_t msg)
 			GSE_ERR("null pointer!!\n");
 			return -EINVAL;
 		}
-		atomic_set(&obj->suspend, 1);
+		atomic_set(&obj->suspend, 1);	
+		err = icm20645_turn_on(obj->client, BIT_PWR_ACCEL_STBY, false);
+		if (err != ICM20645_SUCCESS) {
+			GSE_ERR("icm20645_turn_on error\n");
+			return err;
+		}
 		err = ICM20645_SetPowerMode(obj->client, false);
 		if (err) {
 			GSE_ERR("write power control fail!!\n");
@@ -1922,16 +1982,41 @@ static int icm20645_enable_nodata(int en)
 		power = true;
 	if (0 == en)
 		power = false;
-
-	for (retry = 0; retry < 3; retry++) {
-		res = ICM20645_SetPowerMode(obj_i2c_data->client, power);
-		if (res == 0) {
-			GSE_LOG("ICM20645_SetPowerMode done\n");
-			break;
+	if (power == true) {
+		for (retry = 0; retry < 3; retry++) {
+			res = ICM20645_SetPowerMode(obj_i2c_data->client, true);
+			if (res == 0) {
+				GSE_LOG("ICM20645_SetPowerMode done\n");
+				break;
+			}
+			GSE_LOG("ICM20645_SetPowerMode fail\n");
 		}
-		GSE_LOG("ICM20645_SetPowerMode fail\n");
+		res = icm20645_turn_on(obj_i2c_data->client, BIT_PWR_ACCEL_STBY, true);
+		if (res != ICM20645_SUCCESS) {
+			GSE_ERR("icm20645_turn_on error\n");
+			return res;
+		}
+		res = ICM20645_lowest_power_mode(obj_i2c_data->client, true);	
+		if (res != ICM20645_SUCCESS) {
+			GSE_ERR("ICM20645_lowest_power_mode error\n");
+			return res;
+		}
+	} else {
+		res = icm20645_turn_on(obj_i2c_data->client, BIT_PWR_ACCEL_STBY, false);
+		if (res != ICM20645_SUCCESS) {
+			GSE_ERR("icm20645_turn_on error\n");
+			return res;
+		}
+		for (retry = 0; retry < 3; retry++) {
+			res = ICM20645_SetPowerMode(obj_i2c_data->client, false);
+			if (res == 0) {
+				GSE_LOG("ICM20645_SetPowerMode done\n");
+				break;
+			}
+			GSE_LOG("ICM20645_SetPowerMode fail\n");
+		}
+		
 	}
-
 	if (res != ICM20645_SUCCESS) {
 		GSE_LOG("ICM20645_SetPowerMode fail!\n");
 		return -1;

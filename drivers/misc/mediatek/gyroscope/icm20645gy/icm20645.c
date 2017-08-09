@@ -226,51 +226,6 @@ static int icm20645_lp_mode(struct i2c_client *client, bool on)
 		}
 #endif
 	}
-
-/* all_chip_lp_config */
-#ifdef ICM20645_ACCESS_BY_GSE_I2C
-	res = ICM20645_hwmsen_read_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
-	if (res < 0) {
-		GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-		return ICM20645_ERR_I2C;
-	}
-#else
-	if (hwmsen_read_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
-		GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-		return ICM20645_ERR_I2C;
-	}
-#endif
-
-	if (on == true) {
-		databuf[0] |= BIT_LP_EN;
-#ifdef ICM20645_ACCESS_BY_GSE_I2C
-		res = ICM20645_hwmsen_write_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
-		if (res < 0) {
-			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-			return ICM20645_ERR_I2C;
-		}
-#else
-		if (hwmsen_write_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
-			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-			return ICM20645_ERR_I2C;
-		}
-#endif
-	} else {
-		databuf[0] &= ~BIT_LP_EN;
-#ifdef ICM20645_ACCESS_BY_GSE_I2C
-		res = ICM20645_hwmsen_write_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
-		if (res < 0) {
-			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-			return ICM20645_ERR_I2C;
-		}
-#else
-		if (hwmsen_write_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
-			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
-			return ICM20645_ERR_I2C;
-		}
-#endif
-
-	}
 	return ICM20645_SUCCESS;
 
 }
@@ -490,8 +445,15 @@ static int ICM20645_SetPowerMode(struct i2c_client *client, bool enable)
 
 	databuf[0] &= ~ICM20645_SLEEP;
 	if (enable == FALSE) {
-		if (ICM20645_gse_mode() == false)
+		if (ICM20645_gse_mode() == false) {
 			databuf[0] |= ICM20645_SLEEP;
+		} else {
+			res = icm20645_lowest_power_mode(client, true);
+			if (res != 0) {
+				GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
+				return res;
+			}
+		}
 	}
 
 #ifdef ICM20645_ACCESS_BY_GSE_I2C
@@ -570,7 +532,7 @@ static int ICM20645_Setfilter(struct i2c_client *client, int filter_sample)
 	databuf[1] = filter_sample;
 	res = i2c_master_send(client, databuf, 0x2);
 #endif
-	if (res <= 0) {
+	if (res < 0) {
 		GYRO_ERR("write sample rate register err!\n");
 		return ICM20645_ERR_I2C;
 	}
@@ -598,7 +560,7 @@ static int ICM20645_SetSampleRate(struct i2c_client *client, int sample_rate)
 	databuf[0] = ICM20645_REG_SAMRT_DIV;
 	res = i2c_master_send(client, databuf, 0x2);
 #endif
-	if (res <= 0) {
+	if (res < 0) {
 		GYRO_ERR("write sample rate register err!\n");
 		return ICM20645_ERR_I2C;
 	}
@@ -616,6 +578,7 @@ static int ICM20645_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 
 	if (sensor_power == false) {
 		ICM20645_SetPowerMode(client, true);
+		icm20645_turn_on(client, BIT_PWR_GYRO_STBY, true);
 		msleep(50);
 	}
 #ifdef ICM20645_ACCESS_BY_GSE_I2C
@@ -936,15 +899,24 @@ static int icm20645_init_client(struct i2c_client *client, bool enable)
 		GYRO_ERR("ICM20645_SetPowerMode ERR!\n");
 		return res;
 	}
-
+	res = icm20645_turn_on(client, BIT_PWR_GYRO_STBY, true);
+	if (res != ICM20645_SUCCESS) {
+		GYRO_ERR("icm20645_turn_on ERR!\n");
+		return res;
+	}
+	res = icm20645_lp_mode(client, true);
+	if (res != ICM20645_SUCCESS) {
+		GYRO_ERR("icm20645_lp_mode ERR!\n");
+		return res;
+	}
+	res = icm20645_lowest_power_mode(client, false);
+	if (res != 0) {
+		GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
+		return res;
+	}
 	res = ICM20645_SetDataFormat(client, (GYRO_DLPFCFG | GYRO_FS_SEL | GYRO_FCHOICE));
 	if (res != ICM20645_SUCCESS) {
 		GYRO_ERR("ICM20645_SetDataFormat ERR!\n");
-		return res;
-	}
-	res = ICM20645_SetSampleRate(client, 125);
-	if (res != ICM20645_SUCCESS) {
-		GYRO_ERR("ICM20645_SetSampleRate ERR!\n");
 		return res;
 	}
 	res = ICM20645_Setfilter(client, GYRO_AVGCFG_8X);
@@ -952,18 +924,22 @@ static int icm20645_init_client(struct i2c_client *client, bool enable)
 		GYRO_ERR("ICM20645_Setfilter ERR!\n");
 		return res;
 	}
+	res = ICM20645_SetSampleRate(client, 125);
+	if (res != ICM20645_SUCCESS) {
+		GYRO_ERR("ICM20645_SetSampleRate ERR!\n");
+		return res;
+	}
 #ifdef CONFIG_ICM20645_LOWPASS
 	memset(&obj->fir, 0x00, sizeof(obj->fir));
 #endif
-	icm20645_turn_on(client, BIT_PWR_GYRO_STBY, true);
+	res = icm20645_turn_on(client, BIT_PWR_GYRO_STBY, false);
 	if (res != ICM20645_SUCCESS) {
 		GYRO_ERR("icm20645_turn_on ERR!\n");
 		return res;
 	}
-
-	icm20645_lp_mode(client, true);
-	if (res != ICM20645_SUCCESS) {
-		GYRO_ERR("icm20645_lp_mode ERR!\n");
+	res = icm20645_lowest_power_mode(client, true);
+	if (res != 0) {
+		GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
 		return res;
 	}
 	res = ICM20645_SetPowerMode(client, enable);
@@ -1220,9 +1196,14 @@ static int icm20645_suspend(struct i2c_client *client, pm_message_t msg)
 			return -EINVAL;
 		}
 		atomic_set(&obj->suspend, 1);
+		err = icm20645_turn_on(client, BIT_PWR_GYRO_STBY, false);
+		if (err != ICM20645_SUCCESS) {
+			GYRO_ERR("icm20645_turn_on ERR!\n");
+			return err;
+		}
 
 		err = ICM20645_SetPowerMode(client, false);
-		if (err <= 0)
+		if (err < 0)
 			return err;
 	}
 	return err;
@@ -1272,14 +1253,39 @@ static int icm20645_enable_nodata(int en)
 		power = true;
 	if (0 == en)
 		power = false;
-
-	for (retry = 0; retry < 3; retry++) {
-		res = ICM20645_SetPowerMode(obj_i2c_data->client, power);
-		if (res == 0) {
-			GYRO_LOG("ICM20645_SetPowerMode done\n");
-			break;
+	if (power == true) {
+		for (retry = 0; retry < 3; retry++) {
+			res = ICM20645_SetPowerMode(obj_i2c_data->client, true);
+			if (res == 0) {
+				GYRO_LOG("ICM20645_SetPowerMode done\n");
+				break;
+			}
+			GYRO_LOG("ICM20645_SetPowerMode fail\n");
 		}
-		GYRO_LOG("ICM20645_SetPowerMode fail\n");
+		res = icm20645_turn_on(obj_i2c_data->client, BIT_PWR_GYRO_STBY, true);
+		if (res != ICM20645_SUCCESS) {
+			GYRO_ERR("icm20645_turn_on ERR!\n");
+			return res;
+		}
+		res = icm20645_lowest_power_mode(obj_i2c_data->client, true);
+		if (res != 0) {
+			GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
+			return res;
+		}
+	} else {
+		res = icm20645_turn_on(obj_i2c_data->client, BIT_PWR_GYRO_STBY, false);
+		if (res != ICM20645_SUCCESS) {
+			GYRO_ERR("icm20645_turn_on ERR!\n");
+			return res;
+		}
+		for (retry = 0; retry < 3; retry++) {
+			res = ICM20645_SetPowerMode(obj_i2c_data->client, false);
+			if (res == 0) {
+				GYRO_LOG("ICM20645_SetPowerMode done\n");
+				break;
+			}
+			GYRO_LOG("ICM20645_SetPowerMode fail\n");
+		}
 	}
 
 	if (res != ICM20645_SUCCESS) {
