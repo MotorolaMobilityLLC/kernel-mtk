@@ -24,12 +24,13 @@
 #define  HELP_INFO_DSI \
 	"\n" \
 	"USAGE\n" \
-	"        echo [ACTION]... > /sys/kernel/debug/mtk_dsi\n" \
+	"	echo [ACTION]... > /sys/kernel/debug/mtk_dsi\n" \
 	"\n" \
 	"ACTION\n" \
 	"\n" \
-	"        regr:addr\n" \
-	"        regw:addr=value\n" \
+	"	regr:addr\n" \
+	"	regw:addr=value\n" \
+	"	dump\n" \
 
 #define  MTK_DSI_BASE		0x1400c000
 #define  MTK_MIPI_TX_BASE	0x10010000
@@ -90,6 +91,8 @@ static int mtk_dsi_process_cmd(char *cmd, struct mtk_dsi *dsi)
 			writel(val, dsi->regs + addr - MTK_DSI_BASE);
 		else
 			goto errcode;
+	} else if (strncmp(opt, "dump", 4) == 0) {
+		mtk_dsi_dump_registers(dsi);
 	} else {
 		goto errcode;
 	}

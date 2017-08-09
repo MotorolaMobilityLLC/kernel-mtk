@@ -395,9 +395,10 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 	 * mipi_ratio is mipi clk coefficient for balance the pixel clk in mipi.
 	 * we set mipi_ratio is 1.05.
 	 */
+
 	dsi->data_rate = dsi->vm.pixelclock * 3 * 21 / (1 * 1000 * 10);
 
-	ret |= mtk_mipi_tx_set_data_rate(dsi->phy, dsi->data_rate);
+	ret |= mtk_mipi_tx_set_data_rate(dsi->phy, dsi->data_rate, dsi->ssc_data);
 	ret |= phy_power_on(dsi->phy);
 
 	dsi->poweron = true;
@@ -897,6 +898,8 @@ static void mtk_dsi_encoder_mode_set(
 	dsi->vm.vback_porch = adjusted->vtotal - adjusted->vsync_end;
 	dsi->vm.vfront_porch = adjusted->vsync_start - adjusted->vdisplay;
 	dsi->vm.vsync_len = adjusted->vsync_end - adjusted->vsync_start;
+
+	dsi->ssc_data = *adjusted->private;
 }
 
 static void mtk_dsi_encoder_disable(struct drm_encoder *encoder)

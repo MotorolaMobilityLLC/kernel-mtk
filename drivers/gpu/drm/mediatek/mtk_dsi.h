@@ -41,14 +41,14 @@ struct mtk_dsi {
 	struct clk *digital_clk;
 
 	u32 data_rate;
+	int ssc_data;
 
 	unsigned long mode_flags;
 	enum mipi_dsi_pixel_format format;
 	unsigned int lanes;
 	struct videomode vm;
 	int refcount;
-	bool enabled;
-	bool poweron;
+	bool enabled, poweron;
 	int irq_num, irq_data;
 
 #if defined(CONFIG_DEBUG_FS)
@@ -70,5 +70,7 @@ static inline struct mtk_dsi *connector_to_dsi(struct drm_connector *c)
 {
 	return container_of(c, struct mtk_dsi, conn);
 }
+
+void mtk_dsi_dump_registers(struct mtk_dsi *dsi);
 
 #endif

@@ -118,6 +118,10 @@
 
 #define MIPITX_DSI_PLL_CON2	0x58
 
+#define MIPITX_DSI_PLL_CON3	0x5c
+#define RG_DSI_MPPLL_SDM_SSC_DELTA1		(0xffff << 0)
+#define RG_DSI_MPPLL_SDM_SSC_DELTA		(0xffff << 16)
+
 #define MIPITX_DSI_PLL_TOP	0x64
 #define RG_DSI_MPPLL_PRESERVE		(0xff << 8)
 
@@ -169,6 +173,7 @@ enum reg_idx {
 	TX_DSI_PLL_CON0,
 	TX_DSI_PLL_CON1,
 	TX_DSI_PLL_CON2,
+	TX_DSI_PLL_CON3,
 	TX_DSI_PLL_TOP,
 	TX_DSI_PLL_PWR,
 	TX_DSI_SW_CTRL,
@@ -188,6 +193,7 @@ static unsigned int mtk_regs_ofs[] = {
 	[TX_DSI_PLL_CON0]	=  MIPITX_DSI_PLL_CON0,
 	[TX_DSI_PLL_CON1]	=  MIPITX_DSI_PLL_CON1,
 	[TX_DSI_PLL_CON2]	=  MIPITX_DSI_PLL_CON2,
+	[TX_DSI_PLL_CON3]	=  MIPITX_DSI_PLL_CON3,
 	[TX_DSI_PLL_TOP]	=  MIPITX_DSI_PLL_TOP,
 	[TX_DSI_PLL_PWR]	=  MIPITX_DSI_PLL_PWR,
 	[TX_DSI_SW_CTRL]	=  MIPITX_DSI_SW_CTRL,
@@ -227,6 +233,7 @@ static const struct of_device_id mtk_mipi_tx_match[] = {
 struct mtk_mipi_tx {
 	void __iomem *regs;
 	unsigned int data_rate;
+	unsigned char ssc_data;
 	struct mtk_mipitx_driver_data *driver_data;
 };
 
@@ -239,6 +246,6 @@ struct mtk_mipi_tx {
 
 struct phy;
 
-int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate);
+int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate, unsigned char ssc_data);
 
 #endif

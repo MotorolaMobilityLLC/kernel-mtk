@@ -29,7 +29,7 @@ static void mtk_mipi_tx_mask(struct mtk_mipi_tx *mipi_tx, u32 reg_idx, u32 mask,
 	MIPITX_WRITE(mipi_tx, reg_idx, (temp & ~mask) | (data & mask));
 }
 
-int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate)
+int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate, unsigned char ssc_data)
 {
 	struct mtk_mipi_tx *mipi_tx = phy_get_drvdata(phy);
 
@@ -37,6 +37,7 @@ int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate)
 		return -EINVAL;
 
 	mipi_tx->data_rate = data_rate;
+	mipi_tx->ssc_data = ssc_data;
 
 	return 0;
 }
@@ -44,8 +45,14 @@ int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate)
 static int mtk_mipi_tx_power_on(struct phy *phy)
 {
 	struct mtk_mipi_tx *mipi_tx = phy_get_drvdata(phy);
-	unsigned int txdiv, txdiv0, txdiv1;
-	u64 pcw;
+	u8 txdiv, txdiv0, txdiv1;
+	u64 pcw, delta;
+	u8 delta1 = 5, ssc_range;	/* delta1 is ssc default range*/
+	bool ssc_disable;
+	unsigned int pdelta1;
+
+	ssc_disable = mipi_tx->ssc_data >> 4;
+	ssc_range = mipi_tx->ssc_data & 0xf;
 
 	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON,
 			 RG_DSI_LNT_IMP_CAL_CODE | RG_DSI_LNT_HS_BIAS_EN,
@@ -113,9 +120,34 @@ static int mtk_mipi_tx_power_on(struct phy *phy)
 	 * Post DIV =4, so need data_Rate*4
 	 * Ref_clk is 26MHz
 	 */
+
 	pcw = ((u64) mipi_tx->data_rate * txdiv) << 24;
 	do_div(pcw, 13);
 	MIPITX_WRITE(mipi_tx, TX_DSI_PLL_CON2, pcw);
+
+	/* spread spectrum clock config
+	* pmod = ROUND(1000*26MHz/fmod/2);fmod default is 30Khz, and this value not be changed
+	* pmod = 433.33;
+	*/
+
+	if (!ssc_disable) {
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1, RG_DSI_MPPLL_SDM_SSC_PH_INIT,
+				 RG_DSI_MPPLL_SDM_SSC_PH_INIT);
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1, RG_DSI_MPPLL_SDM_SSC_PRD,
+				 0x1B1 << 16);
+
+		if (0 != ssc_range)
+			delta1 = ssc_range;
+
+		delta = (u64)mipi_tx->data_rate * delta1 * txdiv * 262144 + 281664;
+		do_div(delta, 563329);
+		pdelta1 = delta & RG_DSI_MPPLL_SDM_SSC_DELTA1;
+
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON3, RG_DSI_MPPLL_SDM_SSC_DELTA,
+				 pdelta1 << 16);
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON3, RG_DSI_MPPLL_SDM_SSC_DELTA1,
+				 pdelta1);
+	}
 
 	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1,
 			 RG_DSI_MPPLL_SDM_FRA_EN, RG_DSI_MPPLL_SDM_FRA_EN);
@@ -136,8 +168,13 @@ static int mtk_mipi_tx_power_on(struct phy *phy)
 
 	usleep_range(20, 100);
 
-	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1,
-			 RG_DSI_MPPLL_SDM_SSC_EN, (0 << 2));
+	if (0 != mipi_tx->data_rate && !ssc_disable)
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1, RG_DSI_MPPLL_SDM_SSC_EN,
+				 RG_DSI_MPPLL_SDM_SSC_EN);
+	else
+		mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1, RG_DSI_MPPLL_SDM_SSC_EN,
+				(0 << 2));
+
 	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_TOP, RG_DSI_MPPLL_PRESERVE,
 			 mipi_tx->driver_data->reg_value[TX_DSI_PLL_TOP]);
 	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN, (0 << 11));
@@ -181,6 +218,9 @@ static int mtk_mipi_tx_power_off(struct phy *phy)
 			RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN, 0);
 
 	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON0, RG_DSI_MPPLL_DIV_MSK, 0);
+
+	MIPITX_WRITE(mipi_tx, TX_DSI_PLL_CON1, 0x00000000);
+	MIPITX_WRITE(mipi_tx, TX_DSI_PLL_CON2, 0x50000000);
 
 	return 0;
 }
