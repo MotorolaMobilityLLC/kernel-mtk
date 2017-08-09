@@ -1136,7 +1136,7 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 	void __user *argp = (void __user *)arg;
 	uint32_t flag;
 	struct sensor_delay delayPara;
-	struct hwm_trans_data hwm_sensors_data;
+	struct hwm_trans_data *hwm_sensors_data;
 	int i = 0;
 	int idx = 0;
 	atomic_t delaytemp;
@@ -1183,8 +1183,13 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 		break;
 
 	case HWM_IO_GET_SENSORS_DATA:
-		if (copy_from_user(&hwm_sensors_data, argp, sizeof(hwm_sensors_data))) {
+		hwm_sensors_data = kmalloc(sizeof(*hwm_sensors_data), GFP_KERNEL);
+		if (!hwm_sensors_data)
+			return -ENOMEM;
+
+		if (copy_from_user(hwm_sensors_data, argp, sizeof(*hwm_sensors_data))) {
 			HWM_ERR("copy_from_user fail!!\n");
+			kfree(hwm_sensors_data);
 			return -EFAULT;
 		}
 
@@ -1193,20 +1198,22 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 			sizeof(struct hwm_sensor_data) * MAX_ANDROID_SENSOR_NUM);*/
 		for (i = 0, idx = 0;
 		     i < MAX_ANDROID_SENSOR_NUM && idx < MAX_SENSOR_DATA_UPDATE_ONCE; i++) {
-			if (hwm_sensors_data.data_type & (1LL << i)) {
-				memcpy(&hwm_sensors_data.data[idx], &(obj_data.sensors_data[i]),
+			if (hwm_sensors_data->data_type & (1LL << i)) {
+				memcpy(&(hwm_sensors_data->data[idx]), &(obj_data.sensors_data[i]),
 				       sizeof(struct hwm_sensor_data));
-				hwm_sensors_data.data[idx].update = 1;
+				hwm_sensors_data->data[idx].update = 1;
 				idx++;
 			}
 		}
 		if (idx < MAX_SENSOR_DATA_UPDATE_ONCE)
-			hwm_sensors_data.data[idx].update = 0;
+			hwm_sensors_data->data[idx].update = 0;
 		mutex_unlock(&obj_data.lock);
-		if (copy_to_user(argp, &hwm_sensors_data, sizeof(hwm_sensors_data))) {
+		if (copy_to_user(argp, hwm_sensors_data, sizeof(*hwm_sensors_data))) {
 			HWM_ERR("copy_to_user fail!!\n");
+			kfree(hwm_sensors_data);
 			return -EFAULT;
 		}
+		kfree(hwm_sensors_data);
 		break;
 
 	case HWM_IO_ENABLE_SENSOR_NODATA:
