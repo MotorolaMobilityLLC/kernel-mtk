@@ -40,7 +40,7 @@
 #include "../pinctrl-utils.h"
 #include "pinctrl-mtk-common.h"
 
-/*#include <linux/irqchip/mt-eic.h>*/
+#include <linux/irqchip/mt-eic.h>
 
 
 
@@ -820,14 +820,13 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 {
 	pr_debug("fwq pinctrl mtk_gpio_to_irq pin=%d\n", offset);
-	/*return mt_gpio_to_irq(offset); fix me*/
-	return 0;
+	return mt_gpio_to_irq(offset);
 }
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	unsigned debounce)
 {
 	pr_debug("fwq pinctrl mtk_gpio_set_debounce pin=%d\n", offset);
-	/*mt_eint_set_hw_debounce(offset, debounce); fix me*/
+	mt_eint_set_hw_debounce(offset, debounce);
 	return 0;
 }
 
