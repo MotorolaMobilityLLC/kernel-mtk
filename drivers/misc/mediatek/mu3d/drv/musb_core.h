@@ -88,6 +88,8 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 #include "musb_gadget.h"
 #include <linux/usb/hcd.h>
 
+/* #define U3_COMPLIANCE */
+
 #define USB_GADGET_SUPERSPEED
 #define EP_PROFILING
 

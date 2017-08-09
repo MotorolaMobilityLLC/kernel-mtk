@@ -250,7 +250,7 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
 bool usb_cable_connected(void)
 {
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_MTK_FPGA) && !defined(U3_COMPLIANCE)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 #ifdef CONFIG_POWER_EXT
 	chg_type = mt_get_charger_type();

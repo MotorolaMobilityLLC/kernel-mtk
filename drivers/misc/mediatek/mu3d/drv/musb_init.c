@@ -143,7 +143,7 @@ void init_check_ltssm_work(void)
 void check_ltssm_work(struct work_struct *data)
 {
 	/* struct musb *musb = container_of(to_delayed_work(data), struct musb, check_ltssm_work); */
-#ifndef CONFIG_USBIF_COMPLIANCE
+#if !defined(CONFIG_USBIF_COMPLIANCE) && !defined(U3_COMPLIANCE)
 	os_printk(K_INFO, "%s %x\n", __func__, sts_ltssm);
 
 	if (sts_ltssm == RXDET_SUCCESS_INTR) {

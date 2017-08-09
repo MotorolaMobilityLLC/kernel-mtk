@@ -164,7 +164,7 @@ MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
  * 0: High Speed
  * 1: Super Speed
  */
-#ifdef CONFIG_USB_MU3D_DEFAULT_U2_MODE
+#if defined(CONFIG_USB_MU3D_DEFAULT_U2_MODE) && !defined(U3_COMPLIANCE)
 unsigned int musb_speed = 0;
 #else
 unsigned int musb_speed = 1;
