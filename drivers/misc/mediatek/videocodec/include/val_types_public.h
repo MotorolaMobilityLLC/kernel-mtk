@@ -79,6 +79,8 @@ typedef enum _VAL_CHIP_NAME_T {
 	VAL_CHIP_NAME_MT6570,                       /* /< Rainier (2 core) */
 	VAL_CHIP_NAME_MT6580,                       /* /< Rainier (4 core) */
 	VAL_CHIP_NAME_MT8163,
+	VAL_CHIP_NAME_MT6755,                       /* / <Jade */
+	VAL_CHIP_NAME_MT6797,                       /* / <Everest */
 	VAL_CHIP_NAME_MAX = 0xFFFFFFFF              /* /< Max Value */
 } VAL_CHIP_NAME_T;
 
