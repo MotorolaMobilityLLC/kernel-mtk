@@ -258,19 +258,6 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
-	  {SENSOR_DRVNAME_IMX219_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1000, 10},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 0},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
-	   },
-	  },
 	  {SENSOR_DRVNAME_IMX230_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -297,19 +284,6 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
-	  {SENSOR_DRVNAME_OV8865_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {PDN, Vol_Low, 5},
-	   {RST, Vol_Low, 5},
-	   {DOVDD, Vol_1800, 5},
-	   {AVDD, Vol_2800, 5},
-	   {DVDD, Vol_1200, 5},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_High, 5},
-	   {RST, Vol_High, 5}
-	   },
-	  },
 	  {SENSOR_DRVNAME_IMX318_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -323,6 +297,66 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#if defined(OV8865_MIPI_RAW)
+	  {SENSOR_DRVNAME_OV8865_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 5},
+	   {RST, Vol_Low, 5},
+	   {DOVDD, Vol_1800, 5},
+	   {AVDD, Vol_2800, 5},
+	   {DVDD, Vol_1200, 5},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_High, 5},
+	   {RST, Vol_High, 5}
+	   },
+	  },
+#endif
+#if defined(IMX219_MIPI_RAW)
+	  {SENSOR_DRVNAME_IMX219_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {AVDD, Vol_2800, 10},
+	   {DOVDD, Vol_1800, 10},
+	   {DVDD, Vol_1000, 10},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_Low, 0},
+	   {RST, Vol_High, 0}
+	   },
+	  },
+#endif
+#if defined(OV5670_MIPI_RAW)
+	   {SENSOR_DRVNAME_OV5670_MIPI_RAW,
+	   {
+		{SensorMCLK, Vol_High, 0},
+		{PDN, Vol_Low, 5},
+		{RST, Vol_Low, 5},
+		{DOVDD, Vol_1800, 5},
+		{AVDD, Vol_2800, 5},
+		{DVDD, Vol_1200, 5},
+		{AFVDD, Vol_2800, 5},
+		{PDN, Vol_High, 5},
+		{RST, Vol_High, 5}
+		},
+	   },
+#endif
+#if defined(OV5670_MIPI_RAW_2)
+			{SENSOR_DRVNAME_OV5670_MIPI_RAW_2,
+			{
+			 {SensorMCLK, Vol_High, 0},
+			 {PDN, Vol_Low, 5},
+			 {RST, Vol_Low, 5},
+			 {DOVDD, Vol_1800, 5},
+			 {AVDD, Vol_2800, 5},
+			 {DVDD, Vol_1200, 5},
+			 {AFVDD, Vol_2800, 5},
+			 {PDN, Vol_High, 5},
+			 {RST, Vol_High, 5}
+			 },
+			},
+#endif
 	 /* add new sensor before this line */
 	 {NULL,},
 	 }
@@ -926,6 +960,15 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	} else if (DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx) {
 		pinSetIdx = 2;
 	}
+	
+	if (currSensorName && (0 == strcmp(currSensorName, "ov5670mipiraw")))
+	{
+		if(pinSetIdx == 1)
+		{
+			goto _kdCISModulePowerOn_exit_;
+		}
+	}
+
 	/* power ON */
 	if (On) {
 		PK_INFO("PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName, pinSetIdx, SensorIdx);
