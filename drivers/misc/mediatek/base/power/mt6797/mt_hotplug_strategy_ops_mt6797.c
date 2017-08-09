@@ -222,6 +222,9 @@ static int hps_algo_heavytsk_det(void)
 		}
 	}
 #endif
+	/*Disable operation of  big cluster */
+	hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
+
 	return ret;
 }
 
