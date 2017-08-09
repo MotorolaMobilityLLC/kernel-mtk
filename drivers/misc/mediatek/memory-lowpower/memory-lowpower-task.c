@@ -8,11 +8,7 @@
 #include <linux/rwlock.h>
 
 /* Trigger method for screen on/off */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#else
 #include <linux/fb.h>
-#endif
 
 /* Memory lowpower private header file */
 #include "internal.h"
@@ -39,8 +35,11 @@ static LIST_HEAD(memory_lowpower_handlers);
 static DEFINE_MUTEX(memory_lowpower_lock);
 
 /* Control parameters for memory lowpower task */
+#define MLPT_CLEAR_ACTION       (0x0)
+#define MLPT_SET_ACTION         (0x1)
 static struct task_struct *memory_lowpower_task;
 static enum power_state memory_lowpower_action;
+static atomic_t action_changed;
 static unsigned long memory_lowpower_state;
 static int get_cma_aligned;			/* in PAGE_SIZE order */
 static int get_cma_num;				/* Number of allocation */
@@ -274,7 +273,7 @@ static void go_to_screenon(void)
 	/* Should be SCREENOFF|SCREENIDLE -> SCREENON */
 	if (MlpsScreenOn(&memory_lowpower_state) &&
 			!MlpsScreenIdle(&memory_lowpower_state)) {
-		MLPT_PRERR("Wrong state[%lu]\n", memory_lowpower_state);
+		MLPT_PRERR("Incomplete state[%lu]\n", memory_lowpower_state);
 		goto out;
 	}
 
@@ -289,10 +288,10 @@ static void go_to_screenon(void)
 	if (MlpsScreenIdle(&memory_lowpower_state))
 		ClearMlpsScreenIdle(&memory_lowpower_state);
 
+out:
 	/* Release pages */
 	release_memory();
 
-out:
 	MLPT_END_PROFILE();
 	MLPT_PRINT("%s:-\n", __func__);
 }
@@ -350,8 +349,8 @@ static void go_to_screenoff(void)
 
 	/* Should be SCREENON -> SCREENOFF */
 	if (!MlpsScreenOn(&memory_lowpower_state)) {
-		MLPT_PRERR("Wrong state[%lu]\n", memory_lowpower_state);
-		goto out;
+		MLPT_PRERR("Incomplete state[%lu]\n", memory_lowpower_state);
+		goto acquired;
 	}
 
 	/* Collect free pages */
@@ -369,6 +368,7 @@ static void go_to_screenoff(void)
 	/* Clear SCREENON state */
 	ClearMlpsScreenOn(&memory_lowpower_state);
 
+acquired:
 	/* HW-related flow for screenoff */
 	__go_to_screenoff();
 
@@ -402,7 +402,10 @@ static int memory_lowpower_entry(void *p)
 	do {
 		/* Start running */
 		set_current_state(TASK_RUNNING);
-		do {
+
+		/* Is any action? */
+		while (atomic_xchg(&action_changed, MLPT_CLEAR_ACTION) == MLPT_SET_ACTION) {
+
 			/* Take proper actions */
 			current_action = memory_lowpower_action;
 			switch (current_action) {
@@ -418,7 +421,7 @@ static int memory_lowpower_entry(void *p)
 			default:
 				MLPT_PRINT("%s: Invalid action[%d]\n", __func__, current_action);
 			}
-		} while (current_action != memory_lowpower_action);
+		}
 
 		/* Schedule me */
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -429,52 +432,37 @@ static int memory_lowpower_entry(void *p)
 }
 
 #ifdef CONFIG_PM
-#ifdef CONFIG_HAS_EARLYSUSPEND
-/* Early suspend/resume callbacks & descriptor */
-static void memory_lowpower_early_suspend(struct early_suspend *h)
-{
-	MLPT_PRINT("%s: SCREENOFF!\n", __func__);
-	memory_lowpower_action = MLP_SCREENOFF;
-
-	/* Wake up task */
-	wake_up_process(memory_lowpower_task);
-}
-
-static void memory_lowpower_late_resume(struct early_suspend *h)
-{
-	MLPT_PRINT("%s: SCREENON!\n", __func__);
-	memory_lowpower_action = MLP_SCREENON;
-
-	/* Wake up task */
-	wake_up_process(memory_lowpower_task);
-}
-
-static struct early_suspend early_suspend_descriptor = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1,
-	.suspend = memory_lowpower_early_suspend,
-	.resume = memory_lowpower_late_resume,
-};
-#else /* !CONFIG_HAS_EARLYSUSPEND */
 /* FB event notifier */
 static int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
 {
 	struct fb_event *fb_event = data;
 	int *blank = fb_event->data;
 	int new_status = *blank ? 1 : 0;
+	static unsigned long debounce_time;
 
 	switch (event) {
 	case FB_EVENT_BLANK:
+		/* Which action */
 		if (new_status == 0) {
 			MLPT_PRINT("%s: SCREENON!\n", __func__);
 			memory_lowpower_action = MLP_SCREENON;
-			wake_up_process(memory_lowpower_task);
+			debounce_time = jiffies + HZ;
 		} else {
 			MLPT_PRINT("%s: SCREENOFF!\n", __func__);
+			/* Check whether we are still in debounce_time before applying SCREENOFF action */
+			if (time_before_eq(jiffies, debounce_time)) {
+				MLPT_PRINT("%s: Bye SCREENOFF!\n", __func__);
+				goto out;
+			}
 			memory_lowpower_action = MLP_SCREENOFF;
-			wake_up_process(memory_lowpower_task);
 		}
+
+		/* Action is changed */
+		atomic_set(&action_changed, MLPT_SET_ACTION);
+		wake_up_process(memory_lowpower_task);
 	}
 
+out:
 	return NOTIFY_DONE;
 }
 
@@ -482,16 +470,11 @@ static struct notifier_block fb_notifier_block = {
 	.notifier_call = memory_lowpower_fb_event,
 	.priority = 0,
 };
-#endif
 
 static int __init memory_lowpower_init_pm_ops(void)
 {
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&early_suspend_descriptor);
-#else
 	if (fb_register_client(&fb_notifier_block) != 0)
 		return -1;
-#endif
 
 	return 0;
 }
@@ -528,6 +511,8 @@ int __init memory_lowpower_task_init(void)
 	SetMlpsInit(&memory_lowpower_state);
 	SetMlpsScreenOn(&memory_lowpower_state);
 
+	/* Reset action_changed */
+	atomic_set(&action_changed, MLPT_CLEAR_ACTION);
 out:
 	MLPT_PRINT("%s: memory_power_state[%lu]\n", __func__, memory_lowpower_state);
 	return ret;
