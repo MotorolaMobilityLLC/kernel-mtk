@@ -66,7 +66,24 @@ static struct dentry *spm_file;
 struct platform_device *pspmdev;
 static int dyna_load_pcm_done __nosavedata;
 
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
+static char *dyna_load_pcm_path[] = {
+	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
+	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
+	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
+	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
+};
+
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_BY_MP1]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
+#elif defined(CONFIG_ARCH_MT6757)
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
@@ -95,20 +112,15 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_LPDDR4]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_LPDDR4_BY_MP1]);
-#else
+#elif defined(CONFIG_ARCH_MT6797)
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
-
-#if defined(CONFIG_ARCH_MT6797)
 	[DYNA_LOAD_PCM_VCOREFS_LPM] = "pcm_vcorefs_lpm.bin",
 	[DYNA_LOAD_PCM_VCOREFS_HPM] = "pcm_vcorefs_hpm.bin",
 	[DYNA_LOAD_PCM_VCOREFS_ULTRA] = "pcm_vcorefs_ultra.bin",
-#endif
-
 	[DYNA_LOAD_PCM_SODI] = "pcm_sodi.bin",
 	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_by_mp1.bin",
-
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
@@ -116,13 +128,9 @@ static char *dyna_load_pcm_path[] = {
 
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_BY_MP1]);
-
-#if defined(CONFIG_ARCH_MT6797)
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_LPM]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_HPM]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_ULTRA]);
-#endif
-
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
