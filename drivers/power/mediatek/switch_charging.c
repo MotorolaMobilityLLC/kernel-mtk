@@ -625,8 +625,8 @@ static void mtk_ta_detector(void)
 		battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &hw_ovp_en);
 		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 
-		/*Set BQ25896 VINDPM to 4.6V for vbus = 5V */
-		vindpm = SWITCH_CHR_VINDPM_5V;
+		/*Set BQ25896 VINDPM to 4.5V for vbus = 5V */
+		vindpm = 4500;
 		battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
 #endif
 	}
