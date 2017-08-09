@@ -16,6 +16,24 @@
 #ifndef _IMX214MIPI_SENSOR_H
 #define _IMX214MIPI_SENSOR_H
 
+#ifndef kal_uint32
+  #define unsigned int    kal_uint32;
+#endif
+
+#ifndef kal_uint16
+  #define unsigned short    kal_uint16;
+#endif
+
+#ifndef kal_uint8
+  #define unsigned char    kal_uint8;
+#endif
+
+#ifndef kal_bool
+typedef enum {
+   KAL_FALSE = 0,
+   KAL_TRUE  = 1,
+} kal_bool;
+#endif
 
 typedef enum{
 	IMGSENSOR_MODE_INIT,

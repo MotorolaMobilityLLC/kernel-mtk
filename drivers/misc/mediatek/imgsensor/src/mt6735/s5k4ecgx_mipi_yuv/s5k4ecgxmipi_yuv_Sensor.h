@@ -40,7 +40,39 @@
 //#define FPGA_TEST
 //#define __CAPTURE_JPEG_OUTPUT__
 
+#ifndef kal_uint32
+  #define unsigned int    kal_uint32;
+#endif
 
+#ifndef UINT32
+  #define UINT32    kal_uint32;
+#endif
+
+#ifndef kal_uint16
+  #define unsigned short    kal_uint16;
+#endif
+
+#ifndef kal_uint8
+  #define unsigned char    kal_uint8;
+#endif
+
+#ifndef UINT16
+  #define UINT16    kal_uint16;
+#endif
+
+#ifndef UINT8
+  #define UINT8    kal_uint8;
+#endif
+
+
+
+
+#ifndef kal_bool
+typedef enum {
+   KAL_FALSE = 0,
+   KAL_TRUE  = 1,
+} kal_bool;
+#endif
 
 typedef enum S5K4ECGX_CAMCO_MODE
 {
@@ -283,14 +315,14 @@ struct S5K4ECGX_MIPI_sensor_struct
 
 typedef struct
 {
-    UINT16  iSensorVersion;
-    UINT16  iNightMode;
-    UINT16  iWB;
-    UINT16  iEffect;
-    UINT16  iEV;
-    UINT16  iBanding;
-    UINT16  iMirror;
-    UINT16  iFrameRate;
+    kal_uint32  iSensorVersion;
+    kal_uint32  iNightMode;
+    kal_uint32  iWB;
+    kal_uint32  iEffect;
+    kal_uint32  iEV;
+    kal_uint32  iBanding;
+    kal_uint32  iMirror;
+    kal_uint32  iFrameRate;
 } S5K4ECYX_MIPIStatus;
 S5K4ECYX_MIPIStatus S5K4ECYX_MIPICurrentStatus;
 
