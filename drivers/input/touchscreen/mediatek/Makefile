@@ -1,5 +1,6 @@
 subdir-ccflags-y += -Werror
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek
 # In case the platform does NOT support this type of sensors
 obj-y   +=  mtk_tpd.o
 obj-y   +=  tpd_button.o

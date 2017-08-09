@@ -5,7 +5,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include "tpd.h"
-#include <met_ftrace_touch.h>
+#include "met_ftrace_touch.h"
 
 #ifdef TPD_DEBUG_CODE
 int tpd_fail_count = 0;
