@@ -3834,6 +3834,8 @@ int mt_clkmgr_init(void)
 
 	cg_bootup_pdn();
 
+	return 1;
+
 	mt_plls_init();
 	mt_subsys_init();
 	mt_muxs_init();
