@@ -17,6 +17,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 #include <sound/soc.h>
 
 
@@ -49,6 +50,13 @@ static void mt_pcm_capture2_start_audio_hw(struct snd_pcm_substream *substream)
 	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_VUL_DATA2, substream->runtime->channels);
 	mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_VUL_DATA2);
 
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I17, INTER_CONN_O21);
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I18, INTER_CONN_O22);
+
+	mt_afe_enable_afe(true);
+
+	udelay(UPLINK_IRQ_DELAY_SAMPLES * 1000000 / substream->runtime->rate);
+
 	/* here to set interrupt */
 	mt_afe_get_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, &irq_status);
 	if (likely(!irq_status.status)) {
@@ -64,10 +72,7 @@ static void mt_pcm_capture2_start_audio_hw(struct snd_pcm_substream *substream)
 			 __func__);
 	}
 
-	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I17, INTER_CONN_O21);
-	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I18, INTER_CONN_O22);
 
-	mt_afe_enable_afe(true);
 }
 
 static void mt_pcm_capture2_stop_audio_hw(struct snd_pcm_substream *substream)

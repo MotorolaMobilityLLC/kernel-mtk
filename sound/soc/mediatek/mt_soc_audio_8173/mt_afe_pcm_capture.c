@@ -17,6 +17,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 #include <sound/soc.h>
 
 struct mt_pcm_capture_priv {
@@ -64,6 +65,14 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 	mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_VUL);
 
+	/* here to turn off digital part */
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I03, INTER_CONN_O09);
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I04, INTER_CONN_O10);
+
+	mt_afe_enable_afe(true);
+
+	udelay(UPLINK_IRQ_DELAY_SAMPLES * 1000000 / runtime->rate);
+
 	/* here to set interrupt */
 	mt_afe_get_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, &irq_status);
 	if (likely(!irq_status.status)) {
@@ -73,16 +82,10 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 		snd_pcm_gettime(runtime, (struct timespec *)&curr_tstamp);
 		pr_debug("%s curr_tstamp %ld %ld\n", __func__, curr_tstamp.tv_sec,
 			 curr_tstamp.tv_nsec);
-
 	} else {
 		pr_debug("%s IRQ2_MCU_MODE is enabled, use original irq2 interrupt mode\n",
 			 __func__);
 	}
-	/* here to turn off digital part */
-	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I03, INTER_CONN_O09);
-	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I04, INTER_CONN_O10);
-
-	mt_afe_enable_afe(true);
 }
 
 static void mt_pcm_capture_stop_audio_hw(struct snd_pcm_substream *substream)

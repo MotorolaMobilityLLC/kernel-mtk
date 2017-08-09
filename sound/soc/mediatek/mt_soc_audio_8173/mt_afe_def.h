@@ -27,6 +27,7 @@
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) BUG_ON(false)
 #define ENUM_TO_STR(enum) #enum
+#define UPLINK_IRQ_DELAY_SAMPLES 3
 
 /**********************************
  *  Other Definitions             *
@@ -138,7 +139,7 @@
 #define SOC_NORMAL_USE_CHANNELS_MAX     2
 #define SOC_NORMAL_USE_PERIODS_MIN      2
 #define SOC_NORMAL_USE_PERIODS_MAX      256
-#define SOC_NORMAL_USE_PERIOD_SIZE_MIN  (512)
+#define SOC_NORMAL_USE_PERIOD_SIZE_MIN  (128)
 
 
 static const unsigned int soc_normal_supported_sample_rates[] = {

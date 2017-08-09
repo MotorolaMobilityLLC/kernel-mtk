@@ -18,6 +18,7 @@
 #include <linux/module.h>
 #include <sound/soc.h>
 #include <linux/dma-mapping.h>
+#include <linux/delay.h>
 
 /*
  *    function implementation
@@ -250,6 +251,19 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 		mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_DAI, runtime->rate);
 		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_DAI);
 
+		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_DAI_BT) == false) {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_DAI_BT);
+			set_voip_dai_bt_attribute(substream->runtime->rate);
+			mt_afe_enable_dai_bt();
+		} else {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_DAI_BT);
+		}
+
+		mt_afe_enable_afe(true);
+
+		if (UPLINK_IRQ_DELAY_SAMPLES > 0)
+			udelay(UPLINK_IRQ_DELAY_SAMPLES * 1000000 / runtime->rate);
+
 		/* here to set interrupt */
 		mt_afe_get_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, &irq_status);
 		if (irq_status.status == false) {
@@ -260,16 +274,6 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 			pr_debug("%s IRQ2_MCU_MODE is enabled, use original irq2 interrupt mode\n",
 				 __func__);
 		}
-
-		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_DAI_BT) == false) {
-			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_DAI_BT);
-			set_voip_dai_bt_attribute(substream->runtime->rate);
-			mt_afe_enable_dai_bt();
-		} else {
-			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_DAI_BT);
-		}
-
-		mt_afe_enable_afe(true);
 	}
 
 	return 0;
