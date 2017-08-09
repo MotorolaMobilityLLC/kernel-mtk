@@ -7,6 +7,7 @@
 #include <linux/io.h>
 #include <mt-plat/aee.h>
 
+#include "mt_clkbuf_ctl.h"
 #include "mt_spm.h"
 #include "mt_lpae.h"
 #include "mt_gpio.h"
@@ -413,6 +414,12 @@ static inline u32 base_va_to_pa(const u32 *base)
 
 static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* SPM controls NFC clock buffer in RF only */
+	if (!is_clk_buf_from_pmic())
+		flags |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
+#endif
+
 	if (pwrctrl->pcm_flags_cust == 0)
 		pwrctrl->pcm_flags = flags;
 	else

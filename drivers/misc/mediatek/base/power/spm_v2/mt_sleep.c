@@ -82,15 +82,14 @@ static u32 slp_spm_flags = {
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
-	SPM_FLAG_DIS_DPD |
-	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
+	SPM_FLAG_DIS_DPD
 #endif
 };
 #if defined(CONFIG_ARCH_MT6755)
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
-	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
+	0
 };
 #endif
 #endif

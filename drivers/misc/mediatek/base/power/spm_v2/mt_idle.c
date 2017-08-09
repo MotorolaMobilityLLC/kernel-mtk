@@ -1544,19 +1544,17 @@ static inline void soidle_post_handler(void)
 
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3 |
-	SPM_FLAG_DIS_SYSRAM_SLEEP |
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
-	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
+	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
 
 static u32 slp_spm_SODI_flags = {
-	SPM_FLAG_DIS_SYSRAM_SLEEP |
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
-	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
+	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
 
 #define LEGACY_SLEEP	0
@@ -1569,9 +1567,10 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
-	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_INFRA_PDN
+	#else
+	0
 	#endif
-	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 #endif
 };
 
