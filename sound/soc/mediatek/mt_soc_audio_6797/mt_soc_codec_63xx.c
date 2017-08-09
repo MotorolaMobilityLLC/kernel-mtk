@@ -4896,6 +4896,8 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
 	/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010); */
 	/* power off mic bias1 */
+	Ana_Set_Reg(DRV_CON2, 0xe << 4, 0xf << 4);
+	/* PAD_AUD_DAT_MISO gpio driving MAX */
 	audckbufEnable(false);
 }
 

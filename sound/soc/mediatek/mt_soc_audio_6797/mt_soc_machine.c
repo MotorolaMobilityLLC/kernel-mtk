@@ -450,10 +450,10 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 		       Ana_Get_Reg(AUDNCP_CLKDIV_CON3));
 	n += scnprintf(buffer + n, size - n, "AUDNCP_CLKDIV_CON4  = 0x%x\n",
 		       Ana_Get_Reg(AUDNCP_CLKDIV_CON4));
-
-	n += scnprintf(buffer + n, size - n, "TOP_CKPDN_CON0  = 0x%x\n",
-		       Ana_Get_Reg(TOP_CKPDN_CON0));
-	n += scnprintf(buffer + n, size - n, "GPIO_MODE3  = 0x%x\n", Ana_Get_Reg(GPIO_MODE3));
+	n += scnprintf(buffer + n, size - n, "GPIO_MODE3  = 0x%x\n",
+		       Ana_Get_Reg(GPIO_MODE3));
+	n += scnprintf(buffer + n, size - n, "DRV_CON2  = 0x%x\n",
+		       Ana_Get_Reg(DRV_CON2));
 	pr_debug("mt_soc_ana_debug_read len = %d\n", n);
 
 	audckbufEnable(false);

@@ -189,6 +189,8 @@
 #define TEST_CON0           ((UINT32)(PMIC_REG_BASE+0x0208))
 #define TEST_CON1           ((UINT32)(PMIC_REG_BASE+0x020A))
 
+#define DRV_CON2            ((UINT32)(PMIC_REG_BASE+0x0230))
+
 #define TOP_STATUS          ((UINT32)(PMIC_REG_BASE+0x0234))
 
 #define TOP_CKPDN_CON0      ((UINT32)(PMIC_REG_BASE+0x023A))
