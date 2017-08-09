@@ -204,12 +204,22 @@ static void spm_sodi3_pre_process(void)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
 	/* Do more low power setting when MD1/C2K/CONN off */
-	if (is_md_c2k_conn_power_off())
+	if (is_md_c2k_conn_power_off()) {
 		__spm_bsi_top_init_setting();
+#if defined(CONFIG_ARCH_MT6755)
+		__spm_backup_pmic_ck_pdn();
+#endif
+	}
 }
 
 static void spm_sodi3_post_process(void)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* Do more low power setting when MD1/C2K/CONN off */
+	if (is_md_c2k_conn_power_off())
+		__spm_restore_pmic_ck_pdn();
+#endif
+
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 
