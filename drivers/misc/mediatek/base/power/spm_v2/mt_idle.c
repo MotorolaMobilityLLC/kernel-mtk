@@ -87,6 +87,8 @@
 #define AEE_WARNING_BY_ISO	10
 #endif
 
+static atomic_t is_in_hotplug = ATOMIC_INIT(0);
+
 static unsigned long rgidle_cnt[NR_CPUS] = { 0 };
 
 static bool mt_idle_chk_golden;
@@ -534,13 +536,27 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_UPDATE,  1U << 18);
 }
 
+#if defined(CONFIG_ARCH_MT6755)
+static bool mt_idle_cpu_criteria(void)
+{
+	unsigned int cpu_pwr_stat = 0;
+
+	cpu_pwr_stat = spm_get_cpu_pwr_status();
+
+	return ((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4)) ? true : false;
+}
+#elif defined(CONFIG_ARCH_MT6797)
+static bool mt_idle_cpu_criteria(void)
+{
+	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
+}
+#endif
 
 bool soidle3_can_enter(int cpu)
 {
 	int reason = NR_REASONS;
 	int i;
 	unsigned long long soidle3_block_curr_time = 0;
-	unsigned int cpu_pwr_stat = 0;
 #ifdef CONFIG_CPU_ISOLATION
 	cpumask_var_t tmp_mask;
 	static int prev_reason = -1;
@@ -560,8 +576,7 @@ bool soidle3_can_enter(int cpu)
 	}
 
 #ifdef CONFIG_SMP
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
+	if (!mt_idle_cpu_criteria()) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -821,7 +836,6 @@ bool soidle_can_enter(int cpu)
 	int reason = NR_REASONS;
 	int i;
 	unsigned long long soidle_block_curr_time = 0;
-	unsigned int cpu_pwr_stat = 0;
 #ifdef CONFIG_CPU_ISOLATION
 	cpumask_var_t tmp_mask;
 	static int prev_reason = -1;
@@ -836,8 +850,7 @@ bool soidle_can_enter(int cpu)
 	}
 
 #ifdef CONFIG_SMP
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
+	if (!mt_idle_cpu_criteria()) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -1181,7 +1194,6 @@ static bool dpidle_can_enter(int cpu)
 	int reason = NR_REASONS;
 	int i = 0;
 	unsigned long long dpidle_block_curr_time = 0;
-	unsigned int cpu_pwr_stat = 0;
 #ifdef CONFIG_CPU_ISOLATION
 	cpumask_var_t tmp_mask;
 	static int prev_reason = -1;
@@ -1206,8 +1218,7 @@ static bool dpidle_can_enter(int cpu)
 #endif
 
 #ifdef CONFIG_SMP
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
+	if (!mt_idle_cpu_criteria()) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -1460,10 +1471,8 @@ EXPORT_SYMBOL(disable_slidle_by_bit);
 static bool slidle_can_enter(void)
 {
 	int reason = NR_REASONS;
-	unsigned int cpu_pwr_stat = 0;
 
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
+	if (!mt_idle_cpu_criteria()) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -2843,6 +2852,45 @@ static int mt_cpuidle_debugfs_init(void)
 	return 0;
 }
 
+/* CPU hotplug notifier, for informing whether CPU hotplug is working */
+static int mt_idle_cpu_callback(struct notifier_block *nfb,
+				   unsigned long action, void *hcpu)
+{
+	switch (action) {
+	case CPU_UP_PREPARE:
+	case CPU_UP_PREPARE_FROZEN:
+	case CPU_DOWN_PREPARE:
+	case CPU_DOWN_PREPARE_FROZEN:
+		atomic_inc(&is_in_hotplug);
+		break;
+
+	case CPU_ONLINE:
+	case CPU_ONLINE_FROZEN:
+	case CPU_UP_CANCELED:
+	case CPU_UP_CANCELED_FROZEN:
+	case CPU_DOWN_FAILED:
+	case CPU_DOWN_FAILED_FROZEN:
+	case CPU_DEAD:
+	case CPU_DEAD_FROZEN:
+		atomic_dec(&is_in_hotplug);
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block mt_idle_cpu_notifier = {
+	.notifier_call = mt_idle_cpu_callback,
+	.priority   = INT_MAX,
+};
+
+static int mt_idle_hotplug_cb_init(void)
+{
+	register_cpu_notifier(&mt_idle_cpu_notifier);
+
+	return 0;
+}
+
 void mt_cpuidle_framework_init(void)
 {
 	int err = 0;
@@ -2865,6 +2913,7 @@ void mt_cpuidle_framework_init(void)
 
 	iomap_init();
 	mt_cpuidle_debugfs_init();
+	mt_idle_hotplug_cb_init();
 #if defined(CONFIG_ARCH_MT6797)
 	set_sodi_fw_mode();
 #endif
