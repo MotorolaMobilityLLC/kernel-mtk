@@ -489,14 +489,15 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	int wdma_idx = wdma_index(module);
 	CMDQ_ENG_ENUM cmdq_engine;
 	CMDQ_EVENT_ENUM cmdq_event;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 
 	if (!pConfig->wdma_dirty)
 		return 0;
 
 	cmdq_engine = wdma_idx == 0 ? CMDQ_ENG_DISP_WDMA0 : CMDQ_ENG_DISP_WDMA1;
 	cmdq_event  = wdma_idx == 0 ? CMDQ_EVENT_DISP_WDMA0_EOF : CMDQ_EVENT_DISP_WDMA1_EOF;
-	cmdq_event_nonsec_end  = wdma_idx == 0 ? CMDQ_SYNC_DISP_WDMA0_2NONSEC_END : CMDQ_SYNC_DISP_WDMA1_2NONSEC_END;
+	/*cmdq_event_nonsec_end  = wdma_idx == 0 ?
+	CMDQ_SYNC_DISP_WDMA0_2NONSEC_END : CMDQ_SYNC_DISP_WDMA1_2NONSEC_END;*/
 
 	if (config->security == DISP_SECURE_BUFFER) {
 		cmdqRecSetSecure(handle, 1);
@@ -539,10 +540,11 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			/*in fact, dapc/port_sec will be disabled by cmdq */
 			cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
 			cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine));
-			cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-			cmdqRecFlushAsync(nonsec_switch_handle);
+			/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+			/*cmdqRecFlushAsync(nonsec_switch_handle);*/
+			cmdqRecFlush(nonsec_switch_handle);
 			cmdqRecDestroy(nonsec_switch_handle);
-			cmdqRecWait(handle, cmdq_event_nonsec_end);
+			/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
 			DDPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
 		}
 		wdma_is_sec[wdma_idx] = 0;

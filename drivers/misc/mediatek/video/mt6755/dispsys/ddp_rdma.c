@@ -925,14 +925,14 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 {
 	static int rdma_is_sec[2];
 	CMDQ_ENG_ENUM cmdq_engine;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 	int rdma_idx = rdma_index(module);
 	DISP_BUFFER_TYPE security = pConfig->rdma_config.security;
 	enum RDMA_MODE mode = rdma_config_mode(pConfig->rdma_config.address);
 
 	/*cmdq_engine = rdma_idx == 0 ? CMDQ_ENG_DISP_RDMA0 : CMDQ_ENG_DISP_RDMA1;*/
 	cmdq_engine = rdma_to_cmdq_engine(module);
-	cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);
+	/*cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);*/
 
 	if (!handle) {
 		DDPDBG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
@@ -974,11 +974,11 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle,
 								(1LL << cmdq_engine));
 				/* cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine)); */
-				cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-				cmdqRecFlushAsync(nonsec_switch_handle);
-				/*cmdqRecFlush(nonsec_switch_handle);*/
+				/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+				/*cmdqRecFlushAsync(nonsec_switch_handle);*/
+				cmdqRecFlush(nonsec_switch_handle);
 				cmdqRecDestroy(nonsec_switch_handle);
-				cmdqRecWait(handle, cmdq_event_nonsec_end);
+				/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
 				DDPMSG("[SVP] switch rdma%d to nonsec done\n", rdma_idx);
 			}
 			rdma_is_sec[rdma_idx] = 0;

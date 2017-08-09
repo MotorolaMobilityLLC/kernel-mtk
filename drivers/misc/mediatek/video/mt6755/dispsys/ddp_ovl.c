@@ -680,9 +680,9 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 	int i = 0;
 	int ovl_idx = ovl_to_index(module);
 	CMDQ_ENG_ENUM cmdq_engine;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 	cmdq_engine = ovl_to_cmdq_engine(module);
-	cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);
+	/*cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);*/
 
 	if (is_engine_sec) {
 
@@ -729,10 +729,11 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 			/*in fact, dapc/port_sec will be disabled by cmdq */
 			cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
 			/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
-			cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-			cmdqRecFlushAsync(nonsec_switch_handle);
+			/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+			/*cmdqRecFlushAsync(nonsec_switch_handle);*/
+			cmdqRecFlush(nonsec_switch_handle);
 			cmdqRecDestroy(nonsec_switch_handle);
-			cmdqRecWait(handle, cmdq_event_nonsec_end);
+			/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
 			DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 		}
 		ovl_is_sec[ovl_idx] = 0;
