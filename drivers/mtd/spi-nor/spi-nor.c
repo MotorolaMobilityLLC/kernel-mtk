@@ -828,7 +828,10 @@ static int spi_nor_write(struct mtd_info *mtd, loff_t to, size_t len,
 			if (page_size > nor->page_size)
 				page_size = nor->page_size;
 
-			wait_till_ready(nor);
+			ret = wait_till_ready(nor);
+			if (ret)
+				goto write_err;
+
 			write_enable(nor);
 
 			nor->write(nor, to + i, page_size, retlen, buf + i);
@@ -838,7 +841,7 @@ static int spi_nor_write(struct mtd_info *mtd, loff_t to, size_t len,
 	ret = spi_nor_wait_till_ready(nor);
 write_err:
 	spi_nor_unlock_and_unprep(nor, SPI_NOR_OPS_WRITE);
-	return 0;
+	return ret;
 }
 
 static int macronix_quad_enable(struct spi_nor *nor)
