@@ -46,8 +46,8 @@ static const struct resource mt6397_rtc_resources[] = {
 
 static const struct resource mt6323_rtc_resources[] = {
 	{
-		.start = MT6397_RTC_SIZE,
-		.end   = MT6397_RTC_SIZE + MT6397_RTC_SIZE,
+		.start = MT6323_RTC_BASE,
+		.end   = MT6323_RTC_BASE + MT6397_RTC_SIZE,
 		.flags = IORESOURCE_MEM,
 	},
 	{
