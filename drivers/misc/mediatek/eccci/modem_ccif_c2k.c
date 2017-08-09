@@ -986,6 +986,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
 	int idx = 0;
+	unsigned int tx_channel = 0;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, timeout=%d\n",
@@ -996,6 +997,15 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 		flush_work(&md_ctrl->rxq[idx].qwork);
 
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif flush_work done, %d\n", ret);
+	/* clear occupied channel */
+	while (tx_channel < 16) {
+		if (ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY) & (1<<tx_channel))
+			ccif_write32(md_ctrl->ccif_ap_base, APCCIF_TCHNUM, tx_channel);
+		tx_channel++;
+	}
+	/* clear un-acked channel */
+	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ccif_read32(md_ctrl->ccif_md_base, APCCIF_BUSY));
+
 	md_ccif_reset_queue(md);
 	md->ops->broadcast_state(md, GATED);
 	return 0;
