@@ -627,6 +627,8 @@ static void __iomem *cksys_base;
 #define VDE_PWR_STA_MASK        BIT(7)
 #define VEN_PWR_STA_MASK        BIT(8)
 
+#define INFRA_AUDIO_PDN_STA_MASK	BIT(5)
+
 enum subsys_id {
 	SYS_VDE,
 	SYS_MFG,
@@ -679,7 +681,8 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_MFG))
 		clks[CG_MFG] = ~idle_readl(MFG_CG_CON); /* MFG */
 
-	clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
+	if (clks[CG_INFRA] & INFRA_AUDIO_PDN_STA_MASK) /* check if infra_audio is on */
+		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
 
 	if (sys_is_on(SYS_VDE)) {
 		clks[CG_VDEC0] = idle_readl(VDEC_CKEN_SET); /* VDEC0 */
