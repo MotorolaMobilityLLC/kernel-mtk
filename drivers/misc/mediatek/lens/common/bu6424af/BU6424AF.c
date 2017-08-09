@@ -26,7 +26,7 @@
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
-
+static int g_i4DriverStatus;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
@@ -46,7 +46,8 @@ static int s4AF_ReadReg(unsigned short *a_pu2Result)
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, pBuff, 2);
 
 	if (i4RetValue < 0) {
-		LOG_INF("I2C read failed!!\n");
+		g_i4DriverStatus++;
+		LOG_INF("I2C read failed - %d!!\n", g_i4DriverStatus);
 		return -1;
 	}
 
@@ -68,7 +69,8 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
 	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
+		g_i4DriverStatus++;
+		LOG_INF("I2C read failed - %d!!\n", g_i4DriverStatus);
 		return -1;
 	}
 
@@ -100,6 +102,9 @@ static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
+
+	if (g_i4DriverStatus > 2) /* I2C failed */
+		return -EINVAL;
 
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
@@ -226,6 +231,8 @@ int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		*g_pAF_Opened = 0;
 		spin_unlock(g_pAF_SpinLock);
 	}
+
+	g_i4DriverStatus = 0;
 
 	LOG_INF("End\n");
 
