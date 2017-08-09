@@ -717,6 +717,37 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "clk-irtx-main";
 		};
 
+		ccci_off@0 {
+			compatible = "mediatek,ccci_off";
+			clocks = <&scpsys SCP_SYS_MD1>;
+			clock-names = "scp-sys-md1-main";
+		};
+
+		mdcldma:mdcldma@1000A000 {
+			compatible = "mediatek,mdcldma";
+			reg =	<0x1000A000 0x1000>, /*AP_CLDMA_AO*/
+				<0x1000B000 0x1000>, /*MD_CLDMA_AO*/
+				<0x1021A000 0x1000>, /*AP_CLDMA_PDN*/
+				<0x1021B000 0x1000>, /*MD_CLDMA_PDN*/
+				<0x1020A000 0x1000>, /*AP_CCIF_BASE*/
+				<0x1020B000 0x1000>; /*MD_CCIF_BASE*/
+			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
+				     <GIC_SPI 140 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
+				     <GIC_SPI 223 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+			mediatek,md_id = <0>;
+			mediatek,cldma_capability = <2>;
+			mediatek,md_smem_size = <0x10000>; /* md share memory size */
+		};
+
+		dbgapb_base@1011A000{
+			compatible = "mediatek,dbgapb_base";
+			reg = <0x1011A000 0x100>;/* MD debug register */
+		};
+
+		ssw:simswitch@0 {
+			compatible = "mediatek,sim_switch";
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";

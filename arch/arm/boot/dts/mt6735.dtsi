@@ -138,9 +138,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		reserve-memory-ccci_md1 {
-			compatible = "reserve-memory-ccci_md1";
+			compatible = "mediatek,reserve-memory-ccci_md1";
 			no-map;
-			size = <0 0x3810000>; // md_size+smem_size
+			size = <0 0x3810000>; /* md_size+smem_size */
 			alignment = <0 0x2000000>;
 			alloc-ranges = <0 0x40000000 0 0xC0000000>;
 		};
@@ -688,6 +688,39 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735-venc";
 			reg = <0x17002000 0x1000>;
 			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		ccci_off@0 {
+			compatible = "mediatek,ccci_off";
+			clocks = <&scpsys SCP_SYS_MD1>;
+			clock-names = "scp-sys-md1-main";
+		};
+
+		mdcldma:mdcldma@1000A000 {
+			compatible = "mediatek,mdcldma";
+			reg =	<0x1000A000 0x1000>, /*AP_CLDMA_AO*/
+				<0x1000B000 0x1000>, /*MD_CLDMA_AO*/
+				<0x1021A000 0x1000>, /*AP_CLDMA_PDN*/
+				<0x1021B000 0x1000>, /*MD_CLDMA_PDN*/
+				<0x1020A000 0x1000>, /*AP_CCIF_BASE*/
+				<0x1020B000 0x1000>; /*MD_CCIF_BASE*/
+			interrupts =	<GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,   /*IRQ_CLDMA*/
+					<GIC_SPI 140 IRQ_TYPE_LEVEL_LOW>,    /*IRQ_CCIF*/
+					<GIC_SPI 221 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+			mediatek,md_id = <0>;
+			mediatek,cldma_capability = <6>;
+			mediatek,md_smem_size = <0x10000>; /* md share memory size */
+			clocks = <&scpsys SCP_SYS_MD1>;
+			clock-names = "scp-sys-md1-main";
+		};
+
+		dbgapb_base@1011A000{
+			compatible = "mediatek,dbgapb_base";
+			reg = <0x1011A000 0x100>;/* MD debug register */
+		};
+
+		ssw:simswitch@0 {
+			compatible = "mediatek,sim_switch";
 		};
 
 		keypad: keypad@10003000 {

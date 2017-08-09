@@ -685,26 +685,29 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,battery";
 		};
 
-		mdcldma:MDCLDMA@0x1000A000 {
-			compatible = "mediatek,MDCLDMA";
-			reg = <0x1000A000 0x1000>, /*AP_CLDMA_AO*/
-						<0x1000B000 0x1000>, /*MD_CLDMA_AO*/
-						<0x1021A000 0x1000>, /*AP_CLDMA_PDN*/
-						<0x1021B000 0x1000>, /*MD_CLDMA_PDN*/
-						<0x1020A000 0x1000>, /*AP_CCIF_BASE*/
-						<0x1020B000 0x1000>; /*MD_CCIF_BASE*/
-			cell-index = <0>;
-			interrupts = <0 145 0x4>, /*IRQ_CLDMA*/
-						 <0 140 0x8>, /*IRQ_CCIF*/
-						 <0 221 0x2>; /*IRQ_MDWDT*/
-			cldma,major = <184>;
-			cldma,minor_base = <0>;
-			cldma,capability = <2>;
-			md_smem_size = <0x10000>; //md share memory size
+		mdcldma:mdcldma@1000A000 {
+			compatible = "mediatek,mdcldma";
+			reg =	<0x1000A000 0x1000>, /*AP_CLDMA_AO*/
+				<0x1000B000 0x1000>, /*MD_CLDMA_AO*/
+				<0x1021A000 0x1000>, /*AP_CLDMA_PDN*/
+				<0x1021B000 0x1000>, /*MD_CLDMA_PDN*/
+				<0x1020A000 0x1000>, /*AP_CCIF_BASE*/
+				<0x1020B000 0x1000>; /*MD_CCIF_BASE*/
+			interrupts = <0 145 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
+				     <0 140 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
+				     <0 221 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+			mediatek,md_id = <0>;
+			mediatek,cldma_capability = <2>;
+			mediatek,md_smem_size = <0x10000>; /* md share memory size */
 		};
-		DBGAPB_BASE@0x1011A000{
-			compatible = "mediatek,DBGAPB_BASE";
-			reg = <0x1011A000 0x100>;// MD debug register
+
+		dbgapb_base@1011A000{
+			compatible = "mediatek,dbgapb_base";
+			reg = <0x1011A000 0x100>;/* MD debug register */
+		};
+
+		ssw:simswitch@0 {
+			compatible = "mediatek,sim_switch";
 		};
 
 		DNL3_XGPT64@0x1000C000 {
@@ -1735,10 +1738,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		buffer2 = <1>;
 		buffer3 = <1>;
 		buffer4 = <1>;
-	};
-
-	ssw:simswitch@0 {
-		compatible = "mediatek,sim_switch";
 	};
 };
 
