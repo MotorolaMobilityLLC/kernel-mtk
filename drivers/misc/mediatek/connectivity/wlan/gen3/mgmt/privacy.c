@@ -327,7 +327,7 @@ BOOL secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P_ST
 	if (!prStaRec || (prRxStatus->u2StatusFlag & RXS_DW2_RX_CLASSERR_BITMAP) == RXS_DW2_RX_CLASSERR_VALUE) {
 
 		DBGLOG(RSN, TRACE,
-		       "prStaRec=%x RX Status = %x RX_CLASSERR check!\n", prStaRec, prRxStatus->u2StatusFlag);
+		       "prStaRec=%p RX Status = %hx RX_CLASSERR check!\n", prStaRec, prRxStatus->u2StatusFlag);
 
 		/* if (IS_NET_ACTIVE(prAdapter, ucBssIndex)) { */
 		authSendDeauthFrame(prAdapter,
@@ -1006,7 +1006,7 @@ VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 				(prStaRec->ucIndex == prWtbl[entry].ucStaIndex)) {
 				secPrivacyFreeForEntry(prAdapter, entry);
 #if 1				/* DBG */
-				DBGLOG(RSN, INFO, "Free the STA entry (%lu)!\n", entry);
+				DBGLOG(RSN, INFO, "Free the STA entry (%u)!\n", entry);
 #endif
 			}
 		}

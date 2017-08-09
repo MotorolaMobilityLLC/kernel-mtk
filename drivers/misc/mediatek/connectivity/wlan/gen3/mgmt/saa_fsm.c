@@ -1220,7 +1220,7 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 					prAisSpecBssInfo = &(prAdapter->rWifiVar.rAisSpecificBssInfo);
 
 					DBGLOG(RSN, INFO,
-					       "QM RX MGT: Deauth frame, P=%d Sec=%d CM=%d BC=%d fc=%02x\n",
+					       "QM RX MGT: Deauth frame, P=%d Sec=%d CM=%d BC=%d fc=%02hx\n",
 						prAisSpecBssInfo->fgMgmtProtection,
 						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
 						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
@@ -1405,7 +1405,7 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 					prAisSpecBssInfo = &(prAdapter->rWifiVar.rAisSpecificBssInfo);
 
 					DBGLOG(RSN, INFO,
-					       "QM RX MGT: Disassoc frame, P=%d Sec=%d CM=%d BC=%d fc=%02x\n",
+					       "QM RX MGT: Disassoc frame, P=%d Sec=%d CM=%d BC=%d fc=%02hx\n",
 						prAisSpecBssInfo->fgMgmtProtection,
 						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
 						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),

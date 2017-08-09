@@ -716,7 +716,7 @@ do { \
 		prCurrSwRfb = incRxDefragMPDU(prAdapter, prCurrSwRfb, prReturnedQue); \
 		if (prCurrSwRfb) { \
 			prRxStatus = prCurrSwRfb->prRxStatus; \
-			DBGLOG(QM, TRACE, "defragmentation RxStatus=%x\n", prRxStatus); \
+			DBGLOG(QM, TRACE, "defragmentation RxStatus=%p\n", prRxStatus); \
 		} \
 	} \
 	if (prCurrSwRfb) { \
@@ -1054,7 +1054,7 @@ VOID qmActivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 		(prStaRec->aprRxReorderParamRefTbl)[i] = NULL;
 #endif
 
-	DBGLOG(QM, TRACE, "QM: +STA[%ld]\n", (UINT_32) prStaRec->ucIndex);
+	DBGLOG(QM, TRACE, "QM: +STA[%d]\n", (UINT_32) prStaRec->ucIndex);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1259,7 +1259,7 @@ P_MSDU_INFO_T qmFlushStaTxQueues(IN P_ADAPTER_T prAdapter, IN UINT_32 u4StaRecId
 	P_MSDU_INFO_T prMsduInfoListTail;
 	P_STA_RECORD_T prStaRec;
 
-	DBGLOG(QM, TRACE, "QM: Enter qmFlushStaTxQueues(%ld)\n", u4StaRecIdx);
+	DBGLOG(QM, TRACE, "QM: Enter qmFlushStaTxQueues(%d)\n", u4StaRecIdx);
 
 	ASSERT(u4StaRecIdx < CFG_NUM_OF_STA_RECORD);
 
@@ -1382,7 +1382,7 @@ P_SW_RFB_T qmFlushStaRxQueue(IN P_ADAPTER_T prAdapter, IN UINT_32 u4StaRecIdx, I
 	P_RX_BA_ENTRY_T prReorderQueParm;
 	P_STA_RECORD_T prStaRec;
 
-	DBGLOG(QM, TRACE, "QM: Enter qmFlushStaRxQueues(%ld)\n", u4StaRecIdx);
+	DBGLOG(QM, TRACE, "QM: Enter qmFlushStaRxQueues(%u)\n", u4StaRecIdx);
 
 	prSwRfbListHead = prSwRfbListTail = NULL;
 
@@ -2180,7 +2180,7 @@ P_MSDU_INFO_T qmDequeueTxPackets(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_STATUS_T 
 						   (UINT_32) prTcqStatus->au2FreePageCount[i], u4MaxQuotaLimit);
 
 		/* The aggregate number of dequeued packets */
-		DBGLOG(QM, LOUD, "DQA)[%u](%lu)\n", i, rReturnedQue.u4NumElem);
+		DBGLOG(QM, LOUD, "DQA)[%u](%u)\n", i, rReturnedQue.u4NumElem);
 	}
 
 	/* TC5 (BMCAST or non-QoS packets) */
@@ -3331,7 +3331,7 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 #if QM_RX_WIN_SSN_AUTO_ADVANCING
 		if (prReorderQueParm->fgIsWaitingForPktWithSsn) {
 			/* Let the first received packet pass the reorder check */
-			DBGLOG(QM, LOUD, "QM:(A)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
+			DBGLOG(QM, LOUD, "QM:(A)[%hhu](%u){%u,%u}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd);
 
 			prReorderQueParm->u2WinStart = (UINT_16) u4SeqNo;
 			prReorderQueParm->u2WinEnd =
@@ -3468,11 +3468,11 @@ VOID qmProcessBarFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, OUT P_QU
 		prReorderQueParm->u2WinEnd =
 		    ((prReorderQueParm->u2WinStart) + (prReorderQueParm->u2WinSize) - 1) % MAX_SEQ_NO_COUNT;
 		DBGLOG(QM, TRACE,
-		       "QM:(BAR)[%d](%ld){%d,%d}\n", prSwRfb->ucTid, u4SSN,
+		       "QM:(BAR)[%hhu](%u){%hu,%hu}\n", prSwRfb->ucTid, u4SSN,
 			prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 		qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
 	} else {
-		DBGLOG(QM, TRACE, "QM:(BAR)(%d)(%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SSN, u4WinStart, u4WinEnd);
+		DBGLOG(QM, TRACE, "QM:(BAR)(%hhu)(%u){%u,%u}\n", prSwRfb->ucTid, u4SSN, u4WinStart, u4WinEnd);
 	}
 }
 

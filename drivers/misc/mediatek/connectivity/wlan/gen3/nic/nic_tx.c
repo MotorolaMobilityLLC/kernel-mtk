@@ -1208,7 +1208,7 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 
 			if (au2FreeTcResource[i]) {
 				DBGLOG(TX, TRACE,
-				       "Release: TC%lu ReturnPageCnt[%u] FreePageCnt[%u] FreeBufferCnt[%u]\n",
+				       "Release: TC%u ReturnPageCnt[%hu] FreePageCnt[%hu] FreeBufferCnt[%hu]\n",
 					i, au2FreeTcResource[i], prTcqStatus->au2FreePageCount[i],
 					prTcqStatus->au2FreeBufferCount[i]);
 			}
@@ -2074,7 +2074,7 @@ WLAN_STATUS nicTxGenerateDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 			for (ucTid = 0; ucTid < TX_DESC_TID_NUM; ucTid++) {
 				prStaRec->aprTxDescTemplate[ucTid] = prTxDesc;
-				DBGLOG(TX, TRACE, "TXD template: TID[%u] Ptr[0x%x]\n", ucTid, (ULONG) prTxDesc);
+				DBGLOG(TX, TRACE, "TXD template: TID[%hhu] Ptr[%p]\n", ucTid, prTxDesc);
 			}
 		} while (FALSE);
 	}
@@ -3220,8 +3220,8 @@ UINT_8 nicTxGetWlanIdx(P_ADAPTER_T prAdapter, UINT_8 ucBssIdx, UINT_8 ucStaRecId
 		ucWlanIndex = prBssInfo->ucBMCWlanIndex;
 
 	if (ucWlanIndex >= WTBL_SIZE) {
-		DBGLOG(TX, WARN, "%s: Unexpected WIDX[%u] BSS[%u] STA[%u], set WIDX to default value[%u]\n",
-			ucWlanIndex, ucBssIdx, ucStaRecIdx, NIC_TX_DEFAULT_WLAN_INDEX);
+		DBGLOG(TX, WARN, "%s: Unexpected WIDX[%hhu] BSS[%hhu] STA[%hhu], set WIDX to default value[%u]\n",
+			__func__, ucWlanIndex, ucBssIdx, ucStaRecIdx, NIC_TX_DEFAULT_WLAN_INDEX);
 
 		ucWlanIndex = NIC_TX_DEFAULT_WLAN_INDEX;
 	}
