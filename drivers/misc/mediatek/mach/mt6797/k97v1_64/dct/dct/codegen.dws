@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.1" buid_sn="151104" dws_modification_time="11.06.2015.10:36:15"-->
+<!--dct_version="2.1" buid_sn="151107" dws_modification_time="11.11.2015.12:40:37"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>Everest</proj>
@@ -4053,7 +4053,7 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus1>
             <i2c_bus2>
-                <speed_kbps>400</speed_kbps>
+                <speed_kbps>300</speed_kbps>
                 <pullPushEn>false</pullPushEn>
             </i2c_bus2>
             <i2c_bus3>
