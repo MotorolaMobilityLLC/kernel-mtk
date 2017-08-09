@@ -54,13 +54,6 @@ extern unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnDat
 
 extern u32 get_devinfo_with_index(u32 index);
 
-/* Freq Meter API */
-#ifdef __KERNEL__
-extern unsigned int mt_get_cpu_freq(void);
-#endif
-
-/* #ifdef CONFIG_CPU_DVFS_AEE_RR_REC */
-#if 1
 /* SRAM debugging*/
 extern void aee_rr_rec_cpu_dvfs_vproc_big(u8 val);
 extern void aee_rr_rec_cpu_dvfs_vproc_little(u8 val);
@@ -78,7 +71,6 @@ extern void aee_rr_rec_cpu_dvfs_cb(u8 val);
 extern u8 aee_rr_curr_cpu_dvfs_cb(void);
 extern void aee_rr_rec_cpufreq_cb(u8 val);
 extern u8 aee_rr_curr_cpufreq_cb(void);
-#endif
 
 /* PTP-OD */
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);

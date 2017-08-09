@@ -81,11 +81,6 @@ static unsigned long topckgen_base	= 0x10000000;
 /*
  * CONFIG
  */
-/* #define CONFIG_CPU_DVFS_BRINGUP 1 */
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define CONFIG_CPU_DVFS_AEE_RR_REC 1
-#endif
-
 #ifdef CONFIG_HYBRID_CPU_DVFS
 /**
  * 1: get voltage from DVFSP for performance
@@ -114,10 +109,6 @@ static u32 enable_hw_gov;
 ktime_t now[NR_SET_V_F];
 ktime_t delta[NR_SET_V_F];
 ktime_t max[NR_SET_V_F];
-ktime_t start_ktime_dvfs;
-ktime_t start_ktime_dvfs_cb;
-ktime_t dvfs_step_delta[16];
-ktime_t dvfs_cb_step_delta[16];
 
 /* used @ set_cur_volt_extBuck() */
 #define NORMAL_DIFF_VRSAM_VPROC		10000
@@ -405,7 +396,6 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 /*
  * AEE (SRAM debug)
  */
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 enum cpu_dvfs_state {
 	CPU_DVFS_LL_IS_DOING_DVFS = 0,
 	CPU_DVFS_L_IS_DOING_DVFS,
@@ -414,15 +404,18 @@ enum cpu_dvfs_state {
 
 static void _mt_cpufreq_aee_init(void)
 {
-	aee_rr_rec_cpu_dvfs_vproc_big(0xFF);
-	aee_rr_rec_cpu_dvfs_vproc_little(0xFF);
-	aee_rr_rec_cpu_dvfs_oppidx(0xFF);
-	aee_rr_rec_cpu_dvfs_status(0xF0);
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_vproc_big(0x0);
+	aee_rr_rec_cpu_dvfs_vproc_little(0x0);
+	aee_rr_rec_cpu_dvfs_oppidx(0x0);
+	aee_rr_rec_cpu_dvfs_cci_oppidx(0x0);
+	aee_rr_rec_cpu_dvfs_status(0x0);
 	aee_rr_rec_cpu_dvfs_step(0x0);
 	aee_rr_rec_cpu_dvfs_pbm_step(0x0);
 	aee_rr_rec_cpu_dvfs_cb(0x0);
-}
+	aee_rr_rec_cpufreq_cb(0x0);
 #endif
+}
 
 /*
  * PMIC_WRAP
@@ -683,113 +676,79 @@ static inline struct mt_cpu_dvfs *cluster_to_cpu_dvfs(unsigned int cluster)
 
 static void aee_record_cpu_dvfs_in(enum mt_cpu_dvfs_id id)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	if (id == MT_CPU_DVFS_LL)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-			(1 << CPU_DVFS_LL_IS_DOING_DVFS));
+					   (1 << CPU_DVFS_LL_IS_DOING_DVFS));
 	else if (id == MT_CPU_DVFS_L)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-			(1 << CPU_DVFS_L_IS_DOING_DVFS));
+					   (1 << CPU_DVFS_L_IS_DOING_DVFS));
+	else	/* CCI */
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
+					   (1 << CPU_DVFS_CCI_IS_DOING_DVFS));
 #endif
 }
 
 static void aee_record_cpu_dvfs_out(enum mt_cpu_dvfs_id id)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	if (id == MT_CPU_DVFS_LL)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-			~(1 << CPU_DVFS_LL_IS_DOING_DVFS));
+					   ~(1 << CPU_DVFS_LL_IS_DOING_DVFS));
 	else if (id == MT_CPU_DVFS_L)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-			~(1 << CPU_DVFS_L_IS_DOING_DVFS));
+					   ~(1 << CPU_DVFS_L_IS_DOING_DVFS));
+	else	/* CCI */
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
+					   ~(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
 #endif
 }
 
 static void aee_record_cpu_dvfs_step(unsigned int step)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	int i;
-
-	if (step == 0) {
-		aee_rr_rec_cpu_dvfs_step(aee_rr_curr_cpu_dvfs_step() & 0xF0);
-		dvfs_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs);
-		start_ktime_dvfs.tv64 = 0;
-	} else if (step == 1) {
-		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | (step));
-		/* Clean dvfs_step_delta[16] to 0 */
-		for (i = 0; i < 16; i++)
-			dvfs_step_delta[i].tv64 = 0;
-		start_ktime_dvfs = ktime_get();
-		dvfs_step_delta[step] = ktime_get();
-	} else {
-		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | (step));
-		dvfs_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs);
-	}
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | step);
 #endif
 }
 
 static void aee_record_cpu_dvfs_pbm_step(unsigned int step)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_pbm_step((aee_rr_curr_cpu_dvfs_pbm_step() & 0xF0) | step);
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_pbm_step(step);
 #endif
 }
 
 static void aee_record_cci_dvfs_step(unsigned int step)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (step == 0)
-		aee_rr_rec_cpu_dvfs_step(aee_rr_curr_cpu_dvfs_step() & 0x0F);
-	else
-		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0x0F) | (step << 4));
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0x0F) | (step << 4));
 #endif
 }
 
 static void aee_record_cpu_dvfs_cb(unsigned int step)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	int i;
-
-	if (step == 0) {
-		aee_rr_rec_cpu_dvfs_cb(aee_rr_curr_cpu_dvfs_cb() & 0x0);
-		dvfs_cb_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs_cb);
-		start_ktime_dvfs_cb.tv64 = 0;
-	} else if (step == 1) {
-		aee_rr_rec_cpu_dvfs_cb((aee_rr_curr_cpu_dvfs_cb() & 0x0) | (step));
-		for (i = 0; i < 16; i++)
-			dvfs_cb_step_delta[i].tv64 = 0;
-		start_ktime_dvfs_cb = ktime_get();
-		dvfs_cb_step_delta[step] = ktime_get();
-	} else {
-		aee_rr_rec_cpu_dvfs_cb((aee_rr_curr_cpu_dvfs_cb() & 0x0) | (step));
-		dvfs_cb_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs_cb);
-	}
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_cb(step);
 #endif
 }
 
 void aee_record_cpufreq_cb(unsigned int step)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (step == 0)
-		aee_rr_rec_cpufreq_cb(aee_rr_curr_cpufreq_cb() & 0x0);
-	else
-		aee_rr_rec_cpufreq_cb((aee_rr_curr_cpufreq_cb() & 0x0) | (step));
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpufreq_cb(step);
 #endif
 }
 
 static void aee_record_cpu_volt(struct mt_cpu_dvfs *p, unsigned int volt)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (0)	/* FIXME */
-		aee_rr_rec_cpu_dvfs_vproc_big(VOLT_TO_EXTBUCK_VAL(volt));
-	else
-		aee_rr_rec_cpu_dvfs_vproc_little(VOLT_TO_EXTBUCK_VAL(volt));
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_cpu_dvfs_vproc_little(VOLT_TO_EXTBUCK_VAL(volt));
 #endif
 }
 
 static void aee_record_freq_idx(struct mt_cpu_dvfs *p, int idx)
 {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
 		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | idx);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
@@ -1242,7 +1201,7 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 			    i, ppm_data[i].core_num, ppm_data[i].freq_idx, ppm_data[i].volt);
 	}
 
-	aee_record_cpu_dvfs_pbm_step(2);
+	aee_record_cpu_dvfs_pbm_step(3);
 
 	mt_ppm_dlpt_kick_PBM(ppm_data, arch_get_nr_clusters());
 #endif
@@ -1771,10 +1730,8 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 
 	if (unlikely(!(cur_vsram >= cur_vproc &&
 		       MAX_DIFF_VSRAM_VPROC >= cur_vsram - cur_vproc))) {
-#ifdef __KERNEL__
 		aee_kernel_warning(TAG, "@%s():%d, cur_vsram = %u, cur_vproc = %u\n",
 				   __func__, __LINE__, cur_vsram, cur_vproc);
-#endif
 		cur_vproc = cpu_dvfs_get_cur_volt(p);
 		cur_vsram = cur_vproc + NORMAL_DIFF_VRSAM_VPROC;
 	}
@@ -1953,19 +1910,15 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target_cci_khz, unsigned int target_cci_volt)
 {
 	int ret = -1;
-	enum mt_cpu_dvfs_id id;
+	enum mt_cpu_dvfs_id id = MT_CPU_DVFS_CCI;
 	struct mt_cpu_dvfs *p_cci;
 	unsigned int cur_cci_volt;
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-		(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
-#endif
+	aee_record_cpu_dvfs_in(id);
 
 	aee_record_cci_dvfs_step(1);
 
 	/* This is for cci */
-	id = MT_CPU_DVFS_CCI;
 	p_cci = id_to_cpu_dvfs(id);
 
 	if (cur_cci_khz != target_cci_khz)
@@ -2014,10 +1967,8 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 out:
 	aee_record_cci_dvfs_step(0);
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-		~(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
-#endif
+	aee_record_cpu_dvfs_out(id);
+
 	return ret;
 }
 
@@ -2567,7 +2518,7 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 	return 0;
 }
 
-#define SIGLE_CORE_IDX 10
+#define SINGLE_CORE_IDX 11	/* 676M */
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
 	/* unsigned int online_cpus; */
@@ -2582,8 +2533,8 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
 		online_cpus = num_online_cpus() + num_online_cpus_delta;
 
-		if (online_cpus == 1 && (new_opp_idx > SIGLE_CORE_IDX))
-			new_opp_idx = SIGLE_CORE_IDX;
+		if (online_cpus == 1 && (new_opp_idx > SINGLE_CORE_IDX))
+			new_opp_idx = SINGLE_CORE_IDX;
 	}
 #endif
 
@@ -3139,15 +3090,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	BUG_ON(!(lv == CPU_LEVEL_0 || lv == CPU_LEVEL_1 || lv == CPU_LEVEL_2 || lv == CPU_LEVEL_3));
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	_mt_cpufreq_aee_init();
-	start_ktime_dvfs.tv64 = 0;
-	start_ktime_dvfs_cb.tv64 = 0;
-	for (i = 0; i < 16; i++) {
-		dvfs_step_delta[i].tv64 = 0;
-		dvfs_cb_step_delta[i].tv64 = 0;
-	}
-#endif
 
 	/* Prepare OPP table for PPM in probe to avoid nested lock */
 	for_each_cpu_dvfs(j, p) {
@@ -3416,6 +3359,7 @@ static int __switch_hwgov_on_off(unsigned int state)
 		for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 			p = cluster_to_cpu_dvfs(i);
 			p->idx_opp_tbl = sta.opp[i];	/* sync OPP back */
+			aee_record_freq_idx(p, p->idx_opp_tbl);
 		}
 		enable_hw_gov = 0;
 	}
