@@ -1462,6 +1462,10 @@ static void msdc_update_cache_flush_status(struct msdc_host *host,
 	u32 l_bypass_flush)
 {
 	struct mmc_command *cmd = mrq->cmd;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_command *sbc;
+	unsigned int task_id;
+#endif
 
 	if (!check_mmc_cache_ctrl(host->mmc->card))
 		return;
@@ -1495,6 +1499,39 @@ static void msdc_update_cache_flush_status(struct msdc_host *host,
 			ERR_MSG("write error happend, g_flush_data_size=%lld",
 				g_flush_data_size);
 		}
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	} else if (cmd->opcode == MMC_WRITE_REQUESTED_QUEUE) {
+		if (host->error == 0) {
+			task_id = (cmd->arg >> 16) & 0x1f;
+			sbc = host->mmc->areq_que[task_id]->mrq_que->sbc;
+			if (sbc && (((sbc->arg >> 24) & 0x1) ||
+				((sbc->arg >> 31) & 0x1))) {
+				/* if reliable write, or force prg write succeed,
+					do set cache flushed status */
+				if (g_cache_status == CACHE_UN_FLUSHED) {
+					g_cache_status = CACHE_FLUSHED;
+					N_MSG(CHE, "reliable/force prg write, update g_cache_status = %d",
+						g_cache_status);
+					N_MSG(CHE, "reliable/force prg write, update g_flush_data_size=%lld",
+					   g_flush_data_size);
+					g_flush_data_size = 0;
+				}
+			} else {
+				/* if normal write succee,
+				   do clear the cache flushed status */
+				if (g_cache_status == CACHE_FLUSHED) {
+					g_cache_status = CACHE_UN_FLUSHED;
+					N_MSG(CHE, "normal write, update g_cache_status = %d",
+						g_cache_status);
+				}
+				g_flush_data_size += data->blocks;
+			}
+		} else if (host->error) {
+			g_flush_data_size += data->blocks;
+			ERR_MSG("write error, g_flush_data_size=%lld",
+				g_flush_data_size);
+		}
+#endif
 	} else if (l_bypass_flush == 0) {
 		if (host->error == 0) {
 			/* if flush cache of emmc device successfully,
@@ -2926,11 +2963,9 @@ int msdc_do_request_prepare(struct msdc_host *host,
 	}
 #endif
 	if ((prepare_case == PREPARE_NON_ASYNC) && !data) {
-
 #ifdef MTK_MSDC_USE_CACHE
-#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 		if ((host->hw->host_function == MSDC_EMMC) &&
-		    check_mmc_cache_flush_cmd(cmd)) {
+			check_mmc_cache_flush_cmd(cmd)) {
 			if (g_cache_status == CACHE_FLUSHED) {
 				N_MSG(CHE, "bypass flush command, g_cache_status=%d",
 					g_cache_status);
@@ -2939,10 +2974,6 @@ int msdc_do_request_prepare(struct msdc_host *host,
 			}
 			*l_bypass_flush = 0;
 		}
-#else
-		*l_bypass_flush = 0;
-#endif
-
 #endif
 #ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
 		if (check_mmc_cmd13_sqs(cmd)) {
