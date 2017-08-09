@@ -100,24 +100,6 @@ static struct fb_ops mediatek_fb_ops = {
 	.fb_mmap = mtk_drm_fb_mmap,
 };
 
-static bool mtk_fbdev_is_anything_connected(struct drm_device *dev)
-{
-	struct drm_connector *connector;
-	bool ret = false;
-
-	mutex_lock(&dev->mode_config.mutex);
-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-		if (connector->status != connector_status_connected)
-			continue;
-
-		ret = true;
-		break;
-	}
-	mutex_unlock(&dev->mode_config.mutex);
-
-	return ret;
-}
-
 static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 			     struct drm_fb_helper_surface_size *sizes)
 {
@@ -131,9 +113,6 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 	unsigned long offset;
 	size_t size;
 	int err;
-
-	if (!mtk_fbdev_is_anything_connected(dev))
-		return -EPROBE_DEFER;
 
 	mode.width = sizes->surface_width;
 	mode.height = sizes->surface_height;
