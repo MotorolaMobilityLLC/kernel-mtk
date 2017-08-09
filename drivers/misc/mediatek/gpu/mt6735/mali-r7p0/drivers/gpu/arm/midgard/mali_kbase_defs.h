@@ -43,6 +43,9 @@
 #include <linux/bus_logger.h>
 #endif
 
+#ifndef CONFIG_MTK_CLKMGR
+#include <linux/clk.h>
+#endif /* !CONFIG_MTK_CLKMGR */
 
 #ifdef CONFIG_KDS
 #include <linux/kds.h>
@@ -662,6 +665,9 @@ struct kbase_pm_device_data {
 	bool suspending;
 	/* Wait queue set when active_count == 0 */
 	wait_queue_head_t zero_active_count_wait;
+	
+	/** Time in milliseconds between each dvfs sample */
+	u32 platform_dvfs_frequency;
 
 	/**
 	 * A bit mask identifying the available shader cores that are specified
@@ -711,10 +717,6 @@ struct kbase_pm_device_data {
 	int poweroff_gpu_ticks;
 
 	struct kbase_pm_backend_data backend;
-
-	/** Time in milliseconds between each dvfs sample */
-        u32 platform_dvfs_frequency;
-
 };
 
 /**
@@ -822,6 +824,9 @@ struct kbase_device {
 	unsigned long hw_issues_mask[(BASE_HW_ISSUE_END + BITS_PER_LONG - 1) / BITS_PER_LONG];
 	/** List of features available */
 	unsigned long hw_features_mask[(BASE_HW_FEATURE_END + BITS_PER_LONG - 1) / BITS_PER_LONG];
+	
+	/* Cached present bitmaps - these are the same as the corresponding hardware registers */
+        u64 shader_present_bitmap;
 
 	/* Bitmaps of cores that are currently in use (running jobs).
 	 * These should be kept up to date by the job scheduler.
@@ -1037,12 +1042,14 @@ struct kbase_device {
 	 */
 	struct bus_logger_client *buslogger;
 #endif
+
 #ifndef CONFIG_MTK_CLKMGR
 	struct clk *clk_mfg;               /* main clock for gpu */
 	struct clk *clk_smi_common;        /* smi clock */
 	struct clk *clk_mfg_scp;           /* mfg MTCMOS */
 	struct clk *clk_display_scp;       /* display MTCMOS */
 #endif /* !CONFIG_MTK_CLKMGR */
+
 };
 
 /* JSCTX ringbuffer size must always be a power of 2 */
@@ -1153,6 +1160,8 @@ struct kbase_context {
 	struct kbase_trace_kctx_timeline timeline;
 #endif
 #ifdef CONFIG_DEBUG_FS
+	/* debugfs entry for memory profile */
+  struct dentry *mem_dentry;
 	/* Content of mem_profile file */
 	char *mem_profile_data;
 	/* Size of @c mem_profile_data */

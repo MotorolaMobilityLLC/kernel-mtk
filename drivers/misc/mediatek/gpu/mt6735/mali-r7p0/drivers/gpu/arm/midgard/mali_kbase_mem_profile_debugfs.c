@@ -25,11 +25,17 @@
 void kbasep_mem_profile_debugfs_insert(struct kbase_context *kctx, char *data,
 		size_t size)
 {
-	spin_lock(&kctx->mem_profile_lock);
-	kfree(kctx->mem_profile_data);
+	unsigned long flags;
+	
+	spin_lock_irqsave(&kctx->mem_profile_lock, flags);
+	if (NULL != kctx->mem_profile_data)
+	{
+		kfree(kctx->mem_profile_data);
+	}
 	kctx->mem_profile_data = data;
 	kctx->mem_profile_size = size;
-	spin_unlock(&kctx->mem_profile_lock);
+	
+	spin_unlock_irqrestore(&kctx->mem_profile_lock, flags);
 }
 
 /** Show callback for the @c mem_profile debugfs file.
@@ -46,13 +52,19 @@ void kbasep_mem_profile_debugfs_insert(struct kbase_context *kctx, char *data,
 static int kbasep_mem_profile_seq_show(struct seq_file *sfile, void *data)
 {
 	struct kbase_context *kctx = sfile->private;
+	unsigned long flags;
 
 	KBASE_DEBUG_ASSERT(kctx != NULL);
 
-	spin_lock(&kctx->mem_profile_lock);
-	seq_write(sfile, kctx->mem_profile_data, kctx->mem_profile_size);
-	seq_putc(sfile, '\n');
-	spin_unlock(&kctx->mem_profile_lock);
+    spin_lock_irqsave(&kctx->mem_profile_lock, flags);
+
+    if (NULL != kctx->mem_profile_data)
+    {
+	    seq_write(sfile, kctx->mem_profile_data, kctx->mem_profile_size);
+	    seq_putc(sfile, '\n');
+	}
+
+    spin_unlock_irqrestore(&kctx->mem_profile_lock, flags);
 
 	return 0;
 }
@@ -84,12 +96,24 @@ void kbasep_mem_profile_debugfs_add(struct kbase_context *kctx)
 
 void kbasep_mem_profile_debugfs_remove(struct kbase_context *kctx)
 {
+	unsigned long flags;
+
 	KBASE_DEBUG_ASSERT(kctx != NULL);
 
-	spin_lock(&kctx->mem_profile_lock);
-	kfree(kctx->mem_profile_data);
+	spin_lock_irqsave(&kctx->mem_profile_lock, flags);
+
+	if (NULL != kctx->mem_profile_data)
+	{
+		kfree(kctx->mem_profile_data);
+	}
+
 	kctx->mem_profile_data = NULL;
-	spin_unlock(&kctx->mem_profile_lock);
+
+	spin_unlock_irqrestore(&kctx->mem_profile_lock, flags);
+
+	if (IS_ERR(kctx->mem_dentry))
+		return;
+	debugfs_remove(kctx->mem_dentry);
 }
 
 #else /* CONFIG_DEBUG_FS */

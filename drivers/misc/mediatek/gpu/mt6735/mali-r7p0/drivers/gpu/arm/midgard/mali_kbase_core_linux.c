@@ -79,19 +79,15 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 
+#ifdef CONFIG_OF
 #include <mali_kbase_config.h>
 #include <linux/of.h>
 #include <linux/of_address.h> 
+#endif
+
 #ifdef CONFIG_MACH_MANTA
 #include <plat/devs.h>
 #endif
-
-/* MTK GPU DVFS */
-#include <mali_kbase_pm.h>
-#include "mt_gpufreq.h"
-
-/* MTK chip version API */
-#include <mt_chip.h>
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0))
 #include <linux/pm_opp.h>
@@ -102,6 +98,15 @@
 #if defined(CONFIG_MALI_MIPE_ENABLED)
 #include <mali_kbase_tlstream.h>
 #endif
+
+/* MTK GPU DVFS */
+#include <mali_kbase_pm.h>
+#include "mt_gpufreq.h"
+#include <mali_kbase_pm_defs.h>
+#include <mali_kbase_pm_internal.h>
+
+/* MTK chip version API */
+#include "mt_chip.h"
 
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
@@ -132,12 +137,18 @@ int g_gpu_boost_duartion = 0;
 int g_gpu_boost_id = 0; /* MTK for touch boost (only for a period of time) */
 int g_custom_gpu_boost_id = 0; /* MTK for mtk_custom_boost_gpu_freq (always set as lower bound of frequency). The lower bound function is used for performance service currently. */
 int g_ged_gpu_boost_id = 0; /* MTK for mtk_set_boost_gpu_freq (always set as lower bound of frequency). The lower bound function is used for GED boost currently. */
-extern unsigned int g_type_T;
+
 /*
    Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to 
    provide the gpu total memory usage to mlogger module
 */
 extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
+
+/*
+   Add by mediatek, Hook the memory dump function pointer to (*ged_mem_dump_gpu_memory_usag_fp) in order to 
+   provide the gpu detail memory usage by PID to mlogger module
+*/
+extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
 
 static DEFINE_MUTEX(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
@@ -374,7 +385,6 @@ out:
 }
 #endif /* CONFIG_KDS */
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
 static void _mtk_set_gpu_boost_duration(void)
 {
     g_gpu_boost_duartion = MTK_GPU_BOOST_DURATION;
@@ -393,7 +403,6 @@ static int _mtk_get_gpu_boost_duration(void)
 void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
 {
     int iCurrentFreqID;
-
     //printk("[MALI] mtk_gpu_input_boost_CB! boost to index=%d\n", ui32BoostFreqID);
 
     // check if input boost enabled
@@ -406,11 +415,11 @@ void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
     g_gpu_boost_id = ui32BoostFreqID;
 
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
-    printk("[MALI] current gpu freq id=%d, touch boost to index=%d\n", iCurrentFreqID, ui32BoostFreqID);
+    pr_debug("[MALI] current gpu freq id=%d, touch boost to index=%d\n", iCurrentFreqID, ui32BoostFreqID);
 
     if(ui32BoostFreqID < iCurrentFreqID)
     {
-        printk("[MALI] boost CB set to FREQ id=%d\n", ui32BoostFreqID);
+        pr_debug("[MALI] boost CB set to FREQ id=%d\n", ui32BoostFreqID);
         mtk_set_touch_boost_flag(ui32BoostFreqID);
     }
 
@@ -420,7 +429,7 @@ void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
 {
     int iCurrentFreqID;
 
-    printk("[MALI] boost CB set to freq id=%d\n", ui32LimitFreqID);
+    pr_debug("[MALI] boost CB set to freq id=%d\n", ui32LimitFreqID);
 
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
 
@@ -430,14 +439,7 @@ void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
 
 void mtk_kbase_boost_gpu_freq(void)
 {
-	if(g_type_T==1)
-	{
-		mtk_gpu_input_boost_CB(1);
-	}
-	else
-	{
-    	mtk_gpu_input_boost_CB(0);
-	}
+    mtk_gpu_input_boost_CB(0);
 
     return;
 }
@@ -451,11 +453,11 @@ void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 
     g_custom_gpu_boost_id = uiTableNum - ui32FreqLevel - 1;
 
-    printk("[MALI] mtk_kbase_custom_boost_gpu_freq() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d", ui32FreqLevel, g_custom_gpu_boost_id);
+    pr_debug("[MALI] mtk_kbase_custom_boost_gpu_freq() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d", ui32FreqLevel, g_custom_gpu_boost_id);
 
     if(g_custom_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
-        printk("[MALI] mtk_kbase_custom_boost_gpu_freq set gpu freq to index=%d, cuurent index=%d", g_custom_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
+        pr_debug("[MALI] mtk_kbase_custom_boost_gpu_freq set gpu freq to index=%d, cuurent index=%d", g_custom_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
         mt_gpufreq_target(g_custom_gpu_boost_id);
     }
 
@@ -475,18 +477,11 @@ void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel)
 
     g_ged_gpu_boost_id = uiTableNum - ui32FreqLevel - 1;
 
-	if(g_type_T==1)
-	{
-	
-if (g_ged_gpu_boost_id == 0)
-		g_ged_gpu_boost_id = 1;
-	}
-
-    printk("[MALI] mtk_kbase_set_bottom_gpu_freq_fp() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d  (GED boost)", ui32FreqLevel, g_ged_gpu_boost_id);
+    pr_debug("[MALI] mtk_kbase_set_bottom_gpu_freq_fp() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d  (GED boost)", ui32FreqLevel, g_ged_gpu_boost_id);
 
     if(g_ged_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
-        printk("[MALI] mtk_kbase_set_bottom_gpu_freq_fp set gpu freq to index=%d, cuurent index=%d  (GED boost)", g_ged_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
+        pr_debug("[MALI] mtk_kbase_set_bottom_gpu_freq_fp set gpu freq to index=%d, cuurent index=%d  (GED boost)", g_ged_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
         mt_gpufreq_target(g_ged_gpu_boost_id);
     }
 
@@ -513,16 +508,12 @@ int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
 int mtk_gpu_dvfs(void)
 {
     int iCurrentFreqID, iTargetFreqID;
-    int iCurrentVirtualFreqID, iTargetVirtualFreqID;
+	int iCurrentVirtualFreqID = 0, iTargetVirtualFreqID;
     int iCurrentGPUPlatformID;
     int iCurrentGPUBoostDurationCount;
     int i;
     enum kbase_pm_dvfs_action action;
-
-    // [MTK] mtk_custom_gpu_boost.  do nothing if g_custom_gpu_boost_id is higher
     int higher_boost_id;
-
-    iCurrentVirtualFreqID = 0;
 
     action = mtk_get_dvfs_action();
 
@@ -582,7 +573,7 @@ int mtk_gpu_dvfs(void)
             break;
 
         default:
-            printk(KERN_EMERG "GPU DVFS call back error action. %d\n", action);
+            pr_debug(KERN_EMERG "GPU DVFS call back error action. %d\n", action);
             return false;
             break;            
     }
@@ -610,6 +601,8 @@ int mtk_gpu_dvfs(void)
     }
 
 
+    // [MTK] mtk_custom_gpu_boost.  do nothing if g_custom_gpu_boost_id is higher
+
     /* calculate higher boost frequency (e.g. lower index id) */
     if(g_custom_gpu_boost_id < g_ged_gpu_boost_id)
         higher_boost_id = g_custom_gpu_boost_id;
@@ -636,9 +629,9 @@ int mtk_gpu_dvfs(void)
     {
         return false;
     }
-    return true;
+   
+    return true; 
 }
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 #ifdef CONFIG_MALI_MIPE_ENABLED
 static void kbase_create_timeline_objects(struct kbase_context *kctx)
@@ -1045,14 +1038,12 @@ copy_failed:
 			if (kbase_jd_submit(kctx, job) != 0)
 #endif /* BASE_LEGACY_UK6_SUPPORT */
 				ukh->ret = MALI_ERROR_FUNCTION_FAILED;
-
-#ifdef CONFIG_MALI_MIDGARD_DVFS
-				if(mtk_get_dvfs_enabled())
-				{
-					mtk_gpu_dvfs();
-				}
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
-
+			
+			if(mtk_get_dvfs_enabled())
+			{
+				mtk_gpu_dvfs();
+			}
+			
 			break;
 		}
 
@@ -3503,6 +3494,7 @@ static int kbase_device_debugfs_init(struct kbase_device *kbdev)
 	}
 	kbase_debug_job_fault_dev_init(kbdev);
 	kbasep_gpu_memory_debugfs_init(kbdev);
+
 #if KBASE_GPU_RESET_EN
 	debugfs_create_file("quirks_sc", 0644,
 			kbdev->mali_debugfs_directory, kbdev,
@@ -3843,7 +3835,15 @@ out_partial:
 		kbase_device_term(kbdev);
 
 	if (inited & inited_backend_early)
-		kbase_backend_early_term(kbdev);
+		kbase_backend_early_term(kbdev);		
+		
+	mtk_get_gpu_memory_usage_fp = kbase_report_gpu_memory_usage;
+	
+	mtk_dump_gpu_memory_usage_fp = kbase_dump_gpu_memory_usage;
+
+#ifdef CONFIG_PROC_FS
+   proc_mali_register();
+#endif
 
 	return err;
 }
@@ -3888,8 +3888,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	int i;
 	unsigned int code;
 	struct device_node *node;
-
-	code = mt_get_chip_hw_code();
+	
+	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
+	pr_debug("[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
 
 #ifdef CONFIG_OF
 	//mfgcfg
@@ -3901,7 +3902,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	if (!clk_mfgcfg_base_addr)
 		pr_debug("[CLK_G3D_CONFIG] base failed\n");
 #endif
-
+	
 #ifdef CONFIG_OF
 	err = kbase_platform_early_init();
 	if (err) {
@@ -4000,6 +4001,41 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		}
 	}
 #endif  /* CONFIG_HAVE_CLK */
+
+	code = mt_get_chip_hw_code();
+	if (0x321 == code) {
+		// do something for Denali-1(6735)
+#ifdef CONFIG_MTK_CLKMGR
+#else	
+		kbdev->clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
+		if (IS_ERR(kbdev->clk_mfg)) {
+			dev_err(kbdev->dev, "cannot get mfg main clock\n");
+			return PTR_ERR(kbdev->clk_mfg);
+		}
+		kbdev->clk_smi_common = devm_clk_get(&pdev->dev, "mfg-smi-common");
+		if (IS_ERR(kbdev->clk_smi_common)) {
+			dev_err(kbdev->dev, "cannot get smi common clock\n");
+			return PTR_ERR(kbdev->clk_smi_common);
+		}
+		kbdev->clk_mfg_scp = devm_clk_get(&pdev->dev, "mtcmos-mfg");
+		if (IS_ERR(kbdev->clk_mfg_scp)) {
+			dev_err(kbdev->dev, "cannot get mtcmos mfg\n");
+			return PTR_ERR(kbdev->clk_mfg_scp);
+		}
+		kbdev->clk_display_scp = devm_clk_get(&pdev->dev, "mtcmos-display");
+		if (IS_ERR(kbdev->clk_display_scp)) {
+			dev_err(kbdev->dev, "cannot get mtcmos display\n");
+			return PTR_ERR(kbdev->clk_display_scp);
+		}
+#endif
+	} else if (0x335 == code) {
+		 // do something for Denali-2(6735M)
+	} else if (0x337 == code) {
+		 // do something for Denali-3(6753)
+	} else {
+		 // unknown chip ID, error !!
+	}
+
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)) && defined(CONFIG_OF) \
 			&& defined(CONFIG_PM_OPP)
 	/* Register the OPPs if they are available in device tree */
@@ -4075,6 +4111,10 @@ out:
 
 static int kbase_common_device_remove(struct kbase_device *kbdev)
 {
+	mtk_get_gpu_memory_usage_fp = NULL;
+	
+	mtk_dump_gpu_memory_usage_fp = NULL;
+	
 	kbase_ipa_term(kbdev->ipa_ctx);
 	kbase_vinstr_term(kbdev->vinstr_ctx);
 	sysfs_remove_group(&kbdev->dev->kobj, &kbase_attr_group);

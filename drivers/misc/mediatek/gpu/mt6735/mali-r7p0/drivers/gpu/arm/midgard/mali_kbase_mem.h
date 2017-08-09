@@ -830,9 +830,10 @@ void kbase_sync_single_for_device(struct kbase_device *kbdev, dma_addr_t handle,
 void kbase_sync_single_for_cpu(struct kbase_device *kbdev, dma_addr_t handle,
 		size_t size, enum dma_data_direction dir);
 
-int kbase_report_gpu_memory_usage(void);
+unsigned int kbase_report_gpu_memory_usage(void);
 
 int kbase_report_gpu_memory_peak(void);
 
+bool kbase_dump_gpu_memory_usage(void);
 
 #endif				/* _KBASE_MEM_H_ */

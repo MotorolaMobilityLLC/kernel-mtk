@@ -27,13 +27,11 @@
 #include <backend/gpu/mali_kbase_jm_rb.h>
 
 #include <mali_kbase_config_defaults.h>
-
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
 #include <asm/uaccess.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <linux/time.h>
 
 /* When VSync is being hit aim for utilisation between 70-90% */
 #define KBASE_PM_VSYNC_MIN_UTILISATION          25//70
@@ -41,9 +39,6 @@
 /* Otherwise aim for 10-40% */
 #define KBASE_PM_NO_VSYNC_MIN_UTILISATION       10
 #define KBASE_PM_NO_VSYNC_MAX_UTILISATION       40
-
-/* for SODI stopping DVFS timer case, threshold for ignoring the remain time, do dvfs right away*/
-#define KBASE_TIMER_THRESHOLD 3000
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
 
@@ -65,29 +60,23 @@ int g_dvfs_deferred_count = 3;
 int g_touch_boost_flag = 0;
 int g_touch_boost_id = 0;
 
-
 int g_early_suspend = 0;
-
-struct timeval g_tv_timer_start;
-
 extern unsigned int g_power_status;
-extern unsigned int g_type_T;
-extern mtk_gpu_thd_level_offset gpu_thd_level_off[];
 
-//#include <linux/earlysuspend.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif /* CONFIG_HAS_EARLYSUSPEND */
 #include <linux/suspend.h>
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void mali_early_suspend(struct early_suspend *h)
 {
-	  struct list_head *entry;
+		struct list_head *entry;
 	  const struct list_head *kbdev_list;    
 	  unsigned long flgs;	  
-	  kbdev_list = kbase_dev_list_get();	  
+	  kbdev_list = kbase_dev_list_get();
 	  
 	  list_for_each(entry, kbdev_list) 
 	  {
@@ -115,7 +104,7 @@ static void mali_early_suspend(struct early_suspend *h)
 static void mali_late_resume(struct early_suspend *h)
 {	  
 		struct list_head *entry;
-	  const struct list_head *kbdev_list;
+	  const struct list_head *kbdev_list;	  	    
 	  unsigned long flgs;
 	  kbdev_list = kbase_dev_list_get();	
 	    
@@ -128,21 +117,18 @@ static void mali_late_resume(struct early_suspend *h)
 	  	 {		
 	  	 	 unsigned long flags;	
 	  	 	 
-			 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+			 	 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
   		 	 kbdev->pm.backend.metrics.timer_active = true;
   		 	 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
   		 	 
   		 	 hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
   		 	 kbdev->pm.backend.metrics.timer.function = dvfs_callback;
-			 do_gettimeofday( &g_tv_timer_start);
   		 	 hrtimer_start(&kbdev->pm.backend.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
-
 			 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
   		 	 g_early_suspend = 0;
   		 	 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);			 
   		 }
   	}
-	
   	kbase_dev_list_put(kbdev_list);  	
 }
 
@@ -155,7 +141,7 @@ static struct early_suspend mali_early_suspend_handler =
 };
 #endif /* CONFIG_HAS_EARLYSUSPEND */
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
+
 void mali_SODI_begin(void)
 {
 		struct list_head *entry;
@@ -185,11 +171,9 @@ KBASE_EXPORT_TEST_API(mali_SODI_begin);
 
 void mali_SODI_exit(void)
 {	  
-	struct list_head *entry;
-	const struct list_head *kbdev_list;
-	struct timeval tv_timer_end;
-	long timer_time_elapse;
-	  kbdev_list = kbase_dev_list_get();
+		struct list_head *entry;
+	  const struct list_head *kbdev_list;	  	    
+	  kbdev_list = kbase_dev_list_get();	
 	    
 	  list_for_each(entry, kbdev_list) 
 	  {
@@ -203,41 +187,15 @@ void mali_SODI_exit(void)
 			 	 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
   		 	 kbdev->pm.backend.metrics.timer_active = true;
   		 	 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-
-             // exit SODI, calculate the length of timer before SODI cancelled the timer.
-             do_gettimeofday(&tv_timer_end);
-             timer_time_elapse = (tv_timer_end.tv_sec - g_tv_timer_start.tv_sec)*1000000 + (tv_timer_end.tv_usec - g_tv_timer_start.tv_usec);
-
-
-             if( timer_time_elapse > (mtk_get_dvfs_freq()*1000 - KBASE_TIMER_THRESHOLD) )
-             {
-                 // remain time is too short, calcute loading immediately
-                 dvfs_callback(&kbdev->pm.backend.metrics.timer);
-             }
-             else if( (timer_time_elapse <= (mtk_get_dvfs_freq()*1000 - KBASE_TIMER_THRESHOLD)) && (timer_time_elapse > 0))
-             {
-                 hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-                 kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq() - timer_time_elapse/1000;   /* set timer length to: original - elasped time */
-                 kbdev->pm.backend.metrics.timer.function = dvfs_callback;
-                 do_gettimeofday( &g_tv_timer_start);
-                 hrtimer_start(&kbdev->pm.backend.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
-             }
-             else
-             {
-                 // unknown case
-                 hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-                 kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq();
-      		 	 kbdev->pm.backend.metrics.timer.function = dvfs_callback;
-    			 do_gettimeofday( &g_tv_timer_start);
-      		 	 hrtimer_start(&kbdev->pm.backend.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
-             }
-
+  		 	 
+  		 	 hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+  		 	 kbdev->pm.backend.metrics.timer.function = dvfs_callback;
+  		 	 hrtimer_start(&kbdev->pm.backend.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
   		 }
   	}
   	kbase_dev_list_put(kbdev_list);  	
 }
 KBASE_EXPORT_TEST_API(mali_SODI_exit);
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 /* Shift used for kbasep_pm_metrics_data.time_busy/idle - units of (1 << 8) ns
  * This gives a maximum period between samples of 2^(32+8)/100 ns = slightly
@@ -245,7 +203,6 @@ KBASE_EXPORT_TEST_API(mali_SODI_exit);
 #define KBASE_PM_TIME_SHIFT			8
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
-
 void mtk_get_touch_boost_flag(int *touch_boost_flag, int *touch_boost_id)
 {
     *touch_boost_flag = g_touch_boost_flag;
@@ -283,44 +240,17 @@ int mtk_get_dvfs_freq()
 
 int mtk_get_dvfs_threshold_max()
 {
-	if(g_type_T==1)
-	{
-		unsigned int iCurrentFreq;
-    	iCurrentFreq = mt_gpufreq_get_cur_freq_index();
-		return 	gpu_thd_level_off[iCurrentFreq].max_level;
-	}
-	else
-	{
-    	return g_dvfs_threshold_max;
-	}
+    return g_dvfs_threshold_max;
 }
 
 int mtk_get_dvfs_threshold_min()
 {
-	if(g_type_T==1)
-	{
-		unsigned int iCurrentFreq;
-    	iCurrentFreq = mt_gpufreq_get_cur_freq_index();
-		return 	gpu_thd_level_off[iCurrentFreq].min_level;
-	}
-	else
-	{
-    	return g_dvfs_threshold_min;
-	}
+    return g_dvfs_threshold_min;
 }
 
 int mtk_get_dvfs_deferred_count()
 {
-	if(g_type_T==1)
-	{
-		unsigned int iCurrentFreq;
-		iCurrentFreq = mt_gpufreq_get_cur_freq_index();
-		return	gpu_thd_level_off[iCurrentFreq].def_count;
-	}
-	else
-	{
-	    return g_dvfs_deferred_count;
-	}
+    return g_dvfs_deferred_count;
 }
 
 enum kbase_pm_dvfs_action mtk_get_dvfs_action()
@@ -343,313 +273,20 @@ static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
 
 	metrics = container_of(timer, struct kbasep_pm_metrics_data, timer);
 	action = kbase_pm_get_dvfs_action(metrics->kbdev);
-	
+
 	g_current_action = action;
 	spin_lock_irqsave(&metrics->lock, flags);
 	metrics->kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq();
 
 	if (metrics->timer_active)
-	{
-		do_gettimeofday( &g_tv_timer_start);
 		hrtimer_start(timer,
 			HR_TIMER_DELAY_MSEC(metrics->kbdev->pm.dvfs_period),
 			HRTIMER_MODE_REL);
-	}
-	
+
 	spin_unlock_irqrestore(&metrics->lock, flags);
 
 	return HRTIMER_NORESTART;
 }
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
-
-int kbasep_pm_metrics_init(struct kbase_device *kbdev)
-{
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-	kbdev->pm.backend.metrics.kbdev = kbdev;
-	kbdev->pm.backend.metrics.vsync_hit = 1; /* [MTK] vsync notifiy is not implemented yet, assumed always hit. */
-	kbdev->pm.backend.metrics.time_period_start = ktime_get();
-	kbdev->pm.backend.metrics.time_busy = 0;
-	kbdev->pm.backend.metrics.time_idle = 0;
-	kbdev->pm.backend.metrics.prev_busy = 0;
-	kbdev->pm.backend.metrics.prev_idle = 0;
-	kbdev->pm.backend.metrics.gpu_active = false;
-	kbdev->pm.backend.metrics.active_cl_ctx[0] = 0;
-	kbdev->pm.backend.metrics.active_cl_ctx[1] = 0;
-	kbdev->pm.backend.metrics.active_gl_ctx[0] = 0;
-	kbdev->pm.backend.metrics.active_gl_ctx[1] = 0;
-	kbdev->pm.backend.metrics.busy_cl[0] = 0;
-	kbdev->pm.backend.metrics.busy_cl[1] = 0;
-	kbdev->pm.backend.metrics.busy_gl = 0;
-
-	spin_lock_init(&kbdev->pm.backend.metrics.lock);
-
-#ifdef CONFIG_MALI_MIDGARD_DVFS
-	kbdev->pm.backend.metrics.timer_active = true;
-	hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC,
-							HRTIMER_MODE_REL);
-	kbdev->pm.backend.metrics.timer.function = dvfs_callback;
-
-	do_gettimeofday( &g_tv_timer_start);
-	hrtimer_start(&kbdev->pm.backend.metrics.timer,
-			HR_TIMER_DELAY_MSEC(kbdev->pm.dvfs_period),
-			HRTIMER_MODE_REL);
-	
-/// Add early suspend callback to disable dvfs timer during deepidle state
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    register_early_suspend(&mali_early_suspend_handler);
-#endif
-			
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
-
-	return 0;
-}
-
-KBASE_EXPORT_TEST_API(kbasep_pm_metrics_init);
-
-void kbasep_pm_metrics_term(struct kbase_device *kbdev)
-{
-#ifdef CONFIG_MALI_MIDGARD_DVFS
-	unsigned long flags;
-
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&mali_early_suspend_handler);
-#endif
-	if (true == kbdev->pm.backend.metrics.timer_active)
-	{
-		spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-		kbdev->pm.backend.metrics.timer_active = false;
-		spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-
-		hrtimer_cancel(&kbdev->pm.backend.metrics.timer);
-	}
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
-}
-
-KBASE_EXPORT_TEST_API(kbasep_pm_metrics_term);
-
-/* caller needs to hold kbdev->pm.backend.metrics.lock before calling this
- * function
- */
-static void kbase_pm_get_dvfs_utilisation_calc(struct kbase_device *kbdev,
-								ktime_t now)
-{
-	ktime_t diff;
-
-	lockdep_assert_held(&kbdev->pm.backend.metrics.lock);
-
-	diff = ktime_sub(now, kbdev->pm.backend.metrics.time_period_start);
-	if (ktime_to_ns(diff) < 0)
-		return;
-
-	if (kbdev->pm.backend.metrics.gpu_active) {
-		u32 ns_time = (u32) (ktime_to_ns(diff) >> KBASE_PM_TIME_SHIFT);
-
-		kbdev->pm.backend.metrics.time_busy += ns_time;
-		if (kbdev->pm.backend.metrics.active_cl_ctx[0])
-			kbdev->pm.backend.metrics.busy_cl[0] += ns_time;
-		if (kbdev->pm.backend.metrics.active_cl_ctx[1])
-			kbdev->pm.backend.metrics.busy_cl[1] += ns_time;
-		if (kbdev->pm.backend.metrics.active_gl_ctx[0])
-			kbdev->pm.backend.metrics.busy_gl += ns_time;
-		if (kbdev->pm.backend.metrics.active_gl_ctx[1])
-			kbdev->pm.backend.metrics.busy_gl += ns_time;
-	} else {
-		kbdev->pm.backend.metrics.time_idle += (u32) (ktime_to_ns(diff)
-							>> KBASE_PM_TIME_SHIFT);
-	}
-
-	kbdev->pm.backend.metrics.time_period_start = now;
-}
-
-#if defined(CONFIG_PM_DEVFREQ) || defined(CONFIG_MALI_MIDGARD_DVFS)
-/* Caller needs to hold kbdev->pm.backend.metrics.lock before calling this
- * function.
- */
-static void kbase_pm_get_dvfs_utilisation_reset(struct kbase_device *kbdev, ktime_t now)
-{
-	/* Reset current values */
-	kbdev->pm.backend.metrics.time_period_start = now;
-	kbdev->pm.backend.metrics.time_idle = 0;
-	kbdev->pm.backend.metrics.time_busy = 0;
-	kbdev->pm.backend.metrics.busy_cl[0] = 0;
-	kbdev->pm.backend.metrics.busy_cl[1] = 0;
-	kbdev->pm.backend.metrics.busy_gl = 0;
-}
-
-void kbase_pm_get_dvfs_utilisation(struct kbase_device *kbdev, unsigned long *total, unsigned long *busy, bool reset)
-{
-	ktime_t now = ktime_get();
-	unsigned long tmp, flags;
-
-	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-	kbase_pm_get_dvfs_utilisation_calc(kbdev, now);
-
-	tmp = kbdev->pm.backend.metrics.busy_gl;
-	tmp += kbdev->pm.backend.metrics.busy_cl[0];
-	tmp += kbdev->pm.backend.metrics.busy_cl[1];
-
-	*busy = tmp;
-	*total = tmp + kbdev->pm.backend.metrics.time_idle;
-
-	if (reset)
-		kbase_pm_get_dvfs_utilisation_reset(kbdev, now);
-	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-}
-#endif
-
-#ifdef CONFIG_MALI_MIDGARD_DVFS
-
-/* caller needs to hold kbdev->pm.backend.metrics.lock before calling this
- * function
- */
-int kbase_pm_get_dvfs_utilisation_old(struct kbase_device *kbdev,
-					int *util_gl_share,
-					int util_cl_share[2],
-					ktime_t now)
-{
-	int utilisation;
-	int busy;
-
-	kbase_pm_get_dvfs_utilisation_calc(kbdev, now);
-
-	if (kbdev->pm.backend.metrics.time_idle +
-				kbdev->pm.backend.metrics.time_busy == 0) {
-		/* No data - so we return NOP */
-		utilisation = -1;
-		if (util_gl_share)
-			*util_gl_share = -1;
-		if (util_cl_share) {
-			util_cl_share[0] = -1;
-			util_cl_share[1] = -1;
-		}
-		goto out;
-	}
-
-	utilisation = (100 * kbdev->pm.backend.metrics.time_busy) /
-			(kbdev->pm.backend.metrics.time_idle +
-			 kbdev->pm.backend.metrics.time_busy);
-
-	busy = kbdev->pm.backend.metrics.busy_gl +
-		kbdev->pm.backend.metrics.busy_cl[0] +
-		kbdev->pm.backend.metrics.busy_cl[1];
-
-	if (busy != 0) {
-		if (util_gl_share)
-			*util_gl_share =
-				(100 * kbdev->pm.backend.metrics.busy_gl) /
-									busy;
-		if (util_cl_share) {
-			util_cl_share[0] =
-				(100 * kbdev->pm.backend.metrics.busy_cl[0]) /
-									busy;
-			util_cl_share[1] =
-				(100 * kbdev->pm.backend.metrics.busy_cl[1]) /
-									busy;
-		}
-	} else {
-		if (util_gl_share)
-			*util_gl_share = -1;
-		if (util_cl_share) {
-			util_cl_share[0] = -1;
-			util_cl_share[1] = -1;
-		}
-	}
-
-out:
-	kbase_pm_get_dvfs_utilisation_reset(kbdev, now);
-	
-	return utilisation;
-}
-
-enum kbase_pm_dvfs_action kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
-{
-	unsigned long flags;
-	int utilisation, util_gl_share;
-	int util_cl_share[2];
-	int random_action;
-	enum kbase_pm_dvfs_action action;
-	ktime_t now;
-	action = KBASE_PM_DVFS_NOP;
-
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-
-	now = ktime_get();
-
-	utilisation = kbase_pm_get_dvfs_utilisation_old(kbdev, &util_gl_share,
-			util_cl_share, now);
-
-	if (utilisation < 0 || util_gl_share < 0 || util_cl_share[0] < 0 ||
-							util_cl_share[1] < 0) {
-		utilisation = 0;
-		util_gl_share = 0;
-		util_cl_share[0] = 0;
-		util_cl_share[1] = 0;
-		goto out;
-	}
-	
-	if (kbdev->pm.backend.metrics.vsync_hit) {
-		/* VSync is being met */
-		if (utilisation < mtk_get_dvfs_threshold_min())
-			action = KBASE_PM_DVFS_CLOCK_DOWN;
-		else if (utilisation > mtk_get_dvfs_threshold_max())
-			action = KBASE_PM_DVFS_CLOCK_UP;
-		else
-			action = KBASE_PM_DVFS_NOP;
-	} else {
-		/* VSync is being missed */
-		if (utilisation < KBASE_PM_NO_VSYNC_MIN_UTILISATION)
-			action = KBASE_PM_DVFS_CLOCK_DOWN;
-		else if (utilisation > KBASE_PM_NO_VSYNC_MAX_UTILISATION)
-			action = KBASE_PM_DVFS_CLOCK_UP;
-		else
-			action = KBASE_PM_DVFS_NOP;
-	}
-	
-	// get a radom action for stress test
-	if (mtk_get_dvfs_enabled() == 2)
-	{
-		get_random_bytes( &random_action, sizeof(random_action));
-        random_action = random_action%3;
-        printk("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
-        action = random_action;
-	}
-	
-	g_current_sample_gl_utilization = utilisation;
-	g_current_sample_cl_utilization[0] = util_cl_share[0];
-	g_current_sample_cl_utilization[1] = util_cl_share[1];
-
-out:
-#if 0 ////#ifdef CONFIG_MALI_MIDGARD_DVFS
-	kbase_platform_dvfs_event(kbdev, utilisation, util_gl_share,
-								util_cl_share);
-#endif				/*CONFIG_MALI_MIDGARD_DVFS */
-
-	//kbase_pm_reset_dvfs_utilisation_unlocked(kbdev, now);
-
-	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-
-	return action;
-}
-
-bool kbase_pm_metrics_is_active(struct kbase_device *kbdev)
-{
-	bool isactive;
-	unsigned long flags;
-
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-	isactive = kbdev->pm.backend.metrics.timer_active;
-	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-
-	return isactive;
-}
-KBASE_EXPORT_TEST_API(kbase_pm_metrics_is_active);
 
 u32 kbasep_get_gl_utilization(void)
 {
@@ -698,8 +335,7 @@ static unsigned int _mtk_gpu_dvfs_index_to_frequency(int iFreq)
 				return 3000000;
         }    
 	}
-    return 0;
-        
+	return 0;
 }
 
 ///=====================================================================================
@@ -1120,6 +756,290 @@ void proc_mali_unregister(void)
 #define proc_mali_register() do{}while(0)
 #define proc_mali_unregister() do{}while(0)
 #endif /// CONFIG_PROC_FS
+
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
+
+int kbasep_pm_metrics_init(struct kbase_device *kbdev)
+{
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+	kbdev->pm.backend.metrics.kbdev = kbdev;
+	kbdev->pm.backend.metrics.vsync_hit = 1; /* [MTK] vsync notifiy is not implemented yet, assumed always hit. */
+	kbdev->pm.backend.metrics.time_period_start = ktime_get();
+	kbdev->pm.backend.metrics.time_busy = 0;
+	kbdev->pm.backend.metrics.time_idle = 0;
+	kbdev->pm.backend.metrics.gpu_active = false;
+	kbdev->pm.backend.metrics.active_cl_ctx[0] = 0;
+	kbdev->pm.backend.metrics.active_cl_ctx[1] = 0;
+	kbdev->pm.backend.metrics.active_gl_ctx[0] = 0;
+	kbdev->pm.backend.metrics.active_gl_ctx[1] = 0;
+	kbdev->pm.backend.metrics.busy_cl[0] = 0;
+	kbdev->pm.backend.metrics.busy_cl[1] = 0;
+	kbdev->pm.backend.metrics.busy_gl = 0;
+
+	spin_lock_init(&kbdev->pm.backend.metrics.lock);
+
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+	kbdev->pm.backend.metrics.timer_active = true;
+	hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC,
+							HRTIMER_MODE_REL);
+	kbdev->pm.backend.metrics.timer.function = dvfs_callback;
+
+	hrtimer_start(&kbdev->pm.backend.metrics.timer,
+			HR_TIMER_DELAY_MSEC(kbdev->pm.dvfs_period),
+			HRTIMER_MODE_REL);
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
+
+	return 0;
+}
+
+KBASE_EXPORT_TEST_API(kbasep_pm_metrics_init);
+
+void kbasep_pm_metrics_term(struct kbase_device *kbdev)
+{
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+	unsigned long flags;
+
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+    unregister_early_suspend(&mali_early_suspend_handler);
+#endif
+	if (true == kbdev->pm.backend.metrics.timer_active)
+	{
+		spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+		kbdev->pm.backend.metrics.timer_active = false;
+		spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+
+		hrtimer_cancel(&kbdev->pm.backend.metrics.timer);
+	}
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
+}
+
+KBASE_EXPORT_TEST_API(kbasep_pm_metrics_term);
+
+/* caller needs to hold kbdev->pm.backend.metrics.lock before calling this
+ * function
+ */
+static void kbase_pm_get_dvfs_utilisation_calc(struct kbase_device *kbdev,
+								ktime_t now)
+{
+	ktime_t diff;
+
+	lockdep_assert_held(&kbdev->pm.backend.metrics.lock);
+
+	diff = ktime_sub(now, kbdev->pm.backend.metrics.time_period_start);
+	if (ktime_to_ns(diff) < 0)
+		return;
+
+	if (kbdev->pm.backend.metrics.gpu_active) {
+		u32 ns_time = (u32) (ktime_to_ns(diff) >> KBASE_PM_TIME_SHIFT);
+
+		kbdev->pm.backend.metrics.time_busy += ns_time;
+		if (kbdev->pm.backend.metrics.active_cl_ctx[0])
+			kbdev->pm.backend.metrics.busy_cl[0] += ns_time;
+		if (kbdev->pm.backend.metrics.active_cl_ctx[1])
+			kbdev->pm.backend.metrics.busy_cl[1] += ns_time;
+		if (kbdev->pm.backend.metrics.active_gl_ctx[0])
+			kbdev->pm.backend.metrics.busy_gl += ns_time;
+		if (kbdev->pm.backend.metrics.active_gl_ctx[1])
+			kbdev->pm.backend.metrics.busy_gl += ns_time;
+	} else {
+		kbdev->pm.backend.metrics.time_idle += (u32) (ktime_to_ns(diff)
+							>> KBASE_PM_TIME_SHIFT);
+	}
+
+	kbdev->pm.backend.metrics.time_period_start = now;
+}
+
+#if defined(CONFIG_PM_DEVFREQ) || defined(CONFIG_MALI_MIDGARD_DVFS)
+/* Caller needs to hold kbdev->pm.backend.metrics.lock before calling this
+ * function.
+ */
+static void kbase_pm_get_dvfs_utilisation_reset(struct kbase_device *kbdev,
+								ktime_t now)
+{
+	/* Reset current values */
+	kbdev->pm.backend.metrics.time_period_start = now;
+	kbdev->pm.backend.metrics.time_idle = 0;
+	kbdev->pm.backend.metrics.time_busy = 0;
+	kbdev->pm.backend.metrics.busy_cl[0] = 0;
+	kbdev->pm.backend.metrics.busy_cl[1] = 0;
+	kbdev->pm.backend.metrics.busy_gl = 0;
+}
+
+
+void kbase_pm_get_dvfs_utilisation(struct kbase_device *kbdev, unsigned long *total, unsigned long *busy, bool reset)
+{
+	ktime_t now = ktime_get();
+	unsigned long tmp, flags;
+
+	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+	kbase_pm_get_dvfs_utilisation_calc(kbdev, now);
+
+	tmp = kbdev->pm.backend.metrics.busy_gl;
+	tmp += kbdev->pm.backend.metrics.busy_cl[0];
+	tmp += kbdev->pm.backend.metrics.busy_cl[1];
+
+	*busy = tmp;
+	*total = tmp + kbdev->pm.backend.metrics.time_idle;
+
+	if (reset)
+		kbase_pm_get_dvfs_utilisation_reset(kbdev, now);
+	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+}
+#endif
+
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+
+/* caller needs to hold kbdev->pm.backend.metrics.lock before calling this
+ * function
+ */
+int kbase_pm_get_dvfs_utilisation_old(struct kbase_device *kbdev,
+					int *util_gl_share,
+					int util_cl_share[2],
+					ktime_t now)
+{
+	int utilisation;
+	int busy;
+
+	kbase_pm_get_dvfs_utilisation_calc(kbdev, now);
+
+	if (kbdev->pm.backend.metrics.time_idle +
+				kbdev->pm.backend.metrics.time_busy == 0) {
+		/* No data - so we return NOP */
+		utilisation = -1;
+		if (util_gl_share)
+			*util_gl_share = -1;
+		if (util_cl_share) {
+			util_cl_share[0] = -1;
+			util_cl_share[1] = -1;
+		}
+		goto out;
+	}
+
+	utilisation = (100 * kbdev->pm.backend.metrics.time_busy) /
+			(kbdev->pm.backend.metrics.time_idle +
+			 kbdev->pm.backend.metrics.time_busy);
+
+	busy = kbdev->pm.backend.metrics.busy_gl +
+		kbdev->pm.backend.metrics.busy_cl[0] +
+		kbdev->pm.backend.metrics.busy_cl[1];
+
+	if (busy != 0) {
+		if (util_gl_share)
+			*util_gl_share =
+				(100 * kbdev->pm.backend.metrics.busy_gl) /
+									busy;
+		if (util_cl_share) {
+			util_cl_share[0] =
+				(100 * kbdev->pm.backend.metrics.busy_cl[0]) /
+									busy;
+			util_cl_share[1] =
+				(100 * kbdev->pm.backend.metrics.busy_cl[1]) /
+									busy;
+		}
+	} else {
+		if (util_gl_share)
+			*util_gl_share = -1;
+		if (util_cl_share) {
+			util_cl_share[0] = -1;
+			util_cl_share[1] = -1;
+		}
+	}
+
+out:
+	kbase_pm_get_dvfs_utilisation_reset(kbdev, now);
+
+	return utilisation;
+}
+
+enum kbase_pm_dvfs_action kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
+{
+	unsigned long flags;
+	int utilisation, util_gl_share;
+	int util_cl_share[2];
+	int random_action;
+	enum kbase_pm_dvfs_action action;
+	ktime_t now;
+
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+
+	action = KBASE_PM_DVFS_NOP;
+
+	now = ktime_get();
+
+	utilisation = kbase_pm_get_dvfs_utilisation_old(kbdev, &util_gl_share,
+			util_cl_share, now);
+
+	if (utilisation < 0 || util_gl_share < 0 || util_cl_share[0] < 0 ||
+							util_cl_share[1] < 0) {
+		utilisation = 0;
+		util_gl_share = 0;
+		util_cl_share[0] = 0;
+		util_cl_share[1] = 0;
+		goto out;
+	}
+	
+	if (kbdev->pm.backend.metrics.vsync_hit) {
+		/* VSync is being met */
+		if (utilisation < mtk_get_dvfs_threshold_min())
+			action = KBASE_PM_DVFS_CLOCK_DOWN;
+		else if (utilisation > mtk_get_dvfs_threshold_max())
+			action = KBASE_PM_DVFS_CLOCK_UP;
+		else
+			action = KBASE_PM_DVFS_NOP;
+	} else {
+		/* VSync is being missed */
+		if (utilisation < KBASE_PM_NO_VSYNC_MIN_UTILISATION)
+			action = KBASE_PM_DVFS_CLOCK_DOWN;
+		else if (utilisation > KBASE_PM_NO_VSYNC_MAX_UTILISATION)
+			action = KBASE_PM_DVFS_CLOCK_UP;
+		else
+			action = KBASE_PM_DVFS_NOP;
+	}
+
+	// get a radom action for stress test
+	if (mtk_get_dvfs_enabled() == 2)
+	{
+		get_random_bytes( &random_action, sizeof(random_action));
+        random_action = random_action%3;
+        //printk("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        pr_debug("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        action = random_action;
+	}
+	
+	g_current_sample_gl_utilization = utilisation;
+	g_current_sample_cl_utilization[0] = util_cl_share[0];
+	g_current_sample_cl_utilization[1] = util_cl_share[1];
+
+out:
+#if 0 //#ifdef CONFIG_MALI_MIDGARD_DVFS
+	kbase_platform_dvfs_event(kbdev, utilisation, util_gl_share,
+								util_cl_share);
+#endif				/*CONFIG_MALI_MIDGARD_DVFS */
+
+	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+	
+	return action;
+}
+
+bool kbase_pm_metrics_is_active(struct kbase_device *kbdev)
+{
+	bool isactive;
+	unsigned long flags;
+
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+	isactive = kbdev->pm.backend.metrics.timer_active;
+	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+
+	return isactive;
+}
+KBASE_EXPORT_TEST_API(kbase_pm_metrics_is_active);
 
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
 

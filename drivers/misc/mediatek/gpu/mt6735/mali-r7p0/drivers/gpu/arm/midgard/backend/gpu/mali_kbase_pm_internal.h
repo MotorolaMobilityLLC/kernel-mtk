@@ -474,8 +474,7 @@ bool kbase_pm_do_poweroff(struct kbase_device *kbdev, bool is_suspend);
 
 #ifdef CONFIG_PM_DEVFREQ
 void kbase_pm_get_dvfs_utilisation(struct kbase_device *kbdev,
-		unsigned long *total, unsigned long *busy);
-void kbase_pm_reset_dvfs_utilisation(struct kbase_device *kbdev);
+		unsigned long *total, unsigned long *busy, bool reset);
 #endif
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
@@ -512,5 +511,37 @@ void kbase_pm_power_changed(struct kbase_device *kbdev);
 void kbase_pm_metrics_update(struct kbase_device *kbdev,
 				ktime_t *now);
 
+void proc_mali_register(void);
+void proc_mali_unregister(void);
+
+u32 kbasep_get_gl_utilization(void);
+u32 kbasep_get_cl_js0_utilization(void);
+u32 kbasep_get_cl_js1_utilization(void);
+
+enum kbase_pm_dvfs_action mtk_get_dvfs_action(void);
+
+void mtk_clear_dvfs_action(void);
+int mtk_get_dvfs_enabled(void);
+unsigned int mtk_get_current_gpu_platform_id(void);
+
+void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID);
+void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID);
+
+int mtk_get_input_boost_enabled(void);
+
+void mtk_kbase_boost_gpu_freq(void);
+
+void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel);
+void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel);
+unsigned int mtk_kbase_custom_get_gpu_freq_level_count(void);
+
+int mtk_get_dvfs_freq(void);
+int mtk_get_dvfs_threshold_max(void);
+int mtk_get_dvfs_threshold_min(void);
+int mtk_get_dvfs_deferred_count(void);
+
+void mtk_get_touch_boost_flag(int *touch_boost_flag, int *touch_boost_id);
+void mtk_set_touch_boost_flag(int boost_id);
+void mtk_clear_touch_boost_flag(void);
 
 #endif /* _KBASE_BACKEND_PM_INTERNAL_H_ */

@@ -26,15 +26,16 @@
 
 /* MTK clock modified */
 #include "mt_gpufreq.h"
-#include <upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
-#include <mali_kbase_pm.h>
-#include <mt_chip.h>
+#include "upmu_common.h"
+#include "mach/upmu_sw.h"
+#include "mach/upmu_hw.h"
+#include "mali_kbase_pm.h"
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
+#include "mt_chip.h"
+
 #ifdef CONFIG_MTK_CLKMGR
-#include "mach/mt_clkmgr.h"
+#include "mt_clkmgr.h"
 #endif /* CONFIG_MTK_CLKMGR */
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -67,18 +68,29 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 #ifdef CONFIG_MALI_MIDGARD_DVFS
 	int touch_boost_flag, touch_boost_id;
-	unsigned int current_gpu_freq_idx;
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
+
+	unsigned int current_gpu_freq_idx;
+
 #ifndef CONFIG_MTK_CLKMGR
 	int ret;
 #endif
 
-		unsigned int code;
-		code = mt_get_chip_hw_code();
+	unsigned int code;
+	code = mt_get_chip_hw_code();
 
 	mt_gpufreq_voltage_enable_set(1);
-    
-	if (0x321 == code) {
+
+	
+	
+	
+	
+	
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
+
+if (0x321 == code) {
 		// do something for Denali-1(6735)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock( MT_CG_DISP0_SMI_COMMON, "GPU");
@@ -128,31 +140,18 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 #endif /* CONFIG_MTK_CLKMGR */
 	}
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
 	g_power_status = 1; // the power status is "power on".
 	mt_gpufreq_target(g_power_off_gpu_freq_idx);
 	current_gpu_freq_idx = mt_gpufreq_get_cur_freq_index();
 	if( current_gpu_freq_idx > g_power_off_gpu_freq_idx)
 		pr_debug("MALI: GPU freq. can't switch to idx=%d\n", g_power_off_gpu_freq_idx );
 
-	mtk_get_touch_boost_flag( &touch_boost_flag, &touch_boost_id);
-	if(g_type_T==1)
-	{
-		if(touch_boost_flag > 0)
-		{
-			mt_gpufreq_target(1);
-			mtk_clear_touch_boost_flag();
-		}
-	}
-	else
-	{
-		if(touch_boost_flag > 0)
-		{
-			mt_gpufreq_target(touch_boost_id);
-			mtk_clear_touch_boost_flag();
-		}
-	}
-#endif /* CONFIG_MALI_MIDGARD_DVFS */
+    mtk_get_touch_boost_flag( &touch_boost_flag, &touch_boost_id);
+    if(touch_boost_flag > 0)
+    {
+        mt_gpufreq_target(touch_boost_id);
+        mtk_clear_touch_boost_flag();
+    }
 	
 	/* Nothing is needed on VExpress, but we may have destroyed GPU state (if the below HARD_RESET code is active) */
 	return 1;
@@ -215,8 +214,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	 */
 	//KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
-#endif
-
 	///  Polling the MFG_DEBUG_REG for checking GPU IDLE before MTCMOS power off (0.1ms)
 	MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG);
 
@@ -246,7 +243,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 
 	code = mt_get_chip_hw_code();
-
+	
 	/* MTK clock modified */
 	if (0x321 == code) {
 		// do something for Denali-1(6735)
@@ -280,6 +277,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(0);
+
+#endif
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {

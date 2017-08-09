@@ -31,37 +31,6 @@
 #define PM_HW_ISSUES_DETECT  0x02
 
 
-/* MTK DVFS */
-#define MTK_MT6735_GPU_LIMIT_COUNT 2
-
-typedef struct _mtk_gpu_freq_limit_data{
-    const int actual_freq_index_count;
-    const int virtual_freq_index_count;
-    const int *virtual_freq_index;
-}mtk_gpu_freq_limit_data;
-
-extern mtk_gpu_freq_limit_data mt6735_gpu_freq_limit_data[];
-
-typedef struct _mtk_gpu_thd_level_offset
-{
-    unsigned int max_level;
-	unsigned int min_level;
-	unsigned int def_count;
-}mtk_gpu_thd_level_offset;
-
-/** Actions for DVFS.
- *
- * kbase_pm_get_dvfs_action will return one of these enumerated values to
- * describe the action that the DVFS system should take.
- */
-enum kbase_pm_dvfs_action {
-        KBASE_PM_DVFS_NOP,          /**< No change in clock frequency is requested */
-        KBASE_PM_DVFS_CLOCK_UP,     /**< The clock frequency should be increased if possible */
-        KBASE_PM_DVFS_CLOCK_DOWN,    /**< The clock frequency should be decreased if possible */
-        KBASE_PM_DVFS_NONSENSE       /* [MTK] clear state, no need to do dvfs action */
-};
-
-
 /** Initialize the power management framework.
  *
  * Must be called before any other power management function
@@ -198,38 +167,5 @@ void kbase_pm_resume(struct kbase_device *kbdev);
  * occurred on the display.
  */
 void kbase_pm_vsync_callback(int buffer_updated, void *data);
-
-void proc_mali_register(void);
-void proc_mali_unregister(void);
-
-u32 kbasep_get_gl_utilization(void);
-u32 kbasep_get_cl_js0_utilization(void);
-u32 kbasep_get_cl_js1_utilization(void);
-
-enum kbase_pm_dvfs_action mtk_get_dvfs_action(void);
-
-void mtk_clear_dvfs_action(void);
-int mtk_get_dvfs_enabled(void);
-unsigned int mtk_get_current_gpu_platform_id(void);
-
-void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID);
-void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID);
-
-int mtk_get_input_boost_enabled(void);
-
-void mtk_kbase_boost_gpu_freq(void);
-
-void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel);
-void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel);
-unsigned int mtk_kbase_custom_get_gpu_freq_level_count(void);
-
-int mtk_get_dvfs_freq(void);
-int mtk_get_dvfs_threshold_max(void);
-int mtk_get_dvfs_threshold_min(void);
-int mtk_get_dvfs_deferred_count(void);
-
-void mtk_get_touch_boost_flag(int *touch_boost_flag, int *touch_boost_id);
-void mtk_set_touch_boost_flag(int boost_id);
-void mtk_clear_touch_boost_flag(void);
 
 #endif				/* _KBASE_PM_H_ */

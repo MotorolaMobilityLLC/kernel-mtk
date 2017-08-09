@@ -17,7 +17,6 @@ CONFIG_MALI_DEBUG := y
 ccflags-y += -DCONFIG_MALI_PLATFORM_FAKE
 ccflags-y += -DCONFIG_MALI_MIDGARD_DVFS
 
-
 #Add include path for kernel 3.10
 ccflags-y += -I-I$(srctree)/include
 

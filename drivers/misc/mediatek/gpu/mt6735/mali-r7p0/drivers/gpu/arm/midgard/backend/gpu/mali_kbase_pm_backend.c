@@ -31,6 +31,73 @@
 #include <backend/gpu/mali_kbase_jm_internal.h>
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
+/* MTK GPU DVFS */
+#include "mt_gpufreq.h"
+#include "mt_chip.h"
+//#include "mach/mt_devinfo.h"
+
+extern u32 get_devinfo_with_index(u32 index);
+
+extern unsigned int g_power_off_gpu_freq_idx;
+extern unsigned int g_power_status;
+
+
+unsigned int g_current_gpu_platform_id = 0;
+
+mtk_gpu_freq_limit_data mt6735_gpu_freq_limit_data[MTK_MT6735_GPU_LIMIT_COUNT]=
+{ {2, 2, (const int[]){0,1}}, // Denali-1;   
+  {3, 3, (const int[]){0,1,2}}, // Denali-3(MT6753T);  
+};
+
+extern unsigned int (*mtk_get_gpu_loading_fp)(void);
+extern void (*mtk_boost_gpu_freq_fp)(void);
+extern void (*mtk_custom_boost_gpu_freq_fp)(unsigned int ui32FreqLevel);
+extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int ui32FreqLevel);
+extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void);
+
+/* for MTK GPU boost and power limit */
+extern void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
+extern void mt_gpufreq_power_limit_notify_registerCB(gpufreq_power_limit_notify pCB);
+
+
+/* gpu SODI */
+extern void (*mtk_gpu_sodi_entry_fp)(void);
+extern void (*mtk_gpu_sodi_exit_fp)(void);
+extern void mali_SODI_begin(void);
+extern void mali_SODI_exit(void);
+
+unsigned int mtk_get_current_gpu_platform_id()
+{
+    return g_current_gpu_platform_id;
+}
+
+void _mtk_gpu_dvfs_init(void)
+{
+    int i;
+    unsigned int iCurrentFreqCount;
+    pr_debug("[MALI] _mtk_gpu_dvfs_init\n");
+    
+    iCurrentFreqCount = mt_gpufreq_get_dvfs_table_num();
+    
+    // get curent platform index
+    for(i=0 ; i<MTK_MT6735_GPU_LIMIT_COUNT ; i++)
+    {
+        if(iCurrentFreqCount == mt6735_gpu_freq_limit_data[i].actual_freq_index_count)
+        {
+            g_current_gpu_platform_id = i;
+            break;
+        }
+    }
+
+    // init g_custom_gpu_boost_id and g_ged_gpu_boost_id as 0
+    mtk_kbase_custom_boost_gpu_freq(0);
+    mtk_kbase_ged_bottom_gpu_freq(0);
+
+    g_power_off_gpu_freq_idx = 0;//mt6735_gpu_freq_limit_data[g_current_gpu_platform_id].virtual_freq_index_count-1;
+    g_power_status = 0;
+
+}
+
 void kbase_pm_register_access_enable(struct kbase_device *kbdev)
 {
 	struct kbase_pm_callback_conf *callbacks;
@@ -106,6 +173,26 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 		kbdev->pm.backend.callback_power_runtime_on = NULL;
 		kbdev->pm.backend.callback_power_runtime_off = NULL;
 	}
+	
+	/* MTK GPU DVFS init */
+	_mtk_gpu_dvfs_init();
+
+	/* MTK Register input boost and power limit call back function */
+	mt_gpufreq_input_boost_notify_registerCB(mtk_gpu_input_boost_CB);
+	mt_gpufreq_power_limit_notify_registerCB(mtk_gpu_power_limit_CB);
+
+	/* Register gpu boost function to MTK HAL */
+	mtk_boost_gpu_freq_fp = mtk_kbase_boost_gpu_freq;
+	mtk_custom_boost_gpu_freq_fp = mtk_kbase_custom_boost_gpu_freq; /* used for for performance service boost */
+    mtk_set_bottom_gpu_freq_fp = mtk_kbase_ged_bottom_gpu_freq; /* used for GED boost */
+	mtk_custom_get_gpu_freq_level_count_fp = mtk_kbase_custom_get_gpu_freq_level_count;
+
+	/* MTK MET use */
+	mtk_get_gpu_loading_fp = kbasep_get_gl_utilization;
+
+  /* SODI callback function */
+  mtk_gpu_sodi_entry_fp = mali_SODI_begin;
+  mtk_gpu_sodi_exit_fp  = mali_SODI_exit;
 
 	/* Initialise the metrics subsystem */
 	ret = kbasep_pm_metrics_init(kbdev);
@@ -207,6 +294,9 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	struct kbasep_js_device_data *js_devdata = &kbdev->js_data;
 	unsigned long irq_flags;
 	int ret;
+	
+	unsigned int code; //mtk
+	unsigned int gpu_efuse;
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
@@ -226,6 +316,30 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	}
 
 	kbasep_pm_read_present_cores(kbdev);
+	
+	// mtk
+	code = mt_get_chip_hw_code();
+	if (0x321 == code) // Denali-1(6735)
+	{     
+     // read GPU efuse info.
+     gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
+	 if( gpu_efuse == 1 ) 
+	 	 kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+	 else				
+	 	 kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+	} 
+	/*else if (0x335 == code) 
+	{
+     // Denali-2(6735M)
+	} 
+	else if (0x337 == code)
+	{
+     // Denali-3(6753)
+	}*/
+	else
+	{
+		kbdev->pm.debug_core_mask = kbdev->shader_present_bitmap;
+	}
 
 	kbdev->pm.debug_core_mask =
 			kbdev->gpu_props.props.raw_props.shader_present;

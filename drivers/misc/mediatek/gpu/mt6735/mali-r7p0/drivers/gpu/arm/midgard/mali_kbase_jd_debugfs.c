@@ -63,6 +63,17 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 			start_timestamp = ktime_to_ns(
 					ktime_sub(ktime_get(), atom->start_timestamp));
 
+#ifdef CONFIG_64BIT
+		seq_printf(sfile,
+				"%i,%u,%u,%u,%lu %lu,%lli,%llu\n",
+				i, atom->core_req, atom->status, atom->coreref_state,
+				atom->dep[0].atom ? atom->dep[0].atom - atoms : 0,
+				atom->dep[1].atom ? atom->dep[1].atom - atoms : 0,
+				(signed long long)start_timestamp,
+				(unsigned long long)(atom->time_spent_us ?
+					atom->time_spent_us * 1000 : start_timestamp)
+				);
+#else
 		seq_printf(sfile,
 				"%i,%u,%u,%u,%u %u,%lli,%llu\n",
 				i, atom->core_req, atom->status, atom->coreref_state,
@@ -74,6 +85,7 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 				(unsigned long long)(atom->time_spent_us ?
 					atom->time_spent_us * 1000 : start_timestamp)
 				);
+#endif
 	}
 	spin_unlock_irqrestore(&kctx->kbdev->js_data.runpool_irq.lock, irq_flags);
 	mutex_unlock(&kctx->jctx.lock);

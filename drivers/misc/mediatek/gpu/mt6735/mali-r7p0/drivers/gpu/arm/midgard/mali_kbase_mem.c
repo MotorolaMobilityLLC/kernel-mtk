@@ -45,7 +45,7 @@ atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 
 KBASE_EXPORT_TEST_API(kbase_report_gpu_memory_usage)
-int kbase_report_gpu_memory_usage()
+unsigned int kbase_report_gpu_memory_usage()
 {
 #if 0
 	ssize_t ret = 0;
@@ -68,6 +68,39 @@ int kbase_report_gpu_memory_usage()
 int kbase_report_gpu_memory_peak()
 {
     return (atomic_read(&g_mtk_gpu_peak_memory_usage_in_pages)*4096);
+}
+
+KBASE_EXPORT_TEST_API(kbase_dump_gpu_memory_usage)
+bool kbase_dump_gpu_memory_usage()
+{
+	struct list_head *entry;
+	const struct list_head *kbdev_list;
+	kbdev_list = kbase_dev_list_get();
+	list_for_each(entry, kbdev_list) {
+		struct kbase_device *kbdev = NULL;
+		struct kbasep_kctx_list_element *element;
+
+		kbdev = list_entry(entry, struct kbase_device, entry);
+		/* output the total memory usage and cap for this device */
+
+		pr_warn(KERN_DEBUG "%10s\t%16s\n", "PID", "Memory by Page");
+		pr_warn(KERN_DEBUG "============================\n");
+		//mutex_lock(&kbdev->kctx_list_lock);
+		list_for_each_entry(element, &kbdev->kctx_list, link) {
+			/* output the memory usage and cap for each kctx */
+			/* opened on this device */
+			pr_warn(KERN_DEBUG "%10u\t%16u\n", element->kctx->tgid, \
+					atomic_read(&(element->kctx->used_pages)));
+		}
+		pr_warn(KERN_DEBUG "============================\n");
+		pr_warn(KERN_DEBUG "%10s\t%16u\n", \
+				"Total", \
+				atomic_read(&(kbdev->memdev.used_pages)));
+		pr_warn(KERN_DEBUG "============================\n");
+		//mutex_unlock(&kbdev->kctx_list_lock);
+	}
+	kbase_dev_list_put(kbdev_list);
+	return true;
 }
 
 /**
@@ -1158,7 +1191,7 @@ int kbase_alloc_phy_pages_helper(
 	size_t nr_pages_requested)
 {
 	int curr;
-  int peak;
+	int peak;
   
 	KBASE_DEBUG_ASSERT(alloc);
 	KBASE_DEBUG_ASSERT(alloc->type == KBASE_MEM_TYPE_NATIVE);
@@ -1169,13 +1202,13 @@ int kbase_alloc_phy_pages_helper(
 
 	kbase_atomic_add_pages(nr_pages_requested, &alloc->imported.kctx->used_pages);
 	kbase_atomic_add_pages(nr_pages_requested, &alloc->imported.kctx->kbdev->memdev.used_pages);
-	
+
 	kbase_atomic_add_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
 
 	/* Increase mm counters before we allocate pages so that this
 	 * allocation is visible to the OOM killer */
 	kbase_process_page_usage_inc(alloc->imported.kctx, nr_pages_requested);
-	
+
 	curr = atomic_read(&g_mtk_gpu_total_memory_usage_in_pages);
 	peak = atomic_read(&g_mtk_gpu_peak_memory_usage_in_pages);
 	if (curr > peak)
@@ -1197,9 +1230,9 @@ no_alloc:
 	kbase_process_page_usage_dec(alloc->imported.kctx, nr_pages_requested);
 	kbase_atomic_sub_pages(nr_pages_requested, &alloc->imported.kctx->used_pages);
 	kbase_atomic_sub_pages(nr_pages_requested, &alloc->imported.kctx->kbdev->memdev.used_pages);
-
-	kbase_atomic_sub_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
 	
+	kbase_atomic_sub_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
+
 	return -ENOMEM;
 }
 
@@ -1232,6 +1265,8 @@ int kbase_free_phy_pages_helper(
 	kbase_process_page_usage_dec(alloc->imported.kctx, nr_pages_to_free);
 	kbase_atomic_sub_pages(nr_pages_to_free, &alloc->imported.kctx->used_pages);
 	kbase_atomic_sub_pages(nr_pages_to_free, &alloc->imported.kctx->kbdev->memdev.used_pages);
+	
+	kbase_atomic_sub_pages(nr_pages_to_free, &g_mtk_gpu_total_memory_usage_in_pages);
 
 #if defined(CONFIG_MALI_MIPE_ENABLED)
 	kbase_tlstream_aux_pagesalloc(-(s64)nr_pages_to_free);

@@ -61,6 +61,16 @@ enum kbase_pm_core_type {
 	KBASE_PM_CORE_SHADER = SHADER_PRESENT_LO,
 	KBASE_PM_CORE_TILER = TILER_PRESENT_LO
 };
+/* MTK DVFS */
+#define MTK_MT6735_GPU_LIMIT_COUNT 2
+
+typedef struct _mtk_gpu_freq_limit_data{
+    const int actual_freq_index_count;
+    const int virtual_freq_index_count;
+    const int *virtual_freq_index;
+}mtk_gpu_freq_limit_data;
+
+extern mtk_gpu_freq_limit_data mt6735_gpu_freq_limit_data[];
 
 /**
  * struct kbasep_pm_metrics_data - Metrics data collected for use by the power
@@ -100,8 +110,6 @@ struct kbasep_pm_metrics_data {
 	ktime_t time_period_start;
 	u32 time_busy;
 	u32 time_idle;
-	u32 prev_busy;
-	u32 prev_idle;
 	bool gpu_active;
 	u32 busy_cl[2];
 	u32 busy_gl;
@@ -116,6 +124,13 @@ struct kbasep_pm_metrics_data {
 
 	void *platform_data;
 	struct kbase_device *kbdev;
+};
+
+enum kbase_pm_dvfs_action {
+	KBASE_PM_DVFS_NOP,	    /**< No change in clock frequency is requested */
+	KBASE_PM_DVFS_CLOCK_UP,	    /**< The clock frequency should be increased if possible */
+	KBASE_PM_DVFS_CLOCK_DOWN,    /**< The clock frequency should be decreased if possible */
+	KBASE_PM_DVFS_NONSENSE       /* [MTK] clear state, no need to do dvfs action */
 };
 
 union kbase_pm_policy_data {

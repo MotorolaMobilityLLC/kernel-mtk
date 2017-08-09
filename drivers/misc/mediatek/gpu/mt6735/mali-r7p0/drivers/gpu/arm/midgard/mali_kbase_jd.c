@@ -1734,7 +1734,7 @@ int kbase_jd_init(struct kbase_context *kctx)
 
 	KBASE_DEBUG_ASSERT(kctx);
 
-	kctx->jctx.job_done_wq = alloc_workqueue("mali_jd", 0, 1);
+	kctx->jctx.job_done_wq = alloc_workqueue("mali_jd", WQ_HIGHPRI | WQ_UNBOUND, 1);
 	if (NULL == kctx->jctx.job_done_wq) {
 		mali_err = -ENOMEM;
 		goto out1;
