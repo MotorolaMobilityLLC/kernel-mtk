@@ -1044,6 +1044,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			/*vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;*/
 		};
 
+		accdet: accdet@ {
+			compatible = "mediatek,mt6735-accdet",
+						"mediatek,mt6735m-accdet";
+		};
+
 		THERM_CTRL@0x1100B000 {
 			compatible = "mediatek,THERM_CTRL";
 			reg = <0x1100B000 0x1000>;
