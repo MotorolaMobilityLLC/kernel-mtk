@@ -499,7 +499,7 @@ int hal_btif_dma_rx_cb_reg(P_MTK_DMA_INFO_STR p_dma_info,
 			   dma_rx_buf_write rx_cb)
 {
 	if (NULL != p_dma_info->rx_cb) {
-		BTIF_INFO_FUNC
+		BTIF_DBG_FUNC
 		    ("rx_cb already registered, replace (0x%p) with (0x%p)\n",
 		     p_dma_info->rx_cb, rx_cb);
 	}

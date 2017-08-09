@@ -796,7 +796,7 @@ int hal_btif_irq_handler(P_MTK_BTIF_INFO_STR p_btif,
 int hal_btif_rx_cb_reg(P_MTK_BTIF_INFO_STR p_btif_info, btif_rx_buf_write rx_cb)
 {
 	if (NULL != p_btif_info->rx_cb)
-		BTIF_INFO_FUNC("rx_cb already registered, replace (0x%p) with (0x%p)\n",
+		BTIF_DBG_FUNC("rx_cb already registered, replace (0x%p) with (0x%p)\n",
 		     p_btif_info->rx_cb, rx_cb);
 	p_btif_info->rx_cb = rx_cb;
 

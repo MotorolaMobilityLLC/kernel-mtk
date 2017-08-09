@@ -321,10 +321,10 @@ static int mtk_btif_suspend(struct platform_device *pdev, pm_message_t state)
 	p_mtk_btif p_btif = NULL;
 
 /*Chaozhong: ToDo: to be implement*/
-	BTIF_INFO_FUNC("++\n");
+	BTIF_DBG_FUNC("++\n");
 	p_btif = platform_get_drvdata(pdev);
 	i_ret = _btif_suspend(p_btif);
-	BTIF_INFO_FUNC("--, i_ret:%d\n", i_ret);
+	BTIF_DBG_FUNC("--, i_ret:%d\n", i_ret);
 	return i_ret;
 }
 
@@ -415,10 +415,10 @@ static int mtk_btif_resume(struct platform_device *pdev)
 	int i_ret = 0;
 	p_mtk_btif p_btif = NULL;
 /*Chaozhong: ToDo: to be implement*/
-	BTIF_INFO_FUNC("++\n");
+	BTIF_DBG_FUNC("++\n");
 	p_btif = platform_get_drvdata(pdev);
 	i_ret = _btif_resume(p_btif);
-	BTIF_INFO_FUNC("--, i_ret:%d\n", i_ret);
+	BTIF_DBG_FUNC("--, i_ret:%d\n", i_ret);
 	return 0;
 }
 
