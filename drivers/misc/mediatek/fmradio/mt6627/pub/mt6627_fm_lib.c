@@ -826,7 +826,9 @@ static fm_s32 mt6627_PowerDown(void)
 	fm_u16 pkt_size;
 	fm_u16 dataRead;
 	fm_u32 tem;
+#if	defined(MT6625_FM)
 	fm_u32 host_reg = 0;
+#endif
 
 	WCN_DBG(FM_DBG | CHIP, "pwr down seq\n");
 	/*SW work around for MCUFA issue.
