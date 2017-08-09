@@ -2101,9 +2101,11 @@ p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter,
 		/* TODO: */
 
 		if (prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ) {
-			/* Leave the probe response to p2p_supplicant. */
+			/* Leave the probe request to p2p_supplicant. */
 			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, fgIsDevInterface, ucRoleIdx);
-		}
+		} else
+			DBGLOG(P2P, INFO, "do not indicate probe req. filter: 0x%x\n",
+				prAdapter->u4OsPacketFilter);
 
 	} while (FALSE);
 
@@ -2135,10 +2137,12 @@ VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 		/* TODO: */
 
-		if (PARAM_PACKET_FILTER_ACTION_FRAME) {
-			/* Leave the probe response to p2p_supplicant. */
+		if (prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_ACTION_FRAME) {
+			/* Leave the action frame to p2p_supplicant. */
 			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, TRUE, 0);
-		}
+		} else
+			DBGLOG(P2P, INFO, "do not indicate action. filter: 0x%x\n",
+				prAdapter->u4OsPacketFilter);
 
 	} while (FALSE);
 
