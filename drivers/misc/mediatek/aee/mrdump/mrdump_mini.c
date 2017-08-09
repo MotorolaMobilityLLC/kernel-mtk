@@ -714,7 +714,7 @@ int mini_rdump_reserve_memory(struct reserved_mem *rmem)
 	return 0;
 }
 
-RESERVEDMEM_OF_DECLARE(reserve_memory_minirdump, "minirdump-reserve-memory",
+RESERVEDMEM_OF_DECLARE(reserve_memory_minirdump, "mediatek,minirdump",
 		       mini_rdump_reserve_memory);
 
 module_param(dump_all_cpus, bool, S_IRUGO | S_IWUSR);

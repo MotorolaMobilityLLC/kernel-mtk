@@ -687,7 +687,7 @@ int ram_console_binary_reserve_memory(struct reserved_mem *rmem)
 
 RESERVEDMEM_OF_DECLARE(reserve_memory_pstore, "pstore-reserve-memory",
 		       ram_console_pstore_reserve_memory);
-RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "ram_console-reserve-memory",
+RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 		       ram_console_binary_reserve_memory);
 
 /* aee sram flags save */
