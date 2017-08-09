@@ -7161,12 +7161,14 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	unsigned int ret = 0;
 
 	PMICLOG1("[mt6311_driver_probe]\n");
+	/*
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
 	if (new_client == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 	memset(new_client, 0, sizeof(struct i2c_client));
+	*/
 
 	new_client = client;
 
