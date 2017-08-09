@@ -1762,9 +1762,9 @@ void aee_rr_show_ptp_gpu_volt_3(struct seq_file *m)
 
 void aee_rr_show_ptp_temp(struct seq_file *m)
 {
-	seq_printf(m, "ptp_temp: little = %llx\n", LAST_RRR_VAL(ptp_temp) & 0xFF);
-	seq_printf(m, "ptp_temp: big = %llx\n", (LAST_RRR_VAL(ptp_temp) >> 8) & 0xFF);
-	seq_printf(m, "ptp_temp: GPU = %llx\n", (LAST_RRR_VAL(ptp_temp) >> 16) & 0xFF);
+	seq_printf(m, "ptp_temp: big = %llx\n", LAST_RRR_VAL(ptp_temp) & 0xFF);
+	seq_printf(m, "ptp_temp: GPU = %llx\n", (LAST_RRR_VAL(ptp_temp) >> 8) & 0xFF);
+	seq_printf(m, "ptp_temp: little = %llx\n", (LAST_RRR_VAL(ptp_temp) >> 16) & 0xFF);
 }
 
 void aee_rr_show_thermal_temp(struct seq_file *m)
