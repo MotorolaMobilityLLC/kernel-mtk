@@ -249,7 +249,8 @@ static void LC898212XD_init(void)
 			}
 		}
 	} else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k97v1", 5) == 0 ||
-		strncmp(CONFIG_ARCH_MTK_PROJECT, "evb6797", 7) == 0) {
+		strncmp(CONFIG_ARCH_MTK_PROJECT, "evb6797", 7) == 0 ||
+		strncmp(CONFIG_ARCH_MTK_PROJECT, "muse6797", 8) == 0) {
 
 		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
 
