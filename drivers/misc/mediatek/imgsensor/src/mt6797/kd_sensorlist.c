@@ -3808,9 +3808,33 @@ static long CAMERA_HW_Ioctl(
 		//AD_CSI0B_DELAYCAL_CK_MUX	=	55	
 		//AD_CSI1A_DELAYCAL_CK_MUX =	56	
 		//AD_CSI1B_DELAYCAL_CK_MUX	=	57	
-		//AD_CSI2_DELAYCAL_CK_MUX	=	58	
-		PK_ERR("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
-		*(unsigned int*)pBuff = abist_meter(54);
+		//AD_CSI2_DELAYCAL_CK_MUX	=	58
+		//Case 18:AD_IMGPLL_450M_CK
+		PK_DBG("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
+		switch(*(unsigned int*)pBuff)
+		{
+			case 18 :
+			*(unsigned int*)pBuff = abist_meter(18);
+			break;
+			case 1 :
+			*(unsigned int*)pBuff = abist_meter(54);
+			break;
+			case 2 :
+			*(unsigned int*)pBuff = abist_meter(55);
+			break;
+			case 3 :
+			*(unsigned int*)pBuff = abist_meter(56);
+			break;
+			case 4 :
+			*(unsigned int*)pBuff = abist_meter(57);
+			break;
+			case 5 :
+			*(unsigned int*)pBuff = abist_meter(58);
+			break;
+			default:
+			PK_ERR("No such case");
+			break;
+		}
     break;
 
     default:
