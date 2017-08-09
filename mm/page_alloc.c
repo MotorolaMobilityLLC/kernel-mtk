@@ -4271,7 +4271,10 @@ static int zone_batchsize(struct zone *zone)
 	 *
 	 * OK, so we don't know how big the cache is.  So guess.
 	 */
-	batch = zone->managed_pages / 1024;
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE)
+		batch = zone->present_pages / 1024;
+	else
+		batch = zone->managed_pages / 1024;
 	if (batch * PAGE_SIZE > 512 * 1024)
 		batch = (512 * 1024) / PAGE_SIZE;
 	batch /= 4;		/* We effectively *= 4 below */
