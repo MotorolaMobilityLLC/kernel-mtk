@@ -193,6 +193,7 @@ void hal_rtc_bbpu_pwdn(void)
 	}
 	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
 	/*TODO if (!ret_val && pmic_chrdet_status() == false) {*/
+#if 0
 	if (!ret_val) {
 		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
 		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
@@ -202,7 +203,9 @@ void hal_rtc_bbpu_pwdn(void)
 
 		/* 3.   Switch SRCLKENAs GPIO MUX function to GPIO Mode */
 		mt_set_gpio_mode(GPIO_SRCLKEN_PIN, GPIO_MODE_GPIO);
-	} else {
+	} else
+#endif
+	{
 		rtc_bbpu_pwrdown(true);
 	}
 }
