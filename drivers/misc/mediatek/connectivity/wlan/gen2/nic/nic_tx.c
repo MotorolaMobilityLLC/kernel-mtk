@@ -1982,7 +1982,8 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	prMsduInfo->u2FrameLength = (UINT_16) u4PacketLen;
 	COPY_MAC_ADDR(prMsduInfo->aucEthDestAddr, aucEthDestAddr);
 
-	STATS_TX_PKT_CALLBACK(prSkb->data, prMsduInfo);
+	if (prSkb->len > ETH_HLEN)
+		STATS_TX_PKT_CALLBACK(prSkb->data, prMsduInfo);
 	return TRUE;
 }
 
