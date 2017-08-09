@@ -6694,7 +6694,7 @@ static MINT32 ISP_open(
 
 
     /*  */
-    /*spin_lock(&(IspInfo.SpinLockIspRef));*/
+	spin_lock(&(IspInfo.SpinLockIspRef));
 
     pFile->private_data = NULL;
     pFile->private_data = kmalloc(sizeof(ISP_USER_INFO_STRUCT) , GFP_ATOMIC);
@@ -6710,15 +6710,18 @@ static MINT32 ISP_open(
         pUserInfo->Tid = current->tgid;
     }
     /*  */
-    if (IspInfo.UserCount > 0)
-    {
-		spin_lock(&(IspInfo.SpinLockIspRef));
+	if (IspInfo.UserCount > 0) {
 		IspInfo.UserCount++;
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist\n",
 			IspInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
-    }
+	} else {
+		IspInfo.UserCount++;
+		spin_unlock(&(IspInfo.SpinLockIspRef));
+		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user\n",
+			IspInfo.UserCount, current->comm, current->pid, current->tgid);
+	}
 
     /* do wait queue head init when re-enter in camera */
     /*  */
