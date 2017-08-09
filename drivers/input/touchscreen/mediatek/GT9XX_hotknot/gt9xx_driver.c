@@ -297,8 +297,11 @@ static ssize_t show_refresh_rate(struct device *dev, struct device_attribute *at
 static ssize_t store_refresh_rate(struct device *dev, struct device_attribute *attr,
 					const char *buf, size_t size)
 {
-	/* u32 rate = 0; */
-	gtp_set_refresh_rate(kstrtoul(buf, NULL, 16));
+	unsigned long rate = 0;
+
+	if (kstrtoul(buf, 16, &rate))
+		return 0;
+	gtp_set_refresh_rate(rate);
 	return size;
 }
 
@@ -2258,9 +2261,6 @@ static void gtp_esd_check_func(struct work_struct *work)
 static int tpd_history_x = 0, tpd_history_y;
 static void tpd_down(s32 x, s32 y, s32 size, s32 id)
 {
-#ifdef CONFIG_CUSTOM_LCM_X
-int lcm_x = 0, lcm_y = 0;
-#endif
 #ifdef CONFIG_GTP_CHARGER_SWITCH
 	if (is_charger_cfg_updating) {
 		GTP_ERROR("tpd_down ignored when CFG changing\n");
@@ -2278,20 +2278,17 @@ int lcm_x = 0, lcm_y = 0;
 	}
 
 	input_report_key(tpd->dev, BTN_TOUCH, 1);
-#ifdef CONFIG_CUSTOM_LCM_X
 
-	lcm_x = kstrtoul(CONFIG_CUSTOM_LCM_X, NULL, 0);
-	lcm_y = kstrtoul(CONFIG_CUSTOM_LCM_Y, NULL, 0);
-	if (x < lcm_x)
+	if (x < tpd_dts_data.tpd_resolution[0])
 			x = 0;
 	else
-			x = x - lcm_x;
-	if (y < lcm_y)
+			x = x - tpd_dts_data.tpd_resolution[0];
+	if (y < tpd_dts_data.tpd_resolution[1])
 			y = 0;
 	else
-			y = y - lcm_y;
+			y = y - tpd_dts_data.tpd_resolution[1];
 	GTP_INFO("x:%d, y:%d, lcm_x:%d, lcm_y:%d\n", x, y, lcm_x, lcm_y);
-#endif
+
 	input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
 	input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
 	input_mt_sync(tpd->dev);

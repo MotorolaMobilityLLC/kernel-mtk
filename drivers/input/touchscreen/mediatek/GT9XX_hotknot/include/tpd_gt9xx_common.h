@@ -295,7 +295,7 @@ enum CHIP_TYPE_T {
 #endif
 
 #define GTP_ERROR(fmt, arg...)          pr_err("<<-GTP-ERROR->> "fmt"\n", ##arg)
-#if 1
+#if 0
 #define GTP_DEBUG(fmt, arg...) \
 	pr_err("<<-GTP-DEBUG->> [%d]"fmt"\n", __LINE__, ##arg)
 #else
