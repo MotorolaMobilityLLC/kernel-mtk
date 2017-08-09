@@ -427,7 +427,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 {
 	/* for D-3, support run time MRW */
 	unsigned int rank_pasr_segment[2];
-	unsigned int dramc0_spcmd, dramc0_pd_ctrl, dramc0_padctl4;
+	unsigned int dramc0_spcmd, dramc0_pd_ctrl, dramc0_pd_ctrl_2, dramc0_padctl4, dramc0_1E8;
 	unsigned int i, cnt = 1000;
 
 	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
@@ -438,9 +438,18 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	dramc0_spcmd = readl(PDEF_DRAMC0_REG_1E4);
 	dramc0_pd_ctrl = readl(PDEF_DRAMC0_REG_1DC);
 	dramc0_padctl4 = readl(PDEF_DRAMC0_REG_0E4);
+	dramc0_1E8 = readl(PDEF_DRAMC0_REG_1E8);
+
+	/* disable MR4(0x1E8[26]=1) */
+	writel(dramc0_1E8 | 0x04000000, PDEF_DRAMC0_REG_1E8);
+
+	/* Set ZQCSCNT7~0(0x1e4[23:16]) = 0 ZQCSCNT8(0x1DC[0]) = 0: disable ZQCS */
+	writel(dramc0_spcmd & 0xff00ffff, PDEF_DRAMC0_REG_1E4);
+	writel(dramc0_pd_ctrl & 0xfffffffe, PDEF_DRAMC0_REG_1DC);
 
 	/* Set MIOCKCTRLOFF(0x1dc[26])=1: not stop to DRAM clock! */
-	writel(dramc0_pd_ctrl | 0x04000000, PDEF_DRAMC0_REG_1DC);
+	dramc0_pd_ctrl_2 = readl(PDEF_DRAMC0_REG_1DC);
+	writel(dramc0_pd_ctrl_2 | 0x04000000, PDEF_DRAMC0_REG_1DC);
 
 	/* fix CKE */
 	writel(dramc0_padctl4 | 0x00000004, PDEF_DRAMC0_REG_0E4);
@@ -468,6 +477,9 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 		/* Mode register write command disable */
 		writel(0x0, PDEF_DRAMC0_REG_1E4);
 	}
+
+	/* release MR4 */
+	writel(dramc0_1E8, PDEF_DRAMC0_REG_1E8);
 
 	/* release fix CKE */
 	writel(dramc0_padctl4, PDEF_DRAMC0_REG_0E4);
