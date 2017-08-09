@@ -2053,6 +2053,8 @@ static int yamaha532_m_set_delay(u64 ns)
 
     if (value <= 20)
 	sample_delay = 20;
+	else
+		sample_delay = value;
 
     return geomagnetic_set_delay(sample_delay);
 }
