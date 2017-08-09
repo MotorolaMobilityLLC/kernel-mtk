@@ -89,7 +89,7 @@ static struct thermal_cooling_device *cl_adp_fps_dev;
 static unsigned int cl_adp_fps_state;
 static int cl_adp_fps_limit = MAX_FPS_LIMIT;
 
-#define GPU_LOADING_THRESHOLD	70
+#define GPU_LOADING_THRESHOLD	30
 /* in percentage */
 #if FPS_DEBUGFS
 static int gpu_loading_threshold = GPU_LOADING_THRESHOLD;
@@ -128,9 +128,9 @@ static int game_whitelist_check(void)
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
 
 	if (1 == result)
-		in_game_whitelist = 0;
-	else if (0 == result)
 		in_game_whitelist = 1;
+	else if (0 == result)
+		in_game_whitelist = 0;
 
 	return 0;
 }
@@ -308,6 +308,7 @@ static bool is_system_too_busy(void)
 
 	/* GPU cases */
 	gpu_loading = get_sma_val(gpu_loading_history, gpu_loading_sma_len);
+	mtk_cooler_fps_dprintk("[%s] gpu_loading = %d\n", __func__, gpu_loading);
 	if (gpu_loading >= GPU_LOADING_THRESHOLD)
 		return true;
 
@@ -333,14 +334,20 @@ static int adp_calc_fps_limit(void)
 	sma_tpcb = get_sma_val(tpcb_history, tpcb_sma_len);
 	tpcb_change = sma_tpcb - last_change_tpcb;
 
+	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d\n", __func__, sma_tpcb,  tpcb_change);
+
 	if (fps_limit_always_on || sma_tpcb >= mtk_thermal_get_tpcb_target()) {
 		sma_fps = get_sma_val(fps_history, fps_sma_len);
 		if (is_system_too_busy() &&
 				fps_limit - sma_fps >= fps_limit * fps_error_threshold / 100) {
+				mtk_cooler_fps_dprintk("[%s] fps_limit = %d, sma_fps = %d\n",
+					__func__, fps_limit, sma_fps);
 			/* we do not limit FPS if not in game */
 			if (in_game_whitelist) {
 				curr_fps_level = find_fps_floor(sma_fps);
 				fps_limit = fps_level[curr_fps_level];
+				mtk_cooler_fps_dprintk("[%s] curr_fps_level = %d, fps_limit = %d\n",
+					__func__, curr_fps_level, fps_limit);
 			}
 #if 0
 			else {
@@ -375,6 +382,8 @@ static bool in_consistent_scene(void)
 		duration++;
 	else /* TODO: TBD: should we reset duration or decrease */
 		duration = 0;
+
+	mtk_cooler_fps_dprintk("[%s] fps <= in_game_low_fps = %d\n", __func__, duration);
 
 	if (duration >= leave_fps_limit_duration) {
 		duration = 0;
