@@ -1126,6 +1126,7 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 
 static unsigned int max_power_except_big;
 static unsigned int max_power_big;
+static unsigned int max_power_1L;
 /* set a margin (2B @ idx 14) to avoid big be throttled / un-throttled frequently */
 static unsigned int big_on_margin;
 #define MAX_OCP_TARGET_POWER	127000
@@ -1160,13 +1161,15 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 		max_power_big = power_table.power_tbl[0].power_idx - max_power_except_big;
 		big_on_margin = (ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].core_total_power[14] * 2)
 				+ ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].l2_power[14];
+		max_power_1L = ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_L].core_total_power[0]
+				+ ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_L].l2_power[0];
 
-		ppm_info("@%s: max_power_big = %d, max_power_except_big = %d, big_on_margin = %d\n",
-			__func__, max_power_big, max_power_except_big, big_on_margin);
+		ppm_info("max_power_big = %d, max_power_except_big = %d, big_on_margin = %d, max_power_1L = %d\n",
+			max_power_big, max_power_except_big, big_on_margin, max_power_1L);
 	}
 
-	/* no need to set big OCP since big cluster or big OCP is powered off */
-	if (!ppm_is_big_cluster_on() || !ocp_status_get(PPM_CLUSTER_B)) {
+	/* no need to set big OCP since big cluster is off */
+	if (!ppm_is_big_cluster_on()) {
 		/* no need to throttle big core since it is not powered on */
 		if (limited_power > max_power_except_big
 			&& limited_power < power_table.power_tbl[0].power_idx
@@ -1180,12 +1183,18 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 			return limited_power;
 	}
 
-	if (ppm_is_need_to_check_tlp3_table(ppm_main_info.cur_power_state, limited_power)) {
-		struct ppm_power_tbl_data tbl = ppm_get_tlp3_power_table();
+	/* OCP is turned off by user, skip set ocp flow! */
+	if (!ocp_status_get(PPM_CLUSTER_B))
+		return limited_power;
 
-		/* We need big now! give all budget to OCP */
-		power_for_ocp = limited_power;
-		power_for_tbl_lookup = tbl.power_tbl[0].power_idx;
+	if (ppm_is_need_to_check_tlp3_table(ppm_main_info.cur_power_state, limited_power)) {
+		/* We need big now! give all budget - max_power_1L power to OCP */
+		power_for_ocp = (percentage)
+			? ((limited_power - max_power_1L) * 100 + (percentage - 1)) / percentage
+			: (limited_power - max_power_1L);
+		power_for_ocp = (power_for_ocp >= max_power_big)
+			? MAX_OCP_TARGET_POWER : power_for_ocp;
+		power_for_tbl_lookup = limited_power;
 	} else if (limited_power <= max_power_except_big) {
 		/* disable HW OCP by setting budget to 0 */
 		power_for_ocp = 0;
