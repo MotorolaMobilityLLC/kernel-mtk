@@ -97,538 +97,1052 @@ workaround */
 ********************************************************************************
 */
 
-#if 0
+#if 1
 
-static int wl_cfgvendor_gscan_get_capabilities(struct wiphy *wiphy,
-					       struct wireless_dev *wdev, const void *data, int len)
+int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy,
+		struct wireless_dev *wdev, const void *data, int data_len)
 {
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	dhd_pno_gscan_capabilities_t *reply = NULL;
-	uint32 reply_len = 0;
-
-	reply = dhd_dev_pno_get_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_GET_CAPABILITIES, NULL, &reply_len);
-	if (!reply) {
-		WL_ERR(("Could not get capabilities\n"));
-		err = -EINVAL;
-		return err;
-	}
-
-	err = wl_cfgvendor_send_cmd_reply(wiphy, bcmcfg_to_prmry_ndev(cfg), reply, reply_len);
-
-	if (unlikely(err))
-		WL_ERR(("Vendor Command reply failed ret:%d\n", err));
-
-	kfree(reply);
-	return err;
-}
-
-static int wl_cfgvendor_set_scan_cfg(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_scan_params_t *scan_param;
-	int j = 0;
-	int type, tmp, tmp1, tmp2, k = 0;
-	const struct nlattr *iter, *iter1, *iter2;
-	struct dhd_pno_gscan_channel_bucket *ch_bucket;
-
-	scan_param = kzalloc(sizeof(gscan_scan_params_t), GFP_KERNEL);
-	if (!scan_param) {
-		WL_ERR(("Could not set GSCAN scan cfg, mem alloc failure\n"));
-		err = -EINVAL;
-		return err;
-
-	}
-
-	scan_param->scan_fr = PNO_SCAN_MIN_FW_SEC;
-	nla_for_each_attr(iter, data, len, tmp) {
-		type = nla_type(iter);
-
-		if (j >= GSCAN_MAX_CH_BUCKETS)
-			break;
-
-		switch (type) {
-		case GSCAN_ATTRIBUTE_BASE_PERIOD:
-			scan_param->scan_fr = nla_get_u32(iter) / 1000;
-			break;
-		case GSCAN_ATTRIBUTE_NUM_BUCKETS:
-			scan_param->nchannel_buckets = nla_get_u32(iter);
-			break;
-		case GSCAN_ATTRIBUTE_CH_BUCKET_1:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_2:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_3:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_4:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_5:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_6:
-		case GSCAN_ATTRIBUTE_CH_BUCKET_7:
-		nla_for_each_nested(iter1, iter, tmp1) {
-			type = nla_type(iter1);
-			ch_bucket = scan_param->channel_bucket;
-
-			switch (type) {
-			case GSCAN_ATTRIBUTE_BUCKET_ID:
-				break;
-			case GSCAN_ATTRIBUTE_BUCKET_PERIOD:
-				ch_bucket[j].bucket_freq_multiple = nla_get_u32(iter1) / 1000;
-				break;
-			case GSCAN_ATTRIBUTE_BUCKET_NUM_CHANNELS:
-				ch_bucket[j].num_channels = nla_get_u32(iter1);
-				break;
-			case GSCAN_ATTRIBUTE_BUCKET_CHANNELS:
-				nla_for_each_nested(iter2, iter1, tmp2) {
-					if (k >= PFN_SWC_RSSI_WINDOW_MAX)
-						break;
-					ch_bucket[j].chan_list[k] = nla_get_u32(iter2);
-					k++;
-				}
-				k = 0;
-				break;
-			case GSCAN_ATTRIBUTE_BUCKETS_BAND:
-				ch_bucket[j].band = (uint16)
-				    nla_get_u32(iter1);
-				break;
-			case GSCAN_ATTRIBUTE_REPORT_EVENTS:
-				ch_bucket[j].report_flag = (uint8)
-				    nla_get_u32(iter1);
-				break;
-			}
-		}
-		j++;
-		break;
-		}
-	}
-
-	if (dhd_dev_pno_set_cfg_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_SCAN_CFG_ID, scan_param, 0) < 0) {
-		WL_ERR(("Could not set GSCAN scan cfg\n"));
-		err = -EINVAL;
-	}
-
-	kfree(scan_param);
-	return err;
-
-}
-
-static int wl_cfgvendor_set_batch_scan_cfg(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0, tmp, type;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_batch_params_t batch_param;
-	const struct nlattr *iter;
-
-	batch_param.mscan = batch_param.bestn = 0;
-	batch_param.buffer_threshold = GSCAN_BATCH_NO_THR_SET;
-
-	nla_for_each_attr(iter, data, len, tmp) {
-		type = nla_type(iter);
-
-		switch (type) {
-		case GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN:
-			batch_param.bestn = nla_get_u32(iter);
-			break;
-		case GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE:
-			batch_param.mscan = nla_get_u32(iter);
-			break;
-		case GSCAN_ATTRIBUTE_REPORT_THRESHOLD:
-			batch_param.buffer_threshold = nla_get_u32(iter);
-			break;
-		}
-	}
-
-	if (dhd_dev_pno_set_cfg_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_BATCH_SCAN_CFG_ID, &batch_param, 0) < 0) {
-		WL_ERR(("Could not set batch cfg\n"));
-		err = -EINVAL;
-		return err;
-	}
-
-	return err;
-}
-
-static int wl_cfgvendor_initiate_gscan(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	int type, tmp = len;
-	int run = 0xFF;
-	int flush = 0;
-	const struct nlattr *iter;
-
-	nla_for_each_attr(iter, data, len, tmp) {
-		type = nla_type(iter);
-		if (type == GSCAN_ATTRIBUTE_ENABLE_FEATURE)
-			run = nla_get_u32(iter);
-		else if (type == GSCAN_ATTRIBUTE_FLUSH_FEATURE)
-			flush = nla_get_u32(iter);
-	}
-
-	if (run != 0xFF) {
-		err = dhd_dev_pno_run_gscan(bcmcfg_to_prmry_ndev(cfg), run, flush);
-
-		if (unlikely(err))
-			WL_ERR(("Could not run gscan:%d\n", err));
-		return err;
-	} else {
-		return -1;
-	}
-
-}
-
-static int wl_cfgvendor_enable_full_scan_result(struct wiphy *wiphy,
-						struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	int type;
-	bool real_time = FALSE;
-
-	type = nla_type(data);
-
-	if (type == GSCAN_ATTRIBUTE_ENABLE_FULL_SCAN_RESULTS) {
-		real_time = nla_get_u32(data);
-
-		err = dhd_dev_pno_enable_full_scan_result(bcmcfg_to_prmry_ndev(cfg), real_time);
-
-		if (unlikely(err))
-			WL_ERR(("Could not run gscan:%d\n", err));
-
-	} else {
-		err = -1;
-	}
-
-	return err;
-}
-
-static int wl_cfgvendor_hotlist_cfg(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_hotlist_scan_params_t *hotlist_params;
-	int tmp, tmp1, tmp2, type, j = 0, dummy;
-	const struct nlattr *outer, *inner, *iter;
-	uint8 flush = 0;
-	struct bssid_t *pbssid;
-
-	hotlist_params = kzalloc(len, GFP_KERNEL);
-	if (!hotlist_params) {
-		WL_ERR(("Cannot Malloc mem to parse config commands size - %d bytes\n", len));
-		return -1;
-	}
-
-	hotlist_params->lost_ap_window = GSCAN_LOST_AP_WINDOW_DEFAULT;
-
-	nla_for_each_attr(iter, data, len, tmp2) {
-		type = nla_type(iter);
-		switch (type) {
-		case GSCAN_ATTRIBUTE_HOTLIST_BSSIDS:
-			pbssid = hotlist_params->bssid;
-			nla_for_each_nested(outer, iter, tmp) {
-				nla_for_each_nested(inner, outer, tmp1) {
-					type = nla_type(inner);
-
-					switch (type) {
-					case GSCAN_ATTRIBUTE_BSSID:
-						memcpy(&(pbssid[j].macaddr), nla_data(inner), ETHER_ADDR_LEN);
-						break;
-					case GSCAN_ATTRIBUTE_RSSI_LOW:
-						pbssid[j].rssi_reporting_threshold = (int8) nla_get_u8(inner);
-						break;
-					case GSCAN_ATTRIBUTE_RSSI_HIGH:
-						dummy = (int8) nla_get_u8(inner);
-						break;
-					}
-				}
-				j++;
-			}
-			hotlist_params->nbssid = j;
-			break;
-		case GSCAN_ATTRIBUTE_HOTLIST_FLUSH:
-			flush = nla_get_u8(iter);
-			break;
-		case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
-			hotlist_params->lost_ap_window = nla_get_u32(iter);
-			break;
-		}
-
-	}
-
-	if (dhd_dev_pno_set_cfg_gscan(bcmcfg_to_prmry_ndev(cfg),
-				      DHD_PNO_GEOFENCE_SCAN_CFG_ID, hotlist_params, flush) < 0) {
-		WL_ERR(("Could not set GSCAN HOTLIST cfg\n"));
-		err = -EINVAL;
-		goto exit;
-	}
-exit:
-	kfree(hotlist_params);
-	return err;
-}
-
-static int wl_cfgvendor_significant_change_cfg(struct wiphy *wiphy,
-					       struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_swc_params_t *significant_params;
-	int tmp, tmp1, tmp2, type, j = 0;
-	const struct nlattr *outer, *inner, *iter;
-	uint8 flush = 0;
-	wl_pfn_significant_bssid_t *pbssid;
-
-	significant_params = kzalloc(len, GFP_KERNEL);
-	if (!significant_params) {
-		WL_ERR(("Cannot Malloc mem to parse config commands size - %d bytes\n", len));
-		return -1;
-	}
-
-	nla_for_each_attr(iter, data, len, tmp2) {
-		type = nla_type(iter);
-
-		switch (type) {
-		case GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH:
-			flush = nla_get_u8(iter);
-			break;
-		case GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE:
-			significant_params->rssi_window = nla_get_u16(iter);
-			break;
-		case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
-			significant_params->lost_ap_window = nla_get_u16(iter);
-			break;
-		case GSCAN_ATTRIBUTE_MIN_BREACHING:
-			significant_params->swc_threshold = nla_get_u16(iter);
-			break;
-		case GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_BSSIDS:
-			pbssid = significant_params->bssid_elem_list;
-			nla_for_each_nested(outer, iter, tmp) {
-				nla_for_each_nested(inner, outer, tmp1) {
-					switch (nla_type(inner)) {
-					case GSCAN_ATTRIBUTE_BSSID:
-						memcpy(&(pbssid[j].macaddr), nla_data(inner), ETHER_ADDR_LEN);
-						break;
-					case GSCAN_ATTRIBUTE_RSSI_HIGH:
-						pbssid[j].rssi_high_threshold = (int8) nla_get_u8(inner);
-						break;
-					case GSCAN_ATTRIBUTE_RSSI_LOW:
-						pbssid[j].rssi_low_threshold = (int8) nla_get_u8(inner);
-						break;
-					}
-				}
-				j++;
-			}
-			break;
-		}
-	}
-	significant_params->nbssid = j;
-
-	if (dhd_dev_pno_set_cfg_gscan(bcmcfg_to_prmry_ndev(cfg),
-				      DHD_PNO_SIGNIFICANT_SCAN_CFG_ID, significant_params, flush) < 0) {
-		WL_ERR(("Could not set GSCAN significant cfg\n"));
-		err = -EINVAL;
-		goto exit;
-	}
-exit:
-	kfree(significant_params);
-	return err;
-}
-
-static int wl_cfgvendor_gscan_get_batch_results(struct wiphy *wiphy,
-						struct wireless_dev *wdev, const void *data, int len)
-{
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_results_cache_t *results, *iter;
-	uint32 reply_len, complete = 0, num_results_iter;
-	int32 mem_needed;
-	wifi_gscan_result_t *ptr;
-	uint16 num_scan_ids, num_results;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	INT_32 i4Status = -EINVAL;
+	PARAM_WIFI_GSCAN_CAPABILITIES_STRUCT_T rGscanCapabilities;
 	struct sk_buff *skb;
-	struct nlattr *scan_hdr;
+	/* UINT_32 u4BufLen; */
 
-	dhd_dev_wait_batch_results_complete(bcmcfg_to_prmry_ndev(cfg));
-	dhd_dev_pno_lock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
-	results = dhd_dev_pno_get_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_GET_BATCH_RESULTS, NULL, &reply_len);
+	DBGLOG(REQ, TRACE, "%s for vendor command \r\n", __func__);
 
-	if (!results) {
-		WL_ERR(("No results to send %d\n", err));
-		err = wl_cfgvendor_send_cmd_reply(wiphy, bcmcfg_to_prmry_ndev(cfg), results, 0);
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-		if (unlikely(err))
-			WL_ERR(("Vendor Command reply failed ret:%d\n", err));
-		dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
-		return err;
-	}
-	num_scan_ids = reply_len & 0xFFFF;
-	num_results = (reply_len & 0xFFFF0000) >> 16;
-	mem_needed = (num_results * sizeof(wifi_gscan_result_t)) +
-	    (num_scan_ids * GSCAN_BATCH_RESULT_HDR_LEN) + VENDOR_REPLY_OVERHEAD + SCAN_RESULTS_COMPLETE_FLAG_LEN;
-
-	if (mem_needed > (int32) NLMSG_DEFAULT_SIZE) {
-		mem_needed = (int32) NLMSG_DEFAULT_SIZE;
-		complete = 0;
-	} else {
-		complete = 1;
-	}
-
-	WL_TRACE(("complete %d mem_needed %d max_mem %d\n", complete, mem_needed, (int)NLMSG_DEFAULT_SIZE));
-	/* Alloc the SKB for vendor_event */
-	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, mem_needed);
-	if (unlikely(!skb)) {
-		WL_ERR(("skb alloc failed"));
-		dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(rGscanCapabilities));
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed:%x\n", __func__, i4Status);
 		return -ENOMEM;
 	}
-	iter = results;
 
-	nla_put_u32(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS_COMPLETE, complete);
+	kalMemZero(&rGscanCapabilities, sizeof(rGscanCapabilities));
 
-	mem_needed = mem_needed - (SCAN_RESULTS_COMPLETE_FLAG_LEN + VENDOR_REPLY_OVERHEAD);
+	/*rStatus = kalIoctl(prGlueInfo,
+	   wlanoidQueryStatistics,
+	   &rGscanCapabilities,
+	   sizeof(rGscanCapabilities),
+	   TRUE,
+	   TRUE,
+	   TRUE,
+	   FALSE,
+	   &u4BufLen); */
+	rGscanCapabilities.max_scan_cache_size = PSCAN_MAX_SCAN_CACHE_SIZE;
+	rGscanCapabilities.max_scan_buckets = GSCAN_MAX_BUCKETS;
+	rGscanCapabilities.max_ap_cache_per_scan = PSCAN_MAX_AP_CACHE_PER_SCAN;
+	rGscanCapabilities.max_rssi_sample_size = 10;
+	rGscanCapabilities.max_scan_reporting_threshold = GSCAN_MAX_REPORT_THRESHOLD;
+	rGscanCapabilities.max_hotlist_aps = MAX_HOTLIST_APS;
+	rGscanCapabilities.max_significant_wifi_change_aps = MAX_SIGNIFICANT_CHANGE_APS;
+	rGscanCapabilities.max_bssid_history_entries = PSCAN_MAX_AP_CACHE_PER_SCAN * PSCAN_MAX_SCAN_CACHE_SIZE;
 
-	while (iter && ((mem_needed - GSCAN_BATCH_RESULT_HDR_LEN) > 0)) {
-		scan_hdr = nla_nest_start(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS);
-		nla_put_u32(skb, GSCAN_ATTRIBUTE_SCAN_ID, iter->scan_id);
-		nla_put_u8(skb, GSCAN_ATTRIBUTE_SCAN_FLAGS, iter->flag);
-		num_results_iter = (mem_needed - GSCAN_BATCH_RESULT_HDR_LEN) / sizeof(wifi_gscan_result_t);
+	/* NLA_PUT_U8(skb, NL80211_TESTMODE_STA_STATISTICS_INVALID, 0); */
+	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_ID, GOOGLE_OUI); */
+	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_SUBCMD, GSCAN_SUBCMD_GET_CAPABILITIES); */
+	/*NLA_PUT(skb, NL80211_ATTR_VENDOR_CAPABILITIES, sizeof(rGscanCapabilities), &rGscanCapabilities);*/
+	if (unlikely(nla_put(skb, NL80211_ATTR_VENDOR_CAPABILITIES,
+		sizeof(rGscanCapabilities), &rGscanCapabilities) < 0))
+		goto nla_put_failure;
 
-		if ((iter->tot_count - iter->tot_consumed) < num_results_iter)
-			num_results_iter = iter->tot_count - iter->tot_consumed;
 
-		nla_put_u32(skb, GSCAN_ATTRIBUTE_NUM_OF_RESULTS, num_results_iter);
-		if (num_results_iter) {
-			ptr = &iter->results[iter->tot_consumed];
-			iter->tot_consumed += num_results_iter;
-			nla_put(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS, num_results_iter * sizeof(wifi_gscan_result_t), ptr);
-		}
-		nla_nest_end(skb, scan_hdr);
-		mem_needed -= GSCAN_BATCH_RESULT_HDR_LEN + (num_results_iter * sizeof(wifi_gscan_result_t));
-		iter = iter->next;
-	}
+	i4Status = cfg80211_vendor_cmd_reply(skb);
 
-	dhd_dev_gscan_batch_cache_cleanup(bcmcfg_to_prmry_ndev(cfg));
-	dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
-
-	return cfg80211_vendor_cmd_reply(skb);
+nla_put_failure:
+	return i4Status;
 }
 
-static int wl_cfgvendor_gscan_get_channel_list(struct wiphy *wiphy,
-					       struct wireless_dev *wdev, const void *data, int len)
+int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy,
+		struct wireless_dev *wdev, const void *data, int data_len)
 {
-	int err = 0, type, band;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	uint16 *reply = NULL;
-	uint32 reply_len = 0, num_channels, mem_needed;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	INT_32 i4Status = -EINVAL;
+	PARAM_WIFI_RTT_CAPABILITIES rRttCapabilities;
 	struct sk_buff *skb;
 
-	type = nla_type(data);
+	DBGLOG(REQ, TRACE, "%s for vendor command \r\n", __func__);
 
-	if (type == GSCAN_ATTRIBUTE_BAND)
-		band = nla_get_u32(data);
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(rRttCapabilities));
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed:%x\n", __func__, i4Status);
+		return -ENOMEM;
+	}
+
+	kalMemZero(&rRttCapabilities, sizeof(rRttCapabilities));
+
+	/*rStatus = kalIoctl(prGlueInfo,
+	   wlanoidQueryStatistics,
+	   &rRttCapabilities,
+	   sizeof(rRttCapabilities),
+	   TRUE,
+	   TRUE,
+	   TRUE,
+	   FALSE,
+	   &u4BufLen); */
+	rRttCapabilities.rtt_one_sided_supported = 0;
+	rRttCapabilities.rtt_ftm_supported = 0;
+	rRttCapabilities.lci_support = 0;
+	rRttCapabilities.lcr_support = 0;
+	rRttCapabilities.preamble_support = 0;
+	rRttCapabilities.bw_support = 0;
+
+	if (unlikely(nla_put(skb, RTT_ATTRIBUTE_CAPABILITIES,
+		sizeof(rRttCapabilities), &rRttCapabilities) < 0))
+		goto nla_put_failure;
+
+
+	i4Status = cfg80211_vendor_cmd_reply(skb);
+
+nla_put_failure:
+	return i4Status;
+}
+
+
+static struct nla_policy nla_parse_policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
+	[GSCAN_ATTRIBUTE_NUM_BUCKETS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BASE_PERIOD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKETS_BAND] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_ID] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_PERIOD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_NUM_CHANNELS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_CHANNELS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_REPORT_THRESHOLD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_REPORT_EVENTS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BSSID] = {.type = NLA_UNSPEC},
+	[GSCAN_ATTRIBUTE_RSSI_LOW] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_RSSI_HIGH] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_MIN_BREACHING] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_NUM_AP] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_HOTLIST_FLUSH] = {.type = NLA_U8},
+	[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH] = {.type = NLA_U8},
+};
+
+int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	/* CMD_GSCN_REQ_T rCmdGscnParam; */
+
+	/* INT_32 i4Status = -EINVAL; */
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd;
+	struct nlattr *attr[GSCAN_ATTRIBUTE_REPORT_EVENTS + 1];
+	struct nlattr *pbucket, *pchannel;
+	UINT_32 len_basic, len_bucket, len_channel;
+	int i, j, k;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+
+	prWifiScanCmd = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), VIR_MEM_TYPE);
+	if (!prWifiScanCmd) {
+		DBGLOG(REQ, ERROR, "Can not alloc memory for PARAM_WIFI_GSCAN_CMD_PARAMS\n");
+		return -ENOMEM;
+	}
+
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
+	kalMemZero(prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
+	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_REPORT_EVENTS + 1));
+
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
+	len_basic = 0;
+	for (k = GSCAN_ATTRIBUTE_NUM_BUCKETS; k <= GSCAN_ATTRIBUTE_REPORT_EVENTS; k++) {
+		if (attr[k]) {
+			switch (k) {
+			case GSCAN_ATTRIBUTE_BASE_PERIOD:
+				prWifiScanCmd->base_period = nla_get_u32(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_NUM_BUCKETS:
+				prWifiScanCmd->num_buckets = nla_get_u32(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				DBGLOG(REQ, TRACE, "attr=0x%x, num_buckets=%d nla_len=%d, \r\n",
+				       *(UINT_32 *) attr[k], prWifiScanCmd->num_buckets, attr[k]->nla_len);
+				break;
+			}
+		}
+	}
+	pbucket = (struct nlattr *)((UINT_8 *) data + len_basic);
+	DBGLOG(REQ, TRACE, "+++basic attribute size=%d pbucket=%p\r\n", len_basic, pbucket);
+
+	for (i = 0; i < prWifiScanCmd->num_buckets; i++) {
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)pbucket, nla_parse_policy);
+		len_bucket = 0;
+		for (k = GSCAN_ATTRIBUTE_NUM_BUCKETS; k <= GSCAN_ATTRIBUTE_REPORT_EVENTS; k++) {
+			if (attr[k]) {
+				switch (k) {
+				case GSCAN_ATTRIBUTE_BUCKETS_BAND:
+					prWifiScanCmd->buckets[i].band = nla_get_u32(attr[k]);
+					len_bucket += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_BUCKET_ID:
+					prWifiScanCmd->buckets[i].bucket = nla_get_u32(attr[k]);
+					len_bucket += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_BUCKET_PERIOD:
+					prWifiScanCmd->buckets[i].period = nla_get_u32(attr[k]);
+					len_bucket += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_REPORT_EVENTS:
+					prWifiScanCmd->buckets[i].report_events = nla_get_u32(attr[k]);
+					len_bucket += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_BUCKET_NUM_CHANNELS:
+					prWifiScanCmd->buckets[i].num_channels = nla_get_u32(attr[k]);
+					len_bucket += NLA_ALIGN(attr[k]->nla_len);
+					DBGLOG(REQ, TRACE, "bucket%d: attr=0x%x, num_channels=%d nla_len = %d, \r\n",
+					       i, *(UINT_32 *) attr[k], nla_get_u32(attr[k]), attr[k]->nla_len);
+					break;
+				}
+			}
+		}
+		pbucket = (struct nlattr *)((UINT_8 *) pbucket + NLA_HDRLEN);
+		/* request.attr_start(i) as nested attribute */
+		DBGLOG(REQ, TRACE, "+++pure bucket size=%d pbucket=%p \r\n", len_bucket, pbucket);
+		pbucket = (struct nlattr *)((UINT_8 *) pbucket + len_bucket);
+		/* pure bucket payload, not include channels */
+
+		/*don't need to use nla_parse_nested to parse channels */
+		/* the header of channel in bucket i */
+		pchannel = (struct nlattr *)((UINT_8 *) pbucket + NLA_HDRLEN);
+		for (j = 0; j < prWifiScanCmd->buckets[i].num_channels; j++) {
+			prWifiScanCmd->buckets[i].channels[j].channel = nla_get_u32(pchannel);
+			len_channel = NLA_ALIGN(pchannel->nla_len);
+			DBGLOG(REQ, TRACE,
+				"attr=0x%x, channel=%d, \r\n", *(UINT_32 *) pchannel, nla_get_u32(pchannel));
+
+			pchannel = (struct nlattr *)((UINT_8 *) pchannel + len_channel);
+		}
+		pbucket = pchannel;
+	}
+
+	DBGLOG(REQ, TRACE, "base_period=%d, num_buckets=%d, bucket0: %d %d %d %d",
+		prWifiScanCmd->base_period, prWifiScanCmd->num_buckets,
+		prWifiScanCmd->buckets[0].bucket, prWifiScanCmd->buckets[0].period,
+		prWifiScanCmd->buckets[0].band, prWifiScanCmd->buckets[0].report_events);
+
+	DBGLOG(REQ, TRACE, "num_channels=%d, channel0=%d, channel1=%d; num_channels=%d, channel0=%d, channel1=%d",
+		prWifiScanCmd->buckets[0].num_channels,
+		prWifiScanCmd->buckets[0].channels[0].channel, prWifiScanCmd->buckets[0].channels[1].channel,
+		prWifiScanCmd->buckets[1].num_channels,
+		prWifiScanCmd->buckets[1].channels[0].channel, prWifiScanCmd->buckets[1].channels[1].channel);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetGSCNAParam,
+			   prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+
+	INT_32 i4Status = -EINVAL;
+	/*PARAM_WIFI_GSCAN_CMD_PARAMS rWifiScanCmd;*/
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd;
+	struct nlattr *attr[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1];
+	/* UINT_32 num_scans = 0; */	/* another attribute */
+	int k;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
+	/*kalMemZero(&rWifiScanCmd, sizeof(rWifiScanCmd));*/
+	prWifiScanCmd = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), VIR_MEM_TYPE);
+	if (prWifiScanCmd == NULL)
+		goto nla_put_failure;
+
+	kalMemZero(prWifiScanCmd, sizeof(*prWifiScanCmd));
+	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1));
+
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
+	for (k = GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN; k <= GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE; k++) {
+		if (attr[k]) {
+			switch (k) {
+			case GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN:
+				prWifiScanCmd->max_ap_per_scan = nla_get_u32(attr[k]);
+				break;
+			case GSCAN_ATTRIBUTE_REPORT_THRESHOLD:
+				prWifiScanCmd->report_threshold = nla_get_u32(attr[k]);
+				break;
+			case GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE:
+				prWifiScanCmd->num_scans = nla_get_u32(attr[k]);
+				break;
+			}
+		}
+	}
+	DBGLOG(REQ, TRACE, "attr=0x%x, attr2=0x%x ", *(UINT_32 *) attr[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN],
+	       *(UINT_32 *) attr[GSCAN_ATTRIBUTE_REPORT_THRESHOLD]);
+
+	DBGLOG(REQ, TRACE, "max_ap_per_scan=%d, report_threshold=%d num_scans=%d \r\n",
+	       prWifiScanCmd->max_ap_per_scan, prWifiScanCmd->report_threshold, prWifiScanCmd->num_scans);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetGSCNAConfig,
+			   prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	kalMemFree(prWifiScanCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
+	return 0;
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wireless_dev *wdev,
+					       const void *data, int data_len)
+{
+	INT_32 i4Status = -EINVAL;
+	PARAM_WIFI_SIGNIFICANT_CHANGE rWifiChangeCmd;
+	UINT_8 flush = 0;
+	struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1];
+	struct nlattr *paplist;
+	int i, k;
+	UINT_32 len_basic, len_aplist;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
+	for (i = 0; i < 6; i++)
+		DBGLOG(REQ, LOUD, "0x%x 0x%x 0x%x 0x%x \r\n",
+			*((UINT_32 *) data + i * 4), *((UINT_32 *) data + i * 4 + 1),
+			*((UINT_32 *) data + i * 4 + 2), *((UINT_32 *) data + i * 4 + 3));
+	kalMemZero(&rWifiChangeCmd, sizeof(rWifiChangeCmd));
+	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
+
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
+	len_basic = 0;
+	for (k = GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE; k <= GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH; k++) {
+		if (attr[k]) {
+			switch (k) {
+			case GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE:
+				rWifiChangeCmd.rssi_sample_size = nla_get_u16(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
+				rWifiChangeCmd.lost_ap_sample_size = nla_get_u16(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_MIN_BREACHING:
+				rWifiChangeCmd.min_breaching = nla_get_u16(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_NUM_AP:
+				rWifiChangeCmd.num_ap = nla_get_u16(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				DBGLOG(REQ, TRACE, "attr=0x%x, num_ap=%d nla_len=%d, \r\n",
+				       *(UINT_32 *) attr[k], rWifiChangeCmd.num_ap, attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH:
+				flush = nla_get_u8(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			}
+		}
+	}
+	paplist = (struct nlattr *)((UINT_8 *) data + len_basic);
+	DBGLOG(REQ, TRACE, "+++basic attribute size=%d flush=%d\r\n", len_basic, flush);
+
+	if (paplist->nla_type == GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_BSSIDS)
+		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
+
+	for (i = 0; i < rWifiChangeCmd.num_ap; i++) {
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
+		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
+		/* request.attr_start(i) as nested attribute */
+		len_aplist = 0;
+		for (k = GSCAN_ATTRIBUTE_BSSID; k <= GSCAN_ATTRIBUTE_RSSI_HIGH; k++) {
+			if (attr[k]) {
+				switch (k) {
+				case GSCAN_ATTRIBUTE_BSSID:
+					kalMemCopy(rWifiChangeCmd.ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_RSSI_LOW:
+					rWifiChangeCmd.ap[i].low = nla_get_u32(attr[k]);
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_RSSI_HIGH:
+					rWifiChangeCmd.ap[i].high = nla_get_u32(attr[k]);
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				}
+			}
+		}
+		if (((i + 1) % 4 == 0) || (i == rWifiChangeCmd.num_ap - 1))
+			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d\n", i, len_aplist);
+		else
+			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d \t", i, len_aplist);
+		paplist = (struct nlattr *)((UINT_8 *) paplist + len_aplist);
+	}
+
+	DBGLOG(REQ, TRACE,
+		"flush=%d, rssi_sample_size=%d lost_ap_sample_size=%d min_breaching=%d",
+		flush, rWifiChangeCmd.rssi_sample_size, rWifiChangeCmd.lost_ap_sample_size,
+		rWifiChangeCmd.min_breaching);
+	DBGLOG(REQ, TRACE,
+		"ap[0].channel=%d low=%d high=%d, ap[1].channel=%d low=%d high=%d",
+		rWifiChangeCmd.ap[0].channel, rWifiChangeCmd.ap[0].low, rWifiChangeCmd.ap[0].high,
+		rWifiChangeCmd.ap[1].channel, rWifiChangeCmd.ap[1].low, rWifiChangeCmd.ap[1].high);
+	return 0;
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	/*WLAN_STATUS rStatus;*/
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	CMD_SET_PSCAN_ADD_HOTLIST_BSSID rCmdPscnAddHotlist;
+
+	INT_32 i4Status = -EINVAL;
+	PARAM_WIFI_BSSID_HOTLIST rWifiHotlistCmd;
+	UINT_8 flush = 0;
+	struct nlattr *attr[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1];
+	struct nlattr *paplist;
+	int i, k;
+	UINT_32 len_basic, len_aplist;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
+	for (i = 0; i < 5; i++)
+		DBGLOG(REQ, LOUD, "0x%x 0x%x 0x%x 0x%x \r\n",
+			*((UINT_32 *) data + i * 4), *((UINT_32 *) data + i * 4 + 1),
+			*((UINT_32 *) data + i * 4 + 2), *((UINT_32 *) data + i * 4 + 3));
+	kalMemZero(&rWifiHotlistCmd, sizeof(rWifiHotlistCmd));
+	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
+
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_AP, (struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
+	len_basic = 0;
+	for (k = GSCAN_ATTRIBUTE_HOTLIST_FLUSH; k <= GSCAN_ATTRIBUTE_NUM_AP; k++) {
+		if (attr[k]) {
+			switch (k) {
+			case GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE:
+				rWifiHotlistCmd.lost_ap_sample_size = nla_get_u32(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_NUM_AP:
+				rWifiHotlistCmd.num_ap = nla_get_u16(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				DBGLOG(REQ, TRACE, "attr=0x%x, num_ap=%d nla_len=%d, \r\n",
+				       *(UINT_32 *) attr[k], rWifiHotlistCmd.num_ap, attr[k]->nla_len);
+				break;
+			case GSCAN_ATTRIBUTE_HOTLIST_FLUSH:
+				flush = nla_get_u8(attr[k]);
+				len_basic += NLA_ALIGN(attr[k]->nla_len);
+				break;
+			}
+		}
+	}
+	paplist = (struct nlattr *)((UINT_8 *) data + len_basic);
+	DBGLOG(REQ, TRACE, "+++basic attribute size=%d flush=%d\r\n", len_basic, flush);
+
+	if (paplist->nla_type == GSCAN_ATTRIBUTE_HOTLIST_BSSIDS)
+		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
+
+	for (i = 0; i < rWifiHotlistCmd.num_ap; i++) {
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
+		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
+		/* request.attr_start(i) as nested attribute */
+		len_aplist = 0;
+		for (k = GSCAN_ATTRIBUTE_BSSID; k <= GSCAN_ATTRIBUTE_RSSI_HIGH; k++) {
+			if (attr[k]) {
+				switch (k) {
+				case GSCAN_ATTRIBUTE_BSSID:
+					kalMemCopy(rWifiHotlistCmd.ap[i].bssid, nla_data(attr[k]), sizeof(mac_addr));
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_RSSI_LOW:
+					rWifiHotlistCmd.ap[i].low = nla_get_u32(attr[k]);
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				case GSCAN_ATTRIBUTE_RSSI_HIGH:
+					rWifiHotlistCmd.ap[i].high = nla_get_u32(attr[k]);
+					len_aplist += NLA_ALIGN(attr[k]->nla_len);
+					break;
+				}
+			}
+		}
+		if (((i + 1) % 4 == 0) || (i == rWifiHotlistCmd.num_ap - 1))
+			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d\n", i, len_aplist);
+		else
+			DBGLOG(REQ, TRACE, "ap[%d], len_aplist=%d \t", i, len_aplist);
+		paplist = (struct nlattr *)((UINT_8 *) paplist + len_aplist);
+	}
+
+	DBGLOG(REQ, TRACE,
+	"flush=%d, lost_ap_sample_size=%d, Hotlist:ap[0].channel=%d low=%d high=%d, ap[1].channel=%d low=%d high=%d",
+		flush, rWifiHotlistCmd.lost_ap_sample_size,
+		rWifiHotlistCmd.ap[0].channel, rWifiHotlistCmd.ap[0].low, rWifiHotlistCmd.ap[0].high,
+		rWifiHotlistCmd.ap[1].channel, rWifiHotlistCmd.ap[1].low, rWifiHotlistCmd.ap[1].high);
+
+	memcpy(&(rCmdPscnAddHotlist.aucMacAddr), &(rWifiHotlistCmd.ap[0].bssid), 6 * sizeof(UINT_8));
+	rCmdPscnAddHotlist.ucFlags = (UINT_8) TRUE;
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	return 0;
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_enable_scan(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	PARAM_WIFI_GSCAN_ACTION_CMD_PARAMS rWifiScanActionCmd;
+
+	INT_32 i4Status = -EINVAL;
+	struct nlattr *attr;
+	UINT_8 gGScanEn = 0;
+
+	static UINT_8 k; /* only for test */
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d, data=0x%x 0x%x\r\n",
+	       __func__, data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1));
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == GSCAN_ATTRIBUTE_ENABLE_FEATURE)
+		gGScanEn = nla_get_u32(attr);
+	DBGLOG(REQ, INFO, "gGScanEn=%d, \r\n", gGScanEn);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+	if (gGScanEn == TRUE)
+		rWifiScanActionCmd.ucPscanAct = ENABLE;
 	else
-		return -1;
+		rWifiScanActionCmd.ucPscanAct = DISABLE;
 
-	reply = dhd_dev_pno_get_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_GET_CHANNEL_LIST, &band, &reply_len);
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetGSCNAction,
+			   &rWifiScanActionCmd,
+			   sizeof(PARAM_WIFI_GSCAN_ACTION_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 
-	if (!reply) {
-		WL_ERR(("Could not get channel list\n"));
-		err = -EINVAL;
-		return err;
+	/* mtk_cfg80211_vendor_get_scan_results(wiphy, wdev, data, data_len ); */
+
+	return 0;
+
+	/* only for test */
+	if (k % 3 == 1) {
+		mtk_cfg80211_vendor_event_significant_change_results(wiphy, wdev, NULL, 0);
+		mtk_cfg80211_vendor_event_hotlist_ap_found(wiphy, wdev, NULL, 0);
+		mtk_cfg80211_vendor_event_hotlist_ap_lost(wiphy, wdev, NULL, 0);
 	}
-	num_channels = reply_len / sizeof(uint32);
-	mem_needed = reply_len + VENDOR_REPLY_OVERHEAD + (ATTRIBUTE_U32_LEN * 2);
+	k++;
 
-	/* Alloc the SKB for vendor_event */
-	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, mem_needed);
-	if (unlikely(!skb)) {
-		WL_ERR(("skb alloc failed"));
-		err = -ENOMEM;
-		goto exit;
-	}
+	return 0;
 
-	nla_put_u32(skb, GSCAN_ATTRIBUTE_NUM_CHANNELS, num_channels);
-	nla_put(skb, GSCAN_ATTRIBUTE_CHANNEL_LIST, reply_len, reply);
-
-	err = cfg80211_vendor_cmd_reply(skb);
-
-	if (unlikely(err))
-		WL_ERR(("Vendor Command reply failed ret:%d\n", err));
-exit:
-	kfree(reply);
-	return err;
+nla_put_failure:
+	return i4Status;
 }
 
-static int wl_cfgvendor_gscan_get_batch_results(struct wiphy *wiphy,
-						struct wireless_dev *wdev, const void *data, int len)
+int mtk_cfg80211_vendor_enable_full_scan_results(struct wiphy *wiphy, struct wireless_dev *wdev,
+						 const void *data, int data_len)
 {
-	int err = 0;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-	gscan_results_cache_t *results, *iter;
-	uint32 reply_len, complete = 0, num_results_iter;
-	int32 mem_needed;
-	wifi_gscan_result_t *ptr;
-	uint16 num_scan_ids, num_results;
+	INT_32 i4Status = -EINVAL;
+	struct nlattr *attr;
+	UINT_8 gFullScanResultsEn = 0;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d, data=0x%x 0x%x\r\n",
+	       __func__, data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1));
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == GSCAN_ENABLE_FULL_SCAN_RESULTS)
+		gFullScanResultsEn = nla_get_u32(attr);
+	DBGLOG(REQ, INFO, "gFullScanResultsEn=%d, \r\n", gFullScanResultsEn);
+
+	return 0;
+
+	/* only for test */
+	mtk_cfg80211_vendor_event_complete_scan(wiphy, wdev, WIFI_SCAN_COMPLETE);
+	mtk_cfg80211_vendor_event_scan_results_available(wiphy, wdev, 4);
+	if (gFullScanResultsEn == TRUE)
+		mtk_cfg80211_vendor_event_full_scan_results(wiphy, wdev, NULL, 0);
+
+	return 0;
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_get_scan_results(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	/*WLAN_STATUS rStatus;*/
+	UINT_32 u4BufLen;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	PARAM_WIFI_GSCAN_GET_RESULT_PARAMS rGSscnResultParm;
+
+	INT_32 i4Status = -EINVAL;
+	struct nlattr *attr;
+	UINT_32 get_num = 0, real_num = 0;
+	UINT_8 flush = 0;
+	/*PARAM_WIFI_GSCAN_RESULT result[4], *pResult;
+	struct sk_buff *skb;*/
+	int i; /*int j;*/
+	/*UINT_32 scan_id;*/
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, TRACE, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
+	for (i = 0; i < 2; i++)
+		DBGLOG(REQ, LOUD, "0x%x 0x%x 0x%x 0x%x \r\n", *((UINT_32 *) data + i * 4),
+			*((UINT_32 *) data + i * 4 + 1), *((UINT_32 *) data + i * 4 + 2),
+			*((UINT_32 *) data + i * 4 + 3));
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == GSCAN_ATTRIBUTE_NUM_OF_RESULTS) {
+		get_num = nla_get_u32(attr);
+		attr = (struct nlattr *)((UINT_8 *) attr + attr->nla_len);
+	}
+	if (attr->nla_type == GSCAN_ATTRIBUTE_FLUSH_RESULTS) {
+		flush = nla_get_u8(attr);
+		attr = (struct nlattr *)((UINT_8 *) attr + attr->nla_len);
+	}
+	DBGLOG(REQ, TRACE, "number=%d, flush=%d \r\n", get_num, flush);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	real_num = (get_num < PSCAN_MAX_SCAN_CACHE_SIZE) ? get_num : PSCAN_MAX_SCAN_CACHE_SIZE;
+	get_num = real_num;
+
+#if 0	/* driver buffer FW results and reports by buffer workaround for FW mismatch with hal results numbers */
+	g_GetResultsCmdCnt++;
+	DBGLOG(REQ, INFO,
+	       "(g_GetResultsCmdCnt [%d], g_GetResultsBufferedCnt [%d]\n", g_GetResultsCmdCnt,
+		g_GetResultsBufferedCnt);
+
+	BOOLEAN fgIsGetResultFromBuffer = FALSE;
+	UINT_8 BufferedResultReportIndex = 0;
+
+	if (g_GetResultsBufferedCnt > 0) {
+
+		DBGLOG(REQ, INFO,
+		       "(g_GetResultsBufferedCnt > 0), report buffered results instead of ask from FW\n");
+
+		/* reply the results to wifi_hal  */
+		for (i = 0; i < MAX_BUFFERED_GSCN_RESULTS; i++) {
+
+			if (g_arGscanResultsIndicateNumber[i] > 0) {
+				real_num = g_arGscanResultsIndicateNumber[i];
+				get_num = real_num;
+				g_arGscanResultsIndicateNumber[i] = 0;
+				fgIsGetResultFromBuffer = TRUE;
+				BufferedResultReportIndex = i;
+				break;
+			}
+		}
+		if (i == MAX_BUFFERED_GSCN_RESULTS)
+			DBGLOG(REQ, TRACE, "all buffered results are invalid, unexpected case \r\n");
+		DBGLOG(REQ, TRACE, "BufferedResultReportIndex[%d] i = %d real_num[%d] get_num[%d] \r\n",
+			BufferedResultReportIndex, i, real_num, get_num);
+	}
+#endif
+
+	rGSscnResultParm.get_num = get_num;
+	rGSscnResultParm.flush = flush;
+#if 0/* //driver buffer FW results and reports by buffer workaround for FW results mismatch with hal results number */
+	if (fgIsGetResultFromBuffer) {
+		nicRxProcessGSCNEvent(prGlueInfo->prAdapter, g_arGscnResultsTempBuffer[BufferedResultReportIndex]);
+		g_GetResultsBufferedCnt--;
+		g_GetResultsCmdCnt--;
+		nicRxReturnRFB(prGlueInfo->prAdapter, g_arGscnResultsTempBuffer[BufferedResultReportIndex]);
+	} else
+#endif
+	{
+		kalIoctl(prGlueInfo,
+			 wlanoidGetGSCNResult,
+			 &rGSscnResultParm,
+			 sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	}
+	return 0;
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	INT_32 i4Status = -EINVAL;
+	struct nlattr *attr;
+	UINT_32 band = 0;
+	UINT_32 num_channel;
+	wifi_channel channels[4];
 	struct sk_buff *skb;
-	struct nlattr *scan_hdr;
 
-	dhd_dev_wait_batch_results_complete(bcmcfg_to_prmry_ndev(cfg));
-	dhd_dev_pno_lock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
-	results = dhd_dev_pno_get_gscan(bcmcfg_to_prmry_ndev(cfg), DHD_PNO_GET_BATCH_RESULTS, NULL, &reply_len);
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
 
-	if (!results) {
-		WL_ERR(("No results to send %d\n", err));
-		err = wl_cfgvendor_send_cmd_reply(wiphy, bcmcfg_to_prmry_ndev(cfg), results, 0);
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == GSCAN_ATTRIBUTE_BAND)
+		band = nla_get_u32(attr);
+	DBGLOG(REQ, INFO, "get channel list: band=%d \r\n", band);
 
-		if (unlikely(err))
-			WL_ERR(("Vendor Command reply failed ret:%d\n", err));
-		dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
-		return err;
-	}
-	num_scan_ids = reply_len & 0xFFFF;
-	num_results = (reply_len & 0xFFFF0000) >> 16;
-	mem_needed = (num_results * sizeof(wifi_gscan_result_t)) +
-	    (num_scan_ids * GSCAN_BATCH_RESULT_HDR_LEN) + VENDOR_REPLY_OVERHEAD + SCAN_RESULTS_COMPLETE_FLAG_LEN;
-
-	if (mem_needed > (int32) NLMSG_DEFAULT_SIZE) {
-		mem_needed = (int32) NLMSG_DEFAULT_SIZE;
-		complete = 0;
-	} else {
-		complete = 1;
-	}
-
-	WL_TRACE(("complete %d mem_needed %d max_mem %d\n", complete, mem_needed, (int)NLMSG_DEFAULT_SIZE));
-	/* Alloc the SKB for vendor_event */
-	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, mem_needed);
-	if (unlikely(!skb)) {
-		WL_ERR(("skb alloc failed"));
-		dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(wifi_channel) * 4);
+	if (!skb) {
+		DBGLOG(REQ, TRACE, "%s allocate skb failed:%x\n", __func__, i4Status);
 		return -ENOMEM;
 	}
-	iter = results;
 
-	nla_put_u32(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS_COMPLETE, complete);
+	kalMemZero(channels, sizeof(wifi_channel) * 4);
+	/*rStatus = kalIoctl(prGlueInfo,
+	   wlanoidQueryStatistics,
+	   &channel,
+	   sizeof(channel),
+	   TRUE,
+	   TRUE,
+	   TRUE,
+	   FALSE,
+	   &u4BufLen); */
 
-	mem_needed = mem_needed - (SCAN_RESULTS_COMPLETE_FLAG_LEN + VENDOR_REPLY_OVERHEAD);
+	/* only for test */
+	num_channel = 3;
+	channels[0] = 2412;
+	channels[1] = 2413;
+	channels[2] = 2414;
+	/*NLA_PUT_U32(skb, GSCAN_ATTRIBUTE_NUM_CHANNELS, num_channel);*/
+	{
+		unsigned int __tmp = num_channel;
 
-	while (iter && ((mem_needed - GSCAN_BATCH_RESULT_HDR_LEN) > 0)) {
-		scan_hdr = nla_nest_start(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS);
-		nla_put_u32(skb, GSCAN_ATTRIBUTE_SCAN_ID, iter->scan_id);
-		nla_put_u8(skb, GSCAN_ATTRIBUTE_SCAN_FLAGS, iter->flag);
-		num_results_iter = (mem_needed - GSCAN_BATCH_RESULT_HDR_LEN) / sizeof(wifi_gscan_result_t);
-
-		if ((iter->tot_count - iter->tot_consumed) < num_results_iter)
-			num_results_iter = iter->tot_count - iter->tot_consumed;
-
-		nla_put_u32(skb, GSCAN_ATTRIBUTE_NUM_OF_RESULTS, num_results_iter);
-		if (num_results_iter) {
-			ptr = &iter->results[iter->tot_consumed];
-			iter->tot_consumed += num_results_iter;
-			nla_put(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS, num_results_iter * sizeof(wifi_gscan_result_t), ptr);
-		}
-		nla_nest_end(skb, scan_hdr);
-		mem_needed -= GSCAN_BATCH_RESULT_HDR_LEN + (num_results_iter * sizeof(wifi_gscan_result_t));
-		iter = iter->next;
+		if (unlikely(nla_put(skb, GSCAN_ATTRIBUTE_NUM_CHANNELS,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
 	}
 
-	dhd_dev_gscan_batch_cache_cleanup(bcmcfg_to_prmry_ndev(cfg));
-	dhd_dev_pno_unlock_access_batch_results(bcmcfg_to_prmry_ndev(cfg));
+	/*NLA_PUT(skb, GSCAN_ATTRIBUTE_CHANNEL_LIST, (sizeof(wifi_channel) * num_channel), channels);*/
+	if (unlikely(nla_put(skb, GSCAN_ATTRIBUTE_CHANNEL_LIST,
+		(sizeof(wifi_channel) * num_channel), channels) < 0))
+		goto nla_put_failure;
 
-	return cfg80211_vendor_cmd_reply(skb);
+
+	i4Status = cfg80211_vendor_cmd_reply(skb);
+
+nla_put_failure:
+	return i4Status;
 }
+
+int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	INT_32 i4Status = -EINVAL;
+	WIFI_RADIO_STAT *pRadioStat;
+	struct sk_buff *skb;
+	UINT_32 u4BufLen;
+
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+
+	u4BufLen = sizeof(WIFI_RADIO_STAT) + sizeof(WIFI_IFACE_STAT);
+	pRadioStat = kalMemAlloc(u4BufLen, VIR_MEM_TYPE);
+	if (!pRadioStat) {
+		DBGLOG(REQ, ERROR, "%s kalMemAlloc pRadioStat failed\n", __func__);
+		return -ENOMEM;
+	}
+	kalMemZero(pRadioStat, u4BufLen);
+
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, u4BufLen);
+	if (!skb) {
+		DBGLOG(REQ, TRACE, "%s allocate skb failed:%x\n", __func__, i4Status);
+		return -ENOMEM;
+	}
+
+	/*rStatus = kalIoctl(prGlueInfo,
+	   wlanoidQueryStatistics,
+	   &rRadioStat,
+	   sizeof(rRadioStat),
+	   TRUE,
+	   TRUE,
+	   TRUE,
+	   FALSE,
+	   &u4BufLen); */
+	/* only for test */
+	pRadioStat->radio = 10;
+	pRadioStat->on_time = 11;
+	pRadioStat->tx_time = 12;
+	pRadioStat->num_channels = 4;
+
+	/*NLA_PUT(skb, NL80211_ATTR_VENDOR_LLSTAT, u4BufLen, pRadioStat);*/
+	if (unlikely(nla_put(skb, NL80211_ATTR_VENDOR_LLSTAT,
+		u4BufLen, pRadioStat) < 0))
+		goto nla_put_failure;
+
+
+	i4Status = cfg80211_vendor_cmd_reply(skb);
+
+	kalMemFree(pRadioStat, VIR_MEM_TYPE, u4BufLen);
+
+nla_put_failure:
+	return i4Status;
+}
+
+int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless_dev *wdev, WIFI_SCAN_EVENT complete)
+{
+	struct sk_buff *skb;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	/* WIFI_SCAN_EVENT complete_scan; */
+
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(complete), GSCAN_EVENT_COMPLETE_SCAN, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+	/* complete_scan = WIFI_SCAN_COMPLETE; */
+	/*NLA_PUT_U32(skb, GSCAN_EVENT_COMPLETE_SCAN, complete);*/
+	{
+		unsigned int __tmp = complete;
+
+		if (unlikely(nla_put(skb, GSCAN_EVENT_COMPLETE_SCAN,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_event_scan_results_available(struct wiphy *wiphy, struct wireless_dev *wdev, UINT_32 num)
+{
+	struct sk_buff *skb;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	/* UINT_32 scan_result; */
+
+	DBGLOG(REQ, INFO, "%s for vendor command %d  \r\n", __func__, num);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(num), GSCAN_EVENT_SCAN_RESULTS_AVAILABLE, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+	/* scan_result = 2; */
+	/*NLA_PUT_U32(skb, GSCAN_EVENT_SCAN_RESULTS_AVAILABLE, num);*/
+	{
+		unsigned int __tmp = num;
+
+		if (unlikely(nla_put(skb, GSCAN_EVENT_SCAN_RESULTS_AVAILABLE,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wireless_dev *wdev,
+						P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len)
+{
+	struct sk_buff *skb;
+	PARAM_WIFI_GSCAN_RESULT result;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(result), GSCAN_EVENT_FULL_SCAN_RESULTS, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+
+	kalMemZero(&result, sizeof(result));
+	kalMemCopy(result.ssid, "Gscan_full_test", sizeof("Gscan_full_test"));
+	result.channel = 2437;
+
+	/* kalMemCopy(&result, pdata, sizeof(PARAM_WIFI_GSCAN_RESULT); */
+	/*NLA_PUT(skb, GSCAN_EVENT_FULL_SCAN_RESULTS, sizeof(result), &result);*/
+	if (unlikely(nla_put(skb, GSCAN_EVENT_FULL_SCAN_RESULTS,
+		sizeof(result), &result) < 0))
+		goto nla_put_failure;
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_event_significant_change_results(struct wiphy *wiphy, struct wireless_dev *wdev,
+							 P_PARAM_WIFI_CHANGE_RESULT pdata, UINT_32 data_len)
+{
+	struct sk_buff *skb;
+	PARAM_WIFI_CHANGE_RESULT result[2], *presult;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(PARAM_WIFI_CHANGE_RESULT),
+					  GSCAN_EVENT_SIGNIFICANT_CHANGE_RESULTS, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+
+	presult = result;
+	kalMemZero(presult, (sizeof(PARAM_WIFI_CHANGE_RESULT) * 2));
+	/* only for test */
+	kalMemCopy(presult->bssid, "213123", sizeof(mac_addr));
+	presult->channel = 2437;
+	presult->rssi[0] = -45;
+	presult->rssi[1] = -46;
+	presult++;
+	presult->channel = 2439;
+	presult->rssi[0] = -47;
+	presult->rssi[1] = -48;
+	/*NLA_PUT(skb, GSCAN_EVENT_SIGNIFICANT_CHANGE_RESULTS, (sizeof(PARAM_WIFI_CHANGE_RESULT) * 2), result);*/
+	if (unlikely(nla_put(skb, GSCAN_EVENT_SIGNIFICANT_CHANGE_RESULTS,
+		(sizeof(PARAM_WIFI_CHANGE_RESULT) * 2), result) < 0))
+		goto nla_put_failure;
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_event_hotlist_ap_found(struct wiphy *wiphy, struct wireless_dev *wdev,
+					       P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len)
+{
+	struct sk_buff *skb;
+	PARAM_WIFI_GSCAN_RESULT result[2], *presult;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(PARAM_WIFI_GSCAN_RESULT),
+					  GSCAN_EVENT_HOTLIST_RESULTS_FOUND, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+
+	presult = result;
+	kalMemZero(presult, (sizeof(PARAM_WIFI_GSCAN_RESULT) * 2));
+	/* only for test */
+	kalMemCopy(presult->bssid, "123123", sizeof(mac_addr));
+	presult->channel = 2441;
+	presult->rssi = -45;
+	presult++;
+	presult->channel = 2443;
+	presult->rssi = -47;
+	/*NLA_PUT(skb, GSCAN_EVENT_HOTLIST_RESULTS_FOUND, (sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result);*/
+	if (unlikely(nla_put(skb, GSCAN_EVENT_HOTLIST_RESULTS_FOUND,
+		(sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result) < 0))
+		goto nla_put_failure;
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wireless_dev *wdev,
+					      P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len)
+{
+	struct sk_buff *skb;
+	PARAM_WIFI_GSCAN_RESULT result[2], *presult;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+
+	skb = cfg80211_vendor_event_alloc(wiphy, sizeof(PARAM_WIFI_GSCAN_RESULT),
+					  GSCAN_EVENT_HOTLIST_RESULTS_LOST, GFP_KERNEL);
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "%s allocate skb failed\n", __func__);
+		return -ENOMEM;
+	}
+
+	presult = result;
+	kalMemZero(presult, (sizeof(PARAM_WIFI_GSCAN_RESULT) * 2));
+	/* only for test */
+	kalMemCopy(presult->bssid, "321321", sizeof(mac_addr));
+	presult->channel = 2445;
+	presult->rssi = -46;
+	presult++;
+	presult->channel = 2447;
+	presult->rssi = -48;
+	/*NLA_PUT(skb, GSCAN_EVENT_HOTLIST_RESULTS_LOST, (sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result);*/
+	if (unlikely(nla_put(skb, GSCAN_EVENT_HOTLIST_RESULTS_LOST,
+		(sizeof(PARAM_WIFI_GSCAN_RESULT) * 2), result) < 0))
+		goto nla_put_failure;
+
+
+	cfg80211_vendor_event(skb, GFP_KERNEL);
+	return 0;
+
+nla_put_failure:
+	return -1;
+}
+
+
 
 #endif

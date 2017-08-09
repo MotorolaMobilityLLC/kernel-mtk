@@ -107,6 +107,31 @@ typedef enum {
 } GSCAN_ATTRIBUTE;
 
 typedef enum {
+	RTT_ATTRIBUTE_CAPABILITIES = 1,
+
+	RTT_ATTRIBUTE_TARGET_CNT = 10,
+	RTT_ATTRIBUTE_TARGET_INFO,
+	RTT_ATTRIBUTE_TARGET_MAC,
+	RTT_ATTRIBUTE_TARGET_TYPE,
+	RTT_ATTRIBUTE_TARGET_PEER,
+	RTT_ATTRIBUTE_TARGET_CHAN,
+	RTT_ATTRIBUTE_TARGET_PERIOD,
+	RTT_ATTRIBUTE_TARGET_NUM_BURST,
+	RTT_ATTRIBUTE_TARGET_NUM_FTM_BURST,
+	RTT_ATTRIBUTE_TARGET_NUM_RETRY_FTM,
+	RTT_ATTRIBUTE_TARGET_NUM_RETRY_FTMR,
+	RTT_ATTRIBUTE_TARGET_LCI,
+	RTT_ATTRIBUTE_TARGET_LCR,
+	RTT_ATTRIBUTE_TARGET_BURST_DURATION,
+	RTT_ATTRIBUTE_TARGET_PREAMBLE,
+	RTT_ATTRIBUTE_TARGET_BW,
+	RTT_ATTRIBUTE_RESULTS_COMPLETE = 30,
+	RTT_ATTRIBUTE_RESULTS_PER_TARGET,
+	RTT_ATTRIBUTE_RESULT_CNT,
+	RTT_ATTRIBUTE_RESULT
+} RTT_ATTRIBUTE;
+
+typedef enum {
 	WIFI_BAND_UNSPECIFIED,
 	WIFI_BAND_BG = 1,	/* 2.4 GHz */
 	WIFI_BAND_A = 2,	/* 5 GHz without DFS */
@@ -304,6 +329,16 @@ typedef struct _PARAM_WIFI_SIGNIFICANT_CHANGE {
 	UINT_16 num_ap;		/* max 64 */
 	PARAM_AP_THRESHOLD ap[MAX_SIGNIFICANT_CHANGE_APS];
 } PARAM_WIFI_SIGNIFICANT_CHANGE, *P_PARAM_WIFI_SIGNIFICANT_CHANGE;
+
+/* RTT Capabilities */
+typedef struct _PARAM_WIFI_RTT_CAPABILITIES {
+	UINT_8 rtt_one_sided_supported;  /* if 1-sided rtt data collection is supported */
+	UINT_8 rtt_ftm_supported;        /* if ftm rtt data collection is supported */
+	UINT_8 lci_support;              /* if initiator supports LCI request. Applies to 2-sided RTT */
+	UINT_8 lcr_support;              /* if initiator supports LCR request. Applies to 2-sided RTT */
+	UINT_8 preamble_support;         /* bit mask indicates what preamble is supported by initiator */
+	UINT_8 bw_support;               /* bit mask indicates what BW is supported by initiator */
+} PARAM_WIFI_RTT_CAPABILITIES, *P_PARAM_WIFI_RTT_CAPABILITIES;
 
 /* channel operating width */
 typedef enum {
@@ -506,6 +541,14 @@ typedef enum {
 	ANDROID_NL80211_SUBCMD_LSTATS_RANGE_START = 0x1200,
 	ANDROID_NL80211_SUBCMD_LSTATS_RANGE_END = 0x12FF,
 
+	/* define all Logger related commands between 0x1400 and 0x14FF */
+	ANDROID_NL80211_SUBCMD_DEBUG_RANGE_START = 0x1400,
+	ANDROID_NL80211_SUBCMD_DEBUG_RANGE_END	 = 0x14FF,
+
+	/* define all wifi offload related commands between 0x1600 and 0x16FF */
+	ANDROID_NL80211_SUBCMD_WIFI_OFFLOAD_RANGE_START = 0x1600,
+	ANDROID_NL80211_SUBCMD_WIFI_OFFLOAD_RANGE_END	= 0x16FF,
+
 	/* This is reserved for future usage */
 
 } ANDROID_VENDOR_SUB_COMMAND;
@@ -542,6 +585,13 @@ enum {
 };
 
 typedef enum {
+
+	RTT_SUBCMD_SET_CONFIG = ANDROID_NL80211_SUBCMD_RTT_RANGE_START,
+	RTT_SUBCMD_CANCEL_CONFIG,
+	RTT_SUBCMD_GETCAPABILITY,
+} RTT_SUB_COMMAND;
+
+typedef enum {
 	GSCAN_EVENT_SIGNIFICANT_CHANGE_RESULTS,
 	GSCAN_EVENT_HOTLIST_RESULTS_FOUND,
 	GSCAN_EVENT_SCAN_RESULTS_AVAILABLE,
@@ -556,7 +606,10 @@ typedef enum {
 ********************************************************************************
 */
 
-int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
+int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
+					 const void *data, int data_len);
+
+int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
 					 const void *data, int data_len);
 
 int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len);

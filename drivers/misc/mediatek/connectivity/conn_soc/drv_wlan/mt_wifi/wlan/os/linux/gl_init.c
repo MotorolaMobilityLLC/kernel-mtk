@@ -922,7 +922,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 	  .vendor_id = GOOGLE_OUI,
 	  .subcmd = GSCAN_SUBCMD_GET_CAPABILITIES},
 	 .flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-	 .doit = mtk_cfg80211_vendor_get_capabilities},
+	 .doit = mtk_cfg80211_vendor_get_gscan_capabilities},
 	{
 	 {
 	  .vendor_id = GOOGLE_OUI,
@@ -978,6 +978,12 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 	  .subcmd = LSTATS_SUBCMD_GET_INFO},
 	 .flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 	 .doit = mtk_cfg80211_vendor_llstats_get_info},
+	  {
+	   {
+	    .vendor_id = GOOGLE_OUI,
+	    .subcmd = RTT_SUBCMD_GETCAPABILITY},
+	   .flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+	   .doit = mtk_cfg80211_vendor_get_rtt_capabilities},
 
 };
 

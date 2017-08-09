@@ -35,6 +35,8 @@ endif
 #    ccflags-y += -D_HIF_SDIO=1
 #endif
 
+CONFIG_MTK_PASSPOINT_R1_SUPPORT = y
+$(info CONFIG_MTK_PASSPOINT_R1_SUPPORT=$(CONFIG_MTK_PASSPOINT_R1_SUPPORT))
 ifeq ($(CONFIG_MTK_PASSPOINT_R1_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_HOTSPOT_2_0=1
     ccflags-y += -DCFG_HS20_DEBUG=1
@@ -140,6 +142,7 @@ OS_OBJS :=	$(OS_DIR)gl_init.o \
 			$(OS_DIR)gl_wext_priv.o \
 			$(OS_DIR)gl_rst.o \
 			$(OS_DIR)gl_cfg80211.o \
+			$(OS_DIR)gl_vendor.o \
 			$(OS_DIR)platform.o		\
 			$(OS_DIR)gl_proc.o
 MGMT_OBJS := $(MGMT_DIR)ais_fsm.o \

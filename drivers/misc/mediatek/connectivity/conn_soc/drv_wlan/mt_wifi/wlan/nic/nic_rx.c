@@ -1652,7 +1652,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			memcpy(prEventGscnCapbiblity, (P_EVENT_GSCAN_CAPABILITY_T) (prEvent->aucBuffer),
 			       sizeof(EVENT_GSCAN_CAPABILITY_T));
 
-			mtk_cfg80211_vendor_get_capabilities(wiphy, prGlueInfo->prDevHandler->ieee80211_ptr,
+			mtk_cfg80211_vendor_get_gscan_capabilities(wiphy, prGlueInfo->prDevHandler->ieee80211_ptr,
 				prEventGscnCapbiblity, sizeof(EVENT_GSCAN_CAPABILITY_T));
 		}
 		break;
