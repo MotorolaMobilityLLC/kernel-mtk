@@ -2126,11 +2126,11 @@ void SP_TX_AudioInfoFrameSetup(struct AudioFormat *bAudioFormat)
 {
 	BYTE freq = 0, bitWidth = 0, temp = 0;
 
-	if (bAudioFormat->bAudio_word_len == 16)
+	if (bAudioFormat->bAudio_word_len == 0x02)
 		bitWidth = 1;
-	else if (bAudioFormat->bAudio_word_len == 20)
+	else if ((bAudioFormat->bAudio_word_len == 0x0a) || (bAudioFormat->bAudio_word_len == 0x03))
 		bitWidth = 2;
-	else if (bAudioFormat->bAudio_word_len == 24)
+	else if (bAudioFormat->bAudio_word_len == 0x0b)
 		bitWidth = 3;
 
 	if (bAudioFormat->bAudio_Fs == AUDIO_FS_441K)
@@ -5203,6 +5203,13 @@ void SP_CTRL_PlayBack_Process(void)
 
 if(audio_format_change)
 {
+	SP_TX_Enable_Audio_Output(0);
+	SP_TX_Power_Enable(SP_TX_PWR_AUDIO, SP_TX_POWER_DOWN);
+	/*	sp_write_reg(SP_TX_PORT2_ADDR, 0x06, 18);
+		delay_ms(2);
+		sp_write_reg(SP_TX_PORT2_ADDR, 0x06, 0);
+		delay_ms(2);
+	*/
 	SP_TX_Update_Audio(&SP_TX_Audio_Input);
 	audio_format_change=0;
 
