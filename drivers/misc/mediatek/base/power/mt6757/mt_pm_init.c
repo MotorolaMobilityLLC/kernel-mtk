@@ -122,12 +122,6 @@ unsigned int abist_meter(int ID)
 #if 0 /* temporarily fix build fail */
 	int output = 0, i = 0;
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
-	unsigned int temp2 = 0, temp1 = 0;
-
-	temp1 = mt6757_0x1001AXXX_reg_read(ARMPLLDIV_ARM_K1);
-	temp2 = mt6757_0x1001AXXX_reg_read(ARMPLLDIV_MON_EN);
-	mt6757_0x1001AXXX_reg_write(ARMPLLDIV_ARM_K1, 0);
-	mt6757_0x1001AXXX_reg_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
 
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 
@@ -169,9 +163,6 @@ unsigned int abist_meter(int ID)
 	udelay(50);
 	pminit_write(CLK26CALI_0, 0x1000);
 	pminit_write(CLK26CALI_0, 0x0000);
-
-	mt6757_0x1001AXXX_reg_write(ARMPLLDIV_MON_EN, temp2);
-	mt6757_0x1001AXXX_reg_write(ARMPLLDIV_ARM_K1, temp1);
 
 	if (i > 10)
 		return 0;

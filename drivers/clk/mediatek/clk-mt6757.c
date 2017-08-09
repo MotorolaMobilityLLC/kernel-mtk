@@ -813,7 +813,7 @@ static struct mtk_gate camsys_clks[] __initdata = {
 	     camsys_camsys_cg_regs, 6, 0),
 	GATE(CAMSYS_CAMTG_CGPDN, camsys_camtg_cgpdn, camtg_sel,
 	     camsys_camsys_cg_regs, 7, 0),
-	GATE(CAMSYS_SENINF_CGPDN, camsys_seninf_cgpdn, temp_sel,
+	GATE(CAMSYS_SENINF_CGPDN, camsys_seninf_cgpdn, img_sel,
 	     camsys_camsys_cg_regs, 8, 0),
 	GATE(CAMSYS_CAMSV0_CGPDN, camsys_camsv0_cgpdn, img_sel,
 	     camsys_camsys_cg_regs, 9, 0),
@@ -937,8 +937,6 @@ static struct mtk_gate infracfg_ao_clks[] __initdata = {
 	     infracfg_ao_module_sw_cg_1_regs, 20, 0),
 	GATE(INFRACFG_AO_XIU2AHB_CG, infracfg_ao_xiu2ahb_cg, axi_sel,
 	     infracfg_ao_module_sw_cg_1_regs, 21, 0),
-	GATE(INFRACFG_AO_L2C_SRAM_CG, infracfg_ao_l2c_sram_cg, temp_sel,
-	     infracfg_ao_module_sw_cg_1_regs, 22, 0),
 	GATE(INFRACFG_AO_CCIF_AP_CG, infracfg_ao_ccif_ap_cg, axi_sel,
 	     infracfg_ao_module_sw_cg_1_regs, 23, 0),
 	GATE(INFRACFG_AO_DEBUGSYS_CG, infracfg_ao_debugsys_cg, axi_sel,
@@ -956,17 +954,15 @@ static struct mtk_gate infracfg_ao_clks[] __initdata = {
 	     infracfg_ao_module_sw_cg_2_regs, 1, 0),
 	GATE(INFRACFG_AO_DISP_PWM_CG, infracfg_ao_disp_pwm_cg, axi_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 2, 0),
-	GATE(INFRACFG_AO_CLDMA_BCLK_CK, infracfg_ao_cldma_bclk_ck, temp_sel,
+	GATE(INFRACFG_AO_CLDMA_BCLK_CK, infracfg_ao_cldma_bclk_ck, axi_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 3, 0),
 	GATE(INFRACFG_AO_AUDIO_26M_BCLK_CK, infracfg_ao_audio_26m_bclk_ck, f26m_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 4, 0),
-	GATE(INFRACFG_AO_MODEM_TEMP_26M_BCLK_CK, infracfg_ao_modem_temp_26m_bclk_ck, temp_sel,
-	     infracfg_ao_module_sw_cg_2_regs, 5, 0),
 	GATE(INFRACFG_AO_SPI1_CG, infracfg_ao_spi1_cg, spi_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 6, 0),
 	GATE(INFRACFG_AO_I2C4_CG, infracfg_ao_i2c4_cg, i2c_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 7, 0),
-	GATE(INFRACFG_AO_MODEM_TEMP_SHARE_CG, infracfg_ao_modem_temp_share_cg, temp_sel,
+	GATE(INFRACFG_AO_MODEM_TEMP_SHARE_CG, infracfg_ao_modem_temp_share_cg, f26m_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 8, 0),
 	GATE(INFRACFG_AO_SPI2_CG, infracfg_ao_spi2_cg, spi_sel,
 	     infracfg_ao_module_sw_cg_2_regs, 9, 0),
@@ -1155,13 +1151,13 @@ static struct mtk_gate_regs venc_gcon_vencsys_cg_regs = {
 
 static struct mtk_gate venc_gcon_clks[] __initdata = {
 	/* VENCSYS_CG */
-	GATE(VENC_GCON_SET0_LARB, venc_gcon_set0_larb, temp_sel /*mm_sel */ ,
+	GATE(VENC_GCON_SET0_LARB, venc_gcon_set0_larb, mm_sel ,
 	     venc_gcon_vencsys_cg_regs, 0, 1),
-	GATE(VENC_GCON_SET1_VENC, venc_gcon_set1_venc, temp_sel,
+	GATE(VENC_GCON_SET1_VENC, venc_gcon_set1_venc, venc_sel,
 	     venc_gcon_vencsys_cg_regs, 4, 1),
-	GATE(VENC_GCON_SET2_JPGENC, venc_gcon_set2_jpgenc, temp_sel,
+	GATE(VENC_GCON_SET2_JPGENC, venc_gcon_set2_jpgenc, venc_sel,
 	     venc_gcon_vencsys_cg_regs, 8, 1),
-	GATE(VENC_GCON_SET3_JPGDEC, venc_gcon_set3_jpgdec, temp_sel,
+	GATE(VENC_GCON_SET3_JPGDEC, venc_gcon_set3_jpgdec, venc_sel,
 	     venc_gcon_vencsys_cg_regs, 12, 1),
 };
 
@@ -1241,6 +1237,7 @@ static struct mtk_pll plls[] __initdata = {
 
 
 #ifdef CONFIG_OF
+void __iomem *apmixed_base;
 void __iomem *cksys_base;
 void __iomem *infracfg_base;
 void __iomem *audio_base;
@@ -1251,6 +1248,19 @@ void __iomem *vdec_gcon_base;
 void __iomem *venc_gcon_base;
 void __iomem *camsys_base;
 
+/*PLL INIT*/
+#define AP_PLL_CON3				(apmixed_base + 0x000C)
+#define AP_PLL_CON4				(apmixed_base + 0x0010)
+#define MSDCPLL_CON0            (apmixed_base + 0x250)
+#define MSDCPLL_PWR_CON0        (apmixed_base + 0x25C)
+#define TVDPLL_CON0             (apmixed_base + 0x270)
+#define TVDPLL_PWR_CON0         (apmixed_base + 0x27C)
+#define APLL1_CON0              (apmixed_base + 0x2A0)
+#define APLL1_PWR_CON0          (apmixed_base + 0x2B0)
+#define APLL2_CON0              (apmixed_base + 0x2B4)
+#define APLL2_PWR_CON0          (apmixed_base + 0x2C4)
+
+/* CG */
 #define INFRA_PDN_SET0          (infracfg_base + 0x0080)
 #define INFRA_PDN_SET1          (infracfg_base + 0x0088)
 #define INFRA_PDN_SET2          (infracfg_base + 0x00A8)
@@ -1258,13 +1268,12 @@ void __iomem *camsys_base;
 #define IMG_CG_SET              (img_base + 0x0004)
 #define MM_CG_SET0            (mmsys_config_base + 0x104)
 #define MM_CG_SET1            (mmsys_config_base + 0x114)
-#define MM_DUMMY_CG_SET0            (mmsys_config_base + 0x894)
-#define MM_DUMMY_CG_SET1            (mmsys_config_base + 0x898)
+#define MM_DUMMY_CG_SET0            (mmsys_config_base + 0x8a8)
+#define MM_DUMMY_CG_SET1            (mmsys_config_base + 0x8ac)
 #define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
 #define LARB_CKEN_CLR           (vdec_gcon_base + 0x000C)
-#define VENC_CG_CON             (venc_gcon_base + 0x0)
+#define VENC_CG_CON             (venc_gcon_base + 0x8)
 #define AUDIO_TOP_CON0          (audio_base + 0x0000)
-#define AUDIO_TOP_CON1          (audio_base + 0x0004)
 #define CAMSYS_CG_SET			(camsys_base + 0x0004)
 #endif
 
@@ -1272,7 +1281,6 @@ void __iomem *camsys_base;
 #define INFRA1_CG  0x0246CA76	/*0: Disable  ( with clock), 1: Enable ( without clock ) */
 #define INFRA2_CG  0x2DFE36FF	/*0: Disable  ( with clock), 1: Enable ( without clock ), 9:dummy for usb ref */
 #define AUD_0_CG   0x0F0C0304
-#define AUD_1_CG   0x00030000
 #define MFG_CG     0x00000001	/*set */
 #define MM_0_CG   0xFFFFFFF8
 #define MM_1_CG   0x000003F0
@@ -1284,18 +1292,7 @@ void __iomem *camsys_base;
 #define VENC_CG    0x00001111	/*set */
 #define CAM_CG	   0x00000FC1
 
-#define CG_BOOTUP_PDN			0
-
-
-#define INFRA_BUS_DCM_CTRL_OFS (0x70)
-#define MSDCPLL_CON0_OFS (0x250)
-#define MSDCPLL_PWR_CON0_OFS (0x25c)
-#define TVDPLL_CON0_OFS (0x270)
-#define TVDPLL_PWR_CON0_OFS (0x27c)
-#define APLL1_CON0_OFS (0x2A0)
-#define APLL1_PWR_CON0_OFS (0x2B0)
-#define APLL2_CON0_OFS (0x2B4)
-#define APLL2_PWR_CON0_OFS (0x2C4)
+#define CG_BOOTUP_PDN 1
 
 static void __init init_factors(struct mtk_fixed_factor *clks, int num,
 				struct clk_onecell_data *clk_data)
@@ -1336,7 +1333,7 @@ static void __init init_clk_top_div(struct clk_onecell_data *clk_data)
 	init_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
 }
 
-static void __init init_clk_apmixedsys(void __iomem *apmixed_base,
+static void __init init_clk_apmixedsys(void __iomem *apmixed_base, void __iomem *spm_base,
 				       struct clk_onecell_data *clk_data)
 {
 	int i;
@@ -1345,11 +1342,17 @@ static void __init init_clk_apmixedsys(void __iomem *apmixed_base,
 	for (i = 0; i < ARRAY_SIZE(plls); i++) {
 		struct mtk_pll *pll = &plls[i];
 
-		clk = mtk_clk_register_pll(pll->name, pll->parent_name,
-					   apmixed_base + pll->reg,
-					   apmixed_base + pll->pwr_reg,
-					   pll->en_mask, pll->flags, pll->ops);
-
+		if (!strcmp("oscpll", pll->name)) {
+			clk = mtk_clk_register_pll(pll->name, pll->parent_name,
+			spm_base + pll->reg,
+			spm_base + pll->pwr_reg,
+			pll->en_mask, pll->flags, pll->ops);
+		} else {
+			clk = mtk_clk_register_pll(pll->name, pll->parent_name,
+			apmixed_base + pll->reg,
+			apmixed_base + pll->pwr_reg,
+			pll->en_mask, pll->flags, pll->ops);
+		}
 		if (IS_ERR(clk)) {
 			pr_err("Failed to register clk %s: %ld\n", pll->name, PTR_ERR(clk));
 			continue;
@@ -1505,9 +1508,6 @@ static void __init mt_topckgen_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
-	mt_reg_sync_writel(0x00000FFF, (base + 0x200));	/* CLK_SCP_CFG_0 = 0x00000FFF */
-	mt_reg_sync_writel(0x00000007, (base + 0x204));	/* CLK_SCP_CFG_1 = 0x00000007 */
-
 #if CG_BOOTUP_PDN
 	cksys_base = base;
 #endif
@@ -1515,49 +1515,59 @@ static void __init mt_topckgen_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mt_topckgen_init);
 
-#define ISO_EN_BIT 0x2
-#define ON_BIT 0x1
+#define PLL_EN (0x1 << 0)
+#define PLL_PWR_ON  (0x1 << 0)
+#define PLL_ISO_EN  (0x1 << 1)
 static void __init mt_apmixedsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
 	void __iomem *base;
+	void __iomem *spm_base;
 	int r;
 
 	pr_debug("[CCF] %s: %s\n", __func__, node->name);
 
 	base = get_reg(node, 0);
-	if (!base) {
-		pr_err("ioremap apmixedsys failed\n");
+	spm_base = get_reg(node, 1);
+	if ((!base) || (!spm_base)) {
+		pr_err("ioremap apmixedsys/spm failed\n");
 		return;
 	}
 
 	clk_data = alloc_clk_data(APMIXED_NR_CLK);
 
-	init_clk_apmixedsys(base, clk_data);
+	init_clk_apmixedsys(base, spm_base, clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
 
-	mt_reg_sync_writel(0x00044440, (base + 0x0C));	/* AP_PLL_CON3, 0x00044440 */
-	mt_reg_sync_writel(0xC, (base + 0x10));	/* AP_PLL_CON4, temp & 0xC */
+	apmixed_base = base;
+
+	clk_writel(AP_PLL_CON3, 0x7D555C);	/* L, LL and TDCLK SW Mode */
+	clk_writel(AP_PLL_CON4, 0x3505);	/* others HW Mode */
 
 	/*disable */
+#if CG_BOOTUP_PDN
+/* TODO: remove to LK after boot PDN enable */
 /* MSDCPLL */
-	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_CON0_OFS) & ~ON_BIT, (base + MSDCPLL_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_PWR_CON0_OFS) | ISO_EN_BIT, (base + MSDCPLL_PWR_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_PWR_CON0_OFS) & ~ON_BIT, (base + MSDCPLL_PWR_CON0_OFS));
-	 /*TVDPLL*/ mt_reg_sync_writel(__raw_readl(base + TVDPLL_CON0_OFS) & ~ON_BIT, (base + TVDPLL_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + TVDPLL_PWR_CON0_OFS) | ISO_EN_BIT, (base + TVDPLL_PWR_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + TVDPLL_PWR_CON0_OFS) & ~ON_BIT, (base + TVDPLL_PWR_CON0_OFS));
+	clk_clrl(MSDCPLL_CON0, PLL_EN);
+	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+/*TVDPLL*/
+	clk_clrl(TVDPLL_CON0, PLL_EN);
+	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
 /*APLL 1,2 */
-	mt_reg_sync_writel(__raw_readl(base + APLL1_CON0_OFS) & ~ON_BIT, (base + APLL1_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + APLL1_PWR_CON0_OFS) | ISO_EN_BIT, (base + APLL1_PWR_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + APLL1_PWR_CON0_OFS) & ~ON_BIT, (base + APLL1_PWR_CON0_OFS));
+	clk_clrl(APLL1_CON0, PLL_EN);
+	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL1_PWR_CON0, PLL_PWR_ON);
 
-	mt_reg_sync_writel(__raw_readl(base + APLL2_CON0_OFS) & ~ON_BIT, (base + APLL2_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + APLL2_PWR_CON0_OFS) | ISO_EN_BIT, (base + APLL2_PWR_CON0_OFS));
-	mt_reg_sync_writel(__raw_readl(base + APLL2_PWR_CON0_OFS) & ~ON_BIT, (base + APLL2_PWR_CON0_OFS));
+	clk_clrl(APLL2_CON0, PLL_EN);
+	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
+
+#endif
 }
 
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,apmixed", mt_apmixedsys_init);
@@ -1583,9 +1593,6 @@ static void __init mt_infrasys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
-
-	mt_reg_sync_writel(__raw_readl(base + INFRA_BUS_DCM_CTRL_OFS) | (1 << 21),
-			   (base + INFRA_BUS_DCM_CTRL_OFS));
 
 #if CG_BOOTUP_PDN
 	infracfg_base = base;
@@ -1830,12 +1837,10 @@ static void __init mt_audiosys_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x801c4000, base + aud0_cg_regs.set_ofs);
-	mt_reg_sync_writel(0x00000000, base + aud1_cg_regs.set_ofs);
 #endif
 #if CG_BOOTUP_PDN
 	audio_base = base;
 	clk_writel(AUDIO_TOP_CON0, clk_readl(AUDIO_TOP_CON0) | AUD_0_CG);
-	clk_writel(AUDIO_TOP_CON1, AUD_1_CG);
 #endif
 
 }
