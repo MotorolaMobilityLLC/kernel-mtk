@@ -263,6 +263,8 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);*/
+	} else if (0 == strncmp(opt, "pwm_test:", 9)) {
+		disp_pwm_test(opt + 9, buf);
 	} else if (0 == strncmp(opt, "corr_dbg:", 9)) {
 		int i;
 

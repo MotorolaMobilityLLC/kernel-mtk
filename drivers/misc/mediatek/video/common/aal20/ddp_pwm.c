@@ -34,7 +34,7 @@
 #define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
 
 #define index_of_pwm(id) (0)
-#define PWM_LOG_BUFFER_SIZE 5
+#define PWM_LOG_BUFFER_SIZE 8
 
 
 static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
@@ -56,6 +56,7 @@ enum PWM_LOG_TYPE {
 
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE];
 static int g_pwm_log_index;
+static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
@@ -290,7 +291,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 	g_pwm_log_buffer[g_pwm_log_index].tusec = (unsigned long)pwm_time.tv_usec;
 	g_pwm_log_index += 1;
 
-	if (g_pwm_log_index == PWM_LOG_BUFFER_SIZE || level_1024 == 0) {
+	if (g_pwm_log_index == g_pwm_log_num || level_1024 == 0) {
 		sprintf(buffer + strlen(buffer), "(latest=%2u): ", g_pwm_log_index);
 		for (i = 0; i < g_pwm_log_index; i += 1) {
 			sprintf(buffer + strlen(buffer), "%5u(%4lu,%4lu)",
@@ -657,6 +658,13 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 
 		clksrc = (unsigned int)(cmd[7] - '0');
 		disp_pwm_set_pwmmux(clksrc);
+	} else if (strncmp(cmd, "log_num:", 8) == 0) {
+		unsigned long log_num = 0;
+
+		pwm_simple_strtoul((char *)(cmd+8), (unsigned long *)(&log_num));
+		log_num = (log_num < 1) ? 1 : ((log_num > PWM_LOG_BUFFER_SIZE) ? PWM_LOG_BUFFER_SIZE : log_num);
+		g_pwm_log_num = (int)log_num;
+		PWM_MSG("combine %lu backlight change log in one line", log_num);
 	}
 }
 
