@@ -2391,13 +2391,19 @@ static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
 {
-	int idx;
+	int idx, ori_idx;
 	unsigned int dds = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
 	/* CUR_OPP_IDX */
 	opp_tbl_m[CUR_OPP_IDX].p = p;
+	ori_idx = search_table_idx_by_freq(opp_tbl_m[CUR_OPP_IDX].p,
+		cur_khz);
+
+	if (ori_idx != p->idx_opp_tbl)
+		p->idx_opp_tbl = ori_idx;
+
 	opp_tbl_m[CUR_OPP_IDX].slot = &p->freq_tbl[p->idx_opp_tbl];
 	cpufreq_ver("[CUR_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		cpu_dvfs_get_name(p), p->idx_opp_tbl, cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl));
@@ -2696,12 +2702,15 @@ static void dump_all_opp_table(void)
 	struct mt_cpu_dvfs *p;
 
 	for_each_cpu_dvfs(i, p) {
-		cpufreq_err("[%s/%d] cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
+		cpufreq_err("[%s/%d] available = %d, oppidx = %d (%u, %u)\n",
+			    p->name, p->cpu_id, p->armpll_is_available, p->idx_opp_tbl,
+			    cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl), cpu_dvfs_get_volt_by_idx(p, p->idx_opp_tbl));
 
-		for (i = 0; i < p->nr_opp_tbl; i++) {
-			cpufreq_err("\tOP(%d, %d),\n",
-					cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i)
-				);
+		if (i == MT_CPU_DVFS_CCI) {
+			for (i = 0; i < p->nr_opp_tbl; i++) {
+				cpufreq_err("%-2d (%u, %u)\n",
+					i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
+			}
 		}
 	}
 }
