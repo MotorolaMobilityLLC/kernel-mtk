@@ -3360,14 +3360,15 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			u2MsgSize = prEventDebugMsg->u2MsgSize;
 			pucMsg = prEventDebugMsg->aucMsg;
 
-			DBGLOG(SW4, TRACE, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
-			       u2DebugMsgId, ucMsgType, ucFlags, u4Value, u2MsgSize);
-
 			if (u2MsgSize <= DEBUG_MSG_SIZE_MAX) {
 				if (ucMsgType >= DEBUG_MSG_TYPE_END)
 					ucMsgType = DEBUG_MSG_TYPE_MEM32;
-
+				/* This writing is for Check patch: Too many leading tabs*/
 				if (ucMsgType == DEBUG_MSG_TYPE_ASCII) {
+					if (aucDebugModule[DBG_SW4_IDX] & DBG_CLASS_TRACE) {
+						LOG_FUNC("FW:%s\n", pucMsg);
+						break;
+					}
 					GET_CURRENT_SYSTIME(&rCurrentTime);
 					if (rFwLogStartTime == 0 ||
 						CHECK_FOR_TIMEOUT(rCurrentTime, rFwLogStartTime,
