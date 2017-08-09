@@ -113,7 +113,8 @@ static u32 slp_spm_flags = {
 static u32 slp_spm_deepidle_flags = {
 	#if defined(CONFIG_ARCH_MT6797)
 	SPM_FLAG_DIS_VCORE_DVS |
-	SPM_FLAG_DIS_VCORE_DFS
+	SPM_FLAG_DIS_VCORE_DFS |
+	SPM_FLAG_DIS_SYSRAM_SLEEP
 	#else
 	0
 	#endif
