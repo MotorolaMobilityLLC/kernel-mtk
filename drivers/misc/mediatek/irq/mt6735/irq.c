@@ -24,6 +24,7 @@
 /*
 #include <mach/mt_reg_base.h>
 */
+#include "irq.h"
 #include <mt-plat/sync_write.h>
 #include <mach/mt_secure_api.h>
 /*
@@ -1238,7 +1239,7 @@ void mt_irq_dump_status(unsigned int irq)
 EXPORT_SYMBOL(mt_irq_dump_status);
 
 
-int set_mask(int irq)
+void set_mask(int irq)
 {
 	unsigned int bit;
 
@@ -1246,7 +1247,7 @@ int set_mask(int irq)
 	writel(bit, IOMEM(GIC_DIST_BASE + GIC_DIST_ENABLE_SET + irq / 32 * 4));
 }
 
-int set_unmask(int irq)
+void set_unmask(int irq)
 {
 	unsigned int bit;
 
@@ -1263,7 +1264,7 @@ void mt_irq_set_pending(unsigned int irq)
 }
 EXPORT_SYMBOL(mt_irq_set_pending);
 
-int set_active_status(int irq)
+void set_active_status(int irq)
 {
 	unsigned int bit;
 
