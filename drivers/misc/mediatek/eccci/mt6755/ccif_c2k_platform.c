@@ -265,6 +265,7 @@ int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 		ccirq_base[3] = ioremap_nocache(C2K_PS_CCIRQ_BASE, 0x100);
 
 		c2k_cgbr1_addr = ioremap_nocache(C2KSYS_BASE + C2K_CGBR1, 0x4);
+		c2k_mpu_itrace_vir = ioremap_nocache(C2KSYS_BASE + C2K_MPU_ITRACE, 0x100);
 
 #ifdef DUMP_C2K_ON_EE
 		c2k_iram_base_vir = ioremap_nocache(C2KSYS_BASE + C2K_IRAM_BASE, C2K_IRAM_DUMP_SIZE);
@@ -617,13 +618,13 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 void dump_c2k_boot_status(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-
+	u32 j;
+	unsigned long reg_base;
 #ifdef DUMP_C2K_ON_EE
-	u32 i, j;
+	u32 i;
 	/*start addr, reg count*/
 	u32 h2x_reg[][2] = { {0x3C, 8}, {0, 0} };
 	u32 cgbr_sbc_reg[][2] = { {0x0, 7}, {0xF0, 3}, {0x10c, 3}, {0x200, 11}, {0, 0} };
-	unsigned long reg_base;
 #endif
 
 	CCCI_INF_MSG(md->index, TAG, "INFRA_C2K_BOOT_STATUS = 0x%x\n",
@@ -647,8 +648,12 @@ void dump_c2k_boot_status(struct ccci_modem *md)
 			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_SPM_CTRL),
 			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_STATUS));
 
-	CCCI_INF_MSG(md->index, TAG, "[C2K] C2K_CGBR1 = 0x%x\n",
-			ccif_read32(c2k_cgbr1_addr, 0));
+	reg_base = C2KSYS_BASE + C2K_MPU_ITRACE;
+	for (j = 0; j < C2K_MPU_ITRACE_DUMP_SIZE; ) {
+		CCCI_INF_MSG(md->index, TAG, "[C2K] mpu itrace 0x%lx, value = 0x%x\n",
+				reg_base + j, ccif_read32(c2k_mpu_itrace_vir, j));
+		j += 4;
+	}
 
 #ifdef DUMP_C2K_ON_EE
 	reg_base = C2KSYS_BASE + C2K_H2X_ZONE_BASE;
