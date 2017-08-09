@@ -75,9 +75,9 @@ static int mi2s0_sidegen_control;
 static int mi2s0_hdoutput_control;
 static int mi2s0_extcodec_echoref_control;
 static const char const *i2s0_SIDEGEN[] = {
-	"Off", "On48000", "On44100", "On32000", "On16000", "On8000" };
-static const char const *i2s0_HD_output[] = { "Off", "On" };
-static const char const *i2s0_ExtCodec_EchoRef[] = { "Off", "On" };
+	"Off", "On48000", "On44100", "On32000", "On16000", "On8000", "On16000MD3"};
+static const char const *i2s0_HD_output[] = {"Off", "On"};
+static const char const *i2s0_ExtCodec_EchoRef[] = {"Off", "On"};
 
 static const struct soc_enum Audio_i2s0_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_SIDEGEN), i2s0_SIDEGEN),
@@ -93,18 +93,16 @@ static int Audio_i2s0_SideGen_Get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int samplerate;
+
 static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	uint32 u32AudioI2S = 0;	/* REG448 = 0, REG44C = 0; */
-	uint32 samplerate = 0;
 	uint32 Audio_I2S_Dac = 0;
 
 	AudDrv_Clk_On();
 
-	pr_debug
-	    ("%s() samplerate = %d, mi2s0_hdoutput_control = %d, mi2s0_extcodec_echoref_control = %d\n",
-	     __func__, samplerate, mi2s0_hdoutput_control, mi2s0_extcodec_echoref_control);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_SIDEGEN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
@@ -130,7 +128,21 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			      Soc_Aud_InterConnectionInput_I14, Soc_Aud_InterConnectionOutput_O00);
 		SetConnection(Soc_Aud_InterCon_Connection,
 			      Soc_Aud_InterConnectionInput_I14, Soc_Aud_InterConnectionOutput_O01);
+	} else if (mi2s0_sidegen_control == 6) {
+		samplerate = 16000;
+		/* here start digital part */
+		SetConnection(Soc_Aud_InterCon_Connection,
+			      Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O00);
+		SetConnection(Soc_Aud_InterCon_Connection,
+			      Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O01);
 	}
+
+	pr_debug("%s(), mi2s0_sidegen = %d, samplerate = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d\n",
+		 __func__,
+		 mi2s0_sidegen_control,
+		 samplerate,
+		 mi2s0_hdoutput_control,
+		 mi2s0_extcodec_echoref_control);
 
 	if (mi2s0_sidegen_control) {
 		AudDrv_Clk_On();
@@ -155,9 +167,15 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		/* I2S0 I2S3 clock-gated */
 
 		if (mi2s0_extcodec_echoref_control == true) {
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I01,
-				      Soc_Aud_InterConnectionOutput_O24);
+			if (mi2s0_sidegen_control == 6) {
+				SetConnection(Soc_Aud_InterCon_Connection,
+					      Soc_Aud_InterConnectionInput_I01,
+					      Soc_Aud_InterConnectionOutput_O27);
+			} else {
+				SetConnection(Soc_Aud_InterCon_Connection,
+					      Soc_Aud_InterConnectionInput_I01,
+					      Soc_Aud_InterConnectionOutput_O24);
+			}
 
 			/* I2S0 Input Control */
 			Audio_I2S_Dac = 0;
@@ -203,7 +221,10 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 	} else {
 		if (mi2s0_extcodec_echoref_control == true) {
-			SetConnection(Soc_Aud_InterCon_Connection,
+			SetConnection(Soc_Aud_InterCon_DisConnect,
+				      Soc_Aud_InterConnectionInput_I01,
+				      Soc_Aud_InterConnectionOutput_O27);
+			SetConnection(Soc_Aud_InterCon_DisConnect,
 				      Soc_Aud_InterConnectionInput_I01,
 				      Soc_Aud_InterConnectionOutput_O24);
 		}
@@ -223,6 +244,10 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I14,
 				      Soc_Aud_InterConnectionOutput_O00);
 			SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I14,
+				      Soc_Aud_InterConnectionOutput_O01);
+			SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I09,
+				      Soc_Aud_InterConnectionOutput_O00);
+			SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I09,
 				      Soc_Aud_InterConnectionOutput_O01);
 			EnableAfe(false);
 		}

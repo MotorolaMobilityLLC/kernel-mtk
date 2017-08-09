@@ -733,6 +733,11 @@ void DisableALLbySampleRate(uint32 SampleRate)
 			AudDrv_APLL1Tuner_Clk_Off();
 			EnableApll1(false);
 			AudDrv_Clk_Off();
+		} else if (APLL1Counter < 0) {
+			pr_warn("%s(), APLL1Counter %d < 0\n",
+				__func__,
+				APLL1Counter);
+			APLL1Counter = 0;
 		}
 		break;
 	case Soc_Aud_APLL2:
@@ -743,6 +748,11 @@ void DisableALLbySampleRate(uint32 SampleRate)
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
 			AudDrv_Clk_Off();
+		} else if (APLL2Counter < 0) {
+			pr_warn("%s(), APLL2Counter %d < 0\n",
+				__func__,
+				APLL2Counter);
+			APLL2Counter = 0;
 		}
 		break;
 	default:
