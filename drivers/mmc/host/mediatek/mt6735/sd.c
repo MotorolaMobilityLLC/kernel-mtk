@@ -8207,15 +8207,6 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Power on */
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP);
-#ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_CLKMGR
-	enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
-#else
-	clk_enable(host->clock_control);
-#endif
-#endif
-	host->core_clkon = 1;
-
 	/* Configure to MMC/SD mode */
 	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
