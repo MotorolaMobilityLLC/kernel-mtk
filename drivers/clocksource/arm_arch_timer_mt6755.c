@@ -764,6 +764,8 @@ arch_timer_use_virtual = false;
 
 	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
 
+	pr_alert("%s:arch_timer_c3stop=%d\n", __func__, arch_timer_c3stop);
+
 	arch_timer_register();
 	arch_timer_common_init();
 }

@@ -135,7 +135,7 @@ static int mt_gpt_set_next_event(unsigned long cycles, struct clock_event_device
 static void mt_gpt_set_mode(enum clock_event_mode mode, struct clock_event_device *evt);
 
 static struct clocksource gpt_clocksource = {
-	.name	= "mt6735-gpt",
+	.name	= "mtk-timer",
 	.rating	= 450,
 	.read	= mt_gpt_read,
 	.mask	= CLOCKSOURCE_MASK(32),
@@ -144,7 +144,7 @@ static struct clocksource gpt_clocksource = {
 };
 
 static struct clock_event_device gpt_clockevent = {
-	.name = "mt6735-gpt",
+	.name = "mtk_tick",
 	.features = CLOCK_EVT_FEAT_ONESHOT,
 	.shift          = 32,
 	.rating         = 300,
@@ -472,7 +472,8 @@ static inline void setup_clkevt(u32 freq)
 	evt->mult = div_sc(freq, NSEC_PER_SEC, evt->shift);
 	evt->max_delta_ns = clockevent_delta2ns(0xffffffff, evt);
 	evt->min_delta_ns = clockevent_delta2ns(3, evt);
-	evt->cpumask = cpumask_of(0);
+	/* evt->cpumask = cpumask_of(0); */
+	evt->cpumask = cpu_possible_mask;
 
 	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 		freq / HZ, clkevt_handler, GPT_ISR);
