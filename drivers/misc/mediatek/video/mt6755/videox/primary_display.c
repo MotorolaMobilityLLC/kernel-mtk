@@ -2612,7 +2612,7 @@ static int _requestCondition(int overlap_layers)
 		w = DISP_GetScreenWidth();
 	if ((720 == w) && (overlap_layers <= DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF))
 		return -1;
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF) {
+	if ((1080 == w) && (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF)) {
 		DISPWARN("overlayed layer num is %d > %d\n", overlap_layers,
 		DISP_HW_HRT_LYAERS_FOR_HI_PERF);
 	}
@@ -4662,6 +4662,13 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		if (ret)
 			goto err;
 	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
+		/* switch to DL mode first */
+		ret = rdma_mode_switch_to_DL(NULL, 0);
+		if (ret)
+			goto err;
+		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
+		DL_switch_to_DC_fast(0);
+	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch to DL mode first */
 		ret = rdma_mode_switch_to_DL(NULL, 0);
 		if (ret)
