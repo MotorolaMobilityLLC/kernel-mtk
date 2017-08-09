@@ -148,7 +148,7 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	static const unsigned int pre_ultra_high_time = 9;	/* in unit of us */
 	/*static const unsigned int fifo_size = 512;*/
 	static const unsigned int fifo_valid_line_ratio = 125;	/* valid size 1/8 line; */
-	/*static const unsigned int fifo_min_size = 32;*/
+	static const unsigned int fifo_min_size = 32;
 	/* working variables */
 	unsigned int consume_levels_per_sec;
 	unsigned int ultra_low_level;

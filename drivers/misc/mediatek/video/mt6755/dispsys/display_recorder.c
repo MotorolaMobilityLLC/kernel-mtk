@@ -24,7 +24,7 @@
 #include "ddp_path.h"
 #include "ddp_drv.h"
 
-#include <mach/m4u.h>
+#include "m4u.h"
 #include "m4u_port.h"
 
 #include "primary_display.h"

@@ -171,7 +171,7 @@ extern "C" {
 	void DSI_ChangeClk(DISP_MODULE_ENUM module, uint32_t clk);
 	int32_t DSI_ssc_enable(uint32_t dsi_idx, uint32_t en);
 	uint32_t PanelMaster_get_CC(uint32_t dsi_idx);
-	void PanelMaster_set_CC(uint32 dsi_index, uint32_t enable);
+	void PanelMaster_set_CC(uint32_t dsi_index, uint32_t enable);
 	uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type);
 	uint32_t PanelMaster_get_TE_status(uint32_t dsi_idx);
 	void PanelMaster_DSI_set_timing(uint32_t dsi_index, MIPI_TIMING timing);

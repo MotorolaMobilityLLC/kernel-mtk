@@ -1,5 +1,5 @@
 #include <linux/slab.h>
-
+#include <linux/types.h>
 #include "disp_drv_log.h"
 #include "lcm_drv.h"
 #include "disp_drv_platform.h"
@@ -31,7 +31,7 @@ int _is_lcm_inited(disp_lcm_handle *plcm)
 
 LCM_PARAMS *_get_lcm_params_by_handle(disp_lcm_handle *plcm)
 {
-	if (plcm) {
+	if (plcm)
 		return plcm->params;
 	DISPERR("WARNING, invalid lcm handle:%p\n", plcm);
 	return NULL;
@@ -39,7 +39,7 @@ LCM_PARAMS *_get_lcm_params_by_handle(disp_lcm_handle *plcm)
 
 LCM_PARAMS *_get_lcm_driver_by_handle(disp_lcm_handle *plcm)
 {
-	if (plcm) {
+	if (plcm)
 		return plcm->drv;
 	DISPERR("WARNING, invalid lcm handle:%p\n", plcm);
 	return NULL;
@@ -147,12 +147,11 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 
 disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
-	DISPFUNC();
 
 	int lcmindex = 0;
 	bool isLCMFound = false;
 	bool isLCMInited = false;
-
+	int i;
 	LCM_DRIVER *lcm_drv = NULL;
 	LCM_PARAMS *lcm_param = NULL;
 	disp_lcm_handle *plcm = NULL;
@@ -263,7 +262,6 @@ FAIL:
 
 int disp_lcm_init(disp_lcm_handle *plcm, int force)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
 
 
@@ -328,10 +326,10 @@ LCM_INTERFACE_ID disp_lcm_get_interface_id(disp_lcm_handle *plcm)
 
 int disp_lcm_update(disp_lcm_handle *plcm, int x, int y, int w, int h, int force)
 {
-	DISPDBGFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
 	int ret = 0;
 
+	DISPDBGFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->update) {
@@ -352,10 +350,10 @@ int disp_lcm_update(disp_lcm_handle *plcm, int x, int y, int w, int h, int force
 /* return 0: esd check pass */
 int disp_lcm_esd_check(disp_lcm_handle *plcm)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
 	int ret = 0;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->esd_check) {
@@ -373,10 +371,9 @@ int disp_lcm_esd_check(disp_lcm_handle *plcm)
 
 int disp_lcm_esd_recover(disp_lcm_handle *plcm)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
-	int ret = 0;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->esd_recover) {
@@ -394,10 +391,9 @@ int disp_lcm_esd_recover(disp_lcm_handle *plcm)
 
 int disp_lcm_suspend(disp_lcm_handle *plcm)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
-	int ret = 0;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->suspend) {
@@ -417,10 +413,9 @@ int disp_lcm_suspend(disp_lcm_handle *plcm)
 
 int disp_lcm_resume(disp_lcm_handle *plcm)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
-	int ret = 0;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->resume_power)
@@ -440,10 +435,10 @@ int disp_lcm_resume(disp_lcm_handle *plcm)
 
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 {
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
 	int ret = 0;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->set_backlight_cmdq) {
@@ -461,7 +456,7 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {
-
+	return 0;
 }
 
 int disp_lcm_is_inited(disp_lcm_handle *plcm)
@@ -474,10 +469,10 @@ int disp_lcm_is_inited(disp_lcm_handle *plcm)
 
 unsigned int disp_lcm_ATA(disp_lcm_handle *plcm)
 {
-	DISPFUNC();
 	unsigned int ret = 0;
 	LCM_DRIVER *lcm_drv = NULL;
 
+	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->ata_check) {
@@ -496,7 +491,6 @@ unsigned int disp_lcm_ATA(disp_lcm_handle *plcm)
 
 void *disp_lcm_switch_mode(disp_lcm_handle *plcm, int mode)
 {
-/* DISPFUNC(); */
 	LCM_DRIVER *lcm_drv = NULL;
 	LCM_DSI_MODE_SWITCH_CMD *lcm_cmd = NULL;
 
@@ -521,9 +515,6 @@ void *disp_lcm_switch_mode(disp_lcm_handle *plcm, int mode)
 
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 {
-	/* DISPFUNC(); */
-	LCM_INTERFACE_ID lcm_id = LCM_INTERFACE_NOTDEFINED;
-
 	if (_is_lcm_inited(plcm))
 		lcm_param = plcm->params;
 	else
@@ -563,7 +554,6 @@ int disp_lcm_set_lcm_cmd(disp_lcm_handle *plcm, void *cmdq_handle, unsigned int 
 {
 	int ret = 0;
 
-	DISPFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
 
 	if (_is_lcm_inited(plcm)) {

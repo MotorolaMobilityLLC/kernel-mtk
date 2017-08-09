@@ -5,7 +5,7 @@
 #include "ddp_reg.h"
 #include "ddp_log.h"
 
-#include <mach/m4u.h>
+#include "m4u.h"
 
 static DDP_MMP_Events_t DDP_MMP_Events;
 

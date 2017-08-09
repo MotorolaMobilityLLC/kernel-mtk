@@ -121,7 +121,7 @@ static int wdma_config_yuv420(DISP_MODULE_ENUM module,
 	unsigned int u_stride = 0;
 	unsigned int y_size = 0;
 	unsigned int u_size = 0;
-	unsigned int v_size = 0;
+	/*unsigned int v_size = 0;*/
 	unsigned int stride = dstPitch;
 	int has_v = 1;
 

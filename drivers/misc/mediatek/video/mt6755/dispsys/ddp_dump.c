@@ -510,7 +510,7 @@ static void mmsys_config_dump_analysis(void)
 	if (greq)
 		DDPMSG("smi greq not grant module: ");
 	else
-		return 0;
+		return;
 
 	clock_on[0] = '\0';
 	for (i = 0; i < 32; i++) {
@@ -521,7 +521,7 @@ static void mmsys_config_dump_analysis(void)
 		DDPDUMP("%s\n", clock_on);
 	}
 
-	return 0;
+	return;
 }
 
 static void gamma_dump_reg(void)

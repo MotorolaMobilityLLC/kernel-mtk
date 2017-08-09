@@ -8,8 +8,10 @@
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
-#include <mach/mt_typedefs.h>
-#include <mach/m4u.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <mt-plat/mt_typedefs.h>
+#include "m4u.h"
 #include "disp_drv_log.h"
 #include "mtkfb.h"
 #include "debug.h"

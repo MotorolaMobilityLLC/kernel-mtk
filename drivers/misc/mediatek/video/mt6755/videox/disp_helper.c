@@ -9,11 +9,10 @@
 #include <linux/types.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
-
+#include "mt-plat/mt_chip.h"
 #include "disp_drv_log.h"
 #include "primary_display.h"
-
-#include "mt_boot.h"
+#include "mt-plat/mt_boot.h"
 #include "disp_helper.h"
 #include "disp_drv_platform.h"
 #include "primary_display.h"
@@ -50,12 +49,12 @@ static int _is_E2(void)
 
 	return 0;
 }
-
+/*
 static int _is_E3(void)
 {
 	return !(_is_E1() || _is_E2());
 }
-
+*/
 static int _is_early_porting_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_EARLY_PORTING;

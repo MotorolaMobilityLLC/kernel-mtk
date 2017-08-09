@@ -998,6 +998,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned long rdma_offset = 0;
 	unsigned long offset = ovl_base_addr(module);
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
+	unsigned int rdma_ctrl;
 
 	DDPDUMP("==DISP %s ANALYSIS==\n", ddp_get_module_name(module));
 	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),",
@@ -1026,7 +1027,6 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 			ovl_dump_layer_info(i, layer_offset);
 		else
 			DDPDUMP("layer%d: disabled\n", i);
-		unsigned int rdma_ctrl;
 
 		rdma_ctrl = DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_CTRL);
 

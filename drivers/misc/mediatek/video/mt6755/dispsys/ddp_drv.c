@@ -38,16 +38,14 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <asm/io.h>
-#include <mach/irqs.h>
-#include <mach/mt_reg_base.h>
-#include <mach/mt_irq.h>
-#include <mach/irqs.h>
+/* #include <mach/irqs.h> */
+/*#include <mach/mt_reg_base.h>*/
+/* #include <mach/mt_irq.h> */
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
 #include "ddp_clkmgr.h"
 #endif
-#include <mach/mt_irq.h>
 #include <mt-plat/sync_write.h>
 #include "m4u.h"
 

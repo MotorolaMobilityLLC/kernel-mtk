@@ -3745,7 +3745,6 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				break;
 			}
 		}
-
 	} else if (state == CMDQ_ESD_ALLC_SLOT) {
 		/* create 3 slot */
 		cmdqBackupAllocateSlot(&hSlot, 3);

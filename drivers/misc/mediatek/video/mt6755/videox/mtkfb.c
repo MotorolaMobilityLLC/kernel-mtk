@@ -30,7 +30,7 @@
 #include <linux/compat.h>
 #include <linux/aee.h>
 
-#include "mach/mt_boot.h"
+#include "mt-plat/mt_boot.h"
 #include "debug.h"
 #include "ddp_hal.h"
 #include "disp_drv_log.h"

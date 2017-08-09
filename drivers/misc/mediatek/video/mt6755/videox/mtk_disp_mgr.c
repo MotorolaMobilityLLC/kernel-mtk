@@ -605,16 +605,15 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 static int set_memory_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	int ret = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned int dst_mva = 0;
 	unsigned int session_id = 0;
-
-	session_id = input->session_id;
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	disp_session_sync_info *session_info;
 	ovl2mem_in_config input_params[MEMORY_SESSION_INPUT_LAYER_COUNT];
 
+	session_id = input->session_id;
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 	memset((void *)&input_params, 0, sizeof(input_params));
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
@@ -635,7 +634,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = input->config[i].src_phy_addr;
+				dst_mva = (unsigned int)input->config[i].src_phy_addr;
 			} else {
 				disp_sync_query_buf_info(session_id, layer_id,
 							 (unsigned int)input->
@@ -698,9 +697,10 @@ static int set_external_buffer(disp_session_input_config *input)
 	unsigned int dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned int mva_offset = 0;
+	disp_session_sync_info *session_info;
 
 	session_id = input->session_id;
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
@@ -1004,11 +1004,11 @@ static int __set_output(disp_session_output_config *session_output)
 {
 	unsigned int session_id = 0;
 	unsigned int dst_mva = 0;
-	unsigned int dst_va = 0;
+	disp_session_sync_info *session_info;
+	disp_mem_output_config primary_output;
 
 	session_id = session_output->session_id;
-
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
 		dprec_start(&session_info->event_setoutput, session_output->config.buff_idx, 0);
@@ -1016,8 +1016,6 @@ static int __set_output(disp_session_output_config *session_output)
 
 	DISPMSG(" _ioctl_set_output_buffer idx %x\n", session_output->config.buff_idx);
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		disp_mem_output_config primary_output;
-
 		memset((void *)&primary_output, 0, sizeof(primary_output));
 		if (session_output->config.pa) {
 			dst_mva = session_output->config.pa;
@@ -1193,7 +1191,6 @@ static int __frame_config_trigger(struct disp_frame_cfg_t *frame_cfg)
 
 int _ioctl_frame_config(unsigned long arg)
 {
-	void __user *argp = (void __user *)arg;
 	struct disp_frame_cfg_t *frame_cfg;
 
 	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
@@ -1206,11 +1203,11 @@ int _ioctl_frame_config(unsigned long arg)
 	}
 
 	/* set input */
-	__frame_config_set_input(&frame_cfg);
+	__frame_config_set_input(frame_cfg);
 	/* set output */
-	__frame_config_set_output(&frame_cfg);
+	__frame_config_set_output(frame_cfg);
 	/* trigger */
-	__frame_config_trigger(&frame_cfg);
+	__frame_config_trigger(frame_cfg);
 
 	return 0;
 }
@@ -1221,7 +1218,6 @@ int _ioctl_get_info(unsigned long arg)
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_info info;
-	int dev = 0;
 	unsigned int session_id = 0;
 
 	if (copy_from_user(&info, argp, sizeof(info))) {

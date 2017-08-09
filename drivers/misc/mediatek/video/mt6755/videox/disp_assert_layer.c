@@ -2,7 +2,7 @@
 #include "primary_display.h"
 #include "ddp_hal.h"
 #include "disp_drv_log.h"
-#include <linux/disp_assert_layer.h>
+#include "disp_assert_layer.h"
 #include <linux/semaphore.h>
 #include <linux/mutex.h>
 #include "ddp_mmp.h"
@@ -34,6 +34,8 @@
 			     (((x) & 0x0000F8) >> 3))
 
 #define MAKE_TWO_RGB565_COLOR(high, low)  (((low) << 16) | (high))
+
+DEFINE_SEMAPHORE(dal_sem);
 
 inline DAL_STATUS DAL_LOCK(void)
 {
@@ -82,7 +84,7 @@ static MFC_HANDLE mfc_handle;
 static void *dal_fb_addr;
 static unsigned long dal_fb_pa;
 
-static BOOL dal_enable_when_resume = FALSE;
+/*static BOOL dal_enable_when_resume = FALSE;*/
 static BOOL dal_disable_when_resume = FALSE;
 static unsigned int dal_fg_color = RGB888_To_RGB565(DAL_COLOR_WHITE);
 static unsigned int dal_bg_color = RGB888_To_RGB565(DAL_COLOR_RED);
@@ -90,8 +92,6 @@ static char dal_print_buffer[1024];
 
 BOOL dal_shown = FALSE;
 unsigned int isAEEEnabled = 0;
-
-DEFINE_SEMAPHORE(dal_sem);
 
 /* --------------------------------------------------------------------------- */
 
@@ -101,7 +101,7 @@ UINT32 DAL_GetLayerSize(void)
 	/* avoid lcdc read buffersize+1 issue */
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
-
+/*
 static DAL_STATUS DAL_SetRedScreen(UINT32 *addr)
 {
 	UINT32 i;
@@ -111,7 +111,7 @@ static DAL_STATUS DAL_SetRedScreen(UINT32 *addr)
 		*addr++ = BG_COLOR;
 	return DAL_STATUS_OK;
 }
-
+*/
 DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 {
 	UINT32 i;
@@ -177,14 +177,13 @@ DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
 
 DAL_STATUS DAL_Clean(void)
 {
-	const UINT32 BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR);
 	DAL_STATUS ret = DAL_STATUS_OK;
 
 	static int dal_clean_cnt;
 
 	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) mfc_handle;
 
-	pr_err("[MTKFB_DAL] DAL_Clean\n");
+	DISPMSG("[MTKFB_DAL] DAL_Clean\n");
 	if (NULL == mfc_handle)
 		return DAL_STATUS_NOT_READY;
 
@@ -207,7 +206,7 @@ DAL_STATUS DAL_Clean(void)
 		session_input.config_layer_num = 1;
 		input = &session_input.config[0];
 
-		input->src_phy_addr = (unsigned int)dal_fb_pa;
+		input->src_phy_addr = (void *)dal_fb_pa;
 		input->layer_id = primary_display_get_option("ASSERT_LAYER");
 		input->layer_enable = 0;
 		input->src_offset_x = 0;
@@ -239,7 +238,6 @@ DAL_STATUS DAL_Clean(void)
 	primary_display_trigger(0, NULL, 0);
 
 
-End:
 	DAL_UNLOCK();
 	MMProfileLogEx(ddp_mmp_get_events()->dal_clean, MMProfileFlagEnd, 0, 0);
 	return ret;
@@ -293,7 +291,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 		session_input.config_layer_num = 1;
 		input = &session_input.config[0];
 
-		input->src_phy_addr = (unsigned int)dal_fb_pa;
+		input->src_phy_addr = (void *)dal_fb_pa;
 		input->layer_id = primary_display_get_option("ASSERT_LAYER");
 		input->layer_enable = 1;
 		input->src_offset_x = 0;
@@ -327,7 +325,6 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 
 	ret = primary_display_trigger(0, NULL, 0);
 
-End:
 
 	DAL_UNLOCK();
 

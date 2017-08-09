@@ -10,7 +10,7 @@
 #include <linux/kthread.h>
 #include <linux/timer.h>
 
-#include <mach/mt_irq.h>
+/* #include <mach/mt_irq.h> */
 #include "ddp_reg.h"
 #include "ddp_irq.h"
 #include "ddp_aal.h"
