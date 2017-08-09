@@ -10,11 +10,9 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
-
+#include <linux/types.h>
 #include "m4u.h"
-
 #include "disp_drv_ddp.h"
-
 #include "ddp_debug.h"
 #include "ddp_reg.h"
 #include "ddp_drv.h"
@@ -33,6 +31,7 @@
 #include "display_recorder.h"
 #include "disp_session.h"
 
+#pragma GCC optimize("O0")
 
 static struct dentry *debugfs;
 static struct dentry *debugDir;
@@ -95,7 +94,6 @@ static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 
 static void process_dbg_opt(const char *opt)
 {
-	static disp_session_config config;
 	int ret;
 	char *buf = dbg_buf + strlen(dbg_buf);
 
@@ -224,18 +222,16 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (0 == strncmp(opt, "rdma_color:", 11)) {
 		if (0 == strncmp(opt + 11, "on", 2)) {
-			char *p = (char *)opt + 14;
 			unsigned int red, green, blue;
+			rdma_color_matrix matrix;
+			rdma_color_pre pre = { 0 };
+			rdma_color_post post = { 255, 0, 0 };
 
 			ret = sscanf(opt, "%d,%d,%d\n", &red, &green, &blue);
 			if (ret != 3) {
 				snprintf(buf, 50, "error to parse cmd %s\n", opt);
 				return;
 			}
-
-			rdma_color_matrix matrix = { 0 };
-			rdma_color_pre pre = { 0 };
-			rdma_color_post post = { 255, 0, 0 };
 
 			post.ADD0 = red;
 			post.ADD1 = green;
@@ -256,23 +252,9 @@ static void process_dbg_opt(const char *opt)
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
 	} else if (0 == strncmp(opt, "corr_dbg:", 9)) {
-		char *p = (char *)opt + 9;
+		int i;
 
-		ret = kstrtouint(p, 0, &corr_dbg_en);
-		if (ret) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		sprintf(buf, "corr_dbg_en = 0x%x\n", corr_dbg_en);
-	} else if (0 == strncmp(opt, "aal_test:", 9)) {
-		aal_test(opt + 9, buf);
-	} else if (0 == strncmp(opt, "pwm_test:", 9)) {
-		disp_pwm_test(opt + 9, buf);
-	} else if (0 == strncmp(opt, "dither_test:", 12)) {
-		/*dither_test(opt + 12, buf);*/
-	} else if (0 == strncmp(opt, "ccorr_test:", 11)) {
-		ccorr_test(opt + 11, buf);
+		i = 0;
 	} else if (0 == strncmp(opt, "dump_reg:", 9)) {
 		char *p = (char *)opt + 9;
 		unsigned int module;
@@ -375,7 +357,7 @@ static void process_dbg_cmd(char *cmd)
 /* Debug FileSystem Routines */
 /* --------------------------------------------------------------------------- */
 
-static ssize_t debug_open(struct inode *inode, struct file *file)
+static int debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
 	return 0;

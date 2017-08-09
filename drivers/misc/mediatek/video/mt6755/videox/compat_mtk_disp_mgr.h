@@ -2,6 +2,9 @@
 #define _COMPAT_MTK_DISP_MGR_H_
 #include <linux/uaccess.h>
 #include <linux/compat.h>
+#include <linux/types.h>
+#include <linux/kernel.h>
+#include <linux/fb.h>
 #include "mtk_disp_mgr.h"
 
 #include "disp_session.h"
@@ -75,7 +78,7 @@ struct compat_disp_session_input_config {
 	compat_uint_t setter;
 	compat_uint_t session_id;
 	compat_uint_t config_layer_num;
-	compat_disp_input_config config[8];
+	struct compat_disp_input_config config[8];
 };
 
 struct compat_disp_present_fence {
@@ -96,7 +99,7 @@ struct compat_disp_session_layer_num_config {
 	compat_uint_t max_layer_num;
 };
 
-struct compat_disp_caps {
+struct compat_disp_caps_info {
 	compat_uint_t output_mode;
 	compat_uint_t output_pass;
 	compat_uint_t max_layer_num;
@@ -120,7 +123,7 @@ struct compat_disp_buffer_info {
 
 struct compat_disp_session_output_config {
 	compat_uint_t session_id;
-	compat_disp_output_config config;
+	struct compat_disp_output_config config;
 };
 
 struct compat_disp_session_info {

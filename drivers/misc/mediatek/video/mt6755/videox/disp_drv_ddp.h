@@ -2,7 +2,7 @@
 /*Only for DDP driver.*/
 #ifndef __DISP_DRV_DDP_H__
 #define __DISP_DRV_DDP_H__
-#include <mach/mt_typedefs.h>
+#include <mt-plat/mt_typedefs.h>
 
 typedef int (*DISP_EXTRA_CHECKUPDATE_PTR)(int);
 typedef int (*DISP_EXTRA_CONFIG_PTR)(int);

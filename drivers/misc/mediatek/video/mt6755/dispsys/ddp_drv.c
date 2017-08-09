@@ -142,12 +142,12 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 };
 
 #endif
-
+/*
 static unsigned int ddp_ms2jiffies(unsigned long ms)
 {
 	return (ms * HZ + 512) >> 10;
 }
-
+*/
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 
 #include "mobicore_driver_api.h"
@@ -399,8 +399,9 @@ static int disp_path_notify_tplay_handle(unsigned int handle_value)
 
 static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	disp_node_struct *pNode = (disp_node_struct *) file->private_data;
+	disp_node_struct *pNode;
 
+	pNode = (disp_node_struct *) file->private_data;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	if (DISP_IOCTL_SET_TPLAY_HANDLE == cmd) {
 		unsigned int value;
@@ -461,7 +462,6 @@ static ssize_t disp_read(struct file *file, char __user *data, size_t len, loff_
 static int disp_release(struct inode *inode, struct file *file)
 {
 	disp_node_struct *pNode = NULL;
-	unsigned int index = 0;
 
 	DDPDBG("enter disp_release() process:%s\n", current->comm);
 
@@ -550,7 +550,7 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned int mva, void *data)
 	m4u_callback_ret_t ret;
 
 	ret = M4U_CALLBACK_HANDLED;
-	DDPERR("fault call port=%d, mva=0x%lx, data=0x%p\n", port, mva, data);
+	DDPERR("fault call port=%d, mva=0x%x, data=0x%p\n", port, mva, data);
 	switch (port) {
 	case M4U_PORT_DISP_OVL0:
 		module = DISP_MODULE_OVL0;
@@ -668,7 +668,7 @@ static int disp_probe(struct platform_device *pdev)
 	/* mipi tx reg map here */
 	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
 	mipi_tx_reg = dispsys_reg[DISP_REG_MIPI];
-	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
+/*	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];*/
 #ifndef CONFIG_MTK_CLKMGR
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
 		DDPMSG("DISPSYS get clock %s\n", disp_clk_name[i]);

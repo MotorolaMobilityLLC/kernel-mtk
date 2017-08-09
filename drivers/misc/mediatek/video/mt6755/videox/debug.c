@@ -44,7 +44,7 @@
 
 static struct dentry *mtkfb_dbgfs;
 static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
-
+/*
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
 {
@@ -80,7 +80,6 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 	int frame, i, ret;
 	enum UNIFIED_COLOR_FMT ufmt;
 	int enable = 0;
-	/* allocate buffer */
 	unsigned long size;
 	unsigned char *buf_va;
 	dma_addr_t buf_pa;
@@ -169,7 +168,6 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 		}
 	}
 
-	/* disable all layers */
 	memset(&input_config, 0, sizeof(input_config));
 	input_config.config_layer_num = layer_num;
 	for (i = 0; i < layer_num; i++)
@@ -179,14 +177,13 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 	primary_display_trigger(1, NULL, 0);
 
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-		/* dealloc mva */
 		m4u_destroy_client(client);
 	}
 
 	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
 	return 0;
 }
-
+*/
 
 static char STR_HELP[] =
 	"\n"
@@ -483,7 +480,7 @@ static void process_dbg_opt(const char *opt)
 		else if (fmt == 2)
 			fmt = DISP_FORMAT_RGB565;
 
-		primary_display_basic_test(layer_num, w, h, fmt, frame_num, vsync);
+		/*primary_display_basic_test(layer_num, w, h, fmt, frame_num, vsync);*/
 	}
 
 	if (0 == strncmp(opt, "pan_disp_test:", 13)) {
@@ -499,7 +496,7 @@ static void process_dbg_opt(const char *opt)
 		pan_display_test(frame_num, bpp);
 	}
 
-Error:
+
 	pr_debug("parse command error!\n\n%s",
 		       STR_HELP);
 }

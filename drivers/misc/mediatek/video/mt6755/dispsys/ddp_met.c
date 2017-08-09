@@ -8,6 +8,7 @@
 #include "ddp_met.h"
 #include "ddp_ovl.h"
 #include "ddp_rdma.h"
+#include "DpDataType.h"
 
 #define DDP_IRQ_EER_ID				(0xFFFF0000)
 #define DDP_IRQ_FPS_ID				(DDP_IRQ_EER_ID + 1)
@@ -22,7 +23,7 @@
 
 
 unsigned int met_tag_on = 0;
-
+/*
 static const char *const parse_color_format(DpColorFormat fmt)
 {
 	switch (fmt) {
@@ -50,9 +51,11 @@ static const char *const parse_color_format(DpColorFormat fmt)
 		return "eYVYU";
 	case eYUY2:
 		return "eYUY2";
+	default:
+		return "";
 	}
 }
-
+*/
 /**
  * Represent to LCM display refresh rate
  * Primary Display:  map to RDMA0 sof/eof ISR, for all display mode
@@ -185,10 +188,7 @@ static void ddp_inout_info_tag(unsigned int index)
 			}
 		}
 	}
-
-
 #endif
-
 }
 
 static void ddp_err_irq_met_tag(const char *name)
@@ -200,7 +200,7 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 {
 	int index = 0;
 	char tag_name[30] = { '\0' };
-	int mutexID;
+	/*int mutexID;*/
 	/* DDPERR("met_irq_handler() module=%d, val=0x%x\n", module, reg_val); */
 	switch (module) {
 	case DISP_MODULE_RDMA0:
@@ -225,7 +225,7 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
 		index = module - DISP_MODULE_OVL0;
-		if (reg_val & (1 << 1)) {/*EOF*/
+		if (reg_val & (1 << 1))
 			ddp_inout_info_tag(index);
 			/*if (met_mmsys_event_disp_ovl_eof)
 				met_mmsys_event_disp_ovl_eof(index);*/
@@ -233,16 +233,16 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 		break;
 
 	case DISP_MODULE_MUTEX:
-		/*reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x7C1F;*/
+		/*reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x7C1F;
 		for (mutexID = DISP_MUTEX_DDP_FIRST; mutexID <= DISP_MUTEX_DDP_LAST; mutexID++) {
-			if (reg_val & (0x1<<mutexID))/*SOF*/
+			if (reg_val & (0x1<<mutexID))//sof
 				if (met_mmsys_event_disp_sof)
 					met_mmsys_event_disp_sof(mutexID);
 
-			if (reg_val & (0x1<<(mutexID+DISP_MUTEX_TOTAL))) /*EOF*/
+			if (reg_val & (0x1<<(mutexID+DISP_MUTEX_TOTAL)))//eof
 				if (met_mmsys_event_disp_mutex_eof)
 					met_mmsys_event_disp_mutex_eof(mutexID);
-		}
+		}*/
 		break;
 
 	default:
@@ -261,4 +261,3 @@ void ddp_init_met_tag(int state, int rdma0_mode, int rdma1_mode)
 		disp_unregister_irq_callback(met_irq_handler);
 	}
 }
-EXPORT_SYMBOL(ddp_init_met_tag);

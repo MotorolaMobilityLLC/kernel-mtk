@@ -10,7 +10,6 @@
 #include <linux/kthread.h>
 #include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
-#include "disp_assert_layer.h"
 #include <linux/semaphore.h>
 #include <linux/mutex.h>
 #include <linux/suspend.h>
@@ -18,19 +17,20 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/dma-buf.h>
-#include <asm/uaccess.h>
-#include <asm/atomic.h>
+#include <linux/uaccess.h>
+#include <linux/atomic.h>
 /* #include <asm/mach-types.h> */
 #include <asm/cacheflush.h>
-#include <asm/io.h>
-#include "ion_drv.h"
-#include <mach/dma.h>
+#include <linux/io.h>
+/*#include <mach/dma.h>*/
 /* #include <mach/irqs.h> */
 #include <linux/dma-mapping.h>
 #include <linux/compat.h>
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
+#include "ion_drv.h"
 
 #include "mt-plat/mt_boot.h"
+#include "disp_assert_layer.h"
 #include "debug.h"
 #include "ddp_hal.h"
 #include "disp_drv_log.h"

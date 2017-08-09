@@ -134,8 +134,8 @@ bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset,
 unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id,
 				unsigned long phy_addr, int query_type);
 #endif
-unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id,
-		unsigned int layer_id, unsigned int phy_addr);
+unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int layer_id,
+					 unsigned long phy_addr);
 bool mtkfb_update_buf_info(unsigned int session_id,
 		unsigned int layer_id, unsigned int idx, unsigned int mva_offset, unsigned int seq);
 struct mtkfb_fence_buf_info *mtkfb_init_buf_info(struct mtkfb_fence_buf_info *buf);

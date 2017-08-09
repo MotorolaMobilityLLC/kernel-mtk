@@ -1,17 +1,15 @@
 # drivers/dispsys
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/mt6755/ \
-             -I$(srctree)/drivers/misc/mediatek/lcm/inc
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
+             -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/mmp/
 
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
-                    -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6755
-
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
-
-subdir-ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
+ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include

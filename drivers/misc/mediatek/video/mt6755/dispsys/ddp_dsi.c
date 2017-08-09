@@ -1814,9 +1814,9 @@ DSI_STATUS DSI_EnableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 DSI_STATUS DSI_DisableClk(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
-	int i = 0;
-
 #if 0
+	int i;
+
 	DISPFUNC();
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_EN, 0);
@@ -1885,7 +1885,6 @@ uint32_t DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, ui
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
 	long ret;
 	int timeout = 0;
-	int i = 0;
 
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		if (DSI_REG[d]->DSI_MODE_CTRL.MODE) {
@@ -2691,7 +2690,7 @@ void DSI_set_cmdq_wrapper_DSIDual(unsigned int *pdata, unsigned int queue_size,
 	DSI_set_cmdq(DISP_MODULE_DSIDUAL, NULL, pdata, queue_size, force_update);
 }
 
-unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI0(uint8_t cmd, int8_t *buffer, uint8_t buffer_size)
+unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI0(uint8_t cmd, uint8_t *buffer, uint8_t buffer_size)
 {
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd, buffer, buffer_size);
 }
@@ -2728,7 +2727,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	}
 
 	if (module == DISP_MODULE_DSI0) {
-		utils = &lcm_utils_dsi0;
+		utils = (LCM_UTIL_FUNCS *)&lcm_utils_dsi0;
 	} else {
 		DISPERR("wrong module: %d\n", module);
 		return -1;
@@ -2777,7 +2776,7 @@ void DSI_ChangeClk(DISP_MODULE_ENUM module, uint32_t clk)
 	}
 }
 
-int ddp_dsi_init(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 {
 
 	DSI_STATUS ret = DSI_STATUS_OK;
@@ -2793,14 +2792,14 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	ddp_parse_apmixed_base();
 #endif
 #endif
-	DSI_REG[0] = DISPSYS_DSI0_BASE;
-	DSI_PHY_REG[0] = MIPITX_BASE;
-	DSI_CMDQ_REG[0] = DISPSYS_DSI0_BASE + 0x200;
-	DSI_REG[1] = DISPSYS_DSI0_BASE;
-	DSI_PHY_REG[1] = MIPITX_BASE;
-	DSI_CMDQ_REG[1] = DISPSYS_DSI0_BASE + 0x200;
-	DSI_VM_CMD_REG[0] = DISPSYS_DSI0_BASE + 0x134;
-	DSI_VM_CMD_REG[1] = DISPSYS_DSI0_BASE + 0x134;
+	DSI_REG[0] = (DSI_REGS *) DISPSYS_DSI0_BASE;
+	DSI_PHY_REG[0] = (DSI_PHY_REGS *) MIPITX_BASE;
+	DSI_CMDQ_REG[0] = (DSI_CMDQ_REGS *) (DISPSYS_DSI0_BASE + 0x200);
+	DSI_REG[1] = (DSI_REGS *) DISPSYS_DSI0_BASE;
+	DSI_PHY_REG[1] = (DSI_PHY_REGS *) MIPITX_BASE;
+	DSI_CMDQ_REG[1] = (DSI_CMDQ_REGS *) (DISPSYS_DSI0_BASE + 0x200);
+	DSI_VM_CMD_REG[0] = (DSI_VM_CMDQ_REGS *) (DISPSYS_DSI0_BASE + 0x134);
+	DSI_VM_CMD_REG[1] = (DSI_VM_CMDQ_REGS *) (DISPSYS_DSI0_BASE + 0x134);
 	memset(&_dsi_context, 0, sizeof(_dsi_context));
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3024,7 +3023,7 @@ static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, cmdqRecHandle
 int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *cmdq)
 {
 	int i = 0;
-	int mipitx_config_dirty = 0;
+	LCM_DSI_PARAMS *dsi_config = &(config->dispif_config.dsi);
 
 	if (!config->dst_dirty) {
 		if (atomic_read(&PMaster_enable) == 0)
@@ -3032,7 +3031,6 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 	}
 	DISPFUNC();
 	DISPCHECK("===>run here 00 Pmaster: clk:%d\n", _dsi_context[0].dsi_params.PLL_CLOCK);
-	LCM_DSI_PARAMS *dsi_config = &(config->dispif_config.dsi);
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		_copy_dsi_params(dsi_config, &(_dsi_context[i].dsi_params));
@@ -3098,7 +3096,7 @@ done:
 	return 0;
 }
 
-int ddp_dsi_start(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 {
 
 	int i = 0;
@@ -3301,7 +3299,7 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 			unsigned int level = params[0];
 
 			DDPMSG("[ddp_dsi_ioctl] level = %d\n", level);
-			DSI_set_cmdq_V2(module, cmdq_handle, cmd, count, &level, 1);
+			DSI_set_cmdq_V2(module, cmdq_handle, cmd, count, ((unsigned char *)&level), 1);
 			break;
 		}
 	case DDP_DSI_IDLE_CLK_CLOSED:
@@ -3346,11 +3344,13 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 			DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
 			break;
 		}
+	default:
+		break;
 	}
 	return ret;
 }
 
-int ddp_dsi_trigger(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
+int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
 	unsigned int data_array[16];
@@ -3374,7 +3374,7 @@ int ddp_dsi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	int i = 0;
+
 	int ret = 0;
 
 	DISPFUNC();
@@ -3682,19 +3682,18 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000001);
 			}
 			/* 2. save RX data */
-			if (hSlot) {
+			if (hSlot)
 				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot, i,
 						&DSI_REG[0]->DSI_RX_DATA0);
-			}
+
 			/* 3. write RX_RACK */
 			DSI_OUTREGBIT(cmdq_trigger_handle, DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
 				      DSI_RACK, 1);
 
 			/* 4. polling not busy(no need clear) */
-			if (dsi_i == 0) {
+			if (dsi_i == 0)
 				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA,
 					      0x80000000, 0);
-			}
 			/* loop: 0~4 */
 		}
 
@@ -3837,7 +3836,7 @@ void *get_dsi_params_handle(uint32_t dsi_idx)
 		return (void *)(&_dsi_context[1].dsi_params);
 }
 
-uint32_t DSI_ssc_enable(UINT32 dsi_index, UINT32 en)
+int32_t DSI_ssc_enable(uint32_t dsi_index, uint32_t en)
 {
 	uint32_t disable = en ? 0 : 1;
 

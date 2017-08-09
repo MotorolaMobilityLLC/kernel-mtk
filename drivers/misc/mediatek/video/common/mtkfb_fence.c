@@ -255,7 +255,7 @@ static void mtkfb_ion_init(void)
 		return;
 	}
 
-	DISPPRINT("create ion client 0x%p\n", ion_client);
+	/*DISPPRINT("create ion client 0x%p\n", ion_client);*/
 }
 
 /**

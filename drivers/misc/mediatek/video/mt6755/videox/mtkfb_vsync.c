@@ -26,7 +26,6 @@
 #include "mtkfb_vsync.h"
 #include "primary_display.h"
 #include "extd_info.h"
-#include <linux/xlog.h>
 
 #define VSYNC_DBG(...) pr_debug(__VA_ARGS__)
 

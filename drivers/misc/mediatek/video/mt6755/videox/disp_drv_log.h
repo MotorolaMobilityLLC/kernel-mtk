@@ -2,6 +2,9 @@
 #define __DISP_DRV_LOG_H__
 #include "display_recorder.h"
 #include "ddp_debug.h"
+#include "debug.h"
+#include "mt-plat/aee.h"
+
 #define DISP_LOG_PRINT(level, sub_module, fmt, arg...)      \
 	    pr_debug(fmt, ##arg)
 
@@ -54,4 +57,11 @@
 		disp_name, "[DISP] error"string, ##args);  \
 	pr_err("DISP error: "string, ##args);  \
 } while (0)
+
+#define DISP_FATAL_ERR(tag, string, args...) do {\
+		DISPMSG(string, ##args);		\
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT |			\
+				       DB_OPT_MMPROFILE_BUFFER, tag, "error: "string, ##args);	\
+	} while (0)
+
 #endif				/* __DISP_DRV_LOG_H__ */

@@ -83,19 +83,18 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	/*PRIMARY_OVL_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
-	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 
 	/*PRIMARY_DITHER_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
-	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, -1, -1, -1, -1, -1},
 	/*PRIMARY_UFOE_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
-	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, -1, -1, -1, -1,
-	 -1, -1},
+	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, -1, -1, -1},
 	/*SUB_DISP */
 	{
 	 DISP_MODULE_OVL1, DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -182,22 +181,22 @@ static sel_t sel_in_map[DDP_SEL_IN_NUM] = {
 int ddp_path_init(void)
 {
 	/* mout */
-	mout_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_MOUT_EN;
-	mout_map[1].reg = DISP_REG_CONFIG_DISP_OVL1_MOUT_EN;
-	mout_map[2].reg = DISP_REG_CONFIG_DISP_DITHER_MOUT_EN;
-	mout_map[3].reg = DISP_REG_CONFIG_DISP_UFOE_MOUT_EN;
+	mout_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL0_MOUT_EN;
+	mout_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL1_MOUT_EN;
+	mout_map[2].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_DITHER_MOUT_EN;
+	mout_map[3].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_UFOE_MOUT_EN;
 	/* sel_out */
-	sel_out_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN;
-	sel_out_map[1].reg = DISP_REG_CONFIG_DISP_OVL1_SOUT_SEL_IN;
-	sel_out_map[2].reg = DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
-	sel_out_map[3].reg = DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
+	sel_out_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN;
+	sel_out_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL1_SOUT_SEL_IN;
+	sel_out_map[2].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
+	sel_out_map[3].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
 	/* sel_in */
-	sel_in_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_SEL_IN;	/* OVL_SEL */
-	sel_in_map[1].reg = DISP_REG_CONFIG_DISP_COLOR0_SEL_IN;	/* COLOR_SEL */
-	sel_in_map[2].reg = DISP_REG_CONFIG_DISP_UFOE_SEL_IN;	/* UFOE_SEL */
-	sel_in_map[3].reg = DISP_REG_CONFIG_DSI0_SEL_IN;	/* DSI0_SEL */
-	sel_in_map[4].reg = DISP_REG_CONFIG_DPI0_SEL_IN;	/* DPI0_SEL */
-	sel_in_map[5].reg = DISP_REG_CONFIG_DISP_WDMA0_SEL_IN;	/* WDMA_SEL */
+	sel_in_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL0_SEL_IN;	/* OVL_SEL */
+	sel_in_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_COLOR0_SEL_IN;	/* COLOR_SEL */
+	sel_in_map[2].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_UFOE_SEL_IN;	/* UFOE_SEL */
+	sel_in_map[3].reg = (volatile unsigned long *)DISP_REG_CONFIG_DSI0_SEL_IN;	/* DSI0_SEL */
+	sel_in_map[4].reg = (volatile unsigned long *)DISP_REG_CONFIG_DPI0_SEL_IN;	/* DPI0_SEL */
+	sel_in_map[5].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_WDMA0_SEL_IN;	/* WDMA_SEL */
 	return 0;
 }
 

@@ -23,7 +23,6 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 #ifdef CONFIG_COMPAT
 static long disp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	long ret = -ENOIOCTLCMD;
 
 	return mtk_disp_mgr_ioctl(file, cmd, arg);
 }

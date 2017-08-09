@@ -80,7 +80,7 @@ static reg_base_map reg_map[] = {
 	{"MIPITX0", (0xF0215000)},
 	{"MIPITX1", (0xF0216000)},
 };
-
+/*
 static event_string_map event_map[] = {
 	{"Set Config Dirty", DPREC_EVENT_CMDQ_SET_DIRTY},
 	{"Wait Stream EOF", DPREC_EVENT_CMDQ_WAIT_STREAM_EOF},
@@ -90,7 +90,7 @@ static event_string_map event_map[] = {
 	{"Frame Done", DPREC_EVENT_FRAME_DONE},
 	{"Frame Start", DPREC_EVENT_FRAME_START},
 };
-
+*/
 
 
 static MMP_Event dprec_mmp_event_spy(DPREC_LOGGER_ENUM l)
@@ -147,7 +147,7 @@ static const char *_find_module_by_reg_addr(unsigned int reg)
 
 	return "unknown";
 }
-
+/*
 static const char *_get_event_string(DPREC_EVENT event)
 {
 	int i = 0;
@@ -159,7 +159,7 @@ static const char *_get_event_string(DPREC_EVENT event)
 
 	return "unknown";
 }
-
+*/
 static unsigned long long get_current_time_us(void)
 {
 	unsigned long long time = sched_clock();
@@ -183,7 +183,7 @@ static dprec_logger old_logger[DPREC_LOGGER_NUM];
 static unsigned char dprec_string_buffer_analysize[dprec_dump_max_length];
 static unsigned int analysize_length;
 char dprec_error_log_buffer[DPREC_ERROR_LOG_BUFFER_LENGTH];
-static static dprec_logger_event dprec_vsync_irq_event;
+static dprec_logger_event dprec_vsync_irq_event;
 static met_log_map dprec_met_info[DISP_SESSION_MEMORY + 2] = {
 	{"UNKWON", 0, 0},
 	{"OVL0-DSI", 0, 0},
@@ -200,6 +200,7 @@ int dprec_init(void)
 
 	dprec_logger_event_init(&dprec_vsync_irq_event, "VSYNC_IRQ", DPREC_LOGGER_LEVEL_SYSTRACE,
 				NULL);
+	return 0;
 }
 /*
 void dprec_event_op(DPREC_EVENT event)
@@ -313,14 +314,15 @@ static const char *dprec_logger_spy(DPREC_LOGGER_ENUM l)
 void dprec_logger_trigger(unsigned int type_logsrc, unsigned int val1, unsigned int val2)
 {
 	unsigned long flags = 0;
+	DPREC_LOGGER_ENUM source;
+	dprec_logger *l;
+	unsigned long long time;
 
 	dprec_to_mmp(type_logsrc, MMProfileFlagPulse, val1, val2);
-
-	DPREC_LOGGER_ENUM source = type_logsrc & 0xffffff;
-
+	source = type_logsrc & 0xffffff;
 	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-	dprec_logger *l = &logger[source];
-	unsigned long long time = get_current_time_us();
+	l = &logger[source];
+	time = get_current_time_us();
 
 	if (l->count == 0) {
 		l->ts_start = time;
@@ -365,12 +367,14 @@ unsigned long long dprec_logger_get_current_hold_period(unsigned int type_logsrc
 {
 	unsigned long long period = 0;
 	unsigned long flags = 0;
-	unsigned long long time = get_current_time_us();
+	unsigned long long time;
+	DPREC_LOGGER_ENUM source;
+	dprec_logger *l;
 
-	DPREC_LOGGER_ENUM source = type_logsrc & 0xffffff;
-
+	time = get_current_time_us();
+	source = type_logsrc & 0xffffff;
 	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-	dprec_logger *l = &logger[source];
+	l = &logger[source];
 
 	if (l->ts_trigger)
 		period = (time - l->ts_trigger);
@@ -385,14 +389,16 @@ unsigned long long dprec_logger_get_current_hold_period(unsigned int type_logsrc
 void dprec_logger_start(unsigned int type_logsrc, unsigned int val1, unsigned int val2)
 {
 	unsigned long flags = 0;
+	dprec_logger *l;
+	DPREC_LOGGER_ENUM source;
+	unsigned long long time;
 
 	dprec_to_mmp(type_logsrc, MMProfileFlagStart, val1, val2);
 
-	DPREC_LOGGER_ENUM source = type_logsrc & 0xffffff;
-
+	source = type_logsrc & 0xffffff;
 	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-	dprec_logger *l = &logger[source];
-	unsigned long long time = get_current_time_us();
+	l = &logger[source];
+	time = get_current_time_us();
 
 	if (l->count == 0) {
 		l->ts_start = time;
@@ -418,14 +424,15 @@ void dprec_logger_start(unsigned int type_logsrc, unsigned int val1, unsigned in
 void dprec_logger_done(unsigned int type_logsrc, unsigned int val1, unsigned int val2)
 {
 	unsigned long flags = 0;
+	dprec_logger *l;
+	unsigned long long time;
+	DPREC_LOGGER_ENUM source;
 
 	dprec_to_mmp(type_logsrc, MMProfileFlagEnd, val1, val2);
-
-	DPREC_LOGGER_ENUM source = type_logsrc & 0xffffff;
-
+	source = type_logsrc & 0xffffff;
 	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-	dprec_logger *l = &logger[source];
-	unsigned long long time = get_current_time_us();
+	l = &logger[source];
+	time = get_current_time_us();
 
 	if (l->ts_start == 0)
 		goto done;
@@ -452,7 +459,7 @@ void dprec_logger_event_init(dprec_logger_event *p, char *name, uint32_t level,
 	if (p) {
 		scnprintf(p->name, sizeof(p->name) / sizeof(p->name[0]), name);
 		if (mmp_root)
-			p->mmp = MMProfileRegisterEvent(mmp_root, name);
+			p->mmp = MMProfileRegisterEvent(*mmp_root, name);
 		else
 			p->mmp = MMProfileRegisterEvent(ddp_mmp_get_events()->DDP, name);
 
@@ -545,6 +552,9 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence)
 
 void dprec_start(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 {
+	dprec_logger *l;
+	unsigned long long time;
+
 	if (event) {
 		if (event->level & DPREC_LOGGER_LEVEL_MMP)
 			MMProfileLogEx(event->mmp, MMProfileFlagStart, val1, val2);
@@ -553,8 +563,8 @@ void dprec_start(dprec_logger_event *event, unsigned int val1, unsigned int val2
 			unsigned long flags = 0;
 
 			spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-			dprec_logger *l = &(event->logger);
-			unsigned long long time = get_current_time_us();
+			l = &(event->logger);
+			time = get_current_time_us();
 
 			if (l->count == 0) {
 				l->ts_start = time;
@@ -587,6 +597,10 @@ void dprec_start(dprec_logger_event *event, unsigned int val1, unsigned int val2
 
 void dprec_done(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 {
+	dprec_logger *l;
+	unsigned long long time;
+
+
 	if (event) {
 		if (event->level & DPREC_LOGGER_LEVEL_MMP)
 			MMProfileLogEx(event->mmp, MMProfileFlagEnd, val1, val2);
@@ -595,8 +609,8 @@ void dprec_done(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 			unsigned long flags = 0;
 
 			spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-			dprec_logger *l = &(event->logger);
-			unsigned long long time = get_current_time_us();
+			l = &(event->logger);
+			time = get_current_time_us();
 
 			if (l->ts_start != 0) {
 				l->period_frame = time - l->ts_trigger;
@@ -631,6 +645,9 @@ void dprec_done(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 
 void dprec_trigger(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 {
+	dprec_logger *l = &(event->logger);
+	unsigned long long time;
+
 	if (event) {
 		if (event->level & DPREC_LOGGER_LEVEL_MMP)
 			MMProfileLogEx(event->mmp, MMProfileFlagPulse, val1, val2);
@@ -639,8 +656,8 @@ void dprec_trigger(dprec_logger_event *event, unsigned int val1, unsigned int va
 			unsigned long flags = 0;
 
 			spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-			dprec_logger *l = &(event->logger);
-			unsigned long long time = get_current_time_us();
+			l = &(event->logger);
+			time = get_current_time_us();
 
 			if (l->count == 0) {
 				l->ts_start = time;
@@ -707,12 +724,12 @@ void dprec_logger_submit(unsigned int type_logsrc, unsigned long long period,
 			 unsigned int fence_idx)
 {
 	unsigned long flags = 0;
+	DPREC_LOGGER_ENUM source;
+	dprec_logger *l;
 
-	DPREC_LOGGER_ENUM source = type_logsrc & 0xffffff;
-
+	source = type_logsrc & 0xffffff;
 	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
-	dprec_logger *l = &logger[source];
-
+	l = &logger[source];
 	l->period_frame = period;
 
 	if (l->period_frame > l->period_max_frame)
@@ -786,10 +803,13 @@ int dprec_logger_get_result_string(DPREC_LOGGER_ENUM source, char *stringbuf, in
 	len += scnprintf(stringbuf + len, strlen - len,
 		      "|%-24s|%8llu |%8lld.%02ld |%8llu.%02ld |%8llu.%02ld |%8llu.%02ld |\n",
 		      dprec_logger_spy(source), l->count, fps_high, fps_low,
-		      nsec_high(avg), nsec_low(avg),
-		      nsec_high(l->period_max_frame), nsec_low(l->period_max_frame),
-		      nsec_high(l->period_min_frame), nsec_low(l->period_min_frame)
-			);
+			(unsigned long long)nsec_high(avg),
+			(unsigned long)nsec_low(avg),
+			(unsigned long long)nsec_high(l->period_max_frame),
+			(unsigned long)nsec_low(l->period_max_frame),
+			(unsigned long long)nsec_high(l->period_min_frame),
+			(unsigned long)nsec_low(l->period_min_frame));
+
 	spin_unlock_irqrestore(&gdprec_logger_spinlock, flags);
 	return len;
 }
@@ -842,7 +862,7 @@ int dprec_logger_get_result_value(DPREC_LOGGER_ENUM source, fpsEx *fps)
 	    source == DPREC_LOGGER_PQ_TRIGGER_1SECOND)
 		l = &old_logger[source];
 
-	unsigned long long total = 0;
+	total = 0;
 	/* calculate average period need use available total period */
 	if (l->period_total)
 		total = l->period_total;
@@ -1027,7 +1047,7 @@ void dprec_logger_dump_reset(void)
 	memset(dprec_string_buffer_analysize, 0, sizeof(dprec_string_buffer_analysize));
 }
 
-char *dprec_logger_get_dump_addr()
+char *dprec_logger_get_dump_addr(void)
 {
 	return dprec_string_buffer_analysize;
 }
@@ -1053,6 +1073,7 @@ int dprec_handle_option(unsigned int option)
 	_control.cmm_dump_use_va = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_VA));
 	_control.systrace = (option & (1 << DPREC_DEBUG_BIT_SYSTRACE));
 	DISPMSG("dprec control=%p\n", &_control);
+	return 0;
 }
 
 /* return true if overall_switch is set. this will dump all register setting by default. */
@@ -1103,23 +1124,18 @@ int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 
 #define DPREC_LOGGER_BUFFER_COUNT 2
 
-static DEFINE_SPINLOCK(dprec_logger_error_spinlock);
-static unsigned int dprec_logger_error_id;
-static unsigned int dprec_logger_error_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-
-static char dprec_logger_error_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
-
-static DEFINE_SPINLOCK(dprec_logger_fence_spinlock);
-static unsigned int dprec_logger_fence_id;
-static unsigned int dprec_logger_fence_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-
-static char dprec_logger_fence_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
-
-static DEFINE_SPINLOCK(dprec_logger_hwop_spinlock);
-static unsigned int dprec_logger_hwop_id;
-static unsigned int dprec_logger_hwop_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-
-static char dprec_logger_hwop_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
+/*static DEFINE_SPINLOCK(dprec_logger_error_spinlock);*/
+/*static unsigned int dprec_logger_error_id;*/
+/*static unsigned int dprec_logger_error_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };*/
+/*static char dprec_logger_error_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];*/
+/*static DEFINE_SPINLOCK(dprec_logger_fence_spinlock);*/
+/*static unsigned int dprec_logger_fence_id;*/
+/*static unsigned int dprec_logger_fence_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };*/
+/*static char dprec_logger_fence_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];*/
+/*static DEFINE_SPINLOCK(dprec_logger_hwop_spinlock);*/
+/*static unsigned int dprec_logger_hwop_id;*/
+/*static unsigned int dprec_logger_hwop_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };*/
+/*static char dprec_logger_hwop_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];*/
 
 /*
 static char *dprec_logger_find_buf(DPREC_LOGGER_PR_TYPE type, unsigned int *len)
@@ -1254,7 +1270,7 @@ unsigned int gCapturePriLayerDownY = 20;
 unsigned int gCapturePriLayerNum = 4;
 
 
-static dprec_logger logger[DPREC_LOGGER_NUM];
+dprec_logger logger[DPREC_LOGGER_NUM] = { { 0 } };
 
 unsigned int dprec_error_log_len = 0;
 unsigned int dprec_error_log_buflen = DPREC_ERROR_LOG_BUFFER_LENGTH;
@@ -1364,7 +1380,7 @@ void dprec_logger_dump_reset(void)
 {
 }
 
-char *dprec_logger_get_dump_addr()
+char *dprec_logger_get_dump_addr(void)
 {
 	return NULL;
 }
@@ -1384,7 +1400,7 @@ int dprec_option_enabled(void)
 	return 0;
 }
 
-int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
+int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l, unsigned int session)
 			     unsigned int session /*1:primary, 2:external, 3:memory */)
 {
 	return 0;
