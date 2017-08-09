@@ -172,7 +172,7 @@ static int memory_lowpower_init(struct reserved_mem *rmem)
 	return 0;
 }
 
-RESERVEDMEM_OF_DECLARE(memory_lowpower, "zone-movable-cma",
+RESERVEDMEM_OF_DECLARE(memory_lowpower, "mediatek,memory-lowpower",
 			memory_lowpower_init);
 
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER_DEBUG
