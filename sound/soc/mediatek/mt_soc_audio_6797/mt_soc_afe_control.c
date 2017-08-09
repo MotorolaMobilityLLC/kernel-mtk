@@ -353,8 +353,11 @@ bool ConditionEnterSuspend(void)
 /* function get internal mode status. */
 bool get_internalmd_status(void)
 {
-	bool ret = (get_voice_bt_status() || get_voice_status() || get_voice_md2_status()
-		    || get_voice_md2_bt_status());
+	bool ret = (get_voice_bt_status() ||
+		    get_voice_status() ||
+		    get_voice_md2_status() ||
+		    get_voice_md2_bt_status() ||
+		    get_voice_ultra_status());
 
 	return (mExternalModemStatus == true) ? false : ret;
 }
@@ -2302,7 +2305,10 @@ static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
 	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		break;
 	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		/* irq 4 default send to cm4 */
 		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
 		break;
 	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:

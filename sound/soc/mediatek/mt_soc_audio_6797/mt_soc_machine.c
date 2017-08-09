@@ -434,7 +434,7 @@ static int mt_soc_debug_open(struct inode *inode, struct file *file)
 static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 				size_t count, loff_t *pos)
 {
-	const int size = 4096;
+	const int size = 6144;
 	/* char buffer[size]; */
 	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
@@ -485,7 +485,7 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(AFE_DL1_CUR));
 	n += scnprintf(buffer + n, size - n, "AFE_DL1_END		   = 0x%x\n",
 			Afe_Get_Reg(AFE_DL1_END));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_BASE	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_BASE		   = 0x%x\n",
 			Afe_Get_Reg(AFE_VUL_D2_BASE));
 	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_END		   = 0x%x\n",
 			Afe_Get_Reg(AFE_VUL_D2_END));
@@ -499,6 +499,12 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(AFE_DL2_CUR));
 	n += scnprintf(buffer + n, size - n, "AFE_DL2_END		   = 0x%x\n",
 			Afe_Get_Reg(AFE_DL2_END));
+	n += scnprintf(buffer + n, size - n, "AFE_DL3_BASE		   = 0x%x\n",
+			Afe_Get_Reg(AFE_DL3_BASE));
+	n += scnprintf(buffer + n, size - n, "AFE_DL3_CUR		   = 0x%x\n",
+			Afe_Get_Reg(AFE_DL3_CUR));
+	n += scnprintf(buffer + n, size - n, "AFE_DL3_END		   = 0x%x\n",
+			Afe_Get_Reg(AFE_DL3_END));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN5			   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN5));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN_24BIT		   = 0x%x\n",
@@ -603,6 +609,8 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(AFE_IRQ_MCU_EN));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_MON2	   = 0x%x\n",
 			Afe_Get_Reg(AFE_IRQ_MCU_MON2));
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT4		   = 0x%x\n",
+			Afe_Get_Reg(AFE_IRQ_MCU_CNT4));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT5		   = 0x%x\n",
 			Afe_Get_Reg(AFE_IRQ_MCU_CNT5));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ1_MCU_CNT_MON   = 0x%x\n",
@@ -1179,6 +1187,14 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.cpu_dai_name   = MT_SOC_ANC_NAME,
 		.platform_name  = MT_SOC_ANC_PCM,
 		.codec_dai_name = MT_SOC_CODEC_ANC_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+	},
+	{
+		.name = "Voice_Ultrasound",
+		.stream_name = MT_SOC_VOICE_ULTRA_STREAM_NAME,
+		.cpu_dai_name	= "snd-soc-dummy-dai",
+		.platform_name	= MT_SOC_VOICE_ULTRA,
+		.codec_dai_name = MT_SOC_CODEC_VOICE_ULTRADAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
 };

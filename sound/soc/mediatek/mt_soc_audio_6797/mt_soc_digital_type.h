@@ -951,4 +951,29 @@ struct irq_manager {
 	const struct irq_user *selected_user;
 };
 
+/*
+ * Ultrasound
+ */
+
+struct voice_ultra_info {
+	/* voice dl with ultra --> playback */
+	unsigned int dl_size;
+	unsigned int dl_rate;
+	unsigned char *dl_dma_area;
+	dma_addr_t dl_dma_addr;
+	/* voice dl --> memif ul to dsp */
+	unsigned int voice_dl_size;
+	unsigned int voice_dl_rate;
+	unsigned char *voice_dl_dma_area;
+	dma_addr_t voice_dl_dma_addr;
+	/* ultra record --> memif ul to dsp */
+	unsigned int ultra_ul_size;
+	unsigned int ultra_ul_rate;
+	unsigned char *ultra_ul_dma_area;
+	dma_addr_t ultra_ul_dma_addr;
+
+	bool playback_info_ready;
+	bool capture_info_ready;
+};
+
 #endif

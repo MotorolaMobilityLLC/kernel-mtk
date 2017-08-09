@@ -1024,7 +1024,9 @@ static int mtk_afe_routing_remove(struct platform_device *pdev)
 static int mtk_routing_pm_ops_suspend(struct device *device)
 {
 	pr_warn("%s\n", __func__);
-	if (get_voice_status() == true || get_voice_md2_status() == true)
+	if (get_voice_status() ||
+	    get_voice_md2_status() ||
+	    get_voice_ultra_status())
 		return 0;
 
 	if (AudDrvSuspendStatus == false) {
