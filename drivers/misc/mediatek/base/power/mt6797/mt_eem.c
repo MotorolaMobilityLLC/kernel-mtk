@@ -4768,6 +4768,78 @@ out:
 	return (ret < 0) ? ret : count;
 }
 
+
+/*
+ * set EEM ITurbo enable by procfs interface
+ */
+
+static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
+{
+	FUNC_ENTER(FUNC_LV_HELP);
+	seq_printf(m, "%s\n", ((ctrl_ITurbo) ? "Enable" : "Disable"));
+	FUNC_EXIT(FUNC_LV_HELP);
+
+	return 0;
+}
+
+static ssize_t eem_iturbo_en_proc_write(struct file *file,
+				     const char __user *buffer, size_t count, loff_t *pos)
+{
+	int ret;
+	unsigned int value;
+	char *buf = (char *) __get_free_page(GFP_USER);
+
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	if (!buf) {
+		FUNC_EXIT(FUNC_LV_HELP);
+		return -ENOMEM;
+	}
+
+	ret = -EINVAL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	ret = -EFAULT;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	ret = -EINVAL;
+
+	if (kstrtoint(buf, 10, &value)) {
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		goto out;
+	}
+
+	ret = 0;
+
+	switch (value) {
+	case 0:
+		eem_debug("eem ITurbo disabled.\n");
+		ctrl_ITurbo = 0;
+		break;
+
+	case 1:
+		eem_debug("eem ITurbo enabled.\n");
+		ctrl_ITurbo = 2;
+		break;
+
+	default:
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		ret = -EINVAL;
+	}
+
+out:
+	free_page((unsigned long)buf);
+	FUNC_EXIT(FUNC_LV_HELP);
+
+	return (ret < 0) ? ret : count;
+}
+
 #define PROC_FOPS_RW(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
 		struct file *file)				\
@@ -4807,6 +4879,7 @@ PROC_FOPS_RW(eem_cur_volt);
 PROC_FOPS_RW(eem_offset);
 PROC_FOPS_RO(eem_dump);
 PROC_FOPS_RW(eem_log_en);
+PROC_FOPS_RW(eem_iturbo_en);
 
 static int create_procfs(void)
 {
@@ -4830,6 +4903,7 @@ static int create_procfs(void)
 	struct pentry eem_entries[] = {
 		PROC_ENTRY(eem_dump),
 		PROC_ENTRY(eem_log_en),
+		PROC_ENTRY(eem_iturbo_en),
 	};
 
 	FUNC_ENTER(FUNC_LV_HELP);
