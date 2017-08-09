@@ -132,6 +132,10 @@ enum I2C_REGS_OFFSET {
 	OFFSET_TRANSFER_LEN_AUX = 0x6c,
 };
 
+enum PERICFG_OFFSET {
+	OFFSET_PERI_I2C_MODE_ENABLE = 0x0410,
+};
+
 struct mt_i2c_data {
 	unsigned int clk_frequency;	/* bus speed in Hz */
 	unsigned int flags;
@@ -163,6 +167,7 @@ struct mt_i2c {
 	struct clk *clk_main;		/* main clock for i2c bus */
 	struct clk *clk_dma;		/* DMA clock for i2c via DMA */
 	struct clk *clk_pmic;		/* PMIC clock for i2c from PMIC */
+	struct clk *clk_arb;		/* Arbitrator clock for i2c */
 	bool have_pmic;			/* can use i2c pins form PMIC */
 	bool have_dcm;			/* HW DCM function */
 	bool use_push_pull;		/* IO config push-pull mode */

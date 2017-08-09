@@ -56,9 +56,17 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 	ret = clk_prepare_enable(i2c->clk_dma);
 	if (ret)
 		return ret;
-	ret = clk_prepare_enable(i2c->clk_main);
-	if (ret)
-		goto err_main;
+
+	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
+		if (i2c->clk_arb != NULL) {
+			ret = clk_prepare_enable(i2c->clk_arb);
+			if (ret)
+				return ret;
+		}
+		clk_prepare_enable(i2c->clk_main);
+		if (ret)
+			goto err_main;
+	}
 	if (i2c->have_pmic) {
 		ret = clk_prepare_enable(i2c->clk_pmic);
 		if (ret)
@@ -77,7 +85,11 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 {
 	if (i2c->have_pmic)
 		clk_disable_unprepare(i2c->clk_pmic);
-	clk_disable_unprepare(i2c->clk_main);
+	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
+		clk_disable_unprepare(i2c->clk_main);
+		if (i2c->clk_arb != NULL)
+			clk_disable_unprepare(i2c->clk_arb);
+	}
 	clk_disable_unprepare(i2c->clk_dma);
 }
 
@@ -581,6 +593,11 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "cannot get dma clock\n");
 		return PTR_ERR(i2c->clk_dma);
 	}
+	i2c->clk_arb = devm_clk_get(&pdev->dev, "arb");
+	if (IS_ERR(i2c->clk_arb))
+		i2c->clk_arb = NULL;
+	else
+		dev_dbg(&pdev->dev, "i2c%d has the relevant arbitrator clk.\n", i2c->id);
 	if (i2c->have_pmic) {
 		i2c->clk_pmic = devm_clk_get(&pdev->dev, "pmic");
 		if (IS_ERR(i2c->clk_pmic)) {
@@ -639,6 +656,7 @@ static int mt_i2c_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6735-i2c", },
+	{ .compatible = "mediatek,mt6797-i2c", },
 	{},
 };
 MODULE_DEVICE_TABLE(of, mt_i2c_match);
@@ -653,7 +671,53 @@ static struct platform_driver mt_i2c_driver = {
 	},
 };
 
-module_platform_driver(mt_i2c_driver);
+#ifdef CONFIG_MTK_I2C_ARBITRATION
+static s32 enable_arbitration(void)
+{
+	struct device_node *pericfg_node;
+	void __iomem *pericfg_base;
+
+	pericfg_node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	if (!pericfg_node) {
+		pr_err("Cannot find pericfg node\n");
+		return -ENODEV;
+	}
+	pericfg_base = of_iomap(pericfg_node, 0);
+	if (!pericfg_base) {
+		pr_err("pericfg iomap failed\n");
+		return -ENOMEM;
+	}
+	/* Enable the I2C arbitration */
+	writew(0x3, pericfg_base + OFFSET_PERI_I2C_MODE_ENABLE);
+	return 0;
+}
+#endif
+
+static s32 __init mt_i2c_init(void)
+{
+#ifdef CONFIG_MTK_I2C_ARBITRATION
+	int ret;
+
+	ret = enable_arbitration();
+	if (ret) {
+		pr_err("Cannot enalbe arbitration.\n");
+		return ret;
+	}
+#endif
+
+	pr_debug(" mt_i2c_init driver as platform device\n");
+	return platform_driver_register(&mt_i2c_driver);
+}
+
+static void __exit mt_i2c_exit(void)
+{
+	platform_driver_unregister(&mt_i2c_driver);
+}
+
+module_init(mt_i2c_init);
+module_exit(mt_i2c_exit);
+
+/* module_platform_driver(mt_i2c_driver); */
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek I2C Bus Driver");
