@@ -34,7 +34,6 @@
 /****** End of Customization ******/
 
 #define PLATFORM_DRIVER_NAME    "msensor"
-
 /* The following items are for internal testing only.
     -USE_ALTERNATE_ADDRESS: (--)default (+*)test S
     +USE_ALTERNATE_ADDRESS: (--)default (+-)test S (-+)test A
@@ -43,8 +42,8 @@
 /* #define _FORCE_PROBE_ERROR */
 
 /*----------------------------------------------------------------------------*/
-#define S62X_I2C_ADDR1          (0x0C<<1)
-#define S62X_I2C_ADDR2          (0x1E<<1)
+#define S62X_I2C_ADDR1          (0x0e)
+#define S62X_I2C_ADDR2          (0x1e)
 
 #ifdef USE_ALTERNATE_ADDRESS
 #define S62X_I2C_ADDRESS        S62X_I2C_ADDR2
@@ -64,7 +63,7 @@
 #define S62X_DEFAULT_DELAY      100
 
 #if S62X_DEBUG_MSG
-#define SSMDBG(format, ...)	pr_err("S62X " format "\n", ## __VA_ARGS__)
+#define SSMDBG(format, ...)			pr_err("S62X " format "\n", ## __VA_ARGS__)
 #else
 #define SSMDBG(format, ...)
 #endif
@@ -177,8 +176,10 @@ static atomic_t init_phase = ATOMIC_INIT(2);	/* 1 = id check ok, 0 = init ok */
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id s62x_i2c_id[] = { {S62X_DEV_NAME, 0}, {} };
 
+/*
 static unsigned short s62x_force[] = { 0x00, S62X_I2C_ADDRESS, I2C_CLIENT_END, I2C_CLIENT_END };
 static const unsigned short *const s62x_forces[] = { s62x_force, NULL };
+ */
 struct mag_hw mag_cust;
 static struct mag_hw *hw = &mag_cust;
 
@@ -216,24 +217,37 @@ struct s62x_i2c_data {
 #define L2CHIP(x)       ((x)/10)	/* layout to chip id */
 #define L2CVTI(x)       ((x)%10)	/* layout to cvt index */
 
+static const struct of_device_id msensor_of_match[] = {
+	{ .compatible = "mediatek,msensor", },
+	{},
+};
 /*----------------------------------------------------------------------------*/
 static struct i2c_driver s62x_i2c_driver = {
 	.driver = {
-		   .owner = THIS_MODULE,
+		   /*.owner = THIS_MODULE, */
 		   .name = S62X_DEV_NAME,
+			 .of_match_table = msensor_of_match,
 		   },
 	.probe = s62x_i2c_probe,
 	.remove = s62x_i2c_remove,
 	.detect = s62x_i2c_detect,
-	.suspend = s62x_suspend,
-	.resume = s62x_resume,
+	.suspend	= s62x_suspend,
+	.resume	= s62x_resume,
 	.id_table = s62x_i2c_id,
 };
 
+static struct platform_driver ssm_sensor_driver = {
+	.driver = {
+		.name = "msensor",
+		.of_match_table = msensor_of_match,
+	}
+};
+
 static struct mag_init_info s62x_init_info = {
-	.name = "akm09911",
+	.name = S62X_DEV_NAME,
 	.init = s62x_local_init,
 	.uninit = s62x_local_remove,
+	.platform_diver_addr = &ssm_sensor_driver,
 };
 
 
@@ -548,11 +562,11 @@ static int ECS_SaveData(short *buf)
 #if DEBUG
 	if (atomic_read(&data->trace) & SS_HWM_DEBUG) {
 		SSMDBG
-		    ("Get daemon data: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d!",
-		     sensor_data[0], sensor_data[1], sensor_data[2],
-		     sensor_data[3], sensor_data[4], sensor_data[5],
-		     sensor_data[6], sensor_data[7], sensor_data[8],
-		     sensor_data[9], sensor_data[10], sensor_data[11]);
+			("Get daemon data: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d!",
+			sensor_data[0], sensor_data[1], sensor_data[2],
+			sensor_data[3], sensor_data[4], sensor_data[5],
+			sensor_data[6], sensor_data[7], sensor_data[8],
+			sensor_data[9], sensor_data[10], sensor_data[11]);
 	}
 #endif
 	return 0;
@@ -563,9 +577,6 @@ static int ECS_SaveData(short *buf)
 static int ECS_GetData(short *mag)
 {
 	int loop_i, ret;
-	struct i2c_client *client = this_client;
-	struct s62x_i2c_data *data = i2c_get_clientdata(client);
-	short v;
 	char buf[6];
 
 	for (loop_i = 0; loop_i < S62X_RETRY_COUNT; loop_i++) {
@@ -591,12 +602,9 @@ static int ECS_GetData(short *mag)
 		pr_err("S62X_IDX_X_LSB %s fail\n", __func__);
 		return -1;
 	}
-	v = V(buf[1], buf[0]), mag[data->cvt.map[0]] =
-	    (data->cvt.sign[0] > 0) ? v : (4095 - v);
-	v = V(buf[5], buf[4]), mag[data->cvt.map[1]] =
-	    (data->cvt.sign[1] > 0) ? v : (4095 - v);
-	v = V(buf[3], buf[2]), mag[data->cvt.map[2]] =
-	    (data->cvt.sign[2] > 0) ? v : (4095 - v);
+	mag[0] =	V(buf[1], buf[0]);
+	mag[1] =	V(buf[5], buf[4]);
+	mag[2] =	V(buf[3], buf[2]);
 
 	/* for debug only */
 	mutex_lock(&last_m_data_mutex);
@@ -937,7 +945,6 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int ret = -1;
 
 	switch (cmd) {
-
 	case ECS_IOCTL_WRITE:
 		if (argp == NULL) {
 			SSMDBG("invalid argument.");
@@ -1257,17 +1264,17 @@ int s62x_operate(void *self, uint32_t command, void *buff_in, int size_in,
 			msensor_data->value_divide = CONVERT_M_DIV;
 
 			mutex_unlock(&sensor_data_mutex);
-#if DEBUG
+		#if DEBUG
 			if (atomic_read(&data->trace) & SS_HWM_DEBUG) {
-				SSMDBG
-				    ("Hwm get m-sensor data: %d, %d, %d. divide %d, status %d!",
-				     msensor_data->values[0],
-				     msensor_data->values[1],
-				     msensor_data->values[2],
-				     msensor_data->value_divide,
-				     msensor_data->status);
+					SSMDBG
+					    ("Hwm get m-sensor data: %d, %d, %d. divide %d, status %d!",
+					     msensor_data->values[0],
+					     msensor_data->values[1],
+					     msensor_data->values[2],
+					     msensor_data->value_divide,
+					     msensor_data->status);
 			}
-#endif
+		#endif
 		}
 		break;
 
@@ -1350,7 +1357,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 			osensor_data->value_divide = CONVERT_O_DIV;
 
 			mutex_unlock(&sensor_data_mutex);
-#if DEBUG
+		#if DEBUG
 			if (atomic_read(&data->trace) & SS_HWM_DEBUG) {
 				SSMDBG
 				    ("Hwm get o-sensor data: %d, %d, %d. divide %d, status %d!",
@@ -1360,7 +1367,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 				     osensor_data->value_divide,
 				     osensor_data->status);
 			}
-#endif
+		#endif
 		}
 		break;
 	default:
@@ -1408,18 +1415,18 @@ static int magic_kpt_command(const struct i2c_client *client)
 	char cmd2[] = { 0x0F, 0x1B };
 	struct i2c_msg msg[] = {
 		{
-		 .addr = S62X_I2C_ADDR1,
-		 .flags = 0,
-		 .len = sizeof(cmd1),
-		 .buf = cmd1,
-		 }
+			.addr = S62X_I2C_ADDR1,
+			.flags = 0,
+			.len = sizeof(cmd1),
+			.buf = cmd1,
+			}
 		,
 		{
-		 .addr = S62X_I2C_ADDR1,
-		 .flags = 0,
-		 .len = sizeof(cmd2),
-		 .buf = cmd2,
-		 }
+			.addr = S62X_I2C_ADDR1,
+			.flags = 0,
+			.len = sizeof(cmd2),
+			.buf = cmd2,
+		}
 		,
 	};
 
@@ -1435,11 +1442,11 @@ static int s62x_change_address(const struct i2c_client *client)
 	char cmd[] = { S62X_IDX_ECO1, ECO1_DEFAULT };
 	struct i2c_msg msg[] = {
 		{
-		 .addr = S62X_I2C_ADDR1,
-		 .flags = 0,
-		 .len = sizeof(cmd),
-		 .buf = cmd,
-		 }
+			.addr = S62X_I2C_ADDR1,
+			.flags = 0,
+			.len = sizeof(cmd),
+			.buf = cmd,
+			}
 		,
 	};
 
@@ -1453,6 +1460,123 @@ static int s62x_change_address(const struct i2c_client *client)
 	return -EIO;
 }
 #endif
+static int s62x_m_enable(int en)
+{
+	int value = 0;
+	int err = 0;
+
+	value = en;
+	if (value == 1) {
+		atomic_set(&m_flag, 1);
+		atomic_set(&open_flag, 1);
+
+		err = ECS_SetMode(SS_SENSOR_MODE_MEASURE);
+		if (err < 0) {
+			SSMDBG("%s:ECS_SetMode on Error.\n", __func__);
+			return err;
+		}
+	} else {
+		atomic_set(&m_flag, 0);
+		if (atomic_read(&o_flag) == 0) {
+			atomic_set(&open_flag, 0);
+			err = ECS_SetMode(SS_SENSOR_MODE_OFF);
+			if (err < 0) {
+				SSMDBG("%s:ECS_SetMode off Error.\n", __func__);
+				return err;
+			}
+		}
+	}
+	wake_up(&open_wq);
+	return err;
+}
+
+static int s62x_m_set_delay(u64 ns)
+{
+	int value = 0;
+
+	value = (int)ns/1000/1000;
+	if (value <= 20)
+		ssmd_delay = 20;
+	else
+		ssmd_delay = value;
+
+	return 0;
+}
+static int s62x_m_open_report_data(int open)
+{
+	return 0;
+}
+
+static int s62x_m_get_data(int *x , int *y, int *z, int *status)
+{
+	mutex_lock(&sensor_data_mutex);
+	*x = sensor_data[9] * CONVERT_M;
+	*y = sensor_data[10] * CONVERT_M;
+	*z = sensor_data[11] * CONVERT_M;
+	*status = sensor_data[4];
+	mutex_unlock(&sensor_data_mutex);
+	return 0;
+}
+
+
+static int s62x_o_enable(int en)
+{
+	int value = 0;
+	int err = 0;
+
+	value = en;
+	if (value == 1) {
+		atomic_set(&o_flag, 1);
+		atomic_set(&open_flag, 1);
+		err = ECS_SetMode(SS_SENSOR_MODE_MEASURE);
+		if (err < 0) {
+			pr_err("%s:ECS_SetMode on Error.\n", __func__);
+			return err;
+		}
+	} else {
+		atomic_set(&o_get_data, 0);
+		atomic_set(&o_flag, 0);
+		if (atomic_read(&m_flag) == 0)
+			atomic_set(&open_flag, 0);
+		err = ECS_SetMode(SS_SENSOR_MODE_OFF);
+		if (err < 0) {
+			pr_err("%s:ECS_SetMode off Error.\n", __func__);
+			return err;
+		}
+	}
+	wake_up(&open_wq);
+
+	return err;
+}
+
+static int s62x_o_set_delay(u64 ns)
+{
+	int value = 0;
+
+	value = (int)ns/1000/1000;
+	if (value <= 20)
+		ssmd_delay = 20;
+	else
+		ssmd_delay = value;
+	return 0;
+}
+static int s62x_o_open_report_data(int open)
+{
+	return 0;
+}
+
+static int s62x_o_get_data(int *x , int *y, int *z, int *status)
+{
+	mutex_lock(&sensor_data_mutex);
+
+	*x = sensor_data[0] * CONVERT_O;
+	*y = sensor_data[1] * CONVERT_O;
+	*z = sensor_data[2] * CONVERT_O;
+	*status = sensor_data[4];
+	mutex_unlock(&sensor_data_mutex);
+	return 0;
+}
+
 
 /*----------------------------------------------------------------------------*/
 static int s62x_i2c_probe(struct i2c_client *client,
@@ -1461,7 +1585,8 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	struct i2c_client *new_client;
 	struct s62x_i2c_data *data;
 	int err = 0;
-	struct hwmsen_object sobj_m, sobj_o;
+	struct mag_control_path ctl = {0};
+	struct mag_data_path mag_data = {0};
 
 	data = kmalloc(sizeof(struct s62x_i2c_data), GFP_KERNEL);
 	if (!data) {
@@ -1470,11 +1595,6 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	}
 	memset(data, 0, sizeof(struct s62x_i2c_data));
 	data->hw = hw;
-
-	if (hwmsen_get_convert(L2CVTI(data->hw->direction), &data->cvt)) {
-		pr_err("S62X invalid direction: %d\n", data->hw->direction);
-		goto exit_init_failed;
-	}
 
 	atomic_set(&data->layout, data->hw->direction);
 	atomic_set(&data->trace, 0x0000);
@@ -1489,7 +1609,6 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	i2c_set_clientdata(new_client, data);
 
 	this_client = new_client;
-	this_client->timing = 100;
 
 #ifdef _MAGIC_KPT_COMMAND
 	magic_kpt_command(client);
@@ -1535,21 +1654,30 @@ static int s62x_i2c_probe(struct i2c_client *client,
 		goto exit_misc_device_register_failed;
 	}
 
-	sobj_m.self = data;
-	sobj_m.polling = 1;
-	sobj_m.sensor_operate = s62x_operate;
-	err = hwmsen_attach(ID_MAGNETIC, &sobj_m);
-	if (err != 0) {
-		pr_err("S62X attach fail = %d\n", err);
+	ctl.is_use_common_factory = false;
+	ctl.m_enable = s62x_m_enable;
+	ctl.m_set_delay  = s62x_m_set_delay;
+	ctl.m_open_report_data = s62x_m_open_report_data;
+	ctl.o_enable = s62x_o_enable;
+	ctl.o_set_delay  = s62x_o_set_delay;
+	ctl.o_open_report_data = s62x_o_open_report_data;
+	ctl.is_report_input_direct = false;
+	ctl.is_support_batch = data->hw->is_batch_supported;
+
+	err = mag_register_control_path(&ctl);
+	if (err) {
+		SSMDBG("register mag control path err\n");
 		goto exit_kfree;
 	}
 
-	sobj_o.self = data;
-	sobj_o.polling = 1;
-	sobj_o.sensor_operate = s62x_orientation_operate;
-	err = hwmsen_attach(ID_ORIENTATION, &sobj_o);
-	if (err != 0) {
-		pr_err("S62X attach fail = %d\n", err);
+	mag_data.div_m = CONVERT_M_DIV;
+	mag_data.div_o = CONVERT_O_DIV;
+	mag_data.get_data_o = s62x_o_get_data;
+	mag_data.get_data_m = s62x_m_get_data;
+
+	err = mag_register_data_path(&mag_data);
+	if (err) {
+		SSMDBG("register data control path err\n");
 		goto exit_kfree;
 	}
 
@@ -1557,7 +1685,9 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	return 0;
 
 exit_sysfs_create_group_failed:
+#ifdef ENABLE_DUALSTACK_MODE
 exit_init_failed:
+#endif
 exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
@@ -1587,10 +1717,7 @@ static int s62x_i2c_remove(struct i2c_client *client)
 static int s62x_local_init(void)
 {
 	s62x_power(hw, 1);
-
 	atomic_set(&dev_open_count, 0);
-	s62x_force[0] = hw->i2c_num;
-
 	if (i2c_add_driver(&s62x_i2c_driver)) {
 		pr_err("S62X add driver error\n");
 		return -1;
