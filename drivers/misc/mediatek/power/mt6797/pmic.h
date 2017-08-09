@@ -30,7 +30,6 @@
 #define GETSIZE(array) (sizeof(array)/sizeof(array[0]))
 
 /* extern functions */
-extern void mt_power_off(void);
 extern PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_IM_current(void *data);

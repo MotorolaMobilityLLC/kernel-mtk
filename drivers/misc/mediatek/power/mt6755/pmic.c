@@ -70,7 +70,7 @@
 #if defined CONFIG_MTK_LEGACY
 #include <mt-plat/mt_gpio.h>
 #endif
-/*#include <mach/mtk_rtc.h> TBD*/
+#include <mt-plat/mtk_rtc.h>
 #include <mach/mt_spm_mtcmos.h>
 
 #include <linux/time.h>

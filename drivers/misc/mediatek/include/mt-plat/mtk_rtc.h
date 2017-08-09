@@ -67,6 +67,6 @@ extern void mt_power_off(void);
 #define set_rtc_spare_fg_value(val)	({ 0; })
 #define rtc_irq_handler()			do {} while (0)
 #define crystal_exist_status()		do {} while (0)
-#define mt_power_off()		do {} while (0)
+__weak void mt_power_off(void);
 #endif/*ifdef CONFIG_MTK_RTC*/
 #endif

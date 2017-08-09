@@ -69,7 +69,7 @@
 #if defined CONFIG_MTK_LEGACY
 /*#include <mach/mt_gpio.h> TBD*/
 #endif
-/*#include <mach/mtk_rtc.h> TBD*/
+#include <mt-plat/mtk_rtc.h>
 #include <mach/mt_spm_mtcmos.h>
 
 /*#include <mach/battery_common.h> TBD*/
@@ -95,7 +95,6 @@
  * PMIC extern variable
  */
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-/*extern void mt_power_off(void);*/
 /*
 static bool long_pwrkey_press = false;
 static unsigned long timer_pre = 0;

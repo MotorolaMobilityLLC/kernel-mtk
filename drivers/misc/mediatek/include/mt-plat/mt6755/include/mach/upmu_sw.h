@@ -169,7 +169,6 @@ extern signed int g_I_SENSE_offset;
 extern void pmic_auxadc_init(void);
 extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
-extern void mt_power_off(void);
 /*==============================================================================
 // PMIC fg define
 //==============================================================================*/

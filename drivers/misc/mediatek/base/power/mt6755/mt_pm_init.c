@@ -33,7 +33,7 @@
 /* #include "mach/mt_cpuidle.h" */
 /* #include "mach/mt_clkbuf_ctl.h" */
 /* #include "mach/mt_chip.h" */
-
+#include <mt-plat/mtk_rtc.h>
 
 #define pminit_write(addr, val)         mt_reg_sync_writel((val), ((void *)(addr)))
 #define pminit_read(addr)               __raw_readl(IOMEM(addr))
@@ -483,7 +483,7 @@ static int __init mt_power_management_init(void)
 	struct proc_dir_entry *pm_init_dir = NULL;
 	/* unsigned int code = mt_get_chip_hw_code(); */
 
-	/* pm_power_off = mt_power_off; */
+	pm_power_off = mt_power_off;
 
 #if !defined(CONFIG_MTK_FPGA)
 	/* cpu dormant driver init */

@@ -69,7 +69,7 @@
 #if defined CONFIG_MTK_LEGACY
 #include <mt-plat/mt_gpio.h>
 #endif
-/*#include <mach/mtk_rtc.h> TBD*/
+#include <mt-plat/mtk_rtc.h>
 #include <mach/mt_spm_mtcmos.h>
 
 #include <linux/time.h>
@@ -3055,7 +3055,7 @@ void chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			PMICLOG("[chrdet_int_handler] Unplug Charger/USB\n");
-			/*mt_power_off();*/
+			mt_power_off();
 		}
 	}
 #endif
