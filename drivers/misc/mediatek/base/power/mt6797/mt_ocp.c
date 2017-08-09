@@ -648,17 +648,6 @@ if (Count < 0 || Count > 4294967295) {
 return 0;
 }
 
-if (cpu_online(4))
-	sched_setaffinity(0, cpumask_of(4));
-else if (cpu_online(3))
-	sched_setaffinity(0, cpumask_of(3));
-else if (cpu_online(2))
-	sched_setaffinity(0, cpumask_of(2));
-else if (cpu_online(1))
-	sched_setaffinity(0, cpumask_of(1));
-else if (cpu_online(0))
-	sched_setaffinity(0, cpumask_of(0));
-
 return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPAVGPWRGET, Count, 0, 0);
 
 }
@@ -4168,6 +4157,70 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						calibration = ktime_to_us(delta) - tmp;
 						ocp_info("Cluster 2 calibration=%d us\n", calibration);
 
+					}
+				}
+				break;
+		case 4:
+			/* LL/L workload calibration with freq and volt info*/
+			if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5) {
+				hqa_test = val[0];
+				if (hqa_test > NR_HQA)
+					hqa_test = NR_HQA;
+
+					calibration = 0;
+
+					for (i = 0; i < hqa_test; i++) {
+						/* This test must disable PPM*/
+						now = ktime_get();
+
+						freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
+						volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
+						freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
+						volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
+						LittleOCPDVFSSet(0, freq_LL, volt_LL);
+						LittleOCPDVFSSet(1, freq_L, volt_L);
+						count_LL = freq_LL * val[1] * 10;
+						count_L = freq_L * val[2] * 10;
+						ocp_info("L_freq=%u Mhz/L_volt=%u mV/LL_freq=%u Mhz/LL_volt=%u mV\n",
+								freq_L, volt_L, freq_LL, volt_LL);
+
+						LittleOCPAvgPwr(0, 1, count_LL);
+						LittleOCPAvgPwr(1, 1, count_L);
+						udelay(val[3]);
+
+						LittleOCPCapture(0, 1, 1, 0, 15);
+						LittleOCPCapture(1, 1, 1, 0, 15);
+						CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
+								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
+						ocp_hqa[0][i].TopRawLkg = TopRawLkg;
+						ocp_hqa[0][i].CPU0RawLkg = CPU0RawLkg;
+						ocp_hqa[0][i].CPU1RawLkg = CPU1RawLkg;
+						ocp_hqa[0][i].CPU2RawLkg = CPU2RawLkg;
+						ocp_hqa[0][i].CPU3RawLkg = CPU3RawLkg;
+						ocp_hqa[0][i].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
+
+						CL1OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
+								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
+						ocp_hqa[1][i].TopRawLkg = TopRawLkg;
+						ocp_hqa[1][i].CPU0RawLkg = CPU0RawLkg;
+						ocp_hqa[1][i].CPU1RawLkg = CPU1RawLkg;
+						ocp_hqa[1][i].CPU2RawLkg = CPU2RawLkg;
+						ocp_hqa[1][i].CPU3RawLkg = CPU3RawLkg;
+						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
+
+						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
+						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
+						ocp_hqa[1][i].CGAvg = AvgAct;
+						ocp_hqa[1][i].AvgLkg = AvgLkg;
+
+						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
+						ocp_hqa[0][i].CGAvg = AvgAct;
+						ocp_hqa[0][i].AvgLkg = AvgLkg;
+
+						delta = ktime_sub(ktime_get(), now);
+
+						ocp_info("Cluster 0/1 delta=%lld us\n", ktime_to_us(delta));
 					}
 				}
 				break;
