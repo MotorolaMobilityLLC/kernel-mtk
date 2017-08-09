@@ -18,7 +18,6 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include <linux/rtpm_prio.h>
 #include <linux/types.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>

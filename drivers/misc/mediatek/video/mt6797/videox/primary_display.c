@@ -18,7 +18,6 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include <linux/rtpm_prio.h>
 #include <linux/types.h>
 #include <linux/ktime.h>
 #include <linux/of.h>
@@ -2860,7 +2859,7 @@ static void decouple_mirror_irq_callback(DISP_MODULE_ENUM module, unsigned int r
 
 static int decouple_mirror_update_rdma_config_thread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -2951,7 +2950,7 @@ static void primary_display_frame_update_irq_callback(DISP_MODULE_ENUM module, u
 
 static int primary_display_frame_update_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 	for (;;) {
@@ -2972,7 +2971,7 @@ static int primary_display_frame_update_kthread(void *data)
 
 static int _present_fence_release_worker_thread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_FB_THREAD };
+	struct sched_param param = {.sched_priority = 87 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -4284,7 +4283,7 @@ int primary_display_trigger(int blocking, void *callback, int need_merge)
 /* decouple_trigger thread->trigger mirror->decouple_update_rdma_config_thread */
 static int decouple_trigger_worker_thread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 

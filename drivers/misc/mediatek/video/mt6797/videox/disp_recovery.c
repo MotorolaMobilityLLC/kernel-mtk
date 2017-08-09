@@ -5,7 +5,6 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include <linux/rtpm_prio.h>
 #include <linux/types.h>
 #include <linux/ktime.h>
 #include <linux/of.h>
@@ -486,7 +485,7 @@ done:
 
 static int primary_display_check_recovery_worker_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_FB_THREAD };
+	struct sched_param param = {.sched_priority = 87 };
 	int ret = 0;
 	int i = 0;
 	int esd_try_cnt = 5;	/* 20; */
