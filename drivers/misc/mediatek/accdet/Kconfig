@@ -63,3 +63,14 @@ config FOUR_KEY_HEADSET
 	  say Y or M here.
 
 	  If unsure, say N.
+
+config TS3A225E_ACCDET
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  TS3A225E support for MediaTek SOC
+
+	  If you want to use TS3A225E
+	  say Y or M here.
+
+	  If unsure, say N.
