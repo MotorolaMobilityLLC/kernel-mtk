@@ -19,10 +19,12 @@
 #include <linux/regmap.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6397/core.h>
+#include <linux/mfd/mt6323/core.h>
 #include <linux/mfd/mt6323/registers.h>
 #include <linux/mfd/mt6397/registers.h>
 
 #define MT6397_RTC_BASE		0xe000
+#define MT6323_RTC_BASE		0x8000
 #define MT6397_RTC_SIZE		0x3e
 
 #define MT6323_CID_CODE    0x23
@@ -42,8 +44,31 @@ static const struct resource mt6397_rtc_resources[] = {
 	},
 };
 
+static const struct resource mt6323_rtc_resources[] = {
+	{
+		.start = MT6397_RTC_SIZE,
+		.end   = MT6397_RTC_SIZE + MT6397_RTC_SIZE,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.start = RG_INT_STATUS_RTC,
+		.end   = RG_INT_STATUS_RTC,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 static const struct mfd_cell mt6323_devs[] = {
 	{
+		.name = "mt6397-rtc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-rtc",
+	}, {
+		.name = "mt6397-misc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-misc",
+	}, {
 		.name = "mt6323-regulator",
 		.of_compatible = "mediatek,mt6323-regulator"
 	}, {
@@ -58,6 +83,11 @@ static const struct mfd_cell mt6397_devs[] = {
 		.num_resources = ARRAY_SIZE(mt6397_rtc_resources),
 		.resources = mt6397_rtc_resources,
 		.of_compatible = "mediatek,mt6397-rtc",
+	}, {
+		.name = "mt6397-misc",
+		.num_resources = ARRAY_SIZE(mt6397_rtc_resources),
+		.resources = mt6397_rtc_resources,
+		.of_compatible = "mediatek,mt6397-misc",
 	}, {
 		.name = "mt6397-regulator",
 		.of_compatible = "mediatek,mt6397-regulator",
