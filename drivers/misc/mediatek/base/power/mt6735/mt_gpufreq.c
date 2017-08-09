@@ -4,6 +4,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+#define GPUDVFS_WORKAROUND_FOR_GIT	1	/* TODO: remove this! */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/sched.h>
@@ -39,7 +41,9 @@
 #include "mt_gpufreq.h"
 #include "mt-plat/sync_write.h"
 #include "mt_static_power.h"
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 #include "mach/mt_thermal.h"
+#endif
 #include "mt-plat/upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
@@ -307,14 +311,17 @@ static void _mt_gpufreq_aee_init(void)
 }
 #endif
 
-
 /**************************************
  * Efuse
  ***************************************/
 static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 {
 	unsigned int type = 0;
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	unsigned int gpu_550m_enable = 0;
+#else
 	unsigned int gpu_550m_enable = is_have_550();
+#endif
 
 	mt_gpufreq_dvfs_mmpll_spd_bond = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >> 12) & 0x7;
 
@@ -596,7 +603,11 @@ static void _mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq, u
 	    ((freq * 100) / ref_freq) *
 	    ((volt * 100) / ref_volt) * ((volt * 100) / ref_volt) / (100 * 100 * 100);
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	p_leakage = mt_spower_get_leakage(MT_SPOWER_VCORE, (volt / 100), temp);
+#else
+	p_leakage = 100;
+#endif
 
 	p_total = p_dynamic + p_leakage;
 
@@ -617,11 +628,14 @@ static void _mt_update_gpufreqs_power_table(void)
 		gpufreq_warn("@%s: GPU DVFS not ready\n", __func__);
 		return;
 	}
-
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	temp = 40;
+#else
 #ifdef CONFIG_THERMAL
 	temp = get_immediate_gpu_wrap() / 1000;
 #else
 	temp = 40;
+#endif
 #endif
 	gpufreq_ver("@%s, temp = %d\n", __func__, temp);
 
@@ -659,10 +673,14 @@ static void _mt_setup_gpufreqs_power_table(int num)
 		return;
 	}
 
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	temp = 40;
+#else
 #ifdef CONFIG_THERMAL
 	temp = get_immediate_gpu_wrap() / 1000;
 #else
 	temp = 40;
+#endif
 #endif
 
 	gpufreq_info("@%s: temp = %d\n", __func__, temp);
@@ -699,8 +717,10 @@ static void _mt_setup_gpufreqs_power_table(int num)
 			     mt_gpufreqs_power[i].gpufreq_power);
 	}
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_THERMAL
 	mtk_gpufreq_register(mt_gpufreqs_power, num);
+#endif
 #endif
 }
 
@@ -719,8 +739,12 @@ static int _mt_setup_gpufreqs_table(struct mt_gpufreq_table_info *freqs, int num
 	for (i = 0; i < num; i++) {
 		mt_gpufreqs[i].gpufreq_khz = freqs[i].gpufreq_khz;
 		/* Apply PTPOD result */
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		mt_gpufreqs[i].gpufreq_volt =
 		    _mt_gpufreq_pmic_wrap_to_volt(get_vcore_ptp_volt(freqs[i].gpufreq_volt * 10));
+#else
+		 mt_gpufreqs[i].gpufreq_volt = freqs[i].gpufreq_volt;
+#endif
 
 		mt_gpufreqs_default[i].gpufreq_khz = freqs[i].gpufreq_khz;
 		mt_gpufreqs_default[i].gpufreq_volt = freqs[i].gpufreq_volt;
@@ -805,7 +829,9 @@ static void _mt_gpufreq_set_cur_freq(unsigned int freq_new)
 {
 	unsigned int dds = _mt_gpufreq_dds_calc(freq_new);
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	mt_dfs_mmpll(dds);
+#endif
 
 	gpufreq_dbg("@%s: freq_new = %d, dds = 0x%x\n", __func__, freq_new, dds);
 
@@ -1392,6 +1418,9 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 unsigned int mt_gpufreq_get_leakage_mw(void)
 {
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	return 0;
+#else
 #ifndef DISABLE_PBM_FEATURE
 	int temp = 0;
 	unsigned int cur_vcore = _mt_gpufreq_get_cur_volt() / 100;
@@ -1405,6 +1434,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 	return mt_spower_get_leakage(MT_SPOWER_VCORE, cur_vcore, temp);
 #else
 	return 0;
+#endif
 #endif
 }
 
@@ -1451,7 +1481,9 @@ int mt_gpufreq_target(unsigned int idx)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		gpufreq_warn("GPU DVFS not ready!\n");
+#endif
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}
@@ -1625,7 +1657,9 @@ int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+#endif
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}
@@ -1836,10 +1870,12 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	return 0;
 #endif
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	/**********************
 	* Initial leackage power usage
 	***********************/
 	mt_spower_init();
+#endif
 
 	/**********************
 	* Initial SRAM debugging ptr
@@ -1906,8 +1942,10 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_low_battery_notify(&mt_gpufreq_low_batt_volt_callback,
 					    LOW_BATTERY_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -1921,8 +1959,10 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_battery_percent_notify(&mt_gpufreq_low_batt_volume_callback,
 						BATTERY_PERCENT_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -1936,7 +1976,9 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_battery_oc_notify(&mt_gpufreq_oc_callback, BATTERY_OC_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -2578,7 +2620,9 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "mt_gpufreq_fixed_freq_state = %d\n", mt_gpufreq_fixed_freq_state);
 	seq_printf(m, "mt_gpufreq_dvfs_table_type = %d\n", mt_gpufreq_dvfs_table_type);
 	seq_printf(m, "mt_gpufreq_dvfs_mmpll_spd_bond = %d\n", mt_gpufreq_dvfs_mmpll_spd_bond);
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	seq_printf(m, "is_have_550MHz = %d\n", is_have_550());
+#endif
 
 	return 0;
 }
@@ -2842,6 +2886,10 @@ static int mt_gpufreq_create_procfs(void)
  ***********************************/
 static int __init _mt_gpufreq_init(void)
 {
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	mt_gpufreq_create_procfs();
+	return 0;
+#else
 	int ret = 0;
 
 	gpufreq_info("@%s\n", __func__);
@@ -2869,6 +2917,7 @@ static int __init _mt_gpufreq_init(void)
 
 out:
 	return ret;
+#endif
 }
 
 static void __exit _mt_gpufreq_exit(void)
