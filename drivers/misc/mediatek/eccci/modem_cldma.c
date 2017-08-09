@@ -1419,6 +1419,11 @@ static inline void cldma_stop(struct ccci_modem *md)
 	}
 }
 
+void __weak dump_emi_latency(void)
+{
+	pr_err("[ccci/dummy] %s is not supported!\n", __func__);
+}
+
 static inline void cldma_stop_for_ee(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
@@ -1444,6 +1449,7 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+			dump_emi_latency();
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1463,6 +1469,7 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+			dump_emi_latency();
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts, but non-stop Rx ones */
