@@ -384,7 +384,6 @@ void kbase_pm_update_active(struct kbase_device *kbdev)
 
 		/* Request power off */
 		if (kbdev->pm.backend.gpu_powered) {
-			hrtimer_cancel(&kbdev->pm.backend.gpu_poweroff_timer);
 			if (kbdev->pm.poweroff_gpu_ticks) {
 				kbdev->pm.backend.gpu_poweroff_pending =
 						kbdev->pm.poweroff_gpu_ticks;
@@ -396,6 +395,7 @@ void kbase_pm_update_active(struct kbase_device *kbdev)
 					 * powered off */
 					kbdev->pm.backend.poweroff_timer_needed
 							= true;
+					hrtimer_cancel(&kbdev->pm.backend.gpu_poweroff_timer);
 					hrtimer_start(
 					&kbdev->pm.backend.gpu_poweroff_timer,
 						kbdev->pm.gpu_poweroff_time,
@@ -408,6 +408,7 @@ void kbase_pm_update_active(struct kbase_device *kbdev)
 					 */
 					kbdev->pm.backend.poweroff_timer_needed
 							= true;
+					hrtimer_cancel(&kbdev->pm.backend.gpu_poweroff_timer);
 					hrtimer_start(
 					&kbdev->pm.backend.gpu_poweroff_timer,
 						kbdev->pm.gpu_poweroff_time,
