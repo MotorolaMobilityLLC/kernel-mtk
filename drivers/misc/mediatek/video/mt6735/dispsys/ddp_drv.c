@@ -107,6 +107,8 @@ static ssize_t disp_kobj_show(struct kobject *kobj, struct attribute *attr, char
 		size = ddp_dump_reg_to_buf(1, (unsigned long *)buffer);	/* DISP_MODULE_OVL */
 	else if (0 == strcmp(attr->name, "dbg3"))
 		size = ddp_dump_reg_to_buf(0, (unsigned long *)buffer);	/* DISP_MODULE_WDMA0 */
+	else if (0 == strcmp(attr->name, "dbg4"))
+		size = ddp_dump_lcm_param_to_buf(0, (unsigned long *)buffer); /* DISP_MODULE_LCM */
 
 	return size;
 }
@@ -129,6 +131,10 @@ static struct kobj_type disp_kobj_ktype = {
 		},
 		&(struct attribute){
 			.name = "dbg3",	/* disp, dbg3 */
+			.mode = S_IRUGO
+		},
+		&(struct attribute){
+			.name = "dbg4",	/* disp, dbg4 */
 			.mode = S_IRUGO
 		},
 		NULL
