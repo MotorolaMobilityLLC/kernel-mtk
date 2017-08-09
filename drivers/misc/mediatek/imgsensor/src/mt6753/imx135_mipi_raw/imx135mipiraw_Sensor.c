@@ -231,7 +231,7 @@ static imgsensor_info_struct imgsensor_info = {
         /*   following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario   */
         .mipi_data_lp2hs_settle_dc = 30,
         /*   following for GetDefaultFramerateByScenario()  */
-        .max_framerate = 300,
+        .max_framerate = 200,
 
     },
     .margin = 10,
@@ -255,7 +255,7 @@ static imgsensor_info_struct imgsensor_info = {
     .custom4_delay_frame = 2,
     .custom5_delay_frame = 2,
 
-    .isp_driving_current = ISP_DRIVING_4MA,
+    .isp_driving_current = ISP_DRIVING_8MA,
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
