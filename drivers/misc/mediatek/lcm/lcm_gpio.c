@@ -63,6 +63,7 @@
 #define GPIO_65132_EN 0
 #endif
 #else
+#ifdef CONFIG_PINCTRL
 static struct pinctrl *_lcm_gpio;
 static struct pinctrl_state *_lcm_gpio_mode_default;
 static struct pinctrl_state *_lcm_gpio_mode[MAX_LCM_GPIO_MODE];
@@ -79,6 +80,7 @@ static unsigned char _lcm_gpio_mode_list[MAX_LCM_GPIO_MODE][128] = {
 
 static unsigned int GPIO_LCD_PWR_EN;
 static unsigned int GPIO_LCD_BL_EN;
+#endif
 
 /* function definitions */
 static int __init _lcm_gpio_init(void);
@@ -266,6 +268,7 @@ LCM_STATUS lcm_gpio_set_data(char type, const LCM_DATA_T1 *t1)
 			mt_set_gpio_out(GPIO_65132_EN, (unsigned int)t1->data);
 			break;
 #else
+#ifdef CONFIG_PINCTRL
 		case LCM_GPIO_MODE:
 			pr_debug("[LCM][GPIO] %s/%d: set mode: %d\n", __func__, __LINE__,
 				 (unsigned int)t1->data);
@@ -283,7 +286,12 @@ LCM_STATUS lcm_gpio_set_data(char type, const LCM_DATA_T1 *t1)
 				 GPIO_LCD_PWR_EN, (unsigned int)t1->data);
 			gpio_set_value(GPIO_LCD_PWR_EN, (int)t1->data);
 			break;
-
+#else
+		case LCM_GPIO_MODE:
+		case LCM_GPIO_DIR:
+		case LCM_GPIO_OUT:
+			break;
+#endif
 #endif
 		default:
 			pr_err("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
