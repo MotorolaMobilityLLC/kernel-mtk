@@ -789,8 +789,8 @@ void soidle3_after_wfi(int cpu)
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
 
-		gpt_get_cnt(idle_gpt, &cnt);
-		gpt_get_cmp(idle_gpt, &cmp);
+		idle_gpt_get_cnt(idle_gpt, &cnt);
+		idle_gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
 			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
 					__func__, idle_gpt + 1, cnt, cmp);
