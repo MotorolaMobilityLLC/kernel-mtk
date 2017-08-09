@@ -104,6 +104,7 @@
 #include "mt_gpufreq.h"
 #include <mali_kbase_pm_defs.h>
 #include <mali_kbase_pm_internal.h>
+#include "ged_dvfs.h"
 
 /* MTK chip version API */
 #include "mt_chip.h"
@@ -129,6 +130,11 @@ static const char kbase_drv_name[] = KBASE_DRV_NAME;
 static int kbase_dev_nr;
 
 /* MTK GPU DVFS freq */
+
+/// MTK_GED {
+static struct kbase_device *gpsMaliData = NULL;
+///}
+
 int g_current_freq_id = 3;
 int g_deferred_down_shift = 0;
 
@@ -385,6 +391,13 @@ out:
 }
 #endif /* CONFIG_KDS */
 
+/// MTK_GED {
+struct kbase_device *MaliGetMaliData(void)
+{
+	return gpsMaliData;
+}
+/// }
+
 static void _mtk_set_gpu_boost_duration(void)
 {
     g_gpu_boost_duartion = MTK_GPU_BOOST_DURATION;
@@ -504,6 +517,13 @@ int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
         return iTargetVirtualFreqID;
 }
 
+/// MTK_GED {
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
+{
+        mt_gpufreq_target(ui32NewFreqID);
+        *pbCommited = true;
+}
+///
 
 int mtk_gpu_dvfs(void)
 {
@@ -1039,10 +1059,13 @@ copy_failed:
 #endif /* BASE_LEGACY_UK6_SUPPORT */
 				ukh->ret = MALI_ERROR_FUNCTION_FAILED;
 			
+#ifndef ENABLE_COMMON_DVFS
+				//dev_err(kbdev->dev, "5566 JOB SUBMIT BASED");                
 			if(mtk_get_dvfs_enabled())
 			{
 				mtk_gpu_dvfs();
 			}
+#endif
 			
 			break;
 		}
@@ -3880,6 +3903,12 @@ static const struct attribute_group kbase_attr_group = {
 
 static int kbase_common_device_remove(struct kbase_device *kbdev);
 
+/// MTK{
+extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited);
+extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
+/// }
+
 static int kbase_platform_device_probe(struct platform_device *pdev)
 {
 	struct kbase_device *kbdev;
@@ -4068,6 +4097,15 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	bl_core_set_threshold(kbdev->buslogger, 1024*1024*1024);
 #endif
+
+    gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS      
+/// MTK_GED {	
+   ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+   ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+///}
+#endif  
+
 	return 0;
 
 #ifdef CONFIG_MALI_FPGA_BUS_LOGGER

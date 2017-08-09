@@ -780,6 +780,7 @@ int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	spin_lock_init(&kbdev->pm.backend.metrics.lock);
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
+#ifndef ENABLE_COMMON_DVFS	
 	kbdev->pm.backend.metrics.timer_active = true;
 	hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC,
 							HRTIMER_MODE_REL);
@@ -788,6 +789,7 @@ int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	hrtimer_start(&kbdev->pm.backend.metrics.timer,
 			HR_TIMER_DELAY_MSEC(kbdev->pm.dvfs_period),
 			HRTIMER_MODE_REL);
+#endif            
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 	return 0;
@@ -953,6 +955,92 @@ out:
 
 	return utilisation;
 }
+
+/// MTK_GED{
+void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle)
+{
+   struct kbase_device *kbdev = MaliGetMaliData();
+//-------------   
+	unsigned long flags;
+	int utilisation, util_gl_share;
+	int util_cl_share[2];
+	int random_action;
+	enum kbase_pm_dvfs_action action;
+	ktime_t now;
+
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+    spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+
+	action = KBASE_PM_DVFS_NOP;
+
+	now = ktime_get();
+
+	utilisation = kbase_pm_get_dvfs_utilisation_old(kbdev, &util_gl_share,
+			util_cl_share, now);
+//-------------
+
+	if(pui32Loading)
+        *pui32Loading = utilisation;
+    if(pui32Idle)
+        *pui32Idle = 100 - utilisation;
+    
+    /*
+    if(pui32Block)
+        *pui32Block = 0; // no ref value in r7px
+     */
+
+		if (utilisation < 0 || util_gl_share < 0 || util_cl_share[0] < 0 ||
+							util_cl_share[1] < 0) {
+		utilisation = 0;
+		util_gl_share = 0;
+		util_cl_share[0] = 0;
+		util_cl_share[1] = 0;
+		goto out;
+	}
+
+	if (kbdev->pm.backend.metrics.vsync_hit) {
+		/* VSync is being met */
+		if (utilisation < mtk_get_dvfs_threshold_min())
+			action = KBASE_PM_DVFS_CLOCK_DOWN;
+		else if (utilisation > mtk_get_dvfs_threshold_max())
+			action = KBASE_PM_DVFS_CLOCK_UP;
+		else
+			action = KBASE_PM_DVFS_NOP;
+	} else {
+		/* VSync is being missed */
+		if (utilisation < KBASE_PM_NO_VSYNC_MIN_UTILISATION)
+			action = KBASE_PM_DVFS_CLOCK_DOWN;
+		else if (utilisation > KBASE_PM_NO_VSYNC_MAX_UTILISATION)
+			action = KBASE_PM_DVFS_CLOCK_UP;
+		else
+			action = KBASE_PM_DVFS_NOP;
+	}
+
+	// get a radom action for stress test
+	if (mtk_get_dvfs_enabled() == 2)
+	{
+		get_random_bytes( &random_action, sizeof(random_action));
+        random_action = random_action%3;
+        //printk("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        pr_debug("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        action = random_action;
+	}
+
+        g_current_sample_gl_utilization = utilisation;
+	g_current_sample_cl_utilization[0] = util_cl_share[0];
+	g_current_sample_cl_utilization[1] = util_cl_share[1];
+
+out:
+#if 0 //#ifdef CONFIG_MALI_MIDGARD_DVFS
+	kbase_platform_dvfs_event(kbdev, utilisation, util_gl_share,
+								util_cl_share);
+#endif				/*CONFIG_MALI_MIDGARD_DVFS */
+
+	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+	
+}
+///}
 
 enum kbase_pm_dvfs_action kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
 {

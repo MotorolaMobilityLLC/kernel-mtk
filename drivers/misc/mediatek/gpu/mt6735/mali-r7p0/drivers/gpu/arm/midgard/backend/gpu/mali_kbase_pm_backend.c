@@ -176,7 +176,7 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 	
 	/* MTK GPU DVFS init */
 	_mtk_gpu_dvfs_init();
-
+#ifndef ENABLE_COMMON_DVFS	
 	/* MTK Register input boost and power limit call back function */
 	mt_gpufreq_input_boost_notify_registerCB(mtk_gpu_input_boost_CB);
 	mt_gpufreq_power_limit_notify_registerCB(mtk_gpu_power_limit_CB);
@@ -193,6 +193,7 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
   /* SODI callback function */
   mtk_gpu_sodi_entry_fp = mali_SODI_begin;
   mtk_gpu_sodi_exit_fp  = mali_SODI_exit;
+#endif
 
 	/* Initialise the metrics subsystem */
 	ret = kbasep_pm_metrics_init(kbdev);
