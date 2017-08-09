@@ -29,11 +29,11 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define BT_LOG_WARN                 1
 #define BT_LOG_ERR                  0
 
-#define COMBO_IOCTL_FW_ASSERT        2
-#define COMBO_IOCTL_BT_IC_HW_VER     3
-#define COMBO_IOCTL_BT_IC_FW_VER     4
-#define COMBO_IOC_BT_HWVER           5
-
+#define COMBO_IOC_MAGIC             0xb0
+#define COMBO_IOCTL_FW_ASSERT       _IOWR(COMBO_IOC_MAGIC, 0, int)
+#define COMBO_IOCTL_BT_IC_HW_VER    _IOWR(COMBO_IOC_MAGIC, 1, void*)
+#define COMBO_IOCTL_BT_IC_FW_VER    _IOWR(COMBO_IOC_MAGIC, 2, void*)
+#define COMBO_IOC_BT_HWVER          _IOWR(COMBO_IOC_MAGIC, 3, void*)
 
 static UINT32 gDbgLevel = BT_LOG_INFO;
 
@@ -197,6 +197,7 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 {
 	static int chip_reset_count;
 	INT32 retval = 0;
+
 	down(&rd_mtx);
 
 	BT_DBG_FUNC("%s: count %zd pos %lld\n", __func__, count, *f_pos);
