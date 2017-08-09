@@ -88,8 +88,11 @@ u32 pinSet[3][8] = {
 #define CUST_AFVDD AFVDD - AVDD
 #define CUST_SUB_AVDD SUB_AVDD - AVDD
 #define CUST_SUB_DVDD SUB_DVDD - AVDD
+#define CUST_SUB_DOVDD SUB_DOVDD - AVDD
 #define CUST_MAIN2_AVDD MAIN2_AVDD - AVDD
 #define CUST_MAIN2_DVDD MAIN2_DVDD - AVDD
+#define CUST_MAIN2_DOVDD MAIN2_DVDD - AVDD
+
 #endif
 
 
@@ -101,8 +104,10 @@ PowerCust PowerCustList = {
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for AFVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_AVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
+	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DOVDD; */
 	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
 	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; */
+	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DOVDD; */
 /* {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
 	 }
 };
@@ -1051,7 +1056,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 				sensorInPowerList = KAL_TRUE;
 
-				for (pwIdx = 9; pwIdx >= 0; pwIdx--) {
+				for (pwIdx = 15; pwIdx >= 0; pwIdx--) {
 					if (PowerOnList.PowerSeq[pwListIdx].PowerInfo[pwIdx].
 					    PowerType != VDD_None) {
 						if (hwpowerdown

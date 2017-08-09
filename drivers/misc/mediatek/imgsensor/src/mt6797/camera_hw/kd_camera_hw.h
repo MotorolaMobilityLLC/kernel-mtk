@@ -21,8 +21,10 @@ typedef enum {
 	AFVDD,
 	SUB_AVDD,
 	SUB_DVDD,
+	SUB_DOVDD,
 	MAIN2_AVDD,
 	MAIN2_DVDD,
+	MAIN2_DOVDD,
 } PowerType;
 
 typedef enum {
@@ -90,7 +92,7 @@ typedef struct {
 } PowerCustInfo;
 
 typedef struct {
-	PowerCustInfo PowerCustInfo[8];
+	PowerCustInfo PowerCustInfo[10];
 } PowerCust;
 
 extern bool _hwPowerDown(PowerType type);

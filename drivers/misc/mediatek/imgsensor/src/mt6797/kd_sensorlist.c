@@ -109,8 +109,12 @@ static struct i2c_board_info i2c_devs2 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DR
 	struct regulator *regVCAMD = NULL;
 	struct regulator *regVCAMIO = NULL;
 	struct regulator *regVCAMAF = NULL;
+	struct regulator *regSubVCAMA = NULL;
 	struct regulator *regSubVCAMD = NULL;
+	struct regulator *regSubVCAMIO = NULL;
+	struct regulator *regMain2VCAMA = NULL;
 	struct regulator *regMain2VCAMD = NULL;
+	struct regulator *regMain2VCAMIO = NULL;
 #endif
 
 struct device *sensor_device = NULL;
@@ -3032,7 +3036,7 @@ bool Get_Cam_Regulator(void)
 			    }
 			    if (regVCAMIO == NULL) {
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
-			    }
+				}
 			    if (regVCAMAF == NULL) {
 				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
 			    }
@@ -3041,21 +3045,34 @@ bool Get_Cam_Regulator(void)
 			    if (regVCAMA == NULL) {
 				    regVCAMA = regulator_get(sensor_device, "vcama");
 			    }
+				if (regSubVCAMA == NULL) {
+				    regSubVCAMA = regulator_get(sensor_device, "vcama_sub");
+			    }
+				if (regMain2VCAMA == NULL) {
+				    regMain2VCAMA = regulator_get(sensor_device, "vcama_main2");
+			    }
 			    if (regVCAMD == NULL) {
 				    regVCAMD = regulator_get(sensor_device, "vcamd");
 			    }
 				if (regSubVCAMD == NULL) {
 				    regSubVCAMD = regulator_get(sensor_device, "vcamd_sub");
 			    }
+				if (regMain2VCAMD == NULL) {
+				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
+			    }
 			    if (regVCAMIO == NULL) {
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
+			    }
+			    if (regSubVCAMIO == NULL) {
+				    regSubVCAMIO = regulator_get(sensor_device, "vcamio_sub");
+			    }
+				if (regMain2VCAMIO == NULL) {
+				    regMain2VCAMIO = regulator_get(sensor_device, "vcamio_main2");
 			    }
 			    if (regVCAMAF == NULL) {
 				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
 			    }
-			    if (regMain2VCAMD == NULL) {
-				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
-			    }
+
 			    /* restore original dev.of_node */
 			}
 			 sensor_device->of_node = kd_node;
@@ -3073,9 +3090,9 @@ bool Get_Cam_Regulator(void)
 bool _hwPowerOn(PowerType type, int powerVolt)
 {
     bool ret = FALSE;
-	struct regulator *reg = NULL;
+    struct regulator *reg = NULL;
 
-	PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
+    PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
     if (type == AVDD) {
 	reg = regVCAMA;
     } else if (type == DVDD) {
@@ -3084,11 +3101,19 @@ bool _hwPowerOn(PowerType type, int powerVolt)
 	reg = regVCAMIO;
     } else if (type == AFVDD) {
 	reg = regVCAMAF;
+    }else if (type == SUB_AVDD) {
+	reg = regSubVCAMA;
     } else if (type == SUB_DVDD) {
 	reg = regSubVCAMD;
+    } else if (type == SUB_DOVDD) {
+	reg = regSubVCAMIO;
+    } else if (type == MAIN2_AVDD) {
+	reg = regMain2VCAMA;
     } else if (type == MAIN2_DVDD) {
 	reg = regMain2VCAMD;
-    } else
+    } else if (type == MAIN2_DOVDD) {
+	reg = regMain2VCAMIO;
+    }else
     	return ret;
 
 	if (!IS_ERR(reg)) {
@@ -3113,23 +3138,30 @@ bool _hwPowerDown(PowerType type)
 {
     bool ret = FALSE;
 	struct regulator *reg = NULL;
+	PK_DBG("[_hwPowerDown]powertype:%d\n", type);
 
-	if (type == AVDD) {
-	 reg = regVCAMA;
-	 } else if (type == DVDD) {
-	 reg = regVCAMD;
-	 } else if (type == DOVDD) {
-	 reg = regVCAMIO;
-	 } else if (type == AFVDD) {
-	 reg = regVCAMAF;
-	 } else if (type == SUB_DVDD) {
-	 reg = regSubVCAMD;
-	 } else if (type == SUB_DVDD) {
-	 reg = regMain2VCAMD;
-	 } else
-		return ret;
-
-
+    if (type == AVDD) {
+	reg = regVCAMA;
+    } else if (type == DVDD) {
+	reg = regVCAMD;
+    } else if (type == DOVDD) {
+	reg = regVCAMIO;
+    } else if (type == AFVDD) {
+	reg = regVCAMAF;
+    }else if (type == SUB_AVDD) {
+	reg = regSubVCAMA;
+    } else if (type == SUB_DVDD) {
+	reg = regSubVCAMD;
+    } else if (type == SUB_DOVDD) {
+	reg = regSubVCAMIO;
+    } else if (type == MAIN2_AVDD) {
+	reg = regMain2VCAMA;
+    } else if (type == MAIN2_DVDD) {
+	reg = regMain2VCAMD;
+    } else if (type == MAIN2_DOVDD) {
+	reg = regMain2VCAMIO;
+    }else
+    	return ret;
 
     if (!IS_ERR(reg)) {
 	if (regulator_is_enabled(reg) != 0) {
