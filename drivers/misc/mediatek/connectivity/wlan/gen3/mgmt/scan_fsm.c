@@ -595,7 +595,7 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 		rCmdScanReq.ucChannelListNum != 0)
 		kalSendAeeWarning("wlan",
 			"channel list is not NULL but channel type is not specified");
-	else if (rCmdScanReq.ucBssIndex >= MAX_BSS_INDEX)
+	else if (rCmdScanReq.ucBssIndex > MAX_BSS_INDEX)
 		kalSendAeeWarning("wlan", "wrong bss index %d", rCmdScanReq.ucBssIndex);
 	else if (rCmdScanReq.ucSSIDType >= BIT(4)) /* ssid type is wrong */
 		kalSendAeeWarning("wlan", "wrong ssid type %d", rCmdScanReq.ucSSIDType);
