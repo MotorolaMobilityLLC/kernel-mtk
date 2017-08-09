@@ -33,8 +33,8 @@
 #define INFRA_AO_C2K_STATUS (0x364)
 #define INFRA_AO_C2K_SPM_CTRL (0x368)
 
-#define MCUCFG_C2K_BOOT_STATUS (0x1308)
-#define MCUCFG_C2K_BOOT_STATUS2 (0x130c)
+#define INFRA_C2K_BOOT_STATUS (0x308)
+#define INFRA_C2K_BOOT_STATUS2 (0x30c)
 
 #define SLEEP_CLK_CON (0x328)
 
@@ -76,6 +76,7 @@
 #define C2K_SBC_KEY7	0x8CC
 #define C2K_SBC_KEY_LOCK	0x8D0	/*((UINT32P)(INFRACFG_AO_BASE+0x8D0))*/
 
+/*** C2K side register ***/
 #define C2KSYS_BASE	(0x38000000)
 #define C2K_CGBR1               0x0200B004	/*	(C2KSYS_BASE+0x0200B004)	*/
 #define C2K_C2K_PLL_CON3        0x02013008
@@ -88,6 +89,18 @@
 #define C2K_C2K_CPPLL_CON0      0x02013040
 #define C2K_C2K_DSPPLL_CON0     0x02013050
 
+#define C2K_IRAM_BASE			0x01000000 /*0x39000000*/
+#define C2K_H2X_ZONE_BASE		0x00000000
+#define C2K_CGBR_SBC_BASE		0x0200B000
+#define C2K_BOOT_ROM_BASE		0x3FFF0000
+/*end of C2K side register*/
+#define C2K_IRAM_DUMP_SIZE		0x20
+#define C2K_BOOTROM_DUMP_SIZE		0x90
+
+#define L1_C2K_CCIRQ_BASE		0x10211400
+#define C2K_L1_CCIRQ_BASE		0x10213400
+#define PS_C2K_CCIRQ_BASE		0x10211000
+#define C2K_PS_CCIRQ_BASE		0x10213000
 
 #define ETS_SEL_BIT					(0x1 << 13)
 
@@ -141,6 +154,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
+void dump_c2k_boot_status(struct ccci_modem *md);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);

@@ -36,9 +36,17 @@ static struct clk *clk_scp_sys_md3_main;
 #define PCCIF_SRAM_SIZE (512)
 
 static unsigned long apmixed_base;
-static unsigned long apmcucfg_base;
+static unsigned long apinfra_base;
 
 struct c2k_pll_t c2k_pll_reg;
+void __iomem *ccirq_base[4];
+void __iomem *c2k_cgbr1_addr;
+#ifdef DUMP_C2K_ON_EE
+void __iomem *c2k_iram_base_vir;
+void __iomem *c2k_h2x_zone_vir;
+void __iomem *c2k_cgbr_sbc_vir;
+void __iomem *c2k_boot_rom_vir;
+#endif
 
 int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct ccci_dev_cfg *dev_cfg,
@@ -160,8 +168,8 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		apmixed_base = (unsigned long)of_iomap(node, 0);
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
-		apmcucfg_base = (unsigned long)of_iomap(node, 0);
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+		apinfra_base = (unsigned long)of_iomap(node, 0);
 
 		CCCI_INF_MSG(dev_cfg->index, TAG,
 			     "infra_ao_base=0x%lx, sleep_base=0x%lx, toprgu_base=0x%lx\n",
@@ -250,6 +258,20 @@ int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 		c2k_pll_reg.c2k_cg_amba_clksel = ioremap_nocache(C2KSYS_BASE + C2K_CG_ARM_AMBA_CLKSEL, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl4 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL4, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl9 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL9, 0x4);
+		/*CCIRQ reg*/
+		ccirq_base[0] = ioremap_nocache(L1_C2K_CCIRQ_BASE, 0x100);
+		ccirq_base[1] = ioremap_nocache(C2K_L1_CCIRQ_BASE, 0x100);
+		ccirq_base[2] = ioremap_nocache(PS_C2K_CCIRQ_BASE, 0x100);
+		ccirq_base[3] = ioremap_nocache(C2K_PS_CCIRQ_BASE, 0x100);
+
+		c2k_cgbr1_addr = ioremap_nocache(C2KSYS_BASE + C2K_CGBR1, 0x4);
+
+#ifdef DUMP_C2K_ON_EE
+		c2k_iram_base_vir = ioremap_nocache(C2KSYS_BASE + C2K_IRAM_BASE, C2K_IRAM_DUMP_SIZE);
+		c2k_h2x_zone_vir = ioremap_nocache(C2KSYS_BASE + C2K_H2X_ZONE_BASE, 0x1000);
+		c2k_cgbr_sbc_vir = ioremap_nocache(C2KSYS_BASE + C2K_CGBR_SBC_BASE, 0x1000);
+		c2k_boot_rom_vir = ioremap_nocache(C2K_BOOT_ROM_BASE, 0x1000);
+#endif
 
 		break;
 	}
@@ -278,6 +300,30 @@ static int config_c2k_pll(void)
 	ccif_write16(c2k_pll_reg.c2k_clk_ctrl9, 0, 0xA207);
 
 
+	return 0;
+}
+
+static int reset_ccirq_hardware(void)
+{
+	int i = 0;
+
+	CCCI_INF_MSG(MD_SYS3, TAG, "reset_ccirq_hardware start\n");
+	for (i = 0; i < 2; i++) {
+		ccif_write32(ccirq_base[i], 0x4, 0xA00000FF);
+		ccif_write32(ccirq_base[i], 0xC, 0xA00000FF);
+	}
+	for (i = 2; i < 4; i++) {
+		ccif_write32(ccirq_base[i], 0x4, 0xA000000F);
+		ccif_write32(ccirq_base[i], 0xC, 0xA000000F);
+	}
+
+	for (i = 0; i < 4; i++) {
+		ccif_write32(ccirq_base[i], 0x40, 0x0);
+		ccif_write32(ccirq_base[i], 0x44, 0x0);
+		ccif_write32(ccirq_base[i], 0x48, 0x0);
+		ccif_write32(ccirq_base[i], 0x4C, 0x0);
+	}
+	CCCI_INF_MSG(MD_SYS3, TAG, "reset_ccirq_hardware end\n");
 	return 0;
 }
 
@@ -318,23 +364,30 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			      (md_ctrl->hw_info->infra_ao_base,
 			       INFRA_AO_C2K_CONFIG) & (~(0x7 << 8))) | (0x5 << 8));
 		*/
-		CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_CONFIG));
-/*
-		CCCI_INF_MSG(md->index, TAG, "MCUCFG_C2K_BOOT_STATUS = 0x%x\n",
-			     ccif_read32(apmcucfg_base,
-					 MCUCFG_C2K_BOOT_STATUS));
-		CCCI_INF_MSG(md->index, TAG, "MCUCFG_C2K_BOOT_STATUS2 = 0x%x\n",
-			     ccif_read32(apmcucfg_base,
-					 MCUCFG_C2K_BOOT_STATUS2));
-*/
+		ccif_write32(md_ctrl->hw_info->infra_ao_base,
+			     INFRA_AO_C2K_CONFIG,
+			     (ccif_read32
+			      (md_ctrl->hw_info->infra_ao_base,
+			       INFRA_AO_C2K_CONFIG)) | (0x1 << 3));
+
 		ccif_write32(md_ctrl->hw_info->sleep_base, POWERON_CONFIG_EN,
 			0x0B160001);
 
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
 			     ccif_read32(md_ctrl->hw_info->sleep_base,
 					 SLEEP_CLK_CON) | 0xc);
+
+		while (((ccif_read32
+			 (md_ctrl->hw_info->sleep_base, PWR_STATUS) & (0x1 << 28)) != (0x1 << 28)) ||
+			 ((ccif_read32
+			 (md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND) & (0x1 << 28)) != (0x1 << 28)))
+			;
+
+		CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS));
+		CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS_2ND = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND));
+
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
 			     ccif_read32(md_ctrl->hw_info->sleep_base,
 					 SLEEP_CLK_CON) & (~(0x1 << PWR_CLK_DIS)));
@@ -367,10 +420,15 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     ccif_read32(apmixed_base, AP_PLL_CON0));
 
 		/*ap hold c2k core*/
+		/*
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     INFRA_AO_C2K_CONFIG,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_CONFIG) | (0x1 << 1));
+		*/
+		CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
+					 INFRA_AO_C2K_CONFIG));
 
 		/*step 4: wake up C2K */
 		/*
@@ -434,11 +492,12 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		config_c2k_pll();
 
 		/*release c2k arm core*/
+		/*
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     INFRA_AO_C2K_CONFIG,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_CONFIG) & (~(0x1 << 1)));
-
+		*/
 		break;
 	}
 	return 0;
@@ -528,6 +587,9 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	struct md_hw_info *hw_info = md_ctrl->hw_info;
+
+	reset_ccirq_hardware();
+
 	/* clear occupied channel */
 	while (tx_channel < 16) {
 		if (ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY) & (1<<tx_channel))
@@ -554,5 +616,75 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 	ccci_mem_dump(-1, (void *)hw_info->md1_pccif_base, 0x300);
 	pr_debug("[C2K] Dump MD3 PCCIF\n");
 	ccci_mem_dump(-1, (void *)hw_info->md3_pccif_base, 0x300);
+}
+
+void dump_c2k_boot_status(struct ccci_modem *md)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+
+#ifdef DUMP_C2K_ON_EE
+	u32 i, j;
+	/*start addr, reg count*/
+	u32 h2x_reg[][2] = { {0x3C, 8}, {0, 0} };
+	u32 cgbr_sbc_reg[][2] = { {0x0, 7}, {0xF0, 3}, {0x10c, 3}, {0x200, 11}, {0, 0} };
+	unsigned long reg_base;
+#endif
+
+	CCCI_INF_MSG(md->index, TAG, "INFRA_C2K_BOOT_STATUS = 0x%x\n",
+			 ccif_read32(apinfra_base, INFRA_C2K_BOOT_STATUS));
+	CCCI_INF_MSG(md->index, TAG, "INFRA_C2K_BOOT_STATUS2 = 0x%x\n",
+			 ccif_read32(apinfra_base, INFRA_C2K_BOOT_STATUS2));
+
+	CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_CONFIG));
+	CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS));
+	CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS_2ND = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND));
+
+	CCCI_INF_MSG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
+			ccif_read32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON));
+	CCCI_INF_MSG(md->index, TAG, "INFRA_MISC2 = 0x%x\n",
+			ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2));
+
+	CCCI_INF_MSG(md->index, TAG, "[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_SPM_CTRL),
+			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_STATUS));
+
+	CCCI_INF_MSG(md->index, TAG, "[C2K] C2K_CGBR1 = 0x%x\n",
+			ccif_read32(c2k_cgbr1_addr, 0));
+
+#ifdef DUMP_C2K_ON_EE
+	reg_base = C2KSYS_BASE + C2K_H2X_ZONE_BASE;
+	for (i = 0; h2x_reg[i][1] != 0; i++) {
+		for (j = 0; j < h2x_reg[i][1]; j++)
+			CCCI_INF_MSG(md->index, TAG, "[C2K] reg = 0x%lx, value = 0x%x\n",
+				reg_base + h2x_reg[i][0] + j*4, ccif_read32(c2k_h2x_zone_vir, h2x_reg[i][0] + j*4));
+	}
+
+	reg_base = C2KSYS_BASE + C2K_CGBR_SBC_BASE;
+	for (i = 0; cgbr_sbc_reg[i][1] != 0; i++) {
+		for (j = 0; j < cgbr_sbc_reg[i][1]; j++)
+			CCCI_INF_MSG(md->index, TAG, "[C2K] reg = 0x%lx, value = 0x%x\n",
+				reg_base + cgbr_sbc_reg[i][0] + j*4,
+				ccif_read32(c2k_cgbr_sbc_vir, cgbr_sbc_reg[i][0] + j*4));
+	}
+
+	reg_base = C2KSYS_BASE + C2K_IRAM_BASE;
+	for (j = 0; j < C2K_IRAM_DUMP_SIZE; ) {
+		CCCI_INF_MSG(md->index, TAG, "[C2K] iram = 0x%lx, value = 0x%x\n",
+				reg_base + j, ccif_read32(c2k_iram_base_vir, j));
+		j += 4;
+	}
+
+	reg_base = C2K_BOOT_ROM_BASE;
+	for (j = 0; j < C2K_BOOTROM_DUMP_SIZE; ) {
+		CCCI_INF_MSG(md->index, TAG, "[C2K] bootrom = 0x%lx, value = 0x%x\n",
+				reg_base + j, ccif_read32(c2k_boot_rom_vir, j));
+		j += 4;
+	}
+
+#endif
+
 }
 
