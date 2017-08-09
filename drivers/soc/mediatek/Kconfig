@@ -62,7 +62,7 @@ config MTK_SCPSYS_MT8127
 	select SOC_MEDIATEK
 	select REGMAP
 	select PM_GENERIC_DOMAINS
-	default y if MACH_MT8127
+	default y if ARCH_MT8127
 	help
 	  Say yes here to add support for the MediaTek SCPSYS power domain
 	  driver.
