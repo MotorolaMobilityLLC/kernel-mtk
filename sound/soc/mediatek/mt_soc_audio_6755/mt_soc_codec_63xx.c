@@ -150,6 +150,8 @@ static int Speaker_mode = AUDIO_SPEAKER_MODE_AB;
 static unsigned int Speaker_pga_gain = 1;	/* default 0Db. */
 static bool mSpeaker_Ocflag;
 #endif
+static unsigned int LineoutL_pga_gain = 8;	/* default 0Db. */
+static unsigned int LineoutR_pga_gain = 8;	/* default 0Db. */
 static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
@@ -584,6 +586,9 @@ static void Apply_Speaker_Gain(void)
 #else
 static void Apply_Speaker_Gain(void)
 {
+	/* pr_warn("%s Lineout_pga_gain= %d\n", __func__, ((LineoutR_pga_gain << 7) | LineoutL_pga_gain)); */
+
+	Ana_Set_Reg(ZCD_CON1, ((LineoutR_pga_gain << 7) | LineoutL_pga_gain), 0x0f9f);
 }
 #endif
 
@@ -1072,8 +1077,8 @@ static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = substream->runtime->rate;
 
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		/* pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
-			substream->runtime->rate); */
+		pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+			substream->runtime->rate);
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = substream->runtime->rate;
 	}
 	return 0;
@@ -2479,8 +2484,6 @@ static int Lineout_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
-
 	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
@@ -2488,12 +2491,12 @@ static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
+	LineoutL_pga_gain = ucontrol->value.integer.value[0];
 
 	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
-		index = 0x1f;
+		LineoutL_pga_gain = 0x1f;
 
-	Ana_Set_Reg(ZCD_CON1, index, 0x001f);
+	Ana_Set_Reg(ZCD_CON1, LineoutL_pga_gain, 0x001f);
 
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL] = ucontrol->value.integer.value[0];
 	return 0;
@@ -2508,9 +2511,6 @@ static int Lineout_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
-	int index = 0;
-
 	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
@@ -2518,12 +2518,12 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
+	LineoutR_pga_gain = ucontrol->value.integer.value[0];
 
 	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
-		index = 0x1f;
+		LineoutR_pga_gain = 0x1f;
 
-	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f10);
+	Ana_Set_Reg(ZCD_CON1, LineoutR_pga_gain << 7, 0x0f80);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR] = ucontrol->value.integer.value[0];
 	return 0;
 }
