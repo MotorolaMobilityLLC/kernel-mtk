@@ -1042,6 +1042,13 @@ DEFINE_PER_CPU(u64, rt_throttling_start);
 DEFINE_PER_CPU(u64, exec_delta_time);
 DEFINE_PER_CPU(u64, clock_task);
 DEFINE_PER_CPU(u64, exec_start);
+DEFINE_PER_CPU(u64, update_curr_exec_start);
+DEFINE_PER_CPU(u64, pick_exec_start);
+DEFINE_PER_CPU(u64, sched_pick_exec_start);
+DEFINE_PER_CPU(u64, set_curr_exec_start);
+DEFINE_PER_CPU(u64, sched_set_curr_exec_start);
+DEFINE_PER_CPU(u64, update_exec_start);
+DEFINE_PER_CPU(u64, sched_update_exec_start);
 DEFINE_PER_CPU(struct task_struct, exec_task);
 static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 {
@@ -1078,6 +1085,10 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 				per_cpu(exec_delta_time, cpu));
 		printk_deferred(", clock_task[%llu], exec_start[%llu]\n",
 				per_cpu(clock_task, cpu), per_cpu(exec_start, cpu));
+		printk_deferred("update[%llu,%llu], pick[%llu, %llu], set_curr[%llu, %llu]\n",
+				per_cpu(update_exec_start, cpu), per_cpu(sched_update_exec_start, cpu),
+				per_cpu(pick_exec_start, cpu), per_cpu(sched_pick_exec_start, cpu),
+				per_cpu(set_curr_exec_start, cpu), per_cpu(sched_set_curr_exec_start, cpu));
 #endif
 		/*
 		 * Don't actually throttle groups that have no runtime assigned
@@ -1136,6 +1147,7 @@ static void update_curr_rt(struct rq *rq)
 	if (curr->sched_class != &rt_sched_class)
 		return;
 
+	per_cpu(update_exec_start, rq->cpu) = curr->se.exec_start;
 	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
 	if (unlikely((s64)delta_exec <= 0))
 		return;
@@ -1156,6 +1168,9 @@ static void update_curr_rt(struct rq *rq)
 	cpuacct_charge(curr, delta_exec);
 
 	sched_rt_avg_update(rq, delta_exec);
+
+	per_cpu(sched_update_exec_start, rq->cpu) = per_cpu(update_curr_exec_start, rq->cpu);
+	per_cpu(update_curr_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
 
 	if (!rt_bandwidth_enabled())
 		return;
@@ -1683,6 +1698,8 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 
 	p = rt_task_of(rt_se);
 	p->se.exec_start = rq_clock_task(rq);
+	per_cpu(pick_exec_start, rq->cpu) = p->se.exec_start;
+	per_cpu(sched_pick_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
 
 	return p;
 }
@@ -2404,7 +2421,8 @@ static void set_curr_task_rt(struct rq *rq)
 	struct task_struct *p = rq->curr;
 
 	p->se.exec_start = rq_clock_task(rq);
-
+	per_cpu(set_curr_exec_start, rq->cpu) = p->se.exec_start;
+	per_cpu(sched_set_curr_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
 	/* The running task is never eligible for pushing */
 	dequeue_pushable_task(rq, p);
 }
