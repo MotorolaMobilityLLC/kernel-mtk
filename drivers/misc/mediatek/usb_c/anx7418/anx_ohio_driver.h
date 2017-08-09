@@ -47,5 +47,25 @@ void ohio_hardware_poweron(void);
 void ohio_hardware_powerdown(void);
 
 extern u8 misc_status;
+extern u32 anx_debug_level;
+
+#define K_EMERG	(1<<7)
+#define K_QMU	(1<<7)
+#define K_ALET		(1<<6)
+#define K_CRIT		(1<<5)
+#define K_ERR		(1<<4)
+#define K_WARNIN	(1<<3)
+#define K_NOTICE	(1<<2)
+#define K_INFO		(1<<1)
+#define K_DEBUG	(1<<0)
+
+#define DEBUG  1
+#if DEBUG
+#define anx_printk(level, fmt, args...) do { \
+		if (anx_debug_level & level) { \
+			pr_err("[ANX]" fmt, ## args); \
+		} \
+	} while (0)
+#endif
 
 #endif

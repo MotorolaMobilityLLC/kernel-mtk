@@ -28,7 +28,7 @@ u8 send_src_cap(const u8 *src_caps, u8 src_caps_size)
 {
 	u8 i;
 
-	pr_info("send_src_cap\n");
+	anx_printk(K_INFO, "send_src_cap\n");
 
 	if (NULL == src_caps)
 		return CMD_FAIL;
@@ -474,7 +474,7 @@ u8 wait_pd_cmd_timeout(int pd_cmd_timeout)
 	usb_pd_cmd_counter = 1;
 	write_unlock_irq(&usb_pd_cmd_rwlock);
 
-	pr_info("wait_pd_cmd_timeout\n");
+	anx_printk(K_INFO, "wait_pd_cmd_timeout\n");
 
 	/* looply check counter to be changed  to 0 by
 	 * interrupt interface in timeout period
@@ -485,7 +485,7 @@ u8 wait_pd_cmd_timeout(int pd_cmd_timeout)
 		if (usb_pd_cmd_counter <= 0) {
 			cmd_status = usb_pd_cmd_status;
 			read_unlock(&usb_pd_cmd_rwlock);
-			pr_err("fetch usb command status %x successful!\n",
+			anx_printk(K_INFO, "fetch usb command status %x successful!\n",
 				cmd_status);
 
 			return cmd_status;
@@ -497,7 +497,7 @@ u8 wait_pd_cmd_timeout(int pd_cmd_timeout)
 			usb_pd_cmd_counter = 0;
 			cmd_status = 0;
 			write_unlock_irq(&usb_pd_cmd_rwlock);
-			pr_info("ohio wait for command response expire timeout!!!!\n");
+			anx_printk(K_INFO, "ohio wait for command response expire timeout!!!!\n");
 			return CMD_FAIL;
 		}
 		/*interface_recvd_msg();*/
@@ -536,7 +536,7 @@ void OhioWriteReg(unsigned char RegAddr, unsigned char RegVal)
 void  printb(const char *buf, size_t size)
 {
 	while (size--)
-		pr_info("%0x", *buf++);
+		anx_printk(K_INFO, "[0x%zx]0x%x\n", size, *buf++);
 }
 
 void send_initialized_setting(void)
@@ -544,13 +544,13 @@ void send_initialized_setting(void)
 	update_pwr_src_caps();
 
 	if (interface_send_snk_cap() != CMD_SUCCESS)
-		pr_err(" ohio sink cap failed\n");
+		anx_printk(K_INFO, "ohio sink cap failed\n");
 
 	if (interface_send_src_dp_cap() != CMD_SUCCESS)
-		pr_err("ohio src dp failed\n");
+		anx_printk(K_INFO, "ohio src dp failed\n");
 
 	if (interface_send_svid() != CMD_SUCCESS)
-		pr_err("ohio svid failed\n");
+		anx_printk(K_INFO, "ohio svid failed\n");
 }
 
 /*///////////////////Circle Buffer ////////////////////////////////*/
@@ -689,6 +689,9 @@ u8 interface_send_msg_timeout(u8 type, u8 *pbuf, u8 len, int timeout_ms)
 	u8 snd_msg_total_len = 0;
 	static unsigned long expire;
 
+	anx_printk(K_INFO, "len=%d, type=%s timeout=%d\n",
+			len, interface_to_str(type), timeout_ms);
+
 	set_ack_status(0x00); /*clear ack bit*/
 	InterfaceSendBuf[0] = len + 1; /* + cmd*/
 	InterfaceSendBuf[1] = type;
@@ -722,7 +725,7 @@ u8 interface_send_msg_timeout(u8 type, u8 *pbuf, u8 len, int timeout_ms)
 		}
 
 		if (time_before(expire, jiffies)) {
-			pr_info("T%d:%d\n", snd_msg_total_len, i);
+			anx_printk(K_INFO, "T%d:%d\n", snd_msg_total_len, i);
 			return CMD_FAIL;
 		}
 	}
@@ -730,15 +733,20 @@ u8 interface_send_msg_timeout(u8 type, u8 *pbuf, u8 len, int timeout_ms)
 	i = get_ack_status();
 	while (i == 0) {
 		if (time_before(expire, jiffies)) {
-			pr_info("ack timeout\n");
+			anx_printk(K_INFO, "ack timeout %d\n",
+					get_ack_status());
 			return CMD_FAIL;
 		}
+		anx_printk(K_INFO, "try again\n");
+		mdelay(1);
+		i = get_ack_status();
 	}
 
 	if (get_ack_status() == 0x01)
-		pr_info("succ << %s:", interface_to_str(InterfaceSendBuf[1]));
+		anx_printk(K_INFO, "CMD OK >> %s\n",
+			interface_to_str(InterfaceSendBuf[1]));
 	else if (get_ack_status() == 0x02)
-		pr_info("F%x\n", type);
+		anx_printk(K_INFO, "F%x\n", type);
 
 	return CMD_SUCCESS;
 }
@@ -951,8 +959,12 @@ u8 polling_interface_msg(int timeout_ms)
 	/* first check if there is NEW interface message arrived? */
 	if (!empty_rx_buf())
 		buf_deque(InterfaceRecvBuf);
-	else
+	else {
+		anx_printk(K_INFO, "%s buffer empty\n", __func__);
 		return 1; /*there is no data arrived*/
+	}
+
+	anx_printk(K_INFO, "%s\n", __func__);
 
 	/* second interface's Data part,
 	* check msg's length(index 0) should > 0,
@@ -966,6 +978,8 @@ u8 polling_interface_msg(int timeout_ms)
 		* 1B Data length + 1B type + Raw Data+ 1B checksum
 		*/
 		msg_total_len = InterfaceRecvBuf[0] + 2;
+
+		anx_printk(K_INFO, "ttl len=%x\n", msg_total_len);
 
 		/* copy data to pointer (begin &InterfaceRecvBuf[1]) */
 		for (i = 1; i < msg_total_len; ) {
@@ -985,7 +999,11 @@ u8 polling_interface_msg(int timeout_ms)
 			}
 
 			if (time_before(expire, jiffies)) {
-				/* printk("Rx IMsg Timeout\n"); */
+				anx_printk(K_INFO, "FRONT[0x%x]=0x%x, REAR[0x%x]=0x%x\n",
+					OCM_BUF_FRONT,
+					OhioReadReg(OCM_BUF_FRONT),
+					OCM_BUF_REAR,
+					OhioReadReg(OCM_BUF_REAR));
 				rst = 2;
 				break;
 			}
@@ -1018,12 +1036,13 @@ u8 polling_interface_msg(int timeout_ms)
 				}
 			} else { /*incorrect chksm*/
 				set_ack_status(0x02);
-				pr_info("Chksum Err: %x\n", (u8)checksum);
+				anx_printk(K_INFO, "Chksum Err:%x\n",
+						(u8)checksum);
 			}
 
 		} else {
 			/*set_ack_status(0x02);*/
-			pr_info("Err: total len=%d, act len=%d\n",
+			anx_printk(K_INFO, "Err: total len=%d, act len=%d\n",
 					msg_total_len, i);
 			rst = 6;
 		}
@@ -1031,11 +1050,12 @@ u8 polling_interface_msg(int timeout_ms)
 		/* Remove the print, it is the effect for the power
 		 * neotiation timing
 		 */
-		pr_info("\n>>%s\n", interface_to_str(InterfaceRecvBuf[1]));
+		anx_printk(K_INFO, ">>%s\n",
+				interface_to_str(InterfaceRecvBuf[1]));
 		printb(InterfaceRecvBuf, i);
 
 	} else {
-		pr_info("Recv 0 Error\n");
+		anx_printk(K_INFO, "Recv 0 Error\n");
 		rst = 5;
 	}
 	return rst;
@@ -1103,7 +1123,7 @@ u8  build_rdo_from_source_caps(u8 obj_cnt, u8  *buf)
 								max_request_ma,
 								0);
 
-					pr_info("MaxVoltage:%d mV, MaxCurrent %d mA\n",
+					anx_printk(K_INFO, "MaxVoltage:%d mV, MaxCurrent %d mA\n",
 						(u16)(((((pdo_h & 0xf) << 6) |
 						(pdo_l >> 10)) & 0x3ff) * 50),
 						max_request_ma);
@@ -1140,7 +1160,7 @@ u8 pd_check_requested_voltage(u32 rdo)
 	if (max_ma > MAX_REQUEST_VOLTAGE)
 		return 0; /* too much max current */
 
-	pr_info("Requested  %d/%d mA) idx %d\n",
+	anx_printk(K_INFO, "Requested  %d/%d mA) idx %d\n",
 		 ((rdo >> 10) & 0x3ff) * 10, (rdo & 0x3ff) * 10, idx);
 
 	return 1;
@@ -1312,13 +1332,13 @@ u8 pd_fsm_status = 0;
 void interface_get_status_result(void)
 {
 	cc_status = InterfaceRecvBuf[3];
-	pr_info("Ohio CC Status:%x\n", cc_status);
+	anx_printk(K_INFO, "Ohio CC Status:%x\n", cc_status);
 
 	misc_status = InterfaceRecvBuf[4];
-	pr_info("Ohio misc status:%x\n", misc_status);
+	anx_printk(K_INFO, "Ohio misc status:%x\n", misc_status);
 
 	pd_fsm_status = InterfaceRecvBuf[5];
-	pr_info("Ohio pd_fsm_status:%x\n", pd_fsm_status);
+	anx_printk(K_INFO, "Ohio pd_fsm_status:%x\n", pd_fsm_status);
 }
 
 u8 recv_pd_cmd_rsp_default_callback(void *para, u8 para_len)
@@ -1344,15 +1364,15 @@ u8 recv_pd_cmd_rsp_default_callback(void *para, u8 para_len)
 		usb_pd_cmd_status = RESPONSE_REQ_RESULT();
 
 		if (RESPONSE_REQ_RESULT() == CMD_SUCCESS)
-			pr_info("pd_cmd DRSwap result is successful\n");
+			anx_printk(K_INFO, "pd_cmd DRSwap result is successful\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_REJECT)
-			pr_info("pd_cmd DRSwap result is rejected\n");
+			anx_printk(K_INFO, "pd_cmd DRSwap result is rejected\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_BUSY)
-			pr_info("pd_cmd DRSwap result is busy\n");
+			anx_printk(K_INFO, "pd_cmd DRSwap result is busy\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_FAIL)
-			pr_info("pd_cmd DRSwap result is fail\n");
+			anx_printk(K_INFO, "pd_cmd DRSwap result is fail\n");
 		else
-			pr_info("pd_cmd DRSwap result is unknown\n");
+			anx_printk(K_INFO, "pd_cmd DRSwap result is unknown\n");
 
 		break;
 
@@ -1361,15 +1381,15 @@ u8 recv_pd_cmd_rsp_default_callback(void *para, u8 para_len)
 		usb_pd_cmd_status = RESPONSE_REQ_RESULT();
 
 		if (RESPONSE_REQ_RESULT() == CMD_SUCCESS)
-			pr_info("pd_cmd PRSwap result is successful\n");
+			anx_printk(K_INFO, "pd_cmd PRSwap result is successful\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_REJECT)
-			pr_info("pd_cmd PRSwap result is rejected\n");
+			anx_printk(K_INFO, "pd_cmd PRSwap result is rejected\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_BUSY)
-			pr_info("pd_cmd PRSwap result is busy\n");
+			anx_printk(K_INFO, "pd_cmd PRSwap result is busy\n");
 		else if (RESPONSE_REQ_RESULT() == CMD_FAIL)
-			pr_info("pd_cmd PRSwap result is fail\n");
+			anx_printk(K_INFO, "pd_cmd PRSwap result is fail\n");
 		else
-			pr_info("pd_cmd PRSwap result is unknown\n");
+			anx_printk(K_INFO, "pd_cmd PRSwap result is unknown\n");
 
 		break;
 

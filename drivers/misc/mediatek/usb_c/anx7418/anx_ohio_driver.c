@@ -19,26 +19,7 @@
 #include <linux/gpio.h>
 #include <typec.h>
 
-#define K_EMERG	(1<<7)
-#define K_QMU	(1<<7)
-#define K_ALET		(1<<6)
-#define K_CRIT		(1<<5)
-#define K_ERR		(1<<4)
-#define K_WARNIN	(1<<3)
-#define K_NOTICE	(1<<2)
-#define K_INFO		(1<<1)
-#define K_DEBUG	(1<<0)
-
-static u32 debug_level = 255;
-
-#define DEBUG  1
-#if DEBUG
-#define anx_printk(level, fmt, args...) do { \
-		if (debug_level & level) { \
-			pr_err("[ANX]" fmt, ## args); \
-		} \
-	} while (0)
-#endif
+u32 anx_debug_level = 255;
 
 /* Ohio access register function */
 static int create_sysfs_interfaces(struct device *dev);
@@ -504,32 +485,6 @@ void update_VDM(void)
 	send_pd_msg(TYPE_VDM, (const char *)vdm, sizeof(vdm));
 }
 
-#define REG_ANALOG_STATUS 0x40
-#define PIN_VCONN_2_IN_MSK (1<<0x6)
-#define PIN_VCONN_1_IN_MSK (1<<0x5)
-#define UFP_PLUG_MSK (1<<0x4) /*[4] 0:unplug 1:plug*/
-#define DFP_OR_UFP_MSK (1<<0x3) /*[3] 0:DFP 1:UFP*/
-
-#define REG_ANALOG_CTRL_1 0x42
-
-#define REG_ANALOG_CTRL_2 0x43
-
-#define REG_ANALOG_CTRL_3 0x44
-
-#define REG_ANALOG_CTRL_4 0x45
-
-#define REG_ANALOG_CTRL_5 0x46
-
-#define REG_ANALOG_CTRL_6 0x47
-
-#define REG_ANALOG_CTRL_7 0x48
-#define CC1_DETECT_RESULT 0x2 /*[2:3]*/
-#define CC2_DETECT_RESULT 0x0 /*[0:1]*/
-
-#define NO_DETECT 0x0
-#define RD_CONNECTED 0x1
-#define RA_CONNECTED 0x3
-
 void ohio_main_process(struct ohio_data *ohio)
 {
 	anx_printk(K_INFO, "cable_connected=%d, power_status=%d\n",
@@ -666,12 +621,13 @@ static irqreturn_t ohio_intr_comm_isr(int irq, void *data)
 		return IRQ_NONE;
 	}
 
-	if (atomic_read(&power_status) == 0) {
+	/*if (atomic_read(&power_status) == 0) {
 		pr_err("%s power off\n", __func__);
 		return IRQ_HANDLED;
-	}
+	:}*/
 
-	anx_printk(K_INFO, "%s\n", __func__);
+	anx_printk(K_INFO, "%s %02x\n", __func__,
+			OhioReadReg(IRQ_EXT_SOURCE_2));
 
 	interface_intr_counter = 0;
 
@@ -1114,8 +1070,8 @@ static int ohio_i2c_probe(struct i2c_client *client,
 	anx_printk(K_INFO, "%s intp_irq=%d\n", __func__, ohio->intp_irq);
 
 	ret = request_threaded_irq(client->irq, NULL, ohio_intr_comm_isr,
-				IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-				"ohio-intr-comm", ohio);
+		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
+		IRQF_ONESHOT, "ohio-intr-comm", ohio);
 	if (ret < 0) {
 		pr_err("%s : failed to request interface irq\n", __func__);
 		goto err4;
@@ -1310,14 +1266,20 @@ bool ohio_chip_detect(void)
 
 void dump_reg(void)
 {
-	int i = 0;
-	u8 val = 0;
+	int i, j;
 
-	anx_printk(K_INFO, "dump registerad:\n");
+	for (i = 0; i < 0x10; i++) {
+		char tmp[0x10] = {0};
 
-	for (i = 0; i < 256; i++) {
-		val = OhioReadReg(i);
-		anx_printk(K_INFO, "\nReg[%d]: %2x\n", i, val);
+		for (j = 0; j < 0x10; j++)
+			tmp[j] = OhioReadReg(i*0x10 + j);
+
+		anx_printk(K_INFO, "[%02x] %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+			i*0x10,
+			tmp[0x0], tmp[0x1], tmp[0x2], tmp[0x3],
+			tmp[0x4], tmp[0x5], tmp[0x6], tmp[0x7],
+			tmp[0x8], tmp[0x9], tmp[0xA], tmp[0xB],
+			tmp[0xC], tmp[0xD], tmp[0xE], tmp[0xF]);
 	}
 }
 
@@ -1440,15 +1402,30 @@ ssize_t anx_ohio_wr_reg(struct device *dev,
 ssize_t anx_ohio_dump_register(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
+#ifdef NEVER
 	int i = 0;
-	int tmp = 0;
+	int j = 0;
+	int len = 0;
 
-	for (i = 0; i < 256; i++) {
-		tmp = OhioReadReg(i);
-		anx_printk(K_INFO, "R%02x=0x%02x\n", i, tmp);
-		sprintf(&buf[i], "%d", OhioReadReg(i));
+	for (i = 0; i < 0x10; i++) {
+		unsigned int tmp[16] = {0};
+
+		for (j = 0; j < 0x10; j++)
+			tmp[j] = OhioReadReg(i*0x10+j);
+
+		/*len += sprintf(&buf[i*53], "[%02x] %02x %02x %02x %02x %02x %02x"
+			" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+			i*0x10,
+			tmp[0x0], tmp[0x1], tmp[0x2], tmp[0x3],
+			tmp[0x4], tmp[0x5], tmp[0x6], tmp[0x7],
+			tmp[0x8], tmp[0x9], tmp[0xA], tmp[0xB],
+			tmp[0xC], tmp[0xD], tmp[0xE], tmp[0xF]);*/
 	}
-	return 256+32;
+	anx_printk(K_INFO, "len=%d\n", len);
+	anx_printk(K_INFO, ">>>%s<<<\n", buf);
+	return len;
+#endif
+	return 0;
 }
 
 ssize_t store_anx_ohio_set_gpio(struct device *dev,

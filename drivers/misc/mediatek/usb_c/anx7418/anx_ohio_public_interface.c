@@ -6,6 +6,7 @@
 #include <linux/skbuff.h>
 #include "anx_ohio_private_interface.h"
 #include "anx_ohio_public_interface.h"
+#include "anx_ohio_driver.h"
 
 /**
  * @desc: The Interface that AP sends the specific USB PD command to Ohio
@@ -28,7 +29,7 @@ u8 send_pd_msg(PD_MSG_TYPE type, const char *buf, u8 size)
 	u8 rst = 0;
 	bool wait_cmd_response_time = 0;
 
-	pr_info("send_pd_message, type=%x\n", type);
+	anx_printk(K_INFO, "send_pd_message, type=%x\n", type);
 
 	switch (type) {
 	case TYPE_PWR_SRC_CAP:
@@ -97,13 +98,13 @@ u8 send_pd_msg(PD_MSG_TYPE type, const char *buf, u8 size)
 		break;
 
 	default:
-		pr_info("unknown type %x\n", type);
+		anx_printk(K_INFO, "unknown type %x\n", type);
 		rst = 0;
 		break;
 	}
 
 	if (rst == CMD_FAIL) {
-		pr_err("Cmd %x timeout\n", type);
+		anx_printk(K_INFO, "Cmd %x timeout\n", type);
 		return CMD_FAIL;
 	}
 
@@ -139,11 +140,12 @@ u8 dispatch_rcvd_pd_msg(PD_MSG_TYPE type, void *para, u8 para_len)
 	u8 rst = 0;
 	pd_callback_t fnc = 0;
 
-	pr_info("dispatch_rcvd_pd_msg type=%s\n", interface_to_str(type));
+	anx_printk(K_INFO, "dispatch_rcvd_pd_msg type=%s\n",
+		interface_to_str(type));
 
 	fnc = get_pd_callback_fnc(type);
 	if (fnc != 0) {
-		/*printk("Register Callback for %x\n", (u8)type);*/
+		anx_printk(K_INFO, "callback for %x\n", type);
 		rst  = (*fnc)(para, para_len);
 		return rst;
 	}
@@ -167,8 +169,7 @@ u8 dispatch_rcvd_pd_msg(PD_MSG_TYPE type, void *para, u8 para_len)
 	case TYPE_PWR_OBJ_REQ:
 		/*External MCU need to evaluate RDO and
 		  give accpet or reject*/
-		recv_pd_pwr_object_req_default_callback(para,
-								para_len);
+		recv_pd_pwr_object_req_default_callback(para, para_len);
 		rst = 1;
 		break;
 
@@ -202,8 +203,9 @@ u8 dispatch_rcvd_pd_msg(PD_MSG_TYPE type, void *para, u8 para_len)
 		recv_pd_cmd_rsp_default_callback(para, para_len);
 		rst = 1;
 		break;
+
 	default:
-		/* pr_info("unknown type %x\n", type);*/
+		anx_printk(K_INFO, "unknown type %x\n", type);
 		rst = 0;
 		break;
 	}

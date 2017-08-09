@@ -742,6 +742,7 @@ static int typec_otg_disable(void *data)
 
 	return 0;
 }
+
 static struct typec_switch_data typec_host_driver = {
 	.name = "xhci-mtk",
 	.type = HOST_TYPE,

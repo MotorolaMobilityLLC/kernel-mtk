@@ -140,6 +140,55 @@ u8 is_recvd_msg_ok(void);
 #define IRQ_EXT_MASK_2 0x3d
 #define IRQ_EXT_SOFT_RESET_BIT 0x04
 #define IRQ_EXT_SOURCE_2 0x4F
+/***************************************/
+#define REG_ANALOG_STATUS 0x40
+
+#define PIN_VCONN_2_IN_MSK (1<<0x6)
+#define PIN_VCONN_1_IN_MSK (1<<0x5)
+#define UFP_PLUG_MSK (1<<0x4) /*[4] 0:unplug 1:plug*/
+#define DFP_OR_UFP_MSK (1<<0x3) /*[3] 0:DFP 1:UFP*/
+/***************************************/
+#define REG_ANALOG_CTRL_1 0x42
+/***************************************/
+#define REG_ANALOG_CTRL_2 0x43
+
+/*[2] 1: CC1 connect to cap. 0: CC1 not connected to cap*/
+#define R_CC_CAP_CC1 (1<<2)
+/*[1] 1: CC2 connect to cap. 0: CC2 not connected to cap*/
+#define R_CC_CAP_CC2 (1<<1)
+/***************************************/
+#define REG_ANALOG_CTRL_3 0x44
+/***************************************/
+#define REG_ANALOG_CTRL_4 0x45
+/***************************************/
+#define REG_ANALOG_CTRL_5 0x46
+/***************************************/
+#define REG_ANALOG_CTRL_6 0x47
+
+/*[2] DRP support indicator. 1: supported, 0: unsupported.*/
+#define DRP_EN (1<<2)
+/*[1:0] 00: 36k, 01: 12k, 10: 4.7k*/
+#define R_RP (3<<0)
+/***************************************/
+#define REG_ANALOG_CTRL_7 0x48
+
+/*[3:2] 00: no connect 01: Rd connected 10: reserved 11: Ra connected*/
+#define CC1_DETECT_RESULT (3<<2)
+/*[1:0] 00: no connect 01: Rd connected 10: reserved 11: Ra connected*/
+#define CC2_DETECT_RESULT (3<<0)
+
+#define NO_DETECT 0x0
+#define RD_CONNECTED 0x1
+#define RA_CONNECTED 0x3
+/***************************************/
+#define REG_HPD_CTRL_0 0x36
+
+/*[5] HPD output enable. 1: HPD input enable, 0: HPD output enable.*/
+#define R_HPD_OEN (1<<5)
+
+/*[4] HPD output data.*/
+#define R_HPD_OUT_DATA (1<<4)
+/***************************************/
 
 /* check soft interrupt happens or not */
 #define is_soft_reset_intr() \
