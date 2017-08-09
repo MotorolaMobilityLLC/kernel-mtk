@@ -2408,6 +2408,7 @@
 		spi0:spi@1100a000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <0>;
+			spi-padmacro = <0>;
 			reg = <0x1100a000 0x1000>;
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI>;
@@ -2493,6 +2494,7 @@
 		spi1:spi@11012000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <1>;
+			spi-padmacro = <1>;
 			reg = <0x11012000 0x1000>;
 			interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI1>;
@@ -2543,6 +2545,7 @@
 		spi2:spi@11018000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <2>;
+			spi-padmacro = <1>;
 			reg = <0x11018000 0x1000>;
 			interrupts = <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI2>;
@@ -2554,6 +2557,7 @@
 		spi3:spi@11019000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <3>;
+			spi-padmacro = <0>;
 			reg = <0x11019000 0x1000>;
 			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI3>;
@@ -2565,6 +2569,7 @@
 		spi4:spi@1101a000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <4>;
+			spi-padmacro = <0>;
 			reg = <0x1101a000 0x1000>;
 			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI4>;
@@ -2576,6 +2581,7 @@
 		spi5:spi@1101b000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <5>;
+			spi-padmacro = <0>;
 			reg = <0x1101b000 0x1000>;
 			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI5>;
