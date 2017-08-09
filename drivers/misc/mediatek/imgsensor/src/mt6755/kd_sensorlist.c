@@ -33,6 +33,9 @@
 #else
 #include <linux/clk.h>
 #endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#include <mt-plat/upmu_common.h>
+#endif
 
 
 #include "kd_imgsensor.h"
@@ -3014,10 +3017,32 @@ bool _hwPowerOn(PowerType type, int powerVolt)
     	return ret;
 
 	if (!IS_ERR(reg)) {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+
+		if (type == DVDD && powerVolt == Vol_1200){
+			PK_DBG("[_hwPowerOn] PMIC_CHIP_MT6353 DVDD 1.2v\n");
+			powerVolt = Vol_1220;
+			if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
+				PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
+				return ret;
+			}
+			if(pmic_set_register_value(PMIC_RG_VCAMD_CAL,0x1))//-20mv
+			{
+				PK_ERR("[_hwPowerOn]fail to set PMIC_RG_VCAMD_CAL, powertype:%d powerId:%d\n", type, powerVolt);
+				return ret;
+			}
+		} else {
+			if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
+				PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
+				return ret;
+			}
+		}
+#else
 		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
 			PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
 			return ret;
 	    }
+#endif
 		if (regulator_enable(reg) != 0) {
 			PK_ERR("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
 			return ret;
