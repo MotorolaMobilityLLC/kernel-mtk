@@ -66,7 +66,7 @@ s32 map_cg_regs(void)
 	return 0;
 }
 
-s32 dump_cg_regs(void)
+void dump_cg_regs(void)
 {
 	pr_err("[I2C] cg regs dump:\n"
 		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
