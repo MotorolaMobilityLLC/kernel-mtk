@@ -138,6 +138,6 @@ extern int Enable_FGADC_LOG;
 /* External function */
 /* ============================================================ */
 extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
-
+extern signed int pmic_is_battery_plugout(void);
 
 #endif				/* #ifndef _BATTERY_METER_HAL_H */

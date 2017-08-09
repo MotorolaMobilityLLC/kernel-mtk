@@ -204,6 +204,8 @@ struct battery_meter_custom_data {
 	int difference_hwocv_rtc;
 	int difference_hwocv_swocv;
 	int difference_swocv_rtc;
+	int difference_vbat_rtc;
+	int difference_swocv_rtc_pos;
 	int max_swocv;
 
 	int max_hwocv;
@@ -238,6 +240,8 @@ struct battery_meter_custom_data {
 	int shutdown_gauge1_mins;
 
 	int min_charging_smooth_time;
+
+	int embedded_battery;
 
 	/* SW Fuel gauge */
 	int apsleep_battery_voltage_compensate;

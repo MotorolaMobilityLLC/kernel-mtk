@@ -21,7 +21,7 @@
 #include <mach/mt_battery_meter.h>
 #include <mach/mt_pmic.h>
 #include <mt-plat/battery_meter.h>
-
+#include <mt-plat/mt_boot_reason.h>
 
 
 
@@ -1002,4 +1002,35 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		status = STATUS_UNSUPPORTED;
 
 	return status;
+}
+
+signed int pmic_is_battery_plugout(void)
+{
+	int is_battery_plugout;
+	int pmic_strup_pwroff_seq_en = pmic_get_register_value(PMIC_STRUP_PWROFF_SEQ_EN);
+	int uvlo_rstb_status = pmic_get_register_value(PMIC_UVLO_RSTB_STATUS);
+	int is_long_press = (get_boot_reason() == BR_POWER_KEY ? 1 : 0);
+	int is_wdt_reboot = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
+
+	pmic_set_register_value(PMIC_UVLO_RSTB_STATUS, 1);
+
+	if (pmic_strup_pwroff_seq_en) {
+		if (uvlo_rstb_status)
+			is_battery_plugout = 0;
+		else {
+			if (is_long_press)
+				is_battery_plugout = 0;
+			else {
+				if (is_wdt_reboot)
+					is_battery_plugout = 0;
+				else
+					is_battery_plugout = 1;
+			}
+		}
+	} else
+		is_battery_plugout = 1;
+
+	bm_err("[pmic_is_battery_plugout] [%d] %d, %d, %d, %d\n", is_battery_plugout,
+		pmic_strup_pwroff_seq_en, uvlo_rstb_status, is_long_press, is_wdt_reboot);
+	return is_battery_plugout;
 }

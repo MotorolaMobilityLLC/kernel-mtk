@@ -162,6 +162,14 @@ int gFG_result_soc = 0;
 #define Q_MAX_SYS_VOLTAGE 3300
 #endif
 
+#ifndef DIFFERENCE_VBAT_RTC
+#define DIFFERENCE_VBAT_RTC 10
+#endif
+
+#ifndef DIFFERENCE_SWOCV_RTC_POS
+#define DIFFERENCE_SWOCV_RTC_POS 15
+#endif
+
 
 /* smooth time tracking */
 signed int gFG_coulomb_act_time = -1;
@@ -672,6 +680,9 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 	batt_meter_cust_data.max_vbat = MAX_VBAT;
 	batt_meter_cust_data.difference_hwocv_vbat = DIFFERENCE_HWOCV_VBAT;
 
+	batt_meter_cust_data.difference_vbat_rtc = DIFFERENCE_VBAT_RTC;
+	batt_meter_cust_data.difference_swocv_rtc_pos = DIFFERENCE_SWOCV_RTC_POS;
+
 	batt_meter_cust_data.suspend_current_threshold = SUSPEND_CURRENT_CHECK_THRESHOLD;
 	batt_meter_cust_data.ocv_check_time = OCV_RECOVER_TIME;
 
@@ -723,6 +734,13 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 	batt_meter_cust_data.q_max_by_current = 0;
 #endif				/* #if defined(Q_MAX_BY_CURRENT) */
 	batt_meter_cust_data.q_max_sys_voltage = Q_MAX_SYS_VOLTAGE;
+
+#if defined(CONFIG_MTK_EMBEDDED_BATTERY)
+	batt_meter_cust_data.embedded_battery = 1;
+#else
+	batt_meter_cust_data.embedded_battery = 0;
+#endif
+
 
 #if defined(SHUTDOWN_GAUGE0)
 	batt_meter_cust_data.shutdown_gauge0 = 1;
@@ -1668,8 +1686,12 @@ void update_fg_dbg_tool_value(void)
 
 void fgauge_algo_run_get_init_data(void)
 {
-
+#if defined(INIT_BAT_CUR_FROM_PTIM)
+	unsigned int bat = 0;
+	signed int cur = 0;
+#else
 	int ret = 0;
+#endif
 	kal_bool charging_enable = KAL_FALSE;
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING) && !defined(SWCHR_POWER_PATH)
@@ -1680,9 +1702,19 @@ void fgauge_algo_run_get_init_data(void)
 
 	msleep(50);
 /* 1. Get Raw Data */
+#if defined(INIT_BAT_CUR_FROM_PTIM)
+	do_ptim_ex(true, &bat, &cur);
+	gFG_voltage_init = bat/10;
+	gFG_current_init = abs(cur);
+	if (cur > 0)
+		gFG_Is_Charging_init = KAL_FALSE;
+	else
+		gFG_Is_Charging_init = KAL_TRUE;
+#else
 	gFG_voltage_init = battery_meter_get_battery_voltage(KAL_TRUE);
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &gFG_current_init);
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &gFG_Is_Charging_init);
+#endif
 	charging_enable = KAL_TRUE;
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 	bm_info
