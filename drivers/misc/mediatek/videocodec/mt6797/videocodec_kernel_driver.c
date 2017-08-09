@@ -187,12 +187,14 @@ void vdec_power_on(void)
 	gu4VdecPWRCounter++;
 	mutex_unlock(&VdecPWRLock);
 
+#ifdef CONFIG_MTK_CLKMGR
 	/* Central power on */
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VDEC");
 	enable_clock(MT_CG_VDEC0_VDEC, "VDEC");
 	enable_clock(MT_CG_VDEC1_LARB, "VDEC");
 #ifdef VDEC_USE_L2C
 	/* enable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
+#endif
 #endif
 }
 
@@ -203,12 +205,14 @@ void vdec_power_off(void)
 		MODULE_MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
 		gu4VdecPWRCounter--;
+#ifdef CONFIG_MTK_CLKMGR
 		/* Central power off */
 		disable_clock(MT_CG_VDEC0_VDEC, "VDEC");
 		disable_clock(MT_CG_VDEC1_LARB, "VDEC");
 		disable_clock(MT_CG_DISP0_SMI_COMMON, "VDEC");
 #ifdef VDEC_USE_L2C
 		/* disable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
+#endif
 #endif
 	}
 	mutex_unlock(&VdecPWRLock);
@@ -221,12 +225,14 @@ void venc_power_on(void)
 	mutex_unlock(&VencPWRLock);
 
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on +\n");
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 	enable_clock(MT_CG_VENC_VENC, "VENC");
 	enable_clock(MT_CG_VENC_LARB , "VENC");
 
 #ifdef VENC_USE_L2C
 	enable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
+#endif
 #endif
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on -\n");
 }
@@ -239,11 +245,13 @@ void venc_power_off(void)
 	} else {
 		gu4VencPWRCounter--;
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off +\n");
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_VENC_VENC, "VENC");
 		disable_clock(MT_CG_VENC_LARB, "VENC");
 		disable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 #ifdef VENC_USE_L2C
 		disable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
+#endif
 #endif
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
