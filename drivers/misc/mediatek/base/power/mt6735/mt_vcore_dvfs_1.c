@@ -11,16 +11,29 @@
 #include <linux/sched/rt.h>
 #include <linux/platform_device.h>
 
-#include "mt_vcore_dvfs.h"
+#include <mach/mt_pmic_wrap.h>
+#include <mach/mt_freqhopping.h>
+#include <primary_display.h>
 
-/* #include <mach/mt_pmic_wrap.h> */
-/* #include <mach/mt_cpufreq.h> */
+#include "mt_vcore_dvfs.h"
+#include "mt_cpufreq.h"
+#include "mt_spm.h"
+
 /* #include <mach/mt_dramc.h> */
-/* #include <mach/mt_spm.h> */
-/* #include <mach/mt_freqhopping.h> */
-/* #include <mach/board.h> */
-/* #include <mt_sd_func.h> */
-/* #include <primary_display.h> */
+int __weak get_dram_data_rate(void)
+{
+	return FDDR_S0_KHZ / 1000;
+}
+
+int __weak dram_can_support_fh(void)
+{
+	return 0;
+}
+
+int __weak dram_do_dfs_by_fh(int ddr_khz)
+{
+	return -1;
+}
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -96,80 +109,6 @@ static struct kobj_attribute _name##_attr = {	\
 
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
-#define PMIC_WRAP_PHASE_NORMAL 0
-#define IDX_NM_VCORE_HPM 0
-#define IDX_NM_VCORE_TRANS2 0
-#define IDX_NM_VCORE_TRANS1 0
-#define IDX_NM_VCORE_LPM 0
-#define PMIC_WRAP_PHASE_SUSPEND 0
-#define IDX_SP_VCORE_HPM 0
-#define IDX_SP_VCORE_TRANS2 0
-#define IDX_SP_VCORE_TRANS1 0
-#define IDX_SP_VCORE_LPM 0
-#define PMIC_WRAP_PHASE_DEEPIDLE 0
-#define IDX_DI_VCORE_HPM 0
-#define IDX_DI_VCORE_TRANS2 0
-#define IDX_DI_VCORE_TRANS1 0
-#define IDX_DI_VCORE_LPM 0
-
-void __weak pwrap_read(int a, int *b)
-{
-	vcorefs_debug("pwrap_read\n");
-}
-
-void __weak mt_cpufreq_set_pmic_cmd(int a, int b, int c)
-{
-	vcorefs_debug("mt_cpufreq_set_pmic_cmd\n");
-}
-
-char * __weak spm_dump_vcore_dvs_regs(char *p)
-{
-	vcorefs_debug("spm_dump_vcore_dvs_regs\n");
-	return p;
-}
-
-int __weak spm_set_vcore_dvs_voltage(int opp)
-{
-	vcorefs_debug("spm_set_vcore_dvs_voltage\n");
-	return 0;
-}
-
-int __weak mt_dfs_vencpll(int opp)
-{
-	vcorefs_debug("mt_dfs_vencpll\n");
-	return 0;
-}
-
-int __weak get_dram_data_rate(void)
-{
-	vcorefs_debug("get_dram_data_rate\n");
-	return 0;
-}
-
-int __weak dram_can_support_fh(void)
-{
-	vcorefs_debug("dram_can_support_fh\n");
-	return 0;
-}
-
-int __weak dram_do_dfs_by_fh(int ddr_khz)
-{
-	vcorefs_debug("dram_do_dfs_by_fh\n");
-	return 0;
-}
-
-int __weak DISP_GetScreenHeight(void)
-{
-	vcorefs_debug("DISP_GetScreenHeight\n");
-	return 0;
-}
-
-int __weak DISP_GetScreenWidth(void)
-{
-	vcorefs_debug("DISP_GetScreenWidth\n");
-	return 0;
-}
-
 /*
  * Define and Declare
  */
@@ -226,16 +165,16 @@ void __iomem  *vcorefs_pericfg_base;
  * __nosavedata will not be restored after IPO-H boot
  */
 static unsigned int trans[NUM_TRANS] __nosavedata;
-static bool feature_en __nosavedata;	/* if feature disable, then keep HPM */
+static bool feature_en __nosavedata = 1;	/* if feature disable, then keep HPM */
 
 static unsigned int vcorefs_curr_opp __nosavedata = OPPI_PERF;
 static unsigned int vcorefs_prev_opp __nosavedata = OPPI_PERF;
 
 static struct vcorefs_profile vcorefs_ctrl = {
 	.recover_en		= 1,
-	.vcore_dvs		= 0,
-	.freq_dfs		= 0,
-	.ddr_dfs		= 0,
+	.vcore_dvs		= 1,
+	.freq_dfs		= 1,
+	.ddr_dfs		= 1,
 	.log_mask		= (1U << KIR_GPU),
 
 	.late_init_opp_done	= 0,
@@ -1182,7 +1121,7 @@ static int init_vcorefs_pwrctrl(void)
 
 	mutex_lock(&vcorefs_mutex);
 	pwrctrl->curr_vcore_uv = get_vcore_uv();
-	/* BUG_ON(pwrctrl->curr_vcore_uv == 0); */
+	BUG_ON(pwrctrl->curr_vcore_uv == 0);
 
 	pwrctrl->curr_ddr_khz = get_ddr_khz();
 

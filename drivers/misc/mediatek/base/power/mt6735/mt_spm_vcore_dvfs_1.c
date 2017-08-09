@@ -165,7 +165,7 @@ int spm_set_vcore_dvs_voltage(unsigned int opp)
 		r = 0;
 	} else {
 		spm_dump_vcore_dvs_regs(NULL);
-		BUG();	/* FIXME */
+		BUG();
 	}
 	spin_unlock_irqrestore(&__spm_lock, flags);
 

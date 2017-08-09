@@ -151,7 +151,7 @@
 #define SR_CCIF1_TO_AP_MASK_B	(1U << 5)
 
 #ifndef CONFIG_MTK_FPGA
-#if /*defined(CONFIG_ARCH_MT6735) ||*/ defined(CONFIG_ARCH_MT6735M) /*|| defined(CONFIG_ARCH_MT6753)*/
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) /*|| defined(CONFIG_ARCH_MT6753)*/
 #define SPM_VCORE_EN
 #endif
 #endif
