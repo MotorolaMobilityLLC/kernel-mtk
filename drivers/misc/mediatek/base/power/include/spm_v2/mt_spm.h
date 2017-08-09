@@ -53,9 +53,9 @@ typedef enum {
 } wake_reason_t;
 
 enum mt_sodi_fw {
-	SODI_FW_ULTRA	= (1 << 0),
-	SODI_FW_HPM	= (1 << 1),
-	SODI_FW_LPM	= (1 << 2),
+	SODI_FW_LPM	= (1 << 0),	/*  1600/1.0  : 1270/0.9 : 1066/0.9 */
+	SODI_FW_HPM	= (1 << 1),	/*  1700/1.0  : 1270/0.9 : 1066/0.9 */
+	SODI_FW_ULTRA	= (1 << 2),	/*  1866/1.05 : 1600/1.0 : 1270/0.9 */
 };
 
 struct twam_sig {
