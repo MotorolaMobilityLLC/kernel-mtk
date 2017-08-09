@@ -91,9 +91,8 @@ unsigned int __chip_hw_subcode(void)
 
 unsigned int __chip_func_code(void)
 {
-	unsigned int val = get_devinfo_with_index(47) & 0xFE000000;	/* [31:25] */
-
-	return (val >> 25);
+	unsigned int val = get_devinfo_with_index(21) & 0x000000FF;	/*[7:0]*/
+	return val;
 }
 
 unsigned int __chip_date_code(void)
