@@ -1245,8 +1245,10 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		hdmi_info.isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
 
-		if (hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz) || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
 			hdmi_info.vsyncFPS = 30;
+		else if (hdmi_reschange == HDMI_VIDEO_2160p_DSC_24Hz)
+			hdmi_info.vsyncFPS = 24;
 		else
 			hdmi_info.vsyncFPS = 60;
 
@@ -1284,8 +1286,10 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		dispif_info->isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
 
-		if (hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz) || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
 			dispif_info->vsyncFPS = 30;
+		else if (hdmi_reschange == HDMI_VIDEO_2160p_DSC_24Hz)
+			dispif_info->vsyncFPS = 24;
 		else
 			dispif_info->vsyncFPS = 60;
 

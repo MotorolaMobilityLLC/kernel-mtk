@@ -880,7 +880,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	_ext_disp_path_unlock();
 
 	_ext_disp_vsync_lock(session);
-	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, 50);
+	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, 60);
 
 	if (ret == -2) {
 		EXT_DISP_LOG("vsync for ext display path not enabled yet\n");
