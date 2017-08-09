@@ -61,8 +61,8 @@ int get_signature_page(void)
 		toi_sig_data = (struct sig_data *)toi_cur_sig_page;
 	}
 
-	toi_message(TOI_IO, TOI_VERBOSE, 0, "Reading signature from dev %lx, sector %d.",
-		    resume_block_device->bd_dev, resume_firstblock);
+	toi_message(TOI_IO, TOI_VERBOSE, 0, "Reading signature from dev %x, sector %lu.",
+		    (unsigned int) resume_block_device->bd_dev, resume_firstblock);
 
 	return toi_bio_ops.bdev_page_io(READ, resume_block_device,
 					resume_firstblock, virt_to_page(toi_cur_sig_page));
@@ -137,8 +137,8 @@ int toi_bio_mark_have_image(void)
 
 	toi_sig_data->first_header_block = get_headerblock();
 	have_image = 1;
-	toi_message(TOI_IO, TOI_VERBOSE, 0, "header dev_t is %x. First block is %d.",
-		    toi_sig_data->header_dev_t, toi_sig_data->first_header_block);
+	toi_message(TOI_IO, TOI_VERBOSE, 0, "header dev_t is %x. First block is %lu.",
+		    (unsigned int) toi_sig_data->header_dev_t, toi_sig_data->first_header_block);
 
 	memcpy(toi_sig_data->sig2, tuxonice_signature, sizeof(tuxonice_signature));
 	toi_sig_data->header_version = TOI_HEADER_VERSION;
@@ -240,8 +240,8 @@ int toi_check_for_signature(void)
 		toi_message(TOI_IO, TOI_VERBOSE, 0, "Have binary signature. Have image is %d.",
 			    have_image);
 		if (have_image)
-			toi_message(TOI_IO, TOI_VERBOSE, 0, "header dev_t is %x. First block is %d.",
-				    toi_sig_data->header_dev_t, toi_sig_data->first_header_block);
+			toi_message(TOI_IO, TOI_VERBOSE, 0, "header dev_t is %x. First block is %lu.",
+				    (unsigned int) toi_sig_data->header_dev_t, toi_sig_data->first_header_block);
 		return toi_sig_data->have_image;
 	}
 

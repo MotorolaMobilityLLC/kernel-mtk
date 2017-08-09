@@ -313,7 +313,7 @@ void toi_extent_state_restore(int slot)
 			if (i == toi_writer_posn.saved_chain_number[j]) {
 				toi_writer_posn.saved_chain_ptr[j] = cur_chain;
 				toi_message(TOI_BIO, TOI_VERBOSE, 0,
-					    "Found saved chain ptr %d (%p) (offset %d).", j, cur_chain,
+					    "Found saved chain ptr %d (%p) (offset %lu).", j, cur_chain,
 					    cur_chain->saved_state[j].offset);
 			}
 
@@ -397,7 +397,7 @@ static int toi_serialise_extent_chain(struct toi_bdev_info *chain)
 
 	if (test_action_state(TOI_LOGALL))
 		dump_block_chains();
-	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Serialising chain (dev_t %lx).", chain->dev_t);
+	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Serialising chain (dev_t %x).", (unsigned int) chain->dev_t);
 	/* Device info -  dev_t, prio, bmap_shift, blocks per page, positions */
 	ret = toiActiveAllocator->rw_header_chunk(WRITE, &toi_blockwriter_ops,
 						  (char *)&chain->uuid, metadata_size);
@@ -788,8 +788,8 @@ int toi_bio_rw_page(int writing, struct page *page, int is_readahead, int free_g
 	}
 
 	toi_message(TOI_BIO, TOI_VERBOSE, 0,
-		    "%s %lx:%ld",
-		    writing ? "Write" : "Read", dev_info->dev_t, dev_info->blocks.current_offset);
+		    "%s %x:%lu",
+		    writing ? "Write" : "Read", (unsigned int) dev_info->dev_t, dev_info->blocks.current_offset);
 
 	result = toi_do_io(writing, dev_info->bdev,
 			   dev_info->blocks.current_offset << dev_info->bmap_shift,

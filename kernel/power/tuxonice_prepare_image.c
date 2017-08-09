@@ -901,9 +901,9 @@ static void flag_image_pages(int atomic_copy)
 
 	if (!atomic_copy)
 		toi_message(TOI_EAT_MEMORY, TOI_MEDIUM, 0,
-			    "Count data pages: Set1 (%d) + Set2 (%d) + Nosave (%ld) + NumFree (%d) = %d.\n",
+			    "Count data pages: Set1 (%lu) + Set2 (%lu) + Nosave (%lu) + NumFree (%d) = %lu.\n",
 			    pagedir1.size, pagedir2.size, num_nosave, num_free,
-			    pagedir1.size + pagedir2.size + num_nosave + num_free);
+			    (unsigned long) (pagedir1.size + pagedir2.size + num_nosave + num_free));
 }
 
 void toi_recalculate_image_contents(int atomic_copy)

@@ -1356,7 +1356,7 @@ static unsigned long toi_bio_storage_available(void)
 		sum += this_module->bio_allocator_ops->storage_available();
 	}
 
-	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Total storage available is %lu pages (%d header pages).",
+	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Total storage available is %lu pages (%lu header pages).",
 		    sum, header_pages_reserved);
 
 	return sum > header_pages_reserved ? raw_to_real(sum - header_pages_reserved) : 0;
@@ -1500,7 +1500,7 @@ static int toi_bio_read_header_init(void)
 	 * If the header is not on the resume_swap_dev_t, get the resume device
 	 * first.
 	 */
-	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Header dev_t is %lx.", toi_sig_data->header_dev_t);
+	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Header dev_t is %x.", (unsigned int) toi_sig_data->header_dev_t);
 #ifdef CONFIG_TOI_FIXUP
 	if (toi_sig_data->have_uuid) {
 		struct fs_info seek;

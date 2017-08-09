@@ -699,7 +699,7 @@ top:
 	if (thread_num)
 		atomic_dec(&toi_num_other_threads);
 
-	toi_message(TOI_IO, TOI_LOW, 0, "Thread %d exiting.", thread_num);
+	toi_message(TOI_IO, TOI_LOW, 0, "Thread %lu exiting.", thread_num);
 	toi__free_page(28, buffer);
 	free_cpumask_var(orig_mask);
 
@@ -739,7 +739,7 @@ int toi_start_other_threads(void)
 	}
 
 	hib_warn("Started %ld threads.", num_started);
-	toi_message(TOI_IO, TOI_LOW, 0, "Started %d threads.", num_started);
+	toi_message(TOI_IO, TOI_LOW, 0, "Started %lu threads.", num_started);
 	return num_started;
 }
 

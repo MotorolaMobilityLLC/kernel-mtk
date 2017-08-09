@@ -292,7 +292,7 @@ int toi_get_pageset1_load_addresses(void)
 			this_high_pbe->orig_address = (void *)orig_high_pfn;
 			this_high_pbe->address = page;
 			this_high_pbe->next = NULL;
-			toi_message(TOI_PAGEDIR, TOI_VERBOSE, 0, "High pbe %d/%d: %p(%d)=>%p",
+			toi_message(TOI_PAGEDIR, TOI_VERBOSE, 0, "High pbe %d/%d: %p(%lu)=>%p",
 				    high_page, high_offset, page, orig_high_pfn, orig_page);
 			if (last_high_pbe_page != high_pbe_page) {
 				*last_high_pbe_ptr = (struct pbe *)high_pbe_page;
@@ -335,7 +335,7 @@ int toi_get_pageset1_load_addresses(void)
 			this_low_pbe->orig_address = page_address(orig_page);
 			this_low_pbe->address = page_address(page);
 			this_low_pbe->next = NULL;
-			toi_message(TOI_PAGEDIR, TOI_VERBOSE, 0, "Low pbe %d/%d: %p(%d)=>%p",
+			toi_message(TOI_PAGEDIR, TOI_VERBOSE, 0, "Low pbe %d/%d: %p(%lu)=>%p",
 				    low_page, low_offset, this_low_pbe->orig_address,
 				    orig_low_pfn, this_low_pbe->address);
 			TOI_TRACE_DEBUG(orig_low_pfn, "LoadAddresses (%d/%d): %p=>%p", low_page,

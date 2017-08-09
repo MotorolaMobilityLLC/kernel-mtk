@@ -659,7 +659,7 @@ static int __save_image(void)
 	toi_prepare_status(DONT_CLEAR_BAR, "Starting to save the image..");
 
 	toi_message(TOI_ANY_SECTION, TOI_LOW, 1,
-		    " - Final values: %d and %d.", pagedir1.size, pagedir2.size);
+		    " - Final values: %lu and %lu.", pagedir1.size, pagedir2.size);
 
 	toi_cond_pause(1, "About to write pagedir2.");
 
