@@ -257,11 +257,14 @@ unsigned int kree_fiq_get_intack(void)
 
 void kree_fiq_eoi(unsigned int iar)
 {
+	TZ_RESULT ret;
 	MTEEC_PARAM param[4];
 
 	param[0].value.a = iar;
-	KREE_TeeServiceCall(irq_session, TZCMD_IRQ_EOI,
+	ret = KREE_TeeServiceCall(irq_session, TZCMD_IRQ_EOI,
 				TZ_ParamTypes1(TZPT_VALUE_INPUT), param);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("%s() fails! ret=0x%x\n", __func__, ret);
 }
 
 int kree_raise_softfiq(unsigned int mask, unsigned int irq)
