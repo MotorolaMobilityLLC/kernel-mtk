@@ -569,7 +569,6 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	kal_uint32 volatile u4RegValue;
 	kal_uint32 volatile irq_mcu_en;
 
-	AudDrv_Clk_On();
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
 	u4RegValue &= 0x5f;
 
@@ -606,6 +605,9 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 		goto AudDrv_IRQ_handler_exit;
 	}
 
+	/* clear irq */
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0x5f);
+
 	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE)) {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
 			Auddrv_DL1_Interrupt_Handler();
@@ -635,11 +637,7 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Auddrv_DL2_Interrupt_Handler();
 	}*/
 
-	/* clear irq */
-	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0x5f);
 AudDrv_IRQ_handler_exit:
-	AudDrv_Clk_Off();
-
 	return IRQ_HANDLED;
 }
 
@@ -2253,6 +2251,13 @@ static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 	default:
 		pr_err("%s(), error, not supported IRQ %d", __func__, Irqmode);
 		break;
+	}
+
+	/* clear irq status */
+	if (bEnable == false) {
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << Irqmode), (1 << Irqmode));
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << (Irqmode + 8)),
+			    (1 << (Irqmode + 8)));
 	}
 
 	return true;

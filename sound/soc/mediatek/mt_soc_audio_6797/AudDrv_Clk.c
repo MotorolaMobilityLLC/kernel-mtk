@@ -554,6 +554,9 @@ void AudDrv_Clk_Off(void)
 	if (Aud_AFE_Clk_cntr == 0) {
 		/* Disable AFE clock */
 #ifdef PM_MANAGER_API
+		/* Make sure all IRQ status is cleared */
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 0xffff, 0xffff);
+
 		if (aud_clks[CLOCK_AFE].clk_prepare)
 			clk_disable(aud_clks[CLOCK_AFE].clock);
 
