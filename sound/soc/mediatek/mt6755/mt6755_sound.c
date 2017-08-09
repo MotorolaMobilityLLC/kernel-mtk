@@ -1549,10 +1549,6 @@ static void Aud_IRQ2_Handler(void)
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI))
 		Auddrv_MOD_DAI_Interrupt_Handler();
 }
-static void Aud_IRQ5_Handler(void)
-{
-	/*write handler of IRQ5*/
-}
 
 static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
 	NULL,
@@ -1560,9 +1556,9 @@ static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
 	Aud_IRQ2_Handler,
 	NULL,
 	NULL,
-	Aud_IRQ5_Handler,
 	NULL,
 	NULL,
+	NULL, /* Reserved */
 	NULL,
 	NULL,
 	NULL,
