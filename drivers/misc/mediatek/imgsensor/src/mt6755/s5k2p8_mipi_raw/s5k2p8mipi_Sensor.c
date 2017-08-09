@@ -308,7 +308,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5A, 0xff},
-	.i2c_speed = 200, // i2c read/write speed
+	.i2c_speed = 300, // i2c read/write speed
 };
 
 
