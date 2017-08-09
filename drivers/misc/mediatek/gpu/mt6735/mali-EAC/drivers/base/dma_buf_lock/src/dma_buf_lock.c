@@ -90,7 +90,7 @@ static int dma_buf_lock_handle_release(struct inode *inode, struct file *file)
 
 	resource = file->private_data;
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_handle_release\n");
+	pr_debug("dma_buf_lock_handle_release\n");
 #endif
 	mutex_lock(&dma_buf_lock_mutex);
 	kref_put(&resource->refcount, dma_buf_lock_dounlock);
@@ -103,7 +103,7 @@ static void dma_buf_lock_kds_callback(void *param1, void *param2)
 {
 	dma_buf_lock_resource *resource = param1;
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_kds_callback\n");
+	pr_debug("dma_buf_lock_kds_callback\n");
 #endif
 	atomic_set(&resource->locked, 1);
 
@@ -121,7 +121,7 @@ static unsigned int dma_buf_lock_handle_poll(struct file *file,
 
 	resource = file->private_data;
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_handle_poll\n");
+	pr_debug("dma_buf_lock_handle_poll\n");
 #endif
 	if (1 == atomic_read(&resource->locked))
 	{
@@ -140,7 +140,7 @@ static unsigned int dma_buf_lock_handle_poll(struct file *file,
 		}
 	}
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_handle_poll : return %i\n", ret);
+	pr_debug("dma_buf_lock_handle_poll : return %i\n", ret);
 #endif
 	return ret;
 }
@@ -248,7 +248,7 @@ static int dma_buf_lock_dolock(dma_buf_lock_k_request *request)
 #if DMA_BUF_LOCK_DEBUG
 	for (i = 0; i < request->count; i++)
 	{
-		printk("dma_buf %i = %X\n", i, resource->list_of_dma_buf_fds[i]);
+		pr_debug("dma_buf %i = %X\n", i, resource->list_of_dma_buf_fds[i]);
 	}
 #endif
 
@@ -283,7 +283,7 @@ static int dma_buf_lock_dolock(dma_buf_lock_k_request *request)
 			return -EINVAL;
 		}
 #if DMA_BUF_LOCK_DEBUG
-		printk("dma_buf_lock_dolock : dma_buf_fd %i dma_buf %X kds_resource %X\n", resource->list_of_dma_buf_fds[i],
+		pr_debug("dma_buf_lock_dolock : dma_buf_fd %i dma_buf %X kds_resource %X\n", resource->list_of_dma_buf_fds[i],
 		       (unsigned int)resource->dma_bufs[i], (unsigned int)resource->kds_resources[i]);
 #endif	
 	}
@@ -325,7 +325,7 @@ static int dma_buf_lock_dolock(dma_buf_lock_k_request *request)
 	}
 
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_dolock : complete\n");
+	pr_debug("dma_buf_lock_dolock : complete\n");
 #endif
 	mutex_lock(&dma_buf_lock_mutex);
 	kref_put(&resource->refcount, dma_buf_lock_dounlock);
@@ -362,7 +362,7 @@ static int __init dma_buf_lock_init(void)
 {
 	int err;
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_init\n");
+	pr_debug("dma_buf_lock_init\n");
 #endif
 	err = alloc_chrdev_region(&dma_buf_lock_dev, 0, 1, dma_buf_lock_dev_name);
 
@@ -397,7 +397,7 @@ static int __init dma_buf_lock_init(void)
 		unregister_chrdev_region(dma_buf_lock_dev, 1);
 	}
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_init failed\n");
+	pr_debug("dma_buf_lock_init failed\n");
 #endif
 	return err;
 }
@@ -405,7 +405,7 @@ static int __init dma_buf_lock_init(void)
 static void __exit dma_buf_lock_exit(void)
 {
 #if DMA_BUF_LOCK_DEBUG
-	printk("dma_buf_lock_exit\n");
+	pr_debug("dma_buf_lock_exit\n");
 #endif
 
 	/* Unlock all outstanding references */
@@ -466,7 +466,7 @@ static int dma_buf_lock_ioctl(struct inode *inode, struct file *filp, unsigned i
 				return -EFAULT;
 			}
 #if DMA_BUF_LOCK_DEBUG
-			printk("DMA_BUF_LOCK_FUNC_LOCK_ASYNC - %i\n", request.count);
+			pr_debug("DMA_BUF_LOCK_FUNC_LOCK_ASYNC - %i\n", request.count);
 #endif
 			return dma_buf_lock_dolock(&request);
 	}

@@ -92,18 +92,18 @@ static struct ump_linux_device ump_linux_device;
 #define DBG_MSG(level, ...) do { \
 if ((level) <=  ump_debug_level)\
 {\
-printk(KERN_DEBUG "UMP<" #level ">:\n" __VA_ARGS__);\
+pr_debug("UMP<" #level ">:\n" __VA_ARGS__);\
 } \
 } while (0)
 
 #define MSG_ERR(...) do{ \
-printk(KERN_ERR "UMP: ERR: %s\n           %s()%4d\n", __FILE__, __func__  , __LINE__) ; \
-printk(KERN_ERR __VA_ARGS__); \
-printk(KERN_ERR "\n"); \
+pr_err("UMP: ERR: %s\n           %s()%4d\n", __FILE__, __func__  , __LINE__) ; \
+pr_err( __VA_ARGS__); \
+pr_err("\n"); \
 } while(0)
 
 #define MSG(...) do{ \
-printk(KERN_INFO "UMP: " __VA_ARGS__);\
+pr_debug("UMP: " __VA_ARGS__);\
 } while (0)
 
 /*
@@ -281,7 +281,7 @@ static int do_ump_dd_allocate(umpp_session * session, ump_k_allocate * params)
 		ump_dd_release(new_allocation);
 	}
 
-	printk(KERN_WARNING "UMP: Allocation FAILED\n");
+	pr_debug("UMP: Allocation FAILED\n");
 	return -ENOMEM;
 }
 

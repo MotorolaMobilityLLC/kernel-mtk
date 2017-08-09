@@ -90,7 +90,7 @@
  *
  *                u32 data = hwcnt_data[data_offset+j];
  *
- *                printk( "COUNTER: %s DATA: %u\n", name, data );
+ *                pr_debug( "COUNTER: %s DATA: %u\n", name, data );
  *            }
  *        }
  *

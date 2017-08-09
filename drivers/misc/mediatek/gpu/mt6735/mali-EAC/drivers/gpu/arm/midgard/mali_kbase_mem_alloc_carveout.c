@@ -127,7 +127,7 @@ static const struct file_operations kbase_carveout_debugfs_fops = {
 	.open           = kbasep_carveout_debugfs_open,
 	.read           = seq_read,
 	.llseek         = seq_lseek,
-	.release        = seq_release_private,
+	.release        = single_release,
 };
 
 static int kbase_carveout_init(struct device *dev)

@@ -389,11 +389,11 @@ void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
     g_gpu_boost_id = ui32BoostFreqID;
 
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
-    printk("[MALI] current gpu freq id=%d, touch boost to index=%d\n", iCurrentFreqID, ui32BoostFreqID);
+    pr_debug("[MALI] current gpu freq id=%d, touch boost to index=%d\n", iCurrentFreqID, ui32BoostFreqID);
 
     if(ui32BoostFreqID < iCurrentFreqID)
     {
-        printk("[MALI] boost CB set to FREQ id=%d\n", ui32BoostFreqID);
+        pr_debug("[MALI] boost CB set to FREQ id=%d\n", ui32BoostFreqID);
         mtk_set_touch_boost_flag(ui32BoostFreqID);
     }
 
@@ -403,7 +403,7 @@ void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
 {
     int iCurrentFreqID;
 
-    printk("[MALI] boost CB set to freq id=%d\n", ui32LimitFreqID);
+    pr_debug("[MALI] boost CB set to freq id=%d\n", ui32LimitFreqID);
 
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
 
@@ -427,11 +427,11 @@ void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 
     g_custom_gpu_boost_id = uiTableNum - ui32FreqLevel - 1;
 
-    printk("[MALI] mtk_kbase_custom_boost_gpu_freq() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d", ui32FreqLevel, g_custom_gpu_boost_id);
+    pr_debug("[MALI] mtk_kbase_custom_boost_gpu_freq() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d", ui32FreqLevel, g_custom_gpu_boost_id);
 
     if(g_custom_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
-        printk("[MALI] mtk_kbase_custom_boost_gpu_freq set gpu freq to index=%d, cuurent index=%d", g_custom_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
+        pr_debug("[MALI] mtk_kbase_custom_boost_gpu_freq set gpu freq to index=%d, cuurent index=%d", g_custom_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
         mt_gpufreq_target(g_custom_gpu_boost_id);
     }
 
@@ -451,11 +451,11 @@ void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel)
 
     g_ged_gpu_boost_id = uiTableNum - ui32FreqLevel - 1;
 
-    printk("[MALI] mtk_kbase_set_bottom_gpu_freq_fp() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d  (GED boost)", ui32FreqLevel, g_ged_gpu_boost_id);
+    pr_debug("[MALI] mtk_kbase_set_bottom_gpu_freq_fp() ui32FreqLevel=%d, g_custom_gpu_boost_id=%d  (GED boost)", ui32FreqLevel, g_ged_gpu_boost_id);
 
     if(g_ged_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
-        printk("[MALI] mtk_kbase_set_bottom_gpu_freq_fp set gpu freq to index=%d, cuurent index=%d  (GED boost)", g_ged_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
+        pr_debug("[MALI] mtk_kbase_set_bottom_gpu_freq_fp set gpu freq to index=%d, cuurent index=%d  (GED boost)", g_ged_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
         mt_gpufreq_target(g_ged_gpu_boost_id);
     }
 
@@ -547,7 +547,7 @@ int mtk_gpu_dvfs(void)
             break;
 
         default:
-            printk(KERN_EMERG "GPU DVFS call back error action. %d\n", action);
+            pr_debug(KERN_EMERG "GPU DVFS call back error action. %d\n", action);
             return MALI_FALSE;
             break;            
     }
@@ -3141,17 +3141,18 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	struct device_node *node;    
 	int attribute_count;
 
-	printk(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
+	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
+	pr_debug("[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
 
 #ifdef CONFIG_OF
 	//mfgcfg
 	node = of_find_compatible_node(NULL, NULL, "mediatek,G3D_CONFIG");
 	if (!node) {
-		printk("[CLK_G3D_CONFIG] find node failed\n");
+		pr_debug("[CLK_G3D_CONFIG] find node failed\n");
 	}
 	clk_mfgcfg_base_addr = of_iomap(node, 0);
 	if (!clk_mfgcfg_base_addr)
-		printk("[CLK_G3D_CONFIG] base failed\n");
+		pr_debug("[CLK_G3D_CONFIG] base failed\n");
 #endif
 
 
@@ -3280,7 +3281,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	code = mt_get_chip_hw_code();
 	if (0x321 == code) {
 		// do something for Denali-1(6735)
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #else	
 		kbdev->clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
 		if (IS_ERR(kbdev->clk_mfg)) {
@@ -3331,7 +3332,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		goto out_term_dev;
 	}
 
-	printk(KERN_EMERG "[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
+	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
+	pr_debug("[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
 
 	return 0;
 

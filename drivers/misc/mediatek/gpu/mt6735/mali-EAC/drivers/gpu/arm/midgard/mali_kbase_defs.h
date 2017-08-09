@@ -54,9 +54,9 @@
 #include <linux/devfreq.h>
 #endif /* CONFIG_DEVFREQ */
 
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !CONFIG_MTK_CLKMGR */
 
 /** Enable SW tracing when set */
 #ifdef CONFIG_MALI_MIDGARD_ENABLE_TRACE
@@ -866,12 +866,12 @@ struct kbase_device {
 	/* Total number of created contexts */
 	atomic_t ctx_num;
 
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 	struct clk *clk_mfg;               /* main clock for gpu */
 	struct clk *clk_smi_common;        /* smi clock */
 	struct clk *clk_mfg_scp;           /* mfg MTCMOS */
 	struct clk *clk_display_scp;       /* display MTCMOS */
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !CONFIG_MTK_CLKMGR */
 
 };
 

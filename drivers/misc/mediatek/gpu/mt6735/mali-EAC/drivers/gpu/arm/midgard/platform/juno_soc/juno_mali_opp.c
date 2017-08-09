@@ -51,13 +51,13 @@ static int juno_setup_opps(void)
 
 	np = of_find_node_by_name(NULL, "gpu");
 	if (!np) {
-		printk(KERN_ERR "Failed to find DT entry for Mali\n");
+		pr_err("Failed to find DT entry for Mali\n");
 		return -EFAULT;
 	}
 
 	pdev = of_find_device_by_node(np);
 	if (!pdev) {
-		printk(KERN_ERR "Failed to find device for Mali\n");
+		pr_err("Failed to find device for Mali\n");
 		of_node_put(np);
 		return -EFAULT;
 	}

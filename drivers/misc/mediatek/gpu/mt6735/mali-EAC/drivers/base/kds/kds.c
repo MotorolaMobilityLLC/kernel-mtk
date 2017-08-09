@@ -138,7 +138,7 @@ int kds_resource_term(struct kds_resource *res)
 	if (!list_empty(&res->waiters.link))
 	{
 		spin_unlock_irqrestore(&kds_lock, lflags);
-		printk(KERN_ERR "ERROR: KDS resource is still in use\n");
+		pr_err("ERROR: KDS resource is still in use\n");
 		return -EBUSY;
 	}
 	res->waiters.parent = KDS_INVALID;

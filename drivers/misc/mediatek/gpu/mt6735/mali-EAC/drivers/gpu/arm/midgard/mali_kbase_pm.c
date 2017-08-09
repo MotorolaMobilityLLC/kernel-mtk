@@ -73,7 +73,7 @@ void _mtk_gpu_dvfs_init(void)
 {
     int i;
     unsigned int iCurrentFreqCount;
-    printk(KERN_EMERG "[MALI] _mtk_gpu_dvfs_init\n");
+    pr_debug("[MALI] _mtk_gpu_dvfs_init\n");
     
     iCurrentFreqCount = mt_gpufreq_get_dvfs_table_num();
     

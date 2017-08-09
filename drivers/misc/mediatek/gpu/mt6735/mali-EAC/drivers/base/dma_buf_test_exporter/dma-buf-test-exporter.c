@@ -596,7 +596,7 @@ static int __init dma_buf_te_init(void)
 
 	res = misc_register(&te_device);
 	if (res) {
-		printk(KERN_WARNING"Misc device registration failed of 'dma_buf_te'\n");
+		pr_debug("Misc device registration failed of 'dma_buf_te'\n");
 		return res;
 	}
 	te_device.this_device->coherent_dma_mask = DMA_BIT_MASK(32);

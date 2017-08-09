@@ -67,7 +67,7 @@ int umpp_phys_commit(umpp_allocation * alloc)
 
 	if( (sizeof(ump_dd_physical_block_64) * alloc->blocksCount) > ((size_t)-1))
 	{
-		printk(KERN_WARNING "UMP: umpp_phys_commit - trying to allocate more than possible\n");
+		pr_debug("UMP: umpp_phys_commit - trying to allocate more than possible\n");
 		return -ENOMEM;
 	}
 

@@ -34,7 +34,7 @@
 #ifdef __KERNEL__
 #define UMP_ASSERT(expr) \
 		if (!(expr)) { \
-			printk(KERN_ERR "UMP: Assertion failed! %s,%s,%s,line=%d\n",\
+			pr_err("UMP: Assertion failed! %s,%s,%s,line=%d\n",\
 					#expr,__FILE__,__func__,__LINE__); \
 					BUG(); \
 		}
