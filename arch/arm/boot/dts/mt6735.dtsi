@@ -768,7 +768,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		DRAMC0@0x10214000 {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10214000 0x1000>;
-			/* clocks = <&infrasys INFRA_GCE>; */
+			clocks = <&infrasys INFRA_GCE>;
 			clock-names = "infra-cqdma";
 		};
 
@@ -793,11 +793,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		APMIXED@0x10209000 {
 			compatible = "mediatek,APMIXED";
 			reg = <0x10209000 0x1000>;
-		};
-
-		DDRPHY@0x10213000 {
-			compatible = "mediatek,DDRPHY";
-			reg = <0x10213000 0x1000>;
 		};
 
 		FHCTL@0x10209F00 {
