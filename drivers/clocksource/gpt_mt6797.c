@@ -101,8 +101,6 @@ unsigned int tick;
 
 static struct gpt_device *id_to_dev(unsigned int id)
 {
-	if ((id == GPT3) || (id == GPT6))
-		return NULL;
 	return id < NR_GPTS ? gpt_devs + id : NULL;
 }
 
