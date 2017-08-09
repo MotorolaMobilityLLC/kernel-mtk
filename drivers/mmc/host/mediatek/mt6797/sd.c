@@ -376,8 +376,9 @@ void msdc_dump_info(u32 id)
 
 	/* 2: check msdc clock gate and clock source */
 	mdelay(10);
+#ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_clock_sts(host);
-
+#endif
 	/* 3: check msdc pmic ldo */
 	msdc_dump_ldo_sts(host);
 #ifdef MTK_MSDC_BRINGUP_DEBUG
@@ -3957,6 +3958,8 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 				if (host->power_switch)
 					host->power_switch(host, 1);
+				/* Set SD3.0 1.8v driving */
+				msdc_set_driving(host, host->hw, 1);
 
 			}
 			/* wait at least 5ms for card to switch to 1.8v signal*/
@@ -4387,6 +4390,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	msdc_set_driving(host, hw, 0);
 	/*msdc_set_pin_mode(host);*/
 	/*msdc_set_ies(host, 1);*/
+	msdc_set_tdsel(host, 0, 0);
 
 	INIT_MSG("msdc drving<clk %d,cmd %d,dat %d>",
 		hw->clk_drv, hw->cmd_drv, hw->dat_drv);

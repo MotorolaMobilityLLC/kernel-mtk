@@ -691,7 +691,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	/* Clock register base */
 	if (apmixed_node == NULL) {
 		apmixed_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,mt6797-apmixedsys");
+			"mediatek,apmixed");
 		if (apmixed_node == NULL)
 			pr_err("msdc get apmixed_node failed\n");
 		else
@@ -722,6 +722,16 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 
 	return 0;
 }
+
+#include <dt-bindings/clock/mt6797-clk.h>
+#include <mt_clk_id.h>
+
+int msdc_cg_clk_id[HOST_MAX_NUM] = {
+	MT_CG_INFRA0_MSDC0_CG_STA,
+	MT_CG_INFRA0_MSDC1_CG_STA,
+	MT_CG_INFRA0_MSDC2_CG_STA,
+	MT_CG_INFRA0_MSDC3_CG_STA
+};
 /**************************************************************/
 /* Section 3: Clock                                           */
 /**************************************************************/
@@ -785,7 +795,6 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 
 void msdc_dump_clock_sts(struct msdc_host *host)
 {
-#ifdef MTK_MSDC_BRINGUP_DEBUG
 	if (topckgen_reg_base) {
 		/* CLK_CFG_3 control msdc clock source PLL */
 		pr_err(" CLK_CFG_3 register address is 0x%p\n\n",
@@ -820,9 +829,25 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
 	}
-#endif
 }
 
+void msdc_clk_status(int *status)
+{
+	int g_clk_gate = 0;
+	int i = 0;
+	unsigned long flags;
+
+	for (i = 0; i < HOST_MAX_NUM; i++) {
+		if (!mtk_msdc_host[i])
+			continue;
+
+		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
+		if (mtk_msdc_host[i]->clk_gate_count > 0)
+			g_clk_gate |= 1 << msdc_cg_clk_id[i];
+		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
+	}
+	*status = g_clk_gate;
+}
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
 /**************************************************************/
@@ -1010,13 +1035,13 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC0_GPIO_R1_ADDR,
 					MSDC0_R1_ALL_MASK, 0xfff);
 		} else if (MSDC_PIN_PULL_UP == mode) {
-			/* clk/dsl: 1/0/1: Pull-down with 50Kohm */
+			/* clk/dsl: 1/1/0: Pull-down with 10Kohm */
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD_ADDR,
 					MSDC0_PUPD_CLK_DSL_MASK, 0x3);
 			MSDC_SET_FIELD(MSDC0_GPIO_R0_ADDR,
-					MSDC0_R0_CLK_DSL_MASK, 0x0);
+					MSDC0_R0_CLK_DSL_MASK, 0x3);
 			MSDC_SET_FIELD(MSDC0_GPIO_R1_ADDR,
-					MSDC0_R1_CLK_DSL_MASK, 0x3);
+					MSDC0_R1_CLK_DSL_MASK, 0x0);
 			/* cmd/dat: 0/1/0: Pull-up with 10Kohm*/
 			MSDC_SET_FIELD(MSDC0_GPIO_PUPD_ADDR,
 					MSDC0_PUPD_CMD_DAT_MASK, 0x0);
@@ -1110,11 +1135,11 @@ void msdc_set_tdsel_by_id(u32 id, bool sleep, bool sd_18)
 	switch (id) {
 	case 0:
 		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK,
-			(sleep ? 0xfff : 0x0));
+			(sleep ? 0xffff : 0xcccc));
 		break;
 	case 1:
 		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK,
-			(sleep ? 0xfff : 0xaaa));
+			(sleep ? 0xfff : 0xccc));
 		break;
 	default:
 		pr_err("[%s] invalid host->id!\n", __func__);

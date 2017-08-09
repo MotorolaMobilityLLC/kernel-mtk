@@ -1479,6 +1479,44 @@ static void msdc_dump_csd(struct seq_file *m, struct msdc_host *host)
 	}
 }
 
+void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
+{
+
+	if (topckgen_reg_base) {
+		/* CLK_CFG_3 control msdc clock source PLL */
+		seq_printf(m, " CLK_CFG_3 register address is 0x%p\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
+		seq_puts(m, " bit[9~8]=01b,     bit[15]=0b\n");
+		seq_puts(m, " bit[19~16]=0001b, bit[23]=0b\n");
+		seq_puts(m, " bit[26~24]=0010b, bit[31]=0b\n");
+		seq_printf(m, " Read value is       0x%x\n",
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+	}
+	if (apmixed_reg_base) {
+		/* bit0 is enables PLL, 0: disable 1: enable */
+		seq_printf(m, " MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
+		seq_puts(m, " bit[0]=1b\n");
+		seq_printf(m, " Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
+
+		seq_printf(m, " MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
+		seq_printf(m, " Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
+
+		seq_printf(m, " MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
+		seq_printf(m, " Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
+
+		seq_printf(m, " MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
+		seq_puts(m, " bit[0]=1b\n");
+		seq_printf(m, " Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
+	}
+}
 void msdc_dump_ext_csd(struct seq_file *m, struct msdc_host *host)
 {
 	u8 ext_csd[512];
@@ -2076,9 +2114,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		host = mtk_msdc_host[id];
 		if ((p2 < 0) || (p2 > 2)) {
 			seq_puts(m, "[SD_Debug]invalid option ( set rd:0, set td:1, get td/rd: 2)\n");
-		} else if ((p2 == 0 && (unsigned char)p3 > 0x3F)
-			|| (p2 == 1 && (unsigned char)p3 > 0xF)) {
-			seq_puts(m, "[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xF << 0))\n");
+		} else if ((p2 == 0 && (unsigned char)p3 > 0xffff)
+			|| (p2 == 1 && (unsigned char)p3 > 0xffff)) {
+			seq_puts(m, "[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xffff << 0))\n");
 		} else {
 			if (p2 == 0) {
 				msdc_set_rdsel_dbg(host, p3);
@@ -2435,6 +2473,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 		host = mtk_msdc_host[id];
 		msdc_dump_csd(m, host);
+		seq_puts(m, "[SD_Debug]: Dump clock status\n");
+		dbg_msdc_dump_clock_sts(m, host);
 		break;
 	case DO_AUTOK_OFFLINE_TUNE_TX:
 		host = mtk_msdc_host[p1]; /*p1 = id */
