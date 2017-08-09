@@ -299,14 +299,10 @@ static int get_plat_capbility(int md_id)
 	int en_flag = 0;
 
 	/* MD1 */
-#ifdef CONFIG_MTK_ENABLE_MD1
-	en_flag |= (1<<0);
-#endif
+	en_flag |= (1<<0); /* Fix me, may design more better solution to reduce memory usage */
 
 	/* MD3 */
-#ifdef CONFIG_MTK_ECCCI_C2K
 	en_flag |= (1<<2);
-#endif
 
 	return (en_flag & (1<<md_id));
 }

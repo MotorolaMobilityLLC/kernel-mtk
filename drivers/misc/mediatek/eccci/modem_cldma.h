@@ -361,9 +361,7 @@ static inline void md_cd_queue_struct_init(struct md_cd_queue *queue, struct ccc
 #endif
 }
 #ifndef CONFIG_MTK_ECCCI_C2K
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
 extern void c2k_reset_modem(void);
-#endif
 #endif
 extern void mt_irq_dump_status(int irq);
 extern unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);

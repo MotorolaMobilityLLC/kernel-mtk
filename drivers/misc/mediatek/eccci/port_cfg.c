@@ -16,7 +16,6 @@
 
 #define TAG     "cfg"
 
-#ifdef CONFIG_MTK_ENABLE_MD1
 static struct ccci_port md1_ccci_ports[] = {
 /* network port first for performace */
 	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0, "ccmni0",},
@@ -85,7 +84,6 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 3, "ccci_raw_netd",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 4, "ccci_raw_usb",},
 };
-#endif
 
 #ifdef CONFIG_MTK_ENABLE_MD2
 static struct ccci_port md2_ccci_ports[] = {
@@ -184,12 +182,11 @@ int get_md_port_cfg(int md_id, struct ccci_port **ports)
 	int port_number = 0;
 
 	switch (md_id) {
-#ifdef CONFIG_MTK_ENABLE_MD1
 	case MD_SYS1:
 		*ports = md1_ccci_ports;
 		port_number = ARRAY_SIZE(md1_ccci_ports);
 		break;
-#endif
+
 #ifdef CONFIG_MTK_ENABLE_MD2
 	case MD_SYS2:
 		*ports = md2_ccci_ports;

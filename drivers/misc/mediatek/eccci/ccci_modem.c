@@ -636,6 +636,9 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 	struct ccci_runtime_boot_info boot_info;
 	unsigned int random_seed = 0;
 	struct timeval t;
+#ifdef FEATURE_C2K_ALWAYS_ON
+	unsigned int c2k_flags = 0;
+#endif
 
 	CCCI_BOOTUP_LOG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", MD_RUNTIME_FEATURE_ID_MAX);
 
@@ -820,23 +823,23 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 			case MISC_INFO_C2K:
 				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
 #ifdef FEATURE_C2K_ALWAYS_ON
-				rt_f_element.feature[0] = (0
+				c2k_flags = 0;
 #ifdef CONFIG_MTK_C2K_SUPPORT
-							   | (1 << 0)
+				c2k_flags |= (1 << 0);
 #endif
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
-							   | (1 << 1)
-#endif
-#ifdef CONFIG_MTK_SRLTE_SUPPORT
-							   | (1 << 2)
-#endif
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
+					c2k_flags |= (1 << 1);
+
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* CONFIG_MTK_SRLTE_SUPPORT */
+					c2k_flags |= (1 << 2);
+
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
-							   | (1 << 3)
+				c2k_flags |=  (1 << 3);
 #endif
 #ifdef CONFIG_CT6M_SUPPORT
-							   | (1 << 4)
+				c2k_flags |= (1 << 4)
 #endif
-				    );
+				rt_f_element.feature[0] = c2k_flags;
 #endif
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;

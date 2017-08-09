@@ -72,7 +72,11 @@ static char *type_str[] = {[md_type_invalid] = "invalid",
 	[modem_ulfwg] = "ulfwg",
 	[modem_ulfwcg] = "ulfwcg",
 	[modem_ulctg] = "ulctg",
-	[modem_ultctg] = "ultctg"
+	[modem_ultctg] = "ultctg",
+	[modem_ultwg] = "ultwg",
+	[modem_ultwcg] = "ultwcg",
+	[modem_ulftg] = "ulftg",
+	[modem_ulfctg] = "ulfctg"
 };
 
 static int curr_ubin_id;
@@ -958,6 +962,14 @@ static const int md1_capability_array[] = {
 	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
 /* ultctg */
 	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ultwg */
+	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ultwcg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulftg */
+	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulfctg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
 };
 
 static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
@@ -978,6 +990,10 @@ static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
 	0x2D,			/* 15-ulfwcg */
 	0x37,			/* 16-ulctg */
 	0x17,			/* 17-ultctg */
+	0x19,			/* 18-ultwg */
+	0x1D,			/* 19-ultwcg */
+	0x23,			/* 20-ulftg */
+	0x27,			/* 21-ulfctg */
 };
 
 int get_md_wm_id_map(int ap_wm_id)

@@ -197,10 +197,8 @@ typedef struct fos_item {	/* Feature Option Setting */
 #endif
 
 /* MD3 */
-#ifdef CONFIG_MTK_ECCCI_C2K
-/* #ifdef CONFIG_MTK_MD3_SUPPORT Fix me */
-/* #define MTK_MD3_SUPPORT	(CONFIG_MTK_MD3_SUPPORT) */
-#define MTK_MD3_SUPPORT (2)
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#define MTK_MD3_SUPPORT	(CONFIG_MTK_MD3_SUPPORT)
 #else
 #define MTK_MD3_SUPPORT	(0)
 #endif
@@ -233,6 +231,13 @@ typedef struct fos_item {	/* Feature Option Setting */
 #define MTK_C2K_SUPPORT	(0)
 #endif
 
+/* MTK_C2K_LTE_MODE */
+#ifdef CONFIG_MTK_C2K_LTE_MODE
+#define MTK_C2K_LTE_MODE	(CONFIG_MTK_C2K_LTE_MODE)
+#else
+#define MTK_C2K_LTE_MODE	(0)
+#endif
+
 /* array for store default option setting, option value may be updated at init if needed */
 static fos_item_t ccci_fos_setting[] = {
 	{"opt_md1_support", MTK_MD1_SUPPORT},
@@ -242,7 +247,7 @@ static fos_item_t ccci_fos_setting[] = {
 	{"opt_irat_support", MTK_IRAT_SUPPORT},
 	{"opt_eccci_c2k", MTK_ECCCI_C2K},
 	{"opt_c2k_support", MTK_C2K_SUPPORT},
-	{"opt_c2k_lte_mode", 0},
+	{"opt_c2k_lte_mode", MTK_C2K_LTE_MODE},
 };
 
 /*---------------- ccci option relate public function for option ----------------------------------------*/
@@ -336,7 +341,7 @@ static void parse_option_setting_from_lk(void)
 	if (using_default)
 		CCCI_UTIL_INF_MSG("All option using default setting\n");
 	else {
-		CCCI_UTIL_INF_MSG("LK has new setting, Dumy final option setting\n");
+		CCCI_UTIL_INF_MSG("LK has new setting, Dump final option setting\n");
 		ccci_dump_opt_tbl();
 	}
 

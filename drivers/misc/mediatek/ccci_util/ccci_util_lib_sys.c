@@ -588,10 +588,11 @@ static ssize_t kcfg_setting_show(char *buf)
 	actual_write = snprintf(&buf[curr], 4096 - curr, "[MTK_LTE_DC_SUPPORT]:0\n");
 #endif
 	curr += actual_write;
-#ifdef CONFIG_MTK_ECCCI_C2K
-	actual_write = snprintf(&buf[curr], 4096 - curr, "[MTK_ECCCI_C2K]:1\n");
-	curr += actual_write;
-#endif
+	if (ccci_get_opt_val("opt_eccci_c2k") > 0) {
+		actual_write = snprintf(&buf[curr], 4096 - curr, "[MTK_ECCCI_C2K]:1\n");
+		curr += actual_write;
+	}
+
 	/* Add total size to tail */
 	actual_write = snprintf(&buf[curr], 4096 - curr, "total:%d\n", curr);
 	curr += actual_write;

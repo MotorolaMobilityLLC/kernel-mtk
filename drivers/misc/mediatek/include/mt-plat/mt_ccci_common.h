@@ -49,7 +49,11 @@ typedef enum {
 	modem_ulfwcg,
 	modem_ulctg,
 	modem_ultctg,
-	MAX_IMG_NUM = modem_ultctg /* this enum starts from 1 */
+	modem_ultwg,
+	modem_ultwcg,
+	modem_ulftg,
+	modem_ulfctg,
+	MAX_IMG_NUM = modem_ulfctg /* this enum starts from 1 */
 } MD_LOAD_TYPE;
 
 /* MD logger configure file */
@@ -475,4 +479,5 @@ typedef struct _mpu_cfg {
 	int relate_region; /* Using same behavior and setting */
 } mpu_cfg_t;
 mpu_cfg_t *get_mpu_region_cfg_info(int region_id);
+int ccci_get_opt_val(char *opt_name);
 #endif

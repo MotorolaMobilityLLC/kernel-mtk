@@ -903,9 +903,9 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 	case CMDM_IOCTL_RESET_FROM_RIL:
 		pr_debug("[C2K]Reset C2K from RIL.\n");
 		c2k_reset_modem();
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
-		exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
-#endif
+		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE */
+			exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
+
 		break;
 	case CMDM_IOCTL_POWER:
 		if (copy_from_user(&flag, argp, sizeof(flag)))
@@ -920,9 +920,8 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 			break;
 		case 2:
 			c2k_power_off_modem();
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
-			exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
-#endif
+			if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE */
+				exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
 			break;
 		default:
 			return -EINVAL;
