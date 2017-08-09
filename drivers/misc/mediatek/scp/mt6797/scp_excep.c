@@ -55,6 +55,138 @@ static struct scp_work_struct scp_aed_work;
 static struct scp_status_reg scp_aee_status;
 static struct mutex scp_excep_mutex, scp_excep_dump_mutex;
 
+/* An ELF note in memory */
+struct memelfnote {
+	const char *name;
+	int type;
+	unsigned int datasz;
+	void *data;
+};
+
+static int notesize(struct memelfnote *en)
+{
+	int sz;
+
+	sz = sizeof(struct elf32_note);
+	sz += roundup((strlen(en->name) + 1), 4);
+	sz += roundup(en->datasz, 4);
+
+	return sz;
+}
+
+static uint8_t *storenote(struct memelfnote *men, uint8_t *bufp)
+{
+	struct elf32_note en;
+
+	en.n_namesz = strlen(men->name) + 1;
+	en.n_descsz = men->datasz;
+	en.n_type = men->type;
+
+	memcpy(bufp, &en, sizeof(en));
+	bufp += sizeof(en);
+
+	memcpy(bufp, men->name, en.n_namesz);
+	bufp += en.n_namesz;
+
+	bufp = (uint8_t *) roundup((unsigned long)bufp, 4);
+	memcpy(bufp, men->data, men->datasz);
+	bufp += men->datasz;
+
+	bufp = (uint8_t *) roundup((unsigned long)bufp, 4);
+	return bufp;
+}
+
+static uint8_t *core_write_cpu_note(int cpu, struct elf32_phdr *nhdr, uint8_t *bufp)
+{
+	struct memelfnote notes;
+	struct elf32_prstatus prstatus;
+	char cpustr[16];
+
+	memset(&prstatus, 0, sizeof(struct elf32_prstatus));
+	snprintf(cpustr, sizeof(cpustr), "CPU%d", cpu);
+	/* set up the process status */
+	notes.name = cpustr;
+	notes.type = NT_PRSTATUS;
+	notes.datasz = sizeof(struct elf32_prstatus);
+	notes.data = &prstatus;
+
+	prstatus.pr_pid = cpu + 1;
+	if (task_context_address) {
+		memcpy_from_scp((void *)&(prstatus.pr_reg),
+				(void *)(SCP_TCM + task_context_address), sizeof(prstatus.pr_reg));
+	}
+	if (prstatus.pr_reg[15] == 0x0)
+		prstatus.pr_reg[15] = SCP_DEBUG_PC_REG;
+	if (prstatus.pr_reg[14] == 0x0)
+		prstatus.pr_reg[14] = SCP_DEBUG_LR_REG;
+	if (prstatus.pr_reg[13] == 0x0)
+		prstatus.pr_reg[13] = SCP_DEBUG_PSP_REG;
+
+	nhdr->p_filesz += notesize(&notes);
+	return storenote(&notes, bufp);
+}
+
+void exception_header_init(void *oldbufp)
+{
+	struct elf32_phdr *nhdr, *phdr;
+	struct elf32_hdr *elf;
+	off_t offset = 0;
+
+	uint8_t *bufp = oldbufp;
+	uint32_t cpu;
+
+	/* NT_PRPSINFO */
+	struct elf32_prpsinfo prpsinfo;
+	struct memelfnote notes;
+
+	elf = (struct elf32_hdr *) bufp;
+	bufp += sizeof(struct elf32_hdr);
+	offset += sizeof(struct elf32_hdr);
+	elf_setup_eident(elf->e_ident, ELFCLASS32);
+	elf_setup_elfhdr(elf, EM_ARM, struct elf32_hdr, struct elf32_phdr)
+
+	nhdr = (struct elf32_phdr *) bufp;
+	bufp += sizeof(struct elf32_phdr);
+	offset += sizeof(struct elf32_phdr);
+	memset(nhdr, 0, sizeof(struct elf32_phdr));
+	nhdr->p_type = PT_NOTE;
+
+	phdr = (struct elf32_phdr *) bufp;
+	bufp += sizeof(struct elf32_phdr);
+	offset += sizeof(struct elf32_phdr);
+	phdr->p_flags = PF_R|PF_W|PF_X;
+	phdr->p_offset = CRASH_MEMORY_HEADER_SIZE;
+	phdr->p_vaddr = CRASH_MEMORY_OFFSET;
+	phdr->p_paddr = CRASH_MEMORY_OFFSET;
+	phdr->p_filesz = (SCP_TCM_SIZE - CRASH_MEMORY_OFFSET);
+	phdr->p_memsz = (SCP_TCM_SIZE - CRASH_MEMORY_OFFSET);
+	phdr->p_align = 0;
+	phdr->p_type = PT_LOAD;
+
+	nhdr->p_offset = offset;
+
+	/* set up the process info */
+	notes.name = CORE_STR;
+	notes.type = NT_PRPSINFO;
+	notes.datasz = sizeof(struct elf32_prpsinfo);
+	notes.data = &prpsinfo;
+
+	memset(&prpsinfo, 0, sizeof(struct elf32_prpsinfo));
+	prpsinfo.pr_state = 0;
+	prpsinfo.pr_sname = 'R';
+	prpsinfo.pr_zomb = 0;
+	prpsinfo.pr_gid = prpsinfo.pr_uid = 0x0;
+	strlcpy(prpsinfo.pr_fname, "freertos8", sizeof(prpsinfo.pr_fname));
+	strlcpy(prpsinfo.pr_psargs, "freertos8", ELF_PRARGSZ);
+
+	nhdr->p_filesz += notesize(&notes);
+	bufp = storenote(&notes, bufp);
+
+	/* Store pre-cpu backtrace */
+	for (cpu = 0; cpu < 1; cpu++)
+		bufp = core_write_cpu_note(cpu, nhdr, bufp);
+}
+
 static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
 {
 	if (length == 0) {
@@ -162,12 +294,10 @@ void scp_excep_reset(void)
 {
 	task_context_address = 0;
 }
-
 static unsigned int scp_crash_dump(MemoryDump *pMemoryDump)
 {
 	unsigned int lock;
 	unsigned int *reg;
-	TaskContext *task_context;
 
 	/* check SRAM lock */
 	reg = (unsigned int *) (scpreg.cfg + SCP_LOCK_OFS);
@@ -179,36 +309,14 @@ static unsigned int scp_crash_dump(MemoryDump *pMemoryDump)
 		return 0;
 	}
 
-	pr_debug("scp dump 0x%x\n", task_context_address);
-
-	pMemoryDump->flash_length = CRASH_MEMORY_LENGTH;
-
-	/* even if we don't have task context, we can still do ram dump */
-	if (task_context_address) {
-		memcpy_from_scp((void *)&(pMemoryDump->core),
-				(void *)(SCP_TCM + task_context_address), sizeof(TaskContext));
-	}
-
+	exception_header_init(pMemoryDump);
 	memcpy_from_scp((void *)&(pMemoryDump->memory),
 			(void *)(SCP_TCM + CRASH_MEMORY_OFFSET), (SCP_TCM_SIZE - CRASH_MEMORY_OFFSET));
-
-	task_context = (TaskContext *) &(pMemoryDump->core);
-
-	if (task_context->pc == 0x0)
-		task_context->pc = SCP_DEBUG_PC_REG;
-	if (task_context->lr == 0x0)
-		task_context->lr = SCP_DEBUG_LR_REG;
-	if (task_context->sp == 0x0)
-		task_context->sp = SCP_DEBUG_PSP_REG;
-	if (task_context->msp == 0x0)
-		task_context->msp = SCP_DEBUG_SP_REG;
-
 	*reg = lock;
 	dsb(SY);
 
 	return sizeof(*pMemoryDump);
 }
-
 /*
  * generate aee argument without dump scp register
  * @param aed_str:  exception description
@@ -309,7 +417,6 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 		memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
 		memory_dump_size = scp_crash_dump(pMemoryDump);
 	}
-
 	scp_dump_buffer_set((unsigned char *) pMemoryDump, memory_dump_size);
 
 	aed->log = (int *)log;
