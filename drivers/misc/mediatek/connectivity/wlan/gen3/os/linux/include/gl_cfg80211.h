@@ -58,9 +58,6 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
-extern struct semaphore g_halt_sem;
-extern int g_u4HaltFlag;
-
 #if CONFIG_NL80211_TESTMODE
 #define NL80211_DRIVER_TESTMODE_VERSION 2
 #endif

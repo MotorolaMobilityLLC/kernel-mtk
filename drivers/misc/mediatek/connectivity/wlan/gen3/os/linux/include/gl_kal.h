@@ -617,9 +617,6 @@
 extern int allocatedMemSize;
 #endif
 
-extern struct semaphore g_halt_sem;
-extern int g_u4HaltFlag;
-
 extern struct delayed_work sched_workq;
 
 /*******************************************************************************
@@ -895,6 +892,13 @@ typedef struct _MONITOR_RADIOTAP_T {
 } __packed MONITOR_RADIOTAP_T, *P_MONITOR_RADIOTAP_T;
 #endif
 
+struct KAL_HALT_CTRL_T {
+	struct semaphore lock;
+	struct task_struct *owner;
+	BOOLEAN fgHalt;
+	BOOLEAN fgHeldByKalIoctl;
+	OS_SYSTIME u4HoldStart;
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1228,6 +1232,7 @@ do { \
 
 #define MSEC_TO_JIFFIES(_msec)      msecs_to_jiffies(_msec)
 
+#define KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE		3000 /* 3s */
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -1607,4 +1612,9 @@ int kalMetRemoveProcfs(void);
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
+INT_32 kalHaltLock(UINT_32 waitMs);
+INT_32 kalHaltTryLock(VOID);
+VOID kalHaltUnlock(VOID);
+VOID kalSetHalted(BOOLEAN fgHalt);
+BOOLEAN kalIsHalted(VOID);
 #endif /* _GL_KAL_H */

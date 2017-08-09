@@ -774,9 +774,6 @@
 ********************************************************************************
 */
 /* #define MAX_IOREQ_NUM   10 */
-struct semaphore g_halt_sem;
-int g_u4HaltFlag = 1;
-
 static struct wireless_dev *gprWdev;
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -1491,19 +1488,9 @@ int wlanDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 /*---------------------------------------------------------------------------*/
 P_GLUE_INFO_T wlanGetGlueInfo(VOID)
 {
-	struct net_device *prDev = NULL;
-	P_GLUE_INFO_T prGlueInfo = NULL;
-
-	if (0 == u4WlanDevNum)
+	if (!gprWdev)
 		return NULL;
-
-	prDev = arWlanDevInfo[u4WlanDevNum - 1].prDev;
-	if (NULL == prDev)
-		return NULL;
-
-	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
-
-	return prGlueInfo;
+	return (P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1537,9 +1524,10 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 	UINT_32 u4SetInfoLen;
 	struct net_device *prDev = gPrDev;
 
-	down(&g_halt_sem);
-	if (g_u4HaltFlag) {
-		up(&g_halt_sem);
+	if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
+		return;
+	if (kalIsHalted()) {
+		kalHaltUnlock();
 		return;
 	}
 
@@ -1548,7 +1536,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 	ASSERT(prGlueInfo);
 	if (!prDev || !prGlueInfo) {
 		DBGLOG(INIT, WARN, "abnormal dev or skb: prDev(0x%p), prGlueInfo(0x%p)\n", prDev, prGlueInfo);
-		up(&g_halt_sem);
+		kalHaltUnlock();
 		return;
 	}
 
@@ -1565,7 +1553,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 			u4PacketFilter |= PARAM_PACKET_FILTER_MULTICAST;
 	}
 
-	up(&g_halt_sem);
+	kalHaltUnlock();
 
 	if (kalIoctl(prGlueInfo,
 		     wlanoidSetCurrentPacketFilter,
@@ -1580,9 +1568,11 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		PUINT_8 prMCAddrList = NULL;
 		UINT_32 i = 0;
 
-		down(&g_halt_sem);
-		if (g_u4HaltFlag) {
-			up(&g_halt_sem);
+		if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
+			return;
+
+		if (kalIsHalted()) {
+			kalHaltUnlock();
 			return;
 		}
 
@@ -1595,7 +1585,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 			}
 		}
 
-		up(&g_halt_sem);
+		kalHaltUnlock();
 
 		kalIoctl(prGlueInfo,
 			 wlanoidSetMulticastList, prMCAddrList, (i * ETH_ALEN), FALSE, FALSE, TRUE, &u4SetInfoLen);
@@ -2087,9 +2077,6 @@ static void createWirelessDevice(void)
 		DBGLOG(INIT, ERROR, "Allocating memory to wireless_dev context failed\n");
 		return;
 	}
-	/* initialize semaphore for ioctl */
-	sema_init(&g_halt_sem, 1);
-	g_u4HaltFlag = 1;
 	/* 4 <1.2> Create wiphy */
 	prWiphy = wiphy_new(&mtk_wlan_ops, sizeof(GLUE_INFO_T));
 	if (!prWiphy) {
@@ -2542,7 +2529,6 @@ static INT_32 wlanProbe(PVOID pvData)
 		 *      initialized by glBusInit().
 		 * _HIF_SDIO: bus driver handle
 		 */
-
 		bRet = glBusInit(pvData);
 
 		/* Cannot get IO address from interface */
@@ -2705,7 +2691,7 @@ bailout:
 		/* Update supported channel list in channel table based on NVRAM */
 		wlanUpdateChannelTable(prGlueInfo);
 
-		g_u4HaltFlag = 0;
+		kalSetHalted(FALSE);
 		/* set MAC address */
 		{
 			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
@@ -2824,6 +2810,7 @@ bailout:
 /*----------------------------------------------------------------------------*/
 static VOID wlanRemove(VOID)
 {
+#define KAL_WLAN_REMOVE_TIMEOUT_MSEC			3000
 	struct net_device *prDev = NULL;
 	P_WLANDEV_INFO_T prWlandevInfo = NULL;
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -2871,23 +2858,32 @@ static VOID wlanRemove(VOID)
 
 	flush_delayed_work(&sched_workq);
 
-	down(&g_halt_sem);
-	g_u4HaltFlag = 1;
+	kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC);
+	kalSetHalted(TRUE);
 
 	/* 4 <2> Mark HALT, notify main thread to stop, and clean up queued requests */
 	set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
 
 #if CFG_SUPPORT_MULTITHREAD
 	wake_up_interruptible(&prGlueInfo->waitq_hif);
-	wait_for_completion_interruptible(&prGlueInfo->rHifHaltComp);
+	if (!wait_for_completion_timeout(&prGlueInfo->rHifHaltComp, MSEC_TO_JIFFIES(KAL_WLAN_REMOVE_TIMEOUT_MSEC))) {
+		DBGLOG(INIT, ERROR, "wait hif_thread exit timeout, longer than 3s, show backtrace of hif_thread\n");
+		show_stack(prGlueInfo->hif_thread, NULL);
+	}
 	wake_up_interruptible(&prGlueInfo->waitq_rx);
-	wait_for_completion_interruptible(&prGlueInfo->rRxHaltComp);
+	if (!wait_for_completion_timeout(&prGlueInfo->rRxHaltComp, MSEC_TO_JIFFIES(KAL_WLAN_REMOVE_TIMEOUT_MSEC))) {
+		DBGLOG(INIT, ERROR, "wait rx_thread exit timeout, longer than 3s, show backtrace of rx_thread\n");
+		show_stack(prGlueInfo->rx_thread, NULL);
+	}
 #endif
 
 	/* wake up main thread */
 	wake_up_interruptible(&prGlueInfo->waitq);
 	/* wait main thread stops */
-	wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
+	if (!wait_for_completion_timeout(&prGlueInfo->rHaltComp, MSEC_TO_JIFFIES(KAL_WLAN_REMOVE_TIMEOUT_MSEC))) {
+		DBGLOG(INIT, ERROR, "wait tx_thread exit timeout, longer than 3s, show backtrace of tx_thread\n");
+		show_stack(prGlueInfo->main_thread, NULL);
+	}
 
 	DBGLOG(INIT, TRACE, "mtk_sdiod stopped\n");
 
@@ -2944,7 +2940,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <5> Release the Bus */
 	glBusRelease(prDev);
 
-	up(&g_halt_sem);
+	kalHaltUnlock();
 
 	/* 4 <6> Unregister the card */
 	wlanNetUnregister(prDev->ieee80211_ptr);

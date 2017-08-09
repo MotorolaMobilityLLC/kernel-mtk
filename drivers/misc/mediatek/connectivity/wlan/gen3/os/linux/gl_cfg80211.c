@@ -2839,8 +2839,10 @@ int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
-	down(&g_halt_sem);
-	if (g_u4HaltFlag || !wiphy)
+	if (kalHaltTryLock())
+		return 0;
+
+	if (kalIsHalted() || !wiphy)
 		goto end;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
@@ -2848,7 +2850,7 @@ int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
 	set_bit(SUSPEND_FLAG_FOR_WAKEUP_REASON, &prGlueInfo->prAdapter->ulSuspendFlag);
 	set_bit(SUSPEND_FLAG_CLEAR_WHEN_RESUME, &prGlueInfo->prAdapter->ulSuspendFlag);
 end:
-	up(&g_halt_sem);
+	kalHaltUnlock();
 	return 0;
 }
 
@@ -2869,8 +2871,10 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 	P_ADAPTER_T prAdapter = NULL;
 	UINT_8 i = 0;
 
-	down(&g_halt_sem);
-	if (g_u4HaltFlag || !wiphy)
+	if (kalHaltTryLock())
+		return 0;
+
+	if (kalIsHalted() || !wiphy)
 		goto end;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
@@ -2892,6 +2896,6 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 	if (i > 0)
 		kalMemZero(&pprBssDesc[0], i * sizeof(P_BSS_DESC_T));
 end:
-	up(&g_halt_sem);
+	kalHaltUnlock();
 	return 0;
 }

@@ -870,7 +870,13 @@ int allocatedMemSize = 0;
 static PVOID pvIoBuffer;
 static UINT_32 pvIoBufferSize;
 static UINT_32 pvIoBufferUsage;
-
+static struct KAL_HALT_CTRL_T rHaltCtrl = {
+	.lock = __SEMAPHORE_INITIALIZER(rHaltCtrl.lock, 1),
+	.owner = NULL,
+	.fgHalt = TRUE,
+	.fgHeldByKalIoctl = FALSE,
+	.u4HoldStart = 0,
+};
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -2602,7 +2608,6 @@ VOID
 kalOidComplete(IN P_GLUE_INFO_T prGlueInfo,
 	       IN BOOLEAN fgSetQuery, IN UINT_32 u4SetQueryInfoLen, IN WLAN_STATUS rOidStatus)
 {
-
 	ASSERT(prGlueInfo);
 	/* remove timeout check timer */
 	wlanoidClearTimeoutCheck(prGlueInfo->prAdapter);
@@ -2666,24 +2671,21 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
 
-	/* <1> Check if driver is halt */
-	/* if (prGlueInfo->u4Flag & GLUE_FLAG_HALT) { */
-	/* return WLAN_STATUS_ADAPTER_NOT_READY; */
-	/* } */
-
-	if (down_interruptible(&g_halt_sem))
+	/* if wait longer than double OID timeout timer, then will show backtrace who held halt lock.
+		at this case, we will return kalIoctl failure because tx_thread may be hung */
+	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD))
 		return WLAN_STATUS_FAILURE;
 
-	if (g_u4HaltFlag) {
-		up(&g_halt_sem);
+	if (kalIsHalted()) {
+		kalHaltUnlock();
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
 	if (down_interruptible(&prGlueInfo->ioctl_sem)) {
-		up(&g_halt_sem);
+		kalHaltUnlock();
 		return WLAN_STATUS_FAILURE;
 	}
-
+	rHaltCtrl.fgHeldByKalIoctl = TRUE;
 	/* <2> TODO: thread-safe */
 
 	/* <3> point to the OidEntry of Glue layer */
@@ -2746,8 +2748,8 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	clear_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->ulFlag);
 
 	up(&prGlueInfo->ioctl_sem);
-	up(&g_halt_sem);
-
+	rHaltCtrl.fgHeldByKalIoctl = FALSE;
+	kalHaltUnlock();
 	return ret;
 }
 
@@ -3369,7 +3371,6 @@ int tx_thread(void *data)
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rTxThreadWakeLock);
 
 	DBGLOG(INIT, INFO, "tx_thread starts running...\n");
-
 	while (TRUE) {
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -3591,7 +3592,6 @@ int tx_thread(void *data)
 
 	DBGLOG(INIT, INFO, "mtk_sdiod stops\n");
 	complete(&prGlueInfo->rHaltComp);
-
 	if (KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter, &rTxThreadWakeLock))
 		KAL_WAKE_UNLOCK(prGlueInfo->prAdapter, &rTxThreadWakeLock);
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &rTxThreadWakeLock);
@@ -5407,3 +5407,67 @@ BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
 }
 #endif
 
+INT_32 kalHaltLock(UINT_32 waitMs)
+{
+	INT_32 i4Ret = 0;
+
+	if (waitMs) {
+		i4Ret = down_timeout(&rHaltCtrl.lock, MSEC_TO_JIFFIES(waitMs));
+		if (!i4Ret)
+			goto success;
+		if (i4Ret != -ETIME)
+			return i4Ret;
+		if (rHaltCtrl.fgHeldByKalIoctl) {
+			P_GLUE_INFO_T prGlueInfo = wlanGetGlueInfo();
+
+			DBGLOG(INIT, ERROR,
+				"kalIoctl was executed longer than %u ms, show backtrace of tx_thread!\n",
+				kalGetTimeTick() - rHaltCtrl.u4HoldStart);
+			if (prGlueInfo)
+				show_stack(prGlueInfo->main_thread, NULL);
+		} else {
+			DBGLOG(INIT, ERROR, "halt lock held by %s pid %d longer than %u ms!\n",
+				rHaltCtrl.owner->comm, rHaltCtrl.owner->pid,
+				kalGetTimeTick() - rHaltCtrl.u4HoldStart);
+			show_stack(rHaltCtrl.owner, NULL);
+		}
+		return i4Ret;
+	}
+	down(&rHaltCtrl.lock);
+success:
+	rHaltCtrl.owner = current;
+	rHaltCtrl.u4HoldStart = kalGetTimeTick();
+	return 0;
+}
+
+INT_32 kalHaltTryLock(VOID)
+{
+	INT_32 i4Ret = 0;
+
+	i4Ret = down_trylock(&rHaltCtrl.lock);
+	if (i4Ret)
+		return i4Ret;
+	rHaltCtrl.owner = current;
+	rHaltCtrl.u4HoldStart = kalGetTimeTick();
+	return 0;
+}
+
+VOID kalHaltUnlock(VOID)
+{
+	if (kalGetTimeTick() - rHaltCtrl.u4HoldStart > WLAN_OID_TIMEOUT_THRESHOLD * 2 &&
+		rHaltCtrl.owner)
+		DBGLOG(INIT, ERROR, "process %s pid %d hold halt lock longer than 4s!\n",
+			rHaltCtrl.owner->comm, rHaltCtrl.owner->pid);
+	rHaltCtrl.owner = NULL;
+	up(&rHaltCtrl.lock);
+}
+
+VOID kalSetHalted(BOOLEAN fgHalt)
+{
+	rHaltCtrl.fgHalt = fgHalt;
+}
+
+BOOLEAN kalIsHalted(VOID)
+{
+	return rHaltCtrl.fgHalt;
+}
