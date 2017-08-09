@@ -27,6 +27,9 @@
 
 #include "xhci-mvebu.h"
 #include "xhci-rcar.h"
+#ifdef CONFIG_SSUSB_MTK_XHCI
+#include "xhci-ssusb-mtk.h"
+#endif
 
 static struct hc_driver __read_mostly xhci_plat_hc_driver;
 
@@ -53,6 +56,9 @@ static int xhci_plat_setup(struct usb_hcd *hcd)
 {
 	struct device_node *of_node = hcd->self.controller->of_node;
 	int ret;
+#ifdef CONFIG_SSUSB_MTK_XHCI
+	struct xhci_hcd *xhci;
+#endif
 
 	if (of_device_is_compatible(of_node, "renesas,xhci-r8a7790") ||
 	    of_device_is_compatible(of_node, "renesas,xhci-r8a7791")) {
@@ -60,8 +66,26 @@ static int xhci_plat_setup(struct usb_hcd *hcd)
 		if (ret)
 			return ret;
 	}
+#ifdef CONFIG_SSUSB_MTK_XHCI
+	ret = xhci_gen_setup(hcd, xhci_plat_quirks);
+	if (ret)
+		return ret;
 
+	if (!usb_hcd_is_primary_hcd(hcd))
+		return 0;
+
+	xhci = hcd_to_xhci(hcd);
+	ret = xhci_mtk_init_quirk(xhci);
+	if (ret) {
+		kfree(xhci);
+		return ret;
+	}
+	return ret;
+#else
 	return xhci_gen_setup(hcd, xhci_plat_quirks);
+#endif
+
+
 }
 
 static int xhci_plat_start(struct usb_hcd *hcd)

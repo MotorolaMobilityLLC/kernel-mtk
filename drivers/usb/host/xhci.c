@@ -38,7 +38,9 @@
 #include <linux/platform_device.h>
 #include "xhci-mtk.h"
 #endif
-
+#ifdef CONFIG_SSUSB_MTK_XHCI
+#include "xhci-ssusb-mtk.h"
+#endif
 #define DRIVER_AUTHOR "Sarah Sharp"
 #define DRIVER_DESC "'eXtensible' Host Controller (xHC) Driver"
 
@@ -634,7 +636,11 @@ int xhci_run(struct usb_hcd *hcd)
 			"// Set the interrupt modulation register");
 	temp = readl(&xhci->ir_set->irq_control);
 	temp &= ~ER_IRQ_INTERVAL_MASK;
+#ifndef CONFIG_SSUSB_MTK_XHCI
 	temp |= (u32) 160;
+#else
+	temp |= (u32) ((xhci->quirks & XHCI_MTK_HOST) ? 20 : 160);
+#endif
 	writel(temp, &xhci->ir_set->irq_control);
 
 	/* Set the HCD state before we enable the irqs */
@@ -1723,7 +1729,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
 	else
 		xhci_warn(xhci, "[MTK]Doesn't find ep_sch instance when removing endpoint\n");
 #endif
-
+#ifdef CONFIG_SSUSB_MTK_XHCI
+	if (xhci->quirks & XHCI_MTK_HOST)
+		xhci_mtk_drop_ep_quirk(hcd, udev, ep);
+#endif
 	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
 			(unsigned int) ep->desc.bEndpointAddress,
 			udev->slot_id,
@@ -1869,7 +1878,13 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
 		return -ENOSPC;
 	}
 #endif
-
+#ifdef CONFIG_SSUSB_MTK_XHCI
+if (xhci->quirks & XHCI_MTK_HOST) {
+		ret = xhci_mtk_add_ep_quirk(hcd, udev, ep);
+		if (ret < 0)
+			return ret;
+}
+#endif
 	ctrl_ctx->add_flags |= cpu_to_le32(added_ctxs);
 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
 
