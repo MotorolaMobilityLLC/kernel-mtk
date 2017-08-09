@@ -635,7 +635,7 @@ static void acm_function_cleanup(struct android_usb_function *f)
 	struct acm_function_config *config = f->config;
 #ifdef CONFIG_USBIF_COMPLIANCE
 	/* FIXME, USB_IF workaround */
-	return 0;
+	return;
 #endif
 
 	for (i = 0; i < MAX_ACM_INSTANCES; i++) {
@@ -938,7 +938,7 @@ static void serial_function_cleanup(struct android_usb_function *f)
 	struct serial_function_config *config = f->config;
 #ifdef CONFIG_USBIF_COMPLIANCE
 	/* FIXME, USB_IF workaround */
-	return 0;
+	return;
 #endif
 
 	for (i = 0; i < MAX_SERIAL_INSTANCES; i++) {
@@ -1087,6 +1087,8 @@ static struct android_usb_function ptp_function = {
 	.bind_config	= ptp_function_bind_config,
 	.ctrlrequest	= ptp_function_ctrlrequest, //ALPS01832160
 };
+
+#ifndef CONFIG_USBIF_COMPLIANCE
 
 struct ecm_function_config {
 	u8      ethaddr[ETH_ALEN];
@@ -1283,6 +1285,7 @@ static struct android_usb_function eem_function = {
 	.unbind_config	= eem_function_unbind_config,
 	.attributes	= eem_function_attributes,
 };
+#endif
 
 struct rndis_function_config {
 	u8      ethaddr[ETH_ALEN];
@@ -2627,10 +2630,9 @@ static int andoid_usbif_driver_on = 0 ;
 
 static int android_start(void)
 {
-	struct android_dev *dev;
 	int err;
 
-	pr_notice("android_start ===> \n");
+	pr_notice("android_start ===>\n");
 
 	err = usb_composite_probe(&android_usb_driver);
 	if (err) {
@@ -2641,18 +2643,19 @@ static int android_start(void)
 	composite_setup_func = android_usb_driver.gadget_driver.setup;
 	android_usb_driver.gadget_driver.setup = android_setup;
 
-	pr_notice("android_start <=== \n");
+	pr_notice("android_start <===\n");
 
 	return err;
 }
 
 static int android_stop(void)
 {
-	pr_notice("android_stop ===> \n");
+	pr_notice("android_stop ===>\n");
 
 	usb_composite_unregister(&android_usb_driver);
 
-	pr_notice("android_stop <=== \n");
+	pr_notice("android_stop <===\n");
+	return 0;
 }
 
 static int andoid_usbif_proc_show(struct seq_file *seq, void *v)
@@ -2668,16 +2671,7 @@ static int andoid_usbif_proc_open(struct inode *inode, struct file *file)
 
 static ssize_t andoid_usbif_proc_write(struct file *file, const char __user *buf, size_t length, loff_t *ppos)
 {
-	int ret ;
 	char msg[32] ;
-	int result;
-	int status;
-	struct device	*dev ;
-	int		irq ;
-	struct resource	*iomem;
-	void __iomem	*base;
-	struct musb *musb ;
-	void __iomem	*ctrl_base;
 
 	if (length >= sizeof(msg)) {
 		pr_notice("andoid_usbif_proc_write length error, the error len is %d\n", (unsigned int)length);

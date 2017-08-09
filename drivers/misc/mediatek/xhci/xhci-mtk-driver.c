@@ -58,6 +58,10 @@
 #endif
 #endif
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+#include <linux/proc_fs.h>
+#endif
+
 #define mtk_xhci_mtk_log(fmt, args...) \
 	pr_notice("%s(%d): " fmt, __func__, __LINE__, ##args)
 
@@ -1069,9 +1073,7 @@ static int xhci_mu3h_proc_open(struct inode *inode, struct file *file)
 
 static ssize_t xhci_mu3h_proc_write(struct file *file, const char __user *buf, size_t length, loff_t *ppos)
 {
-	int ret;
 	char msg[32];
-	int result;
 
 	if (length >= sizeof(msg)) {
 		mtk_xhci_mtk_log("xhci_mu3h_proc_write length error, the error len is %d\n", (unsigned int)length);
@@ -1092,7 +1094,7 @@ static ssize_t xhci_mu3h_proc_write(struct file *file, const char __user *buf, s
 		xhci_hcd_driver_cleanup();
 		mu3h_normal_driver_on = 0;
 		mtk_xhci_mtk_log("unregiste m3h xhci driver.\n");
-	else
+	} else
 		mtk_xhci_mtk_log("xhci_mu3h_proc_write write faile !\n");
 
 	return length;
@@ -1119,12 +1121,12 @@ static int __init xhci_hcd_init(void)
 
 	/* USBIF */
 	prEntry = proc_create("mu3h_driver_init", 0666, NULL, &mu3h_proc_fops);
-	if (prEntry) {
+	if (prEntry)
 		mtk_xhci_mtk_log("create the mu3h init proc OK!\n");
 	else
 		mtk_xhci_mtk_log("[ERROR] create the mu3h init proc FAIL\n");
 
-#ifdef CONFIG_USB_XHCI_MTK
+#if 0
 
 	if (!misc_register(&mu3h_uevent_device))
 		mtk_xhci_mtk_log("create the mu3h_uevent_device uevent device OK!\n");
@@ -1140,7 +1142,7 @@ module_init(xhci_hcd_init);
 
 static void __exit xhci_hcd_cleanup(void)
 {
-#ifdef CONFIG_USB_XHCI_MTK
+#if 0
 	misc_deregister(&mu3h_uevent_device);
 #endif
 	mtk_xhci_mtk_log(KERN_DEBUG "xhci_hcd_cleanup");

@@ -282,9 +282,9 @@ static void update_U1_U2_pwr_params(__u8 bRequest, __le16 wValue)
 		else
 			pwr_params.bU2Enabled = 0;
 	} else if (bRequest == USB_REQ_SET_FEATURE) {
-		os_printk(K_INFO, "%s SET_FEATURE %s handled=%d val=%x\n", __func__,
+		os_printk(K_INFO, "%s SET_FEATURE %s val=%x\n", __func__,
 			(wValue == USB_DEVICE_U1_ENABLE) ? "U1" :
-			"U2", handled, tmp);
+			"U2", tmp);
 
 		os_setmsk(U3D_LINK_POWER_CONTROL, tmp);
 
@@ -317,9 +317,6 @@ __releases(musb->lock) __acquires(musb->lock)
 {
 	int handled = -EINVAL;
 	const u8 recip = ctrlrequest->bRequestType & USB_RECIP_MASK;
-#ifdef CONFIG_USBIF_COMPLIANCE
-	unsigned int tmp;
-#endif
 
 	os_printk(K_DEBUG, "%s\n", __func__);
 

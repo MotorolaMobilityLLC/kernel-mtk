@@ -106,7 +106,6 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include <linux/seq_file.h>
-#include <mach/system.h>
 #endif
 
 #include <mt-plat/mt_chip.h>
@@ -2195,8 +2194,9 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	int status;
 	struct musb *musb;
 	struct musb_hdrc_platform_data *plat = dev->platform_data;
+#ifndef CONFIG_USBIF_COMPLIANCE
 	struct usb_hcd *hcd;
-
+#endif
 	/* The driver might handle more features than the board; OK.
 	 * Fail when the board needs a feature that's not enabled.
 	 */
@@ -2507,8 +2507,9 @@ exit_regs:
 static int musb_remove(struct platform_device *pdev)
 {
 	struct musb *musb = dev_to_musb(&pdev->dev);
+#ifndef CONFIG_USBIF_COMPLIANCE
 	void __iomem *ctrl_base = musb->ctrl_base;
-
+#endif
 	/* this gets called on rmmod.
 	 *  - Host mode: host may still be active
 	 *  - Peripheral mode: peripheral is deactivated (or never-activated)
@@ -2874,16 +2875,7 @@ static int musb_mu3d_proc_open(struct inode *inode, struct file *file)
 static ssize_t musb_mu3d_proc_write(struct file *file, const char __user *buf, size_t length,
 				    loff_t *ppos)
 {
-	int ret;
 	char msg[32];
-	int result;
-	int status;
-	struct device *dev;
-	int irq;
-	struct resource *iomem;
-	void __iomem *base;
-	struct musb *musb;
-	void __iomem *ctrl_base;
 
 	if (length >= sizeof(msg)) {
 		os_printk(K_ERR, "musb_mu3d_proc_write length error, the error len is %d\n",
@@ -2963,7 +2955,6 @@ static void __exit musb_cleanup(void)
 	if (mu3d_normal_driver_on == 1)
 		platform_driver_unregister(&musb_driver);
 
-	return 0;
 }
 module_exit(musb_cleanup);
 #else
