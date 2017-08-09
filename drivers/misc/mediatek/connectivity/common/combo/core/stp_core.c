@@ -2640,6 +2640,7 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	INT32 ret = 0;
 
 	/* osal_buffer_dump(buffer,"tx", length, 32); */
+	osal_ftrace_print("%s|S|T%d|L%d\n", __func__, type, length);
 
 	if (0 != STP_WMT_LAST_CLOSE(stp_core_ctx)) {
 		STP_ERR_FUNC("WMT lats close,should not have tx request!\n");
@@ -2880,6 +2881,7 @@ STP_LOCK_FAIL:
 	}
 #endif
 
+	osal_ftrace_print("%s|E|T|%d|L|%d\n", __func__, type, length);
 	return ret;
 }
 #ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
@@ -2958,6 +2960,7 @@ INT32 mtk_wcn_stp_receive_data(PUINT8 buffer, UINT32 length, UINT8 type)
 	UINT16 copyLen = 0;
 	UINT16 tailLen = 0;
 
+	osal_ftrace_print("%s|S|T|%d|L|%d\n", __func__, type, length);
 	stp_ctx_lock(&stp_core_ctx);
 	while (stp_core_ctx.ring[type].read_p != stp_core_ctx.ring[type].write_p) {
 		/* GeorgeKuo modify: reduce if branch */
@@ -3005,6 +3008,8 @@ INT32 mtk_wcn_stp_receive_data(PUINT8 buffer, UINT32 length, UINT8 type)
 		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 1, copyLen);
 #endif
 	}
+
+	osal_ftrace_print("%s|E|T|%d|L|%d\n", __func__, type, copyLen);
 	return copyLen;
 }
 #ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT

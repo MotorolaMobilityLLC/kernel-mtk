@@ -747,6 +747,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
 		while_loop_counter++;
+		osal_ftrace_print("%s|loop_count:%d\n", __func__, while_loop_counter);
 		/* <0> get CHLPCR information */
 		if (OWN_SET == stp_sdio_get_own_state()) {
 			STPSDIO_DBG_FUNC("OWN on fw side!\n");
@@ -783,6 +784,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 			STPSDIO_DBG_FUNC("clr firmware own! (wakeup) ok\n");
 			pInfo->wakeup_flag = 0;
 			osal_raise_signal(&pInfo->isr_check_complete);
+			osal_ftrace_print("%s|wakeup done\n", __func__);
 		}
 
 		if ((0 != pInfo->irq_pending) && (1 == pInfo->awake_flag)) {
@@ -890,6 +892,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 		/*Enable IRQ */
 		/*Disable Common interrupt output in CHLPCR */
 		STPSDIO_DBG_FUNC("enable COM IRQ\n");
+		osal_ftrace_print("%s|enable COM IRQ\n", __func__);
 /* need to wait for the ownback completion */
 /* [COHEC_00006052] SW work-around solution:
    using CMD52 write instead of CMD53 write for CCIR, CHLPCR, CSDIOCSR */
@@ -900,6 +903,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 #endif				/* COHEC_00006052 */
 		if (iRet) {
 			STPSDIO_ERR_FUNC("enable IRQ fail. iRet:%d\n", iRet);
+			osal_ftrace_print("%s|enable COM IRQ fail, iRet:%d\n", __func__, iRet);
 		} else {
 			STPSDIO_HINT_FUNC("enable COM IRQ\n");
 			iRet = mtk_wcn_hif_sdio_readl(clt_ctx, CHLPCR, &chlcpr_value);
@@ -909,6 +913,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				if (chlcpr_value & C_FW_INT_EN_SET) {
 					STPSDIO_HINT_FUNC("enable COM IRQ okay (0x%x)\n",
 							  chlcpr_value);
+					osal_ftrace_print("%s|enable COM IRQ done\n", __func__);
 
 					/* INTR_STATUS CHECK */
 					/*
@@ -941,6 +946,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 /* [COHEC_00006052] SW work-around solution:
    using CMD52 write instead of CMD53 write for CCIR, CHLPCR, CSDIOCSR */
 			while_loop_counter = 0;
+			osal_ftrace_print("%s|S|set firmware own\n", __func__);
 #if COHEC_00006052
 			iRet =
 			    mtk_wcn_hif_sdio_writeb(clt_ctx, (UINT32) (CHLPCR + 0x01),
@@ -960,6 +966,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 						while_loop_counter = 0;
 						STPSDIO_DBG_FUNC
 						    ("set firmware own! (sleeping) ok\n");
+						osal_ftrace_print("%s|set firmware own okay\n", __func__);
 						pInfo->awake_flag = 0;
 						pInfo->sleep_flag = 0;
 						mtk_wcn_hif_sdio_en_deep_sleep(clt_ctx);
@@ -968,6 +975,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 					} else {
 						STPSDIO_ERR_FUNC
 						    ("set firmware own! (sleeping) fail, set CLR BACK\n");
+						osal_ftrace_print("%s|set firmware own fail, set CLR BACK\n", __func__);
 						/* if set firmware own not successful (possibly pending interrupts), */
 						/* indicate an own clear event */
 /* [COHEC_00006052] SW work-around solution:
@@ -987,6 +995,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 					}
 				}
 			}
+			osal_ftrace_print("%s|E|set firmware own\n", __func__);
 		} else {
 		}
 		if (1000 < while_loop_counter) {
@@ -995,6 +1004,9 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 
 			STPSDIO_ERR_FUNC("stp_is_ready(%d) irq_pending(%d) tx_packet_num(%d) rx_pkt_len(%d)\n",
 					mtk_wcn_stp_is_ready(), pInfo->irq_pending,
+					pInfo->firmware_info.tx_packet_num, pInfo->rx_pkt_len);
+			osal_ftrace_print("%s|stp_is_ready(%d)irq_pending(%d)tx_packet_num(%d)rx_pkt_len(%d)\n",
+					__func__, mtk_wcn_stp_is_ready(), pInfo->irq_pending,
 					pInfo->firmware_info.tx_packet_num, pInfo->rx_pkt_len);
 			/*make fake irq flag to dump CHISR information */
 			pInfo->irq_pending = 1;
@@ -1061,6 +1073,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	UINT32 idx;
 
 	STPSDIO_LOUD_FUNC("enter\n");
+	osal_ftrace_print("%s|S|L|%d\n", __func__, size);
 	if (written_size)
 		*written_size = 0;
 
@@ -1229,6 +1242,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		}
 
 	/* <2> schedule for Tx worker tasklet */
+	osal_ftrace_print("%s|E|signal stp_sdio_tx_rx\n", __func__);
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_schedule(&gp_info->tx_rx_job); */
 	STPSDIO_DBG_FUNC("osal_trigger_event gp_info->tx_rx_event\n");
@@ -1236,6 +1250,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #else
 	schedule_work(&gp_info->tx_work);
 #endif
+	osal_ftrace_print("%s|E|L|%d\n", __func__, size);
 	return 0;
 }
 
@@ -1248,6 +1263,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	UINT32 room;
 
 	STPSDIO_LOUD_FUNC("enter\n");
+	osal_ftrace_print("%s|S|L|%d\n", __func__, size);
 
 	/* 4 <1> enqueue the stp Tx packet */
 	*written_size = 0;
@@ -1488,6 +1504,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		}
 	}
 	/* <2> schedule for Tx worker tasklet */
+	osal_ftrace_print("%s|E|signal stp_sdio_tx_rx\n", __func__);
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_schedule(&gp_info->tx_rx_job); */
 	STPSDIO_DBG_FUNC("osal_trigger_event gp_info->tx_rx_event\n");
@@ -1495,7 +1512,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #else
 	schedule_work(&gp_info->tx_work);
 #endif
-
+	osal_ftrace_print("%s|E|L|%d\n", __func__, size);
 	return 0;
 }
 #endif				/* end of !STP_SDIO_NEW_TXRING */
@@ -1887,6 +1904,7 @@ static VOID stp_sdio_tx_wkr(
 					 four_byte_align_len, STP_SDIO_TX_FIFO_SIZE);
 		}
 
+		osal_ftrace_print("%s|S|bus_txlen(%d)\n", __func__, four_byte_align_len);
 		/* George: check if
 		 * 1. tx FIFO free space is enough using 4-byte aligned length
 		 * 2. tx max pkt count is not reached
@@ -1991,6 +2009,9 @@ static VOID stp_sdio_tx_wkr(
 						p_info->firmware_info.tx_packet_num);
 				STPSDIO_INFO_FUNC("No ack trigger assert, tx %d seconds later\n",
 						TX_NO_ACK_TIMEOUT_ASSERT);
+				osal_ftrace_print("%s|tx_fifo_size:%d, four_byte_align_len:%d, tx_packet_num(%d)\n",
+						__func__, p_info->firmware_info.tx_fifo_size, four_byte_align_len,
+						p_info->firmware_info.tx_packet_num);
 				p_info->firmware_info.tx_fifo_size = STP_SDIO_TX_FIFO_SIZE;
 				if (MTK_WCN_BOOL_FALSE != pb->full_flag) {
 					pb->full_flag = MTK_WCN_BOOL_FALSE;
@@ -2006,6 +2027,7 @@ static VOID stp_sdio_tx_wkr(
 		stp_sdio_check_tx_sanity(p_info, 2);
 	} while (1);
 
+	osal_ftrace_print("%s|E|\n", __func__);
 	STPSDIO_LOUD_FUNC("end\n");
 }
 #endif				/* end of stp_sdio_tx_wkr and STP_SDIO_NEW_TXRING */
@@ -2103,7 +2125,9 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 	if (STP_SDIO_HDR_SIZE < bus_rxlen) {
 		bus_rxlen -= STP_SDIO_HDR_SIZE;
 		/* transmit data to stp core driver */
+		osal_ftrace_print("%s|B|parser|L|%d\n", __func__, bus_rxlen);
 		ret = mtk_wcn_stp_parser_data(bufp, bus_rxlen);
+		osal_ftrace_print("%s|A|parser|L|%d\n", __func__, bus_rxlen);
 #if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
 		if (ret && (0 == p_info->tx_dbg_dump_flag)) {
 			p_info->tx_dbg_dump_flag = 1;
@@ -2151,6 +2175,7 @@ using CMD52 write instead of CMD53 write for CCIR, CHLPCR, CSDIOCSR */
 				/*inform stp_sdio thread to to rx/tx job */
 				STPSDIO_DBG_FUNC("signal stp_tx_rx\n");
 				osal_trigger_event(&gp_info->tx_rx_event);
+				osal_ftrace_print("%s|stp_tx_rx\n", __func__);
 			} else {
 				STPSDIO_ERR_FUNC
 				    ("**********disable COM IRQ fail, don't signal stp-sdio thread******\n");

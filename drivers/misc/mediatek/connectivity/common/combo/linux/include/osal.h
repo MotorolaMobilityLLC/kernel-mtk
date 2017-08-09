@@ -367,6 +367,9 @@ extern MTK_WCN_BOOL osal_op_is_wait_for_signal(P_OSAL_OP pOp);
 extern VOID osal_op_raise_signal(P_OSAL_OP pOp, INT32 result);
 
 extern UINT16 osal_crc16(const PUINT8 buffer, const UINT32 length);
+
+extern INT32 osal_ftrace_print(const PINT8 str, ...);
+extern INT32 osal_ftrace_print_ctrl(INT32 flag);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

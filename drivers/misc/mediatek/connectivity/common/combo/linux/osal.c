@@ -88,7 +88,7 @@ static UINT16 const crc16_table[256] = {
 };
 
 
-
+INT32 ftrace_flag = 0;
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -1180,4 +1180,32 @@ VOID osal_op_raise_signal(P_OSAL_OP pOp, INT32 result)
 		pOp->result = result;
 		osal_raise_signal(&pOp->signal);
 	}
+}
+
+INT32 osal_ftrace_print(const PINT8 str, ...)
+{
+#ifdef CONFIG_TRACING
+	va_list args;
+	INT8 tempString[DBG_LOG_STR_SIZE];
+
+	if (ftrace_flag) {
+		va_start(args, str);
+		vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
+		va_end(args);
+
+		trace_printk("%s\n", tempString);
+	}
+#endif
+	return 0;
+}
+
+INT32 osal_ftrace_print_ctrl(INT32 flag)
+{
+#ifdef CONFIG_TRACING
+	if (flag)
+		ftrace_flag = 1;
+	else
+		ftrace_flag = 0;
+#endif
+	return 0;
 }
