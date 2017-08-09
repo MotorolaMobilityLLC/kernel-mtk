@@ -8,7 +8,7 @@
 #include <linux/signal.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
-#include "../systracker.h"
+#include "../systracker_v2.h"
 
 #ifdef SYSTRACKER_TEST_SUIT
 void __iomem *p1;
@@ -17,8 +17,7 @@ void __iomem *mm_area1;
 
 #ifdef CONFIG_ARM64
 static int read_timeout_handler(unsigned long addr,
-				unsigned int fsr,
-				struct pt_regs *regs)
+	unsigned int fsr, struct pt_regs *regs)
 {
 	int i = 0;
 
@@ -29,7 +28,8 @@ static int read_timeout_handler(unsigned long addr,
 	pr_err("%s:%d: read timeout\n", __func__, __LINE__);
 	aee_dump_backtrace(regs, NULL);
 
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AR_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+		(BUS_DBG_CON_IRQ_AR_STA0|BUS_DBG_CON_IRQ_AR_STA1)) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			pr_err("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x,",
 			       i,
@@ -53,10 +53,11 @@ static void write_timeout_handler(struct pt_regs *regs, void *priv)
 	systracker_test_cleanup();
 #endif
 
-	pr_err("%s:%d: write timeout\n", __func__, __LINE__);
+	pr_debug("%s:%d: write timeout\n", __func__, __LINE__);
 	aee_dump_backtrace(regs, NULL);
 
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AW_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+		((BUS_DBG_CON_IRQ_AW_STA0|BUS_DBG_CON_IRQ_AW_STA1))) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 			pr_err("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, ",
 			       i,
@@ -123,6 +124,7 @@ int systracker_handler(unsigned long addr,
 			       readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
 		}
 	}
+
 	return -1;
 }
 
@@ -163,7 +165,7 @@ void __iomem *mm_area1;
 
 static int systracker_platform_test_init(void)
 {
-	p1 = ioremap(0x10001220, 0x4);
+	p1 = ioremap(0x10000220, 0x4);
 	/* use mmsys reg base for our test */
 	mm_area1 = ioremap(0x14000000, 0x4);
 
@@ -180,20 +182,21 @@ static void systracker_platform_wp_test(void)
 	void __iomem *ptr;
 	/* use eint reg base as our watchpoint */
 	ptr = ioremap(0x1000b000, 0x4);
-	pr_err("%s:%d: we got p = 0x%p\n", __func__, __LINE__, ptr);
+	pr_debug("%s:%d: we got p = 0x%p\n", __func__, __LINE__, ptr);
 	systracker_set_watchpoint_addr(0x1000b000);
 	systracker_watchpoint_enable();
 	/* touch it */
 	writel(0, ptr);
-	pr_err("after we touched watchpoint\n");
+	pr_debug("after we touched watchpoint\n");
 	iounmap(ptr);
 }
 
 static void systracker_platform_read_timeout_test(void)
 {
-	/*FIXME: testing*/
-	/* track_config.enable_slave_err = 0; */
-	/* systracker_enable(); */
+	/* FIXME: testing
+	track_config.enable_slave_err = 0;
+	systracker_enable();
+	*/
 
 	writel(readl(p1) | (0x1 << 6), p1);
 	readl(mm_area1);
@@ -209,8 +212,8 @@ static void systracker_platform_write_timeout_test(void)
 
 static void systracker_platform_withrecord_test(void)
 {
-	writel(readl(IOMEM(BUS_DBG_CON)) | BUS_DBG_CON_HALT_ON_EN,
-	       IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON)) |
+		BUS_DBG_CON_HALT_ON_EN, IOMEM(BUS_DBG_CON));
 	writel(readl(p1) | (0x1 << 6), p1);
 	readl(mm_area1);
 #if 0
@@ -223,14 +226,15 @@ static void systracker_platform_notimeout_test(void)
 {
 	writel(readl(p1) | (0x1 << 6), p1);
 	/* disable timeout */
-	writel(readl(IOMEM(BUS_DBG_CON)) & ~(BUS_DBG_CON_TIMEOUT_EN),
-	       IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON)) &
+		~(BUS_DBG_CON_TIMEOUT_EN), IOMEM(BUS_DBG_CON));
 	/* read it, should cause bus hang */
 	readl(mm_area1);
 	/* never come back */
-	pr_err("failed??\n");
+	pr_alert("failed??\n");
 }
-#endif /* end of SYSTRACKER_TEST_SUIT */
+#endif
+/* end of SYSTRACKER_TEST_SUIT */
 
 /*
  * mt_systracker_init: initialize driver.

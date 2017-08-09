@@ -2,13 +2,13 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/sched.h>
+#include <mtk_ram_console.h>
 #include <asm/system_misc.h>
 #include <asm/traps.h>
-#include <asm/signal.h>
+#include <linux/signal.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
-#include <mtk_ram_console.h>
-#include "../systracker.h"
+#include "../systracker_v2.h"
 
 #ifdef SYSTRACKER_TEST_SUIT
 void __iomem *p1;
@@ -16,7 +16,8 @@ void __iomem *mm_area1;
 #endif
 
 #ifdef CONFIG_ARM64
-static int read_timeout_handler(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+static int read_timeout_handler(unsigned long addr,
+	unsigned int fsr, struct pt_regs *regs)
 {
 	int i = 0;
 
@@ -24,15 +25,19 @@ static int read_timeout_handler(unsigned long addr, unsigned int fsr, struct pt_
 	systracker_test_cleanup();
 #endif
 
-	pr_debug("%s:%d: read timeout\n", __func__, __LINE__);
+	pr_err("%s:%d: read timeout\n", __func__, __LINE__);
 	aee_dump_backtrace(regs, NULL);
 
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AR_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+		(BUS_DBG_CON_IRQ_AR_STA0|BUS_DBG_CON_IRQ_AR_STA1)) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
-			pr_err("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x, Length:0x%x, TransactionID:0x%x!\n",
-			     i, readl(IOMEM(BUS_DBG_AR_TRACK_L(i))),
-			     readl(IOMEM(BUS_DBG_AR_TRACK_H(i))),
-			     readl(IOMEM(BUS_DBG_AR_TRANS_TID(i))));
+			pr_err("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x,",
+			       i,
+			       readl(IOMEM(BUS_DBG_AR_TRACK_L(i))));
+
+			pr_err("Length:0x%x, TransactionID:0x%x!\n",
+			       readl(IOMEM(BUS_DBG_AR_TRACK_H(i))),
+			       readl(IOMEM(BUS_DBG_AR_TRANS_TID(i))));
 		}
 	}
 
@@ -51,12 +56,15 @@ static void write_timeout_handler(struct pt_regs *regs, void *priv)
 	pr_debug("%s:%d: write timeout\n", __func__, __LINE__);
 	aee_dump_backtrace(regs, NULL);
 
-	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AW_STA) {
+	if (readl(IOMEM(BUS_DBG_CON)) &
+		((BUS_DBG_CON_IRQ_AW_STA0|BUS_DBG_CON_IRQ_AW_STA1))) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
-			pr_err("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, Length:0x%x, TransactionID:0x%x!\n",
-			     i, readl(IOMEM(BUS_DBG_AW_TRACK_L(i))),
-			     readl(IOMEM(BUS_DBG_AW_TRACK_H(i))),
-			     readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
+			pr_err("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, ",
+			       i,
+			       readl(IOMEM(BUS_DBG_AW_TRACK_L(i))));
+			pr_err("Length:0x%x, TransactionID:0x%x!\n",
+			       readl(IOMEM(BUS_DBG_AW_TRACK_H(i))),
+			       readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
 		}
 	}
 }
@@ -66,19 +74,27 @@ static int systracker_platform_hook_fault(void)
 	int ret = 0;
 
 	/* We use ARM64's synchroneous external abort for read timeout */
-	hook_fault_code(0x10, read_timeout_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x10,
+			read_timeout_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 
 	/* for 64bit, we should register async abort handler */
 	ret = register_async_abort_handler(write_timeout_handler, NULL);
 	if (ret) {
-		pr_warn("%s:%d: register_async_abort_handler failed\n", __func__, __LINE__);
+		pr_warn("%s:%d: register_async_abort_handler failed\n",
+			__func__,
+			__LINE__);
 		return -1;
 	}
 
 	return 0;
 }
 #else
-int systracker_handler(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+int systracker_handler(unsigned long addr,
+		       unsigned int fsr,
+		       struct pt_regs *regs)
 {
 	int i;
 
@@ -89,16 +105,21 @@ int systracker_handler(unsigned long addr, unsigned int fsr, struct pt_regs *reg
 	aee_dump_backtrace(regs, NULL);
 	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AR_STA) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
-			pr_alert("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x, Length:0x%x, TransactionID:0x%x!\n",
-			       i, readl(IOMEM(BUS_DBG_AR_TRACK_L(i))),
+			pr_err("AR_TRACKER Timeout Entry[%d]: ReadAddr:0x%x, ",
+			       i,
+			       readl(IOMEM(BUS_DBG_AR_TRACK_L(i))));
+			pr_err("Length:0x%x, TransactionID:0x%x!\n",
 			       readl(IOMEM(BUS_DBG_AR_TRACK_H(i))),
 			       readl(IOMEM(BUS_DBG_AR_TRANS_TID(i))));
 		}
 	}
+
 	if (readl(IOMEM(BUS_DBG_CON)) & BUS_DBG_CON_IRQ_AW_STA) {
 		for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
-			pr_alert("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, Length:0x%x, TransactionID:0x%x!\n",
-			       i, readl(IOMEM(BUS_DBG_AW_TRACK_L(i))),
+			pr_err("AW_TRACKER Timeout Entry[%d]: WriteAddr:0x%x, ",
+			       i,
+			       readl(IOMEM(BUS_DBG_AW_TRACK_L(i))));
+			pr_err("Length:0x%x, TransactionID:0x%x!\n",
 			       readl(IOMEM(BUS_DBG_AW_TRACK_H(i))),
 			       readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
 		}
@@ -112,11 +133,27 @@ static int systracker_platform_hook_fault(void)
 {
 
 #ifdef CONFIG_ARM_LPAE
-	hook_fault_code(0x10, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
-	hook_fault_code(0x11, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x10,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
+	hook_fault_code(0x11,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 #else
-	hook_fault_code(0x8, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
-	hook_fault_code(0x16, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x8,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
+	hook_fault_code(0x16,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 #endif
 	return 0;
 }
@@ -175,7 +212,8 @@ static void systracker_platform_write_timeout_test(void)
 
 static void systracker_platform_withrecord_test(void)
 {
-	writel(readl(IOMEM(BUS_DBG_CON)) | BUS_DBG_CON_HALT_ON_EN, IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON)) |
+		BUS_DBG_CON_HALT_ON_EN, IOMEM(BUS_DBG_CON));
 	writel(readl(p1) | (0x1 << 6), p1);
 	readl(mm_area1);
 #if 0
@@ -188,7 +226,8 @@ static void systracker_platform_notimeout_test(void)
 {
 	writel(readl(p1) | (0x1 << 6), p1);
 	/* disable timeout */
-	writel(readl(IOMEM(BUS_DBG_CON)) & ~(BUS_DBG_CON_TIMEOUT_EN), IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON)) &
+		~(BUS_DBG_CON_TIMEOUT_EN), IOMEM(BUS_DBG_CON));
 	/* read it, should cause bus hang */
 	readl(mm_area1);
 	/* never come back */
@@ -207,15 +246,23 @@ static int __init mt_systracker_init(void)
 
 	systracker_drv = get_mt_systracker_drv();
 
-	systracker_drv->systracker_hook_fault = systracker_platform_hook_fault;
+	systracker_drv->systracker_hook_fault =
+		systracker_platform_hook_fault;
 #ifdef SYSTRACKER_TEST_SUIT
-	systracker_drv->systracker_test_init = systracker_platform_test_init;
-	systracker_drv->systracker_test_cleanup = systracker_platform_test_cleanup;
-	systracker_drv->systracker_wp_test = systracker_platform_wp_test;
-	systracker_drv->systracker_read_timeout_test = systracker_platform_read_timeout_test;
-	systracker_drv->systracker_write_timeout_test = systracker_platform_write_timeout_test;
-	systracker_drv->systracker_withrecord_test = systracker_platform_withrecord_test;
-	systracker_drv->systracker_notimeout_test = systracker_platform_notimeout_test;
+	systracker_drv->systracker_test_init =
+		systracker_platform_test_init;
+	systracker_drv->systracker_test_cleanup =
+		systracker_platform_test_cleanup;
+	systracker_drv->systracker_wp_test =
+		systracker_platform_wp_test;
+	systracker_drv->systracker_read_timeout_test =
+		systracker_platform_read_timeout_test;
+	systracker_drv->systracker_write_timeout_test =
+		systracker_platform_write_timeout_test;
+	systracker_drv->systracker_withrecord_test =
+		systracker_platform_withrecord_test;
+	systracker_drv->systracker_notimeout_test =
+		systracker_platform_notimeout_test;
 #endif
 	return 0;
 }
