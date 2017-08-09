@@ -18,7 +18,7 @@
 #include <linux/vmalloc.h>
 
 static struct aee_kernel_api *g_aee_api;
-#define KERNEL_REPORT_LENGTH 512
+#define KERNEL_REPORT_LENGTH 384
 
 #ifdef CONFIG_KGDB_KDB
 /* Press key to enter kdb */

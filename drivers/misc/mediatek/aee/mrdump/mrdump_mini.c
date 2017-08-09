@@ -407,7 +407,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 {
 #define MAX_STACK_TRACE_DEPTH 32
 	unsigned long ipanic_stack_entries[MAX_STACK_TRACE_DEPTH];
-	char symbol[128];
+	char symbol[96];
 	int sz;
 	int off, plen;
 	struct stack_trace trace;
@@ -432,7 +432,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 			break;
 		}
 		/* FIXME: Check overflow ? */
-		sz += snprintf(symbol + sz, 128 - sz, "[%s, %d]", tsk->comm, tsk->pid);
+		sz += snprintf(symbol + sz, 96 - sz, "[%s, %d]", tsk->comm, tsk->pid);
 		tsk = tsk->real_parent;
 	} while (tsk && (tsk->pid != 0) && (tsk->pid != 1));
 	if (strncmp(cur_proc->process_path, symbol, sz) == 0)
@@ -452,7 +452,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 		off = strlen(cur_proc->backtrace);
 		plen = AEE_BACKTRACE_LENGTH - ALIGN(off, 8);
 		if (plen > 16) {
-			sz = snprintf(symbol, 128, "[<%p>] %pS\n",
+			sz = snprintf(symbol, 96, "[<%p>] %pS\n",
 				      (void *)ipanic_stack_entries[i],
 				      (void *)ipanic_stack_entries[i]);
 			if (ALIGN(sz, 8) - sz) {
