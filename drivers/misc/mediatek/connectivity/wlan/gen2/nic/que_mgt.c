@@ -486,7 +486,10 @@ OS_SYSTIME g_arMissTimeout[CFG_STA_REC_NUM][CFG_RX_MAX_BA_TID_NUM];
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-
+#if ARP_MONITER_ENABLE
+static UINT_16 arpMoniter;
+static UINT_8 apIp[4];
+#endif
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -1356,6 +1359,10 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 					prQM->u4TimeToUpdateQueLen = QM_INIT_TIME_TO_UPDATE_QUE_LEN_MIN;
 					prQM->u4TimeToAdjustTcResource = 1;
 				}
+#endif
+#if ARP_MONITER_ENABLE
+				if (IS_STA_IN_AIS(prStaRec) && prCurrentMsduInfo->eSrc == TX_PACKET_OS)
+					qmDetectArpNoResponse(prAdapter, prCurrentMsduInfo);
 #endif
 
 				break;	/*default */
@@ -3763,8 +3770,12 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 	}
 
 	/* Parse AC parameters and write to HW CRs */
-	if ((prStaRec->fgIsQoS) && (prStaRec->eStaType == STA_TYPE_LEGACY_AP))
+	if ((prStaRec->fgIsQoS) && (prStaRec->eStaType == STA_TYPE_LEGACY_AP)) {
 		mqmParseEdcaParameters(prAdapter, prSwRfb, pucIEStart, u2IELength, TRUE);
+#if ARP_MONITER_ENABLE
+		qmResetArpDetect();
+#endif
+	}
 
 	DBGLOG(QM, TRACE, "MQM: Assoc_Rsp Parsing (QoS Enabled=%d)\n", prStaRec->fgIsQoS);
 	if (prStaRec->fgIsWmmSupported)
@@ -4931,3 +4942,59 @@ UINT_32 qmGetRxReorderQueuedBufferCount(IN P_ADAPTER_T prAdapter)
 	ASSERT(u4Total <= (CFG_NUM_OF_QM_RX_PKT_NUM * 2));
 	return u4Total;
 }
+
+#if ARP_MONITER_ENABLE
+VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prMsduInfo->prPacket;
+	PUINT_8 pucData = prSkb->data;
+	UINT_16 u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+	int arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+
+	if (u2EtherType != ETH_P_ARP || (apIp[0] | apIp[1] | apIp[2] | apIp[3]) == 0)
+		return;
+
+	if (strncmp(apIp, &pucData[ETH_TYPE_LEN_OFFSET + 26], sizeof(apIp))) /* dest ip address */
+		return;
+
+	if (arpOpCode == ARP_PRO_REQ) {
+		arpMoniter++;
+		if (arpMoniter > 20) {
+			DBGLOG(INIT, WARN, "IOT Critical issue, arp no resp, check AP!\n");
+			aisBssBeaconTimeout(prAdapter);
+			arpMoniter = 0;
+			kalMemZero(apIp, sizeof(apIp));
+		}
+	}
+}
+
+VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
+{
+	PUINT_8 pucData = (PUINT_8)prSwRfb->pvHeader;
+	UINT_16 u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+	int arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+
+	if (u2EtherType != ETH_P_ARP)
+		return;
+
+	if (arpOpCode == ARP_PRO_RSP) {
+		arpMoniter = 0;
+		if (prBssInfo && prBssInfo->prStaRecOfAP && prBssInfo->prStaRecOfAP->aucMacAddr) {
+			if (EQUAL_MAC_ADDR(&(pucData[ETH_TYPE_LEN_OFFSET + 10]), /* source hardware address */
+					prBssInfo->prStaRecOfAP->aucMacAddr)) {
+				strncpy(apIp, &(pucData[ETH_TYPE_LEN_OFFSET + 16]), sizeof(apIp)); /* src ip address */
+				DBGLOG(INIT, TRACE, "get arp response from AP %d.%d.%d.%d\n",
+					apIp[0], apIp[1], apIp[2], apIp[3]);
+			}
+		}
+	}
+}
+
+VOID qmResetArpDetect(VOID)
+{
+	arpMoniter = 0;
+	kalMemZero(apIp, sizeof(apIp));
+}
+#endif
+

@@ -233,11 +233,12 @@ typedef enum _ENUM_DBG_MODULE_T {
 #define OS_SYSTIME_DBG_ARGUMENT(systime)    (systime)
 
 /* Debug print format string for the MAC Address */
-#define MACSTR          "%02x:%02x:%02x:%02x:%02x:%02x"
+#define MACSTR          "%pM"
+/* "%02x:%02x:%02x:%02x:%02x:%02x" */
 
 /* Debug print argument for the MAC Address */
-#define MAC2STR(a) \
-	(((PUINT_8)a)[0], ((PUINT_8)a)[1], ((PUINT_8)a)[2], ((PUINT_8)a)[3], ((PUINT_8)a)[4], ((PUINT_8)a)[5])
+#define MAC2STR(a)	a
+/* ((PUINT_8)a)[0], ((PUINT_8)a)[1], ((PUINT_8)a)[2], ((PUINT_8)a)[3], ((PUINT_8)a)[4], ((PUINT_8)a)[5] */
 
 /* The pre-defined format to dump the value of a varaible with its name shown. */
 #define DUMPVAR(variable, format)           (#variable " = " format "\n", variable)

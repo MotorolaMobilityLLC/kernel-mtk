@@ -1446,6 +1446,10 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 				} else {
 					switch (prRetSwRfb->eDst) {
 					case RX_PKT_DESTINATION_HOST:
+#if ARP_MONITER_ENABLE
+					if (IS_STA_IN_AIS(prStaRec))
+						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+#endif
 						nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
 						break;
 
