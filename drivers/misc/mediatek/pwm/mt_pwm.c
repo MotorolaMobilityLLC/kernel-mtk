@@ -1794,6 +1794,7 @@ static void mt_pwm_shutdown(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id pwm_of_match[] = {
 	{.compatible = "mediatek,pwm",},
+	{.compatible = "mediatek,mt8173-pwm",},
 	{},
 };
 #endif
