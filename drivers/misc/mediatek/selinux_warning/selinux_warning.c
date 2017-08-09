@@ -105,6 +105,7 @@ void mtk_audit_hook(char *data)
 		selinux_enforcing, scontext);
 		pname = mtk_get_process(scontext);
 #ifdef CONFIG_MTK_AEE_FEATURE
+	/*
 		if (pname != 0) {
 			char printbuf[PRINT_BUF_LEN] = { '\0' };
 
@@ -114,6 +115,7 @@ void mtk_audit_hook(char *data)
 					DB_OPT_DEFAULT|DB_OPT_NATIVE_BACKTRACE,	printbuf, data);
 			}
 		}
+	*/
 #endif
 	}
 }
