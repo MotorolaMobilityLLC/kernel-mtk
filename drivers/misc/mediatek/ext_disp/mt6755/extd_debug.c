@@ -4,9 +4,9 @@
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
 
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <cust_gpio_usage.h>
+#include <linux/types.h>
+#include <mt-plat/mt_gpio.h>
+
 
 #include "ddp_hal.h"
 #include "ddp_reg.h"
@@ -103,16 +103,13 @@ static void process_dbg_cmd(char *cmd)
 /* --------------------------------------------------------------------------- */
 /* Debug FileSystem Routines */
 /* --------------------------------------------------------------------------- */
-
 struct dentry *extd_dbgfs = NULL;
 
-
-static ssize_t debug_open(struct inode *inode, struct file *file)
+static int debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
 	return 0;
 }
-
 
 static char debug_buffer[2048];
 
@@ -126,7 +123,6 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
-
 
 static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
