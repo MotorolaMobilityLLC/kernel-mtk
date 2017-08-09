@@ -1171,10 +1171,15 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 
 void mt_irq_dump_status(int irq)
 {
-	char buf[1024];
+	char *buf = kmalloc(2048, GFP_KERNEL);
 
-	if (mt_irq_dump_status_buf(irq, &buf[0]))
+	if (!buf)
+		return;
+
+	if (mt_irq_dump_status_buf(irq, buf))
 		pr_debug("%s", buf);
+
+	kfree(buf);
 }
 EXPORT_SYMBOL(mt_irq_dump_status);
 
@@ -1449,16 +1454,6 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	if (of_property_read_u32(node, "mediatek,wdt_irq", &wdt_irq))
 		wdt_irq = 0;
 #endif
-
-	/* FIXME: just used to test dump API
-		mt_irq_dump_status(160);
-	*/
-	/* UT for gic functions
-		mt_gic_test(284, IRQF_TRIGGER_RISING);
-		mt_gic_test(285, IRQF_TRIGGER_HIGH);
-		mt_gic_test(286, IRQF_TRIGGER_LOW);
-		mt_gic_test(287, IRQF_TRIGGER_FALLING);
-	*/
 
 	return 0;
 }
