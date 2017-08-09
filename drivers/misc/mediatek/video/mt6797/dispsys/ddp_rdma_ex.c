@@ -313,6 +313,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
 		frame_rate = 60;
+
+		if ((rdma_golden_setting->ext_dst_width == 3840) &&
+				(rdma_golden_setting->ext_dst_width == 2160))
+			frame_rate = 30;
 	}
 
 	/* get fifo parameters */
@@ -338,14 +342,15 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
-	if (idx == 0) {
+	if (idx == 0)
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height;
-		consume_rate /= (8*1000);
-		consume_rate *= frame_rate * bpp;
-	} else {
+	else {
 		consume_rate = rdma_golden_setting->ext_dst_width
-		* rdma_golden_setting->ext_dst_height*frame_rate*bpp/(8*1000);
+		* rdma_golden_setting->ext_dst_height;
 	}
+
+	consume_rate /= (8*1000);
+	consume_rate *= frame_rate * bpp;
 	consume_rate = 1200*consume_rate/(16*1000);
 
 	preultra_low = preultra_low_us * consume_rate;
