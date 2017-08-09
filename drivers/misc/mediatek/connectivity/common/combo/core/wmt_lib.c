@@ -1023,6 +1023,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 	MTK_WCN_BOOL bCleanup = MTK_WCN_BOOL_FALSE;
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 waitRet = -1;
+	P_OSAL_THREAD pThread;
 
 	osal_assert(pWmtDev);
 	osal_assert(pOp);
@@ -1072,8 +1073,11 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 
 		/* if (unlikely(!wait_ret)) { */
 		if (0 == waitRet) {
-			WMT_ERR_FUNC("wait completion timeout\n");
+			pThread = &gDevWmt.thread;
+			WMT_ERR_FUNC
+				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
 			/* TODO: how to handle it? retry? */
+			osal_thread_show_stack(pThread);
 		} else {
 			if (pOp->result)
 				WMT_WARN_FUNC("opId(%d) result:%d\n", pOp->op.opId, pOp->result);
