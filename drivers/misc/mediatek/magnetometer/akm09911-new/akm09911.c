@@ -161,7 +161,7 @@ static long AKI2C_RxData(char *rxData, int length)
 		this_client->addr = this_client->addr & I2C_MASK_FLAG;
 		this_client->addr = this_client->addr | I2C_WR_FLAG;
 #endif
-		if (i2c_master_send(this_client, (const char *)rxData, ((length<<0X08) | 0X01)))
+		if (i2c_master_recv(this_client, (char *)rxData, length))
 			break;
 		mdelay(10);
 	}
