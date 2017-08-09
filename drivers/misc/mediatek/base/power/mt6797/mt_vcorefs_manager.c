@@ -32,7 +32,7 @@ static struct kobj_attribute _name##_attr = {	\
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-#define VCOREFS_AEE_RR_REC 0 /* 1 FIXME */
+#define VCOREFS_AEE_RR_REC 1
 #else
 #define VCOREFS_AEE_RR_REC 0
 #endif

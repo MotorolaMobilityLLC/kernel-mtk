@@ -16,7 +16,7 @@
 #define DYNAMIC_LOAD 1
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-#define VCOREFS_AEE_RR_REC 0
+#define VCOREFS_AEE_RR_REC 1
 #else
 #define VCOREFS_AEE_RR_REC 0
 #endif
