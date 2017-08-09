@@ -3443,25 +3443,24 @@ static void cg_all_force_on(void)
 	clk_writel(PERI_PDN_CLR0, PERI_CG);
 
 	/* AUDIO */
-	clk_clrl(AUDIO_TOP_CON0, AUD_CG);
+/*	clk_clrl(AUDIO_TOP_CON0, AUD_CG); */
 	/* MFG */
 	clk_writel(MFG_CG_CLR, MFG_CG);
 	/* DISP */
-	/* clk_writel(DISP_CG_CLR0, DISP0_CG); */
-	/* clk_writel(DISP_CG_CLR1, DISP1_CG); */
-	clk_writel(MMSYS_DUMMY, 0);
+/*	clk_writel(MMSYS_DUMMY, 0); */
 	/* ISP */
-	clk_writel(IMG_CG_CLR, IMG_CG);
+/*	clk_writel(IMG_CG_CLR, IMG_CG); */
 	/* VDE */
-	clk_writel(VDEC_CKEN_SET, VDEC_CG);
-	clk_writel(LARB_CKEN_SET, LARB_CG);
+/*	clk_writel(VDEC_CKEN_SET, VDEC_CG); */
+/*	clk_writel(LARB_CKEN_SET, LARB_CG); */
 	/* VENC */
-	clk_writel(VENC_CG_SET, VENC_CG);
+/*	clk_writel(VENC_CG_SET, VENC_CG); */
 }
 
 
 static void cg_bootup_pdn(void)
 {
+#if 0
 	/* AUDIO */
 	clk_writel(AUDIO_TOP_CON0, AUD_CG);
 
@@ -3485,6 +3484,7 @@ static void cg_bootup_pdn(void)
 
 	/* VENC */
 	clk_clrl(VENC_CG_CON, VENC_CG);
+#endif
 }
 
 
@@ -3829,7 +3829,6 @@ int mt_clkmgr_init(void)
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
 /* spm_mtcmos_ctrl_connsys(STA_POWER_ON); */
-
 
 	cg_all_force_on();
 
