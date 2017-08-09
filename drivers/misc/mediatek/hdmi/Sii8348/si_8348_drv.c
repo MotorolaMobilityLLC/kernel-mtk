@@ -750,11 +750,11 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 		,use_hardware_totals
 	}timing_info_basis=use_avi_vic;
 
-	MHL_TX_DBG_ERR(hw_context,"packed_pixel_available :%d \n",packed_pixel_available(dev_context));
+	MHL_TX_DBG_WARN(hw_context,"packed_pixel_available :%d \n",packed_pixel_available(dev_context));
 // check if DPI signal is normal
 	h_total = si_mhl_tx_drv_get_incoming_horizontal_total((struct drv_hw_context *)dev_context);
 	v_total = si_mhl_tx_drv_get_incoming_vertical_total((struct drv_hw_context *)dev_context);
-	MHL_TX_DBG_INFO(hw_context, "h_total :%u,v_total:%u\n", h_total,v_total );
+	MHL_TX_DBG_WARN(hw_context, "h_total :%u,v_total:%u\n", h_total,v_total );
 
 //
 	/* Extract VIC from incoming AVIF */

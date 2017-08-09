@@ -127,7 +127,7 @@ static struct i2c_dev_info device_addresses[] = {
 */
 
 extern int I2S_Enable;
-int	debug_msgs	= 3;	// print all msgs, default should be '0'
+int	debug_msgs	= 1;	// print all msgs, default should be '0'
 //int	debug_msgs	= 3;	// print all msgs, default should be '0'
 
 static bool reset_on_exit = 0; // request to reset hw before unloading driver
