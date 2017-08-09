@@ -39,15 +39,4 @@ enum RG_INT_STATUS_numbers {
 	MT6323_IRQ_NR,
 };
 
-struct mt6323_chip {
-	struct device *dev;
-	struct regmap *regmap;
-	int irq;
-	struct irq_domain *irq_domain;
-	struct mutex irqlock;
-	u16 wake_mask[2];
-	u16 irq_masks_cur[2];
-	u16 irq_masks_cache[2];
-};
-
 #endif /* __MFD_MT6323_CORE_H__ */

@@ -19,10 +19,15 @@
 #include <linux/regmap.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6397/core.h>
+#include <linux/mfd/mt6323/registers.h>
 #include <linux/mfd/mt6397/registers.h>
 
 #define MT6397_RTC_BASE		0xe000
 #define MT6397_RTC_SIZE		0x3e
+
+#define MT6323_CID_CODE    0x23
+#define MT6391_CID_CODE    0x91
+#define MT6397_CID_CODE    0x97
 
 static const struct resource mt6397_rtc_resources[] = {
 	{
@@ -34,6 +39,16 @@ static const struct resource mt6397_rtc_resources[] = {
 		.start = MT6397_IRQ_RTC,
 		.end   = MT6397_IRQ_RTC,
 		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static const struct mfd_cell mt6323_devs[] = {
+	{
+		.name = "mt6323-regulator",
+		.of_compatible = "mediatek,mt6323-regulator"
+	}, {
+		.name = "mt6323-pmic",
+		.of_compatible = "mediatek,mt6323-pmic"
 	},
 };
 
@@ -69,8 +84,8 @@ static void mt6397_irq_sync_unlock(struct irq_data *data)
 {
 	struct mt6397_chip *mt6397 = irq_data_get_irq_chip_data(data);
 
-	regmap_write(mt6397->regmap, MT6397_INT_CON0, mt6397->irq_masks_cur[0]);
-	regmap_write(mt6397->regmap, MT6397_INT_CON1, mt6397->irq_masks_cur[1]);
+	regmap_write(mt6397->regmap, mt6397->int_con[0], mt6397->irq_masks_cur[0]);
+	regmap_write(mt6397->regmap, mt6397->int_con[1], mt6397->irq_masks_cur[1]);
 
 	mutex_unlock(&mt6397->irqlock);
 }
@@ -147,8 +162,8 @@ static irqreturn_t mt6397_irq_thread(int irq, void *data)
 {
 	struct mt6397_chip *mt6397 = data;
 
-	mt6397_irq_handle_reg(mt6397, MT6397_INT_STATUS0, 0);
-	mt6397_irq_handle_reg(mt6397, MT6397_INT_STATUS1, 16);
+	mt6397_irq_handle_reg(mt6397, mt6397->int_status[0], 0);
+	mt6397_irq_handle_reg(mt6397, mt6397->int_status[1], 16);
 
 	return IRQ_HANDLED;
 }
@@ -177,8 +192,8 @@ static int mt6397_irq_init(struct mt6397_chip *mt6397)
 	mutex_init(&mt6397->irqlock);
 
 	/* Mask all interrupt sources */
-	regmap_write(mt6397->regmap, MT6397_INT_CON0, 0x0);
-	regmap_write(mt6397->regmap, MT6397_INT_CON1, 0x0);
+	regmap_write(mt6397->regmap, mt6397->int_con[0], 0x0);
+	regmap_write(mt6397->regmap, mt6397->int_con[1], 0x0);
 
 	mt6397->irq_domain = irq_domain_add_linear(mt6397->dev->of_node,
 		MT6397_IRQ_NR, &mt6397_irq_domain_ops, mt6397);
@@ -203,8 +218,8 @@ static int mt6397_irq_suspend(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
 
-	regmap_write(chip->regmap, MT6397_INT_CON0, chip->wake_mask[0]);
-	regmap_write(chip->regmap, MT6397_INT_CON1, chip->wake_mask[1]);
+	regmap_write(chip->regmap, chip->int_con[0], chip->wake_mask[0]);
+	regmap_write(chip->regmap, chip->int_con[1], chip->wake_mask[1]);
 
 	enable_irq_wake(chip->irq);
 
@@ -215,8 +230,8 @@ static int mt6397_irq_resume(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
 
-	regmap_write(chip->regmap, MT6397_INT_CON0, chip->irq_masks_cur[0]);
-	regmap_write(chip->regmap, MT6397_INT_CON1, chip->irq_masks_cur[1]);
+	regmap_write(chip->regmap, chip->int_con[0], chip->irq_masks_cur[0]);
+	regmap_write(chip->regmap, chip->int_con[1], chip->irq_masks_cur[1]);
 
 	disable_irq_wake(chip->irq);
 
@@ -230,6 +245,7 @@ static SIMPLE_DEV_PM_OPS(mt6397_pm_ops, mt6397_irq_suspend,
 static int mt6397_probe(struct platform_device *pdev)
 {
 	int ret;
+	unsigned int id;
 	struct mt6397_chip *mt6397;
 
 	mt6397 = devm_kzalloc(&pdev->dev, sizeof(*mt6397), GFP_KERNEL);
@@ -254,10 +270,43 @@ static int mt6397_probe(struct platform_device *pdev)
 			return ret;
 	}
 
-	ret = mfd_add_devices(&pdev->dev, -1, mt6397_devs,
-			ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
-	if (ret)
+	ret = regmap_read(mt6397->regmap, MT6397_CID, &id);
+	if (ret) {
+		dev_err(mt6397->dev, "Failed to read chip id: %d\n", ret);
+		goto fail_irq;
+	}
+
+	switch (id & 0xff) {
+	case MT6323_CID_CODE:
+		mt6397->int_con[0] = MT6323_INT_CON0;
+		mt6397->int_con[1] = MT6323_INT_CON1;
+		mt6397->int_status[0] = MT6323_INT_STATUS0;
+		mt6397->int_status[1] = MT6323_INT_STATUS1;
+		ret = mfd_add_devices(&pdev->dev, -1, mt6323_devs,
+				ARRAY_SIZE(mt6323_devs), NULL, 0, NULL);
+		break;
+
+	case MT6397_CID_CODE:
+	case MT6391_CID_CODE:
+		mt6397->int_con[0] = MT6397_INT_CON0;
+		mt6397->int_con[1] = MT6397_INT_CON1;
+		mt6397->int_status[0] = MT6397_INT_STATUS0;
+		mt6397->int_status[1] = MT6397_INT_STATUS1;
+		ret = mfd_add_devices(&pdev->dev, -1, mt6397_devs,
+				ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
+		break;
+
+	default:
+		dev_err(&pdev->dev, "unsupported chip: %d\n", id);
+		ret = -ENODEV;
+		break;
+	}
+
+fail_irq:
+	if (ret) {
+		irq_domain_remove(mt6397->irq_domain);
 		dev_err(&pdev->dev, "failed to add child devices: %d\n", ret);
+	}
 
 	return ret;
 }
@@ -271,6 +320,7 @@ static int mt6397_remove(struct platform_device *pdev)
 
 static const struct of_device_id mt6397_of_match[] = {
 	{ .compatible = "mediatek,mt6397" },
+	{ .compatible = "mediatek,mt6323" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, mt6397_of_match);

@@ -16,7 +16,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
-#include <linux/mfd/mt6323/core.h>
+#include <linux/mfd/mt6397/core.h>
 #include <linux/mfd/mt6323/registers.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
@@ -255,7 +255,7 @@ static struct mt6323_regulator_info mt6323_regulators[] = {
 
 static int mt6323_set_buck_vosel_reg(struct platform_device *pdev)
 {
-	struct mt6323_chip *mt6323 = dev_get_drvdata(pdev->dev.parent);
+	struct mt6397_chip *mt6323 = dev_get_drvdata(pdev->dev.parent);
 	int i;
 	u32 regval;
 
@@ -281,7 +281,7 @@ static int mt6323_set_buck_vosel_reg(struct platform_device *pdev)
 
 static int mt6323_regulator_probe(struct platform_device *pdev)
 {
-	struct mt6323_chip *mt6323 = dev_get_drvdata(pdev->dev.parent);
+	struct mt6397_chip *mt6323 = dev_get_drvdata(pdev->dev.parent);
 	struct regulator_config config = {};
 	struct regulator_dev *rdev;
 	int i;
