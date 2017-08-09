@@ -653,7 +653,7 @@ RESTORE_IRQ:
 		__spm_check_md_pdn_power_control(pwrctrl);
 		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-/*		pwrctrl->pcm_flags &= ~(SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS); */
+		pwrctrl->pcm_flags &= ~(SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
 
 		__spm_set_power_control(pwrctrl);
 		__spm_set_wakeup_event(pwrctrl);
