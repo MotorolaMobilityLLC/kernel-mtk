@@ -136,9 +136,18 @@
 #define BASE_MAX_NR_AS              16
 
 /* mmu */
-#define MIDGARD_MMU_VA_BITS 48
+#define MIDGARD_MMU_PAGE_SIZE 12
+#define MIDGARD_MMU_PAGE_MASK ((1ULL << MIDGARD_MMU_PAGE_SIZE) - 1)
 
-#if MIDGARD_MMU_VA_BITS > 39
+#define MIDGARD_MMU_PA_BITS_NUM 48
+#define MIDGARD_MMU_PA_MASK \
+	(((1ULL << MIDGARD_MMU_PA_BITS_NUM) - 1) & ~MIDGARD_MMU_PAGE_MASK)
+
+#define MIDGARD_MMU_VA_BITS_NUM 48
+#define MIDGARD_MMU_VA_MASK \
+	(((1ULL << MIDGARD_MMU_VA_BITS_NUM) - 1) & ~MIDGARD_MMU_PAGE_MASK)
+
+#if MIDGARD_MMU_VA_BITS_NUM > 39
 #define MIDGARD_MMU_TOPLEVEL    0
 #else
 #define MIDGARD_MMU_TOPLEVEL    1
@@ -1038,6 +1047,7 @@ struct kbase_device {
 	 */
 	struct bus_logger_client *buslogger;
 #endif
+	u8 debug_gpu_page_tables;
 };
 
 /* JSCTX ringbuffer size must always be a power of 2 */

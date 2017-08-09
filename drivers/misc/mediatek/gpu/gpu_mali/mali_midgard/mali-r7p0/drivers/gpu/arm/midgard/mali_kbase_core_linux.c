@@ -3290,6 +3290,10 @@ static int kbase_device_debugfs_init(struct kbase_device *kbdev)
 	debugfs_create_file("secure_mode", S_IRUGO,
 			kbdev->mali_debugfs_directory, kbdev,
 			&kbasep_secure_mode_debugfs_fops);
+	kbdev->debug_gpu_page_tables = 1;
+	debugfs_create_u8("debug_gpu_page_tables", 0644,
+			kbdev->mali_debugfs_directory,
+			&kbdev->debug_gpu_page_tables);
 
 	return 0;
 

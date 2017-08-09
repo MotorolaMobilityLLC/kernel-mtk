@@ -41,6 +41,7 @@
 #include <mali_kbase_hw.h>
 #include <mali_kbase_mmu_hw.h>
 #include <mali_kbase_hwaccess_jm.h>
+#include <mali_kbase_debug_gpu_mem_mapping.h>
 
 #define KBASE_MMU_PAGE_ENTRIES 512
 
@@ -1417,6 +1418,7 @@ static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 		access_type, access_type_name(kbdev, as->fault_status),
 		source_id,
 		kctx->pid);
+	kbase_debug_gpu_mem_mapping(kctx, as->fault_addr);
 
 	/* hardware counters dump fault handling */
 	if ((kbdev->hwcnt.kctx) && (kbdev->hwcnt.kctx->as_nr == as_no) &&

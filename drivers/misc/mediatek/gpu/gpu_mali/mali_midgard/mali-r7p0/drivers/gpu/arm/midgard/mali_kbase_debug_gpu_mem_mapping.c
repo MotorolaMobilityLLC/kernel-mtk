@@ -1,0 +1,281 @@
+/*
+ * (C) COPYRIGHT 2015 ARM Limited. All rights reserved.
+ *
+ * This program is free software and is provided to you under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation, and any use by you of this program is subject to the terms
+ * of such GNU licence.
+ *
+ * A copy of the licence is included with the program, and can also be obtained
+ * from Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ *
+ */
+
+/*
+ * Show VA -> PA mapping details (page table and flags)
+ */
+
+#include "mali_kbase_debug_gpu_mem_mapping.h"
+
+#define ENTRY_TYPE_BITS		(3ULL)
+#define	ENTRY_TYPE_IS_ATE	(1ULL)
+#define	ENTRY_TYPE_IS_PTE	(3ULL)
+
+#define ATE_ATTRIDX_SHIFT	(2)
+#define ATE_ATTRIDX_BITS	(7ULL << ATE_ATTRIDX_SHIFT)
+#define ATE_AP_SHIFT		(6)
+#define ATE_AP_BITS		(3ULL << ATE_AP_SHIFT)
+#define ATE_AP_NO_ACCESS	(0ULL)
+#define ATE_AP_RO		(1ULL)
+#define ATE_AP_WO		(2ULL)
+#define ATE_AP_RW		(3ULL)
+#define ATE_SH_SHIFT		(8)
+#define ATE_SH_BITS		(3ULL << ATE_SH_SHIFT)
+#define ATE_SH_NOT_SHARABLE	(0)
+#define ATE_SH_IN_OUT_SHARE	(2)
+#define ATE_SH_IN_SHARE_ONLY	(3)
+#define ATE_AI_SHIFT		(10)
+#define ATE_AI_BIT		(1ULL << ATE_AI_SHIFT)
+#define ATE_OUT_ADDR_SHIFT	(12)
+#define ATE_OUT_ADDR_BITS	(0xfffffffffULL << ATE_OUT_ADDR_SHIFT)
+#define ATE_NX_SHIFT		(54)
+#define ATE_NX_BIT		(1ULL << ATE_NX_SHIFT)
+
+#define show(kctx, fmt, ...) \
+	dev_err(kctx->kbdev->dev, fmt, ##__VA_ARGS__)
+
+
+enum ate_flag {
+	ATE_FLAG_ATTRIB_INDEX,
+	ATE_FLAG_ACCESS_PERM,
+	ATE_FLAG_SHAREABILITY,
+	ATE_FLAG_ACCESS_INTERRUPT,
+	ATE_FLAG_EXEC_NEVER,
+	ATE_FLAG_NUM
+};
+
+static u64 ate_flags_masks[ATE_FLAG_NUM] = {
+	[ATE_FLAG_ATTRIB_INDEX]		= ATE_ATTRIDX_BITS,
+	[ATE_FLAG_ACCESS_PERM]		= ATE_AP_BITS,
+	[ATE_FLAG_SHAREABILITY]		= ATE_SH_BITS,
+	[ATE_FLAG_ACCESS_INTERRUPT]	= ATE_AI_BIT,
+	[ATE_FLAG_EXEC_NEVER]		= ATE_NX_BIT
+};
+
+static const char *ate_flag_name(u64 mask)
+{
+	switch (mask) {
+	case ATE_ATTRIDX_BITS:	return "Attribute Index";
+	case ATE_AP_BITS:	return "Access Permissions";
+	case ATE_SH_BITS:	return "Shareability";
+	case ATE_AI_BIT:	return "Access Interrupt flag";
+	case ATE_NX_BIT:	return "Execute never";
+	}
+	return NULL;
+}
+
+static const char *ate_flag_value(u64 mask, u64 entry)
+{
+	static const char * const digits[] = { "0", "1", "2", "3",
+					       "4", "5", "6", "7" };
+
+	switch (mask) {
+	case ATE_ATTRIDX_BITS:
+		return digits[((entry & mask) >> ATE_ATTRIDX_SHIFT)];
+	case ATE_AP_BITS:
+		switch ((entry & mask) >> ATE_AP_SHIFT) {
+		case ATE_AP_NO_ACCESS:
+			return "No access";
+		case ATE_AP_RO:
+			return "Read-only access";
+		case ATE_AP_WO:
+			return "Write-only access";
+		case ATE_AP_RW:
+			return "Read and write access";
+		default:
+			/* Unreachable */
+			return NULL;
+		}
+	case ATE_SH_BITS:
+		switch ((entry & mask) >> ATE_SH_SHIFT) {
+		case ATE_SH_NOT_SHARABLE:
+			return "Not shareable";
+		case ATE_SH_IN_OUT_SHARE:
+			return "Inner and outer shareable";
+		case ATE_SH_IN_SHARE_ONLY:
+			return "Inner shareable only";
+		default:
+			/* Unreachable */
+			return NULL;
+		}
+	case ATE_AI_BIT:
+	case ATE_NX_BIT:
+		return digits[(entry & mask) ? 1 : 0];
+	}
+	return NULL;
+}
+
+static void pr_ate_flags(struct kbase_context *kctx, u64 entry)
+{
+	size_t i;
+
+	show(kctx, "ATE flags: [flag name]: value\n");
+	for (i = 0; i < ATE_FLAG_NUM; i++)
+		show(kctx, "  [%s]: %s\n", ate_flag_name(ate_flags_masks[i]),
+				ate_flag_value(ate_flags_masks[i], entry));
+}
+
+
+static phys_addr_t get_next_pgd(struct kbase_context *kctx,
+		phys_addr_t pgd, u64 vpfn, int level)
+{
+	u64 *pgd_page;
+	u64 pte;
+	phys_addr_t target_pgd;
+	struct page *p;
+	size_t index = (vpfn >> (3 - level) * 9) & 0x1FF;
+	struct kbase_mmu_mode const *m = kctx->kbdev->mmu_mode;
+	char pte_str[32];
+
+	lockdep_assert_held(&kctx->reg_lock);
+
+	p = pfn_to_page(PFN_DOWN(pgd));
+	pgd_page = kmap(p);
+	if (!pgd_page) {
+		dev_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
+		return 0;
+	}
+	pte = pgd_page[index];
+	kunmap(p);
+	if (m->pte_is_valid(pte)) {
+		target_pgd = m->pte_to_phy_addr(pte);
+		snprintf(pte_str, sizeof(pte_str), " (phy=%pa)\n", &target_pgd);
+	} else {
+		target_pgd = 0;
+		snprintf(pte_str, sizeof(pte_str), " - PTE is INVALID!\n");
+	}
+	if (kctx->kbdev->debug_gpu_page_tables)
+		show(kctx, "  level=%d [pgd=%pa index=%-3d] -> pte=%016llx%s",
+				level, &pgd, (int)index, pte, pte_str);
+	return target_pgd;
+}
+
+
+static phys_addr_t get_bottom_pgd(struct kbase_context *kctx, u64 vpfn)
+{
+	phys_addr_t pgd = kctx->pgd;
+	int l;
+
+	for (l = MIDGARD_MMU_TOPLEVEL; l < 3; l++) {
+		pgd = get_next_pgd(kctx, pgd, vpfn, l);
+		if (!pgd) {
+			dev_err(kctx->kbdev->dev, "%s: Table walk failed on level %d.\n",
+					__func__, l);
+			break;
+		}
+	}
+	return pgd;
+}
+
+static phys_addr_t ate_to_phy_addr(u64 entry)
+{
+	if ((entry & ENTRY_TYPE_BITS) != ENTRY_TYPE_IS_ATE)
+		return 0;
+
+	return entry & MIDGARD_MMU_PA_MASK;
+}
+
+static u64 *get_ate_page(struct kbase_context *kctx, phys_addr_t pgd)
+{
+	struct page *p;
+	u64 *ate_page;
+
+	p = pfn_to_page(PFN_DOWN(pgd));
+	ate_page = kmap(p);
+	if (!ate_page) {
+		dev_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
+		return NULL;
+	}
+	return ate_page;
+}
+
+static void release_ate_page(phys_addr_t pgd)
+{
+	kunmap(pfn_to_page(PFN_DOWN(pgd)));
+}
+
+static phys_addr_t get_phy_addr(struct kbase_context *kctx, u64 va)
+{
+	u64 vpfn = va >> PAGE_SHIFT;
+	size_t offset = va & MIDGARD_MMU_PAGE_MASK;
+	size_t index = vpfn & 0x1FF;
+	phys_addr_t bottom_pgd, phy_addr;
+	u64 *ate_page;
+	u64 ate;
+	struct kbase_mmu_mode const *m = kctx->kbdev->mmu_mode;
+	char ate_str[32];
+
+	if (kctx->kbdev->debug_gpu_page_tables)
+		show(kctx, "Page table state: level [PGD index] -> PTE (next PGD or PFN\n");
+
+	kbase_gpu_vm_lock(kctx);
+
+	bottom_pgd = get_bottom_pgd(kctx, vpfn);
+	if (!bottom_pgd)
+		goto err;
+
+	ate_page = get_ate_page(kctx, bottom_pgd);
+	if (!ate_page)
+		goto err;
+
+	ate = ate_page[index];
+	release_ate_page(bottom_pgd);
+	if (m->ate_is_valid(ate)) {
+		phy_addr = ate_to_phy_addr(ate);
+		snprintf(ate_str, sizeof(ate_str), " (phy=%pa)\n", &phy_addr);
+	} else {
+		phy_addr = 0;
+		snprintf(ate_str, sizeof(ate_str), " - ATE is INVALID!\n");
+	}
+	if (kctx->kbdev->debug_gpu_page_tables)
+		show(kctx, "  level=3 [pgd=%pa index=%-3d] -> ate=%016llx%s\n",
+				&bottom_pgd, (int)index, ate, ate_str);
+	if (!phy_addr)
+		goto err;
+
+	if (kctx->kbdev->debug_gpu_page_tables)
+		pr_ate_flags(kctx, ate);
+	kbase_gpu_vm_unlock(kctx);
+	return phy_addr + offset;
+err:
+	if (bottom_pgd)
+		dev_err(kctx->kbdev->dev, "%s: Table walk failed on level 3.\n",
+				__func__);
+	kbase_gpu_vm_unlock(kctx);
+	return 0;
+}
+
+
+/**
+ * kbase_debug_gpu_mem_mapping - walk GPU page table and print out the mapping.
+ * @kctx: kbase context
+ * @va: virtual address to examine
+ *
+ * Returns physical address mapped to va or 0 if no mapping.
+ */
+phys_addr_t kbase_debug_gpu_mem_mapping(struct kbase_context *kctx, u64 va)
+{
+	phys_addr_t phy_addr = get_phy_addr(kctx, va);
+
+	if (!phy_addr && kctx->kbdev->debug_gpu_page_tables) {
+		show(kctx, "VA %016llx NOT mapped on GPU\n", va);
+		return 0;
+	}
+	if (kctx->kbdev->debug_gpu_page_tables)
+		show(kctx, "VA %016llx mapped -> PA %pa\n", va, &phy_addr);
+	return phy_addr;
+
+}
+KBASE_EXPORT_SYMBOL(kbase_debug_gpu_mem_mapping);
+
