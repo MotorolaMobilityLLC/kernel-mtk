@@ -588,7 +588,7 @@ static int profile_timestamp_init(void)
 {
 	int ret = 0;
 	int i = 0;
-
+	spin_lock(&hotplug_timestamp_lock);
 	for (i = 0; i < TIMESTAMP_REC_SIZE; i++) {
 		hotplug_ts_rec.rec[i].func = NULL;
 		hotplug_ts_rec.rec[i].line = 0;
@@ -605,6 +605,7 @@ static int profile_timestamp_init(void)
 
 	SET_TIMESTAMP_FILTER(hotplug_ts_rec, TIMESTAMP_FILTER);
 	timestamp_enable = 0;
+	spin_unlock(&hotplug_timestamp_lock);
 
 	return ret;
 }
