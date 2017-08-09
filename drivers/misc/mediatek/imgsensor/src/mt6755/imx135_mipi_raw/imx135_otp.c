@@ -24,8 +24,7 @@ After finishing the OTP written, we will provide you the golden_rg and golden_bg
 #include <asm/atomic.h>
 #include <linux/slab.h>
 
-
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"

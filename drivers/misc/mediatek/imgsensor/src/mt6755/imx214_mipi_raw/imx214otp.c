@@ -11,7 +11,7 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include "imx214otp.h"
@@ -77,7 +77,7 @@ extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 ********************************************************************************/
 //Address: 2Byte, Data: 1Byte
 static int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 puDataInBytes)
-{   
+{
     #if 0
     int  i4RetValue = 0;
 	int retry = 3;
@@ -94,7 +94,7 @@ static int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 puDataInBytes)
             break;
     	}
         mdelay(10);
-    } while ((retry--) > 0);    
+    } while ((retry--) > 0);
    //CAM_CALDB("[CAM_CAL] iWriteCAM_CAL done!! \n");
    #else
    CAM_CALDB("[CAM_CAL][iWriteCAM_CAL] Write 0x%x=0x%x \n",a_u2Addr, puDataInBytes);
@@ -112,10 +112,10 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 * a_puBuff)
     char puReadCmd[2] = {(char)(a_u2Addr >> 8) , (char)(a_u2Addr & 0xFF)};
 	g_pstI2Cclient->addr = (IMX214OTP_DEVICE_ID>> 1);
 
-    //CAM_CALDB("[CAM_CAL] iReadCAM_CAL!! \n");   
+    //CAM_CALDB("[CAM_CAL] iReadCAM_CAL!! \n");
     //CAM_CALDB("[CAM_CAL] i2c_master_send \n");
     i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
-	
+
     if (i4RetValue != 2)
     {
         CAM_CALDB("[CAM_CAL] I2C send read address failed!! \n");
@@ -129,19 +129,19 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 * a_puBuff)
     {
         CAM_CALDB("[CAM_CAL] I2C read data failed!! \n");
         return -1;
-    } 
+    }
 
     //CAM_CALDB("[CAM_CAL] iReadCAM_CAL done!! \n");
 	#else
 	int  i4RetValue = 0;
 
 	i4RetValue=iReadReg(a_u2Addr,a_puBuff,IMX214OTP_DEVICE_ID);
-	
+
 	if (i4RetValue !=0)
 		{
 			CAM_CALDB("[CAM_CAL] I2C read data failed!! \n");
 			return -1;
-		} 	
+		}
 	CAM_CALDB("[CAM_CAL][iReadCAM_CAL] Read 0x%x=0x%x \n", a_u2Addr, a_puBuff[0]);
 	#endif
     return 0;
@@ -156,10 +156,10 @@ int iReadCAM_CAL_8(u8 a_u2Addr, u8 * a_puBuff, u16 i2c_id)
     g_pstI2Cclient->addr = i2c_id>>1;
 	g_pstI2Cclient->timing=400;
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
-    spin_unlock(&g_CAM_CALLock); // for SMP    
-    
+    spin_unlock(&g_CAM_CALLock); // for SMP
+
     i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 1);
-	
+
     if (i4RetValue != 1)
     {
         CAM_CALDB("[CAM_CAL] I2C send read address failed!! \n");
@@ -173,7 +173,7 @@ int iReadCAM_CAL_8(u8 a_u2Addr, u8 * a_puBuff, u16 i2c_id)
     {
         CAM_CALDB("[CAM_CAL] I2C read data failed!! \n");
         return -1;
-    } 
+    }
 
     return 0;
 }
@@ -187,22 +187,22 @@ static kal_uint8 IMX214_GotoPage(kal_uint8 page)
 
 
 static kal_uint8 check_IMX214_otp_valid_AFPage(void)
-{	
+{
 
     kal_uint8 AF_OK = 0x00;
 	u8 readbuff, i;
 
 	iReadCAM_CAL_8(0x28,&readbuff,0xA0);
-	
+
 	AF_OK = readbuff;
-	
+
 	if (AF_OK==1)
 	{
 		CAM_CALDB("can read AF otp from page\n");
 	}
 	else
 	    return KAL_FALSE;
-	
+
 	return KAL_TRUE;
 
 }
@@ -215,16 +215,16 @@ static kal_uint8 check_IMX214_otp_valid_AWBPage(void)
 	kal_uint16 LSC_lengthL,LSC_lengthH;
 
 	iReadCAM_CAL_8(0x11,&readbuff,0xA0);
-	
+
 	AWB_OK = readbuff;
-	
+
 	if (AWB_OK==1)
 	{
 		CAM_CALDB("can read AWB otp from page\n");
 	}
 	else
 	    return KAL_FALSE;
-	
+
 	return KAL_TRUE;
 
 }
@@ -237,28 +237,28 @@ kal_bool check_IMX214_otp_valid_LSC_Page(kal_uint8 page)
 	u8 readbuff, i;
 
 	iReadCAM_CAL_8(0x30,&readbuff,0xA0);
-	
+
 	LSC_OK = readbuff;
-	
+
 	if (LSC_OK==1)
 	{
 		CAM_CALDB("can read LSC otp from page0~page5\n");
-		CAM_CALDB("page number %d is valid\n",LSC_OK);	 
+		CAM_CALDB("page number %d is valid\n",LSC_OK);
 	}
 	else
 	    return KAL_FALSE;
-	
+
 	return KAL_TRUE;
 }
 
 #if 1
  kal_bool IMX214_Read_LSC_Otp(kal_uint8 pagestart,kal_uint8 pageend,u16 Outdatalen,unsigned char * pOutputdata)
  {
- 
+
  kal_uint8 page = 0;
  kal_uint16 byteperpage = 256;
  kal_uint16 number = 0;
- kal_uint16 LSCOTPaddress = 0x00 ; 
+ kal_uint16 LSCOTPaddress = 0x00 ;
  u8 readbuff;
  int i = 0;
 
@@ -268,18 +268,18 @@ kal_bool check_IMX214_otp_valid_LSC_Page(kal_uint8 page)
 		pOutputdata[i]=OTPData[i];
  }
 else{
- 	
+
    if (!check_IMX214_otp_valid_LSC_Page(page))
 	{
 	 CAM_CALDB("check_IMX214_otp_valid_LSC_Page fail!\n");
 	 return KAL_FALSE;
-		 
+
 	}
 
 	 for(page = pagestart; page<=pageend; page++)
 	 {
 	   CAM_CALDB("read page=%d\n",page);
-   
+
 	   if(page==0){
 		   for(i = 49; i < byteperpage;i++)
 		   {
@@ -287,7 +287,7 @@ else{
 			 pOutputdata[number]=readbuff;
 			 number+=1;
 		   }
-		 
+
 	   }
 	   else{
 		  for(i = 0; i <=244;i++)
@@ -295,17 +295,17 @@ else{
 			iReadCAM_CAL_8(LSCOTPaddress+i,&readbuff,0xA2);
 			pOutputdata[number]=readbuff;
 			number+=1;
-   
+
 		  }
 	   }
-   
+
    }
 
 }
      CAM_CALDB("LSC read finished number= %d\n",--number);
 	 otp_flag=0;
 	 return KAL_TRUE;
- 
+
  }
 #endif
 
@@ -316,12 +316,12 @@ else{
 		u8 readbuff, base_add;
 		int ret ;
 		//base_add=(address/10)*16+(address%10);
-			
+
 		CAM_CALDB("[CAM_CAL]ENTER page:0x%x address:0x%x buffersize:%d\n ",page, address, buffersize);
 		if (IMX214_GotoPage(page))
 		{
 			for(i = 0; i<buffersize; i++)
-			{				
+			{
 				ret= iReadCAM_CAL_8(address+i,&readbuff,0xA0);
 				CAM_CALDB("[CAM_CAL]address+i = 0x%x,readbuff = 0x%x\n",(address+i),readbuff );
 				*(iBuffer+i) =(unsigned char)readbuff;
@@ -340,42 +340,42 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
    int  i4RetValue = 0;
     kal_uint8 page = 0, pageS=0,pageE=1;;
 	//1. check which page is valid
-	
+
 	if(ui4_length ==1)
     {
        if(check_IMX214_otp_valid_LSC_Page(page))
-		
+
 	    IMX214_ReadOtp(page, ui4_offset, pinputdata, ui4_length);
    	   else
    		{
 	   		 CAM_CALDB("[CAM_CAL]No LSC OTP Data!\n");
 	  		 return -1;
         }
-	   	
+
    	}
 	else if(ui4_length ==6)
     {
        if(check_IMX214_otp_valid_AWBPage())
-		
+
 	    IMX214_ReadOtp(page, ui4_offset, pinputdata, ui4_length);
    	   else
    		{
 	   		 CAM_CALDB("[CAM_CAL]No AWB OTP Data!\n");
 	  		 return -1;
         }
-	   	
+
    	}
 	else if(ui4_length ==2)
     {
        if(check_IMX214_otp_valid_AFPage())
-		
+
 	    IMX214_ReadOtp(page, ui4_offset, pinputdata, ui4_length);
    	   else
    		{
 	   		 CAM_CALDB("[CAM_CAL]No AF OTP Data!\n");
 	  		 return -1;
         }
-	   	
+
    	}
 	else{
 
@@ -406,10 +406,10 @@ static int CAM_CAL_Ioctl(struct inode * a_pstInode,
 struct file * a_pstFile,
 unsigned int a_u4Command,
 unsigned long a_u4Param)
-#else 
+#else
 static long CAM_CAL_Ioctl(
-    struct file *file, 
-    unsigned int a_u4Command, 
+    struct file *file,
+    unsigned int a_u4Command,
     unsigned long a_u4Param
 )
 #endif
@@ -418,7 +418,7 @@ static long CAM_CAL_Ioctl(
     u8 * pBuff = NULL;
     u8 * pWorkingBuff = NULL;
     stCAM_CAL_INFO_STRUCT *ptempbuf;
-	
+
 #ifdef CAM_CALGETDLT_DEBUG
     struct timeval ktv1, ktv2;
     unsigned long TimeIntervalUS;
@@ -449,7 +449,7 @@ static long CAM_CAL_Ioctl(
     }
 
     ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
-    pWorkingBuff = (u8*)kmalloc(ptempbuf->u4Length,GFP_KERNEL); 
+    pWorkingBuff = (u8*)kmalloc(ptempbuf->u4Length,GFP_KERNEL);
     if(NULL == pWorkingBuff)
     {
         kfree(pBuff);
@@ -458,22 +458,22 @@ static long CAM_CAL_Ioctl(
     }
      CAM_CALDB("[S24CAM_CAL] init Working buffer address 0x%8x  command is 0x%8x\n", (u32)pWorkingBuff, (u32)a_u4Command);
 
- 
+
     if(copy_from_user((u8*)pWorkingBuff ,  (u8*)ptempbuf->pu1Params, ptempbuf->u4Length))
     {
         kfree(pBuff);
         kfree(pWorkingBuff);
         CAM_CALDB("[S24CAM_CAL] ioctl copy from user failed\n");
         return -EFAULT;
-    } 
-    
+    }
+
     switch(a_u4Command)
     {
-        case CAM_CALIOC_S_WRITE:    
+        case CAM_CALIOC_S_WRITE:
             CAM_CALDB("[S24CAM_CAL] Write CMD \n");
 #ifdef CAM_CALGETDLT_DEBUG
             do_gettimeofday(&ktv1);
-#endif            
+#endif
             i4RetValue = iWriteData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff);
 #ifdef CAM_CALGETDLT_DEBUG
             do_gettimeofday(&ktv2);
@@ -486,19 +486,19 @@ static long CAM_CAL_Ioctl(
                 TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
             }
             printk("Write data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
-#endif            
+#endif
             break;
         case CAM_CALIOC_G_READ:
             CAM_CALDB("[S24CAM_CAL] Read CMD \n");
-#ifdef CAM_CALGETDLT_DEBUG            
+#ifdef CAM_CALGETDLT_DEBUG
             do_gettimeofday(&ktv1);
-#endif     
+#endif
             CAM_CALDB("[CAM_CAL] offset %d \n", ptempbuf->u4Offset);
             CAM_CALDB("[CAM_CAL] length %d \n", ptempbuf->u4Length);
             CAM_CALDB("[CAM_CAL] Before read Working buffer address 0x%8x \n", (u32)pWorkingBuff);
 			otp_flag=1;
             i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff);
-			
+
             CAM_CALDB("[S24CAM_CAL] After read Working buffer data  0x%4x \n", *pWorkingBuff);
 
 
@@ -513,7 +513,7 @@ static long CAM_CAL_Ioctl(
                 TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
             }
             printk("Read data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
-#endif            
+#endif
 
             break;
         default :
@@ -675,31 +675,31 @@ static int CAM_CAL_i2c_detect(struct i2c_client *client, struct i2c_board_info *
 static int CAM_CAL_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int CAM_CAL_i2c_remove(struct i2c_client *);
 
-static const struct i2c_device_id CAM_CAL_i2c_id[] = {{CAM_CAL_DRVNAME,0},{}};   
+static const struct i2c_device_id CAM_CAL_i2c_id[] = {{CAM_CAL_DRVNAME,0},{}};
 #if 0 //test110314 Please use the same I2C Group ID as Sensor
-static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, IMX214OTP_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};   
+static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, IMX214OTP_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};
 #else
-//static unsigned short force[] = {IMG_SENSOR_I2C_GROUP_ID, OV5647OTP_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};   
+//static unsigned short force[] = {IMG_SENSOR_I2C_GROUP_ID, OV5647OTP_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};
 #endif
-//static const unsigned short * const forces[] = { force, NULL };              
-//static struct i2c_client_address_data addr_data = { .forces = forces,}; 
+//static const unsigned short * const forces[] = { force, NULL };
+//static struct i2c_client_address_data addr_data = { .forces = forces,};
 
 
 static struct i2c_driver CAM_CAL_i2c_driver = {
-    .probe = CAM_CAL_i2c_probe,                                   
-    .remove = CAM_CAL_i2c_remove,                           
-//   .detect = CAM_CAL_i2c_detect,                           
+    .probe = CAM_CAL_i2c_probe,
+    .remove = CAM_CAL_i2c_remove,
+//   .detect = CAM_CAL_i2c_detect,
     .driver.name = CAM_CAL_DRVNAME,
-    .id_table = CAM_CAL_i2c_id,                             
+    .id_table = CAM_CAL_i2c_id,
 };
 
 #ifndef CAM_CAL_ICS_REVISION
-static int CAM_CAL_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info) {         
+static int CAM_CAL_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info) {
     strcpy(info->type, CAM_CAL_DRVNAME);
     return 0;
 }
 #endif
-static int CAM_CAL_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id) {             
+static int CAM_CAL_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id) {
 int i4RetValue = 0;
     CAM_CALDB("[S24CAM_CAL] Attach I2C \n");
 //    spin_lock_init(&g_CAM_CALLock);
@@ -708,8 +708,8 @@ int i4RetValue = 0;
     spin_lock(&g_CAM_CALLock); //for SMP
     g_pstI2Cclient = client;
     g_pstI2Cclient->addr = IMX214OTP_DEVICE_ID>>1;
-    spin_unlock(&g_CAM_CALLock); // for SMP    
-    
+    spin_unlock(&g_CAM_CALLock); // for SMP
+
     CAM_CALDB("[CAM_CAL] g_pstI2Cclient->addr = 0x%8x \n",g_pstI2Cclient->addr);
     //Register char driver
     i4RetValue = RegisterCAM_CALCharDrv();
@@ -721,8 +721,8 @@ int i4RetValue = 0;
 
 
     CAM_CALDB("[S24CAM_CAL] Attached!! \n");
-    return 0;                                                                                       
-} 
+    return 0;
+}
 
 static int CAM_CAL_i2c_remove(struct i2c_client *client)
 {
@@ -770,7 +770,7 @@ static int __init CAM_CAL_i2C_init(void)
     {
         CAM_CALDB("failed to register S24CAM_CAL driver, 2nd time\n");
         return -ENODEV;
-    }	
+    }
 
     return 0;
 }
