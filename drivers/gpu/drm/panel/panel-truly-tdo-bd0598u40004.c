@@ -95,7 +95,8 @@ static void truly_panel_init(struct truly *ctx)
 	mdelay(2);
 
 	truly_dcs_write_seq_static(ctx, 0xBB, 0x03);
-	truly_dcs_write_seq_static(ctx, 0x3B, 0x03, 0x0A, 0x0A, 0x0A, 0x0A);
+	truly_dcs_write_seq_static(ctx, 0x3B, 0x03, 0x0A, 0x0A,
+				   0x0A, 0x0A);
 	truly_dcs_write_seq_static(ctx, 0x53, 0x24);
 	truly_dcs_write_seq_static(ctx, 0x55, 0x00);
 	truly_dcs_write_seq_static(ctx, 0x5E, 0x00);
@@ -625,7 +626,7 @@ static void truly_panel_init(struct truly *ctx)
 	mdelay(2);
 
 	truly_dcs_write_seq_static(ctx, 0x08, 0x04);
-	truly_dcs_write_seq_static(ctx, 0xFF, 0x10);/*	Return	To	CMD1*/
+	truly_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	mdelay(2);
 
 	truly_dcs_write_seq_static(ctx, 0x35, 0x00);
@@ -726,15 +727,15 @@ static int truly_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock = 148500,
+	.clock = 142858,
 	.hdisplay = 1080,
-	.hsync_start = 1080 + 58,
-	.hsync_end = 1080 + 58 + 58,
-	.htotal = 1080 + 58 + 58 + 58,
+	.hsync_start = 1080 + 40,
+	.hsync_end = 1080 + 10 + 40,
+	.htotal = 1080 + 10 + 20 + 40,
 	.vdisplay = 1920,
-	.vsync_start = 1920 + 4,
-	.vsync_end = 1920 + 4 + 4,
-	.vtotal = 1920 + 4 + 4 + 4,
+	.vsync_start = 1920 + 10,
+	.vsync_end = 1920 + 2 + 10,
+	.vtotal = 1920 + 2 + 8 + 10,
 	.vrefresh = 60,
 };
 
@@ -899,5 +900,6 @@ static struct mipi_dsi_driver truly_driver = {
 module_mipi_dsi_driver(truly_driver);
 
 MODULE_AUTHOR("Jitao Shi <jitao.shi@mediatek.com>");
+MODULE_AUTHOR("Shaoming Chen <shaoming.chen@mediatek.com>");
 MODULE_DESCRIPTION("TRULY TDO-BD0598U40004 LCD Panel Driver");
 MODULE_LICENSE("GPL v2");
