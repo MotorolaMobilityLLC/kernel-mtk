@@ -1020,6 +1020,7 @@ static inline int rt_se_prio(struct sched_rt_entity *rt_se)
 	return rt_task_of(rt_se)->prio;
 }
 /* sched:add rt exec info*/
+DEFINE_PER_CPU(u64, rt_throttling_start);
 DEFINE_PER_CPU(u64, exec_delta_time);
 DEFINE_PER_CPU(u64, clock_task);
 DEFINE_PER_CPU(u64, exec_start);
@@ -1058,7 +1059,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		printk_deferred(", clock_task[%llu], exec_start[%llu]\n",
 				per_cpu(clock_task, cpu), per_cpu(exec_start, cpu));
 #endif
-		/*
+	/*
 		 * Don't actually throttle groups that have no runtime assigned
 		 * but accrue some time due to boosting.
 		 */
@@ -1068,6 +1069,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 			printk_deferred("sched: RT throttling activated\n");
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
+			per_cpu(rt_throttling_start, cpu) = rq_clock_task(rt_rq->rq);
 #ifdef CONFIG_MTPROF
 			/* sched:rt throttle monitor */
 			mt_rt_mon_switch(MON_STOP);

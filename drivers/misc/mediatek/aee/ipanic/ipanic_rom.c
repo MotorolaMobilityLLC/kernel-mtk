@@ -621,6 +621,10 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	aee_disable_api();
 	__show_regs(dargs->regs);
 	dump_stack();
+#ifdef CONFIG_SCHED_DEBUG
+	if (aee_rr_curr_exp_type() == 1)
+		sysrq_sched_debug_show_at_AEE();
+#endif
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 	aee_rr_rec_exp_type(2);
