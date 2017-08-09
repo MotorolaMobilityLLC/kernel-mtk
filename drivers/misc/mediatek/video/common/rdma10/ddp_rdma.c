@@ -1,6 +1,5 @@
 #define LOG_TAG "RDMA"
 
-#include <mach/mt_clkmgr.h>
 #include <linux/delay.h>
 #include "m4u.h"
 #include "ddp_log.h"

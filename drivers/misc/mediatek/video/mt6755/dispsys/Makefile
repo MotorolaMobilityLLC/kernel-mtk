@@ -2,6 +2,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
@@ -25,7 +26,7 @@ endif
 #driver
 obj-y += ddp_ovl.o
 obj-y += ddp_rdma_ex.o
-obj-y += ddp_wdma.o
+obj-y += ddp_wdma_ex.o
 obj-y += ddp_dsi.o
 #obj-y += ddp_dpi.o
 #obj-y += ddp_split.o

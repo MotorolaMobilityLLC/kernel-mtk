@@ -9,6 +9,7 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_wdma.h"
+#include "ddp_wdma_ex.h"
 
 char *ddp_get_module_name(DISP_MODULE_ENUM module)
 {

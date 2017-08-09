@@ -71,6 +71,7 @@
 #include "ddp_dsi.h"
 #include "mtk_disp_mgr.h"
 #include "ddp_wdma.h"
+#include "ddp_wdma_ex.h"
 
 
 #ifndef MT_CG_DISP0_DISP_WDMA0

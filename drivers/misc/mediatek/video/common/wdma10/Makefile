@@ -1,4 +1,4 @@
-obj-y += ddp_rdma.o
+obj-y += ddp_wdma.o
 
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/include     \
@@ -22,4 +22,3 @@ ifeq ($(CONFIG_ARCH_MT6753),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6753/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6753/
 endif
-

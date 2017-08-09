@@ -5,6 +5,7 @@
 #include "ddp_dump.h"
 #include "ddp_ovl.h"
 #include "ddp_wdma.h"
+#include "ddp_wdma_ex.h"
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"

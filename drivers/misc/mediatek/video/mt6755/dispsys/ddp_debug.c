@@ -17,6 +17,7 @@
 #include "ddp_reg.h"
 #include "ddp_drv.h"
 #include "ddp_wdma.h"
+#include "ddp_wdma_ex.h"
 #include "ddp_hal.h"
 #include "ddp_path.h"
 #include "ddp_aal.h"
