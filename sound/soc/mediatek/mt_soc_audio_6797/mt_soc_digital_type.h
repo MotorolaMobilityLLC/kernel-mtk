@@ -972,6 +972,9 @@ struct voice_ultra_info {
 	unsigned char *ultra_ul_dma_area;
 	dma_addr_t ultra_ul_dma_addr;
 
+	unsigned int memif_period_count;
+	unsigned int memif_byte;
+
 	bool playback_info_ready;
 	bool capture_info_ready;
 };

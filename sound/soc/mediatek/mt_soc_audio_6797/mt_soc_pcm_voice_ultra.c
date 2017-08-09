@@ -58,6 +58,11 @@
 #include "mt_soc_pcm_common.h"
 #include "AudDrv_Common_func.h"
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#include <audio_messenger_ipi.h>
+#include <scp_helper.h>
+#endif
+
 /*
  *    function implementation
  */
@@ -236,9 +241,61 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 	}
 }
 
+static int send_ipi_enable(bool enable)
+{
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#define VOICE_ULTRA_ENABLE_ID 1
+#define VOICE_ULTRA_DISABLE_ID 0
+	pr_warn("%s(), enable = %d\n", __func__, enable);
+
+	if (enable) {
+		uint32_t payload[8] = {0};
+
+		payload[0] = ultra_info.voice_dl_rate;	/* modem rate */
+		payload[1] = ultra_info.dl_rate;	/* ultra dl rate */
+		payload[2] = ultra_info.ultra_ul_rate;	/* ultra ul rate */
+		payload[3] = ultra_info.memif_byte;	/* memif format byte */
+		payload[4] = ultra_info.memif_period_count; /* memif period count */
+
+		register_feature(OPEN_DSP_FEATURE_ID);
+		request_freq();
+
+		audio_send_ipi_msg(TASK_SCENE_VOICE_ULTRASOUND,
+				   AUDIO_IPI_PAYLOAD,
+				   AUDIO_IPI_MSG_BYPASS_ACK,
+				   VOICE_ULTRA_ENABLE_ID,
+				   MAX_IPI_MSG_PAYLOAD_SIZE,
+				   0,
+				   (char *)payload);
+
+		/* change to wait ack when ready */
+		udelay(5 * 1000);
+	} else {
+		audio_send_ipi_msg(TASK_SCENE_VOICE_ULTRASOUND,
+				   AUDIO_IPI_MSG_ONLY,
+				   AUDIO_IPI_MSG_BYPASS_ACK,
+				   VOICE_ULTRA_DISABLE_ID,
+				   0,
+				   0,
+				   NULL);
+
+		/* change to wait ack when ready */
+		udelay(5 * 1000);
+
+		deregister_feature(OPEN_DSP_FEATURE_ID);
+		request_freq();
+	}
+#endif
+	return 0;
+}
+
 static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_voice_ultra_close\n");
+
+	/* inform cm4 */
+	if (mDlPrepareDone && mUlPrepareDone)
+		send_ipi_enable(false);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK && mDlPrepareDone) {
 		mDlPrepareDone = false;
@@ -385,6 +442,7 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 						  Soc_Aud_InterConnectionOutput_O22);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+			ultra_info.memif_byte = 4;
 		} else {
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL3, AFE_WLEN_16_BIT);
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_AWB, AFE_WLEN_16_BIT);
@@ -403,6 +461,7 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
 						  Soc_Aud_InterConnectionOutput_O22);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
+			ultra_info.memif_byte = 2;
 		}
 
 		/* start I2S DAC out */
@@ -454,6 +513,10 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 
 	EnableAfe(true);
 
+	/* inform cm4 */
+	if (mDlPrepareDone && mUlPrepareDone)
+		send_ipi_enable(true);
+
 	return 0;
 }
 
@@ -467,6 +530,7 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 		pr_warn("%s(), with SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 		ultra_info.dl_size = params_buffer_bytes(hw_params);
 		ultra_info.dl_rate = params_rate(hw_params);
+		ultra_info.memif_period_count = params_periods(hw_params);
 		ultra_info.playback_info_ready = true;
 	} else {
 		pr_warn("%s(), with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
@@ -487,11 +551,12 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 				   (ultra_info.ultra_ul_rate / 100)) /
 				   (ultra_info.dl_rate / 100);
 
-	pr_warn("%s(), allocate sram, size: dl = %d, voice_dl = %d, ultra_ul = %d\n",
+	pr_warn("%s(), allocate sram, size: dl = %d, voice_dl = %d, ultra_ul = %d, period_count = %d\n",
 		__func__,
 		ultra_info.dl_size,
 		ultra_info.voice_dl_size,
-		ultra_info.ultra_ul_size);
+		ultra_info.ultra_ul_size,
+		ultra_info.memif_period_count);
 
 	/* allocate sram */
 	ret |= AllocateAudioSram(&ultra_info.dl_dma_addr,
