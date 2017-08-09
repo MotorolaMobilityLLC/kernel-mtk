@@ -1233,7 +1233,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x11010000 0x1000>;
 		};
 
-		USB0@0x11200000 {
+		usb0:usb20@11200000 {
 			compatible = "mediatek,mt6735-usb20";
 			cell-index = <0>;
 			reg = <0x11200000 0x10000>,
