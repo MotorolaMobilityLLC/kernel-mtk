@@ -17,8 +17,6 @@
 #include <linux/skbuff.h>
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
-#define AP_REMAP_ADDR_FOR_MD_CLDMA 0xA0000000
-
 /* Modem WDT */
 /* BASE_ADDR_MDRSTCTL+ */
 #define REG_MDRSTCTL_WDTCR            (0x0000) /*WDT_MODE*/

@@ -1447,9 +1447,6 @@ static inline void cldma_reset(struct ccci_modem *md)
 	}
 	/* disable debug ID */
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_DEBUG_ID_EN, 0);
-#ifdef MD_CACHE_TO_NONECACHE
-	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_ADDR_REMAP_FROM, AP_REMAP_ADDR_FOR_MD_CLDMA);
-#endif
 }
 
 static inline void cldma_start(struct ccci_modem *md)

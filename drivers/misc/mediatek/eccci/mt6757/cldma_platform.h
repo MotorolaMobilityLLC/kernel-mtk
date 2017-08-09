@@ -17,8 +17,6 @@
 #include <linux/skbuff.h>
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
-#define AP_REMAP_ADDR_FOR_MD_CLDMA 0xA0000000
-
 /* ap_mixed_base+ */
 #define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
