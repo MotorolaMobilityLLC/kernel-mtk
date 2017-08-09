@@ -27,6 +27,7 @@
 #include "mach/emi_mpu.h"
 #include <mt-plat/mt_lpae.h>
 #include <mt-plat/mt_ccci_common.h>
+#include <linux/delay.h>
 
 static int Violation_PortID = MASTER_ALL;
 
@@ -40,7 +41,9 @@ static int Violation_PortID = MASTER_ALL;
 
 static struct work_struct emi_mpu_work;
 static struct workqueue_struct *emi_mpu_workqueue;
-
+void __iomem *INFRA_BASE_ADDR = NULL;
+void __iomem *INFRACFG_BASE_ADDR = NULL;
+void __iomem *SMI_BASE_ADDR = NULL;
 static unsigned int enable_4gb;
 static unsigned int vio_addr;
 static unsigned int emi_physical_offset;
@@ -2275,6 +2278,41 @@ static int __init emi_mpu_mod_init(void)
 		}
 	}
 
+	if (INFRA_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL,
+		"mediatek,infracfg_ao");
+		if (node) {
+			INFRA_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get INFRA_BASE_ADDR @ %p\n", INFRA_BASE_ADDR);
+		} else {
+			pr_err("can't find compatible node INFRA_BASE_ADDR\n");
+			return -1;
+		}
+	}
+
+	if (INFRACFG_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+		if (node) {
+			INFRACFG_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get INFRACFG_BASE_ADDR @ %p\n",
+			INFRACFG_BASE_ADDR);
+		} else {
+			pr_err("can't find compatible node INFRACFG_BASE_ADDR\n");
+			return -1;
+		}
+	}
+
+	if (SMI_BASE_ADDR == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mdhw_smi");
+		if (node) {
+			SMI_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get SMI_BASE_ADDR @ %p\n", SMI_BASE_ADDR);
+		} else {
+			pr_err("can't find compatible node SMI_BASE_ADDR\n");
+			return -1;
+		}
+	}
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,devapc");
 	if (node) {
 		mpu_irq = irq_of_parse_and_map(node, 0);
@@ -2424,3 +2462,112 @@ static int __init dram_4gb_init(void)
 }
 
 early_initcall(dram_4gb_init);
+
+
+#define MEM_DCM_CTRL                     IOMEM(INFRA_BASE_ADDR+0x78)
+
+#define EMI_CONM                       IOMEM(EMI_BASE_ADDR+0x060)
+#define EMI_BMEN                        IOMEM(EMI_BASE_ADDR+0x400)
+#define EMI_MSEL                         IOMEM(EMI_BASE_ADDR+0x440)
+#define EMI_MSEL2                       IOMEM(EMI_BASE_ADDR+0x468)
+#define EMI_BMEN2                     IOMEM(EMI_BASE_ADDR+0x4E8)
+#define EMI_BMRW0                    IOMEM(EMI_BASE_ADDR+0x4F8)
+#define EMI_WSCT                         IOMEM(EMI_BASE_ADDR+0x428)
+#define EMI_WSCT2                      IOMEM(EMI_BASE_ADDR+0x458)
+#define EMI_WSCT3                      IOMEM(EMI_BASE_ADDR+0x460)
+#define EMI_WSCT4                      IOMEM(EMI_BASE_ADDR+0x464)
+#define EMI_TTYPE1                      IOMEM(EMI_BASE_ADDR+0x500)
+#define EMI_TTYPE9                      IOMEM(EMI_BASE_ADDR+0x540)
+#define EMI_TTYPE4                      IOMEM(EMI_BASE_ADDR+0x518)
+#define EMI_TTYPE12                    IOMEM(EMI_BASE_ADDR+0x558)
+#define EMI_TTYPE5                      IOMEM(EMI_BASE_ADDR+0x520)
+#define EMI_TTYPE13                    IOMEM(EMI_BASE_ADDR+0x560)
+#define EMI_TTYPE6                      IOMEM(EMI_BASE_ADDR+0x528)
+#define EMI_TTYPE14                    IOMEM(EMI_BASE_ADDR+0x568)
+#define EMI_TTYPE7                      IOMEM(EMI_BASE_ADDR+0x530)
+#define EMI_TTYPE15                    IOMEM(EMI_BASE_ADDR+0x570)
+#define EMI_CONI                          IOMEM(EMI_BASE_ADDR+0x040)
+#define EMI_TEST0                         IOMEM(EMI_BASE_ADDR+0x0D0)
+#define EMI_TEST1                         IOMEM(EMI_BASE_ADDR+0x0D8)
+
+void dump_emi_latency(void)
+{
+/* Disable EMI DCM */
+pr_err("Disable EMI DCM\n");
+mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~(1<<7)), MEM_DCM_CTRL);
+mt_reg_sync_writel(readl(MEM_DCM_CTRL) | (0x1f<<1), MEM_DCM_CTRL);
+mt_reg_sync_writel(readl(MEM_DCM_CTRL) | 0x1,       MEM_DCM_CTRL);
+mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~0x1),    MEM_DCM_CTRL);
+
+/* Enable EMI bus monitor */
+pr_err("Enable EMI bus monitor\n");
+mt_reg_sync_writel(readl(EMI_CONM) | (1<<30), EMI_CONM);
+mt_reg_sync_writel(0x00FF0000, EMI_BMEN);
+mt_reg_sync_writel(0x00200001, EMI_MSEL);
+mt_reg_sync_writel(0x00000008, EMI_MSEL2);
+mt_reg_sync_writel(0x02000000, EMI_BMEN2);
+mt_reg_sync_writel(0x55555555, EMI_BMRW0);
+mt_reg_sync_writel(readl(EMI_BMEN) | 0x1, EMI_BMEN);
+
+mdelay(3);
+
+pr_err("Get latency Result\n");
+mt_reg_sync_writel(readl(EMI_BMEN) | 0x2, EMI_BMEN);
+
+pr_err("-----------Get BW RESULT----------------\n");
+/* Get BW result */
+pr_err("EMI_WSCT = 0x%x\n", readl(EMI_WSCT));
+pr_err("EMI_WSCT2 = 0x%x\n", readl(EMI_WSCT2));
+pr_err("EMI_WSCT3 = 0x%x\n", readl(EMI_WSCT3));
+pr_err("EMI_WSCT4 = 0x%x\n", readl(EMI_WSCT4));
+
+/* Get latency result */
+pr_err("EMI_TTYPE1 = 0x%x\n", readl(EMI_TTYPE1));
+pr_err("EMI_TTYPE9 = 0x%x\n", readl(EMI_TTYPE9));
+pr_err("EMI_TTYPE4 = 0x%x\n", readl(EMI_TTYPE4));
+pr_err("EMI_TTYPE12 = 0x%x\n", readl(EMI_TTYPE12));
+pr_err("EMI_TTYPE5 = 0x%x\n", readl(EMI_TTYPE5));
+pr_err("EMI_TTYPE13 = 0x%x\n", readl(EMI_TTYPE13));
+pr_err("EMI_TTYPE6 = 0x%x\n", readl(EMI_TTYPE6));
+pr_err("EMI_TTYPE14 = 0x%x\n", readl(EMI_TTYPE14));
+pr_err("EMI_TTYPE7 = 0x%x\n", readl(EMI_TTYPE7));
+pr_err("EMI_TTYPE15 = 0x%x\n", readl(EMI_TTYPE15));
+
+pr_err("EMI_CONI  = 0x%x\n", readl(EMI_CONI));
+pr_err("EMI_TEST0 = 0x%x\n", readl(EMI_TEST0));
+pr_err("EMI_TEST1 = 0x%x\n", readl(EMI_TEST1));
+
+/*read SMI debug register     // 0x1021C400 ~ 0x1021C434 */
+pr_err("SMI debug register 0x1021C400= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x400)));
+pr_err("SMI debug register 0x1021C404= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x404)));
+pr_err("SMI debug register 0x1021C408= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x408)));
+pr_err("SMI debug register 0x1021C40C= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x40C)));
+pr_err("SMI debug register 0x1021C410= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x410)));
+pr_err("SMI debug register 0x1021C414= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x414)));
+pr_err("SMI debug register 0x1021C418= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x418)));
+pr_err("SMI debug register 0x1021C41C= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x41C)));
+pr_err("SMI debug register 0x1021C420= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x420)));
+pr_err("SMI debug register 0x1021C424= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x424)));
+pr_err("SMI debug register 0x1021C428= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x428)));
+pr_err("SMI debug register 0x1021C42C= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x42C)));
+pr_err("SMI debug register 0x1021C430= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x430)));
+pr_err("SMI debug register 0x1021C434= 0x%x\n",
+readl(IOMEM(SMI_BASE_ADDR+0x434)));
+/*read Bus debug register     // 0x10201190 */
+pr_err("Bus debug register 0x10201190= 0x%x\n",
+readl(IOMEM(INFRACFG_BASE_ADDR+0x190)));
+
+}
