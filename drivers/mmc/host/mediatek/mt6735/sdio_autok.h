@@ -7,6 +7,7 @@
 #include <mt-plat/mt_boot_common.h>
 
 #include "mt_sd.h"
+#include <mt_vcore_dvfs.h>
 
 #define AUTOK_READ 0
 #define AUTOK_WRITE 1

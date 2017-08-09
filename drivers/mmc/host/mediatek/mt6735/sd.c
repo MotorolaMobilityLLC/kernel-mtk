@@ -49,10 +49,9 @@
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
+#include "mt_sd.h"
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
-#include <linux/xlog.h>
-#include <mach/mtk_thermal_monitor.h>
-#include "mach/mt_vcore_dvfs.h"
+#include <mt_vcore_dvfs.h>
 #endif /* MTK_SDIO30_ONLINE_TUNING_SUPPORT */
 
 #include <queue.h>
@@ -65,7 +64,6 @@
 #include "mach/mtk_hibernate_dpm.h"
 #endif
 
-#include "mt_sd.h"
 #include "msdc_hw_ett.h"
 #include "dbg.h"
 #define MET_USER_EVENT_SUPPORT

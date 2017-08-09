@@ -44,6 +44,19 @@ config MTK_EMMC_SUPPORT_OTP
 
 	  If unsure, say N.
 
+config SDIOAUTOK_SUPPORT
+        tristate "MediaTek SDIO UHS auto calibration support"
+        depends on MMC_MTK
+        default n
+        help
+          Alternative name of MTK_SDIOAUTOK_SUPPORT. Some MTK platform use
+          this kerner config name instead of MTK_SDIOAUTOK_SUPPORT.
+          This enables MTK auto-calibration (AUTOK) scheme for SDIO timing
+          calibration. This can only be enabled when you turn on MTK_MMC and
+          use MTK proprietary SDIO 3.0 device. Otherwise, say N.
+
+          If unsure, say N.
+
 config MMC_MT81XX
 	tristate "MediaTek MT81XX SD/MMC driver support"
 	help
