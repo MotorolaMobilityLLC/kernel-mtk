@@ -15,14 +15,11 @@
 #define vcorefs_debug(fmt, args...)	\
 	pr_debug(VCPREFS_TAG""fmt, ##args)
 
-#define DBG_MSG_ALL (1U << 31)
-#define DBG_MSG_ENG (1U << 30)
+#define DBG_MSG_ENABLE (1U << 31)
 #define vcorefs_debug_mask(type, fmt, args...)	\
 	do {							\
-		if (vcorefs_log_mask & DBG_MSG_ALL)		\
+		if (vcorefs_log_mask & DBG_MSG_ENABLE)		\
 			vcorefs_info(fmt, ##args);		\
-		else if (vcorefs_log_mask & DBG_MSG_ENG)	\
-			vcorefs_debug(fmt, ##args);		\
 		else if (vcorefs_log_mask & (1U << type))	\
 			vcorefs_info(fmt, ##args);		\
 	} while (0)

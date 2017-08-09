@@ -68,7 +68,7 @@ __weak int sdio_autok(void)
 void __iomem *vcorefs_sram_base;
 u32 spm_vcorefs_err_irq = 154;
 
-unsigned int vcorefs_log_mask = (~(DBG_MSG_ALL | DBG_MSG_ENG));
+unsigned int vcorefs_log_mask = ~(0xFFFFFFFF << LAST_KICKER);
 
 /*
  * struct define

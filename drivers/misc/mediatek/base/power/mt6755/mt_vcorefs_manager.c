@@ -137,7 +137,7 @@ static int kicker_request_compare(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	if (opp == kicker_table[kicker] && kicker != KIR_SYSFS) {
 		/* try again since previous change is partial success */
 		if (vcorefs_curr_opp == vcorefs_prev_opp) {
-			vcorefs_debug_mask(0, "opp no change, kr_tb: %d, kr: %d, opp: %d\n",
+			vcorefs_debug_mask(LAST_KICKER, "opp no change, kr_tb: %d, kr: %d, opp: %d\n",
 				    kicker_table[kicker], kicker, opp);
 			return -1;
 		}
