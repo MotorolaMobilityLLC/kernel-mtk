@@ -63,7 +63,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX258_SENSOR_ID, //IMX258MIPI_SENSOR_ID,  /*sensor_id = 0x2680*/ //record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value = 0x16d8abef, //checksum value for Camera Auto Test
+	.checksum_value = 0xfa71879b, //checksum value for Camera Auto Test
 
 	.pre = {
 		.pclk = 259200000,				//record different mode's pclk
