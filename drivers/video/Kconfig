@@ -17,6 +17,10 @@ config SH_LCD_MIPI_DSI
 
 source "drivers/char/agp/Kconfig"
 
+menu "ARM GPU Configuration"
+source "drivers/gpu/arm/Kconfig"
+endmenu
+
 source "drivers/gpu/vga/Kconfig"
 
 source "drivers/gpu/host1x/Kconfig"
