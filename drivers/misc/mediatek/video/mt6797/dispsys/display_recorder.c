@@ -1375,6 +1375,10 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 {
 }
 
+void dprec_logger_vdump(const char *fmt, ...)
+{
+}
+
 void dprec_logger_dump(char *string)
 {
 }
