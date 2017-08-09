@@ -3295,10 +3295,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	}
 
 
-/*
- * TODO: Modify this to be Everest version
- */
-static MINT32 ISP_DumpReg(void)
+static MINT32 ISP_DumpSeninfReg(void)
 {
 	MINT32 Ret = 0;
 	/*  */
@@ -3340,6 +3337,15 @@ static MINT32 ISP_DumpReg(void)
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d14), ISP_RD32(ISP_SENINF3_BASE + 0x0d18));
 	/* IMGPLL frequency */
 	LOG_INF("IMGPLL frequency(0x%x)[HPM:0x114EC5, LPM:0xC8000]", ISP_RD32(CLOCK_CELL_BASE + 0x0264));
+
+	/*  */
+	return Ret;
+
+}
+static MINT32 ISP_DumpReg(void)
+{
+	MINT32 Ret = 0;
+
 #if 0
 	/*  */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
@@ -5586,6 +5592,12 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 
 		if (WaitIrq->bDumpReg) {
 			ISP_DumpReg();
+		}
+
+		if (WaitIrq->bDumpReg &&
+			((WaitIrq->EventInfo.Status == SOF_INT_ST) ||
+			 (WaitIrq->EventInfo.Status == SW_PASS1_DON_ST))) {
+			ISP_DumpSeninfReg();
 		}
 		Ret = -EFAULT;
 		goto EXIT;
