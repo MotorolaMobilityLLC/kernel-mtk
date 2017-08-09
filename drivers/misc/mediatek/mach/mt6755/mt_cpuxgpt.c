@@ -393,7 +393,8 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 /*don't trigger IRQ to CPU0 mt_gic_cfg_irq2cpu(irq_id,0,0);*/
 /*trigger IRQ to CPUx mt_gic_cfg_irq2cpu(irq_id,(irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus(),1); */
 
-		ret = request_irq(irq_id, (irq_handler_t)cpuxgpt_irq_handler[id], IRQF_TRIGGER_HIGH, name, NULL);
+		ret = request_irq(irq_id, (irq_handler_t)cpuxgpt_irq_handler[id],
+			IRQF_TRIGGER_HIGH | IRQF_PERCPU, name, NULL);
 		if (ret != 0) {
 			pr_err("%s:%s fail to register irq\n", __func__, name);
 			return ret;
