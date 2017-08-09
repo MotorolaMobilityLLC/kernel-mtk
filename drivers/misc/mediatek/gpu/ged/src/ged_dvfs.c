@@ -295,7 +295,7 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 {
 	unsigned int  ui32BeforeSwitchInterpret;
 	unsigned int  ui32BeforeDebugInterpret;
-	GED_ERROR ret=GED_OK;
+	GED_ERROR ret = GED_OK;
 	mutex_lock(&gsVSyncOffsetLock);
 
 	ui32BeforeSwitchInterpret = g_ui32EventStatus;

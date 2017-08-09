@@ -21,7 +21,9 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
+#include <linux/module.h>
 
+static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
 int ged_bridge_log_buf_get(
 		GED_BRIDGE_IN_LOGBUFGET *psLogBufGetIN,
@@ -136,8 +138,18 @@ int ged_bridge_event_notify(
 		GED_BRIDGE_IN_EVENT_NOTIFY *psEVENT_NOTIFYINT, 
 		GED_BRIDGE_OUT_EVENT_NOTIFY *psEVENT_NOTIFYOUT)
 {
-	psEVENT_NOTIFYOUT->eError = 
-		ged_dvfs_vsync_offset_event_switch(psEVENT_NOTIFYINT->eEvent, 
-											psEVENT_NOTIFYINT->bSwitch);
+    if (ged_boost_enable)
+    {
+        psEVENT_NOTIFYOUT->eError = 
+            ged_dvfs_vsync_offset_event_switch(psEVENT_NOTIFYINT->eEvent,
+                                                psEVENT_NOTIFYINT->bSwitch);
+    }
+    else
+    {
+        psEVENT_NOTIFYOUT->eError = GED_OK;
+    }
+
 	return 0;
 }
+
+module_param(ged_boost_enable, uint, 0644);
