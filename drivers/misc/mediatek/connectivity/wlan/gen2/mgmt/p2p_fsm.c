@@ -2201,6 +2201,11 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
+		/* Change station state. */
+		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
+
+		/* Reset Station Record Status. */
+		p2pFuncResetStaRecStatus(prAdapter, prStaRec);
 
 		bssRemoveStaRecFromClientList(prAdapter, prP2pBssInfo, prStaRec);
 
