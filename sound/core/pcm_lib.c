@@ -915,7 +915,7 @@ int snd_interval_ratnum(struct snd_interval *i,
 	}
 	t.min = div_down(best_num, best_den);
 	t.openmin = !!(best_num % best_den);
-	
+
 	result_num = best_num;
 	result_diff = best_diff;
 	result_den = best_den;
@@ -1027,7 +1027,7 @@ static int snd_interval_ratden(struct snd_interval *i,
 	}
 	t.min = div_down(best_num, best_den);
 	t.openmin = !!(best_num % best_den);
-	
+
 	best_num = best_den = best_diff = 0;
 	for (k = 0; k < rats_count; ++k) {
 		unsigned int num;
@@ -1889,7 +1889,7 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
 	if (runtime->no_period_wakeup)
 		wait_time = MAX_SCHEDULE_TIMEOUT;
 	else {
-		wait_time = 10;
+		wait_time = 2;/* 10 Modified by MTK */
 		if (runtime->rate) {
 			long t = runtime->period_size * 2 / runtime->rate;
 			wait_time = max(t, wait_time);
@@ -1957,7 +1957,7 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
 	*availp = avail;
 	return err;
 }
-	
+
 static int snd_pcm_lib_write_transfer(struct snd_pcm_substream *substream,
 				      unsigned int hwoff,
 				      unsigned long data, unsigned int off,
