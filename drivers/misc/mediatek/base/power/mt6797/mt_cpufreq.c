@@ -3932,6 +3932,7 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
 	/* unsigned int online_cpus; */
+	struct mt_cpu_dvfs *p_ll;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -3948,6 +3949,12 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 			new_opp_idx = SIGLE_CORE_IDX;
 	}
 #endif
+
+	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
+		if (p_ll->armpll_is_available && (new_opp_idx > p_ll->idx_opp_tbl))
+			new_opp_idx = p_ll->idx_opp_tbl;
+	}
 
 	if ((p->idx_opp_ppm_limit != -1) && (new_opp_idx < p->idx_opp_ppm_limit))
 		new_opp_idx = p->idx_opp_ppm_limit;
