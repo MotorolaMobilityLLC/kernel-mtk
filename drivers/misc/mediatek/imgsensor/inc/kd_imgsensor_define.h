@@ -410,6 +410,7 @@ typedef struct {
 	MUINT8 AEShutDelayFrame;    /* The frame of setting shutter default 0 for TG int */
 	MUINT8 AESensorGainDelayFrame;  /* The frame of setting sensor gain */
 	MUINT8 AEISPGainDelayFrame;
+	MUINT8 FrameTimeDelayFrame; /* The delay frame of setting frame length  */
 	MUINT8 MIPIDataLowPwr2HighSpeedTermDelayCount;
 	MUINT8 MIPIDataLowPwr2HighSpeedSettleDelayCount;
 	MUINT8 MIPICLKLowPwr2HighSpeedTermDelayCount;
@@ -499,6 +500,7 @@ typedef struct {
 	MUINT8 AEShutDelayFrame;    /* The frame of setting shutter default 0 for TG int */
 	MUINT8 AESensorGainDelayFrame;  /* The frame of setting sensor gain */
 	MUINT8 AEISPGainDelayFrame;
+	MUINT8 FrameTimeDelayFrame; /* The delay frame of setting frame length  */
 	MUINT8 MIPIDataLowPwr2HighSpeedTermDelayCount;
 	MUINT8 MIPIDataLowPwr2HighSpeedSettleDelayCount;
 	MUINT8 MIPIDataLowPwr2HSSettleDelayM0;

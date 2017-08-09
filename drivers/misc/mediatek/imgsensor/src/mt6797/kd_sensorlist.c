@@ -2079,6 +2079,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->AEShutDelayFrame                         = pInfo[IDNum]->AEShutDelayFrame;
     pSensorInfo->AESensorGainDelayFrame                   = pInfo[IDNum]->AESensorGainDelayFrame;
     pSensorInfo->AEISPGainDelayFrame                      = pInfo[IDNum]->AEISPGainDelayFrame;
+	pSensorInfo->FrameTimeDelayFrame                      = pInfo[IDNum]->FrameTimeDelayFrame;
     pSensorInfo->MIPIDataLowPwr2HighSpeedTermDelayCount   = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedTermDelayCount;
     pSensorInfo->MIPIDataLowPwr2HighSpeedSettleDelayCount = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
 	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM0           = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
