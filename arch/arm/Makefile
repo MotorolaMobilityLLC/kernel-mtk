@@ -174,7 +174,9 @@ machine-$(CONFIG_ARCH_MSM)		+= msm
 machine-$(CONFIG_ARCH_MV78XX0)		+= mv78xx0
 machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
 machine-$(CONFIG_ARCH_MXC)		+= imx
-machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
+# only for 32-bit bringup, must refactor this later
+#machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
+machine-$(CONFIG_MEDIATEK_SOLUTION)	+= mediatek
 machine-$(CONFIG_ARCH_MXS)		+= mxs
 machine-$(CONFIG_ARCH_NETX)		+= netx
 machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
