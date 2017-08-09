@@ -723,7 +723,7 @@ static irqreturn_t epl2182_eint_func(int irq, void *desc)
 	if (!obj)
 		return IRQ_HANDLED;
 #ifndef FPGA_EARLY_PORTING
-	disable_irq(epl2182_obj->irq);
+	disable_irq_nosync(epl2182_obj->irq);
 #endif				/* #ifndef FPGA_EARLY_PORTING */
 	schedule_work(&obj->eint_work);
 
