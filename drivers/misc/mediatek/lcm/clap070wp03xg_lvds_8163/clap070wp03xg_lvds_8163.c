@@ -107,6 +107,7 @@ static int lcm_get_vgp_supply(struct device *dev)
 
 	pr_debug("LCM: lcm get supply ok.\n");
 
+	ret = regulator_enable(lcm_vgp_ldo);
 	/* get current voltage settings */
 	ret = regulator_get_voltage(lcm_vgp_ldo);
 	pr_debug("lcm LDO voltage = %d in LK stage\n", ret);
@@ -285,7 +286,7 @@ static void lcm_suspend_power(void)
 	lcm_set_gpio(0);
 	MDELAY(20);
 
-	lcm_vgp_supply_enable();
+	lcm_vgp_supply_disable();
 	MDELAY(20);
 
 #endif
@@ -305,7 +306,7 @@ static void lcm_resume_power(void)
 	lcm_set_gpio(1);
 	MDELAY(20);
 
-	lcm_vgp_supply_disable();
+	lcm_vgp_supply_enable();
 	MDELAY(20);
 
 #endif
