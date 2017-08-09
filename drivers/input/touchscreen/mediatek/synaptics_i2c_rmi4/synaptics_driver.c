@@ -148,7 +148,6 @@ static struct i2c_driver tpd_i2c_driver = {
 	.address_list = (const unsigned short *)forces,
 	/* .address_data = &addr_data, */
 };
-
 #if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
@@ -309,16 +308,15 @@ static int tpd_irq_registration(void)
 {
 	struct device_node *node = NULL;
 	int ret = 0;
-	u32 ints[2] = { 0, 0 };
 
 	TPD_DMESG("Device Tree Tpd_irq_registration!");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek, TOUCH_PANEL-eint");
-	if (node) {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		gpio_set_debounce(ints[0], ints[1]);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,cap_touch");
 
+	if (node) {
+		/*touch_irq = gpio_to_irq(tpd_int_gpio_number);*/
 		touch_irq = irq_of_parse_and_map(node, 0);
+		TPD_DMESG("touch_irq number %d\n", touch_irq);
 
 		ret = request_irq(touch_irq, tpd_eint_handler, IRQF_TRIGGER_FALLING,
 					TPD_DEVICE, NULL);
@@ -1548,7 +1546,7 @@ static int touch_event_handler(void *unused)
 /*        disable_irq_nosync(touch_irq);*/
 /*		enable_irq(touch_irq);*/
 
-	} while (!kthread_should_stop())
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -1654,7 +1652,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 #if 0
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
-		TPD_DMESG("SMBus byte data not supported\n");
+		dev_err(&client->dev, "SMBus byte data not supported\n");
 		return -EIO;
 	}
 #endif
@@ -1672,26 +1670,14 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	mutex_init(&(ts->io_ctrl_mutex));
 
 
-	tpd->reg = devm_regulator_get(&client->dev, "vtouch");
-	tpd->io_reg = devm_regulator_get(&client->dev, "vtouchio");
-	retval = regulator_set_voltage(tpd->reg, 3300000, 3300000);
-	if (retval != 0) {
-		TPD_DMESG("Failed to set reg-rgp6 voltage: %d\n", retval);
-		goto err_query_device;
-	}
-	retval = regulator_set_voltage(tpd->io_reg, 1800000, 1800000);
-	if (retval != 0) {
-		TPD_DMESG("Failed to set reg-rgp4 voltage: %d\n", retval);
-		goto err_query_device;
-	}
 	retval = regulator_enable(tpd->reg);
 	if (retval != 0) {
-		TPD_DMESG("Failed to enable reg-rgp6: %d\n", retval);
+		dev_err(&client->dev, "Failed to enable reg-vgp6: %d\n", retval);
 		goto err_query_device;
 	}
 	retval = regulator_enable(tpd->io_reg);
 	if (retval != 0) {
-		TPD_DMESG("Failed to enable reg-rgp4: %d\n", retval);
+		dev_err(&client->dev, "Failed to enable reg-vgp4: %d\n", retval);
 		goto err_query_device;
 	}
 	msleep(20);
@@ -1704,13 +1690,13 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	if ((tpd_i2c_read_data(ts->client, 0xEE, &data, 1)) < 0) {
 		if (reset_count-- > 0)
 			goto TPD_RESET_PROBE;
-		TPD_DMESG("Can't connect touch panel.\n");
+		dev_err(&client->dev, "Can't connect touch panel.\n");
 		return -1;
 	}
 
 	retval = tpd_rmi4_read_pdt(ts);
 	if (retval < 0) {
-		TPD_DMESG("Failed to query device\n");
+		dev_err(&client->dev, "Failed to query device\n");
 		goto err_query_device;
 	}
 
@@ -1744,7 +1730,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #if 0
 	retval = tpd_i2c_read_data(ts->client, 0x004b, config_id, sizeof(config_id));
 	if (retval < 0) {
-		TPD_DMESG("Failed to read config (code %d).\n", retval);
+		dev_err(&client->dev, "Failed to read config (code %d).\n", retval);
 		return retval;
 	}
 	TPD_DMESG("Device config ID 0x%02X, 0x%02X, 0x%02X, 0x%02X\n",
@@ -1790,7 +1776,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		TPD_DMESG("failed to create kernel thread: %d\n", retval);
 		goto error_kthread_creat_failed;
 	}
-	tpd_gpio_as_int(GTP_INT_PORT);
 
 	tpd_irq_registration();
 
@@ -1816,7 +1801,22 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 static int tpd_local_init(void)
 {
+	int retval;
+
 	TPD_DMESG("Synaptics I2C Touchscreen Driver load\n");
+
+	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+	tpd->io_reg = regulator_get(tpd->tpd_dev, "vtouchio");
+	retval = regulator_set_voltage(tpd->reg, 3300000, 3300000);
+	if (retval != 0) {
+		TPD_DMESG("Failed to set reg-vgp6 voltage: %d\n", retval);
+		return -1;
+	}
+	retval = regulator_set_voltage(tpd->io_reg, 1800000, 1800000);
+	if (retval != 0) {
+		TPD_DMESG("Failed to set reg-vgp4 voltage: %d\n", retval);
+		return -1;
+	}
 
 	if (i2c_add_driver(&tpd_i2c_driver) != 0) {
 		TPD_DMESG("Error unable to add i2c driver.\n");
@@ -1868,21 +1868,13 @@ static void tpd_resume(struct device *h)
 	tpd_sw_power(ts->client, 1);
 #else
  TPD_RESET_RESUME:
-	retval = regulator_set_voltage(tpd->reg, 3300000, 3300000);
-	if (retval != 0)
-		TPD_DMESG("Failed to set reg-rgp6 voltage: %d\n", retval);
-
-	retval = regulator_set_voltage(tpd->io_reg, 1800000, 1800000);
-	if (retval != 0)
-		TPD_DMESG("Failed to set reg-rgp4 voltage: %d\n", retval);
-
 	retval = regulator_enable(tpd->reg);
 	if (retval != 0)
-		TPD_DMESG("Failed to enable reg-rgp6: %d\n", retval);
+		TPD_DMESG("Failed to enable reg-vgp6: %d\n", retval);
 
 	retval = regulator_enable(tpd->io_reg);
 	if (retval != 0)
-		TPD_DMESG("Failed to enable reg-rgp4: %d\n", retval);
+		TPD_DMESG("Failed to enable reg-vgp4: %d\n", retval);
 	/* hwPowerOn(MT6323_POWER_LDO_VGP2,  VOL_1800, "TP"); */
 	msleep(20);
 #endif
@@ -1937,11 +1929,11 @@ static void tpd_suspend(struct device *h)
 
 	retval = regulator_disable(tpd->io_reg);
 	if (retval != 0)
-		TPD_DMESG("Failed to disable reg-rgp6: %d\n", retval);
+		TPD_DMESG("Failed to disable reg-vgp4: %d\n", retval);
 
 	retval = regulator_disable(tpd->reg);
 	if (retval != 0)
-		TPD_DMESG("Failed to disable reg-rgp6: %d\n", retval);
+		TPD_DMESG("Failed to disable reg-vgp6: %d\n", retval);
 #endif
 
 	TPD_DMESG("TPD enter sleep\n");

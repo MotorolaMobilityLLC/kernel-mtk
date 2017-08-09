@@ -549,7 +549,6 @@ extern int tpd_i2c_write_data(struct i2c_client *client, unsigned short addr, un
 			      unsigned short length);
 
 extern int synaptics_fw_updater(unsigned char *fw_data);
-extern int fwu_check_version(void);
 #ifdef VELOCITY_CUSTOM
 extern int tpd_v_magnify_x;
 extern int tpd_v_magnify_y;
