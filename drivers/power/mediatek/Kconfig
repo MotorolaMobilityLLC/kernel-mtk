@@ -249,3 +249,30 @@ config HIGH_BATTERY_VOLTAGE_SUPPORT
 	  to be supported.
 	  Set No to config if 4.2V battery is
 	  used.
+
+config MTK_PUMP_EXPRESS_SUPPORT
+	bool "MediaTek PUMP EXPRESS"
+	default n
+	help
+	  fast charging, by using linear charger
+	  to achive better charging ability.
+	  Set Yes to support PE feature.
+	  Set No to disable PE.
+
+config MTK_PUMP_EXPRESS_PLUS_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS"
+	default n
+	help
+	  fast charging, by using switch charger
+	  to achive better charging ability.
+	  Set Yes to enable PE+.
+	  Set No to disable PE+.
+
+config MTK_BIF_SUPPORT
+	bool "MTK_BIF_SUPPORT"
+	default n
+	help
+	  Set yes to support BIF features of a
+	  smart battery.
+	  Set No to disable BIF feature of a
+	  smart battery.
