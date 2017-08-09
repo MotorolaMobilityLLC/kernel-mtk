@@ -62,7 +62,8 @@ static LCM_UTIL_FUNCS lcm_util;
 #define UDELAY(n)		(lcm_util.udelay(n))
 
 
-
+#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
+	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update) \
 	lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
 #define dsi_set_cmdq(pdata, queue_size, force_update) \
@@ -1422,7 +1423,8 @@ static struct LCM_setting_table bl_level[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
-static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+static void push_table(void *cmdq, struct LCM_setting_table *table,
+	unsigned int count, unsigned char force_update)
 {
 	unsigned int i;
 	unsigned cmd;
@@ -1448,7 +1450,7 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 			break;
 
 		default:
-			dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
 		}
 	}
 }
@@ -1676,17 +1678,17 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	if (lcm_dsi_mode == CMD_MODE) {
-		push_table(init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
+		push_table(0, init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
-		push_table(init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+		push_table(0, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 	}
 }
 
 static void lcm_suspend(void)
 {
-	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table(0, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_MTK_LEGACY
@@ -1848,7 +1850,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	bl_level[0].para_list[0] = level;
 
-	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 /*
 static void lcm_setbacklight(unsigned int level)
@@ -1857,7 +1859,7 @@ static void lcm_setbacklight(unsigned int level)
 
 	bl_level[0].para_list[0] = level;
 
-	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(0, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 */
 static void *lcm_switch_mode(int mode)
