@@ -52,6 +52,8 @@ void __iomem *clk_camsys_base;
 
 #define Bring_Up
 
+#define dbg_bug_size 4096
+static char dbg_buf[dbg_bug_size] = { 0 };
 /************************************************
  **********         log debug          **********
  ************************************************/
@@ -689,11 +691,135 @@ static int mfgpll_fsel_read(struct seq_file *m, void *v)
 	return 0;
 }
 
-static int clk_debugf_read(struct seq_file *m, void *v)
+static int _clk_debugf_open(struct seq_file *s, void *data)
 {
-	slp_check_pm_mtcmos_pll();
-	clk_dump();
 	return 0;
+}
+
+static ssize_t clk_debugf_read(struct file *filp,
+			       char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	int len = 0;
+	char *p = dbg_buf;
+	int i;
+
+	for (i = 0; i < NR_PLLS; i++) {
+		if (i == 6)/*skip mpll*/
+			continue;
+		if (pll_is_on(i))
+			p += sprintf(p, "suspend warning: %s is on!!!\n", plls[i].name);
+	}
+	for (i = 0; i < NR_SYSS; i++) {
+		if (subsys_is_on(i)) {
+			if ((i != SYS_MD1) && (i != SYS_C2K))
+				p += sprintf(p, "suspend warning: %s is on!!!\n", syss[i].name);
+			else
+				p += sprintf(p, "%s: on\n", syss[i].name);
+		}
+	}
+
+	p += sprintf(p, "********** PLL register dump *********\n");
+
+	p += sprintf(p, "[MAINPLL_CON0]=0x%08x\n", clk_readl(MAINPLL_CON0));
+	p += sprintf(p, "[MAINPLL_CON1]=0x%08x\n", clk_readl(MAINPLL_CON1));
+	p += sprintf(p, "[MAINPLL_PWR_CON0]=0x%08x\n", clk_readl(MAINPLL_PWR_CON0));
+
+	p += sprintf(p, "[UNIVPLL_CON0]=0x%08x\n", clk_readl(UNIVPLL_CON0));
+	p += sprintf(p, "[UNIVPLL_CON1]=0x%08x\n", clk_readl(UNIVPLL_CON1));
+	p += sprintf(p, "[UNIVPLL_PWR_CON0]=0x%08x\n", clk_readl(UNIVPLL_PWR_CON0));
+
+	p += sprintf(p, "[MFGPLL_CON0]=0x%08x\n", clk_readl(MFGPLL_CON0));
+	p += sprintf(p, "[MFGPLL_CON1]=0x%08x\n", clk_readl(MFGPLL_CON1));
+	p += sprintf(p, "[MFGPLL_PWR_CON0]=0x%08x\n", clk_readl(MFGPLL_PWR_CON0));
+
+	p += sprintf(p, "[MSDCPLL_CON0]=0x%08x\n", clk_readl(MSDCPLL_CON0));
+	p += sprintf(p, "[MSDCPLL_CON1]=0x%08x\n", clk_readl(MSDCPLL_CON1));
+	p += sprintf(p, "[MSDCPLL_PWR_CON0]=0x%08x\n", clk_readl(MSDCPLL_PWR_CON0));
+
+	p += sprintf(p, "[IMGPLL_CON0]=0x%08x\n", clk_readl(IMGPLL_CON0));
+	p += sprintf(p, "[IMGPLL_CON1]=0x%08x\n", clk_readl(IMGPLL_CON1));
+	p += sprintf(p, "[IMGPLL_PWR_CON0]=0x%08x\n", clk_readl(IMGPLL_PWR_CON0));
+
+	p += sprintf(p, "[CODECPLL_CON0]=0x%08x\n", clk_readl(CODECPLL_CON0));
+	p += sprintf(p, "[CODECPLL_CON1]=0x%08x\n", clk_readl(CODECPLL_CON1));
+	p += sprintf(p, "[CODECPLL_PWR_CON0]=0x%08x\n", clk_readl(CODECPLL_PWR_CON0));
+
+	p += sprintf(p, "[VDECPLL_CON0]=0x%08x\n", clk_readl(VDECPLL_CON0));
+	p += sprintf(p, "[VDECPLL_CON1]=0x%08x\n", clk_readl(VDECPLL_CON1));
+	p += sprintf(p, "[VDECPLL_PWR_CON0]=0x%08x\n", clk_readl(VDECPLL_PWR_CON0));
+
+	p += sprintf(p, "[TVDPLL_CON0]=0x%08x\n", clk_readl(TVDPLL_CON0));
+	p += sprintf(p, "[TVDPLL_CON1]=0x%08x\n", clk_readl(TVDPLL_CON1));
+	p += sprintf(p, "[TVDPLL_PWR_CON0]=0x%08x\n", clk_readl(TVDPLL_PWR_CON0));
+
+	p += sprintf(p, "[APLL1_CON0]=0x%08x\n", clk_readl(APLL1_CON0));
+	p += sprintf(p, "[APLL1_CON1]=0x%08x\n", clk_readl(APLL1_CON1));
+	p += sprintf(p, "[APLL1_PWR_CON0]=0x%08x\n", clk_readl(APLL1_PWR_CON0));
+
+	p += sprintf(p, "[APLL2_CON0]=0x%08x\n", clk_readl(APLL2_CON0));
+	p += sprintf(p, "[APLL2_CON1]=0x%08x\n", clk_readl(APLL2_CON1));
+	p += sprintf(p, "[APLL2_PWR_CON0]=0x%08x\n", clk_readl(APLL2_PWR_CON0));
+
+	p += sprintf(p, "[AP_PLL_CON3]=0x%08x\n", clk_readl(AP_PLL_CON3));
+	p += sprintf(p, "[AP_PLL_CON4]=0x%08x\n", clk_readl(AP_PLL_CON4));
+
+	p += sprintf(p, "********** subsys pwr sts register dump *********\n");
+	p += sprintf(p, "PWR_STATUS=0x%08x, PWR_STATUS_2ND=0x%08x\n",
+		   clk_readl(PWR_STATUS), clk_readl(PWR_STATUS_2ND));
+
+	p += sprintf(p, "********** mux register dump *********\n");
+
+	p += sprintf(p, "[CLK_CFG_0]=0x%08x\n", clk_readl(CLK_CFG_0));
+	p += sprintf(p, "[CLK_CFG_1]=0x%08x\n", clk_readl(CLK_CFG_1));
+	p += sprintf(p, "[CLK_CFG_2]=0x%08x\n", clk_readl(CLK_CFG_2));
+	p += sprintf(p, "[CLK_CFG_3]=0x%08x\n", clk_readl(CLK_CFG_3));
+	p += sprintf(p, "[CLK_CFG_4]=0x%08x\n", clk_readl(CLK_CFG_4));
+	p += sprintf(p, "[CLK_CFG_5]=0x%08x\n", clk_readl(CLK_CFG_5));
+	p += sprintf(p, "[CLK_CFG_6]=0x%08x\n", clk_readl(CLK_CFG_6));
+	p += sprintf(p, "[CLK_CFG_7]=0x%08x\n", clk_readl(CLK_CFG_7));
+	p += sprintf(p, "[CLK_CFG_8]=0x%08x\n", clk_readl(CLK_CFG_8));
+
+	p += sprintf(p, "********** CG register dump *********\n");
+	p += sprintf(p, "[INFRA_SUBSYS][%p]\n", clk_infracfg_ao_base);	/* 0x10001000 */
+
+	p += sprintf(p, "[INFRA_PDN_STA0]=0x%08x\n", clk_readl(INFRA_SW_CG0_STA));
+	p += sprintf(p, "[INFRA_PDN_STA1]=0x%08x\n", clk_readl(INFRA_SW_CG1_STA));
+	p += sprintf(p, "[INFRA_PDN_STA2]=0x%08x\n", clk_readl(INFRA_SW_CG2_STA));
+
+	p += sprintf(p, "[INFRA_TOPAXI_PROTECTSTA1]=0x%08x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
+
+	p += sprintf(p, "[MMSYS_SUBSYS][%p]\n", clk_mmsys_config_base);
+	p += sprintf(p, "[DISP_CG_CON0]=0x%08x\n", clk_readl(DISP_CG_CON0));
+	p += sprintf(p, "[DISP_CG_CON1]=0x%08x\n", clk_readl(DISP_CG_CON1));
+
+	/**/
+	p += sprintf(p, "[MFG_SUBSYS][%p]\n", clk_mfgcfg_base);
+	p += sprintf(p, "[MFG_CG_CON]=0x%08x\n", clk_readl(MFG_CG_CON));
+
+	p += sprintf(p, "[AUDIO_SUBSYS][%p]\n", clk_audio_base);
+	p += sprintf(p, "[AUDIO_TOP_CON0]=0x%08x\n", clk_readl(AUDIO_TOP_CON0));
+	p += sprintf(p, "[AUDIO_TOP_CON1]=0x%08x\n", clk_readl(AUDIO_TOP_CON1));
+
+	p += sprintf(p, "[IMG_SUBSYS][%p]\n", clk_imgsys_base);
+	p += sprintf(p, "[IMG_CG_CON]=0x%08x\n", clk_readl(IMG_CG_CON));
+
+	p += sprintf(p, "[VDEC_SUBSYS][%p]\n", clk_vdec_gcon_base);
+	p += sprintf(p, "[VDEC_CKEN_SET]=0x%08x\n", clk_readl(VDEC_CKEN_SET));
+	p += sprintf(p, "[LARB_CKEN_SET]=0x%08x\n", clk_readl(LARB_CKEN_SET));
+
+	p += sprintf(p, "[VENC_SUBSYS][%p]\n", clk_venc_gcon_base);
+	p += sprintf(p, "[VENC_CG_CON]=0x%08x\n", clk_readl(VENC_CG_CON));
+
+	p += sprintf(p, "[CAM_SUBSYS][%p]\n", clk_camsys_base);
+	p += sprintf(p, "[CAM_CG_CON]=0x%08x\n", clk_readl(CAM_CG_CON));
+
+	p += sprintf(p, "[MJC_SUBSYS][%p]\n", clk_mjc_config_base);
+	p += sprintf(p, "[MJC_CG_CON]=0x%08x\n", clk_readl(MJC_CG_CON));
+
+	len = p - dbg_buf;
+
+	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
+
 }
 
 static ssize_t armbpll_fsel_write(struct file *file, const char __user *buffer,
@@ -898,7 +1024,7 @@ void slp_check_pm_mtcmos_pll(void)
 
 	slp_chk_mtcmos_pll_stat = 1;
 
-	for (i = 2; i < NR_PLLS; i++) {
+	for (i = 0; i < NR_PLLS; i++) {
 		if (i == 6)/*skip mpll*/
 			continue;
 		if (pll_is_on(i)) {
@@ -1007,13 +1133,13 @@ static const struct file_operations mfgpll_fsel_proc_fops = {
 static int proc_clk_debugf_open(struct inode *inode, struct file *file)
 {
 	clk_err("%s", __func__);
-	return single_open(file, clk_debugf_read, NULL);
+	return single_open(file, _clk_debugf_open, NULL);
 }
 
 static const struct file_operations clk_fsel_proc_fops = {
 	.owner = THIS_MODULE,
 	.open = proc_clk_debugf_open,
-	.read = seq_read,
+	.read = clk_debugf_read,
 	.write = clk_fsel_write,
 	.release = single_release,
 };
