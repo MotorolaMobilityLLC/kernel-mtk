@@ -3775,7 +3775,6 @@ void PMIC_INIT_SETTING_V1(void)
 	is_wdt_reboot_pmic = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	pmic_set_register_value(PMIC_WDTRSTB_STATUS_CLR, 1);
 
-
 	/*--------------------------------------------------------*/
 
 	PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 6328 PMIC Chip = 0x%x\n", chip_version);
@@ -3948,7 +3947,6 @@ void PMIC_INIT_SETTING_V1(void)
 		ret = pmic_config_interface(0x25A, 0x1, 0x1, 9);
 		ret = pmic_config_interface(0x40E, 0x0, 0x3, 2);
 		ret = pmic_config_interface(0x412, 0x0, 0x3, 2);
-		ret = pmic_config_interface(0x420, 0x1, 0x1, 4);
 		ret = pmic_config_interface(0x422, 0x1, 0x1, 0);
 		ret = pmic_config_interface(0x422, 0x1, 0x1, 1);
 		ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
@@ -4044,6 +4042,21 @@ void PMIC_INIT_SETTING_V1(void)
 		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 2);
 		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
 		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
+
+		if (crystal_exist_status() == 0) {
+			ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
+			ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
+			ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
+			ret = pmic_config_interface(0x278, 0x0, 0x1, 11);
+			ret = pmic_config_interface(0x420, 0x1, 0x1, 4);
+			ret = pmic_config_interface(0xF08, 0xC, 0x3FF, 0);
+			ret = pmic_config_interface(0xF08, 0x0, 0x1, 15);
+			ret = pmic_config_interface(0xF0E, 0xC, 0x3FF, 0);
+			ret = pmic_config_interface(0xF0E, 0x1, 0x1, 15);
+			ret = pmic_config_interface(0xF12, 0x0, 0x1, 0);
+			ret = pmic_config_interface(0xF12, 0x0, 0x1, 1);
+			ret = pmic_config_interface(0xF12, 0x1, 0x1, 2);
+		}
 	}
 	/*--------------------------------------------------------*/
 
