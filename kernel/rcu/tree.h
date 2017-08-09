@@ -650,7 +650,7 @@ static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long *qll)
 #ifdef RCU_MONITOR
 #include <linux/sched.h>
 
-#define MAX_RCU_BUFF_LEN			10240
+#define MAX_RCU_BUFF_LEN			1024
 #define MAX_SERVICE_NAME_LEN		16
 
 #define CALL_RCU			0
@@ -694,6 +694,8 @@ struct rcu_invoke_log {
 	struct rcu_invoke_log_entry *entry;
 };
 
+DECLARE_PER_CPU(struct rcu_callback_log, rcu_callback_log_head);
+DECLARE_PER_CPU(struct rcu_invoke_log, rcu_invoke_callback_log);
 extern struct rcu_callback_log_entry *rcu_callback_log_add(void);
 extern struct rcu_invoke_log_entry *rcu_invoke_log_add(void);
 #endif /* #ifdef RCU_MONITOR */

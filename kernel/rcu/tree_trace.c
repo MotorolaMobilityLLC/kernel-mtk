@@ -42,15 +42,13 @@
 #include <linux/mutex.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/vmalloc.h>
 
 #define RCU_TREE_NONCORE
 #include "tree.h"
 
 #ifdef CONFIG_MTK_EXTMEM
 #include <linux/exm_driver.h>
-#else
-static struct rcu_callback_log_entry callback_entry_t[MAX_RCU_BUFF_LEN];
-static struct rcu_invoke_log_entry invoke_entry_t[MAX_RCU_BUFF_LEN];
 #endif
 
 static int r_open(struct inode *inode, struct file *file,
@@ -427,45 +425,43 @@ static const struct file_operations rcutorture_fops = {
 	.release = single_release,
 };
 #ifdef RCU_MONITOR
-static struct rcu_callback_log rcu_callback_log_head;
-static struct rcu_invoke_log rcu_invoke_callback_log;
-static DEFINE_SPINLOCK(rcu_callback_log_lock);
-
+DEFINE_PER_CPU(struct rcu_callback_log, rcu_callback_log_head);
+DEFINE_PER_CPU(struct rcu_invoke_log, rcu_invoke_callback_log);
 
 struct rcu_callback_log_entry *rcu_callback_log_add(void)
 {
-	struct rcu_callback_log *log = &rcu_callback_log_head;
+	struct rcu_callback_log *log;
 	struct rcu_callback_log_entry *e;
-	unsigned long irq_flags;
+
+	log = &__raw_get_cpu_var(rcu_callback_log_head);
 
 	if (log->entry == NULL)
 		return NULL;
 
-	spin_lock_irqsave(&rcu_callback_log_lock, irq_flags);
 	e = &log->entry[log->next];
-	spin_unlock_irqrestore(&rcu_callback_log_lock, irq_flags);
-
 	memset(e, 0, sizeof(*e));
-	spin_lock_irqsave(&rcu_callback_log_lock, irq_flags);
+
 	log->next++;
 	if (log->next == log->size) {
 		log->next = 0;
 		log->full = 1;
 	}
-	spin_unlock_irqrestore(&rcu_callback_log_lock, irq_flags);
 	return e;
 }
 
 struct rcu_invoke_log_entry *rcu_invoke_log_add(void)
 {
-	struct rcu_invoke_log *log = &rcu_invoke_callback_log;
+	struct rcu_invoke_log *log;
 	struct rcu_invoke_log_entry *e;
+
+	log = &__raw_get_cpu_var(rcu_invoke_callback_log);
 
 	if (log->entry == NULL)
 		return NULL;
 
 	e = &log->entry[log->next];
 	memset(e, 0, sizeof(*e));
+
 	log->next++;
 	if (log->next == log->size) {
 		log->next = 0;
@@ -514,36 +510,57 @@ static void print_rcu_invoke_log_entry(struct seq_file *m, struct
 
 static int rcu_callback_log_show(struct seq_file *m, void *unused)
 {
-	struct rcu_callback_log *rcu_log = &rcu_callback_log_head;
-	struct rcu_invoke_log *invoke_log = &rcu_invoke_callback_log;
-	int i;
+	struct rcu_callback_log *rcu_log;
+	struct rcu_invoke_log *invoke_log;
+	int i, cpu;
 
-	if (!rcu_log->entry || !invoke_log->entry)
-		return 0;
+	for_each_possible_cpu(cpu) {
+		if (!per_cpu(rcu_callback_log_head, cpu).entry)
+			return 0;
+	}
 
 	seq_puts(m, "========================");
 	seq_puts(m, "RCU CALLBACK LIST");
 	seq_puts(m, "========================\n");
 
-	if (rcu_log->full) {
-		for (i = rcu_log->next; i < rcu_log->size; i++)
+	for_each_possible_cpu(cpu) {
+		rcu_log = &per_cpu(rcu_callback_log_head, cpu);
+		seq_printf(m, "CPU%d\n", cpu);
+		if (rcu_log->full) {
+			for (i = rcu_log->next; i < rcu_log->size; i++) {
+				seq_printf(m, "%d ", cpu);
+				print_rcu_callback_log_entry(m, &rcu_log->entry[i]);
+			}
+		}
+		for (i = 0; i < rcu_log->next; i++) {
+			seq_printf(m, "%d ", cpu);
 			print_rcu_callback_log_entry(m, &rcu_log->entry[i]);
+		}
 	}
 
-	for (i = 0; i < rcu_log->next; i++)
-		print_rcu_callback_log_entry(m, &rcu_log->entry[i]);
+	for_each_possible_cpu(cpu) {
+		if (!per_cpu(rcu_invoke_callback_log, cpu).entry)
+			return 0;
+	}
 
 	seq_puts(m, "========================");
 	seq_puts(m, "RCU INVOKE CALLBACK LIST");
 	seq_puts(m, "========================\n");
 
-	if (invoke_log->full) {
-		for (i = invoke_log->next; i < invoke_log->size; i++)
+	for_each_possible_cpu(cpu) {
+		invoke_log = &per_cpu(rcu_invoke_callback_log, cpu);
+		seq_printf(m, "CPU%d\n", cpu);
+		if (invoke_log->full) {
+			for (i = invoke_log->next; i < invoke_log->size; i++) {
+				seq_printf(m, "%d ", cpu);
+				print_rcu_invoke_log_entry(m, &invoke_log->entry[i]);
+			}
+		}
+		for (i = 0; i < invoke_log->next; i++) {
+			seq_printf(m, "%d ", cpu);
 			print_rcu_invoke_log_entry(m, &invoke_log->entry[i]);
+		}
 	}
-
-	for (i = 0; i < invoke_log->next; i++)
-		print_rcu_invoke_log_entry(m, &invoke_log->entry[i]);
 
 	return 0;
 }
@@ -563,39 +580,43 @@ static const struct file_operations rcu_callback_log_fops = {
 
 static void alloc_rcu_log_entry(void)
 {
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
 #ifdef CONFIG_MTK_EXTMEM
-	rcu_callback_log_head.entry =
-		extmem_malloc_page_align(sizeof(struct rcu_callback_log_entry)
-					* MAX_RCU_BUFF_LEN);
-	rcu_callback_log_head.size = MAX_RCU_BUFF_LEN;
-	rcu_callback_log_head.next = 0;
+		per_cpu(rcu_callback_log_head, cpu).entry =
+			extmem_malloc_page_align(sizeof(struct rcu_callback_log_entry)
+						* MAX_RCU_BUFF_LEN);
+		per_cpu(rcu_callback_log_head, cpu).size = MAX_RCU_BUFF_LEN;
 
-	if (rcu_callback_log_head.entry == NULL) {
-		pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
-		rcu_callback_log_head.entry =
-		vmalloc(sizeof(struct rcu_callback_log_entry) *
-					MAX_RCU_BUFF_LEN);
-	}
+		if (per_cpu(rcu_callback_log_head, cpu).entry == NULL) {
+			pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
+			per_cpu(rcu_callback_log_head, cpu).entry =
+				vmalloc(sizeof(struct rcu_callback_log_entry) *
+							MAX_RCU_BUFF_LEN);
+		}
 
-	rcu_invoke_callback_log.entry =
-		extmem_malloc_page_align(sizeof(struct rcu_invoke_log_entry)
-					* MAX_RCU_BUFF_LEN);
-	rcu_invoke_callback_log.size = MAX_RCU_BUFF_LEN;
-	rcu_invoke_callback_log.next = 0;
+		per_cpu(rcu_invoke_callback_log, cpu).entry =
+			extmem_malloc_page_align(sizeof(struct rcu_invoke_log_entry)
+						* MAX_RCU_BUFF_LEN);
+		per_cpu(rcu_invoke_callback_log, cpu).size = MAX_RCU_BUFF_LEN;
 
-	if (rcu_invoke_callback_log.entry == NULL) {
-		pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
-		rcu_invoke_callback_log.entry =
-		vmalloc(sizeof(struct rcu_invoke_log_entry) *
-					MAX_RCU_BUFF_LEN);
-	}
+		if (per_cpu(rcu_invoke_callback_log, cpu).entry == NULL) {
+			pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
+			per_cpu(rcu_invoke_callback_log, cpu).entry =
+				vmalloc(sizeof(struct rcu_invoke_log_entry) *
+							MAX_RCU_BUFF_LEN);
+		}
 #else
-	rcu_callback_log_head.entry = &callback_entry_t[0];
-	rcu_callback_log_head.size = ARRAY_SIZE(callback_entry_t);
+		per_cpu(rcu_callback_log_head, cpu).entry =
+			vmalloc(sizeof(struct rcu_callback_log_entry) * MAX_RCU_BUFF_LEN);
+		per_cpu(rcu_callback_log_head, cpu).size = MAX_RCU_BUFF_LEN;
 
-	rcu_invoke_callback_log.entry = &invoke_entry_t[0];
-	rcu_invoke_callback_log.size = ARRAY_SIZE(invoke_entry_t);
+		per_cpu(rcu_invoke_callback_log, cpu).entry =
+			vmalloc(sizeof(struct rcu_invoke_log_entry) * MAX_RCU_BUFF_LEN);
+		per_cpu(rcu_invoke_callback_log, cpu).size = MAX_RCU_BUFF_LEN;
 #endif
+	}
 }
 #endif
 
