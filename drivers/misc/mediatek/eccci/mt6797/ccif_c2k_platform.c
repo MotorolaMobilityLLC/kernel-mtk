@@ -345,6 +345,12 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 				      (md_ctrl->hw_info->c2k_misc,
 				       C2K_CONFIG) | ETS_SEL_BIT));
 		}
+		/*set c2k_md1src_req_en*/
+		ccif_write32(md_ctrl->hw_info->c2k_misc,
+			     C2K_CONFIG,
+			     ccif_read32(md_ctrl->hw_info->c2k_misc,
+					 C2K_CONFIG) | (0x1 << 3));
+
 		/*step 1: config srcclkena selection mask */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
