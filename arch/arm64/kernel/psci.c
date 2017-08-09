@@ -34,6 +34,8 @@
 #include <mtk_hibernate_core.h>
 #ifdef CONFIG_ARCH_MT6797
 #include <mt6797/da9214.h>
+#include <mach/mt_freqhopping.h>
+#include <mt_clkmgr.h>
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -45,8 +47,18 @@
 
 #ifdef CONFIG_ARCH_MT6797
 #define MT6797_IDVFS_BASE_ADDR		0x10222000
+
+#define CONFIG_CL2_BUCK_CTRL	1
+ #undef CONFIG_CL2_BUCK_CTRL
+#define CONFIG_ARMPLL_CTRL	1
+ #undef CONFIG_ARMPLL_CTRL
+
 int bypass_boot = 2;
-char cl2_online = 0;
+int bypass_cl0_armpll = 3;
+int bypass_cl1_armpll = 4;
+char g_cl0_online = 1;	/* cpu0 is online */
+char g_cl1_online = 0;
+char g_cl2_online = 0;
 #endif
 
 struct psci_power_state {
@@ -461,6 +473,7 @@ static int __init cpu_psci_cpu_prepare(unsigned int cpu)
 }
 
 #ifdef CONFIG_ARCH_MT6797
+#ifdef CONFIG_CL2_BUCK_CTRL
 static int cpu_power_on_buck(unsigned int cpu)
 {
 	static void __iomem *reg_base;
@@ -477,6 +490,24 @@ static int cpu_power_on_buck(unsigned int cpu)
 
 	return ret;
 }
+
+static int cpu_power_off_buck(unsigned int cpu)
+{
+	static void __iomem *reg_base;
+	int ret = 0;
+
+	pr_info("power down vproc (%d)\n", cpu);
+	ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
+	ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
+
+	pr_info("power down vsram\n");
+	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
+	writel_relaxed((readl(reg_base + 0x02B0) & ~(0xf << 4)), reg_base + 0x02B0);
+	iounmap(reg_base);
+
+	return ret;
+}
+#endif
 #endif
 
 static int cpu_psci_cpu_boot(unsigned int cpu)
@@ -484,22 +515,71 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 #ifdef CONFIG_ARCH_MT6797
 	int err = 0;
 
-	if ((cpu == 8) || (cpu == 9)) {
+	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
+		if (bypass_cl0_armpll > 0) {
+			bypass_cl0_armpll--;
+		} else {
+			if (!g_cl0_online) {
+				pr_info("boot cluster0\n");
+#ifdef CONFIG_ARMPLL_CTRL
+				/* turn on arm pll */
+				enable_armpll_ll();
+				/* non-pause FQHP function */
+				mt_pause_armpll(MCU_FH_PLL0, 0);
+				mt_pause_armpll(MCU_FH_PLL1, 0);
+				mt_pause_armpll(MCU_FH_PLL2, 0);
+				mt_pause_armpll(MCU_FH_PLL3, 0);
+				/* switch to HW mode */
+				switch_armpll_ll_hwmode(1);
+#endif
+			}
+		}
+	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
+		if (bypass_cl1_armpll > 0) {
+			bypass_cl1_armpll--;
+		} else {
+			if (!g_cl1_online) {
+				pr_info("boot cluster1\n");
+#ifdef CONFIG_ARMPLL_CTRL
+				/* turn on arm pll */
+				enable_armpll_l();
+				/* non-pause FQHP function */
+				mt_pause_armpll(MCU_FH_PLL0, 0);
+				mt_pause_armpll(MCU_FH_PLL1, 0);
+				mt_pause_armpll(MCU_FH_PLL2, 0);
+				mt_pause_armpll(MCU_FH_PLL3, 0);
+				/* switch to HW mode */
+				switch_armpll_l_hwmode(1);
+#endif
+			}
+		}
+	} else if ((cpu == 8) || (cpu == 9)) {
 		if (bypass_boot > 0) {
 			bypass_boot--;
 		} else {
-			if (!cl2_online)
+			if (!g_cl2_online)
+				pr_info("boot cluster2\n");
+#ifdef CONFIG_CL2_BUCK_CTRL
 				cpu_power_on_buck(cpu);
+#endif
 		}
 	}
+
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 
 	if (err)
 		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
 	else {
-		if ((cpu == 8) || (cpu == 9))
-			cl2_online |= (1 << (cpu - 8));
+		if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3))
+			g_cl0_online |= (1 << cpu);
+		else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7))
+			g_cl1_online |= (1 << (cpu - 4));
+		else if ((cpu == 8) || (cpu == 9))
+			g_cl2_online |= (1 << (cpu - 8));
 	}
+
+	pr_info("boot CPU%d (0x%x, 0x%x, 0x%x)\n",
+		cpu, g_cl0_online, g_cl1_online, g_cl2_online);
 #else
 	int err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 	if (err)
@@ -541,22 +621,49 @@ static void cpu_psci_cpu_die(unsigned int cpu)
 }
 
 #ifdef CONFIG_ARCH_MT6797
-static int cpu_power_down_buck(unsigned int cpu)
+static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 {
-	static void __iomem *reg_base;
 	int ret = 0;
 
-	if ((cpu == 8) || (cpu == 9)) {
-		cl2_online &= ~(1 << (cpu - 8));
-		if (!cl2_online) {
-			pr_info("power down vproc (%d)\n", cpu);
-			ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
-			ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
-
-			pr_info("power down vsram\n");
-			reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
-			writel_relaxed((readl(reg_base + 0x02B0) & ~(0xf << 4)), reg_base + 0x02B0);
-			iounmap(reg_base);
+	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
+		g_cl0_online &= ~(1 << cpu);
+		if (!g_cl0_online) {
+			pr_info("cluster0 down\n");
+#ifdef CONFIG_ARMPLL_CTRL
+			/* switch to SW mode */
+			switch_armpll_ll_hwmode(0);
+			/* pause FQHP function */
+			mt_pause_armpll(MCU_FH_PLL0, 1);
+			mt_pause_armpll(MCU_FH_PLL1, 1);
+			mt_pause_armpll(MCU_FH_PLL2, 1);
+			mt_pause_armpll(MCU_FH_PLL3, 1);
+			/* turn off arm pll */
+			disable_armpll_ll();
+#endif
+		}
+	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
+		g_cl1_online &= ~(1 << (cpu - 4));
+		if (!g_cl1_online) {
+			pr_info("cluster1 down\n");
+#ifdef CONFIG_ARMPLL_CTRL
+			/* switch to SW mode */
+			switch_armpll_l_hwmode(0);
+			/* pause FQHP function */
+			mt_pause_armpll(MCU_FH_PLL0, 1);
+			mt_pause_armpll(MCU_FH_PLL1, 1);
+			mt_pause_armpll(MCU_FH_PLL2, 1);
+			mt_pause_armpll(MCU_FH_PLL3, 1);
+			/* turn off arm pll */
+			disable_armpll_l();
+#endif
+		}
+	} else if ((cpu == 8) || (cpu == 9)) {
+		g_cl2_online &= ~(1 << (cpu - 8));
+		if (!g_cl2_online) {
+			pr_info("cluster2 down\n");
+#ifdef CONFIG_CL2_BUCK_CTRL
+			ret = cpu_power_off_buck(cpu);
+#endif
 		}
 	}
 
@@ -581,7 +688,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
 			pr_info("CPU%d killed.\n", cpu);
 #ifdef CONFIG_ARCH_MT6797
-			cpu_power_down_buck(cpu);
+			cpu_kill_pll_buck_ctrl(cpu);
 #endif
 			return 1;
 		}
