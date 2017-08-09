@@ -437,7 +437,7 @@ struct aee_oops *ipanic_oops_from_sd(void)
 				oops->android_radio_len = dheader->used;
 				break;
 			case IPANIC_DT_CURRENT_TSK:
-				memcpy(oops->process_path, data, sizeof(struct aee_process_info));
+				memcpy(oops->process_path, data, AEE_PROCESS_NAME_LENGTH - 1);
 				break;
 			case IPANIC_DT_MMPROFILE:
 				oops->mmprofile = data;
@@ -534,6 +534,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, 0);
 	ipanic_kick_wdt();
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	errno = ipanic_header_to_sd(0);
@@ -577,7 +578,7 @@ struct ipanic_header *ipanic_header(void)
 		dheader->type = i;
 		dheader->valid = 0;
 		dheader->used = 0;
-		strncpy(dheader->name, ipanic_dt_ops[i].string, 32);
+		strncpy(dheader->name, ipanic_dt_ops[i].string, 31);
 		if (ipanic_dt_active(i) && ipanic_dt_ops[i].size) {
 			dheader->encrypt = ipanic_dt_encrypt(i);
 			dheader->offset = next_offset + iheader->dhblk;
@@ -631,6 +632,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	smp_send_stop();
 
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel Oops");
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, dargs->regs);

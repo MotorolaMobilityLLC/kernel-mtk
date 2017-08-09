@@ -1382,8 +1382,9 @@ void aee_rr_show_last_pc(struct seq_file *m)
 {
 	char *reg_buf = kmalloc(4096, GFP_KERNEL);
 
-	if (reg_buf && mt_reg_dump(reg_buf) == 0) {
-		seq_printf(m, "%s\n", reg_buf);
+	if (reg_buf) {
+		if (mt_reg_dump(reg_buf) == 0)
+			seq_printf(m, "%s\n", reg_buf);
 		kfree(reg_buf);
 	}
 }

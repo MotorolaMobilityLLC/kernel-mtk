@@ -344,7 +344,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 
 static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
 {
-	char name[8];
+	char name[NOTE_NAME_SHORT];
 	int id;
 
 	if (mrdump_mini_ehdr == NULL)
@@ -354,7 +354,7 @@ static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
 	id = main ? 0 : cpu + 1;
 	if (strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 		return -1;
-	snprintf(name, NOTE_NAME_SHORT, main ? "ke%d" : "core%d", cpu);
+	snprintf(name, NOTE_NAME_SHORT - 1, main ? "ke%d" : "core%d", cpu);
 	fill_prstatus(&mrdump_mini_ehdr->prstatus[id].data, regs, 0, id ? id : (100 + cpu));
 	fill_note_S(&mrdump_mini_ehdr->prstatus[id].note, name, NT_PRSTATUS,
 		    sizeof(struct elf_prstatus));
@@ -562,9 +562,11 @@ static void mrdump_mini_add_loads(void)
 			cpu = prstatus->pr_pid - 100;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 1);
 			mrdump_mini_add_entry((unsigned long)cpu_rq(cpu), MRDUMP_MINI_SECTION_SIZE);
-		} else {
+		} else if (prstatus->pr_pid < NR_CPUS) {
 			cpu = prstatus->pr_pid - 1;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 0);
+		} else {
+			LOGE("mrdump: wrong pr_pid: %d\n", prstatus->pr_pid);
 		}
 	}
 
