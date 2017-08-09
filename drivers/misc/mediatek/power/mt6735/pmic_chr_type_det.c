@@ -23,7 +23,7 @@
 #include <linux/seq_file.h>
 
 #include <asm/uaccess.h>
-
+#include <mt-plat/charging.h>
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>

@@ -77,9 +77,8 @@
 #include "pmic_dvt.h"
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-#include <mach/mt_boot.h>
-#include <mach/system.h>
-#include "mach/mt_gpt.h"
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/mt_gpt.h>
 #endif
 
 /*#include <mach/battery_common.h> TBD*/
@@ -2957,7 +2956,7 @@ void pwrkey_int_handler(void)
 	PMICLOG("[pwrkey_int_handler] Press pwrkey %d\n", pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 		timer_pre = sched_clock();
 #endif
 #if defined(CONFIG_MTK_FPGA)
@@ -2971,7 +2970,7 @@ void pwrkey_int_handler_r(void)
 	PMICLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
 		timer_pos = sched_clock();
 		if (timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME)
 			long_pwrkey_press = true;
@@ -2979,7 +2978,7 @@ void pwrkey_int_handler_r(void)
 						timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
 		if (long_pwrkey_press) {	/*500ms*/
 			PMICLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
-			arch_reset(0, NULL);
+			/*arch_reset(0, NULL);*/
 		}
 	}
 #endif
@@ -3027,7 +3026,7 @@ void chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			PMICLOG("[chrdet_int_handler] Unplug Charger/USB\n");
-			mt_power_off();
+			/*mt_power_off();*/
 		}
 	}
 #endif
