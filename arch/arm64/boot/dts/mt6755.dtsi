@@ -2474,7 +2474,7 @@
 			/* charger error check */
 			bat_low_temp_protect_enable = <0 >;
 			v_charger_enable = <0 >;	/* 1:on , 0:off */
-			v_charger_max = <13500 >;	/* unit: mV */
+			v_charger_max = <6500 >;	/* unit: mV */
 			v_charger_min = <4400 >;
 
 			/*  Tracking TIME */
