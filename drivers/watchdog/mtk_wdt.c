@@ -38,6 +38,8 @@
 #include <linux/reset.h>
 #ifdef CONFIG_MT6397_MISC
 #include <linux/mfd/mt6397/rtc_misc.h>
+#else
+#include <mt-plat/mtk_rtc.h>
 #endif
 #include <mt-plat/aee.h>
 
@@ -63,6 +65,7 @@
 
 #define WDT_STATUS		0x0c
 #define WDT_NONRST_REG		0x20
+#define WDT_NONRST_REG2		0x24
 
 #define WDT_SWRST		0x14
 #define WDT_SWRST_KEY		0x1209
@@ -214,6 +217,20 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 	return ret;
 }
 
+static int mtk_wd_SetNonResetReg2(unsigned int offset, bool value)
+{
+	u32 reg;
+
+	reg = ioread32(toprgu_base + WDT_NONRST_REG2);
+	if (value)
+		reg |= 1 << offset;
+	else
+		reg &= ~(1 << offset);
+	iowrite32(reg, toprgu_base + WDT_NONRST_REG2);
+
+	return ioread32(toprgu_base + WDT_NONRST_REG2);
+}
+
 static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 				void *cmd)
 {
@@ -224,13 +241,24 @@ static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 	mtk_wdt = container_of(this, struct mtk_wdt_dev, restart_handler);
 	wdt_base = mtk_wdt->wdt_base;
 
-#ifdef CONFIG_MT6397_MISC
-	if (cmd && !strcmp(cmd, "recovery")) {
+	if (cmd && !strcmp(cmd, "rpmbpk")) {
+		mtk_wd_SetNonResetReg2(0x0, 1);
+	} else if (cmd && !strcmp(cmd, "recovery")) {
+		mtk_wd_SetNonResetReg2(0x1, 1);
+		#ifdef CONFIG_MT6397_MISC
 		mtk_misc_mark_recovery();
+		#else
+		rtc_mark_recovery();
+		#endif
 	} else if (cmd && !strcmp(cmd, "bootloader")) {
+		mtk_wd_SetNonResetReg2(0x2, 1);
+		#ifdef CONFIG_MT6397_MISC
 		mtk_misc_mark_fast();
+		#else
+		rtc_mark_fast();
+		#endif
 	}
-#endif
+
 	reg = ioread32(wdt_base + WDT_MODE);
 	reg &= ~(WDT_MODE_DUAL_EN | WDT_MODE_IRQ_EN | WDT_MODE_EN);
 	reg |= WDT_MODE_KEY;
@@ -302,7 +330,6 @@ static int mtk_wdt_start(struct watchdog_device *wdt_dev)
 
 	reg = ioread32(wdt_base + WDT_MODE);
 	reg |= (WDT_MODE_DUAL_EN | WDT_MODE_IRQ_EN | WDT_MODE_EXRST_EN);
-	reg |= WDT_MODE_AUTO_START;
 	reg &= ~WDT_MODE_EXT_POL_HIGH;
 	reg |= (WDT_MODE_EN | WDT_MODE_KEY);
 	iowrite32(reg, wdt_base + WDT_MODE);
