@@ -184,7 +184,7 @@ static int mt_soc_ana_debug_open(struct inode *inode, struct file *file)
 static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 				     size_t count, loff_t *pos)
 {
-	const int size = 4096;
+	const int size = 6020;
 	/* char buffer[size]; */
 	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
@@ -470,6 +470,8 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 
 	n += scnprintf(buffer + n, size - n, "TOP_CKPDN_CON0  = 0x%x\n",
 		       Ana_Get_Reg(TOP_CKPDN_CON0));
+	n += scnprintf(buffer + n, size - n, "DRV_CON2  = 0x%x\n",
+		       Ana_Get_Reg(DRV_CON2));
 	n += scnprintf(buffer + n, size - n, "GPIO_MODE3  = 0x%x\n", Ana_Get_Reg(GPIO_MODE3));
 	pr_debug("mt_soc_ana_debug_read len = %d\n", n);
 

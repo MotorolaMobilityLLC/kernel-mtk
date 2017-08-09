@@ -4476,6 +4476,8 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
 	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000);
 	/* Reverse the PMIC clock*/
+	Ana_Set_Reg(DRV_CON2, 0x00e0, 0x00f0);
+	/* PAD_AUD_DAT_MISO driving */
 	audckbufEnable(false);
 }
 
