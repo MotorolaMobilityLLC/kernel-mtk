@@ -171,7 +171,7 @@ extern int get_dlpt_imix(void);
 extern int dlpt_check_power_off(void);
 extern unsigned int pmic_read_vbif28_volt(unsigned int *val);
 extern unsigned int pmic_get_vbif28_volt(void);
-
+extern void pmic_auxadc_debug(int index);
 extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
 extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
 

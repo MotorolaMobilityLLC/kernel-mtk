@@ -91,9 +91,15 @@
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
 
-#include <da9214.h>
-#include <fan53555.h>
+#if defined(EXTERNAL_BUCK_FAN49101)
 #include <fan49101.h>
+#endif
+#if defined(EXTERNAL_BUCK_FAN53555)
+#include <fan53555.h>
+#endif
+#if defined(EXTERNAL_BUCK_DA9214)
+#include <da9214.h>
+#endif
 
 /*****************************************************************************
  * PMIC extern variable
@@ -3390,7 +3396,11 @@ int is_ext_buck_sw_ready(void)
 
 int is_ext_buck_exist(void)
 {
+#if defined(EXTERNAL_BUCK_MT6311)
+	if ((is_mt6311_exist() == 1))
+#elif defined(EXTERNAL_BUCK_DA9214)
 	if ((is_da9214_exist() == 1))
+#endif
 		return 1;
 	else
 		return 0;
@@ -3398,18 +3408,39 @@ int is_ext_buck_exist(void)
 
 int is_ext_buck2_exist(void)
 {
+#if defined(EXTERNAL_BUCK_FAN53555)
 	if ((is_fan53555_exist() == 1))
 		return 1;
 	else
 		return 0;
+#else
+	return 0;
+#if 0
+#if defined(CONFIG_MTK_FPGA)
+	return 0;
+#else
+#if !defined CONFIG_MTK_LEGACY
+	/*return gpiod_get_value(gpio_to_desc(130));*/
+	return __gpio_get_value(130);
+	/*return mt_get_gpio_in(130);*/
+#else
+	return 0;
+#endif
+#endif
+#endif
+#endif /* End of #if defined(EXTERNAL_BUCK_FAN53555) */
 }
 
 int is_ext_buck3_exist(void)
 {
+#if defined(EXTERNAL_BUCK_FAN49101)
 	if ((is_fan49101_exist() == 1))
 		return 1;
 	else
 		return 0;
+#else
+	return 0;
+#endif
 }
 /*****************************************************************************
  * FTM
@@ -4327,9 +4358,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/*pmic initial setting */
-#if 1
+#if !defined(EXTERNAL_BUCK_MT6311)
 	PMIC_INIT_SETTING_V1();
-	pr_err("[PMIC_INIT_SETTING_V1] Done\n");
+	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
 #else
 	PMICLOG("[PMIC_INIT_SETTING_V1] delay to MT6311 init\n");
 #endif
@@ -4688,10 +4719,10 @@ static int __init pmic_mt_init(void)
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
-	pr_err("Auxadc Init\n");
+
 	pmic_auxadc_init();
-	ret = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH11, 5, 0);
-	pr_err("****[pmic_mt_init] Initialization : DONE !!\n");
+
+	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
 
 	return 0;
 }

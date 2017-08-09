@@ -4,6 +4,11 @@
 
 #define PMIC_DEBUG
 
+/* #define EXTERNAL_BUCK_MT6311 */
+#define EXTERNAL_BUCK_FAN49101
+#define EXTERNAL_BUCK_FAN53555
+#define EXTERNAL_BUCK_DA9214
+
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 /*

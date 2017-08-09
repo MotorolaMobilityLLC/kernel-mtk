@@ -4,6 +4,7 @@
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
 #define BATTERY_DTS_SUPPORT
+#define BATTERY_SW_INIT
 #define RBAT_PULL_UP_VOLT_BY_BIF
 
 /*==============================================================================
