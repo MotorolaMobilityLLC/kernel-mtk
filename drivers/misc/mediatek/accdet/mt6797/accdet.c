@@ -137,10 +137,10 @@ int accdet_get_cable_type(void)
 void accdet_auxadc_switch(int enable)
 {
 	if (enable) {
-		pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_BF_ON);
+		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | ACCDET_BF_ON);
 		/*ACCDET_DEBUG("ACCDET enable switch\n");*/
 	} else {
-		pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) & ~(ACCDET_BF_ON));
+		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) & ~(ACCDET_BF_ON));
 		/*ACCDET_DEBUG("ACCDET disable switch\n");*/
 	}
 }
@@ -1141,8 +1141,8 @@ void accdet_pmic_Read_Efuse_HPOffset(void)
 {
 	s16 efusevalue;
 
-	efusevalue = (s16) pmic_Read_Efuse_HPOffset(0x10);
-	accdet_auxadc_offset = (efusevalue >> 8) & 0xFF;
+	efusevalue = (s16) pmic_Read_Efuse_HPOffset(RG_OTP_PA_ADDR_WORD_INDEX);
+	accdet_auxadc_offset = (efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & 0xFF;
 	accdet_auxadc_offset = (accdet_auxadc_offset / 2);
 	ACCDET_INFO(" efusevalue = 0x%x, accdet_auxadc_offset = %d\n", efusevalue, accdet_auxadc_offset);
 }
@@ -1193,22 +1193,23 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_NEGV_IRQ_SET);
 #endif
    /*********************ACCDET Analog Setting***********************************************************/
-	pmic_set_register_value(PMIC_RG_AUDMICBIASVREF, accdet_dts_data.mic_mode_vol);
-	pmic_pwrap_write(ACCDET_RSV, 0x1290);	/*TODO: need confirm pull low,6328 bit[12]=1*/
+	pmic_set_register_value(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
+	pmic_set_register_value(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
+		| (accdet_dts_data.mic_mode_vol<<4) | 0x80);
+	pmic_pwrap_write(ACCDET_RSV, 0x0010);
 #ifdef CONFIG_ACCDET_EINT_IRQ
-	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_EINT_CON_EN);
+	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG)
+		| ACCDET_EINT_CON_EN); /*Internal connection between ACCDET and EINT*/
 #endif
 #ifdef ACCDET_NEGV_IRQ
 	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_NEGV_DT_EN);
 #endif
 	if (accdet_dts_data.accdet_mic_mode == 1)	/* ACC mode*/
-		pmic_set_register_value(PMIC_RG_AUDMICBIAS1DCSWPEN, 0);
+		;
 	else if (accdet_dts_data.accdet_mic_mode == 2)	/* Low cost mode without internal bias*/
-		pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
-	else if (accdet_dts_data.accdet_mic_mode == 6) {/* Low cost mode with internal bias*/
-		pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
-		pmic_set_register_value(PMIC_RG_AUDMICBIAS1DCSWPEN, 1);	/*switch P internal*/
-	}
+		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
+	else if (accdet_dts_data.accdet_mic_mode == 6)	/* Low cost mode with internal bias*/
+		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x09C4);
     /**************************************************************************************************/
 #if defined CONFIG_ACCDET_EINT
 	/* disable ACCDET unit*/
@@ -1645,8 +1646,7 @@ void mt_accdet_pm_restore_noirq(void)
 #ifdef CONFIG_ACCDET_EINT_IRQ
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_EINT_IRQ_CLR);
 	pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
-	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_EINT_CON_EN);
-	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_EINT_CON_EN);
+	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | ACCDET_EINT_CON_EN);
 	pmic_pwrap_write(ACCDET_CTRL, ACCDET_EINT_EN);
 #endif
 #ifdef ACCDET_NEGV_IRQ
