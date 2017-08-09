@@ -316,9 +316,6 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 		if (isAEEEnabled == 0) {
 			isAEEEnabled = 1;
 			DAL_Dynamic_Change_FB_Layer(isAEEEnabled);
-			DAL_CHECK_MFC_RET(MFC_Open(&mfc_handle, dal_fb_addr,
-			   DAL_WIDTH, DAL_HEIGHT, DAL_BPP,
-			   DAL_FG_COLOR, DAL_BG_COLOR));
 		}
 		show_dal_layer(1);
 	}

@@ -350,7 +350,7 @@ static void mutex_dump_analysis(void)
 	unsigned int val;
 	unsigned int regval;
 
-	mutex_module = kzalloc(512, GFP_KERNEL);
+	mutex_module = kzalloc(512, GFP_ATOMIC);
 	if (!mutex_module) {
 		DDPDUMP("%s fail because of no memory\n", __func__);
 		return;
@@ -476,7 +476,7 @@ static void mmsys_config_dump_analysis(void)
 		DDPERR("mmsys clock abnormal!!\n");
 
 #define CLOCK_ON_SIZE 512
-	clock_on = kzalloc(CLOCK_ON_SIZE, GFP_KERNEL);
+	clock_on = kzalloc(CLOCK_ON_SIZE, GFP_ATOMIC);
 	if (!clock_on)
 		return;
 
