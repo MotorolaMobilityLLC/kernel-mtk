@@ -171,7 +171,7 @@ obj-$(CONFIG_MTK_MTD_NAND) += nand/
 obj-$(CONFIG_MTK_DUM_CHAR) += dum-char/
 obj-$(CONFIG_MTK_DYNAMIC_BOOST) += dynamic_boost/
 
-obj-$(CONFIG_MTK_RRC)	+= rrc/
+obj-$(CONFIG_MTK_DISPLAY_120HZ_SUPPORT)	+= rrc/
 
 # Crypto performance tools (disable by default)
 obj-n += crypto/

@@ -856,6 +856,7 @@ static int rrc_probe(struct platform_device *pdev)
 	}
 	is_touch_event = 0;
 	is_video_scenario = 0;
+	_rrc_avg_fps_range = RRC_DRV_120Hz;
 
 	RRC_DBG("RRC Probe Done\n");
 
