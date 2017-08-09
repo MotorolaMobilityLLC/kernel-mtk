@@ -536,6 +536,9 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 		set_adaptive_cpu_power_limit(0);
 #endif
 		set_adaptive_gpu_power_limit(0);
+#if (CONFIG_THERMAL_AEE_RR_REC == 1)
+			aee_rr_rec_thermal_ATM_status(ATM_DONE);
+#endif
 		return 0;
 	}
 
