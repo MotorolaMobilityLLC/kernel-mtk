@@ -934,7 +934,8 @@ void EnableAfe(bool bEnable)
 	unsigned long flags;
 	bool MemEnable = false;
 #ifdef CONFIG_OF
-#ifdef CONFIG_MTK_CLKMGR
+#ifdef CONFIG_MTK_LEGACY
+
 	int ret;
 
 	ret = GetGPIO_Info(1, &pin_audclk, &pin_mode_audclk);

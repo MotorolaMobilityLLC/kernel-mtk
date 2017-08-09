@@ -753,6 +753,8 @@ static int Auddrv_Reg_map_new(void *dev)
 	return 0;
 }
 
+#ifdef CONFIG_MTK_LEGACY
+
 static int Auddrv_OF_ParseGPIO(void *dev)
 {
 	/* struct device_node *node = NULL; */
@@ -1025,6 +1027,8 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 	return 0;
 }
 EXPORT_SYMBOL(GetGPIO_Info);
+#endif
+
 #endif
 
 static void DL1GlobalVarInit(void)
