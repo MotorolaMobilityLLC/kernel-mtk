@@ -328,6 +328,11 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 	return 0;
 }
 
+int __attribute__((weak)) is_teei_ready(void)
+{
+	return 1;
+}
+
 #endif
 
 static char log_buf[500];
@@ -608,6 +613,13 @@ bool soidle3_can_enter(int cpu)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	if (soidle3_by_pass_en == 0) {
 		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0)) {
@@ -894,6 +906,13 @@ bool soidle_can_enter(int cpu)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	if (soidle_by_pass_en == 0) {
 		if (spm_get_sodi_en() == 0) {
@@ -1262,6 +1281,13 @@ static bool dpidle_can_enter(int cpu)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));

@@ -21,6 +21,10 @@ extern int request_uart_to_wakeup(void);
 extern void mtk_uart_restore(void);
 extern void dump_uart_reg(void);
 
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+extern int is_teei_ready(void);
+#endif
+
 /* SODI3 */
 extern void soidle3_before_wfi(int cpu);
 extern void soidle3_after_wfi(int cpu);
