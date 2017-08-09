@@ -592,26 +592,12 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+	if (primary_display_partial_support())
+		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
+
 	data_config->dst_dirty = 1;
 	data_config->ovl_dirty = 1;
 	data_config->rdma_dirty = 1;
-	if (primary_display_partial_support()) {
-		struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
-
-		total_dirty_roi.x = 0;
-		total_dirty_roi.y = 0;
-		total_dirty_roi.width = primary_display_get_width();
-		total_dirty_roi.height = primary_display_get_height();
-		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
-			data_config->ovl_partial_roi = total_dirty_roi;
-			dpmgr_path_update_partial_roi(primary_get_dpmgr_handle(),
-					total_dirty_roi, NULL);
-			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
-				/*update rdma goden settin*/
-				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
-			}
-		}
-	}
 	dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
 
 	if (primary_display_is_decouple_mode()) {

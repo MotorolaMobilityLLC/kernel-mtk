@@ -346,6 +346,9 @@ int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_han
 			/* update ovl to full layer */
 			pconfig->ovl_dirty = 1;
 			dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
+			pconfig->ovl_layer_scanned = 0;
+			pconfig->ovl_partial_dirty = 0;
+			pconfig->ovl_dirty = 0;
 		}
 		return 0;
 	}
@@ -1526,15 +1529,13 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_engine, cmdq_handle);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	primary_display_config_full_roi(pconfig, pgc->dpmgr_handle, cmdq_handle);
 	pconfig->wdma_config = *p_wdma;
 
 	if (disp_helper_get_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565)) {
 		pconfig->wdma_config.outputFormat = UFMT_RGB565;
 		pconfig->wdma_config.dstPitch = pconfig->wdma_config.srcWidth * 2;
 	}
-
-	primary_display_config_full_roi(pconfig, pgc->dpmgr_handle, cmdq_handle);
-
 	pconfig->wdma_dirty = 1;
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
 
@@ -4435,7 +4436,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
 	if (disp_partial_is_support()) {
-		if (aal_is_partial_support() && primary_display_is_directlink_mode())
+		if (primary_display_is_directlink_mode())
 			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);
 		else
 			assign_full_lcm_roi(&total_dirty_roi);
@@ -4559,6 +4560,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (disp_partial_is_support() && primary_display_is_directlink_mode()) {
 		disp_patial_lcm_validate_roi(pgc->plcm, &total_dirty_roi);
+		if (is_equal_full_lcm(&total_dirty_roi))
+			aal_request_partial_support(0);
+		else
+			aal_request_partial_support(1);
+
+		if (!aal_is_partial_support())
+			assign_full_lcm_roi(&total_dirty_roi);
+
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
 			/*update roi to lcm*/
 			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);

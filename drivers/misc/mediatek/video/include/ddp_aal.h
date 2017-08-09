@@ -46,6 +46,7 @@ void disp_aal_on_end_of_frame(void);
 extern int aal_dbg_en;
 void aal_test(const char *cmd, char *debug_output);
 int aal_is_partial_support(void);
+int aal_request_partial_support(int partial);
 
 void disp_aal_notify_backlight_changed(int bl_1024);
 

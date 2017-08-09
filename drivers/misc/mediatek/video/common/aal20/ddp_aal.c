@@ -624,6 +624,11 @@ int aal_is_partial_support(void)
 	return 1;
 }
 
+int aal_request_partial_support(int partial)
+{
+	return 0;
+}
+
 #if defined(CONFIG_ARCH_MT6797)
 static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {

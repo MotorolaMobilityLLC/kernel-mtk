@@ -598,6 +598,11 @@ int primary_display_esd_recovery(void)
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 8);
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
+	if (primary_display_partial_support()) {
+		disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+
+		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
+	}
 	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]start dpmgr path[end]\n");
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {

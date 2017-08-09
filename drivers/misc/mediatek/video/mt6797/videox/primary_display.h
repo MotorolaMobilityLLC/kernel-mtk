@@ -313,5 +313,8 @@ int display_enter_tui(void);
 int display_exit_tui(void);
 
 int primary_display_partial_support(void);
+int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
+		cmdqRecHandle cmdq_handle);
+
 
 #endif
