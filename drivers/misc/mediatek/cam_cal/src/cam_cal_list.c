@@ -67,6 +67,7 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX214_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
 	{S5K2X8_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
 	{IMX258_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
+	{IMX377_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
 
 	/*  ADD before this line */
 	{0, 0, 0, 0} /*end of list*/
