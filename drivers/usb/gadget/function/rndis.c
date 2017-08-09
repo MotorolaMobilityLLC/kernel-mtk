@@ -904,6 +904,7 @@ int rndis_register(void (*resp_avail)(void *v), void *v)
 			rndis_per_dev_params[i].used = 1;
 			rndis_per_dev_params[i].resp_avail = resp_avail;
 			rndis_per_dev_params[i].v = v;
+			rndis_per_dev_params[i].max_pkt_per_xfer = 1;
 			pr_debug("%s: configNr = %d\n", __func__, i);
 			return i;
 		}
