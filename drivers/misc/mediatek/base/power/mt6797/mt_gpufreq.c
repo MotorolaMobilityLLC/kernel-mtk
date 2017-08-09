@@ -774,7 +774,7 @@ static void mt_gpufreq_set_initial(void)
 	aee_rr_rec_gpu_dvfs_oppidx(g_cur_gpu_OPPidx);
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() & ~(1 << GPU_DVFS_IS_DOING_DVFS));
 #endif
-	_mt_gpufreq_kick_pbm(1);
+
 	mutex_unlock(&mt_gpufreq_lock);
 }
 
@@ -1454,20 +1454,20 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 
 static unsigned int _mt_gpufreq_get_cur_freq(void)
 {
-	unsigned int mfgpll = 0;
+	unsigned long mfgpll = 0;
 	unsigned int post_div = 0;
 	unsigned int freq = 0;
 
 	mfgpll = DRV_Reg32(MFGPLL_CON1) & ~0xffc00000;
 	post_div = (DRV_Reg32(MFGPLL_CON1) & (0x3 << 24)) >> 24;
 	if ((mfgpll >= 0x10000) && (mfgpll <= 0x3fffff)) {
-		freq = (((mfgpll * 10 * 26  >> 14) / (1 << post_div) + 5) / 10) * 1000;
+		freq = (((mfgpll * 100 * 26  >> 14) / (1 << post_div) + 5) / 10) * 100;
 	}  else {
-		gpufreq_err("Invalid mfgpll value = 0x%x\n", mfgpll);
+		gpufreq_err("Invalid mfgpll value = %ld\n", mfgpll);
 		BUG();
 	}
 
-	gpufreq_dbg("mfgpll = 0x%x, freq = %d div = %d\n", mfgpll, freq, post_div);
+	gpufreq_dbg("mfgpll = %ld, freq = %d div = %d\n", mfgpll, freq, post_div);
 
 	return freq;		/* KHz */
 }
