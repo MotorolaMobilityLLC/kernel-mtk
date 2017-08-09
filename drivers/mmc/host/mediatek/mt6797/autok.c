@@ -27,6 +27,8 @@
 #include <linux/completion.h>
 #include <linux/scatterlist.h>
 
+#define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
+#define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define HS400_ONE_CYCLE                 (50)
 #define HS400_ACTUAL_CYCLE              (50 - 10 * 2)
 #define MSDC_FIFO_THD_1K                (1024)
@@ -141,20 +143,16 @@ enum TUNE_TYPE {
 #define msdc_txfifocnt() \
 	((MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
 
-#define wait_cond(cond, tmo, left) \
+#define wait_cond_tmo(cond, tmo) \
 	do { \
-		u32 t = tmo; \
+		unsigned long timeout = jiffies + tmo; \
 		while (1) { \
-			if ((cond) || (t == 0)) \
+			if ((cond) || (tmo == 0)) \
 				break; \
-			if (t > 0) { \
-				ndelay(1); \
-				t--; \
-			} \
+			if (time_after(jiffies, timeout)) \
+				tmo = 0; \
 		} \
-		left = t; \
 	} while (0)
-
 
 #define msdc_clear_fifo() \
 	do { \
@@ -385,7 +383,8 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 	unsigned int arg = 0;
 	unsigned int sts = 0;
 	unsigned int wints = 0;
-	unsigned int tmo = 0;
+	unsigned long tmo = 0;
+	unsigned long write_tmo = 0;
 	unsigned int left = 0;
 	unsigned int fifo_have = 0;
 	unsigned int fifo_1k_cnt = 0;
@@ -446,8 +445,13 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	}
 
-	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY))
-		;
+	tmo = AUTOK_DAT_TIMEOUT;
+	wait_cond_tmo(!(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY), tmo);
+	if (tmo == 0) {
+		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo1 cmd%d goto end...\n", opcode);
+		ret = E_RESULT_FATAL_ERR;
+		goto end;
+	}
 
 	/* clear fifo */
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA)) {
@@ -462,8 +466,8 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 
 	/* wait interrupt status */
 	wints = MSDC_INT_CMDTMO | MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR;
-	tmo = 0x3FFFFF;
-	wait_cond(((sts = MSDC_READ32(MSDC_INT)) & wints), tmo, tmo);
+	tmo = AUTOK_CMD_TIMEOUT;
+	wait_cond_tmo(((sts = MSDC_READ32(MSDC_INT)) & wints), tmo);
 	if (tmo == 0) {
 		AUTOK_RAWPRINT("[AUTOK]CMD%d wait int tmo\r\n", opcode);
 		ret = E_RESULT_CMD_TMO;
@@ -492,7 +496,10 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 
 	if ((tune_type_value != TUNE_LATCH_CK) && (tune_type_value != TUNE_DATA))
 		goto skip_tune_latch_ck_and_tune_data;
-	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
+	tmo = jiffies + AUTOK_DAT_TIMEOUT;
+	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY) && (tmo != 0)) {
+		if (time_after(jiffies, tmo))
+			tmo = 0;
 		if (tune_type_value == TUNE_LATCH_CK) {
 			fifo_have = msdc_rxfifocnt();
 			if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) || (opcode == MMC_READ_SINGLE_BLOCK)
@@ -519,9 +526,19 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 				MSDC_WRITE32(MSDC_TXDATA, 0x33cc33cc);
 			}
 
-			while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY))
-				;
+			write_tmo = AUTOK_DAT_TIMEOUT;
+			wait_cond_tmo(!(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY), write_tmo);
+			if (write_tmo == 0) {
+				AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo2 while write cmd%d goto end...\n", opcode);
+				ret = E_RESULT_FATAL_ERR;
+				goto end;
+			}
 		}
+	}
+	if (tmo == 0) {
+		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo3 cmd%d goto end...\n", opcode);
+		ret = E_RESULT_FATAL_ERR;
+		goto end;
 	}
 
 	sts = MSDC_READ32(MSDC_INT);
@@ -538,15 +555,24 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 	}
 
 skip_tune_latch_ck_and_tune_data:
-	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY))
-		;
+	tmo = AUTOK_DAT_TIMEOUT;
+	wait_cond_tmo(!(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY), tmo);
+	if (tmo == 0) {
+		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo4 cmd%d goto end...\n", opcode);
+		ret = E_RESULT_FATAL_ERR;
+		goto end;
+	}
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA))
 		msdc_clear_fifo();
 
 end:
 	if (opcode == MMC_STOP_TRANSMISSION) {
-		while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000)
-			;
+		tmo = AUTOK_DAT_TIMEOUT;
+		wait_cond_tmo(((MSDC_READ32(MSDC_PS) & 0x10000) == 0x10000), tmo);
+		if (tmo == 0) {
+			AUTOK_RAWPRINT("[AUTOK]DTA0 busy tmo cmd%d goto end...\n", opcode);
+			ret = E_RESULT_FATAL_ERR;
+		}
 	}
 
 	return ret;
@@ -633,6 +659,7 @@ static int autok_simple_score(char *res_str, unsigned int result)
 	if (num > old)
 		old = num;
 
+	res_str[32] = '\0';
 	return old;
 }
 
@@ -670,6 +697,7 @@ static int autok_simple_score64(char *res_str64, u64 result64)
 	if (num > old)
 		old = num;
 
+	res_str64[64] = '\0';
 	return old;
 }
 
@@ -2058,7 +2086,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64)(1LL << j);
 					break;
-				}
+				} else if (ret == E_RESULT_FATAL_ERR)
+					return -1;
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
@@ -2099,6 +2128,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 				return -1;
 			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0)
 				break;
+			else if (ret == E_RESULT_FATAL_ERR)
+				return -1;
 		}
 		if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
 			p_autok_tune_res[DAT_RD_D_DLY1] = j;
@@ -2123,7 +2154,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
 				RawData64 |= (u64) (1LL << j);
 				break;
-			}
+			} else if (ret == E_RESULT_FATAL_ERR)
+				return -1;
 		}
 	}
 	RawData64 |= 0xffffffff00000000;
@@ -2238,7 +2270,8 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64)(1LL << j);
 					break;
-				}
+				} else if (ret == E_RESULT_FATAL_ERR)
+					return -1;
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
@@ -2401,7 +2434,8 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
-				}
+				} else if (ret == E_RESULT_FATAL_ERR)
+					return -1;
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
@@ -2441,7 +2475,8 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
 				RawData64 |= (u64) (1LL << j);
 				break;
-			}
+			} else if (ret == E_RESULT_FATAL_ERR)
+				return -1;
 		}
 	}
 	score = autok_simple_score64(tune_result_str64, RawData64);
@@ -2509,7 +2544,8 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
-				}
+				} else if (ret == E_RESULT_FATAL_ERR)
+					return -1;
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
@@ -2552,7 +2588,8 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 				} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
-				}
+				} else if (ret == E_RESULT_FATAL_ERR)
+					return -1;
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
@@ -3773,7 +3810,8 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	if (execute_offline_tuning(host) != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok OFFLINE Failed========");
 #endif
-	if (execute_online_tuning(host, res) != 0)
+	ret = execute_online_tuning(host, res);
+	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok Failed========");
 
 	autok_msdc_reset();
@@ -3809,7 +3847,8 @@ int hs400_execute_tuning(struct msdc_host *host, u8 *res)
 	if (execute_offline_tuning_hs400(host) != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok HS400 OFFLINE Failed========");
 #endif
-	if (execute_online_tuning_hs400(host, res) != 0)
+	ret = execute_online_tuning_hs400(host, res);
+	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok HS400 Failed========");
 #if AUTOK_OFFLINE_TUNE_TX_ENABLE
 	autok_offline_tuning_TX(host);
@@ -3845,7 +3884,8 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 
 	autok_init_hs400(host);
-	if (execute_cmd_online_tuning(host, res) != 0)
+	ret = execute_cmd_online_tuning(host, res);
+	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS400 Failed========");
 
 	autok_msdc_reset();
@@ -3882,7 +3922,8 @@ int hs200_execute_tuning(struct msdc_host *host, u8 *res)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok OFFLINE HS200 Failed========");
 #endif
 	MSDC_WRITE32(MSDC_INT, 0xffffffff);
-	if (execute_online_tuning_hs200(host, res) != 0)
+	ret = execute_online_tuning_hs200(host, res);
+	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok HS200 Failed========");
 
 	autok_msdc_reset();
@@ -3915,7 +3956,8 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 
 	autok_init_hs200(host);
-	if (execute_cmd_online_tuning(host, res) != 0)
+	ret = execute_cmd_online_tuning(host, res);
+	if (ret != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS200 Failed========");
 
 	autok_msdc_reset();

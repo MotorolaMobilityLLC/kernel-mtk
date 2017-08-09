@@ -4146,6 +4146,7 @@ out:
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	int ret = 0;
 
 	msdc_init_tune_path(host, mmc->ios.timing);
 	host->tuning_in_progress = true;
@@ -4157,25 +4158,25 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 			/* Only CMD13 is valid when CMDQ is not empty */
 			if (opcode == MMC_SEND_STATUS) {
 				pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
-				hs200_execute_tuning_cmd(host, NULL);
+				ret = hs200_execute_tuning_cmd(host, NULL);
 			} else {
 				pr_err("[AUTOK]eMMC HS200 Tune\n");
-				hs200_execute_tuning(host, NULL);
+				ret = hs200_execute_tuning(host, NULL);
 			}
 		} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
 			/* Only CMD13 is valid when CMDQ is not empty */
 			if (opcode == MMC_SEND_STATUS) {
 				pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
-				hs400_execute_tuning_cmd(host, NULL);
+				ret = hs400_execute_tuning_cmd(host, NULL);
 			} else {
 				pr_err("[AUTOK]eMMC HS400 Tune\n");
-				hs400_execute_tuning(host, NULL);
+				ret = hs400_execute_tuning(host, NULL);
 			}
 		}
 		break;
 	case MSDC_SD:
 		pr_err("[AUTOK]SDcard autok\n");
-		autok_execute_tuning(host, NULL);
+		ret = autok_execute_tuning(host, NULL);
 		break;
 	case MSDC_SDIO:
 		pr_err("SDIO autok is not portted\n");
@@ -4185,6 +4186,9 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 			host->hw->host_function);
 		break;
 	}
+	if (ret)
+		msdc_dump_register(host);
+
 	host->tuning_in_progress = false;
 	msdc_gate_clock(host, 1);
 	return 0;
@@ -4325,6 +4329,9 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
 			break;
 		}
+		if (ret)
+			msdc_dump_register(host);
+
 		/* autok failed three times will try reinit tuning */
 		if (host->reautok_times >= 4) {
 recovery:
