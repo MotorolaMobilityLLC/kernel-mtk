@@ -14,6 +14,8 @@
 #ifndef __MT_CPUFREQ_H__
 #define __MT_CPUFREQ_H__
 
+#include <linux/kernel.h>
+
 enum mt_cpu_dvfs_id {
 	MT_CPU_DVFS_LL,
 	MT_CPU_DVFS_L,
@@ -103,9 +105,8 @@ extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id);
 extern int mt_cpufreq_clock_switch(enum mt_cpu_dvfs_id id, enum top_ckmuxsel sel);
 extern enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_registerCB(cpuVoltsampler_func pCB);
-extern unsigned int mt_get_cpu_freq(void);
 
 /* CPUFREQ */
 extern void aee_record_cpufreq_cb(unsigned int step);
 
-#endif
+#endif	/* __MT_CPUFREQ_H__ */

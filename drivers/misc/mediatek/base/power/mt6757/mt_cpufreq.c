@@ -24,15 +24,12 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
-#include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 #include <linux/jiffies.h>
-#include <linux/bitops.h>
 #include <linux/uaccess.h>
 #include <linux/seq_file.h>
-#include <linux/types.h>
 #include <linux/suspend.h>
 #include <linux/topology.h>
 #include <mt-plat/sync_write.h>
@@ -45,16 +42,15 @@
 #endif
 
 /* project includes */
-#include "mach/mt_freqhopping.h"
-#include "mach/mt_thermal.h"
+#include <mach/mt_freqhopping.h>
+#include <mach/mt_thermal.h>
 #include "mt_static_power.h"
 #include "../../../power/mt6757/mt6311.h"
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-#include "mach/mt_ppm_api.h"
-#include "mach/mt_pbm.h"
-
+#include <mach/mt_ppm_api.h>
+#include <mach/mt_pbm.h>
 
 /* local includes */
 #include "mt_cpufreq.h"
@@ -2737,7 +2733,6 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	return new_cci_opp_idx;
 }
 
-#if 1
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
@@ -2814,7 +2809,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	if (!p->dvfs_disable_by_suspend && kick)
 		_kick_PBM_by_cpu(p);
 }
-#endif
 
 /*
  * cpufreq driver
@@ -3265,11 +3259,10 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 			p->nr_opp_tbl = opp_tbl_info->size;
 			p->freq_tbl_for_cpufreq = table;
 		}
-#if 1
+
 		/* lv should be sync with DVFS_TABLE_TYPE_SB */
 		if (j != MT_CPU_DVFS_CCI)
 				mt_ppm_set_dvfs_table(p->cpu_id, p->freq_tbl_for_cpufreq, opp_tbl_info->size, lv);
-#endif
 	}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before cpufreq_register_driver */
@@ -3345,190 +3338,9 @@ static struct platform_driver _mt_cpufreq_pdrv = {
 		   },
 };
 
-#ifndef __KERNEL__
-/*
-* For CTP
-*/
-int mt_cpufreq_pdrv_probe(void)
-{
-	static struct cpufreq_policy policy_LL;
-	static struct cpufreq_policy policy_L;
-
-	_mt_cpufreq_pdrv_probe(NULL);
-
-	policy_LL.cpu = 0;
-	_mt_cpufreq_init(&policy_LL);
-
-	policy_L.cpu = 4;
-	_mt_cpufreq_init(&policy_L);
-
-	return 0;
-}
-
-int mt_cpufreq_set_opp_volt(enum mt_cpu_dvfs_id id, int idx)
-{
-	int ret = 0;
-	static struct opp_tbl_info *info;
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-
-	info = &opp_tbls[id][CPU_LV_TO_OPP_IDX(CPU_LEVEL_0)];
-
-	if (idx >= info->size)
-		return -1;
-
-	return _set_cur_volt_locked(p, info->opp_tbl[idx].cpufreq_volt);
-
-}
-
-int mt_cpufreq_set_freq(enum mt_cpu_dvfs_id id, int idx)
-{
-	unsigned int cur_freq;
-	unsigned int target_freq;
-	int ret = -1;
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-
-	int new_cci_opp_idx;
-	unsigned int cur_cci_freq;
-	unsigned int target_cci_freq;
-
-	enum mt_cpu_dvfs_id id_cci;
-	struct mt_cpu_dvfs *p_cci;
-
-	/* This is for cci */
-	id_cci = MT_CPU_DVFS_CCI;
-	p_cci = id_to_cpu_dvfs(id_cci);
-
-	/* Get cci opp idx */
-	new_cci_opp_idx = _calc_new_cci_opp_idx(id_to_cpu_dvfs(id), idx);
-
-	cur_cci_freq = p_cci->ops->get_cur_phy_freq(p_cci);
-	target_cci_freq = cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx);
-
-	cur_freq = p->ops->get_cur_phy_freq(p);
-	target_freq = cpu_dvfs_get_freq_by_idx(p, idx);
-
-	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, cur_cci_freq, target_cci_freq);
-
-	if (ret < 0)
-		return ret;
-
-	p->idx_opp_tbl = idx;
-	p_cci->idx_opp_tbl = new_cci_opp_idx;
-
-	return target_freq;
-}
-
-#include "dvfs.h"
-
-unsigned int dvfs_get_cur_oppidx(enum mt_cpu_dvfs_id id)
-{
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-
-	return p->idx_opp_tbl;
-}
-
-unsigned int _mt_get_cpu_freq(unsigned int num)
-{
-	int output = 0, i = 0;
-	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
-
-	clk_dbg_cfg = DRV_Reg32(CLK_DBG_CFG);
-	/* sel abist_cksw and enable freq meter sel abist */
-	DRV_WriteReg32(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFFFFE)|(num << 16));
-
-	clk_misc_cfg_0 = DRV_Reg32(CLK_MISC_CFG_0);
-	/* select divider, WAIT CONFIRM */
-	DRV_WriteReg32(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x01FFFFFF));
-
-	clk26cali_1 = DRV_Reg32(CLK26CALI_1);
-	/* cycle count default 1024,[25:16]=3FF */
-    /* DRV_WriteReg32(CLK26CALI_1, 0x00ff0000);
-
-    temp = DRV_Reg32(CLK26CALI_0); */
-	DRV_WriteReg32(CLK26CALI_0, 0x1000);
-	DRV_WriteReg32(CLK26CALI_0, 0x1010);
-
-	/* wait frequency meter finish */
-	while (DRV_Reg32(CLK26CALI_0) & 0x10) {
-		mdelay(10);
-		i++;
-		if (i > 10)
-			break;
-	}
-
-	temp = DRV_Reg32(CLK26CALI_1) & 0xFFFF;
-	output = ((temp * 26000)) / 1024 * 2; /* Khz */
-
-	DRV_WriteReg32(CLK_DBG_CFG, clk_dbg_cfg);
-	DRV_WriteReg32(CLK_MISC_CFG_0, clk_misc_cfg_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0);
-	DRV_WriteReg32(CLK26CALI_1, clk26cali_1);
-
-	cpufreq_dbg("CLK26CALI_1 = 0x%x, CPU freq = %d KHz\n", temp, output);
-
-	if (i > 10) {
-		cpufreq_dbg("meter not finished!\n");
-		return 0;
-	} else
-		return output;
-}
-
-unsigned int dvfs_get_cpu_freq(enum mt_cpu_dvfs_id id)
-{
-	if (id == MT_CPU_DVFS_LL)
-		return _mt_get_cpu_freq(34); /* 42 */
-	else if (id == MT_CPU_DVFS_L)
-		return _mt_get_cpu_freq(35); /* 43 */
-	else if (id == MT_CPU_DVFS_CCI)
-		return _mt_get_cpu_freq(36); /* 44 */
-	else
-		return _mt_get_cpu_freq(45); /* 45 is backup pll */
-}
-
-void dvfs_set_cpu_freq_FH(enum mt_cpu_dvfs_id id, int freq)
-{
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-	int idx;
-
-	if (!p) {
-		cpufreq_err("%s(%d, %d), id is wrong\n", __func__, id, freq);
-		return;
-	}
-
-	idx = _search_available_freq_idx(p, freq, CPUFREQ_RELATION_H);
-
-	if (-1 == idx) {
-		cpufreq_err("%s(%d, %d), freq is wrong\n", __func__, id, freq);
-		return;
-	}
-
-	mt_cpufreq_set_freq(id, idx);
-}
-
-void dvfs_set_cpu_volt(enum mt_cpu_dvfs_id id, int volt)	/* volt: mv * 100 */
-{
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-
-	cpufreq_dbg("%s(%d, %d)\n", __func__, id, volt);
-
-	if (!p) {
-		cpufreq_err("%s(%d, %d), id is wrong\n", __func__, id, volt);
-		return;
-	}
-
-	if (_set_cur_volt_locked(p, volt))
-		cpufreq_err("%s(%d, %d), set volt fail\n", __func__, id, volt);
-
-	cpufreq_dbg("%s(%d, %d) Vproc = %d, Vsram = %d\n",
-		__func__, id, volt, p->ops->get_cur_volt(p), p->ops->get_cur_vsram(p));
-}
-#endif
-
-#ifdef CONFIG_PROC_FS
 /*
 * PROC
 */
-
 static char *_copy_from_user_for_proc(const char __user *buffer, size_t count)
 {
 	char *buf = (char *)__get_free_page(GFP_USER);
@@ -4258,7 +4070,6 @@ static int _create_procfs(void)
 
 	return 0;
 }
-#endif
 
 static void mt_cpufreq_dts_map(void)
 {
@@ -4333,11 +4144,9 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	}
 #endif
 
-#ifdef CONFIG_PROC_FS
 	/* init proc */
 	if (_create_procfs())
 		goto out;
-#endif
 
 	/* register platform device/driver */
 	ret = platform_device_register(&_mt_cpufreq_pdev);
