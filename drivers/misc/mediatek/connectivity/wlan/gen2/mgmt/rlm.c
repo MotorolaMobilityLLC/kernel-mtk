@@ -773,7 +773,11 @@ static VOID rlmFillHtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU
 /*----------------------------------------------------------------------------*/
 static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T prMsduInfo)
 {
+#if CFG_SUPPORT_HOTSPOT_2_0
+	P_HS20_EXT_CAP_T prHsExtCap;
+#else
 	P_EXT_CAP_T prExtCap;
+#endif
 	BOOLEAN fg40mAllowed;
 
 	ASSERT(prAdapter);
@@ -781,17 +785,43 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 
 	fg40mAllowed = prBssInfo->fgAssoc40mBwAllowed;
 
+#if CFG_SUPPORT_HOTSPOT_2_0
+	prHsExtCap = (P_HS20_EXT_CAP_T)
+	    (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
+	prHsExtCap->ucId = ELEM_ID_EXTENDED_CAP;
+
+	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE)
+		prHsExtCap->ucLength = ELEM_MAX_LEN_EXT_CAP;
+
+	kalMemZero(prHsExtCap->aucCapabilities, sizeof(prHsExtCap->aucCapabilities));
+
+	prHsExtCap->aucCapabilities[0] = ELEM_EXT_CAP_DEFAULT_VAL;
+
+	if (!fg40mAllowed)
+		prHsExtCap->aucCapabilities[0] &= ~ELEM_EXT_CAP_20_40_COEXIST_SUPPORT;
+
+	if (prBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
+		prHsExtCap->aucCapabilities[0] &= ~ELEM_EXT_CAP_PSMP_CAP;
+
+	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE) {
+		SET_EXT_CAP(prHsExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_INTERWORKING_BIT);
+
+		/* For R2 WNM-Notification */
+		SET_EXT_CAP(prHsExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_WNM_NOTIFICATION_BIT);
+	}
+
+	ASSERT(IE_SIZE(prHsExtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP));
+
+	prMsduInfo->u2FrameLength += IE_SIZE(prHsExtCap);
+
+#else
 	/* Add Extended Capabilities IE */
 	prExtCap = (P_EXT_CAP_T)
 	    (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
 
 	prExtCap->ucId = ELEM_ID_EXTENDED_CAP;
-#if CFG_SUPPORT_HOTSPOT_2_0
-	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE)
-		prExtCap->ucLength = ELEM_MAX_LEN_EXT_CAP;
-	else
-#endif
-		prExtCap->ucLength = 3 - ELEM_HDR_LEN;
+
+	prExtCap->ucLength = 3 - ELEM_HDR_LEN;
 	kalMemZero(prExtCap->aucCapabilities, sizeof(prExtCap->aucCapabilities));
 
 	prExtCap->aucCapabilities[0] = ELEM_EXT_CAP_DEFAULT_VAL;
@@ -801,18 +831,11 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 
 	if (prBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
 		prExtCap->aucCapabilities[0] &= ~ELEM_EXT_CAP_PSMP_CAP;
-#if CFG_SUPPORT_HOTSPOT_2_0
-	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE) {
-		SET_EXT_CAP(prExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_INTERWORKING_BIT);
-
-		/* For R2 WNM-Notification */
-		SET_EXT_CAP(prExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_WNM_NOTIFICATION_BIT);
-	}
-#endif
 
 	ASSERT(IE_SIZE(prExtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP));
 
 	prMsduInfo->u2FrameLength += IE_SIZE(prExtCap);
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

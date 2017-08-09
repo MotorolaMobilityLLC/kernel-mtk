@@ -124,13 +124,13 @@ VOID hs20GenerateHS20IE(IN P_ADAPTER_T prAdapter, OUT P_MSDU_INFO_T prMsduInfo)
 
 VOID hs20FillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T prMsduInfo)
 {
-	P_EXT_CAP_T prExtCap;
+	P_HS20_EXT_CAP_T prExtCap;
 
 	ASSERT(prAdapter);
 	ASSERT(prMsduInfo);
 
 	/* Add Extended Capabilities IE */
-	prExtCap = (P_EXT_CAP_T)
+	prExtCap = (P_HS20_EXT_CAP_T)
 	    (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
 
 	prExtCap->ucId = ELEM_ID_EXTENDED_CAP;
@@ -172,12 +172,12 @@ VOID hs20FillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO
 /*----------------------------------------------------------------------------*/
 VOID hs20FillProreqExtCapIE(IN P_ADAPTER_T prAdapter, OUT PUINT_8 pucIE)
 {
-	P_EXT_CAP_T prExtCap;
+	P_HS20_EXT_CAP_T prExtCap;
 
 	ASSERT(prAdapter);
 
 	/* Add Extended Capabilities IE */
-	prExtCap = (P_EXT_CAP_T) pucIE;
+	prExtCap = (P_HS20_EXT_CAP_T) pucIE;
 
 	prExtCap->ucId = ELEM_ID_EXTENDED_CAP;
 	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE)
