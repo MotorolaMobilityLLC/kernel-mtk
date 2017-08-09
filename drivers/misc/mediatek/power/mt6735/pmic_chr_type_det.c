@@ -38,6 +38,10 @@
 #endif
 #include <linux/time.h>
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mt_usb2jtag.h>
+#endif
+
 /* ============================================================ // */
 /* extern function */
 /* ============================================================ // */
@@ -264,6 +268,13 @@ int hw_charging_get_charger_type(void)
 	/* return STANDARD_CHARGER; //adaptor */
 #else
 	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+	if (usb2jtag_mode()) {
+		pr_err("[USB2JTAG] in usb2jtag mode, skip charger detection\n");
+		return STANDARD_HOST;
+	}
+#endif
 
 	/********* Step initial  ***************/
 	hw_bc11_init();
