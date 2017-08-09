@@ -47,7 +47,7 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 #ifdef CONFIG_MTK_AEE_FEATURE
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #endif
 #ifdef CONFIG_MTK_HIBERNATION
 #include <mtk_hibernate_dpm.h>

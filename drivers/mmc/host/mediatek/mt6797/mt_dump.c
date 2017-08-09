@@ -397,7 +397,7 @@ static unsigned int simp_mmc_power_up(struct simp_mmc_host *host, bool on)
 }
 
 #define clk_readl(addr) \
-	DRV_Reg32(addr)
+	readl(addr)
 
 #define clk_setl(addr, val) \
 	mt_reg_sync_writel(clk_readl(addr) | (val), addr)
