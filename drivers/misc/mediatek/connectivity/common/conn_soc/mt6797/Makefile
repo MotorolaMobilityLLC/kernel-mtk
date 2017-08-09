@@ -6,7 +6,8 @@ ccflags-y += \
 	-I$(src)/../include \
 	-I$(src)/../../common_detect
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
 
 subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 

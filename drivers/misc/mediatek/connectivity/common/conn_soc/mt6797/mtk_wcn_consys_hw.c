@@ -790,7 +790,7 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 	return iRet;
 }
 
-INT32 mtk_wcn_consys_hw_pwr_off(VOID)
+INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
