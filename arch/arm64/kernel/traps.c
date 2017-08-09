@@ -38,7 +38,6 @@
 #include <asm/exception.h>
 #include <asm/system_misc.h>
 #include <mt-plat/mt_hooks.h>
-#include <mt-plat/mt_cache_dump.h>
 
 static const char *handler[]= {
 	"Synchronous Abort",
@@ -331,8 +330,6 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 {
 	siginfo_t info;
 	void __user *pc = (void __user *)instruction_pointer(regs);
-
-	mt_icache_dump();
 
 	/* check for AArch32 breakpoint instructions */
 	if (!aarch32_break_handler(regs))

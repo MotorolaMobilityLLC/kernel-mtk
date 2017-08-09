@@ -9,6 +9,7 @@
 #include <asm/cacheflush.h>
 #include <asm/pgtable.h>
 #include <asm/atomic.h>
+#include <mt-plat/mt_cache_dump.h>
 
 static atomic_t reg_0x1001Axxx_cnt = ATOMIC_INIT(1);
 
@@ -46,6 +47,9 @@ int arm_undefinstr_retry(struct pt_regs *regs, unsigned int instr)
 {
 	void __user *pc = (void __user *)instruction_pointer(regs);
 	struct thread_info *thread = current_thread_info();
+
+	mt_icache_dump();
+
 	/*
 	 * Place the SIGILL ICache Invalidate after the Debugger
 	 * Undefined-Instruction Solution.
