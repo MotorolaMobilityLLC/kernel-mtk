@@ -558,10 +558,10 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
             	pal_resulution |= SINK_480P;
             	break;
 	    case HDMI_4k24_DSC:
-	  	///pal_resulution |= SINK_2160p24;
+	  	pal_resulution |= SINK_2160p24;
 	  	break;
 	    case HDMI_4k30_DSC:
-		///pal_resulution |= SINK_2160p30;
+		pal_resulution |= SINK_2160p30;
 		break;
 
 	    default:
