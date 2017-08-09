@@ -33,6 +33,7 @@ int mt7620_mdio_read(struct mii_bus *bus, int phy_addr, int phy_reg);
 void mt7620_mdio_link_adjust(struct fe_priv *priv, int port);
 void mt7620_port_init(struct fe_priv *priv, struct device_node *np);
 int mt7620a_has_carrier(struct fe_priv *priv);
+int mt7623_has_carrier(struct fe_priv *priv);
 void mii_mgr_read_combine(struct fe_priv *priv, u32 phy_addr,
 			  u32 phy_register, u32 *read_data);
 void mii_mgr_write_combine(struct fe_priv *priv, u32 phy_addr,

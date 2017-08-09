@@ -248,6 +248,23 @@ int mt7620a_has_carrier(struct fe_priv *priv)
 	return 0;
 }
 
+int mt7623_has_carrier(struct fe_priv *priv)
+{
+	struct mt7620_gsw *gsw = (struct mt7620_gsw *)priv->soc->swpriv;
+	unsigned int link;
+	int i = 4;
+
+	link = mt7530_mdio_r32(gsw, 0x3008 + (i * 0x100)) & 0x1;
+
+	if (!link) {
+		pr_err("port 4 is not linked\n");
+	} else {
+		pr_err("port 4 is linked\n");
+		return 1;
+	}
+	return 0;
+}
+
 static void mt7620a_handle_carrier(struct fe_priv *priv)
 {
 	if (!priv->phy)
