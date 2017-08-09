@@ -991,7 +991,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 
 			} else if (request->request.length == 0) {
 				/* If there is only ZLP in the reqeest list. Just send ZLP directly */
-				int utime = 1000000;	/* 1 sec */
+				int utime = 700000;	/* 700 ms */
 				/* Send ZLP by setting TXPKTRDY */
 				u32 val = 0;
 
