@@ -456,6 +456,9 @@ static void process_rx_w(struct work_struct *work)
 		skb->protocol = eth_type_trans(skb, dev->net);
 		dev->net->stats.rx_packets++;
 		dev->net->stats.rx_bytes += skb->len;
+#if defined(NETDEV_TRACE) && defined(NETDEV_UL_TRACE)
+		skb->dbg_flag = 0x4;
+#endif
 
 		status = netif_rx_ni(skb);
 	}
