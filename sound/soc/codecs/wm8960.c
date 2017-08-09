@@ -616,9 +616,7 @@ static int wm8960_mute(struct snd_soc_dai *dai, int mute)
 static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
 				      enum snd_soc_bias_level level)
 {
-#ifndef CONFIG_SND_SOC_MT7623_WM8960
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
-#endif
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:
@@ -630,51 +628,6 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
 		break;
 
 	case SND_SOC_BIAS_STANDBY:
-#ifdef CONFIG_SND_SOC_MT7623_WM8960
-		pr_err("SND_SOC_BIAS_STANDBY begin\n");
-		snd_soc_write(codec, WM8960_RESET, 0);
-		mdelay(500);
-		snd_soc_write(codec, WM8960_IFACE1, AINTFCE1_WL_24 | AINTFCE1_FORMAT_I2S);//0x07
-
-		// In
-		snd_soc_update_bits(codec, WM8960_POWER1
-			, WM8960_PWR1_ADCL|WM8960_PWR1_ADCR|WM8960_PWR1_AINL |WM8960_PWR1_AINR|WM8960_PWR1_MICB
-			, WM8960_PWR1_ADCL|WM8960_PWR1_ADCR|WM8960_PWR1_AINL |WM8960_PWR1_AINR|WM8960_PWR1_MICB);//0x19
-		snd_soc_update_bits(codec, WM8960_ADDCTL1, 0x3 << 2, 0x1 << 2);//0x17
-		snd_soc_write(codec, WM8960_LADC, LEFTGAIN_LDVU|LEFTGAIN_LDACVOL(0xc3));//0x15
-		snd_soc_write(codec, WM8960_RADC, LEFTGAIN_LDVU|LEFTGAIN_LDACVOL(0xc3));//0x16
-		snd_soc_write(codec, WM8960_LINPATH, 0x148);//0x20
-		snd_soc_write(codec, WM8960_RINPATH, 0x148);//0x21
-		snd_soc_write(codec, WM8960_POWER3, WM8960_PWR3_LMIC|WM8960_PWR3_RMIC);//0x2f
-
-		// Out
-		snd_soc_update_bits(codec, WM8960_POWER2
-		, WM8960_PWR2_DACL|WM8960_PWR2_DACR|WM8960_PWR2_LOUT1|WM8960_PWR2_ROUT1|WM8960_PWR2_SPKL|WM8960_PWR2_SPKR
-		, WM8960_PWR2_DACL|WM8960_PWR2_DACR|WM8960_PWR2_LOUT1|WM8960_PWR2_ROUT1|WM8960_PWR2_SPKL|WM8960_PWR2_SPKR);//0x1a
-		mdelay(10);
-		snd_soc_write(codec, WM8960_IFACE2, 0x40);
-		snd_soc_write(codec, WM8960_LDAC, LEFTGAIN_LDVU|LEFTGAIN_LDACVOL(0xff));//0x0a
-		snd_soc_write(codec, WM8960_RDAC, RIGHTGAIN_RDVU|RIGHTGAIN_RDACVOL(0xff));//0x0b
-		snd_soc_write(codec, WM8960_LOUTMIX, 0x100);//0x22
-		snd_soc_write(codec, WM8960_ROUTMIX, 0x100);//0x25
-
-		snd_soc_update_bits(codec, WM8960_POWER3
-			, WM8960_PWR3_ROMIX|WM8960_PWR3_LOMIX
-			, WM8960_PWR3_ROMIX|WM8960_PWR3_LOMIX);//0x2f
-
-		snd_soc_write(codec, WM8960_CLASSD1, 0xf7);//0x31
-		snd_soc_write(codec, WM8960_CLASSD3, 0xad);//0x33
-		snd_soc_write(codec, WM8960_DACCTL1,  0x000);//0x05
-
-		snd_soc_update_bits(codec, WM8960_POWER1, 0x1c0, 0x1c0);//0x19
-
-		snd_soc_write(codec, WM8960_LOUT1, LOUT1_LO1VU|LOUT1_LO1ZC|LOUT1_LOUT1VOL(115));//0x02
-		snd_soc_write(codec, WM8960_ROUT1, ROUT1_RO1VU|ROUT1_RO1ZC|ROUT1_ROUT1VOL(115));//0x03
-
-		snd_soc_write(codec, WM8960_LINVOL, LINV_IPVU|LINV_LINVOL(110)); //LINV(0x00)=>0x12b
-		snd_soc_write(codec, WM8960_RINVOL, RINV_IPVU|RINV_RINVOL(110)); //LINV(0x01)=>0x12b
-		pr_err("SND_SOC_BIAS_STANDBY end\n");
-#else
 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
 			regcache_sync(wm8960->regmap);
 
@@ -697,18 +650,9 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
 
 		/* Set VMID to 2x250k */
 		snd_soc_update_bits(codec, WM8960_POWER1, 0x180, 0x100);
-#endif
 		break;
 
 	case SND_SOC_BIAS_OFF:
-#ifdef CONFIG_SND_SOC_MT7623_WM8960
-		pr_debug("SND_SOC_BIAS_OFF begin\n");
-		snd_soc_write(codec, WM8960_DACCTL1,0x8); //0x05->0x08
-		snd_soc_write(codec, WM8960_POWER1, 0x000); //0x19->0x000
-		mdelay(300);
-		snd_soc_write(codec, WM8960_POWER2, 0x000); //0x1a->0x000
-		pr_debug("SND_SOC_BIAS_OFF end\n");
-#else
 		/* Enable anti-pop features */
 		snd_soc_write(codec, WM8960_APOP1,
 			     WM8960_POBCTRL | WM8960_SOFT_ST |
@@ -717,7 +661,6 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
 		/* Disable VMID and VREF, let them discharge */
 		snd_soc_write(codec, WM8960_POWER1, 0);
 		msleep(600);
-#endif
 		break;
 	}
 
@@ -1134,23 +1077,10 @@ static const struct i2c_device_id wm8960_i2c_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, wm8960_i2c_id);
 
-#ifdef CONFIG_SND_SOC_MT7623_WM8960
-#if defined(CONFIG_OF)
-static const struct of_device_id wm8960_of_match[] = {
-	{ .compatible = "wolfson,wm8960", },
-	{},
-};
-MODULE_DEVICE_TABLE(of, rt5640_of_match);
-#endif
-#endif
-
 static struct i2c_driver wm8960_i2c_driver = {
 	.driver = {
 		.name = "wm8960",
 		.owner = THIS_MODULE,
-#ifdef CONFIG_SND_SOC_MT7623_WM8960
-		.of_match_table = of_match_ptr(wm8960_of_match),
-#endif
 	},
 	.probe =    wm8960_i2c_probe,
 	.remove =   wm8960_i2c_remove,
