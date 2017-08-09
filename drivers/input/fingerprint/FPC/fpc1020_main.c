@@ -101,9 +101,9 @@ static int __init fpc1020_init(void);
 static void __exit fpc1020_exit(void);
 
 static int fpc1020_probe(struct spi_device *spi);
-
+#if 0
 static int fpc1020_remove(struct spi_device *spi);
-
+#endif
 static int fpc1020_suspend(struct device *dev);
 
 static int fpc1020_resume(struct device *dev);
@@ -121,9 +121,9 @@ static int fpc1020_release(struct inode *inode, struct file *file);
 
 static unsigned int fpc1020_poll(struct file *file, poll_table *wait);
 #endif
-
+#if 0
 static int fpc1020_cleanup(fpc1020_data_t *fpc1020, struct spi_device *spidev);
-
+#endif
 static int fpc1020_param_init(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata);
 
@@ -139,8 +139,9 @@ static int fpc1020_spi_setup(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata);
 #if 0
 static int fpc1020_worker_init(fpc1020_data_t *fpc1020);
-#endif
+
 static int fpc1020_worker_destroy(fpc1020_data_t *fpc1020);
+#endif
 
 static int fpc1020_get_of_pdata(struct device *dev,
 					struct fpc1020_platform_data *pdata);
@@ -217,7 +218,7 @@ static struct spi_driver fpc1020_driver = {
 #endif
 	},
 	.probe	= fpc1020_probe,
-	.remove	= fpc1020_remove,
+	/* .remove	= fpc1020_remove, */
 };
 
 static const struct file_operations fpc1020_fops = {
@@ -641,7 +642,7 @@ err:
 	return error;
 }
 
-
+#if 0
 /* -------------------------------------------------------------------- */
 static int fpc1020_remove(struct spi_device *spi)
 {
@@ -661,7 +662,7 @@ static int fpc1020_remove(struct spi_device *spi)
 
 	return 0;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_suspend(struct device *dev)
@@ -893,6 +894,7 @@ static unsigned int fpc1020_poll(struct file *file, poll_table *wait)
 }
 #endif
 
+#if 0
 /* -------------------------------------------------------------------- */
 static int fpc1020_cleanup(fpc1020_data_t *fpc1020, struct spi_device *spidev)
 {
@@ -929,7 +931,7 @@ static int fpc1020_cleanup(fpc1020_data_t *fpc1020, struct spi_device *spidev)
 
 	return 0;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_param_init(fpc1020_data_t *fpc1020,
@@ -1231,6 +1233,7 @@ static int fpc1020_worker_init(fpc1020_data_t *fpc1020)
 }
 */
 
+#if 0
 /* -------------------------------------------------------------------- */
 static int fpc1020_worker_destroy(fpc1020_data_t *fpc1020)
 {
@@ -1248,7 +1251,7 @@ static int fpc1020_worker_destroy(fpc1020_data_t *fpc1020)
 
 	return error;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 #ifdef CONFIG_OF
