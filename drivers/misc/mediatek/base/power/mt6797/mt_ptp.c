@@ -1633,6 +1633,7 @@ static void record(struct eem_det *det)
 	int i;
 	unsigned int vSram;
 
+	eem_error("record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
@@ -1652,6 +1653,7 @@ static void restore_record(struct eem_det *det)
 {
 	int i;
 
+	eem_error("restore_record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
@@ -1714,6 +1716,39 @@ static int get_volt_cpu(struct eem_det *det)
 	#endif
 }
 
+static void mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
+{
+	struct eem_det *det = NULL;
+
+	switch (id) {
+	case MT_CPU_DVFS_B:
+		det = id_to_eem_det(EEM_DET_BIG);
+		break;
+
+	case MT_CPU_DVFS_L:
+		det = id_to_eem_det(EEM_DET_L);
+		break;
+
+	case MT_CPU_DVFS_LL:
+		det = id_to_eem_det(EEM_DET_2L);
+		break;
+
+	case MT_CPU_DVFS_CCI:
+		det = id_to_eem_det(EEM_DET_CCI);
+		break;
+
+	default:
+		break;
+	}
+
+	if (det) {
+		if (restore)
+			restore_record(det);
+		else
+			record(det);
+	}
+}
+
 /* volt_tbl_pmic is convert from 10uV */
 static int set_volt_cpu(struct eem_det *det)
 {
@@ -1726,9 +1761,6 @@ static int set_volt_cpu(struct eem_det *det)
 	#ifdef EARLY_PORTING
 		return value;
 	#else
-		#ifdef __KERNEL__
-			record(det);
-		#endif
 
 		switch (det_to_id(det)) {
 		case EEM_DET_BIG:
@@ -1762,9 +1794,6 @@ static void restore_default_volt_cpu(struct eem_det *det)
 
 	#ifndef EARLY_PORTING
 		/* I-Chang */
-		#ifdef __KERNEL__
-			restore_record(det);
-		#endif
 		switch (det_to_id(det)) {
 		case EEM_DET_BIG:
 			mt_cpufreq_restore_default_volt(MT_CPU_DVFS_B);
@@ -3323,18 +3352,18 @@ void get_devinfo(struct eem_devinfo *p)
 	#endif
 #else
 	/* test pattern */
-	val[0] = 0x10A1590D;
-	val[1] = 0x00270023;
-	val[2] = 0x10944B0F;
-	val[3] = 0x002B0023;
-	val[4] = 0x10A16004;
-	val[5] = 0x00220023;
-	val[6] = 0x10A15E07;
-	val[7] = 0x00220023;
-	val[8] = 0x10A15F04;
-	val[9] = 0x00220000;
-	val[10] = 0x10A1590D;
-	val[11] = 0x00270023;
+	val[0] = 0x17F75060;
+	val[1] = 0x00540003;
+	val[2] = 0x18A73D12;
+	val[3] = 0x00560003;
+	val[4] = 0x18A46103;
+	val[5] = 0x00450003;
+	val[6] = 0x18A25E06;
+	val[7] = 0x00450003;
+	val[8] = 0x18A56004;
+	val[9] = 0x00450010;
+	val[10] = 0x0070004E;
+	val[11] = 0x0F18315B;
 #endif
 	eem_debug("M_HW_RES0 = 0x%X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%X\n", val[1]);
@@ -3466,6 +3495,7 @@ static int eem_probe(struct platform_device *pdev)
 			eem_init_det(det, &eem_devinfo);
 
 	#ifdef __KERNEL__
+		mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM);
 		eem_init01();
 	#endif
 	ptp_data[0] = 0;
