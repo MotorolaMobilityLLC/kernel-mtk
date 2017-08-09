@@ -52,5 +52,10 @@ config SND_SOC_MT8173_MT6391_MACH
     help
         This adds audio driver for MT8173 platform with the MT6391 audio codec.
 if MT_SND_SOC_2701
-source "sound/soc/mediatek/mt2701/Kconfig"
+config SND_SOC_MT2701_EVB
+	bool "MT2701 EVB"
+
+	help
+	  Say Y if you want to use the MT2701 EVB
+	  Audio interfaces for MT2701.
 endif	# MT_SND_SOC_2701
