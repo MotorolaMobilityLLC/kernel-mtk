@@ -79,6 +79,7 @@ struct last_reboot_reason {
 	uint64_t ptp_gpu_volt;
 	uint64_t ptp_temp;
 	uint8_t ptp_status;
+	uint8_t eem_pi_offset;
 
 
 	uint8_t thermal_temp1;
@@ -1050,6 +1051,13 @@ void aee_rr_rec_ptp_status(u8 val)
 	LAST_RR_SET(ptp_status, val);
 }
 
+void aee_rr_rec_eem_pi_offset(u8 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(eem_pi_offset, val);
+}
+
 void aee_rr_rec_thermal_temp1(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1122,6 +1130,11 @@ u64 aee_rr_curr_ptp_temp(void)
 u8 aee_rr_curr_ptp_status(void)
 {
 	return LAST_RR_VAL(ptp_status);
+}
+
+u8 aee_rr_curr_eem_pi_offset(void)
+{
+	return LAST_RR_VAL(eem_pi_offset);
 }
 
 u8 aee_rr_curr_thermal_temp1(void)
@@ -1374,6 +1387,11 @@ void aee_rr_show_thermal_temp(struct seq_file *m)
 void aee_rr_show_ptp_status(struct seq_file *m)
 {
 	seq_printf(m, "ptp_status: 0x%x\n", LAST_RRR_VAL(ptp_status));
+}
+
+void aee_rr_show_eem_pi_offset(struct seq_file *m)
+{
+	seq_printf(m, "eem_pi_offset : 0x%x\n", LAST_RRR_VAL(eem_pi_offset));
 }
 
 void aee_rr_show_thermal_status(struct seq_file *m)

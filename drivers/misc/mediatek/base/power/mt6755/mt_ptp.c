@@ -349,7 +349,6 @@ static void _mt_eem_aee_init(void)
 	aee_rr_rec_ptp_gpu_volt(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_temp(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_status(0xFF);
-	/* aee_rr_rec_eem_pi_offset(0xFF); */
 }
 #endif
 
@@ -4138,7 +4137,7 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 	det->pi_offset = step;
 
 #ifdef CONFIG_PTP_AEE_RR_REC
-	/* aee_rr_rec_eem_pi_offset(step); */
+	aee_rr_rec_eem_pi_offset(step);
 #endif
 }
 
