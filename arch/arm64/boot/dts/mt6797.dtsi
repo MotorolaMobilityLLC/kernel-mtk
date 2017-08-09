@@ -867,6 +867,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,fusb300-eint";
 		};
 
+		otg_iddig: otg_iddig@ {
+			compatible = "mediatek,usb_iddig_bi_eint";
+		};
+
 		touch: touch@ {
 			compatible = "mediatek,mt6797-touch";
 		};
