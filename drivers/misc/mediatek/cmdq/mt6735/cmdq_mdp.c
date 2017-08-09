@@ -182,17 +182,17 @@ void cmdq_mdp_init_module_clk(void)
 #if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
 	cmdq_dev_get_module_clock_by_name("mediatek,MMSYS_CONFIG", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RDMA", "MDP_RDMA",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma", "MDP_RDMA",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RSZ0", "MDP_RSZ0",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz0", "MDP_RSZ0",
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ0);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RSZ1", "MDP_RSZ1",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz1", "MDP_RSZ1",
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_WDMA", "MDP_WDMA",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wdma", "MDP_WDMA",
 					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_WROT", "MDP_WROT",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wrot", "MDP_WROT",
 					  &gCmdqMdpModuleClock.clk_MDP_WROT);
-	cmdq_dev_get_module_clock_by_name("mediatek,MDP_TDSHP", "MDP_TDSHP",
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_tdshp", "MDP_TDSHP",
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
 #endif
 }
@@ -535,12 +535,12 @@ void cmdq_mdp_init_module_base_VA(void)
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
 
 #ifdef CMDQ_OF_SUPPORT
-	gCmdqMdpModuleBaseVA.MDP_RDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RDMA");
-	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RSZ0");
-	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RSZ1");
-	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_WDMA");
-	gCmdqMdpModuleBaseVA.MDP_WROT = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_WROT");
-	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_TDSHP");
+	gCmdqMdpModuleBaseVA.MDP_RDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rdma");
+	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rsz0");
+	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rsz1");
+	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_wdma");
+	gCmdqMdpModuleBaseVA.MDP_WROT = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_wrot");
+	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_tdshp");
 	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,VENC");
 #else
 	gCmdqMdpModuleBaseVA.MDP_RDMA = MDP_RDMA_BASE;

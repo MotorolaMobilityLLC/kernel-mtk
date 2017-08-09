@@ -900,46 +900,143 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			*/
 			 };
 
+		gce@10217000 {
+			compatible = "mediatek,gce";
+			reg = <0x10217000 0x1000>;
+			interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 148 IRQ_TYPE_LEVEL_LOW>;
+			g3d_config_base = <0x13000000 0 0xFFFF0000>;
+			mmsys_config_base = <0x14000000 1 0xFFFF0000>;
+			disp_dither_base = <0x14010000 2 0xFFFF0000>;
+			mm_na_base = <0x14020000 3 0xFFFF0000>;
+			imgsys_base = <0x15000000 4 0xFFFF0000>;
+			vdec_gcon_base = <0x16000000 5 0xFFFF0000>;
+			venc_gcon_base = <0x17000000 6 0xFFFF0000>;
+			conn_peri_base = <0x18000000 7 0xFFFF0000>;
+			topckgen_base = <0x10000000 8 0xFFFF0000>;
+			kp_base = <0x10010000 9 0xFFFF0000>;
+			scp_sram_base = <0x10020000 10 0xFFFF0000>;
+			infra_na3_base = <0x10030000 11 0xFFFF0000>;
+			infra_na4_base = <0x10040000 12 0xFFFF0000>;
+			scp_base = <0x10050000 13 0xFFFF0000>;
+			mcucfg_base = <0x10200000 14 0xFFFF0000>;
+			gcpu_base = <0x10210000 15 0xFFFF0000>;
+			usb0_base = <0x11200000 16 0xFFFF0000>;
+			usb_sif_base = <0x11210000 17 0xFFFF0000>;
+			audio_base = <0x11220000 18 0xFFFF0000>;
+			msdc0_base = <0x11230000 19 0xFFFF0000>;
+			msdc1_base = <0x11240000 20 0xFFFF0000>;
+			msdc2_base = <0x11250000 21 0xFFFF0000>;
+			msdc3_base = <0x11260000 22 0xFFFF0000>;
+			pwm_sw_base = <0x1100E000 99 0xFFFFF000>;
+			mdp_rdma0_sof = <0>;
+			mdp_rsz0_sof = <1>;
+			mdp_rsz1_sof = <2>;
+			mdp_tdshp_sof = <3>;
+			mdp_wdma_sof = <4>;
+			mdp_wrot_sof = <5>;
+			disp_ovl0_sof = <6>;
+			disp_ovl1_sof = <7>;
+			disp_rdma0_sof = <8>;
+			disp_rdma1_sof = <9>;
+			disp_wdma0_sof = <10>;
+			disp_ccorr_sof = <11>;
+			disp_color_sof = <12>;
+			disp_aal_sof = <13>;
+			disp_gamma_sof = <14>;
+			disp_dither_sof = <15>;
+			disp_pwm0_sof = <17>;
+			disp_od_sof = <18>;
+			mdp_rdma0_frame_done = <19>;
+			mdp_rsz0_frame_done = <20>;
+			mdp_rsz1_frame_done = <21>;
+			mdp_tdshp_frame_done = <22>;
+			mdp_wdma_frame_done = <23>;
+			mdp_wrot_write_frame_done = <24>;
+			mdp_wrot_read_frame_done = <25>;
+			disp_ovl0_frame_done = <26>;
+			disp_ovl1_frame_done = <27>;
+			disp_rdma0_frame_done = <28>;
+			disp_rdma1_frame_done = <29>;
+			disp_wdma0_frame_done = <30>;
+			disp_ccorr_frame_done = <31>;
+			disp_color_frame_done = <32>;
+			disp_aal_frame_done = <33>;
+			disp_gamma_frame_done = <34>;
+			disp_dither_frame_done = <35>;
+			disp_od_frame_done = <37>;
+			disp_dpi0_frame_done = <38>;
+			disp_dsi0_frame_done = <39>;
+			stream_done_0 = <40>;
+			stream_done_1 = <41>;
+			stream_done_2 = <42>;
+			stream_done_3 = <43>;
+			stream_done_4 = <44>;
+			stream_done_5 = <45>;
+			stream_done_6 = <46>;
+			stream_done_7 = <47>;
+			stream_done_8 = <48>;
+			stream_done_9 = <49>;
+			buf_underrun_event_0 = <50>;
+			buf_underrun_event_1 = <51>;
+			dsi0_te_event = <52>;
+			isp_frame_done_p2_2 = <65>;
+			isp_frame_done_p2_1 = <66>;
+			isp_frame_done_p2_0 = <67>;
+			isp_frame_done_p1_1 = <68>;
+			isp_frame_done_p1_0 = <69>;
+			camsv_2_pass1_done = <70>;
+			camsv_1_pass1_done = <71>;
+			seninf_cam1_2_3_fifo_full = <72>;
+			seninf_cam0_fifo_full = <73>;
+			venc_done = <129>;
+			jpgenc_done = <130>;
+			jpgdec_done = <131>;
+			venc_mb_done = <132>;
+			venc_128byte_cnt_done = <133>;
+			apxgpt2_count = <0x10004028>;
+		};
+
 		MMSYS_CONFIG@0x14000000 {
 			compatible = "mediatek,MMSYS_CONFIG";
 			reg = <0x14000000 0x1000>;
 			interrupts = <0 205 0x8>;
 		};
 
-		MDP_RDMA@0x14001000 {
-			compatible = "mediatek,MDP_RDMA";
+		mdp_rdma@14001000 {
+			compatible = "mediatek,mdp_rdma";
 			reg = <0x14001000 0x1000>;
-			interrupts = <0 187 0x8>;
+			interrupts = <GIC_SPI 187 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MDP_RSZ0@0x14002000 {
-			compatible = "mediatek,MDP_RSZ0";
+		mdp_rsz0@14002000 {
+			compatible = "mediatek,mdp_rsz0";
 			reg = <0x14002000 0x1000>;
-			interrupts = <0 188 0x8>;
+			interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MDP_RSZ1@0x14003000 {
-			compatible = "mediatek,MDP_RSZ1";
+		mdp_rsz1@14003000 {
+			compatible = "mediatek,mdp_rsz1";
 			reg = <0x14003000 0x1000>;
-			interrupts = <0 189 0x8>;
+			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MDP_WDMA@0x14004000 {
-			compatible = "mediatek,MDP_WDMA";
+		mdp_wdma@14004000 {
+			compatible = "mediatek,mdp_wdma";
 			reg = <0x14004000 0x1000>;
-			interrupts = <0 191 0x8>;
+			interrupts = <GIC_SPI 191 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MDP_WROT@0x14005000 {
-			compatible = "mediatek,MDP_WROT";
+		mdp_wrot@14005000 {
+			compatible = "mediatek,mdp_wrot";
 			reg = <0x14005000 0x1000>;
-			interrupts = <0 192 0x8>;
+			interrupts = <GIC_SPI 192 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MDP_TDSHP@0x14006000 {
-			compatible = "mediatek,MDP_TDSHP";
+		mdp_tdshp@14006000 {
+			compatible = "mediatek,mdp_tdshp";
 			reg = <0x14006000 0x1000>;
-			interrupts = <0 190 0x8>;
+			interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_LOW>;
 		};
 	};
 
@@ -1103,78 +1200,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735-gcpu";
 			reg = <0x10216000 0x1000>;
 			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
-		};
-
-		GCE@0x10217000 {
-			compatible = "mediatek,GCE";
-			reg = <0x10217000 0x1000>;
-			interrupts = <0 151 0x8>,
-						<0 148 0x8>;
-			mdp_rdma0_sof = <0>;
-			mdp_rsz0_sof = <1>;
-			mdp_rsz1_sof = <2>;
-			mdp_tdshp_sof = <3>;
-			mdp_wdma_sof = <4>;
-			mdp_wrot_sof = <5>;
-			disp_ovl0_sof = <6>;
-			disp_ovl1_sof = <7>;
-			disp_rdma0_sof = <8>;
-			disp_rdma1_sof = <9>;
-			disp_wdma0_sof = <10>;
-			disp_ccorr_sof = <11>;
-			disp_color_sof = <12>;
-			disp_aal_sof = <13>;
-			disp_gamma_sof = <14>;
-			disp_dither_sof = <15>;
-			disp_pwm0_sof = <17>;
-			disp_od_sof = <18>;
-			mdp_rdma0_frame_done = <19>;
-			mdp_rsz0_frame_done = <20>;
-			mdp_rsz1_frame_done = <21>;
-			mdp_tdshp_frame_done = <22>;
-			mdp_wdma_frame_done = <23>;
-			mdp_wrot_write_frame_done = <24>;
-			mdp_wrot_read_frame_done = <25>;
-			disp_ovl0_frame_done = <26>;
-			disp_ovl1_frame_done = <27>;
-			disp_rdma0_frame_done = <28>;
-			disp_rdma1_frame_done = <29>;
-			disp_wdma0_frame_done = <30>;
-			disp_ccorr_frame_done = <31>;
-			disp_color_frame_done = <32>;
-			disp_aal_frame_done = <33>;
-			disp_gamma_frame_done = <34>;
-			disp_dither_frame_done = <35>;
-			disp_od_frame_done = <37>;
-			disp_dpi0_frame_done = <38>;
-			disp_dsi0_frame_done = <39>;
-			stream_done_0 = <40>;
-			stream_done_1 = <41>;
-			stream_done_2 = <42>;
-			stream_done_3 = <43>;
-			stream_done_4 = <44>;
-			stream_done_5 = <45>;
-			stream_done_6 = <46>;
-			stream_done_7 = <47>;
-			stream_done_8 = <48>;
-			stream_done_9 = <49>;
-			buf_underrun_event_0 = <50>;
-			buf_underrun_event_1 = <51>;
-			dsi0_te_event = <52>;
-			isp_frame_done_p2_2 = <65>;
-			isp_frame_done_p2_1 = <66>;
-			isp_frame_done_p2_0 = <67>;
-			isp_frame_done_p1_1 = <68>;
-			isp_frame_done_p1_0 = <69>;
-			camsv_2_pass1_done = <70>;
-			camsv_1_pass1_done = <71>;
-			seninf_cam1_2_3_fifo_full = <72>;
-			seninf_cam0_fifo_full = <73>;
-			venc_done = <129>;
-			jpgenc_done = <130>;
-			jpgdec_done = <131>;
-			venc_mb_done = <132>;
-			venc_128byte_cnt_done = <133>;
 		};
 
 		CQDMA@0x10217C00 {

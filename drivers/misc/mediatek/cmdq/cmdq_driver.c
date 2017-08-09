@@ -38,7 +38,7 @@
  *  - use io_map to map and get VA of HW's rgister
 **/
 static const struct of_device_id cmdq_of_ids[] = {
-	{.compatible = "mediatek,GCE",},
+	{.compatible = "mediatek,gce",},
 	{}
 };
 #endif

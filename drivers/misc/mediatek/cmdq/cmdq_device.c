@@ -272,7 +272,7 @@ void cmdq_dev_get_event_value_by_name(CMDQ_EVENT_ENUM event, const char *dts_nam
 		if (event < 0 || event >= CMDQ_MAX_HW_EVENT_COUNT)
 			break;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,GCE");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,gce");
 
 		status = of_property_read_u32(node, dts_name, &event_value);
 		if (status < 0)
