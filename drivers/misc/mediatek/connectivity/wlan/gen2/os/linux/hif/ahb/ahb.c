@@ -863,6 +863,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 {
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 u4HSTCRValue = 0;
+	UINT_32 RegWHLPCR = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -884,6 +885,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_RXD1, Size);
 	else if (Port == MCR_WHISR)
 		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_WHISR, Size);
+
+	RegWHLPCR = HIF_REG_READL(HifInfo, MCR_WHLPCR);
+	if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+		HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 
 	/* Read */
 #if (CONF_MTK_AHB_DMA == 1)
@@ -987,6 +992,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #else
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
+
+		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+			HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_SET);
+
 		if (WlanDmaFatalErr) {
 			if (!fgIsResetting)
 				glDoChipReset();
@@ -1010,6 +1019,9 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			*LoopBuf = HIF_REG_READL(HifInfo, Port);
 			LoopBuf++;
 		}
+
+		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+			HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_SET);
 	}
 
 	return TRUE;
@@ -1035,6 +1047,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 {
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 u4HSTCRValue = 0;
+	UINT_32 RegWHLPCR = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -1058,6 +1071,10 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	else if (Port == MCR_WTDR1)
 		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_TXD1, Size);
 	/* else other non-data port */
+
+	RegWHLPCR = HIF_REG_READL(HifInfo, MCR_WHLPCR);
+	if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+		HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 
 	/* Write */
 #if (CONF_MTK_AHB_DMA == 1)
@@ -1148,6 +1165,10 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
+
+		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+			HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_SET);
+
 		if (WlanDmaFatalErr) {
 			if (!fgIsResetting)
 				glDoChipReset();
@@ -1174,6 +1195,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			HIF_REG_WRITEL(HifInfo, Port, *LoopBuf);
 			LoopBuf++;
 		}
+
+		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
+			HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_SET);
 
 		HIF_DBG_TX(("\n\n"));
 	}
