@@ -177,7 +177,7 @@ static void dump_reg_table(sn65dsi8x_setting_table *table, unsigned int count)
 			printf("dump cmd=0x%x  data=0x%x\n", cmd, data);
 #else
 			sn65dsi83_read_byte(cmd, &data);
-			pr_notice("dump cmd=0x%x  data=0x%x\n", cmd, data);
+			pr_debug("dump cmd=0x%x  data=0x%x\n", cmd, data);
 #endif
 		}
 	}
@@ -202,7 +202,7 @@ void init_sn65dsi8x(void)
 #ifdef BUILD_LK
 	printf("dump cmd=0xe5  data=0x%x\n", data);
 #else
-	pr_notice("dump cmd=0xe5  data=0x%x\n", data);
+	pr_debug("dump cmd=0xe5  data=0x%x\n", data);
 #endif
 	dump_reg_table(sn65dis83_init_table,
 		       sizeof(sn65dis83_init_table) / sizeof(sn65dsi8x_setting_table));
@@ -328,7 +328,7 @@ static void lcm_init(void)
 	lcm_set_gpio_output(GPIO_LCD_STB_EN, GPIO_OUT_ONE);
 #elif (defined BUILD_UBOOT)
 #else
-	pr_notice("[Kernel/LCM]lcm_init\n");
+	pr_debug("[Kernel/LCM]lcm_init\n");
 
 	DSI_clk_HS_mode(0, NULL, 1);
 #endif
@@ -341,7 +341,7 @@ static void lcm_suspend(void)
 #else
 	unsigned char temp;
 
-	pr_notice("[Kernel/LCM]lcm_suspend enter\n");
+	pr_debug("[Kernel/LCM]lcm_suspend enter\n");
 
 	lcm_set_gpio_output(GPIO_LCD_PWR2_EN, GPIO_OUT_ZERO);
 	MDELAY(30);		/* avoid LCD resume transint */
@@ -368,10 +368,10 @@ static void lcm_suspend(void)
 
 	/* step 2 suspend sn65dsi8x */
 	sn65dsi83_read_byte(0x0a, &temp);	/* for test wether ti lock the pll clok */
-	pr_notice("lcm_suspend  0x0a  value=0x%x\n", temp);
+	pr_debug("lcm_suspend  0x0a  value=0x%x\n", temp);
 
 	sn65dsi83_read_byte(0x0d, &temp);
-	pr_notice("lcm_suspend  0x0d  value=0x%x\n", temp);
+	pr_debug("lcm_suspend  0x0d  value=0x%x\n", temp);
 
 	sn65dsi83_write_byte(0x0d, (temp & 0xfe));	/* set bit0: 0 */
 
@@ -391,7 +391,7 @@ static void lcm_resume(void)
 	unsigned char temp;
 #endif
 
-	pr_notice("[Kernel/LCM]lcm_resume enter\n");
+	pr_debug("[Kernel/LCM]lcm_resume enter\n");
 
 	DSI_clk_HS_mode(0, NULL, 1);
 	MDELAY(50);
@@ -414,13 +414,13 @@ static void lcm_resume(void)
 
 #ifdef SN65DSI_DEBUG
 	sn65dsi83_read_byte(0x0a, &temp);
-	pr_notice("lcm_resume cmd-- 0x0a=0x%x\n", temp);
+	pr_debug("lcm_resume cmd-- 0x0a=0x%x\n", temp);
 
 	sn65dsi83_read_byte(0x0d, &temp);
-	pr_notice("lcm_resume cmd-- 0x0d=0x%x\n", temp);
+	pr_debug("lcm_resume cmd-- 0x0d=0x%x\n", temp);
 
 	sn65dsi83_read_byte(0x09, &temp);
-	pr_notice("lcm_resume cmd-- 0x09=0x%x\n", temp);
+	pr_debug("lcm_resume cmd-- 0x09=0x%x\n", temp);
 #endif
 
 	/* step 2 resume lvds */

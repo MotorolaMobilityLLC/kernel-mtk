@@ -28,13 +28,13 @@ void lcm_request_gpio_control(struct device *dev)
 	GPIO_LCD_LED_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_led_en", 0);
 
 	gpio_request(GPIO_LCD_PWR_EN, "GPIO_LCD_PWR_EN");
-	pr_notice("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
+	pr_debug("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
 
 	gpio_request(GPIO_LCD_RST_EN, "GPIO_LCD_RST_EN");
-	pr_notice("[KE/LCM] GPIO_LCD_RST_EN = 0x%x\n", GPIO_LCD_RST_EN);
+	pr_debug("[KE/LCM] GPIO_LCD_RST_EN = 0x%x\n", GPIO_LCD_RST_EN);
 
 	gpio_request(GPIO_LCD_LED_EN, "GPIO_LCD_LED_EN");
-	pr_notice("[KE/LCM] GPIO_LCD_LED_EN = 0x%x\n", GPIO_LCD_LED_EN);
+	pr_debug("[KE/LCM] GPIO_LCD_LED_EN = 0x%x\n", GPIO_LCD_LED_EN);
 }
 
 static int lcm_probe(struct device *dev)
@@ -62,7 +62,7 @@ static struct platform_driver lcm_driver = {
 
 static int __init lcm_init(void)
 {
-	pr_notice("LCM: Register panel driver for r69429_wqxga_dsi_vdo\n");
+	pr_debug("LCM: Register panel driver for r69429_wqxga_dsi_vdo\n");
 	if (platform_driver_register(&lcm_driver)) {
 		pr_err("LCM: failed to register this driver!\n");
 		return -ENODEV;
@@ -74,7 +74,7 @@ static int __init lcm_init(void)
 static void __exit lcm_exit(void)
 {
 	platform_driver_unregister(&lcm_driver);
-	pr_notice("LCM: Unregister this driver done\n");
+	pr_debug("LCM: Unregister this driver done\n");
 }
 
 late_initcall(lcm_init);

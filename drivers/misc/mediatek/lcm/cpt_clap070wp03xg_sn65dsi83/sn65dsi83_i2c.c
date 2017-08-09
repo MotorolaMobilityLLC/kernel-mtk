@@ -111,7 +111,7 @@ static int sn65dsi83_driver_probe(struct i2c_client *client, const struct i2c_de
 {
 	int err = 0;
 
-	pr_notice("[sn65dsi83_driver_probe]name=%s addr=0x%x\n", client->name, client->addr);
+	pr_debug("[sn65dsi83_driver_probe]name=%s addr=0x%x\n", client->name, client->addr);
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
 	if (!new_client) {
 		err = -ENOMEM;
@@ -130,7 +130,7 @@ static int sn65dsi83_driver_probe(struct i2c_client *client, const struct i2c_de
 
 static int sn65dsi83_driver_remove(struct i2c_client *client)
 {
-	pr_notice("sn65dsi83_driver_remove\n");
+	pr_debug("sn65dsi83_driver_remove\n");
 
 	new_client = NULL;
 	i2c_unregister_device(client);
