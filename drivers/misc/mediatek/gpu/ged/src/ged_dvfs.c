@@ -251,6 +251,8 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, eCommitType);
 			if(true==bCommited)
 			{
+				ged_log_trace_counter("Freq-idx",ui32NewFreqID);
+				ged_log_trace_counter("commit-type",eCommitType);
 				ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] commited true");
 				g_ui32PreFreqID = ui32CurFreqID;            
 			}
@@ -349,6 +351,8 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 	if(ui32BeforeSwitchInterpret != g_ui32EventStatus || ui32BeforeDebugInterpret != g_ui32EventDebugStatus 
 			|| g_ui32EventDebugStatus&GED_EVENT_NOT_SYNC)
 	{
+		ged_log_trace_counter("vsync-offset event",g_ui32EventStatus);
+		ged_log_trace_counter("vsync-offset debug",g_ui32EventDebugStatus);
 		ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
 	}
 
@@ -359,6 +363,7 @@ CHECK_OUT:
 void ged_dvfs_vsync_offset_level_set(int i32level)
 {
 	g_VsyncOffsetLevel = i32level;
+	ged_log_trace_counter("vsync-offset",g_VsyncOffsetLevel);
 }
 
 int ged_dvfs_vsync_offset_level_get()

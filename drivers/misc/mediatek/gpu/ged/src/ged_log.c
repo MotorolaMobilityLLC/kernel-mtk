@@ -23,13 +23,15 @@
 #include <linux/seq_file.h>
 #include <linux/rtc.h>
 
+#include <linux/module.h>
+
+#include <linux/ftrace_event.h>
+
 #include "ged_base.h"
 #include "ged_log.h"
 #include "ged_debugFS.h"
 #include "ged_profile_dvfs.h"
 #include "ged_hashtable.h"
-
-#include <linux/ftrace_event.h>
 
 enum
 {
@@ -106,6 +108,8 @@ static struct dentry* gpsGEDLogEntry = NULL;
 static struct dentry* gpsGEDLogBufsDir = NULL;
 
 static GED_HASHTABLE_HANDLE ghHashTable = NULL;
+
+unsigned int ged_log_trace_enable = 0;
 
 //-----------------------------------------------------------------------------
 //
@@ -977,6 +981,8 @@ GED_ERROR ged_log_system_init(void)
 		goto ERROR;
 	}
 
+	ged_log_trace_enable = 0;
+
 	return err;
 
 ERROR:
@@ -1005,25 +1011,33 @@ static inline void __mt_update_tracing_mark_write_addr(void)
         if(unlikely(0 == tracing_mark_write_addr))
         tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
 }
-
 void ged_log_trace_begin(char *name)
 {
-        __mt_update_tracing_mark_write_addr();
-        event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+	if(ged_log_trace_enable)
+	{
+        	__mt_update_tracing_mark_write_addr();
+        	event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+	}
 }
 EXPORT_SYMBOL(ged_log_trace_begin);
  
 void ged_log_trace_end(void)
 {
-        __mt_update_tracing_mark_write_addr();
-        event_trace_printk(tracing_mark_write_addr, "E\n");
+	if(ged_log_trace_enable)
+	{
+        	__mt_update_tracing_mark_write_addr();
+        	event_trace_printk(tracing_mark_write_addr, "E\n");
+	}
 }
 EXPORT_SYMBOL(ged_log_trace_end);
  
 void ged_log_trace_counter(char *name, int count)
 {
-        __mt_update_tracing_mark_write_addr();
-        event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+	if(ged_log_trace_enable)
+	{
+        	__mt_update_tracing_mark_write_addr();
+        	event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+	}
 }
 EXPORT_SYMBOL(ged_log_trace_counter);
 
@@ -1034,3 +1048,5 @@ EXPORT_SYMBOL(ged_log_buf_get_early);
 EXPORT_SYMBOL(ged_log_buf_free);
 EXPORT_SYMBOL(ged_log_buf_print);
 EXPORT_SYMBOL(ged_log_buf_print2);
+
+module_param(ged_log_trace_enable, uint, 0644);
