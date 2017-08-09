@@ -5748,6 +5748,14 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 	if (event != FB_EVENT_BLANK || !prGlueInfo)
 		return 0;
 
+	if (kalHaltTryLock())
+		return 0;
+
+	if (kalIsHalted()) {
+		kalHaltUnlock();
+		return 0;
+	}
+
 	blank = *(INT_32 *)evdata->data;
 
 	switch (blank) {
@@ -5760,6 +5768,8 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 	default:
 		break;
 	}
+
+	kalHaltUnlock();
 	return 0;
 }
 

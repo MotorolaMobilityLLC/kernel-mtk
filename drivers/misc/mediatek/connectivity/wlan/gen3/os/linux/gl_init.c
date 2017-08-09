@@ -2798,7 +2798,6 @@ bailout:
 		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
 		/* Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);
-		kalFbNotifierReg(prGlueInfo);
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
@@ -2880,7 +2879,6 @@ static VOID wlanRemove(VOID)
 	procRemoveProcfs();
 #endif /* WLAN_INCLUDE_PROC */
 
-	kalFbNotifierUnReg();
 	kalPerMonDestroy(prGlueInfo);
 
 #if CFG_ENABLE_BT_OVER_WIFI
@@ -3033,6 +3031,8 @@ static int initWlan(void)
 #if (CFG_CHIP_RESET_SUPPORT)
 	glResetInit();
 #endif
+
+	kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 	return ret;
 }				/* end of initWlan() */
 
@@ -3048,6 +3048,8 @@ static int initWlan(void)
 /* 1 Module Leave Point */
 static VOID exitWlan(void)
 {
+
+	kalFbNotifierUnReg();
 #if CFG_CHIP_RESET_SUPPORT
 	glResetUninit();
 #endif
