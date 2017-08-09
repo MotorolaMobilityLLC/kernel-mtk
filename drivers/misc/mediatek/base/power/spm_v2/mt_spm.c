@@ -679,7 +679,6 @@ int spm_module_init(void)
 							spm_read(SPM_SW_RSV_5),
 							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
 							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
-	pmic_config_interface(MT6351_BUCK_VGPU_CON0, 0, 0x1, 0);
 #if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
 	/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
 	pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
@@ -1504,7 +1503,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN2, 0x7, 3);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
@@ -1528,7 +1527,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
@@ -1554,7 +1553,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
