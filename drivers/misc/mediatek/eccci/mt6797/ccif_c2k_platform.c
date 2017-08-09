@@ -546,9 +546,5 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
-	pr_debug("[C2K] Dump MD1 PCCIF\n");
-	ccci_mem_dump(-1, (void *)hw_info->md1_pccif_base, 0x300);
-	pr_debug("[C2K] Dump MD3 PCCIF\n");
-	ccci_mem_dump(-1, (void *)hw_info->md3_pccif_base, 0x300);
 }
 
