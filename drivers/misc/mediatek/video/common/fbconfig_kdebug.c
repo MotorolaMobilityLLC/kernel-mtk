@@ -123,13 +123,16 @@ static DISP_MODULE_ENUM pm_get_dsi_handle(DSI_INDEX dsi_id)
 int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num)
 {
 	int array[4];
-	int ret;
+	int ret = 0;
 	/* set max return packet size */
 	/* array[0] = 0x00013700; */
 	array[0] = 0x3700 + (num << 16);
 	dsi_set_cmdq(array, 1, 1);
 	atomic_set(&ESDCheck_byCPU , 1);
-	ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(dsi_id), NULL, cmd, buffer, num);
+	if ((dsi_id == PM_DSI0) || (dsi_id == PM_DSI_DUAL))
+		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI0), NULL, cmd, buffer, num);
+	else if (dsi_id == PM_DSI1)
+		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI1), NULL, cmd, buffer, num);
 	atomic_set(&ESDCheck_byCPU , 0);
 	if (ret == 0)
 		return -1;
