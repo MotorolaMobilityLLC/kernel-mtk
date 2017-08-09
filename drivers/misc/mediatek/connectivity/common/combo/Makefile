@@ -14,10 +14,6 @@ ccflags-y += \
 	-I$(src)/include \
 	-I$(src)/../common_detect
 
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-subdir-ccflags-y += -DCONFIG_MTK_COMBO_ANT
-endif
-
 COMMON_SRC_PATH := $(src)
 COMMON_OBJ_PATH := $(src)
 

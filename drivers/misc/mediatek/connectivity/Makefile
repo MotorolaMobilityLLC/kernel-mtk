@@ -30,12 +30,7 @@ endif
     obj-y += common/
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
     obj-$(CONFIG_MTK_COMBO_GPS) += gps/
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-    obj-y += ant/
-endif
-ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
-    obj-y += ant/
-endif
+    obj-$(CONFIG_MTK_COMBO_ANT) += ant/
 	obj-n := dummy.o
 
 # Otherwise we were called directly from the command line;
