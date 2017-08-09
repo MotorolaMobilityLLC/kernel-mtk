@@ -2340,6 +2340,12 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 	}
 
 	local_irq_save(flags);
+#ifdef	CONFIG_MTK_ENG
+	if (count >= qhimark) {
+		pr_emerg("ruc debug: %s CBs-invoked=%ld qlen=%ld",
+			rsp->name, count, rdp->qlen);
+	}
+#endif
 	trace_rcu_batch_end(rsp->name, count, !!list, need_resched(),
 			    is_idle_task(current),
 			    rcu_is_callbacks_kthread());

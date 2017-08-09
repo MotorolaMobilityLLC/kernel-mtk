@@ -106,6 +106,9 @@ void kfree(const void *);
 static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
 {
 	unsigned long offset = (unsigned long)head->func;
+#ifdef	CONFIG_MTK_RCU_DEBUG
+	unsigned long long t1, t2;
+#endif
 
 	rcu_lock_acquire(&rcu_callback_map);
 	if (__is_kfree_rcu_offset(offset)) {
@@ -115,7 +118,15 @@ static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
 		return true;
 	} else {
 		RCU_TRACE(trace_rcu_invoke_callback(rn, head));
+#ifdef	CONFIG_MTK_ENG
+		t1 = sched_clock();
 		head->func(head);
+		t2 = sched_clock();
+		if (t2 - t1 > 200 * NSEC_PER_MSEC)
+			pr_emerg("ruc debug: %s func=%pS", rn, head->func);
+#else
+		head->func(head);
+#endif
 		rcu_lock_release(&rcu_callback_map);
 		return false;
 	}
