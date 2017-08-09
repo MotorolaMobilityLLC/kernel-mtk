@@ -88,7 +88,7 @@
 #endif
 #define MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT (0)
 
-#define CFG_WMT_POWER_ON_DLM  (0)
+#define CFG_WMT_POWER_ON_DLM  (1)
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
