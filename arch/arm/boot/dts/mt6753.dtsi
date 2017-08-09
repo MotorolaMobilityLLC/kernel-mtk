@@ -827,6 +827,13 @@
 			interrupts = <0 118 0x8>;
 		};
 
+		touch: touch@ {
+			compatible = "mediatek,mt6735-touch",
+						"mediatek,mt6735m-touch",
+						"mediatek,mt6753-touch";
+			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
+		};
+
 		THERM_CTRL@0x1100B000 {
 			compatible = "mediatek,THERM_CTRL";
 			reg = <0x1100B000 0x1000>;
