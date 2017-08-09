@@ -24,9 +24,7 @@
 /**************************************************
  * VCORE DVFS option
  ***************************************************/
-#ifdef CONFIG_MTK_VCOREFS
 #define MT_GPUFREQ_VCOREFS_ENABLED
-#endif
 
 /**************************************************
  * GPU DVFS input boost feature
