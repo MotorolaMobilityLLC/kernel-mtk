@@ -146,8 +146,13 @@ static int answer_call_get_data(int *probability, int *status)
 }
 static int answer_call_open_report_data(int open)
 {
+	int ret = 0;
+
+	if (open == 1)
+		ret = sensor_set_delay_to_hub(ID_ANSWER_CALL, 20);
 	pr_warn("%s : type=%d, open=%d\n", __func__, ID_ANSWER_CALL, open);
-	return sensor_enable_to_hub(ID_ANSWER_CALL, open);
+	ret = sensor_enable_to_hub(ID_ANSWER_CALL, open);
+	return ret;
 }
 static int SCP_sensorHub_notify_handler(void *data, unsigned int len)
 {

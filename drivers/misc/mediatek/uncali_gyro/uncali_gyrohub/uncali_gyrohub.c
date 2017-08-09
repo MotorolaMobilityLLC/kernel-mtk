@@ -107,7 +107,7 @@ static int uncali_gyro_get_data(int *dat, int *offset, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	err = sensor_get_data_from_hub(ID_GYROSCOPE, &data);
+	err = sensor_get_data_from_hub(ID_GYROSCOPE_UNCALIBRATED, &data);
 	if (err < 0) {
 		UNGYROHUB_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
@@ -132,14 +132,14 @@ static int uncali_gyro_open_report_data(int open)
 }
 static int uncali_gyro_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_GYROSCOPE, en);
+	return sensor_enable_to_hub(ID_GYROSCOPE_UNCALIBRATED, en);
 }
 static int uncali_gyro_set_delay(u64 delay)
 {
 	unsigned int delayms = 0;
 
 	delayms = delay / 1000 / 1000;
-	return sensor_set_delay_to_hub(ID_GYROSCOPE, delayms);
+	return sensor_set_delay_to_hub(ID_GYROSCOPE_UNCALIBRATED, delayms);
 }
 static int uncali_gyrohub_local_init(void)
 {
@@ -155,7 +155,7 @@ static int uncali_gyrohub_local_init(void)
 	ctl.open_report_data = uncali_gyro_open_report_data;
 	ctl.enable_nodata = uncali_gyro_enable_nodata;
 	ctl.set_delay = uncali_gyro_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 	err = uncali_gyro_register_control_path(&ctl);
 	if (err) {
@@ -164,10 +164,16 @@ static int uncali_gyrohub_local_init(void)
 	}
 
 	data.get_data = uncali_gyro_get_data;
+	data.vender_div = 7506;
 	err = uncali_gyro_register_data_path(&data);
 	if (err) {
 		UNGYROHUB_ERR("register uncali_gyro data path err\n");
 		goto exit;
+	}
+	err = batch_register_support_info(ID_GYROSCOPE_UNCALIBRATED, ctl.is_support_batch, data.vender_div, 1);
+	if (err) {
+		UNGYROHUB_ERR("register gsensor batch support err = %d\n", err);
+		goto exit_create_attr_failed;
 	}
 	return 0;
 exit:

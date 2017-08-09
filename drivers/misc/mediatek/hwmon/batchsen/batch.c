@@ -26,11 +26,32 @@ static int IDToSensorType(int id)
 	case ID_MAGNETIC:
 		sensorType = SENSOR_TYPE_MAGNETIC_FIELD;
 		break;
+	case ID_MAGNETIC_UNCALIBRATED:
+		sensorType = SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED;
+		break;
 	case ID_ORIENTATION:
 		sensorType = SENSOR_TYPE_ORIENTATION;
 		break;
 	case ID_GYROSCOPE:
 		sensorType = SENSOR_TYPE_GYROSCOPE;
+		break;
+	case ID_GYROSCOPE_UNCALIBRATED:
+		sensorType = SENSOR_TYPE_GYROSCOPE_UNCALIBRATED;
+		break;
+	case ID_ROTATION_VECTOR:
+		sensorType = SENSOR_TYPE_ROTATION_VECTOR;
+		break;
+	case ID_GAME_ROTATION_VECTOR:
+		sensorType = SENSOR_TYPE_GAME_ROTATION_VECTOR;
+		break;
+	case ID_GEOMAGNETIC_ROTATION_VECTOR:
+		sensorType = SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR;
+		break;
+	case ID_LINEAR_ACCELERATION:
+		sensorType = SENSOR_TYPE_LINEAR_ACCELERATION;
+		break;
+	case ID_GRAVITY:
+		sensorType = SENSOR_TYPE_GRAVITY;
 		break;
 	case ID_LIGHT:
 		sensorType = SENSOR_TYPE_LIGHT;
@@ -52,6 +73,12 @@ static int IDToSensorType(int id)
 		break;
 	case ID_STEP_COUNTER:
 		sensorType = SENSOR_TYPE_STEP_COUNTER;
+		break;
+	case ID_PEDOMETER:
+		sensorType = SENSOR_TYPE_PEDOMETER;
+		break;
+	case ID_PDR:
+		sensorType = SENSOR_TYPE_PDR;
 		break;
 	default:
 		sensorType = -1;

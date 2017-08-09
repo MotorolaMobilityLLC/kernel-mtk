@@ -107,7 +107,7 @@ static int uncali_mag_get_data(int *dat, int *offset, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	err = sensor_get_data_from_hub(ID_MAGNETIC, &data);
+	err = sensor_get_data_from_hub(ID_MAGNETIC_UNCALIBRATED, &data);
 	if (err < 0) {
 		UNMAGHUB_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
@@ -129,14 +129,14 @@ static int uncali_mag_open_report_data(int open)
 }
 static int uncali_mag_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_MAGNETIC, en);
+	return sensor_enable_to_hub(ID_MAGNETIC_UNCALIBRATED, en);
 }
 static int uncali_mag_set_delay(u64 delay)
 {
 	unsigned int delayms = 0;
 
 	delayms = delay / 1000 / 1000;
-	return sensor_set_delay_to_hub(ID_MAGNETIC, delayms);
+	return sensor_set_delay_to_hub(ID_MAGNETIC_UNCALIBRATED, delayms);
 }
 static int uncali_maghub_local_init(void)
 {

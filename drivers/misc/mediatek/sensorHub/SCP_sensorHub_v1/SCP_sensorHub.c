@@ -244,6 +244,16 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->status = (int8_t)data_t->gyroscope_t.status;
 		data->time = data_t->time_stamp;
 		break;
+	case ID_GYROSCOPE_UNCALIBRATED:
+		data->sensor	= data_t->sensor_type;
+		data->values[0] = data_t->gyroscope_t.x - data_t->gyroscope_t.x_bias;
+		data->values[1] = data_t->gyroscope_t.y - data_t->gyroscope_t.y_bias;
+		data->values[2] = data_t->gyroscope_t.z - data_t->gyroscope_t.z_bias;
+		data->values[3] = data_t->gyroscope_t.x_bias;
+		data->values[4] = data_t->gyroscope_t.y_bias;
+		data->values[5] = data_t->gyroscope_t.z_bias;
+		data->time = data_t->time_stamp;
+		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->relative_humidity_t.relative_humidity;
@@ -259,6 +269,16 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[4] = data_t->magnetic_t.y_bias;
 		data->values[5] = data_t->magnetic_t.z_bias;
 		data->status = (int8_t)data_t->magnetic_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_MAGNETIC_UNCALIBRATED:
+		data->sensor	= data_t->sensor_type;
+		data->values[0] = data_t->magnetic_t.x - data_t->magnetic_t.x_bias;
+		data->values[1] = data_t->magnetic_t.y - data_t->magnetic_t.y_bias;
+		data->values[2] = data_t->magnetic_t.z - data_t->magnetic_t.z_bias;
+		data->values[3] = data_t->magnetic_t.x_bias;
+		data->values[4] = data_t->magnetic_t.y_bias;
+		data->values[5] = data_t->magnetic_t.z_bias;
 		data->time = data_t->time_stamp;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
@@ -1201,6 +1221,17 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->gyroscope_t.z_bias  = data_t->gyroscope_t.z_bias;
 		data->gyroscope_t.status = data_t->gyroscope_t.status;
 		break;
+	case ID_GYROSCOPE_UNCALIBRATED:
+		data->time_stamp = data_t->time_stamp;
+		data->time_stamp_gpt = data_t->time_stamp_gpt;
+		data->uncalibrated_gyro_t.x = data_t->uncalibrated_gyro_t.x;
+		data->uncalibrated_gyro_t.y = data_t->uncalibrated_gyro_t.y;
+		data->uncalibrated_gyro_t.z = data_t->uncalibrated_gyro_t.z;
+		data->uncalibrated_gyro_t.x_bias = data_t->uncalibrated_gyro_t.x_bias;
+		data->uncalibrated_gyro_t.y_bias  = data_t->uncalibrated_gyro_t.y_bias;
+		data->uncalibrated_gyro_t.z_bias  = data_t->uncalibrated_gyro_t.z_bias;
+		data->uncalibrated_gyro_t.status = data_t->uncalibrated_gyro_t.status;
+		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->time_stamp = data_t->time_stamp;
 		data->time_stamp_gpt = data_t->time_stamp_gpt;
@@ -1218,6 +1249,17 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->magnetic_t.y_bias = data_t->magnetic_t.y_bias;
 		data->magnetic_t.z_bias = data_t->magnetic_t.z_bias;
 		data->magnetic_t.status = data_t->magnetic_t.status;
+		break;
+	case ID_MAGNETIC_UNCALIBRATED:
+		data->time_stamp = data_t->time_stamp;
+		data->time_stamp_gpt = data_t->time_stamp_gpt;
+		data->uncalibrated_mag_t.x = data_t->uncalibrated_mag_t.x;
+		data->uncalibrated_mag_t.y = data_t->uncalibrated_mag_t.y;
+		data->uncalibrated_mag_t.z = data_t->uncalibrated_mag_t.z;
+		data->uncalibrated_mag_t.x_bias = data_t->uncalibrated_mag_t.x_bias;
+		data->uncalibrated_mag_t.y_bias = data_t->uncalibrated_mag_t.y_bias;
+		data->uncalibrated_mag_t.z_bias = data_t->uncalibrated_mag_t.z_bias;
+		data->uncalibrated_mag_t.status = data_t->uncalibrated_mag_t.status;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
