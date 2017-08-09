@@ -251,9 +251,9 @@ void mt_cpu_save(void)
 	stop_generic_timer();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(CPU_IDLE_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 10) & 0x0f;
 	else
-		sleep_sta = (spm_read(CPU_IDLE_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 14) & 0x0f;
 
 	if ((sleep_sta | (1 << cpuid)) == 0x0f) { /* last core */
 		cluster = GET_CLUSTER_DATA();
@@ -273,9 +273,9 @@ void mt_cpu_restore(void)
 	core = GET_CORE_DATA();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(CPU_IDLE_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 10) & 0x0f;
 	else
-		sleep_sta = (spm_read(CPU_IDLE_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 14) & 0x0f;
 
 	sleep_sta = (sleep_sta | (1 << cpuid));
 
@@ -393,7 +393,6 @@ int mt_cpu_dormant(unsigned long flags)
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x0);
 
 	return ret & 0x0ff;
-
 }
 
 static int mt_dormant_dts_map(void)

@@ -78,10 +78,12 @@ static unsigned int c2k_wdt_irq_bit;
 
 #if defined(CONFIG_ARCH_MT6735_SERIES) || defined(CONFIG_ARCH_MT6580)
 #define CPUIDLE_CPU_IDLE_STA SPM_SLEEP_TIMER_STA
+#define CPUIDLE_CPU_IDLE_STA_OFFSET 16
 #define CPUIDLE_SPM_WAKEUP_MISC SPM_SLEEP_WAKEUP_MISC
 
 #elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 #define CPUIDLE_CPU_IDLE_STA CPU_IDLE_STA
+#define CPUIDLE_CPU_IDLE_STA_OFFSET 10
 #define CPUIDLE_SPM_WAKEUP_MISC SPM_WAKEUP_MISC
 #endif
 
@@ -671,9 +673,9 @@ void mt_cpu_save(void)
 	stop_generic_timer();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> CPUIDLE_CPU_IDLE_STA_OFFSET) & 0x0f;
 	else
-		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> (CPUIDLE_CPU_IDLE_STA_OFFSET + 4)) & 0x0f;
 
 	if ((sleep_sta | (1 << cpuid)) == 0x0f) { /* last core */
 		cluster = GET_CLUSTER_DATA();
@@ -693,9 +695,9 @@ void mt_cpu_restore(void)
 	core = GET_CORE_DATA();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> CPUIDLE_CPU_IDLE_STA_OFFSET) & 0x0f;
 	else
-		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> (CPUIDLE_CPU_IDLE_STA_OFFSET + 4)) & 0x0f;
 
 	sleep_sta = (sleep_sta | (1 << cpuid));
 
