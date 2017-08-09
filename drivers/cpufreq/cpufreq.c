@@ -1672,6 +1672,9 @@ void cpufreq_suspend(void)
 {
 	struct cpufreq_policy *policy;
 
+	/* Avoid hotplug racing issue */
+	return;
+
 	if (!cpufreq_driver)
 		return;
 
@@ -1703,6 +1706,9 @@ suspend:
 void cpufreq_resume(void)
 {
 	struct cpufreq_policy *policy;
+
+	/* Avoid hotplug racing issue */
+	return;
 
 	if (!cpufreq_driver)
 		return;

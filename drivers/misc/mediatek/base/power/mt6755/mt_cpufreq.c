@@ -40,12 +40,12 @@
 #endif
 
 /* project includes */
-/* #include "mach/mt_thermal.h" */
+#include "mach/mt_thermal.h"
+#include "mt_static_power.h"
 #include "mach/mt_pmic_wrap.h"
 #include "mach/mt_freqhopping.h"
 #include "mach/mt_ppm_api.h"
 /* #include "mach/mt_ptp.h"
-#include "mach/mt_static_power.h"
 #include "mach/upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
@@ -1042,7 +1042,25 @@ EXPORT_SYMBOL(mt_cpufreq_restore_default_volt);
 /* for PBM */
 unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 {
+#ifndef DISABLE_PBM_FEATURE
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+#ifdef CONFIG_THERMAL
+	int temp;
+
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
+	else
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK2) / 1000;
+#else
+	int temp = 40;
+#endif
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
+		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
+	else
+		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
+#else
 	return 0;
+#endif
 }
 
 static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
@@ -2746,13 +2764,24 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	if (!ignore_ppm[MT_CPU_DVFS_LITTLE]) {
 		get_online_cpus();
 		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_LITTLE], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)&cpu_online_mask);
+		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
 		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
 		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
 		ret = -1;
 		for_each_cpu(i, &cpu_online_cpumask) {
 			policy[MT_CPU_DVFS_LITTLE] = cpufreq_cpu_get(i);
 			if (policy[MT_CPU_DVFS_LITTLE]) {
+				p = id_to_cpu_dvfs(MT_CPU_DVFS_LITTLE);
+				if (p->idx_opp_ppm_limit == -1)
+					policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_max_freq(p);
+				else
+					policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_freq_by_idx(p,
+						p->idx_opp_ppm_limit);
+				if (p->idx_opp_ppm_base == -1)
+					policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_min_freq(p);
+				else
+					policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_freq_by_idx(p,
+						p->idx_opp_ppm_base);
 				cpufreq_cpu_put(policy[MT_CPU_DVFS_LITTLE]);
 				ret = 0;
 				break;
@@ -2768,13 +2797,24 @@ second_limit:
 	if (!ignore_ppm[MT_CPU_DVFS_BIG]) {
 		get_online_cpus();
 		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_BIG], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)&cpu_online_mask);
+		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
 		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
 		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for big = %s\n", str1, str2);
 		ret = -1;
 		for_each_cpu(i, &cpu_online_cpumask) {
 			policy[MT_CPU_DVFS_BIG] = cpufreq_cpu_get(i);
 			if (policy[MT_CPU_DVFS_BIG]) {
+				p = id_to_cpu_dvfs(MT_CPU_DVFS_BIG);
+				if (p->idx_opp_ppm_limit == -1)
+					policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_max_freq(p);
+				else
+					policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_freq_by_idx(p,
+						p->idx_opp_ppm_limit);
+				if (p->idx_opp_ppm_base == -1)
+					policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_min_freq(p);
+				else
+					policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_freq_by_idx(p,
+						p->idx_opp_ppm_base);
 				cpufreq_cpu_put(policy[MT_CPU_DVFS_BIG]);
 				ret = 0;
 				break;
@@ -2908,8 +2948,17 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
 		policy->cur = p->ops->get_cur_phy_freq(p);	/* use cur phy freq is better */
-		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
-		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
+		if (p->idx_opp_ppm_limit == -1)
+			policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
+		else
+			policy->max = cpu_dvfs_get_freq_by_idx(id_to_cpu_dvfs(id), p->idx_opp_ppm_limit);
+
+		if (p->idx_opp_ppm_base == -1)
+			policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
+		else
+			policy->min = cpu_dvfs_get_freq_by_idx(id_to_cpu_dvfs(id), p->idx_opp_ppm_base);
+
+		cpufreq_update_policy(policy->cpu);
 
 		if (_mt_cpufreq_sync_opp_tbl_idx(p) >= 0)
 			if (p->idx_normal_max_opp == -1)
