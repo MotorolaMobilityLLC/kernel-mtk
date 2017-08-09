@@ -179,6 +179,8 @@ unsigned long rndis_test_rx_error = 0 ;
 
 unsigned long rndis_test_tx_net_in = 0 ;
 unsigned long rndis_test_tx_busy = 0 ;
+unsigned long rndis_test_tx_stop = 0;
+
 unsigned long rndis_test_tx_usb_out = 0 ;
 unsigned long rndis_test_tx_complete = 0 ;
 
@@ -672,6 +674,7 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 					spin_unlock(&dev->req_lock);
 					break;
 				case 0:
+					rndis_test_tx_usb_out++;
 					spin_lock(&dev->req_lock);
 					dev->no_tx_req_used++;
 					spin_unlock(&dev->req_lock);
@@ -772,6 +775,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	static unsigned int okCnt = 0, busyCnt = 0;
 	static int firstShot = 1, diffSec;
 	static struct timeval tv_last, tv_cur;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 2);
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (dev->port_usb) {
@@ -800,6 +804,15 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		}
 	}
 	spin_unlock_irqrestore(&dev->req_lock, flags);
+
+	if (__ratelimit(&ratelimit)) {
+		pr_notice("[NDIS]spd %d,ms %d,rin %lu,rout %lu,rxmem %lu,rxerr %lu,tin %lu,tout %lu,tb %lu,ts %lu,tx_com %lu,lmsg: 0x%x,lrsp:0x%x,rst:%lu\n",
+		dev->gadget->speed, max_size, rndis_test_rx_usb_in, rndis_test_rx_net_out,
+		rndis_test_rx_nomem, rndis_test_rx_error, rndis_test_tx_net_in,
+		rndis_test_tx_usb_out, rndis_test_tx_busy, rndis_test_tx_stop,
+		rndis_test_tx_complete, rndis_test_last_msg_id, rndis_test_last_resp_id,
+		rndis_test_reset_msg_cnt);
+	}
 
 	rndis_test_tx_net_in ++ ;
 
@@ -862,8 +875,10 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	list_del(&req->list);
 
 	/* temporarily stop TX queue when the freelist empties */
-	if (list_empty(&dev->tx_reqs))
+	if (list_empty(&dev->tx_reqs)) {
+		rndis_test_tx_stop++;
 		netif_stop_queue(net);
+	}
 	spin_unlock_irqrestore(&dev->req_lock, flags);
 
 	/* no buffer copies needed, unless the network stack did it
@@ -967,7 +982,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	} else {
 		req->no_interrupt = 0;
 	}
-	rndis_test_tx_usb_out ++ ;
+
 	retval = usb_ep_queue(in, req, GFP_ATOMIC);
 	switch (retval) {
 	default:
@@ -975,6 +990,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		pr_debug("[XLOG_INFO][UTHER]eth_start_xmit : tx queue err %d\n", retval);
 		break;
 	case 0:
+		rndis_test_tx_usb_out++;
 		net->trans_start = jiffies;
 	}
 
@@ -1283,9 +1299,9 @@ struct net_device *gether_connect(struct gether *link)
 
 	if (result == 0) {
 		result = alloc_tx_requests(dev, link, qlen(dev->gadget));
-		if(result == 0)  
-			result = alloc_rx_requests(dev, link, qlenrx(dev->gadget));		
-	} 
+		if (result == 0)
+			result = alloc_rx_requests(dev, link, qlenrx(dev->gadget));
+	}
 
 	if (result == 0) {
 		dev->zlp = link->is_zlp_ok;
@@ -1366,6 +1382,7 @@ void gether_disconnect(struct gether *link)
 
 	rndis_test_tx_net_in = 0 ;
 	rndis_test_tx_busy = 0 ;
+	rndis_test_tx_stop = 0;
 	rndis_test_tx_usb_out = 0 ;
 	rndis_test_tx_complete = 0 ;
 
