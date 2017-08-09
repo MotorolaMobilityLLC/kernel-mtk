@@ -6635,7 +6635,11 @@ static int need_migrate_task_immediately(struct task_struct *p,
 		src_clid = arch_get_cluster_id(env->src_cpu);
 		dst_clid = arch_get_cluster_id(env->dst_cpu);
 		BUG_ON(dst_clid == -1 || src_clid == -1);
-		BUG_ON(p == NULL || p->group_leader == NULL);
+		BUG_ON(p == NULL);
+
+		if (group_leader_is_empty(p))
+			return 0;
+
 		src_tginfo = &p->group_leader->thread_group_info[src_clid];
 		dst_tginfo = &p->group_leader->thread_group_info[dst_clid];
 		src_nr_cpus = nr_cpus_in_cluster(src_clid, false);
