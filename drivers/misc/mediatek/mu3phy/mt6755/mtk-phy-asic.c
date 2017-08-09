@@ -403,12 +403,16 @@ void usb_phy_sib_enable_switch(bool enable)
 	/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
-
-	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x700), 0x00031000);  /* SSUSB_IP_SW_RST = 0    */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x704), 0x00000000);  /* SSUSB_IP_HOST_PDN = 0  */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x708), 0x00000000);  /* SSUSB_IP_DEV_PDN = 0   */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x70C), 0x00000000);  /* SSUSB_IP_PCIE_PDN = 0  */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x730), 0x0000000C);  /* SSUSB_U3_PORT_DIS/SSUSB_U3_PORT_PDN = 0*/
+	/* SSUSB_IP_SW_RST = 0 */
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x700), 0x00031000);
+	/* SSUSB_IP_HOST_PDN = 0 */
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x704), 0x00000000);
+	/* SSUSB_IP_DEV_PDN = 0 */
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x708), 0x00000000);
+	/* SSUSB_IP_PCIE_PDN = 0 */
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x70C), 0x00000000);
+	/* SSUSB_U3_PORT_DIS/SSUSB_U3_PORT_PDN = 0*/
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x730), 0x0000000C);
 
 	/*
 	 * USBMAC mode is 0x62910002 (bit 1)
@@ -416,10 +420,10 @@ void usb_phy_sib_enable_switch(bool enable)
 	 * 0x0629 just likes a signature. Can't be removed.
 	 */
 	if (enable) {
-		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910008);
+		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910008);
 		sib_mode = true;
 	} else {
-		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910002);
+		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910002);
 		sib_mode = false;
 	}
 }
@@ -435,9 +439,10 @@ bool usb_phy_sib_enable_switch_status(void)
 
 	usb_enable_clock(true);
 	udelay(50);
-	U3PhyWriteField32((uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST, RG_SSUSB_VUSB10_ON, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
+			  RG_SSUSB_VUSB10_ON, 1);
 
-	reg = U3PhyReadReg32((uintptr_t) u3_sif2_base+0x300);
+	reg = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300));
 	if (reg == 0x62910008)
 		ret = true;
 	else
