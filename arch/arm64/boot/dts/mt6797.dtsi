@@ -268,9 +268,9 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alloc-ranges = <0 0x40000000 0 0xC0000000>;
 		};
 
-		minirdump-reserved-memory@43ff0000 {
+		minirdump-reserved-memory@444f0000 {
 			compatible = "minirdump-reserve-memory";
-			reg = <0 0x43ff0000 0 0x10000>;
+			reg = <0 0x444f0000 0 0x10000>;
 		};
 
 		ram_console-reserved-memory@44400000 {
