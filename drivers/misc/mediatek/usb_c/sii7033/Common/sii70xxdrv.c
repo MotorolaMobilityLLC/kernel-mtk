@@ -64,6 +64,22 @@ void sii70xx_vbus_enable(struct sii70xx_drv_context *drv_context, uint8_t is_src
 	sii_platform_vbus_control(drv_context, is_src);
 }
 
+static void status_monitor_timer(void *context)
+{
+	struct sii70xx_drv_context *drv_context = (struct sii70xx_drv_context *)context;
+	struct sii_usbp_policy_engine *usbpd_dev = (struct sii_usbp_policy_engine *)drv_context->pusbpd_policy;
+	struct sii_typec *ptypec_dev = (struct sii_typec *)drv_context->ptypec;
+
+	pr_debug("Status Monitor Timer\n");
+
+	pr_info("typecState :: %x\n", ptypec_dev->state);
+
+	pr_info("pdState :: %d AltmodeState ::%d pr_swap_state ::%d dr_swap_state ::%d\n",
+	usbpd_dev->state, usbpd_dev->alt_mode_state, usbpd_dev->pr_swap_state,
+	usbpd_dev->dr_swap_state);
+	sii_timer_start(&(drv_context->usbpd_inst_stat_mon_tmr));
+}
+
 static bool sii_start_xmit(struct sii70xx_drv_context *drv_context, struct pd_cb_params *sm_inputs)
 {
 	if (sii_platform_rd_reg8(REG_ADDR__PDTXCS) != 0x06) {
@@ -793,6 +809,15 @@ int sii70xx_device_init(struct device *dev, struct gpio *sk_gpios)
 		goto exit;
 	}
 
+	ret = sii_timer_create(status_monitor_timer,
+			drv_context, &drv_context->
+			usbpd_inst_stat_mon_tmr,
+			500, true);
+
+	if (ret != 0) {
+		pr_warn("Failed to register NoResponseTimer timer!\n");
+		goto exit;
+	}
 
 	g_drv_context = drv_context;
 	ret =
@@ -825,6 +850,14 @@ void usbpd_device_exit(struct device *dev)
 		free_irq(drv_context->irq, drv_context);
 		pr_debug("IRQ freed\n");
 	}
+
+	if (drv_context->usbpd_inst_stat_mon_tmr) {
+		sii_timer_stop(&drv_context->
+			usbpd_inst_stat_mon_tmr);
+		ret = sii_timer_delete(&drv_context->
+			usbpd_inst_stat_mon_tmr);
+	}
+
 	if (drv_context->usbpd_inst_disconnect_tmr) {
 		sii_timer_stop(&drv_context->usbpd_inst_disconnect_tmr);
 		ret = sii_timer_delete(&drv_context->usbpd_inst_disconnect_tmr);

@@ -1204,11 +1204,94 @@ void usbpd_event_notify(struct sii70xx_drv_context *pdev, unsigned int events,
 		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE, envp);
 		break;
 	case PD_UNSTRUCTURED_VDM:
-		sysfs_notify(&pdev->dev->kobj, NULL, __stringify(SYS_ATTR_NAME_UNSTRUCTURED_VDM));
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_UNSTRUCTURED_VDM));
 
 		strlcpy(event_string,
-			"Unstructred VDM set for Below Voltage levels", USBPD_EVENT_STRING_LEN);
-		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE, envp);
+			"Unstructred VDM is set",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_PR_SWAP_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_PR_SWAP_COMPLETED));
+
+		strlcpy(event_string,
+			"Power role swap completed",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_DR_SWAP_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_DR_SWAP_COMPLETED));
+
+		strlcpy(event_string,
+			"Data role swap completed",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_PR_SWAP_EXIT:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_PR_SWAP_EXIT));
+
+		strlcpy(event_string,
+			"Power role swap exited",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_DR_SWAP_EXIT:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_DR_SWAP_EXIT));
+
+		strlcpy(event_string,
+			"Data role swap exited",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_DFP_EXIT_MODE_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_DFP_ALT_MODE_EXIT));
+
+		strlcpy(event_string,
+			"DFP - Alt mode exit",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_UFP_EXIT_MODE_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_UFP_ALT_MODE_EXIT));
+
+		strlcpy(event_string,
+			"UFP - Alt mode exit",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_DFP_ENTER_MODE_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_DFP_ALT_MODE_DONE));
+
+		strlcpy(event_string,
+			"DFP - Alt mode completed",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
+		break;
+	case PD_UFP_ENTER_MODE_DONE:
+		sysfs_notify(&pdev->dev->kobj, NULL,
+			__stringify(SYS_ATTR_NAME_UFP_ALT_MODE_DONE));
+
+		strlcpy(event_string,
+			"UFP - Alt mode completed",
+			USBPD_EVENT_STRING_LEN);
+		kobject_uevent_env(&pdev->dev->kobj, KOBJ_CHANGE,
+			envp);
 		break;
 	default:
 		break;

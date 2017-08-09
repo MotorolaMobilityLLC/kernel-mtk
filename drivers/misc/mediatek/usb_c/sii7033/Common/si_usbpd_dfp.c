@@ -169,7 +169,7 @@ static void sender_response_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("Sender Response Timer\n");
+		pr_info("Source Sender Response Timer\n");
 		if (pdev->state == PE_SRC_Get_Sink_Cap) {
 			pdev->state = PE_SRC_Ready;
 			goto success;
@@ -707,7 +707,10 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		pr_info("Enter mode done\n");
 		pdev->at_mode_established = true;
 		pdev->alt_mode_req_send = false;
-		/*si_enable_switch_control(pdev->drv_context, PD_TX, true); */
+		pdev->alt_mode_req_rcv = false;
+#if defined(I2C_DBG_SYSFS)
+		usbpd_event_notify(drv_context, PD_DFP_ENTER_MODE_DONE, 0x00, NULL);
+#endif
 		break;
 
 	case PE_DFP_VDM_Mode_Exit_Request:
@@ -746,7 +749,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->alt_mode_state = PE_DFP_VDM_Init;
 		/*si_enable_switch_control(pdev->drv_context, PD_TX, false); */
 #if defined(I2C_DBG_SYSFS)
-		usbpd_event_notify(pdev->drv_context, PD_DFP_EXIT_MODE, 0x00, NULL);
+		usbpd_event_notify(pdev->drv_context, PD_DFP_EXIT_MODE_DONE, 0x00, NULL);
 #endif
 		break;
 	case DFP_SVIDs_MODES_NAK:
@@ -758,7 +761,11 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->alt_mode_req_rcv = false;
 		pdev->alt_mode_req_send = false;
 		pdev->alt_mode_state = PE_DFP_VDM_Init;
+		pr_info("ALT MODE EXIT\n");
 		work = 1;
+#if defined(I2C_DBG_SYSFS)
+		usbpd_event_notify(drv_context, PD_DFP_EXIT_MODE_DONE, 0x00, NULL);
+#endif
 		break;
 
 	default:
@@ -843,6 +850,9 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		/*pdev->dr_swap_state = PE_SRC_DR_Swap_Init; */
 		pdev->dr_swap.done = true;
 		pdev->dr_swap.req_rcv = false;
+#if defined(I2C_DBG_SYSFS)
+		usbpd_event_notify(drv_context, PD_DR_SWAP_DONE, 0x00, NULL);
+#endif
 		si_update_pd_status(pdev);
 		/*work = 1; */
 		break;
@@ -874,6 +884,7 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->dr_swap.req_send = false;
 		pdev->dr_swap.req_rcv = false;
 		pdev->dr_swap.done = false;
+		pr_info("DR SWAP EXITED\n");
 		break;
 	case PE_DRS_DFP_UFP_Reject_DR_Swap:
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__REJECT);
@@ -887,6 +898,9 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->dr_swap.in_progress = false;
 			pdev->dr_swap.req_rcv = false;
 			pdev->dr_swap.done = false;
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_DR_SWAP_EXIT, 0x00, NULL);
+#endif
 		}
 		break;
 	default:
@@ -1005,6 +1019,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_SRC_Swap_Init:
 		if (pdev->drv_context->pUsbpd_dp_mngr->pr_swap_supp) {
 			usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__PR_SWAP);
+			pdev->pr_swap.in_progress = true;
 			pdev->pr_swap_state = PE_SWAP_Wait_Good_Crc_Received;
 		} else {
 			pdev->pr_swap_state = PE_PRS_SRC_SNK_Reject_PR_Swap;
@@ -1024,6 +1039,9 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 				pr_debug("REJECT_RCVD\n");
 				work = 1;
 			}
+			pdev->pr_swap.in_progress = true;
+		} else {
+			pdev->pr_swap.in_progress = false;
 		}
 		break;
 
@@ -1055,6 +1073,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		break;
 	case PE_PRS_SRC_SNK_Accept_Swap:
 		pr_debug("PE_PRS_SRC_SNK_Accept_Swap\n");
+		pdev->pr_swap.in_progress = true;
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__ACCEPT);
 		pdev->pr_swap_state = PE_Wait_Accept_Good_Crc_Received;
 		break;
@@ -1062,7 +1081,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_Wait_Accept_Good_Crc_Received:
 		if (pdev->tx_good_crc_received) {
 			pdev->tx_good_crc_received = 0;
-			pdev->pr_swap_state = PE_PRS_SRC_SNK_Transition_to_off;
+			pdev->pr_swap_state = PE_PRS_SRC_SNK_Transition_to_off_wait;
 			work = 1;
 		} else {
 		}
@@ -1113,6 +1132,9 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			clear_bit(PS_RDY_RCVD, &pdev->intf.param.sm_cmd_inputs);
 			sii_timer_stop(&(pdev->usbpd_inst_ps_source_on_tmr));
 			pr_info("PR SWAP COMPLETED\n");
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_PR_SWAP_DONE, 0x00, NULL);
+#endif
 			pdev->pr_swap.req_send = false;
 			pdev->pr_swap.in_progress = false;
 			pdev->pr_swap.req_rcv = false;
@@ -1132,6 +1154,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->pr_swap.in_progress = false;
 		pdev->pr_swap.req_rcv = false;
 		pdev->pr_swap.done = false;
+		pr_info("PR SWAP EXIT\n");
 		break;
 	case PE_PRS_SRC_SNK_Reject_PR_Swap:
 		pr_info("SEND_COMMAND: REJECT\n");
@@ -1149,6 +1172,9 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->pr_swap.done = false;
 			pdev->pr_swap_state = PE_SRC_Swap_Init;
 			work = 1;
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_PR_SWAP_EXIT, 0x00, NULL);
+#endif
 		}
 		break;
 	default:
@@ -1295,8 +1321,7 @@ void source_policy_engine(WORK_STRUCT *w)
 				work = 1;
 			}
 #if defined(I2C_DBG_SYSFS)
-			/*      usbpd_event_notify(the_pdev, PD_POWER_LEVELS,
-			   0x00, NULL); */
+			usbpd_event_notify(drv_context, PD_POWER_LEVELS, 0x00, NULL);
 #endif
 			break;
 
@@ -1647,6 +1672,11 @@ bool usbpd_set_dfp_swap_init(struct sii_usbp_policy_engine *pUsbpd)
 	memset(&pUsbpd->dr_swap, 0, sizeof(struct swap_config));
 	memset(&pUsbpd->vconn_swap, 0, sizeof(struct swap_config));
 
+	pUsbpd->intf.param.sm_cmd_inputs = 0;
+	pUsbpd->intf.param.svdm_sm_inputs = 0;
+	pUsbpd->intf.param.uvdm_sm_inputs = 0;
+	pUsbpd->intf.param.count = 0;
+
 	set_pd_reset(pUsbpd->drv_context, false);
 
 	pUsbpd->state = PE_SRC_Startup;
@@ -1654,6 +1684,7 @@ bool usbpd_set_dfp_swap_init(struct sii_usbp_policy_engine *pUsbpd)
 
 	pUsbpd->pr_swap_state = PE_SRC_Swap_Init;
 	pUsbpd->alt_mode_state = PE_DFP_VDM_Init;
+	pUsbpd->dr_swap_state = PE_SRC_DR_Swap_Init;
 	pUsbpd->at_mode_established = false;
 	pUsbpd->custom_msg = false;
 	pUsbpd->vdm_cnt = 0;
@@ -1712,6 +1743,7 @@ bool usbpd_set_dfp_init(struct sii_usbp_policy_engine *pUsbpd)
 	pUsbpd->state = PE_SRC_Startup;
 	pUsbpd->pr_swap_state = PE_SRC_Swap_Init;
 	pUsbpd->alt_mode_state = PE_DFP_VDM_Init;
+	pUsbpd->dr_swap_state = PE_SRC_DR_Swap_Init;
 	pUsbpd->at_mode_established = false;
 	pUsbpd->vconn_swap_state = PE_VCS_DFP_Send_Swap;
 	pUsbpd->custom_msg = false;

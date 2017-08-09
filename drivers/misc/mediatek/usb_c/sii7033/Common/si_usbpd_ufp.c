@@ -147,7 +147,7 @@ static void sink_sender_response_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ Sender Response Timer $$\n");
+		pr_info("\n$$ Sink Sender Response Timer $$\n");
 
 		if (pdev->state == PE_SNK_Transition_Sink) {
 			if (pdev->hard_reset_counter < N_HARDRESETCOUNT) {
@@ -377,6 +377,9 @@ bool sii_snk_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_DRS_UFP_DFP_Change_to_DFP:
 		change_drp_data_role(pdev);
 		pr_info("DR SWAP COMPLETED\n");
+#if defined(I2C_DBG_SYSFS)
+		usbpd_event_notify(drv_context, PD_DR_SWAP_DONE, 0x00, NULL);
+#endif
 		pdev->dr_swap.req_send = false;
 		pdev->dr_swap_state = PE_SNK_DR_Swap_Init;
 		pdev->dr_swap.done = true;
@@ -457,16 +460,20 @@ bool sii_snk_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		pr_info("SEND_COMMAND: SEND_SWAP\n");
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__PR_SWAP);
 		pdev->pr_swap_state = PE_SWAP_Wait_Good_Crc_Received;
+		pdev->pr_swap.in_progress = true;/*done here only for nuvuton*/
 		break;
 	case PE_SWAP_Wait_Good_Crc_Received:
 		if (pdev->tx_good_crc_received) {
 			pdev->tx_good_crc_received = 0;
+			pdev->pr_swap.in_progress = true;
 			pdev->pr_swap_state = PE_PRS_Wait_Accept_PR_Swap;
 			sii_timer_start(&(pdev->usbpd_inst_snk_sendr_resp_tmr));
 			if (test_bit(ACCEPT_RCVD, &pdev->intf.param.sm_cmd_inputs))
 				work = 1;
 			else if (test_bit(REJECT_RCVD, &pdev->intf.param.sm_cmd_inputs))
 				work = 1;
+		} else {
+			pdev->pr_swap.in_progress = false;
 		}
 		break;
 	case PE_PRS_Wait_Accept_PR_Swap:
@@ -531,6 +538,9 @@ bool sii_snk_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pr_info("PR SWAP COMPLETED\n");
 			si_update_pd_status(pdev);
 			set_70xx_mode(pdev->drv_context, TYPEC_DRP_DFP);
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_PR_SWAP_DONE, 0x00, NULL);
+#endif
 		}
 		break;
 	case PE_PRS_SNK_SRC_Evaluate_Swap:
@@ -544,6 +554,7 @@ bool sii_snk_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_PRS_SNK_SRC_Accept_Swap:
 		pr_debug("PE_PRS_SNK_SRC_Accept_Swap\n");
 		pr_info("SEND_COMMAND: ACCEPT\n");
+		pdev->pr_swap.in_progress = true;
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__ACCEPT);
 		pdev->pr_swap_state = PE_SWAP_Wait_Accept_Good_CRC_Received;
 		break;
@@ -566,6 +577,10 @@ bool sii_snk_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->pr_swap.in_progress = false;
 		pdev->pr_swap.req_rcv = false;
 		pdev->pr_swap.done = false;
+		pr_info("PR SWAP EXIT\n");
+#if defined(I2C_DBG_SYSFS)
+		usbpd_event_notify(drv_context, PD_PR_SWAP_EXIT, 0x00, NULL);
+#endif
 		break;
 	case PE_PRS_SNK_SRC_Reject_Swap:
 		pr_info("SEND_COMMAND: REJECT\n");
@@ -707,6 +722,14 @@ bool sii_snk_vdm_mode_engine(struct sii_usbp_policy_engine *pdev)
 			/*si_enable_switch_control(pdev->drv_context,
 			   PD_RX, true); */
 			pr_info("ALt mode completed\n");
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_UFP_ENTER_MODE_DONE, 0x00, NULL);
+#endif
+#if defined(SII_LINUX_BUILD)
+#else
+			pdev->pr_swap.req_send = true;
+			work = true;
+#endif
 		}
 		break;
 	case PE_UFP_VDM_Mode_Exit_ACK:
@@ -723,6 +746,9 @@ bool sii_snk_vdm_mode_engine(struct sii_usbp_policy_engine *pdev)
 			/*si_enable_switch_control(pdev->drv_context,
 			   PD_RX, false); */
 			pr_info("ALT MODE DISCONNECTED\n");
+#if defined(I2C_DBG_SYSFS)
+			usbpd_event_notify(drv_context, PD_UFP_EXIT_MODE_DONE, 0x00, NULL);
+#endif
 		}
 		break;
 	}
@@ -887,8 +913,7 @@ void sink_policy_engine(WORK_STRUCT *w)
 			sii_usbpd_xmit_data_msg(pUsbpd_protlyr, REQ, &pdev->rdo, 1);
 			pdev->next_state = PE_SNK_Wait_Request_Good_Crc_Received;
 #if defined(I2C_DBG_SYSFS)
-			/*usbpd_event_notify(the_pdev, PD_POWER_LEVELS,
-			   0x00, NULL); */
+			usbpd_event_notify(drv_context, PD_POWER_LEVELS, 0x00, NULL);
 #endif
 			break;
 		case PE_SNK_Wait_Accept_Sft_Rst_Received:
@@ -1196,6 +1221,7 @@ void sii_reset_ufp(struct sii_usbp_policy_engine *pUsbpd)
 	pUsbpd->state = PE_SNK_Startup;
 	pUsbpd->pr_swap_state = PE_SNK_Swap_Init;
 	pUsbpd->dr_swap_state = PE_SNK_DR_Swap_Init;
+	pUsbpd->alt_mode_state = PE_UFP_VDM_Get_Identity;
 
 	memset(&pUsbpd->pr_swap, 0, sizeof(struct swap_config));
 	memset(&pUsbpd->dr_swap, 0, sizeof(struct swap_config));
@@ -1246,9 +1272,15 @@ bool usbpd_set_ufp_swap_init(struct sii_usbp_policy_engine *pUsbpd)
 	memset(&pUsbpd->dr_swap, 0, sizeof(struct swap_config));
 	memset(&pUsbpd->vconn_swap, 0, sizeof(struct swap_config));
 
+	pUsbpd->intf.param.sm_cmd_inputs = 0;
+	pUsbpd->intf.param.svdm_sm_inputs = 0;
+	pUsbpd->intf.param.uvdm_sm_inputs = 0;
+	pUsbpd->intf.param.count = 0;
+
 	pUsbpd->state = PE_SNK_Startup;
 	pUsbpd->next_state = PE_SNK_Startup;
 	pUsbpd->pr_swap_state = PE_SNK_Swap_Init;
+	pUsbpd->alt_mode_state = PE_UFP_VDM_Get_Identity;
 
 	if (!usbpd_sink_timer_create(pUsbpd)) {
 		pr_err("%s: Failed in timer create.\n", __func__);

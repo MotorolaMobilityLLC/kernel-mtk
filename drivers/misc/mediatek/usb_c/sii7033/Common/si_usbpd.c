@@ -623,7 +623,7 @@ void process_hard_reset(struct sii70xx_drv_context *drv_context)
 		sii70xx_pd_sm_reset(usbpd_dev);
 		sii70xx_vbus_enable(usbpd_dev->drv_context, VBUS_SNK);
 	}
-	sii_timer_start(&(usbpd_dev->usbpd_inst_no_resp_tmr));
+	/*sii_timer_start(&(usbpd_dev->usbpd_inst_no_resp_tmr));*/
 	wakeup_pd_queues(drv_context);
 }
 

@@ -455,6 +455,7 @@ struct sii70xx_drv_context {
 	void *pusbpd_policy;
 	void *pUsbpd_prot;
 	void *usbpd_inst_disconnect_tmr;
+	void *usbpd_inst_stat_mon_tmr;
 	struct sii_usbp_device_policy *pUsbpd_dp_mngr;
 	struct completion disconnect_done_complete;
 	struct vbus_status_reg *vbus_status;
@@ -472,10 +473,14 @@ struct sii70xx_drv_context {
 #define	PD_DFP_DETACHED		0x04
 #define	PD_POWER_LEVELS		0x05
 #define	PD_UNSTRUCTURED_VDM	0x06
-#define	PD_DFP_EXIT_MODE	0x07
-#define	PD_DFP_ENTER_MODE	0x08
-#define	PD_UFP_EXIT_MODE	0x09
-#define	PD_UFP_ENTER_MODE	0x10
+#define	PD_DFP_EXIT_MODE_DONE	0x07
+#define	PD_DFP_ENTER_MODE_DONE	0x08
+#define	PD_UFP_EXIT_MODE_DONE	0x09
+#define	PD_UFP_ENTER_MODE_DONE	0x10
+#define PD_PR_SWAP_DONE		0x11
+#define PD_PR_SWAP_EXIT		0x12
+#define PD_DR_SWAP_DONE		0x13
+#define PD_DR_SWAP_EXIT		0x14
 
 	struct cdev usbpd_cdev;
 	int irq;

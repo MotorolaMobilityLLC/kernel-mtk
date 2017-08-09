@@ -373,7 +373,7 @@ static int sii_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	dev_dbg(&client->dev, "Enter\n");
 
-	pr_info("SII70XX Driver v8.4\n");
+	pr_info("SII70XX Driver v8.7\n");
 
 #if 0
 	if (client->dev.of_node) {

@@ -282,6 +282,7 @@ static void parse_vdm_identity(struct sii_usbpd_protocol *pd, struct pd_inq *req
 	pr_info("usb device support : %s\n", is_usb_device ? "Yes" : "No");
 	pr_info("Modal operation support : %s\n", is_modal_op_supp ? "Yes" : "No");
 	pr_info("usb vid : %X\n", usb_vid);
+	pr_info("usb svid0 : %X\n", svid0);
 
 	switch (PD_IDH_PTYPE(req->msgdata[VDO_I(IDH)])) {
 	case IDH_PTYPE_UNDEF:
@@ -877,11 +878,15 @@ bool usbpd_svdm_init_resp(struct sii_usbpd_protocol *pd, uint8_t cmd, bool is_rc
 		switch (cmd) {
 		case DISCOVER_IDENTITY:
 			vdm_data[VDM_HDR] = SVDM_HEADER(0xFF00, 1, 0, 0, RESP_ACK, cmd);
-			vdm_data[VDM_IDH] = SVDM_IDH(1, 1, 5, 0, 0x8976);
-			vdm_data[VDM_CERT] = SII_PREPARE_CERT_STAT_HEADER(0, 0xFFFFF);
-			vdm_data[VDM_PTYPE] = SII_PREPARE_PRODUCT_VDO_HEADER(0xFFFF, 0xFFFF);
+			vdm_data[VDM_IDH]   = 0;
+			/*SVDM_IDH(1, 1, 5, 0, 0x8976);*/
+			vdm_data[VDM_CERT]  = 0;
+			/*SII_PREPARE_CERT_STAT_HEADER(0, 0xFFFFF);*/
+			vdm_data[VDM_PTYPE] = 0;
+			/*SII_PREPARE_PRODUCT_VDO_HEADER(0xFFFF, 0xFFFF);*/
 			vdm_data[VDM_CABLE] = 0;
-			vdm_data[VDM_AMA] = SVDM_AMA(0, 0, 0, 0, 0, 0, 1, 0, 0, 0);
+			vdm_data[VDM_AMA]   = 0;
+			/*;SVDM_AMA(0, 0, 0, 0, 0, 0,1, 0, 0, 0);*/
 			no_of_objs = 5;
 			break;
 		case DISCOVER_SVID:
@@ -1032,7 +1037,7 @@ static void usbpd_svdm_init(struct sii_usbpd_protocol *prot_lyr)
 
 void update_data_role(void *context, uint8_t updated_role)
 {
-	struct sii70xx_drv_context *drv_context = (struct sii70xx_drv_context *)drv_context;
+	struct sii70xx_drv_context *drv_context = (struct sii70xx_drv_context *)context;
 	struct sii_usbpd_protocol *pUsbpd_prtlyr = (struct sii_usbpd_protocol *)
 	    drv_context->pUsbpd_prot;
 

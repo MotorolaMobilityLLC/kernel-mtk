@@ -37,7 +37,7 @@ void update_typec_status(struct sii_typec *ptypec_dev, bool is_dfp, bool status)
 			sii_wakeup_queues(ptypec_dev->typec_work_queue,
 					  &ptypec_dev->sm_work, &ptypec_dev->typec_event, true);
 #if defined(I2C_DBG_SYSFS)
-			usbpd_event_notify(ptypec_dev->drv_context, PD_DFP_DETACHED, 0x00, NULL);
+			usbpd_event_notify(ptypec_dev->drv_context, PD_UFP_DETACHED, 0x00, NULL);
 #endif
 		} else {
 			set_bit(DFP_DETACHED, &ptypec_dev->inputs);
@@ -46,7 +46,7 @@ void update_typec_status(struct sii_typec *ptypec_dev, bool is_dfp, bool status)
 			sii_wakeup_queues(ptypec_dev->typec_work_queue,
 					  &ptypec_dev->sm_work, &ptypec_dev->typec_event, true);
 #if defined(I2C_DBG_SYSFS)
-			usbpd_event_notify(ptypec_dev->drv_context, PD_UFP_DETACHED, 0x00, NULL);
+			usbpd_event_notify(ptypec_dev->drv_context, PD_DFP_DETACHED, 0x00, NULL);
 #endif
 
 		}
@@ -426,8 +426,9 @@ void sii_check_vbus_status(struct sii_typec *ptypec_dev)
 		if ((cc_status == 0x00) || (cc_status == 0x04)) {
 			pr_info("Vbus Glitch\n");
 			sii_update_70xx_mode(ptypec_dev->drv_context, TYPEC_DRP_TOGGLE_RD);
-		} else {
-			pr_info("Not a Glitch\n");
+		} else if ((cc_status == 0x01) || (cc_status == 0x05)) {
+			pr_info("CC Glitch\n");
+			sii_update_70xx_mode(ptypec_dev->drv_context, TYPEC_DRP_TOGGLE_RP);
 		}
 	}
 }
@@ -462,16 +463,17 @@ void typec_sm0_work(WORK_STRUCT *w)
 
 			if (ptypec_dev->prev_state == UNATTACHED) {
 				pr_info("PREV_STATE:UNATTACHED\n");
-				if (test_bit(DFP_DETACHED, &ptypec_dev->inputs)) {
-					if (test_bit(DFP_ATTACHED, &ptypec_dev->inputs)) {
-						pr_info("VBUS is DETECTED\n");
+				if ((test_bit(DFP_DETACHED, &ptypec_dev->inputs)) || (test_bit(UFP_DETACHED,
+					&ptypec_dev->inputs))) {
+					if ((test_bit(DFP_ATTACHED, &ptypec_dev->inputs)) || (test_bit(UFP_ATTACHED,
+						&ptypec_dev->inputs))) {
+						pr_info("No Glitch\n");
 					} else {
 						clear_bit(DFP_DETACHED, &ptypec_dev->inputs);
 						sii_check_vbus_status(ptypec_dev);
 					}
 				}
-			}
-			if (ptypec_dev->prev_state == ATTACHED_UFP) {
+			} else if (ptypec_dev->prev_state == ATTACHED_UFP) {
 				pr_info("PREV_STATE:ATTACHED_UFP\n");
 				set_pd_reset(drv_context, true);
 				if (ptypec_dev->cc_mode == DRP) {
@@ -488,8 +490,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 				ptypec_dev->ufp_attached = false;
 				/*to take new interrupt again if
 				   unplug/plug happens */
-			}
-			if (ptypec_dev->prev_state == LOCK_UFP) {
+			} else if (ptypec_dev->prev_state == LOCK_UFP) {
 				pr_info("PREV_STATE:LOCK_UFP\n");
 				set_pd_reset(drv_context, true);
 				if (ptypec_dev->cc_mode == DRP) {
@@ -503,8 +504,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 				/*src= 0, snk = 0 */
 				sii70xx_vbus_enable(drv_context, VBUS_SNK);
 				ptypec_dev->dfp_attached = false;
-			}
-			if (ptypec_dev->prev_state == ATTACHED_DFP) {
+			} else if (ptypec_dev->prev_state == ATTACHED_DFP) {
 				pr_info("PREV_STATE:ATTACHED_DFP\n");
 				set_pd_reset(drv_context, true);
 				/*after pr swap this will happen */
@@ -519,6 +519,8 @@ void typec_sm0_work(WORK_STRUCT *w)
 				ptypec_dev->dfp_attached = false;
 				/*to take new interrupt again if
 				   unplug/plug happens */
+			} else {
+				pr_info("INVALID STATE\n");
 			}
 
 			if (test_bit(DFP_ATTACHED, &ptypec_dev->inputs)) {
@@ -646,9 +648,19 @@ void typec_sm0_work(WORK_STRUCT *w)
 			}
 			if (check_substrate_req_dfp(ptypec_dev)) {
 				/*check cc voltages */
-				if (ptypec_dev->is_flipped == TYPEC_UNDEFINED)
+				if (ptypec_dev->is_flipped == TYPEC_UNDEFINED) {
 					pr_debug("DFP: not In range\n");
-				else {
+					sii70xx_vbus_enable(drv_context,
+						VBUS_SRC);
+					result = usbpd_set_dfp_init(ptypec_dev->
+						drv_context->pusbpd_policy);
+					if (!result) {
+						pr_debug("Error: DFP Config\n");
+						ptypec_dev->state = UNATTACHED;
+						work = 1;
+						break;
+					}
+				} else {
 					sii70xx_vbus_enable(drv_context, VBUS_SRC);
 					result =
 					    usbpd_set_dfp_init(ptypec_dev->
@@ -664,9 +676,10 @@ void typec_sm0_work(WORK_STRUCT *w)
 			break;
 
 		case DFP_DRP_WAIT:
-			sii_mask_detach_interrupts(ptypec_dev->drv_context);
+			sii_mask_detach_interrupts(drv_context);
 			ptypec_dev->prev_state = ptypec_dev->state;
-
+			sii70xx_vbus_enable(drv_context,
+				VBUS_SRC);
 			pr_info("DFP_DRP_WAIT\n");
 			msleep(100);
 			/*enable_vconn(phy); */
