@@ -20,7 +20,7 @@ ccflags-y += \
 endif
 
 ifeq ($(CONFIG_ARCH_MT8173),y)
-ccflags-y += -DJPEG_PM_DOMAIN_ENABLE
+#ccflags-y += -DJPEG_PM_DOMAIN_ENABLE
 endif
 
 ifeq ($(CONFIG_ARCH_MT6753),y)
