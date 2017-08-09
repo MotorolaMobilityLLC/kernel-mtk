@@ -5464,6 +5464,9 @@ static int cmp_select_task_rq_fair(struct task_struct *p, int prev_cpu)
 				cpumask_set_cpu(j, &idle_mask);
 		}
 
+		if (group_leader_is_empty(p))
+			continue;
+
 		tg_cnt = p->group_leader->thread_group_info[i].nr_running;
 		mt_sched_printf(sched_cmp,
 			"wakeup pid=%d name=%s load=%ld, cluster=%d allowed_cpu=%02lx, idle_cpu=%02lx",
