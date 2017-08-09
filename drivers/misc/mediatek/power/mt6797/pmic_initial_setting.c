@@ -414,6 +414,21 @@ ret = pmic_config_interface(0xFA4, 0x0, 0x7, 4);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 6);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 7);
+if (pmic_get_register_value(PMIC_HWCID) == 0x5140) {
+	ret = pmic_config_interface(0x26A, 0x1, 0x1, 4);
+	ret = pmic_config_interface(0x26A, 0x1, 0x1, 7);
+	ret = pmic_config_interface(0x6A0, 0x1, 0x1, 1);
+	pr_err("[PMIC] 6351 VOW 0x%x, 0x%x, 0x%x 0x%x\n", pmic_get_register_value(PMIC_HWCID),
+					pmic_get_register_value(PMIC_RG_VOWEN_MODE),
+					pmic_get_register_value(PMIC_RG_SRCVOLTEN_MODE),
+					pmic_get_register_value(PMIC_BUCK_VSRAM_PROC_VOSEL_CTRL));
+}
+if (pmic_get_register_value(PMIC_HWCID) == 0x5120) {
+	pr_err("[PMIC] 6351 VOW 0x%x, 0x%x, 0x%x 0x%x\n", pmic_get_register_value(PMIC_HWCID),
+					pmic_get_register_value(PMIC_RG_VOWEN_MODE),
+					pmic_get_register_value(PMIC_RG_SRCVOLTEN_MODE),
+					pmic_get_register_value(PMIC_BUCK_VSRAM_PROC_VOSEL_CTRL));
+}
 pr_err("[PMIC] 6351 PMIC Initial Setting Done\n");
 /*****************************************************
  * below programming is used for MD setting
