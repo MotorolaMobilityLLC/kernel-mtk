@@ -87,7 +87,7 @@ typedef struct ion_sys_get_phys_param {
 		struct ion_handle *kernel_handle;
 	};
 	unsigned int phy_addr;
-	unsigned int len;
+	unsigned long len;
 } ion_sys_get_phys_param_t;
 
 #define ION_MM_DBG_NAME_LEN 16
