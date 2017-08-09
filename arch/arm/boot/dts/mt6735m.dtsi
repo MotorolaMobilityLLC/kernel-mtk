@@ -513,6 +513,13 @@
 			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
 		};
 
+		apirtx:irtx@11011000 {
+			compatible = "mediatek,irtx";
+			reg = <0x11011000 0x1000>;
+			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
+			pwm_ch = <0>;
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";
@@ -1091,14 +1098,6 @@
 		IRDA@0x11010000 {
 			compatible = "mediatek,IRDA";
 			reg = <0x11010000 0x1000>;
-		};
-
-		IRTX@0x11011000 {
-			compatible = "mediatek,IRTX";
-			reg = <0x11011000 0x1000>;
-			interrupts = <0 124 0x4>;
-			major = <100>;
-			pwm_ch = <0>;
 		};
 
 		USB0@0x11200000 {

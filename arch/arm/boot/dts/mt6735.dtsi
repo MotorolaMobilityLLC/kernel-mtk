@@ -696,6 +696,18 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
 		};
 
+		apirtx:irtx@11011000 {
+			compatible = "mediatek,irtx";
+			reg = <0x11011000 0x1000>;
+			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
+			pwm_ch = <0>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_IRTX>;
+			clock-names = "clk-irtx-main";
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";
