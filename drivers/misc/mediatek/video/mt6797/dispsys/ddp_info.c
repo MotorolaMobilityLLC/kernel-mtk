@@ -144,6 +144,8 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 		return DISP_MODULE_MIPI0;
 	case DISP_REG_MIPI1:
 		return DISP_MODULE_MIPI1;
+	case DISP_REG_OD:
+		return DISP_MODULE_OD;
 	default:
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		BUG();
@@ -299,7 +301,7 @@ DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,			/* DISP_MODULE_RDMA2, */
 
 	0,			/* DISP_MODULE_PWM1, */
-	0,			/* DISP_MODULE_OD, */
+	&ddp_driver_od,		/* DISP_MODULE_OD, */
 	0,			/* DISP_MODULE_MERGE, */
 	&ddp_driver_split,	/* DISP_MODULE_SPLIT0, */
 	0,			/* DISP_MODULE_SPLIT1, */

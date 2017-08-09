@@ -135,7 +135,9 @@ wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_wait_esd_eof(void);
 static unsigned int _need_lfr_check(void);
-
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+static int od_need_start;
+#endif
 
 typedef struct {
 	DISP_POWER_STATE state;
@@ -2795,6 +2797,14 @@ static int _disp_primary_path_check_trigger(void *data)
 			if (pgc->state != DISP_SLEPT) {
 				cmdqRecReset(handle);
 				_cmdq_insert_wait_frame_done_token_mira(handle);
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+				if (od_need_start) {
+					od_need_start = 0;
+					disp_od_start_read(handle);
+				}
+				disp_od_update_status(handle);
+#endif
+
 				_cmdq_set_config_handle_dirty_mira(handle);
 				_cmdq_flush_config_handle_mira(handle, 0);
 			}
@@ -3700,6 +3710,27 @@ int primary_display_set_lcm_refresh_rate(int fps)
 	return ret;
 }
 
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+static int od_by_pass;
+
+void primary_display_od_bypass(int bypass)
+{
+	DISPCHECK("odbyass %d\n", bypass);
+	od_by_pass = bypass;
+}
+
+static void _display_set_refresh_rate_post_proc(int fps)
+{
+	if (fps == 60) {
+		/* TODO: switch path after adjusting fps */
+		od_need_start = 0;
+	} else if (fps == 120) {
+		if (!od_by_pass)
+			od_need_start = 1;
+	}
+}
+#endif
+
 int _display_set_lcm_refresh_rate(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
@@ -3756,8 +3787,9 @@ int _display_set_lcm_refresh_rate(int fps)
 	/* Change PLL CLOCK parameter and build fps lcm command */
 	disp_lcm_adjust_fps(cmdq_handle, pgc->plcm, fps);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, cmdq_handle, DDP_PHY_CLK_CHANGE, &pgc->plcm->params->dsi.PLL_CLOCK);
-	/* TODO: OD Control
-	*/
+	/* OD Enable */
+	if (!od_by_pass)
+		disp_od_set_enabled(cmdq_handle, 1);
 
 	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE)
 		/*need sync, make sure od is config done, even if od in decouple path*/
@@ -3765,11 +3797,7 @@ int _display_set_lcm_refresh_rate(int fps)
 	else
 		_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 
-	/* TODO: switch path after adjusting fps
-	if (fps == 60) {
-		Switch path.
-	}
-	*/
+	_display_set_refresh_rate_post_proc(fps);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_fps, MMProfileFlagEnd, fps, 0);
 #endif

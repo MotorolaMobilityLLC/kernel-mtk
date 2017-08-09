@@ -313,7 +313,7 @@ extern DDP_MODULE_DRIVER ddp_driver_color;
 /* aal */
 extern DDP_MODULE_DRIVER ddp_driver_aal;
 /* od */
-/* extern  DDP_MODULE_DRIVER ddp_driver_od; */
+extern  DDP_MODULE_DRIVER ddp_driver_od;
 /* gamma */
 extern DDP_MODULE_DRIVER ddp_driver_gamma;
 /* dither */

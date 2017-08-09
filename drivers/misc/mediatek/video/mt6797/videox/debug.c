@@ -289,6 +289,15 @@ static void process_dbg_opt(const char *opt)
 			primary_display_wait_for_vsync(&vsync_config);
 			dpmgr_module_notify(DISP_MODULE_AAL, DISP_PATH_EVENT_TRIGGER);
 		}
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	} else if (0 == strncmp(opt, "odbypass:", 9)) {
+		char *p = (char *)opt + 9;
+		int bypass = kstrtoul(p, 16, (unsigned long int *)&p);
+
+		primary_display_od_bypass(bypass);
+		DISPMSG("OD bypass: %d\n", bypass);
+		return;
+#endif
 	} else if (0 == strncmp(opt, "diagnose", 8)) {
 		primary_display_diagnose();
 		return;

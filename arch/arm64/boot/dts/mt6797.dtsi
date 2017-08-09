@@ -2039,7 +2039,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			      <0x14014000 0x1000>,  /*disp_ccorr	*/
 			      <0x14015000 0x1000>,  /*disp_aal		*/
 			      <0x14016000 0x1000>,  /*disp_gamma	*/
-			   /*   <0x14017000 0x1000>,  //disp_od		*/
+			      <0x14017000 0x1000>,  /*disp_od		*/
 			      <0x14018000 0x1000>,  /*disp_dither	*/
 			      <0x14019000 0x1000>,  /*disp_dsi_ufoe	*/
 			   /*   <0x1401a000 0x1000>,  //disp_dsi_dsc	*/
@@ -2068,7 +2068,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<GIC_SPI 222 IRQ_TYPE_LEVEL_LOW>, /*disp_ccorr */
 				<GIC_SPI 223 IRQ_TYPE_LEVEL_LOW>, /*disp_aal */
 				<GIC_SPI 224 IRQ_TYPE_LEVEL_LOW>, /*disp_gamma */
-			/*	<GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>, //disp_od */
+				<GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>, /*disp_od */
 				<GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>, /*disp_dither */
 				<GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, /*disp_ufoe */
 			/*	<GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>, //disp_dsi_dsc */

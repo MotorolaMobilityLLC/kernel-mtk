@@ -1076,7 +1076,7 @@ extern volatile unsigned long dsi_reg_va;
 #define DDP_REG_BASE_SMI_LARB0     dispsys_reg[DISP_REG_SMI_LARB0]
 #define DDP_REG_BASE_SMI_LARB5     dispsys_reg[DISP_REG_SMI_LARB5]
 #define DDP_REG_BASE_SMI_COMMON    dispsys_reg[DISP_REG_SMI_COMMON]
-#define DDP_REG_BASE_DISP_OD       0
+#define DDP_REG_BASE_DISP_OD       dispsys_reg[DISP_REG_OD]
 #define DDP_REG_BASE_DISP_CCORR    dispsys_reg[DISP_REG_CCORR]
 #define DDP_REG_BASE_DISP_DITHER   dispsys_reg[DISP_REG_DITHER]
 #define DDP_REG_BASE_DISP_OVL0_2L  dispsys_reg[DISP_REG_OVL0_2L]
@@ -1254,10 +1254,17 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_CMDQ_REG_SET(__cmdq, reg32, val, mask) DISP_REG_MASK(__cmdq, reg32, val, mask)
 
-#define DISP_CMDQ_CONFIG_STREAM_DIRTY(__cmdq) /* ddp_insert_config_dirty_rec(__cmdq) */ /* To be ported */
-
 #define DISP_CMDQ_END(__cmdq) \
 	do {					\
+		cmdqRecFlush(__cmdq); \
+		cmdqRecDestroy(__cmdq); \
+	} while (0)
+
+#define DISP_CMDQ_CONFIG_STREAM_DIRTY(__cmdq) \
+	ddp_insert_config_dirty_rec(__cmdq)
+
+#define DISP_CMDQ_END(__cmdq) \
+	do { \
 		cmdqRecFlush(__cmdq); \
 		cmdqRecDestroy(__cmdq); \
 	} while (0)
