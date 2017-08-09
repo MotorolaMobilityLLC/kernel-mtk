@@ -274,10 +274,6 @@ static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE
 };
 
-#ifndef CONFIG_MT_ENG_BUILD
-static struct mdjtag_gpio_config GPIO_KPROW1_config, GPIO_KPROW2_config;
-#endif
-
 static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	u32 spm_val;
@@ -377,28 +373,10 @@ void clk_buf_config_rfbpi_gpio(void)
 #endif
 
 #ifndef CONFIG_MT_ENG_BUILD
-void clk_buf_store_kprow_gpio_config(void)
+void clk_buf_config_mdjtag_gpio_pull_down(void)
 {
-
-	GPIO_KPROW1_config.mode = mt_get_gpio_mode(GPIO_KPROW1);
-	GPIO_KPROW1_config.pull_enable = mt_get_gpio_pull_enable(GPIO_KPROW1);
-	GPIO_KPROW1_config.pull_select = mt_get_gpio_pull_select(GPIO_KPROW1);
-	GPIO_KPROW1_config.ies = mt_get_gpio_ies(GPIO_KPROW1);
-
-	GPIO_KPROW2_config.mode = mt_get_gpio_mode(GPIO_KPROW2);
-	GPIO_KPROW2_config.pull_enable = mt_get_gpio_pull_enable(GPIO_KPROW2);
-	GPIO_KPROW2_config.pull_select = mt_get_gpio_pull_select(GPIO_KPROW2);
-	GPIO_KPROW2_config.ies = mt_get_gpio_ies(GPIO_KPROW2);
-}
-
-void clk_buf_config_mdjtag_gpio(bool is_flightmode_on)
-{
-
-	int idx, mt_gpio_num;
-	int md_jtag_gpio[MD_JTAG_GPIO_NUM] = {GPIO_KPROW1, GPIO_KPROW2};
-	unsigned long mt_gpio_index;
-
-	if (is_flightmode_on) {
+	/* if GPIO_KPROW1 and GPIO_KPROW2 is set as md jtag function, set GPI pull down for power saving */
+	if (mt_get_gpio_mode(GPIO_KPROW1) == GPIO_MODE_07 && mt_get_gpio_mode(GPIO_KPROW2) == GPIO_MODE_07) {
 		mt_set_gpio_mode(GPIO_KPROW1, GPIO_MODE_GPIO);
 		mt_set_gpio_pull_enable(GPIO_KPROW1, GPIO_PULL_ENABLE);
 		mt_set_gpio_pull_select(GPIO_KPROW1, GPIO_PULL_DOWN);
@@ -408,30 +386,8 @@ void clk_buf_config_mdjtag_gpio(bool is_flightmode_on)
 		mt_set_gpio_pull_enable(GPIO_KPROW2, GPIO_PULL_ENABLE);
 		mt_set_gpio_pull_select(GPIO_KPROW2, GPIO_PULL_DOWN);
 		mt_set_gpio_ies(GPIO_KPROW2, GPIO_IES_DISABLE);
-	} else {
-		mt_set_gpio_mode(GPIO_KPROW1, GPIO_KPROW1_config.mode);
-		mt_set_gpio_pull_enable(GPIO_KPROW1, GPIO_KPROW1_config.pull_enable);
-		mt_set_gpio_pull_select(GPIO_KPROW1, GPIO_KPROW1_config.pull_select);
-		mt_set_gpio_ies(GPIO_KPROW1, GPIO_KPROW1_config.ies);
-
-		mt_set_gpio_mode(GPIO_KPROW2, GPIO_KPROW2_config.mode);
-		mt_set_gpio_pull_enable(GPIO_KPROW2, GPIO_KPROW2_config.pull_enable);
-		mt_set_gpio_pull_select(GPIO_KPROW2, GPIO_KPROW2_config.pull_select);
-		mt_set_gpio_ies(GPIO_KPROW2, GPIO_KPROW2_config.ies);
+		clk_buf_warn("config modem jtag gpio as GPI pull down\n");
 	}
-
-	for (idx = 0 ; idx < MD_JTAG_GPIO_NUM; idx++) {
-		mt_gpio_num = md_jtag_gpio[idx] & (~MT_CPIO_INDEX_OFS);
-		mt_gpio_index = mt_gpio_num | MT_CPIO_INDEX_OFS;
-
-		clk_buf_warn("gpio = %3d: %d %d %d %d %d %d %d %d\n",
-			mt_gpio_num,
-			mt_get_gpio_mode(mt_gpio_index), mt_get_gpio_pull_select(mt_gpio_index),
-			mt_get_gpio_in(mt_gpio_index), mt_get_gpio_out(mt_gpio_index),
-			mt_get_gpio_pull_enable(mt_gpio_index), mt_get_gpio_dir(mt_gpio_index),
-			mt_get_gpio_ies(mt_gpio_index), mt_get_gpio_smt(mt_gpio_index));
-	}
-
 }
 #endif /* CONFIG_MT_ENG_BUILD */
 
@@ -455,10 +411,6 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 		spm_clk_buf_ctrl(clk_buf_swctrl_modem_on);
 
 	mutex_unlock(&clk_buf_ctrl_lock);
-
-#ifndef CONFIG_MT_ENG_BUILD
-	clk_buf_config_mdjtag_gpio(is_flightmode_on);
-#endif
 }
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
@@ -1024,7 +976,7 @@ bool clk_buf_init(void)
 	/*clk_buf_config_rfbpi_gpio(); */
 
 #ifndef CONFIG_MT_ENG_BUILD
-	clk_buf_store_kprow_gpio_config();
+	clk_buf_config_mdjtag_gpio_pull_down();
 #endif
 
 	is_clkbuf_initiated = true;
