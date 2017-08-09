@@ -19,8 +19,7 @@ mediatek-drm-hdmi-objs := mtk_drm_hdmi_drv.o \
 			  mtk_cec.o \
 			  mtk_hdmi_ddc_drv.o \
 			  mtk_hdmi.o \
-			  mtk_hdmi_hw.o \
-			  mtk_hdmi_phy.o
+			  mtk_hdmi_hw.o
 ifeq ($(CONFIG_DEBUG_FS),y)
 mediatek-drm-hdmi-objs += mtk_hdmi_debugfs.o
 endif

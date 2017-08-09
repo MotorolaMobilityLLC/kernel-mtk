@@ -304,9 +304,6 @@ static void mtk_dpi_config_color_format(struct mtk_dpi *dpi,
 
 static int mtk_dpi_power_off(struct mtk_dpi *dpi)
 {
-	if (WARN_ON(dpi->refcount == 0))
-		return -EINVAL;
-
 	if (--dpi->refcount != 0)
 		return 0;
 
@@ -321,7 +318,7 @@ static int mtk_dpi_power_on(struct mtk_dpi *dpi)
 {
 	int ret;
 
-	if (dpi->refcount++ != 1)
+	if (++dpi->refcount != 1)
 		return 0;
 
 	ret = clk_prepare_enable(dpi->engine_clk);
@@ -357,8 +354,6 @@ int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
 	struct mtk_dpi_sync_param vsync_rodd = { 0 };
 	struct mtk_dpi_sync_param vsync_reven = { 0 };
 	unsigned long pix_rate;
-	unsigned long pll_rate;
-	unsigned int factor;
 
 	if (!dpi) {
 		dev_err(dpi->dev, "invalid argument\n");
@@ -366,24 +361,13 @@ int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
 	}
 
 	pix_rate = 1000UL * mode->clock;
-	if (mode->clock <= 74000)
-		factor = 8 * 3;
+	if (pix_rate <= 74250000)
+		clk_set_parent(dpi->sel, dpi->tvd_d8);
 	else
-		factor = 4 * 3;
-	pll_rate = pix_rate * factor;
+		clk_set_parent(dpi->sel, dpi->tvd_d4);
 
-	dev_dbg(dpi->dev, "Want PLL %lu Hz, pixel clock %lu Hz\n",
-		pll_rate, pix_rate);
-
-	clk_set_rate(dpi->tvd_clk, pll_rate);
-	pll_rate = clk_get_rate(dpi->tvd_clk);
-
-	pix_rate = pll_rate / factor;
 	clk_set_rate(dpi->pixel_clk, pix_rate);
-	pix_rate = clk_get_rate(dpi->pixel_clk);
-
-	dev_dbg(dpi->dev, "Got  PLL %lu Hz, pixel clock %lu Hz\n",
-		pll_rate, pix_rate);
+	dev_info(dpi->dev, "expected clock is %lu, actual is %lu\n", pix_rate, clk_get_rate(dpi->pixel_clk));
 
 	limit.c_bottom = 0x0010;
 	limit.c_top = 0x0FE0;
@@ -621,10 +605,24 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	dpi->tvd_clk = devm_clk_get(dev, "pll");
-	if (IS_ERR(dpi->tvd_clk)) {
-		ret = PTR_ERR(dpi->tvd_clk);
-		dev_err(dev, "Failed to get tvdpll clock: %d\n", ret);
+	dpi->sel = devm_clk_get(dev, "sel");
+	if (IS_ERR(dpi->sel)) {
+		ret = PTR_ERR(dpi->sel);
+		dev_err(dev, "Failed to get sel clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->tvd_d4 = devm_clk_get(dev, "tvd_d4");
+	if (IS_ERR(dpi->tvd_d4)) {
+		ret = PTR_ERR(dpi->tvd_d4);
+		dev_err(dev, "Failed to get tvd_d4 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->tvd_d8 = devm_clk_get(dev, "tvd_d8");
+	if (IS_ERR(dpi->tvd_d8)) {
+		ret = PTR_ERR(dpi->tvd_d8);
+		dev_err(dev, "Failed to get tvd_d8 clock: %d\n", ret);
 		return ret;
 	}
 
@@ -640,9 +638,8 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 		of_node_put(ep);
 	}
 	if (!bridge_node) {
-		ret = -EINVAL;
-		dev_err(dev, "Failed to find bridge node: %d\n", ret);
-		return ret;
+		dev_err(dev, "Failed to find bridge node\n");
+		return -ENODEV;
 	}
 
 	dev_info(dev, "Found bridge node: %s\n", bridge_node->full_name);

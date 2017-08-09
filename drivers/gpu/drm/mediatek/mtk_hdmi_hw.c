@@ -297,31 +297,10 @@ void mtk_hdmi_hw_config_sys(struct mtk_hdmi *hdmi)
 			   HDMI_OUT_FIFO_EN | MHL_MODE_ON, HDMI_OUT_FIFO_EN);
 }
 
-void mtk_hdmi_hw_set_deep_color_mode(struct mtk_hdmi *hdmi,
-				     enum hdmi_display_color_depth depth)
+void mtk_hdmi_hw_set_deep_color_mode(struct mtk_hdmi *hdmi)
 {
-	u32 val = 0;
-
-	switch (depth) {
-	case HDMI_DEEP_COLOR_24BITS:
-		val = COLOR_8BIT_MODE;
-		break;
-	case HDMI_DEEP_COLOR_30BITS:
-		val = COLOR_10BIT_MODE | DEEP_COLOR_EN;
-		break;
-	case HDMI_DEEP_COLOR_36BITS:
-		val = COLOR_12BIT_MODE | DEEP_COLOR_EN;
-		break;
-	case HDMI_DEEP_COLOR_48BITS:
-		val = COLOR_16BIT_MODE | DEEP_COLOR_EN;
-		break;
-	default:
-		val = COLOR_8BIT_MODE;
-		break;
-	}
-
 	regmap_update_bits(hdmi->sys_regmap, hdmi->sys_offset + HDMI_SYS_CFG20,
-			   DEEP_COLOR_MODE_MASK | DEEP_COLOR_EN, val);
+			   DEEP_COLOR_MODE_MASK | DEEP_COLOR_EN, COLOR_8BIT_MODE);
 }
 
 void mtk_hdmi_hw_send_av_mute(struct mtk_hdmi *hdmi)
@@ -689,7 +668,6 @@ void mtk_hdmi_hw_aud_aclk_inv_enable(struct mtk_hdmi *hdmi, bool enable)
 }
 
 static void do_hdmi_hw_aud_set_ncts(struct mtk_hdmi *hdmi,
-				    enum hdmi_display_color_depth depth,
 				    enum hdmi_audio_sample_frequency freq,
 				    int pix)
 {
@@ -702,41 +680,18 @@ static void do_hdmi_hw_aud_set_ncts(struct mtk_hdmi *hdmi,
 	mtk_hdmi_write(hdmi, GRL_NCTS, 0);
 	memset(val, 0, sizeof(val));
 
-	if (depth == HDMI_DEEP_COLOR_24BITS) {
-		for (i = 0; i < NCTS_BYTES; i++) {
-			if ((freq < 8) && (pix < 9))
-				val[i] = HDMI_NCTS[freq - 1][pix][i];
-		}
-		temp = (val[0] << 24) | (val[1] << 16) |
-			(val[2] << 8) | (val[3]);	/* CTS */
-	} else {
-		for (i = 0; i < NCTS_BYTES; i++) {
-			if ((freq < 7) && (pix < 9))
-				val[i] = HDMI_NCTS[freq - 1][pix][i];
-		}
-
-		temp =
-		    (val[0] << 24) | (val[1] << 16) | (val[2] << 8) | (val[3]);
-
-		if (depth == HDMI_DEEP_COLOR_30BITS)
-			temp = (temp >> 2) * 5;
-		else if (depth == HDMI_DEEP_COLOR_36BITS)
-			temp = (temp >> 1) * 3;
-		else if (depth == HDMI_DEEP_COLOR_48BITS)
-			temp = (temp << 1);
-
-		val[0] = (temp >> 24) & 0xff;
-		val[1] = (temp >> 16) & 0xff;
-		val[2] = (temp >> 8) & 0xff;
-		val[3] = (temp) & 0xff;
+	for (i = 0; i < NCTS_BYTES; i++) {
+		if ((freq < 8) && (pix < 9))
+			val[i] = HDMI_NCTS[freq - 1][pix][i];
 	}
+	temp = (val[0] << 24) | (val[1] << 16) |
+		(val[2] << 8) | (val[3]);	/* CTS */
 
 	for (i = 0; i < NCTS_BYTES; i++)
 		mtk_hdmi_write(hdmi, GRL_NCTS, val[i]);
 }
 
 void mtk_hdmi_hw_aud_set_ncts(struct mtk_hdmi *hdmi,
-			      enum hdmi_display_color_depth depth,
 			      enum hdmi_audio_sample_frequency freq, int clock)
 {
 	int pix = 0;
@@ -764,5 +719,5 @@ void mtk_hdmi_hw_aud_set_ncts(struct mtk_hdmi *hdmi,
 
 	mtk_hdmi_mask(hdmi, DUMMY_304, AUDIO_I2S_NCTS_SEL_64,
 		      AUDIO_I2S_NCTS_SEL);
-	do_hdmi_hw_aud_set_ncts(hdmi, depth, freq, pix);
+	do_hdmi_hw_aud_set_ncts(hdmi, freq, pix);
 }

@@ -63,7 +63,9 @@ struct mtk_dpi {
 	struct device *dev;
 	struct clk *engine_clk;
 	struct clk *pixel_clk;
-	struct clk *tvd_clk;
+	struct clk *sel;
+	struct clk *tvd_d4;
+	struct clk *tvd_d8;
 	int irq;
 	struct drm_display_mode mode;
 	enum mtk_dpi_out_color_format color_format;

@@ -14,11 +14,9 @@
 #include <drm/drm_edid.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
-#include <linux/phy/phy.h>
 #include "mtk_cec.h"
 #include "mtk_hdmi.h"
 #include "mtk_hdmi_hw.h"
-#include "mtk_hdmi_phy.h"
 
 static u8 mtk_hdmi_aud_get_chnl_count(enum hdmi_aud_channel_type channel_type)
 {
@@ -90,8 +88,7 @@ static u8 mtk_hdmi_aud_get_chnl_count(enum hdmi_aud_channel_type channel_type)
 	}
 }
 
-static int mtk_hdmi_video_change_vpll(struct mtk_hdmi *hdmi, u32 clock,
-				      enum hdmi_display_color_depth depth)
+static int mtk_hdmi_video_change_vpll(struct mtk_hdmi *hdmi, u32 clock)
 {
 	unsigned long rate;
 	int ret;
@@ -112,9 +109,8 @@ static int mtk_hdmi_video_change_vpll(struct mtk_hdmi *hdmi, u32 clock,
 	else
 		dev_dbg(hdmi->dev, "Want PLL %u Hz, got %lu Hz\n", clock, rate);
 
-	mtk_hdmi_phy_set_pll(hdmi->phy, clock, depth);
 	mtk_hdmi_hw_config_sys(hdmi);
-	mtk_hdmi_hw_set_deep_color_mode(hdmi, depth);
+	mtk_hdmi_hw_set_deep_color_mode(hdmi);
 	return 0;
 }
 
@@ -249,7 +245,7 @@ static int mtk_hdmi_aud_set_src(struct mtk_hdmi *hdmi,
 			break;
 		}
 	}
-	mtk_hdmi_hw_aud_set_ncts(hdmi, hdmi->depth, hdmi->aud_param.aud_hdmi_fs,
+	mtk_hdmi_hw_aud_set_ncts(hdmi, hdmi->aud_param.aud_hdmi_fs,
 				 display_mode->clock);
 
 	mtk_hdmi_hw_aud_src_reenable(hdmi);
@@ -414,7 +410,6 @@ int mtk_hdmi_output_init(struct mtk_hdmi *hdmi)
 		return -EINVAL;
 
 	hdmi->csp = HDMI_COLORSPACE_RGB;
-	hdmi->depth = HDMI_DEEP_COLOR_24BITS;
 	hdmi->output = true;
 	aud_param->aud_codec = HDMI_AUDIO_CODING_TYPE_PCM;
 	aud_param->aud_hdmi_fs = HDMI_AUDIO_SAMPLE_FREQUENCY_48000;
@@ -487,20 +482,15 @@ int mtk_hdmi_output_set_display_mode(struct mtk_hdmi *hdmi,
 	mtk_hdmi_hw_vid_black(hdmi, true);
 	mtk_hdmi_hw_aud_mute(hdmi, true);
 	mtk_hdmi_setup_av_mute_packet(hdmi);
-	phy_power_off(hdmi->phy);
 
 	ret = mtk_hdmi_video_change_vpll(hdmi,
-					 mode->clock * 1000,
-					 hdmi->depth);
+					 mode->clock * 1000);
 	if (ret) {
 		dev_err(hdmi->dev, "set vpll failed!\n");
 		return ret;
 	}
 	mtk_hdmi_video_set_display_mode(hdmi, mode);
-
-	phy_power_on(hdmi->phy);
 	mtk_hdmi_aud_output_config(hdmi, mode);
-
 	mtk_hdmi_setup_audio_infoframe(hdmi);
 	mtk_hdmi_setup_avi_infoframe(hdmi, mode);
 	mtk_hdmi_setup_spd_infoframe(hdmi, "mediatek", "chromebook");

@@ -26,7 +26,6 @@ struct device;
 struct device_node;
 struct i2c_adapter;
 struct platform_device;
-struct phy;
 struct regmap;
 
 enum mtk_hdmi_clk_id {
@@ -37,18 +36,10 @@ enum mtk_hdmi_clk_id {
 	MTK_HDMI_CLK_COUNT
 };
 
-enum hdmi_display_color_depth {
-	HDMI_DEEP_COLOR_24BITS,
-	HDMI_DEEP_COLOR_30BITS,
-	HDMI_DEEP_COLOR_36BITS,
-	HDMI_DEEP_COLOR_48BITS,
-};
-
 struct mtk_hdmi {
 	struct drm_bridge bridge;
 	struct drm_connector conn;
 	struct device *dev;
-	struct phy *phy;
 	struct device *cec_dev;
 	struct i2c_adapter *ddc_adpt;
 	struct clk *clk[MTK_HDMI_CLK_COUNT];
@@ -70,7 +61,6 @@ struct mtk_hdmi {
 	unsigned int sys_offset;
 	void __iomem *regs;
 	bool init;
-	enum hdmi_display_color_depth depth;
 	enum hdmi_colorspace csp;
 	bool audio_enable;
 	bool output;
@@ -114,5 +104,5 @@ void mtk_drm_hdmi_debugfs_exit(struct mtk_hdmi *hdmi)
 
 extern struct platform_driver mtk_cec_driver;
 extern struct platform_driver mtk_hdmi_ddc_driver;
-extern struct platform_driver mtk_hdmi_phy_driver;
+extern struct platform_driver mtk_hdmi_pll_driver;
 #endif /* _MTK_HDMI_CTRL_H */

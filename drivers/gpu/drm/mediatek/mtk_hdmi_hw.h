@@ -24,8 +24,7 @@ void mtk_hdmi_hw_send_info_frame(struct mtk_hdmi *hdmi, u8 *buffer, u8 len);
 void mtk_hdmi_hw_send_aud_packet(struct mtk_hdmi *hdmi, bool enable);
 int mtk_hdmi_hw_set_clock(struct mtk_hdmi *hctx, u32 clock);
 void mtk_hdmi_hw_config_sys(struct mtk_hdmi *hdmi);
-void mtk_hdmi_hw_set_deep_color_mode(struct mtk_hdmi *hdmi,
-				     enum hdmi_display_color_depth depth);
+void mtk_hdmi_hw_set_deep_color_mode(struct mtk_hdmi *hdmi);
 void mtk_hdmi_hw_send_av_mute(struct mtk_hdmi *hdmi);
 void mtk_hdmi_hw_send_av_unmute(struct mtk_hdmi *hdmi);
 void mtk_hdmi_hw_ncts_enable(struct mtk_hdmi *hdmi, bool on);
@@ -56,7 +55,6 @@ void mtk_hdmi_hw_aud_src_off(struct mtk_hdmi *hdmi);
 void mtk_hdmi_hw_aud_src_reenable(struct mtk_hdmi *hdmi);
 void mtk_hdmi_hw_aud_aclk_inv_enable(struct mtk_hdmi *hdmi, bool enable);
 void mtk_hdmi_hw_aud_set_ncts(struct mtk_hdmi *hdmi,
-			      enum hdmi_display_color_depth depth,
 			      enum hdmi_audio_sample_frequency freq,
 			      int clock);
 bool mtk_hdmi_hw_is_hpd_high(struct mtk_hdmi *hdmi);

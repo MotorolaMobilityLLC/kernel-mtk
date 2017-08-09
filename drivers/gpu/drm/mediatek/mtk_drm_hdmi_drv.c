@@ -24,12 +24,10 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/of_graph.h>
-#include <linux/phy/phy.h>
 #include <linux/platform_device.h>
 #include "mtk_cec.h"
 #include "mtk_hdmi.h"
 #include "mtk_hdmi_hw.h"
-#include "mtk_hdmi_phy.h"
 
 static const char * const mtk_hdmi_clk_names[MTK_HDMI_CLK_COUNT] = {
 	[MTK_HDMI_CLK_HDMI_PIXEL] = "pixel",
@@ -250,7 +248,6 @@ static void mtk_hdmi_bridge_disable(struct drm_bridge *bridge)
 {
 	struct mtk_hdmi *hdmi = hdmi_ctx_from_bridge(bridge);
 
-	phy_power_off(hdmi->phy);
 	clk_disable_unprepare(hdmi->clk[MTK_HDMI_CLK_HDMI_PIXEL]);
 	clk_disable_unprepare(hdmi->clk[MTK_HDMI_CLK_HDMI_PLL]);
 }
@@ -298,7 +295,6 @@ static void mtk_hdmi_bridge_enable(struct drm_bridge *bridge)
 	mtk_hdmi_output_set_display_mode(hdmi, &hdmi->mode);
 	clk_prepare_enable(hdmi->clk[MTK_HDMI_CLK_HDMI_PLL]);
 	clk_prepare_enable(hdmi->clk[MTK_HDMI_CLK_HDMI_PIXEL]);
-	phy_power_on(hdmi->phy);
 }
 
 static const struct drm_bridge_funcs mtk_hdmi_bridge_funcs = {
@@ -472,13 +468,6 @@ static int mtk_drm_hdmi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	hdmi->phy = devm_phy_get(dev, "hdmi");
-	if (IS_ERR(hdmi->phy)) {
-		ret = PTR_ERR(hdmi->phy);
-		dev_err(dev, "Failed to get HDMI PHY: %d\n", ret);
-		return ret;
-	}
-
 	platform_set_drvdata(pdev, hdmi);
 
 	ret = mtk_drm_hdmi_debugfs_init(hdmi);
@@ -511,8 +500,7 @@ static int mtk_drm_hdmi_probe(struct platform_device *pdev)
 	audio_pdev_info.size_data = sizeof(audio_data);
 	hdmi->audio_pdev = platform_device_register_full(&audio_pdev_info);
 	if (IS_ERR(hdmi->audio_pdev))
-		dev_err(dev, "Failed to register audio device: %ld\n",
-			PTR_ERR(hdmi->audio_pdev));
+		dev_err(dev, "Failed to register audio device: %ld\n", PTR_ERR(hdmi->audio_pdev));
 
 	hdmi->bridge.funcs = &mtk_hdmi_bridge_funcs;
 	hdmi->bridge.of_node = pdev->dev.of_node;
@@ -597,7 +585,6 @@ static struct platform_driver mtk_hdmi_driver = {
 };
 
 static struct platform_driver * const mtk_hdmi_drivers[] = {
-	&mtk_hdmi_phy_driver,
 	&mtk_hdmi_ddc_driver,
 	&mtk_cec_driver,
 	&mtk_hdmi_driver,
