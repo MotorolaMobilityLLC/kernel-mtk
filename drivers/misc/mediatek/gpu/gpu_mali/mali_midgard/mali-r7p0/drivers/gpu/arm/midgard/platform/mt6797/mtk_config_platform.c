@@ -111,12 +111,21 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {
+	int polling_retry = 100000;
 	struct mtk_config *config = kbdev->mtk_config;
 
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+
+	/* polling mfg idle */
+	MFG_write32(MFG_DEBUG_SEL, 0x3);
+	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
+	if (polling_retry <= 0)
+	{
+		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
+	}
 
 #ifdef MTK_GPU_OCP
 	MFG_write32(MFG_OCP_DCM_CON, 0x0);

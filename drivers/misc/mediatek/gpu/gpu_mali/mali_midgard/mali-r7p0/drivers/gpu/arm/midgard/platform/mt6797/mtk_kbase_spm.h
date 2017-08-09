@@ -49,6 +49,10 @@ struct mtk_config {
 	unsigned int min_freq;
 };
 
+#define MFG_DEBUG_SEL   (0x180)
+#define MFG_DEBUG_A     (0x184)
+#define MFG_DEBUG_IDEL  (1<<2)
+
 #define MFG_OCP_DCM_CON             0x460
 
 #define DFP_ID                      0x0

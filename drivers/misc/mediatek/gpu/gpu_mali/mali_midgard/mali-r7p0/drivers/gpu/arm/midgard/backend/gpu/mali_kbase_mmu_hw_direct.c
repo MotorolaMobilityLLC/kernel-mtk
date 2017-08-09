@@ -79,7 +79,7 @@ static int wait_ready(struct kbase_device *kbdev,
 
 	if (max_loops == 0) {
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck\n");
-		ged_log_buf_print2(kbdev->mtk_log, GED_LOG_ATTR_TIME, "AS_ACTIVE bit stuck\n");
+		ged_log_buf_print2(kbdev->mtk_log, GED_LOG_ATTR_TIME, "AS_ACTIVE bit stuck");
 		{
 			static int called = 0;
 			if (called == 0)
