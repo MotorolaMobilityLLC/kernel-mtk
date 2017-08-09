@@ -312,6 +312,11 @@ int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void md_cd_check_md_DCM(struct ccci_modem *md);
 
+#ifndef _MT_SPM_SLEEP_
+extern bool spm_is_md1_sleep(void);
+extern void spm_ap_mdsrc_req(u8 set);
+#endif
+
 extern unsigned long infra_ao_base;
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);
 #endif				/* __CLDMA_PLATFORM_H__ */
