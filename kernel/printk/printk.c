@@ -1635,6 +1635,24 @@ static void zap_locks(void)
 	sema_init(&console_sem, 1);
 }
 
+#ifdef CONFIG_MTK_AEE_FEATURE
+/* if logbuf lock in aee_wdt flow, zap locks uncondationally  */
+void aee_wdt_zap_locks(void)
+{
+	debug_locks_off();
+	/* If a crash is occurring, make sure we can't deadlock */
+	raw_spin_lock_init(&logbuf_lock);
+	/* And make sure that we print immediately */
+	sema_init(&console_sem, 1);
+}
+
+/* for aee_wdt test case */
+void aee_wdt_logbuf_lock(void)
+{
+	raw_spin_lock(&logbuf_lock);
+	down(&console_sem);
+}
+#endif
 /*
  * Check if we have any console that is capable of printing while cpu is
  * booting or shutting down. Requires console_sem.

@@ -22,6 +22,11 @@ void mt_enable_uart(void);
 extern int mt_need_uart_console;
 #endif
 
+#ifdef CONFIG_MTK_AEE_FEATURE
+extern void aee_wdt_zap_locks(void);
+extern void aee_wdt_logbuf_lock(void);
+#endif
+
 #if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 extern void set_detect_count(int count);
 extern int get_detect_count(void);
