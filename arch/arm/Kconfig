@@ -868,6 +868,7 @@ config ARCH_MT6753
 	select ARM_MT6735_CPUIDLE
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
+	select MTK_BASE_POWER
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers

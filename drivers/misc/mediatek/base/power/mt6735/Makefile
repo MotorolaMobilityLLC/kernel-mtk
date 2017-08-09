@@ -30,6 +30,8 @@ obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
 obj-y += mt_gpufreq.o
 
+obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
+
 ifneq ($(CONFIG_ARM64), y)
 
 obj-y += mt-smp.o

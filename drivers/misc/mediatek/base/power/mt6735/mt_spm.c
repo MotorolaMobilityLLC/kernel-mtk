@@ -176,6 +176,9 @@ static void spm_register_init(void)
 {
 	unsigned long flags;
 	unsigned int code = mt_get_chip_hw_code();
+#if defined(CONFIG_ARCH_MT6753)
+	struct resource r;
+#endif
 
 #ifdef CONFIG_OF
 	struct device_node *node;
@@ -201,7 +204,6 @@ static void spm_register_init(void)
 		spm_err("get spm_irq_3 failed\n");
 #if defined(CONFIG_ARCH_MT6753)
 #define MCUCFG_NODE "mediatek,MCUCFG"
-	struct resource r;
 
 	node = of_find_compatible_node(NULL, NULL, MCUCFG_NODE);
 	if (!node) {
@@ -212,9 +214,9 @@ static void spm_register_init(void)
 		spm_err("error: cannot get phys addr" MCUCFG_NODE);
 		BUG();
 	}
-	_mcucfg_phys_base = r.start;
+	_mcucfg_phys_base = (void *)r.start;
 
-	_mcucfg_base = (unsigned long)of_iomap(node, 0);
+	_mcucfg_base = (void *)of_iomap(node, 0);
 	if (!_mcucfg_base) {
 		spm_err("error: cannot iomap " MCUCFG_NODE);
 		BUG();
