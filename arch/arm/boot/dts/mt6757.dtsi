@@ -1985,31 +1985,37 @@
 	camsva@1a050000 {
 		compatible = "mediatek,camsva";
 		reg = <0 0x1a050000 0 0x1000>;
+		interrupts = <GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsvb@1a051000 {
 		compatible = "mediatek,camsvb";
 		reg = <0 0x1a051000 0 0x1000>;
+		interrupts = <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsvc@1a052000 {
 		compatible = "mediatek,camsvc";
 		reg = <0 0x1a052000 0 0x1000>;
+		interrupts = <GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsvd@1a053000 {
 		compatible = "mediatek,camsvd";
 		reg = <0 0x1a053000 0 0x1000>;
+		interrupts = <GIC_SPI 229 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsve@1a054000 {
 		compatible = "mediatek,camsve";
 		reg = <0 0x1a054000 0 0x1000>;
+		interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsvf@1a055000 {
 		compatible = "mediatek,camsvf";
 		reg = <0 0x1a055000 0 0x1000>;
+		interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	tsf@1a057000 {
