@@ -50,6 +50,7 @@
 
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
+#include "mt_soc_digital_type.h"
 
 /*****************************************************************************
  *                         D A T A   T Y P E S
@@ -67,7 +68,9 @@
 #include <linux/gpio.h>
 
 void AudDrv_GPIO_probe(void *dev);
-int AudDrv_GPIO_PMIC_Select(int bEnable);
+
+int AudDrv_GPIO_Request(bool _enable, Soc_Aud_Digital_Block _usage);
+
 int AudDrv_GPIO_SMARTPA_Select(int mode);
 int AudDrv_GPIO_TDM_Select(int mode);
 

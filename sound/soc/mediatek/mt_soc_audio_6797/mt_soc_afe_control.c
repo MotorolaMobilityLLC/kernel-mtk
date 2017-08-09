@@ -957,33 +957,7 @@ void EnableAfe(bool bEnable)
 
 	if (false == bEnable && false == MemEnable) {
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_OF
-		AudDrv_GPIO_PMIC_Select(bEnable);
-#else
-		mt_set_gpio_mode(GPIO_AUD_CLK_MOSI_PIN, GPIO_MODE_00);	/* GPIO24, AUD_CLK_MOSI. */
-
-		/* this GPIO only use in record and VOW */
-		mt_set_gpio_mode(GPIO_AUD_DAT_MISO_PIN, GPIO_MODE_00);	/* GPIO25, AUD_DAT_MISO */
-
-		mt_set_gpio_mode(GPIO_AUD_DAT_MOSI_PIN, GPIO_MODE_00);	/* GPIO26, AUD_DAT_MOSI */
-
-#endif
-#endif
 	} else if (true == bEnable && true == MemEnable) {
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_OF
-		AudDrv_GPIO_PMIC_Select(bEnable);
-#else
-		mt_set_gpio_mode(GPIO_AUD_CLK_MOSI_PIN, GPIO_MODE_01);	/* GPIO24, AUD_CLK_MOSI */
-
-		/* this GPIO only use in record and VOW */
-		mt_set_gpio_mode(GPIO_AUD_DAT_MISO_PIN, GPIO_MODE_01);	/* GPIO25, AUD_DAT_MISO */
-
-		mt_set_gpio_mode(GPIO_AUD_DAT_MOSI_PIN, GPIO_MODE_01);	/* GPIO26, AUD_DAT_MOSI */
-
-#endif
-#endif
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
@@ -1686,6 +1660,8 @@ bool SetI2SAdcEnable(bool bEnable)
 #endif
 	}
 
+	AudDrv_GPIO_Request(bEnable, Soc_Aud_Digital_Block_ADDA_UL);
+
 	return true;
 }
 
@@ -2160,14 +2136,13 @@ bool SetI2SDacEnable(bool bEnable)
 		}
 
 		AudDrv_AUD_Sel(0);
-	}
-
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	if (bEnable == false) {
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
-	}
 #endif
+	}
+
+	AudDrv_GPIO_Request(bEnable, Soc_Aud_Digital_Block_ADDA_DL);
 
 	return true;
 }

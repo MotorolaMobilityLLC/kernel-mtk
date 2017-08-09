@@ -64,6 +64,8 @@ typedef enum {
 	/* ADDA */
 	Soc_Aud_Digital_Block_ADDA_DL,
 	Soc_Aud_Digital_Block_ADDA_UL,
+	Soc_Aud_Digital_Block_ADDA_VOW,
+	Soc_Aud_Digital_Block_ADDA_ANC,
 	/* connection to int main modem */
 	Soc_Aud_Digital_Block_MODEM_PCM_1_O,
 	/* connection to extrt/int modem */
