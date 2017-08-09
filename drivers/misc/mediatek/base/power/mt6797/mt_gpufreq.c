@@ -217,7 +217,7 @@
 #define GPUFREQ_EFUSE_INDEX		(8)
 #define EFUSE_MFG_SPD_BOND_SHIFT	(8)
 #define EFUSE_MFG_SPD_BOND_MASK		(0xF)
-
+#define FUNC_CODE_EFUSE_INDEX		(22)
 /*
  * LOG
  */
@@ -482,6 +482,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 {
 	unsigned int gpu_speed_bounding = 0;
 	unsigned int type = 0;
+	unsigned int func_code_0, func_code_1;
 #ifdef MTK_TABLET_TURBO
 	unsigned int gpu_speed_turbo = 0;
 
@@ -490,7 +491,18 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 	if (gpu_speed_turbo == 1)
 		return 3;
 #endif
+	func_code_0 = (get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX) >> 24) & 0xf;
+	func_code_1 = get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX) & 0xf;
 
+	gpufreq_info("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
+		     func_code_1);
+
+	if (func_code_1 == 0)
+		type = 0;
+	else if (func_code_1 == 1)
+		type = 1;
+	else /* if (func_code_1 == 2) */
+		type = 2;
 	gpu_speed_bounding = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >>
 				EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
 	gpufreq_info("GPU frequency bounding from efuse = %x\n", gpu_speed_bounding);
@@ -535,6 +547,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 	switch (gpu_speed_bounding) {
 	case 1:
+		type = 1;	/* 800M */
 	case 2:
 		type = 0;	/* 700M */
 		break;
@@ -552,7 +565,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 	case 14:
 	case 15:
 	default:
-		type = 1;	/* 600M */
+		type = 2;	/* 600M */
 		break;
 	}
 
@@ -1437,13 +1450,28 @@ static void mt_gpufreq_clock_switch(unsigned int freq_new)
 #if 1
 	unsigned int mfgpll;
 
-	if (freq_new > 750000)
-		mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
-	else if (freq_new < 250000)
-		mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
-	else
-		mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
-
+	if (mt_gpufreq_dvfs_table_type == 0) {
+		if (freq_new > 750000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
+		else if (freq_new < 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
+		else
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
+	} else if (mt_gpufreq_dvfs_table_type == 1) {
+		if (freq_new >= 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
+		else if (freq_new < 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
+	} else if (mt_gpufreq_dvfs_table_type == 2) {
+		if (freq_new >= 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
+		else if (freq_new < 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
+		else if (freq_new < 100000)
+			gpufreq_err("@%s: freq_new = %d cannot be applied\n", __func__, freq_new);
+	} else {
+		gpufreq_err("@%s: efuse number type(%d)\n", __func__, mt_gpufreq_dvfs_table_type);
+	}
 	mfgpll = DRV_Reg32(MFGPLL_CON1);
 	gpufreq_dbg("@%s: freq_new = %d, mfgpll = 0x%x\n", __func__, freq_new, mfgpll);
 #else
