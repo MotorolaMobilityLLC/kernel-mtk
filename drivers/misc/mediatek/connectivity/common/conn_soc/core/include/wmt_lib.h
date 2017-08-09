@@ -76,6 +76,8 @@ when mtk_wcn_wmt_func_on is called by wifi through rfkill)
 
 #define MAX_GPIO_CTRL_TIME (2000)	/* [FixMe][GeorgeKuo] a temp value */
 
+#define MAX_PATCH_NUM 10
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
