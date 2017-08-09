@@ -27,7 +27,8 @@
 enum mt_afe_dl1_playback_mux {
 	MTK_INTERFACE = 0,
 	I2S0,
-	MTK_INTERFACE_AND_I2S0
+	MTK_INTERFACE_AND_I2S0,
+	MTK_INTERFACE_AND_I2S1_DATA2
 };
 
 struct mt_pcm_dl1_priv {
@@ -231,7 +232,8 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, MT_AFE_MEMIF_16_BIT);
 
-	if (priv->playback_mux == MTK_INTERFACE || priv->playback_mux == MTK_INTERFACE_AND_I2S0) {
+	if (priv->playback_mux == MTK_INTERFACE || priv->playback_mux == MTK_INTERFACE_AND_I2S0 ||
+	    priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
 		if (priv->i2s1_clock_mode == MT_AFE_LOW_JITTER_CLOCK) {
 			mt_afe_enable_apll(runtime->rate);
 			mt_afe_enable_apll_tuner(runtime->rate);
@@ -242,10 +244,17 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 			priv->enable_i2s1_low_jitter = true;
 		}
 
-		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O03);
-		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O04);
-		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O03);
-		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		if (priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
+			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O19);
+			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O20);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O19);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O20);
+		} else {
+			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O03);
+			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O04);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O03);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		}
 
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
@@ -381,8 +390,13 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC))
 			mt_afe_disable_i2s_dac();
 
-		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
-		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		if (priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O19);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O20);
+		} else {
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		}
 		priv->enable_mtk_interface = false;
 
 		if (priv->enable_i2s1_low_jitter) {
@@ -458,6 +472,7 @@ static const char *const mt_pcm_dl1_playback_mux_function[] = {
 	ENUM_TO_STR(MTK_INTERFACE),
 	ENUM_TO_STR(I2S0),
 	ENUM_TO_STR(MTK_INTERFACE_AND_I2S0),
+	ENUM_TO_STR(MTK_INTERFACE_AND_I2S1_DATA2),
 };
 
 static int dl1_playback_mux_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
