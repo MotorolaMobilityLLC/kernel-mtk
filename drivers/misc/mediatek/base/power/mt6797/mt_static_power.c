@@ -26,6 +26,8 @@
 #define SPOWER_INFO(fmt, args...)	 pr_err(SP_TAG fmt, ##args)
 #endif
 
+#define V_OF_FUSE						1100
+#define T_OF_FUSE							30
 
 
 static sptbl_t sptab[MT_SPOWER_MAX]; /* CPU, GPU, CPUL, CPULL, VCORE, MODEM, VMD1  */
@@ -478,39 +480,39 @@ int mt_spower_init(void)
 		SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => 0x%x/0x%x/0x%x/0x%x/0x%x/0x%x/0x%x\n",
 		cpubig, gpu, vcore, cpul, cpull, modem, vmd1);
 
-		cpubig	= (int)(cpubig*1150/1000);
-		gpu	= (int)(gpu*1150/1000);
-		vcore	= (int)(vcore*1150/1000);
-		cpul	= (int)(cpul*1150/1000);
-		cpull	= (int)(cpull*1150/1000);
-		modem	= (int)(modem*1150/1000);
-		vmd1	= (int)(vmd1*1150/1000);
+		cpubig	= (int)(cpubig*V_OF_FUSE/1000);
+		gpu	= (int)(gpu*V_OF_FUSE/1000);
+		vcore	= (int)(vcore*V_OF_FUSE/1000);
+		cpul	= (int)(cpul*V_OF_FUSE/1000);
+		cpull	= (int)(cpull*V_OF_FUSE/1000);
+		modem	= (int)(modem*V_OF_FUSE/1000);
+		vmd1	= (int)(vmd1*V_OF_FUSE/1000);
 	} else {
-		cpubig = 100;
-		gpu = 100;
-		vcore = 100;
-		cpul = 100;
-		cpull = 100;
-		modem = 300;
-		vmd1 = 162;
+		cpubig = 190 * V_OF_FUSE/1000;
+		gpu = 55 * V_OF_FUSE/1000;
+		vcore = 181 * V_OF_FUSE/1000;
+		cpul = 46 * V_OF_FUSE/1000;
+		cpull = 30 * V_OF_FUSE/1000;
+		modem = 45 * V_OF_FUSE/1000;
+		vmd1 = 55 * V_OF_FUSE/1000;
 	}
 
 	SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => %d/%d/%d/%d/%d/%d/%d\n",
 		cpubig, gpu, vcore, cpul, cpull, vmd1, modem);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_CPUBIG\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_CPUBIG], &cpubig_spower_raw, cpubig, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_CPUBIG], &cpubig_spower_raw, cpubig, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_GPU\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_GPU], &gpu_spower_raw, gpu, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_GPU], &gpu_spower_raw, gpu, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_VCORE\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_VCORE], &vcore_spower_raw, vcore, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_VCORE], &vcore_spower_raw, vcore, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_CPUL\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_CPUL], &cpul_spower_raw, cpul, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_CPUL], &cpul_spower_raw, cpul, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_CPULL\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_CPULL], &cpull_spower_raw, cpull, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_CPULL], &cpull_spower_raw, cpull, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_MODEM\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_MODEM], &modem_spower_raw, modem, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_MODEM], &modem_spower_raw, modem, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_VMD1\n");
-	mt_spower_make_table(&sptab[MT_SPOWER_VMD1], &vmd1_spower_raw, vmd1, 1150, 30);
+	mt_spower_make_table(&sptab[MT_SPOWER_VMD1], &vmd1_spower_raw, vmd1, V_OF_FUSE, T_OF_FUSE);
 
 
 
