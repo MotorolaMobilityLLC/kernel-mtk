@@ -99,7 +99,12 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
 {
 	int ret;
 
-	BUG_ON(pool->order != compound_order(page));
+	if (WARN_ONCE(pool->order != compound_order(page),
+			"ion_page_pool_free page = 0x%p, compound_order(page) = 0x%x",
+			page, compound_order(page))) {
+		BUG();
+		/*BUG_ON(pool->order != compound_order(page));*/
+	}
 
 	ret = ion_page_pool_add(pool, page);
 	if (ret)
