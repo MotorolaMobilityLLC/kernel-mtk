@@ -185,6 +185,9 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 {
 	int result = 0;
 
+	if (IS_ERR(clk_module))
+		return -EFAULT;
+
 	if (enable) {
 		result = clk_prepare_enable(clk_module);
 		CMDQ_MSG("enable clock with module: %s, result: %d\n", clkName, result);
@@ -192,6 +195,7 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 		clk_disable_unprepare(clk_module);
 		CMDQ_MSG("disable clock with module: %s\n", clkName);
 	}
+
 	return result;
 }
 
