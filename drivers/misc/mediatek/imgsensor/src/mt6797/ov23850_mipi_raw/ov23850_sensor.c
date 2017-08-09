@@ -2796,6 +2796,8 @@ static void preview_setting(void)
 
 static void capture_setting(kal_uint16 currefps)
 {
+	int retry=0;
+	int frame_cnt = 0;
 	LOG_INF("capture_setting\n");
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(1);
@@ -2811,6 +2813,24 @@ static void capture_setting(kal_uint16 currefps)
 		ov23850_setting_PDAF(PDAF_OFF);
 
 	write_cmos_sensor(0x0100, 0x01);
+
+	while(retry<10)
+	{
+		frame_cnt = read_cmos_sensor(0x3863);
+		if(frame_cnt==0x00)
+		{
+			msleep(5);
+			retry++;
+			//LOG_INF("Sensor has not output stream %x\n",read_cmos_sensor(0x3863));
+		}
+		else
+		{
+			LOG_INF("Sensor has output(%x), retry(%x)\n", read_cmos_sensor(0x3863), retry);
+			retry=0;
+			break;
+		}
+	}
+
 }
 
 static void normal_video_setting(kal_uint16 currefps)//1080p
