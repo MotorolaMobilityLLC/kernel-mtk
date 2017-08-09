@@ -1,14 +1,14 @@
         .global write_cntpctl
 write_cntpctl:
         .func
-        mrs	x0, CNTP_CTL_EL0
+        msr	CNTP_CTL_EL0, x0
         ret
         .endfunc
 
         .global read_cntpctl
 read_cntpctl:
         .func
-        msr	CNTP_CTL_EL0, x0
+        mrs	x0, CNTP_CTL_EL0
         ret
         .endfunc
 
