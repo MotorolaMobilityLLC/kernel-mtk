@@ -3,39 +3,15 @@
 #include <linux/slab.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
-#include <linux/seq_file.h>
 #include <linux/kallsyms.h>
 #include <linux/utsname.h>
 #include <asm/uaccess.h>
 #include <linux/sched.h>
-#include "prof_ctl.h"
 #include <linux/delay.h>
 
 #include <linux/pid.h>
-#define SEQ_printf(m, x...)	    \
-	do {			    \
-		if (m)		    \
-			seq_printf(m, x);	\
-		else		    \
-			pr_err(x);	    \
-	} while (0)
-
-#define MT_DEBUG_ENTRY(name) \
-static int mt_##name##_show(struct seq_file *m, void *v);\
-static ssize_t mt_##name##_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data);\
-static int mt_##name##_open(struct inode *inode, struct file *file) \
-{ \
-	return single_open(file, mt_##name##_show, inode->i_private); \
-} \
-\
-static const struct file_operations mt_##name##_fops = { \
-	.open = mt_##name##_open, \
-	.write = mt_##name##_write, \
-	.read = seq_read, \
-	.llseek = seq_lseek, \
-	.release = single_release, \
-}; \
-void mt_##name##_switch(int on)
+#include "internal.h"
+#include "mt_cputime.h"
 
 static void print_task(struct seq_file *m, struct task_struct *p)
 {
@@ -80,7 +56,8 @@ static int mt_sched_debug_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static ssize_t mt_sched_debug_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t mt_sched_debug_write(struct file *filp,
+				    const char *ubuf, size_t cnt, loff_t *data)
 {
 	return cnt;
 }
@@ -94,6 +71,7 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 	int i = 0;
 	unsigned long long end_ts;
 	unsigned long long total_excul_time = 0, thread_time = 0;
+	unsigned long long cost_isr_time = 0;
 	unsigned long long cpu_idle_time[mt_cpu_num];
 	u32 div_value;
 	struct task_struct *tsk;
@@ -104,20 +82,19 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 	if (mt_proc_head == NULL) {
 		SEQ_printf(m, "Please enable cputime again!\n");
 	} else {
-		if (0 == prof_end_ts || is_mtsched_enabled())
+		if (0 == prof_end_ts || mtsched_is_enabled())
 			end_ts = sched_clock();
 		else
 			end_ts = prof_end_ts;
 		prof_dur_ts = end_ts - prof_start_ts;
 
 		for (i = 0; i < mt_cpu_num; i++) {
-			if (is_mtsched_enabled() || (0 == mt_cpu_info_head[i].cpu_idletime_end)) {
-				mt_cpu_info_head[i].cpu_idletime_end = mtprof_get_cpu_idle(i);
+			if (mtsched_is_enabled() ||
+			    (0 == mt_cpu_info_head[i].cpu_idletime_end)) {
+				mt_cpu_info_head[i].cpu_idletime_end =
+					mtprof_get_cpu_idle(i);
 				if (mt_cpu_info_head[i].cpu_idletime_end <
 				    mt_cpu_info_head[i].cpu_idletime_start) {
-					pr_err("the %d cpu idletime end is %10Ld.%10ld\n", i,
-					       nsec_high(mt_cpu_info_head[i].cpu_idletime_end),
-					       nsec_low(mt_cpu_info_head[i].cpu_idletime_end));
 					mt_cpu_info_head[i].cpu_idletime_end =
 					    mt_cpu_info_head[i].cpu_idletime_start;
 				}
@@ -130,8 +107,10 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 				do_div(cpu_idle_time[i], 1000);
 			}
 
-			if (is_mtsched_enabled() || (0 == mt_cpu_info_head[i].cpu_iowait_end)) {
-				mt_cpu_info_head[i].cpu_iowait_end = mtprof_get_cpu_iowait(i);
+			if (mtsched_is_enabled() ||
+			    (0 == mt_cpu_info_head[i].cpu_iowait_end)) {
+				mt_cpu_info_head[i].cpu_iowait_end =
+					mtprof_get_cpu_iowait(i);
 				if (mt_cpu_info_head[i].cpu_iowait_end <
 				    mt_cpu_info_head[i].cpu_iowait_start) {
 					mt_cpu_info_head[i].cpu_iowait_end =
@@ -152,8 +131,7 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 
 		SEQ_printf(m, "-----------------------------------------------\n");
 		SEQ_printf(m, "        Duration: %10Ld.%06ld ms\n",
-			   nsec_high(end_ts - prof_start_ts),
-			   nsec_low(end_ts - prof_start_ts));
+			   nsec_high(end_ts - prof_start_ts), nsec_low(end_ts - prof_start_ts));
 		SEQ_printf(m, "        --------------------------------\n");
 		SEQ_printf(m, "           Start: %10Ld.%06ld ms\n", nsec_high(prof_start_ts), nsec_low(prof_start_ts));
 		SEQ_printf(m, "             End: %10Ld.%06ld ms\n", nsec_high(end_ts), nsec_low(end_ts));
@@ -186,7 +164,7 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 
 			if (tsk != NULL) {
 				/* update cputime */
-				if (is_mtsched_enabled()) {
+				if (mtsched_is_enabled()) {
 					mtproc->cputime = tsk->se.sum_exec_runtime;	/* - tsk->se.mtk_isr_time; */
 					mtproc->isr_time = tsk->se.mtk_isr_time;
 					mt_task_times(tsk, &mtproc->utime, &mtproc->stime);
@@ -194,16 +172,19 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 					    mtproc->utime - mtproc->utime_init;
 					mtproc->stime =
 					    mtproc->stime - mtproc->stime_init;
+					cost_isr_time =
+						mtproc->isr_time - mtproc->isr_time_init;
 				}
 				status = 'L';
 			} else {
 				status = 'D';
 			}
 
-			if (is_mtsched_enabled()) {
-				if (mtproc->cputime >= (mtproc->cputime_init + mtproc->isr_time)) {
+			if (mtsched_is_enabled()) {
+				if (mtproc->cputime >=
+					(mtproc->cputime_init + cost_isr_time)) {
 					thread_time =
-					    mtproc->cputime - mtproc->isr_time -
+					    mtproc->cputime - cost_isr_time -
 							mtproc->cputime_init;
 					mtproc->cost_cputime = thread_time;
 					do_div(thread_time, prof_dur_ts);
@@ -220,8 +201,10 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 			SEQ_printf(m,
 				   "%16s:     %c:%6d:%6d:%10Ld.%06ld:%10d.%04d%%:%10Ld.%06ld:%7u:%7u:%7d:%10Ld.%06ld:\n",
 				   mtproc->comm, status, mtproc->pid, mtproc->tgid,
-				   nsec_high(mtproc->cost_cputime), nsec_low(mtproc->cost_cputime),
-				   mtproc->cputime_percen_6 / 10000, mtproc->cputime_percen_6 % 10000,
+				   nsec_high(mtproc->cost_cputime),
+				   nsec_low(mtproc->cost_cputime),
+				   mtproc->cputime_percen_6 / 10000,
+				   mtproc->cputime_percen_6 % 10000,
 				   nsec_high(mtproc->prof_end ==
 					    0 ? end_ts - mtproc->prof_start : mtproc->prof_end -
 					    mtproc->prof_start),
@@ -230,8 +213,8 @@ static int mt_cputime_show(struct seq_file *m, void *v)
 					    mtproc->prof_start),
 				   jiffies_to_msecs(mtproc->utime),
 				   jiffies_to_msecs(mtproc->stime), mtproc->isr_count,
-				   nsec_high(mtproc->isr_time),
-				   nsec_low(mtproc->isr_time));
+				   nsec_high(cost_isr_time),
+				   nsec_low(cost_isr_time));
 
 			mtproc = mtproc->next;
 		}
@@ -295,37 +278,36 @@ static ssize_t mt_cputime_write(struct file *filp, const char *ubuf, size_t cnt,
 	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 
-	pr_err("mtsched_proc input count %zd.\n", cnt);
-
 	buf[cnt] = 0;
 
 	ret = kstrtoul(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-	pr_err("mtsched_proc input stream:%s\n", buf);
-/* val = !!val; */
+	val = !!val;
 	/* 0: off, 1:on */
 	mt_cputime_switch(val);
 	return cnt;
 
 }
 #endif
+#ifdef CONFIG_MT_ENG_BUILD
 
-/* 4. prof status*/
-MT_DEBUG_ENTRY(status);
-#define MT_CPUTIME 1
-unsigned long mtprof_status = 0;
-static int mt_status_show(struct seq_file *m, void *v)
+MT_DEBUG_ENTRY(log);
+static unsigned long print_num;
+static unsigned long long second = 1;
+
+static int mt_log_show(struct seq_file *m, void *v)
 {
-	SEQ_printf(m, "%lu\n", mtprof_status);
+	SEQ_printf(m, "Print %ld lines log in %lld second in last time.\n", print_num, second);
+	SEQ_printf(m, "show: Please echo m n > log again. m: second, n: level.\n");
 	return 0;
 }
 
-static ssize_t mt_status_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t mt_log_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 {
 	char buf[64];
-	unsigned long val;
-	int ret;
+	unsigned long long t1 = 0, t2 = 0;
+	int level = 0;
 
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
@@ -335,15 +317,60 @@ static ssize_t mt_status_write(struct file *filp, const char *ubuf, size_t cnt, 
 
 	buf[cnt] = 0;
 
-	ret = kstrtoul(buf, 10, &val);
-	if (ret < 0)
-		return ret;
-	/* 0: off, 1:on */
-	pr_err("[mtprof] status = 0x%x\n", (unsigned int)mtprof_status);
-	mtprof_status = val;
-	pr_err("[mtprof] new status = 0x%x\n", (unsigned int)mtprof_status);
+	if (sscanf(buf, "%lld %d ", &second, &level) == 2) {
+		SEQ_printf(NULL, "will print log in level %d about %lld second.\n", level, second);
+	} else {
+		SEQ_printf(NULL, "Please echo m n > log; m: second, n: level.\n");
+		return cnt;
+	}
+	t1 = sched_clock();
+	pr_err("printk debug log: start time: %lld.\n", t1);
+	print_num = 0;
+	for (;;) {
+		t2 = sched_clock();
+		if (t2 - t1 > second * 1000000000)
+			break;
+		pr_err("printk debug log: the %ld line, time: %lld.\n", print_num++, t2);
+		switch (level) {
+		case 0:
+			break;
+		case 1:
+			__delay(1);
+			break;
+		case 2:
+			__delay(5);
+			break;
+		case 3:
+			__delay(10);
+			break;
+		case 4:
+			__delay(50);
+			break;
+		case 5:
+			__delay(100);
+			break;
+		case 6:
+			__delay(200);
+			break;
+		case 7:
+			__delay(500);
+			break;
+		case 8:
+			__delay(1000);
+			break;
+		case 9:
+			msleep(20);
+			break;
+		default:
+			msleep(20);
+			break;
+		}
+	}
+
+	pr_err("mt log total write %ld line in %lld second.\n", print_num, second);
 	return cnt;
 }
+#endif
 
 /* 6. reboot pid*/
 MT_DEBUG_ENTRY(pid);
@@ -362,26 +389,20 @@ static ssize_t mt_pid_write(struct file *filp, const char *ubuf,
 	unsigned long val;
 	int ret;
 
-	if (cnt >= sizeof(buf)) {
-		pr_debug("mt_pid input stream size to large.\n");
+	if (cnt >= sizeof(buf))
 		return -EINVAL;
-	}
 
 	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
-	pr_debug("mt_pid input stream:%s\n", buf);
 	ret = kstrtoul(buf, 10, &val);
 
 	reboot_pid = val;
 	if (reboot_pid > PID_MAX_DEFAULT) {
-		pr_debug("get reboot pid error %d.\n", reboot_pid);
 		reboot_pid = 0;
 		return -EFAULT;
 	}
-
 	pr_debug("get reboot pid: %d.\n", reboot_pid);
-
 
 	return cnt;
 
@@ -405,7 +426,6 @@ static ssize_t mt_pid_write(struct file *filp, const char *ubuf,
 		}						\
 	} while (0)
 
-/* the order should follow include/trace/events/signal.h */
 static const char * const signal_deliver_results[] = {
 	"delivered",
 	"ignored",
@@ -423,7 +443,7 @@ enum {
 } SI_LOG_MASK;
 
 static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-static unsigned int enabled_signal_log = SI_GENERATE;
+static unsigned int enabled_signal_log;
 
 static void probe_signal_generate(void *ignore, int sig, struct siginfo *info,
 		struct task_struct *task, int group, int result)
@@ -465,6 +485,7 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 	 * all action will cause process coredump or terminate
 	 */
 	if ((sig_fatal(current, sig) || sig >= SIGRTMIN) &&
+	    (ka->sa.sa_handler == SIG_DFL) &&
 	    (!(signal->flags & SIGNAL_UNKILLABLE) || sig_kernel_only(sig))) {
 		/*
 		 * verbose log for death signals
@@ -555,7 +576,7 @@ static int __init init_mtsched_prof(void)
 	if (mt_cpu_info_head == NULL)
 		return -ENOMEM;
 #ifdef CONFIG_MT_ENG_BUILD
-	pe = proc_create("mtprof/status", 0666, NULL, &mt_status_fops);
+	pe = proc_create("mtprof/log", 0666, NULL, &mt_log_fops);
 	if (!pe)
 		return -ENOMEM;
 #endif

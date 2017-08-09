@@ -7,7 +7,6 @@
 #include <linux/xlog.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <linux/seq_file.h>
 
 struct pool_workqueue;
 #include <trace/events/workqueue.h>
@@ -18,30 +17,7 @@ struct pool_workqueue;
 #define WQ_DUMP_ACTIVE_WORK  0x2
 #define WQ_DUMP_EXECUTE_WORK 0x4
 
-#define SEQ_printf(m, x...)	    \
-	do {			    \
-		if (m)		    \
-			seq_printf(m, x);	\
-		else		    \
-			pr_err(x);	    \
-	} while (0)
-
-#define MT_DEBUG_ENTRY(name) \
-static int mt_##name##_show(struct seq_file *m, void *v);\
-static ssize_t mt_##name##_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data);\
-static int mt_##name##_open(struct inode *inode, struct file *file) \
-{ \
-	return single_open(file, mt_##name##_show, inode->i_private); \
-} \
-\
-static const struct file_operations mt_##name##_fops = { \
-	.open = mt_##name##_open, \
-	.write = mt_##name##_write, \
-	.read = seq_read, \
-	.llseek = seq_lseek, \
-	.release = single_release, \
-}; \
-void mt_##name##_switch(int on)
+#include "internal.h"
 
 static int wq_tracing;
 

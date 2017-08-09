@@ -7,6 +7,8 @@ config MTPROF
 	  misc tools. If you are not sure about whether to enable it or not, please
 	  set n.
 
+if MTPROF
+
 config MTPROF_CPUTIME
 	bool "thread cputime profiling"
 	depends on SCHEDSTATS
@@ -34,3 +36,5 @@ config MTK_WQ_DEBUG
 	  It will add logs to monitor work activation, queue, and execution. Say y to
 	  enable mtk workqueue debug, or if you are not sure about this, please
 	  set n
+
+endif

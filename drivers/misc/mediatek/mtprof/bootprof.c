@@ -1,21 +1,13 @@
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
-#include <linux/seq_file.h>
 #include <linux/kallsyms.h>
 #include <linux/utsname.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
-/* #include <linux/log_store_kernel.h> */
 #include <asm/uaccess.h>
-#include "prof_ctl.h"
 
-#define SEQ_printf(m, x...)	    \
-	do {			    \
-		if (m)		    \
-			seq_printf(m, x);	\
-		else		    \
-			pr_err(x);	    \
-	} while (0)
+#include "internal.h"
+#include "mt_cputime.h"
 
 #define BOOT_STR_SIZE 128
 #ifdef CONFIG_MT_ENG_BUILD
@@ -33,8 +25,6 @@ int boot_log_count = 0;
 static DEFINE_MUTEX(mt_bootprof_lock);
 static int mt_bootprof_enabled;
 static int bootprof_lk_t, bootprof_pl_t;
-/* unsigned int gpt_boot_time(void); */
-/* extern int printk_too_much_enable; */
 int boot_finish = 0;
 
 
@@ -65,7 +55,6 @@ void log_boot(char *str)
 }
 
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
-/* extern void mt_disable_uart(void); */
 static void bootup_finish(void)
 {
 	/* mt_disable_uart(); */
@@ -131,15 +120,15 @@ static int mt_bootprof_show(struct seq_file *m, void *v)
 	if (bootprof_pl_t > 0 && bootprof_lk_t > 0) {
 		SEQ_printf(m, "%10d        : %s\n", bootprof_pl_t, "preloader");
 		SEQ_printf(m, "%10d        : %s\n", bootprof_lk_t, "lk");
-		/* SEQ_printf(m, "%10d        : %s\n",
+		SEQ_printf(m, "%10d        : %s\n",
 			   gpt_boot_time() - bootprof_pl_t - bootprof_lk_t, "lk->Kernel");
-		   */
 		SEQ_printf(m, "----------------------------------------\n");
 	}
 
 	for (i = 0; i < boot_log_count; i++) {
-		SEQ_printf(m, "%10Ld.%06ld : %s\n", nsec_high(mt_bootprof[i].timestamp),
-			   nsec_low(mt_bootprof[i].timestamp), mt_bootprof[i].event);
+		SEQ_printf(m, "%10Ld.%06ld : %s\n",
+			   nsec_high(mt_bootprof[i].timestamp), nsec_low(mt_bootprof[i].timestamp),
+			   mt_bootprof[i].event);
 	}
 	SEQ_printf(m, "----------------------------------------\n");
 	return 0;

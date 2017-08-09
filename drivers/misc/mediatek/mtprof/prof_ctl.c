@@ -6,24 +6,27 @@
 #include <linux/utsname.h>
 #include <linux/jiffies.h>
 #include <linux/kernel_stat.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/tick.h>
-#include <linux/version.h>
-
-#include "prof_ctl.h"
+#include "internal.h"
+#include "mt_cputime.h"
 
 #ifdef CONFIG_MT_ENG_BUILD
-#define MAX_THREAD_COUNT 50000	/* max debug thread count, if reach the level, stop store new thread informaiton. */
-#define MAX_TIME (5*60*60)	/* max debug time, if reach the level, stop and clear the debug information */
+/* max debug thread count,
+ * if reach the level, stop store new thread informaiton. */
+#define MAX_THREAD_COUNT (50000)
+/* max debug time,
+ * if reach the level, stop and clear the debug information */
+#define MAX_TIME (5*60*60)
 #else
-#define MAX_THREAD_COUNT 10000	/* max debug thread count, if reach the level, stop store new thread informaiton. */
-#define MAX_TIME (1*60*60)	/* max debug time, if reach the level, stop and clear the debug information */
+#define MAX_THREAD_COUNT (10000)
+#define MAX_TIME (1*60*60)
 #endif
 
 struct mt_proc_struct *mt_proc_curr = NULL;
 struct mt_proc_struct *mt_proc_head = NULL;
-int proc_count = 0;
-int mtsched_enabled = 0;
+static int proc_count;
+static int mtsched_enabled;
 unsigned long long prof_start_ts, prof_end_ts, prof_dur_ts;
 static DEFINE_MUTEX(mt_cputime_lock);
 static DEFINE_MUTEX(mt_memprof_lock);
@@ -31,12 +34,12 @@ static DEFINE_MUTEX(mt_memprof_lock);
 struct mt_cpu_info *mt_cpu_info_head = NULL;
 int mt_cpu_num = 1;
 
-bool is_mtsched_enabled(void)
+bool mtsched_is_enabled(void)
 {
-	return mtsched_enabled == 1;
+	return mtsched_enabled != 0;
 }
 
-int cputime_proc_count(void)
+int mtproc_counts(void)
 {
 	return proc_count;
 }
@@ -68,10 +71,10 @@ unsigned long long mtprof_get_cpu_idle(int cpu)
 	u64 unused = 0, idle_time = 0;
 
 	idle_time = get_cpu_idle_time_us(cpu, NULL);
+
 	if (idle_time == -1ULL)
 		return get_cpu_idle_time_jiffy(cpu, &unused);
 	idle_time += get_cpu_iowait_time_us(cpu, &unused);
-	pr_err("update time is is %llu\n", unused);
 
 	return idle_time;
 }
@@ -99,10 +102,8 @@ void setup_mtproc_info(struct task_struct *p, unsigned long long ts)
 	if (0 == mtsched_enabled)
 		return;
 
-	if (proc_count >= MAX_THREAD_COUNT) {
-		pr_err("mtproc thread count larger the max level %d.\n", MAX_THREAD_COUNT);
+	if (proc_count >= MAX_THREAD_COUNT)
 		return;
-	}
 
 	mtproc = kmalloc(sizeof(struct mt_proc_struct), GFP_ATOMIC);
 	if (!mtproc)
@@ -110,7 +111,6 @@ void setup_mtproc_info(struct task_struct *p, unsigned long long ts)
 	memset(mtproc, 0, sizeof(struct mt_proc_struct));
 	proc_count++;
 
-	p->se.mtk_isr_time = 0;
 	mtproc->pid = p->pid;
 	mtproc->tgid = p->tgid;
 	mtproc->index = proc_count;
@@ -118,9 +118,9 @@ void setup_mtproc_info(struct task_struct *p, unsigned long long ts)
 	mtproc->cputime_init = p->se.sum_exec_runtime;
 	mtproc->prof_start = ts;
 	mtproc->prof_end = 0;
-	mtproc->isr_time = 0;
+	mtproc->isr_time = p->se.mtk_isr_time;
+	mtproc->isr_time_init = p->se.mtk_isr_time;
 	p->se.mtk_isr = NULL;
-	p->se.mtk_isr_time = 0;
 	p->se.mtk_isr_count = 0;
 	mtproc->next = NULL;
 
@@ -148,7 +148,6 @@ void save_mtproc_info(struct task_struct *p, unsigned long long ts)
 	}
 
 	if (proc_count >= MAX_THREAD_COUNT) {
-		pr_err("mtproc thread count larger the max level %d.\n", MAX_THREAD_COUNT);
 		mutex_unlock(&mt_cputime_lock);
 		return;
 	}
@@ -161,7 +160,6 @@ void save_mtproc_info(struct task_struct *p, unsigned long long ts)
 	prof_dur_ts = prof_now_ts - prof_start_ts;
 	do_div(prof_dur_ts, 1000000);	/* put prof_dur_ts to ms */
 	if (prof_dur_ts >= MAX_TIME * 1000) {
-		pr_err("mtproc debug time larger than the max time %d.\n", MAX_TIME);
 		mtsched_enabled = 0;
 		mt_cputime_switch(2);
 		return;
@@ -180,9 +178,9 @@ void save_mtproc_info(struct task_struct *p, unsigned long long ts)
 	mtproc->index = proc_count;
 	mtproc->cputime = p->se.sum_exec_runtime;
 	mtproc->cputime_init = p->se.sum_exec_runtime;
-	mtproc->isr_time = 0;
+	mtproc->isr_time = p->se.mtk_isr_time;
+	mtproc->isr_time_init = p->se.mtk_isr_time;
 	p->se.mtk_isr = NULL;
-	p->se.mtk_isr_time = 0;
 	p->se.mtk_isr_count = 0;
 	mtproc->prof_start = ts;
 	mtproc->prof_end = 0;
@@ -220,7 +218,6 @@ void end_mtproc_info(struct task_struct *p)
 	}
 
 	if (mtproc == NULL) {
-		pr_err("pid:%d can't be found in mtsched proc_info.\n", p->pid);
 		mutex_unlock(&mt_cputime_lock);
 		return;
 	}
@@ -258,7 +255,6 @@ void set_mtprof_comm(char *comm, int pid)
 	}
 
 	if (mtproc == NULL) {
-		pr_err("[mtprof] no matching pid\n");
 		mutex_unlock(&mt_cputime_lock);
 		return;
 	}
@@ -299,6 +295,7 @@ void stop_record_task(void)
 {
 	struct mt_proc_struct *mtproc = mt_proc_head;
 	struct task_struct *tsk;
+	unsigned long long cost_isrtime = 0;
 	unsigned long long cost_cputime = 0;
 	int i = 0;
 
@@ -310,13 +307,16 @@ void stop_record_task(void)
 
 	for (i = 0; i < mt_cpu_num; i++) {
 		mt_cpu_info_head[i].cpu_idletime_end = mtprof_get_cpu_idle(i);
-		if (mt_cpu_info_head[i].cpu_idletime_end < mt_cpu_info_head[i].cpu_idletime_start) {
+		if (mt_cpu_info_head[i].cpu_idletime_end <
+		    mt_cpu_info_head[i].cpu_idletime_start) {
 			mt_cpu_info_head[i].cpu_idletime_end =
 			    mt_cpu_info_head[i].cpu_idletime_start;
 		}
 		mt_cpu_info_head[i].cpu_iowait_end = mtprof_get_cpu_iowait(i);
-		if (mt_cpu_info_head[i].cpu_iowait_end < mt_cpu_info_head[i].cpu_iowait_start)
-			mt_cpu_info_head[i].cpu_iowait_end = mt_cpu_info_head[i].cpu_iowait_start;
+		if (mt_cpu_info_head[i].cpu_iowait_end <
+		    mt_cpu_info_head[i].cpu_iowait_start)
+			mt_cpu_info_head[i].cpu_iowait_end =
+				mt_cpu_info_head[i].cpu_iowait_start;
 	}
 
 	while (mtproc != NULL) {
@@ -329,17 +329,19 @@ void stop_record_task(void)
 			mt_task_times(tsk, &mtproc->utime, &mtproc->stime);
 			mtproc->utime = mtproc->utime - mtproc->utime_init;
 			mtproc->stime = mtproc->stime - mtproc->stime_init;
+			cost_isrtime = mtproc->isr_time - mtproc->isr_time_init;
 			mtproc->mtk_isr = tsk->se.mtk_isr;
 			tsk->se.mtk_isr_count = 0;
-			tsk->se.mtk_isr_time = 0;
 			tsk->se.mtk_isr = NULL;
 
 		}
 
 
-		if (mtproc->cputime >= (mtproc->cputime_init + mtproc->isr_time)) {
+		if (mtproc->cputime >=
+			(mtproc->cputime_init + cost_isrtime)) {
 			cost_cputime =
-			    mtproc->cputime - mtproc->isr_time - mtproc->cputime_init;
+			    mtproc->cputime - cost_isrtime
+			    - mtproc->cputime_init;
 			mtproc->cost_cputime = cost_cputime;
 			do_div(cost_cputime, prof_dur_ts);
 			mtproc->cputime_percen_6 = cost_cputime;
@@ -402,7 +404,6 @@ void reset_record_task(void)
 
 void mt_cputime_switch(int on)
 {
-	pr_err("Original mtsched enabled = %d, on = %d.\n", mtsched_enabled, on);
 	mutex_lock(&mt_cputime_lock);
 
 	if (mtsched_enabled == 1) {
@@ -416,19 +417,10 @@ void mt_cputime_switch(int on)
 			reset_record_task();
 	}
 	mutex_unlock(&mt_cputime_lock);
-	pr_err("Current mtsched enabled = %d\n", mtsched_enabled);
 }
 
 #else				/* CONFIG_MTPROF_CPUTIME */
 void setup_mtproc_info(struct task_struct *p, unsigned long long ts)
-{
-}
-
-void save_mtproc_info(struct task_struct *p, unsigned long long ts)
-{
-}
-
-void end_mtproc_info(struct task_struct *p)
 {
 }
 
@@ -447,48 +439,4 @@ void stop_record_task(void)
 void reset_record_task(void)
 {
 }
-
-void mt_cputime_switch(int on)
-{
-}
 #endif				/* end of CONFIG_MTPROF_CPUTIME */
-
-long long usec_high(unsigned long long usec)
-{
-	if ((long long)usec < 0) {
-		usec = -usec;
-		do_div(usec, 1000);
-		return -usec;
-	}
-	do_div(usec, 1000);
-
-	return usec;
-}
-
-unsigned long usec_low(unsigned long long usec)
-{
-	if ((long long)usec < 0)
-		usec = -usec;
-
-	return do_div(usec, 1000);
-}
-
-long long nsec_high(unsigned long long nsec)
-{
-	if ((long long)nsec < 0) {
-		nsec = -nsec;
-		do_div(nsec, 1000000);
-		return -nsec;
-	}
-	do_div(nsec, 1000000);
-
-	return nsec;
-}
-
-unsigned long nsec_low(unsigned long long nsec)
-{
-	if ((long long)nsec < 0)
-		nsec = -nsec;
-
-	return do_div(nsec, 1000000);
-}

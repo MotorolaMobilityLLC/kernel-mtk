@@ -15,17 +15,19 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/kernel_stat.h>
+#include <linux/slab.h>
 
 #include <trace/events/irq.h>
 
 #include "internals.h"
 #ifdef CONFIG_MTPROF_CPUTIME
-#include <linux/slab.h>
+#include "mt_cputime.h"
 /*  cputime monitor en/disable value */
 #ifdef CONFIG_MT_ENG_BUILD
-#define MAX_THREAD_COUNT 6000
+/* max debug thread count, if reach the level, stop store new thread informaiton. */
+#define MAX_THREAD_COUNT (6000)
 #else
-#define MAX_THREAD_COUNT 3000
+#define MAX_THREAD_COUNT (3000)
 #endif
 #endif
 
@@ -139,75 +141,87 @@ void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
 	wake_up_process(action->thread);
 }
 
-#ifdef CONFIG_MTPROF_CPUTIME
 static void save_isr_info(unsigned int irq, struct irqaction *action,
 			  unsigned long long start, unsigned long long end)
 {
+	unsigned long long dur = end - start;
+#ifdef CONFIG_MTPROF_CPUTIME
 	int isr_find = 0;
 	struct mtk_isr_info *mtk_isr_point = current->se.mtk_isr;
 	struct mtk_isr_info *mtk_isr_current = mtk_isr_point;
 	char *isr_name = NULL;
-	unsigned long long dur = end - start;
 
-	current->se.mtk_isr_time += dur;
-	while ((current->se.mtk_isr != NULL) && (mtk_isr_point != NULL)) {
-		if (mtk_isr_point->isr_num == irq) {
-			mtk_isr_point->isr_time += dur;
-			mtk_isr_point->isr_count++;
-			isr_find = 1;
-			break;
+	if (unlikely(mtsched_is_enabled())) {
+		current->se.mtk_isr_time += dur;
+		while ((current->se.mtk_isr != NULL) && (mtk_isr_point != NULL)) {
+			if (mtk_isr_point->isr_num == irq) {
+				mtk_isr_point->isr_time += dur;
+				mtk_isr_point->isr_count++;
+				isr_find = 1;
+				break;
+			}
+			mtk_isr_current = mtk_isr_point;
+			mtk_isr_point = mtk_isr_point->next;
 		}
-		mtk_isr_current = mtk_isr_point;
-		mtk_isr_point = mtk_isr_point->next;
-	}
 
-	if ((isr_find == 0) && (cputime_proc_count() < MAX_THREAD_COUNT)) {
-		mtk_isr_point =  kmalloc(sizeof(struct mtk_isr_info), GFP_ATOMIC);
-		if (mtk_isr_point == NULL) {
-			pr_debug("cant' alloc mtk_isr_info mem!\n");
-		} else {
-			mtk_isr_point->isr_num = irq;
-			mtk_isr_point->isr_time = dur;
-			mtk_isr_point->isr_count = 1;
-			mtk_isr_point->next = NULL;
-			if (mtk_isr_current == NULL)
-				current->se.mtk_isr = mtk_isr_point;
-			else
-				mtk_isr_current->next  = mtk_isr_point;
+		if ((isr_find == 0) && (mtproc_counts() < MAX_THREAD_COUNT)) {
+			mtk_isr_point =  kmalloc(sizeof(struct mtk_isr_info), GFP_ATOMIC);
+			if (mtk_isr_point == NULL) {
+				pr_debug("cant' alloc mtk_isr_info mem!\n");
+			} else {
+				mtk_isr_point->isr_num = irq;
+				mtk_isr_point->isr_time = dur;
+				mtk_isr_point->isr_count = 1;
+				mtk_isr_point->next = NULL;
+				if (mtk_isr_current == NULL)
+					current->se.mtk_isr = mtk_isr_point;
+				else
+					mtk_isr_current->next  = mtk_isr_point;
 
-			isr_name = kmalloc(sizeof(action->name), GFP_ATOMIC);
-			if (isr_name != NULL) {
-				strcpy(isr_name, action->name);
-				mtk_isr_point->isr_name = isr_name;
-			} else
-				pr_debug("cant' alloc isr_name mem!\n");
-			current->se.mtk_isr_count++;
+				isr_name = kmalloc(sizeof(action->name), GFP_ATOMIC);
+				if (isr_name != NULL) {
+					strcpy(isr_name, action->name);
+					mtk_isr_point->isr_name = isr_name;
+				} else {
+					pr_debug("cant' alloc isr_name mem!\n");
+				}
+				current->se.mtk_isr_count++;
+			}
 		}
+		return;
 	}
-}
 #endif
+#ifdef CONFIG_MT_RT_THROTTLE_MON
+	/* only record dur in mtk_isr_time if:
+	 * CONFIG_MTPROF_CPUTIME defined but not enabled, or
+	 * CONFIG_MTPROF_CPUTIME not defined
+	 */
+	if ((current->policy == SCHED_FIFO || current->policy == SCHED_RR)
+	    && mt_rt_mon_enable())
+		current->se.mtk_isr_time += dur;
+#endif
+}
 
 irqreturn_t
 handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 {
 	irqreturn_t retval = IRQ_NONE;
 	unsigned int flags = 0, irq = desc->irq_data.irq;
-
-#ifdef CONFIG_MTPROF_CPUTIME
+#if defined(CONFIG_MTPROF_CPUTIME) || defined(CONFIG_MT_RT_THROTTLE_MON)
 	unsigned long long t1, t2;
 #endif
+
 	do {
 		irqreturn_t res;
 
 		trace_irq_handler_entry(irq, action);
-#ifdef CONFIG_MTPROF_CPUTIME
+#if defined(CONFIG_MTPROF_CPUTIME) || defined(CONFIG_MT_RT_THROTTLE_MON)
 		t1 = sched_clock();
 #endif
 		res = action->handler(irq, action->dev_id);
-#ifdef CONFIG_MTPROF_CPUTIME
+#if defined(CONFIG_MTPROF_CPUTIME) || defined(CONFIG_MT_RT_THROTTLE_MON)
 		t2 = sched_clock();
-		if (unlikely(is_mtsched_enabled()))
-			save_isr_info(irq, action, t1, t2);
+		save_isr_info(irq, action, t1, t2);
 #endif
 		trace_irq_handler_exit(irq, action, res);
 

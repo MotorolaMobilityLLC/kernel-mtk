@@ -84,6 +84,9 @@
 #include <asm/setup.h>
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
+#ifdef CONFIG_MTPROF
+#include "bootprof.h"
+#endif
 
 #ifdef CONFIG_X86_LOCAL_APIC
 #include <asm/smp.h>
@@ -940,6 +943,10 @@ static int __ref kernel_init(void *unused)
 	numa_default_policy();
 
 	flush_delayed_fput();
+
+#ifdef CONFIG_MTPROF
+	log_boot("Kernel_init_done");
+#endif
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);
