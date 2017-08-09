@@ -1247,6 +1247,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 
 void spm_bypass_boost_gpio_set(void)
 {
+#if 0
 	u32 gpio_nf = 0;
 	u32 gpio_dout_nf = 0;
 	u32 gpio_dout_bit = 0;
@@ -1273,6 +1274,7 @@ void spm_bypass_boost_gpio_set(void)
 
 	spm_write(SPM_BSI_EN_SR, gpio_dout_addr);
 	spm_write(SPM_BSI_CLK_SR, gpio_dout_bit);
+#endif
 }
 
 u32 spm_get_register(void __force __iomem *offset)
