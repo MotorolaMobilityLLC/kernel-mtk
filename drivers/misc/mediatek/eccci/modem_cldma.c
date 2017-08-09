@@ -242,7 +242,8 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 #endif
 
 	/* use request's link head to traverse */
-	CCCI_MEM_LOG_TAG(md->index, TAG, " dump txq %d request\n", qno);
+	CCCI_MEM_LOG_TAG(md->index, TAG, " dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
+			md_ctrl->txq[qno].tr_done->gpd, md_ctrl->txq[qno].tx_xmit->gpd);
 	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
 		CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
@@ -257,8 +258,8 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 	}
 
 	/* use request's link head to traverse */
-	CCCI_MEM_LOG_TAG(md->index, TAG, " dump rxq %d, tr_ring=%p -> gpd_ring=0x%p\n", qno, md_ctrl->rxq[qno].tr_ring,
-		&md_ctrl->rxq[qno].tr_ring->gpd_ring);
+	CCCI_MEM_LOG_TAG(md->index, TAG, " dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
+			md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
 	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
 		CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
@@ -446,7 +447,7 @@ again:
 #endif
 		req = queue->tr_done;
 		rgpd = (struct cldma_rgpd *)req->gpd;
-		if (!((rgpd->gpd_flags & 0x1) == 0 && req->skb))
+		if (!((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb))
 			break;
 		skb = req->skb;
 		/* update skb */
@@ -537,6 +538,7 @@ again:
 					queue->index, skb, ret);
 			skb->len = 0;
 			skb_reset_tail_pointer(skb);
+			wmb(); /* other cores need to see this immediately when IRQ is allowed on multi-core */
 			/* no need to retry if port refused to recv */
 			skb_handled = ret == -CCCI_ERR_PORT_RX_FULL ? 1 : 0;
 			break;
@@ -1034,8 +1036,8 @@ static void cldma_tx_queue_init(struct md_cd_queue *queue)
 
 	cldma_queue_switch_ring(queue);
 	queue->worker =
-	    alloc_workqueue("md%d_tx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM, 1, md->index + 1,
-			    queue->index);
+	alloc_workqueue("md%d_tx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | (queue->index == 0 ? WQ_HIGHPRI : 0),
+			1, md->index + 1, queue->index);
 	INIT_DELAYED_WORK(&queue->cldma_tx_work, cldma_tx_done);
 	CCCI_DEBUG_LOG(md->index, TAG, "txq%d work=%p\n", queue->index, &queue->cldma_tx_work);
 #ifdef ENABLE_CLDMA_TIMER
@@ -1437,7 +1439,8 @@ static inline void cldma_reset(struct ccci_modem *md)
 			      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x10);
 		break;
 	}
-	/* TODO: enable debug ID? */
+	/* disable debug ID */
+	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_DEBUG_ID_EN, 0);
 #ifdef MD_CACHE_TO_NONECACHE
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_ADDR_REMAP_FROM, AP_REMAP_ADDR_FOR_MD_CLDMA);
 #endif
