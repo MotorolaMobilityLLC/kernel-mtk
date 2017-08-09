@@ -1332,13 +1332,81 @@ static long APDS9930_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
  err_out:
 	return err;
 }
+/*----------------------------------------------------------------------------*/
+#ifdef CONFIG_COMPAT
+static long APDS9930_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	long err = 0;
 
+	void __user *arg32 = compat_ptr(arg);
+
+	if (!file->f_op || !file->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	switch (cmd) {
+	case COMPAT_ALSPS_SET_PS_MODE:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_SET_PS_MODE, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_MODE:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_MODE, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_DATA:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_DATA, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_RAW_DATA:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_RAW_DATA, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_SET_ALS_MODE:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_SET_ALS_MODE, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_ALS_MODE:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_ALS_MODE, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_ALS_DATA:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_ALS_DATA, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_ALS_RAW_DATA:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_ALS_RAW_DATA, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_TEST_RESULT:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_TEST_RESULT, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_IOCTL_CLR_CALI:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_IOCTL_CLR_CALI, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_IOCTL_GET_CALI:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_IOCTL_GET_CALI, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_IOCTL_SET_CALI:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_IOCTL_SET_CALI, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_SET_PS_THRESHOLD:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_SET_PS_THRESHOLD, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_THRESHOLD_HIGH:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_THRESHOLD_HIGH, (unsigned long)arg32);
+		break;
+	case COMPAT_ALSPS_GET_PS_THRESHOLD_LOW:
+		err = file->f_op->unlocked_ioctl(file, ALSPS_GET_PS_THRESHOLD_LOW, (unsigned long)arg32);
+		break;
+	default:
+		APS_ERR("%s not supported = 0x%04x", __func__, cmd);
+		err = -ENOIOCTLCMD;
+		break;
+	}
+
+	return err;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 static const struct file_operations APDS9930_fops = {
 	.owner = THIS_MODULE,
 	.open = APDS9930_open,
 	.release = APDS9930_release,
 	.unlocked_ioctl = APDS9930_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = APDS9930_compat_ioctl,
+#endif
 };
 
 /*----------------------------------------------------------------------------*/
