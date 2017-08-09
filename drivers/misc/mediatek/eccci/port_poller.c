@@ -99,7 +99,7 @@ static void port_poller_md_state_notice(struct ccci_port *port, MD_STATE state)
 	/* only for thoes states which are updated by modem driver */
 	switch (state) {
 	case EXCEPTION:
-	case RESET:
+	case WAITING_TO_STOP:
 		del_timer(&status_poller->md_status_poller);
 		del_timer(&status_poller->md_status_timeout);
 		status_poller->md_status_poller_flag = 0;

@@ -134,7 +134,7 @@ static void port_ctl_md_state_notice(struct ccci_port *port, MD_STATE state)
 
 	/* only for thoes states which are updated by modem driver */
 	switch (state) {
-	case RESET:
+	case WAITING_TO_STOP:
 		mdee_reset(port);
 		break;
 	default:
