@@ -856,43 +856,12 @@ static int accelhub_remove(struct platform_device *pdev)
 
 static int accelhub_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	struct accelhub_ipi_data *obj = platform_get_drvdata(pdev);
-	int err = 0;
-
-	GSE_FUN();
-
-	if (msg.event == PM_EVENT_SUSPEND) {
-		if (obj == NULL) {
-			GSE_ERR("null pointer!!\n");
-			return -EINVAL;
-		}
-		atomic_set(&obj->suspend, 1);
-		err = accelhub_SetPowerMode(false);
-		if (err < 0)
-			return err;
-		GSE_LOG("accelhub_suspend ok\n");
-	}
-	return err;
+	return 0;
 }
 
 static int accelhub_resume(struct platform_device *pdev)
 {
-	struct accelhub_ipi_data *obj = platform_get_drvdata(pdev);
-	int err = 0;
-
-	GSE_FUN();
-
-	if (obj == NULL) {
-		GSE_ERR("null pointer!!\n");
-		return -EINVAL;
-	}
-
-	atomic_set(&obj->suspend, 0);
-	err = accelhub_SetPowerMode(true);
-	if (err < 0)
-		return err;
-	GSE_LOG("accelhub_resume ok\n");
-
+	
 	return 0;
 }
 

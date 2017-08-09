@@ -511,40 +511,11 @@ static int hmdyhub_remove(struct platform_device *pdev)
 }
 static int hmdyhub_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	struct hmdyhub_ipi_data *obj = platform_get_drvdata(pdev);
-	int err = 0;
-
-	HMDYHUB_FUN();
-
-	if (msg.event == PM_EVENT_SUSPEND) {
-		if (NULL == obj) {
-			HMDYHUB_ERR("null pointer\n");
-			return -EINVAL;
-		}
-
-		atomic_set(&obj->suspend, 1);
-		err = hmdyhub_set_powermode(false);
-		if (err) {
-			HMDYHUB_ERR("hmdyhub set suspend mode failed, err = %d\n", err);
-			return err;
-		}
-	}
-	return err;
+	return 0;
 }
 
 static int hmdyhub_resume(struct platform_device *pdev)
 {
-	struct hmdyhub_ipi_data *obj = platform_get_drvdata(pdev);
-
-	HMDYHUB_FUN();
-
-	if (NULL == obj) {
-		HMDYHUB_ERR("null pointer\n");
-		return -EINVAL;
-	}
-
-	atomic_set(&obj->suspend, 0);
-
 	return 0;
 }
 static struct platform_device hmdyhub_device = {

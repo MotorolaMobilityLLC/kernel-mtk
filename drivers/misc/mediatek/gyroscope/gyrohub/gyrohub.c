@@ -905,40 +905,12 @@ static int gyrohub_remove(struct platform_device *pdev)
 
 static int gyrohub_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	int err = 0;
-	struct gyrohub_ipi_data *obj = platform_get_drvdata(pdev);
-
-	GYROS_FUN();
-
-	if (msg.event == PM_EVENT_SUSPEND) {
-		if (obj == NULL) {
-			GYROS_ERR("null pointer!!\n");
-			return -EINVAL;
-		}
-		atomic_set(&obj->suspend, 1);
-
-		err = gyrohub_SetPowerMode(false);
-		if (err <= 0)
-			return err;
-	}
-	return err;
+	return 0;
 }
 
 static int gyrohub_resume(struct platform_device *pdev)
 {
-	struct gyrohub_ipi_data *obj = platform_get_drvdata(pdev);
-	int err = 0;
-
-	GYROS_FUN();
-
-	if (obj == NULL) {
-		GYROS_ERR("null pointer!!\n");
-		return -EINVAL;
-	}
-
-	atomic_set(&obj->suspend, 0);
-
-	return err;
+	return 0;
 }
 static struct platform_device gyrohub_device = {
 	.name = GYROHUB_DEV_NAME,
