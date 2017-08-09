@@ -1094,20 +1094,27 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 #endif
 
 	/* config parameter from customer color_index.h */
-	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1,
+	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
 		       (g_Color_Index.BRIGHTNESS[pq_param_p->u4Brightness] << 16) | g_Color_Index.
 		       CONTRAST[pq_param_p->u4Contrast]);
-	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_2,
+	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_2 + offset,
 		       (0x200 << 16) | g_Color_Index.GLOBAL_SAT[pq_param_p->u4SatGain]);
 
 
 	/* Partial Y Function */
 	for (index = 0; index < 8; index++) {
-		_color_reg_set(cmdq, DISP_COLOR_Y_SLOPE_1_0_MAIN + 4 * index,
+		_color_reg_set(cmdq, DISP_COLOR_Y_SLOPE_1_0_MAIN + 4 * index + offset,
 			       (g_Color_Index.PARTIAL_Y[pq_param_p->u4PartialY][2 * index] | g_Color_Index.
 				PARTIAL_Y[pq_param_p->u4PartialY][2 * index + 1] << 16));
 	}
 
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
+	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
+#endif
 
 	/* Partial Saturation Function */
 
@@ -1378,6 +1385,13 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 			(color_reg->PARTIAL_Y[2 * index + 1] << 16)));
 	}
 
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
+	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
+#endif
 
 	/* Partial Saturation Function */
 
