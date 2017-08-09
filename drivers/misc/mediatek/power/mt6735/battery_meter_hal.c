@@ -663,7 +663,7 @@ static signed int fgauge_set_columb_interrupt(void *data)
 	return fgauge_set_columb_interrupt_internal(data, 0);
 }
 
-static signed int fgauge_read_columb_internal(void *data, int reset)
+static signed int fgauge_read_columb_internal(void *data, int reset, int precise)
 {
 #if defined(CONFIG_POWER_EXT)
 	*(signed int *) (data) = 0;
@@ -756,8 +756,13 @@ static signed int fgauge_read_columb_internal(void *data, int reset)
 	dvalue_CAR = Temp_Value / 1000;	/* mAh */
 #else
 	/* dvalue_CAR = (Temp_Value/8)/1000; //mAh, due to FG_OSR=0x8 */
-	do_div(Temp_Value, 8);
-	do_div(Temp_Value, 1000);
+	if (precise == 0) {
+		do_div(Temp_Value, 8);
+		do_div(Temp_Value, 1000);
+	} else {
+		do_div(Temp_Value, 8);
+		do_div(Temp_Value, 100);
+	}
 
 	if (uvalue32_CAR_MSB == 0x1)
 		dvalue_CAR = (signed int) (Temp_Value - (Temp_Value * 2));	/* keep negative value */
@@ -800,7 +805,12 @@ static signed int fgauge_read_columb_internal(void *data, int reset)
 
 static signed int fgauge_read_columb(void *data)
 {
-	return fgauge_read_columb_internal(data, 0);
+	return fgauge_read_columb_internal(data, 0, 0);
+}
+
+static signed int fgauge_read_columb_accurate(void *data)
+{
+	return fgauge_read_columb_internal(data, 0, 1);
 }
 
 static signed int fgauge_hw_reset(void *data)
@@ -816,7 +826,7 @@ static signed int fgauge_hw_reset(void *data)
 
 	while (val_car != 0x0) {
 		ret = pmic_config_interface(MT6328_FGADC_CON0, 0x7100, 0xFF00, 0x0);
-		fgauge_read_columb_internal(&val_car_temp, 1);
+		fgauge_read_columb_internal(&val_car_temp, 1, 0);
 		val_car = val_car_temp;
 		bm_print(BM_LOG_FULL, "#");
 	}
@@ -920,6 +930,13 @@ static signed int dump_register_fgadc(void *data)
 	return STATUS_OK;
 }
 
+static signed int read_battery_plug_out_status(void *data)
+{
+	*(signed int *) (data) = is_battery_remove_pmic();
+
+	return STATUS_OK;
+}
+
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
 signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
@@ -941,6 +958,8 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_HW_OCV] = read_hw_ocv;
 		bm_func[BATTERY_METER_CMD_DUMP_REGISTER] = dump_register_fgadc;
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT] = fgauge_set_columb_interrupt;
+		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
+		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
