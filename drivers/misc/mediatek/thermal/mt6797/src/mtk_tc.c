@@ -143,8 +143,8 @@ static U32 calefuse3;
 /* chip dependent */
 int tscpu_polling_trip_temp1 = 40000;
 int tscpu_polling_trip_temp2 = 20000;
-int tscpu_polling_factor1 = 4;
-int tscpu_polling_factor2 = 8;
+int tscpu_polling_factor1 = 1;
+int tscpu_polling_factor2 = 4;
 
 #if MTKTSCPU_FAST_POLLING
 /* Combined fast_polling_trip_temp and fast_polling_factor,
