@@ -13,3 +13,5 @@ obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
+obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
+obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
