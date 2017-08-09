@@ -1024,6 +1024,8 @@ struct kbase_device {
 
 	/* MTK */
 	void *mtk_config;
+	/* MTK: gedlog */
+	unsigned int mtk_log;
 
 #ifdef CONFIG_MALI_DEBUG
 	wait_queue_head_t driver_inactive_wait;

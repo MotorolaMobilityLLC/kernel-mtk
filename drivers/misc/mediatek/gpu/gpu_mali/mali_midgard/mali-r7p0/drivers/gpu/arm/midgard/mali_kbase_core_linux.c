@@ -100,10 +100,11 @@
 
 /* MTK GPU DVFS */
 #include <mali_kbase_pm.h>
-#include "mt_gpufreq.h"
+#include <mt_gpufreq.h>
 #include <mali_kbase_pm_defs.h>
 #include <mali_kbase_pm_internal.h>
-#include "ged_dvfs.h"
+#include <ged_dvfs.h>
+#include <ged_log.h>
 
 /* MTK chip version API */
 #include "mt_chip.h"
@@ -3741,6 +3742,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 #endif  /* CONFIG_HAVE_CLK */
 	/* MTK: common */
+	kbdev->mtk_log = 0;
+	ged_log_buf_get_early("FENCE", (GED_LOG_BUF_HANDLE *)&kbdev->mtk_log);
 	if (mtk_platform_init(pdev, kbdev))
 	{
 		dev_err(kbdev->dev, "GPU: mtk_platform_init fail");
