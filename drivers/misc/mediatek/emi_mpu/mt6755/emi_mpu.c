@@ -653,12 +653,13 @@ static int mpu_check_violation(void)
 					int md_id = 0;
 
 					exec_ccci_kern_func_by_md_id(md_id,
-					ID_DUMP_MD_REG, NULL, 0);
+					ID_FORCE_MD_ASSERT, NULL, 0);
 					pr_err("[EMI MPU] MPU violation trigger MD\n");
 				}
 		#endif
 		if ((region == 0) && (mt_emi_reg_read(EMI_MPUA) == 0)
-			&& (mt_emi_reg_read(EMI_MPUI) == 0)) {
+			&& (mt_emi_reg_read(EMI_MPUI) == 0)
+			&& (!(dbg_pqry & OOR_VIO))) {
 				pr_err("[EMI MPU] A strange violation.\n");
 		} else {
 		aee_kernel_exception("EMI MPU",
@@ -1804,7 +1805,6 @@ static void protect_ap_region(void)
 	unsigned long long kernel_base;
 	phys_addr_t dram_size;
 
-	return; /* temp to disable */
 	kernel_base = emi_physical_offset;
 	dram_size = get_max_DRAM_size();
 
