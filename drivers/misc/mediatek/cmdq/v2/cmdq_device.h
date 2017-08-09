@@ -61,4 +61,15 @@ void cmdq_dev_test_dts_correctness(void);
 void cmdq_dev_init(struct platform_device *pDevice);
 void cmdq_dev_deinit(void);
 
+typedef struct cmdq_dts_setting {
+	uint32_t prefetch_thread_count;
+	uint32_t prefetch_size[CMDQ_MAX_THREAD_COUNT];
+} cmdq_dts_setting;
+
+/* callback when read resource from device tree */
+typedef void(*CMDQ_DEV_INIT_RESOURCE_CB) (uint32_t engineFlag, CMDQ_EVENT_ENUM resourceEvent);
+
+void cmdq_dev_get_dts_setting(cmdq_dts_setting *dts_setting);
+void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb);
+
 #endif				/* __CMDQ_DEVICE_H__ */

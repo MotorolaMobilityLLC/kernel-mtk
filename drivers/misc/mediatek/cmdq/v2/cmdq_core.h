@@ -328,6 +328,15 @@ typedef enum TASK_STATE_ENUM {
 	TASK_STATE_WAITING,	/* allocated but waiting for available thread */
 } TASK_STATE_ENUM;
 
+#define CMDQ_FEATURE_OFF_VALUE (0)
+#define FOREACH_FEATURE(FEATURE) \
+FEATURE(CMDQ_FEATURE_SRAM_SHARE, "SRAM Share") \
+
+typedef enum CMDQ_FEATURE_TYPE_ENUM {
+	FOREACH_FEATURE(GENERATE_ENUM)
+	CMDQ_FEATURE_TYPE_MAX,	 /* ALWAYS keep at the end */
+} CMDQ_FEATURE_TYPE_ENUM;
+
 #ifdef CMDQ_INSTRUCTION_COUNT
 /* GCE instructions count information */
 typedef enum CMDQ_STAT_ENUM {
@@ -609,6 +618,9 @@ typedef struct ContextStruct {
 	int32_t logLevel;
 	int32_t errNum;
 	ErrorStruct error[CMDQ_MAX_ERROR_COUNT];
+
+	/* feature option information */
+	uint32_t features[CMDQ_FEATURE_TYPE_MAX];
 
 	/* Resource manager information */
 	struct list_head resourceList;	/* all resource list */
@@ -929,6 +941,13 @@ extern "C" {
 								CmdqResourceAvailableCB resourceAvailable,
 								CmdqResourceReleaseCB resourceRelease);
 
+	void cmdq_core_dump_dts_setting(void);
+	uint32_t cmdq_core_thread_prefetch_size(const int32_t thread);
+
+	void cmdq_core_dump_feature(void);
+	void cmdq_core_set_feature(CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
+	uint32_t cmdq_core_get_feature(CMDQ_FEATURE_TYPE_ENUM featureOption);
+	bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption);
 
 #ifdef __cplusplus
 }

@@ -427,6 +427,50 @@ void cmdq_dev_test_dts_correctness(void)
 #endif
 }
 
+void cmdq_dev_get_dts_setting(cmdq_dts_setting *dts_setting)
+{
+	int status;
+
+	do {
+		status = of_property_read_u32(gCmdqDev.pDev->of_node,
+			"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
+		if (status < 0)
+			break;
+		status = of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
+			dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
+		if (status < 0)
+			break;
+	} while (0);
+}
+
+void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb)
+{
+	int status, index;
+	uint32_t count;
+
+	do {
+		status = of_property_read_u32(gCmdqDev.pDev->of_node,
+			"sram_share_cnt", &count);
+		if (status < 0)
+			break;
+
+		for (index = 0; index < count; index++) {
+			uint32_t engine, event;
+
+			status = of_property_read_u32_index(gCmdqDev.pDev->of_node, "sram_share_engine",
+				index, &engine);
+			if (status < 0)
+				break;
+			status = of_property_read_u32_index(gCmdqDev.pDev->of_node, "sram_share_event",
+				index, &event);
+			if (status < 0)
+				break;
+			if (init_cb != NULL)
+				init_cb(engine, event);
+		}
+	} while (0);
+}
+
 void cmdq_dev_init_device_tree(struct device_node *node)
 {
 	int status;

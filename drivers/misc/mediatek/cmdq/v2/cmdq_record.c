@@ -320,10 +320,14 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 	/* force insert MARKER if prefetch memory is full */
 	/* GCE deadlocks if we don't do so */
 	if (CMDQ_CODE_EOC != code && cmdq_get_func()->shouldEnablePrefetch(handle->scenario)) {
-		if (handle->prefetchCount >= CMDQ_MAX_PREFETCH_INSTUCTION) {
+		uint32_t prefetchSize = 0;
+		int32_t threadNo = cmdq_get_func()->getThreadID(handle->scenario, handle->secData.isSecure);
+
+		prefetchSize = cmdq_core_thread_prefetch_size(threadNo);
+		if (prefetchSize > 0 && handle->prefetchCount >= prefetchSize) {
 			CMDQ_MSG
-			    ("prefetchCount(%d) > MAX_PREFETCH_INSTUCTION, force insert disable prefetch marker\n",
-			     handle->prefetchCount);
+			    ("prefetchCount(%d) > %d, force insert disable prefetch marker\n",
+			     handle->prefetchCount, prefetchSize);
 			/* Mark END of prefetch section */
 			cmdqRecDisablePrefetch(handle);
 			/* BEGING of next prefetch section */
@@ -893,6 +897,11 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 
 int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle)
 {
+#ifdef _CMDQ_DISABLE_MARKER_
+	/* disable pre-fetch marker feature but use auto prefetch mechanism */
+	CMDQ_MSG("not allow enable prefetch, scenario: %d\n", handle->scenario);
+	return true;
+#else
 	if (NULL == handle)
 		return -EFAULT;
 
@@ -904,6 +913,7 @@ int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle)
 	}
 	CMDQ_ERR("not allow enable prefetch, scenario: %d\n", handle->scenario);
 	return -EFAULT;
+#endif
 }
 
 int32_t cmdqRecDisablePrefetch(cmdqRecHandle handle)
@@ -1473,7 +1483,7 @@ int32_t cmdqRecAcquireResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEve
 
 	acquireResult = cmdqCoreAcquireResource(resourceEvent);
 	if (!acquireResult) {
-		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p", resourceEvent, handle);
+		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p\n", resourceEvent, handle);
 		return -EFAULT;
 	}
 	return 0;
@@ -1486,7 +1496,7 @@ int32_t cmdqRecWriteForResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEv
 
 	acquireResult = cmdqCoreAcquireResource(resourceEvent);
 	if (!acquireResult) {
-		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p", resourceEvent, handle);
+		CMDQ_LOG("Acquire resource (event:%d) failed, handle:0x%p\n", resourceEvent, handle);
 		return -EFAULT;
 	}
 

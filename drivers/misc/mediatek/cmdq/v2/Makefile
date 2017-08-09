@@ -56,6 +56,8 @@ endif
 # ccflags-$(CONFIG_MTK_MET) += -DCMDQ_MDP_MET_STATUS
 # endif
 
+ccflags-y += -D_CMDQ_DISABLE_MARKER_
+
 ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 # driver module
 obj-y += cmdq_record.o

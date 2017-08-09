@@ -41,7 +41,6 @@
 #define CMDQ_MAX_RECORD_COUNT           (1024)
 #endif
 
-#define CMDQ_MAX_PREFETCH_INSTUCTION    (240)	/* Maximum prefetch buffer size, in instructions. */
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
 #define CMDQ_EMERGENCY_BLOCK_SIZE       (256 * 1024)	/* 256 KB command buffer */
 #define CMDQ_EMERGENCY_BLOCK_COUNT      (4)

@@ -11,7 +11,6 @@
 
 #include "cmdq_record_private.h"
 #include "cmdq_reg.h"
-#include "cmdq_core.h"
 #include "cmdq_virtual.h"
 #include "cmdq_mdp_common.h"
 #include "cmdq_device.h"
@@ -36,6 +35,8 @@ typedef enum CMDQ_TEST_TYPE_ENUM {
 	CMDQ_TEST_TYPE_MONITOR_EVENT = 2,
 	CMDQ_TEST_TYPE_MONITOR_POLL = 3,
 	CMDQ_TEST_TYPE_OPEN_COMMAND_DUMP = 4,
+	CMDQ_TEST_TYPE_DUMP_DTS = 5,
+	CMDQ_TEST_TYPE_FEATURE_CONFIG = 6,
 
 	CMDQ_TEST_TYPE_MAX	/* ALWAYS keep at the end */
 } CMDQ_TEST_TYPE_ENUM;
@@ -2194,19 +2195,20 @@ void testcase_write_stress_test(void)
 
 void testcase_prefetch_multiple_command(void)
 {
-#define LOOP 2
+#define TEST_PREFETCH_MARKER_LOOP 2
 
 	int32_t i;
 	int32_t ret;
-	cmdqRecHandle handle[LOOP] = { 0 };
-	TaskStruct *pTask[LOOP] = { 0 };
+	cmdqRecHandle handle[TEST_PREFETCH_MARKER_LOOP] = { 0 };
+	TaskStruct *pTask[TEST_PREFETCH_MARKER_LOOP] = { 0 };
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
 	CMDQ_MSG("%s\n", __func__);
-	for (i = 0; i < LOOP; i++) {
-		CMDQ_MSG("=============== flush:%d/%d ===============\n", i, LOOP);
+	for (i = 0; i < TEST_PREFETCH_MARKER_LOOP; i++) {
+		CMDQ_MSG("=============== flush:%d/%d ===============\n",
+			i, TEST_PREFETCH_MARKER_LOOP);
 
 		cmdqRecCreate(CMDQ_SCENARIO_DEBUG_PREFETCH, &(handle[i]));
 		cmdqRecReset(handle[i]);
@@ -2226,7 +2228,7 @@ void testcase_prefetch_multiple_command(void)
 		ret = _test_submit_async(handle[i], &pTask[i]);
 	}
 
-	for (i = 0; i < LOOP; ++i) {
+	for (i = 0; i < TEST_PREFETCH_MARKER_LOOP; ++i) {
 		if (NULL == pTask[i]) {
 			CMDQ_ERR("%s pTask[%d] is NULL\n ", __func__, i);
 			continue;
@@ -3121,6 +3123,66 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+void testcase_prefetch_round(uint32_t loopCount, uint32_t cmdCount, bool withMask, bool withWait)
+{
+#define TEST_PREFETCH_LOOP 3
+
+	int32_t i, j, k;
+	int32_t ret;
+	cmdqRecHandle handle[TEST_PREFETCH_LOOP] = {0};
+	TaskStruct *pTask[TEST_PREFETCH_LOOP] = { 0 };
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	CMDQ_MSG("%s: count:%d, withMask:%d, withWait:%d\n", __func__, cmdCount, withMask, withWait);
+	for (i = 0; i < TEST_PREFETCH_LOOP; i++) {
+		CMDQ_MSG("=============== flush:%d/%d ===============\n", i, TEST_PREFETCH_LOOP);
+
+		for (k = 0; k < loopCount; k++) {
+			CMDQ_MSG("=============== loop:%d/%d ===============\n", k, loopCount);
+			cmdqRecCreate(CMDQ_SCENARIO_DEBUG_PREFETCH, &(handle[i]));
+			cmdqRecReset(handle[i]);
+			cmdqRecSetSecure(handle[i], false);
+
+			/* record instructions which needs prefetch */
+			if (i == 1)
+				cmdqRecEnablePrefetch(handle[i]); /* use pre-fetch with marker */
+
+			if (withWait)
+				cmdqRecWait(handle[i], CMDQ_SYNC_TOKEN_USER_0);
+
+			cmdqRecProfileMarker(handle[i], "ANA_BEGIN");
+			for (j = 0; j < cmdCount; j++) {
+				/* record instructions which does not need prefetch */
+				if (withMask)
+					cmdqRecWrite(handle[i], CMDQ_TEST_MMSYS_DUMMY_PA, 0x3210, ~0xfff0);
+				else
+					cmdqRecWrite(handle[i], CMDQ_TEST_MMSYS_DUMMY_PA, 0x3210, ~0);
+			}
+
+			if (i == 1)
+				cmdqRecDisablePrefetch(handle[i]); /* disable pre-fetch with marker */
+
+			cmdqRecProfileMarker(handle[i], "ANA_END");
+			cmdq_rec_finalize_command(handle[i], false);
+
+			ret = _test_submit_async(handle[i], &pTask[i]);
+
+			if (withWait) {
+				msleep_interruptible(500);
+				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+			}
+
+			CMDQ_MSG("wait 0x%p, i:%2d========\n", pTask[i], i);
+			ret = cmdqCoreWaitAndReleaseTask(pTask[i], 500);
+			cmdqRecDestroy(handle[i]);
+		}
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_ALL = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3136,6 +3198,14 @@ typedef enum CMDQ_TESTCASE_ENUM {
 static void testcase_general_handling(int32_t testID)
 {
 	switch (testID) {
+	case 121:
+		testcase_prefetch_round(1, 100, false, true);
+		testcase_prefetch_round(1, 100, false, false);
+		testcase_prefetch_round(1, 160, false, true);
+		testcase_prefetch_round(1, 160, false, false);
+		testcase_prefetch_round(1, 180, false, true);
+		testcase_prefetch_round(1, 180, false, false);
+		break;
 	case 120:
 		testcase_notify_and_delay_submit(16);
 		break;
@@ -3412,6 +3482,15 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 		/* (scenario, buffersize) */
 		testcase_open_buffer_dump((int32_t)testParameter[1], (int32_t)testParameter[2]);
 		break;
+	case CMDQ_TEST_TYPE_DUMP_DTS:
+		cmdq_core_dump_dts_setting();
+		break;
+	case CMDQ_TEST_TYPE_FEATURE_CONFIG:
+		if (0 > (int32_t)testParameter[1])
+			cmdq_core_dump_feature();
+		else
+			cmdq_core_set_feature((int32_t)testParameter[1], (uint32_t)testParameter[2]);
+
 	default:
 		break;
 	}

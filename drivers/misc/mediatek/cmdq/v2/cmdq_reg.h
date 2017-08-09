@@ -31,6 +31,8 @@
 #define CMDQ_SYNC_TOKEN_VAL          (GCE_BASE_VA + 0x064)
 #define CMDQ_SYNC_TOKEN_UPD          (GCE_BASE_VA + 0x068)
 
+#define CMDQ_PREFETCH_GSIZE         (GCE_BASE_VA + 0x0C0)
+
 #define CMDQ_GPR_R32(id)             (GCE_BASE_VA + (0x004 * id) + 0x80)
 #define CMDQ_GPR_R32_PA(id)          (GCE_BASE_PA + (0x004 * id) + 0x80)
 
@@ -46,6 +48,7 @@
 #define CMDQ_THR_EXEC_CNT(id)        (GCE_BASE_VA + (0x080 * id) + 0x128)
 #define CMDQ_THR_WAIT_TOKEN(id)      (GCE_BASE_VA + (0x080 * id) + 0x130)
 #define CMDQ_THR_CFG(id)             (GCE_BASE_VA + (0x080 * id) + 0x140)
+#define CMDQ_THR_PREFETCH(id)        (GCE_BASE_VA + (0x080 * id) + 0x144)
 #define CMDQ_THR_INST_CYCLES(id)     (GCE_BASE_VA + (0x080 * id) + 0x150)
 #define CMDQ_THR_INST_THRESX(id)     (GCE_BASE_VA + (0x080 * id) + 0x154)
 
