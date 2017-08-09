@@ -348,7 +348,7 @@ static long APDS9930_enable_ps(struct i2c_client *client, int enable)
 }
 
 /*----------------------------------------------------------------------------*/
-/*for interrupt work mode support -- by liaoxl.lenovo 12.08.2011*/
+/*for interrupt work mode support*/
 static int APDS9930_check_and_clear_intr(struct i2c_client *client)
 {
 	int res, intp, intl;
@@ -538,7 +538,7 @@ static int APDS9930_init_client(struct i2c_client *client)
 	if (res <= 0)
 		goto EXIT_ERR;
 
-	/*for interrupt work mode support -- by liaoxl.lenovo 12.08.2011 */
+	/*for interrupt work mode support*/
 	if (0 == obj->hw->polling_mode_ps) {
 		if (1 == ps_cali.valid) {
 			databuf[0] = APDS9930_CMM_INT_LOW_THD_LOW;
@@ -609,7 +609,7 @@ static int APDS9930_init_client(struct i2c_client *client)
 		goto EXIT_ERR;
 
 
-	/*Lenovo-sw chenlj2 add 2011-06-03,modified pulse 2  to 4 */
+	/*modified pulse 2  to 4 */
 	databuf[0] = APDS9930_CMM_PPCOUNT;
 	databuf[1] = APDS9930_CMM_PPCOUNT_VALUE;
 	res = APDS9930_i2c_master_operate(client, databuf, 0x2, I2C_FLAG_WRITE);
@@ -617,7 +617,7 @@ static int APDS9930_init_client(struct i2c_client *client)
 		goto EXIT_ERR;
 
 
-	/*Lenovo-sw chenlj2 add 2011-06-03,modified gain 16  to 1 */
+	/*modified gain 16  to 1 */
 	databuf[0] = APDS9930_CMM_CONTROL;
 	databuf[1] = APDS9930_CMM_CONTROL_VALUE;
 	res = APDS9930_i2c_master_operate(client, databuf, 0x2, I2C_FLAG_WRITE);
@@ -680,21 +680,21 @@ int APDS9930_read_als(struct i2c_client *client, u16 *data)
 	c1_nf = obj->als_modulus * c1_value;
 	/* APS_LOG("c1_value=%d, c1_nf=%d, als_modulus=%d\n", c1_value, c1_nf, obj->als_modulus); */
 
-	if ((c0_value > c1_value) && (c0_value < 50000)) {	/*Lenovo-sw chenlj2 add 2011-06-03,add { */
+	if ((c0_value > c1_value) && (c0_value < 50000)) {
 		atio = (c1_nf * 100) / c0_nf;
 
 		/* APS_LOG("atio = %d\n", atio); */
 		if (atio < 30) {
 			*data = (13 * c0_nf - 24 * c1_nf) / 10000;
-		} else if (atio >= 30 && atio < 38) {	/*Lenovo-sw chenlj2 add 2011-06-03,modify > to >= */
+		} else if (atio >= 30 && atio < 38) {
 			*data = (16 * c0_nf - 35 * c1_nf) / 10000;
-		} else if (atio >= 38 && atio < 45) {	/*Lenovo-sw chenlj2 add 2011-06-03,modify > to >= */
+		} else if (atio >= 38 && atio < 45) {
 			*data = (9 * c0_nf - 17 * c1_nf) / 10000;
-		} else if (atio >= 45 && atio < 54) {	/*Lenovo-sw chenlj2 add 2011-06-03,modify > to >= */
+		} else if (atio >= 45 && atio < 54) {
 			*data = (6 * c0_nf - 10 * c1_nf) / 10000;
 		} else
 			*data = 0;
-		/*Lenovo-sw chenlj2 add 2011-06-03,add } */
+
 	} else if (c0_value > 50000) {
 		*data = 65535;
 	} else if (c0_value == 0) {
@@ -897,7 +897,7 @@ static int APDS9930_get_ps_value(struct APDS9930_priv *obj, u16 ps)
 
 
 /*----------------------------------------------------------------------------*/
-/*for interrupt work mode support -- by liaoxl.lenovo 12.08.2011*/
+/*for interrupt work mode support*/
 /* #define DEBUG_APDS9930 */
 static void APDS9930_irq_work(struct work_struct *work)
 {
@@ -1891,7 +1891,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	obj->hw = hw;
 	APDS9930_get_addr(obj->hw, &obj->addr);
 
-	/*for interrupt work mode support -- by liaoxl.lenovo 12.08.2011 */
+	/*for interrupt work mode support*/
 	INIT_WORK(&obj->irq_work, APDS9930_irq_work);
 	obj->client = client;
 	i2c_set_clientdata(client, obj);
@@ -1911,7 +1911,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	obj->pending_intr = 0;
 	obj->als_level_num = sizeof(obj->hw->als_level) / sizeof(obj->hw->als_level[0]);
 	obj->als_value_num = sizeof(obj->hw->als_value) / sizeof(obj->hw->als_value[0]);
-	/*Lenovo-sw chenlj2 add 2011-06-03,modified gain 16 to 1/5 according to actual thing */
+	/*modified gain 16 to 1/5 according to actual thing */
 	/* (1/Gain)*(400/Tine), this value is fix after init ATIME and CONTROL register value */
 	obj->als_modulus = (400 * 100 * ZOOM_TIME) / (1 * 150);
 	/* (400)/16*2.72 here is amplify *100 / *16 */

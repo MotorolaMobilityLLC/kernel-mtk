@@ -23,7 +23,7 @@
 #define APDS9930_CMM_ATIME		0X81
 #define APDS9930_CMM_PTIME		0X82
 #define APDS9930_CMM_WTIME		0X83
-/*for interrupt work mode support -- by liaoxl.lenovo 12.08.2011*/
+/*for interrupt work mode support*/
 #define APDS9930_CMM_INT_LOW_THD_LOW   0X88
 #define APDS9930_CMM_INT_LOW_THD_HIGH  0X89
 #define APDS9930_CMM_INT_HIGH_THD_LOW  0X8A
