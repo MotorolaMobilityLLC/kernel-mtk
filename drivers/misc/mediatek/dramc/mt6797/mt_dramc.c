@@ -1616,6 +1616,22 @@ unsigned int get_dram_data_rate(void)
 	unsigned int MEMPLL_FOUT = 0;
 
 	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
+
+	/* DVFS owner to request provide a spec. frequency,
+	not real frequency */
+	if (MEMPLL_FOUT == 1866)
+		MEMPLL_FOUT = 1866;
+	else if (MEMPLL_FOUT == 1700)
+		MEMPLL_FOUT = 1700;
+	else if (MEMPLL_FOUT == 1560)
+		MEMPLL_FOUT = 1600;
+	else if (MEMPLL_FOUT == 1586)
+		MEMPLL_FOUT = 1600;
+	else if (MEMPLL_FOUT == 1274)
+		MEMPLL_FOUT = 1270;
+	else if (MEMPLL_FOUT == 1040)
+		MEMPLL_FOUT = 1066;
+
 	return MEMPLL_FOUT;
 }
 
@@ -1926,7 +1942,7 @@ static int __init dram_test_init(void)
 	}
 
 	org_dram_data_rate = get_dram_data_rate();
-	pr_warn("[DRAMC Driver] Dram Data Rate = %d\n", org_dram_data_rate);
+	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", org_dram_data_rate);
 
 	if (dram_can_support_fh())
 		pr_warn("[DRAMC Driver] dram can support Frequency Hopping\n");
