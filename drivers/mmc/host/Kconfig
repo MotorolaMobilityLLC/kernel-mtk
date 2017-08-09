@@ -76,6 +76,16 @@ config MMC_MT81XX
 
 	  If unsure, say N.
 
+config K42_MMC_RETUNE
+	tristate "Kernel-4.2 mmc retune support"
+	depends on MMC_MT81XX || MMC_MTK
+	help
+	  This selects the mmc retune method from kernel-4.2,
+	  Note that this for Tablet/Box which use retune from kernel-4.2.
+	  if your driver do not use it, say N.
+
+	  if unsure, say N.
+
 config MMC_ARMMMCI
 	tristate "ARM AMBA Multimedia Card Interface support"
 	depends on ARM_AMBA
