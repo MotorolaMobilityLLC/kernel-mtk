@@ -90,49 +90,6 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 #define MTK_SIP_KERNEL_IDVFS_WRITE						0x8200035E
 #endif
 
-/*
- * bit operation
- */
-#define BIT_IDVFS(bit)		(1U << (bit))
-
-#define MSB_IDVFS(range)	(1 ? range)
-#define LSB_IDVFS(range)	(0 ? range)
-/**
- * Genearte a mask wher MSB to LSB are all 0b1
- * @r: Range in the form of MSB:LSB
- */
-#define BITMASK_IDVFS(r) \
-	(((unsigned) -1 >> (31 - MSB_IDVFS(r))) & ~((1U << LSB_IDVFS(r)) - 1))
-
-#define GET_BITS_VAL_IDVFS(_bits_, _val_) \
-	(((_val_) & (BITMASK_IDVFS(_bits_))) >> ((0) ? _bits_))
-
-/**
- * Set value at MSB:LSB. For example, BITS(7:3, 0x5A)
- * will return a value where bit 3 to bit 7 is 0x5A
- * @r:	Range in the form of MSB:LSB
- */
-/* BITS(MSB:LSB, value) => Set value at MSB:LSB  */
-#define BITS_IDVFS(r, val)	((val << LSB_IDVFS(r)) & BITMASK_IDVFS(r))
-
-/* dfine for IDVFS register service */
-#ifdef __KERNEL__
-#define idvfs_read(addr) \
-		mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_READ, addr, 0, 0)
-#define idvfs_write(addr, val) \
-		mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_WRITE, addr, val, 0)
-#else
-#define idvfs_read(addr) \
-		ptp3_reg_read(addr)
-#define idvfs_write(addr, val) \
-		ptp3_reg_write(addr, val)
-#endif
-
-#define idvfs_read_field(addr, range) \
-		GET_BITS_VAL_IDVFS(range, idvfs_read(addr))
-#define idvfs_write_field(addr, range, val) \
-		idvfs_write(addr, (idvfs_read(addr) & ~(BITMASK_IDVFS(range))) | BITS_IDVFS(range, val))
-
 /* ATF only support */
 #ifdef __KERNEL__
 #define SEC_BIGIDVFSENABLE(FMax, Vproc, Vsram) \
@@ -143,6 +100,10 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETFREQ, Freq, 0, 0)
 #define SEC_BIGIDVFSSRAMLDOSET(mv_x100) \
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET, mv_x100, 0, 0)
+#define SEC_BIGIDVFS_READ(addr) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_READ, addr, 0, 0)
+#define SEC_BIGIDVFS_WRITE(addr, val) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_WRITE, addr, val, 0)
 #else
 #define SEC_BIGIDVFSENABLE(FMax, Vproc_x100, Vsram_x100) \
 			API_BIGIDVFSENABLE(FMax, Vproc_x100, Vsram_x100)
@@ -152,35 +113,11 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 			API_BIGPLLSETFREQ(Freq)
 #define SEC_BIGIDVFSSRAMLDOSET(mv_x100) \
 			BigSRAMLDOSet(mv_x100)
+#define SEC_BIGIDVFS_READ(addr) \
+			ptp3_reg_read(addr)
+#define SEC_BIGIDVFS_WRITE(addr, val) \
+			ptp3_reg_write(addr, val)
 #endif
-
-/* ATF remove, add at Android code base, remove later due to build code issue */
-#define SEC_BIGIDVFSFREQ(FreqPct) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSFREQ, FreqPct, 0, 0)
-#define SEC_BIGIDVFSCHANNEL(Channel, EnDis) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSCHANNEL, Channel, EnDis, 0)
-#define SEC_BIGIDVFSSWAVG(Length, EnDis) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVG, Length, EnDis, 0)
-#define SEC_BIGIDVFSSWAVGSTATUS() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVGSTATUS, 0, 0, 0)
-#define SEC_BIGIDVFSPURESWMODE(Func, Para) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWMODE, Func, Para, 0) /* option */
-#define SEC_BIGIDVFSSLOWMODE(pllus, voltus) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSLOWMODE, pllus, voltus, 0) /* option */
-#define SEC_BIGIDVFSPLLDISABLE() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLDISABLE, 0, 0, 0)
-#define SEC_BIGIDVFSPLLGETFREQ() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETFREQ, 0, 0, 0)
-#define SEC_BIGIDVFSPLLSETPOSDIV(div) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPOSDIV, div, 0, 0)
-#define SEC_BIGIDVFSPLLGETPOSDIV() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPOSDIV, 0, 0, 0)
-#define SEC_BIGIDVFSPLLSETPCW(pcw) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPCW, pcw, 0, 0)
-#define SEC_BIGIDVFSPLLGETPCW() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW, 0, 0, 0)
-#define SEC_BIGIDVFSSRAMLDOGET() \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET, 0, 0, 0)
 
 /* Channel type*/
 enum idvfs_channel {
