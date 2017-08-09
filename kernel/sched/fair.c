@@ -4379,6 +4379,14 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
 	return 1;
 }
 
+#ifdef CONFIG_MT_SCHED_INTEROP
+#define MT_RT_LOAD (2*1023*scale_load_down(scale_load(prio_to_weight[0])))
+static inline unsigned long mt_rt_load(int cpu)
+{
+	return cpu_rq(cpu)->rt.rt_nr_running * MT_RT_LOAD;
+}
+#endif
+
 /*
  * find_idlest_group finds and returns the least busy CPU group within the
  * domain.
@@ -4418,6 +4426,9 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 			else
 				load = target_load(i, load_idx);
 
+#ifdef CONFIG_MT_SCHED_INTEROP
+			load += mt_rt_load(i);
+#endif
 			avg_load += load;
 		}
 
@@ -4476,6 +4487,9 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 			}
 		} else {
 			load = weighted_cpuload(i);
+#ifdef CONFIG_MT_SCHED_INTEROP
+			load += mt_rt_load(i);
+#endif
 			if (load < min_load || (load == min_load && i == this_cpu)) {
 				min_load = load;
 				least_loaded_cpu = i;
@@ -4531,6 +4545,31 @@ done:
 	return target;
 }
 
+#if defined(CONFIG_MT_SCHED_INTEROP)
+static int interop_select_task_rq_fair(struct task_struct *p, int prev_cpu)
+{
+	int i;
+	struct cpumask allowed_mask;
+
+	cpumask_and(&allowed_mask, cpu_online_mask, tsk_cpus_allowed(p));
+	mt_sched_printf(sched_interop, "prev cpu=%d, idle_prev=%d find idle cpu from cpumask 0x%lx",
+			prev_cpu, idle_cpu(prev_cpu), allowed_mask.bits[0]);
+	if (idle_cpu(prev_cpu))
+		return prev_cpu;
+	if (!cpumask_weight(&allowed_mask))
+		return -1;
+	for_each_cpu(i, &allowed_mask) {
+		if (idle_cpu(i))
+			return i;
+	}
+	return -1;
+}
+static int mt_select_task_rq_fair(struct task_struct *p, int prev_cpu)
+{
+	return interop_select_task_rq_fair(p, prev_cpu);
+}
+#endif
+
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
@@ -4551,13 +4590,26 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int new_cpu = cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
+#if defined(CONFIG_MT_SCHED_INTEROP)
+	int prefer_cpu;
+#endif
 
 	if (p->nr_cpus_allowed == 1)
 		return prev_cpu;
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
+#if defined(CONFIG_MT_SCHED_INTEROP)
+	prefer_cpu = mt_select_task_rq_fair(p, prev_cpu);
 
+	if ((-1 != prefer_cpu) && (prefer_cpu < nr_cpu_ids)) {
+		cpu = prefer_cpu;
+		new_cpu = prefer_cpu;
+		mt_sched_printf(sched_log, "cmp/interop wakeup %d %s to cpu %d",
+				p->pid, p->comm, cpu);
+		goto mt_found;
+	}
+#endif
 	rcu_read_lock();
 	for_each_domain(cpu, tmp) {
 		if (!(tmp->flags & SD_LOAD_BALANCE))
@@ -4621,6 +4673,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	}
 unlock:
 	rcu_read_unlock();
+#if defined(CONFIG_MT_SCHED_INTEROP)
+mt_found:
+#endif
 
 	return new_cpu;
 }

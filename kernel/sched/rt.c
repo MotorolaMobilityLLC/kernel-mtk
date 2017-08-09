@@ -1362,9 +1362,14 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	}
 #endif
 
+#if defined(CONFIG_MT_SCHED_INTEROP)
+	/* if the task is allowed to put more than one CPU. */
+	if ((p->nr_cpus_allowed > 1)) {
+#else
 	if (curr && unlikely(rt_task(curr)) &&
 	    (curr->nr_cpus_allowed < 2 ||
 	     curr->prio <= p->prio)) {
+#endif
 		int target = find_lowest_rq(p);
 
 		if (target != -1)
@@ -1552,12 +1557,51 @@ static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
 
 static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 
+#ifdef CONFIG_MT_SCHED_INTEROP
+static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
+{
+	int lowest_cpu = -1, lowest_prio = 0;
+
+	mt_sched_printf(sched_interop, "current cpu=%d, find idle cpu from cpumask 0x%lx",
+			cpu, lowest_mask->bits[0]);
+
+	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu))
+		return cpu;
+
+	for_each_cpu(cpu, lowest_mask) {
+		struct rq *rq;
+		struct task_struct *curr;
+
+		if (idle_cpu(cpu))
+			return cpu;
+
+		rq = cpu_rq(cpu);
+		curr = rq->curr;
+		if ((curr->sched_class == &fair_sched_class) && (curr->prio > lowest_prio)) {
+			lowest_prio = curr->prio;
+			lowest_cpu = cpu;
+
+			mt_sched_printf(sched_interop, "lowest_cpu=%d, lowest_prio=%d",
+					lowest_cpu, lowest_prio);
+		}
+	}
+
+	if (-1 != lowest_cpu)
+		return lowest_cpu;
+
+	return -1;
+}
+#endif
+
 static int find_lowest_rq(struct task_struct *task)
 {
 	struct sched_domain *sd;
 	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
 	int this_cpu = smp_processor_id();
 	int cpu      = task_cpu(task);
+#ifdef CONFIG_MT_SCHED_INTEROP
+	int interop_cpu;
+#endif
 
 	mt_sched_printf(sched_rt_info,
 			"1 find_lowest_rq lowest_mask=0x%lx, task->cpus_allowed=0x%lx",
@@ -1571,6 +1615,14 @@ static int find_lowest_rq(struct task_struct *task)
 
 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
 		return -1; /* No targets found */
+
+#ifdef CONFIG_MT_SCHED_INTEROP
+	interop_cpu = mt_sched_interop_rt(cpu, lowest_mask);
+	if (interop_cpu != -1) {
+		mt_sched_printf(sched_interop, "find idle cpu=%d", interop_cpu);
+		return interop_cpu;
+	}
+#endif
 
 	/*
 	 * At this point we have built a mask of cpus representing the
