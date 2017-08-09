@@ -147,17 +147,22 @@ static __init int boot_trace_cmdline(char *str)
 }
 __setup("boot_trace", boot_trace_cmdline);
 
+#include <linux/rtc.h>
 void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)
 {
 	struct ftrace_event_call *call;
 	struct ftrace_event_file *file;
 	struct trace_array *tr;
 
+	unsigned long usec_rem;
+	unsigned long long t;
+	struct rtc_time tm_utc, tm;
+	struct timeval tv = { 0 };
+
 	if (buf->tr)
 		tr = buf->tr;
 	else
 		return;
-
 	if (tr->name != NULL)
 		seq_printf(m, "# instance: %s, enabled events:", tr->name);
 	else
@@ -169,6 +174,25 @@ void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)
 				   ftrace_event_name(call));
 	}
 	seq_puts(m, "\n");
+
+	t = sched_clock();
+	do_gettimeofday(&tv);
+	t = ns2usecs(t);
+	usec_rem = do_div(t, USEC_PER_SEC);
+	rtc_time_to_tm(tv.tv_sec, &tm_utc);
+	rtc_time_to_tm(tv.tv_sec - sys_tz.tz_minuteswest * 60, &tm);
+
+	seq_printf(m, "# kernel time now: %5llu.%06lu\n",
+		   t, usec_rem);
+	seq_printf(m, "# UTC time:\t%d-%02d-%02d %02d:%02d:%02d.%03u\n",
+			tm_utc.tm_year + 1900, tm_utc.tm_mon + 1,
+			tm_utc.tm_mday, tm_utc.tm_hour,
+			tm_utc.tm_min, tm_utc.tm_sec,
+			(unsigned int)tv.tv_usec);
+	seq_printf(m, "# android time:\t%d-%02d-%02d %02d:%02d:%02d.%03u\n",
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec,
+			(unsigned int)tv.tv_usec);
 }
 
 /* ftrace's switch function for MTK solution */
