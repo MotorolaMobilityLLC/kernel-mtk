@@ -74,7 +74,8 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN, enable, 0x1);
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, enable << 1, 1 << 1);
-#if defined(CONFIG_ARCH_MT6755) /* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
+	/* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
