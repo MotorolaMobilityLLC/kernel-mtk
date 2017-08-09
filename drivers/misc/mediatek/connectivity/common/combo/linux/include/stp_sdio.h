@@ -100,6 +100,9 @@
 
 #define STP_SDIO_FW_CPUPCR_POLLING_CNT (5)
 
+#define STP_SDIO_RETRY_LIMIT (5)
+#define STP_SDIO_MAX_RETRY_NUM (100)
+
 /* tx buffer size for a single entry */
 /* George: SHALL BE a multiple of the used BLK_SIZE!! */
 #if 1
@@ -130,6 +133,16 @@
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+typedef enum _ENUM_STP_SDIO_HIF_TYPE_T {
+	HIF_TYPE_READB = 0,
+	HIF_TYPE_READL = HIF_TYPE_READB + 1,
+	HIF_TYPE_READ_BUF = HIF_TYPE_READL + 1,
+	HIF_TYPE_WRITEB = HIF_TYPE_READ_BUF + 1,
+	HIF_TYPE_WRITEL = HIF_TYPE_WRITEB + 1,
+	HIF_TYPE_WRITE_BUF = HIF_TYPE_WRITEL + 1,
+	HIF_TYPE_MAX
+} ENUM_STP_SDIO_HIF_TYPE_T, *P_ENUM_STP_SDIO_HIF_TYPE_T;
+
 /* HIF's local packet buffer variables for Tx/Rx */
 typedef struct _MTK_WCN_STP_SDIO_PKT_BUF {
 	/* Tx entry ring buffer. Entry size is aligned to SDIO block size. */
