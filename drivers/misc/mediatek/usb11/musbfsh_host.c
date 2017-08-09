@@ -920,14 +920,15 @@ static bool musbfsh_h_ep0_continue(struct musbfsh *musbfsh, u16 len,
 	case MUSBFSH_EP0_START:
 		request = (struct usb_ctrlrequest *)urb->setup_packet;
 
-		if (!request->wLength)
+		if (!request->wLength) {
 			INFO("start no-DATA\n");
 			break;
-		if (request->bRequestType & USB_DIR_IN)
+		} else if (request->bRequestType & USB_DIR_IN) {
 			INFO("start IN-DATA\n");
 			musbfsh->ep0_stage = MUSBFSH_EP0_IN;
 			more = true;
-			break;	/* wait for next interrupt! */
+			break;	/*wait for next interrupt! */
+		}
 
 		INFO("start OUT-DATA\n");
 		musbfsh->ep0_stage = MUSBFSH_EP0_OUT;
