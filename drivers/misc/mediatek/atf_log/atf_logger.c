@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#define DEBUG
 #include <linux/module.h>
 #include <linux/file.h>
 #include <linux/fs.h>
@@ -24,6 +23,8 @@
 #include <linux/io.h>           /* ioremap() */
 #include <linux/of_fdt.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/of_irq.h>
+#include <linux/of.h>
 #include <linux/seq_file.h>
 #include <asm/setup.h>
 #include <linux/interrupt.h>
@@ -534,6 +535,8 @@ static int __init atf_log_init(void)
 	int err;
 	struct proc_dir_entry *atf_log_proc_dir;
 	struct proc_dir_entry *atf_log_proc_file;
+	struct device_node *node = NULL;
+	int irq_num;
 #ifdef CONFIG_ARCH_MT6797
 	struct proc_dir_entry *atf_log_dump_proc_file;
 #endif
@@ -569,17 +572,19 @@ static int __init atf_log_init(void)
 	/* initial wait queue */
 	init_waitqueue_head(&atf_log_wq);
 
-#ifdef CONFIG_ARCH_MT6797
-	if (request_irq(325, (irq_handler_t)ATF_log_irq_handler, IRQ_TYPE_EDGE_RISING, "ATF_irq", NULL) != 0) {
+	node = of_find_compatible_node(NULL, NULL, "mediatek,atf_logger");
+	if (!node) {
+		pr_err("[SCP] Can't find node:mediatek,atf_logger.n");
+		return -1;
+	}
+
+	irq_num = irq_of_parse_and_map(node, 0);
+	pr_notice("atf irq num %d.\n", irq_num);
+
+	if (request_irq(irq_num, (irq_handler_t)ATF_log_irq_handler, IRQF_TRIGGER_NONE, "ATF_irq", NULL) != 0) {
 		pr_crit("Fail to request ATF_log_irq interrupt!\n");
 		return -1;
 	}
-#else
-	if (request_irq(281, (irq_handler_t)ATF_log_irq_handler, IRQF_TRIGGER_NONE, "ATF_irq", NULL) != 0) {
-		pr_crit("Fail to request ATF_log_irq interrupt!\n");
-		return -1;
-	}
-#endif
 
 	/* create /proc/atf_log */
 	atf_log_proc_dir = proc_mkdir("atf_log", NULL);
