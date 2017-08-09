@@ -119,18 +119,22 @@ static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
 	if (deint_mapped < 4)
-		writel(0xff << (deint_mapped * 8), IOMEM(DEINT_SEL_CLR_BASE));
+		writel(0xff << (deint_mapped * 8),
+			IOMEM(DEINT_SEL_CLR_BASE));
 	else if ((deint_mapped >= 4) && (deint_mapped < 8))
-		writel(0xff << (deint_mapped * 8), IOMEM(DEINT_SEL_CLR_BASE + 4));
+		writel(0xff << ((deint_mapped-4) * 8),
+			IOMEM(DEINT_SEL_CLR_BASE + 4));
 }
 
 static void mt_eint_set_deint_selection(u32 eint_num, u32 deint_mapped)
 {
 	/* set our new deint_sel setting */
 	if (deint_mapped < 4)
-		writel((eint_num << (deint_mapped * 8)), IOMEM(DEINT_SEL_SET_BASE));
+		writel((eint_num << (deint_mapped * 8)),
+			IOMEM(DEINT_SEL_SET_BASE));
 	else if ((deint_mapped >= 4) && (deint_mapped < 8))
-		writel((eint_num << (deint_mapped * 8)), IOMEM(DEINT_SEL_SET_BASE + 4));
+		writel((eint_num << ((deint_mapped-4) * 8)),
+			IOMEM(DEINT_SEL_SET_BASE + 4));
 }
 
 static void mt_eint_enable_deint_selection(u32 deint_mapped)
