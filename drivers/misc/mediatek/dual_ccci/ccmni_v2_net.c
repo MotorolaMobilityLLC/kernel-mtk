@@ -18,7 +18,11 @@
  ****************************************************************************/
 
 #include <ccci.h>
+#include <linux/sockios.h>
+
 #define CCMNI_DBG_INFO 1
+
+#define SIOCSTXQSTATE (SIOCDEVPRIVATE + 0)
 
 struct ccmni_v2_instance_t {
 	int channel;
@@ -36,7 +40,7 @@ struct ccmni_v2_instance_t {
 	struct net_device *dev;
 	struct wake_lock wake_lock;
 	spinlock_t spinlock;
-
+	atomic_t usage;
 	struct shared_mem_ccmni_t *shared_mem;
 	int shared_mem_phys_addr;
 
@@ -686,7 +690,8 @@ static void ccmni_v2_callback(void *private_data)
 			/*  this should be in an interrupt, */
 			/*  so no locking required... */
 			ccmni->ready = 1;
-			netif_wake_queue(ccmni->dev);
+			if (atomic_read(&ccmni->usage) > 0)
+				netif_wake_queue(ccmni->dev);
 			break;
 
 		case CCCI_CCMNI1_RX:
@@ -855,9 +860,10 @@ static int ccmni_v2_open(struct net_device *dev)
 	struct ccmni_v2_ctl_block_t *ctl_b = (struct ccmni_v2_ctl_block_t *) ccmni->owner;
 	int md_id = ctl_b->m_md_id;
 
-	CCCI_DBG_MSG(md_id, "net", "CCMNI%d open\n", ccmni->channel);
+	atomic_inc(&ccmni->usage);
+	CCCI_MSG_INF(md_id, "net", "CCMNI%d open: usage=%d\n", ccmni->channel, atomic_read(&ccmni->usage));
 	if (ctl_b->ccci_is_ready == 0) {
-		CCCI_DBG_MSG(md_id, "net",
+		CCCI_MSG_INF(md_id, "net",
 			     "CCMNI%d open fail when modem not ready\n",
 			     ccmni->channel);
 		return -EIO;
@@ -871,27 +877,54 @@ static int ccmni_v2_close(struct net_device *dev)
 	struct ccmni_v2_instance_t *ccmni = netdev_priv(dev);
 	struct ccmni_v2_ctl_block_t *ctl_b = (struct ccmni_v2_ctl_block_t *) ccmni->owner;
 
-	CCCI_DBG_MSG(ctl_b->m_md_id, "net", "CCMNI%d close\n", ccmni->channel);
+	atomic_dec(&ccmni->usage);
+	CCCI_MSG_INF(ctl_b->m_md_id, "net", "CCMNI%d close: usage=%d\n", ccmni->channel, atomic_read(&ccmni->usage));
 	netif_stop_queue(dev);
 	return 0;
 }
 
-static int ccmni_v2_net_ioctl(struct net_device *dev, struct ifreq *ifr,
-			      int cmd)
+static int ccmni_v2_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
-	/*   No implementation at this moment. */
-	/*   This is a place holder. */
+	struct ccmni_v2_instance_t *ccmni = netdev_priv(dev);
+	struct ccmni_v2_ctl_block_t *ctl_b = (struct ccmni_v2_ctl_block_t *)ccmni->owner;
+
+	switch (cmd) {
+	case SIOCSTXQSTATE:
+		/* ifru_ivalue[3~0]:start/stop; ifru_ivalue[7~4]:reserve; */
+		/* ifru_ivalue[15~8]:user id, bit8=rild, bit9=thermal */
+		/* ifru_ivalue[31~16]: watchdog timeout value */
+		if ((ifr->ifr_ifru.ifru_ivalue & 0xF) == 0) {
+			if (atomic_read(&ccmni->usage) > 0) {
+				atomic_dec(&ccmni->usage);
+				netif_stop_queue(dev);
+				dev->watchdog_timeo = 60*HZ;
+			}
+		} else {
+			if (atomic_read(&ccmni->usage) <= 0) {
+				if (netif_running(dev) && netif_queue_stopped(dev))
+					netif_wake_queue(dev);
+				dev->watchdog_timeo = 1*HZ;
+				atomic_inc(&ccmni->usage);
+			}
+		}
+		CCCI_MSG_INF(ctl_b->m_md_id, "net", "SIOCSTXQSTATE request=%d on CCMNI%d usge=%d\n",
+			ifr->ifr_ifru.ifru_ivalue, ccmni->channel, atomic_read(&ccmni->usage));
+		break;
+	default:
+		CCCI_MSG_INF(ctl_b->m_md_id, "net", "unknown ioctl cmd=%d on CCMNI%d\n", cmd, ccmni->channel);
+		break;
+	}
 
 	return 0;
 }
 
 static void ccmni_v2_tx_timeout(struct net_device *dev)
 {
-	/*   No implementation at this moment. */
-	/*   This is a place holder. */
+	struct ccmni_v2_instance_t *ccmni = netdev_priv(dev);
 
 	dev->stats.tx_errors++;
-	netif_wake_queue(dev);
+	if (atomic_read(&ccmni->usage) > 0)
+		netif_wake_queue(dev);
 }
 
 static const struct net_device_ops ccmni_v2_netdev_ops = {
