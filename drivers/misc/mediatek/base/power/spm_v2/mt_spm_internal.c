@@ -296,6 +296,7 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->conn_mask_b << 26) |
 			(!!pwrctrl->md_apsrc0_sel << 25) |
 			(!!pwrctrl->md_apsrc1_sel << 24) |
+			(spm_read(SPM_AP_STANDBY_CON) & SRCCLKENI_MASK_B_LSB) | /* bit23 */
 			(!!pwrctrl->lte_mask_b << 22) |
 			(!!pwrctrl->scp_req_mask_b << 21) |
 			(!!pwrctrl->md2_req_mask_b << 20) |
@@ -312,7 +313,6 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->mp1top_idle_mask << 2) |
 			(!!pwrctrl->mp0top_idle_mask << 1) |
 			(!!pwrctrl->wfi_op << 0));
-	spm_write(SPM_AP_STANDBY_CON, (spm_read(SPM_AP_STANDBY_CON) & SRCCLKENI_MASK_B_LSB)); /* bit23 */
 #if defined(CONFIG_ARCH_MT6797)
 	spm_write(SPM_AP_STANDBY_CON, spm_read(SPM_AP_STANDBY_CON) & ~SCP_MASK_B_LSB);
 #endif
