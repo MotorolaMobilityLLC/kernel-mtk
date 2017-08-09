@@ -19,13 +19,13 @@ extern unsigned long long hacc_base;
 #else
 extern unsigned int hacc_base;
 #endif
-
+#if 0
 #ifdef CONFIG_ARM64
 extern unsigned long long es_base;
 #else
 extern unsigned int es_base;
 #endif
-
+#endif
 /******************************************************************************
  * MACROS DEFINITIONS
  ******************************************************************************/

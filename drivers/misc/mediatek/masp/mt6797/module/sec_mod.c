@@ -45,14 +45,20 @@
 #include <linux/cdev.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <linux/of_platform.h>
+#include <linux/of_irq.h>
 #include <linux/of_address.h>
-
+#ifdef CONFIG_OF
+#include <linux/of_fdt.h>
+#endif
 /******************************************************************************
  *  INCLUDE LIBRARY
  ******************************************************************************/
 #include "sec_osal.h"
 #include "sec_mod.h"
+#include "sec_boot_lib.h"
 #ifdef MTK_SECURITY_MODULE_LITE
 #include "masp_version.h"
 #endif
@@ -76,17 +82,17 @@ static struct device *sec_device;
 
 #ifdef CONFIG_ARM64
 unsigned long long hacc_base;
-unsigned long long es_base;
+/*unsigned long long es_base;*/
 #else
 unsigned int hacc_base;
-unsigned int es_base;
+/*unsigned int es_base;*/
 #endif
 
 static const struct of_device_id masp_of_ids[] = {
 	{.compatible = "mediatek,hacc",},
 	{}
 };
-
+#if 0
 /* ****************************
  * FOR ES_BASE ONLY
  ******************************/
@@ -111,7 +117,7 @@ int es_remove(struct platform_device *dev)
 }
 
 static const struct of_device_id es_of_ids[] = {
-	{.compatible = "mediatek,EFUSEC",},
+	{.compatible = "mediatek,efusec",},
 	{}
 };
 
@@ -124,7 +130,7 @@ static struct platform_driver es_driver = {
 	.probe = es_probe,
 	.remove = es_remove,
 };
-
+#endif
 /**************************************************************************
  *  SEC DRIVER OPEN
  **************************************************************************/
@@ -319,13 +325,13 @@ static struct platform_driver masp_driver = {
 static int __init masp_init(void)
 {
 	int ret;
-
+	#if 0
 	ret = platform_driver_register(&es_driver);
 	if (ret) {
 		pr_err("[ES] Reg platform driver failed (%d)\n", ret);
 		return ret;
 	}
-
+	#endif
 	ret = platform_driver_register(&masp_driver);
 	if (ret) {
 		pr_err("[%s] Reg platform driver failed (%d)\n", SEC_DEV_NAME, ret);
@@ -335,10 +341,40 @@ static int __init masp_init(void)
 	return ret;
 }
 
+#ifdef CONFIG_OF
+static int __init masp_parse_dt(unsigned long node, const char *uname, int depth, void *data)
+{
+	struct masp_tag *tags;
+	int i;
 
+	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+		return 0;
+
+	tags = (struct masp_tag *)of_get_flat_dt_prop(node, "atag,masp", NULL);
+	if (tags) {
+		g_rom_info_sbc_attr = tags->rom_info_sbc_attr;
+		g_rom_info_sdl_attr = tags->rom_info_sdl_attr;
+		g_hw_sbcen = tags->hw_sbcen;
+		g_lock_state = tags->lock_state;
+		for (i = 0; i < NUM_RID; i++)
+			g_random_id[i] = tags->rid[i];
+		for (i = 0; i < NUM_CRYPTO_SEED; i++)
+			g_crypto_seed[i] = tags->crypto_seed[i];
+		for (i = 0; i < NUM_SBC_PUBK_HASH; i++)
+			g_sbc_pubk_hash[i] = tags->sbc_pubk_hash[i];
+	}
+	return 1;
+}
+
+static int __init masp_of_init(void)
+{
+	of_scan_flat_dt(masp_parse_dt, NULL);
+	return 0;
+}
+#endif
 static void __exit masp_exit(void)
 {
-	platform_driver_unregister(&es_driver);
+	/*platform_driver_unregister(&es_driver);*/
 	platform_driver_unregister(&masp_driver);
 }
 module_init(masp_init);
@@ -351,6 +387,9 @@ EXPORT_SYMBOL(sec_get_random_id);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("MediaTek Inc.");
+#ifdef CONFIG_OF
+early_initcall(masp_of_init);
+#endif
 #ifdef MTK_SECURITY_MODULE_LITE
 MODULE_DESCRIPTION("Mediatek Security Module Lite");
 #else

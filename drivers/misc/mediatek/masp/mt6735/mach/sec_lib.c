@@ -41,16 +41,8 @@
 /******************************************************************************
  * REGISTER
  ******************************************************************************/
-
-
-#define ES_SEC_CTRL              (es_base+0x0060)
-#define ES_SBC_PUBK_HASH         (es_base+0x0090)
-
-#define NUM_SBC_PUBK_HASH           8
-
-#define ES_SBC_EN                (0x00000002)
-#define ES_DAA_EN                (0x00000004)
-#define ES_SLA_EN                (0x00000008)
+#include "sec_boot_lib.h"
+#include "sec_mod.h"
 
 
 /******************************************************************************
@@ -58,15 +50,15 @@
  ******************************************************************************/
 int masp_hal_sbc_enabled(void)
 {
-	return (DRV_Reg32(ES_SEC_CTRL) & ES_SBC_EN) ? 1 : 0;
+	return g_hw_sbcen;
 }
 
 int masp_hal_get_sbc_checksum(unsigned int *pChecksum)
 {
-	int i = 0;
+	int i;
 
 	for (i = 0; i < NUM_SBC_PUBK_HASH; i++)
-		*pChecksum += DRV_Reg32(ES_SBC_PUBK_HASH + (i << 2));
+		*pChecksum += g_sbc_pubk_hash[i];
 
 	return 0;
 }

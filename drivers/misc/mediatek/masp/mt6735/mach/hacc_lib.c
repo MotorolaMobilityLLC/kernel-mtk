@@ -36,7 +36,7 @@
 /*#include <mach/mt_typedefs.h>*/
 #include "sec_hal.h"
 #include "hacc_mach.h"
-#include "sec_log.h"
+/*#include "sec_log.h"*/
 #include "sec_error.h"
 #include "sec_typedef.h"
 
@@ -145,6 +145,6 @@ _error:
 	/* try to release hacc lock */
 	osal_hacc_unlock();
 
-	SMSG(TRUE, "[%s] masp_hal_secure_algo error (0x%x)\n", MOD, err);
+	pr_err("[%s] masp_hal_secure_algo error (0x%x)\n", MOD, err);
 	BUG_ON(!(0));
 }

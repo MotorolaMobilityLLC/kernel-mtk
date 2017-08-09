@@ -170,7 +170,7 @@ _err:
 	if (TRUE == bDoLock)
 		osal_hacc_unlock();
 
-	SMSG(true, "[%s] HACC Fail (0x%x)\n", MOD, err);
+	pr_debug("[%s] HACC Fail (0x%x)\n", MOD, err);
 
 	BUG_ON(!(0));
 
@@ -221,7 +221,7 @@ unsigned int masp_hal_sp_hacc_init(unsigned char *sec_seed, unsigned int size)
 		keyseed.seed[HACC_AES_MAX_KEY_SZ - i - 1] = sec_seed[i] + MTK_HACC_SEED;
 	}
 
-	SMSG(true, "0x%x,0x%x,0x%x,0x%x\n", keyseed.seed[0], keyseed.seed[1], keyseed.seed[2],
+	pr_debug("0x%x,0x%x,0x%x,0x%x\n", keyseed.seed[0], keyseed.seed[1], keyseed.seed[2],
 	     keyseed.seed[3]);
 
 	return hacc_init(&keyseed);
