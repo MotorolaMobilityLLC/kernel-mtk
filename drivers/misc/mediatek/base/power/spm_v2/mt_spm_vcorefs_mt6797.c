@@ -15,7 +15,7 @@
 #include "mt_dramc.h"
 
 #define DYNAMIC_LOAD 1
-#define GATING_AUTO_SAVE 1
+#define GATING_AUTO_SAVE 0
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define VCOREFS_AEE_RR_REC 1
