@@ -1935,7 +1935,8 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 
 			usb_redriver_exit_dps(typec);
 
-			usb3_switch_en(typec, ENABLE);
+			/*ALPS02376554*/
+			/*usb3_switch_en(typec, ENABLE);*/
 
 			fusb_printk(K_DEBUG, "trigger_driver: enable host drv\n");
 		} else {
