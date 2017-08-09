@@ -609,20 +609,12 @@ typedef struct _PARAM_MCR_RW_STRUCT_T {
 } PARAM_MCR_RW_STRUCT_T, *P_PARAM_MCR_RW_STRUCT_T;
 
 typedef struct _PARAM_GET_STA_STATISTICS {
+	UINT_8 ucInvalid;
+	UINT_8 ucVersion;
 	/* Per-STA statistic */
 	UINT_8 aucMacAddr[MAC_ADDR_LEN];
-
+	UINT_32 u4LinkScore;
 	UINT_32 u4Flag;
-
-	/* From driver */
-	UINT_32 u4TxTotalCount;
-	UINT_32 u4TxExceedThresholdCount;
-
-	UINT_32 u4TxMaxTime;
-	UINT_32 u4TxAverageProcessTime;
-
-	UINT_32 au4TcResourceEmptyCount[NUM_TC_RESOURCE_TO_STATISTICS];
-	UINT_32 au4TcQueLen[NUM_TC_RESOURCE_TO_STATISTICS];
 
 	/* From FW */
 	UINT_8 ucPer;		/* base: 128 */
@@ -632,9 +624,43 @@ typedef struct _PARAM_GET_STA_STATISTICS {
 
 	UINT_32 u4TxFailCount;
 	UINT_32 u4TxLifeTimeoutCount;
-
 	UINT_32 u4TxAverageAirTime;
 
+	/* From driver */
+	UINT_32 u4TxTotalCount;
+	UINT_32 u4TxExceedThresholdCount;
+	UINT_32 u4TxAverageProcessTime;
+
+	UINT_32 u4TxMaxTime;
+	UINT_32 u4TxMaxHifTime;
+	UINT_32 u4TxAverageHifTime;
+
+	/*
+	 * How many packages Enqueue/Deqeue during statistics interval
+	 */
+	UINT_32 u4EnqueueCounter;
+	UINT_32 u4DequeueCounter;
+
+	UINT_32 u4EnqueueStaCounter;
+	UINT_32 u4DequeueStaCounter;
+
+	UINT_32 IsrCnt;
+	UINT_32 IsrPassCnt;
+	UINT_32 TaskIsrCnt;
+
+	UINT_32 IsrAbnormalCnt;
+	UINT_32 IsrSoftWareCnt;
+	UINT_32 IsrRxCnt;
+	UINT_32 IsrTxCnt;
+
+	UINT_32 au4TcResourceEmptyCount[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4DequeueNoTcResource[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4TcResourceBackCount[NUM_TC_RESOURCE_TO_STATISTICS];
+
+	UINT_32 au4TcResourceUsedCount[NUM_TC_RESOURCE_TO_STATISTICS];
+	UINT_32 au4TcResourceWantedCount[NUM_TC_RESOURCE_TO_STATISTICS];
+
+	UINT_32 au4TcQueLen[NUM_TC_RESOURCE_TO_STATISTICS];
 	/* Global queue management statistic */
 	UINT_32 au4TcAverageQueLen[NUM_TC_RESOURCE_TO_STATISTICS];
 	UINT_32 au4TcCurrentQueLen[NUM_TC_RESOURCE_TO_STATISTICS];

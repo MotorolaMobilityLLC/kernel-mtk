@@ -1166,11 +1166,13 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 	BOOLEAN bStatus = FALSE;
 	UINT_32 i, u4BufferCountToBeFreed;
 	UINT_16 au2FreeTcResource[TC_NUM] = { 0 };
+	P_QUE_MGT_T prQM = NULL;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prAdapter);
 	prTcqStatus = &prAdapter->rTxCtrl.rTc;
+	prQM = &prAdapter->rQM;
 
 	/* Calculate free page count */
 	if (nicTxCalculateResource(prAdapter, au2TxRlsCnt, au2FreeTcResource)) {
@@ -1194,6 +1196,8 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 					prTcqStatus->au2FreeBufferCount[i]);
 			}
 		}
+		for (i = TC0_INDEX; i < TC_NUM; i++)
+			prQM->au4QmTcResourceBackCounter[i] += au2FreeTcResource[i];
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 		bStatus = TRUE;
 	}
@@ -2190,7 +2194,7 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
 				GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 			} else if (prMsduInfo->eSrc == TX_PACKET_OS) {
-				wlanTxProfilingTagMsdu(prAdapter, prMsduInfo, TX_PROF_TAG_DRV_TX_DONE);
+				wlanTxProfilingTagMsdu(prAdapter, prMsduInfo, TX_PROF_TAG_DRV_DEQUE);
 				kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_SUCCESS);
 				prMsduInfo->prPacket = NULL;
 			} else if (prMsduInfo->eSrc == TX_PACKET_FORWARDING) {
@@ -2274,6 +2278,9 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 		HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, (PUINT_8) pucOutputBuf, u4ValidBufSize);
 #endif
+		wlanTxLifetimeTagPacketQue(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue),
+				TX_PROF_TAG_DRV_TX_DONE);
+
 		nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue));
 
 	}
@@ -2502,7 +2509,7 @@ VOID nicProcessTxInterrupt(IN P_ADAPTER_T prAdapter)
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 	ASSERT(prTxCtrl);
-
+	prAdapter->prGlueInfo->IsrTxCnt++;
 	/* Get the TX STATUS */
 #if CFG_SDIO_INTR_ENHANCE
 

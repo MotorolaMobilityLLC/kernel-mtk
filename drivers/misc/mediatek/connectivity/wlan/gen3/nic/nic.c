@@ -1507,14 +1507,15 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 #if defined(MT6797)
 	UINT_32 u4Value1 = 0;
 #endif
+	prAdapter->prGlueInfo->IsrAbnormalCnt++;
 
 #if defined(MT6797)
-		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
-		HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
-		DBGLOG(REQ, ERROR, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
+	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
+	HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
+	DBGLOG(REQ, ERROR, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
 #else
-		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
-		DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
+	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
 #endif
 
 #if CFG_CHIP_RESET_SUPPORT
@@ -1550,6 +1551,7 @@ VOID nicProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 
+	prAdapter->prGlueInfo->IsrSoftWareCnt++;
 	u4IntrBits = prAdapter->u4IntStatus & BITS(8, 31);
 
 	if ((u4IntrBits & WHISR_D2H_SW_ASSERT_INFO_INT) != 0) {

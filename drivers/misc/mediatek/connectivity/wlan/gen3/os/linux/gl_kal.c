@@ -3022,7 +3022,8 @@ VOID kalProcessTxReq(P_GLUE_INFO_T prGlueInfo, PBOOLEAN pfgNeedHwAccess)
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 	u4CmdCount = prCmdQue->u4NumElem;
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
-	if (u4CmdCount > 0) {
+	if (u4CmdCount > 0)
+		wlanProcessCommandQueue(prGlueInfo->prAdapter, prCmdQue);
 #else
 	if (prCmdQue->u4NumElem > 0) {
 		if (*pfgNeedHwAccess == FALSE) {
@@ -3030,9 +3031,10 @@ VOID kalProcessTxReq(P_GLUE_INFO_T prGlueInfo, PBOOLEAN pfgNeedHwAccess)
 
 			wlanAcquirePowerControl(prGlueInfo->prAdapter);
 		}
-#endif
 		wlanProcessCommandQueue(prGlueInfo->prAdapter, prCmdQue);
 	}
+#endif
+
 
 	while (u4TxLoopCount--) {
 		while (QUEUE_IS_NOT_EMPTY(prTxQueue)) {
@@ -3163,6 +3165,7 @@ int hif_thread(void *data)
 				DBGLOG(INIT, INFO, "ignore pending interrupt\n");
 			} else {
 				/* DBGLOG(INIT, INFO, ("HIF Interrupt!\n")); */
+				prGlueInfo->TaskIsrCnt++;
 				wlanIST(prGlueInfo->prAdapter);
 			}
 		}
@@ -3420,6 +3423,7 @@ int tx_thread(void *data)
 				/* Should stop now... skip pending interrupt */
 				DBGLOG(INIT, INFO, "ignore pending interrupt\n");
 			} else {
+				prGlueInfo->TaskIsrCnt++;
 				wlanIST(prGlueInfo->prAdapter);
 			}
 		}

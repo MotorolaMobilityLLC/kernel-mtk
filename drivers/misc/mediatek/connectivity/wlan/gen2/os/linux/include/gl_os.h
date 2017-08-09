@@ -973,7 +973,18 @@ struct _GLUE_INFO_T {
 /* UINT8                                   aucTdlsDisconHistory[TDLS_DISCON_HISTORY_MAX][20]; */
 /* UINT32                                  u4TdlsDisconIdx; */
 #endif				/* CFG_SUPPORT_TDLS */
+	UINT_32 IsrCnt;
+	UINT_32 IsrPassCnt;
+	UINT_32 TaskIsrCnt;
 
+	UINT_32 IsrPreCnt;
+	UINT_32 IsrPrePassCnt;
+	UINT_32 TaskPreIsrCnt;
+
+	UINT_32 IsrAbnormalCnt;
+	UINT_32 IsrSoftWareCnt;
+	UINT_32 IsrTxCnt;
+	UINT_32 IsrRxCnt;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

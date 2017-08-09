@@ -1205,6 +1205,8 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 
 	HifInfo = &GlueInfo->rHifInfo;
 
+	GlueInfo->IsrCnt++;
+
 	if (GlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 		return IRQ_HANDLED;
@@ -1222,6 +1224,7 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	wake_up_interruptible(&GlueInfo->waitq);
 
 	IsrPassCnt++;
+	GlueInfo->IsrPassCnt++;
 	return IRQ_HANDLED;
 
 }

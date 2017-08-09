@@ -1478,6 +1478,11 @@ P_QUE_T qmDetermineStaTxQueue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduI
 	} while (fgCheckACMAgain);
 
 	*pucTC = ucTC;
+	/*
+	 * Record how many packages enqueue this STA
+	 * to TX during statistic intervals
+	 */
+	prStaRec->u4EnqueueCounter++;
 
 	return prTxQue;
 }
@@ -1646,6 +1651,23 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 		/* 4 <4> Enqueue the packet */
 		QUEUE_INSERT_TAIL(prTxQue, (P_QUE_ENTRY_T) prCurrentMsduInfo);
+		/*
+		 * Record how many packages enqueue to TX during statistic intervals
+		 */
+		if (prTxQue != &rNotEnqueuedQue) {
+			prQM->u4EnqueueCounter++;
+			/* how many page count this frame wanted */
+			prQM->au4QmTcWantedPageCounter[ucTC] += prCurrentMsduInfo->ucPageCount;
+		}
+#if QM_TC_RESOURCE_EMPTY_COUNTER
+		{
+			P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
+
+			if (prCurrentMsduInfo->ucPageCount > prTxCtrl->rTc.au2FreePageCount[ucTC])
+				prQM->au4QmTcResourceEmptyCounter[prCurrentMsduInfo->ucBssIndex][ucTC]++;
+
+		}
+#endif
 
 #if QM_FAST_TC_RESOURCE_CTRL && QM_ADAPTIVE_TC_RESOURCE_CTRL
 		if (prTxQue != &rNotEnqueuedQue) {
@@ -1823,6 +1845,7 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 	/* Sanity Check */
 	if (!u4CurrentQuota) {
 		DBGLOG(TX, LOUD, "(Fairness) Skip TC = %u u4CurrentQuota = %u\n", ucTC, u4CurrentQuota);
+		prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 		return u4CurrentQuota;
 	}
 	/* 4 <1> Assign init value */
@@ -1886,10 +1909,11 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 				if ((u4CurStaForwardFrameCount >= u4MaxForwardFrameCountLimit) ||
 				    (u4CurStaUsedResource >= u4MaxResourceLimit)) {
 					/* Exceeds Limit */
-
+					prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 					break;
 				} else if (prDequeuedPkt->ucPageCount > u4AvaliableResource) {
 					/* Available Resource is not enough */
+					prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 					if (!(prAdapter->rWifiVar.ucAlwaysResetUsedRes & BIT(0)))
 						fgEndThisRound = TRUE;
 					break;
@@ -1904,6 +1928,8 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 				}
 
 				QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
+				prStaRec->u4DeqeueuCounter++;
+				prQM->u4DequeueCounter++;
 
 				u4AvaliableResource -= prDequeuedPkt->ucPageCount;
 				u4CurStaUsedResource += prDequeuedPkt->ucPageCount;
@@ -2087,6 +2113,7 @@ qmDequeueTxPacketsFromGlobalQueue(IN P_ADAPTER_T prAdapter,
 		if (IS_BSS_ACTIVE(prBssInfo)) {
 			if (!prBssInfo->fgIsNetAbsent) {
 				QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
+				prQM->u4DequeueCounter++;
 				u4AvaliableResource -= prDequeuedPkt->ucPageCount;
 				QM_DBG_CNT_INC(prQM, QM_DBG_CNT_26);
 			} else {
@@ -2187,9 +2214,13 @@ P_MSDU_INFO_T qmDequeueTxPacketsMthread(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_ST
 	/* UINT_32 u4MaxQuotaLimit; */
 	P_MSDU_INFO_T prMsduInfo, prNextMsduInfo;
 
+	UINT_8 ucPageCount;
+	P_QUE_MGT_T prQM;
+
 	KAL_SPIN_LOCK_DECLARATION();
 
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+	prQM = &prAdapter->rQM;
 
 	prReturnedPacketListHead = qmDequeueTxPackets(prAdapter, prTcqStatus);
 
@@ -2197,7 +2228,9 @@ P_MSDU_INFO_T qmDequeueTxPacketsMthread(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_ST
 	prMsduInfo = prReturnedPacketListHead;
 	while (prMsduInfo) {
 		prNextMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prMsduInfo);
-		prTcqStatus->au2FreePageCount[prMsduInfo->ucTC] -= nicTxGetPageCount(prMsduInfo->u2FrameLength, FALSE);
+		ucPageCount = nicTxGetPageCount(prMsduInfo->u2FrameLength, FALSE);
+		prTcqStatus->au2FreePageCount[prMsduInfo->ucTC] -= ucPageCount;
+		prQM->au4QmTcUsedPageCounter[prMsduInfo->ucTC] += ucPageCount;
 		prTcqStatus->au2FreeBufferCount[prMsduInfo->ucTC] =
 		    (prTcqStatus->au2FreePageCount[prMsduInfo->ucTC] / NIC_TX_MAX_PAGE_PER_FRAME);
 		prMsduInfo = prNextMsduInfo;

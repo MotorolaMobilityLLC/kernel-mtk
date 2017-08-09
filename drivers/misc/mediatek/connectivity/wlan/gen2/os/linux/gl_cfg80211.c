@@ -2042,12 +2042,12 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 			goto nla_put_failure;
 	}
 
-	/* NLA_PUT_U8(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE, u4LinkScore); */
+	/* NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE, u4LinkScore); */
 	{
-		unsigned char __tmp = u4LinkScore;
+		unsigned int __tmp = u4LinkScore;
 
 		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE,
-			sizeof(unsigned char), &__tmp) < 0))
+			sizeof(unsigned int), &__tmp) < 0))
 			goto nla_put_failure;
 	}
 
@@ -2155,7 +2155,143 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 			goto nla_put_failure;
 	}
 
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4TxMaxTime;
 
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_MAX_PROCESS_TIME,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4TxAverageHifTime;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_AVG_HIF_PROCESS_TIME,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4TxMaxHifTime;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_MAX_HIF_PROCESS_TIME,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_ENQUEUE, rQueryStaStatistics.u4EnqueueCounter);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4EnqueueCounter;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_ENQUEUE,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_DEQUEUE, rQueryStaStatistics.u4DequeueCounter);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4DequeueCounter;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_DEQUEUE,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_STA_ENQUEUE, rQueryStaStatistics.u4EnqueueStaCounter);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4EnqueueStaCounter;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_STA_ENQUEUE,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_STA_DEQUEUE, rQueryStaStatistics.u4DequeueStaCounter);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.u4DequeueStaCounter;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_STA_DEQUEUE,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_CNT, rQueryStaStatistics.IsrCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_PASS_CNT, rQueryStaStatistics.IsrPassCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrPassCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_ISR_PASS_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_TASK_CNT, rQueryStaStatistics.TaskIsrCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.TaskIsrCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_TASK_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_AB_CNT, rQueryStaStatistics.IsrAbnormalCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrAbnormalCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_AB_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_SW_CNT, rQueryStaStatistics.IsrSoftWareCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrSoftWareCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_SW_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 * NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_TX_CNT, rQueryStaStatistics.IsrTxCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrTxCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_TX_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+	/*
+	 *NLA_PUT_U32(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_RX_CNT, rQueryStaStatistics.IsrRxCnt);
+	 */
+	{
+		unsigned int __tmp = rQueryStaStatistics.IsrRxCnt;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_IRQ_RX_CNT,
+			sizeof(unsigned int), &__tmp) < 0))
+			goto nla_put_failure;
+	}
 	/* Network counter */
 	/*NLA_PUT(skb,
 		NL80211_TESTMODE_STA_STATISTICS_TC_EMPTY_CNT_ARRAY,
@@ -2163,7 +2299,31 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_TC_EMPTY_CNT_ARRAY,
 		sizeof(rQueryStaStatistics.au4TcResourceEmptyCount), &rQueryStaStatistics.au4TcResourceEmptyCount) < 0))
 		goto nla_put_failure;
+	/*
+	NLA_PUT(skb,
+		NL80211_TESTMODE_STA_STATISTICS_NO_TC_ARRAY,
+		sizeof(rQueryStaStatistics.au4DequeueNoTcResource), rQueryStaStatistics.au4DequeueNoTcResource);
+	 */
+	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_NO_TC_ARRAY,
+		sizeof(rQueryStaStatistics.au4DequeueNoTcResource), &rQueryStaStatistics.au4DequeueNoTcResource) < 0))
+		goto nla_put_failure;
+	/*
+	NLA_PUT(skb,
+		NL80211_TESTMODE_STA_STATISTICS_RB_ARRAY,
+		sizeof(rQueryStaStatistics.au4TcResourceBackCount), rQueryStaStatistics.au4TcResourceBackCount);
+	 */
+	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_RB_ARRAY,
+		sizeof(rQueryStaStatistics.au4TcResourceBackCount), &rQueryStaStatistics.au4TcResourceBackCount) < 0))
+		goto nla_put_failure;
 
+	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_USED_BFCT_ARRAY,
+		sizeof(rQueryStaStatistics.au4TcResourceUsedCount), &rQueryStaStatistics.au4TcResourceUsedCount) < 0))
+		goto nla_put_failure;
+
+	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_WANTED_BFCT_ARRAY,
+		sizeof(rQueryStaStatistics.au4TcResourceWantedCount),
+		&rQueryStaStatistics.au4TcResourceWantedCount) < 0))
+		goto nla_put_failure;
 
 	/* Sta queue length */
 	/*NLA_PUT(skb,
@@ -2198,38 +2358,6 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 		sizeof(rQueryStaStatistics.au4Reserved), &rQueryStaStatistics.au4Reserved) < 0))
 		goto nla_put_failure;
 
-	DBGLOG(QM, INFO, "%02x:%02x:%02x:%02x:%02x:%02x TxExTC %d TxTC %d TxFC %d TxLT %d LINKSCORE %d Per %d Rcpi %d ",
-			prParams->aucMacAddr[0],
-			prParams->aucMacAddr[1],
-			prParams->aucMacAddr[2],
-			prParams->aucMacAddr[3],
-			prParams->aucMacAddr[4],
-			prParams->aucMacAddr[5],
-			rQueryStaStatistics.u4TxExceedThresholdCount,
-			rQueryStaStatistics.u4TxTotalCount,
-			rQueryStaStatistics.u4TxFailCount,
-			rQueryStaStatistics.u4TxLifeTimeoutCount,
-			u4LinkScore,
-			rQueryStaStatistics.ucPer,
-			rQueryStaStatistics.ucRcpi);
-	DBGLOG(QM, INFO, "PhyMode %d LinkSpeed %d Flag %d TxAvgPT %d TCReEC0 %d TCReEC1 %d TCReEC2 %d TCReEC3 %d ",
-			rQueryStaStatistics.u4PhyMode,
-			rQueryStaStatistics.u2LinkSpeed,
-			rQueryStaStatistics.u4Flag,
-			rQueryStaStatistics.u4TxAverageProcessTime,
-			rQueryStaStatistics.au4TcResourceEmptyCount[0],
-			rQueryStaStatistics.au4TcResourceEmptyCount[1],
-			rQueryStaStatistics.au4TcResourceEmptyCount[2],
-			rQueryStaStatistics.au4TcResourceEmptyCount[3]);
-	DBGLOG(QM, INFO, "TcQlen0 %d TcQlen1 %d TcQlen2 %d TcQlen3 %d CQlen0 %d CQlen1 %d CQlen2 %d CQlen3 %d\n",
-			rQueryStaStatistics.au4TcQueLen[0],
-			rQueryStaStatistics.au4TcQueLen[1],
-			rQueryStaStatistics.au4TcQueLen[2],
-			rQueryStaStatistics.au4TcQueLen[3],
-			rQueryStaStatistics.au4TcCurrentQueLen[0],
-			rQueryStaStatistics.au4TcCurrentQueLen[1],
-			rQueryStaStatistics.au4TcCurrentQueLen[2],
-			rQueryStaStatistics.au4TcCurrentQueLen[3]);
 	i4Status = cfg80211_testmode_reply(skb);
 
 nla_put_failure:

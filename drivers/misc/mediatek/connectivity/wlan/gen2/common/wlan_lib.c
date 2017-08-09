@@ -5254,6 +5254,7 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
 	UINT_8 ucIdx;
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 
 	do {
 		ASSERT(pvQueryBuffer);
@@ -5305,9 +5306,12 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 		prQueryStaStatistics->u4TxTotalCount = prStaRec->u4TotalTxPktsNumber;
 		prQueryStaStatistics->u4TxExceedThresholdCount = prStaRec->u4ThresholdCounter;
 		prQueryStaStatistics->u4TxMaxTime = prStaRec->u4MaxTxPktsTime;
+		prQueryStaStatistics->u4TxMaxHifTime = prStaRec->u4MaxTxPktsHifTime;
 		if (prStaRec->u4TotalTxPktsNumber) {
 			prQueryStaStatistics->u4TxAverageProcessTime =
 			    (prStaRec->u4TotalTxPktsTime / prStaRec->u4TotalTxPktsNumber);
+			prQueryStaStatistics->u4TxAverageHifTime =
+			    (prStaRec->u4TotalTxPktsHifTime / prStaRec->u4TotalTxPktsNumber);
 		} else
 			prQueryStaStatistics->u4TxAverageProcessTime = 0;
 
@@ -5316,13 +5320,55 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 			    prQM->au4QmTcResourceEmptyCounter[prStaRec->ucNetTypeIndex][ucIdx];
 			/* Reset */
 			prQM->au4QmTcResourceEmptyCounter[prStaRec->ucNetTypeIndex][ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceBackCount[ucIdx] =
+				prQM->au4QmTcResourceBackCounter[ucIdx];
+			prQM->au4QmTcResourceBackCounter[ucIdx] = 0;
+
+			prQueryStaStatistics->au4DequeueNoTcResource[ucIdx] =
+				prQM->au4DequeueNoTcResourceCounter[ucIdx];
+			prQM->au4DequeueNoTcResourceCounter[ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceUsedCount[ucIdx] =
+				prQM->au4ResourceUsedCounter[ucIdx];
+			prQM->au4ResourceUsedCounter[ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceWantedCount[ucIdx] =
+				prQM->au4ResourceWantedCounter[ucIdx];
+			prQM->au4ResourceWantedCounter[ucIdx] = 0;
 		}
+
+		prQueryStaStatistics->u4EnqueueCounter = prQM->u4EnqeueuCounter;
+		prQueryStaStatistics->u4DequeueCounter = prQM->u4DequeueCounter;
+		prQueryStaStatistics->u4EnqueueStaCounter = prStaRec->u4EnqeueuCounter;
+		prQueryStaStatistics->u4DequeueStaCounter = prStaRec->u4DeqeueuCounter;
+
+		prQueryStaStatistics->IsrCnt = prGlueInfo->IsrCnt - prGlueInfo->IsrPreCnt;
+		prQueryStaStatistics->IsrPassCnt = prGlueInfo->IsrPassCnt - prGlueInfo->IsrPrePassCnt;
+		prQueryStaStatistics->TaskIsrCnt = prGlueInfo->TaskIsrCnt - prGlueInfo->TaskPreIsrCnt;
+
+		prQueryStaStatistics->IsrAbnormalCnt = prGlueInfo->IsrAbnormalCnt;
+		prQueryStaStatistics->IsrSoftWareCnt = prGlueInfo->IsrSoftWareCnt;
+		prQueryStaStatistics->IsrRxCnt = prGlueInfo->IsrRxCnt;
+		prQueryStaStatistics->IsrTxCnt = prGlueInfo->IsrTxCnt;
 
 		/* 4 4.1 Reset statistics */
 		prStaRec->u4ThresholdCounter = 0;
 		prStaRec->u4TotalTxPktsNumber = 0;
 		prStaRec->u4TotalTxPktsTime = 0;
 		prStaRec->u4MaxTxPktsTime = 0;
+		prStaRec->u4MaxTxPktsHifTime = 0;
+
+		prStaRec->u4EnqeueuCounter = 0;
+		prStaRec->u4DeqeueuCounter = 0;
+
+		prQM->u4EnqeueuCounter = 0;
+		prQM->u4DequeueCounter = 0;
+
+		prGlueInfo->IsrPreCnt = prGlueInfo->IsrCnt;
+		prGlueInfo->IsrPrePassCnt = prGlueInfo->IsrPassCnt;
+		prGlueInfo->TaskPreIsrCnt = prGlueInfo->TaskIsrCnt;
+		prGlueInfo->IsrAbnormalCnt = 0;
+		prGlueInfo->IsrSoftWareCnt = 0;
+		prGlueInfo->IsrRxCnt = 0;
+		prGlueInfo->IsrTxCnt = 0;
 #endif
 
 		for (ucIdx = TC0_INDEX; ucIdx <= TC3_INDEX; ucIdx++)

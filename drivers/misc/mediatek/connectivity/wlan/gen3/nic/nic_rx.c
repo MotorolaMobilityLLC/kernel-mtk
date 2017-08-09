@@ -4314,6 +4314,7 @@ VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	ASSERT(prAdapter);
 
+	prAdapter->prGlueInfo->IsrRxCnt++;
 #if CFG_SDIO_INTR_ENHANCE
 #if CFG_SDIO_RX_AGG
 	nicRxSDIOAggReceiveRFBs(prAdapter);

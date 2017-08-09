@@ -1409,6 +1409,14 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 		/* 4 <4> Enqueue the packet to different AC queue (max 5 AC queues) */
 		QUEUE_INSERT_TAIL(prTxQue, (P_QUE_ENTRY_T) prCurrentMsduInfo);
+
+		if (prTxQue != &rNotEnqueuedQue) {
+			prQM->u4EnqeueuCounter++;
+			prQM->au4ResourceWantedCounter[ucTC]++;
+		}
+		if (prStaRec)
+			prStaRec->u4EnqeueuCounter++;
+
 #if QM_TC_RESOURCE_EMPTY_COUNTER
 		{
 			P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
@@ -1554,6 +1562,7 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 	ASSERT(ucTC == TC0_INDEX || ucTC == TC1_INDEX || ucTC == TC2_INDEX || ucTC == TC3_INDEX || ucTC == TC4_INDEX);
 
 	if (!ucCurrentQuota) {
+		prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 		DBGLOG(TX, LOUD, "@@@@@ TC = %u ucCurrentQuota = %u @@@@@\n", ucTC, ucCurrentQuota);
 		return;
 	}
@@ -1706,6 +1715,8 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 		}
 
 		QUEUE_REMOVE_HEAD(prCurrQueue, prDequeuedPkt, P_MSDU_INFO_T);
+		prStaRec->u4DeqeueuCounter++;
+		prQM->u4DequeueCounter++;
 
 #if (CFG_SUPPORT_TDLS_DBG == 1)
 		if (prDequeuedPkt != NULL) {
@@ -1785,8 +1796,10 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 	/* Check all of the STAs to continue forwarding packets (including the head STA) */
 	for (i = 0; i < CFG_NUM_OF_STA_RECORD; i++) {
 		/* Break in case no reasource is available */
-		if (u4Resource == 0)
+		if (u4Resource == 0) {
+			prQM->au4DequeueNoTcResourceCounter[ucTC]++;
 			break;
+		}
 
 		/* The current head STA will be examined when i = CFG_NUM_OF_STA_RECORD-1 */
 		prStaRec = &prAdapter->arStaRec[((*pu4HeadStaRecIndex) + i + 1) % CFG_NUM_OF_STA_RECORD];
@@ -1884,6 +1897,9 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 				prDequeuedPkt->ucPsForwardingType = PS_FORWARDING_MORE_DATA_ENABLED;
 
 			QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
+			if (prStaRec)
+				prStaRec->u4DeqeueuCounter++;
+			prQM->u4DequeueCounter++;
 			u4Resource--;
 			u4ForwardCount++;
 
@@ -2044,6 +2060,7 @@ qmDequeueTxPacketsFromPerTypeQueues(IN P_ADAPTER_T prAdapter, OUT P_QUE_T prQue,
 		if (IS_BSS_ACTIVE(prBssInfo)) {
 			if (!prBssInfo->fgIsNetAbsent) {
 				QUEUE_INSERT_TAIL(prQue, (P_QUE_ENTRY_T) prDequeuedPkt);
+				prQM->u4DequeueCounter++;
 				prBurstEndPkt = prDequeuedPkt;
 				ucPktCount--;
 				QM_DBG_CNT_INC(prQM, QM_DBG_CNT_26);

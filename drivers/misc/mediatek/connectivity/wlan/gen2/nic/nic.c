@@ -1292,7 +1292,10 @@ void nicRestoreSpiDefMode(IN P_ADAPTER_T prAdapter)
 VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4Value = 0;
+	P_GLUE_INFO_T prGlueInfo = NULL;
 
+	prGlueInfo = prAdapter->prGlueInfo;
+	prGlueInfo->IsrAbnormalCnt++;
 	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
 	DBGLOG(REQ, WARN, "MCR_WASR: 0x%x\n", u4Value);
 }
@@ -1324,9 +1327,10 @@ VOID nicProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4IntrBits;
 
-	ASSERT(prAdapter);
-
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	u4IntrBits = prAdapter->u4IntStatus & BITS(8, 31);
+
+	prGlueInfo->IsrSoftWareCnt++;
 
 	if ((u4IntrBits & WHISR_D2H_SW_ASSERT_INFO_INT) != 0) {
 		nicPrintFirmwareAssertInfo(prAdapter);
@@ -1351,7 +1355,6 @@ VOID nicProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 #endif
 
 	DBGLOG(REQ, WARN, "u4IntrBits: 0x%x\n", u4IntrBits);
-
 }				/* end of nicProcessSoftwareInterrupt() */
 
 VOID nicPutMailbox(IN P_ADAPTER_T prAdapter, IN UINT_32 u4MailboxNum, IN UINT_32 u4Data)

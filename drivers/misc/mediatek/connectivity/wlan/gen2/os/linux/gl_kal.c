@@ -2762,7 +2762,7 @@ int tx_thread(void *data)
 				/* Should stop now... skip pending interrupt */
 				DBGLOG(INIT, INFO, "ignore pending interrupt\n");
 			} else {
-				TaskIsrCnt++;
+				prGlueInfo->TaskIsrCnt++;
 				wlanIST(prGlueInfo->prAdapter);
 			}
 		}

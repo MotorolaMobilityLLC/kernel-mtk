@@ -525,6 +525,15 @@ typedef struct _QUE_MGT_T {	/* Queue Management Control Info */
 #endif
 #if QM_TC_RESOURCE_EMPTY_COUNTER
 	UINT_32 au4QmTcResourceEmptyCounter[NET_TYPE_NUM][TC_NUM];
+	UINT_32 au4QmTcResourceBackCounter[TC_NUM];
+	UINT_32 au4DequeueNoTcResourceCounter[TC_NUM];
+
+	UINT_32 au4ResourceUsedCounter[TC_NUM];
+
+	UINT_32 au4ResourceWantedCounter[TC_NUM];
+
+	UINT_32 u4EnqeueuCounter;
+	UINT_32 u4DequeueCounter;
 #endif
 } QUE_MGT_T, *P_QUE_MGT_T;
 

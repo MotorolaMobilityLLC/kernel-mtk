@@ -3340,8 +3340,9 @@ VOID nicRxReturnRFB(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 /*----------------------------------------------------------------------------*/
 VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 {
-	ASSERT(prAdapter);
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 
+	prGlueInfo->IsrRxCnt++;
 #if CFG_SDIO_INTR_ENHANCE
 #if CFG_SDIO_RX_AGG
 	nicRxSDIOAggReceiveRFBs(prAdapter);

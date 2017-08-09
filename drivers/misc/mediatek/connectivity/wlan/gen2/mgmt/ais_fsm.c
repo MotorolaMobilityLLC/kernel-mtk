@@ -3766,17 +3766,19 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	P_CONNECTION_SETTINGS_T prConnSettings;
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 u4FwCnt;
+	P_GLUE_INFO_T prGlueInfo;
 
 	DEBUGFUNC("aisFsmRunEventScanDoneTimeOut()");
 
-	ASSERT(prAdapter);
+	prGlueInfo = prAdapter->prGlueInfo;
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
 	DBGLOG(AIS, WARN, "aisFsmRunEventScanDoneTimeOut Current[%d]\n", prAisFsmInfo->eCurrentState);
-	DBGLOG(AIS, WARN, "Isr/task %u %u %u (0x%x)\n", IsrCnt, IsrPassCnt, TaskIsrCnt, prAdapter->fgIsIntEnable);
+	DBGLOG(AIS, WARN, "Isr/task %u %u %u (0x%x)\n", prGlueInfo->IsrCnt, prGlueInfo->IsrPassCnt,
+			prGlueInfo->TaskIsrCnt, prAdapter->fgIsIntEnable);
 
 	/* dump firmware program counter */
 	DBGLOG(AIS, WARN, "CONNSYS FW CPUINFO:\n");

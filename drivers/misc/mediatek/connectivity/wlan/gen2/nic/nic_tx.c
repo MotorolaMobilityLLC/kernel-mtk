@@ -545,11 +545,14 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
+	P_QUE_MGT_T prQM;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
+
+	prQM = &prAdapter->rQM;
 
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
@@ -562,6 +565,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 			u4CurrTick = 0;
 		/* get a available TX entry */
 		prTxCtrl->rTc.aucFreeBufferCount[ucTC]--;
+
+		prQM->au4ResourceUsedCounter[ucTC]++;
 
 		DBGLOG(TX, EVENT, "Acquire: TC = %d aucFreeBufferCount = %d\n",
 				   ucTC, prTxCtrl->rTc.aucFreeBufferCount[ucTC]);
@@ -673,7 +678,7 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRl
 
 	KAL_SPIN_LOCK_DECLARATION();
 
-	ASSERT(prAdapter);
+	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	prTxCtrl = &prAdapter->rTxCtrl;
 
 	if (pu4Tmp[0] | pu4Tmp[1]) {
@@ -681,6 +686,8 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRl
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 		for (i = 0; i < TC_NUM; i++)
 			prTxCtrl->rTc.aucFreeBufferCount[i] += aucTxRlsCnt[i];
+		for (i = 0; i < TC_NUM; i++)
+			prQM->au4QmTcResourceBackCounter[i] += aucTxRlsCnt[i];
 		if (aucTxRlsCnt[TC4_INDEX] != 0)
 			wlanTraceReleaseTcRes(prAdapter, aucTxRlsCnt, prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX]);
 
@@ -1049,21 +1056,33 @@ VOID nicTxReturnMsduInfoProfiling(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 			{
 				P_STA_RECORD_T prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 				UINT_32 u4DeltaTime;
+				UINT_32 u4DeltaHifTime;
+#if 0
 				P_QUE_MGT_T prQM = &prAdapter->rQM;
+#endif
 				UINT_8 ucNetIndex;
 
 				if (prStaRec) {
 					ucNetIndex = prStaRec->ucNetTypeIndex;
 					u4DeltaTime = (UINT_32) (prPktProfile->rHifTxDoneTimestamp -
 							prPktProfile->rHardXmitArrivalTimestamp);
-
+					u4DeltaHifTime = (UINT_32) (prPktProfile->rHifTxDoneTimestamp -
+							prPktProfile->rDequeueTimestamp);
 					prStaRec->u4TotalTxPktsNumber++;
+
 					prStaRec->u4TotalTxPktsTime += u4DeltaTime;
+					prStaRec->u4TotalTxPktsHifTime += u4DeltaHifTime;
+
 					if (u4DeltaTime > prStaRec->u4MaxTxPktsTime)
 						prStaRec->u4MaxTxPktsTime = u4DeltaTime;
+
+					if (u4DeltaHifTime > prStaRec->u4MaxTxPktsHifTime)
+						prStaRec->u4MaxTxPktsHifTime = u4DeltaHifTime;
+
+
 					if (u4DeltaTime >= NIC_TX_TIME_THRESHOLD)
 						prStaRec->u4ThresholdCounter++;
-
+#if 0
 					if (u4PktPrintPeriod && (prStaRec->u4TotalTxPktsNumber >= u4PktPrintPeriod)) {
 
 						DBGLOG(TX, TRACE, "[%u]N[%4u]A[%5u]M[%4u]T[%4u]E[%4u]\n",
@@ -1080,6 +1099,7 @@ VOID nicTxReturnMsduInfoProfiling(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 						prStaRec->u4ThresholdCounter = 0;
 						prQM->au4QmTcResourceEmptyCounter[ucNetIndex][TC2_INDEX] = 0;
 					}
+#endif
 				}
 
 			}
@@ -1787,10 +1807,11 @@ VOID nicProcessTxInterrupt(IN P_ADAPTER_T prAdapter)
 	UINT_32 au4TxCount[2];
 #endif /* CFG_SDIO_INTR_ENHANCE */
 
-	ASSERT(prAdapter);
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 	ASSERT(prTxCtrl);
+	prGlueInfo->IsrTxCnt++;
 
 	/* Get the TX STATUS */
 #if CFG_SDIO_INTR_ENHANCE
