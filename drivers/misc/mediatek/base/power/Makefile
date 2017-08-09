@@ -57,7 +57,7 @@ endif
 
 obj-$(CONFIG_ARCH_MT6755) += pbm_v1/
 obj-$(CONFIG_ARCH_MT6797) += pbm_v1/
-#obj-$(CONFIG_ARCH_MT6757) += pbm_v1/
+obj-$(CONFIG_ARCH_MT6757) += pbm_v1/
 obj-$(CONFIG_ARCH_MT6735) += cpuidle_v1/
 obj-$(CONFIG_ARCH_MT6735M) += cpuidle_v1/
 obj-$(CONFIG_ARCH_MT6753) += cpuidle_v1/
