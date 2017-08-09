@@ -25,7 +25,3 @@ endif
 ifeq ($(CONFIG_MTK_COMBO_COMM),y)
 obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o
 endif
-
-#ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
-#ccflags-y += -DFEATURE_MET_MMC_INDEX
-#endif

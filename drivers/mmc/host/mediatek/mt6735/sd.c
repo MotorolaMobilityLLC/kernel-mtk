@@ -66,7 +66,6 @@
 
 #include "msdc_hw_ett.h"
 #include "dbg.h"
-#define MET_USER_EVENT_SUPPORT
 
 #include<mt-plat/upmu_common.h>
 
@@ -240,10 +239,6 @@ struct mmc_blk_data {
 static bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
 static struct workqueue_struct *wq_tune;
-
-#if defined(FEATURE_MET_MMC_INDEX)
-static unsigned int met_mmc_bdnum;
-#endif
 
 #define DRV_NAME                         "mtk-msdc"
 
@@ -4450,10 +4445,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 
 	switch (dma->mode) {
 	case MSDC_MODE_DMA_BASIC:
-#if defined(FEATURE_MET_MMC_INDEX)
-		met_mmc_bdnum = 1;
-#endif
-
 		if (host->hw->host_function == MSDC_SDIO)
 			BUG_ON(dma->xfersz > 0xFFFFFFFF);
 		else
@@ -4485,10 +4476,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 		gpd = dma->gpd;
 		bd = dma->bd;
 		bdlen = sglen;
-
-#if defined(FEATURE_MET_MMC_INDEX)
-		met_mmc_bdnum = bdlen;
-#endif
 
 		/* modify gpd */
 		/* gpd->intr = 0; */
@@ -5625,10 +5612,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
 	msdc_dma_start(host);
 	spin_unlock(&host->lock);
-
-#if defined(FEATURE_MET_MMC_INDEX)
-	met_mmc_issue(host->mmc, host->mrq);
-#endif
 
 #ifdef MTK_MSDC_USE_CMD23
 	/* for msdc use cmd23, but card not supported(sbc is NULL),
@@ -8076,12 +8059,6 @@ done:
 		msdc_gate_clock(host, 1);
 		host->error &= ~REQ_DAT_ERR;
 	}
-#if defined(FEATURE_MET_MMC_INDEX)
-	if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-		met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg, data->blocks,
-			data->mrq->cmd->opcode, met_mmc_bdnum);
-	}
-#endif
 	if (host->hw->host_function == MSDC_SD)
 		host->continuous_fail_request_count = 0;
 
@@ -8110,12 +8087,6 @@ tune:
 			complete(&host->xfer_done);
 		}
 
-#if defined(FEATURE_MET_MMC_INDEX)
-		if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-			met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg, data->blocks,
-				data->mrq->cmd->opcode, met_mmc_bdnum);
-		}
-#endif
 	} /* PIO mode can't do complete, because not init */
 
 	return IRQ_HANDLED;

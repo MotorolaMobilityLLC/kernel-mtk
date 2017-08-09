@@ -93,10 +93,6 @@ int src_clk_control;
 bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
 
-#if defined(FEATURE_MET_MMC_INDEX)
-static unsigned int met_mmc_bdnum;
-#endif
-
 #define DRV_NAME                "mtk-msdc"
 
 #define MSDC_COOKIE_PIO         (1<<0)
@@ -2408,10 +2404,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 
 	switch (dma->mode) {
 	case MSDC_MODE_DMA_BASIC:
-#if defined(FEATURE_MET_MMC_INDEX)
-		met_mmc_bdnum = 1;
-#endif
-
 		if (host->hw->host_function == MSDC_SDIO)
 			BUG_ON(dma->xfersz > 0xFFFFFFFF);
 		else
@@ -2444,10 +2436,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 		gpd = dma->gpd;
 		bd  = dma->bd;
 		bdlen = sglen;
-
-#if defined(FEATURE_MET_MMC_INDEX)
-		met_mmc_bdnum = bdlen;
-#endif
 
 		/* modify gpd */
 		/* gpd->intr = 0; */
@@ -3312,10 +3300,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	msdc_dma_start(host);
 	spin_unlock(&host->lock);
 
-#if defined(FEATURE_MET_MMC_INDEX)
-	met_mmc_issue(host->mmc, host->mrq);
-#endif
-
 #ifdef MTK_MSDC_USE_CMD23
 	/* for msdc use cmd23, but card not supported(sbc is NULL),
 	   need enable autocmd23 for next request */
@@ -4032,11 +4016,6 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.hw_reset			= msdc_card_reset,
 };
 
-#if defined(FEATURE_MET_MMC_INDEX)
-extern void met_mmc_dma_stop(struct mmc_host *host, u32 lba, unsigned int len,
-	u32 opcode, unsigned int bd_num);
-#endif
-
 static void msdc_irq_data_complete(struct msdc_host *host,
 	struct mmc_data *data, int error)
 {
@@ -4077,13 +4056,6 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		*/
 		complete(&host->xfer_done);
 	}
-
-#if defined(FEATURE_MET_MMC_INDEX)
-	if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-		met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg,
-			data->blocks, data->mrq->cmd->opcode, met_mmc_bdnum);
-	}
-#endif
 }
 
 static irqreturn_t msdc_irq(int irq, void *dev_id)

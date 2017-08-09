@@ -740,12 +740,6 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host);
 /* Function provided by drivers/irqchip/irq-mt-eic.c */
 int mt_eint_get_polarity_external(unsigned int irq_num);
 
-#define MET_USER_EVENT_SUPPORT
-/* #include <linux/met_drv.h> */
-#if defined(FEATURE_MET_MMC_INDEX)
-void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
-#endif
-
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 

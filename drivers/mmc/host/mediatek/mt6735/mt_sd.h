@@ -1540,11 +1540,6 @@ extern unsigned int msdc_do_command(struct msdc_host *host,
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 extern unsigned int autok_get_current_vcore_offset(void);
 #endif
-#if defined(FEATURE_MET_MMC_INDEX)
-extern void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
-extern void met_mmc_dma_stop(struct mmc_host *host, u32 lba, unsigned int len,
-	u32 opcode, unsigned int bd_num);
-#endif
 extern void init_tune_sdio(struct msdc_host *host);
 extern int mmc_flush_cache(struct mmc_card *card);
 
