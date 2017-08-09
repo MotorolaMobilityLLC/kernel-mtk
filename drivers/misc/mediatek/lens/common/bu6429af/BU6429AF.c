@@ -104,8 +104,6 @@ static int init_setting(void)
 	MSB = (char)((PS << 7) & (EN << 6) & (Mode << 2));
 
 	/* convert frequency to register setting */
-	if (resonant_frequency > 255)
-		resonant_frequency = 255;
 
 	/* step1: power on */
 	/* puSendCmd[2] = (char)(0xc2), (char)(0x00); */
