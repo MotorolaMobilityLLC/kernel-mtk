@@ -33,6 +33,8 @@ enum {
 	IDX_NM_VSRAM_CORE_0P9V = 10,	/* A */
 	IDX_NM_VSRAM_CORE_1P0V,		/* B */
 	IDX_NM_VSRAM_CORE_1P1V,		/* C */
+	IDX_NM_PWM_MODE,		/* D */
+	IDX_NM_AUTO_MODE,		/* E */
 	NR_IDX_NM,
 };
 enum {
