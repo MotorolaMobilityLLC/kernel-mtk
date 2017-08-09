@@ -24,6 +24,9 @@
 #include <linux/platform_device.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#else
+#include <linux/notifier.h>
+#include <linux/fb.h>
 #endif
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
@@ -545,6 +548,8 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void _mt_cpufreq_early_suspend(struct early_suspend *h);
 static void _mt_cpufreq_late_resume(struct early_suspend *h);
+#else
+static int _mt_cpufreq_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data);
 #endif
 static int _mt_cpufreq_suspend(struct device *dev);
 static int _mt_cpufreq_resume(struct device *dev);
@@ -839,6 +844,10 @@ static struct early_suspend _mt_cpufreq_early_suspend_handler = {
 	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 200,
 	.suspend = _mt_cpufreq_early_suspend,
 	.resume = _mt_cpufreq_late_resume,
+};
+#else
+static struct notifier_block _mt_cpufreq_fb_notifier = {
+	.notifier_call = _mt_cpufreq_fb_notifier_callback,
 };
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
 
@@ -3788,75 +3797,117 @@ bool mt_cpufreq_earlysuspend_status_get(void)
 }
 EXPORT_SYMBOL(mt_cpufreq_earlysuspend_status_get);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void _mt_cpufreq_early_suspend(struct early_suspend *h)
+static void _mt_cpufreq_lcm_status_switch(int onoff)
 {
 	struct mt_cpu_dvfs *p;
 	int i;
 
+	cpufreq_info("@%s: LCM is %s\n", __func__, (onoff) ? "on" : "off");
+
+	/* onoff = 0: LCM OFF */
+	/* others: LCM ON */
+	if (onoff) {
+		_allow_dpidle_ctrl_vproc = false;
+
+		for_each_cpu_dvfs(i, p) {
+			if (!cpu_dvfs_is_available(p))
+				continue;
+
+			p->dvfs_disable_by_early_suspend = false;
+
+			if (is_fix_freq_in_ES) {
+#ifdef CONFIG_CPU_FREQ
+				struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
+
+				if (policy) {
+					cpufreq_driver_target(
+						policy,
+						cpu_dvfs_get_freq_by_idx(
+							p,
+							p->idx_opp_tbl_for_late_resume
+						),
+						CPUFREQ_RELATION_L
+					);
+					cpufreq_cpu_put(policy);
+				}
+#endif
+			}
+		}
+	} else {
+		for_each_cpu_dvfs(i, p) {
+			if (!cpu_dvfs_is_available(p))
+				continue;
+
+			p->dvfs_disable_by_early_suspend = true;
+
+			p->idx_opp_tbl_for_late_resume = p->idx_opp_tbl;
+
+			if (is_fix_freq_in_ES) {
+#ifdef CONFIG_CPU_FREQ
+				struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
+
+				if (policy) {
+					cpufreq_driver_target(
+						policy,
+						cpu_dvfs_get_normal_max_freq(p), CPUFREQ_RELATION_L);
+					cpufreq_cpu_put(policy);
+				}
+#endif
+			}
+		}
+		_allow_dpidle_ctrl_vproc = true;
+	}
+}
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void _mt_cpufreq_early_suspend(struct early_suspend *h)
+{
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	for_each_cpu_dvfs(i, p) {
-		if (!cpu_dvfs_is_available(p))
-			continue;
-
-		p->dvfs_disable_by_early_suspend = true;
-
-		p->idx_opp_tbl_for_late_resume = p->idx_opp_tbl;
-
-		if (is_fix_freq_in_ES) {
-#ifdef CONFIG_CPU_FREQ
-			struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
-
-			if (policy) {
-				cpufreq_driver_target(
-					policy, cpu_dvfs_get_normal_max_freq(p), CPUFREQ_RELATION_L);
-				cpufreq_cpu_put(policy);
-			}
-#endif
-		}
-	}
-
-	_allow_dpidle_ctrl_vproc = true;
+	_mt_cpufreq_lcm_status_switch(0);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 }
 
 static void _mt_cpufreq_late_resume(struct early_suspend *h)
 {
-	struct mt_cpu_dvfs *p;
-	int i;
+	FUNC_ENTER(FUNC_LV_MODULE);
+
+	_mt_cpufreq_lcm_status_switch(1);
+
+	FUNC_EXIT(FUNC_LV_MODULE);
+}
+#else
+static int _mt_cpufreq_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	_allow_dpidle_ctrl_vproc = false;
+	blank = *(int *)evdata->data;
+	cpufreq_ver("@%s: blank = %d, event = %lu\n", __func__, blank, event);
 
-	for_each_cpu_dvfs(i, p) {
-		if (!cpu_dvfs_is_available(p))
-			continue;
+	/* skip if it's not a blank event */
+	if (event != FB_EVENT_BLANK)
+		return 0;
 
-		p->dvfs_disable_by_early_suspend = false;
-
-		if (is_fix_freq_in_ES) {
-#ifdef CONFIG_CPU_FREQ
-			struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
-
-			if (policy) {
-				cpufreq_driver_target(
-					policy,
-					cpu_dvfs_get_freq_by_idx(
-						p,
-						p->idx_opp_tbl_for_late_resume
-					),
-					CPUFREQ_RELATION_L
-				);
-				cpufreq_cpu_put(policy);
-			}
-#endif
-		}
+	switch (blank) {
+	/* LCM ON */
+	case FB_BLANK_UNBLANK:
+		_mt_cpufreq_lcm_status_switch(1);
+		break;
+	/* LCM OFF */
+	case FB_BLANK_POWERDOWN:
+		_mt_cpufreq_lcm_status_switch(0);
+		break;
+	default:
+		break;
 	}
 
 	FUNC_EXIT(FUNC_LV_MODULE);
+
+	return 0;
 }
 #endif
 
@@ -3959,6 +4010,11 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	/* register early suspend */
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&_mt_cpufreq_early_suspend_handler);
+#else
+	if (fb_register_client(&_mt_cpufreq_fb_notifier)) {
+		cpufreq_err("@%s: register FB client failed!\n", __func__);
+		return 0;
+	}
 #endif
 
 	/* init PMIC_WRAP & volt */
