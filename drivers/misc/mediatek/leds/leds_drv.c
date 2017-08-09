@@ -8,7 +8,7 @@
  * mt65xx leds driver
  *
  */
-
+#include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -33,6 +33,11 @@
 #include <mt-plat/mt_pwm.h>
 #include <mt-plat/upmu_common.h>
 
+#ifdef BACKLIGHT_SUPPORT_LP8557
+#include <linux/of_gpio.h>
+#include <linux/gpio.h>
+#include <asm-generic/gpio.h>
+#endif
 /****************************************************************************
  * variables
  ***************************************************************************/
@@ -46,6 +51,11 @@ static unsigned int bl_div = CLK_DIV1;
 static unsigned int div_array[PWM_DIV_NUM];
 struct mt65xx_led_data *g_leds_data[MT65XX_LED_TYPE_TOTAL];
 
+#ifdef BACKLIGHT_SUPPORT_LP8557
+static unsigned int last_level1 = 102;
+static struct i2c_client *g_client;
+static int I2C_SET_FOR_BACKLIGHT  = 149;
+#endif
 /****************************************************************************
  * DEBUG MACROS
  ***************************************************************************/
@@ -207,6 +217,15 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 {
 	struct mt65xx_led_data *led_data =
 	    container_of(led_cdev, struct mt65xx_led_data, cdev);
+	#ifdef BACKLIGHT_SUPPORT_LP8557
+	bool flag = FALSE;
+	int value = 0;
+	int retval;
+	struct i2c_client *client = g_client;
+
+	value = i2c_smbus_read_byte_data(g_client, 0x10);
+	LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:0x10 = %d\n", value);
+	#endif
 	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
 #ifdef CONTROL_BL_TEMPERATURE
 		mutex_lock(&bl_level_limit_mutex);
@@ -226,7 +245,39 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		mutex_unlock(&bl_level_limit_mutex);
 #endif
 	}
+	#ifdef BACKLIGHT_SUPPORT_LP8557
+	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
+		if (level == 0) {
+			LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:close the power\n");
+			i2c_smbus_write_byte_data(client, 0x00, 0);
+			retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
+			if (retval)
+				LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
+			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 0);
+		}
+		if (!last_level1 && level) {
+			LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:open the power\n");
+			retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
+			if (retval)
+				LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
+			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 1);
+			mdelay(100);
+			i2c_smbus_write_byte_data(client, 0x10, 4);
+			flag = TRUE;
+		}
+		last_level1 = level;
+	}
+	#endif
 	mt_mt65xx_led_set(led_cdev, level);
+	#ifdef BACKLIGHT_SUPPORT_LP8557
+	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
+		if (flag) {
+			i2c_smbus_write_byte_data(client, 0x14, 0xdf);
+			i2c_smbus_write_byte_data(client, 0x04, 0xff);
+			i2c_smbus_write_byte_data(client, 0x00, 1);
+		}
+	}
+	#endif
 }
 
 static int mt65xx_blink_set(struct led_classdev *led_cdev,
@@ -476,6 +527,42 @@ static ssize_t show_pwm_register(struct device *dev,
 static DEVICE_ATTR(pwm_register, 0664, show_pwm_register, store_pwm_register);
 #endif
 
+#ifdef BACKLIGHT_SUPPORT_LP8557
+static int led_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int led_i2c_remove(struct i2c_client *client);
+
+static struct i2c_board_info leds_board_info __initdata = {
+	I2C_BOARD_INFO("lp8557_led", 0x2c),
+};
+
+static const struct i2c_device_id lp855x_ids[] = {
+	{"lp8557_led", 0},
+	{"mediatek,8173led_i2c", 0},
+	{ }
+};
+
+struct i2c_driver led_i2c_driver = {
+	.probe = led_i2c_probe,
+	.remove = led_i2c_remove,
+	.driver = {
+		.name = "lp8557_led",
+		.owner = THIS_MODULE,
+	},
+	.id_table = lp855x_ids,
+};
+
+static int led_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	g_client = client;
+
+	return 0;
+}
+
+static int led_i2c_remove(struct i2c_client *client)
+{
+	return 0;
+}
+#endif
 /****************************************************************************
  * driver functions
  ***************************************************************************/
@@ -484,7 +571,21 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	int i;
 	int ret;/* rc; */
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+	#ifdef BACKLIGHT_SUPPORT_LP8557
+	struct device_node *node = NULL;
 
+	i2c_register_board_info(4, &leds_board_info, 1);
+	if (i2c_add_driver(&led_i2c_driver)) {
+		LEDS_DRV_DEBUG("unable to add led-i2c driver.\n");
+		return -1;
+	}
+	node = of_find_compatible_node(NULL, NULL,
+						    "mediatek,lcd-backlight");
+	if (node) {
+		I2C_SET_FOR_BACKLIGHT = of_get_named_gpio(node, "gpios", 0);
+		LEDS_DRV_DEBUG("Led_i2c gpio num for power:%d\n", I2C_SET_FOR_BACKLIGHT);
+	}
+	#endif
 	LEDS_DRV_DEBUG("%s\n", __func__);
 	get_div_array();
 	for (i = 0; i < MT65XX_LED_TYPE_TOTAL; i++) {
