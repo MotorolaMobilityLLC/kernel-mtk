@@ -4455,7 +4455,7 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 		}
 	}
 
-	if (!clbs->ncpu || target == num_possible_cpus() || !cpumask_test_cpu(target, cluster_cpus))
+	if (!clbs->ncpu || target >= num_possible_cpus() || !cpumask_test_cpu(target, cluster_cpus))
 		return;
 
 	clbs->cpu_power = (int)arch_scale_cpu_capacity(NULL, target);
@@ -9258,7 +9258,7 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 
 	cpumask_and(&srcp, cpu_online_mask, mask);
 	target = cpumask_any_and(&srcp, tsk_cpus_allowed(p));
-	if (num_possible_cpus() == target)
+	if (target >= num_possible_cpus())
 		goto out;
 
 	/*
@@ -9331,17 +9331,12 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	 * Case 1: return the runqueue whose load is minimum
 	 * Case 2: return original CFS runqueue selection result
 	 */
-#ifdef CONFIG_HMP_DISCARD_CFS_SELECTION_RESULT
-	if (num_possible_cpus() == B_target && num_possible_cpus() == L_target)
+	if (B_target >= num_possible_cpus() && L_target >= num_possible_cpus())
 		goto out;
-	if (num_possible_cpus() == B_target)
+	if (B_target >= num_possible_cpus())
 		goto select_slow;
-	if (num_possible_cpus() == L_target)
+	if (L_target >= num_possible_cpus())
 		goto select_fast;
-#else
-	if (num_possible_cpus() == B_target || num_possible_cpus() == L_target)
-		goto out;
-#endif
 
 	/*
 	 * Two clusters exist and both clusters are allowed for this task
@@ -9843,7 +9838,7 @@ static void hmp_force_down_migration(int this_cpu)
 		}
 #endif
 		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_slow_cpu_mask, -1);
-		if (target_cpu == num_possible_cpus()) {
+		if (target_cpu >= num_possible_cpus()) {
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 			continue;
 		}
@@ -9938,7 +9933,7 @@ static void hmp_force_up_migration(int this_cpu)
 #endif
 		p = task_of(se);
 		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_fast_cpu_mask, -1);
-		if (target_cpu == num_possible_cpus()) {
+		if (target_cpu >= num_possible_cpus()) {
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 			continue;
 		}
@@ -10791,7 +10786,7 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 	}
 	if (hmp_cpu_is_slow(buddy)) {
 		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy);
-		per_cpu(sd_pack_buddy, cpu) = (L_target == num_possible_cpus()) ? buddy : L_target;
+		per_cpu(sd_pack_buddy, cpu) = (L_target >= num_possible_cpus()) ? buddy : L_target;
 		buddy = per_cpu(sd_pack_buddy, cpu);
 	}
 
