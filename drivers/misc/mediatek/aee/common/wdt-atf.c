@@ -34,11 +34,11 @@
 #define THREAD_INFO(sp) ((struct thread_info *) \
 				((unsigned long)(sp) & ~(THREAD_SIZE - 1)))
 
-#define WDT_PERCPU_LOG_SIZE		2048
+#define WDT_PERCPU_LOG_SIZE	2048
 #define WDT_LOG_DEFAULT_SIZE	4096
-#define WDT_SAVE_STACK_SIZE		256
-#define MAX_EXCEPTION_FRAME		16
-#define PRINTK_BUFFER_SIZE		512
+#define WDT_SAVE_STACK_SIZE	256
+#define MAX_EXCEPTION_FRAME	16
+#define PRINTK_BUFFER_SIZE	512
 
 /* NR_CPUS may not eaqual to real cpu numbers, alloc buffer at initialization */
 static char *wdt_percpu_log_buf[NR_CPUS];
@@ -49,6 +49,7 @@ static unsigned long wdt_percpu_stackframe[NR_CPUS][MAX_EXCEPTION_FRAME];
 static int wdt_log_length;
 static atomic_t wdt_enter_fiq;
 static char printk_buf[PRINTK_BUFFER_SIZE];
+static char str_buf[NR_CPUS][PRINTK_BUFFER_SIZE];
 
 #define ATF_AEE_DEBUG_BUF_LENGTH	0x4000
 static void *atf_aee_debug_virt_addr;
@@ -324,51 +325,50 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 static void aee_save_reg_stack_sram(int cpu)
 {
 	int i;
-	char str_buf[1024];
 	int len = 0;
 
 	if (regs_buffer_bin[cpu].real_len != 0) {
-		snprintf(str_buf, sizeof(str_buf),
+		snprintf(str_buf[cpu], sizeof(str_buf[cpu]),
 			 "\n\ncpu %d preempt=%lx, softirq=%lx, hardirq=%lx ", cpu,
 			 ((wdt_percpu_preempt_cnt[cpu] & PREEMPT_MASK) >> PREEMPT_SHIFT),
 			 ((wdt_percpu_preempt_cnt[cpu] & SOFTIRQ_MASK) >> SOFTIRQ_SHIFT),
 			 ((wdt_percpu_preempt_cnt[cpu] & HARDIRQ_MASK) >> HARDIRQ_SHIFT));
-		aee_sram_fiq_log(str_buf);
+		aee_sram_fiq_log(str_buf[cpu]);
 
-		memset_io(str_buf, 0, sizeof(str_buf));
+		memset_io(str_buf[cpu], 0, sizeof(str_buf[cpu]));
 #ifdef CONFIG_ARM64
-		snprintf(str_buf, sizeof(str_buf), "\ncpu %d x0->x30 sp pc pstate\n", cpu);
+		snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\ncpu %d x0->x30 sp pc pstate\n", cpu);
 #else
-		snprintf(str_buf, sizeof(str_buf),
+		snprintf(str_buf[cpu], sizeof(str_buf[cpu]),
 			 "\ncpu %d r0->r10 fp ip sp lr pc cpsr orig_r0\n", cpu);
 #endif
-		aee_sram_fiq_log(str_buf);
+		aee_sram_fiq_log(str_buf[cpu]);
 		aee_sram_fiq_save_bin((char *)&(regs_buffer_bin[cpu].regs),
 				      regs_buffer_bin[cpu].real_len);
 	}
 
 	if (stacks_buffer_bin[cpu].real_len > 0) {
-		memset_io(str_buf, 0, sizeof(str_buf));
+		memset_io(str_buf[cpu], 0, sizeof(str_buf[cpu]));
 #ifdef CONFIG_ARM64
-		snprintf(str_buf, sizeof(str_buf), "\ncpu %d stack [%016lx %016lx]\n",
+		snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\ncpu %d stack [%016lx %016lx]\n",
 			 cpu, stacks_buffer_bin[cpu].bottom, stacks_buffer_bin[cpu].top);
 #else
-		snprintf(str_buf, sizeof(str_buf), "\ncpu %d stack [%08lx %08lx]\n",
+		snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\ncpu %d stack [%08lx %08lx]\n",
 			 cpu, stacks_buffer_bin[cpu].bottom, stacks_buffer_bin[cpu].top);
 #endif
-		aee_sram_fiq_log(str_buf);
+		aee_sram_fiq_log(str_buf[cpu]);
 		aee_sram_fiq_save_bin(stacks_buffer_bin[cpu].bin_buf,
 				      stacks_buffer_bin[cpu].real_len);
 
-		memset_io(str_buf, 0, sizeof(str_buf));
-		len = snprintf(str_buf, sizeof(str_buf), "\ncpu %d backtrace : ", cpu);
+		memset_io(str_buf[cpu], 0, sizeof(str_buf[cpu]));
+		len = snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\ncpu %d backtrace : ", cpu);
 		for (i = 0; i < MAX_EXCEPTION_FRAME; i++) {
 			if (wdt_percpu_stackframe[cpu][i] == 0)
 				break;
-			len += snprintf((str_buf + len), (sizeof(str_buf) - len),
+			len += snprintf((str_buf[cpu] + len), (sizeof(str_buf[cpu]) - len),
 					"%08lx, ", wdt_percpu_stackframe[cpu][i]);
 		}
-		aee_sram_fiq_log(str_buf);
+		aee_sram_fiq_log(str_buf[cpu]);
 	}
 
 	mrdump_mini_per_cpu_regs(cpu, &regs_buffer_bin[cpu].regs);
