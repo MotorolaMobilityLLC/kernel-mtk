@@ -5115,7 +5115,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 {
 	TaskStruct *pTask = NULL;
 
-	if ((NULL == pThread) || (index < 0) || (index > CMDQ_MAX_TASK_IN_THREAD)) {
+	if ((NULL == pThread) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
 		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d], newTaskState[%d]\n",
 		     pThread, index, newTaskState);
@@ -5164,7 +5164,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(T
 {
 	TaskStruct *pTask = NULL;
 
-	if ((NULL == pThread) || (index < 0) || (index > CMDQ_MAX_TASK_IN_THREAD)) {
+	if ((NULL == pThread) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
 		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d]\n",
 		     pThread, index);
