@@ -160,21 +160,15 @@ clean-kernel:
 droid: check-kernel-config check-kernel-dotconfig
 check-mtk-config: check-kernel-config check-kernel-dotconfig
 check-kernel-config:
-ifneq (MT6735,$(strip $(MTK_PLATFORM)))
-	-python device/mediatek/build/build/tools/check_kernel_config.py -c $(MTK_TARGET_PROJECT_FOLDER)/ProjectConfig.mk -k $(KERNEL_CONFIG_FILE) -p $(MTK_PROJECT_NAME)
-else
 	python device/mediatek/build/build/tools/check_kernel_config.py -c $(MTK_TARGET_PROJECT_FOLDER)/ProjectConfig.mk -k $(KERNEL_CONFIG_FILE) -p $(MTK_PROJECT_NAME)
-endif
+
 
 ifneq ($(filter check-mtk-config check-kernel-dotconfig,$(MAKECMDGOALS)),)
 .PHONY: $(TARGET_KERNEL_CONFIG)
 endif
 check-kernel-dotconfig: $(TARGET_KERNEL_CONFIG)
-ifneq (MT6735,$(strip $(MTK_PLATFORM)))
-	-python device/mediatek/build/build/tools/check_kernel_config.py -c $(MTK_TARGET_PROJECT_FOLDER)/ProjectConfig.mk -k $(TARGET_KERNEL_CONFIG) -p $(MTK_PROJECT_NAME)
-else
 	python device/mediatek/build/build/tools/check_kernel_config.py -c $(MTK_TARGET_PROJECT_FOLDER)/ProjectConfig.mk -k $(TARGET_KERNEL_CONFIG) -p $(MTK_PROJECT_NAME)
-endif
+
 
 endif#TARGET_NO_KERNEL
 endif#LINUX_KERNEL_VERSION
