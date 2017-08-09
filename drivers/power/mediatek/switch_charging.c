@@ -1176,6 +1176,39 @@ unsigned int set_chr_input_current_limit(int current_limit)
 #endif
 }
 
+int get_chr_temperature(int *min_temp, int *max_temp)
+{
+	int ret = 0;
+	int temp[2] = {0, 0};
+
+	ret = battery_charging_control(CHARGING_CMD_GET_CHARGER_TEMPERATURE, temp);
+	if (ret < 0)
+		return ret;
+
+	*min_temp = temp[0];
+	*max_temp = temp[1];
+
+	return ret;
+}
+
+int set_chr_boost_current_limit(unsigned int current_limit)
+{
+	int ret = 0;
+
+	ret = battery_charging_control(CHARGING_CMD_SET_BOOST_CURRENT_LIMIT,
+		&current_limit);
+
+	return ret;
+}
+
+int set_chr_enable_otg(unsigned int enable)
+{
+	int ret = 0;
+
+	ret = battery_charging_control(CHARGING_CMD_ENABLE_OTG, &enable);
+
+	return ret;
+}
 
 static void pchr_turn_on_charging(void);
 unsigned int set_bat_charging_current_limit(int current_limit)

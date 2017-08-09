@@ -125,6 +125,9 @@ typedef enum {
 	CHARGING_CMD_SET_TA20_RESET,
 	CHARGING_CMD_SET_TA20_CURRENT_PATTERN,
 	CHARGING_CMD_SET_DP,
+	CHARGING_CMD_GET_CHARGER_TEMPERATURE,
+	CHARGING_CMD_SET_BOOST_CURRENT_LIMIT,
+	CHARGING_CMD_ENABLE_OTG,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -600,4 +603,13 @@ __weak kal_bool pmic_chrdet_status(void);
 #endif
 /*BCCT input current control function over switch charger*/
 extern unsigned int set_chr_input_current_limit(int current_limit);
+
+/* Get internal temperature of charger */
+extern int get_chr_temperature(int *min_temp, int *max_temp);
+
+/* Set charger's boost current limit */
+extern int set_chr_boost_current_limit(unsigned int current_limit);
+
+/* Enable/Disable OTG mode */
+extern int set_chr_enable_otg(unsigned int enable);
 #endif				/* #ifndef _CHARGING_H */

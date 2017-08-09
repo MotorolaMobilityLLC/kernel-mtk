@@ -138,6 +138,11 @@ const unsigned int VINDPM_REG[] = {
 	15300
 };
 
+/* BQ25890 REG0A BOOST_LIM[2:0], mA */
+const unsigned int BOOST_CURRENT_LIMIT[] = {
+	500, 750, 1200, 1400, 1650,
+};
+
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
 #ifndef CUST_GPIO_VIN_SEL
 #define CUST_GPIO_VIN_SEL 18
@@ -1704,21 +1709,51 @@ static unsigned int charging_set_dp(void *data)
 		return status;
 	}
 
+static unsigned int charging_get_charger_temperature(void *data)
+{
+	return STATUS_UNSUPPORTED;
+}
+
+static unsigned int charging_set_boost_current_limit(void *data)
+{
+	int ret = 0;
+	unsigned int current_limit = 0, reg_ilim = 0;
+
+	current_limit = *((unsigned int *)data);
+	reg_ilim = charging_parameter_to_value(BOOST_CURRENT_LIMIT,
+		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
+	bq25890_set_boost_ilim(reg_ilim);
+
+	return ret;
+}
+
+static unsigned int charging_enable_otg(void *data)
+{
+	int ret = 0;
+	unsigned int enable = 0;
+
+	enable = *((unsigned int *)data);
+	bq25890_otg_en(enable);
+
+	return ret;
+}
 
 static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
-charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
-	    charging_get_current, charging_set_current, charging_set_input_current,
-	    charging_get_charging_status, charging_reset_watch_dog_timer,
-	    charging_set_hv_threshold, charging_get_hv_status, charging_get_battery_status,
-	    charging_get_charger_det_status, charging_get_charger_type,
-	    charging_get_is_pcm_timer_trigger, charging_set_platform_reset,
-	    charging_get_platform_boot_mode, charging_set_power_off,
-	    charging_get_power_source, charging_get_csdac_full_flag,
-	    charging_set_ta_current_pattern, charging_set_error_state, charging_diso_init,
-	    charging_get_diso_state, charging_set_vindpm_voltage, charging_set_vbus_ovp_en,
-	    charging_get_bif_vbat, charging_set_chrind_ck_pdn, charging_sw_init, charging_enable_safetytimer,
-		charging_set_hiz_swchr, charging_get_bif_tbat, charging_set_ta20_reset,
-		charging_set_ta20_current_pattern, charging_set_dp};
+	charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
+	charging_get_current, charging_set_current, charging_set_input_current,
+	charging_get_charging_status, charging_reset_watch_dog_timer,
+	charging_set_hv_threshold, charging_get_hv_status, charging_get_battery_status,
+	charging_get_charger_det_status, charging_get_charger_type,
+	charging_get_is_pcm_timer_trigger, charging_set_platform_reset,
+	charging_get_platform_boot_mode, charging_set_power_off,
+	charging_get_power_source, charging_get_csdac_full_flag,
+	charging_set_ta_current_pattern, charging_set_error_state, charging_diso_init,
+	charging_get_diso_state, charging_set_vindpm_voltage, charging_set_vbus_ovp_en,
+	charging_get_bif_vbat, charging_set_chrind_ck_pdn, charging_sw_init, charging_enable_safetytimer,
+	charging_set_hiz_swchr, charging_get_bif_tbat, charging_set_ta20_reset,
+	charging_set_ta20_current_pattern, charging_set_dp, charging_get_charger_temperature,
+	charging_set_boost_current_limit, charging_enable_otg
+};
 
 /*
 * FUNCTION
