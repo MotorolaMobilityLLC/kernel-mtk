@@ -29,14 +29,7 @@
 #include <mt_smi.h>
 
 #include "smi_common.h"
-
-#ifdef D1
-#include "smi_reg_d1.h"
-#elif defined D2
-#include "smi_reg_d2.h"
-#else
-#include "smi_reg_d3.h"
-#endif
+#include "smi_reg.h"
 
 #define SMI_LOG_TAG "smi"
 

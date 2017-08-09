@@ -169,13 +169,12 @@ static void mmdvfs_dump_info(void)
 }
 
 /* delay 4 seconds to go LPM to workaround camera ZSD + PIP issue */
+#if !defined(D3)
 static void mmdvfs_cam_work_handler(struct work_struct *work)
 {
 	MMDVFSMSG("CAM handler %d\n", jiffies_to_msecs(jiffies));
 	mmdvfs_set_step(MMDVFS_CAM_MON_SCEN, mmdvfs_get_default_step());
 }
-
-#if !defined(D3)
 
 static DECLARE_DELAYED_WORK(g_mmdvfs_cam_work, mmdvfs_cam_work_handler);
 

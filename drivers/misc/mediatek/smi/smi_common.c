@@ -13,11 +13,11 @@
 #include <aee.h>
 
 /* Define SMI_INTERNAL_CCF_SUPPORT when CCF needs to be enabled */
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #define SMI_INTERNAL_CCF_SUPPORT
 #endif
 
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) && defined(D1)
 #include <linux/clk.h>
 /* for ccf clk CB */
 #include "clk-mt6735-pg.h"
@@ -40,19 +40,19 @@
 #include <mt_smi.h>
 
 
-#include "smi_reg_d1.h"
+#include "smi_reg.h"
 #include "smi_common.h"
 #include "smi_debug.h"
-
+#if defined D1 || defined D2 || defined D3
 #include "mmdvfs_mgr.h"
-
+#endif
 #undef pr_fmt
 #define pr_fmt(fmt) "[SMI]" fmt
 
 #define SMI_LOG_TAG "SMI"
 
 #define LARB_BACKUP_REG_SIZE 128
-#define SMI_COMMON_BACKUP_REG_NUM   8
+#define SMI_COMMON_BACKUP_REG_NUM   7
 
 #define SF_HWC_PIXEL_MAX_NORMAL  (1920 * 1080 * 7)
 #define SF_HWC_PIXEL_MAX_VR   (1920 * 1080 * 4 + 1036800)	/* 4.5 FHD size */
@@ -62,10 +62,10 @@
 /* debug level */
 static unsigned int smi_debug_level;
 
-#define SMIDBG(level, x...)				\
-		do {						\
-				if (smi_debug_level >= (level))		\
-						SMIMSG(x);					\
+#define SMIDBG(level, x...)            \
+		do {                        \
+			if (smi_debug_level >= (level))    \
+				SMIMSG(x);            \
 		} while (0)
 
 struct SMI_struct {
@@ -76,7 +76,7 @@ struct SMI_struct {
 static struct SMI_struct g_SMIInfo;
 
 /* LARB BASE ADDRESS */
-static unsigned long gLarbBaseAddr[SMI_LARB_NR] = { 0, 0, 0, 0 };
+static unsigned long gLarbBaseAddr[SMI_LARB_NR] = { 0 };
 
 /* DT porting */
 unsigned long smi_reg_base_common_ext = 0;
@@ -85,21 +85,107 @@ unsigned long smi_reg_base_barb1 = 0;
 unsigned long smi_reg_base_barb2 = 0;
 unsigned long smi_reg_base_barb3 = 0;
 
-#define SMI_REG_REGION_MAX 5
+
+
+
+char *smi_get_region_name(unsigned int region_indx);
+
+
+static struct smi_device *smi_dev;
+
+static struct device *smiDeviceUevent;
+
+static struct cdev *pSmiDev;
+
 #define SMI_COMMON_REG_INDX 0
 #define SMI_LARB0_REG_INDX 1
 #define SMI_LARB1_REG_INDX 2
 #define SMI_LARB2_REG_INDX 3
 #define SMI_LARB3_REG_INDX 4
 
+#if defined D2
+#define SMI_REG_REGION_MAX 4
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = { SMI_LARB0_PORT_NUM,
+	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM
+};
+
+static unsigned char larb_vc_setting[SMI_LARB_NR] = { 0, 2, 1 };
+
+static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
+static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
+static unsigned short int larb2_port_backup[SMI_LARB2_PORT_NUM];
+
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
+	larb0_port_backup, larb1_port_backup, larb2_port_backup
+};
+
+
+#elif defined D1
+#define SMI_REG_REGION_MAX 5
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = { SMI_LARB0_PORT_NUM,
+	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
+};
+
+static unsigned char larb_vc_setting[SMI_LARB_NR] = { 0, 2, 0, 1 };
+
+static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
+static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
+static unsigned short int larb2_port_backup[SMI_LARB2_PORT_NUM];
+static unsigned short int larb3_port_backup[SMI_LARB3_PORT_NUM];
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
+	larb0_port_backup, larb1_port_backup, larb2_port_backup, larb3_port_backup
+};
+
+
+#elif defined D3
+#define SMI_REG_REGION_MAX 5
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = { SMI_LARB0_PORT_NUM,
+	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
+};
+
+static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
+static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
+static unsigned short int larb2_port_backup[SMI_LARB2_PORT_NUM];
+static unsigned short int larb3_port_backup[SMI_LARB3_PORT_NUM];
+
+static unsigned char larb_vc_setting[SMI_LARB_NR] = { 0, 2, 1, 1 };
+
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
+	larb0_port_backup, larb1_port_backup, larb2_port_backup, larb3_port_backup
+};
+#elif defined R
+
+#define SMI_REG_REGION_MAX 3
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = { SMI_LARB0_PORT_NUM,
+	SMI_LARB1_PORT_NUM
+};
+
+static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
+static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
+
+static unsigned char larb_vc_setting[SMI_LARB_NR] = { 0, 2 };
+
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
+	larb0_port_backup, larb1_port_backup
+};
+#endif
+
 static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 
-char *smi_get_region_name(unsigned int region_indx);
+/* SMI COMMON register list to be backuped */
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = { 0x100, 0x104,
+	0x108, 0x10c, 0x110, 0x230, 0x234
+};
 
+static unsigned int g_smi_common_backup[SMI_COMMON_BACKUP_REG_NUM];
 struct smi_device {
 	struct device *dev;
 	void __iomem *regs[SMI_REG_REGION_MAX];
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) & defined D1
 	struct clk *smi_common_clk;
 	struct clk *smi_larb0_clk;
 	struct clk *img_larb2_clk;
@@ -112,33 +198,7 @@ struct smi_device {
 	struct clk *larb3_mtcmos;
 #endif
 };
-static struct smi_device *smi_dev;
 
-static struct device *smiDeviceUevent;
-
-static struct cdev *pSmiDev;
-
-static const unsigned int larb_port_num[SMI_LARB_NR] = { SMI_LARB0_PORT_NUM,
-	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
-};
-
-static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
-static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
-static unsigned short int larb2_port_backup[SMI_LARB2_PORT_NUM];
-static unsigned short int larb3_port_backup[SMI_LARB3_PORT_NUM];
-
-/* SMI COMMON register list to be backuped */
-static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = { 0x100, 0x104,
-	0x108, 0x10c, 0x110, 0x230, 0x234, 0x238
-};
-
-static unsigned int g_smi_common_backup[SMI_COMMON_BACKUP_REG_NUM];
-
-static unsigned char larb_vc_setting[SMI_LARB_NR] = { 0, 2, 0, 1 };
-
-static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
-	larb0_port_backup, larb1_port_backup, larb2_port_backup, larb3_port_backup
-};
 
 /* To keep the HW's init value */
 static int is_default_value_saved;
@@ -161,9 +221,9 @@ static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
 static unsigned int *pLarbRegBackUp[SMI_LARB_NR];
 static int g_bInited;
 
-static MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = { 0, 0, {0, 0}, {0, 0}, {0,
-									0}, {0, 0}, 0, 0, 0,
-SF_HWC_PIXEL_MAX_NORMAL
+static MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
+	0, 0, {0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0,
+	SF_HWC_PIXEL_MAX_NORMAL
 };
 
 char *smi_port_name[][21] = {
@@ -190,14 +250,13 @@ static void vpSetting(void);
 static void vrSetting(void);
 static void icfpSetting(void);
 static void vpWfdSetting(void);
-
+static unsigned long get_register_base(int i);
 static void smi_dumpLarb(unsigned int index);
 static void smi_dumpCommon(void);
 
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 static struct clk *get_smi_clk(char *smi_clk_name);
 #endif
-
 
 #if IS_ENABLED(CONFIG_COMPAT)
 static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
@@ -206,19 +265,17 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 #endif
 
 
-
 /* Use this function to get base address of Larb resgister */
 /* to support error checking */
 unsigned long get_larb_base_addr(int larb_id)
 {
-	unsigned long ret = 0;
-
 	if (larb_id >= SMI_LARB_NR || larb_id < 0)
-		ret = SMI_ERROR_ADDR;
+		return SMI_ERROR_ADDR;
 	else
-		ret = gLarbBaseAddr[larb_id];
-	return ret;
+		return gLarbBaseAddr[larb_id];
+
 }
+
 /* 0 for common, 1 for larb0, 2 for larb1... */
 unsigned long get_smi_base_addr(int larb_id)
 {
@@ -227,10 +284,10 @@ unsigned long get_smi_base_addr(int larb_id)
 	else
 		return gSMIBaseAddrs[larb_id];
 }
+EXPORT_SYMBOL(get_smi_base_addr);
 
 
-
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) && defined D1
 struct clk *get_smi_clk(char *smi_clk_name)
 {
 	struct clk *smi_clk_ptr = NULL;
@@ -255,6 +312,7 @@ static void smi_prepare_clk(struct clk *smi_clk, char *name)
 		SMIMSG("clk_prepare error, smi_clk can't be NULL, %s\n", name);
 	}
 }
+
 static void smi_enable_clk(struct clk *smi_clk, char *name)
 {
 	if (smi_clk != NULL) {
@@ -302,17 +360,27 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 		break;
 	case 1:
 		enable_clock(MT_CG_DISP0_SMI_COMMON, name);
+#if defined R
+		enable_clock(MT_CG_LARB1_SMI_CKPDN, name);
+#else
 		enable_clock(MT_CG_VDEC1_LARB, name);
+#endif
 		break;
 	case 2:
+#if !defined R
 		enable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		enable_clock(MT_CG_IMAGE_LARB2_SMI, name);
+#endif
 		break;
 	case 3:
 		enable_clock(MT_CG_DISP0_SMI_COMMON, name);
+#if defined D1
 		enable_clock(MT_CG_VENC_LARB, name);
+#elif defined D3
+		enable_clock(MT_CG_VENC_VENC, name);
+#endif
 		break;
-#else
+#elif defined D1
 	case 0:
 		if (enable_mtcmos)
 			smi_enable_clk(smi_dev->larb0_mtcmos, name);
@@ -353,7 +421,8 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 
 static int larb_clock_prepare(int larb_id, int enable_mtcmos)
 {
-#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING) && defined(SMI_INTERNAL_CCF_SUPPORT)
+#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING) && defined(SMI_INTERNAL_CCF_SUPPORT) \
+	&& defined(D1)
 	char name[30];
 
 	sprintf(name, "smi+%d", larb_id);
@@ -412,18 +481,28 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		break;
 	case 1:
+#if defined R
+		disable_clock(MT_CG_LARB1_SMI_CKPDN, name);
+#else
 		disable_clock(MT_CG_VDEC1_LARB, name);
+#endif
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		break;
 	case 2:
+#if !defined R
 		disable_clock(MT_CG_IMAGE_LARB2_SMI, name);
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
+#endif
 		break;
 	case 3:
+#if defined D1
 		disable_clock(MT_CG_VENC_LARB, name);
+#elif defined D3
+		disable_clock(MT_CG_VENC_VENC, name);
+#endif
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		break;
-#else
+#elif defined D1
 	case 0:
 		smi_disable_clk(smi_dev->smi_larb0_clk, name);
 		smi_disable_clk(smi_dev->smi_common_clk, name);
@@ -464,7 +543,8 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 
 static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 {
-#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING) && defined(SMI_INTERNAL_CCF_SUPPORT)
+#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING) && defined(SMI_INTERNAL_CCF_SUPPORT) \
+	&& defined(D1)
 	char name[30];
 
 	sprintf(name, "smi+%d", larb_id);
@@ -608,9 +688,6 @@ static int larb_reg_backup(int larb)
 
 	*(pReg++) = M4U_ReadReg32(larb_base, SMI_LARB_CON);
 
-	/* *(pReg++) = M4U_ReadReg32(larb_base, SMI_SHARE_EN); */
-	/* *(pReg++) = M4U_ReadReg32(larb_base, SMI_ROUTE_SEL); */
-
 	backup_larb_smi(larb);
 
 	if (0 == larb)
@@ -669,6 +746,11 @@ int larb_reg_restore(int larb)
 		return 0;
 	}
 
+	if (larb >= SMI_LARB_NR || larb < 0) {
+		SMIMSG("Can't find the backup register value for Larb%d\n", larb);
+		return 0;
+	}
+
 	pReg = pLarbRegBackUp[larb];
 
 	SMIDBG(1, "+larb_reg_restore(), larb_idx=%d\n", larb);
@@ -677,9 +759,6 @@ int larb_reg_restore(int larb)
 	regval = *(pReg++);
 	M4U_WriteReg32(larb_base, SMI_LARB_CON_CLR, ~(regval));
 	M4U_WriteReg32(larb_base, SMI_LARB_CON_SET, (regval));
-
-	/* M4U_WriteReg32(larb_base, SMI_SHARE_EN, *(pReg++) ); */
-	/* M4U_WriteReg32(larb_base, SMI_ROUTE_SEL, *(pReg++) ); */
 
 	smi_larb_init(larb);
 
@@ -725,6 +804,38 @@ void on_larb_power_off_with_ccf(int larb_idx)
 
 static void restSetting(void)
 {
+#if defined D2
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x1);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 0x1);	/* disp_fake */
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0x1);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0x1);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x20c, 0x1);	/* hw_vdec_pred_rd_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x210, 0x1);	/* hw_vdec_pred_wr_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x218, 0x1);	/* hw_vdec_ppwrap_ext */
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x1);	/* cam_imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x1);	/* cam_img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x1);	/* cam_imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x1);	/* venc_mc */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* venc_cdma */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* venc_rec */
+#elif defined D1
 	/* initialize OSTD to 1 */
 	M4U_WriteReg32(LARB0_BASE, 0x200, 0x1);	/* disp_ovl0 */
 	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_rdma0 */
@@ -777,12 +888,138 @@ static void restSetting(void)
 	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
 	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x1);	/* venc_ref_luma */
 	M4U_WriteReg32(LARB3_BASE, 0x230, 0x1);	/* venc_ref_chroma */
+#elif defined D3
+	/* initialize OSTD to 1 */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x1);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_ovl1 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* disp_rdma1 */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* disp_od_r */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* disp_od_w */
+	M4U_WriteReg32(LARB0_BASE, 0x21c, 0x1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x220, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x224, 0x1);	/* mdp_wrot */
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0x1);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0x1);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x20c, 0x1);	/* hw_vdec_pred_rd_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x210, 0x1);	/* hw_vdec_pred_wr_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x218, 0x1);	/* hw_vdec_ppwrap_ext */
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x1);	/* imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x1);	/* rrzo */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* aao */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* lcso */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x1);	/* imgo_s */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* lsci_d */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* bpci */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* bpci_d */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x1);	/* ufdi */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x234, 0x1);	/* img3o */
+	M4U_WriteReg32(LARB2_BASE, 0x238, 0x1);	/* vipi */
+	M4U_WriteReg32(LARB2_BASE, 0x23c, 0x1);	/* vip2i */
+	M4U_WriteReg32(LARB2_BASE, 0x240, 0x1);	/* vip3i */
+	M4U_WriteReg32(LARB2_BASE, 0x244, 0x1);	/* lcei */
+	M4U_WriteReg32(LARB2_BASE, 0x248, 0x1);	/* rb */
+	M4U_WriteReg32(LARB2_BASE, 0x24c, 0x1);	/* rp */
+	M4U_WriteReg32(LARB2_BASE, 0x250, 0x1);	/* wr */
+
+	M4U_WriteReg32(LARB3_BASE, 0x200, 0x1);	/* venc_rcpu */
+	M4U_WriteReg32(LARB3_BASE, 0x204, 0x2);	/* venc_rec */
+	M4U_WriteReg32(LARB3_BASE, 0x208, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x20c, 0x1);	/* venc_sv_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x210, 0x1);	/* venc_rd_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x214, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB3_BASE, 0x218, 0x1);	/* jpgenc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x21c, 0x1);	/* jpgdec_wdma */
+	M4U_WriteReg32(LARB3_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x224, 0x1);	/* venc_cur_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
+	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x1);	/* venc_ref_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x230, 0x1);	/* venc_ref_chroma */
+#elif defined R
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x1);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* disp_fake */
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0x1);	/* cam_imgo */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0x1);	/* cam_img2o */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB1_BASE, 0x20c, 0x1);	/* venc_bsdma_vdec_post0 */
+	M4U_WriteReg32(LARB1_BASE, 0x210, 0x1);	/* cam_imgi */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB1_BASE, 0x218, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB1_BASE, 0x21c, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB1_BASE, 0x220, 0x1);	/* venc_mc */
+	M4U_WriteReg32(LARB1_BASE, 0x224, 0x1);	/* venc_cdma_vdec_cdma */
+	M4U_WriteReg32(LARB1_BASE, 0x228, 0x1);	/* venc_rec_vdec_wdma */
+
+#endif
 }
 
 /* Make sure clock is on */
 static void initSetting(void)
 {
+#if defined D2
+	/* save default larb regs */
+	if (!is_default_value_saved) {
+		SMIMSG("Save default config:\n");
+		default_val_smi_l1arb[0] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB0);
+		default_val_smi_l1arb[1] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB1);
+		default_val_smi_l1arb[2] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB2);
 
+		SMIMSG("l1arb[0-2]= 0x%x,  0x%x, 0x%x\n", default_val_smi_l1arb[0],
+		       default_val_smi_l1arb[1], default_val_smi_l1arb[2]);
+
+		is_default_value_saved = 1;
+	}
+	/* Keep the HW's init setting in REG_SMI_L1ARB0 ~ REG_SMI_L1ARB4 */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, default_val_smi_l1arb[0]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, default_val_smi_l1arb[1]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2, default_val_smi_l1arb[2]);
+
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x100, 0xb);
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE,
+		       0x234, (0x1 << 31) + (0x1d << 26) + (0x1f << 21) + (0x0 << 20) + (0x3 << 15)
+		       + (0x4 << 10) + (0x4 << 5) + 0x5);
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x230, (0x7 + (0x8 << 3) + (0x7 << 8)));
+
+	/* Set VC priority: MMSYS = ISP > VENC > VDEC = MJC */
+	M4U_WriteReg32(LARB0_BASE, 0x20, 0x0);	/* MMSYS */
+	M4U_WriteReg32(LARB1_BASE, 0x20, 0x2);	/* VDEC */
+	M4U_WriteReg32(LARB2_BASE, 0x20, 0x1);	/* ISP */
+
+
+	/* for UI */
+	restSetting();
+
+	/* LARB 0 DISP+MDP */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 31);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 31);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 4);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 6);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 4);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 1);	/* disp_fake */
+#elif defined D1
 	/* save default larb regs */
 	if (!is_default_value_saved) {
 		SMIMSG("Save default config:\n");
@@ -846,18 +1083,206 @@ static void initSetting(void)
 	M4U_WriteReg32(LARB0_BASE, 0x210, 4);	/* mdp_rdma */
 	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
 	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* mdp_wrot */
+#elif defined D3
+/* save default larb regs */
+	if (!is_default_value_saved) {
+		SMIMSG("Save default config:\n");
+		default_val_smi_l1arb[0] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB0);
+		default_val_smi_l1arb[1] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB1);
+		default_val_smi_l1arb[2] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB2);
+		default_val_smi_l1arb[3] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB3);
+		SMIMSG("l1arb[0-2]= 0x%x,  0x%x, 0x%x\n", default_val_smi_l1arb[0],
+		       default_val_smi_l1arb[1], default_val_smi_l1arb[2]);
+		SMIMSG("l1arb[3]= 0x%x\n", default_val_smi_l1arb[3]);
+
+		is_default_value_saved = 1;
+	}
+	/* Keep the HW's init setting in REG_SMI_L1ARB0 ~ REG_SMI_L1ARB4 */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, default_val_smi_l1arb[0]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, default_val_smi_l1arb[1]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2, default_val_smi_l1arb[2]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB3, default_val_smi_l1arb[3]);
+
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x100, 0xb);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE,
+		       0x234, (0x1 << 31) + (0x1d << 26) + (0x1f << 21) + (0x0 << 20) + (0x3 << 15)
+		       + (0x4 << 10) + (0x4 << 5) + 0x5);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x230, 0xf + (0x8 << 4) + (0x7 << 9));
+
+	/* Set VC priority: MMSYS = ISP > VENC > VDEC = MJC */
+	M4U_WriteReg32(LARB0_BASE, 0x20, 0x0);	/* MMSYS */
+	M4U_WriteReg32(LARB1_BASE, 0x20, 0x2);	/* VDEC */
+	M4U_WriteReg32(LARB2_BASE, 0x20, 0x1);	/* ISP */
+	M4U_WriteReg32(LARB3_BASE, 0x20, 0x1);	/* VENC */
+
+	/* for ISP HRT */
+	M4U_WriteReg32(LARB2_BASE, 0x24, (M4U_ReadReg32(LARB2_BASE, 0x24) & 0xf7ffffff));
+
+	/* for UI */
+	restSetting();
+
+	/* SMI common BW limiter */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, default_val_smi_l1arb[0]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x1000);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10C, 0x1000);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x110, 0x1000);
+
+	/* LARB 0 DISP+MDP */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 31);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 8);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 6);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 31);	/* disp_ovl1 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 4);	/* disp_rdma1 */
+	M4U_WriteReg32(LARB0_BASE, 0x21c, 2);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x224, 3);	/* mdp_wrot */
+#elif defined R
+	/* save default larb regs */
+	if (!is_default_value_saved) {
+		SMIMSG("Save default config:\n");
+		default_val_smi_l1arb[0] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB0);
+		default_val_smi_l1arb[1] = M4U_ReadReg32(SMI_COMMON_EXT_BASE,
+							 REG_OFFSET_SMI_L1ARB1);
+		SMIMSG("l1arb[0-1]= 0x%x,  0x%x\n", default_val_smi_l1arb[0],
+		       default_val_smi_l1arb[1]);
+
+		is_default_value_saved = 1;
+	}
+	/* Keep the HW's init setting in REG_SMI_L1ARB0 ~ REG_SMI_L1ARB1 */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, 0x14cb);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, 0x1001);
+
+
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x100, 0xb);
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE,
+		       0x234, (0x1 << 31) + (0x1d << 26) + (0x1f << 21) + (0x0 << 20) + (0x3 << 15)
+		       + (0x4 << 10) + (0x4 << 5) + 0x5);
+
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x230, (0x3 + (0x8 << 2) + (0x7 << 7)));
+
+	/* Set VC priority: MMSYS = ISP > VENC > VDEC = MJC */
+	M4U_WriteReg32(LARB0_BASE, 0x20, 0x0);	/* MMSYS */
+	M4U_WriteReg32(LARB1_BASE, 0x20, 0x2);	/* VDEC */
+
+
+	/* for UI */
+	restSetting();
+
+	/* LARB 0 DISP+MDP */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 28);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 4);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 6);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 1);	/* disp_fake */
+#endif
 
 }
 
+
 static void icfpSetting(void)
 {
+#if defined D2
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x11da);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x1000);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10c, 0x1318);	/* LARB3, VENC+JPG */
+
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x6);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x6);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 0x1);	/* disp_fake */
+
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x2);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x1);	/* venc_mc */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* venc_cdma */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* venc_rec */
+#elif defined D1
 	vrSetting();
+#elif defined D3
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, 0x14E2);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, 0x1000);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2, 0x1310);	/* LARB2, ISP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB3, 0x106F);	/* LARB3, VENC+JPG */
+
+	restSetting();
+
+	/* LARB 0 DISP+MDP */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x14);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x21c, 0x2);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x220, 0x2);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x224, 0x3);	/* mdp_wrot */
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0xc);	/* imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x4);	/* aao */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* bpci */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x3);	/* img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* img2o */
+
+	M4U_WriteReg32(LARB3_BASE, 0x214, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB3_BASE, 0x218, 0x1);	/* jpgenc_bsdma */
+#elif defined R
+	vrSetting();
+#endif
 }
 
 
 
 static void vrSetting(void)
 {
+#if defined D2
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x11ff);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x1000);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10c, 0x1361);	/* LARB3, VENC+JPG */
+
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x6);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x6);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 0x1);	/* disp_fake */
+
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x2);	/* venc_mc */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* venc_cdma */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* venc_rec */
+#elif defined D1
 	/* SMI BW limit */
 	/* vss */
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, 0x11F1);	/* LARB0, DISP+MDP */
@@ -899,11 +1324,109 @@ static void vrSetting(void)
 	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
 	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
 	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#elif defined D3
+	/* SMI BW limit */
+	/* vss */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, 0x1417);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, 0x1000);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2, 0x11D0);	/* LARB2, ISP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB3, 0x11F8);	/* LARB3, VENC+JPG */
+
+	restSetting();
+
+	/* LARB 0 DISP+MDP */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x10);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x21c, 0x4);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x220, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x224, 0x6);	/* mdp_wrot */
+
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x2);	/* rrzo */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* aao */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x2);	/* lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x2);	/* bpci */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x8);	/* imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x238, 0x2);	/* vipi */
+	M4U_WriteReg32(LARB2_BASE, 0x23c, 0x2);	/* vip2i */
+	M4U_WriteReg32(LARB2_BASE, 0x240, 0x2);	/* vip3i */
+
+	M4U_WriteReg32(LARB3_BASE, 0x200, 0x1);	/* venc_rcpu */
+	M4U_WriteReg32(LARB3_BASE, 0x204, 0x2);	/* venc_rec */
+	M4U_WriteReg32(LARB3_BASE, 0x208, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x20c, 0x1);	/* venc_sv_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x210, 0x1);	/* venc_rd_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x214, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB3_BASE, 0x218, 0x1);	/* jpgenc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x224, 0x2);	/* venc_cur_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
+	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#elif defined R
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x122b);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x142c);	/* LARB1, CAM+VENC */
+
+	restSetting();
+
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0xa);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x4);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x2);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x2);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* disp_fake */
+
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB1_BASE, 0x20c, 0x1);	/* venc_bsdma_vdec_post0 */
+	M4U_WriteReg32(LARB1_BASE, 0x210, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB1_BASE, 0x218, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB1_BASE, 0x21c, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB1_BASE, 0x220, 0x3);	/* venc_mc */
+	M4U_WriteReg32(LARB1_BASE, 0x224, 0x2);	/* venc_cdma_vdec_cdma */
+	M4U_WriteReg32(LARB1_BASE, 0x228, 0x2);	/* venc_rec_vdec_wdma */
+#endif
 }
 
 static void vpSetting(void)
 {
+#if defined D2
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x11ff);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, default_val_smi_l1arb[1]);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10c, 0x1361);	/* LARB3, VENC+JPG */
 
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x8);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x8);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x3);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x4);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 0x1);	/* disp_fake */
+
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0xb);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0xe);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x2);	/* venc_mc */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* venc_cdma */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* venc_rec */
+#elif defined D1
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x1262);	/* LARB0, DISP+MDP */
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x11E9);	/* LARB1, VDEC */
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10C, 0x1000);	/* LARB2, ISP */
@@ -936,8 +1459,62 @@ static void vpSetting(void)
 	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
 	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
 	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#elif defined D3
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x1262);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x11E9);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10C, 0x1000);	/* LARB2, ISP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x110, 0x123D);	/* LARB3, VENC+JPG */
 
+	restSetting();
 
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x8);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x2);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x3);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x4);	/* mdp_wrot */
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0xb);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0xe);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+
+	M4U_WriteReg32(LARB3_BASE, 0x200, 0x1);	/* venc_rcpu */
+	M4U_WriteReg32(LARB3_BASE, 0x204, 0x2);	/* venc_rec */
+	M4U_WriteReg32(LARB3_BASE, 0x208, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x20c, 0x1);	/* venc_sv_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x210, 0x1);	/* venc_rd_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x224, 0x1);	/* venc_cur_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
+	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#elif defined R
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x11ff);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, default_val_smi_l1arb[1]);	/* LARB1, VDEC */
+
+	restSetting();
+
+	/* use vpSetting in d2 */
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x8);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x3);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x4);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x1);	/* disp_fake */
+
+	/* use vrSetting for temporary */
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB1_BASE, 0x20c, 0x1);	/* venc_bsdma_vdec_post0 */
+	M4U_WriteReg32(LARB1_BASE, 0x210, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB1_BASE, 0x218, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB1_BASE, 0x21c, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB1_BASE, 0x220, 0x3);	/* venc_mc */
+	M4U_WriteReg32(LARB1_BASE, 0x224, 0x2);	/* venc_cdma_vdec_cdma */
+	M4U_WriteReg32(LARB1_BASE, 0x228, 0x2);	/* venc_rec_vdec_wdma */
+#endif
 }
 
 
@@ -945,6 +1522,40 @@ static void vpSetting(void)
 
 static void vpWfdSetting(void)
 {
+#if defined D2
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x11ff);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, default_val_smi_l1arb[1]);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10c, 0x1361);	/* LARB3, VENC+JPG */
+
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x8);	/* disp_ovl0_port0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x8);	/* disp_ovl0_port1 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x1);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x1);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x3);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x214, 0x1);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x218, 0x4);	/* mdp_wrot */
+	M4U_WriteReg32(LARB0_BASE, 0x21C, 0x1);	/* disp_fake */
+
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0xb);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0xe);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+
+	M4U_WriteReg32(LARB2_BASE, 0x200, 0x8);	/* cam_imgo */
+	M4U_WriteReg32(LARB2_BASE, 0x204, 0x6);	/* cam_img2o */
+	M4U_WriteReg32(LARB2_BASE, 0x208, 0x1);	/* cam_lsci */
+	M4U_WriteReg32(LARB2_BASE, 0x20c, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x210, 0x1);	/* jpgenc_rdma */
+	M4U_WriteReg32(LARB2_BASE, 0x214, 0x4);	/* cam_imgi */
+	M4U_WriteReg32(LARB2_BASE, 0x218, 0x1);	/* cam_esfko */
+	M4U_WriteReg32(LARB2_BASE, 0x21c, 0x1);	/* cam_aao */
+	M4U_WriteReg32(LARB2_BASE, 0x220, 0x1);	/* jpgdec_bsdma */
+	M4U_WriteReg32(LARB2_BASE, 0x224, 0x1);	/* venc_mvqp */
+	M4U_WriteReg32(LARB2_BASE, 0x228, 0x2);	/* venc_mc */
+	M4U_WriteReg32(LARB2_BASE, 0x22c, 0x1);	/* venc_cdma */
+	M4U_WriteReg32(LARB2_BASE, 0x230, 0x1);	/* venc_rec */
+#elif defined D1
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x1262);	/* LARB0, DISP+MDP */
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x11E9);	/* LARB1, VDEC */
 	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10C, 0x1000);	/* LARB2, ISP */
@@ -977,6 +1588,40 @@ static void vpWfdSetting(void)
 	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
 	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
 	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#elif defined D3
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x104, 0x14B6);	/* LARB0, DISP+MDP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x108, 0x11EE);	/* LARB1, VDEC */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x10C, 0x1000);	/* LARB2, ISP */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x110, 0x11F2);	/* LARB3, VENC+JPG */
+
+	restSetting();
+
+	M4U_WriteReg32(LARB0_BASE, 0x200, 0x12);	/* disp_ovl0 */
+	M4U_WriteReg32(LARB0_BASE, 0x204, 0x8);	/* disp_rdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x208, 0x6);	/* disp_wdma0 */
+	M4U_WriteReg32(LARB0_BASE, 0x20c, 0x12);	/* disp_ovl1 */
+	M4U_WriteReg32(LARB0_BASE, 0x210, 0x4);	/* disp_rdma1 */
+	M4U_WriteReg32(LARB0_BASE, 0x21c, 0x3);	/* mdp_rdma */
+	M4U_WriteReg32(LARB0_BASE, 0x220, 0x2);	/* mdp_wdma */
+	M4U_WriteReg32(LARB0_BASE, 0x224, 0x5);	/* mdp_wrot */
+
+
+	M4U_WriteReg32(LARB1_BASE, 0x200, 0xb);	/* hw_vdec_mc_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x204, 0xe);	/* hw_vdec_pp_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x208, 0x1);	/* hw_vdec_avc_mv_ext */
+	M4U_WriteReg32(LARB1_BASE, 0x214, 0x1);	/* hw_vdec_vld_ext */
+
+
+	M4U_WriteReg32(LARB3_BASE, 0x200, 0x1);	/* venc_rcpu */
+	M4U_WriteReg32(LARB3_BASE, 0x204, 0x2);	/* venc_rec */
+	M4U_WriteReg32(LARB3_BASE, 0x208, 0x1);	/* venc_bsdma */
+	M4U_WriteReg32(LARB3_BASE, 0x20c, 0x1);	/* venc_sv_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x210, 0x1);	/* venc_rd_comv */
+	M4U_WriteReg32(LARB3_BASE, 0x224, 0x2);	/* venc_cur_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x228, 0x1);	/* venc_cur_chroma */
+	M4U_WriteReg32(LARB3_BASE, 0x22c, 0x3);	/* venc_ref_luma */
+	M4U_WriteReg32(LARB3_BASE, 0x230, 0x2);	/* venc_ref_chroma */
+#endif
 }
 
 /* Fake mode check, e.g. WFD */
@@ -1003,9 +1648,6 @@ static int ovl_limit_uevent(int bwc_scenario, int ovl_pixel_limit)
 	char scenario_buf[32] = "";
 	char ovl_limit_buf[32] = "";
 
-	/* scenario_buf = kzalloc(sizeof(char)*128, GFP_KERNEL); */
-	/* ovl_limit_buf = kzalloc(sizeof(char)*128, GFP_KERNEL); */
-
 	snprintf(scenario_buf, 31, "SCEN=%d", bwc_scenario);
 	snprintf(ovl_limit_buf, 31, "HWOVL=%d", ovl_pixel_limit);
 
@@ -1014,15 +1656,9 @@ static int ovl_limit_uevent(int bwc_scenario, int ovl_pixel_limit)
 	envp[2] = NULL;
 
 	if (pSmiDev != NULL) {
-		/* err = kobject_uevent_env(&(pSmiDev->kobj), KOBJ_CHANGE, envp); */
-		/* use smi_dev->dev.lobj instead */
-		/* err = kobject_uevent_env(&(smi_dev->dev->kobj), KOBJ_CHANGE, envp); */
-		/* user smiDeviceUevent->kobj instead */
 		err = kobject_uevent_env(&(smiDeviceUevent->kobj), KOBJ_CHANGE, envp);
 		SMIMSG("Notify OVL limitaion=%d, SCEN=%d", ovl_pixel_limit, bwc_scenario);
 	}
-	/* kfree(scenario_buf); */
-	/* kfree(ovl_limit_buf); */
 
 	if (err < 0)
 		SMIMSG(KERN_INFO "[%s] kobject_uevent_env error = %d\n", __func__, err);
@@ -1030,7 +1666,7 @@ static int ovl_limit_uevent(int bwc_scenario, int ovl_pixel_limit)
 	return err;
 }
 
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) && defined D1
 static unsigned int smiclk_subsys_2_larb(enum subsys_id sys)
 {
 	unsigned int i4larbid = 0;
@@ -1126,7 +1762,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		SMIERR("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
 		return -1;
 	}
-
+#if defined D1 || defined D2 || defined D3
 	if (p_conf->b_on_off) {
 		/* set mmdvfs step according to certain scenarios */
 		mmdvfs_notify_scenario_enter(p_conf->scenario);
@@ -1134,11 +1770,12 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		/* set mmdvfs step to default after the scenario exits */
 		mmdvfs_notify_scenario_exit(p_conf->scenario);
 	}
-
+#endif
+#if defined(SMI_INTERNAL_CCF_SUPPORT)
 	/* prepare larb clk because prepare cannot in spinlock */
 	for (i = 0; i < SMI_LARB_NR; i++)
 		larb_clock_prepare(i, 1);
-
+#endif
 	spin_lock(&g_SMIInfo.SMI_lock);
 
 	if (p_conf->b_on_off) {
@@ -1173,14 +1810,16 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		if (g_SMIInfo.pu4ConcurrencyTable[i])
 			u4Concurrency |= (1 << i);
 	}
-
+#if defined D1 || defined D2 || defined D3
 	/* notify mmdvfs concurrency */
 	mmdvfs_notify_scenario_concurrency(u4Concurrency);
-
+#endif
 	if ((1 << SMI_BWC_SCEN_MM_GPU) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_MM_GPU;
 	else if ((1 << SMI_BWC_SCEN_ICFP) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_ICFP;
+	else if ((1 << SMI_BWC_SCEN_VSS) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_VR;
 	else if ((1 << SMI_BWC_SCEN_VR_SLOW) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VR_SLOW;
 	else if ((1 << SMI_BWC_SCEN_VR) & u4Concurrency)
@@ -1199,9 +1838,11 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	} else {
 		SMIMSG("Scen equal%d,don't change\n", eFinalScen);
 		spin_unlock(&g_SMIInfo.SMI_lock);
+#if defined(SMI_INTERNAL_CCF_SUPPORT)
 		/* unprepare larb clock */
 		for (i = 0; i < SMI_LARB_NR; i++)
 			larb_clock_unprepare(i, 1);
+#endif
 		return 0;
 	}
 
@@ -1215,7 +1856,8 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	switch (eFinalScen) {
 	case SMI_BWC_SCEN_VP:
 		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VP");
-		if (wifi_disp_transaction)
+		/* fixed wrong judgement */
+		if (!wifi_disp_transaction)
 			vpSetting();
 		else
 			vpWfdSetting();
@@ -1276,11 +1918,11 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		larb_clock_disable(i, 1);
 
 	spin_unlock(&g_SMIInfo.SMI_lock);
-
+#if defined(SMI_INTERNAL_CCF_SUPPORT)
 	/* unprepare larb clock */
 	for (i = 0; i < SMI_LARB_NR; i++)
 		larb_clock_unprepare(i, 1);
-
+#endif
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
 
 	/* force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
@@ -1344,9 +1986,9 @@ int smi_common_init(void)
 
 	/* apply init setting after kernel boot */
 	SMIMSG("Enter smi_common_init\n");
-	    initSetting();
+	initSetting();
 
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) && defined(D1)
 	fglarbcallback = true;
 
 	pold = register_pg_callback(&smi_clk_subsys_handle);
@@ -1522,7 +2164,24 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 			smi_dumpCommon();
 		}
 		break;
+#if defined D1 || defined D2 || defined D3
+	case MTK_IOC_MMDVFS_CMD:
+		{
+			MTK_MMDVFS_CMD mmdvfs_cmd;
 
+			if (copy_from_user(&mmdvfs_cmd, (void *)param, sizeof(MTK_MMDVFS_CMD)))
+				return -EFAULT;
+
+
+			mmdvfs_handle_cmd(&mmdvfs_cmd);
+
+			if (copy_to_user
+			    ((void *)param, (void *)&mmdvfs_cmd, sizeof(MTK_MMDVFS_CMD))) {
+				return -EFAULT;
+			}
+		}
+		break;
+#endif
 	default:
 		return -1;
 	}
@@ -1636,7 +2295,7 @@ static int smi_probe(struct platform_device *pdev)
 		       smi_get_region_name(i), smi_dev->regs[i], get_register_base(i));
 	}
 
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
+#if defined(SMI_INTERNAL_CCF_SUPPORT) && defined D1
 	smi_dev->smi_common_clk = get_smi_clk("smi-common");
 	smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
 	smi_dev->img_larb2_clk = get_smi_clk("img-larb2");
@@ -1668,21 +2327,50 @@ static int smi_probe(struct platform_device *pdev)
 	smiDeviceUevent = smiDevice;
 
 	SMIMSG("SMI probe done.\n");
+#if defined D2
+	/* To adapt the legacy codes */
+	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
+	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
+	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];
+	smi_reg_base_barb2 = gSMIBaseAddrs[SMI_LARB2_REG_INDX];
+	/* smi_reg_base_barb4 = gSMIBaseAddrs[SMI_LARB4_REG_INDX]; */
 
+	gLarbBaseAddr[0] = LARB0_BASE;
+	gLarbBaseAddr[1] = LARB1_BASE;
+	gLarbBaseAddr[2] = LARB2_BASE;
+#elif defined D1
 	/* To adapt the legacy codes */
 	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
 	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
 	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];
 	smi_reg_base_barb2 = gSMIBaseAddrs[SMI_LARB2_REG_INDX];
 	smi_reg_base_barb3 = gSMIBaseAddrs[SMI_LARB3_REG_INDX];
-	/* smi_reg_base_barb4 = gSMIBaseAddrs[SMI_LARB4_REG_INDX]; */
 
 	gLarbBaseAddr[0] = LARB0_BASE;
 	gLarbBaseAddr[1] = LARB1_BASE;
 	gLarbBaseAddr[2] = LARB2_BASE;
 	gLarbBaseAddr[3] = LARB3_BASE;
-	/* gLarbBaseAddr[4] = LARB4_BASE; */
 
+#elif defined D3
+/* To adapt the legacy codes */
+	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
+	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
+	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];
+	smi_reg_base_barb2 = gSMIBaseAddrs[SMI_LARB2_REG_INDX];
+	smi_reg_base_barb3 = gSMIBaseAddrs[SMI_LARB3_REG_INDX];
+
+	gLarbBaseAddr[0] = LARB0_BASE;
+	gLarbBaseAddr[1] = LARB1_BASE;
+	gLarbBaseAddr[2] = LARB2_BASE;
+	gLarbBaseAddr[3] = LARB3_BASE;
+#else
+	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
+	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
+	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];
+
+	gLarbBaseAddr[0] = LARB0_BASE;
+	gLarbBaseAddr[1] = LARB1_BASE;
+#endif
 	SMIMSG("Execute smi_common_init\n");
 	smi_common_init();
 
@@ -1705,8 +2393,6 @@ char *smi_get_region_name(unsigned int region_indx)
 		return "larb2";
 	case SMI_LARB3_REG_INDX:
 		return "larb3";
-		/* case SMI_LARB4_REG_INDX: */
-		/* return "larb4"; */
 	default:
 		SMIMSG("invalid region id=%d", region_indx);
 		return "unknown";
@@ -1746,7 +2432,6 @@ static struct platform_driver smiDrv = {
 		   .name = "MTK_SMI",
 		   .owner = THIS_MODULE,
 		   .of_match_table = smi_of_ids,
-
 		   }
 };
 
@@ -1754,9 +2439,10 @@ static int __init smi_init(void)
 {
 	SMIMSG("smi_init enter\n");
 	spin_lock_init(&g_SMIInfo.SMI_lock);
+#if defined D1 || defined D2 || defined D3
 	/* MMDVFS init */
 	mmdvfs_init(&g_smi_bwc_mm_info);
-
+#endif
 	memset(g_SMIInfo.pu4ConcurrencyTable, 0, SMI_BWC_SCEN_CNT * sizeof(unsigned int));
 
 	/* Informs the kernel about the function to be called */
@@ -1812,36 +2498,46 @@ static void smi_dumpCommonDebugMsg(int output_gce_buffer)
 		M4U_ReadReg32(u4Base, 0x440));
 }
 
-#if !defined(SMI_INTERNAL_CCF_SUPPORT)
+
 static int smi_larb_clock_is_on(unsigned int larb_index)
 {
-
 	int result = 0;
-#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING)
-#if defined(CONFIG_MTK_LEGACY)
+
+#if defined(SMI_INTERNAL_CCF_SUPPORT)
+	return 1;
+#elif !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	switch (larb_index) {
 	case 0:
 		result = clock_is_on(MT_CG_DISP0_SMI_LARB0);
 		break;
 	case 1:
+#if defined R
+		result = clock_is_on(MT_CG_LARB1_SMI_CKPDN);
+#else
 		result = clock_is_on(MT_CG_VDEC1_LARB);
+#endif
 		break;
 	case 2:
+#if !defined R
 		result = clock_is_on(MT_CG_IMAGE_LARB2_SMI);
+#endif
 		break;
 	case 3:
+#if defined D1
 		result = clock_is_on(MT_CG_VENC_LARB);
+#elif defined D3
+		result = clock_is_on(MT_CG_VENC_VENC);
+#endif
 		break;
 	default:
 		result = 0;
 		break;
 	}
-#endif				/* defined(CONFIG_MTK_LEGACY) */
 #endif				/* !defined (CONFIG_MTK_FPGA) && !defined (CONFIG_FPGA_EARLY_PORTING) */
 	return result;
 
 }
-#endif				/* !defined(SMI_INTERNAL_CCF_SUPPORT) */
+
 static void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer)
 {
 	unsigned long u4Base = 0;
@@ -1858,52 +2554,54 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer)
 
 		return;
 	} else if ((larbClkEnabled != 0) || smi_debug_level > 0) {
-		SMIMSG3(output_gce_buffer, "===SMI LARB%d reg dump, CLK: %d===\n", u4Index, larbClkEnabled);
+		SMIMSG3(output_gce_buffer, "===SMI LARB%d reg dump, CLK: %d===\n", u4Index,
+			larbClkEnabled);
 
 		/* Staus Registers */
-		SMIMSG3(output_gce_buffer, "[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
-		       M4U_ReadReg32(u4Base, 0x8), M4U_ReadReg32(u4Base, 0x10));
+		SMIMSG3(output_gce_buffer, "[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n",
+			M4U_ReadReg32(u4Base, 0x0), M4U_ReadReg32(u4Base, 0x8),
+			M4U_ReadReg32(u4Base, 0x10));
 		SMIMSG3(output_gce_buffer, "[0x24,0x50,0x60]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x24), M4U_ReadReg32(u4Base, 0x50),
-		       M4U_ReadReg32(u4Base, 0x60));
+			M4U_ReadReg32(u4Base, 0x24), M4U_ReadReg32(u4Base, 0x50),
+			M4U_ReadReg32(u4Base, 0x60));
 		SMIMSG3(output_gce_buffer, "[0xa0,0xa4,0xa8]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0xa0), M4U_ReadReg32(u4Base, 0xa4),
-		       M4U_ReadReg32(u4Base, 0xa8));
+			M4U_ReadReg32(u4Base, 0xa0), M4U_ReadReg32(u4Base, 0xa4),
+			M4U_ReadReg32(u4Base, 0xa8));
 		SMIMSG3(output_gce_buffer, "[0xac,0xb0,0xb4]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0xac), M4U_ReadReg32(u4Base, 0xb0),
-		       M4U_ReadReg32(u4Base, 0xb4));
+			M4U_ReadReg32(u4Base, 0xac), M4U_ReadReg32(u4Base, 0xb0),
+			M4U_ReadReg32(u4Base, 0xb4));
 		SMIMSG3(output_gce_buffer, "[0xb8,0xbc,0xc0]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0xb8), M4U_ReadReg32(u4Base, 0xbc),
-		       M4U_ReadReg32(u4Base, 0xc0));
+			M4U_ReadReg32(u4Base, 0xb8), M4U_ReadReg32(u4Base, 0xbc),
+			M4U_ReadReg32(u4Base, 0xc0));
 		SMIMSG3(output_gce_buffer, "[0xc8,0xcc]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xc8),
-		       M4U_ReadReg32(u4Base, 0xcc));
+			M4U_ReadReg32(u4Base, 0xcc));
 		/* Settings */
 		SMIMSG3(output_gce_buffer, "[0x200, 0x204, 0x208]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x200), M4U_ReadReg32(u4Base, 0x204),
-		       M4U_ReadReg32(u4Base, 0x208));
+			M4U_ReadReg32(u4Base, 0x200), M4U_ReadReg32(u4Base, 0x204),
+			M4U_ReadReg32(u4Base, 0x208));
 
 		SMIMSG3(output_gce_buffer, "[0x20c, 0x210, 0x214]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x20c), M4U_ReadReg32(u4Base, 0x210),
-		       M4U_ReadReg32(u4Base, 0x214));
+			M4U_ReadReg32(u4Base, 0x20c), M4U_ReadReg32(u4Base, 0x210),
+			M4U_ReadReg32(u4Base, 0x214));
 
 		SMIMSG3(output_gce_buffer, "[0x218, 0x21c, 0x220]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x218), M4U_ReadReg32(u4Base, 0x21c),
-		       M4U_ReadReg32(u4Base, 0x220));
+			M4U_ReadReg32(u4Base, 0x218), M4U_ReadReg32(u4Base, 0x21c),
+			M4U_ReadReg32(u4Base, 0x220));
 
 		SMIMSG3(output_gce_buffer, "[0x224, 0x228, 0x22c]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x224), M4U_ReadReg32(u4Base, 0x228),
-		       M4U_ReadReg32(u4Base, 0x22c));
+			M4U_ReadReg32(u4Base, 0x224), M4U_ReadReg32(u4Base, 0x228),
+			M4U_ReadReg32(u4Base, 0x22c));
 
 		SMIMSG3(output_gce_buffer, "[0x230, 0x234, 0x238]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234),
-		       M4U_ReadReg32(u4Base, 0x238));
+			M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234),
+			M4U_ReadReg32(u4Base, 0x238));
 
 		SMIMSG3(output_gce_buffer, "[0x23c, 0x240, 0x244]=[0x%x,0x%x,0x%x]\n",
-		       M4U_ReadReg32(u4Base, 0x23c), M4U_ReadReg32(u4Base, 0x240),
-		       M4U_ReadReg32(u4Base, 0x244));
+			M4U_ReadReg32(u4Base, 0x23c), M4U_ReadReg32(u4Base, 0x240),
+			M4U_ReadReg32(u4Base, 0x244));
 
-		SMIMSG3(output_gce_buffer, "[0x248, 0x24c]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x248),
-		       M4U_ReadReg32(u4Base, 0x24c));
+		SMIMSG3(output_gce_buffer, "[0x248, 0x24c]=[0x%x,0x%x]\n",
+			M4U_ReadReg32(u4Base, 0x248), M4U_ReadReg32(u4Base, 0x24c));
 	} else {
 		SMIMSG3(output_gce_buffer, "===SMI LARB%d clock is disabled===\n", u4Index);
 	}
@@ -1976,24 +2674,57 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 	return smi_debug_bus_hanging_detect_ext(larbs, show_dump, 0);
 }
 
-/* output_gce_buffer = 1, write log into kernel log and CMDQ buffer. dual_buffer = 0, write log into kernel log only */
+static int get_status_code(int smi_larb_clk_status, int smi_larb_busy_count, int smi_common_busy_count)
+{
+	int status_code = 0;
+
+	if (smi_larb_clk_status != 0) {
+		if (smi_larb_busy_count == 5) {	/* The larb is always busy */
+			if (smi_common_busy_count == 5)	/* smi common is always busy */
+				status_code = 1;
+			else if (smi_common_busy_count == 0)	/* smi common is always idle */
+				status_code = 2;
+			else
+				status_code = 5;	/* smi common is sometimes busy and idle */
+		} else if (smi_larb_busy_count == 0) {	/* The larb is always idle */
+			if (smi_common_busy_count == 5)	/* smi common is always busy */
+				status_code = 3;
+			else if (smi_common_busy_count == 0)	/* smi common is always idle */
+				status_code = 4;
+			else
+				status_code = 6;	/* smi common is sometimes busy and idle */
+		} else {	/* sometime the larb is busy */
+			if (smi_common_busy_count == 5)	/* smi common is always busy */
+				status_code = 7;
+			else if (smi_common_busy_count == 0)	/* smi common is always idle */
+				status_code = 8;
+			else
+				status_code = 9;	/* smi common is sometimes busy and idle */
+		}
+	} else {
+		status_code = 10;
+	}
+	return status_code;
+}
 int smi_debug_bus_hanging_detect_ext(unsigned int larbs, int show_dump, int output_gce_buffer)
 {
-
+/* output_gce_buffer = 1, write log into kernel log and CMDQ buffer. */
+/* dual_buffer = 0, write log into kernel log only */
 	int i = 0;
 	int dump_time = 0;
 	int is_smi_issue = 0;
 	int status_code = 0;
 	/* Keep the dump result */
 	unsigned char smi_common_busy_count = 0;
-	unsigned int reg_temp = 0;
+	unsigned int u4Index = 0;
+	unsigned long u4Base = 0;
+
+	volatile unsigned int reg_temp = 0;
 	unsigned char smi_larb_busy_count[SMI_LARB_NR] = { 0 };
 	unsigned char smi_larb_mmu_status[SMI_LARB_NR] = { 0 };
-
+	int smi_larb_clk_status[SMI_LARB_NR] = { 0 };
 	/* dump resister and save resgister status */
 	for (dump_time = 0; dump_time < 5; dump_time++) {
-		unsigned int u4Index = 0;
-
 		reg_temp = M4U_ReadReg32(SMI_COMMON_EXT_BASE, 0x440);
 		if ((reg_temp & (1 << 0)) == 0) {
 			/* smi common is busy */
@@ -2004,108 +2735,92 @@ int smi_debug_bus_hanging_detect_ext(unsigned int larbs, int show_dump, int outp
 			smi_dumpCommonDebugMsg(output_gce_buffer);
 
 		for (u4Index = 0; u4Index < SMI_LARB_NR; u4Index++) {
-			unsigned long u4Base = get_larb_base_addr(u4Index);
+			u4Base = get_larb_base_addr(u4Index);
 
-			if (u4Base != SMI_ERROR_ADDR) {
-				reg_temp = M4U_ReadReg32(u4Base, 0x0);
-
-				if (reg_temp != 0) {
-					/* Larb is busy */
-					smi_larb_busy_count[u4Index]++;
+			smi_larb_clk_status[u4Index] = smi_larb_clock_is_on(u4Index);
+			/* check larb clk is enable */
+			if (smi_larb_clk_status[u4Index] != 0) {
+				if (u4Base != SMI_ERROR_ADDR) {
+					reg_temp = M4U_ReadReg32(u4Base, 0x0);
+					if (reg_temp != 0) {
+						/* Larb is busy */
+						smi_larb_busy_count[u4Index]++;
+					}
+					smi_larb_mmu_status[u4Index] = M4U_ReadReg32(u4Base, 0xa0);
+					if (show_dump != 0)
+						smi_dumpLarbDebugMsg(u4Index, output_gce_buffer);
 				}
-				smi_larb_mmu_status[u4Index] = M4U_ReadReg32(u4Base, 0xa0);
-				if (show_dump != 0)
-					smi_dumpLarbDebugMsg(u4Index, output_gce_buffer);
 			}
+
 		}
 
-	}
+		/* Show the checked result */
+		for (i = 0; i < SMI_LARB_NR; i++) {	/* Check each larb */
+			if (SMI_DGB_LARB_SELECT(larbs, i)) {
+				/* larb i has been selected */
+				/* Get status code */
+				get_status_code(smi_larb_clk_status[i], smi_larb_busy_count[i], smi_common_busy_count);
 
-	/* Show the checked result */
-	for (i = 0; i < SMI_LARB_NR; i++) {	/* Check each larb */
-		if (SMI_DGB_LARB_SELECT(larbs, i)) {
-			/* larb i has been selected */
-			/* Get status code */
-
-			if (smi_larb_busy_count[i] == 5) {	/* The larb is always busy */
-				if (smi_common_busy_count == 5) {	/* smi common is always busy */
-					status_code = 1;
-				} else if (smi_common_busy_count == 0) {	/* smi common is always idle */
-					status_code = 2;
-				} else {
-					status_code = 5;	/* smi common is sometimes busy and idle */
-				}
-			} else if (smi_larb_busy_count[i] == 0) {	/* The larb is always idle */
-				if (smi_common_busy_count == 5) {	/* smi common is always busy */
-					status_code = 3;
-				} else if (smi_common_busy_count == 0) {	/* smi common is always idle */
-					status_code = 4;
-				} else {
-					status_code = 6;	/* smi common is sometimes busy and idle */
-				}
-			} else {	/* sometime the larb is busy */
-				if (smi_common_busy_count == 5) {	/* smi common is always busy */
-					status_code = 7;
-				} else if (smi_common_busy_count == 0) {	/* smi common is always idle */
-					status_code = 8;
-				} else {
-					status_code = 9;	/* smi common is sometimes busy and idle */
-				}
-			}
-
-			/* Send the debug message according to the final result */
-			switch (status_code) {
-			case 1:
-			case 3:
-			case 5:
-			case 7:
-			case 8:
-				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine's state first\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
-				SMIMSG3(output_gce_buffer,
-					"If the engine is waiting for Larb%ds' response, it needs SMI HW's check\n",
-					i);
-				break;
-			case 2:
-				if (smi_larb_mmu_status[i] == 0) {
+				/* Send the debug message according to the final result */
+				switch (status_code) {
+				case 1:
+				case 3:
+				case 5:
+				case 7:
+				case 8:
 					SMIMSG3(output_gce_buffer,
-						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine state first\n",
+						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine's state first\n",
 						i, smi_larb_busy_count[i], smi_common_busy_count,
 						status_code);
 					SMIMSG3(output_gce_buffer,
 						"If the engine is waiting for Larb%ds' response, it needs SMI HW's check\n",
 						i);
-				} else {
+					break;
+				case 2:
+					if (smi_larb_mmu_status[i] == 0) {
+						SMIMSG3(output_gce_buffer,
+							"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine state first\n",
+							i, smi_larb_busy_count[i],
+							smi_common_busy_count, status_code);
+						SMIMSG3(output_gce_buffer,
+							"If the engine is waiting for Larb%ds' response, it needs SMI HW's check\n",
+							i);
+					} else {
+						SMIMSG3(output_gce_buffer,
+							"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> MMU port config error\n",
+							i, smi_larb_busy_count[i],
+							smi_common_busy_count, status_code);
+						is_smi_issue = 1;
+					}
+					break;
+				case 4:
+				case 6:
+				case 9:
 					SMIMSG3(output_gce_buffer,
-						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> MMU port config error\n",
+						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> not SMI issue\n",
 						i, smi_larb_busy_count[i], smi_common_busy_count,
 						status_code);
-					is_smi_issue = 1;
+					break;
+				case 10:
+					SMIMSG3(output_gce_buffer,
+						"Larb%d clk is disbable, status=%d ==> no need to check\n",
+						i, status_code);
+					break;
+				default:
+					SMIMSG3(output_gce_buffer,
+						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> status unknown\n",
+						i, smi_larb_busy_count[i], smi_common_busy_count,
+						status_code);
+					break;
 				}
-				break;
-			case 4:
-			case 6:
-			case 9:
-				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> not SMI issue\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
-				break;
-			default:
-				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> status unknown\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
-				break;
 			}
+
 		}
 
 	}
-
 	return is_smi_issue;
 }
+
 
 void smi_client_status_change_notify(int module, int mode)
 {
@@ -2246,7 +2961,7 @@ static int compat_put_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO _
 	return err;
 }
 
-long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 
@@ -2306,7 +3021,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 								  (unsigned long)data);
 			}
 		}
-	/* Fall through */
+		/* Fall through */
 	case COMPAT_MTK_IOC_SMI_BWC_INFO_GET:
 		{
 
@@ -2342,6 +3057,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 	case MTK_IOC_SMI_DUMP_LARB:
 	case MTK_IOC_SMI_DUMP_COMMON:
+	case MTK_IOC_MMDVFS_CMD:
 
 		return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
 	default:
@@ -2351,10 +3067,8 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 }
 
 #endif
-EXPORT_SYMBOL(get_smi_base_addr);
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
-EXPORT_SYMBOL(get_smi_clk);
-#endif
+
+
 
 module_init(smi_init);
 module_exit(smi_exit);
@@ -2364,5 +3078,5 @@ module_param_named(tuning_mode, smi_tuning_mode, uint, S_IRUGO | S_IWUSR);
 module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO | S_IWUSR);
 
 MODULE_DESCRIPTION("MTK SMI driver");
-MODULE_AUTHOR("Frederic Chen<frederic.chen@mediatek.com>");
+MODULE_AUTHOR("Kendrick Hsu<kendrick.hsu@mediatek.com>");
 MODULE_LICENSE("GPL");
