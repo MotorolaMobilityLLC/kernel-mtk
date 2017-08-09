@@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
 obj-y += mt_vcorefs_manager.o
 obj-y += mt_vcorefs_governor.o
 obj-y += mt_ptp.o
+obj-y += mt_otp.o
 obj-y += mt_eem2.o
 #obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
