@@ -5,6 +5,7 @@
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
 
 #include <linux/device.h>
 #include <linux/kdev_t.h>
@@ -3009,6 +3010,9 @@ static void init_meter_global_data(struct platform_device *dev)
 static int battery_meter_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+	char *temp_strptr;
+#endif
 
 	p_bat_meter_data = (struct mt_battery_meter_custom_data *) dev->dev.platform_data;
 
@@ -3022,6 +3026,18 @@ static int battery_meter_probe(struct platform_device *dev)
 	init_meter_global_data(dev);
 
 	bm_print(BM_LOG_CRTI, "[battery_meter_probe] probe\n");
+
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+	if (get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
+		|| get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
+		temp_strptr = kzalloc(strlen(saved_command_line) + strlen(" androidboot.mode=charger") + 1,
+			GFP_KERNEL);
+			strcpy(temp_strptr, saved_command_line);
+			strcat(temp_strptr, " androidboot.mode=charger");
+			saved_command_line = temp_strptr;
+		}
+#endif
+
 	/* select battery meter control method */
 	battery_meter_ctrl = bm_ctrl_cmd;
 	/* LOG System Set */
