@@ -40,6 +40,11 @@
 #define idle_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
+#define idle_warn_log(fmt, args...) { \
+	if (dpidle_dump_log == DEEPIDLE_LOG_FULL) \
+		pr_warn(IDLE_TAG fmt, ##args); \
+	}
+
 #define idle_gpt GPT4
 
 #define idle_readl(addr)			__raw_readl(addr)
@@ -177,7 +182,7 @@ void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
 
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
+wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 {
 	return 0;
 }
@@ -508,6 +513,7 @@ static unsigned long    dpidle_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
+static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 
 static unsigned int		idle_spm_lock;
 
@@ -1448,14 +1454,14 @@ int dpidle_enter(int cpu)
 	int ret = 1;
 
 	dpidle_pre_handler();
-	spm_go_to_dpidle(slp_spm_deepidle_flags, 0);
+	spm_go_to_dpidle(slp_spm_deepidle_flags, 0, dpidle_dump_log);
 	dpidle_post_handler();
 
 #ifdef CONFIG_SMP
-	idle_warn("DP:timer_left=%d, timer_left2=%d, delta=%d\n",
+	idle_warn_log("DP:timer_left=%d, timer_left2=%d, delta=%d\n",
 				dpidle_timer_left, dpidle_timer_left2, dpidle_timer_left-dpidle_timer_left2);
 #else
-	idle_warn("DP:timer_left=%d, timer_left2=%d, delta=%d, timeout val=%d\n",
+	idle_warn_log("DP:timer_left=%d, timer_left2=%d, delta=%d, timeout val=%d\n",
 				dpidle_timer_left,
 				dipidle_timer_left2,
 				dpidle_timer_left2 - dpidle_timer_left,
@@ -1463,7 +1469,7 @@ int dpidle_enter(int cpu)
 #endif
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[3]);
-	idle_warn("1:%u, 2:%u, 3:%u, 4:%u\n",
+	idle_warn_log("1:%u, 2:%u, 3:%u, 4:%u\n",
 				dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
 #endif
 
@@ -1634,6 +1640,8 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	p += sprintf(p, "dpidle_bypass_cg=%u\n", dpidle_by_pass_cg);
+	p += sprintf(p, "dpidle_dump_log = %u\n", dpidle_dump_log);
+	p += sprintf(p, "(0: None, 1: Reduced, 2: Full\n");
 
 	p += sprintf(p, "\n*********** dpidle command help  ************\n");
 	p += sprintf(p, "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
@@ -1676,7 +1684,8 @@ static ssize_t dpidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			dpidle_by_pass_cg = param;
 			idle_warn("bypass = %d\n", dpidle_by_pass_cg);
-		}
+		} else if (!strcmp(cmd, "log"))
+			dpidle_dump_log = param;
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_DP] = param;

@@ -106,11 +106,8 @@ static unsigned long mcucfg_phys_base;
 #endif
 #define SPM_USE_TWAM_DEBUG	0
 
-#define	REDUCE_DPIDLE_LOG		1
-#if REDUCE_DPIDLE_LOG
 #define	DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA	20
 #define	DPIDLE_LOG_DISCARD_CRITERIA			5000	/* ms */
-#endif
 
 #if SPM_AEE_RR_REC
 enum spm_deepidle_step {
@@ -898,10 +895,8 @@ static struct pwr_ctrl dpidle_ctrl = {
 #error "Does not support!"
 #endif
 
-#if REDUCE_DPIDLE_LOG
 static unsigned int dpidle_log_discard_cnt;
 static unsigned int dpidle_log_print_prev_time;
-#endif
 
 struct spm_lp_scen __spm_dpidle = {
 	.pcmdesc = &dpidle_pcm,
@@ -960,7 +955,6 @@ void __attribute__ ((weak)) mt_cpufreq_set_pmic_phase(enum pmic_wrap_phase_id ph
 {
 }
 
-#if REDUCE_DPIDLE_LOG
 static long int idle_get_current_time_ms(void)
 {
 	struct timeval t;
@@ -968,7 +962,6 @@ static long int idle_get_current_time_ms(void)
 	do_gettimeofday(&t);
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
-#endif
 
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
@@ -1032,38 +1025,41 @@ int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 	return 0;
 }
 
-#if REDUCE_DPIDLE_LOG
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc)
+static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 dump_log)
 {
-	wake_reason_t wr;
+	wake_reason_t wr = WR_NONE;
 	unsigned long int dpidle_log_print_curr_time = 0;
 	bool log_print = false;
 
-	/* Determine print SPM log or not */
-	dpidle_log_print_curr_time = idle_get_current_time_ms();
-
-	if (wakesta->assert_pc != 0)
-		log_print = true;
-	/* Not wakeup by GPT */
-	else if ((wakesta->r12 & (0x1 << 4)) == 0)
-		log_print = true;
-	else if (wakesta->timer_out <= DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA)
-		log_print = true;
-	else if ((dpidle_log_print_curr_time - dpidle_log_print_prev_time) >
-		 DPIDLE_LOG_DISCARD_CRITERIA)
-		log_print = true;
-
-	/* Print SPM log */
-	if (log_print == true) {
-		dpidle_dbg("dpidle_log_discard_cnt = %d\n", dpidle_log_discard_cnt);
+	if (dump_log == DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+	} else if (dump_log == DEEPIDLE_LOG_REDUCED) {
+		/* Determine print SPM log or not */
+		dpidle_log_print_curr_time = idle_get_current_time_ms();
 
-		dpidle_log_print_prev_time = dpidle_log_print_curr_time;
-		dpidle_log_discard_cnt = 0;
-	} else {
-		dpidle_log_discard_cnt++;
+		if (wakesta->assert_pc != 0)
+			log_print = true;
+		/* Not wakeup by GPT */
+		else if ((wakesta->r12 & (0x1 << 4)) == 0)
+			log_print = true;
+		else if (wakesta->timer_out <= DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA)
+			log_print = true;
+		else if ((dpidle_log_print_curr_time - dpidle_log_print_prev_time) >
+			 DPIDLE_LOG_DISCARD_CRITERIA)
+			log_print = true;
 
-		wr = WR_NONE;
+		/* Print SPM log */
+		if (log_print == true) {
+			dpidle_dbg("dpidle_log_discard_cnt = %d\n", dpidle_log_discard_cnt);
+			wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+
+			dpidle_log_print_prev_time = dpidle_log_print_curr_time;
+			dpidle_log_discard_cnt = 0;
+		} else {
+			dpidle_log_discard_cnt++;
+
+			wr = WR_NONE;
+		}
 	}
 
 	if (wakesta->r12 & WAKE_SRC_CLDMA_MD)
@@ -1071,19 +1067,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	return wr;
 }
-#else
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc)
-{
-	wake_reason_t wr;
 
-	wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
-
-	if (wakesta->r12 & WAKE_SRC_CLDMA_MD)
-		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
-
-	return wr;
-}
-#endif
 #if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 static u32 vsram_vosel_on_lb;
 #endif
@@ -1105,7 +1089,7 @@ static void spm_dpidle_post_process(void)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
 }
 
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
+wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
@@ -1186,7 +1170,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
 
 	request_uart_to_wakeup();
 
-	wr = spm_output_wake_reason(&wakesta, pcmdesc);
+	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
 
 #if defined(CONFIG_ARCH_MT6753)
 	__spm_disable_i2c4_clk();

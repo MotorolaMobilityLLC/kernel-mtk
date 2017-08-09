@@ -20,7 +20,7 @@
  */
 void spm_dpidle_before_wfi(void);		 /* can be redefined */
 void spm_dpidle_after_wfi(void);		 /* can be redefined */
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data);
+wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log);
 wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);
 void spm_deepidle_init(void);
@@ -29,6 +29,10 @@ void spm_deepidle_init(void);
 #define SPM_PROFILE_APXGPT GPT2
 extern unsigned int dpidle_profile[4];
 #endif
+
+#define DEEPIDLE_LOG_NONE      0
+#define DEEPIDLE_LOG_REDUCED   1
+#define DEEPIDLE_LOG_FULL      2
 
 /*
  * for Screen On Deep Idle
