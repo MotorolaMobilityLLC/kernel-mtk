@@ -104,7 +104,7 @@ typedef bool                    MBOOL;
 
 #define EVEREST_EP_CODE_MARK /* Mark codes first, should check it in later */
 /*#define EVEREST_EP_NO_CLKMGR*/ /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-#define EVEREST_EP_JESSY_LOG
+/*#define _WAITIRQ_LOG_*/ /* wait irq debug logs */
 
 /* ---------------------------------------------------------------------------- */
 
@@ -3229,7 +3229,7 @@ static MINT32 ISP_DumpReg(void)
 {
 	MINT32 Ret = 0;
 	/*  */
-	LOG_DBG("- E.");
+	LOG_DBG("[DumpReg]- E.");
 #if 0
 	/*  */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
@@ -3530,7 +3530,7 @@ static MINT32 ISP_DumpReg(void)
 	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
 	/*  */
 #endif
-	LOG_DBG("- X.");
+	LOG_DBG("[DumpReg]- X.");
 	/*  */
 	return Ret;
 }
@@ -3542,67 +3542,67 @@ static inline void Prepare_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
 	ret = clk_prepare(isp_clk.ISP_SCP_SYS_DIS);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot prepare ISP_SCP_SYS_DIS clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_MM_SMI_COMMON);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
+		LOG_ERR("cannot prepare ISP_MM_SMI_COMMON clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_SCP_SYS_ISP);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_SCP_SYS_ISP clock\n");
+		LOG_ERR("cannot prepare ISP_SCP_SYS_ISP clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_IMG_LARB6);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_IMG_LARB6 clock\n");
+		LOG_ERR("cannot prepare ISP_IMG_LARB6 clock\n");
 	}
 	ret = clk_prepare(isp_clk.ISP_IMG_DIP);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_IMG_DIP clock\n");
+		LOG_ERR("cannot prepare ISP_IMG_DIP clock\n");
 	}
 	ret = clk_prepare(isp_clk.ISP_IMG_DPE);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_IMG_DPE clock\n");
+		LOG_ERR("cannot prepare ISP_IMG_DPE clock\n");
 	}
 	ret = clk_prepare(isp_clk.ISP_IMG_FDVT);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_IMG_FDVT clock\n");
+		LOG_ERR("cannot prepare ISP_IMG_FDVT clock\n");
 	}
 	ret = clk_prepare(isp_clk.ISP_CAM_LARB2);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_LARB2 clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_LARB2 clock\n");
 	}
 	ret = clk_prepare(isp_clk.ISP_CAM_CAMSYS);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_CAMSYS clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_CAMSYS clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_CAM_CAMTG);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_CAMTG clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_CAMTG clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_CAM_SENINF);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_SENINF clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_SENINF clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_CAM_CAMSV0);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_CAMSV0 clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_CAMSV0 clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_CAM_CAMSV1);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_CAMSV1 clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_CAMSV1 clock\n");
 	}
 
 	ret = clk_prepare(isp_clk.ISP_CAM_CAMSV2);
 	if (ret) {
-		LOG_ERR("cannot prepare CG_CAM_CAMSV2 clock\n");
+		LOG_ERR("cannot prepare ISP_CAM_CAMSV2 clock\n");
 	}
 }
 
@@ -3613,52 +3613,52 @@ static inline void Prepare_Enable_ccf_clock(void)
 
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_DIS);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot pre-en ISP_SCP_SYS_DIS clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_MM_SMI_COMMON);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_MM_SMI_COMMON clock\n");
+		LOG_ERR("cannot pre-en ISP_MM_SMI_COMMON clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_ISP);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_SCP_SYS_ISP clock\n");
+		LOG_ERR("cannot pre-en ISP_SCP_SYS_ISP clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_LARB6);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_IMG_LARB6 clock\n");
+		LOG_ERR("cannot pre-en ISP_IMG_LARB6 clock\n");
 	}
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_DIP);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_IMG_DIP clock\n");
+		LOG_ERR("cannot pre-en ISP_IMG_DIP clock\n");
 	}
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_DPE);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_IMG_DPE clock\n");
+		LOG_ERR("cannot pre-en ISP_IMG_DPE clock\n");
 	}
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_FDVT);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_IMG_FDVT clock\n");
+		LOG_ERR("cannot pre-en ISP_IMG_FDVT clock\n");
 	}
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_LARB2);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_CAM_LARB2 clock\n");
+		LOG_ERR("cannot pre-en ISP_CAM_LARB2 clock\n");
 	}
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_CAMSYS);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_CAM_CAMSYS clock\n");
+		LOG_ERR("cannot pre-en ISP_CAM_CAMSYS clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_CAMTG);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_CAM_CAMTG clock\n");
+		LOG_ERR("cannot pre-en ISP_CAM_CAMTG clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_SENINF);
 	if (ret) {
-		LOG_ERR("cannot pre-en CG_CAM_SENINF clock\n");
+		LOG_ERR("cannot pre-en ISP_CAM_SENINF clock\n");
 	}
 
 	ret = clk_prepare_enable(isp_clk.ISP_CAM_CAMSV0);
@@ -3834,7 +3834,7 @@ static void ISP_EnableClock(MBOOL En)
 			ISP_WR32(CAMSYS_REG_CG_CLR, setReg);
 			ISP_WR32(IMGSYS_REG_CG_CLR, setReg);
 #else /* Everest not support CLKMGR, only CCF!!*/
-			LOG_INF("MTK_LEGACY:enable clk");
+			/*LOG_INF("MTK_LEGACY:enable clk");*/
 			enable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
 			enable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
 			enable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
@@ -3851,7 +3851,7 @@ static void ISP_EnableClock(MBOOL En)
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else/*CCF*/
-		LOG_INF("CCF:prepare_enable clk");
+		/*LOG_INF("CCF:prepare_enable clk");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -3876,7 +3876,7 @@ static void ISP_EnableClock(MBOOL En)
 			ISP_WR32(CAMSYS_REG_CG_SET, setReg);
 			ISP_WR32(IMGSYS_REG_CG_SET, setReg);
 #else
-			LOG_INF("MTK_LEGACY:disable clk");
+			/*LOG_INF("MTK_LEGACY:disable clk");*/
 			/* do disable clock     */
 			disable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
 			disable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
@@ -3893,7 +3893,7 @@ static void ISP_EnableClock(MBOOL En)
 		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else
-		LOG_INF("CCF:disable_unprepare clk\n");
+		/*LOG_INF("CCF:disable_unprepare clk\n");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -5282,7 +5282,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	time_getrequest.tv_usec = usec;
 	time_getrequest.tv_sec = sec;
 
-
+#ifdef _WAITIRQ_LOG_
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
 		if (WaitIrq->EventInfo.Status & IspInfo.IrqInfo.Mask[WaitIrq->Type][WaitIrq->EventInfo.St_type]) {
@@ -5296,7 +5296,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			}
 		}
 	}
-
+#endif
 
 	/* 1. wait type update */
 	if (WaitIrq->EventInfo.Clear == ISP_IRQ_CLEAR_STATUS) {
@@ -5358,7 +5358,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	irqStatus = IspInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey];
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
 
-#ifdef EVEREST_EP_JESSY_LOG
+#ifdef _WAITIRQ_LOG_
 	LOG_INF("before wait_event: WaitIrq Timeout(%d) Clear(%d), IRQType(%d), StType(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d), userKey(%d)\n",
 		WaitIrq->EventInfo.Timeout,
 		WaitIrq->EventInfo.Clear,
@@ -5404,7 +5404,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-#ifdef EVEREST_EP_JESSY_LOG
+#ifdef _WAITIRQ_LOG_
 	else {
 		/* Store irqinfo status in here to redeuce time of spin_lock_irqsave */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
@@ -5907,8 +5907,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				LOG_ERR("invalid userKey(%d), max(%d), force userkey = 0\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
 				IrqInfo.EventInfo.UserKey = 0;
 			}
-
+#ifdef _WAITIRQ_LOG_
 			LOG_INF("IRQ type(%d), userKey(%d), timeout(%d), userkey(%d), st_status(%d), status(%d)\n", IrqInfo.Type, IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.Timeout, IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.St_type, IrqInfo.EventInfo.Status);
+#endif
 			Ret = ISP_WaitIrq(&IrqInfo);
 
 			if (copy_to_user((void *)Param, &IrqInfo, sizeof(ISP_WAIT_IRQ_STRUCT)) != 0) {
@@ -9297,7 +9298,7 @@ void ISP_MCLK3_EN(BOOL En)
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("ISP_MDPClockOnCallback"); */
-	LOG_DBG("+MDPEn:%d", G_u4EnableClockCount);
+	/*LOG_DBG("+MDPEn:%d", G_u4EnableClockCount);*/
 	ISP_EnableClock(MTRUE);
 
 	return 0;
@@ -9324,7 +9325,7 @@ int32_t ISP_MDPClockOffCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("ISP_MDPClockOffCallback"); */
 	ISP_EnableClock(MFALSE);
-	LOG_DBG("-MDPEn:%d", G_u4EnableClockCount);
+	/*LOG_DBG("-MDPEn:%d", G_u4EnableClockCount);*/
 	return 0;
 }
 
@@ -10084,7 +10085,7 @@ static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 	MUINT32 IrqCQStatus = 0x0;
 	MUINT32 IrqCQLDStatus = 0x0;
 
-	LOG_DBG("ISP_Irq_DIP_A:%d\n", Irq);
+	/*LOG_DBG("ISP_Irq_DIP_A:%d\n", Irq);*/
 
 	spin_lock(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_DIP_A_ST]));
 	IrqINTStatus = ISP_RD32(ISP_DIP_A_BASE + 0x030); /* DIP_A_REG_CTL_INT_STATUS */
@@ -10097,7 +10098,8 @@ static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 
 	spin_unlock(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_DIP_A_ST]));
 
-	LOG_DBG("ISP_Irq_DIP_A:%d, reg 0x%p : 0x%x, reg 0x%p : 0x%x\n", Irq, (ISP_DIP_A_BASE + 0x030), IrqINTStatus, (ISP_DIP_A_BASE + 0x034), IrqCQStatus);
+	/*LOG_DBG("ISP_Irq_DIP_A:%d, reg 0x%p : 0x%x, reg 0x%p : 0x%x\n",
+		Irq, (ISP_DIP_A_BASE + 0x030), IrqINTStatus, (ISP_DIP_A_BASE + 0x034), IrqCQStatus);*/
 
 	/*  */
 	wake_up_interruptible(&IspInfo.WaitQueueHead);
