@@ -60,7 +60,7 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	char buf[64];
-	int val;
+	unsigned long val;
 	int ret;
 
 	if (cnt >= sizeof(buf))
@@ -103,7 +103,7 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 			bw_threshold -= 250;
 		pr_crit("\n<<SOC DVFS FLIPER>> Command Change EMI bandwidth threshold to %d MB/s\n", bw_threshold);
 	}
-	pr_crit(" fliper option: %d\n", val);
+	pr_crit(" fliper option: %lu\n", val);
 	return cnt;
 
 }
