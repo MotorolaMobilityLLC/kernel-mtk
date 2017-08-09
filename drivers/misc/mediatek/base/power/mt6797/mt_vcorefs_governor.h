@@ -39,12 +39,11 @@ struct kicker_config {
 #define FAXI_S0_KHZ		158000
 #define FAXI_S1_KHZ		138000
 
-/* Vcore 1.0 <=> trans1 <=> trans2 <=> Vcore 0.9 (SPM control) */
 enum vcore_trans {
-	TRANS4,
-	TRANS3,
-	TRANS2,
 	TRANS1,
+	TRANS2,
+	TRANS3,
+	TRANS4,
 	NUM_TRANS,
 };
 
