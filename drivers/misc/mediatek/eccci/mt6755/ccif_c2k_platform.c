@@ -41,6 +41,7 @@ static unsigned long apinfra_base;
 struct c2k_pll_t c2k_pll_reg;
 void __iomem *ccirq_base[4];
 void __iomem *c2k_cgbr1_addr;
+void __iomem *c2k_mpu_itrace_vir;
 #ifdef DUMP_C2K_ON_EE
 void __iomem *c2k_iram_base_vir;
 void __iomem *c2k_h2x_zone_vir;
