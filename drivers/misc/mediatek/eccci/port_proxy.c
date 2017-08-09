@@ -1374,7 +1374,7 @@ static int port_proxy_get_no_response_assert_type(struct port_proxy *proxy_p, u6
 	rem_nsec0 = (latest_poll_start_time == 0 ? 0 : do_div(latest_poll_start_time, 1000000000));
 	rem_nsec1 = (latest_isr_time == 0 ? 0 : do_div(latest_isr_time, 1000000000));
 	rem_nsec2 = (latest_poll_isr_time == 0 ? 0 : do_div(latest_poll_isr_time, 1000000000));
-	rem_nsec3 = (latest_q0_rx_time == 0 ? 0 : do_div(latest_q0_rx_time, latest_poll_isr_time));
+	rem_nsec3 = (latest_q0_rx_time == 0 ? 0 : do_div(latest_q0_rx_time, 1000000000));
 	rem_nsec4 = (latest_rx_thread_time == 0 ? 0 : do_div(latest_rx_thread_time, 1000000000));
 
 	CCCI_ERROR_LOG(md_id, KERN,

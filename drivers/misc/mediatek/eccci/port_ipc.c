@@ -472,6 +472,7 @@ static int port_ipc_kernel_thread(void *arg)
 	CCCI_DEBUG_LOG(port->md_id, IPC, "port %s's thread running\n", port->name);
 
 	while (1) {
+retry:
 		if (skb_queue_empty(&port->rx_skb_list)) {
 			ret = wait_event_interruptible(port->rx_wq, !skb_queue_empty(&port->rx_skb_list));
 			if (ret == -ERESTARTSYS)
@@ -486,6 +487,8 @@ static int port_ipc_kernel_thread(void *arg)
 		if (port->rx_skb_list.qlen == 0)
 			port_proxy_ask_more_req_to_md(port->port_proxy, port);
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
+		if (skb == NULL)
+			goto retry;
 		/* 2. process the request */
 		/* ccci header */
 		ccci_h = (struct ccci_header *)skb->data;

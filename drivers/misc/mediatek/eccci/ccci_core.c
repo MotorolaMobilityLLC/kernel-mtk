@@ -138,12 +138,10 @@ int boot_md_show(int md_id, char *buf, int size)
 {
 	int curr = 0;
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
-	int md_state = ccci_md_get_state(md);
-	int ex_stage = mdee_get_ex_stage(md->mdee_obj);
 
 	if (md)
 		curr += snprintf(&buf[curr], size, "md%d:%d/%d", md->index + 1,
-				 md_state, ex_stage);
+				 ccci_md_get_state(md), mdee_get_ex_stage(md->mdee_obj));
 	return curr;
 }
 

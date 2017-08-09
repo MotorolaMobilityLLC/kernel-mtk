@@ -226,11 +226,11 @@ static void mdee_dumper_info_dump_v1(struct md_ee *mdee)
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
 		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
-		strcpy(ex_info, "\n[Others] MD long time no response\n");
+		strncpy(ex_info, "\n[Others] MD long time no response\n", EE_BUF_LEN);
 		db_opt |= DB_OPT_FTRACE;
 		break;
 	case MD_EE_CASE_WDT:
-		strcpy(ex_info, "\n[Others] MD watchdog timeout interrupt\n");
+		strncpy(ex_info, "\n[Others] MD watchdog timeout interrupt\n", EE_BUF_LEN);
 		break;
 	default:
 		break;

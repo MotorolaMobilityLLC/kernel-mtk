@@ -244,7 +244,7 @@ static void mdee_info_dump_v2(struct md_ee *mdee)
 			break;
 		}
 		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, "\n[Others] May I-Bit dis too long\n%s", ex_info);
-		strcpy(ex_info, i_bit_ex_info);
+		strncpy(ex_info, i_bit_ex_info, EE_BUF_LEN_UMOLY);
 		break;
 	case MD_EE_CASE_TX_TRG:
 	case MD_EE_CASE_ISR_TRG:
@@ -252,11 +252,11 @@ static void mdee_info_dump_v2(struct md_ee *mdee)
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
 		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
-		strcpy(ex_info, "\n[Others] MD long time no response\n");
+		strncpy(ex_info, "\n[Others] MD long time no response\n", EE_BUF_LEN_UMOLY);
 		db_opt |= DB_OPT_FTRACE;
 		break;
 	case MD_EE_CASE_WDT:
-		strcpy(ex_info, "\n[Others] MD watchdog timeout interrupt\n");
+		strncpy(ex_info, "\n[Others] MD watchdog timeout interrupt\n", EE_BUF_LEN_UMOLY);
 		break;
 	default:
 		break;
@@ -304,9 +304,9 @@ static void mdee_info_dump_v2(struct md_ee *mdee)
 err_exit:
 
 	/* update here to maintain handshake stage info during exception handling */
-	if (debug_info->type == MD_EX_TYPE_C2K_ERROR)
+	if (debug_info && debug_info->type == MD_EX_TYPE_C2K_ERROR)
 		CCCI_NORMAL_LOG(md_id, KERN, "C2K EE, No need trigger DB\n");
-	else if ((debug_info->type == MD_EX_DUMP_EMI_CHECK) && (Is_MD_EMI_voilation() == 0))
+	else if (debug_info && (debug_info->type == MD_EX_DUMP_EMI_CHECK) && (Is_MD_EMI_voilation() == 0))
 		CCCI_NORMAL_LOG(md_id, KERN, "Not MD EMI violation, No need trigger DB\n");
 	else if (ex_info == NULL)
 		ccci_aed_v2(mdee, dump_flag, buf_fail, db_opt);
