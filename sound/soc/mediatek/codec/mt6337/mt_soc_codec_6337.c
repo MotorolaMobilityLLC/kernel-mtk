@@ -5486,7 +5486,7 @@ static int Audio_HyBridDRE_TurnOn_Set(struct snd_kcontrol *kcontrol, struct snd_
 	}
 	pr_warn("%s %d %d enter\n", __func__, rg_dre_delay_ana_idx, rg_dre_gain_ana_tar_idx);
 	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
-	if ((rg_temp_value & 0x00C0) != 0) {
+	if ((rg_temp_value & 0x00C0) != 0x40) {
 		pr_err("%s R Err rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_DRE_RegDump();
 		return -2;
@@ -5508,7 +5508,7 @@ static int Audio_HyBridDRE_TurnOn_Set(struct snd_kcontrol *kcontrol, struct snd_
 	}
 	Ana_Set_Reg(AFE_DL_DRE_R_CFG0, rg_dre_gain_ana_tar_idx, 0x3f3f);
 	Ana_Set_Reg(AFE_DL_DRE_L_CFG0, rg_dre_gain_ana_tar_idx, 0x3f3f);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (1 << 6) | rg_dre_delay_ana_idx, 0x7f);
+	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (0 << 6) | rg_dre_delay_ana_idx, 0x7f);
 	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, rg_dre_delay_ana_idx, 0x3f);
 	rg_dre_r_initiate = (Ana_Get_Reg(AFE_DL_DRE_R_CFG2) & 0x0100);
 	rg_dre_l_initiate = (Ana_Get_Reg(AFE_DL_DRE_L_CFG2) & 0x0100);
@@ -5563,7 +5563,7 @@ static int Audio_HyBridDRE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 	pr_warn("%s %d %d enter\n", __func__, rg_dre_delay_ana_idx, rg_dre_gain_ana_tar_idx);
 
 	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
-	if ((rg_temp_value & 0x00C0) != 0x00C0) {
+	if ((rg_temp_value & 0x00C0) != 0x0080) {
 		pr_warn("%s R Warn Off rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_DRE_RegDump();
 		return 0;
@@ -5704,7 +5704,7 @@ static int Audio_HyBridDRE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 	} while (1);
 
 	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, 0, 0x0080);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, 0, 0x00C0);  /* pdn last trigger on+pdn*/
+	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (1 << 6), 0x00C0);  /* pdn last trigger on+pdn*/
 
 	pr_warn("%s exit\n", __func__);
 	return 0;
