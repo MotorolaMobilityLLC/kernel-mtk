@@ -632,6 +632,7 @@ int spm_module_init(void)
 #ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
 static char *local_buf;
 static dma_addr_t local_buf_dma;
+struct firmware spm_fw[DYNA_LOAD_PCM_MAX];
 
 /*Reserved memory by device tree!*/
 int reserve_memory_spm_fn(struct reserved_mem *rmem)
@@ -672,6 +673,8 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		int copy_size = 0;
 		struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
 		int j = 0;
+
+		fw = &spm_fw[i];
 
 		do {
 			j++;
