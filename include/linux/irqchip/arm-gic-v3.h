@@ -18,8 +18,6 @@
 #ifndef __LINUX_IRQCHIP_ARM_GIC_V3_H
 #define __LINUX_IRQCHIP_ARM_GIC_V3_H
 
-#include <asm/sysreg.h>
-
 /*
  * Distributor registers. We assume we're running non-secure, with ARE
  * being set. Secure-only and non-ARE registers are not described.
@@ -127,72 +125,22 @@
 #define ICH_VMCR_PMR_SHIFT		24
 #define ICH_VMCR_PMR_MASK		(0xffUL << ICH_VMCR_PMR_SHIFT)
 
-#define ICC_EOIR1_EL1			sys_reg(3, 0, 12, 12, 1)
-#define ICC_IAR1_EL1			sys_reg(3, 0, 12, 12, 0)
-#define ICC_SGI1R_EL1			sys_reg(3, 0, 12, 11, 5)
-#define ICC_PMR_EL1			sys_reg(3, 0, 4, 6, 0)
-#define ICC_CTLR_EL1			sys_reg(3, 0, 12, 12, 4)
-#define ICC_SRE_EL1			sys_reg(3, 0, 12, 12, 5)
-#define ICC_GRPEN1_EL1			sys_reg(3, 0, 12, 12, 7)
-
 #define ICC_IAR1_EL1_SPURIOUS		0x3ff
-
-#define ICC_SRE_EL2			sys_reg(3, 4, 12, 9, 5)
 
 #define ICC_SRE_EL2_SRE			(1 << 0)
 #define ICC_SRE_EL2_ENABLE		(1 << 3)
 
-/*
- * System register definitions
- */
-#define ICH_VSEIR_EL2			sys_reg(3, 4, 12, 9, 4)
-#define ICH_HCR_EL2			sys_reg(3, 4, 12, 11, 0)
-#define ICH_VTR_EL2			sys_reg(3, 4, 12, 11, 1)
-#define ICH_MISR_EL2			sys_reg(3, 4, 12, 11, 2)
-#define ICH_EISR_EL2			sys_reg(3, 4, 12, 11, 3)
-#define ICH_ELSR_EL2			sys_reg(3, 4, 12, 11, 5)
-#define ICH_VMCR_EL2			sys_reg(3, 4, 12, 11, 7)
-
-#define __LR0_EL2(x)			sys_reg(3, 4, 12, 12, x)
-#define __LR8_EL2(x)			sys_reg(3, 4, 12, 13, x)
-
-#define ICH_LR0_EL2			__LR0_EL2(0)
-#define ICH_LR1_EL2			__LR0_EL2(1)
-#define ICH_LR2_EL2			__LR0_EL2(2)
-#define ICH_LR3_EL2			__LR0_EL2(3)
-#define ICH_LR4_EL2			__LR0_EL2(4)
-#define ICH_LR5_EL2			__LR0_EL2(5)
-#define ICH_LR6_EL2			__LR0_EL2(6)
-#define ICH_LR7_EL2			__LR0_EL2(7)
-#define ICH_LR8_EL2			__LR8_EL2(0)
-#define ICH_LR9_EL2			__LR8_EL2(1)
-#define ICH_LR10_EL2			__LR8_EL2(2)
-#define ICH_LR11_EL2			__LR8_EL2(3)
-#define ICH_LR12_EL2			__LR8_EL2(4)
-#define ICH_LR13_EL2			__LR8_EL2(5)
-#define ICH_LR14_EL2			__LR8_EL2(6)
-#define ICH_LR15_EL2			__LR8_EL2(7)
-
-#define __AP0Rx_EL2(x)			sys_reg(3, 4, 12, 8, x)
-#define ICH_AP0R0_EL2			__AP0Rx_EL2(0)
-#define ICH_AP0R1_EL2			__AP0Rx_EL2(1)
-#define ICH_AP0R2_EL2			__AP0Rx_EL2(2)
-#define ICH_AP0R3_EL2			__AP0Rx_EL2(3)
-
-#define __AP1Rx_EL2(x)			sys_reg(3, 4, 12, 9, x)
-#define ICH_AP1R0_EL2			__AP1Rx_EL2(0)
-#define ICH_AP1R1_EL2			__AP1Rx_EL2(1)
-#define ICH_AP1R2_EL2			__AP1Rx_EL2(2)
-#define ICH_AP1R3_EL2			__AP1Rx_EL2(3)
+#include <asm/arch_gicv3.h>
 
 #ifndef __ASSEMBLY__
 
-#include <linux/stringify.h>
-
-static inline void gic_write_eoir(u64 irq)
+static inline void gic_enable_sre(void)
 {
-	asm volatile("msr_s " __stringify(ICC_EOIR1_EL1) ", %0" : : "r" (irq));
-	isb();
+	u32 val;
+
+	val = gic_read_sre();
+	val |= ICC_SRE_EL1_SRE;
+	gic_write_sre(val);
 }
 
 #endif
