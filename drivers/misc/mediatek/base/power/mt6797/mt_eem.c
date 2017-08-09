@@ -4997,6 +4997,10 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	default:
 		break;
 	}
+
+	vcore1 = (vcore1 < vcore2) ? vcore2 : vcore1;
+	vcore0 = (vcore0 < vcore1) ? vcore1 : vcore0;
+
 	have_550 = 0;
 	eem_error("[EEM][VCORE] - Kernel Got from DT (0x%0X, 0x%0X, 0x%0X, 0x%0X)\n",
 			vcore0, vcore1, vcore2, have_550);
