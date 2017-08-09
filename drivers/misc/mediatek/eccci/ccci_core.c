@@ -411,6 +411,10 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 		skb = ccci_skb_dequeue(&scp_ipi_rx_skb_list);
 		ipi_msg_ptr = (struct ccci_ipi_msg *)skb->data;
 		md = ccci_get_modem_by_id(ipi_msg_ptr->md_id);
+		if (!md) {
+			CCCI_ERR_MSG(ipi_msg_ptr->md_id, CORE, "MD not exist\n");
+			return;
+		}
 		switch (ipi_msg_ptr->op_id) {
 		case CCCI_OP_SCP_STATE:
 			switch (ipi_msg_ptr->data[0]) {
