@@ -505,7 +505,7 @@ typedef enum {
 	DIP_A = DIP_START,
 	/* DIP_B,            //not supported in everest */
 	DIP_MAX,
-	MAX_ISP_HW_MODULE
+	MAX_ISP_HW_MODULE = DIP_MAX
 } ISP_HW_MODULE;
 
 
