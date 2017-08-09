@@ -138,5 +138,8 @@ void Main_OIS(void)
 	/* ------------------------------------------------------ */
 	/* Set scene parameter for OIS */
 	/* ------------------------------------------------------ */
-	func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 1, 0, 0, &fadj);
+	if (g_BU63165_OIS_Disable == 1)
+		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 0, 0, 0, &fadj);
+	else
+		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 1, 0, 0, &fadj);
 }

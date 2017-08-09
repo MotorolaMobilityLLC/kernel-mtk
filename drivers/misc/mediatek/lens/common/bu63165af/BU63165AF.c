@@ -35,6 +35,8 @@ static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 static unsigned int g_u4CheckDrvStatus;
 
+int g_BU63165_OIS_Disable = 0;
+
 int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data)
 {
 	u8 u8data[2];
@@ -62,7 +64,7 @@ int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 {
 	int i4RetValue = 0;
 
-	if (g_u4CheckDrvStatus > 0)
+	if (g_u4CheckDrvStatus > 1)
 		return -1;
 
 	spin_lock(g_pAF_SpinLock);
@@ -85,7 +87,7 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 	int i4RetValue;
 	struct i2c_msg msg[2];
 
-	if (g_u4CheckDrvStatus > 0)
+	if (g_u4CheckDrvStatus > 1)
 		return -1;
 
 	spin_lock(g_pAF_SpinLock);
@@ -194,6 +196,12 @@ static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
 	LOG_INF("Motor CmdID : %x\n", stMotorCmd.u4CmdID);
 
 	LOG_INF("Motor Param : %x\n", stMotorCmd.u4Param);
+
+	switch (stMotorCmd.u4CmdID) {
+	case 1:
+		g_BU63165_OIS_Disable = stMotorCmd.u4Param;
+		break;
+	}
 
 	return 0;
 }

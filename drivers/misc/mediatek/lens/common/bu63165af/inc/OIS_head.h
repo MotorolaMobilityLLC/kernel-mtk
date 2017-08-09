@@ -203,6 +203,8 @@ extern int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendDa
 extern int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
 				   u8 *a_pRecvData, u16 a_sizeRecvData);
 
+extern int g_BU63165_OIS_Disable;
+
 /* #define      DEBUG_FADJ */
 #ifdef	DEBUG_FADJ
 int debug_print(const char *format, ...);	/* RHM_HT 2013/04/15    Add for DEBUG */
