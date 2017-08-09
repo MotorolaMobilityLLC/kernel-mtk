@@ -34,7 +34,6 @@
 #include <mt-plat/mt_io.h>
 #include <mt-plat/mt_gpio.h>
 #include <linux/printk.h>
-#include <mach/mt_secure_api.h>
 #define EINT_DEBUG 0
 #if (EINT_DEBUG == 1)
 #define dbgmsg printk
@@ -204,7 +203,6 @@ static int mt_eint_get_deint_selection(u32 deint_mapped)
 {
 	int ret;
 	unsigned long base = DEINT_SEL_BASE;
-	unsigned int offset;
 	unsigned int field_shift;
 
 	if (deint_mapped >= MAX_DEINT_CNT)
@@ -221,7 +219,7 @@ static void mt_eint_enable_deint_selection(u32 deint_mapped)
 	writel(readl(IOMEM(DEINT_CON_BASE)) | (1 << deint_mapped), IOMEM(DEINT_CON_BASE));
 }
 
-
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 unsigned int mt_eint_get_enable_deint(unsigned int deint_mapped)
 {
 	unsigned long base;
@@ -234,6 +232,7 @@ unsigned int mt_eint_get_enable_deint(unsigned int deint_mapped)
 	return ((st & bit)?1:0);
 
 }
+#endif
 
 int mt_eint_clr_deint(u32 eint_num)
 {
