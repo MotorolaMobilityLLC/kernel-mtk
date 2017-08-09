@@ -1872,19 +1872,26 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 
 	INT32 iRet = 0;
-	UINT8 pBuffer[NAME_MAX + 1];
+	UINT8 *pBuffer = NULL;
 
 	WMT_DBG_FUNC("cmd (%u), arg (0x%lx)\n", cmd, arg);
 	switch (cmd) {
 	case WMT_IOCTL_SET_PATCH_NAME:	/* patch location */
 		{
 
+			pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+			if (!pBuffer) {
+				WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
+				return 0;
+			}
 			if (copy_from_user(pBuffer, (void *)arg, NAME_MAX)) {
 				iRet = -EFAULT;
+				kfree(pBuffer);
 				break;
 			}
 			pBuffer[NAME_MAX] = '\0';
 			wmt_lib_set_patch_name(pBuffer);
+			kfree(pBuffer);
 		}
 		break;
 
@@ -2068,6 +2075,11 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case 10:
 		{
+			pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+			if (!pBuffer) {
+				WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
+				return 0;
+			}
 			wmt_lib_host_awake_get();
 			mtk_wcn_stp_coredump_start_ctrl(1);
 			osal_strcpy(pBuffer, "MT662x f/w coredump start-");
@@ -2078,6 +2090,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			}
 			pBuffer[NAME_MAX] = '\0';
 			osal_dbg_assert_aee(pBuffer, pBuffer);
+			kfree(pBuffer);
 		}
 		break;
 	case 11:
@@ -2219,12 +2232,18 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WMT_IOCTL_DYNAMIC_DUMP_CTRL:
 		{
 			UINT32 i = 0, j = 0, k = 0;
-			UINT8 pBuf[DYNAMIC_DUMP_BUF + 1];
-			UINT32 int_buf[DYNAMIC_DUMP_BUF];
+			UINT8 *pBuf = NULL;
+			UINT32 int_buf[10];
 			char Buffer[10][11];
 
+			pBuf = kmalloc(DYNAMIC_DUMP_BUF + 1, GFP_KERNEL);
+			if (!pBuf) {
+				WMT_ERR_FUNC("pBuf kmalloc memory fail\n");
+				return 0;
+			}
 			if (copy_from_user(pBuf, (void *)arg, DYNAMIC_DUMP_BUF)) {
 				iRet = -EFAULT;
+				kfree(pBuf);
 				break;
 			}
 			pBuf[DYNAMIC_DUMP_BUF] = '\0';
@@ -2248,6 +2267,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				WMT_INFO_FUNC("dynamic dump data buf[%d]:(0x%x)\n", j, int_buf[j]);
 			}
 			wmt_plat_set_dynamic_dumpmem(int_buf);
+			kfree(pBuf);
 		}
 		break;
 	default:
