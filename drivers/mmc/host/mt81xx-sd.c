@@ -72,6 +72,8 @@
 #define MSDC_PATCH_BIT   0xb0
 #define MSDC_PATCH_BIT1  0xb4
 #define MSDC_PAD_TUNE    0xec
+#define PAD_DS_TUNE	 0x188
+#define EMMC50_CFG0	 0x208
 
 /*--------------------------------------------------------------------------*/
 /* Register Mask                                                            */
@@ -205,6 +207,14 @@
 #define MSDC_PATCH_BIT_SPCPUSH    (0x1 << 29)	/* RW */
 #define MSDC_PATCH_BIT_DECRCTMO   (0x1 << 30)	/* RW */
 
+#define PAD_DS_TUNE_DLY1	  (0x1f << 2)
+#define PAD_DS_TUNE_DLY2	  (0x1f << 7)
+#define PAD_DS_TUNE_DLY3	  (0x1f << 12)
+
+#define EMMC50_CFG_PADCMD_LATCHCK (0x1 << 0)
+#define EMMC50_CFG_CRCSTS_EDGE	  (0x1 << 3)
+#define EMMC50_CFG_CFCSTS_SEL	  (0x1 << 4)
+
 #define REQ_CMD_EIO  (0x1 << 0)
 #define REQ_CMD_TMO  (0x1 << 1)
 #define REQ_DAT_ERR  (0x1 << 2)
@@ -266,6 +276,8 @@ struct msdc_save_para {
 	u32 pad_tune;
 	u32 patch_bit0;
 	u32 patch_bit1;
+	u32 pad_ds_tune;
+	u32 emmc50_cfg0;
 };
 
 struct msdc_host {
@@ -297,11 +309,14 @@ struct msdc_host {
 	int irq;		/* host interrupt */
 
 	struct clk *src_clk;	/* msdc source clock */
+	struct clk *src_clk_parent; /* src_clk's parent */
+	struct clk *hs400_src;	/* 400Mhz source clock */
 	struct clk *h_clk;      /* msdc h_clk */
+	u32 hs400_tune_counter;
 	u32 mclk;		/* mmc subsystem clock frequency */
 	u32 src_clk_freq;	/* source clock frequency */
 	u32 sclk;		/* SD/MS bus clock frequency */
-	bool ddr;
+	unsigned char timing;
 	bool vqmmc_enabled;
 	struct msdc_save_para save_para; /* used when gate HCLK */
 };
@@ -492,7 +507,7 @@ static void msdc_ungate_clock(struct msdc_host *host)
 		cpu_relax();
 }
 
-static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
+static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 {
 	u32 mode;
 	u32 flags;
@@ -508,8 +523,13 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 
 	flags = readl(host->base + MSDC_INTEN);
 	sdr_clr_bits(host->base + MSDC_INTEN, flags);
-	if (ddr) { /* may need to modify later */
-		mode = 0x2; /* ddr mode and use divisor */
+	if (timing == MMC_TIMING_UHS_DDR50 ||
+	    timing == MMC_TIMING_MMC_DDR52 ||
+	    timing == MMC_TIMING_MMC_HS400) { /* may need to modify later */
+		if (timing == MMC_TIMING_MMC_HS400)
+			mode = 0x3;
+		else
+			mode = 0x2; /* ddr mode and use divisor */
 		if (hz >= (host->src_clk_freq >> 2)) {
 			div = 0; /* mean div = 1/4 */
 			sclk = host->src_clk_freq >> 2; /* sclk = clk / 4 */
@@ -539,12 +559,12 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 		cpu_relax();
 	host->sclk = sclk;
 	host->mclk = hz;
-	host->ddr = ddr;
+	host->timing = timing;
 	/* need because clk changed. */
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
 	sdr_set_bits(host->base + MSDC_INTEN, flags);
 
-	dev_dbg(host->dev, "sclk: %d, ddr: %d\n", host->sclk, ddr);
+	dev_dbg(host->dev, "sclk: %d, timing: %d\n", host->sclk, timing);
 }
 
 static inline u32 msdc_cmd_find_resp(struct msdc_host *host,
@@ -1130,6 +1150,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	writel(0x403c0046, host->base + MSDC_PATCH_BIT);
 	sdr_set_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, 1);
 	writel(0xffff0089, host->base + MSDC_PATCH_BIT1);
+	sdr_set_bits(host->base + EMMC50_CFG0, EMMC50_CFG_CFCSTS_SEL);
 	/* Configure to enable SDIO mode.
 	 * it's must otherwise sdio cmd5 failed
 	 */
@@ -1175,13 +1196,8 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret;
-	u32 ddr = 0;
 
 	pm_runtime_get_sync(host->dev);
-
-	if (ios->timing == MMC_TIMING_UHS_DDR50 ||
-	    ios->timing == MMC_TIMING_MMC_DDR52)
-		ddr = 1;
 
 	msdc_set_buswidth(host, ios->bus_width);
 
@@ -1219,8 +1235,8 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		break;
 	}
 
-	if (host->mclk != ios->clock || host->ddr != ddr)
-		msdc_set_mclk(host, ddr, ios->clock);
+	if (host->mclk != ios->clock || host->timing != ios->timing)
+		msdc_set_mclk(host, ios->timing, ios->clock);
 
 end:
 	pm_runtime_mark_last_busy(host->dev);
@@ -1287,7 +1303,6 @@ static void msdc_tune_cmdrsp(struct msdc_host *host)
 {
 	u32 orig_rsmpl, orig_cksel;
 	u32 cur_rsmpl, cur_cksel = 0;
-	u32 ddr, clkmode;
 
 	sdr_get_field(host->base + MSDC_IOCON, MSDC_IOCON_RSPL, &orig_rsmpl);
 	sdr_get_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, &orig_cksel);
@@ -1301,21 +1316,48 @@ static void msdc_tune_cmdrsp(struct msdc_host *host)
 	if (cur_cksel >= 32) {
 		sdr_set_field(host->base + MSDC_IOCON, MSDC_IOCON_RSPL, 0);
 		sdr_set_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, 0);
-		sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD, &clkmode);
-		ddr = (clkmode == 2) ? 1 : 0;
-		msdc_set_mclk(host, ddr, host->mclk / 2);
+		msdc_set_mclk(host, host->timing, host->mclk / 2);
+	}
+}
+
+static void emmc_hs400_tune_rw(struct msdc_host *host)
+{
+	int cur_ds_dly1 = 0, cur_ds_dly3 = 0, orig_ds_dly1 = 0, orig_ds_dly3 = 0;
+
+	sdr_get_field(host->base + PAD_DS_TUNE, PAD_DS_TUNE_DLY1, &orig_ds_dly1);
+	sdr_get_field(host->base + PAD_DS_TUNE, PAD_DS_TUNE_DLY3, &orig_ds_dly3);
+
+	cur_ds_dly1 = orig_ds_dly1 - 1;
+	cur_ds_dly3 = orig_ds_dly3;
+	if (cur_ds_dly1 < 0) {
+		cur_ds_dly1 = 31;
+		cur_ds_dly3 = orig_ds_dly3 + 1;
+		if (cur_ds_dly3 >= 32)
+			cur_ds_dly3 = 0;
+	}
+
+	if (++host->hs400_tune_counter >= 32 * 32) {
+		dev_err(host->dev, "Failed to update PAD_DS_TUNE_DLY\n");
+		host->hs400_tune_counter = 0;
+		msdc_set_mclk(host, host->timing, host->mclk / 2);
+	} else {
+		sdr_set_field(host->base + PAD_DS_TUNE, PAD_DS_TUNE_DLY1, cur_ds_dly1);
+		if (cur_ds_dly3 != orig_ds_dly3) {
+			sdr_set_field(host->base + PAD_DS_TUNE, PAD_DS_TUNE_DLY3,
+				      cur_ds_dly3);
+		}
+		dev_err(host->dev, "cur_ds_dly1<0x%x>, cur_ds_dly3<0x%x>\n",
+				cur_ds_dly1, cur_ds_dly3);
 	}
 }
 
 static void msdc_tune_read(struct msdc_host *host)
 {
-	u32 ddr;
-	u32 clkmode;
 	u32 cur_dsmpl, orig_dsmpl;
 	u32 cur_cksel = 0, orig_cksel;
 
-	sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD, &clkmode);
-	ddr = (clkmode == 2) ? 1 : 0;
+	if (host->timing == MMC_TIMING_MMC_HS400)
+		return emmc_hs400_tune_rw(host);
 
 	sdr_get_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, &orig_cksel);
 	sdr_get_field(host->base + MSDC_IOCON, MSDC_IOCON_DSPL, &orig_dsmpl);
@@ -1330,16 +1372,17 @@ static void msdc_tune_read(struct msdc_host *host)
 
 	if (cur_cksel >= 32) {
 		sdr_set_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, 0);
-		msdc_set_mclk(host, ddr, host->mclk / 2); /* lower to 50Mhz */
+		msdc_set_mclk(host, host->timing, host->mclk / 2); /* lower to 50Mhz */
 	}
 }
 
 static void msdc_tune_write(struct msdc_host *host)
 {
-	u32 ddr;
 	u32 cur_dsmpl, orig_dsmpl;
 	u32 cur_cksel = 0, orig_cksel;
-	u32 clkmode;
+
+	if (host->timing == MMC_TIMING_MMC_HS400)
+		return emmc_hs400_tune_rw(host);
 
 	sdr_get_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, &orig_cksel);
 	sdr_get_field(host->base + MSDC_IOCON, MSDC_IOCON_W_DSPL, &orig_dsmpl);
@@ -1354,9 +1397,7 @@ static void msdc_tune_write(struct msdc_host *host)
 	if (cur_cksel >= 32) {
 		sdr_set_field(host->base + MSDC_IOCON, MSDC_IOCON_W_DSPL, 0);
 		sdr_set_field(host->base + MSDC_PATCH_BIT, MSDC_CKGEN_MSDC_DLY_SEL, 0);
-		sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD, &clkmode);
-		ddr = (clkmode == 2) ? 1 : 0;
-		msdc_set_mclk(host, ddr, host->mclk / 2);
+		msdc_set_mclk(host, host->timing, host->mclk / 2);
 	}
 }
 
@@ -1432,6 +1473,13 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (IS_ERR(host->src_clk)) {
 		ret = PTR_ERR(host->src_clk);
 		goto host_free;
+	} else {
+		host->src_clk_parent = clk_get_parent(host->src_clk);
+		host->hs400_src = devm_clk_get(&pdev->dev, "400Mhz_clk");
+		if (IS_ERR(host->hs400_src))
+			dev_dbg(&pdev->dev, "Cannot find 400Mhz_clk at dts!\n");
+		else if (clk_set_parent(host->src_clk_parent, host->hs400_src) < 0)
+				dev_err(host->dev, "Failed to set 400Mhz source clock!\n");
 	}
 
 	host->h_clk = devm_clk_get(&pdev->dev, "hclk");
@@ -1584,6 +1632,8 @@ static void msdc_save_reg(struct msdc_host *host)
 	host->save_para.pad_tune = readl(host->base + MSDC_PAD_TUNE);
 	host->save_para.patch_bit0 = readl(host->base + MSDC_PATCH_BIT);
 	host->save_para.patch_bit1 = readl(host->base + MSDC_PATCH_BIT1);
+	host->save_para.pad_ds_tune = readl(host->base + PAD_DS_TUNE);
+	host->save_para.emmc50_cfg0 = readl(host->base + EMMC50_CFG0);
 }
 
 static void msdc_restore_reg(struct msdc_host *host)
@@ -1594,6 +1644,8 @@ static void msdc_restore_reg(struct msdc_host *host)
 	writel(host->save_para.pad_tune, host->base + MSDC_PAD_TUNE);
 	writel(host->save_para.patch_bit0, host->base + MSDC_PATCH_BIT);
 	writel(host->save_para.patch_bit1, host->base + MSDC_PATCH_BIT1);
+	writel(host->save_para.pad_ds_tune, host->base + PAD_DS_TUNE);
+	writel(host->save_para.emmc50_cfg0, host->base + EMMC50_CFG0);
 }
 
 static int msdc_runtime_suspend(struct device *dev)
