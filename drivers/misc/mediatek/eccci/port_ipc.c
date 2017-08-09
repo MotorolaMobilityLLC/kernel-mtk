@@ -257,16 +257,21 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 				  int number)
 {
 	struct file *filp = NULL;
-	char file_list[][64] = {
+	static const char * const file_list[] = {
 		"/proc/net/tcp",
 		"/proc/net/tcp6",
 		"/proc/net/udp",
 		"/proc/net/udp6",
 	};
-	char *file_name = NULL;
+	const char *file_name = NULL;
 	int port_number = -1;
-	char buffer[256];
+	char *buffer;
 
+	buffer = kmalloc(256, GFP_KERNEL);
+	if (buffer == NULL) {
+		CCCI_INF_MSG(-1, IPC, "%s kmalloc 256 failed\n", __func__);
+		return -1;
+	}
 	if (prot_type == GF_TCP) {
 		if (ip_type == GF_IPV4)
 			file_name = file_list[0];
@@ -301,6 +306,7 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 			}
 		}
 	}
+	kfree(buffer);
 	if (filp != NULL)
 		filp_close(filp, NULL);
 	CCCI_INF_MSG(-1, IPC, "IP:%d Protocol:%d port number:%d\n", ip_type, prot_type, port_number);
