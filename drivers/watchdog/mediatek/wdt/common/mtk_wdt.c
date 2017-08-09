@@ -511,9 +511,7 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 	get_wd_api(&wd_api);
 	wdt_mode_val = __raw_readl(MTK_WDT_STATUS);
 	writel(wdt_mode_val, MTK_WDT_NONRST_REG);
-	pr_err("wdt fiq occur, STA=0x%x\n", wdt_mode_val);
 #ifdef	CONFIG_MTK_WD_KICKER
-	pr_err("kick=0x%x,check=0x%x\n", wd_api->wd_get_kick_bit(), wd_api->wd_get_check_bit());
 	aee_wdt_printf("\n kick=0x%08x,check=0x%08x,STA=%x\n", wd_api->wd_get_kick_bit(),
 		wd_api->wd_get_check_bit(), wdt_mode_val);
 #endif
