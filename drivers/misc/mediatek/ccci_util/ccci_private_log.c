@@ -645,6 +645,8 @@ static int ccci_dump_close(struct inode *inode, struct file *file)
 	int need_wait = 0;
 
 	user_info = (struct ccci_user_ctlb *)file->private_data;
+	if (user_info == NULL)
+		return -1;
 
 	do {
 		spin_lock_irqsave(&file_lock, flags);
