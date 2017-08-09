@@ -17,6 +17,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 #endif
 
+
+ifeq ($(CONFIG_ARCH_MT6755), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 
 obj-y += mt_idle.o
@@ -31,3 +33,12 @@ obj-y += mt_spm_sleep.o
 #obj-y += mt_spm_sodi.o
 #obj-y += mt_spm_sodi3p0.o
 obj-y += mt_spm_vcore_dvfs.o
+endif
+
+ifeq ($(CONFIG_ARCH_MT6797), y)
+
+obj-y += mt_idle.o
+obj-y += mt_spm.o
+obj-y += mt_spm_internal.o
+
+endif

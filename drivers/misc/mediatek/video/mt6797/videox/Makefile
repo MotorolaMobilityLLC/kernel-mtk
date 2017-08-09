@@ -28,7 +28,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/   \
              -I$(srctree)/drivers/misc/mediatek/sync/      \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
-             -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+             -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 		    -I$(srctree)/drivers/staging/android/ion/mtk

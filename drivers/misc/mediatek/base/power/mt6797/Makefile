@@ -30,17 +30,12 @@ endif
 #obj-y += mt_clkmgr_common.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
 #endif
-#obj-$(CONFIG_ARCH_MT6797) += mt_idle.o
-#obj-$(CONFIG_ARCH_MT6797M) += mt_idle.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_idle.o
-#obj-y += mt_spm.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6797M) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_spm_fs.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_spm_sodi.o
 #obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sodi.o
-#obj-y += mt_spm_internal.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_vcore_dvfs_1.o
