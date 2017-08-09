@@ -1158,7 +1158,6 @@ int spm_mtcmos_ctrl_cpusys1(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
 
-	return 0;
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
