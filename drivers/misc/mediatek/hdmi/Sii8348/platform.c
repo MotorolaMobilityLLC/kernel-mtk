@@ -535,6 +535,7 @@ void mhl_tx_vbus_control(enum vbus_power_state power_state)
     		mtk_enable_pmic_otg_mode();
 		printk(	"%s:  power chg %d received!\n",
 				__func__, battery_meter_get_charger_voltage());
+		msleep(100);
 		break;
 
 	default:

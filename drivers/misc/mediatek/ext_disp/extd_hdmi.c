@@ -824,7 +824,7 @@ static void hdmi_resolution_setting(int arg)
 
 		extd_dpi_params.dispif_config.dpi.width = p->hdmi_width;
 		extd_dpi_params.dispif_config.dpi.height = p->hdmi_height;
-		if (arg == HDMI_VIDEO_2160p_DSC_24Hz) {
+		if ((arg == HDMI_VIDEO_2160p_DSC_24Hz) || (arg == HDMI_VIDEO_2160p_DSC_30Hz)) {
 			memset(&(extd_dpi_params.dispif_config.dpi.dsc_params), 0, sizeof(LCM_DSC_CONFIG_PARAMS));
 			extd_dpi_params.dispif_config.dpi.dsc_enable = 1;
 			extd_dpi_params.dispif_config.dpi.width = p->hdmi_width/3;

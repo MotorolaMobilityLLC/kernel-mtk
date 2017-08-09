@@ -154,11 +154,15 @@ enum mhl2_enhanced_mode_command {
 
 #define MHL2_EM_MODE_NORMAL	0x00
 #define MHL2_EM_MODE_ONE	0x01
+#define MHL2_EM_MODE_TWO	0x02
+
 
 #define MHL2_EM_CMD_QUERY_CAP_MSG_LEN	(MHL2_EM_MESSAGE_FRAME_LEN + 0x00)
 #define MHL2_EM_CMD_REQ_MODE_MSG_LEN	(MHL2_EM_MESSAGE_FRAME_LEN + 0x01)
 #define MHL2_EM_CMD_REQ_MODE_NORMAL	MHL2_EM_MODE_NORMAL
 #define MHL2_EM_CMD_REQ_MODE_ONE	MHL2_EM_MODE_ONE
+#define MHL2_EM_CMD_REQ_MODE_TWO	MHL2_EM_MODE_TWO
+
 
 #define MHL2_EM_CAP_NONE	0x00
 #define MHL2_EM_CAP_4K24	0x01
@@ -1094,7 +1098,7 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 		TX_DEBUG_PRINT(("VIDEO_CAPABILITY_D_BLOCK_found= false. defult range\n"));
 	}
 	hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[3] = video_data.inputVideoCode; 
-	if(video_data.inputVideoCode == 93)
+	if((video_data.inputVideoCode == HDMI_4k24_DSC) || (video_data.inputVideoCode == HDMI_4k30_DSC))
 		hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[3] = 23;
 	MHL_TX_DBG_WARN(hw_context,"video_data.inputVideoCode:0x%02x\n",(int)video_data.inputVideoCode);
 
@@ -3135,8 +3139,7 @@ static int int_4_isr(struct drv_hw_context *hw_context, uint8_t int_4_status)
 		if(0x02 == (mhl_tx_read_reg(hw_context, REG_DISC_STAT2) & 0x03)) {
 			MHL_TX_DBG_INFO(hw_context, "Cable impedance = 1k (MHL Device)\n");
 			/* Call platform function to turn the VBUS on for unpowered dongle */
-			mhl_tx_vbus_control(VBUS_ON);
-			msleep(100);
+			mhl_tx_vbus_control(VBUS_ON);			
 			mhl_tx_write_reg(hw_context, REG_DISC_CTRL1, 0x27);
 			/*************************************************************/
 			
@@ -4036,7 +4039,10 @@ static void mhl2_em_request(struct drv_hw_context *hw_context, bool em)
 		// Request to go to MHL2 Enhanced Mode
 		hw_context->mhl2_em_sm = MHL2_EM_SM_REQ_MODE_EM;
 		hw_context->mhl2_em_request_mode = MHL2_EM_MODE_ONE;
-		req_msg[3] = MHL2_EM_CMD_REQ_MODE_ONE;
+		if(video_data.inputVideoCode == HDMI_4k30_DSC)
+			req_msg[3] = MHL2_EM_CMD_REQ_MODE_TWO;
+		else
+			req_msg[3] = MHL2_EM_CMD_REQ_MODE_ONE;
 	}
 	else
 	{
