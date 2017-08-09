@@ -1376,6 +1376,8 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 
 	spi_master_set_devdata(master, ms);
+	if (pdev->id == 1)
+		spi_clr_pinctrl(pdev);
 #if !defined(CONFIG_MTK_CLKMGR)
 	/*
 	 * prepare the clock source
