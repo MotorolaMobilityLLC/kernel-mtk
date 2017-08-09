@@ -22,7 +22,7 @@
 #include "m4u_hw.h"
 
 /* #define M4U_FPGAPORTING */
-/* #define M4U_PROFILE */
+#define M4U_PROFILE
 
 #define M4U_DVT 0
 
@@ -230,7 +230,7 @@ extern int gM4U_log_to_uart;
 				if (level > gM4U_log_to_uart)\
 					pr_warn("M4U"string, ##args);\
 				else\
-					pr_debug("M4U"string, ##args);\
+					pr_err("M4U"string, ##args);\
 			} \
 		} while (0)
 
