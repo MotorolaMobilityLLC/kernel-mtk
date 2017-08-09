@@ -1200,10 +1200,6 @@ static void msdc_pm(pm_message_t state, void *data)
 		if (host->suspend)
 			goto end;
 
-		if (evt == PM_EVENT_SUSPEND &&
-		     host->power_mode == MMC_POWER_OFF)
-			goto end;
-
 		host->suspend = 1;
 		host->pm_state = state;
 
@@ -5536,14 +5532,6 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 
 	host = mmc_priv(mmc);
 	base = host->base;
-
-	/* FIX ME: check if it can be removed */
-	if ((host->hw->host_function == MSDC_SD) &&
-	    (host->card_inserted == 1) &&
-	    (g_msdc1_io == 0)) {
-		/*bad sd because power is off, but sd is still inserted*/
-		host->block_bad_card = 1;
-	}
 
 	if (state.event == PM_EVENT_SUSPEND) {
 		if  (host->hw->flags & MSDC_SYS_SUSPEND) {
