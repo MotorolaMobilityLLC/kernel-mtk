@@ -101,9 +101,6 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 
 	ppm_lock(&hica_policy.lock);
 
-	if (!hica_policy.is_enabled)
-		goto end;
-
 	ppm_hica_algo_data.ppm_cur_loads = cur_loads;
 	ppm_hica_algo_data.ppm_cur_tlp = cur_tlp;
 	ppm_hica_algo_data.ppm_cur_nr_heavy_task = cur_nr_heavy_task;
@@ -114,7 +111,12 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 	hica_dbg("cur_loads = %d, cur_tlp = %d, cur_nr_heavy_task = %d, cur_state = %s, cur_mode = %d\n",
 		cur_loads, cur_tlp, cur_nr_heavy_task, ppm_get_power_state_name(cur_state), cur_mode);
 
-	if (!ppm_main_info.is_enabled || ppm_main_info.is_in_suspend || cur_state == PPM_POWER_STATE_NONE)
+	if (!ppm_main_info.is_enabled || !hica_policy.is_enabled || ppm_main_info.is_in_suspend ||
+		cur_state == PPM_POWER_STATE_NONE)
+		goto end;
+
+	/* skip HICA if DVFS is not ready (we cannot get current freq...) */
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 		goto end;
 
 	/* Power state is fixed by user, skip HICA state calculation */

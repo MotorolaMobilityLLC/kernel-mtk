@@ -140,7 +140,11 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		),
 	TRANS_DATA(
 		L_ONLY,
+#if 1	/* Workaround: disable LL->L due to hotplug is not ready */
+		0,
+#else
 		PPM_MODE_MASK_JUST_MAKE_ONLY | PPM_MODE_MASK_PERFORMANCE_ONLY,
+#endif
 		ppm_trans_rule_LL_ONLY_to_L_ONLY,
 		PPM_DEFAULT_DELTA,
 		PPM_DEFAULT_HOLD_TIME,
@@ -307,20 +311,23 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 	unsigned int cur_freq_LL;
-	unsigned int heavy_task_LL;
 
 	/* keep in LL_ONLY state if root cluster is fixed at cluster 0 */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
 		return false;
 
-	/* check heavy task (waiting for scheduler's API) */
-#if 0
-	heavy_task_LL = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
-#else
-	heavy_task_LL = 0;
+	/* check heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	{
+		unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
+
+		if (heavy_task && data.ppm_cur_tlp <= settings->tlp_bond) {
+			if (ppm_hica_is_log_enabled())
+				ppm_info("LL heavy task = %d\n", heavy_task);
+			return true;
+		}
+	}
 #endif
-	if (heavy_task_LL && data.ppm_cur_tlp <= settings->tlp_bond)
-		return true;
 
 	/* check loading */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
@@ -349,15 +356,16 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 static bool ppm_trans_rule_LL_ONLY_to_4LL_L(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/* check heavy task (waiting for scheduler's API) */
-#if 0
-	unsigned int heavy_task_LL = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
-#else
-	unsigned int heavy_task_LL = 0;
-#endif
+	/* check heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
 
-	if (heavy_task_LL && data.ppm_cur_tlp > settings->tlp_bond)
+	if (heavy_task && data.ppm_cur_tlp > settings->tlp_bond) {
+		if (ppm_hica_is_log_enabled())
+			ppm_info("LL heavy task = %d\n", heavy_task);
 		return true;
+	}
+#endif
 
 	/* check loading only */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
@@ -375,21 +383,23 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 	unsigned int cur_freq_L;
-	unsigned int heavy_task_L;
 
 	/* keep in L_ONLY state if root cluster is fixed at L */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L)
 		return false;
 
-	/* check heavy task (waiting for scheduler's API) */
-#if 0
-	heavy_task_L = sched_get_nr_heavy_task(PPM_CLUSTER_L);
-#else
-	heavy_task_L = 0;
-#endif
 	/* stay if L has heavy task, should be transferred to 4L+LL */
-	if (heavy_task_L)
-		return false;
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	{
+		unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_L);
+
+		if (heavy_task) {
+			if (ppm_hica_is_log_enabled())
+				ppm_info("L heavy task = %d\n", heavy_task);
+			return false;
+		}
+	}
+#endif
 
 	cur_freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L); /* FIXME */
 	if (ppm_hica_is_log_enabled())
@@ -408,15 +418,16 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/* check heavy task (waiting for scheduler's API) */
-#if 0
-	unsigned int heavy_task_L = sched_get_nr_heavy_task(PPM_CLUSTER_L);
-#else
-	unsigned int heavy_task_L = 0;
-#endif
+	/* check heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_L);
 
-	if (heavy_task_L)
+	if (heavy_task) {
+		if (ppm_hica_is_log_enabled())
+			ppm_info("L heavy task = %d\n", heavy_task);
 		return true;
+	}
+#endif
 
 	/* check loading */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)) {
@@ -432,17 +443,20 @@ static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+	/* stay if LL/L/B has heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task;
 	int i;
 
-	/* stay if LL/L/B has heavy task */
 	for_each_ppm_clusters(i) {
-#if 0
-		if (sched_get_nr_heavy_task(i))
-#else
-		if (0)
-#endif
+		heavy_task = sched_get_nr_heavy_task(i);
+		if (heavy_task) {
+			if (ppm_hica_is_log_enabled())
+				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
 			return false;
+		}
 	}
+#endif
 
 	/* check loading */
 	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {
@@ -458,17 +472,20 @@ static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
+	/* stay if LL/L/B has heavy task */
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+	unsigned int heavy_task;
 	int i;
 
-	/* stay if LL/L/B has heavy task */
 	for_each_ppm_clusters(i) {
-#if 0
-		if (sched_get_nr_heavy_task(i))
-#else
-		if (0)
-#endif
+		heavy_task = sched_get_nr_heavy_task(i);
+		if (heavy_task) {
+			if (ppm_hica_is_log_enabled())
+				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
 			return false;
+		}
 	}
+#endif
 
 	/* check loading */
 	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {

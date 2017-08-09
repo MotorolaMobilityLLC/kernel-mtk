@@ -17,12 +17,6 @@
 #include "mt_ppm_internal.h"
 
 
-/* project includes */
-#if 0
-#include "mach/mt_static_power.h"
-#endif
-
-
 #define PPM_TIMER_INTERVAL_MS		(1000)
 
 /*==============================================================*/
@@ -37,7 +31,11 @@ static int ppm_main_pdrv_remove(struct platform_device *pdev);
 /* Global variables						*/
 /*==============================================================*/
 struct ppm_data ppm_main_info = {
+#ifdef CONFIG_ARCH_MT6797 /* disable PPM temporarily */
+	.is_enabled = false,
+#else
 	.is_enabled = true,
+#endif
 	.is_in_suspend = false,
 
 	.cur_mode = PPM_MODE_PERFORMANCE,

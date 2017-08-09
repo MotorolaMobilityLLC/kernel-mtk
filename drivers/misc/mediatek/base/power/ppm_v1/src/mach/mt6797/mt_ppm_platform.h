@@ -19,6 +19,11 @@ extern "C" {
 #include "mt_ocp.h"
 #endif
 
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+extern unsigned int sched_get_nr_heavy_task(int cluster_id);
+#endif
+
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
 #define DLPT_MAX_REAL_POWER_FY	(11546)
