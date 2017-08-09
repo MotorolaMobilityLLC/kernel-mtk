@@ -5257,7 +5257,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
 	ret = cpuhvfs_module_init();
-	if (ret || disable_idvfs_flag)
+	if (ret || disable_idvfs_flag || dvfs_disable_flag)
 		enable_cpuhvfs = 0;
 #endif
 
