@@ -9,17 +9,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
-ifeq ($(CONFIG_ARCH_MT6797),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6797/
-obj-y += mt6797/
-endif
-ifeq ($(CONFIG_ARCH_MT6797M),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6797m/
-obj-y += mt6797m/
-endif
-ifeq ($(CONFIG_ARCH_MT6753),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6753/
-obj-y += mt6753/
-endif
-
 obj-$(CONFIG_MTK_M4U) += m4u_hw.o
