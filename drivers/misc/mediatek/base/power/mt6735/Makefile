@@ -39,6 +39,9 @@ obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr3.o
 else
 obj-y += mt_clkmgr_common.o
 obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr.o
+ifeq ($(strip $(CONFIG_DEBUG_FS)),y)
+obj-$(CONFIG_ARCH_MT6735) += mt_clkdbg.o
+endif
 endif
 obj-y += mt_spm_mtcmos.o
 obj-y += mt_pbm.o
