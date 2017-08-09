@@ -1008,9 +1008,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			pins-are-numbered;
 			gpio-controller;
 			#gpio-cells = <2>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
-
 		};
 
 		usb0:USB0@0x11200000 {

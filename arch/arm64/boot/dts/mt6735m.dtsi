@@ -725,9 +725,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			pins-are-numbered;
 			gpio-controller;
 			#gpio-cells = <2>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
-
 		};
 
 		i2c0:I2C0@0x11007000 {
