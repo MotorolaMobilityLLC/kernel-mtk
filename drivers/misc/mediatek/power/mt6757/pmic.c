@@ -3542,7 +3542,7 @@ bool is_charger_detection_rdy(void)
 	else
 		return false;
 }
-
+#if 0
 int is_ext_buck2_exist(void)
 {
 #if defined(CONFIG_MTK_FPGA)
@@ -3557,6 +3557,7 @@ int is_ext_buck2_exist(void)
 #endif
 #endif
 }
+#endif
 
 int is_ext_vbat_boost_exist(void)
 {

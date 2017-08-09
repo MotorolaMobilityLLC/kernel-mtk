@@ -411,6 +411,15 @@ int fan53526_vosel(unsigned long val)
 }
 #endif
 
+int fan53526_enable(unsigned char en)
+{
+	int ret = 1;
+
+	ret = fan53526_config_interface(0x00, en, 0x1, 7);
+	pr_notice("[fan53526_enable] en=%d\n", en);
+	return ret;
+}
+
 int fan53526_set_voltage(unsigned long val)
 {
 	int ret = 1;
@@ -421,13 +430,11 @@ int fan53526_set_voltage(unsigned long val)
 	/* 0.6~1.39375V (step 6.25mv) */
 	reg_val = (((val * 1000) - 600000)) / 6250;
 
-	if (reg_val > 63)
-		reg_val = 63;
+	if (reg_val > 127)
+		reg_val = 127;
 
 	ret = fan53526_config_interface(0x00, reg_val, 0x3F, 0);
-	/* ret = fan53526_config_interface(0x00, 0x1, 0x1, 7); */
-
-	/* pr_notice("[fan53526_vosel] val=%ld, reg_val=%ld\n", val, reg_val); */
+	pr_notice("[fan53526_set_voltage] val=%ld, reg_val=%ld\n", val, reg_val);
 
 	return ret;
 }
@@ -435,25 +442,9 @@ int fan53526_set_voltage(unsigned long val)
 int fan53526_set_mode(unsigned char mode)
 {
 	int ret = 1;
-	unsigned long reg_val = 0;
-	unsigned long fan_reg = 0;
-	unsigned int MASK = 0x3;
-	unsigned int SHIFT = 0;
 
-	ret = fan53526_read_interface(0x02, &reg_val, 0xFF, 0);
-	/*if (ret != 0) {
-		pr_err("[fan53526_set_mode] Reg[%x]\n", 0x2);
-		return ret;
-	}*/
-
-	fan_reg &= ~(MASK << SHIFT);
-	fan_reg |= (mode << SHIFT);
-
-	ret = fan53526_config_interface(0x02, fan_reg, 0xFF, 0);
-	/* ret = fan53526_config_interface(0x00, 0x1, 0x1, 7); */
-
-	/* pr_notice("[fan53526_vosel] val=%ld, reg_val=%ld\n", val, reg_val); */
-
+	ret = fan53526_config_interface(0x02, mode, 0x3, 0);
+	pr_notice("[fan53526_set_mode] mode=%d\n", mode);
 	return ret;
 }
 

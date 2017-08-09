@@ -43,6 +43,7 @@ extern unsigned int fan53526_read_interface(unsigned char RegNum, unsigned char 
 extern unsigned int fan53526_config_interface(unsigned char RegNum, unsigned char val,
 					      unsigned char MASK, unsigned char SHIFT);
 /*extern int fan53526_vosel(unsigned long val);*/
+extern int fan53526_enable(unsigned char en);
 extern int fan53526_set_voltage(unsigned long val);
 extern int fan53526_set_mode(unsigned char mode);
 extern unsigned int fan53526_read_byte(unsigned char cmd, unsigned char *returnData);
