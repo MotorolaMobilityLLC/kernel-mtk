@@ -316,7 +316,7 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 		int items = sscanf(buf, "fix_fv %u %u", &f, &v);
 		if (items == 2 && v > 0 && f > 0)
 		{
-			mtk_kbase_spm_fix_vol_freq(v, f);
+			mtk_kbase_spm_set_vol_freq_cf(v, f, v, f);
 		}
 	}
 
@@ -376,10 +376,10 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	dev_err(kbdev->dev, "xxxx clk_ap_dmau:%p\n", config->clk_ap_dma);
 #endif
 
-	config->max_vol = 1125;
-	config->max_freq = 700000;
-	config->min_vol = 800;
-	config->min_freq = 154500;
+	config->max_volt = 1125;
+	config->max_freq = mt_gpufreq_get_freq_by_idx(0);
+	config->min_volt = 800;
+	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-1);
 
 	g_config = kbdev->mtk_config = config;
 
