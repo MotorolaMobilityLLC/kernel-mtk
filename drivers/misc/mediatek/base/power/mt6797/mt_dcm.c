@@ -14,15 +14,13 @@
 #include <linux/of_address.h>
 #include <mt_dramc.h>
 
-#define DCM_DEFAULT_ALL_OFF
+/* #define DCM_DEFAULT_ALL_OFF */
 
 #if defined(CONFIG_OF)
 static unsigned long mcucfg_base;
 static unsigned long mcucfg_phys_base;
-#if 0
 static unsigned long mcucfg2_base;
 static unsigned long mcucfg2_phys_base;
-#endif
 static unsigned long emi_reg_base;
 static unsigned long dramc_conf_base;
 static unsigned long dramc_conf_b_base;
@@ -125,9 +123,6 @@ static unsigned long mcumixed_base;
 #endif
 
 #define REG_DUMP(addr) dcm_info("%-30s(0x%08lX): 0x%08X\n", #addr, addr, reg_read(addr))
-
-#define DCM_OFF (0)
-#define DCM_ON	(1)
 
 /*#define DCM_DEBUG*/
 
@@ -1072,11 +1067,6 @@ int dcm_ssusb(ENUM_MISC_DCM on)
 #define MSCI_A_DCM_ON	(0xFFFF << 16)
 #define MSCI_A_DCM_OFF	(0x0    << 16)
 
-typedef enum {
-	MCUSYS_DCM_OFF = DCM_OFF,
-	MCUSYS_DCM_ON = DCM_ON,
-} ENUM_MCUSYS_DCM;
-
 #ifdef NON_AO_MCUSYS_DCM
 void dcm_non_ao_mcusys(ENUM_MCUSYS_DCM on)
 {
@@ -1134,10 +1124,10 @@ int dcm_mcusys_sync_dcm(ENUM_MCUSYS_DCM on)
 int dcm_mcusys_mp2_sync_dcm(ENUM_MCUSYS_DCM on)
 {
 	dcm_info("%s(%d)\n", __func__, on);
-#if 0
+
 	if (on == MCUSYS_DCM_ON) {
 
-		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+		reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 				aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 				    ~MCUCFG_SYNC_DCM_MP2_MASK,
 				    (MCUCFG_SYNC_DCM_MP2_ON |
@@ -1145,7 +1135,7 @@ int dcm_mcusys_mp2_sync_dcm(ENUM_MCUSYS_DCM on)
 				     MCUCFG_SYNC_DCM_MP2_TOG1)));
 		/* dcm_info("[0x%x] = 0x%x\n", MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG)); */
 
-		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+		reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 				aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 				    ~MCUCFG_SYNC_DCM_MP2_MASK,
 				    (MCUCFG_SYNC_DCM_MP2_ON |
@@ -1155,7 +1145,7 @@ int dcm_mcusys_mp2_sync_dcm(ENUM_MCUSYS_DCM on)
 	} else {
 		/* dcm_info("MP2 sync DCM OFF\n"); */
 
-		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+		reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 				aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 				    ~MCUCFG_SYNC_DCM_MP2_MASK,
 				    (MCUCFG_SYNC_DCM_MP2_OFF |
@@ -1163,7 +1153,7 @@ int dcm_mcusys_mp2_sync_dcm(ENUM_MCUSYS_DCM on)
 				     MCUCFG_SYNC_DCM_MP2_TOG1)));
 		/* dcm_info("[0x%x] = 0x%x\n", MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG)); */
 
-		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+		reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 				aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 				    ~MCUCFG_SYNC_DCM_MP2_MASK,
 				    (MCUCFG_SYNC_DCM_MP2_OFF |
@@ -1171,7 +1161,7 @@ int dcm_mcusys_mp2_sync_dcm(ENUM_MCUSYS_DCM on)
 				     MCUCFG_SYNC_DCM_MP2_TOG0)));
 		/* dcm_info("[0x%x] = 0x%x\n", MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG)); */
 	}
-#endif
+
 	return 0;
 }
 
@@ -1631,8 +1621,8 @@ void dcm_set_state(unsigned int type, int state)
 		if (type & dcm->typeid) {
 			type &= ~(dcm->typeid);
 
-			#if 0
 			dcm->saved_state = state;
+			#if 0
 			if (dcm->disable_refcnt == 0) {
 			#endif
 				dcm->current_state = state;
@@ -1737,10 +1727,7 @@ void dcm_dump_regs(void)
 	REG_DUMP(MCUCFG_BUS_FABRIC_DCM_CTRL);
 	REG_DUMP(MCUCFG_CCI_ADB400_DCM_CONFIG);
 	REG_DUMP(MCUCFG_SYNC_DCM_CONFIG);
-#if 0
 	REG_DUMP(MCUCFG_SYNC_DCM_MP2_CONFIG);
-#endif
-
 #ifdef NON_AO_MCUSYS_DCM
 	REG_DUMP(MSCI_A_DCM);
 #endif
@@ -1780,9 +1767,8 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	/* dcm_dump_state(ALL_DCM_TYPE); */
 	p += sprintf(p, "\n******** dcm dump state *********\n");
 	for (i = 0, dcm = &dcm_array[0]; i < NR_DCM_TYPE; i++, dcm++)
-		p += sprintf(p, "[%-16s 0x%08x] current state:%d (%d)\n",
-			     dcm->name, dcm->typeid, dcm->current_state,
-			     dcm->disable_refcnt);
+		p += sprintf(p, "[%-16s 0x%08x] current state: %s\n",
+			     dcm->name, dcm->typeid, dcm->current_state ? "ON" : "OFF");
 
 	p += sprintf(p, "\n******** dcm dump register *********\n");
 	p += sprintf(p, "\n=== armcore DCM ===\n");
@@ -1802,10 +1788,8 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 				MCUCFG_CCI_ADB400_DCM_CONFIG, reg_read(MCUCFG_CCI_ADB400_DCM_CONFIG));
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_CONFIG",
 				MCUCFG_SYNC_DCM_CONFIG, reg_read(MCUCFG_SYNC_DCM_CONFIG));
-#if 0
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_MP2_CONFIG",
 				MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG));
-#endif
 
 	p += sprintf(p, "\n=== infra DCM ===\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "INFRA_BUS_DCM_CTRL",
@@ -1917,35 +1901,30 @@ static int mt_dcm_dts_map(void)
 		BUG();
 	}
 	if (of_address_to_resource(node, 0, &r)) {
-		dcm_info("error: cannot get phys addr" MCUCFG_NODE);
+		dcm_info("error: cannot get phys addr index 1 of " MCUCFG_NODE);
 		BUG();
 	}
 	mcucfg_phys_base = r.start;
 
 	mcucfg_base = (unsigned long)of_iomap(node, 0);
 	if (!mcucfg_base) {
-		dcm_info("error: cannot iomap " MCUCFG_NODE);
+		dcm_info("error: cannot iomap index 0 of " MCUCFG_NODE);
 		BUG();
 	}
-#if 0
+
 	/* mcucfg2 */
-	node = of_find_compatible_node(NULL, NULL, MCUCFG2_NODE);
-	if (!node) {
-		dcm_info("error: cannot find node " MCUCFG2_NODE);
-		BUG();
-	}
-	if (of_address_to_resource(node, 0, &r)) {
-		dcm_info("error: cannot get phys addr" MCUCFG2_NODE);
+	if (of_address_to_resource(node, 1, &r)) {
+		dcm_info("error: cannot get phys addr index 1 of " MCUCFG2_NODE);
 		BUG();
 	}
 	mcucfg2_phys_base = r.start;
 
-	mcucfg2_base = (unsigned long)of_iomap(node, 0);
+	mcucfg2_base = (unsigned long)of_iomap(node, 1);
 	if (!mcucfg2_base) {
-		dcm_info("error: cannot iomap " MCUCFG2_NODE);
+		dcm_info("error: cannot iomap index 1 of " MCUCFG2_NODE);
 		BUG();
 	}
-#endif
+
 	/* infracfg_ao */
 	node = of_find_compatible_node(NULL, NULL, INFRACFG_AO_NODE);
 	if (!node) {
@@ -2015,64 +1994,15 @@ static int mt_dcm_dts_map(void)
 }
 #endif
 
-#if 0
-int dcm_probe(struct platform_device *pdev)
-{
-	int ret = 0;
-	int i;
-
-#if defined(CONFIG_OF)
-	mcucfg_base = of_iomap(pdev->dev.of_node, 0);
-	if (!mcucfg_base) {
-		dcm_info("error: cannot iomap mcucfg_base" MCUCFG_NODE);
-		BUG();
-	}
-
-	mcucfg2_base = of_iomap(pdev->dev.of_node, 1);
-	if (!mcucfg2_base) {
-		dcm_info("error: cannot iomap mcucfg2_base" MCUCFG_NODE);
-		BUG();
-	}
-#endif
-
-	return ret;
-}
-
-static const struct of_device_id mcucfg_ids[] = {
-	{.compatible = "mediatek,mcucfg",},
-	{}
-};
-
-static struct platform_driver dcm_driver = {
-	.probe = dcm_probe,
-	.driver = {
-		   .name = "dcm",
-		   .bus = &platform_bus_type,
-		   .owner = THIS_MODULE,
-		   .of_match_table = mcucfg_ids,
-		   },
-};
-#endif
-
 int mt_dcm_init(void)
 {
-#if 0
-	int err;
-#endif
 	if (dcm_initiated)
 		return 0;
-#if 0
-	err = platform_driver_register(&wp_driver);
-	if (err) {
-		pr_err("[MTK WP] watchpoint registration failed\n");
-		return err;
-	}
-#endif
+
 	dcm_info("=== mt_dcm_init ===\n");
 
 	mt_dcm_dts_map();
 
-#if 0 /*TBD*/
 #if !defined(DCM_DEFAULT_ALL_OFF)
 	/** enable all dcm **/
 	dcm_set_default(INIT_DCM_TYPE);
@@ -2081,7 +2011,6 @@ int mt_dcm_init(void)
 #endif /* #if !defined (DCM_DEFAULT_ALL_OFF) */
 
 	dcm_dump_regs();
-#endif
 
 #if defined(CONFIG_PM)
 	{
@@ -2280,12 +2209,12 @@ int sync_dcm_set_mp2_freq(unsigned int mp2)
 	mt_dcm_init();
 
 	/* set xxx_sync_dcm_tog as 0 first */
-	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+	reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 			    ~MCUCFG_SYNC_DCM_MP2_TOGMASK,
 			    MCUCFG_SYNC_DCM_MP2_TOG0));
 
-	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_MP2_CONFIG,
+	reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 			    ~MCUCFG_SYNC_DCM_MP2_TOGDIV_MASK,
 			    (MCUCFG_SYNC_DCM_MP2_TOG1 |

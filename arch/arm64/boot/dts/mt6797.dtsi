@@ -2114,7 +2114,9 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 		mcucfg@10220000 {
 			compatible = "mediatek,mcucfg";
-			reg = <0x10220000 0x1000>;
+			num = <2>;
+			reg = <0x10220000 0x1000>,
+				<0x10222000 0x1000>;
 		};
 
 		ocp_cfg@10220000 {
