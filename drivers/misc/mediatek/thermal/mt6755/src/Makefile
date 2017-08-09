@@ -19,5 +19,9 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 
 obj-$(CONFIG_THERMAL) += mtk_tc.o
 
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6353),y)
+obj-$(CONFIG_THERMAL) += mtk_pmic_mt6353_efuse.o
+else
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
+endif
 

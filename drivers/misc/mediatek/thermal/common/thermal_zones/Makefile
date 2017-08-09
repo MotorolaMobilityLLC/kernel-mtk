@@ -83,7 +83,9 @@ obj-$(CONFIG_THERMAL) += mtk_ts4.o
 endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6755"))
+ifneq ($(CONFIG_MTK_PMIC_CHIP_MT6353),y)
 obj-$(CONFIG_THERMAL) += mtk_ts_6311buck.o
+endif
 
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
