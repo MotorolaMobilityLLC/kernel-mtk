@@ -45,7 +45,6 @@ obj-y += mt_idle_mt6797.o
 obj-y += mt_spm.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_sleep.o
-obj-y += mt_pm_init.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_dpidle_mt6797.o
