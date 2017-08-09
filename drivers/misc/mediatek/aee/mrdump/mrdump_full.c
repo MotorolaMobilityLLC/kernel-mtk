@@ -637,7 +637,7 @@ __init void mrdump_rsvmem(void)
 				mrdump_rsv_conflict = 1;
 				mrdump_enable = 0;
 #endif
-				pr_err(" error mrdump region start = %pa size =%pa is reserved by others\n",
+				pr_err(" mrdump region start = %pa size =%pa is reserved already\n",
 						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 			}
 		}
