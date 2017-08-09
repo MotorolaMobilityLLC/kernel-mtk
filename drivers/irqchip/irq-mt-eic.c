@@ -828,10 +828,11 @@ static unsigned int mt_can_en_debounce(unsigned int eint_num)
  */
 void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 {
-	unsigned int dbnc, bit, clr_bit, rst, unmask = 0, eint_num;
+	unsigned int bit, clr_bit, rst, unmask = 0, eint_num;
 	unsigned long base, clr_base;
 	unsigned int i;
 
+	unsigned int dbnc = 0;
 	eint_num = mt_gpio_to_irq(gpio_pin) - EINT_IRQ_BASE;
 
 	if (eint_num >= EINT_MAX_CHANNEL) {
@@ -1004,7 +1005,6 @@ void dump_eint_trigger_history(void)
 	unsigned int i;
 	unsigned int cur_wp;
 	unsigned int cur_rp;
-	unsigned long flags;
 
 	if (eint_history_dump_enable != 1)
 		return;
@@ -1073,9 +1073,9 @@ static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
 	ssize_t ret;
 
 	if (cur_debug_eint >= EINT_MAX_CHANNEL)
-		return;
+		return -EINVAL;
 
-	ret = snprintf(buf, PAGE_SIZE, "[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x\n", cur_debug_eint,
+	ret = snprintf(buf, PAGE_SIZE, "[EINT] eint:%ld,mask:%x,pol:%x,deb:%d us,sens:%x\n", cur_debug_eint,
 			mt_eint_get_mask(cur_debug_eint), mt_eint_get_polarity(cur_debug_eint),
 			mt_eint_get_debounce_cnt(cur_debug_eint), mt_eint_get_sens(cur_debug_eint));
 	return ret;
@@ -2021,10 +2021,11 @@ static int __init mt_eint_init(void)
 
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num)
 {
-	unsigned int dbnc, deb, dben;
 	unsigned long base;
 	unsigned int i;
-
+	unsigned int dbnc = 0;
+	unsigned int deb = 0;
+	unsigned int dben = 0;
 
 	base = (cur_eint_num / 4) * 4 + EINT_DBNC_BASE;
 
