@@ -164,8 +164,8 @@ thermal_bank_name g_currentBank = THERMAL_BANK0;
 /*=============================================================
  * Local function declartation
  *=============================================================*/
-static S32 temperature_to_raw_room(U32 ret);
-static void set_tc_trigger_hw_protect(int temperature, int temperature2);
+static S32 temperature_to_raw_room(U32 ret, thermal_sensor_name ts_name);
+static void set_tc_trigger_hw_protect(int temperature, int temperature2, thermal_bank_name bank);
 /*=============================================================
  *Weak functions
  *=============================================================*/
@@ -514,16 +514,15 @@ void tscpu_thermal_cal_prepare_2(U32 ret)
 }
 
 #if THERMAL_CONTROLLER_HW_TP
-static S32 temperature_to_raw_room(U32 ret)
+static S32 temperature_to_raw_room(U32 ret, thermal_sensor_name ts_name)
 {
 	/* Ycurr = [(Tcurr - DEGC_cali/2)*(166+O_slope)*(18/15)*(1/10000)+X_roomtabb]*Gain*4096 + OE */
 
 	S32 t_curr = ret;
 	S32 format_1 = 0;
 	S32 format_2 = 0;
-	S32 format_3[THERMAL_SENSOR_NUM] = { 0 };
-	S32 format_4[THERMAL_SENSOR_NUM] = { 0 };
-	S32 i, index = 0, temp = 0;
+	S32 format_3 = 0;
+	S32 format_4 = 0;
 
 	/* tscpu_dprintk("temperature_to_raw_room\n"); */
 
@@ -532,39 +531,18 @@ static S32 temperature_to_raw_room(U32 ret)
 		format_2 = format_1 * (166 + g_o_slope) * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
-		for (i = 0; i < THERMAL_SENSOR_NUM; i++) {
-			format_3[i] = format_2 / 1000 + g_x_roomt[i] * 10;
-			format_4[i] = (format_3[i] * 4096 / 10000 * g_gain) / 100000 + g_oe;
-		}
-
+		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
+		format_4 = (format_3 * 4096 / 10000 * g_gain) / 100000 + g_oe;
 	} else {		/* O_SLOPE is Negative. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
 		format_2 = format_1 * (166 - g_o_slope) * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
-		for (i = 0; i < THERMAL_SENSOR_NUM; i++) {
-			format_3[i] = format_2 / 1000 + g_x_roomt[i] * 10;
-			format_4[i] = (format_3[i] * 4096 / 10000 * g_gain) / 100000 + g_oe;
-			/* tscpu_dprintk("[roomt%d] format_1=%d, format_2=%d, format_3=%d, format_4=%d\n",
-				 i, format_1, format_2, format_3[i], format_4[i]); */
-		}
-
-		/* tscpu_dprintk("temperature_to_raw_abb format_1=%d, format_2=%d, format_3=%d, format_4=%d\n",
-			format_1, format_2, format_3, format_4); */
+		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
+		format_4 = (format_3 * 4096 / 10000 * g_gain) / 100000 + g_oe;
 	}
 
-
-	temp = 0;
-	for (i = 0; i < THERMAL_SENSOR_NUM; i++) {
-		if (temp < format_4[i]) {
-			temp = format_4[i];
-			index = i;
-		}
-	}
-
-	/* tscpu_dprintk("[Temperature_to_raw_roomt] temperature=%d, raw[%d]=%d", ret, index, format_4[index]); */
-	return format_4[index];
-
+	return format_4;
 }
 #endif
 
@@ -919,52 +897,30 @@ static int thermal_config_Bank(void)
 /**
  *  temperature2 to set the middle threshold for interrupting CPU. -275000 to disable it.
  */
-static void set_tc_trigger_hw_protect(int temperature, int temperature2)
+static void set_tc_trigger_hw_protect(int temperature, int temperature2, thermal_bank_name bank)
 {
 	int temp = 0;
-	int raw_high, raw_middle, raw_low;
-
+	int raw_high;
+	thermal_sensor_name ts_name;
 
 	/* temperature2=80000;  test only */
 	tscpu_dprintk("set_tc_trigger_hw_protect t1=%d t2=%d\n", temperature, temperature2);
 
+	ts_name = tscpu_g_bank[bank].ts[0].type;
 
 	/* temperature to trigger SPM state2 */
-	raw_high = temperature_to_raw_room(temperature);
-	if (temperature2 > -275000)
-		raw_middle = temperature_to_raw_room(temperature2);
-	raw_low = temperature_to_raw_room(5000);
-
+	raw_high = temperature_to_raw_room(temperature, ts_name);
 
 	temp = DRV_Reg32(TEMPMONINT);
-	/* tscpu_printk("set_tc_trigger_hw_protect 1 TEMPMONINT:temp=0x%x\n",temp); */
-	/* THERMAL_WRAP_WR32(temp & 0x1FFFFFFF, TEMPMONINT);     // disable trigger SPM interrupt */
 	THERMAL_WRAP_WR32(temp & 0x00000000, TEMPMONINT);	/* disable trigger SPM interrupt */
 
 
-	/* THERMAL_WRAP_WR32(0x60000, TEMPPROTCTL);// set hot to wakeup event control */
-	/* THERMAL_WRAP_WR32(0x20000, TEMPPROTCTL);// set hot to wakeup event control */
 	THERMAL_WRAP_WR32(0x20000, TEMPPROTCTL);	/* set hot to wakeup event control */
-
-	THERMAL_WRAP_WR32(raw_low, TEMPPROTTA);
-	if (temperature2 > -275000)
-		THERMAL_WRAP_WR32(raw_middle, TEMPPROTTB);	/* register will remain unchanged if -275000... */
-
 
 	THERMAL_WRAP_WR32(raw_high, TEMPPROTTC);	/* set hot to HOT wakeup event */
 
 
-	/*trigger cold ,normal and hot interrupt */
-	/* remove for temp       THERMAL_WRAP_WR32(temp | 0xE0000000, TEMPMONINT); // enable trigger SPM interrupt */
-	/*Only trigger hot interrupt */
-#if defined(CONFIG_ARCH_MT6755)/*remove Tj=100C shutdown*/
 	THERMAL_WRAP_WR32(temp | 0x80000000, TEMPMONINT);	/* enable trigger Hot SPM interrupt */
-#else
-	if (temperature2 > -275000)
-		THERMAL_WRAP_WR32(temp | 0xC0000000, TEMPMONINT);	/* enable trigger middle & Hot SPM interrupt */
-	else
-		THERMAL_WRAP_WR32(temp | 0x80000000, TEMPMONINT);	/* enable trigger Hot SPM interrupt */
-#endif
 }
 
 
@@ -1217,8 +1173,8 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
 		tscpu_switch_bank(i);
-
-		set_tc_trigger_hw_protect(temperature, temperature2);	/* Move thermal HW protection ahead... */
+		/* Move thermal HW protection ahead... */
+		set_tc_trigger_hw_protect(temperature, temperature2, i);
 	}
 
 	mt_ptp_unlock(&flags);
