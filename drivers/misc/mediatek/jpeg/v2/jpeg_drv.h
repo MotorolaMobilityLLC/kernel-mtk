@@ -6,7 +6,7 @@
 #include <linux/compat.h>
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
@@ -103,7 +103,7 @@ const long jpeg_dev_get_encoder_base_VA(void);
 const long jpeg_dev_get_decoder_base_VA(void);
 /* #endif */
 
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 typedef struct JpegClk {
 	struct clk *clk_disp_mtcmos;
 	struct clk *clk_venc_mtcmos;

@@ -57,7 +57,7 @@
 #include <mach/mt_irq.h>
 #include <mach/irqs.h>
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif				/* defined(CONFIG_MTK_LEGACY) */
 
@@ -127,7 +127,7 @@ static const struct of_device_id jpeg_of_ids[] = {
 };
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 static struct JpegClk gJpegClk;
 #endif
 
@@ -212,7 +212,7 @@ static irqreturn_t jpeg_drv_dec_isr(int irq, void *dev_id)
 
 void jpeg_drv_dec_power_on(void)
 {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "JPEG");
 	enable_clock(MT_CG_VENC_LARB, "JPEG");
 	enable_clock(MT_CG_VENC_JPGDEC, "JPEG");
@@ -236,7 +236,7 @@ void jpeg_drv_dec_power_on(void)
 
 void jpeg_drv_dec_power_off(void)
 {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_VENC_JPGDEC, "JPEG");
 	disable_clock(MT_CG_VENC_LARB, "JPEG");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "JPEG");
@@ -252,7 +252,7 @@ void jpeg_drv_dec_power_off(void)
 
 void jpeg_drv_enc_power_on(void)
 {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	/* REG_JPEG_MM_REG_MASK  = 0; */
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "JPEG");
 #ifdef CONFIG_ARCH_MT6735M
@@ -282,7 +282,7 @@ void jpeg_drv_enc_power_on(void)
 
 void jpeg_drv_enc_power_off(void)
 {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #ifdef CONFIG_ARCH_MT6735M
 	disable_clock(MT_CG_IMAGE_JPGENC, "JPEG");
 #else
@@ -508,7 +508,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			JPEG_MSG("[JPEGDRV]JPEG gen CMDQ wait!!\n");
 			/* wait frame done */
 			cmdqRecWait(jpegCMDQ_handle, CMDQ_EVENT_JPEG_DEC_EOF);
-			/* cmdqRecPoll(jpegCMDQ_handle, 0x18004274 /*REG_ADDR_JPGDEC_INTERRUPT_STATUS */
+			/* cmdqRecPoll(jpegCMDQ_handle, 0x18004274 */
 			/*    , BIT_INQST_MASK_PAUSE, 0x0010); */
 		}
 
@@ -1249,7 +1249,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,JPGENC");
 	jpegDev->encRegBaseVA = (unsigned long)of_iomap(node, 0);
 	jpegDev->encIrqId = irq_of_parse_and_map(node, 0);
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #else
 	gJpegClk.clk_disp_mtcmos = of_clk_get_by_name(node, "disp-mtcmos");
 	if (IS_ERR(gJpegClk.clk_disp_mtcmos))
@@ -1271,7 +1271,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,JPGDEC");
 	jpegDev->decRegBaseVA = (unsigned long)of_iomap(node, 0);
 	jpegDev->decIrqId = irq_of_parse_and_map(node, 0);
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #else
 	gJpegClk.clk_venc_jpgDec = of_clk_get_by_name(node, "venc-jpgdec");
 	if (IS_ERR(gJpegClk.clk_venc_jpgDec))
