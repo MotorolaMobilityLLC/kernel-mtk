@@ -33,7 +33,6 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
 static unsigned int g_SelectEEPROM;
@@ -364,11 +363,6 @@ static void LC898212XD_init(void)
 
 static unsigned short AF_convert(int position)
 {
-	if (position == 0)
-		return 0x9001;
-	else if(position == 1023)
-		return 0x6FFF;
-
 #if 1
 	if (g_LC898212_SearchDir == 0) {
 		return (((position - Min_Pos) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
@@ -427,23 +421,19 @@ static inline int moveAF(unsigned long a_u4Position)
 		LC898212XD_init();
 
 		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = 0;
+		g_u4CurrPosition = a_u4Position;
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
+
+		StmvTo(AF_convert((int)a_u4Position));
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
 		return 0;
 
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
-
-	/* LOG_INF("move [curr] %d [target] %d\n", (int)g_u4CurrPosition, (int)g_u4TargetPosition); */
-
-	if ((StmvTo(AF_convert(a_u4Position))&0x1) == 0) {
+	if ((StmvTo(AF_convert((int)a_u4Position))&0x1) == 0) {
 		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
+		g_u4CurrPosition = (unsigned long)a_u4Position;
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
