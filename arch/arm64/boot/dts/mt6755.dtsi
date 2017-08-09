@@ -1441,13 +1441,15 @@
 			#size-cells = <0>;
 		};
 
-		spi1@1100a000 {
-			compatible = "mediatek,spi1";
+		spi0: spi@1100a000 {
+			compatible = "mediatek,mt6755-spi";
+			cell-index = <0>;
+			spi-padmacro = <0>;
 			reg = <0x1100a000 0x1000>;
 			interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI0>;
-			clock-names = "spi1-main";
-			clock-frequency = <13600>;
+			clock-names = "main";
+			clock-frequency = <109000000>;
 			clock-div = <1>;
 		};
 
@@ -1510,10 +1512,16 @@
 			};
 		};
 
-		spi2@11010000 {
-			compatible = "mediatek,spi2";
+		spi1: spi@11010000 {
+			compatible = "mediatek,mt6755-spi";
+			cell-index = <1>;
+			spi-padmacro = <1>;
 			reg = <0x11010000 0x1000>;
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI1>;
+			clock-names = "main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		i2c3: i2c@11011000 {

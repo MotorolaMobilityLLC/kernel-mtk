@@ -127,7 +127,7 @@ static void disable_clk(struct mt_spi_t *ms)
 }
 
 #ifdef SPI_DEBUG
-#define SPI_DBG(fmt, args...) pr_alert("spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
+#define SPI_DBG(fmt, args...) pr_debug("spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
 
 #ifdef SPI_VERBOSE
 #define SPI_INFO(dev, fmt, args...) dev_alert(dev, "spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
@@ -813,12 +813,12 @@ static void transfer_dma_unmapping(struct mt_spi_t *ms, struct spi_transfer *xfe
 
 	if ((xfer->tx_dma != INVALID_DMA_ADDRESS) && (xfer->tx_dma != 0)) {
 		dma_unmap_single(dev, xfer->tx_dma, xfer->len, DMA_TO_DEVICE);
-		SPI_INFO(dev, "tx_dma:0x%x,unmapping\n", xfer->tx_dma);
+		SPI_INFO(dev, "tx_dma:0x%x,unmapping\n", (unsigned int)xfer->tx_dma);
 		xfer->tx_dma = INVALID_DMA_ADDRESS;
 	}
 	if ((xfer->rx_dma != INVALID_DMA_ADDRESS) && (xfer->rx_dma != 0)) {
 		dma_unmap_single(dev, xfer->rx_dma, xfer->len, DMA_FROM_DEVICE);
-		SPI_INFO(dev, "rx_dma:0x%x,unmapping\n", xfer->rx_dma);
+		SPI_INFO(dev, "rx_dma:0x%x,unmapping\n", (unsigned int)xfer->rx_dma);
 		xfer->rx_dma = INVALID_DMA_ADDRESS;
 	}
 
@@ -834,7 +834,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 	struct mt_chip_conf *chip_config = (struct mt_chip_conf *)msg->state;
 	u8 mode, cnt, i;
 	int ret = 0;
-	char xfer_rec[16];
+	char xfer_rec[32];
 #ifdef SPI_AUTO_SELECT_MODE
 	u32 reg_val = 0;
 #endif
@@ -1019,7 +1019,7 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 {
 	struct spi_message *msg;
 	struct mt_chip_conf *chip_config;
-	char msg_addr[16];
+	char msg_addr[32];
 
 	msg = list_entry(ms->queue.next, struct spi_message, queue);
 	chip_config = (struct mt_chip_conf *)msg->state;
@@ -1061,7 +1061,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
 	unsigned long flags;
-	char msg_addr[16];
+	char msg_addr[32];
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
@@ -1118,7 +1118,8 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 #ifdef SPI_VERBOSE
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
 		SPI_INFO(&spidev->dev, "xfer %p: len %04u tx %p/%08x rx %p/%08x\n",
-			 xfer, xfer->len, xfer->tx_buf, xfer->tx_dma, xfer->rx_buf, xfer->rx_dma);
+			 xfer, xfer->len, xfer->tx_buf, (unsigned int)xfer->tx_dma,
+			 xfer->rx_buf, (unsigned int)xfer->rx_dma);
 	}
 #endif
 	msg->status = -EINPROGRESS;
@@ -1130,10 +1131,13 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	if (!ms->cur_transfer) {
 		wake_lock(&ms->wk_lock);
 		spi_gpio_set(ms);
+
 		/* enable_clk(); */
 
 		enable_clk(ms);
+
 		mt_spi_next_message(ms);
+
 	}
 	spin_unlock_irqrestore(&ms->lock, flags);
 
