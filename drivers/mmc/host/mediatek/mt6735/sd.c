@@ -1175,9 +1175,7 @@ int msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
 	ret = regulator_enable(reg);
-	if (!ret)
-		pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
-	else
+	if (ret)
 		pr_err("power on failed, %s: %d\n", __func__, __LINE__);
 out:
 	return ret;
@@ -1200,7 +1198,6 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 
 	/* New API voltage use micro V */
 	regulator_disable(reg);
-	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
 
 	return true;
 }
@@ -1211,7 +1208,6 @@ static u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_uv,
 {
 	if (on) {		/* want to power on */
 		if (*status == 0) {	/* can power on */
-			pr_warn("msdc LDO<%d> power on<%d>\n", powerId, voltage_uv);
 			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
 			*status = voltage_uv;
 		} else if (*status == voltage_uv) {
@@ -1226,7 +1222,6 @@ static u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_uv,
 		}
 	} else {		/* want to power off */
 		if (*status != 0) {	/* has been powerred on */
-			pr_warn("msdc LDO<%d> power off\n", powerId);
 			msdc_hwPowerDown(powerId, "msdc");
 			*status = 0;
 		} else
@@ -2145,9 +2140,6 @@ static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 		timeout = timeout > 255 ? 255 : timeout;
 	}
 	sdr_set_field(SDC_CFG, SDC_CFG_DTOC, timeout);
-
-	pr_debug("msdc%d set read dattimeout:%dns,%d clk,MSDC_CFG=0x%x,freq=%dKHZ"
-		, host->id, ns, clks, sdr_read32(MSDC_CFG), (host->sclk / 1000));
 }
 
 /* msdc_eirq_sdio() will be called when EIRQ(for WIFI) */
@@ -8221,9 +8213,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	msdc_set_smt(host, 1);
 	msdc_set_driving(host, hw, 0);
 #endif
-
-	pr_err("msdc%d drving<clk %d,cmd %d,dat %d>",
-		host->id, hw->clk_drv, hw->cmd_drv, hw->dat_drv);
 
 	/* write crc timeout detection */
 	sdr_set_field(MSDC_PATCH_BIT0, 1 << 30, 1);
