@@ -31,13 +31,14 @@
 #include <mt-plat/mt_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
+#include <mt_spm_sleep.h>
+#include <mt_spm_reg.h>
 
 #include "mt_dramc.h"
 
 void __iomem *DRAMCAO_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
 void __iomem *DRAMCNAO_BASE_ADDR;
-void __iomem *SLEEP_BASE_ADDR;
 void __iomem *TOPCKGEN_BASE_ADDR;
 
 volatile unsigned int dst_dummy_read_addr[2];
@@ -153,7 +154,7 @@ void spm_dpd_init(void)
 	recover8   = readl(PDEF_DRAMC0_REG_1DC) & 0x00000001;
 	recover = recover7_0 | recover8;
 
-	writel(recover, SPM_PASR_DPD_0);
+	spm_set_register(SPM_PASR_DPD_0, recover);
 
 	/*-----try, disable MR4(0x1E8[26]=1)*/
 	writel(readl(PDEF_DRAMC0_REG_1E8) | 0x04000000, PDEF_DRAMC0_REG_1E8);
@@ -365,8 +366,8 @@ void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 	/*release fix CKE*/
 	writel(readl(PDEF_DRAMC0_REG_0E4) & 0xfffffffb, PDEF_DRAMC0_REG_0E4);
 
-	recover7_0 = readl(SPM_PASR_DPD_0) & 0x00ff0000;
-	recover8   = readl(SPM_PASR_DPD_0) & 0x00000001;
+	recover7_0 = spm_get_register(SPM_PASR_DPD_0) & 0x00ff0000;
+	recover8   = spm_get_register(SPM_PASR_DPD_0) & 0x00000001;
 
 	/*SW recover ZQCSCNT7~0(0x1E4[23:16]) to allow ZQCS*/
 	writel(readl(PDEF_DRAMC0_REG_1DC) | recover8, PDEF_DRAMC0_REG_1DC);
@@ -1226,15 +1227,6 @@ static int dram_dt_init(void)
 		pr_warn("[DRAMC]get DRAMCNAO_BASE_ADDR @ %p\n", DRAMCNAO_BASE_ADDR);
 	} else {
 		pr_warn("[DRAMC]can't find DRAMCNAO compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
-	if (node) {
-		SLEEP_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n", SLEEP_BASE_ADDR);
-	} else {
-		pr_warn("[DRAMC]can't find SLEEP compatible node\n");
 		return -1;
 	}
 
