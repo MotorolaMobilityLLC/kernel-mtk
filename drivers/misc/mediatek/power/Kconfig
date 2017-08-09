@@ -43,3 +43,20 @@ config MTK_DYNAMIC_BAT_CV_SUPPORT
 	to AP and no need to use AuxADC
 	to get battery voltage.
 
+config MTK_WIRELESS_CHARGER_SUPPORT
+	bool "MTK_WIRELESS_CHARGER_SUPPORT"
+	default n
+	---help---
+	yes : support wireless charger feature, it can show the wireless
+	charging animation and charging icon when receive wireless charger
+	plug-in. no: not support wireless charger feature, stay with
+	legancy feature, which cannot sense the exist of the wireles
+	charger.
+
+config MTK_POWER_EXT_DETECT
+	bool "MediaTek Power Ext detect"
+	default n
+	---help---
+	EVB/Phone share load configration.
+	Require one GPIO to do detection,
+	GPIO high mean EVB, otherwise mean phone platform.
