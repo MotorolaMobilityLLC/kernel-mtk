@@ -86,6 +86,13 @@ struct builtin_eint {
 	unsigned int builtin_eint;
 };
 
+struct eint_chip {
+	unsigned int max_channel;
+	unsigned int *dual_edges;
+};
+
+static struct eint_chip *mt_eint_chip;
+
 static struct eint_func EINT_FUNC;
 
 static unsigned int EINT_MAX_CHANNEL;
@@ -110,6 +117,9 @@ struct deint_des {
 
 static u32 *deint_possible_irq;
 static struct deint_des *deint_descriptors;
+
+static int mt_eint_get_level(unsigned int eint_num);
+static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -957,6 +967,7 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
 	unsigned long long t1, t2;
 	int mask_status = 0;
 	struct irq_chip *chip = irq_get_chip(irq);
+	struct eint_chip *eint_chip = irq_get_handler_data(irq);
 
 	chained_irq_enter(chip, desc);
 
@@ -1027,6 +1038,9 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
 					pr_warn("[EINT]Warn!EINT:%d run too long,s:%llu,e:%llu,total:%llu\n",
 							index, t1, t2, (t2 - t1));
 			}
+
+			if (eint_chip->dual_edges[index])
+				mt_eint_flip_edge(eint_chip, index);
 		}
 	}
 
@@ -1870,18 +1884,90 @@ static void mt_eint_irq_ack(struct irq_data *data)
 	mt_eint_ack(data->hwirq);
 }
 
+static unsigned int mt_eint_get_raw_status(unsigned int eint_num)
+{
+	unsigned long base, raw_base;
+	unsigned int bit_pos;
+
+	bit_pos = eint_num % 32;
+	base = eint_num / 32;
+	raw_base = EINT_RAW_STA_BASE + base * 4;
+
+	return ((readl(IOMEM(raw_base)) & (1<<bit_pos))>>bit_pos);
+}
+
+static int mt_eint_get_level(unsigned int eint_num)
+{
+	unsigned int prev_mask = mt_eint_get_mask(eint_num);
+	unsigned int prev_pol = mt_eint_get_polarity(eint_num);
+	unsigned int prev_sens = mt_eint_get_sens(eint_num);
+	unsigned int level = 0;
+
+	if (!prev_mask)
+		mt_eint_mask(eint_num);
+
+	mt_eint_set_polarity(eint_num, MT_EINT_POL_POS);
+	mt_eint_set_sens(eint_num, MT_LEVEL_SENSITIVE);
+	mt_eint_ack(eint_num);
+
+	/* if high level can keep pending on raw status
+	 * it means current level is high */
+	level = mt_eint_get_raw_status(eint_num);
+
+	mt_eint_set_polarity(eint_num, prev_pol);
+	mt_eint_set_sens(eint_num, prev_sens);
+	mt_eint_ack(eint_num);
+
+	if (!prev_mask)
+		mt_eint_unmask(eint_num);
+
+	return level;
+}
+
+static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num)
+{
+	unsigned int level = mt_eint_get_level(eint_num);
+	unsigned int prev_mask = mt_eint_get_mask(eint_num);
+
+	if (!prev_mask)
+		mt_eint_mask(eint_num);
+
+	if (level == 1)
+		mt_eint_set_polarity(eint_num, MT_EINT_POL_NEG);
+	else
+		mt_eint_set_polarity(eint_num, MT_EINT_POL_POS);
+
+	mt_eint_set_sens(eint_num, MT_EDGE_SENSITIVE);
+	mt_eint_ack(eint_num);
+
+	if (!prev_mask)
+		mt_eint_unmask(eint_num);
+
+	return level;
+}
+
 static int mt_eint_irq_set_type(struct irq_data *data, unsigned int type)
 {
+	struct eint_chip *chip = irq_data_get_irq_chip_data(data);
 	int eint_num = data->hwirq;
+
+	if ((type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
+		chip->dual_edges[eint_num] = 1;
+	else
+		chip->dual_edges[eint_num] = 0;
 
 	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_EDGE_FALLING))
 		mt_eint_set_polarity(eint_num, MT_EINT_POL_NEG);
 	else
 		mt_eint_set_polarity(eint_num, MT_EINT_POL_POS);
+
 	if (type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING))
 		mt_eint_set_sens(eint_num, MT_EDGE_SENSITIVE);
 	else
 		mt_eint_set_sens(eint_num, MT_LEVEL_SENSITIVE);
+
+	if (chip->dual_edges[eint_num])
+		mt_eint_flip_edge(chip, eint_num);
 
 	return IRQ_SET_MASK_OK;
 }
@@ -1953,6 +2039,9 @@ static int __init mt_eint_init(void)
 	EINT_FUNC.eint_sw_deb_timer =
 	    kmalloc(sizeof(struct timer_list) * EINT_MAX_CHANNEL, GFP_KERNEL);
 	EINT_FUNC.count = kmalloc(sizeof(unsigned int) * EINT_MAX_CHANNEL, GFP_KERNEL);
+	mt_eint_chip = kmalloc(sizeof(struct eint_chip), GFP_KERNEL);
+	mt_eint_chip->max_channel = EINT_MAX_CHANNEL;
+	mt_eint_chip->dual_edges = kcalloc(mt_eint_chip->max_channel, sizeof(unsigned int), GFP_KERNEL);
 
 	if (of_property_read_u32(node, "mapping_table_entry", &mapping_table_entry))
 		return -1;
@@ -2077,7 +2166,9 @@ static int __init mt_eint_init(void)
 	}
 
 	for (i = 0; i < EINT_MAX_CHANNEL; i++) {
-		irq_set_chip_and_handler(i + EINT_IRQ_BASE, &mt_irq_eint, handle_level_irq);
+		irq_set_chip_and_handler(i + EINT_IRQ_BASE, &mt_irq_eint,
+					 handle_level_irq);
+		irq_set_chip_data(i + EINT_IRQ_BASE, mt_eint_chip);
 		set_irq_flags(i + EINT_IRQ_BASE, IRQF_VALID);
 	}
 
@@ -2087,6 +2178,7 @@ static int __init mt_eint_init(void)
 		pr_err("EINT domain add error\n");
 
 	irq_set_chained_handler(irq, (irq_flow_handler_t) mt_eint_demux);
+	irq_set_handler_data(irq, mt_eint_chip);
 
 #if defined(EINT_TEST_V2)
 	ret = platform_driver_register(&eint_driver);
