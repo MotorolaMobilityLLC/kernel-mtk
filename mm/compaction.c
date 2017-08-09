@@ -115,9 +115,10 @@ static struct page *pageblock_pfn_to_page(unsigned long start_pfn,
 static inline bool isolation_suitable(struct compact_control *cc,
 					struct page *page)
 {
+#ifndef CONFIG_NO_FALLBACK_CMA
 	if (cc->ignore_skip_hint)
 		return true;
-
+#endif
 	return !get_pageblock_skip(page);
 }
 

@@ -1141,6 +1141,10 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
 			if (migratetype == MIGRATE_RESERVE)
 				break;
 
+			/* No fallback to CMA */
+			if (IS_ENABLED(CONFIG_NO_FALLBACK_CMA) && is_migrate_cma(migratetype))
+				continue;
+
 			area = &(zone->free_area[current_order]);
 			if (list_empty(&area->free_list[migratetype]))
 				continue;

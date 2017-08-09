@@ -541,6 +541,16 @@ config CMA_AREAS
 
 	  If unsure, leave the default value "7".
 
+config NO_FALLBACK_CMA
+	bool "Don't allow system to fallback to CMA"
+	depends on CMA
+	default n
+	help
+	  This configuration will forbid system to fallback to CMA pages which
+	  are not in ZONE_MOVABLE zone. This is used to guarantee the exclusive
+	  use of dedicated memory created by MTK_EXCL_MEMORY.
+	  When using MTK_EXCL_MEMORY, this will be enabled automatically.
+
 config MEM_SOFT_DIRTY
 	bool "Track memory changes"
 	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS

@@ -106,6 +106,12 @@ config MTK_TUI_RAM_SIZE
 	depends on MTK_SVP
 	default 0
 
+config MTK_EXCL_MEMORY
+	bool "Support Mediatek Exclusive Memory for Dedicated Usage"
+	select CMA
+	select NO_FALLBACK_CMA
+	default n
+
 config MTK_BASE_POWER
 	bool
 
