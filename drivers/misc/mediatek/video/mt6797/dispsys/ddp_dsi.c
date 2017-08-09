@@ -997,6 +997,8 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_P
 {
 	int i = 0;
 	unsigned int ps_sel_bitvalue = 0;
+	unsigned int ps_wc_adjust = 0;
+	unsigned int ps_wc = 0;
 
 	/* /TODO: parameter checking */
 	ASSERT((int)(dsi_params->PS) <= (int)PACKED_PS_18BIT_RGB666);
@@ -1014,32 +1016,28 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_P
 		if (dsi_params->ufoe_enable && dsi_params->ufoe_params.lr_mode_en != 1) {
 			if (dsi_params->ufoe_params.compress_ratio == 3) {
 				unsigned int ufoe_internal_width = w + w % 4;
+
 				if (ufoe_internal_width % 3 == 0) {
-					DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL,
-						      DSI_PS_WC,
-						      (ufoe_internal_width / 3) *
-						      _dsi_ps_type_to_bpp(dsi_params->PS));
+					ps_wc = (ufoe_internal_width / 3) * _dsi_ps_type_to_bpp(dsi_params->PS);
 				} else {
 					unsigned int temp_w = ufoe_internal_width / 3 + 1;
+
 					temp_w = ((temp_w % 2) == 1) ? (temp_w + 1) : temp_w;
-					DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL,
-						      DSI_PS_WC,
-						      temp_w * _dsi_ps_type_to_bpp(dsi_params->PS));
+					ps_wc = temp_w  * _dsi_ps_type_to_bpp(dsi_params->PS);
 				}
 			} else { /* 1/2 */
-				DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL,
-					      DSI_PS_WC,
-					      (w +
-					       w % 4) / 2 * _dsi_ps_type_to_bpp(dsi_params->PS));
+				ps_wc = (w + w % 4) / 2 * _dsi_ps_type_to_bpp(dsi_params->PS);
 			}
 		} else if (dsi_params->dsc_enable) {
-			DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC,
-				      dsi_params->word_count);
+			ps_wc = dsi_params->word_count;
 		} else {
-			DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC,
-				      w * _dsi_ps_type_to_bpp(dsi_params->PS));
+			ps_wc = w * _dsi_ps_type_to_bpp(dsi_params->PS);
 		}
 
+		if (ps_wc_adjust)
+			ps_wc *= dsi_params->packet_size_mult;
+
+		DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_SEL,
 			      ps_sel_bitvalue);
 	}

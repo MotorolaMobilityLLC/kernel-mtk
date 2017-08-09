@@ -980,7 +980,7 @@ static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 		/*push_table(cmdq, lcm_120fps_setting,
 		sizeof(lcm_120fps_setting) / sizeof(struct LCM_setting_table), 1);*/
 		lcm_send_120hz(cmdq);
-		params->dsi.PLL_CLOCK = 280;
+		params->dsi.PLL_CLOCK = 300;
 	} else {
 		return -1;
 	}
