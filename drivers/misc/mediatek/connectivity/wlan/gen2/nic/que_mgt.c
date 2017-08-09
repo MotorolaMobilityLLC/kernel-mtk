@@ -4537,8 +4537,8 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter,
 				return FRAME_ACTION_TX_PKT;
 		}
 
-		DBGLOG(QM, WARN, "Drop packets Action, SeqNo: %d (Bss Index %u).\n",
-				prMsduInfo->ucTxSeqNum, prBssInfo->ucNetTypeIndex);
+		DBGLOG(QM, WARN, "Drop packets Action, eFrameType: %d (Bss Index %u).\n",
+				eFrameType, prBssInfo->ucNetTypeIndex);
 		TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_BSS_DROP);
 		return FRAME_ACTION_DROP_PKT;
 	}
