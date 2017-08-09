@@ -32,20 +32,24 @@
 #define APDS9930_DEV_NAME     "APDS9930"
 /*----------------------------------------------------------------------------*/
 #define APS_TAG                  "[ALS/PS] "
+/*#define APS_DEBUG*/
 #define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#ifdef APS_DEBUG
 #define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#else
+#define APS_LOG(fmt, args...)
+#define APS_DBG(fmt, args...)
+#endif
 
 #define I2C_FLAG_WRITE	0
 #define I2C_FLAG_READ	1
 
-
 int APDS9930_CMM_PPCOUNT_VALUE = 0x08;
 int APDS9930_CMM_CONTROL_VALUE = 0xE4;
 int ZOOM_TIME = 4;
-unsigned int alsps_int_gpio_number = 0;
-static int of_get_APDS9930_platform_data(struct device *dev);
+unsigned int alsps_int_gpio_number;
 struct alsps_hw alsps_cust;
 static struct alsps_hw *hw = &alsps_cust;
 struct platform_device *alspsPltFmDev;
@@ -72,6 +76,8 @@ static int APDS9930_i2c_suspend(struct i2c_client *client, pm_message_t msg);
 static int APDS9930_i2c_resume(struct i2c_client *client);
 static int APDS9930_remove(void);
 static int APDS9930_local_init(void);
+static int of_get_APDS9930_platform_data(struct device *dev);
+
 
 static int APDS9930_init_flag = -1; /* 0<==>OK -1 <==> fail*/
 static struct alsps_init_info APDS9930_init_info = {
@@ -114,7 +120,6 @@ struct APDS9930_priv {
 	struct alsps_hw *hw;
 	struct i2c_client *client;
 	struct work_struct irq_work;
-
 	/*i2c address group */
 	struct APDS9930_i2c_addr addr;
 
@@ -464,38 +469,31 @@ static irqreturn_t alsps_interrupt_handler(int irq, void *dev_id)
 	if (!obj)
 		return IRQ_HANDLED;
 
+	disable_irq_nosync(alsps_irq);
 	int_top_time = sched_clock();
 	schedule_work(&obj->irq_work);
 	return IRQ_HANDLED;
 }
 
-
 int APDS9930_irq_registration(struct i2c_client *client)
 {
 	int ret = -1;
-
 	struct APDS9930_priv *obj = i2c_get_clientdata(client);
-	/*struct task_struct *thread = NULL;*/
+
 
 	g_APDS9930_ptr = obj;
 
+	/* gpio setting */
 
 	gpio_direction_input(alsps_int_gpio_number);
-
-	ret = request_irq(alsps_irq, alsps_interrupt_handler, IRQF_TRIGGER_FALLING, "als_ps", NULL);
-
+	ret = request_irq(alsps_irq, alsps_interrupt_handler,
+			IRQF_TRIGGER_LOW, "als_ps", NULL);
 	if (ret > 0) {
 		APS_ERR("alsps request_irq IRQ LINE NOT AVAILABLE!.");
 		return ret;
 	}
-
- /*   disable_irq_nosync(alsps_irq);*/
- /*   enable_irq(alsps_irq);*/
-
 	return ret;
-
 }
-
 
 /*----------------------------------------------------------------------------*/
 
@@ -820,12 +818,10 @@ long APDS9930_read_ps(struct i2c_client *client, u16 *data)
 
 
 	temp_data = buffer[0] | (buffer[1] << 8);
-	/* APS_LOG("yucong APDS9930_read_ps ps_data=%d, low:%d  high:%d", *data, buffer[0], buffer[1]); */
 	if (temp_data < obj->ps_cali)
 		*data = 0;
 	else
 		*data = temp_data - obj->ps_cali;
-	return 0;
 	return 0;
 
  EXIT_ERR:
@@ -904,12 +900,15 @@ static void APDS9930_irq_work(struct work_struct *work)
 	struct APDS9930_priv *obj =
 	    (struct APDS9930_priv *)container_of(work, struct APDS9930_priv, irq_work);
 	int err;
-	struct hwm_sensor_data sensor_data;
+	/*struct hwm_sensor_data sensor_data;*/
+	int intFlag = -1;
 	u8 databuf[3];
 	int res = 0;
 
-	disable_irq(alsps_irq);
-
+	if (NULL == obj) {
+		APS_ERR("NULL Pointer\n");
+		return;
+	}
 	err = APDS9930_check_intr(obj->client);
 	if (err) {
 		APS_ERR("APDS9930_irq_work check intrs: %d\n", err);
@@ -923,12 +922,15 @@ static void APDS9930_irq_work(struct work_struct *work)
 		if (obj->als > 40000) {
 			APS_LOG("APDS9930_irq_work ALS too large may under lighting als_ch0=%d!\n",
 				obj->als);
+			enable_irq(alsps_irq);
 			return;
-			}
+		}
+		intFlag = APDS9930_get_ps_value(obj, obj->ps);
+/*
 		sensor_data.values[0] = APDS9930_get_ps_value(obj, obj->ps);
 		sensor_data.value_divide = 1;
 		sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;
-
+*/
 #ifdef DEBUG_APDS9930
 		databuf[0] = APDS9930_CMM_ENABLE;
 		res = APDS9930_i2c_master_operate(obj->client, databuf, 0x101, I2C_FLAG_READ);
@@ -1043,6 +1045,9 @@ static void APDS9930_irq_work(struct work_struct *work)
 		    ("APDS9930_irq_work APDS9930_CMM_INT_HIGH_THD_LOW after databuf[0]=%d databuf[1]=%d!\n",
 		     databuf[0], databuf[1]);
 #endif
+		res = ps_report_interrupt_data(intFlag);
+		if (res)
+			APS_ERR("apds9930 call ps_report_interrupt_data fail = %d\n", res);
 		/*err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data);
 		if (err)
 			APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);*/
@@ -1941,14 +1946,13 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	int err = 0;
 
 	APS_FUN();
-	of_get_APDS9930_platform_data(&client->dev);
-	/* configure the gpio pins */
-	err = gpio_request_one(alsps_int_gpio_number, GPIOF_IN,
-				 "alsps_int");
+
+	err = of_get_APDS9930_platform_data(&client->dev);
 	if (err < 0) {
-		APS_ERR("Unable to request gpio int_pin\n");
-		return -1;
+		APS_ERR("get_APDS9930_platform_data fail\n");
+		goto exit;
 	}
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!(obj)) {
 		err = -ENOMEM;
@@ -1994,6 +1998,7 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	obj->ps_cali = 0;
 
 	APDS9930_i2c_client = client;
+
 
 	/*if (1 == obj->hw->polling_mode_ps)
 	{
@@ -2124,8 +2129,6 @@ static int APDS9930_i2c_remove(struct i2c_client *client)
 	err = misc_deregister(&APDS9930_device);
 	if (err)
 		APS_ERR("misc_deregister fail: %d\n", err);
-
-
 	gpio_free(alsps_int_gpio_number);
 	APDS9930_i2c_client = NULL;
 	i2c_unregister_device(client);
@@ -2157,20 +2160,28 @@ static int APDS9930_remove(void)
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
-
 static int of_get_APDS9930_platform_data(struct device *dev)
 {
 	struct device_node *node = NULL;
+	int err = 0;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,alsps");
 	if (node) {
 		alsps_int_gpio_number = of_get_named_gpio(node, "int-gpio", 0);
+		err = gpio_request_one(alsps_int_gpio_number, GPIOF_IN, "alsps_int");
+		if (err < 0) {
+			APS_ERR("Unable to request gpio int_pin\n");
+			return -1;
+		}
 		alsps_irq = irq_of_parse_and_map(node, 0);
 		if (alsps_irq < 0) {
 			APS_ERR("alsps request_irq IRQ LINE NOT AVAILABLE!.");
 			return -1;
 		}
 		APS_ERR("alsps_int_gpio_number %d; alsps_irq : %d\n", alsps_int_gpio_number, alsps_irq);
+	} else {
+		APS_ERR("get dts gpio node fail!\n");
+		return -1;
 	}
 	return 0;
 }
