@@ -27,6 +27,10 @@
 #include "mtk_common.h"
 #include "mtk_mfg_reg.h"
 
+#ifdef ENABLE_COMMON_DVFS
+#include <ged_dvfs.h>
+#endif
+
 
 #define HARD_RESET_AT_POWER_OFF 0
 
@@ -104,8 +108,11 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
     /*
 	mt_gpufreq_voltage_enable_set(1);
  	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
+ 	*/
+#ifdef ENABLE_COMMON_DVFS    
 	ged_dvfs_gpu_clock_switch_notify(1);
-    */
+#endif    
+    
 	ret = clk_prepare_enable(config->clk_display_scp);
 	if (ret) {
 		pr_alert("MALI: clk_prepare_enable failed when enabling display MTCMOS");
@@ -213,9 +220,13 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
     /* FIXME: MT6755 */ 
     /* 
+     * 
 	mt_gpufreq_voltage_enable_set(0);
+	*/
+#ifdef ENABLE_COMMON_DVFS    
 	ged_dvfs_gpu_clock_switch_notify(0);
-    */
+#endif    
+    
 	
 }
 
