@@ -30,7 +30,6 @@
 /* #include "mach/memory.h" */
 /* #include <mach/i2c.h> */
 /* #include <linux/aee.h> */
-static DEFINE_MUTEX(mutex_mt_i2c_stander_i2c);
 #define TAG     "MT_I2C"
 
 #define DMA_LOG_LEN 7
@@ -1139,7 +1138,6 @@ static s32 standard_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[]
 	s32 retry;
 	struct mt_i2c_t *i2c = i2c_get_adapdata(adap);
 
-	mutex_lock(&mutex_mt_i2c_stander_i2c);
 	for (retry = 0; retry < adap->retries; retry++) {
 		ret = standard_i2c_do_transfer(i2c, msgs, num);
 		if (ret != -EAGAIN)
@@ -1147,7 +1145,6 @@ static s32 standard_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[]
 		if (retry < adap->retries - 1)
 			udelay(100);
 	}
-	mutex_unlock(&mutex_mt_i2c_stander_i2c);
 
 	if (ret != -EAGAIN)
 		return ret;
@@ -1164,7 +1161,6 @@ int mtk_i2c_transfer(struct i2c_adapter *adap, struct mt_i2c_msg msgs[], s32 num
 
 	struct mt_i2c_t *i2c = i2c_get_adapdata(adap);
 
-	mutex_lock(&mutex_mt_i2c_stander_i2c);
 	for (retry = 0; retry < adap->retries; retry++) {
 		ret = mt_i2c_do_transfer(i2c, msgs, num);
 		if (ret != -EAGAIN)
@@ -1173,7 +1169,6 @@ int mtk_i2c_transfer(struct i2c_adapter *adap, struct mt_i2c_msg msgs[], s32 num
 			udelay(100);
 	}
 
-	mutex_unlock(&mutex_mt_i2c_stander_i2c);
 	if (ret != -EAGAIN)
 		return ret;
 	else
