@@ -44,7 +44,7 @@
 #include "disp_lcm.h"
 #include "disp_utils.h"
 #include "display_recorder.h"
-#include "fbconfig_kdebug_k2.h"
+#include "fbconfig_kdebug.h"
 #include "primary_display.h"
 #include "disp_helper.h"
 

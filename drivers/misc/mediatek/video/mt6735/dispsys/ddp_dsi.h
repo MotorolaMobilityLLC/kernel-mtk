@@ -6,7 +6,7 @@
 
 #include "lcm_drv.h"
 #include "ddp_hal.h"
-#include "fbconfig_kdebug_k2.h"
+#include "fbconfig_kdebug.h"
 #include "ddp_info.h"
 #include "ddp_manager.h"
 

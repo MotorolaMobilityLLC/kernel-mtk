@@ -50,7 +50,7 @@
 #include "primary_display.h"
 #include "ddp_dump.h"
 #include "display_recorder.h"
-#include "fbconfig_kdebug_k2.h"
+#include "fbconfig_kdebug.h"
 
 #include "mtk_ovl.h"
 #include "ion_drv.h"
