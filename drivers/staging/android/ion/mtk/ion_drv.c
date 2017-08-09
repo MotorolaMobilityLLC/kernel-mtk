@@ -558,5 +558,5 @@ static void __exit ion_exit(void)
 	platform_device_unregister(&ion_device);
 }
 
-module_init(ion_init);
+fs_initcall(ion_init);
 module_exit(ion_exit);
