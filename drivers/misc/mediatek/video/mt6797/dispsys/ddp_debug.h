@@ -34,7 +34,11 @@ void ddp_debug_exit(void);
 unsigned int  ddp_debug_analysis_to_buffer(void);
 unsigned int  ddp_debug_dbg_log_level(void);
 unsigned int  ddp_debug_irq_log_level(void);
-int ddp_debug_force_full_roi(void);
+int ddp_debug_force_roi(void);
+int ddp_debug_force_roi_x(void);
+int ddp_debug_force_roi_y(void);
+int ddp_debug_force_roi_w(void);
+int ddp_debug_force_roi_h(void);
 
 int ddp_mem_test(void);
 int ddp_lcd_test(void);

@@ -87,8 +87,14 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 	struct layer_dirty_roi *layer_roi_addr = &layers[0];
 	struct disp_rect layer_roi = {0, 0, 0, 0};
 
-	if (ddp_debug_force_full_roi())
+	if (ddp_debug_force_roi()) {
 		assign_full_lcm_roi(result);
+		result->x = ddp_debug_force_roi_x();
+		result->y = ddp_debug_force_roi_y();
+		result->width = ddp_debug_force_roi_w();
+		result->height = ddp_debug_force_roi_h();
+		return 0;
+	}
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_rect layer_total_roi = {0, 0, 0, 0};

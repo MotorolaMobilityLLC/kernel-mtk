@@ -67,7 +67,12 @@ unsigned char aal_debug_flag = 0;
 static unsigned int dbg_log_level;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
-static int dbg_force_full_roi;
+
+static int dbg_force_roi;
+static int dbg_partial_x;
+static int dbg_partial_y;
+static int dbg_partial_w;
+static int dbg_partial_h;
 
 unsigned int gUltraEnable = 1;
 static char STR_HELP[] =
@@ -241,17 +246,14 @@ static void process_dbg_opt(const char *opt)
 			goto Error;
 		}
 	} else if (0 == strncmp(opt, "partial:", 8)) {
-		char *p = (char *)opt + 8;
-		unsigned int on;
-
-		ret = kstrtouint(p, 0, &on);
-		if (ret) {
+		ret = sscanf(opt, "partial:%d,%d,%d,%d,%d\n", &dbg_force_roi,
+			&dbg_partial_x, &dbg_partial_y, &dbg_partial_w, &dbg_partial_h);
+		if (ret != 5) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		dbg_force_full_roi = on;
-		sprintf(buf, "dbg_partial_on %d\n", dbg_force_full_roi);
-		DDPMSG("process_dbg_opt, dbg_partial_on=%d\n", dbg_force_full_roi);
+		DDPMSG("process_dbg_opt, partial force=%d (%d,%d,%d,%d)\n", dbg_force_roi,
+			dbg_partial_x, dbg_partial_y, dbg_partial_w, dbg_partial_h);
 	} else if (0 == strncmp(opt, "pwm0:", 5) || 0 == strncmp(opt, "pwm1:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned int level;
@@ -576,9 +578,29 @@ unsigned int ddp_debug_irq_log_level(void)
 	return irq_log_level;
 }
 
-int ddp_debug_force_full_roi(void)
+int ddp_debug_force_roi(void)
 {
-	return dbg_force_full_roi;
+	return dbg_force_roi;
+}
+
+int ddp_debug_force_roi_x(void)
+{
+	return dbg_partial_x;
+}
+
+int ddp_debug_force_roi_y(void)
+{
+	return dbg_partial_y;
+}
+
+int ddp_debug_force_roi_w(void)
+{
+	return dbg_partial_w;
+}
+
+int ddp_debug_force_roi_h(void)
+{
+	return dbg_partial_h;
 }
 
 void ddp_debug_exit(void)

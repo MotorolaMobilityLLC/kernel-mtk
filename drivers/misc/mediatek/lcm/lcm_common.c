@@ -1161,6 +1161,7 @@ void lcm_common_setbacklight_cmdq(void *handle, unsigned int level)
 }
 
 #if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
+#define PARTIAL_WIDTH_ALIGN_LINE
 static inline int align_to(int value, int n, int lower_align)
 {
 	int x = value;
@@ -1171,36 +1172,88 @@ static inline int align_to(int value, int n, int lower_align)
 		if (value > x)
 			value -= n;
 	} else {
+#ifndef PARTIAL_WIDTH_ALIGN_LINE
 		if (value <= x)
 			value += n;
+#else
+		if (value < x)
+			value += n;
+#endif
 	}
 	return value;
 }
 
 static void r63419_lcm_validate_roi(int *x, int *y, int *width, int *height)
 {
-	int x1 = 0;
-	/*int x2 = 0;*/
+	int x1 = *x;
+	int x2 = *width + x1 - 1;
 	int y1 = *y;
 	int y2 = *height + y1 - 1;
 	int w = *width;
 	int h = *height;
+	int lcm_w = _LCM_DTS.params.dsi.horizontal_active_pixel;
 
-	w = _LCM_DTS.params.dsi.horizontal_active_pixel;
 	/*  comfine  SP & EP value */
+#ifndef PARTIAL_WIDTH_ALIGN_LINE
+	x1 = 0;
 	y1 = align_to(y1, 2, 1);
 	y2 = align_to(y2, 2, 0) - 1;
-	if (y2 - y1 < 6) {
-		if (y1 > 6)
-			y1 -= 6;
+	w = lcm_w;
+#else
+	int ya_align = align_to(y2, 2, 0);
+	int lcm_half = lcm_w >> 1;
+	int roi_half = 0;
+
+	if (w == 0 || w == lcm_w) {
+		w = lcm_w;
+	} else {
+		y1 = align_to(y1, 2, 1);
+
+		if (ya_align == y2)
+			ya_align += 1;
 		else
-			y2 += 6;
+			ya_align -= 1;
+		y2 = ya_align;
+
+		if (lcm_half >= x2) {
+			roi_half = lcm_half - x1;
+		} else if (x1 >= lcm_half) {
+			roi_half = x2 - lcm_half;
+		} else {
+			int left = lcm_half - x1;
+			int right = x2 - lcm_half;
+
+			roi_half = left > right ? left : right;
+		}
+		if (roi_half < 16)
+			roi_half = 16;
+
+		roi_half = align_to(roi_half, 16, 0);
+		roi_half += 16;
+		if (roi_half > lcm_half)
+			roi_half = lcm_half;
+
+		x1 = lcm_half - roi_half;
+
+		w = roi_half << 1;
 	}
-	h = y2 - y1 + 1;
-/*
-	LCD_DEBUG("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
-		*x, *y, *width, *height, x1, y1, w, h);
-*/
+#endif
+
+	if (h == 0) {
+		h = 6;
+	} else {
+		if (y2 - y1 < 6) {
+			if (y1 > 6)
+				y1 -= 6;
+			else
+				y2 += 6;
+		}
+		h = y2 - y1 + 1;
+	}
+	/*
+	   LCD_DEBUG("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+	 *x, *y, *width, *height, x1, y1, w, h);
+	 */
 	*x = x1;
 	*y = y1;
 	*width = w;

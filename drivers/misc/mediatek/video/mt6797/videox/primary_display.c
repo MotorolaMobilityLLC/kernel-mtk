@@ -4568,6 +4568,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		if (!aal_is_partial_support())
 			assign_full_lcm_roi(&total_dirty_roi);
 
+		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
+			total_dirty_roi.width, total_dirty_roi.height);
+
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
 			/*update roi to lcm*/
 			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);
