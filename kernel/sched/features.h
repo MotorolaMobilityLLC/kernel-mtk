@@ -88,4 +88,8 @@ SCHED_FEAT(NUMA_RESIST_LOWER, false)
  * HMP scheduling. Use dynamic threshold depends on system load and
  * CPU capacity to make schedule decisions.
  */
+#ifdef CONFIG_SCHED_HMP
+SCHED_FEAT(SCHED_HMP, true)
+#else
 SCHED_FEAT(SCHED_HMP, false)
+#endif
