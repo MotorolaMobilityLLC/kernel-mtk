@@ -19,6 +19,7 @@
 #include <linux/proc_fs.h>
 #include <linux/time.h>
 #include <linux/spinlock.h>
+#include <linux/seq_file.h>
 #endif
 
 #include "smpboot.h"
