@@ -22,12 +22,8 @@
 #include <linux/of.h>
 #include <linux/string.h>
 
-#if defined(CONFIG_ARCH_MT6735)
-#include "../../../drivers/misc/mediatek/base/power/mt6735/mt_cpu_psci_ops.h"
-#elif defined(CONFIG_ARCH_MT8173)
-#include "../../../drivers/misc/mediatek/base/power/mt8173/mt_cpu_psci_ops.h"
-#else
-#include "../../../drivers/misc/mediatek/base/power/mt6735/mt_cpu_psci_ops.h"
+#if defined(CONFIG_MTK_PSCI)
+#include <mt_cpu_psci_ops.h>
 #endif
 
 extern const struct cpu_operations smp_spin_table_ops;
