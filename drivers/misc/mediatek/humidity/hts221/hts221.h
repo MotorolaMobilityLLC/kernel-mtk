@@ -21,7 +21,7 @@
 |  bmp180  |    0x55    |           0x77             |
 *****************************************************/
 
-#define DEBUF
+/*#define DEBUF*/
 /*#define CONFIG_ID_TEMPERATURE*/
 /*#define CONFIG_I2C_BASIC_FUNCTION*/
 

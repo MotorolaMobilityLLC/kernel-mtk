@@ -92,7 +92,7 @@ struct hts221_i2c_data {
 };
 
 #define HTS_TAG                  "[hts221] "
-#define HTS_FUN(f)               pr_debug(HTS_TAG"%s\n", __func__)
+#define HTS_FUN(f)
 #define HTS_ERR(fmt, args...) \
 	pr_err(HTS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define HTS_LOG(fmt, args...)    pr_debug(HTS_TAG fmt, ##args)
@@ -428,11 +428,11 @@ static int hts221_set_powermode(struct i2c_client *client, enum HTS_POWERMODE_EN
 	if (power_mode == HTS_NORMAL_MODE) {
 		err = hts221_device_power_on(client);
 		if (err < 0)
-			HTS_LOG("HTS221 power on fail\n");
+			HTS_ERR("HTS221 power on fail\n");
 	} else {
 		err = hts221_device_power_off(client);
 		if (err < 0)
-			HTS_LOG("HTS221 power off fail\n");
+			HTS_ERR("HTS221 power off fail\n");
 	}
 	return 0;
 }
@@ -505,7 +505,7 @@ static int hts221_get_temperature(struct i2c_client *client, char *buf, int bufs
 	err = hts221_convert(obj_i2c_data->hts221_cali.t_slope, obj_i2c_data->hts221_cali.t_b, &data_t, 1);
 	if (err < 0)
 		return err;
-	HTS_LOG("hts221 get temperature: %d rH\n", data_t);
+	/*HTS_LOG("hts221 get temperature: %d rH\n", data_t);*/
 	sprintf(buf, "%08x", data_t);
 	return 0;
 }
@@ -530,12 +530,12 @@ static int hts221_get_humidity(struct i2c_client *client, char *buf, int bufsize
 	if (err < 0)
 		return err;
 	data_h = ((s32) ((s16) ((humidity_data[1] << 8) | (humidity_data[0]))));
-	HTS_LOG("humidity raw data: 0x%x\n", data_h);
+	/*HTS_LOG("humidity raw data: 0x%x\n", data_h);*/
 	err = hts221_convert(obj_i2c_data->hts221_cali.h_slope, obj_i2c_data->hts221_cali.h_b, &data_h, 0);
 	if (err < 0)
 		return err;
 
-	HTS_LOG("hts221 get humidity: %d rH\n", data_h);
+	/*HTS_LOG("hts221 get humidity: %d rH\n", data_h);*/
 	sprintf(buf, "%08x", data_h);
 	return 0;
 }
@@ -949,7 +949,7 @@ static int hts221_enable_nodata(int en)
 	for (retry = 0; retry < 3; retry++) {
 		res = hts221_set_powermode(obj_i2c_data->client, (enum HTS_POWERMODE_ENUM)(!!power));
 		if (res == 0) {
-			HTS_LOG("hts221_set_powermode done\n");
+			/*HTS_LOG("hts221_set_powermode done\n");*/
 			break;
 		}
 		HTS_ERR("hts221_set_powermode fail\n");
@@ -959,7 +959,7 @@ static int hts221_enable_nodata(int en)
 		HTS_ERR("hts221_set_powermode fail!\n");
 		return -1;
 	}
-	HTS_LOG("hts221_set_powermode OK!\n");
+	/*HTS_LOG("hts221_set_powermode OK!\n");*/
 	return 0;
 }
 
