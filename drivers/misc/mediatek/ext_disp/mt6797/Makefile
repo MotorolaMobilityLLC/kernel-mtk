@@ -14,6 +14,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/hdmi/inc/ \
+             -I$(srctree)/drivers/misc/mediatek/smi \
              -I$(srctree)/drivers/staging/android/ion \
              -I$(srctree)/drivers/staging/android/ion/mtk \
              -I$(srctree)/drivers/misc/mediatek/lcm/inc
