@@ -62,7 +62,7 @@ void BM_Init(void)
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBF)) &
 		~0x00008000, EMI_ARBF);
 	}
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	if (readl(IOMEM(EMI_ARBG_2ND)) & 0x00008000) {
 		g_cBWL |= 1 << 6;
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) & ~0x00008000, EMI_ARBG_2ND);
@@ -120,7 +120,7 @@ void BM_DeInit(void)
 		0x00008000, EMI_ARBF);
 	}
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	if (g_cBWL & (1 << 6)) {
 		g_cBWL &= ~(1 << 6);
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) |
@@ -462,7 +462,7 @@ int BM_GetLatencyCycle(const unsigned int counter_num)
 	case 16:
 		cycle_count = readl(IOMEM(EMI_TTYPE16));
 		break;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	case 17:
 		cycle_count = readl(IOMEM(EMI_TTYPE17));
 		break;
@@ -604,7 +604,7 @@ unsigned int DRAMC_GetIdleCount(void)
 {
 	return ucDram_Register_Read(DRAMC_IDLE_COUNT);
 }
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 
 unsigned int BM_GetBWST(void)
 {
