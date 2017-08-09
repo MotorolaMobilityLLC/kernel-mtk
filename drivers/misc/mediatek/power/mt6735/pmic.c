@@ -108,6 +108,7 @@ static unsigned long timer_pos;
 /*
  * Global variable
  */
+int g_mt6328_irq = 0;
 unsigned int g_eint_pmic_num = 206;
 unsigned int g_cust_eint_mt_pmic_debounce_cn = 1;
 unsigned int g_cust_eint_mt_pmic_type = 4;
@@ -2817,7 +2818,7 @@ void pwrkey_int_handler(void)
 #endif
 #if defined(CONFIG_MTK_FPGA)
 #else
-	/* kpd_pwrkey_pmic_handler(0x1); TBD */
+	kpd_pwrkey_pmic_handler(0x1);
 #endif
 }
 
@@ -2840,7 +2841,7 @@ void pwrkey_int_handler_r(void)
 #endif
 #if defined(CONFIG_MTK_FPGA)
 #else
-	/*kpd_pwrkey_pmic_handler(0x0); TBD*/
+	kpd_pwrkey_pmic_handler(0x0);
 #endif
 }
 
@@ -2854,7 +2855,7 @@ void homekey_int_handler(void)
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
 #if defined(CONFIG_MTK_FPGA)
 #else
-	/*kpd_pmic_rstkey_handler(0x1); TBD*/
+	kpd_pmic_rstkey_handler(0x1);
 #endif
 }
 
@@ -2864,7 +2865,7 @@ void homekey_int_handler_r(void)
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
 #if defined(CONFIG_MTK_FPGA)
 #else
-	/*kpd_pmic_rstkey_handler(0x0); TBD*/
+	kpd_pmic_rstkey_handler(0x0);
 #endif
 }
 
@@ -2934,10 +2935,12 @@ void wake_up_pmic(void)
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
-void mt_pmic_eint_irq(void)
+irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
 	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
 	wake_up_pmic();
+	disable_irq_nosync(irq);
+	return IRQ_HANDLED;
 }
 
 void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
@@ -2985,6 +2988,8 @@ void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (
 
 void PMIC_EINT_SETTING(void)
 {
+	int ret;
+
 	upmu_set_reg_value(MT6328_INT_CON0, 0);
 	upmu_set_reg_value(MT6328_INT_CON1, 0);
 	upmu_set_reg_value(MT6328_INT_CON2, 0);
@@ -3037,6 +3042,12 @@ void PMIC_EINT_SETTING(void)
 	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
 	/* mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0); TBD */
 	/* mt_eint_unmask(g_eint_pmic_num); TBD*/
+	g_mt6328_irq = mt_gpio_to_irq(g_eint_pmic_num);
+	mt_gpio_set_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);
+
+	ret = request_irq(g_mt6328_irq, mt_pmic_eint_irq, g_cust_eint_mt_pmic_type, "mt6328-eint", NULL);
+	if (ret)
+		PMICLOG("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6328_irq, ret);
 
 	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
@@ -3145,6 +3156,9 @@ static int pmic_thread_kthread(void *x)
 
 		set_current_state(TASK_INTERRUPTIBLE);
 		/*mt_eint_unmask(g_eint_pmic_num); TBD*/
+		if (g_mt6328_irq != 0)
+			enable_irq(g_mt6328_irq);
+
 		schedule();
 	}
 

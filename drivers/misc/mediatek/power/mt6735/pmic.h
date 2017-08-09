@@ -49,6 +49,9 @@ extern bool crystal_exist_status(void);
 extern void pmu_drv_tool_customization_init(void);
 #endif
 extern int batt_init_cust_data(void);
+
+extern unsigned int mt_gpio_to_irq(unsigned int gpio);
+extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
 /*---------------------------------------------------*/
 
 /* controllable voltage , not fixed step */

@@ -201,4 +201,7 @@ extern void pmic_auxadc_init(void);
 
 extern unsigned int pmic_Read_Efuse_HPOffset(int i);
 
+extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
+extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
+
 #endif				/* _MT_PMIC_COMMON_H_ */
