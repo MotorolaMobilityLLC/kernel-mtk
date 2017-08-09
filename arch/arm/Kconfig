@@ -211,14 +211,14 @@ config GENERIC_ISA_DMA
 config FIQ
 	bool
 
-config MTK_KERNEL_IN_SECURE_MODE
-	bool
-	depends on (!TRUSTY) && (!TRUSTONIC_TEE_SUPPORT)
-	default y
-
 config MTK_NO_ATF
 	bool
 	default n
+
+config MTK_KERNEL_IN_SECURE_MODE
+	bool
+	depends on (!TRUSTY) && (!TRUSTONIC_TEE_SUPPORT) && (MTK_NO_ATF)
+	default y
 
 config NEED_RET_TO_USER
 	bool
