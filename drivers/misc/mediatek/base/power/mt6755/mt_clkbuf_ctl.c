@@ -27,7 +27,6 @@
 #include <mt-plat/sync_write.h>
 #include <mt_spm.h>
 #include <mach/mt_clkmgr.h>
-#include <mt_spm_sleep.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <mach/mt_gpio_core.h> */
 #include <mt_clkbuf_ctl.h>
@@ -120,6 +119,8 @@ static void __iomem *pwrap_base;
 /* FIXME: only for bring up Co-TSX before DT is ready */
 /* #define CLKBUF_COTSX_BRINGUP */
 
+static bool is_clkbuf_initiated;
+
 /* false: rf_clkbuf, true: pmic_clkbuf */
 static bool is_pmic_clkbuf;
 
@@ -185,8 +186,6 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	u32 spm_val;
 	int i;
 
-	spm_ap_mdsrc_req(1);
-
 	spm_val = spm_read(SPM_MDBSI_CON) & ~0x7;
 
 	for (i = 1; i < CLKBUF_NUM; i++)
@@ -195,8 +194,6 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	spm_write(SPM_MDBSI_CON, spm_val);
 
 	udelay(2);
-
-	spm_ap_mdsrc_req(0);
 }
 
 static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
@@ -358,6 +355,9 @@ bool is_clk_buf_from_pmic(void)
 	unsigned int reg = 0;
 	bool ret = false;
 
+	if (is_clkbuf_initiated)
+		return is_pmic_clkbuf;
+
 	/* switch to debug mode */
 	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x1,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
@@ -502,6 +502,9 @@ bool clk_buf_init(void)
 	}
 #endif
 #endif
+	if (is_clkbuf_initiated)
+		return false;
+
 	if (clk_buf_fs_init())
 		return false;
 
@@ -521,6 +524,8 @@ bool clk_buf_init(void)
 
 		clk_buf_pmic_wrap_init();
 	}
+
+	is_clkbuf_initiated = true;
 
 	return true;
 }
