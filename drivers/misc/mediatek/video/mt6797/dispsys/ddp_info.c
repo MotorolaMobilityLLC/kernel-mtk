@@ -74,27 +74,27 @@ char *ddp_get_module_name(DISP_MODULE_ENUM module)
 	case DISP_MODULE_MUTEX:
 		return "mutex ";
 	case DISP_MODULE_CCORR:
-		return "ccorr";
+		return "ccorr ";
 	case DISP_MODULE_DITHER:
-		return "dither";
+		return "dither ";
 	case DISP_MODULE_SMI_LARB0:
-		return "smi_larb0";
+		return "smi_larb0 ";
 	case DISP_MODULE_SMI_LARB5:
-		return "smi_larb5";
+		return "smi_larb5 ";
 	case DISP_MODULE_SMI_COMMON:
-		return "smi_common";
+		return "smi_common ";
 	case DISP_MODULE_UFOE:
 		return "ufoe ";
 	case DISP_MODULE_OVL0_VIRTUAL:
-		return "ovl0_virtual";
+		return "ovl0_virtual ";
 	case DISP_MODULE_MIPI0:
-		return "mipi0";
+		return "mipi0 ";
 	case DISP_MODULE_MIPI1:
-		return "mipi1";
+		return "mipi1 ";
 	case DISP_MODULE_DSC:
-		return "dsc";
+		return "dsc ";
 	case DISP_PATH0:
-		return "path0";
+		return "path0 ";
 
 	default:
 		DDPMSG("invalid module id=%d", module);

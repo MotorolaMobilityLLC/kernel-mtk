@@ -811,9 +811,9 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 
 	if (lcm_param && lcm_drv)
 		len += scnprintf(stringbuf + len, buf_len - len,
-			      "|LCM Driver=[%s]\tResolution=%dx%d,Interface:%s\n", lcm_drv->name,
+			      "|LCM Driver=[%s]\tResolution=%dx%d,Interface:%s, LCM Connected:%s\n", lcm_drv->name,
 			      lcm_param->width, lcm_param->height,
-			      (lcm_param->type == LCM_TYPE_DSI) ? "DSI" : "Other");
+			      (lcm_param->type == LCM_TYPE_DSI) ? "DSI" : "Other", islcmconnected ? "Y" : "N");
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|State=%s\tlcm_fps=%d\tmax_layer=%d\tmode:%d\tvsync_drop=%d\n",
 		      pgc->state == DISP_ALIVE ? "Alive" : "Sleep", pgc->lcm_fps, pgc->max_layer,

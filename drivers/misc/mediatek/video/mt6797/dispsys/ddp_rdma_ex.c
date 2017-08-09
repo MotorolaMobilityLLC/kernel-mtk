@@ -693,7 +693,7 @@ void rdma_dump_reg(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_DVFS + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0b0)R_FOR_SRAM    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SRAM_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON    =0x%x\n",
+	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
@@ -714,7 +714,7 @@ void rdma_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned int bg0 = DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_0);
 	unsigned int bg1 = DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_1);
 
-	DDPDUMP("==DISP RDMA%d ANALYSIS==\n", idx);
+	DDPDUMP("== DISP RDMA%d ANALYSIS ==\n", idx);
 	DDPDUMP("rdma%d: en=%d,memory_mode=%d,smi_busy=%d,w=%d,h=%d,pitch=%d,addr=0x%x,fmt=%s,fifo_min=%d,\n",
 		idx, REG_FLD_VAL_GET(GLOBAL_CON_FLD_ENGINE_EN, global_ctrl),
 		REG_FLD_VAL_GET(GLOBAL_CON_FLD_MODE_SEL, global_ctrl),

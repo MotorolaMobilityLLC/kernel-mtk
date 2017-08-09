@@ -622,8 +622,6 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-#define MTK_NO_DISP_IN_LK
-
 static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 	int i = 0;
@@ -632,6 +630,7 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	unsigned int tmp = 0;
 #else
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
+	int ret = 0;
 #endif
 
 	if (cmdq) {
@@ -665,9 +664,8 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	}
 #else
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		ret =
-		    wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
-						     !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
+		ret = wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
+						       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 		if (0 == ret) {
 			DISPERR("dsi wait not busy timeout\n");
 			DSI_DumpRegisters(module, 1);
@@ -3813,7 +3811,8 @@ static const char *dsi_mode_spy(LCM_DSI_MODE_CON mode)
 void dsi_analysis(DISP_MODULE_ENUM module)
 {
 	int i = 0;
-	DDPDUMP("==DISP DSI ANALYSIS==\n");
+
+	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
 		DDPDUMP

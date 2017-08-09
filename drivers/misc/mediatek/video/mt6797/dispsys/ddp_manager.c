@@ -411,7 +411,7 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 	int i = 0;
 	int module_name = 0;
 	DDP_MANAGER_CONTEXT *content = _get_context();
-	ddp_path_handle handle = (ddp_path_handle) dp_handle;
+	ddp_path_handle handle = (ddp_path_handle)dp_handle;
 
 	int *new_modules = ddp_get_scenario_list(new_scenario);
 	int new_module_num = ddp_get_module_num(new_scenario);
@@ -1516,7 +1516,7 @@ int dpmgr_check_status_by_scenario(DDP_SCENARIO_ENUM scenario)
 	ddp_check_path(scenario);
 
 	{
-		DDPDUMP("path:");
+		DDPDUMP("path:\n");
 		for (i = 0; i < module_num; i++)
 			DDPDUMP("%s-", ddp_get_module_name(modules[i]));
 

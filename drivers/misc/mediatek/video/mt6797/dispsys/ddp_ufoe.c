@@ -123,7 +123,7 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 		}
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, pConfig->dst_w);
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, pConfig->dst_h);
-		ufoe_dump();
+		/* ufoe_dump(); */
 	}
 	/* ufoe_dump(); */
 	return 0;

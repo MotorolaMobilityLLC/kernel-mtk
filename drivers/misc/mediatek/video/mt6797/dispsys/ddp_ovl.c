@@ -1086,7 +1086,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned long offset = ovl_base_addr(module);
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
-	DDPDUMP("==DISP %s ANALYSIS==\n", ddp_get_module_name(module));
+	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
 	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),",
 		DISP_REG_GET(DISP_REG_OVL_EN + offset),
 		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) & 0x1,
