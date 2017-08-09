@@ -278,6 +278,8 @@ static int ovl2mem_callback(unsigned int userdata)
 	}
 
 	atomic_set(&g_release_ticket, userdata);
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x05,
+			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
 	return 0;
 }
@@ -294,6 +296,8 @@ int ovl2mem_init(unsigned int session)
 	M4U_PORT_STRUCT sPort;
 
 	DISPMSG("ovl2mem_init\n");
+
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 0);
 
 	dpmgr_init();
 	mutex_init(&(pgc->lock));
@@ -345,7 +349,7 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
+	dpmgr_path_set_video_mode(pgc->dpmgr_handle, false);
 
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -361,6 +365,7 @@ int ovl2mem_init(unsigned int session)
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x01, 1);
 
 	DISPMSG("ovl2mem_init done\n");
 
@@ -508,6 +513,8 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	atomic_add(1, &g_trigger_ticket);
 
 	_ovl2mem_path_unlock(__func__);
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagPulse, 0x02,
+			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
 	DISPMSG("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
 
@@ -545,6 +552,9 @@ int ovl2mem_deinit(void)
 	int loop_cnt = 0;
 	DISPFUNC();
 
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagStart, 0x03,
+			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
+
 	_ovl2mem_path_lock(__func__);
 
 	if (pgc->state == 0) {
@@ -576,6 +586,7 @@ int ovl2mem_deinit(void)
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
+	MMProfileLogEx(ddp_mmp_get_events()->ovl_trigger, MMProfileFlagEnd, 0x03, (loop_cnt<<24)|1);
 
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;
