@@ -1030,6 +1030,23 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_rssi_monitoring
 	},
+	/* Packet Keep Alive */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_START_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_start
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_STOP_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_stop
+	},
 };
 
 static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {

@@ -11099,6 +11099,48 @@ wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 				   0);
 }
 
+WLAN_STATUS
+wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
+		 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	P_PARAM_PACKET_KEEPALIVE_T prPacket;
+
+	DEBUGFUNC("wlanoidRssiMonitor");
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+	if (u4SetBufferLen)
+		ASSERT(pvSetBuffer);
+
+	*pu4SetInfoLen = sizeof(PARAM_PACKET_KEEPALIVE_T);
+
+	/* Check for query buffer length */
+	if (u4SetBufferLen < *pu4SetInfoLen) {
+		DBGLOG(OID, WARN, "Too short length %u\n", u4SetBufferLen);
+		return WLAN_STATUS_BUFFER_TOO_SHORT;
+	}
+
+	prPacket = (P_PARAM_PACKET_KEEPALIVE_T)kalMemAlloc(sizeof(PARAM_PACKET_KEEPALIVE_T), VIR_MEM_TYPE);
+	if (!prPacket) {
+		DBGLOG(OID, ERROR, "Can not alloc memory for PARAM_PACKET_KEEPALIVE_T\n");
+		return -ENOMEM;
+	}
+	kalMemCopy(prPacket, pvSetBuffer, sizeof(PARAM_PACKET_KEEPALIVE_T));
+
+	DBGLOG(OID, INFO, "enable=%d, index=%d\r\n", prPacket->enable, prPacket->index);
+
+	rStatus = wlanSendSetQueryCmd(prAdapter,
+			   CMD_ID_WFC_KEEP_ALIVE,
+			   TRUE,
+			   FALSE,
+			   TRUE,
+			   nicCmdEventSetCommon,
+			   nicOidCmdTimeoutCommon,
+			   sizeof(PARAM_PACKET_KEEPALIVE_T), (PUINT_8)prPacket, NULL, 0);
+	kalMemFree(prPacket, VIR_MEM_TYPE, sizeof(PARAM_PACKET_KEEPALIVE_T));
+	return rStatus;
+}
+
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /*----------------------------------------------------------------------------*/
 /*!

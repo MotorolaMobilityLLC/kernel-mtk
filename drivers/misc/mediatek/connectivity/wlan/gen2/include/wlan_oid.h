@@ -1690,7 +1690,7 @@ wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
 
 WLAN_STATUS
 wlanoidSetTxRateInfo(IN P_ADAPTER_T prAdapter,
-		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 WLAN_STATUS
 wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
@@ -1698,6 +1698,12 @@ wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
 
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
+		       IN PVOID pvSetBuffer,
+		       IN UINT_32 u4SetBufferLen,
+		       OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
