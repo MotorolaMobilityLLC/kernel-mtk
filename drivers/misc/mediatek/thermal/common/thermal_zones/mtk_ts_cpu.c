@@ -1843,7 +1843,8 @@ static int thermal_auxadc_get_data(int times, int channel)
 	return ret;
 }
 #endif
-#if 0
+/*Patch to pause thermal controller and turn off auxadc GC.
+  For mt6755 only*/
 static void tscpu_thermal_pause(void)
 {
 	int cnt = 0;
@@ -1869,7 +1870,7 @@ static void tscpu_thermal_pause(void)
 static void tscpu_thermal_release(void)
 {
 	int temp = 0;
-	int cnt = 0, ret;
+	int cnt = 0;
 
 	aee_rr_rec_thermal_status(TSCPU_RELEASE);
 
@@ -1896,7 +1897,7 @@ static void tscpu_thermal_release(void)
 	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
 }
 #endif
-#endif
+
 static void read_all_bank_temperature(void)
 {
 	int i = 0;
@@ -1977,11 +1978,9 @@ void tscpu_cancel_thermal_timer(void)
 #endif
 
 #if defined(CONFIG_ARCH_MT6755)
-#if 0
 	/*Patch to pause thermal controller and turn off auxadc GC.
 		For mt6755 only*/
 	tscpu_thermal_pause();
-#endif
 #endif
 }
 
@@ -1997,11 +1996,9 @@ void tscpu_start_thermal_timer(void)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 
 #if defined(CONFIG_ARCH_MT6755)
-#if 0
 /*Patch to pause thermal controller and turn off auxadc GC.
   For mt6755 only*/
 	tscpu_thermal_release();
-#endif
 #endif
 }
 
