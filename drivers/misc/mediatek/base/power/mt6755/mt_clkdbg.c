@@ -1524,7 +1524,7 @@ static char last_cmd[128] = "null";
 
 static int clkdbg_prepare_enable(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *clk_name;
@@ -1552,7 +1552,7 @@ static int clkdbg_prepare_enable(struct seq_file *s, void *v)
 
 static int clkdbg_disable_unprepare(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *clk_name;
@@ -1579,7 +1579,7 @@ static int clkdbg_disable_unprepare(struct seq_file *s, void *v)
 
 static int clkdbg_set_parent(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *clk_name;
@@ -1618,7 +1618,7 @@ static int clkdbg_set_parent(struct seq_file *s, void *v)
 
 static int clkdbg_set_rate(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *clk_name;
@@ -1677,7 +1677,7 @@ void *reg_from_str(const char *str)
 
 static int parse_reg_val_from_cmd(void __iomem **preg, unsigned long *pval)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *reg_str;
@@ -1905,7 +1905,7 @@ static int clkdbg_dump_genpd(struct seq_file *s, void *v)
 
 static int clkdbg_pm_genpd_poweron(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *genpd_name;
@@ -1940,7 +1940,7 @@ static int clkdbg_pm_genpd_poweroff_unused(struct seq_file *s, void *v)
 
 static int clkdbg_pm_runtime_enable(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *dev_name;
@@ -1966,7 +1966,7 @@ static int clkdbg_pm_runtime_enable(struct seq_file *s, void *v)
 
 static int clkdbg_pm_runtime_disable(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *dev_name;
@@ -1992,7 +1992,7 @@ static int clkdbg_pm_runtime_disable(struct seq_file *s, void *v)
 
 static int clkdbg_pm_runtime_get_sync(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *dev_name;
@@ -2019,7 +2019,7 @@ static int clkdbg_pm_runtime_get_sync(struct seq_file *s, void *v)
 
 static int clkdbg_pm_runtime_put_sync(struct seq_file *s, void *v)
 {
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 	char *c = cmd;
 	char *ign;
 	char *dev_name;
@@ -2081,7 +2081,7 @@ static int clkdbg_show(struct seq_file *s, void *v)
 	};
 
 	int i;
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 
 	pr_debug("last_cmd: %s\n", last_cmd);
 
@@ -2109,7 +2109,7 @@ static ssize_t clkdbg_write(
 		size_t count,
 		loff_t *data)
 {
-	char desc[sizeof(last_cmd)];
+	char desc[sizeof(last_cmd) - 1];
 	int len = 0;
 
 	pr_debug("count: %zu\n", count);
