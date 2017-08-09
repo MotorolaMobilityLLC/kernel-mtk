@@ -42,8 +42,9 @@ unsigned int g_LC898212_SearchDir;
 #define Min_Pos		0
 #define Max_Pos		1023
 
-static signed short Hall_Max = 0x0000;	/* Please read INF position from EEPROM or OTP */
-static signed short Hall_Min = 0x0000;	/* Please read MACRO position from EEPROM or OTP */
+/* LiteOn : Hall calibration range : 0xA800 - 0x5800 */
+static signed short Hall_Max = 0x5800;	/* Please read INF position from EEPROM or OTP */
+static signed short Hall_Min = 0xA800;	/* Please read MACRO position from EEPROM or OTP */
 
 
 int s4AF_ReadReg_LC898212XDAF(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
@@ -125,8 +126,8 @@ static void LC898212XD_init(void)
 	stSmvPar StSmvPar;
 	u8 val1 = 0, val2 = 0;
 
-	int Hall_Off = 0x00;	/* Please Read Offset from EEPROM or OTP */
-	int Hall_Bias = 0x00;	/* Please Read Bias from EEPROM or OTP */
+	int Hall_Off = 0x80;	/* Please Read Offset from EEPROM or OTP */
+	int Hall_Bias = 0x80;	/* Please Read Bias from EEPROM or OTP */
 
 	g_SelectEEPROM = 1;
 
@@ -135,26 +136,34 @@ static void LC898212XD_init(void)
 
 
 	if ( g_SelectEEPROM == 0 ) {
-
-		LOG_INF("Select imx258 e2prom!!\n");
-
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
-		Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val2);
-		Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		unsigned short HallDataCheck;
 
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
-		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		HallDataCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
-		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		LOG_INF("Select imx258 e2prom!!\n");
+
+		if ((0x1FFF <= HallDataCheck && HallDataCheck <= 0x7FFF) ||
+			(0x8001 <= HallDataCheck && HallDataCheck <= 0xEFFF)) {
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
+			Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val2);
+			Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
+			Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
+			Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		}
+
 		g_LC898212_SearchDir = 1;
-
 	} else {
 
 		LOG_INF("Select ov23850 e2prom!!\n");
@@ -341,15 +350,12 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		if (0 <= Hall_Max && Hall_Max <= 0x7FFF) {
-			g_LC898212_SearchDir = 0;
-		} else {
+		if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
 			signed short Temp;
 
 			Temp = Hall_Min;
 			Hall_Min = Hall_Max;
 			Hall_Max = Temp;
-			g_LC898212_SearchDir = 1;
 		}
 
 		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
