@@ -915,7 +915,7 @@ static int mpu_check_violation(void)
 #ifdef CONFIG_MTK_AEE_FEATURE
 	if (wr_vio != 0) {
 		/* EMI violation is relative to MD at user build*/
-		#ifndef CONFIG_MT_ENG_BUILD
+		#if 0 /* #ifndef CONFIG_MT_ENG_BUILD */
 			if (((master_ID & 0x7) == MASTER_MDMCU) ||
 				((master_ID & 0x7) == MASTER_MDHW)) {
 					int md_id = 0;
@@ -924,6 +924,24 @@ static int mpu_check_violation(void)
 					ID_FORCE_MD_ASSERT, NULL, 0);
 					pr_err("[EMI MPU] MPU violation trigger MD\n");
 				}
+		#else
+			if (((master_ID & 0x7) == MASTER_MDMCU) ||
+				((master_ID & 0x7) == MASTER_MDHW)) {
+					char str[60] = "0";
+					char *pstr = str;
+
+					sprintf(pstr, "EMI_MPUS = 0x%x, ADDR = 0x%x",
+						dbg_s, dbg_t + emi_physical_offset);
+
+					exec_ccci_kern_func_by_md_id(0,
+					ID_MD_MPU_ASSERT, str, strlen(str));
+					pr_err("[EMI MPU] MPU violation trigger MD str=%s strlen(str)=%d\n"
+					, str, (int)strlen(str));
+				} else {
+					exec_ccci_kern_func_by_md_id(0,
+					ID_MD_MPU_ASSERT, NULL, 0);
+					pr_err("[EMI MPU] MPU violation ack to MD\n");
+					}
 		#endif
 		if ((region == 0) && (mt_emi_reg_read(EMI_MPUA) == 0)
 			&& (mt_emi_reg_read(EMI_MPUI) == 0)
