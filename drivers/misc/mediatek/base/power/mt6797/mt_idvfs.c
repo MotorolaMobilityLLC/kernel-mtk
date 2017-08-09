@@ -799,8 +799,8 @@ int	BigiDVFSDisable(void)
 	BigiDVFSChannel(2, 0);
 #endif
 
-	/* down to 20% = 500MHz for disable */
-	BigIDVFSFreq(2000);
+	/* down to 30% = 750MHz for disable */
+	BigIDVFSFreq(3000);
 	idvfs_ver("iDVFS force setting FreqREQ = 20%%.\n");
 
 	/* call smc */ /* function_id = SMC_IDVFS_BigiDVFSDisable */
@@ -815,10 +815,12 @@ int	BigiDVFSDisable(void)
 	BigDREQSWEn(0);
 #endif
 
-	/* set Vproc = 950mv for 750MHz */
-	da9214_vosel_buck_b(95000);
+	/* set Vproc = 880mv for 750MHz */
+	da9214_vosel_buck_b(88000);
 
 	/* set Vsram = 1050mv for 750MHz */
+	/* When next iDVFS enable Freq = 750MHz(default),
+	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
 	BigiDVFSSRAMLDOSet(105000);
 
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
