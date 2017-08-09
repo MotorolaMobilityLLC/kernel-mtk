@@ -385,6 +385,59 @@ static void NvregEnable(bool enable)
 	mutex_unlock(&Ana_Clk_Mutex);
 }
 
+static int anc_clk_counter;
+static void anc_clk_enable(bool _enable)
+{
+	pr_warn("anc_clk_enable, anc_clk_counter = %d, enable = %d\n",
+		anc_clk_counter, _enable);
+	mutex_lock(&Ana_Clk_Mutex);
+	if (_enable == true) {
+		if (anc_clk_counter == 0) {
+			Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 0, 0x1 << 0);
+			/* release hp_anc_pdn */
+		}
+		anc_clk_counter++;
+	} else {
+		anc_clk_counter--;
+		if (anc_clk_counter == 0) {
+			Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0);
+			/* pdn hp_anc_pdn */
+		}
+		if (anc_clk_counter < 0) {
+			pr_warn("anc_clk_counter < 0 = %d\n", anc_clk_counter);
+			anc_clk_counter = 0;
+		}
+	}
+	mutex_unlock(&Ana_Clk_Mutex);
+}
+
+static int anc_ul_src_counter;
+static void anc_ul_src_enable(bool _enable)
+{
+	pr_warn("anc_ul_src_enable, anc_ul_src_counter = %d, enable = %d\n",
+		anc_ul_src_counter, _enable);
+	mutex_lock(&Ana_Clk_Mutex);
+	if (_enable == true) {
+		if (anc_ul_src_counter == 0) {
+			Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);
+			/* enable anc ul src */
+		}
+		anc_ul_src_counter++;
+	} else {
+		anc_ul_src_counter--;
+		if (anc_ul_src_counter == 0) {
+			Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 1, 0x1 << 1);
+			/* disable anc ul src */
+		}
+		if (anc_ul_src_counter < 0) {
+			pr_warn("anc_clk_counter < 0 = %d\n",
+				anc_ul_src_counter);
+			anc_ul_src_counter = 0;
+		}
+	}
+	mutex_unlock(&Ana_Clk_Mutex);
+}
+
 bool hasHpDepopHw(void)
 {
 	return mUseHpDepopFlow ? true : false;
@@ -2776,18 +2829,13 @@ static bool GetDacStatus(void)
 
 static bool TurnOnADcPowerACC(int ADCType, bool enable)
 {
-	bool refmic_using_ADC_L;
-
-	refmic_using_ADC_L = false;
+	bool refmic_using_ADC_L = false;
+	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
 
 	pr_warn("%s ADCType = %d enable = %d, refmic_using_ADC_L=%d\n", __func__, ADCType,
 	       enable, refmic_using_ADC_L);
 
 	if (enable) {
-		/* uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]); */
-		uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
-		/* uint32 SampleRate_VUL2 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC_2]; */
-
 		if (GetAdcStatus() == false) {
 			audckbufEnable(true);
 			/* Ana_Set_Reg(LDO_VCON1, 0x0301, 0xffff);
@@ -2935,9 +2983,9 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* fixed 260k path for 8/16/32/48 */
 			if (SampleRate_VUL1 <= 48000) {
 				/* anc ul path src on */
-				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);
+				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
-				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0);
+				anc_clk_enable(true);
 			}
 
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
@@ -2947,6 +2995,14 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 		if (GetAdcStatus() == false) {
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001);
 			/* UL turn off */
+
+			if (SampleRate_VUL1 <= 48000) {
+				/* anc ul path src off */
+				anc_ul_src_enable(false);
+				/* ANC clk pdn enable */
+				anc_clk_enable(false);
+			}
+
 			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
 			/* up-link power down */
 		}
@@ -3133,12 +3189,10 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 
 static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 {
+	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+
 	pr_warn("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);
 	if (enable) {
-		/* uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]); */
-		uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
-		/* uint32 SampleRate_VUL2 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC_2]; */
-
 		if (GetAdcStatus() == false) {
 			audckbufEnable(true);
 			/* Ana_Set_Reg(LDO_VCON1, 0x0301, 0xffff);
@@ -3310,9 +3364,9 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* fixed 260k path for 8/16/32/48 */
 			if (SampleRate_VUL1 <= 48000) {
 				/* anc ul path src on */
-				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);
+				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
-				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0);
+				anc_clk_enable(true);
 			}
 
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
@@ -3327,6 +3381,14 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 		if (GetAdcStatus() == false) {
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
 			/* UL turn off */
+
+			if (SampleRate_VUL1 <= 48000) {
+				/* anc ul path src off */
+				anc_ul_src_enable(false);
+				/* ANC clk pdn enable */
+				anc_clk_enable(false);
+			}
+
 			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
 			/* up-link power down */
 		}
