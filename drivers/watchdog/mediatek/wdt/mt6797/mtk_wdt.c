@@ -406,7 +406,7 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 		if (WD_REQ_EN == en) {
 			if (ext_debugkey_io != -1) {
 				ext_req_con = (ext_debugkey_io << 4) | 0x01;
-				DRV_WriteReg32(MTK_WDT_EXT_REQ_CON, ext_req_con);
+				mt_reg_sync_writel(ext_req_con, MTK_WDT_EXT_REQ_CON);
 				tmp |= (MTK_WDT_REQ_MODE_EINT);
 			} else {
 				tmp &= ~(MTK_WDT_REQ_MODE_EINT);
@@ -512,11 +512,11 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 #endif
 	if (1 == flag) {
 		ret = __raw_readl(MTK_WDT_SWSYSRST);
-		ret &= (~(1<<C2K_SYSRST_SHIFT));
+		ret &= (~(1 << shift));
 		mt_reg_sync_writel((ret|MTK_WDT_SWSYS_RST_KEY), MTK_WDT_SWSYSRST);
 	} else { /* means set x bit */
 		ret = __raw_readl(MTK_WDT_SWSYSRST);
-		ret |= ((1<<C2K_SYSRST_SHIFT));
+		ret |= ((1 << shift));
 		mt_reg_sync_writel((ret|MTK_WDT_SWSYS_RST_KEY), MTK_WDT_SWSYSRST);
 	}
 }
@@ -614,7 +614,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 {
 	int ret = 0;
 	unsigned int interval_val;
-	unsigned int nonrst;
 	struct device_node *node;
 	u32 ints[2] = { 0, 0 };
 
