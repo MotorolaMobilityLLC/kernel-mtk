@@ -59,7 +59,6 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
-#include <mt-plat/mt_typedefs.h>
 #include <mt-plat/mt_boot.h>
 
 #include <mach/mt_charging.h>
@@ -143,13 +142,13 @@ kal_bool g_vcdt_irq_delay_flag = 0;
 
 kal_bool skip_battery_update = KAL_FALSE;
 
-kal_uint32 g_batt_temp_status = TEMP_POS_NORMAL;
+unsigned int g_batt_temp_status = TEMP_POS_NORMAL;
 
 
 kal_bool battery_suspended = KAL_FALSE;
 /*#ifdef MTK_ENABLE_AGING_ALGORITHM
-extern U32 suspend_time;
-#endif*/
+extern unsigned int suspend_time;
+#endif */
 
 #if defined(CUST_SYSTEM_OFF_VOLTAGE)
 #define SYSTEM_OFF_VOLTAGE CUST_SYSTEM_OFF_VOLTAGE
@@ -211,7 +210,7 @@ static DECLARE_WAIT_QUEUE_HEAD(charger_hv_detect_waiter);
 static struct hrtimer battery_kthread_timer;
 static kal_bool g_battery_soc_ready = KAL_FALSE;
 /*extern BOOL bat_spm_timeout;
-extern U32 _g_bat_sleep_total_time;*/
+extern unsigned int _g_bat_sleep_total_time;*/
 
 /*
  * FOR ADB CMD
@@ -322,13 +321,13 @@ extern void mt_usb_disconnect(void);
 
 #if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 extern void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC);
-extern kal_int32 battery_meter_get_battery_soc(void);
+extern signed int battery_meter_get_battery_soc(void);
 #endif*/
 
 /*void check_battery_exist(void);*/
 void charging_suspend_enable(void)
 {
-	U32 charging_enable = true;
+	unsigned int charging_enable = true;
 
 	suspend_discharging = 0;
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
@@ -336,7 +335,7 @@ void charging_suspend_enable(void)
 
 void charging_suspend_disable(void)
 {
-	U32 charging_enable = false;
+	unsigned int charging_enable = false;
 
 	suspend_discharging = 1;
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
@@ -371,7 +370,7 @@ kal_bool bat_is_ext_power(void)
 kal_bool upmu_is_chr_det(void)
 {
 #if !defined(CONFIG_POWER_EXT)
-	kal_uint32 tmp32;
+	unsigned int tmp32;
 #endif
 
 	if (battery_charging_control == NULL)
@@ -1484,7 +1483,7 @@ static DEVICE_ATTR(FG_Battery_CurrentConsumption, 0664, show_FG_Battery_CurrentC
 static ssize_t show_FG_SW_CoulombCounter(struct device *dev, struct device_attribute *attr,
 					 char *buf)
 {
-	kal_int32 ret_value = 7777;
+	signed int ret_value = 7777;
 
 	ret_value = battery_meter_get_car();
 	battery_log(BAT_LOG_CRTI, "[EM] FG_SW_CoulombCounter : %d\n", ret_value);
@@ -1549,7 +1548,7 @@ static DEVICE_ATTR(V_0Percent_Tracking, 0664, show_V_0Percent_Tracking, store_V_
 
 static ssize_t show_Charger_Type(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	UINT32 chr_ype = CHARGER_UNKNOWN;
+	unsigned int chr_ype = CHARGER_UNKNOWN;
 
 	chr_ype = BMT_status.charger_exist ? BMT_status.charger_type : CHARGER_UNKNOWN;
 
@@ -1648,12 +1647,12 @@ static kal_bool mt_battery_100Percent_tracking_check(void)
 	kal_bool resetBatteryMeter = KAL_FALSE;
 
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	kal_uint32 cust_sync_time = CUST_SOC_JEITA_SYNC_TIME;
-	static kal_uint32 timer_counter = (CUST_SOC_JEITA_SYNC_TIME / BAT_TASK_PERIOD);
+	unsigned int cust_sync_time = CUST_SOC_JEITA_SYNC_TIME;
+	static unsigned int timer_counter = (CUST_SOC_JEITA_SYNC_TIME / BAT_TASK_PERIOD);
 #else
-	kal_uint32 cust_sync_time = batt_cust_data.onehundred_percent_tracking_time;
+	unsigned int cust_sync_time = batt_cust_data.onehundred_percent_tracking_time;
 	/* = (batt_cust_data.onehundred_percent_tracking_time / BAT_TASK_PERIOD); */
-	static kal_uint32 timer_counter;
+	static unsigned int timer_counter;
 	static int timer_counter_init;
 #endif
 
@@ -1717,7 +1716,7 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
 {
 	kal_bool resetBatteryMeter = KAL_FALSE;
 #if defined(SOC_BY_HW_FG)
-	static kal_uint32 timer_counter;
+	static unsigned int timer_counter;
 	static int timer_counter_init;
 
 	if (timer_counter_init == 0) {
@@ -1788,7 +1787,7 @@ static kal_bool mt_battery_0Percent_tracking_check(void)
 
 static void mt_battery_Sync_UI_Percentage_to_Real(void)
 {
-	static kal_uint32 timer_counter;
+	static unsigned int timer_counter;
 
 	if ((BMT_status.UI_SOC > BMT_status.SOC) && ((BMT_status.UI_SOC != 1))) {
 #if !defined(SYNC_UI_SOC_IMM)
@@ -2055,7 +2054,7 @@ kal_bool bat_is_charging_full(void)
 }
 
 
-kal_uint32 bat_get_ui_percentage(void)
+unsigned int bat_get_ui_percentage(void)
 {
 	/* for plugging out charger in recharge phase, using SOC as UI_SOC */
 
@@ -2071,7 +2070,7 @@ kal_uint32 bat_get_ui_percentage(void)
 }
 
 /* Full state --> recharge voltage --> full state */
-kal_uint32 bat_is_recharging_phase(void)
+unsigned int bat_is_recharging_phase(void)
 {
 	return BMT_status.bat_in_recharging_state || BMT_status.bat_full == KAL_TRUE;
 }
@@ -2154,15 +2153,15 @@ unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 }
 
 
-static void mt_battery_average_method_init(BATTERY_AVG_ENUM type, kal_uint32 *bufferdata,
-					   kal_uint32 data, kal_int32 *sum)
+static void mt_battery_average_method_init(BATTERY_AVG_ENUM type, unsigned int *bufferdata,
+					   unsigned int data, signed int *sum)
 {
-	kal_uint32 i;
+	unsigned int i;
 	static kal_bool batteryBufferFirst = KAL_TRUE;
 	static kal_bool previous_charger_exist = KAL_FALSE;
 	static kal_bool previous_in_recharge_state = KAL_FALSE;
 
-	static kal_uint8 index;
+	static unsigned char index;
 
 	/* reset charging current window while plug in/out { */
 	if (type == BATTERY_AVG_CURRENT) {
@@ -2236,11 +2235,11 @@ static void mt_battery_average_method_init(BATTERY_AVG_ENUM type, kal_uint32 *bu
 }
 
 
-static kal_uint32 mt_battery_average_method(BATTERY_AVG_ENUM type, kal_uint32 *bufferdata,
-					    kal_uint32 data, kal_int32 *sum,
-					    kal_uint8 batteryIndex)
+static unsigned int mt_battery_average_method(BATTERY_AVG_ENUM type, unsigned int *bufferdata,
+					    unsigned int data, signed int *sum,
+					    unsigned char batteryIndex)
 {
-	kal_uint32 avgdata;
+	unsigned int avgdata;
 
 	mt_battery_average_method_init(type, bufferdata, data, sum);
 
@@ -2255,14 +2254,14 @@ static kal_uint32 mt_battery_average_method(BATTERY_AVG_ENUM type, kal_uint32 *b
 
 void mt_battery_GetBatteryData(void)
 {
-	kal_uint32 bat_vol, charger_vol, Vsense, ZCV;
-	kal_int32 ICharging, temperature, temperatureR, temperatureV, SOC;
-	static kal_int32 bat_sum, icharging_sum, temperature_sum;
-	static kal_int32 batteryVoltageBuffer[BATTERY_AVERAGE_SIZE];
-	static kal_int32 batteryCurrentBuffer[BATTERY_AVERAGE_SIZE];
-	static kal_int32 batteryTempBuffer[BATTERY_AVERAGE_SIZE];
-	static kal_uint8 batteryIndex;
-	static kal_int32 previous_SOC = -1;
+	unsigned int bat_vol, charger_vol, Vsense, ZCV;
+	signed int ICharging, temperature, temperatureR, temperatureV, SOC;
+	static signed int bat_sum, icharging_sum, temperature_sum;
+	static signed int batteryVoltageBuffer[BATTERY_AVERAGE_SIZE];
+	static signed int batteryCurrentBuffer[BATTERY_AVERAGE_SIZE];
+	static signed int batteryTempBuffer[BATTERY_AVERAGE_SIZE];
+	static unsigned char batteryIndex;
+	static signed int previous_SOC = -1;
 
 	bat_vol = battery_meter_get_battery_voltage(KAL_TRUE);
 	Vsense = battery_meter_get_VSense();
@@ -2400,7 +2399,7 @@ static PMU_STATUS mt_battery_CheckChargerVoltage(void)
 {
 	PMU_STATUS status = PMU_STATUS_OK;
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	kal_uint32 v_charger_max = DISO_data.hv_voltage;
+	unsigned int v_charger_max = DISO_data.hv_voltage;
 #endif
 
 	if (BMT_status.charger_exist == KAL_TRUE) {
@@ -2599,7 +2598,7 @@ static void mt_battery_notify_VCharger_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	kal_uint32 v_charger_max = DISO_data.hv_voltage;
+	unsigned int v_charger_max = DISO_data.hv_voltage;
 #endif
 
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
@@ -3318,10 +3317,10 @@ void check_battery_exist(void)
 #if defined(CONFIG_DIS_CHECK_BATTERY)
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Disable check battery exist.\n");
 #else
-	kal_uint32 baton_count = 0;
-	kal_uint32 charging_enable = KAL_FALSE;
-	kal_uint32 battery_status;
-	kal_uint32 i;
+	unsigned int baton_count = 0;
+	unsigned int charging_enable = KAL_FALSE;
+	unsigned int battery_status;
+	unsigned int i;
 
 	for (i = 0; i < 3; i++) {
 		battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS, &battery_status);
@@ -3352,12 +3351,12 @@ void check_battery_exist(void)
 
 void charger_plug_out_sw_mode(void)
 {
-	kal_int32 ICharging = 0;
-	kal_int16 i;
-	kal_int16 cnt = 0;
+	signed int ICharging = 0;
+	signed short i;
+	signed short cnt = 0;
 	kal_bool enable;
-	kal_uint32 charging_enable;
-	kal_int32 VCharger = 0;
+	unsigned int charging_enable;
+	signed int VCharger = 0;
 
 	if (BMT_status.charger_exist == KAL_TRUE) {
 		if (chargin_hw_init_done && upmu_is_chr_det() == KAL_TRUE) {
@@ -3400,11 +3399,11 @@ void charger_plug_out_sw_mode(void)
 }
 
 
-/*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
+/*extern unsigned int upmu_get_reg_value(unsigned int reg);*/
 void hv_sw_mode(void)
 {
 	kal_bool hv_status;
-	kal_uint32 charging_enable;
+	unsigned int charging_enable;
 
 	if (upmu_is_chr_det() == KAL_TRUE)
 		check_battery_exist();
@@ -3445,10 +3444,10 @@ void hv_sw_mode(void)
 int charger_hv_detect_sw_thread_handler(void *unused)
 {
 	ktime_t ktime;
-	kal_uint32 hv_voltage = batt_cust_data.v_charger_max * 1000;
+	unsigned int hv_voltage = batt_cust_data.v_charger_max * 1000;
 
 
-	kal_uint8 cnt = 0;
+	unsigned char cnt = 0;
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 	hv_voltage = DISO_data.hv_voltage;
@@ -3501,8 +3500,8 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 int charger_hv_detect_sw_thread_handler(void *unused)
 {
 	ktime_t ktime;
-	kal_uint32 charging_enable;
-	kal_uint32 hv_voltage = batt_cust_data.v_charger_max * 1000;
+	unsigned int charging_enable;
+	unsigned int hv_voltage = batt_cust_data.v_charger_max * 1000;
 	kal_bool hv_status;
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
@@ -4087,7 +4086,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 	int len = 0;
 	char desc[32];
 	int cmd_current_unlimited = false;
-	U32 charging_enable = false;
+	unsigned int charging_enable = false;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -4119,7 +4118,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 
 static int current_cmd_read(struct seq_file *m, void *v)
 {
-	U32 charging_enable = false;
+	unsigned int charging_enable = false;
 
 	cmd_discharging = 1;
 	charging_enable = false;
@@ -4142,7 +4141,7 @@ static ssize_t discharging_cmd_write(struct file *file, const char *buffer, size
 {
 	int len = 0;
 	char desc[32];
-	U32 charging_enable = false;
+	unsigned int charging_enable = false;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))

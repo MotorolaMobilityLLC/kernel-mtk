@@ -38,7 +38,6 @@
 #ifndef CHARGING_H
 #define CHARGING_H
 
-#include <mt-plat/mt_typedefs.h>
 #include <mach/mt_charging.h>
 
 /* ============================================================ */
@@ -472,7 +471,15 @@ typedef enum {
 /* ============================================================ */
 /* typedef */
 /* ============================================================ */
-typedef kal_int32(*CHARGING_CONTROL) (CHARGING_CTRL_CMD cmd, void *data);
+typedef signed int(*CHARGING_CONTROL) (CHARGING_CTRL_CMD cmd, void *data);
+
+#ifndef BATTERY_BOOL
+#define BATTERY_BOOL
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE  = 1,
+} kal_bool;
+#endif
 
 
 /* ============================================================ */
@@ -485,13 +492,13 @@ extern kal_bool chargin_hw_init_done;
 /* ============================================================ */
 /* External function */
 /* ============================================================ */
-extern kal_int32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data);
-extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);
+extern signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data);
+extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 extern int hw_charging_get_charger_type(void);
 extern void mt_power_off(void);
-extern kal_uint32 mt6311_get_chip_id(void);
+extern unsigned int mt6311_get_chip_id(void);
 extern int is_mt6311_exist(void);
 extern int is_mt6311_sw_ready(void);
 

@@ -1,7 +1,6 @@
 #ifndef _BATTERY_METER_HAL_H
 #define _BATTERY_METER_HAL_H
 
-#include <mt-plat/mt_typedefs.h>
 
 /* ============================================================ */
 /* define */
@@ -43,6 +42,15 @@ typedef enum {
 	BATTERY_METER_CMD_NUMBER
 } BATTERY_METER_CTRL_CMD;
 
+#ifndef BATTERY_BOOL
+#define BATTERY_BOOL
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE  = 1,
+} kal_bool;
+#endif
+
+
 /* ============================================================ */
 /* structure */
 /* ============================================================ */
@@ -50,7 +58,7 @@ typedef enum {
 /* ============================================================ */
 /* typedef */
 /* ============================================================ */
-typedef kal_int32(*BATTERY_METER_CONTROL) (BATTERY_METER_CTRL_CMD cmd, void *data);
+typedef signed int(*BATTERY_METER_CONTROL) (BATTERY_METER_CTRL_CMD cmd, void *data);
 
 /* ============================================================ */
 /* External Variables */
@@ -60,7 +68,7 @@ extern int Enable_FGADC_LOG;
 /* ============================================================ */
 /* External function */
 /* ============================================================ */
-extern kal_int32 bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
+extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
 
 
 #endif				/* #ifndef _BATTERY_METER_HAL_H */

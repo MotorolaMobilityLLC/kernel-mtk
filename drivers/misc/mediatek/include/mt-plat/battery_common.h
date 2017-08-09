@@ -2,7 +2,6 @@
 #define BATTERY_COMMON_H
 
 #include <linux/ioctl.h>
-#include <mt-plat/mt_typedefs.h>
 #include "charging.h"
 #include <linux/time.h>
 
@@ -152,37 +151,62 @@ typedef enum {
 	TEMP_POS_HIGH
 } batt_temp_state_enum;
 
+#ifndef BATTERY_BOOL
+#define BATTERY_BOOL
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE  = 1,
+} kal_bool;
+#endif
+
+#ifndef BOOL
+typedef unsigned char  BOOL;
+#endif
+
+#ifndef FALSE
+  #define FALSE (0)
+#endif
+
+#ifndef TRUE
+  #define TRUE  (1)
+#endif
+
+
+
 /*****************************************************************************
  *  structure
  ****************************************************************************/
 typedef struct {
 	kal_bool bat_exist;
 	kal_bool bat_full;
-	INT32 bat_charging_state;
-	UINT32 bat_vol;
+	signed int bat_charging_state;
+	unsigned int bat_vol;
 	kal_bool bat_in_recharging_state;
-	kal_uint32 Vsense;
+	unsigned int Vsense;
 	kal_bool charger_exist;
-	UINT32 charger_vol;
-	INT32 charger_protect_status;
-	INT32 ICharging;
-	INT32 IBattery;
-	INT32 temperature;
-	INT32 temperatureR;
-	INT32 temperatureV;
-	UINT32 total_charging_time;
-	UINT32 PRE_charging_time;
-	UINT32 CC_charging_time;
-	UINT32 TOPOFF_charging_time;
-	UINT32 POSTFULL_charging_time;
-	UINT32 charger_type;
-	INT32 SOC;
-	INT32 UI_SOC;
-	INT32 UI_SOC2;
-	UINT32 nPercent_ZCV;
-	UINT32 nPrecent_UI_SOC_check_point;
-	UINT32 ZCV;
+	unsigned int charger_vol;
+	signed int charger_protect_status;
+	signed int ICharging;
+	signed int IBattery;
+	signed int temperature;
+	signed int temperatureR;
+	signed int temperatureV;
+	unsigned int total_charging_time;
+	unsigned int PRE_charging_time;
+	unsigned int CC_charging_time;
+	unsigned int TOPOFF_charging_time;
+	unsigned int POSTFULL_charging_time;
+	unsigned int charger_type;
+	signed int SOC;
+	signed int UI_SOC;
+	signed int UI_SOC2;
+	unsigned int nPercent_ZCV;
+	unsigned int nPrecent_UI_SOC_check_point;
+	unsigned int ZCV;
 } PMU_ChargerStruct;
+
+
+
 
 /*****************************************************************************
  *  Extern Variable
@@ -208,18 +232,18 @@ extern void charging_suspend_enable(void);
 extern void charging_suspend_disable(void);
 extern kal_bool bat_is_charger_exist(void);
 extern kal_bool bat_is_charging_full(void);
-extern kal_uint32 bat_get_ui_percentage(void);
-extern kal_uint32 get_charging_setting_current(void);
-extern kal_uint32 bat_is_recharging_phase(void);
+extern unsigned int bat_get_ui_percentage(void);
+extern unsigned int get_charging_setting_current(void);
+extern unsigned int bat_is_recharging_phase(void);
 extern void do_chrdet_int_task(void);
 extern void set_usb_current_unlimited(bool enable);
 extern bool get_usb_current_unlimited(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
 
-extern kal_uint32 mt_battery_get_duration_time(BATTERY_TIME_ENUM duration_type);
+extern unsigned int mt_battery_get_duration_time(BATTERY_TIME_ENUM duration_type);
 extern void mt_battery_update_time(struct timespec *pre_time, BATTERY_TIME_ENUM duration_type);
-extern kal_uint32 mt_battery_shutdown_check(void);
-extern kal_uint8 bat_is_kpoc(void);
+extern unsigned int mt_battery_shutdown_check(void);
+extern unsigned char bat_is_kpoc(void);
 
 #ifdef CONFIG_MTK_SMART_BATTERY
 extern void wake_up_bat(void);
@@ -263,6 +287,6 @@ void check_battery_exist(void);
 #ifdef BATTERY_CDP_WORKAROUND
 extern kal_bool is_usb_rdy(void);
 #endif
-extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);
+extern unsigned int upmu_get_reg_value(unsigned int reg);
 
 #endif				/* #ifndef BATTERY_COMMON_H */

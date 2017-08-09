@@ -65,7 +65,6 @@
  ****************************************************************************/
 #include <linux/types.h>
 #include <linux/kernel.h>
-#include <mt-plat/mt_typedefs.h>
 
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
@@ -96,11 +95,11 @@
  /* ============================================================ // */
  /* global variable */
  /* ============================================================ // */
-kal_uint32 g_bcct_flag = 0;
+unsigned int g_bcct_flag = 0;
 CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
-kal_uint32 g_usb_state = USB_UNCONFIGURED;
-kal_uint32 charging_full_current;	/* = CHARGING_FULL_CURRENT; *//* mA */
-kal_uint32 v_cc2topoff_threshold;	/* = V_CC2TOPOFF_THRES; */
+unsigned int g_usb_state = USB_UNCONFIGURED;
+unsigned int charging_full_current;	/* = CHARGING_FULL_CURRENT; *//* mA */
+unsigned int v_cc2topoff_threshold;	/* = V_CC2TOPOFF_THRES; */
 CHR_CURRENT_ENUM ulc_cv_charging_current;	/* = AC_CHARGER_CURRENT; */
 kal_bool ulc_cv_charging_current_flag = KAL_FALSE;
 static bool usb_unlimited;
@@ -185,7 +184,7 @@ void BATTERY_SetUSBState(int usb_state_value)
 /* EXPORT_SYMBOL(BATTERY_SetUSBState); */
 
 
-kal_uint32 get_charging_setting_current(void)
+unsigned int get_charging_setting_current(void)
 {
 	return g_temp_CC_value;
 }
@@ -270,7 +269,7 @@ static void mtk_ta_detector(void)
 	int real_v_chrA;
 	int real_v_chrB;
 	kal_bool retransmit = KAL_TRUE;
-	kal_uint32 retransmit_count = 0;
+	unsigned int retransmit_count = 0;
 	U32 charging_enable = true;
 
 	battery_log(BAT_LOG_CRTI, "mtk_ta_detector() start\n");
@@ -393,7 +392,7 @@ static void mtk_ta_vchr_select(int i, int ta_v_chr_candidate[], int ta_charging_
 {
 	int current_vchr;
 	kal_bool retransmit = KAL_TRUE;
-	kal_uint32 retransmit_count = 0;
+	unsigned int retransmit_count = 0;
 
 	current_vchr = battery_meter_get_charger_voltage();
 	if (ta_current_level != 5000 && current_vchr >= 4900) {	/* pattern error before, so reset vchr to 5V */
@@ -520,7 +519,7 @@ static void battery_pump_express_algorithm_start(void)
 	int curr_vbat = 0;
 	int i = 0;
 	int ta_cv_vchr;
-	kal_uint32 cv_voltage;
+	unsigned int cv_voltage;
 
 	if (batt_cust_data.high_battery_voltage_support)
 		cv_voltage = 4350;
@@ -790,7 +789,7 @@ void select_charging_curret_bcct(void)
 }
 
 
-kal_uint32 set_bat_charging_current_limit(int current_limit)
+unsigned int set_bat_charging_current_limit(int current_limit)
 {
 	battery_log(BAT_LOG_CRTI, "[BATTERY] set_bat_charging_current_limit (%d)\r\n",
 		    current_limit);
@@ -954,12 +953,12 @@ void select_charging_curret(void)
 
 
 
-static kal_uint32 charging_full_check(void)
+static unsigned int charging_full_check(void)
 {
-	kal_uint32 status = KAL_FALSE;
+	unsigned int status = KAL_FALSE;
 
 #if defined(POST_TIME_ENABLE)
-	static kal_uint32 post_charging_time;
+	static unsigned int post_charging_time;
 
 	if (post_charging_time >= POST_CHARGING_TIME) {
 		status = KAL_TRUE;
@@ -983,7 +982,7 @@ static kal_uint32 charging_full_check(void)
 		post_charging_time = 0;
 	}
 #else
-	static kal_uint8 full_check_count;
+	static unsigned char full_check_count;
 
 	if (BMT_status.ICharging <= charging_full_current) {
 		full_check_count++;
@@ -1005,10 +1004,10 @@ static kal_uint32 charging_full_check(void)
 
 static void charging_current_calibration(void)
 {
-	kal_int32 bat_isense_offset;
+	signed int bat_isense_offset;
 #if 0
-	kal_int32 bat_vol = battery_meter_get_battery_voltage();
-	kal_int32 Vsense = battery_meter_get_VSense();
+	signed int bat_vol = battery_meter_get_battery_voltage();
+	signed int Vsense = battery_meter_get_VSense();
 
 	bat_isense_offset = bat_vol - Vsense;
 
@@ -1024,7 +1023,7 @@ static void charging_current_calibration(void)
 static void pchr_sw_cv_charing_current_check(void)
 {
 	kal_bool charging_enable = KAL_TRUE;
-	kal_uint32 csdac_full_flag = KAL_TRUE;
+	unsigned int csdac_full_flag = KAL_TRUE;
 
 	battery_charging_control(CHARGING_CMD_SET_CURRENT, &ulc_cv_charging_current);
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
@@ -1061,7 +1060,7 @@ static void pchr_turn_on_charging(void)
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
 	BATTERY_VOLTAGE_ENUM cv_voltage;
 #endif
-	kal_uint32 charging_enable = KAL_TRUE;
+	unsigned int charging_enable = KAL_TRUE;
 
 	battery_log(BAT_LOG_FULL, "[BATTERY] pchr_turn_on_charging()!\r\n");
 
@@ -1214,8 +1213,8 @@ PMU_STATUS BAT_ConstantCurrentModeAction(void)
 
 PMU_STATUS BAT_TopOffModeAction(void)
 {
-	kal_uint32 charging_enable = KAL_FALSE;
-	kal_uint32 cv_voltage;
+	unsigned int charging_enable = KAL_FALSE;
+	unsigned int cv_voltage;
 
 	if (batt_cust_data.high_battery_voltage_support)
 		cv_voltage = 4350;
@@ -1253,7 +1252,7 @@ PMU_STATUS BAT_TopOffModeAction(void)
 
 PMU_STATUS BAT_BatteryFullAction(void)
 {
-	kal_uint32 charging_enable = KAL_FALSE;
+	unsigned int charging_enable = KAL_FALSE;
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Battery full !!\n\r");
 
@@ -1291,7 +1290,7 @@ if (BMT_status.bat_vol < batt_cust_data.recharging_voltage)
 
 PMU_STATUS BAT_BatteryHoldAction(void)
 {
-	kal_uint32 charging_enable;
+	unsigned int charging_enable;
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Hold mode !!\n\r");
 
@@ -1311,7 +1310,7 @@ PMU_STATUS BAT_BatteryHoldAction(void)
 
 PMU_STATUS BAT_BatteryStatusFailAction(void)
 {
-	kal_uint32 charging_enable;
+	unsigned int charging_enable;
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] BAD Battery status... Charging Stop !!\n\r");
 

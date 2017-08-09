@@ -2,7 +2,6 @@
 #define _BATTERY_METER_H
 
 #include <linux/platform_device.h>
-#include <mt-plat/mt_typedefs.h>
 #include <mach/mt_battery_meter.h>
 /* ============================================================ */
 /* define */
@@ -44,9 +43,23 @@ enum {
 /* ============================================================ */
 /* typedef */
 /* ============================================================ */
+
+#ifndef BATTERY_BOOL
+#define BATTERY_BOOL
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE  = 1,
+} kal_bool;
+#endif
+
+#ifndef BOOL
+typedef unsigned char  BOOL;
+#endif
+
+
 typedef struct {
-	INT32 BatteryTemp;
-	INT32 TemperatureR;
+	signed int BatteryTemp;
+	signed int TemperatureR;
 } BATT_TEMPERATURE;
 
 #if !defined(CONFIG_MTK_HAFG_20)
@@ -298,51 +311,51 @@ extern struct battery_meter_table_custom_data batt_meter_table_cust_data;
 #endif
 
 #ifdef MTK_ENABLE_AGING_ALGORITHM
-extern U32 suspend_time;
+extern unsigned int suspend_time;
 #endif
 extern BOOL bat_spm_timeout;
-extern U32 _g_bat_sleep_total_time;
+extern unsigned int _g_bat_sleep_total_time;
 
 
 /* ============================================================ */
 /* External function */
 /* ============================================================ */
-extern kal_int32 battery_meter_get_battery_voltage(kal_bool update);
-extern kal_int32 battery_meter_get_charging_current_imm(void);
-extern kal_int32 battery_meter_get_charging_current(void);
-extern kal_int32 battery_meter_get_battery_current(void);
+extern signed int battery_meter_get_battery_voltage(kal_bool update);
+extern signed int battery_meter_get_charging_current_imm(void);
+extern signed int battery_meter_get_charging_current(void);
+extern signed int battery_meter_get_battery_current(void);
 extern kal_bool battery_meter_get_battery_current_sign(void);
-extern kal_int32 battery_meter_get_car(void);
-extern kal_int32 battery_meter_get_battery_temperature(void);
-extern kal_int32 battery_meter_get_charger_voltage(void);
-extern kal_int32 battery_meter_get_battery_percentage(void);
-extern kal_int32 battery_meter_initial(void);
-extern kal_int32 battery_meter_reset(void);
-extern kal_int32 battery_meter_sync(kal_int32 bat_i_sense_offset);
+extern signed int battery_meter_get_car(void);
+extern signed int battery_meter_get_battery_temperature(void);
+extern signed int battery_meter_get_charger_voltage(void);
+extern signed int battery_meter_get_battery_percentage(void);
+extern signed int battery_meter_initial(void);
+extern signed int battery_meter_reset(void);
+extern signed int battery_meter_sync(signed int bat_i_sense_offset);
 
-extern kal_int32 battery_meter_get_battery_zcv(void);
-extern kal_int32 battery_meter_get_battery_nPercent_zcv(void);	/* 15% zcv,  15% can be customized */
-extern kal_int32 battery_meter_get_battery_nPercent_UI_SOC(void);	/* tracking point */
+extern signed int battery_meter_get_battery_zcv(void);
+extern signed int battery_meter_get_battery_nPercent_zcv(void);	/* 15% zcv,  15% can be customized */
+extern signed int battery_meter_get_battery_nPercent_UI_SOC(void);	/* tracking point */
 
-extern kal_int32 battery_meter_get_tempR(kal_int32 dwVolt);
-extern kal_int32 battery_meter_get_tempV(void);
-extern kal_int32 battery_meter_get_VSense(void);/* isense voltage */
+extern signed int battery_meter_get_tempR(signed int dwVolt);
+extern signed int battery_meter_get_tempV(void);
+extern signed int battery_meter_get_VSense(void);/* isense voltage */
 extern int wakeup_fg_algo(int flow_state);
 
 extern int batt_meter_init_cust_data(struct platform_device *dev);
 #if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 extern void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC);
-extern kal_int32 battery_meter_get_battery_soc(void);
+extern signed int battery_meter_get_battery_soc(void);
 #endif
 
 #ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
-extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);
+extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
-extern U32 pmic_config_interface(U32 RegNum, U32 val, U32 MASK, U32 SHIFT);
-extern U32 pmic_read_interface(U32 RegNum, U32 *val, U32 MASK, U32 SHIFT);
+extern unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT);
+extern unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT);
 extern unsigned int get_pmic_mt6325_cid(void);
 #endif
 #endif

@@ -2,8 +2,6 @@
 #include <linux/delay.h>
 #include <asm/div64.h>
 
-#include <mt-plat/mt_typedefs.h>
-
 #include <mt-plat/upmu_common.h>
 
 #include <mt-plat/battery_meter_hal.h>
@@ -25,10 +23,10 @@
 /* ============================================================ // */
 /* global variable */
 /* ============================================================ // */
-kal_int32 chip_diff_trim_value_4_0 = 0;
-kal_int32 chip_diff_trim_value = 0;	/* unit = 0.1 */
+signed int chip_diff_trim_value_4_0 = 0;
+signed int chip_diff_trim_value = 0;	/* unit = 0.1 */
 
-kal_int32 g_hw_ocv_tune_value = 0;
+signed int g_hw_ocv_tune_value = 0;
 
 kal_bool g_fg_is_charging = 0;
 
@@ -43,7 +41,7 @@ kal_bool g_fg_is_charging = 0;
 /* ============================================================ // */
 /* extern function */
 /* ============================================================ // */
-/*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);
+/*extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
 extern U32 pmic_config_interface(U32 RegNum, U32 val, U32 MASK, U32 SHIFT);
@@ -56,7 +54,7 @@ void get_hw_chip_diff_trim_value(void)
 #else
 
 #if 1
-	kal_int32 reg_val = 0;
+	signed int reg_val = 0;
 
 	reg_val = upmu_get_reg_value(0xCB8);
 	chip_diff_trim_value_4_0 = (reg_val >> 7) & 0x001F;	/* chip_diff_trim_value_4_0 = (reg_val>>10)&0x001F; */
@@ -170,12 +168,12 @@ void get_hw_chip_diff_trim_value(void)
 #endif
 }
 
-kal_int32 use_chip_trim_value(kal_int32 not_trim_val)
+signed int use_chip_trim_value(signed int not_trim_val)
 {
 #if defined(CONFIG_POWER_EXT)
 	return not_trim_val;
 #else
-	kal_int32 ret_val = 0;
+	signed int ret_val = 0;
 
 	ret_val = ((not_trim_val * chip_diff_trim_value) / 1000);
 
@@ -191,9 +189,9 @@ int get_hw_ocv(void)
 	return 4001;
 	bm_print(BM_LOG_CRTI, "[get_hw_ocv] TBD\n");
 #else
-	kal_int32 adc_result_reg = 0;
-	kal_int32 adc_result = 0;
-	kal_int32 r_val_temp = 3;	/* MT6325 use 2, old chip use 4 */
+	signed int adc_result_reg = 0;
+	signed int adc_result = 0;
+	signed int r_val_temp = 3;	/* MT6325 use 2, old chip use 4 */
 
 #if defined(SWCHR_POWER_PATH)
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
@@ -237,10 +235,10 @@ static void dump_car(void)
 		 pmic_get_register_value(PMIC_FG_CAR_15_00));
 }
 
-static kal_uint32 fg_get_data_ready_status(void)
+static unsigned int fg_get_data_ready_status(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 temp_val = 0;
+	unsigned int ret = 0;
+	unsigned int temp_val = 0;
 
 	ret = pmic_read_interface(MT6328_FGADC_CON0, &temp_val, 0xFFFF, 0x0);
 
@@ -255,14 +253,14 @@ static kal_uint32 fg_get_data_ready_status(void)
 }
 #endif
 
-static kal_int32 fgauge_read_current(void *data);
-static kal_int32 fgauge_initialization(void *data)
+static signed int fgauge_read_current(void *data);
+static signed int fgauge_initialization(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
 	/*  */
 #else
-	kal_uint32 ret = 0;
-	kal_int32 current_temp = 0;
+	unsigned int ret = 0;
+	signed int current_temp = 0;
 	int m = 0;
 
 	get_hw_chip_diff_trim_value();
@@ -307,17 +305,17 @@ static kal_int32 fgauge_initialization(void *data)
 	return STATUS_OK;
 }
 
-static kal_int32 fgauge_read_current(void *data)
+static signed int fgauge_read_current(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 0;
+	*(signed int *) (data) = 0;
 #else
-	kal_uint16 uvalue16 = 0;
-	kal_int32 dvalue = 0;
+	unsigned short uvalue16 = 0;
+	signed int dvalue = 0;
 	int m = 0;
-	kal_int64 Temp_Value = 0;
-	kal_int32 Current_Compensate_Value = 0;
-	kal_uint32 ret = 0;
+	long long Temp_Value = 0;
+	signed int Current_Compensate_Value = 0;
+	unsigned int ret = 0;
 
 /* HW Init */
 	/* (1)    i2c_write (0x60, 0xC8, 0x01); // Enable VA2 */
@@ -360,23 +358,23 @@ static kal_int32 fgauge_read_current(void *data)
 	ret = pmic_config_interface(MT6328_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 
 /* calculate the real world data */
-	dvalue = (kal_uint32) uvalue16;
+	dvalue = (unsigned int) uvalue16;
 	if (dvalue == 0) {
-		Temp_Value = (kal_int64) dvalue;
+		Temp_Value = (long long) dvalue;
 		g_fg_is_charging = KAL_FALSE;
 	} else if (dvalue > 32767) {/* > 0x8000 */
 
-		Temp_Value = (kal_int64) (dvalue - 65535);
+		Temp_Value = (long long) (dvalue - 65535);
 		Temp_Value = Temp_Value - (Temp_Value * 2);
 		g_fg_is_charging = KAL_FALSE;
 	} else {
-		Temp_Value = (kal_int64) dvalue;
+		Temp_Value = (long long) dvalue;
 		g_fg_is_charging = KAL_TRUE;
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
 	do_div(Temp_Value, 100000);
-	dvalue = (kal_uint32) Temp_Value;
+	dvalue = (unsigned int) Temp_Value;
 
 	if (g_fg_is_charging == KAL_TRUE) {
 		bm_print(BM_LOG_FULL, "[fgauge_read_current] current(charging) = %d mA\r\n",
@@ -419,7 +417,7 @@ static kal_int32 fgauge_read_current(void *data)
 	bm_print(BM_LOG_FULL, "[fgauge_read_current] final current=%d (ratio=%d)\n", dvalue,
 		 batt_meter_cust_data.car_tune_value);
 
-	*(kal_int32 *) (data) = dvalue;
+	*(signed int *) (data) = dvalue;
 #endif
 
 	return STATUS_OK;
@@ -427,17 +425,17 @@ static kal_int32 fgauge_read_current(void *data)
 
 
 
-kal_int32 fgauge_read_IM_current(void *data)
+signed int fgauge_read_IM_current(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 0;
+	*(signed int *) (data) = 0;
 #else
-	kal_uint16 uvalue16 = 0;
-	kal_int32 dvalue = 0;
+	unsigned short uvalue16 = 0;
+	signed int dvalue = 0;
 	/*int m = 0;*/
-	kal_int64 Temp_Value = 0;
-	kal_int32 Current_Compensate_Value = 0;
-	/*kal_uint32 ret = 0;*/
+	long long Temp_Value = 0;
+	signed int Current_Compensate_Value = 0;
+	/*unsigned int ret = 0;*/
 
 
 
@@ -445,23 +443,23 @@ kal_int32 fgauge_read_IM_current(void *data)
 	bm_print(BM_LOG_FULL, "[fgauge_read_IM_current] : FG_CURRENT = %x\r\n", uvalue16);
 
 /* calculate the real world data */
-	dvalue = (kal_uint32) uvalue16;
+	dvalue = (unsigned int) uvalue16;
 	if (dvalue == 0) {
-		Temp_Value = (kal_int64) dvalue;
+		Temp_Value = (long long) dvalue;
 		g_fg_is_charging = KAL_FALSE;
 	} else if (dvalue > 32767) {/* > 0x8000 */
 
-		Temp_Value = (kal_int64) (dvalue - 65535);
+		Temp_Value = (long long) (dvalue - 65535);
 		Temp_Value = Temp_Value - (Temp_Value * 2);
 		g_fg_is_charging = KAL_FALSE;
 	} else {
-		Temp_Value = (kal_int64) dvalue;
+		Temp_Value = (long long) dvalue;
 		g_fg_is_charging = KAL_TRUE;
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
 	do_div(Temp_Value, 100000);
-	dvalue = (kal_uint32) Temp_Value;
+	dvalue = (unsigned int) Temp_Value;
 
 	if (g_fg_is_charging == KAL_TRUE) {
 		bm_print(BM_LOG_FULL, "[fgauge_read_IM_current] current(charging) = %d mA\r\n",
@@ -504,43 +502,43 @@ kal_int32 fgauge_read_IM_current(void *data)
 	bm_print(BM_LOG_FULL, "[fgauge_read_IM_current] final current=%d (ratio=%d)\n", dvalue,
 		 batt_meter_cust_data.car_tune_value);
 
-	*(kal_int32 *) (data) = dvalue;
+	*(signed int *) (data) = dvalue;
 #endif
 
 	return STATUS_OK;
 }
 
 
-static kal_int32 fgauge_read_current_sign(void *data)
+static signed int fgauge_read_current_sign(void *data)
 {
 	*(kal_bool *) (data) = g_fg_is_charging;
 
 	return STATUS_OK;
 }
 
-static kal_int32 fgauge_read_columb(void *data);
+static signed int fgauge_read_columb(void *data);
 
-kal_int32 fgauge_set_columb_interrupt_internal(void *data, int reset)
+signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 {
 #if defined(CONFIG_POWER_EXT)
 	return STATUS_OK;
 #else
 
-	kal_uint32 uvalue32_CAR = 0;
-	kal_uint32 uvalue32_CAR_MSB = 0;
-	kal_int16 upperbound = 0, lowbound = 0;
-	kal_int16 pcar = 0;
-	kal_int16 m;
-	kal_uint32 car = *(kal_uint32 *) (data);
-	kal_uint32 ret = 0;
-	kal_uint16 *plow, *phigh, *pori;
+	unsigned int uvalue32_CAR = 0;
+	unsigned int uvalue32_CAR_MSB = 0;
+	signed short upperbound = 0, lowbound = 0;
+	signed short pcar = 0;
+	signed short m;
+	unsigned int car = *(unsigned int *) (data);
+	unsigned int ret = 0;
+	unsigned short *plow, *phigh, *pori;
 
 	bm_print(BM_LOG_FULL, "fgauge_set_columb_interrupt_internal car=%d\n", car);
 
 
-	plow = (kal_uint16 *) &lowbound;
-	phigh = (kal_uint16 *) &upperbound;
-	pori = (kal_uint16 *) &uvalue32_CAR;
+	plow = (unsigned short *) &lowbound;
+	phigh = (unsigned short *) &upperbound;
+	pori = (unsigned short *) &uvalue32_CAR;
 
 	if (car == 0) {
 		pmic_set_register_value(PMIC_RG_INT_EN_FG_BAT_H, 0);
@@ -619,7 +617,7 @@ kal_int32 fgauge_set_columb_interrupt_internal(void *data, int reset)
 	car = car + 5;
 	car = car * 10;
 	car = car / 35986;
-	pcar = (kal_int16) car;
+	pcar = (signed short) car;
 
 	upperbound = *pori;
 	lowbound = *pori;
@@ -627,8 +625,8 @@ kal_int32 fgauge_set_columb_interrupt_internal(void *data, int reset)
 /*
 	if(uvalue32_CAR_MSB==1)
 	{
-		upperbound=(kal_int16)(upperbound-upperbound*2);
-		lowbound=(kal_int16)(lowbound-lowbound*2);
+		upperbound=(signed short)(upperbound-upperbound*2);
+		lowbound=(signed short)(lowbound-lowbound*2);
 	}
 */
 	bm_print(BM_LOG_FULL,
@@ -660,22 +658,22 @@ kal_int32 fgauge_set_columb_interrupt_internal(void *data, int reset)
 }
 
 
-static kal_int32 fgauge_set_columb_interrupt(void *data)
+static signed int fgauge_set_columb_interrupt(void *data)
 {
 	return fgauge_set_columb_interrupt_internal(data, 0);
 }
 
-static kal_int32 fgauge_read_columb_internal(void *data, int reset)
+static signed int fgauge_read_columb_internal(void *data, int reset)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 0;
+	*(signed int *) (data) = 0;
 #else
-	kal_uint32 uvalue32_CAR = 0;
-	kal_uint32 uvalue32_CAR_MSB = 0;
-	kal_int32 dvalue_CAR = 0;
+	unsigned int uvalue32_CAR = 0;
+	unsigned int uvalue32_CAR_MSB = 0;
+	signed int dvalue_CAR = 0;
 	int m = 0;
-	kal_int64 Temp_Value = 0;
-	kal_uint32 ret = 0;
+	long long Temp_Value = 0;
+	unsigned int ret = 0;
 
 /* HW Init */
 	/* (1)    i2c_write (0x60, 0xC8, 0x01); // Enable VA2 */
@@ -730,7 +728,7 @@ static kal_int32 fgauge_read_columb_internal(void *data, int reset)
 	ret = pmic_config_interface(MT6328_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 
 /* calculate the real world data */
-	dvalue_CAR = (kal_int32) uvalue32_CAR;
+	dvalue_CAR = (signed int) uvalue32_CAR;
 
 	if (uvalue32_CAR == 0) {
 		Temp_Value = 0;
@@ -738,11 +736,11 @@ static kal_int32 fgauge_read_columb_internal(void *data, int reset)
 		Temp_Value = 0;
 	} else if (uvalue32_CAR_MSB == 0x1) {
 		/* dis-charging */
-		Temp_Value = (kal_int64) (dvalue_CAR - 0x1ffff);	/* keep negative value */
+		Temp_Value = (long long) (dvalue_CAR - 0x1ffff);	/* keep negative value */
 		Temp_Value = Temp_Value - (Temp_Value * 2);
 	} else {
 		/* charging */
-		Temp_Value = (kal_int64) dvalue_CAR;
+		Temp_Value = (long long) dvalue_CAR;
 	}
 
 #if 0
@@ -762,9 +760,9 @@ static kal_int32 fgauge_read_columb_internal(void *data, int reset)
 	do_div(Temp_Value, 1000);
 
 	if (uvalue32_CAR_MSB == 0x1)
-		dvalue_CAR = (kal_int32) (Temp_Value - (Temp_Value * 2));	/* keep negative value */
+		dvalue_CAR = (signed int) (Temp_Value - (Temp_Value * 2));	/* keep negative value */
 	else
-		dvalue_CAR = (kal_int32) Temp_Value;
+		dvalue_CAR = (signed int) Temp_Value;
 #endif
 
 	bm_print(BM_LOG_FULL, "[fgauge_read_columb_internal] dvalue_CAR = %d\r\n", dvalue_CAR);
@@ -794,25 +792,25 @@ static kal_int32 fgauge_read_columb_internal(void *data, int reset)
 	dump_nter();
 	dump_car();
 
-	*(kal_int32 *) (data) = dvalue_CAR;
+	*(signed int *) (data) = dvalue_CAR;
 #endif
 
 	return STATUS_OK;
 }
 
-static kal_int32 fgauge_read_columb(void *data)
+static signed int fgauge_read_columb(void *data)
 {
 	return fgauge_read_columb_internal(data, 0);
 }
 
-static kal_int32 fgauge_hw_reset(void *data)
+static signed int fgauge_hw_reset(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
 	/*  */
 #else
-	volatile kal_uint32 val_car = 1;
-	kal_uint32 val_car_temp = 1;
-	kal_uint32 ret = 0;
+	volatile unsigned int val_car = 1;
+	unsigned int val_car_temp = 1;
+	unsigned int ret = 0;
 
 	bm_print(BM_LOG_FULL, "[fgauge_hw_reset] : Start \r\n");
 
@@ -829,17 +827,17 @@ static kal_int32 fgauge_hw_reset(void *data)
 	return STATUS_OK;
 }
 
-static kal_int32 read_adc_v_bat_sense(void *data)
+static signed int read_adc_v_bat_sense(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 4201;
+	*(signed int *) (data) = 4201;
 #else
 #if defined(SWCHR_POWER_PATH)
-	*(kal_int32 *) (data) =
-	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_ISENSE_AP, *(kal_int32 *) (data), 1);
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_ISENSE_AP, *(signed int *) (data), 1);
 #else
-	*(kal_int32 *) (data) =
-	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(kal_int32 *) (data), 1);
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(signed int *) (data), 1);
 #endif
 #endif
 
@@ -848,93 +846,102 @@ static kal_int32 read_adc_v_bat_sense(void *data)
 
 
 
-static kal_int32 read_adc_v_i_sense(void *data)
+static signed int read_adc_v_i_sense(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 4202;
+	*(signed int *) (data) = 4202;
 #else
 #if defined(SWCHR_POWER_PATH)
-	*(kal_int32 *) (data) =
-	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(kal_int32 *) (data), 1);
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(signed int *) (data), 1);
 #else
-	*(kal_int32 *) (data) =
-	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_ISENSE_AP, *(kal_int32 *) (data), 1);
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_ISENSE_AP, *(signed int *) (data), 1);
 #endif
 #endif
 
 	return STATUS_OK;
 }
 
-static kal_int32 read_adc_v_bat_temp(void *data)
+static signed int read_adc_v_bat_temp(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 0;
+	*(signed int *) (data) = 0;
 #else
 #if defined(MTK_PCB_TBAT_FEATURE)
 	/* no HW support */
 #else
 	bm_print(BM_LOG_FULL,
 		 "[read_adc_v_bat_temp] return PMIC_IMM_GetOneChannelValue(4,times,1);\n");
-	*(kal_int32 *) (data) =
-	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATON_AP, *(kal_int32 *) (data), 1);
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATON_AP, *(signed int *) (data), 1);
 #endif
 #endif
 
 	return STATUS_OK;
 }
 
-static kal_int32 read_adc_v_charger(void *data)
+static signed int read_adc_v_charger(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 5001;
+	*(signed int *) (data) = 5001;
 #else
-	kal_int32 val;
+	signed int val;
 
-	val = PMIC_IMM_GetOneChannelValue(MT6328_AUX_VCDT_AP, *(kal_int32 *) (data), 1);
+	val = PMIC_IMM_GetOneChannelValue(MT6328_AUX_VCDT_AP, *(signed int *) (data), 1);
 	val =
 	    (((batt_meter_cust_data.r_charger_1 +
 	       batt_meter_cust_data.r_charger_2) * 100 * val) / batt_meter_cust_data.r_charger_2) /
 	    100;
-	*(kal_int32 *) (data) = val;
+	*(signed int *) (data) = val;
 #endif
 
 	return STATUS_OK;
 }
 
-static kal_int32 read_hw_ocv(void *data)
+static signed int read_hw_ocv(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(kal_int32 *) (data) = 3999;
+	*(signed int *) (data) = 3999;
 #else
 #if 0
-	*(kal_int32 *) (data) = PMIC_IMM_GetOneChannelValue(AUX_BATSNS_AP, 5, 1);
+	*(signed int *) (data) = PMIC_IMM_GetOneChannelValue(AUX_BATSNS_AP, 5, 1);
 	bm_print(BM_LOG_CRTI, "[read_hw_ocv] By SW AUXADC for bring up\n");
 #else
-	*(kal_int32 *) (data) = get_hw_ocv();
+	*(signed int *) (data) = get_hw_ocv();
 #endif
 #endif
 
 	return STATUS_OK;
 }
 
-static kal_int32 dump_register_fgadc(void *data)
+static signed int dump_register_fgadc(void *data)
 {
 	return STATUS_OK;
 }
 
-static kal_int32(*const bm_func[BATTERY_METER_CMD_NUMBER]) (void *data) = {
-	fgauge_initialization	/* hw fuel gague used only */
-	    , fgauge_read_current	/* hw fuel gague used only */
-	    , fgauge_read_current_sign	/* hw fuel gague used only */
-	    , fgauge_read_columb	/* hw fuel gague used only */
-	    , fgauge_hw_reset	/* hw fuel gague used only */
-	    , read_adc_v_bat_sense, read_adc_v_i_sense, read_adc_v_bat_temp, read_adc_v_charger
-	    , read_hw_ocv, dump_register_fgadc	/* hw fuel gague used only */
-, fgauge_set_columb_interrupt};
+static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
-kal_int32 bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
+signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 {
-	kal_int32 status = 0;
+	signed int status = 0;
+	static signed int init = -1;
+
+	if (init == -1) {
+		init = 0;
+		bm_func[BATTERY_METER_CMD_HW_FG_INIT] = fgauge_initialization;
+		bm_func[BATTERY_METER_CMD_GET_HW_FG_CURRENT] = fgauge_read_current;
+		bm_func[BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN] = fgauge_read_current_sign;
+		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR] = fgauge_read_columb;
+		bm_func[BATTERY_METER_CMD_HW_RESET] = fgauge_hw_reset;
+		bm_func[BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE] = read_adc_v_bat_sense;
+		bm_func[BATTERY_METER_CMD_GET_ADC_V_I_SENSE] = read_adc_v_i_sense;
+		bm_func[BATTERY_METER_CMD_GET_ADC_V_BAT_TEMP] = read_adc_v_bat_temp;
+		bm_func[BATTERY_METER_CMD_GET_ADC_V_CHARGER] = read_adc_v_charger;
+		bm_func[BATTERY_METER_CMD_GET_HW_OCV] = read_hw_ocv;
+		bm_func[BATTERY_METER_CMD_DUMP_REGISTER] = dump_register_fgadc;
+		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT] = fgauge_set_columb_interrupt;
+	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
 		if (bm_func[cmd] != NULL)
