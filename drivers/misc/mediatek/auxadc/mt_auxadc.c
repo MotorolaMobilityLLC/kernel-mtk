@@ -206,6 +206,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	u32 cali_ge = 0;
 	u32 cali_oe = 0;
 	u32 gain = 1;
+	int cali_rawdata = 0;
 #endif
 	mutex_lock(&mutex_get_cali_value);
 
@@ -315,10 +316,11 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
 	if (NULL != rawdata)
 		*rawdata = channel[dwChannel] - cali_oe;
+		cali_rawdata = channel[dwChannel] - cali_oe;
 
 	pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
-	data[0] = (*rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
-	data[1] = (*rawdata * 1500 / (4096 + cali_ge)) % 1000;
+	data[0] = (cali_rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
+	data[1] = (cali_rawdata * 1500 / (4096 + cali_ge)) % 1000;
 	pr_debug("[adc_api][external effuse cali]: imm mode => channel[%d] = %d.%3d\n", dwChannel, data[0], data[1]);
 #else
 	if (NULL != rawdata)
