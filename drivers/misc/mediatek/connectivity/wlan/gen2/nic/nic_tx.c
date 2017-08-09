@@ -541,7 +541,7 @@ VOID nicTxInitialize(IN P_ADAPTER_T prAdapter)
 UINT_32 u4CurrTick = 0;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 {
-#define TC4_NO_RESOURCE_DELAY_MS      (1048*5)    /* exponential of 5s */
+#define TC4_NO_RESOURCE_DELAY_MS      5    /* exponential of 5s */
 
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
