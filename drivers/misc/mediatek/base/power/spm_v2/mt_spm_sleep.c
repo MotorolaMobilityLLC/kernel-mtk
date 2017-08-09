@@ -496,7 +496,7 @@ static void spm_clean_after_wakeup(void)
 #endif
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc)
+static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status)
 {
 	wake_reason_t wr;
 	u32 md32_flag = 0;
@@ -520,8 +520,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_wakesta_index = 0;
 #endif
 
-	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d\n",
-		  spm_dormant_sta, md32_flag, md32_flag2);
+	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d, vcore_status = %d\n",
+		  spm_dormant_sta, md32_flag, md32_flag2, vcore_status);
 	if (0 != spm_ap_mdsrc_req_cnt)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
@@ -655,6 +655,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	static wake_reason_t last_wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl;
+	int vcore_status;
 	u32 cpu = smp_processor_id();
 
 #ifndef CONFIG_MTK_FPGA
@@ -737,6 +738,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
+	vcore_status = vcorefs_get_curr_ddr();
+
 	__spm_set_power_control(pwrctrl);
 
 	__spm_set_wakeup_event(pwrctrl);
@@ -761,7 +764,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	/* record last wakesta */
 	/* last_wr = spm_output_wake_reason(&wakesta, pcmdesc); */
-	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
+	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc, vcore_status);
 RESTORE_IRQ:
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
