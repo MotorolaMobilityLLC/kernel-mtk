@@ -174,9 +174,6 @@ int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
 
 void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
 {
-	/* add by k, for mm heap to free mva */
-	if (heap->ops->add_freelist)
-		heap->ops->add_freelist(buffer);
 	spin_lock(&heap->free_lock);
 	list_add(&buffer->list, &heap->free_list);
 	heap->free_list_size += buffer->size;
