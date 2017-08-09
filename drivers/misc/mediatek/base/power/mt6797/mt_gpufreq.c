@@ -126,45 +126,52 @@
 #define GPU_DVFS_FREQT (819000)
 #endif
 
-#define GPU_DVFS_FREQ0		(850000)	/* KHz */
-#define GPU_DVFS_FREQ1		(700000)	/* KHz */
-#define GPU_DVFS_FREQ2		(610000)	/* KHz */
-#define GPU_DVFS_FREQ3		(520000)	/* KHz */
-#define GPU_DVFS_FREQ4		(442500)	/* KHz */
-#define GPU_DVFS_FREQ5		(365000)	/* KHz */
-#define GPU_DVFS_FREQ6		(301500)	/* KHz */
-#define GPU_DVFS_FREQ7		(238000)	/* KHz */
-#define GPU_DVFS_FREQ8		(154500)	/* KHz */
-/* M bin */
-#define GPU_DVFS_FREQ9		(600000)	/* KHz */
-#define GPU_DVFS_FREQ10		(522000)	/* KHz */
-#define GPU_DVFS_FREQ11		(445000)	/* KHz */
-#define GPU_DVFS_FREQ12		(379000)	/* KHz */
-#define GPU_DVFS_FREQ13		(313000)	/* KHz */
-#define GPU_DVFS_FREQ14		(258000)	/* KHz */
-#define GPU_DVFS_FREQ15		(204000)	/* KHz */
-#define GPU_DVFS_FREQ16		(132000)	/* KHz */
+#define GPU_DVFS_FREQ0_S		(850000)	/* KHz */
+#define GPU_DVFS_FREQ0		(825000)	/* KHz */
+#define GPU_DVFS_FREQ1		(780000) /* KHz */
+#define GPU_DVFS_FREQ2		(700000)	/* KHz */
+#define GPU_DVFS_FREQ3		(610000)	/* KHz */
+#define GPU_DVFS_FREQ2_M		(600000)	/* KHz */
+#define GPU_DVFS_FREQ2_S		(522500)	/* KHz */
+#define GPU_DVFS_FREQ3_M		(522000)	/* KHz */
+#define GPU_DVFS_FREQ4		(520000)	/* KHz */
+#define GPU_DVFS_FREQ4_M		(445000)	/* KHz */
+#define GPU_DVFS_FREQ5		(442500)	/* KHz */
+#define GPU_DVFS_FREQ5_M		(379000)	/* KHz */
+#define GPU_DVFS_FREQ6		(365000)	/* KHz */
+#define GPU_DVFS_FREQ6_M		(313000)	/* KHz */
+#define GPU_DVFS_FREQ7		(301500)	/* KHz */
+#define GPU_DVFS_FREQ7_S		(258500)	/* KHz */
+#define GPU_DVFS_FREQ7_M		(258000)	/* KHz */
+#define GPU_DVFS_FREQ8		(238000)	/* KHz */
+#define GPU_DVFS_FREQ8_M		(204000)	/* KHz */
+#define GPU_DVFS_FREQ9		(154500)	/* KHz */
+#define GPU_DVFS_FREQ9_M		(132000)	/* KHz */
 
-#define GPUFREQ_LAST_FREQ_LEVEL		(GPU_DVFS_FREQ8)
+#define GPUFREQ_LAST_FREQ_LEVEL		(GPU_DVFS_FREQ9_M)
+#define GPU_DVFS_VOLT0_S	(115450)		/* mV x 100 */
 #define GPU_DVFS_VOLT0		(112890)		/* mV x 100 */
-#define GPU_DVFS_VOLT1		(107760)		/* mV x 100 */
-#define GPU_DVFS_VOLT2		(106470)		/* mV x 100 */
-#define GPU_DVFS_VOLT3		(101340)		/* mV x 100 */
-#define GPU_DVFS_VOLT4		(100060)		/* mV x 100 */
-#define GPU_DVFS_VOLT5		(97500)		/* mV x 100 */
-#define GPU_DVFS_VOLT6		(93650)		/* mV x 100 */
-#define GPU_DVFS_VOLT7		(91080)		/* mV x 100 */
-#define GPU_DVFS_VOLT8		(89800)		/* mV x 100 */
-#define GPU_DVFS_VOLT9		(85950)		/* mV x 100 */
-#define GPU_DVFS_VOLT10		(84670)		/* mV x 100 */
-#define GPU_DVFS_VOLT11		(80820)		/* mV x 100 */
-/* M bin */
-#define GPU_DVFS_VOLT12		(109040)
-#define GPU_DVFS_VOLT13		(102630)
-#define GPU_DVFS_VOLT14		(98780)
+#define GPU_DVFS_VOLT1		(109040)		/* mV x 100 */
+#define GPU_DVFS_VOLT2		(107760)		/* mV x 100 */
+#define GPU_DVFS_VOLT3		(106470)		/* mV x 100 */
+#define GPU_DVFS_VOLT4		(103910)		/* mV x 100 */
+#define GPU_DVFS_VOLT5		(102630)		/* mV x 100 */
+#define GPU_DVFS_VOLT5_S		(101340)		/* mV x 100 */
+#define GPU_DVFS_VOLT6		(100060)		/* mV x 100 */
+#define GPU_DVFS_VOLT7		(98780)		/* mV x 100 */
+#define GPU_DVFS_VOLT8		(97500)		/* mV x 100 */
+#define GPU_DVFS_VOLT9		(94930)		/* mV x 100 */
+#define GPU_DVFS_VOLT10		(93650)		/* mV x 100 */
+#define GPU_DVFS_VOLT10_S		(92370)		/* mV x 100 */
+#define GPU_DVFS_VOLT11		(91080)		/* mV x 100 */
+#define GPU_DVFS_VOLT12		(89800)		/* mV x 100 */
+#define GPU_DVFS_VOLT12_S		(88520)		/* mV x 100 */
+#define GPU_DVFS_VOLT13		(85950)		/* mV x 100 */
+#define GPU_DVFS_VOLT13_S		(84670)		/* mV x 100 */
+#define GPU_DVFS_VOLT14		(80820)		/* mV x 100 */
 
 
-#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT4
+#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT6
 
 #define UNIVPLL_FREQ	(416000) /* KHz */
 /*****************************************
@@ -218,6 +225,10 @@
 #define EFUSE_MFG_SPD_BOND_SHIFT	(8)
 #define EFUSE_MFG_SPD_BOND_MASK		(0xF)
 #define FUNC_CODE_EFUSE_INDEX		(22)
+#define EFUSE_PTP1_ODB_INDEX		(61)
+#define EFUSE_PTP1_ODB_MASK		(0xf)
+#define EFUSE_PTP1_ODB_SHIFT		(4)
+
 /*
  * LOG
  */
@@ -263,74 +274,111 @@ static gpufreq_ptpod_update_notify g_pGpufreq_ptpod_update_notify;
  * GPU DVFS OPP Table
  ****************************/
 /* Full Yield */
+/* 20160119 type = 8*/
+static struct mt_gpufreq_table_info mt_gpufreq_opp_v7_tbl_e1_0[] = {
+	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT1, 1),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT4, 2),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT9, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
+};
+/* 20151221 type = 0*/
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_0[] = {
 	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT0, 0),
 	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT1, 1),
 	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT4, 2),
-	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT5, 3),
-	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT7, 4),
-	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT8, 5),
-	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT9, 6),
-	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT9, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
 };
-
+/* 20151125 type = 4*/
 static struct mt_gpufreq_table_info mt_gpufreq_opp_lp_tbl_e1_0[] = {
-	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT0, 0),
-	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT1, 1),
-	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT4, 2),
-	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT5, 3),
-	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT7, 4),
-	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT8, 5),
-	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT9, 6),
-	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT2, 1),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 2),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 4),
+	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT12, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
 };
 
 /* Speed Bin */
+/* 20160119 type = 9*/
+static struct mt_gpufreq_table_info mt_gpufreq_opp_v7_tbl_e1_1[] = {
+	GPUOP(GPU_DVFS_FREQ0_S, GPU_DVFS_VOLT0_S, 0),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, 1),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5, 2),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT7, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT9, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13_S, 6),
+};
+/* 20151221 type = 1*/
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_1[] = {
 	GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, 0),
-	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT2, 1),
-	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT3, 2),
-	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5, 3),
-	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 4),
-	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT7, 5),
-	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT10, 6),
-	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT3, 1),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5, 2),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT7, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT10, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
 };
-
+/* 20151125 type = 5*/
 static struct mt_gpufreq_table_info mt_gpufreq_opp_lp_tbl_e1_1[] = {
-	GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, 0),
-	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT2, 1),
-	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT3, 2),
-	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5, 3),
-	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 4),
-	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT7, 5),
-	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT10, 6),
-	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ0_S, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT3, 1),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5_S, 2),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT10, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13_S, 6),
 };
 
 /* M Bin */
+/* 20160119 type = 10 */
+static struct mt_gpufreq_table_info mt_gpufreq_opp_v7_tbl_e1_2[] = {
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT2, 1),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 2),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 4),
+	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT12, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
+};
+/* 20151221 type = 2 */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_2[] = {
-	GPUOP(GPU_DVFS_FREQ9, GPU_DVFS_VOLT0, 0),
-	GPUOP(GPU_DVFS_FREQ10, GPU_DVFS_VOLT12, 1),
-	GPUOP(GPU_DVFS_FREQ11, GPU_DVFS_VOLT13, 2),
-	GPUOP(GPU_DVFS_FREQ12, GPU_DVFS_VOLT14, 3),
-	GPUOP(GPU_DVFS_FREQ13, GPU_DVFS_VOLT6, 4),
-	GPUOP(GPU_DVFS_FREQ14, GPU_DVFS_VOLT8, 5),
-	GPUOP(GPU_DVFS_FREQ15, GPU_DVFS_VOLT9, 6),
-	GPUOP(GPU_DVFS_FREQ16, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT2, 1),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT6, 2),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 4),
+	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT12, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13, 6),
 };
-
+/* 20151125 type = 6 */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_lp_tbl_e1_2[] = {
-	GPUOP(GPU_DVFS_FREQ9, GPU_DVFS_VOLT0, 0),
-	GPUOP(GPU_DVFS_FREQ10, GPU_DVFS_VOLT12, 1),
-	GPUOP(GPU_DVFS_FREQ11, GPU_DVFS_VOLT13, 2),
-	GPUOP(GPU_DVFS_FREQ12, GPU_DVFS_VOLT14, 3),
-	GPUOP(GPU_DVFS_FREQ13, GPU_DVFS_VOLT6, 4),
-	GPUOP(GPU_DVFS_FREQ14, GPU_DVFS_VOLT8, 5),
-	GPUOP(GPU_DVFS_FREQ15, GPU_DVFS_VOLT9, 6),
-	GPUOP(GPU_DVFS_FREQ16, GPU_DVFS_VOLT11, 7),
+	GPUOP(GPU_DVFS_FREQ2_M, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ3_M, GPU_DVFS_VOLT1, 1),
+	GPUOP(GPU_DVFS_FREQ4_M, GPU_DVFS_VOLT5, 2),
+	GPUOP(GPU_DVFS_FREQ5_M, GPU_DVFS_VOLT7, 3),
+	GPUOP(GPU_DVFS_FREQ6_M, GPU_DVFS_VOLT10, 4),
+	GPUOP(GPU_DVFS_FREQ7_M, GPU_DVFS_VOLT12, 5),
+	GPUOP(GPU_DVFS_FREQ8_M, GPU_DVFS_VOLT13, 6),
 };
 
+/* 20160119 type = 11 */
+static struct mt_gpufreq_table_info mt_gpufreq_opp_v7_tbl_e1_3[] = {
+	GPUOP(GPU_DVFS_FREQ2_M, GPU_DVFS_VOLT0, 0),
+	GPUOP(GPU_DVFS_FREQ2_S, GPU_DVFS_VOLT2, 1),
+	GPUOP(GPU_DVFS_FREQ4_M, GPU_DVFS_VOLT5_S, 2),
+	GPUOP(GPU_DVFS_FREQ5_M, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ6_M, GPU_DVFS_VOLT10_S, 4),
+	GPUOP(GPU_DVFS_FREQ7_S, GPU_DVFS_VOLT12_S, 5),
+	GPUOP(GPU_DVFS_FREQ8_M, GPU_DVFS_VOLT13_S, 6),
+};
 #ifdef MTK_TABLET_TURBO
 /* 800M Turbo */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_t[] = {
@@ -419,7 +467,7 @@ static unsigned int mt_gpufreq_opp_max_frequency;
 static unsigned int mt_gpufreq_opp_max_index;
 
 static unsigned int mt_gpufreq_dvfs_table_type;
-
+static unsigned int mt_gpufreq_dvfs_table_cid;
 /* static DEFINE_SPINLOCK(mt_gpufreq_lock); */
 static DEFINE_MUTEX(mt_gpufreq_lock);
 static DEFINE_MUTEX(mt_gpufreq_power_lock);
@@ -517,6 +565,7 @@ EXPORT_SYMBOL(mt_gpufreq_start_low_batt_volume_timer);
 static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 {
 	unsigned int gpu_speed_bounding = 0;
+	unsigned int ptp_prog_version = 0;
 	unsigned int type = 0;
 	unsigned int func_code_0, func_code_1;
 #ifdef MTK_TABLET_TURBO
@@ -529,82 +578,59 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 #endif
 	func_code_0 = (get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX) >> 24) & 0xf;
 	func_code_1 = get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX) & 0xf;
+	ptp_prog_version = (get_devinfo_with_index(EFUSE_PTP1_ODB_INDEX) >>
+				EFUSE_PTP1_ODB_SHIFT) & EFUSE_PTP1_ODB_MASK;
+	gpufreq_info("from efuse: function code 0 = 0x%x, function code 1 = 0x%x, ptp_version = 0x%x\n", func_code_0,
+		     func_code_1, ptp_prog_version);
 
-	gpufreq_info("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
-		     func_code_1);
-
-	if (func_code_1 == 0)
+	if (func_code_1 == 0 || func_code_1 == 3)
 		type = 0;
-	else if (func_code_1 == 1)
+	else if (func_code_1 == 1 || func_code_1 == 6)
 		type = 1;
-	else /* if (func_code_1 == 2) */
+	else if (func_code_1 == 2 || func_code_1 == 7)
 		type = 2;
+	else
+		type = 0;
+
+	if (ptp_prog_version <= 5)
+		type += 4;
+	if (ptp_prog_version > 6)
+		type += 8;
+
+	if (func_code_1 == 0xf)
+		type = 11;
 	gpu_speed_bounding = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >>
 				EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
+
 	gpufreq_info("GPU frequency bounding from efuse = %x\n", gpu_speed_bounding);
-
+#if 1
 	/* No efuse or free run? use clock-frequency from device tree to determine GPU table type! */
-	if (gpu_speed_bounding == 0) {
-#ifdef CONFIG_OF
-		static const struct of_device_id gpu_ids[] = {
-			{.compatible = "arm,malit6xx"},
-			{.compatible = "arm,mali-midgard"},
-			{ /* sentinel */ }
-		};
-		struct device_node *node;
-		unsigned int gpu_speed = 0;
-
-		node = of_find_matching_node(NULL, gpu_ids);
-		if (!node) {
-			gpufreq_err("@%s: find GPU node failed\n", __func__);
-			gpu_speed = 700;	/* default speed */
-		} else {
-			if (!of_property_read_u32(node, "clock-frequency", &gpu_speed)) {
-				gpu_speed = gpu_speed / 1000 / 1000;	/* MHz */
-			} else {
-				gpufreq_err
-				    ("@%s: missing clock-frequency property, use default GPU level\n",
-				     __func__);
-				gpu_speed = 700;	/* default speed */
-			}
-		}
-		gpufreq_info("GPU clock-frequency from DT = %d MHz\n", gpu_speed);
-
-		if (gpu_speed >= 700)
-			type = 0;	/* 700M */
-		else if (gpu_speed >= 600)
-			type = 1;	/* 600M */
-#else
-		gpufreq_err("@%s: Cannot get GPU speed from DT!\n", __func__);
-		type = 0;
-#endif
-		return type;
-	}
 
 	switch (gpu_speed_bounding) {
+	case 0:
+		mt_gpufreq_dvfs_table_cid = 0;	/* free run */
+		break;
 	case 1:
-		type = 1;	/* 800M */
+		mt_gpufreq_dvfs_table_cid = 1;	/* 800M */
+		break;
 	case 2:
-		type = 0;	/* 700M */
+		mt_gpufreq_dvfs_table_cid = 2;	/* 700M */
 		break;
 	case 3:
+		mt_gpufreq_dvfs_table_cid = 3;	/* 600M */
+		break;
 	case 4:
-	case 5:
-	case 6:
-	case 7:
-	case 8:
-	case 9:
-	case 10:
-	case 11:
 	case 12:
 	case 13:
 	case 14:
 	case 15:
+		mt_gpufreq_dvfs_table_cid = 4;	/* 500M */
+		break;
 	default:
-		type = 2;	/* 600M */
+		mt_gpufreq_dvfs_table_cid = 0;	/* free run */
 		break;
 	}
-
+#endif
 	return type;
 }
 
@@ -1487,27 +1513,26 @@ static void mt_gpufreq_clock_switch(unsigned int freq_new)
 #if 1
 	unsigned int mfgpll;
 
-	if (mt_gpufreq_dvfs_table_type == 0) {
-		if (freq_new > 750000)
+	if (mt_gpufreq_dvfs_table_cid == 0) {
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
-		else if (freq_new < 250000)
-			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
-		else
-			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
-	} else if (mt_gpufreq_dvfs_table_type == 1) {
-		if (freq_new >= 250000)
+	} else if (mt_gpufreq_dvfs_table_cid == 1) {
+		if (freq_new >= 500000)
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
-		else if (freq_new < 250000)
+		else if (freq_new >= 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
+		else if (freq_new >= 125000)
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
-	} else if (mt_gpufreq_dvfs_table_type == 2) {
+		else if (freq_new < 125000)
+			gpufreq_err("@%s: freq_new = %d cannot be applied\n", __func__, freq_new);
+	} else if (mt_gpufreq_dvfs_table_cid == 2 || mt_gpufreq_dvfs_table_cid == 3 || mt_gpufreq_dvfs_table_cid == 4) {
 		if (freq_new >= 250000)
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
-		else if (freq_new < 250000)
+		else if (freq_new >= 125000)
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
-		else if (freq_new < 100000)
+		else if (freq_new < 125000)
 			gpufreq_err("@%s: freq_new = %d cannot be applied\n", __func__, freq_new);
 	} else {
-		gpufreq_err("@%s: efuse number type(%d)\n", __func__, mt_gpufreq_dvfs_table_type);
+		gpufreq_err("@%s: efuse number type(%d)\n", __func__, mt_gpufreq_dvfs_table_cid);
 	}
 	mfgpll = DRV_Reg32(MFGPLL_CON1);
 	gpufreq_dbg("@%s: freq_new = %d, mfgpll = 0x%x\n", __func__, freq_new, mfgpll);
@@ -1706,6 +1731,70 @@ static void _mt_gpufreq_kick_pbm(int enable)
 #endif
 }
 
+void mt_gpufreq_kick_pbm(int enable, unsigned int spm_gpu_freq)
+{
+#ifndef DISABLE_PBM_FEATURE
+	int i;
+	unsigned int found = 0;
+	unsigned int power;
+	unsigned int spm_gpu_volt;
+	unsigned int spm_gpu_idx;
+
+
+	for (i = 0; i < mt_gpufreqs_num; i++) {
+		if (spm_gpu_freq >= mt_gpufreqs_power[i].gpufreq_khz) {
+			if (spm_gpu_freq > mt_gpufreqs_power[i].gpufreq_khz && i != 0) {
+				spm_gpu_volt = mt_gpufreqs_power[i-1].gpufreq_volt;
+				spm_gpu_idx = i - 1;
+			} else {
+				spm_gpu_volt = mt_gpufreqs_power[i].gpufreq_volt;
+				spm_gpu_idx = i;
+			}
+			found = 1;
+			gpufreq_dbg("match spm_gpu_OPPidx: %d\n", spm_gpu_idx);
+			break;
+		}
+	}
+
+	if (found == 0) {
+		spm_gpu_volt = mt_gpufreqs_power[0].gpufreq_volt;
+		spm_gpu_idx = 0;
+		gpufreq_err("gpu freq not found, set parameter to max freq\n");
+	}
+
+	if (enable) {
+		gpufreq_dbg("@%s: %d %d\n", __func__, mt_gpufreqs_power[spm_gpu_idx].gpufreq_volt, spm_gpu_volt);
+		if (mt_gpufreqs_power[spm_gpu_idx].gpufreq_volt == spm_gpu_volt) {
+			power = mt_gpufreqs_power[spm_gpu_idx].gpufreq_power;
+			found = 1;
+			kicker_pbm_by_gpu(true, power, spm_gpu_volt / 100);
+			gpufreq_dbg
+			    ("@%s: request GPU power = %d, cur_volt = %d, cur_freq = %d\n",
+			     __func__, power, spm_gpu_volt / 100, spm_gpu_freq);
+			return;
+		}
+
+		if (!found) {
+			if (spm_gpu_idx != -1 && spm_gpu_idx < mt_gpufreqs_num) {
+				/* use freq to found corresponding power budget */
+				power = mt_gpufreqs_power[spm_gpu_idx].gpufreq_power;
+				kicker_pbm_by_gpu(true, power, spm_gpu_volt / 100);
+				gpufreq_dbg
+				    ("@%s: request GPU power = %d, cur_volt = %d, cur_freq = %d\n",
+				     __func__, power, spm_gpu_volt / 100, spm_gpu_freq);
+			} else {
+				gpufreq_warn("@%s: Cannot found request power in power table!\n",
+					     __func__);
+				gpufreq_warn("cur_freq = %dKHz, cur_volt = %dmV\n", spm_gpu_freq,
+					     spm_gpu_volt / 100);
+			}
+		}
+	} else {
+		kicker_pbm_by_gpu(false, 0, spm_gpu_volt / 100);
+	}
+#endif
+}
+
 /*****************************************
  * frequency ramp up and ramp down handler
  ******************************************/
@@ -1812,32 +1901,6 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		mutex_unlock(&mt_gpufreq_lock);
 		gpufreq_err("@%s: idx out of range! idx = %d\n", __func__, idx);
 		return -1;
-	}
-
-	/************************************************
-	 * DVFS workaround 2015.1209 for 0.8-0.9v dvfs unstable for EMI hang
-	 * re-create table for low power mode
-	 *************************************************/
-	if (mt_gpufreq_low_power_test_enable == 1) {
-		if (mt_gpufreq_dvfs_table_type == 0)	/* 700M */
-			mt_backup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_0);
-		else if (mt_gpufreq_dvfs_table_type == 1)	/* 800M */
-			mt_backup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_1);
-		else if (mt_gpufreq_dvfs_table_type == 2)	/* 600M */
-			mt_backup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_2);
-		else
-			mt_backup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_0);
-		mt_gpufreq_low_power_test_enable = -1;
-	} else if (mt_gpufreq_low_power_test_enable == 0) {
-		if (mt_gpufreq_dvfs_table_type == 0)	/* 700M */
-			mt_restore_gpufreqs_table(mt_gpufreq_opp_tbl_e1_0);
-		else if (mt_gpufreq_dvfs_table_type == 1)	/* 800M */
-			mt_restore_gpufreqs_table(mt_gpufreq_opp_tbl_e1_1);
-		else if (mt_gpufreq_dvfs_table_type == 2)	/* 600M */
-			mt_restore_gpufreqs_table(mt_gpufreq_opp_tbl_e1_2);
-		else
-			mt_restore_gpufreqs_table(mt_gpufreq_opp_tbl_e1_0);
-		mt_gpufreq_low_power_test_enable = -1;
 	}
 
 	/**********************************
@@ -2753,6 +2816,27 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else if (mt_gpufreq_dvfs_table_type == 2)	/* 600M */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_2,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e1_2));
+	else if (mt_gpufreq_dvfs_table_type == 4)	/* 700M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_0,
+					ARRAY_SIZE(mt_gpufreq_opp_lp_tbl_e1_0));
+	else if (mt_gpufreq_dvfs_table_type == 5)	/* 800M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_1,
+					ARRAY_SIZE(mt_gpufreq_opp_lp_tbl_e1_1));
+	else if (mt_gpufreq_dvfs_table_type == 6)	/* 600M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_lp_tbl_e1_2,
+					ARRAY_SIZE(mt_gpufreq_opp_lp_tbl_e1_2));
+	else if (mt_gpufreq_dvfs_table_type == 8)	/* 700M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_v7_tbl_e1_0,
+					ARRAY_SIZE(mt_gpufreq_opp_v7_tbl_e1_0));
+	else if (mt_gpufreq_dvfs_table_type == 9)	/* 800M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_v7_tbl_e1_1,
+					ARRAY_SIZE(mt_gpufreq_opp_v7_tbl_e1_1));
+	else if (mt_gpufreq_dvfs_table_type == 10)	/* 700M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_v7_tbl_e1_2,
+					ARRAY_SIZE(mt_gpufreq_opp_v7_tbl_e1_2));
+	else if (mt_gpufreq_dvfs_table_type == 11)	/* 600M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_v7_tbl_e1_3,
+					ARRAY_SIZE(mt_gpufreq_opp_v7_tbl_e1_3));
 #ifdef MTK_TABLET_TURBO
 	else if (mt_gpufreq_dvfs_table_type == 3)	/* 800 */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_t,
