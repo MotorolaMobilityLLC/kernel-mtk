@@ -102,7 +102,6 @@ void ipanic_oops_free(struct aee_oops *oops, int erase);
 void ipanic_block_scramble(u8 *buf, int buflen);
 /* for WDT timeout case : dump timer/schedule/irq/softirq etc... debug information */
 extern void aee_wdt_dump_info(void);
-extern int mt_dump_wq_debugger(void);
 void aee_disable_api(void);
 int panic_dump_android_log(char *buf, size_t size, int type);
 
@@ -254,5 +253,8 @@ extern unsigned int aee_rr_curr_exp_type(void);
 extern void aee_rr_rec_scp(void);
 #ifdef CONFIG_SCHED_DEBUG
 extern int sysrq_sched_debug_show_at_AEE(void);
+#endif
+#ifdef CONFIG_MTK_WQ_DEBUG
+extern void wq_debug_dump(void);
 #endif
 #endif
