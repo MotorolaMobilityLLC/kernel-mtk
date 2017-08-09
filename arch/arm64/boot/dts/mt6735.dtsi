@@ -558,24 +558,24 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			};/* End of ldo_regulators */
 			regulators_supply {
 				compatible = "mediatek,mt_pmic_regulator_supply";
-				VAUX18-supply = <&mt_pmic_vaux18_ldo_reg>;
-				VTCXO_0-supply = <&mt_pmic_vtcxo_0_ldo_reg>;
-				VTCXO_1-supply = <&mt_pmic_vtcxo_1_ldo_reg>;
-				VAUD28-supply = <&mt_pmic_vaud28_ldo_reg>;
-				VEFUSE-supply = <&mt_pmic_vefuse_ldo_reg>;
-				VSIM1-supply = <&mt_pmic_vsim1_ldo_reg>;
-				VSIM2-supply = <&mt_pmic_vsim2_ldo_reg>;
-				VEMC_3V3-supply = <&mt_pmic_vemc33_ldo_reg>;
-				VMCH-supply = <&mt_pmic_vmch_ldo_reg>;
-				VTREF-supply = <&mt_pmic_vtref_ldo_reg>;
-				VMC-supply = <&mt_pmic_vmc_ldo_reg>;
-				VIO28-supply = <&mt_pmic_vio28_ldo_reg>;
-				VIBR-supply = <&mt_pmic_vibr_ldo_reg>;
-				VRF18_0-supply = <&mt_pmic_vrf18_0_ldo_reg>;
-				VRF18_1-supply = <&mt_pmic_vrf18_1_ldo_reg>;
-				VIO18-supply = <&mt_pmic_vio18_ldo_reg>;
-				VSRAM-supply = <&mt_pmic_vsram_ldo_reg>;
-				VM-supply = <&mt_pmic_vm_ldo_reg>;
+				vaux18-supply = <&mt_pmic_vaux18_ldo_reg>;
+				vtcxo_0-supply = <&mt_pmic_vtcxo_0_ldo_reg>;
+				vtcxo_1-supply = <&mt_pmic_vtcxo_1_ldo_reg>;
+				vaud28-supply = <&mt_pmic_vaud28_ldo_reg>;
+				vefuse-supply = <&mt_pmic_vefuse_ldo_reg>;
+				vsim1-supply = <&mt_pmic_vsim1_ldo_reg>;
+				vsim2-supply = <&mt_pmic_vsim2_ldo_reg>;
+				vemc_3v3-supply = <&mt_pmic_vemc33_ldo_reg>;
+				vmch-supply = <&mt_pmic_vmch_ldo_reg>;
+				vtref-supply = <&mt_pmic_vtref_ldo_reg>;
+				vmc-supply = <&mt_pmic_vmc_ldo_reg>;
+				vio28-supply = <&mt_pmic_vio28_ldo_reg>;
+				vibr-supply = <&mt_pmic_vibr_ldo_reg>;
+				vrf18_0-supply = <&mt_pmic_vrf18_0_ldo_reg>;
+				vrf18_1-supply = <&mt_pmic_vrf18_1_ldo_reg>;
+				vio18-supply = <&mt_pmic_vio18_ldo_reg>;
+				vsram-supply = <&mt_pmic_vsram_ldo_reg>;
+				vm-supply = <&mt_pmic_vm_ldo_reg>;
 			};/* End of regulators_supply */
 		};/* End of mt_pmic_regulator */
 
@@ -1206,4 +1206,5 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 /include/ "cust_kpd.dtsi"
 /include/ "cust_i2c.dtsi"
 /include/ "cust_eint.dtsi"
+/* /include/ "cust_pmic.dtsi" */
 

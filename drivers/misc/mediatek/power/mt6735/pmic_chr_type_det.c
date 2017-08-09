@@ -68,7 +68,7 @@ static void hw_bc11_dump_register(void)
 static void hw_bc11_init(void)
 {
 	msleep(200);
-	Charger_Detect_Init();
+	/* Charger_Detect_Init(); TBD */
 
 	/* RG_bc11_BIAS_EN=1 */
 	bc11_set_register_value(PMIC_RG_BC11_BIAS_EN, 1);

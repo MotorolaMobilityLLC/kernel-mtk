@@ -28,11 +28,11 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
-
-/*#ifdef CONFIG_PM_WAKELOCKS*/
-/*#include <linux/pm_wakeup.h>*/  /*included in linux/device.h*/
-/*#else*/
-
+/*
+#if !defined CONFIG_HAS_WAKELOCKS
+#include <linux/pm_wakeup.h>  included in linux/device.h
+#else
+*/
 #include <linux/wakelock.h>
 /*#endif*/
 #include <linux/device.h>
@@ -48,6 +48,7 @@
 #include <linux/seq_file.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
 #include <linux/of_device.h>
@@ -59,6 +60,7 @@
 #include <linux/regulator/machine.h>
 #if !defined CONFIG_MTK_LEGACY
 #include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
 #endif
 #include <mt-plat/upmu_common.h>
 #include <pmic.h>
@@ -87,6 +89,7 @@
 
 /*#include <cust_battery_meter.h> TBD*/
 
+/*#define non_ks*/
 
 /*
  * PMIC extern variable
@@ -229,6 +232,87 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return return_value;
 }
 
+unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+{
+	unsigned int return_value = 0;
+
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
+	unsigned int pmic_reg = 0;
+	unsigned int rdata;
+
+
+	/*mt_read_byte(RegNum, &pmic_reg); */
+	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
+	pmic_reg = rdata;
+	if (return_value != 0) {
+		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
+		return return_value;
+	}
+	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+
+	pmic_reg &= (MASK << SHIFT);
+	*val = (pmic_reg >> SHIFT);
+	/*PMICLOG"[pmic_read_interface] val=0x%x\n", *val); */
+
+#else
+	/*PMICLOG("[pmic_read_interface] Can not access HW PMIC\n"); */
+#endif
+
+	return return_value;
+}
+
+unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
+{
+	unsigned int return_value = 0;
+
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
+	unsigned int pmic_reg = 0;
+	unsigned int rdata;
+
+    /* pmic wrapper has spinlock protection. pmic do not to do it again */
+
+	/*1. mt_read_byte(RegNum, &pmic_reg); */
+	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
+	pmic_reg = rdata;
+	if (return_value != 0) {
+		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
+		return return_value;
+	}
+	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+
+	pmic_reg &= ~(MASK << SHIFT);
+	pmic_reg |= (val << SHIFT);
+
+	/*2. mt_write_byte(RegNum, pmic_reg); */
+	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
+	if (return_value != 0) {
+		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
+		return return_value;
+	}
+	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+
+#if 0
+	/*3. Double Check */
+	/*mt_read_byte(RegNum, &pmic_reg); */
+	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
+	pmic_reg = rdata;
+	if (return_value != 0) {
+		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap write data fail\n", RegNum);
+		mutex_unlock(&pmic_access_mutex);
+		return return_value;
+	}
+	PMICLOG("[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);
+#endif
+
+#else
+	/*PMICLOG("[pmic_config_interface] Can not access HW PMIC\n"); */
+#endif
+
+	return return_value;
+}
 
 /*
  * PMIC lock/unlock APIs
@@ -1140,11 +1224,11 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 {
 	struct device_node *np, *nproot, *regulators, *child;
 	const struct of_device_id *match;
-	int i;
+	int i, ret;
 	unsigned int default_on;
 
 	PMICLOG("[PMIC]pmic_mt_cust_probe %s %s\n", pdev->name, pdev->id_entry->name);
-
+#ifdef non_ks
 	/* check if device_id is matched */
 	match = of_match_device(pmic_cust_of_ids, &pdev->dev);
 	if (!match) {
@@ -1153,22 +1237,25 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 	}
 
 	/* check customer setting */
-	np = of_find_compatible_node(NULL, NULL, "mediatek,mt6328");
-	if (np == NULL) {
+	nproot = of_find_compatible_node(NULL, NULL, "mediatek,mt6328");
+	if (nproot == NULL) {
 		pr_info("[PMIC]pmic_mt_cust_probe get node failed\n");
 		return -ENOMEM;
 	}
 
-	nproot = of_node_get(np);
-	if (!nproot) {
+	np = of_node_get(nproot);
+	if (!np) {
 		pr_info("[PMIC]pmic_mt_cust_probe of_node_get fail\n");
 		return -ENODEV;
 	}
-	regulators = of_find_node_by_name(nproot, "regulators");
+
+	regulators = of_find_node_by_name(np, "regulators");
 	if (!regulators) {
 		pr_info("[PMIC]failed to find regulators node\n");
-		return -ENODEV;
+		ret = -ENODEV;
+		goto out;
 	}
+
 	for_each_child_of_node(regulators, child) {
 		/* check ldo regualtors and set it */
 		for (i = 0; i < ARRAY_SIZE(mt6328_regulator_matches); i++) {
@@ -1208,6 +1295,59 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 	of_node_put(regulators);
 	PMICLOG("[PMIC]pmic_mt_cust_probe done\n");
 	return 0;
+#else
+	nproot = of_find_compatible_node(NULL, NULL, "mediatek,mt_pmic");
+	if (nproot == NULL) {
+		pr_info("[PMIC]pmic_mt_cust_probe get node failed\n");
+		return -ENOMEM;
+	}
+
+	np = of_node_get(nproot);
+	if (!np) {
+		pr_info("[PMIC]pmic_mt_cust_probe of_node_get fail\n");
+		return -ENODEV;
+	}
+
+	regulators = of_get_child_by_name(np, "ldo_regulators");
+	if (!regulators) {
+		PMICLOG("[PMIC]pmic_mt_cust_probe ldo regulators node not found\n");
+		ret = -ENODEV;
+		goto out;
+	}
+
+	for_each_child_of_node(regulators, child) {
+		/* check ldo regualtors and set it */
+		if (!of_property_read_u32(child, "regulator-default-on", &default_on)) {
+			switch (default_on) {
+			case 0:
+				/* skip */
+				PMICLOG("[PMIC]%s regulator_skip %s\n", child->name,
+					mt6328_regulator_matches[i].name);
+				break;
+			case 1:
+				/* turn ldo off */
+				pmic_set_register_value(mtk_ldos[i].en_reg, false);
+				PMICLOG("[PMIC]%s default is off\n",
+					(char *)of_get_property(child, "regulator-name", NULL));
+				break;
+			case 2:
+				/* turn ldo on */
+				pmic_set_register_value(mtk_ldos[i].en_reg, true);
+				PMICLOG("[PMIC]%s default is on\n",
+					(char *)of_get_property(child, "regulator-name", NULL));
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	of_node_put(regulators);
+	pr_err("[PMIC]pmic_mt_cust_probe done\n");
+	return 0;
+#endif
+out:
+	of_node_put(np);
+	return ret;
 }
 
 static int pmic_mt_cust_remove(struct platform_device *pdev)
@@ -1862,7 +2002,7 @@ void fg_cur_l_int_handler(void)
 /*
  * 15% notify service
  */
-#if 0 /*ndef DISABLE_BATTERY_PERCENT_PROTECT TBD*/
+#if 0 /*ndef DISABLE_BATTERY_PERCENT_PROTECT TBD */
 #define BATTERY_PERCENT_PROTECT
 #endif
 
@@ -1873,7 +2013,7 @@ static struct task_struct *bat_percent_notify_thread;
 static bool bat_percent_notify_flag;
 static DECLARE_WAIT_QUEUE_HEAD(bat_percent_notify_waiter);
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 struct wakeup_source bat_percent_notify_lock;
 #else
 struct wake_lock bat_percent_notify_lock;
@@ -1955,7 +2095,7 @@ int bat_percent_notify_handler(void *unused)
 		wait_event_interruptible(bat_percent_notify_waiter,
 					 (bat_percent_notify_flag == true));
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 		__pm_stay_awake(&bat_percent_notify_lock);
 #else
 		wake_lock(&bat_percent_notify_lock);
@@ -1980,7 +2120,7 @@ int bat_percent_notify_handler(void *unused)
 		PMICLOG("bat_per_level=%d,bat_per_val=%d\n", g_battery_percent_level, bat_per_val);
 
 		mutex_unlock(&bat_percent_notify_mutex);
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 		__pm_relax(&bat_percent_notify_lock);
 #else
 		wake_unlock(&bat_percent_notify_lock);
@@ -2177,7 +2317,7 @@ static struct task_struct *dlpt_notify_thread;
 static bool dlpt_notify_flag;
 static DECLARE_WAIT_QUEUE_HEAD(dlpt_notify_waiter);
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 struct wakeup_source dlpt_notify_lock;
 #else
 struct wake_lock dlpt_notify_lock;
@@ -2551,7 +2691,7 @@ int dlpt_notify_handler(void *unused)
 
 		wait_event_interruptible(dlpt_notify_waiter, (dlpt_notify_flag == true));
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 		__pm_stay_awake(&dlpt_notify_lock);
 #else
 		wake_lock(&dlpt_notify_lock);
@@ -2632,7 +2772,7 @@ int dlpt_notify_handler(void *unused)
 
 		/*---------------------------------*/
 		mutex_unlock(&dlpt_notify_mutex);
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 		__pm_relax(&dlpt_notify_lock);
 #else
 		wake_unlock(&dlpt_notify_lock);
@@ -2915,7 +3055,7 @@ static DEFINE_MUTEX(pmic_mutex);
 /*static struct task_struct *pmic_thread_handle = NULL;*/
 static struct task_struct *pmic_thread_handle;
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 struct wakeup_source pmicThread_lock;
 #else
 struct wake_lock pmicThread_lock;
@@ -2927,7 +3067,7 @@ void wake_up_pmic(void)
 	PMICLOG("[wake_up_pmic]\r\n");
 	wake_up_process(pmic_thread_handle);
 
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 	__pm_stay_awake(&pmicThread_lock);
 #else
 	wake_lock(&pmicThread_lock);
@@ -2935,13 +3075,22 @@ void wake_up_pmic(void)
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
+#ifdef CONFIG_MTK_LEGACY
+void mt_pmic_eint_irq(void)
+{
+	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
+	wake_up_pmic();
+	/*return;*/
+}
+#else
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
-	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
+	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
 	wake_up_pmic();
 	disable_irq_nosync(irq);
 	return IRQ_HANDLED;
 }
+#endif
 
 void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 {
@@ -2988,7 +3137,9 @@ void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (
 
 void PMIC_EINT_SETTING(void)
 {
-	int ret;
+	struct device_node *node = NULL;
+	int ret = 0;
+	u32 ints[2] = { 0, 0 };
 
 	upmu_set_reg_value(MT6328_INT_CON0, 0);
 	upmu_set_reg_value(MT6328_INT_CON1, 0);
@@ -3039,15 +3190,24 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(43, 1, "PMIC");
 #endif
 
-	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
-	/* mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0); TBD */
-	/* mt_eint_unmask(g_eint_pmic_num); TBD*/
-	g_mt6328_irq = mt_gpio_to_irq(g_eint_pmic_num);
-	mt_gpio_set_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);
+#if 0
+	mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);
+	mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);
+	mt_eint_unmask(g_eint_pmic_num);
+#else
+	node = of_find_compatible_node(NULL, NULL, "mediatek, pmic-eint");
+	if (node) {
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		mt_gpio_set_debounce(ints[0], ints[1]);
 
-	ret = request_irq(g_mt6328_irq, mt_pmic_eint_irq, g_cust_eint_mt_pmic_type, "mt6328-eint", NULL);
-	if (ret)
-		PMICLOG("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6328_irq, ret);
+		g_mt6328_irq = irq_of_parse_and_map(node, 0);
+
+		ret = request_irq(g_mt6328_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
+		if (ret > 0)
+			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
+	} else
+		PMICLOG("can't find compatible node\n");
+#endif
 
 	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
@@ -3148,17 +3308,20 @@ static int pmic_thread_kthread(void *x)
 		mdelay(1);
 
 		mutex_unlock(&pmic_mutex);
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 		__pm_relax(&pmicThread_lock);
 #else
 		wake_unlock(&pmicThread_lock);
 #endif
 
 		set_current_state(TASK_INTERRUPTIBLE);
-		/*mt_eint_unmask(g_eint_pmic_num); TBD*/
+
+#if 0 /*def CONFIG_MTK_LEGACY*/
+		mt_eint_unmask(g_eint_pmic_num);
+#else
 		if (g_mt6328_irq != 0)
 			enable_irq(g_mt6328_irq);
-
+#endif
 		schedule();
 	}
 
@@ -3173,7 +3336,8 @@ int is_ext_buck2_exist(void)
 	return 0;
 #else
 #if !defined CONFIG_MTK_LEGACY
-	return __gpio_get_value(130);
+	return gpiod_get_value(gpio_to_desc(130));
+	/*return __gpio_get_value(130);*/
 	/*return mt_get_gpio_in(130);*/
 #else
 	return 0;
@@ -4395,7 +4559,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);
 
 	if (pimix == NULL)
-		PMICLOG(" pimix==NULL len=%u\n", len);
+		PMICLOG(" pimix==NULL len=%d\n", len);
 	else {
 		PMICLOG(" pimix=%d\n", *pimix);
 #ifdef DLPT_FEATURE_SUPPORT
@@ -4866,7 +5030,7 @@ static int __init pmic_mt_init(void)
 	int ret;
 
 #ifdef BATTERY_PERCENT_PROTECT
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&pmicThread_lock, "pmicThread_lock_mt6328 wakelock");
 	wakeup_source_init(&bat_percent_notify_lock, "bat_percent_notify_lock wakelock");
 #else
@@ -4877,7 +5041,7 @@ static int __init pmic_mt_init(void)
 #endif /* #ifdef BATTERY_PERCENT_PROTECT */
 
 #ifdef DLPT_FEATURE_SUPPORT
-#ifdef CONFIG_PM_WAKELOCKS
+#if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&dlpt_notify_lock, "dlpt_notify_lock wakelock");
 #else
 	wake_lock_init(&dlpt_notify_lock, WAKE_LOCK_SUSPEND, "dlpt_notify_lock wakelock");

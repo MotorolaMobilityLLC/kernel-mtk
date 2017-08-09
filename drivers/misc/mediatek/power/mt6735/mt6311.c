@@ -1,3 +1,6 @@
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
@@ -102,7 +105,7 @@ unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData)
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
-		return 0;
+		return ret;
 	}
 
 	readData = cmd_buf[0];
@@ -135,7 +138,7 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
-		return 0;
+		return ret;
 	}
 
 	new_client->ext_flag = 0;
@@ -241,6 +244,11 @@ unsigned char mt6311_get_cid(void)
 				    (unsigned char) (MT6311_PMIC_CID_MASK),
 				    (unsigned char) (MT6311_PMIC_CID_SHIFT)
 	    );
+	if (ret < 0) {
+		PMICLOG("[mt6311_get_cid] ret=%d\n", ret);
+		mt6311_unlock();
+		return ret;
+	}
 	mt6311_unlock();
 
 	return val;
@@ -257,6 +265,11 @@ unsigned char mt6311_get_swcid(void)
 				    (unsigned char) (MT6311_PMIC_SWCID_MASK),
 				    (unsigned char) (MT6311_PMIC_SWCID_SHIFT)
 	    );
+	if (ret < 0) {
+		PMICLOG("[mt6311_get_swcid] ret=%d\n", ret);
+		mt6311_unlock();
+		return ret;
+	}
 	mt6311_unlock();
 
 	return val;
@@ -273,6 +286,11 @@ unsigned char mt6311_get_hwcid(void)
 				    (unsigned char) (MT6311_PMIC_HWCID_MASK),
 				    (unsigned char) (MT6311_PMIC_HWCID_SHIFT)
 	    );
+	if (ret < 0) {
+		PMICLOG("[mt6311_get_hwcid] ret=%d\n", ret);
+		mt6311_unlock();
+		return ret;
+	}
 	mt6311_unlock();
 
 	return val;
@@ -6658,7 +6676,15 @@ unsigned int update_mt6311_chip_id(void)
 	unsigned int id_r = 0;
 
 	id_l = mt6311_get_cid();
+	if (id_l < 0) {
+		PMICLOG("[update_mt6311_chip_id] id_l=%d\n", id_l);
+		return id_l;
+	}
 	id_r = mt6311_get_swcid();
+	if (id_r < 0) {
+		PMICLOG("[update_mt6311_chip_id] id_r=%d\n", id_r);
+		return id_r;
+	}
 	id = ((id_l << 8) | (id_r));
 
 	g_mt6311_cid = id;
@@ -6670,8 +6696,16 @@ unsigned int update_mt6311_chip_id(void)
 
 unsigned int mt6311_get_chip_id(void)
 {
-	if (g_mt6311_cid == 0)
-		update_mt6311_chip_id();
+	unsigned int ret = 0;
+
+	if (g_mt6311_cid == 0) {
+		ret = update_mt6311_chip_id();
+		if (ret < 0) {
+			g_mt6311_hw_exist = 0;
+			PMICLOG("[mt6311_get_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+			return ret;
+		}
+	}
 
 	PMICLOG("[mt6311_get_chip_id] g_mt6311_cid=0x%x\n", g_mt6311_cid);
 
@@ -6738,19 +6772,31 @@ void mt6311_hw_init(void)
 	}
 }
 
-void mt6311_hw_component_detect(void)
+unsigned int mt6311_hw_component_detect(void)
 {
-	update_mt6311_chip_id();
+	unsigned int ret = 0, chip_id = 0;
 
-	if ((mt6311_get_chip_id() == PMIC6311_E1_CID_CODE) ||
-	    (mt6311_get_chip_id() == PMIC6311_E2_CID_CODE) ||
-	    (mt6311_get_chip_id() == PMIC6311_E3_CID_CODE)
-	    ) {
-		g_mt6311_hw_exist = 1;
-	} else {
+	ret = update_mt6311_chip_id();
+	if (ret < 0) {
 		g_mt6311_hw_exist = 0;
+		PMICLOG("[update_mt6311_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+		return ret;
 	}
+
+	chip_id = mt6311_get_chip_id();
+	if (chip_id < 0) {
+		PMICLOG("[mt6311_get_chip_id] ret=%d\n", chip_id);
+		return chip_id;
+	}
+	if ((chip_id == PMIC6311_E1_CID_CODE) ||
+	(chip_id == PMIC6311_E2_CID_CODE) ||
+	(chip_id == PMIC6311_E3_CID_CODE)
+	){
+		g_mt6311_hw_exist = 1;
+	} else
+		g_mt6311_hw_exist = 0;
 	PMICLOG("[mt6311_hw_component_detect] exist=%d\n", g_mt6311_hw_exist);
+	return 0;
 }
 
 int is_mt6311_sw_ready(void)
@@ -7093,6 +7139,7 @@ void mt6311_eint_init(void)
 static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = 0;
+	unsigned int ret = 0;
 
 	PMICLOG("[mt6311_driver_probe]\n");
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
@@ -7105,7 +7152,11 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	new_client = client;
 
 	/*---------------------        */
-	mt6311_hw_component_detect();
+	ret = mt6311_hw_component_detect();
+	if (ret < 0) {
+		err = -ENOMEM;
+		goto exit;
+	}
 	if (g_mt6311_hw_exist == 1) {
 		mt6311_hw_init();
 		mt6311_dump_register();
@@ -7125,7 +7176,7 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	if (g_mt6311_hw_exist == 0) {
 		/*re-init battery oc protect point for platform without extbuck*/
-		battery_oc_protect_reinit();
+		/* battery_oc_protect_reinit(); TBD */
 
 		PMICLOG("[mt6311_driver_probe] return err\n");
 		return err;
@@ -7134,6 +7185,10 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	return 0;
 
 exit:
+#if defined(CONFIG_ARCH_MT6753)
+	PMIC_INIT_SETTING_V1();
+#else
+#endif
 	return err;
 }
 
@@ -7302,6 +7357,10 @@ static int __init mt6311_init(void)
 		g_mt6311_driver_ready = 1;
 		PMICLOG("[mt6311_init] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 			g_mt6311_hw_exist, g_mt6311_driver_ready);
+#if defined(CONFIG_ARCH_MT6753)
+	PMIC_INIT_SETTING_V1();
+#else
+#endif
 	}
 #endif
 
@@ -7317,6 +7376,7 @@ static void __exit mt6311_exit(void)
 module_init(mt6311_init);
 module_exit(mt6311_exit);
 
+MODULE_AUTHOR("Argus Lin");
+MODULE_DESCRIPTION("MT PMIC Device Driver");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("I2C mt6311 Driver");
-MODULE_AUTHOR("James Lo<james.lo@mediatek.com>");
+

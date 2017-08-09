@@ -375,6 +375,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
 		return -1;
+		break;
 	}
 
 	switch (dwChannel) {
@@ -429,6 +430,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
 		return -1;
+		break;
 	}
 
 	wake_unlock(&pmicAuxadc_irq_lock);
@@ -537,6 +539,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 		PMICLOG("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
 		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
+		break;
 	}
 
 	switch (dwChannel) {
@@ -564,6 +567,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 		PMICLOG("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
 		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
+		break;
 	}
 
 	wake_unlock(&pmicAuxadc_irq_lock);
