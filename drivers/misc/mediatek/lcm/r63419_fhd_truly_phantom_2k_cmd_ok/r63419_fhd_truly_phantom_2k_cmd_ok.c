@@ -379,9 +379,13 @@ static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 #endif
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
+	/* Display off sequence */
 	{ 0x28, 0, {} },
+	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 120, {} }
+	{0xB0, 1, {0x00} },
+	{0xB1, 1, {0x01} },
+	{REGFLAG_DELAY, 80, {} },
 };
 
 #if 0 /* defined but not used */
@@ -659,6 +663,7 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
+	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 #ifdef CONFIG_MTK_LEGACY
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
@@ -666,8 +671,6 @@ static void lcm_suspend(void)
 #else
 	set_gpio_lcd_enp(0);
 #endif
-	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	SET_RESET_PIN(0);
 }
 
 static void lcm_resume(void)
