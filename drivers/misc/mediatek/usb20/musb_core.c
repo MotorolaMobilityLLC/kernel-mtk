@@ -113,6 +113,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include "mtk_musb.h"
+struct device_node *dts_np;
 #endif
 
 int musb_is_shutting = 0;
@@ -2373,7 +2374,13 @@ static int musb_probe(struct platform_device *pdev)
 	unsigned long usb_phy_base;
 
 	pr_info("musb probe\n");
-	pdev->dev.of_node = of_find_compatible_node(NULL, NULL, "mediatek,USB0");
+	if (dts_np) {
+		DBG(0, "dts node from dts_np\n");
+		pdev->dev.of_node = dts_np;
+	} else {
+		DBG(0, "dts node from of_find_compatible_node\n");
+		pdev->dev.of_node = of_find_compatible_node(NULL, NULL, "mediatek,USB0");
+	}
 	if (pdev->dev.of_node == NULL)
 		pr_info("USB get node failed\n");
 	base = of_iomap(pdev->dev.of_node, 0);

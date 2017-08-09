@@ -14,6 +14,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/io.h>
+#include <linux/usb/usb_phy_generic.h>
 #include <linux/switch.h>
 #include <linux/i2c.h>
 #include "musb_core.h"
@@ -133,7 +134,7 @@ static bool usb_connected;
 /*=======================================================================*/
 #ifdef CONFIG_OF
 static const struct of_device_id apusb_of_ids[] = {
-	{.compatible = "mediatek,USB0",},
+	{.compatible = "mediatek,mt6735-usb20",},
 	{},
 };
 
@@ -1169,7 +1170,7 @@ static int mt_usb_init(struct musb *musb)
 #endif
 	DBG(0, "mt_usb_init\n");
 
-	/* phy device added by dtsi, usbphy0 */
+	usb_phy_generic_register();
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
 
 	if (IS_ERR_OR_NULL(musb->xceiv)) {
@@ -1203,7 +1204,7 @@ static int mt_usb_init(struct musb *musb)
 	hwPowerOn(MT6328_POWER_LDO_VUSB33, VOL_3300, "VUSB_LDO");
 	DBG(0, "enable VBUS LDO\n");
 #else
-	reg = regulator_get(musb->controller, "VUSB33");
+	reg = regulator_get(musb->controller, "vusb33");
 	if (!IS_ERR(reg)) {
 #define	VUSB33_VOL_MIN 3300000
 #define	VUSB33_VOL_MAX 3300000
@@ -1297,6 +1298,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 		goto err1;
 	}
 #ifdef CONFIG_OF
+	dts_np = pdev->dev.of_node;
 
 	/* usb_irq_number1 = irq_of_parse_and_map(pdev->dev.of_node, 0); */
 	usb_phy_base = (unsigned long)of_iomap(pdev->dev.of_node, 1);

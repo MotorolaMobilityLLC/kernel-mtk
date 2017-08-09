@@ -134,6 +134,7 @@ enum {
 	usb_sif,
 	usb_acm_temp_device,
 };
+extern struct device_node *dts_np;
 #endif
 
 
