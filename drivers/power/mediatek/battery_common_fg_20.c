@@ -1695,9 +1695,6 @@ static void battery_update(struct battery_data *bat_data)
 		bat_data->adjust_power = adjust_power;
 		battery_log(BAT_LOG_CRTI, "adjust_power=(%d)\n", adjust_power);
 	}
-	battery_log(BAT_LOG_CRTI,
-		    "[kernel][battery_update] SOC %d,UI_SOC2 %d, status %d\n",
-		    BMT_status.SOC, BMT_status.UI_SOC2, bat_data->BAT_STATUS);
 
 #ifdef DLPT_POWER_OFF_EN
 #ifndef DISABLE_DLPT_FEATURE
@@ -2135,10 +2132,10 @@ void mt_battery_GetBatteryData(void)
 		batteryIndex = 0;
 
 	battery_log(BAT_LOG_CRTI,
-		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d\n",
+		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d\n",
 		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
 		    BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
-		    BMT_status.charger_type);
+		    BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2);
 }
 
 
