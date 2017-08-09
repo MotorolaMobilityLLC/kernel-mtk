@@ -6,7 +6,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_
 
 snd-soc-mt8173-pcm-objs := \
     mt_afe_reg.o mt_afe_clk.o mt_afe_control.o mt_afe_connection.o mt_afe_debug.o \
-    mt_afe_pcm_dl1.o mt_afe_pcm_capture.o mt_afe_pcm_capture2.o \
+    mt_afe_pcm_dl1.o mt_afe_pcm_dl2.o mt_afe_pcm_capture.o mt_afe_pcm_capture2.o \
     mt_afe_pcm_dl1_awb.o mt_afe_pcm_i2s0_awb.o \
     mt_afe_pcm_btsco.o mt_afe_pcm_mrgrx.o mt_afe_pcm_mrgrx_awb.o \
     mt_afe_pcm_hdmi.o mt_afe_pcm_hdmi_raw.o mt_afe_pcm_spdif.o \

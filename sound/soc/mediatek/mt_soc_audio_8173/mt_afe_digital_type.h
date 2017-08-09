@@ -55,6 +55,7 @@ enum mt_afe_digital_block {
 
 enum mt_afe_mem_context {
 	MT_AFE_MEM_CTX_DL1 = 0,
+	MT_AFE_MEM_CTX_DL2,
 	MT_AFE_MEM_CTX_VUL,
 	MT_AFE_MEM_CTX_VUL2,
 	MT_AFE_MEM_CTX_DAI,

@@ -34,9 +34,11 @@
 
 #define MT_SOC_MACHINE_NAME      "mt8173-soc-machine"
 #define MT_SOC_DL1_PCM           "mt8173-soc-dl1-pcm"
+#define MT_SOC_DL2_PCM           "mt8173-soc-dl2-pcm"
 #define MT_SOC_UL1_PCM           "mt8173-soc-ul1-pcm"
 #define MT_SOC_UL2_PCM           "mt8173-soc-ul2-pcm"
 #define MT_SOC_DL1_CPU_DAI_NAME  "mt-soc-dl1-dai"
+#define MT_SOC_DL2_CPU_DAI_NAME  "mt-soc-dl2-dai"
 #define MT_SOC_UL1_CPU_DAI_NAME  "mt-soc-ul1-dai"
 #define MT_SOC_UL2_CPU_DAI_NAME  "mt-soc-ul2-dai"
 
@@ -90,6 +92,7 @@
 */
 
 #define DL1_MAX_BUFFER_SIZE     (16*1024)
+#define DL2_MAX_BUFFER_SIZE     (32*1024)
 #define UL1_MAX_BUFFER_SIZE     (32*1024)
 #define UL2_MAX_BUFFER_SIZE     (32*1024)
 #define BT_DL_MAX_BUFFER_SIZE   (16*1024)

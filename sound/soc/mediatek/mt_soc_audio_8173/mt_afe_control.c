@@ -70,6 +70,7 @@ static int mt_afe_register_irq(void *dev);
 static irqreturn_t mt_afe_irq_handler(int irq, void *dev_id);
 static uint32_t mt_afe_rate_to_idx(uint32_t sample_rate);
 static void mt_afe_dl_interrupt_handler(void);
+static void mt_afe_dl2_interrupt_handler(void);
 static void mt_afe_ul_interrupt_handler(void);
 static void mt_afe_hdmi_interrupt_handler(void);
 static void mt_afe_hdmi_raw_interrupt_handler(void);
@@ -1397,6 +1398,12 @@ void mt_afe_init_dma_buffer(enum mt_afe_mem_context mem_context,
 			0xffffffff);
 		mt_afe_set_reg(AFE_MEMIF_MSB, memory_addr_bit33, 0x1);
 		break;
+	case MT_AFE_MEM_CTX_DL2:
+		mt_afe_set_reg(AFE_DL2_BASE, block->phy_buf_addr, 0xffffffff);
+		mt_afe_set_reg(AFE_DL2_END, block->phy_buf_addr + (block->buffer_size - 1),
+			0xffffffff);
+		mt_afe_set_reg(AFE_MEMIF_MSB, memory_addr_bit33 << 1, 1 << 1);
+		break;
 	case MT_AFE_MEM_CTX_VUL:
 		mt_afe_set_reg(AFE_VUL_BASE, block->phy_buf_addr, 0xffffffff);
 		mt_afe_set_reg(AFE_VUL_END, block->phy_buf_addr + (block->buffer_size - 1),
@@ -1474,6 +1481,7 @@ int mt_afe_update_hw_ptr(enum mt_afe_mem_context mem_context)
 
 	switch (mem_context) {
 	case MT_AFE_MEM_CTX_DL1:
+	case MT_AFE_MEM_CTX_DL2:
 	case MT_AFE_MEM_CTX_HDMI:
 	case MT_AFE_MEM_CTX_HDMI_RAW:
 	case MT_AFE_MEM_CTX_SPDIF:
@@ -1646,6 +1654,8 @@ static void mt_afe_init_control(void *dev)
 	/* power down all dividers */
 	for (i = MT_AFE_APLL1_DIV0; i < MT_AFE_APLL_DIV_COUNT; i++)
 		mt_afe_disable_i2s_div_power(i);
+
+	mt_afe_set_reg(AFE_IRQ_MCU_EN, 1 << 2, 1 << 2);
 }
 
 static int mt_afe_register_irq(void *dev)
@@ -1673,6 +1683,9 @@ static irqreturn_t mt_afe_irq_handler(int irq, void *dev_id)
 
 	if (reg_value & MT_AFE_IRQ2_MCU)
 		mt_afe_ul_interrupt_handler();
+
+	if (reg_value & MT_AFE_IRQ3_MCU)
+		mt_afe_dl2_interrupt_handler();
 
 	if (reg_value & MT_AFE_IRQ5_MCU)
 		mt_afe_hdmi_interrupt_handler();
@@ -1798,6 +1811,46 @@ static void mt_afe_dl_interrupt_handler(void)
 #ifdef DEBUG_IRQ_STATUS
 	gpt_get_cnt(GPT2, &pre_irq1_gpt_cnt);
 #endif
+}
+
+static void mt_afe_dl2_interrupt_handler(void)
+{
+	int afe_consumed_bytes;
+	int hw_memory_index;
+	int hw_cur_read_index = 0;
+	struct mt_afe_block_t *const afe_block =
+	    &(afe_mem_control_context[MT_AFE_MEM_CTX_DL2]->block);
+
+	hw_cur_read_index = mt_afe_get_reg(AFE_DL2_CUR);
+
+	if (hw_cur_read_index == 0) {
+		pr_notice("%s hw_cur_read_index == 0\n", __func__);
+		hw_cur_read_index = afe_block->phy_buf_addr;
+	}
+
+	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
+
+	/*
+	   pr_notice("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   __func__, hw_cur_read_index, hw_memory_index, afe_block->physical_buffer_addr);
+	 */
+
+	/* get hw consume bytes */
+	if (hw_memory_index > afe_block->read_index) {
+		afe_consumed_bytes = hw_memory_index - afe_block->read_index;
+	} else {
+		afe_consumed_bytes =
+		    afe_block->buffer_size + hw_memory_index - afe_block->read_index;
+	}
+
+	if (unlikely((afe_consumed_bytes & 0x7) != 0))
+		pr_warn("%s DMA address is not aligned 8 bytes (%d)\n", __func__,
+			afe_consumed_bytes);
+
+	afe_block->read_index += afe_consumed_bytes;
+	afe_block->read_index %= afe_block->buffer_size;
+
+	snd_pcm_period_elapsed(afe_mem_control_context[MT_AFE_MEM_CTX_DL2]->substream);
 }
 
 static void mt_afe_ul_interrupt_handler(void)

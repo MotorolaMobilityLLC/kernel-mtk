@@ -134,6 +134,16 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 		     },
 	 .name = MT_SOC_MRGRX_AWB_CPU_DAI_NAME,
 	 },
+	 {
+	 .playback = {
+		      .stream_name = MT_SOC_DL2_STREAM_NAME,
+		      .rates = SOC_NORMAL_USE_RATE,
+		      .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		      .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
+		      .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
+		      },
+	 .name = MT_SOC_DL2_CPU_DAI_NAME,
+	 },
 };
 
 static const struct snd_soc_component_driver mt_dai_component = {
