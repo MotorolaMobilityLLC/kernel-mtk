@@ -70,6 +70,7 @@
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "mt_spm_sodi_cmdq.h"
+#include "ddp_od.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
