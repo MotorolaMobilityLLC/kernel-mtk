@@ -71,7 +71,7 @@ static void get_reserved_dram(void)
 	resv_dram.phy_addr = (char *)get_reserve_mem_phys(OPENDSP_MEM_ID);
 	resv_dram.vir_addr = (char *)get_reserve_mem_virt(OPENDSP_MEM_ID);
 	resv_dram.size     = (uint32_t)get_reserve_mem_size(OPENDSP_MEM_ID);
-	AUD_LOG_V("resv_dram: pa %p, va %p, sz 0x%x",
+	AUD_LOG_V("resv_dram: pa %p, va %p, sz 0x%x\n",
 		  resv_dram.phy_addr, resv_dram.vir_addr, resv_dram.size);
 }
 
@@ -81,6 +81,7 @@ static void parsing_ipi_msg_from_user_space(void __user *user_data_ptr)
 
 	ipi_msg_t ipi_msg;
 	uint32_t msg_len = 0;
+	uint32_t dma_data_len = 0;
 
 	/* TODO: read necessary len only */
 	ret = copy_from_user(&ipi_msg, user_data_ptr, MAX_IPI_MSG_BUF_SIZE);
@@ -93,10 +94,13 @@ static void parsing_ipi_msg_from_user_space(void __user *user_data_ptr)
 	/* TODO: ring buf */
 	memset_io(resv_dram.vir_addr, 0, 1024);
 	if (ipi_msg.data_type == AUDIO_IPI_DMA) {
+		dma_data_len = ipi_msg.param1;
+		if (dma_data_len > resv_dram.size)
+			dma_data_len = resv_dram.size;
 		ret = copy_from_user(
 			      resv_dram.vir_addr,
 			      (void __user *)ipi_msg.dma_addr,
-			      ipi_msg.param1);
+			      dma_data_len);
 		if (ret != 0) {
 			AUD_LOG_E("dram copy_from_user ret %d\n", ret);
 			return;
