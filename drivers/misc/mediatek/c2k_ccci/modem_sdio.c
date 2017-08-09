@@ -3841,17 +3841,13 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 	/*modem->cbp_data->ipc_enable = 0; */
 	/*if 4-line enabled, do this to make sure md is awake */
 	if (modem->cbp_data->ipc_enable) {
-		if (ch_id == CTRL_CH_ID) {
-			asc_tx_ready_count(modem->cbp_data->tx_handle->name, 1);
-			tx_ready =
-			    asc_tx_auto_ready(modem->cbp_data->tx_handle->name,
-					      1);
-			if (tx_ready != 0)
-				asc_tx_ready_count(modem->cbp_data->
-						   tx_handle->name, 0);
-		} else {
-			asc_tx_auto_ready(modem->cbp_data->tx_handle->name, 1);
-		}
+		asc_tx_ready_count(modem->cbp_data->tx_handle->name, 1);
+		tx_ready =
+		    asc_tx_auto_ready(modem->cbp_data->tx_handle->name,
+				      1);
+		if (tx_ready != 0)
+			asc_tx_ready_count(modem->cbp_data->
+					   tx_handle->name, 0);
 	}
 	if (modem->status == MD_OFF) {
 		LOGPRT(LOG_ERR,
@@ -3967,7 +3963,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		modem_err_indication_usr(1);
 	}
  terminate:
-	if ((ch_id == CTRL_CH_ID) && tx_ready == 0)
+	if (tx_ready == 0)
 		asc_tx_ready_count(modem->cbp_data->tx_handle->name, 0);
 }
 
