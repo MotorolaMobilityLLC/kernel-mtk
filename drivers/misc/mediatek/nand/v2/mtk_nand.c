@@ -2472,6 +2472,7 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 {
 	u32 dec_mask;
 	u32 fsm_mask;
+	u32 ECC_DECFSM_IDLE;
 	struct timeval timer_timeout, timer_cur;
 
 	do_gettimeofday(&timer_timeout);
@@ -2495,10 +2496,13 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 
 	if (mtk_nfi_dev_comp->chip_ver == 1) {
 		fsm_mask = 0x7F0F0F0F;
+		ECC_DECFSM_IDLE = ECC_DECFSM_IDLE_V1;
 	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
 		fsm_mask = 0x3F3FFF0F;
+		ECC_DECFSM_IDLE = ECC_DECFSM_IDLE_V2;
 	} else {
 		fsm_mask = 0xFFFFFFFF;
+		ECC_DECFSM_IDLE = 0xFFFFFFFF;
 		pr_err("[mtk_nand_check_dececc_done] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
 			mtk_nfi_dev_comp->chip_ver);
 	}

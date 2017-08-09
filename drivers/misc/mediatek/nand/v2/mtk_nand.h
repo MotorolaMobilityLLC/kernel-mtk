@@ -502,7 +502,8 @@
 /* #define NAND_PFM */
 
 /* ECC_DECFSM */
-#define ECC_DECFSM_IDLE         (0x01011101)
+#define ECC_DECFSM_IDLE_V1         (0x01010101)
+#define ECC_DECFSM_IDLE_V2         (0x01011101)
 /*******************************************************************************
  * Data Structure Definition
  *******************************************************************************/
