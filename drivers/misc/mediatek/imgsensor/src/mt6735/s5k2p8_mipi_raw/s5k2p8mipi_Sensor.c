@@ -1589,9 +1589,9 @@ static void preview_setting(void)
 
 
 static void normal_capture_setting(void)
-{
-	LOG_INF("E! ");
+{    
 	int retry=0;
+	LOG_INF("E! ");
 
 	//====================================================
 //2P8XX

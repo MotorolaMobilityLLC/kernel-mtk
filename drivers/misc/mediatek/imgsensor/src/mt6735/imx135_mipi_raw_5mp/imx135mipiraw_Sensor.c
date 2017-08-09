@@ -1778,7 +1778,7 @@ void IMX135MIPI_set_Video_IHDR(kal_uint16 IHDR_En)
     write_cmos_sensor(0x3A43,0x01);//
     write_cmos_sensor(0x0100,0x01);// STREAM START
 }
-
+#if 0
 static void hs_video_setting_vga_120fps(void)  // VideoHDSetting_120fps
 {
     LOG_INF("E\n  VGA  120fps ");
@@ -1919,7 +1919,7 @@ else {
     write_cmos_sensor(0x0100,0x01);// STREAM START
 
 }
-
+#endif
 static void hs_video_setting(void)  // VideoHDSetting_120fps
 {
     LOG_INF("E\n  Video  120fps ");
