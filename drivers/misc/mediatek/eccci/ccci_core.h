@@ -975,6 +975,9 @@ static inline void ccci_request_struct_init(struct ccci_request *req)
 extern volatile int current_time_zone;
 #endif
 
+extern void __iomem *md1_excp_smem_vir;
+extern unsigned int md1_excp_smem__size;
+
 struct ccci_modem *ccci_allocate_modem(int private_size);
 int ccci_register_modem(struct ccci_modem *modem);
 int ccci_register_dev_node(const char *name, int major_id, int minor);
