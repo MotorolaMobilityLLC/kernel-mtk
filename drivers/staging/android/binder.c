@@ -5671,7 +5671,7 @@ static void print_binder_timeout_log_entry(struct seq_file *m, struct binder_tim
 		   e->debug_id, binder_wait_on_str[e->r],
 		   e->from_proc, e->from_thrd, e->to_proc, e->to_thrd,
 		   e->over_sec, e->service, e->code);
-	seq_printf(m, "start_at %lu.%03ld android %d-%02d-%02d%02d:%02d:%02d.%03lu\n",
+	seq_printf(m, "start_at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
 		   (unsigned long)e->ts.tv_sec,
 		   (e->ts.tv_nsec / NSEC_PER_MSEC),
 		   (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
