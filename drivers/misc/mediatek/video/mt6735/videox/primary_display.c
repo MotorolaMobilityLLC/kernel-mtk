@@ -6793,7 +6793,7 @@ int primary_display_get_original_height(void)
 
 int primary_display_get_bpp(void)
 {
-	return 32;
+	return 24;
 }
 
 void primary_display_set_max_layer(int maxlayer)
