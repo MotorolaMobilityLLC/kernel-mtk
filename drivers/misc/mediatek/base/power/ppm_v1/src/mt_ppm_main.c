@@ -520,6 +520,20 @@ int mt_ppm_main(void)
 	/* calculate final limit and fill-in client request structure */
 	ppm_main_calc_new_limit();
 
+#ifdef PPM_CLUSTER_MIGRATION_BOOST
+	if (prev_state == PPM_POWER_STATE_L_ONLY && next_state == PPM_POWER_STATE_LL_ONLY) {
+		unsigned int freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(PPM_CLUSTER_L);
+		int freq_idx_LL = ppm_main_freq_to_idx(PPM_CLUSTER_LL, freq_L, CPUFREQ_RELATION_L);
+
+		if (freq_idx_LL != -1)
+			c_req->cpu_limit[PPM_CLUSTER_LL].min_cpufreq_idx =
+				(freq_idx_LL > c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx)
+				? freq_idx_LL : c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx;
+
+		ppm_ver("boost when L -> LL! L freq = %dKHz(LL min idx = %d)\n", freq_L, freq_idx_LL);
+	}
+#endif
+
 	/* notify client and print debug message if limits are changed */
 	if (memcmp(c_req->cpu_limit, last_req->cpu_limit,
 		ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit))) {

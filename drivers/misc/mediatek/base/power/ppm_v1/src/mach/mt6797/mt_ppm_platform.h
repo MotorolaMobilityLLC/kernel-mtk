@@ -14,33 +14,40 @@ extern "C" {
 /*==============================================================*/
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
+
 #define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
+
 #ifdef ENABLE_IDVFS
 #include "mt_ocp.h"
 #define PPM_HW_OCP_SUPPORT		(1)
 #else
 #define PPM_HW_OCP_SUPPORT		(0)
 #endif
+
 #define PPM_DLPT_ENHANCEMENT		(1)
 #if PPM_DLPT_ENHANCEMENT
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
 #endif
+
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #define PPM_DISABLE_CLUSTER_MIGRATION	(1)
 #endif
+
 #define PPM_POWER_TABLE_CALIBRATION	(1)
 #ifdef PPM_POWER_TABLE_CALIBRATION
 #include "mt_static_power.h"
-/* TBD */
 #define BIG_LKG_EFUSE_TT		(169)
 #define BIG_LKG_EFUSE_FF		(421)
 #endif
 
 #define PPM_FAST_ATM_SUPPORT		(1)
 #define PPM_OUTPUT_MAIN_LOG_TO_UART	(1)
+#ifndef PPM_DISABLE_CLUSTER_MIGRATION
+#define PPM_CLUSTER_MIGRATION_BOOST	(1)
+#endif
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
