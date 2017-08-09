@@ -190,7 +190,7 @@
 #define EXTIC_VGPU_SLEW_MASK		0x7
 #define EXTIC_VGPU_SLEW_SHIFT		0x4
 
-#define EXTIC_VOLT_ON_OFF_DELAY_US		200
+#define EXTIC_VOLT_ON_OFF_DELAY_US		300
 #define EXTIC_VOLT_STEP			12826	/* 12.826mV per step */
 #define EXTIC_SLEW_STEP			10000	/* 10.000mV per step */
 #define EXTIC_VOLT_UP_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
