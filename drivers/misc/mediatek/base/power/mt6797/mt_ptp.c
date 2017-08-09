@@ -3545,6 +3545,9 @@ static int eem_probe(struct platform_device *pdev)
 			/* disable frequency hopping (main PLL) */
 			/* mt_fh_popod_save(); */
 
+			set_cpu_present(8, true); /* enable big cluster */
+			if (!cpu_online(8))
+				cpu_up(8);
 			/* disable DVFS and set vproc = 1v (LITTLE = 689 MHz)(BIG = 1196 MHz) */
 			mt_ppm_ptpod_policy_activate();
 			mt_gpufreq_disable_by_ptpod();
@@ -3618,6 +3621,8 @@ static int eem_probe(struct platform_device *pdev)
 			#endif
 			mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
 			mt_ppm_ptpod_policy_deactivate();
+			if (cpu_online(8))
+				cpu_down(8);
 			/* enable frequency hopping (main PLL) */
 			/* mt_fh_popod_restore(); */
 		#endif
