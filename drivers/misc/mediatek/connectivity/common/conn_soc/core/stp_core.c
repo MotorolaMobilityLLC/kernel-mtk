@@ -30,6 +30,8 @@
 
 UINT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int g_coredump_mode = 0;
+unsigned int chip_reset_only = 0;
+
 #define REMOVE_USELESS_LOG 1
 
 #define STP_POLL_CPUPCR_NUM 16
@@ -2053,6 +2055,12 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 			break;
 
 		case MTKSTP_FW_MSG:
+			if (((11 < length) && (0 == osal_strncmp(p_data, "{reset}", 7))) ||
+				(7 == stp_core_ctx.parser.length)) {
+				STP_INFO_FUNC("MCU need chip reset only! len=%d,pkt_len=%d!\n",
+					length, stp_core_ctx.parser.length);
+				chip_reset_only = 1;
+			}
 #if CFG_WMT_DUMP_INT_STATUS
 			if (MTK_WCN_BOOL_TRUE == wmt_plat_dump_BGF_irq_status())
 				wmt_plat_BGF_irq_dump_status();

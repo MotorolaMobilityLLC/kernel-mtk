@@ -2095,7 +2095,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case 11:
 		{
-			osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends");
+			/*osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends");*/
 			wmt_lib_host_awake_put();
 		}
 		break;

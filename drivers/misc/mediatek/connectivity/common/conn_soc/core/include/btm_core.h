@@ -125,6 +125,7 @@ MTK_WCN_BOOL is_btif_rxd_be_blocked(void);
 #endif
 MTKSTP_BTM_T *stp_btm_init(void);
 extern unsigned int g_coredump_mode;
+extern unsigned int chip_reset_only;
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
