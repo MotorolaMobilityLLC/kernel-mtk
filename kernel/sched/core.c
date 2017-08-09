@@ -863,7 +863,7 @@ static void tgs_log(struct rq *rq, struct task_struct *p)
 			i,
 			tg->thread_group_info[i].nr_running,
 			tg->thread_group_info[i].cfs_nr_running,
-			tg->thread_group_info[i].utilization_avg_contrib);
+			tg->thread_group_info[i].loadwop_avg_contrib);
 	}
 }
 #endif /* CONFIG_MT_SCHED_TRACE_DETAIL */

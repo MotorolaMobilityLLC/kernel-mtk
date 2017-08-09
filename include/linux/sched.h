@@ -1129,7 +1129,7 @@ struct sched_avg {
 	 * is runnable on a rq. It is based on both runnable_avg_sum and the
 	 * weight of the task.
 	 */
-	unsigned long load_avg_contrib, utilization_avg_contrib;
+	unsigned long load_avg_contrib, utilization_avg_contrib, loadwop_avg_contrib;
 	/*
 	 * These sums represent an infinite geometric series and so are bound
 	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
@@ -1325,7 +1325,7 @@ struct thread_group_info_t {
 	/* # of threads in the thread group per cluster */
 	unsigned long nr_running;
 	/* runnable contrib of the thread group per cluster */
-	unsigned long utilization_avg_contrib;
+	unsigned long loadwop_avg_contrib;
 };
 
 #endif

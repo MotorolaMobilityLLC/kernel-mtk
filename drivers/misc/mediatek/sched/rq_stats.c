@@ -305,7 +305,7 @@ static void __trace_out(int heavy, int cpu, struct task_struct *p)
 
 		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
 				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.utilization_avg_contrib,
+				 cpu, p->se.avg.loadwop_avg_contrib,
 				 topology_cur_cpu_capacity(cpu), topology_max_cpu_capacity(cpu),
 				 p->pid, p->comm);
 		trace_sched_heavy_task(tracebuf);
@@ -322,7 +322,6 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 	unsigned long flags;
 	unsigned int count = 0;
 	int is_heavy = 0;
-	unsigned int hmp_threshold;
 	int clusters;
 	struct cpumask cls_cpus;
 
@@ -344,7 +343,6 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 			continue;
 		cur_cap = topology_cur_cpu_capacity(cpu);
 		max_cap = topology_max_cpu_capacity(cpu);
-		hmp_threshold = (max_cap * threshold) >> SCHED_CAPACITY_SHIFT;
 		raw_spin_lock_irqsave(&cpu_rq(cpu)->lock, flags);
 		list_for_each_entry(p, &cpu_rq(cpu)->cfs_tasks, se.group_node) {
 			is_heavy = 0;
@@ -352,7 +350,7 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 			if (task_low_priority(p->prio))
 				continue;
 #endif
-			if (p->se.avg.utilization_avg_contrib >= hmp_threshold) {
+			if (p->se.avg.loadwop_avg_contrib >= threshold) {
 				if ((cur_cap * SCHED_CAPACITY_SCALE) >= max_cap * (threshold-delta))
 					is_heavy = 1;
 				else
