@@ -142,7 +142,11 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		),
 	TRANS_DATA(
 		L_ONLY,
+#if 1	/* Workaround: disable LL->L due to hotplug is not ready */
+		0,
+#else
 		PPM_MODE_MASK_JUST_MAKE_ONLY | PPM_MODE_MASK_PERFORMANCE_ONLY,
+#endif
 		ppm_trans_rule_LL_ONLY_to_L_ONLY,
 		PPM_DEFAULT_DELTA,
 		PPM_DEFAULT_HOLD_TIME,
