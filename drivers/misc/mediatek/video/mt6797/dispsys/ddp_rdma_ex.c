@@ -226,7 +226,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 {
 
 	/* rdma golden setting variables */
-	unsigned int mmsysclk = 286;
+	unsigned int mmsysclk = 450;
 	unsigned int is_wrot_sram = 0;
 	unsigned int fifo_mode = 1;
 
@@ -266,14 +266,14 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		temp_golden_setting.is_dc = 0;
 		temp_golden_setting.is_display_idle = 0;
 		temp_golden_setting.is_wrot_sram = 0;
-		temp_golden_setting.mmsys_clk = MMSYS_CLK_MEDIUM;/* 286: defalut ; 182: low ; 364: high */
+		temp_golden_setting.mmsys_clk = MMSYS_CLK_MEDIUM;/* 450: defalut ; 320: low ; 450: high */
 
 		/* primary_display */
-		temp_golden_setting.dst_width	= 1080;
-		temp_golden_setting.dst_height	= 1920;
-		temp_golden_setting.rdma_width	= 1080;
-		temp_golden_setting.rdma_height	= 1920;
-		temp_golden_setting.hrt_magicnum = 2;
+		temp_golden_setting.dst_width	= 1440;
+		temp_golden_setting.dst_height	= 2560;
+		temp_golden_setting.rdma_width	= 1440;
+		temp_golden_setting.rdma_height	= 2560;
+		temp_golden_setting.hrt_magicnum = 4;
 
 		/* set hrtnum max */
 		temp_golden_setting.hrt_num = temp_golden_setting.hrt_magicnum + 1;
@@ -306,13 +306,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	/* get fifo parameters */
 	switch (rdma_golden_setting->mmsys_clk) {
 	case MMSYS_CLK_LOW:
-		mmsysclk = 182;
+		mmsysclk = 320;
 		break;
 	case MMSYS_CLK_MEDIUM:
-		mmsysclk = 286;
+		mmsysclk = 450;
 		break;
 	case MMSYS_CLK_HIGH:
-		mmsysclk = 364;
+		mmsysclk = 450;
 		break;
 	}
 
@@ -338,10 +338,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 			preultra_low_us = ultra_high_us;
 			preultra_high_us = 7;
 		} else {
-			ultra_low_us = 8;
-			ultra_high_us = 12;
+			ultra_low_us = 4;
+			ultra_high_us = 6;
 			preultra_low_us = ultra_high_us;
-			preultra_high_us = 15;
+			preultra_high_us = 7;
 		}
 	} else {
 		if (rdma_golden_setting->ext_dst_width  == 1920 && rdma_golden_setting->ext_dst_height == 1080) {

@@ -60,7 +60,7 @@ static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 
-#define NO_SPM /* FIXME: tmp define for bring up */
+/*#define NO_SPM*/
 
 /* wait for mmdvfs_mgr.h ready */
 #define mmdvfs_notify_mmclk_switch_request(...)
@@ -128,6 +128,9 @@ static golden_setting_context *_get_golden_setting_context(void)
 			g_golden_setting_context.hrt_magicnum = 2;
 		else if (g_golden_setting_context.dst_width == 720
 			&& g_golden_setting_context.dst_height == 1280)
+			g_golden_setting_context.hrt_magicnum = 4;
+		else if (g_golden_setting_context.dst_width == 1440
+			&& g_golden_setting_context.dst_height == 2560)
 			g_golden_setting_context.hrt_magicnum = 4;
 
 		/* set hrtnum max */

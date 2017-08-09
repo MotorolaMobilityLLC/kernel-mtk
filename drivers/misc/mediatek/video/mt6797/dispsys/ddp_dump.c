@@ -143,11 +143,11 @@ static char *ddp_get_mutex_module_name(unsigned int bit)
 	case 12:
 		return "ovl0_2l";
 	case 13:
-		return "ovl1_2l";
-	case 14:
 		return "rdma0";
-	case 15:
+	case 14:
 		return "rdma1";
+	case 15:
+		return "ovl1_2l";
 	case 16:
 		return "wdma0";
 	case 17:
@@ -251,6 +251,8 @@ static char *ddp_clock_0(int bit)
 		return "smi_common, ";
 	case 1:
 		return "smi_larb0, ";
+	case 2:
+		return "smi_larb5, ";
 	case 10:
 		return "ovl0, ";
 	case 11:
@@ -583,17 +585,6 @@ static void merge_dump_analysis(void)
 		DISP_REG_GET(DISP_REG_MERGE_DEBUG));
 }
 
-static void split_dump_reg(DISP_MODULE_ENUM module)
-{
-	DDPDUMP("error: disp_split dose not exist! module=%d\n", module);
-	return;
-}
-
-static void split_dump_analysis(DISP_MODULE_ENUM module)
-{
-	DDPDUMP("error: disp_split dose not exist! module=%d\n", module);
-	return;
-}
 
 static void color_dump_reg(DISP_MODULE_ENUM module)
 {
@@ -789,17 +780,17 @@ static void dither_dump_analyze(void)
 	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
 }
 
-#if 0 /* defined but not used */
-static void ufoe_dump_reg(void)
+static void ufoe_dump(void)
 {
 	DDPDUMP("==DISP UFOE REGS==\n");
+	DDPDUMP("(0x000)UFOE_START =0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
+	DDPDUMP("(0x020)UFOE_PAD  =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CR0P6_PAD));
+	DDPDUMP("(0x050)UFOE_WIDTH =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH));
+	DDPDUMP("(0x054)UFOE_HEIGHT =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
+	DDPDUMP("(0x100)UFOE_CFG0 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
+	DDPDUMP("(0x104)UFOE_CFG1 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
 }
 
-static void ufoe_dump_analysis(void)
-{
-	DDPDUMP("==DISP UFOE ANALYSIS==\n");
-}
-#endif
 
 static void dsi_dump_reg(DISP_MODULE_ENUM module)
 {
@@ -846,6 +837,41 @@ static void dpi_dump_analysis(void)
 #endif
 }
 
+static int split_dump_regs(void)
+{
+	DDPMSG("== DISP SPLIT0 REGS  ==\n");
+	DDPMSG("(0x000)S_ENABLE       =0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_ENABLE));
+	DDPMSG("(0x004)S_SW_RST       =0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_SW_RESET));
+	DDPMSG("(0x008)S_DEBUG        =0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_DEBUG));
+	return 0;
+}
+
+static char *split_state(unsigned int state)
+{
+	switch (state) {
+	case 1:
+		return "idle";
+	case 2:
+		return "wait";
+	case 4:
+		return "busy";
+	default:
+		return "unknown";
+	}
+	return "unknown";
+}
+
+
+static int split_dump_analysis(void)
+{
+	unsigned int pixel = DISP_REG_GET_FIELD(DEBUG_FLD_IN_PIXEL_CNT, DISP_REG_SPLIT_DEBUG);
+	unsigned int state = DISP_REG_GET_FIELD(DEBUG_FLD_SPLIT_FSM, DISP_REG_SPLIT_DEBUG);
+
+	DDPMSG("== DISP SPLIT0 ANALYSIS ==\n");
+	DDPMSG("cur_pixel %u, state %s\n", pixel, split_state(state));
+	return 0;
+}
+
 int ddp_dump_reg(DISP_MODULE_ENUM module)
 {
 	switch (module) {
@@ -877,7 +903,7 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_SPLIT0:
 	case DISP_MODULE_SPLIT1:
-		split_dump_reg(module);
+		split_dump_regs();
 		break;
 	case DISP_MODULE_COLOR0:
 	case DISP_MODULE_COLOR1:
@@ -905,6 +931,9 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_DITHER:
 		dither_dump_reg();
+		break;
+	case DISP_MODULE_UFOE:
+		ufoe_dump();
 		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
@@ -943,7 +972,7 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_SPLIT0:
 	case DISP_MODULE_SPLIT1:
-		split_dump_analysis(module);
+		split_dump_analysis();
 		break;
 	case DISP_MODULE_COLOR0:
 	case DISP_MODULE_COLOR1:
