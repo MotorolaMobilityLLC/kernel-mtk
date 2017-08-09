@@ -101,7 +101,7 @@ static void *ion_cache_map_page_va(struct page *page)
 	int ret;
 	struct page **ppPage = &page;
 
-	ret = map_vm_area(cache_map_vm_struct, PAGE_KERNEL, &ppPage);
+	ret = map_vm_area(cache_map_vm_struct, PAGE_KERNEL, ppPage);
 	if (ret) {
 		IONMSG("error to map page\n");
 		return NULL;
