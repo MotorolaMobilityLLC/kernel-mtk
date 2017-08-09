@@ -38,6 +38,8 @@
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
 #include <video/videomode.h>
+#include <linux/regmap.h>
+#include <linux/mfd/syscon.h>
 
 #include "mtk_drm_drv.h"
 #include "mtk_drm_crtc.h"
@@ -103,7 +105,14 @@
 #define CMDQ_SIZE		0x3f
 
 #define DSI_HSTX_CKL_WC		0x64
+
+#define DSI_RX_DATA0	0x74
+#define DSI_RX_DATA1	0x78
+#define DSI_RX_DATA2	0x7c
+#define DSI_RX_DATA3	0x80
+
 #define DSI_RACK		0x84
+#define DSI_MEM_CONTI	0x90
 
 #define DSI_PHY_LCCON		0x104
 #define LC_HS_TX_EN		BIT(0)
@@ -140,9 +149,30 @@
 #define DSI_PHY_TIMECON4	0x120
 #define ULPS_WAKEUP		(0x1fffff << 0)
 
+#define DSI_VM_CMD_CON	0x130
+#define VM_CMD_EN		BIT(0)
+#define TS_VFP_EN		BIT(5)
+
 #define DSI_CMDQ0		0x180
 
 #define NS_TO_CYCLE(n, c)    ((n) / c + (((n) % c) ? 1 : 0))
+
+#define MTK_DSI_IRQ_INTERRUPT_MODE
+
+#define MTK_DSI_HOST_IS_READ(type) \
+	((type == MIPI_DSI_GENERIC_READ_REQUEST_0_PARAM) || \
+	(type == MIPI_DSI_GENERIC_READ_REQUEST_1_PARAM) || \
+	(type == MIPI_DSI_GENERIC_READ_REQUEST_2_PARAM) || \
+	(type == MIPI_DSI_DCS_READ))
+
+#define MTK_DSI_HOST_IS_WRITE(type) \
+	((type == MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM) || \
+	(type == MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM) || \
+	(type == MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM) || \
+	(type == MIPI_DSI_DCS_SHORT_WRITE) || \
+	(type == MIPI_DSI_DCS_SHORT_WRITE_PARAM) || \
+	(type == MIPI_DSI_GENERIC_LONG_WRITE) || \
+	(type == MIPI_DSI_DCS_LONG_WRITE))
 
 struct dsi_cmd_t0 {
 	u8 config;
@@ -172,6 +202,35 @@ struct dsi_cmd_t3 {
 	unsigned mem_start1;
 };
 
+struct dsi_rx_data {
+	unsigned char byte0;
+	unsigned char byte1;
+	unsigned char byte2;
+	unsigned char byte3;
+};
+
+struct dsi_tx_cmdq {
+	unsigned char byte0;
+	unsigned char byte1;
+	unsigned char byte2;
+	unsigned char byte3;
+};
+
+struct dsi_tx_cmdq_regs {
+	struct dsi_tx_cmdq data[32];
+};
+
+enum {
+	DSI_INT_SLEEPOUT_DONE_FLAG	= (1<<6),
+	DSI_INT_VM_CMD_DONE_FLAG	= (1<<5),
+	DSI_INT_EXT_TE_RDY_FLAG		= (1<<4),
+	DSI_INT_VM_DONE_FLAG		= (1<<3),
+	DSI_INT_TE_RDY_FLAG		= (1<<2),
+	DSI_INT_CMD_DONE_FLAG		= (1<<1),
+	DSI_INT_LPRX_RD_RDY_FLAG	= (1<<0),
+	DSI_INT_ALL_BITS		= (0x7F)
+};
+
 static void mtk_dsi_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
 {
 	u32 temp = readl(dsi->regs + offset);
@@ -179,7 +238,7 @@ static void mtk_dsi_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
 	writel((temp & ~mask) | (data & mask), dsi->regs + offset);
 }
 
-static void dsi_phy_timconfig(struct mtk_dsi *dsi)
+static void mtk_dsi_phy_timconfig(struct mtk_dsi *dsi)
 {
 	u32 timcon0, timcon1, timcon2, timcon3;
 	unsigned int ui, cycle_time;
@@ -219,21 +278,34 @@ static void mtk_dsi_reset(struct mtk_dsi *dsi)
 	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_RESET, 0);
 }
 
+static void mtk_dsi_reset_all(struct mtk_dsi *dsi)
+{
+	regmap_update_bits(dsi->mmsys_sw_rst_b, dsi->sw_rst_b,
+			   BIT(18), ~(BIT(18)));
+	usleep_range(1000, 1100);
+
+	regmap_update_bits(dsi->mmsys_sw_rst_b, dsi->sw_rst_b,
+			   BIT(18), BIT(18));
+}
+
 static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 {
 	struct device *dev = dsi->dev;
-	int ret;
+	int ret = 0;
 
 	if (++dsi->refcount != 1)
 		return 0;
 
-	ret = clk_prepare_enable(dsi->engine_clk);
+	if (dsi->poweron)
+		return ret;
+
+	ret |= clk_prepare_enable(dsi->engine_clk);
 	if (ret < 0) {
 		dev_err(dev, "can't enable engine %d\n", ret);
 		goto err_engine_clk;
 	}
 
-	ret = clk_prepare_enable(dsi->digital_clk);
+	ret |= clk_prepare_enable(dsi->digital_clk);
 	if (ret < 0) {
 		dev_err(dev, "can't enable digital %d\n", ret);
 		goto err_digital_clk;
@@ -245,13 +317,14 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 	 * mipi_ratio is mipi clk coefficient for balance the pixel clk in mipi.
 	 * we set mipi_ratio is 1.05.
 	 */
-
 	dsi->data_rate = dsi->vm.pixelclock * 3 * 21 / (1 * 1000 * 10);
 
-	mtk_mipi_tx_set_data_rate(dsi->phy, dsi->data_rate);
-	phy_power_on(dsi->phy);
+	ret |= mtk_mipi_tx_set_data_rate(dsi->phy, dsi->data_rate);
+	ret |= phy_power_on(dsi->phy);
 
-	return 0;
+	dsi->poweron = true;
+
+	return ret;
 
 err_digital_clk:
 	clk_disable_unprepare(dsi->engine_clk);
@@ -260,33 +333,33 @@ err_engine_clk:
 	return ret;
 }
 
-static void dsi_clk_ulp_mode_enter(struct mtk_dsi *dsi)
+static void mtk_dsi_clk_ulp_mode_enter(struct mtk_dsi *dsi)
 {
 	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_HS_TX_EN, 0);
-	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_ULPM_EN, 0);
+	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_ULPM_EN, LC_ULPM_EN);
 }
 
-static void dsi_clk_ulp_mode_leave(struct mtk_dsi *dsi)
+static void mtk_dsi_clk_ulp_mode_leave(struct mtk_dsi *dsi)
 {
 	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_ULPM_EN, 0);
 	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_WAKEUP_EN, LC_WAKEUP_EN);
 	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_WAKEUP_EN, 0);
 }
 
-static void dsi_lane0_ulp_mode_enter(struct mtk_dsi *dsi)
+static void mtk_dsi_lane0_ulp_mode_enter(struct mtk_dsi *dsi)
 {
 	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_HS_TX_EN, 0);
-	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, LD0_ULPM_EN);
 }
 
-static void dsi_lane0_ulp_mode_leave(struct mtk_dsi *dsi)
+static void mtk_dsi_lane0_ulp_mode_leave(struct mtk_dsi *dsi)
 {
 	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
 	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, LD0_WAKEUP_EN);
 	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, 0);
 }
 
-static bool dsi_clk_hs_state(struct mtk_dsi *dsi)
+static bool mtk_dsi_clk_hs_state(struct mtk_dsi *dsi)
 {
 	u32 tmp_reg1;
 
@@ -294,15 +367,15 @@ static bool dsi_clk_hs_state(struct mtk_dsi *dsi)
 	return ((tmp_reg1 & LC_HS_TX_EN) == 1) ? true : false;
 }
 
-static void dsi_clk_hs_mode(struct mtk_dsi *dsi, bool enter)
+static void mtk_dsi_clk_hs_mode(struct mtk_dsi *dsi, bool enter)
 {
-	if (enter && !dsi_clk_hs_state(dsi))
+	if (enter && !mtk_dsi_clk_hs_state(dsi))
 		mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_HS_TX_EN, LC_HS_TX_EN);
-	else if (!enter && dsi_clk_hs_state(dsi))
+	else if (!enter && mtk_dsi_clk_hs_state(dsi))
 		mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_HS_TX_EN, 0);
 }
 
-static void dsi_set_mode(struct mtk_dsi *dsi)
+static void mtk_dsi_set_mode(struct mtk_dsi *dsi)
 {
 	u32 vid_mode = CMD_MODE;
 
@@ -317,7 +390,14 @@ static void dsi_set_mode(struct mtk_dsi *dsi)
 	writel(vid_mode, dsi->regs + DSI_MODE_CTRL);
 }
 
-static void dsi_ps_control_vact(struct mtk_dsi *dsi)
+static void mtk_dsi_set_vm_cmd(struct mtk_dsi *dsi)
+{
+	writel(0x3c, dsi->regs + DSI_MEM_CONTI);
+	mtk_dsi_mask(dsi, DSI_VM_CMD_CON, VM_CMD_EN, VM_CMD_EN);
+	mtk_dsi_mask(dsi, DSI_VM_CMD_CON, TS_VFP_EN, TS_VFP_EN);
+}
+
+static void mtk_dsi_ps_control_vact(struct mtk_dsi *dsi)
 {
 	struct videomode *vm = &dsi->vm;
 	u32 dsi_buf_bpp, ps_wc;
@@ -351,7 +431,7 @@ static void dsi_ps_control_vact(struct mtk_dsi *dsi)
 	writel(ps_wc, dsi->regs + DSI_HSTX_CKL_WC);
 }
 
-static void dsi_rxtx_control(struct mtk_dsi *dsi)
+static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
 {
 	u32 tmp_reg;
 
@@ -376,7 +456,7 @@ static void dsi_rxtx_control(struct mtk_dsi *dsi)
 	writel(tmp_reg, dsi->regs + DSI_TXRX_CTRL);
 }
 
-static void dsi_ps_control(struct mtk_dsi *dsi)
+static void mtk_dsi_ps_control(struct mtk_dsi *dsi)
 {
 	unsigned int dsi_tmp_buf_bpp;
 	u32 tmp_reg;
@@ -408,7 +488,7 @@ static void dsi_ps_control(struct mtk_dsi *dsi)
 	writel(tmp_reg, dsi->regs + DSI_PSCTRL);
 }
 
-static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
+static void mtk_dsi_config_vdo_timing(struct mtk_dsi *dsi)
 {
 	unsigned int horizontal_sync_active_byte;
 	unsigned int horizontal_backporch_byte;
@@ -442,10 +522,10 @@ static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
 	writel(horizontal_backporch_byte, dsi->regs + DSI_HBP_WC);
 	writel(horizontal_frontporch_byte, dsi->regs + DSI_HFP_WC);
 
-	dsi_ps_control(dsi);
+	mtk_dsi_ps_control(dsi);
 }
 
-static void dsi_set_interrupt_enable(struct mtk_dsi *dsi)
+static void mtk_dsi_set_interrupt_enable(struct mtk_dsi *dsi)
 {
 	writel(0x0000003f, dsi->regs + DSI_INTEN);
 }
@@ -456,6 +536,138 @@ static void mtk_dsi_start(struct mtk_dsi *dsi)
 	writel(1, dsi->regs + DSI_START);
 }
 
+static void mtk_dsi_stop(struct mtk_dsi *dsi)
+{
+	writel(0, dsi->regs + DSI_START);
+}
+
+static void mtk_dsi_set_cmd_mode(struct mtk_dsi *dsi)
+{
+	u32 tmp_reg1;
+
+	tmp_reg1 = CMD_MODE;
+	writel(tmp_reg1, dsi->regs + DSI_MODE_CTRL);
+}
+
+void mtk_dsi_irq_wakeup(struct mtk_dsi *dsi, u32 irq_bit)
+{
+	dsi->irq_data |= irq_bit;
+}
+
+#ifdef MTK_DSI_IRQ_INTERRUPT_MODE
+static irqreturn_t mtk_dsi_irq(int irq, void *dev_id)
+{
+	struct mtk_dsi *dsi = dev_id;
+#else
+static irqreturn_t mtk_dsi_irq(struct mtk_dsi *dsi)
+{
+#endif
+
+	u32 status, tmp;
+
+	status = readl(dsi->regs + DSI_INTSTA);
+
+	if (status & DSI_INT_LPRX_RD_RDY_FLAG) {
+		/* write clear RD_RDY interrupt */
+		/* write clear RD_RDY interrupt must be before DSI_RACK */
+		/* because CMD_DONE will raise after DSI_RACK, */
+		/* so write clear RD_RDY after that will clear CMD_DONE too */
+		do {
+			/* send read ACK */
+			mtk_dsi_mask(dsi, DSI_RACK,	BIT(0), BIT(0));
+			tmp = readl(dsi->regs + DSI_INTSTA);
+		} while (tmp & BIT(31));
+
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_LPRX_RD_RDY_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_LPRX_RD_RDY_FLAG);
+	}
+
+	if (status & DSI_INT_CMD_DONE_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_CMD_DONE_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_CMD_DONE_FLAG);
+	}
+
+	if (status & DSI_INT_TE_RDY_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_TE_RDY_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_TE_RDY_FLAG);
+	}
+
+	if (status & DSI_INT_VM_DONE_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_VM_DONE_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_VM_DONE_FLAG);
+	}
+
+	if (status & DSI_INT_EXT_TE_RDY_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_EXT_TE_RDY_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_EXT_TE_RDY_FLAG);
+	}
+
+	if (status & DSI_INT_VM_CMD_DONE_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_VM_CMD_DONE_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_VM_CMD_DONE_FLAG);
+	}
+
+	if (status & DSI_INT_SLEEPOUT_DONE_FLAG) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, DSI_INT_SLEEPOUT_DONE_FLAG, 0);
+		mtk_dsi_irq_wakeup(dsi, DSI_INT_SLEEPOUT_DONE_FLAG);
+	}
+
+	return IRQ_HANDLED;
+}
+
+static void mtk_dsi_wait_for_idle(struct mtk_dsi *dsi)
+{
+	u32 timeout_ms = 500000; /* total 1s ~ 2s timeout */
+
+	while (timeout_ms--) {
+		if (!(readl(dsi->regs + DSI_INTSTA) & BIT(31)))
+			break;
+
+		usleep_range(2, 4);
+	}
+
+	if (0 == timeout_ms) {
+		dev_info(dsi->dev, "polling dsi wait not busy timeout!\n");
+
+		mtk_dsi_enable(dsi);
+		mtk_dsi_reset(dsi);
+	}
+}
+
+static s32 mtk_dsi_wait_for_irq_timeout(struct mtk_dsi *dsi, u32 irq_bit, u32 timeout_ms)
+{
+	while (timeout_ms--) {
+		if (dsi->irq_data & irq_bit) {
+			dsi->irq_data &= ~irq_bit;
+			return 0;
+		}
+
+	#ifndef MTK_DSI_IRQ_INTERRUPT_MODE
+		mtk_dsi_irq(dsi);
+	#endif
+
+		usleep_range(1000, 1100);
+	}
+
+	dsi->irq_data = 0;
+
+	return -1;
+}
+
+static void mtk_dsi_wait_engine_idle(struct mtk_dsi *dsi)
+{
+	s32 ret = 0;
+
+	mtk_dsi_set_cmd_mode(dsi);
+
+	ret = mtk_dsi_wait_for_irq_timeout(dsi, DSI_INT_VM_DONE_FLAG, 500);
+	if (0 != ret)
+		dev_info(dsi->dev, "dsi wait engine idle timeout\n");
+
+	mtk_dsi_reset(dsi);
+	mtk_dsi_stop(dsi);
+}
+
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
 	if (WARN_ON(dsi->refcount == 0))
@@ -464,8 +676,13 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 	if (--dsi->refcount != 0)
 		return;
 
-	dsi_lane0_ulp_mode_enter(dsi);
-	dsi_clk_ulp_mode_enter(dsi);
+	if (!dsi->poweron)
+		return;
+
+	mtk_dsi_wait_engine_idle(dsi);
+
+	mtk_dsi_lane0_ulp_mode_enter(dsi);
+	mtk_dsi_clk_ulp_mode_enter(dsi);
 
 	mtk_dsi_disable(dsi);
 
@@ -473,6 +690,8 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 	clk_disable_unprepare(dsi->digital_clk);
 
 	phy_power_off(dsi->phy);
+
+	dsi->poweron = false;
 }
 
 static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
@@ -482,22 +701,24 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 	if (dsi->enabled)
 		return;
 
+	mtk_dsi_reset_all(dsi);
+
 	ret = mtk_dsi_poweron(dsi);
 	if (ret < 0) {
 		DRM_ERROR("failed to power on dsi\n");
 		return;
 	}
 
-	/* need set to cmd mode for send panel init code */
-	dsi_set_interrupt_enable(dsi);
-	dsi_rxtx_control(dsi);
+	mtk_dsi_rxtx_control(dsi);
+	mtk_dsi_phy_timconfig(dsi);
+	mtk_dsi_ps_control_vact(dsi);
+	mtk_dsi_set_vm_cmd(dsi);
+	mtk_dsi_config_vdo_timing(dsi);
+
 	mtk_dsi_enable(dsi);
-	dsi_clk_ulp_mode_leave(dsi);
-	dsi_lane0_ulp_mode_leave(dsi);
-	dsi_clk_hs_mode(dsi, 0);
-	dsi_ps_control_vact(dsi);
-	dsi_phy_timconfig(dsi);
-	dsi_config_vdo_timing(dsi);
+	mtk_dsi_clk_ulp_mode_leave(dsi);
+	mtk_dsi_lane0_ulp_mode_leave(dsi);
+	mtk_dsi_clk_hs_mode(dsi, 0);
 
 	if (dsi->panel) {
 		if (drm_panel_prepare(dsi->panel)) {
@@ -506,8 +727,9 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 		}
 	}
 
-	dsi_set_mode(dsi);
-	dsi_clk_hs_mode(dsi, 1);
+	mtk_dsi_set_interrupt_enable(dsi);
+	mtk_dsi_set_mode(dsi);
+	mtk_dsi_clk_hs_mode(dsi, 1);
 	mtk_dsi_start(dsi);
 
 	dsi->enabled = true;
@@ -543,7 +765,7 @@ static void mtk_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
 {
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
 
-	DRM_INFO("mtk_dsi_encoder_dpms 0x%x\n", mode);
+	dev_info(dsi->dev, "mtk_dsi_encoder_dpms 0x%x\n", mode);
 
 	switch (mode) {
 	case DRM_MODE_DPMS_ON:
@@ -793,56 +1015,143 @@ static int mtk_dsi_host_detach(struct mipi_dsi_host *host,
 	return 0;
 }
 
-static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
+static ssize_t mtk_dsi_host_read_cmd(struct mtk_dsi *dsi,
 				     const struct mipi_dsi_msg *msg)
 {
-	struct mtk_dsi *dsi = host_to_dsi(host);
-	const char *tx_buf = msg->tx_buf;
+	u8 max_try_count = 5;
+	u32 recv_data_cnt, tmp_val, recv_data0, recv_data1, recv_data2, recv_data3;
+	struct dsi_rx_data read_data;
+	struct dsi_cmd_t0 t0;
+	s32 ret;
 
-	u32 i, timeout_ms = 200;
+	u8 *buffer = msg->rx_buf;
+	u8 buffer_size = msg->rx_len;
+
+	if (readl(dsi->regs + DSI_MODE_CTRL) & 0x03) {
+		dev_info(dsi->dev, "dsi engine is not command mode\n");
+		return -1;
+	}
+
+	if (buffer == NULL || buffer_size == 0) {
+		dev_info(dsi->dev, "dsi receive buffer size may be NULL\n");
+		return -1;
+	}
+
+	do {
+		if (max_try_count == 0) {
+			dev_info(dsi->dev, "dsi engine read counter has been maxinum\n");
+			return -1;
+		}
+
+		max_try_count--;
+		recv_data_cnt = 0;
+
+		mtk_dsi_wait_for_idle(dsi);
+
+		t0.config = 0x04;
+		t0.data0 = *((u8 *)(msg->tx_buf));
+
+		if (buffer_size < 0x3)
+			t0.type = MIPI_DSI_DCS_READ;
+		else
+			t0.type = MIPI_DSI_GENERIC_READ_REQUEST_1_PARAM;
+
+		t0.data1 = 0;
+
+		tmp_val = (t0.data1 << 24) | (t0.data0 << 16) | (t0.type << 8) | t0.config;
+
+		writel(tmp_val, dsi->regs + DSI_CMDQ0);
+		mtk_dsi_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE, 1);
+
+		mtk_dsi_mask(dsi, DSI_RACK, BIT(0), BIT(0));
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(1), ~(BIT(1)));
+		mtk_dsi_mask(dsi, DSI_INTEN, BIT(0), BIT(0));
+		mtk_dsi_mask(dsi, DSI_INTEN, BIT(1), BIT(1));
+
+		mtk_dsi_start(dsi);
+
+		ret = mtk_dsi_wait_for_irq_timeout(dsi, DSI_INT_LPRX_RD_RDY_FLAG, 2000); /* 2s timeout*/
+		if (ret) {
+			dev_info(dsi->dev, "wait for irq timeout\n");
+
+			mtk_dsi_enable(dsi);
+			mtk_dsi_reset(dsi);
+
+			return ret;
+		}
+
+		mtk_dsi_mask(dsi, DSI_RACK, BIT(0), BIT(0));
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
+
+		recv_data0 = readl(dsi->regs + DSI_RX_DATA0);
+		recv_data1 = readl(dsi->regs + DSI_RX_DATA1);
+		recv_data2 = readl(dsi->regs + DSI_RX_DATA2);
+		recv_data3 = readl(dsi->regs + DSI_RX_DATA3);
+
+		read_data.byte0 = recv_data0 & 0xff;		/* e.g: short packet_type */
+		read_data.byte1 = (recv_data0 >> 8) & 0xff;	/* LS data byte */
+		read_data.byte2 = (recv_data0 >> 16) & 0xff;	/* MS data byte */
+		read_data.byte3 = (recv_data0 >> 24) & 0xff;	/* ECC */
+
+		if (read_data.byte0 == 0x1A || read_data.byte0 == 0x1C) {
+			/* long packet */
+			void *read_tmp = (void *)&recv_data1;
+
+			recv_data_cnt = read_data.byte1 + read_data.byte2 * 16;
+			if (recv_data_cnt > 10)
+				recv_data_cnt = 10;
+
+			if (recv_data_cnt > buffer_size)
+				recv_data_cnt = buffer_size;
+
+			memcpy((void *)buffer, read_tmp, recv_data_cnt);
+		} else {
+			/* short  packet */
+			recv_data_cnt = 2;
+			if (recv_data_cnt > buffer_size)
+				recv_data_cnt = buffer_size;
+
+			memcpy((void *)buffer, (void *)&read_data.byte1, 2);
+		}
+	} while (read_data.byte0 != 0x1C && read_data.byte0 != 0x21 &&
+		read_data.byte0 != 0x22 && read_data.byte0 != 0x1A);
+
+	dev_info(dsi->dev, "dsi get %d byte data from the panel address(0x%x)\n",
+		 recv_data_cnt, *((u8 *)(msg->tx_buf)));
+
+	return recv_data_cnt;
+}
+
+static ssize_t mtk_dsi_host_write_cmd(struct mtk_dsi *dsi,
+				     const struct mipi_dsi_msg *msg)
+{
+	u32 i;
 	u32 goto_addr, mask_para, set_para, reg_val;
 	struct dsi_cmd_t0 t0;
 	struct dsi_cmd_t2 t2;
+	const char *tx_buf = msg->tx_buf;
+	struct dsi_tx_cmdq_regs *dsi_cmd_reg = (struct dsi_tx_cmdq_regs *)(dsi->regs + DSI_CMDQ0);
 
-	#ifdef INTERRUPT_MODE
-	u32 ret;
+	mtk_dsi_wait_for_idle(dsi);
 
-	i = readl(dsi->dsi_reg_base + DSI_INTSTA);
-	ret = wait_event_interruptible_timeout(
-			_dsi_cmd_done_wait_queue,
-			!(i & BIT(31)), msecs_to_jiffies(timeout_ms)
-			);
-	if (0 == ret) {
-		DRM_INFO("dsi wait not busy timeout!\n");
-		mtk_dsi_clk_enable(dsi);
-		mtk_dsi_reset(dsi);
-	}
-	#else
-	while (timeout_ms--) {
-		i = readl(dsi->regs + DSI_INTSTA);
-		if (!(i & BIT(31)))
-			break;
-
-		usleep_range(1, 2);
-	}
-
-	if (0 == timeout_ms) {
-		mtk_dsi_enable(dsi);
-		mtk_dsi_reset(dsi);
-	}
-	#endif
-
-	if (msg->tx_len > 1) {
+	if (msg->tx_len > 2) {
 		t2.config = 2;
 		t2.type = msg->type;
 		t2.wc16 = msg->tx_len;
 
 		reg_val = (t2.wc16 << 16) | (t2.type << 8) | t2.config;
 
-		writel(reg_val, dsi->regs + DSI_CMDQ0);
+		writel(reg_val, &dsi_cmd_reg->data[0]);
 
-		for (i = 0; i < msg->tx_len; i++) {
-			goto_addr = DSI_CMDQ0 + i;
+		goto_addr = (u32)(&dsi_cmd_reg->data[1].byte0);
+		mask_para = (0xff << ((goto_addr & 0x3) * 8));
+		set_para = (tx_buf[0] << ((goto_addr & 0x3) * 8));
+		mtk_dsi_mask(dsi, goto_addr & (~0x3), mask_para,
+				 set_para);
+
+		for (i = 0; i < msg->tx_len - 1; i++) {
+			goto_addr = (u32)(&dsi_cmd_reg->data[1].byte1) + i;
 			mask_para = (0xff << ((goto_addr & 0x3) * 8));
 			set_para = (tx_buf[i] << ((goto_addr & 0x3) * 8));
 			mtk_dsi_mask(dsi, goto_addr & (~0x3), mask_para,
@@ -850,26 +1159,43 @@ static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
 		}
 
 		mtk_dsi_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE,
-			     1 + (msg->tx_len - 1) / 4);
+			     2 + (msg->tx_len - 1) / 4);
 	} else {
 		t0.config = 0;
-		t0.type = msg->type;
 		t0.data0 = tx_buf[0];
-		if (msg->tx_len == 2)
+		if (msg->tx_len == 2) {
+			t0.type = MIPI_DSI_DCS_SHORT_WRITE_PARAM;
 			t0.data1 = tx_buf[1];
-		else
+		} else {
+			t0.type = MIPI_DSI_DCS_SHORT_WRITE;
 			t0.data1 = 0;
+		}
 
 		reg_val = (t0.data1 << 24) | (t0.data0 << 16) | (t0.type << 8) |
 			   t0.config;
 
-		writel(reg_val, dsi->regs + DSI_CMDQ0);
+		writel(reg_val, &dsi_cmd_reg->data[0]);
 		mtk_dsi_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE, 1);
 	}
 
 	mtk_dsi_start(dsi);
 
 	return 0;
+}
+
+static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
+				     const struct mipi_dsi_msg *msg)
+{
+	struct mtk_dsi *dsi = host_to_dsi(host);
+	u8 type = msg->type;
+	ssize_t ret = 0;
+
+	if (MTK_DSI_HOST_IS_READ(type))
+		ret = mtk_dsi_host_read_cmd(dsi, msg);
+	else if (MTK_DSI_HOST_IS_WRITE(type))
+		ret = mtk_dsi_host_write_cmd(dsi, msg);
+
+	return ret;
 }
 
 static const struct mipi_dsi_host_ops mtk_dsi_ops = {
@@ -940,67 +1266,6 @@ static const struct component_ops mtk_dsi_component_ops = {
 	.unbind = mtk_dsi_unbind,
 };
 
-#define INTERRUPT_MODE
-
-#ifdef INTERRUPT_MODE
-static wait_queue_head_t _dsi_cmd_done_wait_queue;
-static wait_queue_head_t _dsi_dcs_read_wait_queue;
-static wait_queue_head_t _dsi_wait_bta_te;
-static wait_queue_head_t _dsi_wait_ext_te;
-static wait_queue_head_t _dsi_wait_vm_done_queue;
-static wait_queue_head_t _dsi_wait_vm_cmd_done_queue;
-
-static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
-{
-	struct mtk_dsi *dsi = dev_id;
-	u32 status, tmp;
-
-	status = readl(dsi->regs + DSI_INTSTA);
-
-	if (status & BIT(0)) {
-		/* write clear RD_RDY interrupt */
-		/* write clear RD_RDY interrupt must be before DSI_RACK */
-		/* because CMD_DONE will raise after DSI_RACK, */
-		/* so write clear RD_RDY after that will clear CMD_DONE too */
-		do {
-			/* send read ACK */
-			mtk_dsi_mask(dsi, DSI_RACK,	BIT(0), BIT(0));
-			tmp = readl(dsi->regs + DSI_INTSTA);
-		} while (tmp & BIT(31));
-
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
-		wake_up_interruptible(&_dsi_dcs_read_wait_queue);
-	}
-
-	if (status & BIT(1)) {
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(1), ~(BIT(1)));
-		wake_up_interruptible(&_dsi_cmd_done_wait_queue);
-	}
-
-	if (status & BIT(2)) {
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(2), ~(BIT(2)));
-		wake_up_interruptible(&_dsi_wait_bta_te);
-	}
-
-	if (status & BIT(4)) {
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(4), ~(BIT(4)));
-		wake_up_interruptible(&_dsi_wait_ext_te);
-	}
-
-	if (status & BIT(3)) {
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(3), ~(BIT(3)));
-		wake_up_interruptible(&_dsi_wait_vm_done_queue);
-	}
-
-	if (status & BIT(5)) {
-		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(5), ~(BIT(5)));
-		wake_up_interruptible(&_dsi_wait_vm_cmd_done_queue);
-	}
-
-	return IRQ_HANDLED;
-}
-#endif
-
 static int mtk_dsi_probe(struct platform_device *pdev)
 {
 	struct mtk_dsi *dsi;
@@ -1009,25 +1274,13 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	struct resource *regs;
 	int comp_id;
 	int ret;
+	struct regmap *regmap;
 
 	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->lanes = 4;
-
-	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
-	if (endpoint) {
-		remote_node = of_graph_get_remote_port_parent(endpoint);
-		of_node_put(endpoint);
-
-		if (!remote_node) {
-			dev_err(dev, "No panel connected\n");
-			return -ENODEV;
-		}
-
-		dsi->device_node = remote_node;
-		of_node_put(remote_node);
-	}
+	dsi->dev = dev;
 
 	dsi->engine_clk = devm_clk_get(dev, "engine");
 	if (IS_ERR(dsi->engine_clk)) {
@@ -1058,6 +1311,33 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	regmap = syscon_regmap_lookup_by_phandle(dev->of_node, "mediatek,syscon-dsi");
+	ret = of_property_read_u32_index(dev->of_node, "mediatek,syscon-dsi", 1, &dsi->sw_rst_b);
+
+	if (IS_ERR(regmap))
+		ret = PTR_ERR(regmap);
+	if (ret) {
+		ret = PTR_ERR(regmap);
+		dev_err(dev, "Failed to get system configuration registers: %d\n", ret);
+		return ret;
+	}
+
+	dsi->mmsys_sw_rst_b = regmap;
+
+	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
+	if (endpoint) {
+		remote_node = of_graph_get_remote_port_parent(endpoint);
+		of_node_put(endpoint);
+
+		if (!remote_node) {
+			dev_err(dev, "No panel connected\n");
+			return -ENODEV;
+		}
+
+		dsi->device_node = remote_node;
+		of_node_put(remote_node);
+	}
+
 	dsi->host.ops = &mtk_dsi_ops;
 	dsi->host.dev = dev;
 	mipi_dsi_host_register(&dsi->host);
@@ -1065,7 +1345,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	dsi->bridge = of_drm_find_bridge(dsi->device_node);
 	dsi->panel = of_drm_find_panel(dsi->device_node);
 
-	DRM_INFO("dsi connector detect panel = 0x%p, bridge = 0x%p\n",
+	dev_info(dev, "dsi connector detect panel = 0x%p, bridge = 0x%p\n",
 		 dsi->panel, dsi->bridge);
 
 	if (!dsi->bridge && !dsi->panel) {
@@ -1086,31 +1366,25 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	#ifdef INTERRUPT_MODE
-	dsi->irq = platform_get_irq(pdev, 0);
-	if (dsi->irq < 0) {
+	#ifdef MTK_DSI_IRQ_INTERRUPT_MODE
+	dsi->irq_num = platform_get_irq(pdev, 0);
+	if (dsi->irq_num < 0) {
 		dev_err(&pdev->dev, "failed to request dsi irq resource\n");
-		ret = dsi->irq;
+		ret = dsi->irq_num;
 		return -EPROBE_DEFER;
 	}
 
-	irq_set_status_flags(dsi->irq, IRQ_TYPE_LEVEL_LOW);
-	ret = devm_request_irq(&pdev->dev, dsi->irq, mediatek_dsi_irq,
+	irq_set_status_flags(dsi->irq_num, IRQ_TYPE_LEVEL_LOW);
+	ret = devm_request_irq(&pdev->dev, dsi->irq_num, mtk_dsi_irq,
 			       IRQF_TRIGGER_LOW, dev_name(&pdev->dev), dsi);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to request mediatek dsi irq\n");
 		return -EPROBE_DEFER;
 	}
-
-	DRM_INFO("dsi irq num is 0x%x\n", dsi->irq);
-
-	init_waitqueue_head(&_dsi_cmd_done_wait_queue);
-	init_waitqueue_head(&_dsi_dcs_read_wait_queue);
-	init_waitqueue_head(&_dsi_wait_bta_te);
-	init_waitqueue_head(&_dsi_wait_ext_te);
-	init_waitqueue_head(&_dsi_wait_vm_done_queue);
-	init_waitqueue_head(&_dsi_wait_vm_cmd_done_queue);
 	#endif
+
+	dsi->irq_data = 0;
+	dev_info(dev, "dsi irq num is 0x%x\n", dsi->irq_num);
 
 	platform_set_drvdata(pdev, dsi);
 
@@ -1141,7 +1415,7 @@ static int mtk_dsi_suspend(struct device *dev)
 	dsi = dev_get_drvdata(dev);
 
 	mtk_output_dsi_disable(dsi);
-	DRM_INFO("dsi suspend success!\n");
+	dev_info(dsi->dev, "dsi suspend success!\n");
 
 	return 0;
 }
@@ -1153,7 +1427,7 @@ static int mtk_dsi_resume(struct device *dev)
 	dsi = dev_get_drvdata(dev);
 
 	mtk_output_dsi_enable(dsi);
-	DRM_INFO("dsi resume success!\n");
+	dev_info(dsi->dev, "dsi resume success!\n");
 
 	return 0;
 }

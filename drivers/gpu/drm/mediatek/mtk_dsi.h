@@ -30,6 +30,9 @@ struct mtk_dsi {
 	struct drm_bridge *bridge;
 	struct phy *phy;
 
+	struct regmap *mmsys_sw_rst_b;
+	u32 sw_rst_b;
+
 	struct mipi_dsi_host host;
 
 	void __iomem *regs;
@@ -45,7 +48,8 @@ struct mtk_dsi {
 	struct videomode vm;
 	int refcount;
 	bool enabled;
-	int irq;
+	bool poweron;
+	int irq_num, irq_data;
 };
 
 static inline struct mtk_dsi *host_to_dsi(struct mipi_dsi_host *h)
