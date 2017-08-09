@@ -1117,7 +1117,7 @@
 		touch: touch@ {
 			compatible = "mediatek,mt6735-touch",
 						"mediatek,mt6735m-touch";
-			/*vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;*/
+			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
 
 		accdet: accdet@ {
