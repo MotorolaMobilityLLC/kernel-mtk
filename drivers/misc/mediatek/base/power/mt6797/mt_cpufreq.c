@@ -168,7 +168,7 @@ ktime_t max[NR_SET_V_F];
 /* PMIC/PLL settle time (us) */
 /* DA9214 */
 #define PMIC_SETTLE_TIME(old_mv, new_mv) \
-	(((((old_mv) > (new_mv)) ? ((old_mv) - (new_mv)) : ((new_mv) - (old_mv))) + 9) / 10)
+	(((((old_mv) > (new_mv)) ? ((old_mv) - (new_mv)) : ((new_mv) - (old_mv))) + 9) / 1000)
 /* SRAM LDO*/
 #define PMIC_CMD_DELAY_TIME     5
 #define MIN_PMIC_SETTLE_TIME    25
