@@ -1799,10 +1799,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<&vdecsys VDEC_LARB1_CKEN>,
 				<&camsys CAM_LARB2>,
 				<&vencsys VENC_1>,
-				<&mjcsys  MJC_SMI_LARB>,
-				<&mjcsys  MJC_LARB4_ASIF>,
-				<&mmsys   MM_SMI_LARB5>,
-				<&imgsys  IMG_LARB6>;
+				<&mjcsys MJC_SMI_LARB>,
+				<&mjcsys MJC_LARB4_ASIF>,
+				<&mmsys MM_SMI_LARB5>,
+				<&imgsys IMG_LARB6>;
 			clock-names = "m4u_mm_smi_common",
 				"m4u_mm_smi_larb0",
 				"m4u_vdec_cken",

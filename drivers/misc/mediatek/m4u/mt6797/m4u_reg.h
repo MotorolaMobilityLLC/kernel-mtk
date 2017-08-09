@@ -385,7 +385,7 @@ static inline void M4U_WriteReg32(unsigned long M4uBase, unsigned int Offset, un
 	/* printk("M4U_WriteReg32: M4uBase: 0x%lx, Offset:0x%x, val:0x%x\n", M4uBase, Offset, Val); */
 }
 
-static inline unsigned int m4uHw_set_field(unsigned int M4UBase,
+static inline unsigned int m4uHw_set_field(unsigned long M4UBase,
 		unsigned int Reg, unsigned int bit_width, unsigned int shift,
 		unsigned int value) {
 	unsigned int mask = ((1 << bit_width) - 1) << shift;

@@ -985,7 +985,7 @@ static int larb_clock_off(int larb)
 	break;
 	case 4:
 		clk_disable(gM4uDev->smi_clk[MJC_SMI_LARB]);
-		clk_disable(gM4uDev->smi_clk[MJC_SMI_LARB]);
+		clk_disable(gM4uDev->smi_clk[MJC_LARB4_ASIF]);
 	break;
 	case 5:
 		clk_disable(gM4uDev->smi_clk[MM_SMI_LARB5]);
@@ -1073,7 +1073,6 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 {
 	int i, free_id = -1;
 	int m4u_index = m4u_port_2_m4u_id(port);
-	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
@@ -1083,15 +1082,15 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 	larb_port = m4u_port_2_larb_port(port);
 	larb_base = gLarbBaseAddr[larb];
 
-	pProgPfh = gM4UProgPfh[m4u_index] + M4U_PROG_PFH_NUM(m4u_index) * m4u_slave_id;
+	pProgPfh = gM4UProgPfh[m4u_index];
 
 	mutex_lock(&gM4u_prog_pfh_mutex);
 
 	for (i = 0; i < M4U_PROG_PFH_NUM(m4u_index); i++) {
 		if (1 == pProgPfh[i].Enabled) {
 			if (port == pProgPfh[i].port && (sel == 0 || pProgPfh[i].sel == 0)) {
-				M4UERR
-				("m4u error: cannot set two direction or difference distance in the same port.\n");
+				M4UMSG
+				("m4u warning: cannot set two direction or difference distance in the same port.\n");
 				M4UMSG
 				("original value: module = %s, mm_id = %d, dir = %d, dist = %d, sel = %d.\n",
 				 m4u_get_port_name(port), mm_id, dir, dist, sel);
@@ -1099,11 +1098,13 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 				("new value: module = %s, mm_id = %d, dir = %d, dist = %d, sel = %d.\n",
 				 m4u_get_port_name(pProgPfh[i].port), pProgPfh[i].mm_id,
 				 pProgPfh[i].dir, pProgPfh[i].dist, pProgPfh[i].sel);
-				mutex_unlock(&gM4u_seq_mutex);
-				return -1;
+				free_id = i;
+				break;
 			}
-		} else
+		} else {
 			free_id = i;
+			break;
+		}
 	}
 
 	if (free_id == -1) {
@@ -1319,12 +1320,14 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
 	/* Prefetch Distance & Direction, one bit for each port, 1:-, 0:+ */
-	/*
+
 	if (dir != 0 || dis != 1)
 		m4u_config_prog_dist(port, dir, dis, 1, 0, 0);
 	else
 		m4u_invalid_prog_dist_by_id(port);
-	*/
+
+	if (0 == virt)
+		m4u_invalid_prog_dist_by_id(port);
 
 	spin_lock(&gM4u_reg_lock);
 
