@@ -71,9 +71,9 @@
 
 #define GC2145MIPIYUV_DEBUG
 #ifdef GC2145MIPIYUV_DEBUG
-#define SENSORDB printk
+#define SENSORDB(fmt, args...) pr_debug(fmt, ##args)
 #else
-#define SENSORDB(x,...)
+#define SENSORDB(fmt, args...)
 #endif
 
 #define GC2145MIPI_2Lane
@@ -118,7 +118,7 @@ kal_uint8 out_buff[2];
     iWriteRegI2C((u8*)out_buff , (u16)sizeof(out_buff), GC2145MIPI_WRITE_ID); 
 
 #if (defined(__GC2145MIPI_DEBUG_TRACE__))
-  if (sizeof(out_buff) != rt) printk("I2C write %x, %x error\n", addr, para);
+  if (sizeof(out_buff) != rt) pr_debug("I2C write %x, %x error\n", addr, para);
 #endif
 }
 
@@ -150,7 +150,7 @@ static kal_uint8 GC2145MIPI_read_cmos_sensor(kal_uint8 addr)
     }
 
 #if (defined(__GC2145MIPI_DEBUG_TRACE__))
-  if (size != rt) printk("I2C read %x error\n", addr);
+  if (size != rt) pr_debug("I2C read %x error\n", addr);
 #endif
 
   return in_buff[0];
@@ -176,12 +176,12 @@ gc2145mipi_initial_set_struct gc2145mipi_Init_Reg[5000];
 static u32 strtol(const char *nptr, u8 base)
 {
 
-	printk("gc2145mipi___%s____\n",__func__); 
+	pr_debug("gc2145mipi___%s____\n",__func__); 
 
 	u8 ret;
 	if(!nptr || (base!=16 && base!=10 && base!=8))
 	{
-		printk("gc2145mipi %s(): NULL pointer input\n", __FUNCTION__);
+		pr_debug("gc2145mipi %s(): NULL pointer input\n", __FUNCTION__);
 		return -1;
 	}
 	for(ret=0; *nptr; nptr++)
@@ -217,7 +217,7 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	u32 i = 0, j = 0;
 	u8 func_ind[4] = {0};	/* REG or DLY */
 
-	printk("gc2145mipi___%s____11111111111111\n",__func__); 
+	pr_debug("gc2145mipi___%s____11111111111111\n",__func__); 
 
 
 
@@ -229,24 +229,24 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	fp = filp_open("/mnt/sdcard/gc2145mipi_sd.txt", O_RDONLY , 0); 
 	if (IS_ERR(fp)) 
 	{ 
-		printk("2145 create file error 1111111\n");  
+		pr_debug("2145 create file error 1111111\n");  
 		return -1; 
 	} 
 	else
 	{
-		printk("2145 create file error 2222222\n");  
+		pr_debug("2145 create file error 2222222\n");  
 	}
 	fs = get_fs(); 
 	set_fs(KERNEL_DS); 
 
 	file_size = vfs_llseek(fp, 0, SEEK_END);
 	vfs_read(fp, data_buff, file_size, &pos); 
-	//printk("%s %d %d\n", buf,iFileLen,pos); 
+	//pr_debug("%s %d %d\n", buf,iFileLen,pos); 
 	filp_close(fp, NULL); 
 	set_fs(fs);
 
 
-	printk("gc2145mipi___%s____22222222222222222\n",__func__); 
+	pr_debug("gc2145mipi___%s____22222222222222222\n",__func__); 
 
 
 
@@ -291,7 +291,7 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 			curr_ptr += 2;
 			continue ;
 		}
-		//printk(" curr_ptr1 = %s\n",curr_ptr);
+		//pr_debug(" curr_ptr1 = %s\n",curr_ptr);
 		memcpy(func_ind, curr_ptr, 3);
 
 
@@ -333,9 +333,9 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	gc2145mipi_Init_Reg[i].init_val = 0xFF;
 	i++;
 	//for (j=0; j<i; j++)
-	printk("gc2145mipi %x  ==  %x\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);
+	pr_debug("gc2145mipi %x  ==  %x\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);
 	
-	printk("gc2145mipi___%s____3333333333333333\n",__func__); 
+	pr_debug("gc2145mipi___%s____3333333333333333\n",__func__); 
 
 	/* Start apply the initial setting to sensor. */
 #if 1
@@ -343,27 +343,27 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	{
 		if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_END)	/* End of the setting. */
 		{
-			printk("gc2145mipi REG OK -----------------END!\n");
+			pr_debug("gc2145mipi REG OK -----------------END!\n");
 		
 			break ;
 		}
 		else if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_DLY)
 		{
 			msleep(gc2145mipi_Init_Reg[j].init_val);		/* Delay */
-			printk("gc2145mipi REG OK -----------------DLY!\n");			
+			pr_debug("gc2145mipi REG OK -----------------DLY!\n");			
 		}
 		else if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_REG)
 		{
 
 			GC2145MIPI_write_cmos_sensor(gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);
-			printk("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
-			printk("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
-			printk("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
+			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
+			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
+			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
 			
 		}
 		else
 		{
-			printk("gc2145mipi REG ERROR!\n");
+			pr_debug("gc2145mipi REG ERROR!\n");
 		}
 	}
 #endif
@@ -1521,9 +1521,9 @@ UINT32 GC2145MIPIOpen(void)
 		loff_t pos = 0; 
 		static char buf[60*1024] ;
 
-		printk("open 2145 debug \n");
-		printk("open 2145 debug \n");
-		printk("open 2145 debug \n");	
+		pr_debug("open 2145 debug \n");
+		pr_debug("open 2145 debug \n");
+		pr_debug("open 2145 debug \n");	
 
 
 		fp = filp_open("/mnt/sdcard/gc2145mipi_sd.txt", O_RDONLY , 0); 
@@ -1532,18 +1532,18 @@ UINT32 GC2145MIPIOpen(void)
 		{ 
 
 			fromsd = 0;   
-			printk("open 2145 file error\n");
-			printk("open 2145 file error\n");
-			printk("open 2145 file error\n");		
+			pr_debug("open 2145 file error\n");
+			pr_debug("open 2145 file error\n");
+			pr_debug("open 2145 file error\n");		
 
 
 		} 
 		else 
 		{
 			fromsd = 1;
-			printk("open 2145 file ok\n");
-			printk("open 2145 file ok\n");
-			printk("open 2145 file ok\n");
+			pr_debug("open 2145 file ok\n");
+			pr_debug("open 2145 file ok\n");
+			pr_debug("open 2145 file ok\n");
 
 			//gc2145mipi_Initialize_from_T_Flash();
 			
@@ -1553,18 +1553,18 @@ UINT32 GC2145MIPIOpen(void)
 
 		if(fromsd == 1)
 		{
-			printk("________________2145 from t!\n");
-			printk("________________2145 from t!\n");
-			printk("________________2145 from t!\n");		
+			pr_debug("________________2145 from t!\n");
+			pr_debug("________________2145 from t!\n");
+			pr_debug("________________2145 from t!\n");		
 			GC2145MIPI_Initialize_from_T_Flash();
-			printk("______after_____2145 from t!\n");	
+			pr_debug("______after_____2145 from t!\n");	
 		}
 		else
 		{
 			//GC2145MIPI_MPEG4_encode_mode = KAL_FALSE;
-			printk("________________2145 not from t!\n");	
-			printk("________________2145 not from t!\n");
-			printk("________________2145 not from t!\n");		
+			pr_debug("________________2145 not from t!\n");	
+			pr_debug("________________2145 not from t!\n");
+			pr_debug("________________2145 not from t!\n");		
 			RETAILMSG(1, (TEXT("Sensor Read ID OK \r\n"))); 
 		}
 
@@ -1985,13 +1985,13 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 //	   return TRUE;
 
 #ifdef DEBUG_SENSOR_GC2145MIPI
-		printk("______%s______GC2145MIPI YUV setting\n",__func__);
+		pr_debug("______%s______GC2145MIPI YUV setting\n",__func__);
 		return TRUE;
 #endif
 
 	switch (iCmd) {
 	case FID_SCENE_MODE:	    
-//	    printk("Set Scene Mode:%d\n", iPara); 
+//	    pr_debug("Set Scene Mode:%d\n", iPara); 
 	    if (iPara == SCENE_MODE_OFF)
 	    {
 	        GC2145MIPI_night_mode(0); 
@@ -2002,19 +2002,19 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 	    }	    
 	    break; 	    
 	case FID_AWB_MODE:
-	    printk("Set AWB Mode:%d\n", iPara); 	    
+	    pr_debug("Set AWB Mode:%d\n", iPara); 	    
            GC2145MIPI_set_param_wb(iPara);
 	break;
 	case FID_COLOR_EFFECT:
-	    printk("Set Color Effect:%d\n", iPara); 	    	    
+	    pr_debug("Set Color Effect:%d\n", iPara); 	    	    
            GC2145MIPI_set_param_effect(iPara);
 	break;
 	case FID_AE_EV:
-           printk("Set EV:%d\n", iPara); 	    	    
+           pr_debug("Set EV:%d\n", iPara); 	    	    
            GC2145MIPI_set_param_exposure(iPara);
 	break;
 	case FID_AE_FLICKER:
-          printk("Set Flicker:%d\n", iPara); 	    	    	    
+          pr_debug("Set Flicker:%d\n", iPara); 	    	    	    
            GC2145MIPI_set_param_banding(iPara);
 	break;
         case FID_AE_SCENE_MODE: 
@@ -2038,7 +2038,7 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
 {
     kal_uint8 iTemp;
     /* to fix VSYNC, to fix frame rate */
-    //printk("Set YUV Video Mode \n");  
+    //pr_debug("Set YUV Video Mode \n");  
 
     if (u2FrameRate == 30)
     {
@@ -2048,7 +2048,7 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
     }
     else 
     {
-        printk("Wrong frame rate setting \n");
+        pr_debug("Wrong frame rate setting \n");
     }
     GC2145MIPI_VEDIO_encode_mode = KAL_TRUE; 
         
@@ -2259,7 +2259,7 @@ UINT32 GC2145MIPIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 			 GC2145MIPI_GetSensorID(pFeatureData32);
 			 break;
 		case SENSOR_FEATURE_SET_YUV_CMD:
-		       //printk("GC2145MIPI YUV sensor Setting:%d, %d \n", *pFeatureData32,  *(pFeatureData32+1));
+		       //pr_debug("GC2145MIPI YUV sensor Setting:%d, %d \n", *pFeatureData32,  *(pFeatureData32+1));
 			GC2145MIPIYUVSensorSetting((FEATURE_ID)*feature_data, *(feature_data+1));
 		break;
 		case SENSOR_FEATURE_SET_VIDEO_MODE:

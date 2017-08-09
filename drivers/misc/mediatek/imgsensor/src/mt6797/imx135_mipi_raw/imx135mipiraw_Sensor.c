@@ -737,11 +737,11 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
     kal_uint8 iRation;
-    kal_uint8 iReg;
+    //kal_uint8 iReg;
 
     LOG_INF("le:0x%x, se:0x%x\n",le,se);
-    //Test only
-    return 0;
+
+
     if (imgsensor.ihdr_en) {
 
             spin_lock(&imgsensor_drv_lock);
@@ -1745,7 +1745,7 @@ void IMX135MIPI_set_Video_IHDR(kal_uint16 IHDR_En)
     write_cmos_sensor(0x3A43,0x01);//
     write_cmos_sensor(0x0100,0x01);// STREAM START
 }
-
+/*
 static void hs_video_setting_vga_120fps(void)  // VideoHDSetting_120fps
 {
     LOG_INF("E\n  VGA  120fps ");
@@ -1886,7 +1886,7 @@ else {
     write_cmos_sensor(0x0100,0x01);// STREAM START
 
 }
-
+*/
 static void hs_video_setting(void)  // VideoHDSetting_120fps
 {
     LOG_INF("E\n  Video  120fps ");

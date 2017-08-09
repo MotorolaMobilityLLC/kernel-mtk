@@ -213,7 +213,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5A, 0xff},
-	.i2c_speed = 400, // i2c read/write speed
+	.i2c_speed = 300, // i2c read/write speed
 };
 
 
@@ -1537,21 +1537,22 @@ static void preview_setting(void)
 		write_cmos_sensor_8(0x021B,0x00);
 	}
 	write_cmos_sensor(0x0100,0x0100);	//smiaRegs_rw_general_setup // Stream on
-//		while(retry<10)
-//			{if(read_cmos_sensor_8(0x0005)==0xff)
-//				{
-//				  mdelay(10);
-//				  retry++;
-//				  LOG_INF("Sensor has not output\n");
-//				}
-//			 else
-//				{
+    /*EVB seldom output fail issue. Need retry*/
+	while(retry<10)
+	{if(read_cmos_sensor_8(0x0005)==0xff)
+		{
+		  mdelay(10);
+		  retry++;
+		  LOG_INF("Sensor has not output\n");
+		}
+	 else
+		{
 
-//					retry=0;
-//					LOG_INF("Sensor has output\n");
-//					break;
-//				}
-//			}
+			retry=0;
+			LOG_INF("Sensor has output\n");
+			break;
+		}
+	}
 
 //	write_cmos_sensor(0x3A70,0x0000);
 //	write_cmos_sensor(0x3A72,0x0000);
@@ -3203,7 +3204,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             }
             break;
         case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-            LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", (int)*feature_data);
+            LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", (UINT32)*feature_data);
             //PDAF capacity enable or not, 2p8 only full size support PDAF
             switch (*feature_data) {
                 case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:

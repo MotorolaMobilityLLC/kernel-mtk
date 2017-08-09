@@ -6,8 +6,8 @@
 /*#define CCCI_STATISTIC*/
 #define FEATURE_GET_MD_GPIO_NUM
 #define FEATURE_GET_MD_GPIO_VAL
-#define FEATURE_GET_MD_ADC_NUM
-#define FEATURE_GET_MD_ADC_VAL
+/*#define FEATURE_GET_MD_ADC_NUM*/
+/*#define FEATURE_GET_MD_ADC_VAL*/
 #define FEATURE_GET_MD_EINT_ATTR
 #if defined(FEATURE_GET_MD_EINT_ATTR)
 #define FEATURE_GET_MD_EINT_ATTR_DTS
@@ -33,22 +33,23 @@
 #ifdef CONFIG_MTK_CONN_MD
 #define FEATURE_CONN_MD_EXP_EN
 #endif
-
+#ifndef CONFIG_ARM64
 #define FEATURE_USING_4G_MEMORY_API
+#endif
 #define FEATURE_VLTE_SUPPORT
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
 #else
-#define FEATURE_RF_CLK_BUF
-#define ENABLE_32K_CLK_LESS
+/*#define FEATURE_RF_CLK_BUF*/
+/*#define ENABLE_32K_CLK_LESS*/
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
 
-#define ENABLE_EMI_PROTECTION
+/*#define ENABLE_EMI_PROTECTION*/
 
-#ifdef CONFIG_ARCH_MT6735M
-#define ENABLE_DSP_SMEM_SHARE_MPU_REGION
+#ifdef CONFIG_ARCH_MT6797M
+/*#define ENABLE_DSP_SMEM_SHARE_MPU_REGION*/
 #endif
 
 #endif
@@ -56,7 +57,7 @@
 /*================================================ */
 /*Configure value option part*/
 /*================================================*/
-#define AP_PLATFORM_INFO    "MT6735E1"
+#define AP_PLATFORM_INFO    "MT6797E1"
 #define CCCI_MTU            (3584-128)
 #define CCCI_NET_MTU        (1500)
 #define SKB_POOL_SIZE_4K    (256)	/*2*MD */

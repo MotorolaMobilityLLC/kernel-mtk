@@ -1,8 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
-#include <mach/memory.h>
-#include <mach/upmu_sw.h>
 #include <linux/interrupt.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -16,6 +14,10 @@
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
+#ifdef FEATURE_USING_4G_MEMORY_API
+#include <mach/memory.h>
+#endif
+
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
 #endif
@@ -33,7 +35,7 @@ static int is_4g_memory_size_support(void)
 /* =================================================== */
 /* MPU Region defination */
 /* =================================================== */
-#ifdef CONFIG_ARCH_MT6735M
+#ifdef CONFIG_ARCH_MT6797M
 #define MPU_REGION_ID_SEC_OS        0
 #define MPU_REGION_ID_ATF           1
 #define MPU_REGION_ID_MD1_SEC_SMEM  2
@@ -564,7 +566,7 @@ void ccci_get_platform_version(char *ver)
 #ifdef ENABLE_CHIP_VER_CHECK
 	sprintf(ver, "MT%04x_S%02x", get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
 #else
-	sprintf(ver, "MT6735_S00");
+	sprintf(ver, "MT6797_S00");
 #endif
 }
 

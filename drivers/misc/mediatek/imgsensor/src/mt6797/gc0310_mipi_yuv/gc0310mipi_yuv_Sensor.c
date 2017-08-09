@@ -54,9 +54,9 @@ static DEFINE_SPINLOCK(GC0310_drv_lock);
 #define GC0310YUV_DEBUG
 
 #ifdef GC0310YUV_DEBUG
-#define SENSORDB printk
+#define SENSORDB(fmt, args...) pr_debug(fmt, ##args)
 #else
-#define SENSORDB(x,...)
+#define SENSORDB(fmt, args...) 
 #endif
 
 #define GC0310_TEST_PATTERN_CHECKSUM (0x9db2de6e)

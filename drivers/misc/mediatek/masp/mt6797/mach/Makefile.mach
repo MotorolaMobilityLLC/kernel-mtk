@@ -1,0 +1,12 @@
+#######################################
+# Specify source files
+#######################################
+mach_obj += $(MTK_PLATFORM)/mach/sec_lib.o
+mach_obj += $(MTK_PLATFORM)/mach/sec_uid.o
+mach_obj += $(MTK_PLATFORM)/mach/hacc_lib.o
+mach_obj += $(MTK_PLATFORM)/mach/hacc_export.o
+mach_obj += $(MTK_PLATFORM)/mach/hacc_hk.o
+mach_obj += $(MTK_PLATFORM)/mach/hacc_sk.o
+
+
+ccflags-y += -I$(src)/asf/asf_inc

@@ -223,7 +223,7 @@ static kal_uint32 return_sensor_id(void)
 }
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-    kal_int16 dummy_line;
+    //kal_int16 dummy_line;
     kal_uint32 frame_length = imgsensor.frame_length;
     //unsigned long flags;
 
@@ -271,8 +271,8 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 static void set_shutter(kal_uint16 shutter)
 {
     unsigned long flags;
-    kal_uint16 realtime_fps = 0;
-    kal_uint32 frame_length = 0;
+    //kal_uint16 realtime_fps = 0;
+    //kal_uint32 frame_length = 0;
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -307,14 +307,14 @@ static void set_shutter(kal_uint16 shutter)
 
 
 
-static kal_uint16 gain2reg(const kal_uint16 gain)
+/*static kal_uint16 gain2reg(const kal_uint16 gain)
 {
     kal_uint16 reg_gain = 0x0000;
 
     reg_gain = ((gain / BASEGAIN) << 4) + ((gain % BASEGAIN) * 16 / BASEGAIN);
     reg_gain = reg_gain & 0xFFFF;
     return (kal_uint16)reg_gain;
-}
+}*/
 
 /*************************************************************************
 * FUNCTION
@@ -342,7 +342,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 #define ANALOG_GAIN_6 330  // 5.06x
 #define ANALOG_GAIN_7 470  // 7.15x
 
-	kal_uint16 iReg,temp,temp1;
+	kal_uint16 iReg,temp;
 
 	write_cmos_sensor(0xb1, 0x01);
 	write_cmos_sensor(0xb2, 0x00);
@@ -438,7 +438,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 }
 
 
-
+/*
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	LOG_INF("image_mirror = %d\n", image_mirror);
@@ -468,7 +468,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	}
 
 
-}
+}*/
 
 /*************************************************************************
 * FUNCTION
@@ -1474,7 +1474,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     UINT32 *feature_return_para_32=(UINT32 *) feature_para;
     UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+    //unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
