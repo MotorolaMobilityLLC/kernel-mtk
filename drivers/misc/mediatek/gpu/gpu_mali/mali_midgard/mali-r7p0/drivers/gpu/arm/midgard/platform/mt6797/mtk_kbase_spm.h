@@ -25,8 +25,8 @@ struct pcm_desc {
 };
 
 struct mtk_config {
-	//struct clk *clk_smi_common;
-	//struct clk *clk_display;
+	struct clk *clk_smi_common;
+	struct clk *clk_display;
 
 	struct clk *clk_mfg_async;
 	struct clk *clk_mfg;

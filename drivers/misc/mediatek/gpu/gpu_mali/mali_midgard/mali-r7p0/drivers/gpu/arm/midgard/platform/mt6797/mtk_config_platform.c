@@ -58,8 +58,7 @@ static void mt6797_gpu_set_power(int on)
 #else
 		mt_gpufreq_voltage_enable_set(1);
 #endif
-
-		udelay(263);
+		udelay(340);
 	}
 	else
 	{
@@ -87,6 +86,8 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	struct mtk_config *config = kbdev->mtk_config;
 
 	mt6797_gpu_set_power(1);
+
+	MTKCLK_prepare_enable(clk_smi_common);
 
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
@@ -131,6 +132,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
+
 	return 1;
 }
 
@@ -163,6 +165,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 	MTKCLK_disable_unprepare(clk_mfg);
 	MTKCLK_disable_unprepare(clk_mfg_async);
+
+	MTKCLK_disable_unprepare(clk_smi_common);
 
 	mt6797_gpu_set_power(0);
 }
@@ -351,6 +355,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
 	g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
 
+	config->clk_smi_common = devm_clk_get(&pdev->dev, "mfg-smi-common");
+
 	config->clk_mfg_async = devm_clk_get(&pdev->dev, "mtcmos-mfg-async");
 	config->clk_mfg = devm_clk_get(&pdev->dev, "mtcmos-mfg");
 #ifndef MTK_GPU_APM
@@ -365,6 +371,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	config->clk_gpupm = devm_clk_get(&pdev->dev, "infra-gpupm");
 	config->clk_ap_dma = devm_clk_get(&pdev->dev, "infra-ap-dma");
 #endif
+
+	dev_err(kbdev->dev, "xxxx smi_common:%p\n", config->clk_smi_common);
 
 	dev_err(kbdev->dev, "xxxx mfg_async:%p\n", config->clk_mfg_async);
 	dev_err(kbdev->dev, "xxxx mfg:%p\n", config->clk_mfg);
