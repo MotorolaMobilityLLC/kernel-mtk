@@ -626,34 +626,42 @@ static void rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo)
 static int rtc_ops_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 {
 	unsigned long time, flags;
-	struct rtc_time *tm = &alm->time;
+	struct rtc_time tm = alm->time;
+	ktime_t target;
 
-	rtc_tm_to_time(tm, &time);
+	rtc_tm_to_time(&tm, &time);
 	if (time > (unsigned long)LONG_MAX)
 		return -EINVAL;
 
-	tm->tm_year -= RTC_MIN_YEAR_OFFSET;
-	tm->tm_mon++;
+	if (alm->enabled == 1) {
+		/* Add one more second to postpone wake time. */
+		target = rtc_tm_to_ktime(tm);
+		target = ktime_add_ns(target, NSEC_PER_SEC);
+		tm = rtc_ktime_to_tm(target);
+	}
+
+	tm.tm_year -= RTC_MIN_YEAR_OFFSET;
+	tm.tm_mon++;
 
 	rtc_xinfo("set al time = %04d/%02d/%02d %02d:%02d:%02d (%d)\n",
-		  tm->tm_year + RTC_MIN_YEAR, tm->tm_mon, tm->tm_mday,
-		  tm->tm_hour, tm->tm_min, tm->tm_sec, alm->enabled);
+		  tm.tm_year + RTC_MIN_YEAR, tm.tm_mon, tm.tm_mday,
+		  tm.tm_hour, tm.tm_min, tm.tm_sec, alm->enabled);
 
 	spin_lock_irqsave(&rtc_lock, flags);
 	if (alm->enabled == 2) {	/* enable power-on alarm */
-		rtc_save_pwron_time(true, tm, false);
+		rtc_save_pwron_time(true, &tm, false);
 	} else if (alm->enabled == 3) {	/* enable power-on alarm with logo */
-		rtc_save_pwron_time(true, tm, true);
+		rtc_save_pwron_time(true, &tm, true);
 	} else if (alm->enabled == 4) {	/* disable power-on alarm */
 		/* alm->enabled = 0; */
-		rtc_save_pwron_time(false, tm, false);
+		rtc_save_pwron_time(false, &tm, false);
 	}
 
 	/* disable alarm and clear Power-On Alarm bit */
-	hal_rtc_clear_alarm(tm);
+	hal_rtc_clear_alarm(&tm);
 
 	if (alm->enabled)
-		hal_rtc_set_alarm(tm);
+		hal_rtc_set_alarm(&tm);
 	spin_unlock_irqrestore(&rtc_lock, flags);
 
 	return 0;
