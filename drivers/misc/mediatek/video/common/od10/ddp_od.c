@@ -205,6 +205,9 @@ static void od_refresh_screen(void)
 {
 #if defined(CONFIG_ARCH_ELBRUS)
 	return;
+#elif defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6795)
+	if (g_od_ddp_notify != NULL)
+		g_od_ddp_notify(DISP_MODULE_OD, DISP_PATH_EVENT_TRIGGER);
 #else
 
 	if (g_od_ddp_notify != NULL)
@@ -699,6 +702,7 @@ void disp_od_hwc_force(int allow_enabled)
 
 void disp_od_set_smi_clock(int enabled)
 {
+#ifndef CONFIG_MTK_CLKMGR
 	eDDP_CLK_ID larb_clk;
 
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
@@ -716,8 +720,10 @@ void disp_od_set_smi_clock(int enabled)
 		ddp_clk_disable_unprepare(larb_clk);
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	}
+#else
+	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock not support");
+#endif
 }
-
 
 void disp_od_set_enabled(void *cmdq, int enabled)
 {
