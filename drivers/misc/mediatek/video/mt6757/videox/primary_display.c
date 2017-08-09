@@ -4872,16 +4872,20 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			if (ddp_debug_partial_statistic()) {
 				int frame_ori = 0;
 				int frame_partial = 0;
-				int save = 0;
+				long long save = 0;
 
 				evaluate_bandwidth_save(data_config, &frame_ori, &frame_partial);
 				total_ori += frame_ori;
 				total_partial += frame_partial;
 
-				if (total_ori)
-					save = (total_ori - total_partial) * 100 / total_ori;
+				if (total_ori) {
+					/*save = (total_ori - total_partial) * 100 / total_ori;*/
+					unsigned long long tmp = (total_ori - total_partial) * 100;
+					do_div(tmp, total_ori);
+					save = tmp;
+				}
 
-				DISPDBG("total partial save:%%%d\n", save);
+				DISPDBG("total partial save:%%%lld\n", save);
 			} else {
 				total_ori = 0;
 				total_partial = 0;
