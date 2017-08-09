@@ -36,6 +36,7 @@
 #include <linux/kallsyms.h>
 #include <linux/proc_fs.h>
 #include <linux/export.h>
+#include <linux/ratelimit.h>
 
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/exception.h>
@@ -140,7 +141,7 @@ int __init arch_probe_nr_irqs(void)
 #include <linux/slab.h>
 #include <linux/bitmap.h>
 
-static inline bool mt_mt_cpumask_equal(const struct cpumask *src1p, const struct cpumask *src2p)
+static inline bool mt_cpumask_equal(const struct cpumask *src1p, const struct cpumask *src2p)
 {
 	return bitmap_equal(cpumask_bits(src1p), cpumask_bits(src2p), num_possible_cpus());
 }
@@ -450,9 +451,9 @@ void migrate_irqs(void)
 		affinity_broken = migrate_one_irq(desc);
 		raw_spin_unlock(&desc->lock);
 
-		if (affinity_broken && printk_ratelimited())
-			pr_warn("IRQ%u no longer affine to CPU%u\n",
-					    (desc->irq_data).irq, smp_processor_id());
+		if (affinity_broken)
+			pr_warn_ratelimited("IRQ%u no longer affine to CPU%u\n",
+					(desc->irq_data).irq, smp_processor_id());
 	}
 	rcu_read_unlock();
 #else
