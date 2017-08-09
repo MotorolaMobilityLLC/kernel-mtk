@@ -39,7 +39,7 @@
 #define PFX "ov23850_camera_sensor"
 #define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
-#define MULTI_WRITE 1
+#define MULTI_WRITE 0
 /*Enable PDAF function */
 //#define ENABLE_PDAF_VC
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -490,7 +490,7 @@ static void write_shutter(kal_uint16 shutter)
             write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
             write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
             write_cmos_sensor(0x3502, shutter  & 0xFF);
-						LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
             return;
         }
 #endif
@@ -2839,6 +2839,23 @@ static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting_pdaf\n");
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_cap, sizeof(addr_data_pair_cap)/sizeof(kal_uint16));
+#if 0
+	/*Deskew funciton*/
+	write_cmos_sensor(0x4800, 0x64);//r4800 = r4800 | 60, clk gate en
+	write_cmos_sensor(0x484b, 0x03);//r484b = r484b|02 ; [1] clk start after mipi rst
+	write_cmos_sensor(0x4850, 0x5c);//[6] eof_busy_en
+								    //[5] one_time_one_lane
+								    //[4] r_wait_pa_cal
+									//[3] r_deskew_auto_en
+									//[2] r_frame_skew_en
+									//[1] r_deskew_manual1
+									//[0] r_deskew_manual0
+	
+	write_cmos_sensor(0x4852, 0x27);//4852 06 ; 27 ; ;deskew length for periodic
+	write_cmos_sensor(0x4856, 0x5e);//r4856 = r4856 & fc | 02;[1:0] 01: DPHY plus, 10: dphy12 ,11: cphy 
+	write_cmos_sensor(0x4857, 0xaa);//4857 aa ; 55 ;r_mode12_hsdat
+	write_cmos_sensor(0x486f, 0x55);//486f 55 ; ;r_mode12_clk_data
+#endif
 	/*None PDAF focus windows range*/
     if(imgsensor.pdaf_mode == 1)
 		ov23850_setting_PDAF(PDAF_ON);
