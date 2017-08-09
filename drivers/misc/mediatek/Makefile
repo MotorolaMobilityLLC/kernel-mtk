@@ -48,3 +48,4 @@ obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
 obj-$(CONFIG_MTK_LASTPC) += lastpc/
+obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
