@@ -12,6 +12,7 @@ obj-$(CONFIG_ARCH_MT6735)			+= cpuidle-mt6735.o
 obj-$(CONFIG_ARCH_MT6735M)          += cpuidle-mt6735.o
 obj-$(CONFIG_ARCH_MT6753)			+= cpuidle-mt6735.o
 obj-$(CONFIG_ARCH_MT6580)			+= cpuidle-mt6580.o
+obj-$(CONFIG_ARCH_MT7623)			+= cpuidle-mt81xx.o
 obj-$(CONFIG_ARCH_MT8127)			+= cpuidle-mt81xx.o
 obj-$(CONFIG_ARCH_MT8163)			+= cpuidle-mt8163.o
 obj-$(CONFIG_ARCH_MT8173)			+= cpuidle-mt8173.o
