@@ -33,3 +33,5 @@ config ION_TEGRA
 	help
 	  Choose this option if you wish to use ion on an nVidia Tegra.
 
+source "drivers/staging/android/ion/mtk/Kconfig"
+

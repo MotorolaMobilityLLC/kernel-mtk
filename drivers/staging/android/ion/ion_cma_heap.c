@@ -76,8 +76,10 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 		return -EINVAL;
 
 	info = kzalloc(sizeof(struct ion_cma_buffer_info), GFP_KERNEL);
-	if (!info)
+	if (!info) {
+		/*dev_err(dev, "Can't allocate buffer info\n");*/
 		return ION_CMA_ALLOCATE_FAILED;
+	}
 
 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
 						GFP_HIGHUSER | __GFP_ZERO);
@@ -88,8 +90,10 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 	}
 
 	info->table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
-	if (!info->table)
+	if (!info->table) {
+		/*dev_err(dev, "Fail to allocate sg table\n");*/
 		goto free_mem;
+	}
 
 	if (ion_cma_get_sgtable
 	    (dev, info->table, info->cpu_addr, info->handle, len))
@@ -131,7 +135,7 @@ static int ion_cma_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	struct device *dev = cma_heap->dev;
 	struct ion_cma_buffer_info *info = buffer->priv_virt;
 
-	dev_dbg(dev, "Return buffer %p physical address %pa\n", buffer,
+	dev_dbg(dev, "Return buffer %p physical address 0x%pa\n", buffer,
 		&info->handle);
 
 	*addr = info->handle;

@@ -7,3 +7,4 @@ obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_IRQ) += irq/
 
+obj-$(CONFIG_MTK_M4U)	+= m4u/
