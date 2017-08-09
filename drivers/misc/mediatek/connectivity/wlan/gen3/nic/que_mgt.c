@@ -3571,14 +3571,14 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 	P_SW_RFB_T prReorderedSwRfb;
 	P_QUE_T prReorderQue;
 	BOOLEAN fgDequeuHead, fgMissing;
-	OS_SYSTIME rCurrentTime, rMissTimeout;
+	OS_SYSTIME rCurrentTime, *prMissTimeout;
 
 	prReorderQue = &(prReorderQueParm->rReOrderQue);
 
 	fgMissing = FALSE;
 	rCurrentTime = 0;
-	rMissTimeout = g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
-	if (rMissTimeout) {
+	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
+	if (*prMissTimeout) {
 		fgMissing = TRUE;
 		GET_CURRENT_SYSTIME(&rCurrentTime);
 	}
@@ -3616,7 +3616,7 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 			}
 
 			if ((fgMissing == TRUE) &&
-			    CHECK_FOR_TIMEOUT(rCurrentTime, rMissTimeout,
+			    CHECK_FOR_TIMEOUT(rCurrentTime, *prMissTimeout,
 					      MSEC_TO_SYSTIME(QM_RX_BA_ENTRY_MISS_TIMEOUT_MS))) {
 				DBGLOG(QM, TRACE,
 				       "QM:RX BA Timout Next Tid %d SSN %d\n",
@@ -3649,10 +3649,10 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 	}
 
 	if (QUEUE_IS_EMPTY(prReorderQue))
-		rMissTimeout = 0;
+		*prMissTimeout = 0;
 	else {
 		if (fgMissing == FALSE)
-			GET_CURRENT_SYSTIME(&rMissTimeout);
+			GET_CURRENT_SYSTIME(prMissTimeout);
 	}
 
 	/* After WinStart has been determined, update the WinEnd */
