@@ -313,10 +313,13 @@ static void SetHDMIAddress(void)
 
 
 static int mHdmi_sidegen_control;
+static int mHdmi_display_control;
 static const char const *HDMI_SIDEGEN[] = { "Off", "On" };
+static const char const *HDMI_DISPLAY[] = { "MHL", "SLIMPORT" };
 
 static const struct soc_enum Audio_Hdmi_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(HDMI_SIDEGEN), HDMI_SIDEGEN),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(HDMI_DISPLAY), HDMI_DISPLAY),
 };
 
 static int Audio_hdmi_SideGen_Get(struct snd_kcontrol *kcontrol,
@@ -353,8 +356,11 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI, AFE_WLEN_16_BIT);
 		SetHDMIdatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 		SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-		SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-		Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
+
+		if (mHdmi_display_control == 1)
+			Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
+		else
+			Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
 
 		/* set APLL clock setting */
 		EnableApll1(true);
@@ -371,7 +377,10 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		SetHDMIBCLK();
 
 		SetTDMLrckWidth(Tdm_Lrck);
-		SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
+		if (mHdmi_display_control == 1)
+			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
+		else
+			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 		SetTDMChannelsSdata(Channels);
 		SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 		SetTDMI2Smode(Soc_Aud_I2S_FORMAT_I2S);
@@ -427,9 +436,30 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int Audio_hdmi_disport_Get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("Audio_hdmi_slimport_Get = %d\n", mHdmi_display_control);
+	ucontrol->value.integer.value[0] = mHdmi_display_control;
+	return 0;
+}
+
+static int Audio_hdmi_disport_Set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("Audio_hdmi_slimport_Set = %d\n", mHdmi_display_control);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(HDMI_DISPLAY)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	mHdmi_display_control = ucontrol->value.integer.value[0];
+	return 0;
+}
 static const struct snd_kcontrol_new Audio_snd_hdmi_controls[] = {
 	SOC_ENUM_EXT("Audio_Hdmi_SideGen_Switch", Audio_Hdmi_Enum[0], Audio_hdmi_SideGen_Get,
-		     Audio_hdmi_SideGen_Set)
+		     Audio_hdmi_SideGen_Set),
+	SOC_ENUM_EXT("Audio_Hdmi_Display_Switch", Audio_Hdmi_Enum[1], Audio_hdmi_disport_Get,
+		     Audio_hdmi_disport_Set),
 };
 
 
@@ -761,7 +791,6 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 			SetHDMIdatalength(Soc_Aud_I2S_WLEN_WLEN_32BITS);
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_32BITS);
-			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
 			Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
 
 			/*SetCLkBclk(MclkDiv, runtime->rate, runtime->channels, Soc_Aud_I2S_WLEN_WLEN_16BITS); */
@@ -773,26 +802,33 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 			SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
 
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_32BITS);
-/*            SetTDMLrckInverse(true);*/
+			/*SetTDMLrckInverse(true);*/
 			SetTDMBckInverse(false);
 		} else {
-			pr_debug("mtk_pcm_hdmi_prepare 16bit\n ");
+			pr_debug("mtk_pcm_hdmi_prepare 16bit, mHdmi_display_control =%d\n ", mHdmi_display_control);
 
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI,
 						     AFE_WLEN_16_BIT);
 			SetHDMIdatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-			Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
 
 			SetCLkBclk(MclkDiv, runtime->rate, runtime->channels,
 				   Soc_Aud_I2S_WLEN_WLEN_16BITS);
+			if (mHdmi_display_control == 1)
+				Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
+			else
+				Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
+
 			SetTDMLrckWidth(Tdm_Lrck);
-			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
+
+			if (mHdmi_display_control == 1)
+				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
+			else
+				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
 
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-/*            SetTDMLrckInverse(true);*/
+			/*SetTDMLrckInverse(true);*/
 			SetTDMBckInverse(false);
 		}
 

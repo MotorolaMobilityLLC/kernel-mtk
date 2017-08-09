@@ -115,6 +115,7 @@ static bool AudioMrgStatus;
 static bool mAudioInit;
 static bool mVOWStatus;
 static unsigned int MCLKFS = 128;
+static unsigned int MCLKFS_HDMI = 256;
 static AudioDigtalI2S *m2ndI2S;	/* input */
 static AudioDigtalI2S *m2ndI2Sout;	/* output */
 static bool mFMEnable;
@@ -222,6 +223,7 @@ static void AfeGlobalVarInit(void)
 	mAudioInit = false;
 	mVOWStatus = false;
 	MCLKFS = 128;
+	MCLKFS_HDMI = 256;
 	m2ndI2S = NULL;		/* input */
 	m2ndI2Sout = NULL;	/* output */
 	mFMEnable = false;
@@ -783,7 +785,7 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 24, 0xff << 24);
 		break;
 	case Soc_Aud_I2S4:
-		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
+		I2s_ck_div = (I2S_APll / MCLKFS_HDMI / SampleRate) - 1;
 		Afe_Set_Reg(CLK_AUDDIV_2, I2s_ck_div << 0, 0xff << 0);
 		break;
 	}
