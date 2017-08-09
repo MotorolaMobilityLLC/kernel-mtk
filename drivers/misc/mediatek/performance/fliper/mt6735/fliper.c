@@ -14,8 +14,9 @@
 #include <linux/timer.h>
 #include <linux/jiffies.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
+#ifdef CONFIG_PM_AUTOSLEEP
+#include <linux/fb.h>
+#include <linux/notifier.h>
 #endif
 
 #include "mach/fliper.h"
@@ -34,11 +35,6 @@
 #define BW_THRESHOLD 1500
 #define BW_THRESHOLD_MAX 9000
 #define BW_THRESHOLD_MIN 1000
-
-#define DISABLE_IN_EARLY_SUSPEND
-#ifndef CONFIG_MTK_LEGACY
-#undef DISABLE_IN_EARLY_SUSPEND
-#endif
 
 static int bw_threshold;
 static int fliper_enabled;
@@ -73,7 +69,8 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 
 	ret = kstrtoul(buf, 10, (unsigned long *)&val);
 	if (ret < 0) {
-		pr_crit("\n<<SOC DVFS FLIPER>> no support change POWER_MODE\n");
+		if (fliper_debug)
+			pr_crit("\n<<SOC DVFS FLIPER>> no support change POWER_MODE\n");
 		return cnt;
 	}
 	if (val == 1) {
@@ -226,7 +223,7 @@ static void mt_power_pef_transfer(void)
 	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(X_ms));
 	schedule_work(&mt_pp_work);
 }
-
+#ifndef CONFIG_PM_AUTOSLEEP
 	static int
 fliper_pm_callback(struct notifier_block *nb,
 		unsigned long action, void *ptr)
@@ -241,6 +238,8 @@ fliper_pm_callback(struct notifier_block *nb,
 		pp_index = 0;
 		disable_fliper();
 		break;
+	case PM_HIBERNATION_PREPARE:
+		break;
 
 	case PM_POST_SUSPEND:
 		if (fliper_enabled == 1)
@@ -249,15 +248,19 @@ fliper_pm_callback(struct notifier_block *nb,
 			pr_crit("\n<<SOC DVFS FLIPER>> Resume enable flipper but flipper is disabled\n");
 		break;
 
+	case PM_POST_HIBERNATION:
+		break;
+
 	default:
 		return NOTIFY_DONE;
 	}
 
 	return NOTIFY_OK;
 }
+#endif
 
-#ifdef CONFIG_EARLYSUSPEND
-static void fliper_early_suspend(struct early_suspend *h)
+#ifdef CONFIG_PM_AUTOSLEEP
+static void fliper_early_suspend(void)
 {
 	int ret;
 
@@ -267,18 +270,48 @@ static void fliper_early_suspend(struct early_suspend *h)
 	disable_fliper();
 }
 
-static void fliper_late_resume(struct early_suspend *h)
+static void fliper_late_resume(void)
 {
 	pr_emerg("\n<<SOC DVFS FLIPER>> Late Resume\n");
 	enable_fliper();
 }
 
-static struct early_suspend fliper_early_suspend_handler = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
-	.suspend = fliper_early_suspend,
-	.resume = fliper_late_resume,
+
+
+
+static int fliper_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
+{
+	struct fb_event *evdata = fb_evdata;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		fliper_late_resume();
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		fliper_early_suspend();
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct notifier_block fliper_fb_notif = {
+	.notifier_call = fliper_fb_notifier_callback,
 };
 #endif
+
 
 /*-----------------------------------------------*/
 
@@ -286,8 +319,9 @@ static struct early_suspend fliper_early_suspend_handler = {
 static int __init init_fliper(void)
 {
 	struct proc_dir_entry *pe;
+	int ret = 0;
 
-	pe = proc_create("fliper", 0664, NULL, &mt_fliper_fops);
+	pe = proc_create("fliper", 0666, NULL, &mt_fliper_fops);
 	if (!pe)
 		return -ENOMEM;
 	bw_threshold = BW_THRESHOLD;
@@ -295,14 +329,14 @@ static int __init init_fliper(void)
 	pr_debug("-	next jiffies:%lu >>> %lu\n", jiffies, jiffies + msecs_to_jiffies(X_ms));
 	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(TIME_5SEC_IN_MS));
 	fliper_enabled = 1;
-#ifdef DISABLE_IN_EARLY_SUSPEND
-#ifdef CONFIG_EARLYSUSPEND
-	register_early_suspend(&fliper_early_suspend_handler);
-#endif
+
+#ifdef CONFIG_PM_AUTOSLEEP
+	ret = fb_register_client(&fliper_fb_notif);
+	if (ret)
+		pr_err("\n<<SOC DVFS FLIPER>> register fb notifier, ret=%d\n", ret);
 #else
 	pm_notifier(fliper_pm_callback, 0);
 #endif
-
 
 	return 0;
 }
