@@ -18,8 +18,8 @@
 /* ============================================================ */
 /* define */
 /* ============================================================ */
-#define BM_LOG_CRTI 7
-#define BM_LOG_FULL 8
+#define BM_LOG_CRTI (7)
+#define BM_LOG_FULL (8)
 
 #define bm_print(num, fmt, args...)   \
 do {									\

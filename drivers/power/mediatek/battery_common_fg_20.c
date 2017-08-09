@@ -3145,9 +3145,11 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Set_META_BAT_CAR_TUNE_VALUE:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		batt_meter_cust_data.car_tune_value = adc_in_data[1];
+		/* Input X mA, div 1k => car_tune_value */
+		batt_meter_cust_data.car_tune_value = adc_in_data[1] / 1000;
 		adc_out_data[0] = batt_meter_cust_data.car_tune_value;
-		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE[%d], res=%d\n", adc_in_data[1], adc_out_data[0]);
+		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE[%d], res=%d\n",
+			adc_in_data[1], adc_out_data[0]);
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;

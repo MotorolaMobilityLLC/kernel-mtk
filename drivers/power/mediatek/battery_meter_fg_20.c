@@ -4484,6 +4484,16 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		}
 		break;
 
+		case FG_DAEMON_CMD_SET_CAR_TUNE_VALUE:
+		{
+			signed int NVRAM_CAR_TUNE_VALUE;
+
+			memcpy(&NVRAM_CAR_TUNE_VALUE, &msg->fgd_data[0], sizeof(NVRAM_CAR_TUNE_VALUE));
+			bm_notice("[fg_res] NVRAM_CAR_TUNE_VALUE = %d\n", NVRAM_CAR_TUNE_VALUE);
+			batt_meter_cust_data.car_tune_value = NVRAM_CAR_TUNE_VALUE;
+		}
+		break;
+
 	default:
 		bm_debug("bad FG_DAEMON_CTRL_CMD_FROM_USER 0x%x\n", msg->fgd_cmd);
 		break;
