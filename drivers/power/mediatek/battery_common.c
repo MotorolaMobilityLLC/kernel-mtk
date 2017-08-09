@@ -53,6 +53,8 @@
 #include <linux/of_address.h>
 #endif
 #include <linux/suspend.h>
+#include <linux/reboot.h>
+
 
 #include <asm/scatterlist.h>
 #include <asm/uaccess.h>
@@ -70,6 +72,7 @@
 #include <mt-plat/battery_common.h>
 #include <mach/mt_battery_meter.h>
 #include <mach/mt_charging.h>
+#include <mach/mt_pmic.h>
 
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
@@ -1904,18 +1907,20 @@ static void battery_update(struct battery_data *bat_data)
 #ifdef DLPT_POWER_OFF_EN
 	/*extern int dlpt_check_power_off(void);*/
 	if (bat_data->BAT_CAPACITY <= DLPT_POWER_OFF_THD) {
+		static signed char cnt;
+
 		battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] run\n");
 
-		if (bat_data->BAT_CAPACITY == 0) {
-			bat_data->BAT_CAPACITY = 1;
-			battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] SOC=0 but keep %d\n",
-				    bat_data->BAT_CAPACITY);
-		}
 		if (dlpt_check_power_off() == 1) {
 			bat_data->BAT_CAPACITY = 0;
+			cnt++;
 			battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] SOC=%d to power off\n",
 				    bat_data->BAT_CAPACITY);
-		}
+			if (cnt >= 2)
+				kernel_restart("DLPT reboot system");
+
+		} else
+			cnt = 0;
 	} else {
 		battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] disable(%d)\n",
 			    bat_data->BAT_CAPACITY);
