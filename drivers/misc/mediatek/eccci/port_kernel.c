@@ -2369,7 +2369,10 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 		md_img_len = MD_IMG_DUMP_SIZE;
 	}
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
+	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+		aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
+	else
+		aed_md_exception_api(NULL, 0, md_img_addr, md_img_len, buff, db_opt);
 #endif
 	kfree(buff);
 }
@@ -2567,7 +2570,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->ex_pl_info, MD_HS1_FAIL_DUMP_SIZE);
 		/* MD will not fill in share memory before we send runtime data */
 		dump_flag = CCCI_AED_DUMP_EX_PKT;
-	} else {
+	} else if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM)) {
 #if 1
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
 					md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
@@ -3145,7 +3148,7 @@ err_exit:
 	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD EX log\n");
 	if ((md->index == MD_SYS3) || (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0))
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->ex_info, sizeof(EX_LOG_T));
-	else
+	else if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
 		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	/* Dump MD image memory */
 	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD image memory\n");
@@ -3416,14 +3419,20 @@ void md_ex_monitor_func(unsigned long data)
 	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD EX log\n");
 #ifdef MD_UMOLY_EE_SUPPORT
 	if (md->index == MD_SYS1) {
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+		if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM)) {
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
 					md->smem_layout.ccci_exp_smem_mdss_debug_vir, (2048 + 512));
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
 					(md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
-	} else
+		}
+	} else {
 #endif
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+		if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
 					md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+#ifdef MD_UMOLY_EE_SUPPORT
+	}
+#endif
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	spin_lock_irqsave(&md->ctrl_lock, flags);
@@ -3535,7 +3544,8 @@ void md_bootup_timeout_func(unsigned long data)
 	} else if (md->boot_stage == MD_BOOT_STAGE_1) {
 		/* Handshake 2 fail */
 		CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
+		if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 						md->smem_layout.ccci_exp_dump_size);
 
 		ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM, ex_info, DB_OPT_FTRACE);

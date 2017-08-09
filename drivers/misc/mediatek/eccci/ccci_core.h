@@ -837,6 +837,20 @@ enum {
 	CRIT_USR_MAX,
 };
 
+enum {
+	MD_DBG_DUMP_TOPSM = 0,
+	MD_DBG_DUMP_PCMON,
+	MD_DBG_DUMP_BUSREC,
+	MD_DBG_DUMP_MDRGU,
+	MD_DBG_DUMP_OST,
+	MD_DBG_DUMP_BUS,
+	MD_DBG_DUMP_PLL,
+	MD_DBG_DUMP_ECT,
+
+	MD_DBG_DUMP_SMEM,
+	MD_DBG_DUMP_ALL = 0xFFFFFFFF,
+};
+
 struct ccci_modem {
 	unsigned char index;
 	unsigned char *private_data;
@@ -916,6 +930,7 @@ struct ccci_modem {
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	struct work_struct scp_md_state_sync_work;
 #endif
+	unsigned int md_dbg_dump_flag;
 	/* unsigned char private_data[0];
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
 	char md_wakelock_name[32];

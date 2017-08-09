@@ -1046,7 +1046,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			CCCI_ERR_MSG(md->index, CHAR, "set efun fail: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "efun set to %d\n", sim_mode);
+			CCCI_NORMAL_LOG(md->index, CHAR, "efun set to %d\n", sim_mode);
 			if (sim_mode == 0 && md->ops->soft_stop)
 				md->ops->soft_stop(md, sim_mode);
 			else if (sim_mode != 0 && md->ops->soft_start)
@@ -1058,6 +1058,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NORMAL_LOG(md->index, CHAR, "mdlog dump done ioctl called by %s\n", current->comm);
 		md->mdlog_dump_done = 1;
 		break;
+
 	default:
 		ret = -ENOTTY;
 		break;

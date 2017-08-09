@@ -3658,6 +3658,13 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		trace_sample_time = (buf[size] - '0') * 100000000;
 		CCCI_NORMAL_LOG(md->index, TAG, "trace_sample_time %u\n", trace_sample_time);
 	}
+	size = strlen("md_dbg_dump=");
+	if (strncmp(buf, "md_dbg_dump=", size) == 0 && size < count - 1) {
+		size = kstrtouint(buf+size, 16, &md->md_dbg_dump_flag);
+		if (size)
+			md->md_dbg_dump_flag = MD_DBG_DUMP_ALL;
+		CCCI_NORMAL_LOG(md->index, TAG, "md_dbg_dump 0x%X\n", md->md_dbg_dump_flag);
+	}
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	size = strlen("scp_smem");
 	if (strncmp(buf, "scp_smem", size) == 0) {

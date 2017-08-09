@@ -640,6 +640,7 @@ struct ccci_modem *ccci_allocate_modem(int private_size)
 	init_timer(&md->md_status_timeout);
 	md->md_status_timeout.function = md_status_timeout_func;
 	md->md_status_timeout.data = (unsigned long)md;
+	md->md_dbg_dump_flag = MD_DBG_DUMP_ALL;
 
 	snprintf(md->md_wakelock_name, sizeof(md->md_wakelock_name), "md%d_wakelock", md->index + 1);
 	wake_lock_init(&md->md_wake_lock, WAKE_LOCK_SUSPEND, md->md_wakelock_name);
@@ -920,6 +921,7 @@ int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len)
 		return -1;
 	md->mdlg_mode = data[0];
 	md->sbp_code  = data[1];
+	md->md_dbg_dump_flag = data[2];
 
 	return ret;
 }
