@@ -182,6 +182,8 @@ void Auddrv_DL2_Interrupt_Handler(void);
 void Auddrv_UL1_Interrupt_Handler(void);
 void Auddrv_UL1_Spinlock_lock(void);
 void Auddrv_UL1_Spinlock_unlock(void);
+void Auddrv_UL2_Spinlock_lock(void);
+void Auddrv_UL2_Spinlock_unlock(void);
 void Auddrv_AWB_Interrupt_Handler(void);
 void Auddrv_DAI_Interrupt_Handler(void);
 void Auddrv_HDMI_Interrupt_Handler(void);

@@ -61,7 +61,6 @@ static struct snd_dma_buffer *Adc2_Capture_dma_buf;
 static unsigned int mPlaybackDramState;
 
 static DEFINE_SPINLOCK(auddrv_I2s2adc2InCtl_lock);
-static kal_int32 Previous_Hw_cur;
 static struct device *mDev;
 
 /*
@@ -174,25 +173,57 @@ static snd_pcm_uframes_t mtk_i2s2_adc2_pcm_pointer(struct snd_pcm_substream *sub
 {
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
-	kal_uint32 Frameidx = 0;
+	kal_int32 Hw_Get_bytes = 0;
+	bool bIsOverflow = false;
+	unsigned long flags;
 	AFE_BLOCK_T *adc2_Block = &(I2S2_ADC2_Control_context->rBlock);
 
 	PRINTK_AUD_UL2("mtk_i2s2_adc2_pcm_pointer adc2_Block->u4WriteIdx;= 0x%x\n", adc2_Block->u4WriteIdx);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2) == true) {
-		Frameidx = audio_bytes_to_frame(substream, adc2_Block->u4WriteIdx);
-		return Frameidx;
+	Auddrv_UL2_Spinlock_lock();
+	spin_lock_irqsave(&I2S2_ADC2_Control_context->substream_lock, flags);
 
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2) == true) {
+		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_D2_CUR));
 		if (HW_Cur_ReadIdx == 0) {
-			pr_err("[Auddrv] mtk_awb_pcm_pointer  HW_Cur_ReadIdx ==0\n");
+			PRINTK_AUD_UL2("[Auddrv] %s HW_Cur_ReadIdx ==0\n", __func__);
 			HW_Cur_ReadIdx = adc2_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - adc2_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		pr_debug("[Auddrv] mtk_i2s2_adc2_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
+
+		/* update for data get to hardware */
+		Hw_Get_bytes = (HW_Cur_ReadIdx - adc2_Block->pucPhysBufAddr) - adc2_Block->u4WriteIdx;
+		if (Hw_Get_bytes < 0)
+			Hw_Get_bytes += adc2_Block->u4BufferSize;
+
+		adc2_Block->u4WriteIdx   += Hw_Get_bytes;
+		adc2_Block->u4WriteIdx   %= adc2_Block->u4BufferSize;
+		adc2_Block->u4DataRemained += Hw_Get_bytes;
+
+		PRINTK_AUD_UL2("%s ReadIdx=0x%x WriteIdx = 0x%x Remained = 0x%x BufferSize= 0x%x, Get_bytes= 0x%x\n",
+			__func__, adc2_Block->u4DMAReadIdx, adc2_Block->u4WriteIdx, adc2_Block->u4DataRemained,
+			adc2_Block->u4BufferSize, Hw_Get_bytes);
+
+		/* buffer overflow */
+		if (adc2_Block->u4DataRemained > adc2_Block->u4BufferSize) {
+			bIsOverflow = true;
+			pr_warn("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, DataRemained:%x, BufferSize:%x\n",
+				__func__, adc2_Block->u4DMAReadIdx, adc2_Block->u4WriteIdx,
+				adc2_Block->u4DataRemained, adc2_Block->u4BufferSize);
+		}
+
+		PRINTK_AUD_UL2("[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
 			HW_Cur_ReadIdx, HW_memory_index);
-		return audio_bytes_to_frame(substream, Previous_Hw_cur);
+
+		spin_unlock_irqrestore(&I2S2_ADC2_Control_context->substream_lock, flags);
+		Auddrv_UL2_Spinlock_unlock();
+
+		if (bIsOverflow == true)
+			return -1;
+
+		return audio_bytes_to_frame(substream, HW_memory_index);
 	}
+	spin_unlock_irqrestore(&I2S2_ADC2_Control_context->substream_lock, flags);
+	Auddrv_UL2_Spinlock_unlock();
 	return 0;
 }
 

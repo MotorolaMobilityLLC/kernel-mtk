@@ -165,6 +165,8 @@ static DEFINE_SPINLOCK(auddrv_dl1_lock);
 static DEFINE_SPINLOCK(auddrv_dl2_lock);
 static DEFINE_SPINLOCK(auddrv_dl3_lock);
 static DEFINE_SPINLOCK(auddrv_ul1_lock);
+static DEFINE_SPINLOCK(auddrv_ul2_lock);
+
 
 
 static const uint16_t kSideToneCoefficientTable16k[] = {
@@ -3023,6 +3025,18 @@ void Auddrv_UL1_Spinlock_unlock(void)
 	spin_unlock_irqrestore(&auddrv_ul1_lock, ul1_flags);
 }
 
+static unsigned long ul2_flags;
+
+void Auddrv_UL2_Spinlock_lock(void)
+{
+	spin_lock_irqsave(&auddrv_ul2_lock, ul2_flags);
+}
+
+void Auddrv_UL2_Spinlock_unlock(void)
+{
+	spin_unlock_irqrestore(&auddrv_ul2_lock, ul2_flags);
+}
+
 void Auddrv_HDMI_Interrupt_Handler(void)
 {
 	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI];
@@ -3745,14 +3759,10 @@ void Auddrv_UL2_Interrupt_Handler(void)
 
 	/* buffer overflow */
 	if (mBlock->u4DataRemained > mBlock->u4BufferSize) {
-
-		PRINTK_AUD_UL1("%s buffer overflow u4DMAReadIdx:%x,WriteIdx:%x,Remained:%x,Size:%x\n",
-		__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
-		mBlock->u4DataRemained, mBlock->u4BufferSize);
-		mBlock->u4DataRemained = mBlock->u4BufferSize / 2;
-		mBlock->u4DMAReadIdx = mBlock->u4WriteIdx - mBlock->u4BufferSize / 2;
-		if (mBlock->u4DMAReadIdx < 0)
-			mBlock->u4DMAReadIdx += mBlock->u4BufferSize;
+		pr_debug
+		    ("buffer overflow u4DMAReadIdx:%x,u4WriteIdx:%x, u4DataRemained:%x, u4BufferSize:%x\n",
+		     mBlock->u4DMAReadIdx, mBlock->u4WriteIdx, mBlock->u4DataRemained,
+		     mBlock->u4BufferSize);
 	}
 
 	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->interruptTrigger = 1;
