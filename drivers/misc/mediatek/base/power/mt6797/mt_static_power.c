@@ -714,8 +714,8 @@ int mt_spower_get_efuse_lkg(int dev)
 		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPUL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_CPULL:
-		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
+		efuse_leakage = (devinfo >> 24) & 0xff;
 		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPULL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_MODEM:
