@@ -923,8 +923,8 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_M0_REC17, 0x1001af44);
 	cspm_write(CSPM_M0_REC18, 0x1001a204);
 	cspm_write(CSPM_M0_REC19, 0x1);
-	cspm_write(CSPM_M1_REC0,  0x20000);
-	cspm_write(CSPM_M1_REC1,  0xffc1ffff);
+	cspm_write(CSPM_M1_REC0,  0x200);
+	cspm_write(CSPM_M1_REC1,  0xffffc1ff);
 	cspm_write(CSPM_M1_REC2,  0x4);
 	cspm_write(CSPM_M1_REC3,  0x8);
 	cspm_write(CSPM_M1_REC4,  0xfffffff3);
@@ -936,8 +936,8 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_M1_REC9,  0x1001af58);
 	cspm_write(CSPM_M1_REC10, 0x1001a214);
 	cspm_write(CSPM_M1_REC11, 0x2);
-	cspm_write(CSPM_M1_REC12, 0x200);
-	cspm_write(CSPM_M1_REC13, 0xffffc1ff);
+	cspm_write(CSPM_M1_REC12, 0x20000);
+	cspm_write(CSPM_M1_REC13, 0xffc1ffff);
 	cspm_write(CSPM_M1_REC14, 0x10);
 	cspm_write(CSPM_M1_REC15, 0x20);
 	cspm_write(CSPM_M1_REC16, 0xffffffcf);
