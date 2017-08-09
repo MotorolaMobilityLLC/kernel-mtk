@@ -22,26 +22,20 @@
 /**************************************
  * Macro and Inline
  **************************************/
+#define vcorefs_crit(fmt, args...)	pr_err(fmt, ##args)
 #define vcorefs_err(fmt, args...)	pr_err(fmt, ##args)
 #define vcorefs_warn(fmt, args...)	pr_warn(fmt, ##args)
-
-#if 0
-#define vcorefs_crit(fmt, args...)	pr_crit(fmt, ##args)
-#define vcorefs_debug(fmt, args...)	pr_info(fmt, ##args)
-#else
-#define vcorefs_crit(fmt, args...)	pr_debug(fmt, ##args)
 #define vcorefs_debug(fmt, args...)	pr_debug(fmt, ##args)
-#endif
 
-/* log_mask[15:0]: show nothing, log_mask[16:31]: show only on MobileLog */
+/* log_mask[15:0]: show nothing, log_mask[31:16]: show only on MobileLog */
 #define vcorefs_crit_mask(fmt, args...)				\
 do {								\
 	if (pwrctrl->log_mask & (1U << kicker))			\
 		;						\
 	else if ((pwrctrl->log_mask >> 16) & (1U << kicker))	\
-		vcorefs_debug(fmt, ##args);			\
+		pr_debug(fmt, ##args);				\
 	else							\
-		vcorefs_crit(fmt, ##args);			\
+		pr_err(fmt, ##args);				\
 } while (0)
 
 #define DEFINE_ATTR_RO(_name)			\
@@ -124,7 +118,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.vcore_dvs		= 1,
 	.freq_dfs		= 1,
 	.ddr_dfs		= 1,
-	.log_mask		= (1U << KIR_GPU),
+	.log_mask		= 0xffff0000 | (1U << KIR_GPU),
 
 	.late_init_opp_done	= 0,
 	.init_opp_perf		= 0,
@@ -1042,4 +1036,4 @@ static int __init vcorefs_module_init(void)
 module_init(vcorefs_module_init);
 late_initcall_sync(late_init_to_lowpwr_opp);
 
-MODULE_DESCRIPTION("Vcore DVFS Driver v0.3");
+MODULE_DESCRIPTION("Vcore DVFS Driver v0.3.1");
