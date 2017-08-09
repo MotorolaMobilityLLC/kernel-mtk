@@ -24,7 +24,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	void __user *ptr = (void __user *) arg;
 	int dat;
 	uint32_t enable = 0;
-	int ps_cali;
+	int ps_cali = 0;
 	int threshold_data[2];
 
 	if (_IOC_DIR(cmd) & _IOC_READ)

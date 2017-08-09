@@ -1033,7 +1033,6 @@ static long ITG1010_unlocked_ioctl(struct file *file, unsigned int cmd,
 {
 	struct i2c_client *client = (struct i2c_client *)file->private_data;
 	char strbuf[ITG1010_BUFSIZE] = {0};
-	s16 *SMTdata;
 	void __user *data;
 	long err = 0;
 	int copy_cnt = 0;
@@ -1060,12 +1059,6 @@ static long ITG1010_unlocked_ioctl(struct file *file, unsigned int cmd,
 		data = (void __user *) arg;
 		if (data == NULL) {
 			err = -EINVAL;
-			break;
-		}
-
-		SMTdata = kzalloc(sizeof(*SMTdata) * 800, GFP_KERNEL);
-		if (SMTdata == NULL) {
-			err = -ENOMEM;
 			break;
 		}
 
@@ -1550,9 +1543,9 @@ exit_create_attr_failed:
 exit_misc_device_register_failed:
 exit_init_failed:
 exit_kfree:
+exit:
 	kfree(obj);
 	obj = NULL;
-exit:
 	ITG1010_init_flag =  -1;
 	GYRO_ERR("%s: err = %d\n", __func__, err);
 	return err;
