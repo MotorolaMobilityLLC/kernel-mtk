@@ -76,6 +76,7 @@ static const struct of_device_id kpd_of_match[] = {
 	{.compatible = "mediatek,mt8173-keypad"},
 	{.compatible = "mediatek,mt6797-keypad"},
 	{.compatible = "mediatek,mt8163-keypad"},
+	{.compatible = "mediatek,mt8127-keypad"},
 	{},
 };
 
