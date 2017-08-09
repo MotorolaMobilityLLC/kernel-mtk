@@ -1,5 +1,5 @@
 obj-y += scp.o
-scp-y := scp_helper.o scp_excep.o scp_ipi.o scp_irq.o scp_logger.o
+scp-y := scp_helper.o scp_excep.o scp_ipi.o scp_irq.o scp_logger.o scp_dvfs.o
 
 # include emi_mpu.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach

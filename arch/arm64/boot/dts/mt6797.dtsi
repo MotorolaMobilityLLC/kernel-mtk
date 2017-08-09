@@ -1804,6 +1804,10 @@
 			interrupts = <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
+		scpdvfs: scpdvfs@0 {
+			compatible = "mediatek,mt6797-scpdvfs";
+		};
+
 		emi_mpu@10200000 {
 			compatible = "mediatek,emi_mpu";
 			reg = <0x10200000 0x1000>;

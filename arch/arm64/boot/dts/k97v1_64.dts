@@ -1529,3 +1529,31 @@
 	status = "okay";
 };
 /* SPI END */
+
+/* SCP GPIO standardization */
+
+&pio {
+	scp_dvfs_default: default {
+	};
+	scp_aud_clk_mosi_off: scp_gpio_off {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO146__FUNC_GPIO146>;
+		};
+	};
+
+	scp_aud_clk_mosi_on: scp_gpio_on {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO146__FUNC_AUD_CLK_MOSI>;
+		};
+	};
+};
+
+&scpdvfs {
+	pinctrl-names = "default", "scp_gpio_off", "scp_gpio_on";
+	pinctrl-0 = <&scp_dvfs_default>;
+	pinctrl-1 = <&scp_aud_clk_mosi_off>;
+	pinctrl-2 = <&scp_aud_clk_mosi_on>;
+	status = "okay";
+};
+
+/* SCP DVFS GPIO end */
