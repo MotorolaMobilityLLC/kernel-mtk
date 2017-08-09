@@ -1351,6 +1351,8 @@ static inline int hrtick_enabled(struct rq *rq)
 extern void sched_avg_update(struct rq *rq);
 extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
 extern unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu);
+extern void arch_scale_set_curr_freq(int cpu, unsigned long freq);
+extern void arch_scale_set_max_freq(int cpu, unsigned long freq);
 
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {

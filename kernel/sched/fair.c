@@ -32,6 +32,12 @@
 #include <linux/task_work.h>
 
 #include <trace/events/sched.h>
+#ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
+/* Include cpufreq header to add a notifier so that cpu frequency
+ * scaling can track the current CPU frequency
+ */
+#include <linux/cpufreq.h>
+#endif /* CONFIG_HMP_FREQUENCY_INVARIANT_SCALE */
 
 #include "sched.h"
 
@@ -4322,6 +4328,19 @@ static void sched_tg_dequeue_fair(struct rq *rq, struct task_struct *p)
 #define HMP_LB (0x4000)
 #define HMP_MAX_LOAD (NICE_0_LOAD - 1)
 
+#ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
+/*
+ * Returns the current capacity of cpu after applying both
+ * cpu and freq scaling.
+ */
+unsigned long capacity_curr_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity_orig *
+	       arch_scale_freq_capacity(NULL, cpu)
+	       >> SCHED_CAPACITY_SHIFT;
+}
+#endif
+
 static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluster_cpus, int target)
 {
 #define HMP_RESOLUTION_SCALING (4)
@@ -4350,35 +4369,8 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	/* Scale current CPU compute capacity in accordance with frequency */
 	clbs->cpu_capacity = HMP_MAX_LOAD;
 #ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
-	if (hmp_data.freqinvar_load_scale_enabled) {
-		cpu = cpumask_any(cluster_cpus);
-		if (freq_scale[cpu].throttling == 1)
-			clbs->cpu_capacity *= freq_scale[cpu].curr_scale;
-		else
-			clbs->cpu_capacity *= freq_scale[cpu].max;
-
-		clbs->cpu_capacity >>= SCHED_FREQSCALE_SHIFT;
-
-		if (clbs->cpu_capacity > HMP_MAX_LOAD)
-			clbs->cpu_capacity = HMP_MAX_LOAD;
-	}
-#elif defined(CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY)
-	if (topology_cpu_inv_power_en()) {
-		cpu = cpumask_any(cluster_cpus);
-		if (topology_cpu_throttling(cpu))
-			clbs->cpu_capacity *=
-			    (topology_cpu_capacity(cpu) << CPUPOWER_FREQSCALE_SHIFT)
-			    / (topology_max_cpu_capacity(cpu) + 1);
-		else
-			clbs->cpu_capacity *= topology_max_cpu_capacity(cpu);
-		clbs->cpu_capacity >>= CPUPOWER_FREQSCALE_SHIFT;
-
-		if (clbs->cpu_capacity > HMP_MAX_LOAD)
-			clbs->cpu_capacity = HMP_MAX_LOAD;
-
-	}
+	clbs->cpu_capacity = capacity_curr_of(target);
 #endif
-
 	/*
 	 * Calculate available CPU capacity
 	 * Calculate available task space
@@ -4445,19 +4437,6 @@ static void adj_threshold(struct clb_env *clbenv)
 		l_task = cpu_rq(lcpu)->cfs.h_nr_running;
 	}
 
-#ifdef CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY
-	if (bcpu < nr_cpu_ids)
-		b_cap = topology_cpu_capacity(bcpu);
-
-	if (lcpu < nr_cpu_ids)
-		l_cap = topology_cpu_capacity(lcpu);
-
-
-	b_nacap = POSITIVE(b_cap - b_load);
-	b_natask = POSITIVE(b_cap - ((b_task * b_load) >> TSKLD_SHIFT));
-	l_nacap = POSITIVE(l_cap - l_load);
-	l_natask = POSITIVE(l_cap - ((l_task * l_load) >> TSKLD_SHIFT));
-#else /* !CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY */
 	b_cap = clbenv->bstats.cpu_power;
 	l_cap = clbenv->lstats.cpu_power;
 	b_nacap = POSITIVE(clbenv->bstats.scaled_acap *
@@ -4466,8 +4445,6 @@ static void adj_threshold(struct clb_env *clbenv)
 						clbenv->bstats.cpu_power / (clbenv->lstats.cpu_power+1));
 	l_nacap = POSITIVE(clbenv->lstats.scaled_acap);
 	l_natask = POSITIVE(clbenv->bstats.scaled_atask);
-
-#endif /* CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY */
 
 	clbenv->bstats.threshold = HMP_MAX_LOAD - HMP_MAX_LOAD * b_nacap * b_natask /
 	    ((b_nacap + l_nacap) * (b_natask + l_natask) + 1);
@@ -10344,3 +10321,68 @@ __init void init_sched_fair_class(void)
 #endif
 
 }
+
+#ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
+static int cpufreq_callback(struct notifier_block *nb,
+				unsigned long val, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+	int cpu = freq->cpu;
+	struct cpumask *mask;
+	int id;
+
+	if (freq->flags & CPUFREQ_CONST_LOOPS)
+		return NOTIFY_OK;
+
+	if (val == CPUFREQ_PRECHANGE) {
+		if (sched_feat(SCHED_HMP)) {
+			mask = arch_cpu_is_big(cpu) ? &hmp_fast_cpu_mask : &hmp_slow_cpu_mask;
+			for_each_cpu(id, mask)
+				arch_scale_set_curr_freq(id, freq->new);
+		} else {
+			arch_scale_set_curr_freq(cpu, freq->new);
+		}
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_notifier = {
+	.notifier_call = cpufreq_callback,
+};
+
+static int cpufreq_policy_callback(struct notifier_block *nb,
+					unsigned long val, void *data)
+{
+	struct cpufreq_policy *policy = data;
+	int i;
+
+	if (val != CPUFREQ_NOTIFY)
+		return NOTIFY_OK;
+
+	for_each_cpu(i, policy->cpus) {
+		arch_scale_set_curr_freq(i, policy->cur);
+		arch_scale_set_max_freq(i, policy->max);
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_policy_notifier = {
+	.notifier_call = cpufreq_policy_callback,
+};
+
+static int __init register_cpufreq_notifier(void)
+{
+	int ret;
+
+	ret = cpufreq_register_notifier(&cpufreq_notifier,
+						CPUFREQ_TRANSITION_NOTIFIER);
+	if (ret)
+		return ret;
+
+	return cpufreq_register_notifier(&cpufreq_policy_notifier,
+						CPUFREQ_POLICY_NOTIFIER);
+}
+core_initcall(register_cpufreq_notifier);
+#endif
