@@ -10,11 +10,11 @@
 #include "internal.h"
 #include <mt_cpufreq.h>
 
-#define BOOT_STR_SIZE 128
+#define BOOT_STR_SIZE 64 /* Before: 128 */
 #ifdef CONFIG_MT_ENG_BUILD
-#define BOOT_LOG_NUM 64
+#define BOOT_LOG_NUM 128 /* Memory Usage Before: (128+8)*64 = 8704. Now: (64+8)*128 = 9216 */
 #else
-#define BOOT_LOG_NUM 48
+#define BOOT_LOG_NUM 96  /* Memory Usage Before: (128+8)*48 = 6528. Now: (64+8)*96 = 6912 */
 #endif
 
 struct boot_log_struct {
@@ -162,8 +162,14 @@ static int __init init_boot_prof(void)
 	if (!pe)
 		return -ENOMEM;
 	/* set_intact_mode = NULL; */
+	return 0;
+}
+
+static int __init init_bootprof_buf(void)
+{
 	mt_bootprof_switch(1);
 	return 0;
 }
 
+early_initcall(init_bootprof_buf);
 device_initcall(init_boot_prof);
