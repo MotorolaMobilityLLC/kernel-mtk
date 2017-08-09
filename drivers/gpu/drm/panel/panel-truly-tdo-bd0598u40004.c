@@ -692,28 +692,24 @@ static int truly_power_on(struct truly *ctx)
 	gpiod_set_value(ctx->reset_gpio, 1);
 	mdelay(100);
 
-	gpiod_set_value(ctx->reset_gpio, 0);
-	mdelay(100);
-
-	gpiod_set_value(ctx->reset_gpio, 1);
-	mdelay(100);
-
 	return 0;
 }
 
 static int truly_power_off(struct truly *ctx)
 {
 	gpiod_set_value(ctx->reset_gpio, 0);
-
 	return 0;
 }
 
 static int truly_disable(struct drm_panel *panel)
 {
 	struct truly *ctx = panel_to_truly(panel);
+	int ret = 0;
 
 	if (!ctx->enabled)
 		return 0;
+
+	ret = truly_power_off(ctx);
 
 	if (ctx->backlight) {
 		ctx->backlight->props.power = FB_BLANK_POWERDOWN;
@@ -722,7 +718,7 @@ static int truly_disable(struct drm_panel *panel)
 
 	ctx->enabled = false;
 
-	return 0;
+	return ret;
 }
 
 static int truly_unprepare(struct drm_panel *panel)
@@ -732,15 +728,15 @@ static int truly_unprepare(struct drm_panel *panel)
 	if (!ctx->prepared)
 		return 0;
 
-	truly_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	truly_dcs_write_seq_static(ctx, MIPI_DCS_SET_DISPLAY_OFF);
-	msleep(40);
+	truly_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
+	msleep(120);
 
 	truly_clear_error(ctx);
 
 	ctx->prepared = false;
 
-	return truly_power_off(ctx);
+	return 0;
 }
 
 static int truly_prepare(struct drm_panel *panel)
@@ -750,8 +746,6 @@ static int truly_prepare(struct drm_panel *panel)
 
 	if (ctx->prepared)
 		return ret;
-
-	ret = truly_power_on(ctx);
 
 	if (ret < 0)
 		return ret;
@@ -774,9 +768,12 @@ static int truly_prepare(struct drm_panel *panel)
 static int truly_enable(struct drm_panel *panel)
 {
 	struct truly *ctx = panel_to_truly(panel);
+	int ret = 0;
 
 	if (ctx->enabled)
 		return 0;
+
+	ret = truly_power_on(ctx);
 
 	if (ctx->backlight) {
 		ctx->backlight->props.power = FB_BLANK_UNBLANK;
@@ -785,7 +782,7 @@ static int truly_enable(struct drm_panel *panel)
 
 	ctx->enabled = true;
 
-	return 0;
+	return ret;
 }
 
 static struct drm_display_mode default_mode = {

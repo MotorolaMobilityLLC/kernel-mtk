@@ -154,6 +154,8 @@
 #define VM_CMD_EN		BIT(0)
 #define TS_VFP_EN		BIT(5)
 
+#define DSI_VM_CMDQ0		0x134
+
 #define DSI_STATE_DBG6		0x160
 
 #define DSI_CMDQ0		0x180
@@ -371,9 +373,6 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 	struct device *dev = dsi->dev;
 	int ret = 0;
 
-	if (++dsi->refcount != 1)
-		return 0;
-
 	if (dsi->poweron)
 		return ret;
 
@@ -408,7 +407,6 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 err_digital_clk:
 	clk_disable_unprepare(dsi->engine_clk);
 err_engine_clk:
-	dsi->refcount--;
 	return ret;
 }
 
@@ -737,37 +735,26 @@ static s32 mtk_dsi_wait_for_irq_timeout(struct mtk_dsi *dsi, u32 irq_bit, u32 ti
 	return -1;
 }
 
-static void mtk_dsi_wait_engine_idle(struct mtk_dsi *dsi)
+static void mtk_dsi_switch_to_cmd_mode(struct mtk_dsi *dsi)
 {
 	s32 ret = 0;
 
 	mtk_dsi_set_cmd_mode(dsi);
 
 	ret = mtk_dsi_wait_for_irq_timeout(dsi, DSI_INT_VM_DONE_FLAG, 500);
-	if (0 != ret)
+	if (0 != ret) {
 		dev_info(dsi->dev, "dsi wait engine idle timeout\n");
 
-	mtk_dsi_reset_engine(dsi);
-	mtk_dsi_stop(dsi);
+		mtk_dsi_enable(dsi);
+		mtk_dsi_reset_engine(dsi);
+		mtk_dsi_dump_registers(dsi);
+	}
 }
 
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
-	if (WARN_ON(dsi->refcount == 0))
-		return;
-
-	if (--dsi->refcount != 0)
-		return;
-
 	if (!dsi->poweron)
 		return;
-
-	mtk_dsi_wait_engine_idle(dsi);
-
-	mtk_dsi_lane0_ulp_mode_enter(dsi);
-	mtk_dsi_clk_ulp_mode_enter(dsi);
-
-	mtk_dsi_disable(dsi);
 
 	clk_disable_unprepare(dsi->engine_clk);
 	clk_disable_unprepare(dsi->digital_clk);
@@ -784,7 +771,12 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 	if (dsi->enabled)
 		return;
 
-	mtk_dsi_reset_all(dsi);
+	if (dsi->panel) {
+		if (drm_panel_enable(dsi->panel)) {
+			DRM_ERROR("failed to enable the panel\n");
+			return;
+		}
+	}
 
 	ret = mtk_dsi_poweron(dsi);
 	if (ret < 0) {
@@ -805,7 +797,7 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 
 	if (dsi->panel) {
 		if (drm_panel_prepare(dsi->panel)) {
-			DRM_ERROR("failed to setup the panel\n");
+			DRM_ERROR("failed to prepare the panel\n");
 			return;
 		}
 	}
@@ -823,12 +815,28 @@ static void mtk_output_dsi_disable(struct mtk_dsi *dsi)
 	if (!dsi->enabled)
 		return;
 
+	mtk_dsi_switch_to_cmd_mode(dsi);
+
+	if (dsi->panel) {
+		if (drm_panel_unprepare(dsi->panel)) {
+			DRM_ERROR("failed to prepare the panel\n");
+			return;
+		}
+	}
+
 	if (dsi->panel) {
 		if (drm_panel_disable(dsi->panel)) {
 			DRM_ERROR("failed to disable the panel\n");
 			return;
 		}
 	}
+
+	mtk_dsi_reset_engine(dsi);
+	mtk_dsi_lane0_ulp_mode_enter(dsi);
+	mtk_dsi_clk_ulp_mode_enter(dsi);
+
+	mtk_dsi_stop(dsi);
+	mtk_dsi_disable(dsi);
 
 	mtk_dsi_poweroff(dsi);
 
@@ -898,8 +906,6 @@ static void mtk_dsi_encoder_mode_set(
 	dsi->vm.vback_porch = adjusted->vtotal - adjusted->vsync_end;
 	dsi->vm.vfront_porch = adjusted->vsync_start - adjusted->vdisplay;
 	dsi->vm.vsync_len = adjusted->vsync_end - adjusted->vsync_start;
-
-	dsi->ssc_data = *adjusted->private;
 }
 
 static void mtk_dsi_encoder_disable(struct drm_encoder *encoder)
@@ -1053,6 +1059,8 @@ static int mtk_dsi_create_conn_enc(struct drm_device *drm, struct mtk_dsi *dsi)
 			return ret;
 		}
 	}
+
+	mtk_dsi_reset_all(dsi);
 
 	return 0;
 
@@ -1298,6 +1306,7 @@ static ssize_t mtk_dsi_host_write_cmd(struct mtk_dsi *dsi,
 	}
 
 	mtk_dsi_start(dsi);
+	mtk_dsi_wait_for_idle(dsi);
 
 	return 0;
 }
@@ -1394,6 +1403,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	int comp_id;
 	int ret;
 	struct regmap *regmap;
+	unsigned int ssc_range;
 
 	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
@@ -1442,6 +1452,11 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	}
 
 	dsi->mmsys_sw_rst_b = regmap;
+
+	ret = of_property_read_u32(dev->of_node, "mediatek,ssc-range", &ssc_range);
+	dsi->ssc_data = ssc_range;
+	dev_info(dev, "dsi ssc is %s, the amplitude is 0x%x\n",
+		 (0 == ssc_range)?"disable":"enable", ssc_range);
 
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
 	if (endpoint) {
