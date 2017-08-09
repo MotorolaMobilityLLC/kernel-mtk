@@ -712,7 +712,7 @@ static ssize_t mt6605_dev_write(struct file *filp, const char __user *buf,
 	while (1) {
 		if (copy_from_user
 		    (I2CDMAWriteBuf, &buf[(idx * MAX_BUFFER_SIZE)], count)) {
-			pr_debug("%s : failed to copy from user space.\n",
+			pr_debug("%s : failed to copy from user space...\n",
 				 __func__);
 			return -EFAULT;
 		}
