@@ -1014,12 +1014,12 @@ static s8 gtp_i2c_test(struct i2c_client *client)
 
 	u8 retry = 0;
 	s8 ret = -1;
-	u8 hw_info = 0;
+	u32 hw_info = 0;
 
 	GTP_DEBUG_FUNC();
 
 	while (retry++ < 5) {
-		ret = i2c_read_bytes(client, GTP_REG_HW_INFO, &hw_info, sizeof(hw_info));
+		ret = i2c_read_bytes(client, GTP_REG_HW_INFO, (u8 *)&hw_info, sizeof(hw_info));
 
 		if ((!ret) && (hw_info == 0x00900600))
 			return ret;
