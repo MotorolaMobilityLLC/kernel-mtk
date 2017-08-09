@@ -36,7 +36,6 @@
 /* 1: turn on adaptive fps cooler; 0: turn off */
 #define ADAPTIVE_FPS_COOLER              (1)
 
-#define FPS_DEBUGFS    (0)
 
 #define mtk_cooler_fps_dprintk_always(fmt, args...) \
 pr_debug("thermal/cooler/fps" fmt, ##args)
@@ -102,11 +101,12 @@ static struct thermal_cooling_device *cl_adp_fps_dev;
 static unsigned int cl_adp_fps_state;
 static int cl_adp_fps_limit = MAX_FPS_LIMIT;
 
-#define GPU_LOADING_THRESHOLD	70
+#define GPU_LOADING_THRESHOLD	60
 /* in percentage */
-#if FPS_DEBUGFS
+/* ====FPS_DEBUGFS=========
 static int gpu_loading_threshold = GPU_LOADING_THRESHOLD;
-#endif
+====FPS_DEBUGFS=========== */
+
 /* in percentage */
 static int fps_error_threshold = 10;
 /* in round */
@@ -347,10 +347,13 @@ static int adp_calc_fps_limit(void)
 	sma_tpcb = get_sma_val(tpcb_history, tpcb_sma_len);
 	tpcb_change = sma_tpcb - last_change_tpcb;
 
-	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d\n", __func__, sma_tpcb,  tpcb_change);
+	sma_fps = get_sma_val(fps_history, fps_sma_len);
 
-	if (fps_limit_always_on || sma_tpcb >= mtk_thermal_get_tpcb_target()) {
-		sma_fps = get_sma_val(fps_history, fps_sma_len);
+	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d, sma_fps = %d\n",
+		__func__, sma_tpcb,  tpcb_change, sma_fps);
+
+	if (fps_limit_always_on ||
+		(sma_fps < 40 && sma_tpcb >= mtk_thermal_get_tpcb_target())) {
 		if (is_system_too_busy() &&
 				fps_limit - sma_fps >= fps_limit * fps_error_threshold / 100) {
 				mtk_cooler_fps_dprintk("[%s] fps_limit = %d, sma_fps = %d\n",
@@ -506,7 +509,7 @@ static ssize_t clfps_level_write(struct file *file, const char __user *buffer,
 					&nr_fps_levels, &fps_level[0], &fps_level[1], &fps_level[2],
 					&fps_level[3], &fps_level[4], &fps_level[5])) {
 
-		if (nr_fps_levels > MAX_FPS_LEVELS) {
+		if ((nr_fps_levels > MAX_FPS_LEVELS) || (nr_fps_levels < 0)) {
 			mtk_cooler_fps_dprintk_always("[%s] nr_fps_levels: %d\n", __func__, nr_fps_levels);
 			ret = -EINVAL;
 			goto exit;
@@ -798,8 +801,7 @@ static const struct file_operations tm_fps_fops = {
 	.release = single_release,
 };
 
-/* =======================
-#if FPS_DEBUGFS
+/* ====FPS_DEBUGFS=========
 #define debugfs_entry(name) \
 do { \
 		dentry_f = debugfs_create_u32(#name, S_IWUSR | S_IRUGO, _d, &name); \
@@ -831,8 +833,7 @@ static void create_debugfs_entries(void)
 }
 
 #undef debugfs_entry
-#endif
-========================== */
+====FPS_DEBUGFS=========== */
 
 static int __init mtk_cooler_fps_init(void)
 {
@@ -897,9 +898,10 @@ static int __init mtk_cooler_fps_init(void)
 			if (entry)
 				proc_set_user(entry, uid, gid);
 		}
-#if FPS_DEBUGFS
+/* ====FPS_DEBUGFS=========
 		create_debugfs_entries();
-#endif
+====FPS_DEBUGFS=========== */
+
 
 #endif
 
