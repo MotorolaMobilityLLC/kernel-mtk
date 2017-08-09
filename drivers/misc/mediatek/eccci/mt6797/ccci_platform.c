@@ -21,6 +21,7 @@
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
 #endif
+
 #define TAG "plat"
 
 static int is_4g_memory_size_support(void)
@@ -56,6 +57,9 @@ static int is_4g_memory_size_support(void)
 #define MPU_REGION_ID_MD3_RW            18
 #define MPU_REGION_ID_AP                19
 #define MPU_REGION_ID_TOTAL_NUM         (MPU_REGION_ID_AP + 1)
+
+
+#ifdef ENABLE_EMI_PROTECTION
 /* ////////////////////////////////////////////////////////////// (D7(MDHW),       D6(MFG), \
 	D5(MD3),        D4(MM),        D3(Resv),      D2(CONN),      D1(MD1),       D0(AP)) */
 #define MPU_ACCESS_PERMISSON_CLEAR	SET_ACCESS_PERMISSON(NO_PROTECTION, NO_PROTECTION, \
@@ -117,6 +121,8 @@ static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_I
 { SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
 { NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN},
 }; /*=================================================================================================================*/
+
+#endif
 
 #define MPU_REGION_INFO_ID0    MPU_REGION_ID_MD1_ROM
 #define MPU_REGION_INFO_ID1    MPU_REGION_ID_MD1_MCURW_HWRO

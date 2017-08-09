@@ -23,6 +23,7 @@
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
+#include <mach/mt_pbm.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -348,7 +349,7 @@ void md_cd_check_md_DCM(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	md_cd_lock_modem_clock_src(1);
-	/* CCCI_INF_MSG(md->index, TAG, "MD DCM: 0x%X\n", *(unsigned int *)(md_ctrl->md_bus_status + 0x45C)); */
+	CCCI_INF_MSG(md->index, TAG, "MD DCM: 0x%X\n", *(unsigned int *)(md_ctrl->md_bus_status + 0x45C));
 	md_cd_lock_modem_clock_src(0);
 }
 
@@ -425,7 +426,6 @@ void md1_pll_on(struct ccci_modem *md)
 {
 	void __iomem *map_addr;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
 
 	map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
 
@@ -700,7 +700,6 @@ int md_cd_let_md_go(struct ccci_modem *md)
 int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
-	unsigned int reg_value;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */

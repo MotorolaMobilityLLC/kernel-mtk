@@ -33,6 +33,7 @@
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
+#include <mach/mt_pbm.h>
 
 #if defined(CLDMA_TRACE) || defined(CCCI_SKB_TRACE)
 #define CREATE_TRACE_POINTS
@@ -3176,6 +3177,9 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+#ifdef MD_UMOLY_EE_SUPPORT /* for bootup trace, umoly is in register instead of ccif */
+		struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+#endif
 
 	if (flag & DUMP_FLAG_CCIF_REG) {
 		CCCI_INF_MSG(md->index, TAG, "Dump CCIF REG\n");
@@ -3207,7 +3211,6 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		CCCI_INF_MSG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
 		ccci_mem_dump(md->index, dest_buff, length);
 #ifdef MD_UMOLY_EE_SUPPORT /* for bootup trace, umoly is in register instead of ccif */
-		struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 		/* 10. Bootup trace Reg*/
 		CCCI_INF_MSG(md->index, TAG, "Bootup trace Reg: PSCroe && L1 Core\n");
 		ccci_mem_dump(md->index, md_reg->md_bootup_0, MD_Bootup_DUMP_LEN0);
