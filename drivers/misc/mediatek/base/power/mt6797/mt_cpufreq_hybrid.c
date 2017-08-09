@@ -1185,7 +1185,10 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
 
 	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("PCM_REG15: %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	cspm_err("PCM_REG15: %u, SEMA3: 0x(%x %x %x)\n", cspm_read(CSPM_PCM_REG15_DATA),
+					   cspm_read(CSPM_SEMA3_M0),
+					   cspm_read(CSPM_SEMA3_M1),
+					   cspm_read(CSPM_SEMA3_M2));
 
 	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
 	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
@@ -1441,8 +1444,8 @@ static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 	f_max = opp_sw_to_fw(ceiling);
 	f_min = opp_sw_to_fw(floor);
 
-	cspm_dbgx(LIMIT, "(%u) cluster%u limit, ceiling = (%u, %u), floor = (%u, %u)\n",
-			 dvfsp->hw_gov_en, cluster, ceiling, f_max, floor, f_min);
+	cspm_dbgx(LIMIT, "(%u) cluster%u limit, sw = (%u - %u), fw = (%u - %u)\n",
+			 dvfsp->hw_gov_en, cluster, ceiling, floor, f_max, f_min);
 
 	swctrl = cspm_read(swctrl_reg[cluster]);
 	swctrl &= ~(SW_F_MAX_MASK | SW_F_MIN_MASK);
