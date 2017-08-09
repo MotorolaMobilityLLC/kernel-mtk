@@ -39,7 +39,11 @@ struct ppm_ipi_data {
 	unsigned char cmd;
 	unsigned char cluster_num;
 	union {
-		unsigned int ratio;
+		struct {
+			unsigned int efuse_val;
+			unsigned int ratio;
+			unsigned int dvfs_tbl_type;
+		} init;
 		unsigned char act_core[NR_PPM_CLUSTERS];
 		struct {
 			unsigned short min_pwr_bgt;
@@ -57,7 +61,7 @@ struct ppm_ipi_data {
 };
 
 #ifdef PPM_PMCU_SUPPORT
-extern void ppm_ipi_init(unsigned int ratio);
+extern void ppm_ipi_init(unsigned int efuse_val, unsigned int ratio);
 extern void ppm_ipi_update_act_core(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num);
 extern void ppm_ipi_update_limit(struct ppm_client_req req);

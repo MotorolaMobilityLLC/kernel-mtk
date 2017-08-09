@@ -11,45 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/cpu.h>
-#include <linux/cpumask.h>
-#include <linux/notifier.h>
-
 #include "mt_ppm_internal.h"
-
 
 #ifdef PPM_PMCU_SUPPORT
 #include "sspm_ipi.h"
 
-static int __cpuinit ppm_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-{
-	struct cpumask cluster_cpu, online_cpu;
-	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
-	int i;
-
-	switch (action & ~CPU_TASKS_FROZEN) {
-	case CPU_ONLINE:
-	case CPU_DEAD:
-		for_each_ppm_clusters(i) {
-			arch_get_cluster_cpus(&cluster_cpu, i);
-			cpumask_and(&online_cpu, &cluster_cpu, cpu_online_mask);
-
-			cl_status[i].core_num = cpumask_weight(&online_cpu);
-			cl_status[i].volt = 0;	/* don't care */
-			cl_status[i].freq_idx = 0; /* don't care */
-		}
-		ppm_ipi_update_act_core(cl_status, ppm_main_info.cluster_num);
-		break;
-	default:
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block __refdata ppm_cpu_notifier = {
-	.notifier_call = ppm_cpu_callback,
-};
 
 static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 {
@@ -61,7 +27,8 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 	case PPM_IPI_INIT:
 		data->cmd = cmd;
 
-		ppm_dbg(IPI, "ratio = %d\n", data->u.ratio);
+		ppm_dbg(IPI, "efuse_val = %d, ratio = %d, dvfs_tbl_type = %d\n",
+			data->u.init.efuse_val, data->u.init.ratio, data->u.init.dvfs_tbl_type);
 
 		/* ret = sspm_ipi_send_sync(IPI_ID_PPM, OPT, data, PPM_D_LEN, &ack_data); */
 		if (ret != 0)
@@ -118,13 +85,13 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 	return ret;
 }
 
-void ppm_ipi_init(unsigned int ratio)
+void ppm_ipi_init(unsigned int efuse_val, unsigned int ratio)
 {
 	struct ppm_ipi_data data;
 
-	data.u.ratio = ratio;
-
-	register_hotcpu_notifier(&ppm_cpu_notifier);
+	data.u.init.efuse_val = efuse_val;
+	data.u.init.ratio = ratio;
+	data.u.init.dvfs_tbl_type = (unsigned int)ppm_main_info.dvfs_tbl_type;
 
 	ppm_ipi_to_sspm_command(PPM_IPI_INIT, &data);
 }
@@ -161,6 +128,5 @@ void ppm_ipi_update_limit(struct ppm_client_req req)
 
 	ppm_ipi_to_sspm_command(PPM_IPI_UPDATE_LIMIT, &data);
 }
-
 #endif
 
