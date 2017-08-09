@@ -23,6 +23,7 @@
 
 #include <asm/uaccess.h>
 #include "scp_ipi.h"
+#include "scp_helper.h"
 /*
  * LOG
  */
@@ -54,25 +55,15 @@
 #define DVFS_STATUS_CMD_FIX		-6
 #define DVFS_STATUS_CMD_LIMITED		-7
 #define DVFS_STATUS_CMD_DISABLE		-8
-#if 0
+
 /* CLK_CTRL Registers */
-#define CLK_CTRL_BASE	0x100a4000
-#define CLK_SW_SEL          (CLK_CTRL_BASE + 0x00)  /* Clock Source Select */
-#define CLK_ENABLE          (CLK_CTRL_BASE + 0x04)  /* Clock Source Enable */
-#define CLK_DIV_SEL         (CLK_CTRL_BASE + 0x24)  /* Clock Divider Select */
-#define SLEEP_DEBUG         (CLK_CTRL_BASE + 0x28)  /* Sleep mode debug signals */
-#define CKSW_SEL_O          16
-#define CKSW_DIV_SEL_O      16
-#endif
-typedef unsigned int UINT32;
-#define READ_REGISTER_UINT32(reg) \
-	(*(volatile UINT32 * const)(reg))
+#define CLK_SW_SEL		(*(volatile unsigned int *)(scpreg.clkctrl + 0x0000))  /* Clock Source Select */
+#define CLK_ENABLE	(*(volatile unsigned int *)(scpreg.clkctrl + 0x0004))  /* Clock Source Enable */
+#define CLK_DIV_SEL	(*(volatile unsigned int *)(scpreg.clkctrl + 0x0024))  /* Clock Divider Select */
+#define SLEEP_DEBUG	(*(volatile unsigned int *)(scpreg.clkctrl + 0x0028))  /* Sleep mode debug signals */
+#define CKSW_SEL_O	16
+#define CKSW_DIV_SEL_O	16
 
-#define WRITE_REGISTER_UINT32(reg, val) \
-	((*(volatile UINT32 * const)(reg)) = (val))
-
-#define DRV_Reg32(x)		READ_REGISTER_UINT32(x)
-#define DRV_SetReg32(x, y)		WRITE_REGISTER_UINT32(x, READ_REGISTER_UINT32(x)|(y))
 typedef enum {
 	IN_DEBUG_IDLE = 0,
 	ENTERING_SLEEP,
@@ -97,6 +88,44 @@ struct mt_scp_dvfs_table_info {
 	bool scp_dvfs_sleep;
 	bool scp_dvfs_wake;
 };
+
+typedef enum {
+	CLK_SEL_SYS     = 0x0,
+	CLK_SEL_32K     = 0x1,
+	CLK_SEL_HIGH    = 0x2
+} clk_sel_val;
+
+enum {
+	CLK_SYS_EN_BIT = 0,
+	CLK_HIGH_EN_BIT = 1,
+	CLK_HIGH_CG_BIT = 2,
+	CLK_SYS_IRQ_EN_BIT = 16,
+	CLK_HIGH_IRQ_EN_BIT = 17,
+};
+/*#ifdef CONFIG_PINCTRL_MT6797*/
+
+typedef enum  {
+	CLK_UNKNOWN = 0,
+	CLK_112M,
+	CLK_224M,
+	CLK_354M,
+} clk_enum;
+
+typedef enum {
+	CLK_DIV_1 = 0,
+	CLK_DIV_2 = 1,
+	CLK_DIV_4  = 2,
+	CLK_DIV_8  = 3,
+	CLK_DIV_UNKNOWN,
+} clk_div_enum;
+
+typedef enum  {
+	SPM_VOLTAGE_800_D = 0,
+	SPM_VOLTAGE_800,
+	SPM_VOLTAGE_900,
+	SPM_VOLTAGE_1000,
+	SPM_VOLTAGE_TYPE_NUM,
+} voltage_enum;
 
 #if 0
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
@@ -215,6 +244,55 @@ void scp_state_handler(int id, void *data, unsigned int len)
 	unsigned int *scp_data = (unsigned int *)data;
 
 	scp_state = *scp_data;
+}
+
+
+unsigned int get_clk_sw_select(void)
+{
+	int i, clk_val = 0;
+
+	clk_val = CLK_SW_SEL >> CKSW_SEL_O;
+
+	for (i = 0; i < 3; i++) {
+		if (clk_val == 1 << i)
+			break;
+	}
+
+	return i;
+}
+
+unsigned int get_clk_div_select(void)
+{
+	int i, div_val = 0;
+
+	div_val = CLK_DIV_SEL >> CKSW_DIV_SEL_O;
+
+	for (i = 0; i < CLK_DIV_UNKNOWN; i++) {
+		if (div_val == 1 << i)
+			break;
+	}
+
+	return i;
+}
+
+clk_enum get_cur_clk(void)
+{
+	unsigned int cur_clk, cur_div, clk_enable;
+
+	cur_clk = get_clk_sw_select();
+	cur_div = get_clk_div_select();
+
+	clk_enable = CLK_ENABLE;
+	scp_dvfs_info("cur_clk = %d, cur_div = %d, clk_enable = 0x%x\n", cur_clk, cur_div, clk_enable);
+	if (cur_clk == CLK_SEL_SYS && cur_div == CLK_DIV_1 && (clk_enable & (1 << CLK_SYS_EN_BIT)) != 0)
+		return CLK_354M;
+	else if (cur_clk == CLK_SEL_HIGH && cur_div == CLK_DIV_1 && (clk_enable & (1 << CLK_HIGH_EN_BIT)) != 0)
+		return CLK_224M;
+	else if (cur_clk == CLK_SEL_HIGH && cur_div == CLK_DIV_2 && (clk_enable & (1 << CLK_HIGH_EN_BIT)) != 0)
+		return CLK_112M;
+
+	scp_dvfs_err("clk setting error (%d, %d)\n", cur_clk, cur_div);
+	return CLK_UNKNOWN;
 }
 
 #ifdef CONFIG_PROC_FS
@@ -337,6 +415,13 @@ static ssize_t mt_scp_dvfs_limited_opp_on_proc_write(struct file *file,
  *****************************/
 static int mt_scp_dvfs_cur_opp_proc_show(struct seq_file *m, void *v)
 {
+	clk_enum cur_clk = CLK_UNKNOWN;
+
+	cur_clk = get_cur_clk();
+	seq_printf(m, "current opp = %s\n",
+		(cur_clk == CLK_112M) ? "CLK 112M, Voltage = 0.8V" : (cur_clk == CLK_224M) ?
+		"CLK_224M, Voltage = 0.9V" : (cur_clk == CLK_354M) ? "CLK_354M, Volt = 1.0V"
+		: "state error");
 	return 0;
 }
 
@@ -446,6 +531,13 @@ static ssize_t mt_scp_dvfs_current_volt_proc_write(struct file *file,
  *****************************/
 static int mt_scp_dvfs_state_proc_show(struct seq_file *m, void *v)
 {
+	unsigned int scp_state;
+
+	scp_state = SLEEP_DEBUG;
+	seq_printf(m, "scp status is in %s\n",
+		(scp_state == IN_DEBUG_IDLE) ? "idle mode" : (scp_state == ENTERING_SLEEP) ? "enter sleep"
+		: (scp_state == IN_SLEEP) ? "sleep mode" : (scp_state == ENTERING_ACTIVE) ? "enter active"
+		: (scp_state == IN_ACTIVE) ? "active mode" : "none of state");
 	return 0;
 }
 
