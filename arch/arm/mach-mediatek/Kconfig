@@ -12,5 +12,6 @@ config MACH_MT2701
 	bool "MediaTek MT2701 SoCs support"
 	default n
 	select MFD_SYSCON
+	select MTK_BASE_POWER
 
 endif
