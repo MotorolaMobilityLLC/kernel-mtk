@@ -333,9 +333,6 @@ static void update_cpu_capacity(unsigned int cpu)
 	capacity /= max_cpu_perf;
 
 	set_capacity_scale(cpu, capacity);
-
-	printk(KERN_INFO "CPU%u: update cpu_capacity %lu\n",
-		cpu, arch_scale_cpu_capacity(NULL, cpu));
 }
 
 #else
