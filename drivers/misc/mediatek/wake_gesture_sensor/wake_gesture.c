@@ -496,24 +496,28 @@ static int wag_remove(struct platform_device *pdev)
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 static int wag_suspend(struct platform_device *dev, pm_message_t state)
 {
+#if 0
 	atomic_set(&(wag_context_obj->suspend), 1);
 	if (!atomic_read(&wag_context_obj->wake))	/* not wake up, disable in early suspend */
 		wag_real_enable(WAG_SUSPEND);
 
 	WAG_LOG(" wag_suspend ok------->hwm_obj->suspend=%d\n",
 		atomic_read(&(wag_context_obj->suspend)));
+	#endif
 	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
 static int wag_resume(struct platform_device *dev)
 {
+	#if 0
 	atomic_set(&(wag_context_obj->suspend), 0);
 	if (!atomic_read(&wag_context_obj->wake) && resume_enable_status)
 		wag_real_enable(WAG_RESUME);
 
 	WAG_LOG(" wag_resume ok------->hwm_obj->suspend=%d\n",
 		atomic_read(&(wag_context_obj->suspend)));
+	#endif
 	return 0;
 }
 #endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */

@@ -480,46 +480,54 @@ static int shk_remove(struct platform_device *pdev)
 
 static void shk_early_suspend(struct early_suspend *h)
 {
+#if 0
 	atomic_set(&(shk_context_obj->early_suspend), 1);
 	if (!atomic_read(&shk_context_obj->wake))	/* not wake up, disable in early suspend */
 		shk_real_enable(SHK_SUSPEND);
 
 	SHK_LOG(" shk_early_suspend ok------->hwm_obj->early_suspend=%d\n",
 		atomic_read(&(shk_context_obj->early_suspend)));
+	#endif
 }
 
 /*----------------------------------------------------------------------------*/
 static void shk_late_resume(struct early_suspend *h)
 {
+#if 0
 	atomic_set(&(shk_context_obj->early_suspend), 0);
 	if (!atomic_read(&shk_context_obj->wake) && resume_enable_status)
 		shk_real_enable(SHK_RESUME);
 
 	SHK_LOG(" shk_late_resume ok------->hwm_obj->early_suspend=%d\n",
 		atomic_read(&(shk_context_obj->early_suspend)));
+	#endif
 }
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 static int shk_suspend(struct platform_device *dev, pm_message_t state)
 {
+#if 0
 	atomic_set(&(shk_context_obj->suspend), 1);
 	if (!atomic_read(&shk_context_obj->wake))	/* not wake up, disable in early suspend */
 		shk_real_enable(SHK_SUSPEND);
 
 	SHK_LOG(" shk_early_suspend ok------->hwm_obj->suspend=%d\n",
 		atomic_read(&(shk_context_obj->suspend)));
+	#endif
 	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
 static int shk_resume(struct platform_device *dev)
 {
+#if 0
 	atomic_set(&(shk_context_obj->suspend), 0);
 	if (!atomic_read(&shk_context_obj->wake) && resume_enable_status)
 		shk_real_enable(SHK_RESUME);
 
 	SHK_LOG(" shk_resume ok------->hwm_obj->suspend=%d\n",
 		atomic_read(&(shk_context_obj->suspend)));
+	#endif
 	return 0;
 }
 #endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */

@@ -432,7 +432,7 @@ int glg_register_control_path(struct glg_control_path *ctl)
 	return 0;
 }
 
-static int glg_probe(struct platform_device *pdev)
+static int glg_probe(void)
 {
 	int err;
 
@@ -456,14 +456,6 @@ static int glg_probe(struct platform_device *pdev)
 		GLG_ERR("unable to register glg input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(glg_context_obj->early_suspend), 0);
-	glg_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    glg_context_obj->early_drv.suspend = glg_early_suspend,
-	    glg_context_obj->early_drv.resume = glg_late_resume,
-	    register_early_suspend(&glg_context_obj->early_drv);
-#endif				/* #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND) */
-
 	GLG_LOG("----glg_probe OK !!\n");
 	return 0;
 
@@ -479,7 +471,7 @@ exit_alloc_data_failed:
 	return err;
 }
 
-static int glg_remove(struct platform_device *pdev)
+static int glg_remove(void)
 {
 	int err = 0;
 
@@ -494,59 +486,11 @@ static int glg_remove(struct platform_device *pdev)
 	kfree(glg_context_obj);
 	return 0;
 }
-
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-static int glg_suspend(struct platform_device *dev, pm_message_t state)
-{
-	atomic_set(&(glg_context_obj->suspend), 1);
-	if (!atomic_read(&glg_context_obj->wake))
-		glg_real_enable(GLG_SUSPEND);
-
-	GLG_LOG(" glg_suspend ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(glg_context_obj->suspend)));
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int glg_resume(struct platform_device *dev)
-{
-	atomic_set(&(glg_context_obj->suspend), 0);
-	if (!atomic_read(&glg_context_obj->wake) && resume_enable_status)
-		glg_real_enable(GLG_RESUME);
-
-	GLG_LOG(" glg_resume ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(glg_context_obj->suspend)));
-	return 0;
-}
-#endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_glg_pl_of_match[] = {
-	{.compatible = "mediatek,m_glg_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver glg_driver = {
-	.probe = glg_probe,
-	.remove = glg_remove,
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-	.suspend = glg_suspend,
-	.resume = glg_resume,
-#endif
-	.driver = {
-		   .name = GLG_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_glg_pl_of_match,
-#endif
-		   }
-};
-
 static int __init glg_init(void)
 {
 	GLG_FUN();
 
-	if (platform_driver_register(&glg_driver)) {
+	if (glg_probe()) {
 		GLG_ERR("failed to register glg driver\n");
 		return -ENODEV;
 	}
@@ -556,7 +500,7 @@ static int __init glg_init(void)
 
 static void __exit glg_exit(void)
 {
-	platform_driver_unregister(&glg_driver);
+	glg_remove();
 	platform_driver_unregister(&glance_gesture_driver);
 }
 

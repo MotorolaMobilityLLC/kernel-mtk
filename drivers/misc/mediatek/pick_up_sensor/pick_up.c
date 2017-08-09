@@ -418,7 +418,7 @@ int pkup_register_control_path(struct pkup_control_path *ctl)
 	return 0;
 }
 
-static int pkup_probe(struct platform_device *pdev)
+static int pkup_probe(void)
 {
 	int err;
 
@@ -442,13 +442,6 @@ static int pkup_probe(struct platform_device *pdev)
 		PKUP_ERR("unable to register pkup input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(pkup_context_obj->early_suspend), 0);
-	pkup_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    pkup_context_obj->early_drv.suspend = pkup_early_suspend,
-	    pkup_context_obj->early_drv.resume = pkup_late_resume,
-	    register_early_suspend(&pkup_context_obj->early_drv);
-#endif				/* #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND) */
 
 	PKUP_LOG("----pkup_probe OK !!\n");
 	return 0;
@@ -466,7 +459,7 @@ exit_alloc_data_failed:
 	return err;
 }
 
-static int pkup_remove(struct platform_device *pdev)
+static int pkup_remove(void)
 {
 	int err = 0;
 
@@ -481,61 +474,11 @@ static int pkup_remove(struct platform_device *pdev)
 	kfree(pkup_context_obj);
 	return 0;
 }
-
-
-
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-static int pkup_suspend(struct platform_device *dev, pm_message_t state)
-{
-	atomic_set(&(pkup_context_obj->suspend), 1);
-	if (!atomic_read(&pkup_context_obj->wake))/* not wake up, disable in early suspend */
-		pkup_real_enable(PKUP_SUSPEND);
-
-	PKUP_LOG(" pkup_suspend ok------->hwm_obj->suspend=%d\n",
-		 atomic_read(&(pkup_context_obj->suspend)));
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int pkup_resume(struct platform_device *dev)
-{
-	atomic_set(&(pkup_context_obj->suspend), 0);
-	if (!atomic_read(&pkup_context_obj->wake) && resume_enable_status)
-		pkup_real_enable(PKUP_RESUME);
-
-	PKUP_LOG(" pkup_resume ok------->hwm_obj->suspend=%d\n",
-		 atomic_read(&(pkup_context_obj->suspend)));
-	return 0;
-}
-#endif	/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_pkup_pl_of_match[] = {
-	{.compatible = "mediatek,m_pkup_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver pkup_driver = {
-	.probe = pkup_probe,
-	.remove = pkup_remove,
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-	.suspend = pkup_suspend,
-	.resume = pkup_resume,
-#endif
-	.driver = {
-		   .name = PKUP_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_pkup_pl_of_match,
-#endif
-		   }
-};
-
 static int __init pkup_init(void)
 {
 	PKUP_FUN();
 
-	if (platform_driver_register(&pkup_driver)) {
+	if (pkup_probe()) {
 		PKUP_ERR("failed to register pkup driver\n");
 		return -ENODEV;
 	}
@@ -545,7 +488,7 @@ static int __init pkup_init(void)
 
 static void __exit pkup_exit(void)
 {
-	platform_driver_unregister(&pkup_driver);
+	pkup_remove();
 	platform_driver_unregister(&pick_up_driver);
 }
 

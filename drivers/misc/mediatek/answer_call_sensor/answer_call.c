@@ -435,7 +435,7 @@ int ancall_register_control_path(struct ancall_control_path *ctl)
 	return 0;
 }
 
-static int ancall_probe(struct platform_device *pdev)
+static int ancall_probe(void)
 {
 	int err;
 
@@ -459,13 +459,6 @@ static int ancall_probe(struct platform_device *pdev)
 		ANCALL_ERR("unable to register ancall input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(ancall_context_obj->early_suspend), 0);
-	ancall_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    ancall_context_obj->early_drv.suspend = ancall_early_suspend,
-	    ancall_context_obj->early_drv.resume = ancall_late_resume,
-	    register_early_suspend(&ancall_context_obj->early_drv);
-#endif				/* #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND) */
 
 	ANCALL_LOG("----ancall_probe OK !!\n");
 	return 0;
@@ -482,7 +475,7 @@ exit_alloc_data_failed:
 	return err;
 }
 
-static int ancall_remove(struct platform_device *pdev)
+static int ancall_remove(void)
 {
 	int err = 0;
 
@@ -497,59 +490,11 @@ static int ancall_remove(struct platform_device *pdev)
 	kfree(ancall_context_obj);
 	return 0;
 }
-
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-static int ancall_suspend(struct platform_device *dev, pm_message_t state)
-{
-	atomic_set(&(ancall_context_obj->suspend), 1);
-	if (!atomic_read(&ancall_context_obj->wake))
-		ancall_real_enable(ANSWER_CALL_SUSPEND);
-
-	ANCALL_LOG(" ancall_suspend ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(ancall_context_obj->suspend)));
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int ancall_resume(struct platform_device *dev)
-{
-	atomic_set(&(ancall_context_obj->suspend), 0);
-	if (!atomic_read(&ancall_context_obj->wake) && resume_enable_status)
-		ancall_real_enable(ANSWER_CALL_RESUME);
-
-	ANCALL_LOG(" ancall_resume ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(ancall_context_obj->suspend)));
-	return 0;
-}
-#endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_ancall_pl_of_match[] = {
-	{.compatible = "mediatek,m_ancall_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver ancall_driver = {
-	.probe = ancall_probe,
-	.remove = ancall_remove,
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-	.suspend = ancall_suspend,
-	.resume = ancall_resume,
-#endif
-	.driver = {
-		   .name = ANSWERCALL_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_ancall_pl_of_match,
-#endif
-		   }
-};
-
 static int __init ancall_init(void)
 {
 	ANCALL_FUN();
 
-	if (platform_driver_register(&ancall_driver)) {
+	if (ancall_probe()) {
 		ANCALL_ERR("failed to register ancall driver\n");
 		return -ENODEV;
 	}
@@ -559,7 +504,7 @@ static int __init ancall_init(void)
 
 static void __exit ancall_exit(void)
 {
-	platform_driver_unregister(&ancall_driver);
+	ancall_remove();
 	platform_driver_unregister(&answer_call_driver);
 }
 

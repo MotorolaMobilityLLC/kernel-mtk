@@ -415,7 +415,7 @@ int tilt_register_control_path(struct tilt_control_path *ctl)
 	return 0;
 }
 
-static int tilt_probe(struct platform_device *pdev)
+static int tilt_probe(void)
 {
 	int err;
 
@@ -438,14 +438,6 @@ static int tilt_probe(struct platform_device *pdev)
 		TILT_ERR("unable to register tilt input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(tilt_context_obj->early_suspend), 0);
-	tilt_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    tilt_context_obj->early_drv.suspend = tilt_early_suspend,
-	    tilt_context_obj->early_drv.resume = tilt_late_resume,
-	    register_early_suspend(&tilt_context_obj->early_drv);
-#endif				/* #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND) */
-
 	TILT_LOG("----tilt_probe OK !!\n");
 	return 0;
 
@@ -462,7 +454,7 @@ exit_alloc_data_failed:
 	return err;
 }
 
-static int tilt_remove(struct platform_device *pdev)
+static int tilt_remove(void)
 {
 	int err = 0;
 
@@ -477,60 +469,11 @@ static int tilt_remove(struct platform_device *pdev)
 	kfree(tilt_context_obj);
 	return 0;
 }
-
-
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-static int tilt_suspend(struct platform_device *dev, pm_message_t state)
-{
-	atomic_set(&(tilt_context_obj->suspend), 1);
-	if (!atomic_read(&tilt_context_obj->wake))	/* not wake up, disable in early suspend */
-		tilt_real_enable(TILT_SUSPEND);
-
-	TILT_LOG(" tilt_suspend ok------->hwm_obj->suspend=%d\n",
-		 atomic_read(&(tilt_context_obj->suspend)));
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int tilt_resume(struct platform_device *dev)
-{
-	atomic_set(&(tilt_context_obj->suspend), 0);
-	if (!atomic_read(&tilt_context_obj->wake) && resume_enable_status)
-		tilt_real_enable(TILT_RESUME);
-
-	TILT_LOG(" tilt_resume ok------->hwm_obj->suspend=%d\n",
-		 atomic_read(&(tilt_context_obj->suspend)));
-	return 0;
-}
-#endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_tilt_pl_of_match[] = {
-	{.compatible = "mediatek,m_tilt_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver tilt_driver = {
-	.probe = tilt_probe,
-	.remove = tilt_remove,
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-	.suspend = tilt_suspend,
-	.resume = tilt_resume,
-#endif
-	.driver = {
-		   .name = TILT_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_tilt_pl_of_match,
-#endif
-		   }
-};
-
 static int __init tilt_init(void)
 {
 	TILT_FUN();
 
-	if (platform_driver_register(&tilt_driver)) {
+	if (tilt_probe()) {
 		TILT_ERR("failed to register tilt driver\n");
 		return -ENODEV;
 	}
@@ -540,7 +483,7 @@ static int __init tilt_init(void)
 
 static void __exit tilt_exit(void)
 {
-	platform_driver_unregister(&tilt_driver);
+	tilt_remove();
 	platform_driver_unregister(&tilt_detector_driver);
 }
 
