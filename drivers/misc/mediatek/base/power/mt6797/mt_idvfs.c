@@ -575,6 +575,11 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	}
 #endif
 
+	/* initial clk div = 1 */
+	/* 01001: 3/4, 10001:4/5, 11001: 5/6, 11100:2/6, 01000: 4/4 */
+	mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x8);
+	udelay(2);
+
 #if IDVFS_CCF_I2C6
 	/* I2CV6 (APPM I2C) clock CCF control enable */
 	if (clk_enable(idvfs_i2c6_clk)) {
@@ -629,20 +634,14 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 
 	/* idvfs_ver("iDVFS Enable OCP/OTP channel.\n"); */
 	/* cfg or init OCP then enable OCP channel */
-	if (idvfs_init_opt.ocp_endis) {
-		BigOCPConfig(300, 10000);
-		BigOCPSetTarget(3, 127000);
-		BigOCPEnable(3, 1, 625, 0);
-		BigiDVFSChannel(1, 1);
-		/* Cluster2_OCP_ON(); */
-	}
+	if (idvfs_init_opt.ocp_endis)
+		Cluster2_OCP_ON();
 
 	/* cfg or init OTP then enable OTP channel */
-	if (idvfs_init_opt.otp_endis) {
+	/* mark channel enable, otp will chk itself */
+	/* BigiDVFSChannel(2, 1); */
+	if (idvfs_init_opt.otp_endis)
 		BigOTPEnable();
-		/* mark channel enable, otp will chk itself */
-		/* BigiDVFSChannel(2, 1); */
-	}
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
 	idvfs_init_opt.idvfs_status = 1;
@@ -720,11 +719,10 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* disable OCP channel */
 	/* enable depend on .ocp_endis, but desable by .status
 	   due to adb command direct disable .ocp_endis ctrl */
-	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status) {
-		BigiDVFSChannel(1, 0);
-		BigOCPDisable();
-		/* Cluster2_OCP_FF(); */
-	}
+	/* BigiDVFSChannel(1, 0); */
+	/* BigOCPDisable(); */
+	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status)
+		Cluster2_OCP_OFF();
 
 	/* disable OTP channel */
 	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status) {
@@ -908,7 +906,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		AEE_RR_REC(idvfs_swavg_curr_pct_x100, (GetDecInterger((((SEC_BIGIDVFS_READ(0x102224cc) >> 16)
 			& 0x7fff) << 4))));
 #else
-	if (Freqpct_x100 > 2000)
+	if (Freqpct_x100 >= 2000)
 		mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x8);
 #endif
 
