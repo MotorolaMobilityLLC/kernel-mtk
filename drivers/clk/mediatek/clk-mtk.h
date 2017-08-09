@@ -151,6 +151,11 @@ struct clk_onecell_data *mtk_alloc_clk_data(unsigned int clk_num);
 
 #define HAVE_RST_BAR	BIT(0)
 
+struct mtk_pll_div_table {
+	u32 div;
+	unsigned long freq;
+};
+
 struct mtk_pll_data {
 	int id;
 	const char *name;
@@ -167,7 +172,7 @@ struct mtk_pll_data {
 	int pcwbits;
 	uint32_t pcw_reg;
 	int pcw_shift;
-	const unsigned long *div_rate;
+	const struct mtk_pll_div_table *div_table;
 };
 
 void mtk_clk_register_plls(struct device_node *node,
