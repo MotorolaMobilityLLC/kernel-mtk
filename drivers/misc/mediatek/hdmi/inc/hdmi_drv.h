@@ -115,7 +115,8 @@ enum HDMI_CABLE_TYPE {
 	MHL_CABLE,
 	MHL_SMB_CABLE,
 	MHL_2_CABLE,		/* /MHL 2.0 */
-	MHL_3D_GLASSES
+	MHL_3D_GLASSES,
+	SLIMPORT_CABLE
 };
 
 enum HDMI_3D_FORMAT_ENUM {
@@ -329,6 +330,7 @@ struct HDMI_DRIVER {
 /* --------------------------------------------------------------------------- */
 
 const struct HDMI_DRIVER *HDMI_GetDriver(void);
+const struct HDMI_DRIVER *SlimPort_GetDriver(void);
 void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);
 extern int	chip_device_id;
 extern bool need_reset_usb_switch;

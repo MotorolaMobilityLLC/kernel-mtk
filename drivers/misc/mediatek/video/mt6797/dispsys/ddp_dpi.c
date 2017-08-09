@@ -228,12 +228,26 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #endif
 			break;
 		}
+/*
 	case DPI_CLK_1080p:
 		{
 #if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;	        /*296M*/
+			clksrc = 1;
 #else
+			DDPERR("[DPI] DPI_CLK_1080p, TVDPLL_D2\n");
 			clksrc = TVDPLL_D2;
+#endif
+			break;
+		}
+*/
+		case DPI_CLK_1080p:
+		{
+#if defined(CONFIG_MTK_LEGACY)
+			clksrc = 1;
+#else
+			clksrc = TVDPLL_D4;
+			prediv = 0x800B6C4E;
+			con0 =  0xC0000101;
 #endif
 			break;
 		}

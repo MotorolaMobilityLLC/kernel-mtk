@@ -45,7 +45,11 @@ int hdmi_factory_mode_init(void)
 {
 	EXTD_FACTORY_FUNC();
 
+#if 1
 	hdmi_tx_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
+#else
+	hdmi_tx_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
+#endif
 	if (NULL == hdmi_tx_drv) {
 		EXTD_FACTORY_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
 		return -1;

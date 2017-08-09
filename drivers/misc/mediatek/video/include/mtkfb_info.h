@@ -17,7 +17,8 @@ extern "C" {
 		HDMI = 7,
 		HDMI_SMARTBOOK,
 		MHL,
-		DISPIF_TYPE_EPD
+		DISPIF_TYPE_EPD,
+		SLIMPORT
 	} MTKFB_DISPIF_TYPE;
 
 	typedef enum {
