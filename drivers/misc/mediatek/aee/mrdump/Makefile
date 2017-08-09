@@ -1,5 +1,5 @@
 obj-$(CONFIG_MTK_AEE_MRDUMP) += mrdump.o
-mrdump-y := mrdump_full.o
+mrdump-y := mrdump_full.o mrdump_setup.o
 obj-$(CONFIG_ARM) += mrdump_arm.o
 obj-$(CONFIG_ARM64) += mrdump_arm64.o
 

@@ -36,3 +36,9 @@ config MTK_AEE_POWERKEY_HANG_DETECT
 	  designed by MTK, which is a debug feature for detect device hang.
 	  When the device hang and can detect by this mechanism, it will notice
 	  user space aee and get some debug information.
+
+config MTK_AEE_MRDUMP
+	bool "MT-RAMDUMP support"
+	default n
+	help
+	  MT-RAMDUMP support full system ramdump when kernel occur.
