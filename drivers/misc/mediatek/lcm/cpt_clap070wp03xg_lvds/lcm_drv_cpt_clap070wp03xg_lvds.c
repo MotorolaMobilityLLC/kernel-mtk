@@ -16,6 +16,8 @@
 #include <linux/clk.h>
 #endif
 
+#include "cpt_clap070wp03xg_lvds.h"
+
 static struct regulator *lcm_vgp;
 
 /* get(vgp6) LDO supply */
@@ -110,6 +112,7 @@ static int lcm_probe(struct device *dev)
 {
 	lcm_get_vgp_supply(dev);
 	lcm_vgp_supply_enable();
+	lcm_get_gpio();
 	return 0;
 }
 
