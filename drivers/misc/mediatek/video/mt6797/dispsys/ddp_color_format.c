@@ -201,37 +201,3 @@ int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FM
 	}
 	return ret;
 }
-
-unsigned int ufmt_get_rgb(unsigned int fmt)
-{
-	return UFMT_GET_RGB(fmt);
-}
-unsigned int ufmt_get_bpp(unsigned int fmt)
-{
-	return UFMT_GET_bpp(fmt);
-}
-unsigned int ufmt_get_block(unsigned int fmt)
-{
-	return UFMT_GET_BLOCK(fmt);
-}
-unsigned int ufmt_get_vdo(unsigned int fmt)
-{
-	return UFMT_GET_VDO(fmt);
-}
-unsigned int ufmt_get_format(unsigned int fmt)
-{
-	return UFMT_GET_FORMAT(fmt);
-}
-unsigned int ufmt_get_swap(unsigned int fmt)
-{
-	return UFMT_GET_SWAP(fmt);
-}
-unsigned int ufmt_get_id(unsigned int fmt)
-{
-	return UFMT_GET_ID(fmt);
-}
-unsigned int ufmt_get_Bpp(unsigned int fmt)
-{
-	return UFMT_GET_Bpp(fmt);
-}
-

@@ -80,7 +80,7 @@ typedef struct {
 	spinlock_t node_lock;
 } disp_node_struct;
 
-static struct platform_device mydev;
+
 static struct dispsys_device *dispsys_dev;
 unsigned int dispsys_irq[DISP_REG_NUM] = { 0 };
 volatile unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
@@ -88,7 +88,7 @@ volatile unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
 volatile unsigned long mipi_tx0_reg = 0;
 volatile unsigned long mipi_tx1_reg = 0;
 volatile unsigned long dsi_reg_va = 0;
-/* from DTS, should be synced with DTS */
+/* from DTS, for debug */
 unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x14000000,	/* CONFIG*/
 	0x1400b000,	/* OVL0 */
@@ -100,7 +100,6 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x14014000,	/* CCORR*/
 	0x14015000,	/* AAL*/
 	0x14016000,	/* GAMMA*/
-	0x14017000,	/* OD */
 	0x14018000,	/* DITHER*/
 	0x14019000,	/* UFOE */
 /*	0x1401a000,	// DSC */
@@ -537,7 +536,7 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	case DISP_REG_OVL1_2L:
 	case DISP_REG_RDMA0:
 	case DISP_REG_RDMA1:
-	/*case DISP_REG_WDMA0:*/
+	case DISP_REG_WDMA0:
 	case DISP_REG_WDMA1:
 	case DISP_REG_MUTEX:
 	case DISP_REG_DSI0:
@@ -556,13 +555,6 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	case DISP_REG_MIPI0:
 	case DISP_REG_MIPI1:
 		return 0;
-
-	case DISP_REG_WDMA0:
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-		return 0;
-#else
-		return 1;
-#endif
 	default:
 		return 0;
 	}
@@ -591,12 +583,6 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 		break;
 	case M4U_PORT_DISP_WDMA1:
 		module = DISP_MODULE_WDMA1;
-		break;
-	case M4U_PORT_DISP_2L_OVL0:
-		module = DISP_MODULE_OVL0_2L;
-		break;
-	case M4U_PORT_DISP_2L_OVL1:
-		module = DISP_MODULE_OVL1_2L;
 		break;
 	default:
 		DDPERR("unknown port=%d\n", port);
@@ -633,65 +619,12 @@ static const struct file_operations disp_fops = {
 static int disp_probe(struct platform_device *pdev)
 {
 	struct class_device;
+	int ret;
 	int i;
 	static unsigned int disp_probe_cnt;
 
 	if (disp_probe_cnt != 0)
 		return 0;
-
-	/* save pdev for disp_probe_1 */
-	memcpy(&mydev, pdev, sizeof(mydev));
-
-	if (dispsys_dev) {
-		DDPERR("%s: dispsys_dev=0x%p\n", __func__, dispsys_dev);
-		BUG();
-	}
-
-	dispsys_dev = kmalloc(sizeof(struct dispsys_device), GFP_KERNEL);
-	if (!dispsys_dev) {
-		DDPERR("Unable to allocate dispsys_dev\n");
-		return -ENOMEM;
-	}
-
-#ifndef CONFIG_MTK_CLKMGR
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		DDPMSG("DISPSYS get clock %s\n", disp_clk_name[i]);
-		dispsys_dev->disp_clk[i] = devm_clk_get(&pdev->dev, disp_clk_name[i]);
-		if (IS_ERR(dispsys_dev->disp_clk[i]))
-			DDPERR("%s:%d, DISPSYS get %d,%s clock error!!!\n",
-				   __FILE__, __LINE__, i, disp_clk_name[i]);
-		else {
-				if (!ddp_set_clk_handle(dispsys_dev->disp_clk[i], i)) {
-					switch (i) {
-					case MUX_MM:
-					case MM_VENCPLL:
-					case SYSPLL2_D2:
-						break; /* no need prepare_enable here */
-					case DISP0_SMI_COMMON:
-					case DISP0_SMI_LARB0:
-					case DISP_MTCMOS_CLK:
-						ddp_clk_prepare_enable(i);
-						break;
-					default:
-						ddp_clk_prepare(i);
-						break;
-					}
-				}
-		}
-	}
-#endif /* CONFIG_MTK_CLKMGR */
-	disp_probe_cnt++;
-
-	return 0;
-}
-
-static int __init disp_probe_1(void)
-{
-	struct class_device;
-	int ret;
-	int i;
-	struct platform_device *pdev = &mydev;
-
 
 	disp_helper_option_init();
 
@@ -708,9 +641,15 @@ static int __init disp_probe_1(void)
 	/* secure video path implementation: a physical address is allocated to place a handle for decryption buffer. */
 	init_tplay_handle(&(pdev->dev));	/* non-zero value for valid VA */
 #endif
-	if (!dispsys_dev) {
-		DDPERR("%s: dispsys_dev=NULL\n", __func__);
+	if (dispsys_dev) {
+		DDPERR("%s: dispsys_dev=0x%p\n", __func__, dispsys_dev);
 		BUG();
+	}
+
+	dispsys_dev = kmalloc(sizeof(struct dispsys_device), GFP_KERNEL);
+	if (!dispsys_dev) {
+		DDPERR("Unable to allocate dispsys_dev\n");
+		return -ENOMEM;
 	}
 
 	dispsys_dev->dev = &pdev->dev;
@@ -746,6 +685,20 @@ static int __init disp_probe_1(void)
 #ifndef DISP_NO_DPI
 	DPI_REG = (struct DPI_REGS *)dispsys_reg[DISP_REG_DPI0];
 #endif
+#ifndef CONFIG_MTK_CLKMGR
+	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+		DDPMSG("DISPSYS get clock %s\n", disp_clk_name[i]);
+		dispsys_dev->disp_clk[i] = devm_clk_get(&pdev->dev, disp_clk_name[i]);
+		if (IS_ERR(dispsys_dev->disp_clk[i]))
+			DDPERR("%s:%d, DISPSYS get %d,%s clock error!!!\n",
+				   __FILE__, __LINE__, i, disp_clk_name[i]);
+		else {
+				if (!ddp_set_clk_handle(dispsys_dev->disp_clk[i], i))
+					if (i != DISP_MTCMOS_CLK)
+						ddp_clk_prepare(i);
+		}
+	}
+#endif /* CONFIG_MTK_CLKMGR */
 	/* //// power on MMSYS for early porting */
 #ifdef CONFIG_MTK_FPGA
 	pr_debug("[DISP Probe] power MMSYS:0x%lx,0x%lx\n", DISP_REG_CONFIG_MMSYS_CG_CLR0,
@@ -786,8 +739,6 @@ static int __init disp_probe_1(void)
 	m4u_register_fault_callback(M4U_PORT_DISP_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_RDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 
 
 	DDPMSG("dispsys probe done.\n");
@@ -873,8 +824,7 @@ static void __exit disp_exit(void)
 }
 
 #ifndef MTK_FB_DO_NOTHING
-arch_initcall(disp_init);
-module_init(disp_probe_1);
+module_init(disp_init);
 module_exit(disp_exit);
 #endif
 MODULE_AUTHOR("Tzu-Meng, Chung <Tzu-Meng.Chung@mediatek.com>");

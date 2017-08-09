@@ -46,14 +46,6 @@
 
 #define UFMT_GET_Bpp(fmt)		(UFMT_GET_bpp(fmt)/8)
 
-unsigned int ufmt_get_rgb(unsigned int fmt);
-unsigned int ufmt_get_bpp(unsigned int fmt);
-unsigned int ufmt_get_block(unsigned int fmt);
-unsigned int ufmt_get_vdo(unsigned int fmt);
-unsigned int ufmt_get_format(unsigned int fmt);
-unsigned int ufmt_get_swap(unsigned int fmt);
-unsigned int ufmt_get_id(unsigned int fmt);
-unsigned int ufmt_get_Bpp(unsigned int fmt);
 
 enum UNIFIED_COLOR_FMT {
 	UFMT_UNKNOWN = 0,
@@ -207,19 +199,9 @@ typedef struct {
 	unsigned int is_wrot_sram;
 	unsigned int mmsys_clk;
 	unsigned int hrt_num;
-	unsigned int ext_hrt_num;
 	unsigned int is_display_idle;
 	unsigned int is_dc;
-	unsigned int hrt_magicnum; /* by resolution */
-	unsigned int ext_hrt_magicnum; /* by resolution */
-	unsigned int dst_width;
-	unsigned int dst_height;
-	unsigned int ext_dst_width;
-	unsigned int ext_dst_height;
-	unsigned int fps;
-	unsigned int is_one_layer;
-	unsigned int rdma_width;
-	unsigned int rdma_height;
+	unsigned int hrt_magicnum;
 } golden_setting_context;
 
 typedef struct {
@@ -239,7 +221,6 @@ typedef struct {
 	bool dst_dirty;
 	int ovl_layer_dirty;	/*each bit represent one layer */
 	int ovl_layer_scanned;	/*each bit reprsent one layer, used for ovl engines */
-	int overlap_layer_num;
 	OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
 	RDMA_CONFIG_STRUCT rdma_config;
 	WDMA_CONFIG_STRUCT wdma_config;

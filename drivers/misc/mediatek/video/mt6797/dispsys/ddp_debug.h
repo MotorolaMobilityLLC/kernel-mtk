@@ -5,14 +5,6 @@
 #include "ddp_mmp.h"
 #include "ddp_dump.h"
 
-#define LP_CUST_DISABLE (0)
-#define LOW_POWER_MODE (1)
-#define JUST_MAKE_MODE (2)
-#define PERFORMANC_MODE (3)
-
-int get_lp_cust_mode(void);
-void backup_vfp_for_lp_cust(unsigned int vfp);
-unsigned int get_backup_vfp(void);
 void ddp_debug_init(void);
 void ddp_debug_exit(void);
 

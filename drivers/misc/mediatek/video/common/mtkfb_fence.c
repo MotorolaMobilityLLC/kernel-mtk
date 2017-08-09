@@ -69,23 +69,6 @@ static DEFINE_MUTEX(fence_buffer_mutex);
 
 disp_session_sync_info _disp_fence_context[MAX_SESSION_COUNT];
 
-#if 0 /* defined but not used */
-static const char *session_mode_spy(unsigned int mode)
-{
-	switch (mode) {
-	case DISP_SESSION_DIRECT_LINK_MODE:
-		return "DIRECT_LINK";
-	case DISP_SESSION_DIRECT_LINK_MIRROR_MODE:
-		return "DIRECT_LINK_MIRROR";
-	case DISP_SESSION_DECOUPLE_MODE:
-		return "DECOUPLE";
-	case DISP_SESSION_DECOUPLE_MIRROR_MODE:
-		return "DECOUPLE_MIRROR";
-	default:
-		return "UNKNOWN";
-	}
-}
-#endif
 
 static disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 {
@@ -884,8 +867,8 @@ void mtkfb_release_session_fence(unsigned int session_id)
 {
 	disp_session_sync_info *session_sync_info = NULL;
 	int i;
-
 	session_sync_info = _get_session_sync_info(session_id);
+
 	if (session_sync_info == NULL) {
 		DISPERR("layer_info is null\n");
 		return;

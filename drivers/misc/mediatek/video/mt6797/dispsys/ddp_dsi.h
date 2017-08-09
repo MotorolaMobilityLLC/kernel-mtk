@@ -190,9 +190,6 @@ typedef int		INT32;
 	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable, unsigned int color);
 	int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq);
 	DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level);
-	void DSI_ForceConfig(int forceconfig);
-	int DSI_set_roi(int x, int y);
-	int DSI_check_roi(void);
 
 #ifdef __cplusplus
 }

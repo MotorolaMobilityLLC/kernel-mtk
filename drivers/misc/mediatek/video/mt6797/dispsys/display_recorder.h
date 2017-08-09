@@ -137,7 +137,7 @@ typedef enum {
 } DPREC_LOGGER_PR_TYPE;
 
 
-#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024*8)
+#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024*16)
 extern unsigned int gCapturePriLayerEnable;
 extern unsigned int gCaptureWdmaLayerEnable;
 extern unsigned int gCapturePriLayerDownX;
@@ -165,7 +165,6 @@ void dprec_logger_submit(DPREC_LOGGER_ENUM source, unsigned long long period,
 			 unsigned int fence_idx);
 
 void dprec_logger_dump(char *string);
-void dprec_logger_vdump(const char *fmt, ...);
 void dprec_logger_dump_reset(void);
 char *dprec_logger_get_dump_addr(void);
 unsigned int dprec_logger_get_dump_len(void);

@@ -622,7 +622,7 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 #endif
 
 	if (cmdq) {
-		/* for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) */
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
 			DSI_POLLREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
 		return;
 	}
@@ -1974,21 +1974,21 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		if (DSI_REG[d]->DSI_MODE_CTRL.MODE) {
 			/* only support cmd mode read */
-			DISPERR("DSI Read Fail: DSI Mode is %d\n",
+			DISPCHECK("DSI Read Fail: DSI Mode is %d\n",
 				  DSI_REG[d]->DSI_MODE_CTRL.MODE);
 			return 0;
 		}
 
 		if (buffer == NULL || buffer_size == 0) {
 			/* illegal parameters */
-			DISPERR("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
+			DISPCHECK("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
 				  (unsigned int)buffer_size);
 			return 0;
 		}
 
 		do {
 			if (max_try_count == 0) {
-				DISPERR("DSI Read Fail: try 5 times\n");
+				DISPCHECK("DSI Read Fail: try 5 times\n");
 				return 0;
 			}
 
@@ -2447,7 +2447,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 
 			if (data_id == REGFLAG_ESCAPE_ID && cmd == REGFLAG_DELAY_MS_V3) {
 				udelay(1000 * count);
-				DDPMSG("DISP/DSI " "DSI_set_cmdq_V3[%d]. Delay %d (ms)\n", index,
+				pr_info("DISP/DSI " "DSI_set_cmdq_V3[%d]. Delay %d (ms)\n", index,
 					count);
 
 				continue;
@@ -2990,40 +2990,40 @@ void _dump_dsi_params(LCM_DSI_PARAMS *dsi_config)
 	if (dsi_config) {
 		switch (dsi_config->mode) {
 		case CMD_MODE:
-			DISPDBG("[DDPDSI] DSI Mode: CMD_MODE\n");
+			DISPCHECK("[DDPDSI] DSI Mode: CMD_MODE\n");
 			break;
 		case SYNC_PULSE_VDO_MODE:
-			DISPDBG("[DDPDSI] DSI Mode: SYNC_PULSE_VDO_MODE\n");
+			DISPCHECK("[DDPDSI] DSI Mode: SYNC_PULSE_VDO_MODE\n");
 			break;
 		case SYNC_EVENT_VDO_MODE:
-			DISPDBG("[DDPDSI] DSI Mode: SYNC_EVENT_VDO_MODE\n");
+			DISPCHECK("[DDPDSI] DSI Mode: SYNC_EVENT_VDO_MODE\n");
 			break;
 		case BURST_VDO_MODE:
-			DISPDBG("[DDPDSI] DSI Mode: BURST_VDO_MODE\n");
+			DISPCHECK("[DDPDSI] DSI Mode: BURST_VDO_MODE\n");
 			break;
 		default:
 			DISPCHECK("[DDPDSI] DSI Mode: Unknown\n");
 			break;
 		}
 
-		DISPDBG
+		DISPCHECK
 		    ("[DDPDSI] vact: %d, vbp: %d, vfp: %d, vact_line: %d, hact: %d, hbp: %d, hfp: %d, hblank: %d\n",
 		     dsi_config->vertical_sync_active, dsi_config->vertical_backporch,
 		     dsi_config->vertical_frontporch, dsi_config->vertical_active_line,
 		     dsi_config->horizontal_sync_active, dsi_config->horizontal_backporch,
 		     dsi_config->horizontal_frontporch, dsi_config->horizontal_blanking_pixel);
-		DISPDBG
+		DISPCHECK
 		    ("[DDPDSI] pll_select: %d, pll_div1: %d, pll_div2: %d, fbk_div: %d,fbk_sel: %d, rg_bir: %d\n",
 		     dsi_config->pll_select, dsi_config->pll_div1, dsi_config->pll_div2,
 		     dsi_config->fbk_div, dsi_config->fbk_sel, dsi_config->rg_bir);
-		DISPDBG("[DDPDSI] rg_bic: %d, rg_bp: %d, PLL_CLOCK: %d, dsi_clock: %d, ssc_range: %d\n",
+		DISPCHECK("[DDPDSI] rg_bic: %d, rg_bp: %d, PLL_CLOCK: %d, dsi_clock: %d, ssc_range: %d\n",
 		     dsi_config->rg_bic, dsi_config->rg_bp, dsi_config->PLL_CLOCK,
 		     dsi_config->dsi_clock, dsi_config->ssc_range);
 
-		DISPDBG("[DDPDSI] ssc_disable: %d, compatibility_for_nvk: %d, cont_clock: %d\n",
+		DISPCHECK("[DDPDSI] ssc_disable: %d, compatibility_for_nvk: %d, cont_clock: %d\n",
 		     dsi_config->ssc_disable, dsi_config->compatibility_for_nvk, dsi_config->cont_clock);
 
-		DISPDBG
+		DISPCHECK
 		    ("[DDPDSI] lcm_ext_te_enable: %d, noncont_clock: %d, noncont_clock_period: %d\n",
 		     dsi_config->lcm_ext_te_enable, dsi_config->noncont_clock,
 		     dsi_config->noncont_clock_period);
@@ -3749,7 +3749,6 @@ void dsi_analysis(DISP_MODULE_ENUM module)
 	int i = 0;
 	DDPDUMP("==DISP DSI ANALYSIS==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
 		DDPDUMP
 		    ("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
 		     i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
@@ -3807,13 +3806,13 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 	dsi_params = &_dsi_context[dsi_i].dsi_params;
 
 	if (cmdq_trigger_handle == NULL) {
-		DISPERR("cmdq_trigger_handle is NULL\n");
+		DISPCHECK("cmdq_trigger_handle is NULL\n");
 		return -1;
 	}
 
 	if (state == CMDQ_WAIT_LCM_TE) {
 		/* need waiting te */
-		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+		if (module == DISP_MODULE_DSI0) {
 			if (dsi0_te_enable == 0)
 				return 0;
 
@@ -3828,7 +3827,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		}
 	} else if (state == CMDQ_CHECK_IDLE_AFTER_STREAM_EOF) {
 		/* need waiting te */
-		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+		if (module == DISP_MODULE_DSI0) {
 			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000,
 				      0);
 		}
@@ -3872,7 +3871,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA,
 					      0x00000001, 0x1);
 				DSI_OUTREGBIT(cmdq_trigger_handle, DSI_INT_STATUS_REG,
-					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000000);
+					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000001);
 			}
 			/* 2. save RX data */
 			if (hSlot) {

@@ -8,7 +8,6 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			debug.o                \
 			primary_display.o      \
 			disp_lowpower.o        \
-			disp_recovery.o        \
 			disp_lcm.o             \
 			disp_utils.o           \
 			mtk_disp_mgr.o         \
@@ -16,8 +15,8 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			mtk_mira.o             \
 			mtk_ovl.o              \
 			disp_helper.o          \
-			disp_dts_gpio.o
-#			fbconfig_kdebug_x.o
+			disp_dts_gpio.o        \
+			fbconfig_kdebug_x.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/
 #obj-y += mtkfb_dummy.o
@@ -31,8 +30,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/sync/      \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
-             -I$(srctree)/drivers/misc/mediatek/base/power/include \
-             -I$(srctree)/drivers/misc/mediatek/smi/
+             -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 		    -I$(srctree)/drivers/staging/android/ion/mtk

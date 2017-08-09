@@ -35,7 +35,6 @@
 
 #include <asm/atomic.h>
 
-static int is_context_inited;
 static int ovl2mem_layer_num;
 int ovl2mem_use_m4u = 1;
 int ovl2mem_use_cmdq = CMDQ_ENABLE;
@@ -61,6 +60,7 @@ atomic_t g_release_ticket = ATOMIC_INIT(1);
 
 static ovl2mem_path_context *_get_context(void)
 {
+	static int is_context_inited;
 	static ovl2mem_path_context g_context;
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(ovl2mem_path_context));
@@ -116,12 +116,6 @@ static void _ovl2mem_path_unlock(const char *caller)
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
-void ovl2mem_context_init(void)
-{
-	is_context_inited = 0;
-	ovl2mem_layer_num = 0;
-}
-
 void ovl2mem_setlayernum(int layer_num)
 {
 	ovl2mem_layer_num = layer_num;
@@ -160,75 +154,44 @@ int ovl2mem_get_info(void *info)
 }
 
 
-static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
+static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, primary_disp_input_config *src)
 {
-	int ret;
-	int force_disable_alpha = 0;
-	enum UNIFIED_COLOR_FMT tmp_fmt;
-	unsigned int Bpp = 0;
+	if (src && dst) {
+		dst->layer = src->layer;
+		dst->layer_en = src->layer_en;
+		dst->source = src->buffer_source;
+		dst->fmt = src->fmt;
+		dst->addr = src->addr;
+		dst->vaddr = src->vaddr;
+		dst->src_x = src->src_x;
+		dst->src_y = src->src_y;
+		dst->src_w = src->src_w;
+		dst->src_h = src->src_h;
+		dst->src_pitch = src->src_pitch;
+		dst->dst_x = src->dst_x;
+		dst->dst_y = src->dst_y;
+		dst->dst_w = src->dst_w;
+		dst->dst_h = src->dst_h;
+		dst->keyEn = src->keyEn;
+		dst->key = src->key;
+		dst->aen = src->aen;
+		dst->alpha = src->alpha;
+		dst->sur_aen = src->sur_aen;
+		dst->src_alpha = src->src_alpha;
+		dst->dst_alpha = src->dst_alpha;
 
-	if (!src || !dst) {
-		DISPERR("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
+		dst->isDirty = src->isDirty;
+
+		dst->buff_idx = src->buff_idx;
+		dst->identity = src->identity;
+		dst->connected_type = src->connected_type;
+		dst->security = src->security;
+		dst->yuv_range = src->yuv_range;
+		return 0;
+	} else {
+		DISPERR("src(%p) or dst(%p) is null\n", src, dst);
 		return -1;
 	}
-
-	dst->layer = src->layer_id;
-	dst->isDirty = 1;
-	dst->buff_idx = src->next_buff_idx;
-	dst->layer_en = src->layer_enable;
-
-	/* if layer is disable, we just needs config above params. */
-	if (!src->layer_enable)
-		return 0;
-
-	tmp_fmt = disp_fmt_to_unified_fmt(src->src_fmt);
-	/* display don't support X channel, like XRGB8888
-	 * we need to disable alpha channel*/
-	ufmt_disable_X_channel(tmp_fmt, &dst->fmt);
-	if (tmp_fmt != dst->fmt)
-		force_disable_alpha = 1;
-
-	Bpp = UFMT_GET_Bpp(dst->fmt);
-
-	dst->addr = (unsigned long)(src->src_phy_addr);
-	dst->vaddr = (unsigned long)(src->src_base_addr);
-	dst->src_x = src->src_offset_x;
-	dst->src_y = src->src_offset_y;
-	dst->src_w = src->src_width;
-	dst->src_h = src->src_height;
-	dst->src_pitch = src->src_pitch * Bpp;
-	dst->dst_x = src->tgt_offset_x;
-	dst->dst_y = src->tgt_offset_y;
-
-	/* dst W/H should <= src W/H */
-	dst->dst_w = min(src->src_width, src->tgt_width);
-	dst->dst_h = min(src->src_height, src->tgt_height);
-
-	dst->keyEn = src->src_use_color_key;
-	dst->key = src->src_color_key;
-
-	dst->aen = force_disable_alpha ? 0 : src->alpha_enable;
-	dst->sur_aen = force_disable_alpha ? 0 : src->sur_aen;
-
-	dst->alpha = src->alpha;
-	dst->src_alpha = src->src_alpha;
-	dst->dst_alpha = src->dst_alpha;
-
-	dst->identity = src->identity;
-	dst->connected_type = src->connected_type;
-	dst->security = src->security;
-	dst->yuv_range = src->yuv_range;
-
-	if (src->buffer_source == DISP_BUFFER_ALPHA) {
-		dst->source = OVL_LAYER_SOURCE_RESERVED;	/* dim layer, constant alpha */
-	} else if (src->buffer_source == DISP_BUFFER_ION || src->buffer_source == DISP_BUFFER_MVA) {
-		dst->source = OVL_LAYER_SOURCE_MEM;	/* from memory */
-	} else {
-		DISPERR("unknown source = %d", src->buffer_source);
-		dst->source = OVL_LAYER_SOURCE_MEM;
-	}
-
-	return ret;
 }
 
 static int ovl2mem_callback(unsigned int userdata)
@@ -238,29 +201,26 @@ static int ovl2mem_callback(unsigned int userdata)
 
 	DISPMSG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
 		get_ovl2mem_ticket(), userdata);
-	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT); layid++) {
+	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
-		if (fence_idx >= 0)
+
+		if (fence_idx >= 0) {
+			disp_ddp_path_config *data_config =
+			    dpmgr_path_get_last_config(pgc->dpmgr_handle);
+
+			if (data_config && (layid >= MEMORY_SESSION_INPUT_LAYER_COUNT)) {
+				WDMA_CONFIG_STRUCT wdma_layer;
+
+				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
+				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
+				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
+				wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
+				wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
+
+				dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
+			}
 			mtkfb_release_fence(pgc->session, layid, fence_idx);
-	}
-
-	layid = disp_sync_get_output_timeline_id();
-	fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
-	if (fence_idx >= 0) {
-		disp_ddp_path_config *data_config =
-			dpmgr_path_get_last_config(pgc->dpmgr_handle);
-		if (data_config) {
-			WDMA_CONFIG_STRUCT wdma_layer;
-
-			wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
-			wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
-			wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
-			wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
-			wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
-
-			dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
 		}
-		mtkfb_release_fence(pgc->session, layid, fence_idx);
 	}
 
 	atomic_set(&g_release_ticket, userdata);
@@ -286,25 +246,23 @@ int ovl2mem_init(unsigned int session)
 
 	_ovl2mem_path_lock(__func__);
 
-	if (pgc->state > 0) {
-		DISPERR("path has created, state%d\n", pgc->state);
+	if (pgc->state > 0)
 		goto Exit;
-	}
 
 	ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
 	if (ret) {
-		DISPERR("cmdqRecCreate FAIL, ret=%d\n", ret);
+		DISPCHECK("cmdqRecCreate FAIL, ret=%d\n", ret);
 		goto Exit;
 	} else {
-		DISPDBG("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
+		DISPCHECK("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
 	}
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
 
 	if (pgc->dpmgr_handle) {
-		DISPDBG("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
+		DISPCHECK("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
 	} else {
-		DISPERR("dpmgr create path FAIL\n");
+		DISPCHECK("dpmgr create path FAIL\n");
 		goto Exit;
 	}
 
@@ -321,11 +279,11 @@ int ovl2mem_init(unsigned int session)
 	sPort.Direction = 0;
 	ret = m4u_config_port(&sPort);
 	if (ret == 0) {
-		DISPDBG("config M4U Port %s to %s SUCCESS\n",
+		DISPCHECK("config M4U Port %s to %s SUCCESS\n",
 			  ddp_get_module_name(DISP_MODULE_OVL1),
 			  ovl2mem_use_m4u ? "virtual" : "physical");
 	} else {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+		DISPCHECK("config M4U Port %s to %s FAIL(ret=%d)\n",
 			  ddp_get_module_name(DISP_MODULE_OVL1),
 			  ovl2mem_use_m4u ? "virtual" : "physical", ret);
 		goto Exit;
@@ -354,18 +312,17 @@ Exit:
 }
 
 
-int ovl2mem_input_config(disp_session_input_config *input)
+int ovl2mem_input_config(ovl2mem_in_config *input)
 {
 	int ret = -1;
 	int i = 0;
-	int config_layer_id = 0;
 	disp_ddp_path_config *data_config;
 
 	DISPFUNC();
 	_ovl2mem_path_lock(__func__);
 
 	if (pgc->state == 0) {
-		DISPERR("ovl2mem is already slept\n");
+		DISPMSG("ovl2mem is already slept\n");
 		_ovl2mem_path_unlock(__func__);
 		return 0;
 	}
@@ -377,18 +334,18 @@ int ovl2mem_input_config(disp_session_input_config *input)
 	data_config->rdma_dirty = 0;
 
 	/* hope we can use only 1 input struct for input config, just set layer number */
-	for (i = 0; i < input->config_layer_num; i++) {
+	for (i = 0; i < MEMORY_SESSION_INPUT_LAYER_COUNT; i++) {
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
-				   input->config[i].layer_id | (input->config[i].layer_enable << 16),
-				   (unsigned long)(input->config[i].src_phy_addr));
+				   input->layer | (input->layer_en << 16), input->addr);
 
-		config_layer_id = input->config[i].layer_id;
-		_convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]), &(input->config[i]));
-		dprec_mmp_dump_ovl_layer(&(data_config->ovl_config[config_layer_id]), config_layer_id, 3);
-
+		if (input[i].dirty) {
+			ret =
+			    _convert_disp_input_to_ovl(&(data_config->ovl_config[input[i].layer]),
+						       (primary_disp_input_config *)&input[i]);
+		}
 		data_config->ovl_dirty = 1;
-		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, input->config[i].src_offset_x,
-											input->config[i].src_offset_y);
+		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, input->src_x, input->src_y);
+
 	}
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
@@ -433,7 +390,7 @@ int ovl2mem_output_config(disp_mem_output_config *out)
 	data_config->wdma_config.security = out->security;
 
 	if (pgc->state == 0) {
-		DISPERR("ovl2mem is already slept\n");
+		DISPMSG("ovl2mem is already slept\n");
 		_ovl2mem_path_unlock(__func__);
 		return 0;
 	}
@@ -533,10 +490,8 @@ int ovl2mem_deinit(void)
 
 	_ovl2mem_path_lock(__func__);
 
-	if (pgc->state == 0) {
-		DISPERR("path exit, state%d\n", pgc->state);
+	if (pgc->state == 0)
 		goto Exit;
-	}
 
 	/* ovl2mem_wait_done(); */
 	ovl2mem_layer_num = 0;

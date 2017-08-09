@@ -54,7 +54,7 @@ unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID p
 	sg_dma_len(sg_table->sgl) = size;
 	client = m4u_create_client();
 	if (IS_ERR_OR_NULL(client))
-		DISPERR("create client fail!\n");
+		DISPMSG("create client fail!\n");
 
 	mva = pa;
 	ret =
@@ -62,7 +62,7 @@ unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID p
 			  M4U_FLAGS_FIX_MVA, &mva);
 	/* m4u_alloc_mva(M4U_PORT_DISP_OVL0, pa_start, (pa_end - pa_start + 1), 0, 0, mva); */
 	if (ret)
-		DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
+		DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
 	DISPMSG("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", mva, pa);
 
 	return mva;

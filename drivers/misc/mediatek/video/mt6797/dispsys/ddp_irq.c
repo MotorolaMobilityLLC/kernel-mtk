@@ -15,7 +15,6 @@
 #include "ddp_irq.h"
 #include "ddp_aal.h"
 #include "ddp_drv.h"
-#include "disp_helper.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -38,21 +37,6 @@ static DDP_IRQ_CALLBACK irq_module_callback_table[DISP_MODULE_NUM][DISP_MAX_IRQ_
 static DDP_IRQ_CALLBACK irq_callback_table[DISP_MAX_IRQ_CALLBACK];
 
 atomic_t ESDCheck_byCPU = ATOMIC_INIT(0);
-
-/* dsi read by cpu should keep esd_check_bycmdq = 0.  */
-/* dsi read by cmdq should keep esd_check_bycmdq = 1. */
-static atomic_t esd_check_bycmdq = ATOMIC_INIT(1);
-
-void disp_irq_esd_cust_bycmdq(int enable)
-{
-	atomic_set(&esd_check_bycmdq, enable);
-}
-
-int disp_irq_esd_cust_get(void)
-{
-	return atomic_read(&esd_check_bycmdq);
-}
-
 int disp_register_irq_callback(DDP_IRQ_CALLBACK cb)
 {
 	int i = 0;
@@ -181,21 +165,17 @@ unsigned int rdma_targetline_irq_cnt[2] = { 0, 0 };
 irqreturn_t disp_irq_handler(int irq, void *dev_id)
 {
 	DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
-	unsigned int reg_val = 0;
+	unsigned long reg_val = 0;
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
-	unsigned int reg_temp_val = 0;
+
 	DDPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
 
 	if (irq == dispsys_irq[DISP_REG_DSI0]) {
 		module = DISP_MODULE_DSI0;
 		reg_val = (DISP_REG_GET(dsi_reg_va + 0xC) & 0xff);
-		reg_temp_val = reg_val;
-		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
-		if (disp_irq_esd_cust_get() == 1)
-			reg_temp_val = reg_val & 0xfffe;
-		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_temp_val);
+		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]) {
@@ -217,7 +197,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: %s sw reset done\n", ddp_get_module_name(module));
 
 		if (reg_val & (1 << 4))
-			DDPERR("IRQ: %s hw reset done\n", ddp_get_module_name(module));
+			DDPIRQ("IRQ: %s hw reset done\n", ddp_get_module_name(module));
 
 		if (reg_val & (1 << 5))
 			DDPERR("IRQ: %s-L0 not complete until EOF!\n",
@@ -248,9 +228,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (reg_val & (1 << 12))
 			DDPERR("IRQ: %s-L3 fifo underflow!\n", ddp_get_module_name(module));
-#endif
+
 		if (reg_val & (1 << 13))
 			DDPERR("IRQ: %s abnormal SOF!\n", ddp_get_module_name(module));
+#endif
 
 		DISP_CPU_REG_SET(DISP_REG_OVL_INTSTA + ovl_base_addr(module), ~reg_val);
 		MMProfileLogEx(ddp_mmp_get_events()->OVL_IRQ[index], MMProfileFlagPulse, reg_val,
@@ -333,8 +314,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index));
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
 			       cnt_rdma_underflow[index]++);
-			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
-				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 		}

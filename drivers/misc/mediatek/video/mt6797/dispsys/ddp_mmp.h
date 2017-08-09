@@ -56,7 +56,6 @@ typedef struct {
 	MMP_Event present_fence_set;
 	MMP_Event idlemgr;
 	MMP_Event sec;
-	MMP_Event tui;
 	MMP_Event fps_set;
 	MMP_Event fps_get;
 	MMP_Event primary_error;

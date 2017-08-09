@@ -9,7 +9,6 @@
 
 #define TOTAL_OVL_LAYER_NUM	(12)
 #define OVL_NUM			(4)
-#define PRIMARY_THREE_OVL_CASCADE
 
 /* start overlay module */
 int ovl_start(DISP_MODULE_ENUM module, void *handle);
