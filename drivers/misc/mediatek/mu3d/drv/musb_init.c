@@ -154,10 +154,16 @@ void reconnect_work(struct work_struct *data)
 	os_printk(K_INFO, "%s\n", __func__);
 
 	/* Disable U2 detect */
-	mu3d_hal_u3dev_dis();
-	mu3d_hal_u2dev_disconn();
-	mdelay(1000);
-	mu3d_hal_u3dev_en();
+#ifdef SUPPORT_U3
+	if (musb_speed) {
+#endif
+		mu3d_hal_u3dev_dis();
+		mu3d_hal_u2dev_disconn();
+		mdelay(1000);
+		mu3d_hal_u3dev_en();
+#ifdef SUPPORT_U3
+	}
+#endif
 }
 #endif
 

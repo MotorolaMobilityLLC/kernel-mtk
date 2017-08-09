@@ -62,6 +62,7 @@ struct musb_ep;
 #include <mt-plat/mt_boot_common.h>
 #endif
 extern u32 fake_CDP;
+extern unsigned int musb_speed;
 
 extern struct musb *_mu3d_musb;
 #if defined(CONFIG_MTK_SMART_BATTERY)

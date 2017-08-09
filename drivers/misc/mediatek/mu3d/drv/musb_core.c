@@ -158,6 +158,21 @@ MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
 
 #define U3D_FIFO_START_ADDRESS 0
 
+#ifdef SUPPORT_U3
+/*
+ * USB Speed Mode
+ * 0: High Speed
+ * 1: Super Speed
+ */
+#ifdef CONFIG_USB_MU3D_DEFAULT_U2_MODE
+unsigned int musb_speed = 0;
+#else
+unsigned int musb_speed = 1;
+#endif
+module_param_named(speed, musb_speed, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, spuper speed.");
+#endif
+
 void __iomem *u3_base;
 void __iomem *u3_sif_base;
 void __iomem *u3_sif2_base;
@@ -986,8 +1001,12 @@ void musb_start(struct musb *musb)
 		schedule_delayed_work(&musb->ep_prof_work, msecs_to_jiffies(POLL_INTERVAL * 1000));
 #endif
 
-	if (musb->softconnect)
-		mu3d_hal_u3dev_en();
+	if (musb->softconnect) {
+		if (musb_speed)
+			mu3d_hal_u3dev_en();
+		else
+			mu3d_hal_u2dev_connect();
+	}
 }
 
 

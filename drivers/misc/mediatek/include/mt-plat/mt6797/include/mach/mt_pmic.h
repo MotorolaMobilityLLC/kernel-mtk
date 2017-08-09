@@ -33,7 +33,7 @@
 #define POWEROFF_BAT_CURRENT 3000
 #define DLPT_POWER_OFF_THD 100
 
-/*#define BATTERY_MODULE_INIT*/
+#define BATTERY_MODULE_INIT
 
 /* ADC Channel Number */
 typedef enum {
