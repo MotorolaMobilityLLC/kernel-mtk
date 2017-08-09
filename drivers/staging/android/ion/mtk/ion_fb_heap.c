@@ -267,6 +267,8 @@ int ion_drv_create_FB_heap(ion_phys_addr_t fb_base, size_t fb_size)
 	struct ion_platform_heap *heap_data;
 
 	heap_data = kzalloc(sizeof(struct ion_platform_heap), GFP_KERNEL);
+	if (!heap_data)
+		return -ENOMEM;
 
 	heap_data->id = ION_HEAP_TYPE_FB;
 	heap_data->type = ION_HEAP_TYPE_FB;
@@ -276,6 +278,8 @@ int ion_drv_create_FB_heap(ion_phys_addr_t fb_base, size_t fb_size)
 	heap_data->align = 0x1000;
 	heap_data->priv = NULL;
 	ion_drv_create_heap(heap_data);
+
+	kfree(heap_data);
 
 	return 0;
 }
