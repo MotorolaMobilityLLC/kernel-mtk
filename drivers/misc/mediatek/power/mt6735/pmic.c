@@ -81,9 +81,10 @@
 #include <mt-plat/mt_gpt.h>
 #endif
 
-/*#include <mach/battery_common.h> TBD*/
-/*#include <mach/battery_meter.h> TBD*/
-#include <mach/mt_battery_meter.h>
+#if defined(CONFIG_MTK_SMART_BATTERY)
+#include <mt-plat/battery_meter.h>
+#include <mt-plat/battery_common.h>
+#endif
 
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
@@ -1849,7 +1850,7 @@ void bat_l_int_handler(void)
  */
 #define OCCB_NUM 16
 
-#if 0 /*ndef DISABLE_BATTERY_OC_PROTECT TBD*/
+#ifndef DISABLE_BATTERY_OC_PROTECT
 #define BATTERY_OC_PROTECT
 #endif
 
@@ -2005,7 +2006,7 @@ void fg_cur_l_int_handler(void)
 /*
  * 15% notify service
  */
-#if 0 /*ndef DISABLE_BATTERY_PERCENT_PROTECT TBD */
+#ifndef DISABLE_BATTERY_PERCENT_PROTECT
 #define BATTERY_PERCENT_PROTECT
 #endif
 
@@ -2309,7 +2310,7 @@ void enable_dummy_load(unsigned int en)
 #endif /* #ifdef DLPT_FEATURE_SUPPORT */
 
 
-#if 0 /*ndef DISABLE_DLPT_FEATURE TBD*/
+#ifndef DISABLE_DLPT_FEATURE
 #define DLPT_FEATURE_SUPPORT
 #endif
 
@@ -3031,7 +3032,9 @@ void chrdet_int_handler(void)
 	}
 #endif
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
-	/*do_chrdet_int_task(); TBD*/
+#if defined(CONFIG_MTK_SMART_BATTERY)
+	do_chrdet_int_task();
+#endif
 }
 
 void auxadc_imp_int_handler_r(void)
@@ -3259,7 +3262,9 @@ void pmic_enable_charger_detection_int(int x)
 
 	PMICLOG("[pmic_enable_charger_detection_int] pmic_rdy=%d usb_rdy=%d\n", pmic_rdy, usb_rdy);
 	if (pmic_rdy == 1 && usb_rdy == 1) {
-		/* wake_up_bat(); TBD*/
+#if defined(CONFIG_MTK_SMART_BATTERY)
+		wake_up_bat();
+#endif
 		PMICLOG("[pmic_enable_charger_detection_int] enable charger detection interrupt\n");
 	}
 
@@ -4581,7 +4586,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	upmu_set_reg_value(0x2a6, 0xff);
 
-	/* batt_init_cust_data(); TBD*/
+	batt_init_cust_data();
 	/*dump_ldo_status_read_debug();*/
 
 	/*pmic initial setting*/

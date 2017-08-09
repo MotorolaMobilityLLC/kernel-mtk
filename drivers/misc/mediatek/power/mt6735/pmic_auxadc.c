@@ -34,10 +34,13 @@
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
 
-/*#include <mach/battery_common.h> TBD*/
+#if defined(CONFIG_MTK_SMART_BATTERY)
+#include <mt-plat/battery_meter.h>
+#include <mt-plat/battery_common.h>
+#endif
 #include <linux/time.h>
 /*#include <mach/pmic_mt6328_sw.h>*/
-/*#include <mach/battery_meter.h> TBD*/
+
 
 #include <mach/mt_pmic.h>
 #include <mach/mt_battery_meter.h>
@@ -134,12 +137,12 @@ signed int PMIC_IMM_GetCurrent(void)
 	ADC_BAT_SENSE = (batsns * 3 * VOLTAGE_FULL_RANGE) / 32768;
 	ADC_I_SENSE = (isense * 3 * VOLTAGE_FULL_RANGE) / 32768;
 
-/*
+#if defined(CONFIG_MTK_SMART_BATTERY)
 	ICharging =
 	    (ADC_I_SENSE - ADC_BAT_SENSE +
 	     g_I_SENSE_offset) * 1000 / batt_meter_cust_data.cust_r_sense;
 
- TBD*/
+ #endif
 
 	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);

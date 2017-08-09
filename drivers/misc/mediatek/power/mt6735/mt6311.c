@@ -7176,8 +7176,9 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	if (g_mt6311_hw_exist == 0) {
 		/*re-init battery oc protect point for platform without extbuck*/
-		/* battery_oc_protect_reinit(); TBD */
-
+#if defined(CONFIG_MTK_SMART_BATTERY)
+		battery_oc_protect_reinit();
+#endif
 		PMICLOG("[mt6311_driver_probe] return err\n");
 		return err;
 	}
