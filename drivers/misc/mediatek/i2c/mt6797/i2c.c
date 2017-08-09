@@ -61,7 +61,7 @@ static void mt_i2c_clock_disable(struct mt_i2c_t *i2c);
 u32 I2C_TIMING_REG_BACKUP[7] = { 0 };
 u32 I2C_HIGHSP_REG_BACKUP[7] = { 0 };
 
-#ifdef CONFIG_OF
+#if 0
 static void __iomem *ap_dma_base;
 #endif
 /***********************************I2C Param only used in kernel*****************/
@@ -1436,8 +1436,8 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	if (of_property_read_u32(pdev->dev.of_node, "cell-index", &pdev->id)) {
-		I2CERR("I2C get cell-index failed\n");
+	if (of_property_read_u32(pdev->dev.of_node, "id", &pdev->id)) {
+		I2CERR("I2C get i2c bus id failed\n");
 		return -ENODEV;
 	}
 	i2c->id = pdev->id;
@@ -1561,8 +1561,11 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	snprintf(i2c->adap.name, sizeof(i2c->adap.name), I2C_DRV_NAME);
 
 #ifdef CONFIG_OF
-	i2c->pdmabase = DMA_I2C_BASE(i2c->id, ap_dma_base);
-
+	/* i2c->pdmabase = DMA_I2C_BASE(i2c->id, ap_dma_base); */
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	i2c->pdmabase = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(i2c->pdmabase))
+		return PTR_ERR(i2c->pdmabase);
 #else
 
 	i2c->pdmabase = DMA_I2C_BASE_CH(i2c->id);
@@ -1665,7 +1668,7 @@ static struct platform_driver mt_i2c_driver = {
 
 static s32 __init mt_i2c_init(void)
 {
-#ifdef CONFIG_OF
+#if 0
 	struct device_node *ap_dma_node;
 
 	I2CLOG(" mt_i2c_init  driver us DT\n");
