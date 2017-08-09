@@ -401,9 +401,9 @@ void __iomem  *camsys_base;
 
 #define INFRA0_CG  0x03AFF900/*0: Disable  ( with clock), 1: Enable ( without clock )*/
 #define INFRA1_CG  0x00460802/*0: Disable  ( with clock), 1: Enable ( without clock )*/
-#define INFRA2_CG  0x20FBb4FD/*0: Disable  ( with clock), 1: Enable ( without clock ) 0x23FFb4FD*/
-#define AUD_0_CG   0x0F0C0302
-#define AUD_1_CG   0x00020000
+#define INFRA2_CG  0x21FFb6FD/*0: Disable  ( with clock), 1: Enable ( without clock ) 0x23FFb4FD,9:dummy*/
+#define AUD_0_CG   0x0F0C0304
+#define AUD_1_CG   0x00030000
 #define MFG_CG     0x00000001/*set*/
 #define MM_0_CG   0xFFFFFFFF
 #define MM_1_CG   0x000003F0
@@ -1169,7 +1169,7 @@ static struct mtk_gate infra_clks[] __initdata = {
 	GATE(INFRA_SPI5, infra_spi5, spi_sel, infra2_cg_regs, 22, 0),
 	GATE(INFRA_IRTX, infra_irtx, spi_sel, infra2_cg_regs, 23, 0),
 	GATE(INFRA_SSUSB_SYS, infra_ssusb_sys, ssusb_top_sys_sel, infra2_cg_regs, 24, 0),
-	GATE(INFRA_SSUSB_REF, infra_ssusb_ref, f26m_sel, infra2_cg_regs, 25, 0),
+	GATE(INFRA_SSUSB_REF, infra_ssusb_ref, f26m_sel, infra2_cg_regs, 9, 0),/*9:dummy*/
 	GATE(INFRA_AUDIO_26M, infra_audio_26m, f26m_sel, infra2_cg_regs, 26, 0),
 	GATE(INFRA_AUDIO_26M_PAD_TOP, infra_audio_26m_pad_top, f26m_sel, infra2_cg_regs, 27, 0),
 	GATE(INFRA_MODEM_TEMP_SHARE, infra_modem_temp_share, axi_sel, infra2_cg_regs, 28, 0),
@@ -1854,7 +1854,7 @@ static void __init mt_audiosys_init(struct device_node *node)
 #endif
 #if CG_BOOTUP_PDN
 	audio_base = base;
-	clk_writel(AUDIO_TOP_CON0, AUD_0_CG);
+	clk_writel(AUDIO_TOP_CON0, clk_readl(AUDIO_TOP_CON0)|AUD_0_CG);
 	clk_writel(AUDIO_TOP_CON1, AUD_1_CG);
 #endif
 
