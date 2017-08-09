@@ -1863,7 +1863,8 @@ INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 str_len)
 
 	if ((STP_FW_NOACK_ISSUE == g_stp_dbg_cpupcr->issue_type) ||
 	    (STP_DBG_PROC_TEST == g_stp_dbg_cpupcr->issue_type) ||
-	    (STP_FW_WARM_RST_ISSUE == g_stp_dbg_cpupcr->issue_type)) {
+	    (STP_FW_WARM_RST_ISSUE == g_stp_dbg_cpupcr->issue_type) ||
+		(STP_FW_ABT == g_stp_dbg_cpupcr->issue_type)) {
 		len +=
 		    osal_sprintf(*buf + len, "%s\n\t\t</classification>\n\t\t<rc>\n\t\t\t",
 				 g_stp_dbg_cpupcr->assert_info);
@@ -1877,7 +1878,8 @@ INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 str_len)
 		    osal_sprintf(*buf + len, "<irqx>IRQ_0x%x</irqx>\n\t\t\t",
 				 g_stp_dbg_cpupcr->fwRrq);
 		len += osal_sprintf(*buf + len, "<isr>0x%x</isr>\n\t\t\t", g_stp_dbg_cpupcr->fwIsr);
-	} else if (STP_FW_ASSERT_ISSUE == g_stp_dbg_cpupcr->issue_type) {
+	} else if (STP_FW_ASSERT_ISSUE == g_stp_dbg_cpupcr->issue_type ||
+			(STP_HOST_TRIGGER_FW_ASSERT == g_stp_dbg_cpupcr->issue_type)) {
 		len +=
 		    osal_sprintf(*buf + len, "%s\n\t\t</classification>\n\t\t<rc>\n\t\t\t",
 				 g_stp_dbg_cpupcr->assert_info);

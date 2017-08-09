@@ -2430,6 +2430,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					}
 #endif
 					/*Trace32 Dump */
+					STP_ERR_FUNC("receive a firmware assert packet!\n");
 					stp_trace32_dump();
 
 					/*discard CRC */

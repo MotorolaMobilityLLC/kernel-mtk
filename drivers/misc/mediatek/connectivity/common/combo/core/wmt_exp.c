@@ -627,8 +627,16 @@ EXPORT_SYMBOL(mtk_wcn_wmt_ant_ram_ctrl);
 MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 {
 	INT32 iRet = -1;
+	UINT8 * drv_name[] = {
+		"DRV_TYPE_BT",
+		"DRV_TYPE_FM",
+		"DRV_TYPE_GPS",
+		"DRV_TYPE_WIFI",
+		"DRV_TYPE_WMT",
+		"DRV_TYPE_ANT"
+	};
 
-	WMT_INFO_FUNC("reset source:%d\n", type);
+	WMT_INFO_FUNC("Subsystem trigger whole chip reset, reset source: %s\n", drv_name[type]);
 	iRet = wmt_lib_trigger_reset();
 	return 0 == iRet ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
 }

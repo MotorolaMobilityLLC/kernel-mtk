@@ -395,9 +395,12 @@ INT32 wmt_core_func_ctrl_cmd(ENUM_WMTDRV_TYPE_T type, MTK_WCN_BOOL fgEn)
 		if (iRet) {
 			ctrlPa1 = type;
 			ctrlPa2 = 32;
-			WMT_ERR_FUNC("WMT-CORE: wmt_func_ctrl_cmd kal_stp_rx failed\n");
+			WMT_ERR_FUNC
+				("WMT firwmare no rx event, trigger f/w assert. sub-driver type:%d, state(%d)\n",
+				 type, fgEn);
 			wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
 			mtk_wcn_stp_dbg_dump_package();
+			mtk_wcn_stp_read_fw_cpupcr();
 			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlPa1, &ctrlPa2);
 			break;
 		}
@@ -1326,8 +1329,9 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			ctrlpa1 = WMTDRV_TYPE_WMT;
 			ctrlpa2 = 33;
 			wmt_core_rx_flush(WMT_TASK_INDX);
-			WMT_ERR_FUNC("wmt_core: read SLEEP_EVT fail(%d) len(%d, %d)", ret,
-				     u4_result, evt_len);
+			WMT_ERR_FUNC
+				("wmt_core: read SLEEP_EVT fail(%d) len(%d, %d), host trigger firmware assert\n",
+				 ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
 			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
 			goto pwr_sv_done;
@@ -1353,7 +1357,7 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 
 		if (ret || (u4_result != sizeof(WMT_WAKEUP_CMD))) {
 			wmt_core_rx_flush(WMT_TASK_INDX);
-			WMT_ERR_FUNC("wmt_core: WAKEUP_CMD ret(%d) cmd len err(%d, %zu) ", ret,
+			WMT_ERR_FUNC("wmt_core: WAKEUP_CMD ret(%d) cmd len err(%d, %zu)\n", ret,
 				     u4_result, sizeof(WMT_WAKEUP_CMD));
 			goto pwr_sv_done;
 		}
@@ -1363,8 +1367,9 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		if (ret || (u4_result != evt_len)) {
 			ctrlpa1 = WMTDRV_TYPE_WMT;
 			ctrlpa2 = 34;
-			WMT_ERR_FUNC("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d)", ret,
-				     u4_result, evt_len);
+			WMT_ERR_FUNC
+				("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d), host grigger firmaware assert\n",
+					ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
 			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
 			goto pwr_sv_done;
@@ -1403,8 +1408,9 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			ctrlpa1 = WMTDRV_TYPE_WMT;
 			ctrlpa2 = 35;
 			wmt_core_rx_flush(WMT_TASK_INDX);
-			WMT_ERR_FUNC("wmt_core: read HOST_AWAKE_EVT fail(%d) len(%d, %d)", ret,
-				     u4_result, evt_len);
+			WMT_ERR_FUNC
+				("wmt_core:read HOST_AWAKE_EVT fail(%d) len(%d, %d), host trigger f/w assert\n",
+				 ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
 			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
 			goto pwr_sv_done;

@@ -1852,6 +1852,7 @@ static VOID stp_sdio_tx_wkr(
 						p_info->firmware_info.tx_packet_num);
 				STPSDIO_INFO_FUNC("No ack trigger assert, tx %d seconds later\n",
 						TX_NO_ACK_TIMEOUT_ASSERT);
+				mtk_wcn_stp_read_fw_cpupcr();
 				p_info->firmware_info.tx_fifo_size = STP_SDIO_TX_FIFO_SIZE;
 				p_info->firmware_info.tx_packet_num = 0;
 				if (MTK_WCN_BOOL_FALSE != pb->full_flag) {
@@ -2032,6 +2033,7 @@ static VOID stp_sdio_tx_wkr(
 						p_info->firmware_info.tx_packet_num);
 				STPSDIO_INFO_FUNC("No ack trigger assert, tx %d seconds later\n",
 						TX_NO_ACK_TIMEOUT_ASSERT);
+				mtk_wcn_stp_read_fw_cpupcr();
 				osal_ftrace_print("%s|tx_fifo_size:%d, four_byte_align_len:%d, tx_packet_num(%d)\n",
 						__func__, p_info->firmware_info.tx_fifo_size, four_byte_align_len,
 						p_info->firmware_info.tx_packet_num);
