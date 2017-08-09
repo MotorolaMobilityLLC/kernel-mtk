@@ -884,8 +884,10 @@ int	BigiDVFSPllSetFreq(unsigned int Freq)
 	}
 
 	if ((idvfs_read(0x10222470) & 0x1) == 1) {
-		idvfs_error("PLL cannot set when iDVFS is enable.\n");
-		return -2;
+		/* don't display this log, when at legacy DVFS mode to enable iDVFS function */
+		/* idvfs_error("PLL cannot set when iDVFS is enable.\n"); */
+		/* return -2; */
+		return 0;
 	}
 
 	rc = SEC_BIGIDVFSPLLSETFREQ(Freq);
@@ -1240,22 +1242,22 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	}
 #endif
 
-	seq_puts(m, "======================================================\n");
+	seq_puts(m, "================= 2015/10/01 Ver 3.1 ===================\n");
 	seq_printf(m, "iDVFS ctrl = 0x%x.\n", idvfs_read(0x10222470));
 	seq_printf(m, "iDVFS debugout = 0x%x.\n", idvfs_read(0x102224c8));
-	seq_printf(m, "SW AVG status(%%_x100) = %d.\n", BigiDVFSSWAvgStatus());
+	seq_printf(m, "SW AVG status(%%_x100) = %d, Freq = %dMHz.\n", BigiDVFSSWAvgStatus(), idvfs_init_opt.freq_cur);
 	ret_val = ((idvfs_read(0x10222470) & 0xf000) >> 12);
 	switch (ret_val) {
 	case 7:
-		seq_printf(m, "Deb Freq = %dMHz.\n",
+		seq_printf(m, "Debug Freq = %dMHz.\n",
 			(unsigned int)((((unsigned long long)(idvfs_read(0x102224c8) & 0x7fffffff)) * 26) >> 24));
 		break;
 	case 8:
-		seq_printf(m, "Deb POS_DIV = %d.\n", (idvfs_read(0x102224c8) & 0x7));
+		seq_printf(m, "Debug POS_DIV = %d.\n", (idvfs_read(0x102224c8) & 0x7));
 		break;
 	case 10:
 		i = idvfs_read(0x102224c8);
-		seq_printf(m, "Deb cur_vsram[7:0] = %d, cur_vproc[15:8] = %d, chip_ldo[27:24] = %d.\n",
+		seq_printf(m, "Debug cur_vsram[7:0] = %d, cur_vproc[15:8] = %d, chip_ldo[27:24] = %d.\n",
 			(i & 0xff), ((i & 0xff00) >> 8), ((i & 0xf000000) >> 24));
 		break;
 	}
@@ -1330,7 +1332,11 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			if (err == 3)
 				rc = BigiDVFSSWAvg(func_para[0], func_para[1]);
 			break;
-		/* case 5 : */
+		case 5:
+			/* switch debugout mode = 0 ~ 15 */
+			if (err == 2)
+				rc = idvfs_write_field(0x10222470, 15 : 12, func_para[0]);
+			break;
 		/* case 6 : */
 		case 7:
 			/* Set L/LL Vproc, Vsarm mv_x100*/

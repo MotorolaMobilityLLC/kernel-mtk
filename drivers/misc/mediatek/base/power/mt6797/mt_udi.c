@@ -1,5 +1,13 @@
+/*
+ * @file    mt_udi.c
+ * @brief   Driver for UDI interface
+ *
+ */
+
 #define __MT_UDI_C__	/* format copy from mt_ptp2.c */
 
+/* system includes */
+#ifdef __KERNEL__
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/sched.h>
@@ -16,6 +24,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
+#else
+#include "common.h" /* for printf */
+#endif
 #include "mt_udi.h"
 
 static unsigned int func_lv_mask_udi;
@@ -23,53 +34,126 @@ static unsigned int func_lv_mask_udi;
 /*
  * LOG
  */
-#ifdef __KERNEL__
 #define	UDI_TAG	  "[mt_udi] "
+#ifdef __KERNEL__
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
-	#define	udi_emerg(fmt, args...)		pr_err(ANDROID_LOG_ERROR,	UDI_TAG, fmt,	##args)
-	#define	udi_alert(fmt, args...)		pr_err(ANDROID_LOG_ERROR,	UDI_TAG, fmt,	##args)
-	#define	udi_crit(fmt,	args...)	pr_err(ANDROID_LOG_ERROR,	UDI_TAG, fmt,	##args)
-	#define	udi_error(fmt, args...)		pr_err(ANDROID_LOG_ERROR,	UDI_TAG, fmt,	##args)
-	#define	udi_warning(fmt, args...)	pr_warn(ANDROID_LOG_WARN,	UDI_TAG, fmt,	##args)
-	#define	udi_notice(fmt, args...)	pr_info(ANDROID_LOG_INFO,	UDI_TAG, fmt,	##args)
-	#define	udi_info(fmt,	args...)	pr_info(ANDROID_LOG_INFO,	UDI_TAG, fmt,	##args)
-	#define	udi_debug(fmt, args...)		pr_debug(ANDROID_LOG_DEBUG, UDI_TAG, fmt, ##args)
+	#define udi_emerg(fmt, args...)		pr_err(ANDROID_LOG_ERROR, UDI_TAG, fmt, ##args)
+	#define udi_alert(fmt, args...)		pr_err(ANDROID_LOG_ERROR, UDI_TAG, fmt, ##args)
+	#define udi_crit(fmt, args...)		pr_err(ANDROID_LOG_ERROR, UDI_TAG, fmt, ##args)
+	#define udi_error(fmt, args...)		pr_err(ANDROID_LOG_ERROR, UDI_TAG, fmt, ##args)
+	#define udi_warning(fmt, args...)	pr_warn(ANDROID_LOG_WARN, UDI_TAG, fmt, ##args)
+	#define udi_notice(fmt, args...)	pr_info(ANDROID_LOG_INFO, UDI_TAG, fmt, ##args)
+	#define udi_info(fmt, args...)		pr_info(ANDROID_LOG_INFO, UDI_TAG, fmt, ##args)
+	#define udi_debug(fmt, args...)		pr_debug(ANDROID_LOG_DEBUG, UDI_TAG, fmt, ##args)
 	#define udi_ver(fmt, args...)	\
 		do {	\
 			if (func_lv_mask_udi)	\
-				pr_info(ANDROID_LOG_INFO,	UDI_TAG, fmt,	##args);	\
+				pr_info(ANDROID_LOG_INFO, UDI_TAG, fmt, ##args);	\
 		} while (0)
 #else
-	#define	udi_emerg(fmt, args...)		pr_emerg(UDI_TAG fmt, ##args)
-	#define	udi_alert(fmt, args...)	    pr_alert(UDI_TAG fmt, ##args)
-	#define	udi_crit(fmt,	args...)	pr_crit(UDI_TAG	fmt, ##args)
-	#define	udi_error(fmt, args...)	    pr_err(UDI_TAG fmt,	##args)
-	#define	udi_warning(fmt, args...)	pr_warn(UDI_TAG	fmt, ##args)
-	#define	udi_notice(fmt, args...)	pr_notice(UDI_TAG fmt, ##args)
-	#define	udi_info(fmt,	args...)	pr_info(UDI_TAG	fmt, ##args)
-	#define	udi_debug(fmt, args...)		pr_debug(UDI_TAG fmt, ##args)
+	#define udi_emerg(fmt, args...)		pr_emerg(UDI_TAG fmt, ##args)
+	#define udi_alert(fmt, args...)		pr_alert(UDI_TAG fmt, ##args)
+	#define udi_crit(fmt, args...)		pr_crit(UDI_TAG	fmt, ##args)
+	#define udi_error(fmt, args...)		pr_err(UDI_TAG fmt,	##args)
+	#define udi_warning(fmt, args...)	pr_warn(UDI_TAG	fmt, ##args)
+	#define udi_notice(fmt, args...)	pr_notice(UDI_TAG fmt, ##args)
+	#define udi_info(fmt, args...)		pr_info(UDI_TAG	fmt, ##args)
+	#define udi_debug(fmt, args...)		pr_debug(UDI_TAG fmt, ##args)
 	#define udi_ver(fmt, args...)	\
 		do {	\
 			if (func_lv_mask_udi)	\
 				pr_info(UDI_TAG	fmt, ##args);	\
 		} while (0)
 #endif
+#else
+	#define udi_emerg(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_alert(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_crit(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_error(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_warning(fmt, args...)	printf(UDI_TAG fmt, ##args)
+	#define udi_notice(fmt, args...)	printf(UDI_TAG fmt, ##args)
+	#define udi_info(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_debug(fmt, args...)		printf(UDI_TAG fmt, ##args)
+	#define udi_ver(fmt, args...)		printf(UDI_TAG fmt, ##args)
 #endif
 
-#define RECV_IRDR_SIZE 25
 static unsigned int func_lv_mask_udi;
-static unsigned int IR_bit_count, DR_bit_count;
-static unsigned int IR_byte[RECV_IRDR_SIZE], DR_byte[RECV_IRDR_SIZE];
-static unsigned int jtag_sw_tck;	/* default debug channel = 1 */
-
-/* #define FIFOSIZE 16384  */
-#define FIFOSIZE 1024 /* zzz */
-unsigned short UDI_IR[FIFOSIZE], UDI_DR[FIFOSIZE];
+unsigned int IR_bit_count, DR_bit_count;
+unsigned char IR_byte[UDI_FIFOSIZE], DR_byte[UDI_FIFOSIZE];
+unsigned int jtag_sw_tck;	/* default debug channel = 1 */
 
 #define CTOI(char_ascii)    ((char_ascii <= 0x39) ? (char_ascii - 0x30) :	\
 							((char_ascii <= 0x46) ? (char_ascii - 55) : (char_ascii - 87)))
 
+int udi_jtag_clock_read(void)
+{
+	int i, j;
+
+	if ((IR_bit_count == 0) || (DR_bit_count == 0))
+		return 0;
+
+#if 1
+	/* rest mode by TRST = 1 */
+	/* jtag_clock(sw_tck, i_trst, i_tms, i_tdi, count) */
+	udi_jtag_clock(jtag_sw_tck, 0, 0, 0, 4);
+#else
+	/* reset mode by TMS = 1 */
+	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 10);
+#endif
+
+	/* into idel mode */
+	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+
+	/* Jog the state machine arround to shift IR */
+	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
+
+	/* Shift the IR bits, assert TMS=1 for last bit */
+	for (i = 0; i < IR_bit_count; i++) {
+		j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (IR_bit_count - 1)) ? 1 : 0),
+			(((IR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+		IR_byte[i >> 3] &= ~(1 << (i & 7));
+		IR_byte[i >> 3] |= (j << (i & 7));
+	}
+
+	if (DR_bit_count) {
+		/* Jog the state machine arround to shift DR */
+		udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
+
+		/* Shift the DR bits, assert TMS=1 for last bit */
+		for (i = 0; i < DR_bit_count; i++) {
+			j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
+			(((DR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+
+			DR_byte[i >> 3] &= ~(1 << (i & 7));
+			DR_byte[i >> 3] |= (j << (i & 7));
+		}
+	}
+
+	/* Return the state machine to run-test-idle */
+	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
+	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+
+#ifndef __KERNEL__
+	/* Print the IR/DR readback values to STDOUT */
+	printf("Channel = %d, ", jtag_sw_tck);
+	printf("IR %u = ", IR_bit_count);
+	for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
+		printf("%x ", IR_byte[i]);
+	printf(" ");
+
+	printf("DR %u = ", DR_bit_count);
+	for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
+		printf("%x ", DR_byte[i]);
+	printf("\n");
+#endif
+
+	return 0;
+}
+
+#ifdef __KERNEL__ /* __KERNEL__ */
 /* Device infrastructure */
 static int udi_remove(struct platform_device *pdev)
 {
@@ -83,7 +167,6 @@ static int udi_probe(struct platform_device *pdev)
 	return 0;
 }
 
-
 static int udi_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	/*
@@ -93,8 +176,6 @@ static int udi_suspend(struct platform_device *pdev, pm_message_t state)
 	udi_ver("UDI suspend\n");
 	return 0;
 }
-
-
 
 static int udi_resume(struct platform_device *pdev)
 {
@@ -159,19 +240,24 @@ static int udi_reg_proc_show(struct seq_file *m, void *v)
 static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	char *buf = _copy_from_user_for_proc(buffer, count);
-	unsigned int udi_addr_offset = 0, udi_value = 0;
+	unsigned int udi_addr_offset = 0, udi_value = 0, udi_reg_msb, udi_reg_lsb;
 	unsigned char udi_rw[5] = { 0, 0, 0, 0, 0 };
 
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%s %x %x", udi_rw, &udi_addr_offset, &udi_value) == 3) {
-		/* w format or 'w', addr(offset), value */
+	if (sscanf(buf, "%s %x %d %d %x", udi_rw, &udi_addr_offset, &udi_reg_msb , &udi_reg_lsb, &udi_value) == 5) {
+		/* f format or 'f', addr, MSB, LSB, value */
+		udi_reg_field(udi_addr_offset, udi_reg_msb : udi_reg_lsb, udi_value);
+		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
+				udi_addr_offset, udi_reg_read(udi_addr_offset));
+	} else if (sscanf(buf, "%s %x %x", udi_rw, &udi_addr_offset, &udi_value) == 3) {
+		/* w format or 'w', addr, value */
 		udi_reg_write(udi_addr_offset, udi_value);
-		udi_info("Read back, offset addr = 0x%x, value = 0x%x\n",
+		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
 				udi_addr_offset, udi_reg_read(udi_addr_offset));
 	} else if (sscanf(buf, "%s %x", udi_rw, &udi_addr_offset) == 2) {
-		/* r format or 'r', addr(offset) */
+		/* r format or 'r', addr */
 		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
 				udi_addr_offset, udi_reg_read(udi_addr_offset));
 	} else {
@@ -209,57 +295,19 @@ static ssize_t udi_debug_proc_write(struct file *file, const char __user *buffer
 
 static int udi_jtag_clock_proc_show(struct seq_file *m, void *v)
 {
-	int i, j;
+	int i;
 
-	if ((IR_bit_count == 0) || (DR_bit_count == 0))
-		return 0;
-
-	/* clear output buffer and copy IR_byte / DR_byte to output buffer */
-	memset(UDI_IR, 0, sizeof(UDI_IR));
-	memset(UDI_DR, 0, sizeof(UDI_DR));
-	memcpy(UDI_IR, IR_byte, sizeof(IR_byte));
-	memcpy(UDI_DR, DR_byte, sizeof(DR_byte));
-
-	/* Jog the state machine arround to shift IR */
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
-	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
-
-	/* Shift the IR bits, assert TMS=1 for last bit */
-	for (i = 0; i < IR_bit_count; i++) {
-		j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (IR_bit_count - 1)) ? 1 : 0),
-		(((UDI_IR[i >> 3]) >> (i & 7)) & 1), 1);
-		UDI_IR[i >> 3] &= ~(1 << (i & 7));
-		UDI_IR[i >> 3] |= (j << (i & 7));
-	}
-
-	if (DR_bit_count) {
-		/* Jog the state machine arround to shift DR */
-		udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
-		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
-
-		/* Shift the DR bits, assert TMS=1 for last bit */
-		for (i = 0; i < DR_bit_count; i++) {
-			j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
-			(((UDI_DR[i >> 3]) >> (i & 7)) & 1), 1);
-			UDI_DR[i >> 3] &= ~(1 << (i & 7));
-			UDI_DR[i >> 3] |= (j << (i & 7));
-		}
-	}
-
-	/* Return the state machine to run-test-idle */
-	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+	udi_jtag_clock_read();
 
 	/* Print the IR/DR readback values to STDOUT */
 	seq_printf(m, "IR %u ", IR_bit_count);
 	for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
-		seq_printf(m, "%02x", UDI_IR[i]);
+		seq_printf(m, "%02x", IR_byte[i]);
 	seq_puts(m, " ");
 
 	seq_printf(m, "DR %u ", DR_bit_count);
 	for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
-		seq_printf(m, "%02x", UDI_DR[i]);
+		seq_printf(m, "%02x", DR_byte[i]);
 	seq_puts(m, "\n");
 
 	return 0;
@@ -275,6 +323,7 @@ In this form there are 4 calling parameters:
 %x ¡X hex string for DR bit sequence
 
 e.g. echo 3 12 a05 30 9b6a4109 > /proc/udi/udi_jtag_clock
+     echo 0 11 006 11 000 > /proc/udi/udi_jtag_clock
 */
 
 static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
@@ -282,7 +331,7 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 
 	unsigned int j, numdigits, length;
 	unsigned int recv_buf[3];
-	unsigned char recv_char[2][RECV_IRDR_SIZE * 2]; /* two char is one byte */
+	unsigned char recv_char[2][UDI_FIFOSIZE * 2]; /* two char is one byte */
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
@@ -533,5 +582,5 @@ module_exit(udi_exit);
 
 MODULE_DESCRIPTION("MediaTek UDI Driver v0.1");
 MODULE_LICENSE("GPL");
-
+#endif /* __KERNEL__ */
 #undef __MT_UDI_C__
