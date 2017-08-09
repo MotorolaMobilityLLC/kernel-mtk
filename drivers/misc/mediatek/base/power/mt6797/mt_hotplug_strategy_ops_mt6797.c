@@ -168,14 +168,14 @@ static int hps_algo_down(void)
 		     hps_ctxt.down_times) ? 0 : hps_ctxt.down_loads_history_index + 1;
 		++hps_ctxt.down_loads_count;
 		/* XXX: use >= or >, which is benifit? use > */
+		if (hps_ctxt.down_times == 1)
+			val = hps_ctxt.down_loads_sum = hps_ctxt.cur_loads;
 		if (hps_ctxt.down_loads_count > hps_ctxt.down_times) {
 			BUG_ON(hps_ctxt.down_loads_sum < val);
 			hps_ctxt.down_loads_sum -= val;
 		}
 		if (hps_ctxt.stats_dump_enabled)
 			hps_ctxt_print_algo_stats_down(0);
-		if (hps_ctxt.down_times == 1)
-			hps_ctxt.down_loads_sum = hps_ctxt.cur_loads;
 		if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) {
 			unsigned int down_threshold = hps_ctxt.down_threshold * hps_ctxt.down_times;
 
