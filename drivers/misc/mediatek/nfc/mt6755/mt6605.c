@@ -662,10 +662,6 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 	if (ret < 0) {
 		pr_debug("%s: i2c_master_recv returned %d, irq status=%d\n", __func__,
 			 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));
-		pr_debug("%s, enable clock buffer\n", __func__);
-		clk_buf_ctrl(CLK_BUF_NFC, 0);
-		usleep_range(900, 1000);
-		clk_buf_ctrl(CLK_BUF_NFC, 1);
 		return ret;
 	}
 
@@ -695,10 +691,7 @@ static ssize_t mt6605_dev_write(struct file *filp, const char __user *buf,
 				size_t count, loff_t *offset)
 {
 	struct mt6605_dev *mt6605_dev;
-	int ret = 0, count_ori = 0, count_remain = 0, idx = 0;
-	int n = 0, ret_tmp = 0, count_retry = 10;
-	char dbg_buff[1024];
-	unsigned int len;
+	int ret = 0, ret_tmp = 0, count_ori = 0, count_remain = 0, idx = 0;
 
 	mt6605_dev = filp->private_data;
 	count_ori = count;
@@ -729,33 +722,16 @@ static ssize_t mt6605_dev_write(struct file *filp, const char __user *buf,
 		/* mt6605_dev->client->ext_flag |= I2C_A_FILTER_MSG; */
 		mt6605_dev->client->timing = NFC_CLIENT_TIMING;
 
-		while (count_retry) {
 			ret_tmp =
 			    i2c_master_send(mt6605_dev->client,
 					    (unsigned char *)(uintptr_t)
 					    I2CDMAWriteBuf_pa, count);
+
 			if (ret_tmp != count) {
 				pr_debug("%s : i2c_master_send returned %d\n", __func__,
 					 ret);
-				if (I2CDMAWriteBuf) {
-					memset(dbg_buff, 0x00, 1024);
-					len = 0;
-					pr_debug("ret_tmp = %d, count = %zu\n", ret_tmp, count);
-					for (n = 0; n < 64; n++) {
-						sprintf(dbg_buff+len, "%02x,", I2CDMAWriteBuf[n]);
-						len = strlen(dbg_buff);
-					}
-					sprintf(dbg_buff+len, "\n");
-					pr_err("%s", dbg_buff);
-				}
-				count_retry--;
-				usleep_range(900, 1000);
-				if ((1 == count) && (0x55 == I2CDMAWriteBuf[0]) && count_retry)
-					continue;
 				ret = -EIO;
-			} else {
-				break;
-			}
+				return ret;
 		}
 
 		ret += ret_tmp;
