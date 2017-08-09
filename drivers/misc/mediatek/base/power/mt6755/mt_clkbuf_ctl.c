@@ -22,6 +22,7 @@
 #include <linux/string.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/ratelimit.h>
 
 #include <mt-plat/sync_write.h>
 #include <mt_spm.h>
@@ -32,11 +33,12 @@
 #include <mt_clkbuf_ctl.h>
 #include <mt-plat/upmu_common.h>
 
-#define CLK_BUF_TAG     "[Power/clkbuf]"
+#define TAG     "[Power/clkbuf]"
 
-#define clk_buf_err(fmt, args...)	pr_err(CLK_BUF_TAG fmt, ##args)
-#define clk_buf_warn(fmt, args...)	pr_warn(CLK_BUF_TAG fmt, ##args)
-#define clk_buf_dbg(fmt, args...)	pr_debug(CLK_BUF_TAG fmt, ##args)
+#define clk_buf_err(fmt, args...)		pr_err(TAG fmt, ##args)
+#define clk_buf_warn(fmt, args...)		pr_warn(TAG fmt, ##args)
+#define clk_buf_warn_limit(fmt, args...)	pr_warn_ratelimited(TAG fmt, ##args)
+#define clk_buf_dbg(fmt, args...)		pr_debug(TAG fmt, ##args)
 
 /*
  * LOCK
@@ -351,7 +353,7 @@ static struct attribute_group spm_attr_group = {
 	.attrs	= clk_buf_attrs,
 };
 
-static bool is_clk_buf_from_pmic(void)
+bool is_clk_buf_from_pmic(void)
 {
 	unsigned int reg = 0;
 	bool ret = false;
@@ -371,10 +373,10 @@ static bool is_clk_buf_from_pmic(void)
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
 	if ((reg & 0x200) == 0x200) {
-		clk_buf_warn("clkbuf is from RF, PMIC_CW00_ADDR=0x%x\n", reg);
+		clk_buf_warn_limit("clkbuf is from RF, CW00=0x%x\n", reg);
 		ret = false;
 	} else {
-		clk_buf_warn("clkbuf is from PMIC, PMIC_CW00_ADDR=0x%x\n", reg);
+		clk_buf_warn_limit("clkbuf is from PMIC, CW00=0x%x\n", reg);
 		ret = true;
 	}
 
