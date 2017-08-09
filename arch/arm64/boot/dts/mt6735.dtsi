@@ -688,18 +688,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x11011000 0x1000>;
 			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
 			pwm_ch = <0>;
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_IRTX>;
 			clock-names = "clk-irtx-main";
-
-			pinctrl-names = "irtx_gpio_default",
-					"irtx_gpio_led_set";
-
-			pinctrl-0 = <&irtx_gpio_default>;
-			pinctrl-1 = <&irtx_gpio_led_set>;
-			status = "okay";
 		};
 
 		apuart0: apuart0@11002000 {
@@ -711,24 +703,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts =	<GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 103 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_UART0>, <&perisys PERI_APDMA>;
 			clock-names = "uart0-main", "uart-apdma";
-
-			pinctrl-names = "uart0_gpio_default",
-					"uart0_rx_set",
-					"uart0_rx_clear",
-					"uart0_tx_set",
-					"uart0_tx_clear";
-
-			pinctrl-0 = <&uart0_gpio_def_cfg>;
-			pinctrl-1 = <&uart0_rx_set_cfg>;
-			pinctrl-2 = <&uart0_rx_clr_cfg>;
-			pinctrl-3 = <&uart0_tx_set_cfg>;
-			pinctrl-4 = <&uart0_tx_clr_cfg>;
-			status = "okay";
 		};
 
 		apuart1: apuart1@11003000 {
@@ -740,24 +718,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 						 <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 						 <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_UART1>;
 			clock-names = "uart1-main";
-
-			pinctrl-names = "uart1_gpio_default",
-					"uart1_rx_set",
-					"uart1_rx_clear",
-					"uart1_tx_set",
-					"uart1_tx_clear";
-
-			pinctrl-0 = <&uart1_gpio_def_cfg>;
-			pinctrl-1 = <&uart1_rx_set_cfg>;
-			pinctrl-2 = <&uart1_rx_clr_cfg>;
-			pinctrl-3 = <&uart1_tx_set_cfg>;
-			pinctrl-4 = <&uart1_tx_clr_cfg>;
-			status = "okay";
 		};
 
 		apuart2: apuart2@11004000 {
@@ -769,24 +733,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 						 <GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 						 <GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_UART2>;
 			clock-names = "uart2-main";
-
-			pinctrl-names = "uart2_gpio_default",
-					"uart2_rx_set",
-					"uart2_rx_clear",
-					"uart2_tx_set",
-					"uart2_tx_clear";
-
-			pinctrl-0 = <&uart2_gpio_def_cfg>;
-			pinctrl-1 = <&uart2_rx_set_cfg>;
-			pinctrl-2 = <&uart2_rx_clr_cfg>;
-			pinctrl-3 = <&uart2_tx_set_cfg>;
-			pinctrl-4 = <&uart2_tx_clr_cfg>;
-			status = "okay";
 		};
 
 		apuart3: apuart3@11005000 {
@@ -798,24 +748,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 						 <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 						 <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_UART3>;
 			clock-names = "uart3-main";
 
-			pinctrl-names = "uart3_gpio_default",
-					"uart3_rx_set",
-					"uart3_rx_clear",
-					"uart3_tx_set",
-					"uart3_tx_clear";
-
-			pinctrl-0 = <&uart3_gpio_def_cfg>;
-			pinctrl-1 = <&uart3_rx_set_cfg>;
-			pinctrl-2 = <&uart3_rx_clr_cfg>;
-			pinctrl-3 = <&uart3_tx_set_cfg>;
-			pinctrl-4 = <&uart3_tx_clr_cfg>;
-			status = "okay";
 		};
 
 		pwm:pwm@11006000 {
@@ -923,7 +860,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts =	<GIC_SPI 95 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&perisys PERI_UART4>;
