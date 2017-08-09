@@ -1267,7 +1267,7 @@ VOID rlmFillVhtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T
 #endif
 
 static VOID rlmReviseMaxBw(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, P_ENUM_CHNL_EXT_T peExtend,
-			PUINT_8 peChannelWidth, PUINT_8 pucS1, PUINT_8 pucPrimaryCh)
+			PUINT_8 peChannelWidth, PUINT_8 pucS1, UINT_8 ucPrimaryCh)
 {
 	UINT_8 ucMaxBandwidth = MAX_BW_80MHZ;
 	UINT_8 ucCurrentBandwidth = MAX_BW_20MHZ;
@@ -1305,17 +1305,17 @@ static VOID rlmReviseMaxBw(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, P_ENUM_CHNL
 				/*modify S1 for Bandwidth 160 downgrade 80 case*/
 				if (ucCurrentBandwidth == MAX_BW_160MHZ) {
 
-					if ((*pucPrimaryCh >= 36) && (*pucPrimaryCh <= 48))
+					if ((ucPrimaryCh >= 36) && (ucPrimaryCh <= 48))
 						*pucS1 = 42;
-					else if ((*pucPrimaryCh >= 52) && (*pucPrimaryCh <= 64))
+					else if ((ucPrimaryCh >= 52) && (ucPrimaryCh <= 64))
 						*pucS1 = 58;
-					else if ((*pucPrimaryCh >= 100) && (*pucPrimaryCh <= 102))
+					else if ((ucPrimaryCh >= 100) && (ucPrimaryCh <= 112))
 						*pucS1 = 106;
-					else if ((*pucPrimaryCh >= 116) && (*pucPrimaryCh <= 128))
+					else if ((ucPrimaryCh >= 116) && (ucPrimaryCh <= 128))
 						*pucS1 = 122;
-					else if ((*pucPrimaryCh >= 132) && (*pucPrimaryCh <= 144))
+					else if ((ucPrimaryCh >= 132) && (ucPrimaryCh <= 144))
 						*pucS1 = 138; /*160 downgrade should not in this case*/
-					else if ((*pucPrimaryCh >= 149) && (*pucPrimaryCh <= 161))
+					else if ((ucPrimaryCh >= 149) && (ucPrimaryCh <= 161))
 						*pucS1 = 155; /*160 downgrade should not in this case*/
 					else
 						DBGLOG(RLM, INFO,
@@ -1743,7 +1743,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 #endif
 
 	rlmReviseMaxBw(prAdapter, prBssInfo->ucBssIndex, &prBssInfo->eBssSCO, &prBssInfo->ucVhtChannelWidth,
-		&prBssInfo->ucVhtChannelFrequencyS1, &prBssInfo->ucPrimaryChannel);
+		&prBssInfo->ucVhtChannelFrequencyS1, prBssInfo->ucPrimaryChannel);
 
 	if (!rlmDomainIsValidRfSetting(prAdapter, prBssInfo->eBand,
 				       prBssInfo->ucPrimaryChannel, prBssInfo->eBssSCO,
