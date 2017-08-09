@@ -3,6 +3,7 @@
 
 #include <linux/wait.h>
 #include "ccci_core.h"
+#include "ccci_config.h"
 
 #define MAX_NUM_IPC_TASKS 10
 #define CCCI_TASK_PENDING 0x01
