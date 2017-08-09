@@ -29,11 +29,10 @@ extern void __iomem *pericfg_reg_base;
 extern void __iomem *apmixed_reg_base;
 extern void __iomem *topckgen_reg_base;
 
-int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
-		unsigned int *cd_irq);
+int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 
 #ifdef FPGA_PLATFORM
-void msdc_fpga_pwr_init(struct device *dev);
+void msdc_fpga_pwr_init(void);
 #endif
 
 /**************************************************************/
@@ -122,28 +121,7 @@ void msdc_sd_power(struct msdc_host *host, u32 on);
 void msdc_sdio_power(struct msdc_host *host, u32 on);
 void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_vcore(struct msdc_host *host);
-
-#if !defined(CONFIG_MTK_LEGACY)
-enum MSDC_LDO_POWER {
-	POWER_LDO_VMCH,
-	POWER_LDO_VMC,
-	POWER_LDO_VEMC,
-};
-bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name);
-bool msdc_hwPowerDown(unsigned int powerId, char *mode_name);
-
-#else
-#define POWER_LDO_VMCH          MT6351_POWER_LDO_VMCH
-#define POWER_LDO_VMC           MT6351_POWER_LDO_VMC
-#define POWER_LDO_VEMC          MT6351_POWER_LDO_VEMC
-
-#define msdc_hwPowerOn(powerId, powerVolt, name) \
-	hwPowerOn(powerId, powerVolt, name)
-
-#define msdc_hwPowerDown(powerId, name) \
-	hwPowerDown(powerId, name)
-#endif
-
+int msdc_regulator_set_and_enable(struct regulator *reg, int powerVolt);
 #endif
 
 #ifdef FPGA_PLATFORM
@@ -192,11 +170,8 @@ void msdc_dump_clock_sts(void);
 #define MSDC_INFRA_PDN_CLR1_OFFSET      (0x008c)
 #define MSDC_INFRA_PDN_STA1_OFFSET      (0x0094)
 
-extern u32 hclks_msdc50[];
-extern u32 hclks_msdc30[];
-extern u32 hclks_msdc30_3[];
-#define msdc_get_hclks(id) \
-	((id == 0) ? hclks_msdc50 : ((id == 3) ? hclks_msdc30_3 : hclks_msdc30))
+extern u32 *hclks_msdc_all[];
+#define msdc_get_hclks(id) hclks_msdc_all[id]
 
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host);

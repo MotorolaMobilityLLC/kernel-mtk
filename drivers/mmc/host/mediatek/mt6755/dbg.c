@@ -528,8 +528,13 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 	msdc_select_card_type(mmc);
 
 	if (mmc_card_sd(mmc->card)) {
+		/* For chang default caps in card_event */
 		g_sd_mode_switch = 1;
 		return;
+	} else {
+		/* For suppressing msdc_dump_info() caused by
+		   cmd13 do in mmc_reset()@mmc.c */
+		g_emmc_mode_switch = 1;
 	}
 
 	mmc_claim_host(mmc);
@@ -551,6 +556,8 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 
 	if (mmc_hw_reset(mmc))
 		pr_err("[SD_Debug] Reinit card failed, Can not switch speed mode\n");
+
+	g_emmc_mode_switch = 0;
 
 	mmc->caps &= ~MMC_CAP_HW_RESET;
 
@@ -1297,6 +1304,7 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 /* FIX ME: check if this function can be removed*/
 void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
 {
+	int i;
 	seq_printf(m, "hw->clk_src = %x\n", hw->clk_src);
 	seq_printf(m, "hw->cmd_edge = %x\n", hw->cmd_edge);
 	seq_printf(m, "hw->rdata_edge = %x\n", hw->rdata_edge);
@@ -1306,17 +1314,11 @@ void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
 	seq_printf(m, "hw->dat_drv = %x\n", hw->dat_drv);
 	seq_printf(m, "hw->rst_drv = %x\n", hw->rst_drv);
 	seq_printf(m, "hw->ds_drv = %x\n", hw->ds_drv);
-	seq_printf(m, "hw->data_pins = %x\n", (unsigned int)hw->data_pins);
-	seq_printf(m, "hw->data_offset = %x\n", (unsigned int)hw->data_offset);
 	seq_printf(m, "hw->flags = %x\n", (unsigned int)hw->flags);
-	seq_printf(m, "hw->dat0rddly = %x\n", hw->dat0rddly);
-	seq_printf(m, "hw->dat1rddly = %x\n", hw->dat1rddly);
-	seq_printf(m, "hw->dat2rddly = %x\n", hw->dat2rddly);
-	seq_printf(m, "hw->dat3rddly = %x\n", hw->dat3rddly);
-	seq_printf(m, "hw->dat4rddly = %x\n", hw->dat4rddly);
-	seq_printf(m, "hw->dat5rddly = %x\n", hw->dat5rddly);
-	seq_printf(m, "hw->dat6rddly = %x\n", hw->dat6rddly);
-	seq_printf(m, "hw->dat7rddly = %x\n", hw->dat7rddly);
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "hw->dat%drddly = %x\n", i, hw->datrddly[i]);
+
 	seq_printf(m, "hw->datwrddly = %x\n", hw->datwrddly);
 	seq_printf(m, "hw->cmdrrddly = %x\n", hw->cmdrrddly);
 	seq_printf(m, "hw->cmdrddly = %x\n", hw->cmdrddly);

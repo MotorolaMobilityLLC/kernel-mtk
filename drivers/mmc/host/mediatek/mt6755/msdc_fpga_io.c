@@ -15,6 +15,8 @@
 void __iomem *fpga_pwr_gpio;
 void __iomem *fpga_pwr_gpio_eo;
 
+#define FPGA_PWR_GPIO                    (0xF0001E84)
+#define FPGA_PWR_GPIO_EO                 (0xF0001E88)
 #define PWR_GPIO                         (fpga_pwr_gpio)
 #define PWR_GPIO_EO                      (fpga_pwr_gpio_eo)
 #define PWR_GPIO_L4_DIR                  (1 << 11)
@@ -40,10 +42,10 @@ void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 	pr_debug("[%s]: pwr gpio dir = 0x%x\n", __func__, l_val);
 }
 
-void msdc_fpga_pwr_init(struct device *dev)
+void msdc_fpga_pwr_init(void)
 {
 	if (fpga_pwr_gpio == NULL) {
-		fpga_pwr_gpio = of_iomap(dev->of_node, 1);
+		fpga_pwr_gpio = ioremap(FPGA_PWR_GPIO, 8);
 		fpga_pwr_gpio_eo = fpga_pwr_gpio + 0x4;
 		pr_err("FPAG PWR_GPIO, PWR_GPIO_EO address 0x%p, 0x%p\n",
 			fpga_pwr_gpio, fpga_pwr_gpio_eo);
@@ -129,7 +131,7 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 	hclks = msdc_get_hclks(host->id);
 
 	pr_err("[%s]: msdc%d change clk_src from %dKHz to %d:%dKHz\n", __func__,
-		host->id, (host->hclk/1000), clksrc, (hclks_msdc[clksrc]/1000));
+		host->id, (host->hclk/1000), clksrc, (hclks[clksrc]/1000));
 
 	host->hclk = hclks[clksrc];
 	host->hw->clk_src = clksrc;

@@ -32,8 +32,7 @@
 
 		mmc0: msdc0@11230000 {
 			compatible = "mediatek,mt6755-mmc";
-			reg = <0x11230000 0x10000  /* MSDC0_BASE   */
-			       0x10001e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
+			reg = <0x11230000 0x10000>;
 			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_MSDC0>;
 			clock-names = "MSDC0-CLOCK";
@@ -55,13 +54,14 @@
 			clock-names = "MSDC2-CLOCK";
 		};
 
+		/*
 		mmc3: msdc3@11260000 {
 			compatible = "mediatek,mt6755-mmc";
 			reg = <0x11260000 0x10000>;
 			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_MSDC3>;
 			clock-names = "MSDC3-CLOCK";
-		};
+		};*/
 	};
 
 	psci {
@@ -3332,5 +3332,7 @@
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/
+
+#include "cust_mt6755_msdc.dtsi"
 
 #include <trusty.dtsi>

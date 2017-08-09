@@ -4,6 +4,7 @@
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 
+#include <linux/gpio.h>
 #include <linux/delay.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
@@ -62,36 +63,6 @@ int g_reset_tune = 0;     /* do not record the pass settigns, but try the worst
 			     setting of each request. */
 
 u32 sdio_tune_flag = 0; /* FIX ME: check if it can be removed */
-
-#ifdef USE_CUST_NODE_IN_DTS
-/* FIX ME: check if it can be removed */
-int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para)
-{
-	struct tag_msdc_hw_para *msdc_para_hw_datap =
-		(struct tag_msdc_hw_para *) para;
-	unsigned char *cptr = (unsigned char *)para;
-
-	if ((NULL == hw) || (msdc_para_hw_datap == NULL))
-		return -1;
-
-	if ((msdc_para_hw_datap->host_function != MSDC_SD)
-	 && (msdc_para_hw_datap->host_function != MSDC_EMMC))
-		return -1;
-
-	if ((msdc_para_hw_datap->version == 0x5A01)
-	 && (msdc_para_hw_datap->end_flag == 0x5a5a5a5a)) {
-		/* exclude leading member and tailing members:
-		   version, host_function, boot, cd_level, end_flag */
-		memcpy(hw, cptr + 4, sizeof(struct tag_msdc_hw_para)
-			- sizeof(unsigned int)*4);
-		hw->boot  = msdc_para_hw_datap->boot;
-		hw->host_function  = msdc_para_hw_datap->host_function;
-		hw->cd_level  = msdc_para_hw_datap->cd_level;
-		return 0;
-	}
-	return -1;
-}
-#endif
 
 void msdc_reset_pwr_cycle_counter(struct msdc_host *host)
 {
@@ -198,7 +169,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		      3 power_tuning
 		      4 power_off */
 
-	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_DDLSEL, hw->ddlsel);
 	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, hw->cmd_edge);
 	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL, hw->rdata_edge);
 	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_W_D_SMPL, hw->wdata_edge);
@@ -260,7 +230,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 
 void msdc_set_bad_card_and_remove(struct msdc_host *host)
 {
-	int got_polarity = 0;
 	unsigned long flags;
 
 	if (host == NULL) {
@@ -275,15 +244,15 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 	}
 	if (host->mmc->card) {
 		spin_lock_irqsave(&host->remove_bad_card, flags);
-		got_polarity = host->sd_cd_polarity;
 		host->block_bad_card = 1;
 
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
-		 && (got_polarity ^ host->hw->cd_level)) {
-			tasklet_hi_schedule(&host->card_tasklet);
+		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
+			/* do nothing*/
+			/*tasklet_hi_schedule(&host->card_tasklet);*/
 		} else {
 			mmc_remove_card(host->mmc->card);
 			host->mmc->card = NULL;
@@ -526,54 +495,6 @@ int emmc_hs400_tune_rw(struct msdc_host *host)
 	return err;
 }
 
-#define BACKUP_REG_NUM (12)
-struct msdc_reg_control backup_reg_list[BACKUP_REG_NUM] = {
-	/*      addr
-		mask
-		value   default*/
-	{(OFFSET_MSDC_PATCH_BIT0),
-		(MSDC_PB0_INT_DAT_LATCH_CK_SEL),
-		0x0,    0x0},
-	{(OFFSET_MSDC_PATCH_BIT1),
-		(MSDC_PB1_WRDAT_CRCS_TA_CNTR),
-		0x0,    0x0},
-		/* defalut init value is 1, but HS400 shall be 0x0*/
-	{(OFFSET_MSDC_IOCON),
-		(MSDC_IOCON_R_D_SMPL | MSDC_IOCON_DDLSEL |
-		 MSDC_IOCON_R_D_SMPL_SEL | MSDC_IOCON_R_D0SPL |
-		 MSDC_IOCON_W_D_SMPL_SEL | MSDC_IOCON_W_D_SMPL),
-		0x0,    0x0},
-	{(OFFSET_MSDC_PAD_TUNE0),
-		(MSDC_PAD_TUNE0_DATWRDLY | MSDC_PAD_TUNE0_DATRRDLY),
-		0x0,    0x0},
-	{(OFFSET_MSDC_DAT_RDDLY0),
-		(MSDC_DAT_RDDLY0_D3 | MSDC_DAT_RDDLY0_D2 |
-		 MSDC_DAT_RDDLY0_D1 | MSDC_DAT_RDDLY0_D0),
-		0x0,    0x0},
-	{(OFFSET_MSDC_DAT_RDDLY1),
-		(MSDC_DAT_RDDLY1_D7 | MSDC_DAT_RDDLY1_D6 |
-		 MSDC_DAT_RDDLY1_D5 | MSDC_DAT_RDDLY1_D4),
-		0x0,    0x0},
-	{(OFFSET_EMMC50_PAD_CMD_TUNE),
-		(MSDC_EMMC50_PAD_CMD_TUNE_TXDLY),
-		0x0,    0x00000200},
-	{(OFFSET_EMMC50_PAD_DS_TUNE),
-		(MSDC_EMMC50_PAD_DS_TUNE_DLY1 | MSDC_EMMC50_PAD_DS_TUNE_DLY3),
-		0x0,    0x0},
-	{(OFFSET_EMMC50_PAD_DAT01_TUNE),
-		(MSDC_EMMC50_PAD_DAT0_TXDLY | MSDC_EMMC50_PAD_DAT1_TXDLY),
-		0x0,    0x01000100},
-	{(OFFSET_EMMC50_PAD_DAT23_TUNE),
-		(MSDC_EMMC50_PAD_DAT2_TXDLY | MSDC_EMMC50_PAD_DAT3_TXDLY),
-		0x0,    0x01000100},
-	{(OFFSET_EMMC50_PAD_DAT45_TUNE),
-		(MSDC_EMMC50_PAD_DAT4_TXDLY | MSDC_EMMC50_PAD_DAT5_TXDLY),
-		0x0,    0x01000100},
-	{(OFFSET_EMMC50_PAD_DAT67_TUNE),
-		(MSDC_EMMC50_PAD_DAT6_TXDLY | MSDC_EMMC50_PAD_DAT7_TXDLY),
-		0x0,    0x01000100},
-};
-
 /*
    register as callback function of WIFI(combo_sdio_register_pm) .
    can called by msdc_drv_suspend/resume too.
@@ -649,28 +570,6 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	/*msdc_dump_register(host);*/
 }
 
-/*
- *  2015-01-09
- *  Runtime reducing to legacy speed or slower clock, clear eMMC ett timing
- */
-void emmc_clear_timing(void)
-{
-	int i = 0;
-
-	if (!mtk_msdc_host[0]) {
-		pr_err("[%s] msdc%d is not exist\n", __func__, 0);
-		return;
-	}
-
-	pr_err("emmc_clear_timing msdc0\n");
-	for (i = 0; i < BACKUP_REG_NUM; i++) {
-		MSDC_SET_FIELD(
-			(backup_reg_list[i].addr + mtk_msdc_host[0]->base),
-			backup_reg_list[i].mask,
-			backup_reg_list[i].default_value);
-	}
-}
-
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 {
 	void __iomem *base = host->base;
@@ -729,6 +628,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);
 	MSDC_WRITE32(MSDC_DAT_RDDLY1, 0x00000000);
 
+	MSDC_WRITE32(MSDC_PATCH_BIT0, 0x403C000F);
 	MSDC_WRITE32(MSDC_PATCH_BIT1, 0xFFFE00C9);
 
 	/* 64T + 48T cmd <-> resp */
@@ -972,92 +872,88 @@ int msdc_tuning_wo_autok(struct msdc_host *host)
 }
 #endif
 
+#define MSDC0_TX_SETTING_NUM	(12)
+static u32 msdc0_tx_setting_reg[MSDC0_TX_SETTING_NUM][2] = {
+	{OFFSET_MSDC_IOCON, MSDC_IOCON_DDR50CKD},
+	{OFFSET_EMMC50_CFG0, MSDC_EMMC50_CFG_TXSKEW_SEL},
+	{OFFSET_MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY},
+	{OFFSET_EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT1_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT23_TUNE, MSDC_EMMC50_PAD_DAT2_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT23_TUNE, MSDC_EMMC50_PAD_DAT3_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT45_TUNE, MSDC_EMMC50_PAD_DAT4_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT45_TUNE, MSDC_EMMC50_PAD_DAT5_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT67_TUNE, MSDC_EMMC50_PAD_DAT6_TXDLY},
+	{OFFSET_EMMC50_PAD_DAT67_TUNE, MSDC_EMMC50_PAD_DAT7_TXDLY}
+};
+
+static u8 msdc0_hs400_tx_setting_default_val[MSDC0_TX_SETTING_NUM] = {
+	MSDC_DDRCKD,
+	MSDC0_HS400_TXSKEW,
+	MSDC0_HS400_CLKTXDLY,
+	MSDC0_HS400_CMDTXDLY,
+	MSDC0_HS400_DAT0TXDLY,
+	MSDC0_HS400_DAT1TXDLY,
+	MSDC0_HS400_DAT2TXDLY,
+	MSDC0_HS400_DAT3TXDLY,
+	MSDC0_HS400_DAT4TXDLY,
+	MSDC0_HS400_DAT5TXDLY,
+	MSDC0_HS400_DAT6TXDLY,
+	MSDC0_HS400_DAT7TXDLY
+};
+
+/* for hs and hs200 */
+static u8 msdc0_hs_tx_setting_default_val[MSDC0_TX_SETTING_NUM] = {
+	MSDC_DDRCKD,
+	MSDC0_CLKTXDLY,
+	MSDC0_TXSKEW,
+	MSDC0_CMDTXDLY,
+	MSDC0_DAT0TXDLY,
+	MSDC0_DAT1TXDLY,
+	MSDC0_DAT2TXDLY,
+	MSDC0_DAT3TXDLY,
+	MSDC0_DAT4TXDLY,
+	MSDC0_DAT5TXDLY,
+	MSDC0_DAT6TXDLY,
+	MSDC0_DAT7TXDLY
+};
+
+static u8 msdc0_ddr52_tx_setting_default_val[MSDC0_TX_SETTING_NUM] = {
+	MSDC0_DDR50_DDRCKD,
+	MSDC0_CLKTXDLY,
+	MSDC0_TXSKEW,
+	MSDC0_CMDTXDLY,
+	MSDC0_DAT0TXDLY,
+	MSDC0_DAT1TXDLY,
+	MSDC0_DAT2TXDLY,
+	MSDC0_DAT3TXDLY,
+	MSDC0_DAT4TXDLY,
+	MSDC0_DAT5TXDLY,
+	MSDC0_DAT6TXDLY,
+	MSDC0_DAT7TXDLY
+};
+
 static void msdc_init_tx_setting(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
+	u8 *tx_setting_default;
+	int i;
 
 	if (host->hw->host_function == MSDC_EMMC) {
 		if ((ios->timing == MMC_TIMING_MMC_HS400) &&
-		    (ios->clock >= 100000000)) {
-			MSDC_SET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_DDR50CKD, MSDC_DDRCKD);
-			MSDC_SET_FIELD(EMMC50_CFG0,
-				MSDC_EMMC50_CFG_TXSKEW_SEL,
-				MSDC0_HS400_TXSKEW);
-			MSDC_SET_FIELD(MSDC_PAD_TUNE0,
-				MSDC_PAD_TUNE0_CLKTXDLY,
-				MSDC0_HS400_CLKTXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE,
-				MSDC_EMMC50_PAD_CMD_TUNE_TXDLY,
-				MSDC0_HS400_CMDTXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
-				MSDC_EMMC50_PAD_DAT0_TXDLY,
-				MSDC0_HS400_DAT0TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
-				MSDC_EMMC50_PAD_DAT1_TXDLY,
-				MSDC0_HS400_DAT1TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
-				MSDC_EMMC50_PAD_DAT2_TXDLY,
-				MSDC0_HS400_DAT2TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
-				MSDC_EMMC50_PAD_DAT3_TXDLY,
-				MSDC0_HS400_DAT3TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT45_TUNE,
-				MSDC_EMMC50_PAD_DAT4_TXDLY,
-				MSDC0_HS400_DAT4TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT45_TUNE,
-				MSDC_EMMC50_PAD_DAT5_TXDLY,
-				MSDC0_HS400_DAT5TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE,
-				MSDC_EMMC50_PAD_DAT6_TXDLY,
-				MSDC0_HS400_DAT6TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE,
-				MSDC_EMMC50_PAD_DAT7_TXDLY,
-				MSDC0_HS400_DAT7TXDLY);
-		} else {
-			if ((ios->timing == MMC_TIMING_UHS_DDR50)
-			 || (ios->timing == MMC_TIMING_MMC_DDR52)) {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_DDR50CKD,
-					MSDC0_DDR50_DDRCKD);
-			} else {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_DDR50CKD, MSDC_DDRCKD);
-			}
-			MSDC_SET_FIELD(MSDC_PAD_TUNE0,
-				MSDC_PAD_TUNE0_CLKTXDLY,
-				MSDC0_CLKTXDLY);
-			MSDC_SET_FIELD(EMMC50_CFG0,
-				MSDC_EMMC50_CFG_TXSKEW_SEL,
-				MSDC0_TXSKEW);
-			MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE,
-				MSDC_EMMC50_PAD_CMD_TUNE_TXDLY,
-				MSDC0_CMDTXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
-				MSDC_EMMC50_PAD_DAT0_TXDLY,
-				MSDC0_DAT0TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE,
-				MSDC_EMMC50_PAD_DAT1_TXDLY,
-				MSDC0_DAT1TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
-				MSDC_EMMC50_PAD_DAT2_TXDLY,
-				MSDC0_DAT2TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE,
-				MSDC_EMMC50_PAD_DAT3_TXDLY,
-				MSDC0_DAT3TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT45_TUNE,
-				MSDC_EMMC50_PAD_DAT4_TXDLY,
-				MSDC0_DAT4TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT45_TUNE,
-				MSDC_EMMC50_PAD_DAT5_TXDLY,
-				MSDC0_DAT5TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE,
-				MSDC_EMMC50_PAD_DAT6_TXDLY,
-				MSDC0_DAT6TXDLY);
-			MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE,
-				MSDC_EMMC50_PAD_DAT7_TXDLY,
-				MSDC0_DAT7TXDLY);
+		    (ios->clock >= 100000000))
+			tx_setting_default = msdc0_hs400_tx_setting_default_val;
+		else if (ios->timing == MMC_TIMING_MMC_DDR52)
+			tx_setting_default = msdc0_ddr52_tx_setting_default_val;
+		else
+			tx_setting_default = msdc0_hs_tx_setting_default_val;
+
+		for (i = 0; i < MSDC0_TX_SETTING_NUM; i++) {
+			MSDC_SET_FIELD(base + msdc0_tx_setting_reg[i][0],
+				msdc0_tx_setting_reg[i][1],
+				tx_setting_default[i]);
 		}
 	} else if (host->hw->host_function == MSDC_SD) {
 		MSDC_SET_FIELD(MSDC_IOCON,
@@ -1080,6 +976,7 @@ static void msdc_init_tx_setting(struct mmc_host *mmc, struct mmc_ios *ios)
 			MSDC2_CLK_TX_VALUE);
 	}
 }
+
 
 /*For msdc_ios_set_ios()*/
 void msdc_ios_tune_setting(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -1112,7 +1009,7 @@ void msdc_ios_tune_setting(struct mmc_host *mmc, struct mmc_ios *ios)
 				msdc_execute_tuning(host->mmc,
 					MMC_SEND_TUNING_BLOCK_HS200);
 		} else {
-			emmc_clear_timing();
+			msdc_init_tune_setting(host);
 			host->first_tune_done = 0;
 		}
 	}

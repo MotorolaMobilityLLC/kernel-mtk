@@ -79,21 +79,11 @@ static int sd_ioctl_cd_pin_en(struct msdc_ioctl	*msdc_ctl)
 	struct msdc_host *host = msdc_get_host(MSDC_SD,	0, 0);
 
 	if (NULL != host)
-		return (host->hw->flags & MSDC_CD_PIN_EN) == MSDC_CD_PIN_EN;
+		return (host->mmc->caps & MMC_CAP_NONREMOVABLE)
+			== MMC_CAP_NONREMOVABLE;
 	else
 		return -EINVAL;
 }
-
-/* FIX ME: check if it can be removed since it may have no caller */
-/*
-void msdc_check_init_done(void)
-{
-	struct msdc_host *host = NULL;
-	host = msdc_get_host(MSDC_EMMC, 1, 0);
-	BUG_ON(!host || !host->mmc || !host->mmc->card);
-	host->mmc->card_init_wait(host->mmc);
-	pr_err("[%s]: get the emmc init done signal\n", __func__);
-}*/
 
 int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 {

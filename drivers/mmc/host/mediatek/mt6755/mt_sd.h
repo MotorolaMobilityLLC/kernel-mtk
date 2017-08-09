@@ -185,24 +185,11 @@ struct msdc_hw {
 	unsigned char cmd_drv_sd_18_ddr50;      /* command pad driving for SD card at 1.8v ddr50 mode */
 	unsigned char dat_drv_sd_18_ddr50;      /* data pad driving for SD card at 1.8v ddr50 mode */
 	unsigned long flags;    /* hardware capability flags */
-	unsigned long data_pins;        /* data pins */
-	unsigned long data_offset;      /* data address offset */
 
-	unsigned char ddlsel;   /* data line delay line fine tune selecion*/
-	unsigned char rdsplsel; /* read: data line rising or falling latch fine tune selection */
-	unsigned char wdsplsel; /* write: data line rising or falling latch fine tune selection*/
-
-	unsigned char dat0rddly;        /*read; range: 0~31*/
-	unsigned char dat1rddly;        /*read; range: 0~31*/
-	unsigned char dat2rddly;        /*read; range: 0~31*/
-	unsigned char dat3rddly;        /*read; range: 0~31*/
-	unsigned char dat4rddly;        /*read; range: 0~31*/
-	unsigned char dat5rddly;        /*read; range: 0~31*/
-	unsigned char dat6rddly;        /*read; range: 0~31*/
-	unsigned char dat7rddly;        /*read; range: 0~31*/
+	unsigned char datrddly[8];      /*read; range: 0~31*/
 	unsigned char datwrddly;        /*write; range: 0~31*/
 	unsigned char cmdrrddly;        /*cmd; range: 0~31*/
-	unsigned char cmdrddly; /*cmd; range: 0~31*/
+	unsigned char cmdrddly;         /*cmd; range: 0~31*/
 
 	unsigned char cmdrtactr_sdr50;  /* command response turn around counter, sdr 50 mode*/
 	unsigned char wdatcrctactr_sdr50;       /* write data crc turn around counter, sdr 50 mode*/
@@ -215,9 +202,6 @@ struct msdc_hw {
 	unsigned char host_function;    /* define host function */
 	unsigned char cd_level;         /* card detection level */
 
-	/* config gpio pull mode */
-	void (*config_gpio_pin)(int type, int pull);
-
 	/* external power control for card */
 	void (*ext_power_on)(void);
 	void (*ext_power_off)(void);
@@ -227,23 +211,8 @@ struct msdc_hw {
 	void (*enable_sdio_eirq)(void);
 	void (*disable_sdio_eirq)(void);
 
-	/* external cd irq operations */
-	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
-	void (*enable_cd_eirq)(void);
-	void (*disable_cd_eirq)(void);
-	int (*get_cd_status)(void);
-
 	/* power management callback for external module */
 	void (*register_pm)(pm_callback_t pm_cb, void *data);
-};
-
-enum MSDC_POWER {
-	MSDC_VIO18_MC1 = 0,
-	MSDC_VIO18_MC2,
-	MSDC_VIO28_MC1,
-	MSDC_VIO28_MC2,
-	MSDC_VMC,
-	MSDC_VGP6,
 };
 
 
@@ -283,7 +252,6 @@ struct bd_t {
 	u32  buflen:24;
 	u32  rsv3:8;
 };
-
 
 struct scatterlist_ex {
 	u32 cmd;
@@ -334,8 +302,6 @@ struct msdc_saved_para {
 	u32 pad_tune1;
 	u32 ddly0;
 	u32 ddly1;
-	u8 cmd_resp_ta_cntr;            /*to be removed, if pb1 works*/
-	u8 wrdat_crc_ta_cntr;           /*to be removed, if pb1 works*/
 	u8 suspend_flag;
 	u32 msdc_cfg;
 	u32 mode;
@@ -387,7 +353,6 @@ struct msdc_host {
 	u32                     blksz;          /* host block size */
 	void __iomem            *base;          /* host base address */
 	int                     id;             /* host id */
-	int                     pwr_ref;        /* core power reference count */
 
 	u32                     xfer_size;      /* total transferred size */
 
@@ -405,7 +370,6 @@ struct msdc_host {
 
 	int                     irq;            /* host interrupt */
 
-	struct tasklet_struct   card_tasklet;
 #ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
 	struct tasklet_struct   flush_cache_tasklet;
 #endif
@@ -425,12 +389,10 @@ struct msdc_host {
 	u32                     sclk;           /* SD/MS clock speed */
 	u8                      core_clkon;     /* host clock(cg) status */
 	u8                      timing;         /* timing specification used */
-	u8                      core_power;     /* core power */
 	u8                      power_mode;     /* host power mode */
 	u8                      bus_width;
 	u8                      card_inserted;  /* card inserted ? */
 	u8                      suspend;        /* host suspended ? */
-	u8                      reserved;
 	u8                      app_cmd;        /* for app command */
 	u32                     app_cmd_arg;
 	u64                     starttime;
@@ -463,12 +425,6 @@ struct msdc_host {
 #endif
 	unsigned int            power_domain;
 	struct msdc_saved_para  saved_para;
-	int                     sd_cd_polarity;
-	int                     sd_cd_insert_work;
-				/* to make sure insert mmc_rescan this work
-				   in start_host when boot up.
-				   Driver will get a EINT(Level sensitive)
-				   when boot up phone with card insert */
 #ifndef CONFIG_HAS_EARLYSUSPEND
 	struct wakeup_source    trans_lock;
 #else
@@ -489,62 +445,6 @@ struct msdc_host {
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
 #endif
-};
-
-struct tag_msdc_hw_para {
-	unsigned int  version;          /* msdc structure version info */
-	unsigned int  clk_src;          /* host clock source */
-	unsigned int  cmd_edge;         /* command latch edge */
-	unsigned int  rdata_edge;       /* read data latch edge */
-	unsigned int  wdata_edge;       /* write data latch edge */
-	unsigned int  clk_drv;          /* clock pad driving */
-	unsigned int  cmd_drv;          /* command pad driving */
-	unsigned int  dat_drv;          /* data pad driving */
-	unsigned int  rst_drv;          /* RST-N pad driving */
-	unsigned int  ds_drv;           /* eMMC5.0 DS pad driving */
-	unsigned int  clk_drv_sd_18;    /* clock pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  cmd_drv_sd_18;    /* command pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  dat_drv_sd_18;    /* data pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  clk_drv_sd_18_sdr50;    /* clock pad driving for SD card
-						 at 1.8v sdr50 mode */
-	unsigned int  cmd_drv_sd_18_sdr50;    /* command pad driving for SD
-						 card at 1.8v sdr50 mode */
-	unsigned int  dat_drv_sd_18_sdr50;    /* data pad driving for SD card
-						 at 1.8v sdr50 mode */
-	unsigned int  clk_drv_sd_18_ddr50;    /* clock pad driving for SD card
-						 at 1.8v ddr50 mode */
-	unsigned int  cmd_drv_sd_18_ddr50;    /* command pad driving for SD
-						 card at 1.8v ddr50 mode */
-	unsigned int  dat_drv_sd_18_ddr50;    /* data pad driving for SD card
-						 at 1.8v ddr50 mode */
-	unsigned int  flags;            /* hardware capability flags */
-	unsigned int  data_pins;        /* data pins */
-	unsigned int  data_offset;      /* data address offset */
-	unsigned int  ddlsel;           /* data line delay shared or
-					   separated selecion */
-	unsigned int  rdsplsel;         /* read: data line rising or falling
-					   latch selection */
-	unsigned int  wdsplsel;         /* write: data line rising or falling
-					   latch selection */
-	unsigned int  dat0rddly;        /*read; range: 0~31 */
-	unsigned int  dat1rddly;        /*read; range: 0~31 */
-	unsigned int  dat2rddly;        /*read; range: 0~31 */
-	unsigned int  dat3rddly;        /*read; range: 0~31 */
-	unsigned int  dat4rddly;        /*read; range: 0~31 */
-	unsigned int  dat5rddly;        /*read; range: 0~31 */
-	unsigned int  dat6rddly;        /*read; range: 0~31 */
-	unsigned int  dat7rddly;        /*read; range: 0~31 */
-	unsigned int  datwrddly;        /*write; range: 0~31 */
-	unsigned int  cmdrrddly;        /*cmd; range: 0~31 */
-	unsigned int  cmdrddly;         /*cmd; range: 0~31 */
-	unsigned int  boot;             /* define boot host*/
-	unsigned char host_function;    /* define host function*/
-	unsigned char cd_level;         /* card detection level*/
-	unsigned int  end_flag;         /* This struct end flag,
-					   should be 0x5a5a5a5a */
 };
 
 enum {
@@ -753,6 +653,7 @@ extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
 extern int g_dma_debug[HOST_MAX_NUM];
 
 extern u32 g_sd_mode_switch;
+extern u32 g_emmc_mode_switch;
 
 enum {
 	SD_TOOL_ZONE = 0,
@@ -808,7 +709,6 @@ extern bool emmc_sleep_failed;
 
 extern int msdc_rsp[];
 
-extern void pmic_ldo_oc_int_register(void);
 
 /**********************************************************/
 /* Functions                                               */
@@ -874,12 +774,6 @@ void mmc_remove_card(struct mmc_card *card);
 
 /* Function provided by drivers/irqchip/irq-mt-eic.c */
 int mt_eint_get_polarity_external(unsigned int irq_num);
-
-#define MET_USER_EVENT_SUPPORT
-/*#include <linux/met_drv.h>*/
-#if defined(FEATURE_MET_MMC_INDEX)
-void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
-#endif
 
 #define check_mmc_cache_ctrl(card) \
 	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
