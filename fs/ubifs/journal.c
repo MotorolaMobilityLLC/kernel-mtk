@@ -61,7 +61,6 @@
 #include "ubifs.h"
 
 #if defined(FEATURE_UBIFS_PERF_INDEX)
-#include <linux/xlog.h>
 #include <asm/div64.h>
 
 #define PRT_TIME_PERIOD 500000000
