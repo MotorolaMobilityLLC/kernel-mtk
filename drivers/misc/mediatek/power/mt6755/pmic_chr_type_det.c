@@ -37,6 +37,8 @@
 #include <mt-plat/battery_common.h>
 #endif
 #include <linux/time.h>
+#include <mt-plat/mt_boot.h>
+
 
 /* ============================================================ // */
 /* extern function */
@@ -64,6 +66,14 @@ int hw_charging_get_charger_type(void)
 static void hw_bc11_init(void)
 {
 	msleep(200);
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	/* add delay to make sure android init.rc finish */
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+		msleep(1000);
+	}
+#endif
+
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	Charger_Detect_Init();
 #endif
