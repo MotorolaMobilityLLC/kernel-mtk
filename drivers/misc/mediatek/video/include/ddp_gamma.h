@@ -31,5 +31,11 @@ typedef struct {
 	unsigned int coef[3][3];
 } DISP_CCORR_COEF_T;
 
+extern int corr_dbg_en;
+
+void ccorr_test(const char *cmd, char *debug_output);
+int ccorr_interface_for_color(unsigned int ccorr_idx,
+	unsigned int ccorr_coef[3][3], void *handle);
+
 #endif
 

@@ -32,6 +32,12 @@ ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_
 obj-$(CONFIG_MTK_FB) += mtkfb.o
 endif
 
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755)))
+obj-y += aal20/
+obj-y += corr10/
+obj-y += od10/
+endif
+
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/include     \
 				-I$(srctree)/drivers/misc/mediatek/video/common/IPv1     \

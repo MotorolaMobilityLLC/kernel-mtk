@@ -8,6 +8,12 @@ typedef enum {
 	DISP_PWM_ALL = (DISP_PWM0 | DISP_PWM1)
 } disp_pwm_id_t;
 
+typedef enum {
+	CLK26M = 0,
+	UNIVPLL_104M,
+	OSC_104M,
+	OSC_26M,
+} DISP_PWM_CLK_FREQ;
 
 void disp_pwm_set_main(disp_pwm_id_t main);
 disp_pwm_id_t disp_pwm_get_main(void);
