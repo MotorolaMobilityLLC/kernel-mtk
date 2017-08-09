@@ -766,26 +766,38 @@ int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t 
 
 void ccci_set_mem_remap(struct ccci_modem *md, unsigned long smem_offset, phys_addr_t invalid)
 {
-	unsigned long remainder;
+	/*
+	 * MD bank4 is remap to nearest 32M aligned address
+	 * assume share memoy layout is:
+	 * |---AP/MD1--| <--MD1 bank4
+	 * |--MD1/MD3--| <--MD3 bank4
+	 * |---AP/MD3--|
+	 * this should align with LK's remap setting
+	 */
+	phys_addr_t md_bank4_base;
 
-	if (is_4g_memory_size_support())
-		invalid &= 0xFFFFFFFF;
-	else
-		invalid -= get_phys_offset();
+	switch (md->index) {
+	case MD_SYS1:
+		md_bank4_base = round_down(md->mem_layout.smem_region_phy, 0x02000000);
+		break;
+	case MD_SYS3:
+		md_bank4_base = round_down(md->mem_layout.md1_md3_smem_phy, 0x02000000);
+		break;
+	default:
+		md_bank4_base = 0;
+		break;
+	}
 	md->invalid_remap_base = invalid;
 	/*
-	 * always remap only the 1 slot where share memory locates. smem_offset is the offset between
-	 * ROM start address(32M align) and share memory start address.
-	 * (AP view smem address) - [(smem_region_phy) - (bank4 start address) - (un-32M-align space)]
-	 * = (MD view smem address)
+	 * AP_view_addr - md_bank4_base + 0x40000000 = MD_view_addr
+	 * AP_view_addr - smem_offset_AP_to_MD = MD_view_addr
 	 */
-	remainder = smem_offset % 0x02000000;
-	md->mem_layout.smem_offset_AP_to_MD = md->mem_layout.smem_region_phy - (remainder + 0x40000000);
-	set_md_smem_remap(md, 0x40000000, md->mem_layout.md_region_phy + (smem_offset - remainder), invalid);
-	CCCI_INIT_LOG(md->index, TAG, "AP to MD share memory offset 0x%X", md->mem_layout.smem_offset_AP_to_MD);
-
-	/* Set md image and rw runtime memory remapping */
+	md->mem_layout.smem_offset_AP_to_MD = md_bank4_base - 0x40000000;
+	invalid = md->mem_layout.smem_region_phy + md->mem_layout.smem_region_size;
 	set_md_rom_rw_mem_remap(md, 0x00000000, md->mem_layout.md_region_phy, invalid);
+	set_md_smem_remap(md, 0x40000000, md_bank4_base, invalid);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s 0x%llX 0x%X\n", __func__,
+		(unsigned long long)md_bank4_base, md->mem_layout.smem_offset_AP_to_MD);
 }
 
 /*
