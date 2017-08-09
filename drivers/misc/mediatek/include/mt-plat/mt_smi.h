@@ -1,5 +1,5 @@
-#ifndef _MTK_MAU_H_
-#define _MTK_MAU_H_
+#ifndef _MTK_SMI_H_
+#define _MTK_SMI_H_
 
 #define MTK_SMI_MAJOR_NUMBER 190
 
@@ -26,6 +26,7 @@ typedef struct {
 
 
 int mau_config(MTK_MAU_CONFIG *pMauConf);
+int mau_dump_status(int larb);
 
 
 /* --------------------------------------------------------------------------- */
@@ -39,6 +40,7 @@ typedef enum {
 	SMI_BWC_SCEN_WFD,
 	SMI_BWC_SCEN_VENC,
 	SMI_BWC_SCEN_ICFP,
+	SMI_BWC_SCEN_UI_IDLE,
 	SMI_BWC_SCEN_VSS,
 	SMI_BWC_SCEN_FORCE_MMDVFS,
 	SMI_BWC_SCEN_CNT
@@ -51,6 +53,7 @@ typedef enum {
 	MMDVFS_VOLTAGE_LOW = MMDVFS_VOLTAGE_0,
 	MMDVFS_VOLTAGE_1,
 	MMDVFS_VOLTAGE_HIGH = MMDVFS_VOLTAGE_1,
+	MMDVFS_VOLTAGE_DEFAULT_STEP,
 	MMDVFS_VOLTAGE_COUNT
 } mmdvfs_voltage_enum;
 
@@ -60,20 +63,25 @@ typedef struct {
 } MTK_SMI_BWC_CONFIG;
 
 typedef struct {
+	unsigned int *hwc_max_pixel; /* : exit this scenario , 1 : enter this scenario */
+} MTK_SMI_BWC_STATE;
+
+typedef struct {
 	unsigned int address;
 	unsigned int value;
 } MTK_SMI_BWC_REGISTER_SET;
 
 typedef struct {
 	unsigned int address;
-	unsigned int *return_address;	/* 0 : exit this scenario , 1 : enter this scenario */
+	unsigned int *return_address;
 } MTK_SMI_BWC_REGISTER_GET;
 
 #define MMDVFS_CAMERA_MODE_FLAG_DEFAULT	1
-#define MMDVFS_CAMERA_MODE_FLAG_PIP	(1 << 1)
-#define MMDVFS_CAMERA_MODE_FLAG_VFB	(1 << 2)
+#define MMDVFS_CAMERA_MODE_FLAG_PIP (1 << 1)
+#define MMDVFS_CAMERA_MODE_FLAG_VFB (1 << 2)
 #define MMDVFS_CAMERA_MODE_FLAG_EIS_2_0 (1 << 3)
-#define MMDVFS_CAMERA_MODE_FLAG_IVHDR	(1 << 4)
+#define MMDVFS_CAMERA_MODE_FLAG_IVHDR (1 << 4)
+#define MMDVFS_CAMERA_MODE_FLAG_STEREO  (1 << 5)
 
 typedef struct {
 	unsigned int type;
@@ -91,7 +99,6 @@ typedef struct {
 #define MTK_MMDVFS_CMD_TYPE_SET		0
 #define MTK_MMDVFS_CMD_TYPE_QUERY	1
 
-/* GMP start */
 typedef enum {
 	SMI_BWC_INFO_CON_PROFILE = 0,
 	SMI_BWC_INFO_SENSOR_SIZE,
@@ -106,9 +113,9 @@ typedef enum {
 } MTK_SMI_BWC_INFO_ID;
 
 typedef struct {
-	int property;
-	int value1;
-	int value2;
+	int       property;
+	int       value1;
+	int       value2;
 } MTK_SMI_BWC_INFO_SET;
 
 
@@ -131,6 +138,7 @@ typedef struct {
 #define MTK_IOC_SPC_DUMP_STA        MTK_IOW(22, unsigned long)
 #define MTK_IOC_SPC_CMD             MTK_IOW(23, unsigned long)
 #define MTK_IOC_SMI_BWC_CONFIG      MTK_IOW(24, MTK_SMI_BWC_CONFIG)
+#define MTK_IOC_SMI_BWC_STATE       MTK_IOWR(25, MTK_SMI_BWC_STATE)
 #define MTK_IOC_SMI_BWC_REGISTER_SET    MTK_IOWR(26, MTK_SMI_BWC_REGISTER_SET)
 #define MTK_IOC_SMI_BWC_REGISTER_GET    MTK_IOWR(27, MTK_SMI_BWC_REGISTER_GET)
 
@@ -172,7 +180,10 @@ unsigned int spc_clear_irq(void);
 int spc_test(int code);
 int MTK_SPC_Init(void *dev);
 
+#define MMDVFS_ENABLE_DEFAULT_STEP_QUERY
+#define MMDVFS_MMCLOCK_NOTIFICATION
 /* MMDVFS kernel API */
 extern int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
-
+extern int mmdvfs_is_default_step_need_perf(void);
+extern void mmdvfs_mm_clock_switch_notify(int is_before, int is_to_high);
 #endif
