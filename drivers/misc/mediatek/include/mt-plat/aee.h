@@ -50,6 +50,7 @@ typedef enum {
 	AE_KERNEL_PROBLEM_REPORT = 1000,
 	AE_SYSTEM_JAVA_DEFECT,
 	AE_SYSTEM_NATIVE_DEFECT,
+	AE_MANUAL_MRDUMP_KEY,
 } AE_EXP_CLASS;			/* General Program Exception Class */
 
 typedef enum {
