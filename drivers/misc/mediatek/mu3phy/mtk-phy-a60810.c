@@ -1,7 +1,7 @@
-#include <linux/mu3phy/mtk-phy.h>
+#include "mtk-phy.h"
 
 #ifdef CONFIG_A60810_SUPPORT
-#include <linux/mu3phy/mtk-phy-a60810.h>
+#include "mtk-phy-a60810.h"
 
 PHY_INT32 phy_init_a60810(struct u3phy_info *info)
 {
@@ -192,9 +192,7 @@ static void EyeScanHelper_RunTest(struct u3phy_info *info)
 	/* Wait til it's done */
 	/* RGS_SSUSB_RX_EYE_CNT_RDY */
 	while (!U3PhyReadField32(((phys_addr_t) &info->u3phyd_regs_a->phya_rx_mon5)
-				 , A60810_RGS_SSUSB_EQ_EYE_CNT_RDY_OFST,
-				 A60810_RGS_SSUSB_EQ_EYE_CNT_RDY))
-		NULL;
+	    , A60810_RGS_SSUSB_EQ_EYE_CNT_RDY_OFST, A60810_RGS_SSUSB_EQ_EYE_CNT_RDY));
 }
 
 /* -------------------------------------------------------- */

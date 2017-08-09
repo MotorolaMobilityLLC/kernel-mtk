@@ -25,10 +25,12 @@
 static inline void BATTERY_SetUSBState(int usb_state)
 {
 };
+#ifndef CONFIG_MTK_FPGA
 static inline CHARGER_TYPE  mt_get_charger_type(void)
 {
 	return STANDARD_HOST;
 };
+#endif
 static inline bool upmu_is_chr_det(void)
 {
 	return true;
@@ -101,11 +103,15 @@ void connection_work(struct work_struct *data)
 #ifndef CONFIG_USBIF_COMPLIANCE
 	static enum status connection_work_dev_status = INIT;
 #endif
+
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
 		bool is_usb_cable = usb_cable_connected();
 		bool cmode_effect_on = false;
+
+#ifndef CONFIG_MTK_FPGA
 		CHARGER_TYPE chg_type = mt_get_charger_type();
 
 		if (fake_CDP && chg_type == STANDARD_HOST) {
@@ -127,7 +133,8 @@ void connection_work(struct work_struct *data)
 		os_printk(K_INFO, "%s type=%d, cmode_effect_on=%d, usb_mode:%d\n",
 			  __func__, chg_type, cmode_effect_on, musb->usb_mode);
 
-#ifndef CONFIG_MTK_FPGA
+
+
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
 			usb_fake_powerdown(musb->is_clk_on);

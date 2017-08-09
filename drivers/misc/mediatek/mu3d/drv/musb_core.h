@@ -50,7 +50,9 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 /*#include <mt-plat/battery_common.h>*/
+#ifndef CONFIG_MTK_FPGA
 #include <mt-plat/charging.h>
+#endif
 
 struct musb;
 struct musb_hw_ep;

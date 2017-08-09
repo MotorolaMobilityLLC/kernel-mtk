@@ -1,5 +1,4 @@
-#include <linux/mu3phy/mtk-phy.h>
-#include <linux/mu3phy/mtk-phy.h>
+#include "mtk-phy.h"
 
 #ifdef CONFIG_U3_PHY_GPIO_SUPPORT
 
@@ -316,7 +315,8 @@ PHY_INT32 I2cWriteReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 val)
 	REG_I2C_START = REG_I2C_START_BIT;
 
 	while ((REG_I2C_START & REG_I2C_START_BIT))
-		NULL;
+		;
+
 	return PHY_TRUE;
 }
 
@@ -331,14 +331,14 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 *data)
 	REG_I2C_START = REG_I2C_START_BIT;
 
 	while ((REG_I2C_START & REG_I2C_START_BIT))
-		NULL;
+		;
 
 	REG_I2C_SLAVE_ADDR = (dev_id << 1) | I2C_READ_BIT;
 	REG_I2C_TRANSFER_LEN = 0x01;
 	REG_I2C_START = REG_I2C_START_BIT;
 
 	while ((REG_I2C_START & REG_I2C_START_BIT))
-		NULL;
+		;
 
 	*data = REG_I2C_DATA_PORT;
 

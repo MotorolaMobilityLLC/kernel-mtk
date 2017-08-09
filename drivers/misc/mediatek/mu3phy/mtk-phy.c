@@ -183,19 +183,19 @@ PHY_INT32 u3phy_init(void)
 		u3phy->u2phy_regs_a = (struct u2phy_reg_a *)0x0;
 		u3phy->u3phyd_regs_a = (struct u3phyd_reg_a *)0x100000;
 		u3phy->u3phyd_bank2_regs_a = (struct u3phyd_bank2_reg_a *)0x200000;
-		u3phy->u3phya_regs_a = (struct u3phya_reg_e *)0x300000;
+		u3phy->u3phya_regs_a = (struct u3phya_reg_a *)0x300000;
 		u3phy->u3phya_da_regs_a = (struct u3phya_da_reg_a *)0x400000;
 		u3phy->sifslv_chip_regs_a = (struct sifslv_chip_reg_a *)0x500000;
 		u3phy->spllc_regs_a = (struct spllc_reg_a *)0x600000;
-		u3phy->sifslv_fm_regs_a = (struct sifslv_fm_feg_a *)0xf00000;
+		u3phy->sifslv_fm_regs_a = (struct sifslv_fm_reg_a *)0xf00000;
 #else
 		u3phy->u2phy_regs_a = (struct u2phy_reg_a *)U2_PHY_BASE;
 		u3phy->u3phyd_regs_a = (struct u3phyd_reg_a *)U3_PHYD_BASE;
 		u3phy->u3phyd_bank2_regs_a = (struct u3phyd_bank2_reg_a *)U3_PHYD_B2_BASE;
-		u3phy->u3phya_regs_a = (struct u3phya_reg_e *)U3_PHYA_BASE;
+		u3phy->u3phya_regs_a = (struct u3phya_reg_a *)U3_PHYA_BASE;
 		u3phy->u3phya_da_regs_a = (struct u3phya_da_reg_a *)U3_PHYA_DA_BASE;
 		u3phy->sifslv_chip_regs_a = (struct sifslv_chip_reg_a *)SIFSLV_CHIP_BASE;
-		u3phy->sifslv_fm_regs_a = (struct sifslv_fm_feg_a *)SIFSLV_FM_FEG_BASE;
+		u3phy->sifslv_fm_regs_a = (struct sifslv_fm_reg_a *)SIFSLV_FM_FEG_BASE;
 #endif
 		u3phy_ops = ((struct u3phy_operator *)&a60810_operators);
 #endif
