@@ -121,6 +121,7 @@ extern void *mt_dramc_nao_base_get(void);
 extern void *mt_ddrphy_base_get(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
+void dram_HQA_adjust_voltage(void);
 
 
 enum DDRTYPE {
