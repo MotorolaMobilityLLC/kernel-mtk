@@ -886,6 +886,7 @@ void mt_freqhopping_init(void)
 	g_drv_pll_count = g_p_fh_hal_drv->pll_cnt;
 
 	freqhopping_debug_proc_init();
+
 	platform_driver_register(&freqhopping_driver);
 
 	mt_freqhopping_pll_init();	/* TODO_HAL: wait for clkmgr to invoke this function */

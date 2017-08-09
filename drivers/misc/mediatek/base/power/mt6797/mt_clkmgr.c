@@ -23,7 +23,6 @@
 #include "mt_spm.h"
 #include <mach/mt_spm_mtcmos.h>
 /* #include <mach/mt_spm_sleep.h> */
-/* #include <mach/mt_freqhopping.h> */
 /* #include <mach/mt_gpufreq.h> */
 /* #include <mach/irqs.h> */
 

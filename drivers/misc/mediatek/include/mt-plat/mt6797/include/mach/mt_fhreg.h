@@ -116,23 +116,26 @@
 
 #define REG_MCU_FHCTL0_CFG      REG_MCU_FHCTL_ADDR(0x0034)
 #define REG_MCU_FHCTL0_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0038)
-#define REG_MCU_FHCTL0_DDS      REG_MCU_FHCTL_ADDR(0x004C)
+#define REG_MCU_FHCTL0_DDS      REG_MCU_FHCTL_ADDR(0x003C)
 #define REG_MCU_FHCTL0_DVFS     REG_MCU_FHCTL_ADDR(0x0040)
 #define REG_MCU_FHCTL0_MON      REG_MCU_FHCTL_ADDR(0x0044)
+
 #define REG_MCU_FHCTL1_CFG      REG_MCU_FHCTL_ADDR(0x0048)
-#define REG_MCU_FHCTL1_UPDNLMT  REG_MCU_FHCTL_ADDR(0x005C)
+#define REG_MCU_FHCTL1_UPDNLMT  REG_MCU_FHCTL_ADDR(0x004C)
 #define REG_MCU_FHCTL1_DDS      REG_MCU_FHCTL_ADDR(0x0050)
 #define REG_MCU_FHCTL1_DVFS     REG_MCU_FHCTL_ADDR(0x0054)
 #define REG_MCU_FHCTL1_MON      REG_MCU_FHCTL_ADDR(0x0058)
-#define REG_MCU_FHCTL2_CFG      REG_MCU_FHCTL_ADDR(0x006C)
+
+#define REG_MCU_FHCTL2_CFG      REG_MCU_FHCTL_ADDR(0x005C)
 #define REG_MCU_FHCTL2_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0060)
 #define REG_MCU_FHCTL2_DDS      REG_MCU_FHCTL_ADDR(0x0064)
 #define REG_MCU_FHCTL2_DVFS     REG_MCU_FHCTL_ADDR(0x0068)
-#define REG_MCU_FHCTL2_MON      REG_MCU_FHCTL_ADDR(0x007C)
+#define REG_MCU_FHCTL2_MON      REG_MCU_FHCTL_ADDR(0x006C)
+
 #define REG_MCU_FHCTL3_CFG      REG_MCU_FHCTL_ADDR(0x0070)
 #define REG_MCU_FHCTL3_UPDNLMT  REG_MCU_FHCTL_ADDR(0x0074)
 #define REG_MCU_FHCTL3_DDS      REG_MCU_FHCTL_ADDR(0x0078)
-#define REG_MCU_FHCTL3_DVFS     REG_MCU_FHCTL_ADDR(0x008C)
+#define REG_MCU_FHCTL3_DVFS     REG_MCU_FHCTL_ADDR(0x007C)
 #define REG_MCU_FHCTL3_MON      REG_MCU_FHCTL_ADDR(0x0080)
 
 
@@ -162,7 +165,7 @@
 #define REG_FH_PLL1_CON1 REG_APMIX_ADDR(0x0284)
 #define REG_FH_PLL2_CON1 REG_APMIX_ADDR(0x0224)
 #define REG_FH_PLL3_CON1 REG_APMIX_ADDR(0)	/* MEMPLL doesn't have */
-#define REG_FH_PLL4_CON1 REG_APMIX_ADDR(0x02E4)
+#define REG_FH_PLL4_CON1 REG_APMIX_ADDR(0x0254)
 #define REG_FH_PLL5_CON1 REG_APMIX_ADDR(0x0244)
 #define REG_FH_PLL6_CON1 REG_APMIX_ADDR(0x0264)
 #define REG_FH_PLL7_CON1 REG_APMIX_ADDR(0x0274)
@@ -229,7 +232,17 @@ static inline unsigned int uffs(unsigned int x)
 
 #define fh_read8(reg)           readb(reg)
 #define fh_read16(reg)          readw(reg)
-#define fh_read32(reg)          readl((void __iomem *)reg)
+/* #define fh_read32(reg)          readl((void __iomem *)reg) */
+/* EVEREST CHIP issue, should read two times. */
+static inline unsigned int fh_read32(unsigned long reg)
+{
+	volatile unsigned int val = readl((void __iomem *)reg);
+
+	val = readl((void __iomem *)reg);
+	return val;
+}
+
+
 #define fh_write8(reg, val)      mt_reg_sync_writeb((val), (reg))
 #define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
 #define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg))

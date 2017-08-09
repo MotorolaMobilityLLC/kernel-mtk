@@ -1,15 +1,19 @@
 #ifndef __MT_FREQHOPPING_H__
 #define __MT_FREQHOPPING_H__
 
-#define DISABLE_FREQ_HOPPING	/* Disable all FHCTL Common Interface for chip Bring-up */
+
+/* Disable all FHCTL Common Interface for chip Bring-up */
+#undef DISABLE_FREQ_HOPPING
+/* Use HW semaphore to share REG_FHCTL_HP_EN with secure CPU DVFS */
+#define HP_EN_REG_SEMAPHORE_PROTECT
 
 #define FHTAG "[FH]"
-#define VERBOSE_DEBUG 0
+#define VERBOSE_DEBUG 1
 #define DEBUG_MSG_ENABLE 0
 
 #if VERBOSE_DEBUG
 #define FH_MSG(fmt, args...) \
-	printk(FHTAG""fmt" <- %s(): L<%d>  PID<%s><%d>\n", \
+	pr_debug(FHTAG""fmt" <- %s(): L<%d>  PID<%s><%d>\n", \
 	##args , __func__, __LINE__, current->comm, current->pid)
 
 #define FH_MSG_DEBUG   FH_MSG
@@ -20,7 +24,7 @@
 #define FH_MSG_DEBUG(fmt, args...)\
 	do {    \
 		if (DEBUG_MSG_ENABLE)           \
-			printk(FHTAG""fmt"\n", ##args); \
+			pr_debug(FHTAG""fmt"\n", ##args); \
 	} while (0)
 #endif
 

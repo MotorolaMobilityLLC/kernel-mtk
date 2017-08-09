@@ -15,6 +15,9 @@
 #include "mach/mt_fhreg.h"
 #include "sync_write.h"
 #include "mt_freqhopping_drv.h"
+#ifdef HP_EN_REG_SEMAPHORE_PROTECT
+#include "mt_cpufreq_hybrid.h"
+#endif
 #include <linux/seq_file.h>
 #include <linux/of_address.h>
 
@@ -41,6 +44,7 @@ static void __iomem *g_mcumixed_base;
 #define BIT32   (1U<<31)
 
 #define VALIDATE_PLLID(id) BUG_ON(id >= FH_PLL_NUM)
+#define VALIDATE_DDS(dds)  BUG_ON(dds > 0x1ffff)
 #define PERCENT_TO_DDSLMT(dDS, pERCENT_M10) (((dDS * pERCENT_M10) >> 5) / 100)
 
 /*********************************/
@@ -59,13 +63,14 @@ static fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* init during run time. */
 /*********************************/
 /* FHCTL PLL SSC Setting Table   */
 /*********************************/
-#define UNINIT_DDS             0x1FFFFF
+#define UNINIT_DDS   0x0
+#define MAX_DDS      0x1fffff	/* 21 bit */
 
 /* [For Everest] Should be setting according to HQA de-sense result.  */
 static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	/*
-	 *  FH_SSC_DEF_DISABLE: Default SSC disable,
-	 *  FH_SSC_DEF_ENABLE_SSC: Default enable SSC.
+	 *  [FH_SSC_DEF_DISABLE]: Default SSC disable,
+	 *  [FH_SSC_DEF_ENABLE_SSC]: Default enable SSC.
 	 */
 	FH_SSC_DEF_DISABLE,
 	FH_SSC_DEF_DISABLE,
@@ -88,79 +93,79 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	{
 	 /* magic_index, dt, df, upbnd, lowbnd, dds */
 	 {0, 0, 0, 0, 0, 0},	/* Means disable */
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* MCU FH PLL1 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* MCU FH PLL2 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* MCU FH PLL3 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL0 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL1 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL2 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL3 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL4 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL5 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL6 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL7 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL8 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0%  */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 };
 
@@ -218,12 +223,40 @@ static void fh_switch2fhctl(enum FH_PLL_ID pll_id, int i_control)
 	/* Release software reset */
 	/* fh_set_field(REG_FHCTL_RST_CON, mask, 0); */
 
+
+#ifdef HP_EN_REG_SEMAPHORE_PROTECT
 	/* Switch to FHCTL_CORE controller */
+	/* Use HW semaphore to share REG_FHCTL_HP_EN with secure CPU DVFS */
+	if (0 == cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
+
+		if (isFHCTL(pll_id))
+			fh_set_field(REG_FHCTL_HP_EN, mask, i_control);
+		else
+			fh_set_field(REG_MCU_FHCTL_HP_EN, mask, i_control);
+
+		cpuhvfs_release_dvfsp_semaphore(SEMA_FHCTL_DRV);
+	} else {
+		FH_MSG("sema time out 2ms\n");
+		if (0 == cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
+			if (isFHCTL(pll_id))
+				fh_set_field(REG_FHCTL_HP_EN, mask, i_control);
+			else
+				fh_set_field(REG_MCU_FHCTL_HP_EN, mask, i_control);
+
+			cpuhvfs_release_dvfsp_semaphore(SEMA_FHCTL_DRV);
+		} else {
+			FH_MSG("sema time out 4ms\n");
+			BUG_ON(1);
+		}		/* if-else */
+	}			/* if-else */
+#else
+	/* Switch to FHCTL_CORE controller - Original design */
 	if (isFHCTL(pll_id))
 		fh_set_field(REG_FHCTL_HP_EN, mask, i_control);
 	else
 		fh_set_field(REG_MCU_FHCTL_HP_EN, mask, i_control);
 
+#endif
 }
 
 static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
@@ -418,7 +451,11 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
 		fh_dds = (fh_read32(reg_mon)) & MASK21b;
 		++i;
 	}
-	FH_MSG("target_dds = %d, fh_dds = %d, i = %d", target_dds, fh_dds, i);
+	if (i >= wait_count) {
+		/* Has something wrong during hopping */
+		FH_MSG("[Warning]wait_dds_stable()  target_dds = 0x%x, fh_dds = 0x%x, i = %d",
+		       target_dds, fh_dds, i);
+	}
 }
 
 static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
@@ -440,7 +477,8 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	fh_sync_ncpo_to_fhctl_dds(pll_id);
 
 	/* FH_MSG("1. sync ncpo to DDS of FHCTL"); */
-	FH_MSG_DEBUG("FHCTL%d_DDS: 0x%08x", pll_id, (fh_read32(g_reg_dds[pll_id]) & MASK21b));
+	FH_MSG_DEBUG("[Before DVFS] FHCTL%d_DDS: 0x%08x", pll_id,
+		     (fh_read32(g_reg_dds[pll_id]) & MASK21b));
 
 	/* 2. enable DVFS and Hopping control */
 	{
@@ -475,7 +513,8 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		fh_write32(dvfs_req, (dds_value) | (BIT32));	/* set dds */
 
 		/* FH_MSG("4. set DFS DDS"); */
-		FH_MSG_DEBUG("FHCTL%d_DDS: 0x%08x", pll_id, (fh_read32(dvfs_req) & MASK21b));
+		FH_MSG_DEBUG("[After DVFS] FHCTL%d_DDS: 0x%08x", pll_id,
+			     (fh_read32(dvfs_req) & MASK21b));
 		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id, (fh_read32(dvfs_req) & MASK21b));
 	}
 
@@ -511,7 +550,6 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 /*
    armpll dfs mdoe
-   current_freq  : useless variable, legacy variable. Konrad: should change to CPU core PLL ID
 */
 static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 {
@@ -524,20 +562,27 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 		return -1;
 	}
 
-	FH_MSG("%s for pll %d dds %d", __func__, pll, dds);
+	if (dds > MAX_DDS) {
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll, dds);
+		/* Check dds overflow (21 bit) */
+		BUG_ON(1);
+	}
 
 	switch (pll) {
 	case MCU_FH_PLL0:
 	case MCU_FH_PLL1:
 	case MCU_FH_PLL2:
 	case MCU_FH_PLL3:
-		reg_cfg = g_reg_cfg[pll];
-		FH_MSG("(PLL_CON1): 0x%x", (fh_read32(g_reg_pll_con1[pll]) & MASK21b));
+		FH_MSG_DEBUG("[Before DVFS] (PLL_CON1): 0x%x",
+			     (fh_read32(g_reg_pll_con1[pll]) & MASK21b));
 		break;
 	default:
+		FH_MSG("[ERROR] %s [pll_id]:%d is not CAXPLL. ", __func__, pll);
 		BUG_ON(1);
 		return 1;
 	};
+
+	reg_cfg = g_reg_cfg[pll];
 
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, flags);
@@ -569,6 +614,15 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 		FH_MSG("(Warning) %s FHCTL isn't ready. ", __func__);
 		return -1;
 	}
+
+	if (target_dds > MAX_DDS) {
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll_id,
+		       target_dds);
+		/* Check dds overflow (21 bit) */
+		BUG_ON(1);
+	}
+
+
 
 	FH_MSG("%s, current dds(MMPLL_CON1): 0x%x, target dds %d",
 	       __func__, (fh_read32(g_reg_pll_con1[pll_id]) & MASK21b), target_dds);
@@ -606,7 +660,7 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 
 		fh_sync_ncpo_to_fhctl_dds(pll_id);
 
-		FH_MSG("Enable mmpll SSC mode");
+		FH_MSG("Enable GPU PLL SSC mode");
 		FH_MSG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK21b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
@@ -838,9 +892,12 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 {
 	int i = 0;
 	static unsigned int dds_max[FH_PLL_NUM] = { 0 };
-	static unsigned int dds_min[FH_PLL_NUM] = {
-		UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX
-	};
+	static unsigned int dds_min[FH_PLL_NUM] = { 0 };
+
+	if (g_initialize != 1) {
+		FH_MSG("[ERROR] %s fhctl didn't init. Please check!!!", __func__);
+		return -1;
+	}
 
 	FH_MSG("EN: %s", __func__);
 
@@ -848,19 +905,22 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		const unsigned int mon = fh_read32(g_reg_mon[i]);
 		const unsigned int dds = mon & MASK21b;
 
-		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DDS, MON\r\n", i);
-		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x\r\n",
+		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DVFS, DDS, MON\r\n", i);
+		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\r\n",
 			   fh_read32(g_reg_cfg[i]), fh_read32(g_reg_updnlmt[i]),
-			   fh_read32(g_reg_dds[i]), mon);
+			   fh_read32(g_reg_dvfs[i]), fh_read32(g_reg_dds[i]), mon);
 
 		if (dds > dds_max[i])
 			dds_max[i] = dds;
-		if (dds < dds_min[i])
+		if ((dds < dds_min[i]) || (dds_min[i] == 0))
 			dds_min[i] = dds;
 	}
 
 	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_HP_EN));
+	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_CLK_CON));
+
 	seq_printf(m, "\r\nMCU_FHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_MCU_FHCTL_HP_EN));
+	seq_printf(m, "\r\nMCU_FHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_MCU_FHCTL_CLK_CON));
 
 	seq_puts(m, "\r\nPLL_CON0 :\r\n");
 	for (i = 0; i < FH_PLL_NUM; ++i)
@@ -965,6 +1025,12 @@ static int __reg_base_addr_init(void)
 	struct device_node *apmixed_node;
 	struct device_node *mcumixed_node;
 
+	FH_MSG("(b) g_fhctl_base:0x%lx", (unsigned long)g_fhctl_base);
+	FH_MSG("(b) g_mcu_fhctl_base:0x%lx", (unsigned long)g_mcu_fhctl_base);
+	FH_MSG("(b) g_apmixed_base:0x%lx", (unsigned long)g_apmixed_base);
+	FH_MSG("(b) g_mcumixed_base:0x%lx", (unsigned long)g_mcumixed_base);
+
+
 	/* Init FHCTL base address */
 	fhctl_node = of_find_compatible_node(NULL, NULL, "mediatek,fhctl");
 	g_fhctl_base = of_iomap(fhctl_node, 0);
@@ -974,7 +1040,7 @@ static int __reg_base_addr_init(void)
 	}
 
 	/* Init MCU FHCTL base address */
-	mcu_fhctl_node = of_find_compatible_node(NULL, NULL, "mediatek,mcumixed");
+	mcu_fhctl_node = of_find_compatible_node(NULL, NULL, "mediatek,mcufhctl");
 	g_mcu_fhctl_base = of_iomap(mcu_fhctl_node, 0);
 	if (!g_mcu_fhctl_base) {
 		FH_MSG_DEBUG("Error, MCU FHCTL iomap failed");
@@ -990,12 +1056,18 @@ static int __reg_base_addr_init(void)
 	}
 
 	/* Init APMIXED base address */
-	mcumixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mcufhctl");
+	mcumixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mcumixed");
 	g_mcumixed_base = of_iomap(mcumixed_node, 0);
 	if (!g_mcumixed_base) {
 		FH_MSG_DEBUG("Error, MCUMIXED iomap failed");
 		BUG_ON(1);
 	}
+
+	FH_MSG("g_fhctl_base:0x%lx", (unsigned long)g_fhctl_base);
+	FH_MSG("g_mcu_fhctl_base:0x%lx", (unsigned long)g_mcu_fhctl_base);
+	FH_MSG("g_apmixed_base:0x%lx", (unsigned long)g_apmixed_base);
+	FH_MSG("g_mcumixed_base:0x%lx", (unsigned long)g_mcumixed_base);
+
 	__reg_tbl_init();
 
 	return 0;
@@ -1026,8 +1098,16 @@ static void mt_fh_hal_init(void)
 
 	/* FHCTL IP Init */
 	for (i = 0; i < FH_PLL_NUM; ++i) {
-		unsigned int mask = 1 << i;
 
+		unsigned int mask;
+
+		if (isFHCTL(i)) {
+			/* FHCTL */
+			mask = 1 << (i - FH_PLL0);
+		} else {
+			/* MCU FHCTL */
+			mask = 1 << i;
+		}
 		spin_lock_irqsave(&g_fh_lock, flags);
 
 		if (isFHCTL(i)) {
@@ -1056,6 +1136,8 @@ static void mt_fh_hal_init(void)
 	}
 
 	g_initialize = 1;
+
+	FH_MSG("mt_fh_hal_init done");
 }
 
 static void mt_fh_hal_lock(unsigned long *flags)
