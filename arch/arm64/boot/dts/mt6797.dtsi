@@ -2803,12 +2803,20 @@
 			reg = <0x11210000 0x10000>;
 		};
 
-		usb3@11270000 {
+		usb0:usb3@11270000 {
 			compatible = "mediatek,usb3";
 			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
 			reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>, <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "musb-hdrc", "xhci";
+		};
+
+		xhci0:usb3_xhci@11270000 {
+			compatible = "mediatek,usb3_xhci";
+			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
+			reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
+			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "xhci";
 		};
 
 		usb_c_pinctrl:usb_c_pinctrl@0 {
