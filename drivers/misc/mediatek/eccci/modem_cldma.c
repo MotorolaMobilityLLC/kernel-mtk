@@ -3395,6 +3395,13 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	case CCIF_INTR_SEQ:
 		md_cd_ccif_send(md, AP_MD_SEQ_ERROR);
 		break;
+#ifdef MD_UMOLY_EE_SUPPORT
+	case CCIF_MPU_INTR:
+		md_cd_ccif_send(md, H2D_MPU_FORCE_ASSERT);
+		break;
+#endif
+	default:
+		break;
 	};
 	return 0;
 }

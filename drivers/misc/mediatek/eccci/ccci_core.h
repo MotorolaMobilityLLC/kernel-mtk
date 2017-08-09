@@ -112,6 +112,7 @@ typedef enum {
 
 #ifdef MD_UMOLY_EE_SUPPORT
 #define MD_HS1_FAIL_DUMP_SIZE  (2048)
+#define MD_EX_MPU_STR_LEN   (128)
 #endif
 
 typedef enum {
@@ -692,6 +693,7 @@ typedef enum {
 	CCCI_MESSAGE,
 	CCIF_INTERRUPT,
 	CCIF_INTR_SEQ,
+	CCIF_MPU_INTR,
 } MD_COMM_TYPE;
 
 typedef enum {
@@ -912,6 +914,7 @@ struct ccci_modem {
 #ifdef MD_UMOLY_EE_SUPPORT
 	/* EX_PL_LOG_T ex_pl_info; */
 	unsigned char ex_pl_info[MD_HS1_FAIL_DUMP_SIZE]; /* request by modem, change to 2k: include EX_PL_LOG_T*/
+	unsigned char ex_mpu_string[MD_EX_MPU_STR_LEN];
 #endif
 	unsigned short heart_beat_counter;
 	int dtr_state; /* only for usb bypass */

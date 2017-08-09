@@ -743,6 +743,21 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		CCCI_NORMAL_LOG(md->index, CHAR, "Force MD assert called by %s\n", current->comm);
 		ret = md->ops->force_assert(md, CCIF_INTERRUPT);
 		break;
+#ifdef MD_UMOLY_EE_SUPPORT
+	case ID_MD_MPU_ASSERT:
+		if (md->index == MD_SYS1) {
+			if (buf != NULL && strlen(buf)) {
+				CCCI_NORMAL_LOG(md->index, CHAR, "Force MD assert(MPU) called by %s\n", current->comm);
+				snprintf(md->ex_mpu_string, MD_EX_MPU_STR_LEN, "EMI MPU VIOLATION: %s", buf);
+				ret = md->ops->force_assert(md, CCIF_MPU_INTR);
+			} else {
+				CCCI_NORMAL_LOG(md->index, CHAR, "ACK (MPU violation) called by %s\n", current->comm);
+				ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_AP_MPU_ACK_MD, 0, 0);
+			}
+		} else
+			CCCI_NORMAL_LOG(md->index, CHAR, "MD%d MPU API called by %s\n", md->index, current->comm);
+		break;
+#endif
 	case ID_PAUSE_LTE:
 		/*
 		 * MD booting/flight mode/exception mode: return >0 to DVFS.

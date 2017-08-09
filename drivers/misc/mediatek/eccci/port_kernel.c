@@ -2455,7 +2455,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			CCCI_ERROR_LOG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
 			if (debug_info->fatal_error.offender[0] != '\0') {
 				snprintf(ex_info, EE_BUF_LEN_UMOLY,
-					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s\n",
+				"%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s",
 					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
 					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
 					 debug_info->fatal_error.offender, debug_info->fatal_error.ExStr);
@@ -2465,6 +2465,11 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
 					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
 					 debug_info->fatal_error.ExStr);
+			}
+			if (debug_info->fatal_error.err_code1 == 0x3104) {
+				snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s, MD base = 0x%08X\n\n", ex_info,
+					md->ex_mpu_string, (unsigned int)md->mem_layout.md_region_phy);
+				memset(md->ex_mpu_string, 0x0, sizeof(md->ex_mpu_string));
 			}
 			break;
 		case MD_EX_DUMP_2P_EX:

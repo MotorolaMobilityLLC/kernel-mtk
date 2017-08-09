@@ -1484,6 +1484,8 @@ static int md_ccif_op_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	case CCIF_INTR_SEQ:
 		md_ccif_send(md, AP_MD_SEQ_ERROR);
 		break;
+	default:
+		break;
 	};
 	return 0;
 
