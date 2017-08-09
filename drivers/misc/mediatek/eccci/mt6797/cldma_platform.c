@@ -607,17 +607,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	static int has_registed;
 
-	/* Fix me, should change to using device tree */
-	void __iomem *bpi_bsi_slv1;
-
-	bpi_bsi_slv1 = ioremap_nocache(0x1021F600, 0x20);
-	if (bpi_bsi_slv1) {
-		cldma_write32(bpi_bsi_slv1, 0x10, 0xFFFF);
-		cldma_write32(bpi_bsi_slv1, 0x08, 0x4);
-		iounmap(bpi_bsi_slv1);
-	} else
-		CCCI_INF_MSG(md->index, TAG, "bps_bsi_slv1 map fail\n");
-
 	/* step 0: PMIC setting */
 	md1_pmic_setting_on();
 
