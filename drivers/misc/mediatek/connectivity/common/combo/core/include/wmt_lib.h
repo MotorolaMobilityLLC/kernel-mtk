@@ -310,6 +310,7 @@ extern UINT32 wmt_lib_get_drv_status(UINT32 type);
 #endif
 extern INT32 wmt_lib_tm_temp_query(VOID);
 extern INT32 wmt_lib_trigger_reset(VOID);
+extern VOID wmt_lib_read_fw_cpupcr(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

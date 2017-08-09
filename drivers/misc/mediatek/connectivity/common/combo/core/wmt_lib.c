@@ -1893,3 +1893,8 @@ INT32 wmt_lib_trigger_reset(VOID)
 {
 	return wmt_btm_trigger_reset();
 }
+
+VOID wmt_lib_read_fw_cpupcr(VOID)
+{
+	mtk_wcn_stp_read_fw_cpupcr();
+}
