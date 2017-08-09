@@ -56,6 +56,8 @@
 #include <linux/wakelock.h>
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 #include <audio_messenger_ipi.h>
+#include <audio_ipi_client_playback.h>
+#include <audio_dma_buf_control.h>
 #endif
 
 
@@ -135,6 +137,9 @@ static bool irq7_user;
 #ifdef use_wake_lock
 static DEFINE_SPINLOCK(offload_lock);
 struct wake_lock Offload_suspend_lock;
+#endif
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+static audio_resv_dram_t *p_resv_dram;
 #endif
 /*****************************************************************************
 * Function  Declaration
@@ -488,10 +493,12 @@ static void mtk_compr_offload_drain(bool enable, int draintype)
 static int mtk_compr_offload_open(void)
 {
 	scp_reserve_mblock_t MP3DRAM;
+	memset(&MP3DRAM, 0, sizeof(MP3DRAM));
 	MP3DRAM.num = MP3_MEM_ID;
 	/* 1. Get DRAM */
 	afe_offload_block.buf.u4BufferSize = 0;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	p_resv_dram = get_reserved_dram();
 	MP3DRAM.start_phys = get_reserve_mem_phys(MP3DRAM.num);
 	MP3DRAM.start_virt = get_reserve_mem_virt(MP3DRAM.num);
 	MP3DRAM.size = get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
@@ -672,6 +679,10 @@ void OffloadService_IPICmd_Received(ipi_msg_t *ipi_msg)
 		afe_offload_service.ipiwait = false;
 		afe_offload_service.ipiresult = true;
 		break;
+	case MP3_PCMDUMP_OK:
+		afe_offload_service.ipiwait = false;
+		playback_dump_message(ipi_msg);
+		break;
 	}
 }
 
@@ -700,8 +711,10 @@ static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 			break;
 		}
 	}
+	if (data_type != AUDIO_IPI_DMA)
+		payload = (char *)&test_buf;
 	audio_send_ipi_msg(TASK_SCENE_PLAYBACK_MP3, data_type, ack_type, msg_id, param1,
-			param2, (char *)&test_buf);
+			param2, payload);
 }
 #endif
 
@@ -829,6 +842,28 @@ static int mtk_compr_offload_pointer(void __user *arg)
 		return -1;
 	}
 	return ret;
+}
+
+static void mtk_compr_offload_pcmdump(unsigned long enable)
+{
+
+	if (enable > 0) {
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+		playback_open_dump_file();
+#endif
+	}
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+		OffloadService_IPICmd_Send(AUDIO_IPI_DMA, AUDIO_IPI_MSG_BYPASS_ACK,
+				   MP3_PCMDUMP_ON, p_resv_dram->size, enable, p_resv_dram->phy_addr);
+#endif
+	afe_offload_service.ipiwait = true;
+	/* dsp dump closed */
+	if (!enable) {
+		OffloadService_IPICmd_Wait(MP3_PCMDUMP_OK);
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+		playback_close_dump_file();
+#endif
+	}
 }
 
 /*****************************************************************************
@@ -1016,6 +1051,9 @@ long OffloadService_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	case _IOC_NR(OFFLOADSERVICE_GETTIMESTAMP):
 		mtk_compr_offload_pointer((void __user *)arg);
 		break;
+	case _IOC_NR(OFFLOADSERVICE_PCMDUMP):
+		mtk_compr_offload_pcmdump(arg);
+		break;
 	default:
 		break;
 	}
@@ -1199,6 +1237,9 @@ static int OffloadService_mod_init(void)
 		pr_err("OffloadService misc_register Fail:%d\n", ret);
 		return ret;
 	}
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	audio_ipi_client_playback_init();
+#endif
 #ifdef use_wake_lock
 	wake_lock_init(&Offload_suspend_lock, WAKE_LOCK_SUSPEND, "Offload wakelock");
 #endif
@@ -1208,6 +1249,10 @@ static int OffloadService_mod_init(void)
 static void  OffloadService_mod_exit(void)
 {
 	pr_warn("%s\n", __func__);
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	audio_ipi_client_playback_deinit();
+#endif
+
 #ifdef use_wake_lock
 	wake_lock_destroy(&Offload_suspend_lock);
 #endif
