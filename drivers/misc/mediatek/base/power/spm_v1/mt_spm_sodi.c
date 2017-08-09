@@ -922,18 +922,6 @@ void __attribute__ ((weak)) mt_cirq_disable(void)
 {
 }
 
-#if defined(CONFIG_ARCH_MT6580)
-int __attribute__ ((weak)) mt_irq_mask_all(struct mtk_irq_mask *mask)
-{
-	return 0;
-}
-
-int __attribute__ ((weak)) mt_irq_mask_restore(struct mtk_irq_mask *mask)
-{
-	return 0;
-}
-#endif
-
 #if REDUCE_SODI_LOG
 static long int idle_get_current_time_ms(void)
 {
