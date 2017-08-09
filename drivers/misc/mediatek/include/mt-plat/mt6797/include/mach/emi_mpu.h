@@ -21,6 +21,10 @@
 #define EMI_MPUB3		(0x0368)
 #define EMI_MPUC3		(0x0370)
 #define EMI_MPUD3		(0x0378)
+#define EMI_MPUE3		(0x0380)
+#define EMI_MPUF3		(0x0388)
+#define EMI_MPUG3		(0x0390)
+#define EMI_MPUH3		(0x0398)
 
 #define EMI_MPUI		   (0x01A0)
 #define EMI_MPUI_2ND	 (0x01A4)
@@ -39,9 +43,13 @@
 #define EMI_MPUL2		   (0x02B8)
 #define EMI_MPUL2_2ND	 (0x02BC)
 #define EMI_MPUI3		   (0x03A0)
+#define EMI_MPUI3_2ND	 (0x03A4)
 #define EMI_MPUJ3		   (0x03A8)
+#define EMI_MPUJ3_2ND	 (0x03AC)
 #define EMI_MPUK3		   (0x03B0)
+#define EMI_MPUK3_2ND	 (0x03B4)
 #define EMI_MPUL3		   (0x03B8)
+#define EMI_MPUL3_2ND	 (0x03BC)
 
 #define EMI_MPUM        (0x01C0)
 #define EMI_MPUN        (0x01C8)
@@ -56,7 +64,7 @@
 #define EMI_MPUW		(0x0210)
 #define EMI_MPUX        (0x0218)
 #define EMI_MPU_START   (0x0160)
-#define EMI_MPU_END     (0x03B8)
+#define EMI_MPU_END     (0x03BC)
 
 #define EMI_CONA		(EMI_BASE_ADDR + 0x0000)
 #define EMI_CONH		(EMI_BASE_ADDR + 0x0038)

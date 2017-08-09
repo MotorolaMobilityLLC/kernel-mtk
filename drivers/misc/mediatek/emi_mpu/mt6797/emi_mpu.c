@@ -476,7 +476,7 @@ static char *__id2name(u32 id)
 	u32 axi_ID;
 	u32 port_ID;
 
-	axi_ID = (id >> 3) & 0x00000FFF;
+	axi_ID = (id >> 3) & 0x00001FFF;
 	port_ID = id & 0x00000007;
 	emi_mpu_set_violation_port(port_ID);
 	pr_err("[EMI MPU] axi_id = %x, port_id = %x\n", axi_ID, port_ID);
@@ -488,7 +488,7 @@ static char *__id2name(u32 id)
 
 	return (char *)UNKNOWN_MASTER;
 }
-#define NR_REGIONS  18
+#define NR_REGIONS  24
 static void __clear_emi_mpu_vio(unsigned int first)
 {
 	u32 dbg_s, dbg_t;
@@ -531,7 +531,7 @@ static int mpu_check_violation(void)
 
 	pr_alert("Clear status.\n");
 
-	master_ID = (dbg_s & 0x00007FFF);
+	master_ID = (dbg_s & 0x0000FFFF);
 	domain_ID = (dbg_s >> 21) & 0x00000007;
 	wr_vio = (dbg_s >> 28) & 0x00000003;
 	region = (dbg_s >> 16) & 0x1F;
@@ -603,9 +603,13 @@ static int mpu_check_violation(void)
 		pr_err("EMI_MPUH2=%x, EMI_MPUA3=%x, EMI_MPUB3=%x\n",
 		mt_emi_reg_read(EMI_MPUH2), mt_emi_reg_read(EMI_MPUA3),
 		mt_emi_reg_read(EMI_MPUB3));
-		pr_err("EMI_MPUC3=%x, EMI_MPUD3=%x, EMI_MPUI=%x\n",
+		pr_err("EMI_MPUC3=%x, EMI_MPUD3=%x, EMI_MPUE3=%x\n",
 		mt_emi_reg_read(EMI_MPUC3), mt_emi_reg_read(EMI_MPUD3),
-		mt_emi_reg_read(EMI_MPUI));
+		mt_emi_reg_read(EMI_MPUE3));
+		pr_err("EMI_MPUF3=%x, EMI_MPUG3=%x, EMI_MPUH3=%x\n",
+		mt_emi_reg_read(EMI_MPUF3), mt_emi_reg_read(EMI_MPUG3),
+		mt_emi_reg_read(EMI_MPUH3));
+		pr_err("EMI_MPUI=%x\n", mt_emi_reg_read(EMI_MPUI));
 		pr_err("EMI_MPUI_2ND=%x, EMI_MPUJ=%x, EMI_MPUJ_2ND=%x\n",
 		mt_emi_reg_read(EMI_MPUI_2ND), mt_emi_reg_read(EMI_MPUJ),
 		mt_emi_reg_read(EMI_MPUJ_2ND));
@@ -624,8 +628,12 @@ static int mpu_check_violation(void)
 		pr_err("EMI_MPUI3=%x, EMI_MPUJ3=%x, EMI_MPUK3=%x\n",
 		mt_emi_reg_read(EMI_MPUI3), mt_emi_reg_read(EMI_MPUJ3),
 		mt_emi_reg_read(EMI_MPUK3));
-		pr_err("EMI_MPUL3=%x, EMI_MPUM=%x, EMI_MPUN=%x\n",
-		mt_emi_reg_read(EMI_MPUL3), mt_emi_reg_read(EMI_MPUM),
+		pr_err("EMI_MPUL3=%x, EMI_MPUI3_2ND=%x, EMI_MPUJ3_2ND=%x\n",
+		mt_emi_reg_read(EMI_MPUL3), mt_emi_reg_read(EMI_MPUI3_2ND),
+		mt_emi_reg_read(EMI_MPUJ3_2ND));
+		pr_err("EMI_MPUK3_2ND=%x\n", mt_emi_reg_read(EMI_MPUK3_2ND));
+		pr_err("EMI_MPUL3_2ND=%x, EMI_MPUM=%x, EMI_MPUN=%x\n",
+		mt_emi_reg_read(EMI_MPUL3_2ND), mt_emi_reg_read(EMI_MPUM),
 		mt_emi_reg_read(EMI_MPUN));
 		pr_err("EMI_MPUO=%x, EMI_MPUU=%x, EMI_MPUM2=%x\n",
 		mt_emi_reg_read(EMI_MPUO), mt_emi_reg_read(EMI_MPUU),
@@ -853,12 +861,12 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	unsigned int d0, d1, d2, d3, d4, d5, d6, d7;
 	static const char *permission[7] = {
 		"No protect",
-		"Only R/W: SEC",
-		"Only R/W: SEC, non-SEC read",
-		"Only R/W: SEC, non-SEC write",
-		"Only R for SEC/non-SEC",
-		"Both R/W forbidden",
-		"Only SEC W is forbidden"
+		"SEC_RW",
+		"SEC_RW_NSEC_R",
+		"SEC_RW_NSEC_W",
+		"SEC_R_NSEC_R",
+		"FORBIDDEN",
+		"SEC_R_NSEC_RW"
 	};
 
 	reg_value = mt_emi_reg_read(EMI_MPUA);
@@ -950,6 +958,36 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	start = ((reg_value >> 16) << 16) + emi_physical_offset;
 	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
 	ptr += sprintf(ptr, "R17 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUC3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R18 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUD3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R19 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUE3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R20 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUF3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R21 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUG3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R22 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUH3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R23 --> 0x%x to 0x%x\n", start, end);
 
 	ptr += sprintf(ptr, "\n");
 
@@ -1123,7 +1161,6 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "R11 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
 	permission[d4],  permission[d5],  permission[d6], permission[d7]);
 
-
 	reg_value = mt_emi_reg_read(EMI_MPUI2_2ND);
 	d0 = (reg_value & 0x7);
 	d1 = (reg_value >> 3) & 0x7;
@@ -1137,7 +1174,6 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	permission[d0],  permission[d1],  permission[d2], permission[d3]);
 	ptr += sprintf(ptr, "R12 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
 	permission[d4],  permission[d5],  permission[d6], permission[d7]);
-
 
 	reg_value = mt_emi_reg_read(EMI_MPUJ2_2ND);
 	d0 = (reg_value & 0x7);
@@ -1209,6 +1245,89 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "R17 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
 	permission[d4],  permission[d5],  permission[d6], permission[d7]);
 
+	reg_value = mt_emi_reg_read(EMI_MPUK3);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R18 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R18 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUL3);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R19 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R19 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUI3_2ND);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R20 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R20 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUJ3_2ND);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R21 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R21 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUK3_2ND);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R22 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R22 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUL3_2ND);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R23 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R23 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
 	return strlen(buf);
 }
 
@@ -1789,7 +1908,7 @@ out:
 DRIVER_ATTR(emi_wp_vio, 0644, emi_wp_vio_show, emi_wp_vio_store);
 #endif /* #ifdef ENABLE_EMI_WATCH_POINT */
 
-#define AP_REGION_ID   17
+#define AP_REGION_ID   23
 static void protect_ap_region(void)
 {
 
