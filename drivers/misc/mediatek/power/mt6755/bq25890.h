@@ -16,8 +16,6 @@
 * -------
 *
 ****************************************************************************/
-#include <mt-plat/mt_typedefs.h>
-
 #ifndef _bq25890_SW_H_
 #define _bq25890_SW_H_
 
@@ -249,82 +247,82 @@
   *
   *********************************************************/
 /* CON0---------------------------------------------------- */
-extern void bq25890_set_en_hiz(kal_uint32 val);
-extern void bq25890_set_en_ilim(kal_uint32 val);
-void bq25890_set_iinlim(kal_uint32 val);
+extern void bq25890_set_en_hiz(unsigned int val);
+extern void bq25890_set_en_ilim(unsigned int val);
+void bq25890_set_iinlim(unsigned int val);
 
 /* CON1---------------------------------------------------- */
 /* willcai */
-extern void bq25890_set_vindpm(kal_uint32 val);
+extern void bq25890_set_vindpm(unsigned int val);
 /*  */
 
 /* CON2---------------------------------------------------- */
-extern void bq25890_ADC_start(kal_uint32 val);
-extern void bq25890_set_ADC_rate(kal_uint32 val);
-extern void bq25890_set_ico_en_start(kal_uint32 val);
+extern void bq25890_ADC_start(unsigned int val);
+extern void bq25890_set_ADC_rate(unsigned int val);
+extern void bq25890_set_ico_en_start(unsigned int val);
 /*  */
 
 
 /* CON3---------------------------------------------------- */
 /* willcai */
-extern void bq25890_wd_reset(kal_uint32 val);
-extern void bq25890_otg_en(kal_uint32 val);
-extern void bq25890_chg_en(kal_uint32 val);
-extern void bq25890_set_sys_min(kal_uint32 val);
+extern void bq25890_wd_reset(unsigned int val);
+extern void bq25890_otg_en(unsigned int val);
+extern void bq25890_chg_en(unsigned int val);
+extern void bq25890_set_sys_min(unsigned int val);
 /*  */
 
 
 /* CON4---------------------------------------------------- */
 
 /* willcai */
-extern void bq25890_en_pumpx(kal_uint32 val);
-extern void bq25890_set_ichg(kal_uint32 val);
+extern void bq25890_en_pumpx(unsigned int val);
+extern void bq25890_set_ichg(unsigned int val);
 
 /*  */
 
 /* CON5---------------------------------------------------- */
 
 /* willcai */
-extern void bq25890_set_iprechg(kal_uint32 val);
-extern void bq25890_set_iterml(kal_uint32 val);
+extern void bq25890_set_iprechg(unsigned int val);
+extern void bq25890_set_iterml(unsigned int val);
 /*  */
 
 
 /* CON6---------------------------------------------------- */
 /* willcai */
-extern void bq25890_set_vreg(kal_uint32 val);
-extern void bq25890_set_batlowv(kal_uint32 val);
-extern void bq25890_set_vrechg(kal_uint32 val);
+extern void bq25890_set_vreg(unsigned int val);
+extern void bq25890_set_batlowv(unsigned int val);
+extern void bq25890_set_vrechg(unsigned int val);
 
 
 /* con7 */
 
-extern void bq25890_en_term_chg(kal_uint32 val);
-extern void bq25890_en_state_dis(kal_uint32 val);
-extern void bq25890_set_wd_timer(kal_uint32 val);
-extern void bq25890_en_chg_timer(kal_uint32 val);
+extern void bq25890_en_term_chg(unsigned int val);
+extern void bq25890_en_state_dis(unsigned int val);
+extern void bq25890_set_wd_timer(unsigned int val);
+extern void bq25890_en_chg_timer(unsigned int val);
 
-extern void bq25890_set_chg_timer(kal_uint32 val);
+extern void bq25890_set_chg_timer(unsigned int val);
 
 
 /* con8 */
-extern void bq25890_set_thermal_regulation(kal_uint32 val);
-extern void bq25890_set_VBAT_clamp(kal_uint32 val);
-extern void bq25890_set_VBAT_IR_compensation(kal_uint32 val);
+extern void bq25890_set_thermal_regulation(unsigned int val);
+extern void bq25890_set_VBAT_clamp(unsigned int val);
+extern void bq25890_set_VBAT_IR_compensation(unsigned int val);
 /* con9 */
-void bq25890_pumpx_up(kal_uint32 val);
+void bq25890_pumpx_up(unsigned int val);
 
 
 
 
 /* --------------------------------------------------------- */
 extern void bq25890_dump_register(void);
-extern kal_uint32 bq25890_reg_config_interface(kal_uint8 RegNum, kal_uint8 val);
+extern unsigned int bq25890_reg_config_interface(unsigned char RegNum, unsigned char val);
 
-extern kal_uint32 bq25890_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MASK,
-					 kal_uint8 SHIFT);
-extern kal_uint32 bq25890_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 MASK,
-					   kal_uint8 SHIFT);
+extern unsigned int bq25890_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
+					 unsigned char SHIFT);
+extern unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+					   unsigned char SHIFT);
 /*
 *static void hw_bc11_dump_register(void);
 *static void hw_bc11_init(void);
@@ -337,38 +335,38 @@ extern kal_uint32 bq25890_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_
 *static void hw_bc11_done(void);
 */
 /* CONA */
-extern void bq25890_set_boost_ilim(kal_uint32 val);
-extern void bq25890_set_boost_vlim(kal_uint32 val);
+extern void bq25890_set_boost_ilim(unsigned int val);
+extern void bq25890_set_boost_vlim(unsigned int val);
 
 /* CONB */
-kal_uint32 bq25890_get_vbus_state(void);
-kal_uint32 bq25890_get_chrg_state(void);
-kal_uint32 bq25890_get_pg_state(void);
-kal_uint32 bq25890_get_sdp_state(void);
-kal_uint32 bq25890_get_vsys_state(void);
-kal_uint32 bq25890_get_wdt_state(void);
-kal_uint32 bq25890_get_boost_state(void);
-kal_uint32 bq25890_get_chrg_fault_state(void);
-kal_uint32 bq25890_get_bat_state(void);
-kal_uint32 bq25890_get_ichg(void);
+unsigned int bq25890_get_vbus_state(void);
+unsigned int bq25890_get_chrg_state(void);
+unsigned int bq25890_get_pg_state(void);
+unsigned int bq25890_get_sdp_state(void);
+unsigned int bq25890_get_vsys_state(void);
+unsigned int bq25890_get_wdt_state(void);
+unsigned int bq25890_get_boost_state(void);
+unsigned int bq25890_get_chrg_fault_state(void);
+unsigned int bq25890_get_bat_state(void);
+unsigned int bq25890_get_ichg(void);
 
 /* CON0D */
-extern void bq25890_set_FORCE_VINDPM(kal_uint32 val);
-extern void bq25890_set_VINDPM(kal_uint32 val);
+extern void bq25890_set_FORCE_VINDPM(unsigned int val);
+extern void bq25890_set_VINDPM(unsigned int val);
 
 /* CON11 */
-extern kal_uint32 bq25890_get_vbus(void);
+extern unsigned int bq25890_get_vbus(void);
 
 /* aggregated APIs */
 extern void bq25890_hw_init(void);
-extern void bq25890_charging_enable(kal_uint32 bEnable);
+extern void bq25890_charging_enable(unsigned int bEnable);
 extern void bq25890_dump_register(void);
-extern kal_uint32 bq25890_get_chrg_stat(void);
+extern unsigned int bq25890_get_chrg_stat(void);
 
 
 /*CON13*/
-kal_uint32 bq25890_get_idpm_state(void);
-kal_uint32 bq25890_get_vdpm_state(void);
+unsigned int bq25890_get_idpm_state(void);
+unsigned int bq25890_get_vdpm_state(void);
 
 /*Added for debuging to check power off caller*/
 extern void dump_stack(void);
