@@ -101,7 +101,7 @@
 #include <mt-plat/battery_common.h>
 #include <mach/mt_battery_meter.h>
 #endif
-/* #include <mt6311.h> */
+#include <mt6311.h>
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
 #include <mach/mt_charging.h>
@@ -3306,6 +3306,7 @@ int dlpt_check_power_off(void)
 	if (g_dlpt_start == 0) {
 		PMICLOG("[dlpt_check_power_off] not start\n");
 	} else {
+#ifdef LOW_BATTERY_PROTECT
 		if (g_low_battery_level == 2 && g_lowbat_int_bottom == 1) {
 			/*1st time receive battery voltage < 3.1V, record it */
 			if (g_low_battery_if_power_off == 0) {
@@ -3314,7 +3315,6 @@ int dlpt_check_power_off(void)
 			} else {
 				/*2nd time receive battery voltage < 3.1V, wait FG to call power off */
 				ret = 1;
-				g_low_battery_if_power_off = 0;
 				pr_err("[dlpt_check_power_off] %d %d\n", ret, g_low_battery_if_power_off);
 			}
 		} else {
@@ -3322,11 +3322,14 @@ int dlpt_check_power_off(void)
 			/* battery voltage > 3.1V, ignore it */
 			g_low_battery_if_power_off = 0;
 		}
+#endif
 
 		PMICLOG("[dlpt_check_power_off]");
 		PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix, POWEROFF_BAT_CURRENT);
+#ifdef LOW_BATTERY_PROTECT
 		PMICLOG(" g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n", g_low_battery_level, ret,
 			g_lowbat_int_bottom);
+#endif
 	}
 
 	return ret;
