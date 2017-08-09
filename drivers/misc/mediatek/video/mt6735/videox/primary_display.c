@@ -616,6 +616,9 @@ void disp_exit_idle_ex(const char *caller)
 static int _disp_primary_path_idle_detect_thread(void *data)
 {
 	int ret = 0, idle_time;
+	static int enter_cnt;
+	static int end_cnt;
+	static int stop_cnt;
 
 #if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
 	idle_time = 2000;
@@ -658,7 +661,8 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 				}
 			}
 #endif
-			DISPMSG("[LP] - enter\n");
+			DISPMSG("[LP] - enter: %d, flag:%d,%d\n", enter_cnt++,
+				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			atomic_set(&isDdp_Idle, 1);
 			primary_display_save_power_for_idle(1, 1);
 			_primary_path_esd_check_unlock();
@@ -672,10 +676,18 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		ret = wait_event_interruptible(idle_detect_wq, (atomic_read(&idle_detect_flag) != 0));
 		atomic_set(&idle_detect_flag, 0);
 		/* printk("[ddp_idle]ret=%d\n", ret); */
-		if (kthread_should_stop())
+		if (kthread_should_stop()) {
+			pr_debug("[LP] stop: %d, flag:%d,%d\n", stop_cnt++,
+				 atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			break;
+		}
 
-		pr_debug("[LP] end\n");
+		pr_debug("[LP] end: %d, flag:%d,%d\n", end_cnt++, atomic_read(&isDdp_Idle),
+			 atomic_read(&idle_detect_flag));
+		if (enter_cnt != end_cnt) {
+			pr_debug("[LP][ASSERT]%d, %d, %d\n", enter_cnt, end_cnt, stop_cnt);
+			ASSERT(0);
+		}
 	}
 
 	return ret;
