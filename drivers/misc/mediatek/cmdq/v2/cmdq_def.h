@@ -67,10 +67,10 @@
 #define CMDQ_MAX_TASK_IN_SECURE_THREAD	(10)
 
 /* max value of CMDQ_THR_EXEC_CMD_CNT (value starts from 0) */
-#ifdef CMDQ_USE_LEGACY
-#define CMDQ_MAX_COOKIE_VALUE           (0xFFFF)
-#else
+#ifdef CMDQ_USE_LARGE_MAX_COOKIE
 #define CMDQ_MAX_COOKIE_VALUE           (0xFFFFFFFF)
+#else
+#define CMDQ_MAX_COOKIE_VALUE           (0xFFFF)
 #endif
 #define CMDQ_ARG_A_SUBSYS_MASK          (0x001F0000)
 

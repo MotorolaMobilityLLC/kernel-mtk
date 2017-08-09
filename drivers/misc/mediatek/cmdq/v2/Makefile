@@ -75,6 +75,10 @@ endif
 # ccflags-$(CONFIG_MTK_MET) += -DCMDQ_MDP_MET_STATUS
 # endif
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6580"))
+ccflags-y += -DCMDQ_USE_LARGE_MAX_COOKIE
+endif
+
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797"))
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 ccflags-y += -DCMDQ_DVFS_SPECIAL
