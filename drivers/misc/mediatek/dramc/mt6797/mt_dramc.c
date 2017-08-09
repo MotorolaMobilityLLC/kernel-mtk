@@ -90,9 +90,9 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 		g_dram_info_dummy_read = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
 	}
 
-	pr_debug("[DRAMC] dram info dram rank number = %d\n", g_dram_info_dummy_read->rank_num);
-	pr_debug("[DRAMC] dram info dram rank0 base = 0x%llx\n", g_dram_info_dummy_read->rank_info[0].start);
-	pr_debug("[DRAMC] dram info dram rank1 base = 0x%llx\n",
+	pr_err("[DRAMC] dram info dram rank number = %d\n", g_dram_info_dummy_read->rank_num);
+	pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n", g_dram_info_dummy_read->rank_info[0].start);
+	pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[0].start + g_dram_info_dummy_read->rank_info[0].size);
 
 	return node;
