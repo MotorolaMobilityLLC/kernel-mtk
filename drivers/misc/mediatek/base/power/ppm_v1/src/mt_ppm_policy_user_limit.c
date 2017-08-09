@@ -121,10 +121,6 @@ static ssize_t ppm_userlimit_min_cpu_core_proc_write(struct file *file, const ch
 	if (!buf)
 		return -EINVAL;
 
-#ifdef CONFIG_ARCH_MT6797
-	goto out;
-#endif
-
 	if (sscanf(buf, "%d %d", &id, &min_core) == 2) {
 		if (id < 0 || id >= ppm_main_info.cluster_num) {
 			ppm_err("@%s: Invalid cluster id: %d\n", __func__, id);
@@ -202,10 +198,6 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 
 	if (!buf)
 		return -EINVAL;
-
-#ifdef CONFIG_ARCH_MT6797
-	goto out;
-#endif
 
 	if (sscanf(buf, "%d %d", &id, &max_core) == 2) {
 		if (id < 0 || id >= ppm_main_info.cluster_num) {
@@ -285,10 +277,6 @@ static ssize_t ppm_userlimit_min_cpu_freq_proc_write(struct file *file, const ch
 	if (!buf)
 		return -EINVAL;
 
-#ifdef CONFIG_ARCH_MT6797
-	goto out;
-#endif
-
 	if (sscanf(buf, "%d %d", &id, &min_freq) == 2) {
 		if (id < 0 || id >= ppm_main_info.cluster_num) {
 			ppm_err("@%s: Invalid cluster id: %d\n", __func__, id);
@@ -360,10 +348,6 @@ static ssize_t ppm_userlimit_max_cpu_freq_proc_write(struct file *file, const ch
 
 	if (!buf)
 		return -EINVAL;
-
-#ifdef CONFIG_ARCH_MT6797
-	goto out;
-#endif
 
 	if (sscanf(buf, "%d %d", &id, &max_freq) == 2) {
 		if (id < 0 || id >= ppm_main_info.cluster_num) {
