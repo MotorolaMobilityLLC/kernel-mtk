@@ -426,6 +426,9 @@ void hps_algo_main(void)
 	 */
 	/*Base and limit check */
 	hps_check_base_limit(&hps_sys);
+	/*Disable rush boost in big cluster */
+	if (0 == get_efuse_status() || (!hps_ctxt.heavy_task_enabled))
+		hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 
 	/* Ensure that root cluster must one online cpu at less */
 	if (hps_sys.cluster_info[hps_sys.root_cluster_id].target_core_num <= 0)
@@ -481,7 +484,8 @@ void hps_algo_main(void)
 #endif
 	if (action_print || hrtbt_dbg) {
 		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk;
-
+		if (0 == get_efuse_status())
+			hps_sys.action_id |= (0x1 << 12);
 		mutex_lock(&hps_ctxt.para_lock);
 		online = target = criteria_limit = criteria_base = 0;
 		for (i = 0; i < hps_sys.cluster_num; i++) {
