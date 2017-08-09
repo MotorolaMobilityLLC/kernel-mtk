@@ -280,6 +280,32 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+	  {SENSOR_DRVNAME_S5K3L8_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 1},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_High, 0}
+	   },
+	  },
+	  {SENSOR_DRVNAME_OV8865_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 5},
+	   {RST, Vol_Low, 5},
+	   {DOVDD, Vol_1800, 5},
+	   {AVDD, Vol_2800, 5},
+	   {DVDD, Vol_1200, 5},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_High, 5},
+	   {RST, Vol_High, 5}
+	   },
+	  },
 	 /* add new sensor before this line */
 	 {NULL,},
 	 }
