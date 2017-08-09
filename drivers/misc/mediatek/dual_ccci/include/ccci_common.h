@@ -30,10 +30,10 @@
 /* ======================================================== */
 /*  debug log define     */
 /* ======================================================== */
-#define CCCI_MSG(fmt, args...)        pr_notice("[com] (0)" fmt, ##args)
-#define CCCI_MSG_INF(idx, tag, fmt, args...)    pr_notice("[" tag "] (%d)" fmt, (idx+1), ##args)
+#define CCCI_MSG(fmt, args...)        pr_warn("[com] (0)" fmt, ##args)
+#define CCCI_MSG_INF(idx, tag, fmt, args...)    pr_warn("[" tag "] (%d)" fmt, (idx+1), ##args)
 #define CCCI_DBG_MSG(idx, tag, fmt, args...)    pr_debug("[" tag "] (%d)" fmt, (idx+1), ##args)
-#define CCCI_DBG_COM_MSG(fmt, args...)        pr_notice("[com] (0)" fmt, ##args)
+#define CCCI_DBG_COM_MSG(fmt, args...)        pr_warn("[com] (0)" fmt, ##args)
 #define CCCI_ERR(fmt, args...)        pr_err("[err] (0)" fmt, ##args)
 #define CCCI_ERR_INF(idx, tag, fmt, args...)    pr_err("[" tag "] (%d)" fmt, (idx+1), ##args)
 

@@ -56,8 +56,6 @@ int ccci_log_write(const char *fmt, ...)
 	write_len += vsnprintf(temp_log + write_len, sizeof(temp_log) - write_len, fmt, args);
 	va_end(args);
 
-	/*printk("[cclog]write %d\n", write_len); */
-
 	spin_lock_irqsave(&ccci_log_buf.write_lock, flags);
 	if (ccci_log_buf.write_pos + write_len > CCCI_LOG_BUF_SIZE) {
 		first_half = CCCI_LOG_BUF_SIZE - ccci_log_buf.write_pos;
@@ -101,7 +99,6 @@ static ssize_t ccci_log_read(struct file *file, char __user *buf, size_t size, l
 	}
 
 	read_len = size < available ? size : available;
-	/*printk("[cclog]read %d\n", read_len); */
 	if (ccci_log_buf.read_pos + read_len > CCCI_LOG_BUF_SIZE) {
 		first_half = CCCI_LOG_BUF_SIZE - ccci_log_buf.read_pos;
 		ret = copy_to_user(buf, ccci_log_buf.buffer + ccci_log_buf.read_pos, first_half);

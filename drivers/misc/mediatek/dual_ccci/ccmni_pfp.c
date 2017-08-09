@@ -20,6 +20,7 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/vmalloc.h>
+#include "ccci_common.h"
 #include "ccmni_pfp.h"
 
 struct ccmni_record_t ccmni_dev[MAX_PDP_CONT_NUM];
@@ -114,14 +115,14 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 
 	do {
 #ifdef __PFP_KERNEL_DEBUG__
-		pr_notice("CCMNI%d: pfp_unframe_state=%d\n", ccmni_inx,
+		CCCI_MSG("CCMNI%d: pfp_unframe_state=%d\n", ccmni_inx,
 			ccmni_dev[ccmni_inx].unframe_state);
 #endif
 		switch (ccmni_dev[ccmni_inx].unframe_state) {
 		case PARSE_PFP_FRAME_START_FLAG_STATE:
 			/*  if(((unsigned char)local_raw_data[0]) == PFP_FRAME_START_FLAG) */
 #ifdef __PFP_KERNEL_DEBUG__
-			pr_notice
+			CCCI_MSG
 			    ("CCMNI%d: check start flag-local_raw_data[0]=0x%02x\n",
 			     ccmni_inx, local_raw_data[0]);
 #endif
@@ -141,7 +142,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 		case PARSE_PFP_FRAME_MAGIC_NUM_STATE:
 			/*  if(((unsigned char)local_raw_data[0]) != PFP_FRAME_MAGIC_NUM) */
 #ifdef __PFP_KERNEL_DEBUG__
-			pr_notice
+			CCCI_MSG
 			    ("CCMNI%d: check magic num-local_raw_data[0]=0x%02x\n",
 			     ccmni_inx, local_raw_data[0]);
 #endif
@@ -163,7 +164,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 		case PARSE_PFP_FRAME_LENGTH_FIELD_STATE:
 			/* Check if two bytes Length Field can be obtained from the raw_data[] */
 #ifdef __PFP_KERNEL_DEBUG__
-			pr_notice("CCMNI%d: local_raw_size=%d\n",
+			CCCI_MSG("CCMNI%d: local_raw_size=%d\n",
 				  ccmni_inx, local_raw_size);
 #endif
 			if (local_raw_size >= 2) {
@@ -172,7 +173,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 				     local_raw_data[0]);
 
 #ifdef __PFP_KERNEL_DEBUG__
-				pr_notice
+				CCCI_MSG
 				    ("CCMNI%d: pkt_size=%d,len[0]=0x%02x,len[1]=0x%02x\n",
 				     ccmni_inx,
 				     ccmni_dev[ccmni_inx].pkt_size,
@@ -193,7 +194,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 				} else {
 					/* Change state to PARSE_START_FLAG to find the next frame */
 #ifdef __PFP_KERNEL_DEBUG__
-					pr_notice
+					CCCI_MSG
 					    ("CCMNI%d: Reset decode state then continue to parse\n",
 					     ccmni_inx);
 #endif
@@ -209,7 +210,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 				 * Keep the state as the PARSE_PFP_FRAME_LENGTH_FIELD_STATE
 				 */
 #ifdef __PFP_KERNEL_DEBUG__
-				pr_notice
+				CCCI_MSG
 				    ("CCMNI%d: not enough len bytes\n",
 				     ccmni_inx);
 #endif
@@ -225,7 +226,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 				 * Wait for the data can be retrived as one complete IP Packet
 				 */
 #ifdef __PFP_KERNEL_DEBUG__
-				pr_notice
+				CCCI_MSG
 				    ("CCMNI%d: not enough pkt bytes\n",
 				     ccmni_inx);
 #endif
@@ -252,7 +253,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 
 				if (current_node == NULL) {
 #ifdef __PFP_KERNEL_DEBUG__
-					pr_notice
+					CCCI_MSG
 					    ("CCMNI%d: malloc for first pkt node\n",
 					     ccmni_inx);
 #endif
@@ -272,7 +273,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 					} else {
 						/* Error Handle */
 #ifdef __PFP_KERNEL_DEBUG__
-						pr_notice
+						CCCI_MSG
 						    ("CCMNI%d: Can't find one available complete_ippkt entry case1\n",
 						     ccmni_inx);
 #endif
@@ -296,15 +297,16 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 					} else {
 						/* Error Handle */
 #ifdef __PFP_KERNEL_DEBUG__
-						pr_notice("CCMNI%d: Can't find one available complete_ippkt entry case2\n",
-						     ccmni_inx);
+						CCCI_MSG
+						("CCMNI%d: Can't find one available complete_ippkt entry case2\n",
+						ccmni_inx);
 #endif
 						entry.try_decode_again = 1;
 						goto error_handle_return;
 					}
 				}
 #ifdef __PFP_KERNEL_DEBUG__
-				pr_notice
+				CCCI_MSG
 				    ("CCMNI%d: prepare pkt node\n",
 				     ccmni_inx);
 #endif
@@ -369,7 +371,7 @@ struct packet_info_t pfp_unframe(unsigned char *cooked_data, int cooked_data_buf
 				 * IP Packet : Keep the unframe_state as GET_DATA_STATE
 				 */
 #ifdef __PFP_KERNEL_DEBUG__
-				pr_notice
+				CCCI_MSG
 				    ("CCMNI%d: not enough free space provided by cooked_data\n",
 				     ccmni_inx);
 #endif
@@ -395,7 +397,7 @@ void traverse_pkt_list(struct complete_ippkt_t *node)
 
 	while (t_pkt_node != NULL) {
 #ifdef __PFP_KERNEL_DEBUG__
-		pr_notice("Packet Node: data=0x%08x, size=%d\n",
+		CCCI_MSG("Packet Node: data=0x%08x, size=%d\n",
 			  t_pkt_node->pkt_data, t_pkt_node->pkt_size);
 #endif
 		prev_pkt_node = t_pkt_node;
