@@ -263,7 +263,9 @@ int WV511AAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	LOG_INF("Start\n");
 
 	if (*g_s4AF_Opened == 2) {
+		spin_lock(g_AF_SpinLock);
 		g_sr = 5;
+		spin_unlock(g_AF_SpinLock);
 		s4AF_WriteReg(200);
 		msleep(20);
 		s4AF_WriteReg(100);
