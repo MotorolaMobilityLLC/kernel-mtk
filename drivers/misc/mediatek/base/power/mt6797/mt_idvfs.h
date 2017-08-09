@@ -12,6 +12,7 @@
 #endif
 */
 
+#ifdef	__MT_IDVFS_C__
 /* This is workaround for idvfs use */
 static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
 {
@@ -27,6 +28,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 	ret = (int)reg0;
 	return ret;
 }
+#endif
 
 /* define for iDVFS service */
 #ifdef CONFIG_ARM64
@@ -79,17 +81,19 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 /*
  * bit operation
  */
-#undef  BIT
-#define BIT(bit)	(1U << (bit))
+#define BIT_IDVFS(bit)		(1U << (bit))
 
-#define MSB(range)	(1 ? range)
-#define LSB(range)	(0 ? range)
+#define MSB_IDVFS(range)	(1 ? range)
+#define LSB_IDVFS(range)	(0 ? range)
 /**
  * Genearte a mask wher MSB to LSB are all 0b1
  * @r:	Range in the form of MSB:LSB
  */
-#define BITMASK(r)	\
-	(((unsigned) -1 >> (31 - MSB(r))) & ~((1U << LSB(r)) - 1))
+#define BITMASK_IDVFS(r)	\
+	(((unsigned) -1 >> (31 - MSB_IDVFS(r))) & ~((1U << LSB_IDVFS(r)) - 1))
+
+#define GET_BITS_VAL_IDVFS(_bits_, _val_)	\
+	(((_val_) & (BITMASK_IDVFS(_bits_))) >> ((0) ? _bits_))
 
 /**
  * Set value at MSB:LSB. For example, BITS(7:3, 0x5A)
@@ -97,7 +101,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
  * @r:	Range in the form of MSB:LSB
  */
 /* BITS(MSB:LSB, value) => Set value at MSB:LSB  */
-#define BITS(r, val)	((val << LSB(r)) & BITMASK(r))
+#define BITS_IDVFS(r, val)	((val << LSB_IDVFS(r)) & BITMASK_IDVFS(r))
 
 /* dfine for IDVFS register service */
 #define idvfs_read(addr) \
@@ -105,9 +109,9 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 #define idvfs_write(addr, val) \
 		mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_OCP_WRITE, addr, val, 0)
 #define idvfs_read_field(addr, range) \
-		GET_BITS_VAL(range, idvfs_read(addr))
+		GET_BITS_VAL_IDVFS(range, idvfs_read(addr))
 #define idvfs_write_field(addr, range, val) \
-		idvfs_write(addr, (idvfs_read(addr) & ~(BITMASK(range))) | BITS(range, val))
+		idvfs_write(addr, (idvfs_read(addr) & ~(BITMASK_IDVFS(range))) | BITS_IDVFS(range, val))
 
 /* ATF only support */
 /* #define __KERNEL__ */
@@ -189,29 +193,25 @@ struct  IDVFS_INIT_OPT {
 
 /* #undef IDVFS_EXTERN */
 
-extern int BigiDVFSEnable(int Fmax, int cur_vproc_mv_x100, int cur_vsram_mv_x100);
+extern int BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100);
 extern int BigiDVFSDisable(void);
-extern int BigiDVFSChannel(int Channelm, int EnDis);
-extern int BigIDVFSFreq(int Freqpct_x100);
-extern int BigiDVFSSWAvg(int Length, int EnDis);
+extern int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis);
+extern int BigIDVFSFreq(unsigned int Freqpct_x100);
+extern int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis);
 extern int BigiDVFSSWAvgStatus(void);
-extern int BigiDVFSPureSWMode(int function, int parameter);
+extern int BigiDVFSPureSWMode(unsigned int function, unsigned int parameter);
 
-extern int BigiDVFSPllSetFreq(int Freq);		/* rang 507 ~ 3000(MHz) */
+extern int BigiDVFSPllSetFreq(unsigned int Freq); /* rang 507 ~ 3000(MHz) */
 extern unsigned int BigiDVFSPllGetFreq(void);
 extern int BigiDVFSPllDisable(void);
 
-extern int BigiDVFSSRAMLDOSet(int mVolts_x100);	/* range 60000 ~ 120000(mv_x100) */
+extern int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100); /* range 60000 ~ 120000(mv_x100) */
 extern unsigned int BigiDVFSSRAMLDOGet(void);
 
-extern int BigiDVFSPOSDIVSet(int pos_div);		/* range 0/1/2 = div 1/2/4 */
+extern int BigiDVFSPOSDIVSet(unsigned int pos_div); /* range 0/1/2 = div 1/2/4 */
 extern unsigned int BigiDVFSPOSDIVGet(void);
 
-extern int BigiDVFSPLLSetPCM(int freq);			/* range 1000 ~ 3000(MHz), without pos div value */
+extern int BigiDVFSPLLSetPCM(unsigned int freq); /* range 1000 ~ 3000(MHz), without pos div value */
 extern unsigned int BigiDVFSPLLGetPCW(void);
 
 #endif /* _MT_IDVFS_H  */
-
-/* add for da9214*/
-extern unsigned int da9214_read_byte(unsigned char cmd, unsigned char *returnData);
-
