@@ -21,6 +21,7 @@
 #define MTK_WDT_MODE_KEYMASK		(0xff00)
 #define MTK_WDT_MODE_KEY		(0x22000000)
 
+#define MTK_WDT_MODE_DDR_RESERVE  (0x0080)
 #define MTK_WDT_MODE_DUAL_MODE  (0x0040)
 #define MTK_WDT_MODE_IN_DIS		(0x0020) /* Reserved */
 #define MTK_WDT_MODE_AUTO_RESTART	(0x0010) /* Reserved */

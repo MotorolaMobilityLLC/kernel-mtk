@@ -345,6 +345,23 @@ void wdt_arch_reset(char mode)
 
 int mtk_rgu_dram_reserved(int enable)
 {
+	volatile unsigned int tmp;
+
+	if (1 == enable) {
+		/* enable ddr reserved mode */
+		tmp = __raw_readl(MTK_WDT_MODE);
+		tmp |= (MTK_WDT_MODE_DDR_RESERVE|MTK_WDT_MODE_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_MODE);
+	} else if (0 == enable) {
+		/* disable ddr reserved mode, set reset mode,
+		disable watchdog output reset signal */
+		tmp = __raw_readl(MTK_WDT_MODE);
+		tmp &= (~MTK_WDT_MODE_DDR_RESERVE);
+		tmp |= MTK_WDT_MODE_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_MODE);
+	}
+	pr_debug("mtk_rgu_dram_reserved:MTK_WDT_MODE(0x%x)\n", __raw_readl(MTK_WDT_MODE));
+
 	return 0;
 }
 
