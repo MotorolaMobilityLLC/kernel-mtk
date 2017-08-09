@@ -28,7 +28,7 @@
 
 /*----------------------------------------------------------------------------*/
 typedef enum{
-	ALSPS_NOTIFY_PROXIMITY_CHANGE = 1,
+    ALSPS_NOTIFY_PROXIMITY_CHANGE = 0,
 } ALSPS_NOTIFY_TYPE;
 
 #endif

@@ -300,23 +300,21 @@ static int ps_recv_interrupt_ipidata(void *data, unsigned int len)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	SCP_SENSOR_HUB_DATA_P rsp = (SCP_SENSOR_HUB_DATA_P)data;
+	struct data_unit_t *data_t;
 
 	if (!obj)
 		return -1;
 
-	APS_ERR("len = %d, type = %d, action = %d, errCode = %d\n", len, rsp->rsp.sensorType, rsp->rsp.action,
-		rsp->rsp.errCode);
+	APS_ERR("len = %d, type = %d, action = %d, event = %d\n", len, rsp->notify_rsp.sensorType, rsp->notify_rsp.action,
+		rsp->notify_rsp.event);
 
-	switch (rsp->rsp.action) {
+	switch (rsp->notify_rsp.action) {
 	case SENSOR_HUB_NOTIFY:
 		switch (rsp->notify_rsp.event) {
 		case SCP_NOTIFY:
-			if (ALSPS_NOTIFY_PROXIMITY_CHANGE == rsp->notify_rsp.data[0]) {
-				intr_flag = rsp->notify_rsp.data[1];
-				schedule_work(&obj->eint_work);
-			} else {
-				APS_ERR("Unknow notify");
-			}
+			data_t = (struct data_unit_t *)rsp->notify_rsp.data.int8_Data;
+			intr_flag = data_t->proximity_t.oneshot;
+			schedule_work(&obj->eint_work);
 			break;
 		default:
 			APS_ERR("Error sensor hub notify");

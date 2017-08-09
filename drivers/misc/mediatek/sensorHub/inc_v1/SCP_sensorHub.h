@@ -413,7 +413,11 @@ typedef struct {
 	uint8_t action;
 	uint8_t event;
 	uint8_t reserve[1];
-	uint32_t data[0];
+	union {
+		int8_t		int8_Data[0];
+		int16_t		int16_Data[0];
+		int32_t		int32_Data[0];
+	} data;
 } SCP_SENSOR_HUB_NOTIFY_RSP;
 
 typedef union {
