@@ -681,11 +681,16 @@ static int truly_unprepare(struct drm_panel *panel)
 {
 	struct truly *ctx = panel_to_truly(panel);
 
+	if (!ctx->prepared)
+		return 0;
+
 	truly_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	truly_dcs_write_seq_static(ctx, MIPI_DCS_SET_DISPLAY_OFF);
 	msleep(40);
 
 	truly_clear_error(ctx);
+
+	ctx->prepared = false;
 
 	return truly_power_off(ctx);
 }
@@ -693,7 +698,10 @@ static int truly_unprepare(struct drm_panel *panel)
 static int truly_prepare(struct drm_panel *panel)
 {
 	struct truly *ctx = panel_to_truly(panel);
-	int ret;
+	int ret = 0;
+
+	if (ctx->prepared)
+		return ret;
 
 	ret = truly_power_on(ctx);
 
@@ -705,6 +713,8 @@ static int truly_prepare(struct drm_panel *panel)
 	ret = ctx->error;
 	if (ret < 0)
 		truly_unprepare(panel);
+
+	ctx->prepared = true;
 
 	return ret;
 }
@@ -856,6 +866,8 @@ static int truly_probe(struct mipi_dsi_device *dsi)
 		dev_err(dev, "cannot configure reset-gpios %d\n", ret);
 		return ret;
 	}
+
+	ctx->prepared = false;
 
 	drm_panel_init(&ctx->panel);
 	ctx->panel.dev = dev;
