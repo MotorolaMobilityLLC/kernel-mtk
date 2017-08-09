@@ -263,152 +263,152 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 	cam0_pnd_h = pinctrl_lookup_state(camctrl, "cam0_pnd1");
 	if (IS_ERR(cam0_pnd_h)) {
 		ret = PTR_ERR(cam0_pnd_h);
-		pr_debug("%s : pinctrl err, cam0_pnd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam0_pnd_h\n", __func__);
 	}
 
 	cam0_pnd_l = pinctrl_lookup_state(camctrl, "cam0_pnd0");
 	if (IS_ERR(cam0_pnd_l)) {
 		ret = PTR_ERR(cam0_pnd_l);
-		pr_debug("%s : pinctrl err, cam0_pnd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam0_pnd_l\n", __func__);
 	}
 
 
 	cam0_rst_h = pinctrl_lookup_state(camctrl, "cam0_rst1");
 	if (IS_ERR(cam0_rst_h)) {
 		ret = PTR_ERR(cam0_rst_h);
-		pr_debug("%s : pinctrl err, cam0_rst_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam0_rst_h\n", __func__);
 	}
 
 	cam0_rst_l = pinctrl_lookup_state(camctrl, "cam0_rst0");
 	if (IS_ERR(cam0_rst_l)) {
 		ret = PTR_ERR(cam0_rst_l);
-		pr_debug("%s : pinctrl err, cam0_rst_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam0_rst_l\n", __func__);
 	}
 
 	/*Cam1 Power/Rst Ping initialization */
 	cam1_pnd_h = pinctrl_lookup_state(camctrl, "cam1_pnd1");
 	if (IS_ERR(cam1_pnd_h)) {
 		ret = PTR_ERR(cam1_pnd_h);
-		pr_debug("%s : pinctrl err, cam1_pnd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam1_pnd_h\n", __func__);
 	}
 
 	cam1_pnd_l = pinctrl_lookup_state(camctrl, "cam1_pnd0");
 	if (IS_ERR(cam1_pnd_l)) {
 		ret = PTR_ERR(cam1_pnd_l);
-		pr_debug("%s : pinctrl err, cam1_pnd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam1_pnd_l\n", __func__);
 	}
 
 
 	cam1_rst_h = pinctrl_lookup_state(camctrl, "cam1_rst1");
 	if (IS_ERR(cam1_rst_h)) {
 		ret = PTR_ERR(cam1_rst_h);
-		pr_debug("%s : pinctrl err, cam1_rst_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam1_rst_h\n", __func__);
 	}
 
 
 	cam1_rst_l = pinctrl_lookup_state(camctrl, "cam1_rst0");
 	if (IS_ERR(cam1_rst_l)) {
 		ret = PTR_ERR(cam1_rst_l);
-		pr_debug("%s : pinctrl err, cam1_rst_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam1_rst_l\n", __func__);
 	}
 	/*Cam2 Power/Rst Ping initialization */
 	cam2_pnd_h = pinctrl_lookup_state(camctrl, "cam2_pnd1");
 	if (IS_ERR(cam2_pnd_h)) {
 		ret = PTR_ERR(cam2_pnd_h);
-		pr_debug("%s : pinctrl err, cam2_pnd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam2_pnd_h\n", __func__);
 	}
 
 	cam2_pnd_l = pinctrl_lookup_state(camctrl, "cam2_pnd0");
 	if (IS_ERR(cam2_pnd_l)) {
 		ret = PTR_ERR(cam2_pnd_l);
-		pr_debug("%s : pinctrl err, cam2_pnd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam2_pnd_l\n", __func__);
 	}
 
 
 	cam2_rst_h = pinctrl_lookup_state(camctrl, "cam2_rst1");
 	if (IS_ERR(cam2_rst_h)) {
 		ret = PTR_ERR(cam2_rst_h);
-		pr_debug("%s : pinctrl err, cam2_rst_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam2_rst_h\n", __func__);
 	}
 
 
 	cam2_rst_l = pinctrl_lookup_state(camctrl, "cam2_rst0");
 	if (IS_ERR(cam2_rst_l)) {
 		ret = PTR_ERR(cam2_rst_l);
-		pr_debug("%s : pinctrl err, cam2_rst_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam2_rst_l\n", __func__);
 	}
 
 	/*externel LDO enable */
 	cam_ldo_vcama_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcama_1");
 	if (IS_ERR(cam_ldo_vcama_h)) {
 		ret = PTR_ERR(cam_ldo_vcama_h);
-		pr_debug("%s : pinctrl err, cam_ldo_vcama_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcama_h\n", __func__);
 	}
 
 	cam_ldo_vcama_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcama_0");
 	if (IS_ERR(cam_ldo_vcama_l)) {
 		ret = PTR_ERR(cam_ldo_vcama_l);
-		pr_debug("%s : pinctrl err, cam_ldo_vcama_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcama_l\n", __func__);
 	}
 
 	cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_1");
 	if (IS_ERR(cam_ldo_vcamd_h)) {
 		ret = PTR_ERR(cam_ldo_vcamd_h);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamd_h\n", __func__);
 	}
 
 	cam_ldo_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_0");
 	if (IS_ERR(cam_ldo_vcamd_l)) {
 		ret = PTR_ERR(cam_ldo_vcamd_l);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
 	}
 
 	cam_ldo_vcamio_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamio_1");
 	if (IS_ERR(cam_ldo_vcamio_h)) {
 		ret = PTR_ERR(cam_ldo_vcamio_h);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamio_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamio_h\n", __func__);
 	}
 
 	cam_ldo_vcamio_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamio_0");
 	if (IS_ERR(cam_ldo_vcamio_l)) {
 		ret = PTR_ERR(cam_ldo_vcamio_l);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamio_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamio_l\n", __func__);
 	}
 
 	cam_ldo_vcamaf_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamaf_1");
 	if (IS_ERR(cam_ldo_vcamaf_h)) {
 		ret = PTR_ERR(cam_ldo_vcamaf_h);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamaf_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamaf_h\n", __func__);
 	}
 
 	cam_ldo_vcamaf_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamaf_0");
 	if (IS_ERR(cam_ldo_vcamaf_l)) {
 		ret = PTR_ERR(cam_ldo_vcamaf_l);
-		pr_debug("%s : pinctrl err, cam_ldo_vcamaf_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_vcamaf_l\n", __func__);
 	}
 
 	cam_ldo_sub_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_sub_vcamd_1");
 	if (IS_ERR(cam_ldo_sub_vcamd_h)) {
 		ret = PTR_ERR(cam_ldo_sub_vcamd_h);
-		pr_debug("%s : pinctrl err, cam_ldo_sub_vcamd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_sub_vcamd_h\n", __func__);
 	}
 
 	cam_ldo_sub_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_sub_vcamd_0");
 	if (IS_ERR(cam_ldo_sub_vcamd_l)) {
 		ret = PTR_ERR(cam_ldo_sub_vcamd_l);
-		pr_debug("%s : pinctrl err, cam_ldo_sub_vcamd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_sub_vcamd_l\n", __func__);
 	}
 
 	cam_ldo_main2_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_main2_vcamd_1");
 	if (IS_ERR(cam_ldo_main2_vcamd_h)) {
 		ret = PTR_ERR(cam_ldo_main2_vcamd_h);
-		pr_debug("%s : pinctrl err, cam_ldo_main2_vcamd_h\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcamd_h\n", __func__);
 	}
 
 	cam_ldo_main2_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_main2_vcamd_0");
 	if (IS_ERR(cam_ldo_main2_vcamd_l)) {
 		ret = PTR_ERR(cam_ldo_main2_vcamd_l);
-		pr_debug("%s : pinctrl err, cam_ldo_main2_vcamd_l\n", __func__);
+		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcamd_l\n", __func__);
 	}
 
 	return ret;

@@ -1154,7 +1154,7 @@ int kdSetDriver(unsigned int *pDrvIndex)
         memcpy((char *)g_invokeSensorNameStr[i], (char *)pSensorList[drvIdx[i]].drvname, sizeof(pSensorList[drvIdx[i]].drvname));
         /* return sensor ID */
         /* pDrvIndex[0] = (unsigned int)pSensorList[drvIdx].SensorId; */
-        PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%d]\n", i, g_bEnableDriver[i], g_invokeSocketIdx[i], g_invokeSensorNameStr[i], sizeof(pSensorList[drvIdx[i]].drvname));
+        PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%lu]\n", i, g_bEnableDriver[i], g_invokeSocketIdx[i], g_invokeSensorNameStr[i], sizeof(pSensorList[drvIdx[i]].drvname));
     }
     }
     return 0;
@@ -1644,7 +1644,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 		return -ENOMEM;
 	}
 
-    PK_DBG("[CAMERA_HW][Resolution] %x\n", pSensorGetInfo->pSensorResolution);
+    PK_DBG("[CAMERA_HW][Resolution] %p\n", pSensorGetInfo->pSensorResolution);
 
     /* TO get preview value */
     ScenarioId[0] = ScenarioId[1] = MSDK_SCENARIO_ID_CAMERA_PREVIEW;
@@ -1811,9 +1811,9 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
     /* Step2 : Get Resolution */
     g_pSensorFunc->SensorGetResolution(psensorResolution);
-    PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorPreviewWidth, SensorResolution[0].SensorPreviewHeight);
-    PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorFullWidth, SensorResolution[0].SensorFullHeight);
-    PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorVideoWidth, SensorResolution[0].SensorVideoHeight);
+    PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorPreviewWidth, psensorResolution[0]->SensorPreviewHeight);
+    PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorFullWidth, psensorResolution[0]->SensorFullHeight);
+    PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorVideoWidth, psensorResolution[0]->SensorVideoHeight);
 
     if (DUAL_CAMERA_MAIN_SENSOR == pSensorGetInfo->SensorId) {
     /* Resolution */
@@ -2935,7 +2935,7 @@ bool _hwPowerOn(PowerType type, int powerVolt)
     bool ret = FALSE;
 	struct regulator *reg = NULL;
 
-	PK_DBG("[_hwPowerOn]before get, powertype:%d powerId:%d\n", type, powerVolt);
+	PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
     if (type == AVDD) {
 	reg = regVCAMA;
     } else if (type == DVDD) {
@@ -3448,7 +3448,7 @@ static long CAMERA_HW_Ioctl(
         break;
 
     default:
-        PK_DBG("No such command\n");
+        PK_DBG("No such command %d\n",a_u4Command);
         i4RetValue = -EPERM;
         break;
 
@@ -3867,7 +3867,7 @@ struct i2c_driver CAMERA_HW_i2c_driver2 = {
     .driver = {
     .name = CAMERA_HW_DRVNAME2,
     .owner = THIS_MODULE,
-#if 0
+#if 1
 #ifdef CONFIG_OF
     .of_match_table = CAMERA_HW2_i2c_driver_of_ids,
 #endif
