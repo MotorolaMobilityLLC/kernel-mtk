@@ -12,7 +12,7 @@
 #include <fan53555.h>
 
 //#define MTK_GPU_DPM
-#define MTK_GPU_SPM
+//#define MTK_GPU_SPM
 //#define MTK_GPU_APM
 //#define MTK_GPU_OCP
 
@@ -92,12 +92,6 @@ volatile void *g_TOPCK_base;
 
 static void mt6797_gpu_set_power(int on)
 {
-	if (on)
-	{
-	}
-	else
-	{
-	}
 }
 
 
@@ -108,17 +102,12 @@ static void mt6797_gpu_set_power(int on)
 #define MTKCLK_disable_unprepare(clk) \
     if (config->clk) clk_disable_unprepare(config->clk);
 
-static void mtk_init_registers_once(struct mtk_config* config)
+static void mtk_init_registers_once(void)
 {
 	static int init = 0;
 
 	if (init == 1) return;
 	init = 1;
-
-	/* LDO: VSRAM_GPU */
-	base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
-	base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
-	base_write32(g_ldo_base+0xfbc, 0xff);
 
 #ifdef MTK_GPU_APM
 	/* enable GPU hot-plug */
@@ -150,6 +139,34 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 	mt6797_gpu_set_power(1);
 
+	{ 	/* init VGPU power once */
+		static int init = 0;
+
+		if (init == 0)
+		{
+			unsigned char x0 = 0, x1;
+
+			/* LDO: VSRAM_GPU */
+			base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
+			base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
+			base_write32(g_ldo_base+0xfbc, 0xff);
+
+			/* FAN53555: VGPU */
+			fan53555_read_interface(0x0, &x0, 0xff, 0x0);
+			fan53555_read_interface(0x1, &x1, 0xff, 0x0);
+			dev_err(kbdev->dev, "xxxx vgpu:0x00:0x%02x, 0x01:0x%02x\n", x0, x1);
+
+			fan53555_config_interface(0x0, 0x1, 0x1, 0x7);
+			fan53555_config_interface(0x1, 0x1, 0x1, 0x7);
+
+			fan53555_read_interface(0x0, &x0, 0xff, 0x0);
+			fan53555_read_interface(0x1, &x1, 0xff, 0x0);
+			dev_err(kbdev->dev, "xxxx vgpu:0x00:0x%02x, 0x01:0x%02x\n", x0, x1);
+
+			init = 1;
+		}
+	}
+
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
 #ifndef MTK_GPU_APM
@@ -166,7 +183,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_ap_dma);
 #endif
 
-	mtk_init_registers_once(config);
+	mtk_init_registers_once();
 
 #ifdef MTK_GPU_OCP
 	mtk_kbase_dpm_setup(dfp_weights);
@@ -252,15 +269,14 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
 	}
 
-	/* dump registers */
+	/* dump DFP registers */
+	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_ctrl = %u\n", DFP_read32(DFP_CTRL));
+	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
+
+	/* dump DVFS_GPU registers */
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_ap_dma);
-
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_ctrl = %u\n", DFP_read32(DFP_CTRL));
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_accum_ctrl = %u\n", DFP_read32(DFP_EVENT_ACCUM_CTRL));
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
-
 	for (k = 0; k < ARRAY_SIZE(dvfs_gpu_bases); ++k)
 	{
 		for (i = 0; i < 5; ++i)
