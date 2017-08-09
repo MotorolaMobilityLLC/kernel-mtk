@@ -1058,6 +1058,19 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NORMAL_LOG(md->index, CHAR, "mdlog dump done ioctl called by %s\n", current->comm);
 		md->mdlog_dump_done = 1;
 		break;
+	case CCCI_IOC_GET_AT_CH_NUM:
+		{
+			unsigned int at_ch_num = 0;
+			struct ccci_runtime_feature *rt_feature = NULL;
+
+			rt_feature = ccci_get_rt_feature_by_id(md, AT_CHANNEL_NUM, 1);
+			ret = ccci_parse_rt_feature(md, rt_feature, &at_ch_num, sizeof(at_ch_num));
+			if (ret == 0) {
+				CCCI_NORMAL_LOG(md->index, KERN, "get at_ch_num = %u\n", at_ch_num);
+				ret = put_user(at_ch_num, (unsigned int __user *)arg);
+			}
+			break;
+		}
 
 	default:
 		ret = -ENOTTY;

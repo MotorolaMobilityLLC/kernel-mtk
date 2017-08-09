@@ -406,6 +406,7 @@ enum{
 #define CCCI_IOC_SET_EFUN               _IOW(CCCI_IOC_MAGIC, 55, unsigned int) /* RILD */
 #define CCCI_IOC_MDLOG_DUMP_DONE		_IO(CCCI_IOC_MAGIC, 56) /*mdlogger*/
 #define CCCI_IOC_GET_OTHER_MD_STATE		_IOR(CCCI_IOC_MAGIC, 57, unsigned int) /* mdlogger */
+#define CCCI_IOC_GET_AT_CH_NUM			_IOR(CCCI_IOC_MAGIC, 58, unsigned int) /* RILD */
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */

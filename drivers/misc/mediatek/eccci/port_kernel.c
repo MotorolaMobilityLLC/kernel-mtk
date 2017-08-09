@@ -264,7 +264,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	unsigned int random_seed = 0;
 	struct timeval t;
 
-	CCCI_BOOTUP_LOG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", RUNTIME_FEATURE_ID_MAX);
+	CCCI_BOOTUP_LOG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", MD_RUNTIME_FEATURE_ID_MAX);
 
 	memset(&md_feature_ap, 0, sizeof(struct md_query_ap_feature));
 	config_ap_side_feature(md, &md_feature_ap);

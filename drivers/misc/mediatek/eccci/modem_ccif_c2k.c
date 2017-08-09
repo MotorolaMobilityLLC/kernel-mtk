@@ -1331,8 +1331,8 @@ static void dump_runtime_data(struct ccci_modem *md, struct ap_query_md_feature 
 
 	CCCI_BOOTUP_LOG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
 
-	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
-		CCCI_BOOTUP_LOG(md->index, KERN, "feature %u: mask %u, version %u\n",
+	for (i = 0; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
+		CCCI_BOOTUP_LOG(md->index, KERN, "ap query md feature %u: mask %u, version %u\n",
 				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
 	}
 	CCCI_BOOTUP_LOG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
@@ -1374,7 +1374,20 @@ static void md_ccif_smem_sub_region_init(struct ccci_modem *md)
 
 static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_feature *ap_rt_data)
 {
+	struct ccci_feature_support s_info[4];
+
 	ccif_write32(&ap_rt_data->head_pattern, 0, AP_FEATURE_QUERY_PATTERN);
+
+	/*Notice: ccif_write8 is invalid, so must write 4 features at the same time*/
+	s_info[0].version = 0;	/*AT_CHANNEL_NUM*/
+	s_info[0].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
+	s_info[1].version = 0;
+	s_info[1].support_mask = 0;
+	s_info[2].version = 0;
+	s_info[2].support_mask = 0;
+	s_info[3].version = 0;
+	s_info[3].support_mask = 0;
+	ccif_write32(&ap_rt_data->feature_set[0], 0, s_info[0].version << 4 | s_info[0].support_mask);
 
 	ccif_write32(&ap_rt_data->share_memory_support, 0, 1);
 

@@ -974,6 +974,52 @@ int ccci_send_virtual_md_msg(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg,
 	return ret;
 }
 
+struct ccci_runtime_feature *ccci_get_rt_feature_by_id(struct ccci_modem *md, u8 feature_id, u8 ap_query_md)
+{
+	struct ccci_runtime_feature *rt_feature = NULL;
+	u8 i = 0;
+	u8 max_id = 0;
+
+	if (ap_query_md) {
+		rt_feature = (struct ccci_runtime_feature *)(md->smem_layout.ccci_rt_smem_base_vir +
+			CCCI_SMEM_SIZE_RUNTIME_AP);
+		max_id = AP_RUNTIME_FEATURE_ID_MAX;
+	} else {
+		rt_feature = (struct ccci_runtime_feature *)(md->smem_layout.ccci_rt_smem_base_vir);
+		max_id = MD_RUNTIME_FEATURE_ID_MAX;
+	}
+	while (i < max_id) {
+		if (feature_id == rt_feature->feature_id)
+			return rt_feature;
+		/*todo: valid data len check*/
+		if (rt_feature->data_len > sizeof(struct ccci_misc_info_element)) {
+			CCCI_ERROR_LOG(md->index, KERN, "get invalid feature, id %u\n", i);
+			return NULL;
+		}
+		rt_feature = (struct ccci_runtime_feature *) ((char *)rt_feature->data + rt_feature->data_len);
+		i++;
+	}
+
+	return NULL;
+}
+
+int ccci_parse_rt_feature(struct ccci_modem *md, struct ccci_runtime_feature *rt_feature, void *data, u32 data_len)
+{
+	if (unlikely(!rt_feature)) {
+		CCCI_ERROR_LOG(md->index, KERN, "parse_md_rt_feature: rt_feature == NULL\n");
+		return -EFAULT;
+	}
+	if (unlikely(rt_feature->data_len > data_len || rt_feature->data_len == 0)) {
+		CCCI_ERROR_LOG(md->index, KERN, "rt_feature %u data_len = %u, expected data_len %u\n",
+			rt_feature->feature_id, rt_feature->data_len, data_len);
+		return -EFAULT;
+	}
+
+	memcpy(data, (const void *)((char *)rt_feature->data), rt_feature->data_len);
+
+	return 0;
+}
+
 #if defined(FEATURE_MTK_SWITCH_TX_POWER)
 static int switch_Tx_Power(int md_id, unsigned int mode)
 {

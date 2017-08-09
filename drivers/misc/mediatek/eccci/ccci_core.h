@@ -761,10 +761,11 @@ typedef enum{
 	DT_NETD_SHARE_MEMORY,
 	DT_USB_SHARE_MEMORY,
 	EE_AFTER_EPOF,
-	RUNTIME_FEATURE_ID_MAX,
+	MD_RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
 typedef enum{
+	AT_CHANNEL_NUM = 0,
 	AP_RUNTIME_FEATURE_ID_MAX,
 } AP_CCCI_RUNTIME_FEATURE_ID;
 
@@ -786,7 +787,7 @@ struct ccci_runtime_feature {
 	struct ccci_feature_support support_info;
 	u8 reserved[2];
 	u32 data_len;
-	u32 data[0];
+	u8 data[0];
 };
 
 struct ccci_runtime_boot_info {
@@ -1108,6 +1109,9 @@ void ccci_dump_log_add(struct ccci_modem *md, DIRECTION dir, int queue_index,
 				struct ccci_header *msg, int is_dropped);
 int ccci_scp_ipi_send(int md_id, int op_id, void *data);
 void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage);
+
+struct ccci_runtime_feature *ccci_get_rt_feature_by_id(struct ccci_modem *md, u8 feature_id, u8 ap_query_md);
+int ccci_parse_rt_feature(struct ccci_modem *md, struct ccci_runtime_feature *rt_feature, void *data, u32 data_len);
 
 /* common sub-system */
 extern int ccci_subsys_bm_init(void);
