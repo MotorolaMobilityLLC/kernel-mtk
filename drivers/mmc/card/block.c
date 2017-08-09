@@ -2451,7 +2451,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 					sizeof(char)*BLOCK_IO_BUFFER_SIZE);
 			    time = get_current_time_us();
 				rem_nsec = do_div(time, 1000000000);
-				snprintf((((struct struct_block_io_ring *)block_io_ring) + block_io_ring_index),
+				snprintf((char *)(((struct struct_block_io_ring *)block_io_ring) + block_io_ring_index),
 					BLOCK_IO_BUFFER_SIZE, "\n[%5lu.%06lu]q:%d.%s",
 					(unsigned long)time, rem_nsec / 1000, idx, block_io_log_dst_buffer);
 				block_io_ring_index++;
