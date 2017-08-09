@@ -56,10 +56,7 @@
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
 
-#if 0				/* temp mark for early porting */
-/* #include <mach/mtk_wcn_cmb_stub.h> */
-/* extern int mtk_wcn_cmb_stub_audio_ctrl(CMB_STUB_AIF_X state); */
-#endif
+#include <mt-plat/mtk_wcn_cmb_stub.h>
 /* static DEFINE_SPINLOCK(auddrv_fm_i2s_lock); */
 
 /*
@@ -103,23 +100,19 @@ static const struct soc_enum wcn_stub_audio_ctr_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(wcn_stub_audio_ctr), wcn_stub_audio_ctr),
 };
 
-/* static int mAudio_Wcn_Cmb = CMB_STUB_AIF_3;//temp mark for early porting */
+static int mAudio_Wcn_Cmb = CMB_STUB_AIF_3;
 static int Audio_Wcn_Cmb_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-#if 0				/* temp mark for early porting */
 	pr_warn("Audio_Wcn_Cmb_Get = %d\n", mAudio_Wcn_Cmb);
 	ucontrol->value.integer.value[0] = mAudio_Wcn_Cmb;
-#endif
 	return 0;
 }
 
 static int Audio_Wcn_Cmb_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-#if 0				/* temp mark for early porting */
 	mAudio_Wcn_Cmb = ucontrol->value.integer.value[0];
 	pr_warn("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
-	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)mAudio_Wcn_Cmb);//temp mark for early porting */
-#endif
+	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)mAudio_Wcn_Cmb);
 	return 0;
 }
 
@@ -227,7 +220,7 @@ static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream)
 
 	pr_warn("%s rate = %d\n", __func__, runtime->rate);
 
-	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0);//temp mark for early porting */
+	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false) {
@@ -270,7 +263,7 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 	pr_warn("%s rate = %d\n", __func__, runtime->rate);
 
 	if (mPrepareDone == false) {
-		/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_3);//temp mark for early porting */
+		mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_3);
 
 		/* interconnection setting */
 		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I00,
