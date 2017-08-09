@@ -2354,6 +2354,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 	/* ========================================= */
 	if (0 == m4u_id) {
 		struct device_node *node = NULL;
+		unsigned long InfraConfigBaseAddr;
 
 		for (i = 0; i < SMI_LARB_NR; i++) {
 			node = of_find_compatible_node(NULL, NULL, gM4U_SMILARB[i]);
@@ -2371,6 +2372,13 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 
 			M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
 		}
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+		InfraConfigBaseAddr = (unsigned long)of_iomap(node, 0);
+		m4uHw_set_field_by_mask(InfraConfigBaseAddr, 0x70C, F_BIT_SET(9), F_BIT_SET(9));
+		regval = M4U_ReadReg32(InfraConfigBaseAddr, 0x70C);
+		M4UMSG("InfraConfig: enable mmu_idle 0x%x\n", regval);
+
 	}
 	/* ========================================= */
 	/* perisys init */
