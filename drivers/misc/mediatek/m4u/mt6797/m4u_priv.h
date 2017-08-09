@@ -24,7 +24,7 @@
 #define M4U_FPGAPORTING
 #endif
 #define M4U_PROFILE
-/*#define M4U_4GBDRAM */
+#define M4U_4GBDRAM
 
 #define M4U_DVT 0
 
@@ -372,6 +372,10 @@ int m4u_sec_init(void);
 
 #if !defined(CONFIG_MTK_CLKMGR)
 extern const char *smi_clk_name[];
+#endif
+
+#ifdef M4U_4GBDRAM
+extern unsigned int enable_4G(void);
 #endif
 
 #endif
