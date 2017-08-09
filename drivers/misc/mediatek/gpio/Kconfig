@@ -11,4 +11,4 @@ config MTK_GPIO
 
 config MTK_MT6306_SUPPORT
 	tristate "MediaTek MT6306 GPIO Controller support"
-	default y
+	default n
