@@ -892,6 +892,16 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10003000 0x1000>;
 			interrupts = <0 164 0x2>;
 		};
+
+		vcorefs {
+			compatible = "mediatek,vcorefs";
+			clocks = <&topckgen TOP_MUX_AXI>,
+				 <&topckgen TOP_SYSPLL_D5>,
+				 <&topckgen TOP_SYSPLL1_D4>;
+			clock-names = "mux_axi",
+				      "syspll_d5",
+				      "syspll1_d4";
+		};
 	};
 
 };
