@@ -3652,7 +3652,10 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 }
 
 int init_cci_status = 0;
+
 #define IDVFS_FMAX 2500
+#define DEFAULT_VRSAM 105000
+
 static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int ret = -EINVAL;
@@ -3730,13 +3733,19 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
 #ifdef ENABLE_IDVFS
-		if (MT_CPU_DVFS_B == id && !disable_idvfs_flag) {
-			cur_vproc_mv_x100 = p->ops->get_cur_volt(p);
-			cur_vsram_mv_x100 = p->ops->get_cur_vsram(p);
-			eem_init_det_tmp();
-			BigiDVFSSWAvg(0, 1);
-			ret = BigiDVFSEnable(IDVFS_FMAX, cur_vproc_mv_x100, cur_vsram_mv_x100);
+		if (MT_CPU_DVFS_B == id) {
+			if (!disable_idvfs_flag) {
+				cur_vproc_mv_x100 = p->ops->get_cur_volt(p);
+				cur_vsram_mv_x100 = p->ops->get_cur_vsram(p);
+				eem_init_det_tmp();
+				BigiDVFSSWAvg(0, 1);
+				ret = BigiDVFSEnable(IDVFS_FMAX, cur_vproc_mv_x100, cur_vsram_mv_x100);
+			} else
+				da9214_vosel_buck_b(DEFAULT_VRSAM - NORMAL_DIFF_VRSAM_VPROC);
 		}
+#else
+		if (MT_CPU_DVFS_B == id)
+			da9214_vosel_buck_b(DEFAULT_VRSAM - NORMAL_DIFF_VRSAM_VPROC);
 #endif
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* after BigiDVFSEnable */
 		if (enable_cpuhvfs)
