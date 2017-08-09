@@ -1859,8 +1859,8 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	volatile unsigned int SO_CFG;
 
-	/* volatile unsigned int SO_CFG; */
 	CCCI_ERR_MSG(md->index, TAG, "MD exception HIF %d\n", stage);
 	/* in exception mode, MD won't sleep, so we do not need to request MD resource first */
 	switch (stage) {
@@ -1889,9 +1889,6 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		schedule_delayed_work(&md_ctrl->ccif_delayed_work, 2 * HZ);
 		break;
 	case HIF_EX_ALLQ_RESET:
-#if 1 /* move reset flow to ccif_work1 */
-		schedule_work(&md_ctrl->ccif_work1);
-#else
 		/* re-start CLDMA */
 		cldma_reset(md);
 		/* md_cd_clear_all_queue(md, IN); move to delay work for request skb in it*/ /* purge Rx queue */
@@ -1906,7 +1903,6 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 			cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
 				      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x05);
 		}
-#endif
 		break;
 	default:
 		break;
@@ -1927,34 +1923,10 @@ static void md_cd_ccif_delayed_work(struct work_struct *work)
 #ifdef ENABLE_CLDMA_AP_SIDE
 	md_cldma_hw_reset(md);
 #endif
+	md_cd_clear_all_queue(md, IN);
 	/* tell MD to reset CLDMA */
 	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
 	CCCI_INF_MSG(md->index, TAG, "send clearq_ack to MD\n");
-}
-
-static void md_cd_ccif_work1(struct work_struct *work)
-{
-	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, ccif_work1);
-	struct ccci_modem *md = md_ctrl->modem;
-
-	volatile unsigned int SO_CFG;
-
-	/* re-start CLDMA */
-
-	cldma_reset(md);
-	md_cd_clear_all_queue(md, IN);
-	ccci_md_exception_notify(md, EX_INIT_DONE);
-	cldma_start(md);
-
-	SO_CFG = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG);
-	if ((SO_CFG & 0x1) == 0) {	/* write function didn't work */
-		CCCI_ERR_MSG(md->index, TAG,
-			     "Enable AP OUTCLDMA failed. Register can't be wrote. SO_CFG=0x%x\n", SO_CFG);
-		cldma_dump_register(md);
-		cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
-			      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x05);
-	}
-	CCCI_INF_MSG(md->index, TAG, "md_cd_ccif_work1\n");
 }
 
 static void md_cd_ccif_work(struct work_struct *work)
@@ -3699,7 +3671,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	snprintf(md_ctrl->peer_wakelock_name, sizeof(md_ctrl->peer_wakelock_name), "md%d_cldma_peer", md_id + 1);
 	wake_lock_init(&md_ctrl->peer_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->peer_wakelock_name);
 	INIT_WORK(&md_ctrl->ccif_work, md_cd_ccif_work);
-	INIT_WORK(&md_ctrl->ccif_work1, md_cd_ccif_work1);
 	INIT_DELAYED_WORK(&md_ctrl->ccif_delayed_work, md_cd_ccif_delayed_work);
 	init_timer(&md_ctrl->bus_timeout_timer);
 	md_ctrl->bus_timeout_timer.function = md_cd_ap2md_bus_timeout_timer_func;
