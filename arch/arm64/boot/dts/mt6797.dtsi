@@ -4060,6 +4060,10 @@
 			compatible = "mediatek,m_tilt_pl";
 	};
 
+	answer_call@0 {
+			compatible = "mediatek,m_ancall_pl";
+	};
+
 	activity@0 {
 			compatible = "mediatek,activity";
 	};
