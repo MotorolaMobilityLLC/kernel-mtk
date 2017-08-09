@@ -91,6 +91,7 @@ static unsigned long m4u_phys_base;
 #define TRIGGER_TYPE            (2) /* b'10: high */
 #define TWAM_PERIOD_MS          (1000)
 #define WINDOW_LEN              (TWAM_PERIOD_MS * 0x65B8)
+#define GET_EVENT_RATIO(x)      ((x)/(WINDOW_LEN/1000))
 static bool twam_running;
 static u32 twam_event = 29; /* EMI_CLK_OFF_ACK */
 const char **twam_str = NULL;
@@ -235,9 +236,9 @@ static unsigned long int logout_prev_dvfs_time;
 
 static void spm_sodi_twam_callback(struct twam_sig *ts)
 {
-	sodi_warn("spm twan %s ratio: %5llu/10000\n",
+	sodi_warn("spm twan %s ratio: %5u/1000\n",
 			(twam_str)?"unknown":twam_str[twam_event],
-			(((u64)ts->sig0)*10000)/WINDOW_LEN);
+			GET_EVENT_RATIO(ts->sig0));
 }
 
 void spm_sodi_twam_disable(void)
