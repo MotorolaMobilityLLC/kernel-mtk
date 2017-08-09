@@ -1468,8 +1468,8 @@ static void spm_vcore_overtemp_ctrl(int lock)
 	}
 }
 
-#define PMIC_VSRAM_PROC_SW_MODE (0)
-#define PMIC_VSRAM_PROC_HW_MODE (1)
+#define PMIC_SW_MODE (0)
+#define PMIC_HW_MODE (1)
 
 static void spm_pmic_set_vsram_proc_mode(int mode)
 {
@@ -1489,6 +1489,12 @@ static void spm_pmic_set_vsram_proc_mode(int mode)
 	}
 }
 
+static void spm_pmic_set_osc_mode(int mode)
+{
+	pmic_config_interface_nolock(MT6351_PMIC_RG_OSC_SEL_HW_MODE_ADDR,
+				mode, MT6351_PMIC_RG_OSC_SEL_HW_MODE_MASK,
+				MT6351_PMIC_RG_OSC_SEL_HW_MODE_SHIFT);
+}
 #endif
 
 #define PMIC_BUCK_SRCLKEN_NA	-1
@@ -1531,6 +1537,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_osc_mode(PMIC_HW_MODE);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
@@ -1544,27 +1551,29 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
-#elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_vsram_proc_mode(PMIC_VSRAM_PROC_SW_MODE);
-#endif
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
-
-#if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-#elif defined(CONFIG_ARCH_MT6797)
-		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
-		pmic_config_interface(MT6351_BUCK_VGPU_CON9, 0, 0x1, 8);
-#endif
-
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+#elif defined(CONFIG_ARCH_MT6797)
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_vsram_proc_mode(PMIC_SW_MODE);
+		spm_pmic_set_osc_mode(PMIC_SW_MODE);
+		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+#endif
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
@@ -1582,9 +1591,9 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vsram_proc_mode(PMIC_VSRAM_PROC_HW_MODE);
-		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
-		pmic_config_interface(MT6351_BUCK_VGPU_CON9, 1, 0x1, 8);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_vsram_proc_mode(PMIC_HW_MODE);
+		spm_pmic_set_osc_mode(PMIC_HW_MODE);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
