@@ -178,7 +178,7 @@ unsigned int bq25890_read_byte(unsigned char cmd, unsigned char *returnData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
@@ -188,7 +188,7 @@ unsigned int bq25890_read_byte(unsigned char cmd, unsigned char *returnData)
 
 	mutex_unlock(&bq25890_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 
 unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
@@ -216,7 +216,7 @@ unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
@@ -226,7 +226,7 @@ unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
 
 	mutex_unlock(&bq25890_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 #endif
 /**********************************************************
@@ -959,9 +959,9 @@ void bq25890_dump_register(void)
 	unsigned char vdpm = 0;
 	unsigned char fault = 0;
 
-	bq25890_ADC_start(1);
+	/*bq25890_ADC_start(1);*/
 	for (i = 0; i < bq25890_REG_NUM; i++) {
-		bq25890_read_byte(i, &bq25890_reg[i]);
+		/*bq25890_read_byte(i, &bq25890_reg[i]);*/
 		battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
 	}
 	bq25890_ADC_start(1);
