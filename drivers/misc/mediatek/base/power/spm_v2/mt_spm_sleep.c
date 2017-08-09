@@ -380,7 +380,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
 
 #if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
-	pwrctrl->pcm_flags_cust |= 0x20000
+	pwrctrl->pcm_flags_cust |= 0x20000;
 #endif
 
 	if (pwrctrl->pcm_flags_cust & 0x20000) {
