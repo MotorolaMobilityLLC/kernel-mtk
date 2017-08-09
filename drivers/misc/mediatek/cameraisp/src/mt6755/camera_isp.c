@@ -84,19 +84,19 @@ typedef bool MBOOL;
 #define MyTag "[ISP]"
 #define IRQTag "KEEPER"
 
-#define	LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
+#define	LOG_VRB(format,	args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 
 #ifdef ISP_DEBUG
-#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
-#define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
-#define LOG_WRN(format, args...)    pr_warn(MyTag format,  ##args)
-#define LOG_ERR(format, args...)    pr_err(MyTag format,  ##args)
-#define LOG_AST(format, args...)    pr_alert(MyTag format, ##args)
+#define LOG_INF(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
+#define LOG_NOTICE(format, args...) pr_notice(MyTag "[%s] " format, __func__, ##args)
+#define LOG_WRN(format, args...)    pr_warn(MyTag "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)    pr_err(MyTag "[%s] " format, __func__, ##args)
+#define LOG_AST(format, args...)    pr_alert(MyTag "[%s] " format, __func__, ##args)
 
 /*******************************************************************************
 *
@@ -2109,16 +2109,16 @@ MBOOL ISP_chkModuleSetting(void)
 			     EIS_NUM_VRP);
 		}
 
-		/*8. EIS_MB_INTERVAL.EIS_WIN_HSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_HRP+1)*16+2 */
-		/*9. EIS_MB_INTERVAL.EIS_WIN_VSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_VRP+1)*16+2 */
-		if ((EIS_WIN_HSIZE < (((EIS_NUM_HRP + 1) << 4) + 2)) ||
-		    (EIS_WIN_VSIZE < (((EIS_NUM_VRP + 1) << 4) + 2))) {
+		/*8. EIS_MB_INTERVAL.EIS_WIN_HSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_HRP+1)*16+1 */
+		/*9. EIS_MB_INTERVAL.EIS_WIN_VSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_VRP+1)*16+1 */
+		if ((EIS_WIN_HSIZE < (((EIS_NUM_HRP + 1) << 4) + 1)) ||
+		    (EIS_WIN_VSIZE < (((EIS_NUM_VRP + 1) << 4) + 1))) {
 			/*Error */
 			LOG_INF
-			    ("EIS Error, 8. EIS_MB_INTERVAL.EIS_WIN_HSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_HRP+1)*16+2!!, EIS_WIN_HSIZE:%d, EIS_NUM_HRP:%d",
+			    ("EIS Error, 8. EIS_WIN_HSIZE(%d) >= (EIS_NUM_HRP(%d)+1)*16+1!!",
 			     EIS_WIN_HSIZE, EIS_NUM_HRP);
 			LOG_INF
-			    ("EIS Error, 9. EIS_MB_INTERVAL.EIS_WIN_VSIZE >= (EIS_PREP_ME_CTRL1.EIS_NUM_VRP+1)*16+2!!, EIS_WIN_VSIZE:%d, EIS_NUM_VRP:%d",
+			    ("EIS Error, 9. EIS_WIN_VSIZE(%d) >= (EIS_NUM_VRP(%d)+1)*16+1!!",
 			     EIS_WIN_VSIZE, EIS_NUM_VRP);
 		}
 		/*10. (EIS_MB_OFFSET.EIS_RP_HOFST + ((EIS_MB_INTERVAL.EIS_WIN_HSIZE-1)*EIS_PREP_ME_CTRL1.EIS_NUM_HWIN)+EIS_PREP_ME_CTRL1.EIS_NUM_HRP*16)*EIS_PREP_ME_CTRL1.EIS_OP_HORI < EIS_IMAGE_CTRL.WIDTH */
@@ -2548,7 +2548,7 @@ static MINT32 ISP_DumpReg(void)
 {
 	MINT32 Ret = 0;
 	/*      */
-	LOG_ERR("[ISP_DumpReg] E.");
+	LOG_ERR(" E.");
 	/*      */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
 
@@ -8425,7 +8425,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	    (!ISP_GetIRQState
 	     (eIrq, WaitIrq->UserInfo.Type, WaitIrq->UserInfo.UserKey, WaitIrq->UserInfo.Status))) {
 		LOG_WRN
-		    ("interrupted by	system signal,return value(%d),irq Type/User/Sts(0x%x/%d/0x%x)",
+		    ("interrupted by system signal,return value(%d),irq Type/User/Sts(0x%x/%d/0x%x)",
 		     Timeout, WaitIrq->UserInfo.Type, WaitIrq->UserInfo.UserKey,
 		     WaitIrq->UserInfo.Status);
 		Ret = -ERESTARTSYS;	/* actually     it should be -ERESTARTSYS */
@@ -8434,11 +8434,11 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* timeout */
 	if (Timeout == 0) {
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
-		LOG_ERR
-		    ("v3	ERRRR WaitIrq Timeout(%d) Clear(%d), Type(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d),userKey(%d)\n",
+		LOG_ERR(
+		 "v3 ERRRR WaitIrq Timeout(%d)Clear(%d)Type(%d)IrqSts(0x%08X)WaitSts(0x%08X)UserKey(%d)\n",
 		     WaitIrq->Timeout, WaitIrq->Clear, WaitIrq->UserInfo.Type,
 		     IspInfo.IrqInfo.Status[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type],
-		     WaitIrq->UserInfo.Status, WaitIrq->Timeout, WaitIrq->UserInfo.UserKey);
+		     WaitIrq->UserInfo.Status, WaitIrq->UserInfo.UserKey);
 		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 		/* TODO:  AF */
 		if (WaitIrq->bDumpReg
@@ -8521,7 +8521,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			    IspInfo.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx_D].
 			    tLastSOF2P1done_usec;
 		}
-		LOG_VRB(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
+		LOG_DBG(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
 			WaitIrq->UserInfo.Type, WaitIrq->EisMeta.tLastSOF2P1done_sec);
 	}
 	/* time period for 3A */
@@ -8581,7 +8581,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* clear the status     if someone get the irq */
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	if (WaitIrq->UserInfo.UserKey > 0) {
-		LOG_VRB
+		LOG_DBG
 		    (" [WAITIRQv3]user(%d) mark sec/usec	(%d/%d), last irq sec/usec (%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
 		     WaitIrq->UserInfo.UserKey,
 		     IspInfo.IrqInfo.MarkedTime_sec[WaitIrq->UserInfo.UserKey][WaitIrq->
@@ -8594,7 +8594,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		     IspInfo.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx],
 		     (int)(time_getrequest.tv_sec), (int)(time_getrequest.tv_usec),
 		     (int)(time_ready2return.tv_sec), (int)(time_ready2return.tv_usec));
-		LOG_VRB
+		LOG_DBG
 		    (" [WAITIRQv3]user(%d)  sigNum(%d/%d), mark sec/usec	(%d/%d), irq sec/usec (%d/%d),user(0x%x)\n",
 		     WaitIrq->UserInfo.UserKey,
 		     IspInfo.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->
