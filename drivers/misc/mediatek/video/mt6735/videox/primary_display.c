@@ -157,20 +157,10 @@ void reset_buffer(display_primary_path_context *ctx, disp_internal_buffer_info *
 
 }
 
-static struct ion_client *ion_client;
-
 disp_internal_buffer_info *dequeue_buffer(display_primary_path_context *ctx,
 					  struct list_head *head)
 {
-	disp_internal_buffer_info *buf = NULL;
 	disp_internal_buffer_info *temp = NULL;
-	unsigned int *pSrc;
-	unsigned int src_mva;
-	unsigned long size = 0;
-	unsigned long tmp_size = 0;
-
-	struct ion_mm_data mm_data;
-	struct ion_handle *src_handle;
 
 	if (ctx && head) {
 		if (!list_empty(head)) {
@@ -183,62 +173,6 @@ disp_internal_buffer_info *dequeue_buffer(display_primary_path_context *ctx,
 		} else {
 			DISPMSG("list is empty, alloc new buffer\n");
 			return NULL;
-
-			size = primary_display_get_width() * primary_display_get_height() *
-					    primary_display_get_dc_bpp() / 4;
-			DISPMSG("size=0x%lx\n", size);
-			if (ion_client == NULL)
-				ion_client = ion_client_create(g_ion_device, "disp_decouple");
-
-			buf = kzalloc(sizeof(disp_internal_buffer_info), GFP_KERNEL);
-			if (buf) {
-				INIT_LIST_HEAD(&buf->list);
-				src_handle = ion_alloc(ion_client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
-				if (IS_ERR_OR_NULL(src_handle)) {
-					DISPERR("Fatal Error, ion_alloc for size %lx failed\n",
-						size);
-					return NULL;
-				}
-
-				pSrc = ion_map_kernel(ion_client, src_handle);
-				if (!IS_ERR_OR_NULL(pSrc)) {
-					memset_io((void *)pSrc, 0, size);
-				} else {
-					DISPERR("map va failed\n");
-					return NULL;
-				}
-
-				mm_data.config_buffer_param.kernel_handle = src_handle;
-				/* mm_data.config_buffer_param.m4u_port= M4U_PORT_DISP_OVL0; */
-				/* mm_data.config_buffer_param.prot = M4U_PROT_READ|M4U_PROT_WRITE; */
-				/* mm_data.config_buffer_param.flags = M4U_FLAGS_SEQ_ACCESS; */
-				mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
-				if (ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data) < 0) {
-					DISPERR("ion_test_drv: Config buffer failed.\n");
-					return NULL;
-				}
-
-				ion_phys(ion_client, src_handle, (ion_phys_addr_t *)&src_mva,
-					 (size_t *)&tmp_size);
-				if (tmp_size == 0) {
-					DISPERR("Fatal Error, get mva failed\n");
-					return NULL;
-				}
-				buf->handle = src_handle;
-				buf->mva = src_mva;
-				buf->size = tmp_size;
-				DISPMSG("buf:0x%p, buf->list:0x%lx, buf->mva:0x%08x,\n",
-					buf, (unsigned long)(&buf->list), buf->mva);
-				DISPMSG("buf->size:0x%08x, buf->handle:0x%p\n",
-					buf->size, buf->handle);
-			} else {
-				DISPERR("Fatal error, kzalloc internal buffer info failed!!\n");
-				return NULL;
-			}
-
-			/* ion_client_destroy(ion_client); */
-
-			return buf;
 		}
 	}
 
@@ -7978,9 +7912,11 @@ int primary_display_get_debug_info(char *buf)
 
 int primary_display_check_path(char *stringbuf, int buf_len)
 {
-	int len = 0;
 
 	return 0; /* status will print in config dump. */
+
+#if 0
+	int len = 0;
 
 	DISPMSG("primary_display_check_path() check signal status:\n");
 	if (stringbuf) {
@@ -8101,6 +8037,7 @@ int primary_display_check_path(char *stringbuf, int buf_len)
 	}
 
 	return len;
+#endif
 }
 
 int primary_display_lcm_ATA(void)

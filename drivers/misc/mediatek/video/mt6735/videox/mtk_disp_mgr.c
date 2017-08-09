@@ -1599,7 +1599,7 @@ int _ioctl_set_output_buffer(unsigned long arg)
 						      dst_mva);
 		primary_output.dirty = 1;
 
-		DISPPR_FENCE("S+/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%08lx/t%d/sec%d(%d)\n",
+		DISPPR_FENCE("S+O/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%08lx/t%d/sec%d(%d)\n",
 				disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id), 4,
 				session_output.config.buff_idx, session_output.config.width,
 				session_output.config.height, session_output.config.x, session_output.config.y,

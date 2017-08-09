@@ -9,8 +9,8 @@ extern unsigned int gResetRDMAEnable;
 extern unsigned int gOVLBackground;
 extern unsigned int gEnableIRQ;
 extern unsigned int gUltraEnable;
-extern unsigned int gRDMAUltraSetting;
-extern unsigned int gRDMAFIFOLen;
+extern unsigned long int gRDMAUltraSetting;
+extern unsigned long int gRDMAFIFOLen;
 extern unsigned int g_mobilelog;
 
 extern unsigned int disp_low_power_enlarge_blanking;
