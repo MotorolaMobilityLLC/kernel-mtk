@@ -182,7 +182,7 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 	GPIO_WR32(&reg->mode[pos]._align1, data);
 
 #else
-	/* For Denali/Jade, there is no mwr register for simple register setting.
+	/* For DNL/JD, there is no mwr register for simple register setting.
 	 * Need 1R+1W to set MODE registers
 	 */
 	mask = (1L << GPIO_MODE_BITS) - 1;
@@ -463,14 +463,14 @@ int mt_get_gpio_pull_select_base(unsigned long pin)
 int mt_set_gpio_inversion_base(unsigned long pin, unsigned long enable)
 {				/*FIX-ME
 				 */
-	GPIOERR("%s:function not supprted for Jade", __func__);
+	GPIOERR("%s:function not supprted", __func__);
 	return RSUCCESS;
 }
 
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_inversion_base(unsigned long pin)
 {				/*FIX-ME */
-	GPIOERR("%s:function not supprted for Jade", __func__);
+	GPIOERR("%s:function not supprted", __func__);
 	return 0;		/* FIX-ME */
 }
 

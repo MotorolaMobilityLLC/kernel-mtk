@@ -112,7 +112,7 @@
 #define SWITCH_CHR_VINDPM_9V 0x37  /* 8.1V */
 #define SWITCH_CHR_VINDPM_12V 0x54 /* 11.0 set this tp prevent adapters from failure and reset*/
 
-/*Added switch chr OPTIONS for BQ25896 on Jade*/
+/*Added switch chr OPTIONS for BQ25896*/
 /*switch charger input/output current separation; moved to Kconfig.driver*/
 /*#define CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT*/
 /*Dynamic CV using BIF
@@ -123,7 +123,7 @@
 /*enable to save charger in detection power by turning off Chr clock*/
 #define CONFIG_MTK_CHRIND_CLK_PDN_SUPPORT
 
-/*Added battery_common options for jade*/
+/*Added battery_common options*/
 /*enable this to change thread wakeup period to 10 secs to avoid suspend failure*/
 #define CONFIG_MTK_I2C_CHR_SUPPORT
 
