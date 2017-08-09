@@ -1342,5 +1342,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 /include/ "cust_kpd.dtsi"
 /include/ "cust_i2c.dtsi"
 /include/ "cust_eint.dtsi"
-/* /include/ "cust_pmic.dtsi" */
-
+/include/ "cust_pmic.dtsi"
+&eintc {
+	pmic@206 {
+	compatible = "mediatek, pmic-eint";
+	interrupt-parent = <&eintc>;
+	interrupts = <206 4>;
+	debounce = <206 1000>;
+	};
+};
