@@ -1223,7 +1223,7 @@ static void base_ops_disable_locked(struct eem_det *det, int reason)
 		eem_write(EEMINTSTS, 0x00ffffff);
 		/* fall through */
 
-	case BY_PROCFS_INIT2:
+	case BY_PROCFS_INIT2: /* 2 */
 		/* set init2 value to DVFS table (PMIC) */
 		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl_init2));
 		eem_set_eem_volt(det);
@@ -1238,7 +1238,7 @@ static void base_ops_disable_locked(struct eem_det *det, int reason)
 		eem_write(EEMINTSTS, 0x00ffffff);
 		/* fall through */
 
-	case BY_PROCFS:
+	case BY_PROCFS: /* 1 */
 		det->disabled |= reason;
 		/* restore default DVFS table (PMIC) */
 		eem_restore_eem_volt(det);
@@ -1309,14 +1309,12 @@ static int base_ops_init02(struct eem_det *det)
 		return -1;
 	}
 
-	/*
-	if (det->disabled & BY_PROCFS) {
-		eem_debug("[%s] Disabled by PROCFS\n", __func__);
+	if (det->disabled & BY_INIT_ERROR) {
+		eem_error("[%s] Disabled by INIT_ERROR\n", ((char *)(det->name) + 8));
 		FUNC_EXIT(FUNC_LV_HELP);
 		return -2;
 	}
 	eem_debug("DCV = 0x%08X, AGEV = 0x%08X\n", det->DCVOFFSETIN, det->AGEVOFFSETIN);
-	*/
 
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_INIT02);
@@ -1341,13 +1339,11 @@ static int base_ops_mon_mode(struct eem_det *det)
 		return -1;
 	}
 
-	/*
-	if (det->disabled & BY_PROCFS) {
-		eem_debug("[%s] Disabled by PROCFS\n", __func__);
+	if (det->disabled & BY_INIT_ERROR) {
+		eem_error("[%s] Disabled BY_INIT_ERROR\n", ((char *)(det->name) + 8));
 		FUNC_EXIT(FUNC_LV_HELP);
 		return -2;
 	}
-	*/
 
 #if !defined(EARLY_PORTING)
 	ts_bank = det->ctrl_id;
