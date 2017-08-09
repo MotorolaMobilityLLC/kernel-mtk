@@ -43,7 +43,7 @@ static const struct of_device_id gcpu_of_ids[] = {
 	{}
 };
 
-int gcpu_enableClk(void)
+static int gcpu_enableclk(void)
 {
 	int ret = 0;
 
@@ -53,13 +53,11 @@ int gcpu_enableClk(void)
 	ret = clk_prepare_enable(gcpu_clk);
 	if (ret)
 		GCPU_LOG_INFO("enable gcpu clock fail\n");
-	else
-		GCPU_LOG_INFO("enable gcpu clock\n");
 
 	return 0;
 }
 
-int gcpu_disableClk(void)
+static int gcpu_disableclk(void)
 {
 	if (IS_ERR(gcpu_clk))
 		return -1;
@@ -111,12 +109,12 @@ static int gcpu_probe(struct platform_device *pdev)
 
 	/* register for GCPU */
 	gcpu_clk = devm_clk_get(&pdev->dev, "main");
-	if (IS_ERR(gcpu_clk))
+	if (IS_ERR(gcpu_clk)) {
 		GCPU_LOG_INFO("get clock fail!\n");
-	else
-		gcpu_enableClk();
+		return 1;
+	}
 
-	/* gcpu_tee_call(TZCMD_GCPU_SELFTEST); */
+	gcpu_enableclk();
 
 	return 0;
 }
@@ -125,7 +123,7 @@ static int gcpu_remove(struct platform_device *pdev)
 {
 	GCPU_LOG_INFO("gcpu_remove\n");
 
-	gcpu_disableClk();
+	gcpu_disableclk();
 
 	return 0;
 }
@@ -140,6 +138,7 @@ static int gcpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 		ret = 1;
 	} else {
 		GCPU_LOG_INFO("Suspend ok\n");
+		gcpu_disableclk();
 		ret = 0;
 	}
 	return ret;
@@ -148,7 +147,7 @@ static int gcpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 static int gcpu_resume(struct platform_device *pdev)
 {
 	GCPU_LOG_INFO("gcpu_resume\n");
-	/* gcpu_tee_call(TZCMD_GCPU_SELFTEST); */
+	gcpu_enableclk();
 	return 0;
 }
 
