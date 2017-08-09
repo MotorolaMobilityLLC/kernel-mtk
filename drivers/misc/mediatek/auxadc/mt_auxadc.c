@@ -71,7 +71,7 @@ static struct clk *clk_auxadc;
 #ifdef CONFIG_OF
 void __iomem *auxadc_base = NULL;
 void __iomem *auxadc_apmix_base = NULL;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
+#if defined(EFUSE_CALI)
 void __iomem *auxadc_efuse_base = NULL;
 #endif
 #endif
@@ -196,18 +196,6 @@ static void mt_auxadc_update_cali(void)
 	cali_oe = 0;
 	cali_ge = 0;
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-	cali_reg = (*(volatile unsigned int * const)(ADC_CALI_EN_A_REG));
-	if ((cali_reg & (1 << 10)) != 0) {
-		cali_oe_a = cali_reg & 0x3FF;
-		cali_ge_a = ((cali_reg & 0x3FF0000) >> 16);
-		cali_ge = cali_ge_a - 512;
-		cali_oe = cali_oe_a - 512;
-		gain = 1 + cali_ge;
-	}
-	/*pr_debug("[AUXADC] cali_reg(%x),cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
-		(cali_reg & (1 << 10)), cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);*/
-#endif
 #if defined(EFUSE_CALI)
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
@@ -226,11 +214,11 @@ static void mt_auxadc_get_cali_data(unsigned int rawdata, int data[4], bool enab
 {
 
 	if (enable_cali == true) {
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
+#if defined(EFUSE_CALI)
 		rawdata = rawdata - cali_oe;
 		data[0] = (rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
-		data[1] = (rawdata * 150 / (4096 + cali_ge)) % 100;
-		data[2] = (rawdata * 1500 / (4096 + cali_ge)) % 1000;
+		data[1] = (rawdata * 150 / (4096 + cali_ge)) % 100;  /* convert to mv, need multiply 10 */
+		data[2] = (rawdata * 1500 / (4096 + cali_ge)) % 1000; /* data[2] provide high precision mv */
 #else
 		data[0] = (rawdata * 150 / AUXADC_PRECISE / 100);
 		data[1] = ((rawdata * 150 / AUXADC_PRECISE) % 100);
@@ -411,22 +399,6 @@ static int IMM_auxadc_GetOneChannelValue_Cali(int Channel, int *voltage)
 
 }
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-static struct task_struct *thread;
-
-static int auxadc_test_cali(void *unused)
-{
-	int data[4], raw;
-
-	do {
-		msleep(5000);
-		IMM_auxadc_GetOneChannelValue(0, data, &raw);
-		pr_debug("[AUXADC] adc channel 0 value: (%d);%d.%d\n", raw, data[0], data[1]);
-	} while (1);
-
-	return 0;
-}
-#endif
 static void mt_auxadc_cal_prepare(void)
 {
 	/* no voltage calibration */
@@ -445,9 +417,6 @@ static void mt_auxadc_power_on(void)
 
 void mt_auxadc_hal_init(struct platform_device *dev)
 {
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-	int err = 0;
-#endif
 #ifdef CONFIG_OF
 	struct device_node *node;
 
@@ -467,7 +436,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	if (!auxadc_base)
 		pr_err("[AUXADC] base failed\n");
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
+#if defined(EFUSE_CALI)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
 	if (!node)
 		pr_debug("[AUXADC] find node failed\n");
@@ -481,13 +450,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	pr_debug("[AUXADC]: auxadc:0x%p\n", auxadc_base);
 
 #endif
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-	thread = kthread_run(auxadc_test_cali, 0, "adc_cali_test");
-	if (IS_ERR(thread)) {
-		err = PTR_ERR(thread);
-		pr_debug("[AUXADC] failed to create kernel thread: %d\n", err);
-	}
-#endif
+
 	mt_auxadc_cal_prepare();
 	mt_auxadc_power_on();
 

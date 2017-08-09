@@ -19,6 +19,14 @@ extern void __iomem *auxadc_efuse_base;
 
 #define MT_PDN_PERI_AUXADC MT_CG_PERI_AUXADC
 #define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x548)
+#define EFUSE_CALI /*Auxadc sw flow support efuse function, so this micro always defined */
+#define ADC_GE_A_MASK 0x3ff0000
+#define ADC_GE_A_SHIFT 16
+#define ADC_OE_A_MASK 0x3ff
+#define ADC_OE_A_SHIFT 0
+#define ADC_CALI_EN_A_MASK 0x400
+#define ADC_CALI_EN_A_SHIFT 10
+
 #define AUXADC_NODE "mediatek,mt6735-auxadc"
 
 #define AUXADC_CON0             (AUXADC_BASE + 0x000)
