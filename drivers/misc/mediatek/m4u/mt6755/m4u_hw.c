@@ -1313,7 +1313,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	unsigned int larb, larb_port;
 	int ret = 0;
 
-	M4ULOG_HIGH("config_port:%s,v%d,s%d\n",
+	M4ULOG_MID("config_port:%s,v%d,s%d\n",
 	m4u_get_port_name(port), virt, sec);
 
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
