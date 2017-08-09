@@ -2118,10 +2118,19 @@ typedef struct {
 	compat_uint_t mva;
 } COMPAT_M4U_CACHE_STRUCT;
 
+typedef struct {
+	compat_uint_t port;
+	compat_uint_t eDMAType;
+	compat_uint_t eDMADir;
+	compat_ulong_t va;
+	compat_uint_t size;
+	compat_uint_t mva;
+} COMPAT_M4U_DMA_STRUCT;
+
 #define COMPAT_MTK_M4U_T_ALLOC_MVA	  _IOWR(MTK_M4U_MAGICNO, 4, int)
 #define COMPAT_MTK_M4U_T_DEALLOC_MVA  _IOW(MTK_M4U_MAGICNO, 5, int)
 #define COMPAT_MTK_M4U_T_CACHE_SYNC   _IOW(MTK_M4U_MAGICNO, 10, int)
-
+#define COMPAT_MTK_M4U_T_DMA_OP		_IOW(MTK_M4U_MAGICNO, 29, int)
 
 
 static int compat_get_m4u_module_struct(COMPAT_M4U_MOUDLE_STRUCT __user *data32,
@@ -2185,6 +2194,30 @@ static int compat_get_m4u_cache_struct(COMPAT_M4U_CACHE_STRUCT __user *data32,
 	err |= put_user(u, &(data->port));
 	err |= get_user(u, &(data32->eCacheSync));
 	err |= put_user(u, &(data->eCacheSync));
+	err |= get_user(l, &(data32->va));
+	err |= put_user(l, &(data->va));
+	err |= get_user(u, &(data32->size));
+	err |= put_user(u, &(data->size));
+	err |= get_user(u, &(data32->mva));
+	err |= put_user(u, &(data->mva));
+
+	return err;
+}
+
+static int compat_get_m4u_dma_struct(
+			COMPAT_M4U_DMA_STRUCT __user *data32,
+			M4U_DMA_STRUCT __user *data)
+{
+	compat_uint_t u;
+	compat_ulong_t l;
+	int err;
+
+	err = get_user(u, &(data32->port));
+	err |= put_user(u, &(data->port));
+	err |= get_user(u, &(data32->eDMAType));
+	err |= put_user(u, &(data->eDMAType));
+	err |= get_user(u, &(data32->eDMADir));
+	err |= put_user(u, &(data->eDMADir));
 	err |= get_user(l, &(data32->va));
 	err |= put_user(l, &(data->va));
 	err |= get_user(u, &(data32->size));
@@ -2263,6 +2296,24 @@ long MTK_M4U_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		return filp->f_op->unlocked_ioctl(filp, MTK_M4U_T_CACHE_SYNC,
 				(unsigned long)data);
 	}
+	case COMPAT_MTK_M4U_T_DMA_OP:
+	{
+		COMPAT_M4U_DMA_STRUCT __user *data32;
+		M4U_DMA_STRUCT __user *data;
+		int err;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(M4U_DMA_STRUCT));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_m4u_dma_struct(data32, data);
+		if (err)
+			return err;
+
+		return filp->f_op->unlocked_ioctl(filp, MTK_M4U_T_DMA_OP,
+								(unsigned long)data);
+}
 	case MTK_M4U_T_POWER_ON:
 	case MTK_M4U_T_POWER_OFF:
 	case MTK_M4U_T_DUMP_INFO:
