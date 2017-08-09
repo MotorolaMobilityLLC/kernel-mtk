@@ -13,6 +13,10 @@
 
 # drivers/video/mtk/Makefile
 
+ifneq ($(filter y,$(CONFIG_ARCH_MT8127) $(CONFIG_ARCH_MT7623)),)
+CONFIG_MTK_PLATFORM := mt8127
+endif
+
 # include $(srctree)/drivers/misc/mediatek/Makefile.custom
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM) \
