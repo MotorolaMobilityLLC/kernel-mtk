@@ -69,6 +69,7 @@ void log_boot(char *str)
 
 static void bootup_finish(void)
 {
+	initcall_debug = 0;
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 	mt_disable_uart();
 #endif
