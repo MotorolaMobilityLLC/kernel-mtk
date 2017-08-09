@@ -14,6 +14,7 @@ static void ppm_perfserv_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data perfserv_policy = {
 	.name			= __stringify(PPM_POLICY_PERF_SERV),
+	.lock			= __MUTEX_INITIALIZER(perfserv_policy.lock),
 	.policy			= PPM_POLICY_PERF_SERV,
 	.priority		= PPM_POLICY_PRIO_PERFORMANCE_BASE,
 	.get_power_state_cb	= ppm_perfserv_get_power_state_cb,

@@ -15,6 +15,7 @@ static void ppm_userlimit_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data userlimit_policy = {
 	.name			= __stringify(PPM_POLICY_USER_LIMIT),
+	.lock			= __MUTEX_INITIALIZER(userlimit_policy.lock),
 	.policy			= PPM_POLICY_USER_LIMIT,
 	.priority		= PPM_POLICY_PRIO_USER_SPECIFY_BASE,
 	.get_power_state_cb	= ppm_userlimit_get_power_state_cb,
@@ -134,7 +135,7 @@ static ssize_t ppm_userlimit_min_cpu_core_proc_write(struct file *file, const ch
 		ppm_lock(&userlimit_policy.lock);
 
 		if (!userlimit_policy.is_enabled) {
-			ppm_err("@%s: userlimit policy is not enabled!\n", __func__);
+			ppm_warn("@%s: userlimit policy is not enabled!\n", __func__);
 			ppm_unlock(&userlimit_policy.lock);
 			goto out;
 		}
@@ -213,7 +214,7 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 		ppm_lock(&userlimit_policy.lock);
 
 		if (!userlimit_policy.is_enabled) {
-			ppm_err("@%s: userlimit policy is not enabled!\n", __func__);
+			ppm_warn("@%s: userlimit policy is not enabled!\n", __func__);
 			ppm_unlock(&userlimit_policy.lock);
 			goto out;
 		}
@@ -287,7 +288,7 @@ static ssize_t ppm_userlimit_min_cpu_freq_proc_write(struct file *file, const ch
 		ppm_lock(&userlimit_policy.lock);
 
 		if (!userlimit_policy.is_enabled) {
-			ppm_err("@%s: userlimit policy is not enabled!\n", __func__);
+			ppm_warn("@%s: userlimit policy is not enabled!\n", __func__);
 			ppm_unlock(&userlimit_policy.lock);
 			goto out;
 		}
@@ -359,7 +360,7 @@ static ssize_t ppm_userlimit_max_cpu_freq_proc_write(struct file *file, const ch
 		ppm_lock(&userlimit_policy.lock);
 
 		if (!userlimit_policy.is_enabled) {
-			ppm_err("@%s: userlimit policy is not enabled!\n", __func__);
+			ppm_warn("@%s: userlimit policy is not enabled!\n", __func__);
 			ppm_unlock(&userlimit_policy.lock);
 			goto out;
 		}

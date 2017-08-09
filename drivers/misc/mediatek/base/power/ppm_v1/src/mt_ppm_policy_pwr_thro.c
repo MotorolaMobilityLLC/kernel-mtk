@@ -15,6 +15,7 @@ static void ppm_pwrthro_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data pwrthro_policy = {
 	.name			= __stringify(PPM_POLICY_PWR_THRO),
+	.lock			= __MUTEX_INITIALIZER(pwrthro_policy.lock),
 	.policy			= PPM_POLICY_PWR_THRO,
 	.priority		= PPM_POLICY_PRIO_POWER_BUDGET_BASE,
 	.get_power_state_cb	= NULL,	/* decide in ppm main via min power budget */
@@ -68,6 +69,12 @@ static void ppm_pwrthro_bat_per_protect(BATTERY_PERCENT_LEVEL level)
 
 	ppm_lock(&pwrthro_policy.lock);
 
+	if (!pwrthro_policy.is_enabled) {
+		ppm_warn("@%s: pwrthro policy is not enabled!\n", __func__);
+		ppm_unlock(&pwrthro_policy.lock);
+		goto end;
+	}
+
 	switch (level) {
 	case BATTERY_PERCENT_LEVEL_1:
 		limited_power = PWRTHRO_BAT_PER_MW;
@@ -79,14 +86,11 @@ static void ppm_pwrthro_bat_per_protect(BATTERY_PERCENT_LEVEL level)
 	}
 
 	pwrthro_policy.req.power_budget = limited_power;
+	pwrthro_policy.is_activated = (limited_power) ? true : false;
+	ppm_unlock(&pwrthro_policy.lock);
+	ppm_task_wakeup();
 
-	if (pwrthro_policy.is_enabled) {
-		pwrthro_policy.is_activated = (limited_power) ? true : false;
-		ppm_unlock(&pwrthro_policy.lock);
-		ppm_task_wakeup();
-	} else
-		ppm_unlock(&pwrthro_policy.lock);
-
+end:
 	FUNC_EXIT(FUNC_LV_API);
 }
 #endif
@@ -102,6 +106,12 @@ static void ppm_pwrthro_bat_oc_protect(BATTERY_OC_LEVEL level)
 
 	ppm_lock(&pwrthro_policy.lock);
 
+	if (!pwrthro_policy.is_enabled) {
+		ppm_warn("@%s: pwrthro policy is not enabled!\n", __func__);
+		ppm_unlock(&pwrthro_policy.lock);
+		goto end;
+	}
+
 	switch (level) {
 	case BATTERY_OC_LEVEL_1:
 		limited_power = PWRTHRO_BAT_OC_MW;
@@ -113,14 +123,11 @@ static void ppm_pwrthro_bat_oc_protect(BATTERY_OC_LEVEL level)
 	}
 
 	pwrthro_policy.req.power_budget = limited_power;
+	pwrthro_policy.is_activated = (limited_power) ? true : false;
+	ppm_unlock(&pwrthro_policy.lock);
+	ppm_task_wakeup();
 
-	if (pwrthro_policy.is_enabled) {
-		pwrthro_policy.is_activated = (limited_power) ? true : false;
-		ppm_unlock(&pwrthro_policy.lock);
-		ppm_task_wakeup();
-	} else
-		ppm_unlock(&pwrthro_policy.lock);
-
+end:
 	FUNC_EXIT(FUNC_LV_API);
 }
 #endif
@@ -136,6 +143,12 @@ void ppm_pwrthro_low_bat_protect(LOW_BATTERY_LEVEL level)
 
 	ppm_lock(&pwrthro_policy.lock);
 
+	if (!pwrthro_policy.is_enabled) {
+		ppm_warn("@%s: pwrthro policy is not enabled!\n", __func__);
+		ppm_unlock(&pwrthro_policy.lock);
+		goto end;
+	}
+
 	switch (level) {
 	case LOW_BATTERY_LEVEL_1:
 		limited_power = PWRTHRO_LOW_BAT_LV1_MW;
@@ -150,14 +163,11 @@ void ppm_pwrthro_low_bat_protect(LOW_BATTERY_LEVEL level)
 	}
 
 	pwrthro_policy.req.power_budget = limited_power;
+	pwrthro_policy.is_activated = (limited_power) ? true : false;
+	ppm_unlock(&pwrthro_policy.lock);
+	ppm_task_wakeup();
 
-	if (pwrthro_policy.is_enabled) {
-		pwrthro_policy.is_activated = (limited_power) ? true : false;
-		ppm_unlock(&pwrthro_policy.lock);
-		ppm_task_wakeup();
-	} else
-		ppm_unlock(&pwrthro_policy.lock);
-
+end:
 	FUNC_EXIT(FUNC_LV_API);
 }
 #endif

@@ -12,6 +12,7 @@ static enum ppm_power_state ppm_ut_get_power_state_cb(enum ppm_power_state cur_s
 /* other members will init by ppm_main */
 static struct ppm_policy_data ut_policy = {
 	.name			= __stringify(PPM_POLICY_UT),
+	.lock			= __MUTEX_INITIALIZER(ut_policy.lock),
 	.policy			= PPM_POLICY_UT,
 	.priority		= PPM_POLICY_PRIO_HIGHEST,
 	.get_power_state_cb	= ppm_ut_get_power_state_cb,
@@ -93,12 +94,13 @@ static ssize_t ppm_ut_fix_core_num_proc_write(struct file *file, const char __us
 			is_clear = false;
 	}
 
+	ppm_lock(&ut_policy.lock);
+
 	if (!ut_policy.is_enabled) {
-		ppm_err("@%s: UT policy is not enabled!\n", __func__);
+		ppm_warn("@%s: UT policy is not enabled!\n", __func__);
+		ppm_unlock(&ut_policy.lock);
 		goto out;
 	}
-
-	ppm_lock(&ut_policy.lock);
 
 	if (is_clear) {
 		ut_data.is_core_num_fixed = false;
@@ -189,12 +191,13 @@ static ssize_t ppm_ut_fix_freq_idx_proc_write(struct file *file, const char __us
 			is_clear = false;
 	}
 
+	ppm_lock(&ut_policy.lock);
+
 	if (!ut_policy.is_enabled) {
-		ppm_err("@%s: UT policy is not enabled!\n", __func__);
+		ppm_warn("@%s: UT policy is not enabled!\n", __func__);
+		ppm_unlock(&ut_policy.lock);
 		goto out;
 	}
-
-	ppm_lock(&ut_policy.lock);
 
 	if (is_clear) {
 		ut_data.is_freq_idx_fixed = false;

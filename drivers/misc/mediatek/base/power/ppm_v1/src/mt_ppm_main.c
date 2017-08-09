@@ -204,7 +204,6 @@ int ppm_main_register_policy(struct ppm_policy_data *policy)
 		ret = -ENOMEM;
 		goto out;
 	}
-	mutex_init(&policy->lock);
 	policy->req.cluster_num = ppm_main_info.cluster_num;
 	policy->req.power_budget = 0;
 	policy->req.perf_idx = 0;

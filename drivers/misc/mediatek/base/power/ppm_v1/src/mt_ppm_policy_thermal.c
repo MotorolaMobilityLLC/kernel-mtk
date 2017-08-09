@@ -16,6 +16,7 @@ static void ppm_thermal_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data thermal_policy = {
 	.name			= __stringify(PPM_POLICY_THERMAL),
+	.lock			= __MUTEX_INITIALIZER(thermal_policy.lock),
 	.policy			= PPM_POLICY_THERMAL,
 	.priority		= PPM_POLICY_PRIO_POWER_BUDGET_BASE,
 	.get_power_state_cb	= NULL,	/* decide in ppm main via min power budget */
@@ -30,21 +31,18 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 
 	ppm_info("Get budget from thermal => limited_power = %d\n", limited_power);
 
+	ppm_lock(&thermal_policy.lock);
+
 	if (!thermal_policy.is_enabled) {
-		ppm_warn("PPM thermal policy is not enabled!\n");
+		ppm_warn("@%s: thermal policy is not enabled!\n", __func__);
+		ppm_unlock(&thermal_policy.lock);
 		goto end;
 	}
 
-	ppm_lock(&thermal_policy.lock);
-
 	thermal_policy.req.power_budget = limited_power;
-
-	if (thermal_policy.is_enabled) {
-		thermal_policy.is_activated = (limited_power) ? true : false;
-		ppm_unlock(&thermal_policy.lock);
-		ppm_task_wakeup();
-	} else
-		ppm_unlock(&thermal_policy.lock);
+	thermal_policy.is_activated = (limited_power) ? true : false;
+	ppm_unlock(&thermal_policy.lock);
+	ppm_task_wakeup();
 
 end:
 	FUNC_EXIT(FUNC_LV_POLICY);

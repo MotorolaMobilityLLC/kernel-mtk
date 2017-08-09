@@ -70,6 +70,7 @@ static void ppm_hica_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data hica_policy = {
 	.name			= __stringify(PPM_POLICY_HICA),
+	.lock			= __MUTEX_INITIALIZER(hica_policy.lock),
 	.policy			= PPM_POLICY_HICA,
 	.priority		= PPM_POLICY_PRIO_SYSTEM_BASE,
 	.get_power_state_cb	= NULL,	/* No need */
@@ -98,10 +99,10 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
-	if (!hica_policy.is_enabled)
-		goto hica_not_enabled;
-
 	ppm_lock(&hica_policy.lock);
+
+	if (!hica_policy.is_enabled)
+		goto end;
 
 	ppm_hica_algo_data.ppm_cur_loads = cur_loads;
 	ppm_hica_algo_data.ppm_cur_tlp = cur_tlp;
@@ -152,7 +153,6 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 
 end:
 	ppm_unlock(&hica_policy.lock);
-hica_not_enabled:
 	FUNC_EXIT(FUNC_LV_HICA);
 }
 
@@ -335,12 +335,12 @@ enum ppm_power_state ppm_hica_get_cur_state(void)
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
+	ppm_lock(&hica_policy.lock);
+
 	if (!hica_policy.is_enabled) {
 		state = PPM_POWER_STATE_NONE;
 		goto end;
 	}
-
-	ppm_lock(&hica_policy.lock);
 
 	if (!hica_policy.is_activated) {
 		unsigned int i;
@@ -356,9 +356,9 @@ enum ppm_power_state ppm_hica_get_cur_state(void)
 		state = (fix_power_state != PPM_POWER_STATE_NONE)
 			? fix_power_state : ppm_hica_algo_data.new_state;
 
+end:
 	ppm_unlock(&hica_policy.lock);
 
-end:
 	FUNC_EXIT(FUNC_LV_HICA);
 
 	return state;

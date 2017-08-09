@@ -14,6 +14,7 @@ static void ppm_ptpod_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data ptpod_policy = {
 	.name			= __stringify(PPM_POLICY_PTPOD),
+	.lock			= __MUTEX_INITIALIZER(ptpod_policy.lock),
 	.policy			= PPM_POLICY_PTPOD,
 	.priority		= PPM_POLICY_PRIO_HIGHEST,
 	.get_power_state_cb	= ppm_ptpod_get_power_state_cb,
@@ -29,25 +30,26 @@ void mt_ppm_ptpod_policy_activate(void)
 
 	FUNC_ENTER(FUNC_LV_API);
 
-	/* activate ptpod policy */
-	if (ptpod_policy.is_enabled) {
-		ppm_lock(&ptpod_policy.lock);
+	ppm_lock(&ptpod_policy.lock);
 
-		ptpod_policy.is_activated = true;
-
-		for (i = 0; i < ptpod_policy.req.cluster_num; i++) {
-			/* FREQ is the same for each cluster? */
-			ptpod_policy.req.limit[i].min_cpufreq_idx =
-				get_cluster_ptpod_fix_freq_idx(i);
-			ptpod_policy.req.limit[i].max_cpufreq_idx =
-				get_cluster_ptpod_fix_freq_idx(i);
-		}
-
+	if (!ptpod_policy.is_enabled) {
+		ppm_warn("@%s: ptpod policy is not enabled!\n", __func__);
 		ppm_unlock(&ptpod_policy.lock);
-
-		ppm_task_wakeup();
+		goto end;
 	}
 
+	ptpod_policy.is_activated = true;
+	for (i = 0; i < ptpod_policy.req.cluster_num; i++) {
+		/* FREQ is the same for each cluster? */
+		ptpod_policy.req.limit[i].min_cpufreq_idx =
+			get_cluster_ptpod_fix_freq_idx(i);
+		ptpod_policy.req.limit[i].max_cpufreq_idx =
+			get_cluster_ptpod_fix_freq_idx(i);
+	}
+	ppm_unlock(&ptpod_policy.lock);
+	ppm_task_wakeup();
+
+end:
 	FUNC_EXIT(FUNC_LV_API);
 }
 
@@ -57,10 +59,10 @@ void mt_ppm_ptpod_policy_deactivate(void)
 
 	FUNC_ENTER(FUNC_LV_API);
 
+	ppm_lock(&ptpod_policy.lock);
+
 	/* deactivate ptpod policy */
 	if (ptpod_policy.is_activated) {
-		ppm_lock(&ptpod_policy.lock);
-
 		ptpod_policy.is_activated = false;
 
 		/* restore to default setting */
@@ -72,7 +74,8 @@ void mt_ppm_ptpod_policy_deactivate(void)
 		ppm_unlock(&ptpod_policy.lock);
 
 		ppm_task_wakeup();
-	}
+	} else
+		ppm_unlock(&ptpod_policy.lock);
 
 	FUNC_EXIT(FUNC_LV_API);
 }

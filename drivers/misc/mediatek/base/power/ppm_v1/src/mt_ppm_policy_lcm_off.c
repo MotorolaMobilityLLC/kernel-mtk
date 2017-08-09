@@ -20,6 +20,7 @@ static void ppm_lcmoff_mode_change_cb(enum ppm_mode mode);
 /* other members will init by ppm_main */
 static struct ppm_policy_data lcmoff_policy = {
 	.name			= __stringify(PPM_POLICY_LCM_OFF),
+	.lock			= __MUTEX_INITIALIZER(lcmoff_policy.lock),
 	.policy			= PPM_POLICY_LCM_OFF,
 	.priority		= PPM_POLICY_PRIO_USER_SPECIFY_BASE,
 	.get_power_state_cb	= ppm_lcmoff_get_power_state_cb,
@@ -82,47 +83,32 @@ static void ppm_lcmoff_switch(int onoff)
 
 	ppm_info("@%s: onoff = %d\n", __func__, onoff);
 
+	ppm_lock(&lcmoff_policy.lock);
+
 	/* onoff = 0: LCM OFF */
 	/* others: LCM ON */
 	if (onoff) {
 		/* deactivate lcmoff policy */
 		if (lcmoff_policy.is_activated) {
-			ppm_lock(&lcmoff_policy.lock);
-
 			lcmoff_policy.is_activated = false;
-
 			for (i = 0; i < lcmoff_policy.req.cluster_num; i++) {
 				lcmoff_policy.req.limit[i].min_cpufreq_idx = get_cluster_min_cpufreq_idx(i);
 				lcmoff_policy.req.limit[i].max_cpufreq_idx = get_cluster_max_cpufreq_idx(i);
 				lcmoff_policy.req.limit[i].min_cpu_core = get_cluster_min_cpu_core(i);
 				lcmoff_policy.req.limit[i].max_cpu_core = get_cluster_max_cpu_core(i);
 			}
-
 			ppm_unlock(&lcmoff_policy.lock);
-
 			ppm_task_wakeup();
-		}
+		} else
+			ppm_unlock(&lcmoff_policy.lock);
 	} else {
 		/* activate lcmoff policy */
 		if (lcmoff_policy.is_enabled) {
-			ppm_lock(&lcmoff_policy.lock);
-
 			lcmoff_policy.is_activated = true;
-
-#if 0
-			for (i = 0; i < lcmoff_policy.req.cluster_num; i++) {
-				lcmoff_policy.req.limit[i].min_cpufreq_idx =
-					ppm_main_freq_to_idx(i, LCMOFF_FREQ, CPUFREQ_RELATION_L);
-				lcmoff_policy.req.limit[i].max_cpufreq_idx = get_cluster_max_cpufreq_idx(i);
-					ppm_main_freq_to_idx(i, LCMOFF_FREQ, CPUFREQ_RELATION_L);
-				lcmoff_policy.req.limit[i].min_cpu_core = get_cluster_min_cpu_core(i);
-				lcmoff_policy.req.limit[i].max_cpu_core = get_cluster_max_cpu_core(i);
-			}
-#endif
 			ppm_unlock(&lcmoff_policy.lock);
-
 			ppm_task_wakeup();
-		}
+		} else
+			ppm_unlock(&lcmoff_policy.lock);
 	}
 
 	FUNC_EXIT(FUNC_LV_POLICY);

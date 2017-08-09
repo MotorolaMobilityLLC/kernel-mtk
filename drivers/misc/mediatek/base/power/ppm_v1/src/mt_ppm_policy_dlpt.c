@@ -30,12 +30,14 @@ static enum PPM_DLPT_MODE dlpt_mode;
 /* other members will init by ppm_main */
 static struct ppm_policy_data dlpt_policy = {
 	.name			= __stringify(PPM_POLICY_DLPT),
+	.lock			= __MUTEX_INITIALIZER(dlpt_policy.lock),
 	.policy			= PPM_POLICY_DLPT,
 	.priority		= PPM_POLICY_PRIO_POWER_BUDGET_BASE,
 	.get_power_state_cb	= NULL,	/* decide in ppm main via min power budget */
 	.update_limit_cb	= ppm_dlpt_update_limit_cb,
 	.status_change_cb	= ppm_dlpt_status_change_cb,
 	.mode_change_cb		= ppm_dlpt_mode_change_cb,
+
 };
 
 void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
@@ -47,11 +49,6 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 	int i;
 
 	FUNC_ENTER(FUNC_LV_POLICY);
-
-	if (!dlpt_policy.is_enabled) {
-		ppm_warn("PPM DLPT policy is not enabled!\n");
-		goto end;
-	}
 
 	/* find power budget in table, skip this round if idx not found in table */
 	power_idx = ppm_find_pwr_idx(cluster_status);
@@ -88,6 +85,12 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 
 	ppm_lock(&dlpt_policy.lock);
 
+	if (!dlpt_policy.is_enabled) {
+		ppm_warn("@%s: dlpt policy is not enabled!\n", __func__);
+		ppm_unlock(&dlpt_policy.lock);
+		goto end;
+	}
+
 	switch (dlpt_mode) {
 	case SW_MODE:
 	case HYBRID_MODE:
@@ -97,13 +100,9 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 #else
 		dlpt_policy.req.power_budget = budget;
 #endif
-
-		if (dlpt_policy.is_enabled) {
-			dlpt_policy.is_activated = (budget) ? true : false;
-			ppm_unlock(&dlpt_policy.lock);
-			ppm_task_wakeup();
-		} else
-			ppm_unlock(&dlpt_policy.lock);
+		dlpt_policy.is_activated = (budget) ? true : false;
+		ppm_unlock(&dlpt_policy.lock);
+		ppm_task_wakeup();
 
 		break;
 	case HW_MODE:	/* TBD */
@@ -111,6 +110,7 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 		break;
 	}
 
+end:
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
