@@ -21,7 +21,8 @@
 	do {\
 		if (onoff == 1)\
 			cmdq_core_save_first_dump(string, ##args);\
-		SMIMSG(string, ##args);\
+		else\
+			SMIMSG(string, ##args);\
 	} while (0)
 #else
 #define SMIMSG3(string, args...) SMIMSG(string, ##args)
