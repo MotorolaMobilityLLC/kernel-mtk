@@ -670,7 +670,7 @@ bool is_in_cpufreq = 0;
 int dvfs_disable_flag = 0;
 
 #define CPUFREQ_EFUSE_INDEX     (3)
-#define FUNC_CODE_EFUSE_INDEX	(28)
+#define FUNC_CODE_EFUSE_INDEX	(22)
 
 #define CPU_LEVEL_0             (0x0)
 #define CPU_LEVEL_1             (0x1)
@@ -683,7 +683,7 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
 	unsigned int func_code_0 = _GET_BITS_VAL_(27:24, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
-	unsigned int func_code_1 = _GET_BITS_VAL_(31:28, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+	unsigned int func_code_1 = _GET_BITS_VAL_(3:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 
 	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
 		     func_code_1);
