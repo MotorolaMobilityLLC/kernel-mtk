@@ -39,6 +39,9 @@ DECLARE_PER_CPU(u64, exec_delta_time);
 DECLARE_PER_CPU(u64, clock_task);
 DECLARE_PER_CPU(u64, exec_start);
 DECLARE_PER_CPU(struct task_struct, exec_task);
+DECLARE_PER_CPU(u64, old_rt_runtime);
+DECLARE_PER_CPU(u64, init_rt_runtime);
+DECLARE_PER_CPU(u64, rt_period_time);
 /*
  * This allows printing both to /proc/sched_debug and
  * to the console

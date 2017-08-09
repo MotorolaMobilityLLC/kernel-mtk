@@ -200,7 +200,7 @@ static void save_isr_info(unsigned int irq, struct irqaction *action,
 	 * CONFIG_MTPROF_CPUTIME not defined
 	 */
 	if ((current->policy == SCHED_FIFO || current->policy == SCHED_RR)
-	    && mt_rt_mon_enable())
+	    && mt_rt_mon_enable(smp_processor_id()))
 		current->se.mtk_isr_time += dur;
 }
 #endif

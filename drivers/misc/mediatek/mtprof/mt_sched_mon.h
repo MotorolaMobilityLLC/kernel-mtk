@@ -146,22 +146,27 @@ DECLARE_PER_CPU(unsigned long long, local_timer_te);
 #define MON_RESET 2
 
 #ifdef CONFIG_MT_RT_THROTTLE_MON
-extern void save_mt_rt_mon_info(struct task_struct *p, unsigned long long ts);
-extern void end_mt_rt_mon_info(struct task_struct *p);
-extern void check_mt_rt_mon_info(struct task_struct *p);
-extern void mt_rt_mon_switch(int on);
-extern void mt_rt_mon_print_task(void);
+DECLARE_PER_CPU(struct mt_rt_mon_struct, mt_rt_mon_head);
+DECLARE_PER_CPU(int, rt_mon_count);
+DECLARE_PER_CPU(int, mt_rt_mon_enabled);
+DECLARE_PER_CPU(unsigned long long, rt_start_ts);
+DECLARE_PER_CPU(unsigned long long, rt_end_ts);
+DECLARE_PER_CPU(unsigned long long, rt_dur_ts);
+
+extern void save_mt_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p);
+extern void mt_rt_mon_switch(int on, int cpu);
+extern void mt_rt_mon_print_task(int cpu);
 extern void mt_rt_mon_print_task_from_buffer(void);
-extern int mt_rt_mon_enable(void);
+extern void update_mt_rt_mon_start(int cpu, u64 delta_exec);
+extern int mt_rt_mon_enable(int cpu);
 #else
 static inline void
-save_mt_rt_mon_info(struct task_struct *p, unsigned long long ts) {};
-static inline void end_mt_rt_mon_info(struct task_struct *p) {};
-static inline void check_mt_rt_mon_info(struct task_struct *p) {};
-static inline void mt_rt_mon_switch(int on) {};
-static inline void mt_rt_mon_print_task(void) {};
+save_mt_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p) {};
+static inline void mt_rt_mon_switch(int on, int cpu) {};
+static inline void mt_rt_mon_print_task(int cpu) {};
 static inline void mt_rt_mon_print_task_from_buffer(void) {};
-static inline int mt_rt_mon_enable(void)
+static inline void update_mt_rt_mon_start(int cpu, u64 delta_exec) {};
+static inline int mt_rt_mon_enable(int cpu)
 {
 	return 0;
 }

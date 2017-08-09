@@ -22,22 +22,11 @@
 #include <linux/uaccess.h>
 #include <linux/tick.h>
 #include <linux/seq_file.h>
+#include <linux/module.h>
 #include <linux/list_sort.h>
 #include "mt_sched_mon.h"
 
 #define MAX_THROTTLE_COUNT 5
-
-#ifdef CONFIG_MT_ENG_BUILD
-#define MAX_THREAD_COUNT 50000
-/* max debug thread count, if reach the level, stop store new thread informaiton*/
-#define MAX_TIME (5*60*60)
-/* max debug time, if reach the level, stop and clear the debug information*/
-#else
-#define MAX_THREAD_COUNT 10000
-/* max debug thread count, if reach the level, stop store new thread informaiton*/
-#define MAX_TIME (1*60*60)
-/* max debug time, if reach the level, stop and clear the debug information*/
-#endif
 
 struct mt_rt_mon_struct {
 	struct list_head list;
@@ -46,20 +35,20 @@ struct mt_rt_mon_struct {
 	int prio;
 	char comm[TASK_COMM_LEN];
 	u64 cputime;
-	u64 cputime_init;
 	u64 cost_cputime;
 	u32 cputime_percen_6;
 	u64 isr_time;
+	u64 isr_time_init;
 	u64 cost_isrtime;
 };
 
-static struct mt_rt_mon_struct mt_rt_mon_head = {
-	.list = LIST_HEAD_INIT(mt_rt_mon_head.list),
-};
+DEFINE_PER_CPU(struct mt_rt_mon_struct, mt_rt_mon_head);
+DEFINE_PER_CPU(int, rt_mon_count);
+DEFINE_PER_CPU(int, mt_rt_mon_enabled);
+DEFINE_PER_CPU(unsigned long long, rt_start_ts);
+DEFINE_PER_CPU(unsigned long long, rt_end_ts);
+DEFINE_PER_CPU(unsigned long long, rt_dur_ts);
 
-static int mt_rt_mon_enabled;
-static int rt_mon_count;
-static unsigned long long rt_start_ts, rt_end_ts, rt_dur_ts;
 static DEFINE_SPINLOCK(mt_rt_mon_lock);
 static struct mt_rt_mon_struct buffer[MAX_THROTTLE_COUNT];
 static int rt_mon_count_buffer;
@@ -91,7 +80,7 @@ static unsigned long nsec_low(unsigned long long nsec)
 #define SPLIT_NS_L(x) nsec_low(x)
 
 
-static void store_rt_mon_info(struct task_struct *p)
+static void store_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 {
 	struct mt_rt_mon_struct *mtmon;
 	unsigned long irq_flags;
@@ -103,111 +92,64 @@ static void store_rt_mon_info(struct task_struct *p)
 	INIT_LIST_HEAD(&(mtmon->list));
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
+	per_cpu(rt_mon_count, cpu)++;
 
-	rt_mon_count++;
 	mtmon->pid = p->pid;
 	mtmon->prio = p->prio;
 	strncpy(mtmon->comm, p->comm, sizeof(p->comm));
-	mtmon->cputime = p->se.sum_exec_runtime;
-	mtmon->cputime_init = p->se.sum_exec_runtime;
+	mtmon->cputime = delta_exec;
 	mtmon->isr_time = p->se.mtk_isr_time;
+	mtmon->isr_time_init = p->se.mtk_isr_time;
 	mtmon->cost_cputime = 0;
 	mtmon->cost_isrtime = 0;
-	list_add(&(mtmon->list), &(mt_rt_mon_head.list));
+	list_add(&(mtmon->list), &(__raw_get_cpu_var(mt_rt_mon_head).list));
 
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 }
 
-void setup_mt_rt_mon_info(struct task_struct *p)
+void start_rt_mon_task(int cpu)
 {
-	struct mt_rt_mon_struct *tmp;
-	int find = 0;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
-
-	if (0 == mt_rt_mon_enabled) {
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
-	if (rt_mon_count >= MAX_THREAD_COUNT) {
-		pr_err("mtmon thread count larger the max level %d.\n",
-			MAX_THREAD_COUNT);
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
-	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
-		if (!find && (tmp->pid == p->pid)) {
-			tmp->prio = p->prio;
-			strncpy(tmp->comm, p->comm, sizeof(p->comm));
-			tmp->cputime = p->se.sum_exec_runtime;
-			tmp->cputime_init = p->se.sum_exec_runtime;
-			tmp->isr_time = p->se.mtk_isr_time;
-			find = 1;
-		}
-	}
-
+	per_cpu(mt_rt_mon_enabled, cpu) = 1;
+	per_cpu(rt_start_ts, cpu) = sched_clock();
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 
-
-	if (!find)
-		store_rt_mon_info(p);
-
-}
-void start_rt_mon_task(void)
-{
-	struct task_struct *g, *p;
-	unsigned long flags, irq_flags;
-
-	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
-	mt_rt_mon_enabled = 1;
-	rt_start_ts = sched_clock();
-	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-
-	read_lock_irqsave(&tasklist_lock, flags);
-
-	do_each_thread(g, p) {
-		if (!task_has_rt_policy(p))
-			continue;
-		setup_mt_rt_mon_info(p);
-	} while_each_thread(g, p);
-
-	read_unlock_irqrestore(&tasklist_lock, flags);
 }
 
-void stop_rt_mon_task(void)
+void stop_rt_mon_task(int cpu)
 {
 	struct mt_rt_mon_struct *tmp;
 	struct task_struct *tsk;
+	struct list_head *list_head;
 	unsigned long long cost_cputime = 0;
+	unsigned long long dur_ts = 0;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
 
-	mt_rt_mon_enabled = 0;
-	rt_end_ts = sched_clock();
+	per_cpu(mt_rt_mon_enabled, cpu) = 0;
+	per_cpu(rt_end_ts, cpu) = sched_clock();
+	per_cpu(rt_dur_ts, cpu) = per_cpu(rt_end_ts, cpu) - per_cpu(rt_start_ts, cpu);
+	dur_ts = per_cpu(rt_dur_ts, cpu);
+	do_div(dur_ts, 1000000);	/* put prof_dur_ts to ms */
+	list_head = &(__raw_get_cpu_var(mt_rt_mon_head).list);
 
-	rt_dur_ts = rt_end_ts - rt_start_ts;
-	do_div(rt_dur_ts, 1000000);	/* put prof_dur_ts to ms */
-
-	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
+	list_for_each_entry(tmp, list_head, list) {
 		tsk = find_task_by_vpid(tmp->pid);
 		if (tsk && task_has_rt_policy(tsk)) {
-			tmp->cputime = tsk->se.sum_exec_runtime;
-			tmp->isr_time =
-				tsk->se.mtk_isr_time - tmp->isr_time;
-			tmp->cost_isrtime += tmp->isr_time;
-			strncpy(tmp->comm, tsk->comm, sizeof(tsk->comm));
 			tmp->prio = tsk->prio;
+			strncpy(tmp->comm, tsk->comm, sizeof(tsk->comm));
+			tmp->isr_time = tsk->se.mtk_isr_time;
+			tmp->cost_isrtime = tmp->isr_time - tmp->isr_time_init;
 		}
 
-		if (tmp->cputime >= (tmp->cputime_init + tmp->cost_isrtime)) {
+		if (tmp->cputime >= tmp->cost_isrtime) {
 			cost_cputime =
-			   tmp->cputime - tmp->cost_isrtime - tmp->cputime_init;
+			   tmp->cputime - tmp->cost_isrtime;
 			tmp->cost_cputime += cost_cputime;
-			do_div(cost_cputime, rt_dur_ts);
+			do_div(cost_cputime, dur_ts);
 			tmp->cputime_percen_6 = cost_cputime;
 		} else {
 			tmp->cost_cputime = 0;
@@ -218,33 +160,35 @@ void stop_rt_mon_task(void)
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 }
 
-void reset_rt_mon_list(void)
+void reset_rt_mon_list(int cpu)
 {
 	struct mt_rt_mon_struct *tmp, *tmp2;
 	struct task_struct *tsk;
+	struct list_head *list_head;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
 
-	mt_rt_mon_enabled = 0;
+	list_head = &(per_cpu(mt_rt_mon_head, cpu).list);
+	per_cpu(mt_rt_mon_enabled, cpu) = 0;
 
-	list_for_each_entry_safe(tmp, tmp2, &mt_rt_mon_head.list, list) {
+	list_for_each_entry_safe(tmp, tmp2, list_head, list) {
 		tsk = find_task_by_vpid(tmp->pid);
-		if (tsk && task_has_rt_policy(tsk)) {
+		if (tsk) {
+			tmp->cputime = 0;
 			tmp->cost_cputime = 0;
 			tmp->cputime_percen_6 = 0;
 			tmp->cost_isrtime = 0;
 			tmp->prio = tsk->prio;
-			tmp->cputime_init = tsk->se.sum_exec_runtime;
+			tmp->isr_time_init = tsk->se.mtk_isr_time;
 			tmp->isr_time = tsk->se.mtk_isr_time;
 		} else {
-			rt_mon_count--;
+			per_cpu(rt_mon_count, cpu)--;
 			list_del(&(tmp->list));
 			kfree(tmp);
 		}
 	}
-	rt_end_ts = 0;
-
+	per_cpu(rt_end_ts, cpu) = 0;
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 
 }
@@ -263,32 +207,33 @@ static int mt_rt_mon_cmp(void *priv, struct list_head *a, struct list_head *b)
 	return 0;
 }
 
-void mt_rt_mon_print_task(void)
+void mt_rt_mon_print_task(int cpu)
 {
 	unsigned long irq_flags;
 	int count = 0;
 	struct mt_rt_mon_struct *tmp;
+	struct list_head *list_head;
 
-	rt_mon_count_buffer = rt_mon_count;
-	rt_start_ts_buffer = rt_start_ts;
-	rt_end_ts_buffer =  rt_end_ts;
-	rt_dur_ts_buffer = rt_dur_ts;
+	rt_mon_count_buffer = __raw_get_cpu_var(rt_mon_count);
+	rt_start_ts_buffer = __raw_get_cpu_var(rt_start_ts);
+	rt_end_ts_buffer =  __raw_get_cpu_var(rt_end_ts);
+	rt_dur_ts_buffer = __raw_get_cpu_var(rt_dur_ts);
 
 	pr_err(
-		"sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
-		rt_mon_count, SPLIT_NS_H(rt_start_ts), SPLIT_NS_L(rt_start_ts),
-		SPLIT_NS_H(rt_end_ts), SPLIT_NS_L(rt_end_ts),
-		SPLIT_NS_H((rt_end_ts - rt_start_ts)),
-		SPLIT_NS_L((rt_end_ts - rt_start_ts)));
+		"sched: mon_count = %d monitor start[%lld.%06lu ms] end[%lld.%06lu ms] dur[%lld.%06lu ms]\n",
+		per_cpu(rt_mon_count, cpu),
+		SPLIT_NS_H(per_cpu(rt_start_ts, cpu)), SPLIT_NS_L(per_cpu(rt_start_ts, cpu)),
+		SPLIT_NS_H(per_cpu(rt_end_ts, cpu)), SPLIT_NS_L(per_cpu(rt_end_ts, cpu)),
+		SPLIT_NS_H(per_cpu(rt_dur_ts, cpu)), SPLIT_NS_L(per_cpu(rt_dur_ts, cpu)));
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
+	list_head = &(__raw_get_cpu_var(mt_rt_mon_head).list);
+	list_sort(NULL, list_head, mt_rt_mon_cmp);
 
-	list_sort(NULL, &mt_rt_mon_head.list, mt_rt_mon_cmp);
-
-	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
+	list_for_each_entry(tmp, list_head, list) {
 		memcpy(&buffer[count], tmp, sizeof(struct mt_rt_mon_struct));
 		count++;
-		pr_err("sched:[%s] pid:%d prio:%d cputime[%lld.%06lu] percen[%d.%04d%%] isr_time[%lld.%06lu]\n",
+		pr_err("sched:[%s] pid:%d prio:%d exec_time[%lld.%06lu ms] percen[%d.%04d%%] isr_time[%lld.%06lu ms]\n",
 			tmp->comm, tmp->pid, tmp->prio,
 			SPLIT_NS_H(tmp->cost_cputime), SPLIT_NS_L(tmp->cost_cputime),
 			tmp->cputime_percen_6 / 10000, tmp->cputime_percen_6 % 10000,
@@ -297,7 +242,6 @@ void mt_rt_mon_print_task(void)
 		if (count == MAX_THROTTLE_COUNT)
 			break;
 	}
-
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 }
 
@@ -323,142 +267,78 @@ void mt_rt_mon_print_task_from_buffer(void)
 	pr_err("last throttle information end\n");
 }
 
-void mt_rt_mon_switch(int on)
+void mt_rt_mon_switch(int on, int cpu)
 {
 	if (on == MON_RESET)
-		reset_rt_mon_list();
+		reset_rt_mon_list(cpu);
 
-	if (mt_rt_mon_enabled == 1) {
+	if (per_cpu(mt_rt_mon_enabled, cpu) == 1) {
 		if (on == MON_STOP)
-			stop_rt_mon_task();
+			stop_rt_mon_task(cpu);
 	} else {
 		if (on == MON_START)
-			start_rt_mon_task();
+			start_rt_mon_task(cpu);
 	}
 }
-
-void save_mt_rt_mon_info(struct task_struct *p, unsigned long long ts)
+void update_mt_rt_mon_start(int cpu, u64 delta_exec)
 {
-	unsigned long long mon_now_ts;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
 
-	if (0 == mt_rt_mon_enabled) {
+	if (__raw_get_cpu_var(mt_rt_mon_enabled) == 0) {
 		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 		return;
 	}
-
-	if (p->policy != SCHED_FIFO && p->policy != SCHED_RR) {
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
-	if (rt_mon_count >= MAX_THREAD_COUNT) {
-		pr_err("mtmon thread count larger the max level %d.\n", MAX_THREAD_COUNT);
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
+	per_cpu(rt_start_ts, cpu) -= delta_exec;
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-
-	mon_now_ts = sched_clock();
-
-	rt_dur_ts = mon_now_ts - rt_start_ts;
-	do_div(rt_dur_ts, 1000000);	/* put prof_dur_ts to ms */
-	if (rt_dur_ts >= MAX_TIME * 1000) {
-		pr_err("mtmon debug time larger than the max time %d.\n", MAX_TIME);
-		mt_rt_mon_switch(MON_RESET);
-		return;
-	}
-
-	store_rt_mon_info(p);
 }
 
-void end_mt_rt_mon_info(struct task_struct *p)
+void save_mt_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 {
 	struct mt_rt_mon_struct *tmp;
-	unsigned long irq_flags;
 	int find = 0;
+	struct list_head *list_head;
+	unsigned long irq_flags;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
 
-	/* check profiling enable flag */
-	if (0 == mt_rt_mon_enabled) {
+	if (__raw_get_cpu_var(mt_rt_mon_enabled) == 0) {
 		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 		return;
 	}
 
-	if (!task_has_rt_policy(p)) {
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
-	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
-		if (p->pid == tmp->pid) {
+	list_head = &(__raw_get_cpu_var(mt_rt_mon_head).list);
+	list_for_each_entry(tmp, list_head, list) {
+		if (!find && (tmp->pid == p->pid)) {
 			tmp->prio = p->prio;
 			strncpy(tmp->comm, p->comm, sizeof(p->comm));
-			/* update cputime */
-			tmp->cputime = p->se.sum_exec_runtime;
-			tmp->isr_time = p->se.mtk_isr_time - tmp->isr_time;
-			tmp->cost_isrtime += tmp->isr_time;
+			tmp->cputime += delta_exec;
 			find = 1;
-			break;
 		}
 	}
+	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
+
 	if (!find)
-		pr_err("pid:%d can't be found in mtsched proc_info.\n", p->pid);
-
-	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
+		store_rt_mon_info(cpu, delta_exec, p);
 
 }
-void check_mt_rt_mon_info(struct task_struct *p)
+
+int mt_rt_mon_enable(int cpu)
 {
-	struct mt_rt_mon_struct *tmp;
-	unsigned long irq_flags;
-	unsigned long long cost_cputime = 0;
-	int find = 0;
-
-	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
-
-	/* check profiling enable flag */
-	if (0 == mt_rt_mon_enabled) {
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-		return;
-	}
-
-	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
-		if (!find && p->pid == tmp->pid) {
-			tmp->prio = p->prio;
-			strncpy(tmp->comm, p->comm, sizeof(p->comm));
-			tmp->cputime = p->se.sum_exec_runtime;
-			if (!task_has_rt_policy(p)) {
-				tmp->isr_time =
-					p->se.mtk_isr_time - tmp->isr_time;
-				tmp->cost_isrtime += tmp->isr_time;
-				if (tmp->cputime >= (tmp->cputime_init + tmp->cost_isrtime)) {
-					cost_cputime =
-						tmp->cputime - tmp->cost_isrtime - tmp->cputime_init;
-					tmp->cost_cputime += cost_cputime;
-				} else {
-					tmp->cost_cputime = 0;
-				}
-			}
-			tmp->cputime_init = p->se.sum_exec_runtime;
-			tmp->isr_time = p->se.mtk_isr_time;
-			find = 1;
-			break;
-		}
-	}
-
-	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
-
-	if (!find && task_has_rt_policy(p))
-		store_rt_mon_info(p);
-
+	return per_cpu(mt_rt_mon_enabled, cpu);
 }
 
-int mt_rt_mon_enable(void)
+static int __init mt_rt_mon_init(void)
 {
-	return mt_rt_mon_enabled;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		INIT_LIST_HEAD(&(per_cpu(mt_rt_mon_head, cpu).list));
+
+	return 0;
 }
+early_initcall(mt_rt_mon_init);
+
+
+
