@@ -644,7 +644,7 @@ void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 #endif
 		}
 	} else {
-		MSG(ERR, "%s dma or uart ptr is null\n", __func__);
+		MSG_ERR("%s dma or uart ptr is null\n", __func__);
 		/* del_timer(&dma->vfifo->timer); */
 	}
 #else
@@ -657,7 +657,7 @@ void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 			MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
 		}
 	} else {
-		MSG(ERR, "%s dma or uart ptr is null\n", __func__);
+		MSG_ERR("%s dma or uart ptr is null\n", __func__);
 	}
 #endif				/* ENABE_HRTIMER_FLUSH */
 }
