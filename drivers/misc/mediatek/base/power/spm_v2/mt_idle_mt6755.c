@@ -235,10 +235,12 @@ bool cg_check_idle_can_enter(
 	if (!(r == 0))
 		ret = false;
 
-	for (i = 0; i < NR_GRPS; i++) {
-		for (k = 0; k < 32; k++) {
-			if (block_mask[i] & (1 << k))
-				dpidle_blocking_stat[i][k] += 1;
+	if (mode == MT_DPIDLE) {
+		for (i = 0; i < NR_GRPS; i++) {
+			for (k = 0; k < 32; k++) {
+				if (block_mask[i] & (1 << k))
+					dpidle_blocking_stat[i][k] += 1;
+			}
 		}
 	}
 

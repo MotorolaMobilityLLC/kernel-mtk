@@ -402,6 +402,7 @@ static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
+static bool             dpidle_by_pass_i2c_appm_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 /* MCDI */
@@ -1290,7 +1291,7 @@ static bool dpidle_can_enter(int cpu)
 	mt_dvfsp_paused_by_idle = true;
 #endif
 
-	if (dpidle_by_pass_cg == 0) {
+	if (dpidle_by_pass_i2c_appm_cg == 0) {
 		/* Check if I2C-appm gated since DVFSP will control it */
 		if (!cg_i2c_appm_check_idle_can_enter(dpidle_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -2349,6 +2350,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 			dpidle_blocking_stat[i][k] = 0;
 
 	p += sprintf(p, "dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
+	p += sprintf(p, "dpidle_by_pass_i2c_appm_cg=%u\n", dpidle_by_pass_i2c_appm_cg);
 	p += sprintf(p, "dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	p += sprintf(p, "dpidle_dump_log = %u\n", dpidle_dump_log);
 	p += sprintf(p, "(0: None, 1: Reduced, 2: Full\n");
@@ -2393,6 +2395,8 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_time_critera = param;
 		else if (!strcmp(cmd, "bypass"))
 			dpidle_by_pass_cg = param;
+		else if (!strcmp(cmd, "bypass_appm"))
+			dpidle_by_pass_i2c_appm_cg = param;
 		else if (!strcmp(cmd, "bypass_pg")) {
 			dpidle_by_pass_pg = param;
 			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);

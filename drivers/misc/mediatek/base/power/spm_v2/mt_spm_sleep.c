@@ -347,8 +347,6 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	pmic_config_interface(0x44a, 0x0b00, 0xffff, 0);
 	pmic_read_interface(0x44a, &reg, 0xffff, 0);
 	spm_crit2("0x44a= :0x%x\n", reg);
-
-	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
 #endif
 }
 

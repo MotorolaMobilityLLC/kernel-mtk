@@ -535,6 +535,10 @@ static void spm_register_init(void)
 	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
 	spm_write(PCM_PWR_IO_EN, 0);
 
+#if defined(CONFIG_ARCH_MT6797)
+	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
+#endif
+
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
