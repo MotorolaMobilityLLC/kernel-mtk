@@ -1076,63 +1076,6 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 		/* mt_fh_hal_dfs_armpll(p2, p3); */
 		/* FH_MSG("ARMPLL DFS completed\n"); */
 		break;
-	case FH_MM_PLLID:
-		mt_fh_hal_dfs_mmpll(p3);
-		FH_MSG("MMPLL DFS completed\n");
-		break;
-	case FH_VENC_PLLID:
-		mt_fh_hal_dfs_vencpll(p3);
-		FH_MSG("VENCPLL DFS completed\n");
-		break;
-	case FH_MEM_PLLID:	/* 2 */
-		FH_MSG("MEMPLL DFS enter\n");
-		mt_fh_hal_dfs_mempll(p2);
-		FH_MSG("MEMPLL DFS completed\n");
-		break;
-	case 4370:
-		{
-			unsigned long reg_cfg = 0;
-
-			VALIDATE_PLLID(p2);
-
-			reg_cfg = g_reg_cfg[p2];
-
-			/* TODO: Find out who use this case */
-			FH_MSG("pllid=%d dt=%d df=%d lowbnd=%d", p2, p3, p4, p5);
-			fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
-			fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-			fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
-
-			fh_sync_ncpo_to_fhctl_dds(p2);
-
-			FH_MSG("Enable FHCTL%d SSC mode", p2);
-			FH_MSG("DDS: 0x%08x", (fh_read32(reg_cfg) & MASK21b));
-
-			fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p4);
-			fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p3);
-
-			fh_write32(g_reg_updnlmt[p2],
-				   (PERCENT_TO_DDSLMT((fh_read32(reg_cfg) & MASK21b), p5) << 16));
-			FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[p2]));
-
-			fh_switch2fhctl(p2, 1);
-
-			fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
-			fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
-
-			FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg));
-		}
-		break;
-	case 2222:
-		/* TODO: and what this case for? */
-		if (p2 == 0)	/* disable */
-			mt_fh_hal_popod_save();
-		else if (p2 == 1)	/* enable */
-			mt_fh_hal_popod_restore();
-		break;
-	default:
-		mt_fh_hal_dvfs(p1, p2);
-		break;
 	};
 
 	return count;
