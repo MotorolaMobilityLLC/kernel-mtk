@@ -925,7 +925,7 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 {
 #ifdef CONFIG_MTK_EIC
-	pr_debug("fwq pinctrl mtk_gpio_to_irq pin=%d\n", offset);
+	pr_debug("pinctrl mtk_gpio_to_irq pin=%d\n", offset);
 	return mt_gpio_to_irq(offset);
 #else
 	const struct mtk_desc_pin *pin;
