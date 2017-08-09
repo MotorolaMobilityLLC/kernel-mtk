@@ -520,16 +520,16 @@ do {								\
 #define cspm_is_fw_l_done()		(!!(cspm_read(CSPM_SW_RSV5) & FW_B_DONE))
 #define cspm_is_fw_all_done()		((cspm_read(CSPM_SW_RSV5) & FW_ALL_DONE) == FW_ALL_DONE)
 
-#define cspm_err(fmt, args...)		pr_err(fmt, ##args)
-#define cspm_warn(fmt, args...)		pr_warn(fmt, ##args)
-#define cspm_debug(fmt, args...)	pr_debug(fmt, ##args)
+#define cspm_err(fmt, args...)		pr_err("[CPUHVFS] " fmt, ##args)
+#define cspm_warn(fmt, args...)		pr_warn("[CPUHVFS] " fmt, ##args)
+#define cspm_debug(fmt, args...)	pr_debug("[CPUHVFS] " fmt, ##args)
 
 #define cspm_dbgx(flag, fmt, args...)			\
 do {							\
 	if (dbgx_log_en & DLF_##flag)			\
-		pr_err(fmt, ##args);			\
+		cspm_err(fmt, ##args);			\
 	else if (dbgx_log_en & (DLF_##flag << 16))	\
-		pr_debug(fmt, ##args);			\
+		cspm_debug(fmt, ##args);		\
 	else						\
 		;					\
 } while (0)
@@ -586,10 +586,10 @@ static inline void cspm_save_curr_sta(struct init_sta *sta)
 #define set_dvfsp_init_done(dvfsp)	((dvfsp)->init_done = 1)
 #define is_dvfsp_uninit(dvfsp)		(!(dvfsp)->init_done)
 
-#define cpuhvfs_crit(fmt, args...)	pr_err(fmt, ##args)
-#define cpuhvfs_err(fmt, args...)	pr_err(fmt, ##args)
-#define cpuhvfs_warn(fmt, args...)	pr_warn(fmt, ##args)
-#define cpuhvfs_debug(fmt, args...)	pr_debug(fmt, ##args)
+#define cpuhvfs_crit(fmt, args...)	pr_err("[CPUHVFS] " fmt, ##args)
+#define cpuhvfs_err(fmt, args...)	pr_err("[CPUHVFS] " fmt, ##args)
+#define cpuhvfs_warn(fmt, args...)	pr_warn("[CPUHVFS] " fmt, ##args)
+#define cpuhvfs_debug(fmt, args...)	pr_debug("[CPUHVFS] " fmt, ##args)
 
 #define DEFINE_FOPS_RO(fname)						\
 static int fname##_open(struct inode *inode, struct file *file)		\

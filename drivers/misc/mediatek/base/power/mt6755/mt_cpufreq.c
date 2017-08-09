@@ -27,8 +27,8 @@
 #include <linux/uaccess.h>
 #include <linux/seq_file.h>
 #include <linux/types.h>
-#include <asm/io.h>
-#include <asm/topology.h>
+#include <linux/io.h>
+#include <linux/topology.h>
 #include <linux/suspend.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
@@ -1888,6 +1888,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 	if (unlikely
 	    (!((cur_vsram >= cur_vproc) && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
 		unsigned int i, val, extbuck_chip_id = mt6311_get_chip_id();
+
 		fail_case = 1;
 		fail_times++;
 		dump_opp_table(p);
@@ -2968,6 +2969,9 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 }
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+#include <linux/syscore_ops.h>
+#include <linux/smp.h>
+
 static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 {
 	int i, r;
@@ -2990,7 +2994,7 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 	}
 }
 
-static int _mt_cpufreq_syscore_suspend(struct cpufreq_policy *policy)
+static int _mt_cpufreq_syscore_suspend(void)
 {
 	if (enable_cpuhvfs)
 		return cpuhvfs_dvfsp_suspend();
@@ -2998,11 +3002,11 @@ static int _mt_cpufreq_syscore_suspend(struct cpufreq_policy *policy)
 	return 0;
 }
 
-static int _mt_cpufreq_syscore_resume(struct cpufreq_policy *policy)
+static void _mt_cpufreq_syscore_resume(void)
 {
 	if (enable_cpuhvfs) {
 		int i;
-		enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(policy->cpu);
+		enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(smp_processor_id());
 		struct init_sta sta;
 		struct mt_cpu_dvfs *p;
 
@@ -3016,9 +3020,12 @@ static int _mt_cpufreq_syscore_resume(struct cpufreq_policy *policy)
 
 		cpuhvfs_dvfsp_resume(id_to_cluster(id), &sta);
 	}
-
-	return 0;
 }
+
+static struct syscore_ops _mt_cpufreq_syscore_ops = {
+	.suspend	= _mt_cpufreq_syscore_suspend,
+	.resume		= _mt_cpufreq_syscore_resume,
+};
 #endif
 
 #ifdef CONFIG_CPU_FREQ
@@ -3033,10 +3040,6 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 	.init = _mt_cpufreq_init,
 	.exit = _mt_cpufreq_exit,
 	.get = _mt_cpufreq_get,
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	.suspend = _mt_cpufreq_syscore_suspend,
-	.resume = _mt_cpufreq_syscore_resume,
-#endif
 	.name = "mt-cpufreq",
 	.attr = _mt_cpufreq_attr,
 };
@@ -3201,6 +3204,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 				if (enable_cpuhvfs == 1)
 					p->ops->get_cur_volt = get_cur_volt_hybrid;
 			}
+
+			register_syscore_ops(&_mt_cpufreq_syscore_ops);
 		} else {
 			enable_cpuhvfs = 0;
 		}
