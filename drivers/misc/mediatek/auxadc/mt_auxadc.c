@@ -467,7 +467,7 @@ static void mt_auxadc_hal_resume(void)
 		pr_err("hwEnableClock AUXADC failed!!!.");
 #endif
 #endif
-
+	mt_auxadc_power_on();
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
 
