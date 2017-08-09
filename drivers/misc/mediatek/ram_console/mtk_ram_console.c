@@ -536,10 +536,7 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 	if (ram_console_check_header(buffer) && buffer->sz_buffer != 0) {
 		pr_err("ram_console: buffer %p, size %x(%x)\n", buffer, buffer->sz_buffer,
 		       ram_console_buffer->sz_buffer);
-		if (buffer)
-			seq_write(m, buffer, ram_console_buffer->sz_buffer);
-		else
-			seq_puts(m, "NO VALID DATA.\n");
+		seq_write(m, buffer, ram_console_buffer->sz_buffer);
 		return 0;
 	}
 	if (buffer->off_pl == 0 || buffer->off_pl + ALIGN(buffer->sz_pl, 64) != buffer->off_lpl) {
