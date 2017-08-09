@@ -371,7 +371,7 @@ int ccci_c2k_buffer_push(int ch_id, void *buf, int count)
 						ret = -EAGAIN;
 					goto push_err_out;
 				}
-				return ret < 0 ? ret : actual_count;
+				return actual_count;
 push_err_out:
 				ccci_free_req(req);
 				return ret;
@@ -1051,7 +1051,7 @@ static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
 {
 
 	struct ccci_header *ccci_h = NULL;
-	int ret, read_len, read_count;
+	int read_len, read_count, ret = 0;
 	int c2k_ch_id;
 
 	if (port->rx_ch == CCCI_C2K_PPP_DATA)
