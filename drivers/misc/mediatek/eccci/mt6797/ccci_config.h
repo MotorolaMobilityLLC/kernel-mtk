@@ -102,7 +102,7 @@
 #define CCCI_SMEM_SIZE_CCISM 0x200000
 #define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_CCISM+CCCI_SMEM_SIZE_CCISM) /*AP<->MD3*/
 #else
-#define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME_MD) /*AP<->MD3*/
+#define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME) /*AP<->MD3*/
 #endif
 #define CCCI_SMEM_SIZE_CCIF_SMEM 0x0 /* variable, so it should be the last region for MD3 */
 /*================================================ */

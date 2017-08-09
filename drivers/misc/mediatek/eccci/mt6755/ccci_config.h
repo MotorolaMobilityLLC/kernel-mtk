@@ -94,7 +94,7 @@
 #define CCCI_SMEM_SIZE_RUNTIME_AP 0x800 /* AP runtime data size */
 #define CCCI_SMEM_SIZE_RUNTIME_MD 0x800 /* MD runtime data size */
 #define CCCI_SMEM_SIZE_RUNTIME	(CCCI_SMEM_SIZE_RUNTIME_AP+CCCI_SMEM_SIZE_RUNTIME_MD)
-#define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME_MD) /*AP<->MD3*/
+#define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME) /*AP<->MD3*/
 #define CCCI_SMEM_SIZE_CCIF_SMEM 0x0 /* variable, so it should be the last region for MD3 */
 /*================================================ */
 
