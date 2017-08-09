@@ -338,11 +338,11 @@ void c2k_wake_host(int wake)
 	if (wake && !host_status) {	/*wake sdio host to enum device for sth host */
 		host_status = 1;
 		LOGPRT(LOG_NOTICE, "%s %d host on.\n", __func__, __LINE__);
-		via_sdio_on(3);
+		/*via_sdio_on(3);*/
 	} else if (host_status) {
 		host_status = 0;
 		LOGPRT(LOG_NOTICE, "%s %d host off.\n", __func__, __LINE__);
-		via_sdio_off(3);
+		/*via_sdio_off(3);*/
 	}
 #endif
 }
