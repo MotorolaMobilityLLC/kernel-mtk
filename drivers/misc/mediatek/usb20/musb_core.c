@@ -544,6 +544,7 @@ static void musb_otg_timer_func(unsigned long data)
 {
 	struct musb *musb = (struct musb *)data;
 	unsigned long flags;
+	bool vbus_off = false;
 
 	spin_lock_irqsave(&musb->lock, flags);
 	switch (musb->xceiv->state) {
@@ -564,7 +565,9 @@ static void musb_otg_timer_func(unsigned long data)
 		musb->otg_event = OTG_EVENT_DEV_CONN_TMOUT;
 		schedule_work(&musb->otg_notifier_work);
 #endif
-		musb_platform_set_vbus(musb, 0);
+		/*musb_platform_set_vbus(musb, 0);*/
+		vbus_off = true; /* I2C can't use with spin_lock */
+
 		musb->xceiv->state = OTG_STATE_A_WAIT_VFALL;
 		break;
 	default:
@@ -572,6 +575,9 @@ static void musb_otg_timer_func(unsigned long data)
 	}
 	musb->ignore_disconnect = 0;
 	spin_unlock_irqrestore(&musb->lock, flags);
+
+	if (vbus_off)
+		musb_platform_set_vbus(musb, 0);
 }
 
 #if defined(CONFIG_USBIF_COMPLIANCE)
