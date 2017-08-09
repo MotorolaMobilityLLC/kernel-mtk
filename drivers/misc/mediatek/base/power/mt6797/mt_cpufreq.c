@@ -2019,7 +2019,9 @@ static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 	pcw = BigiDVFSPLLGetPCW();
 	posdiv = BigiDVFSPOSDIVGet();
 
+	mt6797_0x1001AXXX_lock();
 	ckdiv1 = cpufreq_read(ARMPLLDIV_CKDIV);
+	mt6797_0x1001AXXX_unlock();
 	ckdiv1 = _GET_BITS_VAL_(4:0, ckdiv1);
 
 	if (ckdiv1 == 10)
@@ -2051,8 +2053,11 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 
 	BUG_ON(NULL == p);
 
+	mt6797_0x1001AXXX_lock();
 	con1 = cpufreq_read(p->armpll_addr);
 	ckdiv1 = cpufreq_read((unsigned int *)ARMPLLDIV_CKDIV);
+	mt6797_0x1001AXXX_unlock();
+
 	ckdiv1 = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _GET_BITS_VAL_(9:5, ckdiv1) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _GET_BITS_VAL_(14:10, ckdiv1) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) ? _GET_BITS_VAL_(19:15, ckdiv1) : _GET_BITS_VAL_(9:5, ckdiv1);
@@ -2062,7 +2067,9 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 			cur_khz = _cpu_freq_calc(con1, ckdiv1);
 			/* Read con1 fail */
 			if (cur_khz > cpu_dvfs_get_max_freq(p) || cur_khz < cpu_dvfs_get_min_freq(p)) {
+				mt6797_0x1001AXXX_lock();
 				con1 = cpufreq_read(p->armpll_addr);
+				mt6797_0x1001AXXX_unlock();
 				cur_khz = _cpu_freq_calc(con1, ckdiv1);
 				con1_result = 0;
 				cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x, retry = %d\n",
@@ -2143,6 +2150,8 @@ static void _cpu_clock_switch(struct mt_cpu_dvfs *p, enum top_ckmuxsel sel)
 
 	BUG_ON(sel >= NR_TOP_CKMUXSEL);
 
+	mt6797_0x1001AXXX_lock();
+
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
 		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 3 : 2, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
@@ -2152,15 +2161,24 @@ static void _cpu_clock_switch(struct mt_cpu_dvfs *p, enum top_ckmuxsel sel)
 	else /* CCI */
 		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 7 : 6, sel);
 
+	ndelay(200);
+	mt6797_0x1001AXXX_unlock();
+
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 static enum top_ckmuxsel _get_cpu_clock_switch(struct mt_cpu_dvfs *p)
 {
-	unsigned int val = cpufreq_read(ARMPLLDIV_MUXSEL);
+	unsigned int val;
 	unsigned int mask;
 
 	FUNC_ENTER(FUNC_LV_HELP);
+
+	mt6797_0x1001AXXX_lock();
+
+	val = cpufreq_read(ARMPLLDIV_MUXSEL);
+
+	mt6797_0x1001AXXX_unlock();
 
 	mask = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _BITMASK_(3:2) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _BITMASK_(5:4) :
@@ -2228,10 +2246,13 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned 
 
 		dds = _cpu_dds_calc(vco);
 		/* dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(vco)); */
+		mt6797_0x1001AXXX_lock();
 		reg = cpufreq_read(p->armpll_addr);
 		dds = (((reg & ~(_BITMASK_(26:24))) | (shift << 24)) & ~(_BITMASK_(20:0))) | dds;
 		/* dbg_print("DVFS: Set ARMPLL CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
 		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
+		ndelay(200);
+		mt6797_0x1001AXXX_unlock();
 	}
 	udelay(PLL_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
@@ -2261,10 +2282,13 @@ static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 			(pos_div == 2) ? 1 :
 			(pos_div == 4) ? 2 : 0;
 
+		mt6797_0x1001AXXX_lock();
 		reg = cpufreq_read(p->armpll_addr);
 		dds = (reg & ~(_BITMASK_(26:24))) | (shift << 24);
 		/* dbg_print("DVFS: Set POSDIV CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
 		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
+		ndelay(200);
+		mt6797_0x1001AXXX_unlock();
 	}
 	udelay(POS_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
@@ -2281,6 +2305,7 @@ static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 		(clk_div == 2) ? 10 :
 		(clk_div == 4) ? 11 : 8;
 
+	mt6797_0x1001AXXX_lock();
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
 		cpufreq_write_mask(ARMPLLDIV_CKDIV, 9 : 5, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
@@ -2290,6 +2315,8 @@ static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 	else
 		cpufreq_write_mask(ARMPLLDIV_CKDIV, 19 : 15, sel);
 
+	ndelay(200);
+	mt6797_0x1001AXXX_unlock();
 	udelay(POS_SETTLE_TIME);
 }
 
