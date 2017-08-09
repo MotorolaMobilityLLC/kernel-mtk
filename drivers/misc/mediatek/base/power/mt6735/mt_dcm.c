@@ -11,6 +11,7 @@
 #include <mach/mt_secure_api.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <mt_dramc.h>
 
 /* #define DCM_DEFAULT_ALL_OFF */
 
@@ -30,11 +31,9 @@ static unsigned long ddrphy_base;
 #define INFRACFG_AO_NODE "mediatek,INFRACFG_AO"
 #define TOPCKGEN_NODE "mediatek,CKSYS"
 #define PERICFG_NODE "mediatek,PERICFG"
-#define DRAMC_AO_NODE "mediatek,DRAMC0"
 #define EMI_REG_NODE "mediatek,EMI"
 #define EFUSE_NODE "mediatek,EFUSEC"
 #define APMIXED_NODE "mediatek,APMIXED"
-#define DDRPHY_NODE "mediatek,DDRPHY"
 
 #undef INFRACFG_AO_BASE
 #undef MCUCFG_BASE
@@ -1188,14 +1187,9 @@ static int mt_dcm_dts_map(void)
 	}
 
 	/* dramc */
-	node = of_find_compatible_node(NULL, NULL, DRAMC_AO_NODE);
-	if (!node) {
-		dcm_info("error: cannot find node " DRAMC_AO_NODE);
-		BUG();
-	}
-	dramc_ao_base = (unsigned long)of_iomap(node, 0);
+	dramc_ao_base = (unsigned long)mt_dramc_base_get();
 	if (!dramc_ao_base) {
-		dcm_info("error: cannot iomap " DRAMC_AO_NODE);
+		dcm_info("error: cannot get dramc_ao_base from dram api");
 		BUG();
 	}
 
@@ -1212,14 +1206,9 @@ static int mt_dcm_dts_map(void)
 	}
 
 	/* ddrphy */
-	node = of_find_compatible_node(NULL, NULL, DDRPHY_NODE);
-	if (!node) {
-		dcm_info("error: cannot find node " DDRPHY_NODE);
-		BUG();
-	}
-	ddrphy_base = (unsigned long)of_iomap(node, 0);
+	ddrphy_base = (unsigned long)mt_ddrphy_base_get();
 	if (!ddrphy_base) {
-		dcm_info("error: cannot iomap " DDRPHY_NODE);
+		dcm_info("error: cannot get ddrphy_base from dram api");
 		BUG();
 	}
 
