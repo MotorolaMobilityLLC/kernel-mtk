@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 obj-y += rrc_driver.o
 
 rrc_driver-objs := rrc_drv.o

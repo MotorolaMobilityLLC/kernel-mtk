@@ -14,7 +14,6 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-#include $(srctree)/drivers/misc/mediatek/imgsensor/src/Makefile.custom
 ifneq ($(CONFIG_PINCTRL_MT6797),y)
 # to use mtk legacy pinctrl
 subdir-ccflags-y += -I$(DRVGEN_OUT)/inc

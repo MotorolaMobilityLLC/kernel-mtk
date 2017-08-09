@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-# include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 # drivers/cmdq
 $(warning start to build cmdq normal)
 

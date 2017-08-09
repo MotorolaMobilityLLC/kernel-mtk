@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ifeq ($(strip $(CONFIG_ARCH_MT6735)),y)
 vcodec_kernel_driver-objs :=        \
     videocodec_kernel_driver_D1.o      \

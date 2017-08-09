@@ -13,8 +13,6 @@
 
 ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
 
-# include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 obj-$(CONFIG_MTK_ECCCI_DRIVER) := ccci.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include/

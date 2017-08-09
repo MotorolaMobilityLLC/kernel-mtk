@@ -1,7 +1,6 @@
 #
 # Makefile for external display driver.
 #
-# include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/common/test/     \

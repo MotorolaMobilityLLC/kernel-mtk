@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ifeq ($(CONFIG_ARCH_MT6735M), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/mt6735m
 endif

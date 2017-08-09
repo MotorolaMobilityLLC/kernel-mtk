@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 obj-y := cameraisp_dummy.o
 
 ifeq ($(CONFIG_ARCH_MT6580),y)

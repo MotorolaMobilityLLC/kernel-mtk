@@ -1,4 +1,3 @@
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-y += rrc_driver.o
 

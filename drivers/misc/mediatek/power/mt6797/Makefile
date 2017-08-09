@@ -11,7 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 # obj-$(CONFIG_MTK_PMIC)        += mt6311.o
 obj-$(CONFIG_MTK_PMIC)          += pmic.o pmic_irq.o upmu_common.o pmic_auxadc.o pmic_initial_setting.o fan53555.o da9214.o fan49101.o pmic_chr_type_det.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)

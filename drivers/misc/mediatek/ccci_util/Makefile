@@ -17,7 +17,6 @@ ifndef CONFIG_MTK_FPGA
 # ccci_util is build after eccci or later
 ifdef CONFIG_MTK_ECCCI_DRIVER
 
-# include $(srctree)/drivers/misc/mediatek/Makefile.custom
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccci_util
 
 obj-y += ccci_util_lib.o

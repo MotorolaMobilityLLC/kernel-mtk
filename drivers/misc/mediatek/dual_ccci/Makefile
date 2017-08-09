@@ -11,7 +11,6 @@
 # GNU General Public License for more details.
 #
 
-# include $(srctree)/drivers/misc/mediatek/Makefile.custom
 #CONFIG_MTK_CCCI_DRIVER :=m
 ifeq ($(CONFIG_MTK_CCCI_EXT), y)
 

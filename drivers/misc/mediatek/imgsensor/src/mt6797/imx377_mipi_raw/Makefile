@@ -11,7 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 obj-y += imx377mipiraw_Sensor.o
 
 

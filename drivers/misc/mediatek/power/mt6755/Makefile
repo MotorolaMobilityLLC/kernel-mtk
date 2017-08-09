@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ifeq ($(CONFIG_MTK_PMIC_NEW_ARCH),y)
 
 obj-$(CONFIG_MTK_PMIC)          += mt6311.o

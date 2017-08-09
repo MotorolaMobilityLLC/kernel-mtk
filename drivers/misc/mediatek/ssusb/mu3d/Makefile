@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ccflags-y += -I$(srctree)/drivers/usb/host
 ccflags-y += -I$(src)/../include/
 

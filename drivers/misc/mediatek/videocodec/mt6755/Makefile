@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 vcodec_kernel_driver-objs :=        \
     videocodec_kernel_driver.o      \
     common/val/src/val.o			\

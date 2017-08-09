@@ -13,7 +13,6 @@
 
 # MTK Platform Support
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include

@@ -13,8 +13,6 @@
 
 # drivers/image/jpeg/Makefile
 
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ccflags-y = -DSDEBUG_T
 
 ifneq ($(CONFIG_ARCH_MT6735M),y)
