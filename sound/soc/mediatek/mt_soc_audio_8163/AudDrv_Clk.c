@@ -236,13 +236,12 @@ void AudDrv_Clk_Power_Off(void)
  */
 void AudDrv_Clk_On(void)
 {
-	unsigned long flags;
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 	int ret;
 #endif
 
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_Clk_mutex);
 	if (Aud_AFE_Clk_cntr == 0) {
 		pr_debug("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 
@@ -304,20 +303,19 @@ void AudDrv_Clk_On(void)
 #endif
 	}
 	Aud_AFE_Clk_cntr++;
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_Clk_mutex);
 	PRINTK_AUD_CLK("-AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_On);
 
 void AudDrv_Clk_Off(void)
 {
-	unsigned long flags;
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 	int ret;
 #endif
 
 	PRINTK_AUD_CLK("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_Clk_mutex);
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
 		pr_debug("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
@@ -360,7 +358,7 @@ void AudDrv_Clk_Off(void)
 		AUDIO_ASSERT(true);
 		Aud_AFE_Clk_cntr = 0;
 	}
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_Clk_mutex);
 	PRINTK_AUD_CLK("-!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
