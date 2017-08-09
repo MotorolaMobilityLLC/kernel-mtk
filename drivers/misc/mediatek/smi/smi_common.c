@@ -264,9 +264,9 @@ static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 
 /* SMI COMMON register list to be backuped */
 #if defined(SMI_EV)
-#define SMI_COMMON_BACKUP_REG_NUM   10
+#define SMI_COMMON_BACKUP_REG_NUM   13
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = { 0x100, 0x104,
-	0x108, 0x10c, 0x110, 0x220, 0x230, 0x234, 0x238, 0x300
+	0x108, 0x10c, 0x110, 0x114, 0x118, 0x11c, 0x220, 0x230, 0x234, 0x238, 0x300
 };
 #else
 #define SMI_COMMON_BACKUP_REG_NUM   8
@@ -823,24 +823,52 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 	return 0;
 }
 
-
 static void backup_smi_common(void)
 {
 	int i;
+	int err_count = 0;
 
-	for (i = 0; i < SMI_COMMON_BACKUP_REG_NUM; i++)
+	for (i = 0; i < SMI_COMMON_BACKUP_REG_NUM; i++) {
 		g_smi_common_backup[i] = M4U_ReadReg32(SMI_COMMON_EXT_BASE, (unsigned long)
 						       g_smi_common_backup_reg_offset[i]);
+		if (!g_smi_common_backup[i])
+			err_count++;
+	}
+
+	if (err_count)
+		SMIMSG("backup fail!!\n");
 }
 
 static void restore_smi_common(void)
 {
-	int i;
+	int err_count = 0;
+	int i = 0;
 
-	for (i = 0; i < SMI_COMMON_BACKUP_REG_NUM; i++)
-		M4U_WriteReg32(SMI_COMMON_EXT_BASE,
-			       (unsigned long)g_smi_common_backup_reg_offset[i],
-			       g_smi_common_backup[i]);
+	for (i = 0; i < SMI_COMMON_BACKUP_REG_NUM; i++) {
+		if (!g_smi_common_backup[i])
+			err_count++;
+	}
+
+	if (err_count)
+		SMIMSG("backup value abnormal!!\n");
+
+	if (smi_debug_level > 0) {
+		SMIMSG("smi_profile=%d, dump before setting\n", smi_profile);
+		smi_dumpCommonDebugMsg(0);
+	}
+
+	smi_common_setting(smi_profile,
+			smi_profile_config[smi_profile].setting);
+
+	if (smi_debug_level > 0) {
+		SMIMSG("dump after setting\n");
+		smi_dumpCommonDebugMsg(0);
+	}
+
+	if (!M4U_ReadReg32(SMI_COMMON_EXT_BASE, (unsigned long)
+						       g_smi_common_backup_reg_offset[0]))
+		SMIMSG("restore fail!!\n");
+
 }
 
 static void backup_larb_smi(int index)

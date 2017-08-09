@@ -54,3 +54,24 @@ int smi_bus_regs_setting(int larb_id, int profile, struct SMI_SETTING *settings)
 	}
 	return 0;
 }
+
+int smi_common_setting(int profile, struct SMI_SETTING *settings)
+{
+	int i = 0;
+
+	if (!settings || profile < 0 || profile >= SMI_BWC_SCEN_CNT)
+		return -1;
+
+	if (settings->smi_common_reg_num == 0)
+		return -1;
+
+	/* set regs of common */
+
+	for (i = 0 ; i < settings->smi_common_reg_num ; ++i) {
+		M4U_WriteReg32(SMI_COMMON_EXT_BASE,
+		settings->smi_common_setting_vals[i].offset,
+		settings->smi_common_setting_vals[i].value);
+	}
+
+	return 0;
+}

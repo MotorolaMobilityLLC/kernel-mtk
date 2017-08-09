@@ -77,5 +77,6 @@ extern void smi_dumpCommon(void);
 
 extern struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM];
 extern int smi_bus_regs_setting(int larb_id, int profile, struct SMI_SETTING *settings);
+extern int smi_common_setting(int profile, struct SMI_SETTING *settings);
 
 #endif
