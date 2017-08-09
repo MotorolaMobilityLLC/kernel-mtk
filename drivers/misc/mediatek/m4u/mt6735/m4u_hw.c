@@ -1831,9 +1831,10 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 		if (IntrSrc & (F_INT_MMU0_MAIN_MSK | F_INT_MMU0_MAU_MSK))
 			m4u_slave_id = 0;
-		else
+		else {
 			m4u_clear_intr(m4u_index);
-		return 0;
+			return 0;
+		}
 
 		/* read error info from registers */
 		fault_mva = M4U_ReadReg32(m4u_base, REG_MMU_FAULT_VA(m4u_slave_id));
