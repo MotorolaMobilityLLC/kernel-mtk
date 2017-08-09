@@ -819,14 +819,14 @@ static int musb_gadget_disable(struct usb_ep *ep)
 	schedule_work(&musb->irq_work);
 
 	musb->active_ep--;
-	os_printk(K_INFO, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);
+	/* os_printk(K_INFO, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);*/
 
 	if (musb->active_ep == 0 && musb->is_active == 0)
 		schedule_work(&musb->suspend_work);
 
 	spin_unlock_irqrestore(&(musb->lock), flags);
 
-	dev_dbg(musb->controller, "%s\n", musb_ep->end_point.name);
+	dev_dbg(musb->controller, "%s %s\n", __func__, musb_ep->end_point.name);
 
 	return status;
 }

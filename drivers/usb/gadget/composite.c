@@ -189,10 +189,9 @@ int usb_add_function(struct usb_configuration *config,
 		struct usb_function *function)
 {
 	int	value = -EINVAL;
-	
-	pr_debug("[XLOG_DEBUG][USB][COM]%s: \n", __func__);
+	pr_debug("[XLOG_DEBUG][USB][COM]%s:\n", __func__);
 
-	INFO(config->cdev, "adding '%s'/%p to config '%s'/%p\n",
+	DBG(config->cdev, "adding '%s'/%p to config '%s'/%p\n",
 			function->name, function,
 			config->label, config);
 
@@ -226,7 +225,7 @@ int usb_add_function(struct usb_configuration *config,
 
 done:
 	if (value)
-		INFO(config->cdev, "adding '%s'/%p --> %d\n",
+		DBG(config->cdev, "adding '%s'/%p --> %d\n",
 				function->name, function, value);
 	return value;
 }
@@ -235,7 +234,7 @@ EXPORT_SYMBOL_GPL(usb_add_function);
 void usb_remove_function(struct usb_configuration *c, struct usb_function *f)
 {
 	if (f->disable) {
-		INFO(c->cdev, "disable function '%s'/%p\n", f->name, f);
+		/* INFO(c->cdev, "disable function '%s'/%p\n", f->name, f); */
 		f->disable(f);
 	}
 
@@ -606,7 +605,7 @@ static void reset_config(struct usb_composite_dev *cdev)
 	DBG(cdev, "reset config\n");
 
 	list_for_each_entry(f, &cdev->config->functions, list) {
-		INFO(cdev, "disable function '%s'/%p\n", f->name, f);
+		/* INFO(cdev, "disable function '%s'/%p\n", f->name, f);*/
 		if (f->disable)
 			f->disable(f);
 

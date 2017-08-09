@@ -161,7 +161,7 @@ void usb20_pll_settings(bool host, bool forceOn)
 {
 	if (host) {
 		if (forceOn) {
-			os_printk(K_INFO, "%s-%d - Set USBPLL_FORCE_ON.\n", __func__, __LINE__);
+			os_printk(K_DEBUG, "%s-%d - Set USBPLL_FORCE_ON.\n", __func__, __LINE__);
 			/* Set RG_SUSPENDM to 1 */
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST,
 				RG_SUSPENDM, 1);
@@ -174,7 +174,7 @@ void usb20_pll_settings(bool host, bool forceOn)
 #endif
 
 		} else {
-			os_printk(K_INFO, "%s-%d - Clear USBPLL_FORCE_ON.\n", __func__, __LINE__);
+			os_printk(K_DEBUG, "%s-%d - Clear USBPLL_FORCE_ON.\n", __func__, __LINE__);
 			/* Set RG_SUSPENDM to 1 */
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST,
 				RG_SUSPENDM, 0);
@@ -189,7 +189,7 @@ void usb20_pll_settings(bool host, bool forceOn)
 		}
 	}
 
-	os_printk(K_INFO, "%s-%d - Set PLL_FORCE_MODE and SIFSLV PLL_FORCE_ON.\n", __func__,
+	os_printk(K_DEBUG, "%s-%d - Set PLL_FORCE_MODE and SIFSLV PLL_FORCE_ON.\n", __func__,
 		  __LINE__);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR2_0, RG_SIFSLV_USB20_PLL_FORCE_MODE_OFST,
 			  RG_SIFSLV_USB20_PLL_FORCE_MODE, 0x1);
@@ -506,7 +506,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	os_printk(K_DEBUG, "%s-\n", __func__);
 
 	return PHY_TRUE;
 }
@@ -518,7 +518,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	PHY_INT32 u4FmOut = 0;
 	PHY_INT32 u4Tmp = 0;
 
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 	/* => RG_USB20_HSTX_SRCAL_EN = 1 */
 	/* enable USB ring oscillator */
@@ -543,7 +543,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0x1);
 
-	os_printk(K_INFO, "Freq_Valid=(0x%08X)\n",
+	os_printk(K_DEBUG, "Freq_Valid=(0x%08X)\n",
 		  U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)));
 
 	mdelay(1);
@@ -553,12 +553,12 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
 		u4FmOut = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x10C));
-		os_printk(K_INFO, "FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
+		os_printk(K_DEBUG, "FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
 
 		/* check if FM detection done */
 		if (u4FmOut != 0) {
 			fgRet = 0;
-			os_printk(K_INFO, "FM detection done! loop = %d\n", i);
+			os_printk(K_DEBUG, "FM detection done! loop = %d\n", i);
 			break;
 		}
 		fgRet = 1;
@@ -583,7 +583,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 		/* set reg = (1024/FM_OUT) * REF_CK * U2_SR_COEF_E60802 / 1000 (round to the nearest digits) */
 		/* u4Tmp = (((1024 * REF_CK * U2_SR_COEF_E60802) / u4FmOut) + 500) / 1000; */
 		u4Tmp = (1024 * REF_CK * U2_SR_COEF_E60802) / (u4FmOut * 1000);
-		os_printk(K_INFO, "SR calibration value u1SrCalVal = %d\n", (PHY_UINT8) u4Tmp);
+		os_printk(K_DEBUG, "SR calibration value u1SrCalVal = %d\n", (PHY_UINT8) u4Tmp);
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR5, RG_USB20_HSTX_SRCTRL_OFST,
 				  RG_USB20_HSTX_SRCTRL, u4Tmp);
 	}
@@ -774,7 +774,7 @@ void usb_phy_recover(unsigned int clk_on)
 {
 	PHY_INT32 ret;
 
-	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
+	os_printk(K_DEBUG, "%s clk_on=%d+\n", __func__, clk_on);
 
 	if (!clk_on) {
 		/*---POWER-----*/
@@ -973,7 +973,7 @@ void usb_phy_recover(unsigned int clk_on)
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	os_printk(K_DEBUG, "%s-\n", __func__);
 }
 
 /*
@@ -1022,7 +1022,7 @@ void Charger_Detect_En(bool enable)
 /* BC1.2 */
 void Charger_Detect_Init(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
+	os_printk(K_DEBUG, "%s+\n", __func__);
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
@@ -1049,12 +1049,12 @@ void Charger_Detect_Init(void)
 	}
 #endif
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	os_printk(K_DEBUG, "%s-\n", __func__);
 }
 
 void Charger_Detect_Release(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
+	os_printk(K_DEBUG, "%s+\n", __func__);
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
@@ -1076,7 +1076,7 @@ void Charger_Detect_Release(void)
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	} else {
-		os_printk(K_INFO, "%s do not release detection as charger_det_en is false\n",
+		os_printk(K_DEBUG, "%s do not release detection as charger_det_en is false\n",
 			  __func__);
 	}
 #endif

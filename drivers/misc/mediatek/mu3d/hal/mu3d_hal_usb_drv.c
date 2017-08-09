@@ -70,7 +70,7 @@ void mu3d_hal_ssusb_en(void)
 
 void _ex_mu3d_hal_ssusb_en(void)
 {
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 	os_clrmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
 	os_clrmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
@@ -193,7 +193,7 @@ void mu3d_hal_rst_dev(void)
 {
 	DEV_INT32 ret;
 
-	os_printk(K_ERR, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 #if 0
 	os_writel(U3D_SSUSB_DEV_RST_CTRL,
@@ -232,7 +232,7 @@ DEV_INT32 mu3d_hal_check_clk_sts(void)
 {
 	DEV_INT32 ret;
 
-	os_printk(K_ERR, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 	ret =
 	    wait_for_value(U3D_SSUSB_IP_PW_STS1, SSUSB_SYS125_RST_B_STS, SSUSB_SYS125_RST_B_STS, 1,
@@ -261,7 +261,7 @@ DEV_INT32 mu3d_hal_check_clk_sts(void)
 	}
 #endif
 
-	os_printk(K_CRIT, "check clk pass!!\n");
+	os_printk(K_DEBUG, "check clk pass!!\n");
 	return RET_SUCCESS;
 }
 
@@ -430,7 +430,7 @@ void _ex_mu3d_hal_system_intr_en(void)
 	DEV_UINT16 int_en;
 	DEV_UINT32 ltssm_int_en;
 
-	os_printk(K_ERR, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 	/* Disable All endpoint interrupt */
 	os_writel(U3D_EPIECR, os_readl(U3D_EPIER));
@@ -1193,7 +1193,7 @@ void mu3d_hal_unfigured_ep(void)
 	DEV_UINT32 i, tx_ep_num, rx_ep_num;
 	struct USB_EP_SETTING *ep_setting;
 
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 	g_TxFIFOadd = USB_TX_FIFO_START_ADDRESS;
 	g_RxFIFOadd = USB_RX_FIFO_START_ADDRESS;

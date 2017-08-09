@@ -247,7 +247,7 @@ static void android_work(struct work_struct *data)
 	else
 		is_hwconnected = false;
 
-	pr_notice("[USB]%s: is_hwconnected=%d \n", __func__, is_hwconnected);
+	/*pr_notice("[USB]%s: is_hwconnected=%d\n", __func__, is_hwconnected);*/
 	/* Add for HW/SW connect */
 
 	spin_lock_irqsave(&cdev->lock, flags);
@@ -271,9 +271,9 @@ static void android_work(struct work_struct *data)
 
 	if (uevent_envp) {
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp);
-		pr_notice("[USB]%s: sent uevent %s\n", __func__, uevent_envp[0]);
+		pr_notice("[USB]%s: is_hwconnected=%d, sent uevent %s\n", __func__, is_hwconnected, uevent_envp[0]);
 	} else {
-		pr_notice("[USB]%s: did not send uevent (%d %d %p)\n", __func__,
+		pr_notice("[USB]%s: is_hwconnected=%d, did not send uevent (%d %d %p)\n", __func__, is_hwconnected,
 			 dev->connected, dev->sw_connected, cdev->config);
 	}
 
@@ -286,7 +286,7 @@ static void android_work(struct work_struct *data)
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp_cdrom);
 		pr_notice("[USB]%s: sent uevent %s\n", __func__, uevent_envp_cdrom[0]);
 	} else {
-		pr_notice("[USB]%s: did not send zero uevent\n", __func__);
+		 /* pr_notice("[USB]%s: did not send zero uevent\n", __func__); */
 	}
 
 }
@@ -1995,7 +1995,7 @@ android_bind_enabled_functions(struct android_dev *dev,
 	int ret;
 
 	/* Added for USB Develpment debug, more log for more debuging help */
-	pr_notice("[USB]%s: ", __func__);
+	/* pr_notice("[USB]%s: ", __func__); */
 	/* Added for USB Develpment debug, more log for more debuging help */
 
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
@@ -2016,7 +2016,7 @@ android_unbind_enabled_functions(struct android_dev *dev,
 	struct android_usb_function *f;
 
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
-		pr_notice("[USB]unbind_config function '%s'/%p\n", f->name, f);
+		/* pr_notice("[USB]unbind_config function '%s'/%p\n", f->name, f); */
 		if (f->unbind_config)
 			f->unbind_config(f, c);
 	}
@@ -2027,9 +2027,8 @@ static int android_enable_function(struct android_dev *dev, char *name)
 	struct android_usb_function **functions = dev->functions;
 	struct android_usb_function *f;
 	while ((f = *functions++)) {
-
 		/* Added for USB Develpment debug, more log for more debuging help */
-		pr_notice("[USB]%s: name = %s, f->name=%s \n", __func__, name, f->name);
+		/* pr_notice("[USB]%s: name = %s, f->name=%s\n", __func__, name, f->name);*/
 		/* Added for USB Develpment debug, more log for more debuging help */
 		if (!strcmp(name, f->name)) {
 			list_add_tail(&f->enabled_list,
@@ -2100,7 +2099,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 #endif
 
 	/* Added for USB Develpment debug, more log for more debuging help */
-	pr_notice("[USB]%s\n", __func__);
+	/* pr_notice("[USB]%s\n", __func__); */
 	/* Added for USB Develpment debug, more log for more debuging help */
 
 	strlcpy(buf, buff, sizeof(buf));
@@ -2214,7 +2213,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		}
 
 		list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
-			pr_notice("[USB]enable function '%s'/%p\n", f->name, f);
+			/* pr_notice("[USB]enable function '%s'/%p\n", f->name, f); */
 			if (f->enable)
 				f->enable(f);
 		}
@@ -2233,7 +2232,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 
 		android_disable(dev);
 		list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
-			pr_notice("[USB]disable function '%s'/%p\n", f->name, f);
+			/* pr_notice("[USB]disable function '%s'/%p\n", f->name, f); */
 			if (f->disable) {
 				f->disable(f);
 			}

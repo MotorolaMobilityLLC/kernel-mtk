@@ -136,7 +136,8 @@ const char musb_driver_name[] = MUSB_DRIVER_NAME;
 
 struct musb *_mu3d_musb = NULL;
 
-u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO;
+/* u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO; */
+u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
 u32 fake_CDP = 0;
 
 module_param(debug_level, int, 0644);
@@ -461,8 +462,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 	struct usb_otg *otg = musb->xceiv->otg;
 	irqreturn_t handled = IRQ_NONE;
 
-	dev_notice(musb->controller, "<== Power=%02x, DevCtl=%02x, int_usb=0x%x\n", power, devctl,
-		   int_usb);
+	os_printk(K_DEBUG, "<== Power=%02x, DevCtl=%02x, int_usb=0x%x\n", power, devctl, int_usb);
 
 	/* in host mode, the peripheral may issue remote wakeup.
 	 * in peripheral mode, the host may resume the link.
@@ -877,9 +877,7 @@ void musb_start(struct musb *musb)
 {
 	u8 devctl = (u8) os_readl(U3D_DEVICE_CONTROL);
 
-	dev_dbg(musb->controller, "<== devctl %02x\n", devctl);
-
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_INFO, "%s  <== devctl %02x\n", __func__, devctl);
 
 	if (musb->is_clk_on == 0) {
 #ifndef CONFIG_MTK_FPGA

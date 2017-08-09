@@ -621,12 +621,12 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
 
 static void mtu3d_musb_enable(struct musb *musb)
 {
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 }
 
 static void mtu3d_musb_disable(struct musb *musb)
 {
-	os_printk(K_INFO, "%s\n", __func__);
+	os_printk(K_DEBUG, "%s\n", __func__);
 
 #ifdef CONFIG_PROJECT_PHY
 	/* Comment from CC Chou.
