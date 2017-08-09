@@ -632,8 +632,10 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			g_cl2_online |= (1 << (cpu - 8));
 	}
 
+	/* shrink kernel log
 	pr_info("boot CPU%d (0x%x, 0x%x, 0x%x)\n",
 		cpu, g_cl0_online, g_cl1_online, g_cl2_online);
+	*/
 #else
 	int err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 	if (err)
