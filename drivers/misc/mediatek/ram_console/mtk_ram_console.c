@@ -1386,6 +1386,21 @@ void aee_rr_show_isr_el1(struct seq_file *m)
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
 }
 
+__weak uint32_t get_vcore_dvfs_sram_debug_regs(uint32_t index)
+{
+	return 0;
+}
+
+void aee_rr_show_vcore_dvfs_debug_regs(struct seq_file *m)
+{
+	int i;
+	uint32_t count = get_vcore_dvfs_sram_debug_regs(0);
+
+	for (i = 0; i < count; i++)
+		seq_printf(m, "vcore dvfs debug regs(index %d) = 0x%x\n",
+				i + 1, get_vcore_dvfs_sram_debug_regs(i + 1));
+}
+
 __weak uint32_t get_suspend_debug_flag(void)
 {
 	return LAST_RR_VAL(suspend_debug_flag);
@@ -1464,6 +1479,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_spm_suspend,
 	aee_rr_show_vcore_dvfs_opp,
 	aee_rr_show_vcore_dvfs_status,
+	aee_rr_show_vcore_dvfs_debug_regs,
 	aee_rr_show_clk,
 	aee_rr_show_cpu_dvfs_vproc_big,
 	aee_rr_show_cpu_dvfs_vproc_little,
