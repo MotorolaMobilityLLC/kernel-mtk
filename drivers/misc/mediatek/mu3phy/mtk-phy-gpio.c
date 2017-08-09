@@ -4,12 +4,12 @@
 
 /* TEST CHIP PHY define, edit this in different platform */
 #define U3_PHY_I2C_DEV			0x60
-#define U3_PHY_PAGE				0xff
-#define GPIO_BASE		0xf0044700	/* 0x80080000 */
-#define SSUSB_I2C_OUT			(GPIO_BASE+0xd0)
-#define SSUSB_I2C_IN			(GPIO_BASE+0xd4)
+#define U3_PHY_PAGE			0xff
+#define GPIO_BASE			(u3_sif_base + 0x700) /* 0xf0044700 */
+#define SSUSB_I2C_OUT			(GPIO_BASE + 0xd0)
+#define SSUSB_I2C_IN			(GPIO_BASE + 0xd4)
 
-#ifdef NEVER			/* USE_GPIO */
+#if 1 /* #ifdef NEVER //USE_GPIO */
 
 /* /////////////////////////////////////////////////////////////// */
 
@@ -39,9 +39,10 @@
 
 void gpio_dir_set(PHY_INT32 pin)
 {
-	PHY_INT32 addr, temp;
+	PHY_INT32 temp;
+	u64 addr;
 
-	addr = SSUSB_I2C_OUT;
+	addr = (u64)SSUSB_I2C_OUT;
 	temp = DRV_Reg32(addr);
 	if (pin == SDA) {
 		temp |= SDA_OEN;
@@ -54,9 +55,10 @@ void gpio_dir_set(PHY_INT32 pin)
 
 void gpio_dir_clr(PHY_INT32 pin)
 {
-	PHY_INT32 addr, temp;
+	PHY_INT32 temp;
+	u64 addr;
 
-	addr = SSUSB_I2C_OUT;
+	addr = (u64)SSUSB_I2C_OUT;
 	temp = DRV_Reg32(addr);
 	if (pin == SDA) {
 		temp &= ~SDA_OEN;
@@ -69,9 +71,10 @@ void gpio_dir_clr(PHY_INT32 pin)
 
 void gpio_dout_set(PHY_INT32 pin)
 {
-	PHY_INT32 addr, temp;
+	PHY_INT32 temp;
+	u64 addr;
 
-	addr = SSUSB_I2C_OUT;
+	addr = (u64)SSUSB_I2C_OUT;
 	temp = DRV_Reg32(addr);
 	if (pin == SDA) {
 		temp |= SDA_OUT;
@@ -84,9 +87,10 @@ void gpio_dout_set(PHY_INT32 pin)
 
 void gpio_dout_clr(PHY_INT32 pin)
 {
-	PHY_INT32 addr, temp;
+	PHY_INT32 temp;
+	u64 addr;
 
-	addr = SSUSB_I2C_OUT;
+	addr = (u64)SSUSB_I2C_OUT;
 	temp = DRV_Reg32(addr);
 	if (pin == SDA) {
 		temp &= ~SDA_OUT;
@@ -99,9 +103,10 @@ void gpio_dout_clr(PHY_INT32 pin)
 
 PHY_INT32 gpio_din(PHY_INT32 pin)
 {
-	PHY_INT32 addr, temp;
+	PHY_INT32 temp;
+	u64 addr;
 
-	addr = SSUSB_I2C_IN;
+	addr = (u64)SSUSB_I2C_IN;
 	temp = DRV_Reg32(addr);
 	if (pin == SDA)
 		temp = (temp >> SDA_IN_OFFSET) & 1;
@@ -299,12 +304,12 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 Addr, PHY_UINT8 *Data)
 #define REG_I2C_SOFT_RESET   (*((volatile unsigned short int *) (PHY_I2C_BASE + 0x50)))
 #define REG_I2C_CONTROL		 (*((volatile unsigned short int *) (PHY_I2C_BASE + 0x10)))
 
-#define IS_PRINT 0
+#define IS_PRINT 1
 
 PHY_INT32 I2cWriteReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 val)
 {
 	if (IS_PRINT)
-		pr_debug("I2C Write@%x [%x]=%x\n", dev_id, addr, val);
+		pr_info("I2C Write@%x [%x]=%x\n", dev_id, addr, val);
 
 	REG_I2C_SLAVE_ADDR = dev_id << 1;
 	REG_I2C_TRANSFER_LEN = 2;
@@ -323,7 +328,7 @@ PHY_INT32 I2cWriteReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 val)
 PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 *data)
 {
 	if (IS_PRINT)
-		pr_debug("I2C Read@%x [%x]\n", dev_id, addr);
+		pr_info("I2C Read@%x [%x]\n", dev_id, addr);
 
 	REG_I2C_SLAVE_ADDR = dev_id << 1;
 	REG_I2C_TRANSFER_LEN = 0x01;
@@ -343,7 +348,7 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 *data)
 	*data = REG_I2C_DATA_PORT;
 
 	if (IS_PRINT)
-		pr_debug("I2C Read [%x]=%x\n", addr, *data);
+		pr_info("I2C Read [%x]=%x\n", addr, *data);
 
 	return PHY_TRUE;	/* !!(PHY_INT32)*data; */
 }

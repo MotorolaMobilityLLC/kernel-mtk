@@ -200,7 +200,7 @@ PHY_INT32 u3phy_init(void)
 		u3phy_ops = ((struct u3phy_operator *)&a60810_operators);
 #endif
 	} else {
-		pr_err("No match phy version\n");
+		pr_err("No match phy version, version: %x\n", u3phy_version);
 		return PHY_FALSE;
 	}
 

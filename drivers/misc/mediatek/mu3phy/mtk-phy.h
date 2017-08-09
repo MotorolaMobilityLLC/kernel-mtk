@@ -14,6 +14,7 @@
 /* include system library */
 #include <linux/slab.h>
 #include <linux/delay.h>
+#include <linux/io.h>
 
 /* BASE ADDRESS DEFINE, should define this on ASIC */
 #define PHY_BASE           0x0
@@ -61,6 +62,9 @@ typedef u32 u3phy_addr_t;
 #define ALIGN_MASK 0xFFFFFFFC
 #endif
 
+/* MACRO DEFINE */
+#define DRV_WriteReg32(addr, data)	writel(data, (void __iomem *)addr)
+#define DRV_Reg32(addr)			readl((void __iomem *)addr)
 
 /* CONSTANT DEFINE */
 #define PHY_FALSE	0
