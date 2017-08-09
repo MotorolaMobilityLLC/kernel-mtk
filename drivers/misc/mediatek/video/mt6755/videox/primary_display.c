@@ -71,6 +71,7 @@
 
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
+#include "mt_spm_sodi_cmdq.h"
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
