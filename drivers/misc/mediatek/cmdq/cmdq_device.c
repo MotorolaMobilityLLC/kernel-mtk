@@ -111,7 +111,7 @@ uint32_t cmdq_dev_enable_clock_##FN_NAME(bool enable)	\
 	return cmdq_dev_enable_mtk_clock(enable, MT_CG_DISP0_##HW_NAME, "CMDQ_MDP_"#HW_NAME);	\
 }
 
-uint32_t cmdq_dev_enable_mtk_clock(bool enable, enum cg_clk_id gateId, char *name)
+uint32_t cmdq_dev_enable_mtk_clock(bool enable, cgCLKID gateId, char *name)
 {
 	if (enable)
 		enable_clock(gateId, name);
@@ -120,7 +120,7 @@ uint32_t cmdq_dev_enable_mtk_clock(bool enable, enum cg_clk_id gateId, char *nam
 	return 0;
 }
 
-bool cmdq_dev_mtk_clock_is_enable(enum cg_clk_id gateId)
+bool cmdq_dev_mtk_clock_is_enable(cgCLKID gateId)
 {
 	return clock_is_on(gateId);
 }

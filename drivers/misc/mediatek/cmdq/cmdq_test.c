@@ -826,7 +826,7 @@ static void testcase_prefetch_scenarios(void)
 }
 
 #ifndef CMDQ_USE_CCF
-void testcase_clkmgr_impl(enum cg_clk_id gateId,
+void testcase_clkmgr_impl(cgCLKID gateId,
 			  char *name,
 			  const unsigned long testWriteReg,
 			  const uint32_t testWriteValue,

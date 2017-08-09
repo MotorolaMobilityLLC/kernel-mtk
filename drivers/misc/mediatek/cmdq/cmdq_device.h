@@ -21,10 +21,11 @@ DECLARE_ENABLE_HW_CLOCK(MUTEX_32K);
 #undef DECLARE_ENABLE_HW_CLOCK
 
 #ifndef CMDQ_USE_CCF
-uint32_t cmdq_dev_enable_mtk_clock(bool enable, enum cg_clk_id gateId, char *name);
-bool cmdq_dev_mtk_clock_is_enable(enum cg_clk_id gateId);
+typedef enum cg_clk_id cgCLKID;
+uint32_t cmdq_dev_enable_mtk_clock(bool enable, cgCLKID gateId, char *name);
+bool cmdq_dev_mtk_clock_is_enable(cgCLKID gateId);
 /* For test case used */
-void testcase_clkmgr_impl(enum cg_clk_id gateId,
+void testcase_clkmgr_impl(cgCLKID gateId,
 			  char *name,
 			  const unsigned long testWriteReg,
 			  const uint32_t testWriteValue,
