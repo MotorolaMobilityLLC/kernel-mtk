@@ -398,6 +398,24 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 		if (0 == set_value)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MFG_RST;
 		break;
+	case MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST: /* hotplug reset */
+		if (1 == set_value)
+			wdt_sys_val |= MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST;
+		if (0 == set_value)
+			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST;
+		break;
+	case MTK_WDT_SWSYS_RST_C2KSYS_RST: /* c2k reset */
+		if (1 == set_value)
+			wdt_sys_val |= MTK_WDT_SWSYS_RST_C2KSYS_RST;
+		if (0 == set_value)
+			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_C2KSYS_RST;
+		break;
+	case MTK_WDT_SWSYS_RST_C2KWDT_RST: /* c2k reset */
+		if (1 == set_value)
+			wdt_sys_val |= MTK_WDT_SWSYS_RST_C2KWDT_RST;
+		if (0 == set_value)
+			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_C2KWDT_RST;
+		break;
 	}
 	mt_reg_sync_writel(wdt_sys_val, MTK_WDT_SWSYSRST);
 	spin_unlock(&rgu_reg_operation_spinlock);
