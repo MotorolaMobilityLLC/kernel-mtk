@@ -271,7 +271,7 @@ extern int CL0OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
 extern int CL1OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
 			int *CPU1RawLkg, int *CPU2RawLkg, int *CPU3RawLkg);
 extern int LittleOCPAvgPwr(int Cluster, int EnDis, int Count);
-extern int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgPwr);
+extern int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgLkg, unsigned long long *AvgAct);
 extern int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct);
 /* DREQ + SRAMLDO */
 extern int BigSRAMLDOEnable(int mVolts);
