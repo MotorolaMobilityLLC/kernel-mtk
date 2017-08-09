@@ -5974,7 +5974,7 @@ again:
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* in case nr_running!=0 but h_nr_running==0 */
 	if (!cfs_rq->h_nr_running)
-		return NULL;
+		goto idle;
 
 	if (!cfs_rq->nr_running)
 		goto idle;
