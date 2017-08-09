@@ -33,7 +33,7 @@ obj-y += mt_picachu.o
 obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
 obj-y += mt_cpufreq_hybrid.o
-ifeq (,$(CONFIG_MTK_PMIC_CHIP_MT6353), y))
+ifeq (,$(filter $(CONFIG_MTK_PMIC_CHIP_MT6353), y))
 	# MT6755
 	obj-y += mt_gpufreq.o
 else
