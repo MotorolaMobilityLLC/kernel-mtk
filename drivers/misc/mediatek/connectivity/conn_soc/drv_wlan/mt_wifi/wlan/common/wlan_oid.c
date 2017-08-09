@@ -3230,22 +3230,18 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		return WLAN_STATUS_INVALID_DATA;
 
 	/* Exception check, pairwise key must with transmit bit enabled */
-	if ((prNewKey->u4KeyIndex & BITS(30, 31)) == IS_UNICAST_KEY)
+	if ((prNewKey->u4KeyIndex & BITS(30, 31)) == BITS(30, 31)) {
+		if (((prNewKey->u4KeyLength == CCMP_KEY_LEN || prNewKey->u4KeyLength == TKIP_KEY_LEN) &&
+			(prNewKey->u4KeyIndex & 0xff) != 0) ||
+			EQUAL_MAC_ADDR(prNewKey->arBSSID, "\xff\xff\xff\xff\xff\xff")) {
+			return WLAN_STATUS_INVALID_DATA;
+		}
+	} else if ((prNewKey->u4KeyIndex & BITS(30, 31)) == IS_UNICAST_KEY)
 		return WLAN_STATUS_INVALID_DATA;
 
 	if (!(prNewKey->u4KeyLength == WEP_40_LEN || prNewKey->u4KeyLength == WEP_104_LEN ||
 	      prNewKey->u4KeyLength == CCMP_KEY_LEN || prNewKey->u4KeyLength == TKIP_KEY_LEN)) {
 		return WLAN_STATUS_INVALID_DATA;
-	}
-
-	/* Exception check, pairwise key must with transmit bit enabled */
-	if ((prNewKey->u4KeyIndex & BITS(30, 31)) == BITS(30, 31)) {
-		if (((prNewKey->u4KeyIndex & 0xff) != 0) ||
-		    ((prNewKey->arBSSID[0] == 0xff) && (prNewKey->arBSSID[1] == 0xff) && (prNewKey->arBSSID[2] == 0xff)
-		     && (prNewKey->arBSSID[3] == 0xff) && (prNewKey->arBSSID[4] == 0xff)
-		     && (prNewKey->arBSSID[5] == 0xff))) {
-			return WLAN_STATUS_INVALID_DATA;
-		}
 	}
 
 	*pu4SetInfoLen = u4SetBufferLen;
