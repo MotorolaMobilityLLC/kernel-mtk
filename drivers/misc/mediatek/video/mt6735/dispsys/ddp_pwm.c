@@ -4,7 +4,7 @@
 /* #include <cust_leds.h> */
 /* #include <cust_leds_def.h> */
 /* #include <mach/mt_reg_base.h> */
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <cust_gpio_usage.h> */
@@ -304,31 +304,31 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 {
 	PWM_MSG("ddp_pwm_power_on: %d\n", module);
-
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_DISP_PWM, "PWM");
 #else
-	disp_clk_enable(DISP_PWM);
+		disp_clk_enable(DISP_PWM);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
 static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 {
 	PWM_MSG("ddp_pwm_power_off: %d\n", module);
-
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 		atomic_set(&g_pwm_backlight[0], 0);
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_DISP_PWM, "PWM");
 #else
-	disp_clk_disable(DISP_PWM);
+		disp_clk_disable(DISP_PWM);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
@@ -425,20 +425,18 @@ static void disp_pwm_test_pin_mux(void)
 #ifndef CONFIG_MTK_FPGA
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM1);
 
-#ifdef CONFIG_MTK_LEGACY
-	/* workaround comment for kernel 3.18 bring up */
-	/*
-	mt_set_gpio_mode(GPIO55, GPIO_MODE_07);
-	mt_set_gpio_dir(GPIO55, GPIO_DIR_OUT);
+#ifdef CONFIG_MTK_CLKMGR
+	mt_set_gpio_mode(GPIO55, GPIO_MODE_07);  /* For DVT PIN MUX verification only, not normal path */
+	mt_set_gpio_dir(GPIO55, GPIO_DIR_OUT);   /* For DVT PIN MUX verification only, not normal path */
 
-	mt_set_gpio_mode(GPIO69, GPIO_MODE_01);
-	mt_set_gpio_dir(GPIO69, GPIO_DIR_OUT);
+	mt_set_gpio_mode(GPIO69, GPIO_MODE_01); /* For DVT PIN MUX verification only, not normal path */
+	mt_set_gpio_dir(GPIO69, GPIO_DIR_OUT);  /* For DVT PIN MUX verification only, not normal path */
 
-	mt_set_gpio_mode(GPIO129, GPIO_MODE_02);
-	mt_set_gpio_dir(GPIO129, GPIO_DIR_OUT);
+	mt_set_gpio_mode(GPIO129, GPIO_MODE_02); /* For DVT PIN MUX verification only, not normal path */
+	mt_set_gpio_dir(GPIO129, GPIO_DIR_OUT);  /* For DVT PIN MUX verification only, not normal path */
 
 	enable_clock(MT_CG_PERI_DISP_PWM, "PWM");
-	*/
+
 #else
 	disp_clk_enable(DISP_PWM);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_PWM_TEST_PINMUX_55);

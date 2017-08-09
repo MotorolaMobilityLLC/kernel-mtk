@@ -14,7 +14,7 @@
 #include "ddp_aal.h"
 #include "ddp_pwm.h"
 #include "ddp_path.h"
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include "primary_display.h"
@@ -421,22 +421,26 @@ static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, vo
 
 static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef ENABLE_CLK_MGR
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_AAL, "aal");
 #else
 	disp_clk_enable(DISP0_DISP_AAL);
 #endif
 	AAL_DBG("aal_clock_on CG 0x%x", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+#endif
 	return 0;
 }
 
 static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#ifdef ENABLE_CLK_MGR
 	AAL_DBG("aal_clock_off");
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_AAL, "aal");
 #else
 	disp_clk_disable(DISP0_DISP_AAL);
+#endif
 #endif
 	return 0;
 }

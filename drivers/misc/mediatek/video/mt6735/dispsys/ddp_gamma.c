@@ -2,7 +2,7 @@
 #include <asm/uaccess.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include "cmdq_record.h"
@@ -189,27 +189,29 @@ static int disp_gamma_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_GAMMA) {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
 		disp_clk_enable(DISP0_DISP_GAMMA);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
 static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_GAMMA) {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
 		disp_clk_disable(DISP0_DISP_GAMMA);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
@@ -387,26 +389,28 @@ static int disp_ccorr_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_CCORR)
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #else
 		disp_clk_enable(DISP0_DISP_CCORR);
 #endif
-
+#endif
 
 	return 0;
 }
 
 static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_CCORR)
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #else
 		disp_clk_disable(DISP0_DISP_CCORR);
 #endif
-
+#endif
 
 	return 0;
 }

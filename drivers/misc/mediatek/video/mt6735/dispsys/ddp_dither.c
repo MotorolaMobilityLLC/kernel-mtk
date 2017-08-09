@@ -1,5 +1,5 @@
 #include <linux/kernel.h>
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include "cmdq_record.h"
@@ -88,27 +88,29 @@ static int disp_dither_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_DITHER) {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
 		disp_clk_enable(DISP0_DISP_DITHER);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
 static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_DITHER) {
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
 		disp_clk_disable(DISP0_DISP_DITHER);
 #endif
 	}
-
+#endif
 	return 0;
 }
 
