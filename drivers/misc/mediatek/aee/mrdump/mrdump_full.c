@@ -602,7 +602,7 @@ static int __init early_mrdump_rsvmem(char *p)
 	{
 		if(rsvmem_block[i].start_addr)
 			pr_err(" mrdump region start = %pa size =%pa\n",
-						rsvmem_block[i].start_addr,mrdump_rsvmem_block[i].size);
+						&rsvmem_block[i].start_addr,&mrdump_rsvmem_block[i].size);
 	}
 */
 	return 0;
@@ -617,10 +617,15 @@ __init void mrdump_rsvmem(void)
 			if (!memblock_is_region_reserved(rsvmem_block[i].start_addr, rsvmem_block[i].size))
 				memblock_reserve(rsvmem_block[i].start_addr, rsvmem_block[i].size);
 			else {
+				/*even conflict , we still enable MRDUMP for temp
+				 * because MINI DUMP will reserve the memory in DTSI now
+				 * */
+#if 0
 				mrdump_rsv_conflict = 1;
 				mrdump_enable = 0;
+#endif
 				pr_err(" error mrdump region start = %pa size =%pa is reserved by others\n",
-						(void *)rsvmem_block[i].start_addr, (void *)rsvmem_block[i].size);
+						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 			}
 		}
 	}
