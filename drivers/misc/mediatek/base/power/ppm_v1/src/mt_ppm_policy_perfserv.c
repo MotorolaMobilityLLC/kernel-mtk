@@ -75,6 +75,10 @@ static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)
 					power_table.power_tbl[index].cluster_cfg[i].core_num;
 				perfserv_policy.req.limit[i].min_cpufreq_idx =
 					power_table.power_tbl[index].cluster_cfg[i].opp_lv;
+
+				/* error check */
+				if (perfserv_policy.req.limit[i].min_cpufreq_idx == -1)
+					perfserv_policy.req.limit[i].max_cpufreq_idx = -1;
 			}
 		} else
 			ppm_dbg("@%s: index not found!", __func__);
@@ -140,8 +144,26 @@ out:
 	return count;
 }
 
+static int ppm_perfserv_min_perf_idx_proc_show(struct seq_file *m, void *v)
+{
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	unsigned int size = power_table.nr_power_tbl;
+
+	seq_printf(m, "%d\n", power_table.power_tbl[size - 1].perf_idx);
+
+	return 0;
+}
+
+static int ppm_perfserv_max_perf_idx_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ppm_get_power_table().power_tbl[0].perf_idx);
+
+	return 0;
+}
 
 PROC_FOPS_RW(perfserv_perf_idx);
+PROC_FOPS_RO(perfserv_min_perf_idx);
+PROC_FOPS_RO(perfserv_max_perf_idx);
 
 static int __init ppm_perfserv_policy_init(void)
 {
@@ -154,6 +176,8 @@ static int __init ppm_perfserv_policy_init(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(perfserv_perf_idx),
+		PROC_ENTRY(perfserv_min_perf_idx),
+		PROC_ENTRY(perfserv_max_perf_idx),
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
