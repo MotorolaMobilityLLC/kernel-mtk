@@ -10,7 +10,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
-# ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/masp/asf/asf_export_inc
+ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
 endif
 ifeq ($(CONFIG_MTK_SEC_MODEM_NVRAM_ANTI_CLONE), y)
 ccflags-y  += -DMTK_SEC_MODEM_NVRAM_ANTI_CLONE

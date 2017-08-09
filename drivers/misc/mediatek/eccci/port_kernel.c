@@ -14,7 +14,7 @@
 #include <linux/irq.h>
 #endif
 #ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-#include <mach/mt_sec_export.h>
+#include <sec_export.h>
 #endif
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <linux/aee.h>
