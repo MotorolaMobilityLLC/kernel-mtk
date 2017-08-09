@@ -494,6 +494,8 @@ static unsigned int ctrl_EEM_Enable = 1;
 static unsigned int ctrl_EEM_Enable = 1;
 #endif
 
+static unsigned int checkEfuse;
+
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
 
@@ -3677,6 +3679,7 @@ void get_devinfo(struct eem_devinfo *p)
 	int *val = (int *)p;
 	int i;
 	FUNC_ENTER(FUNC_LV_HELP);
+	checkEfuse = 1;
 
 #ifndef EARLY_PORTING
 	#if defined(__KERNEL__)
@@ -3739,6 +3742,7 @@ void get_devinfo(struct eem_devinfo *p)
 		if (0 == val[i]) {
 			ctrl_EEM_Enable = 0;
 			infoIdvfs = 0x55;
+			checkEfuse = 0;
 			eem_error("No EEM EFUSE available, will turn off EEM !!\n");
 			break;
 		}
@@ -4803,6 +4807,11 @@ unsigned int get_vcore_ptp_volt(int seg)
 	}
 
 	return ret;
+}
+
+unsigned int get_efuse_status(void)
+{
+	return checkEfuse;
 }
 
 #ifdef __KERNEL__

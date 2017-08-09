@@ -159,7 +159,7 @@ extern void mt_ptp_unlock(unsigned long *flags);
 extern int mt_eem_status(enum eem_det_id id);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
-
+extern unsigned int get_efuse_status(void);
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
 extern void ptp_init01_ptp(int id);
