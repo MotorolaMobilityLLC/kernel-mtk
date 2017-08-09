@@ -1181,6 +1181,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 
 	unsigned int L2TIMR0, L2RIMR0, L2TISAR0, L2RISAR0;
 	unsigned int L3TIMR0, L3RIMR0, L3TISAR0, L3RISAR0;
+	unsigned int coda_version;
 
 	md_cd_lock_cldma_clock_src(1);
 	/* get L2 interrupt status */
@@ -1213,7 +1214,9 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 	if (L2RISAR0 & CLDMA_BM_INT_ERROR)
 		/* TODO: */;
 	if (unlikely(!(L2RISAR0 & CLDMA_BM_INT_DONE) && !(L2TISAR0 & CLDMA_BM_INT_DONE))) {
-		CCCI_ERR_MSG(md->index, TAG,
+		coda_version = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_CODA_VERSION);
+		if (unlikely(coda_version == 0)) {
+			CCCI_ERR_MSG(md->index, TAG,
 			     "no Tx or Rx, L2TISAR0=%X, L3TISAR0=%X, L2RISAR0=%X, L3RISAR0=%X, L2TIMR0=%X, L2RIMR0=%X, CODA_VERSION=%X\n",
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0),
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3TISAR0),
@@ -1222,7 +1225,8 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0),
 			     cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMR0),
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_CODA_VERSION));
-			     md_cd_check_md_DCM(md);
+			md_cd_check_md_DCM(md);
+		}
 	}
 	/* ack Tx interrupt */
 	if (L2TISAR0) {
@@ -1271,6 +1275,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 				/* disable RX_DONE interrupt */
 				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0,
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
+				cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0); /* dummy read */
 				if (md->md_state != EXCEPTION && md_ctrl->rxq[i].napi_port) {
 					md_ctrl->rxq[i].napi_port->ops->md_state_notice(md_ctrl->rxq[i].napi_port,
 							RX_IRQ);
