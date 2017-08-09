@@ -23,47 +23,57 @@ const unsigned int MT6351_PMIC_REG_gs_video_record_data[] = {
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_video_record = MT6351_PMIC_REG_gs_video_record_data;
+
 unsigned int MT6351_PMIC_REG_gs_video_record_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle = MT6351_PMIC_REG_gs_early_suspend_deep_idle_data;
+
 unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_datalink_3g_and_4g_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_datalink_3g_and_4g = MT6351_PMIC_REG_gs_datalink_3g_and_4g_data;
+
 unsigned int MT6351_PMIC_REG_gs_datalink_3g_and_4g_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_talking_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_talking = MT6351_PMIC_REG_gs_talking_data;
+
 unsigned int MT6351_PMIC_REG_gs_talking_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_video_play_and_3d_gaming_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_video_play_and_3d_gaming = MT6351_PMIC_REG_gs_video_play_and_3d_gaming_data;
+
 unsigned int MT6351_PMIC_REG_gs_video_play_and_3d_gaming_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_flightmode_suspend_mode_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0016, 0x0080, 0x0000,	/* STRUP_CON11 */
 	0x0204, 0x0270, 0x0070,	/* TOP_CON */
-	0x023A, 0xFFFF, 0xFEFC,	/* TOP_CKPDN_CON0 */
+	0x023A, 0xFFFF, 0xFCFC,/* TOP_CKPDN_CON0*/
 	0x0240, 0x1FFF, 0x00AC,	/* TOP_CKPDN_CON1 */
 	0x0246, 0xFEFC, 0x7470,	/* TOP_CKPDN_CON2 */
 	0x024C, 0x0FFF, 0x0DE4,	/* TOP_CKPDN_CON3 */
 	0x0252, 0x006F, 0x0000,	/* TOP_CKPDN_CON4 */
 	0x0258, 0x7FDF, 0x3FC0,	/* TOP_CKPDN_CON5 */
 	0x025E, 0xF400, 0x0000,	/* TOP_CKSEL_CON0 */
-	0x0282, 0x0CFF, 0x00F7,	/* TOP_CKHWEN_CON0 */
+	0x0282, 0x0CFF, 0x00E7,/* TOP_CKHWEN_CON0*/
 	0x0288, 0x0037, 0x0037,	/* TOP_CKHWEN_CON1 */
 	0x028E, 0x002F, 0x002F,	/* TOP_CKHWEN_CON2 */
 	0x029A, 0x0F3F, 0x0100,	/* TOP_CLKSQ */
@@ -74,8 +84,8 @@ const unsigned int MT6351_PMIC_REG_gs_flightmode_suspend_mode_data[] = {
 	0x0604, 0x0001, 0x0001,	/* BUCK_VCORE_CON2 */
 	0x0612, 0x0100, 0x0100,	/* BUCK_VCORE_CON9 */
 	0x0614, 0x0001, 0x0000,	/* BUCK_VGPU_CON0 */
-	0x0618, 0x0001, 0x0000,	/* BUCK_VGPU_CON2 */
-	0x0626, 0x0100, 0x0000,	/* BUCK_VGPU_CON9 */
+	0x0618, 0x0001, 0x0001,/* BUCK_VGPU_CON2*/
+	0x0626, 0x0100, 0x0100,/* BUCK_VGPU_CON9*/
 	0x0628, 0x0001, 0x0000,	/* BUCK_VMODEM_CON0 */
 	0x062C, 0x0001, 0x0000,	/* BUCK_VMODEM_CON2 */
 	0x063A, 0x0100, 0x0000,	/* BUCK_VMODEM_CON9 */
@@ -140,20 +150,21 @@ const unsigned int MT6351_PMIC_REG_gs_flightmode_suspend_mode_data[] = {
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_flightmode_suspend_mode = MT6351_PMIC_REG_gs_flightmode_suspend_mode_data;
+
 unsigned int MT6351_PMIC_REG_gs_flightmode_suspend_mode_len = 249;
 
 const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0016, 0x0080, 0x0000,	/* STRUP_CON11 */
 	0x0204, 0x0270, 0x0070,	/* TOP_CON */
-	0x023A, 0xFFFF, 0xFEFC,	/* TOP_CKPDN_CON0 */
+	0x023A, 0xFFFF, 0xFCFC,/* TOP_CKPDN_CON0*/
 	0x0240, 0x1FFF, 0x00AC,	/* TOP_CKPDN_CON1 */
 	0x0246, 0xFEFC, 0x7470,	/* TOP_CKPDN_CON2 */
 	0x024C, 0x0FFF, 0x0DE4,	/* TOP_CKPDN_CON3 */
 	0x0252, 0x006F, 0x0000,	/* TOP_CKPDN_CON4 */
 	0x0258, 0x7FDF, 0x3FC0,	/* TOP_CKPDN_CON5 */
 	0x025E, 0xF400, 0x0000,	/* TOP_CKSEL_CON0 */
-	0x0282, 0x0CFF, 0x00F7,	/* TOP_CKHWEN_CON0 */
+	0x0282, 0x0CFF, 0x00E7,/* TOP_CKHWEN_CON0*/
 	0x0288, 0x0037, 0x0037,	/* TOP_CKHWEN_CON1 */
 	0x028E, 0x002F, 0x002F,	/* TOP_CKHWEN_CON2 */
 	0x029A, 0x0F3F, 0x0100,	/* TOP_CLKSQ */
@@ -164,8 +175,8 @@ const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
 	0x0604, 0x0001, 0x0001,	/* BUCK_VCORE_CON2 */
 	0x0612, 0x0100, 0x0100,	/* BUCK_VCORE_CON9 */
 	0x0614, 0x0001, 0x0000,	/* BUCK_VGPU_CON0 */
-	0x0618, 0x0001, 0x0000,	/* BUCK_VGPU_CON2 */
-	0x0626, 0x0100, 0x0000,	/* BUCK_VGPU_CON9 */
+	0x0618, 0x0001, 0x0001,/* BUCK_VGPU_CON2*/
+	0x0626, 0x0100, 0x0100,/* BUCK_VGPU_CON9*/
 	0x0628, 0x0001, 0x0000,	/* BUCK_VMODEM_CON0 */
 	0x062C, 0x0001, 0x0000,	/* BUCK_VMODEM_CON2 */
 	0x063A, 0x0100, 0x0000,	/* BUCK_VMODEM_CON9 */
@@ -239,13 +250,16 @@ const unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_32k_removal_data
 const unsigned int *MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_32k_removal =
 MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_32k_removal_data;
 unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_32k_removal_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_paging_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_paging = MT6351_PMIC_REG_gs_paging_data;
+
 unsigned int MT6351_PMIC_REG_gs_paging_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_early_suspend_idle_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
@@ -254,6 +268,7 @@ const unsigned int MT6351_PMIC_REG_gs_early_suspend_idle_data[] = {
 const unsigned int *MT6351_PMIC_REG_gs_early_suspend_idle =
 MT6351_PMIC_REG_gs_early_suspend_idle_data;
 unsigned int MT6351_PMIC_REG_gs_early_suspend_idle_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
@@ -262,10 +277,12 @@ const unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_data[] = {
 const unsigned int *MT6351_PMIC_REG_gs_s_flightmode_suspend_mode =
 MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_data;
 unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_len = 3;
+
 const unsigned int MT6351_PMIC_REG_gs_mp3_play_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
 };
 
 const unsigned int *MT6351_PMIC_REG_gs_mp3_play = MT6351_PMIC_REG_gs_mp3_play_data;
+
 unsigned int MT6351_PMIC_REG_gs_mp3_play_len = 3;
