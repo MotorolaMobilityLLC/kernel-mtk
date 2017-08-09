@@ -22,10 +22,19 @@
 //#include <asm/io.h>
 */
 
-#include <mach/mt_typedefs.h>
+/* #include <mach/mt_typedefs.h> */
 /* #include <mach/typedefs.h> */
 
 #include "jpeg_drv.h"
+typedef signed char     kal_int8;
+typedef signed short    kal_int16;
+typedef signed int      kal_int32;
+typedef long long       kal_int64;
+typedef unsigned char   kal_uint8;
+typedef unsigned short  kal_uint16;
+typedef unsigned int    kal_uint32;
+typedef unsigned long long  kal_uint64;
+typedef char            kal_char;
 
 extern kal_uint32 _jpeg_enc_int_status;
 extern kal_uint32 _jpeg_dec_int_status;
@@ -106,7 +115,10 @@ typedef struct {
 #define JPEG_DRV_ENC_NV12                     (0x02 << 3)
 #define JPEG_DRV_ENC_NV21                     (0x03 << 3)
 
-
+#define JPEG_MSG pr_debug
+#define JPEG_WRN pr_warn
+#define JPEG_ERR pr_err
+#define JPEG_VEB pr_err
 /* /////// JPEG Driver Decoder /////// */
 /*  */
 /*  */

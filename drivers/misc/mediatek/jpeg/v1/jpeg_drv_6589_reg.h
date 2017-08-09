@@ -2,14 +2,10 @@
 #define __JPEG_DRV_6589_REG_H__
 
 
-#include <mach/mt_reg_base.h>
-
-#include <mach/sync_write.h>
-
-
-
-
-
+/*#include <mach/mt_reg_base.h>*/
+/*#include <mach/sync_write.h>*/
+#include <mt-plat/sync_write.h>
+#include "jpeg_drv.h"
 #if 1
 
 #define JPEG_EARLY_MM_BASE    0xF5000000
@@ -20,9 +16,10 @@
 /* #define JPEG_ENC_BASE   //EARLY_JPEG_ENC_BASE */
 /* #define JPEG_DEC_BASE   (JPG_CODEC_BASE)    //EARLY_JPEG_DEC_BASE */
 /* #define JPEG_ENC_BASE   (JPG_CODEC_BASE + 0x1000)   //EARLY_JPEG_ENC_BASE */
-#define JPEG_DEC_BASE   EARLY_JPEG_DEC_BASE
-#define JPEG_ENC_BASE   EARLY_JPEG_ENC_BASE
-
+/*#define JPEG_DEC_BASE   EARLY_JPEG_DEC_BASE*/
+/*#define JPEG_ENC_BASE   EARLY_JPEG_ENC_BASE*/
+#define JPEG_ENC_BASE   jpeg_dev_get_encoder_base_VA()
+#define JPEG_DEC_BASE   jpeg_dev_get_decoder_base_VA()
 #else
 /* 0xF5003000 */
 
@@ -34,18 +31,16 @@
 #endif
 
 
+/*
 #define IMG_REG_WRITE(v, a) mt65xx_reg_sync_writel(v, a)
-
 #define IMG_REG_READ(v, a) ((v) = *(volatile kal_uint32*)(a))
-
-/* #define IMG_REG_READ(v,a) mt65xx_reg_sync_writew(v,a) */
-
+*/
+#define IMG_REG_WRITE(v, a) mt_reg_sync_writel(v, a)
+#define IMG_REG_READ(v, a) ((v) = ioread32((void __iomem *)a))
 
 /********************************************************************/
 /* The following registers are for JPEG Encoder Registers on MT6589 */
 /********************************************************************/
-
-
 
 #define REG_JPEG_ENC_RSTB                           (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x100))
 #define REG_JPEG_ENC_CTRL                           (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x104))

@@ -1,15 +1,8 @@
-#include <mach/mt_typedefs.h>
-#include <mach/sync_write.h>
+/*#include <mach/mt_typedefs.h>*/
+/*#include <mach/sync_write.h>*/
 #include <linux/kernel.h>
-#include <linux/xlog.h>
 
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
-#define JPEG_VEB pr_debug
-
-#include "jpeg_drv_6589_reg.h"
-
+#ifdef JPEG_DEC_DRIVER
 
 #include "jpeg_drv_6589_common.h"
 #include "jpeg_drv_6589_reg.h"
@@ -21,7 +14,7 @@
 #define CHECK_ALIGN(value, align, addr)  \
 { \
 	if (value & (align-1)) \
-		JPEG_WRN("WriteREG: Try to write %d to REG(%x) without %d align!!\n ", value, addr, align); \
+		JPEG_WRN("WriteREG: Try to write %d to REG(%lx) without %d align!!\n ", value, addr, align); \
 }
 
 
@@ -761,3 +754,4 @@ void jpeg_drv_dec_rw_reg(void)
 	JPEG_VEB("=======================================\n\r\n\r");
 
 }
+#endif

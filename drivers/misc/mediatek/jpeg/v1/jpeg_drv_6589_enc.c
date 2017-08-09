@@ -1,7 +1,7 @@
-#include <mach/mt_typedefs.h>
+/*#include <mach/mt_typedefs.h>*/
 #include <asm/io.h>
 #include <linux/kernel.h>
-#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 
 
 #include "jpeg_drv_6589_reg.h"
@@ -27,10 +27,6 @@
 #define JPEG_ENC_EN_SELF_INIT                   (1 << 16)
 
 #define JPEG_ENC_DEBUG_INFO0_GMC_IDLE_MASK      (1 << 13)
-
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
 
 kal_uint32 _jpeg_enc_int_status = 0;
 
@@ -144,7 +140,7 @@ void jpeg_drv_enc_dump_reg(void)
 		reg_value = *(volatile kal_uint32 *)(JPEG_ENC_BASE + index);
 #else
 		/* reg_value = ioread32(JPEG_ENC_BASE + index); */
-		IMG_REG_READ(reg_value, JPEG_DEC_BASE + index);
+		IMG_REG_READ(reg_value, JPEG_ENC_BASE + index);
 #endif
 		JPEG_MSG("+0x%x 0x%08x\n", index, reg_value);
 	}

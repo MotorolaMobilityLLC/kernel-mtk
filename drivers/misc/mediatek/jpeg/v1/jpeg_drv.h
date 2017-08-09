@@ -1,4 +1,7 @@
 #include <linux/ioctl.h>
+#ifndef CONFIG_MTK_CLKMGR
+#include <linux/clk.h>
+#endif
 
 #ifndef __JPEG_DRV_H__
 #define __JPEG_DRV_H__
@@ -93,7 +96,28 @@ typedef struct {
 #define JPEG_ENC_DST_ADDR_OFFSET_MASK (0x0f)
 
 
+typedef struct JpegDeviceStruct {
 
+	struct device *pDev;
+	long encRegBaseVA;	/* considering 64 bit kernel, use long */
+	long decRegBaseVA;
+	uint32_t encIrqId;
+	uint32_t decIrqId;
+
+} JpegDeviceStruct;
+
+typedef struct JpegClk {
+	struct clk *clk_disp_mtcmos;
+	struct clk *clk_venc_mtcmos;
+	struct clk *clk_disp_smi;
+	struct clk *clk_venc_larb;
+	struct clk *clk_venc_jpgEnc;
+	struct clk *clk_venc_jpgDec;
+} JpegClk;
+
+const long jpeg_dev_get_encoder_base_VA(void);
+
+const long jpeg_dev_get_decoder_base_VA(void);
 
 
 typedef enum _ENUM_JPEG_RET_CODE_T {

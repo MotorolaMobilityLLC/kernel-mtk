@@ -24,23 +24,10 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 
-#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 
-#include <asm/io.h>
-
-
-#include <mach/irqs.h>
-
-#include <mach/mt_reg_base.h>
-/* #include <mach/mt6575_pll.h> */
-#include <mach/mt_irq.h>
-#include <mach/irqs.h>
-#include <mach/mt_clkmgr.h>
-#include <mach/sync_write.h>
-
+#include <linux/io.h>
 /* ============================================================ */
-
-
 
 /* #include <linux/uaccess.h> */
 /* #include <linux/module.h> */
@@ -53,53 +40,53 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-#include <linux/earlysuspend.h>
+/*#include <linux/earlysuspend.h>*/
 /* #include <linux/mm.h> */
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
 /* #include <linux/slab.h> */
 /* #include <linux/gfp.h> */
-#include <linux/aee.h>
+/*#include <linux/aee.h>*/
 #include <linux/timer.h>
-#include <linux/disp_assert_layer.h>
-/* #include <linux/xlog.h> */
-/* #include <linux/fs.h> */
+/*#include <linux/disp_assert_layer.h>*/
+/*#include <linux/xlog.h> */
+/*#include <linux/fs.h> */
 
 /* Arch dependent files */
-#include <asm/mach/map.h>
-#include <mach/sync_write.h>
+/* #include <asm/mach/map.h> */
 /* #include <mach/mt6577_pll.h> */
-#include <mach/mt_irq.h>
+/* #include <mach/mt_irq.h> */
+/* #include <mach/irqs.h> */
+
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
-#include <mach/irqs.h>
+#endif				/* defined(CONFIG_MTK_LEGACY) */
 
 /* #include <asm/tcm.h> */
 #include <asm/cacheflush.h>
-#include <asm/system.h>
+/*#include <asm/system.h>*/
 /* #include <linux/mm.h> */
 #include <linux/pagemap.h>
-
-#ifndef FPGA_VERSION
-#include <mach/mt_boot.h>
+#ifdef JPEG_PM_DOMAIN_ENABLE
+#include "mt_smi.h"
 #endif
 
-
-
-
-
-/* ========================================================== */
+#ifndef JPEG_DEV
+#include <linux/proc_fs.h>
+#endif
+#ifdef CONFIG_OF
+/* device tree */
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/io.h>
+#include <linux/of_device.h>
+#endif
 
 #include "jpeg_drv.h"
 #include "jpeg_drv_6589_common.h"
 
-/* #include <asm/tcm.h> */
-
-
 /* #define USE_SYSRAM */
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
-
 #define JPEG_DEVNAME "mtk_jpeg"
 
 #define TABLE_SIZE 4096
@@ -112,32 +99,28 @@
 /* -------------------------------------------------------------------------- */
 /*  */
 /* -------------------------------------------------------------------------- */
+static struct JpegDeviceStruct gJpegqDev;
+#ifdef JPEG_PM_DOMAIN_ENABLE
+/*static struct platform_device *pjpg_dev = 0;*/
+static struct JpegClk gJpegClk;
+#endif
 
 /* device and driver */
 static dev_t jpeg_devno;
 static struct cdev *jpeg_cdev;
 static struct class *jpeg_class;
 
+#ifdef JPEG_DEC_DRIVER
 /* decoder */
 static wait_queue_head_t dec_wait_queue;
 static spinlock_t jpeg_dec_lock;
 static int dec_status;
-
-/* static unsigned int table_buffer_pa; */
-/* static unsigned char *table_buffer_va; */
-/* static unsigned char *dec_src_va; */
-/* static unsigned int dec_src_pa; */
-/* static unsigned int dec_src_size; */
+#endif
 
 /* encoder */
 static wait_queue_head_t enc_wait_queue;
 static spinlock_t jpeg_enc_lock;
 static int enc_status;
-/* static unsigned char *dstBufferVA; */
-/* static unsigned char *dstUserVA; */
-/* static unsigned int dstBufferPA; */
-/* static unsigned int dstBufferSize; */
-
 /* -------------------------------------------------------------------------- */
 /* JPEG Common Function */
 /* -------------------------------------------------------------------------- */
@@ -174,13 +157,8 @@ static irqreturn_t jpeg_drv_enc_isr(int irq, void *dev_id)
 {
 	/* JPEG_MSG("JPEG Encoder Interrupt\n"); */
 
-	if (irq == MT6582_JPEG_ENC_IRQ_ID) {
+	if (irq == gJpegqDev.encIrqId) {
 		/* mt65xx_irq_mask(MT6575_JPEG_CODEC_IRQ_ID); */
-
-#if 0
-		if (jpeg_isr_dec_lisr() == 0)
-			wake_up_interruptible(&dec_wait_queue);
-#endif
 		if (jpeg_isr_enc_lisr() == 0)
 			wake_up_interruptible(&enc_wait_queue);
 		/* mt65xx_irq_unmask(MT6575_JPEG_CODEC_IRQ_ID); */
@@ -195,7 +173,7 @@ static irqreturn_t jpeg_drv_dec_isr(int irq, void *dev_id)
 	/* JPEG_MSG("JPEG Decoder Interrupt\n"); */
 	/* jpeg_reg_dump(); */
 
-	if (irq == MT6589_JPEG_DEC_IRQ_ID) {
+	if (irq == gJpegqDev.decIrqId /*MT6589_JPEG_DEC_IRQ_ID*/) {
 		/* mt65xx_irq_mask(MT6575_JPEG_CODEC_IRQ_ID); */
 
 
@@ -210,7 +188,7 @@ static irqreturn_t jpeg_drv_dec_isr(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-#endif
+
 
 void jpeg_drv_dec_power_on(void)
 {
@@ -243,10 +221,15 @@ void jpeg_drv_dec_power_off(void)
 	NOT_REFERENCED(ret);
 #endif
 }
-
+#endif
 
 void jpeg_drv_enc_power_on(void)
 {
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	mtk_smi_larb_clock_on(3, true);
+	if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
+		JPEG_ERR("enable jpgEnc clk fail!");
+#else
 #ifndef FPGA_VERSION
 	/* REG_JPEG_MM_REG_MASK  = 0; */
 	enable_clock(MT_CG_IMAGE_LARB2_SMI, "JPEG");
@@ -260,10 +243,15 @@ void jpeg_drv_enc_power_on(void)
 	ret = enable_clock(MT65XX_PDN_MM_JPEG_ENC, "JPEG");
 	NOT_REFERENCED(ret);
 #endif
+#endif
 }
 
 void jpeg_drv_enc_power_off(void)
 {
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
+	mtk_smi_larb_clock_off(3, true);
+#else
 #ifndef FPGA_VERSION
 	disable_clock(MT_CG_IMAGE_LARB2_SMI, "JPEG");
 	disable_clock(MT_CG_IMAGE_VENC_JPENC, "JPEG");
@@ -276,12 +264,13 @@ void jpeg_drv_enc_power_off(void)
 	ret = disable_clock(MT65XX_PDN_MM_JPEG_ENC, "JPEG");
 	NOT_REFERENCED(ret);
 #endif
+#endif
 }
 
 #endif
 
 
-
+#ifdef JPEG_DEC_DRIVER
 static int jpeg_drv_dec_init(void)
 {
 
@@ -323,7 +312,7 @@ static void jpeg_drv_dec_deinit(void)
 	}
 
 }
-
+#endif
 
 static int jpeg_drv_enc_init(void)
 {
@@ -359,7 +348,7 @@ static void jpeg_drv_enc_deinit(void)
 	}
 }
 
-
+#ifdef JPEG_DEC_DRIVER
 /* -------------------------------------------------------------------------- */
 /* JPEG REG DUMP FUNCTION */
 /* -------------------------------------------------------------------------- */
@@ -379,8 +368,6 @@ void jpeg_reg_dump(void)
 /* -------------------------------------------------------------------------- */
 /* JPEG DECODER IOCTRL FUNCTION */
 /* -------------------------------------------------------------------------- */
-
-
 
 static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file)
 {
@@ -589,7 +576,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	}
 	return 0;
 }
-
+#endif
 
 
 
@@ -886,7 +873,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 static long jpeg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	switch (cmd) {
-
+#ifdef JPEG_DEC_DRIVER
 	case JPEG_DEC_IOCTL_INIT:
 	case JPEG_DEC_IOCTL_CONFIG:
 	case JPEG_DEC_IOCTL_START:
@@ -898,7 +885,7 @@ static long jpeg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 	case JPEG_DEC_IOCTL_DUMP_REG:
 
 		return jpeg_dec_ioctl(cmd, arg, file);
-
+#endif
 
 	case JPEG_ENC_IOCTL_INIT:
 	case JPEG_ENC_IOCTL_CONFIG:
@@ -976,7 +963,8 @@ static int jpeg_flush(struct file *a_pstFile, fl_owner_t a_id)
 }
 
 /* Kernel interface */
-static struct const file_operations jpeg_fops = {
+static struct file_operations const jpeg_fops = {
+/*static struct const file_operations jpeg_fops = {*/
 	.owner = THIS_MODULE,
 	/* .ioctl                = jpeg_ioctl, */
 	.unlocked_ioctl = jpeg_unlocked_ioctl,
@@ -986,12 +974,46 @@ static struct const file_operations jpeg_fops = {
 	.read = jpeg_read,
 };
 
+
+const long jpeg_dev_get_encoder_base_VA(void)
+{
+	return gJpegqDev.encRegBaseVA;
+}
+
+#ifdef JPEG_DEC_DRIVER
+const long jpeg_dev_get_decoder_base_VA(void)
+{
+	return gJpegqDev.decRegBaseVA;
+}
+#endif
+
 static int jpeg_probe(struct platform_device *pdev)
 {
 	struct class_device;
 
 	int ret;
 	struct class_device *class_dev = NULL;
+	/*struct JpegDeviceStruct *jpegDev;*/
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgenc");
+	gJpegqDev.encRegBaseVA = (unsigned long)of_iomap(node, 0);
+	gJpegqDev.encIrqId = irq_of_parse_and_map(node, 0);
+
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	/*pjenc_dev = pdev;*/
+	gJpegClk.clk_venc_jpgEnc = of_clk_get_by_name(node, "venc-jpgenc");
+	if (IS_ERR(gJpegClk.clk_venc_jpgEnc))
+		JPEG_ERR("get jpgEnc clk error!");
+
+#ifdef JPEG_DEC_DRIVER
+	gJpegClk.clk_venc_jpgDec = of_clk_get_by_name(node, "venc-jpgdec");
+	if (IS_ERR(gJpegClk.clk_venc_jpgDec))
+		JPEG_ERR("get jpgDec clk error!");
+#endif
+
+#endif
+	/*gJpegqDev = *jpegDev;*/
 
 	JPEG_MSG("-------------jpeg driver probe-------\n");
 	ret = alloc_chrdev_region(&jpeg_devno, 0, 1, JPEG_DEVNAME);
@@ -1010,16 +1032,19 @@ static int jpeg_probe(struct platform_device *pdev)
 	jpeg_class = class_create(THIS_MODULE, JPEG_DEVNAME);
 	class_dev =
 	    (struct class_device *)device_create(jpeg_class, NULL, jpeg_devno, NULL, JPEG_DEVNAME);
-
+#ifdef JPEG_DEC_DRIVER
 	spin_lock_init(&jpeg_dec_lock);
+#endif
 	spin_lock_init(&jpeg_enc_lock);
 
 	/* initial codec, register codec ISR */
+#ifdef JPEG_DEC_DRIVER
 	dec_status = 0;
-	enc_status = 0;
-	_jpeg_dec_int_status = 0;
-	_jpeg_enc_int_status = 0;
 	_jpeg_dec_mode = 0;
+	_jpeg_dec_int_status = 0;
+#endif
+	enc_status = 0;
+	_jpeg_enc_int_status = 0;
 
 #ifndef FPGA_VERSION
 
@@ -1032,17 +1057,19 @@ static int jpeg_probe(struct platform_device *pdev)
 	/* mt6575_irq_set_polarity(MT6575_JPEG_CODEC_IRQ_ID, MT65xx_POLARITY_LOW); */
 	/* mt6575_irq_unmask(MT6575_JPEG_CODEC_IRQ_ID); */
 	JPEG_MSG("request JPEG Encoder IRQ\n");
-	enable_irq(MT6582_JPEG_ENC_IRQ_ID);
+	/*enable_irq(MT6582_JPEG_ENC_IRQ_ID);*/
+	enable_irq(gJpegqDev.encIrqId);
 	if (request_irq
-	    (MT6582_JPEG_ENC_IRQ_ID, jpeg_drv_enc_isr, IRQF_TRIGGER_LOW, "jpeg_enc_driver", NULL)) {
+	    (gJpegqDev.encIrqId, jpeg_drv_enc_isr, IRQF_TRIGGER_LOW, "jpeg_enc_driver", NULL)) {
 		JPEG_ERR("JPEG ENC Driver request irq failed\n");
 	}
 #ifdef JPEG_DEC_DRIVER
-	enable_irq(MT6589_JPEG_DEC_IRQ_ID);
+	/*enable_irq(MT6589_JPEG_DEC_IRQ_ID);*/
+	enable_irq(gJpegqDev.decIrqId);
 	JPEG_MSG("request JPEG Decoder IRQ\n");
 	/* if(request_irq(MT6589_JPEG_DEC_IRQ_ID, jpeg_drv_dec_isr, IRQF_TRIGGER_LOW, "jpeg_dec_driver" , NULL)) */
 	if (request_irq
-	    (MT6589_JPEG_DEC_IRQ_ID, jpeg_drv_dec_isr, IRQF_TRIGGER_FALLING, "jpeg_dec_driver",
+	    (gJpegqDev.decIrqId, jpeg_drv_dec_isr, IRQF_TRIGGER_FALLING, "jpeg_dec_driver",
 	     NULL)) {
 		JPEG_ERR("JPEG DEC Driver request irq failed\n");
 	}
@@ -1050,8 +1077,9 @@ static int jpeg_probe(struct platform_device *pdev)
 
 #endif
 	JPEG_MSG("JPEG Probe Done\n");
-
+#ifdef JPEG_DEV
 	NOT_REFERENCED(class_dev);
+#endif
 	return 0;
 }
 
@@ -1060,9 +1088,9 @@ static int jpeg_remove(struct platform_device *pdev)
 	JPEG_MSG("JPEG Codec remove\n");
 	/* unregister_chrdev(JPEGDEC_MAJOR, JPEGDEC_DEVNAME); */
 #ifndef FPGA_VERSION
-	free_irq(MT6582_JPEG_ENC_IRQ_ID, NULL);
+	free_irq(gJpegqDev.encIrqId, NULL);
 #ifdef JPEG_DEC_DRIVER
-	free_irq(MT6589_JPEG_DEC_IRQ_ID, NULL);
+	free_irq(gJpegqDev.decIrqId, NULL);
 #endif
 
 #endif
