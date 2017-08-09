@@ -57,6 +57,7 @@ extern int is_mmdvfs_freq_hopping_disabled(void);
 extern int is_mmdvfs_freq_mux_disabled(void);
 extern int is_force_max_mmsys_clk(void);
 extern int is_force_camera_hpm(void);
+extern int is_mmdvfs_disabled(void);
 
 
 #ifdef MMDVFS_STANDALONE
@@ -82,4 +83,20 @@ extern int is_force_camera_hpm(void);
 extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int session, int blocking);
 #endif
 
-#endif				/* __MMDVFS_MGR_H__ */
+
+enum {
+	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
+	MMDVFS_SCEN_VP_HIGH_RESOLUTION , MMDVFS_SCEN_COUNT
+};
+
+/* Backward compatible */
+#define SMI_BWC_SCEN_120HZ MMDVFS_SCEN_DISP
+
+
+#ifndef CONFIG_MTK_SMI_EXT
+#define mmdvfs_set_step(scenario, step)
+#else
+int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
+#endif /* CONFIG_MTK_SMI_EXT */
+
+#endif /* __MMDVFS_MGR_H__ */

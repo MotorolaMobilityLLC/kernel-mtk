@@ -45,13 +45,16 @@
 
 #include <mt_smi.h>
 
+#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SMI_J) ||  defined(SMI_EV)
+#define MMDVFS_HOOK
+#endif
 
 #include "smi_reg.h"
 #include "smi_common.h"
 #include "smi_debug.h"
 #include "smi_info_util.h"
 #include "smi_configuration.h"
-#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SMI_J)
+#if defined(MMDVFS_HOOK)
 #include "mmdvfs_mgr.h"
 #endif
 #undef pr_fmt
@@ -120,7 +123,6 @@ unsigned long smi_reg_base_barb6 = 0;
 
 
 char *smi_get_region_name(unsigned int region_indx);
-
 
 static struct smi_device *smi_dev;
 
@@ -295,12 +297,17 @@ static unsigned int wifi_disp_transaction;
 static bool fglarbcallback;
 #endif
 /* tuning mode, 1 for register ioctl */
-static unsigned int smi_tuning_mode;
+static unsigned int enable_ioctl;
 static unsigned int disable_freq_hopping = 1;
 static unsigned int disable_freq_mux = 1;
 static unsigned int force_max_mmsys_clk;
 static unsigned int force_camera_hpm;
+static unsigned int bus_optimization;
+static unsigned int enable_bw_optimization;
 static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
+static unsigned int is_dcm_enable;
+static unsigned int disable_mmdvfs;
+
 
 static unsigned int *pLarbRegBackUp[SMI_LARB_NR];
 static int g_bInited;
@@ -332,6 +339,7 @@ char *smi_port_name[][21] = {
 
 
 static unsigned long get_register_base(int i);
+static void smi_driver_setting(void);
 
 
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
@@ -388,6 +396,8 @@ static void smi_prepare_clk(struct clk *smi_clk, char *name)
 		ret = clk_prepare(smi_clk);
 		if (ret)
 			SMIMSG("clk_prepare return error %d, %s\n", ret, name);
+		else
+			SMIDBG(1, "clk:%s prepare done.\n", name);
 	} else {
 		SMIMSG("clk_prepare error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -401,6 +411,8 @@ static void smi_enable_clk(struct clk *smi_clk, char *name)
 		ret = clk_enable(smi_clk);
 		if (ret)
 			SMIMSG("clk_enable return error %d, %s\n", ret, name);
+		else
+			SMIDBG(1, "clk:%s enable done.\n", name);
 	} else {
 		SMIMSG("clk_enable error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -787,6 +799,29 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 	return 0;
 }
 
+static void smi_enable_dcm(void)
+{
+	if (is_dcm_enable)
+		return;
+#if defined(SMI_J)
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
+	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+#elif defined(SMI_EV)
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
+	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB4_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB5_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+	M4U_WriteReg32(LARB6_BASE, 0x14, (0x7 << 8) + (0xf << 4));
+#endif
+	is_dcm_enable = 1;
+}
+
 static void backup_smi_common(void)
 {
 	int i;
@@ -978,6 +1013,11 @@ void on_larb_power_off(struct larb_monitor *h, int larb_idx)
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 void on_larb_power_on_with_ccf(int larb_idx)
 {
+	if (!bus_optimization) {
+		SMIDBG(1, "larb%d will not restore\n", larb_idx);
+		return;
+	}
+
 	/* MTCMOS has already enable, only enable clk here to set register value */
 	if (larb_idx < 0 || larb_idx >= SMI_LARB_NR) {
 		SMIMSG("incorrect larb:%d/\n", larb_idx);
@@ -986,12 +1026,18 @@ void on_larb_power_on_with_ccf(int larb_idx)
 	larb_clock_prepare(larb_idx, 0);
 	larb_clock_enable(larb_idx, 0);
 	larb_reg_restore(larb_idx);
+	is_dcm_enable = 0;
+	smi_enable_dcm();
 	larb_clock_disable(larb_idx, 0);
 	larb_clock_unprepare(larb_idx, 0);
 }
 
 void on_larb_power_off_with_ccf(int larb_idx)
 {
+	if (!bus_optimization) {
+		SMIDBG(1, "larb%d will not backup\n", larb_idx);
+		return;
+	}
 	if (larb_idx < 0 || larb_idx >= SMI_LARB_NR) {
 		SMIMSG("incorrect larb:%d/\n", larb_idx);
 		return;
@@ -1006,25 +1052,7 @@ void on_larb_power_off_with_ccf(int larb_idx)
 #endif				/* defined(SMI_INTERNAL_CCF_SUPPORT) */
 
 
-static void DCM_enable(void)
-{
-#if defined(SMI_J)
-	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
-	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-#elif defined(SMI_EV)
-	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
-	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB4_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB5_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB6_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-#endif
-}
+
 
 /* Fake mode check, e.g. WFD */
 static int fake_mode_handling(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
@@ -1115,6 +1143,7 @@ static void smiclk_subsys_after_on(enum subsys_id sys)
 	do {
 		if (i4larbid & 1) {
 			if (i != 0) {
+				SMIDBG(1, "ready to call restore with larb%d.\n", i);
 				on_larb_power_on_with_ccf(i);
 				#if defined(SMI_D1)
 				/* inform m4u to restore register value */
@@ -1140,11 +1169,11 @@ static void smiclk_subsys_before_off(enum subsys_id sys)
 	do {
 		if (i4larbid & 1) {
 			if (i != 0) {
-				SMIMSG("ready to call backup with larb%d.\n", i);
+				SMIDBG(1, "ready to call backup with larb%d.\n", i);
 				on_larb_power_off_with_ccf(i);
 #if defined(SMI_D1)
-		/* inform m4u to backup register value */
-		m4u_larb_restore((int)i4larbid);
+			/* inform m4u to backup register value */
+			m4u_larb_restore((int)i4larbid);
 #endif
 			}
 		}
@@ -1157,49 +1186,105 @@ struct pg_callbacks smi_clk_subsys_handle = {
 	.before_off = smiclk_subsys_before_off,
 	.after_on = smiclk_subsys_after_on
 };
-#endif
+
+#endif /* SMI_INTERNAL_CCF_SUPPORT */
+
+/* prepare larb clk because prepare cannot in spinlock */
+void smi_bus_optimization_prepare(int optimization_larbs)
+{
+	int i = 0;
+
+	for (i = 0; i < SMI_LARB_NR; i++) {
+		int larb_mask = 1 << i;
+
+		if (optimization_larbs & larb_mask) {
+			SMIDBG(1, "prepare clock%d\n", i);
+			larb_clock_prepare(i, 1);
+		}
+	}
+}
+
+/* unprepare larb clk because prepare cannot in spinlock */
+void smi_bus_optimization_unprepare(int optimization_larbs)
+{
+	int i = 0;
+
+	for (i = 0; i < SMI_LARB_NR; i++) {
+		int larb_mask = 1 << i;
+
+		if (optimization_larbs & larb_mask) {
+			SMIDBG(1, "unprepare clock%d\n", i);
+			larb_clock_unprepare(i, 1);
+		}
+	}
+}
+
+
+void smi_bus_optimization(int optimization_larbs, int smi_profile)
+{
+	int i = 0;
+
+	for (i = 0; i < SMI_LARB_NR; i++) {
+		int larb_mask = 1 << i;
+
+		if (optimization_larbs & larb_mask) {
+			SMIDBG(1, "enable clock%d", i);
+			larb_clock_enable(i, 1);
+			smi_enable_dcm();
+			smi_bus_regs_setting(smi_profile,
+				smi_profile_config[smi_profile].setting);
+			SMIDBG(1, "disable clock%d", i);
+			larb_clock_disable(i, 1);
+		}	else {
+			SMIMSG("Larb:%d optimization disabled\n", i);
+		}
+	}
+}
 
 static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 {
 	int i;
 	int result = 0;
 	unsigned int u4Concurrency = 0;
+	int bus_optimization_sync = bus_optimization;
 	MTK_SMI_BWC_SCEN eFinalScen;
 	static MTK_SMI_BWC_SCEN ePreviousFinalScen = SMI_BWC_SCEN_CNT;
-
-	if (smi_tuning_mode == 1) {
-		SMIMSG("Doesn't change profile in tunning mode");
-		return 0;
-	}
-
 
 	if ((SMI_BWC_SCEN_CNT <= p_conf->scenario) || (0 > p_conf->scenario)) {
 		SMIERR("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
 		return -1;
 	}
-#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SIM_J)
-	if (p_conf->b_on_off) {
-		/* set mmdvfs step according to certain scenarios */
-		mmdvfs_notify_scenario_enter(p_conf->scenario);
-	} else {
-		/* set mmdvfs step to default after the scenario exits */
-		mmdvfs_notify_scenario_exit(p_conf->scenario);
+
+#ifdef MMDVFS_HOOK
+	if (!disable_mmdvfs) {
+		if (p_conf->b_on_off) {
+			/* set mmdvfs step according to certain scenarios */
+			mmdvfs_notify_scenario_enter(p_conf->scenario);
+		} else {
+			/* set mmdvfs step to default after the scenario exits */
+			mmdvfs_notify_scenario_exit(p_conf->scenario);
+		}
 	}
 #endif
 
 	spin_lock(&g_SMIInfo.SMI_lock);
+
 	result = fake_mode_handling(p_conf, pu4LocalCnt);
+
+	if (enable_bw_optimization)
+		bus_optimization_sync = bus_optimization;
+	else
+		bus_optimization_sync = 0;
+
+
 	spin_unlock(&g_SMIInfo.SMI_lock);
 
 	/* Fake mode is not a real SMI profile, so we need to return here */
 	if (result == 1)
 		return 0;
 
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
-	/* prepare larb clk because prepare cannot in spinlock */
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_prepare(i, 1);
-#endif
+	smi_bus_optimization_prepare(bus_optimization_sync);
+
 	spin_lock(&g_SMIInfo.SMI_lock);
 
 	if (p_conf->b_on_off) {
@@ -1234,9 +1319,11 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		if (g_SMIInfo.pu4ConcurrencyTable[i])
 			u4Concurrency |= (1 << i);
 	}
-#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SMI_J)
+
+#ifdef MMDVFS_HOOK
 	/* notify mmdvfs concurrency */
-	mmdvfs_notify_scenario_concurrency(u4Concurrency);
+	if (!disable_mmdvfs)
+		mmdvfs_notify_scenario_concurrency(u4Concurrency);
 #endif
 
 	if ((1 << SMI_BWC_SCEN_MM_GPU) & u4Concurrency)
@@ -1263,80 +1350,16 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	} else {
 		SMIMSG("Scen equal%d,don't change\n", eFinalScen);
 		spin_unlock(&g_SMIInfo.SMI_lock);
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
-		/* unprepare larb clock */
-		for (i = 0; i < SMI_LARB_NR; i++)
-			larb_clock_unprepare(i, 1);
-#endif
 		return 0;
 	}
 
-	/* enable larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_enable(i, 1);
-
 	smi_profile = eFinalScen;
+	smi_bus_optimization(bus_optimization_sync, eFinalScen);
+	SMIMSG("[SMI_PROFILE]: %d\n", eFinalScen);
 
-	smi_bus_regs_setting(smi_profile,
-			smi_profile_config[smi_profile].setting);
-
-	/* Bandwidth Limiter */
-	switch (eFinalScen) {
-	case SMI_BWC_SCEN_VP:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VP");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VP;
-		break;
-
-	case SMI_BWC_SCEN_SWDEC_VP:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_SWDEC_VP");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VP;
-		break;
-
-	case SMI_BWC_SCEN_ICFP:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_ICFP");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VR;
-		break;
-	case SMI_BWC_SCEN_VR:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VR;
-		break;
-
-	case SMI_BWC_SCEN_VR_SLOW:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
-		break;
-
-	case SMI_BWC_SCEN_VENC:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_VENC");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
-		break;
-
-	case SMI_BWC_SCEN_NORMAL:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_NORMAL");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
-		break;
-
-	case SMI_BWC_SCEN_MM_GPU:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_MM_GPU");
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
-		break;
-
-	default:
-		SMIMSG("[SMI_PROFILE] : %s %d\n", "initSetting", eFinalScen);
-		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
-		break;
-	}
-
-	/* disable larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_disable(i, 1);
 
 	spin_unlock(&g_SMIInfo.SMI_lock);
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
-	/* unprepare larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_unprepare(i, 1);
-#endif
+	smi_bus_optimization_unprepare(bus_optimization_sync);
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
 
 	/* force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
@@ -1376,28 +1399,18 @@ int smi_common_init(void)
 	struct pg_callbacks *pold = 0;
 #endif
 
-	/* enable DCM */
-	DCM_enable();
 	SMIMSG("Enter smi_common_init\n");
+
+	if (!enable_bw_optimization) {
+		SMIMSG("SMI enable_bw_optimization off\n");
+		return 0;
+	}
+
 	for (i = 0; i < SMI_LARB_NR; i++) {
 		pLarbRegBackUp[i] = kmalloc(LARB_BACKUP_REG_SIZE, GFP_KERNEL | __GFP_ZERO);
 		if (pLarbRegBackUp[i] == NULL)
 			SMIERR("pLarbRegBackUp kmalloc fail %d\n", i);
 	}
-
-	/*
-	 * make sure all larb power is on before we register callback func.
-	 * then, when larb power is first off, default register value will be backed up.
-	 */
-
-	for (i = 0; i < SMI_LARB_NR; i++) {
-		larb_clock_prepare(i, 1);
-		larb_clock_enable(i, 1);
-	}
-
-	/* apply init setting after kernel boot */
-	SMIMSG("Enter smi_common_init\n");
-	smi_bus_regs_setting(SMI_BWC_SCEN_NORMAL, smi_profile_config[SMI_BWC_SCEN_NORMAL].setting);
 
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 	fglarbcallback = true;
@@ -1412,10 +1425,15 @@ int smi_common_init(void)
 	register_larb_monitor(&larb_monitor_handler);
 #endif				/* defined(SMI_INTERNAL_CCF_SUPPORT) */
 
-	for (i = 0; i < SMI_LARB_NR; i++) {
-		larb_clock_disable(i, 1);
-		larb_clock_unprepare(i, 1);
-	}
+	/*
+	 * make sure all larb power is on before we register callback func.
+	 * then, when larb power is first off, default register value will be backed up.
+	 */
+
+	/* apply init setting after kernel boot */
+	smi_bus_optimization_prepare(bus_optimization);
+	smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
+	smi_bus_optimization_unprepare(bus_optimization);
 
 	return 0;
 
@@ -1470,6 +1488,11 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 {
 	int ret = 0;
 
+	if (!enable_ioctl) {
+		SMIMSG("SMI IOCTL disabled: cmd code=%d\n", cmd);
+		return 0;
+	}
+
 	/* unsigned long * pu4Cnt = (unsigned long *)pFile->private_data; */
 
 	switch (cmd) {
@@ -1520,10 +1543,15 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 			smi_dumpCommon();
 		}
 		break;
-#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SMI_J)
+
+#ifdef MMDVFS_HOOK
 	case MTK_IOC_MMDVFS_CMD:
 		{
+
 			MTK_MMDVFS_CMD mmdvfs_cmd;
+
+			if (disable_mmdvfs)
+				return -EFAULT;
 
 			if (copy_from_user(&mmdvfs_cmd, (void *)param, sizeof(MTK_MMDVFS_CMD)))
 				return -EFAULT;
@@ -1681,60 +1709,65 @@ static int smi_probe(struct platform_device *pdev)
 	/* Keep the device structure */
 	smi_dev->dev = &pdev->dev;
 
-	/* Map registers */
-	for (i = 0; i < SMI_REG_REGION_MAX; i++) {
-		SMIMSG("Save region: %d\n", i);
-		smi_dev->regs[i] = (void *)of_iomap(pdev->dev.of_node, i);
+	if (enable_bw_optimization) {
 
-		if (!smi_dev->regs[i]) {
-			SMIERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
-			return -ENOMEM;
+		/* Map registers */
+		for (i = 0; i < SMI_REG_REGION_MAX; i++) {
+			SMIMSG("Save region: %d\n", i);
+			smi_dev->regs[i] = (void *)of_iomap(pdev->dev.of_node, i);
+
+			if (!smi_dev->regs[i]) {
+				SMIERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
+				return -ENOMEM;
+			}
+			/* Record the register base in global variable */
+			gSMIBaseAddrs[i] = (unsigned long)(smi_dev->regs[i]);
+			SMIMSG("DT, i=%d, region=%s, map_addr=0x%p, reg_pa=0x%lx\n", i,
+			       smi_get_region_name(i), smi_dev->regs[i], get_register_base(i));
+
 		}
-		/* Record the register base in global variable */
-		gSMIBaseAddrs[i] = (unsigned long)(smi_dev->regs[i]);
-		SMIMSG("DT, i=%d, region=%s, map_addr=0x%p, reg_pa=0x%lx\n", i,
-		       smi_get_region_name(i), smi_dev->regs[i], get_register_base(i));
 
+	#if defined(SMI_INTERNAL_CCF_SUPPORT)
+	#if defined(SMI_D1)
+		smi_dev->smi_common_clk = get_smi_clk("smi-common");
+		smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
+		smi_dev->smi_larb1_clk = get_smi_clk("vdec1-larb");
+		smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
+		smi_dev->smi_larb3_clk = get_smi_clk("venc-venc");
+	#elif defined(SMI_J)
+		smi_dev->smi_common_clk = get_smi_clk("smi-common");
+		smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
+		smi_dev->smi_larb1_clk = get_smi_clk("vdec1-larb");
+		smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
+		smi_dev->smi_larb3_clk = get_smi_clk("venc-venc");
+	#elif defined(SMI_EV)
+		smi_dev->smi_common_clk = get_smi_clk("smi-common");
+		smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
+		smi_dev->smi_larb1_clk = get_smi_clk("vdec-larb1");
+		smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
+		smi_dev->smi_larb3_clk = get_smi_clk("venc-larb3");
+		smi_dev->smi_larb4_mjc_clk = get_smi_clk("mjc-larb4");
+		smi_dev->smi_larb4_mm_clk = get_smi_clk("mm-larb4");
+		smi_dev->smi_larb4_mjc_smi_larb_clk = get_smi_clk("mjc_smi_larb");
+		smi_dev->smi_larb4_mjc_top_clk_0_clk = get_smi_clk("mjc_top_clk_0");
+		smi_dev->smi_larb4_mjc_top_clk_1_clk = get_smi_clk("mjc_top_clk_1");
+		smi_dev->smi_larb4_mjc_top_clk_2_clk = get_smi_clk("mjc_top_clk_2");
+		smi_dev->smi_larb4_mjc_larb4_asif_clk = get_smi_clk("mjc_larb4_asif");
+		smi_dev->smi_larb5_clk = get_smi_clk("smi-larb5");
+		smi_dev->smi_larb6_clk = get_smi_clk("img2-larb6");
+	#endif
+		/* MTCMOS */
+		smi_dev->larb0_mtcmos = get_smi_clk("mtcmos-dis");
+		smi_dev->larb1_mtcmos = get_smi_clk("mtcmos-vde");
+		smi_dev->larb2_mtcmos = get_smi_clk("mtcmos-isp");
+		smi_dev->larb3_mtcmos = get_smi_clk("mtcmos-ven");
+	#if defined(SMI_EV)
+		smi_dev->larb4_mtcmos = get_smi_clk("mtcmos-mjc");
+	#endif
+	#endif
+	} else {
+		SMIDBG(1, "enable_bw_optimization is disabled\n");
 	}
-
-#if defined(SMI_INTERNAL_CCF_SUPPORT)
-#if defined(SMI_D1)
-	smi_dev->smi_common_clk = get_smi_clk("smi-common");
-	smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
-	smi_dev->smi_larb1_clk = get_smi_clk("vdec1-larb");
-	smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
-	smi_dev->smi_larb3_clk = get_smi_clk("venc-venc");
-#elif defined(SMI_J)
-	smi_dev->smi_common_clk = get_smi_clk("smi-common");
-	smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
-	smi_dev->smi_larb1_clk = get_smi_clk("vdec1-larb");
-	smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
-	smi_dev->smi_larb3_clk = get_smi_clk("venc-venc");
-#elif defined(SMI_EV)
-	smi_dev->smi_common_clk = get_smi_clk("smi-common");
-	smi_dev->smi_larb0_clk = get_smi_clk("smi-larb0");
-	smi_dev->smi_larb1_clk = get_smi_clk("vdec-larb1");
-	smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
-	smi_dev->smi_larb3_clk = get_smi_clk("venc-larb3");
-	smi_dev->smi_larb4_mjc_clk = get_smi_clk("mjc-larb4");
-	smi_dev->smi_larb4_mm_clk = get_smi_clk("mm-larb4");
-	smi_dev->smi_larb4_mjc_smi_larb_clk = get_smi_clk("mjc_smi_larb");
-	smi_dev->smi_larb4_mjc_top_clk_0_clk = get_smi_clk("mjc_top_clk_0");
-	smi_dev->smi_larb4_mjc_top_clk_1_clk = get_smi_clk("mjc_top_clk_1");
-	smi_dev->smi_larb4_mjc_top_clk_2_clk = get_smi_clk("mjc_top_clk_2");
-	smi_dev->smi_larb4_mjc_larb4_asif_clk = get_smi_clk("mjc_larb4_asif");
-	smi_dev->smi_larb5_clk = get_smi_clk("smi-larb5");
-	smi_dev->smi_larb6_clk = get_smi_clk("img2-larb6");
-#endif
-	/* MTCMOS */
-	smi_dev->larb0_mtcmos = get_smi_clk("mtcmos-dis");
-	smi_dev->larb1_mtcmos = get_smi_clk("mtcmos-vde");
-	smi_dev->larb2_mtcmos = get_smi_clk("mtcmos-isp");
-	smi_dev->larb3_mtcmos = get_smi_clk("mtcmos-ven");
-#if defined(SMI_EV)
-	smi_dev->larb4_mtcmos = get_smi_clk("mtcmos-mjc");
-#endif
-#endif
 
 	SMIMSG("Execute smi_register\n");
 	if (smi_register()) {
@@ -1749,7 +1782,7 @@ static int smi_probe(struct platform_device *pdev)
 		SMIERR("Unable to create class, err = %d", ret);
 		return ret;
 	}
-	SMIMSG("Create davice\n");
+	SMIMSG("Create device\n");
 	smiDevice = device_create(pSmiClass, NULL, smiDevNo, NULL, "MTK_SMI");
 	smiDeviceUevent = smiDevice;
 
@@ -1887,9 +1920,9 @@ static struct platform_driver smiDrv = {
 static int __init smi_init(void)
 {
 	SMIMSG("smi_init enter\n");
+	smi_driver_setting();
 	spin_lock_init(&g_SMIInfo.SMI_lock);
-#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) || defined(SMI_J)
-	/* MMDVFS init */
+#ifdef MMDVFS_HOOK
 	mmdvfs_init(&g_smi_bwc_mm_info);
 #endif
 	memset(g_SMIInfo.pu4ConcurrencyTable, 0, SMI_BWC_SCEN_CNT * sizeof(unsigned int));
@@ -2167,6 +2200,12 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 
 #endif
 
+int is_mmdvfs_disabled(void)
+{
+	return disable_mmdvfs;
+}
+
+
 int is_mmdvfs_freq_hopping_disabled(void)
 {
 	return disable_freq_hopping;
@@ -2193,16 +2232,46 @@ subsys_initcall(smi_init);
 module_init(smi_init);
 #endif
 
+static void smi_driver_setting(void)
+{
+#ifdef SMI_PARAM_BW_OPTIMIZATION
+	enable_bw_optimization = SMI_PARAM_BW_OPTIMIZATION;
+#endif
+
+#ifdef SMI_PARAM_BUS_OPTIMIZATION
+	bus_optimization = SMI_PARAM_BUS_OPTIMIZATION;
+#endif
+
+#ifdef SMI_PARAM_ENABLE_IOCTL
+	enable_ioctl = SMI_PARAM_ENABLE_IOCTL;
+#endif
+
+#ifdef SMI_PARAM_DISABLE_FREQ_HOPPING
+	disable_freq_hopping = SMI_PARAM_DISABLE_FREQ_HOPPING;
+#endif
+
+#ifdef SMI_PARAM_DISABLE_FREQ_MUX
+	disable_freq_mux = SMI_PARAM_DISABLE_FREQ_MUX;
+#endif
+
+#ifdef SMI_PARAM_DISABLE_MMDVFS
+	disable_mmdvfs = SMI_PARAM_DISABLE_MMDVFS;
+#endif
+
+}
+
+module_param_named(disable_mmdvfs, disable_mmdvfs, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_hopping, disable_freq_hopping, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_mux, disable_freq_mux, uint, S_IRUGO | S_IWUSR);
 module_param_named(force_max_mmsys_clk, force_max_mmsys_clk, uint, S_IRUGO | S_IWUSR);
 module_param_named(force_camera_hpm, force_camera_hpm, uint, S_IRUGO | S_IWUSR);
+module_param_named(smi_debug_level, smi_debug_level, uint, S_IRUGO | S_IWUSR);
+module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO | S_IWUSR);
+module_param_named(bus_optimization, bus_optimization, uint, S_IRUGO | S_IWUSR);
+module_param_named(enable_ioctl, enable_ioctl, uint, S_IRUGO | S_IWUSR);
+module_param_named(enable_bw_optimization, enable_bw_optimization, uint, S_IRUGO | S_IWUSR);
 
 module_exit(smi_exit);
-
-module_param_named(debug_level, smi_debug_level, uint, S_IRUGO | S_IWUSR);
-module_param_named(tuning_mode, smi_tuning_mode, uint, S_IRUGO | S_IWUSR);
-module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO | S_IWUSR);
 
 MODULE_DESCRIPTION("MTK SMI driver");
 MODULE_AUTHOR("Kendrick Hsu<kendrick.hsu@mediatek.com>");

@@ -41,7 +41,7 @@ endif
 ifeq ($(CONFIG_ARCH_MT6797),y)
 ccflags-y += -DSMI_EV
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
-#obj-y += mmdvfs_mgr_v2.o
+obj-y += mmdvfs_mgr_v2.o
 endif
 
 else

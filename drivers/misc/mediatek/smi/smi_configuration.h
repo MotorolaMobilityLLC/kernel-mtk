@@ -3,10 +3,28 @@
 
 #include "smi_reg.h"
 #include "mt_smi.h"
-/* ***********debug parameters*********** */
 
-#define SMI_COMMON_DEBUG_OFFSET_NUM 16
-#define SMI_LARB_DEFAULT_DEBUG_OFFSET_NUM 69
+/* SMI common configuration */
+#if defined(SMI_D1) || defined(SMI_D3) || defined(SMI_J)
+	#define SMI_PARAM_BW_OPTIMIZATION (1)
+	#define SMI_PARAM_BUS_OPTIMIZATION (0xFF)
+	#define SMI_PARAM_ENABLE_IOCTL (1)
+	#define SMI_PARAM_DISABLE_FREQ_HOPPING (0)
+	#define SMI_PARAM_DISABLE_FREQ_MUX (1)
+	#define SMI_PARAM_DISABLE_MMDVFS (0)
+#elif defined(SMI_EV)
+	#define SMI_PARAM_BW_OPTIMIZATION (0)
+	#define SMI_PARAM_BUS_OPTIMIZATION (0x0)
+	#define SMI_PARAM_ENABLE_IOCTL (0)
+	#define SMI_PARAM_DISABLE_FREQ_HOPPING (1)
+	#define SMI_PARAM_DISABLE_FREQ_MUX (1)
+	#define SMI_PARAM_DISABLE_MMDVFS (1)
+#endif
+/* ***********debug parameters************/
+
+
+#define SMI_COMMON_DEBUG_OFFSET_NUM 17
+#define SMI_LARB_DEFAULT_DEBUG_OFFSET_NUM 70
 
 
 #if defined(SMI_D1) || defined(SMI_D3) || defined(SMI_J)
