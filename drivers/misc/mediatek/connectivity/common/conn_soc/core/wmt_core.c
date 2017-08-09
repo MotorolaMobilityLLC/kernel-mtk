@@ -792,7 +792,7 @@ static INT32 wmt_core_hw_check(VOID)
 		WMT_ERR_FUNC("get hwcode (chip id) fail (%d)\n", iret);
 		return -2;
 	}
-	WMT_WARN_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
+	WMT_DBG_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
 
 	/* TODO:[ChangeFeature][George]: use a better way to select a correct ops table based on chip id */
 	switch (chipid) {

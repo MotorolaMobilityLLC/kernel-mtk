@@ -310,7 +310,7 @@ static void wmt_pwr_on_off_handler(struct work_struct *work)
 		if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK))
 			WMT_WARN_FUNC("WMT turn off LPBK fail\n");
 		else
-			WMT_INFO_FUNC("WMT turn off LPBK suceed\n");
+			WMT_DBG_FUNC("WMT turn off LPBK suceed\n");
 
 	}
 
@@ -2110,7 +2110,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case WMT_IOCTL_SET_PATCH_NUM:{
 			pAtchNum = arg;
-			WMT_WARN_FUNC(" get patch num from launcher = %d\n", pAtchNum);
+			WMT_DBG_FUNC(" get patch num from launcher = %d\n", pAtchNum);
 			wmt_lib_set_patch_num(pAtchNum);
 			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
 			if (!pPatchInfo) {
