@@ -9234,13 +9234,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		sdr_clr_bits(SDC_CFG, SDC_CFG_INSWKUP);
 	}
 	/*config tune at workqueue*/
-	if (!wq_tune) {
-		wq_tune = create_workqueue("msdc-tune");
-		if (!wq_tune) {
-			ret = 1;
-			goto free_irq;
-		}
-	}
 	INIT_WORK(&host->work_tune, msdc_async_tune);
 	host->mrq_tune = NULL;
 
@@ -9300,11 +9293,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	tasklet_kill(&host->card_tasklet);
 
 	mmc_free_host(mmc);
-	/* FIXME: need fix remvoed issue by multi host*/
-#if 0
-	if (wq_tune)
-		destroy_workqueue(wq_tune);
-#endif
+
 out:
 	return ret;
 }
@@ -9349,11 +9338,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		release_mem_region(mem->start, mem->end - mem->start + 1);
 
 	mmc_free_host(host->mmc);
-	/* FIXME: need fix remvoed issue by multi host*/
-#if 0
-	if (wq_tune)
-		destroy_workqueue(wq_tune);
-#endif
+
 	return 0;
 }
 
@@ -9488,12 +9473,24 @@ static int __init mt_msdc_init(void)
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif
+	/*config tune at workqueue*/
+	wq_tune = create_workqueue("msdc-tune");
+	if (!wq_tune) {
+		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
+		BUG();
+	}
+
 	return 0;
 }
 
 static void __exit mt_msdc_exit(void)
 {
 	platform_driver_unregister(&mt_msdc_driver);
+
+	if (wq_tune) {
+		destroy_workqueue(wq_tune);
+		wq_tune = NULL;
+	}
 
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_MSDC);
