@@ -97,8 +97,7 @@ int get_dram_type(void)
 {
 	unsigned int value;
 
-	value = 0xFFFF;
-	/*wait for dramc ready unsigned int value = ucDram_Register_Read(DRAMC_ACTIM1); */
+	value = ucDram_Register_Read(DRAMC_ACTIM1);
 
 	if ((value >> 28) & 0x1)
 		return LPDDR3_1800;
