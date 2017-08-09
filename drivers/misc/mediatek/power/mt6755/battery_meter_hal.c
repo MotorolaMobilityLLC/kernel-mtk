@@ -51,13 +51,11 @@ void get_hw_chip_diff_trim_value(void)
 #else
 
 #if 1
-	signed int reg_val = 0;
 
-	reg_val = upmu_get_reg_value(0xCB8);
-	chip_diff_trim_value_4_0 = (reg_val >> 7) & 0x001F;	/*chip_diff_trim_value_4_0 = (reg_val>>10)&0x001F; */
+	chip_diff_trim_value_4_0 = 0;
 
-	bm_print(BM_LOG_CRTI, "[Chip_Trim] Reg[0xCB8]=0x%x, chip_diff_trim_value_4_0=%d\n",
-		 reg_val, chip_diff_trim_value_4_0);
+	bm_print(BM_LOG_CRTI, "[Chip_Trim] chip_diff_trim_value_4_0=%d\n",
+		 chip_diff_trim_value_4_0);
 #else
 	bm_print(BM_LOG_FULL, "[Chip_Trim] need check reg number\n");
 #endif
@@ -238,9 +236,9 @@ static unsigned int fg_get_data_ready_status(void)
 	unsigned int ret = 0;
 	unsigned int temp_val = 0;
 
-	ret = pmic_read_interface(MT6351_FGADC_CON0, &temp_val, 0xFFFF, 0x0);
+	ret = pmic_read_interface(MT6351_PMIC_FG_LATCHDATA_ST_ADDR, &temp_val, 0xFFFF, 0x0);
 
-	bm_print(BM_LOG_FULL, "[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", MT6351_FGADC_CON0,
+	bm_print(BM_LOG_FULL, "[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", MT6351_PMIC_FG_LATCHDATA_ST_ADDR,
 		 temp_val);
 
 	temp_val =
@@ -285,9 +283,9 @@ static signed int fgauge_initialization(void *data)
 	bm_print(BM_LOG_CRTI, "******** [fgauge_initialization] reset HW FG!\n");
 
 	/*set FG_OSR */
-	ret = pmic_config_interface(MT6351_FGADC_CON11, 0x8, 0xF, 0x0);
-	bm_print(BM_LOG_CRTI, "[fgauge_initialization] Reg[0x%x]=0x%x\n", MT6351_FGADC_CON11,
-		 upmu_get_reg_value(MT6351_FGADC_CON11));
+	pmic_set_register_value(MT6351_PMIC_FG_OSR, 0x8);
+	bm_print(BM_LOG_CRTI, "[fgauge_initialization] Reg[0x%x]=0x%x\n", MT6351_PMIC_FG_OSR_ADDR,
+		 upmu_get_reg_value(MT6351_PMIC_FG_OSR_ADDR));
 
 	/*make sure init finish */
 	m = 0;
