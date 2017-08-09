@@ -2,12 +2,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#else
 #include <linux/notifier.h>
 #include <linux/fb.h>
-#endif
 
 #include "mt_ppm_internal.h"
 
@@ -120,27 +116,6 @@ static void ppm_lcmoff_switch(int onoff)
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void ppm_lcmoff_early_suspend(struct early_suspend *h)
-{
-	FUNC_ENTER(FUNC_LV_POLICY);
-	ppm_lcmoff_switch(0);
-	FUNC_EXIT(FUNC_LV_POLICY);
-}
-
-static void ppm_lcmoff_late_resume(struct early_suspend *h)
-{
-	FUNC_ENTER(FUNC_LV_POLICY);
-	ppm_lcmoff_switch(1);
-	FUNC_EXIT(FUNC_LV_POLICY);
-}
-
-static struct early_suspend ppm_lcmoff_es_handler = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 200,
-	.suspend = ppm_lcmoff_early_suspend,
-	.resume = ppm_lcmoff_late_resume,
-};
-#else
 static int ppm_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
@@ -176,7 +151,6 @@ static int ppm_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned
 static struct notifier_block ppm_lcmoff_fb_notifier = {
 	.notifier_call = ppm_lcmoff_fb_notifier_callback,
 };
-#endif
 
 static int __init ppm_lcmoff_policy_init(void)
 {
@@ -184,15 +158,11 @@ static int __init ppm_lcmoff_policy_init(void)
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&ppm_lcmoff_es_handler);
-#else
 	if (fb_register_client(&ppm_lcmoff_fb_notifier)) {
 		ppm_err("@%s: lcmoff policy register FB client failed!\n", __func__);
 		ret = -EINVAL;
 		goto out;
 	}
-#endif
 
 	if (ppm_main_register_policy(&lcmoff_policy)) {
 		ppm_err("@%s: lcmoff policy register failed\n", __func__);
@@ -212,21 +182,14 @@ static void __exit ppm_lcmoff_policy_exit(void)
 {
 	FUNC_ENTER(FUNC_LV_POLICY);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&ppm_lcmoff_es_handler);
-#else
 	fb_unregister_client(&ppm_lcmoff_fb_notifier);
-#endif
 
 	ppm_main_unregister_policy(&lcmoff_policy);
 
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
-#ifdef CONFIG_HAS_EARLYSUSPEND
-module_init(ppm_lcmoff_policy_init);
-#else
+
 /* Cannot init before FB driver */
 late_initcall(ppm_lcmoff_policy_init);
-#endif
 module_exit(ppm_lcmoff_policy_exit);
 

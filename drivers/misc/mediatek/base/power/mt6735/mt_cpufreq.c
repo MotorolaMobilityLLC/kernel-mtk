@@ -22,12 +22,8 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#else
 #include <linux/notifier.h>
 #include <linux/fb.h>
-#endif
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
@@ -545,12 +541,7 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu);
 #endif
 
 /* (early-)suspend */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void _mt_cpufreq_early_suspend(struct early_suspend *h);
-static void _mt_cpufreq_late_resume(struct early_suspend *h);
-#else
 static int _mt_cpufreq_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data);
-#endif
 static int _mt_cpufreq_suspend(struct device *dev);
 static int _mt_cpufreq_resume(struct device *dev);
 static int _mt_cpufreq_pm_restore_early(struct device *dev);	/* for IPO-H HW(freq) / SW(opp_tbl_idx) */
@@ -839,17 +830,9 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 
 
 /* (early-)suspend / (late-)resume */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend _mt_cpufreq_early_suspend_handler = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 200,
-	.suspend = _mt_cpufreq_early_suspend,
-	.resume = _mt_cpufreq_late_resume,
-};
-#else
 static struct notifier_block _mt_cpufreq_fb_notifier = {
 	.notifier_call = _mt_cpufreq_fb_notifier_callback,
 };
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 static const struct dev_pm_ops _mt_cpufreq_pm_ops = {
 	.suspend = _mt_cpufreq_suspend,
@@ -3863,25 +3846,6 @@ static void _mt_cpufreq_lcm_status_switch(int onoff)
 	}
 }
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void _mt_cpufreq_early_suspend(struct early_suspend *h)
-{
-	FUNC_ENTER(FUNC_LV_MODULE);
-
-	_mt_cpufreq_lcm_status_switch(0);
-
-	FUNC_EXIT(FUNC_LV_MODULE);
-}
-
-static void _mt_cpufreq_late_resume(struct early_suspend *h)
-{
-	FUNC_ENTER(FUNC_LV_MODULE);
-
-	_mt_cpufreq_lcm_status_switch(1);
-
-	FUNC_EXIT(FUNC_LV_MODULE);
-}
-#else
 static int _mt_cpufreq_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
@@ -3913,7 +3877,6 @@ static int _mt_cpufreq_fb_notifier_callback(struct notifier_block *self, unsigne
 
 	return 0;
 }
-#endif
 
 static int _mt_cpufreq_suspend(struct device *dev)
 {
@@ -4012,14 +3975,10 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 
 	/* register early suspend */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&_mt_cpufreq_early_suspend_handler);
-#else
 	if (fb_register_client(&_mt_cpufreq_fb_notifier)) {
 		cpufreq_err("@%s: register FB client failed!\n", __func__);
 		return 0;
 	}
-#endif
 
 	/* init PMIC_WRAP & volt */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
