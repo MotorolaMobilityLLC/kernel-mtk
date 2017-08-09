@@ -398,7 +398,9 @@ static unsigned int charging_get_hv_status(void *data)
 static unsigned int charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
+#if !defined(CONFIG_POWER_EXT)
 	unsigned int val = 0;
+#endif
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = 0;	/* battery exist */

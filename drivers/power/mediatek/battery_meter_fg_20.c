@@ -274,7 +274,9 @@ struct timespec suspend_time, car_time;
 signed int g_sw_vbat_temp = 0;
 struct timespec last_oam_run_time;
 /*static signed int coulomb_before_sleep = 0x123456;*/
+#if !defined(CONFIG_POWER_EXT)
 static signed int last_time = 1;
+#endif
 /* aging mechanism */
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 /*
