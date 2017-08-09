@@ -801,8 +801,8 @@ unsigned int bq25890_get_chrg_fault_state(void)
 
 	ret = bq25890_read_interface((unsigned char) (bq25890_CONC),
 				     (&val),
-				     (unsigned char) (CONB_CHRG_STAT_MASK),
-				     (unsigned char) (CONB_CHRG_STAT_SHIFT)
+				     (unsigned char) (CONC_CHRG_FAULT_MASK),
+				     (unsigned char) (CONC_CHRG_FAULT_SHIFT)
 	    );
 	return val;
 }
@@ -957,10 +957,11 @@ void bq25890_dump_register(void)
 	unsigned char chr_en = 0;
 	unsigned char vbus = 0;
 	unsigned char vdpm = 0;
+	unsigned char fault = 0;
 
-	bq25890_ADC_start(1);
+	/*bq25890_ADC_start(1);*/
 	for (i = 0; i < bq25890_REG_NUM; i++) {
-		bq25890_read_byte(i, &bq25890_reg[i]);
+		/*bq25890_read_byte(i, &bq25890_reg[i]);*/
 		battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
 	}
 	bq25890_ADC_start(1);
@@ -972,10 +973,10 @@ void bq25890_dump_register(void)
 	vbat = bq25890_get_vbat();
 	vbus = bq25890_get_vbus();
 	vdpm = bq25890_get_vdpm_state();
+	fault = bq25890_get_chrg_fault_state();
 	battery_log(BAT_LOG_CRTI,
-		    "[PE+]BQ25896 Ichg_reg=%d mA, Iinlin=%d mA, Vbus=%d mV",
-		     ichg_reg * 64, iinlim * 50 + 100, vbus * 100 + 2600);
-	battery_log(BAT_LOG_CRTI, "[PE+]BQ25896 Ichg=%d mA, Vbat =%d mV, ChrStat=%d, CHGEN=%d, VDPM=%d\n",
+	"[PE+]Ibat=%d, Ilim=%d, Vbus=%d, err=%d, Ichg=%d, Vbat=%d, ChrStat=%d, CHGEN=%d, VDPM=%d\n",
+	ichg_reg * 64, iinlim * 50 + 100, vbus * 100 + 2600, fault,
 		    ichg * 50, vbat * 20 + 2304, chrg_state, chr_en, vdpm);
 
 }
@@ -988,15 +989,8 @@ void bq25890_hw_init(void)
 
 static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	int err = 0;
 
 	battery_log(BAT_LOG_CRTI, "[bq25890_driver_probe]\n");
-	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
-	if (!new_client) {
-		err = -ENOMEM;
-		goto exit;
-	}
-	memset(new_client, 0, sizeof(struct i2c_client));
 
 	new_client = client;
 
@@ -1008,8 +1002,6 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	return 0;
 
-exit:
-	return err;
 
 }
 

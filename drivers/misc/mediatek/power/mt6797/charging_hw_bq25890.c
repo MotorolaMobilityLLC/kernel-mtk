@@ -153,11 +153,14 @@ static char *DISO_state_s[8] = {
 /* extern int is_mt6311_exist(void); _not_ used */
 /* extern int is_mt6311_sw_ready(void); _not_ used */
 #ifdef CONFIG_MTK_BIF_SUPPORT
-static int bif_inited;
+static int bif_exist;
+static int bif_checked;
 #endif
 static unsigned int charging_error;
 static unsigned int charging_get_error_state(void);
 static unsigned int charging_set_error_state(void *data);
+static unsigned int charging_set_vindpm(void *data);
+
 /* ============================================================ // */
 unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size,
 				       const unsigned int val)
@@ -277,7 +280,7 @@ void bif_waitfor_slave(void)
 		reg_val = pmic_get_register_value(PMIC_BIF_IRQ);
 
 		if (loop_i++ > 50) {
-			battery_log(BAT_LOG_CRTI,
+			battery_log(BAT_LOG_FULL,
 				    "[BIF][waitfor_slave] failed. PMIC_BIF_IRQ=0x%x, loop=%d\n",
 				    reg_val, loop_i);
 			break;
@@ -297,7 +300,7 @@ int bif_powerup_slave(void)
 	int loop_i = 0;
 
 	do {
-		battery_log(BAT_LOG_FULL, "[BIF][powerup_slave] set BIF power up register\n");
+		battery_log(BAT_LOG_CRTI, "[BIF][powerup_slave] set BIF power up register\n");
 		pmic_set_register_value(PMIC_BIF_POWER_UP, 1);
 
 		battery_log(BAT_LOG_FULL, "[BIF][powerup_slave] trigger BIF module\n");
@@ -817,6 +820,14 @@ static unsigned int charging_set_current(void *data)
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
 	/* bq25890_config_interface(bq25890_CON4, register_value, 0x7F, 0); */
 	bq25890_set_ichg(register_value);
+	/*For USB_IF compliance test only when USB is in suspend(Ibus < 2.5mA) or unconfigured(Ibus < 70mA) states*/
+#ifdef CONFIG_USBIF_COMPLIANCE
+	if (current_value < CHARGE_CURRENT_100_00_MA)
+		register_value = 0x7f;
+	else
+		register_value = 0x13;
+	charging_set_vindpm(&register_value);
+#endif
 
 	return status;
 }
@@ -868,8 +879,6 @@ static unsigned int charging_get_charging_status(void *data)
 static unsigned int charging_reset_watch_dog_timer(void *data)
 {
 	unsigned int status = STATUS_OK;
-
-	pr_info("charging_reset_watch_dog_timer\r\n");
 
 	bq25890_config_interface(bq25890_CON3, 0x1, 0x1, 6);	/* reset watchdog timer */
 
@@ -1236,11 +1245,14 @@ static unsigned int charging_get_bif_vbat(void *data)
 	/* turn on VBIF28 regulator*/
 	/*bif_init();*/
 
-	bif_ADC_enable();
-
-	vbat = bif_read16(MW3790_VBAT);
-	*(unsigned int *) (data) = vbat;
-
+	/*change to HW control mode*/
+	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 0);
+	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 1);*/
+	if (bif_checked != 1 || bif_exist == 1) {
+		bif_ADC_enable();
+		vbat = bif_read16(MW3790_VBAT);
+		*(unsigned int *) (data) = vbat;
+	}
 	/*turn off LDO and change SW control back to HW control */
 	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 0);
 	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);*/
@@ -1260,7 +1272,7 @@ static unsigned int charging_get_bif_tbat(void *data)
 
 	mdelay(50);
 
-	if (bif_inited == 1) {
+	if (bif_exist == 1) {
 		do {
 			bif_ADC_enable();
 			ret = bif_read8(MW3790_TBAT, &tbat);
@@ -1452,14 +1464,16 @@ static unsigned int charging_sw_init(void *data)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 	int vbat;
 
-	if (bif_inited != 1) {
+	vbat = 0;
+	if (bif_checked != 1) {
 		bif_init();
 		charging_get_bif_vbat(&vbat);
 		if (vbat != 0) {
 			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery detected.\n");
-			bif_inited = 1;
+			bif_exist = 1;
 		} else
 			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery _NOT_ detected.\n");
+		bif_checked = 1;
 	}
 #endif
 	return status;
