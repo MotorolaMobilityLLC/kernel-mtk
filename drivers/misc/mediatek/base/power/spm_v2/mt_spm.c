@@ -672,12 +672,18 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		u16 firmware_size = 0;
 		int copy_size = 0;
 		struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
+		int j = 0;
 
-		err = request_firmware(&fw, dyna_load_pcm_path[i], &pdev->dev);
+		do {
+			j++;
+			pr_debug("try to request_firmware() %s - %d\n", dyna_load_pcm_path[i], j);
+			err = request_firmware(&fw, dyna_load_pcm_path[i], &pdev->dev);
+			if (err)
+				pr_err("Failed to load %s, err = %d.\n", dyna_load_pcm_path[i], err);
+		} while (err == -EAGAIN && j < 5);
 		if (err) {
-			pr_debug("Failed to load %s, %d.\n", dyna_load_pcm_path[i], err);
+			pr_err("Failed to load %s, err = %d.\n", dyna_load_pcm_path[i], err);
 			continue;
-			/* return -EINVAL; */
 		}
 
 		/* Do whatever it takes to load firmware into device. */
