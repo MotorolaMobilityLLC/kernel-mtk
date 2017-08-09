@@ -385,5 +385,5 @@ static int __init init_fliper(void)
 
 	return 0;
 }
-device_initcall(init_fliper);
+late_initcall(init_fliper);
 

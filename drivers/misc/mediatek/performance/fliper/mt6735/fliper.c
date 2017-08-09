@@ -72,8 +72,10 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 	buf[cnt] = 0;
 
 	ret = kstrtoul(buf, 10, (unsigned long *)&val);
-	if (ret < 0)
-		return ret;
+	if (ret < 0) {
+		pr_crit("\n<<SOC DVFS FLIPER>> no support change POWER_MODE\n");
+		return cnt;
+	}
 	if (val == 1) {
 		fliper_enabled = 1;
 		enable_fliper();
@@ -285,7 +287,7 @@ static int __init init_fliper(void)
 {
 	struct proc_dir_entry *pe;
 
-	pe = proc_create("fliper", 0644, NULL, &mt_fliper_fops);
+	pe = proc_create("fliper", 0664, NULL, &mt_fliper_fops);
 	if (!pe)
 		return -ENOMEM;
 	bw_threshold = BW_THRESHOLD;
