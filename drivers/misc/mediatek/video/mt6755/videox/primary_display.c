@@ -3653,8 +3653,12 @@ int primary_display_resume(void)
 
 		/* disable all ovl layers to show black screen */
 		/* note that if WFD is connected, we may miss the black setting before the last suspend */
-		for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++)
+		for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
+			if (is_DAL_Enabled() &&
+				data_config->ovl_config[i].layer == primary_display_get_option("ASSERT_LAYER"))
+				continue;
 			data_config->ovl_config[i].layer_en = 0;
+		}
 
 		data_config->ovl_dirty = 1;
 
