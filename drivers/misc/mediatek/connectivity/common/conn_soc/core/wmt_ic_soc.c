@@ -1977,12 +1977,12 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	cDataTime[15] = '\0';
 	if (index == 0) {
 		WMT_INFO_FUNC("===========================================\n");
-		WMT_WARN_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
+		WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
 		WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
 		WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
 		WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-		WMT_WARN_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+		WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 			      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 		WMT_INFO_FUNC("===========================================\n");
 	}
@@ -2233,12 +2233,12 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID)
 
 	cDataTime[15] = '\0';
 	WMT_INFO_FUNC("===========================================\n");
-	WMT_WARN_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
+	WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
 	WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
 	WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
 	WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 		      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-	WMT_WARN_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+	WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 		      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 	WMT_INFO_FUNC("===========================================\n");
 

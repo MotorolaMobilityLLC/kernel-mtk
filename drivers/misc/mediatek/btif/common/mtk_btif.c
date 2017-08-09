@@ -1401,10 +1401,10 @@ int _btif_lpbk_ctrl(p_mtk_btif p_btif, bool flag)
 
 	if (flag) {
 		i_ret = hal_btif_loopback_ctrl(p_btif->p_btif_info, true);
-		BTIF_INFO_FUNC("loopback function enabled\n");
+		BTIF_DBG_FUNC("loopback function enabled\n");
 	} else {
 		i_ret = hal_btif_loopback_ctrl(p_btif->p_btif_info, false);
-		BTIF_INFO_FUNC("loopback function disabled\n");
+		BTIF_DBG_FUNC("loopback function disabled\n");
 	}
 	if (0 == i_ret)
 		p_btif->lpbk_flag = flag;
@@ -3097,7 +3097,7 @@ int btif_log_buf_reset(P_BTIF_LOG_QUEUE_T p_log_que)
 	memset((p_log_que->p_queue[0]), 0, sizeof(BTIF_LOG_BUF_T));
 
 	spin_unlock_irqrestore(&p_log_que->lock, flags);
-	BTIF_INFO_FUNC("reset %s log buffer\n",
+	BTIF_DBG_FUNC("reset %s log buffer\n",
 		       p_log_que->dir == BTIF_TX ? "Tx" : "Rx");
 	return 0;
 }

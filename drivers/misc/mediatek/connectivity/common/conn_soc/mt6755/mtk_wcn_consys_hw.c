@@ -332,7 +332,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 	UINT32 retry = 10;
 	UINT32 consysHwChipId = 0;
 
-	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
+	WMT_PLAT_DBG_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
 	WMT_PLAT_DBG_FUNC("CONSYS_EMI_MAPPING dump before power on/off(0x%08x)\n", CONSYS_REG_READ(CONSYS_EMI_MAPPING));
 
 	if (on) {
@@ -743,7 +743,7 @@ INT32 mtk_wcn_consys_hw_gpio_ctrl(UINT32 on)
 {
 	INT32 iRet = 0;
 
-	WMT_PLAT_INFO_FUNC("CONSYS-HW-GPIO-CTRL(0x%08x), start\n", on);
+	WMT_PLAT_DBG_FUNC("CONSYS-HW-GPIO-CTRL(0x%08x), start\n", on);
 
 	if (on) {
 
@@ -895,7 +895,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 1);
 
 #endif
-		WMT_PLAT_INFO_FUNC("WMT do BT PMIC on\n");
+		WMT_PLAT_DBG_FUNC("WMT do BT PMIC on\n");
 	} else {
 		/*do BT PMIC off */
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
@@ -908,7 +908,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 			regulator_disable(reg_VCN33_BT);
 #endif
 #endif
-		WMT_PLAT_INFO_FUNC("WMT do BT PMIC off\n");
+		WMT_PLAT_DBG_FUNC("WMT do BT PMIC off\n");
 	}
 
 	return 0;
@@ -933,7 +933,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 #endif
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 1);
 #endif
-		WMT_PLAT_INFO_FUNC("WMT do WIFI PMIC on\n");
+		WMT_PLAT_DBG_FUNC("WMT do WIFI PMIC on\n");
 	} else {
 		/*do WIFI PMIC off */
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
@@ -947,7 +947,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 #endif
 
 #endif
-		WMT_PLAT_INFO_FUNC("WMT do WIFI PMIC off\n");
+		WMT_PLAT_DBG_FUNC("WMT do WIFI PMIC off\n");
 	}
 
 	return 0;

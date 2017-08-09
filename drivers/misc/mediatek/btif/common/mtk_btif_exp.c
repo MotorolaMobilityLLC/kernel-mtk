@@ -67,7 +67,7 @@ int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 	struct list_head *p_user_list = &(p_btif->user_list);
 
 	BTIF_DBG_FUNC("++");
-	BTIF_INFO_FUNC("p_btif(0x%p)\n", p_btif);
+	BTIF_DBG_FUNC("p_btif(0x%p)\n", p_btif);
 
 	if (mutex_lock_killable(&(p_btif->ops_mtx))) {
 		BTIF_ERR_FUNC("mutex_lock_killable return failed\n");
