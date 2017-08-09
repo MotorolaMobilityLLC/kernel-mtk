@@ -578,6 +578,7 @@ void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage)
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	case MD_ACK_SCP_INIT: /* in port kernel thread context, safe to send IPI */
 		data = md->smem_layout.ccci_ccism_smem_base_phy;
+		memset_io(md->smem_layout.ccci_ccism_smem_base_vir, 0, md->smem_layout.ccci_ccism_smem_size);
 		ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, &data);
 		break;
 #endif
