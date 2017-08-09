@@ -2329,7 +2329,7 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 	index = block_io_ring_index;
 
 	debug_fs = vmalloc(MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
-	if (debug_fs) {
+	if (debug_fs && block_io_ring != NULL) {
 		memset(debug_fs, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
 	for (i = 0; i < MAX_BLOCK_IO_LOG_COUNT; i++) {
 		tmp_logger = ((struct struct_block_io_ring *)debug_fs) + i;
