@@ -22,6 +22,7 @@ ifeq ($(CONFIG_ARCH_MT6755), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 
 obj-y += mt_idle.o
+obj-y += mt_idle_mt6755.o
 obj-y += mt_sleep.o
 obj-y += mt_spm.o
 obj-y += mt_spm_dpidle.o
@@ -38,6 +39,7 @@ endif
 ifeq ($(CONFIG_ARCH_MT6797), y)
 
 obj-y += mt_idle.o
+obj-y += mt_idle_mt6797.o
 obj-y += mt_spm.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_sleep.o
