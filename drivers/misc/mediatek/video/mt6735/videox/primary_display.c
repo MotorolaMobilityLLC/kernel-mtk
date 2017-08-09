@@ -2559,13 +2559,6 @@ static int __build_path_direct_link(void)
 	DISPPRINT("%s\n", __func__);
 	pgc->mode = DIRECT_LINK_MODE;
 
-	/* wait and clear rdma0_sof for vfp change */
-	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_EOF);
-
-	ret = cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_EOF);
-	ret = cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_DISP, pgc->cmdq_handle_config);
 	if (pgc->dpmgr_handle) {
 		DISPPRINT("dpmgr create path SUCCESS(0x%p)\n", pgc->dpmgr_handle);
