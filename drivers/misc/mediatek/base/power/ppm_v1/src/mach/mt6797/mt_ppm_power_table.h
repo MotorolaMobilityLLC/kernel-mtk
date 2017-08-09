@@ -980,3 +980,8 @@ static const struct ppm_power_tbl cpu_tlp_power_tbl_SB[] = {
 	{135, {{14, 1}, {-1, 0}, {-1, 0},}, 159, 52},
 };
 
+static unsigned int freq_idx_mapping_tbl_FY[] = {0, 3, 5, 7, 9, 10, 12, 14};
+static unsigned int freq_idx_mapping_tbl_FY_BIG[] = {0, 4, 6, 8, 10, 12, 14, 15};
+static unsigned int freq_idx_mapping_tbl_SB[] = {0, 3, 6, 8, 9, 11, 12, 14};
+static unsigned int freq_idx_mapping_tbl_SB_BIG[] = {0, 3, 6, 8, 9, 10, 12, 15};
+

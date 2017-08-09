@@ -582,15 +582,37 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 {
 	int i, j;
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-	int core[NR_PPM_CLUSTERS];
-	int opp[NR_PPM_CLUSTERS];
+	int core[NR_PPM_CLUSTERS] = {-1};
+	int opp[NR_PPM_CLUSTERS] = {-1};
 	char buf[128];
 	char *ptr = buf;
+	unsigned int *mapping_tbl;
 
 	/* copy core/opp info */
 	for_each_ppm_clusters(i) {
 		core[i] = cluster_status[i].core_num;
 		opp[i] = (!core[i]) ? -1 : cluster_status[i].freq_idx;
+
+		/* Workaround: remap freq idx from 16 opp to 8 opp (waiting for 16 opp power tbl) */
+		if (opp[i] != -1) {
+			if (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
+				mapping_tbl = (i == PPM_CLUSTER_B) ? freq_idx_mapping_tbl_FY_BIG
+								: freq_idx_mapping_tbl_FY;
+			else
+				mapping_tbl = (i == PPM_CLUSTER_B) ? freq_idx_mapping_tbl_SB_BIG
+								: freq_idx_mapping_tbl_SB;
+
+			for (j = 0; j < 8; j++) {
+				if (opp[i] == mapping_tbl[j])
+					break;
+				else if (opp[i] < mapping_tbl[j]) {
+					opp[i] = mapping_tbl[j-1];
+					break;
+				}
+			}
+			if (j == 8)
+				opp[i] = mapping_tbl[j-1];
+		}
 
 		ptr += sprintf(ptr, "(%d)(%d)(%d) ", opp[i], core[i], cluster_status[i].volt);
 	}
@@ -606,11 +628,11 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 		if (opp[PPM_CLUSTER_LL] != -1 && opp[PPM_CLUSTER_L] != -1)
 			opp[PPM_CLUSTER_LL] = opp[PPM_CLUSTER_L] = MIN(opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L]);
 
-		/* modify L's core if current state is 4LL+L or 4L+LL */
+		/* modify LL or L core num if current state is 4LL+L or 4L+LL */
 		if (ppm_main_info.cur_power_state == PPM_POWER_STATE_4LL_L)
-			opp[PPM_CLUSTER_LL] = 4;
+			core[PPM_CLUSTER_LL] = 4;
 		else if (ppm_main_info.cur_power_state == PPM_POWER_STATE_4L_LL)
-			opp[PPM_CLUSTER_L] = 4;
+			core[PPM_CLUSTER_L] = 4;
 	}
 
 	for_each_pwr_tbl_entry(i, power_table) {
@@ -620,7 +642,7 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 				break;
 		}
 
-		if (j == NR_PPM_CLUSTERS) {
+		if (j == ppm_main_info.cluster_num) {
 			ppm_ver("[index][power] = [%d][%d]\n",
 					i, power_table.power_tbl[i].power_idx);
 			return power_table.power_tbl[i].power_idx;
