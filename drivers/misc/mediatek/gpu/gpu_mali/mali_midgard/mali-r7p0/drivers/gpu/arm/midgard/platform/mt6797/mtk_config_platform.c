@@ -99,15 +99,15 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x3f0, 0xffffffff);
 
 #ifdef MTK_GPU_SPM
+	MTKCLK_prepare_enable(clk_gpupm);
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
 	if (!mtk_kbase_spm_isonline())
 	{
 		mtk_init_spm_dvfs_gpu();
-		mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
-		mtk_kbase_spm_wait();
 	}
-
 	mtk_kbase_spm_acquire();
-	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
+	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
+	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
 #endif
 
@@ -142,38 +142,17 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
 	}
 
-	/* hard reset */
-	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
-	/* polling mfg idle again */
-	MFG_write32(MFG_DEBUG_SEL, 0x3);
-	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
-	if (polling_retry <= 0)
-	{
-		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
-	}
-
 #ifdef MTK_GPU_OCP
 	MFG_write32(MFG_OCP_DCM_CON, 0x0);
 #endif
 
 #ifdef MTK_GPU_SPM
 	mtk_kbase_spm_acquire();
-	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
-	{
-		int t = 0xffff;
-		while (DVFS_GPU_read32(SPM_BYPASS_DFP) != 0x1 && --t)
-		{
-			if (!mtk_kbase_spm_isonline())
-				break;
-			udelay(1);
-		}
-
-		if (t <= 10)
-		{
-			dev_err(kbdev->dev, "polling BYPASS_DFP fail, rem:%d\n", t);
-		}
-	}
+	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
+	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release(); 
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	MTKCLK_disable_unprepare(clk_gpupm);
 #endif
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
@@ -427,15 +406,19 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
-	/* init gpu hal */
-	mtk_kbase_spm_hal_init();
-
 	/* kick spm_dvfs_gpu */
 	mtk_init_spm_dvfs_gpu();
 
-	/* enable it */
-	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
+	/* wait idle */
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
+	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
+
+	/* init gpu hal */
+	mtk_kbase_spm_hal_init();
+
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	MTKCLK_disable_unprepare(clk_gpupm);
 
 	/* create debugging node */
 	if (device_create_file(kbdev->dev, &dev_attr_dvfs_gpu_dump))

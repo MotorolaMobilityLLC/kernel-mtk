@@ -267,4 +267,32 @@ void mtk_gpu_spm_reset_fix(void)
 	spm_update_fc();
 }
 
+static int en_backup = -1;
+void mtk_gpu_spm_pause(void)
+{
+	struct mtk_config *config = g_config;
+
+	if (config && en_backup == -1)
+	{
+		MTKCLK_prepare_enable(clk_dvfs_gpu);
+		mtk_kbase_spm_acquire();
+		en_backup = DVFS_GPU_read32(SPM_RSV_CON);
+		DVFS_GPU_write32(SPM_RSV_CON, 0);
+		mtk_kbase_spm_wait();
+	}
+}
+void mtk_gpu_spm_resume(void)
+{
+	struct mtk_config *config = g_config;
+
+	if (config && en_backup != -1)
+	{
+		DVFS_GPU_write32(SPM_RSV_CON, en_backup);
+		mtk_kbase_spm_wait();
+		mtk_kbase_spm_release();
+		MTKCLK_disable_unprepare(clk_dvfs_gpu);
+		en_backup = -1;
+	}
+}
+
 #endif

@@ -199,4 +199,7 @@ void mtk_gpu_spm_resume_hal(void);
 void mtk_gpu_spm_fix_by_idx(unsigned int idx);
 void mtk_gpu_spm_reset_fix(void);
 
+void mtk_gpu_spm_pause(void);
+void mtk_gpu_spm_resume(void);
+
 #endif

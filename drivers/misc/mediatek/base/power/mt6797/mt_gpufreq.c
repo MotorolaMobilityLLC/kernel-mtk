@@ -947,6 +947,11 @@ EXPORT_SYMBOL(mt_gpufreq_voltage_enable_set);
 
 void mt_gpufreq_enable_by_ptpod(void)
 {
+#ifdef MTK_GPU_SPM
+	if (mt_gpufreq_ptpod_disable)
+		mtk_gpu_spm_resume();
+#endif
+
 	mt_gpufreq_ptpod_disable = false;
 	gpufreq_info("mt_gpufreq enabled by ptpod\n");
 }
@@ -963,6 +968,10 @@ void mt_gpufreq_disable_by_ptpod(void)
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
 		return;
 	}
+
+#ifdef MTK_GPU_SPM
+	mtk_gpu_spm_pause();
+#endif
 
 	mt_gpufreq_ptpod_disable = true;
 	gpufreq_info("mt_gpufreq disabled by ptpod\n");
