@@ -475,9 +475,9 @@ int mt_dump_gdma(int channel)
 {
 	unsigned int i;
 
-	pr_notice("Channel 0x%x\n", channel);
+	pr_debug("Channel 0x%x\n", channel);
 	for (i = 0; i < 96; i++)
-		pr_notice("addr:%p, value:%x\n", env_info[channel].base + i * 4,
+		pr_debug("addr:%p, value:%x\n", env_info[channel].base + i * 4,
 			  readl(env_info[channel].base + i * 4));
 
 	return 0;
