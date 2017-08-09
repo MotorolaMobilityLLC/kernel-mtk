@@ -1,5 +1,4 @@
 # drivers/dispsys/mt6735m
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \

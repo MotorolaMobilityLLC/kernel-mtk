@@ -3,20 +3,24 @@
 
 #include <linux/dma-mapping.h>
 #include <linux/types.h>
-#include <mach/mt_gpio.h>
+#ifdef CONFIG_MTK_LEGACY
+/* #include <mach/mt_gpio.h> */
+#endif
 #include "m4u.h"
-#include <mach/mt_reg_base.h>
+/* #include <mach/mt_reg_base.h> */
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
-#include <mach/mt_irq.h>
+#endif
+/* #include <mach/mt_irq.h> */
 /*#include <board-custom.h>*/
 #include "disp_assert_layer.h"
+#include <mt-plat/sync_write.h>
 #include "ddp_hal.h"
-#include "ddp_drv.h"
+/* #include "ddp_drv.h" */
 #include "ddp_path.h"
 #include "ddp_rdma.h"
 #include "ddp_ovl.h"
 
-#include <mach/sync_write.h>
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
@@ -26,12 +30,12 @@
 /**
  * SODI enable.
  */
-#define MTK_FB_SODI_SUPPORT
+/* #define MTK_FB_SODI_SUPPORT */
 
 /**
  * ESD recovery support.
  */
-#define MTK_FB_ESD_ENABLE
+/* #define MTK_FB_ESD_ENABLE */
 
 /**
  * FB Ion support.
@@ -61,7 +65,7 @@
 /**
  * Disable M4U of display engines.
  */
-/* #define MTKFB_NO_M4U */
+#define MTKFB_NO_M4U
 
 /**
  * Bring-up display in kernel stage (not LK stage).
@@ -73,7 +77,7 @@
  * Disable using CMDQ in display driver.
  * The registers and system event would be processed by CPU.
  */
-/* #define MTK_FB_CMDQ_DISABLE */
+#define MTK_FB_CMDQ_DISABLE
 
 /**
  * Bypass ALL display PQ engine.
@@ -99,7 +103,7 @@
 /**
  * FB alignment byte.
  */
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_FPGA_EARLY_PORTING) || !defined(CONFIG_MTK_GPU_SUPPORT)
 #define MTK_FB_ALIGNMENT 16
 #else
 #define MTK_FB_ALIGNMENT 32
@@ -187,5 +191,20 @@ typedef enum {
 	#endif
 	#define DISP_INTERNAL_BUFFER_COUNT 3
 #endif
+
+/**
+ * DISP_NO_DPI: option for DPI
+ */
+#define DISP_NO_DPI
+
+/**
+ * DISP_NO_MT_BOOT: option for mt_boot
+ */
+#define DISP_NO_MT_BOOT
+
+/**
+ * DISP_NO_AEE
+ */
+#define DISP_NO_AEE
 
 #endif /* __DISP_DRV_PLATFORM_H__ */

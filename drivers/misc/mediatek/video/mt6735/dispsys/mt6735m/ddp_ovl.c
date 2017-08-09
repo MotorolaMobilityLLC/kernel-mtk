@@ -791,7 +791,7 @@ int ovl_deinit(DISP_MODULE_ENUM module, void *handle)
 
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid)
 {
-	if (rdma_mode) {
+	if (rdma_mode)
 		return DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR);
 
 #ifdef OVL_CASCADE_SUPPORT

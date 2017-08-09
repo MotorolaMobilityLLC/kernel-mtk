@@ -1,7 +1,7 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
 #include <mt-plat/sync_write.h>
-#include <mach/mt_reg_base.h>
+/* #include <mach/mt_reg_base.h> */
 #include <linux/types.h>
 #include "display_recorder.h"
 #include "cmdq_record.h"
@@ -1076,6 +1076,7 @@ struct DSI_PHY_REGS {
 };
 
 #ifndef BUILD_LK
+/*
 STATIC_ASSERT(0x0050 == offsetof(struct DSI_PHY_REGS, MIPITX_DSI_PLL_CON0));
 STATIC_ASSERT(0x0070 == offsetof(struct DSI_PHY_REGS, MIPITX_DSI_RGS));
 STATIC_ASSERT(0x0080 == offsetof(struct DSI_PHY_REGS, MIPITX_DSI_SW_CTRL_EN));
@@ -1088,6 +1089,7 @@ STATIC_ASSERT(0x0100 == offsetof(struct DSI_REGS, DSI_PHY_PCPAT));
 
 
 STATIC_ASSERT(0x0098 == offsetof(struct DSI_REGS, DSI_3D_CON));
+*/
 #endif
 
 
@@ -1271,6 +1273,13 @@ extern unsigned long dsi_reg_va;
 /* --------------------------------------------------------------------------- */
 /* Register Field Access */
 /* --------------------------------------------------------------------------- */
+#define READ_REGISTER_UINT32(reg)	(*(volatile uint32_t *const)(reg))
+#define INREG32(x)	READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
+
+#define WRITE_REGISTER_UINT32(reg, val)	((*(volatile uint32_t *const)(reg)) = (val))
+#define OUTREG32(x, y)	WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
+
+#define AS_UINT32(x)	(*(uint32_t *)((void *)x))
 
 #define REG_FLD(width, shift) \
 	((unsigned int)((((width) & 0xFF) << 16) | ((shift) & 0xFF)))
