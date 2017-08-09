@@ -17,6 +17,12 @@ config MTK_LEGACY
 	  This is an option for MTK legacy driver that using old API
 	  It will be deprecated after all drivers changed to new structure
 
+config MTK_INTERNAL
+	bool "Enable MTK internal debug feature"
+	help
+	  Identify if codebase is built with MTK internal debug
+	  (Don't modify this feature option setting.)
+
 endif
 
 config MTK_MEM
