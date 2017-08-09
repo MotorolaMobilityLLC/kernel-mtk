@@ -53,11 +53,6 @@ endif
 
 #driver
 obj-y += ddp_wdma.o
-obj-y += ddp_aal.o
-obj-y += ddp_pwm.o
-obj-y += ddp_gamma.o
-obj-y += ddp_dither.o
-obj-y += ddp_od.o
 obj-y += ddp_dsi.o
 obj-y += ddp_dpi.o
 

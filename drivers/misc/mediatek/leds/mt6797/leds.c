@@ -28,8 +28,8 @@
 #include <mach/upmu_hw.h>*/
 
 #ifdef CONFIG_MTK_AAL_SUPPORT
-#include <linux/aal_api.h>
-#include <linux/aee.h>
+#include <ddp_aal.h>
+/* #include <linux/aee.h> */
 #endif
 
 #include <mt-plat/mt_pwm.h>

@@ -10,7 +10,7 @@
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
-#include "ddp_clkmgr.h"
+/* #include <ddp_clkmgr.h> */
 #endif
 
 /* #include <mach/mt_gpio.h> */
@@ -18,9 +18,10 @@
 /* #include <cust_leds.h> */
 /* #include <cust_leds_def.h> */
 #include <ddp_reg.h>
-#include <ddp_pwm.h>
 #include <ddp_path.h>
+#include <primary_display.h>
 #include <ddp_drv.h>
+#include <ddp_pwm.h>
 
 
 #define PWM_DEFAULT_DIV_VALUE 0x0
@@ -56,268 +57,6 @@ static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE];
 static int g_pwm_log_index;
 
 
-/*****************************************************************************
- *
- * variable for get clock node fromdts
- *
-*****************************************************************************/
-static void __iomem *disp_pmw_mux_base;
-static void __iomem *disp_pmw_osc_base;
-
-#ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
-#endif
-#ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
-#define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
-#endif
-#ifndef OSC_ULPOSC_ADDR /* rosc control register address */
-#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
-#endif
-/* clock hard code access API */
-#define clk_readl(addr) DRV_Reg32(addr)
-#define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
-#define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)
-#define clk_clrl(addr, val) mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
-
-/*****************************************************************************
- *
- * get disp pwm source mux node
- *
-*****************************************************************************/
-static int disp_pwm_get_muxbase(void)
-{
-	int ret = 0;
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,TOPCKGEN");
-	if (!node) {
-		PWM_ERR("DISP find TOPCKGEN node failed\n");
-		return -1;
-	}
-	disp_pmw_mux_base = of_iomap(node, 0);
-	if (!disp_pmw_mux_base) {
-		PWM_ERR("DISP TOPCKGEN base failed\n");
-		return -1;
-	}
-	PWM_MSG("find TOPCKGEN node");
-	return ret;
-}
-/*****************************************************************************
- *
- * get disp pwm source osc
- *
-*****************************************************************************/
-static int disp_pwm_get_oscbase(void)
-{
-	int ret = 0;
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
-	if (!node) {
-		PWM_ERR("DISP find SLEEP node failed\n");
-		return -1;
-	}
-	disp_pmw_osc_base = of_iomap(node, 0);
-	if (!disp_pmw_osc_base) {
-		PWM_ERR("DISP find SLEEP base failed\n");
-		return -1;
-	}
-	PWM_MSG("find SLEEP node");
-	return ret;
-}
-
-static int disp_pwm_check_osc_status(void)
-{
-	unsigned int regosc;
-	int ret;
-
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	if ((regosc & 0x5) != 0x5) {
-		PWM_MSG("osc is off (%x)", regosc);
-		ret = 0;
-	} else {
-		PWM_MSG("osc is on (%x)", regosc);
-		ret = 1;
-	}
-
-	return ret;
-}
-
-/*****************************************************************************
- *
- * hardcode turn on/off ROSC api
- *
-*****************************************************************************/
-static int disp_pwm_osc_on(void)
-{
-	unsigned int regosc;
-
-	if (disp_pwm_get_oscbase() == -1)
-		return -1;
-
-	if (disp_pwm_check_osc_status() == 1)
-		return 0; /* osc already on */
-
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x", regosc);
-
-	/* OSC EN = 1 */
-	regosc = regosc | 0x1;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after en", regosc);
-	udelay(11);
-
-	/* OSC RST  */
-	regosc = regosc | 0x2;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after rst 1", regosc);
-	udelay(40);
-	regosc = regosc & 0xfffffffd;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after rst 0", regosc);
-	udelay(130);
-
-	/* OSC CG_EN = 1 */
-	regosc = regosc | 0x4;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc);
-
-	return 0;
-
-}
-
-static int disp_pwm_osc_off(void)
-{
-	unsigned int regosc;
-
-	if (disp_pwm_get_oscbase() == -1)
-		return -1;
-
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-
-	/* OSC CG_EN = 0 */
-	regosc = regosc & (~0x4);
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc);
-
-	udelay(40);
-
-	/* OSC EN = 0 */
-	regosc = regosc & (~0x1);
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	PWM_MSG("ULPOSC config : 0x%08x after en", regosc);
-
-	return 0;
-}
-
-static unsigned int disp_pwm_get_pwmmux(void)
-{
-	unsigned int regsrc;
-
-	regsrc = clk_readl(MUX_DISPPWM_ADDR);
-	PWM_MSG("read CLK_CFG_7 config %x", regsrc);
-	return regsrc & 0x3;
-}
-
-/*****************************************************************************
- *
- * disp pwm source clock select mux api
- *
-*****************************************************************************/
-#define BRINGUP
-static int disp_pwm_set_pwmmux(unsigned int clk_req)
-{
-	UINT32 clksrc = 0;
-	unsigned int regsrc;
-
-	PWM_MSG("new pwm src setting=%x", clk_req);
-
-	if (disp_pwm_get_muxbase() == -1)
-		return -1;
-
-	regsrc = disp_pwm_get_pwmmux();
-
-	switch (clk_req) {
-	case CLK26M:
-		{
-#if defined(CONFIG_MTK_CLKMGR) || defined(BRINGUP)
-		clksrc = 0;
-#else
-
-#endif
-		break;
-		}
-	case UNIVPLL_104M:
-		{
-#if defined(CONFIG_MTK_CLKMGR) || defined(BRINGUP)
-		clksrc = 1;
-#else
-
-#endif
-		break;
-		}
-	case OSC_104M:
-		{
-#if defined(CONFIG_MTK_CLKMGR) || defined(BRINGUP)
-		clksrc = 2;
-#else
-		clksrc = OSC_D2;
-#endif
-		break;
-		}
-	case OSC_26M:
-		{
-#if defined(CONFIG_MTK_CLKMGR) || defined(BRINGUP)
-		clksrc = 3;
-#else
-		clksrc = OSC_D8;
-#endif
-		break;
-		}
-	default:
-		{
-		PWM_ERR("[DPI]unknown clock frequency: %d\n", clksrc);
-		break;
-		}
-	}
-
-	PWM_MSG("CLK_CFG setting : %x->%x", regsrc, clk_req);
-
-#ifdef BRINGUP
-	PWM_MSG("hard code set");
-	regsrc = regsrc & 0xfffffffc;
-	regsrc = regsrc | clksrc;
-	clk_writel(MUX_DISPPWM_ADDR, regsrc);/* select clock source */
-	regsrc = clk_readl(MUX_DISPPWM_ADDR);
-	PWM_MSG("CLK_CFG(after config) %x", regsrc);
-	regsrc = clk_readl(MUX_UPDATE_ADDR);/* set clock source update bit */
-	regsrc = regsrc | (0x1 << 27);
-	clk_writel(MUX_UPDATE_ADDR, regsrc);
-#else
-#ifdef CONFIG_MTK_CLKMGR
-	PWM_MSG("normal clk api");
-	clkmux_sel(MT_MUX_PWM, clksrc, "DISP_PWM");
-#else
-	if (clksrc > MUX_DISPPWM) {
-		PWM_MSG("ccf clk(%d) api apply success", clksrc);
-		ddp_clk_enable(MUX_DISPPWM);
-		ddp_clk_set_parent(MUX_DISPPWM, clksrc);
-		ddp_clk_disable(MUX_DISPPWM);
-	} else {
-		PWM_ERR("ccf clk api apply fail");
-	}
-#endif
-#endif
-
-	return 0;
-}
-
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 	/* struct cust_mt65xx_led *cust_led_list; */
@@ -328,10 +67,6 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int index = index_of_pwm(DISP_PWM0);
 	int i;
-
-#if defined(CONFIG_ARCH_MT6755)
-	disp_pwm_set_pwmmux(3);
-#endif
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
 #if 0
@@ -605,17 +340,9 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 
 		if (old_pwm == 0 || level_1024 == 0 || abs_diff > 64) {
 			/* To be printed in UART log */
-			/*
-			PWM_NOTICE("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d(dup=%d)",
-				id, level_1024, old_pwm, g_pwm_duplicate_count);
-			*/
 			disp_pwm_log(level_1024, NOTICE_LOG);
 		} else {
-			/*
-			PWM_MSG("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d(dup=%d)",
-				id, level_1024, old_pwm, g_pwm_duplicate_count);
-			*/
-			disp_pwm_log(level_1024,  MSG_LOG);
+			disp_pwm_log(level_1024, MSG_LOG);
 		}
 
 		if (level_1024 > g_pwm_max_backlight[index])
@@ -639,13 +366,6 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		g_pwm_duplicate_count = 0;
 	} else {
 		g_pwm_duplicate_count = (g_pwm_duplicate_count + 1) & 63;
-		if (g_pwm_duplicate_count == 2) {
-			/*
-			PWM_MSG
-			    ("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d (dup)",
-			     id, level_1024, old_pwm);
-			*/
-		}
 	}
 
 	return 0;
@@ -661,20 +381,18 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 		enable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		enable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
 #else
+#if !defined(CONFIG_ARCH_MT6580) /* Not ready yet */
 		enable_clock(MT_CG_PERI_DISP_PWM, "PWM");
+#endif
 #endif
 #else /* Common Clock Framework */
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_enable(DISP_PWM);
+		/* ddp_clk_enable(DISP_PWM); */
 #else
 		disp_clk_enable(DISP_PWM);
 #endif
 #endif
 	}
-#endif
-
-#if defined(CONFIG_ARCH_MT6755)
-	disp_pwm_osc_on(); /* enable OSC 26M for default clock source */
 #endif
 
 	return 0;
@@ -691,11 +409,13 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 		disable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		disable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
 #else
+#if !defined(CONFIG_ARCH_MT6580)
 		disable_clock(MT_CG_PERI_DISP_PWM, "PWM");
+#endif
 #endif
 #else /* Common Clock Framework */
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_disable(DISP_PWM);
+		/* ddp_clk_disable(DISP_PWM); */
 #else
 		disp_clk_disable(DISP_PWM);
 #endif
@@ -703,9 +423,6 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
-	disp_pwm_osc_off();
-#endif
 	return 0;
 }
 
@@ -874,7 +591,7 @@ static void disp_pwm_dump(void)
 void disp_pwm_test(const char *cmd, char *debug_output)
 {
 	unsigned long offset;
-	unsigned int value, mask, regsrc;
+	unsigned int value, mask;
 
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 
@@ -900,25 +617,10 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		}
 		if (count >= 2)
 			PWM_MSG("[+0x%03lx] = 0x%08x(%d) & 0x%08x", offset, value, value, mask);
-
 	} else if (strncmp(cmd, "dump", 4) == 0) {
 		disp_pwm_dump();
-
 	} else if (strncmp(cmd, "pinmux", 6) == 0) {
 		disp_pwm_test_pin_mux();
-
-	} else if (strncmp(cmd, "pwmmux:", 7) == 0) {
-		unsigned int clksrc = cmd[7] - '0';
-
-		disp_pwm_osc_on();
-		disp_pwm_set_pwmmux(clksrc);
-
-	} else if (strncmp(cmd, "clkinfo", 7) == 0) {
-		disp_pwm_get_muxbase();
-		disp_pwm_get_oscbase();
-		regsrc = disp_pwm_get_pwmmux();
-		PWM_MSG("clock source=%d, osc status=%d", regsrc, disp_pwm_check_osc_status());
 	}
-
 }
 

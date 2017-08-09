@@ -5,7 +5,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#include "ddp_clkmgr.h"
+/* #include <ddp_clkmgr.h> */
 #endif
 #include <cmdq_record.h>
 #include <ddp_drv.h>
@@ -203,7 +203,7 @@ static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 		enable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_enable(DISP0_DISP_GAMMA);
+		/* ddp_clk_enable(DISP0_DISP_GAMMA); */
 #else
 		disp_clk_enable(DISP0_DISP_GAMMA);
 #endif
@@ -221,7 +221,7 @@ static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 		disable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_disable(DISP0_DISP_GAMMA);
+		/* ddp_clk_disable(DISP0_DISP_GAMMA); */
 #else
 		disp_clk_disable(DISP0_DISP_GAMMA);
 #endif
@@ -404,10 +404,12 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_CCORR) {
 #ifdef CONFIG_MTK_CLKMGR
+#if !defined(CONFIG_ARCH_MT6580)
 		enable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
+#endif
 #else
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_enable(DISP0_DISP_CCORR);
+		/* ddp_clk_enable(DISP0_DISP_CCORR); */
 #else
 		disp_clk_enable(DISP0_DISP_CCORR);
 #endif
@@ -422,10 +424,12 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_CCORR) {
 #ifdef CONFIG_MTK_CLKMGR
+#if !defined(CONFIG_ARCH_MT6580)
 		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
+#endif
 #else
 #if defined(CONFIG_ARCH_MT6755)
-		ddp_clk_disable(DISP0_DISP_CCORR);
+		/* ddp_clk_disable(DISP0_DISP_CCORR); */
 #else
 		disp_clk_disable(DISP0_DISP_CCORR);
 #endif
@@ -446,6 +450,7 @@ DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.power_on = disp_ccorr_power_on,
 	.power_off = disp_ccorr_power_off,
 };
+
 
 int ccorr_interface_for_color(unsigned int ccorr_idx,
 	unsigned int ccorr_coef_ref[3][3], void *handle)
@@ -519,6 +524,7 @@ int ccorr_interface_for_color(unsigned int ccorr_idx,
 	return 0;
 }
 
+
 static int ccorr_parse_coef(const char *cmd, void *handle)
 {
 
@@ -555,6 +561,7 @@ static int ccorr_parse_coef(const char *cmd, void *handle)
 	return 0;
 }
 
+
 static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned int *value, unsigned int *mask)
 {
 	int count = 0;
@@ -586,6 +593,7 @@ static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned i
 	return count;
 }
 
+
 static void ccorr_dump_reg(void)
 {
 	const unsigned long reg_base = DISPSYS_CCORR_BASE;
@@ -605,6 +613,7 @@ static void ccorr_dump_reg(void)
 		CCORR_DBG("[+0x%02x] = 0x%08x", offset, val);
 	}
 }
+
 
 void ccorr_test(const char *cmd, char *debug_output)
 {

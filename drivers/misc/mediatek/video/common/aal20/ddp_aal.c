@@ -7,17 +7,17 @@
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
 /* #include <linux/leds-mt65xx.h> */
-/* #include <linux/aal_api.h> */
 #include <cmdq_record.h>
 #include <ddp_reg.h>
 #include <ddp_drv.h>
 #include <ddp_path.h>
+#include <primary_display.h>
 #include <ddp_aal.h>
 #include <ddp_pwm.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#include "ddp_clkmgr.h"
+/* #include <ddp_clkmgr.h> */
 #endif
 
 
@@ -46,6 +46,8 @@ static volatile int g_aal_hist_available;
 static volatile int g_aal_dirty_frame_retrieved = 1;
 static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
+static volatile int g_aal_initialed;
+
 
 static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *cmdq)
 {
@@ -409,10 +411,8 @@ static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, vo
 
 
 /*****************************************************************************
- *
  * AAL Backup / Restore function
- *
-*****************************************************************************/
+ *****************************************************************************/
 struct { /* structure for backup AAL register value */
 	unsigned int DRE_MAPPING;
 	unsigned int DRE_FLT_FORCE[11];
@@ -420,6 +420,8 @@ struct { /* structure for backup AAL register value */
 	unsigned int CABC_02;
 	unsigned int CABC_GAINLMT[11];
 } g_aal_backup;
+
+
 static void ddp_aal_backup(void)
 {
 	int i;
@@ -432,25 +434,33 @@ static void ddp_aal_backup(void)
 	g_aal_backup.DRE_MAPPING = DISP_REG_GET(DISP_AAL_DRE_MAPPING_00);
 	for (i = 0; i <= 10; i++)
 		g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+	g_aal_initialed = 1;
 
 }
+
+
 static void ddp_aal_restore(void *cmq_handle)
 {
 	int i;
 
-	DISP_REG_SET(cmq_handle, DISP_AAL_CABC_00, g_aal_backup.CABC_00);
-	DISP_REG_SET(cmq_handle, DISP_AAL_CABC_02, g_aal_backup.CABC_02);
-	for (i = 0; i <= 10; i++)
-		DISP_REG_SET(cmq_handle, DISP_AAL_CABC_GAINLMT_TBL(i), g_aal_backup.CABC_GAINLMT[i]);
+	if (g_aal_initialed == 1) {
+		DISP_REG_SET(cmq_handle, DISP_AAL_CABC_00, g_aal_backup.CABC_00);
+		DISP_REG_SET(cmq_handle, DISP_AAL_CABC_02, g_aal_backup.CABC_02);
+		for (i = 0; i <= 10; i++)
+			DISP_REG_SET(cmq_handle, DISP_AAL_CABC_GAINLMT_TBL(i), g_aal_backup.CABC_GAINLMT[i]);
 
-	DISP_REG_SET(cmq_handle, DISP_AAL_DRE_MAPPING_00, g_aal_backup.DRE_MAPPING);
-	for (i = 0; i <= 10; i++)
-		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i), g_aal_backup.DRE_FLT_FORCE[i]);
-
+		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_MAPPING_00, g_aal_backup.DRE_MAPPING);
+		for (i = 0; i <= 10; i++)
+			DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i), g_aal_backup.DRE_FLT_FORCE[i]);
+	}
 }
+
 
 static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* aal is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_AAL, "aal");
@@ -463,6 +473,7 @@ static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 #endif
 	AAL_DBG("aal_clock_on CG 0x%x", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
+#endif
 	ddp_aal_restore(cmq_handle);
 	return 0;
 }
@@ -470,6 +481,9 @@ static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_aal_backup();
+#if defined(CONFIG_ARCH_MT6755)
+	/* aal is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 	AAL_DBG("aal_clock_off");
 #ifdef CONFIG_MTK_CLKMGR
@@ -479,6 +493,7 @@ static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 	ddp_clk_disable(DISP0_DISP_AAL);
 #else
 	disp_clk_disable(DISP0_DISP_AAL);
+#endif
 #endif
 #endif
 #endif

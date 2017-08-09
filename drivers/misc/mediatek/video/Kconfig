@@ -56,3 +56,22 @@ config MTK_FB_SUPPORT_ASSERTION_LAYER
 	  This enable support for AEE assertion layer.
 	  If you want to enable AEE assertion layer support, say Y here.
 	  If unsure, say N.
+
+config MTK_AAL_SUPPORT
+	bool "MTK_AAL_SUPPORT"
+	default n
+	help
+	  Decide whether to support ambient-light adaptive luma and
+	  display visual enhancement.
+	  This feature requires the cowork of AAL user-space algorithm process.
+	  Please also turn on MTK_AAL_SUPPORT in ProjectConfig.mk.
+
+config MTK_OD_SUPPORT
+	bool "MTK_OD_SUPPORT"
+	default n
+	help
+	  Over drive LCD to enhance the response time.
+	  On high frame rate (e.g. 120Hz) platform, the LCD response time is
+	  not short enough to display clear moving objects.
+	  This feature allows to speed up the change time of each pixels.
+	  MUST fill the over-drive table correctly according to LCD property.
