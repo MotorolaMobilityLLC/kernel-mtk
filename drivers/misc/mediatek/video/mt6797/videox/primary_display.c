@@ -1578,7 +1578,7 @@ static int _DL_switch_to_DC_fast(void)
 	/* 5. backup rdma address to slots */
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
-	cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(rdma_config.inputFormat));
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 
 
 	/* 6 .flush to cmdq */
@@ -2682,8 +2682,6 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	addr = ddp_ovl_get_cur_addr(!_should_config_ovl_input(), 0);
 	if ((primary_display_is_decouple_mode() == 0))
 		update_frm_seq_info(addr, 0, 2, FRM_START);
-
-	decouple_update_rdma_config();
 
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagEnd, 1, userdata);
 	return ret;
@@ -4480,10 +4478,6 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	if (gTriggerDispMode > 0)
 		return 0;
 
-	if (pgc->state == DISP_SLEPT) {
-		DISPERR("%s, skip because primary dipslay is sleep\n", __func__);
-		goto done;
-	}
 	primary_display_idlemgr_kick(__func__, 0);
 
 	if (primary_display_is_decouple_mode()) {
@@ -4492,6 +4486,22 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	} else {
 		disp_handle = pgc->dpmgr_handle;
 		cmdq_handle = pgc->cmdq_handle_config;
+	}
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("%s, skip because primary dipslay is slept\n", __func__);
+
+		if (is_DAL_Enabled() &&
+			cfg->setter == SESSION_USER_AEE &&
+			cfg->input_cfg[0].layer_id == primary_display_get_option("ASSERT_LAYER")) {
+			disp_ddp_path_config *data_config = dpmgr_path_get_last_config(disp_handle);
+			int layer = cfg->input_cfg[0].layer_id;
+
+			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
+					&cfg->input_cfg[0]);
+		}
+
+		goto done;
 	}
 
 	fps_ctx_update(&primary_fps_ctx);
@@ -5582,6 +5592,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 
 	_primary_path_lock(__func__);
 
+	primary_display_idlemgr_kick(__func__, 0);
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -5647,6 +5658,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 	}
 
 	_primary_path_lock(__func__);
+	primary_display_idlemgr_kick(__func__, 1);
 
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
 

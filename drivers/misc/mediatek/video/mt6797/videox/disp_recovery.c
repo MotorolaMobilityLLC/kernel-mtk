@@ -38,7 +38,8 @@
 #include "ddp_manager.h"
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
-#include "mmdvfs_mgr.h"
+#include "mt_smi.h"
+/* #include "mmdvfs_mgr.h" */
 #include "disp_drv_log.h"
 #include "ddp_log.h"
 #include "disp_lowpower.h"
@@ -138,6 +139,7 @@ int _esd_check_config_handle_cmd(cmdqRecHandle handle)
 
 	DISPCHECK("[ESD]_esd_check_config_handle_cmd ret=%d\n", ret);
 
+
 	if (ret)
 		ret = 1;
 	return ret;
@@ -180,6 +182,7 @@ int _esd_check_config_handle_vdo(cmdqRecHandle handle)
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
 	DISPCHECK("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
+
 
 	if (ret)
 		ret = 1;
@@ -349,7 +352,7 @@ int do_esd_check_read(void)
 	cmdqRecHandle handle;
 
 	/* 0.create esd check cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
 
 	primary_display_manual_lock();
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
@@ -425,14 +428,14 @@ int primary_display_esd_check(void)
 		if (GPIO_EINT_MODE == mode) {
 			DISPCHECK("[ESD]ESD check eint\n");
 			MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse,
-				       primary_display_is_video_mode(), mode);
+				primary_display_is_video_mode(), mode);
 			primary_display_switch_esd_mode(mode);
 			ret = do_esd_check_eint();
 			mode = GPIO_DSI_MODE; /* used for mode switch */
 			primary_display_switch_esd_mode(mode);
 		} else if (GPIO_DSI_MODE == mode) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse,
-				       primary_display_is_video_mode(), mode);
+				primary_display_is_video_mode(), mode);
 			if (primary_display_is_video_mode()) {
 				DISPCHECK("[ESD]ESD check read\n");
 				ret = do_esd_check_read();
@@ -440,7 +443,7 @@ int primary_display_esd_check(void)
 			} else {
 				/* need kick idle in case of cmd mode idle disable mtcmos */
 				if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
-					primary_display_idlemgr_kick(__func__, 1);
+					primary_display_idlemgr_kick((char *)__func__, 1);
 				ret = do_esd_check_dsi_te();
 			}
 		}
@@ -471,7 +474,7 @@ int primary_display_esd_check(void)
 
 	/* only cmd mode read & with disable mmsys clk will kick */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
-		primary_display_idlemgr_kick(__func__, 1);
+		primary_display_idlemgr_kick((char *)__func__, 1);
 	ret = do_esd_check_read();
 
 
@@ -494,8 +497,8 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	int esd_try_cnt = 5;	/* 20; */
 	int recovery_done = 0;
 
-	sched_setscheduler(current, SCHED_RR, &param);
 	DISPFUNC();
+	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
 		msleep(2000);/*2s*/
@@ -558,12 +561,13 @@ int primary_display_esd_recovery(void)
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse,
 		       primary_display_is_video_mode(), 1);
 
+
 	lcm_param = disp_lcm_get_params(primary_get_lcm());
 	if (primary_get_state() == DISP_SLEPT) {
-		DISPCHECK("[ESD]esd recovery but primary display path is slept?\n");
+		DISPCHECK("[ESD]esd recovery but primary display path is slept??\n");
 		goto done;
 	}
-	primary_display_idlemgr_kick(__func__, 0);
+	primary_display_idlemgr_kick((char *)__func__, 0);
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 2);
 
 	/* blocking flush before stop trigger loop */

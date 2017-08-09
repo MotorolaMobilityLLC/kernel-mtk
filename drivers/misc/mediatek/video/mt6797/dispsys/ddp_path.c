@@ -1276,12 +1276,15 @@ int disp_get_dst_module(DDP_SCENARIO_ENUM scenario)
 int ddp_convert_ovl_input_to_rdma(RDMA_CONFIG_STRUCT *rdma_cfg, OVL_CONFIG_STRUCT *ovl_cfg,
 					int dst_w, int dst_h)
 {
+	unsigned int Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
+	unsigned int offset;
 	rdma_cfg->dst_y = ovl_cfg->dst_y;
 	rdma_cfg->dst_x = ovl_cfg->dst_x;
 	rdma_cfg->dst_h = dst_h;
 	rdma_cfg->dst_w = dst_w;
 	rdma_cfg->inputFormat = ovl_cfg->fmt;
-	rdma_cfg->address = ovl_cfg->addr;
+	offset = ovl_cfg->src_x * Bpp + ovl_cfg->src_y * ovl_cfg->src_pitch;
+	rdma_cfg->address = ovl_cfg->addr + offset;
 	rdma_cfg->pitch = ovl_cfg->src_pitch;
 	rdma_cfg->width = ovl_cfg->dst_w;
 	rdma_cfg->height = ovl_cfg->dst_h;
