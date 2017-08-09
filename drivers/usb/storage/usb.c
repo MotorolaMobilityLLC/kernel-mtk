@@ -134,6 +134,16 @@ MODULE_PARM_DESC(quirks, "supplemental list of device IDs and their quirks");
 	.initFunction = init_function,	\
 }
 
+#define HW_UNUSUAL_DEV(idVendor, cl, sc, pr, \
+vendor_name, product_name, use_protocol, use_transport, \
+init_function, Flags) \
+{ \
+.vendorName = vendor_name, \
+.productName = product_name, \
+.useProtocol = use_protocol, \
+.useTransport = use_transport, \
+.initFunction = init_function, \
+}
 static struct us_unusual_dev us_unusual_dev_list[] = {
 #	include "unusual_devs.h"
 	{ }		/* Terminating entry */
@@ -144,6 +154,7 @@ static struct us_unusual_dev for_dynamic_ids =
 
 #undef UNUSUAL_DEV
 #undef COMPLIANT_DEV
+#undef HW_UNUSUAL_DEV
 #undef USUAL_DEV
 #undef UNUSUAL_VENDOR_INTF
 
@@ -187,7 +198,7 @@ int usb_stor_suspend(struct usb_interface *iface, pm_message_t message)
 	mutex_lock(&us->dev_mutex);
 
 	if (us->suspend_resume_hook)
-		(us->suspend_resume_hook)(us, US_SUSPEND);
+		(us->suspend_resume_hook) (us, US_SUSPEND);
 
 	/* When runtime PM is working, we'll set a flag to indicate
 	 * whether we should autoresume when a SCSI request arrives. */
@@ -204,7 +215,7 @@ int usb_stor_resume(struct usb_interface *iface)
 	mutex_lock(&us->dev_mutex);
 
 	if (us->suspend_resume_hook)
-		(us->suspend_resume_hook)(us, US_RESUME);
+		(us->suspend_resume_hook) (us, US_RESUME);
 
 	mutex_unlock(&us->dev_mutex);
 	return 0;
@@ -224,7 +235,7 @@ int usb_stor_reset_resume(struct usb_interface *iface)
 }
 EXPORT_SYMBOL_GPL(usb_stor_reset_resume);
 
-#endif /* CONFIG_PM */
+#endif				/* CONFIG_PM */
 
 /*
  * The next two routines get called just before and just after
@@ -273,26 +284,26 @@ void fill_inquiry_response(struct us_data *us, unsigned char *data,
 
 	memset(data+8, ' ', 28);
 	if (data[0]&0x20) { /* USB device currently not connected. Return
-			      peripheral qualifier 001b ("...however, the
-			      physical device is not currently connected
-			      to this logical unit") and leave vendor and
-			      product identification empty. ("If the target
-			      does store some of the INQUIRY data on the
-			      device, it may return zeros or ASCII spaces
-			      (20h) in those fields until the data is
-			      available from the device."). */
+				   peripheral qualifier 001b ("...however, the
+				   physical device is not currently connected
+				   to this logical unit") and leave vendor and
+				   product identification empty. ("If the target
+				   does store some of the INQUIRY data on the
+				   device, it may return zeros or ASCII spaces
+				   (20h) in those fields until the data is
+				   available from the device."). */
 	} else {
 		u16 bcdDevice = le16_to_cpu(us->pusb_dev->descriptor.bcdDevice);
 		int n;
 
 		n = strlen(us->unusual_dev->vendorName);
-		memcpy(data+8, us->unusual_dev->vendorName, min(8, n));
+		memcpy(data + 8, us->unusual_dev->vendorName, min(8, n));
 		n = strlen(us->unusual_dev->productName);
-		memcpy(data+16, us->unusual_dev->productName, min(16, n));
+		memcpy(data + 16, us->unusual_dev->productName, min(16, n));
 
-		data[32] = 0x30 + ((bcdDevice>>12) & 0x0F);
-		data[33] = 0x30 + ((bcdDevice>>8) & 0x0F);
-		data[34] = 0x30 + ((bcdDevice>>4) & 0x0F);
+		data[32] = 0x30 + ((bcdDevice >> 12) & 0x0F);
+		data[33] = 0x30 + ((bcdDevice >> 8) & 0x0F);
+		data[34] = 0x30 + ((bcdDevice >> 4) & 0x0F);
 		data[35] = 0x30 + ((bcdDevice) & 0x0F);
 	}
 
@@ -300,7 +311,7 @@ void fill_inquiry_response(struct us_data *us, unsigned char *data,
 }
 EXPORT_SYMBOL_GPL(fill_inquiry_response);
 
-static int usb_stor_control_thread(void * __us)
+static int usb_stor_control_thread(void *__us)
 {
 	struct us_data *us = (struct us_data *)__us;
 	struct Scsi_Host *host = us_to_host(us);
@@ -412,7 +423,7 @@ SkipForAbort:
 
 		/* unlock the device pointers */
 		mutex_unlock(&us->dev_mutex);
-	} /* for (;;) */
+	}			/* for (;;) */
 
 	/* Wait until we are told to stop */
 	for (;;) {
@@ -472,7 +483,7 @@ void usb_stor_adjust_quirks(struct usb_device *udev, unsigned long *fflags)
 	u16 pid = le16_to_cpu(udev->descriptor.idProduct);
 	unsigned f = 0;
 	unsigned int mask = (US_FL_SANE_SENSE | US_FL_BAD_SENSE |
-			US_FL_FIX_CAPACITY | US_FL_IGNORE_UAS |
+			     US_FL_FIX_CAPACITY | US_FL_IGNORE_UAS |
 			US_FL_CAPACITY_HEURISTICS | US_FL_IGNORE_DEVICE |
 			US_FL_NOT_LOCKABLE | US_FL_MAX_SECTORS_64 |
 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
@@ -497,7 +508,7 @@ void usb_stor_adjust_quirks(struct usb_device *udev, unsigned long *fflags)
 				break;
 		}
 	}
-	if (!*p)	/* No match */
+	if (!*p)		/* No match */
 		return;
 
 	/* Collect the flags */
@@ -560,7 +571,7 @@ void usb_stor_adjust_quirks(struct usb_device *udev, unsigned long *fflags)
 		case 'w':
 			f |= US_FL_NO_WP_DETECT;
 			break;
-		/* Ignore unrecognized flag characters */
+			/* Ignore unrecognized flag characters */
 		}
 	}
 	*fflags = (*fflags & ~mask) | f;
@@ -611,20 +622,20 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 	 * from the unusual_devs.h table.
 	 */
 	if (id->idVendor || id->idProduct) {
-		static const char *msgs[3] = {
+		/*static const char *msgs[3] = {
 			"an unneeded SubClass entry",
 			"an unneeded Protocol entry",
 			"unneeded SubClass and Protocol entries"};
-		struct usb_device_descriptor *ddesc = &dev->descriptor;
+		struct usb_device_descriptor *ddesc = &dev->descriptor;*/
 		int msg = -1;
 
 		if (unusual_dev->useProtocol != USB_SC_DEVICE &&
 			us->subclass == idesc->bInterfaceSubClass)
 			msg += 1;
 		if (unusual_dev->useTransport != USB_PR_DEVICE &&
-			us->protocol == idesc->bInterfaceProtocol)
+		    us->protocol == idesc->bInterfaceProtocol)
 			msg += 2;
-		if (msg >= 0 && !(us->fflags & US_FL_NEED_OVERRIDE))
+		/*if (msg >= 0 && !(us->fflags & US_FL_NEED_OVERRIDE))
 			dev_notice(pdev, "This device "
 					"(%04x,%04x,%04x S %02x P %02x)"
 					" has %s in unusual_devs.h (kernel"
@@ -638,7 +649,7 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 					idesc->bInterfaceSubClass,
 					idesc->bInterfaceProtocol,
 					msgs[msg],
-					utsname()->release);
+					utsname()->release);*/
 	}
 
 	return 0;
@@ -882,7 +893,7 @@ static void release_everything(struct us_data *us)
 static void usb_stor_scan_dwork(struct work_struct *work)
 {
 	struct us_data *us = container_of(work, struct us_data,
-			scan_dwork.work);
+					  scan_dwork.work);
 	struct device *dev = &us->pusb_intf->dev;
 
 	dev_dbg(dev, "starting scan\n");
@@ -1106,17 +1117,17 @@ static int storage_probe(struct usb_interface *intf,
 }
 
 static struct usb_driver usb_storage_driver = {
-	.name =		"usb-storage",
-	.probe =	storage_probe,
-	.disconnect =	usb_stor_disconnect,
-	.suspend =	usb_stor_suspend,
-	.resume =	usb_stor_resume,
-	.reset_resume =	usb_stor_reset_resume,
-	.pre_reset =	usb_stor_pre_reset,
-	.post_reset =	usb_stor_post_reset,
-	.id_table =	usb_storage_usb_ids,
+	.name = "usb-storage",
+	.probe = storage_probe,
+	.disconnect = usb_stor_disconnect,
+	.suspend = usb_stor_suspend,
+	.resume = usb_stor_resume,
+	.reset_resume = usb_stor_reset_resume,
+	.pre_reset = usb_stor_pre_reset,
+	.post_reset = usb_stor_post_reset,
+	.id_table = usb_storage_usb_ids,
 	.supports_autosuspend = 1,
-	.soft_unbind =	1,
+	.soft_unbind = 1,
 };
 
 module_usb_driver(usb_storage_driver);
