@@ -242,7 +242,7 @@ static struct upstream_transaction *alloc_upstream_transaction(struct rawbulk_tr
 {
 	struct upstream_transaction *t;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	/* t = kmalloc(sizeof *t + bufsz * sizeof(unsigned char), GFP_KERNEL); */
 	t = kmalloc(sizeof(struct upstream_transaction), GFP_KERNEL);
@@ -282,7 +282,7 @@ static void free_upstream_transaction(struct rawbulk_transfer *transfer)
 {
 	struct list_head *p, *n;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	mutex_lock(&transfer->usb_up_mutex);
 	list_for_each_safe(p, n, &transfer->upstream.transactions) {
@@ -304,7 +304,7 @@ static void free_upstream_sdio_buf(struct rawbulk_transfer *transfer)
 {
 	struct list_head *p, *n;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	mutex_lock(&transfer->modem_up_mutex);
 	list_for_each_safe(p, n, &transfer->cache_buf_lists.transactions) {

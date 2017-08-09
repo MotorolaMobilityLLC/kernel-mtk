@@ -93,7 +93,7 @@ struct rawbulk_function *prealloced_functions[_MAX_TID] = { NULL };
 
 struct rawbulk_function *rawbulk_lookup_function(int transfer_id)
 {
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 	if (transfer_id >= 0 && transfer_id < _MAX_TID)
 		return prealloced_functions[transfer_id];
 	return NULL;
@@ -106,17 +106,17 @@ static inline int check_enable_state(struct rawbulk_function *fn)
 	int enab;
 	unsigned long flags;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 	spin_lock_irqsave(&fn->lock, flags);
 	enab = fn->enable ? 1 : 0;
-	C2K_NOTE("enab(%d)\n", enab);
+	C2K_DBG("enab(%d)\n", enab);
 	spin_unlock_irqrestore(&fn->lock, flags);
 	return enab;
 }
 
 int rawbulk_check_enable(struct rawbulk_function *fn)
 {
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 	return check_enable_state(fn);
 }
 EXPORT_SYMBOL_GPL(rawbulk_check_enable);
@@ -676,7 +676,7 @@ static __init struct rawbulk_function *rawbulk_alloc_function(int transfer_id)
 
 static void rawbulk_destroy_function(struct rawbulk_function *fn)
 {
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	if (!fn)
 		return;
