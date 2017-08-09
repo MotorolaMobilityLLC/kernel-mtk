@@ -192,7 +192,7 @@ static unsigned int scp_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &logwait, wait);
 
-	if (kfifo_avail(&scp_buf_fifo) > 0)
+	if (kfifo_len(&scp_buf_fifo) > 0)
 		ret |= (POLLIN | POLLRDNORM);
 
 	return ret;
