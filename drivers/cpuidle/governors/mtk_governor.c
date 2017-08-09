@@ -25,17 +25,12 @@ struct mtk_idle_device {
 	int                 last_state_idx;
 };
 
-#define LOAD_INT(x) ((x) >> FSHIFT)
-#define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
-
-#define IDLE_TAG     "[Power/swap]"
-#define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
-
 static DEFINE_PER_CPU(struct mtk_idle_device, mtk_idle_devices);
 
 int __attribute__((weak)) mt_idle_select(int cpu)
 {
-	return 0;
+	/* Default: CPUidle state select failed */
+	return -1;
 }
 
 void __attribute__((weak)) mt_cpuidle_framework_init(void)
