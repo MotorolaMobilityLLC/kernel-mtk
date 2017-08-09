@@ -605,6 +605,10 @@ int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
 	return 0;
 }
 
+void __attribute__((weak)) mt_eint_print_status(void)
+{
+}
+
 #if defined(CONFIG_ARCH_MT6797)
 void __attribute__((weak)) mt_cirq_clone_gic(void)
 {
