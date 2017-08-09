@@ -343,7 +343,7 @@ int ovl2mem_init(unsigned int session)
 	pgc->state = 1;
 	pgc->session = session;
 	atomic_set(&g_trigger_ticket, 1);
-	atomic_set(&g_release_ticket, 1);
+	atomic_set(&g_release_ticket, 0);
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
@@ -558,7 +558,7 @@ int ovl2mem_deinit(void)
 	pgc->state = 0;
 	pgc->need_trigger_path = 0;
 	atomic_set(&g_trigger_ticket, 1);
-	atomic_set(&g_release_ticket, 1);
+	atomic_set(&g_release_ticket, 0);
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
