@@ -79,9 +79,10 @@ static unsigned int func_lv_mask_udi;
 #endif
 
 static unsigned int func_lv_mask_udi;
-unsigned int IR_bit_count, DR_bit_count;
 unsigned char IR_byte[UDI_FIFOSIZE], DR_byte[UDI_FIFOSIZE];
-unsigned int jtag_sw_tck;	/* default debug channel = 1 */
+unsigned int IR_bit_count, IR_pause_count;
+unsigned int DR_bit_count, DR_pause_count;
+unsigned int jtag_sw_tck; /* default debug channel = 1 */
 unsigned int udi_addr_phy = 10222470;
 
 #define CTOI(char_ascii)    ((char_ascii <= 0x39) ? (char_ascii - 0x30) :	\
@@ -91,7 +92,8 @@ int udi_jtag_clock_read(void)
 {
 	int i, j;
 
-	if ((IR_bit_count == 0) || (DR_bit_count == 0))
+	/* support ID or DR zero */
+	if ((IR_bit_count == 0) && (DR_bit_count == 0))
 		return 0;
 
 #if 1
@@ -103,52 +105,97 @@ int udi_jtag_clock_read(void)
 	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 10);
 #endif
 
-	/* into idel mode */
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
-
-	/* Jog the state machine arround to shift IR */
-	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
-
-	/* Shift the IR bits, assert TMS=1 for last bit */
-	for (i = 0; i < IR_bit_count; i++) {
-		j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (IR_bit_count - 1)) ? 1 : 0),
-			(((IR_byte[i >> 3]) >> (i & 7)) & 1), 1);
-		IR_byte[i >> 3] &= ~(1 << (i & 7));
-		IR_byte[i >> 3] |= (j << (i & 7));
-	}
-
-	if (DR_bit_count) {
-		/* Jog the state machine arround to shift DR */
+	if (IR_bit_count) {
+		/* into idel mode */
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+		/* Jog the state machine arround to shift IR */
 		udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
+
+		/* Shift the IR bits, assert TMS=1 for last bit */
+		for (i = 0; i < IR_bit_count; i++) {
+			j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (IR_bit_count - 1)) ? 1 : 0),
+				(((IR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+			IR_byte[i >> 3] &= ~(1 << (i & 7));
+			IR_byte[i >> 3] |= (j << (i & 7));
+		}
+
+		/* Should be in UPDATE IR */
+		if (IR_pause_count) {
+				udi_jtag_clock(jtag_sw_tck, 1, 0, 0, IR_pause_count);
+				udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+		} else
+			udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
+
+		if (DR_bit_count) {
+			/* Jog the state machine arround to shift DR */
+			udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
+			udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
+			/* Shift the DR bits, assert TMS=1 for last bit */
+			for (i = 0; i < DR_bit_count; i++) {
+				j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
+				(((DR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+				DR_byte[i >> 3] &= ~(1 << (i & 7));
+				DR_byte[i >> 3] |= (j << (i & 7));
+			}
+
+			/* Should be in UPDATE DR */
+			if (DR_pause_count) {
+					udi_jtag_clock(jtag_sw_tck, 1, 0, 0, DR_pause_count);
+					udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+			} else
+				udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
+		} else
+			udi_ver("WARNING: IR-Only JTAG Command\n");
+
+		/* Return the state machine to run-test-idle */
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+
+	} else if (DR_bit_count) {
+		udi_ver("WARNING: DR-Only JTAG Command\n");
+
+		/* into idel mode */
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+		/* Jog the state machine arround to shift DR */
+		udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
 		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 2);
 
 		/* Shift the DR bits, assert TMS=1 for last bit */
 		for (i = 0; i < DR_bit_count; i++) {
 			j = udi_jtag_clock(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
 			(((DR_byte[i >> 3]) >> (i & 7)) & 1), 1);
-
 			DR_byte[i >> 3] &= ~(1 << (i & 7));
 			DR_byte[i >> 3] |= (j << (i & 7));
 		}
-	}
 
-	/* Return the state machine to run-test-idle */
-	udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
-	udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+		/* Should be in UPDATE DR */
+		if (DR_pause_count) {
+				udi_jtag_clock(jtag_sw_tck, 1, 0, 0, DR_pause_count);
+				udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 2);
+		} else
+			udi_jtag_clock(jtag_sw_tck, 1, 1, 0, 1);
+
+		/* Return the state machine to run-test-idle */
+		udi_jtag_clock(jtag_sw_tck, 1, 0, 0, 1);
+	} else
+		udi_error("SCAN command with #IR=0 and #DR=0. Doing nothing!\n");
 
 #ifndef __KERNEL__
 	/* Print the IR/DR readback values to STDOUT */
 	printf("Channel = %d, ", jtag_sw_tck);
-	printf("IR %u = ", IR_bit_count);
-	for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
-		printf("%x ", IR_byte[i]);
-	printf(" ");
+	if (IR_bit_count) {
+		printf("IR %u = ", IR_bit_count);
+		for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
+			printf("%x ", IR_byte[i]);
+		printf(" ");
+	}
 
-	printf("DR %u = ", DR_bit_count);
-	for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
-		printf("%x ", DR_byte[i]);
-	printf("\n");
+	if (DR_bit_count) {
+		printf("DR %u = ", DR_bit_count);
+		for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
+			printf("%x ", DR_byte[i]);
+		printf("\n");
+	}
 #endif
 
 	return 0;
@@ -219,14 +266,14 @@ static char *_copy_from_user_for_proc(const char __user *buffer, size_t count)
 	if (!buf)
 		return NULL;
 	if (count >= PAGE_SIZE)
-		goto out;
+		goto out0;
 	if (copy_from_user(buf, buffer, count))
-		goto out;
+		goto out0;
 
 	buf[count] = '\0';
 	return buf;
 
-out:
+out0:
 	free_page((unsigned long)buf);
 	return NULL;
 }
@@ -302,13 +349,19 @@ static int udi_jtag_clock_proc_show(struct seq_file *m, void *v)
 
 	/* Print the IR/DR readback values to STDOUT */
 	seq_printf(m, "IR %u ", IR_bit_count);
-	for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
-		seq_printf(m, "%02x", IR_byte[i]);
-	seq_puts(m, " ");
+	if (IR_bit_count) {
+		for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
+			seq_printf(m, "%02x", IR_byte[i]);
+	} else
+		seq_puts(m, "00");
 
-	seq_printf(m, "DR %u ", DR_bit_count);
-	for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
-		seq_printf(m, "%02x", DR_byte[i]);
+	seq_printf(m, " DR %u ", DR_bit_count);
+	if (DR_bit_count) {
+		for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
+			seq_printf(m, "%02x", DR_byte[i]);
+	} else
+		seq_puts(m, "00 ");
+
 	seq_puts(m, "\n");
 
 	return 0;
@@ -327,16 +380,22 @@ e.g. echo 3 12 a05 30 9b6a4109 > /proc/udi/udi_jtag_clock
      echo 0 11 006 11 000 > /proc/udi/udi_jtag_clock
      echo 0 58 003ffbffbfff807 35 7c000003f > /proc/udi/udi_jtag_clock
      (ans: IR 58 0000550000355000 DR 35 000003f000)
+new:
+     echo SCAN Sub-Ch IR-bit IR-hex [IR_pause_count] DR-bit DR-hex [DR_pause_count] > /proc/udi/udi_jtag_clock
+     echo SCAN %u %u %x [%u] %u %x [%u] > /proc/udi/udi_jtag_clock
+e.q 4 parameter:
+     echo SCAN 0 58 003ffbffbfff807 35 7c000003f > /proc/udi/udi_jtag_clock
+    6 parameter:
+     echo SCAN 0 58 003ffbffbfff807 12 35 7c000003f 5 > /proc/udi/udi_jtag_clock
 */
 
 static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-
-	unsigned int j, numdigits, length;
-	unsigned int recv_buf[3];
-	unsigned char recv_char[2][UDI_FIFOSIZE * 2]; /* two char is one byte */
-
 	char *buf = _copy_from_user_for_proc(buffer, count);
+	unsigned int i, numdigits, length;
+	unsigned int recv_buf[5];
+	unsigned char recv_char[2][UDI_FIFOSIZE * 2]; /* two char is one byte */
+	unsigned char recv_key_word[10];
 
 	if (!buf)
 		return -EINVAL;
@@ -345,69 +404,98 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 	jtag_sw_tck = 0;
 	IR_bit_count = 0;
 	DR_bit_count = 0;
+	IR_pause_count = 0;
+	DR_pause_count = 0;
 	memset(IR_byte, 0, sizeof(IR_byte));
 	memset(DR_byte, 0, sizeof(DR_byte));
 
-	if (sscanf(buf, "%d %u %s %u %s", &recv_buf[0], &recv_buf[1], recv_char[0], &recv_buf[2], recv_char[1]) == 5) {
-		/* check channel 0~3 */
-		if ((recv_buf[0] < 0) || (recv_buf[0] > 3)) {
-			udi_error("ERROR: Sub-Chains  ont 1~3\n");
-			goto out;
-		} else {
-			jtag_sw_tck = recv_buf[0];
-		}
-
-		/* Parse the IR command into a bit string, for a05 must be 9~12bits range */
-		if ((recv_buf[1] > (strlen(recv_char[0]) * 4)) || (recv_buf[1] < ((strlen(recv_char[0]) * 4) - 3))) {
-			udi_error("ERROR: IR string too short (%zu characters not match with %u bits)\n",
-						strlen(recv_char[0]), recv_buf[1]);
-			goto out;
-		} else {
-			IR_bit_count = recv_buf[1];
-			udi_ver("Input data: IR_bit_count = %u\n", IR_bit_count);
-			/* Parse the IR command into a bit string */
-			length = strlen(recv_char[0])-1;
-			numdigits = length / 2;
-
-			for (j = 0; j <= numdigits; j++) {
-				if (length == (j << 1)) {
-					IR_byte[j] = CTOI(recv_char[0][length - (2 * j)]);
-				} else {
-					IR_byte[j] = (CTOI(recv_char[0][length - (2 * j) - 1]) << 4) +
-								  CTOI(recv_char[0][length - (2 * j)]);
-				}
-				udi_ver("IR[%d] = 0x%02X\n", j, IR_byte[j]);
-			} /* example jtag_adb 1 12 a05 30 9b6a4109, IR[0]=0x05. IR[1]=0x0a */
-		}
-
-		/* Parse the DR command into a bit string, for 9b6a4109 must be 29~32bits range */
-		if ((recv_buf[2] > (strlen(recv_char[1]) * 4)) || (recv_buf[2] < ((strlen(recv_char[1]) * 4) - 3))) {
-			udi_error("ERROR: DR string too short (%zu hex characters not match with %u bits)\n",
-						strlen(recv_char[1]), recv_buf[2]);
-			goto out;
-		} else {
-			DR_bit_count = recv_buf[2];
-			udi_ver("Input data: DR_bit_count = %u\n", DR_bit_count);
-			/* Parse the DR command into a bit string */
-			length = strlen(recv_char[1])-1;
-			numdigits = length / 2;
-
-			for (j = 0; j <= numdigits; j++) {
-				if (length == (j << 1))
-					DR_byte[j] = CTOI(recv_char[1][length - (2 * j)]);
-				else
-					DR_byte[j] = (CTOI(recv_char[1][length - (2 * j) - 1]) << 4) +
-								  CTOI(recv_char[1][length - (2 * j)]);
-				udi_ver("DR[%d] = 0x%02X\n", j, DR_byte[j]);
-			} /* example jtag_adb 1 12 a05 30 9b6a4109, IR[0]=0x05. IR[1]=0x0a */
-		}
+	/* input check format */
+	if (sscanf(buf, "%s %u %u %s %u %s", &recv_key_word[0], &recv_buf[0],
+				&recv_buf[1], recv_char[0], &recv_buf[2], recv_char[1]) == 6) {
+		/* 4 parameter */
+		IR_pause_count = 0;
+		DR_pause_count = 0;
+	} else if (sscanf(buf, "%s %u %u %s %u %u %s %u", &recv_key_word[0], &recv_buf[0],
+				&recv_buf[1], recv_char[0], &recv_buf[3],
+				&recv_buf[2], recv_char[1], &recv_buf[4]) == 8) {
+		/* 6 parameter */
+		IR_pause_count = recv_buf[3];
+		DR_pause_count = recv_buf[4];
 	} else {
-		udi_ver("Input error! Input: echo sub_c ir_bit ir dr_bit dr > udi_jtag_clock\n");
-		udi_ver("Example: echo 0 12 a05 30 9b6a4109 > udi_jtag_clock\n");
 		udi_error("echo wrong format > /proc/udi/udi_jtag_clock\n");
+		goto out1;
 	}
 
-out:
+	/* chekc first key word equ "SCAN" */
+	if (strcmp(recv_key_word, "SCAN")) {
+		udi_error("echo wrong format > /proc/udi/udi_jtag_clock\n");
+		goto out1;
+	}
+
+	/* check channel 0~3 */
+	if ((recv_buf[0] < 0) || (recv_buf[0] > 3)) {
+		udi_error("ERROR: Sub-Chains  ont 1~3\n");
+		goto out1;
+	} else {
+		jtag_sw_tck = recv_buf[0];
+	}
+
+	/* chek IR/DR bit counter */
+	if ((recv_buf[1] == 0) && (recv_buf[2] == 0)) {
+		udi_error("ERROR: IR and DR bit all zero\n");
+		goto out1;
+	}
+
+	/* Parse the IR command into a bit string, for a05 must be 9~12bits range */
+	if (recv_buf[1] == 0)
+		udi_ver("WARNING: DR-Only JTAG Command\n");
+	else if ((recv_buf[1] > (strlen(recv_char[0]) * 4)) || (recv_buf[1] < ((strlen(recv_char[0]) * 4) - 3))) {
+		udi_error("ERROR: IR string too short (%zu characters not match with %u bits)\n",
+					strlen(recv_char[0]), recv_buf[1]);
+		goto out1;
+	} else {
+		IR_bit_count = recv_buf[1];
+		udi_ver("Input data: IR_bit_count = %u\n", IR_bit_count);
+		/* Parse the IR command into a bit string */
+		length = strlen(recv_char[0])-1;
+		numdigits = length / 2;
+
+		for (i = 0; i <= numdigits; i++) {
+			if (length == (i << 1)) {
+				IR_byte[i] = CTOI(recv_char[0][length - (2 * i)]);
+			} else {
+				IR_byte[i] = (CTOI(recv_char[0][length - (2 * i) - 1]) << 4) +
+							  CTOI(recv_char[0][length - (2 * i)]);
+			}
+			udi_ver("IR[%d] = 0x%02X\n", i, IR_byte[i]);
+		} /* example jtag_adb 1 12 a05 30 9b6a4109, IR[0]=0x05. IR[1]=0x0a */
+	}
+
+	/* Parse the DR command into a bit string, for 9b6a4109 must be 29~32bits range */
+	if (recv_buf[2] == 0)
+		udi_ver("WARNING: IR-Only JTAG Command\n");
+	else if ((recv_buf[2] > (strlen(recv_char[1]) * 4)) || (recv_buf[2] < ((strlen(recv_char[1]) * 4) - 3))) {
+		udi_error("ERROR: DR string too short (%zu hex characters not match with %u bits)\n",
+					strlen(recv_char[1]), recv_buf[2]);
+		goto out1;
+	} else {
+		DR_bit_count = recv_buf[2];
+		udi_ver("Input data: DR_bit_count = %u\n", DR_bit_count);
+		/* Parse the DR command into a bit string */
+		length = strlen(recv_char[1])-1;
+		numdigits = length / 2;
+
+		for (i = 0; i <= numdigits; i++) {
+			if (length == (i << 1))
+				DR_byte[i] = CTOI(recv_char[1][length - (2 * i)]);
+			else
+				DR_byte[i] = (CTOI(recv_char[1][length - (2 * i) - 1]) << 4) +
+							  CTOI(recv_char[1][length - (2 * i)]);
+			udi_ver("DR[%d] = 0x%02X\n", i, DR_byte[i]);
+		} /* example jtag_adb 1 12 a05 30 9b6a4109, IR[0]=0x05. IR[1]=0x0a */
+	}
+
+out1:
 	free_page((unsigned long)buf);
 	return count;
 }
@@ -417,23 +505,32 @@ static int udi_jtag_manual_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 
-	if ((IR_bit_count == 0) || (DR_bit_count == 0)) {
+	if ((IR_bit_count == 0) && (DR_bit_count == 0)) {
 		seq_puts(m, "IR_bit count or DR_bit_count is zero.\n");
-		seq_puts(m, "input example, adb shell echo 12 a05 30 9b6a4109 > udi_jtag_clock\n");
+		seq_puts(m, "Input error! 4 parameter: echo SCAN sub_c ir_bit ir dr_bit dr > udi_jtag_clock\n");
+		seq_puts(m, "             6 parameter: echo SCAN sub_c ir_bit ir ir_p dr_bit dr dr_p> udi_jtag_clock\n");
+		seq_puts(m, "Example: echo SCAN 0 12 a05 30 9b6a4109 > udi_jtag_clock\n");
+		seq_puts(m, "         echo SCAN 0 12 a05 5 30 9b6a4109 3 > udi_jtag_clock\n");
 		return 0;
 	}
 
+	seq_puts(m, "================= 2015/11/10 Ver 5.1 ==================\n");
 	seq_printf(m, "UDI Jtag sub-chains = %d\n", jtag_sw_tck);
 
-	seq_printf(m, "IR_bit count = %u ", IR_bit_count);
-	for (i = 0; i <= (IR_bit_count >> 3); i++)
-		seq_printf(m, ",IR[%d] =0x%02X ", i, IR_byte[i]);
+	seq_printf(m, "IR_bits_count = %u , IR_Pause_count = %u, ", IR_bit_count, IR_pause_count);
+	if (IR_bit_count) {
+		for (i = 0; i <= (IR_bit_count >> 3); i++)
+			seq_printf(m, ",IR[%d] =0x%02X ", i, IR_byte[i]);
+	}
 	seq_puts(m, "\n");
 
-	seq_printf(m, "DR_bit count = %u ", DR_bit_count);
-	for (i = 0; i <= (DR_bit_count >> 3); i++)
-		seq_printf(m, ",DR[%d] =0x%02X ", i, DR_byte[i]);
+	seq_printf(m, "DR_bits_count = %u , DR_Pause_count = %u, ", DR_bit_count, DR_pause_count);
+	if (DR_bit_count) {
+		for (i = 0; i <= (DR_bit_count >> 3); i++)
+			seq_printf(m, ",DR[%d] =0x%02X ", i, DR_byte[i]);
+	}
 	seq_puts(m, "\n");
+	seq_puts(m, "=======================================================\n");
 
 	udi_jtag_clock_proc_show(m, v);
 
@@ -548,7 +645,7 @@ static int __init udi_init(void)
 
 	if (err) {
 		udi_error("fail to register UDI device @ %s()\n", __func__);
-		goto out;
+		goto out2;
 	}
 
 	err = platform_driver_register(&udi_pdrv);
@@ -565,11 +662,11 @@ static int __init udi_init(void)
 	/* init proc */
 	if (_create_procfs()) {
 		err = -ENOMEM;
-		goto out;
+		goto out2;
 	}
 #endif /* CONFIG_PROC_FS */
 
-out:
+out2:
 	return err;
 }
 

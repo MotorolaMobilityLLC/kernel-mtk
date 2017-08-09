@@ -698,8 +698,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	else if (idvfs_init_opt.idvfs_status == 1) {
 		idvfs_init_opt.idvfs_status = 3;
 		aee_rr_rec_idvfs_state_manchine(3);
-	}
-	else if (idvfs_init_opt.idvfs_status == 4) {
+	} else if (idvfs_init_opt.idvfs_status == 4) {
 		/* wait SWREQ and into 5 fist */
 		idvfs_init_opt.idvfs_status = 5;
 		aee_rr_rec_idvfs_state_manchine(5);
@@ -1442,7 +1441,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	/* idvfs_write(0x1-0-0-1-a-2-8-4, armplldiv_mon_en); */
 #endif
 
-	seq_puts(m, "================= 2015/11/10 Ver 5.1 ===================\n");
+	seq_puts(m, "================= 2015/11/10 Ver 5.1 ==================\n");
 
 	/* if big cluster offline then return */
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
