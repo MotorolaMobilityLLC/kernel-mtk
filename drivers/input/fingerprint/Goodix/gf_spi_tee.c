@@ -54,7 +54,6 @@
 #include "mach/gpio_const.h"
 
 #include "gf_spi_tee.h"
-#include "gf_spi_ree.h"
 
 /**************************defination******************************/
 #define GF_DEV_NAME "goodix_fp"
@@ -67,54 +66,6 @@
 
 #define NETLINK_GF_TEST 26   /* for GF test temporary, need defined in include/uapi/linux/netlink.h */
 #define MAX_NL_MSG_LEN 16
-
-/***********************GPIO setting port layer*************************/
-/* customer hardware port layer, please change according to customer's hardware */
-#ifdef CONFIG_MTK_LEGACY
-
-#ifndef GPIO_FP_INT_PIN
-#define GPIO_FP_INT_PIN			(GPIO251 | 0x80000000)
-#define GPIO_FP_INT_PIN_M_GPIO	GPIO_MODE_00
-#define GPIO_FP_INT_PIN_M_EINT	GPIO_FP_INT_PIN_M_GPIO
-#endif
-
-/* using SPI1(0-5) on MT6797 platform */
-#define GPIO_FP_SPICLK_PIN		   (GPIO234 | 0x80000000)
-#define GPIO_FP_SPICLK_PIN_M_GPIO  GPIO_MODE_00
-#define GPIO_FP_SPICLK_PIN_M_PWM  GPIO_MODE_03
-#define GPIO_FP_SPICLK_PIN_M_SPI_CK   GPIO_MODE_01
-
-#define GPIO_FP_SPIMISO_PIN			(GPIO235 | 0x80000000)
-#define GPIO_FP_SPIMISO_PIN_M_GPIO	GPIO_MODE_00
-#define GPIO_FP_SPIMISO_PIN_M_PWM  GPIO_MODE_03
-#define GPIO_FP_SPIMISO_PIN_M_SPI_MI   GPIO_MODE_01
-
-#define GPIO_FP_SPIMOSI_PIN			(GPIO236 | 0x80000000)
-#define GPIO_FP_SPIMOSI_PIN_M_GPIO	GPIO_MODE_00
-#define GPIO_FP_SPIMOSI_PIN_M_MDEINT  GPIO_MODE_02
-#define GPIO_FP_SPIMOSI_PIN_M_PWM  GPIO_MODE_03
-#define GPIO_FP_SPIMOSI_PIN_M_SPI_MO   GPIO_MODE_01
-
-#define GPIO_FP_SPICS_PIN		  (GPIO237 | 0x80000000)
-#define GPIO_FP_SPICS_PIN_M_GPIO  GPIO_MODE_00
-#define GPIO_FP_SPICS_PIN_M_MDEINT	GPIO_MODE_02
-#define GPIO_FP_SPICS_PIN_M_PWM  GPIO_MODE_03
-#define GPIO_FP_SPICS_PIN_M_SPI_CS	 GPIO_MODE_01
-
-#define GPIO_FP_RESET_PIN		  (GPIO252 | 0x80000000)
-#define GPIO_FP_RESET_PIN_M_GPIO  GPIO_MODE_00
-
-/* #define GPIO_FP_SPI_BYPASS_PIN		   (GPIOx | 0x80000000) */
-/* #define GPIO_FP_SPI_BYPASS_M_GPIO  GPIO_MODE_00 */
-
-#ifndef	CUST_EINT_FP_EINT_NUM
-#define CUST_EINT_FP_EINT_NUM			   5
-#define CUST_EINT_FP_EINT_DEBOUNCE_CN	   0
-#define CUST_EINT_FP_EINT_TYPE			   EINTF_TRIGGER_RISING /* EINTF_TRIGGER_LOW */
-#define CUST_EINT_FP_EINT_DEBOUNCE_EN	   0  /* CUST_EINT_DEBOUNCE_DISABLE */
-#endif
-
-#endif /* CONFIG_MTK_LEGACY */
 
 #ifndef GF_INPUT_HOME_KEY
 /* on MTK EVB board, home key has been redefine to KEY_HOMEPAGE! */
@@ -335,31 +286,9 @@ static void gf_bypass_flash_gpio_cfg(void)
 	/* TODO: by pass flash IO config, default connect to GND */
 }
 
-/* Confure gpio for SPI if necessary */
-static void gf_spi_gpio_cfg(void)
-{
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_FP_SPICLK_PIN, GPIO_FP_SPICLK_PIN_M_SPI_CK);
-	mt_set_gpio_mode(GPIO_FP_SPIMISO_PIN, GPIO_FP_SPIMISO_PIN_M_SPI_MI);
-	mt_set_gpio_mode(GPIO_FP_SPIMOSI_PIN, GPIO_FP_SPIMOSI_PIN_M_SPI_MO);
-	mt_set_gpio_mode(GPIO_FP_SPICS_PIN, GPIO_FP_SPICS_PIN_M_SPI_CS);
-#else
-	/* TODO: config SPI1(0 to 5)to SPI mode using functions provided by SPI module */
-
-#endif
-}
-
 /* pull high miso, or change to SPI mode */
 static void gf_miso_gpio_cfg(u8 pullhigh)
 {
-#ifdef CONFIG_MTK_LEGACY
-	if (pullhigh) {
-		mt_set_gpio_pull_select(GPIO_FP_SPIMISO_PIN, GPIO_PULL_UP);
-		mt_set_gpio_pull_enable(GPIO_FP_SPIMISO_PIN, GPIO_PULL_ENABLE);
-	} else {
-		mt_set_gpio_pull_enable(GPIO_FP_SPIMISO_PIN, GPIO_PULL_DISABLE);
-	}
-#endif
 
 #ifdef CONFIG_OF
 	if (pullhigh)
@@ -372,24 +301,11 @@ static void gf_miso_gpio_cfg(u8 pullhigh)
 
 static void gf_irq_gpio_cfg(void)
 {
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_FP_INT_PIN, GPIO_FP_INT_PIN_M_EINT);
-	mt_set_gpio_pull_enable(GPIO_FP_INT_PIN, GPIO_PULL_DISABLE);
-	/* mt_set_gpio_dir(GPIO_FP_INT_PIN, GPIO_DIR_IN); */
-	/* mt_eint_set_hw_debounce(CUST_EINT_FP_EINT_NUM, CUST_EINT_FP_EINT_DEBOUNCE_CN); */
-
-#if 0
-	mt_eint_registration(CUST_EINT_FP_EINT_NUM, CUST_EINT_FP_EINT_TYPE, gf_irq, 0);
-	mt_eint_unmask(CUST_EINT_FP_EINT_NUM);
-#endif
-
-#endif
-
 #ifdef CONFIG_OF
 	struct device_node *node;
 
 	/* use fpc1145 eint defination temporary */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,fpc1145");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,goodix-fp");
 	if (node) {
 		g_gf_dev->irq_num = irq_of_parse_and_map(node, 0);
 		gf_debug(INFO_LOG, "%s, gf_irq = %d\n", __func__, g_gf_dev->irq_num);
@@ -402,13 +318,6 @@ static void gf_irq_gpio_cfg(void)
 
 static void gf_reset_gpio_cfg(void)
 {
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_FP_RESET_PIN, GPIO_FP_RESET_PIN_M_GPIO);
-	mt_set_gpio_pull_select(GPIO_FP_RESET_PIN, GPIO_PULL_UP);
-	mt_set_gpio_pull_enable(GPIO_FP_RESET_PIN, GPIO_PULL_ENABLE);
-	mt_set_gpio_dir(GPIO_FP_RESET_PIN, GPIO_DIR_OUT);
-#endif
-
 #ifdef CONFIG_OF
 	pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_reset_high);
 #endif
@@ -418,12 +327,6 @@ static void gf_reset_gpio_cfg(void)
 /* delay ms after reset */
 static void gf_hw_reset(u8 delay)
 {
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ZERO);
-	mdelay(5);
-	mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ONE);
-#endif
-
 #ifdef CONFIG_OF
 	pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_reset_low);
 	mdelay(5);
@@ -467,7 +370,6 @@ static void gf_disable_irq(struct gf_dev *gf_dev)
 }
 
 
-#ifdef GF_NETLINK
 /* -------------------------------------------------------------------- */
 /* netlink functions                 */
 /* -------------------------------------------------------------------- */
@@ -492,7 +394,6 @@ void gf_netlink_send(const int command)
 	/*malloc data space at least 1500 bytes, which is ethernet data length*/
 	skb = alloc_skb(NLMSG_SPACE(MAX_NL_MSG_LEN), GFP_ATOMIC);
 	if (skb == NULL) {
-		/* gf_debug(ERR_LOG, "[%s] : allocate skb failed\n", __func__); */
 		return;
 	}
 
@@ -568,8 +469,6 @@ static int gf_netlink_destroy(void)
 	gf_debug(ERR_LOG, "[%s] : no netlink socket yet\n", __func__);
 	return -1;
 }
-#endif
-
 
 /* -------------------------------------------------------------------- */
 /* early suspend callback and suspend/resume functions          */
@@ -680,64 +579,10 @@ static int gf_resume(struct spi_device *spi)
 /* -------------------------------------------------------------------- */
 static ssize_t gf_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	u8 status;
-	u8 *transfer_buf = NULL;
-	int retval = 0;
-	u16 checksum = 0;
-	int i;
-
 	FUNC_ENTRY();
 
-	if (!g_gf_dev->spi_ree_enable) {
-		gf_debug(ERR_LOG, "%s: Not support read opertion in TEE mode\n", __func__);
-		return -EFAULT;
-	}
-	gf_spi_read_byte_ree(0x8140, &status);
-	if ((status&0xF0) != 0xC0) {
-		gf_debug(ERR_LOG, "%s: no image data available\n", __func__);
-		return 0;
-	}
-	if ((count > bufsiz) || (count == 0)) {
-		gf_debug(ERR_LOG, "%s: request transfer length larger than maximum buffer\n", __func__);
-		return -EINVAL;
-	}
-	transfer_buf = kzalloc((count + 10), GFP_KERNEL);
-	if (transfer_buf == NULL) {
-		/* gf_debug(ERR_LOG, "%s: failed to allocate transfer buffer\n", __func__); */
-		return -EMSGSIZE;
-	}
-
-	/* set spi to high speed */
-	gf_spi_setup_conf_ree(6, DMA_TRANSFER);
-
-	gf_spi_read_bytes_ree(0x8140, count+10, transfer_buf);
-
-	/* check checksum */
-	checksum = 0;
-
-	for (i = 0; i < (count+6); i++)
-		checksum += *(transfer_buf+2+i);
-
-	if (checksum != ((*(transfer_buf+count+8)<<8) | *(transfer_buf+count+9))) {
-		gf_debug(ERR_LOG, "%s: raw data checksum check failed, cal[0x%x], recevied[0x%x]\n", __func__,
-						checksum, ((*(transfer_buf+count+8)<<8) | *(transfer_buf+count+9)));
-		retval = 0;
-	} else {
-		gf_debug(INFO_LOG, "%s: checksum check passed[0x%x], copy_to_user\n", __func__, checksum);
-		if (copy_to_user(buf, transfer_buf + 8, count)) {
-			gf_debug(ERR_LOG, "%s: Failed to copy gf_ioc_transfer from kernel to user\n", __func__);
-			retval = -EFAULT;
-		} else {
-			retval = count;
-		}
-	}
-
-	/* restore to low speed */
-	gf_spi_setup_conf_ree(1, FIFO_TRANSFER);
-
-	kfree(transfer_buf);
 	FUNC_EXIT();
-	return retval;
+	return 0;
 }
 
 static ssize_t gf_write(struct file *filp, const char __user *buf,
@@ -754,23 +599,8 @@ static irqreturn_t gf_irq(int irq, void *handle)
 
 	FUNC_ENTRY();
 
-#ifdef GF_FASYNC
-	kill_fasync(&dev->async, SIGIO, POLL_IN);
-#endif
-
-#ifdef GF_NETLINK
 	gf_netlink_send(GF_NETLINK_IRQ);
-#endif
 	gf_dev->sig_count++;
-
-#if 0
-	u8 status[2];
-
-	gf_spi_read_bytes_ree(0x8140, 2, status);
-	gf_debug(INFO_LOG, "%s, read status is 0x%x, 0x%x\n", __func__, status[0], status[1]);
-
-	gf_spi_write_byte_ree(0x8140, (status[0]&0x7F));
-#endif
 
 	FUNC_EXIT();
 	return IRQ_HANDLED;
@@ -782,8 +612,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct gf_dev *gf_dev = NULL;
 	struct gf_key gf_key;
 	uint32_t key_event;
-	struct gf_ioc_transfer ioc;
-	u8 *transfer_buf = NULL;
 	int retval = 0;
 
 	FUNC_ENTRY();
@@ -808,6 +636,11 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case GF_IOC_INIT:
 		gf_debug(INFO_LOG, "%s: gf init started======\n", __func__);
+		if (gf_dev->system_status) {
+			gf_debug(INFO_LOG, "%s: system re-started======\n", __func__);
+			gf_dev->device_available = 1;
+			break;
+		}
 		gf_irq_gpio_cfg();
 		retval = request_threaded_irq(gf_dev->spi->irq, NULL, gf_irq,
 				IRQF_TRIGGER_RISING | IRQF_ONESHOT, dev_name(&(gf_dev->spi->dev)), gf_dev);
@@ -833,7 +666,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 
 		gf_dev->sig_count = 0;
-		gf_dev->spi_ree_enable = 0;
+		gf_dev->system_status = 1;
 
 		gf_debug(INFO_LOG, "%s: gf init finished======\n", __func__);
 		break;
@@ -845,7 +678,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			gf_dev->irq_count = 0;
 		}
 		gf_dev->device_available = 0;
-		gf_dev->spi_ree_enable = 1;
 
 		#ifdef CONFIG_HAS_EARLYSUSPEND
 		if (gf_dev->early_suspend.suspend)
@@ -892,55 +724,22 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			key_event = GF_INPUT_OTHER_KEY;
 		}
 		gf_debug(INFO_LOG, "%s: received key event[%d], key=%d, value=%d\n",
-								 __func__, key_event, gf_key.key, gf_key.value);
-		input_report_key(gf_dev->input, key_event, gf_key.value);
-		input_sync(gf_dev->input);
+			__func__, key_event, gf_key.key, gf_key.value);
+
+		if ((GF_KEY_POWER == gf_key.key) && (gf_key.value == 1)) {
+			input_report_key(gf_dev->input, key_event, 1);
+			input_sync(gf_dev->input);
+			input_report_key(gf_dev->input, key_event, 0);
+			input_sync(gf_dev->input);
+
+		} else if (GF_KEY_POWER != gf_key.key) {
+			input_report_key(gf_dev->input, key_event, gf_key.value);
+			input_sync(gf_dev->input);
+		}
 		break;
 
 	case GF_IOC_ENTER_SLEEP_MODE:
 		gf_dev->is_sleep_mode = 1;
-		break;
-
-	case GF_IOC_TRANSFER_CMD:
-		if (copy_from_user(&ioc, (struct gf_ioc_transfer *)arg, sizeof(struct gf_ioc_transfer))) {
-			gf_debug(ERR_LOG, "%s: Failed to copy gf_ioc_transfer from user to kernel\n", __func__);
-			retval = -EFAULT;
-			break;
-		}
-
-		if ((ioc.len > bufsiz) || (ioc.len == 0)) {
-			gf_debug(ERR_LOG, "%s: request transfer length larger than maximum buffer\n", __func__);
-			retval = -EINVAL;
-			break;
-		}
-		transfer_buf = kzalloc(ioc.len, GFP_KERNEL);
-		if (transfer_buf == NULL) {
-			/* gf_debug(ERR_LOG, "%s: failed to allocate transfer buffer\n", __func__); */
-			retval = -EMSGSIZE;
-			break;
-		}
-
-		mutex_lock(&g_gf_dev->buf_lock);
-		if (ioc.cmd) {
-			/* spi write operation */
-			gf_debug(DEBUG_LOG, "%s: write data to 0x%x, len = 0x%x\n", __func__, ioc.addr, ioc.len);
-			if (copy_from_user(transfer_buf, ioc.buf, ioc.len)) {
-				gf_debug(ERR_LOG, "Failed to copy gf_ioc_transfer from user to kernel\n");
-				retval = -EFAULT;
-			} else {
-				gf_spi_write_bytes_ree(ioc.addr, ioc.len, transfer_buf);
-			}
-		} else {
-			/* spi read operation */
-			gf_debug(DEBUG_LOG, "%s: read data from 0x%x, len = 0x%x\n", __func__, ioc.addr, ioc.len);
-			gf_spi_read_bytes_ree(ioc.addr, ioc.len, transfer_buf);
-			if (copy_to_user(ioc.buf, transfer_buf, ioc.len)) {
-				gf_debug(ERR_LOG, "Failed to copy gf_ioc_transfer from kernel to user\n");
-				retval = -EFAULT;
-			}
-		}
-		kfree(transfer_buf);
-		mutex_unlock(&g_gf_dev->buf_lock);
 		break;
 
 	default:
@@ -989,7 +788,6 @@ static ssize_t gf_debug_store(struct device *dev,
 	struct gf_dev *gf_dev =  dev_get_drvdata(dev);
 	int retval = 0;
 	u8 flag = 0;
-	u8 tmp[16];
 
 	if (!strncmp(buf, "-10", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -10, gf init start===============\n", __func__);
@@ -1022,43 +820,8 @@ static ssize_t gf_debug_store(struct device *dev,
 		gf_enable_irq(gf_dev);
 
 	} else if (!strncmp(buf, "-12", 3)) {
-		gf_debug(INFO_LOG, "%s: parameter is -12, REE SPI read/write test=======\n", __func__);
-		gf_spi_read_bytes_ree(0x4220, 4, tmp);
-		gf_debug(INFO_LOG, "%s, 9p chp version is 0x%x, 0x%x, 0x%x, 0x%x\n", __func__,
-				tmp[0], tmp[1], tmp[2], tmp[3]);
-
-		gf_spi_read_bytes_ree(0x8000, 10, tmp);
-		gf_debug(INFO_LOG, "%s, read fw version 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x, %02d.%02d.%02d\n", __func__,
-				tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[7], tmp[8], tmp[9]);
-
-	} else if (!strncmp(buf, "-13", 3)) {
-		gf_debug(INFO_LOG, "%s: parameter is -13, set/read sensor mode==========\n", __func__);
-		gf_spi_read_byte_ree(0x8043, &tmp[0]);
-		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x\n", __func__, tmp[0]);
-
-		gf_spi_write_byte_ree(0x8043, 0);
-		gf_spi_read_byte_ree(0x8043, &tmp[0]);
-		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x after set to IMAGE mode\n", __func__, tmp[0]);
-
-		gf_spi_write_byte_ree(0x8043, 1);
-		gf_spi_read_byte_ree(0x8043, &tmp[0]);
-		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x after set to KEY mode\n", __func__, tmp[0]);
-
-	} else if (!strncmp(buf, "-14", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -14, GPIO test===============\n", __func__);
 		gf_reset_gpio_cfg();
-
-#ifdef CONFIG_MTK_LEGACY
-		if (flag == 0) {
-			mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ZERO);
-			gf_debug(INFO_LOG, "%s: set reset PIN to zero\n", __func__);
-			flag = 1;
-		} else {
-			mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ONE);
-			gf_debug(INFO_LOG, "%s: set reset PIN to one\n", __func__);
-			flag = 0;
-		}
-#endif
 
 #ifdef CONFIG_OF
 		if (flag == 0) {
@@ -1136,19 +899,6 @@ static int gf_open(struct inode *inode, struct file *filp)
 	return status;
 }
 
-#ifdef GF_FASYNC
-static int gf_fasync(int fd, struct file *filp, int mode)
-{
-	struct gf_dev *gf_dev = filp->private_data;
-	int ret;
-
-	FUNC_ENTRY();
-	ret = fasync_helper(fd, filp, mode, &gf_dev->async);
-	FUNC_EXIT();
-	return ret;
-}
-#endif
-
 static int gf_release(struct inode *inode, struct file *filp)
 {
 	struct gf_dev *gf_dev;
@@ -1186,9 +936,6 @@ static const struct file_operations gf_fops = {
 	.open =		gf_open,
 	.release =	gf_release,
 	.poll	= gf_poll,
-#ifdef GF_FASYNC
-	.fasync = gf_fasync,
-#endif
 };
 
 /*-------------------------------------------------------------------------*/
@@ -1203,7 +950,6 @@ static int gf_probe(struct spi_device *spi)
 	/* Allocate driver data */
 	gf_dev = kzalloc(sizeof(struct gf_dev), GFP_KERNEL);
 	if (!gf_dev) {
-		/* gf_debug(ERR_LOG, "%s, Failed to alloc memory for gf device.\n", __func__); */
 		FUNC_EXIT();
 		status = -ENOMEM;
 		goto err;
@@ -1217,7 +963,7 @@ static int gf_probe(struct spi_device *spi)
 	gf_dev->device_available = 0;
 	gf_dev->device_count = 0;
 	gf_dev->probe_finish = 0;
-	gf_dev->spi_ree_enable = 1;
+	gf_dev->system_status = 0;
 
 	/*setup gf configurations.*/
 	gf_debug(INFO_LOG, "%s, Setting gf device configuration==========\n", __func__);
@@ -1331,7 +1077,6 @@ static int gf_probe(struct spi_device *spi)
 	gf_bypass_flash_gpio_cfg();
 
 	/* gpio function setting */
-	gf_spi_gpio_cfg();
 	gf_reset_gpio_cfg();
 
 	/* put miso high to select SPI transfer */
@@ -1342,10 +1087,8 @@ static int gf_probe(struct spi_device *spi)
 	gf_irq_gpio_cfg();
 	gf_spi_clk_enable(1);
 
-#ifdef GF_NETLINK
 	/* netlink interface init */
 	gf_netlink_init();
-#endif
 
 	gf_dev->probe_finish = 1;
 	gf_dev->is_sleep_mode = 0;
@@ -1480,7 +1223,7 @@ static void __exit gf_exit(void)
 module_exit(gf_exit);
 
 
-MODULE_AUTHOR("Ke Yang<yangke@goodix.com>");
+MODULE_AUTHOR("goodix");
 MODULE_DESCRIPTION("Goodix Fingerprint chip GF318M/GF516M/GF516 TEE driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("spi:gf_spi");

@@ -7,10 +7,6 @@
 #include "mt_spi.h"
 
 
-/**********************feature defination**********************/
-#undef GF_FASYNC    /* If support fasync mechanism */
-#define GF_NETLINK	/* If support netlink mechanism */
-
 /**************************debug******************************/
 #define ERR_LOG  (0)
 #define INFO_LOG (1)
@@ -100,16 +96,10 @@ struct gf_dev {
 	u8 buf_status;
 	u8 device_available;	/* changed during fingerprint chip sleep and wakeup phase */
 
-#ifdef GF_FASYNC
-	/* fasync support used */
-	struct fasync_struct *async;
-#endif
 
-#ifdef GF_NETLINK
 	/* for netlink use */
 	struct sock *nl_sk;
 	int pid;
-#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
@@ -118,7 +108,6 @@ struct gf_dev {
 #endif
 
 	u8 probe_finish;
-	u8 spi_ree_enable;
 	u8 irq_count;
 
 	/* bit24-bit32 of signal count */
@@ -127,6 +116,7 @@ struct gf_dev {
 	u32 event_type;
 	u8 sig_count;
 	u8 is_sleep_mode;
+	u8 system_status;
 
 	u32 cs_gpio;
 	u32 reset_gpio;
@@ -140,8 +130,5 @@ struct gf_dev {
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
 };
-
-extern struct gf_dev *g_gf_dev;
-extern u8 g_debug_level;
 
 #endif	/* __GF_SPI_TEE_H */

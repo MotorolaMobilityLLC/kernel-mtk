@@ -4041,7 +4041,7 @@
 			status = "disabled";
 		};
 
-		fingerprint: fingerprint@ {
+		goodix_fp: fingerprint_gf@ {
 			compatible = "mediatek,goodix-fp";
 		};
 
