@@ -312,7 +312,6 @@ struct spm_lp_scen __spm_suspend = {
 };
 
 #if defined(CONFIG_ARCH_MT6797)
-#define TEMP1	0x100A4000
 #define TEMP4	0x10002000
 #endif
 
@@ -321,11 +320,8 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
 #elif defined(CONFIG_ARCH_MT6797)
-	static void __iomem *temp1_base;
 	static void __iomem *temp4_base;
 
-	temp1_base = ioremap(TEMP1, 0x1000);
-	spm_write(temp1_base + 0x20, spm_read(temp1_base) | 0x100);
 
 	temp4_base = ioremap(TEMP4, 0x1000);
 	spm_write(temp4_base + 0x8b0, spm_read(temp4_base) | 0x400);
