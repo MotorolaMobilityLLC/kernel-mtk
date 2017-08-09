@@ -303,7 +303,8 @@ static void oops_end(unsigned long flags, struct pt_regs *regs, int signr)
 	if (!die_nest_count)
 		/* Nest count reaches zero, release the lock. */
 		arch_spin_unlock(&die_lock);
-	raw_local_irq_restore(flags);
+	/* not enable irq incase softirq many turn off msdc clock */
+	/*raw_local_irq_restore(flags);*/
 	oops_exit();
 
 	if (in_interrupt())
