@@ -270,6 +270,7 @@ int port_ipc_init(struct ccci_port *port)
 	return 0;
 }
 
+#ifdef FEATURE_GARBAGE_FILTER_SUPPORT
 #define GF_PORT_LIST_MAX 128
 struct garbage_filter_item gf_port_list[GF_PORT_LIST_MAX];
 	/* frame size be less than 1400, so we made it global variable */
@@ -407,6 +408,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
 	}
 }
+#endif
 
 static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 {

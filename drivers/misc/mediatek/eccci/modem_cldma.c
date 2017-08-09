@@ -3538,6 +3538,7 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 static ssize_t md_cd_filter_show(struct ccci_modem *md, char *buf)
 {
 	int count = 0;
+#ifdef FEATURE_GARBAGE_FILTER_SUPPORT
 	int i;
 
 	count += snprintf(buf + count, 128, "register port:");
@@ -3556,11 +3557,13 @@ static ssize_t md_cd_filter_show(struct ccci_modem *md, char *buf)
 			break;
 	}
 	count += snprintf(buf + count, 128, "\n");
+#endif
 	return count;
 }
 
 static ssize_t md_cd_filter_store(struct ccci_modem *md, const char *buf, size_t count)
 {
+#ifdef FEATURE_GARBAGE_FILTER_SUPPORT
 	char command[16];
 	int start_id = 0, end_id = 0, i, temp_valu;
 
@@ -3580,6 +3583,7 @@ static ssize_t md_cd_filter_store(struct ccci_modem *md, const char *buf, size_t
 			gf_port_list_unreg[i] = start_id + i;
 		ccci_ipc_set_garbage_filter(md, 0);
 	}
+#endif
 	return count;
 }
 
