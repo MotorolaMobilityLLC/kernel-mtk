@@ -607,8 +607,13 @@ jsctx_rb_remove(struct kbase_context *kctx, struct kbase_jd_atom *katom)
 	lockdep_assert_held(&kctx->kbdev->js_data.runpool_irq.lock);
 
 	/* Atoms must be completed in order. */
-	WARN_ON(rb->entries[rb->running_idx & JSCTX_RB_MASK].atom_id !=
-			kbase_jd_atom_id(kctx, katom));
+    /// too much log in mt6755
+	///WARN_ON(rb->entries[rb->running_idx & JSCTX_RB_MASK].atom_id !=
+	///		kbase_jd_atom_id(kctx, katom));
+	if(rb->entries[rb->running_idx & JSCTX_RB_MASK].atom_id !=
+			kbase_jd_atom_id(kctx, katom)){
+        pr_alert("[Mali] atom_id = %d, atom_offset = %d \n", rb->entries[rb->running_idx & JSCTX_RB_MASK].atom_id, kbase_jd_atom_id(kctx, katom));
+    }
 
 	rb->running_idx++;
 }
