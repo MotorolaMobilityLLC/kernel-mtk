@@ -4,7 +4,7 @@
 
 #include <linux/types.h>
 #include <linux/io.h>
-#ifdef SPI_TRUSTONIC_TEE_SUPPORT
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #include <mobicore_driver_api.h>
 #include <tlspi_Api.h>
 #endif
