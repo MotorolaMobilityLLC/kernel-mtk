@@ -2,6 +2,8 @@
 # Makefile for the linux arm-specific parts of the memory manager.
 #
 
+subdir-ccflags-y += -Werror
+
 obj-y				:= dma-mapping.o extable.o fault.o init.o \
 				   iomap.o
 

@@ -1,3 +1,5 @@
+subdir-ccflags-y += -Werror
+
 obj-y = base.o device.o platform.o
 obj-$(CONFIG_OF_DYNAMIC) += dynamic.o
 obj-$(CONFIG_OF_FLATTREE) += fdt.o

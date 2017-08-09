@@ -14,6 +14,8 @@
 # Based on the ia64 boot/Makefile.
 #
 
+subdir-ccflags-y += -Werror
+
 include $(srctree)/arch/arm64/boot/dts/Makefile
 
 targets := Image Image.gz
