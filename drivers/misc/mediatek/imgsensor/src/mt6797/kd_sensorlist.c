@@ -3816,10 +3816,8 @@ struct i2c_driver CAMERA_HW_i2c_driver2 = {
     .driver = {
     .name = CAMERA_HW_DRVNAME2,
     .owner = THIS_MODULE,
-#if 0
 #ifdef CONFIG_OF
     .of_match_table = CAMERA_HW2_i2c_driver_of_ids,
-#endif
 #endif
     },
     .id_table = CAMERA_HW_i2c_id2,
@@ -3906,14 +3904,11 @@ static int CAMERA_HW_resume2(struct platform_device *pdev)
   *=======================================================================*/
 /* It seems we don't need to use device tree to register device cause we just use i2C part */
 /* You can refer to CAMERA_HW_probe & CAMERA_HW_i2c_probe */
-
-#if 1
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW2_of_ids[] = {
     { .compatible = "mediatek,camera_hw2", },
     {}
 };
-#endif
 #endif
 
 static struct platform_driver g_stCAMERA_HW_Driver2 = {
@@ -3922,12 +3917,10 @@ static struct platform_driver g_stCAMERA_HW_Driver2 = {
     .suspend    = CAMERA_HW_suspend2,
     .resume     = CAMERA_HW_resume2,
     .driver     = {
-    .name   = "image_sensor_bus2",
-    .owner  = THIS_MODULE,
-#if 1
+		.name   = "image_sensor_bus2",
+		.owner  = THIS_MODULE,
 #ifdef CONFIG_OF
     .of_match_table = CAMERA_HW2_of_ids,
-#endif
 #endif
 
     }
