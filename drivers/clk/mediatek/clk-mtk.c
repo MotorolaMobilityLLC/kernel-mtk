@@ -24,6 +24,8 @@
 #include "clk-mtk.h"
 #include "clk-gate.h"
 
+#define WORKAROUND_318_WARNING	1
+
 struct clk_onecell_data *mtk_alloc_clk_data(unsigned int clk_num)
 {
 	int i;
@@ -178,7 +180,12 @@ struct clk *mtk_clk_register_composite(const struct mtk_composite *mc,
 		div_ops = &clk_divider_ops;
 	}
 
+#if WORKAROUND_318_WARNING
+	clk = clk_register_composite(NULL, mc->name,
+		(const char **)parent_names, num_parents,
+#else
 	clk = clk_register_composite(NULL, mc->name, parent_names, num_parents,
+#endif
 		mux_hw, mux_ops,
 		div_hw, div_ops,
 		gate_hw, gate_ops,
