@@ -54,12 +54,12 @@ static void process_dbg_opt(const char *opt)
 	else if (0 == strncmp(opt, "UART:", 5)) {
 		if (0 == strncmp(opt + 5, "on", 2)) {
 			pr_debug("[hdmi][Debug] Enable UART,disable DPI D6/D7\n");
-			mt_set_gpio_mode(GPIO19|0x80000000, GPIO_MODE_02);
-			mt_set_gpio_mode(GPIO20|0x80000000, GPIO_MODE_02);
+/*			mt_set_gpio_mode(GPIO19|0x80000000, GPIO_MODE_02);
+			mt_set_gpio_mode(GPIO20|0x80000000, GPIO_MODE_02);*/
 		} else if (0 == strncmp(opt + 5, "off", 3)) {
 			pr_debug("[hdmi][Debug] Disable UART,enable DPI D6/D7\n");
-			mt_set_gpio_mode(GPIO19|0x80000000, GPIO_MODE_02);
-			mt_set_gpio_mode(GPIO20|0x80000000, GPIO_MODE_02);
+/*			mt_set_gpio_mode(GPIO19|0x80000000, GPIO_MODE_02);
+			mt_set_gpio_mode(GPIO20|0x80000000, GPIO_MODE_02);*/
 		}
 	} else if (0 == strncmp(opt, "extd_analyze", 12)) {
 		ddp_dump_analysis(DISP_MODULE_CONFIG);
