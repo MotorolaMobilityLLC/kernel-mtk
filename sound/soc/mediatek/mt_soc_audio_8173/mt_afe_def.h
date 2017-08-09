@@ -22,6 +22,7 @@
 /* #define AUDIO_BTSCO_MEMORY_SRAM */
 #define AUDIO_MEM_IOREMAP
 #define AUDIO_IOREMAP_FROM_DT
+/* #define ENABLE_I2S0_CLK_RESYNC */
 
 
 /* if need assert , use AUDIO_ASSERT(true) */

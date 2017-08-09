@@ -228,14 +228,15 @@ static int mt_pcm_dl2_prestart(struct snd_pcm_substream *substream)
 		/* i2s0 soft reset begin */
 		mt_afe_set_reg(AUDIO_TOP_CON1, 0x2, 0x2);
 
+		mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_I2S, runtime->rate);
+
+#ifdef ENABLE_I2S0_CLK_RESYNC
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2)) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
 			mt_afe_disable_2nd_i2s_in();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
 		}
-
-		mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_I2S, runtime->rate);
 
 		if (priv->enable_i2s0_low_jitter) {
 			mt_afe_set_2nd_i2s_in(MT_AFE_I2S_WLEN_16BITS,
@@ -250,6 +251,7 @@ static int mt_pcm_dl2_prestart(struct snd_pcm_substream *substream)
 		}
 
 		mt_afe_enable_2nd_i2s_in();
+#endif
 
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2)) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
@@ -344,9 +346,11 @@ static int mt_pcm_dl2_post_stop(struct snd_pcm_substream *substream)
 		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2))
 			mt_afe_disable_2nd_i2s_out();
 
+#ifdef ENABLE_I2S0_CLK_RESYNC
 		mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
 		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2))
 			mt_afe_disable_2nd_i2s_in();
+#endif
 
 		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I07, INTER_CONN_O00);
 		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I08, INTER_CONN_O01);
