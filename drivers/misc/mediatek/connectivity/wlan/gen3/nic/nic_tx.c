@@ -1211,10 +1211,10 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 					prTcqStatus->au2FreeBufferCount[i]);
 			}
 		}
-
+		#if 0
 		if (au2TxRlsCnt[TC4_INDEX] != 0)
 			wlanTraceReleaseTcRes(prAdapter, au2TxRlsCnt, prTcqStatus->au2FreeBufferCount[TC4_INDEX]);
-
+		#endif
 		for (i = TC0_INDEX; i < TC_NUM; i++)
 			prQM->au4QmTcResourceBackCounter[i] += au2FreeTcResource[i];
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
@@ -2337,7 +2337,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	prTxCtrl = &prAdapter->rTxCtrl;
 	pucOutputBuf = prTxCtrl->pucTxCoalescingBufPtr;
 
-	wlanTraceTxCmd(prCmdInfo);
+	/* wlanTraceTxCmd(prCmdInfo); */
 
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		prMsduInfo = prCmdInfo->prMsduInfo;
