@@ -97,7 +97,7 @@ TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 	TZ_RESULT ret;
 
 	p[0].value.a = (unsigned long)start;
-	p[0].value.b = (unsigned long)start >> 32;
+	p[0].value.b = (unsigned long long)(unsigned long)start >> 32;
 	p[1].value.a = size;
 	p[2].mem.buffer = map_p;
 	if (map_p != NULL)

@@ -515,7 +515,9 @@ static long tz_client_open_session(struct file *file, unsigned long arg)
 	if (!access_ok(VERIFY_READ, param.data, 10))
 		return -EFAULT;
 
-	len = strncpy_from_user(uuid, (void *)param.data, sizeof(uuid));
+	len = strncpy_from_user(uuid,
+				(void *)(unsigned long)param.data,
+				sizeof(uuid));
 	if (len <= 0)
 		return -EFAULT;
 
@@ -591,7 +593,8 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 		if (!access_ok(VERIFY_READ, cparam.param, sizeof(oparam)))
 			return -EFAULT;
 
-		cret = copy_from_user(oparam, (void *)cparam.param,
+		cret = copy_from_user(oparam,
+					(void *)(unsigned long)cparam.param,
 					sizeof(oparam));
 		if (cret)
 			return -EFAULT;
@@ -622,10 +625,13 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 		case TZPT_MEM_INPUT:
 		case TZPT_MEM_OUTPUT:
 		case TZPT_MEM_INOUT:
+#ifdef CONFIG_COMPAT
 			if (compat) {
 				ubuf = compat_ptr(oparam[i].mem32.buffer);
 				ubuf_sz = oparam[i].mem32.size;
-			} else {
+			} else
+#endif
+			{
 				ubuf = oparam[i].mem.buffer;
 				ubuf_sz = oparam[i].mem.size;
 			}
@@ -715,9 +721,11 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 		case TZPT_MEM_INPUT:
 		case TZPT_MEM_OUTPUT:
 		case TZPT_MEM_INOUT:
+#ifdef CONFIG_COMPAT
 			if (compat)
 				ubuf = compat_ptr(oparam[i].mem32.buffer);
 			else
+#endif
 				ubuf = oparam[i].mem.buffer;
 
 			if (type != TZPT_MEM_INPUT) {
@@ -737,7 +745,8 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 
 	/* Copy data back. */
 	if (cparam.paramTypes != TZPT_NONE) {
-		cret = copy_to_user((void *)cparam.param, oparam,
+		cret = copy_to_user((void *)(unsigned long)cparam.param,
+					oparam,
 					sizeof(oparam));
 		if (cret)
 			return -EFAULT;
@@ -1291,4 +1300,9 @@ static int __init tz_client_init(void)
 
 	return 0;
 }
+#ifdef CONFIG_TRUSTY
+device_initcall(tz_client_init);
+/* subsys_initcall(tz_client_init); */
+#else
 arch_initcall(tz_client_init);
+#endif
