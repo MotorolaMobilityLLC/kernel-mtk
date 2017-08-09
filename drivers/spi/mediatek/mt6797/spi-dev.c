@@ -487,7 +487,7 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 
 	return 0;
 }
-
+#if 0
 static int secspi_session_close(void)
 {
 	enum mc_result mc_ret = MC_DRV_OK;
@@ -539,6 +539,7 @@ static int secspi_session_close(void)
 	return 0;
 
 }
+#endif
 #endif
 
 static ssize_t spi_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
