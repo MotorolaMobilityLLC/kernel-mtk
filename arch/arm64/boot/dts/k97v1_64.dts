@@ -1314,9 +1314,8 @@
 	irtx_gpio_default:irtx_gpio_led_def@gpio137 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO137__FUNC_GPIO137>;
-			slew-rate = <1>;
-			bias-disable;
-			output-low;
+			slew-rate = <0>;
+			bias-pull-down = <00>;
 			input-schmitt-enable = <0>;
 		};
 	};
