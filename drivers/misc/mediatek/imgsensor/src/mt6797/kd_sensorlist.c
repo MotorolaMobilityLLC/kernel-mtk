@@ -87,7 +87,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
-#define HW_TRIGGER_I2C_SUPPORT 1
+#define HW_TRIGGER_I2C_SUPPORT 0
 #if HW_TRIGGER_I2C_SUPPORT
 #include "i2c-mtk.h"
 #endif
@@ -599,6 +599,11 @@ int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
 	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, I2C_HWTRIG_FLAG, 0);
 		//ret = i2c_transfer(pClient->adapter, msg, trans_num);
 	return ret;
+}
+#else
+int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
+	PK_ERR("plz #define HW_TRIGGER_I2C_SUPPORT 1\n");
+        return -1;
 }
 #endif
 
