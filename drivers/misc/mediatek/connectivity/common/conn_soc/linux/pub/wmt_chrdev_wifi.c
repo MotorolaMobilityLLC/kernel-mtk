@@ -652,13 +652,13 @@ INT32 mtk_wcn_wmt_wifi_init(VOID)
 {
 	return WIFI_init();
 }
-EXPORT_SYMBOL(mtk_wcn_wmt_wifi_soc_init);
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_init);
 
 VOID mtk_wcn_wmt_wifi_exit(VOID)
 {
 	return WIFI_exit();
 }
-EXPORT_SYMBOL(mtk_wcn_wmt_wifi_soc_exit);
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_exit);
 
 #else
 
