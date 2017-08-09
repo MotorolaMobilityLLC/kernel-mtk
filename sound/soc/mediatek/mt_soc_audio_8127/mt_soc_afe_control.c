@@ -1727,7 +1727,7 @@ void mt_afe_set_2nd_i2s_in(struct AudioDigtalI2S *mDigitalI2S) /*Set2ndI2SIn*/
 		mt_afe_set_sample_rate(Soc_Aud_Digital_Block_MEM_I2S, m2ndI2S->mI2S_SAMPLERATE);
 
 	reg_value |= (1 << 31);	/* enable phase_shift_fix for better quality */
-	reg_value |= (Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_IO_MUX << 28);
+	reg_value |= (m2ndI2S->mI2S_IN_PAD_SEL << 28);
 	reg_value |= (Soc_Aud_INV_LRCK_NO_INVERSE << 5);
 	reg_value |= (Soc_Aud_I2S_FORMAT_I2S << 3);
 	reg_value |= (m2ndI2S->mI2S_SLAVE << 2);

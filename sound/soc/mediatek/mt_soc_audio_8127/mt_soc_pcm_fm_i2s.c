@@ -60,7 +60,7 @@ static int Audio_fm_i2s_Volume_Set(struct snd_kcontrol *kcontrol,
 	pr_debug("%s mfm_i2s_Volume = 0x%x\n", __func__, mfm_i2s_Volume);
 
 	if (mt_afe_get_memory_path_state(Soc_Aud_Digital_Block_I2S_IN_2) == true)
-		SetHwDigitalGain(mfm_i2s_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
+		SetHwDigitalGain(mfm_i2s_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2);
 
 	return 0;
 }
@@ -248,18 +248,18 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 
 		/* interconnection setting */
 		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I00,
-			      Soc_Aud_InterConnectionOutput_O13);
+			      Soc_Aud_InterConnectionOutput_O15);
 		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I01,
-			      Soc_Aud_InterConnectionOutput_O14);
-		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I10,
+			      Soc_Aud_InterConnectionOutput_O16);
+		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I12,
 			      Soc_Aud_InterConnectionOutput_O03);
-		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I11,
+		mt_afe_set_connection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I13,
 			      Soc_Aud_InterConnectionOutput_O04);
 
 		/* Set HW_GAIN */
-		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, runtime->rate, 0x40);
-		SetHwDigitalGainEnable(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, true);
-		SetHwDigitalGain(mfm_i2s_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
+		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2, runtime->rate, 0x40);
+		SetHwDigitalGainEnable(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2, true);
+		SetHwDigitalGain(mfm_i2s_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2);
 
 		/* start I2S DAC out */
 		if (mt_afe_get_memory_path_state(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
@@ -277,7 +277,7 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 			memset((void *)&m2ndI2SInAttribute, 0, sizeof(m2ndI2SInAttribute));
 
 			m2ndI2SInAttribute.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-			m2ndI2SInAttribute.mI2S_IN_PAD_SEL = Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_IO_MUX;
+			m2ndI2SInAttribute.mI2S_IN_PAD_SEL = Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_CONNSYS;
 			m2ndI2SInAttribute.mI2S_SLAVE = Soc_Aud_I2S_SRC_SLAVE_MODE;
 			m2ndI2SInAttribute.mI2S_SAMPLERATE = 32000;
 			m2ndI2SInAttribute.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;

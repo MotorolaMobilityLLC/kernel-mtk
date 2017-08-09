@@ -110,8 +110,7 @@ static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 		memset((void *)&m2ndI2SInAttribute, 0, sizeof(m2ndI2SInAttribute));
 
 		m2ndI2SInAttribute.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-		/* I2S_IN_FROM_IO_MUX */
-		m2ndI2SInAttribute.mI2S_IN_PAD_SEL = Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_IO_MUX;
+		m2ndI2SInAttribute.mI2S_IN_PAD_SEL = Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_CONNSYS;
 		m2ndI2SInAttribute.mI2S_SLAVE = Soc_Aud_I2S_SRC_SLAVE_MODE;
 		m2ndI2SInAttribute.mI2S_SAMPLERATE = 32000;
 		m2ndI2SInAttribute.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
