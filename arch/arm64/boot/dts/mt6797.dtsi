@@ -2488,21 +2488,23 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x16000000 0x10000>;
 			#clock-cells = <1>;
 			clocks =
-			<&mmsys MM_SMI_COMMON>,
-			<&vdecsys VDEC_LARB1_CKEN>,
-			<&vdecsys VDEC_CKEN>,
-			<&vencsys VENC_1>,
-			<&scpsys SCP_SYS_VDE>,
-			<&scpsys SCP_SYS_VEN>,
-			<&scpsys SCP_SYS_DIS>;
+				<&mmsys MM_SMI_COMMON>,
+				<&vdecsys VDEC_LARB1_CKEN>,
+				<&vdecsys VDEC_CKEN>,
+				<&vencsys VENC_0>,
+				<&vencsys VENC_1>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_DIS>;
 			clock-names =
-			"MT_CG_DISP0_SMI_COMMON",
-			"MT_CG_VDEC0_VDEC",
-			"MT_CG_VDEC1_LARB",
-			"MT_CG_VENC_VENC",
-			"MT_SCP_SYS_VDE",
-			"MT_SCP_SYS_VEN",
-			"MT_SCP_SYS_DIS";
+				"MT_CG_DISP0_SMI_COMMON",
+				"MT_CG_VDEC0_VDEC",
+				"MT_CG_VDEC1_LARB",
+				"MT_CG_VENC_LARB",
+				"MT_CG_VENC_VENC",
+				"MT_SCP_SYS_VDE",
+				"MT_SCP_SYS_VEN",
+				"MT_SCP_SYS_DIS";
 		};
 
 		smi_larb1@16010000 {
