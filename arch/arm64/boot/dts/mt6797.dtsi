@@ -3914,6 +3914,10 @@
 			compatible = "mediatek,gps";
 		};
 
+		gps_emi {
+			compatible = "mediatek,gps_emi-v1";
+		};
+
 		nfc:nfcC@0 {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-ven = <60>;

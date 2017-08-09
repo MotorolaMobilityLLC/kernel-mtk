@@ -44,10 +44,14 @@ ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
 	-I$(src)/../common/common_detect \
 	-I$(src)/../common/conn_soc/include \
 	-I$(src)/../common/conn_soc/linux/include \
+	-I$(src)/../common/conn_soc/core/include \
+	-I$(src)/../common/conn_soc/$(MTK_PLATFORM)/include \
+	-I$(src)/../common/conn_soc/linux/pri/include \
         -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
 endif
 
 obj-$(CONFIG_MTK_COMBO_GPS)	+= stp_chrdev_gps.o
 obj-$(CONFIG_MTK_GPS)		+= gps.o
+obj-$(CONFIG_MTK_GPS_EMI)		+= gps_emi.o
 
 # EOF

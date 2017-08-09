@@ -289,3 +289,9 @@ config MTK_GPS_REGISTER_SETTING
 	depends on MTK_COMBO_GPS
 	help
 	   GPS register settings.
+
+config MTK_GPS_EMI
+	tristate "MediaTek GPS EMI Driver"
+	depends on MTK_COMBO_GPS
+	help
+	   GPS EMI driver is for MNL OFFLOAD feature.
