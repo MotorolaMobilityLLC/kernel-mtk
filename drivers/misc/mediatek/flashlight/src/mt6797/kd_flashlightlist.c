@@ -69,7 +69,7 @@
 #define PFX "[KD_CAMERA_FLASHLIGHT]"
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "%s: " fmt, __func__ , ##arg)
 
-#define DEBUG_KD_STROBE
+/*#define DEBUG_KD_STROBE*/
 #ifdef DEBUG_KD_STROBE
 #define logI PK_DBG_FUNC
 #else
