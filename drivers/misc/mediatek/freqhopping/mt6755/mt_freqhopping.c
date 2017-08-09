@@ -129,7 +129,7 @@ static const struct freqhopping_ssc ssc_mainpll_setting[] = {
 static const struct freqhopping_ssc ssc_mempll_setting[] = {
 	{0, 0, 0, 0, 0, 0},/* Means disable */
 	{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},/* Means User-Define */
-	{MEMPLL_DEF_FREQ, 0, 9, 0, 8, 0x1C000}, /* 0 ~ -8% */
+	{MEMPLL_DEF_FREQ, 0, 6, 0, 8, 0x1C000}, /* 0 ~ -8% *//* Df changed to 6 */
 	{0, 0, 0, 0, 0, 0} /* EOF */
 };
 
