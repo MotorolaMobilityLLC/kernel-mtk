@@ -58,7 +58,7 @@ static struct clk *clk_auxadc;
 #ifdef CONFIG_OF
 void __iomem *auxadc_base = NULL;
 void __iomem *auxadc_apmix_base = NULL;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
 void __iomem *auxadc_efuse_base = NULL;
 #endif
 #endif
@@ -66,7 +66,7 @@ void __iomem *auxadc_efuse_base = NULL;
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 #else
-/*#include <cust_adc.h>*/		/* generate by DCT Tool */
+					/*#include <cust_adc.h>*//* generate by DCT Tool */
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -199,7 +199,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	int idle_count = 0;
 	int data_ready_count = 0;
 	int ret = 0;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
 	u32 cali_reg = 0;
 	u32 cali_ge_a = 0;
 	u32 cali_oe_a = 0;
@@ -232,7 +232,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-	cali_reg = (*(volatile unsigned int * const)(ADC_CALI_EN_A_REG));
+	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
 	if ((cali_reg & (1 << 10)) != 0) {
 		cali_oe_a = cali_reg & 0x3FF;
 		cali_ge_a = ((cali_reg & 0x3FF0000) >> 16);
@@ -241,8 +241,22 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		gain = 1 + cali_ge;
 	}
 	pr_debug("[AUXADC] cali_reg(%x),cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
-		(cali_reg & (1 << 10)), cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
+	     (cali_reg & (1 << 10)), cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
 #endif
+#if defined(EFUSE_CALI)
+	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
+	cali_reg = 0x60180400;
+	if (((cali_reg & 0x40000000) >> 30) != 0) {
+		cali_oe_a = (cali_reg & 0x3ff00000) >> 20;
+		cali_ge_a = ((cali_reg & 0xffc00) >> 10);
+		cali_ge = cali_ge_a - 512;
+		cali_oe = cali_oe_a - 512;
+		gain = 1 + cali_ge;
+	}
+		pr_err("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
+	     cali_reg, cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
+#endif
+
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
 	/* step1 check con2 if auxadc is busy */
@@ -299,12 +313,12 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	/* step6 read data */
 
 	channel[dwChannel] = AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) & 0x0FFF;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
 	if (NULL != rawdata)
 		*rawdata = channel[dwChannel] - cali_oe;
 
 	pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
-	data[0] = (*rawdata * 1500 / (4096 + cali_ge)) / 1000; /* convert to volt*/
+	data[0] = (*rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
 	data[1] = (*rawdata * 1500 / (4096 + cali_ge)) % 1000;
 	pr_debug("[adc_api][external effuse cali]: imm mode => channel[%d] = %d.%3d\n", dwChannel, data[0], data[1]);
 #else
@@ -414,8 +428,8 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	if (!auxadc_base)
 		pr_err("[AUXADC] base failed\n");
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) || defined(EFUSE_CALI)
+	    node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
 	if (!node)
 		pr_debug("[AUXADC] find node failed\n");
 
@@ -1661,7 +1675,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 				"ADC_FDD_Rf_Params_Dynamic_Custom");
 			g_adc_info[used_channel_counter].channel_number = of_value;
 			pr_warn("[AUXADC_AP] find node ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH:%d\n",
-				 of_value);
+				of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,hf_mic", &of_value, 1);
