@@ -285,8 +285,6 @@ static int mtk_pm_callback_power_on(void)
 	/* Release MFG PROT */
 	udelay(100);
 	spm_topaxi_protect(MFG_PROT_MASK, 0);
-	MTK_err("protect off [0x10001224]=0x%08x, [0x10001228]=0x%08x",
-		base_read32(g_0x10001_base + 0x224), base_read32(g_0x10001_base + 0x228));
 
 #ifdef MTK_GPU_APM
 	/* enable GPU hot-plug */
@@ -383,8 +381,6 @@ static void mtk_pm_callback_power_off(void)
 
 	/* Set MFG PROT */
 	spm_topaxi_protect(MFG_PROT_MASK, 1);
-	MTK_err("protect on [0x10001224]=0x%08x, [0x10001228]=0x%08x",
-		base_read32(g_0x10001_base + 0x224), base_read32(g_0x10001_base + 0x228));
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
 #ifndef MTK_GPU_APM
@@ -406,13 +402,10 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	int ret;
 
-	MTK_err("power-on enter");
-
 	ret = mtk_pm_callback_power_on();
 
 	power_acquire();
 	g_is_power_on = 1;
-	MTK_err("power-on leave");
 	power_release();
 
 	return ret;
@@ -421,12 +414,9 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 {
 	power_acquire();
 	g_is_power_on = 0;
-	MTK_err("power-off enter");
 	power_release();
 
 	mtk_pm_callback_power_off();
-
-	MTK_err("power-off leave");
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
