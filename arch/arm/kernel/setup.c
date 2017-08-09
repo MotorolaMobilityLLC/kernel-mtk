@@ -375,6 +375,7 @@ void __init early_print(const char *str, ...)
 static void __init cpuid_init_hwcaps(void)
 {
 	unsigned int divide_instrs, vmsa;
+	u32 isar5;
 
 	if (cpu_architecture() < CPU_ARCH_ARMv7)
 		return;
@@ -392,6 +393,13 @@ static void __init cpuid_init_hwcaps(void)
 	vmsa = (read_cpuid_ext(CPUID_EXT_MMFR0) & 0xf) >> 0;
 	if (vmsa >= 5)
 		elf_hwcap |= HWCAP_LPAE;
+
+	/* check for supported v8 Crypto instructions */
+	isar5 = read_cpuid_ext(CPUID_EXT_ISAR5);
+
+	vmsa = cpuid_feature_extract_field(isar5, 12);
+	if (vmsa >= 1)
+		elf_hwcap2 |= HWCAP2_SHA2;
 }
 
 static void __init elf_hwcap_fixup(void)
