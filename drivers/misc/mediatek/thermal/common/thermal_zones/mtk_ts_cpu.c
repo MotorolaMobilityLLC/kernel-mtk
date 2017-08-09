@@ -61,11 +61,6 @@ static kgid_t gid = KGIDT_INIT(1000);
 
 #if !defined(CONFIG_MTK_CLKMGR)
 struct clk *therm_main;		/* main clock for Thermal */
-#if defined(CONFIG_ARCH_MT6755)
-/*Patch to pause thermal controller and turn off auxadc GC.
-  For mt6755 only*/
-struct clk *therm_auxadc;
-#endif
 #endif
 
 void __iomem  *therm_clk_infracfg_ao_base;
@@ -1848,9 +1843,7 @@ static int thermal_auxadc_get_data(int times, int channel)
 	return ret;
 }
 #endif
-/*Patch to pause thermal controller and turn off auxadc GC.
-  For mt6755 only*/
-#if 1
+#if 0
 static void tscpu_thermal_pause(void)
 {
 	int cnt = 0;
@@ -1871,11 +1864,6 @@ static void tscpu_thermal_pause(void)
 
 	/* disable periodic temp measurement on sensor 0~2 */
 	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
-
-#if !defined(CONFIG_MTK_CLKMGR)
-	if (therm_auxadc)
-		clk_disable_unprepare(therm_auxadc);
-#endif
 }
 
 static void tscpu_thermal_release(void)
@@ -1884,14 +1872,6 @@ static void tscpu_thermal_release(void)
 	int cnt = 0, ret;
 
 	aee_rr_rec_thermal_status(TSCPU_RELEASE);
-
-#if !defined(CONFIG_MTK_CLKMGR)
-	if (therm_auxadc) {
-		ret = clk_prepare_enable(therm_auxadc);
-		if (ret)
-			tscpu_printk("Cannot enable auxadc clock.\n");
-	}
-#endif
 
 	/*thermal_auxadc_get_data(2, 11);*/
 	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
@@ -1914,51 +1894,6 @@ static void tscpu_thermal_release(void)
 	tscpu_thermal_initial_all_bank();
 
 	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
-}
-#else
-static void tscpu_thermal_pause(void)
-{
-	int cnt = 0, temp = 0;
-
-	aee_rr_rec_thermal_status(TSCPU_PAUSE);
-
-	thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
-	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
-
-	while (temp != 0x0 && cnt < 50) {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
-			tscpu_printk("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
-
-		udelay(2);
-		cnt++;
-	}
-#if !defined(CONFIG_MTK_CLKMGR)
-	if (therm_auxadc)
-		clk_disable_unprepare(therm_auxadc);
-#endif
-}
-
-static void tscpu_thermal_release(void)
-{
-	int i = 0;
-	unsigned long flags;
-
-	aee_rr_rec_thermal_status(TSCPU_RELEASE);
-#if !defined(CONFIG_MTK_CLKMGR)
-	if (therm_auxadc)
-		clk_prepare_enable(therm_auxadc);
-#endif
-	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
-
-	mt_ptp_lock(&flags);
-
-	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
-		tscpu_switch_bank(i);
-		tscpu_thermal_enable_all_periodoc_sensing_point(i);
-	}
-
-	mt_ptp_unlock(&flags);
 }
 #endif
 #endif
@@ -2042,9 +1977,11 @@ void tscpu_cancel_thermal_timer(void)
 #endif
 
 #if defined(CONFIG_ARCH_MT6755)
+#if 0
 	/*Patch to pause thermal controller and turn off auxadc GC.
 		For mt6755 only*/
 	tscpu_thermal_pause();
+#endif
 #endif
 }
 
@@ -2060,9 +1997,11 @@ void tscpu_start_thermal_timer(void)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 
 #if defined(CONFIG_ARCH_MT6755)
+#if 0
 /*Patch to pause thermal controller and turn off auxadc GC.
   For mt6755 only*/
 	tscpu_thermal_release();
+#endif
 #endif
 }
 
@@ -2235,16 +2174,6 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 		return 0;
 
 #if !defined(CONFIG_MTK_CLKMGR)
-#if defined(CONFIG_ARCH_MT6755)
-/*Patch to pause thermal controller and turn off auxadc GC.
-  For mt6755 only*/
-	therm_auxadc = devm_clk_get(&dev->dev, "therm-auxadc");
-
-	if (IS_ERR(therm_auxadc))
-		tscpu_printk("[auxadc] cannot get auxadc clock\n");
-
-	tscpu_printk("[AUXADC]: auxadc CLK:0x%p\n", therm_auxadc);
-#endif
 	therm_main = devm_clk_get(&dev->dev, "therm-main");
 	if (IS_ERR(therm_main)) {
 		tscpu_printk("cannot get thermal clock.\n");
