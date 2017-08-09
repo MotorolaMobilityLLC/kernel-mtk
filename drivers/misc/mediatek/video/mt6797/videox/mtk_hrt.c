@@ -401,6 +401,9 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 		else
 			return HRT_OVER_LIMIT;
 	} else {
+		if (sum_overlap_w <= EMI_EXTREME_LOWER_BOUND * 240 && primary_fps == 60)
+			return HRT_LEVEL_EXTREME_LOW;
+
 		if (sum_overlap_w <= emi_lower_bound * 240)
 			return HRT_LEVEL_LOW;
 		else if (sum_overlap_w <= emi_upper_bound * 240)
@@ -637,7 +640,9 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 #ifdef HRT_DEBUG
 	DISPMSG("EMI hrt level:%d\n", hrt_level);
 #endif
-	if (hrt_level > HRT_LEVEL_LOW)
+
+	/* Need to calculate larb hrt for HRT_LEVEL_LOW level. */
+	if (hrt_level != HRT_LEVEL_LOW)
 		return hrt_level;
 
 	if (single_ovl) {

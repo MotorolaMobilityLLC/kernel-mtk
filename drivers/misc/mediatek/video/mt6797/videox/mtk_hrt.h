@@ -8,6 +8,7 @@
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
 
+#define EMI_EXTREME_LOWER_BOUND 2
 #define EMI_LOWER_BOUND 4
 #define EMI_UPPER_BOUND 6
 #define LARB_LOWER_BOUND 3
@@ -32,7 +33,8 @@ typedef struct hrt_sort_entry_t {
 } hrt_sort_entry;
 
 typedef enum {
-	HRT_LEVEL_LOW = 0,
+	HRT_LEVEL_EXTREME_LOW = 0,
+	HRT_LEVEL_LOW,
 	HRT_LEVEL_HIGH,
 	HRT_OVER_LIMIT,
 } HRT_LEVEL;
