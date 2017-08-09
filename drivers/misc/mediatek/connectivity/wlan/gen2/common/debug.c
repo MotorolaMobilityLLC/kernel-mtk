@@ -117,7 +117,7 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 				i*2, prCmd[i*2].u8TxTime, prCmd[i*2].eCmdType, *(PUINT_32)(&prCmd[i*2].u.rCmd.ucCID),
 				i*2+1, prCmd[i*2+1].u8TxTime, prCmd[i*2+1].eCmdType,
 				*(PUINT_32)(&prCmd[i*2+1].u.rCmd.ucCID));
-			if (bufLen <= 0)
+			if (bufLen <= 0 || (UINT_32)bufLen >= maxLen)
 				break;
 			pucBuf += bufLen;
 			maxLen -= bufLen;
@@ -129,7 +129,7 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 				prTcRel[i*2].u4RelCID,
 				i*2+1, prTcRel[i*2+1].u8RelaseTime, prTcRel[i*2+1].ucTc4RelCnt,
 				prTcRel[i*2+1].ucAvailableTc4, prTcRel[i*2+1].u4RelCID);
-			if (bufLen <= 0)
+			if (bufLen <= 0 || (UINT_32)bufLen >= maxLen)
 				break;
 			pucBuf += bufLen;
 			maxLen -= bufLen;
