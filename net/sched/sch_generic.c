@@ -29,6 +29,8 @@
 #include <net/sch_generic.h>
 #include <net/pkt_sched.h>
 #include <net/dst.h>
+#include <net/ip.h>
+#include <net/ipv6.h>
 
 /* Qdisc to use by default */
 const struct Qdisc_ops *default_qdisc_ops = &pfifo_fast_ops;
@@ -166,6 +168,21 @@ int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
 
 		HARD_TX_UNLOCK(dev, txq);
 	}
+
+	#ifdef CONFIG_MTK_NET_LOGGING
+	if (ret != NETDEV_TX_OK) {
+		if (qdisc_qlen(q) < 16) {
+			if (4 == (qdisc_qlen(q)) % 16)
+				pr_debug("[mtk_net][sched]dev_hard_start_xmit ret = %d(%s), txq state = %lu\n",
+					 ret, dev->name, txq->state);
+		} else {
+				if (64 == (qdisc_qlen(q)) % 128)
+					pr_debug("[mtk_net][sched]warning: dev_hard_start_xmit ret = %d(%s), txq state = %lu\n",
+						 ret, dev->name, txq->state);
+		}
+	}
+	#endif
+
 	spin_lock(root_lock);
 
 	if (dev_xmit_complete(ret)) {
@@ -481,8 +498,33 @@ static int pfifo_fast_enqueue(struct sk_buff *skb, struct Qdisc *qdisc)
 {
 	if (skb_queue_len(&qdisc->q) < qdisc_dev(qdisc)->tx_queue_len) {
 		int band = prio2band[skb->priority & TC_PRIO_MAX];
-		struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
-		struct sk_buff_head *list = band2list(priv, band);
+		struct pfifo_fast_priv *priv;
+		struct sk_buff_head *list;
+
+		/*mtk_net_change*/
+		if (skb->protocol == htons(ETH_P_IP)) {
+			if (skb->len <= 52 && (ip_hdr(skb)->protocol) == IPPROTO_TCP)
+				band = 0;
+		}
+		if (skb->protocol == htons(ETH_P_IPV6)) {
+			if (skb->len <= 128) {
+				struct tcphdr *tcph;
+				__be16 frag_off;
+				struct ipv6hdr *iph = ipv6_hdr(skb);
+				u8 nexthdr = iph->nexthdr;
+				u32 total_len = sizeof(struct ipv6hdr) + ntohs(iph->payload_len);
+				u32 l4_off = ipv6_skip_exthdr(skb, sizeof(struct ipv6hdr), &nexthdr, &frag_off);
+
+				tcph = (struct tcphdr *)(skb_network_header(skb) + l4_off);
+				if (nexthdr == IPPROTO_TCP && !tcph->syn && !tcph->fin && !tcph->rst &&
+				    ((total_len - l4_off) == (tcph->doff << 2))) {
+					band = 0;
+				}
+			}
+		}
+
+		priv = qdisc_priv(qdisc);
+		list = band2list(priv, band);
 
 		priv->bitmap |= (1 << band);
 		qdisc->q.qlen++;
@@ -790,10 +832,10 @@ void dev_activate(struct net_device *dev)
 	int need_watchdog;
 
 	/* No queueing discipline is attached to device;
-	 * create default one for devices, which need queueing
-	 * and noqueue_qdisc for virtual interfaces
-	 */
-
+	* create default one for devices, which need queueing
+	* and noqueue_qdisc for virtual interfaces
+	*/
+	pr_debug("[mtk net][sched]dev activate dev = %s\n", dev->name);
 	if (dev->qdisc == &noop_qdisc)
 		attach_default_qdiscs(dev);
 
@@ -846,6 +888,13 @@ static bool some_qdisc_is_busy(struct net_device *dev)
 
 		dev_queue = netdev_get_tx_queue(dev, i);
 		q = dev_queue->qdisc_sleeping;
+
+		/*MTK_NET_CHANGES*/
+		if (q == NULL) {
+			pr_err("some_qdisc_is_busy dev = %p, i = %d, dev_q = %p", dev, i, dev_queue);
+			BUG_ON(q == NULL);
+		}
+
 		root_lock = qdisc_lock(q);
 
 		spin_lock_bh(root_lock);
@@ -900,8 +949,10 @@ void dev_deactivate_many(struct list_head *head)
 void dev_deactivate(struct net_device *dev)
 {
 	LIST_HEAD(single);
-
 	list_add(&dev->close_list, &single);
+
+	pr_debug("[mtk net][sched]dev deactivate dev = %s\n", dev->name);
+
 	dev_deactivate_many(&single);
 	list_del(&single);
 }
