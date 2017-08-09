@@ -1866,6 +1866,7 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #endif
 }
 
+#define IDVFS_FMAX 2500
 #ifndef DISABLE_PBM_FEATURE
 static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 {
@@ -1875,6 +1876,9 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 	struct cpumask cpu_online_cpumask[NR_MT_CPU_DVFS];
 	struct ppm_cluster_status ppm_data[NR_MT_CPU_DVFS];
 	int i;
+#ifdef ENABLE_IDVFS
+	unsigned int idvfs_avg = 0;
+#endif
 
 	for_each_cpu_dvfs_only(i, p) {
 		arch_get_cluster_cpus(&dvfs_cpumask[i], i);
@@ -1882,7 +1886,18 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 
 		p_dvfs[i] = id_to_cpu_dvfs(i);
 		ppm_data[i].core_num = cpumask_weight(&cpu_online_cpumask[i]);
+
+#ifdef ENABLE_IDVFS
+		if (!disable_idvfs_flag && cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
+			idvfs_avg = (BigiDVFSSWAvgStatus() / (10000 / IDVFS_FMAX));
+			ppm_data[i].freq_idx = _search_available_freq_idx(p, idvfs_avg * 1000, CPUFREQ_RELATION_L);
+			cpufreq_ver("iDVFS average freq = %d, idx map to %d\n",
+				idvfs_avg, _search_available_freq_idx(p, idvfs_avg * 1000, CPUFREQ_RELATION_L));
+		} else
 		ppm_data[i].freq_idx = p_dvfs[i]->idx_opp_tbl;
+#else
+		ppm_data[i].freq_idx = p_dvfs[i]->idx_opp_tbl;
+#endif
 		ppm_data[i].volt = p_dvfs[i]->ops->get_cur_volt(p_dvfs[i]) / 100;
 
 		cpufreq_ver("%d: core = %d, idx = %d, volt = %d\n",
@@ -3855,7 +3870,6 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 }
 
 int init_cci_status = 0;
-#define IDVFS_FMAX 2500
 static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int ret = -EINVAL;
