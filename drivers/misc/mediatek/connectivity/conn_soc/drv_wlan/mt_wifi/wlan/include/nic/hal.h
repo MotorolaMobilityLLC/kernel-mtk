@@ -255,7 +255,9 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value); \
+	if (kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value) \
+		== FALSE) \
+		fgIsBusAccessFailed = TRUE; \
 }
 
 #define HAL_MCR_WR(_prAdapter, _u4Offset, _u4Value) \
@@ -263,7 +265,9 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value); \
+	if (kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value) \
+		== FALSE) \
+		fgIsBusAccessFailed = TRUE; \
 }
 
 #define HAL_PORT_RD(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
@@ -271,7 +275,9 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	if (kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
+		== FALSE) \
+		fgIsBusAccessFailed = TRUE; \
 }
 
 #define HAL_PORT_WR(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
@@ -279,7 +285,9 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	if (kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
+		== FALSE) \
+		fgIsBusAccessFailed = TRUE; \
 }
 
 #if 0				/* only for SDIO */

@@ -538,11 +538,14 @@ VOID nicTxInitialize(IN P_ADAPTER_T prAdapter)
 * \retval WLAN_STATUS_RESOURCES Resource is not available.
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 u4CurrTick = 0;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 {
+#define TC4_NO_RESOURCE_DELAY_MS      (1048*30)    /* exponential of 30s */
+
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
-
+	BOOLEAN fgTimeout;
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prAdapter);
@@ -555,6 +558,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 
 	if (prTxCtrl->rTc.aucFreeBufferCount[ucTC]) {
 
+		if (ucTC == TC4_INDEX)
+			u4CurrTick = 0;
 		/* get a available TX entry */
 		prTxCtrl->rTc.aucFreeBufferCount[ucTC]--;
 
@@ -565,6 +570,15 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	}
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
+	if (ucTC == TC4_INDEX) {
+		if (u4CurrTick == 0)
+			u4CurrTick = kalGetTimeTick();
+		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > TC4_NO_RESOURCE_DELAY_MS) ? TRUE : FALSE;
+		if (fgTimeout) {
+			kalSendAeeWarning("[TC4 no resource delay 30s!]", __func__);
+			glDoChipReset();
+		}
+	}
 	return u4Status;
 
 }				/* end of nicTxAcquireResourceAndTFCBs() */

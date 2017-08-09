@@ -1224,10 +1224,19 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	const UINT_32 u4CRCOffset = offsetof(FIRMWARE_DIVIDED_DOWNLOAD_T, u4NumOfEntries);
 #endif
 #endif
+	enum Adapter_Start_Fail_Reason {
+		ALLOC_ADAPTER_MEM_FAIL,
+		DRIVER_OWN_FAIL,
+		INIT_ADAPTER_FAIL,
+		RAM_CODE_DOWNLOAD_FAIL,
+		WAIT_FIRMWARE_READY_FAIL,
+		FAIL_REASON_MAX
+	} eFailReason;
 	ASSERT(prAdapter);
 
 	DEBUGFUNC("wlanAdapterStart");
 
+	eFailReason = FAIL_REASON_MAX;
 	/* 4 <0> Reset variables in ADAPTER_T */
 	prAdapter->fgIsFwOwn = TRUE;
 	prAdapter->fgIsEnterD3ReqIssued = FALSE;
@@ -1245,6 +1254,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "nicAllocateAdapterMemory Error!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = ALLOC_ADAPTER_MEM_FAIL;
 			break;
 		}
 
@@ -1260,6 +1270,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		if (prAdapter->fgIsFwOwn == TRUE) {
 			DBGLOG(INIT, ERROR, "nicpmSetDriverOwn() failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = DRIVER_OWN_FAIL;
 			break;
 		}
 		/* 4 <1> Initialize the Adapter */
@@ -1267,6 +1278,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "nicInitializeAdapter failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = INIT_ADAPTER_FAIL;
 			break;
 		}
 
@@ -1287,6 +1299,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		if (pvFwImageMapFile == NULL) {
 			DBGLOG(INIT, ERROR, "No Firmware found!\n");
 			u4Status = WLAN_STATUS_FAILURE;
+			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
 			break;
 		}
 
@@ -1391,8 +1404,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			}
 #endif
 
-		if (u4Status != WLAN_STATUS_SUCCESS)
+		if (u4Status != WLAN_STATUS_SUCCESS) {
+			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
 			break;
+		}
 #if !CFG_ENABLE_FW_DOWNLOAD_ACK
 		/* Send INIT_CMD_ID_QUERY_PENDING_ERROR command and wait for response */
 		if (wlanImageQueryStatus(prAdapter) != WLAN_STATUS_SUCCESS) {
@@ -1422,6 +1437,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				break;
 			} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
 				u4Status = WLAN_STATUS_FAILURE;
+				eFailReason = WAIT_FIRMWARE_READY_FAIL;
 				break;
 			} else if (i >= CFG_RESPONSE_POLLING_TIMEOUT) {
 				UINT_32 u4MailBox0;
@@ -1430,6 +1446,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				DBGLOG(INIT, ERROR, "Waiting for Ready bit: Timeout, ID=%u\n",
 						     (u4MailBox0 & 0x0000FFFF));
 				u4Status = WLAN_STATUS_FAILURE;
+				eFailReason = WAIT_FIRMWARE_READY_FAIL;
 				break;
 			}
 			i++;
@@ -1464,8 +1481,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 		RECLAIM_POWER_CONTROL_TO_PM(prAdapter, FALSE);
 
-		if (u4Status != WLAN_STATUS_SUCCESS)
+		if (u4Status != WLAN_STATUS_SUCCESS) {
+			eFailReason = WAIT_FIRMWARE_READY_FAIL;
 			break;
+		}
 
 		/* OID timeout timer initialize */
 		cnmTimerInitTimer(prAdapter,
@@ -1612,7 +1631,42 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 	} else {
 		/* release allocated memory */
-		nicReleaseAdapterMemory(prAdapter);
+		switch (eFailReason) {
+		case WAIT_FIRMWARE_READY_FAIL:
+			DBGLOG(INIT, ERROR, "Wait firmware ready fail, FailReason: %d\n",
+					eFailReason);
+			g_IsNeedDoChipReset = 1;
+			kalSendAeeWarning("[Wait firmware ready fail!]", __func__);
+			KAL_WAKE_LOCK_DESTROY(prAdapter, &prAdapter->rTxThreadWakeLock);
+			nicRxUninitialize(prAdapter);
+			nicTxRelease(prAdapter);
+			/* System Service Uninitialization */
+			nicUninitSystemService(prAdapter);
+			nicReleaseAdapterMemory(prAdapter);
+			break;
+		case RAM_CODE_DOWNLOAD_FAIL:
+			DBGLOG(INIT, ERROR, "Ram code download fail, FailReason: %d\n",
+					eFailReason);
+			g_IsNeedDoChipReset = 1;
+			kalSendAeeWarning("[Ram code download fail!]", __func__);
+			KAL_WAKE_LOCK_DESTROY(prAdapter, &prAdapter->rTxThreadWakeLock);
+			nicRxUninitialize(prAdapter);
+			nicTxRelease(prAdapter);
+			/* System Service Uninitialization */
+			nicUninitSystemService(prAdapter);
+			nicReleaseAdapterMemory(prAdapter);
+			break;
+		case INIT_ADAPTER_FAIL:
+			nicReleaseAdapterMemory(prAdapter);
+			break;
+		case DRIVER_OWN_FAIL:
+			nicReleaseAdapterMemory(prAdapter);
+			break;
+		case ALLOC_ADAPTER_MEM_FAIL:
+			break;
+		default:
+			break;
+		}
 	}
 
 	return u4Status;
@@ -1672,6 +1726,8 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 					break;
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
 					 || fgIsBusAccessFailed == TRUE || i >= CFG_RESPONSE_POLLING_TIMEOUT) {
+					g_IsNeedDoChipReset = 1;
+					kalSendAeeWarning("[Read WCIR_WLAN_READY fail!]", __func__);
 					break;
 				}
 				i++;
@@ -3002,9 +3058,13 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT\n");
 				u4Status = WLAN_STATUS_FAILURE;
+				g_IsNeedDoChipReset = 1;
+				kalSendAeeWarning("[Check EID error!]", __func__);
 			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucSeqNum != ucCmdSeqNum\n");
 				u4Status = WLAN_STATUS_FAILURE;
+				g_IsNeedDoChipReset = 1;
+				kalSendAeeWarning("[Check SeqNum error!]", __func__);
 			} else {
 				prEventCmdResult =
 				    (P_INIT_EVENT_CMD_RESULT) (prInitHifRxHeader->rInitWifiEvent.aucBuffer);

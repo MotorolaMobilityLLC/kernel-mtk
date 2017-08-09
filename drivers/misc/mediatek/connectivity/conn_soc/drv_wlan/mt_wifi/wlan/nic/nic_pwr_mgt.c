@@ -352,6 +352,8 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
 					DBGLOG(NIC, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
 				/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
+				kalSendAeeWarning("[Fatal error! Driver own fail!]", __func__);
+				glDoChipReset();
 			}
 			break;
 		}

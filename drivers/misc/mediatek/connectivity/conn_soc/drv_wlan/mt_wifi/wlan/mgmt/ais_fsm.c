@@ -2327,6 +2327,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 * \return none
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 ucScanTimeoutTimes = 0;
 VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_MSG_SCN_SCAN_DONE prScanDoneMsg;
@@ -2342,6 +2343,7 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	DBGLOG(AIS, WARN, "ScanDone\n");
 	DBGLOG(AIS, LOUD, "EVENT-SCAN DONE: Current Time = %u\n", kalGetTimeTick());
+	ucScanTimeoutTimes = 0;
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
@@ -3757,6 +3759,8 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 UINT_32 IsrCnt = 0, IsrPassCnt = 0, TaskIsrCnt = 0;
 VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
+#define SCAN_DONE_TIMEOUT_TIMES_LIMIT		20
+
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	ENUM_AIS_STATE_T eNextState;
 	P_CONNECTION_SETTINGS_T prConnSettings;
@@ -3779,6 +3783,11 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
 		DBGLOG(AIS, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
 
+	ucScanTimeoutTimes++;
+	if (ucScanTimeoutTimes > SCAN_DONE_TIMEOUT_TIMES_LIMIT) {
+		kalSendAeeWarning("[Scan done timeout more than 20 times!]", __func__);
+		glDoChipReset();
+	}
 #if 0 /* ALPS02018734: remove trigger assert */
 	if (prAdapter->fgTestMode == FALSE) {
 		/* Titus - xxx */

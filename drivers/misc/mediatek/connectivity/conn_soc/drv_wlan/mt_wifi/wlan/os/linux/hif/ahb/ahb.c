@@ -278,9 +278,6 @@ static probe_card pfWlanProbe;
 /* release function from other module */
 static remove_card pfWlanRemove;
 
-/* DMA operator */
-static GL_HIF_DMA_OPS_T *pfWlanDmaOps;
-
 static BOOLEAN WlanDmaFatalErr;
 
 #if (CONF_HIF_DEV_MISC == 1)
@@ -312,12 +309,12 @@ static const struct of_device_id apwifi_of_ids[] = {
 
 struct platform_driver MtkPltmAhbDriver = {
 	.driver = {
-		   .name = "mt-wifi",
-		   .owner = THIS_MODULE,
+	.name = "mt-wifi",
+	.owner = THIS_MODULE,
 #ifdef CONFIG_OF
-		   .of_match_table = apwifi_of_ids,
+	.of_match_table = apwifi_of_ids,
 #endif
-		   },
+	},
 	.probe = HifAhbPltmProbe,
 #ifdef CONFIG_PM
 	.suspend = HifAhbPltmSuspend,
@@ -338,151 +335,6 @@ static struct platform_device *HifAhbPDev;
 ********************************************************************************
 */
 
-#if 0
-/*set JTAG Mode for MCU*/
-#define JTAG_ADDR1_BASE 0x10208000
-#define JTAG_ADDR2_BASE 0x10005300
-char *jtag_addr1 = (char *)JTAG_ADDR1_BASE;
-char *jtag_addr2 = (char *)JTAG_ADDR2_BASE;
-
-#define JTAG1_REG_WRITE(addr, value)    \
-	writel(value, ((volatile (UINT_32 *))(jtag_addr1 + (addr - JTAG_ADDR1_BASE))))
-#define JTAG1_REG_READ(addr)            \
-	readl(((volatile (UINT_32 *))(jtag_addr1 + (addr - JTAG_ADDR1_BASE))))
-#define JTAG2_REG_WRITE(addr, value)    \
-	writel(value, ((volatile (UINT_32 *))(jtag_addr2 + (addr - JTAG_ADDR2_BASE))))
-#define JTAG2_REG_READ(addr)            \
-	readl(((volatile (UINT_32 *))(jtag_addr2 + (addr - JTAG_ADDR2_BASE))))
-
-static int wmt_set_jtag_for_mcu(void)
-{
-	int iRet = 0;
-	unsigned int tmp = 0;
-
-	jtag_addr1 = ioremap(JTAG_ADDR1_BASE, 0x5000);
-	if (jtag_addr1 == 0) {
-		DBGLOG(INIT, ERROR, "remap jtag_addr1 fail!\n");
-		return -1;
-	}
-	DBGLOG(INIT, INFO, "jtag_addr1 = 0x%p\n", jtag_addr1);
-	jtag_addr2 = ioremap(JTAG_ADDR2_BASE, 0x1000);
-	if (jtag_addr2 == 0) {
-		DBGLOG(INIT, ERROR, "remap jtag_addr2 fail!\n");
-		return -1;
-	}
-	DBGLOG(INIT, INFO, "jtag_addr2 = 0x%p\n", jtag_addr2);
-
-	/*Enable IES of all pins */
-	JTAG1_REG_WRITE(0x10208004, 0xffffffff);
-	JTAG1_REG_WRITE(0x10208014, 0xffffffff);
-	JTAG1_REG_WRITE(0x10209004, 0xffffffff);
-	JTAG1_REG_WRITE(0x1020A004, 0xffffffff);
-	JTAG1_REG_WRITE(0x1020B004, 0xffffffff);
-
-/*JTAG1 mode setting*/
-	/*set GPIO pull mode */
-	/*0x1020A040[6:0]=0x7f */
-	tmp = JTAG1_REG_READ(0x1020A040);
-	tmp &= 0xffffff80;
-	tmp |= 0x7f;
-	JTAG1_REG_WRITE(0x1020A040, tmp);
-
-#if 0
-	/*0x1020A060[6:0]=0x31 */
-	tmp = JTAG1_REG_READ(0x1020A060);
-	tmp &= 0xffffff80;
-	tmp |= 0x31;
-	JTAG1_REG_WRITE(0x1020A060, tmp);
-	/*set CONSYS JTAG mode 0x10005300=0x07777777 */
-	/* DRV_WriteReg32(0x10005300, 0x07777777); */ /*remove JTAG mode1*/
-	JTAG2_REG_WRITE(0x10005300, 0x00000000);
-#endif
-
-#if 1
-	/*0x1020A060[6:0]=0x31 */
-	tmp = JTAG1_REG_READ(0x1020A060);
-	tmp &= 0xffffff80;
-	tmp |= 0x31;
-	JTAG1_REG_WRITE(0x1020A060, tmp);
-	/*set CONSYS JTAG mode 0x10005300=0x07777777 */
-	/* DRV_WriteReg32(0x10005300, 0x07777777); */ /*remove JTAG mode1*/
-	JTAG2_REG_WRITE(0x1000530C, 0x08888888);
-#endif
-
-/*JTAG1 mode setting*/
-
-	/*set GPIO pull mode */
-	/*0x1020A050[6:0]=0x7f */
-	tmp = JTAG1_REG_READ(0x1020A050);
-	tmp &= 0xffffff80;
-	tmp |= 0x7f;
-	JTAG1_REG_WRITE(0x1020A050, tmp);
-	/*0x1020A070[6:0]=0x31 */
-	tmp = JTAG1_REG_READ(0x1020A070);
-	tmp &= 0xffffff80;
-	tmp |= 0x31;
-	JTAG1_REG_WRITE(0x1020A070, tmp);
-	/*set CONSYS JTAG mode
-	   0x10005310=0x77111111
-	   0x10005320=0x00077777 */
-	JTAG2_REG_WRITE(0x1000531C, 0xff111111);
-	JTAG2_REG_WRITE(0x1000532C, 0x000fffff);
-
-#if 0
-	JTAG2_REG_WRITE(0x10005410, 0x77700000);	/* GPIO141 ~ GPIO143 */
-	JTAG2_REG_WRITE(0x10005420, 0x00000077);	/* GPIO144 ~ GPIO145 */
-	JTAG2_REG_WRITE(0x10005370, 0x70000000);	/* GPIO63 */
-	JTAG2_REG_WRITE(0x10005380, 0x00000777);	/* GPIO64 ~ GPIO66 */
-	JTAG2_REG_WRITE(0x100053a0, 0x70000000);	/* GPIO87 */
-	JTAG2_REG_WRITE(0x100053b0, 0x00000777);	/* GPIO88 ~ GPIO90 */
-	JTAG2_REG_WRITE(0x100053d0, 0x00777000);	/* GPIO107 ~ GPIO109 */
-#endif
-
-#if 0
-	/*set CONSYS debug flag mode */
-	JTAG2_REG_WRITE(0x1000540C, 0xffffffff);
-	JTAG2_REG_WRITE(0x1000541C, 0xffffffff);
-	JTAG2_REG_WRITE(0x1000538C, 0x11111fff);
-	JTAG2_REG_WRITE(0x100053AC, 0xf1111111);
-	JTAG2_REG_WRITE(0x100053BC, 0x00000fff);
-	JTAG2_REG_WRITE(0x100053DC, 0xfffff001);
-	JTAG2_REG_WRITE(0x100053EC, 0x1111100f);
-	JTAG2_REG_WRITE(0x1000533C, 0x00ffffff);
-	JTAG2_REG_WRITE(0x1000532C, 0xff000000);
-#endif
-
-	return iRet;
-}
-
-static int wmt_set_jtag_for_gps(void)
-{
-	int iRet = 0;
-	unsigned int tmp = 0;
-	/*JTAG1 mode setting */
-	/*set GPIO pull mode */
-	/*0x1020B040[21:16]=0x37, leave bit19 alone */
-	tmp = JTAG1_REG_READ(0x1020B040);
-	tmp &= 0xffC8ffff;
-	tmp |= (0x37 << 16);
-	JTAG1_REG_WRITE(0x1020B040, tmp);
-
-	/*0x1020B050[21:16]=0x20, leave bit19 alone */
-	tmp = JTAG1_REG_READ(0x1020B050);
-	tmp &= 0xffC8ffff;
-	tmp |= (0x20 << 16);
-	JTAG1_REG_WRITE(0x1020B050, tmp);
-
-	/*set CONSYS JTAG mode 0x100053B0=0x70777000 */
-	/*set CONSYS JTAG mode 0x100053C0=0x00000007 */
-	JTAG2_REG_WRITE(0x100053BC, 0xf0fff000);
-	JTAG2_REG_WRITE(0x100053CC, 0x0000000F);
-
-	/*CONSYS debug flag mode is already done in MCU jtag mode setting */
-
-	return iRet;
-}
-#endif /* 0 */
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function will register sdio bus to the os
@@ -500,29 +352,21 @@ WLAN_STATUS glRegisterBus(probe_card pfProbe, remove_card pfRemove)
 	ASSERT(pfProbe);
 	ASSERT(pfRemove);
 
-/* DBGLOG(INIT, INFO, ("mtk_sdio: MediaTek SDIO WLAN driver\n")); */
-/* DBGLOG(INIT, INFO, ("mtk_sdio: Copyright MediaTek Inc.\n")); */
-
 	pfWlanProbe = pfProbe;	/* wlan card initialization in other modules = wlanProbe() */
 	pfWlanRemove = pfRemove;
 
 #if (CONF_HIF_DEV_MISC == 1)
 	Ret = misc_register(&MtkAhbDriver);
-	if (Ret != 0) {
-		/* DBGLOG(INIT, ERROR, (" unable to register misc device\n")); */
+	if (Ret != 0)
 		return Ret;
-	}
-
 	HifAhbProbe();
 #else
-
 	Ret = platform_driver_register(&MtkPltmAhbDriver);
-
 #endif /* CONF_HIF_DEV_MISC */
 
 	return Ret;
 
-}				/* end of glRegisterBus() */
+} /* end of glRegisterBus() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -543,7 +387,7 @@ VOID glUnregisterBus(remove_card pfRemove)
 	HifAhbRemove();
 
 	if ((misc_deregister(&MtkAhbDriver)) != 0)
-		; /* DBGLOG(INIT, INFO, (" unable to de-register character device\n")); */
+		;
 #else
 
 	platform_driver_unregister(&MtkPltmAhbDriver);
@@ -551,7 +395,7 @@ VOID glUnregisterBus(remove_card pfRemove)
 
 	return;
 
-}				/* end of glUnregisterBus() */
+} /* end of glUnregisterBus() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -617,10 +461,8 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 #ifdef CONFIG_OF
 #if !defined(CONFIG_MTK_CLKMGR)
 	HifInfo->clk_wifi_dma = devm_clk_get(&HifAhbPDev->dev, "wifi-dma");
-	if (IS_ERR(HifInfo->clk_wifi_dma)) {
+	if (IS_ERR(HifInfo->clk_wifi_dma))
 		DBGLOG(INIT, ERROR, "[WiFi/HIF][CCF]cannot get HIF clk_wifi_dma clock.\n");
-		/* return PTR_ERR(HifInfo->clk_wifi_dma); */
-	}
 	DBGLOG(INIT, TRACE, "[WiFi/HIF][CCF]HIF clk_wifi_dma=0x%p\n", HifInfo->clk_wifi_dma);
 #endif
 #endif
@@ -631,12 +473,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 #if (CONF_MTK_AHB_DMA == 1)
 	spin_lock_init(&HifInfo->DdmaLock);
 
-/* if (HifInfo->ChipID == MTK_CHIP_ID_6572) */
-/* HifPdmaInit(HifInfo); */
-/* else if (HifInfo->ChipID == MTK_CHIP_ID_6582) */
 	HifPdmaInit(HifInfo);
-
-	pfWlanDmaOps = HifInfo->DmaOps;
 #endif /* CONF_MTK_AHB_DMA */
 
 	/* Start loopback test after 10 seconds */
@@ -663,7 +500,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->HifDmaWaitFlg = 0;
 #endif /* CONF_HIF_DMA_INT */
 
-}				/* end of glSetHifInfo() */
+} /* end of glSetHifInfo() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -681,7 +518,7 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
 	return;
 
-}				/* end of glClearHifInfo() */
+} /* end of glClearHifInfo() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -711,7 +548,7 @@ VOID glGetChipInfo(GLUE_INFO_T *GlueInfo, UINT_8 *pucChipBuf)
 	default:
 		kalMemCopy(pucChipBuf, "SOC", strlen("SOC"));
 	}
-}				/* end of glGetChipInfo() */
+} /* end of glGetChipInfo() */
 
 #if CFG_SPM_WORKAROUND_FOR_HOTSPOT
 /*----------------------------------------------------------------------------*/
@@ -732,7 +569,7 @@ BOOLEAN glIsChipNeedWakelock(GLUE_INFO_T *GlueInfo)
 		return TRUE;
 	else
 		return FALSE;
-}				/* end of glIsChipNeedWakelock() */
+} /* end of glIsChipNeedWakelock() */
 #endif /* CFG_SPM_WORKAROUND_FOR_HOTSPOT */
 
 /*----------------------------------------------------------------------------*/
@@ -749,8 +586,7 @@ BOOLEAN glIsChipNeedWakelock(GLUE_INFO_T *GlueInfo)
 BOOLEAN glBusInit(PVOID pvData)
 {
 	return TRUE;
-
-}				/* end of glBusInit() */
+} /* end of glBusInit() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -764,8 +600,7 @@ BOOLEAN glBusInit(PVOID pvData)
 VOID glBusRelease(PVOID pvData)
 {
 	return;
-
-}				/* end of glBusRelease() */
+} /* end of glBusRelease() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -779,11 +614,6 @@ VOID glBusRelease(PVOID pvData)
 *         NEGATIVE_VALUE   if fail
 */
 /*----------------------------------------------------------------------------*/
-/* #ifdef CONFIG_OF */ /*for MT6752*/
-/* #ifndef MT_WF_HIF_IRQ_ID */
-/* #define MT_WF_HIF_IRQ_ID   270 */
-/* #endif */
-/* #endif */
 #ifdef CONFIG_OF
 INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 {
@@ -803,10 +633,6 @@ INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,WIFI");
 	if (node) {
 		irq_id = irq_of_parse_and_map(node, 0);
-		/*fixme, be compitable arch 64bits */
-		/* mtk_btif.base = (unsigned long)of_iomap(node, 0); */
-		/* BTIF_INFO_FUNC("get btif irq(%d),register base(0x%lx)\n", */
-		/* mtk_btif.p_irq->irq_id,mtk_btif.base); */
 		DBGLOG(INIT, INFO, "WIFI-OF: get wifi irq(%d)\n", irq_id);
 	} else {
 		DBGLOG(INIT, ERROR, "WIFI-OF: get wifi device node fail\n");
@@ -841,19 +667,13 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 
 	/* Init */
 	ASSERT(pvData);
-	if (!pvData) {
-		/* DBGLOG(INIT, INFO, ("%s null pvData\n", __FUNCTION__)); */
+	if (!pvData)
 		return;
-	}
 	prNetDevice = (struct net_device *)pvData;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,WIFI");
 	if (node) {
 		irq_id = irq_of_parse_and_map(node, 0);
-		/*fixme, be compitable arch 64bits */
-		/* mtk_btif.base = (unsigned long)of_iomap(node, 0); */
-		/* BTIF_INFO_FUNC("get btif irq(%d),register base(0x%lx)\n", */
-		/* mtk_btif.p_irq->irq_id,mtk_btif.base); */
 		DBGLOG(INIT, INFO, "WIFI-OF: get wifi irq(%d)\n", irq_id);
 	} else {
 		DBGLOG(INIT, ERROR, "WIFI-OF: get wifi device node fail\n");
@@ -872,9 +692,7 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 	return;
 
 }
-
 #else
-
 /* the name is different in 72 and 82 */
 #ifndef MT_WF_HIF_IRQ_ID	/* for MT6572/82/92 */
 #define MT_WF_HIF_IRQ_ID   WF_HIF_IRQ_ID
@@ -917,7 +735,7 @@ INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 
 	return ret;
 
-}				/* end of glBusSetIrq() */
+} /* end of glBusSetIrq() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -937,18 +755,14 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 
 	/* Init */
 	ASSERT(pvData);
-	if (!pvData) {
-		/* DBGLOG(INIT, ERROR, ("%s null pvData\n", __FUNCTION__)); */
+	if (!pvData)
 		return;
-	}
 
 	prNetDevice = (struct net_device *)pvData;
 	GlueInfo = (GLUE_INFO_T *) pvCookie;
 	ASSERT(GlueInfo);
-	if (!GlueInfo) {
-		/* DBGLOG(INIT, ERROR, ("%s no glue info\n", __FUNCTION__)); */
+	if (!GlueInfo)
 		return;
-	}
 
 	HifInfo = &GlueInfo->rHifInfo;
 
@@ -956,7 +770,7 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 	free_irq(MT_WF_HIF_IRQ_ID, prNetDevice);
 	return;
 
-}				/* end of glBusreeIrq() */
+} /* end of glBusreeIrq() */
 #endif
 
 /*----------------------------------------------------------------------------*/
@@ -981,6 +795,8 @@ BOOLEAN kalDevRegRead(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, OUT UINT_3
 	HifInfo = &GlueInfo->rHifInfo;
 
 	/* use PIO mode to read register */
+	if (WlanDmaFatalErr && RegOffset != MCR_WCIR && RegOffset != MCR_WHLPCR)
+		return FALSE;
 	*pu4Value = HIF_REG_READL(HifInfo, RegOffset);
 
 	if ((RegOffset == MCR_WRDR0) || (RegOffset == MCR_WRDR1))
@@ -988,7 +804,7 @@ BOOLEAN kalDevRegRead(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, OUT UINT_3
 
 	return TRUE;
 
-}				/* end of kalDevRegRead() */
+} /* end of kalDevRegRead() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -1011,6 +827,8 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 	HifInfo = &GlueInfo->rHifInfo;
 
 	/* use PIO mode to write register */
+	if (WlanDmaFatalErr && RegOffset != MCR_WCIR && RegOffset != MCR_WHLPCR)
+		return FALSE;
 	HIF_REG_WRITEL(HifInfo, RegOffset, RegValue);
 
 	if ((RegOffset == MCR_WTDR0) || (RegOffset == MCR_WTDR1))
@@ -1018,7 +836,7 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 
 	return TRUE;
 
-}				/* end of kalDevRegWrite() */
+} /* end of kalDevRegWrite() */
 
 static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte);
 
@@ -1040,39 +858,13 @@ BOOLEAN
 kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
 	GL_HIF_INFO_T *HifInfo;
-#if (CONF_MTK_AHB_DMA == 1)
-	MTK_WCN_HIF_DMA_CONF DmaConf;
-	UINT_32 LoopCnt;
-#endif /* CONF_MTK_AHB_DMA */
-	UINT_32 IdLoop, MaxLoop;
-	UINT_32 *LoopBuf;
-	unsigned long PollTimeout;
-
-#if DBG
-	/* DBGLOG(INIT, INFO,
-	(KERN_INFO DRV_NAME"++kalDevPortRead++ buf:0x%p, port:0x%x, length:%d\n", Buf, Port, Size)); */
-#endif
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
-		/* #ifdef CONF_HIF_CONNSYS_DBG */
-#if 0
-		/* avoid log is overwrited */
-		if (WlanDmaFatalErr == 1) {
-			/* dump information every 20 times */
-			static int testrx;
-
-			HifInfo = &GlueInfo->rHifInfo;
-			if (testrx++ >= 20) {
-				testrx = 0;
-				goto LabelErr;
-			}
-		}
-#endif /* CONF_HIF_CONNSYS_DBG */
-
-		return TRUE;
+		DBGLOG(RX, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d, HifIsFwOwn: %d\n",
+				WlanDmaFatalErr, fgIsResetting, HifIsFwOwn(GlueInfo->prAdapter));
+		return FALSE;
 	}
-
 	/* Init */
 	ASSERT(GlueInfo);
 	HifInfo = &GlueInfo->rHifInfo;
@@ -1097,14 +889,17 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
 		VOID *DmaVBuf = NULL, *DmaPBuf = NULL;
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
-
+		GL_HIF_DMA_OPS_T *prDmaOps = HifInfo->DmaOps;
+		MTK_WCN_HIF_DMA_CONF DmaConf;
+		UINT_32 LoopCnt;
+		unsigned long PollTimeout;
+#if (CONF_HIF_DMA_INT == 1)
+		INT_32 RtnVal = 0;
+#endif
 		/* config DMA, Port = MCR_WRDR0 or MCR_WRDR1 */
 		DmaConf.Count = Size;
 		DmaConf.Dir = HIF_DMA_DIR_RX;
 		DmaConf.Src = HIF_DRV_BASE + Port;	/* must be physical addr */
-
-		/* TODO: use dma_unmap_single(struct device *dev, dma_addr_t handle,
-		   size_t size, enum dma_data_direction dir) */
 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
 		DmaConf.Dst = kalIOPhyAddrGet(Buf);	/* must be physical addr */
@@ -1132,113 +927,44 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		   it, do it after dma_unmap_single().
 		 */
 		/* DMA_FROM_DEVICE invalidated (without writeback) the cache */
-		/* TODO: if dst_off was not cacheline aligned? */
+		/* TODO: if dst_off was not cacheline aligned */
 		DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to read data */
 		AP_DMA_HIF_LOCK(HifInfo);	/* lock to avoid other codes config GDMA */
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
+		prDmaOps->DmaClockCtrl(TRUE);
+		prDmaOps->DmaConfig(HifInfo, &DmaConf);
+		prDmaOps->DmaStart(HifInfo);
 
-		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
-		HifInfo->DmaOps->DmaStart(HifInfo);
-
-		/* TODO: use interrupt mode */
-		/* TODO: use timeout, not loopcnt */
-		/* TODO: use semaphore */
 #if (CONF_HIF_DMA_INT == 1)
 		RtnVal = wait_event_interruptible_timeout(HifInfo->HifDmaWaitq, (HifInfo->HifDmaWaitFlg != 0), 1000);
-		if (RtnVal <= 0) {
-			while (1)
-				DBGLOG(RX, ERROR, "fatal error1! reset DMA!\n");
-		}
+		if (RtnVal <= 0)
+			DBGLOG(RX, ERROR, "fatal error1! reset DMA!\n");
 		HifInfo->HifDmaWaitFlg = 0;
 #else
-
-		LoopCnt = 0;
 		PollTimeout = jiffies + HZ * 5;
 
 		do {
-#if 0
-			if (LoopCnt++ > 100000) {
-#else
-			if (time_before(jiffies, PollTimeout)) {
-				/* Do nothing */
-				/* not timeout, continue to poll */
-			} else {
-#endif
+			if (!time_before(jiffies, PollTimeout)) {
+				DBGLOG(RX, INFO, "DMA Timeout, Hif Reg dump WCIR:%u, WHLPCR:%u\n",
+						HIF_REG_READL(HifInfo, MCR_WCIR), HIF_REG_READL(HifInfo, MCR_WHLPCR));
 
-#if (CONF_HIF_CONNSYS_DBG == 0)
-				/* TODO: impossible! reset DMA */
-				DBGLOG(RX, ERROR, "fatal error1! reset DMA!\n");
-				break;
-#else
-				/*
-				   never break and just wait for response from HIF
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
 
-				   because when we use ICE on CONNSYS, we will break the CPU and do debug,
-				   but maybe AP side continues to send packets to HIF, HIF buffer of CONNSYS
-				   will be full and we will do DMA reset here then CONNSYS CPU will also be reset.
-				 */
-				DBGLOG(RX, INFO, "DMA LoopCnt > 100000... (%lu %lu)\n", jiffies, PollTimeout);
-/* LabelErr: */
-				if (HifInfo->DmaOps->DmaRegDump != NULL)
-					HifInfo->DmaOps->DmaRegDump(HifInfo);
-				HifRegDump(GlueInfo->prAdapter);
-				LoopCnt = 0;
 				WlanDmaFatalErr = 1;
 
-#if (CONF_HIF_DMA_DBG == 0)
-				{
-/* UCHAR AeeBuffer[100]; */
-				UINT_32 FwCnt;
-				/* UINT_32 RegValChip, RegValLP; */
-				DBGLOG(RX, WARN, "CONNSYS FW CPUINFO:\n");
-				for (FwCnt = 0; FwCnt < 512; FwCnt++) {
-					DBGLOG(RX, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
-					/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
-					if ((FwCnt + 1) % 16 == 0)
-						DBGLOG(RX, WARN, "\n");
-				}
-				DBGLOG(RX, WARN, "\n\n");
-#if 0
-				mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
-				sprintf(AeeBuffer, "<WLANRXERR><vend_samp.lin> 0x%x 0x%x 0x%x",
-					*(volatile unsigned int *)0xF0000024,
-					(UINT_32) RegValChip, (UINT_32) RegValLP);
-				kalSendAeeWarning(AeeBuffer, "", "");
-
-				msleep(5000);
-				/* try to use PIO mode to read */
-				MaxLoop = Size >> 2;
-				if (Size & 0x3)
-					MaxLoop++;
-				LoopBuf = (UINT_32 *) Buf;
-
-				DBGLOG(INIT, INFO, "PIO content =\n");
-				for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
-
-					*LoopBuf = HIF_REG_READL(HifInfo, Port);
-					DBGLOG(INIT, INFO, "0x%0x ", *LoopBuf);
-					LoopBuf++;
-				}
-				DBGLOG(INIT, INFO, "\n\n");
-
-				/* re-dump HIF registers */
-				HifRegDump(GlueInfo->prAdapter);
-#endif
-				return TRUE;
-				}
-#endif /* CONF_HIF_DMA_DBG */
-#endif /* CONF_HIF_CONNSYS_DBG */
+				if (!fgIsResetting)
+					glDoChipReset();
+				return FALSE;
 			}
-		} while (!HifInfo->DmaOps->DmaPollIntr(HifInfo));
+		} while (!prDmaOps->DmaPollIntr(HifInfo));
 #endif /* CONF_HIF_DMA_INT */
 
-		HifInfo->DmaOps->DmaAckIntr(HifInfo);
-		HifInfo->DmaOps->DmaStop(HifInfo);
+		prDmaOps->DmaAckIntr(HifInfo);
+		prDmaOps->DmaStop(HifInfo);
 
 		LoopCnt = 0;
 		do {
@@ -1247,10 +973,9 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 				DBGLOG(RX, ERROR, "fatal error2! reset DMA!\n");
 				break;
 			}
-		} while (HifInfo->DmaOps->DmaPollStart(HifInfo) != 0);
+		} while (prDmaOps->DmaPollStart(HifInfo) != 0);
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(FALSE);
+		prDmaOps->DmaClockCtrl(FALSE);
 
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
@@ -1265,6 +990,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
+		UINT_32 IdLoop, MaxLoop;
+		UINT_32 *LoopBuf;
 
 		/* default PIO mode */
 		MaxLoop = Size >> 2;
@@ -1301,48 +1028,15 @@ BOOLEAN
 kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
 	GL_HIF_INFO_T *HifInfo;
-#if (CONF_MTK_AHB_DMA == 1)
-	MTK_WCN_HIF_DMA_CONF DmaConf;
-	UINT_32 LoopCnt;
-#endif /* CONF_MTK_AHB_DMA */
-	UINT_32 IdLoop, MaxLoop;
-	UINT_32 *LoopBuf;
-/* UINT8 *BufSrc, *BufLast; */
-/* UINT8 Last4B[4]; */
-	unsigned long PollTimeout;
-
-#if DBG
-	/* DBGLOG(INIT, INFO,
-	(KERN_INFO DRV_NAME"++kalDevPortWrite++ buf:0x%p, port:0x%x, length:%d\n", Buf, Port, Size)); */
-#endif
-	/* DBGLOG(INIT, INFO,
-	("++kalDevPortWrite++ buf:0x%p, port:0x%x, length:%d\n", Buf, Port, Size)); //samp */
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
-		/* #if (CONF_HIF_CONNSYS_DBG == 1) */
-#if 0
-		/* avoid log is overwrited */
-		if (WlanDmaFatalErr == 1) {
-			/* dump information every 20 times */
-			static int testtx;
-
-			HifInfo = &GlueInfo->rHifInfo;
-			if (testtx++ >= 20) {
-				testtx = 0;
-				goto LabelErr;
-			}
-		}
-#endif /* CONF_HIF_CONNSYS_DBG */
-
-		return TRUE;
+		DBGLOG(RX, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d, HifIsFwOwn: %d\n",
+				WlanDmaFatalErr, fgIsResetting, HifIsFwOwn(GlueInfo->prAdapter));
+		return FALSE;
 	}
 
 	/* Init */
-#ifdef HIF_DEBUG_SUP_TX
-/* dumpMemory8(Buf, Size); */
-#endif /* HIF_DEBUG_SUP_TX */
-
 	ASSERT(GlueInfo);
 	HifInfo = &GlueInfo->rHifInfo;
 
@@ -1366,6 +1060,13 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
 		VOID *DmaVBuf = NULL, *DmaPBuf = NULL;
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
+		GL_HIF_DMA_OPS_T *prDmaOps = HifInfo->DmaOps;
+		MTK_WCN_HIF_DMA_CONF DmaConf;
+		UINT_32 LoopCnt;
+		unsigned long PollTimeout;
+#if (CONF_HIF_DMA_INT == 1)
+		INT_32 RtnVal = 0;
+#endif
 
 		/* config GDMA */
 		HIF_DBG_TX(("[WiFi/HIF/DMA] Prepare to send data...\n"));
@@ -1388,19 +1089,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		}
 #else
 
-		/*
-		   http://kernelnewbies.org/KernelMemoryAllocation
-		   Since the cache-coherent mapping may be expensive, also a streaming allocation exists.
-
-		   This is a buffer for one-way communication, which means coherency is limited to
-		   flushing the data from the cache after a write finishes. The buffer has to be
-		   pre-allocated (e.g. using kmalloc()). DMA for it is set up with dma_map_single().
-
-		   When the DMA is finished (e.g. when the device has sent an interrupt signaling end of
-		   DMA), call dma_unmap_single(). Between map and unmap, the device is in control of the
-		   buffer: if you write to the device, do it before dma_map_single(), if you read from
-		   it, do it after dma_unmap_single().
-		 */
 		/* DMA_TO_DEVICE writeback the cache */
 		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
@@ -1408,25 +1096,14 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		/* start to write */
 		AP_DMA_HIF_LOCK(HifInfo);
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
+		prDmaOps->DmaClockCtrl(TRUE);
+		prDmaOps->DmaConfig(HifInfo, &DmaConf);
+		prDmaOps->DmaStart(HifInfo);
 
-		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
-		HifInfo->DmaOps->DmaStart(HifInfo);
-
-		/* TODO: use interrupt mode */
-		/* TODO: use timeout, not loopcnt */
-		/* TODO: use semaphore */
 #if (CONF_HIF_DMA_INT == 1)
 		RtnVal = wait_event_interruptible_timeout(HifInfo->HifDmaWaitq, (HifInfo->HifDmaWaitFlg != 0), 1000);
-		if (RtnVal <= 0) {
-			/* HifRegDump(GlueInfo->prAdapter); */
-			/* if (HifInfo->DmaOps->DmaRegDump != NULL) */
-			/* HifInfo->DmaOps->DmaRegDump(HifInfo); */
-			/* kalSendAeeWarning( */
-			while (1)
-				DBGLOG(TX, ERROR, "fatal error1! reset DMA!\n");
-		}
+		if (RtnVal <= 0)
+			DBGLOG(TX, ERROR, "fatal error1! reset DMA!\n");
 		HifInfo->HifDmaWaitFlg = 0;
 #else
 
@@ -1434,70 +1111,34 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		PollTimeout = jiffies + HZ * 5;
 
 		do {
-#if 0
-			if (LoopCnt++ > 10000) {
-#else
-			if (time_before(jiffies, PollTimeout)) {
-				/* Do nothing */
-				/* not timeout, continue to poll */
-			} else {
-#endif
-
-#if (CONF_HIF_CONNSYS_DBG == 0)
-				/* TODO: impossible! reset DMA */
-				DBGLOG(TX, ERROR, "fatal error1! reset DMA!\n");
-				break;
-#else
-
-				DBGLOG(TX, INFO, "DMA LoopCnt > 100000... (%lu %lu)\n", jiffies, PollTimeout);
-/* LabelErr: */
-				if (HifInfo->DmaOps->DmaRegDump != NULL)
-					HifInfo->DmaOps->DmaRegDump(HifInfo);
+			if (!time_before(jiffies, PollTimeout)) {
+				DBGLOG(TX, INFO, "DMA Timeout, Hif Reg dump WCIR:%u, WHLPCR:%u\n",
+					HIF_REG_READL(HifInfo, MCR_WCIR),
+					HIF_REG_READL(HifInfo, MCR_WHLPCR));
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
 				LoopCnt = 0;
-				HifRegDump(GlueInfo->prAdapter);
 				WlanDmaFatalErr = 1;
 
-#if (CONF_HIF_DMA_DBG == 0)
-				{
-/* UCHAR AeeBuffer[100]; */
-					UINT_32 FwCnt;
-					/* UINT_32 RegValChip, RegValLP; */
-					DBGLOG(TX, WARN, "CONNSYS FW CPUINFO:\n");
-					for (FwCnt = 0; FwCnt < 512; FwCnt++) {
-						DBGLOG(TX, WARN,
-							"0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
-					if ((FwCnt + 1) % 16 == 0)
-						DBGLOG(TX, WARN, "\n");
-					}
-#if 0
-					mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
-					sprintf(AeeBuffer, "<WLANTXERR><vend_samp.lin> 0x%x 0x%x 0x%x",
-						*(volatile unsigned int *)0xF0000024,
-						(UINT_32) RegValChip, (UINT_32) RegValLP);
-					kalSendAeeWarning(AeeBuffer, "", "");
-#endif
-					return TRUE;
-				}
-#endif /* CONF_HIF_DMA_DBG */
-#endif /* CONF_HIF_CONNSYS_DBG */
+				if (!fgIsResetting)
+					glDoChipReset();
+				return FALSE;
 			}
-		} while (!HifInfo->DmaOps->DmaPollIntr(HifInfo));
+		} while (!prDmaOps->DmaPollIntr(HifInfo));
 #endif /* CONF_HIF_DMA_INT */
 
-		HifInfo->DmaOps->DmaAckIntr(HifInfo);
-		HifInfo->DmaOps->DmaStop(HifInfo);
+		prDmaOps->DmaAckIntr(HifInfo);
+		prDmaOps->DmaStop(HifInfo);
 
 		LoopCnt = 0;
 		do {
 			if (LoopCnt++ > 100000) {
-				/* TODO: impossible! reset DMA */
 				DBGLOG(TX, ERROR, "fatal error2! reset DMA!\n");
 				break;
 			}
-		} while (HifInfo->DmaOps->DmaPollStart(HifInfo) != 0);
+		} while (prDmaOps->DmaPollStart(HifInfo) != 0);
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(FALSE);
+		prDmaOps->DmaClockCtrl(FALSE);
 
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
@@ -1509,6 +1150,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
+		UINT_32 IdLoop, MaxLoop;
+		UINT_32 *LoopBuf;
+
 		/* PIO mode */
 		MaxLoop = Size >> 2;
 		LoopBuf = (UINT_32 *) Buf;
@@ -1520,67 +1164,16 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			MaxLoop++;
 
 		for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
-			/* HIF_DBG_TX(("0x%08x ", *LoopBuf)); */
 			HIF_REG_WRITEL(HifInfo, Port, *LoopBuf);
 			LoopBuf++;
 		}
-
-		/* TODO: check with DE if we "must" pad 0x00? */
-		/* write the last 4B with padding 0x00 */
-#if 0
-		if (Size & 0x3) {
-			/* need to use another 4B buffer to write */
-			*((UINT_32 *) Last4B) = 0;
-			BufLast = Last4B;
-			BufSrc = ((UINT8 *) LoopBuf);
-
-			for (IdLoop = 0; IdLoop < (Size & 0x3); IdLoop++) {
-				*BufLast = *BufSrc;
-				BufLast++;
-				BufSrc++;
-			}
-
-			HIF_DBG_TX(("0x%08x ", *((UINT_32 *) Last4B)));
-			HIF_REG_WRITEL(HifInfo, Port, *((UINT_32 *) Last4B));
-		}
-#endif
 
 		HIF_DBG_TX(("\n\n"));
 	}
 
 	return TRUE;
 
-}				/* end of kalDevPortWrite() */
-
-#if 0				/* only for SDIO HIF */
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief Write device I/O port in byte with CMD52
-*
-* \param[in] GlueInfo         Pointer to the GLUE_INFO_T structure.
-* \param[in] RegOffset             I/O port offset
-* \param[in] RegData             Single byte of data to be written
-*
-* \retval TRUE          operation success
-* \retval FALSE         operation fail
-*/
-/*----------------------------------------------------------------------------*/
-BOOLEAN kalDevWriteWithSdioCmd52(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_8 RegData)
-{
-	GL_HIF_INFO_T *HifInfo;
-
-	DBGLOG(INIT, INFO, "kalDevWriteWithSdioCmd52\n");
-
-	ASSERT(GlueInfo);
-	HifInfo = &GlueInfo->rHifInfo;
-
-	/* Write by using PIO mode */
-	HIF_REG_WRITEB(HifInfo, RegOffset, RegData);
-
-	return TRUE;
-
-}				/* end of kalDevWriteWithSdioCmd52() */
-#endif
+} /* end of kalDevPortWrite() */
 
 /*******************************************************************************
 *                       P R I V A T E   F U N C T I O N S
@@ -1608,30 +1201,17 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDevice));
 	ASSERT(GlueInfo);
 
-	if (!GlueInfo) {
-		/* DBGLOG(INIT, WARN, ("No glue info in HifAhbISR()\n")); */
+	if (!GlueInfo)
 		return IRQ_HANDLED;
-	}
+
 	HifInfo = &GlueInfo->rHifInfo;
 
 	if (GlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
-		/* DBGLOG(INIT, WARN, ("GLUE_FLAG_HALT skip INT\n")); */
 		return IRQ_HANDLED;
 	}
 
 	HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
-
-#if 0
-	wlanISR(GlueInfo->prAdapter, TRUE);
-
-	if (GlueInfo->u4Flag & GLUE_FLAG_HALT) {
-		/* Should stop now... skip pending interrupt */
-		/* DBGLOG(INIT, WARN, ("ignore pending interrupt\n")); */
-	} else {
-		wlanIST(GlueInfo->prAdapter);
-	}
-#endif
 
 	/* lock 100ms to avoid suspend */
 	kalHifAhbKalWakeLockTimeout(GlueInfo);
@@ -1669,10 +1249,8 @@ static irqreturn_t HifDmaISR(IN int Irq, IN void *Arg)
 	GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDevice));
 	ASSERT(GlueInfo);
 
-	if (!GlueInfo) {
-		/* DBGLOG(INIT, WARN, ("No glue info in HifAhbISR()\n")); */
+	if (!GlueInfo)
 		return IRQ_HANDLED;
-	}
 	HifInfo = &GlueInfo->rHifInfo;
 
 	/* disable interrupt */
@@ -1711,8 +1289,6 @@ static int HifAhbProbe(VOID)
 
 	DBGLOG(INIT, INFO, "HifAhbProbe()\n");
 
-	/* ASSERT(dev); */
-
 	/* power on WiFi TX PA 3.3V and HIF GDMA clock */
 	{
 #ifdef CONFIG_MTK_PMIC_MT6397
@@ -1735,7 +1311,6 @@ static int HifAhbProbe(VOID)
 #endif
 #else
 #ifdef CONFIG_OF		/*for MT6752 */
-		/* hwPowerOn(MT6325_POWER_LDO_VCN33, VOL_3300, "WLAN"); */
 		mtk_wcn_consys_hw_wifi_paldo_ctrl(1);	/* switch to HW mode */
 #else				/*for MT6572/82/92 */
 		hwPowerOn(MT6323_POWER_LDO_VCN33_WIFI, VOL_3300, "WLAN");
@@ -1743,9 +1318,6 @@ static int HifAhbProbe(VOID)
 #endif
 #endif
 
-/* enable_clock(MT_CG_APDMA_SW_CG, "WLAN"); */
-/* if (pfWlanDmaOps != NULL) */
-/* pfWlanDmaOps->DmaClockCtrl(TRUE); */
 	}
 
 #if (CONF_HIF_DEV_MISC == 1)
@@ -1753,7 +1325,6 @@ static int HifAhbProbe(VOID)
 #else
 	if (pfWlanProbe((PVOID) &HifAhbPDev->dev) != WLAN_STATUS_SUCCESS) {
 #endif /* CONF_HIF_DEV_MISC */
-		/* DBGLOG(INIT, INFO, ("pfWlanProbe fail!call pfWlanRemove()\n")); */
 
 		pfWlanRemove();
 		Ret = -1;
@@ -1776,7 +1347,6 @@ static int HifAhbRemove(VOID)
 {
 	DBGLOG(INIT, INFO, "HifAhbRemove()\n");
 
-	/* ASSERT(dev); */
 	pfWlanRemove();
 
 	{
@@ -1801,21 +1371,15 @@ static int HifAhbRemove(VOID)
 #else
 #ifdef CONFIG_OF		/*for MT6752 */
 		mtk_wcn_consys_hw_wifi_paldo_ctrl(0);	/* switch to SW mode */
-		/* hwPowerDown(MT6325_POWER_LDO_VCN33, "WLAN"); */
 #else				/*for MT6572/82/92 */
 		upmu_set_vcn33_on_ctrl_wifi(0);	/* switch to SW mode */
 		hwPowerDown(MT6323_POWER_LDO_VCN33_WIFI, "WLAN");
 #endif
 #endif
 
-		/* disable_clock(MT_CG_APDMA_SW_CG, "WLAN"); */
-		/* if (pfWlanDmaOps != NULL) */
-		/* pfWlanDmaOps->DmaClockCtrl(FALSE); */
 	}
 
-	/* DBGLOG(INIT, INFO, ("HifAhbRemove() done\n")); */
 	return 0;
-
 }
 
 #if (MTK_WCN_SINGLE_MODULE == 0)
@@ -1869,15 +1433,6 @@ static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen,
 	ASSERT(GlueInfo);
 	HifInfo = &GlueInfo->rHifInfo;
 
-	/*
-	   20130315
-	   Problem Description:
-	   HIF 92B issue, 4B problem between 2 block transmission
-	   HIF will have problems if the read length between 2 block
-	   transmission is 4B.
-	   Solution:
-	   Access any non-func0 register.
-	 */
 	RegHSTCR = HIF_REG_READL(HifInfo, MCR_WHIER);
 
 	RegHSTCR = HIF_REG_READL(HifInfo, MCR_HSTCR);
@@ -1886,10 +1441,6 @@ static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen,
 	    ((PortId << HSTCR_TRANS_TARGET_OFFSET) & HSTCR_TRANS_TARGET) |
 	    (((TransByte & 0x3) == 0) ? (TransByte & HSTCR_HSIF_TRANS_CNT) : ((TransByte + 4) & HSTCR_HSIF_TRANS_CNT));
 	HIF_REG_WRITEL(HifInfo, MCR_HSTCR, RegHSTCR);
-
-/* RegHSTCR = HIF_REG_READL(HifInfo, MCR_HSTCR); */
-/* HIF_DBG(("[WiFi/HIF] HSTCR(0x%08x)\n", RegHSTCR)); */
-
 }
 
 VOID glSetPowerState(IN GLUE_INFO_T *GlueInfo, IN UINT_32 ePowerMode)
@@ -1936,32 +1487,6 @@ static int HifAhbMiscClose(IN struct inode *Inodep, IN struct file *Filp)
 /*----------------------------------------------------------------------------*/
 static int HifAhbPltmProbe(IN struct platform_device *PDev)
 {
-	/*
-	   TODO: reference codes
-	   struct resource *regs;
-
-	   struct spi_master *master;
-	   struct mt_spi_t *ms;
-
-	   if(!request_mem_region(pdev->resource[0].start,
-	   pdev->resource[0].end-pdev->resource[0].start + 1,
-	   pdev->name)){
-	   dev_err(&pdev->dev,"request_mem_region busy.\n");
-	   return -EBUSY;
-	   }
-
-	   regs = platform_get_resource ( pdev,IORESOURCE_MEM, 0 );
-	   if(!regs){
-	   dev_err(&pdev->dev,"get resource regs NULL.\n");
-	   return -ENXIO;
-	   }
-
-	   irq = platform_get_irq(pdev,0);
-	   if(irq  < 0) {
-	   dev_err(&pdev->dev,"platform_get_irq error. get invalid irq\n");
-	   return irq;
-	   }
-	 */
 	HifAhbPDev = PDev;
 
 	DBGLOG(INIT, INFO, "HifAhbPltmProbe\n");
@@ -1970,9 +1495,6 @@ static int HifAhbPltmProbe(IN struct platform_device *PDev)
 	wmt_set_jtag_for_mcu();
 	wmt_set_jtag_for_gps();
 
-	{
-		/* mtk_wcn_consys_hw_reg_ctrl(1, 0); */
-	}
 #endif /* CONF_HIF_PMIC_TEST */
 
 #if (MTK_WCN_SINGLE_MODULE == 1)
@@ -2009,13 +1531,6 @@ static int __exit HifAhbPltmRemove(IN struct platform_device *PDev)
 #if (MTK_WCN_SINGLE_MODULE == 0)
 	mtk_wcn_wmt_wlan_unreg();
 #endif /* MTK_WCN_SINGLE_MODULE */
-
-#if (CONF_HIF_PMIC_TEST == 1)
-	{
-		/* mtk_wcn_consys_hw_reg_ctrl(0, 0); */
-	}
-#endif /* CONF_HIF_PMIC_TEST */
-
 	return 0;
 }
 
@@ -2072,15 +1587,10 @@ static VOID HifAhbLoopbkAuto(IN unsigned long arg)
 
 	HIF_DBG(("[WiFi/HIF] Trigger to do loopback test...\n"));
 
-	/* Notify tx thread  for timeout event */
-/* set_bit(GLUE_FLAG_HIF_LOOPBK_AUTO_BIT, &GlueInfo->u4Flag); */
-/* wake_up_interruptible(&GlueInfo->waitq); */
-
 	set_bit(GLUE_FLAG_HIF_LOOPBK_AUTO_BIT, &HifInfo->HifLoopbkFlg);
 	wake_up_interruptible(&HifInfo->HifWaitq);
 
 }
-
 #endif /* CONF_HIF_LOOPBACK_AUTO */
 
 VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo)
@@ -2090,7 +1600,6 @@ VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo)
 
 	for (j = 0; j < 512; j++) {
 		DBGLOG(INIT, WARN, "0x%08x ", MCU_REG_READL(prHifInfo, CONN_MCU_CPUPCR));
-		/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
 		if ((j + 1) % 16 == 0)
 			DBGLOG(INIT, WARN, "\n");
 	}

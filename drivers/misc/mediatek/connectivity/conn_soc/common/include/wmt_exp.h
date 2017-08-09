@@ -85,6 +85,7 @@ extern OSAL_BIT_OP_VAR gBtWifiGpsState;
 extern OSAL_BIT_OP_VAR gGpsFmState;
 extern UINT32 gWifiProbed;
 extern MTK_WCN_BOOL g_pwr_off_flag;
+extern UINT32 g_IsNeedDoChipReset;
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -245,6 +246,7 @@ extern wmt_wlan_bus_cnt_clr_cb mtk_wcn_wlan_bus_tx_cnt_clr;
 ********************************************************************************
 */
 /*subsystem function ctrl APIs*/
+extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 
 #ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 #define WMT_EXP_HID_API_EXPORT 0
