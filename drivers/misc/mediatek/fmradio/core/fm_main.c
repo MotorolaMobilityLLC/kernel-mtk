@@ -271,7 +271,8 @@ fm_s32 fm_open(struct fm *fmp)
 		} else if ((chipid == 0x6572) || (chipid == 0x6582) || (chipid == 0x6592)
 			   || (chipid == 0x8127) || (chipid == 0x6571) || (chipid == 0x6752)
 			   || (chipid == 0x0321) || (chipid == 0x0335) || (chipid == 0x0337)
-			   || (chipid == 0x6735) || (chipid == 0x8163)) {
+			   || (chipid == 0x6735) || (chipid == 0x8163) || (chipid == 0x6755)
+			   || (chipid == 0x0326)) {
 #ifdef MT6627_FM
 			fm_low_ops = MT6627fm_low_ops;
 			fmp->chip_id = 0x6627;
