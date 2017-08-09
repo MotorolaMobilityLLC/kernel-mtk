@@ -214,6 +214,16 @@
 #define RV_INPUTDEV_NAME               "m_rv_input"
 #define RV_MISC_DEV_NAME               "m_rv_misc"
 
+#define FREEFALL_PL_DEV_NAME                 "m_frfl_pl"
+#define FREEFALL_INPUTDEV_NAME               "m_frfl_input"
+#define FREEFALL_MISC_DEV_NAME               "m_frfl_misc"
+
+#define PDR_PL_DEV_NAME                 "m_pdr_pl"
+#define PDR_INPUTDEV_NAME               "m_pdr_input"
+#define PDR_MISC_DEV_NAME               "m_pdr_misc"
+
+
+
 #define EVENT_TYPE_SENSOR				0x01
 #define EVENT_TYPE_SENSOR_EXT				0x02
 #define EVENT_SENSOR_ACCELERATION		SENSOR_ACCELEROMETER

@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_TILT_DETECTOR_SENSOR
+	bool "CUSTOM_KERNEL_TILT_DETECTOR_SENSOR"
+	help
+	  Kernel space tilt detector sensor driver.

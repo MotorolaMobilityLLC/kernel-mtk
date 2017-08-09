@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_GMRV_SENSOR
+	bool "CUSTOM_KERNEL_GMRV_SENSOR"
+	help
+	  Kernel space geomagnetic rotation vector sensor driver.

@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_GRV_SENSOR
+	bool "CUSTOM_KERNEL_GRV_SENSOR"
+	help
+	  Kernel space game rotation vector sensor driver.
