@@ -952,7 +952,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		bus_dbg@10208000 {
-			compatible = "mediatek,bus_dbg";
+			compatible = "mediatek,bus_dbg-v2";
 			reg = <0x10208000 0x1000>;
 			interrupts = <GIC_SPI 140 IRQ_TYPE_LEVEL_LOW>;
 		};

@@ -18,6 +18,9 @@
 
 #define TRACKER_DEBUG 1
 
+#ifdef CONFIG_ARM64
+#define IOMEM(a)	((void __force __iomem *)((a)))
+#endif
 void __iomem *BUS_DBG_BASE;
 int systracker_irq;
 struct systracker_config_t track_config;
