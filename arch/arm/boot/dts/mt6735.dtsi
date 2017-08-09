@@ -6,6 +6,8 @@
  *
  */
 
+#include <dt-bindings/clock/mt6735-clk.h>
+
 / {
 	model = "MT6735";
 	compatible = "mediatek,MT6735";
@@ -276,6 +278,80 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <32000>;
 		};
 	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		topckgen: topckgen@0x10210000 {
+			compatible = "mediatek,mt6735-topckgen";
+			reg = <0x10210000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		infrasys: infrasys@0x10000000 {
+			compatible = "mediatek,mt6735-infrasys";
+			reg = <0x10000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		perisys: perisys@0x10002000 {
+			compatible = "mediatek,mt6735-perisys";
+			reg = <0x10002000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		apmixedsys: apmixedsys@0x10209000 {
+			compatible = "mediatek,mt6735-apmixedsys";
+			reg = <0x10209000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		audiosys: audiosys@0x11220000 {
+			compatible = "mediatek,mt6735-audiosys";
+			reg = <0x11220000 0x10000>;
+			#clock-cells = <1>;
+		};
+
+		mfgsys: mfgsys@0x13000000 {
+			compatible = "mediatek,mt6735-mfgsys";
+			reg = <0x13000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		mmsys: mmsys@0x14000000 {
+			compatible = "mediatek,mt6735-mmsys";
+			reg = <0x14000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		imgsys: imgsys@0x15000000 {
+			compatible = "mediatek,mt6735-imgsys";
+			reg = <0x15000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		vdecsys: vdecsys@0x16000000 {
+			compatible = "mediatek,mt6735-vdecsys";
+			reg = <0x16000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		vencsys: vencsys@0x17000000 {
+			compatible = "mediatek,mt6735-vencsys";
+			reg = <0x17000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		scpsys: scpsys@0x10000000 {
+			compatible = "mediatek,mt6735-scpsys";
+			reg = <0x10000000 0x1000>, <0x10006000 0x1000>;
+			#clock-cells = <1>;
+		};
+	};
+
 	bus {
 		compatible = "simple-bus";
 		#address-cells = <1>;
