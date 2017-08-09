@@ -935,7 +935,7 @@ static struct mtk_mux top_muxes[] __initdata = {
 	/* CLK_CFG_8 */
 	MUX(TOP_MUX_SPM, spm_sel, spm_parents, 0x00c0, 0, 1, 7),
 	MUX(TOP_MUX_BSISPI, bsi_spi_sel, bsi_spi_parents, 0x00c0, 8, 2, 15),
-	MUX(TOP_MUX_I2C, i2c_sel, i2c_parents, 0x00c0, 16, 2, 23),
+	MUX(TOP_MUX_I2C, i2c_sel, i2c_parents, 0x00c0, 16, 2, INVALID_MUX_GATE_BIT),
 	MUX(TOP_MUX_DVFSP, dvfsp_sel, dvfsp_parents, 0x00c0, 24, 1, 31),
 };
 
