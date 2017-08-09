@@ -39,7 +39,7 @@ set_bat_charging_current_limit(int current_limit)
 /* ************************************ */
 
 #define mtk_cooler_bcct_dprintk_always(fmt, args...) \
-pr_debug("[thermal/cooler/bcct]" fmt, ##args)
+pr_warn("[thermal/cooler/bcct]" fmt, ##args)
 
 #define mtk_cooler_bcct_dprintk(fmt, args...) \
 do { \
