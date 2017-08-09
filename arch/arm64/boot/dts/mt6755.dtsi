@@ -1294,10 +1294,12 @@
 	      clock-names = "btif-apdma-clock";
 		};
 
-		auxadc@11001000 {
-			compatible = "mediatek,auxadc";
+		auxadc: adc_hw@11001000 {
+			compatible = "mediatek,mt6755-auxadc";
 			reg = <0x11001000 0x1000>;
 			interrupts = <GIC_SPI 74 IRQ_TYPE_EDGE_FALLING>;
+			clocks = <&infrasys INFRA_AUXADC>;
+			clock-names = "auxadc-main";
 		};
 
 		apuart0: apuart0@11002000 {
@@ -3239,11 +3241,6 @@
 		status = "disabled";
 	};
 
-
-	auxadc: auxadc {
-		compatible = "mediatek, auxadc";
-		status = "disabled";
-	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";

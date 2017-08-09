@@ -1661,6 +1661,7 @@ static int mt_auxadc_resume(struct platform_device *dev)
 static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6735-auxadc",},
 	{.compatible = "mediatek,mt6797-auxadc",},
+	{.compatible = "mediatek,mt6755-auxadc",},
 	{},
 };
 #endif
