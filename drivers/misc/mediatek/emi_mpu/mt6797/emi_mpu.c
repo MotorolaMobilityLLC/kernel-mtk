@@ -996,6 +996,10 @@ static int mpu_check_violation(void)
 		}
 #endif
 
+	/* MTK: debug for GPU MPU  violation*/
+	pr_err("[EMI_MPU][MALI] ready to kbase_check_PA. PA=0x%x.\n",
+	dbg_t + emi_physical_offset);
+	kbase_check_PA(dbg_t + emi_physical_offset);
 	__clear_emi_mpu_vio(0);
 	mt_devapc_clear_emi_violation();
 	vio_addr = dbg_t + emi_physical_offset;
@@ -1011,7 +1015,7 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 	/* Need DEVAPC owner porting */
 	res = mt_devapc_check_emi_violation();
 	if (!res)
-		pr_err("it's a mt_devapc_emi_violation.\n");
+		pr_err("it's a violation.\n");
 
 	res1 = mt_devapc_check_emi_mpu_violation();
 	if (!res1) {

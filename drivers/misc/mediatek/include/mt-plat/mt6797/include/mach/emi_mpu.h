@@ -283,4 +283,6 @@ extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern int mt_emi_mpu_set_region_protection(unsigned long long start,
 unsigned long long end, unsigned int region_permission);
+/* MTK: debug for GPU MPU violation */
+extern void kbase_check_PA(u64);
 #endif  /* !__MT_EMI_MPU_H */
