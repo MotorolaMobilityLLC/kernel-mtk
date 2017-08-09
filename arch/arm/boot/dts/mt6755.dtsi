@@ -2250,9 +2250,9 @@
 				<&vencsys VENC_JPGENC>;
 
 			clock-names = "disp-mtcmos",
-				"disp-smi-jpgenc",
+				"disp-smi",
 				"venc-mtcmos",
-				"venc-larb-jpgenc",
+				"venc-larb",
 				"venc-jpgenc";
 		};
 
@@ -2267,9 +2267,9 @@
 				<&vencsys VENC_JPGDEC>;
 
 			clock-names = "disp-mtcmos",
-					"disp-smi-jpgdec",
+					"disp-smi",
 					"venc-mtcmos",
-					"venc-larb-jpgdec",
+					"venc-larb",
 					"venc-jpgdec";
 		};
 
