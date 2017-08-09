@@ -3056,7 +3056,7 @@ int dlpt_notify_handler(void *unused)
 	ktime_t ktime;
 	int pre_ui_soc = 0;
 	int cur_ui_soc = 0;
-	int diff_ui_soc = 1;
+	/*int diff_ui_soc = 1;*/
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	pre_ui_soc = bat_get_ui_percentage();

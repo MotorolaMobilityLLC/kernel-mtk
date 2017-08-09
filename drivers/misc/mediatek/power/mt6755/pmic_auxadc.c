@@ -453,9 +453,8 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		r_val_temp = 2;
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
 		if (adc_result < 0x200) {
-			pr_err("[AUXADC] ch3(%x, %x, %x)\n", adc_result,
+			pr_err("[AUXADC] ch3 high bat temp(%x, %x, %x)\n", adc_result,
 				ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
-			adc_result = 0x2a0;
 		}
 		break;
 	case 4:

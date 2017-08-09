@@ -31,7 +31,7 @@ do {					\
 } while (0)
 
 
-#define PMIC_DEBUG_PR_DBG
+/*#define PMIC_DEBUG_PR_DBG*/
 
 #define PMICTAG                "[PMIC] "
 #ifdef PMIC_DEBUG
