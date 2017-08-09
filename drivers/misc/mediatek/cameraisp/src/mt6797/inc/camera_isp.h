@@ -261,14 +261,20 @@ typedef enum {
 	_dma_lcso_,    /* 02e0 */
 	_dma_ufeo_,    /* 0310 *//*20*/
 	_dma_pdo_,     /* 0340 */
-	_dma_imgo_fh_, /* 0c04 */
+	_dma_eiso_,    /* 0220 */
+	_dma_flko_,    /* 0250 */
+	_dma_rsso_,    /* 0280 */
+	_dma_imgo_fh_, /* 0c04 *//*25*/
 	_dma_rrzo_fh_, /* 0c08 */
 	_dma_aao_fh_,  /* 0c0c */
-	_dma_afo_fh_,  /* 0c10 *//*25*/
+	_dma_afo_fh_,  /* 0c10 */
 	_dma_lcso_fh_, /* 0c14 */
-	_dma_ufeo_fh_, /* 0c18 */
+	_dma_ufeo_fh_, /* 0c18 *//*30*/
 	_dma_pdo_fh_,  /* 0c1c */
-	_dma_max_wr_
+	_dma_eiso_fh_,  /* 03C4 */
+	_dma_flko_fh_, /* 03C8 */
+	_dma_rsso_fh_, /* 03CC */
+	_dma_max_wr_             /*35*/
 } ISP_WRDMA_ENUM;
 
 typedef struct {
