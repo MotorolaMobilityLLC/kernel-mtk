@@ -98,7 +98,7 @@ static unsigned long timer_pos;
 #define PMICLOG(fmt, arg...)
 #endif
 */
-#ifdef CONFIG_ARM /* fix kpd build error only */
+#ifndef CONFIG_KEYBOARD_MTK /* fix kpd build error only */
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {}
 void kpd_pmic_rstkey_handler(unsigned long pressed)
