@@ -21,6 +21,7 @@ static int larb_lower_bound;
 static int larb_upper_bound;
 static int primary_fps = 60;
 static disp_layer_info disp_info_hrt;
+static int dal_enable;
 
 static int get_bpp(DISP_FORMAT format)
 {
@@ -84,9 +85,9 @@ static void dump_disp_info(disp_layer_info *disp_info)
 	layer_config *layer_info;
 
 	for (i = 0 ; i < 2 ; i++) {
-		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d\n",
+		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d/dal:%d\n",
 			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
-			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps);
+			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps, dal_enable);
 
 		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 			layer_info = &disp_info->input_config[i][j];
@@ -145,10 +146,14 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 			disp_info->disp_mode[disp_index] == DISP_SESSION_DECOUPLE_MODE)
 			continue;
 
-		if (disp_index == 0)
-			ovl_num_limit = PRIMARY_OVL_LAYER_NUM;
-		else
+		if (disp_index == 0) {
+			if (dal_enable)
+				ovl_num_limit = PRIMARY_OVL_LAYER_NUM - 1;
+			else
+				ovl_num_limit = PRIMARY_OVL_LAYER_NUM;
+		} else {
 			ovl_num_limit = SECONDARY_OVL_LAYER_NUM;
+		}
 
 		if (disp_info->layer_num[disp_index] <= ovl_num_limit)
 			continue;
@@ -467,7 +472,7 @@ static int get_layer_weight(int disp_idx)
 }
 
 static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
-				int start_layer, int end_layer, bool force_scan_y)
+				int start_layer, int end_layer, bool force_scan_y, bool has_dal_layer)
 {
 	int i, bpp, sum_overlap_w, overlap_lower_bound, overlay_w, weight;
 	bool has_gles = false;
@@ -479,9 +484,8 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 		dump_disp_info(disp_info);
 	}
 
-	/* TODO: get display fps here */
+	/* 1.Initial overlap conditions. */
 	weight = get_layer_weight(disp_index);
-
 	sum_overlap_w = 0;
 	overlap_lower_bound = emi_lower_bound * 240;
 	if (disp_info->gles_head[disp_index] != -1 &&
@@ -489,6 +493,10 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 		disp_info->gles_head[disp_index] <= end_layer)
 		has_gles = true;
 
+	/*
+	2.Add each layer info to layer list and sort it by yoffset.
+	Also add up each layer overlap weight.
+	*/
 	for (i = start_layer ; i <= end_layer ; i++) {
 		layer_info = &disp_info->input_config[disp_index][i];
 
@@ -501,16 +509,25 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 			add_layer_entry(layer_info, true, overlay_w);
 		}
 	}
-
+	/* Add overlap weight of Gles layer and Assert layer. */
 	if (has_gles)
 		sum_overlap_w += (4 * weight);
+	if (has_dal_layer)
+		sum_overlap_w += 120;
 
+	/*
+	3.Calculate the HRT bound if the total layer weight over the lower bound
+	or has secondary display.
+	*/
 	if (sum_overlap_w > overlap_lower_bound ||
 		has_hrt_limit(disp_info, HRT_SECONDARY) ||
 		force_scan_y) {
 		sum_overlap_w = scan_y_overlap(disp_info, disp_index, overlap_lower_bound);
+		/* Add overlap weight of Gles layer and Assert layer. */
 		if (has_gles)
 			sum_overlap_w += (4 * weight);
+		if (has_dal_layer)
+			sum_overlap_w += 120;
 	}
 
 #ifdef HRT_DEBUG
@@ -563,7 +580,7 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 	}
 
 	larb_idx = _get_larb0_idx(disp_info);
-	sum_overlap_w = _calc_hrt_num(disp_info, 0, 0, larb_idx, false);
+	sum_overlap_w = _calc_hrt_num(disp_info, 0, 0, larb_idx, false, false);
 
 	if (get_hrt_level(sum_overlap_w, true) > HRT_LEVEL_LOW)
 		is_over_bound = true;
@@ -583,15 +600,15 @@ static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
 
 		larb5_idx = _get_larb0_idx(disp_info) + 1;
 		sum_overlap_w += _calc_hrt_num(disp_info, HRT_PRIMARY,
-					larb5_idx, disp_info->layer_num[0] - 1, false);
+					larb5_idx, disp_info->layer_num[0] - 1, false, dal_enable);
+
 	}
 
 	if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
 		sum_overlap_w += _calc_hrt_num(disp_info, HRT_SECONDARY,
-					0, disp_info->layer_num[1] - 1, false);
+					0, disp_info->layer_num[1] - 1, false, false);
 	}
 
-	/* HRTMSG("%s, sum_overlap_w:%d\n", __func__, sum_overlap_w); */
 	if (get_hrt_level(sum_overlap_w, true) > HRT_LEVEL_LOW)
 		is_over_bound = true;
 	else
@@ -626,13 +643,14 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 
 	/* Calculate HRT for EMI level */
 	if (has_hrt_limit(disp_info, HRT_PRIMARY))
-		sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1, false);
+		sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1,
+					false, dal_enable);
 	if (has_hrt_limit(disp_info, HRT_SECONDARY))
-		sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1, false);
+		sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1,
+					false, false);
 
 
 	hrt_level = get_hrt_level(sum_overlay_w, false);
-
 	/*
 	The larb bound always meet the limit for HRT_LEVEL2 in 8+4 ovl architecture.
 	So calculate larb bound only for HRT_LEVEL2.
@@ -650,7 +668,8 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 		/* In single ovl mode, larb0->primary, larb5->secondary */
 
 		if (has_hrt_limit(disp_info, HRT_PRIMARY)) {
-			sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1, true);
+			sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1,
+				true, dal_enable);
 			hrt_level = get_hrt_level(sum_overlay_w, true);
 			if (hrt_level > HRT_LEVEL_LOW) {
 				disp_info->hrt_num = hrt_level;
@@ -658,7 +677,8 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 			}
 		}
 		if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
-			sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1, true);
+			sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1,
+				true, false);
 			hrt_level = get_hrt_level(sum_overlay_w, true);
 			if (hrt_level > HRT_LEVEL_LOW) {
 				disp_info->hrt_num = hrt_level;
@@ -941,6 +961,7 @@ static int set_hrt_bound(void)
 	else
 		emi_extreme_lower_bound = EMI_EXTREME_LOWER_BOUND + 1;
 
+	dal_enable = is_DAL_Enabled();
 #ifdef HRT_DEBUG
 	DISPMSG("60hz hrt bound\n");
 #endif
