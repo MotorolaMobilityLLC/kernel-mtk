@@ -1423,7 +1423,7 @@ static void musb_pullup(struct musb *musb, int is_on)
 
 	if (is_on) {
 #ifdef SUPPORT_U3
-		if (musb_speed)
+		if (musb_speed && (musb->charger_mode == STANDARD_HOST))
 			mu3d_hal_u3dev_en();
 		else {
 			/* u2 mode */

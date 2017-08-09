@@ -600,6 +600,7 @@ struct musb {
 	unsigned is_clk_on;
 	unsigned usb_mode;
 	unsigned active_ep;
+	CHARGER_TYPE charger_mode;
 	struct work_struct suspend_work;
 	struct wake_lock usb_wakelock;
 	struct delayed_work connection_work;

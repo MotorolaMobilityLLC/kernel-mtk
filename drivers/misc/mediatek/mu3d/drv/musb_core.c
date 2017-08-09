@@ -986,7 +986,7 @@ void musb_start(struct musb *musb)
 #endif
 
 	if (musb->softconnect) {
-		if (musb_speed)
+		if (musb_speed && (musb->charger_mode == STANDARD_HOST))
 			mu3d_hal_u3dev_en();
 		else
 			mu3d_hal_u2dev_connect();

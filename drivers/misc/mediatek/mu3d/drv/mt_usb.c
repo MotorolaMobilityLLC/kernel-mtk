@@ -111,7 +111,7 @@ void connection_work(struct work_struct *data)
 		bool cmode_effect_on = false;
 
 #ifndef CONFIG_MTK_FPGA
-		CHARGER_TYPE chg_type = mt_get_charger_type();
+		CHARGER_TYPE chg_type = musb->charger_mode = mt_get_charger_type();
 
 		if (fake_CDP && chg_type == STANDARD_HOST) {
 			os_printk(K_INFO, "%s, fake to type 2\n", __func__);
@@ -131,8 +131,6 @@ void connection_work(struct work_struct *data)
 #endif
 		os_printk(K_INFO, "%s type=%d, cmode_effect_on=%d, usb_mode:%d\n",
 			  __func__, chg_type, cmode_effect_on, musb->usb_mode);
-
-
 
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
