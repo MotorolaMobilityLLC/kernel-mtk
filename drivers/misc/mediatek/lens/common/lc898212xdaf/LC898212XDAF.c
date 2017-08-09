@@ -135,10 +135,10 @@ static void LC898212XD_init(void)
 
 	g_ReadCalibData_FirstTime = 1;
 
-	g_SelectEEPROM = 0;
+	g_SelectEEPROM = 1;
 
-	if (s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x001A, &val1) < 0)
-		g_SelectEEPROM = 1;
+	if (s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x001A, &val1) < 0)
+		g_SelectEEPROM = 0;
 
 
 	if ( g_SelectEEPROM == 0 ) {

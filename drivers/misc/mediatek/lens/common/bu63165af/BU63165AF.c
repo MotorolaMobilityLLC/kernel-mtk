@@ -75,30 +75,27 @@ int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 
 int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData)
 {
-#if 0
-	int i4RetValue = 0;
-	int i;
+	int i4RetValue;
+	struct i2c_msg msg[2];
 
 	g_pstAF_I2Cclient->addr = i2c_id >> 1;
 
-	g_pstAF_I2Cclient->timing = 400; /* 400k */
+	msg[0].addr = g_pstAF_I2Cclient->addr;
+	msg[0].flags = 0;
+	msg[0].len = a_sizeSendData;
+	msg[0].buf = a_pSendData;
 
-	g_pstAF_I2Cclient->ext_flag = ((g_pstAF_I2Cclient->ext_flag)&(~I2C_DMA_FLAG)) | I2C_WR_FLAG | I2C_RS_FLAG;
+	msg[1].addr = g_pstAF_I2Cclient->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = a_sizeRecvData;
+	msg[1].buf = a_pRecvData;
 
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, (a_sizeRecvData << 8) | a_sizeSendData);
+	i4RetValue = i2c_transfer(g_pstAF_I2Cclient->adapter, msg, sizeof(msg)/sizeof(msg[0]));
 
-	if (i4RetValue != ((a_sizeRecvData << 8) | a_sizeSendData)) {
-		g_pstAF_I2Cclient->ext_flag = (g_pstAF_I2Cclient->ext_flag)&(~(I2C_WR_FLAG | I2C_RS_FLAG));
-		LOG_INF("I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+	if (i4RetValue != 2) {
+		LOG_INF("I2C Read failed!!\n");
 		return -1;
 	}
-
-	for (i = 0; i < a_sizeRecvData; i++)
-		a_pRecvData[i] = a_pSendData[i];
-
-	g_pstAF_I2Cclient->ext_flag = (g_pstAF_I2Cclient->ext_flag)&(~(I2C_WR_FLAG | I2C_RS_FLAG));
-#endif
-
 	return 0;
 }
 
@@ -216,9 +213,6 @@ int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
-		setVCMPos(200);
-		msleep(20);
-		setVCMPos(100);
 		msleep(20);
 	}
 
