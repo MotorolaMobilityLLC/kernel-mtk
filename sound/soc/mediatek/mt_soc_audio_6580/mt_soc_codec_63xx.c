@@ -3805,6 +3805,8 @@ static void mt6350_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDTOP_CON5, 0x1114, 0xFFFF);	/* Set audio DAC Bias to 50% */
 	Ana_Set_Reg(AUDTOP_CON6, 0x37A2, 0xFFFF);
 	Ana_Set_Reg(AUDTOP_CON6, 0x37E2, 0xFFFF);	/* Enable the depop MUX of HP drivers */
+	pr_warn("%s, inverse pmic clk gpio\n", __func__);
+	pmic_config_interface(0xc060, 0x1, 0x1, 7); /* [7:7]: GPIO_inv, inverse the PMIC gpio clk, ALPS02247074 */
 	audckbufEnable(false);
 	AudDrv_Clk_Off();
 #endif
