@@ -136,16 +136,96 @@ static atomic_t dev_open_count;
 /*----------------------------------------------------------------------------*/
 
 static DEFINE_MUTEX(akm09911_i2c_mutex);
+#ifndef CONFIG_MTK_I2C_EXTENSION
+static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{
+	int err = 0;
+	u8 beg = addr;
+	struct i2c_msg msgs[2] = { {0}, {0} };
 
+	mutex_lock(&akm09911_i2c_mutex);
+	msgs[0].addr = client->addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = &beg;
+
+	msgs[1].addr = client->addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = len;
+	msgs[1].buf = data;
+
+	if (!client) {
+		mutex_unlock(&akm09911_i2c_mutex);
+		return -EINVAL;
+	} else if (len > C_I2C_FIFO_SIZE) {
+		mutex_unlock(&akm09911_i2c_mutex);
+		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
+	err = i2c_transfer(client->adapter, msgs, sizeof(msgs) / sizeof(msgs[0]));
+	if (err != 2) {
+		MAGN_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
+		err = -EIO;
+	} else {
+		err = 0;
+	}
+	mutex_unlock(&akm09911_i2c_mutex);
+	return err;
+
+}
+
+static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{				/*because address also occupies one byte, the maximum length for write is 7 bytes */
+	int err = 0, idx = 0, num = 0;
+	char buf[C_I2C_FIFO_SIZE];
+
+	err = 0;
+	mutex_lock(&akm09911_i2c_mutex);
+	if (!client) {
+		mutex_unlock(&akm09911_i2c_mutex);
+		return -EINVAL;
+	} else if (len >= C_I2C_FIFO_SIZE) {
+		mutex_unlock(&akm09911_i2c_mutex);
+		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
+	num = 0;
+	buf[num++] = addr;
+	for (idx = 0; idx < len; idx++)
+		buf[num++] = data[idx];
+
+	err = i2c_master_send(client, buf, num);
+	if (err < 0) {
+		mutex_unlock(&akm09911_i2c_mutex);
+		MAGN_ERR("send command error!!\n");
+		return -EFAULT;
+	}
+	mutex_unlock(&akm09911_i2c_mutex);
+	return err;
+}
+#endif
 static void akm09911_power(struct mag_hw *hw, unsigned int on)
 {
 }
 static long AKI2C_RxData(char *rxData, int length)
 {
-	uint8_t loop_i;
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	struct i2c_client *client = this_client;
+	int res = 0;
+	char addr = rxData[0];
 
+	if ((rxData == NULL) || (length < 1))
+		return -EINVAL;
+	res = mag_i2c_read_block(client, addr, rxData, length);
+	if (res < 0)
+		return -1;
+	return 0;
+#else
+	uint8_t loop_i = 0;
 #if DEBUG
-	int i;
+	int i = 0;
 	struct i2c_client *client = this_client;
 	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
 	char addr = rxData[0];
@@ -157,11 +237,9 @@ static long AKI2C_RxData(char *rxData, int length)
 
 	mutex_lock(&akm09911_i2c_mutex);
 	for (loop_i = 0; loop_i < AKM09911_RETRY_COUNT; loop_i++) {
-#ifdef CONFIG_MTK_I2C_EXTENSION
 		this_client->addr = this_client->addr & I2C_MASK_FLAG;
 		this_client->addr = this_client->addr | I2C_WR_FLAG;
-#endif
-		if (i2c_master_recv(this_client, (char *)rxData, length))
+		if (i2c_master_send(this_client, (const char *)rxData, ((length << 0X08) | 0X01)))
 			break;
 		mdelay(10);
 	}
@@ -183,14 +261,27 @@ static long AKI2C_RxData(char *rxData, int length)
 #endif
 
 	return 0;
+#endif
 }
 
 static long AKI2C_TxData(char *txData, int length)
 {
-	uint8_t loop_i;
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	struct i2c_client *client = this_client;
+	int res = 0;
+	char addr = txData[0];
+	u8 *buff = &txData[1];
 
+	if ((txData == NULL) || (length < 2))
+		return -EINVAL;
+	res = mag_i2c_write_block(client, addr, buff, (length - 1));
+	if (res < 0)
+		return -1;
+	return 0;
+#else
+	uint8_t loop_i = 0;
 #if DEBUG
-	int i;
+	int i = 0;
 	struct i2c_client *client = this_client;
 	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
 #endif
@@ -199,9 +290,7 @@ static long AKI2C_TxData(char *txData, int length)
 	if ((txData == NULL) || (length < 2))
 		return -EINVAL;
 	mutex_lock(&akm09911_i2c_mutex);
-#ifdef CONFIG_MTK_I2C_EXTENSION
 	this_client->addr = this_client->addr & I2C_MASK_FLAG;
-#endif
 	for (loop_i = 0; loop_i < AKM09911_RETRY_COUNT; loop_i++) {
 		if (i2c_master_send(this_client, (const char *)txData, length) > 0)
 			break;
@@ -225,6 +314,7 @@ static long AKI2C_TxData(char *txData, int length)
 #endif
 
 	return 0;
+#endif
 }
 
 static long AKECS_SetMode_SngMeasure(void)
