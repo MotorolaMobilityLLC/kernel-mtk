@@ -140,7 +140,7 @@ struct OTP_info_data otp_info_data;
 static DEFINE_MUTEX(debug_mutex);
 
 #ifdef ENABLE_IDVFS
-int otp_enable = 1;
+int otp_enable = OTP_ENABLE;
 #else
 int otp_enable = 0;
 #endif
@@ -160,9 +160,10 @@ static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x1
 unsigned int otp_reg_dump_data[ARRAY_SIZE(otp_reg_dump_addr_off)];
 #endif
 
-#define OTP_INTERVAL		(5LL)
+#define OTP_INTERVAL		(10LL)
 static wait_queue_head_t wq;
 static int condition;
+static int timer_enabled;
 static struct hrtimer otp_timer;
 unsigned int otp_debug_dump_data[10];
 /*
@@ -190,8 +191,8 @@ unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0x00001500;
-unsigned int piderrmin = 0xFFFFEB00;
+unsigned int piderrmax = 0x00000A80;
+unsigned int piderrmin = 0xFFFFF580;
 unsigned int kp_step = 0x0;
 unsigned int kp = 0xFF9C;
 unsigned int ki_step = 0x0;
@@ -813,7 +814,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	set_otp_ctrl_data(0x00001500, 0xFFFFEB00, 0x0, 0xFF9C, 0x0, 0xFFFE, 0x0, 0x0);
+	set_otp_ctrl_data(0x00000A80, 0xFFFFF580, 0x0, 0xFF9C, 0x0, 0xFFFE, 0x0, 0x0);
 }
 
 void getTHslope(void)
@@ -957,12 +958,12 @@ static void otp_monitor_ctrl(void)
 
 	hrtimer_init(&otp_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	otp_timer.function = otp_timer_func;
-	hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL);
+	/* hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL); */
 }
 
 static void enable_OTP(void)
 {
-	otp_info(" Start Enabled");
+	otp_info(" Enabled\n");
 
 	getTHslope();
 
@@ -987,15 +988,25 @@ static void enable_OTP(void)
 
 	otp_info(" Configuration finished\n");
 
-	/* hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL); */
+
+	if (timer_enabled == 0) {
+		hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL);
+		timer_enabled = 1;
+	}
 }
 
 static void disable_OTP(void)
 {
+	otp_info(" Disabled\n");
 
 	BigiDVFSChannel(2, 0);
+	otp_info_data_reset(&otp_info_data);
 
-	/* hrtimer_cancel(&otp_timer); */
+	if (timer_enabled == 1) {
+		hrtimer_cancel(&otp_timer);
+		timer_enabled = 0;
+	}
+
 	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);

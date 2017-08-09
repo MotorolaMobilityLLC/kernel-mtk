@@ -9,6 +9,7 @@
 
 #define	TARGET_TEMP		(95)
 
+#define OTP_ENABLE		(1)
 #define PID_EN_enable		(1)
 
 /**
