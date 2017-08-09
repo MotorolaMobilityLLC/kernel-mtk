@@ -10,6 +10,7 @@
 #include <linux/delay.h>
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
+#include <linux/cpu.h>
 
 #include <linux/ktime.h>
 
@@ -646,6 +647,17 @@ if (Count < 0 || Count > 4294967295) {
 
 return 0;
 }
+
+if (cpu_online(4))
+	sched_setaffinity(0, cpumask_of(4));
+else if (cpu_online(3))
+	sched_setaffinity(0, cpumask_of(3));
+else if (cpu_online(2))
+	sched_setaffinity(0, cpumask_of(2));
+else if (cpu_online(1))
+	sched_setaffinity(0, cpumask_of(1));
+else if (cpu_online(0))
+	sched_setaffinity(0, cpumask_of(0));
 
 return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPAVGPWRGET, Count, 0, 0);
 
@@ -4136,8 +4148,8 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				}
 				break;
 		case 3:
-				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
-					hqa_test = val[0];
+			if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
+				hqa_test = val[0];
 					if (hqa_test > NR_HQA)
 						hqa_test = NR_HQA;
 
@@ -4256,6 +4268,7 @@ for (i = 0; i < 2000; i++) {
 	}
 		mdelay(1);
 }
+
 		ocp_info("stress test: count = %llu\n", count1++);
 	}
 
