@@ -75,6 +75,9 @@ static int hps_algo_rush_boost(void)
 {
 	int val, base_val;
 
+	if (!hps_ctxt.rush_boost_enabled)
+		return 0;
+
 	base_val = cal_base_cores();
 
 	if (hps_ctxt.cur_loads > hps_ctxt.rush_boost_threshold * hps_sys.total_online_cores)

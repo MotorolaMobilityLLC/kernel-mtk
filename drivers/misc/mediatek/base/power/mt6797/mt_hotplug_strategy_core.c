@@ -286,7 +286,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 	mutex_unlock(&hps_ctxt.para_lock);
 	hps_ctxt.is_interrupt = 1;
-	hps_task_wakeup();
+	hps_task_wakeup_nolock();
 
 }
 
