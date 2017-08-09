@@ -114,7 +114,7 @@ if (cmdq_core_should_print_msg()) { \
 #define CMDQ_VERBOSE(string, args...) \
 {			\
 if (cmdq_core_should_print_msg()) { \
-	pr_info("[CMDQ]"string, ##args); \
+	pr_debug("[CMDQ]"string, ##args); \
 }			\
 }
 
