@@ -25,8 +25,7 @@
 
 #include <dt-bindings/clock/mt6797-clk.h>
 
-/* #define _SKIP_BUS_PROTECT_ */
-
+#define TOPAXI_PROTECT_LOCK
 #define VLTE_SUPPORT
 #ifdef VLTE_SUPPORT
 /* #include <mach/mt_gpio.h> */
@@ -121,13 +120,11 @@ static void __iomem *spm_base;
 /**************************************
  * for non-CPU MTCMOS
  **************************************/
- #if 0
 static DEFINE_SPINLOCK(spm_noncpu_lock);
 
 #define spm_mtcmos_noncpu_lock(flags)   spin_lock_irqsave(&spm_noncpu_lock, flags)
 
 #define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
-#endif
 
 /* FIXME: set correct value: S */
 #define POWERON_CONFIG_EN			SPM_REG(0x0000)
@@ -391,6 +388,38 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 	return old_pgcb;
 }
 
+#ifdef TOPAXI_PROTECT_LOCK
+int spm_topaxi_protect(unsigned int mask_value, int en)
+{
+	unsigned long flags;
+
+	spm_mtcmos_noncpu_lock(flags);
+
+	if (en == 1) {
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | (mask_value));
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value)) {
+			#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
+			#endif
+		}
+	} else {
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~(mask_value));
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) {
+			#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
+			#endif
+		}
+	}
+
+	spm_mtcmos_noncpu_unlock(flags);
+/*
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
+*/
+	return 0;
+}
+#endif
+
 static struct subsys *id_to_sys(unsigned int id)
 {
 	return id < NR_SYSS ? &syss[id] : NULL;
@@ -417,7 +446,9 @@ static int spm_mtcmos_ctrl_md1(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
 		/* TINFO="Set bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MD1_PROT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MD1_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MD1_PROT_MASK) != MD1_PROT_MASK) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
@@ -481,7 +512,9 @@ static int spm_mtcmos_ctrl_md1(int state)
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Release bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MD1_PROT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MD1_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MD1_PROT_MASK) {
@@ -510,7 +543,9 @@ static int spm_mtcmos_ctrl_conn(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(CONN_PROT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) != CONN_PROT_MASK) {
@@ -569,7 +604,9 @@ static int spm_mtcmos_ctrl_conn(int state)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(CONN_PROT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) {
@@ -595,7 +632,9 @@ static int spm_mtcmos_ctrl_dis(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
 		/* TINFO="Set bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(DIS_PROT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | DIS_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK) != DIS_PROT_MASK) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
@@ -669,7 +708,9 @@ static int spm_mtcmos_ctrl_dis(int state)
 			#endif
 		}
 		/* TINFO="Release bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(DIS_PROT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~DIS_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK) {
@@ -861,7 +902,9 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE3" */
 		/* TINFO="Set bus protect" */
-		#ifndef _SKIP_BUS_PROTECT_
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MFG_PROT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
@@ -937,9 +980,10 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-
-		#ifndef _SKIP_BUS_PROTECT_
 		/* TINFO="Release bus protect" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(MFG_PROT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) {
@@ -1616,12 +1660,16 @@ static int spm_mtcmos_ctrl_c2k(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off C2K" */
 		/* TINFO="Set PWR_ISO = 1" */
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(C2K_PROT_MASK, 1);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | C2K_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & C2K_PROT_MASK) != C2K_PROT_MASK) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
 			#endif
 		}
+		#endif
 
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1673,13 +1721,17 @@ static int spm_mtcmos_ctrl_c2k(int state)
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_RST_B);
 
 		/* TINFO="Release bus protect" */
+
+		#ifdef TOPAXI_PROTECT_LOCK
+		spm_topaxi_protect(C2K_PROT_MASK, 0);
+		#else
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~C2K_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & C2K_PROT_MASK) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
 			#endif
 		}
-
+		#endif
 		/* TINFO="Finish to turn on C2K" */
 	}
 	#ifdef CONFIG_MTK_RAM_CONSOLE
