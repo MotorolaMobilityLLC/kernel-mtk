@@ -2490,10 +2490,13 @@ static s32 i2c_auto_read(struct i2c_client *client, u8 *rxbuf, int len)
 	u16 offset = 0;
 
 	struct i2c_msg msg = {
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		.addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
-		/*.addr = ((client->addr &I2C_MASK_FLAG) | (I2C_PUSHPULL_FLAG)), */
-		.flags = I2C_M_RD,
-		.timing = I2C_MASTER_CLOCK
+		.timing = I2C_MASTER_CLOCK,
+#else
+		.addr = client->addr,
+#endif
+		.flags = I2C_M_RD
 	};
 
 	if (NULL == rxbuf)

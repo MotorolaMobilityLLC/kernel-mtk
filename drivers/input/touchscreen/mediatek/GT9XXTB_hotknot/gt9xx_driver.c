@@ -644,17 +644,23 @@ int i2c_read_bytes_non_dma(struct i2c_client *client, u16 addr, u8 *rxbuf, int l
 
 	struct i2c_msg msg[2] = {
 		{
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		 .addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
-		 /* .addr = ((client->addr &I2C_MASK_FLAG) | (I2C_PUSHPULL_FLAG)), */
+		 .timing = I2C_MASTER_CLOCK,
+#else
+		.addr = client->addr,
+#endif
 		 .flags = 0,
 		 .buf = buffer,
-		 .len = GTP_ADDR_LENGTH,
-		 .timing = I2C_MASTER_CLOCK},
+		 .len = GTP_ADDR_LENGTH},
 		{
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		 .addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
-		 /* .addr = ((client->addr &I2C_MASK_FLAG) | (I2C_PUSHPULL_FLAG)), */
-		 .flags = I2C_M_RD,
-		 .timing = I2C_MASTER_CLOCK},
+		 .timing = I2C_MASTER_CLOCK,
+#else
+		.addr = client->addr,
+#endif
+		 .flags = I2C_M_RD},
 	};
 
 	if (rxbuf == NULL)
@@ -761,11 +767,14 @@ int i2c_write_bytes_non_dma(struct i2c_client *client, u16 addr, u8 *txbuf, int 
 	u8 retry = 0;
 
 	struct i2c_msg msg = {
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		.addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
-		/* .addr = ((client->addr &I2C_MASK_FLAG) | (I2C_PUSHPULL_FLAG)), */
-		.flags = 0,
-		.buf = buffer,
 		.timing = I2C_MASTER_CLOCK,
+#else
+		.addr = client->addr,
+#endif
+		.flags = 0,
+		.buf = buffer
 	};
 
 
