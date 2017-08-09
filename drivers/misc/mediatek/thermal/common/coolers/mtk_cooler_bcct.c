@@ -25,6 +25,8 @@
 #include <charging.h>
 #include <tmp_battery.h>
 #include <linux/uidgid.h>
+#include <linux/notifier.h>
+#include <linux/fb.h>
 
 /* ************************************ */
 /* Weak functions */
@@ -94,6 +96,8 @@ static kgid_t gid = KGIDT_INIT(1000);
  */
 int chrlmt_chr_input_curr_limit = -1; /**< -1 is unlimit, unit is mA. */
 int chrlmt_bat_chr_curr_limit = -1; /**< -1 is unlimit, unit is mA. */
+static bool chrlmt_is_lcmoff; /**0 is lcm on, 1 is lcm off */
+static int chrlmt_lcmoff_policy_enable; /**0: No lcmoff abcct */
 
 struct chrlmt_handle {
 	int chr_input_curr_limit;
@@ -239,6 +243,10 @@ static int mtk_cl_bcct_get_cur_state(struct thermal_cooling_device *cdev, unsign
 
 static int mtk_cl_bcct_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
+	/*Only active while lcm not off */
+	if (chrlmt_is_lcmoff)
+		state = 0;
+
 	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, state);
 	MTK_CL_BCCT_SET_CURR_STATE(state, *((unsigned long *)cdev->devdata));
 	mtk_cl_bcct_set_bcct_limit();
@@ -323,7 +331,12 @@ static int mtk_cl_abcct_get_cur_state(struct thermal_cooling_device *cdev, unsig
 static int mtk_cl_abcct_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
 	cl_abcct_state = state;
-	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, state);
+
+	/*Only active while lcm not off */
+	if (chrlmt_is_lcmoff)
+		cl_abcct_state = 0;
+
+	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, cl_abcct_state);
 	return 0;
 }
 
@@ -374,6 +387,92 @@ static struct thermal_cooling_device_ops_extra mtk_cl_abcct_ops_ext = {
 	.set_cur_temp = mtk_cl_abcct_set_cur_temp
 };
 
+static struct thermal_cooling_device *cl_abcct_lcmoff_dev;
+static unsigned long cl_abcct_lcmoff_state;
+static struct chrlmt_handle abcct_lcmoff_chrlmt_handle;
+static long abcct_lcmoff_prev_temp;
+static long abcct_lcmoff_curr_temp;
+static long abcct_lcmoff_target_temp = 48000;
+static long abcct_lcmoff_kp = 1000;
+static long abcct_lcmoff_ki = 3000;
+static long abcct_lcmoff_kd = 10000;
+static int abcct_lcmoff_max_bat_chr_curr_limit = 3000;
+static int abcct_lcmoff_min_bat_chr_curr_limit = 200;
+static int abcct_lcmoff_cur_bat_chr_curr_limit;
+static long abcct_lcmoff_iterm;
+
+static int mtk_cl_abcct_lcmoff_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	*state = 1;
+	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, *state);
+	return 0;
+}
+
+static int mtk_cl_abcct_lcmoff_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	*state = cl_abcct_lcmoff_state;
+	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, *state);
+	return 0;
+}
+
+static int mtk_cl_abcct_lcmoff_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
+{
+	cl_abcct_lcmoff_state = state;
+
+	/*Only active while lcm off */
+	if (!chrlmt_is_lcmoff)
+		cl_abcct_lcmoff_state = 0;
+	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, cl_abcct_lcmoff_state);
+	return 0;
+}
+
+/* bind fan callbacks to fan device */
+static struct thermal_cooling_device_ops mtk_cl_abcct_lcmoff_ops = {
+	.get_max_state = mtk_cl_abcct_lcmoff_get_max_state,
+	.get_cur_state = mtk_cl_abcct_lcmoff_get_cur_state,
+	.set_cur_state = mtk_cl_abcct_lcmoff_set_cur_state,
+};
+
+static int mtk_cl_abcct_lcmoff_set_cur_temp(struct thermal_cooling_device *cdev, unsigned long temp)
+{
+	long delta, pterm, dterm;
+	int limit;
+
+	/* based on temp and state to do ATM */
+	abcct_lcmoff_prev_temp = abcct_lcmoff_curr_temp;
+	abcct_lcmoff_curr_temp = (long) temp;
+
+	if (cl_abcct_lcmoff_state == 0) {
+		abcct_lcmoff_iterm = 0;
+		abcct_lcmoff_cur_bat_chr_curr_limit = abcct_lcmoff_max_bat_chr_curr_limit;
+		chrlmt_set_limit(&abcct_lcmoff_chrlmt_handle, -1, -1);
+		return 0;
+	}
+
+	pterm = abcct_lcmoff_target_temp - abcct_lcmoff_curr_temp;
+	abcct_lcmoff_iterm += pterm;
+	dterm = abcct_lcmoff_prev_temp - abcct_lcmoff_curr_temp;
+
+	delta = pterm/abcct_lcmoff_kp + abcct_lcmoff_iterm/abcct_lcmoff_ki + dterm/abcct_lcmoff_kd;
+
+	limit = abcct_lcmoff_cur_bat_chr_curr_limit + (int) delta;
+	limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
+	limit = MIN(abcct_lcmoff_max_bat_chr_curr_limit, limit);
+	limit = MAX(abcct_lcmoff_min_bat_chr_curr_limit, limit);
+	abcct_lcmoff_cur_bat_chr_curr_limit = limit;
+
+	mtk_cooler_bcct_dprintk("%s %ld %ld %ld %ld %ld %d\n"
+		, __func__, abcct_lcmoff_curr_temp, pterm, abcct_lcmoff_iterm, dterm, delta, limit);
+
+	chrlmt_set_limit(&abcct_lcmoff_chrlmt_handle, -1, limit);
+
+	return 0;
+}
+
+static struct thermal_cooling_device_ops_extra mtk_cl_abcct_lcmoff_ops_ext = {
+	.set_cur_temp = mtk_cl_abcct_lcmoff_set_cur_temp
+};
+
 static int mtk_cooler_abcct_register_ltf(void)
 {
 	mtk_cooler_bcct_dprintk("%s\n", __func__);
@@ -398,6 +497,32 @@ static void mtk_cooler_abcct_unregister_ltf(void)
 	}
 
 	chrlmt_unregister(&abcct_chrlmt_handle);
+}
+
+static int mtk_cooler_abcct_lcmoff_register_ltf(void)
+{
+	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	chrlmt_register(&abcct_lcmoff_chrlmt_handle);
+
+	if (!cl_abcct_lcmoff_dev)
+		cl_abcct_lcmoff_dev = mtk_thermal_cooling_device_register_wrapper_extra(
+			"abcct_lcmoff", (void *)NULL, &mtk_cl_abcct_lcmoff_ops, &mtk_cl_abcct_lcmoff_ops_ext);
+
+	return 0;
+}
+
+static void mtk_cooler_abcct_lcmoff_unregister_ltf(void)
+{
+	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	if (cl_abcct_lcmoff_dev) {
+		mtk_thermal_cooling_device_unregister(cl_abcct_lcmoff_dev);
+		cl_abcct_lcmoff_dev = NULL;
+		cl_abcct_lcmoff_state = 0;
+	}
+
+	chrlmt_unregister(&abcct_lcmoff_chrlmt_handle);
 }
 
 static ssize_t _cl_bcct_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
@@ -560,6 +685,128 @@ static const struct file_operations _cl_abcct_fops = {
 	.release = single_release,
 };
 
+static ssize_t _cl_abcct_lcmoff_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+{
+	/* int ret = 0; */
+	char tmp[128] = { 0 };
+	int _lcmoff_policy_enable;
+	long _abcct_lcmoff_target_temp, _abcct_lcmoff_kp, _abcct_lcmoff_ki, _abcct_lcmoff_kd;
+	int _max_cur, _min_cur;
+
+	len = (len < (128 - 1)) ? len : (128 - 1);
+	/* write data to the buffer */
+	if (copy_from_user(tmp, buf, len))
+		return -EFAULT;
+
+	if (NULL == data) {
+		mtk_cooler_bcct_dprintk("%s null data\n", __func__);
+		return -EINVAL;
+	}
+
+	if (7 <= sscanf(tmp, "%d %ld %ld %ld %ld %d %d"
+		, &_lcmoff_policy_enable
+		, &_abcct_lcmoff_target_temp, &_abcct_lcmoff_kp, &_abcct_lcmoff_ki, &_abcct_lcmoff_kd
+		, &_max_cur, &_min_cur)) {
+
+		chrlmt_lcmoff_policy_enable = _lcmoff_policy_enable;
+		abcct_lcmoff_target_temp = _abcct_lcmoff_target_temp;
+		abcct_lcmoff_kp = _abcct_lcmoff_kp;
+		abcct_lcmoff_ki = _abcct_lcmoff_ki;
+		abcct_lcmoff_kd = _abcct_lcmoff_kd;
+		abcct_lcmoff_max_bat_chr_curr_limit = _max_cur;
+		abcct_lcmoff_min_bat_chr_curr_limit = _min_cur;
+		abcct_lcmoff_cur_bat_chr_curr_limit = abcct_lcmoff_max_bat_chr_curr_limit;
+		abcct_lcmoff_iterm = 0;
+
+		return len;
+	}
+
+	mtk_cooler_bcct_dprintk("%s bad argument\n", __func__);
+	return -EINVAL;
+}
+
+static int _cl_abcct_lcmoff_read(struct seq_file *m, void *v)
+{
+	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	seq_printf(m, "chrlmt_lcmoff_policy_enable %d\n", chrlmt_lcmoff_policy_enable);
+	seq_printf(m, "%d\n", abcct_lcmoff_cur_bat_chr_curr_limit);
+	seq_printf(m, "abcct_lcmoff_cur_bat_chr_curr_limit %d\n", abcct_lcmoff_cur_bat_chr_curr_limit);
+	seq_printf(m, "abcct_lcmoff_target_temp %ld\n", abcct_lcmoff_target_temp);
+	seq_printf(m, "abcct_lcmoff_kp %ld\n", abcct_lcmoff_kp);
+	seq_printf(m, "abcct_lcmoff_ki %ld\n", abcct_lcmoff_ki);
+	seq_printf(m, "abcct_lcmoff_kd %ld\n", abcct_lcmoff_kd);
+	seq_printf(m, "abcct_lcmoff_max_bat_chr_curr_limit %d\n", abcct_lcmoff_max_bat_chr_curr_limit);
+	seq_printf(m, "abcct_lcmoff_min_bat_chr_curr_limit %d\n", abcct_lcmoff_min_bat_chr_curr_limit);
+
+	return 0;
+}
+
+static int _cl_abcct_lcmoff_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, _cl_abcct_lcmoff_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _cl_abcct_lcmoff_fops = {
+	.owner = THIS_MODULE,
+	.open = _cl_abcct_lcmoff_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = _cl_abcct_lcmoff_write,
+	.release = single_release,
+};
+
+static void bcct_lcmoff_switch(int onoff)
+{
+	mtk_cooler_bcct_dprintk("%s: onoff = %d\n", __func__, onoff);
+
+	/* onoff = 0: LCM OFF */
+	/* others: LCM ON */
+	if (onoff) {
+		/* deactivate lcmoff policy */
+		chrlmt_is_lcmoff = 0;
+	} else {
+		/* activate lcmoff policy */
+		chrlmt_is_lcmoff = 1;
+	}
+}
+
+static int bcct_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	/* skip if policy is not enable */
+	if (!chrlmt_lcmoff_policy_enable)
+		return 0;
+
+	blank = *(int *)evdata->data;
+	mtk_cooler_bcct_dprintk("%s: blank = %d, event = %lu\n", __func__, blank, event);
+
+	/* skip if it's not a blank event */
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	switch (blank) {
+	/* LCM ON */
+	case FB_BLANK_UNBLANK:
+		bcct_lcmoff_switch(1);
+		break;
+	/* LCM OFF */
+	case FB_BLANK_POWERDOWN:
+		bcct_lcmoff_switch(0);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block bcct_lcmoff_fb_notifier = {
+	.notifier_call = bcct_lcmoff_fb_notifier_callback,
+};
+
 static int _cl_chrlmt_read(struct seq_file *m, void *v)
 {
 	mtk_cooler_bcct_dprintk("%s\n", __func__);
@@ -608,6 +855,16 @@ static int __init mtk_cooler_bcct_init(void)
 	if (err)
 		goto err_unreg;
 
+	err = mtk_cooler_abcct_lcmoff_register_ltf();
+	if (err)
+		goto err_unreg;
+
+	if (fb_register_client(&bcct_lcmoff_fb_notifier)) {
+		mtk_cooler_bcct_dprintk_always("%s: register FB client failed!\n", __func__);
+		err = -EINVAL;
+		goto err_unreg;
+	}
+
 	/* create a proc file */
 	{
 		struct proc_dir_entry *entry = NULL;
@@ -633,6 +890,13 @@ static int __init mtk_cooler_bcct_init(void)
 		else
 			proc_set_user(entry, uid, gid);
 
+		entry =
+		    proc_create("clabcct_lcmoff", S_IRUGO | S_IWUSR | S_IWGRP, dir_entry, &_cl_abcct_lcmoff_fops);
+		if (!entry)
+			mtk_cooler_bcct_dprintk_always("%s clabcct_lcmoff creation failed\n", __func__);
+		else
+			proc_set_user(entry, uid, gid);
+
 		entry = proc_create("bcctlmt", S_IRUGO, NULL, &_cl_chrlmt_fops);
 	}
 	return 0;
@@ -649,9 +913,13 @@ static void __exit mtk_cooler_bcct_exit(void)
 	/* remove the proc file */
 	remove_proc_entry("driver/thermal/clbcct", NULL);
 	remove_proc_entry("driver/thermal/clabcct", NULL);
+	remove_proc_entry("driver/thermal/clabcct_lcmoff", NULL);
 
 	mtk_cooler_bcct_unregister_ltf();
 	mtk_cooler_abcct_unregister_ltf();
+	mtk_cooler_abcct_lcmoff_unregister_ltf();
+
+	fb_unregister_client(&bcct_lcmoff_fb_notifier);
 }
 module_init(mtk_cooler_bcct_init);
 module_exit(mtk_cooler_bcct_exit);
