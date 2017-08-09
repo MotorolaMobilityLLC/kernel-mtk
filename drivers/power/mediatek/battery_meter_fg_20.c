@@ -420,6 +420,7 @@ signed int gFG_min_temperature = 100;
 
 unsigned int g_sw_fg_version = 150327;
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
+static unsigned char gDisableFG;
 
 /* ============================================================ // */
 /* function prototype */
@@ -1784,7 +1785,7 @@ void update_fg_dbg_tool_value(void)
 
 	g_fg_dbg_bat_r = gFG_resistance_bat;
 
-	g_fg_dbg_bat_car = gFG_coulomb;
+	g_fg_dbg_bat_car = gFG_coulomb_act;
 
 	g_fg_dbg_bat_qmax = gFG_BATT_CAPACITY_aging;
 
@@ -3347,6 +3348,33 @@ static ssize_t store_FG_daemon_log_level(struct device *dev, struct device_attri
 static DEVICE_ATTR(FG_daemon_log_level, 0664, show_FG_daemon_log_level, store_FG_daemon_log_level);
 /* ------------------------------------------------------------------------------------------- */
 
+static ssize_t show_FG_daemon_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show FG_daemon_log_level : %d\n", gDisableFG);
+	return sprintf(buf, "%d\n", gDisableFG);
+}
+
+static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+
+	bm_debug("[disable FG daemon]\n");
+	BMT_status.UI_SOC2 = 50;
+	if (!g_battery_soc_ready) {
+		g_battery_soc_ready = KAL_TRUE;
+		gfg_percent_check_point = 50;
+	}
+
+	bat_update_thread_wakeup();
+
+	gDisableFG = 1;
+
+	return size;
+}
+
+static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
+/* ------------------------------------------------------------------------------------------- */
+
 #ifdef FG_BAT_INT
 unsigned char reset_fg_bat_int = KAL_TRUE;
 
@@ -3445,6 +3473,9 @@ static int battery_meter_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Min_Battery_Temperature);
 #endif
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
+
+
 
 	batt_meter_init_cust_data(dev);
 
@@ -4470,6 +4501,13 @@ static void nl_data_handler(struct sk_buff *skb)
 
 int wakeup_fg_algo(int flow_state)
 {
+	update_fg_dbg_tool_value();
+
+	if (gDisableFG) {
+		bm_notice("FG daemon is disabled\n");
+		return -1;
+	}
+
 	if (g_fgd_pid != 0) {
 		struct fgd_nl_msg_t *fgd_msg;
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
