@@ -1,10 +1,18 @@
-#include <xhci-mtk.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/list.h>
+#include <linux/platform_device.h>
+#include <linux/io.h>
+#include <xhci-mtk.h>
 
 static struct sch_ep **ss_out_eps[MAX_EP_NUM];
 static struct sch_ep **ss_in_eps[MAX_EP_NUM];
 static struct sch_ep **hs_eps[MAX_EP_NUM];	/* including tt isoc */
 static struct sch_ep **tt_intr_eps[MAX_EP_NUM];
+
 
 int mtk_xhci_scheduler_init(void)
 {
@@ -608,3 +616,45 @@ int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, i
 		return SCH_FAIL;
 	}
 }
+
+void mtk_xhci_vbus_on(struct platform_device *pdev)
+{
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_drvvbus_high;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+
+	if (IS_ERR(pinctrl)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+
+	pinctrl_drvvbus_high = pinctrl_lookup_state(pinctrl, "drvvbus_high");
+
+	if (IS_ERR(pinctrl_drvvbus_high)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl drvvbus_high\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_high);
+}
+
+void mtk_xhci_vbus_off(struct platform_device *pdev)
+{
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_drvvbus_low;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+
+	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl, "drvvbus_low");
+
+	if (IS_ERR(pinctrl_drvvbus_low)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl drvvbus_low\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
+}
+

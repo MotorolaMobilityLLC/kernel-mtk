@@ -199,7 +199,9 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	ret = usb_add_hcd(xhci->shared_hcd, irq, IRQF_SHARED);
 	if (ret)
 		goto put_usb3_hcd;
-
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk_xhci_vbus_on(pdev);
+#endif
 	return 0;
 
 put_usb3_hcd:
@@ -223,6 +225,10 @@ static int xhci_plat_remove(struct platform_device *dev)
 	struct usb_hcd	*hcd = platform_get_drvdata(dev);
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	struct clk *clk = xhci->clk;
+
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk_xhci_vbus_off(dev);
+#endif
 
 	usb_remove_hcd(xhci->shared_hcd);
 	usb_put_hcd(xhci->shared_hcd);

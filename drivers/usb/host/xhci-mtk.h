@@ -77,13 +77,16 @@ struct sch_ep {
 	mtk_u32 *ep;		/* address of usb_endpoint pointer */
 };
 
-int mtk_xhci_scheduler_init(void);
-int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp,
+extern int mtk_xhci_scheduler_init(void);
+extern int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp,
 			      int interval, int burst, int mult, mtk_u32 *ep, mtk_u32 *ep_ctx,
 			      struct sch_ep *sch_ep);
-struct sch_ep *mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, int ep_type,
+extern struct sch_ep *mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, int ep_type,
 					    mtk_u32 *ep);
-int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci);
+extern int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci);
+extern void mtk_xhci_vbus_on(struct platform_device *pdev);
+extern void mtk_xhci_vbus_off(struct platform_device *pdev);
+
 
 #define XHCI_DRIVER_NAME		"xhci"
 #define XHCI_BASE_REGS_ADDR_RES_NAME	"ssusb_base"
