@@ -809,7 +809,12 @@ static void __cspm_register_init(void)
 static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	/* do basic init because of Infra power-on reset */
+#if 0
+	/* SEMA3 is used for MCUMIXEDSYS workaround, so FH driver/ATF will write POWERON_CONFIG_EN */
 	if (!(cspm_read(CSPM_POWERON_CONFIG_EN) & REGWR_EN))
+#else
+	if (!(cspm_read(CSPM_PCM_CON1) & CON1_MIF_APBEN))
+#endif
 		__cspm_register_init();
 
 	/* reset PCM */
