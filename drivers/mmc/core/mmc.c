@@ -57,6 +57,15 @@ static const unsigned int tacc_mant[] = {
 		__res & __mask;						\
 	})
 
+#ifdef MTK_BKOPS_IDLE_MAYA
+#define MMC_UPDATE_BKOPS_STATS_SUSPEND(stats)\
+	do {\
+		spin_lock(&stats.lock);\
+		if (stats.enabled)\
+			stats.suspend++;\
+		spin_unlock(&stats.lock);\
+	} while (0)
+#endif
 /*
  * Given the decoded CSD structure, decode the raw CID to our CID structure.
  */
@@ -1477,7 +1486,29 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * Choose the power class with selected bus interface
 	 */
 	mmc_select_powerclass(card);
-
+#ifdef MTK_BKOPS_IDLE_MAYA
+	/*
+	 * enable BKOPS if eMMC card supports.
+	 * BKOPS_EN 163 of ext-csd, is one-time program register
+	 */
+	if (card->ext_csd.bkops) {
+		if (!card->ext_csd.bkops_en) {
+			/* not to re-enable BKOPS */
+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_BKOPS_EN, 1, card->ext_csd.generic_cmd6_time);
+			if (err && err != -EBADMSG)
+				goto free_card;
+			if (err) {
+				pr_warn("%s: Enabling BKOPS failed\n",
+					mmc_hostname(card->host));
+				card->ext_csd.bkops_en = 0;
+				err = 0;
+			} else {
+				card->ext_csd.bkops_en = 1;
+			}
+		}
+	}
+#endif
 	/*
 	 * Enable HPI feature (if supported)
 	 */
@@ -1702,8 +1733,10 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 		err = mmc_stop_bkops(host->card);
 		if (err)
 			goto out;
+#ifdef MTK_BKOPS_IDLE_MAYA
+		MMC_UPDATE_BKOPS_STATS_SUSPEND(host->card->bkops_info.bkops_stats);
+#endif
 	}
-
 	err = mmc_flush_cache(host->card);
 	if (err)
 		goto out;
@@ -1912,6 +1945,23 @@ int mmc_attach_mmc(struct mmc_host *host)
 	if (err)
 		goto err;
 
+#ifdef MTK_BKOPS_IDLE_MAYA
+	if (host->card->ext_csd.bkops_en) {
+		INIT_DELAYED_WORK(&host->card->bkops_info.dw,
+			mmc_start_idle_time_bkops);
+		/*
+		 * The host controller can set the time to start the BKOPS in
+		 * order to prevent a race condition before starting BKOPS
+		 * and going into suspend.
+		 * If the host controller didn't set this time,
+		 * a default value is used.
+		 */
+		host->card->bkops_info.delay_ms = MMC_IDLE_BKOPS_TIME_MS;
+		if (host->card->bkops_info.host_delay_ms)
+			host->card->bkops_info.delay_ms =
+				host->card->bkops_info.host_delay_ms;
+	}
+#endif
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);
 	mmc_claim_host(host);

@@ -277,6 +277,9 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
 	card->dev.bus = &mmc_bus_type;
 	card->dev.release = mmc_release_card;
 	card->dev.type = type;
+#ifdef MTK_BKOPS_IDLE_MAYA
+	spin_lock_init(&card->bkops_info.bkops_stats.lock);
+#endif
 
 	return card;
 }
