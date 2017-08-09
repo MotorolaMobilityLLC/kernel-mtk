@@ -101,6 +101,11 @@ typedef enum {
 #define DPREC_LOGGER_LEVEL_AEE_DUMP			(0x1<<4)
 #define DPREC_LOGGER_LEVEL_LOGGER			(0x1<<5)
 
+#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#define DEBUG_BUFFER_SIZE (4096 + 30 * 16 * 1024)
+#else
+#define DEBUG_BUFFER_SIZE 10240
+#endif
 
 typedef struct {
 	unsigned long long period_frame;
@@ -187,5 +192,6 @@ void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence
 void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
 int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
 			     unsigned int session /*1:primary, 2:external, 3:memory */);
+void init_log_buffer(void);
 
 #endif

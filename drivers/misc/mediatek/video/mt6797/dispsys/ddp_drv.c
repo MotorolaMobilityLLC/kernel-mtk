@@ -58,7 +58,7 @@
 #include "ddp_log.h"
 #include "ddp_irq.h"
 #include "ddp_info.h"
-
+#include "display_recorder.h"
 
 /*#define DISP_NO_DPI*/   /* FIXME: tmp define */
 #ifndef DISP_NO_DPI
@@ -857,6 +857,7 @@ static int __init disp_init(void)
 {
 	int ret = 0;
 
+	init_log_buffer();
 	DDPMSG("Register the disp driver\n");
 	if (platform_driver_register(&dispsys_of_driver)) {
 		DDPERR("failed to register disp driver\n");

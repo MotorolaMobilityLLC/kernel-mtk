@@ -41,11 +41,6 @@
 #include "disp_recovery.h"
 
 static struct dentry *mtkfb_dbgfs;
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
-static char debug_buffer[4096 + 30 * 16 * 1024];
-#else
-static char debug_buffer[10240];
-#endif
 unsigned int g_mobilelog;
 
 static int draw_buffer(char *va, int w, int h,
@@ -668,18 +663,19 @@ void debug_info_dump_to_printk(char *buf, int buf_len)
 
 static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
-	const int debug_bufmax = sizeof(debug_buffer) - 1;
+	int debug_bufmax;
 	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 	static int n;
 
 	/* Debugfs read only fetch 4096 byte each time, thus whole ringbuffer need massive
 	 * iteration. We only copy ringbuffer content to debugfs buffer at first time (*ppos = 0)
 	 */
-	if (*ppos != 0)
+	if (*ppos != 0 || !is_buffer_init)
 		goto out;
 
 	DISPFUNC();
 
+	debug_bufmax = DEBUG_BUFFER_SIZE - 1;
 	n = debug_get_info(debug_buffer, debug_bufmax);
 	/* debug_info_dump_to_printk(); */
 out:
@@ -691,20 +687,21 @@ out:
 
 static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
-	const int debug_bufmax = sizeof(debug_buffer) - 1;
+	const int debug_bufmax = 1024 - 1;
 	size_t ret;
+	char cmd_buffer[1024];
 
 	ret = count;
 
 	if (count > debug_bufmax)
 		count = debug_bufmax;
 
-	if (copy_from_user(&debug_buffer, ubuf, count))
+	if (copy_from_user(&cmd_buffer, ubuf, count))
 		return -EFAULT;
 
-	debug_buffer[count] = 0;
+	cmd_buffer[count] = 0;
 
-	process_dbg_cmd(debug_buffer);
+	process_dbg_cmd(cmd_buffer);
 
 	return ret;
 }

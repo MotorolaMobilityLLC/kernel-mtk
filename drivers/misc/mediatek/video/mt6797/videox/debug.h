@@ -18,6 +18,8 @@ static int dbg_indent;
 static int dbg_cnt;
 static char dbg_buf[DBG_BUF_SIZE];
 static spinlock_t dbg_spinlock = SPIN_LOCK_UNLOCKED;
+extern char *debug_buffer;
+extern bool is_buffer_init;
 
 static inline void dbg_print(int level, const char *fmt, ...)
 {
@@ -85,6 +87,9 @@ static inline void dbg_print(int level, const char *fmt, ...)
 #define MSG(evt, fmt, args...)
 #define MSG_FUNC_ENTER()
 #define MSG_FUNC_LEAVE()
+
+extern char *debug_buffer;
+extern bool is_buffer_init;
 void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned int h,
 		    unsigned int linepitch, unsigned int color, unsigned int layerid,
 		    unsigned int bufidx);
