@@ -54,10 +54,8 @@ static void mag_work_func(struct work_struct *work)
 	cur_ns = time.tv_sec*1000000000LL+time.tv_nsec;
 
 	for (i = 0; i < MAX_M_V_SENSOR; i++) {
-		if (!(cxt->active_data_sensor&(0x01<<i))) {
-			MAG_LOG("mag_type(%d)  enabled(%d)\n", i, cxt->active_data_sensor);
+		if (!(cxt->active_data_sensor&(0x01<<i)))
 			continue;
-		}
 
 		if (ID_M_V_MAGNETIC == i) {
 			err = cxt->mag_dev_data.get_data_m(&x, &y, &z, &status);
