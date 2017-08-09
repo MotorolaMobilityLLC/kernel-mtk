@@ -452,6 +452,11 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_dump);
+
+	if (unlikely(ret != 0))
+		return ret;
+
 	return 0;
 }
 

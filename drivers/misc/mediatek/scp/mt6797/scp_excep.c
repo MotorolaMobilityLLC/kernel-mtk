@@ -13,6 +13,7 @@
 */
 
 #include <linux/slab.h>         /* needed by kmalloc */
+#include <linux/device.h>       /* needed by device_* */
 #include <linux/workqueue.h>
 #include <mt-plat/aee.h>
 #include <mt-plat/sync_write.h>
@@ -281,6 +282,13 @@ void scp_aed_reset(scp_excep_id type)
 	scp_aed_work.flags = (unsigned int) type;
 	scp_schedule_work(&scp_aed_work);
 }
+
+static ssize_t scp_dump_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	return 0;
+}
+
+DEVICE_ATTR(scp_dump, 0444, scp_dump_show, NULL);
 
 /*
  * init a work struct

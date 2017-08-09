@@ -21,6 +21,7 @@ struct scp_work_struct {
 extern const struct file_operations scp_file_ops;
 extern struct scp_regs scpreg;
 extern struct device_attribute dev_attr_scp_log_len, dev_attr_scp_mobile_log, dev_attr_scp_log_flush;
+extern struct device_attribute dev_attr_scp_status, dev_attr_scp_dump;
 
 extern irqreturn_t scp_irq_handler(int irq, void *dev_id);
 extern int scp_logger_init(void);
