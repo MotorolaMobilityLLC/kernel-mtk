@@ -3565,6 +3565,12 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 		{
 			break;
 		}
+	case DDP_DSI_ENABLE_TE:
+		{
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN,
+				      TE_RDY, 1);
+			break;
+		}
 	}
 	return ret;
 }
