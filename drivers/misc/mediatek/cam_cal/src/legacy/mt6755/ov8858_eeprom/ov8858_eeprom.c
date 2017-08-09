@@ -478,7 +478,7 @@ static long CAM_CAL_Ioctl(
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
 		CAM_CALDB("[CAM_CAL2] to user length %d\n", ptempbuf->u4Length);
-		CAM_CALDB("[CAM_CAL2] to user  Working buffer address 0x%p\n", pu1Params);
+		/*CAM_CALDB("[CAM_CAL2] to user  Working buffer address 0x%p\n", pu1Params); 70681*/
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pu1Params , ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pu1Params);
