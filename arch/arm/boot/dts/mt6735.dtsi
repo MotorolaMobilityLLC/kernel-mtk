@@ -19,6 +19,21 @@
 initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 
+	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
+	/*workaround for .0*/
+	mtk-msdc.0 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0 0 0xffffffff>;
+
+		MSDC0@0x11230000 {
+			compatible = "mediatek,MSDC0";
+			reg = <0x11230000 0x10000  /* MSDC0_BASE   */
+			       0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
+			interrupts = <0 79 0x8>;
+		};
+	};
 
 	cpus {	#address-cells = <1>;
 		#size-cells = <0>;

@@ -4,6 +4,35 @@
 
 comment "MMC/SD/SDIO Host Controller Drivers"
 
+config MMC_MTK
+	tristate "MediaTek SD/MMC Card Interface support"
+	help
+	  This selects the MediaTek(R) Secure digital and Multimedia card
+	  Interface. If you have a machine with a integrated SD/MMC card
+	  reader, say Y or M here.
+
+	  If unsure, say N.
+
+config MTK_EMMC_SUPPORT
+	bool "MTK_EMMC_SUPPORT"
+	depends on MTK_MMC
+	help
+	  This enables using embedded Multimedia card (eMMC) as booting
+	  device on MTK platform. Say Y if you turns on MTK_EMMC and want to
+	  use eMMC as booting device.
+
+	  If unsure, say N.
+
+config MTK_EMMC_SUPPORT_OTP
+	tristate "MediaTek eMMC Card OTP support"
+	depends on MTK_EMMC_SUPPORT
+	help
+	  This enables MTK One-Time-Programming (OTP) partition support on eMMC
+	  device. Say Y if you turns on MTK_EMMC and want to use MTK OTP
+	  partition for storing One-Time-Programming data.
+
+	  If unsure, say N.
+
 config MMC_ARMMMCI
 	tristate "ARM AMBA Multimedia Card Interface support"
 	depends on ARM_AMBA
