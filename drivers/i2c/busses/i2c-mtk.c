@@ -403,7 +403,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
 			i2c_writew(i2c->msg_aux_len, i2c, OFFSET_TRANSFER_LEN_AUX);
 		} else {
-			i2c_writew(i2c->msg_len & 0xFF | (i2c->msg_aux_len<<8) & 0x1F00,
+			i2c_writew((i2c->msg_len & 0xFF) | ((i2c->msg_aux_len<<8) & 0x1F00),
 				i2c, OFFSET_TRANSFER_LEN);
 		}
 		i2c_writew(0x02, i2c, OFFSET_TRANSAC_LEN);
