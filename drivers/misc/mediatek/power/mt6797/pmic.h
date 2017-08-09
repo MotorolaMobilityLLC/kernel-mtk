@@ -190,6 +190,12 @@ extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
 		.isUsedable = (use),	\
 	}
 
+struct mtk_regulator_vosel {
+	unsigned int def_sel; /*-- default vosel --*/
+	unsigned int cur_sel; /*-- current vosel --*/
+	bool restore;
+};
+
 struct mtk_regulator {
 	struct regulator_desc desc;
 	struct regulator_init_data init_data;
@@ -204,6 +210,8 @@ struct mtk_regulator {
 	const void *pvoltages;
 	bool isUsedable;
 	struct regulator *reg;
+	/*--- Add to record selector ---*/
+	struct mtk_regulator_vosel vosel;
 	int vsleep_en_saved;
 };
 

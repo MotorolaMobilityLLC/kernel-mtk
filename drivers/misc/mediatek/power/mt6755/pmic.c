@@ -1035,9 +1035,10 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
+	mreg->vosel.cur_sel = selector;
+
 	PMICLOG("regulator_set_voltage_sel(name=%s id=%d en_reg=%x vol_reg=%x selector=%d)\n",
 		rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, selector);
-
 
 #if 0
 	if (strcmp(rdesc->name, "VCAMD") == 0) {
@@ -1663,7 +1664,11 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev)
 			} else {
 				PMICLOG("[regulator_register] pass to register %s\n",
 					mtk_ldos[i].desc.name);
+
+				mtk_ldos[i].vosel.def_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
+				mtk_ldos[i].vosel.cur_sel = mtk_ldos[i].vosel.def_sel;
 			}
+
 			PMICLOG("[PMIC]mtk_ldos[%d].config.init_data min_uv:%d max_uv:%d\n", i,
 				mtk_ldos[i].config.init_data->constraints.min_uV,
 				mtk_ldos[i].config.init_data->constraints.max_uV);
@@ -1827,13 +1832,71 @@ static struct platform_driver mt_pmic_driver = {
 #endif				/* End of #ifdef CONFIG_OF */
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
+void pmic_regulator_suspend(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
+			if (mtk_ldos[i].vol_reg != 0) {
+				mtk_ldos[i].vosel.cur_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
+				if (mtk_ldos[i].vosel.cur_sel != mtk_ldos[i].vosel.def_sel) {
+					mtk_ldos[i].vosel.restore = true;
+					pr_err("pmic_regulator_suspend(name=%s id=%d default_sel=%d current_sel=%d)\n",
+							mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
+							mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
+				} else
+					mtk_ldos[i].vosel.restore = false;
+			}
+	}
+}
+
+void pmic_regulator_resume(void)
+{
+	int i, selector;
+
+	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
+			if (mtk_ldos[i].vol_reg != 0) {
+				if (mtk_ldos[i].vosel.restore == true) {
+					/*-- regulator voltage changed? --*/
+					selector = mtk_ldos[i].vosel.cur_sel;
+					pmic_set_register_value(mtk_ldos[i].vol_reg, selector);
+					pr_err("pmic_regulator_resume(name=%s id=%d default_sel=%d current_sel=%d)\n",
+						mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
+						mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
+				}
+			}
+	}
+}
+
+static int pmic_regulator_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+{
+	switch (pm_event) {
+	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
+		pr_warn("[%s] pm_event %lu (IPOH_Start)\n", __func__, pm_event);
+		pmic_regulator_suspend();
+		return NOTIFY_DONE;
+
+	case PM_POST_HIBERNATION:	/* Hibernation finished */
+		pr_warn("[%s] pm_event %lu (IPOH_End)\n", __func__, pm_event);
+		pmic_regulator_resume();
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block pmic_regulator_pm_notifier_block = {
+	.notifier_call = pmic_regulator_pm_event,
+	.priority = 0,
+};
+
 void mtk_regulator_init(struct platform_device *dev)
 {
 #if defined CONFIG_MTK_LEGACY
 	int i = 0;
-	int ret = 0;
 	int isEn = 0;
 #endif
+	int ret = 0;
+
 	/*workaround for VMC voltage */
 	if (pmic_get_register_value(PMIC_SWCID) == PMIC6351_E1_CID_CODE) {
 		if (pmic_read_VMC_efuse() != 0) {
@@ -1908,6 +1971,10 @@ void mtk_regulator_init(struct platform_device *dev)
 		}
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
+	ret = register_pm_notifier(&pmic_regulator_pm_notifier_block);
+	if (ret)
+		PMICLOG("****failed to register PM notifier %d\n", ret);
+
 }
 
 
