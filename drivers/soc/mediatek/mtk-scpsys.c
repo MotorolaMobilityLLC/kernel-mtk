@@ -506,4 +506,15 @@ static struct platform_driver scpsys_drv = {
 	},
 };
 
-module_platform_driver_probe(scpsys_drv, scpsys_probe);
+static int __init scpsys_drv_init(void)
+{
+	return platform_driver_probe(&scpsys_drv, scpsys_probe);
+}
+
+static void __exit scpsys_drv_exit(void)
+{
+	platform_driver_unregister(&scpsys_drv);
+}
+
+subsys_initcall(scpsys_drv_init);
+module_exit(scpsys_drv_exit);
