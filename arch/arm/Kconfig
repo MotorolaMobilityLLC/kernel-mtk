@@ -786,6 +786,27 @@ config ARCH_OMAP1
 	help
 	  Support for older TI OMAP1 (omap7xx, omap15xx or omap16xx)
 
+config ARCH_MT6735
+	bool "MediaTek MT6735"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select VFP_OPT
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select MTK_IRQ
+	select COMMON_CLK if !MTK_LEGACY
+	help
+	  This enable support for MediaTek MT6735
+
 endchoice
 
 menu "Multiple platform selection"
@@ -897,6 +918,8 @@ source "arch/arm/mach-ks8695/Kconfig"
 source "arch/arm/mach-meson/Kconfig"
 
 source "arch/arm/mach-msm/Kconfig"
+
+source "drivers/misc/mediatek/mach/Kconfig"
 
 source "arch/arm/mach-moxart/Kconfig"
 

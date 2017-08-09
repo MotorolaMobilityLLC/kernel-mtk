@@ -291,6 +291,10 @@ endif
 
 all:	$(KBUILD_IMAGE) $(KBUILD_DTBS)
 
+MTK_PLATFORM := $(CONFIG_MTK_PLATFORM:"%"=%)
+KBUILD_CPPFLAGS += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+
+
 boot := arch/arm/boot
 
 archprepare:
