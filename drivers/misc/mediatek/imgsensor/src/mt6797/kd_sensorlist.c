@@ -14,13 +14,14 @@
 #include <sync_write.h>
 #include <linux/types.h>
 #include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif
 
-#include "kd_camera_typedef.h"
+
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
@@ -28,6 +29,9 @@
 
 #include "kd_sensorlist.h"
 
+#ifdef CONFIG_MTK_SMI_EXT
+#include "mmdvfs_mgr.h"
+#endif
 #ifdef CONFIG_OF
 /* device tree */
 #include <linux/of.h>
@@ -59,6 +63,9 @@ struct clk *g_camclk_univpll2_d2;
 #define PDAF_DATA_SIZE 4096
 char mtk_ccm_name[camera_info_size] = {0};
 static unsigned int gDrvIndex = 0;
+#ifdef CONFIG_MTK_SMI_EXT
+static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
+#endif
 
 static DEFINE_SPINLOCK(kdsensor_drv_lock);
 
@@ -105,22 +112,13 @@ struct device *sensor_device = NULL;
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
-#ifdef CONFIG_MTK_FPGA
-#define PFX "[kd_sensorlist]"
-
-#define PK_INF(fmt, args...)	printk(PFX "[%s] " fmt, __FUNCTION__, ##args)
-#define PK_DBG(fmt, args...)	printk(fmt, ##args)
-#define PK_ERR(fmt, args...)		printk(fmt, ##args)
-#define PK_XLOG_INFO(fmt, args...)  printk(fmt, ##args)
-
-#else
 #define PFX "[kd_sensorlist]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(fmt, ##arg)
 #define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
-//#undef DEBUG_CAMERA_HW_K
- #define DEBUG_CAMERA_HW_K
+#undef DEBUG_CAMERA_HW_K
+/* #define DEBUG_CAMERA_HW_K */
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -134,9 +132,6 @@ struct device *sensor_device = NULL;
 #define PK_XLOG_INFO(fmt, args...)
 
 #endif
-
-#endif
-
 
 /*******************************************************************************
 * Proifling
@@ -182,7 +177,7 @@ extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *cu
 /*******************************************************************************
 *
 ********************************************************************************/
-
+#ifndef CONFIG_OF
 static struct platform_device camerahw_platform_device = {
     .name = "image_sensor",
     .id = 0,
@@ -190,6 +185,8 @@ static struct platform_device camerahw_platform_device = {
     .coherent_dma_mask = DMA_BIT_MASK(32),
     }
 };
+#endif
+struct platform_device* pCamerahw_platform_device;
 static struct i2c_client *g_pstI2Cclient;
 static struct i2c_client *g_pstI2Cclient2;
 
@@ -567,21 +564,22 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
     if (bytes > MAX_CMD_LEN) {
-        PK_DBG("[iBurstWriteReg] exceed the max write length\n");
+        PK_ERR("[iBurstWriteReg] exceed the max write length\n");
         return 1;
     }
 
     phyAddr = 0;
 
-    buf = dma_alloc_coherent(&(camerahw_platform_device.dev) , bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
+    buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev) , bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
 
     if (NULL == buf) {
-        PK_DBG("[iBurstWriteReg] Not enough memory\n");
+        PK_ERR("[iBurstWriteReg] Not enough memory\n");
         return -1;
     }
     memset(buf, 0, bytes);
     memcpy(buf, pData, bytes);
     /* PK_DBG("[iBurstWriteReg] bytes = %d, phy addr = 0x%x\n", bytes, phyAddr ); */
+	PK_DBG("transfer_length %d\n",bytes == transfer_length ? transfer_length : (((bytes/transfer_length)<<16)|transfer_length));
 
     old_addr = g_pstI2Cclient->addr;
     spin_lock(&kdsensor_drv_lock);
@@ -603,7 +601,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
         }
     } while (((ret&0xffff) != transfer_length) && (retry > 0));
 
-    dma_free_coherent(&(camerahw_platform_device.dev), bytes, buf, phyAddr);
+    dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient->addr = old_addr;
     spin_unlock(&kdsensor_drv_lock);
@@ -615,10 +613,10 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
         return 1;
     }
     phyAddr = 0;
-    buf = dma_alloc_coherent(&(camerahw_platform_device.dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
+    buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
 
     if (NULL == buf) {
-        PK_DBG("[iBurstWriteReg] Not enough memory\n");
+        PK_ERR("[iBurstWriteReg] Not enough memory\n");
         return -1;
     }
     memset(buf, 0, bytes);
@@ -645,7 +643,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     } while (((ret&0xffff) != transfer_length) && (retry > 0));
 
 
-    dma_free_coherent(&(camerahw_platform_device.dev), bytes, buf, phyAddr);
+    dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient2->addr = old_addr;
     spin_unlock(&kdsensor_drv_lock);
@@ -682,7 +680,7 @@ int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
     }
 
     if (ret != lens) {
-    PK_DBG("Error sent I2C ret = %d\n", ret);
+    PK_ERR("Error sent I2C ret = %d\n", ret);
     }
     return 0;
 }
@@ -723,7 +721,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
         i4RetValue = i2c_master_send(g_pstI2Cclient2, a_pSendData, a_sizeSendData);
     }
     if (i4RetValue != a_sizeSendData) {
-        PK_DBG("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
+        PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
     }
     else {
         break;
@@ -749,7 +747,6 @@ MUINT32 FeatureParaLen = 0;
     FeatureParaLen = sizeof(unsigned long long)*2;
     return g_pInvokeSensorFunc[i]->SensorFeatureControl(SENSOR_FEATURE_SET_SLAVE_I2C_ID, (MUINT8 *)FeaturePara, (MUINT32 *)&FeatureParaLen);
 }
-//extern void A60919_Init_reg_debug(void);
 
 /*  */
 MUINT32
@@ -820,9 +817,6 @@ MINT32 i = 0;
     }
     }
     KD_MULTI_FUNCTION_EXIT();
-//	kdSetI2CBusNum(1);
-//	A60919_Init_reg_debug();
-//	kdSetI2CBusNum(1);
     return ERROR_NONE;
 }
 /*  */
@@ -835,36 +829,24 @@ MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData[2])
 {
     MUINT32 ret = ERROR_NONE;
     u32 i = 0;
-    MSDK_SENSOR_INFO_STRUCT SensorInfo[2];
-    MSDK_SENSOR_CONFIG_STRUCT SensorConfigData[2];
-    memset(&SensorInfo[0], 0, 2*sizeof(MSDK_SENSOR_INFO_STRUCT));
-    memset(&SensorConfigData[0], 0, 2*sizeof(MSDK_SENSOR_CONFIG_STRUCT));
-
 
     KD_MULTI_FUNCTION_ENTRY();
     for (i = KDIMGSENSOR_INVOKE_DRIVER_0; i < KDIMGSENSOR_MAX_INVOKE_DRIVERS; i++) {
-    if (g_bEnableDriver[i] && g_pInvokeSensorFunc[i]) {
-        if (DUAL_CAMERA_MAIN_SENSOR == g_invokeSocketIdx[i]) {
-        ret = g_pInvokeSensorFunc[i]->SensorGetInfo((MSDK_SCENARIO_ID_ENUM)(*pScenarioId[0]), &SensorInfo[0], &SensorConfigData[0]);
-        }
-        else if ((DUAL_CAMERA_MAIN_2_SENSOR == g_invokeSocketIdx[i]) || (DUAL_CAMERA_SUB_SENSOR == g_invokeSocketIdx[i])) {
-        ret = g_pInvokeSensorFunc[i]->SensorGetInfo((MSDK_SCENARIO_ID_ENUM)(*pScenarioId[1]), &SensorInfo[1], &SensorConfigData[1]);
-        }
+	    if (g_bEnableDriver[i] && g_pInvokeSensorFunc[i]) {
+	        if (DUAL_CAMERA_MAIN_SENSOR == g_invokeSocketIdx[i]) {
+	        ret = g_pInvokeSensorFunc[i]->SensorGetInfo((MSDK_SCENARIO_ID_ENUM)(*pScenarioId[0]), pSensorInfo[0], pSensorConfigData[0]);
+	        }
+	        else if ((DUAL_CAMERA_MAIN_2_SENSOR == g_invokeSocketIdx[i]) || (DUAL_CAMERA_SUB_SENSOR == g_invokeSocketIdx[i])) {
+	        ret = g_pInvokeSensorFunc[i]->SensorGetInfo((MSDK_SCENARIO_ID_ENUM)(*pScenarioId[1]), pSensorInfo[1], pSensorConfigData[1]);
+	        }
 
-        if (ERROR_NONE != ret) {
-        PK_ERR("[%s]\n", __func__);
-        return ret;
-        }
+	        if (ERROR_NONE != ret) {
+	        PK_ERR("[%s]\n", __func__);
+	        return ret;
+	        }
 
+	    }
     }
-    }
-    memcpy(pSensorInfo[0], &SensorInfo[0], sizeof(MSDK_SENSOR_INFO_STRUCT));
-    memcpy(pSensorInfo[1], &SensorInfo[1], sizeof(MSDK_SENSOR_INFO_STRUCT));
-    memcpy(pSensorConfigData[0], &SensorConfigData[0], sizeof(MSDK_SENSOR_CONFIG_STRUCT));
-    memcpy(pSensorConfigData[1], &SensorConfigData[1], sizeof(MSDK_SENSOR_CONFIG_STRUCT));
-
-
-
     KD_MULTI_FUNCTION_EXIT();
     return ERROR_NONE;
 }
@@ -1205,7 +1187,7 @@ int kdSetDriver(unsigned int *pDrvIndex)
         memcpy((char *)g_invokeSensorNameStr[i], (char *)pSensorList[drvIdx[i]].drvname, sizeof(pSensorList[drvIdx[i]].drvname));
         /* return sensor ID */
         /* pDrvIndex[0] = (unsigned int)pSensorList[drvIdx].SensorId; */
-        //PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%d]\n", i, g_bEnableDriver[i], g_invokeSocketIdx[i], g_invokeSensorNameStr[i], sizeof(pSensorList[drvIdx[i]].drvname));
+        PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%lu]\n", i, g_bEnableDriver[i], g_invokeSocketIdx[i], g_invokeSensorNameStr[i], sizeof(pSensorList[drvIdx[i]].drvname));
     }
     }
     return 0;
@@ -1304,7 +1286,9 @@ int kdSensorSyncFunctionPtr(void)
 
     /* if the delay frame is 0 or 0xFF, stop to count */
     if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF) && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
-    g_NewSensorExpGain.uISPGainDelayFrame--;
+		spin_lock(&kdsensor_drv_lock);
+		g_NewSensorExpGain.uISPGainDelayFrame--;
+		spin_unlock(&kdsensor_drv_lock);
     }
     mutex_unlock(&kdCam_Mutex);
     return 0;
@@ -1495,7 +1479,8 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
     }
 
     /* reset sensor state after power off */
-    err1 = g_pSensorFunc->SensorClose();
+	if (g_pSensorFunc)
+		err1 = g_pSensorFunc->SensorClose();
     if (ERROR_NONE != err1) {
     PK_DBG("SensorClose\n");
     }
@@ -1536,17 +1521,32 @@ inline static int adopt_CAMERA_HW_GetResolution(void *pBuf)
 inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 {
     ACDK_SENSOR_GETINFO_STRUCT *pSensorGetInfo = (ACDK_SENSOR_GETINFO_STRUCT *)pBuf;
-    MSDK_SENSOR_INFO_STRUCT info[2], *pInfo[2];
-    MSDK_SENSOR_CONFIG_STRUCT config[2], *pConfig[2];
+    MSDK_SENSOR_INFO_STRUCT *pInfo[2];
+    MSDK_SENSOR_CONFIG_STRUCT *pConfig[2];
     MUINT32 *pScenarioId[2];
-    u32 i = 0;
+    u32 i,j = 0;
 
     for (i = 0; i < 2; i++) {
-    pInfo[i] =  &info[i];
-    pConfig[i] =  &config[i];
-    pScenarioId[i] =  &(pSensorGetInfo->ScenarioId[i]);
+	    pInfo[i] = NULL;
+	    pConfig[i] =  NULL;
+	    pScenarioId[i] =  &(pSensorGetInfo->ScenarioId[i]);
     }
 
+
+	pInfo[0] = kmalloc(sizeof(MSDK_SENSOR_INFO_STRUCT), GFP_KERNEL);
+	pInfo[1] = kmalloc(sizeof(MSDK_SENSOR_INFO_STRUCT), GFP_KERNEL);
+	pConfig[0] = kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	pConfig[1] = kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+
+	if (pInfo[0] == NULL || pInfo[1] == NULL || pConfig[0] == NULL || pConfig[1] == NULL){
+		PK_ERR(" ioctl allocate mem failed\n");
+		return -ENOMEM;
+	}
+
+	memset(pInfo[0], 0, sizeof(MSDK_SENSOR_INFO_STRUCT));
+	memset(pInfo[1], 0, sizeof(MSDK_SENSOR_INFO_STRUCT));
+	memset(pConfig[0], 0, sizeof(MSDK_SENSOR_CONFIG_STRUCT));
+	memset(pConfig[1], 0, sizeof(MSDK_SENSOR_CONFIG_STRUCT));
 
     if (NULL == pSensorGetInfo) {
     PK_DBG("[CAMERA_HW] NULL arg.\n");
@@ -1560,27 +1560,46 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
     }
 
     if (g_pSensorFunc) {
-    g_pSensorFunc->SensorGetInfo(pScenarioId, pInfo, pConfig);
+	    g_pSensorFunc->SensorGetInfo(pScenarioId, pInfo, pConfig);
     }
     else {
-    PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+	    PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
     }
 
 
 
     for (i = 0; i < 2; i++) {
-    /* SenorInfo */
-    if (copy_to_user((void __user *)(pSensorGetInfo->pInfo[i]), (void *)pInfo[i] , sizeof(MSDK_SENSOR_INFO_STRUCT))) {
-        PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
-        return -EFAULT;
-    }
+	    /* SenorInfo */
+	    if (copy_to_user((void __user *)(pSensorGetInfo->pInfo[i]), (void *)pInfo[i] , sizeof(MSDK_SENSOR_INFO_STRUCT))) {
+	        PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
+			for (j = 0; j < 2; j++) {
+			  	if (pInfo[j] != NULL) kfree(pInfo[j]);
+			  	if (pConfig[j] != NULL) kfree(pConfig[j]);
+				pInfo[j] = NULL;
+				pConfig[j] = NULL;
+			}
+	        return -EFAULT;
+	    }
 
-    /* SensorConfig */
-    if (copy_to_user((void __user *) (pSensorGetInfo->pConfig[i]) , (void *)pConfig[i] , sizeof(MSDK_SENSOR_CONFIG_STRUCT))) {
-        PK_DBG("[CAMERA_HW][config] ioctl copy to user failed\n");
-        return -EFAULT;
+	    /* SensorConfig */
+	    if (copy_to_user((void __user *) (pSensorGetInfo->pConfig[i]) , (void *)pConfig[i] , sizeof(MSDK_SENSOR_CONFIG_STRUCT))) {
+	        PK_DBG("[CAMERA_HW][config] ioctl copy to user failed\n");
+			for (j = 0; j < 2; j++) {
+			  	if (pInfo[j] != NULL) kfree(pInfo[j]);
+			  	if (pConfig[j] != NULL) kfree(pConfig[j]);
+				pInfo[j] = NULL;
+				pConfig[j] = NULL;
+			}
+	        return -EFAULT;
+	    }
     }
-    }
+	for (j = 0; j < 2; j++) {
+		if (pInfo[j] != NULL) kfree(pInfo[j]);
+		if (pConfig[j] != NULL) kfree(pConfig[j]);
+		pInfo[j] = NULL;
+		pConfig[j] = NULL;
+	}
+
     return 0;
 }   /* adopt_CAMERA_HW_GetInfo() */
 
@@ -1596,37 +1615,24 @@ MSDK_SENSOR_INFO_STRUCT ginfo4[2];
 inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 {
     IMAGESENSOR_GETINFO_STRUCT *pSensorGetInfo = (IMAGESENSOR_GETINFO_STRUCT *)pBuf;
-    ACDK_SENSOR_INFO2_STRUCT SensorInfo = {0};
+    ACDK_SENSOR_INFO2_STRUCT *pSensorInfo = NULL;//{0};
     MUINT32 IDNum = 0;
-    MSDK_SENSOR_INFO_STRUCT *pInfo[2];
-    MSDK_SENSOR_CONFIG_STRUCT config[2], *pConfig[2];
-    MSDK_SENSOR_INFO_STRUCT *pInfo1[2];
-    MSDK_SENSOR_CONFIG_STRUCT config1[2], *pConfig1[2];
-    MSDK_SENSOR_INFO_STRUCT *pInfo2[2];
-    MSDK_SENSOR_CONFIG_STRUCT config2[2], *pConfig2[2];
-    MSDK_SENSOR_INFO_STRUCT *pInfo3[2];
-    MSDK_SENSOR_CONFIG_STRUCT config3[2], *pConfig3[2];
-    MSDK_SENSOR_INFO_STRUCT *pInfo4[2];
-    MSDK_SENSOR_CONFIG_STRUCT config4[2], *pConfig4[2];
-    MSDK_SENSOR_RESOLUTION_INFO_STRUCT SensorResolution[2], *psensorResolution[2];
+    MSDK_SENSOR_INFO_STRUCT *pInfo[2] = {NULL,NULL};
+    MSDK_SENSOR_CONFIG_STRUCT  *pConfig[2] = {NULL,NULL};
+    MSDK_SENSOR_INFO_STRUCT *pInfo1[2] = {NULL,NULL};
+    MSDK_SENSOR_CONFIG_STRUCT  *pConfig1[2]= {NULL,NULL};
+    MSDK_SENSOR_INFO_STRUCT *pInfo2[2] = {NULL,NULL};
+    MSDK_SENSOR_CONFIG_STRUCT  *pConfig2[2]= {NULL,NULL};
+    MSDK_SENSOR_INFO_STRUCT *pInfo3[2] = {NULL,NULL};
+    MSDK_SENSOR_CONFIG_STRUCT  *pConfig3[2] = {NULL,NULL};
+    MSDK_SENSOR_INFO_STRUCT *pInfo4[2] = {NULL,NULL};
+    MSDK_SENSOR_CONFIG_STRUCT  *pConfig4[2]= {NULL,NULL};
+    MSDK_SENSOR_RESOLUTION_INFO_STRUCT  *psensorResolution[2] = {NULL,NULL};
 
     MUINT32 ScenarioId[2], *pScenarioId[2];
     u32 i = 0;
     PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry\n");
-    for (i = 0; i < 2; i++) {
-    pInfo[i] =  &ginfo[i];
-    pConfig[i] =  &config[i];
-    pInfo1[i] =  &ginfo1[i];
-    pConfig1[i] =  &config1[i];
-    pInfo2[i] =  &ginfo2[i];
-    pConfig2[i] =  &config2[i];
-    pInfo3[i] =  &ginfo3[i];
-    pConfig3[i] =  &config3[i];
-    pInfo4[i] =  &ginfo4[i];
-    pConfig4[i] =  &config4[i];
-    psensorResolution[i] =  &SensorResolution[i];
-    pScenarioId[i] =  &ScenarioId[i];
-    }
+
 
     if (NULL == pSensorGetInfo) {
     PK_DBG("[CAMERA_HW] NULL arg.\n");
@@ -1636,6 +1642,46 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
     return -EFAULT;
     }
+
+	for (i = 0; i < 2; i++) {
+	   pInfo[i] =  &ginfo[i];
+	   pConfig[i] =  kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	   pInfo1[i] =	&ginfo1[i];
+	   pConfig1[i] =  kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	   pInfo2[i] =	&ginfo2[i];
+	   pConfig2[i] = kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	   pInfo3[i] =	&ginfo3[i];
+	   pConfig3[i] =  kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	   pInfo4[i] =	&ginfo4[i];
+	   pConfig4[i] =  kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
+	   psensorResolution[i] = kmalloc(sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT), GFP_KERNEL);
+	   pScenarioId[i] =  &ScenarioId[i];
+	}
+	pSensorInfo = kmalloc(sizeof(ACDK_SENSOR_INFO2_STRUCT), GFP_KERNEL);
+
+	if (pConfig[0] == NULL || pConfig[1] == NULL || pConfig1[0] == NULL || pConfig1[1] == NULL ||
+		pConfig2[0] == NULL || pConfig2[1] == NULL || pConfig3[0] == NULL || pConfig3[1] == NULL ||
+		pConfig4[0] == NULL || pConfig4[1] == NULL || pSensorInfo ==NULL ||
+		psensorResolution[0] == NULL || psensorResolution[1]==NULL) {
+		PK_ERR(" ioctl allocate mem failed\n");
+		for (i = 0; i < 2; i++) {
+			if(pConfig[i] != NULL) kfree(pConfig[i]);
+			if(pConfig1[i] != NULL) kfree(pConfig1[i]);
+			if(pConfig2[i] != NULL) kfree(pConfig2[i]);
+			if(pConfig3[i] != NULL) kfree(pConfig3[i]);
+			if(pConfig4[i] != NULL) kfree(pConfig4[i]);
+			if(psensorResolution[i] != NULL) kfree(psensorResolution[i]);
+			pConfig[i] = NULL;
+			pConfig1[i] = NULL;
+			pConfig2[i] = NULL;
+			pConfig3[i] =  NULL;
+			pConfig4[i] =  NULL;
+			psensorResolution[i] = NULL;
+		}
+		kfree(pSensorInfo);
+		pSensorInfo = NULL;
+		return -ENOMEM;
+	}
 
     PK_DBG("[CAMERA_HW][Resolution] %p\n", pSensorGetInfo->pSensorResolution);
 
@@ -1663,89 +1709,89 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     IDNum = 1;
     }
     /* Basic information */
-    SensorInfo.SensorPreviewResolutionX                 = pInfo[IDNum]->SensorPreviewResolutionX;
-    SensorInfo.SensorPreviewResolutionY                 = pInfo[IDNum]->SensorPreviewResolutionY;
-    SensorInfo.SensorFullResolutionX                    = pInfo[IDNum]->SensorFullResolutionX;
-    SensorInfo.SensorFullResolutionY                    = pInfo[IDNum]->SensorFullResolutionY;
-    SensorInfo.SensorClockFreq                          = pInfo[IDNum]->SensorClockFreq;
-    SensorInfo.SensorCameraPreviewFrameRate             = pInfo[IDNum]->SensorCameraPreviewFrameRate;
-    SensorInfo.SensorVideoFrameRate                     = pInfo[IDNum]->SensorVideoFrameRate;
-    SensorInfo.SensorStillCaptureFrameRate              = pInfo[IDNum]->SensorStillCaptureFrameRate;
-    SensorInfo.SensorWebCamCaptureFrameRate             = pInfo[IDNum]->SensorWebCamCaptureFrameRate;
-    SensorInfo.SensorClockPolarity                      = pInfo[IDNum]->SensorClockPolarity;
-    SensorInfo.SensorClockFallingPolarity               = pInfo[IDNum]->SensorClockFallingPolarity;
-    SensorInfo.SensorClockRisingCount                   = pInfo[IDNum]->SensorClockRisingCount;
-    SensorInfo.SensorClockFallingCount                  = pInfo[IDNum]->SensorClockFallingCount;
-    SensorInfo.SensorClockDividCount                    = pInfo[IDNum]->SensorClockDividCount;
-    SensorInfo.SensorPixelClockCount                    = pInfo[IDNum]->SensorPixelClockCount;
-    SensorInfo.SensorDataLatchCount                     = pInfo[IDNum]->SensorDataLatchCount;
-    SensorInfo.SensorHsyncPolarity                      = pInfo[IDNum]->SensorHsyncPolarity;
-    SensorInfo.SensorVsyncPolarity                      = pInfo[IDNum]->SensorVsyncPolarity;
-    SensorInfo.SensorInterruptDelayLines                = pInfo[IDNum]->SensorInterruptDelayLines;
-    SensorInfo.SensorResetActiveHigh                    = pInfo[IDNum]->SensorResetActiveHigh;
-    SensorInfo.SensorResetDelayCount                    = pInfo[IDNum]->SensorResetDelayCount;
-    SensorInfo.SensroInterfaceType                      = pInfo[IDNum]->SensroInterfaceType;
-    SensorInfo.SensorOutputDataFormat                   = pInfo[IDNum]->SensorOutputDataFormat;
-    SensorInfo.SensorMIPILaneNumber                     = pInfo[IDNum]->SensorMIPILaneNumber;
-    SensorInfo.CaptureDelayFrame                        = pInfo[IDNum]->CaptureDelayFrame;
-    SensorInfo.PreviewDelayFrame                        = pInfo[IDNum]->PreviewDelayFrame;
-    SensorInfo.VideoDelayFrame                          = pInfo[IDNum]->VideoDelayFrame;
-    SensorInfo.HighSpeedVideoDelayFrame                 = pInfo[IDNum]->HighSpeedVideoDelayFrame;
-    SensorInfo.SlimVideoDelayFrame                      = pInfo[IDNum]->SlimVideoDelayFrame;
-    SensorInfo.Custom1DelayFrame                        = pInfo[IDNum]->Custom1DelayFrame;
-    SensorInfo.Custom2DelayFrame                        = pInfo[IDNum]->Custom2DelayFrame;
-    SensorInfo.Custom3DelayFrame                        = pInfo[IDNum]->Custom3DelayFrame;
-    SensorInfo.Custom4DelayFrame                        = pInfo[IDNum]->Custom4DelayFrame;
-    SensorInfo.Custom5DelayFrame                        = pInfo[IDNum]->Custom5DelayFrame;
-    SensorInfo.YUVAwbDelayFrame                         = pInfo[IDNum]->YUVAwbDelayFrame;
-    SensorInfo.YUVEffectDelayFrame                      = pInfo[IDNum]->YUVEffectDelayFrame;
-    SensorInfo.SensorGrabStartX_PRV                     = pInfo[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_PRV                     = pInfo[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_CAP                     = pInfo1[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CAP                     = pInfo1[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_VD                      = pInfo2[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_VD                      = pInfo2[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_VD1                     = pInfo3[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_VD1                     = pInfo3[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_VD2                     = pInfo4[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_VD2                     = pInfo4[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorDrivingCurrent                     = pInfo[IDNum]->SensorDrivingCurrent;
-    SensorInfo.SensorMasterClockSwitch                  = pInfo[IDNum]->SensorMasterClockSwitch;
-    SensorInfo.AEShutDelayFrame                         = pInfo[IDNum]->AEShutDelayFrame;
-    SensorInfo.AESensorGainDelayFrame                   = pInfo[IDNum]->AESensorGainDelayFrame;
-    SensorInfo.AEISPGainDelayFrame                      = pInfo[IDNum]->AEISPGainDelayFrame;
-    SensorInfo.MIPIDataLowPwr2HighSpeedTermDelayCount   = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedTermDelayCount;
-    SensorInfo.MIPIDataLowPwr2HighSpeedSettleDelayCount = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-	SensorInfo.MIPIDataLowPwr2HSSettleDelayM0           = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-	SensorInfo.MIPIDataLowPwr2HSSettleDelayM1           = pInfo1[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-	SensorInfo.MIPIDataLowPwr2HSSettleDelayM2           = pInfo2[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-	SensorInfo.MIPIDataLowPwr2HSSettleDelayM3           = pInfo3[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-	SensorInfo.MIPIDataLowPwr2HSSettleDelayM4           = pInfo4[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
-    SensorInfo.MIPICLKLowPwr2HighSpeedTermDelayCount    = pInfo[IDNum]->MIPICLKLowPwr2HighSpeedTermDelayCount;
-    SensorInfo.SensorWidthSampling                      = pInfo[IDNum]->SensorWidthSampling;
-    SensorInfo.SensorHightSampling                      = pInfo[IDNum]->SensorHightSampling;
-    SensorInfo.SensorPacketECCOrder                     = pInfo[IDNum]->SensorPacketECCOrder;
-    SensorInfo.MIPIsensorType                           = pInfo[IDNum]->MIPIsensorType;
-    SensorInfo.IHDR_LE_FirstLine                        = pInfo[IDNum]->IHDR_LE_FirstLine;
-    SensorInfo.IHDR_Support                             = pInfo[IDNum]->IHDR_Support;
-    SensorInfo.SensorModeNum                            = pInfo[IDNum]->SensorModeNum;
-    SensorInfo.SettleDelayMode                          = pInfo[IDNum]->SettleDelayMode;
-    SensorInfo.PDAF_Support                             = pInfo[IDNum]->PDAF_Support;
-	SensorInfo.IMGSENSOR_DPCM_TYPE_PRE                  = pInfo[IDNum]->DPCM_INFO;
-	SensorInfo.IMGSENSOR_DPCM_TYPE_CAP                  = pInfo1[IDNum]->DPCM_INFO;
-	SensorInfo.IMGSENSOR_DPCM_TYPE_VD                   = pInfo2[IDNum]->DPCM_INFO;
-	SensorInfo.IMGSENSOR_DPCM_TYPE_VD1                  = pInfo3[IDNum]->DPCM_INFO;
-	SensorInfo.IMGSENSOR_DPCM_TYPE_VD2                  = pInfo4[IDNum]->DPCM_INFO;
+    pSensorInfo->SensorPreviewResolutionX                 = pInfo[IDNum]->SensorPreviewResolutionX;
+    pSensorInfo->SensorPreviewResolutionY                 = pInfo[IDNum]->SensorPreviewResolutionY;
+    pSensorInfo->SensorFullResolutionX                    = pInfo[IDNum]->SensorFullResolutionX;
+    pSensorInfo->SensorFullResolutionY                    = pInfo[IDNum]->SensorFullResolutionY;
+    pSensorInfo->SensorClockFreq                          = pInfo[IDNum]->SensorClockFreq;
+    pSensorInfo->SensorCameraPreviewFrameRate             = pInfo[IDNum]->SensorCameraPreviewFrameRate;
+    pSensorInfo->SensorVideoFrameRate                     = pInfo[IDNum]->SensorVideoFrameRate;
+    pSensorInfo->SensorStillCaptureFrameRate              = pInfo[IDNum]->SensorStillCaptureFrameRate;
+    pSensorInfo->SensorWebCamCaptureFrameRate             = pInfo[IDNum]->SensorWebCamCaptureFrameRate;
+    pSensorInfo->SensorClockPolarity                      = pInfo[IDNum]->SensorClockPolarity;
+    pSensorInfo->SensorClockFallingPolarity               = pInfo[IDNum]->SensorClockFallingPolarity;
+    pSensorInfo->SensorClockRisingCount                   = pInfo[IDNum]->SensorClockRisingCount;
+    pSensorInfo->SensorClockFallingCount                  = pInfo[IDNum]->SensorClockFallingCount;
+    pSensorInfo->SensorClockDividCount                    = pInfo[IDNum]->SensorClockDividCount;
+    pSensorInfo->SensorPixelClockCount                    = pInfo[IDNum]->SensorPixelClockCount;
+    pSensorInfo->SensorDataLatchCount                     = pInfo[IDNum]->SensorDataLatchCount;
+    pSensorInfo->SensorHsyncPolarity                      = pInfo[IDNum]->SensorHsyncPolarity;
+    pSensorInfo->SensorVsyncPolarity                      = pInfo[IDNum]->SensorVsyncPolarity;
+    pSensorInfo->SensorInterruptDelayLines                = pInfo[IDNum]->SensorInterruptDelayLines;
+    pSensorInfo->SensorResetActiveHigh                    = pInfo[IDNum]->SensorResetActiveHigh;
+    pSensorInfo->SensorResetDelayCount                    = pInfo[IDNum]->SensorResetDelayCount;
+    pSensorInfo->SensroInterfaceType                      = pInfo[IDNum]->SensroInterfaceType;
+    pSensorInfo->SensorOutputDataFormat                   = pInfo[IDNum]->SensorOutputDataFormat;
+    pSensorInfo->SensorMIPILaneNumber                     = pInfo[IDNum]->SensorMIPILaneNumber;
+    pSensorInfo->CaptureDelayFrame                        = pInfo[IDNum]->CaptureDelayFrame;
+    pSensorInfo->PreviewDelayFrame                        = pInfo[IDNum]->PreviewDelayFrame;
+    pSensorInfo->VideoDelayFrame                          = pInfo[IDNum]->VideoDelayFrame;
+    pSensorInfo->HighSpeedVideoDelayFrame                 = pInfo[IDNum]->HighSpeedVideoDelayFrame;
+    pSensorInfo->SlimVideoDelayFrame                      = pInfo[IDNum]->SlimVideoDelayFrame;
+    pSensorInfo->Custom1DelayFrame                        = pInfo[IDNum]->Custom1DelayFrame;
+    pSensorInfo->Custom2DelayFrame                        = pInfo[IDNum]->Custom2DelayFrame;
+    pSensorInfo->Custom3DelayFrame                        = pInfo[IDNum]->Custom3DelayFrame;
+    pSensorInfo->Custom4DelayFrame                        = pInfo[IDNum]->Custom4DelayFrame;
+    pSensorInfo->Custom5DelayFrame                        = pInfo[IDNum]->Custom5DelayFrame;
+    pSensorInfo->YUVAwbDelayFrame                         = pInfo[IDNum]->YUVAwbDelayFrame;
+    pSensorInfo->YUVEffectDelayFrame                      = pInfo[IDNum]->YUVEffectDelayFrame;
+    pSensorInfo->SensorGrabStartX_PRV                     = pInfo[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_PRV                     = pInfo[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CAP                     = pInfo1[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CAP                     = pInfo1[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_VD                      = pInfo2[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_VD                      = pInfo2[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_VD1                     = pInfo3[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_VD1                     = pInfo3[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_VD2                     = pInfo4[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_VD2                     = pInfo4[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorDrivingCurrent                     = pInfo[IDNum]->SensorDrivingCurrent;
+    pSensorInfo->SensorMasterClockSwitch                  = pInfo[IDNum]->SensorMasterClockSwitch;
+    pSensorInfo->AEShutDelayFrame                         = pInfo[IDNum]->AEShutDelayFrame;
+    pSensorInfo->AESensorGainDelayFrame                   = pInfo[IDNum]->AESensorGainDelayFrame;
+    pSensorInfo->AEISPGainDelayFrame                      = pInfo[IDNum]->AEISPGainDelayFrame;
+    pSensorInfo->MIPIDataLowPwr2HighSpeedTermDelayCount   = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedTermDelayCount;
+    pSensorInfo->MIPIDataLowPwr2HighSpeedSettleDelayCount = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM0           = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM1           = pInfo1[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM2           = pInfo2[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM3           = pInfo3[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM4           = pInfo4[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
+    pSensorInfo->MIPICLKLowPwr2HighSpeedTermDelayCount    = pInfo[IDNum]->MIPICLKLowPwr2HighSpeedTermDelayCount;
+    pSensorInfo->SensorWidthSampling                      = pInfo[IDNum]->SensorWidthSampling;
+    pSensorInfo->SensorHightSampling                      = pInfo[IDNum]->SensorHightSampling;
+    pSensorInfo->SensorPacketECCOrder                     = pInfo[IDNum]->SensorPacketECCOrder;
+    pSensorInfo->MIPIsensorType                           = pInfo[IDNum]->MIPIsensorType;
+    pSensorInfo->IHDR_LE_FirstLine                        = pInfo[IDNum]->IHDR_LE_FirstLine;
+    pSensorInfo->IHDR_Support                             = pInfo[IDNum]->IHDR_Support;
+    pSensorInfo->SensorModeNum                            = pInfo[IDNum]->SensorModeNum;
+    pSensorInfo->SettleDelayMode                          = pInfo[IDNum]->SettleDelayMode;
+    pSensorInfo->PDAF_Support                             = pInfo[IDNum]->PDAF_Support;
+	pSensorInfo->IMGSENSOR_DPCM_TYPE_PRE                  = pInfo[IDNum]->DPCM_INFO;
+	pSensorInfo->IMGSENSOR_DPCM_TYPE_CAP                  = pInfo1[IDNum]->DPCM_INFO;
+	pSensorInfo->IMGSENSOR_DPCM_TYPE_VD                   = pInfo2[IDNum]->DPCM_INFO;
+	pSensorInfo->IMGSENSOR_DPCM_TYPE_VD1                  = pInfo3[IDNum]->DPCM_INFO;
+	pSensorInfo->IMGSENSOR_DPCM_TYPE_VD2                  = pInfo4[IDNum]->DPCM_INFO;
 	/*Per-Frame conrol suppport or not */
-	SensorInfo.PerFrameCTL_Support                      = pInfo[IDNum]->PerFrameCTL_Support;
+	pSensorInfo->PerFrameCTL_Support                      = pInfo[IDNum]->PerFrameCTL_Support;
 	/*SCAM number*/
-	SensorInfo.SCAM_DataNumber                          = pInfo[IDNum]->SCAM_DataNumber;
-	SensorInfo.SCAM_DDR_En                              = pInfo[IDNum]->SCAM_DDR_En;
-	SensorInfo.SCAM_CLK_INV                             = pInfo[IDNum]->SCAM_CLK_INV;
-	SensorInfo.SCAM_DEFAULT_DELAY                      = pInfo[IDNum]->SCAM_DEFAULT_DELAY;
-	SensorInfo.SCAM_CRC_En                             = pInfo[IDNum]->SCAM_CRC_En;
-	SensorInfo.SCAM_SOF_src                            = pInfo[IDNum]->SCAM_SOF_src;
-	SensorInfo.SCAM_Timout_Cali                        = pInfo[IDNum]->SCAM_Timout_Cali;
+	pSensorInfo->SCAM_DataNumber                          = pInfo[IDNum]->SCAM_DataNumber;
+	pSensorInfo->SCAM_DDR_En                              = pInfo[IDNum]->SCAM_DDR_En;
+	pSensorInfo->SCAM_CLK_INV                             = pInfo[IDNum]->SCAM_CLK_INV;
+	pSensorInfo->SCAM_DEFAULT_DELAY                      = pInfo[IDNum]->SCAM_DEFAULT_DELAY;
+	pSensorInfo->SCAM_CRC_En                             = pInfo[IDNum]->SCAM_CRC_En;
+	pSensorInfo->SCAM_SOF_src                            = pInfo[IDNum]->SCAM_SOF_src;
+	pSensorInfo->SCAM_Timout_Cali                        = pInfo[IDNum]->SCAM_Timout_Cali;
     /* TO get preview value */
     ScenarioId[0] = ScenarioId[1] = MSDK_SCENARIO_ID_CUSTOM1;
     g_pSensorFunc->SensorGetInfo(pScenarioId, pInfo, pConfig);
@@ -1769,42 +1815,108 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     {
     IDNum = 1;
     }
-    SensorInfo.SensorGrabStartX_CST1                    = pInfo[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CST1                    = pInfo[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_CST2                    = pInfo1[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CST2                    = pInfo1[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_CST3                    = pInfo2[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CST3                    = pInfo2[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_CST4                    = pInfo3[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CST4                    = pInfo3[IDNum]->SensorGrabStartY;
-    SensorInfo.SensorGrabStartX_CST5                    = pInfo4[IDNum]->SensorGrabStartX;
-    SensorInfo.SensorGrabStartY_CST5                    = pInfo4[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CST1                    = pInfo[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CST1                    = pInfo[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CST2                    = pInfo1[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CST2                    = pInfo1[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CST3                    = pInfo2[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CST3                    = pInfo2[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CST4                    = pInfo3[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CST4                    = pInfo3[IDNum]->SensorGrabStartY;
+    pSensorInfo->SensorGrabStartX_CST5                    = pInfo4[IDNum]->SensorGrabStartX;
+    pSensorInfo->SensorGrabStartY_CST5                    = pInfo4[IDNum]->SensorGrabStartY;
 
-    if (copy_to_user((void __user *)(pSensorGetInfo->pInfo), (void *)(&SensorInfo), sizeof(ACDK_SENSOR_INFO2_STRUCT))) {
-    PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
+    if (copy_to_user((void __user *)(pSensorGetInfo->pInfo), (void *)(pSensorInfo), sizeof(ACDK_SENSOR_INFO2_STRUCT))) {
+	    PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
+		for (i = 0; i < 2; i++) {
+			if(pConfig[i] != NULL) kfree(pConfig[i]);
+			if(pConfig1[i] != NULL) kfree(pConfig1[i]);
+			if(pConfig2[i] != NULL) kfree(pConfig2[i]);
+			if(pConfig3[i] != NULL) kfree(pConfig3[i]);
+			if(pConfig4[i] != NULL) kfree(pConfig4[i]);
+			if(psensorResolution[i] != NULL) kfree(psensorResolution[i]);
+			pConfig[i] = NULL;
+			pConfig1[i] = NULL;
+			pConfig2[i] = NULL;
+			pConfig3[i] =  NULL;
+			pConfig4[i] =  NULL;
+			psensorResolution[i] = NULL;
+		}
+   		kfree(pSensorInfo);
+		pSensorInfo = NULL;
+
     return -EFAULT;
     }
 
     /* Step2 : Get Resolution */
     g_pSensorFunc->SensorGetResolution(psensorResolution);
-    PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorPreviewWidth, SensorResolution[0].SensorPreviewHeight);
-    PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorFullWidth, SensorResolution[0].SensorFullHeight);
-    PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n", SensorResolution[0].SensorVideoWidth, SensorResolution[0].SensorVideoHeight);
+    PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorPreviewWidth, psensorResolution[0]->SensorPreviewHeight);
+    PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorFullWidth, psensorResolution[0]->SensorFullHeight);
+    PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n", psensorResolution[0]->SensorVideoWidth, psensorResolution[0]->SensorVideoHeight);
 
     if (DUAL_CAMERA_MAIN_SENSOR == pSensorGetInfo->SensorId) {
     /* Resolution */
     PK_DBG("[adopt_CAMERA_HW_GetInfo2]Resolution\n");
     if (copy_to_user((void __user *) (pSensorGetInfo->pSensorResolution) , (void *)psensorResolution[0] , sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
        PK_DBG("[CAMERA_HW][Resolution] ioctl copy to user failed\n");
+	   for (i = 0; i < 2; i++) {
+		   if(pConfig[i] != NULL) kfree(pConfig[i]);
+		   if(pConfig1[i] != NULL) kfree(pConfig1[i]);
+		   if(pConfig2[i] != NULL) kfree(pConfig2[i]);
+		   if(pConfig3[i] != NULL) kfree(pConfig3[i]);
+		   if(pConfig4[i] != NULL) kfree(pConfig4[i]);
+		   if(psensorResolution[i] != NULL) kfree(psensorResolution[i]);
+		   pConfig[i] = NULL;
+		   pConfig1[i] = NULL;
+		   pConfig2[i] = NULL;
+		   pConfig3[i] =  NULL;
+		   pConfig4[i] =  NULL;
+		   psensorResolution[i] = NULL;
+	   }
+   		kfree(pSensorInfo);
+		pSensorInfo = NULL;
        return -EFAULT;
     }
     } else{
      /* Resolution */
      if (copy_to_user((void __user *) (pSensorGetInfo->pSensorResolution) , (void *)psensorResolution[1] , sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
         PK_DBG("[CAMERA_HW][Resolution] ioctl copy to user failed\n");
+		for (i = 0; i < 2; i++) {
+			if(pConfig[i] != NULL) kfree(pConfig[i]);
+			if(pConfig1[i] != NULL) kfree(pConfig1[i]);
+			if(pConfig2[i] != NULL) kfree(pConfig2[i]);
+			if(pConfig3[i] != NULL) kfree(pConfig3[i]);
+			if(pConfig4[i] != NULL) kfree(pConfig4[i]);
+			if(psensorResolution[i] != NULL) kfree(psensorResolution[i]);
+			pConfig[i] = NULL;
+			pConfig1[i] = NULL;
+			pConfig2[i] = NULL;
+			pConfig3[i] =  NULL;
+			pConfig4[i] =  NULL;
+			psensorResolution[i] = NULL;
+		}
+			kfree(pSensorInfo);
+		pSensorInfo = NULL;
         return -EFAULT;
     }
     }
+
+	for (i = 0; i < 2; i++) {
+		if(pConfig[i] != NULL) kfree(pConfig[i]);
+		if(pConfig1[i] != NULL) kfree(pConfig1[i]);
+		if(pConfig2[i] != NULL) kfree(pConfig2[i]);
+		if(pConfig3[i] != NULL) kfree(pConfig3[i]);
+		if(pConfig4[i] != NULL) kfree(pConfig4[i]);
+		if(psensorResolution[i] != NULL) kfree(psensorResolution[i]);
+		   pConfig[i] = NULL;
+		   pConfig1[i] = NULL;
+		   pConfig2[i] = NULL;
+		   pConfig3[i] =  NULL;
+		   pConfig4[i] =  NULL;
+		   psensorResolution[i] = NULL;
+	}
+	kfree(pSensorInfo);
+	pSensorInfo = NULL;
 
     return 0;
 }   /* adopt_CAMERA_HW_GetInfo() */
@@ -1892,23 +2004,22 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     }
     else
     {
-    if (NULL == pFeatureCtrl->pFeaturePara || NULL == pFeatureCtrl->pFeatureParaLen) {
-        PK_ERR(" NULL arg.\n");
-        return -EFAULT;
-    }
-    }
+		if (NULL == pFeatureCtrl->pFeaturePara || NULL == pFeatureCtrl->pFeatureParaLen) {
+			PK_ERR(" NULL arg.\n");
+			return -EFAULT;
+		}
+		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
+			PK_ERR(" ioctl copy from user failed\n");
+			return -EFAULT;
+		}
 
-    if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
-    PK_ERR(" ioctl copy from user failed\n");
-    return -EFAULT;
+		pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
+		if (NULL == pFeaturePara) {
+			PK_ERR(" ioctl allocate mem failed\n");
+			return -ENOMEM;
+		}
+		memset(pFeaturePara, 0x0, FeatureParaLen);
     }
-
-    pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
-    if (NULL == pFeaturePara) {
-    PK_ERR(" ioctl allocate mem failed\n");
-    return -ENOMEM;
-    }
-    memset(pFeaturePara, 0x0, FeatureParaLen);
 
     /* copy from user */
     switch (pFeatureCtrl->FeatureId)
@@ -1954,7 +2065,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_GET_CROP_INFO:
     case SENSOR_FEATURE_GET_VC_INFO:
     case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-    case SENSOR_FEATURE_SET_HDR_SHUTTER:
+	case SENSOR_FEATURE_SET_HDR_SHUTTER:
     case SENSOR_FEATURE_GET_AE_FLASHLIGHT_INFO:
     case SENSOR_FEATURE_GET_TRIGGER_FLASHLIGHT_INFO: /* return TRUE:play flashlight */
     case SENSOR_FEATURE_SET_YUV_3A_CMD: /* para: ACDK_SENSOR_3A_LOCK_ENUM */
@@ -1967,13 +2078,13 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         /*  */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         kfree(pFeaturePara);
-        PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+        PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
         return -EFAULT;
         }
         break;
      case SENSOR_FEATURE_SET_SENSOR_SYNC:    /* Update new sensor exposure time and gain to keep */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
-         PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+         PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
          return -EFAULT;
     }
     /* keep the information to wait Vsync synchronize */
@@ -2038,7 +2149,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 #endif
     case SENSOR_FEATURE_SET_ESHUTTER_GAIN:
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
-        PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+        PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
         return -EFAULT;
         }
         /* keep the information to wait Vsync synchronize */
@@ -2082,7 +2193,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			memset(pValue, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue;
-			PK_DBG("1[CAMERA_HW] %p %p %p\n",
+			PK_ERR("[CAMERA_HW] %p %p %p\n",
 			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
 			       (void *)pFeaturePara_64, (void *)(pValue));
 			if (g_pSensorFunc) {
@@ -2094,7 +2205,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 									(unsigned int *)
 									&FeatureParaLen);
 			} else {
-				PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+				PK_ERR("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
 			}
 			*(pFeaturePara_64 + 1) = *pValue;
 			kfree(pValue);
@@ -2169,7 +2280,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		{
 			SENSOR_AE_AWB_REF_STRUCT *pAeAwbRef = NULL;
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
-			void *usr_ptr = (void*)(*(pFeaturePara_64));
+			void *usr_ptr = (void*)(uintptr_t)(*(pFeaturePara_64));
 			pAeAwbRef = kmalloc(sizeof(SENSOR_AE_AWB_REF_STRUCT), GFP_KERNEL);
 			if (pAeAwbRef == NULL) {
 				PK_ERR(" ioctl allocate mem failed\n");
@@ -2801,6 +2912,8 @@ bool Get_Cam_Regulator(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
 
 		if (node) {
+			kd_node = sensor_device->of_node;
+			sensor_device->of_node = node;
 			/* name = of_get_property(node, "MAIN_CAMERA_POWER_A", NULL); */
 			 regSubVCAMD = regulator_get(sensor_device, "vcamd_sub"); /*check customer definition*/
 			if (regSubVCAMD == NULL) {
@@ -2817,13 +2930,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
 			    }
 			} else{
-				/*PK_DBG("Camera customer regulator name =%s!\n", name);*/
 				PK_DBG("Camera customer regulator!\n");
-				/* backup original dev.of_node */
-				kd_node = sensor_device->of_node;
-				/* if customer defined, get customized camera regulator node */
-				sensor_device->of_node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
-
 			    if (regVCAMA == NULL) {
 				    regVCAMA = regulator_get(sensor_device, "vcama");
 			    }
@@ -2843,8 +2950,8 @@ bool Get_Cam_Regulator(void)
 				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
 			    }
 			    /* restore original dev.of_node */
-			    sensor_device->of_node = kd_node;
 			}
+			 sensor_device->of_node = kd_node;
 		} else{
 			PK_ERR("regulator get cust camera node failed!\n");
 			return FALSE;
@@ -2855,12 +2962,13 @@ bool Get_Cam_Regulator(void)
 	return FALSE;
 }
 
+
 bool _hwPowerOn(PowerType type, int powerVolt)
 {
     bool ret = FALSE;
 	struct regulator *reg = NULL;
 
-	PK_DBG("[_hwPowerOn]before get, powertype:%d powerId:%d\n", type, powerVolt);
+	PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
     if (type == AVDD) {
 	reg = regVCAMA;
     } else if (type == DVDD) {
@@ -2887,7 +2995,7 @@ bool _hwPowerOn(PowerType type, int powerVolt)
 	}
 	ret = true;
     } else {
-		PK_DBG("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d\n", type);
+		PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
 		return ret;
     }
 
@@ -2931,6 +3039,7 @@ bool _hwPowerDown(PowerType type)
     }
     return ret;
 }
+
 
 #endif
 
@@ -3365,7 +3474,7 @@ static long CAMERA_HW_Ioctl(
         break;
 
     case KDIMGSENSORIOC_X_SET_MCLK_PLL:
-        //i4RetValue = kdSetSensorMclk(pBuff);
+        i4RetValue = kdSetSensorMclk(pBuff);
         break;
 
     case KDIMGSENSORIOC_X_SET_GPIO:
@@ -3373,12 +3482,17 @@ static long CAMERA_HW_Ioctl(
         break;
 
     case KDIMGSENSORIOC_X_GET_ISP_CLK:
-        //PK_DBG("get_isp_clk=%d\n",get_isp_clk());
-        //*(unsigned int*)pBuff = get_isp_clk();
-        break;
+#ifdef CONFIG_MTK_SMI_EXT
+	PK_DBG("KDIMGSENSORIOC_X_GET_ISP_CLK current_mmsys_clk=%d\n", current_mmsys_clk);
+	if(current_mmsys_clk == MMSYS_CLK_HIGH)
+		*(unsigned int*)pBuff = 450;
+	else
+#endif
+		*(unsigned int*)pBuff = 320;
+	break;
 
     default:
-        PK_DBG("No such command\n");
+        PK_DBG("No such command %d\n",a_u4Command);
         i4RetValue = -EPERM;
         break;
 
@@ -3398,7 +3512,14 @@ CAMERA_HW_Ioctl_EXIT:
     mutex_unlock(&kdCam_Mutex);
     return i4RetValue;
 }
-
+#ifdef CONFIG_MTK_SMI_EXT
+int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
+{
+	PK_DBG("mmsys_clk_change_cb ori: %d, new: %d, current_mmsys_clk %d\n", ori_clk_mode, new_clk_mode, current_mmsys_clk);
+	current_mmsys_clk = new_clk_mode;
+	return 1;
+}
+#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3428,7 +3549,9 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
     /* kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
     /* kdCISModulePowerOn(DUAL_CAMERA_SUB_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
-
+#ifdef CONFIG_MTK_SMI_EXT
+	mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
+#endif
     }
 
     /*  */
@@ -3447,7 +3570,9 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
     atomic_dec(&g_CamDrvOpenCnt);
-
+#ifdef CONFIG_MTK_SMI_EXT
+	current_mmsys_clk = MMSYS_CLK_MEDIUM;
+#endif
     return 0;
 }
 
@@ -3821,6 +3946,7 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 	mtkcam_gpio_init(pdev);
 #endif
 
+	pCamerahw_platform_device = pdev;
     return i2c_add_driver(&CAMERA_HW_i2c_driver);
 }
 
