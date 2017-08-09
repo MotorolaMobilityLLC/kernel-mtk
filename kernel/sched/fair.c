@@ -8368,7 +8368,7 @@ redo:
 	}
 
 #ifdef CONFIG_HMP_PACK_SMALL_TASK
-	if (cpumask_test_cpu(this_cpu, &hmp_fast_cpu_mask)) {
+	if (hmp_cpu_is_fastest(this_cpu)) {
 		if (per_cpu(sd_pack_buddy, this_cpu) == busiest->cpu &&
 			!is_buddy_busy(per_cpu(sd_pack_buddy, this_cpu))) {
 			schedstat_inc(sd, lb_nobusyq[idle]);
@@ -10935,7 +10935,7 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 		goto check_load;
 	}
 	if (hmp_cpu_is_slowest(buddy)) {
-		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy, 1);
+		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_cpu_domain(buddy)->possible_cpus, buddy, 1);
 		per_cpu(sd_pack_buddy, cpu) = (L_target >= num_possible_cpus()) ? buddy : L_target;
 		buddy = per_cpu(sd_pack_buddy, cpu);
 	}
