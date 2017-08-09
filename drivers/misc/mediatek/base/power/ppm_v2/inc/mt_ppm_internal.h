@@ -32,6 +32,7 @@ extern "C" {
 
 #include "mach/mt_ppm_api.h"
 #include "mt_ppm_platform.h"
+#include "mt_ppm_ipi.h"
 
 /*==============================================================*/
 /* Definitions							*/
@@ -159,6 +160,7 @@ enum {
 	TIME_PROFILE = 1 << 5,
 	COBRA_ALGO = 1 << 6,
 	SYS_BOOST = 1 << 7,
+	IPI	= 1 << 8,
 };
 
 enum ppm_policy {
@@ -410,3 +412,4 @@ extern void aee_rr_rec_ppm_waiting_for_pbm(u8 val);
 #endif
 
 #endif
+

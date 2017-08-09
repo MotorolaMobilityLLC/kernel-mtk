@@ -15,9 +15,12 @@ ccflags-y += \
 	-I$(PPM_ROOT_DIR)/inc \
 	-I$(PPM_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
+	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)	\
+	-I$(srctree)/drivers/misc/mediatek/sspm/	\
+	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 
-ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
+ifeq (0,1)
+#ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 # main
 obj-y := mt_ppm_main.o
 obj-y += mt_ppm_interface.o
@@ -25,6 +28,9 @@ obj-y += mt_ppm_api.o
 
 # for profiling
 obj-y += mt_ppm_profile.o
+
+# for IPI to PMCU
+obj-y += mt_ppm_ipi.o
 
 # policies
 obj-y += mt_ppm_policy_dlpt.o
@@ -46,3 +52,4 @@ else
 # dummy driver to avoid build error
 obj-y := mt_ppm_dummy.o
 endif
+

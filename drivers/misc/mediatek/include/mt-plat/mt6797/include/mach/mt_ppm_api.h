@@ -97,10 +97,16 @@ struct ppm_cluster_status {
 extern void mt_ppm_set_dvfs_table(unsigned int cpu, struct cpufreq_frequency_table *tbl,
 	unsigned int num, enum dvfs_table_type type);
 extern void mt_ppm_register_client(enum ppm_client client, void (*limit)(struct ppm_client_req req));
+extern void mt_ppm_set_5A_limit_throttle(bool enable);
+extern void mt_ppm_limit_freq_when_ke(void);
 
 /* SYS boost policy */
 extern void mt_ppm_sysboost_core(enum ppm_sysboost_user user, unsigned int core_num);
 extern void mt_ppm_sysboost_freq(enum ppm_sysboost_user user, unsigned int freq);
+extern void mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user, unsigned int cluster,
+					int min_core, int max_core);
+extern void mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user, unsigned int cluster,
+					int min_freq, int max_freq);
 
 /* DLPT policy */
 extern void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power);
