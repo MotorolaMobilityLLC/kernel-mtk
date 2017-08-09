@@ -1039,7 +1039,7 @@ unsigned int get_dram_data_rate_from_reg(void)
 
 void DVFS_gating_auto_save(void)
 {
-#if 1
+#if 0
 	unsigned int u4HWTrackPICH0R0, u4HWTrackPICH0R1;
 	unsigned int u4HWTrackUICH0R0P0, u4HWTrackUICH0R1P0;
 	unsigned int u4HWTrackUICH0R0P1, u4HWTrackUICH0R1P1;
