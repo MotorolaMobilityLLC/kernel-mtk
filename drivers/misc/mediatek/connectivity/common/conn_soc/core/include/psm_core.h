@@ -54,6 +54,7 @@
 
 #define STP_PSM_WMT_PS_TASK_HANDLING_TIME  30	/* 20 milli-seconds */
 #define STP_PSM_IDLE_TIME_SLEEP           30	/* temporary for stress testing */
+#define STP_PSM_IDLE_TIME_SLEEP_1000           1000	/* for high speed transmission e.g. BT OPP*/
 #define STP_PSM_SDIO_IDLE_TIME_SLEEP           100	/* temporary for SDIO stress testing */
 #define STP_PSM_WAIT_EVENT_TIMEOUT        6000
 #if 0
