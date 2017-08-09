@@ -52,6 +52,23 @@ __weak void get_android_log_buffer(unsigned long *addr, unsigned long *size, uns
 {
 }
 
+__weak void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+
+
+__weak void get_disp_fence_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+
+__weak void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+
+__weak void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+
 __weak struct vm_struct *find_vm_area(const void *addr)
 {
 	return NULL;
@@ -504,6 +521,18 @@ static void mrdump_mini_build_elf_misc(void)
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_kernel_log_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_KERNEL_LOG_");
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_disp_err_buffer(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_ERR_");
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_disp_dump_buffer(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_DUMP_");
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_disp_fence_buffer(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_FENCE_");
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_disp_dbg_buffer(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_DBG_");
 	for (i = 0; i < 4; i++) {
 		memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 		get_android_log_buffer(&misc.vaddr, &misc.size, &misc.start, i + 1);
