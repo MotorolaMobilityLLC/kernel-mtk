@@ -26,6 +26,7 @@
 #elif defined(CONFIG_OF)
 #define I2C_CONFIG_SETTING 2 /* device tree */
 #else
+
 #define I2C_CONFIG_SETTING 1
 #endif
 
@@ -71,6 +72,9 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	#endif
 	#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_AD5820AF_SUPPORT
+	{1, AFDRV_AD5820AF, AD5820AF_SetI2Cclient, AD5820AF_Ioctl, AD5820AF_Release},
 	#endif
 };
 
