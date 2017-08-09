@@ -3802,7 +3802,7 @@ UINT_32 wfdFuncCalculateWfdIELenForAssocRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 
 	if (IS_STA_P2P_TYPE(prStaRec) && (prWfdCfgSettings->ucWfdEnable > 0)) {
 
 		u2EstimatedExtraIELen = prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
-		ASSERT(u2EstimatedExtraIELen < 128);
+		ASSERT(u2EstimatedExtraIELen <= 400);
 	}
 	return u2EstimatedExtraIELen;
 
@@ -3832,7 +3832,7 @@ VOID wfdFuncGenerateWfdIEForAssocRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T 
 				if (prWfdCfgSettings->ucWfdEnable > 0) {
 					u2EstimatedExtraIELen = prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
 					if (u2EstimatedExtraIELen > 0) {
-						ASSERT(u2EstimatedExtraIELen < 128);
+						ASSERT(u2EstimatedExtraIELen <= 400);
 						ASSERT(sizeof
 						       (prAdapter->prGlueInfo->prP2PInfo->aucWFDIE) >=
 						       prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen);
