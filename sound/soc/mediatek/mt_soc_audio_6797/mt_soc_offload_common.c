@@ -335,7 +335,6 @@ static int mtk_offload_dl3_stop(void)
 			Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I24,
 			Soc_Aud_InterConnectionOutput_O04);
-	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL3);
 	return 0;
 }
 

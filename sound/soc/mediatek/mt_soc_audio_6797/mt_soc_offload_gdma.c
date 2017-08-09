@@ -507,7 +507,6 @@ static int mtk_compr_offload_gdma_int_stop(struct snd_compr_stream *stream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I08, Soc_Aud_InterConnectionOutput_O04);
 #endif
 	SetHwDigitalGainEnable(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, false);
-	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL2);
 
 	afe_offload_block.transferred  = 0;
 	afe_offload_block.copied       = 0;
