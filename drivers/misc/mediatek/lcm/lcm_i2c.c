@@ -151,6 +151,11 @@ static int _lcm_i2c_write_bytes(unsigned char addr, unsigned char value)
 	struct i2c_client *client = _lcm_i2c_client;
 	char write_data[2] = { 0 };
 
+	if (client == NULL) {
+		pr_debug("ERROR!! _lcm_i2c_client is null\n");
+		return 0;
+	}
+
 	write_data[0] = addr;
 	write_data[1] = value;
 	ret = i2c_master_send(client, write_data, 2);
