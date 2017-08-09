@@ -11,6 +11,13 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 
+&nfc {
+	interrupt-parent = <&eintc>;
+	interrupts = <2 IRQ_TYPE_LEVEL_HIGH>;
+	debounce = <2 0>;
+	status = "okay";
+};
+
 &eintc {
 	IRQ_NFC@2 {
 		compatible = "mediatek, IRQ_NFC-eint";
