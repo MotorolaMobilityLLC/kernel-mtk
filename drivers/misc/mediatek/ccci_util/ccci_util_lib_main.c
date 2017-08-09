@@ -20,10 +20,6 @@
 #endif
 #include <asm/setup.h>
 #include <linux/atomic.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_boot_common.h>
-
-#include <mt-plat/mt_ccci_common.h>
 
 #include "ccci_util_lib_main.h"
 

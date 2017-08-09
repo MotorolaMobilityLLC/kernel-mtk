@@ -1,7 +1,7 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
-#include <mach/sync_write.h>
-#include <mach/mt_boot_common.h>
+#include <mt-plat/sync_write.h>
+#include <mt-plat/mt_boot_common.h>
 #if defined(CONFIG_MTK_LEGACY)
 #include <mach/mt_clkmgr.h>
 #else
@@ -382,8 +382,8 @@ int ccci_md_off(void)
 	modem_power_down();
 #else
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if ((g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT) || (g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT)) {
-		pr_debug("[ccci-off]power off MD in charging mode %d\n", g_boot_mode);
+	if ((get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) || (get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT)) {
+		pr_debug("[ccci-off]power off MD in charging mode %d\n", get_boot_mode());
 		modem_power_down();
 	}
 #endif

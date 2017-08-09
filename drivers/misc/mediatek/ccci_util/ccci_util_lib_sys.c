@@ -1,4 +1,4 @@
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include <mt-plat/mt_ccci_common.h>
 #include <linux/slab.h>
 #include <linux/kobject.h>

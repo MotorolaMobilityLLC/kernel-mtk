@@ -26,9 +26,7 @@
 
 #include <asm/setup.h>
 #include <linux/atomic.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_boot_common.h>
-
+#include <mt-plat/mt_boot_common.h>
 #include <mt-plat/mt_ccci_common.h>
 
 #include "ccci_util_log.h"
@@ -354,8 +352,8 @@ void ccci_md_mem_reserve(void)
 #ifdef CONFIG_OF_RESERVED_MEM
 #define CCCI_MD1_MEM_RESERVED_KEY "mediatek,reserve-memory-ccci_md1"
 #define CCCI_MD2_MEM_RESERVED_KEY "mediatek,reserve-memory-ccci_md2"
-#include <mach/mtk_memcfg.h>
-int ccci_reserve_mem_of_init(struct reserved_mem *rmem, unsigned long node, const char *uname)
+#include <mt-plat/mtk_memcfg.h>
+int ccci_reserve_mem_of_init(struct reserved_mem *rmem)
 {
 	phys_addr_t rptr = 0;
 	unsigned int rsize = 0;
@@ -363,12 +361,12 @@ int ccci_reserve_mem_of_init(struct reserved_mem *rmem, unsigned long node, cons
 
 	rptr = rmem->base;
 	rsize = (unsigned int)rmem->size;
-	if (strstr(CCCI_MD1_MEM_RESERVED_KEY, uname))
+	if (strstr(CCCI_MD1_MEM_RESERVED_KEY, rmem->name))
 		md_id = MD_SYS1;
-	if (strstr(CCCI_MD2_MEM_RESERVED_KEY, uname))
+	if (strstr(CCCI_MD2_MEM_RESERVED_KEY, rmem->name))
 		md_id = MD_SYS2;
 	if (md_id < 0) {
-		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "memory reserve key %s not support\n", uname);
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "memory reserve key %s not support\n", rmem->name);
 		return 0;
 	}
 	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "reserve_mem_of_init, rptr=0x%pa, rsize=0x%x\n", &rptr, rsize);

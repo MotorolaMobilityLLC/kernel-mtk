@@ -10,7 +10,7 @@
 #include <linux/timer.h>
 #include <linux/types.h>
 #include <linux/ktime.h>
-#include <mach/mt_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 
 #include "ccci_util_log.h"
 

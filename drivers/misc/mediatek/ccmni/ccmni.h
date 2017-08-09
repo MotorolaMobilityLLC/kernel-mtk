@@ -18,10 +18,7 @@
 #include <linux/if_ether.h>
 #include <linux/bitops.h>
 #include <linux/dma-mapping.h>
-#include <mach/mt_typedefs.h>
-
 #include <mt-plat/mt_ccci_common.h>
-/* #include "ccci_core.h" */
 
 #define  CCMNI_MTU              1500
 #define  CCMNI_TX_QUEUE         1000
