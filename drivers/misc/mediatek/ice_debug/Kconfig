@@ -1,0 +1,3 @@
+config MTK_ICE_DEUBG
+	bool "ICE_DEUBG"
+	default ARCH_MT8173
