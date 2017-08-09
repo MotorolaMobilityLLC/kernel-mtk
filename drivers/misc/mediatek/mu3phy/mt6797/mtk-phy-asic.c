@@ -317,6 +317,112 @@ void usb_phy_switch_to_usb(void)
 	usb_enable_clock(false);
 }
 #endif
+
+#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
+
+#define USB30_PHYD_PIPE0 (SSUSB_SIFSLV_U3PHYD_BASE+0x40)
+#define USB30_PHYD_RX0 (SSUSB_SIFSLV_U3PHYD_BASE+0x2c)
+#define USB30_PHYD_MIX0 (SSUSB_SIFSLV_U3PHYD_BASE+0x0)
+#define USB30_PHYD_T2RLB (SSUSB_SIFSLV_U3PHYD_BASE+0x30)
+
+bool u3_loop_back_test(void)
+{
+	int reg;
+
+	bool loop_back_ret = false;
+
+	pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
+	usb_enable_clock(true);
+
+	/*SSUSB_IP_SW_RST = 0*/
+	writel(0x00031000, U3D_SSUSB_IP_PW_CTRL0);
+	/*SSUSB_IP_HOST_PDN = 0*/
+	writel(0x00000000, U3D_SSUSB_IP_PW_CTRL1);
+	/*SSUSB_IP_DEV_PDN = 0*/
+	writel(0x00000000, U3D_SSUSB_IP_PW_CTRL2);
+	/*SSUSB_IP_PCIE_PDN = 0*/
+	writel(0x00000000, U3D_SSUSB_IP_PW_CTRL3);
+	/*SSUSB_U3_PORT_DIS/SSUSB_U3_PORT_PDN = 0*/
+	writel(0x0000000C, U3D_SSUSB_U3_CTRL_0P);
+	mdelay(10);
+
+	writel((readl(USB30_PHYD_PIPE0)&~(0x01<<30))|0x01<<30,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x01<<28))|0x00<<28,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x03<<26))|0x01<<26,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x03<<24))|0x00<<24,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x01<<22))|0x00<<22,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x01<<21))|0x00<<21,
+							USB30_PHYD_PIPE0);
+	writel((readl(USB30_PHYD_PIPE0)&~(0x01<<20))|0x01<<20,
+							USB30_PHYD_PIPE0);
+	mdelay(10);
+
+	/*T2R loop back disable*/
+	writel((readl(USB30_PHYD_RX0)&~(0x01<<15))|0x00<<15,
+							USB30_PHYD_RX0);
+	mdelay(10);
+
+	/* TSEQ lock detect threshold */
+	writel((readl(USB30_PHYD_MIX0)&~(0x07<<24))|0x07<<24,
+							USB30_PHYD_MIX0);
+	/* set default TSEQ polarity check value = 1 */
+	writel((readl(USB30_PHYD_MIX0)&~(0x01<<28))|0x01<<28,
+							USB30_PHYD_MIX0);
+	/* TSEQ polarity check enable */
+	writel((readl(USB30_PHYD_MIX0)&~(0x01<<29))|0x01<<29,
+							USB30_PHYD_MIX0);
+	/* TSEQ decoder enable */
+	writel((readl(USB30_PHYD_MIX0)&~(0x01<<30))|0x01<<30,
+							USB30_PHYD_MIX0);
+	mdelay(10);
+
+	/* set T2R loop back TSEQ length (x 16us) */
+	writel((readl(USB30_PHYD_T2RLB)&~(0xff<<0))|0xF0<<0,
+							USB30_PHYD_T2RLB);
+	/* set T2R loop back BDAT reset period (x 16us) */
+	writel((readl(USB30_PHYD_T2RLB)&~(0x0f<<12))|0x0F<<12,
+							USB30_PHYD_T2RLB);
+	/* T2R loop back pattern select */
+	writel((readl(USB30_PHYD_T2RLB)&~(0x03<<8))|0x00<<8,
+							USB30_PHYD_T2RLB);
+	mdelay(10);
+
+	/* T2R loop back serial mode */
+	writel((readl(USB30_PHYD_RX0)&~(0x01<<13))|0x01<<13,
+							USB30_PHYD_RX0);
+	/* T2R loop back parallel mode = 0 */
+	writel((readl(USB30_PHYD_RX0)&~(0x01<<12))|0x00<<12,
+							USB30_PHYD_RX0);
+	/* T2R loop back mode enable */
+	writel((readl(USB30_PHYD_RX0)&~(0x01<<11))|0x01<<11,
+							USB30_PHYD_RX0);
+	/* T2R loop back enable */
+	writel((readl(USB30_PHYD_RX0)&~(0x01<<15))|0x01<<15,
+							USB30_PHYD_RX0);
+	mdelay(100);
+
+	reg = U3PhyReadReg32((phys_addr_t)SSUSB_SIFSLV_U3PHYD_BASE+0xb4);
+	os_printk(K_INFO, "read back             : 0x%x\n", reg);
+	os_printk(K_INFO, "read back t2rlb_lock  : %d\n", (reg>>2)&0x01);
+	os_printk(K_INFO, "read back t2rlb_pass  : %d\n", (reg>>3)&0x01);
+	os_printk(K_INFO, "read back t2rlb_passth: %d\n", (reg>>4)&0x01);
+
+	if ((reg&0x0E) == 0x0E)
+		loop_back_ret = true;
+	else
+		loop_back_ret = false;
+
+	return loop_back_ret;
+}
+#endif
+
 #define RG_SSUSB_VUSB10_ON (1<<29)
 #define RG_SSUSB_VUSB10_ON_OFST (29)
 

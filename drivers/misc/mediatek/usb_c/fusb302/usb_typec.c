@@ -2413,6 +2413,32 @@ static int usb_sib_set(void *data, u64 val)
 DEFINE_SIMPLE_ATTRIBUTE(usb_sib_debugfs_fops, usb_sib_get, usb_sib_set, "%llu\n");
 #endif
 
+#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
+static int usb_smt_set(void *data, u64 val)
+{
+	struct usbtypc *typec = data;
+	int sel = val;
+
+	fusb_printk(K_DEBUG, "usb_smt_set %d\n", sel);
+
+	if (sel == 0) {
+		usb_redriver_enter_dps(typec);
+		usb3_switch_en(typec, DISABLE);
+	} else {
+		usb_redriver_exit_dps(typec);
+		usb3_switch_en(typec, ENABLE);
+
+		if (sel == 1)
+			usb3_switch_sel(typec, UP_SIDE);
+		else
+			usb3_switch_sel(typec, DOWN_SIDE);
+	}
+
+	return 0;
+}
+DEFINE_SIMPLE_ATTRIBUTE(usb_smt_debugfs_fops, NULL, usb_smt_set, "%llu\n");
+#endif
+
 int fusb300_init_debugfs(struct usbtypc *typec)
 {
 	struct dentry *root;
@@ -2432,6 +2458,10 @@ int fusb300_init_debugfs(struct usbtypc *typec)
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 	file = debugfs_create_file("sib", S_IRUGO|S_IWUSR, root, typec, &usb_sib_debugfs_fops);
+#endif
+#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
+	file = debugfs_create_file("smt", S_IWUSR, root, typec,
+						&usb_smt_debugfs_fops);
 #endif
 
 	if (!file) {

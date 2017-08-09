@@ -51,6 +51,11 @@ static inline int musb_init_debugfs(struct musb *musb)
 static inline void musb_exit_debugfs(struct musb *musb)
 {
 }
+
+#endif
+
+#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
+extern bool u3_loop_back_test(void);
 #endif
 
 #endif /*__MUSB_LINUX_DEBUG_H__ */

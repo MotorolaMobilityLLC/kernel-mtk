@@ -87,3 +87,16 @@ config A60810_SUPPORT
 	  USB 3.0 PHY that is part of the Mediatek SOC.
 	  Say Y here if your system using external Mediatek USB PHY.
 	  If unsure, say N.
+
+config U3_PHY_SMT_LOOP_BACK_SUPPORT
+	bool "MU3 ASIC PHY support SMT loop back mode"
+	depends on MU3_PHY
+	default n
+	---help---
+	  Enables support for testing SuperSpeed signal is correct.
+          Use to check the USB-C connector is mounted properly.
+          U3 PHY sends a pattern of signal from TX1/2+, TX1/2-.
+          And receive the signal from RX1/2+, RX1/2-. Then
+          verify the signal is correct. If loopback signal is
+          corrent, it means the path from TX to RX is smooth.
+	  If unsure, say N.
