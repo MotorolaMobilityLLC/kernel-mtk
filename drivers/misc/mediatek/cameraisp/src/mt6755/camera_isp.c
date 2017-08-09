@@ -1464,7 +1464,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 sggmux_v_size;
 
 		MUINT32 esfko_xsize;
-		
+
 		/*Check AF setting */
 		MUINT32 cam_af_con;	/*46B0 */
 		MUINT32 cam_af_winx_1;	/*46B4 */
@@ -1526,7 +1526,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 AF_InputWidth;
 
 		MUINT32 AF_LeftOverWidth;
-		
+
 		MUINT32 cam_aao_xsize;	/*7390 */
 		MUINT32 cam_aao_ysize;	/*7394 */
 		MUINT32 cam_awb_win_num;	/*45BC */
@@ -1536,7 +1536,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 AWB_W_HNUM;
 		MUINT32 AWB_W_VNUM;
 		MUINT32 histogramen_num;
-		
+
 		MUINT32 cam_awb_win_org;	/*45B0 */
 		MUINT32 cam_awb_win_pit;	/*45B8 */
 
@@ -1735,7 +1735,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 EIS_RP_HOFST;
 		MUINT32 EIS_WIN_VSIZE;
 		MUINT32 EIS_WIN_HSIZE;
-		
+
 		MUINT32 EIS_OP_HORI;
 		MUINT32 EIS_OP_VERT;
 
@@ -1923,7 +1923,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 cam_aao_ysize;	/*7394 */
 		MUINT32 cam_awb_win_num;	/*45BC */
 		MUINT32 cam_ae_hst_ctl;	/*4650 */
-		
+
 		MUINT32 AAO_XSIZE;
 		MUINT32 AWB_W_HNUM;
 		MUINT32 AWB_W_VNUM;
@@ -3219,7 +3219,7 @@ static void ISP_EnableClock(MBOOL En)
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else
-		/*LOG_INF("CCF:prepare_enable clk"); */
+		LOG_INF("CCF:prepare_enable clk cnt %d\n", G_u4EnableClockCount);
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -3248,11 +3248,11 @@ static void ISP_EnableClock(MBOOL En)
 		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else
-		/*LOG_INF("CCF:disable_unprepare clk\n"); */
+		LOG_INF("CCF:disable_unprepare cnt %d\n", G_u4EnableClockCount);
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
 		spin_unlock(&(IspInfo.SpinLockClock));
-		Disable_Unprepare_ccf_clock();
+		/* Disable_Unprepare_ccf_clock(); */
 #endif
 	}
 }
@@ -5781,7 +5781,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				/* if(copy_to_user((void __user*)rt_buf_ctrl.data_ptr,
 				 &deque_buf, sizeof(ISP_DEQUE_BUF_INFO_STRUCT)) != 0)     */
 				if (copy_to_user
-				    ((void __user *)rt_buf_ctrl.pExtend, &deque_buf,
+				    ((void __user *)rt_buf_ctrl.pExtend, deque_buf,
 				     sizeof(ISP_DEQUE_BUF_INFO_STRUCT)) != 0) {
 					LOG_ERR("[rtbc][DEQUE]:copy_to_user	failed");
 					Ret = -EFAULT;
@@ -9240,7 +9240,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 		ktime_t time;
 		MUINT32 z;
 		static MUINT32 m_sec, m_usec;
-		
+
 		time = ktime_get();/* ns */
 		sec = time.tv64;
 		do_div(sec, 1000);/* usec */
@@ -9338,7 +9338,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 			_fbc_chk[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_FBC);	/* in     order to log newest     fbc     condition */
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
 
-			
+
 			if (g1stSof[_IRQ]) {
 				m_sec = sec;
 				m_usec = usec;
@@ -9475,7 +9475,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 		sec = time.tv64;
 		do_div(sec, 1000);/* usec */
 		usec = do_div(sec, 1000000);/* sec and usec */
-	
+
 
 		if (pstRTBuf->ring_buf[_imgo_d_].active) {
 			_dmaport = 2;
@@ -9562,13 +9562,13 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 
 			_fbc_chk[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_D_FBC);
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_D_FBC);
-			
-			
+
+
 			if (g1stSof[_IRQ_D]) {
 				m_sec_d = sec;
 				m_usec_d = usec;
 			}
-			
+
 			IRQ_LOG_KEEPER(_IRQ_D, m_CurrentPPB, _LOG_INF,
 							"P1_D_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)_int_us:%d\n",
 							sof_count[_PASS1_D], d_cur_v_cnt,
@@ -9584,7 +9584,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 			/* keep current time */
 			m_sec_d = sec;
 			m_usec_d = usec;
-		
+
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_d_].active) {
 				if (_fbc_chk[0].Bits.WCNT != p1_fbc[2].Bits.WCNT)
@@ -11157,7 +11157,7 @@ EXIT:
 		 */
 		ISP_EnableClock(MTRUE);
 		LOG_DBG("isp open G_u4EnableClockCount:	%d", G_u4EnableClockCount);
-		
+
 		/*  DVFS HALT ENABLE
 		HRT engine DMA port: imgo/rrzo/aao/lcso/esfko/imgo_s/bpci/bpci_d
 		*/
@@ -12243,7 +12243,7 @@ static ssize_t CAMIO_RegDebug(
 #else /* new file_operations style */
 	LOG_ERR("CAMIO_RegDebug: Not implement");
 	return 0;
-#endif	
+#endif
 }
 
 /*******************************************************************************
@@ -13180,7 +13180,7 @@ EXPORT_SYMBOL(ISP_UnregCallback);
 void ISP_MCLK1_EN(BOOL En)
 {
 	MUINT32	temp = 0;
-	
+
 	if (1 == En)
 		mMclk1User++;
 	else {
@@ -13222,7 +13222,7 @@ void ISP_MCLK2_EN(BOOL En)
 			mMclk2User = 0;
 	}
 
-	
+
 	temp = ISP_RD32(ISP_ADDR + 0x4600);
 	if (En) {
 		if (mMclk2User > 0) {
@@ -13252,7 +13252,7 @@ void ISP_MCLK3_EN(BOOL En)
 			mMclk3User = 0;
 	}
 
-	
+
 	temp = ISP_RD32(ISP_ADDR + 0x4A00);
 	if (En) {
 		if (mMclk3User > 0) {

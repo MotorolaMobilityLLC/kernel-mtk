@@ -427,16 +427,22 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 				pinctrl_select_state(camctrl, cam0_rst_l);
 			else if (Val == 1 && !IS_ERR(cam0_rst_h))
 				pinctrl_select_state(camctrl, cam0_rst_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, RST\n", __func__,PinIdx ,Val);
 		} else if (PinIdx == 1) {
 			if (Val == 0 && !IS_ERR(cam1_rst_l))
 				pinctrl_select_state(camctrl, cam1_rst_l);
 			else if (Val == 1 && !IS_ERR(cam1_rst_h))
 				pinctrl_select_state(camctrl, cam1_rst_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, RST\n", __func__,PinIdx ,Val);
 		} else {
 			if (Val == 0 && !IS_ERR(cam2_rst_l))
 				pinctrl_select_state(camctrl, cam2_rst_l);
 			else if (Val == 1 && !IS_ERR(cam2_rst_h))
 				pinctrl_select_state(camctrl, cam2_rst_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, RST\n", __func__,PinIdx ,Val);
 		}
 		break;
 	case PDN:
@@ -445,16 +451,22 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 				pinctrl_select_state(camctrl, cam0_pnd_l);
 			else if (Val == 1 && !IS_ERR(cam0_pnd_h))
 				pinctrl_select_state(camctrl, cam0_pnd_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, PDN\n", __func__,PinIdx ,Val);
 		} else if (PinIdx == 1) {
 			if (Val == 0 && !IS_ERR(cam1_pnd_l))
 				pinctrl_select_state(camctrl, cam1_pnd_l);
 			else if (Val == 1 && !IS_ERR(cam1_pnd_h))
 				pinctrl_select_state(camctrl, cam1_pnd_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, PDN\n", __func__,PinIdx ,Val);
 		} else {
 			if (Val == 0 && !IS_ERR(cam2_pnd_l))
 				pinctrl_select_state(camctrl, cam2_pnd_l);
 			else if (Val == 1 && !IS_ERR(cam2_pnd_h))
 				pinctrl_select_state(camctrl, cam2_pnd_h);
+			else
+				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, PDN\n", __func__,PinIdx ,Val);
 		}
 		break;
 	case AVDD:
@@ -1456,7 +1468,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 	if (pwInfo.PowerType == AVDD) {
 		if (PowerCustList.PowerCustInfo[0].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != hwPowerDown(pwInfo.PowerType, mode_name)) {
-				PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
+				PK_DBG("[CAMERA SENSOR] Fail to disable digital power\n");
 				return FALSE;
 			}
 		} else {
@@ -1478,11 +1490,11 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		if (PowerCustList.PowerCustInfo[1].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (pinSetIdx == 1) {
 				if (TRUE != hwPowerDown(PMIC_APP_SUB_CAMERA_POWER_D, mode_name)) {
-					PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
+					PK_DBG("[CAMERA SENSOR] Fail to disable digital power\n");
 					return FALSE;
 				}
 			} else if (TRUE != hwPowerDown(pwInfo.PowerType, mode_name)) {
-				PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
+				PK_DBG("[CAMERA SENSOR] Fail to disable digital power\n");
 				return FALSE;
 			} else {
 			}
@@ -1504,7 +1516,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 	} else if (pwInfo.PowerType == DOVDD) {
 		if (PowerCustList.PowerCustInfo[2].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != hwPowerDown(pwInfo.PowerType, mode_name)) {
-				PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
+				PK_DBG("[CAMERA SENSOR] Fail to disable digital power\n");
 				return FALSE;
 			}
 		} else {

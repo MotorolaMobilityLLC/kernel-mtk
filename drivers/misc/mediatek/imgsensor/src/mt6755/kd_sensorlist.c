@@ -2875,6 +2875,8 @@ bool Get_Cam_Regulator(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
 
 		if (node) {
+			kd_node = sensor_device->of_node;
+			sensor_device->of_node = node;
 			/* name = of_get_property(node, "MAIN_CAMERA_POWER_A", NULL); */
 			 regSubVCAMD = regulator_get(sensor_device, "vcamd_sub"); /*check customer definition*/
 			if (regSubVCAMD == NULL) {
@@ -2891,13 +2893,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
 			    }
 			} else{
-				/*PK_DBG("Camera customer regulator name =%s!\n", name);*/
 				PK_DBG("Camera customer regulator!\n");
-				/* backup original dev.of_node */
-				kd_node = sensor_device->of_node;
-				/* if customer defined, get customized camera regulator node */
-				sensor_device->of_node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
-
 			    if (regVCAMA == NULL) {
 				    regVCAMA = regulator_get(sensor_device, "vcama");
 			    }
@@ -2917,8 +2913,8 @@ bool Get_Cam_Regulator(void)
 				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
 			    }
 			    /* restore original dev.of_node */
-			    sensor_device->of_node = kd_node;
 			}
+			 sensor_device->of_node = kd_node;
 		} else{
 			PK_ERR("regulator get cust camera node failed!\n");
 			return FALSE;
@@ -2962,7 +2958,7 @@ bool _hwPowerOn(PowerType type, int powerVolt)
 	}
 	ret = true;
     } else {
-		PK_DBG("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d\n", type);
+		PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
 		return ret;
     }
 
