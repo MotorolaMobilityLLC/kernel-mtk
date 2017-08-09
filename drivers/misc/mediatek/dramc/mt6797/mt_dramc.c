@@ -47,6 +47,7 @@ void __iomem *DRAMCNAO_CHB_BASE_ADDR;
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
+unsigned char old_IC = 0;
 #if 0 /* if0 for tmp */
 static unsigned int enter_pdp_cnt;
 #endif /* if0 for tmp */
@@ -1645,9 +1646,11 @@ unsigned int get_dram_data_rate(void)
 		MEMPLL_FOUT = 1066;
 	else if (MEMPLL_FOUT == 3120) {
 		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
+		old_IC = 1;
 		MEMPLL_FOUT = 1600; /* old version,not support DFS */
 	}	else if (MEMPLL_FOUT == 3432) {
 		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
+		old_IC = 1;
 		MEMPLL_FOUT = 1700; /* old version,not support DFS */
 	}
 
@@ -1710,22 +1713,12 @@ int dram_steps_freq(unsigned int step)
 	return freq;
 }
 
-/*dram_can_support_fh() : need revise after HQA ,
-and need to check if there a empty bit in dramc_reg (0xf4)*/
 int dram_can_support_fh(void)
 {
-	unsigned int value;
-
-	/*need to check if there empty bit in reg(0xf4) */
-	/*value = ucDram_Register_Read(0xf4);*/
-	value = (0x1 << 15);/*this is a temp value*/
-	/*pr_debug("dummy regs 0x%x\n", value);
-	pr_debug("check 0x%x\n",(0x1 <<15));*/
-
-	if (value & (0x1 << 15))
-		return 1;
-	else
+	if (old_IC)
 		return 0;
+	else
+		return 1;
 }
 
 static ssize_t complex_mem_test_show(struct device_driver *driver, char *buf)
@@ -1964,9 +1957,9 @@ static int __init dram_test_init(void)
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", org_dram_data_rate);
 
 	if (dram_can_support_fh())
-		pr_warn("[DRAMC Driver] dram can support Frequency Hopping\n");
+		pr_err("[DRAMC Driver] dram can support DFS\n");
 	else
-		pr_warn("[DRAMC Driver] dram can not support Frequency Hopping\n");
+		pr_err("[DRAMC Driver] dram can not support DFS\n");
 
 	return ret;
 }
