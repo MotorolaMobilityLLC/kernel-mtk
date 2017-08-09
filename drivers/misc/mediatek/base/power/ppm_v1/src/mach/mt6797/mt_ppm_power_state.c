@@ -416,7 +416,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 		settings->loading_hold_cnt = 0;
 
 	/* check freq */
-	cur_freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL);	/* FIXME */
+	cur_freq_LL = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_LL);
 	ppm_dbg(HICA, "LL cur freq = %d\n", cur_freq_LL);
 
 	if (cur_freq_LL >= get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
@@ -476,7 +476,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	}
 #endif
 
-	cur_freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L); /* FIXME */
+	cur_freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_L);
 	ppm_dbg(HICA, "L cur freq = %d\n", cur_freq_L);
 
 	if (cur_freq_L < get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
