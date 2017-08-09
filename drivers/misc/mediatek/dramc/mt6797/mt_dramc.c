@@ -1300,7 +1300,7 @@ int dram_steps_freq(unsigned int step)
 		break;
 	case 1:
 		if (DFS_type == 1)
-			freq = 1600;
+			freq = 1270;
 		else if (DFS_type == 2)
 			freq = 1270;
 		else if (DFS_type == 3)
