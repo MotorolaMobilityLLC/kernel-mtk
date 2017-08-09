@@ -1767,10 +1767,12 @@ clocks {
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
-		MMSYS_CONFIG@0x14000000 {
-			compatible = "mediatek,MMSYS_CONFIG";
+		mmsys_config@14000000 {
+			compatible = "mediatek,mmsys_config";
 			reg = <0x14000000 0x1000>;
-			interrupts = <0 196 0x8>;
+			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_CAM_MDP>;
+			clock-names = "CAM_MDP";
 		};
 
 		DISPSYS@0x14008000 {

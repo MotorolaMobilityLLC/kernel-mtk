@@ -1000,10 +1000,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			"venc-venc", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-dis";
 		};
 
-		MMSYS_CONFIG@0x14000000 {
-			compatible = "mediatek,MMSYS_CONFIG";
+		mmsys_config@14000000 {
+			compatible = "mediatek,mmsys_config";
 			reg = <0x14000000 0x1000>;
-			interrupts = <0 205 0x8>;
+			interrupts = <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		ispsys@15000000 {

@@ -67,9 +67,6 @@ void cmdq_dev_init_module_base_VA(void)
 
 #ifdef CMDQ_OF_SUPPORT
 	gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mmsys_config");
-
-	if (0 == gMMSYS_CONFIG_Base_VA)
-		gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MMSYS_CONFIG");
 #endif
 
 	cmdq_mdp_get_func()->initModuleBaseVA();

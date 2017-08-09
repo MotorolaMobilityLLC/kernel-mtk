@@ -625,7 +625,7 @@ static void __init iomap_init(void)
 	get_base_from_node("mediatek,PERICFG", &perisys_base, 0);
 	get_base_from_node("mediatek,AUDIO", &audiosys_base, 0);
 	get_base_from_node("mediatek,G3D_CONFIG", &mfgsys_base, 0);
-	get_base_from_node("mediatek,MMSYS_CONFIG", &mmsys_base, 0);
+	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
 	get_base_from_node("mediatek,IMGSYS", &imgsys_base, 0);
 	get_base_from_node("mediatek,VDEC_GCON", &vdecsys_base, 0);
 	get_base_from_node("mediatek,VENC_GCON", &vencsys_base, 0);

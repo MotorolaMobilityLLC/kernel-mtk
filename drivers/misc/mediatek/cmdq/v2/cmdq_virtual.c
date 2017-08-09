@@ -1069,7 +1069,7 @@ void cmdq_virtual_init_module_PA_stat(void)
 	CmdqModulePAStatStruct *modulePAStat = cmdq_core_Initial_and_get_module_stat();
 
 	/* Get MM_SYS config registers range */
-	cmdq_dev_get_module_PA("mediatek,MMSYS_CONFIG", 0,
+	cmdq_dev_get_module_PA("mediatek,mmsys_config", 0,
 					    &modulePAStat->start[CMDQ_MODULE_STAT_MMSYS_CONFIG],
 					    &modulePAStat->end[CMDQ_MODULE_STAT_MMSYS_CONFIG]);
 	/* Get MDP module registers range */
