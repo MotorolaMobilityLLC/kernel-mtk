@@ -183,6 +183,7 @@ obj-n += crypto/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
 obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
+obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
 endif

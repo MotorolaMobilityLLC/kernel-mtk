@@ -57,6 +57,10 @@
 #include "mt_soc_pcm_common.h"
 #include "AudDrv_Common_func.h"
 
+#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
+#include <audio_messenger_ipi.h>
+#include <mt_spm_sleep.h>
+#endif
 /*
  *    function implementation
  */
@@ -236,8 +240,25 @@ static int mtk_voice_md2_trigger(struct snd_pcm_substream *substream, int cmd)
 	pr_warn("mtk_voice_md2_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
+		spm_ap_mdsrc_req(1);
+		audio_send_ipi_msg(
+			TASK_SCENE_PHONE_CALL,
+			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
+			0x2f20, true, 0, NULL);
+		break;
+#endif
 	case SNDRV_PCM_TRIGGER_RESUME:
+		break;
 	case SNDRV_PCM_TRIGGER_STOP:
+#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
+		audio_send_ipi_msg(
+			TASK_SCENE_PHONE_CALL,
+			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
+			0x2f21, false, 0, NULL);
+		spm_ap_mdsrc_req(0);
+		break;
+#endif
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		break;
 	}

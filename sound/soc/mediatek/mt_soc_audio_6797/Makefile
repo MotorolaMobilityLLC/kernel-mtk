@@ -12,6 +12,12 @@ ccflags-y += -D_GIT318_READY
 ccflags-y += -D_GIT318_PMIC_READY
 ccflags-y += -DAUDIO_USING_WRAP_DRIVER
 ccflags-y += -D_MT_IDLE_HEADER
+
+ifeq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)
+ccflags-y += -DMTK_AURISYS_PHONE_CALL_SUPPORT
+endif
+
 #
 EXTRA_CFLAGS := -I$(src)/../common
 obj-$(CONFIG_MT_SND_SOC_6797) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o

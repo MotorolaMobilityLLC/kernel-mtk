@@ -24,7 +24,7 @@ typedef enum ipi_id {
 	IPI_LOGGER,
 	IPI_SWAP,
 	IPI_VOW,
-	IPI_SPK_PROTECT,
+	IPI_AUDIO,
 	IPI_THERMAL,
 	IPI_SPM,
 	IPI_DVT_TEST,
