@@ -386,7 +386,7 @@ static void _spm_vcorefs_init_reg(void)
 	u32 mask;
 
 	/* set en_spm2cksys_mem_ck_mux_update for SPM control */
-	spm_write((spm_cksys_base + 0x40), (spm_read(spm_cksys_base + 0x40) | (0x1 << 13)));
+	/* spm_write((spm_cksys_base + 0x40), (spm_read(spm_cksys_base + 0x40) | (0x1 << 13))); */
 
 	/* SPM_EMI_BW_MODE[0]&[1] set to 0 */
 	mask = (EMI_BW_MODE_LSB | EMI_BOOST_MODE_LSB);
