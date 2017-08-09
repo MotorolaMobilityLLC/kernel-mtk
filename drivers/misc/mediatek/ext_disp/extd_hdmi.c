@@ -180,6 +180,18 @@ void hdmi_force_resolution(int params)
 	HDMI_LOG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange, hdmi_params->is_3d_support);
 }
 
+#ifdef MM_MHL_DVFS
+#include "mmdvfs_mgr.h"
+static void hdmi_enable_dvfs(int enable)
+{
+	mmdvfs_mhl_enable(enable);
+}
+#else
+static void hdmi_enable_dvfs(int enable)
+{
+}
+#endif
+
 /* <--for debug */
 void hdmi_cable_fake_plug_in(void)
 {
@@ -188,7 +200,11 @@ void hdmi_cable_fake_plug_in(void)
 
 	if (p->is_force_disable == false) {
 		if (IS_HDMI_STANDBY()) {
+#ifdef MHL_DYNAMIC_VSYNC_OFFSET
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, true);
+#endif
 			hdmi_resume();
+			hdmi_enable_dvfs(true);
 			/* /msleep(1000); */
 			hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
 			switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
@@ -204,7 +220,11 @@ void hdmi_cable_fake_plug_out(void)
 	if (p->is_force_disable == false) {
 		if (IS_HDMI_ON()) {
 			if (hdmi_drv->get_state() != HDMI_STATE_ACTIVE) {
+#ifdef MHL_DYNAMIC_VSYNC_OFFSET
+				ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, false);
+#endif
 				hdmi_suspend();
+				hdmi_enable_dvfs(false);
 				switch_set_state(&hdmi_switch_data, HDMI_STATE_NO_DEVICE);
 				switch_set_state(&hdmires_switch_data, 0);
 			}
@@ -308,19 +328,6 @@ int hdmi_dump_vendor_chip_register(void)
 		hdmi_drv->dump();
 	return ret;
 }
-/* -->for debug */
-
-#ifdef MM_MHL_DVFS
-#include "mmdvfs_mgr.h"
-static void hdmi_enable_dvfs(int enable)
-{
-	mmdvfs_mhl_enable(enable);
-}
-#else
-static void hdmi_enable_dvfs(int enable)
-{
-}
-#endif
 
 bool is_hdmi_active(void)
 {
@@ -1294,7 +1301,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			dispif_info->vsyncFPS = 60;
 
 		if (dispif_info->displayWidth * dispif_info->displayHeight <= 240 * 432)
-			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
+			dispif_info->physicalHeight = dispif_info2d->physicalWidth = 0;
 		else if (dispif_info->displayWidth * dispif_info->displayHeight <= 320 * 480)
 			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
 		else if (dispif_info->displayWidth * dispif_info->displayHeight <= 480 * 854)
