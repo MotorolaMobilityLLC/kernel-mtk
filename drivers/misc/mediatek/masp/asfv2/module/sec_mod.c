@@ -357,6 +357,7 @@ static int __init masp_parse_dt(unsigned long node, const char *uname, int depth
 		g_rom_info_sdl_attr = tags->rom_info_sdl_attr;
 		g_hw_sbcen = tags->hw_sbcen;
 		g_lock_state = tags->lock_state;
+		lks = tags->lock_state;
 		for (i = 0; i < NUM_RID; i++)
 			g_random_id[i] = tags->rid[i];
 		for (i = 0; i < NUM_CRYPTO_SEED; i++)

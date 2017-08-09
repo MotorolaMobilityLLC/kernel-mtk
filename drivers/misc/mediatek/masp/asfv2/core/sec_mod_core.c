@@ -34,7 +34,7 @@ typedef struct {
 } HEVC_BLK;
 HEVC_BLK hevc_blk;
 
-static uint lks = 2;		/* if sec is not enabled, this param will not be updated */
+uint lks = 2;		/* if sec is not enabled, this param will not be updated */
 module_param(lks, uint, S_IRUSR /*|S_IWUSR|S_IWGRP */  | S_IRGRP | S_IROTH);	/* r--r--r-- */
 MODULE_PARM_DESC(lks, "A device lks parameter under sysfs (0=NL, 1=L, 2=NA)");
 
@@ -45,20 +45,6 @@ MODULE_PARM_DESC(lks, "A device lks parameter under sysfs (0=NL, 1=L, 2=NA)");
 void sec_core_exit(void)
 {
 	pr_debug("[%s] version '%s%s', exit.\n", MOD, BUILD_TIME, BUILD_BRANCH);
-}
-
-void sec_update_lks(unsigned char tr, unsigned char dn, unsigned char fb_ulk)
-{
-	if (fb_ulk)		/* FB */
-		lks = 0;
-	else if (sec_schip_enabled())	/* SC */
-		lks = 1;
-	else if (!sec_boot_enabled())	/* NSC */
-		lks = 0;
-	else if (0 == tr && 2 == dn)	/* SWSEC */
-		lks = 0;
-	else			/* SWSEC */
-		lks = 1;
 }
 
 /* extern void osal_msleep(unsigned int msec); */
