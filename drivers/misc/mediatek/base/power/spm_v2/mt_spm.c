@@ -35,6 +35,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 #include "mt_spm_misc.h"
+#include <linux/suspend.h>
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
@@ -852,6 +853,36 @@ const struct file_operations gSPMDetectFops = {
 	.write = SPM_detect_write,
 };
 
+static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	int i = 0;
+
+	switch (pm_event) {
+	case PM_HIBERNATION_PREPARE:
+		return NOTIFY_DONE;
+	case PM_RESTORE_PREPARE:
+		return NOTIFY_DONE;
+	case PM_POST_HIBERNATION:
+		if (local_buf) {
+			iounmap(local_buf);
+			local_buf = NULL;
+		}
+		dyna_load_pcm_done = 0;
+		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
+			dyna_load_pcm[i].ready = 0;
+		spm_load_pcm_firmware_nodev();
+
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block spm_pm_notifier_func = {
+	.notifier_call = spm_pm_event,
+	.priority = 0,
+};
+
 int spm_module_late_init(void)
 {
 	int i = 0;
@@ -904,6 +935,12 @@ int spm_module_late_init(void)
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
 		dyna_load_pcm[i].ready = 0;
+
+	ret = register_pm_notifier(&spm_pm_notifier_func);
+	if (ret) {
+		pr_debug("Failed to register PM notifier.\n");
+		goto err2;
+	}
 
 	return 0;
 

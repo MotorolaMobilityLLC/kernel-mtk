@@ -1046,8 +1046,6 @@ static int vcorefs_governor_pm_callback(struct notifier_block *nb, unsigned long
 	switch (action) {
 	case PM_POST_HIBERNATION:
 		{
-			struct governor_profile *gvrctrl = &governor_ctrl;
-
 			vcorefs_info
 			    ("restore sram debug info(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
 			     sram_debug_info[0], sram_debug_info[1], sram_debug_info[2],
@@ -1061,9 +1059,6 @@ static int vcorefs_governor_pm_callback(struct notifier_block *nb, unsigned long
 			spm_write(VCOREFS_SRAM_DVFS_UP_LATENCY, 0);
 			spm_write(VCOREFS_SRAM_DVFS_DOWN_LATENCY, 0);
 			spm_write(VCOREFS_SRAM_DVFS_LATENCY_SPEC, sram_debug_info[6]);
-
-			if (gvrctrl->vcore_dvfs_en == true)
-				spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
 		}
 		break;
 	case PM_HIBERNATION_PREPARE:
