@@ -17,6 +17,15 @@ config MTK_LENS_DUMMYLENS_SUPPORT
     lens driver for the camera sensor module
     Set as y if the driver is used in this project
 
+config MTK_LENS_BU63165AF_SUPPORT
+  bool "BU63165AF Lens Driver"
+  default n
+  help
+    BU63165AF Lens Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project
+
 config MTK_LENS_AD5820AF_SUPPORT
   bool "AD5820AF Lens Driver"
   default n
@@ -139,6 +148,15 @@ config MTK_LENS_LC898212AF_SUPPORT
   default n
   help
     LC898212AF Lens Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project
+
+config MTK_LENS_LC898212XDAF_SUPPORT
+  bool "LC898212XDAF Lens Driver"
+  default n
+  help
+    LC898212XDAF Lens Driver
     This config is used to enable the corresponding
     lens driver for the camera sensor module
     Set as y if the driver is used in this project

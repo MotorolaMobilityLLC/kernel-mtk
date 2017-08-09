@@ -1,5 +1,5 @@
 /*
- * BU6424AF voice coil motor driver
+ * AD5823AF voice coil motor driver
  *
  *
  */
@@ -12,8 +12,8 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "BU6424AF_DRV"
-#define AF_I2C_SLAVE_ADDR        0x18
+#define AF_DRVNAME "AD5823AF_DRV"
+#define AF_I2C_SLAVE_ADDR        0x0C
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
@@ -38,19 +38,44 @@ static int s4AF_ReadReg(unsigned short *a_pu2Result)
 {
 	int i4RetValue = 0;
 	char pBuff[2];
+	char VCMMSB[1] = { (char)(0x04) };
+	char VCMLSB[1] = { (char)(0x05) };
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
-	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, pBuff, 2);
+	/* Read MSB */
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMMSB, 1);
 
 	if (i4RetValue < 0) {
-		LOG_INF("I2C read failed!!\n");
+		LOG_INF("I2C read MSB send failed!!\n");
 		return -1;
 	}
 
-	*a_pu2Result = (((u16)(pBuff[0] & 0x03)) << 8) + pBuff[1];
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, &pBuff[1], 1);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C read MSB recv failed!!\n");
+		return -1;
+	}
+
+	/* Read LSB */
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMLSB, 1);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C read LSB send failed!!\n");
+		return -1;
+	}
+
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, &pBuff[0], 1);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C read LSB recv failed!!\n");
+		return -1;
+	}
+
+	*a_pu2Result = ((u16) pBuff[0] + (u16) (pBuff[1] << 8));
 
 	return 0;
 }
@@ -59,13 +84,17 @@ static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
 
-	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xc0), (char)(a_u2Data & 0xff)};
+	/* 0x04[1:0] VCM MSB data */
+	/* 0x05[7:0] VCM LSB data */
+	char VCMMSB[2] = { (char)(0x04), (char)((a_u2Data >> 8) & 0x03) };
+	char VCMLSB[2] = { (char)(0x05), (char)(a_u2Data & 0xFF) };
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMMSB, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMLSB, 2);
 
 	if (i4RetValue < 0) {
 		LOG_INF("I2C send failed!!\n");
@@ -75,7 +104,7 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	return 0;
 }
 
-static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
+static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 {
 	stAF_MotorInfo stMotorInfo;
 
@@ -97,6 +126,31 @@ static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
 	return 0;
 }
 
+static int AD5823_Mode_Init(void)
+{
+	int i4RetValue = 0;
+
+	char Mode[2] = { (char)(0x02), (char)(0x01) };
+	char MoveTime[2] = { (char)(0x03), (char)(0x4B) };
+	char VCMMSB[2] = { (char)(0x04), (char)(0x05) };
+	char VCMLSB[2] = { (char)(0x05), (char)(0x32) };
+
+	LOG_INF("mode_init : 0x02\n");
+
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, Mode, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, MoveTime, 2);
+#if 1
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMMSB, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMLSB, 2);
+#endif
+
+	return 0;
+}
+
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
@@ -108,6 +162,8 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
+
+		AD5823_Mode_Init();
 
 		ret = s4AF_ReadReg(&InitPos);
 
@@ -167,7 +223,7 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long BU6424AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long AD5823AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -202,21 +258,16 @@ long BU6424AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int AD5823AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
-		char puSendCmd[2];
-
-		puSendCmd[0] = (char)(0x00);
-		puSendCmd[1] = (char)(0x00);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 		LOG_INF("Wait\n");
-		/*s4AF_WriteReg(200);
+		s4AF_WriteReg(200);
 		msleep(20);
 		s4AF_WriteReg(100);
-		msleep(20);*/
+		msleep(20);
 	}
 
 	if (*g_pAF_Opened) {
@@ -232,7 +283,7 @@ int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void BU6424AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+void AD5823AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
