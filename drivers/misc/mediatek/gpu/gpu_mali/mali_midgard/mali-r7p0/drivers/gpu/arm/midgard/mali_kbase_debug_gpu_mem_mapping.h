@@ -19,5 +19,6 @@
 #include <mali_kbase.h>
 
 phys_addr_t kbase_debug_gpu_mem_mapping(struct kbase_context *kctx, u64 va);
+bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
 
 #endif /* _KBASE_SHOW_MEM_MAPPING_H */

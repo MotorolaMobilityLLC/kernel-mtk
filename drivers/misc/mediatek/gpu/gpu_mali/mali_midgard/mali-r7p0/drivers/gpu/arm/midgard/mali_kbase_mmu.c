@@ -49,6 +49,9 @@
 extern atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 #endif /* ENABLE_MTK_MEMINFO */
 
+int g_check_PA_flag = 0;
+u64 g_check_PA_address = 0;
+
 /**
  * kbase_mmu_sync_pgd - sync page directory to memory
  * @dev:	Device pointer.
@@ -73,6 +76,13 @@ static void kbase_mmu_sync_pgd(struct device *dev,
  * - ATE: Address Transation Entry. A 64bit value pointing to
  *        a 4kB physical page.
  */
+
+void kbase_check_PA(u64 pa)
+{
+	pr_err("[MALI] kbase_check_PA. PA=0x%llx.\n", pa);
+	g_check_PA_flag = 1;
+	g_check_PA_address = pa;
+}
 
 static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 		struct kbase_as *as, const char *reason_str);
@@ -307,6 +317,14 @@ void page_fault_worker(struct work_struct *data)
 	}
 
 fault_done:
+
+	if( g_check_PA_flag == 1)
+	{
+		dev_dbg(kbdev->dev, "EMI MPU violation, ready to check if PA:0x%llx is in GPU MMU table.\n", g_check_PA_address);	
+		kbase_debug_gpu_mem_mapping_check_pa(g_check_PA_address);
+		g_check_PA_flag = 0;
+	}
+
 	/*
 	 * By this point, the fault was handled in some way,
 	 * so release the ctx refcount
@@ -314,6 +332,9 @@ fault_done:
 	kbasep_js_runpool_release_ctx(kbdev, kctx);
 
 	atomic_dec(&kbdev->faults_pending);
+
+	
+		
 }
 
 phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
