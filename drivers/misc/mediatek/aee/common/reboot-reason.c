@@ -49,11 +49,13 @@ enum boot_reason_t {
 	BR_TOOL_BY_PASS_PWK,
 	BR_2SEC_REBOOT,
 	BR_UNKNOWN,
-	BR_KE_REBOOT
+	BR_KERNEL_PANIC,
+	BR_WDT_SW,
+	BR_WDT_HW
 };
 
-char boot_reason[][16] = { "XXXXXX", "XXXXXXX", "XXX", "XXX",
-	"XXXXXX", "XXXXXXXXXXX", "XXXX", "XXXXXX", "XXXXXX" };
+char boot_reason[][16] = { "keypad", "usb_chg", "rtc", "wdt", "reboot",
+	"tool reboot", "smpl", "others", "kpanic", "wdt_sw", "wdt_hw" };
 
 int __weak aee_rr_reboot_reason_show(struct seq_file *m, void *v)
 {
@@ -102,7 +104,7 @@ static ssize_t powerup_reason_show(struct kobject *kobj, struct kobj_attribute *
 		LOGE("g_boot_reason=%d\n", g_boot_reason);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		if (aee_rr_last_fiq_step() != 0)
-			g_boot_reason = BR_KE_REBOOT;
+			g_boot_reason = BR_KERNEL_PANIC;
 #endif
 		return sprintf(buf, "%s\n", boot_reason[g_boot_reason]);
 	} else
