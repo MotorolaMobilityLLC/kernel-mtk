@@ -19,7 +19,8 @@
 
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-memops.h>
-#include <mtkbuf-dma-cache-sg.h>
+
+#include "mtkbuf-dma-cache-sg.h"
 
 static int debug;
 module_param(debug, int, 0644);

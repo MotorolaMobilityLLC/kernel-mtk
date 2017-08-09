@@ -16,8 +16,8 @@
 #include <media/v4l2-event.h>
 #include <media/v4l2-mem2mem.h>
 #include <media/videobuf2-dma-contig.h>
-#include <mtkbuf-dma-cache-sg.h>
 
+#include "mtkbuf-dma-cache-sg.h"
 #include "mtk_vcodec_drv.h"
 #include "mtk_vcodec_dec.h"
 #include "mtk_vcodec_intr.h"

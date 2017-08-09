@@ -12,6 +12,7 @@ obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC) += mtk_vcodec_intr.o \
 
 obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC) += vp8_enc/ h264_enc/ h264_dec/ vp8_dec/ vp9_dec/ mpeg4_dec/
 
+ccflags-y += -I$(srctree)/drivers/media/platform/mtk-vcodec
 ccflags-y += -I$(srctree)/drivers/media/platform/mtk-vpu
 
 ifeq ($(CONFIG_VIDEO_MEDIATEK_VCODEC),y)
