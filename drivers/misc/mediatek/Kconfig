@@ -60,6 +60,7 @@ config MTK_MEMCFG
 
 config MTK_MEMORY_LOWPOWER
 	bool "Support Mediatek memory lowpower technology"
+	depends on CMA && ZONE_MOVABLE_CMA
 	default n
 	help
 	  Mediatek DRAM low power technology.
