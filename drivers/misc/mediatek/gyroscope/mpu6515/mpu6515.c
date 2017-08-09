@@ -1107,15 +1107,27 @@ static int MPU6515_ReadPowerStatus(struct i2c_client *client, char *buf, int buf
 static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 {
 	struct i2c_client *client = mpu6515_i2c_client;
-	char strbuf[MPU6515_BUFSIZE];
+	/* char strbuf[MPU6515_BUFSIZE]; */
+	char *strbuf;
+	int ret;
 
 	if (NULL == client) {
 		GYRO_ERR("i2c client is null!!\n");
 		return 0;
 	}
 
+	strbuf = kmalloc(MPU6515_BUFSIZE, GFP_KERNEL);
+	if (!strbuf) {
+		GYRO_ERR("strbuf is null!!\n");
+		return 0;
+	}
+
 	MPU6515_ReadChipInfo(client, strbuf, MPU6515_BUFSIZE);
-	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
+
+	ret = snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
+	kfree(strbuf);
+
+	return ret;
 }
 
 /*----------------------------------------------------------------------------*/

@@ -1325,7 +1325,9 @@ static int MPU6515_JudgeTestResult(struct i2c_client *client, s32 prv[MPU6515_AX
 static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 {
 	struct i2c_client *client = mpu6515_i2c_client;
-	char strbuf[MPU6515_BUFSIZE];
+	/* char strbuf[MPU6515_BUFSIZE]; */
+	char *strbuf;
+	int ret;
 
 	if (NULL == client) {
 		GSE_ERR("i2c client is null!!\n");
@@ -1337,10 +1339,20 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 		msleep(50);
 	}
 
+	strbuf = kmalloc(MPU6515_BUFSIZE, GFP_KERNEL);
+	if (!strbuf) {
+		GSE_ERR("strbuf is null!!\n");
+		return 0;
+	}
+
 	MPU6515_ReadAllReg(client, strbuf, MPU6515_BUFSIZE);
 
 	MPU6515_ReadChipInfo(client, strbuf, MPU6515_BUFSIZE);
-	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
+
+	ret = snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
+	kfree(strbuf);
+
+	return ret;
 }
 
 /*----------------------------------------------------------------------------*/
