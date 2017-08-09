@@ -1062,8 +1062,6 @@ VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 				      0	/* u4SetQueryBufferLen */
 	    );
 
-	ASSERT(rStatus == WLAN_STATUS_PENDING);
-
 	cnmMemFree(prAdapter, prCmd);
 }
 
@@ -1830,8 +1828,6 @@ VOID rlmDomainSendPwrLimitCmd(P_ADAPTER_T prAdapter)
 		    );
 	} else
 		DBGLOG(RLM, ERROR, "Domain: illegal power limit table");
-
-	/* ASSERT(rStatus == WLAN_STATUS_PENDING); */
 
 	cnmMemFree(prAdapter, prCmd);
 

@@ -875,8 +875,11 @@ BOOLEAN nicTxSanityCheckResource(IN P_ADAPTER_T prAdapter)
 * \retval WLAN_STATUS_RESOURCES Resource is not available.
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 u4CurrTick = 0;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UINT_8 ucPageCount)
 {
+#define TC4_NO_RESOURCE_DELAY_MS      5    /* exponential of 5s */
+
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
 
@@ -889,6 +892,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 
 	if (prTxCtrl->rTc.au2FreePageCount[ucTC] >= ucPageCount) {
 
+		if (ucTC == TC4_INDEX)
+			u4CurrTick = 0;
 		prTxCtrl->rTc.au2FreePageCount[ucTC] -= ucPageCount;
 
 		prTxCtrl->rTc.au2FreeBufferCount[ucTC] =
@@ -903,6 +908,16 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 	}
 
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+
+	if (ucTC == TC4_INDEX) {
+		if (u4CurrTick == 0)
+			u4CurrTick = kalGetTimeTick();
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
+				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_MS))) {
+			wlanDumpTcResAndTxedCmd(NULL, 0);
+			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+		}
+	}
 
 	return u4Status;
 
@@ -1196,6 +1211,10 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 					prTcqStatus->au2FreeBufferCount[i]);
 			}
 		}
+
+		if (au2TxRlsCnt[TC4_INDEX] != 0)
+			wlanTraceReleaseTcRes(prAdapter, au2TxRlsCnt, prTcqStatus->au2FreeBufferCount[TC4_INDEX]);
+
 		for (i = TC0_INDEX; i < TC_NUM; i++)
 			prQM->au4QmTcResourceBackCounter[i] += au2FreeTcResource[i];
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
@@ -2318,6 +2337,8 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	prTxCtrl = &prAdapter->rTxCtrl;
 	pucOutputBuf = prTxCtrl->pucTxCoalescingBufPtr;
 
+	wlanTraceTxCmd(prCmdInfo);
+
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		prMsduInfo = prCmdInfo->prMsduInfo;
 
@@ -2406,9 +2427,17 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
 
-		DBGLOG(TX, TRACE, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
+		if ((prWifiCmd->ucCID == CMD_ID_SCAN_REQ) ||
+			(prWifiCmd->ucCID == CMD_ID_SCAN_CANCEL) ||
+			(prWifiCmd->ucCID == CMD_ID_SCAN_REQ_V2)) {
+			DBGLOG(TX, INFO, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
+					prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
+					u2OverallBufferLength);
+		} else {
+			DBGLOG(TX, TRACE, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
 				    prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
 				    u2OverallBufferLength);
+		}
 	}
 
 	/* <4> Write frame to data port */
