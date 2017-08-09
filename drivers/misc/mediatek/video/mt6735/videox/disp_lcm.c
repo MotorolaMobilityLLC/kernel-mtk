@@ -465,7 +465,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	/* parse LCM init table */
 	len = disp_of_getprop_u8(np, "init", dts);
 	if (len < 0) {
-		pr_err("%s:%d: Cannot find LCM init table\n", __FILE__, __LINE__);
+		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
 		return;
 	}
 	if (len > INIT_SIZE) {
@@ -529,71 +529,73 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	/* parse LCM compare_id table */
 	len = disp_of_getprop_u8(np, "compare_id", dts);
 	if (len < 0) {
-		pr_err("%s:%d: Cannot find LCM compare_id table\n", __FILE__, __LINE__);
-		return;
-	}
-	if (len > COMPARE_ID_SIZE) {
-		pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__, len);
-		return;
-	}
+		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
+	} else {
+		if (len > COMPARE_ID_SIZE) {
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
 
-	tmp = dts;
-	for (i = 0; i < 8; i++) {
-		lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
-		lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
-		lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
-		tmp_len = 3;
+		tmp = dts;
+		for (i = 0; i < 8; i++) {
+			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
+			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
 
-		switch (lcm_dts->compare_id[i].func) {
-		case LCM_FUNC_UTIL:
-			memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3,
-			       lcm_dts->compare_id[i].size);
-			break;
-
-		case LCM_FUNC_CMD:
-			switch (lcm_dts->compare_id[i].type) {
-			case LCM_UTIL_WRITE_CMD_V1:
-				memcpy(&(lcm_dts->compare_id[i].data_t5), tmp + 3,
+			switch (lcm_dts->compare_id[i].func) {
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3,
 				       lcm_dts->compare_id[i].size);
 				break;
 
-			case LCM_UTIL_WRITE_CMD_V2:
-				memcpy(&(lcm_dts->compare_id[i].data_t3), tmp + 3,
-				       lcm_dts->compare_id[i].size);
-				break;
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->compare_id[i].type) {
+				case LCM_UTIL_WRITE_CMD_V1:
+					memcpy(&(lcm_dts->compare_id[i].data_t5), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
 
-			case LCM_UTIL_READ_CMD_V2:
-				memcpy(&(lcm_dts->compare_id[i].data_t4), tmp + 3,
-				       lcm_dts->compare_id[i].size);
+				case LCM_UTIL_WRITE_CMD_V2:
+					memcpy(&(lcm_dts->compare_id[i].data_t3), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
+
+				case LCM_UTIL_READ_CMD_V2:
+					memcpy(&(lcm_dts->compare_id[i].data_t4), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       (unsigned int)lcm_dts->compare_id[i].type);
+					return;
+				}
 				break;
 
 			default:
 				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       (unsigned int)lcm_dts->compare_id[i].type);
+				       (unsigned int)lcm_dts->compare_id[i].func);
 				return;
 			}
-			break;
+			tmp_len = tmp_len + lcm_dts->compare_id[i].size;
 
-		default:
-			pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-			       (unsigned int)lcm_dts->compare_id[i].func);
-			return;
-		}
-		tmp_len = tmp_len + lcm_dts->compare_id[i].size;
-
-		if (tmp_len < len) {
-			tmp = tmp + tmp_len;
-			len = len - tmp_len;
-		} else {
-			lcm_dts->compare_id_size = i + 1;
-			break;
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				lcm_dts->compare_id_size = i + 1;
+				break;
+			}
 		}
 	}
 
 	/* parse LCM suspend table */
 	len = disp_of_getprop_u8(np, "suspend", dts);
 	if (len < 0) {
-		pr_err("%s:%d: Cannot find LCM suspend table\n", __FILE__, __LINE__);
+		pr_err("%s:%d: Cannot find LCM suspend table, cannot skip it!\n", __FILE__,
+		       __LINE__);
 		return;
 	}
 	if (len > SUSPEND_SIZE) {
@@ -626,8 +628,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				break;
 
 			default:
-				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       lcm_dts->suspend[i].type);
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__, lcm_dts->suspend[i].type);
 				return;
 			}
 			break;
@@ -651,54 +652,55 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	/* parse LCM backlight table */
 	len = disp_of_getprop_u8(np, "backlight", dts);
 	if (len < 0) {
-		pr_err("%s:%d: Cannot find LCM backlight table\n", __FILE__, __LINE__);
-		return;
-	}
-	if (len > BACKLIGHT_SIZE) {
-		pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__, len);
-		return;
-	}
+		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
+	} else {
+		if (len > BACKLIGHT_SIZE) {
+			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
 
-	tmp = dts;
-	for (i = 0; i < 8; i++) {
-		lcm_dts->backlight[i].func = (*tmp) & 0xFF;
-		lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
-		lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
-		tmp_len = 3;
+		tmp = dts;
+		for (i = 0; i < 8; i++) {
+			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
+			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
 
-		switch (lcm_dts->backlight[i].func) {
-		case LCM_FUNC_UTIL:
-			memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3,
-			       lcm_dts->backlight[i].size);
-			break;
-
-		case LCM_FUNC_CMD:
-			switch (lcm_dts->backlight[i].type) {
-			case LCM_UTIL_WRITE_CMD_V2:
-				memcpy(&(lcm_dts->backlight[i].data_t3), tmp + 3,
+			switch (lcm_dts->backlight[i].func) {
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3,
 				       lcm_dts->backlight[i].size);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->backlight[i].type) {
+				case LCM_UTIL_WRITE_CMD_V2:
+					memcpy(&(lcm_dts->backlight[i].data_t3), tmp + 3,
+					       lcm_dts->backlight[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       lcm_dts->backlight[i].type);
+					return;
+				}
 				break;
 
 			default:
 				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       lcm_dts->backlight[i].type);
+				       (unsigned int)lcm_dts->backlight[i].func);
 				return;
 			}
-			break;
+			tmp_len = tmp_len + lcm_dts->backlight[i].size;
 
-		default:
-			pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-			       (unsigned int)lcm_dts->backlight[i].func);
-			return;
-		}
-		tmp_len = tmp_len + lcm_dts->backlight[i].size;
-
-		if (tmp_len < len) {
-			tmp = tmp + tmp_len;
-			len = len - tmp_len;
-		} else {
-			lcm_dts->backlight_size = i + 1;
-			break;
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				lcm_dts->backlight_size = i + 1;
+				break;
+			}
 		}
 	}
 }

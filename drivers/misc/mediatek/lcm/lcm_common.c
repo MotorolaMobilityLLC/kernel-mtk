@@ -845,44 +845,49 @@ void lcm_common_update(unsigned int x, unsigned int y, unsigned int width, unsig
 
 	LCM_DATA update;
 	LCM_DATA_T5 *data_t5 = &(update.data_t5);
+	LCM_PARAMS *dts_params = &_LCM_DTS.params;
 
-	data_t5->size = 7;
-	data_t5->cmd[0] = 0x02;
-	data_t5->cmd[1] = 0x39;
-	data_t5->cmd[2] = 0x05;
-	data_t5->cmd[3] = 0x00;
+	if (_LCM_DTS.parsing != 0) {
+		if (dts_params->dsi.mode == CMD_MODE) {
+			data_t5->size = 7;
+			data_t5->cmd[0] = 0x02;
+			data_t5->cmd[1] = 0x39;
+			data_t5->cmd[2] = 0x05;
+			data_t5->cmd[3] = 0x00;
 
-	data_t5->cmd[4] = 0x2a;
-	data_t5->cmd[5] = x0_MSB;
-	data_t5->cmd[6] = x0_LSB;
-	data_t5->cmd[7] = x1_MSB;
+			data_t5->cmd[4] = 0x2a;
+			data_t5->cmd[5] = x0_MSB;
+			data_t5->cmd[6] = x0_LSB;
+			data_t5->cmd[7] = x1_MSB;
 
-	data_t5->cmd[8] = x1_LSB;
-	data_t5->cmd[9] = 0x00;
-	data_t5->cmd[10] = 0x00;
-	data_t5->cmd[11] = 0x00;
+			data_t5->cmd[8] = x1_LSB;
+			data_t5->cmd[9] = 0x00;
+			data_t5->cmd[10] = 0x00;
+			data_t5->cmd[11] = 0x00;
 
-	data_t5->cmd[12] = 0x02;
-	data_t5->cmd[13] = 0x39;
-	data_t5->cmd[14] = 0x05;
-	data_t5->cmd[15] = 0x00;
+			data_t5->cmd[12] = 0x02;
+			data_t5->cmd[13] = 0x39;
+			data_t5->cmd[14] = 0x05;
+			data_t5->cmd[15] = 0x00;
 
-	data_t5->cmd[16] = 0x2b;
-	data_t5->cmd[17] = y0_MSB;
-	data_t5->cmd[18] = y0_LSB;
-	data_t5->cmd[19] = y1_MSB;
+			data_t5->cmd[16] = 0x2b;
+			data_t5->cmd[17] = y0_MSB;
+			data_t5->cmd[18] = y0_LSB;
+			data_t5->cmd[19] = y1_MSB;
 
-	data_t5->cmd[20] = y1_LSB;
-	data_t5->cmd[21] = 0x00;
-	data_t5->cmd[22] = 0x00;
-	data_t5->cmd[23] = 0x00;
+			data_t5->cmd[20] = y1_LSB;
+			data_t5->cmd[21] = 0x00;
+			data_t5->cmd[22] = 0x00;
+			data_t5->cmd[23] = 0x00;
 
-	data_t5->cmd[24] = 0x09;
-	data_t5->cmd[25] = 0x39;
-	data_t5->cmd[26] = 0x2c;
-	data_t5->cmd[27] = 0x00;
+			data_t5->cmd[24] = 0x09;
+			data_t5->cmd[25] = 0x39;
+			data_t5->cmd[26] = 0x2c;
+			data_t5->cmd[27] = 0x00;
 
-	lcm_util_set_write_cmd_v1(&lcm_util, data_t5, 0);
+			lcm_util_set_write_cmd_v1(&lcm_util, data_t5, 0);
+		}
+	}
 }
 
 
