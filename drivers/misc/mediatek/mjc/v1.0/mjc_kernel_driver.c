@@ -66,7 +66,6 @@
 #define MTK_MJC_DEV_MAJOR_NUMBER 168
 #define MJC_FORCE_REG_NUM 100
 
-
 /* variable */
 static DEFINE_SPINLOCK(ContextLock);
 static DEFINE_SPINLOCK(HWLock);
@@ -491,16 +490,12 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 	int u4FirstUse;
 	unsigned long ulAdd;
 	unsigned long ulFlags;
-	unsigned int u4efuse;
-#ifdef CONFIG_MTK_SEGMENT_TEST
-	unsigned int u4TestValue;
-#endif
+
 	MJC_IOCTL_LOCK_HW_T rLockHW;
 	MJC_IOCTL_ISR_T rIsr;
 	MJC_READ_REG_T rReadReg;
 	MJC_WRITE_REG_T rWriteReg;
 	MJC_IOCTL_SRC_CLK_T rSrcClk;
-	MJC_IOCTL_EFUSE_INFO_T rEFuseInfo;
 	MJC_IOCTL_REG_INFO_T rRegInfo;
 
 	int cnt = 0;
@@ -735,49 +730,6 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 				return -1;
 			}
 			clk_disable_unprepare(clk_TOP_MUX_MJC);
-		}
-		break;
-	case MJC_EFUSE_INFO:
-		{
-			MJCDBG("mjc_ioctl() MJC_EFUSE_INFO + tid = %d\n", current->pid);
-
-			if (copy_from_user
-			    (&rEFuseInfo, (void __user *)u4arg, sizeof(MJC_IOCTL_EFUSE_INFO_T))) {
-				MJCMSG("[ERROR] mjc_ioctl() MJC_EFUSE_INFO copy_from_user fail\n");
-				return -1;
-			}
-
-			if (sizeof(MJC_IOCTL_EFUSE_INFO_T) != rEFuseInfo.u4StructSize) {
-				MJCMSG
-				    ("[ERROR] mjc_ioctl() MJC_EFUSE_INFO context size mismatch (user:%d, kernel:%ld)\n",
-				     rEFuseInfo.u4StructSize, sizeof(MJC_IOCTL_EFUSE_INFO_T));
-				return -1;
-			}
-
-			MJCDBG(" EFUSE_MJC_IDX =%d, EFUSE_MJC_BIT =%d\n",
-			rEFuseInfo.u1EFuseIndex, rEFuseInfo.u4EFuseBit);
-
-#ifndef CONFIG_MTK_SEGMENT_TEST
-			u4efuse = get_devinfo_with_index(rEFuseInfo.u1EFuseIndex);
-
-			if ((u4efuse & rEFuseInfo.u4EFuseBit) != 0) {
-				MJCMSG("[ERROR] mjc efuse no support %d\n", u4efuse);
-				return -1;
-			}
-#else
-			u4TestValue = MJC_Reg32((gulRegister + 4));
-			MJCDBG("Pre-Read: 0x%x\n", u4TestValue);
-			MJC_WriteReg32((gulRegister + 4), 0x123456);
-			MJC_WriteReg32((gulRegister + 4), 0x123456);
-			u4TestValue = MJC_Reg32((gulRegister + 4));
-			MJCDBG("Read: 0x%x\n", u4TestValue);
-			if (u4TestValue == 0x123456) {
-				MJCMSG("[MJC efuse] HW enable\n");
-			} else {
-				MJCMSG("[MJC efuse] HW disable\n");
-				return -1;
-			}
-#endif
 		}
 		break;
 
