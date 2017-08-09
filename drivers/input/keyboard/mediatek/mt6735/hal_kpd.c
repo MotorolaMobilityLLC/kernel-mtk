@@ -1,6 +1,4 @@
-#include <mach/hal_pub_kpd.h>
-#include <mach/hal_priv_kpd.h>
-#include <mt-plat/kpd.h>
+#include <kpd.h>
 #include <mt-plat/aee.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -19,13 +17,13 @@
 #define kpd_info(fmt, arg...)	do {} while (0)
 #endif
 
-#if KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
 #endif
 
 static int kpd_show_hw_keycode = 1;
 #ifndef EVB_PLATFORM
-/*static int kpd_enable_lprst = 1;*/
+static int kpd_enable_lprst = 1;
 #endif
 static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 	0xffff, 0xffff, 0xffff, 0xffff, 0x00ff
@@ -129,165 +127,6 @@ void kpd_slide_qwerty_init(void)
 #endif
 }
 
-/************************************************************/
-/**************************************/
-#if defined(CONFIG_MTK_LEGACY)	/*This not need now */
-#ifdef CONFIG_MTK_LDVT
-void mtk_kpd_gpios_get(unsigned int ROW_REG[], unsigned int COL_REG[], unsigned int GPIO_MODE[])
-{
-	int i;
-
-	for (i = 0; i < 3; i++) {
-		ROW_REG[i] = 0;
-		COL_REG[i] = 0;
-		GPIO_MODE[i] = 0;
-	}
-#ifdef GPIO_KPD_KROW0_PIN
-	ROW_REG[0] = GPIO_KPD_KROW0_PIN;
-	GPIO_MODE[0] |= GPIO_KPD_KROW0_PIN_M_KROW;
-#endif
-
-#ifdef GPIO_KPD_KROW1_PIN
-	ROW_REG[1] = GPIO_KPD_KROW1_PIN;
-	GPIO_MODE[1] |= GPIO_KPD_KROW1_PIN_M_KROW;
-#endif
-
-#ifdef GPIO_KPD_KROW2_PIN
-	ROW_REG[2] = GPIO_KPD_KROW2_PIN;
-	GPIO_MODE[2] |= GPIO_KPD_KROW2_PIN_M_KROW;
-#endif
-
-#ifdef GPIO_KPD_KCOL0_PIN
-	COL_REG[0] = GPIO_KPD_KCOL0_PIN;
-	GPIO_MODE[0] |= (GPIO_KPD_KCOL0_PIN_M_KCOL << 4);
-#endif
-
-#ifdef GPIO_KPD_KCOL1_PIN
-	COL_REG[1] = GPIO_KPD_KCOL1_PIN;
-	GPIO_MODE[1] |= (GPIO_KPD_KCOL1_PIN_M_KCOL << 4);
-#endif
-
-#ifdef GPIO_KPD_KCOL2_PIN
-	COL_REG[2] = GPIO_KPD_KCOL2_PIN;
-	GPIO_MODE[2] |= (GPIO_KPD_KCOL2_PIN_M_KCOL << 4);
-#endif
-}
-
-void mtk_kpd_gpio_set(void)
-{
-	unsigned int ROW_REG[3];
-	unsigned int COL_REG[3];
-	unsigned int GPIO_MODE[3];
-	int i;
-
-	kpd_print("Enter mtk_kpd_gpio_set!\n");
-	mtk_kpd_gpios_get(ROW_REG, COL_REG, GPIO_MODE);
-
-	for (i = 0; i < 3; i++) {
-		if (COL_REG[i] != 0) {
-			/* KCOL: GPIO INPUT + PULL ENABLE + PULL UP */
-			mt_set_gpio_mode(COL_REG[i], ((GPIO_MODE[i] >> 4) & 0x0f));
-			mt_set_gpio_dir(COL_REG[i], 0);
-			mt_set_gpio_pull_enable(COL_REG[i], 1);
-			mt_set_gpio_pull_select(COL_REG[i], 1);
-		}
-
-		if (ROW_REG[i] != 0) {
-			/* KROW: GPIO output + pull disable + pull down */
-			mt_set_gpio_mode(ROW_REG[i], (GPIO_MODE[i] & 0x0f));
-			mt_set_gpio_dir(ROW_REG[i], 1);
-			mt_set_gpio_pull_enable(ROW_REG[i], 0);
-			mt_set_gpio_pull_select(ROW_REG[i], 0);
-		}
-	}
-}
-#endif
-#endif
-void kpd_ldvt_test_init(void)
-{
-#if defined(CONFIG_MTK_LEGACY)	/*This not need now */
-#ifdef CONFIG_MTK_LDVT
-	u16 temp_reg = 0;
-
-	/* set kpd GPIO to kpd mode */
-	mtk_kpd_gpio_set();
-
-	temp_reg = readw(KP_SEL);
-#if !defined(CONFIG_MTK_LEGACY)
-	if (kpd_dts_data.kpd_use_extend_type) {
-		/* select specific cols for double keypad */
-#ifndef GPIO_KPD_KCOL0_PIN
-		temp_reg &= ~(KP_COL0_SEL);
-#endif
-
-#ifndef GPIO_KPD_KCOL1_PIN
-		temp_reg &= ~(KP_COL1_SEL);
-#endif
-
-#ifndef GPIO_KPD_KCOL2_PIN
-		temp_reg &= ~(KP_COL2_SEL);
-#endif
-
-		temp_reg |= 0x1;
-	} else {
-		temp_reg &= ~(0x1);
-	}
-#else
-#if KPD_USE_EXTEND_TYPE
-	/* select specific cols for double keypad */
-#ifndef GPIO_KPD_KCOL0_PIN
-	temp_reg &= ~(KP_COL0_SEL);
-#endif
-
-#ifndef GPIO_KPD_KCOL1_PIN
-	temp_reg &= ~(KP_COL1_SEL);
-#endif
-
-#ifndef GPIO_KPD_KCOL2_PIN
-	temp_reg &= ~(KP_COL2_SEL);
-#endif
-
-	temp_reg |= 0x1;
-
-#else
-	temp_reg &= ~(0x1);
-#endif
-#endif
-	/* set kpd enable and sel register */
-	mt_reg_sync_writew(temp_reg, KP_SEL);
-	mt_reg_sync_writew(0x1, KP_EN);
-#endif
-#endif
-}
-
-/*******************************kpd factory mode auto test *************************************/
-/*
-static void mtk_kpd_get_gpio_col(unsigned int COL_REG[])
-{
-	int i;
-	for(i = 0; i< 3; i++)
-	{
-		COL_REG[i] = 0;
-	}
-	kpd_print("Enter mtk_kpd_get_gpio_col!\n");
-
-	#ifdef GPIO_KPD_KCOL0_PIN
-		kpd_print("checking GPIO_KPD_KCOL0_PIN!\n");
-		COL_REG[0] = GPIO_KPD_KCOL0_PIN;
-	#endif
-
-	#ifdef GPIO_KPD_KCOL1_PIN
-		kpd_print("checking GPIO_KPD_KCOL1_PIN!\n");
-		COL_REG[1] = GPIO_KPD_KCOL1_PIN;
-	#endif
-
-	#ifdef GPIO_KPD_KCOL2_PIN
-		kpd_print("checking GPIO_KPD_KCOL2_PIN!\n");
-		COL_REG[2] = GPIO_KPD_KCOL2_PIN;
-	#endif
-}
-*/
-
 void kpd_get_keymap_state(u16 state[])
 {
 	state[0] = *(volatile u16 *)KP_MEM1;
@@ -351,11 +190,6 @@ static void kpd_factory_mode_handler(void)
 /********************************************************************/
 void kpd_auto_test_for_factorymode(void)
 {
-/*
-	unsigned int COL_REG[8];
-	int i;
-	int time = 500;
-*/
 	kpd_print("Enter kpd_auto_test_for_factorymode!\n");
 
 	mdelay(1000);
@@ -392,23 +226,21 @@ void kpd_auto_test_for_factorymode(void)
 /********************************************************************/
 void long_press_reboot_function_setting(void)
 {
-/*ZH CHEN*/
-#if 0
 #ifndef EVB_PLATFORM
 	if (kpd_enable_lprst && get_boot_mode() == NORMAL_BOOT) {
 		kpd_info("Normal Boot long press reboot selection\n");
-#ifdef KPD_PMIC_LPRST_TD
+#ifdef CONFIG_KPD_PMIC_LPRST_TD
 		kpd_info("Enable normal mode LPRST\n");
-#ifdef ONEKEY_REBOOT_NORMAL_MODE
+#ifdef CONFIG_ONEKEY_REBOOT_NORMAL_MODE
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
-		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, KPD_PMIC_LPRST_TD);
+		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
 #endif
 
-#ifdef TWOKEY_REBOOT_NORMAL_MODE
+#ifdef CONFIG_TWOKEY_REBOOT_NORMAL_MODE
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x01);
-		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, KPD_PMIC_LPRST_TD);
+		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
 #endif
 #else
 		kpd_info("disable normal mode LPRST\n");
@@ -418,18 +250,18 @@ void long_press_reboot_function_setting(void)
 #endif
 	} else {
 		kpd_info("Other Boot Mode long press reboot selection\n");
-#ifdef KPD_PMIC_LPRST_TD
+#ifdef CONFIG_KPD_PMIC_LPRST_TD
 		kpd_info("Enable other mode LPRST\n");
-#ifdef ONEKEY_REBOOT_OTHER_MODE
+#ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
-		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, KPD_PMIC_LPRST_TD);
+		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
 #endif
 
-#ifdef TWOKEY_REBOOT_OTHER_MODE
+#ifdef CONFIG_TWOKEY_REBOOT_OTHER_MODE
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x01);
-		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, KPD_PMIC_LPRST_TD);
+		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
 #endif
 #else
 		kpd_info("disable other mode LPRST\n");
@@ -440,7 +272,6 @@ void long_press_reboot_function_setting(void)
 #else
 	pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
 	pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
-#endif
 #endif
 }
 
@@ -525,7 +356,7 @@ void kpd_pmic_rstkey_hal(unsigned long pressed)
 
 void kpd_pmic_pwrkey_hal(unsigned long pressed)
 {
-#if KPD_PWRKEY_USE_PMIC
+#ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 	if (!kpd_sb_enable) {
 		input_report_key(kpd_input_dev, kpd_dts_data.kpd_sw_pwrkey, pressed);
 		input_sync(kpd_input_dev);
@@ -542,7 +373,7 @@ void kpd_pmic_pwrkey_hal(unsigned long pressed)
 /***********************************************************************/
 void kpd_pwrkey_handler_hal(unsigned long data)
 {
-#if KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 	bool pressed;
 	u8 old_state = kpd_pwrkey_state;
 
@@ -550,7 +381,6 @@ void kpd_pwrkey_handler_hal(unsigned long data)
 	pressed = (kpd_pwrkey_state == !!KPD_PWRKEY_POLARITY);
 	if (kpd_show_hw_keycode)
 		kpd_print(KPD_SAY "(%s) HW keycode = using EINT\n", pressed ? "pressed" : "released");
-	kpd_backlight_handler(pressed, kpd_dts_data.kpd_sw_pwrkey);
 	input_report_key(kpd_input_dev, kpd_dts_data.kpd_sw_pwrkey, pressed);
 	kpd_print("report Linux keycode = %u\n", kpd_dts_data.kpd_sw_pwrkey);
 	input_sync(kpd_input_dev);
@@ -564,7 +394,7 @@ void kpd_pwrkey_handler_hal(unsigned long data)
 /***********************************************************************/
 void mt_eint_register(void)
 {
-#if KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 	mt_eint_set_sens(KPD_PWRKEY_EINT, KPD_PWRKEY_SENSITIVE);
 	mt_eint_set_hw_debounce(KPD_PWRKEY_EINT, KPD_PWRKEY_DEBOUNCE);
 	mt_eint_registration(KPD_PWRKEY_EINT, true, KPD_PWRKEY_POLARITY, kpd_pwrkey_eint_handler, false);

@@ -68,3 +68,25 @@ config KPD_PMIC_LPRST_TD
 	default "1"
 	---help---
 	  0->8s, 1->11s, 2->14s, 3->5s
+
+config KPD_PWRKEY_USE_EINT
+	bool "power key use keypad key"
+	default n
+	---help---
+	  Say Y here if you want to use keypad key as power key.
+
+	  If unuse, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called kpd_pwrkey_handler_hal.
+
+config KPD_PWRKEY_USE_PMIC
+	bool "power key use pmic key"
+	default n
+	---help---
+	  Say Y here if you want to use pmic key as power key.
+
+	  If unuse, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called kpd_pmic_pwrkey_hal.

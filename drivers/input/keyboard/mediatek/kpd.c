@@ -14,7 +14,7 @@
  *
  */
 
-#include <mt-plat/kpd.h>
+#include <kpd.h>
 #include <linux/wakelock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -45,7 +45,7 @@ static u8 kpd_slide_state = !KPD_SLIDE_POLARITY;
 #endif
 struct keypad_dts_data kpd_dts_data;
 /* for Power key using EINT */
-#if KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static void kpd_pwrkey_handler(unsigned long data);
 static DECLARE_TASKLET(kpd_pwrkey_tasklet, kpd_pwrkey_handler, 0);
 #endif
@@ -66,7 +66,8 @@ static int kpd_pdrv_resume(struct platform_device *pdev);
 #endif
 
 static const struct of_device_id kpd_of_match[] = {
-	{.compatible = KPD_DTS_NODE_NAME},
+	{.compatible = "mediatek,mt6735-keypad"},
+	{.compatible = "mediatek,mt6580-keypad"},
 	{},
 };
 
@@ -322,7 +323,7 @@ static void kpd_slide_eint_handler(void)
 }
 #endif
 
-#if KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static void kpd_pwrkey_handler(unsigned long data)
 {
 	kpd_pwrkey_handler_hal(data);
@@ -336,7 +337,7 @@ static void kpd_pwrkey_eint_handler(void)
 /*********************************************************************/
 
 /*********************************************************************/
-#if KPD_PWRKEY_USE_PMIC
+#ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {
 	kpd_print("Power Key generate, pressed=%ld\n", pressed);
@@ -398,7 +399,6 @@ static void kpd_keymap_handler(unsigned long data)
 			}
 			kpd_aee_handler(linux_keycode, pressed);
 
-			kpd_backlight_handler(pressed, linux_keycode);
 			input_report_key(kpd_input_dev, linux_keycode, pressed);
 			input_sync(kpd_input_dev);
 			kpd_print("report Linux keycode = %u\n", linux_keycode);
@@ -736,37 +736,28 @@ static int kpd_open(struct input_dev *dev)
 	kpd_slide_qwerty_init();	/* API 1 for kpd slide qwerty init settings */
 	return 0;
 }
-
-void kpd_get_dts_info(void)
+void kpd_get_dts_info(struct device_node *node)
 {
-	struct device_node *node;
+	of_property_read_u32(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
+	of_property_read_u32(node, "mediatek,kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
+	of_property_read_u32(node, "mediatek,kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
+	of_property_read_u32(node, "mediatek,kpd-sw-rstkey", &kpd_dts_data.kpd_sw_rstkey);
+	of_property_read_u32(node, "mediatek,kpd-hw-rstkey", &kpd_dts_data.kpd_hw_rstkey);
+	of_property_read_u32(node, "mediatek,kpd-use-extend-type", &kpd_dts_data.kpd_use_extend_type);
+	of_property_read_u32(node, "mediatek,kpd-pwrkey-eint-gpio", &kpd_dts_data.kpd_pwrkey_eint_gpio);
+	of_property_read_u32(node, "mediatek,kpd-pwrkey-gpio-din", &kpd_dts_data.kpd_pwrkey_gpio_din);
+	of_property_read_u32(node, "mediatek,kpd-hw-dl-key1", &kpd_dts_data.kpd_hw_dl_key1);
+	of_property_read_u32(node, "mediatek,kpd-hw-dl-key2", &kpd_dts_data.kpd_hw_dl_key2);
+	of_property_read_u32(node, "mediatek,kpd-hw-dl-key3", &kpd_dts_data.kpd_hw_dl_key3);
+	of_property_read_u32(node, "mediatek,kpd-hw-recovery-key", &kpd_dts_data.kpd_hw_recovery_key);
+	of_property_read_u32(node, "mediatek,kpd-hw-factory-key", &kpd_dts_data.kpd_hw_factory_key);
+	of_property_read_u32(node, "mediatek,kpd-hw-map-num", &kpd_dts_data.kpd_hw_map_num);
+	of_property_read_u32_array(node, "mediatek,kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
+		kpd_dts_data.kpd_hw_map_num);
 
-	node = of_find_compatible_node(NULL, NULL, KPD_DTS_NODE_NAME);
-	if (node) {
-		of_property_read_u32(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
-		of_property_read_u32(node, "mediatek,kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
-		of_property_read_u32(node, "mediatek,kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
-		of_property_read_u32(node, "mediatek,kpd-sw-rstkey", &kpd_dts_data.kpd_sw_rstkey);
-		of_property_read_u32(node, "mediatek,kpd-hw-rstkey", &kpd_dts_data.kpd_hw_rstkey);
-		of_property_read_u32(node, "mediatek,kpd-use-extend-type", &kpd_dts_data.kpd_use_extend_type);
-		of_property_read_u32(node, "mediatek,kpd-pwrkey-eint-gpio", &kpd_dts_data.kpd_pwrkey_eint_gpio);
-		of_property_read_u32(node, "mediatek,kpd-pwrkey-gpio-din", &kpd_dts_data.kpd_pwrkey_gpio_din);
-		of_property_read_u32(node, "mediatek,kpd-hw-dl-key1", &kpd_dts_data.kpd_hw_dl_key1);
-		of_property_read_u32(node, "mediatek,kpd-hw-dl-key2", &kpd_dts_data.kpd_hw_dl_key2);
-		of_property_read_u32(node, "mediatek,kpd-hw-dl-key3", &kpd_dts_data.kpd_hw_dl_key3);
-		of_property_read_u32(node, "mediatek,kpd-hw-recovery-key", &kpd_dts_data.kpd_hw_recovery_key);
-		of_property_read_u32(node, "mediatek,kpd-hw-factory-key", &kpd_dts_data.kpd_hw_factory_key);
-		of_property_read_u32(node, "mediatek,kpd-hw-map-num", &kpd_dts_data.kpd_hw_map_num);
-		of_property_read_u32_array(node, "mediatek,kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
-					   kpd_dts_data.kpd_hw_map_num);
-
-		kpd_info
-		    ("key-debounce = %d, sw-pwrkey = %d, hw-pwrkey = %d, hw-rstkey = %d, sw-rstkey = %d\n",
-		     kpd_dts_data.kpd_key_debounce, kpd_dts_data.kpd_sw_pwrkey, kpd_dts_data.kpd_hw_pwrkey,
-		     kpd_dts_data.kpd_hw_rstkey, kpd_dts_data.kpd_sw_rstkey);
-	} else {
-		kpd_info("[kpd]%s can't find compatible custom node\n", __func__);
-	}
+	kpd_print("key-debounce = %d, sw-pwrkey = %d, hw-pwrkey = %d, hw-rstkey = %d, sw-rstkey = %d\n",
+		  kpd_dts_data.kpd_key_debounce, kpd_dts_data.kpd_sw_pwrkey, kpd_dts_data.kpd_hw_pwrkey,
+		  kpd_dts_data.kpd_hw_rstkey, kpd_dts_data.kpd_sw_rstkey);
 }
 static int kpd_pdrv_probe(struct platform_device *pdev)
 {
@@ -787,11 +778,6 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 	kpd_info("kp base: 0x%p, addr:0x%p,  kp irq: %d\n", kp_base, &kp_base, kp_irqnr);
-#if defined(CONFIG_MTK_LEGACY)	/*This not need now */
-#ifdef CONFIG_MTK_LDVT
-	kpd_ldvt_test_init();	/* API 2 for kpd LFVT test environment settings */
-#endif
-#endif
 	/* initialize and register input device (/dev/input/eventX) */
 	kpd_input_dev = input_allocate_device();
 	if (!kpd_input_dev)
@@ -803,13 +789,13 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	kpd_input_dev->id.product = 0x6500;
 	kpd_input_dev->id.version = 0x0010;
 	kpd_input_dev->open = kpd_open;
-	kpd_get_dts_info();
+	kpd_get_dts_info(pdev->dev.of_node);
 	/* fulfill custom settings */
 	kpd_memory_setting();
 
 	__set_bit(EV_KEY, kpd_input_dev->evbit);
 
-#if (KPD_PWRKEY_USE_EINT || KPD_PWRKEY_USE_PMIC)
+#if defined(CONFIG_KPD_PWRKEY_USE_EINT) || defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	__set_bit(kpd_dts_data.kpd_sw_pwrkey, kpd_input_dev->keybit);
 	kpd_keymap[8] = 0;
 #endif
@@ -904,7 +890,6 @@ static int kpd_pdrv_suspend(struct platform_device *pdev, pm_message_t state)
 		kpd_print("kpd_early_suspend wake up source disable!! (%d)\n", kpd_suspend);
 	}
 #endif
-	kpd_disable_backlight();
 	kpd_print("suspend!! (%d)\n", kpd_suspend);
 	return 0;
 }
@@ -940,7 +925,6 @@ static void kpd_early_suspend(struct early_suspend *h)
 		kpd_print("kpd_early_suspend wake up source disable!! (%d)\n", kpd_suspend);
 	}
 #endif
-	kpd_disable_backlight();
 	kpd_print("early suspend!! (%d)\n", kpd_suspend);
 }
 
