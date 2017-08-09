@@ -2301,9 +2301,9 @@
 			reg = <0x17003000 0x1000>;
 			interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
-				<&mmsys MM_DISP0_SMI_COMMON_JPGENC>,
+				<&mmsys MM_DISP0_SMI_COMMON>,
 				<&scpsys SCP_SYS_VEN>,
-				<&vencsys VENC_LARB_JPGENC>,
+				<&vencsys VENC_LARB>,
 				<&vencsys VENC_JPGENC>;
 
 			clock-names = "disp-mtcmos",
@@ -2318,9 +2318,9 @@
 			reg = <0x17004000 0x1000>;
 			interrupts = <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
-				<&mmsys MM_DISP0_SMI_COMMON_JPGDEC>,
+				<&mmsys MM_DISP0_SMI_COMMON>,
 				<&scpsys SCP_SYS_VEN>,
-				<&vencsys VENC_LARB_JPGDEC>,
+				<&vencsys VENC_LARB>,
 				<&vencsys VENC_JPGDEC>;
 
 			clock-names = "disp-mtcmos",
