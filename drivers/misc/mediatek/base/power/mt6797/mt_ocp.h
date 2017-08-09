@@ -7,7 +7,6 @@
 #ifndef __MT_OCP_H__
 #define __MT_OCP_H__
 
-
 #include <linux/kernel.h>
 
 #ifdef	__MT_OCP_C__
@@ -40,6 +39,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 /* turn on OCP driver */
 #define OCP_ON 1
+
 
 /**
  * OCP control register
@@ -228,6 +228,8 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 extern void aee_rr_rec_ocp_2_target_limit(u32 val);
 extern u32 aee_rr_curr_ocp_2_target_limit(void);
+extern void aee_rr_rec_ocp_2_enable(u8 val);
+extern u8 aee_rr_curr_ocp_2_enable(void);
 
 /* OCP */
 extern int BigOCPSetTarget(int OCPMode, int Target);
@@ -255,4 +257,6 @@ extern unsigned int da9214_config_interface(unsigned char RegNum, unsigned char 
 unsigned char MASK, unsigned char SHIFT);
 extern int da9214_vosel(unsigned long val);
 
+extern spinlock_t reset_lock;
+extern int reset_flags;
 /* __MT_OCP_H__ */

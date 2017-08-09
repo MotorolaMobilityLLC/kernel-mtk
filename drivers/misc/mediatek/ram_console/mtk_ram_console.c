@@ -150,6 +150,7 @@ struct last_reboot_reason {
 	uint8_t idvfs_state_manchine;
 
 	uint32_t ocp_2_target_limit;
+	uint8_t ocp_2_enable;
 	uint32_t scp_pc;
 	uint32_t scp_lr;
 
@@ -1509,6 +1510,13 @@ void aee_rr_rec_ocp_2_target_limit(u32 val)
 	LAST_RR_SET(ocp_2_target_limit, val);
 }
 
+void aee_rr_rec_ocp_2_enable(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ocp_2_enable, val);
+}
+
 u32 aee_rr_curr_ptp_60(void)
 {
 	return LAST_RR_VAL(ptp_60);
@@ -1777,6 +1785,11 @@ u8 aee_rr_curr_idvfs_state_manchine(void)
 u32 aee_rr_curr_ocp_2_target_limit(void)
 {
 	return LAST_RR_VAL(ocp_2_target_limit);
+}
+
+u8 aee_rr_curr_ocp_2_enable(void)
+{
+	return LAST_RR_VAL(ocp_2_enable);
 }
 
 void aee_rr_rec_scp_pc(u32 val)
@@ -2372,6 +2385,11 @@ void aee_rr_show_ocp_2_target_limit(struct seq_file *m)
 	seq_printf(m, "ocp_2_target_limit = %u mW\n", LAST_RRR_VAL(ocp_2_target_limit));
 }
 
+void aee_rr_show_ocp_2_enable(struct seq_file *m)
+{
+	seq_printf(m, "ocp_2_enable = %d\n", LAST_RRR_VAL(ocp_2_enable));
+}
+
 void aee_rr_show_thermal_status(struct seq_file *m)
 {
 	seq_printf(m, "thermal_status: %d\n", LAST_RRR_VAL(thermal_status));
@@ -2550,6 +2568,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_sram_ldo,
 	aee_rr_show_idvfs_state_manchine,
 	aee_rr_show_ocp_2_target_limit,
+	aee_rr_show_ocp_2_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
 	aee_rr_show_hotplug_status

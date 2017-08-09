@@ -28,6 +28,7 @@
 #include <mt-plat/sync_write.h>	/* mt_reg_sync_writel */
 #include <mt-plat/mt_io.h>		/*reg read, write */
 #include <mt-plat/aee.h>		/* ram console */
+#include <linux/spinlock.h>
 
 #include "../../../power/mt6797/da9214.h"
 #define	DA9214_STEP_TO_MV(step)				(((step	& 0x7f)	* 10) +	300)
@@ -99,6 +100,7 @@ echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 
 
 
+
 static unsigned int OCP_DEBUG_FLAG;
 static unsigned int BIG_OCP_ON;
 static unsigned int LITTLE_OCP_ON;
@@ -141,8 +143,8 @@ static int ocp1_irq1_number; /* 285+50=335  */
 #if defined(CONFIG_OCP_AEE_RR_REC) && !defined(EARLY_PORTING)
 static void _mt_ocp_aee_init(void)
 {
-	aee_rr_rec_ocp_2_target_limit(127000);
-
+	aee_rr_rec_ocp_2_target_limit(127999);
+	aee_rr_rec_ocp_2_enable(9);
 }
 #endif
 
@@ -258,6 +260,8 @@ static struct DVFS_STAT dvfs_hqa[3][NR_HQA];
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
 {
+int ret;
+ret = -1;
 
 if (ocp_opt.ocp_cluster2_enable == 1)
 	return 0;
@@ -275,13 +279,23 @@ if (VStepInuV < 1000 || VStepInuV > 100000) {
 return -1;
 }
 
-return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCONFIG, VOffInmV, VStepInuV, 0);
+spin_lock(&reset_lock);
+if (reset_flags == 0)
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCONFIG, VOffInmV, VStepInuV, 0);
+spin_unlock(&reset_lock);
+
+if (ret == 0)
+	return 0;
+else
+	return -1;
 
 }
 
 
 int BigOCPSetTarget(int OCPMode, int Target)
 {
+int ret;
+ret = -1;
 
 if ((Target < 0) || (Target > 127000)) {
 	if (HW_API_RET_DEBUG_ON)
@@ -307,7 +321,15 @@ if (HW_API_DEBUG_ON)
 if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 	return -1;
 
-return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPSETTARGET, OCPMode, Target, 0);
+spin_lock(&reset_lock);
+if (reset_flags == 0)
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPSETTARGET, OCPMode, Target, 0);
+spin_unlock(&reset_lock);
+
+if (ret == 0)
+	return 0;
+else
+	return -1;
 
 }
 
@@ -315,6 +337,7 @@ return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPSETTARGET, OCPMode, Target, 0);
 int BigOCPEnable(int OCPMode, int Units, int ClkPctMin, int FreqPctMin)
 {
 int ret;
+ret = -1;
 
 if (ocp_opt.ocp_cluster2_enable == 1)
 	return 0;
@@ -340,15 +363,21 @@ if (!((OCPMode == OCP_ALL) || (OCPMode == OCP_FPI) || (OCPMode == OCP_OCPI))) {
 }
 
 if (Units == OCP_MA) {
-	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
+	spin_lock(&reset_lock);
+	if (reset_flags == 0)
+		ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
+	spin_unlock(&reset_lock);
 	if (ret == 0) {
-		ocp_opt.ocp_cluster2_enable = 1;
-		if (HW_API_DEBUG_ON)
-			ocp_info("Cluster 2 enable.\n");
+			ocp_opt.ocp_cluster2_enable = 1;
+			if (HW_API_DEBUG_ON)
+				ocp_info("Cluster 2 enable.\n");
 	return 0;
 	}
 } else if (Units == OCP_MW) {
-	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
+	spin_lock(&reset_lock);
+	if (reset_flags == 0)
+		ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
+	spin_unlock(&reset_lock);
 	if (ret == 0) {
 		ocp_opt.ocp_cluster2_enable = 1;
 		if (HW_API_DEBUG_ON)
@@ -367,11 +396,15 @@ return -1;
 
 void BigOCPDisable(void)
 {
-	mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPDISABLE, 0, 0, 0);
-	ocp_opt.ocp_cluster2_enable = 0;
-	ocp_opt.ocp_cluster2_flag = 0;
-	if (HW_API_DEBUG_ON)
-		ocp_info("Cluster 2 disable.\n");
+	spin_lock(&reset_lock);
+	if (reset_flags == 0) {
+		mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPDISABLE, 0, 0, 0);
+		ocp_opt.ocp_cluster2_enable = 0;
+		ocp_opt.ocp_cluster2_flag = 0;
+		if (HW_API_DEBUG_ON)
+			ocp_info("Cluster 2 disable.\n");
+	}
+	spin_unlock(&reset_lock);
 }
 
 
@@ -478,6 +511,8 @@ if ((cpu_online(8) == 1) || (cpu_online(9) == 1)) {
 
 int BigOCPCapture(int EnDis, int Edge, int Count, int Trig)
 {
+int ret;
+ret = 0;
 
 if (ocp_opt.ocp_cluster2_enable == 0)
 	return -1;
@@ -485,7 +520,17 @@ if (ocp_opt.ocp_cluster2_enable == 0)
 if (EnDis == OCP_DISABLE) {
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 		return -1;
-	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCAPTURE0, Edge, Count, Trig);
+
+spin_lock(&reset_lock);
+if (reset_flags == 0)
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCAPTURE0, Edge, Count, Trig);
+spin_unlock(&reset_lock);
+
+if (ret == 0)
+	return 0;
+else
+	return -1;
+
 }
 if (!((Edge == OCP_RISING) || (Edge == OCP_FALLING))) {
 	if (HW_API_RET_DEBUG_ON)
@@ -512,7 +557,17 @@ return -4;
 if ((EnDis == OCP_DISABLE) || (EnDis == OCP_ENABLE)) {
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 		return -1;
-	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCAPTURE1, Edge, Count, Trig);
+
+spin_lock(&reset_lock);
+if (reset_flags == 0)
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCAPTURE1, Edge, Count, Trig);
+spin_unlock(&reset_lock);
+
+if (ret == 0)
+	return 0;
+else
+	return -1;
+
 } else {
 	if (HW_API_RET_DEBUG_ON)
 		ocp_err("parameter EnDis must be 1/0\n");
@@ -538,7 +593,14 @@ if (ocp_opt.ocp_cluster2_enable == 0)
 if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 	goto Label;
 
+spin_lock(&reset_lock);
+if (reset_flags == 0)
 	Temp = ocp_read(OCPAPBSTATUS01);
+else
+	Temp = 0;
+spin_unlock(&reset_lock);
+
+
 if (GET_BITS_VAL_OCP(0:0, Temp) == 1) {
 
 	/* CapOCCGPct -> 100.00% */
@@ -562,8 +624,16 @@ if (ocp_opt.ocp_cluster2_enable == 0)
 	goto Label;
 if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 	goto Label;
+
 	/* CapTotAct:  Q8.12 -> integer  */
-	Temp = ocp_read(OCPAPBSTATUS02);
+	spin_lock(&reset_lock);
+	if (reset_flags == 0)
+		Temp = ocp_read(OCPAPBSTATUS02);
+	else
+		Temp = 0;
+	spin_unlock(&reset_lock);
+
+
 	*Total = ((Temp & 0x0007FFFF) * 1000) >> 12;
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: big total_pwr=%d Lk_pwr=%d CG=%d\n", *Total, *Leakage, *ClkPct);
@@ -1498,7 +1568,13 @@ if (BIG_OCP_ON) {
 	BigOCPEnable(3, 1, 625, 0);
 	ocp_opt.ocp_cluster2_flag = 1;
 	ocp_opt.ocp_cluster2_enable = 1;
-	ocp_opt.ocp_cluster2_OCPAPBCFG24 = ocp_read(OCPAPBCFG24);
+	spin_lock(&reset_lock);
+	if (reset_flags == 0)
+		ocp_opt.ocp_cluster2_OCPAPBCFG24 = ocp_read(OCPAPBCFG24);
+	spin_unlock(&reset_lock);
+#if defined(CONFIG_OCP_AEE_RR_REC) && !defined(EARLY_PORTING)
+	aee_rr_rec_ocp_2_enable(1);
+#endif
 	BigiDVFSChannel(1, 1);
 	}
 }
@@ -1506,9 +1582,12 @@ if (BIG_OCP_ON) {
 void Cluster2_OCP_OFF(void)
 {
 if (BIG_OCP_ON) {
+	BigiDVFSChannel(1, 0);
+#if defined(CONFIG_OCP_AEE_RR_REC) && !defined(EARLY_PORTING)
+	aee_rr_rec_ocp_2_enable(0);
+#endif
 	ocp_opt.ocp_cluster2_flag = 0;
 	ocp_opt.ocp_cluster2_enable = 0;
-	BigiDVFSChannel(1, 0);
 	BigOCPDisable();
 	}
 }
@@ -2238,6 +2317,9 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
+if (!LITTLE_OCP_ON)
+	return -EINVAL;
+
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 8:
@@ -2302,6 +2384,9 @@ int function_id, val[3];
 char *buf = _copy_from_user_for_proc(buffer, count);
 
 if (!buf)
+	return -EINVAL;
+
+if (!LITTLE_OCP_ON)
 	return -EINVAL;
 
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
@@ -2444,6 +2529,9 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
+if (!LITTLE_OCP_ON)
+	return -EINVAL;
+
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 0:
@@ -2503,6 +2591,9 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
+if (!LITTLE_OCP_ON)
+	return -EINVAL;
+
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 0:
@@ -2558,9 +2649,7 @@ seq_printf(m, "CGAvg        = %llu %%\n", ocp_status[2].CGAvg);
 seq_printf(m, "TopRawLkg    = %d\n", ocp_status[2].TopRawLkg);
 seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[2].CPU0RawLkg);
 seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[2].CPU1RawLkg);
-/* seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[2].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[2].CPU3RawLkg);
-*/
+
 if (Reg_Debug_on) {
 	int i;
 
@@ -2618,21 +2707,16 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[2].CapToLkg = Leakage;
 		ocp_status[2].CapTotAct = Total;
 		ocp_status[2].CapOCCGPct = ClkPct;
-		ocp_status[2].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
-/*
-		ocp_info("Cluster 2 Capture: Leakage= %d, Total= %d, ClkPct= %d valid= %d\n",
-		Leakage, Total, ClkPct, ocp_read_field(OCPAPBSTATUS01, 0:0));
-*/
+/*		ocp_status[2].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
+
 		BigOCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg);
 		ocp_status[2].TopRawLkg = TopRawLkg;
 		ocp_status[2].CPU0RawLkg = CPU0RawLkg;
 		ocp_status[2].CPU1RawLkg = CPU1RawLkg;
-/*
-		ocp_info("Cluster 2 Capture: TopRawLkg= %d, CPU0RawLkg= %d, CPU1RawLkg= %d valid= %d\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, ocp_read_field(OCPAPBSTATUS01, 0:0));
-*/
+
 		BigOCPMAFAct(&CapMAFAct);
 		ocp_status[2].CapMAFAct = CapMAFAct;
+*/
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
@@ -2654,10 +2738,6 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		BigOCPClkAvgStatus(&CGAvg);
 		ocp_status[2].CGAvgValid = ocp_read_field(OCPAPBSTATUS04, 27:27);
 		ocp_status[2].CGAvg = CGAvg;
-/*
-		ocp_info("Cluster 2 Capture: CGAvg = %d (valid = %d)\n",
-		CGAvg, ocp_read_field(OCPAPBSTATUS04, 27:27));
-*/
 		break;
 	case 8:
 		BigOCPClkAvg(1, 0);
@@ -2668,35 +2748,23 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[2].CapTotAct = Total;
 		ocp_status[2].CapOCCGPct = ClkPct;
 		ocp_status[2].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
-/*
-		ocp_info("Cluster 2 Capture: Leakage= %d, Total= %d, ClkPct= %d (valid= %d)\n",
-		Leakage, Total, ClkPct, ocp_read_field(OCPAPBSTATUS01, 0:0));
-*/
+
 		BigOCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg);
 		ocp_status[2].TopRawLkg = TopRawLkg;
 		ocp_status[2].CPU0RawLkg = CPU0RawLkg;
 		ocp_status[2].CPU1RawLkg = CPU1RawLkg;
-/*
-		ocp_info("Cluster 2 Capture: TopRawLkg= %d, CPU0RawLkg= %d, CPU1RawLkg= %d (valid= %d)\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, ocp_read_field(OCPAPBSTATUS01, 0:0));
-*/
+
 		BigOCPMAFAct(&CapMAFAct);
 		ocp_status[2].CapMAFAct = CapMAFAct;
 
 		BigOCPClkAvgStatus(&CGAvg);
 		ocp_status[2].CGAvgValid = ocp_read_field(OCPAPBSTATUS04, 27:27);
 		ocp_status[2].CGAvg = CGAvg;
-
-/*		ocp_info("Cluster 2 Capture: CGAvg = %d (valid = %d)\n",
-		CGAvg, ocp_read_field(OCPAPBSTATUS04, 27:27));
-*/		break;
+		break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
-
-/*		for (Count1 = 0; Count1 < 148; Count1 += 4)
-			ocp_info("Address: 0x%x = %x\n", (OCPAPBSTATUS00 + Count1), ocp_read(OCPAPBSTATUS00 + Count1));
-*/		break;
+		break;
 	default:
 		ocp_err("Please Echo 1/0 to Enable/Disable OCP capture.\n");
 	}
@@ -2753,6 +2821,9 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
+if (!LITTLE_OCP_ON)
+	return -EINVAL;
+
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
@@ -2786,21 +2857,14 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[0].CapTotAct = Total;
 		ocp_status[0].CapOCCGPct = ClkPct;
 		ocp_status[0].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
-/*
-		ocp_info("Cluster 0 Capture: Leakage= %d, Total= %d, ClkPct= %d (valid = %d)\n",
-		Leakage, Total, ClkPct, ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0));
-*/
+
 		CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[0].TopRawLkg = TopRawLkg;
 		ocp_status[0].CPU0RawLkg = CPU0RawLkg;
 		ocp_status[0].CPU1RawLkg = CPU1RawLkg;
 		ocp_status[0].CPU2RawLkg = CPU2RawLkg;
 		ocp_status[0].CPU3RawLkg = CPU3RawLkg;
-/*
-		ocp_info("Cluster 0 RawLkg: Top=%d, CPU0=%d, CPU1=%d, CPU2=%d, CPU3=%d (valid = %d)\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg, ocp_read_field(
-		MP0_OCP_CAP_STATUS00, 0:0));
-*/
+
 		LittleOCPMAFAct(0, &CapMAFAct);
 		ocp_status[0].CapMAFAct = CapMAFAct;
 
@@ -2831,10 +2895,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[0].CapTotAct = Total;
 		ocp_status[0].CapOCCGPct = ClkPct;
 		ocp_status[0].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
-/*
-		ocp_info("Cluster 0 Capture: Leakage= %d, Total= %d, ClkPct= %d (valid = %d)\n",
-		Leakage, Total, ClkPct, ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0));
-*/
+
 		CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[0].TopRawLkg = TopRawLkg;
 		ocp_status[0].CPU0RawLkg = CPU0RawLkg;
@@ -2842,10 +2903,6 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[0].CPU2RawLkg = CPU2RawLkg;
 		ocp_status[0].CPU3RawLkg = CPU3RawLkg;
 
-/*		ocp_info("Cluster 0 RawLkg: Top=%d, CPU0=%d, CPU1=%d, CPU2=%d, CPU3=%d (valid = %d)\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg, ocp_read_field(
-		MP0_OCP_CAP_STATUS00, 0:0));
-*/
 		LittleOCPMAFAct(0, &CapMAFAct);
 		ocp_status[0].CapMAFAct = CapMAFAct;
 
@@ -2853,19 +2910,13 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[0].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
 		ocp_status[0].CGAvg = AvgAct;
 		ocp_status[0].AvgLkg = AvgLkg;
-/*		ocp_info("Cluster 0 AvgPwr: AvgAct = %llu AvgLkg = %llu (valid = %d)\n",
-		AvgAct, AvgLkg, ocp_read_field(MP0_OCP_DBG_STAT, 31:31));
-*/
+
 		LittleLowerPowerOn(0, 0);
 		break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
-
-/*			for (Count1 = 0; Count1 < 524; Count1 += 4)
-				ocp_info("Address: 0x%x = %x\n", (MP0_OCP_IRQSTATE + Count1), ocp_read(
-				MP0_OCP_IRQSTATE + Count1));
-*/		break;
+		break;
 	default:
 		ocp_err("Please Echo 1/0 to Enable/Disable OCP capture.\n");
 	}
@@ -2923,6 +2974,9 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
+if (!LITTLE_OCP_ON)
+	return -EINVAL;
+
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
@@ -2956,21 +3010,14 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[1].CapTotAct = Total;
 		ocp_status[1].CapOCCGPct = ClkPct;
 		ocp_status[1].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
-/*
-		ocp_info("Cluster 1 Capture: Leakage= %d, Total= %d, ClkPct= %d (valid = %d)\n",
-		Leakage, Total, ClkPct, ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0));
-*/
+
 		CL1OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[1].TopRawLkg = TopRawLkg;
 		ocp_status[1].CPU0RawLkg = CPU0RawLkg;
 		ocp_status[1].CPU1RawLkg = CPU1RawLkg;
 		ocp_status[1].CPU2RawLkg = CPU2RawLkg;
 		ocp_status[1].CPU3RawLkg = CPU3RawLkg;
-/*
-		ocp_info("Cluster 1 RawLkg: Top=%d, CPU0=%d, CPU1=%d, CPU2=%d, CPU3=%d (valid = %d)\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg, ocp_read_field(
-		MP1_OCP_CAP_STATUS00, 0:0));
-*/
+
 		LittleOCPMAFAct(1, &CapMAFAct);
 		ocp_status[1].CapMAFAct = CapMAFAct;
 		LittleLowerPowerOn(1, 0);
@@ -3000,21 +3047,14 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[1].CapTotAct = Total;
 		ocp_status[1].CapOCCGPct = ClkPct;
 		ocp_status[1].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
-/*
-		ocp_info("Cluster 1 Capture: Leakage= %d, Total= %d, ClkPct= %d (valid = %d)\n",
-		Leakage, Total, ClkPct, ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0));
-*/
+
 		CL1OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[1].TopRawLkg = TopRawLkg;
 		ocp_status[1].CPU0RawLkg = CPU0RawLkg;
 		ocp_status[1].CPU1RawLkg = CPU1RawLkg;
 		ocp_status[1].CPU2RawLkg = CPU2RawLkg;
 		ocp_status[1].CPU3RawLkg = CPU3RawLkg;
-/*
-		ocp_info("Cluster 1 RawLkg: Top=%d, CPU0=%d, CPU1=%d, CPU2=%d, CPU3=%d (valid = %d)\n",
-		TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg, ocp_read_field(
-		MP1_OCP_CAP_STATUS00, 0:0));
-*/
+
 		LittleOCPMAFAct(1, &CapMAFAct);
 		ocp_status[1].CapMAFAct = CapMAFAct;
 
@@ -3022,19 +3062,12 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[1].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 		ocp_status[1].CGAvg = AvgAct;
 		ocp_status[1].AvgLkg = AvgLkg;
-/*		ocp_info("Cluster 1 AvgPwr: AvgAct = %llu AvgLkg = %llu (valid = %d)\n",
-		AvgAct, AvgLkg, ocp_read_field(MP1_OCP_DBG_STAT, 31:31));
-*/
+
 		LittleLowerPowerOn(1, 0);
 		break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
-
-/*			for (Count1 = 0; Count1 < 524; Count1 += 4)
-				ocp_info("Address: 0x%x = %x\n", (MP1_OCP_IRQSTATE + Count1), ocp_read(
-				MP1_OCP_IRQSTATE + Count1));
-*/
 		break;
 	default:
 		ocp_err("Please Echo 1/0 to Enable/Disable OCP capture.\n");
@@ -3095,9 +3128,6 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 			ret = BigSRAMLDOEnable(val[0]);
 			if (ret == 0)
 				ocp_info("SRAM LDO volte = %dmv, enable success.\n", val[0]);
-		/*
-		ocp_info("BIG_SRAMLDO: Address: 0x%x = %x\n", BIG_SRAMLDO, ocp_read(BIG_SRAMLDO) );
-		*/
 		}
 		break;
 	case 9:
@@ -4744,12 +4774,12 @@ for (i = 0; i < 2000; i++) {
 /* ocp_debug */
 static int ocp_debug_proc_show(struct seq_file *m, void *v)
 {
-seq_printf(m, "OCP debug (log level) = %d\n", OCP_DEBUG_FLAG);
-seq_printf(m, "HW_API_DEBUG_ON       = %d\n", HW_API_DEBUG_ON);
-seq_printf(m, "IRQ_Debug_on          = %d\n", IRQ_Debug_on);
-seq_printf(m, "Reg_Debug_on          = %d\n", Reg_Debug_on);
-seq_printf(m, "BIG_OCP_ON            = %d\n", BIG_OCP_ON);
-seq_printf(m, "LITTLE_OCP_ON         = %d\n", LITTLE_OCP_ON);
+	seq_printf(m, "HW_API_DEBUG_ON       = %d\n", HW_API_DEBUG_ON);
+	seq_printf(m, "IRQ_Debug_on          = %d\n", IRQ_Debug_on);
+	seq_printf(m, "Reg_Debug_on          = %d\n", Reg_Debug_on);
+	seq_printf(m, "BIG_OCP_HW            = %d\n", BIG_OCP_ON);
+if (LITTLE_OCP_ON == 1)
+	seq_printf(m, "LITTLE_OCP_HW         = %d\n", LITTLE_OCP_ON);
 return 0;
 }
 
@@ -4897,15 +4927,10 @@ node = of_find_compatible_node(NULL, NULL, "mediatek,ocp_cfg");
 	}
 
 ocp_base = of_iomap(node, 0); /* 0x10220000 0x4000, OCP */
-/* Setup IO addresses and printf */
 ocppin_base = of_iomap(node, 1); /* 0x10005000 0x1000, DFD,UDI pinmux reg */
 ocpprob_base = of_iomap(node, 2); /* 0x10001000 0x2000, GPU, L-LL, BIG sarm ldo probe reg */
 ocpefus_base = of_iomap(node, 3); /* 0x10206000 0x1000, Big eFUSE register */
 
-
-/*	ocp_info("ocppin_base = 0x%lx.\n", (unsigned long)ocppin_base);
-	ocp_info("ocpprob_base = 0x%lx.\n", (unsigned long)ocpprob_base);
-	ocp_info("ocpefus_base = 0x%lx.\n", (unsigned long)ocpefus_base);*/
 	if (!ocppin_base || !ocpprob_base || !ocpefus_base) {
 		ocp_err("OCP get some base NULL.\n");
 		BUG();
