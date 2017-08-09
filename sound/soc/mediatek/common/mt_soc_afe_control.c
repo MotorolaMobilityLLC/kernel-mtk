@@ -300,6 +300,11 @@ void SetOffloadSWMode(bool bEnable)
 	mOffloadSWMode = bEnable;
 }
 
+bool GetOffloadSWMode(void)
+{
+	return mOffloadSWMode;
+}
+
 bool ConditionEnterSuspend(void)
 {
 	if ((mFMEnable == true) ||

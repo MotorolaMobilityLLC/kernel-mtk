@@ -214,6 +214,7 @@ bool ConditionEnterSuspend(void);
 void SetFMEnableFlag(bool bEnable);
 void SetOffloadEnableFlag(bool bEnable);
 void SetOffloadSWMode(bool bEnable);
+bool GetOffloadSWMode(void);
 
 unsigned int Align64ByteSize(unsigned int insize);
 

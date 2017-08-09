@@ -55,6 +55,7 @@
 
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <linux/delay.h>
 
 //#ifdef CONFIG_PINCTRL_MT6797
 #if 1
@@ -487,16 +488,12 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP_LOW] pins\n");
-#ifdef MT6757_READY
 				udelay(2);
-#endif
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP_HIGH] pins\n");
-#ifdef MT6757_READY
 				udelay(2);
-#endif
 			}
 		}
 	} else {
@@ -534,16 +531,12 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP2_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_LOW] pins\n");
-#ifdef MT6757_READY
 				udelay(2);
-#endif
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP2_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_HIGH] pins\n");
-#ifdef MT6757_READY
 				udelay(2);
-#endif
 			}
 		}
 	} else {
