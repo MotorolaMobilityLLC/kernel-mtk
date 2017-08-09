@@ -100,7 +100,7 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_SHIFT				0
 
 #define PMIC_CW00_ADDR				0x7000
-#define PMIC_CW00_INIT_VAL			0x4FFD
+#define PMIC_CW00_INIT_VAL			0x4DFD
 #define PMIC_CW00_XO_EXTBUF2_MODE_MASK		0x3
 #define PMIC_CW00_XO_EXTBUF2_MODE_SHIFT		3
 #define PMIC_CW00_XO_EXTBUF2_EN_M_MASK		0x1
@@ -161,7 +161,7 @@ static unsigned int CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
 #endif
 #endif /* CONFIG_MTK_LEGACY */
 
-#if 0
+#if 1
 static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 #ifdef CLKBUF_COTSX_BRINGUP
 	CLK_BUF_SW_DISABLE,
@@ -189,14 +189,6 @@ static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE
 };
-
-static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl_modem_on[CLKBUF_NUM] = {
-	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE
-};
-
 #endif
 
 static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
@@ -208,7 +200,6 @@ static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 
 static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 {
-#if 0 /*everest early porting: SPM_MDBSI_CON not ready, spm_ap_mdsrc_req not ready*/
 	u32 spm_val;
 	int i;
 
@@ -220,7 +211,6 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	spm_write(SPM_MDBSI_CON, spm_val);
 
 	udelay(2);
-#endif
 }
 
 static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
@@ -288,19 +278,19 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	if ((id == CLK_BUF_AUDIO) && (CLK_BUF4_STATUS == CLOCK_BUFFER_HW_CONTROL))
 		return false;
 
-#if 1 /* everest early porting */
+#if 0
 	/* for bring-up */
 	clk_buf_warn("clk_buf_ctrl is disabled for bring-up\n");
 	return false;
 #else
-	clk_buf_dbg("%s: id=%d, onoff=%d, is_flightmode_on=%d\n", __func__,
+	clk_buf_warn("%s: id=%d, onoff=%d, is_flightmode_on=%d\n", __func__,
 		     id, onoff, g_is_flightmode_on);
 
 	mutex_lock(&clk_buf_ctrl_lock);
 
 	clk_buf_swctrl[id] = onoff;
 
-	if (g_is_flightmode_on)
+	/*if (g_is_flightmode_on)*/
 		spm_clk_buf_ctrl(clk_buf_swctrl);
 
 	mutex_unlock(&clk_buf_ctrl_lock);
@@ -346,7 +336,7 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 		for (i = 0; i < CLKBUF_NUM; i++)
 			clk_buf_swctrl[i] = clk_buf_en[i];
 
-		if (g_is_flightmode_on)
+		/*if (g_is_flightmode_on)*/
 			spm_clk_buf_ctrl(clk_buf_swctrl);
 
 		mutex_unlock(&clk_buf_ctrl_lock);
