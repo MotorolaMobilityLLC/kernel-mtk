@@ -2453,6 +2453,7 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 			break;
 		}
 #endif
+		u4Res = 0;
 		WMT_DBG_FUNC("wmt_core: read WMT_FLASH_PATCH_DWN_EVT length(%zu, %d) ok\n",
 			     sizeof(WMT_FLASH_PATCH_DWN_EVT), u4Res);
 
@@ -2509,6 +2510,7 @@ INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp)
 		if (0 == iRet) {
 			osal_memcpy(&u4PatchVer, &evtBuf[9], sizeof(u4PatchVer));
 			pWmtOp->au4OpData[4] = u4PatchVer;
+			u4Res = 0;
 			WMT_INFO_FUNC("flash patch type: %x, flash patch version %x\n",
 					u4PatchType, u4PatchVer);
 		}
