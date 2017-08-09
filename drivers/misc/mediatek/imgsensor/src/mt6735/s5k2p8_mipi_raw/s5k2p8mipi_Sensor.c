@@ -291,7 +291,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 }
 
 
-static void set_dummy()
+static void set_dummy(void)
 {
 	 LOG_INF("dummyline = %d, dummypixels = %d ", imgsensor.dummy_line, imgsensor.dummy_pixel);
     write_cmos_sensor_8(0x0104, 0x01);
@@ -1588,7 +1588,7 @@ static void preview_setting(void)
 }	/*	preview_setting  */
 
 
-static void normal_capture_setting()
+static void normal_capture_setting(void)
 {
 	LOG_INF("E! ");
 	int retry=0;
@@ -1790,7 +1790,7 @@ static void normal_capture_setting()
 
 }
 
-static void pip_capture_setting()
+static void pip_capture_setting(void)
 {
 	int retry=0;
     LOG_INF( "S5K2P8 PIP setting Enter!");
@@ -1948,7 +1948,7 @@ static void pip_capture_setting()
 
 }
 
-static void pip_capture_15fps_setting()
+static void pip_capture_15fps_setting(void)
 {
     int retry=0;
     LOG_INF( "S5K2P8 PIP 15FPS setting Enter!");
@@ -2081,7 +2081,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	normal_capture_setting();
 
 }
-static void hs_video_setting()
+static void hs_video_setting(void)
 {
 int retry=0;
 	LOG_INF("E");
@@ -2335,7 +2335,7 @@ while(retry<10)
 	   }
 }
 
-static void slim_video_setting()
+static void slim_video_setting(void)
 {
 	LOG_INF("E");
 	//$MV1[mclk:24,width:1328,height:748,format:MIPI_RAW10,mipi_lane:4,mipi_hssettle:19,pvi_pclk_inverse:0]
