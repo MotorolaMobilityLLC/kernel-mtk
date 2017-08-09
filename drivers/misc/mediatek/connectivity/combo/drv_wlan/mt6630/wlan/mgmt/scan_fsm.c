@@ -890,29 +890,13 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 	prScanParam = &prScanInfo->rScanParam;
 	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
 	prScanInfo->ucScanDoneTimeoutCnt = 0;
-	if (fgIsNewVersion) {
+	if (fgIsNewVersion)
 		DBGLOG(SCN, INFO,
-		       "New scnEventScanDone Version%d!size of ScanDone%d,ucCompleteChanCount[%d],ucCurrentState%d\n",
-		       prScanDone->ucScanDoneVersion, sizeof(EVENT_SCAN_DONE),
-		       prScanDone->ucCompleteChanCount, prScanDone->ucCurrentState);
-
-		if (prScanDone->ucScanDoneVersion > 2) {
-			DBGLOG(SCN, INFO, "New u4ScanDurBcnCnt[%lu]!!! fgIsPNOenabled[%d]\n",
-			       prScanDone->u4ScanDurBcnCnt, prScanDone->fgIsPNOenabled);
-		}
-
-		if (prScanDone->ucCurrentState != FW_SCAN_STATE_SCAN_DONE) {
-			DBGLOG(SCN, INFO,
-			       "FW Scan timeout!generate ScanDone event at State%d complete chan count%d ucChannelListNum%d\n",
-			       prScanDone->ucCurrentState, prScanDone->ucCompleteChanCount,
-			       prScanParam->ucChannelListNum);
-
-		} else {
-			DBGLOG(SCN, INFO, " scnEventScanDone at FW_SCAN_STATE_SCAN_DONE state\n");
-		}
-	} else {
+		       "New scnEventScanDone Version%d! ChanCount=%d,CurState=%d, PNO=%d\n",
+		       prScanDone->ucScanDoneVersion, prScanDone->ucCompleteChanCount,
+		       prScanDone->ucCurrentState, prScanDone->fgIsPNOenabled);
+	else
 		DBGLOG(SCN, INFO, "Old scnEventScanDone Version\n");
-	}
 
 	/* buffer empty channel information */
 	if (prScanParam->eScanChannel == SCAN_CHANNEL_FULL || prScanParam->eScanChannel == SCAN_CHANNEL_2G4) {
@@ -932,7 +916,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 		/* switch to next pending scan */
 		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
 	} else {
-		DBGLOG(SCN, INFO, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
+		DBGLOG(SCN, WARN, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
 		       prScanDone->ucSeqNum, prScanInfo->eCurrentState);
 	}
 

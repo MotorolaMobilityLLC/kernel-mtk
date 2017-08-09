@@ -297,29 +297,29 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 		return;
 
 	if (nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) {
-		DBGLOG(INIT, STATE, "FW OWN Failed due to pending INT\n");
+		DBGLOG(NIC, INFO, "FW OWN Failed due to pending INT\n");
 		/* pending interrupts */
 		return;
 	}
 
 	if (fgEnableGlobalInt) {
+		DBGLOG(NIC, INFO, "FW OWN, fgEnableGlobalInt=TRUE\n");
 		prAdapter->fgIsIntEnableWithLPOwnSet = TRUE;
-	} else {
-		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_SET);
-
-		HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
-		if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
-			/* if set firmware own not successful (possibly pending interrupts), */
-			/* indicate an own clear event */
-			HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
-
-			return;
-		}
-
-		prAdapter->fgIsFwOwn = TRUE;
-
-		DBGLOG(INIT, INFO, "FW OWN\n");
+		return;
 	}
+	HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_SET);
+
+	HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
+	if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
+		/* if set firmware own not successful (possibly pending interrupts), */
+		/* indicate an own clear event */
+		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
+		DBGLOG(NIC, INFO, "FW OWN fail\n");
+		return;
+	}
+
+	prAdapter->fgIsFwOwn = TRUE;
+	DBGLOG(NIC, INFO, "FW OWN\n");
 }
 
 VOID nicPmTriggerDriverOwn(IN P_ADAPTER_T prAdapter)
@@ -383,17 +383,10 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			    CHECK_FOR_TIMEOUT(u4CurrTick, prAdapter->rLastOwnFailedLogTime,
 					      MSEC_TO_SYSTIME(LP_OWN_BACK_FAILED_LOG_SKIP_MS))) {
 
-				DBGLOG(INIT, ERROR,
-				       "LP cannot be own back, Timeout[%u](%ums), BusAccessError[%u]",
-					fgTimeout, kalGetTimeTick() - u4CurrTick, fgIsBusAccessFailed);
-				DBGLOG(INIT, ERROR,
-				       "Resetting[%u], CardRemoved[%u] NoAck[%u] Cnt[%u]\n",
-					kalIsResetting(),
-					kalIsCardRemoved(prAdapter->prGlueInfo), wlanIsChipNoAck(prAdapter),
-					prAdapter->u4OwnFailedCount);
-
-				DBGLOG(INIT, INFO,
-				       "Skip LP own back failed log for next %ums\n", LP_OWN_BACK_FAILED_LOG_SKIP_MS);
+				DBGLOG(NIC, ERROR,
+				       "LP fail, Timeout(%ums) Bus Error[%u] Resetting[%u] NoAck[%u] Cnt[%u]",
+					kalGetTimeTick() - u4CurrTick, fgIsBusAccessFailed, kalIsResetting(),
+					wlanIsChipNoAck(prAdapter), prAdapter->u4OwnFailedCount);
 
 				prAdapter->u4OwnFailedLogCount++;
 				if (prAdapter->u4OwnFailedLogCount > LP_OWN_BACK_FAILED_RESET_CNT) {
@@ -419,6 +412,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		kalMsleep(LP_OWN_BACK_LOOP_DELAY_MS);
 		i++;
 	}
+	DBGLOG(NIC, INFO, "DRIVER OWN, status=%d\n", fgStatus);
 
 	return fgStatus;
 }
@@ -470,7 +464,7 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 		/* 2. Initialize the Adapter */
 		u4Status = nicInitializeAdapter(prAdapter);
 		if (u4Status != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "nicInitializeAdapter failed!\n");
+			DBGLOG(NIC, ERROR, "nicInitializeAdapter failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
 			break;
 		}
@@ -479,7 +473,7 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 #if CFG_ENABLE_FW_DOWNLOAD
 		prFwMappingHandle = kalFirmwareImageMapping(prAdapter->prGlueInfo, &pvFwImageMapFile, &u4FwImgLength);
 		if (!prFwMappingHandle) {
-			DBGLOG(INIT, ERROR, "Fail to load FW image from file!\n");
+			DBGLOG(NIC, ERROR, "Fail to load FW image from file!\n");
 			pvFwImageMapFile = NULL;
 		}
 #if defined(MT6630)
@@ -513,7 +507,7 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 			{
 				if (wlanImageSectionConfig(prAdapter,
 							   u4FwLoadAddr, u4FwImgLength, TRUE) != WLAN_STATUS_SUCCESS) {
-					DBGLOG(INIT, ERROR, "Firmware download configuration failed!\n");
+					DBGLOG(NIC, ERROR, "Firmware download configuration failed!\n");
 
 					u4Status = WLAN_STATUS_FAILURE;
 					break;
@@ -551,19 +545,19 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 #endif
 
 		/* 5. check Wi-Fi FW asserts ready bit */
-		DBGLOG(INIT, TRACE, "wlanAdapterStart(): Waiting for Ready bit..\n");
+		DBGLOG(NIC, TRACE, "wlanAdapterStart(): Waiting for Ready bit..\n");
 		i = 0;
 		while (1) {
 			HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
 
 			if (u4Value & WCIR_WLAN_READY) {
-				DBGLOG(INIT, TRACE, "Ready bit asserted\n");
+				DBGLOG(NIC, TRACE, "Ready bit asserted\n");
 				break;
 			} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
 				u4Status = WLAN_STATUS_FAILURE;
 				break;
 			} else if (i >= CFG_RESPONSE_POLLING_TIMEOUT) {
-				DBGLOG(INIT, ERROR, "Waiting for Ready bit: Timeout\n");
+				DBGLOG(NIC, ERROR, "Waiting for Ready bit: Timeout\n");
 				u4Status = WLAN_STATUS_FAILURE;
 				break;
 			}

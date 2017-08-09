@@ -580,18 +580,7 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 				}
 
 				if (fgUpdate == TRUE) {
-					rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
-								      CMD_ID_SET_RX_FILTER,	/* ucCID */
-								      TRUE,	/* fgSetQuery */
-								      FALSE,	/* fgNeedResp */
-								      FALSE,	/* fgIsOid */
-								      NULL,	/* pfCmdDoneHandler */
-								      NULL,	/* pfCmdTimeoutHandler */
-								      sizeof(UINT_32),	/* u4SetQueryInfoLen */
-								      (PUINT_8)&u4rxfilter,	/* pucInfoBuffer */
-								      NULL,	/* pvSetQueryBuffer */
-								      0	/* un4SetQueryBufferLen */
-					    );
+					rStatus = wlanoidSetPacketFilter(prAdapter, u4rxfilter, FALSE, NULL, 0);
 				}
 				/* DBGLOG(SW4, INFO,("SWCTRL_RX_FILTER:
 				 * g_u4RXFilter %x ucOpt0 %x ucOpt1 %x fgUpdate %x u4rxfilter %x, rStatus %x\n", */
@@ -707,7 +696,6 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 			break;
 		case SWCTRL_MAGIC:
 			g_au4SwCr[1] = _SWCTRL_MAGIC;
-			/* DBGLOG(SW4, INFO, "BUILD TIME: %s %s\n", __DATE__, __TIME__); */
 			break;
 		case SWCTRL_QM_INFO:
 			{
@@ -1161,7 +1149,7 @@ VOID swCrReadWriteCmd(P_ADAPTER_T prAdapter, UINT_8 ucRead, UINT_16 u2Addr, UINT
 	/* Address [7:0] OFFSET */
 
 	DEBUGFUNC("swCrReadWriteCmd");
-	DBGLOG(SW4, INFO, "%u addr 0x%x data 0x%x\n", ucRead, u2Addr, *pu4Data);
+	DBGLOG(SW4, TRACE, "%u addr 0x%x data 0x%x\n", ucRead, u2Addr, *pu4Data);
 
 	if (ucMod < (sizeof(g_arSwCrModHandle) / sizeof(g_arSwCrModHandle[0]))) {
 

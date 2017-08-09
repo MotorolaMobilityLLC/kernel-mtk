@@ -112,13 +112,13 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 		return;
 
 	if (!prGlueInfo->prAdapter->fgIsP2PRegistered) {
-		DBGLOG(INIT, INFO, "%s: P2P is not enabled, SKIP!\n", __func__);
+		DBGLOG(P2P, INFO, "%s: P2P is not enabled, SKIP!\n", __func__);
 		return;
 	}
 
 	prDev = prGlueInfo->prP2PInfo->prDevHandler;
 	if (!prDev) {
-		DBGLOG(INIT, INFO, "%s: P2P dev is not available, SKIP!\n", __func__);
+		DBGLOG(P2P, WARN, "%s: P2P dev is not available, SKIP!\n", __func__);
 		return;
 	}
 
@@ -136,19 +136,16 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pLaunch(P_GLUE_INFO_T prGlueInfo)
 {
-	DBGLOG(INIT, INFO, "p2p Launch\n");
-
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == TRUE) {
-		DBGLOG(INIT, INFO, "p2p already registered\n");
+		DBGLOG(P2P, INFO, "p2p already registered\n");
 		return FALSE;
 	} else if (glRegisterP2P(prGlueInfo, ifname, (BOOLEAN) mode)) {
 		prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
-		DBGLOG(INIT, INFO, "Launch success, fgIsP2PRegistered TRUE.\n");
 
+		DBGLOG(P2P, INFO, "Launch success, fgIsP2PRegistered TRUE.\n");
 		return TRUE;
 	}
-
-	DBGLOG(INIT, INFO, "Launch Fail\n");
+	DBGLOG(P2P, ERROR, "Launch Fail\n");
 	return FALSE;
 }
 
@@ -176,10 +173,8 @@ VOID p2pSetMode(IN BOOLEAN fgIsAPMOde)
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pRemove(P_GLUE_INFO_T prGlueInfo)
 {
-	DBGLOG(INIT, INFO, "p2p Remove\n");
-
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE) {
-		DBGLOG(INIT, INFO, "p2p is not Registered.\n");
+		DBGLOG(P2P, INFO, "p2p is not Registered.\n");
 	} else {
 		prGlueInfo->prAdapter->fgIsP2PRegistered = FALSE;
 		glUnregisterP2P(prGlueInfo);
@@ -207,7 +202,7 @@ static int initP2P(void)
 	/*check interface name validation */
 	p2pCheckInterfaceName();
 
-	DBGLOG(INIT, INFO, "InitP2P, Ifname: %s, Mode: %s\n", ifname, mode ? "AP" : "P2P");
+	DBGLOG(P2P, INFO, "InitP2P, Ifname: %s, Mode: %s\n", ifname, mode ? "AP" : "P2P");
 
 	/*register p2p init & exit function to wlan sub module handler */
 	wlanSubModRegisterInitExit(p2pLaunch, p2pRemove, P2P_MODULE);
@@ -238,7 +233,7 @@ static VOID __exit exitP2P(void)
 {
 	P_GLUE_INFO_T prGlueInfo;
 
-	DBGLOG(INIT, INFO, "ExitP2P\n");
+	DBGLOG(P2P, INFO, "ExitP2P\n");
 
 	/*if wlan is not started yet, return FALSE */
 	if (wlanExportGlueInfo(&prGlueInfo))

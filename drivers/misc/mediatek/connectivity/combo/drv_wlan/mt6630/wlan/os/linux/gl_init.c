@@ -1722,11 +1722,7 @@ VOID wlanDebugInit(VOID)
 		aucDebugModule[i] = DBG_CLASS_ERROR |
 		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_EVENT | DBG_CLASS_INFO;
 	}
-	aucDebugModule[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
-	aucDebugModule[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
-	aucDebugModule[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
 	aucDebugModule[DBG_INTR_IDX] = 0;
-	aucDebugModule[DBG_MEM_IDX] = DBG_CLASS_ERROR | DBG_CLASS_WARN;
 #endif /* DBG */
 
 	LOG_FUNC("Reset ALL DBG module log level to DEFAULT!");
@@ -2501,7 +2497,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 			       wlanoidSetP2pMode,
 			       (PVOID) &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
 
-	DBGLOG(INIT, INFO, "set_p2p_mode_handler ret = 0x%08lx\n", (UINT_32) rWlanStatus);
+	DBGLOG(INIT, TRACE, "set_p2p_mode_handler ret = 0x%08lx\n", (UINT_32) rWlanStatus);
 
 	/* Need to check fgIsP2PRegistered, in case of whole chip reset.
 	 * in this case, kalIOCTL return success always,
@@ -2774,7 +2770,7 @@ bailout:
 
 		/* 4 <6> Initialize /proc filesystem */
 #ifdef WLAN_INCLUDE_PROC
-		i4Status = kalMetInitProcfs(prGlueInfo);
+		i4Status = procCreateFsEntry(prGlueInfo);
 		if (i4Status < 0) {
 			DBGLOG(INIT, ERROR, "wlanProbe: init procfs failed\n");
 			break;
@@ -2840,7 +2836,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <0> Sanity check */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (0 == u4WlanDevNum) {
-		DBGLOG(INIT, INFO, "0 == u4WlanDevNum\n");
+		DBGLOG(INIT, ERROR, "0 == u4WlanDevNum\n");
 		return;
 	}
 #if (CFG_ENABLE_WIFI_DIRECT && MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
@@ -2852,14 +2848,14 @@ static VOID wlanRemove(VOID)
 
 	ASSERT(prDev);
 	if (NULL == prDev) {
-		DBGLOG(INIT, INFO, "NULL == prDev\n");
+		DBGLOG(INIT, ERROR, "NULL == prDev\n");
 		return;
 	}
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 	if (NULL == prGlueInfo) {
-		DBGLOG(INIT, INFO, "NULL == prGlueInfo\n");
+		DBGLOG(INIT, ERROR, "NULL == prGlueInfo\n");
 		free_netdev(prDev);
 		return;
 	}
@@ -2895,7 +2891,7 @@ static VOID wlanRemove(VOID)
 	/* wait main thread stops */
 	wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
 
-	DBGLOG(INIT, INFO, "mtk_sdiod stopped\n");
+	DBGLOG(INIT, TRACE, "mtk_sdiod stopped\n");
 
 	/* prGlueInfo->rHifInfo.main_thread = NULL; */
 	prGlueInfo->main_thread = NULL;
@@ -2914,9 +2910,9 @@ static VOID wlanRemove(VOID)
 
 #if CFG_ENABLE_WIFI_DIRECT
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered) {
-		DBGLOG(INIT, INFO, "p2pNetUnregister...\n");
+		DBGLOG(INIT, TRACE, "p2pNetUnregister...\n");
 		p2pNetUnregister(prGlueInfo, FALSE);
-		DBGLOG(INIT, INFO, "p2pRemove...\n");
+		DBGLOG(INIT, TRACE, "p2pRemove...\n");
 		/*p2pRemove must before wlanAdapterStop */
 		p2pRemove(prGlueInfo);
 	}
@@ -2942,7 +2938,7 @@ static VOID wlanRemove(VOID)
 #endif
 
 	wlanAdapterStop(prAdapter);
-	DBGLOG(INIT, INFO, "Number of Stalled Packets = %d\n", GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum));
+	DBGLOG(INIT, TRACE, "Number of Stalled Packets = %d\n", GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum));
 
 	/* 4 <x> Stopping handling interrupt and free IRQ */
 	glBusFreeIrq(prDev, prGlueInfo);

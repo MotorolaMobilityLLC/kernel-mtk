@@ -195,14 +195,19 @@ do { \
 		ASSERT(0); \
 	} \
 	if (HAL_TEST_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR) == FALSE) { \
-		if (kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
+		UINT_32 i = 1; \
+		while (kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
+			if (i < 5) { \
+				i++; \
+				continue; \
+			} \
 			HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_PORT_RD access fail! 0x%lx\n", \
 				(UINT_32) (_u4Port)); \
+			glResetTrigger(_prAdapter); \
+			break; \
 		} \
-		else { \
-			/*fgResult = TRUE;*/ } \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_PORT_RD access! 0x%lx\n", \
 			(UINT_32) (_u4Port)); \
@@ -216,14 +221,19 @@ do { \
 		ASSERT(0); \
 	} \
 	if (HAL_TEST_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR) == FALSE) { \
-		if (kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
+		UINT_32 i = 1; \
+		while (kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) == FALSE) {\
+			if (i < 5) { \
+				i++; \
+				continue; \
+			} \
 			HAL_SET_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR); \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_PORT_WR access fail! 0x%lx\n", \
 				(UINT_32) (_u4Port)); \
+			glResetTrigger(_prAdapter); \
+			break; \
 		} \
-		else \
-			; /*fgResult = TRUE;*/ \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_PORT_WR access! 0x%lx\n", \
 			(UINT_32) (_u4Port)); \

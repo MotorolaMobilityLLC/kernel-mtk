@@ -511,7 +511,7 @@ VOID roamingFsmRunEventAbort(IN P_ADAPTER_T prAdapter)
 			return;
 	} while (0);
 
-	DBGLOG(ROAMING, EVENT, "EVENT-ROAMING ABORT: Current Time = %ld\n", kalGetTimeTick());
+	DBGLOG(ROAMING, TRACE, "EVENT-ROAMING ABORT: Current Time = %ld\n", kalGetTimeTick());
 
 	eNextState = ROAMING_STATE_IDLE;
 	/* IDLE, DECISION, DISCOVERY, ROAM -> IDLE */

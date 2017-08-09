@@ -883,14 +883,14 @@ static IST_EVENT_FUNCTION apfnEventFuncTable[] = {
  */
 #define LOCAL_NIC_ALLOCATE_MEMORY(pucMem, u4Size, eMemType, pucComment) \
 	{ \
-		DBGLOG(INIT, INFO, "Allocating %ld bytes for %s.\n", u4Size, pucComment); \
+		DBGLOG(MEM, TRACE, "Allocating %ld bytes for %s.\n", u4Size, pucComment); \
 		pucMem = (PUINT_8)kalMemAlloc(u4Size, eMemType); \
 		if (pucMem == (PUINT_8)NULL) { \
-			DBGLOG(INIT, ERROR, "Could not allocate %ld bytes for %s.\n", u4Size, pucComment); \
+			DBGLOG(MEM, ERROR, "Could not allocate %ld bytes for %s.\n", u4Size, pucComment); \
 			break; \
 		} \
 		ASSERT(((ULONG)pucMem % 4) == 0); \
-		DBGLOG(INIT, INFO, "Virtual Address = 0x%p for %s.\n", (ULONG)pucMem, pucComment); \
+		DBGLOG(MEM, LOUD, "Virtual Address = 0x%p for %s.\n", (ULONG)pucMem, pucComment); \
 	}
 
 /*******************************************************************************
@@ -972,7 +972,7 @@ WLAN_STATUS nicAllocateAdapterMemory(IN P_ADAPTER_T prAdapter)
 		prAdapter->pucCoalescingBufCached = kalAllocateIOBuffer(prAdapter->u4CoalescingBufCachedSize);
 
 		if (prAdapter->pucCoalescingBufCached == NULL) {
-			DBGLOG(INIT, ERROR,
+			DBGLOG(NIC, ERROR,
 			       "Could not allocate %ld bytes for coalescing buffer.\n",
 				prAdapter->u4CoalescingBufCachedSize);
 			break;
@@ -984,7 +984,7 @@ WLAN_STATUS nicAllocateAdapterMemory(IN P_ADAPTER_T prAdapter)
 		    kalAllocateIOBuffer(sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 
 		if (prAdapter->prSDIOCtrl == NULL) {
-			DBGLOG(INIT, ERROR,
+			DBGLOG(NIC, ERROR,
 			       "Could not allocate %d bytes for interrupt response.\n",
 				sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 			break;
@@ -1273,7 +1273,7 @@ WLAN_STATUS nicProcessIST(IN P_ADAPTER_T prAdapter)
 		HAL_MCR_RD(prAdapter, MCR_WHISR, &u4IntStatus);
 #endif /* CFG_SDIO_INTR_ENHANCE */
 
-		/* DBGLOG(INIT, TRACE, ("u4IntStatus: 0x%x\n", u4IntStatus)); */
+		/* DBGLOG(NIC, TRACE, ("u4IntStatus: 0x%x\n", u4IntStatus)); */
 
 		if (u4IntStatus & ~(WHIER_DEFAULT | WHIER_FW_OWN_BACK_INT_EN)) {
 			DBGLOG(INTR, WARN, "Un-handled HISR %#lx, HISR = %#lx (HIER:0x%lx)\n",
@@ -1359,8 +1359,8 @@ BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter)
 
 	HAL_MCR_RD(prAdapter, MCR_WCIR, &u4CIR);
 
-	DBGLOG(INIT, TRACE, "Chip ID: 0x%lx\n", u4CIR & WCIR_CHIP_ID);
-	DBGLOG(INIT, TRACE, "Revision ID: 0x%lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
+	DBGLOG(NIC, TRACE, "Chip ID: 0x%lx\n", u4CIR & WCIR_CHIP_ID);
+	DBGLOG(NIC, TRACE, "Revision ID: 0x%lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
 
 	if ((u4CIR & WCIR_CHIP_ID) != MTK_CHIP_REV)
 		return FALSE;
@@ -1438,7 +1438,7 @@ WLAN_STATUS nicInitializeAdapter(IN P_ADAPTER_T prAdapter)
 		nicHifInit(prAdapter);
 	} while (FALSE);
 
-	DBGLOG(INIT, INFO, "Chip ID[%04X] Version[E%u]\n", MTK_CHIP_REV, wlanGetEcoVersion(prAdapter));
+	DBGLOG(NIC, INFO, "Chip ID[%04X] Version[E%u]\n", MTK_CHIP_REV, wlanGetEcoVersion(prAdapter));
 
 	return u4Status;
 }
@@ -1554,7 +1554,7 @@ VOID nicSetSwIntr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4SwIntrBitmap)
 	 *  SW interrupt valid from b0~b15
 	 */
 	ASSERT((u4SwIntrBitmap & BITS(0, 15)) == 0);
-/* DBGLOG(INIT, TRACE, ("u4SwIntrBitmap: 0x%08x\n", u4SwIntrBitmap)); */
+/* DBGLOG(NIC, TRACE, ("u4SwIntrBitmap: 0x%08x\n", u4SwIntrBitmap)); */
 
 	HAL_MCR_WR(prAdapter, MCR_WSICR, u4SwIntrBitmap);
 }
@@ -1649,7 +1649,7 @@ P_MSDU_INFO_T nicGetPendingTxMsduInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucWlan
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 
 	if (prMsduInfo) {
-		DBGLOG(TX, INFO, "Get Msdu WIDX:PID[%u:%u] SEQ[%u] from Pending Q\n",
+		DBGLOG(TX, TRACE, "Get Msdu WIDX:PID[%u:%u] SEQ[%u] from Pending Q\n",
 				  prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, prMsduInfo->ucTxSeqNum);
 	} else {
 		DBGLOG(TX, WARN, "Cannot get Target Msdu WIDX:PID[%u:%u] from Pending Q\n", ucWlanIndex, ucPID);
@@ -2080,7 +2080,7 @@ UINT_32 nicFreq2ChannelNum(UINT_32 u4FreqInKHz)
 	case 5865000:
 		return 173;
 	default:
-		DBGLOG(BSS, INFO, "Return Invalid Channelnum = 0.\n");
+		DBGLOG(NIC, WARN, "Return Invalid Channelnum = %u\n", u4FreqInKHz);
 		return 0;
 	}
 }
@@ -2148,8 +2148,8 @@ WLAN_STATUS nicActivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	kalMemZero(&rCmdActivateCtrl.ucReserved, sizeof(rCmdActivateCtrl.ucReserved));
 
 #if DBG
-	DBGLOG(BSS, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
-	DBGLOG(BSS, TRACE,
+	DBGLOG(NIC, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
+	DBGLOG(NIC, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " NetType=%d BCIndex=%d\n",
 		MAC2STR(prBssInfo->aucOwnMacAddr),
 		MAC2STR(prBssInfo->aucBSSID),
@@ -2192,8 +2192,8 @@ WLAN_STATUS nicDeactivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	/* rCmdActivateCtrl.ucBMCWlanIndex = prBssInfo->ucBMCWlanIndex; */
 
 #if DBG
-	DBGLOG(BSS, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
-	DBGLOG(BSS, TRACE,
+	DBGLOG(NIC, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
+	DBGLOG(NIC, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " BCIndex = %d\n",
 		MAC2STR(prBssInfo->aucOwnMacAddr),
 		MAC2STR(prBssInfo->aucBSSID),
@@ -2337,7 +2337,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	else
 		rCmdSetBssInfo.ucStaRecIdxOfAP = STA_REC_INDEX_NOT_FOUND;
 
-	DBGLOG(REQ, TRACE,
+	DBGLOG(BSS, INFO,
 	       "Update Bss[%u] ConnState[%u] OPmode[%u] BSSID[" MACSTR
 		"] AuthMode[%u] EncStatus[%u]\n", ucBssIndex, prBssInfo->eConnectionState,
 		prBssInfo->eCurrentOPMode, MAC2STR(prBssInfo->aucBSSID), rCmdSetBssInfo.ucAuthMode,
@@ -2505,7 +2505,7 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 			  IN UINT_8 ucBssIndex, IN PARAM_POWER_MODE ePwrMode, IN BOOLEAN fgEnCmdEvent)
 {
 	DEBUGFUNC("nicConfigPowerSaveProfile");
-	DBGLOG(INIT, TRACE, "ucBssIndex:%d, ePwrMode:%d, fgEnCmdEvent:%d\n", ucBssIndex, ePwrMode, fgEnCmdEvent);
+	DBGLOG(NIC, INFO, "ucBssIndex:%d, ePwrMode:%d, fgEnCmdEvent:%d\n", ucBssIndex, ePwrMode, fgEnCmdEvent);
 
 	ASSERT(prAdapter);
 
@@ -2539,7 +2539,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 	WLAN_STATUS rWlanStatus;
 
 	DEBUGFUNC("nicEnterCtiaMode");
-	DBGLOG(INIT, TRACE, "nicEnterCtiaMode: %d\n", fgEnterCtia);
+	DBGLOG(NIC, INFO, "nicEnterCtiaMode: %d\n", fgEnterCtia);
 
 	ASSERT(prAdapter);
 
@@ -2644,7 +2644,6 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	UINT_8 ucCmdSeqNum;
 
 	DEBUGFUNC("wlanUpdateBeaconIETemplate");
-	DBGLOG(INIT, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	prGlueInfo = prAdapter->prGlueInfo;
@@ -2664,7 +2663,7 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	/* prepare command info */
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + u2CmdBufLen));
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(NIC, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	/* increase command sequence number */
@@ -2763,11 +2762,7 @@ WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 
 	ASSERT(prAdapter);
 
-	DBGLOG(QM, INFO, "Update WMM parameters for BSS[%u]\n", ucBssIndex);
-
-	DBGLOG(QM, EVENT, "sizeof(AC_QUE_PARMS_T): %d\n", sizeof(AC_QUE_PARMS_T));
-	DBGLOG(QM, EVENT, "sizeof(CMD_UPDATE_WMM_PARMS): %d\n", sizeof(CMD_UPDATE_WMM_PARMS_T));
-	DBGLOG(QM, EVENT, "sizeof(WIFI_CMD_T): %d\n", sizeof(WIFI_CMD_T));
+	DBGLOG(QM, TRACE, "Update WMM parameters for BSS[%u]\n", ucBssIndex);
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 	rCmdUpdateWmmParms.ucBssIndex = (UINT_8) ucBssIndex;
@@ -3920,11 +3915,11 @@ nicRlmArUpdateParms(IN P_ADAPTER_T prAdapter,
 	ucArPerH = (UINT_8) (((u4ArSysParam1 >> 16) & BITS(0, 7)));
 	ucArPerL = (UINT_8) (((u4ArSysParam1 >> 24) & BITS(0, 7)));
 
-	DBGLOG(INIT, INFO, "ArParam %ld %ld %ld %ld\n", u4ArSysParam0, u4ArSysParam1, u4ArSysParam2, u4ArSysParam3);
-	DBGLOG(INIT, INFO, "ArVer %u AbwVer %u AgiVer %u\n", ucArVer, ucAbwVer, ucAgiVer);
-	DBGLOG(INIT, INFO, "HtMask %x LegacyMask %x\n", u2HtClrMask, u2LegacyClrMask);
-	DBGLOG(INIT, INFO,
-	       "CheckWin %u RateDownPer %u PerH %u PerL %u\n", ucArCheckWindow,
+	DBGLOG(NIC, INFO, "ArParam %ld %ld %ld %ld, ArVer %u AbwVer %u AgiVer %u\n",
+			u4ArSysParam0, u4ArSysParam1, u4ArSysParam2, u4ArSysParam3,
+			ucArVer, ucAbwVer, ucAgiVer);
+	DBGLOG(NIC, INFO, "HtMask %x LegacyMask %x, CheckWin %u RateDownPer %u PerH %u PerL %u\n",
+		u2HtClrMask, u2LegacyClrMask, ucArCheckWindow,
 		ucArPerForceRateDownPer, ucArPerH, ucArPerL);
 
 #define SWCR_DATA_ADDR(MOD, ADDR) (0x90000000+(MOD<<8)+(ADDR))

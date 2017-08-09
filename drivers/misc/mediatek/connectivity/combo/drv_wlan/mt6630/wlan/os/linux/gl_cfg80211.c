@@ -736,7 +736,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 			   wlanoidSetInfrastructureMode, &eOpMode, sizeof(eOpMode), FALSE, FALSE, TRUE, &u4BufLen);
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, INFO, "wlanoidSetInfrastructureMode fail 0x%lx\n", rStatus);
+		DBGLOG(REQ, ERROR, "wlanoidSetInfrastructureMode fail 0x%lx\n", rStatus);
 		return -EFAULT;
 	}
 
@@ -901,7 +901,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 				   wlanoidSetWapiAssocInfo, pucIEStart, sme->ie_len, FALSE, FALSE, FALSE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(SEC, WARN, "[wapi] set wapi assoc info error:%lx\n", rStatus);
+			DBGLOG(REQ, TRACE, "[wapi] set wapi assoc info error:%lx\n", rStatus);
 #endif
 #if CFG_SUPPORT_WPS2
 		if (wextSrchDesiredWPSIE(pucIEStart, sme->ie_len, 0xDD, (PUINT_8 *) &prDesiredIE)) {
@@ -1014,7 +1014,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 				   wlanoidSetAddWep, prWepKey, prWepKey->u4Length, FALSE, FALSE, TRUE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, INFO, "wlanoidSetAddWep fail 0x%lx\n", rStatus);
+			DBGLOG(REQ, ERROR, "wlanoidSetAddWep fail 0x%lx\n", rStatus);
 			return -EFAULT;
 		}
 	}
@@ -1967,10 +1967,6 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-#if 1
-	DBGLOG(INIT, INFO, "--> %s()\n", __func__);
-#endif
-
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_SW_CMD_PARAMS) data;
 
@@ -1981,6 +1977,7 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 					   &prParams->adr, (UINT_32) 8, FALSE, FALSE, TRUE, &u4SetInfoLen);
 		}
 	}
+	DBGLOG(REQ, TRACE, "prParams=%p, status=%u\n", prParams, rstatus);
 
 	if (WLAN_STATUS_SUCCESS != rstatus)
 		fgIsValid = -EFAULT;
@@ -1999,9 +1996,6 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-#if 1
-	DBGLOG(INIT, INFO, "-->%s()\n", __func__);
-#endif
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_TEST_MODE_PARAMS) data;
@@ -2037,6 +2031,8 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 			i4Status = -EINVAL;
 			break;
 		}
+		if (i4Status != 0)
+			DBGLOG(REQ, TRACE, "prParams->index=%d, status=%d\n", prParams->index, i4Status);
 	}
 	return i4Status;
 }

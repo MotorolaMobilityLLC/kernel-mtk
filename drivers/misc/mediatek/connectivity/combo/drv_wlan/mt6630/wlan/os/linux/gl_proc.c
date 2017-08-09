@@ -149,8 +149,9 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (*f_pos > 0)
 		return 0;
 
-	kalStrCpy(temp, "\nERROR|WARN|STATE|EVENT|TRACE|INFO|LOUD|TEMP\n"
-			"bit0 |bit1|bit2 |bit3 |bit4 |bit5|bit6|bit7\n\n"
+	kalStrCpy(temp, "\nTEMP|LOUD|INFO|TRACE | EVENT|STATE|WARN|ERROR\n"
+			"bit7|bit6|bit5|bit4 | bit3|bit2|bit1|bit0\n\n"
+			"Usage: Module Index:Module Level, such as 0x00:0xff\n\n"
 			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n");
 	temp += kalStrLen(temp);
 
@@ -540,7 +541,7 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 {
 	struct proc_dir_entry *prEntry;
 
-	DBGLOG(INIT, INFO, "[%s]\n", __func__);
+	DBGLOG(INIT, LOUD, "[%s]\n", __func__);
 	g_prGlueInfo_proc = prGlueInfo;
 
 	prEntry = proc_create(PROC_MCR_ACCESS, 0664, gprProcRoot, &mcr_ops);

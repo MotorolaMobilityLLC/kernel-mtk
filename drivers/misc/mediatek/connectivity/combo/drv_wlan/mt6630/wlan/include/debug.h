@@ -147,6 +147,12 @@ extern UINT_32 u4DebugModule;
 #define TDLS_DBG_CLASSES \
 	(DBG_CLASS_DEFAULT)
 
+#define OID_DBG_CLASSES \
+		(DBG_CLASS_DEFAULT)
+
+#define NIC_DBG_CLASSES \
+		(DBG_CLASS_DEFAULT)
+
 /* Define INIT related debug classes */
 #if (INIT_DBG_CLASSES & DBG_CLASS_ERROR)
 #define INIT_ERROR_LOGFUNC(_Module, _Class, _Fmt...) \
@@ -3191,6 +3197,216 @@ extern UINT_32 u4DebugModule;
 #define TDLS_TEMP_LOGFUNC(_Module, _Class, _Fmt...)
 #define TDLS_TEMP_LOGDUMP8(_StartAddr, _Length)
 #define TDLS_TEMP_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+/* Define OID related debug classes */
+#if (OID_DBG_CLASSES & DBG_CLASS_ERROR)
+#define OID_ERROR_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_ERROR_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#define OID_ERROR_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#else
+#define OID_ERROR_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_ERROR_LOGDUMP8(_StartAddr, _Length)
+#define OID_ERROR_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_WARN)
+#define OID_WARN_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_WARN_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#define OID_WARN_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#else
+#define OID_WARN_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_WARN_LOGDUMP8(_StartAddr, _Length)
+#define OID_WARN_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_STATE)
+#define OID_STATE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_STATE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#define OID_STATE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#else
+#define OID_STATE_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_STATE_LOGDUMP8(_StartAddr, _Length)
+#define OID_STATE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_EVENT)
+#define OID_EVENT_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_EVENT_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#define OID_EVENT_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#else
+#define OID_EVENT_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_EVENT_LOGDUMP8(_StartAddr, _Length)
+#define OID_EVENT_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_TRACE)
+#define OID_TRACE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_TRACE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#define OID_TRACE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#else
+#define OID_TRACE_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_TRACE_LOGDUMP8(_StartAddr, _Length)
+#define OID_TRACE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_INFO)
+#define OID_INFO_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_INFO_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#define OID_INFO_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#else
+#define OID_INFO_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_INFO_LOGDUMP8(_StartAddr, _Length)
+#define OID_INFO_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_LOUD)
+#define OID_LOUD_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_LOUD_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#define OID_LOUD_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#else
+#define OID_LOUD_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_LOUD_LOGDUMP8(_StartAddr, _Length)
+#define OID_LOUD_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (OID_DBG_CLASSES & DBG_CLASS_TEMP)
+#define OID_TEMP_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define OID_TEMP_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_OID_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#define OID_TEMP_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_OID_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#else
+#define OID_TEMP_LOGFUNC(_Module, _Class, _Fmt...)
+#define OID_TEMP_LOGDUMP8(_StartAddr, _Length)
+#define OID_TEMP_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+/* Define NIC related debug classes */
+#if (NIC_DBG_CLASSES & DBG_CLASS_ERROR)
+#define NIC_ERROR_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_ERROR_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#define NIC_ERROR_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#else
+#define NIC_ERROR_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_ERROR_LOGDUMP8(_StartAddr, _Length)
+#define NIC_ERROR_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_WARN)
+#define NIC_WARN_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_WARN_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#define NIC_WARN_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#else
+#define NIC_WARN_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_WARN_LOGDUMP8(_StartAddr, _Length)
+#define NIC_WARN_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_STATE)
+#define NIC_STATE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_STATE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#define NIC_STATE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#else
+#define NIC_STATE_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_STATE_LOGDUMP8(_StartAddr, _Length)
+#define NIC_STATE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_EVENT)
+#define NIC_EVENT_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_EVENT_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#define NIC_EVENT_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#else
+#define NIC_EVENT_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_EVENT_LOGDUMP8(_StartAddr, _Length)
+#define NIC_EVENT_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_TRACE)
+#define NIC_TRACE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_TRACE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#define NIC_TRACE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#else
+#define NIC_TRACE_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_TRACE_LOGDUMP8(_StartAddr, _Length)
+#define NIC_TRACE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_INFO)
+#define NIC_INFO_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_INFO_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#define NIC_INFO_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#else
+#define NIC_INFO_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_INFO_LOGDUMP8(_StartAddr, _Length)
+#define NIC_INFO_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_LOUD)
+#define NIC_LOUD_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_LOUD_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#define NIC_LOUD_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#else
+#define NIC_LOUD_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_LOUD_LOGDUMP8(_StartAddr, _Length)
+#define NIC_LOUD_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (NIC_DBG_CLASSES & DBG_CLASS_TEMP)
+#define NIC_TEMP_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define NIC_TEMP_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_NIC_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#define NIC_TEMP_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_NIC_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#else
+#define NIC_TEMP_LOGFUNC(_Module, _Class, _Fmt...)
+#define NIC_TEMP_LOGDUMP8(_StartAddr, _Length)
+#define NIC_TEMP_LOGDUMP32(_StartAddr, _Length)
 #endif
 
 

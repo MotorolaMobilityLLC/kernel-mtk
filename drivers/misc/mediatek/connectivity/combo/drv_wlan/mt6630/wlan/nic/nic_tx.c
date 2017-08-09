@@ -894,7 +894,7 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 		prTxCtrl->rTc.au2FreeBufferCount[ucTC] =
 		    (prTxCtrl->rTc.au2FreePageCount[ucTC] / NIC_TX_MAX_PAGE_PER_FRAME);
 
-		DBGLOG(TX, EVENT,
+		DBGLOG(TX, TRACE,
 		       "Acquire: TC%d AcquirePageCnt[%u] FreeBufferCnt[%u] FreePageCnt[%u]\n",
 			ucTC, ucPageCount, prTxCtrl->rTc.au2FreeBufferCount[ucTC],
 			prTxCtrl->rTc.au2FreePageCount[ucTC]);
@@ -1188,7 +1188,7 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 			prTcqStatus->au2FreeBufferCount[i] = u4BufferCountToBeFreed;
 
 			if (au2FreeTcResource[i]) {
-				DBGLOG(TX, EVENT,
+				DBGLOG(TX, TRACE,
 				       "Release: TC%lu ReturnPageCnt[%u] FreePageCnt[%u] FreeBufferCnt[%u]\n",
 					i, au2FreeTcResource[i], prTcqStatus->au2FreePageCount[i],
 					prTcqStatus->au2FreeBufferCount[i]);
@@ -1252,7 +1252,7 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 	prTxCtrl->rTc.ucNextTcIdx = TC0_INDEX;
 	prTxCtrl->rTc.u2AvaliablePageCount = 0;
 
-	DBGLOG(TX, INFO, "Default TCQ free resource [%u %u %u %u %u %u]\n",
+	DBGLOG(TX, LOUD, "Default TCQ free resource [%u %u %u %u %u %u]\n",
 			  prAdapter->rWifiVar.au4TcPageCount[TC0_INDEX],
 			  prAdapter->rWifiVar.au4TcPageCount[TC1_INDEX],
 			  prAdapter->rWifiVar.au4TcPageCount[TC2_INDEX],
@@ -1268,7 +1268,7 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 		prTxCtrl->rTc.au2MaxNumOfPage[ucIdx] = prAdapter->rWifiVar.au4TcPageCount[ucIdx];
 		prTxCtrl->rTc.au2FreePageCount[ucIdx] = prAdapter->rWifiVar.au4TcPageCount[ucIdx];
 
-		DBGLOG(TX, INFO, "Set TC%u Default[%u] Max[%u] Free[%u]\n",
+		DBGLOG(TX, LOUD, "Set TC%u Default[%u] Max[%u] Free[%u]\n",
 				  ucIdx,
 				  prAdapter->rWifiVar.au4TcPageCount[ucIdx],
 				  prTxCtrl->rTc.au2MaxNumOfPage[ucIdx], prTxCtrl->rTc.au2FreePageCount[ucIdx]);
@@ -1279,7 +1279,7 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 		prTxCtrl->rTc.au2FreeBufferCount[ucIdx] =
 		    (prTxCtrl->rTc.au2FreePageCount[ucIdx] / NIC_TX_MAX_PAGE_PER_FRAME);
 
-		DBGLOG(TX, INFO, "Set TC%u Default[%u] Buffer Max[%u] Free[%u]\n",
+		DBGLOG(TX, LOUD, "Set TC%u Default[%u] Buffer Max[%u] Free[%u]\n",
 				  ucIdx,
 				  prAdapter->rWifiVar.au4TcPageCount[ucIdx],
 				  prTxCtrl->rTc.au2MaxNumOfBuffer[ucIdx], prTxCtrl->rTc.au2FreeBufferCount[ucIdx]);
@@ -1289,7 +1289,7 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
-	DBGLOG(TX, INFO, "Reset TCQ free resource to Page:Buf [%u:%u %u:%u %u:%u %u:%u %u:%u %u:%u ]\n",
+	DBGLOG(TX, TRACE, "Reset TCQ free resource to Page:Buf [%u:%u %u:%u %u:%u %u:%u %u:%u %u:%u ]\n",
 			  prTxCtrl->rTc.au2FreePageCount[TC0_INDEX],
 			  prTxCtrl->rTc.au2FreeBufferCount[TC0_INDEX],
 			  prTxCtrl->rTc.au2FreePageCount[TC1_INDEX],
@@ -1302,7 +1302,7 @@ WLAN_STATUS nicTxResetResource(IN P_ADAPTER_T prAdapter)
 			  prTxCtrl->rTc.au2FreeBufferCount[TC4_INDEX],
 			  prTxCtrl->rTc.au2FreePageCount[TC5_INDEX], prTxCtrl->rTc.au2FreeBufferCount[TC5_INDEX]);
 
-	DBGLOG(TX, INFO, "Reset TCQ MAX resource to Page:Buf [%u:%u %u:%u %u:%u %u:%u %u:%u %u:%u]\n",
+	DBGLOG(TX, TRACE, "Reset TCQ MAX resource to Page:Buf [%u:%u %u:%u %u:%u %u:%u %u:%u %u:%u]\n",
 			  prTxCtrl->rTc.au2MaxNumOfPage[TC0_INDEX],
 			  prTxCtrl->rTc.au2MaxNumOfBuffer[TC0_INDEX],
 			  prTxCtrl->rTc.au2MaxNumOfPage[TC1_INDEX],
@@ -1362,7 +1362,7 @@ UINT_8 nicTxGetFrameResourceType(IN UINT_8 eFrameType, IN P_MSDU_INFO_T prMsduIn
 		break;
 
 	default:
-		DBGLOG(INIT, WARN, "Undefined Frame Type(%u)\n", eFrameType);
+		DBGLOG(TX, WARN, "Undefined Frame Type(%u)\n", eFrameType);
 		ucTC = TC4_INDEX;
 		break;
 	}
@@ -1389,7 +1389,7 @@ UINT_8 nicTxGetCmdResourceType(IN P_CMD_INFO_T prCmdInfo)
 		break;
 
 	default:
-		DBGLOG(INIT, WARN, "Undefined CMD Type(%u)\n", prCmdInfo->eCmdType);
+		DBGLOG(TX, WARN, "Undefined CMD Type(%u)\n", prCmdInfo->eCmdType);
 		ucTC = TC4_INDEX;
 		break;
 	}
@@ -1995,7 +1995,7 @@ WLAN_STATUS nicTxGenerateDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 	ucTxDescSize = NIC_TX_DESC_SHORT_FORMAT_LENGTH;
 
-	DBGLOG(QM, INFO, "Generate TXD template for STA[%u] QoS[%u]\n", prStaRec->ucIndex, prStaRec->fgIsQoS);
+	DBGLOG(TX, TRACE, "Generate TXD template for STA[%u] QoS[%u]\n", prStaRec->ucIndex, prStaRec->fgIsQoS);
 
 	/* Generate new template */
 	if (prStaRec->fgIsQoS) {
@@ -2049,7 +2049,7 @@ WLAN_STATUS nicTxGenerateDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 			for (ucTid = 0; ucTid < TX_DESC_TID_NUM; ucTid++) {
 				prStaRec->aprTxDescTemplate[ucTid] = prTxDesc;
-				DBGLOG(QM, TRACE, "TXD template: TID[%u] Ptr[0x%x]\n", ucTid, (ULONG) prTxDesc);
+				DBGLOG(TX, TRACE, "TXD template: TID[%u] Ptr[0x%x]\n", ucTid, (ULONG) prTxDesc);
 			}
 		} while (FALSE);
 	}
@@ -2075,7 +2075,7 @@ VOID nicTxFreeDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 	UINT_8 ucTxDescSize;
 	P_HW_MAC_TX_DESC_T prTxDesc;
 
-	DBGLOG(QM, INFO, "Free TXD template for STA[%u] QoS[%u]\n", prStaRec->ucIndex, prStaRec->fgIsQoS);
+	DBGLOG(TX, TRACE, "Free TXD template for STA[%u] QoS[%u]\n", prStaRec->ucIndex, prStaRec->fgIsQoS);
 
 	if (prStaRec->fgIsQoS) {
 		for (ucTid = 0; ucTid < TX_DESC_TID_NUM; ucTid++) {
@@ -2192,13 +2192,14 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			} else if (prMsduInfo->eSrc == TX_PACKET_OS) {
 				wlanTxProfilingTagMsdu(prAdapter, prMsduInfo, TX_PROF_TAG_DRV_TX_DONE);
 				kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_SUCCESS);
+				prMsduInfo->prPacket = NULL;
 			} else if (prMsduInfo->eSrc == TX_PACKET_FORWARDING) {
 				GLUE_DEC_REF_CNT(prTxCtrl->i4PendingFwdFrameCount);
 			}
 
 			if (prMsduInfo->pfTxDoneHandler) {
 				KAL_SPIN_LOCK_DECLARATION();
-				DBGLOG(REQ, INFO, "Wait WIDX:PID[%u:%u] SEQ[%u]\n",
+				DBGLOG(TX, TRACE, "Wait WIDX:PID[%u:%u] SEQ[%u]\n",
 						   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, prMsduInfo->ucTxSeqNum);
 
 				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
@@ -2254,17 +2255,17 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 					   prQue->u4NumElem, prFreeQueue->u4NumElem);
 
 			prMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_HEAD(prFreeQueue);
-			DBGLOG(TX, ERROR, "=== Dump MsduInfo ===\n");
+			DBGLOG(TX, WARN, "=== Dump MsduInfo ===\n");
 			while (prMsduInfo) {
 
-				DBGLOG(INIT, INFO, "Msdu[0x%p] Src[%u] Len[%u] Bss[%u] Sta[%u] TC[%u]\n",
+				DBGLOG(TX, WARN, "Msdu[0x%p] Src[%u] Len[%u] Bss[%u] Sta[%u] TC[%u]\n",
 						    prMsduInfo, prMsduInfo->eSrc, prMsduInfo->u2FrameLength,
 						    prMsduInfo->ucBssIndex, prMsduInfo->ucStaRecIndex,
 						    prMsduInfo->ucTC);
 
 				prMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 			}
-			DBGLOG(TX, ERROR, "=== Dump done ===\n");
+			DBGLOG(TX, WARN, "=== Dump done ===\n");
 
 			qmDumpQueueStatus(prAdapter);
 		}
@@ -2325,7 +2326,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		/* <3> Copy Frame Body */
 		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket, pucOutputBuf + ucTxDescLength);
 
-		DBGLOG(INIT, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u]\n",
+		DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u]\n",
 				    prCmdInfo->ucBssIndex,
 				    HAL_MAC_TX_DESC_GET_WLAN_INDEX((P_HW_MAC_TX_DESC_T) &pucOutputBuf[0]),
 				    prMsduInfo->ucPID, prCmdInfo->ucStaRecIndex,
@@ -2367,7 +2368,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		/* <4> Management Frame Post-Processing */
 		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 
-		DBGLOG(INIT, INFO,
+		DBGLOG(TX, INFO,
 		       "TX MGMT Frame: BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] LEN[%u] RSP[%u]\n",
 			prCmdInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
 			prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, u2OverallBufferLength,
@@ -2398,7 +2399,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
 
-		DBGLOG(INIT, INFO, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
+		DBGLOG(TX, TRACE, "TX CMD: ID[0x%02X] SEQ[%u] SET[%u] LEN[%u]\n",
 				    prWifiCmd->ucCID, prWifiCmd->ucSeqNum, prWifiCmd->ucSetQuery,
 				    u2OverallBufferLength);
 	}
@@ -2952,11 +2953,11 @@ VOID nicTxProcessTxDoneEvent(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent
 
 	if (prTxDone->ucFlag & BIT(0)) {
 		/* Tx Done with advanced info */
-		DBGLOG(INIT, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
+		DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
 				    prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 				    prTxDone->u2SequenceNumber, prTxDone->ucTxCount, prTxDone->u2TxRate);
 	} else {
-		DBGLOG(INIT, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
+		DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
 				    prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 				    prTxDone->u2SequenceNumber);
 	}
@@ -2965,7 +2966,7 @@ VOID nicTxProcessTxDoneEvent(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent
 	prMsduInfo = nicGetPendingTxMsduInfo(prAdapter, prTxDone->ucWlanIndex, prTxDone->ucPacketSeq);
 
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
-	DBGLOG(INIT, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
+	DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
 			     prTxDone->au4Reserved1, prTxDone->au4Reserved2);
 
 	wnmReportTimingMeas(prAdapter, prMsduInfo->ucStaRecIndex,
@@ -3105,7 +3106,7 @@ WLAN_STATUS nicTxEnqueueMsdu(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduIn
 					prCmdInfo->fgNeedResp = FALSE;
 					prCmdInfo->ucCmdSeqNum = prMsduInfoHead->ucTxSeqNum;
 
-					DBGLOG(TX, INFO, "%s: EN-Q MSDU[0x%p] SEQ[%u] BSS[%u] STA[%u] to CMD Q\n",
+					DBGLOG(TX, TRACE, "%s: EN-Q MSDU[0x%p] SEQ[%u] BSS[%u] STA[%u] to CMD Q\n",
 							  __func__, prMsduInfoHead,
 							  prMsduInfoHead->ucTxSeqNum, prMsduInfoHead->ucBssIndex,
 							  prMsduInfoHead->ucStaRecIndex);
@@ -3251,7 +3252,7 @@ UINT_8 nicTxGetCmdPageCount(IN P_CMD_INFO_T prCmdInfo)
 		break;
 
 	default:
-		DBGLOG(INIT, WARN, "Undefined CMD Type(%u)\n", prCmdInfo->eCmdType);
+		DBGLOG(TX, WARN, "Undefined CMD Type(%u)\n", prCmdInfo->eCmdType);
 		ucPageCount = nicTxGetPageCount(prCmdInfo->u2InfoBufLen, FALSE);
 		break;
 	}

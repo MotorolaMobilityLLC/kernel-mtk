@@ -2495,7 +2495,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 			if ((prConnSettings->fgIsConnByBssidIssued) &&
 					(prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE)) {
 				if (UNEQUAL_MAC_ADDR(prConnSettings->aucBSSID, prBssDesc->aucBSSID)) {
-					DBGLOG(SCN, INFO, "SEARCH: Ignore due to BSSID was not matched!\n");
+					DBGLOG(SCN, LOUD, "SEARCH: Ignore due to BSSID was not matched!\n");
 					continue;
 				}
 			}

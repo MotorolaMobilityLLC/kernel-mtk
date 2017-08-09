@@ -3445,7 +3445,7 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	prAssocRspFrame = (P_WLAN_ASSOC_RSP_FRAME_T) prAssocRspSwRfb->pvHeader;
 
-	DBGLOG(AIS, INFO, "Update AIS_BSS_INFO_T and apply settings to MAC\n");
+	DBGLOG(AIS, TRACE, "Update AIS_BSS_INFO_T and apply settings to MAC\n");
 
 	/* 3 <1> Update BSS_INFO_T from AIS_FSM_INFO_T or User Settings */
 	/* 4 <1.1> Setup Operation Mode */

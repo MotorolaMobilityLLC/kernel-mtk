@@ -1050,7 +1050,7 @@ VOID qmActivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 		(prStaRec->aprRxReorderParamRefTbl)[i] = NULL;
 #endif
 
-	DBGLOG(QM, INFO, "QM: +STA[%ld]\n", (UINT_32) prStaRec->ucIndex);
+	DBGLOG(QM, TRACE, "QM: +STA[%ld]\n", (UINT_32) prStaRec->ucIndex);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3077,8 +3077,24 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			}
 
 		}
+#if CFG_SUPPORT_WAPI
 		/* Todo:: Move the data class error check here */
+		if (prCurrSwRfb->u2PacketLen > ETHER_HEADER_LEN) {
+			PUINT_8 pc = (PUINT_8) prCurrSwRfb->pvHeader;
+			UINT_16 u2Etype = 0;
 
+			u2Etype = (pc[ETHER_TYPE_LEN_OFFSET] << 8) | (pc[ETHER_TYPE_LEN_OFFSET + 1]);
+			/* for wapi integrity test. WPI_1x packet should be always in non-encrypted mode.
+				if we received any WPI(0x88b4) packet that is encrypted, drop here. */
+			if (u2Etype == ETH_WPI_1X &&
+				HAL_RX_STATUS_GET_SEC_MODE(prRxStatus) != 0) {
+				DBGLOG(QM, INFO, "drop wpi packet with sec mode\n");
+				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
+				continue;
+			}
+		}
+#endif
 		if (prCurrSwRfb->fgReorderBuffer && !fgIsBMC && fgIsHTran) {
 			/* If this packet should dropped or indicated to the host immediately,
 			 *  it should be enqueued into the rReturnedQue with specific flags. If
@@ -3317,8 +3333,8 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 #endif
 #endif
 
-		/* always indicate to kernel, even we received a fall behind packet,
-			let kernel check it. to avoid some IOT issue */
+		/* An erroneous packet */
+		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
 		/* DbgPrint("QM:(D)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd); */
 		return;
@@ -4430,12 +4446,20 @@ BOOLEAN mqmUpdateEdcaParameters(IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucIE, IN 
 		for (eAci = 0; eAci < WMM_AC_INDEX_NUM; eAci++) {
 			prAcQueParams = &prBssInfo->arACQueParms[eAci];
 			mqmFillAcQueParam(prIeWmmParam, eAci, prAcQueParams);
-			DBGLOG(QM, INFO,
-			      "BSS[%u]: eAci[%d] ACM[%d] Aifsn[%d] CWmin/max[%d/%d] TxopLimit[%d] NewParameter[%d]\n",
-			      prBssInfo->ucBssIndex, eAci, prAcQueParams->ucIsACMSet,
-			      prAcQueParams->u2Aifsn, prAcQueParams->u2CWmin, prAcQueParams->u2CWmax,
-			      prAcQueParams->u2TxopLimit, fgNewParameter);
 		}
+		DBGLOG(QM, INFO,
+		"BSS[%u]: ACM[%d,%d,%d,%d] Aifsn[%d,%d,%d,%d] CWmin/max[%d,%d;%d,%d;%d,%d;%d,%d] Txop[%d,%d,%d,%d]\n",
+		      prBssInfo->ucBssIndex,
+		      prBssInfo->arACQueParms[0].ucIsACMSet, prBssInfo->arACQueParms[1].ucIsACMSet,
+		      prBssInfo->arACQueParms[2].ucIsACMSet, prBssInfo->arACQueParms[3].ucIsACMSet,
+		      prBssInfo->arACQueParms[0].u2Aifsn, prBssInfo->arACQueParms[1].u2Aifsn,
+		      prBssInfo->arACQueParms[2].u2Aifsn, prBssInfo->arACQueParms[3].u2Aifsn,
+		      prBssInfo->arACQueParms[0].u2CWmin, prBssInfo->arACQueParms[0].u2CWmax,
+		      prBssInfo->arACQueParms[1].u2CWmin, prBssInfo->arACQueParms[1].u2CWmax,
+		      prBssInfo->arACQueParms[2].u2CWmin, prBssInfo->arACQueParms[2].u2CWmax,
+		      prBssInfo->arACQueParms[3].u2CWmin, prBssInfo->arACQueParms[3].u2CWmax,
+		      prBssInfo->arACQueParms[0].u2TxopLimit, prBssInfo->arACQueParms[1].u2TxopLimit,
+		      prBssInfo->arACQueParms[2].u2TxopLimit, prBssInfo->arACQueParms[3].u2TxopLimit);
 	} while (FALSE);
 
 	return fgNewParameter;
@@ -5169,7 +5193,7 @@ VOID qmHandleEventBssAbsencePresence(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 	/* DBGLOG(QM, TRACE, ("qmHandleEventBssAbsencePresence (ucNetTypeIdx=%d, fgIsAbsent=%d, FreeQuota=%d)\n", */
 	/* prEventBssStatus->ucNetTypeIdx, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota)); */
 
-	DBGLOG(QM, INFO, "NAF=%d,%d,%d\n",
+	DBGLOG(QM, INFO, "Bss Absence Presence NAF=%d,%d,%d\n",
 			  prEventBssStatus->ucBssIndex, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota);
 
 	if (!prBssInfo->fgIsNetAbsent) {

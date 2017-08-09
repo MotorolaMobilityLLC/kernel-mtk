@@ -2179,7 +2179,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 
 WLAN_STATUS kalResetStats(IN struct net_device *prDev)
 {
-	DBGLOG(QM, INFO, "Reset NetDev[0x%p] statistics\n", prDev);
+	DBGLOG(QM, LOUD, "Reset NetDev[0x%p] statistics\n", prDev);
 
 	kalMemZero(kalGetStats(prDev), sizeof(struct net_device_stats));
 
@@ -2360,7 +2360,7 @@ kalIPv4FrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 	/* IPv4 version check */
 	ucIpVersion = (pucIpHdr[0] & IP_VERSION_MASK) >> IP_VERSION_OFFSET;
 	if (ucIpVersion != IP_VERSION_4) {
-		DBGLOG(INIT, WARN, "Invalid IPv4 packet version: %u\n", ucIpVersion);
+		DBGLOG(TX, WARN, "Invalid IPv4 packet version: %u\n", ucIpVersion);
 		return FALSE;
 	}
 	/* WLAN_GET_FIELD_16(&pucIpHdr[IPV4_HDR_IP_IDENTIFICATION_OFFSET], &u2IpId); */
@@ -2398,7 +2398,7 @@ kalIPv4FrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 
 				WLAN_GET_FIELD_BE32(&prBootp->u4TransId, &u4Xid);
 
-				DBGLOG(SW4, INFO, "DHCP PKT[0x%p] XID[0x%08x] OPT[%u] TYPE[%u]\n",
+				DBGLOG(TX, INFO, "DHCP PKT[0x%p] XID[0x%08x] OPT[%u] TYPE[%u]\n",
 						   prPacket, u4Xid, prBootp->aucOptions[4], prBootp->aucOptions[6]);
 
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DHCP);
@@ -2505,17 +2505,12 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			UINT_16 u2ArpOp;
 
 			WLAN_GET_FIELD_BE16(&pucNextProtocol[ARP_OPERATION_OFFSET], &u2ArpOp);
-/*			Disable for cstyle checking
-			DBGLOG(SW4, INFO, "ARP %s PKT[0x%p] TAR MAC/IP[" MACSTR "]/[" IPV4STR "]\n",
+
+			DBGLOG(TX, INFO, "ARP %s PKT[0x%p] TAR MAC/IP[" MACSTR "]/[" IPV4STR "]\n",
 					   u2ArpOp == ARP_OPERATION_REQUEST ? "REQ" : "RSP",
-					   prPacket, pucNextProtocol[ARP_TARGET_MAC_OFFSET][0],
-					   pucNextProtocol[ARP_TARGET_MAC_OFFSET][1],
-					   pucNextProtocol[ARP_TARGET_MAC_OFFSET][2],
-					   pucNextProtocol[ARP_TARGET_MAC_OFFSET][3],
-					   pucNextProtocol[ARP_TARGET_MAC_OFFSET][4],
-					   pucNextProtocol[ARP_TARGET_MAC_OFFSET][5],
+					   prPacket, MAC2STR(&pucNextProtocol[ARP_TARGET_MAC_OFFSET]),
 					   IPV4TOSTR(&pucNextProtocol[ARP_TARGET_IP_OFFSET]));
-*/
+
 			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_ARP);
 		}
 		break;
@@ -2525,7 +2520,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 #if CFG_SUPPORT_WAPI
 	case ETH_WPI_1X:
 #endif
-		DBGLOG(SW4, INFO, "SECURITY PKT TX SEND, u2EtherTypeLen: 0x%x\n", u2EtherTypeLen);
+		DBGLOG(TX, TRACE, "SECURITY PKT TX SEND, u2EtherTypeLen: 0x%x\n", u2EtherTypeLen);
 		prTxPktInfo->u2Flag |= BIT(ENUM_PKT_1X);
 		break;
 
@@ -3776,7 +3771,7 @@ VOID kalEnqueueCommand(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_ENTRY_T prQueueEntr
 
 	prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
 
-	DBGLOG(INIT, INFO, "EN-Q CMD TYPE[%u] ID[0x%02X] SEQ[%u] to CMD Q\n",
+	DBGLOG(TX, LOUD, "EN-Q CMD TYPE[%u] ID[0x%02X] SEQ[%u] to CMD Q\n",
 			    prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
@@ -4447,7 +4442,7 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 	INT_32 ret = -1;
 	UINT_32 u4ReadSize = 0;
 
-	DBGLOG(INIT, INFO, "kalReadToFile() path %s\n", pucPath);
+	DBGLOG(INIT, TRACE, "kalReadToFile() path %s\n", pucPath);
 
 	file = kalFileOpen(pucPath, O_RDONLY, 0);
 
@@ -5244,7 +5239,7 @@ int kalMetInitProcfs(IN P_GLUE_INFO_T prGlueInfo)
 {
 	/* struct proc_dir_entry *pMetProcDir; */
 	if (init_net.proc_net == (struct proc_dir_entry *)NULL) {
-		DBGLOG(INIT, INFO, "init proc fs fail: proc_net == NULL\n");
+		DBGLOG(INIT, ERROR, "init proc fs fail: proc_net == NULL\n");
 		return -ENOENT;
 	}
 	/*
@@ -5273,10 +5268,10 @@ int kalMetRemoveProcfs(void)
 		DBGLOG(INIT, WARN, "remove proc fs fail: proc_net == NULL\n");
 		return -ENOENT;
 	}
-	remove_proc_entry(PROC_MET_PROF_CTRL, pMetProcDir);
-	remove_proc_entry(PROC_MET_PROF_PORT, pMetProcDir);
+	/* remove_proc_entry(PROC_MET_PROF_CTRL, pMetProcDir);
+	remove_proc_entry(PROC_MET_PROF_PORT, pMetProcDir); */
 	/* remove root directory (proc/net/wlan0) */
-	remove_proc_entry("wlan0", init_net.proc_net);
+	remove_proc_subtree("wlan0", init_net.proc_net);
 	/* clear MetGlobalData */
 	pMetGlobalData = NULL;
 

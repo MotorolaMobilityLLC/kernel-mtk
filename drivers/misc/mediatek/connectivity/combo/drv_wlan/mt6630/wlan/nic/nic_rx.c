@@ -2459,12 +2459,12 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	UINT_32 scan_id;
 	UINT_8 scan_flag;
 	P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnGeofenceFound;
-	P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnSignigicatCange;
+	P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnSignificantChange;
 	UINT_32 real_num = 0;
 	struct wiphy *wiphy;
 	P_EVENT_GSCAN_SCAN_COMPLETE_T prEventGscnScnDone;
-	P_WIFI_GSCAN_RESULT_T prEventGscnFullResultl;
-	P_PARAM_WIFI_GSCAN_RESULT prParamGscnFullResultl;
+	P_WIFI_GSCAN_RESULT_T prEventGscnFullResult;
+	P_PARAM_WIFI_GSCAN_RESULT prParamGscnFullResult;
 
 	ASSERT(prAdapter);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
@@ -2499,19 +2499,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			mtk_cfg80211_vendor_event_scan_results_available(wiphy, NULL,
 									 prEventGscnAvailable->u2Num);
-
-#if 0
-			skb =
-			    cfg80211_vendor_cmd_alloc_reply_skb(prGlueInfo->prDevHandler,
-								sizeof(EVENT_GSCAN_CAPABILITY_T));
-			if (unlikely(!skb)) {
-				WL_ERR(("skb alloc failed"));
-				return -ENOMEM;
-			}
-#endif
-			/* nla_put_nohdr(skb, sizeof(EVENT_GSCAN_CAPABILITY_T), prEventGscnCapbiblity); */
 		}
-
 		break;
 
 	case EVENT_ID_GSCAN_RESULT:
@@ -2533,7 +2521,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(PARAM_WIFI_GSCAN_RESULT) * real_num);
 
 			if (!skb) {
-				DBGLOG(INIT, TRACE, "%s allocate skb failed:%x\n", __func__, i4Status);
+				DBGLOG(RX, ERROR, "%s allocate skb failed:%x\n", __func__, i4Status);
 				return -ENOMEM;
 			}
 
@@ -2600,45 +2588,33 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			mtk_cfg80211_vendor_event_complete_scan(wiphy, NULL,
 								prEventGscnScnDone->ucScanState);
-
-#if 0
-			skb =
-			    cfg80211_vendor_cmd_alloc_reply_skb(prGlueInfo->prDevHandler,
-								sizeof(EVENT_GSCAN_SCAN_COMPLETE_T));
-			if (unlikely(!skb)) {
-				WL_ERR(("skb alloc failed"));
-				return -ENOMEM;
-			}
-#endif
-			/*nla_put_nohdr(skb, sizeof(EVENT_GSCAN_SCAN_COMPLETE_T), prEventGscnScnDone); */
 		}
 		break;
 
 	case EVENT_ID_GSCAN_FULL_RESULT:
 		{
-			prEventGscnFullResultl =
+			prEventGscnFullResult =
 			    (P_WIFI_GSCAN_RESULT_T) ((prEvent->aucBuffer) + sizeof(EVENT_GSCAN_FULL_RESULT_T));
 
-			prEventGscnFullResultl = kalMemAlloc(sizeof(WIFI_GSCAN_RESULT_T), VIR_MEM_TYPE);
-			memcpy(prEventGscnFullResultl, (P_WIFI_GSCAN_RESULT_T) (prEvent->aucBuffer),
+			prEventGscnFullResult = kalMemAlloc(sizeof(WIFI_GSCAN_RESULT_T), VIR_MEM_TYPE);
+			memcpy(prEventGscnFullResult, (P_WIFI_GSCAN_RESULT_T) (prEvent->aucBuffer),
 			       sizeof(WIFI_GSCAN_RESULT_T));
 
-			prParamGscnFullResultl = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_RESULT), VIR_MEM_TYPE);
-			kalMemZero(prParamGscnFullResultl, sizeof(PARAM_WIFI_GSCAN_RESULT));
-			memcpy(prParamGscnFullResultl, prEventGscnFullResultl, sizeof(WIFI_GSCAN_RESULT_T));
+			prParamGscnFullResult = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_RESULT), VIR_MEM_TYPE);
+			kalMemZero(prParamGscnFullResult, sizeof(PARAM_WIFI_GSCAN_RESULT));
+			memcpy(prParamGscnFullResult, prEventGscnFullResult, sizeof(WIFI_GSCAN_RESULT_T));
 
 			mtk_cfg80211_vendor_event_full_scan_results(wiphy,
 								    NULL,
-								    prParamGscnFullResultl,
+								    prParamGscnFullResult,
 								    sizeof(PARAM_WIFI_GSCAN_RESULT));
 		}
 		break;
 
 	case EVENT_ID_GSCAN_SIGNIFICANT_CHANGE:
 		{
-			prEventGscnSignigicatCange = (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer);
-
-			memcpy(prEventGscnSignigicatCange, (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer),
+			prEventGscnSignificantChange = (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer);
+			memcpy(prEventGscnSignificantChange, (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer),
 			       sizeof(EVENT_GSCAN_SIGNIFICANT_CHANGE_T));
 		}
 		break;
@@ -2690,8 +2666,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 	prGlueInfo = prAdapter->prGlueInfo;
 
-	DBGLOG(INIT, INFO, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
-	       prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
+	if (prEvent->ucEID != EVENT_ID_DEBUG_MSG)
+		DBGLOG(RX, INFO, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
+		prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 
 	/* Event Handling */
 	switch (prEvent->ucEID) {
@@ -2897,7 +2874,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			if (prStaRec)
 				rsnTkipHandleMICFailure(prAdapter, prStaRec, (BOOLEAN) prMicError->u4Flags);
 			else
-				DBGLOG(RSN, INFO, "No STA rec!!\n");
+				DBGLOG(RSN, WARN, "No STA rec!!\n");
 #if 0
 			prAuthEvent = (P_PARAM_AUTH_EVENT_T) prAdapter->aucIndicationEventBuffer;
 
@@ -3010,7 +2987,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prAdapter->prAisBssInfo->fgIsPNOEnable = FALSE;
 		if (prAdapter->prAisBssInfo->fgIsNetRequestInActive && prAdapter->prAisBssInfo->fgIsPNOEnable) {
 			UNSET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
-			DBGLOG(INIT, INFO, "INACTIVE  AIS from  ACTIVEto disable PNO\n");
+			DBGLOG(RX, INFO, "INACTIVE  AIS from  ACTIVEto disable PNO\n");
 			/* sync with firmware */
 			nicDeactivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 		}
@@ -3026,7 +3003,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			prTxDone = (P_EVENT_TX_DONE_T) (prEvent->aucBuffer);
 
-			DBGLOG(INIT, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
+			DBGLOG(RX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
 			       prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 			       prTxDone->u2SequenceNumber);
 
@@ -3034,7 +3011,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			prMsduInfo = nicGetPendingTxMsduInfo(prAdapter, prTxDone->ucWlanIndex, prTxDone->ucPacketSeq);
 
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
-			DBGLOG(INIT, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
+			DBGLOG(RX, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
 			       prTxDone->au4Reserved1, prTxDone->au4Reserved2);
 
 			wnmReportTimingMeas(prAdapter, prMsduInfo->ucStaRecIndex,
@@ -3160,7 +3137,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			if (prEventBssBeaconTimeout->ucBssIndex >= BSS_INFO_NUM)
 				break;
 
-			DBGLOG(INIT, INFO, "Reason code: %d\n", prEventBssBeaconTimeout->ucReasonCode);
+			DBGLOG(RX, INFO, "Beacon Timeout Reason: %d\n", prEventBssBeaconTimeout->ucReasonCode);
 
 			prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prEventBssBeaconTimeout->ucBssIndex);
 
@@ -3217,7 +3194,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				if (prStaRec == NULL)
 					break;
 
-				DBGLOG(INIT, INFO, "EVENT_ID_STA_AGING_TIMEOUT %u " MACSTR "\n",
+				DBGLOG(RX, INFO, "EVENT_ID_STA_AGING_TIMEOUT %u " MACSTR "\n",
 				       prEventStaAgingTimeout->ucStaRecIdx, MAC2STR(prStaRec->aucMacAddr));
 
 				prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prStaRec->ucBssIndex);
@@ -3331,7 +3308,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			prAddKeyDone = (P_EVENT_ADD_KEY_DONE_INFO) (prEvent->aucBuffer);
 
-			DBGLOG(RSN, EVENT,
+			DBGLOG(RSN, TRACE,
 			       "EVENT_ID_ADD_PKEY_DONE BSSIDX=%d " MACSTR "\n",
 			       prAddKeyDone->ucBSSIndex, MAC2STR(prAddKeyDone->aucStaAddr));
 
@@ -3379,7 +3356,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			u2MsgSize = prEventDebugMsg->u2MsgSize;
 			pucMsg = prEventDebugMsg->aucMsg;
 
-			DBGLOG(SW4, INFO, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
+			DBGLOG(SW4, TRACE, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
 			       u2DebugMsgId, ucMsgType, ucFlags, u4Value, u2MsgSize);
 
 			if (u2MsgSize <= DEBUG_MSG_SIZE_MAX) {
@@ -3388,20 +3365,20 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 				if (ucMsgType == DEBUG_MSG_TYPE_ASCII) {
 					pucMsg[u2MsgSize] = '\0';
-					DBGLOG(SW4, INFO, "%s\n", pucMsg);
+					DBGLOG(SW4, TRACE, "%s\n", pucMsg);
 				} else if (ucMsgType == DEBUG_MSG_TYPE_MEM32) {
 					/* dumpMemory32(pucMsg, u2MsgSize); */
-					DBGLOG_MEM32(SW4, INFO, pucMsg, u2MsgSize);
+					DBGLOG_MEM32(SW4, TRACE, pucMsg, u2MsgSize);
 				} else if (prEventDebugMsg->ucMsgType == DEBUG_MSG_TYPE_MEM8) {
 					/* dumpMemory8(pucMsg, u2MsgSize); */
-					DBGLOG_MEM8(SW4, INFO, pucMsg, u2MsgSize);
+					DBGLOG_MEM8(SW4, TRACE, pucMsg, u2MsgSize);
 				} else {
 					/* dumpMemory32(pucMsg, u2MsgSize); */
-					DBGLOG_MEM32(SW4, INFO, pucMsg, u2MsgSize);
+					DBGLOG_MEM32(SW4, TRACE, pucMsg, u2MsgSize);
 				}
 			} /* DEBUG_MSG_SIZE_MAX */
 			else
-				DBGLOG(SW4, INFO, "Debug msg size %u is too large.\n", u2MsgSize);
+				DBGLOG(SW4, WARN, "Debug msg size %u is too large.\n", u2MsgSize);
 		}
 		break;
 #if CFG_SUPPORT_SCN_PSCN
@@ -3453,12 +3430,11 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 #endif /* CFG_SUPPORT_TDLS */
 
 	case EVENT_ID_DUMP_MEM:
-		DBGLOG(INIT, INFO, "%s: EVENT_ID_DUMP_MEM\n", __func__);
+		DBGLOG(RX, INFO, "%s: EVENT_ID_DUMP_MEM\n", __func__);
 
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
-
+		DBGLOG(RX, INFO, "EVENT_ID_DUMP_MEM, prCmdInfo=%p\n", prCmdInfo);
 		if (prCmdInfo != NULL) {
-			DBGLOG(INIT, INFO, ": ==> 1\n");
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)
@@ -3467,7 +3443,6 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
 		} else {
 			/* Burst mode */
-			DBGLOG(INIT, INFO, ": ==> 2\n");
 			nicEventQueryMemDump(prAdapter, prEvent->aucBuffer);
 		}
 		break;
@@ -3494,7 +3469,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	/* Reset Chip NoAck flag */
 	if (prGlueInfo->prAdapter->fgIsChipNoAck) {
-		DBGLOG(INIT, WARN, "Got response from chip, clear NoAck flag!\n");
+		DBGLOG(RX, WARN, "Got response from chip, clear NoAck flag!\n");
 		WARN_ON(TRUE);
 	}
 	prGlueInfo->prAdapter->ucOidTimeoutCount = 0;
