@@ -1656,6 +1656,8 @@ static void battery_update(struct battery_data *bat_data)
 	struct power_supply *bat_psy = &bat_data->psy;
 	static unsigned int shutdown_cnt = 0xBADDCAFE;
 	static unsigned int shutdown_cnt_chr = 0xBADDCAFE;
+	static unsigned int update_cnt = 6;
+	static unsigned int pre_soc;
 
 	if (shutdown_cnt == 0xBADDCAFE)
 		shutdown_cnt = 0;
@@ -1723,7 +1725,20 @@ static void battery_update(struct battery_data *bat_data)
 #endif
 #endif
 
-	power_supply_changed(bat_psy);
+	if (update_cnt == 6) {
+		/* Update per 60 seconds */
+		power_supply_changed(bat_psy);
+		pre_soc = BMT_status.SOC;
+		update_cnt = 0;
+	} else if (pre_soc != BMT_status.SOC) {
+		/* Update when soc change */
+		power_supply_changed(bat_psy);
+		pre_soc = BMT_status.SOC;
+		update_cnt = 0;
+	} else {
+		/* No update */
+		update_cnt++;
+	}
 }
 
 void update_charger_info(int wireless_state)
