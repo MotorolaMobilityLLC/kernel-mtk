@@ -191,6 +191,18 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 /* extern int config_L2(int option); */
 #endif
 
+void *mt_venc_base_get(void)
+{
+	return (void *)KVA_VENC_BASE;
+}
+EXPORT_SYMBOL(mt_venc_base_get);
+
+void *mt_vdec_base_get(void)
+{
+	return (void *)KVA_VDEC_BASE;
+}
+EXPORT_SYMBOL(mt_vdec_base_get);
+
 void vdec_power_on(void)
 {
 	int ret = 0;
