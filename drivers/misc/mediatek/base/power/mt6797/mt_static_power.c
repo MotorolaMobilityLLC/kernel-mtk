@@ -593,44 +593,53 @@ int mt_spower_init(void)
 	SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => 0x%x/0x%x/0x%x/0x%x/0x%x/0x%x/0x%x\n",
 		cpubig, gpu, vcore, cpul, cpull, modem, vmd1);
 
-	if (devinfo != 0) {
-		cpubig	= (int)devinfo_table[cpubig];
-		cpubig	= (int)(cpubig*V_OF_FUSE/1000);
+	if (cpubig != 0) {
+		cpubig = (int)devinfo_table[cpubig];
+		cpubig = (int)(cpubig*V_OF_FUSE/1000);
 	} else {
 		cpubig = DEF_BIG_LEAKAGE;
 	}
 
-	if (devinfo_1 != 0) {
+	if (gpu != 0) {
 		gpu	= (int)devinfo_table[gpu];
 		gpu	= (int)(gpu*V_OF_FUSE/1000);
 	} else {
 		gpu = DEF_GPU_LEAKAGE;
 	}
 
-	if (devinfo_2 != 0) {
-		vcore	= (int)devinfo_table[vcore];
-		vcore	= (int)(vcore*V_OF_FUSE/1000);
-		cpull	= (int)devinfo_table[cpull];
-		cpull	= (int)(cpull*V_OF_FUSE/1000);
+	if (vcore != 0) {
+		vcore = (int)devinfo_table[vcore];
+		vcore = (int)(vcore*V_OF_FUSE/1000);
 	} else {
 		vcore = DEF_VCORE_LEAKAGE;
+	}
+
+	if (cpull != 0) {
+		cpull = (int)devinfo_table[cpull];
+		cpull = (int)(cpull*V_OF_FUSE/1000);
+	} else {
 		cpull = DEF_CPULL_LEAKAGE;
 	}
 
-	if (devinfo_3 != 0) {
-		cpul	= (int)devinfo_table[cpul];
-		cpul	= (int)(cpul*V_OF_FUSE/1000);
+
+	if (cpul != 0) {
+		cpul = (int)devinfo_table[cpul];
+		cpul = (int)(cpul*V_OF_FUSE/1000);
 	} else {
 		cpul = DEF_CPUL_LEAKAGE;
 	}
 
-	if (devinfo_4 != 0) {
-		modem	= (int)devinfo_table[modem];
-		vmd1	= (int)devinfo_table[vmd1];
-		modem	= (int)(modem*V_OF_FUSE/1000);
-		vmd1	= (int)(vmd1*V_OF_FUSE/1000);
+	if (modem != 0) {
+		modem = (int)devinfo_table[modem];
+		modem = (int)(modem*V_OF_FUSE/1000);
 	} else {
 		modem = DEF_MODEM_LEAKAGE;
+	}
+
+	if (vmd1 != 0) {
+		vmd1 = (int)devinfo_table[vmd1];
+		vmd1 = (int)(vmd1*V_OF_FUSE/1000);
+	} else {
 		vmd1 = DEF_VMD1_LEAKAGE;
 	}
 
