@@ -3310,8 +3310,10 @@ static void capture_setting(kal_uint16 currefps)
 		ov23850_setting_PDAF(PDAF_ON);
     else
 		ov23850_setting_PDAF(PDAF_OFF);
+#if defined(FULL_24FPS)
 	//Deskew
 	ov23850_setting_Deskew(1);
+#endif
 	mdelay(30);
 	write_cmos_sensor(0x0100, 0x01);
 }
