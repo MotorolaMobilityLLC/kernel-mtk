@@ -1,6 +1,7 @@
 
 menuconfig MEDIATEK_SOLUTION
 	bool "MediaTek Properitary Configuration"
+	select FW_LOADER_USER_HELPER_FALLBACK
 	help
 	  Check this to enable MediaTek properity configuration.
 
