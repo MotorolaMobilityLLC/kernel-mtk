@@ -30,6 +30,7 @@
 
 static unsigned int EINT_IRQ_BASE;
 
+
 #ifdef CONFIG_MTK_LEGACY
 #if 0	/* disable MD_EINT temporarily, since modem module is not ready yet */
 #define MD_EINT
@@ -60,6 +61,8 @@ enum {
 	ERR_SIM_HOT_PLUG_QUERY_STRING,
 } sim_hot_plug_eint_queryErr;
 #endif
+
+
 
 struct eint_func {
 	unsigned int *eint_auto_umask;
@@ -94,7 +97,12 @@ static unsigned int mapping_table_entry;
 static unsigned int builtin_entry;
 static struct builtin_eint *builtin_mapping;
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
+struct wakeup_source EINT_suspend_lock;
+#else
 struct wake_lock EINT_suspend_lock;
+#endif
+
 
 struct deint_des {
 	int eint_num;
@@ -171,20 +179,28 @@ int mt_eint_set_deint(u32 eint_num, u32 irq_num)
 		return -1;
 	}
 
-	/* first usable deint descriptor */
-	for (deint_mapped = 0; deint_mapped < MAX_DEINT_CNT; ++deint_mapped) {
-		if (deint_descriptors[deint_mapped].used == 0) {
-			deint_descriptors[deint_mapped].eint_num = eint_num;
-			deint_descriptors[deint_mapped].irq_num = irq_num;
-			deint_descriptors[deint_mapped].used = 1;
-			break;
-		}
-	}
-
-	if (deint_mapped == MAX_DEINT_CNT) {
-		pr_err("%s: no idle deint now\n", __func__);
+	if (irq_num < deint_possible_irq[0]) {
+		pr_err("%s: irq_num(%u) out of range\n", __func__, irq_num);
 		return -1;
 	}
+
+	deint_mapped = irq_num - deint_possible_irq[0];
+
+	if (deint_mapped >= MAX_DEINT_CNT) {
+		pr_err("%s: irq_num(%u) out of range\n", __func__, irq_num);
+		return -1;
+	}
+
+	/* check if usable deint descriptor */
+	if (deint_descriptors[deint_mapped].used == 0) {
+		deint_descriptors[deint_mapped].eint_num = eint_num;
+		deint_descriptors[deint_mapped].irq_num = irq_num;
+		deint_descriptors[deint_mapped].used = 1;
+	} else {
+		pr_err("%s: deint(%u) already in use\n", __func__, irq_num);
+		return -1;
+	}
+
 
 	for (i = 0; i < MAX_DEINT_CNT; ++i) {
 		if (deint_possible_irq[i] == irq_num)
@@ -821,7 +837,11 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int ms)
  */
 static void eint_do_tasklet(unsigned long unused)
 {
+#ifndef CONFIG_HAS_EARLYSUSPEND
+	__pm_wakeup_event(&EINT_suspend_lock, HZ / 2);
+#else
 	wake_lock_timeout(&EINT_suspend_lock, HZ / 2);
+#endif
 }
 
 DECLARE_TASKLET(eint_tasklet, eint_do_tasklet, 0);
@@ -1151,8 +1171,12 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD1_0_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_0_DEBOUNCE_CN;
+#ifdef CUST_EINT_MD1_0_DEDICATED_EN
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_0_DEDICATED_EN;
+#endif
+#ifdef CUST_EINT_MD1_0_SRCPIN
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_0_SRCPIN;
+#endif
 	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
 	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
@@ -1164,8 +1188,12 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD1_1_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_1_DEBOUNCE_CN;
+#ifdef CUST_EINT_MD1_1_DEDICATED_EN
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_1_DEDICATED_EN;
+#endif
+#ifdef CUST_EINT_MD1_1_SRCPIN
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_1_SRCPIN;
+#endif
 	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
 	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
@@ -1177,8 +1205,12 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD1_2_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_2_DEBOUNCE_CN;
+#ifdef CUST_EINT_MD1_2_DEDICATED_EN
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_2_DEDICATED_EN;
+#endif
+#ifdef CUST_EINT_MD1_2_SRCPIN
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_2_SRCPIN;
+#endif
 	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
 	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
@@ -1190,8 +1222,12 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD1_3_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_3_DEBOUNCE_CN;
+#ifdef CUST_EINT_MD1_3_DEDICATED_EN
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_3_DEDICATED_EN;
+#endif
+#ifdef CUST_EINT_MD1_3_SRCPIN
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_3_SRCPIN;
+#endif
 	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
 	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
@@ -1489,6 +1525,37 @@ const struct irq_domain_ops mt_eint_domain_simple_ops = {
 	.xlate = mt_eint_domain_xlate_onetwocell,
 };
 
+
+
+/*
+ * mt_eint_soft_clr: Unmask the specified EINT number.
+ * @eint_num: EINT number to clear
+ */
+static void mt_eint_soft_clr(unsigned int eint_num)
+{
+	unsigned long base;
+	unsigned int bit = 1 << (eint_num % 32);
+
+	if (eint_num < EINT_MAX_CHANNEL) {
+		base = (eint_num / 32) * 4 + EINT_SOFT_CLR_BASE;
+	} else {
+		dbgmsg("Error in %s [EINT] num:%d is larger than EINT_MAX_CHANNEL\n", __func__, eint_num);
+		return;
+	}
+	writel(bit, IOMEM(base));
+	dbgmsg("[EINT] soft clr addr:%x = %x\n", base, bit);
+}
+
+
+void mt_eint_virq_soft_clr(unsigned int virq)
+{
+	unsigned int eint_num;
+
+	eint_num = virq - EINT_IRQ_BASE;
+	mt_eint_soft_clr(eint_num);
+}
+EXPORT_SYMBOL(mt_eint_virq_soft_clr);
+
 static int __init mt_eint_init(void)
 {
 	unsigned int i, irq;
@@ -1499,7 +1566,7 @@ static int __init mt_eint_init(void)
 	u32 len;
 
 	/* DTS version */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-eic");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt-eic");
 	if (node) {
 		EINT_BASE = of_iomap(node, 0);
 		pr_debug("get EINT_BASE @ %p\n", EINT_BASE);
@@ -1603,7 +1670,11 @@ static int __init mt_eint_init(void)
 	/* assign to domain 0 for AP */
 	mt_eint_setdomain0();
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
+	wakeup_source_init(&EINT_suspend_lock, "EINT wakelock");
+#else
 	wake_lock_init(&EINT_suspend_lock, WAKE_LOCK_SUSPEND, "EINT wakelock");
+#endif
 
 	setup_MD_eint();
 	for (i = 0; i < EINT_MAX_CHANNEL; i++) {

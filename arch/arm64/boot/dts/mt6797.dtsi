@@ -619,7 +619,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		eintc: eintc@1000b000 {
-			compatible = "mediatek,mt6735-eic";
+			compatible = "mediatek,mt-eic";
 			reg = <0x1000b000 0x1000>;
 			interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_HIGH>;
 
