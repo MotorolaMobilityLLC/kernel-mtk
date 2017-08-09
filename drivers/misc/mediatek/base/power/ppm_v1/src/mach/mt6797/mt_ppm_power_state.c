@@ -932,10 +932,6 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 	int i, ret = 0;
 	unsigned int power_for_ocp = 0, power_for_tbl_lookup = 0;
 
-	/* no need to set big OCP since big cluster is powered off */
-	if (!ppm_is_big_cluster_on())
-		return limited_power;
-
 	/* if max_power_except_big < limited_power, set (limited_power - max_power_except_big) to HW OCP */
 	if (!max_power_except_big) {
 		for_each_pwr_tbl_entry(i, power_table) {
@@ -945,6 +941,16 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 			}
 		}
 		ppm_info("@%s: max_power_except_big = %d\n", __func__, max_power_except_big);
+	}
+
+	/* no need to set big OCP since big cluster is powered off */
+	if (!ppm_is_big_cluster_on()) {
+		/* no need to throttle big core since it is not powered on */
+		if (limited_power > max_power_except_big
+			&& limited_power < power_table.power_tbl[0].power_idx)
+			return power_table.power_tbl[0].power_idx;
+		else
+			return limited_power;
 	}
 
 	if (limited_power <= max_power_except_big) {
