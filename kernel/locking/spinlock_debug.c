@@ -142,6 +142,8 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	char aee_str[50];
 	unsigned long long t1, t2, t3;
 	struct task_struct *owner = NULL;
+	struct task_struct *task;
+
 #ifdef CONFIG_MTPROF
 	MT_trace_raw_spin_lock_s(lock);
 #endif
@@ -189,6 +191,15 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 #ifdef CONFIG_SMP
 			trigger_all_cpu_backtrace();
 #endif
+
+			task = find_task_by_vpid(owner->pid);
+			pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", task->comm, task->pid);
+			if (task) {
+				if (debug_locks)
+					debug_show_held_locks(task);
+				show_stack(task, NULL);
+			}
+
 			/* ensure debug_locks is true,then can call aee */
 			if (debug_locks) {
 				debug_show_all_locks();
