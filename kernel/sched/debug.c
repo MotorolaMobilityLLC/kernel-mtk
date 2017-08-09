@@ -20,6 +20,9 @@
 #ifdef CONFIG_KGDB_KDB
 #include <linux/kdb.h>
 #endif
+#ifdef CONFIG_MTPROF
+#include "mt_sched_mon.h"
+#endif
 
 #include "sched.h"
 /* sched: kdb for sched/debug*/
@@ -1315,5 +1318,9 @@ void sysrq_sched_debug_show_at_AEE(void)
 	if (locked)
 		read_unlock_irqrestore(&tasklist_lock, flags);
 
+#ifdef CONFIG_MTPROF
+	/* sched:rt throttle monitor */
+	mt_rt_mon_print_task_from_buffer();
+#endif
 }
 /* sched: add ke log */

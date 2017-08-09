@@ -138,6 +138,7 @@ extern void end_mt_rt_mon_info(struct task_struct *p);
 extern void check_mt_rt_mon_info(struct task_struct *p);
 extern void mt_rt_mon_switch(int on);
 extern void mt_rt_mon_print_task(void);
+extern void mt_rt_mon_print_task_from_buffer(void);
 extern int mt_rt_mon_enable(void);
 #else
 static inline void
@@ -146,6 +147,7 @@ static inline void end_mt_rt_mon_info(struct task_struct *p) {};
 static inline void check_mt_rt_mon_info(struct task_struct *p) {};
 static inline void mt_rt_mon_switch(int on) {};
 static inline void mt_rt_mon_print_task(void) {};
+static inline void mt_rt_mon_print_task_from_buffer(void) {};
 static inline int mt_rt_mon_enable(void)
 {
 	return 0;
