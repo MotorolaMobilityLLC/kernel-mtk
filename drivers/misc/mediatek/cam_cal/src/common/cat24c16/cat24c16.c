@@ -4,7 +4,9 @@
  *
  */
 
+#define CONFIG_MTK_I2C_EXTENSION
 #include <linux/i2c.h>
+#undef CONFIG_MTK_I2C_EXTENSION
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/cdev.h>
@@ -31,7 +33,7 @@
 
 #define CAM_CALINF(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
 #define CAM_CALDB(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
-#define CAM_CALERR(fmt, arg...)    pr_err("[%s] " fmt, __func__, ##arg)
+#define CAM_CALERR(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
 #else
 #define CAM_CALDB(x, ...)
 #endif
@@ -106,9 +108,8 @@ static int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u1
 
 	spin_lock(&g_CAM_CALLock);
 	g_pstI2Cclient->addr = (i2cId >> 1);
-#ifdef USE_I2C_MTK_EXT
 	g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) & (~I2C_DMA_FLAG);
-#endif
+
 
 	spin_unlock(&g_CAM_CALLock);
 	i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);

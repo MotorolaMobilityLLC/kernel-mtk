@@ -19,9 +19,10 @@
 #include <asm/system.h>  /* for SMP */
 #else
 
-/*#define GT24C32A_DRIVER_ON 0*/
-#ifdef GT24C32A_DRIVER_ON
 
+#define CONFIG_MTK_I2C_EXTENSION
+#include <linux/i2c.h>
+#undef CONFIG_MTK_I2C_EXTENSION
 #include <linux/platform_device.h>
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
@@ -30,8 +31,6 @@
 #include "kd_camera_hw.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
-#endif/*GT24C32A_DRIVER_ON*/
-
 #include <linux/delay.h>
 #include "GT24c32a.h"
 /*#include <asm/system.h>//for SMP*/
@@ -100,9 +99,8 @@ static atomic_t g_EEPROMatomic;
 
 #define Read_NUMofEEPROM 2
 static struct i2c_client *g_pstI2Cclient;
-#ifdef USE_I2C_MTK_EXT
+
 static DEFINE_SPINLOCK(g_EEPROMLock); /* for SMP */
-#endif
 
 
 /*******************************************************************************
@@ -160,11 +158,10 @@ static int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		EEPROMDB("[GT24c32a] exceed I2c-mt65xx.c 8 bytes limitation\n");
 		return -1;
 	}
-#ifdef USE_I2C_MTK_EXT
+
 	spin_lock(&g_EEPROMLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
 	spin_unlock(&g_EEPROMLock); /* for SMP */
-#endif
 
 	/* EEPROMDB("[EEPROM] i2c_master_send\n"); */
 	i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
@@ -179,11 +176,11 @@ static int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		EEPROMDB("[GT24c32a] I2C read data failed!!\n");
 		return -1;
 	}
-#ifdef USE_I2C_MTK_EXT
+
 	spin_lock(&g_EEPROMLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & I2C_MASK_FLAG;
 	spin_unlock(&g_EEPROMLock); /* for SMP */
-#endif
+
 	/* EEPROMDB("[GT24c32a] iReadEEPROM done!!\n"); */
 	return 0;
 }

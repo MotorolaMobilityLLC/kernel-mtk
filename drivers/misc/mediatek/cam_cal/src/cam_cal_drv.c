@@ -32,12 +32,12 @@
 #define PFX "CAM_CAL_DRV"
 #define CAM_CALINF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define CAM_CALDB(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
-#define CAM_CALERR(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
+#define CAM_CALERR(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #else
 #define CAM_CALDB(x, ...)
 #endif
 
-#define CAM_CAL_DRV_NAME "CAM_CAL_DRV1"
+#define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
 
 #define CAM_CAL_I2C_MAX_BUSNUM 2
@@ -94,7 +94,7 @@ static int cam_cal_get_i2c_client(struct i2c_board_info *i2c_info,
 
 		adapt = i2c_get_adapter(g_busNum[g_curBusIdx]);
 		if (adapt == NULL) {
-			CAM_CALDB("failed to get adapter i2c bus=%d\n", g_busNum[g_curBusIdx]);
+			CAM_CALDB("failed to get adapter i2c busID=%d\n", g_busNum[g_curBusIdx]);
 			return 0;
 		} else {
 			CAM_CALDB("g_adapt!=NULL, register i2c %d start !\n", g_curBusIdx);
@@ -103,7 +103,7 @@ static int cam_cal_get_i2c_client(struct i2c_board_info *i2c_info,
 			i2c_put_adapter(adapt);
 
 			if (!(*client)) {
-				CAM_CALDB("failed to get client i2c bus=%d\n", g_busNum[g_curBusIdx]);
+				CAM_CALDB("failed to get client i2c busID=%d\n", g_busNum[g_curBusIdx]);
 				return 0;
 			}
 		}
@@ -182,7 +182,7 @@ static stCAM_CAL_CMD_INFO_STRUCT *cam_cal_get_cmd_info_ex(unsigned int sensorID)
 				cam_cal_get_cmd_info(sensorID, &g_camCalDrvInfo[i]);
 
 				if (g_camCalDrvInfo[i].readCMDFunc != NULL) {
-					CAM_CALDB("SensorID=%d, BusID=%d\n", sensorID, g_busNum[g_curBusIdx]);
+					CAM_CALDB("SensorID=%x, BusID=%d\n", sensorID, g_busNum[g_curBusIdx]);
 					/*g_curBusIdx=(g_curBusIdx+1)%CAM_CAL_I2C_MAX_BUSNUM;*/
 					g_camCalDrvInfo[i].sensorID = sensorID;
 				}
@@ -391,7 +391,7 @@ static long cam_cal_drv_ioctl(
 			  ptempbuf->u4Length);
 		if (g_lastSensorID != ptempbuf->sensorID) {
 			g_lastSensorID = ptempbuf->sensorID;
-			CAM_CALDB("MainCam Bus=%d, SubCam Bus=%d\n", g_busNum[0], g_busNum[1]);
+			CAM_CALDB("MainCam BusID=%d, SubCam BusID=%d\n", g_busNum[0], g_busNum[1]);
 			g_curBusIdx = (g_curBusIdx + 1) % CAM_CAL_I2C_MAX_BUSNUM;
 			CAM_CALDB("sensorID=%x, Bus=%d\n", ptempbuf->sensorID, g_busNum[g_curBusIdx]);
 		}

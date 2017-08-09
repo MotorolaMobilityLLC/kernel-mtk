@@ -4,7 +4,9 @@
  *
  */
 
+#define CONFIG_MTK_I2C_EXTENSION
 #include <linux/i2c.h>
+#undef CONFIG_MTK_I2C_EXTENSION
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/cdev.h>
@@ -26,7 +28,7 @@
 #endif
 
 
-/*static DEFINE_SPINLOCK(g_CAM_CALLock);*//* for SMP */
+static DEFINE_SPINLOCK(g_CAM_CALLock);/* for SMP */
 /* #define CAM_CAL_I2C_BUSNUM 1 */
 #define CAM_CAL_I2C_BUSNUM 3
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -110,11 +112,11 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		CAM_CALDB("[BRCB032GWZ] exceed I2c-mt65xx.c 8 bytes limitation\n");
 		return -1;
 	}
-#ifdef USE_I2C_MTK_EXT
+
 	spin_lock(&g_CAM_CALLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
 	spin_unlock(&g_CAM_CALLock); /* for SMP */
-#endif
+
 	/* CAM_CALDB("[CAM_CAL] i2c_master_send\n"); */
 	i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
 	if (i4RetValue != 2) {
@@ -128,11 +130,10 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		CAM_CALDB("[CAM_CAL] I2C read data failed!!\n");
 		return -1;
 	}
-#ifdef USE_I2C_MTK_EXT
+
 	spin_lock(&g_CAM_CALLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & I2C_MASK_FLAG;
 	spin_unlock(&g_CAM_CALLock); /* for SMP */
-#endif
 
 	/* CAM_CALDB("[CAM_CAL] iReadCAM_CAL done!!\n"); */
 	return 0;
