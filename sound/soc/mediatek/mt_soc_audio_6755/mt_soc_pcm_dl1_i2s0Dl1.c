@@ -95,7 +95,7 @@ static int Audio_I2S0dl1_hdoutput_Get(struct snd_kcontrol *kcontrol,
 static int Audio_I2S0dl1_hdoutput_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	PRINTK_AUD_DL1("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(I2S0dl1_HD_output)) {
 		pr_warn("return -EINVAL\n");
 		return -EINVAL;
@@ -275,7 +275,7 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 #endif
 	/* ------------------------------------------------------- */
 #endif
-	pr_warn("1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	PRINTK_AUD_DL1("1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
 
@@ -311,7 +311,7 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
-	pr_warn("mtk_I2S0dl1.buffer_max = %zu mPlaybackSramState = %d\n",
+	PRINTK_AUD_DL1("mtk_I2S0dl1.buffer_max = %zu mPlaybackSramState = %d\n",
 	       mtk_I2S0dl1_hardware.buffer_bytes_max,
 	       mPlaybackSramState);
 	runtime->hw = mtk_I2S0dl1_hardware;
@@ -391,7 +391,7 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 	bool mI2SWLen;
 
 	if (mPrepareDone == false) {
-		pr_warn("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
+		PRINTK_AUD_DL1("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
 		       __func__, runtime->format,
 		       SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE);
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
@@ -433,7 +433,7 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 		u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1; /* 32bit */
 
 		if (mI2S0dl1_hdoutput_control == true) {
-			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
+			PRINTK_AUD_DL1("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
 			/* here to open APLL */
 			EnableALLbySampleRate(runtime->rate);
@@ -479,7 +479,7 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("%s\n", __func__);
+	PRINTK_AUD_DL1("%s\n", __func__);
 	/* here start digital part */
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,

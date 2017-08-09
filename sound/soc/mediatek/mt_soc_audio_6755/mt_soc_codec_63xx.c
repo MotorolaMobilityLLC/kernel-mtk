@@ -786,7 +786,7 @@ void OpenAnalogHeadphone(bool bEnable)
 
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
-	pr_warn("%s benable = %d\n", __func__, bEnable);
+	/* pr_warn("%s benable = %d\n", __func__, bEnable); */
 	if (GetDLStatus() == true)
 		return false;
 
@@ -1340,6 +1340,7 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 		break;
 	case 48000:
 		Reg_value = 8;
+		break;
 	default:
 		pr_warn("ApplyDLNewIFFrequency with frequency = %d", frequency);
 	}
