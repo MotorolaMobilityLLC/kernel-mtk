@@ -17,6 +17,8 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
+
+#include "hdmi_drv.h"
 #include "slimport.h"
 #include "slimport_tx_drv.h"
 #include "slimport_tx_reg.h"
@@ -299,7 +301,7 @@ void SP_TX_Power_Enable(SP_TX_POWER_BLOCK sp_tx_pd_block, BYTE power)
 		else if((power == SP_TX_POWER_DOWN) && ((c & power_type) == 0))
 			sp_write_reg(SP_TX_PORT2_ADDR, SP_POWERD_CTRL_REG, (c |power_type));
 	}
-	pr_err("SP_TX_Power_Enable,block %d, power %d\n", sp_tx_pd_block, power);
+	/*pr_err("SP_TX_Power_Enable,block %d, power %d\n", sp_tx_pd_block, power);*/
 
 }
 
@@ -651,7 +653,7 @@ void SP_TX_Config_BIST_Video (BYTE cBistIndex,struct VideoFormat* pInputFormat)
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_SYS_CTRL1_REG, c);
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_SYS_CTRL1_REG, &c);
 	if(!(c & SP_TX_SYS_CTRL1_DET_STA)) {
-		pr_err("Stream clock not found!");
+		/*pr_err("Stream clock not found!");*/
 		return;
 	}
 
@@ -1118,11 +1120,13 @@ BYTE SP_TX_Config_Video_LVTTL (struct VideoFormat* pInputFormat)
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_SYS_CTRL1_REG, c);
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_SYS_CTRL1_REG, &c);
 	if(!(c & SP_TX_SYS_CTRL1_DET_STA)) {
+/*
 #if(REDUCE_REPEAT_PRINT_INFO)
 		loop_print_msg(0x00);
 #else
 		pr_err("Stream clock not found!");
 #endif
+*/
 		return 1;
 	}
 
@@ -4862,6 +4866,11 @@ void SP_CTRL_Dump_Reg(void)
 
 	sp_read_reg(0x50, 0x36, &temp);
 	pr_err("ANX7418 reg:0x50,offset:0x36, temp:%d\n", temp);
+	if (temp & 0x10)
+		pr_err("ANX7418 bit4 HDP is High\n");
+	else
+		pr_err("ANX7418 bit4 HDP is Low\n");
+
 
 	for(i=BEGIN; i<=END; i++) {
 		sp_read_reg(SP_TX_PORT0_ADDR, i, &temp);
@@ -5088,7 +5097,7 @@ void slimport_hdcp_authentication(BYTE enable)
 	}
 }
 
-extern void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);
+
 void SP_CTRL_TimerProcess (void)
 {
 	switch(sp_tx_system_state) {

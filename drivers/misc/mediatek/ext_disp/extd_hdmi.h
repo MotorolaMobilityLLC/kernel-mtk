@@ -42,7 +42,8 @@ enum HDMI_CAPABILITY {
 	HDMI_SCALE_ADJUSTMENT_SUPPORT = 0x01,
 	HDMI_ONE_RDMA_LIMITATION = 0x02,
 	HDMI_PHONE_GPIO_REUSAGE  = 0x04,
-	HDMI_FACTORY_MODE_NEW    = 0x80,
+	/*bit3-bit6: channal count; bit7-bit9: sample rate; bit10-bit11: bitwidth*/
+	HDMI_FACTORY_MODE_NEW    = 0x1000,
 };
 
 struct hdmi_device_status {

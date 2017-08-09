@@ -34,7 +34,7 @@
 #include <linux/semaphore.h>
 #include <linux/kthread.h>
 
-
+#include "hdmi_drv.h"
 #include "slimport_tx_drv.h"
 #include "slimport_edid.h"
 #include "slimport_edid_3d_api.h"
@@ -638,7 +638,6 @@ irqreturn_t anx7805_cbl_det_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-extern void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);
 static void anx7805_work_func(struct work_struct *work)
 {
 #ifndef EYE_TEST

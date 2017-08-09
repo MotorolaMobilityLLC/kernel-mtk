@@ -481,7 +481,7 @@ typedef enum {
 	SP_TX_PLAY_BACK
 } SP_TX_System_State;
 
-
+void SP_CTRL_Dump_Reg(void);
 void SP_CTRL_Main_Procss(void);
 BYTE SP_CTRL_Chip_Detect(void);
 void SP_CTRL_Chip_Initial(void);

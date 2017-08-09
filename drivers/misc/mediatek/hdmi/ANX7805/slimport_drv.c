@@ -43,12 +43,12 @@ static int txInitFlag = 0;
 
 #define SLIMPORT_LOG(fmt, arg...)  \
 	do { \
-		if (slimport_log_on) printk("[SLIMPORT_Chip_HAL]%s,%d,", __func__, __LINE__); printk(fmt, ##arg); \
+		if (slimport_log_on) pr_info("[SLIMPORT_Chip_HAL]%s,%d,", __func__, __LINE__); pr_info(fmt, ##arg); \
 	}while (0)
 
 #define SLIMPORT_FUNC()    \
 	do { \
-		if (slimport_log_on) printk("[SLIMPORT_Chip_HAL] %s\n", __func__); \
+		if (slimport_log_on) pr_info("[SLIMPORT_Chip_HAL] %s\n", __func__); \
 	}while (0)
 
 void slimport_drv_log_enable(bool enable)
@@ -90,7 +90,8 @@ static char* cable_type_print(unsigned short type)
 }
 
 enum HDMI_CABLE_TYPE Connect_cable_type = SLIMPORT_CABLE;
-static unsigned int HDCP_Supported_Info = 0;
+static unsigned int HDCP_Supported_Info = 130;
+/*
 static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 {
 	char *str = NULL;
@@ -124,6 +125,123 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
     SLIMPORT_LOG("type %s-%d hdcp %d-%d\n", str, Connect_cable_type, params->HDCPSupported, HDCP_Supported_Info);
 	return ;
 }
+*/
+static void slimport_drv_get_params(struct HDMI_PARAMS *params)
+{
+	char* cable_str = "";
+	enum HDMI_VIDEO_RESOLUTION input_resolution = params->init_config.vformat;
+	memset(params, 0, sizeof(struct HDMI_PARAMS));
+
+	switch (input_resolution)
+	{
+		case HDMI_VIDEO_720x480p_60Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_RISING;
+			params->vsync_pol = HDMI_POLARITY_RISING;;
+			
+			params->hsync_pulse_width = 62;
+			params->hsync_back_porch  = 60;
+			params->hsync_front_porch = 16;
+			
+			params->vsync_pulse_width = 6;
+			params->vsync_back_porch  = 30;
+			params->vsync_front_porch = 9;
+			
+			params->width       = 720;
+			params->height      = 480;
+			params->input_clock = 27027;
+
+			params->init_config.vformat = HDMI_VIDEO_720x480p_60Hz;
+			break;
+		case HDMI_VIDEO_1280x720p_60Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;;
+			
+			params->hsync_pulse_width = 40;
+			params->hsync_back_porch  = 220;
+			params->hsync_front_porch = 110;
+			
+			params->vsync_pulse_width = 5;
+			params->vsync_back_porch  = 20;
+			params->vsync_front_porch = 5;
+		
+			params->width       = 1280;
+			params->height      = 720;
+#ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
+			if (MHL_Connect_type == MHL_SMB_CABLE)
+			{
+				params->width  = 1366;
+				params->height = 768;
+			}
+#endif
+			params->input_clock = 74250;
+
+			params->init_config.vformat = HDMI_VIDEO_1280x720p_60Hz;
+			break;
+		case HDMI_VIDEO_1920x1080p_30Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;;
+			
+			params->hsync_pulse_width = 44;
+			params->hsync_back_porch  = 148;
+			params->hsync_front_porch = 88;
+			
+			params->vsync_pulse_width = 5;
+			params->vsync_back_porch  = 36;
+			params->vsync_front_porch = 4;
+			
+			params->width       = 1920;
+			params->height      = 1080;
+			params->input_clock = 74250;
+
+			params->init_config.vformat = HDMI_VIDEO_1920x1080p_30Hz;
+			break;
+		case HDMI_VIDEO_1920x1080p_60Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;;
+			
+			params->hsync_pulse_width = 44;
+			params->hsync_back_porch  = 148;
+			params->hsync_front_porch = 88;
+			
+			params->vsync_pulse_width = 5;
+			params->vsync_back_porch  = 36;
+			params->vsync_front_porch = 4;
+			
+			params->width       = 1920;
+			params->height      = 1080;
+			params->input_clock = 148500;
+
+			params->init_config.vformat = HDMI_VIDEO_1920x1080p_60Hz;
+			break;
+		default:
+			SLIMPORT_LOG("Unknow support resolution\n");
+			break;
+	}
+
+    params->init_config.aformat         = HDMI_AUDIO_44K_2CH;
+	params->rgb_order         			= HDMI_COLOR_ORDER_RGB;
+	params->io_driving_current 			= IO_DRIVING_CURRENT_2MA;
+	params->intermediat_buffer_num 		= 4;
+    params->scaling_factor 				= 0;
+    params->cabletype 					= Connect_cable_type;
+	params->HDCPSupported 				= HDCP_Supported_Info;
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT	
+    if(MHL_Connect_type== MHL_3D_GLASSES)    
+        params->cabletype 				= MHL_CABLE;
+
+	params->is_3d_support 				= MHL_3D_Support;
+#endif
+	cable_str = cable_type_print(params->cabletype);
+    SLIMPORT_LOG("type %s-%d hdcp %d-%d\n", cable_str, Connect_cable_type, params->HDCPSupported, HDCP_Supported_Info);
+}
 
 void slimport_drv_suspend(void) {return ;} 
 void slimport_drv_resume(void)  {return ;} 
@@ -132,7 +250,7 @@ static int slimport_drv_audio_config(enum HDMI_AUDIO_FORMAT aformat, int bitWidt
 	struct AudioFormat Audio_format;
 	memset(&Audio_format, 0, sizeof(Audio_format));
 
-	printk("slimport_drv_audio_config format %d, bitwidth: %d\n", aformat, bitWidth);
+	pr_info("slimport_drv_audio_config format %d, bitwidth: %d\n", aformat, bitWidth);
 	Audio_format.bAudio_word_len = AUDIO_W_LEN_16_20MAX;
 	
 	if(bitWidth == 16)
@@ -366,7 +484,6 @@ void slimport_drv_power_off(void)
 static unsigned int pal_resulution = 0;
 void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int param2)
 {
-#ifdef dp_to_do
     if(audio_video)///video infor
     {
         switch(param1)
@@ -376,8 +493,7 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
             	pal_resulution |= SINK_1080P30;
             	break;
             case 0x10:
-            	if(packed_pixel_available(si_dev_context))
-                	pal_resulution |= SINK_1080P60;
+                pal_resulution |= SINK_1080P60;
             	break;
             case 0x4:
             	pal_resulution |= SINK_720P60;
@@ -390,7 +506,6 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
 				SLIMPORT_LOG("param1: %d\n", param1);
     	}
 	}	
-#endif
 	return ;
 }
 unsigned int si_mhl_get_av_info(void)
@@ -413,7 +528,6 @@ void reset_av_info(void)
 }
 void slimport_GetEdidInfo(void *pv_get_info)
 {
-#ifdef dp_to_do
     struct HDMI_EDID_INFO_T *ptr = (struct HDMI_EDID_INFO_T *)pv_get_info; 
     if(ptr)
     {
@@ -422,20 +536,10 @@ void slimport_GetEdidInfo(void *pv_get_info)
 		if(ptr->ui4_pal_resolution == 0)
 		{
 			SLIMPORT_LOG("MHL edid parse error \n");
-			
-	        if(si_dev_context && packed_pixel_available(si_dev_context))
-	            ptr->ui4_pal_resolution = SINK_720P60 | SINK_1080P60 | SINK_480P;
-	        else
-	            ptr->ui4_pal_resolution = SINK_720P60 | SINK_1080P30 | SINK_480P;
+	        ptr->ui4_pal_resolution = SINK_720P60 | SINK_1080P30 | SINK_480P;
 		}
+		SLIMPORT_LOG("EDID:0x%x\n", ptr->ui4_pal_resolution);
     }
-
-    if(si_dev_context)
-    {
-        SLIMPORT_LOG("MHL slimport_GetEdidInfo ntsc 0x%x,pal: 0x%x, packed: %d, parsed 0x%x\n", ptr->ui4_ntsc_resolution  , 
-        	ptr->ui4_pal_resolution, packed_pixel_available(si_dev_context), si_mhl_get_av_info());
-    }
-#endif
 }
 
 
@@ -475,26 +579,27 @@ enum
 	AUDIO_44K_2CH		= 0x02,
 	AUDIO_48K_2CH		= 0x03,
 	AUDIO_96K_2CH		= 0x05,
-	AUDIO_192K_2CH	= 0x07,
+	AUDIO_192K_2CH	    = 0x07,
 	AUDIO_32K_8CH		= 0x81,
 	AUDIO_44K_8CH		= 0x82,
 	AUDIO_48K_8CH		= 0x83,
 	AUDIO_96K_8CH		= 0x85,
-	AUDIO_192K_8CH	= 0x87,
+	AUDIO_192K_8CH	    = 0x87,
 	AUDIO_INITIAL		= 0xFF
 };
 
 int slimport_drv_get_external_device_capablity(void)
 {
 	int capablity = 0;
-#if 1///def dp_to_do
-	///HDMI_LOG("Cap_MAX_channel: %d, Cap_Samplebit: %d, Cap_SampleRate: %d\n", Cap_MAX_channel, Cap_Samplebit, Cap_SampleRate);  /// 2 2 3
-	///capablity = Cap_MAX_channel << 3 | Cap_SampleRate << 7 | Cap_Samplebit << 10;
+	/*
+	* bit3-bit6: channal count; bit7-bit9: sample rate; bit10-bit11: bitwidth
+	*/
+	SLIMPORT_LOG("Cap_MAX_channel: %d, Cap_Samplebit: %d, Cap_SampleRate: %d\n", Cap_MAX_channel, Cap_Samplebit, Cap_SampleRate);
+	capablity = Cap_MAX_channel << 3 | Cap_SampleRate << 7 | Cap_Samplebit << 10;
 	if(capablity == 0)
 	{
 		capablity = HDMI_CHANNEL_2 << 3 | HDMI_SAMPLERATE_44 << 7 |  HDMI_BITWIDTH_16 << 10;
 	}
-#endif
 	return capablity;
 }
 
@@ -656,8 +761,8 @@ void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *
 			break;
 		case SLIMPORT_TX_EVENT_EDID_DONE:
 		{
-            if(chip_device_id == 0x8346)
-				HDCP_Supported_Info = 140; ///HDCP 1.4
+            /*if(chip_device_id == 0x8346)*/
+			HDCP_Supported_Info = 130; ///HDCP 1.3 for slimport
 			sii_mhl_connected = SLIMPORT_TX_EVENT_CALLBACK;
 			slimport_invoke_cable_callbacks(HDMI_STATE_ACTIVE);
 		}

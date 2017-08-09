@@ -20,9 +20,11 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include <linux/cdev.h>
 #include <linux/device.h>
 
+#include "slimport.h"
 #include "slimport_edid.h"
 #include "slimport_edid_3d_api.h"
 
+#include "hdmi_drv.h"
 #include "slimport_platform.h"
 
 #define SET_3D_FLAG(context,x)							\
@@ -2203,8 +2205,8 @@ static uint8_t parse_861_short_descriptors (
 							VIC = mhl_edid_3d_data->parse_data.p_video_data_blocks_2d[mhl_edid_3d_data->parse_data.num_video_data_blocks]->short_descriptors[i].VIC;
 							SLIMPORT_TX_EDID_INFO(mhl_edid_3d_data->dev_context,
 									"short desc[%d]: VIC: %d\n",i,VIC);
-							//update_av_info_edid(true, VIC, 0);
-							//mhl_event_notify(mhl_edid_3d_data->dev_context, MHL_TX_EVENT_EDID_UPDATE, VIC, NULL);
+							/*update_av_info_edid(true, VIC, 0);*/
+							Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_UPDATE, VIC, NULL);
 							
 							if (!IsQualifiedMhlVIC(mhl_edid_3d_data,VIC,NULL)) {
 								mhl_edid_3d_data->parse_data.p_video_data_blocks_2d[mhl_edid_3d_data->parse_data.num_video_data_blocks]->short_descriptors[i].VIC = 0;

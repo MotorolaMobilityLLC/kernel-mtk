@@ -1097,6 +1097,8 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			hdmi_info.displayType = HDMI_SMARTBOOK;
 		else if (hdmi_params->cabletype == MHL_CABLE)
 			hdmi_info.displayType = MHL;
+		else if (hdmi_params->cabletype == SLIMPORT_CABLE)
+			hdmi_info.displayType = SLIMPORT;
 		else
 			hdmi_info.displayType = HDMI;
 
@@ -1135,7 +1137,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		} else if (hdmi_params->cabletype == MHL_CABLE)
 			dispif_info->displayType = DISP_IF_MHL;
 		else if (hdmi_params->cabletype == SLIMPORT_CABLE)
-			dispif_info->displayType = DISP_IF_SLIMPORT;
+			dispif_info->displayType = DISP_IF_SLIMPORT;   /*value == 11*/
 		else
 			dispif_info->displayType = DISP_IF_HDMI;
 
@@ -1158,8 +1160,10 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		dispif_info->isConnected = 1;
 		dispif_info->isHDCPSupported = hdmi_params->HDCPSupported;
 
-		/* /HDMI_LOG("extd_hdmi_get_dev_info lays %d, type %d, H %d\n", dispif_info->maxLayerNum,
-				dispif_info->displayType, dispif_info->displayHeight); */
+		HDMI_LOG("DEV_INFO configuration get displayType-%d, HDMI support version:%u\n",
+			dispif_info->displayType, dispif_info->isHDCPSupported);
+		HDMI_LOG("DEV_INFO configuration displayHeight:%u, displayWidth:%u\n",
+			dispif_info->displayHeight, dispif_info->displayWidth);
 	}
 
 	return ret;
