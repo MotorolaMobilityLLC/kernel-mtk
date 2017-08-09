@@ -558,6 +558,7 @@ int mmc_run_queue_thread(void *data)
 
 	while (1) {
 		set_current_state(TASK_RUNNING);
+		mt_biolog_cmdq_check();
 
 		/* End request stage 1/2 */
 		if (atomic_read(&host->cq_rw) || (atomic_read(&host->areq_cnt) <= 1)) {
@@ -644,6 +645,7 @@ int mmc_run_queue_thread(void *data)
 			err = done_mrq->areq->err_check(host->card, done_mrq->areq);
 			mmc_post_req(host, done_mrq, 0);
 			mt_biolog_cmdq_isdone_end(task_id);
+			mt_biolog_cmdq_check();
 			mmc_blk_end_queued_req(host, done_mrq->areq, task_id, err);
 			mmc_host_clk_release(host);
 			wake_up_interruptible(&host->cmp_que);
@@ -659,6 +661,7 @@ int mmc_run_queue_thread(void *data)
 
 			while (cmd_mrq) {
 				task_id = ((cmd_mrq->sbc->arg >> 16) & 0x1f);
+				mt_biolog_cmdq_queue_task(task_id, cmd_mrq);
 				if (host->task_id_index & (1 << task_id)) {
 					pr_err("[%s] BUG!!! task_id %d used, task_id_index 0x%08lx, areq_cnt = %d, cq_wait_rdy = %d\n",
 						__func__, task_id, host->task_id_index,
@@ -684,6 +687,7 @@ int mmc_run_queue_thread(void *data)
 			mmc_do_check(host);
 
 		/* Sleep when nothing to do */
+		mt_biolog_cmdq_check();
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (atomic_read(&host->areq_cnt) == 0)
 			schedule();
@@ -1425,8 +1429,7 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 		else
 #endif
 		start_err = __mmc_start_data_req(host, areq->mrq);
-
-		mt_biolog_mmcqd_req_start();
+		mt_biolog_mmcqd_req_start(host);
 	}
 
 	if (host->areq)
