@@ -16,8 +16,8 @@
 #include <linux/slab.h>
 #include <linux/clkdev.h>
 
-#include "clk-mtk.h"
-#include "clk-pll.h"
+#include "clk-mtk-v1.h"
+#include "clk-pll-v1.h"
 
 /*
  * clk_pll

@@ -20,7 +20,7 @@
 #include <linux/delay.h>
 #include <linux/clkdev.h>
 
-#include "clk-mtk.h"
+#include "clk-mtk-v1.h"
 #include "clk-mt6735-pg.h"
 
 #include <dt-bindings/clock/mt6735-clk.h>

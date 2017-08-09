@@ -20,7 +20,7 @@
 #include <linux/delay.h>
 #include <linux/clkdev.h>
 
-#include "clk-mtk.h"
+#include "clk-mtk-v1.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0

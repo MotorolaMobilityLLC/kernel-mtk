@@ -16,9 +16,9 @@
 #include <linux/of_address.h>
 #include <linux/slab.h>
 
-#include "clk-mtk.h"
-#include "clk-pll.h"
-#include "clk-gate.h"
+#include "clk-mtk-v1.h"
+#include "clk-pll-v1.h"
+#include "clk-gate-v1.h"
 #include "clk-mt6735-pll.h"
 
 #include <dt-bindings/clock/mt6735-clk.h>

@@ -21,8 +21,8 @@
 #include <linux/clkdev.h>
 #include <linux/ratelimit.h>
 
-#include "clk-mtk.h"
-#include "clk-gate.h"
+#include "clk-mtk-v1.h"
+#include "clk-gate-v1.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	1

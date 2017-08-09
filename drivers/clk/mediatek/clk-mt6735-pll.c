@@ -17,8 +17,8 @@
 #include <linux/delay.h>
 #include <linux/clkdev.h>
 
-#include "clk-mtk.h"
-#include "clk-pll.h"
+#include "clk-mtk-v1.h"
+#include "clk-pll-v1.h"
 #include "clk-mt6735-pll.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
