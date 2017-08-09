@@ -86,7 +86,9 @@ int dpp_disp_is_decouple(void)
 static void ddp_disp_refresh_tag_start(unsigned int index)
 {
 	static unsigned long sBufAddr[RDMA_NUM];
+
 	static RDMA_BASIC_STRUCT rdmaInfo;
+
 	char tag_name[30] = { '\0' };
 
 	if (dpp_disp_is_decouple() == 1) {
@@ -143,6 +145,7 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 static void ddp_disp_refresh_tag_end(unsigned int index)
 {
 	char tag_name[30] = { '\0' };
+
 	sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
 	met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 0);
 }
@@ -264,7 +267,7 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 {
 	int index = 0;
 	char tag_name[30] = { '\0' };
-	/*int mutexID;*/
+	int mutexID;
 	/* DDPERR("met_irq_handler() module=%d, val=0x%x\n", module, reg_val); */
 	switch (module) {
 	case DISP_MODULE_RDMA0:
@@ -291,23 +294,23 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 		index = module - DISP_MODULE_OVL0;
 		if (reg_val & (1 << 1)) {/*EOF*/
 			ddp_inout_info_tag(index);
-			/*if (met_mmsys_event_disp_ovl_eof)
-				met_mmsys_event_disp_ovl_eof(index);*/
+			if (met_mmsys_event_disp_ovl_eof)
+				met_mmsys_event_disp_ovl_eof(index);
 		}
 
 		break;
 
 	case DISP_MODULE_MUTEX:
-		/*reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x7C1F;
+		/*reg_val is  DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x7C1F; */
 		for (mutexID = DISP_MUTEX_DDP_FIRST; mutexID <= DISP_MUTEX_DDP_LAST; mutexID++) {
-			if (reg_val & (0x1<<mutexID))//sof
+			if (reg_val & (0x1<<mutexID))
 				if (met_mmsys_event_disp_sof)
 					met_mmsys_event_disp_sof(mutexID);
 
-			if (reg_val & (0x1<<(mutexID+DISP_MUTEX_TOTAL)))//eof
+			if (reg_val & (0x1<<(mutexID+DISP_MUTEX_TOTAL)))
 				if (met_mmsys_event_disp_mutex_eof)
 					met_mmsys_event_disp_mutex_eof(mutexID);
-		}*/
+		}
 		break;
 
 	default:
