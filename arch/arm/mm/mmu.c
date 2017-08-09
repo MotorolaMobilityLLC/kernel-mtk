@@ -1362,12 +1362,15 @@ static void __init map_lowmem(void)
 	struct memblock_region *reg;
 	unsigned long kernel_x_start = round_down(__pa(_stext), SECTION_SIZE);
 	unsigned long kernel_x_end = round_up(__pa(__init_end), SECTION_SIZE);
+	phys_addr_t last_end = 0;
 
 	/* Map all the lowmem memory banks. */
 	for_each_memblock(memory, reg) {
 		phys_addr_t start = reg->base;
 		phys_addr_t end = start + reg->size;
 		struct map_desc map;
+
+		last_end = end;
 		MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]kernel   :   0x%08llx - 0x%08llx (0x%08llx)\n",
 						(unsigned long long)start,
 						(unsigned long long)end - 1,
@@ -1423,6 +1426,8 @@ static void __init map_lowmem(void)
 		if (!(end & ~SECTION_MASK))
 			memblock_set_current_limit(end);
 	}
+	if (last_end)
+		memblock_set_current_limit(last_end);
 }
 
 #ifdef CONFIG_ARM_LPAE
