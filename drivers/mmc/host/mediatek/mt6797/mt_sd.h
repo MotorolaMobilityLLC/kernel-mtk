@@ -380,9 +380,7 @@ struct msdc_host {
 #endif
 	void    (*power_control)(struct msdc_host *host, u32 on);
 	void    (*power_switch)(struct msdc_host *host, u32 on);
-#if !defined(CONFIG_MTK_LEGACY)
 	struct clk *clock_control;
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
 };

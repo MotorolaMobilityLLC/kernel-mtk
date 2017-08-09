@@ -393,78 +393,106 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	if (gpio_node == NULL) {
 		gpio_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,gpio");
-		gpio_base = of_iomap(gpio_node, 0);
+		if (gpio_node == NULL)
+			pr_err("msdc get gpio node failed\n");
+		else
+			gpio_base = of_iomap(gpio_node, 0);
 		pr_debug("of_iomap for gpio base @ 0x%p\n", gpio_base);
 	}
 
 	if (io_cfg_r_node == NULL) {
 		io_cfg_r_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,iocfg_r");
-		io_cfg_r_base = of_iomap(io_cfg_r_node, 0);
+		if (io_cfg_r_node == NULL)
+			pr_err("msdc get io_cfg_r_node failed\n");
+		else
+			io_cfg_r_base = of_iomap(io_cfg_r_node, 0);
 		pr_debug("of_iomap for io_cfg_r base @ 0x%p\n", io_cfg_r_base);
 	}
 	if (io_cfg_b_node == NULL) {
 		io_cfg_b_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,iocfg_b");
-		io_cfg_b_base = of_iomap(io_cfg_b_node, 0);
+		if (io_cfg_b_node == NULL)
+			pr_err("msdc get io_cfg_b_node failed\n");
+		else
+			io_cfg_b_base = of_iomap(io_cfg_b_node, 0);
 		pr_debug("of_iomap for io_cfg_b base @ 0x%p\n", io_cfg_b_base);
 	}
 
 #ifndef FPGA_PLATFORM
-	/*FIXME, correct node match string */
 	if (infracfg_ao_node == NULL) {
 		infracfg_ao_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,INFRACFG_AO");
-		infracfg_ao_reg_base = of_iomap(infracfg_ao_node, 0);
+			"mediatek,infracfg_ao");
+		if (infracfg_ao_node == NULL)
+			pr_err("msdc get mediatek,infracfg_ao failed\n");
+		else
+			infracfg_ao_reg_base = of_iomap(infracfg_ao_node, 0);
 		pr_debug("of_iomap for infracfg_ao base @ 0x%p\n",
 			infracfg_ao_reg_base);
 	}
 
 	if (infracfg_node == NULL) {
 		infracfg_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,INFRACFG");
-		infracfg_reg_base = of_iomap(infracfg_node, 0);
+			"mediatek,infracfg");
+		if (infracfg_node == NULL)
+			pr_err("msdc get infracfg_node failed\n");
+		else
+			infracfg_reg_base = of_iomap(infracfg_node, 0);
 		pr_debug("of_iomap for infracfg base @ 0x%p\n",
 			infracfg_reg_base);
 	}
 
 	if (pericfg_node == NULL) {
 		pericfg_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,PERICFG");
-		pericfg_reg_base = of_iomap(pericfg_node, 0);
+			"mediatek,pericfg");
+		if (pericfg_node == NULL)
+			pr_err("msdc get pericfg_node failed\n");
+		else
+			pericfg_reg_base = of_iomap(pericfg_node, 0);
 		pr_debug("of_iomap for pericfg base @ 0x%p\n",
 			pericfg_reg_base);
 	}
 
 	if (emi_node == NULL) {
 		emi_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,EMI");
-		emi_reg_base = of_iomap(emi_node, 0);
+			"mediatek,emi");
+		if (emi_node == NULL)
+			pr_err("msdc get emi_node failed\n");
+		else
+			emi_reg_base = of_iomap(emi_node, 0);
 		pr_debug("of_iomap for emi base @ 0x%p\n",
 			emi_reg_base);
 	}
 
 	if (toprgu_node == NULL) {
 		toprgu_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,TOPRGU");
-		toprgu_reg_base = of_iomap(toprgu_node, 0);
+			"mediatek,mt6797-toprgu");
+		if (toprgu_node == NULL)
+			pr_err("msdc get toprgu_node failed\n");
+		else
+			toprgu_reg_base = of_iomap(toprgu_node, 0);
 		pr_debug("of_iomap for toprgu base @ 0x%p\n",
 			toprgu_reg_base);
 	}
-
+	/* Clock register base */
 	if (apmixed_node == NULL) {
 		apmixed_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,APMIXED");
-		apmixed_reg_base = of_iomap(apmixed_node, 0);
-		pr_debug("of_iomap for APMIXED base @ 0x%p\n",
+			"mediatek,mt6797-apmixedsys");
+		if (apmixed_node == NULL)
+			pr_err("msdc get apmixed_node failed\n");
+		else
+			apmixed_reg_base = of_iomap(apmixed_node, 0);
+		pr_debug("of_iomap for apmixedsys base @ 0x%p\n",
 			apmixed_reg_base);
 	}
-
 	if (topckgen_node == NULL) {
 		topckgen_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,TOPCKGEN");
-		topckgen_reg_base = of_iomap(topckgen_node, 0);
-		pr_debug("of_iomap for TOPCKGEN base @ 0x%p\n",
+			"mediatek,topckgen");
+		if (topckgen_node == NULL)
+			pr_err("msdc get topckgen_node failed\n");
+		else
+			topckgen_reg_base = of_iomap(topckgen_node, 0);
+		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_reg_base);
 	}
 
@@ -480,6 +508,8 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 #endif
 #endif
 	/* Get SD card detect eint irq */
+	/* FIXME: use linux default to detect SDcard */
+#if 0
 	if ((host->hw->host_function == MSDC_SD) && (eint_node == NULL)) {
 		eint_node = of_find_compatible_node(NULL, NULL,
 			"mediatek, MSDC1_INS-eint");
@@ -493,7 +523,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 			pr_err("can't find MSDC1_INS-eint compatible node\n");
 		}
 	}
-
+#endif
 	return 0;
 }
 
@@ -537,7 +567,6 @@ void msdc_get_regulators(struct device *dev)
 
 bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
-#if 0
 	struct regulator *reg = NULL;
 
 	switch (powerId) {
@@ -551,11 +580,11 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 		reg = reg_vemc;
 		break;
 	default:
-		pr_err("[MSDC] Invalid power id\n");
+		pr_err("[msdc] Invalid power id\n");
 		return FALSE;
 	}
 	if (reg == NULL) {
-		pr_err("[MSDC] regulator pointer is NULL\n");
+		pr_err("[msdc] regulator pointer is NULL\n");
 		return FALSE;
 	}
 	/* New API voltage use micro V */
@@ -563,12 +592,10 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 	regulator_enable(reg);
 	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
 	return TRUE;
-#endif
 }
 
 bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 {
-#if 0
 	struct regulator *reg = NULL;
 
 	switch (powerId) {
@@ -582,11 +609,11 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 		reg = reg_vemc;
 		break;
 	default:
-		pr_err("[MSDC] Invalid power id\n");
+		pr_err("[msdc] Invalid power id\n");
 		return FALSE;
 	}
 	if (reg == NULL) {
-		pr_err("[MSDC] regulator pointer is NULL\n");
+		pr_err("[msdc] regulator pointer is NULL\n");
 		return FALSE;
 	}
 	/* New API voltage use micro V */
@@ -594,7 +621,6 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
 
 	return TRUE;
-#endif
 }
 
 #else /*for CONFIG_MTK_LEGACY defined*/
@@ -651,7 +677,6 @@ u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_mv,
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
-#if 0
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	u32 ldo_en = 0, ldo_vol = 0;
 	u32 id = host->id;
@@ -684,12 +709,10 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 		break;
 	}
 #endif
-#endif
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
-#if 0
 	unsigned int reg_val;
 	switch (host->id) {
 	case 1:
@@ -724,12 +747,10 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 	default:
 		break;
 	}
-#endif
 }
 
 void msdc_sdio_power(struct msdc_host *host, u32 on)
 {
-#if 0
 	switch (host->id) {
 #if defined(CFG_DEV_MSDC2)
 	case 2:
@@ -741,12 +762,11 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 		which always turns on */
 		break;
 	}
-#endif
+
 }
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
-#if 0
 	unsigned long tmo = 0;
 	void __iomem *base = host->base;
 	unsigned int sa_timeout;
@@ -791,12 +811,10 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	}
 
 	msdc_dump_ldo_sts(host);
-#endif
 }
 
 void msdc_sd_power(struct msdc_host *host, u32 on)
 {
-#if 0
 	u32 card_on = on;
 	switch (host->id) {
 	case 1:
@@ -822,7 +840,6 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 	}
 
 	msdc_dump_ldo_sts(host);
-#endif
 }
 
 /**************************************************************/
@@ -847,18 +864,21 @@ u32 hclks_msdc30_2[] = {PLLCLK_50M};
 u32 *hclks_msdc = NULL;
 
 /* #include <mt-plat/mt_idle.h> */
+#if 0
 struct clk *g_msdc0_pll_sel;
 struct clk *g_msdc0_pll_400m;
 struct clk *g_msdc0_pll_200m;
-
+#endif
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
 	if (pdev->id == 0) {
 		host->clock_control = devm_clk_get(&pdev->dev, "msdc0-clock");
+#if 0
 		g_msdc0_pll_sel  = devm_clk_get(&pdev->dev, "MSDC0_PLL_SEL");
 		g_msdc0_pll_400m = devm_clk_get(&pdev->dev, "MSDC0_PLL_400M");
 		g_msdc0_pll_200m = devm_clk_get(&pdev->dev, "MSDC0_PLL_200M");
+#endif
 	} else if (pdev->id == 1) {
 		host->clock_control = devm_clk_get(&pdev->dev, "msdc1-clock");
 	} else if (pdev->id == 2) {
@@ -873,6 +893,8 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
 		return 1;
 	}
+#if 0
+	/* FIXME: There is no 800Mhz clock source, So removed change clock source */
 	if (host->id == 0) {
 		if (IS_ERR(g_msdc0_pll_sel) ||
 		    IS_ERR(g_msdc0_pll_400m) || IS_ERR(g_msdc0_pll_200m)) {
@@ -887,7 +909,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 			return 1;
 		}
 	}
-
+#endif
 	return 0;
 }
 
@@ -907,7 +929,7 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 			host->id, __func__, __LINE__);
 		return;
 	}
-
+#if 0
 	if (hclks[clksrc] == PLLCLK_400M) {
 		clk = g_msdc0_pll_400m;
 	} else if (hclks[clksrc] == PLLCLK_200M) {
@@ -924,7 +946,7 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 		pr_err("[msdc%d] switch clk source ERROR...[%s]%d\n",
 			host->id, __func__, __LINE__);
 	clk_disable(g_msdc0_pll_sel);
-
+#endif
 	host->hclk = hclks[clksrc];
 	host->hw->clk_src = clksrc;
 }
@@ -946,13 +968,12 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 		/* bit0 is enables PLL, 0: disable 1: enable */
 		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
 			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
-		pr_err(" bit[2~0]=111b\n");
+		pr_err(" bit[0]=1b\n");
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
 
 		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
 			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
-		pr_err(" bit[31]=1b\n");
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
 
@@ -963,7 +984,7 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 
 		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
 			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
-		pr_err(" bit[31]=0b, bit[1]=0b, bit[0]=1b\n");
+		pr_err(" bit[0]=1b\n");
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
 	}
@@ -975,6 +996,11 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 /**************************************************************/
 void msdc_dump_padctl_by_id(u32 id)
 {
+	if (!gpio_base || !io_cfg_r_base || !io_cfg_b_base) {
+		pr_err("err: gpio_base=%p is_cfg_r_base=%p io_cfg_b_base=%p\n",
+			gpio_base, io_cfg_r_base, io_cfg_b_base);
+		return;
+	}
 	switch (id) {
 	case 0:
 		pr_err("MSDC0 MODE14[0x%p] =0x%8x\tshould:0x111111??\n",
@@ -985,8 +1011,8 @@ void msdc_dump_padctl_by_id(u32 id)
 			MSDC0_GPIO_SMT_ADDR, MSDC_READ32(MSDC0_GPIO_SMT_ADDR));
 		pr_err("MSDC0 IES   [0x%p] =0x%8x\tshould:0x?????fff\n",
 			MSDC0_GPIO_IES_ADDR, MSDC_READ32(MSDC0_GPIO_IES_ADDR));
-		pr_err("PUPD/R0/R1: dat/cmd:0/1/0, clk/dst: 1/0/1");
-		pr_err("PUPD/R0/R1: rstb: 0/0/1");
+		pr_err("PUPD/R0/R1: dat/cmd:0/1/0, clk/dst: 1/0/1\n");
+		pr_err("PUPD/R0/R1: rstb: 0/0/1\n");
 		pr_err("MSDC0 PUPD [0x%p] =0x%8x\tshould: 011000000000 ??????b\n",
 			MSDC0_GPIO_PUPD_ADDR,
 			MSDC_READ32(MSDC0_GPIO_PUPD_ADDR));
@@ -1368,7 +1394,9 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18)
 			hw->cmd_drv);
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_CLK_MASK,
 			hw->clk_drv);
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DAT_MASK,
+		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DAT3_0_MASK,
+			hw->dat_drv);
+		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DAT7_4_MASK,
 			hw->dat_drv);
 		break;
 	case 1:
@@ -1387,6 +1415,8 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18)
 			MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_DRV_DAT_MASK,
 				hw->dat_drv);
 		}
+		/* set BIAS Tune is 0x5 */
+		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_BIAS_MASK, 0x5);
 		break;
 	default:
 		pr_err("[%s] invalid host->id!\n", __func__);

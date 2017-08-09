@@ -2321,7 +2321,7 @@ check_fifo1:
 				u8ptr = (u8 *) ptr;
 				while (left) {
 #ifdef MTK_MSDC_DUMP_FIFO
-					pr)debug("0x%x ", msdc_fifo_read8());
+					pr_debug("0x%x ", msdc_fifo_read8());
 #else
 					*u8ptr++ = msdc_fifo_read8();
 #endif
@@ -2347,7 +2347,7 @@ check_fifo1:
 				if ((atomic_read(&host->ot_work.autok_done)
 					!= 0) ||
 				    (host->hw->host_function != MSDC_SDIO) ||
-				    (host->mclk <= 50*1000*1000)) {
+				    (host->mclk <= 50*1000*1000))
 
 					msdc_dump_info(host->id);
 #else
@@ -4435,8 +4435,8 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 
 	host->block_bad_card = 0;
 	msdc_reset_pwr_cycle_counter(host);
-	/*msdc_reset_crc_tune_counter(host, ALL_TUNE_CNT);*/
-	/*msdc_reset_tmo_tune_counter(host, ALL_TUNE_CNT);*/
+	msdc_reset_crc_tune_counter(host, all_counter);
+	msdc_reset_tmo_tune_counter(host, all_counter);
 
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
@@ -5489,8 +5489,10 @@ release:
 	kfree(host->hw->ett_hs400_settings);
 	kfree(host->hw);
 	mmc_free_host(mmc);
+#if 0
 	if (wq_tune)
 		destroy_workqueue(wq_tune);
+#endif
 	return ret;
 }
 
@@ -5508,14 +5510,10 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	BUG_ON(!host);
 
 	ERR_MSG("removed !!!");
-#ifndef CONFIG_MTK_LEGACY
 #ifndef FPGA_PLATFORM
 	/* clock unprepare */
 	if (host->clock_control)
 		clk_unprepare(host->clock_control);
-	if ((host->hw->host_function == MSDC_EMMC) && g_msdc0_pll_sel)
-		clk_unprepare(g_msdc0_pll_sel);
-#endif
 #endif
 	platform_set_drvdata(pdev, NULL);
 	mmc_remove_host(host->mmc);
@@ -5544,8 +5542,10 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	kfree(host->hw);
 
 	mmc_free_host(host->mmc);
+#if 0
 	if (wq_tune)
 		destroy_workqueue(wq_tune);
+#endif
 	return 0;
 }
 #ifdef CONFIG_PM

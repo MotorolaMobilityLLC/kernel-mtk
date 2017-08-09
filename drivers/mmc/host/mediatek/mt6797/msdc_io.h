@@ -44,7 +44,7 @@ void msdc_fpga_pwr_init(void);
 /* Section 2: Power                                           */
 /**************************************************************/
 #include <mt-plat/upmu_common.h>
-#if 0
+
 #define REG_VEMC_VOSEL_CAL              MT6351_PMIC_RG_VEMC_CAL_ADDR
 #define REG_VEMC_VOSEL                  MT6351_PMIC_RG_VEMC_VOSEL_ADDR
 #define REG_VEMC_EN                     MT6351_PMIC_RG_VEMC_EN_ADDR
@@ -83,7 +83,7 @@ void msdc_fpga_pwr_init(void);
 #define MASK_VMCH_EN                    MT6351_PMIC_RG_VMCH_EN_MASK
 #define SHIFT_VMCH_EN                   MT6351_PMIC_RG_VMCH_EN_SHIFT
 #define FIELD_VMCH_EN                   (MASK_VMCH_EN << SHIFT_VMCH_EN)
-#endif
+
 #define VEMC_VOSEL_CAL_mV(cal)          ((cal <= 0) ? \
 						((0-(cal))/20) : (32-(cal)/20))
 #define VEMC_VOSEL_3V                   (0)
@@ -97,7 +97,7 @@ void msdc_fpga_pwr_init(void);
 						((0-(cal))/20) : (32-(cal)/20))
 #define VMCH_VOSEL_3V                   (0)
 #define VMCH_VOSEL_3V3                  (1)
-#if 0
+
 #define REG_VCORE_VOSEL_SW		MT6351_PMIC_BUCK_VCORE_VOSEL_ADDR
 #define	VCORE_VOSEL_SW_MASK		MT6351_PMIC_BUCK_VCORE_VOSEL_MASK
 #define	VCORE_VOSEL_SW_SHIFT		MT6351_PMIC_BUCK_VCORE_VOSEL_SHIFT
@@ -107,7 +107,7 @@ void msdc_fpga_pwr_init(void);
 #define REG_VIO18_CAL			MT6351_PMIC_RG_VIO18_CAL_ADDR
 #define VIO18_CAL_MASK			MT6351_PMIC_RG_VIO18_CAL_MASK
 #define VIO18_CAL_SHIFT			MT6351_PMIC_RG_VIO18_CAL_SHIFT
-#endif
+
 #define CARD_VOL_ACTUAL			VOL_2900
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
@@ -187,20 +187,10 @@ extern u32 hclks_msdc30_2[];
 	((id == 0) ? hclks_msdc50_0 : \
 	((id == 1) ? hclks_msdc30_1 : hclks_msdc30_2))
 
-#ifdef CONFIG_MTK_CLKMGR
-extern enum cg_clk_id msdc_cg_clk_id[];
-#define msdc_clk_enable(host) enable_clock(msdc_cg_clk_id[host->id], "SD")
-#define msdc_clk_disable(host) disable_clock(msdc_cg_clk_id[host->id], "SD")
-#else
-extern struct clk *g_msdc0_pll_sel;
-extern struct clk *g_msdc0_pll_400m;
-extern struct clk *g_msdc0_pll_200m;
-
 #define msdc_clk_enable(host) clk_enable(host->clock_control)
 #define msdc_clk_disable(host) clk_disable(host->clock_control)
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		struct msdc_host *host);
-#endif
 #endif /* FPGA_PLATFORM */
 
 /**************************************************************/
@@ -252,26 +242,26 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 /* MSDC GPIO Related Register Mask                                               */
 /*--------------------------------------------------------------------------*/
 /* MSDC0_GPIO_MODE14, 001b is msdc mode*/
-#define MSDC0_MODE_DAT5_MASK            (7 << 28)
-#define MSDC0_MODE_DAT4_MASK            (7 << 24)
-#define MSDC0_MODE_DAT3_MASK            (7 << 20)
-#define MSDC0_MODE_DAT2_MASK            (7 << 16)
-#define MSDC0_MODE_DAT1_MASK            (7 << 12)
-#define MSDC0_MODE_DAT0_MASK            (7 << 8)
+#define MSDC0_MODE_DAT5_MASK            (0xf << 28)
+#define MSDC0_MODE_DAT4_MASK            (0xf << 24)
+#define MSDC0_MODE_DAT3_MASK            (0xf << 20)
+#define MSDC0_MODE_DAT2_MASK            (0xf << 16)
+#define MSDC0_MODE_DAT1_MASK            (0xf << 12)
+#define MSDC0_MODE_DAT0_MASK            (0xf << 8)
 /* MSDC0_GPIO_MODE15, 001b is msdc mode */
-#define MSDC0_MODE_RSTB_MASK            (7 << 20)
-#define MSDC0_MODE_DSL_MASK             (7 << 16)
-#define MSDC0_MODE_CLK_MASK             (7 << 12)
-#define MSDC0_MODE_CMD_MASK             (7 << 8)
-#define MSDC0_MODE_DAT7_MASK            (7 << 4)
-#define MSDC0_MODE_DAT6_MASK            (7 << 0)
+#define MSDC0_MODE_RSTB_MASK            (0xf << 20)
+#define MSDC0_MODE_DSL_MASK             (0xf << 16)
+#define MSDC0_MODE_CLK_MASK             (0xf << 12)
+#define MSDC0_MODE_CMD_MASK             (0xf << 8)
+#define MSDC0_MODE_DAT7_MASK            (0xf << 4)
+#define MSDC0_MODE_DAT6_MASK            (0xf << 0)
 /* MSDC1_GPIO_MODE16, 0001b is msdc mode */
-#define MSDC1_MODE_CMD_MASK             (0x7 << 4)
-#define MSDC1_MODE_DAT0_MASK            (0x7 << 8)
-#define MSDC1_MODE_DAT1_MASK            (0x7 << 12)
-#define MSDC1_MODE_DAT2_MASK            (0x7 << 16)
-#define MSDC1_MODE_DAT3_MASK            (0x7 << 20)
-#define MSDC1_MODE_CLK_MASK             (0x7 << 24)
+#define MSDC1_MODE_CMD_MASK             (0xf << 4)
+#define MSDC1_MODE_DAT0_MASK            (0xf << 8)
+#define MSDC1_MODE_DAT1_MASK            (0xf << 12)
+#define MSDC1_MODE_DAT2_MASK            (0xf << 16)
+#define MSDC1_MODE_DAT3_MASK            (0xf << 20)
+#define MSDC1_MODE_CLK_MASK             (0xf << 24)
 
 /* MSDC0 SMT mask*/
 #define MSDC0_SMT_DAT3_0_MASK            (0x1  <<  0)
@@ -433,6 +423,8 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_DRV_DAT_MASK            (0x7 << 24)
 #define MSDC1_DRV_CLK_MASK            (0x7 << 27)
 #define MSDC1_DRV_ALL_MASK            (0x1ff << 21)
+/* MSDC1 BIAS Tune mask */
+#define MSDC1_BIAS_MASK               (0x1f << 16)
 
 #ifndef FPGA_PLATFORM
 void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18);

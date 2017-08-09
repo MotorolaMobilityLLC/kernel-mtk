@@ -36,6 +36,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt6797-mmc";
 			reg = <0x11230000 0x10000>;
 			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_MSDC0>;
+			clock-names = "msdc0-clock";
 			status = "disabled";
 		};
 
@@ -43,17 +45,16 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt6797-mmc";
 			reg = <0x11240000 0x10000>;
 			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_MSDC1>;
+			clock-names = "msdc1-clock";
 			status = "disabled";
 		};
-
-		mmc2:msdc2@11250000 {
-			compatible = "mediatek,mt6797-mmc";
-			reg = <0x11250000 0x10000>;
-			interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
-			status = "disabled";
-		};
-
 	};
+
+	msdc1_ins: msdc1_ins@0 {
+		compatible = "mediatek,mt6797-sdcard-ins";
+	};
+
 
 	psci {
 		compatible	= "arm,psci-0.2";
