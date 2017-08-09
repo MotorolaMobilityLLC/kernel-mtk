@@ -643,17 +643,13 @@ void debug_info_dump_to_printk(char *buf, int buf_len)
 static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = sizeof(debug_buffer) - 1;
-	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 	int n = 0;
 
 	DISPFUNC();
 
 	n += debug_get_info(debug_buffer + n, debug_bufmax - n);
-	/* debug_info_dump_to_printk(); */
-	if (is_mipi_enterulps())
-		return simple_read_from_buffer(ubuf, count, ppos, str, strlen(str));
-	else
-		return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
+
+	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
 
 static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)

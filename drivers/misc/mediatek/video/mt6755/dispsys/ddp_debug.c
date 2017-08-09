@@ -453,16 +453,18 @@ static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size,
 {
 	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 
-	dprec_logger_dump_reset();
-	dump_to_buffer = 1;
-	/* dump all */
-	dpmgr_debug_path_status(-1);
-	dump_to_buffer = 0;
 	if (is_mipi_enterulps())
 		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
-	else
+	else {
+		dprec_logger_dump_reset();
+		dump_to_buffer = 1;
+
+		/* dump all */
+		dpmgr_debug_path_status(-1);
+		dump_to_buffer = 0;
 		return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
 				       dprec_logger_get_dump_len());
+	}
 }
 
 

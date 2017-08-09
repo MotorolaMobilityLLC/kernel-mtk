@@ -494,7 +494,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 */
 	/* DCM Setting -- Enable DCM */
-	DISP_REG_SET(NULL, ovl_base + DISP_REG_OVL_FUNC_DCM0, 0x10);
+	/* DISP_REG_SET(NULL, ovl_base + DISP_REG_OVL_FUNC_DCM0, 0x10); */
 	DISP_REG_SET(NULL, ovl_base + DISP_REG_OVL_FUNC_DCM1, 0x10);
 
 	return 0;
