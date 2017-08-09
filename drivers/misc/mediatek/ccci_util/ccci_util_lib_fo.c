@@ -245,10 +245,12 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 	unsigned int i;
 	ccci_tag_t *tag;
 	unsigned int cpy_size;
+	unsigned int str_size1, str_size2;
 
 	if (buf == NULL)
 		return -1;
 
+	str_size1 = strlen(name);
 	tag = (ccci_tag_t *)lk_inf_base;
 	CCCI_UTIL_INF_MSG("------curr tags:%s----------\n", name);
 	for (i = 0; i < tag_cnt; i++) {
@@ -259,7 +261,9 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 		CCCI_UTIL_INF_MSG("tag->next_tag_offset:%d\n", tag->next_tag_offset);
 		CCCI_UTIL_INF_MSG("tag value:%d\n", *(unsigned int *)(lk_inf_base+tag->data_offset));
 		#endif
-		if (strcmp(tag->tag_name, name) != 0) {
+		str_size2 = strlen(tag->tag_name);
+		str_size2 = str_size1 > str_size2?str_size1:str_size2;
+		if (strncmp(tag->tag_name, name, str_size2) != 0) {
 			tag = (ccci_tag_t *)(lk_inf_base + tag->next_tag_offset);
 			continue;
 		}
