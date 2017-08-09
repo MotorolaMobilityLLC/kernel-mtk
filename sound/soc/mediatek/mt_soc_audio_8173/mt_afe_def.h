@@ -19,6 +19,7 @@
 #define COMMON_CLOCK_FRAMEWORK_API
 #define IDLE_TASK_DRIVER_API
 #define AUDIO_MEMORY_SRAM
+/* #define AUDIO_BTSCO_MEMORY_SRAM */
 #define AUDIO_MEM_IOREMAP
 #define AUDIO_IOREMAP_FROM_DT
 
@@ -91,7 +92,7 @@
      PCM buffer size and period size setting
 */
 
-#define DL1_MAX_BUFFER_SIZE     (16*1024)
+#define DL1_MAX_BUFFER_SIZE     (32*1024)
 #define DL2_MAX_BUFFER_SIZE     (32*1024)
 #define UL1_MAX_BUFFER_SIZE     (32*1024)
 #define UL2_MAX_BUFFER_SIZE     (32*1024)

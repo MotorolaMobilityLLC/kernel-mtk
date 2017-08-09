@@ -128,7 +128,7 @@ static int mt_pcm_btsco_hw_params(struct snd_pcm_substream *substream,
 		dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 		dma_buf->dev.dev = substream->pcm->card->dev;
 		dma_buf->private_data = NULL;
-#ifdef AUDIO_MEMORY_SRAM
+#ifdef AUDIO_BTSCO_MEMORY_SRAM
 		if (buffer_size > BT_DL_MAX_BUFFER_SIZE) {
 			pr_warn("%s request size %zu > max size %d\n", __func__,
 				buffer_size, BT_DL_MAX_BUFFER_SIZE);
@@ -166,7 +166,7 @@ static int mt_pcm_btsco_hw_free(struct snd_pcm_substream *substream)
 	pr_debug("%s stream = %d\n", __func__, substream->stream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-#ifndef AUDIO_MEMORY_SRAM
+#ifndef AUDIO_BTSCO_MEMORY_SRAM
 		snd_pcm_lib_free_pages(substream);
 #endif
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
