@@ -111,10 +111,11 @@ static int g_od_is_demo_mode;
 
 enum OD_DEBUG_MODE {
 	DEBUG_MODE_NONE = 0,
-	DEBUG_MODE_OSD,
-	DEBUG_MODE_INK_OSD
+	DEBUG_MODE_OSD = 0x1,
+	DEBUG_MODE_INK = 0x2,
+	DEBUG_MODE_INK_OSD = (DEBUG_MODE_OSD | DEBUG_MODE_INK)
 };
-static enum OD_DEBUG_MODE g_od_debug_mode = DEBUG_MODE_NONE;
+static unsigned int g_od_debug_mode = DEBUG_MODE_NONE;
 
 static DEFINE_MUTEX(g_od_global_lock);
 static volatile int g_od_is_enabled; /* OD is disabled by default */
@@ -262,10 +263,6 @@ void _od_core_set_enabled(void *cmdq, int enabled)
 		DISP_REG_MASK(cmdq, DISP_REG_OD_CFG, 0x2, 0x3); /* core en */
 	else
 		DISP_REG_MASK(cmdq, DISP_REG_OD_CFG, 0x1, 0x3); /* Relay mode */
-
-	ODDBG(OD_LOG_ALWAYS, "_od_core_set_enabled value=%d", enabled);
-#else
-	ODDBG(OD_LOG_ALWAYS, "_od_core_set_enabled: CONFIG_MTK_OD_SUPPORT is not set");
 #endif
 }
 
@@ -862,19 +859,8 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 
 	if (pConfig->dst_dirty) {
 #if defined(CONFIG_MTK_OD_SUPPORT)
-		M4U_PORT_STRUCT m4u_port;
 		unsigned int od_table_size = lcm_param->od_table_size;
 		void *od_table = lcm_param->od_table;
-
-		m4u_port.ePortID = M4U_PORT_DISP_OD_R;
-		m4u_port.Virtuality = 0;
-		m4u_port.Security = 0;
-		m4u_port.domain = 0;
-		m4u_port.Distance = 1;
-		m4u_port.Direction = 0;
-		m4u_config_port(&m4u_port);
-		m4u_port.ePortID = M4U_PORT_DISP_OD_W;
-		m4u_config_port(&m4u_port);
 
 		if (od_table != NULL)
 			ODDBG(OD_LOG_ALWAYS, "od_config_od: LCD OD table");
@@ -919,6 +905,25 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 #endif
 
 	return 0;
+}
+
+
+static void od_set_debug_function(void *cmdq)
+{
+	if (g_od_debug_mode != 0) {
+		if (g_od_debug_mode & DEBUG_MODE_OSD)
+			OD_REG_SET_FIELD(cmdq, OD_REG46, 1, OD_OSD_SEL);
+		else
+			OD_REG_SET_FIELD(cmdq, OD_REG46, 0, OD_OSD_SEL);
+
+		if (g_od_debug_mode & DEBUG_MODE_INK)
+			DISP_REG_MASK(cmdq, OD_REG03, (0x33 << 24) | (0xaa << 16) | (0x55 << 8) | 1, 0xffffff01);
+		else
+			DISP_REG_MASK(cmdq, OD_REG03, 0, 0x1);
+	} else {
+		OD_REG_SET_FIELD(cmdq, OD_REG46, 0, OD_OSD_SEL);
+		DISP_REG_MASK(cmdq, OD_REG03, 0, 0x1);
+	}
 }
 
 
@@ -1018,17 +1023,7 @@ static int od_start(DISP_MODULE_ENUM module, void *cmdq)
 	DISP_REG_SET(cmdq, OD_BASE + 0x208, (16 << 26) | (8 << 20) | (600 << 10) | 10);
 	DISP_REG_SET(cmdq, OD_BASE + 0x20c, (450 << 20) | (500 << 10) | 540);
 
-	/* workaround for debug (OSD+INK) */
-	if (g_od_debug_mode == DEBUG_MODE_OSD) {
-		OD_REG_SET_FIELD(cmdq, OD_REG46, 1, OD_OSD_SEL);
-		DISP_REG_MASK(cmdq, OD_REG03, 0, 0x1);
-	} else if (g_od_debug_mode == DEBUG_MODE_INK_OSD) {
-		OD_REG_SET_FIELD(cmdq, OD_REG46, 1, OD_OSD_SEL);
-		DISP_REG_MASK(cmdq, OD_REG03, (0x33 << 24) | (0xaa << 16) | (0x55 << 8) | 1, 0xffffff01);
-	} else {
-		OD_REG_SET_FIELD(cmdq, OD_REG46, 0, OD_OSD_SEL);
-		DISP_REG_MASK(cmdq, OD_REG03, 0, 0x1);
-	}
+	od_set_debug_function(cmdq);
 
 	mutex_lock(&g_od_global_lock);
 	_od_core_set_enabled(cmdq, g_od_is_enabled);
@@ -1041,6 +1036,8 @@ static int od_start(DISP_MODULE_ENUM module, void *cmdq)
 
 static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
+	M4U_PORT_STRUCT m4u_port;
+
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_OD, "od");
@@ -1056,6 +1053,16 @@ static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 		disp_od_set_smi_clock(1);
 	mutex_unlock(&g_od_global_lock);
 #endif /* CONFIG_MTK_OD_SUPPORT */
+
+	m4u_port.ePortID = M4U_PORT_DISP_OD_R;
+	m4u_port.Virtuality = 0;
+	m4u_port.Security = 0;
+	m4u_port.domain = 0;
+	m4u_port.Distance = 1;
+	m4u_port.Direction = 0;
+	m4u_config_port(&m4u_port);
+	m4u_port.ePortID = M4U_PORT_DISP_OD_W;
+	m4u_config_port(&m4u_port);
 
 	return 0;
 }
@@ -1355,16 +1362,18 @@ void od_test(const char *cmd, char *debug_output)
 		} else {
 			g_od_debug_enable = DEBUG_ENABLE_NORMAL;
 		}
-	} else if (strncmp(cmd, "osd:", 4) == 0 || strncmp(cmd, "ink:", 4) == 0) {
-		if (cmd[4] == '1') {
-			g_od_debug_mode = DEBUG_MODE_INK_OSD;
-			OD_REG_SET_FIELD(cmdq, OD_REG46, 1, OD_OSD_SEL);
-			DISP_REG_MASK(cmdq, OD_REG03, (0x33 << 24) | (0xaa << 16) | (0x55 << 8) | 1, 0xffffff01);
-		} else {
-			g_od_debug_mode = DEBUG_MODE_NONE;
-			OD_REG_SET_FIELD(cmdq, OD_REG46, 0, OD_OSD_SEL);
-			DISP_REG_MASK(cmdq, OD_REG03, 0, 0x1);
-		}
+	} else if (strncmp(cmd, "ink:", 4) == 0) {
+		if (cmd[4] == '1')
+			g_od_debug_mode |= DEBUG_MODE_INK;
+		else
+			g_od_debug_mode &= ~DEBUG_MODE_INK;
+		od_set_debug_function(cmdq);
+	} else if (strncmp(cmd, "osd:", 4) == 0) {
+		if (cmd[4] == '0')
+			g_od_debug_mode = 0;
+		else
+			g_od_debug_mode = (unsigned int)(cmd[4] - '0');
+		od_set_debug_function(cmdq);
 	} else if (strncmp(cmd, "demo:", 5) == 0) {
 		int enabled = (cmd[5] == '1' ? 1 : 0);
 
