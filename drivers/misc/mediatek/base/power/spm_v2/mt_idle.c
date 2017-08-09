@@ -904,10 +904,17 @@ bool soidle_can_enter(int cpu)
 	}
 #endif
 
-	if (cpu % 4) {
-		reason = BY_CPU;
-		goto out;
-	}
+#if defined(CONFIG_ARCH_MT6755)
+		if (cpu % 4) {
+			reason = BY_CPU;
+			goto out;
+		}
+#elif defined(CONFIG_ARCH_MT6797)
+		if (cpu != 0) {
+			reason = BY_CPU;
+			goto out;
+		}
+#endif
 
 	if (idle_spm_lock || vcore_dvfs_is_progressing()) {
 		reason = BY_VTG;

@@ -107,6 +107,7 @@ enum spm_sodi_step {
 	SPM_SODI_LEAVE_SPM_FLOW,
 	SPM_SODI_ENTER_UART_AWAKE,
 	SPM_SODI_LEAVE,
+	SPM_SODI_REKICK_VCORE,
 };
 
 void __attribute__((weak)) vcorefs_go_to_vcore_dvfs(void)

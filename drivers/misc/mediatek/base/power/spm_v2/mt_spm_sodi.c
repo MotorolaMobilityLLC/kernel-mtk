@@ -103,7 +103,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_apsrc_sel = 0, /* bit 27 */
 
 	/* SPM_SRC_REQ */
-	.spm_apsrc_req = 0,
+	.spm_apsrc_req = 1,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
@@ -595,8 +595,12 @@ UNLOCK_SPM:
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle_after_wfi(cpu);
 
-	spm_sodi_reset_footprint();
+	spm_sodi_footprint(SPM_SODI_REKICK_VCORE);
+
+	__spm_backup_vcore_dvfs_dram_shuffle();
 	vcorefs_go_to_vcore_dvfs();
+
+	spm_sodi_reset_footprint();
 	return wr;
 }
 
