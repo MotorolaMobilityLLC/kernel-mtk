@@ -7,6 +7,10 @@
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#define M4U_TEE_SERVICE_ENABLE
+#endif
+
 #include "m4u.h"
 #include "m4u_reg.h"
 #include "../2.0/m4u_pgtable.h"
@@ -14,10 +18,6 @@
 
 #define M4UMSG(string, args...)	pr_err("M4U"string, ##args)
 #define M4UINFO(string, args...) pr_debug("M4U"string, ##args)
-
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-#define M4U_TEE_SERVICE_ENABLE
-#endif
 
 #include "m4u_hw.h"
 

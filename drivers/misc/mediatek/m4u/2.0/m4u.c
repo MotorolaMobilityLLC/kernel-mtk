@@ -1887,14 +1887,14 @@ static struct notifier_block m4u_fb_notifier;
 static int m4u_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
-	INT32 blank;
+	int blank;
 
 	M4UMSG("m4u_fb_notifier_callback %ld, %d\n", event , FB_EVENT_BLANK);
 
 	if (event != FB_EVENT_BLANK)
 		return 0;
 
-	blank = *(INT32 *)evdata->data;
+	blank = *(int *)evdata->data;
 
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
@@ -2615,7 +2615,12 @@ static int __init MTK_M4U_Init(void)
 #endif
 
 #ifdef M4U_TEE_SERVICE_ENABLE
-	register_early_suspend(&mtk_m4u_early_suspend_driver);
+	m4u_fb_notifier.notifier_call = m4u_fb_notifier_callback;
+	ret = fb_register_client(&m4u_fb_notifier);
+	if (ret)
+		M4UMSG("m4u register fb_notifier failed! ret(%d)\n", ret);
+	else
+		M4UMSG("m4u register fb_notifier OK!\n");
 #endif
 
 	return 0;
