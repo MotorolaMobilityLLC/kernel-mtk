@@ -6727,19 +6727,15 @@ static void msdc_dump_trans_error(struct msdc_host *host,
 	}
 #endif
 
-	if (cmd->error)
-		ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x> block<%d>",
-			cmd->opcode, cmd->arg, cmd->error, cmd->resp[0], (data == NULL) ? 0 : data->blocks);
-	else {
-		if (host->autocmd & MSDC_AUTOCMD23)
-			ERR_MSG("XXX DAT CMD<%d><0x%x> block<%d> Error<%d> SBC<%d><0x%x> Error<%d> Resp<0x%x>",
-				cmd->opcode, cmd->arg, data->blocks, data->error,
-					sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
-		else
-			ERR_MSG("XXX DAT CMD<%d><0x%x> block<%d> Error<%d> STOP<%d><0x%x> Error<%d> Resp<0x%x>",
-				cmd->opcode, cmd->arg, data->blocks, data->error, stop->opcode,
-					stop->arg, stop->error, stop->resp[0]);
-	}
+	if (data)
+		ERR_MSG("XXX DAT block<%d> Error<%d>", data->blocks, data->error);
+	if (stop)
+		ERR_MSG("XXX STOP<%d><0x%x> Error<%d> Resp<0x%x>",
+			stop->opcode, stop->arg, stop->error, stop->resp[0]);
+	if (sbc)
+		ERR_MSG("XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>",
+			sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
+
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 	if ((host->hw->host_function == MSDC_SDIO) && (cmd) && (data) &&
 	    ((cmd->error == -EIO) || (data->error == -EIO))) {

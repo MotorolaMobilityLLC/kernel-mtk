@@ -1936,7 +1936,7 @@ static int simp_mmc_get_host(int card_type, bool boot)
 {
 	int index = 0;
 
-	for (; index < HOST_MAX_NUM; ++index) {
+	for (; index < 2; ++index) {
 		if (p_msdc_hw[index]) {
 			if ((card_type == p_msdc_hw[index]->host_function)
 			    && (boot == p_msdc_hw[index]->boot))
@@ -2555,12 +2555,6 @@ static void simp_msdc_hw_init(void)
 	if (mtk_msdc_host[1])
 		p_msdc_hw[1] = mtk_msdc_host[1]->hw;
 
-#ifdef CFG_DEV_MSDC2
-	p_msdc_hw[2] = &msdc2_hw;
-#endif
-#ifdef CFG_DEV_MSDC3
-	p_msdc_hw[3] = &msdc3_hw;
-#endif
 }
 
 static int __init emmc_dump_init(void)
