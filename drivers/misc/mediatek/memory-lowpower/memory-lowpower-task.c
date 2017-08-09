@@ -34,6 +34,7 @@
 #ifdef CONFIG_PM_WAKELOCKS
 #include <linux/pm_wakeup.h>
 #endif
+#include <linux/uaccess.h>
 
 /* Memory lowpower private header file */
 #include "internal.h"
@@ -645,9 +646,37 @@ static int memory_lowpower_open(struct inode *inode, struct file *file)
 	return single_open(file, &memory_lowpower_task_show, NULL);
 }
 
+static ssize_t memory_lowpower_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *ppos)
+{
+	static char state;
+	struct fb_event fb_event;
+	int blank;
+
+	if (count > 0) {
+		if (get_user(state, buffer))
+			return -EFAULT;
+		state -= '0';
+		fb_event.data = &blank;
+
+		if (!state) {
+			/* collect cma */
+			blank = 1;
+			memory_lowpower_fb_event(NULL, FB_EVENT_BLANK, &fb_event);
+		} else {
+			/* undo collection */
+			blank = 0;
+			memory_lowpower_fb_event(NULL, FB_EVENT_BLANK, &fb_event);
+		}
+	}
+
+	return count;
+}
+
 static const struct file_operations memory_lowpower_task_fops = {
 	.open		= memory_lowpower_open,
 	.read		= seq_read,
+	.write		= memory_lowpower_write,
 	.release	= single_release,
 };
 
