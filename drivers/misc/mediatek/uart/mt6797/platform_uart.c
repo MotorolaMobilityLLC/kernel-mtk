@@ -89,7 +89,8 @@ unsigned int uart_rx_history_cnt[RECORD_NUMBER];
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0, */
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -99,7 +100,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -109,7 +110,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -1122,6 +1123,8 @@ void mtk_uart_dma_setup(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 		reg_sync_writel(dma->vfifo->dmahd, VFF_ADDR(base));
 		reg_sync_writel(dma->vfifo->trig, VFF_THRE(base));
 		reg_sync_writel(dma->vfifo->size, VFF_LEN(base));
+		if (enable_4G())
+			reg_sync_writel(0x01, VFF_4G_DRAM_SUPPORT(base));
 
 		if (dma->vfifo->type == UART_RX_VFIFO)
 			/* reg_sync_writel(VFF_RX_INT_EN0_B, VFF_INT_EN(base)); */
