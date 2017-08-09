@@ -61,78 +61,20 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 #define EX_TIMER_MD_EX_REC_OK 30
 #define EX_TIMER_MD_HANG 5
 
-
-#ifndef CONFIG_PINCTRL_MT6797
-struct mt_gpio_modem_info {
-	char name[40];
-	int num;
+#if defined(FEATURE_GET_MD_GPIO_NUM)
+static struct gpio_item gpio_mapping_table[] = {
+	{"GPIO_FDD_BAND_Support_Detection_1", "GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_2", "GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_3", "GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_4", "GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_5", "GPIO_FDD_BAND_SUPPORT_DETECT_5TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_6", "GPIO_FDD_BAND_SUPPORT_DETECT_6TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_7", "GPIO_FDD_BAND_SUPPORT_DETECT_7TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_8", "GPIO_FDD_BAND_SUPPORT_DETECT_8TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_9", "GPIO_FDD_BAND_SUPPORT_DETECT_9TH_PIN",},
+	{"GPIO_FDD_BAND_Support_Detection_A", "GPIO_FDD_BAND_SUPPORT_DETECT_ATH_PIN",},
 };
-static struct mt_gpio_modem_info mt_gpio_info[] = {
-	{"GPIO_MD_TEST", 800},
-#ifdef GPIO_AST_CS_PIN
-	{"GPIO_AST_HIF_CS", GPIO_AST_CS_PIN},
 #endif
-#ifdef GPIO_AST_CS_PIN_NCE
-	{"GPIO_AST_HIF_CS_ID", GPIO_AST_CS_PIN_NCE},
-#endif
-#ifdef GPIO_AST_RST_PIN
-	{"GPIO_AST_Reset", GPIO_AST_RST_PIN},
-#endif
-#ifdef GPIO_AST_CLK32K_PIN
-	{"GPIO_AST_CLK_32K", GPIO_AST_CLK32K_PIN},
-#endif
-#ifdef GPIO_AST_CLK32K_PIN_CLK
-	{"GPIO_AST_CLK_32K_CLKM", GPIO_AST_CLK32K_PIN_CLK},
-#endif
-#ifdef GPIO_AST_WAKEUP_PIN
-	{"GPIO_AST_Wakeup", GPIO_AST_WAKEUP_PIN},
-#endif
-#ifdef GPIO_AST_INTR_PIN
-	{"GPIO_AST_INT", GPIO_AST_INTR_PIN},
-#endif
-#ifdef GPIO_AST_WAKEUP_INTR_PIN
-	{"GPIO_AST_WAKEUP_INT", GPIO_AST_WAKEUP_INTR_PIN},
-#endif
-#ifdef GPIO_AST_AFC_SWITCH_PIN
-	{"GPIO_AST_AFC_Switch", GPIO_AST_AFC_SWITCH_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN
-	{"GPIO_FDD_Band_Support_Detection_1", GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN
-	{"GPIO_FDD_Band_Support_Detection_2", GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN
-	{"GPIO_FDD_Band_Support_Detection_3", GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN},
-#endif
-#ifdef GPIO_SIM_SWITCH_CLK_PIN
-	{"GPIO_SIM_SWITCH_CLK", GPIO_SIM_SWITCH_CLK_PIN},
-#endif
-#ifdef GPIO_SIM_SWITCH_DAT_PIN
-	{"GPIO_SIM_SWITCH_DAT", GPIO_SIM_SWITCH_DAT_PIN},
-#endif
-/*if you have new GPIO pin add bellow*/
-
-};
-
-static int mt_get_md_gpio(char *gpio_name, int len)
-{
-	unsigned int i;
-	unsigned long number;
-
-	for (i = 0; i < ARRAY_SIZE(mt_gpio_info); i++) {
-		if (!strncmp(gpio_name, mt_gpio_info[i].name, len)) {
-			number = mt_gpio_info[i].num;
-			GPIOMSG("Modern get number=%d, name:%s\n", mt_gpio_info[i].num, gpio_name);
-			mt_gpio_pin_decrypt(&number);
-			return number;
-		}
-	}
-	GPIOERR("Modem gpio name can't match!!!\n");
-	return -1;
-}
-#endif
-
 
 #ifdef CONFIG_MTK_ECCCI_C2K
 int modem_dtr_set(int on, int low_latency)
@@ -814,23 +756,34 @@ static int get_md_adc_info(char *adc_name, unsigned int len)
 static int get_md_gpio_info(char *gpio_name, unsigned int len)
 {
 #if defined(FEATURE_GET_MD_GPIO_NUM)
-#if defined(CONFIG_MTK_LEGACY)
-	return mt_get_md_gpio(gpio_name, len);
-#else
-#ifndef CONFIG_PINCTRL_MT6797
-	CCCI_ERR_MSG(-1, KERN, "get_md_gpio old workaround.\n");
-	return mt_get_md_gpio(gpio_name, len);
-#else
-	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,MD_USE_GPIO");
+	int i = 0;
+	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,gpio_usage_mapping");
 	int gpio_id = -1;
 
-	if (node)
-		of_property_read_u32(node, gpio_name, &gpio_id);
-	else
+	if (!node) {
 		CCCI_INF_MSG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
+		return gpio_id;
+	}
+
+	CCCI_DBG_MSG(0, RPC, "serching %s in device tree\n", gpio_name);
+	for (i = 0; i < ARRAY_SIZE(gpio_mapping_table); i++) {
+		if (!strncmp(gpio_name, gpio_mapping_table[i].gpio_name_from_md, len)) {
+			CCCI_DBG_MSG(0, RPC, "%s found in device tree\n", gpio_mapping_table[i].gpio_name_from_dts);
+			of_property_read_u32(node, gpio_mapping_table[i].gpio_name_from_dts, &gpio_id);
+			break;
+		}
+	}
+
+	/* if gpio_name_from_md and gpio_name_from_dts are the same,
+	   it will not be listed in gpio_mapping_table,
+	   so try read directly from device tree here.
+	*/
+	if (gpio_id < 0)
+		of_property_read_u32(node, gpio_name, &gpio_id);
+
+	CCCI_INF_MSG(0, RPC, "%s id %d\n", gpio_name, gpio_id);
 	return gpio_id;
-#endif
-#endif
+
 #else
 	return -1;
 #endif

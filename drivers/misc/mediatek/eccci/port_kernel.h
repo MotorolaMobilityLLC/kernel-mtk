@@ -269,6 +269,11 @@ struct eint_node_struct {
 
 #endif
 
+struct gpio_item {
+	char gpio_name_from_md[64];
+	char gpio_name_from_dts[64];
+};
+
 int port_kernel_init(struct ccci_port *port);
 int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req);
 
