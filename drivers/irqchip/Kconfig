@@ -138,3 +138,8 @@ config MTK_EIC
 	select IRQ_DOMAIN
 	help
 		Support for Mediatek external interrupt controller
+
+config MTK_INTPOL
+	bool
+	help
+		Support for MediaTek intpol used on mt65xx/mt81xx

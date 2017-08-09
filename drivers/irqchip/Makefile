@@ -46,6 +46,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 
 obj-$(CONFIG_MTK_GIC)                   += irq-mt-gic.o
 obj-$(CONFIG_MTK_EIC)                   += irq-mt-eic.o
+obj-$(CONFIG_MTK_INTPOL)		+= irq-mtk-intpol.o
 
 ifeq ($(CONFIG_MT_ENG_BUILD),y)
 CFLAGS_irq-mt-gic.o := -DDEBUG
