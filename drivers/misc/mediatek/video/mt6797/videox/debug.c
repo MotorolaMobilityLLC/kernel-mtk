@@ -52,6 +52,7 @@
 #include "cmdq_core.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
+#include "disp_partial.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
@@ -737,6 +738,32 @@ static const struct file_operations kickidle_fops = {
 	.read = kick_read,
 };
 
+static ssize_t partial_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	char p[10];
+	int support = 0;
+	struct disp_rect roi = {0, 0, 0, 0};
+
+	if (primary_display_partial_support()) {
+		if (!ddp_debug_force_roi()) {
+			support = 1;
+		} else {
+			roi.x = ddp_debug_force_roi_x();
+			roi.y = ddp_debug_force_roi_y();
+			roi.width = ddp_debug_force_roi_w();
+			roi.height = ddp_debug_force_roi_h();
+			if (!is_equal_full_lcm(&roi))
+				support = 1;
+		}
+	}
+	snprintf(p, 10, "%d\n", support);
+	return simple_read_from_buffer(ubuf, count, ppos, p, strlen(p));
+}
+
+static const struct file_operations partial_fops = {
+	.read = partial_read,
+};
+
 void DBG_Init(void)
 {
 	struct dentry *d_folder;
@@ -745,10 +772,10 @@ void DBG_Init(void)
 	mtkfb_dbgfs = debugfs_create_file("mtkfb", S_IFREG | S_IRUGO, NULL, (void *)0, &debug_fops);
 
 	d_folder = debugfs_create_dir("displowpower", NULL);
-	if (d_folder)
+	if (d_folder) {
 		d_file = debugfs_create_file("kickdump", S_IFREG | S_IRUGO, d_folder, NULL, &kickidle_fops);
-
-
+		d_file = debugfs_create_file("partial", S_IFREG | S_IRUGO, d_folder, NULL, &partial_fops);
+	}
 }
 
 void DBG_Deinit(void)
