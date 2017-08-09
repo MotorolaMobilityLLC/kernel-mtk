@@ -9967,7 +9967,7 @@ static void hmp_force_down_migration(int this_cpu)
 	/* Check migration threshold */
 	if (!target->active_balance &&
 		hmp_down_migration(this_cpu, &target_cpu, se, &clbenv)) {
-		get_task_struct(p);
+		get_task_struct(p); /* hold pi-lock of task */
 		target->active_balance = 1;
 		target->push_cpu = target_cpu;
 		target->migrate_task = p;
@@ -9982,6 +9982,7 @@ static void hmp_force_down_migration(int this_cpu)
 			target, &target->active_balance_work)) {
 			raw_spin_lock_irqsave(&target->lock, flags);
 			target->active_balance = 0;
+			put_task_struct(target->migrate_task); /* release pi-lock of task */
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 		}
 	}
@@ -10098,7 +10099,7 @@ static void hmp_force_up_migration(int this_cpu)
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
-			get_task_struct(p);
+			get_task_struct(p); /* hold pi-lock of task */
 			target->active_balance = 1; /* force up */
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
@@ -10118,6 +10119,7 @@ out_force_up:
 				target, &target->active_balance_work)) {
 				raw_spin_lock_irqsave(&target->lock, flags);
 				target->active_balance = 0;
+				put_task_struct(target->migrate_task); /* release pi-lock of task */
 				raw_spin_unlock_irqrestore(&target->lock, flags);
 			}
 		} else
@@ -10208,7 +10210,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance && task_rq(p) == target) {
-		get_task_struct(p);
+		get_task_struct(p); /* hold pi-lock of task */
 		target->push_cpu = this_cpu;
 		target->migrate_task = p;
 		trace_sched_hmp_migrate(p, target->push_cpu, 3);
@@ -10223,6 +10225,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 			target, &target->active_balance_work)) {
 			raw_spin_lock_irqsave(&target->lock, flags);
 			target->active_balance = 0;
+			put_task_struct(target->migrate_task); /* release pi-lock of task */
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 		}
 	}
