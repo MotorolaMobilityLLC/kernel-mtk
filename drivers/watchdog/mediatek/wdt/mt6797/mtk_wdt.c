@@ -420,6 +420,12 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 		if (0 == set_value)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_C2KWDT_RST;
 		break;
+	case MTK_WDT_SWSYS_RST_CONMCU_RST:
+		if (1 == set_value)
+			wdt_sys_val |= MTK_WDT_SWSYS_RST_CONMCU_RST;
+		if (0 == set_value)
+			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_CONMCU_RST;
+		break;
 	}
 	mt_reg_sync_writel(wdt_sys_val, MTK_WDT_SWSYSRST);
 	spin_unlock(&rgu_reg_operation_spinlock);
