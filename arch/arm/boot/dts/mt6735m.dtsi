@@ -139,11 +139,6 @@
 						alignment = <0 0x200000>;
 				};
 
-				mrdump-reserved-memory@41f00000{
-						compatible = "mediatek,mrdump-V2";
-						reg = <0 0x41f00000 0 0x2000>;
-				};
-
 				preloader-reserved-memory@42000000 {
 						compatible = "mediatek,preloader";
 						reg = <0 0x42000000 0 0x200000>;
