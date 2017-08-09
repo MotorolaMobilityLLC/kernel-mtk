@@ -221,6 +221,7 @@ OUT:
 
 ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+	static int chip_reset_count;
 	INT32 retval = 0;
 
 	down(&rd_mtx);
@@ -229,10 +230,13 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 	if (rstflag) {
 		if (rstflag == 1) {	/* Reset start */
 			retval = -88;
-			BT_INFO_FUNC("%s: detect whole chip reset start\n", __func__);
+			if ((chip_reset_count%500) == 0)
+				BT_INFO_FUNC("%s: detect whole chip reset start, %d\n", __func__, chip_reset_count);
+			chip_reset_count++;
 		} else if (rstflag == 2) {	/* Reset end */
 			retval = -99;
 			BT_INFO_FUNC("%s: detect whole chip reset end\n", __func__);
+			chip_reset_count = 0;
 		}
 		goto OUT;
 	}
