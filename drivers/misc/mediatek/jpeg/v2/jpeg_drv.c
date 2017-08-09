@@ -55,7 +55,7 @@
 /* #include <asm/mach/map.h> */
 /* #include <mach/mt6577_pll.h> */
 /* #include <mach/mt_irq.h> */
-#include <mach/irqs.h>
+/* #include <mach/irqs.h> */
 
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
@@ -83,8 +83,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
+#include <linux/of_device.h>
 #endif
-
+#include <linux/pm_runtime.h>
 /* ========================================================== */
 
 #include "jpeg_drv.h"
@@ -130,9 +131,10 @@ static const struct of_device_id jpeg_of_ids[] = {
 #ifndef CONFIG_MTK_CLKMGR
 static struct JpegClk gJpegClk;
 #endif
-
+struct platform_device *jenc_pdev;
 /* decoder */
 #ifdef JPEG_DEC_DRIVER
+struct platform_device *jdec_pdev;
 static wait_queue_head_t dec_wait_queue;
 static spinlock_t jpeg_dec_lock;
 static int dec_status;
@@ -217,9 +219,12 @@ void jpeg_drv_dec_power_on(void)
 	enable_clock(MT_CG_VENC_LARB, "JPEG");
 	enable_clock(MT_CG_VENC_JPGDEC, "JPEG");
 #else
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_get_sync(&jdec_pdev->dev);
+#else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
-
+#endif
 	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
 		JPEG_ERR("enable smi clk fail!");
 
@@ -245,7 +250,11 @@ void jpeg_drv_dec_power_off(void)
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_put_sync(&jdec_pdev->dev);
+#else
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
+#endif
 #endif
 }
 #endif
@@ -262,9 +271,12 @@ void jpeg_drv_enc_power_on(void)
 	enable_clock(MT_CG_VENC_JPGENC, "JPEG");
 #endif
 #else
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_get_sync(&jenc_pdev->dev);
+#else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
-
+#endif
 	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
 		JPEG_ERR("enable smi clk fail!");
 
@@ -297,7 +309,11 @@ void jpeg_drv_enc_power_off(void)
 #endif
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_put_sync(&jenc_pdev->dev);
+#else
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
+#endif
 #endif
 }
 
@@ -1243,7 +1259,6 @@ static int jpeg_probe(struct platform_device *pdev)
 
 	jpegDev = &(gJpegqDevs[nrJpegDevs]);
 	jpegDev->pDev = &pdev->dev;
-
 	memset(&gJpegqDev, 0x0, sizeof(JpegDeviceStruct));
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgenc");
@@ -1251,9 +1266,27 @@ static int jpeg_probe(struct platform_device *pdev)
 	jpegDev->encIrqId = irq_of_parse_and_map(node, 0);
 #ifdef CONFIG_MTK_CLKMGR
 #else
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	jenc_pdev = pdev;
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
+	pm_runtime_put_sync(&pdev->dev);
+#ifdef JPEG_DEC_DRIVER
+	{
+		struct device_node *node = NULL;
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,jpgdec");
+		jdec_pdev = of_find_device_by_node(node);
+		pm_runtime_enable(&jdec_pdev->dev);
+		pm_runtime_get_sync(&jdec_pdev->dev);
+		pm_runtime_put_sync(&jdec_pdev->dev);
+	}
+#endif
+#else
 	gJpegClk.clk_disp_mtcmos = of_clk_get_by_name(node, "disp-mtcmos");
 	if (IS_ERR(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("get dispMTCMOS clk error!");
+#endif
 	gJpegClk.clk_disp_smi = of_clk_get_by_name(node, "disp-smi");
 	if (IS_ERR(gJpegClk.clk_disp_smi))
 		JPEG_ERR("get dispMTCMOS clk error!");
@@ -1371,7 +1404,12 @@ static int jpeg_remove(struct platform_device *pdev)
 #ifdef JPEG_DEC_DRIVER
 	free_irq(gJpegqDev.decIrqId, NULL);
 #endif
-
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_disable(&pdev->dev);
+#ifdef JPEG_DEC_DRIVER
+	pm_runtime_disable(&jdec_pdev->dev);
+#endif
+#endif
 #endif
 	JPEG_MSG("Done\n");
 	return 0;
