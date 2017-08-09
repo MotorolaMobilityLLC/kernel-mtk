@@ -3136,17 +3136,15 @@ int dlpt_check_power_off(void)
 	if (g_dlpt_start == 0) {
 		PMICLOG("[dlpt_check_power_off] not start\n");
 	} else {
-		if (!upmu_get_rgs_chrdet()) {
-			if (g_low_battery_level == 2 && g_lowbat_int_bottom == 1)
-				ret = 1;
-			else
-				ret = 0;
+		if (g_low_battery_level == 2 && g_lowbat_int_bottom == 1)
+			ret = 1;
+		else
+			ret = 0;
 
-			PMICLOG("[dlpt_check_power_off]");
-			PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix, POWEROFF_BAT_CURRENT);
-			PMICLOG(" g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n", g_low_battery_level, ret,
-				g_lowbat_int_bottom);
-		}
+		PMICLOG("[dlpt_check_power_off]");
+		PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix, POWEROFF_BAT_CURRENT);
+		PMICLOG(" g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n", g_low_battery_level, ret,
+			g_lowbat_int_bottom);
 	}
 
 	return ret;
