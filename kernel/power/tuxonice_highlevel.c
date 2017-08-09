@@ -374,26 +374,18 @@ static int get_toi_debug_info(const char *buffer, int count)
 	SNPRINTF("- Extra pages    : %lu used/%lu.\n",
 		 extra_pd1_pages_used, extra_pd1_pages_allowance);
 
-	for (i = 0; i < TOI_NUM_RESULT_STATES; i++)
+	for (i = 0; i < min(TOI_NUM_RESULT_STATES, ARRAY_SIZE(result_strings)); i++)
 		if (test_result_state(i)) {
 #ifdef CONFIG_TOI_FIXUP
-#if 0				/* remove it */
-#endif
 			SNPRINTF("%s: %s.\n", first_result ?
 				 "- Result         " : "                 ", result_strings[i]);
-#ifdef CONFIG_TOI_FIXUP
-#endif				/* remove it */
 #endif
 			first_result = 0;
 		}
-	if (first_result)
 #ifdef CONFIG_TOI_FIXUP
-#if 0				/* remove it */
-#endif
+	if (first_result)
 		SNPRINTF("- Result         : %s.\n", nr_hibernates ?
 			 "Succeeded" : "No hibernation attempts so far");
-#ifdef CONFIG_TOI_FIXUP
-#endif				/* remove it */
 #endif
 	return len;
 }

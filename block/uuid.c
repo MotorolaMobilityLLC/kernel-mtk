@@ -453,6 +453,7 @@ no_uuid:
 			char *ptr;
 
 			if (!last_mount) {
+				kfree(fs_info);
 				fs_info = ERR_PTR(-ENOMEM);
 				break;
 			}

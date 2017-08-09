@@ -157,7 +157,7 @@ EXPORT_SYMBOL_GPL(attempt_to_parse_resume_device2);
 
 void save_restore_alt_param(int replace, int quiet)
 {
-	static char resume_param_save[255];
+	static char resume_param_save[256];
 	static unsigned long toi_state_save;
 
 	if (replace) {

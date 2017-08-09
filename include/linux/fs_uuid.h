@@ -4,7 +4,7 @@ struct hd_struct;
 struct block_device;
 
 struct fs_info {
-	char uuid[16];
+	char uuid[17];
 	dev_t dev_t;
 	char *last_mount;
 	int last_mount_size;
