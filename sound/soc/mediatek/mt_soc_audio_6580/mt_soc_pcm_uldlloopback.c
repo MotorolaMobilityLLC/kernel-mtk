@@ -233,8 +233,8 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	uint32 Audio_I2S_Dac = 0; */
 	uint32 u32AudioI2S = 0;
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+	/*SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);*/
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with mtk_uldlloopback_pcm_prepare\n", __func__);
