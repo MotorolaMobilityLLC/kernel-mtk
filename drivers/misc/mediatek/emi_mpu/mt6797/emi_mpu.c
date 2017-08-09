@@ -970,6 +970,10 @@ static int mpu_check_violation(void)
 					pr_err("[EMI MPU] MPU violation trigger MD\n");
 				}
 		#endif
+		if ((region == 0) && (mt_emi_reg_read(EMI_MPUA) == 0)
+			&& (mt_emi_reg_read(EMI_MPUI) == 0)) {
+				pr_err("[EMI MPU] A strange violation.\n");
+		} else {
 		aee_kernel_exception("EMI MPU",
 "%sEMI_MPUS = 0x%x,EMI_MPUT = 0x%x\n CHKER = 0x%x,CHKER_TYPE = 0x%x,CHKER_ADR = 0x%x\n MPUA = 0x%x, MPUI = 0x%x\n%s%s\n",
 				     "EMI MPU violation.\n",
@@ -982,6 +986,7 @@ static int mpu_check_violation(void)
 				     mt_emi_reg_read(EMI_MPUI),
 				     "CRDISPATCH_KEY:EMI MPU Violation Issue/",
 				     master_name);
+		}
 		}
 #endif
 
