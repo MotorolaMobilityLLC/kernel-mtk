@@ -1227,12 +1227,14 @@ EXPORT_SYMBOL(mt_get_irq_gic_targets);
 
 #include <linux/platform_device.h>
 
-static int dump_irq;
+static unsigned long dump_irq;
 
-static struct device_driver gic_debug_drv = {
-	.name = "gic_debug",
-	.bus = &platform_bus_type,
-	.owner = THIS_MODULE,
+static struct platform_driver gic_debug_drv = {
+	.driver = {
+		.name = "gic_debug",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+	}
 };
 
 static ssize_t dump_irq_show(struct device_driver *driver, char *buf)
@@ -1261,13 +1263,13 @@ int __init gic_debug_drv_init(void)
 {
 	int ret;
 
-	ret = driver_register(&gic_debug_drv);
+	ret = driver_register(&gic_debug_drv.driver);
 	if (ret)
 		pr_err("fail to create gic debug driver\n");
 	else
 		pr_err("success to create gic debug driver\n");
 
-	ret = driver_create_file(&gic_debug_drv, &driver_attr_dump_irq);
+	ret = driver_create_file(&gic_debug_drv.driver, &driver_attr_dump_irq);
 	if (ret)
 		pr_err("fail to create dump_irq sysfs files\n");
 	else
