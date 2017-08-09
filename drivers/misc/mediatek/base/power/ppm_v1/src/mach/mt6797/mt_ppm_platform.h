@@ -44,6 +44,9 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #define PPM_FAST_ATM_SUPPORT		(1)
+#ifdef PPM_FAST_ATM_SUPPORT
+#define BIG_MIN_FREQ_IDX		(12)
+#endif
 
 #define PPM_OUTPUT_TRANS_LOG_TO_UART	(1)
 

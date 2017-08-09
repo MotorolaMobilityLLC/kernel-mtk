@@ -232,6 +232,12 @@ unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned 
 		for (i = 0; i < tbl->size; i++) {
 			idx = tbl->sorted_tbl[i].advise_index;
 
+			/* ignore inefficiency combination */
+			if (power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_B].core_num > 0
+				&& power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_B].opp_lv > BIG_MIN_FREQ_IDX
+				&& ppm_hica_algo_data.ppm_cur_tlp < 800)
+				continue;
+
 			if (tbl->sorted_tbl[i].value <= pwr_idx) {
 				if (best_idx == -1)
 					best_idx = idx;
