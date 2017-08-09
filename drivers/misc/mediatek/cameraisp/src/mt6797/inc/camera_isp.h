@@ -560,6 +560,7 @@ typedef enum {
 
 
 /* Everest reset ioctl */
+#define ISP_RESET_CAM_P1         _IOWR(ISP_MAGIC, ISP_CMD_RESET_CAM_P1, unsigned int)
 #define ISP_RESET_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, unsigned long)
 
 /* read phy reg  */

@@ -621,6 +621,8 @@ static  spinlock_t      SpinLock_UserKey;
 m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva, void *data);
 
 
+static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats);
+static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 resume);
 #if (TIMESTAMP_QUEUE_EN == 1)
 static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id,
 					MUINT32 delayCheck);
@@ -4342,7 +4344,7 @@ static inline void ISP_Reset(MINT32 module)
 #else
 		mdelay(1);
 #endif
-		ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x1444);
+		ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x0444);
 		ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x0);
 		break;
 	}
@@ -6245,6 +6247,189 @@ static void ISP_ion_free_handle_by_module(MUINT32 module)
 
 #endif
 
+static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
+{
+#if 1
+	/* Adjust S/W start time when using H/W timestamp */
+	#if (TIMESTAMP_QUEUE_EN == 0)
+	g1stSof[module] = MTRUE;
+	#endif
+
+	return 0;
+#else
+	MUINT32    *dma_stat = NULL, *fbc_ctrl2 = NULL;
+	MINT32     Ret = 0, i = 0;
+	MUINT32    reg_vf_con = 0, with_uni = 0;
+	ISP_DEV_NODE_ENUM reg_module;
+	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+
+	if (IspInfo.UserCount == 0) {
+		LOG_INF("ISP is idle, abort reset");
+		goto _RST_EXIT;
+	}
+
+	switch (module) {
+	case ISP_IRQ_TYPE_INT_CAM_A_ST:
+		reg_module = ISP_CAM_A_IDX;
+		break;
+	case ISP_IRQ_TYPE_INT_CAM_B_ST:
+		reg_module = ISP_CAM_B_IDX;
+		break;
+	default:
+		LOG_ERR("Unsupported reset path: %d\n", module);
+		Ret = -EFAULT;
+		goto _RST_EXIT;
+	}
+
+	if (((hds2_sel == 0) && (reg_module == ISP_CAM_A_IDX)) ||
+		((hds2_sel == 1) && (reg_module == ISP_CAM_B_IDX)))
+		with_uni = 1;
+
+	reg_vf_con = ISP_RD32(CAM_REG_TG_VF_CON(reg_module));
+
+	if (flag & 0x02) {
+		MUINT32 __sz = _cam_max_*sizeof(FBC_CTRL_2);
+
+		fbc_ctrl2 = kmalloc(__sz, GFP_KERNEL);
+		if (NULL == fbc_ctrl2) {
+			LOG_ERR("kmalloc failed.\n");
+			return -ENOMEM;
+		}
+		memset(fbc_ctrl2, 0, _cam_max_*sizeof(FBC_CTRL_2));
+
+		__sz = _cam_max_*sizeof(MUINT32);
+		dma_stat = kmalloc(__sz, GFP_KERNEL);
+		if (NULL == dma_stat) {
+			LOG_ERR("kmalloc failed.\n");
+			return -ENOMEM;
+		}
+		memset(dma_stat, 0, _cam_max_*sizeof(MUINT32));
+
+		ISP_GetDmaPortsStatus(reg_module, dma_stat);
+
+		for (i = 0; i < _cam_max_; i++) {
+			if (0 == dma_stat[i])
+				continue;
+
+			switch (i) {
+			case _imgo_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module));
+				break;
+			case _rrzo_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_RRZO_CTL2(reg_module));
+				break;
+			case _eiso_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_UNI_REG_FBC_EISO_A_CTL2(ISP_UNI_A_IDX));
+				break;
+			case _lcso_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_LCSO_CTL2(reg_module));
+				break;
+			case _rsso_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_UNI_REG_FBC_RSSO_A_CTL2(ISP_UNI_A_IDX));
+				break;
+
+			case _aao_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module));
+				break;
+			case _afo_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module));
+				break;
+			case _flko_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX));
+				break;
+			case _pdo_:
+				fbc_ctrl2[i] = ISP_RD32(CAM_REG_FBC_PDO_CTL2(reg_module));
+				break;
+			default:
+				LOG_ERR("Unsupport dma:x%x", i);
+				Ret = -EFAULT;
+				goto _RST_EXIT;
+			}
+		}
+
+		/* Viewfinder disable */
+		if (reg_vf_con & 0x01) {
+			LOG_INF("Cam:%d reset VF disable\n", module);
+
+			ISP_WR32(CAM_REG_TG_VF_CON(reg_module), (reg_vf_con & (~0x01)));
+		}
+
+	}
+
+	if (flag & 0x01) {
+		/* H/W reset CAM and/or UNI */
+		ISP_Reset(reg_module);
+		if (with_uni)
+			ISP_Reset(ISP_UNI_A_IDX);
+	}
+
+	#if (TIMESTAMP_QUEUE_EN == 0)
+	if (flag & 0x04) {
+		/* Adjust S/W start time when using H/W timestamp */
+		g1stSof[module] = MTRUE;
+	}
+	#endif
+
+	if (flag & 0x02) {
+		/* Restore H/W register */
+		for (i = 0; i < _cam_max_; i++) {
+			if (0 == dma_stat[i])
+				continue;
+
+			switch (i) {
+			case _imgo_:
+				ISP_WR32(CAM_REG_FBC_IMGO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			case _rrzo_:
+				ISP_WR32(CAM_REG_FBC_RRZO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			case _eiso_:
+				ISP_WR32(CAM_UNI_REG_FBC_EISO_A_CTL2(ISP_UNI_A_IDX), fbc_ctrl2[i]);
+				break;
+			case _lcso_:
+				ISP_WR32(CAM_REG_FBC_LCSO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			case _rsso_:
+				ISP_WR32(CAM_UNI_REG_FBC_RSSO_A_CTL2(ISP_UNI_A_IDX), fbc_ctrl2[i]);
+				break;
+
+			case _aao_:
+				ISP_WR32(CAM_REG_FBC_AAO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			case _afo_:
+				ISP_WR32(CAM_REG_FBC_AFO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			case _flko_:
+				ISP_WR32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX), fbc_ctrl2[i]);
+				break;
+			case _pdo_:
+				ISP_WR32(CAM_REG_FBC_PDO_CTL2(reg_module), fbc_ctrl2[i]);
+				break;
+			default:
+				LOG_ERR("Unsupport dma:x%x", i);
+				Ret = -EFAULT;
+				goto _RST_EXIT;
+			}
+		}
+
+		/* Viewfinder enable */
+		if (reg_vf_con & 0x01) {
+			LOG_INF("Cam:%d reset VF re-enable\n", module);
+
+			ISP_WR32(CAM_REG_TG_VF_CON(reg_module), reg_vf_con);
+		}
+	}
+
+_RST_EXIT:
+	if (flag & 0x02) {
+		kfree(fbc_ctrl2);
+		kfree(dma_stat);
+	}
+
+	return Ret;
+#endif
+}
+
 
 /*******************************************************************************
 *
@@ -6282,6 +6467,15 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	pUserInfo = (ISP_USER_INFO_STRUCT *)(pFile->private_data);
 	/*  */
 	switch (Cmd) {
+	case ISP_RESET_CAM_P1:
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)*2) != 0) {
+			LOG_ERR("get reset cam p1 from user fail\n");
+			Ret = -EFAULT;
+			break;
+		}
+
+		Ret = ISP_ResetResume_Cam(DebugFlag[0], DebugFlag[1]);
+		break;
 	case ISP_WAKELOCK_CTRL:
 		if (copy_from_user(&wakelock_ctrl, (void *)Param, sizeof(MUINT32)) != 0) {
 			LOG_ERR("get ISP_WAKELOCK_CTRL from user fail\n");
@@ -7499,6 +7693,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						   (unsigned long)compat_ptr(arg));
 		return ret;
 	}
+	case ISP_RESET_CAM_P1:
 	case ISP_WAIT_IRQ:
 	case ISP_CLEAR_IRQ: /* structure (no pointer) */
 	case ISP_REGISTER_IRQ_USER_KEY:
@@ -10926,6 +11121,21 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 				(unsigned int)ISP_RD32(CAM_REG_BPCI_BASE_ADDR(module)));
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x03D0),
 				(unsigned int)ISP_RD32(CAM_REG_LSCI_BASE_ADDR(module)));
+			LOG_DBG("[TF_%d]CQ0_%08X_%08X CQ1_%08X_%08X CQ2_%08X_%08X CQ3_%08X_%08X", port,
+				(unsigned int)(0x0168), (unsigned int)ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(module)),
+				(unsigned int)(0x0180), (unsigned int)ISP_RD32(CAM_REG_CQ_THR1_BASEADDR(module)),
+				(unsigned int)(0x018C), (unsigned int)ISP_RD32(CAM_REG_CQ_THR2_BASEADDR(module)),
+				(unsigned int)(0x0198), (unsigned int)ISP_RD32(CAM_REG_CQ_THR3_BASEADDR(module)));
+			LOG_DBG("[TF_%d]CQ4_%08X_%08X CQ5_%08X_%08X CQ6_%08X_%08X CQ7_%08X_%08X", port,
+				(unsigned int)(0x01A4), (unsigned int)ISP_RD32(CAM_REG_CQ_THR4_BASEADDR(module)),
+				(unsigned int)(0x01B0), (unsigned int)ISP_RD32(CAM_REG_CQ_THR5_BASEADDR(module)),
+				(unsigned int)(0x01BC), (unsigned int)ISP_RD32(CAM_REG_CQ_THR6_BASEADDR(module)),
+				(unsigned int)(0x01C8), (unsigned int)ISP_RD32(CAM_REG_CQ_THR7_BASEADDR(module)));
+			LOG_DBG("[TF_%d]CQ8_%08X_%08X CQ9_%08X_%08X CQ10_%08X_%08X CQ11_%08X_%08X", port,
+				(unsigned int)(0x01D4), (unsigned int)ISP_RD32(CAM_REG_CQ_THR8_BASEADDR(module)),
+				(unsigned int)(0x01E0), (unsigned int)ISP_RD32(CAM_REG_CQ_THR9_BASEADDR(module)),
+				(unsigned int)(0x01EC), (unsigned int)ISP_RD32(CAM_REG_CQ_THR10_BASEADDR(module)),
+				(unsigned int)(0x01F8), (unsigned int)ISP_RD32(CAM_REG_CQ_THR11_BASEADDR(module)));
 
 			if ((ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_B_IDX)) & 0x01) == 0)
 				break;
@@ -11240,6 +11450,37 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 		return CAM_FST_NORMAL;
 }
 
+static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats)
+{
+	MUINT32 dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	MUINT32 flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+	MUINT32 uni_dma_en = 0;
+
+	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
+	DmaPortsStats[_rrzo_] = ((dma_en & 0x04) ? 1 : 0);
+	DmaPortsStats[_lcso_] = ((dma_en & 0x10) ? 1 : 0);
+
+	uni_dma_en = 0;
+	if (((hds2_sel == 0) && (reg_module == ISP_CAM_A_IDX)) || ((hds2_sel == 1) && (reg_module == ISP_CAM_B_IDX)))
+		uni_dma_en = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
+
+	DmaPortsStats[_eiso_] = ((uni_dma_en & 0x04) ? 1 : 0);
+	DmaPortsStats[_rsso_] = ((uni_dma_en & 0x08) ? 1 : 0);
+
+	DmaPortsStats[_aao_] = ((dma_en & 0x20) ? 1 : 0);
+	DmaPortsStats[_afo_] = ((dma_en & 0x08) ? 1 : 0);
+	DmaPortsStats[_pdo_] = ((dma_en & 0x400) ? 1 : 0);
+
+
+	uni_dma_en = 0;
+	if (((flk2_sel == 0) && (reg_module == ISP_CAM_A_IDX)) || ((flk2_sel == 1) && (reg_module == ISP_CAM_B_IDX)))
+		uni_dma_en = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
+
+	DmaPortsStats[_flko_] = ((uni_dma_en & 0x02) ? 1 : 0);
+
+}
+
 #if (TIMESTAMP_QUEUE_EN == 1)
 static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id,
 					MUINT32 delayCheck)
@@ -11398,37 +11639,6 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 		return CAM_FST_DROP_FRAME;
 	else
 		return CAM_FST_NORMAL;
-
-}
-
-static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats)
-{
-	MUINT32 dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
-	MUINT32 flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
-	MUINT32 uni_dma_en = 0;
-
-	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
-	DmaPortsStats[_rrzo_] = ((dma_en & 0x04) ? 1 : 0);
-	DmaPortsStats[_lcso_] = ((dma_en & 0x10) ? 1 : 0);
-
-	uni_dma_en = 0;
-	if (((hds2_sel == 0) && (reg_module == ISP_CAM_A_IDX)) || ((hds2_sel == 1) && (reg_module == ISP_CAM_B_IDX)))
-		uni_dma_en = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
-
-	DmaPortsStats[_eiso_] = ((uni_dma_en & 0x04) ? 1 : 0);
-	DmaPortsStats[_rsso_] = ((uni_dma_en & 0x08) ? 1 : 0);
-
-	DmaPortsStats[_aao_] = ((dma_en & 0x20) ? 1 : 0);
-	DmaPortsStats[_afo_] = ((dma_en & 0x08) ? 1 : 0);
-	DmaPortsStats[_pdo_] = ((dma_en & 0x400) ? 1 : 0);
-
-
-	uni_dma_en = 0;
-	if (((flk2_sel == 0) && (reg_module == ISP_CAM_A_IDX)) || ((flk2_sel == 1) && (reg_module == ISP_CAM_B_IDX)))
-		uni_dma_en = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
-
-	DmaPortsStats[_flko_] = ((uni_dma_en & 0x02) ? 1 : 0);
 
 }
 
