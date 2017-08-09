@@ -2968,8 +2968,9 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 			unsigned int freq = p->ops->get_cur_phy_freq(p);
 
 			if (volt < target_volt || freq != target_khz) {
-				cpufreq_err("volt = %u, target_volt = %u, freq = %u, target_khz = %u\n",
-					    volt, target_volt, freq, target_khz);
+				cpufreq_err("volt = %u, target_volt = %u, freq = %u(0x%x), target_khz = %u(0x%x)\n",
+					    volt, target_volt, freq, opp_tbl_m[CUR_OPP_IDX].slot->vco_dds,
+						target_khz, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds);
 				dump_opp_table(p);
 				BUG();
 			}
