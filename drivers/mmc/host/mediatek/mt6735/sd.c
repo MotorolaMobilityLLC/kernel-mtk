@@ -3938,12 +3938,6 @@ static unsigned int msdc_command_start(struct msdc_host *host,
 #endif /* end of MTK_MSDC_USE_CMD23 */
 	} else if (opcode == MMC_WRITE_BLOCK) {
 		rawcmd |= ((1 << 11) | (1 << 13));
-#ifdef MTK_MSDC_USE_CACHE
-		if (host->mmc->card && mmc_card_mmc(host->mmc->card)
-		    && (host->mmc->card->ext_csd.cache_ctrl & 0x1))
-			ERR_MSG("[Warning]: Single write(0x%x) when cache is enabled",
-				cmd->arg);
-#endif
 	} else if (opcode == SD_IO_RW_EXTENDED) {
 		if (cmd->data->flags & MMC_DATA_WRITE)
 			rawcmd |= (1 << 13);
