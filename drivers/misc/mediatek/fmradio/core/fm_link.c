@@ -169,7 +169,6 @@ fm_s32 fm_cmd_tx(fm_u8 *buf, fm_u16 len, fm_s32 mask, fm_s32 cnt, fm_s32 timeout
 	fm_memcpy(trace.pkt, &buf[4], (trace.len > FM_TRACE_PKT_SIZE) ? FM_TRACE_PKT_SIZE : trace.len);
 #endif
 
-sw_retry:
 
 #ifdef FM_TRACE_ENABLE
 	if (fm_true == FM_TRACE_FULL(cmd_fifo))
@@ -193,7 +192,6 @@ sw_retry:
 			fm_print_cmd_fifo();
 			fm_print_evt_fifo();
 			return -FM_EFW;
-			goto sw_retry;	/* retry if timeout and retry cnt > 0 */
 		} else {
 			WCN_DBG(FM_ALT | LINK, "fatal error, SW retry failed, reset HW\n");
 			return -FM_EFW;
@@ -430,6 +428,7 @@ extern fm_s32 fm_print_cmd_fifo(void)
 #ifdef FM_TRACE_ENABLE
 	struct fm_trace_t trace;
 	fm_s32 i = 0;
+	trace.time = 0;
 
 	while (fm_false == FM_TRACE_EMPTY(cmd_fifo)) {
 		fm_memset(trace.pkt, 0, FM_TRACE_PKT_SIZE);
@@ -455,6 +454,7 @@ extern fm_s32 fm_print_evt_fifo(void)
 #ifdef FM_TRACE_ENABLE
 	struct fm_trace_t trace;
 	fm_s32 i = 0;
+	trace.time = 0;
 
 	while (fm_false == FM_TRACE_EMPTY(evt_fifo)) {
 		fm_memset(trace.pkt, 0, FM_TRACE_PKT_SIZE);

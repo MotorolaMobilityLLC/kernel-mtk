@@ -2807,7 +2807,7 @@ struct fm *fm_dev_init(fm_u32 arg)
 	if (!fm) {
 		WCN_DBG(FM_ALT | MAIN, "-ENOMEM\n");
 		ret = -ENOMEM;
-		goto ERR_EXIT;
+		return NULL;
 	}
 
 	fm->ref = 0;
@@ -3004,6 +3004,10 @@ fm_s32 fm_dev_destroy(struct fm *fm)
 	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
 
 	fm_timer_sys->stop(fm_timer_sys);
+	if (!fm) {
+		WCN_DBG(FM_NTC | MAIN, "fm is null\n");
+		return -1;
+	}
 
 	if (fm->eint_wkthd) {
 		ret = fm_workthread_put(fm->eint_wkthd);

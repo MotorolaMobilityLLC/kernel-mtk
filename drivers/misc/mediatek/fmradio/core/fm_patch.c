@@ -55,7 +55,7 @@ fm_s32 fm_file_read(const fm_s8 *filename, fm_u8 *dst, fm_s32 len, fm_s32 positi
 	set_fs(KERNEL_DS);
 	fp = filp_open(filename, O_RDONLY, 0);
 
-	if (IS_ERR(fp)) {
+	if ((!fp) || IS_ERR(fp)) {
 		WCN_DBG(FM_ERR | CHIP, "open \"%s\" failed\n", filename);
 		set_fs(old_fs);
 		return -FM_EPATCH;
@@ -89,7 +89,7 @@ fm_s32 fm_file_write(const fm_s8 *filename, fm_u8 *dst, fm_s32 len, fm_s32 *ppos
 	set_fs(KERNEL_DS);
 	fp = filp_open(filename, O_CREAT | O_RDWR, 0);
 
-	if (IS_ERR(fp)) {
+	if ((!fp) || IS_ERR(fp)) {
 		WCN_DBG(FM_ERR | CHIP, "open \"%s\" failed\n", filename);
 		set_fs(old_fs);
 		return -FM_EPATCH;
