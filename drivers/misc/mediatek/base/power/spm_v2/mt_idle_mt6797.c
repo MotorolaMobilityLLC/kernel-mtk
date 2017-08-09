@@ -303,7 +303,13 @@ bool cg_check_idle_can_enter(
 
 bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask)
 {
-	/* Do NOT have to check i2c_appm CG */
+	u32 clk_stat = ~idle_readl(INFRA_SW_CG_2_STA); /* INFRA1 */
+
+	if ((clk_stat & 0x00000002) == 0x00000002) {
+		block_mask[CG_INFRA2] |= 0x00000002;
+		return false;
+	}
+
 	return true;
 }
 
