@@ -1573,6 +1573,10 @@ static void createWirelessDevice(void)
 #endif /* CFG_SUPPORT_TDLS */
 	prWiphy->max_remain_on_channel_duration = 5000;
 	prWiphy->mgmt_stypes = mtk_cfg80211_ais_default_mgmt_stypes;
+	prWiphy->vendor_commands = mtk_wlan_vendor_ops;
+	prWiphy->n_vendor_commands = sizeof(mtk_wlan_vendor_ops) / sizeof(struct wiphy_vendor_command);
+	prWiphy->vendor_events = mtk_wlan_vendor_events;
+	prWiphy->n_vendor_events = ARRAY_SIZE(mtk_wlan_vendor_events);
 
 	/* <1.4> wowlan support */
 #ifdef CONFIG_PM

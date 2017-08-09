@@ -2531,7 +2531,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 	struct sk_buff *skb;
 	/* UINT_32 u4BufLen; */
 
-	DBGLOG(REQ, TRACE, "%s for vendor command \r\n", __func__);
+	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
