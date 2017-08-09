@@ -968,6 +968,11 @@
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		lastpc: lastpc@10200000 {
+			compatible = "mediatek,lastpc-v1";
+			reg = <0x10200000 0x200>;  /* mcucfg base */
+		};
+
 		infracfg@10201000 {
 			compatible = "mediatek,infracfg";
 			reg = <0x10201000 0x1000>;

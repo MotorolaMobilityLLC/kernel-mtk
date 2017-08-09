@@ -153,7 +153,7 @@ static int __init lastpc_init(void)
 		return -ENOMEM;
 
 	drv->plt.ops = &lastpc_ops;
-	drv->plt.chip_code = 0x6735;
+	drv->plt.chip_code = 0x6755;
 	drv->plt.min_buf_len = 2048;	/* TODO: can calculate the len by how many levels of bt we want */
 
 	ret = lastpc_register(&drv->plt);
