@@ -257,7 +257,8 @@ ssize_t trusty_add(struct device *dev, struct device_attribute *attr,
 	get_random_bytes(&b, sizeof(s32));
 	b &= 0xFF;
 	ret = trusty_std_call32(dev, MT_SMC_SC_ADD, a, b, 0);
-	return scnprintf(buf, PAGE_SIZE, "%d + %d = %d\n", a, b, ret);
+	return scnprintf(buf, PAGE_SIZE, "%d + %d = %d, %s\n", a, b, ret,
+		(a + b) == ret ? "PASS" : "FAIL");
 }
 
 DEVICE_ATTR(trusty_add, S_IRUSR, trusty_add, NULL);
