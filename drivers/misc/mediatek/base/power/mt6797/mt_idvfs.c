@@ -19,6 +19,7 @@
 #include <linux/uaccess.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/clk.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -34,15 +35,17 @@
 #include "mt_otp.h"
 #include "mt_ocp.h"
 
-/* IDVFS ADDR */ /*	TODO: include other	head file */
+/* IDVFS ADDR */ /* TODO: include other head file */
 #ifdef CONFIG_OF
-void __iomem				*idvfs_base;			/* (0x10220000) */
+static void __iomem			*idvfs_base;			/* (0x10220000) */
+static void __iomem			*i2clk_base;			/* */
 static int					idvfs_irq_number;		/* 331 */
+static struct				clk *idvfs_i2c6_clk;	/* i2c6 clk ctrl */
 /* define IDVFS_BASE_ADDR	   ((unsigned long)idvfs_base) */
 #else
 #include "mach/mt_reg_base.h"
 /* (0x10222000) */
-/* #define	IDVFS_BASE_ADDR		IDVFS_BASEADDR */
+/* #define IDVFS_BASE_ADDR IDVFS_BASEADDR */
 #endif
 #else
 #include <linux/stringify.h>
@@ -165,9 +168,9 @@ static int func_lv_mask_idvfs = 500;
 #define	VMAX_VAL_LITTLE		VOLT_2_EEM(120000)
 #define	VMIN_VAL_LITTLE		VOLT_2_EEM(77500)
 
-#define	DTHI_VAL			0x01		/* positive	*/
-#define	DTLO_VAL			0xfe		/* negative	(2's compliment) */
-#define	DETMAX_VAL			0xffff		/* This	timeout	value is in	cycles of bclk_ck. */
+#define	DTHI_VAL			0x01		/* positive */
+#define	DTLO_VAL			0xfe		/* negative (2's compliment) */
+#define	DETMAX_VAL			0xffff		/* This timeout value is in cycles of bclk_ck. */
 #define	AGECONFIG_VAL		0x555555
 #define	AGEM_VAL			0x0
 #define	DVTFIXED_VAL		0x4
@@ -562,26 +565,31 @@ int iDVFSAPB_init(void) /* it's only for DA9214 PMIC, return 0: 400K, 1:3.4M */
 {
 	unsigned char i2c_spd_reg;
 
-	/* check DA9214 i2c speed */
-	/* bit 6 R/W PM_IF_HSM Enables continuous */
-	da9214_config_interface(0x0, 0x2, 0xF, 0);	/* select to page 2,3 */
-	da9214_read_interface(0x06, &i2c_spd_reg, 0xff, 0);
-	da9214_config_interface(0x0, 0x1, 0xF, 0);	/* back to page 1 */
-	idvfs_ver("DA9214 HSM mode reg = 0x%x, Speed = %sHz.\n",
-			i2c_spd_reg, (i2c_spd_reg & 0x40) ? ("3.4M") : ("400K"));
+	/* check PMIC support I2C speed when first init */
+	if (idvfs_init_opt.i2c_speed == 0) {
+		/* check DA9214 i2c speed */
+		/* bit 6 R/W PM_IF_HSM Enables continuous */
+		da9214_config_interface(0x0, 0x2, 0xF, 0);	/* select to page 2,3 */
+		da9214_read_interface(0x06, &i2c_spd_reg, 0xff, 0);
+		da9214_config_interface(0x0, 0x1, 0xF, 0);	/* back to page 1 */
 
-	/* auto detect PMIC mode and set iDVFSAPB ctrl 400K = 0x1303, 3.4M = 0x1001 */
-	iDVFSAPB_Write(0xa0, (i2c_spd_reg & 0x40) ? 0x1001 : 0x1303);
+		idvfs_init_opt.i2c_speed = ((i2c_spd_reg & 0x40) ? 3400 : 400);
+		idvfs_ver("iDVFSAPB: First init to get DA9214 HSM mode reg = 0x%x, Speed = %dKHz.\n",
+				i2c_spd_reg, idvfs_init_opt.i2c_speed);
+	}
+
+	/* PMIC i2c pseed and set iDVFSAPB ctrl 3.4M = 0x1001, 400K = 0x1303 */
+	iDVFSAPB_Write(0xa0, ((idvfs_init_opt.i2c_speed == 3400) ? 0x1001 : 0x1303));
 	/* I2C control slave addr reg: 0x84, PMIC slave addr: 0xd0(da8214), 0xd6(mt6313) */
 	iDVFSAPB_Write(0x84, 0x00d0);
-	idvfs_ver("iDVFS Timming ctrl(0xa0) = 0x%x.\n", iDVFSAPB_Read(0xa0));
-	idvfs_ver("iDVFS Slave address(0x84) = 0x%x.(DA9214(0xd0) or MT6313(0xd6))\n", iDVFSAPB_Read(0x84));
+	idvfs_ver("iDVFSAPB: Timming ctrl(0xa0) = 0x%x.\n", iDVFSAPB_Read(0xa0));
+	idvfs_ver("iDVFSAPB: Slave address(0x84) = 0x%x.(DA9214(0xd0) or MT6313(0xd6))\n", iDVFSAPB_Read(0x84));
 
 	/*HW pmic volt ctrl reg addr, DA9214: L/LL = 0xd7, Big = 0xd9, MT6313: L/LL = 0x??, Big = 0x96? */
 	idvfs_write(0x11017014,	((unsigned int)(0xd9)));
 
-	/* return 0: 400K, 1:3.4M */
-	return ((i2c_spd_reg & 0x40) ? 3400 : 400);
+	/* return 400 or 3400 */
+	return idvfs_init_opt.i2c_speed;
 }
 
 /* iDVFSAPB function *********************************************************************** */
@@ -702,13 +710,17 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	}
 #endif
 
+	/* move to prob init */
+	iDVFSAPB_init();
+
 #if IDVFS_CCF_I2CV6
 	/* I2CV6 (APPM I2C) clock CCF control enable */
+	if (clk_enable(idvfs_i2c6_clk)) {
+		idvfs_error("I2C6 CLK Ctrl enable fail.\n");
+		idvfs_init_opt.idvfs_status = 0;
+		return -3;
+	}
 #endif
-
-	/* move to prob init */
-	if (idvfs_init_opt.i2c_speed == 0)
-		idvfs_init_opt.i2c_speed = iDVFSAPB_init();
 
 	/* check pos div only 0	or 1 */
 	if (((idvfs_read(0x102224a0) & 0x00007000) >> 12) >= 2) {
@@ -716,7 +728,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 				 ((idvfs_read(0x102224a0) & 0x00007000) >> 12));
 		/* pos div error */
 		idvfs_init_opt.idvfs_status = 0;
-		return -5;
+		return -4;
 	}
 
 	/* get current vproc volt */
@@ -767,7 +779,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* default 100% freq start and enable sw channel */
 	BigiDVFSSWAvgStatus();
 
-	idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz (Range: 500 ~ 3000MHz), Fcur = %dMHz.\n",
+	idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz, Fcur = %dMHz.\n",
 		IDVFS_FMAX_DEFAULT, idvfs_init_opt.freq_cur);
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
@@ -866,6 +878,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 
 #if IDVFS_CCF_I2CV6
 	/* I2CV6 (APPM I2C) clock CCF control disable */
+	clk_disable(idvfs_i2c6_clk);
 #endif
 
 	/* clear all channel status by struct */
@@ -977,8 +990,8 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* swreq = cur/max */
 	idvfs_write(0x10222498, freq_swreq);
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = Freqpct_x100;
-	idvfs_ver("iDVFS freq cur setting success. Cur_pct_x100 = %dMHz, Tar_pct_x100 = %d, Freq_SWREQ = %x.\n",
-				(idvfs_init_opt.freq_cur / (10000 / IDVFS_FMAX_DEFAULT)), Freqpct_x100, freq_swreq);
+	idvfs_ver("iDVFS SWREQ: Cur_pct_x100 = %dMHz, Tar_pct_x100 = %d, Freq_SWREQ = %x.\n",
+				(idvfs_init_opt.freq_cur * (10000 / IDVFS_FMAX_DEFAULT)), Freqpct_x100, freq_swreq);
 
 	/* idvfs status manchine, 1: enable finish,
 	5: disable and wait SWREQ finish, 6: SWREQ finish can into disable*/
@@ -987,7 +1000,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	else if (idvfs_init_opt.idvfs_status == 5)
 		idvfs_init_opt.idvfs_status = 6;
 	else
-		idvfs_error("iDVFS status manchine = %d, SWREQ should be 4 or 5.", idvfs_init_opt.idvfs_status);
+		idvfs_error("iDVFS SWREQ: status manchine = %d, SWREQ should be 4 or 5.", idvfs_init_opt.idvfs_status);
 
 	return 0;
 }
@@ -1007,12 +1020,12 @@ int BigIDVFSTurbo(unsigned int Freqpct_x100)
 int	BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis)
 {
 	if ((Length < 0) || (Length > 7)) {
-		idvfs_error("iDVFS SWAvg length must be 0~7 or Endis invalid.\n");
+		idvfs_error("iDVFS SWAvg: length must be 0~7 or Endis invalid.\n");
 		return -1;
 	}
 
 	if ((EnDis < 0) || (EnDis > 1)) {
-		idvfs_error("Enab out of range..\n");
+		idvfs_error("iDVFS SWAvg: Enab out of range..\n");
 		return -2;
 	}
 
@@ -1022,7 +1035,7 @@ int	BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis)
 
 	idvfs_init_opt.swavg_length = Length;
 	idvfs_init_opt.swavg_endis = EnDis;
-	idvfs_ver("iDVFS setting SWAvg success.\n");
+	idvfs_ver("iDVFS SWAvg: setting SWAvg success.\n");
 	return 0;
 }
 
@@ -1303,20 +1316,51 @@ static irqreturn_t idvfs_big_isr(int irq, void *dev_id)
 /* enable debug message */
 #define DEBUG 0
 
-/* Device infrastructure */
-static int idvfs_remove(struct platform_device *pdev)
+#if IDVFS_CCF_I2CV6
+static int idvfs_i2c_probe(struct platform_device *pdev)
 {
+	int err;
+
+	i2clk_base = of_iomap(pdev->dev.of_node, 1);
+	if (!i2clk_base) {
+		idvfs_error("FAILED TO MAP I2CLK BASE MEMORY.\n");
+		return -ENOMEM;
+	}
+
+	/* get CCF I2C6 register */
+	idvfs_i2c6_clk = devm_clk_get(&pdev->dev, "i2c");
+	if (IS_ERR(idvfs_i2c6_clk)) {
+		idvfs_error("FAILED TO GET I2C CLOCK (%ld)\n", PTR_ERR(idvfs_i2c6_clk));
+		return PTR_ERR(idvfs_i2c6_clk);
+	}
+	idvfs_ver("Succest to get I2C6 CLK Ctrl.\n");
+
+	err = clk_prepare(idvfs_i2c6_clk);
+	if (err) {
+		idvfs_error("FAILED TO PREPARE I2C CLOCK (%d). iDVFS only 750MHz.\n", err);
+		idvfs_init_opt.idvfs_status = 0;
+		return err;
+	}
+	idvfs_ver("Parepare I2C6 CLK Ctrl ok.\n");
+
+	err = clk_enable(idvfs_i2c6_clk);
+	if (err) {
+		idvfs_error("I2C6 CLK Ctrl enable fail = %d.\n", err);
+		return err;
+	}
+
 	return 0;
 }
+#endif /* IDVFS_FFC_I2CV6 */
 
 static int idvfs_probe(struct platform_device *pdev)
 {
-	int	err	= 0;
+	int err = 0;
 
 	idvfs_ver("IDVFS Probe Initial.\n");
 	idvfs_irq_number =	0;
 
-	/* set iDVFS IRQ */
+	/* get iDVFS IRQ */
 	err	= request_irq(idvfs_irq_number, idvfs_big_isr, IRQF_TRIGGER_HIGH, "idvfs_big_isp", NULL);
 	if (err) {
 		idvfs_error("iDVFS IRQ register failed: idvfs_isr_big (%d)\n", err);
@@ -1326,7 +1370,13 @@ static int idvfs_probe(struct platform_device *pdev)
 	return 0;
 }
 
+/* Device infrastructure */
+static int idvfs_remove(struct platform_device *pdev)
+{
+	return 0;
+}
 
+#if 0
 static int idvfs_suspend(struct	platform_device *pdev, pm_message_t state)
 {
 	/*
@@ -1340,6 +1390,8 @@ static int idvfs_suspend(struct	platform_device *pdev, pm_message_t state)
 
 static int idvfs_resume(struct platform_device *pdev)
 {
+	int err;
+
 	/*
 	idvfs_thread = kthread_run(idvfs_thread_handler, 0, "idvfs xxx");
 	if (IS_ERR(idvfs_thread))
@@ -1355,23 +1407,41 @@ static int idvfs_resume(struct platform_device *pdev)
 
 	return 0;
 }
+#endif
 
-struct platform_device idvfs_pdev = {
-	.name	= "mt_idvfs",
-	.id		= -1,
+#if IDVFS_CCF_I2CV6
+#ifdef CONFIG_OF
+static const struct of_device_id idvfs_i2c_of_match[] = {
+	{ .compatible = "mediatek,mt6797-dvfsp", },
+	{}
+};
+#endif /* CONFIG_OF */
+
+static struct platform_driver idvfs_i2c_driver = {
+	.probe		= idvfs_i2c_probe,
+	.driver		= {
+	.name		= "idvfs_i2c_clk",
+	.owner		= THIS_MODULE,
+	.of_match_table	= of_match_ptr(idvfs_i2c_of_match),
+	},
+};
+#endif /* IDVFS_CCF_I2CV6 */
+
+static struct platform_device idvfs_pdev = {
+	.name		= "mt_idvfs_devices",
+	.id			= -1,
 };
 
 static struct platform_driver idvfs_pdrv = {
 	.remove		= idvfs_remove,
 	.shutdown	= NULL,
 	.probe		= idvfs_probe,
-	.suspend	= idvfs_suspend,
-	.resume		= idvfs_resume,
+/*	.suspend	= idvfs_suspend,
+	.resume		= idvfs_resume, */
 	.driver		= {
-		.name	= "mt_idvfs",
+	.name		= "mt_idvfs_driver",
 	},
 };
-
 
 /* ----------------------------------------------------------------------------- */
 
@@ -1459,7 +1529,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 
 	/* print channel status and name */
 	for (i = 0; i < IDVFS_CHANNEL_NP; i++) {
-		seq_printf(m, "\nCh-%s[%d], Pcent_x100 = %5d, EnDIS = %d.",
+		seq_printf(m, "\nCh-%s[%d], Pcent_x100 = %d, EnDIS = %d.",
 		idvfs_init_opt.channel[i].name,
 		idvfs_init_opt.channel[i].ch_number,
 		idvfs_init_opt.channel[i].percentage,
@@ -1774,17 +1844,24 @@ static int __init idvfs_init(void)
 
 	/* register platform device/driver */
 	err	= platform_device_register(&idvfs_pdev);
-
 	if (err) {
-		idvfs_error("fail to register	IDVFS device @ %s()\n", __func__);
+		idvfs_error("fail to register IDVFS device @ %s()\n", __func__);
+		goto out;
+	}
+	err = platform_driver_register(&idvfs_pdrv);
+	if (err) {
+		idvfs_error("fail to register IDVFS device @ %s()\n", __func__);
 		goto out;
 	}
 
-	err	= platform_driver_register(&idvfs_pdrv);
+#if IDVFS_CCF_I2CV6
+	/* register platform i2c clk ctrl */
+	err = platform_driver_register(&idvfs_i2c_driver);
 	if (err) {
-		idvfs_error("%s(), IDVFS driver callback register failed..\n", __func__);
-		return err;
+		idvfs_error("FAILED TO REGISTER idvfs_i2c_clk DRIVER (%d)\n", err);
+		goto out;
 	}
+#endif
 
 	/* ver = mt_get_chip_sw_ver(); */
 	/* ptp2_lo_enable = 1; */
