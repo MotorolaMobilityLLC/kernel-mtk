@@ -2309,8 +2309,10 @@ bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
 			if (!mAudioMcuMode[Irqmode]->mIrqMcuCounter ||
 				Counter < mAudioMcuMode[Irqmode]->mIrqMcuCounter ||
-				mAudioMcuMode[Irqmode]->mIrqMcuCounter >= IrqShortCounter)
+				mAudioMcuMode[Irqmode]->mIrqMcuCounter >= IrqShortCounter) {
+				mAudioMcuMode[Irqmode]->mIrqMcuCounter = Counter;
 				Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
+			}
 			break;
 		}
 	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
