@@ -50,6 +50,6 @@ extern void __iomem *auxadc_apmix_base;
 #define TP_CMD_ADDR_X			0x0005
 
 #define AUXADC_CON_RTP			(APMIXED_BASE + 0x0404)
-
+#define AUXADC_CLOCK_BY_SPM
 #endif   /*_MTK_ADC_HW_H*/
 
