@@ -575,7 +575,7 @@ void clk_buf_write_afcdac(void)
 		return;
 
 	spm_write(SPM_BSI_EN_SR, afcdac_val);
-	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
+	clk_buf_dbg("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
 		     __func__, afcdac_val, spm_read(SPM_BSI_EN_SR),
 		     is_clkbuf_afcdac_updated);
 }

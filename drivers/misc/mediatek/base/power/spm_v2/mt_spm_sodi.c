@@ -221,14 +221,21 @@ static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
+#if defined(CONFIG_ARCH_MT6755)
 static int by_ccif1_count;
-#if defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797)
 static unsigned long int logout_prev_dvfs_time;
+static unsigned int last_r12;
+
+#define NOT_FREQUENT_EVENT(evt, curr)	((evt != last_r12) || \
+					 (((curr) - sodi_logout_prev_time) > SODI_LOGOUT_TIMEOUT_CRITERIA))
+#define NOT_IGNORE_EVENT(evt)		(((evt)&WAKE_SRC_R12_APXGPT1_EVENT_B) == 0)
+#define logout_wakeup_event(evt, curr)	(NOT_IGNORE_EVENT(evt) && NOT_FREQUENT_EVENT(evt, curr))
 #endif
 
 static void spm_sodi_twam_callback(struct twam_sig *ts)
 {
-	sodi_warn("spm twan %s ratio: %5u/1000\n",
+	sodi_warn("spm twam %s ratio: %5u/1000\n",
 			(twam_str)?twam_str[twam_event]:"unknown",
 			GET_EVENT_RATIO(ts->sig0));
 }
@@ -370,13 +377,12 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	} else {
 		/*
 		 * Log reduction mechanism, print debug information criteria :
-		 * 1. SPM assert
+		 * 1. SPM assert or No wakeup event
 		 * 2. Not wakeup by GPT
-		 * 3. Residency is less than 20ms
-		 * 4. Enter/no emi self-refresh change
+		 * 3. Residency is less than 20 ticks of 32KHz
+		 * 4. Emi self-refresh state is changed
 		 * 5. Time from the last output log is larger than 5 sec
-		 * 6. No wakeup event
-		 * 7. CG/PD mode change
+		 * 6. CG/PD state is changed
 		*/
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
@@ -392,6 +398,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				logout_prev_dvfs_time = sodi_logout_curr_time;
 			}
 #endif
+#if defined(CONFIG_ARCH_MT6755)
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 			if (wakesta->r12 & (0x1 << 18)) {
 				/* wake up by R12_CCIF1_EVENT_B */
@@ -404,10 +411,9 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				}
 				by_ccif1_count++;
 			}
-#if defined(CONFIG_ARCH_MT6797)
-			else {
-				need_log_out = 1;
-			}
+#elif defined(CONFIG_ARCH_MT6797)
+		} else if (logout_wakeup_event(wakesta->r12, sodi_logout_curr_time)) {
+			need_log_out = 1;
 #endif
 		} else if ((wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
 			   (wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA)) {
@@ -433,6 +439,9 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 		logout_sodi_cnt++;
 		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
 		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
+#if defined(CONFIG_ARCH_MT6797)
+		last_r12 = wakesta->r12;
+#endif
 
 		if (need_log_out == 1) {
 			sodi_logout_prev_time = sodi_logout_curr_time;

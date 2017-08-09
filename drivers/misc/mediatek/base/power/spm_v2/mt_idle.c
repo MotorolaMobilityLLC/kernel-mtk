@@ -87,6 +87,10 @@
 #include <core/met_drv.h>
 #endif
 
+#if SPM_MET_TAGGING
+#include <core/met_drv.h>
+#endif
+
 #define IDLE_TAG     "Power/swap "
 #define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
 #define spm_alert(fmt, args...)		pr_alert(IDLE_TAG fmt, ##args)
@@ -813,7 +817,7 @@ bool soidle3_can_enter(int cpu)
 
 		get_monotonic_boottime(&uptime);
 		val = (unsigned long)uptime.tv_sec;
-		if (val <= 20) {
+		if (val <= 30) {
 			sodi3_by_uptime_count++;
 			reason = BY_OTH;
 			goto out;
@@ -1913,9 +1917,6 @@ static inline void soidle_post_handler(void)
 
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3 |
-	#ifdef FEATURE_ENABLE_SODI2P5
-	SPM_FLAG_DIS_SRCCLKEN_LOW |
-	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
@@ -2289,11 +2290,12 @@ int soidle3_enter(int cpu)
 	idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
 	soidle_pre_handler();
-
+#ifdef SODI3_AUXADC_CHECK
 	if (is_auxadc_released())
 		slp_spm_SODI3_flags &= ~SPM_FLAG_DIS_SRCCLKEN_LOW;
 	else
 		slp_spm_SODI3_flags |= SPM_FLAG_DIS_SRCCLKEN_LOW;
+#endif
 #ifdef DEFAULT_MMP_ENABLE
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */

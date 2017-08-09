@@ -100,6 +100,7 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 #if defined(CONFIG_ARCH_MT6797)
 static unsigned int vcorefs_fw_mode;
+static unsigned short pmic_hwcid;
 #endif
 
 /* add char device for spm */
@@ -1107,6 +1108,7 @@ int spm_module_late_init(void)
 	spm_file = debugfs_create_file("firmware", S_IRUGO, spm_dir, NULL, &spm_debug_fops);
 #if defined(CONFIG_ARCH_MT6797)
 	debugfs_create_file("scp_debug", S_IRUGO, spm_dir, NULL, &spm_scp_debug_fops);
+	pmic_hwcid = pmic_get_register_value(PMIC_HWCID);
 #endif
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
@@ -1320,12 +1322,12 @@ int spm_golden_setting_cmp(bool en)
 static void spm_pmic_set_vcore(int vcore, int lock)
 {
 	if (lock == 0) {
-		pmic_config_interface_nolock(MT6351_BUCK_VCORE_CON6,
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_ADDR,
 					     vcore,
 					     MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_MASK,
 					     MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
 	} else {
-		pmic_config_interface(MT6351_BUCK_VCORE_CON6,
+		pmic_config_interface(MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_ADDR,
 				      vcore,
 				      MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_MASK,
 				      MT6351_PMIC_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
@@ -1462,6 +1464,28 @@ static void spm_vcore_overtemp_ctrl(int lock)
 			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
 	}
 }
+
+#define PMIC_VSRAM_PROC_SW_MODE (0)
+#define PMIC_VSRAM_PROC_HW_MODE (1)
+
+static void spm_pmic_set_vsram_proc_mode(int mode)
+{
+	if (pmic_hwcid == 0x5140) {
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_ADDR,
+					(mode)?0x10:0x40,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_MASK,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_ADDR,
+					mode,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_MASK,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VSLEEP_EN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_ADDR,
+					mode,
+					MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_MASK,
+					MT6351_PMIC_RG_VSRAM_PROC_MODE_CTRL_SHIFT);
+	}
+}
+
 #endif
 
 #define PMIC_BUCK_SRCLKEN_NA	-1
@@ -1520,6 +1544,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_vsram_proc_mode(PMIC_VSRAM_PROC_SW_MODE);
 #endif
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
@@ -1527,7 +1552,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
+		pmic_config_interface(MT6351_BUCK_VGPU_CON9, 0, 0x1, 8);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
@@ -1553,7 +1579,9 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_vsram_proc_mode(PMIC_VSRAM_PROC_HW_MODE);
+		pmic_config_interface(MT6351_BUCK_VGPU_CON1, PMIC_BUCK_SRCLKEN0, 0x7, 3);
+		pmic_config_interface(MT6351_BUCK_VGPU_CON9, 1, 0x1, 8);
 #endif
 
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);

@@ -31,6 +31,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_io.h>
 
+#include <mt_clkbuf_ctl.h>
 #include <mt_spm_sodi3.h>
 
 
@@ -169,11 +170,17 @@ static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
+#if defined(CONFIG_ARCH_MT6755)
 static int by_ccif1_count;
-#if defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797)
 static unsigned long int logout_prev_dvfs_time;
-#endif
+static unsigned int last_r12;
 
+#define NOT_FREQUENT_EVENT(evt, curr)	((evt != last_r12) || \
+					 (((curr) - sodi3_logout_prev_time) > SODI3_LOGOUT_TIMEOUT_CRITERIA))
+#define NOT_IGNORE_EVENT(evt)           (((evt)&WAKE_SRC_R12_APXGPT1_EVENT_B) == 0)
+#define logout_wakeup_event(evt, curr)	(NOT_IGNORE_EVENT(evt) && NOT_FREQUENT_EVENT(evt, curr))
+#endif
 
 static void spm_sodi3_pre_process(void)
 {
@@ -215,6 +222,9 @@ static void spm_sodi3_pre_process(void)
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
+
+	/* for afcdac setting */
+	clk_buf_write_afcdac();
 
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {
@@ -264,13 +274,12 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 	} else {
 		/*
 		 * Log reduction mechanism, print debug information criteria :
-		 * 1. SPM assert
+		 * 1. SPM assert or No wakeup event
 		 * 2. Not wakeup by GPT
-		 * 3. Residency is less than 20ms
-		 * 4. Enter/no emi self-refresh change
+		 * 3. Residency is less than 20 ticks of 32KHz
+		 * 4. Emi self-refresh state is changed
 		 * 5. Time from the last output log is larger than 5 sec
-		 * 6. No wakeup event
-		 * 7. CG/PD mode change
+		 * 6. CG/PD state is changed
 		*/
 		sodi3_logout_curr_time = spm_get_current_time_ms();
 
@@ -286,6 +295,7 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				logout_prev_dvfs_time = sodi3_logout_curr_time;
 			}
 #endif
+#if defined(CONFIG_ARCH_MT6755)
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 			if (wakesta->r12 & (0x1 << 18)) {
 				/* wake up by R12_CCIF1_EVENT_B */
@@ -298,10 +308,9 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				}
 				by_ccif1_count++;
 			}
-#if defined(CONFIG_ARCH_MT6797)
-			else {
-				need_log_out = 1;
-			}
+#elif defined(CONFIG_ARCH_MT6797)
+		} else if (logout_wakeup_event(wakesta->r12, sodi3_logout_curr_time)) {
+			need_log_out = 1;
 #endif
 		} else if ((wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) ||
 			   (wakesta->timer_out >= SODI3_LOGOUT_MAXTIME_CRITERIA)) {
@@ -327,7 +336,9 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 		logout_sodi3_cnt++;
 		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
 		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
-
+#if defined(CONFIG_ARCH_MT6797)
+		last_r12 = wakesta->r12;
+#endif
 		if (need_log_out == 1) {
 			sodi3_logout_prev_time = sodi3_logout_curr_time;
 
@@ -438,8 +449,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret)
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
 		wd_api->wd_suspend_notify();
+	}
 #endif
 
 	/* enable APxGPT timer */
@@ -550,8 +563,10 @@ UNLOCK_SPM:
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle3_after_wfi(cpu);
 #ifdef CONFIG_MTK_WD_KICKER
-	if (!wd_ret)
+	if (!wd_ret) {
 		wd_api->wd_resume_notify();
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	}
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)
