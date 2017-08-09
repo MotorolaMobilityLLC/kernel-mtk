@@ -89,7 +89,6 @@ u32 log_wakesta_index = 0;
 u8 spm_snapshot_golden_setting = 0;
 
 struct wake_status spm_wakesta; /* record last wakesta */
-
 /**************************************
 
  * SW code for suspend
@@ -380,6 +379,14 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VCORE_LQ_DIS,
 			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VCORE_VSLEEP_SEL_0P6V,
+			temp | (3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VCORE_VSLEEP_SEL_0P7V,
+			temp & ~(3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
 #endif
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
@@ -446,6 +453,11 @@ static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 		spm_write(PCM_WDT_VAL, spm_read(PCM_TIMER_VAL) + PCM_WDT_TIMEOUT);
 		spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | PCM_WDT_EN_LSB);
 	}
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+	if (spm_save_thermal_adc())
+		pwrctrl->pcm_flags = pwrctrl->pcm_flags | 0x80000;
 #endif
 
 #if 0

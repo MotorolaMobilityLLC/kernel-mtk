@@ -53,6 +53,9 @@
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
+#if defined(CONFIG_ARCH_MT6797)
+#include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
+#endif
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif
@@ -120,6 +123,9 @@ void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
 #if defined(CONFIG_ARCH_MT6755)
 void __iomem *spm_bsi1cfg;
+#elif defined(CONFIG_ARCH_MT6797)
+void __iomem *spm_efusec;
+void __iomem *spm_thermal_ctrl;
 #endif
 u32 gpio_base_addr;
 struct clk *i2c3_clk_main;
@@ -140,7 +146,13 @@ u32 spm_irq_0 = 180;
 u32 spm_vcorefs_start_irq = 152;
 u32 spm_vcorefs_end_irq = 153;
 #endif
-
+#if defined(CONFIG_ARCH_MT6797)
+unsigned int spm_mts = 0;
+unsigned int spm_bts = 0;
+unsigned int vcore_temp_hi = 70;
+unsigned int vcore_temp_lo = 0;
+u32 spm_suspend_vcore_efuse = 0;
+#endif
 /**************************************
  * Config and Parameter
  **************************************/
@@ -423,6 +435,23 @@ static void spm_register_init(void)
 	spm_bsi1cfg = of_iomap(node, 0);
 	if (!spm_bsi1cfg)
 		spm_err("[bsi1] base failed\n");
+#elif defined(CONFIG_ARCH_MT6797)
+	/* efusec */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
+	if (!node)
+		spm_err("[efusec] find node failed\n");
+	spm_efusec = of_iomap(node, 0);
+	if (!spm_efusec)
+		spm_err("[efusec] base failed\n");
+
+	/* thermal_ctrl */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-therm_ctrl");
+	if (!node)
+		spm_err("[spm_thermal] find node failed\n");
+	spm_thermal_ctrl = of_iomap(node, 0);
+	if (!spm_thermal_ctrl)
+		spm_err("[spm_thermal] base failed\n");
+
 #endif
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy");
 	if (!node)
@@ -549,6 +578,7 @@ static void spm_register_init(void)
 
 #if defined(CONFIG_ARCH_MT6797)
 	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
+	spm_suspend_vcore_efuse = spm_read(spm_efusec + 0x44) & 0x80000000;
 #endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
@@ -1331,6 +1361,67 @@ static void spm_pmic_set_ldo(u32 addr, int on_ctrl, int en, int mode_ctrl,
 	}
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int spm_Temp2ADC(int Temp)
+{
+	int adc = 0;
+
+	Temp = Temp - 25;
+	adc = (int)(((((spm_bts << 4) - (((unsigned int)Temp) << 6)) & 0x0000FFFF) << 6) / spm_mts);
+
+	return adc;
+}
+
+static void spm_getTHslope(void)
+{
+
+	struct TS_PTPOD ts_info;
+	thermal_bank_name ts_bank;
+
+	ts_bank = 0;
+	get_thermal_slope_intercept(&ts_info, ts_bank);
+	spm_mts = ts_info.ts_MTS;
+	spm_bts = ts_info.ts_BTS;
+}
+
+bool spm_save_thermal_adc(void)
+{
+	if (spm_suspend_vcore_efuse == 0) {
+		spm_write(SPM_PASR_DPD_3, 0);
+		spm_write(SPM_SCP_MAILBOX, 1);
+		spm_write(SPM_SW_RSV_2, spm_Temp2ADC(vcore_temp_lo));
+		spm_write(SPM_BSI_D0_SR, spm_Temp2ADC(vcore_temp_hi));
+		if (spm_read(PCM_TIMER_VAL) >> SPM_THERMAL_TIMER) {
+			spm_write(SPM_PASR_DPD_3, spm_read(PCM_TIMER_VAL) >> SPM_THERMAL_TIMER);
+			spm_write(PCM_TIMER_VAL, 1 << SPM_THERMAL_TIMER);
+		}
+		return 0;
+	}
+	return 1;
+}
+
+static void spm_vcore_overtemp_ctrl(int lock)
+{
+	spm_getTHslope();
+	if (spm_suspend_vcore_efuse != 0) {
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
+		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 0,
+			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
+		spm_crit2("VCORE = 0.7V, efuse= 0x%x\n", spm_suspend_vcore_efuse);
+	} else if (((spm_read(spm_thermal_ctrl + 0x500) & 0xfff) > spm_Temp2ADC(vcore_temp_lo)) |
+		((spm_read(spm_thermal_ctrl + 0x500) & 0xfff) < spm_Temp2ADC(vcore_temp_hi))) {
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
+		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 0,
+			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
+		spm_crit2("VCORE = 0.7V\n");
+	} else {
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P6, lock);
+		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR, 3,
+			MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK, MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
+	}
+}
+#endif
+
 #define PMIC_BUCK_SRCLKEN_NA	-1
 #define PMIC_BUCK_SRCLKEN0	0
 #define PMIC_BUCK_SRCLKEN2	4
@@ -1409,7 +1500,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P6, lock);
+		spm_vcore_overtemp_ctrl(lock);
 #endif
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);

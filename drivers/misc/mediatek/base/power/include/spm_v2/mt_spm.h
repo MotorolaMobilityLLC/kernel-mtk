@@ -34,11 +34,10 @@ extern u32 spm_irq_4;
 extern u32 spm_irq_5;
 extern u32 spm_irq_6;
 extern u32 spm_irq_7;
-
 #undef SPM_BASE
 #define SPM_BASE spm_base
 #define SPM_INFRACFG_AO_BASE spm_infracfg_ao_base
-
+#define SPM_THERMAL_TIMER  23	/* 2 ^ (SPM_THERMAL_TIMER-15) second */
 /* #include <mach/mt_irq.h> */
 #include <mt-plat/sync_write.h>
 
@@ -122,7 +121,9 @@ enum {
 };
 void spm_pmic_power_mode(int mode, int force, int lock);
 void spm_bypass_boost_gpio_set(void);
-
+#if defined(CONFIG_ARCH_MT6797)
+bool spm_save_thermal_adc(void);
+#endif
 /**************************************
  * Macro and Inline
  **************************************/
