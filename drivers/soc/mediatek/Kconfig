@@ -1,0 +1,29 @@
+#
+# MediaTek SoC drivers
+#
+config SOC_MEDIATEK
+	bool
+	help
+	  Mediatek SoC support.
+
+config MTK_INFRACFG
+	bool "MediaTek INFRACFG Support"
+	depends on ARCH_MEDIATEK
+	select SOC_MEDIATEK
+	select REGMAP
+	help
+	  Say yes here to add support for the MediaTek INFRACFG controller. The
+	  INFRACFG controller contains various infrastructure registers not
+	  directly associated to any device.
+	  INFRACFG controller is needed by SCPSYS driver.
+
+config MTK_SCPSYS
+	bool "MediaTek SCPSYS Support"
+	depends on MTK_INFRACFG
+	select SOC_MEDIATEK
+	select REGMAP
+	help
+	  Say yes here to add support for the MediaTek SCPSYS power domain
+	  driver.
+	  The System Control Processor System (SCPSYS) has several power
+	  management related tasks in the system.
