@@ -1392,7 +1392,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 static u32 spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 {
 	int period = SPM_WAKE_PERIOD;
-#if 0
+#if 1
 	if (pwake_time < 0) {
 		/* use FG to get the period of 1% battery decrease */
 		period = get_dynamic_period(last_wr != WR_PCM_TIMER ? 1 : 0, SPM_WAKE_PERIOD, 1);
