@@ -66,33 +66,55 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		cpu0: cpu@0 {
+		cpu0: cpu@000 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x000>;
 			enable-method = "psci";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
 
-		cpu4: cpu@4 {
+		cpu4: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
 			enable-method = "psci";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
 
-		cpu8: cpu@8 {
+		cpu8: cpu@200 {
 			device_type = "cpu";
 			compatible = "arm,armv8";
 			reg = <0x200>;
 			enable-method = "psci";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
 
+		idle-states {
+			entry-method = "arm,psci";
+
+			cpu_sleep_0_0: cpu-sleep-0-0 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			cluster_sleep_0: cluster-sleep-0 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010000>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+		};
 	};
 
 	memory@00000000 {

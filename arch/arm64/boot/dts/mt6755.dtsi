@@ -118,6 +118,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x000>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1300000000>;
 		};
@@ -127,6 +128,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x001>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1300000000>;
 		};
@@ -136,6 +138,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x002>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1300000000>;
 		};
@@ -145,6 +148,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x003>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1300000000>;
 		};
@@ -153,6 +157,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
@@ -162,6 +167,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x101>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
@@ -171,6 +177,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x102>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
@@ -180,9 +187,30 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x103>;
 			enable-method = "mt-boot";
+			cpu-idle-states = <&cpu_sleep_0_0 &cluster_sleep_0>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 
+		};
+
+		idle-states {
+			entry-method = "arm,psci";
+
+			cpu_sleep_0_0: cpu-sleep-0-0 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			cluster_sleep_0: cluster-sleep-0 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010000>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
 		};
 	};
 

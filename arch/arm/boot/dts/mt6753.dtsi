@@ -83,7 +83,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	cpus {	#address-cells = <1>;
 		#size-cells = <0>;
 
-		cpu0: cpu@0 {
+		cpu0: cpu@000 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x000>;
@@ -92,7 +92,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <1300000000>;
 		};
 
-		cpu1: cpu@1 {
+		cpu1: cpu@001 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x001>;
@@ -101,7 +101,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <1300000000>;
 		};
 
-		cpu2: cpu@2 {
+		cpu2: cpu@002 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x002>;
@@ -110,7 +110,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <1300000000>;
 		};
 
-		cpu3: cpu@3 {
+		cpu3: cpu@003 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x003>;
@@ -119,7 +119,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <1300000000>;
 		};
 
-		cpu4: cpu@4 {
+		cpu4: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
@@ -128,7 +128,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <2000000000>;
 		};
 
-		cpu5: cpu@5 {
+		cpu5: cpu@101 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x101>;
@@ -137,7 +137,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <2000000000>;
 		};
 
-		cpu6: cpu@6 {
+		cpu6: cpu@102 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x102>;
@@ -146,7 +146,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <2000000000>;
 		};
 
-		cpu7: cpu@7 {
+		cpu7: cpu@103 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x103>;
