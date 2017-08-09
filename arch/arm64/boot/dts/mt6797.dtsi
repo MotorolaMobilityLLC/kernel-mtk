@@ -1529,8 +1529,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x14000000 0x1000>,  /*disp_sys		*/
 			      <0x1400b000 0x1000>,  /*disp_ovl0		*/
 			      <0x1400c000 0x1000>,  /*disp_ovl1		*/
-			      <0x1400d000 0x1000>,  /*disp_ovl0_2l	*/
-			      <0x1400e000 0x1000>,  /*disp_ovl1_2l	*/
 			      <0x1400f000 0x1000>,  /*disp_rdma0	*/
 			      <0x14010000 0x1000>,  /*disp_rdma1	*/
 			      <0x14011000 0x1000>,  /*disp_wdma0	*/
@@ -1552,17 +1550,15 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			      <0x14021000 0x1000>,  /*disp_smi_larb5	*/
 			      <0x14022000 0x1000>,  /*disp_smi_commom	*/
 			      <0x14012000 0x1000>,  /*disp_wdma1	*/
-				<0x0 0x1000>,
-				/*mipitx0,real chip would use this:<0x14018000 0x1000>;*/
-				/* not in everest coda */
-			      <0x14024000 0x1000>;
+			      <0x1400d000 0x1000>,  /*disp_ovl0_2l	*/
+			      <0x1400e000 0x1000>,  /*disp_ovl1_2l	*/
+			      <0x10215000 0x1000>,  /*mipitx0 */
+			      <0x1021e000 0x1000>;  /*mipitx1 */
 
 
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_sys */
 				<GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0 */
 				<GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1 */
-				<GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0_2l */
-				<GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1_2l */
 				<GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>, /*disp_rdma0 */
 				<GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>, /*disp_rdma1 */
 				<GIC_SPI 219 IRQ_TYPE_LEVEL_LOW>, /*disp_wdma0 */
@@ -1583,7 +1579,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<GIC_SPI 234 IRQ_TYPE_LEVEL_LOW>, /*disp_smi_larb5 */
 				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_smi_commom*/ /* not in everest coda */
 				<GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>, /*disp_wdma1 */
-				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>; /*mipitx0*/ /* not in everest coda */
+				<GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0_2l */
+				<GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1_2l */
+				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*mipitx0*/ /* not in everest coda */
+				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>; /*mipitx1*/ /* not in everest coda */
 		};
 		disp_ovl0@1400b000 {
 			compatible = "mediatek,disp_ovl0";

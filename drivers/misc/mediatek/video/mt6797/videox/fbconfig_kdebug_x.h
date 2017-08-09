@@ -25,8 +25,11 @@
 
 #include <linux/types.h>
 
+void PanelMaster_Init(void);
+void PanelMaster_Deinit(void);
+int fb_config_execute_cmd(void);
+int fbconfig_get_esd_check_exec(void);
 
-/* *****************debug for fbconfig tool in kernel part************* */
 #define MAX_INSTRUCTION 35
 #define NUM_OF_DSI 1
 
@@ -91,7 +94,7 @@ typedef struct SETTING_VALUE {
 } SETTING_VALUE;
 
 typedef struct PM_LAYER_EN {
-	int layer_en[OVL_LAYER_NUM];	/* layer id :0 1 2 3 */
+	int layer_en[TOTAL_OVL_LAYER_NUM];
 } PM_LAYER_EN;
 
 typedef struct PM_LAYER_INFO {
@@ -151,20 +154,58 @@ typedef struct {
 
 } FBCONFIG_DISP_IF;
 
-typedef struct _property {
+struct misc_property {
 	unsigned int dual_port:1;
 	unsigned int reserved:31;
-} misc_property;
+};
 
 void Panel_Master_DDIC_config(void);
-void PanelMaster_Init(void);
-void PanelMaster_Deinit(void);
-int fb_config_execute_cmd(void);
-int fbconfig_get_esd_check_exec(void);
+int fbconfig_get_esd_check(DSI_INDEX dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
 
-int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num);
+#include <linux/uaccess.h>
+#include <linux/compat.h>
 
-/* TODO: FIXME */
-extern int m4u_query_mva_info(unsigned int mva, unsigned int size, unsigned int *real_mva, unsigned int *real_size);
+#ifdef CONFIG_COMPAT
 
-#endif				/* __FBCONFIG_KDEBUG_H */
+struct compat_lcm_type_fb {
+	compat_int_t clock;
+	compat_int_t lcm_type;
+};
+
+struct compat_config_record {
+	compat_int_t type;	/* msleep;cmd;setpin;resetpin. */
+	compat_int_t ins_num;
+	compat_int_t ins_array[MAX_INSTRUCTION];
+};
+
+struct compat_dsi_ret {
+	compat_int_t dsi[NUM_OF_DSI];	/* for there are totally 2 dsi. */
+};
+
+struct compat_mipi_timing {
+	compat_int_t type;
+	compat_uint_t value;
+};
+
+struct compat_pm_layer_en {
+	compat_int_t layer_en[TOTAL_OVL_LAYER_NUM];
+};
+
+struct compat_pm_layer_info {
+	compat_int_t index;
+	compat_int_t height;
+	compat_int_t width;
+	compat_int_t fmt;
+	compat_uint_t layer_size;
+};
+
+struct compat_esd_para {
+	compat_int_t addr;
+	compat_int_t type;
+	compat_int_t para_num;
+	compat_uint_t esd_ret_buffer;
+};
+
+#endif /* end CONFIG_COMPAT */
+
+#endif /* __FBCONFIG_KDEBUG_H */

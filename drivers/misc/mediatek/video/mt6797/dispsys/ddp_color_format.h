@@ -10,6 +10,6 @@ int fmt_is_yuv422(DpColorFormat fmt);
 int fmt_is_yuv420(DpColorFormat fmt);
 int fmt_hw_value(DpColorFormat fmt);
 char *fmt_string(DpColorFormat fmt);
-DpColorFormat fmt_type(int unique, int swap);
+DpColorFormat  fmt_type(int unique, int swap);
 
 #endif

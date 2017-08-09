@@ -389,4 +389,13 @@ typedef struct disp_session_buf_t {
 #define DISP_IOCTL_INSERT_SESSION_BUFFERS			DISP_IOW(219, disp_session_buf_info)
 #define	DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, disp_session_output_config)
 
+
+#ifdef __KERNEL__
+
+int disp_mgr_get_session_info(disp_session_info *info);
+
+#endif
+
+
+
 #endif				/* __DISP_SESSION_H */

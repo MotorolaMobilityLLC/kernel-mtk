@@ -3,8 +3,7 @@
 
 #include "mmprofile.h"
 #include "ddp_info.h"
-#include "ddp_ovl.h"
-
+#include "disp_session.h"
 typedef struct {
 	MMP_Event DDP;
 	MMP_Event layerParent;
@@ -17,7 +16,7 @@ typedef struct {
 	MMP_Event rdma_dump[2];
 	MMP_Event DDP_IRQ;
 	MMP_Event OVL_IRQ_Parent;
-	MMP_Event OVL_IRQ[2];
+	MMP_Event OVL_IRQ[OVL_NUM];
 	MMP_Event WDMA_IRQ_Parent;
 	MMP_Event WDMA_IRQ[2];
 	MMP_Event RDMA_IRQ_Parent;
@@ -42,6 +41,8 @@ typedef struct {
 	MMP_Event primary_display_aalod_trigger;
 	MMP_Event primary_wakeup;
 	MMP_Event primary_switch_mode;
+	MMP_Event primary_mode[DISP_SESSION_MODE_NUM];
+	MMP_Event primary_seq_info;
 	MMP_Event primary_seq_insert;
 	MMP_Event primary_seq_config;
 	MMP_Event primary_seq_trigger;
@@ -52,6 +53,11 @@ typedef struct {
 	MMP_Event present_fence_release;
 	MMP_Event present_fence_get;
 	MMP_Event present_fence_set;
+	MMP_Event idlemgr;
+	MMP_Event sec;
+	MMP_Event fps_set;
+	MMP_Event fps_get;
+	MMP_Event primary_error;
 	MMP_Event ovl_trigger;
 	MMP_Event interface_trigger;
 	MMP_Event Extd_Parent;
@@ -87,11 +93,13 @@ typedef struct {
 	MMP_Event session_release;
 	MMP_Event session_wait_vsync;
 	MMP_Event MonitorParent;
+	MMP_Event rdma_underflow;
 	MMP_Event trigger_delay;
 	MMP_Event release_delay;
 	MMP_Event vsync_count;
 	MMP_Event dal_printf;
 	MMP_Event dal_clean;
+	MMP_Event tmp_debug;
 	MMP_Event cg_mode;
 	MMP_Event power_down_mode;
 	MMP_Event sodi_disable;
@@ -104,7 +112,12 @@ typedef struct {
 	MMP_Event ovl1_status;
 	MMP_Event dpmgr_wait_event_timeout;
 	MMP_Event cmdq_rebuild;
+	MMP_Event LFR_NUM;
 	MMP_Event dsi_te;
+	MMP_Event dsi_frame_done;
+	MMP_Event dsi_lfr_switch;
+	MMP_Event Dsi_Update;
+	MMP_Event primary_set_cmd;
 } DDP_MMP_Events_t;
 
 DDP_MMP_Events_t *ddp_mmp_get_events(void);
@@ -118,10 +131,8 @@ void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y);
 
-/* TODO: FIXME */
-#ifdef DEFAULT_MMP_ENABLE
+/*defined in mmp driver, should remove it */
 extern void MMProfileEnable(int enable);
-extern void MMProfileStart(int start);
-#endif
+void MMProfileStart(int start);
 
 #endif

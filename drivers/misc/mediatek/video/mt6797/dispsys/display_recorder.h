@@ -71,7 +71,9 @@ typedef enum {
 	DPREC_LOGGER_DISPMGR_RELEASE,
 	DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 	DPREC_LOGGER_DISPMGR_WAIT_VSYNC,
+	DPREC_LOGGER_OVL_FRAME_COMPLETE_1SECOND,
 	DPREC_LOGGER_RDMA0_TRANSFER,
+	DPREC_LOGGER_RDMA0_TRANSFER_1SECOND,
 	DPREC_LOGGER_DSI_EXT_TE,
 	DPREC_LOGGER_ESD_RECOVERY,
 	DPREC_LOGGER_ESD_CHECK,
@@ -86,17 +88,18 @@ typedef enum {
 	DPREC_LOGGER_EXTD_RELEASE,
 	DPREC_LOGGER_EXTD_IRQ,
 	DPREC_LOGGER_EXTD_END = DPREC_LOGGER_EXTD_IRQ,
+	DPREC_LOGGER_PQ_TRIGGER_1SECOND,
 	DPREC_LOGGER_NUM
 } DPREC_LOGGER_ENUM;
 
-#define DPREC_LOGGER_LEVEL_ALL			0xFFFFFFFF
-#define DPREC_LOGGER_LEVEL_DEFAULT		(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
-#define DPREC_LOGGER_LEVEL_UART_LOG		(0x1 << 0)
-#define DPREC_LOGGER_LEVEL_MOBILE_LOG		(0x1 << 1)
-#define DPREC_LOGGER_LEVEL_MMP			(0x1 << 2)
-#define DPREC_LOGGER_LEVEL_SYSTRACE		(0x1 << 3)
-#define DPREC_LOGGER_LEVEL_AEE_DUMP		(0x1 << 4)
-#define DPREC_LOGGER_LEVEL_LOGGER		(0x1 << 5)
+#define DPREC_LOGGER_LEVEL_ALL				0xFFFFFFFF
+#define DPREC_LOGGER_LEVEL_DEFAULT			(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
+#define DPREC_LOGGER_LEVEL_UART_LOG			(0x1<<0)
+#define DPREC_LOGGER_LEVEL_MOBILE_LOG			(0x1<<1)
+#define DPREC_LOGGER_LEVEL_MMP				(0x1<<2)
+#define DPREC_LOGGER_LEVEL_SYSTRACE			(0x1<<3)
+#define DPREC_LOGGER_LEVEL_AEE_DUMP			(0x1<<4)
+#define DPREC_LOGGER_LEVEL_LOGGER			(0x1<<5)
 
 
 typedef struct {
@@ -109,28 +112,43 @@ typedef struct {
 	unsigned long long count;
 } dprec_logger;
 
+typedef struct _fpsEx {
+	unsigned long long fps;
+	unsigned long long fps_low;
+	unsigned long long count;
+	unsigned long long avg;
+	unsigned long long max_period;
+	unsigned long long min_period;
+} fpsEx;
+
 typedef struct {
 	int8_t name[24];
 	MMP_Event mmp;
 	uint32_t level;
 	dprec_logger logger;
-	/* spinlock_t spinlock; */
+	/* spinlock_t                            spinlock; */
 } dprec_logger_event;
 
 typedef enum {
 	DPREC_LOGGER_ERROR,
 	DPREC_LOGGER_FENCE,
 	DPREC_LOGGER_HWOP,
-	DPREC_LOGGER_DEBUG,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
 
-#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024 * 16)
+#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024*16)
+extern unsigned int gCapturePriLayerEnable;
+extern unsigned int gCaptureWdmaLayerEnable;
+extern unsigned int gCapturePriLayerDownX;
+extern unsigned int gCapturePriLayerDownY;
+extern unsigned int gCapturePriLayerNum;
+
 
 void dprec_event_op(DPREC_EVENT event);
 void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int mask);
 int dprec_handle_option(unsigned int option);
+int dprec_option_enabled(void);
 int dprec_init(void);
 void dprec_logger_trigger(DPREC_LOGGER_ENUM source, unsigned int val1, unsigned int val2);
 void dprec_logger_start(DPREC_LOGGER_ENUM source, unsigned int val1, unsigned int val2);
@@ -139,6 +157,7 @@ void dprec_logger_reset(DPREC_LOGGER_ENUM source);
 void dprec_logger_reset_all(void);
 int dprec_logger_get_result_string(DPREC_LOGGER_ENUM source, char *stringbuf, int strlen);
 int dprec_logger_get_result_string_all(char *stringbuf, int strlen);
+int dprec_logger_get_result_value(DPREC_LOGGER_ENUM source, fpsEx *fps);
 void dprec_stub_irq(unsigned int irq_bit);
 void dprec_stub_event(DISP_PATH_EVENT event);
 unsigned int dprec_get_vsync_count(void);
@@ -163,13 +182,7 @@ int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num);
 int dprec_mmp_dump_rdma_layer(void *wdma_layer, unsigned int wdma_num);
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence);
 void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
-
-extern unsigned int gCapturePriLayerEnable;
-extern unsigned int gCaptureWdmaLayerEnable;
-extern unsigned int gCapturePriLayerDownX;
-extern unsigned int gCapturePriLayerDownY;
-extern unsigned int gCapturePriLayerNum;
-int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l, unsigned int session);
-
+int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
+			     unsigned int session /*1:primary, 2:external, 3:memory */);
 
 #endif

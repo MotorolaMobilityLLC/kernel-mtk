@@ -1,5 +1,4 @@
 
-
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
@@ -15,13 +14,12 @@
 #include "ddp_dump.h"
 #include "ddp_path.h"
 #include "ddp_drv.h"
-#include "ddp_ovl.h"
 
 #include "disp_session.h"
 #include "primary_display.h"
 
 #include "m4u.h"
-
+#include "m4u_port.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
@@ -30,7 +28,7 @@
 #include "ddp_manager.h"
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
-/* #include "ddp_mmp.h" */
+#include "ddp_mmp.h"
 #include "mtk_ovl.h"
 
 #include "mtkfb_fence.h"
@@ -51,12 +49,11 @@ typedef struct {
 	cmdqRecHandle cmdq_handle_config;
 	cmdqRecHandle cmdq_handle_trigger;
 	disp_path_handle dpmgr_handle;
-	const char *mutex_locker;
+	char *mutex_locker;
 } ovl2mem_path_context;
 
 atomic_t g_trigger_ticket = ATOMIC_INIT(1);
 atomic_t g_release_ticket = ATOMIC_INIT(1);
-
 
 
 #define pgc	_get_context()
@@ -65,7 +62,6 @@ static ovl2mem_path_context *_get_context(void)
 {
 	static int is_context_inited;
 	static ovl2mem_path_context g_context;
-
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(ovl2mem_path_context));
 		is_context_inited = 1;
@@ -79,11 +75,38 @@ CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
 	return ovl2mem_use_cmdq;
 }
 
+#if 0 /* defined but not used */
+static unsigned int cmdqDdpClockOn(uint64_t engineFlag)
+{
+	return 0;
+}
+
+static unsigned int cmdqDdpResetEng(uint64_t engineFlag)
+{
+	/* DISP_LOG_I("cmdqDdpResetEng\n"); */
+	return 0;
+}
+
+static unsigned int cmdqDdpClockOff(uint64_t engineFlag)
+{
+	return 0;
+}
+
+static unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
+{
+	DISPMSG("ovl2mem cmdq timeout:%llu\n", engineFlag);
+	if (pgc->dpmgr_handle)
+		dpmgr_check_status(pgc->dpmgr_handle);
+
+	return 0;
+}
+#endif
+
 static void _ovl2mem_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgc->lock));
-	pgc->mutex_locker = caller;
+	pgc->mutex_locker = (char *)caller;
 }
 
 static void _ovl2mem_path_unlock(const char *caller)
@@ -102,7 +125,6 @@ int ovl2mem_get_info(void *info)
 {
 	/* /DISPFUNC(); */
 	disp_session_info *dispif_info = (disp_session_info *) info;
-
 	memset((void *)dispif_info, 0, sizeof(disp_session_info));
 
 	/* FIXME,  for decouple mode, should dynamic return 4 or 8, please refer to primary_display_get_info() */
@@ -137,7 +159,7 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, primary_disp_input
 	if (src && dst) {
 		dst->layer = src->layer;
 		dst->layer_en = src->layer_en;
-		dst->source = src->buff_source;
+		dst->source = src->buffer_source;
 		dst->fmt = src->fmt;
 		dst->addr = src->addr;
 		dst->vaddr = src->vaddr;
@@ -165,12 +187,11 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, primary_disp_input
 		dst->connected_type = src->connected_type;
 		dst->security = src->security;
 		dst->yuv_range = src->yuv_range;
-
 		return 0;
+	} else {
+		DISPERR("src(%p) or dst(%p) is null\n", src, dst);
+		return -1;
 	}
-
-	DISPERR("src(%p) or dst(%p) is null\n", src, dst);
-	return -1;
 }
 
 static int ovl2mem_callback(unsigned int userdata)
@@ -180,30 +201,23 @@ static int ovl2mem_callback(unsigned int userdata)
 
 	DISPMSG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
 		get_ovl2mem_ticket(), userdata);
-	for (layid = 0; layid < (HW_OVERLAY_COUNT + 1); layid++) {
+	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
-		if (fence_idx >= 0) {
-			disp_ddp_path_config *data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-			WDMA_CONFIG_STRUCT wdma_layer;
 
-			wdma_layer.dstAddress = 0;
-			if (data_config && (layid >= HW_OVERLAY_COUNT)) {
+		if (fence_idx >= 0) {
+			disp_ddp_path_config *data_config =
+			    dpmgr_path_get_last_config(pgc->dpmgr_handle);
+
+			if (data_config && (layid >= MEMORY_SESSION_INPUT_LAYER_COUNT)) {
+				WDMA_CONFIG_STRUCT wdma_layer;
+
 				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
 				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
 				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
 				wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
 				wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
-				DISPMSG("mem_seq %x-seq+ %d\n", pgc->session,
-					mtkfb_query_frm_seq_by_addr(pgc->session, layid,
-								    wdma_layer.dstAddress));
-				dprec_logger_frame_seq_end(pgc->session,
-							   mtkfb_query_frm_seq_by_addr(pgc->session,
-										       layid,
-										       wdma_layer.
-										       dstAddress));
 
 				dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
-
 			}
 			mtkfb_release_fence(pgc->session, layid, fence_idx);
 		}
@@ -220,6 +234,84 @@ int get_ovl2mem_ticket(void)
 
 }
 
+int ovl2mem_init(unsigned int session)
+{
+	int ret = -1;
+	M4U_PORT_STRUCT sPort;
+
+	DISPMSG("ovl2mem_init\n");
+
+	dpmgr_init();
+	mutex_init(&(pgc->lock));
+
+	_ovl2mem_path_lock(__func__);
+
+	if (pgc->state > 0)
+		goto Exit;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
+	if (ret) {
+		DISPCHECK("cmdqRecCreate FAIL, ret=%d\n", ret);
+		goto Exit;
+	} else {
+		DISPCHECK("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
+	}
+
+	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
+
+	if (pgc->dpmgr_handle) {
+		DISPCHECK("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
+	} else {
+		DISPCHECK("dpmgr create path FAIL\n");
+		goto Exit;
+	}
+
+	sPort.ePortID = M4U_PORT_DISP_OVL1;
+	sPort.Virtuality = ovl2mem_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	sPort.ePortID = M4U_PORT_DISP_WDMA1;
+	sPort.Virtuality = ovl2mem_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	if (ret == 0) {
+		DISPCHECK("config M4U Port %s to %s SUCCESS\n",
+			  ddp_get_module_name(DISP_MODULE_OVL1),
+			  ovl2mem_use_m4u ? "virtual" : "physical");
+	} else {
+		DISPCHECK("config M4U Port %s to %s FAIL(ret=%d)\n",
+			  ddp_get_module_name(DISP_MODULE_OVL1),
+			  ovl2mem_use_m4u ? "virtual" : "physical", ret);
+		goto Exit;
+	}
+
+	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
+
+	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
+	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
+
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_COMPLETE);
+
+	pgc->max_layer = 4;
+	pgc->state = 1;
+	pgc->session = session;
+	atomic_set(&g_trigger_ticket, 1);
+	atomic_set(&g_release_ticket, 1);
+
+Exit:
+	_ovl2mem_path_unlock(__func__);
+
+	DISPMSG("ovl2mem_init done\n");
+
+	return ret;
+}
+
+
 int ovl2mem_input_config(ovl2mem_in_config *input)
 {
 	int ret = -1;
@@ -229,41 +321,28 @@ int ovl2mem_input_config(ovl2mem_in_config *input)
 	DISPFUNC();
 	_ovl2mem_path_lock(__func__);
 
+	if (pgc->state == 0) {
+		DISPMSG("ovl2mem is already slept\n");
+		_ovl2mem_path_unlock(__func__);
+		return 0;
+	}
+
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config->dst_dirty = 0;
 	data_config->ovl_dirty = 0;
 	data_config->rdma_dirty = 0;
 
-	if (pgc->state == 0) {
-		DISPMSG("ovl2mem is already slept\n");
-		_ovl2mem_path_unlock(__func__);
-		return 0;
-	}
 	/* hope we can use only 1 input struct for input config, just set layer number */
-	for (i = 0; i < HW_OVERLAY_COUNT; i++) {
+	for (i = 0; i < MEMORY_SESSION_INPUT_LAYER_COUNT; i++) {
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
 				   input->layer | (input->layer_en << 16), input->addr);
 
-		if (input[i].layer_en) {
-			if (input[i].vaddr)
-				/* / _debug_pattern(0x00000000, input[i].vaddr, input[i].dst_w, input[i].dst_h,
-						    input[i].src_pitch, 0x00000000, input[i].layer, input[i].buff_idx);
-				 */
-				;
-			else
-				/* /_debug_pattern(input[i].addr,0x00000000, input[i].dst_w, input[i].dst_h,
-						   input[i].src_pitch, 0x00000000, input[i].layer, input[i].buff_idx);
-				 */
-				;
+		if (input[i].dirty) {
+			ret =
+			    _convert_disp_input_to_ovl(&(data_config->ovl_config[input[i].layer]),
+						       (primary_disp_input_config *)&input[i]);
 		}
-		/* /DISPMSG("[primary], i:%d, layer:%d, layer_en:%d, dirty:%d -0x%x\n",
-			    i, input[i].layer, input[i].layer_en, input[i].dirty, input[i].addr);
-		 */
-		if (input[i].dirty)
-			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[input[i].layer]),
-			(primary_disp_input_config *)&input[i]);
-
 		data_config->ovl_dirty = 1;
 		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, input->src_x, input->src_y);
 
@@ -285,7 +364,10 @@ int ovl2mem_output_config(disp_mem_output_config *out)
 	int ret = -1;
 	disp_ddp_path_config *data_config;
 
+	/* /DISPFUNC(); */
+
 	_ovl2mem_path_lock(__func__);
+
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config->dst_dirty = 1;
@@ -334,16 +416,15 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	int ret = -1;
 	int fence_idx = 0;
 	int layid = 0;
-
 	DISPFUNC();
 
 	if (pgc->need_trigger_path == 0) {
 		DISPMSG("ovl2mem_trigger do not trigger\n");
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
 			DISPMSG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
-			for (layid = 0; layid < (HW_OVERLAY_COUNT + 1); layid++) {
+			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
 				fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid,
-								      atomic_read(&g_trigger_ticket));
+					atomic_read(&g_trigger_ticket));
 				if (fence_idx >= 0)
 					mtkfb_release_fence(pgc->session, layid, fence_idx);
 			}
@@ -371,9 +452,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 
 	_ovl2mem_path_unlock(__func__);
 
-	dprec_logger_frame_seq_begin(pgc->session, mtkfb_query_frm_seq_by_addr(pgc->session, 0, 0));
-	DISPMSG("ovl2mem_trigger ovl2mem_seq %d-seq %d\n", get_ovl2mem_ticket(),
-		mtkfb_query_frm_seq_by_addr(pgc->session, 0, 0));
+	DISPMSG("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
 
 	return ret;
 }
@@ -394,17 +473,19 @@ void ovl2mem_wait_done(void)
 		if (loop_cnt > 5)
 			break;
 
+
 		loop_cnt++;
 	}
 
 	DISPMSG("ovl2mem_wait_done loop %d, trigger tick:%d, release tick:%d\n", loop_cnt,
 		atomic_read(&g_trigger_ticket), atomic_read(&g_release_ticket));
+
 }
 
 int ovl2mem_deinit(void)
 {
 	int ret = -1;
-
+	int loop_cnt = 0;
 	DISPFUNC();
 
 	_ovl2mem_path_lock(__func__);
@@ -412,7 +493,13 @@ int ovl2mem_deinit(void)
 	if (pgc->state == 0)
 		goto Exit;
 
-	ovl2mem_wait_done();
+	/* ovl2mem_wait_done(); */
+	ovl2mem_layer_num = 0;
+	while (((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) != 1) && (loop_cnt < 10)) {
+		usleep_range(5000, 6000);
+		/* wait the last configuration done */
+		loop_cnt++;
+	}
 
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -427,7 +514,6 @@ int ovl2mem_deinit(void)
 	pgc->need_trigger_path = 0;
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 1);
-	ovl2mem_layer_num = 0;
 
 Exit:
 	_ovl2mem_path_unlock(__func__);

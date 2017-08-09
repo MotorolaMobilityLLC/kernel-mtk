@@ -8,8 +8,7 @@
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
-
-#include <linux/types.h>
+#include "mt-plat/mt_typedefs.h"
 #include "m4u.h"
 #include "disp_drv_log.h"
 #include "mtkfb.h"
@@ -21,562 +20,246 @@
 #include "primary_display.h"
 #include "display_recorder.h"
 #ifdef CONFIG_MTK_LEGACY
-#include <mt-plat/mt_gpio.h>
-/* #include <cust_gpio_usage.h> */
+#include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
+#else
+#include "disp_dts_gpio.h"
 #endif
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#endif
 #include "mtkfb_fence.h"
+#include "disp_helper.h"
 #include "ddp_manager.h"
+#include "ddp_log.h"
 #include "ddp_dsi.h"
-#include "disp_assert_layer.h"
 
-struct MTKFB_MMP_Events_t MTKFB_MMP_Events;
-
-#ifdef ROME_TODO
-/* extern LCM_DRIVER *lcm_drv; */
-#endif
-/* extern unsigned int EnableVSyncLog; */
-/* extern unsigned int gTriggerDispMode; */ /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
-
-#define MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
-
-/* --------------------------------------------------------------------------- */
-/* External variable declarations */
-/* --------------------------------------------------------------------------- */
-
-/* extern long tpd_last_down_time; */
-/* extern int tpd_start_profiling; */
-#ifdef ROME_TODO
-/* extern void disp_log_enable(int enable); */
-/* extern void mtkfb_capture_fb_only(bool enable);*/
-/* extern void esd_recovery_pause(BOOL en); */
-/* extern void mtkfb_pan_disp_test(void); */
-/* extern void mtkfb_show_sem_cnt(void); */
-/* extern void mtkfb_hang_test(bool en); */
-/* extern void mtkfb_switch_normal_to_factory(void); */
-/* extern void mtkfb_switch_factory_to_normal(void); */
-/* extern unsigned int gCaptureOvlThreadEnable; */
-/* extern unsigned int gCaptureOvlDownX; */
-/* extern unsigned int gCaptureOvlDownY; */
-/* extern struct task_struct *captureovl_task; */
-/* extern unsigned int gCaptureFBEnable; */
-/* extern unsigned int gCaptureFBDownX; */
-/* extern unsigned int gCaptureFBDownY; */
-/* extern unsigned int gCaptureFBPeriod; */
-/* extern struct task_struct *capturefb_task; */
-/* extern wait_queue_head_t gCaptureFBWQ; */
-/* extern OVL_CONFIG_STRUCT cached_layer_config[DDP_OVL_LAYER_MUN]; */
-/* extern void hdmi_force_init(void); */
-#endif
-/* extern void mtkfb_vsync_log_enable(int enable); */
-
-/* extern unsigned int gCaptureLayerEnable; */
-/* extern unsigned int gCaptureLayerDownX; */
-/* extern unsigned int gCaptureLayerDownY; */
-
-#ifdef MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
-struct dentry *mtkfb_layer_dbgfs[DDP_OVL_LAYER_MUN];
+#include "cmdq_def.h"
+#include "cmdq_record.h"
+#include "cmdq_reg.h"
+#include "cmdq_core.h"
 
 
-typedef struct {
-	uint32_t layer_index;
-	unsigned long working_buf;
-	uint32_t working_size;
-} MTKFB_LAYER_DBG_OPTIONS;
+static struct dentry *mtkfb_dbgfs;
+static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
 
-MTKFB_LAYER_DBG_OPTIONS mtkfb_layer_dbg_opt[DDP_OVL_LAYER_MUN];
-
-#endif
-#ifdef ROME_TODO
-/* extern LCM_DRIVER *lcm_drv; */
-#endif
-/* --------------------------------------------------------------------------- */
-/* Debug Options */
-/* --------------------------------------------------------------------------- */
-
-static const long int DEFAULT_LOG_FPS_WND_SIZE = 30;
-
-typedef struct {
-	unsigned int en_fps_log;
-	unsigned int en_touch_latency_log;
-	unsigned int log_fps_wnd_size;
-	unsigned int force_dis_layers;
-} DBG_OPTIONS;
-
-static DBG_OPTIONS dbg_opt = { 0 };
-
-static bool enable_ovl1_to_mem = true;
-unsigned int g_mobilelog;
-/* --------------------------------------------------------------------------- */
-/* Information Dump Routines */
-/* --------------------------------------------------------------------------- */
-
-void init_mtkfb_mmp_events(void)
+static int draw_buffer(char *va, int w, int h,
+		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
 {
-	if (MTKFB_MMP_Events.MTKFB == 0) {
-		MTKFB_MMP_Events.MTKFB = MMProfileRegisterEvent(MMP_RootEvent, "MTKFB");
-		MTKFB_MMP_Events.PanDisplay =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "PanDisplay");
-		MTKFB_MMP_Events.CreateSyncTimeline =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "CreateSyncTimeline");
-		MTKFB_MMP_Events.SetOverlayLayer =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "SetOverlayLayer");
-		MTKFB_MMP_Events.SetOverlayLayers =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "SetOverlayLayers");
-		MTKFB_MMP_Events.SetMultipleLayers =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "SetMultipleLayers");
-		MTKFB_MMP_Events.CreateSyncFence =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "CreateSyncFence");
-		MTKFB_MMP_Events.IncSyncTimeline =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "IncSyncTimeline");
-		MTKFB_MMP_Events.SignalSyncFence =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "SignalSyncFence");
-		MTKFB_MMP_Events.TrigOverlayOut =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "TrigOverlayOut");
-		MTKFB_MMP_Events.UpdateScreenImpl =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "UpdateScreenImpl");
-		MTKFB_MMP_Events.VSync = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "VSync");
-		MTKFB_MMP_Events.UpdateConfig =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "UpdateConfig");
-		MTKFB_MMP_Events.EsdCheck =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.UpdateConfig, "EsdCheck");
-		MTKFB_MMP_Events.ConfigOVL =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.UpdateConfig, "ConfigOVL");
-		MTKFB_MMP_Events.ConfigAAL =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.UpdateConfig, "ConfigAAL");
-		MTKFB_MMP_Events.ConfigMemOut =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.UpdateConfig, "ConfigMemOut");
-		MTKFB_MMP_Events.ScreenUpdate =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "ScreenUpdate");
-		MTKFB_MMP_Events.CaptureFramebuffer =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "CaptureFB");
-		MTKFB_MMP_Events.RegUpdate =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "RegUpdate");
-		MTKFB_MMP_Events.EarlySuspend =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "EarlySuspend");
-		MTKFB_MMP_Events.DispDone =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "DispDone");
-		MTKFB_MMP_Events.DSICmd = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "DSICmd");
-		MTKFB_MMP_Events.DSIIRQ = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "DSIIrq");
-		MTKFB_MMP_Events.WaitVSync =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "WaitVSync");
-		MTKFB_MMP_Events.LayerDump =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "LayerDump");
-		MTKFB_MMP_Events.Layer[0] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.LayerDump, "Layer0");
-		MTKFB_MMP_Events.Layer[1] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.LayerDump, "Layer1");
-		MTKFB_MMP_Events.Layer[2] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.LayerDump, "Layer2");
-		MTKFB_MMP_Events.Layer[3] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.LayerDump, "Layer3");
-		MTKFB_MMP_Events.OvlDump =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "OvlDump");
-		MTKFB_MMP_Events.FBDump = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "FBDump");
-		MTKFB_MMP_Events.DSIRead =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "DSIRead");
-		MTKFB_MMP_Events.GetLayerInfo =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "GetLayerInfo");
-		MTKFB_MMP_Events.LayerInfo[0] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.GetLayerInfo, "LayerInfo0");
-		MTKFB_MMP_Events.LayerInfo[1] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.GetLayerInfo, "LayerInfo1");
-		MTKFB_MMP_Events.LayerInfo[2] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.GetLayerInfo, "LayerInfo2");
-		MTKFB_MMP_Events.LayerInfo[3] =
-		    MMProfileRegisterEvent(MTKFB_MMP_Events.GetLayerInfo, "LayerInfo3");
-		MTKFB_MMP_Events.IOCtrl = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "IOCtrl");
-		MTKFB_MMP_Events.Debug = MMProfileRegisterEvent(MTKFB_MMP_Events.MTKFB, "Debug");
-		MMProfileEnableEventRecursive(MTKFB_MMP_Events.MTKFB, 1);
-	}
-}
+	int i, j;
+	int Bpp = UFMT_GET_Bpp(ufmt);
 
-static inline int is_layer_enable(unsigned int roi_ctl, unsigned int layer)
-{
-	return (roi_ctl >> (31 - layer)) & 0x1;
-}
+	for (i = 0; i < h; i++)
+		for (j = 0; j < w; j++) {
+			int x = j * Bpp + i * w * Bpp;
 
-/* --------------------------------------------------------------------------- */
-/* FPS Log */
-/* --------------------------------------------------------------------------- */
+			if (ufmt == UFMT_RGB888 || ufmt == UFMT_RGBA8888) {
+				va[x++] = r;
+				va[x++] = g;
+				va[x++] = b;
+				if (Bpp == 4)
+					va[x++] = a;
+			}
 
-typedef struct {
-	long int current_lcd_time_us;
-	long int current_te_delay_time_us;
-	long int total_lcd_time_us;
-	long int total_te_delay_time_us;
-	long int start_time_us;
-	long int trigger_lcd_time_us;
-	unsigned int trigger_lcd_count;
-
-	long int current_hdmi_time_us;
-	long int total_hdmi_time_us;
-	long int hdmi_start_time_us;
-	long int trigger_hdmi_time_us;
-	unsigned int trigger_hdmi_count;
-} FPS_LOGGER;
-
-static FPS_LOGGER fps = { 0 };
-static FPS_LOGGER hdmi_fps = { 0 };
-
-static long int get_current_time_us(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return (t.tv_sec & 0xFFF) * 1000000 + t.tv_usec;
-}
-
-
-static inline void reset_fps_logger(void)
-{
-	memset(&fps, 0, sizeof(fps));
-}
-
-static inline void reset_hdmi_fps_logger(void)
-{
-	memset(&hdmi_fps, 0, sizeof(hdmi_fps));
-}
-
-void DBG_OnTriggerLcd(void)
-{
-	if (!dbg_opt.en_fps_log && !dbg_opt.en_touch_latency_log)
-		return;
-
-	fps.trigger_lcd_time_us = get_current_time_us();
-	if (fps.trigger_lcd_count == 0)
-		fps.start_time_us = fps.trigger_lcd_time_us;
-}
-
-void DBG_OnTriggerHDMI(void)
-{
-	if (!dbg_opt.en_fps_log && !dbg_opt.en_touch_latency_log)
-		return;
-
-	hdmi_fps.trigger_hdmi_time_us = get_current_time_us();
-	if (hdmi_fps.trigger_hdmi_count == 0)
-		hdmi_fps.hdmi_start_time_us = hdmi_fps.trigger_hdmi_time_us;
-}
-
-void DBG_OnTeDelayDone(void)
-{
-	long int time;
-
-	if (!dbg_opt.en_fps_log && !dbg_opt.en_touch_latency_log)
-		return;
-
-	time = get_current_time_us();
-	fps.current_te_delay_time_us = (time - fps.trigger_lcd_time_us);
-	fps.total_te_delay_time_us += fps.current_te_delay_time_us;
-}
-
-
-void DBG_OnLcdDone(void)
-{
-	long int time;
-
-	if (!dbg_opt.en_fps_log && !dbg_opt.en_touch_latency_log)
-		return;
-
-	/* deal with touch latency log */
-
-	time = get_current_time_us();
-	fps.current_lcd_time_us = (time - fps.trigger_lcd_time_us);
-
-#if 0				/* FIXME */
-	if (dbg_opt.en_touch_latency_log && tpd_start_profiling) {
-
-		pr_debug("DISP/DBG " "Touch Latency: %ld ms\n", (time - tpd_last_down_time) / 1000);
-
-		pr_debug("DISP/DBG " "LCD update time %ld ms (TE delay %ld ms + LCD %ld ms)\n",
-			 fps.current_lcd_time_us / 1000,
-			 fps.current_te_delay_time_us / 1000,
-			 (fps.current_lcd_time_us - fps.current_te_delay_time_us) / 1000);
-
-		tpd_start_profiling = 0;
-	}
-#endif
-
-	if (!dbg_opt.en_fps_log)
-		return;
-
-	/* deal with fps log */
-
-	fps.total_lcd_time_us += fps.current_lcd_time_us;
-	++fps.trigger_lcd_count;
-
-	if (fps.trigger_lcd_count >= dbg_opt.log_fps_wnd_size) {
-
-		long int f = fps.trigger_lcd_count * 100 * 1000 * 1000 / (time - fps.start_time_us);
-
-		long int update = fps.total_lcd_time_us * 100 / (1000 * fps.trigger_lcd_count);
-
-		long int te = fps.total_te_delay_time_us * 100 / (1000 * fps.trigger_lcd_count);
-
-		long int lcd = (fps.total_lcd_time_us - fps.total_te_delay_time_us) * 100
-		    / (1000 * fps.trigger_lcd_count);
-
-		pr_debug("DISP/DBG " "MTKFB FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms,\n",
-			 f / 100, f % 100, update / 100, update % 100);
-		pr_debug("(TE delay %ld.%02ld ms, LCD %ld.%02ld ms)\n", te / 100, te % 100, lcd / 100, lcd % 100);
-		reset_fps_logger();
-	}
-}
-
-void DBG_OnHDMIDone(void)
-{
-	long int time;
-
-	if (!dbg_opt.en_fps_log && !dbg_opt.en_touch_latency_log)
-		return;
-
-	/* deal with touch latency log */
-
-	time = get_current_time_us();
-	hdmi_fps.current_hdmi_time_us = (time - hdmi_fps.trigger_hdmi_time_us);
-
-
-	if (!dbg_opt.en_fps_log)
-		return;
-
-	/* deal with fps log */
-
-	hdmi_fps.total_hdmi_time_us += hdmi_fps.current_hdmi_time_us;
-	++hdmi_fps.trigger_hdmi_count;
-
-	if (hdmi_fps.trigger_hdmi_count >= dbg_opt.log_fps_wnd_size) {
-
-		long int f = hdmi_fps.trigger_hdmi_count * 100 * 1000 * 1000
-		    / (time - hdmi_fps.hdmi_start_time_us);
-
-		long int update = hdmi_fps.total_hdmi_time_us * 100
-		    / (1000 * hdmi_fps.trigger_hdmi_count);
-
-		pr_debug("DISP/DBG " "[HDMI] FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms\n",
-			 f / 100, f % 100, update / 100, update % 100);
-
-		reset_hdmi_fps_logger();
-	}
-}
-
-/* --------------------------------------------------------------------------- */
-/* Command Processor */
-/* --------------------------------------------------------------------------- */
-/* extern int DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable,
-				 unsigned int color); */
-
-bool get_ovl1_to_mem_on(void)
-{
-	return enable_ovl1_to_mem;
-}
-
-void switch_ovl1_to_mem(bool on)
-{
-	enable_ovl1_to_mem = on;
-	pr_debug("DISP/DBG " "switch_ovl1_to_mem %d\n", enable_ovl1_to_mem);
-}
-
-static int _draw_line(unsigned long addr, int l, int t, int r, int b, int linepitch,
-		      unsigned int color)
-{
-	int i = 0;
-
-	if (l > r || b < t)
-		return -1;
-
-	if (l == r) {		/* vertical line */
-		for (i = 0; i < (b - t); i++)
-			*(unsigned long *)(addr + (t + i) * linepitch + l * 4) = color;
-	} else if (t == b) {	/* horizontal line */
-		for (i = 0; i < (r - l); i++)
-			*(unsigned long *)(addr + t * linepitch + (l + i) * 4) = color;
-	} else {		/* tile line, not support now */
-		return -1;
-	}
-
+			if (ufmt == UFMT_RGB565) {
+				va[x++] = (b & 0x1f) | ((g & 0x7) << 5);
+				va[x++] = (g & 0x7) | (r & 0x1f);
+			}
+		}
 	return 0;
 }
 
-static int _draw_rect(unsigned long addr, int l, int t, int r, int b, unsigned int linepitch,
-		      unsigned int color)
+static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT fmt, int frame_num,
+				      int vsync)
 {
-	int ret = 0;
+	disp_session_input_config input_config;
+	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
+	unsigned int Bpp;
+	int frame, i, ret;
+	enum UNIFIED_COLOR_FMT ufmt;
 
-	ret += _draw_line(addr, l, t, r, t, linepitch, color);
-	ret += _draw_line(addr, l, t, l, b, linepitch, color);
-	ret += _draw_line(addr, r, t, r, b, linepitch, color);
-	ret += _draw_line(addr, l, b, r, b, linepitch, color);
-	return ret;
+	/* allocate buffer */
+	unsigned long size;
+	unsigned char *buf_va;
+	dma_addr_t buf_pa;
+	unsigned int buf_mva;
+	unsigned long size_align;
+	m4u_client_t *client = NULL;
+
+	ufmt = disp_fmt_to_unified_fmt(fmt);
+	Bpp = UFMT_GET_bpp(ufmt) / 8;
+	size = w * h * Bpp;
+	size_align = round_up(size, PAGE_SIZE);
+
+	DISPMSG("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
+		__func__, layer_num, w, h, unified_color_fmt_name(ufmt), frame_num, vsync, size);
+
+	buf_va = dma_alloc_coherent(disp_get_device(), size, &buf_pa, GFP_KERNEL);
+	if (!(buf_va)) {
+		DISPMSG("dma_alloc_coherent error!  dma memory not available. size=%lu\n", size);
+		return -1;
+	}
+
+	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
+		static struct sg_table table;
+		struct sg_table *sg_table = &table;
+
+		sg_alloc_table(sg_table, 1, GFP_KERNEL);
+
+		sg_dma_address(sg_table->sgl) = buf_pa;
+		sg_dma_len(sg_table->sgl) = size_align;
+		client = m4u_create_client();
+		if (IS_ERR_OR_NULL(client))
+			DISPMSG("create client fail!\n");
+
+		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
+				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &buf_mva);
+		if (ret)
+			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
+		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
+	}
+
+
+	draw_buffer(buf_va, w, h, ufmt, 255, 0, 0, 255);
+
+	for (frame = 0; frame < frame_num; frame++) {
+		memset(&input_config, 0, sizeof(input_config));
+		input_config.config_layer_num = layer_num;
+		input_config.session_id = session_id;
+
+		for (i = 0; i < layer_num; i++) {
+			int enable;
+
+			if (i == frame % (layer_num + 1) - 1)
+				enable = 0;
+			else
+				enable = 1;
+
+			input_config.config[i].layer_id = i;
+			input_config.config[i].layer_enable = enable;
+			input_config.config[i].src_base_addr = 0;
+			if (disp_helper_get_option(DISP_OPT_USE_M4U))
+				input_config.config[i].src_phy_addr = (void *)((unsigned long)buf_mva);
+			else
+				input_config.config[i].src_phy_addr = (void *)((unsigned long)buf_pa);
+			input_config.config[i].next_buff_idx = -1;
+			input_config.config[i].src_fmt = fmt;
+			input_config.config[i].src_pitch = w;
+			input_config.config[i].src_offset_x = 0;
+			input_config.config[i].src_offset_y = 0;
+			input_config.config[i].src_width = w;
+			input_config.config[i].src_height = h;
+
+			input_config.config[i].tgt_offset_x = w * i;
+			input_config.config[i].tgt_offset_y = h * i;
+			input_config.config[i].tgt_width = w;
+			input_config.config[i].tgt_height = h;
+			input_config.config[i].alpha_enable = 1;
+			input_config.config[i].alpha = 0xff;
+			input_config.config[i].security = DISP_NORMAL_BUFFER;
+		}
+		primary_display_config_input_multiple(&input_config);
+		primary_display_trigger(0, NULL, 0);
+
+		if (vsync) {
+			disp_session_vsync_config vsync_config;
+
+			vsync_config.session_id = session_id;
+			primary_display_wait_for_vsync(&vsync_config);
+		}
+	}
+
+	/* disable all layers */
+	memset(&input_config, 0, sizeof(input_config));
+	input_config.config_layer_num = layer_num;
+	for (i = 0; i < layer_num; i++)
+		input_config.config[i].layer_id = i;
+
+	primary_display_config_input_multiple(&input_config);
+	primary_display_trigger(1, NULL, 0);
+
+	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
+		/* dealloc mva */
+		m4u_destroy_client(client);
+	}
+
+	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
+	return 0;
 }
 
-static void _draw_block(unsigned long addr, unsigned int x, unsigned int y, unsigned int w,
-			unsigned int h, unsigned int linepitch, unsigned int color)
-{
-	int i = 0;
-	int j = 0;
-	unsigned long start_addr = addr + linepitch * y + x * 4;
-
-	DISPMSG("addr=0x%lx, start_addr=0x%lx, x=%d,y=%d,w=%d,h=%d,linepitch=%d, color=0x%08x\n",
-		addr, start_addr, x, y, w, h, linepitch, color);
-	for (j = 0; j < h; j++) {
-		for (i = 0; i < w; i++)
-			*(unsigned long *)(start_addr + i * 4 + j * linepitch) = color;
-	}
-}
-
-/* extern void smp_inner_dcache_flush_all(void); */
-
-static int g_display_debug_pattern_index;
-void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
-		    unsigned int linepitch, unsigned int color, unsigned int layerid,
-		    unsigned int bufidx)
-{
-	unsigned long addr = 0;
-	unsigned int layer_size = 0;
-	unsigned int mapped_size = 0;
-	unsigned int bcolor = 0xff808080;
-
-	if (g_display_debug_pattern_index == 0)
-		return;
-
-	if (layerid == 0)
-		bcolor = 0x0000ffff;
-	else if (layerid == 1)
-		bcolor = 0x00ff00ff;
-	else if (layerid == 2)
-		bcolor = 0xff0000ff;
-	else if (layerid == 3)
-		bcolor = 0xffff00ff;
-
-	if (va) {
-		addr = va;
-	} else {
-		layer_size = linepitch * h;
-		m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
-		if (mapped_size == 0) {
-			DISPERR("m4u_mva_map_kernel failed\n");
-			return;
-		}
-	}
-
-	switch (g_display_debug_pattern_index) {
-	case 1:
-		{
-			unsigned int resize_factor = layerid + 1;
-
-			_draw_rect(addr, w / 10 * resize_factor + 0, h / 10 * resize_factor + 0,
-				   w / 10 * (10 - resize_factor) - 0,
-				   h / 10 * (10 - resize_factor) - 0, linepitch, bcolor);
-			_draw_rect(addr, w / 10 * resize_factor + 1, h / 10 * resize_factor + 1,
-				   w / 10 * (10 - resize_factor) - 1,
-				   h / 10 * (10 - resize_factor) - 1, linepitch, bcolor);
-			_draw_rect(addr, w / 10 * resize_factor + 2, h / 10 * resize_factor + 2,
-				   w / 10 * (10 - resize_factor) - 2,
-				   h / 10 * (10 - resize_factor) - 2, linepitch, bcolor);
-			_draw_rect(addr, w / 10 * resize_factor + 3, h / 10 * resize_factor + 3,
-				   w / 10 * (10 - resize_factor) - 3,
-				   h / 10 * (10 - resize_factor) - 3, linepitch, bcolor);
-			break;
-		}
-	case 2:
-		{
-			int bw = 20;
-			int bh = 20;
-
-			_draw_block(addr, bufidx % (w / bw) * bw,
-				    bufidx % (w * h / bh / bh) / (w / bh) * bh, bw, bh, linepitch,
-				    bcolor);
-			break;
-		}
-	case 3:
-		{
-			int bw = 20;
-			int bh = 20;
-
-			_draw_block(addr, bufidx % (w / bw) * bw,
-				    bufidx % (w * h / bh / bh) / (w / bh) * bh, bw, bh, linepitch,
-				    bcolor);
-			break;
-		}
-	}
-
-/* smp_inner_dcache_flush_all(); */
-/* outer_flush_all(); */
-	if (mapped_size)
-		m4u_mva_unmap_kernel(addr, layer_size, addr);
-}
-
-#define DEBUG_FPS_METER_SHOW_COUNT	60
-static int _fps_meter_array[DEBUG_FPS_METER_SHOW_COUNT] = { 0 };
-
-static unsigned long long _last_ts;
-
-void _debug_fps_meter(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
-		      unsigned int linepitch, unsigned int color, unsigned int layerid,
-		      unsigned int bufidx)
-{
-	int i = 0;
-	unsigned long addr = 0;
-	unsigned int layer_size = 0;
-	unsigned int mapped_size = 0;
-	unsigned long long current_ts = sched_clock();
-	unsigned long long t = current_ts;
-	unsigned long mod = 0;
-	unsigned long current_idx = 0;
-	unsigned long long l = _last_ts;
-
-	if (g_display_debug_pattern_index != 3)
-		return;
-	DISPMSG("layerid=%d\n", layerid);
-	_last_ts = current_ts;
-
-	if (va) {
-		addr = va;
-	} else {
-		layer_size = linepitch * h;
-		m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
-		if (mapped_size == 0) {
-			DISPERR("m4u_mva_map_kernel failed\n");
-			return;
-		}
-	}
-
-	mod = do_div(t, 1000 * 1000 * 1000);
-	do_div(l, 1000 * 1000 * 1000);
-	if (t != l) {
-		memset((void *)_fps_meter_array, 0, sizeof(_fps_meter_array));
-		_draw_block(addr, 0, 10, w, 36, linepitch, 0x00000000);
-	}
-
-	current_idx = mod / 1000 / 16666;
-	DISPMSG("mod=%ld, current_idx=%ld\n", mod, current_idx);
-	_fps_meter_array[current_idx]++;
-	for (i = 0; i < DEBUG_FPS_METER_SHOW_COUNT; i++) {
-		if (_fps_meter_array[i])
-			_draw_block(addr, i * 18, 10, 18, 18 * _fps_meter_array[i], linepitch,
-				    0xff0000ff);
-		else
-			; /* _draw_block(addr, i*18, 10, 18, 18, linepitch, 0x00000000); */
-
-	}
-
-/* smp_inner_dcache_flush_all(); */
-/* outer_flush_all(); */
-	if (mapped_size)
-		m4u_mva_unmap_kernel(addr, layer_size, addr);
-}
+#if 0 /* defined but not used */
+static char STR_HELP[] =
+	"\n"
+	"USAGE\n"
+	"        echo [ACTION]... > /d/mtkfb\n"
+	"\n"
+	"        suspend\n"
+	"             enter suspend mode\n"
+	"\n"
+	"        resume\n"
+	"             leave suspend mode\n"
+	"\n"
+	"        lcm:[on|off|init]\n"
+	"             power on/off lcm\n"
+	"\n"
+	"        cabc:[ui|mov|still]\n"
+	"             cabc mode, UI/Moving picture/Still picture\n"
+	"\n"
+	"       esd:[on|off]\n"
+	"             esd kthread on/off\n"
+	"       HQA:[NormalToFactory|FactoryToNormal]\n"
+	"             for HQA requirement\n"
+	"\n"
+	"       dump_layer:[on|off[,down_sample_x[,down_sample_y]][,layer(0:L0,1:L1,2:L2,3:L3,4:L0-3)]\n"
+	"             Start/end to capture current enabled OVL layer every frame\n";
+#endif
 
 static void process_dbg_opt(const char *opt)
 {
-	int ret = 0;
+	int ret;
 
-	if (0 == strncmp(opt, "dsipattern", 10)) {
+	if (0 == strncmp(opt, "helper", 6)) {
+		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
+		char option[100] = "";
+		char *tmp;
+		int value, i;
+
+		tmp = (char *)(opt + 7);
+		for (i = 0; i < 100; i++) {
+			if (tmp[i] != ',' && tmp[i] != ' ')
+				option[i] = tmp[i];
+			else
+				break;
+		}
+		tmp += i + 1;
+		ret = sscanf(tmp, "%d\n", &value);
+		if (ret != 1) {
+			pr_err("error to parse cmd %s: %s %s ret=%d\n", opt, option, tmp, ret);
+			return;
+		}
+
+		DISPMSG("will set option %s to %d\n", option, value);
+		disp_helper_set_option_by_name(option, value);
+	} else if (0 == strncmp(opt, "switch_mode:", 12)) {
+		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
+		int sess_mode;
+
+		ret = sscanf(opt, "switch_mode:%d\n", &sess_mode);
+		if (ret != 1) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+
+		primary_display_switch_mode(sess_mode, session_id, 1);
+	} else if (0 == strncmp(opt, "dsipattern", 10)) {
 		char *p = (char *)opt + 11;
-		unsigned int pattern = 0;
+		unsigned int pattern;
 
-		ret = kstrtoul(p, 16, (unsigned long int *)&pattern);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		ret = kstrtouint(p, 0, &pattern);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
 
 		if (pattern) {
 			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, true, pattern);
@@ -587,149 +270,129 @@ static void process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
-	} else if (0 == strncmp(opt, "mobile:", 7)) {
-		if (0 == strncmp(opt + 7, "on", 2))
-			g_mobilelog = 1;
-		else if (0 == strncmp(opt + 7, "off", 3))
-			g_mobilelog = 0;
+	} else if (0 == strncmp(opt, "force_fps:", 9)) {
+		unsigned int keep;
+		unsigned int skip;
 
-	} else if (0 == strncmp(opt, "trigger", 7)) {
+		ret = sscanf(opt, "force_fps:%d,%d\n", &keep, &skip);
+		if (ret != 2) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+
+		DISPMSG("force set fps, keep %d, skip %d\n", keep, skip);
+		primary_display_force_set_fps(keep, skip);
+	} else if (0 == strncmp(opt, "AAL_trigger", 11)) {
 		int i = 0;
+		disp_session_vsync_config vsync_config;
 
-		for (i = 0; i < 1200; i++)
+		for (i = 0; i < 1200; i++) {
+			primary_display_wait_for_vsync(&vsync_config);
 			dpmgr_module_notify(DISP_MODULE_AAL, DISP_PATH_EVENT_TRIGGER);
+		}
 	} else if (0 == strncmp(opt, "diagnose", 8)) {
 		primary_display_diagnose();
-		return;
-	} else if (0 == strncmp(opt, "_efuse_test", 11)) {
-		primary_display_check_test();
-	} else if (0 == strncmp(opt, "trigger", 7)) {
-		display_primary_path_context *ctx = primary_display_path_lock("debug");
-
-		if (ctx)
-			dpmgr_signal_event(ctx->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
-
-		primary_display_path_unlock("debug");
-
 		return;
 	} else if (0 == strncmp(opt, "dprec_reset", 11)) {
 		dprec_logger_reset_all();
 		return;
-	} else if (0 == strncmp(opt, "suspend", 4)) {
+	} else if (0 == strncmp(opt, "suspend", 7)) {
 		primary_display_suspend();
 		return;
+	} else if (0 == strncmp(opt, "resume", 6)) {
+		primary_display_resume();
 	} else if (0 == strncmp(opt, "ata", 3)) {
 		mtkfb_fm_auto_test();
 		return;
-	} else if (0 == strncmp(opt, "resume", 4)) {
-		primary_display_resume();
 	} else if (0 == strncmp(opt, "dalprintf", 9)) {
 		DAL_Printf("display aee layer test\n");
 	} else if (0 == strncmp(opt, "dalclean", 8)) {
 		DAL_Clean();
-	} else if (0 == strncmp(opt, "DP", 2)) {
-		char *p = (char *)opt + 3;
-		unsigned int pattern = 0;
+	} else if (0 == strncmp(opt, "daltest", 7)) {
+		int i = 1000;
 
-		ret = kstrtoul(p, 16, (unsigned long int *)&pattern);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		while (i--) {
+			DAL_Printf("display aee layer test\n");
+			msleep(20);
+			DAL_Clean();
+			msleep(20);
+		}
+	} else if (0 == strncmp(opt, "lfr_setting:", 12)) {
+		unsigned int enable;
+		unsigned int mode;
+		/* unsigned int  mode=3; */
+		unsigned int type = 0;
+		unsigned int skip_num = 1;
 
-		g_display_debug_pattern_index = pattern;
-		return;
+		ret = sscanf(opt, "lfr_setting:%d,%d\n", &enable, &mode);
+		if (ret != 2) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		DDPMSG("--------------enable/disable lfr--------------\n");
+		if (enable) {
+			DDPMSG("lfr enable %d mode =%d\n", enable, mode);
+			enable = 1;
+			DSI_Set_LFR(DISP_MODULE_DSI0, NULL, mode, type, enable, skip_num);
+		} else {
+			DDPMSG("lfr disable %d mode=%d\n", enable, mode);
+			enable = 0;
+			DSI_Set_LFR(DISP_MODULE_DSI0, NULL, mode, type, enable, skip_num);
+		}
+	} else if (0 == strncmp(opt, "vsync_switch:", 13)) {
+		char *p = (char *)opt + 13;
+		unsigned int method = 0;
+
+		ret = kstrtouint(p, 0, &method);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		primary_display_vsync_switch(method);
+
 	} else if (0 == strncmp(opt, "dsi0_clk:", 9)) {
 		char *p = (char *)opt + 9;
-		uint32_t clk = 0;
+		UINT32 clk;
 
-		ret = kstrtoul(p, 10, (unsigned long int *)&clk);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		ret = kstrtouint(p, 0, &clk);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+	} else if (0 == strncmp(opt, "dst_switch:", 11)) {
+		char *p = (char *)opt + 11;
+		UINT32 mode;
 
-		DSI_ChangeClk(DISP_MODULE_DSI0, clk);
-	} else if (0 == strncmp(opt, "diagnose", 8)) {
-		primary_display_diagnose();
-		return;
-	} else if (0 == strncmp(opt, "switch:", 7)) {
-		char *p = (char *)opt + 7;
-		uint32_t mode = 0;
-
-		ret = kstrtoul(p, 10, (unsigned long int *)&mode);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
+		ret = kstrtouint(p, 0, &mode);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
 		primary_display_switch_dst_mode(mode % 2);
 		return;
-	} else if (0 == strncmp(opt, "disp_mode:", 10)) {
-		char *p = (char *)opt + 10;
-
-		gTriggerDispMode = 0;
-		ret = kstrtoul(p, 10, (unsigned long int *)&gTriggerDispMode);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
-	} else if (0 == strncmp(opt, "regw:", 5)) {
-		char *p = (char *)opt + 5;
-		unsigned long addr = 0;
-		unsigned long val = 0;
-
-		ret = kstrtoul(p, 16, &addr);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-		ret = kstrtoul(p + 1, 16, &val);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		if (addr)
-			OUTREG32(addr, val);
-		else
-			return;
-
-	} else if (0 == strncmp(opt, "regr:", 5)) {
-		char *p = (char *)opt + 5;
-		unsigned long addr = 0;
-
-		ret = kstrtoul(p, 16, (unsigned long int *)&addr);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		if (addr)
-			pr_debug("Read register 0x%lx: 0x%08x\n", addr, INREG32(addr));
-		else
-			return;
-
 	} else if (0 == strncmp(opt, "cmmva_dprec", 11)) {
 		dprec_handle_option(0x7);
 	} else if (0 == strncmp(opt, "cmmpa_dprec", 11)) {
 		dprec_handle_option(0x3);
 	} else if (0 == strncmp(opt, "dprec", 5)) {
 		char *p = (char *)opt + 6;
-		unsigned int option = 0;
+		unsigned int option;
 
-		ret = kstrtoul(p, 16, (unsigned long int *)&option);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
+		ret = kstrtouint(p, 0, &option);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
 		dprec_handle_option(option);
-	} else if (0 == strncmp(opt, "cmdq", 4)) {
-		char *p = (char *)opt + 5;
-		unsigned int option = 0;
-
-		ret = kstrtoul(p, 16, (unsigned long int *)&option);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		if (option)
-			primary_display_switch_cmdq_cpu(CMDQ_ENABLE);
-		else
-			primary_display_switch_cmdq_cpu(CMDQ_DISABLE);
 	} else if (0 == strncmp(opt, "maxlayer", 8)) {
 		char *p = (char *)opt + 9;
-		unsigned int maxlayer = 0;
+		unsigned int maxlayer;
 
-		ret = kstrtoul(p, 10, (unsigned long int *)&maxlayer);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		ret = kstrtouint(p, 0, &maxlayer);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
 
 		if (maxlayer)
 			primary_display_set_max_layer(maxlayer);
@@ -739,135 +402,103 @@ static void process_dbg_opt(const char *opt)
 		primary_display_reset();
 	} else if (0 == strncmp(opt, "esd_check", 9)) {
 		char *p = (char *)opt + 10;
-		unsigned int enable = 0;
+		unsigned int enable;
 
-		ret = kstrtoul(p, 10, (unsigned long int *)&enable);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
+		ret = kstrtouint(p, 0, &enable);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
 		primary_display_esd_check_enable(enable);
-	} else if (0 == strncmp(opt, "cmd:", 4)) {
-		char *p = (char *)opt + 4;
-		unsigned int value = 0;
-		int lcm_cmd[5];
-		unsigned int cmd_num = 1;
-
-		ret = kstrtoul(p, 5, (unsigned long int *)&value);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		lcm_cmd[0] = value;
-		primary_display_set_cmd(lcm_cmd, cmd_num);
 	} else if (0 == strncmp(opt, "esd_recovery", 12)) {
 		primary_display_esd_recovery();
 	} else if (0 == strncmp(opt, "lcm0_reset", 10)) {
-#if 1
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 1);
-		/* msleep(10); */
-		usleep_range(10000, 11000);
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 0);
-		/* msleep(10); */
-		usleep_range(10000, 11000);
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 1);
-
-#else
 #if 0
+		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
+		msleep(20);
+		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 0);
+		msleep(20);
+		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
+#else
+#ifdef CONFIG_MTK_LEGACY
 		mt_set_gpio_mode(GPIO106 | 0x80000000, GPIO_MODE_00);
 		mt_set_gpio_dir(GPIO106 | 0x80000000, GPIO_DIR_OUT);
 		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ONE);
-		/* msleep(10); */
-		usleep_range(10000, 11000);
+		msleep(20);
 		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ZERO);
-		/* msleep(10); */
-		usleep_range(10000, 11000);
+		msleep(20);
 		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ONE);
+#else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
+		msleep(20);
+		ret |= disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
+		msleep(20);
+		ret |= disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 #endif
 #endif
 	} else if (0 == strncmp(opt, "lcm0_reset0", 11)) {
 		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 0);
 	} else if (0 == strncmp(opt, "lcm0_reset1", 11)) {
 		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 1);
-	} else if (0 == strncmp(opt, "cg", 2)) {
-		char *p = (char *)opt + 2;
-		unsigned int enable = 0;
-
-		ret = kstrtoul(p, 10, (unsigned long int *)&enable);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		primary_display_enable_path_cg(enable);
-	} else if (0 == strncmp(opt, "ovl2mem:", 8)) {
-		if (0 == strncmp(opt + 8, "on", 2))
-			switch_ovl1_to_mem(true);
-		else
-			switch_ovl1_to_mem(false);
 	} else if (0 == strncmp(opt, "dump_layer:", 11)) {
 		if (0 == strncmp(opt + 11, "on", 2)) {
-			char *p = (char *)opt + 14;
-
-			ret = kstrtoul(p, 10, (unsigned long int *)&gCapturePriLayerDownX);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-			ret = kstrtoul(p + 1, 10, (unsigned long int *)&gCapturePriLayerDownY);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-			ret = kstrtoul(p + 1, 10, (unsigned long int *)&gCapturePriLayerNum);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-
+			ret = sscanf(opt, "dump_layer:on,%d,%d,%d\n",
+				     &gCapturePriLayerDownX, &gCapturePriLayerDownY, &gCapturePriLayerNum);
+			if (ret != 3) {
+				pr_err("error to parse cmd %s\n", opt);
+				return;
+			}
 
 			gCapturePriLayerEnable = 1;
-			if (gCapturePriLayerDownX == 0)
-				gCapturePriLayerDownX = 20;
-			if (gCapturePriLayerDownY == 0)
-				gCapturePriLayerDownY = 20;
-			pr_debug("dump_layer En %d DownX %d DownY %d,Num %d",
-				 gCapturePriLayerEnable, gCapturePriLayerDownX,
-				 gCapturePriLayerDownY, gCapturePriLayerNum);
-
-		} else if (0 == strncmp(opt + 11, "off", 3)) {
-			gCapturePriLayerEnable = 0;
-			gCapturePriLayerNum = OVL_LAYER_NUM;
-			pr_debug("dump_layer En %d\n", gCapturePriLayerEnable);
-		}
-	} else if (0 == strncmp(opt, "dump_decouple:", 14)) {
-		if (0 == strncmp(opt + 14, "on", 2)) {
-			char *p = (char *)opt + 17;
-
-			ret = kstrtoul(p, 10, (unsigned long int *)&gCapturePriLayerDownX);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-			ret = kstrtoul(p + 1, 10, (unsigned long int *)&gCapturePriLayerDownY);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-			ret = kstrtoul(p + 1, 10, (unsigned long int *)&gCapturePriLayerNum);
-			if (ret)
-				pr_err("DISP/%s: errno %d\n", __func__, ret);
-
 			gCaptureWdmaLayerEnable = 1;
 			if (gCapturePriLayerDownX == 0)
 				gCapturePriLayerDownX = 20;
 			if (gCapturePriLayerDownY == 0)
 				gCapturePriLayerDownY = 20;
-			pr_debug("dump_decouple En %d DownX %d DownY %d,Num %d",
-				 gCaptureWdmaLayerEnable, gCapturePriLayerDownX,
-				 gCapturePriLayerDownY, gCapturePriLayerNum);
+			DDPMSG("dump_layer En %d DownX %d DownY %d,Num %d", gCapturePriLayerEnable,
+			       gCapturePriLayerDownX, gCapturePriLayerDownY, gCapturePriLayerNum);
 
-		} else if (0 == strncmp(opt + 14, "off", 3)) {
+		} else if (0 == strncmp(opt + 11, "off", 3)) {
+			gCapturePriLayerEnable = 0;
 			gCaptureWdmaLayerEnable = 0;
-			pr_debug("dump_decouple En %d\n", gCaptureWdmaLayerEnable);
+			gCapturePriLayerNum = TOTAL_OVL_LAYER_NUM;
+			DDPMSG("dump_layer En %d\n", gCapturePriLayerEnable);
 		}
-	} else if (0 == strncmp(opt, "bkl:", 4)) {
-		char *p = (char *)opt + 4;
-		unsigned long int level = 0;
-
-		ret = kstrtoul(p, 10, &level);
-		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
-		pr_debug("process_dbg_opt(), set backlight level = %ld\n", level);
-		primary_display_setbacklight(level);
 	}
+
+	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
+		int layer_num, w, h, fmt, frame_num, vsync;
+
+		ret = sscanf(opt, "primary_basic_test:%d,%d,%d,%d,%d,%d\n",
+			     &layer_num, &w, &h, &fmt, &frame_num, &vsync);
+		if (ret != 6) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+
+		if (fmt == 0)
+			fmt = DISP_FORMAT_RGBA8888;
+		else if (fmt == 1)
+			fmt = DISP_FORMAT_RGB888;
+		else if (fmt == 2)
+			fmt = DISP_FORMAT_RGB565;
+
+		primary_display_basic_test(layer_num, w, h, fmt, frame_num, vsync);
+	}
+
+	if (0 == strncmp(opt, "pan_disp_test:", 13)) {
+		int frame_num;
+		int bpp;
+
+		ret = sscanf(opt, "pan_disp_test:%d,%d\n", &frame_num, &bpp);
+		if (ret != 2) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+
+		pan_display_test(frame_num, bpp);
+	}
+
 }
 
 
@@ -875,30 +506,17 @@ static void process_dbg_cmd(char *cmd)
 {
 	char *tok;
 
-	pr_debug("DISP/DBG " "[mtkfb_dbg] %s\n", cmd);
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "[mtkfb_dbg] %s\n", cmd);
 
 	while ((tok = strsep(&cmd, " ")) != NULL)
 		process_dbg_opt(tok);
-
 }
-
-
-/* --------------------------------------------------------------------------- */
-/* Debug FileSystem Routines */
-/* --------------------------------------------------------------------------- */
-
-struct dentry *mtkfb_dbgfs = NULL;
-
 
 static int debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
 	return 0;
 }
-
-
-static char debug_buffer[4096 + 3 * DPREC_ERROR_LOG_BUFFER_LENGTH];
-/* extern int mtkfb_fence_get_debug_info(int buf_len, unsigned char *stringbuf); */
 
 int debug_get_info(unsigned char *stringbuf, int buf_len)
 {
@@ -907,22 +525,28 @@ int debug_get_info(unsigned char *stringbuf, int buf_len)
 	DISPFUNC();
 
 	n += mtkfb_get_debug_state(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += primary_display_get_debug_state(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += disp_sync_get_debug_info(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_result_string_all(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
-	n += primary_display_check_path(stringbuf + n, buf_len - n);
+	n += disp_helper_get_option_list(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_HWOP, stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	stringbuf[n++] = 0;
 	return n;
@@ -976,115 +600,12 @@ static const struct file_operations debug_fops = {
 	.open = debug_open,
 };
 
-#ifdef MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
-
-static int layer_debug_open(struct inode *inode, struct file *file)
-{
-	MTKFB_LAYER_DBG_OPTIONS *dbgopt;
-	/* /record the private data */
-	file->private_data = inode->i_private;
-	dbgopt = (MTKFB_LAYER_DBG_OPTIONS *) file->private_data;
-
-	dbgopt->working_size = DISP_GetScreenWidth() * DISP_GetScreenHeight() * 2 + 32;
-	dbgopt->working_buf = (unsigned long)vmalloc(dbgopt->working_size);
-	if (dbgopt->working_buf == 0)
-		pr_debug("DISP/DBG Vmalloc to get temp buffer failed\n");
-
-	return 0;
-}
-
-
-static ssize_t layer_debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
-{
-	return 0;
-}
-
-
-static ssize_t layer_debug_write(struct file *file,
-				 const char __user *ubuf, size_t count, loff_t *ppos)
-{
-	MTKFB_LAYER_DBG_OPTIONS *dbgopt = (MTKFB_LAYER_DBG_OPTIONS *) file->private_data;
-
-	pr_debug("DISP/DBG " "mtkfb_layer%d write is not implemented yet\n", dbgopt->layer_index);
-
-	return count;
-}
-
-static int layer_debug_release(struct inode *inode, struct file *file)
-{
-	MTKFB_LAYER_DBG_OPTIONS *dbgopt;
-
-	dbgopt = (MTKFB_LAYER_DBG_OPTIONS *) file->private_data;
-
-	if (dbgopt->working_buf != 0)
-		vfree((void *)dbgopt->working_buf);
-
-	dbgopt->working_buf = 0;
-
-	return 0;
-}
-
-
-static const struct file_operations layer_debug_fops = {
-	.read = layer_debug_read,
-	.write = layer_debug_write,
-	.open = layer_debug_open,
-	.release = layer_debug_release,
-};
-
-#endif
-
 void DBG_Init(void)
 {
 	mtkfb_dbgfs = debugfs_create_file("mtkfb", S_IFREG | S_IRUGO, NULL, (void *)0, &debug_fops);
-
-	memset(&dbg_opt, 0, sizeof(dbg_opt));
-	memset(&fps, 0, sizeof(fps));
-	dbg_opt.log_fps_wnd_size = DEFAULT_LOG_FPS_WND_SIZE;
-	/* xuecheng, enable fps log by default */
-	dbg_opt.en_fps_log = 1;
-
-#ifdef MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
-	{
-		unsigned int i;
-		unsigned char a[13];
-
-		a[0] = 'm';
-		a[1] = 't';
-		a[2] = 'k';
-		a[3] = 'f';
-		a[4] = 'b';
-		a[5] = '_';
-		a[6] = 'l';
-		a[7] = 'a';
-		a[8] = 'y';
-		a[9] = 'e';
-		a[10] = 'r';
-		a[11] = '0';
-		a[12] = '\0';
-
-		for (i = 0; i < DDP_OVL_LAYER_MUN; i++) {
-			a[11] = '0' + i;
-			mtkfb_layer_dbg_opt[i].layer_index = i;
-			mtkfb_layer_dbgfs[i] = debugfs_create_file(a,
-								   S_IFREG | S_IRUGO, NULL,
-								   (void *)&mtkfb_layer_dbg_opt[i],
-								   &layer_debug_fops);
-		}
-	}
-#endif
 }
-
 
 void DBG_Deinit(void)
 {
 	debugfs_remove(mtkfb_dbgfs);
-#ifdef MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
-	{
-		unsigned int i;
-
-		for (i = 0; i < DDP_OVL_LAYER_MUN; i++)
-			debugfs_remove(mtkfb_layer_dbgfs[i]);
-	}
-#endif
 }

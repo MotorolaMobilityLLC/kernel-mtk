@@ -17,13 +17,14 @@
 #elif defined(BUILD_UBOOT)
 #include <asm/arch/mt_gpio.h>
 #else
+#ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_pm_ldo.h>
 #include <mach/mt_gpio.h>
 #endif
-
-#include <cust_gpio_usage.h>
+#endif
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#include <cust_gpio_usage.h>
 #include <cust_i2c.h>
 #endif
 
@@ -994,7 +995,9 @@ static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
 	unsigned char data = 0xFF;
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	int ret = 0;
+#endif
 
 	cmd = 0x00;
 	data = 0x0E;
@@ -1205,6 +1208,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
+#if 0 /* defined but not used */
 static void lcm_setbacklight(unsigned int level)
 {
 	LCM_LOGI("%s,nt35595 backlight: level = %d\n", __func__, level);
@@ -1213,6 +1217,7 @@ static void lcm_setbacklight(unsigned int level)
 
 	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
+#endif
 
 static void *lcm_switch_mode(int mode)
 {

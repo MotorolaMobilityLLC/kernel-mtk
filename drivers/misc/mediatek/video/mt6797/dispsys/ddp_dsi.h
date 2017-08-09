@@ -2,34 +2,22 @@
 #define __DSI_DRV_H__
 
 
-#include <linux/types.h>
+#include "mt-plat/mt_typedefs.h"
 
 #include "lcm_drv.h"
 #include "ddp_hal.h"
-#include "fbconfig_kdebug_k2.h"
-#include "ddp_info.h"
-#include "ddp_manager.h"
-
+#include "fbconfig_kdebug_x.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-extern const LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
-extern void DSI_manual_enter_HS(cmdqRecHandle cmdq);
-extern void DSI_sw_clk_trail_cmdq(int module_idx, cmdqRecHandle cmdq);
-
-void DSI_ForceConfig(int forceconfig);
-int DSI_set_roi(int x, int y);
-int DSI_check_roi(void);
-
 /* --------------------------------------------------------------------------- */
 
-#define DSI_CHECK_RET(expr)			\
-	do {					\
-		DSI_STATUS ret = (expr);	\
-		ASSERT(DSI_STATUS_OK == ret);	\
+#define DSI_CHECK_RET(expr)             \
+	do {                                \
+		DSI_STATUS ret = (expr);        \
+		ASSERT(DSI_STATUS_OK == ret);   \
 	} while (0)
 
 /* --------------------------------------------------------------------------- */
@@ -44,7 +32,6 @@ int DSI_check_roi(void);
 #define		DSI_GERNERIC_LONG_PACKET_ID			0x29
 #define		DSI_GERNERIC_READ_LONG_PACKET_ID	0x14
 
-#define		DSI_NULL_PACKET_ID					0x09
 
 #define		DSI_WMEM_CONTI						(0x3C)
 #define		DSI_RMEM_CONTI						(0x3E)
@@ -148,13 +135,13 @@ int DSI_check_roi(void);
 	} DSI_T3_INS, *PDSI_T3_INS;
 
 	typedef struct {
-		uint8_t TXDIV0;
-		uint8_t TXDIV1;
-		uint32_t SDM_PCW;
-		uint8_t SSC_PH_INIT;
-		uint16_t SSC_PRD;
-		uint16_t SSC_DELTA1;
-		uint16_t SSC_DELTA;
+		UINT8 TXDIV0;
+		UINT8 TXDIV1;
+		UINT32 SDM_PCW;
+		UINT8 SSC_PH_INIT;
+		UINT16 SSC_PRD;
+		UINT16 SSC_DELTA1;
+		UINT16 SSC_DELTA;
 	} DSI_PLL_CONFIG;
 
 	typedef enum {
@@ -164,25 +151,42 @@ int DSI_check_roi(void);
 		DSI_INTERFACE_NUM,
 	} DSI_INTERFACE_ID;
 
+	typedef enum {
+		DSI_VFP = 0,
+		DSI_VSA,
+		DSI_VBP,
+		DSI_VACT,
+		DSI_HFP,
+		DSI_HSA,
+		DSI_HBP,
+		DSI_BLLP,
+		DSI_PORCH_NUM,
+	} DSI_PORCH_TYPE;
 
-	void DSI_ChangeClk(DISP_MODULE_ENUM module, uint32_t clk);
-	int32_t DSI_ssc_enable(uint32_t dsi_idx, uint32_t en);
-	uint32_t PanelMaster_get_CC(uint32_t dsi_idx);
-	void PanelMaster_set_CC(uint32_t dsi_index, uint32_t enable);
-	uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type);
-	uint32_t PanelMaster_get_TE_status(uint32_t dsi_idx);
-	void PanelMaster_DSI_set_timing(uint32_t dsi_index, MIPI_TIMING timing);
+	extern const LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
+	/* defined in mtkfb.c */
+	extern bool is_ipoh_bootup;
+
+
+	void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk);
+	INT32 DSI_ssc_enable(UINT32 dsi_idx, UINT32 en);
+	UINT32 PanelMaster_get_CC(UINT32 dsi_idx);
+	void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable);
+	UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type);
+	UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx);
+	void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing);
 	unsigned int PanelMaster_set_PM_enable(unsigned int value);
-	uint32_t DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, uint8_t cmd,
-				       uint8_t *buffer, uint8_t buffer_size);
-	void *get_dsi_params_handle(uint32_t dsi_idx);
+	UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT8 cmd,
+				       UINT8 *buffer, UINT8 buffer_size);
+	void *get_dsi_params_handle(UINT32 dsi_idx);
+	void dsi_analysis(DISP_MODULE_ENUM module);
+	void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, cmdqRecHandle cmdq);
+	void DSI_Set_LFR(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode,
+			 unsigned int type, unsigned int enable, unsigned int skip_num);
+	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable, unsigned int color);
+	int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq);
+	DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level);
 
-	DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enable,
-				 unsigned int color);
-
-	extern DDP_MODULE_DRIVER ddp_driver_dsi0;
-	extern DDP_MODULE_DRIVER ddp_driver_dsi1;
-	extern DDP_MODULE_DRIVER ddp_driver_dsidual;
 #ifdef __cplusplus
 }
 #endif

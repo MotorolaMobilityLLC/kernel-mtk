@@ -15,8 +15,5 @@ enum WDMA_INPUT_FORMAT {
 
 void wdma_dump_analysis(DISP_MODULE_ENUM module);
 void wdma_dump_reg(DISP_MODULE_ENUM module);
-unsigned int ddp_wdma_get_cur_addr(void);
-
-extern DDP_MODULE_DRIVER ddp_driver_wdma;
 
 #endif

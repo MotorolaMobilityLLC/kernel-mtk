@@ -20,6 +20,13 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 	return mtk_disp_mgr_ioctl(file, cmd, arg);
 }
 
+#ifdef CONFIG_COMPAT
+static long disp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	return mtk_disp_mgr_ioctl(file, cmd, arg);
+}
+#endif
+
 static int disp_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -46,24 +53,6 @@ static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 	return 0;
 }
 
-#ifdef CONFIG_COMPAT
-static long disp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	long ret = -ENOIOCTLCMD;
-
-	switch (cmd) {
-
-		/* add cases here for 32bit/64bit conversion */
-		/* ... */
-
-	default:
-		return mtk_disp_mgr_ioctl(file, cmd, arg);
-	}
-	return ret;
-}
-#endif
-
-
 /* Kernel interface */
 static const struct file_operations disp_fops = {
 	.owner = THIS_MODULE,
@@ -81,12 +70,10 @@ static const struct file_operations disp_fops = {
 static int __init disp_init(void)
 {
 	int ret = 0;
-
 	DISPMSG("Register the disp driver\n");
 	proc_entry = proc_create(DISP_DEVNAME, 0644, NULL, &disp_fops);
 	if (proc_entry == NULL)
 		ret = -ENOMEM;
-
 	return ret;
 }
 

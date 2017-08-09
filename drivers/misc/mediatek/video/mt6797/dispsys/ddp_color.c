@@ -1278,7 +1278,7 @@ static unsigned long color_pa2va(unsigned int addr)
 	/* check disp module */
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= ddp_reg_pa_base[i]) && (addr < (ddp_reg_pa_base[i] + 0x1000))) {
-			COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n",
+			COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%lx], VABase[0x%lx]\n",
 				  addr, ddp_reg_pa_base[i], dispsys_reg[i]);
 			return dispsys_reg[i] + (addr - ddp_reg_pa_base[i]);
 		}
@@ -1291,7 +1291,7 @@ static unsigned long color_pa2va(unsigned int addr)
 		return g_tdshp_va + (addr - TDSHP_PA_BASE);
 	}
 
-	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%lx], VABase[0x%lx]\n", addr,
 		  ddp_reg_pa_base[0], dispsys_reg[0]);
 
 	return 0;

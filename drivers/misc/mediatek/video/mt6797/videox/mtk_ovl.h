@@ -2,6 +2,7 @@
 #ifndef __MTK_OVL_H__
 #define __MTK_OVL_H__
 #include "primary_display.h"
+
 typedef struct {
 	unsigned int layer;
 	unsigned int layer_en;
@@ -37,14 +38,15 @@ typedef struct {
 	unsigned int connected_type;
 	unsigned int security;
 	unsigned int dirty;
+	unsigned int yuv_range;
 } ovl2mem_in_config;
 
 typedef struct {
 	unsigned int fmt;
-	unsigned long addr;
-	unsigned long addr_sub_u;
-	unsigned long addr_sub_v;
-	unsigned long vaddr;
+	unsigned int addr;
+	unsigned int addr_sub_u;
+	unsigned int addr_sub_v;
+	unsigned int vaddr;
 	unsigned int x;
 	unsigned int y;
 	unsigned int w;

@@ -78,7 +78,7 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 #define enable_clock(...)
 #define disable_clock(...)
 #define smp_inner_dcache_flush_all(...)
-#define register_larb_monitor(...)
+/* #define register_larb_monitor(...) */
 #if 0
 #define aee_kernel_exception(...)
 #define aee_kernel_warning_api(...)
