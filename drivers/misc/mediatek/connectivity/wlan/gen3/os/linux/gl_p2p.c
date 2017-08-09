@@ -1838,6 +1838,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prDev);
 	prGlueInfo = prNetDevPrivate->prGlueInfo;
 	ucBssIndex = prNetDevPrivate->ucBssIdx;
+	prGlueInfo->u8SkbToDriver++;
 
 	kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
 

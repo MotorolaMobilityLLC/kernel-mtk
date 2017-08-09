@@ -1501,6 +1501,8 @@ VOID kalUpdateRxCSUMOffloadParam(IN PVOID pvPacket, IN ENUM_CSUM_RESULT_T aeCSUM
 VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 {
 	dev_kfree_skb((struct sk_buff *)pvPacket);
+	if (prGlueInfo)
+		prGlueInfo->u8SkbFreed++;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2097,6 +2099,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		DBGLOG(INIT, INFO, "GLUE_FLAG_HALT skip tx\n");
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
@@ -2117,6 +2120,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 		/* Cannot extract packet */
 		DBGLOG(INIT, INFO, "Cannot extract content, skip this frame\n");
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return WLAN_STATUS_INVALID_PACKET;
 	}
 
@@ -2129,9 +2133,9 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 	if (u2QueueIdx >= CFG_MAX_TXQ_NUM) {
 		DBGLOG(INIT, INFO, "Incorrect queue index, skip this frame\n");
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return WLAN_STATUS_INVALID_PACKET;
 	}
-
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_TX_QUE);
 	QUEUE_INSERT_TAIL(prTxQueue, prQueueEntry);
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_TX_QUE);
@@ -2283,9 +2287,8 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	}
 
 	dev_kfree_skb((struct sk_buff *)pvPacket);
-
+	prGlueInfo->u8SkbFreed++;
 	DBGLOG(TX, LOUD, "----- pending frame %d -----\n", prGlueInfo->i4TxPendingFrameNum);
-
 }
 
 /*----------------------------------------------------------------------------*/

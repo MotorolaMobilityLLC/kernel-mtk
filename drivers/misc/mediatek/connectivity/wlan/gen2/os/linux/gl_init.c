@@ -1873,6 +1873,7 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	ASSERT(prSkb);
 	ASSERT(prDev);
 	ASSERT(prGlueInfo);
+	prGlueInfo->u8SkbToDriver++;
 
 #if (CFG_SUPPORT_TDLS_DBG == 1)
 	{
@@ -1890,17 +1891,20 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		DBGLOG(INIT, INFO, "GLUE_FLAG_HALT skip tx\n");
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 #if CFG_SUPPORT_HOTSPOT_2_0
 	if (prGlueInfo->fgIsDad) {
 		/* kalPrint("[Passpoint R2] Due to ipv4_dad...TX is forbidden\n"); */
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 	if (prGlueInfo->fgIs6Dad) {
 		/* kalPrint("[Passpoint R2] Due to ipv6_dad...TX is forbidden\n"); */
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 #endif
@@ -1950,13 +1954,15 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_TX_QUE);
 		QUEUE_INSERT_TAIL(prTxQueue, prQueueEntry);
 		GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_TX_QUE);
-
 /* GLUE_INC_REF_CNT(prGlueInfo->i4TxPendingFrameNum); */
 /* GLUE_INC_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][u2QueueIdx]); */
 
 		if (u2QueueIdx < CFG_MAX_TXQ_NUM) {
 			if (prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][u2QueueIdx] >=
 			    CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD) {
+				DBGLOG(TX, INFO, "netif_stop_subqueue for wlan0, Queue len: %d\n",
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][u2QueueIdx]);
+
 				netif_stop_subqueue(prDev, u2QueueIdx);
 
 #if (CONF_HIF_LOOPBACK_AUTO == 1)

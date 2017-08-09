@@ -1651,16 +1651,20 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prDev);
 	ASSERT(prNetDevPrivate->prGlueInfo == prGlueInfo);
 	ucBssIndex = prNetDevPrivate->ucBssIdx;
+	prGlueInfo->u8SkbToDriver++;
 
 #if CFG_SUPPORT_PASSPOINT
 	if (prGlueInfo->fgIsDad) {
 		/* kalPrint("[Passpoint R2] Due to ipv4_dad...TX is forbidden\n"); */
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 	if (prGlueInfo->fgIs6Dad) {
 		/* kalPrint("[Passpoint R2] Due to ipv6_dad...TX is forbidden\n"); */
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
+
 		return NETDEV_TX_OK;
 	}
 #endif /* CFG_SUPPORT_PASSPOINT */

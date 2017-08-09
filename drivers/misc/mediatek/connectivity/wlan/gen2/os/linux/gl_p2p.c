@@ -1795,9 +1795,11 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	ASSERT(prDev);
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
+	prGlueInfo->u8SkbToDriver++;
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		DBGLOG(P2P, ERROR, "GLUE_FLAG_HALT skip tx\n");
+		prGlueInfo->u8SkbFreed++;
 		dev_kfree_skb(prSkb);
 		return NETDEV_TX_OK;
 	}
@@ -1822,6 +1824,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 
 		if (u2QueueIdx >= CFG_MAX_TXQ_NUM) {
 			DBGLOG(P2P, ERROR, "Incorrect queue index, skip this frame\n");
+			prGlueInfo->u8SkbFreed++;
 			dev_kfree_skb(prSkb);
 			return NETDEV_TX_OK;
 		}
@@ -1834,6 +1837,8 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 
 		if (prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_P2P_INDEX][u2QueueIdx] >=
 		    CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD) {
+			DBGLOG(TX, INFO, "netif_stop_subqueue for p2p0, Queue len: %d\n",
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_P2P_INDEX][u2QueueIdx]);
 			netif_stop_subqueue(prDev, u2QueueIdx);
 		}
 	} else {

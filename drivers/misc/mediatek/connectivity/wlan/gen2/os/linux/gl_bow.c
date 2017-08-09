@@ -1008,6 +1008,7 @@ static int bowHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDe
 	aucOUI[0] = *(PUINT_8) &aucLookAheadBuf[ETH_SNAP_OFFSET];
 	aucOUI[1] = *(PUINT_8) &aucLookAheadBuf[ETH_SNAP_OFFSET + 1];
 	aucOUI[2] = *(PUINT_8) &aucLookAheadBuf[ETH_SNAP_OFFSET + 2];
+	prGlueInfo->u8SkbToDriver++;
 
 	if (!(ucDSAP == ETH_LLC_DSAP_SNAP &&
 	      ucSSAP == ETH_LLC_SSAP_SNAP &&
@@ -1020,12 +1021,14 @@ static int bowHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDe
 #endif
 
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		DBGLOG(BOW, TRACE, "GLUE_FLAG_HALT skip tx\n");
 		dev_kfree_skb(prSkb);
+		prGlueInfo->u8SkbFreed++;
 		return NETDEV_TX_OK;
 	}
 
@@ -1065,6 +1068,9 @@ static int bowHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDe
 		GLUE_INC_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_BOW_INDEX][u2QueueIdx]);
 		if (prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_BOW_INDEX][u2QueueIdx] >=
 				CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD)
+			DBGLOG(TX, INFO, "netif_stop_subqueue for BOW, Queue len: %d\n",
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_BOW_INDEX][u2QueueIdx]);
+
 			netif_stop_subqueue(prDev, u2QueueIdx);
 	} else {
 		GLUE_INC_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum);

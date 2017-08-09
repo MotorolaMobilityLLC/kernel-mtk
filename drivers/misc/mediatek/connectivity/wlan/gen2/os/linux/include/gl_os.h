@@ -985,6 +985,8 @@ struct _GLUE_INFO_T {
 	UINT_32 IsrSoftWareCnt;
 	UINT_32 IsrTxCnt;
 	UINT_32 IsrRxCnt;
+	UINT_64 u8SkbToDriver;
+	UINT_64 u8SkbFreed;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

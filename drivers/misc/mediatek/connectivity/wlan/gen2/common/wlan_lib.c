@@ -5312,6 +5312,12 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 
 #if CFG_ENABLE_PER_STA_STATISTICS
 		/* 4 3. Get driver statistics */
+		DBGLOG(TX, INFO, "skbToDriver %lld, skbFreed: %lld\n",
+			prAdapter->prGlueInfo->u8SkbToDriver,
+			prAdapter->prGlueInfo->u8SkbFreed);
+		prAdapter->prGlueInfo->u8SkbFreed = 0;
+		prAdapter->prGlueInfo->u8SkbToDriver = 0;
+
 		prQueryStaStatistics->u4TxTotalCount = prStaRec->u4TotalTxPktsNumber;
 		prQueryStaStatistics->u4TxExceedThresholdCount = prStaRec->u4ThresholdCounter;
 		prQueryStaStatistics->u4TxMaxTime = prStaRec->u4MaxTxPktsTime;

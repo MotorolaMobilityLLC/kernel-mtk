@@ -1289,6 +1289,8 @@ VOID kalUpdateRxCSUMOffloadParam(IN PVOID pvPacket, IN ENUM_CSUM_RESULT_T aeCSUM
 VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 {
 	dev_kfree_skb((struct sk_buff *)pvPacket);
+	if (prGlueInfo)
+		prGlueInfo->u8SkbFreed++;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2061,6 +2063,9 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 		if (netif_subqueue_stopped(prDev, prSkb) &&
 		    prGlueInfo->ai4TxPendingFrameNumPerQueue[ucNetworkType][u2QueueIdx] <=
 		    CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD) {
+			DBGLOG(TX, INFO, "netif_wake_subqueue for bss: %d. Queue len: %d\n",
+				ucNetworkType,
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[ucNetworkType][u2QueueIdx]);
 			netif_wake_subqueue(prDev, u2QueueIdx);
 
 #if (CONF_HIF_LOOPBACK_AUTO == 1)
@@ -2070,9 +2075,9 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	}
 
 	dev_kfree_skb((struct sk_buff *)pvPacket);
+	prGlueInfo->u8SkbFreed++;
 
 	DBGLOG(TX, EVENT, "----- pending frame %d -----\n", prGlueInfo->i4TxPendingFrameNum);
-
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3248,6 +3253,8 @@ VOID kalSecurityFrameSendComplete(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	ASSERT(pvPacket);
 
 	dev_kfree_skb((struct sk_buff *)pvPacket);
+	if (prGlueInfo)
+		prGlueInfo->u8SkbFreed++;
 	GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum);
 }
 
