@@ -1,3 +1,17 @@
+# Copyright (c) 2015 MediaTek Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 LOCAL_PATH := $(call my-dir)
 KERNEL_ROOT_DIR := $(PWD)
 
@@ -152,7 +166,7 @@ else
 	python device/mediatek/build/build/tools/check_kernel_config.py -c $(MTK_TARGET_PROJECT_FOLDER)/ProjectConfig.mk -k $(KERNEL_CONFIG_FILE) -p $(MTK_PROJECT_NAME)
 endif
 
-ifneq ($(filter check-kernel-dotconfig,$(MAKECMDGOALS)),)
+ifneq ($(filter check-mtk-config check-kernel-dotconfig,$(MAKECMDGOALS)),)
 .PHONY: $(TARGET_KERNEL_CONFIG)
 endif
 check-kernel-dotconfig: $(TARGET_KERNEL_CONFIG)
