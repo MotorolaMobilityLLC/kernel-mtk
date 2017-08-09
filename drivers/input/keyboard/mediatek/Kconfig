@@ -1,4 +1,4 @@
-config MTK_KEYPAD
+config KEYBOARD_MTK
 	tristate "MediaTek Keypad Support"
 	---help---
 	  Say Y here if you want to use the keypad.

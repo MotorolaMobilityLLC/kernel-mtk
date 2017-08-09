@@ -42,7 +42,6 @@ config MTK_BASE_POWER
 	bool
 
 source "drivers/misc/mediatek/uart/Kconfig"
-source "drivers/misc/mediatek/keypad/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
 source "drivers/misc/mediatek/videocodec/Kconfig"
