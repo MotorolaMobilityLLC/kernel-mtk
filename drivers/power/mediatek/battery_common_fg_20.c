@@ -4310,6 +4310,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 	int len = 0;
 	char desc[32];
 	int cmd_current_unlimited = false;
+	int cmd_power_path_enable = false;
 	unsigned int charging_enable = false;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -4318,7 +4319,8 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
+	if (sscanf(desc, "%d %d %d", &cmd_current_unlimited, &cmd_discharging,
+		&cmd_power_path_enable) == 3) {
 		set_usb_current_unlimited(cmd_current_unlimited);
 		if (cmd_discharging == 1) {
 			charging_enable = false;
@@ -4328,10 +4330,12 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 			adjust_power = -1;
 		}
 		battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+		battery_charging_control(CHARGING_CMD_ENABLE_POWER_PATH,
+			&cmd_power_path_enable);
 
 		battery_log(BAT_LOG_CRTI,
-			    "[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d\n",
-			    cmd_current_unlimited, cmd_discharging);
+		"[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d, power_path_en=%d\n",
+			    cmd_current_unlimited, cmd_discharging, cmd_power_path_enable);
 		return count;
 	}
 
