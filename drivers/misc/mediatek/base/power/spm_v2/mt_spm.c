@@ -206,7 +206,8 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
 	spm_write(SPM_IRQ_STA, isr);
 	if (isr & ISRS_TWAM)
-		udelay(100);	/* need 3T TWAM clock (32K/26M) */
+		while (ISRS_TWAM & spm_read(SPM_IRQ_STA))
+			;
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
