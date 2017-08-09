@@ -4,6 +4,9 @@
 #include <linux/proc_fs.h>
 
 #include <platform/mtk_platform_common.h>
+#include "mt_gpufreq.h"
+#include <mali_kbase_pm_internal.h>
+
 
 #ifdef ENABLE_MTK_MEMINFO
 /*
@@ -22,6 +25,10 @@ int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
+
+extern u32 kbasep_get_gl_utilization(void);
+extern u32 kbasep_get_cl_js0_utilization(void);
+extern u32 kbasep_get_cl_js1_utilization(void);
 
 /* on:1, off:0 */
 int g_vgpu_power_on_flag = 0;
@@ -121,8 +128,8 @@ static int proc_gpu_help_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "======================================================================\n");
 	seq_printf(m, "A.For Query GPU/CPU related Command:\n");
-//	seq_printf(m, "  cat /proc/mali/utilization\n");
-//	seq_printf(m, "  cat /proc/mali/frequency\n");
+	seq_printf(m, "  cat /proc/mali/utilization\n");
+	seq_printf(m, "  cat /proc/mali/frequency\n");
 	seq_printf(m, "  cat /proc/mali/memory_usage\n");
 //	seq_printf(m, "  cat /proc/gpufreq/gpufreq_var_dump\n");
 //	seq_printf(m, "  cat /proc/pm_init/ckgen_meter_test\n");
@@ -190,9 +197,64 @@ static const struct file_operations kbasep_gpu_memory_usage_debugfs_open = {
 	.release = single_release,
 };
 
+/// 2. For GL/CL utilization
+static int proc_gpu_utilization_show(struct seq_file *m, void *v)
+{
+    unsigned long gl, cl0, cl1;
+    unsigned int iCurrentFreq;
+
+    iCurrentFreq = mt_gpufreq_get_cur_freq_index();
+    
+    gl  = kbasep_get_gl_utilization();
+    cl0 = kbasep_get_cl_js0_utilization();
+    cl1 = kbasep_get_cl_js1_utilization();
+
+    seq_printf(m, "gpu/cljs0/cljs1=%lu/%lu/%lu, frequency index=%d power(0:off, 1:0n):%d\n", gl, cl0, cl1, iCurrentFreq, mtk_get_vgpu_power_on_flag());
+
+    return 0;
+}
+
+static int kbasep_gpu_utilization_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_utilization_show , NULL);
+}
+
+static const struct file_operations kbasep_gpu_utilization_debugfs_fops = {
+	.open    = kbasep_gpu_utilization_debugfs_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+/// 3. For query GPU frequency index
+static int proc_gpu_frequency_show(struct seq_file *m, void *v)
+{
+
+    unsigned int iCurrentFreq;
+
+    iCurrentFreq = mt_gpufreq_get_cur_freq_index();
+
+    seq_printf(m, "GPU Frequency Index: %u\n", iCurrentFreq);
+
+    return 0;
+}
+
+static int kbasep_gpu_frequency_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_frequency_show , NULL);
+}
+
+static const struct file_operations kbasep_gpu_frequency_debugfs_fops = {
+	.open    = kbasep_gpu_frequency_debugfs_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+/// 4. For query GPU dynamically enable DVFS
 static int g_dvfs_enabled = 1;
 
-int mtk_kbase_is_gpu_dvfs_enabled(void)
+static int mtk_kbase_is_gpu_dvfs_enabled(void)
 {
 	return g_dvfs_enabled;
 }
@@ -251,8 +313,8 @@ void proc_mali_register(void)
 
     proc_create("help", 0, mali_pentry, &kbasep_gpu_help_debugfs_fops);
     proc_create("memory_usage", 0, mali_pentry, &kbasep_gpu_memory_usage_debugfs_open);
-//    proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
-//    proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
+    proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
+    proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
     proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
 //    proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
 //    proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);

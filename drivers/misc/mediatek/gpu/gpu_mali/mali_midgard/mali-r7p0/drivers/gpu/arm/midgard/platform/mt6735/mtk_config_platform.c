@@ -72,7 +72,6 @@ static struct kbase_io_resources io_resources = {
 #endif /* CONFIG_OF */
 
 unsigned int g_power_off_gpu_freq_idx;
-unsigned int g_power_status;
 extern unsigned int g_type_T;
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
@@ -158,7 +157,7 @@ if (0x321 == code) {
 #endif /* CONFIG_MTK_CLKMGR */
 	}
 
-	g_power_status = 1; // the power status is "power on".
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON); // the power status is "power on".
 	mt_gpufreq_target(g_power_off_gpu_freq_idx);
 	current_gpu_freq_idx = mt_gpufreq_get_cur_freq_index();
 	if( current_gpu_freq_idx > g_power_off_gpu_freq_idx)
@@ -255,7 +254,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		printk("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
 	}
 
-	g_power_status = 0; // the power status is "power off".
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF); // the power status is "power off".
 
 	g_power_off_gpu_freq_idx = mt_gpufreq_get_cur_freq_index(); // record current freq. index.
 	//printk("MALI:  GPU power off freq idx : %d\n",g_power_off_gpu_freq_idx );

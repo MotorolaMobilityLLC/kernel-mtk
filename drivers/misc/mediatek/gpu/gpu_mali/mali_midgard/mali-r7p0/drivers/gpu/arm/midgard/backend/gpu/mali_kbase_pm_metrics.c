@@ -340,6 +340,26 @@ out:
 }
 ///}
 
+#ifdef CONFIG_PROC_FS
+u32 kbasep_get_gl_utilization(void)
+{
+	return g_current_sample_gl_utilization;
+}
+KBASE_EXPORT_TEST_API(kbasep_get_gl_utilization)
+
+u32 kbasep_get_cl_js0_utilization(void)
+{
+	return g_current_sample_cl_utilization[0];
+}
+KBASE_EXPORT_TEST_API(kbasep_get_cl_js0_utilization)
+
+u32 kbasep_get_cl_js1_utilization(void)
+{
+	return g_current_sample_cl_utilization[1];
+}
+KBASE_EXPORT_TEST_API(kbasep_get_cl_js1_utilization)
+#endif /* CONFIG_PROC_FS */
+
 void kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
 {
 	unsigned long flags;

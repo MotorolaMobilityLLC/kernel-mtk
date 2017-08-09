@@ -36,8 +36,6 @@ int mtk_kbase_report_gpu_memory_peak(void);
 void mtk_kbase_set_gpu_memory_peak(void);
 #endif /* ENABLE_MTK_MEMINFO */
 
-int mtk_kbase_is_gpu_dvfs_enabled(void);
-
 #ifdef CONFIG_PROC_FS
 void proc_mali_register(void);
 void proc_mali_unregister(void);
