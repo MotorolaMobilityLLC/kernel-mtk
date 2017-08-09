@@ -2534,6 +2534,11 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
 			sa->running_avg_sum += scaled_delta_w;
 		sa->avg_period += delta_w;
 
+		mt_sched_printf(sched_lb_info,
+			"[%s] cpu=%d freq=%lu cap=%lu delta=%d scaled_delta_w=%d avg_sum=%lu avg_period=%lu",
+			__func__, cpu, scale_freq, scale_cpu, delta_w, scaled_delta_w, sa->running_avg_sum,
+			sa->avg_period);
+
 		delta -= delta_w;
 
 		/* Figure out how many additional periods this update spans */
@@ -5765,6 +5770,8 @@ static int get_cpu_usage(int cpu)
 	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
 	unsigned long blocked = cpu_rq(cpu)->cfs.utilization_blocked_avg;
 
+	mt_sched_printf(sched_lb_info, "[%s] cpu=%d usage=%lu blocked=%lu",
+		__func__, cpu, usage, blocked);
 	if (usage + blocked >= SCHED_LOAD_SCALE)
 		return capacity_orig_of(cpu);
 
@@ -6721,7 +6728,8 @@ static int detach_tasks(struct lb_env *env)
 		return 0;
 
 	/* sched: add trace_sched */
-	mt_sched_printf(sched_log, "move_tasks start ");
+	mt_sched_printf(sched_lb, "[%s] start: src=%d dst=%d",
+		__func__, env->src_cpu, env->dst_cpu);
 
 	while (!list_empty(tasks)) {
 		p = list_first_entry(tasks, struct task_struct, se.group_node);
@@ -6784,7 +6792,7 @@ next:
 	 */
 	schedstat_add(env->sd, lb_gained[env->idle], detached);
 	/* sched: add trace_sched */
-	mt_sched_printf(sched_log, "move_tasks end");
+	mt_sched_printf(sched_lb, "[%s] detached=%d", __func__, detached);
 
 	return detached;
 }
@@ -6832,7 +6840,8 @@ static int tgs_detach_tasks(struct lb_env *env)
 	get_cluster_cpus(cpus, src_clid, true);
 #endif
 	mt_sched_printf(sched_cmp,
-		"move_tasks_tg start: src:cpu=%d clid=%d runnable_load=%lu dst:cpu=%d clid=%d" "runnable_load=%lu",
+		"[%s] start: src:cpu=%d clid=%d runnable_load=%lu dst:cpu=%d clid=%d" "runnable_load=%lu",
+		__func__,
 		env->src_cpu, src_clid, cpu_rq(env->src_cpu)->cfs.runnable_load_avg,
 		env->dst_cpu, dst_clid, cpu_rq(env->dst_cpu)->cfs.runnable_load_avg);
 
@@ -7020,7 +7029,7 @@ next:
 		}
 	}
 
-	mt_sched_printf(sched_cmp, "move_tasks_tg finish rule migrate");
+	mt_sched_printf(sched_cmp, "[%s] finish rule migrate", __func__);
 
 	while (!list_empty(&other_tasks)) {
 		p = list_first_entry(&other_tasks, struct task_struct, se.group_node);
@@ -7056,8 +7065,8 @@ next:
 	 */
 	schedstat_add(env->sd, lb_gained[env->idle], detached);
 
-	mt_sched_printf(sched_cmp, "move_tasks_tg finish pulled=%d imbalance=%ld", detached,
-			env->imbalance);
+	mt_sched_printf(sched_cmp, "[%s] finish pulled=%d imbalance=%ld",
+			__func__, detached, env->imbalance);
 
 	return detached;
 }
@@ -7607,14 +7616,15 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		if (idle_cpu(i))
 			sgs->idle_cpus++;
 
-		mt_sched_printf(sched_lb_info, "[%s] %d: %lu %lu %d %d", __func__, i,
-			sgs->group_load, load, rq->nr_running, sgs->sum_nr_running);
+		mt_sched_printf(sched_lb_info, "[%s] cpu=%d group_load=%lu load=%lu nr=%d sum_nr=%d", __func__,
+			i, sgs->group_load, load, rq->nr_running, sgs->sum_nr_running);
 	}
 
 	/* Adjust by relative CPU capacity of the group */
 	sgs->group_capacity = group->sgc->capacity;
 	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
-	mt_sched_printf(sched_lb_info, "[%s] %lu %lu %lu", __func__, sgs->avg_load,
+	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx avg_load=%lu group_load=%lu cap=%lu",
+		__func__, sched_group_cpus(group)->bits[0], sgs->avg_load,
 		sgs->group_load, sgs->group_capacity);
 
 	if (sgs->sum_nr_running)
@@ -7624,6 +7634,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 
 	sgs->group_no_capacity = group_is_overloaded(env, sgs);
 	sgs->group_type = group_classify(env, group, sgs);
+	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx no_capacity=%d weight=%lu nr=%d type=%d, usage=%lu",
+		__func__, sched_group_cpus(group)->bits[0],
+		sgs->group_no_capacity, sgs->group_weight, sgs->sum_nr_running,
+		sgs->group_type, sgs->group_usage);
 }
 
 /**
@@ -7646,8 +7660,9 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 {
 	struct sg_lb_stats *busiest = &sds->busiest_stat;
 
-	mt_sched_printf(sched_lb_info, "[%s] %lx: %d %d %lu %lu ", __func__, sched_group_cpus(sg)->bits[0],
-		sgs->group_type, busiest->group_type, sgs->avg_load, busiest->avg_load);
+	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx sgs_type=%d b_type=%d %lu %lu ", __func__,
+		sched_group_cpus(sg)->bits[0], sgs->group_type,
+		busiest->group_type, sgs->avg_load, busiest->avg_load);
 
 	if (sgs->group_type > busiest->group_type)
 		return true;
@@ -7749,7 +7764,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
 						&overload);
 
-		mt_sched_printf(sched_lb_info, "[%s] %lx %lu",
+		mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx load=%lu",
 			__func__, sched_group_cpus(sg)->bits[0], sgs->avg_load);
 
 		if (local_group)
@@ -8112,6 +8127,7 @@ force_balance:
 
 out_balanced:
 	env->imbalance = 0;
+	mt_sched_printf(sched_lb, "[%s] fail out balance", __func__);
 	return NULL;
 }
 
@@ -8311,13 +8327,14 @@ redo:
 	group = find_busiest_group(&env);
 	if (!group) {
 		schedstat_inc(sd, lb_nobusyg[idle]);
+		mt_sched_printf(sched_lb, "[%s] fail no group", __func__);
 		goto out_balanced;
 	}
 
 	busiest = find_busiest_queue(&env, group);
 	if (!busiest) {
 		schedstat_inc(sd, lb_nobusyq[idle]);
-		mt_sched_printf(sched_lb, "[%s] %d: fail no busyq", __func__, env.src_cpu);
+		mt_sched_printf(sched_lb, "[%s] fail no busyq", __func__);
 		goto out_balanced;
 	}
 
@@ -8330,8 +8347,6 @@ redo:
 		}
 	}
 #endif
-
-
 	BUG_ON(busiest == env.dst_rq);
 
 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
@@ -8357,11 +8372,11 @@ more_balance:
 		raw_spin_lock_irqsave(&busiest->lock, flags);
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 		env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
-		mt_sched_printf(sched_cmp,
+#endif /* CONFIG_MTK_SCHED_CMP */
+		mt_sched_printf(sched_lb,
 			"1 busiest->nr_running=%d src=%d, dst=%d, cpus_share_cache=%d loop_max=%d loop=%d imbalance=%ld"
 			, busiest->nr_running, env.src_cpu, env.dst_cpu, cpus_share_cache(env.src_cpu, env.dst_cpu),
 			env.loop_max, env.loop, env.imbalance);
-#endif /* CONFIG_MTK_SCHED_CMP */
 		/*
 		 * cur_ld_moved - load moved in current iteration
 		 * ld_moved     - cumulative load moved across iterations
@@ -8464,9 +8479,9 @@ more_balance:
 			raw_spin_lock_irqsave(&busiest->lock, flags);
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 			env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
-			mt_sched_printf(sched_cmp, "2 env.loop_max=%d, busiest->nr_running=%d",
-					env.loop_max, busiest->nr_running);
 #endif /* CONFIG_MTK_SCHED_CMP */
+			mt_sched_printf(sched_lb, "2 env.loop_max=%d, busiest->nr_running=%d",
+					env.loop_max, busiest->nr_running);
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 /*			if (!cpus_share_cache(env.src_cpu, env.dst_cpu ) ) */
 			if (!cpus_share_cache(env.src_cpu, env.dst_cpu) && (sd->flags & SD_BALANCE_TG))
