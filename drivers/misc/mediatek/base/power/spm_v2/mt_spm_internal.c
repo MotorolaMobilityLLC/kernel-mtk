@@ -561,6 +561,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	}
 }
 
+#if !defined(CONFIG_ARCH_MT6755)
 #ifdef CONFIG_OF
 static int dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -605,9 +606,29 @@ static int dt_scan_memory(unsigned long node, const char *uname, int depth, void
 	return node;
 }
 #endif
+#endif
 
 void spm_set_dummy_read_addr(void)
 {
+#if defined(CONFIG_ARCH_MT6755)
+
+	u32 rank0_addr, rank1_addr, dram_rank_num;
+
+	dram_rank_num = g_dram_info_dummy_read->rank_num;
+	rank0_addr = g_dram_info_dummy_read->rank_info[0].start;
+	if (dram_rank_num == 1)
+		rank1_addr = rank0_addr;
+	else
+		rank1_addr = g_dram_info_dummy_read->rank_info[1].start;
+
+	spm_crit("dram_rank_num: %d\n", dram_rank_num);
+	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
+
+	spm_write(SPM_PASR_DPD_1, rank0_addr);
+	spm_write(SPM_PASR_DPD_2, rank1_addr);
+
+#else
+
 #ifdef CONFIG_OF
 	int node;
 
@@ -616,6 +637,8 @@ void spm_set_dummy_read_addr(void)
 	pr_err("no rank info\n");
 	BUG();
 	/* return false; */
+#endif
+
 #endif
 }
 
