@@ -63,6 +63,7 @@ static int cg_lpm_bw_threshold, cg_hpm_bw_threshold;
 static int cg_fliper_enabled;
 static int fliper_debug;
 static int LPM_MAX_BW, HPM_MAX_BW;
+static int pre_bw1, pre_bw2;
 #if 0
 static unsigned int emi_polling(unsigned int *__restrict__ emi_value)
 {
@@ -143,7 +144,8 @@ int cg_set_threshold(int bw1, int bw2)
 	int ddr_curr = vcorefs_get_curr_ddr();
 
 	if (bw1 <= BW_THRESHOLD_MAX && bw1 >= BW_THRESHOLD_MIN &&
-			bw2 <= BW_THRESHOLD_MAX && bw2 >= BW_THRESHOLD_MIN) {
+			bw2 <= BW_THRESHOLD_MAX && bw2 >= BW_THRESHOLD_MIN &&
+			bw1 != pre_bw1 && bw2 != pre_bw2) {
 		lpm_threshold = bw1 * THRESHOLD_SCALE / LPM_MAX_BW + 1;
 		hpm_threshold = bw2 * THRESHOLD_SCALE / HPM_MAX_BW;
 		if (lpm_threshold > 127 || lpm_threshold < 1 || hpm_threshold > 127 || hpm_threshold < 1) {
@@ -164,19 +166,27 @@ int cg_set_threshold(int bw1, int bw2)
 		cg_lpm_bw_threshold = bw1;
 		cg_hpm_bw_threshold = bw2;
 
-	} else {
+	}
+#if 0
+	else {
 		pr_debug(TAG"Set CG bdw threshold Error: (MAX:%d, MIN:%d)\n",
 			BW_THRESHOLD_MAX, BW_THRESHOLD_MIN);
 	}
+#endif
+
+	pre_bw1 = bw1;
+	pre_bw2 = bw2;
 
 	return 0;
 }
 
 int cg_restore_threshold(void)
 {
+#if 0
 	pr_debug(TAG"Restore CG bdw threshold %d %d -> %d %d\n",
 		cg_lpm_bw_threshold, cg_hpm_bw_threshold, CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
+#endif
 	return 0;
 }
 
@@ -315,6 +325,7 @@ fliper_pm_callback(struct notifier_block *nb,
 	switch (action) {
 
 	case PM_SUSPEND_PREPARE:
+		enable_fliper_polling();
 		break;
 	case PM_HIBERNATION_PREPARE:
 		break;
@@ -322,6 +333,7 @@ fliper_pm_callback(struct notifier_block *nb,
 	case PM_POST_SUSPEND:
 		pr_debug(TAG"Resume, restore CG configuration\n");
 		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
+		disable_fliper_polling();
 		break;
 
 	case PM_POST_HIBERNATION:
@@ -389,6 +401,8 @@ static int __init init_fliper(void)
 	pr_debug(TAG"(LPM_MAX_BW,HPM_MAX_BW):%d,%d\n", LPM_MAX_BW, HPM_MAX_BW);
 	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 	enable_cg_fliper(1);
+	pre_bw1 = BW_THRESHOLD_MAX;
+	pre_bw2 = BW_THRESHOLD_MAX;
 
 	enable_fliper_polling();
 	fliper_debug = 0;
