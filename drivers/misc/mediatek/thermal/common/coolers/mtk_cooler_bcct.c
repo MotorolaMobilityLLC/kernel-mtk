@@ -102,28 +102,7 @@ static void mtk_cl_bcct_set_bcct_limit(void)
 			set_bat_charging_current_limit(-1);
 			mtk_cooler_bcct_dprintk_always("mtk_cl_bcct_set_bcct_limit() limit=-1\n");
 		} else {
-			/*
-			   CHARGER_UNKNOWN = 0,
-			   STANDARD_HOST,      // USB : 450mA
-			   CHARGING_HOST,
-			   NONSTANDARD_CHARGER,// AC : 450mA~1A
-			   STANDARD_CHARGER,    // AC : ~1A
-			   APPLE_2_1A_CHARGER, // 2.1A apple charger
-			   APPLE_1_0A_CHARGER, // 1A apple charger
-			   APPLE_0_5A_CHARGER, // 0.5A apple charger
-			   WIRELESS_CHARGER,
-			 */
-			if (mt_get_charger_type() == STANDARD_HOST) {/* usb charger */
-				mtk_cooler_bcct_dprintk_always("Current is USB charger, limit=%d\n",
-							       cl_bcct_cur_limit);
-				if (cl_bcct_cur_limit >= 500) {/* if usb charger, max current can't > 500mA */
-					set_bat_charging_current_limit(499);
-				} else {
-					set_bat_charging_current_limit(cl_bcct_cur_limit);
-				}
-			} else {
 				set_bat_charging_current_limit(cl_bcct_cur_limit);
-			}
 			mtk_cooler_bcct_dprintk_always("mtk_cl_bcct_set_bcct_limit() limit=%d\n",
 						       cl_bcct_cur_limit);
 		}
