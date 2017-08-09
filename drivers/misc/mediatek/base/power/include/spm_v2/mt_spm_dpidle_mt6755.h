@@ -6,7 +6,9 @@
 #define WAKE_SRC_FOR_DPIDLE             \
 	(WAKE_SRC_R12_KP_IRQ_B |            \
 	WAKE_SRC_R12_APXGPT1_EVENT_B |      \
+	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B |         \
+	WAKE_SRC_R12_CONN_WDT_IRQ_B |       \
 	WAKE_SRC_R12_CCIF0_EVENT_B |        \
 	WAKE_SRC_R12_USB_CDSC_B |           \
 	WAKE_SRC_R12_USB_POWERDWN_B |       \
