@@ -116,12 +116,12 @@ static int btif_dump_array(char *string, char *p_buf, int len)
 	unsigned int idx = 0;
 
 	pr_debug("========dump %s start <length:%d>========\n", string, len);
+	pr_debug(" ");
 	for (idx = 0; idx < len; idx++, p_buf++) {
-		pr_debug("%02x ", *p_buf);
+		pr_cont("%02x ", *p_buf);
 		if (3 == (idx % 4))
-			pr_debug("\n");
+			pr_debug(" ");
 	}
-	pr_debug("\n");
 	pr_debug("========dump %s end========\n", string);
 	return 0;
 }

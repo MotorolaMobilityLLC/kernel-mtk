@@ -2924,12 +2924,12 @@ int btif_dump_data(char *p_buf, int len)
 {
 	unsigned int idx = 0;
 
+	pr_debug("  ");
 	for (idx = 0; idx < len; idx++, p_buf++) {
-		pr_debug("%02x ", *p_buf);
+		pr_cont("%02x ", *p_buf);
 		if (7 == (idx % 8))
-			pr_debug("\n");
+			pr_debug("  ");
 	}
-	pr_debug("\n");
 	return 0;
 }
 
