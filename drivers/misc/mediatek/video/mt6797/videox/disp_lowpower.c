@@ -719,7 +719,7 @@ void _vdo_mode_enter_idle(void)
 	set_is_display_idle(1);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
-	spm_enable_sodi(1);
+
 	/* Enable sodi - need wait golden setting done ??? */
 #if 0
 #ifndef CONFIG_MTK_FPGA
@@ -749,7 +749,6 @@ void _vdo_mode_leave_idle(void)
 #endif
 
 	/* set golden setting */
-	spm_enable_sodi(0);
 	set_is_display_idle(0);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
@@ -945,7 +944,7 @@ void primary_display_sodi_rule_init(void)
 	if (primary_display_is_video_mode()) {
 		spm_sodi_set_vdo_mode(1);
 		spm_sodi_mempll_pwr_mode(1);
-		/*spm_enable_sodi(1);*/
+		spm_enable_sodi(1);
 	} else {
 		spm_enable_sodi(1);
 	}
