@@ -56,7 +56,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K3L8_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value = 0x49c09f86,		//checksum value for Camera Auto Test
+	.checksum_value = 0xba395b5c, //0x49c09f86,		//checksum value for Camera Auto Test
 
 	.pre = {
 		.pclk = 560000000,				//record different mode's pclk
@@ -327,6 +327,18 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
     .i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
 
 };
+#define RWB_ID_OFFSET 0x0F73
+#define EEPROM_READ_ID  0xA0
+#define EEPROM_WRITE_ID   0xA1
+ 
+ static kal_uint16 is_RWB_sensor(void)
+ {
+	 kal_uint16 get_byte=0;
+	 char pusendcmd[2] = {(char)(RWB_ID_OFFSET >> 8) , (char)(RWB_ID_OFFSET & 0xFF) };
+	 iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,EEPROM_READ_ID);
+	 return get_byte;
+ 
+ }
 
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
 {
@@ -824,6 +836,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3762, 0x0105);
 	write_cmos_sensor(0x3764, 0x0105);
 	write_cmos_sensor(0x376A, 0x00F0);
+  write_cmos_sensor(0x3058, 0x0100);//2016/01/08
 	write_cmos_sensor(0x3442, 0x0100);	//new setting
 	write_cmos_sensor(0x344A, 0x000F);
 	write_cmos_sensor(0x344C, 0x003D);
@@ -1466,11 +1479,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
-#ifdef CONFIG_MTK_CAM_CAL
-		//read_imx135_otp_mtk_fmt();
-#endif
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
-                return ERROR_NONE;
+				if(is_RWB_sensor()==0x1){
+					imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_RWB_Wb;
+					LOG_INF("RWB sensor of S5k3L8\n");
+				}
+				return ERROR_NONE;
             }
 			LOG_INF("Read sensor id fail, i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
             retry--;
