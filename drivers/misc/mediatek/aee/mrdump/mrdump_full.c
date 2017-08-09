@@ -256,7 +256,6 @@ static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 			cpu_relax();
 	}
 
-	mrdump_print_crash(regs);
 	mrdump_plat->reboot();
 }
 

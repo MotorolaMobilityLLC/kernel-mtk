@@ -24,7 +24,6 @@ struct pt_regs;
 int mrdump_platform_init(const struct mrdump_platform *plat);
 
 void mrdump_save_current_backtrace(struct pt_regs *regs);
-void mrdump_print_crash(struct pt_regs *regs);
 
 extern void __inner_flush_dcache_all(void);
 extern void __inner_flush_dcache_L1(void);
