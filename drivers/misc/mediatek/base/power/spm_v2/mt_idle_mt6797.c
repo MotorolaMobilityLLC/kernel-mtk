@@ -78,7 +78,7 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 
 
 unsigned int soidle3_condition_mask[NR_GRPS] = {
-	0x02440C02, /* INFRA0: */
+	0x02440802, /* INFRA0: separate AUXADC CG check */
 	0x03AFF900, /* INFRA1: */
 	0x2FFFB4FD, /* INFRA2: separate I2C-appm CG check */
 	0x00507FF8, /* DISP0:  */
@@ -398,10 +398,14 @@ const char *cg_grp_get_name(int id)
 
 bool is_disp_pwm_rosc(void)
 {
-	return (idle_readl(DISP_PWM_MUX) & 0x7) == PWM_LPOSC_D8;
+	return (idle_readl(DISP_PWM_MUX) & PWM_LPOSC_MASK) != 0;
 }
 
 bool is_auxadc_released(void)
 {
+	if (~idle_readl(INFRA_SW_CG_0_STA) & AUXADC_CG_STA) {
+		idle_err("AUXADC CG does not be released\n");
+		return false;
+	}
 	return true;
 }

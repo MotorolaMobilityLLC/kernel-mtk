@@ -80,11 +80,8 @@ static struct pwr_ctrl sodi_ctrl = {
 	.wake_src_md32 = WAKE_SRC_FOR_MD32,
 	.r0_ctrl_en = 1,
 	.r7_ctrl_en = 1,
-#if defined(CONFIG_ARCH_MT6755)
-	.infra_dcm_lock = 1,
-#elif defined(CONFIG_ARCH_MT6797)
-	.infra_dcm_lock = 0, /* set to be 0 if SODI original */
-#endif
+	.infra_dcm_lock = 1, /* set to be 1 if SODI 2.5/3.0 */
+
 	.wfi_op = WFI_OP_AND,
 
 	/* SPM_AP_STANDBY_CON */
@@ -249,9 +246,7 @@ void spm_enable_mmu_smi_async(void)
 
 static void spm_sodi_pre_process(void)
 {
-#if defined(CONFIG_ARCH_MT6755)
 	u32 val;
-#endif
 
 	__spm_pmic_pg_force_on();
 	spm_disable_mmu_smi_async();
@@ -263,6 +258,7 @@ static void spm_sodi_pre_process(void)
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
+#endif
 
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
@@ -271,7 +267,6 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
-#endif
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);

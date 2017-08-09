@@ -42,9 +42,8 @@
 #include <mach/mt_hotplug_strategy_internal.h>
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
 #define FEATURE_ENABLE_SODI2P5
-#endif
+
 /*
 * MCDI DVT IPI Test and GPT test
 * GPT need to modify mt_idle.c and mt_spm_mcdi.c

@@ -163,9 +163,7 @@ static unsigned int logout_selfrefresh_cnt;
 
 static void spm_sodi3_pre_process(void)
 {
-#if defined(CONFIG_ARCH_MT6755)
 	u32 val;
-#endif
 
 	__spm_pmic_pg_force_on();
 
@@ -181,6 +179,7 @@ static void spm_sodi3_pre_process(void)
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
+#endif
 
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
@@ -189,7 +188,6 @@ static void spm_sodi3_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
-#endif
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);

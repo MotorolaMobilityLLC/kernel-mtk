@@ -131,7 +131,8 @@ extern void __iomem  *apmixed_base_in_idle;
 #define PWM_LPOSC_D8        4
 #define PWM_LPOSC_D10       5
 #define PWM_LPOSC_D4        6
-
+#define PWM_LPOSC_MASK      (BIT(2)|BIT(1))
+#define AUXADC_CG_STA       BIT(10)
 
 #endif /* __MT_IDLE_MT6797__H__ */
 
