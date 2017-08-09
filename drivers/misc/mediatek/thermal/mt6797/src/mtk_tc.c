@@ -785,17 +785,12 @@ static void thermal_interrupt_handler(int bank)
 	tscpu_switch_bank(bank);
 
 	ret = DRV_Reg32(TEMPMONINTSTS);
-	/* pr_debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
-	tscpu_warn("[tIRQ] thermal_interrupt_handler,bank=0x%08x,ret=0x%08x\n", bank, ret);
-	tscpu_warn("[tIRQ] thermal_interrupt_handler,BIG T=%d\n", get_immediate_big_wrap());
-
-	/* pr_debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
-
-	/* ret2 = DRV_Reg32(THERMINTST); */
-	/* pr_debug("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret2); */
+	tscpu_dprintk("[tIRQ] thermal_interrupt_handler,bank=0x%08x,ret=0x%08x\n", bank, ret);
+	temp = get_immediate_big_wrap();
+	tscpu_dprintk("[tIRQ] thermal_interrupt_handler,BIG T=%d\n", temp);
 
 	if (ret & THERMAL_MON_LOINTSTS0) {
-		tscpu_warn("[tIRQ] thermal_isr: THERMAL_MON_LOINTSTS0\n");
+		tscpu_dprintk("[tIRQ] thermal_isr: THERMAL_MON_LOINTSTS0\n");
 		/**************************************************
 			disable OTP here
 		**************************************************/
@@ -809,7 +804,7 @@ static void thermal_interrupt_handler(int bank)
 	}
 
 	if (ret & THERMAL_MON_HOINTSTS0) {
-		tscpu_warn("[tIRQ] thermal_isr: THERMAL_MON_HOINTSTS0\n");
+		tscpu_dprintk("[tIRQ] thermal_isr: THERMAL_MON_HOINTSTS0\n");
 		/**************************************************
 			enable OTP here
 		**************************************************/
@@ -862,7 +857,7 @@ irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id)
 	ret = DRV_Reg32(THERMINTST);
 	ret = ret & 0xFF;
 
-	tscpu_warn("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret);
+	tscpu_dprintk("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret);
 
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
 		mask = 1 << i;
