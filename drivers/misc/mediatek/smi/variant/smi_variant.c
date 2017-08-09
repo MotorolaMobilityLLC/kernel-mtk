@@ -902,10 +902,10 @@ static void mtk_smi_common_put(struct device *smidev, bool pm)
 {
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 
-	if (pm)
-		pm_runtime_put_sync(smidev);
 	clk_disable_unprepare(smipriv->clk_smi);
 	clk_disable_unprepare(smipriv->clk_apb);
+	if (pm)
+		pm_runtime_put_sync(smidev);
 }
 
 static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
