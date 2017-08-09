@@ -789,6 +789,7 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 			}
 			j++;
 			STP_BTM_INFO_FUNC("Wait for assert message (%d)\n", j);
+			mtk_wcn_stp_read_fw_cpupcr();
 
 			if (j > 150)
 				break;

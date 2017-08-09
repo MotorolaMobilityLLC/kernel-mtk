@@ -528,6 +528,7 @@ static INT32 stp_sdio_do_own_clr(INT32 wait)
 			if (ret)
 				STPSDIO_ERR_FUNC("request firmware own back fail(%d)\n", ret);
 			STPSDIO_ERR_FUNC("own back failed in %d us, write again\n", 200*delay_us);
+			mtk_wcn_stp_read_fw_cpupcr();
 		}
 	} while (retry-- > 0);
 	if (wait) {
