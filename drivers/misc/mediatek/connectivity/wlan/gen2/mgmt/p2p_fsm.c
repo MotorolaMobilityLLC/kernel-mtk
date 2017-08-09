@@ -1620,8 +1620,25 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 /* case P2P_STATE_REQING_CHANNEL: */
 /* break; */
 		case P2P_STATE_CHNL_ON_HAND:
-			{
+			switch (prP2pFsmInfo->eListenExted) {
+			case P2P_DEV_NOT_EXT_LISTEN:
+			case P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT:
+				DBGLOG(P2P, INFO, "p2p timeout, state==P2P_STATE_CHNL_ON_HAND, eListenExted: %d\n",
+					prP2pFsmInfo->eListenExted);
 				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_IDLE);
+				prP2pFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
+				break;
+			case P2P_DEV_EXT_LISTEN_ING:
+				DBGLOG(P2P, INFO, "p2p timeout, state==P2P_STATE_CHNL_ON_HAND, eListenExted: %d\n",
+					prP2pFsmInfo->eListenExted);
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_CHNL_ON_HAND);
+				prP2pFsmInfo->eListenExted = P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT;
+				break;
+			default:
+				ASSERT(FALSE);
+				DBGLOG(P2P, ERROR,
+					"Current P2P State %d is unexpected for FSM timeout event.\n",
+					prP2pFsmInfo->eCurrentState);
 			}
 			break;
 /* case P2P_STATE_GC_JOIN: */
@@ -2729,6 +2746,37 @@ VOID p2pFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	} while (FALSE);
 
 }				/* p2pFsmRunEventBeaconTimeout */
+
+VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	P_P2P_FSM_INFO_T prP2pFsmInfo = NULL;
+	struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *prExtListenMsg = NULL;
+
+	ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
+
+	prExtListenMsg = (struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *) prMsgHdr;
+
+	prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
+	ASSERT_BREAK(prP2pFsmInfo);
+
+	if (!prExtListenMsg->wait) {
+		DBGLOG(P2P, INFO, "reset listen interval\n");
+		prP2pFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
+		if (prMsgHdr)
+			cnmMemFree(prAdapter, prMsgHdr);
+		return;
+	}
+
+	if (prP2pFsmInfo && (prP2pFsmInfo->eListenExted == P2P_DEV_NOT_EXT_LISTEN)) {
+		DBGLOG(P2P, INFO, "try to ext listen, p2p state: %d\n", prP2pFsmInfo->eCurrentState);
+		if (prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND) {
+			DBGLOG(P2P, INFO, "here to ext listen interval\n");
+			prP2pFsmInfo->eListenExted = P2P_DEV_EXT_LISTEN_ING;
+		}
+	}
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
+}				/* p2pFsmRunEventUpdateMgmtFrame */
 
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)

@@ -88,13 +88,17 @@ VOID p2pStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBs
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eChnlSco;
 
 		DBGLOG(P2P, TRACE, "start a channel on hand timer.\n");
-		cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer), prChnlReqInfo->u4MaxInterval);
+		if (prP2pFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING) {
+			cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer),
+				prChnlReqInfo->u4MaxInterval);
 
-		kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
-					   prChnlReqInfo->u8Cookie,
-					   prChnlReqInfo->ucReqChnlNum,
-					   prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco, prChnlReqInfo->u4MaxInterval);
-
+			kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
+				   prChnlReqInfo->u8Cookie,
+				   prChnlReqInfo->ucReqChnlNum,
+				   prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco, prChnlReqInfo->u4MaxInterval);
+		} else
+			cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer),
+				(P2P_EXT_LISTEN_TIME_MS - prChnlReqInfo->u4MaxInterval));
 	} while (FALSE);
 
 }				/* p2pStateInit_CHNL_ON_HAND */
@@ -118,7 +122,13 @@ p2pStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eOriBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eOriChnlSco;
 
-		if (eNextState != P2P_STATE_CHNL_ON_HAND) {
+		DBGLOG(P2P, INFO, "p2p state trans abort chann on hand, eListenExted: %d, eNextState: %d\n",
+			prP2pFsmInfo->eListenExted, eNextState);
+		if (prP2pFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING ||
+			eNextState != P2P_STATE_CHNL_ON_HAND) {
+			/* Here maybe have a bug, when it's extlistening, a new remain_on_channel
+			was sent to driver? need to verify */
+			prP2pFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
 			/* Indicate channel return. */
 			kalP2PIndicateChannelExpired(prAdapter->prGlueInfo, &prP2pFsmInfo->rChnlReqInfo);
 

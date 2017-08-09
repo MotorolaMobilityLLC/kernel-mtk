@@ -1,6 +1,9 @@
 #ifndef _P2P_FUNC_H
 #define _P2P_FUNC_H
 
+#define P2P_EXT_LISTEN_TIME_MS                               600
+#define P2P_OFF_CHNL_TX_DEFAULT_TIME_MS                      1000
+
 VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prScanReqInfo);
 
 VOID p2pFuncCancelScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prScanReqInfo);

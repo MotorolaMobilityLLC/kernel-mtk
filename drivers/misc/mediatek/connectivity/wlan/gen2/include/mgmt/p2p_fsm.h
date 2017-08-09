@@ -469,6 +469,13 @@ typedef enum _ENUM_P2P_STATE_T {
 	P2P_STATE_NUM
 } ENUM_P2P_STATE_T, *P_ENUM_P2P_STATE_T;
 
+enum _ENUM_P2P_DEV_EXT_LISTEN_T {
+	P2P_DEV_NOT_EXT_LISTEN,
+	P2P_DEV_EXT_LISTEN_ING,
+	P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT,
+	P2P_DEV_EXT_LISTEN_NUM
+};
+
 typedef enum _ENUM_CHANNEL_REQ_TYPE_T {
 	CHANNEL_REQ_TYPE_REMAIN_ON_CHANNEL,
 	CHANNEL_REQ_TYPE_GC_JOIN_REQ,
@@ -564,6 +571,11 @@ typedef struct _P2P_MGMT_TX_REQ_INFO_T {
 	P_MSDU_INFO_T prMgmtTxMsdu;
 	UINT_64 u8Cookie;
 } P2P_MGMT_TX_REQ_INFO_T, *P_P2P_MGMT_TX_REQ_INFO_T;
+
+struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T {
+	MSG_HDR_T rMsgHdr;
+	UINT_32 wait; /* interval supplicant expected to stay in listen interval */
+};
 
 typedef struct _P2P_BEACON_UPDATE_INFO_T {
 	PUINT_8 pucBcnHdr;
@@ -702,6 +714,8 @@ struct _P2P_FSM_INFO_T {
 #endif
 
 	BOOLEAN fgIsWPSMode;
+
+	enum _ENUM_P2P_DEV_EXT_LISTEN_T eListenExted;
 };
 
 /*---------------- Messages -------------------*/
@@ -824,6 +838,8 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 VOID p2pFsmRunEventNetDeviceRegister(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID p2pFsmRunEventUpdateMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+
+VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID p2pFsmRunEventBeaconUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
