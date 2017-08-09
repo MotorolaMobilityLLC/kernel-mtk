@@ -657,8 +657,6 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 {
 	struct musb_request	*r;
 	void __iomem		*regs = musb->control_ep->regs;
-	int is_timeout = 1;
-	int count = 0;
 
 	musb_read_fifo(&musb->endpoints[0], sizeof(*req), (u8 *)req);
 
@@ -698,21 +696,9 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 	} else if (req->bRequestType & USB_DIR_IN) {
 		musb->ep0_state = MUSB_EP0_STAGE_TX;
 		musb_writew(regs, MUSB_CSR0, MUSB_CSR0_P_SVDRXPKTRDY);
-
-		/* prevent deadlock, skip here if over 1s */
-		while (count < 50) {
-			if ((musb_readw(regs, MUSB_CSR0) & MUSB_CSR0_RXPKTRDY)) {
-				is_timeout = 0;
-				break;
-			}
-			mdelay(20);
-			count++;
-		}
-
-		if (is_timeout)
-			ERR("%s, timeout, regs=%x\n",
-				__func__, musb_readw(regs, MUSB_CSR0));
-
+		while ((musb_readw(regs, MUSB_CSR0)
+				& MUSB_CSR0_RXPKTRDY) != 0)
+			cpu_relax();
 		musb->ackpend = 0;
 	} else
 		musb->ep0_state = MUSB_EP0_STAGE_RX;
