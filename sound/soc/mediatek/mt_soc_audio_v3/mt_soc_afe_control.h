@@ -113,6 +113,7 @@ bool Set2ndI2SInEnable(bool bEnable);
 bool SetI2SASRCConfig(bool bIsUseASRC, unsigned int dToSampleRate);
 bool SetI2SASRCEnable(bool bEnable);
 
+bool checkDllinkMEMIfStatus(void);
 bool checkUplinkMEMIfStatus(void);
 bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat);
 bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output);
@@ -161,6 +162,9 @@ bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock);
 
 void Auddrv_Dl1_Spinlock_lock(void);
 void Auddrv_Dl1_Spinlock_unlock(void);
+void Auddrv_Dl2_Spinlock_lock(void);
+void Auddrv_Dl2_Spinlock_unlock(void);
+
 void Auddrv_DL1_Interrupt_Handler(void);
 void Auddrv_DL2_Interrupt_Handler(void);
 void Auddrv_UL1_Interrupt_Handler(void);
@@ -195,6 +199,7 @@ void SetSramState(unsigned int State);
 unsigned int GetPLaybackSramFullSize(void);
 unsigned int GetPLaybackSramPartial(void);
 unsigned int GetPLaybackDramSize(void);
+unsigned int GetPLaybackDramLowLatencySize(void);
 size_t GetCaptureDramSize(void);
 
 /* offsetTrimming */
@@ -212,6 +217,8 @@ bool SetOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream, void (*offl
 bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream);
 
 unsigned int Align64ByteSize(unsigned int insize);
+
+void AudDrv_checkDLISRStatus(void);
 
 #ifdef CONFIG_OF
 int GetGPIO_Info(int type, int *pin, int *pinmode);

@@ -1089,6 +1089,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	 /* .ops = &mt_machine_audio_ops, */
 	 .compr_ops = &mt_machine_audio_compr_ops,
 	 },
+	{
+	 .name = "MultiMedia_DL2",
+	 .stream_name = MT_SOC_DL2_STREAM_NAME,
+	 .cpu_dai_name   = MT_SOC_DL2DAI_NAME,
+	 .platform_name  = MT_SOC_DL2_PCM,
+	 .codec_dai_name = MT_SOC_CODEC_TXDAI2_NAME,
+	 .codec_name = MT_SOC_CODEC_NAME,
+	 .init = mt_soc_audio_init,
+	 .ops = &mt_machine_audio_ops,
+	 },
 };
 
 static const char const *I2S_low_jittermode[] = { "Off", "On" };

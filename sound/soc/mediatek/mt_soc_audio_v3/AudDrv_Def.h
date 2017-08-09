@@ -33,7 +33,7 @@
 #define AUDIO_MEM_IOREMAP
 
 /* below for audio debugging */
-/*#define DEBUG_AUDDRV */
+/* #define DEBUG_AUDDRV */
 /* #define DEBUG_AFE_REG */
 /* #define DEBUG_ANA_REG */
 /*#define DEBUG_AUD_CLK*/
@@ -189,6 +189,7 @@
 /* cpu dai name */
 #define MT_SOC_DAI_NAME "mt-soc-dai-driver"
 #define MT_SOC_DL1DAI_NAME "mt-soc-dl1dai-driver"
+#define MT_SOC_DL2DAI_NAME "mt-soc-dl2dai-driver"
 #define MT_SOC_DL1DATA2DAI_NAME "mt-soc-dl1data2dai-driver"
 #define MT_SOC_UL1DAI_NAME "mt-soc-ul1dai-driver"
 #define MT_SOC_UL1DATA2_NAME "mt-soc-ul1data2dai-driver"
@@ -257,6 +258,7 @@
 
 /* codec dai name */
 #define MT_SOC_CODEC_TXDAI_NAME "mt-soc-codec-tx-dai"
+#define MT_SOC_CODEC_TXDAI2_NAME "mt-soc-codec-tx-dai2"
 #define MT_SOC_CODEC_RXDAI_NAME "mt-soc-codec-rx-dai"
 #define MT_SOC_CODEC_RXDAI2_NAME "mt-soc-codec-rx-dai2"
 #define MT_SOC_CODEC_I2S0AWB_NAME "mt-soc-codec-i2s0awb-dai"

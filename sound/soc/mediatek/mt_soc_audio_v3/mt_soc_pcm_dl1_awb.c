@@ -105,6 +105,10 @@ static void StopAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05, Soc_Aud_InterConnectionOutput_O05);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06, Soc_Aud_InterConnectionOutput_O06);
 
+	/* for DL2 echoref*/
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I07, Soc_Aud_InterConnectionOutput_O05);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I08, Soc_Aud_InterConnectionOutput_O06);
+
 	EnableAfe(false);
 }
 
@@ -120,9 +124,13 @@ static void StartAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_AWB, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, true);
 
-	/* here to turn off digital part */
+	/* here to turn on digital part */
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05, Soc_Aud_InterConnectionOutput_O05);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06, Soc_Aud_InterConnectionOutput_O06);
+
+	/* for DL2 echoref*/
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07, Soc_Aud_InterConnectionOutput_O05);
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I08, Soc_Aud_InterConnectionOutput_O06);
 
 	EnableAfe(true);
 }
@@ -349,6 +357,8 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 		msleep(50);
 		return 0;
 	}
+
+	AudDrv_checkDLISRStatus();
 
 	if (CheckNullPointer((void *)Awb_Block->pucVirtBufAddr)) {
 		pr_err("CheckNullPointer  pucVirtBufAddr = %p\n", Awb_Block->pucVirtBufAddr);

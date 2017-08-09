@@ -54,6 +54,7 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#define DL_ABNORMAL_CONTROL_MAX (5)
 
 typedef	uint8_t kal_uint8;
 typedef	int8_t kal_int8;
@@ -99,6 +100,25 @@ struct pcm_afe_info {
 	struct AFE_BLOCK_T *mAfeBlock;
 	struct snd_pcm_substream *substream;
 };
+
+
+typedef struct {
+	kal_int32 u4BufferSize[DL_ABNORMAL_CONTROL_MAX];
+	kal_int32 u4DataRemained[DL_ABNORMAL_CONTROL_MAX];
+	kal_int32 u4WriteIdx[DL_ABNORMAL_CONTROL_MAX];          /* Previous Write Index. */
+	kal_int32 u4DMAReadIdx[DL_ABNORMAL_CONTROL_MAX];        /* Previous DMA Read Index. */
+	kal_int32 u4ConsumedBytes[DL_ABNORMAL_CONTROL_MAX];
+	kal_int32 u4HwMemoryIndex[DL_ABNORMAL_CONTROL_MAX];
+	kal_int32 pucPhysBufAddr[DL_ABNORMAL_CONTROL_MAX];
+	kal_int32 u4UnderflowCnt;
+	kal_uint32 MemIfNum[DL_ABNORMAL_CONTROL_MAX];
+	unsigned long long IrqLastTimeNs[DL_ABNORMAL_CONTROL_MAX];
+	unsigned long long IrqCurrentTimeNs[DL_ABNORMAL_CONTROL_MAX];
+	unsigned long long IrqIntervalNs[DL_ABNORMAL_CONTROL_MAX];
+	kal_uint32 IrqIntervalLimitMs[DL_ABNORMAL_CONTROL_MAX];
+	bool IrqDelayCnt;
+
+} AFE_DL_ABNORMAL_CONTROL_T;
 
 
 #endif

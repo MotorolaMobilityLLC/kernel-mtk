@@ -327,7 +327,7 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	SetVULBuffer(substream, hw_params);
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_warn("mtk_capture_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
 	return ret;
 }
@@ -368,6 +368,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	} else {
 		pr_warn("mtk_capture_pcm_open use dram\n");
 		mtk_capture_hardware.buffer_bytes_max = UL1_MAX_BUFFER_SIZE;
+		mCaptureUseSram = false;
 	}
 #else
 	pr_warn("mtk_capture_pcm_open use dram\n");

@@ -516,6 +516,8 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream,
 		return 0;
 	}
 
+	AudDrv_checkDLISRStatus();
+
 	spin_lock_irqsave(&auddrv_DLCtl_lock, flags);
 	copy_size = Afe_Block->u4BufferSize - Afe_Block->u4DataRemained;	/* free space of the buffer */
 	spin_unlock_irqrestore(&auddrv_DLCtl_lock, flags);
