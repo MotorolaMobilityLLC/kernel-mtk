@@ -1521,11 +1521,12 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
 #ifdef ENABLE_CLK_MGR
+#ifdef CONFIG_MTK_CLKMGR
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
 		enable_clock(MT_CG_DISP0_DISP_COLOR0, "DDP");
@@ -1537,13 +1538,12 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 			  DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	}
 #else
- #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
- #else
+#endif
+#else
 	ddp_clk_enable(DISP0_DISP_COLOR);
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
- #endif
 #endif
 #endif
 
@@ -1552,11 +1552,12 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
 #ifdef ENABLE_CLK_MGR
+#ifdef CONFIG_MTK_CLKMGR
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
 		COLOR_DBG("color[0]_clock_off\n");
@@ -1567,11 +1568,10 @@ static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 	}
 #else
 	COLOR_DBG("color[0]_clock_off\n");
- #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
- #else
+#endif
+#else
 	ddp_clk_disable(DISP0_DISP_COLOR);
- #endif
 #endif
 #endif
 	return 0;
