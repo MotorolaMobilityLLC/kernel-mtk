@@ -1600,6 +1600,7 @@ bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 
 	reg = mtk_ldos[powerId].reg;
 
+	powerVolt = powerVolt * 1000;
 	ret2 = regulator_set_voltage(reg, powerVolt, powerVolt);
 
 	if (ret2 != 0) {
@@ -1658,6 +1659,7 @@ bool hwPowerSetVoltage(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 
 	reg = mtk_ldos[powerId].reg;
 
+	powerVolt = powerVolt * 1000;
 	ret1 = regulator_set_voltage(reg, powerVolt, powerVolt);
 
 	if (ret1 != 0) {
