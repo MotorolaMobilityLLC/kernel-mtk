@@ -222,11 +222,11 @@ idvfs_status, status machine
 */
 
 struct  IDVFS_INIT_OPT {
-	unsigned int idvfs_status;
-	unsigned int freq_max;
-	unsigned int freq_min;
-	unsigned int freq_cur;
-	unsigned int i2c_speed;
+	unsigned char idvfs_status;
+	unsigned short freq_max;
+	unsigned short freq_min;
+	unsigned short freq_cur;
+	unsigned short i2c_speed;
 	unsigned short swavg_length;
 	unsigned short swavg_endis;
 	struct CHANNEL_STATUS *channel;
@@ -250,7 +250,6 @@ extern int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis);
 extern int BigIDVFSFreq(unsigned int Freqpct_x100);
 extern int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis);
 extern int BigiDVFSSWAvgStatus(void);
-extern int BigiDVFSPureSWMode(unsigned int function, unsigned int parameter);
 
 extern int BigiDVFSPllSetFreq(unsigned int Freq); /* rang 507 ~ 3000(MHz) */
 extern unsigned int BigiDVFSPllGetFreq(void);
@@ -273,7 +272,7 @@ extern int iDVFSAPB_init(void); /* it's only for DA9214 PMIC, return 0: 400K, 1:
 /* temp for PTP1 */
 extern void eem_init_det_tmp(void);
 
-/* SW Channel Turbo/Clamp mode */
-int BigIDVFSTurbo(unsigned int Freqpct_x100); /* range 30% ~ 116% */
+/* SW Channel Turbo/Clamp mode, range 30% ~ 116% */
+extern int BigIDVFSFreqMaxMin(unsigned int maxpct_x100, unsigned int minpct_x100);
 
 #endif /* _MT_IDVFS_H  */
