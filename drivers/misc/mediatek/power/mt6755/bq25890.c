@@ -990,15 +990,8 @@ void bq25890_hw_init(void)
 
 static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	int err = 0;
 
 	battery_log(BAT_LOG_CRTI, "[bq25890_driver_probe]\n");
-	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
-	if (!new_client) {
-		err = -ENOMEM;
-		goto exit;
-	}
-	memset(new_client, 0, sizeof(struct i2c_client));
 
 	new_client = client;
 
@@ -1010,8 +1003,6 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	return 0;
 
-exit:
-	return err;
 
 }
 
