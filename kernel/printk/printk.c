@@ -66,20 +66,30 @@ u64 overflow_gap = 0;
 int printk_too_much_enable = 0;
 #define DETECT_COUNT_MIN 100
 /* Some options {*/
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
-static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines in 1 second*/
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines per second*/
 static bool detect_count_change; /* detect_count change flag*/
-#define DETECT_TIME 1000000000 /* 1s = 1000000000ns */
-#define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*60)	/* 30 min */
-static int log_in_resume;
+#define DETECT_TIME 1000000000LU /* 1s = 1000000000ns */
+#define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*DETECT_TIME*60)
+static u64 delta_time;
+static u64 delta_count;
+
+static bool flag_toomuch;
+
 static char *log_much;
 static int log_count;
+#define LOG_MUCH_PLUS_LEN	(1 << 15)
 #define MARK_STRING_1	"[name:"
 #define MARK_STRING_2	"&]"
+
+static int parse_log_file(void);
+
 inline void set_detect_count(int count)
 {
-	detect_count = count;
+	if (detect_count < DETECT_COUNT_MIN)
+		detect_count = DETECT_COUNT_MIN;
+	else
+		detect_count = count;
 	detect_count_change = true;
 }
 
@@ -97,7 +107,6 @@ inline int get_logtoomuch_enable(void)
 {
 	return printk_too_much_enable;
 }
-#endif
 #endif
 #ifdef CONFIG_EARLY_PRINTK_DIRECT
 extern void printascii(char *);
@@ -497,6 +506,11 @@ static int log_store(int facility, int level,
 	char tbuf[50];
 	unsigned tlen;
 
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	struct printk_log *first_msg;
+	static u64 t_base;
+
+#endif
 	if (state == 0) {
 		__raw_get_cpu_var(printk_state) = ' ';
 		state = ' ';
@@ -559,6 +573,28 @@ static int log_store(int facility, int level,
 	log_next_idx += msg->len;
 	log_next_seq++;
 
+	/* printk too much detect */
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	if (printk_too_much_enable == 1) {
+		if (detect_count_change) {
+			detect_count_change = false;
+			t_base = t_base + DETECT_TIME*15;
+		}
+		if (flag_toomuch == false && t_base < msg->ts_nsec) {
+			first_msg = (struct printk_log *)(log_buf + log_first_idx);
+			delta_time = msg->ts_nsec - first_msg->ts_nsec;
+			delta_count = log_next_seq - log_first_seq;
+			if (delta_count * DETECT_TIME >  detect_count * delta_time) {
+				if (0 == parse_log_file()) {
+					t_base = msg->ts_nsec + DELAY_TIME;
+					flag_toomuch = true;
+				}
+			}
+		}
+
+	}
+
+#endif
 	return msg->text_len;
 }
 
@@ -1919,6 +1955,7 @@ asmlinkage int vprintk_emit(int facility, int level,
 	logbuf_cpu = UINT_MAX;
 	raw_spin_unlock(&logbuf_lock);
 	lockdep_on();
+
 	local_irq_restore(flags);
 
 	/* If called from the scheduler, we can not call up(). */
@@ -2283,55 +2320,41 @@ int is_console_locked(void)
 {
 	return console_locked;
 }
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
-static int store_log_file(unsigned long long now_time)
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+static int parse_log_file(void)
 {
 	char buff[LOG_LINE_MAX + PREFIX_MAX];
 	u32 log_index;
 	u64 log_seq;
 	size_t count = 0;
-	int line_count = 0;
-	int mark_count = 0;
-	char *ptr1 = NULL, *ptr2 = NULL;
 	struct printk_log *msg;
 	enum log_flags prev = 0;
-	unsigned int prefix;
 
 	if (log_much == NULL)
 		return 1;
-	if (detect_count < DETECT_COUNT_MIN) {
-		detect_count = DETECT_COUNT_MIN;
-		return 1;
-	}
+
 	log_count = 0;
-	raw_spin_lock(&logbuf_lock);
 	log_index = log_first_idx;
 	log_seq = log_first_seq;
-	while (log_seq < console_seq) {
+	while (log_seq < log_next_seq) {
 		msg = log_from_idx(log_index);
-		if (msg->ts_nsec > now_time) {
-			count = msg_print_text(msg, prev, true, buff, sizeof(buff));
-			prev = msg->flags;
-			prefix = (msg->facility << 3) | msg->level;
-			memcpy(log_much + log_count, buff, count);
-			log_count += count;
-			line_count++;
-			ptr1 = strstr(buff, MARK_STRING_1);
-			ptr2 = strstr(buff, MARK_STRING_2);
-			if (ptr1 != NULL && ptr2 != NULL)
-				mark_count++;
-			else if (prefix > 7)
-				mark_count++;
-		}
+		count = msg_print_text(msg, prev, true, buff, sizeof(buff));
+		prev = msg->flags;
+
+		if (log_count + count > log_buf_len + LOG_MUCH_PLUS_LEN)
+			return 0;
+		memcpy(log_much + log_count, buff, count);
+		log_count += count;
+
 		log_index = log_next(log_index);
 		log_seq++;
 	}
-	raw_spin_unlock(&logbuf_lock);
-	if (line_count > detect_count/2 && mark_count > detect_count/10)
-		return 0;
-	return 1;
+
+	return 0;
 }
+
+
+
 
 static int log_much_show(struct seq_file *m, void *v)
 {
@@ -2356,8 +2379,6 @@ static const struct file_operations log_much_ops = {
 	.release = single_release,
 };
 #endif
-#endif
-
 
 static void console_cont_flush(char *text, size_t size)
 {
@@ -2409,16 +2430,15 @@ void console_unlock(void)
 	unsigned long flags;
 	bool wake_klogd = false;
 	bool retry;
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
-	unsigned long long t1 = 0;
-	char aee_str[512];
-	int org_loglevel = console_loglevel;
-	static u64 time_count;
-	static int line_count, size_count;
-	int ret = 0;
+
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	char aee_str[63];	/* length can not beyond 63 because of aee API args limitation */
+	int add_len;
+	u64 period;
+	unsigned long rem_nsec;
 #endif
-#endif
+
+
 	if (console_suspended) {
 		up_console_sem();
 		return;
@@ -2482,64 +2502,23 @@ skip:
 		raw_spin_unlock(&logbuf_lock);
 
 		stop_critical_timings();	/* don't trace print latency */
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
-		if (printk_too_much_enable == 1) {
-			if (log_in_resume) {
-				org_loglevel = console_loglevel;
-				console_loglevel = 4;
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+		if (flag_toomuch == true) {
+			flag_toomuch = false;
+			add_len = scnprintf(aee_str, 63, "Printk too much: >100 L/s, L: %llu, ", delta_count);
+			if (63 >= add_len + 12) {
+				period = delta_time;
+				rem_nsec = do_div(period, 1000000000);
+				scnprintf(aee_str + add_len, 63 - add_len, "S: %llu.%06lu\n", period, rem_nsec / 1000);
 			}
-
-			t1 = sched_clock();
-			if (detect_count_change) {
-				detect_count_change = false;
-				time_count += 1000000000;
-				line_count = 0;
-				size_count = 0;
-			}
-			if (time_count > t1) {
-				call_console_drivers(level, text, len);
-			} else if (t1 - time_count > DETECT_TIME) {
-				line_count = 1;
-				size_count = len;
-				time_count = t1;
-				do_div(time_count, 1000000000);
-				time_count = time_count * 1000000000;
-				call_console_drivers(level, text, len);
-			} else if (line_count > detect_count && size_count > detect_count * 50) {
-					/* detect log too much, store log buff to file */
-					ret = store_log_file(time_count);
-					do_div(time_count, 1000000000);
-					if (ret == 0) {
-						sprintf(aee_str, "PRINTK too much:%d, size: %d, time: %llu, %llu.\n",
-								line_count, size_count, time_count, t1);
-	/*				aee_kernel_exception(aee_str, "Need to shrink kernel log"); */
-						aee_kernel_warning_api(__FILE__, __LINE__,  DB_OPT_PRINTK_TOO_MUCH,
-						aee_str, "Need to shrink kernel log");
-					}
-					line_count = 0;
-					size_count = 0;
-					time_count = time_count + DELAY_TIME;
-					time_count = time_count * 1000000000;
-/*				printk_too_much_enable = 0;*/
-			} else {
-				line_count++;
-				size_count += len;
-				call_console_drivers(level, text, len);
-			}
-		} else {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PRINTK_TOO_MUCH,
+							aee_str, "Need to shrink kernel log");
+		} else
 			call_console_drivers(level, text, len);
-		}
-
-		start_critical_timings();
 #else
-		start_critical_timings();
 		call_console_drivers(level, text, len);
 #endif
-#else
 		start_critical_timings();
-		call_console_drivers(level, text, len);
-#endif
 		local_irq_restore(flags);
 	}
 	console_locked = 0;
@@ -2882,10 +2861,8 @@ EXPORT_SYMBOL(unregister_console);
 static int __init printk_late_init(void)
 {
 	struct console *con;
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 	struct proc_dir_entry *entry;
-#endif
 #endif
 	for_each_console(con) {
 		if (!keep_bootcon && con->flags & CON_BOOT) {
@@ -2893,16 +2870,16 @@ static int __init printk_late_init(void)
 		}
 	}
 	hotcpu_notifier(console_cpu_notify, 0);
-#ifdef CONFIG_MT_ENG_BUILD
-#ifdef CONFIG_LOG_TOO_MUCH_WARNING
+
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 	entry = proc_create("log_much", 0444, NULL, &log_much_ops);
 	if (!entry) {
 		pr_err("printk: failed to create proc log much entry\n");
 		return 1;
 	}
-	log_much = kmalloc(__LOG_BUF_LEN, GFP_KERNEL);
+	log_much = kmalloc(log_buf_len + LOG_MUCH_PLUS_LEN, GFP_KERNEL);
 #endif
-#endif
+
 	return 0;
 }
 late_initcall(printk_late_init);

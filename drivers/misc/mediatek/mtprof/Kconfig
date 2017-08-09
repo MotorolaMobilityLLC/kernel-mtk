@@ -99,7 +99,7 @@ config LOG_TOO_MUCH_WARNING
 
 config LOG_TOO_MUCH_DETECT_COUNT
 	hex "printk too much detect count"
-	default 0xC8
+	default 0x64
 	depends on LOG_TOO_MUCH_WARNING
 
 config LOG_TOO_MUCH_DETECT_GAP
