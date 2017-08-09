@@ -39,7 +39,7 @@
 /* #include <mach/mt_vcore_dvfs.h> */
 
 #ifdef FREQ_HOPPING_TEST
-/* #include <mach/mt_freqhopping.h> */
+#include <mach/mt_freqhopping.h>
 #endif
 
 #ifdef VCORE1_ADJ_TEST
@@ -70,12 +70,6 @@ static unsigned int dram_base, dram_add_rank0_base, dram_rank_num;
 #ifndef CONFIG_MTK_CLKMGR
 struct clk *clk_cqdma;
 #endif /* #ifndef CONFIG_MTK_CLKMGR */
-
-int __weak mt_dfs_mempll(unsigned int target_dds)
-{
-	pr_debug("mt_dfs_mempll\n");
-	return 0;
-}
 
 int get_ddr_type(void)
 {
