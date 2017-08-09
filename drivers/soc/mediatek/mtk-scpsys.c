@@ -11,17 +11,17 @@
  * GNU General Public License for more details.
  */
 #include <linux/clk.h>
-#include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
-#include <linux/mfd/syscon.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
-#include <linux/pm_domain.h>
 #include <linux/regmap.h>
+#include <linux/pm_domain.h>
+#include <linux/delay.h>
 #include <linux/soc/mediatek/infracfg.h>
 #include <dt-bindings/power/mt8173-power.h>
+#include <linux/mfd/syscon.h>
 
 #define SPM_VDE_PWR_CON			0x0210
 #define SPM_MFG_PWR_CON			0x0214
@@ -42,27 +42,16 @@
 #define PWR_ON_2ND_BIT			BIT(3)
 #define PWR_CLK_DIS_BIT			BIT(4)
 
-#define PWR_STATUS_DISP			BIT(3)
-#define PWR_STATUS_MFG			BIT(4)
-#define PWR_STATUS_ISP			BIT(5)
-#define PWR_STATUS_VDEC			BIT(7)
-#define PWR_STATUS_VENC_LT		BIT(20)
-#define PWR_STATUS_VENC			BIT(21)
-#define PWR_STATUS_MFG_2D		BIT(22)
-#define PWR_STATUS_MFG_ASYNC		BIT(23)
-#define PWR_STATUS_AUDIO		BIT(24)
-#define PWR_STATUS_USB			BIT(25)
-
-enum clk_id {
-	MT8173_CLK_NONE,
-	MT8173_CLK_MM,
-	MT8173_CLK_MFG,
-	MT8173_CLK_VENC,
-	MT8173_CLK_VENC_LT,
-	MT8173_CLK_MAX,
-};
-
-#define MAX_CLKS	2
+#define DIS_PWR_STA_MASK		BIT(3)
+#define MFG_PWR_STA_MASK		BIT(4)
+#define ISP_PWR_STA_MASK		BIT(5)
+#define VDE_PWR_STA_MASK		BIT(7)
+#define VEN2_PWR_STA_MASK		BIT(20)
+#define VEN_PWR_STA_MASK		BIT(21)
+#define MFG_2D_PWR_STA_MASK		BIT(22)
+#define MFG_ASYNC_PWR_STA_MASK		BIT(23)
+#define AUDIO_PWR_STA_MASK		BIT(24)
+#define USB_PWR_STA_MASK		BIT(25)
 
 struct scp_domain_data {
 	const char *name;
@@ -71,95 +60,92 @@ struct scp_domain_data {
 	u32 sram_pdn_bits;
 	u32 sram_pdn_ack_bits;
 	u32 bus_prot_mask;
-	enum clk_id clk_id[MAX_CLKS];
+	int id;
+	const char *clk_name;
 };
 
-static const struct scp_domain_data scp_domain_data[] __initconst = {
-	[MT8173_POWER_DOMAIN_VDEC] = {
-		.name = "vdec",
-		.sta_mask = PWR_STATUS_VDEC,
+static const struct scp_domain_data scp_domain_data[] = {
+	{
+		.id = MT8173_POWER_DOMAIN_VDEC,
+		.name = "vde",
+		.sta_mask = VDE_PWR_STA_MASK,
 		.ctl_offs = SPM_VDE_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
-		.clk_id = {MT8173_CLK_MM},
-	},
-	[MT8173_POWER_DOMAIN_VENC] = {
-		.name = "venc",
-		.sta_mask = PWR_STATUS_VENC,
+		.clk_name = "disp",
+	}, {
+		.id = MT8173_POWER_DOMAIN_VENC,
+		.name = "ven",
+		.sta_mask = VEN_PWR_STA_MASK,
 		.ctl_offs = SPM_VEN_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {MT8173_CLK_MM, MT8173_CLK_VENC},
-	},
-	[MT8173_POWER_DOMAIN_ISP] = {
+		.clk_name = "disp",
+	}, {
+		.id = MT8173_POWER_DOMAIN_ISP,
 		.name = "isp",
-		.sta_mask = PWR_STATUS_ISP,
+		.sta_mask = ISP_PWR_STA_MASK,
 		.ctl_offs = SPM_ISP_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(13, 12),
-		.clk_id = {MT8173_CLK_MM},
-	},
-	[MT8173_POWER_DOMAIN_MM] = {
-		.name = "mm",
-		.sta_mask = PWR_STATUS_DISP,
+		.clk_name = "disp",
+	}, {
+		.id = MT8173_POWER_DOMAIN_DISP,
+		.name = "disp",
+		.sta_mask = DIS_PWR_STA_MASK,
 		.ctl_offs = SPM_DIS_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
-		.clk_id = {MT8173_CLK_MM},
+		.clk_name = "disp",
 		.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MM_M0 |
 			MT8173_TOP_AXI_PROT_EN_MM_M1,
-	},
-	[MT8173_POWER_DOMAIN_VENC_LT] = {
-		.name = "venc_lt",
-		.sta_mask = PWR_STATUS_VENC_LT,
+	}, {
+		.id = MT8173_POWER_DOMAIN_VENC_LT,
+		.name = "ven2",
+		.sta_mask = VEN2_PWR_STA_MASK,
 		.ctl_offs = SPM_VEN2_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {MT8173_CLK_MM, MT8173_CLK_VENC_LT},
-	},
-	[MT8173_POWER_DOMAIN_AUDIO] = {
+		.clk_name = "disp",
+	}, {
+		.id = MT8173_POWER_DOMAIN_AUDIO,
 		.name = "audio",
-		.sta_mask = PWR_STATUS_AUDIO,
+		.sta_mask = AUDIO_PWR_STA_MASK,
 		.ctl_offs = SPM_AUDIO_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {MT8173_CLK_NONE},
-	},
-	[MT8173_POWER_DOMAIN_USB] = {
-		.name = "usb",
-		.sta_mask = PWR_STATUS_USB,
-		.ctl_offs = SPM_USB_PWR_CON,
-		.sram_pdn_bits = GENMASK(11, 8),
-		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {MT8173_CLK_NONE},
-	},
-	[MT8173_POWER_DOMAIN_MFG_ASYNC] = {
+	},  {
+		.id = MT8173_POWER_DOMAIN_MFG_ASYNC,
 		.name = "mfg_async",
-		.sta_mask = PWR_STATUS_MFG_ASYNC,
+		.sta_mask = MFG_ASYNC_PWR_STA_MASK,
 		.ctl_offs = SPM_MFG_ASYNC_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = 0,
-		.clk_id = {MT8173_CLK_MFG},
-	},
-	[MT8173_POWER_DOMAIN_MFG_2D] = {
+	}, {
+		.id = MT8173_POWER_DOMAIN_MFG_2D,
 		.name = "mfg_2d",
-		.sta_mask = PWR_STATUS_MFG_2D,
+		.sta_mask = MFG_2D_PWR_STA_MASK,
 		.ctl_offs = SPM_MFG_2D_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(13, 12),
-		.clk_id = {MT8173_CLK_NONE},
-	},
-	[MT8173_POWER_DOMAIN_MFG] = {
+	}, {
+		.id = MT8173_POWER_DOMAIN_MFG,
 		.name = "mfg",
-		.sta_mask = PWR_STATUS_MFG,
+		.sta_mask = MFG_PWR_STA_MASK,
 		.ctl_offs = SPM_MFG_PWR_CON,
 		.sram_pdn_bits = GENMASK(13, 8),
 		.sram_pdn_ack_bits = GENMASK(21, 16),
-		.clk_id = {MT8173_CLK_NONE},
 		.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MFG_S |
 			MT8173_TOP_AXI_PROT_EN_MFG_M0 |
 			MT8173_TOP_AXI_PROT_EN_MFG_M1 |
 			MT8173_TOP_AXI_PROT_EN_MFG_SNOOP_OUT,
+	}, {
+		.id = MT8173_POWER_DOMAIN_USB,
+		.name = "usb",
+		.sta_mask = USB_PWR_STA_MASK,
+		.ctl_offs = SPM_USB_PWR_CON,
+		.sram_pdn_bits = GENMASK(11, 8),
+		.sram_pdn_ack_bits = GENMASK(15, 12),
 	},
 };
 
@@ -168,14 +154,10 @@ static const struct scp_domain_data scp_domain_data[] __initconst = {
 struct scp;
 
 struct scp_domain {
-	struct generic_pm_domain genpd;
+	struct generic_pm_domain pmd;
+	const struct scp_domain_data *data;
 	struct scp *scp;
-	struct clk *clk[MAX_CLKS];
-	u32 sta_mask;
-	void __iomem *ctl_addr;
-	u32 sram_pdn_bits;
-	u32 sram_pdn_ack_bits;
-	u32 bus_prot_mask;
+	struct clk *clk;
 };
 
 struct scp {
@@ -186,46 +168,21 @@ struct scp {
 	struct regmap *infracfg;
 };
 
-static int scpsys_domain_is_on(struct scp_domain *scpd)
-{
-	struct scp *scp = scpd->scp;
-
-	u32 status = readl(scp->base + SPM_PWR_STATUS) & scpd->sta_mask;
-	u32 status2 = readl(scp->base + SPM_PWR_STATUS_2ND) & scpd->sta_mask;
-
-	/*
-	 * A domain is on when both status bits are set. If only one is set
-	 * return an error. This happens while powering up a domain
-	 */
-
-	if (status && status2)
-		return true;
-	if (!status && !status2)
-		return false;
-
-	return -EINVAL;
-}
-
 static int scpsys_power_on(struct generic_pm_domain *genpd)
 {
-	struct scp_domain *scpd = container_of(genpd, struct scp_domain, genpd);
+	struct scp_domain *scpd = container_of(genpd, struct scp_domain, pmd);
 	struct scp *scp = scpd->scp;
-	unsigned long timeout;
-	bool expired;
-	void __iomem *ctl_addr = scpd->ctl_addr;
-	u32 sram_pdn_ack = scpd->sram_pdn_ack_bits;
+	const struct scp_domain_data *data = scpd->data;
+	unsigned long expired;
+	void __iomem *ctl_addr = scpd->scp->base + data->ctl_offs;
+	u32 sram_pdn_ack = data->sram_pdn_ack_bits;
 	u32 val;
 	int ret;
-	int i;
 
-	for (i = 0; i < MAX_CLKS && scpd->clk[i]; i++) {
-		ret = clk_prepare_enable(scpd->clk[i]);
-		if (ret) {
-			for (--i; i >= 0; i--)
-				clk_disable_unprepare(scpd->clk[i]);
-
-			goto err_clk;
-		}
+	if (scpd->clk) {
+		ret = clk_prepare_enable(scpd->clk);
+		if (ret)
+			return ret;
 	}
 
 	val = readl(ctl_addr);
@@ -235,22 +192,15 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	writel(val, ctl_addr);
 
 	/* wait until PWR_ACK = 1 */
-	timeout = jiffies + HZ;
-	expired = false;
-	while (1) {
-		ret = scpsys_domain_is_on(scpd);
-		if (ret > 0)
-			break;
-
-		if (expired) {
-			ret = -ETIMEDOUT;
-			goto err_pwr_ack;
-		}
-
+	expired = jiffies + HZ;
+	while (!(readl(scp->base + SPM_PWR_STATUS) & data->sta_mask) ||
+			!(readl(scp->base + SPM_PWR_STATUS_2ND) &
+			data->sta_mask)) {
 		cpu_relax();
-
-		if (time_after(jiffies, timeout))
-			expired = true;
+		if (time_after(jiffies, expired)) {
+			ret = -EIO;
+			goto out;
+		}
 	}
 
 	val &= ~PWR_CLK_DIS_BIT;
@@ -262,81 +212,63 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	val |= PWR_RST_B_BIT;
 	writel(val, ctl_addr);
 
-	val &= ~scpd->sram_pdn_bits;
+	val &= ~data->sram_pdn_bits;
 	writel(val, ctl_addr);
 
 	/* wait until SRAM_PDN_ACK all 0 */
-	timeout = jiffies + HZ;
-	expired = false;
+	expired = jiffies + HZ;
 	while (sram_pdn_ack && (readl(ctl_addr) & sram_pdn_ack)) {
-
-		if (expired) {
-			ret = -ETIMEDOUT;
-			goto err_pwr_ack;
-		}
-
 		cpu_relax();
-
-		if (time_after(jiffies, timeout))
-			expired = true;
+		if (time_after(jiffies, expired)) {
+			ret = -EIO;
+			goto out;
+		}
 	}
 
-	if (scpd->bus_prot_mask) {
+	if (data->bus_prot_mask) {
 		ret = mtk_infracfg_clear_bus_protection(scp->infracfg,
-				scpd->bus_prot_mask);
+				data->bus_prot_mask);
 		if (ret)
-			goto err_pwr_ack;
+			return ret;
 	}
 
 	return 0;
-
-err_pwr_ack:
-	for (i = MAX_CLKS - 1; i >= 0; i--) {
-		if (scpd->clk[i])
-			clk_disable_unprepare(scpd->clk[i]);
-	}
-err_clk:
-	dev_err(scp->dev, "Failed to power on domain %s\n", genpd->name);
+out:
+	dev_err(scp->dev, "Failed to power on domain %s\n", scpd->data->name);
 
 	return ret;
 }
 
 static int scpsys_power_off(struct generic_pm_domain *genpd)
 {
-	struct scp_domain *scpd = container_of(genpd, struct scp_domain, genpd);
+	struct scp_domain *scpd = container_of(genpd, struct scp_domain, pmd);
 	struct scp *scp = scpd->scp;
-	unsigned long timeout;
-	bool expired;
-	void __iomem *ctl_addr = scpd->ctl_addr;
-	u32 pdn_ack = scpd->sram_pdn_ack_bits;
+	const struct scp_domain_data *data = scpd->data;
+	unsigned long expired;
+	void __iomem *ctl_addr = scpd->scp->base + data->ctl_offs;
+	u32 sram_pdn_ack = data->sram_pdn_ack_bits;
 	u32 val;
 	int ret;
-	int i;
 
-	if (scpd->bus_prot_mask) {
+	if (data->bus_prot_mask) {
 		ret = mtk_infracfg_set_bus_protection(scp->infracfg,
-				scpd->bus_prot_mask);
+				data->bus_prot_mask);
 		if (ret)
-			goto out;
+			return ret;
 	}
 
 	val = readl(ctl_addr);
-	val |= scpd->sram_pdn_bits;
+	val |= data->sram_pdn_bits;
 	writel(val, ctl_addr);
 
 	/* wait until SRAM_PDN_ACK all 1 */
-	timeout = jiffies + HZ;
-	expired = false;
-	while (pdn_ack && (readl(ctl_addr) & pdn_ack) != pdn_ack) {
-		if (expired) {
-			ret = -ETIMEDOUT;
+	expired = jiffies + HZ;
+	while ((readl(ctl_addr) & sram_pdn_ack) != sram_pdn_ack) {
+		cpu_relax();
+		if (time_after(jiffies, expired)) {
+			ret = -EIO;
 			goto out;
 		}
-
-		cpu_relax();
-
-		if (time_after(jiffies, timeout))
-			expired = true;
 	}
 
 	val |= PWR_ISO_BIT;
@@ -355,42 +287,34 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
 	writel(val, ctl_addr);
 
 	/* wait until PWR_ACK = 0 */
-	timeout = jiffies + HZ;
-	expired = false;
-	while (1) {
-		ret = scpsys_domain_is_on(scpd);
-		if (ret == 0)
-			break;
-
-		if (expired) {
-			ret = -ETIMEDOUT;
+	expired = jiffies + HZ;
+	while ((readl(scp->base + SPM_PWR_STATUS) & data->sta_mask) ||
+			(readl(scp->base + SPM_PWR_STATUS_2ND) &
+			 data->sta_mask)) {
+		cpu_relax();
+		if (time_after(jiffies, expired)) {
+			ret = -EIO;
 			goto out;
 		}
-
-		cpu_relax();
-
-		if (time_after(jiffies, timeout))
-			expired = true;
 	}
 
-	for (i = 0; i < MAX_CLKS && scpd->clk[i]; i++)
-		clk_disable_unprepare(scpd->clk[i]);
+	if (scpd->clk)
+		clk_disable_unprepare(scpd->clk);
 
 	return 0;
 
 out:
-	dev_err(scp->dev, "Failed to power off domain %s\n", genpd->name);
+	dev_err(scp->dev, "Failed to power off domain %s\n", scpd->data->name);
 
 	return ret;
 }
 
-static int __init scpsys_probe(struct platform_device *pdev)
+static int scpsys_probe(struct platform_device *pdev)
 {
 	struct genpd_onecell_data *pd_data;
 	struct resource *res;
-	int i, j, ret;
+	int i;
 	struct scp *scp;
-	struct clk *clk[MT8173_CLK_MAX];
 
 	scp = devm_kzalloc(&pdev->dev, sizeof(*scp), GFP_KERNEL);
 	if (!scp)
@@ -410,22 +334,6 @@ static int __init scpsys_probe(struct platform_device *pdev)
 	if (!pd_data->domains)
 		return -ENOMEM;
 
-	clk[MT8173_CLK_MM] = devm_clk_get(&pdev->dev, "mm");
-	if (IS_ERR(clk[MT8173_CLK_MM]))
-		return PTR_ERR(clk[MT8173_CLK_MM]);
-
-	clk[MT8173_CLK_MFG] = devm_clk_get(&pdev->dev, "mfg");
-	if (IS_ERR(clk[MT8173_CLK_MFG]))
-		return PTR_ERR(clk[MT8173_CLK_MFG]);
-
-	clk[MT8173_CLK_VENC] = devm_clk_get(&pdev->dev, "venc");
-	if (IS_ERR(clk[MT8173_CLK_VENC]))
-		return PTR_ERR(clk[MT8173_CLK_VENC]);
-
-	clk[MT8173_CLK_VENC_LT] = devm_clk_get(&pdev->dev, "venc_lt");
-	if (IS_ERR(clk[MT8173_CLK_VENC_LT]))
-		return PTR_ERR(clk[MT8173_CLK_VENC_LT]);
-
 	scp->infracfg = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
 			"infracfg");
 	if (IS_ERR(scp->infracfg)) {
@@ -438,56 +346,45 @@ static int __init scpsys_probe(struct platform_device *pdev)
 
 	for (i = 0; i < NUM_DOMAINS; i++) {
 		struct scp_domain *scpd = &scp->domains[i];
-		struct generic_pm_domain *genpd = &scpd->genpd;
-		const struct scp_domain_data *data = &scp_domain_data[i];
+		struct generic_pm_domain *pmd = &scpd->pmd;
 
-		pd_data->domains[i] = genpd;
+		if (scp_domain_data[i].clk_name) {
+			const char *name = scp_domain_data[i].clk_name;
+
+			scpd->clk = devm_clk_get(&pdev->dev, name);
+			if (IS_ERR(scpd->clk)) {
+				dev_err(&pdev->dev, "Failed to get %s clk: %ld\n",
+						name, PTR_ERR(scpd->clk));
+				return PTR_ERR(scpd->clk);
+			}
+		}
+
+		pd_data->domains[scp_domain_data[i].id] = pmd;
+		scpd->data = &scp_domain_data[i];
 		scpd->scp = scp;
 
-		scpd->sta_mask = data->sta_mask;
-		scpd->ctl_addr = scp->base + data->ctl_offs;
-		scpd->sram_pdn_bits = data->sram_pdn_bits;
-		scpd->sram_pdn_ack_bits = data->sram_pdn_ack_bits;
-		scpd->bus_prot_mask = data->bus_prot_mask;
-		for (j = 0; j < MAX_CLKS && data->clk_id[j]; j++)
-			scpd->clk[j] = clk[data->clk_id[j]];
+		pmd->name = scp_domain_data[i].name;
+		pmd->power_off = scpsys_power_off;
+		pmd->power_on = scpsys_power_on;
+		pmd->power_off_latency_ns = 20000;
+		pmd->power_on_latency_ns = 20000;
 
-		genpd->name = data->name;
-		genpd->power_off = scpsys_power_off;
-		genpd->power_on = scpsys_power_on;
+		pm_genpd_init(pmd, NULL, true);
 
 		/*
-		 * Initially turn on all domains to make the domains usable
-		 * with !CONFIG_PM and to get the hardware in sync with the
-		 * software.  The unused domains will be switched off during
-		 * late_init time.
+		 * If PM is disabled turn on all domains by default so that
+		 * consumers can work.
 		 */
-		genpd->power_on(genpd);
-
-		pm_genpd_init(genpd, NULL, false);
+		if (!IS_ENABLED(CONFIG_PM))
+			pmd->power_on(pmd);
 	}
 
-	/*
-	 * We are not allowed to fail here since there is no way to unregister
-	 * a power domain. Once registered above we have to keep the domains
-	 * valid.
-	 */
-
-	ret = pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_ASYNC],
+	pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_ASYNC],
 		pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D]);
-	if (ret && IS_ENABLED(CONFIG_PM))
-		dev_err(&pdev->dev, "Failed to add subdomain: %d\n", ret);
-
-	ret = pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D],
+	pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D],
 		pd_data->domains[MT8173_POWER_DOMAIN_MFG]);
-	if (ret && IS_ENABLED(CONFIG_PM))
-		dev_err(&pdev->dev, "Failed to add subdomain: %d\n", ret);
 
-	ret = of_genpd_add_provider_onecell(pdev->dev.of_node, pd_data);
-	if (ret)
-		dev_err(&pdev->dev, "Failed to add OF provider: %d\n", ret);
-
-	return 0;
+	return of_genpd_add_provider_onecell(pdev->dev.of_node, pd_data);
 }
 
 static const struct of_device_id of_scpsys_match_tbl[] = {
@@ -497,6 +394,7 @@ static const struct of_device_id of_scpsys_match_tbl[] = {
 		/* sentinel */
 	}
 };
+MODULE_DEVICE_TABLE(of, of_scpsys_match_tbl);
 
 static struct platform_driver scpsys_drv = {
 	.driver = {
@@ -504,17 +402,11 @@ static struct platform_driver scpsys_drv = {
 		.owner = THIS_MODULE,
 		.of_match_table = of_match_ptr(of_scpsys_match_tbl),
 	},
+	.probe = scpsys_probe,
 };
 
-static int __init scpsys_drv_init(void)
-{
-	return platform_driver_probe(&scpsys_drv, scpsys_probe);
-}
+module_platform_driver(scpsys_drv);
 
-static void __exit scpsys_drv_exit(void)
-{
-	platform_driver_unregister(&scpsys_drv);
-}
-
-subsys_initcall(scpsys_drv_init);
-module_exit(scpsys_drv_exit);
+MODULE_AUTHOR("Sascha Hauer, Pengutronix");
+MODULE_DESCRIPTION("MediaTek MT8173 scpsys driver");
+MODULE_LICENSE("GPL v2");
