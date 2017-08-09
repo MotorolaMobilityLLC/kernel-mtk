@@ -1948,6 +1948,8 @@ struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM] = {
 	{SMI_BWC_SCEN_VR, &vr_setting_config},
 	{SMI_BWC_SCEN_SWDEC_VP, &swdec_vp_setting_config},
 	{SMI_BWC_SCEN_VP, &vp_setting_config},
+	{SMI_BWC_SCEN_VP_HIGH_FPS, &vp_setting_config},
+	{SMI_BWC_SCEN_VP_HIGH_RESOLUTION, &vp_setting_config},
 	{SMI_BWC_SCEN_VR_SLOW, &vr_slow_setting_config},
 	{SMI_BWC_SCEN_MM_GPU, &mm_gpu_setting_config},
 	{SMI_BWC_SCEN_WFD, &vpwfd_setting_config},

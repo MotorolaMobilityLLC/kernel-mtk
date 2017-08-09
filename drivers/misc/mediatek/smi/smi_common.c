@@ -1387,6 +1387,10 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		eFinalScen = SMI_BWC_SCEN_VR_SLOW;
 	else if ((1 << SMI_BWC_SCEN_VR) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VR;
+	else if ((1 << SMI_BWC_SCEN_VP_HIGH_RESOLUTION) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_VP_HIGH_RESOLUTION;
+	else if ((1 << SMI_BWC_SCEN_VP_HIGH_FPS) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_VP_HIGH_FPS;
 	else if ((1 << SMI_BWC_SCEN_VP) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VP;
 	else if ((1 << SMI_BWC_SCEN_SWDEC_VP) & u4Concurrency)

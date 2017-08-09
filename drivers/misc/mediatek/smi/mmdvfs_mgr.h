@@ -41,6 +41,7 @@ extern void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen);
 extern void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen);
 extern void mmdvfs_notify_scenario_concurrency(unsigned int u4Concurrency);
 extern void mmdvfs_mhl_enable(int enable);
+extern void mmdvfs_mjc_enable(int enable);
 
 /* screen size */
 extern unsigned int DISP_GetScreenWidth(void);

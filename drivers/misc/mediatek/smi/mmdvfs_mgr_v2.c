@@ -91,8 +91,7 @@ static int get_smvr_step_hevc(int resolution, int is_p_mode, int fps);
 static int get_smvr_step(int is_hevc, int resolution, int is_p_mode, int fps);
 #endif /* MMDVFS_E1 */
 
-static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios,
-int lcd_resolution, int venc_resolution, int is_wfd_enable, int is_mhl_enable, int is_ui_idle);
+
 
 static int is_cam_monior_work;
 
@@ -130,8 +129,10 @@ typedef struct {
 
 typedef struct {
 	spinlock_t scen_lock;
+	int is_vp_high_fps_enable;
 	int is_mhl_enable;
 	int is_wfd_enable;
+	int is_mjc_enable;
 	mmdvfs_gpu_monitor_struct gpu_monitor;
 
 } mmdvfs_context_struct;
@@ -147,7 +148,8 @@ typedef enum {
 /* HIGH */
 } mmdvfs_step_enum;
 
-
+static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
+int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle);
 
 static mmdvfs_context_struct g_mmdvfs_mgr_cntx;
 static mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
@@ -744,7 +746,7 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs
 	if (enable_low_low && check_if_enter_low_low(g_disp_low_low_request, final_step,
 			g_mmdvfs_concurrency, mmdvfs_get_lcd_resolution(),
 			g_mmdvfs_info->video_record_size[0] * g_mmdvfs_info->video_record_size[1],
-			g_mmdvfs_mgr->is_wfd_enable, g_mmdvfs_mgr->is_mhl_enable, g_disp_is_ui_idle)) {
+			g_mmdvfs_mgr, g_disp_is_ui_idle)) {
 		final_step = MMDVFS_VOLTAGE_LOW_LOW;
 	}
 
@@ -875,6 +877,9 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 	if (scen == SMI_BWC_SCEN_WFD)
 		g_mmdvfs_mgr->is_wfd_enable = 0;
 
+	if (scen == SMI_BWC_SCEN_VP_HIGH_FPS)
+		g_mmdvfs_mgr->is_vp_high_fps_enable = 0;
+
 	if ((scen == SMI_BWC_SCEN_VR) || (scen == SMI_BWC_SCEN_VR_SLOW) || (scen == SMI_BWC_SCEN_ICFP))
 		mmdvfs_start_cam_monitor(scen, 8);
 
@@ -901,6 +906,9 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 		mmdvfs_start_cam_monitor(scen, 8);
 
 	switch (scen) {
+	case SMI_BWC_SCEN_VP_HIGH_FPS:
+		g_mmdvfs_mgr->is_vp_high_fps_enable = 1;
+		break;
 	case SMI_BWC_SCEN_VENC:
 		if (g_mmdvfs_concurrency & (1 << SMI_BWC_SCEN_VR))
 			mmdvfs_set_step(scen, get_venc_step(g_mmdvfs_info->video_record_size[0] *
@@ -933,6 +941,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 				}
 			break;
 		}
+	case SMI_BWC_SCEN_VP_HIGH_RESOLUTION:
 	case SMI_BWC_SCEN_VR_SLOW:
 	case SMI_BWC_SCEN_ICFP:
 		mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH, MMSYS_CLK_HIGH);
@@ -968,6 +977,11 @@ void mmdvfs_mhl_enable(int enable)
 		mmdvfs_set_step(MMDVFS_SCEN_MHL, get_ext_disp_step(mmdvfs_get_lcd_resolution()));
 	else
 		mmdvfs_set_step(MMDVFS_SCEN_MHL, MMDVFS_VOLTAGE_DEFAULT_STEP);
+}
+
+void mmdvfs_mjc_enable(int enable)
+{
+	g_mmdvfs_mgr->is_mjc_enable = enable;
 }
 
 void mmdvfs_notify_scenario_concurrency(unsigned int u4Concurrency)
@@ -1161,7 +1175,7 @@ static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode, in
 
 /* Only for DDR 800 */
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
-int venc_resolution, int is_wfd_enable, int is_mhl_enable, int is_ui_idle){
+int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle){
 
 	if (final_step == MMDVFS_VOLTAGE_HIGH) {
 		MMDVFSMSG("Didn't enter low low step due to final step is high\n");
@@ -1169,9 +1183,11 @@ int venc_resolution, int is_wfd_enable, int is_mhl_enable, int is_ui_idle){
 	}
 
 	/* WFD and HML check, it is a specfial case which is not recorded with MTK_SMI_BWC_SCEN */
-	if (is_wfd_enable || is_mhl_enable) {
-		MMDVFSMSG("Didn't enter low low step, MHL/ WFD is enabled: (%d, %d)\n",
-		is_wfd_enable, is_mhl_enable);
+	if (mmdvfs_mgr_cntx->is_wfd_enable || mmdvfs_mgr_cntx->is_mhl_enable
+		|| mmdvfs_mgr_cntx->is_mjc_enable || mmdvfs_mgr_cntx->is_vp_high_fps_enable) {
+		MMDVFSMSG("Didn't enter low low step, MHL/WFD/MJC/vp60fps is enabled: (%d,%d,%d,%d)\n",
+		mmdvfs_mgr_cntx->is_wfd_enable, mmdvfs_mgr_cntx->is_mhl_enable,
+		mmdvfs_mgr_cntx->is_mjc_enable,  mmdvfs_mgr_cntx->is_vp_high_fps_enable);
 		return 0;
 	}
 

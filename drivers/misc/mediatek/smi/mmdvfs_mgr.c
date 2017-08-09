@@ -69,6 +69,7 @@ static MTK_MMDVFS_CMD g_mmdvfs_cmd;
 struct mmdvfs_context_struct {
 	spinlock_t scen_lock;
 	int is_mhl_enable;
+	int is_mjc_enable;
 };
 
 /* mmdvfs_query() return value, remember to sync with user space */
@@ -434,6 +435,11 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 void mmdvfs_mhl_enable(int enable)
 {
 	g_mmdvfs_mgr->is_mhl_enable = enable;
+}
+
+void mmdvfs_mjc_enable(int enable)
+{
+	g_mmdvfs_mgr->is_mjc_enable = enable;
 }
 
 void mmdvfs_notify_scenario_concurrency(unsigned int u4Concurrency)
