@@ -146,6 +146,14 @@ static ssize_t ccci_md_enable_show(char *buf)
 
 CCCI_ATTR(md_en, 0660, &ccci_md_enable_show, NULL);
 
+/* Sys -- dump buff usage */
+static ssize_t ccci_dump_buff_usage_show(char *buf)
+{
+	return get_dump_buf_usage(buf, 4095);
+}
+
+CCCI_ATTR(dump_max, 0660, &ccci_dump_buff_usage_show, NULL);
+
 /* Sys -- Versin */
 static unsigned int ccci_port_ver = 3;
 static ssize_t ccci_version_show(char *buf)
@@ -571,6 +579,7 @@ static struct attribute *ccci_default_attrs[] = {
 	&ccci_attr_debug.attr,
 	&ccci_attr_aat.attr,
 	&ccci_attr_kcfg_setting.attr,
+	&ccci_attr_dump_max.attr,
 	&ccci_attr_lk_md.attr,
 	NULL
 };

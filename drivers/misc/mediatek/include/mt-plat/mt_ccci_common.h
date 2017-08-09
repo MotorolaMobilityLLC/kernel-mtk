@@ -1006,4 +1006,21 @@ int get_md_type_from_lk(int md_id);
 int get_raw_check_hdr(int md_id, char buf[], int size);
 int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[]);
 int get_md_img_raw_size(int md_id);
+/* CCCI dump */
+#define CCCI_DUMP_TIME_FLAG		(1<<0)
+#define CCCI_DUMP_CLR_BUF_FLAG	(1<<1)
+#define CCCI_DUMP_CURR_FLAG		(1<<2)
+enum {
+	CCCI_DUMP_INIT = 0,
+	CCCI_DUMP_RUNTIME,
+	CCCI_DUMP_BOOTUP,
+	CCCI_DUMP_REPEAT,
+	CCCI_DUMP_MEM_DUMP,
+	CCCI_DUMP_HISTORY,
+	CCCI_DUMP_MAX,
+};
+
+int ccci_dump_write(int md_id, int buf_type, unsigned int flag, const char *fmt, ...);
+int ccci_log_write(const char *fmt, ...);
+int ccci_log_write_raw(unsigned int flags, const char *fmt, ...);
 #endif
