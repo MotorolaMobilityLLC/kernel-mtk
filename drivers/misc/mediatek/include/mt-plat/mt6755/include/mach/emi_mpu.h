@@ -217,8 +217,8 @@ typedef void (*emi_mpu_notifier)(u32 addr, int wr_vio);
 (((d7) << 21) | ((d6) << 18) | ((d5) << 15) | \
 ((d4) << 12) | ((d3) << 9) | ((d2) << 6) | ((d1) << 3) | (d0))
 
-extern int emi_mpu_set_region_protection(unsigned int start_addr,
-unsigned int end_addr, int region, unsigned int access_permission);
+extern int emi_mpu_set_region_protection(unsigned long long start_addr,
+unsigned long long end_addr, int region, unsigned int access_permission);
 #if defined(CONFIG_MTKPASR)
 extern void acquire_dram_setting(struct basic_dram_setting *pasrdpd);
 #endif
