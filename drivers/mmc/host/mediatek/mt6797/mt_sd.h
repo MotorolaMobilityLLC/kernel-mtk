@@ -476,6 +476,7 @@ struct msdc_host {
 	u32	                    need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	bool                    is_autok_done;
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;

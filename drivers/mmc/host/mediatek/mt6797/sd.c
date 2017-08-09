@@ -153,6 +153,7 @@ struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL, NULL};
 EXPORT_SYMBOL(mtk_msdc_host);
 int g_dma_debug[HOST_MAX_NUM] = { 0, 0, 0, 0};
 u32 latest_int_status[HOST_MAX_NUM] = { 0, 0, 0, 0};
+u8 sd_autok_res[TUNING_PARAM_COUNT];
 
 unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM] = {
 	/* 0 for PIO; 1 for DMA; 2 for nothing */
@@ -261,7 +262,7 @@ int msdc_rsp[] = {
 #define msdc_dma_status()       ((MSDC_READ32(MSDC_CFG) & MSDC_CFG_PIO) >> 3)
 
 #define pr_reg(OFFSET, REG)     \
-	pr_err("R[%x]=0x%.8x\n", OFFSET, MSDC_READ32(REG))
+	pr_err("R[%x]=0x%.8x ", OFFSET, MSDC_READ32(REG))
 
 void msdc_dump_register_core(u32 id, void __iomem *base)
 {
@@ -350,6 +351,7 @@ void msdc_dump_register(struct msdc_host *host)
 	void __iomem *base = host->base;
 
 	msdc_dump_register_core(host->id, base);
+	pr_err("\n");
 }
 
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base)
@@ -358,10 +360,11 @@ void msdc_dump_dbg_register_core(u32 id, void __iomem *base)
 
 	for (i = 0; i <= 0x27; i++) {
 		MSDC_WRITE32(MSDC_DBG_SEL, i);
-		SIMPLE_INIT_MSG("SEL:r[%x]=0x%x", OFFSET_MSDC_DBG_SEL, i);
-		SIMPLE_INIT_MSG("OUT:r[%x]=0x%x", OFFSET_MSDC_DBG_OUT,
+		pr_err("SEL:r[%x]=0x%.8x", OFFSET_MSDC_DBG_SEL, i);
+		pr_err("OUT:r[%x]=0x%.8x", OFFSET_MSDC_DBG_OUT,
 			 MSDC_READ32(MSDC_DBG_OUT));
 	}
+	pr_err("\n");
 
 	MSDC_WRITE32(MSDC_DBG_SEL, 0);
 }
@@ -4176,8 +4179,15 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		}
 		break;
 	case MSDC_SD:
-		pr_err("[AUTOK]SDcard autok\n");
-		ret = autok_execute_tuning(host, NULL);
+		if (host->is_autok_done == 0) {
+			pr_err("[AUTOK]SDcard autok\n");
+			ret = autok_execute_tuning(host, sd_autok_res);
+			host->is_autok_done = 1;
+		} else {
+			pr_err("[AUTOK] apply parameter, don't tune\n");
+			autok_init_sdr104(host);
+			autok_tuning_parameter_init(host, sd_autok_res);
+		}
 		break;
 	case MSDC_SDIO:
 		pr_err("SDIO autok is not portted\n");
@@ -4187,8 +4197,14 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 			host->hw->host_function);
 		break;
 	}
-	if (ret)
+	if (ret) {
+		msdc_dump_clock_sts(host);
+		msdc_dump_ldo_sts(host);
+		pr_err("msdc%d latest_INT_status<0x%.8x>\n", host->id,
+				latest_int_status[host->id]);
 		msdc_dump_register(host);
+		msdc_dump_dbg_register(host);
+	}
 
 	host->tuning_in_progress = false;
 	msdc_gate_clock(host, 1);
@@ -4330,8 +4346,14 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
 			break;
 		}
-		if (ret)
+		if (ret) {
+			msdc_dump_clock_sts(host);
+			msdc_dump_ldo_sts(host);
+			pr_err("msdc%d latest_INT_status<0x%.8x>\n", host->id,
+					latest_int_status[host->id]);
 			msdc_dump_register(host);
+			msdc_dump_dbg_register(host);
+		}
 
 		/* autok failed three times will try reinit tuning */
 		if (host->reautok_times >= 4) {
@@ -4540,6 +4562,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
+	host->is_autok_done = 0;
 	host->block_bad_card = 0;
 	msdc_ops_get_cd(mmc);
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
@@ -5437,6 +5460,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	/* for re-autok */
 	host->tuning_in_progress = false;
+	host->is_autok_done = 0;
 	host->need_tune	= TUNE_NONE;
 	host->reautok_times = 0;
 	host->tune_smpl_times = 0;

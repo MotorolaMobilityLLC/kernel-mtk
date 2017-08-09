@@ -164,7 +164,6 @@ u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_mv,
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
-#ifdef MTK_MSDC_BRINGUP_DEBUG
 	u32 ldo_en = 0, ldo_vol = 0;
 	u32 id = host->id;
 
@@ -174,7 +173,7 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			SHIFT_VEMC_EN);
 		pmic_read_interface_nolock(REG_VEMC_VOSEL, &ldo_vol,
 			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
-		pr_err("VEMC_EN=0x%x, be:1b'1,VEMC_VOL=0x%x, be:1b'0(3.0V),1b'1(3.3V)\n",
+		pr_err(" VEMC_EN=0x%x, be:1b'1,VEMC_VOL=0x%x, be:1b'0(3.0V),1b'1(3.3V)\n",
 			ldo_en, ldo_vol);
 		break;
 	case 1:
@@ -182,20 +181,19 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			SHIFT_VMC_EN);
 		pmic_read_interface_nolock(REG_VMC_VOSEL, &ldo_vol,
 			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
-		pr_err("VMC_EN=0x%x, be:bit1=1,VMC_VOL=0x%x, be:3b'101(2.8V),3b'011(1.8V)\n",
+		pr_err(" VMC_EN=0x%x, be:bit1=1,VMC_VOL=0x%x, be:3b'101(2.8V),3b'011(1.8V)\n",
 			ldo_en, ldo_vol);
 
 		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
 			SHIFT_VMCH_EN);
 		pmic_read_interface_nolock(REG_VMCH_VOSEL, &ldo_vol,
 			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
-		pr_err("VMCH_EN=0x%x, be:bit1=1, VMCH_VOL=0x%x, be:1b'0(3V),1b'1(3.3V)\n",
+		pr_err(" VMCH_EN=0x%x, be:bit1=1, VMCH_VOL=0x%x, be:1b'0(3V),1b'1(3.3V)\n",
 			ldo_en, ldo_vol);
 		break;
 	default:
 		break;
 	}
-#endif
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
@@ -292,7 +290,7 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 			SHIFT_VEMC_VOSEL_CAL);
 	}
 
-	msdc_dump_ldo_sts(host);
+	/* msdc_dump_ldo_sts(host); */
 }
 
 void msdc_sd_power(struct msdc_host *host, u32 on)
@@ -810,7 +808,7 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 {
 	if (topckgen_reg_base) {
 		/* CLK_CFG_3 control msdc clock source PLL */
-		pr_err(" CLK_CFG_3 register address is 0x%p\n\n",
+		pr_err(" CLK_CFG_3 register address is 0x%p\n",
 			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
 		pr_err(" bit[9~8]=01b,     bit[15]=0b\n");
 		pr_err(" bit[19~16]=0001b, bit[23]=0b\n");
@@ -820,23 +818,23 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 	}
 	if (apmixed_reg_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
-		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
+		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n",
 			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
 		pr_err(" bit[0]=1b\n");
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
 
-		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
+		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n",
 			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
 
-		pr_err(" MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
+		pr_err(" MSDCPLL_CON2_OFFSET register address is 0x%p\n",
 			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
 
-		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
+		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n",
 			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
 		pr_err(" bit[0]=1b\n");
 		pr_err(" Read value is       0x%x\n",
