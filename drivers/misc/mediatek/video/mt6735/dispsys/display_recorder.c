@@ -48,7 +48,7 @@ static DEFINE_SPINLOCK(gdprec_logger_spinlock);
 
 static dprec_debug_control _control = { 0 };
 
-static reg_base_map reg_map[] = {
+/*static reg_base_map reg_map[] = {
 	{"MMSYS", (0xf4000000)},
 	{"OVL0", (0xF400c000)},
 	{"OVL1", (0xF400d000)},
@@ -76,7 +76,7 @@ static reg_base_map reg_map[] = {
 	{"OD", (0xF4023000)},
 	{"MIPITX0", (0xF0215000)},
 	{"MIPITX1", (0xF0216000)},
-};
+};*/
 
 static event_string_map event_map[] = {
 	{"Set Config Dirty", DPREC_EVENT_CMDQ_SET_DIRTY},
@@ -131,7 +131,7 @@ static void dprec_to_mmp(unsigned int type_logsrc, MMP_LogType mmp_log, unsigned
 
 }
 
-static const char *_find_module_by_reg_addr(unsigned int reg)
+/*static const char *_find_module_by_reg_addr(unsigned int reg)
 {
 	int i = 0;
 	unsigned int module_offset = 0x1000;
@@ -143,7 +143,7 @@ static const char *_find_module_by_reg_addr(unsigned int reg)
 	}
 
 	return "unknown";
-}
+}*/
 
 static const char *_get_event_string(DPREC_EVENT event)
 {
@@ -920,51 +920,7 @@ unsigned int dprec_get_vsync_count(void)
 
 void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int mask)
 {
-	int len = 0;
-
 	return;
-
-	if (!cmdq)
-		MMProfileLogEx(ddp_mmp_get_events()->dprec_cpu_write_reg, MMProfileFlagPulse, reg, val);
-
-	if (cmdq) {
-		if (mask)
-			DISPPR_HWOP("%s/0x%08x/0x%08x=0x%08x&0x%08x\n",
-				    _find_module_by_reg_addr(reg), (unsigned int)cmdq, reg, val, mask);
-		else
-			DISPPR_HWOP("%s/0x%08x/0x%08x=0x%08x\n", _find_module_by_reg_addr(reg),
-				    (unsigned int)cmdq, reg, val);
-	} else {
-		if (mask)
-			DISPPR_HWOP("%s/%08x=%08x&%08x\n", _find_module_by_reg_addr(reg), reg, val, mask);
-		else
-			DISPPR_HWOP("%s/%08x=%08x\n", _find_module_by_reg_addr(reg), reg, val);
-	}
-
-	if (_control.overall_switch == 0)
-		return;
-
-
-	len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "[DPREC]");
-	len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "[%s]",
-			 _find_module_by_reg_addr(reg));
-	len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "[%s]",
-			      cmdq ? "CMDQ" : "CPU");
-
-	if (cmdq)
-		len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "[0x%p]", cmdq);
-
-	len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "0x%08x=0x%08x", reg, val);
-
-	if (mask)
-		len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "&0x%08x", mask);
-
-	len += scnprintf(dprec_string_buffer + len, dprec_string_max_length - len, "\n");
-
-	if (_control.cmm_dump)
-		;/* pr_debug("[CMM]D.S SD:0x%08x %\LE %\LONG 0x%08x; write %s\n",
-		    (_control.cmm_dump_use_va)?reg:(reg&0x1fffffff),
-		    mask ? (val|mask) : val,_find_module_by_reg_addr(reg)); */
 }
 
 void dprec_logger_dump(char *string)
