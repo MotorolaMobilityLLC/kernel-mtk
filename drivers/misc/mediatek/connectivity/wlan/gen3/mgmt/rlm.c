@@ -1617,13 +1617,20 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 	 *  The channel bandwidth of OP Mode IE  is  3, represent as 160/80+80MHz.
 	 */
 	if (fgHasOPModeIE == TRUE) {
-
-		/*Set the channel bandwidth of VHT operating is 0, represent as 20/40MHz */
-		if ((ucVhtOpModeChannelWidth == 0) || (ucVhtOpModeChannelWidth == 1))
+		if (ucVhtOpModeChannelWidth == 0) {
+			/*Set the channel bandwidth of VHT operating is 0,
+			together with other parameters, represent as 20M */
 			prBssInfo->ucVhtChannelWidth = 0;
-		/*Set the channel bandwidth of VHT operating is 1, represent as 80MHz */
-		else if (ucVhtOpModeChannelWidth == 2)
+			prBssInfo->ucVhtChannelFrequencyS1 = 0;
+			prBssInfo->ucVhtChannelFrequencyS2 = 0;
+			prBssInfo->eBssSCO = CHNL_EXT_SCN;
+		} else if (ucVhtOpModeChannelWidth == 1) {
+			/*Set the channel bandwidth of VHT operating is 0, represent as 20/40MHz */
+			prBssInfo->ucVhtChannelWidth = 0;
+		} else if (ucVhtOpModeChannelWidth == 2) {
+			/*Set the channel bandwidth of VHT operating is 1, represent as 80MHz */
 			prBssInfo->ucVhtChannelWidth = 1;
+		}
 	}
 #endif
 
