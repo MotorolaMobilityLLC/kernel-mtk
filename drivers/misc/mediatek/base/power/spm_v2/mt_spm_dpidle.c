@@ -301,7 +301,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.conn_apsrc_sel = 0,
 
 	/* SPM_SRC_REQ */
+#if defined(CONFIG_ARCH_MT6755)
+	.spm_apsrc_req = 1,
+#elif defined(CONFIG_ARCH_MT6797)
 	.spm_apsrc_req = 0,
+#endif
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,

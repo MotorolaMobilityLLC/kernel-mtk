@@ -247,7 +247,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 #else
-	.spm_apsrc_req = 0,
+	.spm_apsrc_req = 1,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
