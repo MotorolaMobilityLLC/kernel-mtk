@@ -3160,7 +3160,11 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 #endif
 
 	/* set freq (UP/DOWN) */
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	if (enable_cpuhvfs || cur_khz != target_khz)
+#else
 	if (cur_khz != target_khz)
+#endif
 		p->ops->set_cur_freq(p, cur_khz, target_khz);
 
 #ifdef CONFIG_CPU_FREQ
