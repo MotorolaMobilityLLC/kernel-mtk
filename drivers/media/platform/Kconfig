@@ -172,6 +172,15 @@ config VIDEO_MEDIATEK_VCODEC
 	   Set when v4l2 codec is needed
 	   When it is enable, related mediatek codec will be included
 
+config VIDEO_MEDIATEK_MDP
+	bool "Mediatek Multimedia Data Process"
+	select VIDEO_MEDIATEK_VPU
+	---help---
+	  Mediatek Multimedia Data Process for DRM
+	  Default is disable
+	  Set when DRM need to use it
+	  When it is enable, related mediatek mdp will be included
+
 config VIDEO_MEM2MEM_DEINTERLACE
 	tristate "Deinterlace support"
 	depends on VIDEO_DEV && VIDEO_V4L2 && DMA_ENGINE
