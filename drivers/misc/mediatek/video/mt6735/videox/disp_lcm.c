@@ -10,7 +10,7 @@
 
 #include "disp_lcm.h"
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>
 
 #define MAX_INIT_CNT 256
@@ -168,7 +168,7 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 	}
 }
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #define INIT_SIZE			(sizeof(LCM_DATA)*256)
 #define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*8)
 #define SUSPEND_SIZE		(sizeof(LCM_DATA)*8)
@@ -818,7 +818,7 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 		goto FAIL;
 	}
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	load_lcm_resources_from_DT(plcm->drv);
 #endif
 

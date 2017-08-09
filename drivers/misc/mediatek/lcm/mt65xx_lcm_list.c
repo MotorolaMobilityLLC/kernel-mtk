@@ -20,7 +20,7 @@
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	&lcm_common_drv,
 #else
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
@@ -920,8 +920,12 @@ LCM_DRIVER *lcm_driver_list[] = {
 #endif
 };
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 unsigned char lcm_name_list[][128] = {
+#if defined(HX8392A_DSI_CMD)
+	"hx8392a_dsi_cmd",
+#endif
+
 #if defined(OTM9608_QHD_DSI_CMD)
 	"otm9608_qhd_dsi_cmd",
 #endif

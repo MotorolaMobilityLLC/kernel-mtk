@@ -1967,10 +1967,6 @@ unsigned int vramsize = 0;
 phys_addr_t fb_base = 0;
 static int is_videofb_parse_done;
 static unsigned long video_node;
-#if !defined(CONFIG_MTK_LEGACY)
-unsigned int lcm_driver_id = 0;
-unsigned int lcm_module_id = 0;
-#endif
 
 static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -1996,16 +1992,6 @@ int _parse_tag_videolfb(void)
 #endif
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0) {
-#if !defined(CONFIG_MTK_LEGACY)
-		u32 *p = NULL;
-
-		p = (u32 *)of_get_flat_dt_prop(video_node, "lcm_driver_id", NULL);
-		if (p)
-			lcm_driver_id = *p;
-		p = (u32 *)of_get_flat_dt_prop(video_node, "lcm_module_id", NULL);
-		if (p)
-			lcm_module_id = *p;
-#endif
 		videolfb_tag = (struct tag_videolfb *)of_get_flat_dt_prop(video_node, "atag,videolfb", NULL);
 		if (videolfb_tag) {
 			memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
@@ -2027,10 +2013,6 @@ int _parse_tag_videolfb(void)
 			DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
 			DISPCHECK("[DT][videolfb] fb_base    = %p\n", (void *)fb_base);
 			DISPCHECK("[DT][videolfb] vram       = %d\n", vramsize);
-#if !defined(CONFIG_MTK_LEGACY)
-			DISPCHECK("[DT][videolfb] driver_id  = 0x%x\n", lcm_driver_id);
-			DISPCHECK("[DT][videolfb] module_id  = 0x%x\n", lcm_module_id);
-#endif
 			DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 #endif
 			return 0;

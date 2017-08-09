@@ -365,11 +365,6 @@ extern unsigned int vramsize;
 #endif
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-#if !defined(CONFIG_MTK_LEGACY)
-extern unsigned int lcm_driver_id;
-extern unsigned int lcm_module_id;
-#endif
-
 extern bool is_early_suspended;
 extern void mtkfb_waitVsync(void);
 extern bool is_ipoh_bootup;

@@ -3,7 +3,7 @@
 
 #include <lcm_drv.h>
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 extern LCM_DRIVER lcm_common_drv;
 #else
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
