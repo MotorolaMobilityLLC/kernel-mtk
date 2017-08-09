@@ -136,8 +136,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		ranges;
 
 		/* reserve 192KB at DRAM start + 48MB */
-		ATF-reserved-memory {
-			compatible = "ATF-reserved-memory";
+		atf-reserved-memory@43000000 {
+			compatible = "mediatek,mt6735-atf-reserved-memory",
+				     "mediatek,mt6735m-atf-reserved-memory",
+				     "mediatek,mt6753-atf-reserved-memory";
 			no-map;
 			reg = <0 0x43000000 0 0x30000>;
 		};
