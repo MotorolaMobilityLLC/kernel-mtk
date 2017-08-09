@@ -446,7 +446,7 @@ void AudDrv_Clk_Off(void)
 	PRINTK_AUD_CLK("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
-	/* Aud_AFE_Clk_cntr--; */
+	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
 		PRINTK_AUD_CLK("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 		{
