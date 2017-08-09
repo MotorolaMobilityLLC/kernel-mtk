@@ -1176,7 +1176,7 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 		reg = reg_vemc_3v3;
 	if (reg == NULL)
 		return false;
-
+	powerVolt = powerVolt * 1000;
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
 	regulator_enable(reg);
