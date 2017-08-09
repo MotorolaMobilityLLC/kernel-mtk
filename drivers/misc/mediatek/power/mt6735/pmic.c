@@ -2115,25 +2115,26 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 #endif
 
 	if (g_battery_percent_stop == 1) {
-		pr_err("[exec_battery_percent_callback] g_battery_percent_stop=%d\n",
-			g_battery_percent_stop);
+		pr_err("[%s] g_battery_percent_stop=%d\n", __func__, g_battery_percent_stop);
 	} else {
 #ifdef DISABLE_DLPT_FEATURE
 		for (i = 0; i < BPCB_NUM; i++) {
 			if (bpcb_tb[i].bpcb != NULL) {
 				battery_percent_callback = bpcb_tb[i].bpcb;
 				battery_percent_callback(battery_percent_level);
-				pr_debug
-				    ("[exec_battery_percent_callback] prio_val=%d,battery_percent_level=%d\n",
-				     i, battery_percent_level);
+				pr_debug("[%s] prio_val=%d,battery_percent_level=%d\n",
+				     __func__, i, battery_percent_level);
 			}
 		}
 #else
-		battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
-		battery_percent_callback(battery_percent_level);
-		pr_debug
-		    ("[exec_battery_percent_callback at DLPT] prio_val=%d,battery_percent_level=%d\n",
-		     BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
+		if (bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb != NULL) {
+			battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
+			battery_percent_callback(battery_percent_level);
+			pr_debug("[%s at DLPT] prio_val=%d,battery_percent_level=%d\n",
+			    __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
+		} else
+			pr_debug("[%s at DLPT] NULL pointer, prio_val=%d,battery_percent_level=%d\n",
+			    __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
 #endif
 	}
 }
