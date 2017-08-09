@@ -73,7 +73,7 @@ static DEFINE_SPINLOCK(gCmdqThreadLock);
 static atomic_t gCmdqThreadUsage;
 static atomic_t gSMIThreadUsage;
 static bool gCmdqSuspended;
-static bool gCmdqEarlySuspended;
+static atomic_t gCmdqEarlySuspended;
 static DEFINE_SPINLOCK(gCmdqExecLock);
 static DEFINE_SPINLOCK(gCmdqRecordLock);
 
@@ -4993,7 +4993,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(struct TaskStruct *pTask,
 #endif
 }
 
-static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct *pLast, struct TaskStruct *pTask,
+static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, struct TaskStruct *pTask,
 						    int32_t thread, int32_t loop)
 {
 	int32_t status = 0;
@@ -5080,9 +5080,9 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct *pLast, st
 			/* re-fetch command buffer again. */
 			cmdq_core_invalidate_hw_fetched_buffer(thread);
 #endif
-			if (pLast == pTask) {
+			if (*pLast == pTask) {
 				CMDQ_LOG("update pLast from 0x%p to 0x%p\n", pTask, pPrev);
-				pLast = pPrev;
+				*pLast = pPrev;
 			}
 		} else {
 			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
@@ -5106,7 +5106,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct *pLast, st
 		}
 	}
 
-	CMDQ_MSG("Reorder %d tasks for performance end, pLast:0x%p\n", loop, pLast);
+	CMDQ_MSG("Reorder %d tasks for performance end, pLast:0x%p\n", loop, *pLast);
 
 	return status;
 }
@@ -5345,7 +5345,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			/* By default, pTask is the last task, and insert [cookie % CMDQ_MAX_TASK_IN_THREAD] */
 			pLast = pTask;	/* Default last task */
 
-			status = cmdq_core_exec_find_task_slot(pLast, pTask, thread, loop);
+			status = cmdq_core_exec_find_task_slot(&pLast, pTask, thread, loop);
 			if (status < 0) {
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
@@ -5918,19 +5918,19 @@ int32_t cmdqCoreEarlySuspend(void)
 {
 	/* destroy secure path notify thread */
 	cmdq_core_stop_secure_path_notify_thread();
-	gCmdqEarlySuspended = true;
+	atomic_set(&gCmdqEarlySuspended, 1);
 	return 0;
 }
 
 int32_t cmdqCoreLateResume(void)
 {
-	gCmdqEarlySuspended = false;
+	atomic_set(&gCmdqEarlySuspended, 0);
 	return 0;
 }
 
 bool cmdqCoreIsEarlySuspended(void)
 {
-	return gCmdqEarlySuspended;
+	return atomic_read(&gCmdqEarlySuspended);
 }
 
 static int32_t cmdq_core_exec_task_async_with_retry(struct TaskStruct *pTask, int32_t thread)
