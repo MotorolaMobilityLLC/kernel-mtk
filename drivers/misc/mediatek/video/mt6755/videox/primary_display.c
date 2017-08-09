@@ -1317,8 +1317,7 @@ void _cmdq_insert_wait_frame_done_token_mira(void *handle)
 	if (primary_display_is_video_mode()) {
 		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
 		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-		if (disp_helper_get_option(DISP_OPT_VDO_MODE_SOF_WAIT))
-			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), handle, 1);
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), handle, 0);
 	} else {
 		cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 	}
