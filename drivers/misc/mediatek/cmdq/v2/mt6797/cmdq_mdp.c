@@ -230,14 +230,19 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 	static const int engineResetBit[32] = {
 		-1,		/* bit  0 : SMI COMMON */
 		-1,		/* bit  1 : SMI LARB0 */
-		CMDQ_ENG_MDP_CAMIN,	/* bit  2 : CAM_MDP */
-		CMDQ_ENG_MDP_RDMA0,	/* bit  3 : MDP_RDMA0 */
-		CMDQ_ENG_MDP_RSZ0,	/* bit  4 : MDP_RSZ0 */
-		CMDQ_ENG_MDP_RSZ1,	/* bit  5 : MDP_RSZ1 */
-		CMDQ_ENG_MDP_TDSHP0,	/* bit  6 : MDP_TDSHP0 */
-		CMDQ_ENG_MDP_WDMA,	/* bit  7 : MDP_WDMA */
-		CMDQ_ENG_MDP_WROT0,	/* bit  8 : MDP_WROT0 */
-		[9 ... 31] = -1
+		-1,		/* bit  2 : SMI LARB5 */
+		CMDQ_ENG_MDP_CAMIN,	/* bit  3 : CAM_MDP */
+		CMDQ_ENG_MDP_RDMA0,	/* bit  4 : MDP_RDMA0 */
+		CMDQ_ENG_MDP_RDMA1,	/* bit  5 : MDP_RDMA1 */
+		CMDQ_ENG_MDP_RSZ0,	/* bit  6 : MDP_RSZ0 */
+		CMDQ_ENG_MDP_RSZ1,	/* bit  7 : MDP_RSZ1 */
+		CMDQ_ENG_MDP_RSZ2,	/* bit  8 : MDP_RSZ2 */
+		CMDQ_ENG_MDP_TDSHP0,	/* bit  9 : MDP_TDSHP0 */
+		CMDQ_ENG_MDP_COLOR0,	/* bit  10 : MDP_COLOR0 */
+		CMDQ_ENG_MDP_WDMA,	/* bit  11 : MDP_WDMA */
+		CMDQ_ENG_MDP_WROT0,	/* bit  12 : MDP_WROT0 */
+		CMDQ_ENG_MDP_WROT1,	/* bit  13 : MDP_WROT1 */
+		[14 ... 31] = -1
 	};
 
 	for (i = 0; i < 32; ++i) {
