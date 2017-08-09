@@ -161,8 +161,9 @@ static struct deint_des *deint_descriptors;
 static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 static unsigned long cur_debug_eint;
-
+#endif
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -726,6 +727,7 @@ static unsigned int mt_eint_read_status(unsigned int eint_num)
 	return st & bit;
 }
 
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 /*
  * mt_eint_read_status: To read the interrupt status
  * @eint_num: the EINT number to set
@@ -747,7 +749,7 @@ static unsigned int mt_eint_read_raw_status(unsigned int eint_num)
 	st = readl(IOMEM(base));
 	return (st&bit) >> (eint_num % 32);
 }
-
+#endif
 
 
 /*
@@ -2002,6 +2004,8 @@ static int __init mt_eint_init(void)
 	irq_set_chained_handler(irq, (irq_flow_handler_t) mt_eint_demux);
 	irq_set_handler_data(irq, mt_eint_chip);
 
+
+
 #if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
 	ret = platform_driver_register(&eint_driver);
 	if (ret)
@@ -2011,7 +2015,6 @@ static int __init mt_eint_init(void)
 	ret |= driver_create_file(&eint_driver.driver, &driver_attr_per_eint_dump);
 	if (ret)
 		pr_err("Fail to create eint_driver sysfs files");
-
 
 	eint_trigger_history_init();
 #endif
