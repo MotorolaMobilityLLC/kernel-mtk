@@ -12,9 +12,6 @@
 #define MSDC1	1
 #define MSDC3	3
 
-#define WAKE_SRC_FOR_VCOREFS             \
-	(WAKE_SRC_R12_PCM_TIMER)
-
 void spm_go_to_vcorefs(int spm_flags);
 int spm_set_vcore_dvfs(int opp);
 void spm_vcorefs_init(void);

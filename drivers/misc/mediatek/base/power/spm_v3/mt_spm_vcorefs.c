@@ -46,12 +46,6 @@ u32 level_mask[NUM_OPP] = { LV4_MSK, LV3_MSK, LV2_REQ, LV1_MSK, LV0_MSK};
 
 void __iomem *dvfsrc_base;
 
-/* FIXME: */
-/*
- * need check with spec
- */
-#define WAKE_SRC_FOR_MD32	0
-
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define SPM_AEE_RR_REC	1
 #else
@@ -515,8 +509,7 @@ static struct pcm_desc vcorefs_pcm = {
 };
 
 static struct pwr_ctrl vcorefs_ctrl = {
-	.wake_src		= WAKE_SRC_FOR_VCOREFS,
-	.wake_src_md32		= WAKE_SRC_FOR_MD32,
+	.wake_src		= WAKE_SRC_R12_PCM_TIMER,
 
 	/* Auto-gen Start */
 
@@ -703,6 +696,21 @@ static void spm_fw_version(void)
 	spm_vcorefs_warn("VCOREFS_VER: %s\n", pcmdesc->version);
 }
 
+static void __check_dvfs_ultra_source(void)
+{
+	u32 val;
+
+	val = spm_read(DRAMC_DPY_CLK_SW_CON2);
+
+	spm_vcorefs_warn("DVFS ULTRA SOURCE      : 0x%x, REQ(0x%x, 0x%x), ACK(0x%x, 0x%x, 0x%x)\n",
+						val,
+						val & SPM2MM_ULTRAREQ_LSB,
+						val & SPM2MD_ULTRAREQ_LSB,
+						val & SPM2ISP_ULTRAACK_D2T_LSB,
+						val & SPM2MM_ULTRAACK_D2T_LSB,
+						val & SPM2MD_ULTRAACK_D2T_LSB);
+}
+
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
@@ -715,6 +723,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 				spm_read(DVFSRC_RECORD_3), spm_read(DVFSRC_RECORD_4), spm_read(DVFSRC_RECORD_5),
 				spm_read(DVFSRC_RECORD_6), spm_read(DVFSRC_RECORD_7), spm_read(DVFSRC_RECORD_8));
 		p += sprintf(p, "DVFSRC_SPM_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_SPM_LEVEL_MASK));
+		__check_dvfs_ultra_source();
 		p += sprintf(p, "SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "DVFS_LEVEL      : 0x%x\n", spm_read(DVFS_LEVEL));
 		p += sprintf(p, "PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
@@ -730,33 +739,10 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 				spm_read(DVFSRC_RECORD_3), spm_read(DVFSRC_RECORD_4), spm_read(DVFSRC_RECORD_5),
 				spm_read(DVFSRC_RECORD_6), spm_read(DVFSRC_RECORD_7), spm_read(DVFSRC_RECORD_8));
 		spm_vcorefs_warn("DVFSRC_SPM_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_SPM_LEVEL_MASK));
+		__check_dvfs_ultra_source();
 		spm_vcorefs_warn("SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("DVFS_LEVEL      : 0x%x\n", spm_read(DVFS_LEVEL));
-		spm_vcorefs_warn("DRAMC_DPY_CLK   : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON_SEL));
-		spm_vcorefs_warn("MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
-		spm_vcorefs_warn("SPM_SRC_REQ     : 0x%x\n", spm_read(SPM_SRC_REQ));
-		spm_vcorefs_warn("SPM_SRC_MASK    : 0x%x\n", spm_read(SPM_SRC_MASK));
-		spm_vcorefs_warn("SPM_SRC2_MASK   : 0x%x\n", spm_read(SPM_SRC2_MASK));
-		spm_vcorefs_warn("SPM_SW_RSV_1    : 0x%x\n", spm_read(SPM_SW_RSV_1));
-		spm_vcorefs_warn("SPM_SW_RSV_3    : 0x%x\n", spm_read(SPM_SW_RSV_3));
-		spm_vcorefs_warn("SPM_SW_RSV_4    : 0x%x\n", spm_read(SPM_SW_RSV_4));
-		spm_vcorefs_warn("SPM_SW_RSV_5    : 0x%x\n", spm_read(SPM_SW_RSV_5));
-		spm_vcorefs_warn("PCM_REG0_DATA   : 0x%x\n", spm_read(PCM_REG0_DATA));
-		spm_vcorefs_warn("PCM_REG1_DATA   : 0x%x\n", spm_read(PCM_REG1_DATA));
-		spm_vcorefs_warn("PCM_REG2_DATA   : 0x%x\n", spm_read(PCM_REG2_DATA));
-		spm_vcorefs_warn("PCM_REG3_DATA   : 0x%x\n", spm_read(PCM_REG3_DATA));
-		spm_vcorefs_warn("PCM_REG4_DATA   : 0x%x\n", spm_read(PCM_REG4_DATA));
-		spm_vcorefs_warn("PCM_REG5_DATA   : 0x%x\n", spm_read(PCM_REG5_DATA));
-		spm_vcorefs_warn("PCM_REG6_DATA   : 0x%x\n", spm_read(PCM_REG6_DATA));
-		spm_vcorefs_warn("PCM_REG7_DATA   : 0x%x\n", spm_read(PCM_REG7_DATA));
-		spm_vcorefs_warn("PCM_REG8_DATA   : 0x%x\n", spm_read(PCM_REG8_DATA));
-		spm_vcorefs_warn("PCM_REG9_DATA   : 0x%x\n", spm_read(PCM_REG9_DATA));
-		spm_vcorefs_warn("PCM_REG10_DATA  : 0x%x\n", spm_read(PCM_REG10_DATA));
-		spm_vcorefs_warn("PCM_REG11_DATA  : 0x%x\n", spm_read(PCM_REG11_DATA));
-		spm_vcorefs_warn("PCM_REG12_DATA  : 0x%x\n", spm_read(PCM_REG12_DATA));
-		spm_vcorefs_warn("PCM_REG13_DATA  : 0x%x\n", spm_read(PCM_REG13_DATA));
-		spm_vcorefs_warn("PCM_REG14_DATA  : 0x%x\n", spm_read(PCM_REG14_DATA));
-		spm_vcorefs_warn("PCM_REG15_DATA  : %u\n"  , spm_read(PCM_REG15_DATA));
+		spm_vcorefs_warn("CLK_SW_CON_SEL  : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON_SEL));
 		spm_vcorefs_warn("PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 		#endif
 	}
