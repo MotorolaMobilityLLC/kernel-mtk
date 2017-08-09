@@ -86,7 +86,8 @@ typedef enum _VDEC_DRV_VIDEO_FORMAT_T {
 	VDEC_DRV_VIDEO_FORMAT_S263                  = (1 << 26),    /* /< Sorenson Spark */
 	VDEC_DRV_VIDEO_FORMAT_H264HP                = (1 << 27),
 	VDEC_DRV_VIDEO_FORMAT_H264SEC               = (1 << 28),
-	VDEC_DRV_VIDEO_FORMAT_H265SEC               = (1 << 29)
+	VDEC_DRV_VIDEO_FORMAT_H265SEC               = (1 << 29),
+	VDEC_DRV_VIDEO_FORMAT_VP9SEC                = (1 << 30)
 } VDEC_DRV_VIDEO_FORMAT_T;
 
 
