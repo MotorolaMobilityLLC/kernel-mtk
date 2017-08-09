@@ -429,7 +429,7 @@ struct mmc_host {
 	atomic_t		cq_rdy_cnt;
 	unsigned long	task_id_index;
 	int				cur_rw_task;
-	int				is_data_dma;
+	volatile int		is_data_dma;
 	atomic_t		cq_tuning_now;
 #ifdef CONFIG_MMC_FFU
 	atomic_t		stop_queue;

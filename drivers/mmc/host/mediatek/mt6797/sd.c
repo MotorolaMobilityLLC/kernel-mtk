@@ -3555,6 +3555,8 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	struct mmc_request *mrq, int *retry)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
 
 	u32 err = 0, status = 0;
 
@@ -3562,10 +3564,21 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 		err = msdc_get_card_status(mmc, host, &status);
 		if (err) {
 			/* wait for transfer done */
-			if (!atomic_read(&mmc->cq_tuning_now))
+			if (!atomic_read(&mmc->cq_tuning_now)) {
+				polling_tmo = jiffies + 10 * HZ;
+				pr_err("msdc%d waiting data transfer done\n",
+						host->id);
 				while (mmc->is_data_dma) {
-					ERR_MSG("wait until transfer done");
-				};
+					if (time_after(jiffies, polling_tmo)) {
+						ERR_MSG("waiting data transfer done TMO");
+						msdc_dump_info(host->id);
+						msdc_dma_stop(host);
+						msdc_dma_clear(host);
+						msdc_reset_hw(host->id);
+						return -1;
+					}
+				}
+			}
 
 			ERR_MSG("get card status, err = %d", err);
 			if (msdc_execute_tuning(mmc, MMC_SEND_STATUS)) {
