@@ -176,7 +176,9 @@ machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
 machine-$(CONFIG_ARCH_MXC)		+= imx
 machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
 # only for 32-bit bringup, must refactor this later
+ifneq ($(CONFIG_ARCH_MEDIATEK),y)
 machine-$(CONFIG_MEDIATEK_SOLUTION)	+= mediatek
+endif
 machine-$(CONFIG_ARCH_MXS)		+= mxs
 machine-$(CONFIG_ARCH_NETX)		+= netx
 machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
