@@ -470,6 +470,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 
 		if (heavy_task) {
 			ppm_dbg(HICA, "L heavy task = %d\n", heavy_task);
+			settings->freq_hold_cnt = 0;
 			return false;
 		}
 	}
@@ -524,6 +525,7 @@ static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 		heavy_task = hps_get_hvytsk(i);
 		if (heavy_task) {
 			ppm_dbg(HICA, "Cluster%d heavy task = %d\n", i, heavy_task);
+			settings->loading_hold_cnt = 0;
 			return false;
 		}
 	}
@@ -552,6 +554,7 @@ static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 		heavy_task = hps_get_hvytsk(i);
 		if (heavy_task) {
 			ppm_dbg(HICA, "Cluster%d heavy task = %d\n", i, heavy_task);
+			settings->loading_hold_cnt = 0;
 			return false;
 		}
 	}
