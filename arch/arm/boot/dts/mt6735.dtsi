@@ -1118,6 +1118,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				 <&topckgen TOP_TVDPLL_CK>,
 				 <&topckgen TOP_TVDPLL_D2>,
 				 <&topckgen TOP_DPI_CK>,
+				 <&topckgen TOP_MUX_DISPPWM>,
+				 <&topckgen TOP_UNIVPLL2_D4>,
+				 <&topckgen TOP_SYSPLL4_D2_D8>,
+				 <&topckgen TOP_AD_SYS_26M_CK>,
 				 <&scpsys SCP_SYS_DIS>;
 
 			clock-names = "DISP0_SMI_COMMON",
@@ -1140,6 +1144,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "TVDPLL_CK",
 				      "TVDPLL_D2",
 				      "DPI_CK",
+				      "MUX_DISPPWM",
+				      "UNIVPLL2_D4",
+				      "SYSPLL4_D2_D8",
+				      "AD_SYS_26M_CK",
 				      "DISP_MTCMOS_CLK";
 		};
 

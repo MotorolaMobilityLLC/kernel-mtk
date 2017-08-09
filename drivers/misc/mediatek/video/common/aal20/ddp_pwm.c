@@ -10,12 +10,10 @@
 #include <mach/mt_clkmgr.h>
 #else
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
-#include <linux/clk.h>
 #include <ddp_clkmgr.h>
+#endif
+#endif
 #include <ddp_pwm_mux.h>
-#endif
-#endif
-
 /* #include <mach/mt_gpio.h> */
 #include <disp_dts_gpio.h> /* DTS GPIO */
 #include <leds_drv.h>
@@ -58,109 +56,6 @@ enum PWM_LOG_TYPE {
 
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE];
 static int g_pwm_log_index;
-
-/*****************************************************************************
- *
- * variable for get clock node fromdts
- *
-*****************************************************************************/
-static void __iomem *disp_pmw_mux_base;
-
-#ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#if defined(CONFIG_ARCH_MT6797)
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x50)
-#else
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
-#endif
-#endif
-#ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
-#define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
-#endif
-
-/* clock hard code access API */
-#define DRV_Reg32(addr) INREG32(addr)
-#define clk_readl(addr) DRV_Reg32(addr)
-#define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
-#define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)
-#define clk_clrl(addr, val) mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
-/*****************************************************************************
- *
- * get disp pwm source mux node
- *
-*****************************************************************************/
-static int disp_pwm_get_muxbase(void)
-{
-	int ret = 0;
-	struct device_node *node;
-
-	if (disp_pmw_mux_base != NULL) {
-		PWM_MSG("TOPCKGEN node exist");
-		return 0;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
-	if (!node) {
-		PWM_ERR("DISP find TOPCKGEN node failed\n");
-		return -1;
-	}
-	disp_pmw_mux_base = of_iomap(node, 0);
-	if (!disp_pmw_mux_base) {
-		PWM_ERR("DISP TOPCKGEN base failed\n");
-		return -1;
-	}
-	PWM_MSG("find TOPCKGEN node");
-	return ret;
-}
-
-static unsigned int disp_pwm_get_pwmmux(void)
-{
-	unsigned int regsrc;
-
-	regsrc = clk_readl(MUX_DISPPWM_ADDR);
-	return regsrc & 0x7;
-}
-
-/*****************************************************************************
- *
- * disp pwm source clock select mux api
- *
-*****************************************************************************/
-static int disp_pwm_set_pwmmux(unsigned int clk_req)
-{
-#ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
-
-#else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
-	unsigned int regsrc;
-	int ret = -1;
-	eDDP_CLK_ID clkid = -1;
-
-	clkid = disp_pwm_get_clkid(clk_req);
-	ret = disp_pwm_get_muxbase();
-	regsrc = disp_pwm_get_pwmmux();
-
-	if (clkid != -1) {
-#if defined(CONFIG_ARCH_MT6797)
-		ddp_clk_enable(MUX_PWM);
-		ddp_clk_set_parent(MUX_PWM, clkid);
-		ddp_clk_disable(MUX_PWM);
-#else
-		regsrc = clk_readl(MUX_DISPPWM_ADDR) & 0xfffffffc;
-		regsrc = regsrc | 0x3;
-		clk_writel(MUX_DISPPWM_ADDR, regsrc);/* select clock source */
-
-		regsrc = clk_readl(MUX_UPDATE_ADDR);/* set clock source update bit */
-		regsrc = regsrc | (0x1 << 27);
-		clk_writel(MUX_UPDATE_ADDR, regsrc);
-#endif
-	}
-
-	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
-#endif
-#endif
-
-	return 0;
-}
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
@@ -477,6 +372,10 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 
 static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+	unsigned int pwm_div = 0;
+	unsigned int pwm_src = 0;
+	int ret = -1;
+
 	PWM_MSG("ddp_pwm_power_on: %d\n", module);
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
@@ -491,19 +390,22 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 #else /* Common Clock Framework */
 		ddp_clk_enable(DISP_PWM);
-#if defined(CONFIG_ARCH_MT6755)
-		disp_pwm_osc_on();
-#endif
-
 #endif
 	}
 #endif
+	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
+	if (!ret)
+		disp_pwm_clksource_enable(pwm_src);
 
 	return 0;
 }
 
 static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+	unsigned int pwm_div = 0;
+	unsigned int pwm_src = 0;
+	int ret = -1;
+
 	PWM_MSG("ddp_pwm_power_off: %d\n", module);
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
@@ -519,13 +421,12 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 #else /* Common Clock Framework */
 		ddp_clk_disable(DISP_PWM);
-#if defined(CONFIG_ARCH_MT6755)
-		disp_pwm_osc_off();
-#endif
-
 #endif
 	}
 #endif
+	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
+	if (!ret)
+		disp_pwm_clksource_disable(pwm_src);
 
 	return 0;
 }
@@ -753,13 +654,9 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		disp_pwm_test_pin_mux();
 	} else if (strncmp(cmd, "pwmmux:", 7) == 0) {
 		unsigned int clksrc = 0;
-		unsigned int clkreg = 0;
 
-		disp_pwm_get_muxbase();
-		clkreg = disp_pwm_get_pwmmux();
 		clksrc = (unsigned int)(cmd[7] - '0');
 		disp_pwm_set_pwmmux(clksrc);
-		PWM_MSG("PWM_MUX %x->%x", clkreg, disp_pwm_get_pwmmux());
 	}
 }
 

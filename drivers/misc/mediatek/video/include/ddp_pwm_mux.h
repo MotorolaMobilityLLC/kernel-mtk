@@ -1,12 +1,10 @@
 #ifndef __DDP_PWM_MUX_H__
 #define __DDP_PWM_MUX_H__
-#include <ddp_clkmgr.h>
 
-eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req);
+int disp_pwm_set_pwmmux(unsigned int clk_req);
 
-#if defined(CONFIG_ARCH_MT6755)
-int disp_pwm_osc_on(void);
-int disp_pwm_osc_off(void);
-#endif
+int disp_pwm_clksource_enable(int clk_req);
+
+int disp_pwm_clksource_disable(int clk_req);
 
 #endif

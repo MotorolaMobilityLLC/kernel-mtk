@@ -1,8 +1,6 @@
 #include <linux/kernel.h>
 #include <linux/clk.h>
-#include <linux/delay.h>
-#include <linux/sched.h>
-#include <ddp_clkmgr.h>
+#include <ddp_drv.h>
 #include <ddp_pwm_mux.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -10,22 +8,19 @@
 
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
-/* #define HARD_CODE_CONFIG */
+
 /*****************************************************************************
  *
  * variable for get clock node fromdts
  *
 *****************************************************************************/
+#ifndef CONFIG_MTK_CLKMGR /* Common Clock Framework */
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
 #define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
 #endif
-#ifdef HARD_CODE_CONFIG
-#ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
-#define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
-#endif
-#endif
+
 
 /* clock hard code access API */
 #define DRV_Reg32(addr) INREG32(addr)
@@ -37,19 +32,20 @@ static void __iomem *disp_pmw_mux_base;
  * disp pwm source clock select mux api
  *
 *****************************************************************************/
+
 static eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 {
 	eDDP_CLK_ID clkid = -1;
 
 	switch (clk_req) {
-	case 0:
-		clkid = ULPOSC_D8; /* ULPOSC 26M */
-		break;
 	case 1:
-		clkid = ULPOSC_D2; /* ULPOSC 104M */
+		clkid = UNIVPLL2_D4;
 		break;
 	case 2:
-		clkid = UNIVPLL2_D4; /* PLL 104M */
+		clkid = SYSPLL4_D2_D8;
+		break;
+	case 3:
+		clkid = SYS_26M_CK;
 		break;
 	default:
 		clkid = -1;
@@ -64,7 +60,8 @@ static eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
  * get disp pwm source mux node
  *
 *****************************************************************************/
-#define DTSI_TOPCKGEN "mediatek,topckgen"
+#define DTSI_TOPCKGEN "mediatek,mt6735-topckgen"
+
 static int disp_pwm_get_muxbase(void)
 {
 	int ret = 0;
@@ -88,16 +85,21 @@ static int disp_pwm_get_muxbase(void)
 	PWM_MSG("find TOPCKGEN node");
 	return ret;
 }
+#endif
 
 static unsigned int disp_pwm_get_pwmmux(void)
 {
 	unsigned int regsrc = 0;
+#ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
+	regsrc = DISP_REG_GET(CLK_CFG_7);
 
+#else /* Common Clock Framework */
 	if (MUX_DISPPWM_ADDR != NULL)
 		regsrc = clk_readl(MUX_DISPPWM_ADDR);
 	else
 		PWM_ERR("mux addr illegal");
 
+#endif
 	return regsrc;
 }
 
@@ -109,6 +111,13 @@ static unsigned int disp_pwm_get_pwmmux(void)
 int disp_pwm_set_pwmmux(unsigned int clk_req)
 {
 	unsigned int regsrc;
+
+#ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
+	regsrc = disp_pwm_get_pwmmux();
+	clkmux_sel(MT_MUX_DISPPWM, clk_req, "DISP_PWM");
+	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
+
+#else /* Common Clock Framework */
 	int ret = 0;
 	eDDP_CLK_ID clkid = -1;
 
@@ -124,132 +133,19 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	}
 
 	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
+#endif
 
 	return 0;
 }
 
-static void __iomem *disp_pmw_osc_base;
-
-#ifndef OSC_ULPOSC_ADDR /* rosc control register address */
-#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
-#endif
-
-/*****************************************************************************
- *
- * get disp pwm source osc
- *
-*****************************************************************************/
-static int get_ulposc_base(void)
-{
-	int ret = 0;
-	struct device_node *node;
-
-	if (disp_pmw_osc_base != NULL) {
-		PWM_MSG("SLEEP node exist");
-		return 0;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (!node) {
-		PWM_ERR("DISP find SLEEP node failed\n");
-		return -1;
-	}
-	disp_pmw_osc_base = of_iomap(node, 0);
-	if (!disp_pmw_osc_base) {
-		PWM_ERR("DISP find SLEEP base failed\n");
-		return -1;
-	}
-
-	return ret;
-}
-
-static int get_ulposc_status(void)
-{
-	unsigned int regosc;
-	int ret = -1;
-
-	if (get_ulposc_base() == -1) {
-		PWM_ERR("get ULPOSC status fail");
-		return ret;
-	}
-
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	if ((regosc & 0x5) != 0x5) {
-		PWM_MSG("ULPOSC is off (%x)", regosc);
-		ret = 0;
-	} else {
-		PWM_MSG("ULPOSC is on (%x)", regosc);
-		ret = 1;
-	}
-
-	return ret;
-}
-
-/*****************************************************************************
- *
- * hardcode turn on/off ROSC api
- *
-*****************************************************************************/
-static int ulposc_enable(eDDP_CLK_ID clkid)
-{
-	int ret = 0;
-
-	ret = ddp_clk_prepare_enable(clkid);
-	get_ulposc_status();
-
-	return ret;
-}
-
-static int ulposc_disable(eDDP_CLK_ID clkid)
-{
-	int ret = 0;
-
-	ret = ddp_clk_disable_unprepare(clkid);
-	get_ulposc_status();
-
-	return ret;
-}
-
-/*****************************************************************************
- *
- * disp pwm clock source power on /power off api
- *
-*****************************************************************************/
 int disp_pwm_clksource_enable(int clk_req)
 {
-	int ret = 0;
-	eDDP_CLK_ID clkid = -1;
-
-	clkid = disp_pwm_get_clkid(clk_req);
-
-	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D8:
-		ulposc_enable(clkid);
-		break;
-	default:
-		break;
-	}
-
-	return ret;
+	return -1;
 }
 
 int disp_pwm_clksource_disable(int clk_req)
 {
-	int ret = 0;
-	eDDP_CLK_ID clkid = -1;
-
-	clkid = disp_pwm_get_clkid(clk_req);
-
-	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D8:
-		ulposc_disable(clkid);
-		break;
-	default:
-		break;
-	}
-
-	return ret;
+	return -1;
 }
+
 

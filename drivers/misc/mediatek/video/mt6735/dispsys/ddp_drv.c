@@ -636,6 +636,10 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"TVDPLL_D2",
 	"TVDPLL_D4",
 	"DPI_CK",
+	"MUX_DISPPWM",
+	"UNIVPLL2_D4",
+	"SYSPLL4_D2_D8",
+	"AD_SYS_26M_CK",
 	"DISP_MTCMOS_CLK"
 };
 
