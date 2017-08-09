@@ -21,6 +21,7 @@
 #include <linux/fs.h>
 #include <linux/compat.h>
 #endif
+extern u32 get_devinfo_with_index(u32 index);
 /* ----------------------------------------------------------------------------- */
 #define CAM_PIPE_MGR_DEV_NAME       "camera-pipemgr"
 #define CAM_PIPE_MGR_MAGIC_NO       'p'
