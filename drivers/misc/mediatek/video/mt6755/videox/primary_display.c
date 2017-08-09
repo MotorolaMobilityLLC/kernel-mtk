@@ -2748,6 +2748,7 @@ static int primary_display_frame_update_kthread(void *data)
 static int _present_fence_release_worker_thread(void *data)
 {
 	disp_sync_info *layer_info;
+	static int count;
 	struct sched_param param = {.sched_priority = RTPM_PRIO_FB_THREAD };
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -2760,7 +2761,8 @@ static int _present_fence_release_worker_thread(void *data)
 				atomic_read(&primary_display_present_fence_update_event));
 		atomic_set(&primary_display_present_fence_update_event, 0);
 		if (!islcmconnected && !primary_display_is_video_mode()) {
-			DISPCHECK("LCM Not Connected && CMD Mode\n");
+			if ((count++%3) == 0)
+				DISPCHECK("LCM Not Connected && CMD Mode\n");
 			msleep(20);
 		} else {
 			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
@@ -3206,7 +3208,7 @@ int primary_display_wait_for_vsync(void *config)
 	disp_session_vsync_config *c = (disp_session_vsync_config *) config;
 	int ret = 0, has_vsync = 1;
 	unsigned long long ts = 0ULL;
-
+	static int count;
 	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
 	primary_display_idlemgr_kick((char *)__func__, 1);
 
@@ -3216,7 +3218,8 @@ int primary_display_wait_for_vsync(void *config)
 #endif
 
 	if (!islcmconnected || !has_vsync) {
-		DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
+		if ((count++%3) == 0)
+			DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
 			  islcmconnected, has_vsync);
 		msleep(20);
 		return 0;
