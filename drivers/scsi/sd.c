@@ -2770,7 +2770,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
 	unsigned int max_xfer;
 
 	if (!sdkp) {
-		sd_printk(KERN_ERR, sdkp, "Error: sdkp is null\n");
+		pr_err("Error: sdkp is null\n");
 		goto out;
 	}
 	sdp = sdkp->device;
