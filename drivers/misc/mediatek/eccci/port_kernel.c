@@ -570,8 +570,11 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			mod_timer(&md->ex_monitor, jiffies);
 		}
 	} else if (ccci_h->data[1] == MD_EX_PASS) {
+		spin_lock_irqsave(&md->ctrl_lock, flags);
+		md->ee_info_flag |= (1 << MD_EE_PASS_MSG_GET);
 		/* dump share memory again to let MD check exception flow */
 		mod_timer(&md->ex_monitor2, jiffies);
+		spin_unlock_irqrestore(&md->ctrl_lock, flags);
 	} else if (ccci_h->data[1] == MD_INIT_START_BOOT
 		   && ccci_h->reserved == MD_INIT_CHK_ID && !(md->config.setting & MD_SETTING_FIRST_BOOT)) {
 		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
@@ -3396,7 +3399,14 @@ void md_ex_monitor_func(unsigned long data)
 					md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
-	mod_timer(&md->ex_monitor2, jiffies + EX_TIMER_MD_EX_REC_OK * HZ);
+	spin_lock_irqsave(&md->ctrl_lock, flags);
+	if ((1 << MD_EE_PASS_MSG_GET) & md->ee_info_flag)
+		CCCI_ERROR_LOG(md->index, KERN, "MD exception timer 2 has been set!\n");
+	else if (ee_case == MD_EE_CASE_WDT && md->index == MD_SYS3)
+		mod_timer(&md->ex_monitor2, jiffies);
+	else
+		mod_timer(&md->ex_monitor2, jiffies + EX_TIMER_MD_EX_REC_OK * HZ);
+	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 
  _dump_done:
 	return;
@@ -3407,7 +3417,7 @@ void md_ex_monitor2_func(unsigned long data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	unsigned long flags;
-
+	int md_wdt_ee = 0;
 	int ee_on_going = 0;
 
 	CCCI_ERROR_LOG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
@@ -3418,6 +3428,8 @@ void md_ex_monitor2_func(unsigned long data)
 		ee_on_going = 1;
 	else
 		md->ee_info_flag |= (1 << MD_EE_TIMER2_DUMP_ON_GOING);
+	if ((1 << MD_EE_WDT_GET) & md->ee_info_flag)
+		md_wdt_ee = 1;
 	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 
 	if (ee_on_going)
@@ -3443,6 +3455,10 @@ void md_ex_monitor2_func(unsigned long data)
 
 	CCCI_NORMAL_LOG(md->index, KERN, "Enable WDT at exception exit.\n");
 	md->ops->ee_callback(md, EE_FLAG_ENABLE_WDT);
+	if (md_wdt_ee && md->index == MD_SYS3) {
+		CCCI_ERROR_LOG(md->index, KERN, "trigger force assert after WDT EE.\n");
+		md->ops->force_assert(md, CCIF_INTERRUPT);
+	}
 }
 EXPORT_SYMBOL(md_ex_monitor2_func);
 

@@ -72,6 +72,7 @@ enum {
 	MD_EE_PENDING_TOO_LONG,
 	MD_EE_SWINT_GET,
 	MD_EE_WDT_GET,
+	MD_EE_PASS_MSG_GET,
 
 	MD_EE_INFO_OFFSET = 20,	/* not using */
 	MD_EE_EXCP_OCCUR = 20,	/* not using */
