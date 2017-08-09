@@ -39,7 +39,6 @@
 #endif
 
 /* project includes */
-#include "mach/mt_clkmgr.h"
 #include "mach/mt_freqhopping.h"
 /* #include "mach/mt_ptp.h" */
 /* #include "mach/mt_static_power.h" */
@@ -61,21 +60,29 @@ void da9214_vosel_buck_a(unsigned int val)
 void da9214_vosel_buck_b(unsigned int val)
 {
 }
-void  API_BIGPLLSETFREQ(unsigned int val)
+void  SEC_BIGIDVFSPLLSETFREQ(unsigned int val)
 {
 }
-unsigned int API_BIGPLLGETFREQ(void)
-{
-	return 0;
-}
-void API_BIGPLLSETPOSDIV(unsigned int posdiv)
-{
-}
-unsigned int BigSRAMLDOGet(void)
+unsigned int SEC_BIGIDVFSPLLGETPOSDIV(void)
 {
 	return 0;
 }
-int BigSRAMLDOSet(unsigned int volt)
+unsigned int SEC_BIGIDVFSPLLGETPCW(void)
+{
+	return 0;
+}
+unsigned int SEC_BIGIDVFSPLLGETFREQ(void)
+{
+	return 0;
+}
+void SEC_BIGIDVFSPLLSETPOSDIV(unsigned int posdiv)
+{
+}
+unsigned int SEC_BIGIDVFSSRAMLDOGET(void)
+{
+	return 0;
+}
+int SEC_BIGIDVFSSRAMLDOSET(unsigned int volt)
 {
 	return 0;
 }
@@ -111,7 +118,7 @@ static unsigned long mcumixed_base;
 
 #define INFRACFG_AO_BASE        0xF0001000
 #define TOPCKGEN_BASE           0xF0000000
-#define MCUMIXED_BASE           0xF000A000
+#define MCUMIXED_BASE           0xF001A000
 #endif				/* #if defined (CONFIG_OF) */
 
 /* LL */
@@ -139,6 +146,13 @@ static unsigned long mcumixed_base;
 #define ARMPLLDIV_CKDIV		(MCUMIXED_BASE+0x274)
 
 /* INFRASYS Register */
+/* L VSRAM */
+#define CPULDO_CTRL_0		(INFRACFG_AO_BASE+0xF98)
+/* 3:0, 4, 11:8, 12, 19:16, 20, 27:24, 28*/
+#define CPULDO_CTRL_1		(INFRACFG_AO_BASE+0xF9C)
+/* 3:0, 4, 11:8, 12, 19:16, 20, 27:24, 28*/
+#define CPULDO_CTRL_2		(INFRACFG_AO_BASE+0xFA0)
+
 
 /* TOPCKGEN Register */
 #undef CLK_MISC_CFG_0
@@ -1489,13 +1503,17 @@ static unsigned int _cpu_freq_calc(unsigned int con1, unsigned int ckdiv1)
 static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 {
 	unsigned int freq;
+	unsigned int pcw;
+	unsigned int posdiv;
 	unsigned int ckdiv1;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
 	BUG_ON(NULL == p);
 
-	freq = API_BIGPLLGETFREQ(); /* Mhz */
+	freq = SEC_BIGIDVFSPLLGETFREQ(); /* Mhz */
+	pcw = SEC_BIGIDVFSPLLGETPCW();
+	posdiv = SEC_BIGIDVFSPLLGETPOSDIV();
 
 	ckdiv1 = cpufreq_read(ARMPLLDIV_CKDIV);
 	ckdiv1 = _GET_BITS_VAL_(4:0, ckdiv1);
@@ -1505,7 +1523,8 @@ static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 	else
 		freq = freq * 1000;
 
-	cpufreq_ver("@%s: freq = %d\n", __func__, freq);
+	cpufreq_ver("@%s: freq = %d, pcw = 0x%x, posdiv = 0x%x, ckdiv1 = 0x%x\n",
+		__func__, freq, pcw, posdiv, ckdiv1);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -1655,33 +1674,36 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned 
 	int shift;
 	unsigned int reg;
 
-	cur_volt = p->ops->get_cur_volt(p);
-	p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 0));
+	if (0) {
+		cur_volt = p->ops->get_cur_volt(p);
+		p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 0));
+	}
 	_cpu_clock_switch(p, TOP_CKMUXSEL_MAINPLL);
 
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 #if 0
-		API_BIGPLLSETPOSDIV(pos_div);
-		API_BIGPLLSETPCW(vco/pos_div/1000); /* Mhz */
+		SEC_BIGIDVFSPLLSETPOSDIV(pos_div);
+		SEC_BIGIDVFSPLLSETPCW(vco/pos_div/1000); /* Mhz */
 #else
-		API_BIGPLLSETFREQ(vco/pos_div/1000); /* Mhz */
+		SEC_BIGIDVFSPLLSETFREQ(vco/pos_div/1000); /* Mhz */
 #endif
 	} else {
-	shift = (pos_div == 1) ? 0 :
-		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 : 0;
+		shift = (pos_div == 1) ? 0 :
+			(pos_div == 2) ? 1 :
+			(pos_div == 4) ? 2 : 0;
 
 		dds = _cpu_dds_calc(vco);
 		/* dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(vco)); */
 		reg = cpufreq_read(p->armpll_addr);
-		/* dds = ((reg & ~(_BITMASK_(26:24)) | (shift << 24)) & ~(_BITMASK_(20:0))) | dds; */
+		dds = (((reg & ~(_BITMASK_(26:24))) | (shift << 24)) & ~(_BITMASK_(20:0))) | dds;
 		/* dbg_print("DVFS: Set ARMPLL CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
-	cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
+		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
 	}
 	udelay(PLL_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
 
-	p->ops->set_cur_volt(p, cur_volt);
+	if (0)
+		p->ops->set_cur_volt(p, cur_volt);
 }
 
 static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
@@ -1691,26 +1713,30 @@ static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 	int shift;
 	unsigned int reg;
 
-	cur_volt = p->ops->get_cur_volt(p);
-	p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 0));
+	if (0) {
+		cur_volt = p->ops->get_cur_volt(p);
+		p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 0));
+	}
 
 	_cpu_clock_switch(p, TOP_CKMUXSEL_MAINPLL);
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-		API_BIGPLLSETPOSDIV(pos_div);
-	} else {
-	shift = (pos_div == 1) ? 0 :
-		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 : 0;
+
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+		SEC_BIGIDVFSPLLSETPOSDIV(pos_div);
+	else {
+		shift = (pos_div == 1) ? 0 :
+			(pos_div == 2) ? 1 :
+			(pos_div == 4) ? 2 : 0;
 
 		reg = cpufreq_read(p->armpll_addr);
 		dds = (reg & ~(_BITMASK_(26:24))) | (shift << 24);
 		/* dbg_print("DVFS: Set POSDIV CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
-	cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
+		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
 	}
 	udelay(POS_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
 
-	p->ops->set_cur_volt(p, cur_volt);
+	if (0)
+		p->ops->set_cur_volt(p, cur_volt);
 }
 
 static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
@@ -1813,6 +1839,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	/* armpll_div 2 -> 1 */
 	if (opp_tbl_m[CUR_OPP_IDX].slot->clk_div > opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
 		adjust_clkdiv(p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
+
 	if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 		/* post_div 2 -> 1 */
 		if (!cpu_dvfs_is(p, MT_CPU_DVFS_B) && opp_tbl_m[CUR_OPP_IDX].slot->pos_div >
@@ -1833,7 +1860,7 @@ static int set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	int ret;
 
-	ret = BigSRAMLDOSet(volt);
+	ret = SEC_BIGIDVFSSRAMLDOSET(volt);
 
 	return ret;
 }
@@ -1842,7 +1869,7 @@ static unsigned int get_cur_volt_sram_b(struct mt_cpu_dvfs *p)
 {
 	unsigned int volt = 0;
 
-	volt = BigSRAMLDOGet();
+	volt = SEC_BIGIDVFSSRAMLDOGET();
 
 	return volt;
 }
@@ -2734,6 +2761,7 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	p_cci = id_to_cpu_dvfs(id_cci);
 
 	/* Fill the V and F to determine cci state*/
+	/* MCSI Algorithm for cci target F */
 	for_each_cpu_dvfs_only(i, pp) {
 		if (pp->armpll_is_available) {
 			/* F */
@@ -2741,17 +2769,13 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 				freq_idx[i] = new_opp_idx;
 			else
 				freq_idx[i] = pp->idx_opp_tbl;
+
+			target_cci_freq = MAX(target_cci_freq, cpu_dvfs_get_freq_by_idx(pp, freq_idx[i]));
 			/* V */
 			volt[i] = cpu_dvfs_get_volt_by_idx(pp, freq_idx[i]);
 			cpufreq_ver("DVFS: MCSI: %s, freq = %d, volt = %d\n", cpu_dvfs_get_name(pp),
 				cpu_dvfs_get_freq_by_idx(pp, freq_idx[i]), volt[i]);
 		}
-	}
-
-	/* MCSI Algorithm for cci target F */
-	for_each_cpu_dvfs_only(i, pp) {
-		if (freq_idx[i] != -1)
-			target_cci_freq = MAX(target_cci_freq, cpu_dvfs_get_freq_by_idx(pp, freq_idx[i]));
 	}
 
 	target_cci_freq = ((target_cci_freq / 2) / PLL_FREQ_STEP) * PLL_FREQ_STEP;
@@ -2975,6 +2999,13 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->cpuinfo.max_freq = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
+		if (MT_CPU_DVFS_LL == id)
+			p->armpll_addr = (unsigned int *)ARMCAXPLL0_CON1;
+		else if (MT_CPU_DVFS_L == id)
+			p->armpll_addr = (unsigned int *)ARMCAXPLL1_CON1;
+		else
+			p->armpll_addr = 0;
+
 		policy->cur = mt_cpufreq_get_cur_phy_freq(id);	/* use cur phy freq is better */
 		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
@@ -2990,14 +3021,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		p->armpll_is_available = 1;
 		cpufreq_unlock(flags);
 
-		if (MT_CPU_DVFS_LL == id)
-			p->armpll_addr = (unsigned int *)ARMCAXPLL0_CON1;
-		else if (MT_CPU_DVFS_L == id)
-			p->armpll_addr = (unsigned int *)ARMCAXPLL1_CON1;
-		else
-			p->armpll_addr = 0;
-
 		if (init_cci_status == 0) {
+			p_cci->armpll_addr = (unsigned int *)ARMCAXPLL2_CON1;
 			/* init cci freq idx */
 			if (_mt_cpufreq_sync_opp_tbl_idx(p_cci) >= 0)
 				if (p_cci->idx_normal_max_opp == -1)
@@ -3006,7 +3031,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 			opp_tbl_m_cci_info = &opp_tbls_m[id_cci][CPU_LV_TO_OPP_IDX(lv)];
 			p_cci->freq_tbl = opp_tbl_m_cci_info->opp_tbl_m;
 			p_cci->armpll_is_available = 1;
-			p->armpll_addr = (unsigned int *)ARMCAXPLL2_CON1;
 			init_cci_status = 1;
 		}
 	}

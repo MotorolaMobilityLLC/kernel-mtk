@@ -10,14 +10,6 @@
 extern "C" {
 #endif
 
-/* L VSRAM */
-#define CPULDO_CTRL_BASE	(0xF0001000)
-#define CPULDO_CTRL_0		(CPULDO_CTRL_BASE+0xF98)
-/* 3:0, 4, 11:8, 12, 19:16, 20, 27:24, 28*/
-#define CPULDO_CTRL_1		(CPULDO_CTRL_BASE+0xF9C)
-/* 3:0, 4, 11:8, 12, 19:16, 20, 27:24, 28*/
-#define CPULDO_CTRL_2		(CPULDO_CTRL_BASE+0xFA0)
-
 enum mt_cpu_dvfs_id {
 	MT_CPU_DVFS_LL,
 	MT_CPU_DVFS_L,
