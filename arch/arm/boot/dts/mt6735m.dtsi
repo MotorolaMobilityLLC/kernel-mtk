@@ -875,7 +875,7 @@
 		};
 
 		gcpu@10216000 {
-			compatible = "mediatek,mt6735-gcpu";
+			compatible = "mediatek,gcpu";
 			reg = <0x10216000 0x1000>;
 			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
 		};
