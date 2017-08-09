@@ -57,10 +57,12 @@
 #include "u_ether.c"
 
 //#define CONFIG_MTK_C2K_SUPPORT
+#ifndef CONFIG_MTK_ECCCI_C2K
 #ifdef CONFIG_MTK_C2K_SUPPORT
 #include "viatel_rawbulk.h"
 int rawbulk_bind_config(struct usb_configuration *c, int transfer_id);
 int rawbulk_function_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl);
+#endif
 #endif
 
 MODULE_AUTHOR("Mike Lockwood");
@@ -1743,6 +1745,7 @@ static struct android_usb_function audio_source_function = {
 	.attributes	= audio_source_function_attributes,
 };
 
+#ifndef CONFIG_MTK_ECCCI_C2K
 #ifdef CONFIG_MTK_C2K_SUPPORT
 static int rawbulk_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
@@ -1820,7 +1823,7 @@ static struct android_usb_function rawbulk_gps_function = {
 	.bind_config	= rawbulk_function_bind_config,
 };
 #endif
-
+#endif
 
 #ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
@@ -1896,12 +1899,14 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
 #endif
+#ifndef CONFIG_MTK_ECCCI_C2K
 #ifdef CONFIG_MTK_C2K_SUPPORT
 	&rawbulk_modem_function,
 	&rawbulk_ets_function,
 	&rawbulk_atc_function,
 	&rawbulk_pcv_function,
 	&rawbulk_gps_function,
+#endif
 #endif
 #ifdef CONFIG_USB_F_LOOPBACK
 	&loopback_function,
