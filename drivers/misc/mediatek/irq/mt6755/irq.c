@@ -298,6 +298,21 @@ static struct irq_chip mt_irq_chip = {
 };
 
 #ifdef CONFIG_OF
+
+int mt_get_supported_irq_num(void)
+{
+	int ret = 0;
+
+	if (GIC_DIST_BASE) {
+		ret = ((readl_relaxed(GIC_DIST_BASE + GIC_DIST_CTR) & 0x1f) + 1) * 32;
+		pr_debug("gic supported max = %d\n", ret);
+	} else
+		pr_warn("gic dist_base is unknown\n");
+
+	return ret;
+}
+EXPORT_SYMBOL(mt_get_supported_irq_num);
+
 static int mt_gic_irq_domain_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
 {
 	if (hw < 32) {
@@ -1446,7 +1461,7 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	return 0;
 }
 
-IRQCHIP_DECLARE(mt_cortex_a15_gic, "mtk,mt-gic", mt_gic_of_init);
+IRQCHIP_DECLARE(mt_cortex_a15_gic, "mediatek,mt6735-gic", mt_gic_of_init);
 #endif
 
 /*

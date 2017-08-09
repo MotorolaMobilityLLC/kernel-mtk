@@ -1713,31 +1713,6 @@ static void gpio_set_debounce(unsigned gpio, unsigned debounce)
 }
 #endif
 
-int get_supported_irq_num(void)
-{
-	struct device_node *node;
-	void __iomem *dist_base;
-	int ret = 0;
-
-	/* usually, common eic goes with common gic.
-	   However, common eic can also go with not common gic as long as we provide an alias-gic node. */
-	node = of_find_compatible_node(NULL, NULL, "mtk,mt-gic");
-	if (!node) {
-		node = of_find_compatible_node(NULL, NULL, "mtk,alias-gic");
-		if (!node) {
-			pr_err("%s can't find node for gic\n", __func__);
-			return ret;
-		}
-	}
-
-	dist_base = of_iomap(node, 0);
-#define GIC_DIST_CTR 0x4
-	ret = readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f;
-	ret = (ret + 1) * 32;
-	pr_debug("gic supported max = %d\n", ret);
-	return ret;
-}
-
 int mt_gpio_set_debounce(unsigned gpio, unsigned debounce)
 {
 	if (gpio >= EINT_MAX_CHANNEL)
@@ -2131,7 +2106,7 @@ static int __init mt_eint_init(void)
 	}
 
 	/* Register Linux IRQ interface */
-	EINT_IRQ_BASE = get_supported_irq_num();
+	EINT_IRQ_BASE = mt_get_supported_irq_num();
 	if (!EINT_IRQ_BASE) {
 		pr_err("get_supported_irq_num returns %d\n", EINT_IRQ_BASE);
 		return -1;

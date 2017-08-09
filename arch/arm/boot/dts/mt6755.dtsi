@@ -233,14 +233,13 @@
 	};
 
 	gic: interrupt-controller@10230000 {
-		compatible = "mtk,mt-gic";
+		compatible = "mediatek,mt6735-gic";
 		#interrupt-cells = <3>;
 		#address-cells = <0>;
 		interrupt-controller;
 		reg = <0 0x10231000 0 0x1000>,
 		      <0 0x10232000 0 0x1000>,
 		      <0 0x10200620 0 0x1000>;
-		interrupts = <1 9 0xf04>;
 
 		gic-cpuif@0 {
 			compatible = "arm,gic-cpuif";

@@ -184,38 +184,37 @@
 				};
 		};
 
-		gic: interrupt-controller@0x10220000 {
-				compatible = "mtk,mt-gic";
+		gic: interrupt-controller@10220000 {
+				compatible = "mediatek,mt6735-gic";
 				#interrupt-cells = <3>;
 				#address-cells = <0>;
 				interrupt-controller;
 				reg = <0 0x10221000 0 0x1000>,
-							<0 0x10222000 0 0x1000>,
-							<0 0x10200620 0 0x1000>;
-				interrupts = <1 9 0xf04>;
+					<0 0x10222000 0 0x1000>,
+					<0 0x10200620 0 0x1000>;
 
 				gic-cpuif@0 {
-						compatible = "arm,gic-cpuif";
-						cpuif-id = <0>;
-						cpu = <&cpu0>;
+					compatible = "arm,gic-cpuif";
+					cpuif-id = <0>;
+					cpu = <&cpu0>;
 				};
 
 				gic-cpuif@1 {
-						compatible = "arm,gic-cpuif";
-						cpuif-id = <1>;
-						cpu = <&cpu1>;
+					compatible = "arm,gic-cpuif";
+					cpuif-id = <1>;
+					cpu = <&cpu1>;
 				};
 
 				gic-cpuif@2 {
-						compatible = "arm,gic-cpuif";
-						cpuif-id = <2>;
-						cpu = <&cpu2>;
+					compatible = "arm,gic-cpuif";
+					cpuif-id = <2>;
+					cpu = <&cpu2>;
 				};
 
 				gic-cpuif@3 {
-						compatible = "arm,gic-cpuif";
-						cpuif-id = <3>;
-						cpu = <&cpu3>;
+					compatible = "arm,gic-cpuif";
+					cpuif-id = <3>;
+					cpu = <&cpu3>;
 				};
 
 		};

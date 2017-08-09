@@ -1236,6 +1236,22 @@ int mt_gic_test(int irq, int type)
 #ifdef CONFIG_OF
 static int gic_cnt __initdata;
 
+int mt_get_supported_irq_num(void)
+{
+	void __iomem *dist_base;
+	int ret = 0;
+
+	dist_base = gic_data_dist_base(&gic_data[0]);
+	if (dist_base) {
+		ret = ((readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f) + 1) * 32;
+		pr_debug("gic supported max = %d\n", ret);
+	} else
+		pr_warn("gic dist_base is unknown\n");
+
+	return ret;
+}
+EXPORT_SYMBOL(mt_get_supported_irq_num);
+
 int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 {
 	void __iomem *cpu_base;
@@ -1290,6 +1306,6 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	return 0;
 }
 
-IRQCHIP_DECLARE(mt_gic, "mtk,mt-gic", mt_gic_of_init);
+IRQCHIP_DECLARE(mt_gic, "mediatek,mt6735-gic", mt_gic_of_init);
 
 #endif
