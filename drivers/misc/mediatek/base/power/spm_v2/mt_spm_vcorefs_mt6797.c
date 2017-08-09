@@ -312,14 +312,13 @@ int spm_vcorefs_screen_on_setting(void)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
+/*	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
 	}
-
+*/
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_ON);
-	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | MASK_MD_DVFS_REQ);
 	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) & (~CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB));
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
@@ -329,6 +328,8 @@ int spm_vcorefs_screen_on_setting(void)
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
 	}
+
+	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | MASK_MD_DVFS_REQ);
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 
@@ -346,14 +347,13 @@ int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
+/*	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
 	}
-
+*/
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_OFF);
-	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | md_dvfs_req);
 	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) | CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB);
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
@@ -363,6 +363,8 @@ int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
 	}
+
+	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | md_dvfs_req);
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 
