@@ -429,7 +429,7 @@ int secspi_session_open(void)
 	return 0;
 }
 
-int secspi_execute(u32 cmd, tciSpiMessage_t *param)
+int secspi_execute(u32 cmd, tciSpiMessage_t *param, struct mt_spi_t *ms)
 {
 	enum mc_result mc_ret;
 
@@ -461,7 +461,7 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 	SPIDEV_MSG("mc_notify\n");
 
 	/*enable_clock(MT_CG_PERI_SPI0, "spi"); */
-	/*enable_clk(ms); */
+	mt_spi_enable_clk(ms);
 
 	mc_ret = mc_notify(&secspi_session);
 
@@ -554,7 +554,11 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 	int rx_endian, com_mod, pause, finish_intr;
 	int deassert, tckdly, ulthigh;
 
+	struct spi_master *master;
+	struct mt_spi_t *ms;
 	spi = container_of(dev, struct spi_device, dev);
+	master = spi->master;
+	ms = spi_master_get_devdata(master);
 
 	SPIDEV_LOG("SPIDEV name is:%s\n", spi->modalias);
 
@@ -570,22 +574,22 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 	if (!strncmp(buf, "-1", 2)) {
 		/*TRANSFER*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(1, NULL);
+		secspi_execute(1, NULL, ms);
 		SPIDEV_MSG("secspi_execute 1 finished!!!\n");
 	} else if (!strncmp(buf, "-2", 2)) {	/*HW CONFIG */
 		SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(2, NULL);
+		secspi_execute(2, NULL, ms);
 		SPIDEV_MSG("secspi_execute 2 finished!!!\n");
 	} else if (!strncmp(buf, "-3", 2)) {
 		/*DEBUG*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(3, NULL);
+		secspi_execute(3, NULL, ms);
 		SPIDEV_MSG("secspi_execute 3 finished!!!\n");
 	} else if (!strncmp(buf, "-4", 2)) {
 		/*TEST*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(4, NULL);
+		secspi_execute(4, NULL, ms);
 		SPIDEV_MSG("secspi_execute 4 finished!!!\n");
 #else
 	if (!strncmp(buf, "-h", 2)) {
@@ -1023,7 +1027,14 @@ static int __init spi_test_probe(struct spi_device *spi)
 	return 0;
 }
 
-struct spi_device_id spi_id_table = { "spi-ut", 0 };
+struct spi_device_id spi_id_table[] = {
+	{"spi-ut0", 0},
+	{"spi-ut1", 1},
+	{"spi-ut2", 2},
+	{"spi-ut3", 3},
+	{"spi-ut4", 4},
+	{"spi-ut5", 5}
+	};
 
 static struct spi_driver spi_test_driver = {
 	.driver = {
@@ -1033,16 +1044,46 @@ static struct spi_driver spi_test_driver = {
 		},
 	.probe = spi_test_probe,
 	.remove = spi_test_remove,
-	.id_table = &spi_id_table,
+	.id_table = spi_id_table,
 };
 
 static struct spi_board_info spi_board_devs[] __initdata = {
 	[0] = {
-	.modalias = "spi-ut",
+	.modalias = "spi-ut0",
 	.bus_num = 0,
 	.chip_select = 1,
 	.mode = SPI_MODE_3,
 	},
+	[1] = {
+	.modalias = "spi-ut1",
+	.bus_num = 1,
+	.chip_select = 1,
+	.mode = SPI_MODE_3,
+	},
+	[2] = {
+	.modalias = "spi-ut2",
+	.bus_num = 2,
+	.chip_select = 1,
+	.mode = SPI_MODE_3,
+	},
+	[3] = {
+	.modalias = "spi-ut3",
+	.bus_num = 3,
+	.chip_select = 1,
+	.mode = SPI_MODE_3,
+	},
+	[4] = {
+	.modalias = "spi-ut4",
+	.bus_num = 4,
+	.chip_select = 1,
+	.mode = SPI_MODE_3,
+	},
+	[5] = {
+	.modalias = "spi-ut5",
+	.bus_num = 5,
+	.chip_select = 1,
+	.mode = SPI_MODE_3,
+	}
 };
 
 static int __init spi_dev_init(void)

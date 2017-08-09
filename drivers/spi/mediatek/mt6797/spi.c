@@ -62,12 +62,13 @@
 #define PACKET_SIZE 0x400
 #define SPI_FIFO_SIZE 32
 #define INVALID_DMA_ADDRESS 0xffffffff
-
+#if 0
 struct mt_spi_t {
 	struct platform_device *pdev;
 	void __iomem *regs;
 	int irq;
 	int running;
+	u32 pad_macro;
 	struct wake_lock wk_lock;
 	struct mt_chip_conf *config;
 	struct spi_master *master;
@@ -81,6 +82,7 @@ struct mt_spi_t {
 	struct clk *clk_main;	/* main clock for spi bus */
 #endif				/* !defined(CONFIG_MTK_CLKMGR) */
 };
+#endif
 /*open time record debug, log can't affect transfer*/
 /*	#define SPI_REC_DEBUG */
 
@@ -853,7 +855,7 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 {
 	struct spi_message *msg;
 	struct mt_chip_conf *chip_config;
-	char msg_addr[16];
+	char msg_addr[32];
 
 	msg = list_entry(ms->queue.next, struct spi_message, queue);
 	chip_config = (struct mt_chip_conf *)msg->state;
