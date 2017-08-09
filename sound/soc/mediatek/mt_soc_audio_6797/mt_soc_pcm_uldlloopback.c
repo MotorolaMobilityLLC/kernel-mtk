@@ -302,8 +302,6 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	    runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1,
 					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2,
-					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 					  Soc_Aud_InterConnectionOutput_O03);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
@@ -319,7 +317,6 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 		mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 	} else {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_16_BIT);
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2, AFE_WLEN_16_BIT);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
 					  Soc_Aud_InterConnectionOutput_O03);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
