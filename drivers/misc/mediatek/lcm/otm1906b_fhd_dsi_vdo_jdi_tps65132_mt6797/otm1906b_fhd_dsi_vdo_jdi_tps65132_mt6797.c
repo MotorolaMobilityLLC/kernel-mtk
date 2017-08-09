@@ -567,12 +567,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active				= 2;
 	params->dsi.vertical_backporch					= 16;
-	params->dsi.vertical_frontporch					= 2;
+	params->dsi.vertical_frontporch					= 16;
 	params->dsi.vertical_active_line				= FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active				= 4;
-	params->dsi.horizontal_backporch				= 5;
-	params->dsi.horizontal_frontporch				= 5;
+	params->dsi.horizontal_backporch				= 42;
+	params->dsi.horizontal_frontporch				= 42;
 
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
@@ -588,7 +588,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 /*video mode clock*/
 #if (!LCM_DSI_CMD_MODE)
 #if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
-	params->dsi.PLL_CLOCK = 145;
+	params->dsi.PLL_CLOCK = 173;
 #else
 	params->dsi.PLL_CLOCK = 450; /*this value must be in MTK suggested table*/
 #endif
