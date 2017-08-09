@@ -1942,6 +1942,11 @@ int blb_recovery_peb(struct ubi_device *ubi, struct ubi_attach_info *ai,
 recovery:
 	ubi_msg("recovery from %d", recovery);
 	data_size = ubi->leb_size - be32_to_cpu(av->data_pad);
+#ifdef CONFIG_UBI_SHARE_BUFFER
+	mutex_lock(&ubi_buf_mutex);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
 	for (offset = 0; offset < data_size; offset += ubi->mtd->writesize) {
 		/* ubi_msg("read source(%d) from %d, %d bytes", old_seb->pnum, offset, ubi->mtd->writesize); */
 		err = ubi_io_read_data(ubi, (void *)(((char *)ubi->peb_buf) + offset),
@@ -2061,6 +2066,11 @@ retry:
 	kmem_cache_free(ai->aeb_slab_cache, new_seb);
 	ubi_free_vid_hdr(ubi, vid_hdr);
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
+	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 	return 0;
 
 write_error:
@@ -2085,6 +2095,11 @@ write_error:
 out_free:
 	if (vid_hdr)
 		ubi_free_vid_hdr(ubi, vid_hdr);
+#ifdef CONFIG_UBI_SHARE_BUFFER
+	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 	return err;
 }
 
