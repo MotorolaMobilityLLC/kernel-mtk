@@ -181,6 +181,20 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType)
 		}
 		break;
 	}
+	case 0x890d:
+		switch (eventType) {
+		case EVENT_RX:
+			DBGLOG(RX, INFO,
+				"<RX> TDLS type %d, category %d, Action %d, Token %d\n",
+				pucEthBody[0], pucEthBody[1], pucEthBody[2], pucEthBody[3]);
+			break;
+		case EVENT_TX:
+			DBGLOG(TX, INFO,
+				"<TX> TDLS type %d, category %d, Action %d, Token %d\n",
+				pucEthBody[0], pucEthBody[1], pucEthBody[2], pucEthBody[3]);
+			break;
+		}
+		break;
 	}
 }
 /*----------------------------------------------------------------------------*/
