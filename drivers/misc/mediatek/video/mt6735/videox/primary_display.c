@@ -546,6 +546,9 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 	}
 
 end:
+	if (enter)
+		atomic_set(&isDdp_Idle, 1);
+
 	if (need_primary_lock)
 		_primary_path_unlock(__func__);
 
@@ -636,7 +639,6 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			pr_debug("[LP] - enter: %d, flag:%d,%d\n", enter_cnt,
 				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			primary_display_save_power_for_idle(1, 1);
-			atomic_set(&isDdp_Idle, 1);
 			_primary_path_esd_check_unlock();
 		} else {
 			/* _disp_primary_idle_unlock(); */
