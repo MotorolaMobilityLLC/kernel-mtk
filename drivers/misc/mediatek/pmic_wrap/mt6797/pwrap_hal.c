@@ -1230,17 +1230,15 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		PWRAPREG("INT1_FLG status Wrong,value=0x%x\n", WRAP_RD32(PMIC_WRAP_INT1_FLG));
 	}
 	spin_lock_irqsave(&wrp_lock, flags);
-	/* *----------------------------------------------------------------------- */
-	PWRAPREG("infra clock1=0x%x\n", WRAP_RD32(infracfg_ao_base + 0x48));
+	PWRAPREG("infra clock status=0x%x\n", WRAP_RD32(MODULE_SW_CG_0_STA));
+	PWRAPREG("pdn_pmicspi clock status=0x%x\n", WRAP_RD32(CLK_CFG_5_STA));
 	pwrap_dump_all_register();
 	/* raise the priority of WACS2 for AP */
-	WRAP_WR32(PMIC_WRAP_HARB_HPRIO, 1 << 3);
+	WRAP_WR32(PMIC_WRAP_HARB_HPRIO, WACS2);
 
-	/* *----------------------------------------------------------------------- */
 	/* clear interrupt flag */
 	WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
-	PWRAPREG("INT flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_EN));
-	PWRAPREG("infra clock2=0x%x\n", WRAP_RD32(infracfg_ao_base + 0x48));
+	PWRAPREG("INT0 flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_EN));
 	if (1 == g_wrap_wdt_irq_count || 1 == g_case_flag)
 		BUG_ON(1);
 

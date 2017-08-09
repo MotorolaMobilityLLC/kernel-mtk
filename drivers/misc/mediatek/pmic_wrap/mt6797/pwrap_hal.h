@@ -161,10 +161,12 @@ s32 pwrap_init_lk(void);
 
 /************* macro for spi clock config ******************************/
 #define CLK_CFG_4_CLR						(TOPCKGEN_BASE+0x088)
+#define CLK_CFG_5_STA						(TOPCKGEN_BASE+0x090)
 #define CLK_CFG_5_CLR						(TOPCKGEN_BASE+0x098)
 #define CLK_SPI_CK_26M						0x1
 #define MODULE_SW_CG_0_SET					(INFRACFG_AO_REG_BASE+0x080)
 #define MODULE_SW_CG_0_CLR					(INFRACFG_AO_REG_BASE+0x084)
+#define MODULE_SW_CG_0_STA					(INFRACFG_AO_REG_BASE+0x090)
 #define INFRA_GLOBALCON_RST0                (INFRACFG_AO_REG_BASE+0x140)
 #define INFRA_GLOBALCON_RST1                (INFRACFG_AO_REG_BASE+0x144)
 /*****************************************************************/
