@@ -11,6 +11,8 @@
 #ifndef __LINUX_XHCI_MTK_H
 #define __LINUX_XHCI_MTK_H
 
+#include "xhci.h"
+
 #define MTK_SCH_NEW	1
 
 #define SCH_SUCCESS 1
