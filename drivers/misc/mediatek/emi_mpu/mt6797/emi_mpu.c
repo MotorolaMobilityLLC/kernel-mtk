@@ -2234,7 +2234,6 @@ static void protect_ap_region(void)
 	unsigned long long kernel_base;
 	phys_addr_t dram_size;
 
-	return; /* temp to disable */
 	kernel_base = emi_physical_offset;
 	dram_size = get_max_DRAM_size();
 
