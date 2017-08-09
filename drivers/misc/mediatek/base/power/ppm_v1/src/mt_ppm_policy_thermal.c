@@ -107,9 +107,11 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 
 #if 0 /* PPM_DLPT_ENHANCEMENT */
 	power = ppm_calc_total_power(cluster_status, ppm_main_info.cluster_num, 100);
+	kfree(cluster_status);
 	return (power == 0) ? mt_ppm_thermal_get_max_power() : power;
 #else
 	power = ppm_find_pwr_idx(cluster_status);
+	kfree(cluster_status);
 	return (power == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)power;
 #endif
 }
