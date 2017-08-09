@@ -93,6 +93,8 @@ enum DMA_REGS_OFFSET {
 	OFFSET_TX_LEN = 0x24,
 	OFFSET_RX_LEN = 0x28,
 	OFFSET_INT_BUF_SIZE = 0x38,
+	OFFSET_TX_MEM_ADDR2 = 0x54,
+	OFFSET_RX_MEM_ADDR2 = 0x58,
 };
 
 enum i2c_trans_st_rs {
@@ -196,6 +198,7 @@ struct mt_i2c {
 
 extern void i2c_dump_info(struct mt_i2c *i2c);
 extern void mt_irq_dump_status(unsigned int irq);
+extern unsigned int enable_4G(void);
 extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 					u32 ext_flag, u32 timing);
 extern void mt_irq_dump_status(unsigned int irq);
