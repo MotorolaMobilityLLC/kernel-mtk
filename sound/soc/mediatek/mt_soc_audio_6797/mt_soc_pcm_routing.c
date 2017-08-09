@@ -63,6 +63,11 @@
 
 #include <linux/time.h>
 #include <linux/clk.h>
+
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
+
 /*
  *    function implementation
  */
@@ -587,6 +592,27 @@ static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
 	return tmp;
 }
 
+#ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+
+static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+#ifdef CONFIG_COMPAT
+	void *addr =  compat_ptr(ucontrol->value.integer.value[0]);
+#else
+	void *addr =  (void *)ucontrol->value.integer.value[0];
+#endif
+
+	uint32 size =  ucontrol->value.integer.value[1];
+
+	/* pr_warn("%s(), addr %p, size %d\n", __func__, addr, size); */
+
+	mtk_dl2_copy2buffer(addr, size);
+	return 0;
+}
+
+#endif
+
 static void GetAudioTrimOffset(int channels)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -817,6 +843,10 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_Ipoh_Setting_Get, Audio_Ipoh_Setting_Set),
 	SOC_ENUM_EXT("Audio_I2S1_Setting", Audio_Routing_Enum[8],
 		     AudioI2S1_Setting_Get, AudioI2S1_Setting_Set),
+#ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+	SOC_DOUBLE_EXT("Audio_DL2_DataTransfer", SND_SOC_NOPM, 0, 1, 65536, 0,
+	NULL, Audio_DL2_DataTransfer),
+#endif
 };
 
 

@@ -82,6 +82,11 @@
 #include <cust_gpio_usage.h>
 #endif
 */
+
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
+
 /*
  *    function implementation
  */
@@ -644,10 +649,15 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol,
 static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
 {
+#ifdef CONFIG_COMPAT
+	void *addr =  compat_ptr(ucontrol->value.integer.value[0]);
+#else
 	void *addr =  (void *)ucontrol->value.integer.value[0];
+#endif
+
 	uint32 size =  ucontrol->value.integer.value[1];
 
-	/* pr_warn("TEST1 %s(), addr 0x%x, size %d\n", __func__, (int)addr, size); */
+	/* pr_warn("%s(), addr 0x%x, size %d\n", __func__, (int)addr, size); */
 
 	mtk_dl2_copy2buffer(addr, size);
 	return 0;

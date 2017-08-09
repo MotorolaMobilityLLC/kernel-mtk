@@ -132,4 +132,13 @@ struct mtk_dai {
 	uint32_t sample_rate;
 };
 
+typedef struct {
+	kal_int8 *pBufferBase;
+	kal_int8 *pBufferIndx;
+	kal_uint32 u4BufferSize;
+	kal_uint32 u4BufferSizeMax;
+
+	kal_uint32 u4IsrConsumeSize;
+} AFE_DL_ISR_COPY_T;
+
 #endif

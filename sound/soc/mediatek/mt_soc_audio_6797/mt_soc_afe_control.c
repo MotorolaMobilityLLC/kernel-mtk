@@ -3508,6 +3508,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 		return;
 	}
 
+	Auddrv_Dl2_Spinlock_lock();
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false) {
@@ -3515,6 +3516,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 		    ("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ",
 		     __func__);
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		Auddrv_Dl2_Spinlock_unlock();
 		return;
 	}
 
@@ -3597,6 +3599,12 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	}
 
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+
+#ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+	mtk_dl2_copy_l();
+#endif
+
+	Auddrv_Dl2_Spinlock_unlock();
 }
 
 struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock)
