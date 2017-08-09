@@ -1,3 +1,4 @@
+#include <linux/jiffies.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/kallsyms.h>
@@ -27,14 +28,83 @@
 	} while (0)
 #undef TAG
 #define TAG "[SOC DVFS FLIPER]"
-
+#define X_ms 100
+#define Y_steps (2000/X_ms)
+/*
+#if 0
+extern void BM_Enable(const unsigned int);
+extern void BM_Pause(void);
+extern int BM_GetLatencyCycle(const unsigned int);
+#endif
+*/
+static unsigned long long emi_bw;
+static void mt_power_pef_transfer(void);
+static DEFINE_TIMER(mt_pp_transfer_timer, (void *)mt_power_pef_transfer, 0, 0);
+static void mt_power_pef_transfer_work(void);
+static DECLARE_WORK(mt_pp_work, (void *) mt_power_pef_transfer_work);
 
 static int cg_lpm_bw_threshold, cg_hpm_bw_threshold;
 static int cg_fliper_enabled;
 static int fliper_debug;
 static int LPM_MAX_BW, HPM_MAX_BW;
+#if 0
+static unsigned int emi_polling(unsigned int *__restrict__ emi_value)
+{
+	int		j = 0;		/* skip 4 WSCTs */
 
+	BM_Pause();
+
+
+	/* Get Latency */
+	emi_value[j++] = BM_GetLatencyCycle(1);
+	emi_value[j++] = BM_GetLatencyCycle(2);
+	emi_value[j++] = BM_GetLatencyCycle(3);
+	emi_value[j++] = BM_GetLatencyCycle(4);
+	emi_value[j++] = BM_GetLatencyCycle(5);
+	emi_value[j++] = BM_GetLatencyCycle(6);
+	emi_value[j++] = BM_GetLatencyCycle(7);
+	emi_value[j++] = BM_GetLatencyCycle(8);
+
+	BM_Enable(0);
+	BM_Enable(1);
+
+	return j;
+}
+#endif
+static void mt_power_pef_transfer_work(void)
+{
+	/*Get EMI*/
+	if (fliper_debug == 2) {
+		emi_bw = get_mem_bw();
+		pr_crit(TAG"EMI:Rate %6llu\n", emi_bw);
+	}
+/*
+	if (fliper_debug == 3){
+		emi_polling(emi_value);
+		pr_crit(TAG"latency %d:%d:%d:%d:%d:%d:%d:%d\n",
+		emi_value[0], emi_value[1],emi_value[2], emi_value[3],
+		emi_value[4], emi_value[5], emi_value[6], emi_value[7]);
+	}
+*/
+}
 /******* FLIPER SETTING *********/
+static void enable_fliper_polling(void)
+{
+	pr_debug(TAG"fliper polling start\n");
+	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(X_ms));
+}
+
+static void disable_fliper_polling(void)
+{
+	pr_crit("fliper polling disable ---\n");
+	del_timer(&mt_pp_transfer_timer);
+}
+
+static void mt_power_pef_transfer(void)
+{
+	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(X_ms));
+	schedule_work(&mt_pp_work);
+}
 
 int getCGHistory(void)
 {
@@ -167,7 +237,7 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		cg_restore_threshold();
 	}	else if (strncmp(option, "SET_CG", 6) == 0) {
 		setCG(arg1);
-	}  else if (strncmp(option, "POWER_MODE", 10) == 0) {
+	} else if (strncmp(option, "POWER_MODE", 10) == 0) {
 		if (!fliper_debug) {
 			if (arg1 == Default) {
 				pr_debug(TAG"POWER_MODE: default\n");
@@ -196,6 +266,10 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		}
 	} else if (strncmp(option, "DEBUG", 5) == 0) {
 		fliper_debug = arg1;
+		if (fliper_debug >= 2)
+			enable_fliper_polling();
+		else
+			disable_fliper_polling();
 	} else {
 		pr_debug(TAG"unknown option\n");
 	}
@@ -210,6 +284,8 @@ static int mt_fliper_show(struct seq_file *m, void *v)
 			cg_fliper_enabled, cg_lpm_bw_threshold, cg_hpm_bw_threshold);
 	SEQ_printf(m, "CG History: 0x%08x\n", getCGHistory());
 	SEQ_printf(m, "CG Configuration: 0x%08x\n", getCGConfiguration());
+	if (fliper_debug == 2)
+		SEQ_printf(m, "BW: %6llu\n", emi_bw);
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	return 0;
 }
@@ -255,7 +331,7 @@ fliper_pm_callback(struct notifier_block *nb,
 
 
 /*--------------------INIT------------------------*/
-
+#define TIME_5SEC_IN_MS 5000
 static int __init init_fliper(void)
 {
 	struct proc_dir_entry *pe;
@@ -275,6 +351,12 @@ static int __init init_fliper(void)
 
 	pm_notifier(fliper_pm_callback, 0);
 
+
+#if 0
+	pr_debug("prepare mt pp transfer: jiffies:%lu-->%lu\n", jiffies, jiffies + msecs_to_jiffies(TIME_5SEC_IN_MS));
+	pr_debug("-	next jiffies:%lu >>> %lu\n", jiffies, jiffies + msecs_to_jiffies(X_ms));
+	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(TIME_5SEC_IN_MS));
+#endif
 
 	pr_debug(TAG"init fliper driver done\n");
 

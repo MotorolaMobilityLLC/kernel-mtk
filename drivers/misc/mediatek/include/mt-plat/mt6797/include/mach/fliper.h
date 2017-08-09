@@ -24,3 +24,4 @@ void enable_cg_fliper(int);
 int cg_set_threshold(int, int);
 int cg_restore_threshold(void);
 extern int dram_steps_freq(unsigned int step);
+extern int get_mem_bw(void);
