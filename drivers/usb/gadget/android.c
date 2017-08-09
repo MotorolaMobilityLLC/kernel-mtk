@@ -143,6 +143,7 @@ static struct class *android_class;
 static struct android_dev *_android_dev;
 static int android_bind_config(struct usb_configuration *c);
 static void android_unbind_config(struct usb_configuration *c);
+static int android_setup_config(struct usb_configuration *c, const struct usb_ctrlrequest *ctrl);
 
 /* string IDs are assigned dynamically */
 #define STRING_MANUFACTURER_IDX		0
@@ -174,7 +175,11 @@ static struct usb_gadget_strings *dev_strings[] = {
 static struct usb_device_descriptor device_desc = {
 	.bLength              = sizeof(device_desc),
 	.bDescriptorType      = USB_DT_DEVICE,
-	.bcdUSB               = __constant_cpu_to_le16(0x0200),
+#ifdef CONFIG_USB_MU3D_DRV
+	.bcdUSB               = cpu_to_le16(0x0300),
+#else
+	.bcdUSB               = cpu_to_le16(0x0200),
+#endif
 	.bDeviceClass         = USB_CLASS_PER_INTERFACE,
 	.idVendor             = __constant_cpu_to_le16(VENDOR_ID),
 	.idProduct            = __constant_cpu_to_le16(PRODUCT_ID),
@@ -184,6 +189,7 @@ static struct usb_device_descriptor device_desc = {
 
 static struct usb_configuration android_config_driver = {
 	.label		= "android",
+	.setup		= android_setup_config,
 	.unbind		= android_unbind_config,
 	.bConfigurationValue = 1,
 #ifdef CONFIG_USBIF_COMPLIANCE
@@ -191,7 +197,11 @@ static struct usb_configuration android_config_driver = {
 #else
 	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
 #endif
+#ifdef CONFIG_USB_MU3D_DRV
+	.MaxPower	= 192, /* Only consume 192ma for passing USB30CV Descriptor Test [USB3.0 devices]*/
+#else
 	.MaxPower	= 500, /* 500ma */
+#endif
 };
 
 static void android_work(struct work_struct *data)
@@ -2168,6 +2178,75 @@ static void android_unbind_config(struct usb_configuration *c)
 	android_unbind_enabled_functions(dev, c);
 }
 
+static int android_setup_config(struct usb_configuration *c, const struct usb_ctrlrequest *ctrl)
+{
+	int handled = -EINVAL;
+	const u8 recip = ctrl->bRequestType & USB_RECIP_MASK;
+
+	pr_notice("%s bRequestType=%x, bRequest=%x, recip=%x\n", __func__, ctrl->bRequestType, ctrl->bRequest, recip);
+
+	if (!((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD))
+		return handled;
+
+	switch (ctrl->bRequest) {
+
+	case USB_REQ_CLEAR_FEATURE:
+		switch (recip) {
+		case USB_RECIP_DEVICE:
+			switch (ctrl->wValue) {
+			case USB_DEVICE_U1_ENABLE:
+				handled = 1;
+				pr_notice("Clear Feature->U1 Enable\n");
+				break;
+
+			case USB_DEVICE_U2_ENABLE:
+				handled = 1;
+				pr_notice("Clear Feature->U2 Enable\n");
+				break;
+
+			default:
+				handled = -EINVAL;
+				break;
+			}
+			break;
+		default:
+			handled = -EINVAL;
+			break;
+		}
+		break;
+
+	case USB_REQ_SET_FEATURE:
+		switch (recip) {
+		case USB_RECIP_DEVICE:
+			switch (ctrl->wValue) {
+			case USB_DEVICE_U1_ENABLE:
+				pr_notice("Set Feature->U1 Enable\n");
+				handled = 1;
+				break;
+			case USB_DEVICE_U2_ENABLE:
+				pr_notice("Set Feature->U2 Enable\n");
+				handled = 1;
+				break;
+			default:
+				handled = -EINVAL;
+				break;
+			}
+			break;
+
+		default:
+			handled = -EINVAL;
+			break;
+		}
+		break;
+
+	default:
+		handled = -EINVAL;
+		break;
+	}
+
+	return handled;
+}
+
 static int android_bind(struct usb_composite_dev *cdev)
 {
 	struct android_dev *dev = _android_dev;
@@ -2305,7 +2384,11 @@ static struct usb_composite_driver android_usb_driver = {
 	.bind		= android_bind,
 	.unbind		= android_usb_unbind,
 	.disconnect	= android_disconnect,
-	.max_speed	= USB_SPEED_HIGH,
+#ifdef CONFIG_USB_MU3D_DRV
+	.max_speed	= USB_SPEED_SUPER
+#else
+	.max_speed	= USB_SPEED_HIGH
+#endif
 };
 
 static int android_create_device(struct android_dev *dev)
