@@ -28,4 +28,14 @@ struct pg_callbacks {
 /* register new pg_callbacks and return previous pg_callbacks. */
 extern struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb);
 
+/*ram console api*/
+/*
+[0] bus protect reg
+[1] pwr_status
+[2] pwr_status 2
+[others] local function use
+*/
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_clk(int id, u32 val);
+#endif
 #endif				/* __DRV_CLK_MT6755_PG_H */
