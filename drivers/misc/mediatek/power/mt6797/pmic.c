@@ -2177,9 +2177,11 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 			if (lbcb_tb[i].lbcb != NULL) {
 				low_battery_callback = lbcb_tb[i].lbcb;
 				low_battery_callback(low_battery_level);
-				pr_debug
-				    ("[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
-				     i, low_battery_level);
+				/*
+					pr_debug
+					    ("[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
+					     i, low_battery_level);
+					     */
 			}
 		}
 	}
@@ -2543,7 +2545,7 @@ void bat_percent_notify_init(void)
 
 unsigned int ptim_bat_vol = 0;
 signed int ptim_R_curr = 0;
-int ptim_imix = 0, ptim_imix_last = 0;
+int ptim_imix = 0;
 int ptim_rac_val_avg = 0;
 
 signed int pmic_ptimretest = 0;
@@ -2735,6 +2737,9 @@ static DEFINE_MUTEX(dlpt_notify_mutex);
 
 #ifdef DLPT_FEATURE_SUPPORT
 #define DLPT_NUM 16
+/* This define is used to filter smallest and largest voltage and current.
+To avoid auxadc measurement interference issue. */
+#define DLPT_SORT_IMIX_VOLT_CURR 1
 
 
 int g_dlpt_stop = 0;
@@ -2994,17 +2999,65 @@ int get_dlpt_imix_spm(void)
 
 }
 
+#if DLPT_SORT_IMIX_VOLT_CURR
+void pmic_swap(int *a, int *b)
+{
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
 
+
+void pmic_quicksort(int *data, int left, int right)
+{
+	int pivot, i, j;
+
+	if (left >= right)
+		return;
+
+	pivot = data[left];
+
+	i = left + 1;
+	j = right;
+
+	while (1) {
+		while (i <= right) {
+			if (data[i] > pivot)
+				break;
+			i = i + 1;
+		}
+
+		while (j > left) {
+			if (data[j] < pivot)
+				break;
+			j = j - 1;
+		}
+
+		if (i > j)
+			break;
+
+		pmic_swap(&data[i], &data[j]);
+	}
+
+	pmic_swap(&data[left], &data[j]);
+
+	pmic_quicksort(data, left, j - 1);
+	pmic_quicksort(data, j + 1, right);
+}
+#endif /* end of DLPT_SORT_IMIX_VOLT_CURR*/
 int get_dlpt_imix(void)
 {
 	/* int rac_val[5], rac_val_avg; */
 	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
-	int imix, imix_div;
+	int imix;
+#if 0 /* debug only */
+	int val, val1, val2, val3, val4, val5, ret_val;
+#endif
 	int i, count_do_ptim = 0;
 
 	for (i = 0; i < 5; i++) {
 		/*adc and fg-------------------------------------------------------- */
-	/* do_ptim(false); */
+		/* do_ptim(false); */
 		while (do_ptim(false)) {
 			if ((count_do_ptim >= 2) && (count_do_ptim < 4))
 				pr_err("do_ptim more than twice times\n");
@@ -3018,26 +3071,46 @@ int get_dlpt_imix(void)
 
 		volt[i] = ptim_bat_vol;
 		curr[i] = ptim_R_curr;
+#if !DLPT_SORT_IMIX_VOLT_CURR
 		volt_avg += ptim_bat_vol;
 		curr_avg += ptim_R_curr;
+#endif
 	PMICLOG("[get_dlpt_imix:%d] %d,%d,%d,%d\n", i, volt[i], curr[i], volt_avg, curr_avg);
+#if 0 /* debug only */
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_ADC29), (&val), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_ADC30), (&val1), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_FGADC_CON25), (&val2), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_IMP0), (&val3), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_CON2), (&val4), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_LBAT1), (&val5), (0xffff), 0);
+	pr_debug("[get_dlpt_imix after ptim]MT6351_AUXADC_ADC29 0x%x:0x%x, MT6351_AUXADC_ADC30 0x%x:0x%x, MT6351_FGADC_CON25 0x%x:0x%x\n",
+		MT6351_AUXADC_ADC29, val, MT6351_AUXADC_ADC30, val1, MT6351_FGADC_CON25, val2);
+	pr_debug("[get_dlpt_imix after ptim]MT6351_AUXADC_IMP0 0x%x:0x%x, MT6351_AUXADC_CON2 0x%x:0x%x, MT6351_AUXADC_LBAT1 0x%x:0x%x\n",
+		MT6351_AUXADC_IMP0, val3, MT6351_AUXADC_CON2, val4, MT6351_AUXADC_LBAT1, val5);
+	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_LBAT2), (&val), (0xffff), 0);
+	pr_debug("[get_dlpt_imix after ptim]MT6351_AUXADC_LBAT2 0x%x:0x%x\n",
+		MT6351_AUXADC_LBAT2, val);
+#endif
 	}
-
+#if !DLPT_SORT_IMIX_VOLT_CURR
 	volt_avg = volt_avg / 5;
 	curr_avg = curr_avg / 5;
-
+#else
+	pmic_quicksort(volt, 0, 4);
+	pmic_quicksort(curr, 0, 4);
+	volt_avg = volt[1] + volt[2] + volt[3];
+	curr_avg = curr[1] + curr[2] + curr[3];
+	volt_avg = volt_avg / 3;
+	curr_avg = curr_avg / 3;
+#endif /* end of DLPT_SORT_IMIX_VOLT_CURR*/
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg) / 10;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	pr_debug("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
 		ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
 #endif
-	imix_div = ptim_imix_last/10;
-	if (((ptim_imix_last - imix) > imix_div) && (ptim_imix_last != 0)) {
-		ptim_imix = ptim_imix_last;
-		pr_err("[get_dlpt_imix: >10 perc, ignore] %d,%d,%d,%d\n", imix_div, imix, ptim_imix, ptim_imix_last);
-	} else
-		ptim_imix_last = ptim_imix = imix;
+
+	ptim_imix = imix;
 
 	return ptim_imix;
 
