@@ -59,6 +59,8 @@
 #define SENSOR_STRING_TYPE_SHAKE                     "android.sensor.shake"
 #define SENSOR_TYPE_BRINGTOSEE          (43)
 #define SENSOR_STRING_TYPE_BRINGTOSEE               "android.sensor.bring_to_see"
+#define SENSOR_TYPE_ANSWER_CALL          (44)
+#define SENSOR_STRING_TYPE_ANSWERCALL               "android.sensor.answer_call"
 
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -100,6 +102,7 @@
 #define ID_FACE_DOWN                                    (ID_BASE+SENSOR_TYPE_FACE_DOWN-1)
 #define ID_SHAKE                                        (ID_BASE+SENSOR_TYPE_SHAKE-1)
 #define ID_BRINGTOSEE                                   (ID_BASE+SENSOR_TYPE_BRINGTOSEE-1)
+#define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
 #define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_BRINGTOSEE)
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
@@ -150,6 +153,7 @@
 #define SENSOR_FACE_DOWN                    (1 << ID_FACE_DOWN)
 #define SENSOR_SHAKE                        (1 << ID_SHAKE)
 #define SENSOR_BRINGTOSEE                   (1 << ID_BRINGTOSEE)
+#define SENSOR_ANSWER_CALL                   (1 << ID_ANSWER_CALL)
 
 /*----------------------------------------------------------------------------*/
 #define HWM_INPUTDEV_NAME               "hwmdata"
@@ -225,6 +229,10 @@
 #define GLG_PL_DEV_NAME                "m_glg_pl"
 #define GLG_INPUTDEV_NAME              "m_glg_input"
 #define GLG_MISC_DEV_NAME              "m_glg_misc"
+
+#define ANSWERCALL_PL_DEV_NAME          "m_ancall_pl"
+#define ANSWERCALL_INPUTDEV_NAME        "m_ancall_input"
+#define ANSWERCALL_MISC_DEV_NAME        "m_ancall_misc"
 
 #define TEMP_PL_DEV_NAME               "m_temp_pl"
 #define TEMP_INPUTDEV_NAME             "m_temp_input"
