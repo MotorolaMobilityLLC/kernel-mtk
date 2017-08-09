@@ -611,10 +611,10 @@
 			reg = <0x10390000 0x10000>;
 		};
 
-		GCPU@0x10216000 {
-			compatible = "mediatek,GCPU";
+		gcpu@10216000 {
+			compatible = "mediatek,mt6735-gcpu";
 			reg = <0x10216000 0x1000>;
-			interrupts = <0 150 0x8>;
+			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		GCE@0x10217000 {
