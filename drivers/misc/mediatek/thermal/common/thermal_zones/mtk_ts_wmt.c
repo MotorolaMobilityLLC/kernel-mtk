@@ -1427,6 +1427,7 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 		p_linux_if = &pg_wmt_tm->linux_if;
 	} else {
 		wmt_tm_info("[wmt_thz_write] fail!\n");
+		kfree(ptr_tm_data);
 		return -EINVAL;
 	}
 

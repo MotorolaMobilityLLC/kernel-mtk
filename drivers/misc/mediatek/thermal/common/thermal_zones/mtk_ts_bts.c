@@ -1001,6 +1001,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_RAP_pull_up_R=%d\n", g_RAP_pull_up_R);
 		} else {
 			pr_debug("[mtkts_bts_write] bad PUP_R argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1009,6 +1010,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_Rat_pull_up_voltage=%d\n", g_RAP_pull_up_voltage);
 		} else {
 			pr_debug("[mtkts_bts_write] bad PUP_VOLT argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1017,6 +1019,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_TAP_over_critical_low=%d\n", g_TAP_over_critical_low);
 		} else {
 			pr_debug("[mtkts_bts_write] bad OVERCRIT_L argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1025,6 +1028,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_RAP_ntc_table=%d\n", g_RAP_ntc_table);
 		} else {
 			pr_debug("[mtkts_bts_write] bad NTC_TABLE argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
