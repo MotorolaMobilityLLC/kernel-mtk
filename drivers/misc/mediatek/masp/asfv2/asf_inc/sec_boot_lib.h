@@ -22,7 +22,7 @@
  *  INCLUDE MTK HEADERS
  **************************************************************************/
 #include "masp_version.h"
-#include "sec_typedef.h"
+#include <linux/types.h>
 #include "sec_error.h"
 #include "sec_nvram.h"
 #include "sec_osal.h"

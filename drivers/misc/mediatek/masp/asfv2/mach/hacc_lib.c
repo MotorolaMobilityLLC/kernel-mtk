@@ -12,12 +12,10 @@
  */
 
 #include "sec_osal.h"
-/*#include <mach/mt_typedefs.h>*/
 #include "sec_hal.h"
 #include "hacc_mach.h"
-/*#include "sec_log.h"*/
 #include "sec_error.h"
-#include "sec_typedef.h"
+
 
 /******************************************************************************
  * Crypto Engine Test Driver Debug Control
@@ -34,20 +32,20 @@
  ******************************************************************************/
 /* return the result of hwEnableClock ( )
    - TRUE  (1) means crypto engine init success
-   - FALSE (0) means crypto engine init fail    */
+   - false (0) means crypto engine init fail    */
 unsigned char masp_hal_secure_algo_init(void)
 {
-	bool ret = TRUE;
+	bool ret = true;
 
 	return ret;
 }
 
 /* return the result of hwDisableClock ( )
-   - TRUE  (1) means crypto engine de-init success
-   - FALSE (0) means crypto engine de-init fail    */
+   - true  (1) means crypto engine de-init success
+   - false (0) means crypto engine de-init fail    */
 unsigned char masp_hal_secure_algo_deinit(void)
 {
-	bool ret = TRUE;
+	bool ret = true;
 
 	return ret;
 }
@@ -56,8 +54,8 @@ unsigned char masp_hal_secure_algo_deinit(void)
  * CRYPTO ENGINE EXPORTED APIs
  ******************************************************************************/
 /* perform crypto operation
-   @ Direction   : TRUE  (1) means encrypt
-		   FALSE (0) means decrypt
+   @ Direction   : true  (1) means encrypt
+		   false (0) means decrypt
    @ ContentAddr : input source address
    @ ContentLen  : input source length
    @ CustomSeed  : customization seed for crypto engine
@@ -89,20 +87,20 @@ void masp_hal_secure_algo(unsigned char Direction, unsigned char *ContentAddr,
 
 	/* according to input parameter to encrypt or decrypt */
 	switch (Direction) {
-	case TRUE:
+	case true:
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		/* ! CCCI driver already got HACC lock ! */
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		dst =
-		    masp_hal_sp_hacc_enc((unsigned char *)src, ContentLen, TRUE, HACC_USER3, FALSE);
+		    masp_hal_sp_hacc_enc((unsigned char *)src, ContentLen, true, HACC_USER3, false);
 		break;
 
-	case FALSE:
+	case false:
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		/* ! CCCI driver already got HACC lock ! */
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		dst =
-		    masp_hal_sp_hacc_dec((unsigned char *)src, ContentLen, TRUE, HACC_USER3, FALSE);
+		    masp_hal_sp_hacc_dec((unsigned char *)src, ContentLen, true, HACC_USER3, false);
 		break;
 
 	default:

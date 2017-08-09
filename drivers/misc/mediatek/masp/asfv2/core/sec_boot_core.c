@@ -55,7 +55,7 @@ int sec_get_random_id(unsigned int *rid)
 ******************************************************************************/
 int sec_schip_enabled(void)
 {
-	if (TRUE == masp_hal_sbc_enabled()) {
+	if (true == masp_hal_sbc_enabled()) {
 		pr_debug("SC\n");
 		return 1;
 	}
@@ -81,7 +81,7 @@ int sec_usbdl_enabled(void)
 	case ATTR_SUSBDL_DISABLE:
 	case ATTR_SUSBDL_ONLY_ENABLE_ON_SCHIP:
 		pr_debug("[%s] SUSBDL is only enabled on S-CHIP\n", MOD);
-		if (TRUE == masp_hal_sbc_enabled()) {
+		if (true == masp_hal_sbc_enabled()) {
 			pr_debug("0x%x, SD-SC\n", ATTR_SUSBDL_ONLY_ENABLE_ON_SCHIP);
 			return 1;
 		}
@@ -110,7 +110,7 @@ int sec_boot_enabled(void)
 	case ATTR_SBOOT_DISABLE:
 	case ATTR_SBOOT_ONLY_ENABLE_ON_SCHIP:
 		pr_debug("[%s] SBOOT is only enabled on S-CHIP\n", MOD);
-		if (TRUE == masp_hal_sbc_enabled()) {
+		if (true == masp_hal_sbc_enabled()) {
 			pr_debug("0x%x, SB-SC\n", ATTR_SBOOT_ONLY_ENABLE_ON_SCHIP);
 			return 1;
 		}
