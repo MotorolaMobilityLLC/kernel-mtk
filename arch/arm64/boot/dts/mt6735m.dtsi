@@ -65,7 +65,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1000000000>;
 		};
-
+/*
 		cpu1: cpu@001 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -95,7 +95,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1000000000>;
 		};
-
+*/
 		idle-states {
 			entry-method = "arm,psci";
 
@@ -185,6 +185,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				reg = <0 0x10221000 0 0x1000>,
 					<0 0x10222000 0 0x1000>,
 					<0 0x10200620 0 0x1000>;
+
+				mediatek,wdt_irq = <160>;
 
 				gic-cpuif@0 {
 					compatible = "arm,gic-cpuif";
