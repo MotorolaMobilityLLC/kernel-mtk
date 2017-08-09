@@ -775,20 +775,7 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 #define RR_LINUX_PA ((struct last_reboot_reason *)RR_BASE_PA(linux))
 
 /*NOTICE: You should check if ram_console is null before call these macros*/
-/*#define LAST_RR_SET(rr_item, value) (RR_LINUX->rr_item = value)*/
-#define LAST_RR_SET(rr_item, value) \
-	do { \
-		if ((((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux) != 0x140) \
-			pr_err("first ram_console_buffer->off_linux=0x%x\n",	\
-				((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux); \
-		if ((((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux) != 0x140) \
-			pr_err("second time ram_console_buffer->off_linux=0x%x\n",	\
-				((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux); \
-		if ((((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux) != 0x140) \
-			pr_err("thrid time ram_console_buffer->off_linux=0x%x\n",	\
-				((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux); \
-		(RR_LINUX->rr_item = value); \
-	} while (0)
+#define LAST_RR_SET(rr_item, value) (RR_LINUX->rr_item = value)
 
 #define LAST_RR_SET_WITH_ID(rr_item, id, value) (RR_LINUX->rr_item[id] = value)
 
