@@ -2462,7 +2462,8 @@ int mt_idle_select(int cpu)
 			break;
 	}
 
-	return i;
+	/* FIXME: return the corresponding idle state after verification successed */
+	return -1;
 }
 
 int dpidle_enter(int cpu)
