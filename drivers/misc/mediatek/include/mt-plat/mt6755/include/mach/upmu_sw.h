@@ -156,6 +156,7 @@ extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 
 extern unsigned short is_battery_remove;
 extern unsigned short is_wdt_reboot_pmic;
+extern unsigned short is_wdt_reboot_pmic_chk;
 extern unsigned int g_pmic_pad_vbif28_vol;
 
 /*==============================================================================
@@ -169,6 +170,7 @@ extern signed int g_I_SENSE_offset;
 extern void pmic_auxadc_init(void);
 extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
+extern void mt_power_off(void);
 /*==============================================================================
 // PMIC fg define
 //==============================================================================*/

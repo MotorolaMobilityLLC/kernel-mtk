@@ -6765,7 +6765,6 @@ void mt6311_hw_init(void)
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 0); /*  [0:0]: VDVFS11_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 1); /*  [1:1]: VDVFS12_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 2); /*  [2:2]: VBIASN_PG_H2L_EN; Ricky*/
-	ret = mt6311_config_interface(0x69, 0x0, 0x1, 0);
 	ret = mt6311_config_interface(0x6D, 0x3, 0x3, 5);
 	/* [6:5]: RG_UVLO_VTHL; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
 	ret = mt6311_config_interface(0x6E, 0x3, 0x3, 0);

@@ -108,7 +108,7 @@ signed int PMIC_IMM_GetCurrent(void)
 
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
 	pmic_set_register_value(PMIC_AUXADC_VBUF_EN, 1);
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 1);
+	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);
 
 	wake_lock(&pmicAuxadc_irq_lock);
 	mutex_lock(&pmic_adc_mutex);
@@ -195,7 +195,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
 	/* mt6351 change to hw control, but reserve sw control register */
 	/* pmic_set_register_value(PMIC_AUXADC_VBUF_EN,1); //use ch4 only, pmic temp or dcxo temp */
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 1);	/* enable 26MHz */
+	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);	/* enable 26MHz */
 
 	/*upmu_set_reg_value(0x0a44,0x010a); */
 #if defined PMIC_DVT_TC_EN
@@ -443,6 +443,8 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		g_pmic_pad_vbif28_vol = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
 		/* mt6351 sw workaround, PAD_VBIF28 SWITCH TURN ON */
 		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
+		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 0);
+		ret = pmic_set_register_value(PMIC_RG_VBIF28_MODE_CTRL, 0);
 		ret = pmic_set_register_value(PMIC_RG_VBIF28_EN, 0);
 /*		ret = pmic_config_interface(MT6351_LDO_VBIF28_CON0,0xda6a,0xffff,0); */
 		ret = pmic_set_register_value(PMIC_TOP_CKPDN_CON2_SET, 0x70);

@@ -47,6 +47,7 @@ do {					\
 #define GETSIZE(array) (sizeof(array)/sizeof(array[0]))
 
 /* extern functions */
+extern void mt_power_off(void);
 extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_IM_current(void *data);
@@ -61,6 +62,7 @@ extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
+extern bool crystal_exist_status(void);
 #if !defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif
@@ -164,6 +166,7 @@ struct mtk_regulator {
 	const void *pvoltages;
 	bool isUsedable;
 	struct regulator *reg;
+	int vsleep_en_saved;
 };
 
 
