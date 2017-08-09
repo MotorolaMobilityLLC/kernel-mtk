@@ -1875,7 +1875,11 @@ static void get_freq_table_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 	for (i = 0; i < NR_FREQ; i++) {
 		/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
-		binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
+		#ifdef __KERNEL__
+			binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
+		#else
+			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
+		#endif
 		if (binLevel == 0) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
