@@ -27,6 +27,7 @@ typedef enum {
 	ION_SYS_GET_CLIENT,
 	ION_SYS_SET_HANDLE_BACKTRACE,
 	ION_SYS_SET_CLIENT_NAME,
+	ION_SYS_DMA_OP,
 } ION_SYS_CMDS;
 
 typedef enum {
@@ -54,6 +55,30 @@ typedef struct ion_sys_cache_sync_param {
 	unsigned int size;
 	ION_CACHE_SYNC_TYPE sync_type;
 } ion_sys_cache_sync_param_t;
+
+typedef enum {
+	ION_DMA_MAP_AREA,
+	ION_DMA_UNMAP_AREA,
+	ION_DMA_MAP_AREA_VA,
+	ION_DMA_UNMAP_AREA_VA,
+	ION_DMA_CACHE_FLUSH_ALL
+} ION_DMA_TYPE;
+
+typedef enum {
+	ION_DMA_FROM_DEVICE,
+	ION_DMA_TO_DEVICE,
+} ION_DMA_DIR;
+
+typedef struct ion_dma_param {
+	union {
+		ion_user_handle_t handle;
+		void *kernel_handle;
+	};
+	void *va;
+	unsigned int size;
+	ION_DMA_TYPE dma_type;
+	ION_DMA_DIR dma_dir;
+} ion_sys_dma_param_t;
 
 typedef struct ion_sys_get_phys_param {
 	union {
@@ -95,10 +120,11 @@ typedef struct ion_sys_data {
 	ION_SYS_CMDS sys_cmd;
 	union {
 		ion_sys_cache_sync_param_t cache_sync_param;
-		ion_sys_get_phys_param_t   get_phys_param;
+		ion_sys_get_phys_param_t get_phys_param;
 		ion_sys_get_client_param_t get_client_param;
 		ion_sys_client_name_t client_name_param;
 		ion_sys_record_t record_param;
+		ion_sys_dma_param_t dma_param;
 	};
 } ion_sys_data_t;
 
@@ -137,7 +163,7 @@ typedef struct ion_mm_data {
 	ION_MM_CMDS mm_cmd;
 	union {
 		ion_mm_config_buffer_param_t config_buffer_param;
-		ion_mm_buf_debug_info_t  buf_debug_info_param;
+		ion_mm_buf_debug_info_t buf_debug_info_param;
 		ion_mm_sf_buf_info_t sf_buf_info_param;
 	};
 } ion_mm_data_t;
@@ -173,6 +199,12 @@ int ion_drv_create_FB_heap(ion_phys_addr_t fb_base, size_t fb_size);
 
 typedef int (ion_mm_buf_destroy_callback_t)(struct ion_buffer *buffer, unsigned int phyAddr);
 int ion_mm_heap_register_buf_destroy_callback(struct ion_buffer *buffer, ion_mm_buf_destroy_callback_t *fn);
+
+int ion_cache_sync_flush_all(int fd);
+int ion_dma_map_area(int fd, ion_user_handle_t handle, int dir);
+int ion_dma_unmap_area(int fd, ion_user_handle_t handle, int dir);
+void ion_dma_map_area_va(void *start, size_t size, ION_DMA_DIR dir);
+void ion_dma_unmap_area_va(void *start, size_t size, ION_DMA_DIR dir);
 
 #endif
 
