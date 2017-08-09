@@ -1136,6 +1136,8 @@ static void msdc_pin_reset(struct msdc_host *host, int mode, int force_reset)
 
 static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 {
+	u32 val;
+
 	N_MSG(CFG, "Set power mode(%d)", mode);
 	if (host->power_mode == MMC_POWER_OFF && mode != MMC_POWER_OFF) {
 		msdc_pin_reset(host, MSDC_PIN_PULL_UP, 0);
@@ -1145,6 +1147,19 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			host->power_control(host, 1);
 
 		mdelay(10);
+
+		if (host->hw->host_function == MSDC_SD) {
+			pmic_read_interface(MT6351_PMIC_OC_STATUS_VMCH_ADDR,
+					    &val,
+					    MT6351_PMIC_OC_STATUS_VMCH_MASK,
+					    MT6351_PMIC_OC_STATUS_VMCH_SHIFT
+					    );
+
+			if (val) {
+				pr_err("SDcard over current, power off: OC status = %x\n", val);
+				host->power_control(host, 0);
+			}
+		}
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
 
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
@@ -4428,21 +4443,6 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 		ptr = prev;
 	}
 }
-
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-static void msdc_tasklet_flush_cache(unsigned long arg)
-{
-	struct msdc_host *host = (struct msdc_host *)arg;
-
-	if (host->mmc->card) {
-		mmc_claim_host(host->mmc);
-		mmc_flush_cache(host->mmc->card);
-		mmc_release_host(host->mmc);
-	}
-
-}
-#endif
-
 /* This is called by run_timer_softirq */
 static void msdc_timer_pm(unsigned long data)
 {
@@ -4455,17 +4455,14 @@ static void msdc_timer_pm(unsigned long data)
 		N_MSG(CLK, "time out, dsiable clock, clk_gate_count=%d",
 			host->clk_gate_count);
 	}
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-	if (check_mmc_cache_ctrl(mmc->card))
-		tasklet_hi_schedule(&host->flush_cache_tasklet);
-#endif
 
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
 
-/* FIX ME : consider if this function can be moved to msdc_io.c */
+/* FIXME : consider if this function can be moved to msdc_io.c */
 static void msdc_set_host_power_control(struct msdc_host *host)
 {
+	u32 val;
 
 	switch (host->id) {
 	case 0:
@@ -4477,6 +4474,47 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 			host->power_control = msdc_sd_power;
 			host->power_switch = msdc_sd_power_switch;
 		}
+
+		/* VMCH calibration default change to 0mv. We use 3.0V */
+		pmic_read_interface(0xACE, &val,
+			MT6351_PMIC_RG_VMCH_CAL_MASK,
+			MT6351_PMIC_RG_VMCH_CAL_SHIFT
+			);
+
+		pr_err("msdc1, 0xACE=%x\n", val);
+
+		if (5 > val)
+			val = 0x20 + val - 5;
+		else
+			val = val - 5;
+
+		pmic_config_interface(0xACE, val,
+			MT6351_PMIC_RG_VMCH_CAL_MASK,
+			MT6351_PMIC_RG_VMCH_CAL_SHIFT
+			);
+		pr_err("msdc1, 0xACE=%x\n", val);
+
+		/* VMC calibration default not +100mv. We use 3.0V */
+		pmic_read_interface(0xAE2, &val,
+			MT6351_PMIC_RG_VMC_CAL_MASK,
+			MT6351_PMIC_RG_VMC_CAL_SHIFT
+			);
+
+		pr_err("msdc1, 0xAE2=%x\n", val);
+
+		if (0x1b > val)
+			val = 0x20 + val - 0x1b;
+		else
+			val = val - 0x1b;
+
+		pr_err("msdc1, 0xAE2=%x\n", val);
+
+		host->vmc_cal_default = val;
+		pmic_config_interface(0xAE2, val,
+			MT6351_PMIC_RG_VMC_CAL_MASK,
+			MT6351_PMIC_RG_VMC_CAL_SHIFT
+			);
+
 		break;
 	case 2:
 		if (MSDC_SDIO == host->hw->host_function)
@@ -4707,11 +4745,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_SDIO) {
 		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");
 	}
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-	if (host->mmc->caps2 & MMC_CAP2_CACHE_CTRL)
-		tasklet_init(&host->flush_cache_tasklet,
-			msdc_tasklet_flush_cache, (ulong) host);
-#endif
+
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
 	/*INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);*/
 	spin_lock_init(&host->lock);
@@ -4786,10 +4820,6 @@ release:
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
 	pr_err("[%s]: msdc%d init fail release!\n", __func__, host->id);
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-	if (host->mmc->caps2 & MMC_CAP2_CACHE_CTRL)
-		tasklet_kill(&host->flush_cache_tasklet);
-#endif
 	kfree(host->hw);
 	mmc_free_host(mmc);
 
@@ -4820,11 +4850,6 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	msdc_deinit_hw(host);
 
 	tasklet_kill(&host->card_tasklet);
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-	if ((host->hw->host_function == MSDC_EMMC) &&
-	    (host->mmc->caps2 & MMC_CAP2_CACHE_CTRL))
-		tasklet_kill(&host->flush_cache_tasklet);
-#endif
 	free_irq(host->irq, host);
 
 	dma_free_coherent(NULL, MAX_GPD_NUM * sizeof(struct gpd_t),

@@ -191,23 +191,17 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 
 	switch (host->id) {
 	case 1:
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc1_io);
-		/* MT6351 have no 2.9v setting, So calibration 100mv here */
 		if (on) {
-			/* VMC calibration. */
-			pmic_read_interface(REG_VMC_VOSEL_CAL,
-				&reg_val,
-				MASK_VMC_VOSEL_CAL,
-				SHIFT_VMC_VOSEL_CAL);
-
-			/* -100mv. since 2.9V is 2.8V + 100mV. */
-			reg_val = reg_val + 5;
+			/* VMC calibration +40mV. According to SA's request. */
+			reg_val = host->vmc_cal_default - 2;
 
 			pmic_config_interface(REG_VMC_VOSEL_CAL,
 				reg_val,
 				MASK_VMC_VOSEL_CAL,
 				SHIFT_VMC_VOSEL_CAL);
 		}
+
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc1_io);
 
 		msdc_set_tdsel(host, 0, 1);
 		msdc_set_rdsel(host, 0, 1);
@@ -299,10 +293,11 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		msdc_set_rdsel(host, 0, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
-		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_2900,
+		/* VMCH VOLSEL */
+		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_3000,
 			&g_msdc1_flash);
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_2900, &g_msdc1_io);
-
+		/* VMC VOLSEL */
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
 		break;
 	case 2:
 		msdc_set_driving(host, host->hw, 0);

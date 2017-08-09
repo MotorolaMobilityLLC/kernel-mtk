@@ -38,7 +38,6 @@
 
 #ifdef MTK_MSDC_USE_CACHE
 #ifndef MMC_ENABLED_EMPTY_QUEUE_FLUSH
-/* #define MTK_MSDC_FLUSH_BY_CLK_GATE */
 #endif
 #endif
 
@@ -426,9 +425,6 @@ struct msdc_host {
 	int                     irq;            /* host interrupt */
 
 	struct tasklet_struct   card_tasklet;
-#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
-	struct tasklet_struct   flush_cache_tasklet;
-#endif
 	atomic_t                sdio_stopping;
 
 	struct completion       cmd_done;
@@ -478,6 +474,7 @@ struct msdc_host {
 #endif
 	void    (*power_control)(struct msdc_host *host, u32 on);
 	void    (*power_switch)(struct msdc_host *host, u32 on);
+	u32	                    vmc_cal_default;
 	struct clk *clock_control;
 };
 
