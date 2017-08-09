@@ -1240,6 +1240,10 @@ static const struct file_operations mtd_change_proc_fops = {
 	.write = mtd_change_proc_write,
 };
 
+#ifdef DYNAMIC_CHANGE_MTD_WRITEABLE	/* tonykuo 2013-11-05 */
+static struct proc_dir_entry *entry;
+#endif
+
 static int __init init_mtd(void)
 {
 	int ret;

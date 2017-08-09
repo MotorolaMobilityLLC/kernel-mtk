@@ -31,7 +31,7 @@
 #include <linux/mtd/partitions.h>
 #include <linux/err.h>
 
-#include "mtdcore.h"
+#include "mtdpart.h"
 
 /* Our partition linked list */
 static LIST_HEAD(mtd_partitions);
@@ -802,7 +802,7 @@ uint64_t mtd_get_device_size(const struct mtd_info *mtd)
 EXPORT_SYMBOL_GPL(mtd_get_device_size);
 
 #ifdef DYNAMIC_CHANGE_MTD_WRITEABLE /* wschen 2011-01-05 */
-int mtd_writeable_proc_write(struct file *file, const char *buffer, unsigned long count, void *data)
+ssize_t mtd_writeable_proc_write(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	char buf[3];
 
@@ -828,7 +828,7 @@ int mtd_writeable_proc_write(struct file *file, const char *buffer, unsigned lon
 }
 
 #define MTD_CHANGE_NUM 4
-int mtd_change_proc_write(struct file *file, const char *buffer, unsigned long count, void *data)
+ssize_t mtd_change_proc_write(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	struct mtd_change mtd_change[MTD_CHANGE_NUM];
 	int write_3 = 0;

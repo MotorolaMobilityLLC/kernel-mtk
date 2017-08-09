@@ -21,15 +21,10 @@ void __exit cleanup_mtdchar(void);
 #ifdef DYNAMIC_CHANGE_MTD_WRITEABLE	/* tonykuo 2013-11-05 */
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
-static struct proc_dir_entry *entry;
-extern int mtd_writeable_proc_write(struct file *file, const char *buffer, unsigned long count,
-				    void *data);
-extern int mtd_change_proc_write(struct file *file, const char *buffer, unsigned long count,
-				 void *data);
-int mtd_writeable_proc_write(struct file *file, const char *buffer, unsigned long count, void *data);
-int mtd_change_proc_write(struct file *file, const char *buffer, unsigned long count, void *data);
-
-static struct mtd_info *my_mtd;
+extern ssize_t mtd_writeable_proc_write(struct file *file, const char *buffer, size_t count,
+				    loff_t *data);
+extern ssize_t mtd_change_proc_write(struct file *file, const char *buffer, size_t count,
+				 loff_t *data);
 
 struct mtd_change {
 	uint64_t size;
