@@ -646,19 +646,53 @@ return 0;
 }
 */
 
+void BigOCPAvgPwrGet_by_Little(void *info)
+{
+
+*(unsigned int *)info = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPAVGPWRGET, *(unsigned int *)info, 0, 0);
+
+}
+
 unsigned int BigOCPAvgPwrGet(unsigned int Count)
 {
+void *info;
 
 if (Count < 0 || Count > 4294967295) {
 	if (HW_API_RET_DEBUG_ON)
-		ocp_err("parameter Count must be 0 ~ 4294967295 mV");
+		ocp_err("parameter Count must be 0 ~ 4294967295");
 
 return 0;
 }
 
+if (do_ocp_test_on == 1)
+	return 1;
+
+info = &Count;
+
+
+if (smp_call_function_single(4, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(0, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(5, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(6, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(7, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(1, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(2, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+if (smp_call_function_single(3, BigOCPAvgPwrGet_by_Little, info, 1) == 0)
+	return Count;
+
 return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPAVGPWRGET, Count, 0, 0);
 
 }
+
+
+
 
 
 /* Little CPU */
@@ -4237,6 +4271,11 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				if (hqa_test > NR_HQA)
 					hqa_test = NR_HQA;
 
+					if (cpu_online(8))
+						sched_setaffinity(0, cpumask_of(8));
+					else if (cpu_online(9))
+						sched_setaffinity(0, cpumask_of(9));
+
 					little_dvfs_on = 0;
 					LittleLowerPowerOff(0, 1);
 					LittleLowerPowerOff(1, 1);
@@ -4305,6 +4344,12 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 					if (hqa_test > NR_HQA)
 						hqa_test = NR_HQA;
 
+					do_ocp_test_on = 1;
+					if (cpu_online(4))
+						sched_setaffinity(0, cpumask_of(4));
+					else if (cpu_online(0))
+						sched_setaffinity(0, cpumask_of(0));
+
 					calibration = 0;
 					BigOCPClkAvg(1, val[1]);
 					for (j = 0; j < hqa_test; j++) {
@@ -4350,6 +4395,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 						ocp_info("Cluster 2 calibration=%d us\n", calibration);
 					}
+					do_ocp_test_on = 0;
 				}
 				break;
 		case 3:
@@ -4393,6 +4439,11 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				hqa_test = val[0];
 				if (hqa_test > NR_HQA)
 					hqa_test = NR_HQA;
+
+					if (cpu_online(8))
+						sched_setaffinity(0, cpumask_of(8));
+					else if (cpu_online(9))
+						sched_setaffinity(0, cpumask_of(9));
 
 					little_dvfs_on = 1;
 					LittleLowerPowerOff(0, 1);
