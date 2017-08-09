@@ -749,7 +749,7 @@ MUINT32 FeatureParaLen = 0;
     FeatureParaLen = sizeof(unsigned long long)*2;
     return g_pInvokeSensorFunc[i]->SensorFeatureControl(SENSOR_FEATURE_SET_SLAVE_I2C_ID, (MUINT8 *)FeaturePara, (MUINT32 *)&FeatureParaLen);
 }
-extern void A60919_Init_reg_debug(void);
+//extern void A60919_Init_reg_debug(void);
 
 /*  */
 MUINT32
@@ -3834,9 +3834,7 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 #endif
 
 #if !defined(CONFIG_MTK_LEGACY)/*GPIO Pin control*/
-	#if 0
 	mtkcam_gpio_init(pdev);
-	#endif
 #endif
 
     return i2c_add_driver(&CAMERA_HW_i2c_driver);

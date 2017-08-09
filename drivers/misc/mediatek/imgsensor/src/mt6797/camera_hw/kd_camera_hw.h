@@ -1,6 +1,54 @@
 #ifndef _KD_CAMERA_HW_H_
 #define _KD_CAMERA_HW_H_
 
+//#include <linux/types.h>
+//#include <mach/mt_typedefs.h>
+
+#if defined CONFIG_MTK_LEGACY
+#include <mach/mt_gpio.h>
+#include <mach/mt_pm_ldo.h>
+#include "pmic_drv.h"
+
+#ifndef FALSE
+  #define FALSE (0)
+#endif
+
+#ifndef TRUE
+  #define TRUE  (1)
+#endif
+
+/*  */
+/* Analog */
+#define CAMERA_POWER_VCAM_A         PMIC_APP_MAIN_CAMERA_POWER_A
+/* Digital */
+#define CAMERA_POWER_VCAM_D         PMIC_APP_MAIN_CAMERA_POWER_D
+/* AF */
+#define CAMERA_POWER_VCAM_AF        PMIC_APP_MAIN_CAMERA_POWER_AF
+/* digital io */
+#define CAMERA_POWER_VCAM_IO        PMIC_APP_MAIN_CAMERA_POWER_IO
+/* Digital for Sub */
+#define SUB_CAMERA_POWER_VCAM_D     PMIC_APP_SUB_CAMERA_POWER_D
+
+/* FIXME, should defined in DCT tool */
+/* Main sensor */
+#define CAMERA_CMRST_PIN            GPIO_CAMERA_CMRST_PIN
+#define CAMERA_CMRST_PIN_M_GPIO     GPIO_CAMERA_CMRST_PIN_M_GPIO
+
+#define CAMERA_CMPDN_PIN            GPIO_CAMERA_CMPDN_PIN
+#define CAMERA_CMPDN_PIN_M_GPIO     GPIO_CAMERA_CMPDN_PIN_M_GPIO
+
+/* FRONT sensor */
+#define CAMERA_CMRST1_PIN           GPIO_CAMERA_CMRST1_PIN
+#define CAMERA_CMRST1_PIN_M_GPIO    GPIO_CAMERA_CMRST1_PIN_M_GPIO
+
+#define CAMERA_CMPDN1_PIN           GPIO_CAMERA_CMPDN1_PIN
+#define CAMERA_CMPDN1_PIN_M_GPIO    GPIO_CAMERA_CMPDN1_PIN_M_GPIO
+
+/* Define I2C Bus Num */
+//#define SUPPORT_I2C_BUS_NUM1        0
+//#define SUPPORT_I2C_BUS_NUM2        0
+#else
+#if 1
 #define CAMERA_CMRST_PIN            0
 #define CAMERA_CMRST_PIN_M_GPIO     0
 
@@ -14,13 +62,49 @@
 #define CAMERA_CMPDN1_PIN           0
 #define CAMERA_CMPDN1_PIN_M_GPIO    0
 
-#define VOL2800 2800000
-#define VOL1800 1800000
-#define VOL1500 1500000
-#define VOL1200 1200000
-#define VOL1220 1220000
-#define VOL1000 1000000
-#define VOL1100 1100000
+/* Main2 sensor */
+#define CAMERA_CMRST2_PIN           0 /*gpio35*/
+#define CAMERA_CMRST2_PIN_M_GPIO    0
+
+#define CAMERA_CMPDN2_PIN           0 /*gpio34*/
+#define CAMERA_CMPDN2_PIN_M_GPIO    0
+
+
+#define GPIO_OUT_ONE 1
+#define GPIO_OUT_ZERO 0
+#endif
+#endif /* End of #if defined CONFIG_MTK_LEGACY */
+
+#ifndef CONFIG_PINCTRL_MT6797 
+#include <mach/gpio_const.h>
+#include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
+
+/* Main sensor */
+#define CAMERA_CMRST_PIN            GPIO_CAMERA_CMRST_PIN  /*gpio32*/
+#define CAMERA_CMRST_PIN_M_GPIO     GPIO_CAMERA_CMRST_PIN_M_GPIO
+
+#define CAMERA_CMPDN_PIN            GPIO_CAMERA_CMPDN_PIN  /*gpio28*/
+#define CAMERA_CMPDN_PIN_M_GPIO     GPIO_CAMERA_CMPDN_PIN_M_GPIO
+
+/* FRONT sensor */
+#define CAMERA_CMRST1_PIN           GPIO_CAMERA_CMRST1_PIN /*gpio33*/
+#define CAMERA_CMRST1_PIN_M_GPIO    GPIO_CAMERA_CMRST1_PIN_M_GPIO
+
+#define CAMERA_CMPDN1_PIN           GPIO_CAMERA_CMPDN1_PIN /*gpio29*/
+#define CAMERA_CMPDN1_PIN_M_GPIO    GPIO_CAMERA_CMPDN1_PIN_M_GPIO
+
+/* Main2 sensor */
+#define CAMERA_CMRST2_PIN           GPIO_CAMERA_2_CMRST_PIN /*gpio35*/
+#define CAMERA_CMRST2_PIN_M_GPIO    GPIO_CAMERA_2_CMRST_PIN_M_GPIO
+
+#define CAMERA_CMPDN2_PIN           GPIO_CAMERA_2_CMPDN_PIN /*gpio34*/
+#define CAMERA_CMPDN2_PIN_M_GPIO    GPIO_CAMERA_2_CMPDN_PIN_M_GPIO
+
+
+#endif
+
+
 
 typedef enum {
 	VDD_None,
@@ -36,51 +120,21 @@ typedef enum {
 } PowerType;
 
 typedef enum {
-	Vol_Low = 0,
-	Vol_High = 1,
-	Vol_1000 = VOL1000,
-	Vol_1100 = VOL1100,
-	Vol_1200 = VOL1200,
-	Vol_1220 = VOL1220,
-	Vol_1500 = VOL1500,
-	Vol_1800 = VOL1800,
-	Vol_2800 = VOL2800,
-} Voltage;
+	CAMPDN,
+	CAMRST,
+	CAM1PDN,
+	CAM1RST,
+	CAMLDO,
+	CAMLDO1
+} CAMPowerType;
 
-#define GPIO_OUT_ONE 1
-#define GPIO_OUT_ZERO 0
-#define GPIO_UNSUPPORTED 0xff
-#define GPIO_SUPPORTED 0
-#define GPIO_MODE_GPIO 0
-
-typedef struct {
-	PowerType PowerType;
-	Voltage Voltage;
-	u32 Delay;
-} PowerInformation;
-
-
-typedef struct {
-	char *SensorName;
-	PowerInformation PowerInfo[12];
-} PowerSequence;
-
-typedef struct {
-	PowerSequence PowerSeq[16];
-} PowerUp;
-
-typedef struct {
-	u32 Gpio_Pin;
-	u32 Gpio_Mode;
-	Voltage Voltage;
-} PowerCustInfo;
-
-typedef struct {
-	PowerCustInfo PowerCustInfo[6];
-} PowerCust;
+extern void ISP_MCLK1_EN(bool En);
+extern void ISP_MCLK2_EN(bool En);
+extern void ISP_MCLK3_EN(bool En);
 
 extern bool _hwPowerDown(PowerType type);
 extern bool _hwPowerOn(PowerType type, int powerVolt);
+
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 int mtkcam_gpio_init(struct platform_device *pdev);
