@@ -2519,6 +2519,13 @@ static int __build_path_direct_link(void)
 	DISPPRINT("%s\n", __func__);
 	pgc->mode = DIRECT_LINK_MODE;
 
+	/* wait and clear rdma0_sof for vfp change */
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_EOF);
+
+	ret = cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_EOF);
+	ret = cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_DISP, pgc->cmdq_handle_config);
 	if (pgc->dpmgr_handle) {
 		DISPPRINT("dpmgr create path SUCCESS(0x%p)\n", pgc->dpmgr_handle);
@@ -4320,6 +4327,7 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	int i = 0;
 	unsigned int addr = 0;
 	int ret = 0;
+	int disp_reset;
 	unsigned int dsi_state[10];
 	unsigned int rdma_state[50];
 
@@ -4330,6 +4338,18 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	else if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_DISABLE)
 		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
 
+	disp_reset = disp_irq_get_reset_status();
+	if (disp_reset) {
+		DISPERR("disp RESET begin, 0x%x\n", disp_reset);
+
+		dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
+		dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+		if (primary_display_is_video_mode())
+			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+
+		DISPERR("disp RESET end, 0x%x\n", disp_reset);
+	}
 #ifndef MTK_FB_CMDQ_DISABLE
 	for (i = 0; i < PRIMARY_DISPLAY_SESSION_LAYER_COUNT; i++) {
 		int fence_idx = 0;
