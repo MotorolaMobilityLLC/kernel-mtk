@@ -1345,8 +1345,9 @@ static int CONN_sys_disable_op(struct subsys *sys)
 static int MFG_sys_disable_op(struct subsys *sys)
 {
 	/*printk("MFG_sys_disable_op\r\n");*/
-	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
-	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	/*spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
+	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);*/
+	return 0;
 }
 static int DIS_sys_disable_op(struct subsys *sys)
 {
@@ -1846,6 +1847,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 /*	disable_subsys(SYS_MD1);
 	disable_subsys(SYS_MD2);*/
 #endif /* !MT_CCF_BRINGUP */
+	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 }
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6755-scpsys", mt_scpsys_init);
 
