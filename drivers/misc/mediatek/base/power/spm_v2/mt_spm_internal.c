@@ -25,6 +25,7 @@
 #include "mt_spm_vcore_dvfs.h"
 #include "mt_spm_misc.h"
 #include <mt-plat/upmu_common.h>
+#include <camera_isp.h>
 
 /**************************************
  * Config and Parameter
@@ -768,6 +769,9 @@ int __check_dvfs_halt_source(int enable)
 {
 	u32 val, orig_val;
 	bool is_halt = 1;
+#if defined(CONFIG_ARCH_MT6797)
+	int i;
+#endif
 
 	val = spm_read(SPM_SRC2_MASK);
 	orig_val = val;
@@ -789,6 +793,18 @@ int __check_dvfs_halt_source(int enable)
 	if ((val & MM_DVFS_ISP_HALT_MASK) && (is_halt)) {
 		pr_err("[VcoreFS]isp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+
+#if defined(CONFIG_ARCH_MT6797)
+		/* Test bitmask halt_en */
+		for (i = 0; i < ISP_HALT_DMA_AMOUNT; i++) {
+			ISP_Halt_Mask(i);
+			udelay(50);
+			if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+				pr_err("[VcoreFS]dvfs_halt is hold by ISP subgroup %d\n", i);
+				break;
+			}
+		}
+#endif
 		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_ISP_HALT_MASK));
 		udelay(50);
 		pr_err("[VcoreFS]isp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
