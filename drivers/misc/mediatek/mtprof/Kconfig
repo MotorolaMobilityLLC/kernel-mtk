@@ -37,4 +37,21 @@ config MTK_WQ_DEBUG
 	  enable mtk workqueue debug, or if you are not sure about this, please
 	  set n
 
+config MT_SCHED_MONITOR
+	bool "mt scheduler monitor"
+	default n
+	help
+	  MT_SCHED_MONITOR is used to monitor ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER/PREEPT
+	  disable duration. Say Y here to enable ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
+	  monitor. If you are not sure about whether to enable it or not, please
+	  set n.
+
+config MT_RT_THROTTLE_MON
+	bool "mt rt throttle monitor"
+	default n
+	help
+	  MT_RT_THROTTLE_MON is used to monitor rt throttle. When rt throttle activated
+	  print 5 longest execusion time rt tasks. Say Y here to enable rt throttle
+	  monitor. If you are not sure about whether to enable it or not, please set n.
+
 endif

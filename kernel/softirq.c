@@ -26,7 +26,9 @@
 #include <linux/smpboot.h>
 #include <linux/tick.h>
 #include <linux/irq.h>
-
+#ifdef CONFIG_MTPROF
+#include "mt_sched_mon.h"
+#endif
 #define CREATE_TRACE_POINTS
 #include <trace/events/irq.h>
 
@@ -266,7 +268,13 @@ restart:
 		kstat_incr_softirqs_this_cpu(vec_nr);
 
 		trace_softirq_entry(vec_nr);
+#ifdef CONFIG_MTPROF
+		mt_trace_SoftIRQ_start(vec_nr);
+#endif
 		h->action(h);
+#ifdef CONFIG_MTPROF
+		mt_trace_SoftIRQ_end(vec_nr);
+#endif
 		trace_softirq_exit(vec_nr);
 		if (unlikely(prev_count != preempt_count())) {
 			pr_err("huh, entered softirq %u %s %p with preempt_count %08x, exited with %08x?\n",
@@ -498,7 +506,13 @@ static void tasklet_action(struct softirq_action *a)
 				if (!test_and_clear_bit(TASKLET_STATE_SCHED,
 							&t->state))
 					BUG();
+#ifdef CONFIG_MTPROF
+				mt_trace_tasklet_start(t->func);
+#endif
 				t->func(t->data);
+#ifdef CONFIG_MTPROF
+				mt_trace_tasklet_end(t->func);
+#endif
 				tasklet_unlock(t);
 				continue;
 			}

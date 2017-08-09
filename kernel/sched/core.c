@@ -86,9 +86,13 @@
 #include "sched.h"
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
-
+#ifdef CONFIG_MTPROF
+#include "mt_sched_mon.h"
+#endif
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
+
+
 
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
@@ -1568,6 +1572,15 @@ void sched_ttwu_pending(void)
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
 }
 
+enum ipi_msg_type {
+	IPI_RESCHEDULE,
+	IPI_CALL_FUNC,
+	IPI_CALL_FUNC_SINGLE,
+	IPI_CPU_STOP,
+	IPI_TIMER,
+	IPI_IRQ_WORK,
+};
+
 void scheduler_ipi(void)
 {
 	/*
@@ -1577,8 +1590,13 @@ void scheduler_ipi(void)
 	 */
 	preempt_fold_need_resched();
 
-	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()) {
+#ifdef CONFIG_MTPROF
+		mt_trace_ISR_start(IPI_RESCHEDULE);
+		mt_trace_ISR_end(IPI_RESCHEDULE);
+#endif
 		return;
+	}
 
 	/*
 	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
@@ -1594,6 +1612,9 @@ void scheduler_ipi(void)
 	 * somewhat pessimize the simple resched case.
 	 */
 	irq_enter();
+#ifdef CONFIG_MTPROF
+	mt_trace_ISR_start(IPI_RESCHEDULE);
+#endif
 	sched_ttwu_pending();
 
 	/*
@@ -1603,6 +1624,9 @@ void scheduler_ipi(void)
 		this_rq()->idle_balance = 1;
 		raise_softirq_irqoff(SCHED_SOFTIRQ);
 	}
+#ifdef CONFIG_MTPROF
+	mt_trace_ISR_end(IPI_RESCHEDULE);
+#endif
 	irq_exit();
 }
 
@@ -2536,7 +2560,10 @@ void scheduler_tick(void)
 	raw_spin_unlock(&rq->lock);
 
 	perf_event_task_tick();
-
+#ifdef CONFIG_MT_SCHED_MONITOR
+	if (smp_processor_id() == 0)	/* only record by CPU#0 */
+		mt_save_irq_counts();
+#endif
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);
 	trigger_load_balance(rq);
@@ -2608,6 +2635,12 @@ void preempt_count_add(int val)
 		current->preempt_disable_ip = ip;
 #endif
 		trace_preempt_off(CALLER_ADDR0, ip);
+#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
+		if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1)) {
+			/* current->t_add_prmpt = sched_clock(); */
+			MT_trace_preempt_off();
+		}
+#endif
 	}
 }
 EXPORT_SYMBOL(preempt_count_add);
@@ -2631,6 +2664,10 @@ void preempt_count_sub(int val)
 
 	if (preempt_count() == val)
 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
+	if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1))
+		MT_trace_preempt_on();
+#endif
 	__preempt_count_sub(val);
 }
 EXPORT_SYMBOL(preempt_count_sub);
@@ -2780,6 +2817,9 @@ need_resched:
 
 	if (sched_feat(HRTICK))
 		hrtick_clear(rq);
+#if defined(CONFIG_MT_SCHED_MONITOR) && defined(CONFIG_MTPROF)
+	__raw_get_cpu_var(MT_trace_in_sched) = 1;
+#endif
 
 	/*
 	 * Make sure that signal_pending_state()->signal_pending() below
@@ -2838,6 +2878,9 @@ need_resched:
 	} else
 		raw_spin_unlock_irq(&rq->lock);
 
+#if defined(CONFIG_MT_SCHED_MONITOR) && defined(CONFIG_MTPROF)
+	__raw_get_cpu_var(MT_trace_in_sched) = 0;
+#endif
 	post_schedule(rq);
 
 	sched_preempt_enable_no_resched();

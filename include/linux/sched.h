@@ -1158,8 +1158,10 @@ struct sched_entity {
 	/* Per-entity load-tracking */
 	struct sched_avg	avg;
 #endif
-#ifdef CONFIG_MTPROF_CPUTIME
+#if defined(CONFIG_MTPROF_CPUTIME) || defined(CONFIG_MT_RT_THROTTLE_MON)
 	u64			mtk_isr_time;
+#endif
+#ifdef CONFIG_MTPROF_CPUTIME
 	int			mtk_isr_count;
 	struct mtk_isr_info  *mtk_isr;
 #endif

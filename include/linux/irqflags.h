@@ -44,6 +44,12 @@
 # define INIT_TRACE_IRQFLAGS
 #endif
 
+#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
+extern void MT_trace_softirqs_on(unsigned long ip);
+extern void MT_trace_softirqs_off(unsigned long ip);
+extern void MT_trace_hardirqs_on(void);
+extern void MT_trace_hardirqs_off(void);
+#endif
 #if defined(CONFIG_IRQSOFF_TRACER) || \
 	defined(CONFIG_PREEMPT_TRACER)
  extern void stop_critical_timings(void);
@@ -86,6 +92,56 @@
  * if !TRACE_IRQFLAGS.
  */
 #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
+#define local_irq_enable() \
+	do { \
+		if (irqs_disabled()) {\
+			MT_trace_hardirqs_on();\
+			trace_hardirqs_on();\
+			raw_local_irq_enable();\
+		} else {                \
+			trace_hardirqs_on();\
+			raw_local_irq_enable();\
+		} \
+	} while (0)
+#define local_irq_disable() \
+	do { \
+		if (irqs_disabled()) {\
+			raw_local_irq_disable();\
+			trace_hardirqs_off(); \
+		} else {                \
+			raw_local_irq_disable();\
+			trace_hardirqs_off(); \
+			MT_trace_hardirqs_off(); \
+		} \
+	} while (0)
+
+#define local_irq_save(flags)               \
+	do {                        \
+		typecheck(unsigned long, flags);    \
+		if (irqs_disabled()) {  \
+			raw_local_irq_save(flags);      \
+			trace_hardirqs_off();       \
+		} else {                \
+			raw_local_irq_save(flags);      \
+			trace_hardirqs_off();       \
+			MT_trace_hardirqs_off();            \
+		} \
+	} while (0)
+
+#define local_irq_restore(flags)            \
+	do {                        \
+		typecheck(unsigned long, flags);    \
+		if (raw_irqs_disabled_flags(flags)) {   \
+			raw_local_irq_restore(flags);   \
+			trace_hardirqs_off();       \
+		} else {                \
+			MT_trace_hardirqs_on();     \
+			trace_hardirqs_on();        \
+			raw_local_irq_restore(flags);   \
+		}                   \
+	} while (0)
+#else /* !CONFIG_PREEMPT_MONITOR*/
 #define local_irq_enable() \
 	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
 #define local_irq_disable() \
@@ -107,6 +163,7 @@
 			raw_local_irq_restore(flags);	\
 		}					\
 	} while (0)
+#endif /* !CONFIG_PREEMPT_MONITOR*/
 #define local_save_flags(flags)				\
 	do {						\
 		raw_local_save_flags(flags);		\

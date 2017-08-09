@@ -342,7 +342,9 @@ el1_irq:
 #ifdef CONFIG_TRACE_IRQFLAGS
 	bl	trace_hardirqs_off
 #endif
-
+#ifdef CONFIG_MTPROF
+	bl  MT_trace_hardirqs_off
+#endif
 	irq_handler
 
 #ifdef CONFIG_PREEMPT
@@ -353,6 +355,9 @@ el1_irq:
 	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
 	bl	el1_preempt
 1:
+#endif
+#ifdef CONFIG_MTPROF
+	bl  MT_trace_hardirqs_on
 #endif
 #ifdef CONFIG_TRACE_IRQFLAGS
 	bl	trace_hardirqs_on
