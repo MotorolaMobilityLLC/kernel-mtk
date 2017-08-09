@@ -25,6 +25,11 @@
 
 #ifdef CONFIG_MTK_MEMCFG
 
+#include <linux/memblock.h>
+extern int memblock_count;
+extern struct memblock_record memblock_record[100];
+extern struct memblock_stack_trace memblock_stack_trace[100];
+
 #define MTK_MEMCFG_LOG_AND_PRINTK(fmt, arg...)  \
 	do {    \
 		pr_alert(fmt, ##arg); \

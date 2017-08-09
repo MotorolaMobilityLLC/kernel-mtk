@@ -28,11 +28,11 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/mod_devicetable.h>
 #include <linux/io.h>
-#include <linux/memblock.h>
 #include <linux/sort.h>
 
 #define MTK_MEMCFG_SIMPLE_BUFFER_LEN 16
 #define MTK_MEMCFG_LARGE_BUFFER_LEN (2048)
+
 
 struct mtk_memcfg_info_buf {
 	unsigned long max_len;
@@ -104,6 +104,40 @@ void mtk_memcfg_write_memory_layout_info(int type, const char *name, unsigned lo
 }
 
 static unsigned long mtk_memcfg_late_warning_flag;
+
+void mtk_memcfg_merge_memblock_record(void)
+{
+	static int memblock_is_cal;
+	int i = 0, j = 0, n = 0;
+	struct memblock_stack_trace *trace, *next;
+
+	if (memblock_is_cal == 0) {
+		i = 0;
+		while (i < memblock_count) {
+			trace = &memblock_stack_trace[i];
+			for (j = i + 1; j < memblock_count; j++) {
+				next = &memblock_stack_trace[j];
+				next->merge = 1;
+				if (trace->trace.nr_entries != next->trace.nr_entries) {
+					next->merge = 0;
+					break;
+				}
+				for (n = 0; n < trace->trace.nr_entries; n++) {
+					if (trace->addrs[n] != next->addrs[n]) {
+						next->merge = 0;
+						break;
+					}
+				}
+				if (next->merge == 0)
+					break;
+				trace->size += next->size;
+			}
+			i = j;
+		}
+		memblock_is_cal = 1;
+	}
+
+}
 
 void mtk_memcfg_write_memory_layout_buf(char *fmt, ...)
 {
@@ -205,6 +239,45 @@ static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 }
 
 /* end of kenerl memory information */
+
+/* memblock reserve information */
+static int mtk_memcfg_memblock_reserved_show(struct seq_file *m, void *v)
+{
+	int i = 0, display_count = 0, start = 0;
+	struct memblock_stack_trace *trace;
+	struct memblock_record *record;
+	unsigned long total_size = 0;
+
+	mtk_memcfg_merge_memblock_record();
+
+	for (i = 0; i < memblock_count; i++) {
+		record = &memblock_record[i];
+		total_size += record->size;
+	}
+
+	seq_printf(m, "Memblock reserve total size: 0x%lx\n", total_size);
+
+	for (i = 0; i < memblock_count; i++) {
+		trace = &memblock_stack_trace[i];
+		if (trace->merge == 0) {
+			start = trace->trace.nr_entries - 3;
+			seq_printf(m, "%d 0x%lx %pF %pF %pF %pF\n",
+					display_count++,
+					trace->size,
+					(void *)trace->addrs[start],
+					(void *)trace->addrs[start - 1],
+					(void *)trace->addrs[start - 2],
+					(void *)trace->addrs[start - 3]);
+		}
+	}
+	return 0;
+}
+
+static int mtk_memcfg_memblock_reserved_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mtk_memcfg_memblock_reserved_show, NULL);
+}
+/* end of memblock reserve information */
 
 /* kenerl memory fragmentation trigger */
 
@@ -391,6 +464,13 @@ static const struct file_operations mtk_memcfg_memory_layout_operations = {
 	.release = single_release,
 };
 
+static const struct file_operations mtk_memcfg_memblock_reserved_operations = {
+	.open = mtk_memcfg_memblock_reserved_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static const struct file_operations mtk_memcfg_frag_operations = {
 	.open = mtk_memcfg_frag_open,
 	.write = mtk_memcfg_frag_write,
@@ -433,6 +513,14 @@ static int __init mtk_memcfg_late_init(void)
 
 		if (!entry)
 			pr_err("create memory_layout proc entry failed\n");
+
+		/* memblock reserved */
+		entry = proc_create("memblock_reserved", S_IRUGO | S_IWUSR,
+				mtk_memcfg_dir,
+				&mtk_memcfg_memblock_reserved_operations);
+		if (!entry)
+			pr_err("create memblock_reserved proc entry failed\n");
+		pr_info("create memblock_reserved proc entry success!!!!!\n");
 
 		/* fragmentation test */
 		entry = proc_create("frag-trigger",

@@ -58,6 +58,22 @@ static int memblock_can_resize __initdata_memblock;
 static int memblock_memory_in_slab __initdata_memblock = 0;
 static int memblock_reserved_in_slab __initdata_memblock = 0;
 
+struct memblock_record memblock_record[100];
+struct memblock_stack_trace memblock_stack_trace[100];
+int memblock_count = 0;
+
+inline void init_memblock_stack_trace(struct memblock_stack_trace *trace,
+		unsigned long size, int skip)
+{
+	memset(trace->addrs, 0, MAX_MEMBLOCK_TRACK_DEPTH);
+	trace->size = size;
+	trace->trace.nr_entries = 0;
+	trace->trace.max_entries = MAX_MEMBLOCK_TRACK_DEPTH;
+	trace->trace.skip = skip;
+	trace->trace.entries = trace->addrs;
+	trace->merge = 0;
+}
+
 /* inline so we don't get a warning when pr_debug is compiled out */
 static __init_memblock const char *
 memblock_type_name(struct memblock_type *type)
@@ -701,11 +717,24 @@ static int __init_memblock memblock_reserve_region(phys_addr_t base,
 						   unsigned long flags)
 {
 	struct memblock_type *_rgn = &memblock.reserved;
+	struct stack_trace *trace;
 
 	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
 		     (unsigned long long)base,
 		     (unsigned long long)base + size - 1,
 		     flags, (void *)_RET_IP_);
+
+	memblock_record[memblock_count].base = base;
+	memblock_record[memblock_count].end = base + size - 1;
+	memblock_record[memblock_count].size = size;
+	memblock_record[memblock_count].flags = flags;
+	memblock_record[memblock_count].ip = (unsigned long) _RET_IP_;
+
+	init_memblock_stack_trace(&memblock_stack_trace[memblock_count], (unsigned long)size, 0);
+
+	trace = &memblock_stack_trace[memblock_count].trace;
+	save_stack_trace_tsk(current, trace);
+	memblock_count++;
 
 	return memblock_add_range(_rgn, base, size, nid, flags);
 }
