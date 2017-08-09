@@ -1,5 +1,5 @@
 $(info cam_cal:makefile start)
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
+#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 define FILTER_PROJECT_DRV
 $(info cam_cal:FILTER_PROJECT_DRV start)
