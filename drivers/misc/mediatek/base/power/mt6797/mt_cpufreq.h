@@ -84,6 +84,7 @@ extern int mt_cpufreq_get_ppb_state(void);
 
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
+extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id);
 extern unsigned int mt_cpufreq_get_org_volt(enum mt_cpu_dvfs_id id, int idx);
 
 /* Generic */

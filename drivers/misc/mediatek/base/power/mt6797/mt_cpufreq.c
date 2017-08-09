@@ -2103,6 +2103,22 @@ unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id)
 	return freq;
 }
 
+unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+	unsigned int freq = 0;
+
+	FUNC_ENTER(FUNC_LV_LOCAL);
+
+	BUG_ON(NULL == p);
+
+	freq = cpu_dvfs_get_cur_freq(p);
+
+	FUNC_EXIT(FUNC_LV_LOCAL);
+
+	return freq;
+}
+
 unsigned int mt_cpufreq_get_org_volt(enum mt_cpu_dvfs_id id, int idx)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
