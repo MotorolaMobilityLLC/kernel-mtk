@@ -395,12 +395,27 @@ static bool has_hrt_limit(disp_layer_info *disp_info, int disp_idx)
 
 static int get_layer_weight(int disp_idx)
 {
-	/*
-	For primary display, the layer configurations could be execute in 120fps
-	condition. So keep same weight as 120fps.
-	For seconary display, set the wight 4K@30 as 2K@60.
-	*/
+#ifdef CONFIG_MTK_HDMI_SUPPORT
+	if (disp_idx == HRT_SECONDARY) {
+		int weight = 0;
+		disp_session_info dispif_info;
 
+		/* For seconary display, set the wight 4K@30 as 2K@60.	*/
+		hdmi_get_dev_info(true, &dispif_info);
+
+		if (dispif_info.displayWidth > 2560)
+			weight = 120;
+		else if (dispif_info.displayWidth > 1920)
+			weight = 60;
+		else
+			weight = 30;
+
+		if (dispif_info.vsyncFPS <= 30)
+			weight /= 2;
+
+		return weight;
+	}
+#endif
 	return 60;
 }
 
