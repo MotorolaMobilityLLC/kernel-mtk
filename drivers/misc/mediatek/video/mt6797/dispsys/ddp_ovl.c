@@ -299,8 +299,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 		src_y = cfg->src_y + layer_partial_roi->y - cfg->dst_y;
 
 		DDPDBG("layer partial (%d,%d)(%d,%d,%d,%d) to (%d,%d)(%d,%d,%d,%d)\n",
-				cfg->src_x, cfg->src_y, cfg->dst_x, cfg->dst_y, cfg->dst_w, cfg->dst_x,
-				src_x, src_y, dst_x, dst_y, dst_w, src_y);
+				cfg->src_x, cfg->src_y, cfg->dst_x, cfg->dst_y, cfg->dst_w, cfg->dst_h,
+				src_x, src_y, dst_x, dst_y, dst_w, dst_h);
 	}
 
 	if (dst_w > OVL_MAX_WIDTH)

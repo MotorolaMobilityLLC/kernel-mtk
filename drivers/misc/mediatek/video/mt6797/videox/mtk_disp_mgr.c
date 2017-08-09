@@ -1163,42 +1163,6 @@ static int __frame_config_trigger(struct disp_frame_cfg_t *frame_cfg)
 	return __trigger_display(&config);
 }
 
-static int allocate_dirty_roi(struct disp_frame_cfg_t *cfg)
-{
-	int i = 0;
-	int num = 0;
-	int size = 0;
-	void __user *roi_addr = NULL;
-
-	for (i = 0; i < cfg->input_layer_num; i++) {
-		num = cfg->input_cfg[i].dirty_roi_num;
-		roi_addr = cfg->input_cfg[i].dirty_roi_addr;
-		size = num * sizeof(struct layer_dirty_roi);
-		if (num) {
-			void *roi = kmalloc(size, GFP_KERNEL);
-
-			if (roi == NULL || copy_from_user(roi, (void __user *)roi_addr, size)) {
-				pr_err("[drity roi]: copy_from_user failed! line:%d\n", __LINE__);
-				cfg->input_cfg[i].dirty_roi_num = 0;
-			}
-			cfg->input_cfg[i].dirty_roi_addr = roi;
-		} else {
-			cfg->input_cfg[i].dirty_roi_addr = NULL;
-		}
-	}
-	return 0;
-}
-
-static int free_dirty_roi(struct disp_frame_cfg_t *cfg)
-{
-	int i = 0;
-
-	for (i = 0; i < cfg->input_layer_num; i++)
-		kfree(cfg->input_cfg[i].dirty_roi_addr);
-
-	return 0;
-}
-
 int _ioctl_frame_config(unsigned long arg)
 {
 	struct disp_frame_cfg_t *frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
@@ -1219,9 +1183,7 @@ int _ioctl_frame_config(unsigned long arg)
 		input_config_preprocess(frame_cfg);
 		if (frame_cfg->output_en)
 			output_config_preprocess(frame_cfg);
-		allocate_dirty_roi(frame_cfg);
 		primary_display_frame_cfg(frame_cfg);
-		free_dirty_roi(frame_cfg);
 	} else {
 		/* set input */
 		__frame_config_set_input(frame_cfg);
@@ -1332,7 +1294,6 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 	if (primary_display_partial_support()) {
 		caps_info.disp_feature |= DISP_FEATURE_PARTIAL;
-		caps_info.partial_support = 1;
 	}
 
 	if (disp_helper_get_option(DISP_OPT_HRT))

@@ -1,5 +1,5 @@
-#ifndef _DISP_PARTIAL_H_
-#define _DISP_PARTIAL_H_
+#ifndef _DISP_RECT_H_
+#define _DISP_RECT_H_
 
 struct disp_rect;
 

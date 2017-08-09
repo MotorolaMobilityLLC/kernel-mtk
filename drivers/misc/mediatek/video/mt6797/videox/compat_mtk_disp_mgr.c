@@ -13,7 +13,6 @@
 static int compat_get_disp_caps_info(compat_disp_caps_info __user *data32, disp_caps_info __user *data)
 {
 	compat_uint_t u;
-	uint8_t c;
 	int err = 0;
 	err = get_user(u, &(data32->output_mode));
 	err |= put_user(u, &(data->output_mode));
@@ -38,16 +37,12 @@ static int compat_get_disp_caps_info(compat_disp_caps_info __user *data32, disp_
 	err |= get_user(u, &(data32->is_output_rotated));
 	err |= put_user(u, &(data->is_output_rotated));
 
-	err |= get_user(c, &(data->partial_support));
-	err |= put_user(c, &(data32->partial_support));
-
 	return err;
 }
 
 static int compat_put_disp_caps_info(compat_disp_caps_info __user *data32, disp_caps_info __user *data)
 {
 	compat_uint_t u;
-	uint8_t c;
 	int err = 0;
 	err = get_user(u, &(data->output_mode));
 	err |= put_user(u, &(data32->output_mode));
@@ -71,9 +66,6 @@ static int compat_put_disp_caps_info(compat_disp_caps_info __user *data32, disp_
 
 	err |= get_user(u, &(data->is_output_rotated));
 	err |= put_user(u, &(data32->is_output_rotated));
-
-	err |= get_user(c, &(data->partial_support));
-	err |= put_user(c, &(data32->partial_support));
 
 	return err;
 }
@@ -323,18 +315,6 @@ static int compat_get_disp_input_config(compat_disp_input_config __user *data32,
 
 	err |= get_user(s, &(data32->tgt_height));
 	err |= put_user(s, &(data->tgt_height));
-
-	err |= get_user(s, &(data32->dirty_x));
-	err |= put_user(s, &(data->dirty_x));
-
-	err |= get_user(s, &(data32->dirty_y));
-	err |= put_user(s, &(data->dirty_y));
-
-	err |= get_user(s, &(data32->dirty_w));
-	err |= put_user(s, &(data->dirty_w));
-
-	err |= get_user(s, &(data32->dirty_h));
-	err |= put_user(s, &(data->dirty_h));
 
 	err |= get_user(c, &(data32->alpha_enable));
 	err |= put_user(c, &(data->alpha_enable));

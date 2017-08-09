@@ -51,10 +51,10 @@ static int debug_init;
 unsigned char pq_debug_flag = 0;
 unsigned char aal_debug_flag = 0;
 
-static unsigned int dbg_log_level = 2;
+static unsigned int dbg_log_level;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
-static int dbg_partial_on;
+static int dbg_force_full_roi;
 
 unsigned int gUltraEnable = 1;
 static char STR_HELP[] =
@@ -236,9 +236,9 @@ static void process_dbg_opt(const char *opt)
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		dbg_partial_on = on;
-		sprintf(buf, "dbg_partial_on %d\n", dbg_partial_on);
-		DDPMSG("process_dbg_opt, dbg_partial_on=%d\n", dbg_partial_on);
+		dbg_force_full_roi = on;
+		sprintf(buf, "dbg_partial_on %d\n", dbg_force_full_roi);
+		DDPMSG("process_dbg_opt, dbg_partial_on=%d\n", dbg_force_full_roi);
 	} else if (0 == strncmp(opt, "pwm0:", 5) || 0 == strncmp(opt, "pwm1:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned int level;
@@ -563,9 +563,9 @@ unsigned int ddp_debug_irq_log_level(void)
 	return irq_log_level;
 }
 
-int ddp_debug_get_partial_update(void)
+int ddp_debug_force_full_roi(void)
 {
-	return dbg_partial_on;
+	return dbg_force_full_roi;
 }
 
 void ddp_debug_exit(void)

@@ -378,10 +378,6 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 
 	dst->layer_id = src->layer_id;
 	dst->dirty_roi_num = 0;
-	dst->dirty_x = dst->tgt_offset_x;
-	dst->dirty_y = dst->tgt_offset_y;
-	dst->dirty_w = dst->tgt_width;
-	dst->dirty_h = dst->tgt_height;
 	if (!src->layer_enable) {
 		dst->layer_enable = 0;
 		return 0;

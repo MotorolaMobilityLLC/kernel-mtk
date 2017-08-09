@@ -55,11 +55,6 @@ typedef struct compat_disp_input_config_t {
 	compat_ushort_t tgt_offset_x, tgt_offset_y;
 	compat_ushort_t tgt_width, tgt_height;
 
-	compat_ushort_t dirty_x;
-	compat_ushort_t dirty_y;
-	compat_ushort_t dirty_w;
-	compat_ushort_t dirty_h;
-
 	u8 alpha_enable;
 	u8 alpha;
 	u8 sur_aen;
@@ -128,7 +123,6 @@ typedef struct compat_disp_caps_t {
 	compat_uint_t disp_feature;
 	compat_uint_t is_support_frame_cfg_ioctl;
 	compat_uint_t is_output_rotated;
-	uint8_t partial_support;
 } compat_disp_caps_info;
 
 

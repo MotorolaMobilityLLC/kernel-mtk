@@ -1038,8 +1038,6 @@ static unsigned int dpmgr_is_PQ(DISP_MODULE_ENUM module)
 int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
 		struct disp_rect partial, void *cmdq_handle)
 {
-	DDPMSG("partial roi(%d,%d,%d,%d)\n", partial.x, partial.y,
-			partial.width, partial.height);
 	return dpmgr_path_ioctl(dp_handle, cmdq_handle, DDP_PARTIAL_UPDATE,
 			&partial);
 }

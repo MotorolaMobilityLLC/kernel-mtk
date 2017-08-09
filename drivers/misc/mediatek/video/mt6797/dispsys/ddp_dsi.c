@@ -2661,7 +2661,7 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 	data_array[1] = (y1_MSB << 24) | (y0_LSB << 16) | (y0_MSB << 8) | 0x2b;
 	data_array[2] = (y1_LSB);
 	DSI_set_cmdq(module, handle, data_array, 3, 1);
-	DDPMSG("DSI_Send_ROI Done!\n");
+	DDPMSG("DSI_Send_ROI(%d,%d,%d,%d)Done!\n", x, y, width, height);
 
 	/* data_array[0]= 0x002c3909; */
 	/* DSI_set_cmdq(module, handle, data_array, 1, 0); */
@@ -3167,8 +3167,6 @@ void ddp_dsi_update_partial(DISP_MODULE_ENUM module, void *cmdq, void *params)
 {
 	struct disp_rect *roi = (struct disp_rect *)params;
 
-	DISPDBG("dsi_partial(%d,%d,%d,%d)\n",
-		roi->x, roi->y, roi->width, roi->height);
 	DSI_PS_Control(module, cmdq, &(_dsi_context[0].dsi_params),
 			roi->width, roi->height);
 	DSI_Send_ROI(module, cmdq, roi->x, roi->y, roi->width, roi->height);

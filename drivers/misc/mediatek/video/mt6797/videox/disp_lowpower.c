@@ -593,6 +593,10 @@ void _primary_display_enable_mmsys_clk(void)
 			data_config->ovl_partial_roi = total_dirty_roi;
 			dpmgr_path_update_partial_roi(primary_get_dpmgr_handle(),
 					total_dirty_roi, NULL);
+			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
+				/*update rdma goden settin*/
+				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
+			}
 		}
 	}
 	dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);

@@ -42,16 +42,14 @@ struct compat_disp_input_config {
 	compat_uint_t src_color_key;
 	compat_uint_t frm_sequence;
 
+	compat_uptr_t dirty_roi_addr;
+	compat_ushort_t dirty_roi_num;
+
 	compat_ushort_t src_pitch;
 	compat_ushort_t src_offset_x, src_offset_y;
 	compat_ushort_t src_width, src_height;
 	compat_ushort_t tgt_offset_x, tgt_offset_y;
 	compat_ushort_t tgt_width, tgt_height;
-
-	compat_ushort_t dirty_x;
-	compat_ushort_t dirty_y;
-	compat_ushort_t dirty_w;
-	compat_ushort_t dirty_h;
 
 	u8 alpha_enable;
 	u8 alpha;
@@ -118,7 +116,6 @@ struct compat_disp_caps_info {
 	compat_uint_t disp_feature;
 	compat_uint_t is_support_frame_cfg_ioctl;
 	compat_uint_t is_output_rotated;
-	uint8_t partial_support;
 };
 
 struct compat_disp_buffer_info {

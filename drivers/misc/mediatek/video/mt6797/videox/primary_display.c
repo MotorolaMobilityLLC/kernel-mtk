@@ -73,6 +73,7 @@
 #include "ddp_od.h"
 #include "mtk_hrt.h"
 #include "disp_rect.h"
+#include "disp_partial.h"
 #include "ddp_aal.h"
 
 #define MMSYS_CLK_LOW (0)
@@ -184,7 +185,6 @@ typedef struct {
 	cmdqBackupSlotHandle dither_status_info;
 
 	int is_primary_sec;
-	int is_partial_support;
 } display_primary_path_context;
 
 #define pgc	_get_context()
@@ -308,60 +308,34 @@ void _primary_path_switch_dst_unlock(void)
 	mutex_unlock(&(pgc->switch_dst_lock));
 }
 
-void display_validate_roi(struct disp_rect *roi)
-{
-	disp_lcm_validate_roi(pgc->plcm, &roi->x,
-		&roi->y, &roi->width, &roi->height);
-}
-
-int _is_partial_support(void)
-{
-	return pgc->is_partial_support;
-}
-
 int primary_display_partial_support(void)
 {
-	return _is_partial_support();
-}
-
-int _is_frame_partial_support(void)
-{
-	return primary_display_is_directlink_mode() && _is_partial_support();
-}
-
-void primary_display_compute_roi(const int x, const int y, const int width,
-	const int height, struct disp_rect *result)
-{
-	if (aal_is_partial_support() && primary_display_is_directlink_mode()) {
-		rect_join_coord(x, y, width, height, result, result);
-	} else {
-		result->x = 0;
-		result->y = 0;
-		result->width = primary_display_get_width();
-		result->height = primary_display_get_height();
-	}
+	return disp_partial_is_support();
 }
 
 int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
-	cmdqRecHandle cmdq_handle)
+		cmdqRecHandle cmdq_handle)
 {
 	struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
 
-	if (_is_partial_support()) {
-		total_dirty_roi.x = 0;
-		total_dirty_roi.y = 0;
-		total_dirty_roi.width = primary_display_get_width();
-		total_dirty_roi.height = primary_display_get_height();
+	if (disp_partial_is_support()) {
+		assign_full_lcm_roi(&total_dirty_roi);
 		if (!rect_equal(&total_dirty_roi, &pconfig->ovl_partial_roi)) {
 			pconfig->ovl_partial_roi = total_dirty_roi;
 			dpmgr_path_update_partial_roi(disp_handle,
 					total_dirty_roi, cmdq_handle);
-
+			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
+				/*update rdma goden settin*/
+				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
+				dpmgr_path_ioctl(disp_handle, cmdq_handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
+			}
 			/* update ovl to full layer */
 			pconfig->ovl_dirty = 1;
+			dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 		}
+		return 0;
 	}
-	return 0;
+	return -1;
 }
 
 static int _disp_primary_path_switch_dst_mode_thread(void *data)
@@ -2210,67 +2184,6 @@ static int _build_path_direct_link(void)
 	return ret;
 }
 
-void _update_layer_dirty_roi(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
-{
-	if (!_is_partial_support())
-		return;
-
-	/* if layer is disable, we just needs config above params. */
-	if (src->dirty_w == 0 || src->dirty_h == 0) {
-		if (!src->layer_enable) {
-			if (dst->layer_en) {
-					/* layer enable to disable, set full dirty*/
-					DISPMSG("roi layer %d disable, change to full roi", dst->layer);
-					src->dirty_x = dst->dst_x;
-					src->dirty_y = dst->dst_y;
-					src->dirty_w = dst->dst_w;
-					src->dirty_h = dst->dst_h;
-			}
-		} else {
-			if (src->buffer_source == DISP_BUFFER_ALPHA) {
-				/* dim layer, set full dirty*/
-				DISPMSG("roi layer %d buffer change, change to full roi", dst->layer);
-				src->dirty_x = 0;
-				src->dirty_y = 0;
-				src->dirty_w = primary_display_get_width();
-				src->dirty_h = primary_display_get_height();
-			} else if (dst->addr != (unsigned long)src->src_phy_addr) {
-					DISPMSG("roi layer %d buffer change, change to full roi", dst->layer);
-					src->dirty_x = src->tgt_offset_x;
-					src->dirty_y = src->tgt_offset_y;
-					src->dirty_w = src->tgt_width;
-					src->dirty_h = src->tgt_height;
-			}
-		}
-	} else {
-		/*input dirty is picture roi, need re-compute ovl roi */
-		struct disp_rect layer_roi = {0, 0, 0, 0};
-		struct disp_rect pic_roi = {0, 0, 0, 0};
-		struct disp_rect result = {0, 0, 0, 0};
-
-		layer_roi.x = src->src_offset_x;
-		layer_roi.y = src->src_offset_y;
-		layer_roi.width = src->src_width;
-		layer_roi.height = src->src_height;
-
-		pic_roi.x = src->dirty_x;
-		pic_roi.y = src->dirty_y;
-		pic_roi.width = src->dirty_w;
-		pic_roi.height = src->dirty_h;
-
-		rect_intersect(&layer_roi, &pic_roi, &result);
-
-		src->dirty_x = result.x - layer_roi.x + src->tgt_offset_x;
-		src->dirty_y = result.y - layer_roi.y + src->tgt_offset_y;
-		src->dirty_w = result.width;
-		src->dirty_h = result.height;
-
-		DISPMSG("layer %d dirty(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
-			dst->layer, pic_roi.x, pic_roi.y, pic_roi.width, pic_roi.height,
-						result.x, result.y, result.width, result.height);
-	}
-}
-
 static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
 	int ret = 0;
@@ -2282,7 +2195,6 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 		disp_aee_print("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
 		return -1;
 	}
-	_update_layer_dirty_roi(dst, src);
 
 	dst->layer = src->layer_id;
 	dst->isDirty = 1;
@@ -3358,9 +3270,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
-	if (disp_lcm_is_partial_support(pgc->plcm) && !disp_lcm_is_video_mode(pgc->plcm) &&
-			disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
-		pgc->is_partial_support = 1;
+	if (disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
+		disp_partial_check_support(pgc->plcm);
 
 	pgc->state = DISP_ALIVE;
 
@@ -3887,11 +3798,17 @@ int primary_display_resume(void)
 		}
 
 		data_config->fps = pgc->lcm_fps;
-		data_config->ovl_partial_roi.x = 0;
-		data_config->ovl_partial_roi.x = 0;
-		data_config->ovl_partial_roi.y = 0;
-		data_config->ovl_partial_roi.width = primary_display_get_width();
-		data_config->ovl_partial_roi.height = primary_display_get_height();
+		if (disp_partial_is_support()) {
+			data_config->ovl_partial_roi.x = 0;
+			data_config->ovl_partial_roi.y = 0;
+			data_config->ovl_partial_roi.width = primary_display_get_width();
+			data_config->ovl_partial_roi.height = primary_display_get_height();
+			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
+				/*update rdma goden settin*/
+				set_rdma_width_height(data_config->ovl_partial_roi.width,
+						data_config->ovl_partial_roi.height);
+			}
+		}
 		data_config->dst_dirty = 1;
 
 		/* disable all ovl layers to show black screen */
@@ -4465,39 +4382,6 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 	return 1;
 }
 
-static int _compute_ovl_roi(struct disp_frame_cfg_t *cfg, struct disp_rect *result)
-{
-	int i = 0;
-	int j = 0;
-	struct layer_dirty_roi *layer_roi_addr = NULL;
-	struct disp_rect layer_roi = {0, 0, 0, 0};
-
-	for (i = 0; i < cfg->input_layer_num; i++) {
-		disp_input_config *input_cfg = &cfg->input_cfg[i];
-
-		if (input_cfg->dirty_roi_num) {
-
-			layer_roi_addr = (struct layer_dirty_roi *) input_cfg->dirty_roi_addr;
-			for (j = 0; j < input_cfg->dirty_roi_num; j++) {
-				layer_roi_addr += j;
-				layer_roi.x = layer_roi_addr->dirty_x;
-				layer_roi.y = layer_roi_addr->dirty_x;
-				layer_roi.width = layer_roi_addr->dirty_w;
-				layer_roi.height = layer_roi_addr->dirty_h;
-				rect_join(&layer_roi, result, result);
-			}
-		} else {
-			/* if layer disable, is it ok to set this ?*/
-			layer_roi.x = input_cfg->tgt_offset_x;
-			layer_roi.y = input_cfg->tgt_offset_y;
-			layer_roi.width = input_cfg->tgt_width;
-			layer_roi.height = input_cfg->tgt_height;
-			rect_join(&layer_roi, result, result);
-		}
-	}
-	return 0;
-}
-
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, cmdqRecHandle cmdq_handle)
 {
@@ -4507,15 +4391,18 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int bypass, bypass_layer_id = 0;
 	int hrt_level;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
-	struct disp_rect total_dirty_roi2 = {0, 0, 0, 0};
 #ifdef DEBUG_OVL_CONFIG_TIME
 	cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
 #endif
 	/*=== create new data_config for ovl input ===*/
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
-	if (_is_partial_support())
-		_compute_ovl_roi(cfg, &total_dirty_roi2);
+	if (disp_partial_is_support()) {
+		if (aal_is_partial_support() && primary_display_is_directlink_mode())
+			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);
+		else
+			assign_full_lcm_roi(&total_dirty_roi);
+	}
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		disp_input_config *input_cfg = &cfg->input_cfg[i];
@@ -4550,16 +4437,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			max_layer_id_configed = layer;
 
 		data_config->ovl_layer_dirty |= (1 << i);
-
-		if (_is_partial_support()) {
-			/*update roi */
-			if (input_cfg->dirty_w != 0 && input_cfg->dirty_h != 0) {
-				primary_display_compute_roi(input_cfg->dirty_x, input_cfg->dirty_y,
-					input_cfg->dirty_w, input_cfg->dirty_h, &total_dirty_roi);
-			}
-		}
 	}
-
 	hrt_level = cfg->overlap_layer_num;
 	data_config->overlap_layer_num = hrt_level;
 
@@ -4602,18 +4480,17 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (bypass) {
 		/* switch to rdma mode */
 		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-			total_dirty_roi.x = 0;
-			total_dirty_roi.y = 0;
-			total_dirty_roi.width = primary_display_get_width();
-			total_dirty_roi.height = primary_display_get_height();
+			assign_full_lcm_roi(&total_dirty_roi);
 			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_RDMA_MODE, pgc->session_id, 0,
 						       cmdq_handle, 0);
 		}
 	} else {
-		if (pgc->session_mode == DISP_SESSION_RDMA_MODE)
+		if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
 						       cmdq_handle, 0);
+			assign_full_lcm_roi(&total_dirty_roi);
+		}
 	}
 
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE) {
@@ -4642,20 +4519,20 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				; /* mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT); */
 		}
 	}
-	if (!ddp_debug_get_partial_update()) {
-		total_dirty_roi.x = 0;
-		total_dirty_roi.y = 0;
-		total_dirty_roi.width = primary_display_get_width();
-		total_dirty_roi.height = primary_display_get_height();
-	}
-	if (_is_frame_partial_support()) {
-		display_validate_roi(&total_dirty_roi);
+
+	if (disp_partial_is_support() && primary_display_is_directlink_mode()) {
+		disp_patial_lcm_validate_roi(pgc->plcm, &total_dirty_roi);
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
-			dpmgr_path_update_partial_roi(disp_handle, total_dirty_roi, cmdq_handle);
+			/*update roi to lcm*/
+			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);
 			data_config->ovl_partial_roi = total_dirty_roi;
+			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
+				/*update rdma goden settin*/
+				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
+				dpmgr_path_ioctl(disp_handle, cmdq_handle, DDP_RDMA_GOLDEN_SETTING, data_config);
+			}
 		}
-		if (total_dirty_roi.width == primary_display_get_width() &&
-				total_dirty_roi.height == primary_display_get_height())
+		if (is_equal_full_lcm(&total_dirty_roi))
 			data_config->ovl_partial_dirty = 0;
 		else
 			data_config->ovl_partial_dirty = 1;

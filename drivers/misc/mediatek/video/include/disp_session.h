@@ -212,11 +212,6 @@ typedef struct disp_input_config_t {
 	uint16_t tgt_offset_x, tgt_offset_y;
 	uint16_t tgt_width, tgt_height;
 
-	uint16_t dirty_x;
-	uint16_t dirty_y;
-	uint16_t dirty_w;
-	uint16_t dirty_h;
-
 	uint8_t alpha_enable;
 	uint8_t alpha;
 	uint8_t sur_aen;
@@ -369,7 +364,6 @@ typedef struct disp_caps_t {
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;
-	uint8_t partial_support;
 } disp_caps_info;
 
 typedef struct disp_session_buf_t {

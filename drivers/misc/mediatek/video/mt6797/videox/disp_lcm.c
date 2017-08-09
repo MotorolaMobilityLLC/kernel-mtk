@@ -1273,6 +1273,7 @@ int disp_lcm_is_partial_support(disp_lcm_handle *plcm)
 		if (lcm_drv->validate_roi)
 			return 1;
 	}
+	DISPERR("Not support partial update\n");
 	return 0;
 }
 

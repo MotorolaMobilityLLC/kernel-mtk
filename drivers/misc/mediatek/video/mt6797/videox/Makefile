@@ -1,23 +1,24 @@
 # drivers/video/mtk/Makefile
 #
 
-obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
-			disp_assert_layer.o    \
-			mtkfb.o                \
-			mtkfb_vsync.o          \
-			debug.o                \
-			primary_display.o      \
-			disp_lowpower.o        \
-			disp_recovery.o        \
-			disp_lcm.o             \
-			disp_utils.o           \
-			mtk_disp_mgr.o         \
-			compat_mtk_disp_mgr.o  \
-			mtk_mira.o             \
-			mtk_ovl.o              \
-			disp_helper.o          \
-			disp_dts_gpio.o        \
-			disp_rect.o            \
+obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
+			disp_assert_layer.o	\
+			mtkfb.o			\
+			mtkfb_vsync.o		\
+			debug.o			\
+			primary_display.o	\
+			disp_lowpower.o		\
+			disp_recovery.o		\
+			disp_lcm.o		\
+			disp_utils.o		\
+			mtk_disp_mgr.o		\
+			compat_mtk_disp_mgr.o	\
+			mtk_mira.o		\
+			mtk_ovl.o		\
+			disp_helper.o		\
+			disp_dts_gpio.o		\
+			disp_rect.o		\
+			disp_partial.o		\
 			mtk_hrt.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/

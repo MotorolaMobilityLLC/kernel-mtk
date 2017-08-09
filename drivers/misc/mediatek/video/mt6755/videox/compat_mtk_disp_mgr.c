@@ -15,7 +15,6 @@ static int compat_get_disp_caps_info(
 		disp_caps_info __user *data)
 {
 	compat_uint_t u;
-	uint8_t c;
 	int err = 0;
 	err = get_user(u, &(data32->output_mode));
 	err |= put_user(u, &(data->output_mode));
@@ -40,9 +39,6 @@ static int compat_get_disp_caps_info(
 	err |= get_user(u, &(data32->is_output_rotated));
 	err |= put_user(u, &(data->is_output_rotated));
 
-	err |= get_user(c, &(data->partial_support));
-	err |= put_user(c, &(data32->partial_support));
-
 	return err;
 }
 
@@ -51,7 +47,6 @@ static int compat_put_disp_caps_info(
 		disp_caps_info __user *data)
 {
 	compat_uint_t u;
-	uint8_t c;
 	int err = 0;
 	err = get_user(u, &(data->output_mode));
 	err |= put_user(u, &(data32->output_mode));
@@ -75,9 +70,6 @@ static int compat_put_disp_caps_info(
 
 	err |= get_user(u, &(data->is_output_rotated));
 	err |= put_user(u, &(data32->is_output_rotated));
-
-	err |= get_user(c, &(data->partial_support));
-	err |= put_user(c, &(data32->partial_support));
 
 	return err;
 }
@@ -296,6 +288,13 @@ static int compat_get_disp_input_config(struct compat_disp_input_config __user *
 	err |= get_user(u, &(data32->frm_sequence));
 	err |= put_user(u, &(data->frm_sequence));
 
+	err |= get_user(p, &(data32->dirty_roi_addr));
+	ptr = p;
+	err |= put_user((void *)ptr, &(data->dirty_roi_addr));
+
+	err |= get_user(s, &(data32->dirty_roi_num));
+	err |= put_user(s, &(data->dirty_roi_num));
+
 	err |= get_user(s, &(data32->src_pitch));
 	err |= put_user(s, &(data->src_pitch));
 
@@ -322,18 +321,6 @@ static int compat_get_disp_input_config(struct compat_disp_input_config __user *
 
 	err |= get_user(s, &(data32->tgt_height));
 	err |= put_user(s, &(data->tgt_height));
-
-	err |= get_user(s, &(data32->dirty_x));
-	err |= put_user(s, &(data->dirty_x));
-
-	err |= get_user(s, &(data32->dirty_y));
-	err |= put_user(s, &(data->dirty_y));
-
-	err |= get_user(s, &(data32->dirty_w));
-	err |= put_user(s, &(data->dirty_w));
-
-	err |= get_user(s, &(data32->dirty_h));
-	err |= put_user(s, &(data->dirty_h));
 
 	err |= get_user(c, &(data32->alpha_enable));
 	err |= put_user(c, &(data->alpha_enable));
