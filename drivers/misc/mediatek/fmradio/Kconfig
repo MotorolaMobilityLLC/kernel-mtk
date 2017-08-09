@@ -45,3 +45,11 @@ config MTK_FM_50KHZ_SUPPORT
 		for tune/seek/scan functions.
 		Will support 50KHz step if set to 'y',
 		otherwise will not support 50KHz step.
+
+config MTK_MERGE_INTERFACE_SUPPORT
+	bool "MTK_MERGE_INTERFACE_SUPPORT"
+	help
+		This config used to control Audio
+		path is merge interface or not.
+		Audio/FM will use merge interface if yes,
+		otherwise merge interface is not used.
