@@ -37,6 +37,7 @@
 #include <linux/delay.h>
 #include <asm/hardirq.h>
 #include <linux/interrupt.h>
+#include <linux/pm.h>
 #include <dt-bindings/pinctrl/mt65xx.h>
 
 #include "../core.h"
@@ -1202,13 +1203,73 @@ static int mtk_eint_set_type(struct irq_data *d,
 
 static int mtk_eint_irq_set_wake(struct irq_data *d, unsigned int on)
 {
+	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
+
 	if (on)
-		d->chip->flags |= IRQF_NO_SUSPEND;
+		set_bit(d->hwirq, (unsigned long *)pctl->wake_mask);
 	else
-		d->chip->flags &= ~IRQF_NO_SUSPEND;
+		clear_bit(d->hwirq, (unsigned long *)pctl->wake_mask);
 
 	return 0;
 }
+
+static void mtk_eint_chip_write_mask(const struct mtk_eint_offsets *chip,
+	void __iomem *eint_reg_base, u32 *buf)
+{
+	int port;
+	void __iomem *reg;
+
+	for (port = 0; port < chip->ports; port++) {
+		reg = eint_reg_base + (port << 2);
+		writel_relaxed(~buf[port], reg + chip->mask_set);
+		writel_relaxed(buf[port], reg + chip->mask_clr);
+	}
+}
+
+static void mtk_eint_chip_read_mask(const struct mtk_eint_offsets *chip,
+	void __iomem *eint_reg_base, u32 *buf)
+{
+	int port;
+	void __iomem *reg;
+
+	for (port = 0; port < chip->ports; port++) {
+		reg = eint_reg_base + chip->mask + (port << 2);
+		buf[port] = ~readl_relaxed(reg);
+	}
+}
+
+static int mtk_eint_suspend(struct device *device)
+{
+	void __iomem *reg;
+	struct platform_device *pdev = to_platform_device(device);
+	struct mtk_pinctrl *pctl = platform_get_drvdata(pdev);
+	const struct mtk_eint_offsets *eint_offsets =
+		&pctl->devdata->eint_offsets;
+
+	reg = pctl->eint_reg_base;
+	mtk_eint_chip_read_mask(eint_offsets, reg, pctl->cur_mask);
+	mtk_eint_chip_write_mask(eint_offsets, reg, pctl->wake_mask);
+
+	return 0;
+}
+
+static int mtk_eint_resume(struct device *device)
+{
+	struct platform_device *pdev = to_platform_device(device);
+	struct mtk_pinctrl *pctl = platform_get_drvdata(pdev);
+	const struct mtk_eint_offsets *eint_offsets =
+		&pctl->devdata->eint_offsets;
+
+	mtk_eint_chip_write_mask(eint_offsets,
+		pctl->eint_reg_base, pctl->cur_mask);
+
+	return 0;
+}
+
+const struct dev_pm_ops mtk_eint_pm_ops = {
+	.suspend = mtk_eint_suspend,
+	.resume = mtk_eint_resume,
+};
 
 static void mtk_eint_ack(struct irq_data *d)
 {
@@ -1362,7 +1423,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	struct device_node *np = pdev->dev.of_node, *node;
 	struct property *prop;
 	struct resource *res;
-	int i, ret, irq;
+	int i, ret, irq, ports_buf;
 
 	pr_warn("mtk_pctrl_init++++++\n");
 	pctl = devm_kzalloc(&pdev->dev, sizeof(*pctl), GFP_KERNEL);
@@ -1474,6 +1535,17 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		ret = -EINVAL;
 		goto chip_error;
 	}
+
+	ports_buf = ALIGN(pctl->devdata->eint_offsets.ports,
+			sizeof(long)/sizeof(u32));
+	pctl->wake_mask = devm_kcalloc(&pdev->dev, ports_buf * 2,
+					sizeof(*pctl->wake_mask), GFP_KERNEL);
+	if (!pctl->wake_mask) {
+		ret = -ENOMEM;
+		goto chip_error;
+	}
+
+	pctl->cur_mask = pctl->wake_mask + ports_buf;
 
 	pctl->eint_dual_edges = devm_kcalloc(&pdev->dev, pctl->devdata->ap_num,
 					     sizeof(int), GFP_KERNEL);
