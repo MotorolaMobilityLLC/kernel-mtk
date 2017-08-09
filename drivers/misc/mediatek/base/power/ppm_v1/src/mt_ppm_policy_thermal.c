@@ -75,6 +75,10 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 	int power;
 #endif
 
+	/* skip if DVFS is not ready (we cannot get current freq...) */
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
+		return 0;
+
 	cluster_status = kcalloc(ppm_main_info.cluster_num, sizeof(*cluster_status), GFP_KERNEL);
 	if (!cluster_status)
 		return mt_ppm_thermal_get_max_power();
