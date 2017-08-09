@@ -2163,7 +2163,7 @@ void exception_data_dump(const char *buf, unsigned int len)
 int dump_c2k_sdio_status(struct sdio_modem *modem)
 {
 	int ret = 0;
-	union sdio_pio_int_sts_reg int_sts;
+	/*union sdio_pio_int_sts_reg int_sts;*/
 	unsigned int con;
 	unsigned int eint_reg[][2] = {
 		/*address, value */
@@ -2216,9 +2216,10 @@ int dump_c2k_sdio_status(struct sdio_modem *modem)
 	   LOGPRT(LOG_ERR,  "%s %d: get interrupt status failed ret=%d\n", __func__, __LINE__, ret);
 	   return ret;
 	   }
-	 */
+
 	LOGPRT(LOG_ERR, "%s %d: orig int(0x%x)\n", __func__, __LINE__,
 	       int_sts.raw_val);
+	*/
 	return ret;
 }
 
