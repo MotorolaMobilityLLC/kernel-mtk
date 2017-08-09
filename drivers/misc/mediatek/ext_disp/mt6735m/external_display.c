@@ -956,11 +956,12 @@ int ext_disp_suspend(unsigned int session)
 		_cmdq_stop_trigger_loop();
 
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
-	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 30);
 
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+
+	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	pgc->state = EXTD_SUSPEND;
 
