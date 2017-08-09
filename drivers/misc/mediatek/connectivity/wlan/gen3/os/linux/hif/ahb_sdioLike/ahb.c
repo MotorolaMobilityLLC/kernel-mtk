@@ -951,6 +951,14 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
+#if (CONF_MTK_AHB_DMA == 1)
+	if (func->use_dma && (HifInfo->fgDmaEnable == TRUE) && (HifInfo->DmaOps != NULL)
+		&& ((Port == MCR_WRDR0) || (Port == MCR_WRDR1))) {
+
+		if (pfWlanDmaOps != NULL)
+			pfWlanDmaOps->DmaClockCtrl(TRUE);
+	}
+#endif
 
 	my_sdio_disable(HifLock);
 
@@ -1013,9 +1021,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 		/* start to read data */
 		AP_DMA_HIF_LOCK(HifInfo);	/* lock to avoid other codes config GDMA */
-
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
 
 		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
 		HifInfo->DmaOps->DmaStart(HifInfo);
@@ -1219,6 +1224,15 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		func->use_dma, Size, count, func->cur_blksize, info.word);
 
+#if (CONF_MTK_AHB_DMA == 1)
+	if (func->use_dma && (HifInfo->fgDmaEnable == TRUE) && (HifInfo->DmaOps != NULL) &&
+		(Port == MCR_WTDR1))
+
+	{
+		if (pfWlanDmaOps != NULL)
+			pfWlanDmaOps->DmaClockCtrl(TRUE);
+	}
+#endif
 
 	my_sdio_disable(HifLock);
 
@@ -1268,9 +1282,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 		/* start to write */
 		AP_DMA_HIF_LOCK(HifInfo);
-
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
 
 		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
 		HifInfo->DmaOps->DmaStart(HifInfo);
