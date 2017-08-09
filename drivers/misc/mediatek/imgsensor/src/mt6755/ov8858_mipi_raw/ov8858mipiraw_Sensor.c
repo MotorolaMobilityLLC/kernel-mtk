@@ -15,8 +15,8 @@
  *  0528:ä¿®æ”¹get_info,??mipi ??? *  0604:å¢?init preview å»¶æ—¶??0ms
  *  0604:??­init settingä¸?stream on,?otp??è®?
  *  0608:??°ov???setting
- *  0703:for mt6755 jade ä¿®æ”¹?non continue mode 4800
- *  0703:for mt6755 jade crc test 0x5002=00
+ *  0703:for  ä¿®æ”¹?non continue mode 4800
+ *  0703:for  crc test 0x5002=00
  *  ---RD ??????? *  0714 ??¥capture setting full size@30fps 24fps 15fps
  *  15072115172729: ??¥nick??full size 30fps settingï¼Œfor ???size ä¸???®é??
  *------------------------------------------------------------------------------
