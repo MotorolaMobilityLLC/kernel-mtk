@@ -108,6 +108,9 @@ static struct device_node *node;
  * @range:      The field bit range in the form of MSB:LSB
  * @val:        The value to be written to the field
  */
+#define READ_REGISTER_UINT32(reg)	(*(volatile unsigned int * const)(reg))
+#define INREG32(x)	READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
+#define DRV_Reg32(addr)	INREG32(addr)
 #define eem2_read(addr)	DRV_Reg32(addr)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)

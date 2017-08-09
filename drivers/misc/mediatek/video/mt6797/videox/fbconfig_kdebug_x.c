@@ -6,7 +6,7 @@
 #include <linux/sched.h>
 #include <linux/debugfs.h>
 #include <linux/wait.h>
-#include "mt-plat/mt_typedefs.h"
+
 #include "m4u.h"
 #include "m4u_priv.h"
 #include "mtkfb.h"
@@ -25,7 +25,7 @@
 /* This part is for customization parameters of D-IC and DSI . */
 /* **************************************************************************** */
 
-BOOL fbconfig_start_LCM_config;
+unsigned char fbconfig_start_LCM_config;
 #define FBCONFIG_MDELAY(n)	(PM_lcm_utils_dsi0.mdelay((n)))
 #define SET_RESET_PIN(v)	(PM_lcm_utils_dsi0.set_reset_pin((v)))
 #define dsi_set_cmdq(pdata, queue_size, force_update) PM_lcm_utils_dsi0.dsi_set_cmdq(pdata, queue_size, force_update)
