@@ -3004,8 +3004,8 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 #endif
 
 		STATS_RX_REORDER_FALL_BEHIND_INC(prStaRec);
-		/* always indicate to kernel, even we received a fall behind packet,
-			let kernel check it. to avoid some IOT issue */
+		/* An erroneous packet */
+		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
 		/* DbgPrint("QM:(D)[%d](%ld){%ld,%ld}\n", prSwRfb->ucTid, u4SeqNo, u4WinStart, u4WinEnd); */
 		return;
