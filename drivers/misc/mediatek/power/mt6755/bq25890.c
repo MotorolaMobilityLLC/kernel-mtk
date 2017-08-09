@@ -975,10 +975,9 @@ void bq25890_dump_register(void)
 	vdpm = bq25890_get_vdpm_state();
 	fault = bq25890_get_chrg_fault_state();
 	battery_log(BAT_LOG_CRTI,
-		    "[PE+]BQ25896 Ichg_reg=%d mA, Iinlin=%d mA, Vbus=%d mV, err=%d",
-		     ichg_reg * 64, iinlim * 50 + 100, vbus * 100 + 2600, fault);
-	battery_log(BAT_LOG_CRTI, "[PE+]BQ25896 Ichg=%d mA, Vbat =%d mV, ChrStat=%d, CHGEN=%d, VDPM=%d\n",
-		    ichg * 50, vbat * 20 + 2304, chrg_state, chr_en, vdpm);
+	"[PE+]Ibat=%d, Ilim=%d, Vbus=%d, err=%d, Ichg=%d, Vbat=%d, ChrStat=%d, CHGEN=%d, VDPM=%d\n",
+	ichg_reg * 64, iinlim * 50 + 100, vbus * 100 + 2600, fault,
+	ichg * 50, vbat * 20 + 2304, chrg_state, chr_en, vdpm);
 
 }
 

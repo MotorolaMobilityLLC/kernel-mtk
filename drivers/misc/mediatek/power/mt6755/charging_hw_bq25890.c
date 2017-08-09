@@ -880,8 +880,6 @@ static unsigned int charging_reset_watch_dog_timer(void *data)
 {
 	unsigned int status = STATUS_OK;
 
-	pr_info("charging_reset_watch_dog_timer\r\n");
-
 	bq25890_config_interface(bq25890_CON3, 0x1, 0x1, 6);	/* reset watchdog timer */
 
 	return status;

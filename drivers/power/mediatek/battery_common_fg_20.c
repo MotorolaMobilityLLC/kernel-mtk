@@ -2592,7 +2592,7 @@ static void mt_battery_charger_detect_check(void)
 		/* is_ta_connect = KAL_FALSE; */
 		/* ta_check_chr_type = KAL_TRUE; */
 		ta_cable_out_occur = KAL_FALSE;
-		battery_log(BAT_LOG_CRTI, "[PE+] Cable In\n");
+		battery_log(BAT_LOG_FULL, "[PE+] Cable In\n");
 #endif
 
 	} else {
