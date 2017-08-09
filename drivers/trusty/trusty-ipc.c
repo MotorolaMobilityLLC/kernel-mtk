@@ -900,7 +900,7 @@ static long tipc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (ret) {
 			pr_err("%s: TIPC_IOC_CONNECT error (%d)!\n", __func__, ret);
 			trusty_fast_call32(dn->chan->vds->vdev->dev.parent->parent,
-					MT_SMC_FC_DUMP_THREADS, 0, 0, 0);
+					MT_SMC_FC_THREADS, 0, 0, 0);
 			trusty_std_call32(dn->chan->vds->vdev->dev.parent->parent,
 					SMC_SC_NOP, 0, 0, 0);
 		}

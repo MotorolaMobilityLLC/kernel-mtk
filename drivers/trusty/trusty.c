@@ -247,7 +247,7 @@ ssize_t trusty_version_show(struct device *dev, struct device_attribute *attr,
 DEVICE_ATTR(trusty_version, S_IRUSR, trusty_version_show, NULL);
 
 #ifdef CONFIG_MT_TRUSTY_DEBUGFS
-ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
+ssize_t trusty_add(struct device *dev, struct device_attribute *attr,
 			    char *buf)
 {
 	s32 a, b, ret;
@@ -260,56 +260,126 @@ ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
 	return scnprintf(buf, PAGE_SIZE, "%d + %d = %d\n", a, b, ret);
 }
 
-DEVICE_ATTR(trusty_smc_sc_add, S_IRUSR, trusty_smc_sc_add, NULL);
+DEVICE_ATTR(trusty_add, S_IRUSR, trusty_add, NULL);
 
-ssize_t trusty_smc_fc_dump_threads(struct device *dev,
+ssize_t trusty_threads(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	/* Dump Trusty threads info to memlog */
-	trusty_fast_call32(dev, MT_SMC_FC_DUMP_THREADS, 0, 0, 0);
+	trusty_fast_call32(dev, MT_SMC_FC_THREADS, 0, 0, 0);
 	/* Dump threads info from memlog to kmsg*/
 	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
 	return 0;
 }
 
-DEVICE_ATTR(trusty_smc_fc_dump_threads, S_IRUSR,
-	trusty_smc_fc_dump_threads, NULL);
+DEVICE_ATTR(trusty_threads, S_IRUSR, trusty_threads, NULL);
 
-ssize_t trusty_smc_sc_vdev_reset(struct device *dev,
+ssize_t trusty_threadstats(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	/* Dump Trusty threads info to memlog */
+	trusty_fast_call32(dev, MT_SMC_FC_THREADSTATS, 0, 0, 0);
+	/* Dump threads info from memlog to kmsg*/
+	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_threadstats, S_IRUSR, trusty_threadstats, NULL);
+
+ssize_t trusty_threadload(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	/* Dump Trusty threads info to memlog */
+	trusty_fast_call32(dev, MT_SMC_FC_THREADLOAD, 0, 0, 0);
+	/* Dump threads info from memlog to kmsg*/
+	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_threadload, S_IRUSR, trusty_threadload, NULL);
+
+ssize_t trusty_heap_dump(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	/* Dump Trusty threads info to memlog */
+	trusty_fast_call32(dev, MT_SMC_FC_HEAP_DUMP, 0, 0, 0);
+	/* Dump threads info from memlog to kmsg*/
+	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_heap_dump, S_IRUSR, trusty_heap_dump, NULL);
+
+ssize_t trusty_apps(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	/* Dump Trusty threads info to memlog */
+	trusty_fast_call32(dev, MT_SMC_FC_APPS, 0, 0, 0);
+	/* Dump threads info from memlog to kmsg*/
+	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_apps, S_IRUSR, trusty_apps, NULL);
+
+ssize_t trusty_vdev_reset(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	trusty_std_call32(dev, SMC_SC_VDEV_RESET, 0, 0, 0);
 	return 0;
 }
 
-DEVICE_ATTR(trusty_smc_sc_vdev_reset, S_IRUSR,
-	trusty_smc_sc_vdev_reset, NULL);
+DEVICE_ATTR(trusty_vdev_reset, S_IRUSR, trusty_vdev_reset, NULL);
 
 
 static void trusty_create_debugfs(struct trusty_state *s, struct device *pdev)
 {
 	int ret;
 
-	ret = device_create_file(pdev, &dev_attr_trusty_smc_sc_add);
+	ret = device_create_file(pdev, &dev_attr_trusty_add);
 	if (ret)
-		goto err_create_smc_sc_add;
+		goto err_create_trusty_add;
 
-	ret = device_create_file(pdev, &dev_attr_trusty_smc_fc_dump_threads);
+	ret = device_create_file(pdev, &dev_attr_trusty_threads);
 	if (ret)
-		goto err_create_smc_fc_dump_threads;
+		goto err_create_trusty_threads;
 
-	ret = device_create_file(pdev, &dev_attr_trusty_smc_sc_vdev_reset);
+	ret = device_create_file(pdev, &dev_attr_trusty_threadstats);
 	if (ret)
-		goto err_create_smc_sc_vdev_reset;
+		goto err_create_trusty_threadstats;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_threadload);
+	if (ret)
+		goto err_create_trusty_threadload;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_heap_dump);
+	if (ret)
+		goto err_create_trusty_heap_dump;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_apps);
+	if (ret)
+		goto err_create_trusty_apps;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_vdev_reset);
+	if (ret)
+		goto err_create_trusty_vdev_reset;
 
 	return;
 
-err_create_smc_sc_vdev_reset:
-	device_remove_file(pdev, &dev_attr_trusty_smc_sc_vdev_reset);
-err_create_smc_fc_dump_threads:
-	device_remove_file(pdev, &dev_attr_trusty_smc_fc_dump_threads);
-err_create_smc_sc_add:
-	device_remove_file(pdev, &dev_attr_trusty_smc_sc_add);
+err_create_trusty_vdev_reset:
+	device_remove_file(pdev, &dev_attr_trusty_vdev_reset);
+err_create_trusty_apps:
+	device_remove_file(pdev, &dev_attr_trusty_apps);
+err_create_trusty_heap_dump:
+	device_remove_file(pdev, &dev_attr_trusty_heap_dump);
+err_create_trusty_threadload:
+	device_remove_file(pdev, &dev_attr_trusty_threadload);
+err_create_trusty_threadstats:
+	device_remove_file(pdev, &dev_attr_trusty_threadstats);
+err_create_trusty_threads:
+	device_remove_file(pdev, &dev_attr_trusty_threads);
+err_create_trusty_add:
+	device_remove_file(pdev, &dev_attr_trusty_add);
 }
 
 #endif /* CONFIG_MT_TRUSTY_DEBUGFS */
