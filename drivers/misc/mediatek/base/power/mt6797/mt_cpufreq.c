@@ -45,7 +45,6 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-/* #include "mach/mt_hotplug_strategy.h" */
 #include "mach/mt_ppm_api.h"
 #include "mach/mt_pbm.h"
 
@@ -706,43 +705,6 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			lv = CPU_LEVEL_1;
 		}
 	}
-#else				/* CONFIG_OF */
-	/* no DT, we should check efuse for CPU speed HW bounding */
-	{
-		unsigned int cpu_speed_bounding = _GET_BITS_VAL_(3:0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
-
-		cpufreq_info("No DT, get CPU frequency bounding from efuse = %x\n",
-			     cpu_speed_bounding);
-
-		switch (cpu_speed_bounding) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-			lv = CPU_LEVEL_1;	/* 1.7G */
-			break;
-
-		case 5:
-		case 6:
-			lv = CPU_LEVEL_2;	/* 1.5G */
-			break;
-
-		case 7:
-		case 8:
-			lv = CPU_LEVEL_3;	/* 1.3G */
-			break;
-
-		default:
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU level! efuse=0x%x\n",
-			     cpu_speed_bounding);
-			lv = CPU_LEVEL_1;
-			break;
-		}
-
-		cpufreq_info("current CPU efuse is %d\n", cpu_speed_bounding);
-	}
 #endif
 
 	return lv;
@@ -890,8 +852,6 @@ static int set_cur_volt_sram_l(struct mt_cpu_dvfs *p, unsigned int volt);	/* vol
 static unsigned int get_cur_volt_sram_b(struct mt_cpu_dvfs *p);
 static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p);
 static int set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
-
-/* #define ENABLE_IDVFS 1 */
 
 #ifdef ENABLE_IDVFS
 int disable_idvfs_flag = 0;
@@ -3224,7 +3184,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					if (enable_cpuhvfs)
 						cpuhvfs_notify_cluster_off(cpu_dvfs_to_cluster(p));
 #endif
-#ifdef ENABLE_IDVFS
+#if 0
+/* #ifdef ENABLE_IDVFS */
 					if (!disable_idvfs_flag)
 						BigiDVFSDisable();
 #endif
@@ -3725,7 +3686,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
-#ifdef ENABLE_IDVFS
+#if 0
+/* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
 			if (!disable_idvfs_flag) {
 				cur_vproc_mv_x100 = p->ops->get_cur_volt(p);

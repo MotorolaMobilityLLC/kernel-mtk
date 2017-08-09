@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+/* #define ENABLE_IDVFS 1 */
+
 enum mt_cpu_dvfs_id {
 	MT_CPU_DVFS_LL,
 	MT_CPU_DVFS_L,
