@@ -562,11 +562,21 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	/* for slope setting. */
 	/* TODO: Does this need to be changed? */
 	fh_write32(REG_FHCTL_SLOPE0, 0x6003c97);
-#if defined(CONFIG_ARCH_MT6735M)	/* D2 slope */
-	fh_write32(REG_FHCTL_SLOPE1, 0xFF0023F8);
+	if (pll_id == FH_MEM_PLLID) {
+#if defined(CONFIG_ARCH_MT6735)	/* D1 slope */
+		fh_write32(REG_FHCTL_SLOPE1, 0xFF00095A);
+#elif defined(CONFIG_ARCH_MT6735M)	/* D2 slope */
+		fh_write32(REG_FHCTL_SLOPE1, 0xFF000693);
 #else
-	fh_write32(REG_FHCTL_SLOPE1, 0xFF003414);
+		fh_write32(REG_FHCTL_SLOPE1, 0xFF000877);
 #endif
+	} else {
+#if defined(CONFIG_ARCH_MT6735M)	/* D2 slope */
+		fh_write32(REG_FHCTL_SLOPE1, 0xFF0023F8);
+#else
+		fh_write32(REG_FHCTL_SLOPE1, 0xFF003414);
+#endif
+	}
 
 	/* FH_MSG("2. enable DVFS and Hopping control"); */
 
