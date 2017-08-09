@@ -972,7 +972,6 @@ config ARCH_MT6755
 	select MTK_BASE_POWER
 	select ARM_HAS_SG_CHAIN
 	select COMMON_CLK if !MTK_CLKMGR
-	select PINCTRL_MT6735
 	select PINCTRL_MT6755
 	select MTK_POWER_GS
 	select MTK_LM_MODE
