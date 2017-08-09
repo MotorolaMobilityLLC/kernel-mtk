@@ -26,7 +26,7 @@
 */
 #define CONSYS_BT_WIFI_SHARE_V33        0
 #define CONSYS_PMIC_CTRL_ENABLE         1
-#define CONSYS_EMI_MPU_SETTING          0
+#define CONSYS_EMI_MPU_SETTING          1
 #define CONSYS_AHB_CLK_MAGEMENT         0
 #define CONSYS_USE_PLATFORM_WRITE       1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE 1
