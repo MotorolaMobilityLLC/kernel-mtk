@@ -3866,6 +3866,9 @@
 
 		rf_clock_buffer_ctrl: rf_clock_buffer@0 {
 			compatible = "mediatek,rf_clock_buffer";
+			mediatek,clkbuf-quantity = <4>;
+			mediatek,clkbuf-config = <2 0 1 1>;
+			mediatek,clkbuf-driving-current = <2 2 2 2>;
 		};
 
 		pmic_clock_buffer_ctrl: pmic_clock_buffer@0 {
