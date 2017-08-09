@@ -288,7 +288,8 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
 	kal_uint16 addr = 0, addr_last = 0, data;
-
+    int ret =0;
+	
 	tosend = 0;
 	IDX = 0;
 	//LOG_INF("enter ov23850_MIPI_table_write_cmos_sensor_multi len  %d\n",len);
@@ -331,8 +332,14 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 		IDX += 2;
 		addr_last = addr;
 		
-		iWriteRegI2CTiming(puSendCmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+		ret = iWriteRegI2CTiming(puSendCmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+		
+		if(ret != 0)
+		{
+			LOG_INF("Error : write i2c fail addr(0x%x), data(0x%x)\n",para[IDX], puSendCmd[2]);
+		}
 	}
+	
 #endif
 	//LOG_INF("exit ov23850_MIPI_table_write_cmos_sensor_multi\n");
 
@@ -363,7 +370,7 @@ static void eeprom_read_data(void)
 	int i;
 	for(i=0;i<0x2000;i++){
 		primax_ov23850_eeprom[i] = eeprom_read_cmos_sensor(i);
-		printk("eeprom[0x%x]= 0x%x\n",i,primax_ov23850_eeprom[i]);
+		LOG_INF("eeprom[0x%x]= 0x%x\n",i,primax_ov23850_eeprom[i]);
 	}
 }
 
@@ -432,7 +439,7 @@ static int BU64164_read_id(void)
 	//mt_set_gpio_dir(GPIO_CAMERA_OIS_LDO_EN_PIN,GPIO_DIR_OUT);
 	//mt_set_gpio_out(GPIO_CAMERA_OIS_LDO_EN_PIN,GPIO_OUT_ONE);
 	BU64164_id=OIS_read_cmos_sensor(0x00,0x82);
-	printk("%s %d BU64164_id=0x%x\n",__func__,__LINE__,BU64164_id);
+	LOG_INF("%s %d BU64164_id=0x%x\n",__func__,__LINE__,BU64164_id);
 
 }
 #endif
@@ -457,7 +464,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 static void set_dummy(void)
 {
     //check
-    LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
+    //LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 
     write_cmos_sensor(0x380c, imgsensor.line_length >> 8);
     write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
@@ -471,7 +478,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
     //kal_int16 dummy_line;
     kal_uint32 frame_length = imgsensor.frame_length;
 
-    LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
+    //LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
     frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
     //LOG_INF("frame_length =%d\n", frame_length);
     spin_lock(&imgsensor_drv_lock);
@@ -486,7 +493,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
     if (min_framelength_en)
         imgsensor.min_frame_length = imgsensor.frame_length;
     spin_unlock(&imgsensor_drv_lock);
-    LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
+    //LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
     set_dummy();
 }
 
@@ -531,10 +538,14 @@ static void write_shutter(kal_uint16 shutter)
 		if (imgsensor.autoflicker_en == KAL_TRUE)
 		{
             realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-            if(realtime_fps >= 297 && realtime_fps <= 305)
-                set_max_framerate(296,0);
-            else if(realtime_fps >= 147 && realtime_fps <= 150)
-                set_max_framerate(146,0);
+            if(realtime_fps >= 297 && realtime_fps <= 305){
+				realtime_fps = 296;
+                set_max_framerate(realtime_fps,0);
+			}
+            else if(realtime_fps >= 147 && realtime_fps <= 150){
+				realtime_fps = 146;
+                set_max_framerate(realtime_fps ,0);
+			}
             else
             {
             	imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
@@ -552,8 +563,8 @@ static void write_shutter(kal_uint16 shutter)
 		shutter = (shutter >> 1) << 1;
         write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
         write_cmos_sensor(0x3502, shutter  & 0xFF);
-        LOG_INF("realtime_fps =%d\n", realtime_fps);
-        LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+        //LOG_INF("realtime_fps =%d\n", realtime_fps);
+        LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d\n", shutter,imgsensor.frame_length, realtime_fps);
     }
 
 
@@ -2780,6 +2791,8 @@ static void ov23850_setting_Deskew(int enable)
 
 static void preview_setting(void)
 {
+	int retry=0;
+	int frame_cnt = 0;
 	LOG_INF("preview_setting\n");
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(1);
@@ -2792,6 +2805,22 @@ static void preview_setting(void)
 	ov23850_setting_PDAF(PDAF_OFF);
 
 	write_cmos_sensor(0x0100,0x01);
+	frame_cnt = read_cmos_sensor(0x3863);
+	while(retry<10)
+	{
+		if(frame_cnt == read_cmos_sensor(0x3863))
+		{
+			msleep(5);
+			retry++;
+			//LOG_INF("Sensor has not output stream %x\n",read_cmos_sensor(0x3863));
+		}
+		else
+		{
+			LOG_INF("Sensor has output(%x), retry(%x)\n", read_cmos_sensor(0x3863), retry);
+			retry=0;
+			break;
+		}
+	}
 }
 
 static void capture_setting(kal_uint16 currefps)
@@ -2830,7 +2859,6 @@ static void capture_setting(kal_uint16 currefps)
 			break;
 		}
 	}
-
 }
 
 static void normal_video_setting(kal_uint16 currefps)//1080p
@@ -2906,15 +2934,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 	//module_id = eeprom_read_cmos_sensor(0x00);
 	module_id = primax_ov23850_eeprom[0];
-	printk("pangfei primax module_id =0x%x %s %d\n",module_id,__func__,__LINE__);
+	LOG_INF("pangfei primax module_id =0x%x %s %d\n",module_id,__func__,__LINE__);
 	if(module_id==0x47)	{
-		printk("pangfei primax module_id read ok\n");
+		LOG_INF("pangfei primax module_id read ok\n");
 		return ERROR_NONE;
 	}
 	else
 	{
 		*sensor_id = 0xFFFFFFFF;
-		printk("pangfei primax module_id %s read fail\n",__func__);
+		LOG_INF("pangfei primax module_id %s read fail\n",__func__);
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
 #endif
