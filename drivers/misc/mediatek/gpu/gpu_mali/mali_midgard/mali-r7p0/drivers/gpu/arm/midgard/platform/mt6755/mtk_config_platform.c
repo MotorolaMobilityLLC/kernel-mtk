@@ -136,7 +136,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	}
 	
 
-	MFG_WRITE32(0x5, clk_mfgsys_base+ 0x1C);
+	MFG_WRITE32(0x7, clk_mfgsys_base+ 0x1C);
 
 	pr_debug("MALI :[Power on] get GPU ID : 0x%x \n", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
 	return 1;
