@@ -305,6 +305,8 @@ int count_tt_isoc_bw(int is_in, int maxp, int interval, int offset, int td_size)
 	max_bw = 0;
 	if (is_in)
 		i = 2;
+	else
+		i = 0;
 
 	for (cur_mframe = offset + i; i < ss_cs_count; cur_mframe++, i++) {
 		bw_required = 0;
