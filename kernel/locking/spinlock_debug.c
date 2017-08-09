@@ -134,6 +134,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	int print_once = 1;
 	char aee_str[50];
 	unsigned long long t1, t2, t3;
+	struct task_struct *owner = NULL;
 
 	t1 = sched_clock();
 	t2 = t1;
@@ -154,14 +155,20 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 
 		if (oops_in_progress != 0)
 			continue;  /* in exception follow, printk maybe spinlock error */
-		#if 0
+
 		if (is_logbuf_lock(lock))	/*block by logbuf lock */
 			continue;
-		#endif
 		/* lockup suspected: */
+		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
+			owner = lock->owner;
 		pr_emerg("spin time: %llu ns(start:%llu ns, lpj:%lu, LPHZ:%d), value: 0x%08x\n",
 					sched_clock() - t1, t1, loops_per_jiffy, (int)LOOP_HZ,
 					*((unsigned int *)&lock->raw_lock));
+		pr_emerg("spinlock .owner: %s/%d, .owner_cpu: %d\n",
+			owner ? owner->comm : "<none>",
+			owner ? task_pid_nr(owner) : -1,
+			lock->owner_cpu);
+
 		if (print_once) {
 			print_once = 0;
 			spin_dump(lock, "lockup suspected");
