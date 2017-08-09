@@ -1449,12 +1449,13 @@ static unsigned int charging_get_error_state(void)
 {
 	return charging_error;
 }
-
+static unsigned int charging_set_hiz_swchr(void *data);
 static unsigned int charging_set_error_state(void *data)
 {
 	unsigned int status = STATUS_OK;
 
 	charging_error = *(unsigned int *) (data);
+	charging_set_hiz_swchr(&charging_error);
 
 	return status;
 }
@@ -1508,9 +1509,16 @@ static unsigned int charging_set_hiz_swchr(void *data)
 {
 	unsigned int status = STATUS_OK;
 	unsigned int en;
+	unsigned int vindpm;
 
 	en = *(unsigned int *) data;
-	bq25890_set_en_hiz(en);
+	if (en == 1)
+		vindpm = 0x7F;
+	else
+		vindpm = 0x13;
+
+	charging_set_vindpm(&vindpm);
+	/*bq25890_set_en_hiz(en);*/
 
 	return status;
 }
