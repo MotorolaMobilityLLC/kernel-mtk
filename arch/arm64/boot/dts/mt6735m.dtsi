@@ -268,6 +268,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735m-mcu_biu";
 			reg = <0x10300000 0x8000>;
 		};
+
+		gpio: gpio@10211000 {
+			compatible = "mediatek,gpio";
+			reg = <0x10211000 0x1000>;
+		};
 	};
 
 	bus {
@@ -479,11 +484,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		CKSYS@0x10210000 {
 			compatible = "mediatek,CKSYS";
 			reg = <0x10210000 0x1000>;
-		};
-
-		GPIO@0x10211000 {
-			compatible = "mediatek,GPIO";
-			reg = <0x10211000 0x1000>;
 		};
 
 		TOPRGU@0x10212000 {

@@ -617,7 +617,7 @@ static int mtk_gpio_resume(struct platform_device *pdev)
 /*---------------------------------------------------------------------------*/
 #ifdef CONFIG_OF
 static const struct of_device_id apgpio_of_ids[] = {
-	{.compatible = "mediatek,GPIO",},
+	{.compatible = "mediatek,gpio",},
 	{}
 };
 #endif

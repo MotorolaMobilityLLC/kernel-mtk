@@ -290,6 +290,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			#clock-cells = <1>;
 		};
 
+		gpio: gpio@10211000 {
+			compatible = "mediatek,gpio";
+			reg = <0x10211000 0x1000>;
+		};
+
 		cpuxgpt: cpuxgpt@10200000 {
 			compatible = "mediatek,mt6735-cpuxgpt";
 			reg = <0x10200000 0x1000>;
@@ -949,11 +954,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "TVDPLL_D2",
 				      "DPI_CK",
 				      "DISP_MTCMOS_CLK";
-		};
-
-		gpio {
-			compatible = "mediatek,GPIO";
-			reg = <0x10211000 0x1000>;
 		};
 
 		syscfg_pctl_a: syscfg_pctl_a {
