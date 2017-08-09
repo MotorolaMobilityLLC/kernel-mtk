@@ -29,6 +29,7 @@
 
 #include <wmt_exp.h>
 #include <wmt_lib.h>
+#include <psm_core.h>
 #include <hif_sdio.h>
 
 
@@ -116,6 +117,31 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 }
 
 #if WMT_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
+#else
+INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
+#endif
+{
+#if CFG_WMT_PS_SUPPORT
+	if (flag == MTK_WCN_BOOL_FALSE) {
+		wmt_lib_ps_ctrl(0);
+		WMT_INFO_FUNC("disable PSM\n");
+	} else {
+		wmt_lib_ps_set_idle_time(5000);
+		wmt_lib_ps_ctrl(1);
+		WMT_INFO_FUNC("enable PSM, idle to sleep time = 5000 ms\n");
+	}
+#else
+	WMT_INFO_FUNC("WMT PS not supported\n");
+#endif
+
+	return 0;
+}
+#if WMT_EXP_HID_API_EXPORT
+EXPORT_SYMBOL(mtk_wcn_wmt_psm_ctrl);
+#endif
+
+#if WMT_EXP_HID_API_EXPORT
 MTK_WCN_BOOL _mtk_wcn_wmt_func_off(ENUM_WMTDRV_TYPE_T type)
 #else
 MTK_WCN_BOOL mtk_wcn_wmt_func_off(ENUM_WMTDRV_TYPE_T type)
@@ -123,8 +149,14 @@ MTK_WCN_BOOL mtk_wcn_wmt_func_off(ENUM_WMTDRV_TYPE_T type)
 {
 	MTK_WCN_BOOL ret;
 
-	if (type == WMTDRV_TYPE_BT)
+	if (type == WMTDRV_TYPE_BT) {
+#if WMT_EXP_HID_API_EXPORT
+		_mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL_TRUE);
+#else
+		mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL_TRUE);
+#endif
 		osal_printtimeofday("############ BT OFF ====>");
+	}
 
 	ret = mtk_wcn_wmt_func_ctrl(type, WMT_OPID_FUNC_OFF);
 
@@ -496,6 +528,7 @@ VOID mtk_wcn_wmt_exp_init(VOID)
 		.wmt_assert_cb = _mtk_wcn_wmt_assert,
 		.wmt_assert_timeout_cb = _mtk_wcn_wmt_assert_timeout,
 		.wmt_ic_info_get_cb = _mtk_wcn_wmt_ic_info_get,
+		.wmt_psm_ctrl_cb = _mtk_wcn_wmt_psm_ctrl,
 	};
 
 	mtk_wcn_wmt_exp_cb_reg(&wmtExpCb);

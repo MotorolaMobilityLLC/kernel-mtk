@@ -31,9 +31,10 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 #define COMBO_IOC_MAGIC             0xb0
 #define COMBO_IOCTL_FW_ASSERT       _IOWR(COMBO_IOC_MAGIC, 0, int)
-#define COMBO_IOCTL_BT_IC_HW_VER    _IOWR(COMBO_IOC_MAGIC, 1, void*)
-#define COMBO_IOCTL_BT_IC_FW_VER    _IOWR(COMBO_IOC_MAGIC, 2, void*)
-#define COMBO_IOC_BT_HWVER          _IOWR(COMBO_IOC_MAGIC, 3, void*)
+#define COMBO_IOCTL_BT_SET_PSM      _IOWR(COMBO_IOC_MAGIC, 1, int)
+#define COMBO_IOCTL_BT_IC_HW_VER    _IOWR(COMBO_IOC_MAGIC, 2, void*)
+#define COMBO_IOCTL_BT_IC_FW_VER    _IOWR(COMBO_IOC_MAGIC, 3, void*)
+#define COMBO_IOC_BT_HWVER          _IOWR(COMBO_IOC_MAGIC, 4, void*)
 
 static UINT32 gDbgLevel = BT_LOG_INFO;
 
@@ -289,6 +290,10 @@ long BT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case COMBO_IOCTL_BT_IC_FW_VER:
 		retval = mtk_wcn_wmt_ic_info_get(WMTCHIN_FWVER);
+		break;
+	case COMBO_IOCTL_BT_SET_PSM:
+		BT_INFO_FUNC("BT Set PSM setting:%lu\n", arg);
+		retval = mtk_wcn_wmt_psm_ctrl(arg);
 		break;
 	default:
 		retval = -EFAULT;

@@ -276,6 +276,8 @@ extern UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type);
 
 extern INT32 mtk_wcn_wmt_chipid_query(VOID);
 
+extern INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag);
+
 #else
 #define WMT_EXP_HID_API_EXPORT 1
 

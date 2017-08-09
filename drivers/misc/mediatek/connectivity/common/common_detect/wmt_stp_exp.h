@@ -217,6 +217,7 @@ typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT) (ENUM_WMTDRV_TYPE_T type, UINT32 reaso
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT_TIMEOUT)(ENUM_WMTDRV_TYPE_T type,
 		UINT32 reason, INT32 timeout);
 typedef UINT32(*MTK_WCN_WMT_IC_INFO_GET) (ENUM_WMT_CHIPINFO_TYPE_T type);
+typedef INT32 (*MTK_WCN_WMT_PSM_CTRL)(MTK_WCN_BOOL flag);
 
 typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_on_cb;
@@ -231,6 +232,7 @@ typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_ASSERT wmt_assert_cb;
 	MTK_WCN_WMT_ASSERT_TIMEOUT wmt_assert_timeout_cb;
 	MTK_WCN_WMT_IC_INFO_GET wmt_ic_info_get_cb;
+	MTK_WCN_WMT_PSM_CTRL wmt_psm_ctrl_cb;
 } MTK_WCN_WMT_EXP_CB_INFO, *P_MTK_WCN_WMT_EXP_CB_INFO;
 
 /*******************************************************************************
@@ -590,6 +592,18 @@ extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
  * *****************************************************************************/
 extern MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type,
 		UINT32 reason, INT32 timeout);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_wmt_psm_ctrl
+* DESCRIPTION
+*  disable/enable psm
+* PARAMETERS
+*  flag [IN] disable:0, enable:1
+* RETURNS
+*  always return 0;
+*****************************************************************************/
+extern INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag);
 
 #endif
 
