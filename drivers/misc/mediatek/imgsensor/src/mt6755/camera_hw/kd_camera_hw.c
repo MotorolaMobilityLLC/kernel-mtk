@@ -647,10 +647,10 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 	} else if (pwInfo.PowerType == SensorMCLK) {
 		if (pinSetIdx == 0) {
 			/* PK_DBG("Sensor MCLK1 On"); */
-//			ISP_MCLK1_EN(TRUE);
+			ISP_MCLK1_EN(TRUE);
 		} else if (pinSetIdx == 1) {
 			/* PK_DBG("Sensor MCLK2 On"); */
-//			ISP_MCLK2_EN(TRUE);
+			ISP_MCLK2_EN(TRUE);
 		}
 	} else {
 	}
@@ -785,9 +785,9 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 
 	} else if (pwInfo.PowerType == SensorMCLK) {
 		if (pinSetIdx == 0) {
-//			ISP_MCLK1_EN(FALSE);
+			ISP_MCLK1_EN(FALSE);
 		} else if (pinSetIdx == 1) {
-//			ISP_MCLK2_EN(FALSE);
+			ISP_MCLK2_EN(FALSE);
 		}
 	} else {
 	}
