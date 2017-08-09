@@ -2879,10 +2879,11 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 		cmdqRecDumpCommand(pgc->cmdq_handle_config);
 	}
 	/* insert update ovl status slot command */
-	if (primary_display_is_video_mode() == 1 && primary_display_is_decouple_mode() == 0 &&
-	    gEnableOVLStatusCheck == 1) {
-		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info, 0, DISP_REG_OVL0_STATUS_PA);
-		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info, 1, DISP_REG_OVL1_STATUS_PA);
+	if (primary_display_is_video_mode() == 1) {
+		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info,
+			0, DISP_REG_OVL_FLOW_CTRL_DBG);
+		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info,
+			1, DISP_REG_OVL0_STATUS_PA);
 	}
 
 	if (_should_flush_cmdq_config_handle())
@@ -4154,19 +4155,12 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 			       i, fence_idx - subtractor);
 	}
 
-	if (primary_display_is_video_mode() == 1 && primary_display_is_decouple_mode() == 0
-	    && gEnableOVLStatusCheck == 1) {
+	if (primary_display_is_video_mode() == 1) {
 		unsigned int ovl_status[2];
 
 		cmdqBackupReadSlot(pgc->ovl_status_info, 0, &ovl_status[0]);
 		cmdqBackupReadSlot(pgc->ovl_status_info, 1, &ovl_status[1]);
-		if (((ovl_status[0] & 0x1) != OVL_STATUS_IDLE) || ((ovl_get_status() != DDP_OVL1_STATUS_SUB &&
-								    (ovl_status[1] & 0x1) != OVL_STATUS_IDLE))) {
-			DISPERR("disp ovl status error, 0x%x, 0x%x\n", ovl_status[0],
-				ovl_status[1]);
-			/* dump cmdq cmd here */
-			ret = -1;
-		}
+		DISPDBG("ovl fsm state:0x%x\n", ovl_status[0]);
 	}
 #endif
 
