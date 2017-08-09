@@ -109,7 +109,7 @@ static const struct file_operations ppm_ ## name ## _proc_fops = {		\
 	do {							\
 		if (ppm_debug & ALL || ppm_debug & type)	\
 			ppm_info(fmt, ##args);			\
-		else						\
+		else if (type == MAIN)				\
 			pr_debug(TAG""fmt, ##args);		\
 	} while (0)
 #define ppm_ver(fmt, args...)			\
