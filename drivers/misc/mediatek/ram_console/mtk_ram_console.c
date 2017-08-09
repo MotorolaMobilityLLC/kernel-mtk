@@ -109,6 +109,13 @@ struct last_reboot_reason {
 
 	uint8_t isr_el1;
 
+	uint32_t idvfs_ctrl_reg;
+	uint32_t idvfs_enable_cnt;
+	uint16_t idvfs_swreq_pct_x100;
+	uint32_t idvfs_swreq_cnt;
+	uint16_t idvfs_sram_ldo;
+	uint8_t idvfs_state_manchine;
+
 	void *kparams;
 };
 
@@ -1256,6 +1263,48 @@ void aee_rr_rec_isr_el1(u8 val)
 	LAST_RR_SET(isr_el1, val);
 }
 
+void aee_rr_rec_idvfs_ctrl_reg(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_ctrl_reg, val);
+}
+
+void aee_rr_rec_idvfs_enable_cnt(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_enable_cnt, val);
+}
+
+void aee_rr_rec_idvfs_swreq_pct_x100(u16 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_swreq_pct_x100, val);
+}
+
+void aee_rr_rec_idvfs_swreq_cnt(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_swreq_cnt, val);
+}
+
+void aee_rr_rec_idvfs_sram_ldo(u16 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_sram_ldo, val);
+}
+
+void aee_rr_rec_idvfs_state_manchine(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_state_manchine, val);
+}
+
 u64 aee_rr_curr_ptp_cpu_big_volt(void)
 {
 	return LAST_RR_VAL(ptp_cpu_big_volt);
@@ -1404,6 +1453,36 @@ u8 aee_rr_curr_thermal_status(void)
 u8 aee_rr_curr_isr_el1(void)
 {
 	return LAST_RR_VAL(isr_el1);
+}
+
+u32 aee_rr_curr_idvfs_ctrl_reg(void)
+{
+	return LAST_RR_VAL(idvfs_ctrl_reg);
+}
+
+u32 aee_rr_curr_idvfs_enable_cnt(void)
+{
+	return LAST_RR_VAL(idvfs_enable_cnt);
+}
+
+u16 aee_rr_curr_idvfs_swreq_pct_x100(void)
+{
+	return LAST_RR_VAL(idvfs_swreq_pct_x100);
+}
+
+u32 aee_rr_curr_idvfs_swreq_cnt(void)
+{
+	return LAST_RR_VAL(idvfs_swreq_cnt);
+}
+
+u16 aee_rr_curr_idvfs_sram_ldo(void)
+{
+	return LAST_RR_VAL(idvfs_sram_ldo);
+}
+
+u8 aee_rr_curr_idvfs_state_manchine(void)
+{
+	return LAST_RR_VAL(idvfs_state_manchine);
 }
 
 void aee_rr_rec_suspend_debug_flag(u32 val)
@@ -1786,6 +1865,74 @@ void aee_rr_show_eem_pi_offset(struct seq_file *m)
 	seq_printf(m, "eem_pi_offset : 0x%x\n", LAST_RRR_VAL(eem_pi_offset));
 }
 
+void aee_rr_show_idvfs_ctrl_reg(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_ctrl_reg = 0x%x\n", LAST_RRR_VAL(idvfs_ctrl_reg));
+	seq_printf(m, "idvfs_endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x1) ? "Enable" : "Disable");
+	seq_printf(m, "idvfs_SWP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x2) ? "Enable" : "Disable");
+	seq_printf(m, "idvfs_OCP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x4) ? "Enable" : "Disable");
+	seq_printf(m, "idvfs_OTP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x8) ? "Enable" : "Disable");
+}
+
+void aee_rr_show_idvfs_enable_cnt(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_enable_cnt = %d\n", LAST_RRR_VAL(idvfs_enable_cnt));
+}
+
+void aee_rr_show_idvfs_swreq_pct_x100(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_swreq_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swreq_pct_x100));
+}
+
+void aee_rr_show_idvfs_swreq_cnt(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_swreq_cnt = %d\n", LAST_RRR_VAL(idvfs_swreq_cnt));
+}
+
+void aee_rr_show_idvfs_sram_ldo(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_sram_ldo = %dmv\n", LAST_RRR_VAL(idvfs_sram_ldo));
+}
+
+void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
+{
+/*
+0: disable finish
+1: enable finish
+2: enable start
+3: disable start
+4: SWREQ start
+5: disable and wait SWREQ finish
+6: SWREQ finish can into disable */
+
+	switch (LAST_RRR_VAL(idvfs_state_manchine)) {
+	case 0:
+		seq_puts(m, "idvfs state = 0: disable finish\n");
+		break;
+	case 1:
+		seq_puts(m, "idvfs state = 1: enable finish\n");
+		break;
+	case 2:
+		seq_puts(m, "idvfs state = 2: enable start\n");
+		break;
+	case 3:
+		seq_puts(m, "idvfs state = 3: disable start\n");
+		break;
+	case 4:
+		seq_puts(m, "idvfs state = 4: SWREQ start\n");
+		break;
+	case 5:
+		seq_puts(m, "idvfs state = 5: disable and wait SWREQ finish\n");
+		break;
+	case 6:
+		seq_puts(m, "idvfs state = 6: SWREQ finish can into disable\n");
+		break;
+	default:
+		seq_printf(m, "idvfs state = %d, unknown state manchine\n", LAST_RRR_VAL(idvfs_state_manchine));
+		break;
+	}
+}
+
 void aee_rr_show_thermal_status(struct seq_file *m)
 {
 	seq_printf(m, "thermal_status: %d\n", LAST_RRR_VAL(thermal_status));
@@ -1920,7 +2067,13 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_status,
 	aee_rr_show_thermal_temp,
 	aee_rr_show_thermal_status,
-	aee_rr_show_isr_el1
+	aee_rr_show_isr_el1,
+	aee_rr_show_idvfs_ctrl_reg,
+	aee_rr_show_idvfs_enable_cnt,
+	aee_rr_show_idvfs_swreq_pct_x100,
+	aee_rr_show_idvfs_swreq_cnt,
+	aee_rr_show_idvfs_sram_ldo,
+	aee_rr_show_idvfs_state_manchine
 };
 
 last_rr_show_cpu_t aee_rr_show_cpu[] = {

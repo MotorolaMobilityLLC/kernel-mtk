@@ -164,6 +164,10 @@ struct  IDVFS_INIT_OPT {
 	unsigned short freq_min;
 	unsigned short freq_cur;
 	unsigned short i2c_speed;
+	unsigned short ocp_endis;
+	unsigned short otp_endis;
+	unsigned int idvfs_enable_cnt;
+	unsigned int idvfs_swreq_cnt;
 	struct CHANNEL_STATUS *channel;
 };
 
@@ -174,8 +178,21 @@ struct  IDVFS_INIT_OPT {
 /* IDVFS_EXTERN unsigned int get_vcore_ptp_volt(int uv); */
 #endif /* CONFIG_ARM64 */
 
-/* #undef IDVFS_EXTERN */
+extern void aee_rr_rec_idvfs_ctrl_reg(u32 val);
+extern void aee_rr_rec_idvfs_enable_cnt(u32 val);
+extern void aee_rr_rec_idvfs_swreq_pct_x100(u16 val);
+extern void aee_rr_rec_idvfs_swreq_cnt(u32 val);
+extern void aee_rr_rec_idvfs_sram_ldo(u16 val);
+extern void aee_rr_rec_idvfs_state_manchine(u8 val);
 
+extern u32 aee_rr_curr_idvfs_ctrl_reg(void);
+extern u32 aee_rr_curr_idvfs_enable_cnt(void);
+extern u32 aee_rr_curr_idvfs_swreq_pct_x100(void);
+extern u32 aee_rr_curr_idvfs_swreq_cnt(void);
+extern u16 aee_rr_curr_idvfs_sram_ldo(void);
+extern u8 aee_rr_curr_idvfs_state_manchine(void);
+
+/* #undef IDVFS_EXTERN */
 /* iDVFS function */
 /* extern int BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned int cur_vsram_mv_x100); */
 /* extern int BigiDVFSDisable(void); */
