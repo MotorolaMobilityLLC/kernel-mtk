@@ -64,3 +64,5 @@ endif
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
 ccflags-y += -DMTK_MT6797_DEBUG
 endif
+
+ccflags-y += -DMTK_MALI_USE_GED_LOG

@@ -42,6 +42,9 @@
 #include "mali_kbase_gator.h"
 #endif
 
+/* MTK */
+#include <mtk_mali_config.h>
+
 /* Part of the workaround for uTLB invalid pages is to ensure we grow/shrink tmem by 4 pages at a time */
 #define KBASEP_TMEM_GROWABLE_BLOCKSIZE_PAGES_LOG2_HW_ISSUE_8316 (2)	/* round to 4 pages */
 
@@ -153,7 +156,7 @@ static inline void kbase_mem_phy_alloc_gpu_unmapped(struct kbase_mem_phy_alloc *
 	/* we only track mappings of NATIVE buffers */
 	if (alloc->type == KBASE_MEM_TYPE_NATIVE)
 		if (0 > atomic_dec_return(&alloc->gpu_mappings)) {
-			pr_err("Mismatched %s:\n", __func__);
+			pr_MTK_err("Mismatched %s:\n", __func__);
 			dump_stack();
 		}
 }

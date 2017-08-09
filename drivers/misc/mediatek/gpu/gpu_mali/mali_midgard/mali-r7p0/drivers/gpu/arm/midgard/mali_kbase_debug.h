@@ -22,6 +22,8 @@
 
 #include <linux/bug.h>
 
+#include <mtk_mali_config.h>
+
 /** @brief If equals to 0, a trace containing the file, line, and function will be displayed before each message. */
 #define KBASE_DEBUG_SKIP_TRACE 0
 
@@ -74,9 +76,9 @@ struct kbasep_debug_assert_cb {
 #ifdef CONFIG_MALI_DEBUG
 #define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...)\
 		do { \
-			pr_err("Mali<ASSERT>: %s function:%s ", trace, function);\
-			pr_err(__VA_ARGS__);\
-			pr_err("\n");\
+			pr_MTK_err("Mali<ASSERT>: %s function:%s ", trace, function);\
+			pr_MTK_err(__VA_ARGS__);\
+			pr_MTK_err("\n");\
 		} while (false)
 #else
 #define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...) CSTD_NOP()

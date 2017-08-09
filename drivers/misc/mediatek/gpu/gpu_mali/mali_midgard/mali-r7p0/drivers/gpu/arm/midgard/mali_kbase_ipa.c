@@ -179,7 +179,7 @@ static int update_ipa_groups_from_dt(struct kbase_ipa_context *ctx)
 	for_each_available_child_of_node(np, child)
 		nr_groups++;
 	if (!nr_groups || nr_groups > ARRAY_SIZE(ctx->groups)) {
-		dev_err(kbdev->dev, "invalid number of IPA groups: %zu", nr_groups);
+		dev_MTK_err(kbdev->dev, "invalid number of IPA groups: %zu", nr_groups);
 		err = -EINVAL;
 		goto err0;
 	}
@@ -190,14 +190,14 @@ static int update_ipa_groups_from_dt(struct kbase_ipa_context *ctx)
 
 		name = of_get_property(child, "label", NULL);
 		if (!name) {
-			dev_err(kbdev->dev, "label missing for IPA group");
+			dev_MTK_err(kbdev->dev, "label missing for IPA group");
 			err = -EINVAL;
 			goto err0;
 		}
 		err = of_property_read_u32(child, "capacitance",
 				&capacitance);
 		if (err < 0) {
-			dev_err(kbdev->dev, "capacitance missing for IPA group");
+			dev_MTK_err(kbdev->dev, "capacitance missing for IPA group");
 			goto err0;
 		}
 

@@ -611,7 +611,7 @@ void kbase_set_profiling_control(struct kbase_device *kbdev, u32 control, u32 va
 		kbdev->kbase_profiling_controls[control] = value;
 		break;
 	default:
-		dev_err(kbdev->dev, "Profiling control %d not found\n", control);
+		dev_MTK_err(kbdev->dev, "Profiling control %d not found\n", control);
 		break;
 	}
 }
@@ -631,7 +631,7 @@ u32 kbase_get_profiling_control(struct kbase_device *kbdev, u32 control)
 		ret_value = kbdev->kbase_profiling_controls[control];
 		break;
 	default:
-		dev_err(kbdev->dev, "Profiling control %d not found\n", control);
+		dev_MTK_err(kbdev->dev, "Profiling control %d not found\n", control);
 		break;
 	}
 

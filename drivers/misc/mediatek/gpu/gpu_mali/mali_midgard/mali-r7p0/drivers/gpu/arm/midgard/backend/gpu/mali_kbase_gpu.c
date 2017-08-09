@@ -85,7 +85,7 @@ int kbase_backend_late_init(struct kbase_device *kbdev)
 #ifdef CONFIG_MALI_DEBUG
 #ifndef CONFIG_MALI_NO_MALI
 	if (kbasep_common_test_interrupt_handlers(kbdev) != 0) {
-		dev_err(kbdev->dev, "Interrupt assigment check failed.\n");
+		dev_MTK_err(kbdev->dev, "Interrupt assigment check failed.\n");
 		err = -EINVAL;
 		goto fail_interrupt_test;
 	}

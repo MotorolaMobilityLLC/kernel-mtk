@@ -169,7 +169,7 @@ int kbase_hw_set_issues_mask(struct kbase_device *kbdev)
 			issues = base_hw_issues_t82x_r1p0;
 			break;
 		default:
-			dev_err(kbdev->dev, "Unknown GPU ID %x", gpu_id);
+			dev_MTK_err(kbdev->dev, "Unknown GPU ID %x", gpu_id);
 			return -EINVAL;
 		}
 	} else {
@@ -200,7 +200,7 @@ int kbase_hw_set_issues_mask(struct kbase_device *kbdev)
 			issues = base_hw_issues_model_t82x;
 			break;
 		default:
-			dev_err(kbdev->dev, "Unknown GPU ID %x", gpu_id);
+			dev_MTK_err(kbdev->dev, "Unknown GPU ID %x", gpu_id);
 			return -EINVAL;
 		}
 	}

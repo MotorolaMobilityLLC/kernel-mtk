@@ -197,10 +197,10 @@ int kbase_set_custom_irq_handler(struct kbase_device *kbdev,
 			kbdev->irqs[irq_type].flags | IRQF_SHARED,
 			dev_name(kbdev->dev), kbase_tag(kbdev, irq_type))) {
 		result = -EINVAL;
-		dev_err(kbdev->dev, "Can't request interrupt %d (index %d)\n",
+		dev_MTK_err(kbdev->dev, "Can't request interrupt %d (index %d)\n",
 					kbdev->irqs[irq_type].irq, irq_type);
 #ifdef CONFIG_SPARSE_IRQ
-		dev_err(kbdev->dev, "You have CONFIG_SPARSE_IRQ support enabled - is the interrupt number correct for this configuration?\n");
+		dev_MTK_err(kbdev->dev, "You have CONFIG_SPARSE_IRQ support enabled - is the interrupt number correct for this configuration?\n");
 #endif /* CONFIG_SPARSE_IRQ */
 	}
 
@@ -351,7 +351,7 @@ static int kbasep_common_test_interrupt(
 					kbasep_irq_test_data.triggered != 0);
 
 			if (kbasep_irq_test_data.timeout != 0) {
-				dev_err(kbdev->dev, "Interrupt %d (index %d) didn't reach CPU.\n",
+				dev_MTK_err(kbdev->dev, "Interrupt %d (index %d) didn't reach CPU.\n",
 						kbdev->irqs[tag].irq, tag);
 				err = -EINVAL;
 			} else {
@@ -373,7 +373,7 @@ static int kbasep_common_test_interrupt(
 		if (request_irq(kbdev->irqs[tag].irq, kbase_handler_table[tag],
 				kbdev->irqs[tag].flags | IRQF_SHARED,
 				dev_name(kbdev->dev), kbase_tag(kbdev, tag))) {
-			dev_err(kbdev->dev, "Can't restore original interrupt %d (index %d)\n",
+			dev_MTK_err(kbdev->dev, "Can't restore original interrupt %d (index %d)\n",
 						kbdev->irqs[tag].irq, tag);
 			err = -EINVAL;
 		}
@@ -397,13 +397,13 @@ int kbasep_common_test_interrupt_handlers(
 
 	err = kbasep_common_test_interrupt(kbdev, JOB_IRQ_TAG);
 	if (err) {
-		dev_err(kbdev->dev, "Interrupt JOB_IRQ didn't reach CPU. Check interrupt assignments.\n");
+		dev_MTK_err(kbdev->dev, "Interrupt JOB_IRQ didn't reach CPU. Check interrupt assignments.\n");
 		goto out;
 	}
 
 	err = kbasep_common_test_interrupt(kbdev, MMU_IRQ_TAG);
 	if (err) {
-		dev_err(kbdev->dev, "Interrupt MMU_IRQ didn't reach CPU. Check interrupt assignments.\n");
+		dev_MTK_err(kbdev->dev, "Interrupt MMU_IRQ didn't reach CPU. Check interrupt assignments.\n");
 		goto out;
 	}
 
@@ -428,10 +428,10 @@ int kbase_install_interrupts(struct kbase_device *kbdev)
 				dev_name(kbdev->dev),
 				kbase_tag(kbdev, i));
 		if (err) {
-			dev_err(kbdev->dev, "Can't request interrupt %d (index %d)\n",
+			dev_MTK_err(kbdev->dev, "Can't request interrupt %d (index %d)\n",
 							kbdev->irqs[i].irq, i);
 #ifdef CONFIG_SPARSE_IRQ
-			dev_err(kbdev->dev, "You have CONFIG_SPARSE_IRQ support enabled - is the interrupt number correct for this configuration?\n");
+			dev_MTK_err(kbdev->dev, "You have CONFIG_SPARSE_IRQ support enabled - is the interrupt number correct for this configuration?\n");
 #endif /* CONFIG_SPARSE_IRQ */
 			goto release;
 		}

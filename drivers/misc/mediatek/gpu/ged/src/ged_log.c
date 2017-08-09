@@ -99,7 +99,7 @@ typedef struct GED_LOG_BUF_LIST_TAG
 static GED_LOG_BUF_LIST gsGEDLogBufList = {
 	.sLock          = __RW_LOCK_UNLOCKED(gsGEDLogBufList.sLock),
 	.sList_buf      = LIST_HEAD_INIT(gsGEDLogBufList.sList_buf),
-	.sList_listen   = LIST_HEAD_INIT(gsGEDLogBufList.sList_listen), 
+	.sList_listen   = LIST_HEAD_INIT(gsGEDLogBufList.sList_listen),
 };
 
 static struct dentry* gpsGEDLogEntry = NULL;
@@ -141,7 +141,7 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 		{
 			if (attrs & GED_LOG_ATTR_AUTO_INCREASE)
 			{
-				int newLineCount, newBufferSize; 
+				int newLineCount, newBufferSize;
 
 				/* incease min(25%, 1MB) */
 				if ((psGEDLogBuf->i32LineCount >> 2) <= 1024 * 1024)
@@ -208,7 +208,7 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 	if (attrs & GED_LOG_ATTR_RINGBUFFER)
 	{
 		int i;
-		int check = 10 + 1; /* we check the following 10 items. */ 
+		int check = 10 + 1; /* we check the following 10 items. */
 		int a = psGEDLogBuf->i32BufferCurrent;
 		int b = psGEDLogBuf->i32BufferCurrent + len + 2;
 
@@ -350,7 +350,7 @@ static int ged_log_buf_seq_show_print(struct seq_file *psSeqFile, GED_LOG_BUF *p
 			unsigned long long t;
 			unsigned long nanosec_rem;
 
-			t = line->time;                             
+			t = line->time;
 			nanosec_rem = do_div(t, 1000000000);
 
 			seq_printf(psSeqFile,"[%5llu.%06lu] ", t, nanosec_rem / 1000);
@@ -361,12 +361,12 @@ static int ged_log_buf_seq_show_print(struct seq_file *psSeqFile, GED_LOG_BUF *p
 			unsigned long local_time;
 			struct rtc_time tm;
 
-			local_time = line->time; 
+			local_time = line->time;
 			rtc_time_to_tm(local_time, &tm);
 
-			seq_printf(psSeqFile,"%02d-%02d %02d:%02d:%02d.%06lu %5d %5d ", 
-					/*tm.tm_year + 1900,*/ tm.tm_mon + 1, tm.tm_mday, 
-					tm.tm_hour, tm.tm_min, tm.tm_sec, 
+			seq_printf(psSeqFile,"%02d-%02d %02d:%02d:%02d.%06lu %5d %5d ",
+					/*tm.tm_year + 1900,*/ tm.tm_mon + 1, tm.tm_mday,
+					tm.tm_hour, tm.tm_min, tm.tm_sec,
 					line->time_usec, line->pid, line->tid);
 		}
 
@@ -423,7 +423,7 @@ static int ged_log_buf_seq_show(struct seq_file *psSeqFile, void *pvData)
 	return 0;
 }
 //-----------------------------------------------------------------------------
-static struct seq_operations gsGEDLogBufReadOps = 
+static struct seq_operations gsGEDLogBufReadOps =
 {
 	.start = ged_log_buf_seq_start,
 	.stop = ged_log_buf_seq_stop,
@@ -434,7 +434,7 @@ static struct seq_operations gsGEDLogBufReadOps =
 GED_LOG_BUF_HANDLE ged_log_buf_alloc(
 		int i32MaxLineCount,
 		int i32MaxBufferSizeByte,
-		GED_LOG_BUF_TYPE eType, 
+		GED_LOG_BUF_TYPE eType,
 		const char* pszName,
 		const char* pszNodeName)
 {
@@ -519,7 +519,7 @@ GED_LOG_BUF_HANDLE ged_log_buf_alloc(
 				psGEDLogBuf,
 				&psGEDLogBuf->psEntry);
 
-		if (unlikely(err)) 
+		if (unlikely(err))
 		{
 			GED_LOGE("ged: failed to create %s entry, err(%d)!\n", pszNodeName, err);
 			ged_log_buf_free(psGEDLogBuf->ui32HashNodeID);
@@ -786,7 +786,7 @@ GED_ERROR ged_log_buf_print2(GED_LOG_BUF_HANDLE hLogBuf, int i32LogAttrs, const 
 		psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
 
 		/* clear reserved attrs */
-		i32LogAttrs &= ~0xff; 
+		i32LogAttrs &= ~0xff;
 
 		va_start(args, fmt);
 		err = __ged_log_buf_vprint(psGEDLogBuf, fmt, args, psGEDLogBuf->attrs | i32LogAttrs);
@@ -928,7 +928,7 @@ static void* ged_log_seq_next(struct seq_file *psSeqFile, void *pvData, loff_t *
 	return NULL;
 }
 //-----------------------------------------------------------------------------
-static struct seq_operations gsGEDLogReadOps = 
+static struct seq_operations gsGEDLogReadOps =
 {
 	.start = ged_log_seq_start,
 	.stop = ged_log_seq_stop,
@@ -967,7 +967,7 @@ GED_ERROR ged_log_system_init(void)
 	}
 
 	ghHashTable = ged_hashtable_create(5);
-	if (!ghHashTable) 
+	if (!ghHashTable)
 	{
 		err = GED_ERROR_OOM;
 		GED_LOGE("ged: failed to create a hash table!\n");

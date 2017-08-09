@@ -10,6 +10,8 @@
 #include <mt_gpufreq.h>
 #include <mt-plat/mt_lpae.h>
 
+#include <mtk_mali_config.h>
+
 void mtk_kbase_dpm_setup(int *dfp_weights)
 {
 	int i;
@@ -123,7 +125,7 @@ void mtk_kbase_spm_wait(void)
 
 	if (retry <= 0)
 	{
-		pr_err("dvfs_gpu spm wait timeout! STA:%u CON:%d\n", DVFS_GPU_read32(SPM_RSV_STA), DVFS_GPU_read32(SPM_RSV_CON));
+		pr_MTK_err("dvfs_gpu spm wait timeout! STA:%u CON:%d\n", DVFS_GPU_read32(SPM_RSV_STA), DVFS_GPU_read32(SPM_RSV_CON));
 	}
 }
 

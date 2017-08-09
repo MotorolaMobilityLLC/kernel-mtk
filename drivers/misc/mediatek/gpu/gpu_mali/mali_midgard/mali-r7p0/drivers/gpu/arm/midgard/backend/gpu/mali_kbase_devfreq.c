@@ -57,7 +57,7 @@ kbase_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 	voltage = dev_pm_opp_get_voltage(opp);
 	rcu_read_unlock();
 	if (IS_ERR_OR_NULL(opp)) {
-		dev_err(dev, "Failed to get opp (%ld)\n", PTR_ERR(opp));
+		dev_MTK_err(dev, "Failed to get opp (%ld)\n", PTR_ERR(opp));
 		return PTR_ERR(opp);
 	}
 
@@ -74,7 +74,7 @@ kbase_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 			&& kbdev->current_freq < freq) {
 		err = regulator_set_voltage(kbdev->regulator, voltage, voltage);
 		if (err) {
-			dev_err(dev, "Failed to increase voltage (%d)\n", err);
+			dev_MTK_err(dev, "Failed to increase voltage (%d)\n", err);
 			return err;
 		}
 	}
@@ -82,7 +82,7 @@ kbase_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 
 	err = clk_set_rate(kbdev->clock, freq);
 	if (err) {
-		dev_err(dev, "Failed to set clock %lu (target %lu)\n",
+		dev_MTK_err(dev, "Failed to set clock %lu (target %lu)\n",
 				freq, *target_freq);
 		return err;
 	}
@@ -92,7 +92,7 @@ kbase_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 			&& kbdev->current_freq > freq) {
 		err = regulator_set_voltage(kbdev->regulator, voltage, voltage);
 		if (err) {
-			dev_err(dev, "Failed to decrease voltage (%d)\n", err);
+			dev_MTK_err(dev, "Failed to decrease voltage (%d)\n", err);
 			return err;
 		}
 	}
@@ -226,7 +226,7 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 
 	err = devfreq_register_opp_notifier(kbdev->dev, kbdev->devfreq);
 	if (err) {
-		dev_err(kbdev->dev,
+		dev_MTK_err(kbdev->dev,
 			"Failed to register OPP notifier (%d)\n", err);
 		goto opp_notifier_failed;
 	}
@@ -240,7 +240,7 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 				callbacks);
 		if (IS_ERR_OR_NULL(kbdev->devfreq_cooling)) {
 			err = PTR_ERR(kbdev->devfreq_cooling);
-			dev_err(kbdev->dev,
+			dev_MTK_err(kbdev->dev,
 				"Failed to register cooling device (%d)\n",
 				err);
 			goto cooling_failed;
@@ -257,7 +257,7 @@ cooling_failed:
 opp_notifier_failed:
 	err = devfreq_remove_device(kbdev->devfreq);
 	if (err)
-		dev_err(kbdev->dev, "Failed to terminate devfreq (%d)\n", err);
+		dev_MTK_err(kbdev->dev, "Failed to terminate devfreq (%d)\n", err);
 	else
 		kbdev->devfreq = NULL;
 
@@ -278,7 +278,7 @@ void kbase_devfreq_term(struct kbase_device *kbdev)
 
 	err = devfreq_remove_device(kbdev->devfreq);
 	if (err)
-		dev_err(kbdev->dev, "Failed to terminate devfreq (%d)\n", err);
+		dev_MTK_err(kbdev->dev, "Failed to terminate devfreq (%d)\n", err);
 	else
 		kbdev->devfreq = NULL;
 }

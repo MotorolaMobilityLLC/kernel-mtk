@@ -121,7 +121,7 @@ static int kbasep_replay_reset_sfbd(struct kbase_context *kctx,
 	fbd_tiler = kbase_vmap(kctx, fbd_address + SFBD_TILER_OFFSET,
 			sizeof(*fbd_tiler), &map);
 	if (!fbd_tiler) {
-		dev_err(kctx->kbdev->dev, "kbasep_replay_reset_fbd: failed to map fbd\n");
+		dev_MTK_err(kctx->kbdev->dev, "kbasep_replay_reset_fbd: failed to map fbd\n");
 		return -EINVAL;
 	}
 
@@ -203,7 +203,7 @@ static int kbasep_replay_reset_mfbd(struct kbase_context *kctx,
 	fbd_tiler = kbase_vmap(kctx, fbd_address + MFBD_TILER_OFFSET,
 			sizeof(*fbd_tiler), &map);
 	if (!fbd_tiler) {
-		dev_err(kctx->kbdev->dev,
+		dev_MTK_err(kctx->kbdev->dev,
 			       "kbasep_replay_reset_fbd: failed to map fbd\n");
 		return -EINVAL;
 	}
@@ -298,7 +298,7 @@ static int kbasep_replay_reset_tiler_job(struct kbase_context *kctx,
 				sizeof(*job_ext), &map);
 
 		if (!job_ext) {
-			dev_err(kctx->kbdev->dev, "kbasep_replay_reset_tiler_job: failed to map jc\n");
+			dev_MTK_err(kctx->kbdev->dev, "kbasep_replay_reset_tiler_job: failed to map jc\n");
 			return -EINVAL;
 		}
 
@@ -313,7 +313,7 @@ static int kbasep_replay_reset_tiler_job(struct kbase_context *kctx,
 				sizeof(*job_ext), &map);
 
 		if (!job_ext) {
-			dev_err(kctx->kbdev->dev, "kbasep_replay_reset_tiler_job: failed to map jc\n");
+			dev_MTK_err(kctx->kbdev->dev, "kbasep_replay_reset_tiler_job: failed to map jc\n");
 			return -EINVAL;
 		}
 
@@ -378,7 +378,7 @@ static int kbasep_replay_reset_job(struct kbase_context *kctx,
 
 	job = kbase_vmap(kctx, *job_header, sizeof(*job), &map);
 	if (!job) {
-		dev_err(kctx->kbdev->dev,
+		dev_MTK_err(kctx->kbdev->dev,
 				 "kbasep_replay_parse_jc: failed to map jc\n");
 		return -EINVAL;
 	}
@@ -386,7 +386,7 @@ static int kbasep_replay_reset_job(struct kbase_context *kctx,
 	dump_job_head(kctx, "Job header:", job);
 
 	if (job->status == JOB_NOT_STARTED && !fragment_chain) {
-		dev_err(kctx->kbdev->dev, "Job already not started\n");
+		dev_MTK_err(kctx->kbdev->dev, "Job already not started\n");
 		goto out_unmap;
 	}
 	job->status = JOB_NOT_STARTED;
@@ -395,7 +395,7 @@ static int kbasep_replay_reset_job(struct kbase_context *kctx,
 		job->flags = (job->flags & ~JOB_TYPE_MASK) | JOB_TYPE_NULL;
 
 	if ((job->flags & JOB_TYPE_MASK) == JOB_TYPE_FUSED) {
-		dev_err(kctx->kbdev->dev, "Fused jobs can not be replayed\n");
+		dev_MTK_err(kctx->kbdev->dev, "Fused jobs can not be replayed\n");
 		goto out_unmap;
 	}
 
@@ -405,7 +405,7 @@ static int kbasep_replay_reset_job(struct kbase_context *kctx,
 	if ((job->dependencies[0] + hw_job_id_offset) > JOB_HEADER_ID_MAX ||
 	    (job->dependencies[1] + hw_job_id_offset) > JOB_HEADER_ID_MAX ||
 	    (job->index + hw_job_id_offset) > JOB_HEADER_ID_MAX) {
-		dev_err(kctx->kbdev->dev,
+		dev_MTK_err(kctx->kbdev->dev,
 			     "Job indicies/dependencies out of valid range\n");
 		goto out_unmap;
 	}
@@ -493,7 +493,7 @@ static int kbasep_replay_find_hw_job_id(struct kbase_context *kctx,
 
 		job = kbase_vmap(kctx, jc, sizeof(*job), &map);
 		if (!job) {
-			dev_err(kctx->kbdev->dev, "failed to map jc\n");
+			dev_MTK_err(kctx->kbdev->dev, "failed to map jc\n");
 
 			return -EINVAL;
 		}
@@ -560,7 +560,7 @@ static int kbasep_replay_parse_jc(struct kbase_context *kctx,
 		nr_jobs++;
 		if (fragment_chain &&
 		    nr_jobs >= BASE_JD_REPLAY_F_CHAIN_JOB_LIMIT) {
-			dev_err(kctx->kbdev->dev,
+			dev_MTK_err(kctx->kbdev->dev,
 				"Exceeded maximum number of jobs in fragment chain\n");
 			return -EINVAL;
 		}
@@ -687,13 +687,13 @@ static int kbasep_replay_create_atoms(struct kbase_context *kctx,
 
 	t_atom_nr = kbasep_allocate_katom(kctx);
 	if (t_atom_nr < 0) {
-		dev_err(kctx->kbdev->dev, "Failed to allocate katom\n");
+		dev_MTK_err(kctx->kbdev->dev, "Failed to allocate katom\n");
 		return -EINVAL;
 	}
 
 	f_atom_nr = kbasep_allocate_katom(kctx);
 	if (f_atom_nr < 0) {
-		dev_err(kctx->kbdev->dev, "Failed to allocate katom\n");
+		dev_MTK_err(kctx->kbdev->dev, "Failed to allocate katom\n");
 		kbasep_release_katom(kctx, t_atom_nr);
 		return -EINVAL;
 	}
@@ -762,7 +762,7 @@ static int kbasep_replay_parse_payload(struct kbase_context *kctx,
 	payload = kbase_vmap(kctx, replay_atom->jc, sizeof(*payload), &map);
 
 	if (!payload) {
-		dev_err(kctx->kbdev->dev, "kbasep_replay_parse_payload: failed to map payload into kernel space\n");
+		dev_MTK_err(kctx->kbdev->dev, "kbasep_replay_parse_payload: failed to map payload into kernel space\n");
 		return -EINVAL;
 	}
 
@@ -798,14 +798,14 @@ static int kbasep_replay_parse_payload(struct kbase_context *kctx,
 			      ~BASE_JD_REQ_COHERENT_GROUP) != BASE_JD_REQ_FS ||
 	     t_atom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES ||
 	     f_atom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES) {
-		dev_err(kctx->kbdev->dev, "Invalid core requirements\n");
+		dev_MTK_err(kctx->kbdev->dev, "Invalid core requirements\n");
 		goto out;
 	}
 
 	/* Process tiler job chains */
 	next = payload->tiler_jc_list;
 	if (!next) {
-		dev_err(kctx->kbdev->dev, "Invalid tiler JC list\n");
+		dev_MTK_err(kctx->kbdev->dev, "Invalid tiler JC list\n");
 		goto out;
 	}
 
@@ -817,7 +817,7 @@ static int kbasep_replay_parse_payload(struct kbase_context *kctx,
 		jc_struct = kbase_vmap(kctx, next, sizeof(*jc_struct), &jc_map);
 
 		if (!jc_struct) {
-			dev_err(kctx->kbdev->dev, "Failed to map jc struct\n");
+			dev_MTK_err(kctx->kbdev->dev, "Failed to map jc struct\n");
 			goto out;
 		}
 
@@ -861,7 +861,7 @@ static int kbasep_replay_parse_payload(struct kbase_context *kctx,
 	}
 
 	if (!t_atom->jc || !f_atom->jc) {
-		dev_err(kctx->kbdev->dev, "Invalid payload\n");
+		dev_MTK_err(kctx->kbdev->dev, "Invalid payload\n");
 		goto out;
 	}
 
@@ -914,14 +914,14 @@ static void kbase_replay_process_worker(struct work_struct *data)
 
 	need_to_try_schedule_context |= jd_submit_atom(kctx, &t_atom, t_katom);
 	if (t_katom->event_code == BASE_JD_EVENT_JOB_INVALID) {
-		dev_err(kctx->kbdev->dev, "Replay failed to submit atom\n");
+		dev_MTK_err(kctx->kbdev->dev, "Replay failed to submit atom\n");
 		kbasep_release_katom(kctx, f_atom.atom_number);
 		katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
 		goto out;
 	}
 	need_to_try_schedule_context |= jd_submit_atom(kctx, &f_atom, f_katom);
 	if (f_katom->event_code == BASE_JD_EVENT_JOB_INVALID) {
-		dev_err(kctx->kbdev->dev, "Replay failed to submit atom\n");
+		dev_MTK_err(kctx->kbdev->dev, "Replay failed to submit atom\n");
 		katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
 		goto out;
 	}
@@ -985,7 +985,7 @@ static bool kbase_replay_fault_check(struct kbase_jd_atom *katom)
 	 */
 	payload = kbase_vmap(kctx, katom->jc, sizeof(*payload), &map);
 	if (!payload) {
-		dev_err(dev, "kbase_replay_fault_check: failed to map payload.\n");
+		dev_MTK_err(dev, "kbase_replay_fault_check: failed to map payload.\n");
 		return false;
 	}
 
@@ -1005,7 +1005,7 @@ static bool kbase_replay_fault_check(struct kbase_jd_atom *katom)
 	while (job_header) {
 		job = kbase_vmap(kctx, job_header, sizeof(*job), &job_map);
 		if (!job) {
-			dev_err(dev, "failed to map jc\n");
+			dev_MTK_err(dev, "failed to map jc\n");
 			/* unmap payload*/
 			kbase_vunmap(kctx, &map);
 			return false;
@@ -1127,7 +1127,7 @@ bool kbase_replay_process(struct kbase_jd_atom *katom)
 	katom->retry_count++;
 
 	if (katom->retry_count > BASEP_JD_REPLAY_LIMIT) {
-		dev_err(kbdev->dev, "Replay exceeded limit - failing jobs\n");
+		dev_MTK_err(kbdev->dev, "Replay exceeded limit - failing jobs\n");
 
 		kbase_disjoint_state_down(kbdev);
 

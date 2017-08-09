@@ -777,7 +777,7 @@ static enum hrtimer_restart zap_timeout_callback(struct hrtimer *timer)
 
 #if KBASE_GPU_RESET_EN
 	if (kbase_prepare_to_reset_gpu(kbdev)) {
-		dev_err(kbdev->dev, "Issueing GPU soft-reset because jobs failed to be killed (within %d ms) as part of context termination (e.g. process exit)\n",
+		dev_MTK_err(kbdev->dev, "Issueing GPU soft-reset because jobs failed to be killed (within %d ms) as part of context termination (e.g. process exit)\n",
 								ZAP_TIMEOUT);
 		kbase_reset_gpu(kbdev);
 	}
@@ -1018,7 +1018,7 @@ void kbase_job_slot_hardstop(struct kbase_context *kctx, int js,
 		 * hard-stopping just reset the GPU. This will ensure that the
 		 * jobs leave the GPU.*/
 		if (kbase_prepare_to_reset_gpu_locked(kbdev)) {
-			dev_err(kbdev->dev, "Issueing GPU soft-reset after hard stopping due to hardware issue");
+			dev_MTK_err(kbdev->dev, "Issueing GPU soft-reset after hard stopping due to hardware issue");
 			kbase_reset_gpu_locked(kbdev);
 		}
 	}
@@ -1093,32 +1093,32 @@ static void kbase_debug_dump_registers(struct kbase_device *kbdev)
 {
 	int i;
 
-	dev_err(kbdev->dev, "Register state:");
-	dev_err(kbdev->dev, "  GPU_IRQ_RAWSTAT=0x%08x GPU_STATUS=0x%08x",
+	dev_MTK_err(kbdev->dev, "Register state:");
+	dev_MTK_err(kbdev->dev, "  GPU_IRQ_RAWSTAT=0x%08x GPU_STATUS=0x%08x",
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_IRQ_RAWSTAT), NULL),
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL));
-	dev_err(kbdev->dev, "  JOB_IRQ_RAWSTAT=0x%08x JOB_IRQ_JS_STATE=0x%08x JOB_IRQ_THROTTLE=0x%08x",
+	dev_MTK_err(kbdev->dev, "  JOB_IRQ_RAWSTAT=0x%08x JOB_IRQ_JS_STATE=0x%08x JOB_IRQ_THROTTLE=0x%08x",
 		kbase_reg_read(kbdev, JOB_CONTROL_REG(JOB_IRQ_RAWSTAT), NULL),
 		kbase_reg_read(kbdev, JOB_CONTROL_REG(JOB_IRQ_JS_STATE), NULL),
 		kbase_reg_read(kbdev, JOB_CONTROL_REG(JOB_IRQ_THROTTLE), NULL));
 	for (i = 0; i < 3; i++) {
-		dev_err(kbdev->dev, "  JS%d_STATUS=0x%08x      JS%d_HEAD_LO=0x%08x",
+		dev_MTK_err(kbdev->dev, "  JS%d_STATUS=0x%08x      JS%d_HEAD_LO=0x%08x",
 			i, kbase_reg_read(kbdev, JOB_SLOT_REG(i, JS_STATUS),
 					NULL),
 			i, kbase_reg_read(kbdev, JOB_SLOT_REG(i, JS_HEAD_LO),
 					NULL));
 	}
-	dev_err(kbdev->dev, "  MMU_IRQ_RAWSTAT=0x%08x GPU_FAULTSTATUS=0x%08x",
+	dev_MTK_err(kbdev->dev, "  MMU_IRQ_RAWSTAT=0x%08x GPU_FAULTSTATUS=0x%08x",
 		kbase_reg_read(kbdev, MMU_REG(MMU_IRQ_RAWSTAT), NULL),
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_FAULTSTATUS), NULL));
-	dev_err(kbdev->dev, "  GPU_IRQ_MASK=0x%08x    JOB_IRQ_MASK=0x%08x     MMU_IRQ_MASK=0x%08x",
+	dev_MTK_err(kbdev->dev, "  GPU_IRQ_MASK=0x%08x    JOB_IRQ_MASK=0x%08x     MMU_IRQ_MASK=0x%08x",
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK), NULL),
 		kbase_reg_read(kbdev, JOB_CONTROL_REG(JOB_IRQ_MASK), NULL),
 		kbase_reg_read(kbdev, MMU_REG(MMU_IRQ_MASK), NULL));
-	dev_err(kbdev->dev, "  PWR_OVERRIDE0=0x%08x   PWR_OVERRIDE1=0x%08x",
+	dev_MTK_err(kbdev->dev, "  PWR_OVERRIDE0=0x%08x   PWR_OVERRIDE1=0x%08x",
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(PWR_OVERRIDE0), NULL),
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(PWR_OVERRIDE1), NULL));
-	dev_err(kbdev->dev, "  SHADER_CONFIG=0x%08x   L2_MMU_CONFIG=0x%08x",
+	dev_MTK_err(kbdev->dev, "  SHADER_CONFIG=0x%08x   L2_MMU_CONFIG=0x%08x",
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(SHADER_CONFIG), NULL),
 		kbase_reg_read(kbdev, GPU_CONTROL_REG(L2_MMU_CONFIG), NULL));
 }
@@ -1192,7 +1192,7 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	 * assume that anything that is still left on the GPU is stuck there and
 	 * we'll kill it when we reset the GPU */
 
-	dev_err(kbdev->dev, "Resetting GPU (allowing up to %d ms)",
+	dev_MTK_err(kbdev->dev, "Resetting GPU (allowing up to %d ms)",
 								RESET_TIMEOUT);
 
 	spin_lock_irqsave(&kbdev->hwcnt.lock, flags);
@@ -1273,7 +1273,7 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	kbase_disjoint_state_down(kbdev);
 
 	wake_up(&kbdev->hwaccess.backend.reset_wait);
-	dev_err(kbdev->dev, "Reset complete");
+	dev_MTK_err(kbdev->dev, "Reset complete");
 
 	if (js_devdata->nr_contexts_pullable > 0 && !kbdev->poweroff_pending)
 		try_schedule = true;
@@ -1526,7 +1526,7 @@ void kbase_reset_gpu(struct kbase_device *kbdev)
 	atomic_set(&kbdev->hwaccess.backend.reset_gpu,
 						KBASE_RESET_GPU_COMMITTED);
 
-	dev_err(kbdev->dev, "Preparing to soft-reset GPU: Waiting (upto %d ms) for all jobs to complete soft-stop\n",
+	dev_MTK_err(kbdev->dev, "Preparing to soft-reset GPU: Waiting (upto %d ms) for all jobs to complete soft-stop\n",
 			kbdev->reset_timeout_ms);
 
 	hrtimer_start(&kbdev->hwaccess.backend.reset_timer,
@@ -1549,7 +1549,7 @@ void kbase_reset_gpu_locked(struct kbase_device *kbdev)
 	atomic_set(&kbdev->hwaccess.backend.reset_gpu,
 						KBASE_RESET_GPU_COMMITTED);
 
-	dev_err(kbdev->dev, "Preparing to soft-reset GPU: Waiting (upto %d ms) for all jobs to complete soft-stop\n",
+	dev_MTK_err(kbdev->dev, "Preparing to soft-reset GPU: Waiting (upto %d ms) for all jobs to complete soft-stop\n",
 			kbdev->reset_timeout_ms);
 	hrtimer_start(&kbdev->hwaccess.backend.reset_timer,
 			HR_TIMER_DELAY_MSEC(kbdev->reset_timeout_ms),

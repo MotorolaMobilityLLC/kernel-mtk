@@ -47,7 +47,7 @@
 #define ATE_NX_BIT		(1ULL << ATE_NX_SHIFT)
 
 #define show(kctx, fmt, ...) \
-	dev_err(kctx->kbdev->dev, fmt, ##__VA_ARGS__)
+	dev_MTK_err(kctx->kbdev->dev, fmt, ##__VA_ARGS__)
 
 
 enum ate_flag {
@@ -147,7 +147,7 @@ static phys_addr_t get_next_pgd(struct kbase_context *kctx,
 	p = pfn_to_page(PFN_DOWN(pgd));
 	pgd_page = kmap(p);
 	if (!pgd_page) {
-		dev_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
+		dev_MTK_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
 		return 0;
 	}
 	pte = pgd_page[index];
@@ -174,7 +174,7 @@ static phys_addr_t get_bottom_pgd(struct kbase_context *kctx, u64 vpfn)
 	for (l = MIDGARD_MMU_TOPLEVEL; l < 3; l++) {
 		pgd = get_next_pgd(kctx, pgd, vpfn, l);
 		if (!pgd) {
-			dev_err(kctx->kbdev->dev, "%s: Table walk failed on level %d.\n",
+			dev_MTK_err(kctx->kbdev->dev, "%s: Table walk failed on level %d.\n",
 					__func__, l);
 			break;
 		}
@@ -198,7 +198,7 @@ static u64 *get_ate_page(struct kbase_context *kctx, phys_addr_t pgd)
 	p = pfn_to_page(PFN_DOWN(pgd));
 	ate_page = kmap(p);
 	if (!ate_page) {
-		dev_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
+		dev_MTK_err(kctx->kbdev->dev, "%s: kmap failed!\n", __func__);
 		return NULL;
 	}
 	return ate_page;
@@ -254,7 +254,7 @@ static phys_addr_t get_phy_addr(struct kbase_context *kctx, u64 va)
 	return phy_addr + offset;
 err:
 	if (bottom_pgd)
-		dev_err(kctx->kbdev->dev, "%s: Table walk failed on level 3.\n",
+		dev_MTK_err(kctx->kbdev->dev, "%s: Table walk failed on level 3.\n",
 				__func__);
 	kbase_gpu_vm_unlock(kctx);
 	return 0;

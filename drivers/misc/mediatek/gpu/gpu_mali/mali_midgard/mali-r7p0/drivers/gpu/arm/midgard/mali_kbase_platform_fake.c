@@ -39,6 +39,9 @@
 
 static struct platform_device *mali_device;
 
+/* MTK */
+#include <mtk_mali_config.h>
+
 #ifndef CONFIG_OF
 /**
  * @brief Convert data in struct kbase_io_resources struct to Linux-specific resources
@@ -53,7 +56,7 @@ static struct platform_device *mali_device;
 static void kbasep_config_parse_io_resources(const struct kbase_io_resources *io_resources, struct resource *const linux_resources)
 {
 	if (!io_resources || !linux_resources) {
-		pr_err("%s: couldn't find proper resources\n", __func__);
+		pr_MTK_err("%s: couldn't find proper resources\n", __func__);
 		return;
 	}
 
@@ -86,7 +89,7 @@ int kbase_platform_fake_register(void)
 
 	config = kbase_get_platform_config(); /* declared in midgard/mali_kbase_config.h but defined in platform folder */
 	if (config == NULL) {
-		pr_err("%s: couldn't get platform config\n", __func__);
+		pr_MTK_err("%s: couldn't get platform config\n", __func__);
 		return -ENODEV;
 	}
 

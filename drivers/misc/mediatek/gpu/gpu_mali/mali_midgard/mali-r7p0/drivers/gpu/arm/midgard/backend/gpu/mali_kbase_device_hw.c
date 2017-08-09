@@ -116,7 +116,7 @@ static void kbase_report_gpu_fault(struct kbase_device *kbdev, int multiple)
 	}
 	else
 	{
-		pr_err("kbdev->gpu_fault_wq = %p", kbdev->gpu_fault_wq);
+		pr_MTK_err("kbdev->gpu_fault_wq = %p", kbdev->gpu_fault_wq);
 	}
 }
 

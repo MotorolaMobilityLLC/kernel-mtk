@@ -779,7 +779,7 @@ int kbasep_js_devdata_init(struct kbase_device * const kbdev)
 			jsdd->soft_stop_ticks < jsdd->hard_stop_ticks_dumping &&
 			jsdd->hard_stop_ticks_dumping <
 			jsdd->gpu_reset_ticks_dumping)) {
-		dev_err(kbdev->dev, "Job scheduler timeouts invalid; soft/hard/reset tick counts should be in increasing order\n");
+		dev_MTK_err(kbdev->dev, "Job scheduler timeouts invalid; soft/hard/reset tick counts should be in increasing order\n");
 		return -EINVAL;
 	}
 

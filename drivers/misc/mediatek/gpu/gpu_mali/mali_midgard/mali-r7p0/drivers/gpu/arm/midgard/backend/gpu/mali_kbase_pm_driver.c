@@ -761,47 +761,47 @@ void kbase_pm_check_transitions_sync(struct kbase_device *kbdev)
 			kbdev->pm.backend.gpu_in_desired_state);
 
 	if (ret < 0 && time_after(jiffies, timeout)) {
-		dev_err(kbdev->dev, "Power transition timed out unexpectedly\n");
-		dev_err(kbdev->dev, "Desired state :\n");
-		dev_err(kbdev->dev, "\tShader=%016llx\n",
+		dev_MTK_err(kbdev->dev, "Power transition timed out unexpectedly\n");
+		dev_MTK_err(kbdev->dev, "Desired state :\n");
+		dev_MTK_err(kbdev->dev, "\tShader=%016llx\n",
 				kbdev->pm.backend.desired_shader_state);
-		dev_err(kbdev->dev, "\tTiler =%016llx\n",
+		dev_MTK_err(kbdev->dev, "\tTiler =%016llx\n",
 				kbdev->pm.backend.desired_tiler_state);
-		dev_err(kbdev->dev, "Current state :\n");
-		dev_err(kbdev->dev, "\tShader=%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "Current state :\n");
+		dev_MTK_err(kbdev->dev, "\tShader=%08x%08x\n",
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(SHADER_READY_HI), NULL),
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(SHADER_READY_LO),
 					NULL));
-		dev_err(kbdev->dev, "\tTiler =%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "\tTiler =%08x%08x\n",
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(TILER_READY_HI), NULL),
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(TILER_READY_LO), NULL));
-		dev_err(kbdev->dev, "\tL2    =%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "\tL2    =%08x%08x\n",
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(L2_READY_HI), NULL),
 				kbase_reg_read(kbdev,
 					GPU_CONTROL_REG(L2_READY_LO), NULL));
-		dev_err(kbdev->dev, "Cores transitioning :\n");
-		dev_err(kbdev->dev, "\tShader=%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "Cores transitioning :\n");
+		dev_MTK_err(kbdev->dev, "\tShader=%08x%08x\n",
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						SHADER_PWRTRANS_HI), NULL),
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						SHADER_PWRTRANS_LO), NULL));
-		dev_err(kbdev->dev, "\tTiler =%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "\tTiler =%08x%08x\n",
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						TILER_PWRTRANS_HI), NULL),
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						TILER_PWRTRANS_LO), NULL));
-		dev_err(kbdev->dev, "\tL2    =%08x%08x\n",
+		dev_MTK_err(kbdev->dev, "\tL2    =%08x%08x\n",
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						L2_PWRTRANS_HI), NULL),
 				kbase_reg_read(kbdev, GPU_CONTROL_REG(
 						L2_PWRTRANS_LO), NULL));
 #if KBASE_GPU_RESET_EN
-		dev_err(kbdev->dev, "Sending reset to GPU - all running jobs will be lost\n");
+		dev_MTK_err(kbdev->dev, "Sending reset to GPU - all running jobs will be lost\n");
 		if (kbase_prepare_to_reset_gpu(kbdev))
 			kbase_reset_gpu(kbdev);
 #endif /* KBASE_GPU_RESET_EN */
@@ -1261,19 +1261,9 @@ int kbase_pm_init_hw(struct kbase_device *kbdev, unsigned int flags)
 
 	/* The GPU doesn't seem to be responding to the reset so try a hard
 	 * reset */
-	dev_err(kbdev->dev, "Failed to soft-reset GPU (timed out after %d ms), now attempting a hard reset\n",
+	dev_MTK_err(kbdev->dev, "Failed to soft-reset GPU (timed out after %d ms), now attempting a hard reset\n",
 								RESET_TIMEOUT);
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
-
-#ifdef MTK_MT6797_DEBUG
-	{
-#define MFG_PROT_MASK                    (0x1 << 21)
-		int spm_topaxi_protect(unsigned int mask_value, int en);
-
-		/* set bus protect */
-		spm_topaxi_protect(MFG_PROT_MASK, 1);
-	}
-#endif
 
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 						GPU_COMMAND_HARD_RESET, NULL);
@@ -1287,18 +1277,6 @@ int kbase_pm_init_hw(struct kbase_device *kbdev, unsigned int flags)
 	/* Wait for the RESET_COMPLETED interrupt to be raised */
 	kbase_pm_wait_for_reset(kbdev);
 
-#ifdef MTK_MT6797_DEBUG
-	{
-		void mtk_debug_mfg_reset(void);
-		int spm_topaxi_protect(unsigned int mask_value, int en);
-
-		/* MTK: MFG_RESET */
-		mtk_debug_mfg_reset();
-		/* release bus protect */
-		spm_topaxi_protect(MFG_PROT_MASK, 0);
-	}
-#endif
-
 	if (rtdata.timed_out == 0) {
 		/* GPU has been reset */
 		hrtimer_cancel(&rtdata.timer);
@@ -1308,7 +1286,7 @@ int kbase_pm_init_hw(struct kbase_device *kbdev, unsigned int flags)
 
 	destroy_hrtimer_on_stack(&rtdata.timer);
 
-	dev_err(kbdev->dev, "Failed to hard-reset the GPU (timed out after %d ms)\n",
+	dev_MTK_err(kbdev->dev, "Failed to hard-reset the GPU (timed out after %d ms)\n",
 								RESET_TIMEOUT);
 
 	/* The GPU still hasn't reset, give up */

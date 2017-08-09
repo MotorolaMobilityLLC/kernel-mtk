@@ -770,7 +770,7 @@ static void kbase_mmu_flush(struct kbase_context *kctx, u64 vpfn, size_t nr)
 					/* Flush failed to complete, assume the
 					 * GPU has hung and perform a reset to
 					 * recover */
-					dev_err(kbdev->dev, "Flush for GPU page table update did not complete. Issueing GPU soft-reset to recover\n");
+					dev_MTK_err(kbdev->dev, "Flush for GPU page table update did not complete. Issueing GPU soft-reset to recover\n");
 					if (kbase_prepare_to_reset_gpu(kbdev))
 						kbase_reset_gpu(kbdev);
 				}
@@ -1218,7 +1218,7 @@ void bus_fault_worker(struct work_struct *data)
 		 * We start the reset before switching to UNMAPPED to ensure that unrelated jobs
 		 * are evicted from the GPU before the switch.
 		 */
-		dev_err(kbdev->dev, "GPU bus error occurred. For this GPU version we now soft-reset as part of bus error recovery\n");
+		dev_MTK_err(kbdev->dev, "GPU bus error occurred. For this GPU version we now soft-reset as part of bus error recovery\n");
 		reset_status = kbase_prepare_to_reset_gpu(kbdev);
 	}
 #endif /* KBASE_GPU_RESET_EN */
@@ -1420,7 +1420,7 @@ static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 	source_id = (as->fault_status >> 16);
 
 	/* terminal fault, print info about the fault */
-	dev_err(kbdev->dev,
+	dev_MTK_err(kbdev->dev,
 		"Unhandled Page fault in AS%d at VA 0x%016llX\n"
 		"Reason: %s\n"
 		"raw fault status 0x%X\n"
@@ -1468,7 +1468,7 @@ static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 		 * We start the reset before switching to UNMAPPED to ensure that unrelated jobs
 		 * are evicted from the GPU before the switch.
 		 */
-		dev_err(kbdev->dev, "Unhandled page fault. For this GPU version we now soft-reset the GPU as part of page fault recovery.");
+		dev_MTK_err(kbdev->dev, "Unhandled page fault. For this GPU version we now soft-reset the GPU as part of page fault recovery.");
 		reset_status = kbase_prepare_to_reset_gpu(kbdev);
 	}
 #endif /* KBASE_GPU_RESET_EN */
@@ -1682,7 +1682,7 @@ void kbase_mmu_interrupt_process(struct kbase_device *kbdev, struct kbase_contex
 			 * earlier error hasn't been properly cleared by this
 			 * point.
 			 */
-			dev_err(kbdev->dev, "GPU bus error occurred. For this GPU version we now soft-reset as part of bus error recovery\n");
+			dev_MTK_err(kbdev->dev, "GPU bus error occurred. For this GPU version we now soft-reset as part of bus error recovery\n");
 			reset_status = kbase_prepare_to_reset_gpu_locked(kbdev);
 			if (reset_status)
 				kbase_reset_gpu_locked(kbdev);

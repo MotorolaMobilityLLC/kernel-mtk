@@ -114,14 +114,14 @@ struct kbase_va_region *kbase_mem_alloc(struct kbase_context *kctx, u64 va_pages
 
 	reg = kbase_alloc_free_region(kctx, 0, va_pages, zone);
 	if (!reg) {
-		dev_err(dev, "Failed to allocate free region");
+		dev_MTK_err(dev, "Failed to allocate free region");
 		goto no_region;
 	}
 
 	kbase_update_region_flags(kctx, reg, *flags);
 
 	if (kbase_reg_prepare_native(reg, kctx) != 0) {
-		dev_err(dev, "Failed to prepare region");
+		dev_MTK_err(dev, "Failed to prepare region");
 		goto prepare_failed;
 	}
 
@@ -143,7 +143,7 @@ struct kbase_va_region *kbase_mem_alloc(struct kbase_context *kctx, u64 va_pages
 	if (*flags & BASE_MEM_SAME_VA) {
 		/* Bind to a cookie */
 		if (!kctx->cookies) {
-			dev_err(dev, "No cookies available for allocation!");
+			dev_MTK_err(dev, "No cookies available for allocation!");
 			goto no_cookie;
 		}
 		/* return a cookie */
@@ -686,7 +686,7 @@ u64 kbase_mem_alias(struct kbase_context *kctx, u64 *flags, u64 stride,
 	if (!kctx->is_compat) {
 		/* Bind to a cookie */
 		if (!kctx->cookies) {
-			dev_err(kctx->kbdev->dev, "No cookies available for allocation!");
+			dev_MTK_err(kctx->kbdev->dev, "No cookies available for allocation!");
 			goto no_cookie;
 		}
 		/* return a cookie */
@@ -1523,7 +1523,7 @@ int kbase_mmap(struct file *file, struct vm_area_struct *vma)
 				 !(reg->flags & KBASE_REG_CPU_WR))) {
 			/* VM flags inconsistent with region flags */
 			err = -EPERM;
-			dev_err(dev, "%s:%d inconsistent VM flags\n",
+			dev_MTK_err(dev, "%s:%d inconsistent VM flags\n",
 					__FILE__, __LINE__);
 			goto out_unlock;
 		}
@@ -1534,7 +1534,7 @@ int kbase_mmap(struct file *file, struct vm_area_struct *vma)
 		if (kbase_gpu_mmap(kctx, reg,
 					vma->vm_start + aligned_offset,
 					reg->nr_pages, 1) != 0) {
-			dev_err(dev, "%s:%d\n", __FILE__, __LINE__);
+			dev_MTK_err(dev, "%s:%d\n", __FILE__, __LINE__);
 			/* Unable to map in GPU space. */
 			WARN_ON(1);
 			err = -ENOMEM;
@@ -1570,7 +1570,7 @@ int kbase_mmap(struct file *file, struct vm_area_struct *vma)
 			     !(reg->flags & KBASE_REG_CPU_WR))) {
 				/* VM flags inconsistent with region flags */
 				err = -EPERM;
-				dev_err(dev, "%s:%d inconsistent VM flags\n",
+				dev_MTK_err(dev, "%s:%d inconsistent VM flags\n",
 					__FILE__, __LINE__);
 				goto out_unlock;
 			}
@@ -1643,7 +1643,7 @@ out_unlock:
 	kbase_gpu_vm_unlock(kctx);
 out:
 	if (err)
-		dev_err(dev, "mmap failed %d\n", err);
+		dev_MTK_err(dev, "mmap failed %d\n", err);
 
 	return err;
 }
