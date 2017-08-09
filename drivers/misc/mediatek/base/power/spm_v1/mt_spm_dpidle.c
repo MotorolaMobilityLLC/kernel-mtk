@@ -1158,7 +1158,14 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
 #endif
+#if defined(CONFIG_ARCH_MT6580)
+	gic_set_primask();
+#endif
 	spm_trigger_wfi_for_dpidle(pwrctrl);
+
+#if defined(CONFIG_ARCH_MT6580)
+	gic_clear_primask();
+#endif
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
 #endif

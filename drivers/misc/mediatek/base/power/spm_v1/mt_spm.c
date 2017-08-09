@@ -5,6 +5,7 @@
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/atomic.h>
+#include <linux/irqchip/mt-gic.h>
 #include <mt-plat/aee.h>
 #include <mt-plat/mt_chip.h>
 #include <mach/mt_spm_mtcmos_internal.h>
@@ -240,7 +241,9 @@ static int spm_irq_register(void)
 		mt_gic_cfg_irq2cpu(irqdesc[i].irq, i % num_possible_cpus(), 1);
 #endif
 	}
-
+#if defined(CONFIG_ARCH_MT6580)
+	mt_gic_set_priority(SPM_IRQ0_ID);
+#endif
 	return r;
 }
 

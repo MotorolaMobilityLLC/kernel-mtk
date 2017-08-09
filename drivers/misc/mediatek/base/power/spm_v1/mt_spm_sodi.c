@@ -1092,8 +1092,13 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 #if SPM_AEE_RR_REC
 	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << SPM_SODI_ENTER_WFI));
 #endif
-
+#if defined(CONFIG_ARCH_MT6580)
+	gic_set_primask();
+#endif
 	spm_trigger_wfi_for_sodi(pwrctrl);
+#if defined(CONFIG_ARCH_MT6580)
+	gic_clear_primask();
+#endif
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << SPM_SODI_LEAVE_WFI));
