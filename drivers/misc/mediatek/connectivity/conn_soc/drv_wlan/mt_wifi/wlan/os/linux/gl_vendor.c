@@ -148,10 +148,11 @@ int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy,
 		sizeof(rGscanCapabilities), &rGscanCapabilities) < 0))
 		goto nla_put_failure;
 
-
 	i4Status = cfg80211_vendor_cmd_reply(skb);
+	return i4Status;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return i4Status;
 }
 
@@ -199,8 +200,10 @@ int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy,
 
 
 	i4Status = cfg80211_vendor_cmd_reply(skb);
+	return i4Status;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return i4Status;
 }
 
@@ -818,7 +821,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	ASSERT(wiphy);
 	ASSERT(wdev);
 	if ((data == NULL) || !data_len)
-		goto nla_put_failure;
+		return i4Status;
 	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
 
 	attr = (struct nlattr *)data;
@@ -862,10 +865,11 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 		(sizeof(wifi_channel) * num_channel), channels) < 0))
 		goto nla_put_failure;
 
-
 	i4Status = cfg80211_vendor_cmd_reply(skb);
+	return i4Status;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return i4Status;
 }
 
@@ -915,12 +919,13 @@ int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_de
 		u4BufLen, pRadioStat) < 0))
 		goto nla_put_failure;
 
-
 	i4Status = cfg80211_vendor_cmd_reply(skb);
-
 	kalMemFree(pRadioStat, VIR_MEM_TYPE, u4BufLen);
+	return -1; /* not support LLS now*/
+	/* return i4Status; */
 
 nla_put_failure:
+	kfree_skb(skb);
 	return i4Status;
 }
 
@@ -954,6 +959,7 @@ int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
@@ -987,6 +993,7 @@ int mtk_cfg80211_vendor_event_scan_results_available(struct wiphy *wiphy, struct
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
@@ -1021,6 +1028,7 @@ int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wire
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
@@ -1062,6 +1070,7 @@ int mtk_cfg80211_vendor_event_significant_change_results(struct wiphy *wiphy, st
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
@@ -1101,6 +1110,7 @@ int mtk_cfg80211_vendor_event_hotlist_ap_found(struct wiphy *wiphy, struct wirel
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
@@ -1140,6 +1150,7 @@ int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wirele
 	return 0;
 
 nla_put_failure:
+	kfree_skb(skb);
 	return -1;
 }
 
