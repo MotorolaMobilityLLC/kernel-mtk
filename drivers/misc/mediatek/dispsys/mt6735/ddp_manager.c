@@ -23,7 +23,7 @@
 #include "primary_display.h"
 #include "mtk_disp_mgr.h"
 #include "disp_assert_layer.h"
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -1541,7 +1541,7 @@ int dpmgr_path_idle_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned 
 
 	/* For DSI CMD mode, do not clock pwm_26M, used to make sure MM clock off but MTCMOS on */
 	if (primary_display_is_video_mode() == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_DISP_PWM, "screen_idle");
 #else
 		disp_clk_enable(DISP_PWM);
@@ -1603,7 +1603,7 @@ int dpmgr_path_idle_on(disp_path_handle dp_handle, void *cmdq_handle, unsigned i
 
 	/* clock on PEM_26M one more time when idle off, so need clock off it here */
 	if (primary_display_is_video_mode() == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_DISP_PWM, "screen_idle");
 #else
 		disp_clk_disable(DISP_PWM);

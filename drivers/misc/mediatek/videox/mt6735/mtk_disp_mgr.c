@@ -1999,7 +1999,7 @@ static int wait_ovl1_available(void)
 			dpmgr_path_get_handle(&dp_handle, &cmdq_handle);
 			if (dp_handle != 0) {
 				DISPMSG("split OVL1 in suspen mode\n");
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 				disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 				dpmgr_path_power_on((disp_path_handle)(dp_handle), 0);
@@ -2182,7 +2182,7 @@ static void destroy_external_display_path(int session, int mode)
 			dpmgr_path_get_handle(&dp_handle, &cmdq_handle);
 			if (dp_handle != 0) {
 				dpmgr_path_power_off((disp_path_handle) (dp_handle), 0);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 				disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 				g_enable_clock = 0;

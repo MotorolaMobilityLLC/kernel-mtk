@@ -39,7 +39,7 @@ atomic_t PMaster_enable = ATOMIC_INIT(0);
 static int dsi_reg_op_debug;
 #include <mt-plat/sync_write.h>
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
@@ -61,7 +61,7 @@ void ddp_set_mipi26m(int en)
 	else
 		clk_clrl(AP_PLL_CON0, 1 << 6);
 }
-#endif				/* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_CLKMGR */
 
 #define DSI_OUTREG32(cmdq, addr, val) DISP_REG_SET(cmdq, addr, val)
 #define DSI_BACKUPREG32(cmdq, hSlot, idx, addr) DISP_REG_BACKUP(cmdq, hSlot, idx, addr)
@@ -2782,7 +2782,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 {
 	DSI_STATUS ret = DSI_STATUS_OK;
 	int i = 0;
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	struct device_node *node;
 #endif
 /*	DISPFUNC();*/
@@ -2792,7 +2792,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 	/* DSI_OUTREG32(cmdq, MMSYS_CONFIG_BASE+0x118, 0xffffffff); */
 	/* DSI_OUTREG32(MMSYS_CONFIG_BASE+0xC08, 0xffffffff); */
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
 	if (!node)
 		DDPERR("[DDP_APMIXED] DISP find apmixed node failed\n");
@@ -2800,7 +2800,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 	ddp_apmixed_base = of_iomap(node, 0);
 	if (!ddp_apmixed_base)
 		DDPERR("[DDP_APMIXED] DISP apmixed base failed\n");
-#endif				/* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_CLKMGR */
 	DISPFUNC();
 
 	DSI_REG[0] = (struct DSI_REGS *) DISPSYS_DSI0_BASE;
@@ -2840,11 +2840,11 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 #endif
 		s_isDsiPowerOn = true;
 #ifdef ENABLE_CLK_MGR
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 		ddp_set_mipi26m(1);
 #endif
 		if (module == DISP_MODULE_DSI0 /* || module == DISP_MODULE_DSIDUAL */) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -2858,7 +2858,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 		}
 #if 0
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += enable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += enable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
@@ -3339,13 +3339,13 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 int ddp_dsi_clk_on(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int level)
 {
 	int ret = 0;
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	if (level > 0)
 		ddp_set_mipi26m(1);
 #endif
 
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -3374,7 +3374,7 @@ int ddp_dsi_clk_off(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int lev
 
 
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -3387,7 +3387,7 @@ int ddp_dsi_clk_off(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int lev
 
 	}
 	/* DDPMSG("ddp_dsi_clk_off.\n"); */
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	if (level > 0)
 		ddp_set_mipi26m(0);
 #endif
@@ -3520,13 +3520,13 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 	/* DSI_DumpRegisters(module,1); */
 	if (!s_isDsiPowerOn) {
 #ifdef ENABLE_CLK_MGR
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 		ddp_set_mipi26m(1);
 #endif
 
 		if (is_ipoh_bootup) {
 			if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 				ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 				ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -3545,7 +3545,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		DSI_PHY_clk_switch(module, NULL, true);
 
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -3559,7 +3559,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		}
 #if 0
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += enable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += enable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
@@ -3660,7 +3660,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		DSI_DisableClk(module, NULL);
 
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
@@ -3674,7 +3674,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		}
 #if 0
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 			ret += disable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += disable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
@@ -3689,7 +3689,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 		/* disable mipi pll */
 		DSI_PHY_clk_switch(module, NULL, false);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 		ddp_set_mipi26m(0);
 #endif
 #endif

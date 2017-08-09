@@ -8,7 +8,7 @@
 #endif
 #include "m4u.h"
 /* #include <mach/mt_reg_base.h> */
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 /* #include <mach/mt_irq.h> */

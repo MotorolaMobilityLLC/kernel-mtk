@@ -7,7 +7,7 @@
 #include "ddp_gamma.h"
 #include "disp_event.h"
 #include "DpDataType.h"
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
 #endif
 
@@ -269,7 +269,7 @@ typedef enum {
 /* secure video path implementation: the handle value */
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
 
-#if !defined(CONFIG_MTK_LEGACY)
+#ifndef CONFIG_MTK_CLKMGR
 enum disp_clk_id {
 	DISP0_SMI_COMMON = 0,
 	DISP0_SMI_LARB0,

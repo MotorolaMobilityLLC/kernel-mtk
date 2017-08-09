@@ -1,7 +1,7 @@
 #define LOG_TAG "WDMA"
 #include "ddp_log.h"
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include <linux/delay.h>
@@ -361,7 +361,7 @@ static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 	/* DDPMSG("wmda%d_clock_on\n",idx); */
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
 #else
 		disp_clk_enable(DISP0_DISP_WDMA0);
@@ -377,7 +377,7 @@ static int wdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 	/* DDPMSG("wdma%d_clock_off\n",idx); */
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
 #else
 		disp_clk_disable(DISP0_DISP_WDMA0);

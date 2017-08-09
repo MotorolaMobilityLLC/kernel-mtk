@@ -42,7 +42,7 @@
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
 /* #include <mach/irqs.h> */
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>	/* ???? */
 #endif
 /* #include <mach/mt_irq.h> */
@@ -471,7 +471,7 @@ struct dispsys_device {
 	struct device *dev;
 	int irq[DISP_REG_NUM];
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	struct clk *disp_clk[MAX_DISP_CLK_CNT];
 #endif
 };
@@ -598,7 +598,7 @@ static const struct file_operations disp_fops = {
 #endif
 };
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 /*
  * Note: The name order of the disp_clk_name[] must be synced with
  * the enum disp_clk_id in case get the wrong clock.
@@ -663,7 +663,7 @@ int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent)
 {
 	return clk_set_parent(dispsys_dev->disp_clk[id], dispsys_dev->disp_clk[parent]);
 }
-#endif /* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_CLKMGR */
 
 static int disp_probe(struct platform_device *pdev)
 {
@@ -752,7 +752,7 @@ static int disp_probe(struct platform_device *pdev)
 	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
 		pr_debug("DISPSYS get clock %s\n", disp_clk_name[i]);
 		dispsys_dev->disp_clk[i] = devm_clk_get(&pdev->dev, disp_clk_name[i]);
@@ -764,10 +764,10 @@ static int disp_probe(struct platform_device *pdev)
 				disp_clk_prepare(i);
 		}
 	}
-/*	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+	/* for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
 		disp_clk_prepare(i);
 	}*/
-#endif				/* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_CLKMGR */
 
 	/* //// power on MMSYS for early porting */
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -892,7 +892,7 @@ static int __init disp_init(void)
 
 static void __exit disp_exit(void)
 {
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	int i = 0;
 
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++)

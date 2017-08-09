@@ -27,7 +27,7 @@
 /* #include <linux/rtpm_prio.h> */
 /* #include "mach/eint.h" */
 #include <mt-plat/mt_gpio.h>
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -383,7 +383,7 @@ static int _disp_primary_path_dsi_clock_on(unsigned int level)
 	if (!primary_display_is_video_mode()) {
 		unsigned long flags;
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 		disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 		spin_lock_irqsave(&gLockTopClockOff, flags);
@@ -404,7 +404,7 @@ static int _disp_primary_path_dsi_clock_off(unsigned int level)
 		dpmgr_path_dsi_off(pgc->dpmgr_handle, NULL, level);
 		isDSIOff = 1;
 		spin_unlock_irqrestore(&gLockTopClockOff, flags);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 		disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	}
@@ -515,12 +515,12 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 					_disp_primary_path_idle_clock_off(0); /* parameter represent level */
 					isIdlePowerOff = 1;
 					spin_unlock_irqrestore(&gLockTopClockOff, flags);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 					disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 					/* DISPMSG("off MM clock end.\n"); */
 					DISPMSG("***start dump regs! clk_stat_check\n");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 					clk_stat_check(SYS_DIS);
 #endif
 					/*DISPMSG("---- start dump regs! clk_stat_bug.\n"); */
@@ -531,7 +531,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 					unsigned long flags;
 
 					DISPMSG("on MM clock start.\n");
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 					disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 					spin_lock_irqsave(&gLockTopClockOff, flags);
@@ -2073,7 +2073,7 @@ static int _DL_switch_to_DC_fast(void)
 	}
 
 	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_path_init(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
@@ -2144,7 +2144,7 @@ static int _DC_switch_to_DL_fast(void)
 
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle,
 			  (int)(unsigned long)pgc->cmdq_handle_ovl1to2_config);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
@@ -2480,7 +2480,7 @@ static int __build_path_direct_link(void)
 
 	/* set video mode must before path_init */
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 #ifndef MTK_FB_CMDQ_DISABLE
@@ -2547,7 +2547,7 @@ static int _build_path_rdma_to_dsi(void)
 
 	if (primary_display_is_video_mode())
 		_cmdq_insert_wait_frame_done_token();
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
@@ -5110,7 +5110,7 @@ int primary_display_deinit(void)
 
 	_cmdq_stop_trigger_loop();
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	_primary_path_unlock(__func__);
@@ -5364,7 +5364,7 @@ int primary_display_suspend(void)
 	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path)
 		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 8);
@@ -5412,7 +5412,7 @@ int primary_display_resume(void)
 		goto done;
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 1);
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	disp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	DISPCHECK("dpmanager path power on[begin]\n");
@@ -7064,7 +7064,7 @@ int primary_display_enable_path_cg(int enable)
 	_primary_path_lock(__func__);
 
 	if (enable) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI0");
 		ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI0");
 		ret += disable_clock(MT_CG_DISP0_DISP_OVL0, "DDP");
@@ -7109,7 +7109,7 @@ int primary_display_enable_path_cg(int enable)
 #endif
 
 	} else {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI0");
 		ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI0");
 		ret += enable_clock(MT_CG_DISP0_DISP_OVL0, "DDP");

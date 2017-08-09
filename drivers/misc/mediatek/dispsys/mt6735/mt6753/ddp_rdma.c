@@ -1,7 +1,7 @@
 #define LOG_TAG "RDMA"
 #include "ddp_log.h"
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -552,13 +552,13 @@ static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 	unsigned int idx = rdma_index(module);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_RDMA0, "RDMA0");
 #else
 		disp_clk_enable(DISP0_DISP_RDMA0);
 #endif
 	} else {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA1");
 #else
 		disp_clk_enable(DISP0_DISP_RDMA1);
@@ -574,13 +574,13 @@ static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 	unsigned int idx = rdma_index(module);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_RDMA0, "RDMA0");
 #else
 		disp_clk_disable(DISP0_DISP_RDMA0);
 #endif
 	} else {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_RDMA1, "RDMA1");
 #else
 		disp_clk_disable(DISP0_DISP_RDMA1);

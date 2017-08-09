@@ -2481,7 +2481,7 @@ static void ipoh_wkarnd_on_late_resume_done(struct ipoh_wkarnd *w)
  *
  *   Root cause not found.
  */
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #define DISP_IPOH_WORKAROUND_CG     MT_CG_DISP0_SMI_LARB0
 const char *ipoh_wkarnd_caller = "MTKFB";
@@ -2508,7 +2508,7 @@ static struct ipoh_wkarnd ipoh_workaround_rdma_underflow = {
 };
 
 #define IPOH_WORKAROUND_RDMA_UNDERFLOW      (&ipoh_workaround_rdma_underflow)
-#endif /* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_CLKMGR */
 
 /* All IPO-H workaround solution */
 #ifndef IPOH_WORKAROUND_RDMA_UNDERFLOW

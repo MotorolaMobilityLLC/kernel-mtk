@@ -3,7 +3,7 @@
 #include "ddp_log.h"
 
 #include <linux/types.h>
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -1052,7 +1052,7 @@ int ddp_check_engine_status(int mutexID)
 int ddp_path_top_clock_on(void)
 {
 #ifdef ENABLE_CLK_MGR
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP"); */
@@ -1071,14 +1071,14 @@ int ddp_path_top_clock_off(void)
 {
 #ifdef ENABLE_CLK_MGR
 	DDPMSG("ddp path top clock off\n");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	if (clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON)) {
 		DDPMSG("clear SMI_LARB0 & SMI_COMMON forced on\n");
 		clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
 		clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
 	}
 #endif
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	/* disable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP"); */
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
@@ -1095,7 +1095,7 @@ int ddp_path_top_clock_off(void)
 int ddp_path_lp_top_clock_on(void)
 {
 #ifdef ENABLE_CLK_MGR
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 #else
@@ -1110,7 +1110,7 @@ int ddp_path_lp_top_clock_on(void)
 int ddp_path_lp_top_clock_off(void)
 {
 #ifdef ENABLE_CLK_MGR
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 #else

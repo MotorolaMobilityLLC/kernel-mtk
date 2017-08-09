@@ -1,7 +1,7 @@
 #define LOG_TAG "OVL"
 #include "ddp_log.h"
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include "m4u.h"
@@ -687,7 +687,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 	DDPMSG("ovl%d_clock_on\n", idx);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
 		disp_clk_enable(DISP0_DISP_OVL0);
@@ -711,7 +711,7 @@ int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 	}
 
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
 		disp_clk_disable(DISP0_DISP_OVL0);
@@ -730,7 +730,7 @@ int ovl_resume(DISP_MODULE_ENUM module, void *handle)
 	DDPMSG("ovl%d_resume\n", idx);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
 		disp_clk_enable(DISP0_DISP_OVL0);
@@ -749,13 +749,13 @@ int ovl_suspend(DISP_MODULE_ENUM module, void *handle)
 	ovl_store_regs(module);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0 + idx, "OVL0");
 #else
 		disp_clk_disable(DISP0_DISP_OVL0 + idx);
 #endif
 	} else {
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0 + idx, "OVL1");
 #else
 		disp_clk_disable(DISP0_DISP_OVL0 + idx);
