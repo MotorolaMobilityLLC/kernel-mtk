@@ -158,7 +158,7 @@ static void vpSetting(void);
 static void vrSetting(void);
 static void icfpSetting(void);
 static void vpWfdSetting(void);
-
+static unsigned long get_register_base(int i);
 static void smi_dumpLarb(unsigned int index);
 static void smi_dumpCommon(void);
 
@@ -172,7 +172,7 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 /* to support error checking */
 unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id >= SMI_LARB_NR || larb_id < 0) {
+	if (larb_id >= SMI_LARB_NR || larb_id < 0)
 		return SMI_ERROR_ADDR;
 	else
 		return gLarbBaseAddr[larb_id];
@@ -945,8 +945,8 @@ int smi_common_init(void)
 {
 	int i;
 
-	SMIMSG("Enter smi_common_init\n")
-	    for (i = 0; i < SMI_LARB_NR; i++) {
+	SMIMSG("Enter smi_common_init\n");
+	for (i = 0; i < SMI_LARB_NR; i++) {
 		pLarbRegBackUp[i] = kmalloc(LARB_BACKUP_REG_SIZE,
 							    GFP_KERNEL | __GFP_ZERO);
 		if (pLarbRegBackUp[i] == NULL)
@@ -965,8 +965,8 @@ int smi_common_init(void)
 	}
 
 	/* apply init setting after kernel boot */
-	SMIMSG("Enter smi_common_init\n")
-	    initSetting();
+	SMIMSG("Enter smi_common_init\n");
+	initSetting();
 
 	register_larb_monitor(&larb_monitor_handler);
 
