@@ -17,7 +17,7 @@ void BM_Init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,EMI");
 	if (node) {
 		EMI_BASE_ADDR = of_iomap(node, 0);
-		pr_notice("get EMI_BASE_ADDR @ %p\n", EMI_BASE_ADDR);
+		pr_err("get EMI_BASE_ADDR @ %p\n", EMI_BASE_ADDR);
 	} else {
 		pr_err("can't find compatible node\n");
 		return;

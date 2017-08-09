@@ -48,10 +48,10 @@ unsigned long long get_mem_bw(void)
 		return g_pGetMemBW();
 
 	emi_dcm_disable = BM_GetEmiDcm();
-	/* printk("[get_mem_bw]emi_dcm_disable = %d\n", emi_dcm_disable); */
+	/* pr_err("[get_mem_bw]emi_dcm_disable = %d\n", emi_dcm_disable); */
 	current_time_ns = sched_clock();
 	time_period_ns = current_time_ns - last_time_ns;
-	/* printk("[get_mem_bw]last_time=%llu, current_time=%llu,
+	/* pr_err("[get_mem_bw]last_time=%llu, current_time=%llu,
 	period=%llu\n", last_time_ns, current_time_ns, time_period_ns); */
 
 	/* disable_infra_dcm(); */
@@ -76,18 +76,18 @@ unsigned long long get_mem_bw(void)
 		do_div(time_period_ns, 10000000);
 		do_div(throughput, 10000000);
 		pr_debug("[get_mem_bw] time_period_ns overflow lst\n");
-		/* printk("[get_mem_bw] time_period_ns overflow 1st\n"); */
+		/* pr_err("[get_mem_bw] time_period_ns overflow 1st\n"); */
 
 		if (time_period_ns >= 0xFFFFFFFF) { /* uint32_t overflow */
 			do_div(time_period_ns, 1000);
 			do_div(throughput, 1000);
 			pr_debug("[get_mem_bw] time_period_ns overflow 2nd\n");
-			/* printk("[get_mem_bw] time_period overflow 2nd\n"); */
+			/* pr_err("[get_mem_bw] time_period overflow 2nd\n"); */
 		}
 	}
 
 	do_div(throughput, time_period_ns);
-	/* printk("[get_mem_bw]Total MEMORY THROUGHPUT =%llu(MB/s),
+	/* pr_err("[get_mem_bw]Total MEMORY THROUGHPUT =%llu(MB/s),
 	WordAllCount_delta = 0x%llx, LastWordAllCount = 0x%llx\n",
 	throughput, WordAllCount, LastWordAllCount); */
 
@@ -110,7 +110,7 @@ unsigned long long get_mem_bw(void)
 	}
 	LastWordAllCount = value;
 
-	/*printk("[get_mem_bw]loop count = %d,
+	/*pr_err("[get_mem_bw]loop count = %d,
 		last_word_all_count = 0x%llx\n", count, LastWordAllCount); */
 
 	/* start EMI monitor counting */
@@ -120,14 +120,14 @@ unsigned long long get_mem_bw(void)
 	/* restore_infra_dcm();*/
 	BM_SetEmiDcm(emi_dcm_disable);
 
-	/*printk("[get_mem_bw]throughput = %llx\n", throughput);*/
+	/*pr_err("[get_mem_bw]throughput = %llx\n", throughput);*/
 
 	return throughput;
 }
 
 static int mem_bw_suspend_callback(struct device *dev)
 {
-	/*printk("[get_mem_bw]mem_bw_suspend_callback\n");*/
+	/*pr_err("[get_mem_bw]mem_bw_suspend_callback\n");*/
 	LastWordAllCount = 0;
 	BM_Pause();
 	return 0;
@@ -135,7 +135,7 @@ static int mem_bw_suspend_callback(struct device *dev)
 
 static int mem_bw_resume_callback(struct device *dev)
 {
-	/* printk("[get_mem_bw]mem_bw_resume_callback\n"); */
+	/* pr_err("[get_mem_bw]mem_bw_resume_callback\n"); */
 	BM_Continue();
 	return 0;
 }
@@ -170,7 +170,7 @@ static int __init mon_kernel_init(void)
 
 	/* disable_infra_dcm(); */
 	emi_dcm_disable = BM_GetEmiDcm();
-	/* printk("[MT_MEM_BW]emi_dcm_disable = %d\n", emi_dcm_disable); */
+	/* pr_err("[MT_MEM_BW]emi_dcm_disable = %d\n", emi_dcm_disable); */
 	BM_SetEmiDcm(0xff);	/* disable EMI dcm */
 
 	BM_SetReadWriteType(BM_BOTH_READ_WRITE);
