@@ -92,7 +92,7 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_EXTAMP_HIGH] = {"extamp-pullhigh", false, NULL},
 	[GPIO_EXTAMP_LOW] = {"extamp-pulllow", false, NULL},
 	[GPIO_EXTAMP2_HIGH] = {"extamp2-pullhigh", false, NULL},
-	[GPIO_EXTAMP2_HIGH] = {"extamp2-pulllow", false, NULL},
+	[GPIO_EXTAMP2_LOW] = {"extamp2-pulllow", false, NULL},
 	[GPIO_RCVSPK_HIGH] = {"rcvspk-pullhigh", false, NULL},
 	[GPIO_RCVSPK_LOW] = {"rcvspk-pulllow", false, NULL},
 };
@@ -118,9 +118,9 @@ void AudDrv_GPIO_probe(void *dev)
 			ret = PTR_ERR(aud_gpios[i].gpioctrl);
 			pr_err("%s pinctrl_lookup_state %s fail %d\n", __func__, aud_gpios[i].name,
 			       ret);
-			break;
+		} else {
+			aud_gpios[i].gpio_prepare = true;
 		}
-		aud_gpios[i].gpio_prepare = true;
 	}
 #if 0
 	pins_default = pinctrl_lookup_state(pinctrlaud, "default");
