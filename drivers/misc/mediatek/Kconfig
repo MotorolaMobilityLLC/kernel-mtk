@@ -87,6 +87,25 @@ config MTK_PASR
 	  This can help system reduce power consumption.
 	  It is based on MTK_MEMORY_LOWPOWER technology.
 
+config MTK_SVP
+	bool "Support Mediatek Shareable Secure Video Playback technology"
+	depends on CMA
+	default n
+	help
+	  Mediatek Shareable SVP technology.
+	  It tries to save memory by switching
+	  different DRAM mode dynamically. It's a
+	  platform-dependent feature.
+
+config MTK_SVP_RAM_SIZE
+	int "MTK SVP RAM dram buffer size in MB"
+	depends on MTK_SVP
+
+config MTK_TUI_RAM_SIZE
+	int "MTK TUI SVP RAM dram buffer size in MB"
+	depends on MTK_SVP
+	default 0
+
 config MTK_BASE_POWER
 	bool
 

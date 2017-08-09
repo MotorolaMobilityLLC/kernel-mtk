@@ -136,6 +136,8 @@ obj-$(CONFIG_MTK_SYSTRACKER)   += systracker/
 obj-$(CONFIG_MTK_RAM_CONSOLE)	+= ram_console/
 obj-$(CONFIG_MTK_EXTMEM) += exm/
 
+obj-$(CONFIG_MTK_SVP) += memory-ssvp/
+
 obj-y += performance/
 
 # gator driver is platform-independent
