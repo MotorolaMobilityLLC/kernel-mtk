@@ -3,6 +3,7 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/module.h>
+#include <linux/stacktrace.h>
 
 #include <mt-plat/mt_ccci_common.h>
 #include "ccci_config.h"
@@ -11,6 +12,10 @@
 #define CREATE_TRACE_POINTS
 #include "ccci_bm_events.h"
 #endif
+
+/*#define CCCI_WP_DEBUG*/
+/*#define CCCI_MEM_BM_DEBUG*/
+/*#define CCCI_SAVE_STACK_TRACE*/
 
 #define REQ_MAGIC_HEADER 0xF111F111
 #define REQ_MAGIC_FOOTER 0xF222F222
@@ -86,7 +91,37 @@ static void enable_watchpoint(void *address)
 #endif
 
 #ifdef CCCI_MEM_BM_DEBUG
-static int ccci_skb_addr_checker(struct sk_buff *newsk)
+static int is_in_ccci_skb_pool(struct sk_buff *skb)
+{
+	struct sk_buff *skb_p = NULL;
+
+	for (skb_p = skb_pool_1_5K.skb_list.next;
+		skb_p != NULL && skb_p != (struct sk_buff *)&skb_pool_1_5K.skb_list;
+		skb_p = skb_p->next) {
+			if (skb == skb_p) {
+				CCCI_INF_MSG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
+				return 1;
+			}
+	}
+	for (skb_p = skb_pool_16.skb_list.next;
+		skb_p != NULL && skb_p != (struct sk_buff *)&skb_pool_16.skb_list;
+		skb_p = skb_p->next) {
+			if (skb == skb_p) {
+				CCCI_INF_MSG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
+				return 1;
+			}
+	}
+	for (skb_p = skb_pool_4K.skb_list.next;
+		skb_p != NULL && skb_p != (struct sk_buff *)&skb_pool_4K.skb_list;
+		skb_p = skb_p->next) {
+			if (skb == skb_p) {
+				CCCI_INF_MSG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
+				return 1;
+			}
+	}
+	return 0;
+}
+static int ccci_skb_addr_checker(struct sk_buff *skb)
 {
 	unsigned long skb_addr_value;
 	unsigned long queue16_addr_value;
@@ -94,7 +129,7 @@ static int ccci_skb_addr_checker(struct sk_buff *newsk)
 	unsigned long queue4k_addr_value;
 	unsigned long req_pool_addr_value;
 
-	skb_addr_value = (unsigned long)newsk;
+	skb_addr_value = (unsigned long)skb;
 	queue16_addr_value = (unsigned long)&skb_pool_16;
 	queue1_5k_addr_value = (unsigned long)&skb_pool_1_5K;
 	queue4k_addr_value = (unsigned long)&skb_pool_4K;
@@ -112,7 +147,7 @@ static int ccci_skb_addr_checker(struct sk_buff *newsk)
 		(skb_addr_value >= req_pool_addr_value
 			&& skb_addr_value < req_pool_addr_value + sizeof(struct ccci_req_queue))
 		) {
-		CCCI_INF_MSG(-1, BM, "Free wrong skb=%lx pointer in skb poool!\n", skb_addr_value);
+		CCCI_INF_MSG(-1, BM, "WARN:Free wrong skb=%lx pointer in skb poool!\n", skb_addr_value);
 		CCCI_INF_MSG(-1, BM, "skb=%lx, skb_pool_16=%lx,  skb_pool_1_5K=%lx, skb_pool_4K=%lx, req_pool=%lx!\n",
 			skb_addr_value, queue16_addr_value, queue1_5k_addr_value,
 			queue4k_addr_value,
@@ -150,6 +185,71 @@ void ccci_magic_checker(void)
 }
 #endif
 
+#ifdef CCCI_SAVE_STACK_TRACE
+#define CCCI_TRACK_ADDRS_COUNT 8
+#define CCCI_TRACK_HISTORY_COUNT 8
+
+struct ccci_stack_trace {
+	void *who;
+	int cpu;
+	int pid;
+	unsigned long long when;
+	unsigned long addrs[CCCI_TRACK_ADDRS_COUNT];
+};
+
+void ccci_get_back_trace(void *who, struct ccci_stack_trace *trace)
+{
+	struct stack_trace stack_trace;
+
+	if (trace == NULL)
+		return;
+	stack_trace.max_entries = CCCI_TRACK_ADDRS_COUNT;
+	stack_trace.nr_entries = 0;
+	stack_trace.entries = trace->addrs;
+	stack_trace.skip = 3;
+	save_stack_trace(&stack_trace);
+	trace->who = who;
+	trace->when = sched_clock();
+	trace->cpu = smp_processor_id();
+	trace->pid = current->pid;
+}
+void ccci_print_back_trace(struct ccci_stack_trace *trace)
+{
+	int i;
+
+	if (trace->who != NULL) {
+		CCCI_ERR_MSG(-1, BM, "<<<<<who:%p when:%lld cpu:%d pid:%d\n",
+			trace->who,	trace->when, trace->cpu, trace->pid);
+	}
+	for (i = 0; i < CCCI_TRACK_ADDRS_COUNT; i++) {
+		if (trace->addrs[i] != 0)
+			CCCI_ERR_MSG(-1, BM, "[<%p>] %pS\n", (void *)trace->addrs[i], (void *)trace->addrs[i]);
+	}
+}
+
+
+static unsigned int backtrace_idx;
+static struct ccci_stack_trace backtrace_history[CCCI_TRACK_HISTORY_COUNT];
+static void ccci_add_bt_hisory(void *ptr)
+{
+	ccci_get_back_trace(ptr, &backtrace_history[backtrace_idx]);
+	backtrace_idx++;
+	if (backtrace_idx == CCCI_TRACK_HISTORY_COUNT)
+		backtrace_idx = 0;
+}
+static void ccci_print_bt_history(char *info)
+{
+	int i, k;
+
+	CCCI_ERR_MSG(-1, BM, "<<<<<%s>>>>>\n", info);
+	for (i = 0, k = backtrace_idx; i < CCCI_TRACK_HISTORY_COUNT; i++) {
+		if (k == CCCI_TRACK_HISTORY_COUNT)
+			k = 0;
+		ccci_print_back_trace(&backtrace_history[k]);
+		k++;
+	}
+}
+#endif
 static struct ccci_request *ccci_req_dequeue(struct ccci_req_queue *queue)
 {
 	unsigned long flags;
@@ -255,6 +355,7 @@ struct sk_buff *ccci_skb_dequeue(struct ccci_skb_queue *queue)
 	if (queue->pre_filled && queue->skb_list.qlen < queue->max_len / RELOAD_TH)
 		queue_work(pool_reload_work_queue, &queue->reload_work);
 	spin_unlock_irqrestore(&queue->skb_list.lock, flags);
+
 	return result;
 }
 
@@ -264,28 +365,40 @@ void ccci_skb_enqueue(struct ccci_skb_queue *queue, struct sk_buff *newsk)
 
 	spin_lock_irqsave(&queue->skb_list.lock, flags);
 	if (queue->skb_list.qlen < queue->max_len) {
+#ifdef CCCI_MEM_BM_DEBUG
+		if (is_in_ccci_skb_pool(newsk)) {
+			CCCI_INF_MSG(-1, BM,
+				"ccci_skb_enqueue: skb =%p qlen=%d is in ccci skb pool, this should not happened\n",
+				newsk, queue->skb_list.qlen);
+#ifdef CCCI_SAVE_STACK_TRACE
+			ccci_print_bt_history("Enqueue: free skb into 1.5k pool");
+#endif
+		}
+#endif
 		__skb_queue_tail(&queue->skb_list, newsk);
 		if (queue->skb_list.qlen > queue->max_history)
 			queue->max_history = queue->skb_list.qlen;
-	} else {
-#if 0
-		if (queue->pre_filled) {
-			CCCI_ERR_MSG(0, BM, "skb queue too long, max=%d\n", queue->max_len);
-#else
-		if (1) {
-#endif
 
+		#ifdef CCCI_SAVE_STACK_TRACE
+		if (queue == &skb_pool_1_5K)
+			ccci_add_bt_hisory(newsk);
+		#endif
+	} else {
 #ifdef CCCI_MEM_BM_DEBUG
-			if (ccci_skb_addr_checker(newsk)) {
-				CCCI_INF_MSG(-1, BM, "ccci_skb_enqueue:ccci_skb_addr_checker failed!\n");
-				ccci_mem_dump(-1, queue, sizeof(struct ccci_skb_queue));
-				dump_stack();
-			}
-#endif
-			dev_kfree_skb_any(newsk);
-		} else {
-			__skb_queue_tail(&queue->skb_list, newsk);
+		if (ccci_skb_addr_checker(newsk)) {
+			CCCI_INF_MSG(-1, BM, "ccci_skb_enqueue:ccci_skb_addr_checker failed!\n");
+			ccci_mem_dump(-1, queue, sizeof(struct ccci_skb_queue));
+			dump_stack();
 		}
+		if (is_in_ccci_skb_pool(newsk)) {
+			CCCI_INF_MSG(-1, BM, "ccci_skb_enqueue:Free skb =%p is in ccci skb pool\n", newsk);
+			dump_stack();
+			#ifdef CCCI_SAVE_STACK_TRACE
+			ccci_print_bt_history("Free 1.5k skb to kernel");
+			#endif
+		}
+#endif
+		dev_kfree_skb_any(newsk);
 	}
 	spin_unlock_irqrestore(&queue->skb_list.lock, flags);
 }
@@ -381,6 +494,13 @@ void ccci_free_skb(struct sk_buff *skb, DATA_POLICY policy)
 		if (ccci_skb_addr_checker(skb)) {
 			CCCI_INF_MSG(-1, BM, "ccci_skb_addr_checker failed\n");
 			dump_stack();
+		}
+		if (is_in_ccci_skb_pool(skb)) {
+			CCCI_INF_MSG(-1, BM, "Free skb =%p is in ccci skb pool\n", skb);
+			dump_stack();
+			#ifdef CCCI_SAVE_STACK_TRACE
+			ccci_print_bt_history("ccci_free_skb: Free 1.5k skb to kernel");
+			#endif
 		}
 #endif
 		dev_kfree_skb_any(skb);

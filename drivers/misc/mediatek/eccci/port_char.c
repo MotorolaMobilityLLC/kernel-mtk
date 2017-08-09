@@ -139,7 +139,7 @@ static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 	char buf[DUMP_BUF_SIZE];
 	int i, j;
 
-	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j < DUMP_BUF_SIZE; i++) {
+	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
 		if (((32 <= char_ptr[i]) && (char_ptr[i] <= 126))) {
 			buf[j++] = char_ptr[i];
 		} else {
@@ -491,6 +491,8 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		return actual_count;
 
  err_out:
+		CCCI_INF_MSG(port->modem->index, CHAR, "write error done on %s, l=%zu r=%d\n",
+			 port->name, actual_count, ret);
 		ccci_free_req(req);
 		return ret;
 	}

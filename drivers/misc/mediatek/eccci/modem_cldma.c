@@ -2652,7 +2652,15 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 			md_cd_ccif_send(md, AP_MD_PEER_WAKEUP);
 #endif
 		} else {
-			ret = -CCCI_ERR_HIF_NOT_POWER_ON;
+			/*
+			* [NOTICE] Dont return error
+			* SKB has been put into cldma chain,
+			* However, if txq_active is disable, that means cldma_stop for some case,
+			* and cldma no need resume again.
+			* This package will be dropped by cldma.
+			*/
+			CCCI_INF_MSG(md->index, TAG, "ch=%d qno=%d cldma maybe stop, this package will be dropped!\n",
+				ccci_h.channel, qno);
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 		md_cd_lock_cldma_clock_src(0);
