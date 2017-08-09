@@ -3914,7 +3914,7 @@
                 <def_dir>OUT</def_dir>
                 <in>true</in>
                 <out>true</out>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>GPIO_CHR_CE_PIN</varName0>
                 <varName1></varName1>
                 <varName2></varName2>
@@ -4195,7 +4195,7 @@
                 <socketType>0</socketType>
             </eint1>
         </module>
-        <module name="pmic" chip="PMIC_MT6351PMUMP" count="8">
+        <module name="pmic" count="8" chip="PMIC_MT6351PMUMP">
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
@@ -4238,7 +4238,7 @@
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
             </pmic7>
         </module>
-        <module row="8" name="kpd" column="9">
+        <module name="kpd" column="9" row="8">
             <keyMatrix>VOLUMEDOWN NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
