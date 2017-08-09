@@ -319,8 +319,7 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 {
 	kal_uint32 uPacketType, uPacketNumber, uPacketLength, uBufferCount_TX, uBufferCount_RX, uControl;
 
-	LOGBT("+%s, irq=%d\n", __func__, btcvsd_irq_number);
-pr_warn("+%s, irq=%d\n", __func__, btcvsd_irq_number);
+	pr_warn("+%s, irq=%d\n", __func__, btcvsd_irq_number);
 
 	if ((btsco.uRXState != BT_SCO_RXSTATE_RUNNING && btsco.uRXState != BT_SCO_RXSTATE_ENDING)
 		&& (btsco.uTXState != BT_SCO_TXSTATE_RUNNING && btsco.uTXState != BT_SCO_TXSTATE_ENDING)
@@ -637,6 +636,7 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 	unsigned long flags;
 	char *data_w_ptr = (char *)data;
 	kal_uint64 write_timeout_limit;
+	int max_timeout_trial = 3;
 
 	if ((btsco.pTX == NULL) || (btsco.pTX->PacketBuf == NULL) || (btsco.pTX->u4BufferSize == 0)) {
 		pr_debug("AudDrv_btcvsd_write btsco.pTX == NULL || btsco.pTX->PacketBuf == NULL || (btsco.pTX->u4BufferSize == 0 !!!\n");
@@ -770,12 +770,44 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 						BTCVSD_write_wait_queue_flag,
 						write_timeout_limit / 1000000 / 10);
 			t2 = sched_clock();
-			LOGBT("%s WAKEUP...count=%d\n", __func__, (int)count);
 			t2 = t2 - t1; /* in ns (10^9) */
+
+			LOGBT("%s(), WAKEUP...wait event interrupt, ret = %d, BTCVSD_write_wait_queue_flag = %d\n",
+			      __func__,
+			      ret,
+			      BTCVSD_write_wait_queue_flag);
+
 			if (t2 > write_timeout_limit) {
-				pr_debug("%s timeout, %llu ns, timeout_limit %llu\n", __func__,
-					t2, write_timeout_limit);
-				return written_size;
+				pr_warn("%s timeout, %llu ns, timeout_limit %llu, ret %d, flag %d\n",
+					__func__,
+					t2, write_timeout_limit,
+					ret,
+					BTCVSD_write_wait_queue_flag);
+			}
+
+			if (ret < 0) {
+				/* error, -ERESTARTSYS if it was interrupted by a signal */
+				max_timeout_trial--;
+				pr_err("%s(), error, trial left %d\n",
+				       __func__,
+				       max_timeout_trial);
+
+				if (max_timeout_trial <= 0)
+					return written_size;
+			} else if (ret == 0) {
+				/* conidtion is false after timeout */
+				max_timeout_trial--;
+				pr_err("%s(), error, timeout, condition is false, trial left %d\n",
+				       __func__,
+				       max_timeout_trial);
+
+				if (max_timeout_trial <= 0)
+					return written_size;
+			} else if (ret == 1) {
+				/* condition is true after timeout */
+				pr_debug("%s(), timeout, condition is true\n", __func__);
+			} else {
+				pr_debug("%s(), condition is true before timeout\n", __func__);
 			}
 		}
 		/* here need to wait for interrupt handler */

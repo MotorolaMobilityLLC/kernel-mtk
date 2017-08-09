@@ -67,7 +67,6 @@
 static bool mPrepareDone;
 DEFINE_SPINLOCK(auddrv_btcvsd_tx_lock);
 
-struct timeval begin;
 int prev_sec; /* define 0 @ open */
 long prev_usec;
 long diff_msec;
@@ -133,11 +132,15 @@ static int mtk_pcm_btcvsd_tx_stop(struct snd_pcm_substream *substream)
 	return 0;
 }
 
+static snd_pcm_uframes_t prev_frame;
+static kal_int32 prev_iPacket_r;
+
 static snd_pcm_uframes_t mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream
 						 *substream)
 {
+	snd_pcm_uframes_t frame = 0;
 	kal_uint32 byte = 0;
-	kal_uint32 Frameidx = 0;
+	static kal_int32 packet_diff;
 
 	unsigned long flags;
 
@@ -145,32 +148,37 @@ static snd_pcm_uframes_t mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream
 
 	spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 
-#if 1
-	/* kernel time testing */
-	do_gettimeofday(&begin);
+	/* get packet diff from last time */
+	LOGBT("%s(), btsco.pTX->iPacket_r = %d, prev_iPacket_r = %d\n",
+	      __func__,
+	      btsco.pTX->iPacket_r,
+	      prev_iPacket_r);
+	if (btsco.pTX->iPacket_r >= prev_iPacket_r) {
+		packet_diff = btsco.pTX->iPacket_r - prev_iPacket_r;
+	} else {
+		/* integer overflow */
+		packet_diff = (INT_MAX - prev_iPacket_r) +
+			      (btsco.pTX->iPacket_r - INT_MIN) + 1;
+	}
+	prev_iPacket_r = btsco.pTX->iPacket_r;
 
-	diff_msec = (begin.tv_sec - prev_sec)*1000 + (begin.tv_usec - prev_usec)/1000;
-	LOGBT("%s, tv_sec=%d, tv_usec=%ld, diff_msec=%ld, prev_sec=%d, prev_usec=%ld\n",
-		__func__, (int)(begin.tv_sec), begin.tv_usec, diff_msec, prev_sec, prev_usec);
-	prev_sec = begin.tv_sec;
-	prev_usec = begin.tv_usec;
+	/* increased bytes */
+	byte = packet_diff * SCO_TX_ENCODE_SIZE;
 
-	/* calculate cheating byte */
-	byte = (diff_msec * substream->runtime->rate * substream->runtime->channels / 1000);
-	Frameidx = audio_bytes_to_frame(substream , byte);
-	LOGBT("%s, ch=%d, rate=%d, byte=%d, Frameidx=%d\n",
-		__func__, substream->runtime->channels, substream->runtime->rate, byte, Frameidx);
+	frame = audio_bytes_to_frame(substream , byte);
+	frame += prev_frame;
+	frame %= substream->runtime->buffer_size;
 
-#else
-	byte = (btsco.pTX->iPacket_w & SCO_TX_PACKET_MASK) * SCO_TX_ENCODE_SIZE;
-	pr_warn("%s, byte=%d, btsco.pTX->iPacket_w=%d\n", __func__, byte, btsco.pTX->iPacket_w);
-	Frameidx = audio_bytes_to_frame(substream , byte);
-#endif
+	prev_frame = frame;
+	LOGBT("%s(), frame %lu, byte=%d, btsco.pTX->iPacket_r=%d\n",
+	      __func__,
+	      frame,
+	      byte,
+	      btsco.pTX->iPacket_r);
 
 	spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
-	return Frameidx;
-
+	return frame;
 }
 
 static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
@@ -180,6 +188,13 @@ static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 
 	LOGBT("%s\n", __func__);
+
+	if (params_period_size(hw_params) % SCO_TX_ENCODE_SIZE != 0) {
+		pr_err("%s(), error, period size %d not valid\n",
+		       __func__,
+		       params_period_size(hw_params));
+		return -EINVAL;
+	}
 
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
@@ -255,10 +270,6 @@ static int mtk_pcm_btcvsd_tx_open(struct snd_pcm_substream *substream)
 
 	BT_CVSD_Mem.TX_substream = substream;
 
-	do_gettimeofday(&begin);
-	prev_sec = begin.tv_sec;
-	prev_usec = begin.tv_usec;
-
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
@@ -286,6 +297,9 @@ static int mtk_pcm_btcvsd_tx_prepare(struct snd_pcm_substream *substream)
 static int mtk_pcm_btcvsd_tx_start(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
+
+	prev_frame = 0;
+	prev_iPacket_r = btsco.pTX->iPacket_r;
 
 	return 0;
 }
