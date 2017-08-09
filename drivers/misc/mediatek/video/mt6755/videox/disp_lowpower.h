@@ -17,7 +17,7 @@ return 0: display is not idle trigger now
 return 1: display is idle
 */
 int primary_display_is_idle(void);
-void primary_display_idlemgr_kick(char *source, int need_lock);
+void primary_display_idlemgr_kick(const char *source, int need_lock);
 void exit_pd_by_cmdq(cmdqRecHandle handler);
 void enter_pd_by_cmdq(cmdqRecHandle handler);
 void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent);

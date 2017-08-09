@@ -946,7 +946,7 @@ int primary_display_is_idle(void)
 	return idlemgr_pgc->is_primary_idle;
 }
 
-void primary_display_idlemgr_kick(char *source, int need_lock)
+void primary_display_idlemgr_kick(const char *source, int need_lock)
 {
 	char log[128] = "";
 

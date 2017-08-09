@@ -5401,6 +5401,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 
 	_primary_path_lock(__func__);
 
+	primary_display_idlemgr_kick(__func__, 0);
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -5463,6 +5464,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 	}
 
 	_primary_path_lock(__func__);
+	primary_display_idlemgr_kick(__func__, 1);
 
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
 

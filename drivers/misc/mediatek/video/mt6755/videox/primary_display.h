@@ -235,8 +235,6 @@ int primary_display_switch_dst_mode(int mode);
 int primary_display_get_lcm_index(void);
 int primary_display_force_set_fps(unsigned int keep, unsigned int skip);
 int primary_display_set_fps(int fps);
-void primary_display_idlemgr_kick(char *source, int need_lock);
-void primary_display_idlemgr_enter_idle(int need_lock);
 void primary_display_update_present_fence(unsigned int fence_idx);
 int primary_display_switch_esd_mode(int mode);
 int primary_display_cmdq_set_reg(unsigned int addr, unsigned int val);
