@@ -643,6 +643,13 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
 	return 0;
 }
 
+static int mt_gic_irqs;
+
+int mt_get_supported_irq_num_ex(void)
+{
+	return mt_gic_irqs;
+}
+
 static const struct irq_domain_ops gic_irq_domain_ops = {
 	.map = gic_irq_domain_map,
 	.xlate = gic_irq_domain_xlate,
@@ -738,6 +745,8 @@ static int __init gic_of_init(struct device_node *node,
 	gic_smp_init();
 	gic_dist_init();
 	gic_cpu_init();
+
+	mt_gic_irqs = gic_irqs;
 
 	return 0;
 

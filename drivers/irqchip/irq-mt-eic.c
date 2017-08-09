@@ -1698,8 +1698,18 @@ static int __init mt_eint_init(void)
 	/* Register Linux IRQ interface */
 	EINT_IRQ_BASE = mt_get_supported_irq_num();
 	if (!EINT_IRQ_BASE) {
-		pr_err("get_supported_irq_num returns %d\n", EINT_IRQ_BASE);
-		return -1;
+		if (mt_get_supported_irq_num_ex) {
+			EINT_IRQ_BASE = mt_get_supported_irq_num_ex();
+			if (!EINT_IRQ_BASE) {
+				pr_err("get_supported_irq_num returns %d\n",
+					EINT_IRQ_BASE);
+				return -1;
+			}
+		} else {
+			pr_err("get_supported_irq_num returns %d\n",
+					EINT_IRQ_BASE);
+			return -1;
+		}
 	}
 	pr_debug("EINT_IRQ_BASE = %d\n", EINT_IRQ_BASE);
 	irq_base = irq_alloc_descs(EINT_IRQ_BASE, EINT_IRQ_BASE, EINT_MAX_CHANNEL, numa_node_id());

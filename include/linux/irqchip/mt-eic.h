@@ -86,6 +86,7 @@
 extern void _print_status(void);
 extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
 extern unsigned int mt_gpio_to_irq(unsigned gpio);
+extern int mt_get_supported_irq_num_ex(void) __attribute__((weak));
 
 void mt_eint_mask(unsigned int eint_num);
 void mt_eint_unmask(unsigned int eint_num);
