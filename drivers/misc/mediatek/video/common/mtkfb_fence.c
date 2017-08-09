@@ -60,12 +60,7 @@ static struct ion_client *ion_client;
 /* how many counters prior to current timeline real-time counter */
 #define FENCE_STEP_COUNTER         (1)
 #define MTK_FB_NO_ION_FD        ((int)(~0U>>1))
-/*#define HW_OVERLAY_COUNT           (OVL_LAYER_NUM+1)*/
 #define DISP_SESSION_TYPE(id) (((id)>>16)&0xff)
-
-/* TODO: where to put this api? */
-/* extern char *disp_session_mode_spy(unsigned int session_id); */
-
 
 static LIST_HEAD(info_pool_head);
 static DEFINE_MUTEX(_disp_fence_mutex);
@@ -362,7 +357,6 @@ unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id,
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int mva = 0x0;
-	/* ASSERT(layer_id < HW_OVERLAY_COUNT); */
 	disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, layer_id);
@@ -412,7 +406,7 @@ unsigned int mtkfb_query_buf_va(unsigned int session_id, unsigned int layer_id, 
 	disp_session_sync_info *session_info;
 	disp_sync_info *layer_info;
 
-	ASSERT(layer_id < HW_OVERLAY_COUNT);
+	ASSERT(layer_id < DISP_SESSION_TIMELINE_COUNT);
 
 	session_info = _get_session_sync_info(session_id);
 	layer_info = &(session_info->session_layer_info[layer_id]);
@@ -500,7 +494,7 @@ unsigned int mtkfb_update_buf_ticket(unsigned int session_id, unsigned int layer
 	disp_sync_info *layer_info;
 
 	/* ASSERT(layer_id < HW_OVERLAY_COUNT); */
-	if (layer_id >= HW_OVERLAY_COUNT) {
+	if (layer_id >= DISP_SESSION_TIMELINE_COUNT) {
 		DISPERR("mtkfb_update_buf_state return MVA=0x0 mtkfb_query_buf_mva layer_id %d !!!!!!(Warning)\n",
 			layer_id);
 		return mva;
@@ -556,12 +550,76 @@ unsigned int mtkfb_query_idx_by_ticket(unsigned int session_id, unsigned int lay
 	return idx;
 }
 
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset, disp_input_config *buf_info)
+{
+	struct mtkfb_fence_buf_info *buf;
+	disp_session_sync_info *session_info;
+	disp_sync_info *layer_info;
+	unsigned int mva = 0x0;
+
+	if (buf_info->layer_id >= DISP_SESSION_TIMELINE_COUNT) {
+		DISPERR("layer_id %d !!!!!!!!(Warning)\n", buf_info->layer_id);
+		return mva;
+	}
+
+	session_info = _get_session_sync_info(session_id);
+	layer_info = &(session_info->session_layer_info[buf_info->layer_id]);
+	if (buf_info->layer_id != layer_info->layer_id) {
+		DISPERR("wrong layer id %d(rt), %d(in)!\n", layer_info->layer_id, buf_info->layer_id);
+		return 0;
+	}
+
+	mutex_lock(&layer_info->sync_lock);
+	list_for_each_entry(buf, &layer_info->buf_list, list) {
+		if (buf->idx == buf_info->next_buff_idx) {
+			buf->layer_type = buf_info->layer_type;
+			break;
+		}
+	}
+
+	mutex_unlock(&layer_info->sync_lock);
+
+	DISPMSG("mva updaten:session_id=0x%08x, layer_id=%d, %x, mva=0x%lx-%x\n", session_id, buf_info->layer_id,
+		buf_info->next_buff_idx, buf->mva, buf_info->layer_type);
+
+	return mva;
+}
+
+unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id, unsigned long phy_addr,
+		int query_type)
+{
+	struct mtkfb_fence_buf_info *buf = NULL;
+	struct mtkfb_fence_buf_info *pre_buf = NULL;
+	disp_session_sync_info *session_info;
+	disp_sync_info *layer_info;
+	int query_info = 0;
+
+	session_info = _get_session_sync_info(session_id);
+	layer_info = &(session_info->session_layer_info[layer_id]);
+	if (layer_id != layer_info->layer_id) {
+		DISPERR("wrong layer id %d(rt), %d(in)!\n", layer_info->layer_id, layer_id);
+		return 0;
+	}
+
+	mutex_lock(&layer_info->sync_lock);
+	list_for_each_entry(buf, &layer_info->buf_list, list) {
+		DISPMSG("mva updatenn layer%d, idx=0x%x, mva=0x%08lx-%x py %lx\n", layer_id,
+				buf->idx, buf->mva, buf->layer_type, phy_addr);
+		if ((buf->mva + buf->mva_offset) == phy_addr)
+			query_info = buf->layer_type;
+	}
+	mutex_unlock(&layer_info->sync_lock);
+
+	return query_info;
+}
+#endif
 
 #endif				/* #if defined (MTK_FB_ION_SUPPORT) */
 
 
 bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsigned int idx,
-			   unsigned int mva_offset, unsigned int seq)
+		unsigned int mva_offset, unsigned int seq)
 {
 	struct mtkfb_fence_buf_info *buf;
 	bool ret = false;
@@ -582,7 +640,7 @@ bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsig
 			buf->seq = seq;
 			ret = true;
 			MMProfileLogEx(ddp_mmp_get_events()->primary_seq_insert, MMProfileFlagPulse,
-				       buf->mva + buf->mva_offset, buf->seq);
+					buf->mva + buf->mva_offset, buf->seq);
 			break;
 		}
 	}
@@ -593,7 +651,7 @@ bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsig
 }
 
 unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int layer_id,
-					 unsigned int phy_addr)
+					 unsigned long phy_addr)
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int frm_seq = 0x0;
@@ -642,8 +700,8 @@ int disp_sync_init(void)
 		session_info->session_id = 0xffffffff;
 	}
 
-	DISPPRINT("Fence timeline idx: present = %d, output = %d\n",
-		  disp_sync_get_present_timeline_id(), disp_sync_get_output_timeline_id());
+	DISPMSG("Fence timeline idx: present = %d, output = %d\n",
+		disp_sync_get_present_timeline_id(), disp_sync_get_output_timeline_id());
 
 
 	mtkfb_ion_init();
@@ -660,6 +718,9 @@ struct mtkfb_fence_buf_info *mtkfb_init_buf_info(struct mtkfb_fence_buf_info *bu
 	buf->idx = 0;
 	buf->mva = 0;
 	buf->cache_sync = 0;
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+	buf->layer_type = 0;
+#endif
 	return buf;
 }
 
@@ -800,6 +861,19 @@ void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id)
 	mtkfb_release_fence(session_id, layer_id, fence);
 }
 
+void mtkfb_release_session_fence(unsigned int session_id)
+{
+	disp_session_sync_info *session_sync_info = NULL;
+	int i;
+
+	session_sync_info = _get_session_sync_info(session_id);
+	if (session_sync_info == NULL) {
+		DISPERR("layer_info is null\n");
+		return;
+	}
+	for (i = 0; i < ARRAY_SIZE(session_sync_info->session_layer_info); i++)
+		mtkfb_release_layer_fence(session_id, i);
+}
 int disp_sync_get_ovl_timeline_id(int layer_id)
 {
 	return DISP_SESSION_OVL_TIMELINE_ID(layer_id);
@@ -1006,7 +1080,7 @@ struct mtkfb_fence_buf_info *disp_sync_prepare_buf(disp_buffer_info *buf)
 }
 
 int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timeline_id,
-				     unsigned long phy_addr, unsigned int offset)
+				     unsigned long phy_addr)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
 	int idx = -1;
@@ -1053,7 +1127,7 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 						DISPPR_ERROR("wrong addr:0x%lx, 0x%lx,0x%08x\n",
 							     phy_addr, buf->mva, buf->size);
 
-					idx = buf->idx - offset;
+					idx = buf->idx - 1;
 				}
 			}
 		}
@@ -1062,7 +1136,7 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 		if (layer_en == 0)
 			idx = fence_idx;
 		else
-			idx = fence_idx - offset;
+			idx = fence_idx - 1;
 
 	}
 

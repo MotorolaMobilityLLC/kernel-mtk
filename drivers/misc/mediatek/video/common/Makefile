@@ -24,7 +24,8 @@
 # Common Source files for all chips
 obj-$(CONFIG_MTK_FB) += 			\
 				data_rgb888_64x64.o		\
-				data_rgb888_64x64_golden.o
+				data_rgb888_64x64_golden.o \
+				mtkfb_fence.o
 
 
 ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) ))

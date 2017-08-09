@@ -56,6 +56,9 @@ struct mtkfb_fence_buf_info {
 	unsigned long long ts_create;
 	unsigned long long ts_period_keep;
 	unsigned int seq;
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+	unsigned int layer_type;
+#endif
 };
 
 struct mtkfb_fence_sync_info {
@@ -137,10 +140,16 @@ unsigned int mtkfb_update_buf_ticket(unsigned int session_id, unsigned int layer
 				     unsigned int idx, unsigned int ticket);
 unsigned int mtkfb_query_idx_by_ticket(unsigned int session_id, unsigned int layer_id,
 				       unsigned int ticket);
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset,
+		disp_input_config *buf_info);
+unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id,
+		unsigned long phy_addr, int query_type);
+#endif
 unsigned int mtkfb_query_release_idx(unsigned int session_id, unsigned int layer_id,
 				     unsigned long phy_addr);
 unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int layer_id,
-					 unsigned int phy_addr);
+					 unsigned long phy_addr);
 bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsigned int idx,
 			   unsigned int mva_offset, unsigned int seq);
 struct mtkfb_fence_buf_info *mtkfb_init_buf_info(struct mtkfb_fence_buf_info *buf);
@@ -169,8 +178,7 @@ int disp_sync_put_cached_layer_info(unsigned int session_id, unsigned int timeli
 int disp_sync_convert_input_to_fence_layer_info(disp_input_config *src,
 						FENCE_LAYER_INFO *dst,
 						unsigned long dst_mva);
-int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timeline_id,
-				     unsigned long phy_addr, unsigned int offset);
+int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timeline_id, unsigned long phy_addr);
 unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
 				      unsigned int idx, unsigned long *mva,
 				      unsigned int *size);
@@ -181,6 +189,7 @@ int disp_sync_get_output_interface_timeline_id(void);
 int disp_sync_get_present_timeline_id(void);
 disp_session_sync_info *disp_get_session_sync_info_for_debug(unsigned int session_id);
 
+void mtkfb_release_session_fence(unsigned int session_id);
 disp_sync_info *_get_sync_info(unsigned int session_id, unsigned int timeline_id);
 
 
