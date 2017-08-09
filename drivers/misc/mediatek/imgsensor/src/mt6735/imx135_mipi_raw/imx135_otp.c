@@ -32,7 +32,7 @@ After finishing the OTP written, we will provide you the golden_rg and golden_bg
 
 #include "imx135mipiraw_Sensor.h"
 
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 #define PFX "imx135_otp"
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 

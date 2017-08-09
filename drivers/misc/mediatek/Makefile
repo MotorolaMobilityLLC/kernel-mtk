@@ -59,7 +59,7 @@ obj-$(CONFIG_MTK_WFD_SUPPORT)  += uibc/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/src/
-
+obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
 endif

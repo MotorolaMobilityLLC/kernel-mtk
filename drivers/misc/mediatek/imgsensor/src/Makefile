@@ -1,6 +1,6 @@
 #LukeHu
 $(info LukeHu : imgsensor_src makefile start)
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
+#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 CONFIG_MTK_PLATFORM_SENSOR := $(CONFIG_MTK_PLATFORM)
 
 ifeq ($(CONFIG_ARCH_MT6735M),y)

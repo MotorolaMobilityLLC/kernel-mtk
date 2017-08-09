@@ -56,6 +56,15 @@ config MTK_SENSOR_SUPPORT
 	bool "MTK_SENSOR_SUPPORT"
 	help
 	  sensor config to sensor port sensor feature in project.
+
+config CUSTOM_KERNEL_IMGSENSOR
+	string "CUSTOM_KERNEL_IMGSENSOR"
+	help
+	  Kernel space image sensor driver. Define  project used all image
+	  sensors .The value is combination of CUSTOM_KERNEL_MAIN_IMGSENSOR,
+	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
+	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
+
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
@@ -110,3 +119,4 @@ source "drivers/misc/mediatek/exm/Kconfig"
 source "drivers/misc/mediatek/sched/Kconfig"
 source "drivers/misc/mediatek/trustzone/Kconfig"
 source "drivers/misc/mediatek/fmradio/Kconfig"
+source "drivers/misc/mediatek/imgsensor/Kconfig"

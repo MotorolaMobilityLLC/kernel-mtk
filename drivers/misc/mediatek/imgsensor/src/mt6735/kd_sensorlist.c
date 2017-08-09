@@ -13,9 +13,9 @@
 /*#include <linux/xlog.h> *//*Luke--150701=For 3.18 build pass*/
 #include <linux/seq_file.h>
 #include <sync_write.h> /*Luke--150701=For 3.18 build pass*/
-
-#include "../camera/kd_camera_hw.h"
-
+#include <linux/types.h>
+#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
@@ -176,9 +176,8 @@ static inline void KD_IMGSENSOR_PROFILE(char *tag) {}
 *
 ********************************************************************************/
 /*LukeHu--150703=For Kernel Build Pass*/
-/*extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char *mode_name);*/
-/* extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution */
-
+extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char *mode_name);
+extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution 
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3312,7 +3311,7 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 
 #if !defined(CONFIG_MTK_CLKMGR)
 	Get_ccf_clk(pdev);
-	mtkcam_gpio_init(pdev);
+//	mtkcam_gpio_init(pdev);
 #endif
 
     return i2c_add_driver(&CAMERA_HW_i2c_driver);
