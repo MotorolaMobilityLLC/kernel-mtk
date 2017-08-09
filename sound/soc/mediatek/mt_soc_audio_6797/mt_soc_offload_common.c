@@ -278,19 +278,6 @@ static int mtk_offload_dl3_prepare(void)
 			SetI2SDacEnable(true);
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-#if 0
-		if (afe_offload_block.samplerate == 48000) {
-			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 8 << 12 | 0x330,
-				0xffffffff);  /* 48k sample rate */
-			Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 8 << 12 | 0x300,
-				0xffffffff);   /* 48k sample rate */
-		} else {
-			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 7 << 12 | 0x330,
-				0xffffffff);  /* 44k sample rate */
-			Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 7 << 12 | 0x300,
-				0xffffffff);   /* 44k sample rate */
-		}
-#endif
 		EnableAfe(true);
 		mPrepareDone = true;
 	}
@@ -426,6 +413,7 @@ int mtk_compr_offload_copy(unsigned long arg)/* (OFFLOAD_WRITE_T __user *arg) */
 		if (afe_offload_block.state == OFFLOAD_STATE_DRAIN) {
 			if (afe_offload_block.transferred > (8 * USE_PERIODS_MAX)) {
 				int silence_length = 0;
+				unsigned int Drain_idx = 0;
 
 				if (afe_offload_block.buf.u4ReadIdx > afe_offload_block.buf.u4WriteIdx)
 					silence_length = afe_offload_block.buf.u4ReadIdx -
@@ -438,11 +426,14 @@ int mtk_compr_offload_copy(unsigned long arg)/* (OFFLOAD_WRITE_T __user *arg) */
 				memset_io(afe_offload_block.buf.pucVirtBufAddr +
 					afe_offload_block.buf.u4WriteIdx,
 					0, silence_length);
-				afe_offload_block.buf.u4WriteIdx += silence_length;
+				Drain_idx = afe_offload_block.buf.u4WriteIdx + silence_length;
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 				OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
-							MP3_DRAIN, afe_offload_block.buf.u4WriteIdx,
+							MP3_DRAIN, Drain_idx,
 							afe_offload_block.drain_state, NULL);
+#endif
+#ifdef use_wake_lock
+				mtk_compr_offload_int_wakelock(false);
 #endif
 			} else {
 				afe_offload_block.drain_state = AUDIO_DRAIN_ALL;
@@ -531,12 +522,7 @@ static int mtk_compr_offload_open(void)
 	audio_messenger_ipi_init();
 	audio_reg_recv_message(TASK_SCENE_PLAYBACK_MP3, OffloadService_IPICmd_Received);
 #endif
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-	register_feature(OPEN_DSP_FEATURE_ID);
-	request_freq();
-#endif
 #ifdef use_wake_lock
-	wake_lock_init(&Offload_suspend_lock, WAKE_LOCK_SUSPEND, "Offload wakelock");
 	mtk_compr_offload_int_wakelock(true);
 #endif
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
@@ -556,14 +542,7 @@ static void mtk_compr_offload_free(void)
 	/* memset_io((void *)afe_offload_block.hw_buffer_area, 0, afe_offload_block.hw_buffer_size); */
 	SetOffloadEnableFlag(false);
 #ifdef use_wake_lock
-	if (afe_offload_block.wakelock) {
-		mtk_compr_offload_int_wakelock(false);
-		wake_lock_destroy(&Offload_suspend_lock);
-	}
-#endif
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-	deregister_feature(OPEN_DSP_FEATURE_ID);
-	request_freq();
+	mtk_compr_offload_int_wakelock(false);
 #endif
 }
 
@@ -751,11 +730,13 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 	unsigned int u4BufferSize = afe_offload_block.buf.u4BufferSize;
 	unsigned int u4WriteIdx = afe_offload_block.buf.u4WriteIdx;
 	unsigned int u4ReadIdx = afe_offload_block.buf.u4ReadIdx;
-	/*pr_debug("%s, count = %lu, transferred:%lu, writeIdx:%lu, length:%lu\n",
+	/* pr_debug("%s, count = %lu, transferred:%lu, writeIdx:%lu, length:%lu\n",
 	__func__, (unsigned long)count,
 	(unsigned long)afe_offload_block.transferred,
 	(unsigned long)afe_offload_block.buf.u4WriteIdx,
-	(unsigned long)afe_offload_block.buf.u4BufferSize);*/
+	(unsigned long)afe_offload_block.buf.u4BufferSize); */
+	if (count % 64 != 0)
+		count = USE_PERIODS_MAX;
 	Auddrv_Dl3_Spinlock_lock();
 	if (u4WriteIdx >= u4ReadIdx)
 		free_space = (u4BufferSize - u4WriteIdx) + u4ReadIdx;
@@ -789,7 +770,7 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 		free_space = (u4BufferSize - u4WriteIdx) + u4ReadIdx;
 	else
 		free_space = u4ReadIdx - u4WriteIdx;
-	if (count > free_space) {
+	if (count >= free_space) {
 		OffloadService_SetWriteblocked(true);
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
@@ -838,7 +819,7 @@ static int mtk_compr_offload_pointer(void __user *arg)
 		return 0;
 	}
 	timestamp.sampling_rate = afe_offload_block.samplerate;
-	timestamp.pcm_io_frames = afe_offload_block.copied_total >> 3;
+	timestamp.pcm_io_frames = afe_offload_block.copied_total >> 2; /* DSP return 16bit data */
 
 	/* pr_debug("%s pcm_io_frames = %d\n", __func__,timestamp.pcm_io_frames); */
 	if (copy_to_user((struct OFFLOAD_TIMESTAMP_T __user *)arg, &timestamp, sizeof(timestamp))) {
@@ -922,6 +903,8 @@ static void mtk_compr_offload_pause(void)
 	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
+	SetOffloadEnableFlag(false);
+	OffloadService_ReleaseWriteblocked();
 #ifdef use_wake_lock
 	mtk_compr_offload_int_wakelock(false);
 #endif
@@ -929,8 +912,7 @@ static void mtk_compr_offload_pause(void)
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_PAUSE, 0, 0, NULL);
 #endif
-	SetOffloadEnableFlag(false);
-	OffloadService_ReleaseWriteblocked();
+
 }
 static int mtk_compr_offload_stop(void)
 {
@@ -950,7 +932,8 @@ static int mtk_compr_offload_stop(void)
 	memset_io((void *)afe_offload_block.buf.pucVirtBufAddr, 0,
 		afe_offload_block.buf.u4BufferSize);
 	OffloadService_SetWriteblocked(false);
-
+	OffloadService_SetDrain(false, afe_offload_block.drain_state);
+	OffloadService_ReleaseWriteblocked();
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_CLOSE, 0, 0, NULL);
@@ -958,8 +941,6 @@ static int mtk_compr_offload_stop(void)
 #ifdef use_wake_lock
 	mtk_compr_offload_int_wakelock(false);
 #endif
-	OffloadService_SetDrain(false, afe_offload_block.drain_state);
-	OffloadService_ReleaseWriteblocked();
 	return ret;
 }
 
@@ -1208,12 +1189,18 @@ static int OffloadService_mod_init(void)
 		pr_err("OffloadService misc_register Fail:%d\n", ret);
 		return ret;
 	}
+#ifdef use_wake_lock
+	wake_lock_init(&Offload_suspend_lock, WAKE_LOCK_SUSPEND, "Offload wakelock");
+#endif
 	return 0;
 }
 
 static void  OffloadService_mod_exit(void)
 {
 	pr_warn("%s\n", __func__);
+#ifdef use_wake_lock
+	wake_lock_destroy(&Offload_suspend_lock);
+#endif
 }
 module_init(OffloadService_mod_init);
 module_exit(OffloadService_mod_exit);

@@ -202,7 +202,7 @@ void audio_send_ipi_msg(
 		return;
 	}
 
-	memset_io(&ipi_msg, 0, MAX_IPI_MSG_BUF_SIZE);
+	memset_io(ipi_msg, 0, MAX_IPI_MSG_BUF_SIZE);
 
 	ipi_msg->magic      = IPI_MSG_MAGIC_NUMBER;
 	ipi_msg->task_scene = task_scene;
