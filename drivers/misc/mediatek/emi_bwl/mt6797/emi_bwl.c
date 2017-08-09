@@ -95,7 +95,10 @@ static const unsigned int emi_arbh_lpddr3_1800_val[] = {
 
 int get_dram_type(void)
 {
-	unsigned int value = ucDram_Register_Read(DRAMC_ACTIM1);
+	unsigned int value;
+
+	value = 0xFFFF;
+	/*wait for dramc ready unsigned int value = ucDram_Register_Read(DRAMC_ACTIM1); */
 
 	if ((value >> 28) & 0x1)
 		return LPDDR3_1800;
@@ -140,7 +143,7 @@ int mtk_mem_bw_ctrl(int sce, int op)
 		}
 	}
 	if (highest == -1)
-		highest = CON_SCE_NORMAL;
+		highest = CON_SCE_UI;
 
     /* set new EMI bandwidth limiter value */
 	if (highest != cur_con_sce) {
@@ -151,8 +154,8 @@ int mtk_mem_bw_ctrl(int sce, int op)
 			writel(emi_arbd_lpddr3_1800_val[highest], EMI_ARBD);
 			writel(emi_arbe_lpddr3_1800_val[highest], EMI_ARBE);
 			writel(emi_arbf_lpddr3_1800_val[highest], EMI_ARBF);
-			writel(emi_arbf_lpddr3_1800_val[highest], EMI_ARBG);
-			mt_reg_sync_writel(emi_arbg2_lpddr3_1800_val[highest],
+			writel(emi_arbg_lpddr3_1800_val[highest], EMI_ARBG);
+			mt_reg_sync_writel(emi_arbh_lpddr3_1800_val[highest],
 			EMI_ARBH);
 			}
 			cur_con_sce = highest;
@@ -296,7 +299,7 @@ static int __init emi_bwl_mod_init(void)
 		}
 	}
 
-	ret = mtk_mem_bw_ctrl(CON_SCE_NORMAL, ENABLE_CON_SCE);
+	ret = mtk_mem_bw_ctrl(CON_SCE_UI, ENABLE_CON_SCE);
 	if (ret)
 		pr_err("[EMI/BWL] fail to set EMI bandwidth limiter\n");
 
