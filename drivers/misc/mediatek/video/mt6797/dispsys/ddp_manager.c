@@ -178,7 +178,6 @@ static int module_power_off(DISP_MODULE_ENUM module)
 
 	if (ddp_modules_driver[module] != 0) {
 		if (ddp_modules_driver[module]->power_off != 0) {
-			DISP_LOG_V("%s power off\n", ddp_get_module_name(module));
 			ddp_modules_driver[module]->power_off(module, NULL);	/* now just 0; */
 		}
 	}
@@ -192,7 +191,6 @@ static int module_power_on(DISP_MODULE_ENUM module)
 
 	if (ddp_modules_driver[module] != 0) {
 		if (ddp_modules_driver[module]->power_on != 0) {
-			DISP_LOG_V("%s power on\n", ddp_get_module_name(module));
 			ddp_modules_driver[module]->power_on(module, NULL);	/* now just 0; */
 		}
 	}
@@ -840,9 +838,6 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->init != 0) {
-				DDPDBG("scenario %s init module %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->init(module_name, cmdqHandle);
 			}
 			if (ddp_modules_driver[module_name]->set_listener != 0)
@@ -873,9 +868,6 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->deinit != 0) {
-				DDPDBG("scenario %s deinit module  %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->deinit(module_name, cmdqHandle);
 			}
 			if (ddp_modules_driver[module_name]->set_listener != 0)
@@ -904,9 +896,6 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->start != 0) {
-				DDPDBG("scenario %s start module  %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
 			}
 		}
@@ -930,9 +919,6 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->stop != 0) {
-				DDPDBG("scenario %s  stop module %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->stop(module_name, cmdqHandle);
 			}
 		}
@@ -1018,9 +1004,6 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->reset != 0) {
-				DDPDBG("scenario %s  reset module %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ret =
 				    ddp_modules_driver[module_name]->reset(module_name, cmdqHandle);
 				if (ret != 0)
@@ -1070,9 +1053,6 @@ int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, 
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->config != 0) {
-				DISP_LOG_V("scenario %s  config module %s\n",
-					   ddp_get_scenario_name(handle->scenario),
-					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->config(module_name, config,
 									cmdq_handle);
 			}
@@ -1175,7 +1155,6 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->trigger != 0) {
-				DISP_LOG_V("%s trigger\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->trigger(module_name,
 									 trigger_loop_handle);
 			}
@@ -1207,7 +1186,6 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
-			DDPDBG(" %s power off\n", ddp_get_module_name(module_name));
 			ddp_modules_driver[module_name]->power_off(module_name,
 								   encmdq ? handle->cmdqhandle :
 								   NULL);
@@ -1232,7 +1210,6 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_on) {
-			DDPDBG("%s power on\n", ddp_get_module_name(module_name));
 			ddp_modules_driver[module_name]->power_on(module_name,
 								  encmdq ? handle->cmdqhandle :
 								  NULL);
@@ -1259,7 +1236,6 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power off -- bypass\n", ddp_get_module_name(module_name));
 			} else {
-				DDPDBG(" %s power off\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->power_off(module_name,
 									   encmdq ? handle->cmdqhandle :
 									   NULL);
@@ -1288,7 +1264,6 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power on -- bypass\n", ddp_get_module_name(module_name));
 			} else {
-				DDPDBG("%s power on\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->power_on(module_name,
 									  encmdq ? handle->cmdqhandle :
 									  NULL);
@@ -1613,8 +1588,6 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 	if (wq_handle->init) {
 		unsigned long long cur_time;
 
-		DISP_LOG_V("wait event %s on scenario %s\n", path_event_name(event),
-			   ddp_get_scenario_name(handle->scenario));
 		cur_time = sched_clock();
 		ret = wait_event_interruptible_timeout(wq_handle->wq, cur_time < wq_handle->data,
 						       timeout);
@@ -1652,18 +1625,12 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 			ddp_get_scenario_name(handle->scenario));
 		return -2;
 	}
-	DISP_LOG_V("wait event %s on scenario %s\n", path_event_name(event),
-		   ddp_get_scenario_name(handle->scenario));
 
 	cur_time = sched_clock();
 
 	ret = wait_event_interruptible(wq_handle->wq, cur_time < wq_handle->data);
 	if (ret < 0) {
 		DISP_LOG_E("wait %s interrupt by other ret %d on scenario %s\n",
-			   path_event_name(event), ret,
-			   ddp_get_scenario_name(handle->scenario));
-	} else {
-		DISP_LOG_V("received event %s ret %d on scenario %s\n",
 			   path_event_name(event), ret,
 			   ddp_get_scenario_name(handle->scenario));
 	}
@@ -1691,8 +1658,6 @@ int dpmgr_signal_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	ASSERT(dp_handle != NULL);
 	if (handle->wq_list[event].init) {
 		wq_handle->data = sched_clock();
-		DISP_LOG_V("wake up evnet %s on scenario %s\n", path_event_name(event),
-			   ddp_get_scenario_name(handle->scenario));
 		wake_up_interruptible(&(handle->wq_list[event].wq));
 	}
 	return 0;
