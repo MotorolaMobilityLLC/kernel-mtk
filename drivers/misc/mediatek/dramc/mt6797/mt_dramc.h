@@ -102,13 +102,9 @@ DRAMC API config
 =========================*/
 extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
-/*int DFS_APDMA_Enable(void);*/
-/*int DFS_APDMA_Init(void);*/
-int DFS_APDMA_early_init(void);
-void dma_dummy_read_for_vcorefs(int loops);
 /*void get_mempll_table_info(u32 *high_addr, u32 *low_addr, u32 *num);*/
 unsigned int get_dram_data_rate(void);
-/*unsigned int read_dram_temperature(void);*/
+unsigned int read_dram_temperature(unsigned char channel);
 /*void sync_hw_gating_value(void);*/
 /*unsigned int is_one_pll_mode(void);*/
 int dram_steps_freq(unsigned int step);
@@ -122,7 +118,8 @@ extern void *mt_ddrphy_base_get(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
 void dram_HQA_adjust_voltage(void);
-int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1);
+int enter_pasr_dpd_config(unsigned char segment_rank0,
+unsigned char segment_rank1);
 int exit_pasr_dpd_config(void);
 
 enum DDRTYPE {
@@ -132,6 +129,16 @@ enum DDRTYPE {
 	TYPE_PCDDR3
 };
 
+enum {
+	DRAM_OK = 0,
+	DRAM_FAIL
+}; /* DRAM status type */
+
+enum {
+	CHANNEL_A = 0,
+	CHANNEL_B,
+	CHANNEL_MAX
+}; /* DRAM_CHANNEL_T */
 /************************** Common Macro *********************/
 #define delay_a_while(count) \
 	do {                                    \

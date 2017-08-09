@@ -37,20 +37,14 @@
 
 #include "mt_dramc.h"
 
-void __iomem *DRAMCAO_BASE_ADDR;
+void __iomem *DRAMCAO_CHA_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
-void __iomem *DRAMCNAO_BASE_ADDR;
+void __iomem *DRAMCNAO_CHA_BASE_ADDR;
 void __iomem *TOPCKGEN_BASE_ADDR;
+void __iomem *DRAMCAO_CHB_BASE_ADDR;
+void __iomem *INFRACFG_AO_BASE_ADDR;
+void __iomem *DRAMCNAO_CHB_BASE_ADDR;
 
-volatile unsigned int dst_dummy_read_addr[2];
-volatile unsigned int src_dummy_read_addr[2];
-int get_addr_done = 0;
-volatile unsigned char *dst_array_v;
-volatile unsigned char *src_array_v;
-volatile unsigned int dst_array_p;
-volatile unsigned int src_array_p;
-int init_done = 0;
-static char dfs_dummy_buffer[BUFF_LEN] __aligned(PAGE_SIZE);
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
 #if 0 /* if0 for tmp */
@@ -63,7 +57,8 @@ static unsigned int enter_pdp_cnt;
 
 const struct dram_info *g_dram_info_dummy_read = NULL;
 
-static int __init dt_scan_dram_info(unsigned long node, const char *uname, int depth, void *data)
+static int __init dt_scan_dram_info(unsigned long node,
+const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
 	const __be32 *reg, *endp;
@@ -80,27 +75,34 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 	} else if (strcmp(type, "memory") != 0)
 		return 0;
 
-	reg = (const __be32 *)of_get_flat_dt_prop(node, (const char *)"reg", (int *)&l);
+	reg = (const __be32 *)of_get_flat_dt_prop(node,
+	(const char *)"reg", (int *)&l);
 	if (reg == NULL)
 		return 0;
 
 	endp = reg + (l / sizeof(__be32));
 	if (node) {
 		/* orig_dram_info */
-		g_dram_info_dummy_read = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
+		g_dram_info_dummy_read =
+		(const struct dram_info *)of_get_flat_dt_prop(node,
+		"orig_dram_info", NULL);
 	}
 
-	pr_err("[DRAMC] dram info dram rank number = %d\n", g_dram_info_dummy_read->rank_num);
-	pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n", g_dram_info_dummy_read->rank_info[0].start);
+	pr_err("[DRAMC] dram info dram rank number = %d\n",
+	g_dram_info_dummy_read->rank_num);
+	pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
+	g_dram_info_dummy_read->rank_info[0].start);
 	pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
-			g_dram_info_dummy_read->rank_info[0].start + g_dram_info_dummy_read->rank_info[0].size);
+			g_dram_info_dummy_read->rank_info[0].start +
+			g_dram_info_dummy_read->rank_info[0].size);
 
 	return node;
 }
 
 static int check_dramc_base_addr(void)
 {
-	if ((!DRAMCAO_BASE_ADDR) || (!DDRPHY_BASE_ADDR) || (!DRAMCNAO_BASE_ADDR))
+	if ((!DRAMCAO_CHA_BASE_ADDR) || (!DDRPHY_BASE_ADDR)
+		|| (!DRAMCNAO_CHA_BASE_ADDR))
 		return -1;
 	else
 		return 0;
@@ -108,13 +110,13 @@ static int check_dramc_base_addr(void)
 
 void *mt_dramc_base_get(void)
 {
-	return DRAMCAO_BASE_ADDR;
+	return DRAMCAO_CHA_BASE_ADDR;
 }
 EXPORT_SYMBOL(mt_dramc_base_get);
 
 void *mt_dramc_nao_base_get(void)
 {
-	return DRAMCNAO_BASE_ADDR;
+	return DRAMCNAO_CHA_BASE_ADDR;
 }
 EXPORT_SYMBOL(mt_dramc_nao_base_get);
 
@@ -143,7 +145,8 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_HV, 0x7F, 0);
 	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_HV, 0x7F, 0);
 	pr_err("[HQA]Set HVcore1 setting: Vcore1=1.10V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.30V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
 		Vcore1_HV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_HV);
 #endif
 
@@ -152,7 +155,8 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_NV, 0x7F, 0);
 	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_NV, 0x7F, 0);
 	pr_err("[HQA]Set NV setting: Vcore1=1.00V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.22V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
 		Vcore1_NV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_NV);
 #endif
 
@@ -161,7 +165,8 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_LV, 0x7F, 0);
 	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_LV, 0x7F, 0);
 	pr_err("[HQA]Set LVcore1 setting: Vcore1=0.90V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.16V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
 		Vcore1_LV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_LV);
 #endif
 
@@ -170,7 +175,8 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_HV, 0x7F, 0);
 	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_LV, 0x7F, 0);
 	pr_err("[HQA]Set HVcore1_LVdram setting: Vcore1=1.10V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.16V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
 		Vcore1_HV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_LV);
 #endif
 
@@ -179,7 +185,8 @@ void dram_HQA_adjust_voltage(void)
 	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_LV, 0x7F, 0);
 	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_HV, 0x7F, 0);
 	pr_err("[HQA]Set LVcore1_HVdram setting: Vcore1=0.90V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.30V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4),
+		upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
 		Vcore1_LV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_HV);
 #endif
 }
@@ -203,7 +210,8 @@ void spm_dpd_init(void)
 	writel(readl(PDEF_DRAMC0_REG_1E8) | 0x04000000, PDEF_DRAMC0_REG_1E8);
 
 	/*Set ZQCSCNT7~0(0x1e4[23:16]) = 0: disable ZQCS*/
-	/*When doing ZQCS, special_command_enable will wakeup RANK1's CKE. This is wrong.*/
+	/*When doing ZQCS,
+	special_command_enable will wakeup RANK1's CKE. This is wrong.*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xff00ffff, PDEF_DRAMC0_REG_1E4);
 
 	/*20150402 add, ZQCSCNT8 is added in Jade*/
@@ -238,7 +246,8 @@ void spm_dpd_init(void)
 	/*SW set RK1SRF(0x110[21])=0: RK1 can not enter SRF*/
 	writel(readl(PDEF_DRAMC0_REG_110) & 0xffdfffff, PDEF_DRAMC0_REG_110);
 
-	/*Set DISDMOEDIS(0x1ec[16])=1: CA can not be floating because RK1 want to DPD after RK0 enter SRF.*/
+	/*Set DISDMOEDIS(0x1ec[16])=1:
+	CA can not be floating because RK1 want to DPD after RK0 enter SRF.*/
 	writel(readl(PDEF_DRAMC0_REG_1EC) | 0x00010000, PDEF_DRAMC0_REG_1EC);
 
 }
@@ -313,7 +322,8 @@ void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	/*Set MRS value - for rank1, Calibration command after initialization (0x0A)*/
+	/*Set MRS value - for rank1,
+	Calibration command after initialization (0x0A)*/
 	writel(0x10ff000a, PDEF_DRAMC0_REG_088);
 	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
@@ -329,7 +339,8 @@ void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	/*Set MRS value - for rank1, I/O Config-1(0x03) - 40-Ohm typical pull-down/pull-up*/
+	/*Set MRS value - for rank1,
+	I/O Config-1(0x03) - 40-Ohm typical pull-down/pull-up*/
 	writel(0x10010003, PDEF_DRAMC0_REG_088);
 	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
@@ -361,7 +372,8 @@ void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	/*Set MRS value - for rank1, Device Feature 2(0x02) - RL=12 / WL=9 (<= 800 MHz)*/
+	/*Set MRS value - for rank1,
+	Device Feature 2(0x02) - RL=12 / WL=9 (<= 800 MHz)*/
 	writel(0x101c0002, PDEF_DRAMC0_REG_088);
 	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
 	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
@@ -430,12 +442,14 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 {
 	/* for D-3, support run time MRW */
 	unsigned int rank_pasr_segment[2];
-	unsigned int dramc0_spcmd, dramc0_pd_ctrl, dramc0_pd_ctrl_2, dramc0_padctl4, dramc0_1E8;
+	unsigned int dramc0_spcmd, dramc0_pd_ctrl;
+	unsigned int dramc0_pd_ctrl_2, dramc0_padctl4, dramc0_1E8;
 	unsigned int i, cnt = 1000;
 
 	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF;	/* for rank1 */
-	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]);
+	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n",
+	rank_pasr_segment[0], rank_pasr_segment[1]);
 
 	/* backup original data */
 	dramc0_spcmd = readl(PDEF_DRAMC0_REG_1E4);
@@ -446,7 +460,8 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	/* disable MR4(0x1E8[26]=1) */
 	writel(dramc0_1E8 | 0x04000000, PDEF_DRAMC0_REG_1E8);
 
-	/* Set ZQCSCNT7~0(0x1e4[23:16]) = 0 ZQCSCNT8(0x1DC[0]) = 0: disable ZQCS */
+	/* Set ZQCSCNT7~0(0x1e4[23:16]) = 0
+	ZQCSCNT8(0x1DC[0]) = 0: disable ZQCS */
 	writel(dramc0_spcmd & 0xff00ffff, PDEF_DRAMC0_REG_1E4);
 	writel(dramc0_pd_ctrl & 0xfffffffe, PDEF_DRAMC0_REG_1DC);
 
@@ -460,8 +475,10 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	udelay(1);
 
 	for (i = 0; i < 2; i++) {
-		/* set MRS settings include rank number, segment information and MRR17 */
-		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011), PDEF_DRAMC0_REG_088);
+		/* set MRS settings include rank number,
+		segment information and MRR17 */
+		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011),
+		PDEF_DRAMC0_REG_088);
 		/* Mode register write command enable */
 		writel(0x00000001, PDEF_DRAMC0_REG_1E4);
 
@@ -475,7 +492,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 			}
 			udelay(1);
 		} while ((readl(PDEF_DRAMC0_REG_3B8) & 0x00000001) == 0x0);
-		mb();
+		mb(); /* flsush */
 
 		/* Mode register write command disable */
 		writel(0x0, PDEF_DRAMC0_REG_1E4);
@@ -492,10 +509,12 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	writel(dramc0_pd_ctrl, PDEF_DRAMC0_REG_1DC);
 
 	/* writel(0x00000004, PDEF_DRAMC0_REG_088); */
-	pr_warn("[DRAMC0] PASR offset 0x88 = 0x%x\n", readl(PDEF_DRAMC0_REG_088));
+	pr_warn("[DRAMC0] PASR offset 0x88 = 0x%x\n",
+	readl(PDEF_DRAMC0_REG_088));
 	writel(dramc0_spcmd, PDEF_DRAMC0_REG_1E4);
 
-	if (segment_rank1 == 0xFF) {	/*all segments of rank1 are not reserved -> rank1 enter DPD*/
+/*all segments of rank1 are not reserved -> rank1 enter DPD*/
+	if (segment_rank1 == 0xFF) {
 		enter_pdp_cnt++;
 		spm_dpd_init();
 	}
@@ -654,7 +673,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with 00 Byte Pattern at offset 0h === */
+	/* === Read Check then Fill Memory with
+	00 Byte Pattern at offset 0h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5a5a5a5) {
 			vfree(ptr);
@@ -666,7 +686,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with 00 Byte Pattern at offset 2h === */
+	/* === Read Check then Fill Memory with
+	00 Byte Pattern at offset 2h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5a5a500) {
 			vfree(ptr);
@@ -678,7 +699,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with 00 Byte Pattern at offset 1h === */
+	/* === Read Check then Fill Memory with
+	00 Byte Pattern at offset 1h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa500a500) {
 			vfree(ptr);
@@ -690,7 +712,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with 00 Byte Pattern at offset 3h === */
+	/* === Read Check then Fill Memory with
+	00 Byte Pattern at offset 3h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5000000) {
 			vfree(ptr);
@@ -702,7 +725,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with ffff Word Pattern at offset 1h == */
+	/* === Read Check then Fill Memory with ffff
+	Word Pattern at offset 1h == */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0x00000000) {
 			vfree(ptr);
@@ -714,7 +738,8 @@ int Binning_DRAM_complex_mem_test(void)
 		}
 	}
 
-	/* === Read Check then Fill Memory with ffff Word Pattern at offset 0h == */
+	/* === Read Check then Fill Memory with ffff
+	Word Pattern at offset 0h == */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xffff0000) {
 			vfree(ptr);
@@ -912,9 +937,9 @@ unsigned int ucDram_Register_Read(unsigned int u4reg_addr)
 		/* ASSERT(0); */ /* need porting*/
 	}
 
-	pu4reg_value = (readl(IOMEM(DRAMCAO_BASE_ADDR + u4reg_addr)) |
+	pu4reg_value = (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + u4reg_addr)) |
 			readl(IOMEM(DDRPHY_BASE_ADDR + u4reg_addr)) |
-			readl(IOMEM(DRAMCNAO_BASE_ADDR + u4reg_addr)));
+			readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + u4reg_addr)));
 
 	return pu4reg_value;
 }
@@ -926,10 +951,10 @@ void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value)
 		/* ASSERT(0); */ /* need porting*/
 	}
 
-	writel(u4reg_value, IOMEM(DRAMCAO_BASE_ADDR + u4reg_addr));
+	writel(u4reg_value, IOMEM(DRAMCAO_CHA_BASE_ADDR + u4reg_addr));
 	writel(u4reg_value, IOMEM(DDRPHY_BASE_ADDR + u4reg_addr));
-	writel(u4reg_value, IOMEM(DRAMCNAO_BASE_ADDR + u4reg_addr));
-	mb();
+	writel(u4reg_value, IOMEM(DRAMCNAO_CHA_BASE_ADDR + u4reg_addr));
+	mb(); /* flush */
 }
 
 bool pasr_is_valid(void)
@@ -939,49 +964,63 @@ bool pasr_is_valid(void)
 
 unsigned int get_dram_data_rate_from_reg(void)
 {
-	unsigned int u4value1;
-	unsigned int MEMPLL_N_INFO, MEMPLL_DIV;
-	unsigned int MEMPLLx_FBDIV, MEMPLLx_M4PDIV;
-	unsigned int onepll_fout, threepll_fout;
+	unsigned char REF_CLK = 52;
+	unsigned int u2real_freq = 0;
+	unsigned char mpdiv_shu_sel = 0, pll_shu_sel = 0;
+	unsigned int u4MPDIV_IN_SEL = 0;
+	unsigned char u1MPDIV_Sel = 0;
+	unsigned int u4DDRPHY_PLL12_Addr[3] = {0x42c, 0x448, 0x9c4};
+	unsigned int u4DDRPHY_PLL1_Addr[3] =  {0x400, 0x640, 0xa40};
+	unsigned int u4DDRPHY_PLL3_Addr[3] =  {0x408, 0x644, 0xa44};
 
-	u4value1 = ucDram_Register_Read(0x600);
-	MEMPLL_N_INFO = (u4value1 & 0x7fffffff) >> 0;
+	if (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028)) & (1<<17))
+		return 0;
 
-	u4value1 = ucDram_Register_Read(0x610);
-	MEMPLL_DIV = (u4value1 & 0x00fe0000) >> 17;
+	mpdiv_shu_sel = (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028))>>8) & 0x7;
+	pll_shu_sel = readl(IOMEM(DDRPHY_BASE_ADDR + 0x63c)) & 0x3;
 
-	u4value1 = ucDram_Register_Read(0x62C);
-	MEMPLLx_FBDIV = (u4value1 & 0x007f0000) >> 16;
+	u4MPDIV_IN_SEL =
+	readl(IOMEM(DDRPHY_BASE_ADDR +
+	(u4DDRPHY_PLL12_Addr[mpdiv_shu_sel]))) & (1 << 17);
+	u1MPDIV_Sel =
+	(readl(IOMEM(DDRPHY_BASE_ADDR +
+	(u4DDRPHY_PLL12_Addr[mpdiv_shu_sel]))) >> 10) & 0x3;
 
-	u4value1 = ucDram_Register_Read(0x630);
-	MEMPLLx_M4PDIV = (u4value1 & 0x30000000) >> 28;
+	if (u4MPDIV_IN_SEL == 0) {/* PHYPLL */
+		/* FREQ_LCPLL = = FREQ_XTAL*(RG_*_RPHYPLL_FBKDIV+1)
+		*2^(RG_*_RPHYPLL_FBKSEL)/2^(RG_*_RPHYPLL_PREDIV) */
+		unsigned int u4DDRPHY_PLL1 =
+		readl(IOMEM(DDRPHY_BASE_ADDR +
+		(u4DDRPHY_PLL1_Addr[pll_shu_sel])));
+		unsigned int u4FBKDIV = (u4DDRPHY_PLL1>>24) & 0x7F;
+		unsigned char u1FBKSEL = (u4DDRPHY_PLL1>>20) & 0x3;
+		unsigned char u1PREDIV = (u4DDRPHY_PLL1>>18) & 0x3;
 
-	if (MEMPLLx_M4PDIV == 0)
-		MEMPLLx_M4PDIV = 2;
-	else if (MEMPLLx_M4PDIV == 1)
-		MEMPLLx_M4PDIV = 4;
-	else if (MEMPLLx_M4PDIV == 2)
-		MEMPLLx_M4PDIV = 8;
+		if (u1PREDIV == 3)
+			u1PREDIV = 2;
+		u2real_freq = (unsigned int)
+		(((u4FBKDIV+1)*REF_CLK)<<u1FBKSEL)>>(u1PREDIV);
+		} else {
+			/* Freq(VCO clock) = FREQ_XTAL*(RG_RCLRPLL_SDM_PCW)
+			/2^(RG_*_RCLRPLL_PREDIV)/2^(RG_*_RCLRPLL_POSDIV) */
+			/* Freq(DRAM clock)= Freq(VCO clock)/4 */
+			unsigned int u4DDRPHY_PLL3 =
+			readl(IOMEM(DDRPHY_BASE_ADDR +
+			(u4DDRPHY_PLL3_Addr[pll_shu_sel])));
+			unsigned int u4FBKDIV = (u4DDRPHY_PLL3>>24) & 0x7F;
+			unsigned char u1PREDIV = (u4DDRPHY_PLL3>>18) & 0x3;
+			unsigned char u1POSDIV = (u4DDRPHY_PLL3>>16) & 0x3;
+			unsigned char u1FBKSEL =
+			(readl(IOMEM(DDRPHY_BASE_ADDR + 0x43c)) >> 12) & 0x1;
 
-	onepll_fout = ((26*(MEMPLL_N_INFO>>24))+(26*(MEMPLL_N_INFO&0x00ffffff)>>24))/4;
-	threepll_fout = (onepll_fout*4*MEMPLLx_M4PDIV*(MEMPLLx_FBDIV+1))/MEMPLL_DIV;
+			u2real_freq = (unsigned int)
+			((((u4FBKDIV)*REF_CLK) << u1FBKSEL >> u1PREDIV)
+			>> (u1POSDIV)) >> 2;
+		}
 
-	if ((onepll_fout < (DUAL_FREQ_LOW + DATA_RATE_THRESHOLD)) &&
-		(onepll_fout > (DUAL_FREQ_LOW - DATA_RATE_THRESHOLD)))
-		onepll_fout = DUAL_FREQ_LOW;
-
-	/* for threepll calculation result would not be exactly 1800, but we should return exactly 1800 to DVFS driver*/
-	if ((threepll_fout < (DUAL_FREQ_HIGH + DATA_RATE_THRESHOLD)) &&
-		(threepll_fout > (DUAL_FREQ_HIGH - DATA_RATE_THRESHOLD)))
-		threepll_fout = DUAL_FREQ_HIGH;
-
-	/*pr_err("[DRAMC] onepll_fout=%d, threepll_fout=%d\n", onepll_fout, threepll_fout);*/
-	u4value1 = (readl(_CLK_CFG_0_SET) >> 8) & 0x00000003;
-
-	if (u4value1 == 1)
-		return threepll_fout;
-	else
-		return onepll_fout;
+	u2real_freq = u2real_freq >> u1MPDIV_Sel;
+	pr_err("[DRAMC] GetPhyFrequency: %d\n\n", u2real_freq);
+	return u2real_freq;
 }
 
 unsigned int get_dram_data_rate(void)
@@ -997,39 +1036,20 @@ unsigned int get_dram_data_rate(void)
 	return MEMPLL_FOUT;
 }
 
-#if 0
-unsigned int DRAM_MRR(int MRR_num)
+unsigned int read_dram_temperature(unsigned char channel)
 {
-	unsigned int MRR_value = 0x0;
-	unsigned int u4value;
+	unsigned int value = 0;
 
-	/* set DQ bit 0, 1, 2, 3, 4, 5, 6, 7 pinmux for LPDDR3*/
-	/*ucDram_Register_Write(DRAMC_REG_RRRATE_CTL, 0x13121110);
-	ucDram_Register_Write(DRAMC_REG_MRR_CTL, 0x17161514);*/
-	ucDram_Register_Write(DRAMC_REG_RRRATE_CTL, 0x15111012);
-	ucDram_Register_Write(DRAMC_REG_MRR_CTL, 0x16231314);
+	if (channel == CHANNEL_A) {
+		value =
+		(readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x3b8)) >> 8) & 0x7;
+	}	else if (channel == CHANNEL_B) {
+		value =
+		(readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x3b8)) >> 8) & 0x7;
+		}
 
-	ucDram_Register_Write(DRAMC_REG_MRS, MRR_num);
-	ucDram_Register_Write(DRAMC_REG_SPCMD, 0x00000002);
-	udelay(1);
-	ucDram_Register_Write(DRAMC_REG_SPCMD, 0x00000000);
-	udelay(1);
-
-	u4value = ucDram_Register_Read(DRAMC_REG_SPCMDRESP);
-	MRR_value = (u4value >> 20) & 0xFF;
-
-	return MRR_value;
-}
-
-
-unsigned int read_dram_temperature(void)
-{
-	unsigned int value;
-
-	value = DRAM_MRR(4) & 0x7;
 	return value;
 }
-#endif
 
 int get_ddr_type(void)
 {
@@ -1090,134 +1110,10 @@ int dram_can_support_fh(void)
 		return 0;
 }
 
-int dram_get_dummy_read_addr(void)
-{
-
-#if 1/* get addr by ori method */
-		DFS_APDMA_early_init();
-		src_dummy_read_addr[0] =  src_array_p;
-		dst_dummy_read_addr[0] = dst_array_p;
-		src_dummy_read_addr[1] = 0;
-		dst_dummy_read_addr[1] = 0;
-#else/*get addr by new method from dts tree ,which is generated by LK */
-
-
-
-
-#endif
-	return 1;
-
-}
-int DFS_APDMA_early_init(void)
-{
-	phys_addr_t max_dram_size = get_max_DRAM_size();
-	phys_addr_t dummy_read_center_address = 0;
-
-	if (init_done == 0) {
-		if (max_dram_size == 0x100000000ULL)/*dram size = 4GB*/
-			dummy_read_center_address = 0x80000000ULL;
-		else if (max_dram_size <= 0xC0000000)/*dram size <= 3GB*/
-			dummy_read_center_address = DRAM_BASE+(max_dram_size >> 1);
-		else {
-			pr_err("[DRAMC] DRAM max size incorrect!!!\n");
-			/*ASSERT(0);*/
-		}
-
-		src_array_p = (volatile unsigned int)(dummy_read_center_address - (BUFF_LEN >> 1));
-		dst_array_p = __pa(dfs_dummy_buffer);
-		init_done = 1;
-	}
-
-	return 1;
-}
-#if 0
-int DFS_APDMA_Init(void)
-{
-	writel(((~DMA_GSEC_EN_BIT)&readl(DMA_GSEC_EN)), DMA_GSEC_EN);
-	return 1;
-}
-
-int DFS_APDMA_Enable(void)
-{
-#ifdef APDMAREG_DUMP
-	int i;
-#endif
-
-	while (readl(DMA_START) & 0x1)
-		;
-	writel(src_array_p, DMA_SRC);
-	writel(dst_array_p, DMA_DST);
-	writel(BUFF_LEN , DMA_LEN1);
-	writel(DMA_CON_BURST_8BEAT, DMA_CON);
-
-#ifdef APDMAREG_DUMP
-	pr_debug("src_p=0x%x, dst_p=0x%x, src_v=0x%x, dst_v=0x%x, len=%d\n",
-			src_array_p, dst_array_p, (unsigned int)src_array_v, (unsigned int)dst_array_v, BUFF_LEN);
-	for (i = 0; i < 0x60; i += 4)
-		pr_debug("[Before]addr:0x%x, value:%x\n", (unsigned int)(DMA_BASE+i), *((volatile int *)(DMA_BASE+i)));
-
-#ifdef APDMA_TEST
-	for (i = 0; i < BUFF_LEN/sizeof(unsigned int); i++) {
-		dst_array_v[i] = 0;
-		src_array_v[i] = i;
-	}
-#endif
-#endif
-
-	mt_reg_sync_writel(0x1 , DMA_START);
-
-#ifdef APDMAREG_DUMP
-	for (i = 0; i < 0x60; i += 4)
-		pr_debug("[AFTER]addr:0x%x, value:%x\n", (unsigned int)(DMA_BASE+i), *((volatile int *)(DMA_BASE+i)));
-
-#ifdef APDMA_TEST
-	for (i = 0; i < BUFF_LEN/sizeof(unsigned int); i++) {
-		if (dst_array_v[i] != src_array_v[i]) {
-			pr_debug("DMA ERROR at Address %x\n ", (unsigned int)&dst_array_v[i]);
-			pr_debug("(i=%d, value=0x%x(should be 0x%x))", i, dst_array_v[i], src_array_v[i]);
-			ASSERT(0);
-		}
-	}
-	pr_debug("Channe0 DFS DMA TEST PASS\n");
-#endif
-#endif
-	return 1;
-}
-
-int DFS_APDMA_END(void)
-{
-	while (readl(DMA_START))
-		;
-	return 1;
-}
-
-
-void dma_dummy_read_for_vcorefs(int loops)
-{
-	int i, count;
-	unsigned long long start_time, end_time, duration;
-
-	DFS_APDMA_early_init();
-	enable_clock(MT_CG_INFRA_GCE, "CQDMA");
-	for (i = 0; i < loops; i++) {
-		count = 0;
-		start_time = sched_clock();
-		do {
-			DFS_APDMA_Enable();
-			DFS_APDMA_END();
-			end_time = sched_clock();
-			duration = end_time - start_time;
-			count++;
-		} while (duration < 4000L);
-		/*pr_debug("[DMA_dummy_read[%d], duration=%lld, count = %d\n", duration, count);*/
-	}
-	disable_clock(MT_CG_INFRA_GCE, "CQDMA");
-}
-
-#endif
 static ssize_t complex_mem_test_show(struct device_driver *driver, char *buf)
 {
 	int ret;
+
 	ret = Binning_DRAM_complex_mem_test();
 	if (ret > 0)
 		return snprintf(buf, PAGE_SIZE, "MEM Test all pass\n");
@@ -1225,32 +1121,22 @@ static ssize_t complex_mem_test_show(struct device_driver *driver, char *buf)
 		return snprintf(buf, PAGE_SIZE, "MEM TEST failed %d\n", ret);
 }
 
-static ssize_t complex_mem_test_store(struct device_driver *driver, const char *buf, size_t count)
+static ssize_t complex_mem_test_store(struct device_driver *driver,
+const char *buf, size_t count)
 {
 	/*snprintf(buf, "do nothing\n");*/
 	return count;
 }
-#if 0
-#ifdef APDMA_TEST
-static ssize_t DFS_APDMA_TEST_show(struct device_driver *driver, char *buf)
-{
-	dma_dummy_read_for_vcorefs(7);
-	return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address 0x%x\n", (unsigned int)src_array_p);
-}
-static ssize_t DFS_APDMA_TEST_store(struct device_driver *driver, const char *buf, size_t count)
-{
-	return count;
-}
-#endif
-#endif
 
 #if 0
 #ifdef READ_DRAM_TEMP_TEST
 static ssize_t read_dram_temp_show(struct device_driver *driver, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "DRAM MR4 = 0x%x\n", read_dram_temperature());
+	return snprintf(buf, PAGE_SIZE, "DRAM MR4 = 0x%x\n",
+	read_dram_temperature());
 }
-static ssize_t read_dram_temp_store(struct device_driver *driver, const char *buf, size_t count)
+static ssize_t read_dram_temp_store(struct device_driver *driver,
+const char *buf, size_t count)
 {
 	return count;
 }
@@ -1258,28 +1144,34 @@ static ssize_t read_dram_temp_store(struct device_driver *driver, const char *bu
 #endif
 static ssize_t read_dram_data_rate_show(struct device_driver *driver, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "DRAM data rate = %d\n", get_dram_data_rate());
+	return snprintf(buf, PAGE_SIZE, "DRAM data rate = %d\n",
+	get_dram_data_rate());
 }
 
-static ssize_t read_dram_data_rate_store(struct device_driver *driver, const char *buf, size_t count)
+static ssize_t read_dram_data_rate_store(struct device_driver *driver,
+const char *buf, size_t count)
 {
 	return count;
 }
 
 
-DRIVER_ATTR(emi_clk_mem_test, 0664, complex_mem_test_show, complex_mem_test_store);
+DRIVER_ATTR(emi_clk_mem_test, 0664,
+complex_mem_test_show, complex_mem_test_store);
 
 #if 0
 #ifdef APDMA_TEST
-DRIVER_ATTR(dram_dummy_read_test, 0664, DFS_APDMA_TEST_show, DFS_APDMA_TEST_store);
+DRIVER_ATTR(dram_dummy_read_test, 0664,
+DFS_APDMA_TEST_show, DFS_APDMA_TEST_store);
 #endif
 #endif
 
 #ifdef READ_DRAM_TEMP_TEST
-DRIVER_ATTR(read_dram_temp_test, 0664, read_dram_temp_show, read_dram_temp_store);
+DRIVER_ATTR(read_dram_temp_test, 0664,
+read_dram_temp_show, read_dram_temp_store);
 #endif
 
-DRIVER_ATTR(read_dram_data_rate, 0664, read_dram_data_rate_show, read_dram_data_rate_store);
+DRIVER_ATTR(read_dram_data_rate, 0664,
+read_dram_data_rate_show, read_dram_data_rate_store);
 
 /*DRIVER_ATTR(dram_dfs, 0664, dram_dfs_show, dram_dfs_store);*/
 
@@ -1323,10 +1215,21 @@ static int dram_dt_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc");
 	if (node) {
-		DRAMCAO_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMCAO_BASE_ADDR @ %p\n", DRAMCAO_BASE_ADDR);
+		DRAMCAO_CHA_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get DRAMCAO_CHA_BASE_ADDR @ %p\n",
+		DRAMCAO_CHA_BASE_ADDR);
 	} else {
-		pr_err("[DRAMC]can't find DRAMC0 compatible node\n");
+		pr_err("[DRAMC]can't find DRAMC0 CHA compatible node\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_conf_b");
+	if (node) {
+		DRAMCAO_CHB_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get DRAMCAO_CHB_BASE_ADDR @ %p\n",
+		DRAMCAO_CHB_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find DRAMC0 CHB compatible node\n");
 		return -1;
 	}
 
@@ -1341,22 +1244,43 @@ static int dram_dt_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_nao");
 	if (node) {
-		DRAMCNAO_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMCNAO_BASE_ADDR @ %p\n", DRAMCNAO_BASE_ADDR);
+		DRAMCNAO_CHA_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get DRAMCNAO_CHA_BASE_ADDR @ %p\n",
+		DRAMCNAO_CHA_BASE_ADDR);
 	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO compatible node\n");
+		pr_err("[DRAMC]can't find DRAMCNAO CHA compatible node\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_b_nao");
+	if (node) {
+		DRAMCNAO_CHB_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get DRAMCNAO_CHB_BASE_ADDR @ %p\n",
+		DRAMCNAO_CHB_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find DRAMCNAO CHB compatible node\n");
 		return -1;
 	}
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
 	if (node) {
 		TOPCKGEN_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get TOPCKGEN_BASE_ADDR @ %p\n", TOPCKGEN_BASE_ADDR);
+		pr_warn("[DRAMC]get TOPCKGEN_BASE_ADDR @ %p\n",
+		TOPCKGEN_BASE_ADDR);
 	} else {
 		pr_err("[DRAMC]can't find TOPCKGEN compatible node\n");
 		return -1;
 	}
 
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	if (node) {
+		INFRACFG_AO_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get INFRACFG_AO_BASE_ADDR @ %p\n",
+		INFRACFG_AO_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find INFRACFG_AO compatible node\n");
+		return -1;
+	}
 	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
 		pr_warn("[DRAMC]find dt_scan_dram_info\n");
 	} else {
@@ -1384,18 +1308,17 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	ret = driver_create_file(&dram_test_drv.driver, &driver_attr_emi_clk_mem_test);
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_emi_clk_mem_test);
 	if (ret) {
 		pr_warn("fail to create the emi_clk_mem_test sysfs files\n");
 		return ret;
 	}
 
-	/* get dummy read address once only*/
-	dram_get_dummy_read_addr();
-
 #if 0
 #ifdef APDMA_TEST
-	ret = driver_create_file(&dram_test_drv.driver, &driver_attr_dram_dummy_read_test);
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_dram_dummy_read_test);
 	if (ret) {
 		pr_warn("fail to create the DFS sysfs files\n");
 		return ret;
@@ -1403,7 +1326,8 @@ static int __init dram_test_init(void)
 #endif
 
 #ifdef READ_DRAM_TEMP_TEST
-	ret = driver_create_file(&dram_test_drv.driver, &driver_attr_read_dram_temp_test);
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_read_dram_temp_test);
 	if (ret) {
 		pr_warn("fail to create the read dram temp sysfs files\n");
 		return ret;
@@ -1411,7 +1335,8 @@ static int __init dram_test_init(void)
 #endif
 #endif
 
-	ret = driver_create_file(&dram_test_drv.driver, &driver_attr_read_dram_data_rate);
+	ret = driver_create_file(&dram_test_drv.driver,
+	&driver_attr_read_dram_data_rate);
 	if (ret) {
 		pr_warn("fail to create the read dram data rate sysfs files\n");
 		return ret;
