@@ -13,6 +13,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mt_dramc.h>
+#include "mt_freqhopping_drv.h"
 
 /* #define DCM_DEFAULT_ALL_OFF */
 
@@ -181,82 +182,6 @@ typedef void (*DCM_PRESET_FUNC)(void);
 #define ARMPLL_DCM_WFI_ENABLE_3_OFF		(0x0<<13)
 #define ARMPLL_DCM_WFE_ENABLE_3_OFF		(0x0<<14)
 
-/* 0x1022002C MCUCFG_MP0_AXI_CONFIG
- * 0x1022022C MCUCFG_MP1_AXI_CONFIG
- * 4		acinactm	Disables CA7L snoop function (0:enable snoop, 1:disable)
- */
-#define ACINACTM_MASK	(0x10)
-#define ACINACTM_EN		(0x0)
-#define ACINACTM_DIS	(0x10)
-
-/*
- *  ARMPLL enable
- */
-#define ARMPLL_CON0					(0x102224A0)
-
-#define ARMCAXPLL0_CON0				(MCUMIXED_BASE + 0x200)
-#define ARMCAXPLL0_PWR_CON0			(MCUMIXED_BASE + 0x20C)
-#define ARMCAXPLL1_CON0				(MCUMIXED_BASE + 0x210)
-#define ARMCAXPLL1_PWR_CON0			(MCUMIXED_BASE + 0x21C)
-#define ARMCAXPLL2_CON0				(MCUMIXED_BASE + 0x220)
-#define ARMCAXPLL2_PWR_CON0			(MCUMIXED_BASE + 0x22C)
-#define ARMCAXPLL3_CON0				(MCUMIXED_BASE + 0x230)
-#define ARMCAXPLL3_PWR_CON0			(MCUMIXED_BASE + 0x23C)
-
-#define ARMCAXPLL_SDM_PWR_ON_MASK	(0x1<<0)
-#define ARMCAXPLL_SDM_PWR_ON		(0x1<<0)
-#define ARMCAXPLL_SDM_ISO_EN_MASK	(0x1<<1)
-#define ARMCAXPLL_SDM_ISO_EN	    (0x0<<1)
-
-#define ARMCAXPLL0_EN				(0x1)
-#define ARMCAXPLL1_EN				(0x1)
-#define ARMCAXPLL2_EN				(0x1)
-#define ARMCAXPLL3_EN				(0x1)
-
-/*
- *  armcore PLL MUXSEL
- */
-#define ARMPLLDIV_MUXSEL				(MCUMIXED_BASE + 0x270)
-
-#define ARMPLLDIV_MUXSEL_BIG_MASK_BIT	0
-#define ARMPLLDIV_MUXSEL_BIG_MASK		(0x3<<ARMPLLDIV_MUXSEL_BIG_MASK_BIT)
-
-#define ARMPLLDIV_MUXSEL_LL_MASK_BIT	2
-#define ARMPLLDIV_MUXSEL_LL_MASK		(0x3<<ARMPLLDIV_MUXSEL_LL_MASK_BIT)
-
-#define ARMPLLDIV_MUXSEL_L_MASK_BIT		4
-#define ARMPLLDIV_MUXSEL_L_MASK			(0x3<<ARMPLLDIV_MUXSEL_L_MASK_BIT)
-
-#define ARMPLLDIV_MUXSEL_CCI_MASK_BIT	6
-#define ARMPLLDIV_MUXSEL_CCI_MASK		(0x3<<ARMPLLDIV_MUXSEL_CCI_MASK_BIT)
-
-/*
- *  armcore PLL DIV
- */
-#define ARMPLLDIV_CKDIV					(MCUMIXED_BASE + 0x274)
-
-#define ARMPLLDIV_CKDIV_BIG_MASK_BIT	0
-#define ARMPLLDIV_CKDIV_BIG_MASK		(0x1F<<ARMPLLDIV_CKDIV_BIG_MASK_BIT)
-
-#define ARMPLLDIV_CKDIV_LL_MASK_BIT		5
-#define ARMPLLDIV_CKDIV_LL_MASK			(0x1F<<ARMPLLDIV_CKDIV_LL_MASK_BIT)
-
-#define ARMPLLDIV_CKDIV_L_MASK_BIT		10
-#define ARMPLLDIV_CKDIV_L_MASK			(0x1F<<ARMPLLDIV_CKDIV_L_MASK_BIT)
-
-#define ARMPLLDIV_CKDIV_CCI_MASK_BIT	15
-#define ARMPLLDIV_CKDIV_CCI_MASK		(0x1F<<ARMPLLDIV_CKDIV_CCI_MASK_BIT)
-
-/*
- * MP0_CA7L_CACHE_CONFIG / MP1_CA7L_CACHE_CONFIG
- * 12		L2C_share_en	Enables L2C share mode
- */
-#define MP0_CA7L_CACHE_CONFIG			(MCUCFG_BASE + 0x0)
-#define MP1_CA7L_CACHE_CONFIG			(MCUCFG_BASE + 0x200)
-
-#define L2C_SHARE_EN_MASK		(0x1<<12)
-#define L2C_SHARE_EN			(0x1<<12)
-#define L2C_SHARE_DIS			(0x0<<12)
 
 typedef enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
@@ -267,6 +192,8 @@ typedef enum {
 int dcm_armcore(ENUM_ARMCORE_DCM mode)
 {
 	dcm_info("%s(%d)\n", __func__, mode);
+
+	mt6797_0x1001AXXX_lock();
 
 	if (mode == ARMCORE_DCM_OFF) {
 		reg_write(ARMPLLDIV_DCMCTL,
@@ -349,92 +276,10 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 					ARMPLL_DCM_ENABLE_3_OFF |
 					ARMPLL_DCM_WFI_ENABLE_3_ON |
 					ARMPLL_DCM_WFE_ENABLE_3_ON)));
-}
-
-	return 0;
-}
-
-void armcore_armpll_enable(void)
-{
-	/* Big */
-	reg_write(ARMPLL_CON0, reg_read(ARMPLL_CON0) | 0x1);
-
-	/* 900MHz(LL) */
-	reg_write(ARMCAXPLL0_PWR_CON0, reg_read(ARMCAXPLL0_PWR_CON0)|ARMCAXPLL_SDM_PWR_ON);
-	reg_write(ARMCAXPLL0_PWR_CON0,
-		  aor(reg_read(ARMCAXPLL0_PWR_CON0),
-		      ~ARMCAXPLL_SDM_ISO_EN_MASK,
-		      ARMCAXPLL_SDM_ISO_EN));
-	reg_write(ARMCAXPLL0_CON0, reg_read(ARMCAXPLL0_CON0)|ARMCAXPLL0_EN);
-
-	/* 1275MHz(L) */
-	reg_write(ARMCAXPLL1_PWR_CON0, reg_read(ARMCAXPLL1_PWR_CON0)|ARMCAXPLL_SDM_PWR_ON);
-	reg_write(ARMCAXPLL1_PWR_CON0,
-		  aor(reg_read(ARMCAXPLL1_PWR_CON0),
-		      ~ARMCAXPLL_SDM_ISO_EN_MASK,
-		      ARMCAXPLL_SDM_ISO_EN));
-	reg_write(ARMCAXPLL1_CON0, reg_read(ARMCAXPLL1_CON0)|ARMCAXPLL1_EN);
-
-	/* 630MHz(bus/cci) */
-	reg_write(ARMCAXPLL2_PWR_CON0, reg_read(ARMCAXPLL2_PWR_CON0)|ARMCAXPLL_SDM_PWR_ON);
-	reg_write(ARMCAXPLL2_PWR_CON0,
-		  aor(reg_read(ARMCAXPLL2_PWR_CON0),
-		      ~ARMCAXPLL_SDM_ISO_EN_MASK,
-		      ARMCAXPLL_SDM_ISO_EN));
-	reg_write(ARMCAXPLL2_CON0, reg_read(ARMCAXPLL2_CON0)|ARMCAXPLL2_EN);
-
-	/* 1000MHz (backupPLL) */
-	reg_write(ARMCAXPLL3_PWR_CON0, reg_read(ARMCAXPLL3_PWR_CON0)|ARMCAXPLL_SDM_PWR_ON);
-	reg_write(ARMCAXPLL3_PWR_CON0,
-		  aor(reg_read(ARMCAXPLL3_PWR_CON0),
-		      ~ARMCAXPLL_SDM_ISO_EN_MASK,
-		      ARMCAXPLL_SDM_ISO_EN));
-	reg_write(ARMCAXPLL3_CON0, reg_read(ARMCAXPLL3_CON0)|ARMCAXPLL3_EN);
-
-	/* wait 20us */
-	udelay(20);
-}
-
-int dcm_armcore_pll_clkdiv(int pll, int div)
-{
-	int is_armpll_enabled = 0;
-
-	if (pll < 0 || pll > 4)
-		BUG_ON(1);
-
-	if (div < 0 || div > 31)
-		BUG_ON(1);
-
-	/* dcm_info("%s(%d, 0x%x)\n", __func__, pll, div); */
-
-	if (pll == 2 && !is_armpll_enabled) {
-		is_armpll_enabled = 1;
-		armcore_armpll_enable();
 	}
 
-    /* big div */
-	reg_write(ARMPLLDIV_CKDIV,
-		  aor(reg_read(ARMPLLDIV_CKDIV),
-		      ~ARMPLLDIV_CKDIV_BIG_MASK,
-		      div<<ARMPLLDIV_CKDIV_BIG_MASK_BIT));
-
-	/* LL div */
-	reg_write(ARMPLLDIV_CKDIV,
-		  aor(reg_read(ARMPLLDIV_CKDIV),
-		      ~ARMPLLDIV_CKDIV_LL_MASK,
-		      div<<ARMPLLDIV_CKDIV_LL_MASK_BIT));
-
-	/* L div */
-	reg_write(ARMPLLDIV_CKDIV,
-		  aor(reg_read(ARMPLLDIV_CKDIV),
-		      ~ARMPLLDIV_CKDIV_L_MASK,
-		      div<<ARMPLLDIV_CKDIV_L_MASK_BIT));
-
-	/* CCI div */
-	reg_write(ARMPLLDIV_CKDIV,
-		  aor(reg_read(ARMPLLDIV_CKDIV),
-		      ~ARMPLLDIV_CKDIV_CCI_MASK,
-		      div<<ARMPLLDIV_CKDIV_CCI_MASK_BIT));
+	ndelay(200);
+	mt6797_0x1001AXXX_unlock();
 
 	return 0;
 }
@@ -1726,8 +1571,9 @@ void dcm_dump_regs(void)
 	dcm_info("\n******** dcm dump register *********\n");
 
 	dcm_info("\n=== armcore DCM ===\n");
+	mt6797_0x1001AXXX_lock();
 	REG_DUMP(ARMPLLDIV_DCMCTL);
-	REG_DUMP(ARMPLLDIV_CKDIV);
+	mt6797_0x1001AXXX_unlock();
 
 	dcm_info("\nmcusys DCM:\n");
 	REG_DUMP(MCUCFG_L2C_SRAM_CTRL);
@@ -1782,8 +1628,6 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	p += sprintf(p, "\n=== armcore DCM ===\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "ARMPLLDIV_DCMCTL",
 				ARMPLLDIV_DCMCTL, reg_read(ARMPLLDIV_DCMCTL));
-	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "ARMPLLDIV_CKDIV",
-				ARMPLLDIV_CKDIV, reg_read(ARMPLLDIV_CKDIV));
 
 	p += sprintf(p, "\nmcusys DCM:\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_L2C_SRAM_CTRL",
