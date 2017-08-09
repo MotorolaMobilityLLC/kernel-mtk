@@ -864,8 +864,8 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 			Afe_Set_Reg(AFE_TDM_CON2, 4 << 8, 0x00000f00);	/*     2: Channel 0. */
 			Afe_Set_Reg(AFE_TDM_CON2, 4 << 12, 0x0000f000);	/*     3: Channel 0. */
 		}
-		/*Afe_Set_Reg(AUDIO_TOP_CON3, 1 << 3, 1 << 3);
-		Afe_Set_Reg(AFE_MEMIF_MAXLEN, 2 << 24,  0x0f000000); // 64-byte burst
+		Afe_Set_Reg(AUDIO_TOP_CON3, 1 << 3, 1 << 3);
+		/*Afe_Set_Reg(AFE_MEMIF_MAXLEN, 2 << 24,  0x0f000000); // 64-byte burst
 		Afe_Set_Reg(AFE_MEMIF_MAXLEN, 0x11111115,  0xffffffff); // 64-byte burst*/
 
 		/*follow CEA861E (0x13)*/
