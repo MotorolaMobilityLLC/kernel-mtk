@@ -130,6 +130,11 @@ static struct ccci_port md3_ccci_ports[] = {
 	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF1, "cc3mni0",},
 	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF2, "cc3mni1",},
 	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF3, "cc3mni2",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF4, "cc3mni4",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF5, "cc3mni5",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF6, "cc3mni6",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF7, "cc3mni7",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF8, "cc3mni8",},
 /* char port, notes ccci_monitor must be first */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci3_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, C2K_PCM_TX_Q, C2K_PCM_RX_Q, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci3_aud",},

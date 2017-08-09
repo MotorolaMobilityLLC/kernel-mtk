@@ -128,6 +128,11 @@ static struct c2k_port c2k_ports[] = {
 	{NET2_CH_C2K, NET2_CH_C2K, CCCI_CCMNI2_DL_ACK, CCCI_CCMNI2_DL_ACK,},	/*network channel for CCMNI2 */
 	{NET3_CH_C2K, NET3_CH_C2K, CCCI_CCMNI3_TX, CCCI_CCMNI3_RX,},	/*network channel for CCMNI3 */
 	{NET3_CH_C2K, NET3_CH_C2K, CCCI_CCMNI3_DL_ACK, CCCI_CCMNI3_DL_ACK,},	/*network channel for CCMNI3 */
+	{NET4_CH_C2K, NET4_CH_C2K, CCCI_CCMNI4_TX, CCCI_CCMNI4_RX,},	/*network channel for CCMNI4 */
+	{NET5_CH_C2K, NET5_CH_C2K, CCCI_CCMNI5_TX, CCCI_CCMNI5_RX,},	/*network channel for CCMNI5 */
+	{NET6_CH_C2K, NET6_CH_C2K, CCCI_CCMNI6_TX, CCCI_CCMNI6_RX,},	/*network channel for CCMNI6 */
+	{NET7_CH_C2K, NET7_CH_C2K, CCCI_CCMNI7_TX, CCCI_CCMNI7_RX,},	/*network channel for CCMNI7 */
+	{NET8_CH_C2K, NET8_CH_C2K, CCCI_CCMNI8_TX, CCCI_CCMNI8_RX,},	/*network channel for CCMNI8 */
 	{MDLOG_CTRL_CH_C2K, MDLOG_CTRL_CH_C2K, CCCI_UART1_TX, CCCI_UART1_RX,},	/*mdlogger ctrl channel */
 	{MDLOG_CH_C2K, MDLOG_CH_C2K, CCCI_MD_LOG_TX, CCCI_MD_LOG_RX,},	/*mdlogger data channel */
 	{FS_CH_C2K, FS_CH_C2K, CCCI_FS_TX, CCCI_FS_RX,},	/*flashless channel, new */

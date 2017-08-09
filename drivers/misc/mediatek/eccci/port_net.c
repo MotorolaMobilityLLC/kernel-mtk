@@ -220,7 +220,7 @@ struct ccmni_ccci_ops eccci_ccmni_ops = {
 
 struct ccmni_ccci_ops eccci_cc3mni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
-	.ccmni_num = 3,
+	.ccmni_num = 8,
 	.name = "cc3mni",
 #if defined CONFIG_MTK_IRAT_SUPPORT
 #if defined CONFIG_MTK_C2K_SLOT2_SUPPORT
