@@ -84,8 +84,14 @@ extern bool is_already_snap_shot;
 extern void mt_power_gs_dump_suspend(void);
 
 /* gpio */
-extern void gpio_dump_regs(void);
-
+extern int mt_get_gpio_dir(unsigned long pin);
+extern int mt_get_gpio_pull_enable(unsigned long pin);
+extern int mt_get_gpio_smt(unsigned long pin);
+extern int mt_get_gpio_ies(unsigned long pin);
+extern int mt_get_gpio_pull_select(unsigned long pin);
+extern int mt_get_gpio_in(unsigned long pin);
+extern int mt_get_gpio_out(unsigned long pin);
+extern int mt_get_gpio_mode(unsigned long pin);
 /* pasr */
 extern void mtkpasr_phaseone_ops(void);
 extern int configure_mrw_pasr(u32 segment_rank0, u32 segment_rank1);

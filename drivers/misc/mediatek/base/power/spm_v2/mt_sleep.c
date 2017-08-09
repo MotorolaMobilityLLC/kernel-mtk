@@ -219,6 +219,24 @@ void __attribute__ ((weak)) systracker_enable(void)
 }
 #endif
 
+#define MT_CPIO_INDEX_OFS 0x80000000
+#define MT_GPIO_START (MT_CPIO_INDEX_OFS + 0)
+#define MT_GPIO_MAX (MT_CPIO_INDEX_OFS + 262)
+
+void gpio_dump_regs_func(void)
+{
+	int idx = 0;
+
+	slp_error("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT]\n");
+	for (idx = MT_GPIO_START; idx < MT_GPIO_MAX; idx++) {
+		slp_error("idx = %3d: %d %d %d %d %d %d %d %d\n",
+				idx&(~MT_CPIO_INDEX_OFS), mt_get_gpio_mode(idx), mt_get_gpio_pull_select(idx),
+				mt_get_gpio_in(idx), mt_get_gpio_out(idx),
+				mt_get_gpio_pull_enable(idx), mt_get_gpio_dir(idx),
+				mt_get_gpio_ies(idx), mt_get_gpio_smt(idx));
+	}
+}
+
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
@@ -244,7 +262,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
 	if (slp_dump_gpio)
-		gpio_dump_regs();
+		gpio_dump_regs_func();
 #if 0
 	if (slp_dump_regs)
 		slp_dump_pm_regs();
