@@ -27,8 +27,8 @@ extern int iMultiReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId, u8 number);
 #define BYTE               unsigned char
 #define Sleep(ms) mdelay(ms)
 
-#define S5K3P3_EEPROM_READ_ID  0xA3
-#define S5K3P3_EEPROM_WRITE_ID   0xA2
+#define S5K3P3_EEPROM_READ_ID  0xA1
+#define S5K3P3_EEPROM_WRITE_ID   0xA0
 #define S5K3P3_I2C_SPEED        100
 #define S5K3P3_MAX_OFFSET		0xFFFF
 
@@ -68,8 +68,10 @@ static bool _read_3P3_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 }
 
 bool read_3P3_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	addr = 0x0801;
+	addr = 0x763;
 	size = 1404;
+	//BYTE header[9]= {0};
+	//_read_3P3_eeprom(0x0000, header, 9);
 
 	LOG_INF("read 3P3 eeprom, size = %d\n", size);
 
