@@ -183,8 +183,8 @@
 		lcm_params-dsi-lane_swap1 = <2 4 3 1 0 4>;
 		/* lane_swap[1][0~5] */
 		lcm_params-dsi-vertical_vfp_lp;
-		lcm_params-physical_width;
-		lcm_params-physical_height;
+		lcm_params-physical_width = <74520>;
+		lcm_params-physical_height = <132480>;
 		lcm_params-od_table_size;
 		lcm_params-od_table;
 	};
