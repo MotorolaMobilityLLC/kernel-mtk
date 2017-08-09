@@ -10,7 +10,7 @@
 #include <linux/proc_fs.h>   /* proc file use */
 #include <linux/dma-mapping.h>
 #include <linux/module.h>/*Luke++150701=For 3.18 build pass*/
-/*#include <linux/xlog.h> *//*Luke--150701=For 3.18 build pass*/
+/*#include <linux/xlog.h> */
 #include <linux/seq_file.h>
 #include <sync_write.h> /*Luke--150701=For 3.18 build pass*/
 #include <linux/types.h>

@@ -54,7 +54,7 @@
 #include <linux/fs.h>
 //Daniel
 //#include <linux/slab.h>
-#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 #include <asm/atomic.h>
 //#include <asm/uaccess.h> //copy from user
 //#include <linux/miscdevice.h>

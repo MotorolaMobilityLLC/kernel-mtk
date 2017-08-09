@@ -37,7 +37,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"

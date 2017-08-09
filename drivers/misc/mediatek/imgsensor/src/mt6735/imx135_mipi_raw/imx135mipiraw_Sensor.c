@@ -27,7 +27,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-//#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 #include <linux/types.h>
 
 #include "kd_camera_typedef.h"
