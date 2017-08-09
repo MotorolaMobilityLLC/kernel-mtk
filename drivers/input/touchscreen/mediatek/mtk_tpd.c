@@ -54,6 +54,7 @@ struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt6735-touch", },
 	{ .compatible = "mediatek,mt6580-touch", },
 	{ .compatible = "mediatek,mt8173-touch", },
+	{ .compatible = "mediatek,mt6755-touch", },
 	{},
 };
 

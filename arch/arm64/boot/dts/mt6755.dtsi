@@ -1440,6 +1440,11 @@ clocks {
 			#size-cells = <0>;
 		};
 
+		touch: touch@ {
+			compatible = "mediatek, mt6755-touch";
+			/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
+		};
+
 		accdet: ACCDET@ {
 			compatible = "mediatek, accdet";
 		};
