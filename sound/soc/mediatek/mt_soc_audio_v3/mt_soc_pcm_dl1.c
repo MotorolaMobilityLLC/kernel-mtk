@@ -106,6 +106,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
+#ifdef CONFIG_MTK_LEGACY
 static unsigned int pin_extspkamp, pin_extspkamp_2, pin_vowclk, pin_audclk, pin_audmiso,
 	pin_audmosi, pin_i2s1clk, pin_i2s1dat, pin_i2s1mclk, pin_i2s1ws, pin_rcvspkswitch;
 static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso, pin_mode_vowclk,
@@ -113,6 +114,8 @@ static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso, pin_mod
 	pin_mode_i2s1ws, pin_mode_rcvspkswitch;
 static unsigned int if_config1, if_config2, if_config3, if_config4, if_config5, if_config6,
 	if_config7, if_config8, if_config9, if_config10, if_config11;
+#endif
+
 #endif
 
 static AFE_MEM_CONTROL_T *pMemControl;

@@ -923,7 +923,7 @@ void SetVOWStatus(bool bEnable)
  *****************************************************************************
  */
 #ifdef CONFIG_OF
-#ifdef CONFIG_MTK_CLKMGR
+#ifdef CONFIG_MTK_LEGACY
 static unsigned int pin_audclk, pin_audmiso, pin_audmosi;
 static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso;
 #endif
