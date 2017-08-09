@@ -475,7 +475,7 @@ static void rtc_handler(void)
 				/* tm.tm_sec += 1; */
 				hal_rtc_set_alarm(&tm);
 				spin_unlock(&rtc_lock);
-				/*TODO arch_reset(0, "kpoc"); */
+				arch_reset(0, "kpoc");
 			} else {
 				hal_rtc_save_pwron_alarm();
 				pwron_alm = true;
@@ -717,6 +717,7 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 	hal_rtc_set_lp_irq();
 	spin_unlock_irqrestore(&rtc_lock, flags);
 
+	device_init_wakeup(&pdev->dev, 1);
 	/* register rtc device (/dev/rtc0) */
 	rtc = rtc_device_register(RTC_NAME, &pdev->dev, &rtc_ops, THIS_MODULE);
 	if (IS_ERR(rtc)) {
@@ -728,7 +729,6 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 	pmic_enable_interrupt(RTC_INTERRUPT_NUM, 1, "RTC");
 #endif
 
-	device_init_wakeup(&pdev->dev, 1);
 	return 0;
 }
 
