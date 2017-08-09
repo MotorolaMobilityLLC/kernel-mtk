@@ -28,8 +28,11 @@ int disp_pwm_get_max_backlight(disp_pwm_id_t id);
 
 /* For backward compatible */
 int disp_bls_set_max_backlight(unsigned int level_1024);
+#ifdef CONFIG_MTK_FB_DUMMY
+int disp_bls_set_backlight(int level_1024) { return 0; }
+#else
 int disp_bls_set_backlight(int level_1024);
-
+#endif
 void disp_pwm_test(const char *cmd, char *debug_output);
 
 #endif
