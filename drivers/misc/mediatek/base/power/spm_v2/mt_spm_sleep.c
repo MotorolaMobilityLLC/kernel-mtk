@@ -668,7 +668,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.spm_rsv_src_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if 0 /* temporarily fix build fail */ /* !defined(CONFIG_FPGA_EARLY_PORTING) */
 	/* for DVFS */
 	.sw_crtl_event_on = 1,
 #endif

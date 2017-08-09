@@ -241,6 +241,16 @@ bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 	return true;
 }
 
+void __attribute__((weak)) subsys_if_on(void)
+{
+	/* temporarily fix build fail */
+}
+
+void __attribute__((weak)) pll_if_on(void)
+{
+	/* temporarily fix build fail */
+}
+
 #ifdef CONFIG_MTK_SYSTRACKER
 void __attribute__ ((weak)) systracker_enable(void)
 {

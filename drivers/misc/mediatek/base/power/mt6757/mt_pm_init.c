@@ -119,6 +119,7 @@ unsigned int ckgen_meter(int ID)
 
 unsigned int abist_meter(int ID)
 {
+#if 0 /* temporarily fix build fail */
 	int output = 0, i = 0;
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
 	unsigned int temp2 = 0, temp1 = 0;
@@ -176,6 +177,9 @@ unsigned int abist_meter(int ID)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 
 const char *ckgen_array[] = {

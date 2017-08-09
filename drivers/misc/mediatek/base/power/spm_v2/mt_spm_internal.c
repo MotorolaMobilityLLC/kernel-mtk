@@ -25,7 +25,7 @@
 #include "mt_spm_vcore_dvfs.h"
 #include "mt_spm_misc.h"
 #include <mt-plat/upmu_common.h>
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_ARCH_MT6797)
 #include <camera_isp.h>
 #endif
 #if defined(CONFIG_ARCH_MT6797)
