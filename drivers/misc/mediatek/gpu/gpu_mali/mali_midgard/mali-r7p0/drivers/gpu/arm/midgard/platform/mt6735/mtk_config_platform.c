@@ -99,7 +99,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(1);
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON); // the power status is "power on".
 #ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(1);
 #endif
@@ -158,7 +158,6 @@ if (0x321 == code) {
 #endif /* CONFIG_MTK_CLKMGR */
 	}
 
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON); // the power status is "power on".
 	mt_gpufreq_target(g_power_off_gpu_freq_idx);
 	current_gpu_freq_idx = mt_gpufreq_get_cur_freq_index();
 	if( current_gpu_freq_idx > g_power_off_gpu_freq_idx)
@@ -255,8 +254,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		printk("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
 	}
 
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF); // the power status is "power off".
-
 	g_power_off_gpu_freq_idx = mt_gpufreq_get_cur_freq_index(); // record current freq. index.
 	//printk("MALI:  GPU power off freq idx : %d\n",g_power_off_gpu_freq_idx );
 #if 1
@@ -302,7 +299,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(0);
 #endif
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF); // the power status is "power off".
 #endif
 }
 
