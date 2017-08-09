@@ -7,6 +7,7 @@
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/moduleparam.h>
+#include <asm/setup.h>
 
 #include "exm_dlmalloc.h"
 
@@ -40,7 +41,7 @@ static phys_addr_t extmem_phys_base;
 
 static int extmem_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
-	mem_desc_t *mem_desc;
+	struct mem_desc *mem_desc;
 	/* We are scanning "memory" nodes only */
 	const char *type = of_get_flat_dt_prop(node, "device_type", NULL);
 
@@ -56,7 +57,7 @@ static int extmem_scan_memory(unsigned long node, const char *uname, int depth, 
 	}
 
 	/* lca reserved memory */
-	mem_desc = (mem_desc_t *)of_get_flat_dt_prop(node,
+	mem_desc = (struct mem_desc *)of_get_flat_dt_prop(node,
 			"lca_reserved_mem", NULL);
 	if (mem_desc && mem_desc->size) {
 		extmem_phys_base = mem_desc->start;
