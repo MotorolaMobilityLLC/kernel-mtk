@@ -29,8 +29,7 @@
 #include <mach/mt_clkmgr.h>
 /* #include "mach/mt_cpufreq.h" */
 /* #include "mach/mt_gpufreq.h" */
-/* #include "mach/mt_dormant.h" */
-/* #include "mach/mt_cpuidle.h" */
+#include "mt_cpuidle.h"
 /* #include "mach/mt_clkbuf_ctl.h" */
 /* #include "mach/mt_chip.h" */
 #include "mt-plat/mtk_rtc.h"
@@ -457,26 +456,10 @@ static int __init mt_power_management_init(void)
 
 	pm_power_off = mt_power_off;
 
-	#if !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_FPGA)
+
 	/* cpu dormant driver init */
-/* **** */
-/*
 	mt_cpu_dormant_init();
-
-	// SPM driver init
-	spm_module_init();
-
-	// Sleep driver init (for suspend)
-	if (0x321 == code) {
-	   slp_module_init();
-	} else if (0x335 == code) {
-	   slp_module_init();
-	} else if (0x337 == code){
-	   slp_module_init();
-	} else {
-	   // unknown chip ID, error !!
-	}
-*/
 
 	spm_module_init();
 	slp_module_init();
@@ -509,7 +492,7 @@ static int __init mt_power_management_init(void)
 #endif
 	}
 
-	#endif
+#endif
 
 	return 0;
 }
