@@ -165,18 +165,27 @@ static bool __init is_valid_rank(int rank)
 static void __init find_mtkpasr_valid_segment(unsigned long *start, unsigned long *end)
 {
 	int num_segment, rank;
-	unsigned long spfn, epfn, max_start, min_end;
+	unsigned long spfn = 0, epfn = 0, max_start, min_end;
 	unsigned long rspfn, repfn;
 	unsigned long bank_pfn_size;
 	bool virtual;
 
+	/* Sanity check */
+	if (*start == *end)
+		return;
+
 	num_segment = 0;
 	max_start = *start;
 	min_end = *end;
-	for (rank = 0; rank < MAX_RANKS; ++rank) {
+	for (rank = 0; rank < MAX_RANKS; ++rank, num_segment += SEGMENTS_PER_RANK) {
 
 		/* Is it a valid rank */
 		if (!is_valid_rank(rank))
+			continue;
+
+		/* At least 1 bank size  */
+		bank_pfn_size = rank_info[rank].bank_pfn_size;
+		if ((*start + bank_pfn_size) > *end)
 			continue;
 
 		/* If rank's start_pfn > rank's end_pfn, then compare them in virtual */
@@ -194,28 +203,30 @@ static void __init find_mtkpasr_valid_segment(unsigned long *start, unsigned lon
 			virtual = false;
 		}
 
-		/* Start comparison */
-		bank_pfn_size = rank_info[rank].bank_pfn_size;
+		/* Update mtkpasr range */
 		spfn = round_up(spfn, bank_pfn_size);
 		epfn = round_down(epfn, bank_pfn_size);
 		if (virtual) {
-			/* Update mtkpasr range */
 			max_start = max(virt_to_kernel_pfn(spfn), max_start);
 			min_end = min(virt_to_kernel_pfn(epfn), min_end);
+		} else {
+			max_start = max(spfn, max_start);
+			min_end = min(epfn, min_end);
+		}
+
+		/* Check overlapping */
+		if (epfn <= spfn) {
 			/* spfn ~ repfn */
 			while (repfn >= (spfn + bank_pfn_size)) {
 				mtkpasr_segment_bits |= (1 << ((spfn - rspfn) / bank_pfn_size + num_segment));
 				spfn += bank_pfn_size;
 			}
 			/* rspfn ~ epfn */
-			while (epfn <= repfn && epfn >= (rspfn + bank_pfn_size)) {
+			while (epfn >= (rspfn + bank_pfn_size)) {
 				epfn -= bank_pfn_size;
 				mtkpasr_segment_bits |= (1 << ((epfn - rspfn) / bank_pfn_size + num_segment));
 			}
 		} else {
-			/* Update mtkpasr range */
-			max_start = max(spfn, max_start);
-			min_end = min(epfn, min_end);
 			/* spfn ~ epfn */
 			spfn = max(spfn, rspfn);
 			epfn = min(epfn, repfn);
@@ -224,13 +235,16 @@ static void __init find_mtkpasr_valid_segment(unsigned long *start, unsigned lon
 				spfn += bank_pfn_size;
 			}
 		}
-
-		/* Next rank: update offset for mtkpasr_segment_bits */
-		num_segment += SEGMENTS_PER_RANK;
 	}
 
-	*start = max_start;
-	*end = min_end;
+	/* Feedback PASR-masked range */
+	if ((spfn == 0) && (epfn == 0)) {
+		*start = max_start;
+		*end = max_start;
+	} else {
+		*start = max_start;
+		*end = min_end;
+	}
 }
 
 /*
@@ -344,6 +358,10 @@ int __init query_bank_rank_information(int bank, unsigned long *spfn, unsigned l
 	if (virtual) {
 		*spfn = virt_to_kernel_pfn(*spfn);
 		*epfn = virt_to_kernel_pfn(*epfn);
+
+		/* epfn should be larger than spfn */
+		if (*epfn <= *spfn)
+			*epfn = kernel_pfn_to_virt(*epfn);
 	}
 
 	/* Query rank information */

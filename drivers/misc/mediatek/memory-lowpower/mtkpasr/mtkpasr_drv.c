@@ -22,19 +22,20 @@ static unsigned long mtkpasr_triggered, mtkpasr_on, mtkpasr_srmask;
 /* Count the number of free pages */
 static void count_free_pages(unsigned long *spfn, unsigned long *epfn)
 {
-	int sbank;
+	int bank;
 	unsigned long max_spfn, min_epfn;
 
 	MTKPASR_PRINT("%s: spfn[%lu] epfn[%lu] -\n", __func__, *spfn, *epfn);
-	sbank = (*spfn - mtkpasr_banks[0].start_pfn) / bank_pfns;
-	for (; sbank < num_banks; sbank++) {
-		max_spfn = max(mtkpasr_banks[sbank].start_pfn, *spfn);
-		min_epfn = min(mtkpasr_banks[sbank].end_pfn, *epfn);
+
+	for (bank = 0; bank < num_banks; bank++) {
+		max_spfn = max(mtkpasr_banks[bank].start_pfn, *spfn);
+		min_epfn = min(mtkpasr_banks[bank].end_pfn, *epfn);
 		if (min_epfn <= max_spfn)
-			break;
-		mtkpasr_banks[sbank].free += (min_epfn - max_spfn);
-		MTKPASR_PRINT("@@@ bank[%d] free[%lu]\n", sbank, mtkpasr_banks[sbank].free);
+			continue;
+		mtkpasr_banks[bank].free += (min_epfn - max_spfn);
+		MTKPASR_PRINT("@@@ bank[%d] free[%lu]\n", bank, mtkpasr_banks[bank].free);
 	}
+
 	MTKPASR_PRINT("\n");
 }
 
@@ -97,10 +98,16 @@ static int mtkpasr_restore(void)
 
 	MTKPASR_PRINT("%s:+\n", __func__);
 
-	mtkpasr_on = 0x0;
+retry:
 	/* APMCU flow */
 	if (exit_pasr_dpd_config() != 0)
 		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
+	else
+		mtkpasr_on = 0x0;
+
+	/* Retry until success */
+	if (mtkpasr_on != 0)
+		goto retry;
 
 	MTKPASR_PRINT("%s:-\n", __func__);
 
