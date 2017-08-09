@@ -511,6 +511,7 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 }
 
 /* remap register to user space */
+#if defined(CONFIG_MT_ENG_BUILD)
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -527,6 +528,7 @@ static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 
 	return 0;
 }
+#endif
 
 struct dispsys_device {
 	void __iomem *regs[DISP_REG_NUM];
@@ -635,7 +637,7 @@ static const struct file_operations disp_fops = {
 	.release = disp_release,
 	.flush = disp_flush,
 	.read = disp_read,
-#if 1
+#if defined(CONFIG_MT_ENG_BUILD)
 	.mmap = disp_mmap
 #endif
 };
