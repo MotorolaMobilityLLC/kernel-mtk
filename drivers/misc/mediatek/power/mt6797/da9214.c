@@ -336,7 +336,7 @@ void da9214_dump_register(void)
 	}
 	PMICLOG1("\n");
 	/* ---------------------------------------------------------------- */
-	da9214_config_interface(0x0, 0x0, 0xF, 0);	/* select to page 0,1 */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);	/* select to page 0,1 */
 	/* ---------------------------------------------------------------- */
 }
 
@@ -449,6 +449,8 @@ static int da9214_driver_probe(struct i2c_client *client, const struct i2c_devic
 		PMICLOG1("[da9214_driver_probe] return err\n");
 		return err;
 	}
+
+	da9214_config_interface(0x0, 0x1, 0xF, 0);	/* select to page 0,1 */
 
 	return 0;
 
