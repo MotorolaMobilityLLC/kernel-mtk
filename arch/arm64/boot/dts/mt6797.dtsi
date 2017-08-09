@@ -1586,10 +1586,13 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			clock-div = <1>;
 		};
 
-		dvfs_proc1@11015000 {
-			compatible = "mediatek,dvfs_proc1";
-			reg = <0x11015000 0x1000>;
-			interrupts = <GIC_SPI 161 IRQ_TYPE_NONE>;
+		dvfsp@11015000 {
+			compatible = "mediatek,mt6797-dvfsp";
+			reg = <0x11015000 0x1000>,
+			      <0x0012a000 0x3000>;
+			interrupts = <GIC_SPI 161 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_I2C_APPM>;
+			clock-names = "i2c";
 		};
 
 		dvfs_proc2@11016000 {
