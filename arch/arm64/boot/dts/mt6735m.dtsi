@@ -606,6 +606,13 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 						 <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 						 <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
 		};
+		spi0:spi@11012000 {
+			compatible = "mediatek,mt6735m-spi";
+			cell-index = <0>;
+			spi-padmacro = <0>;
+			reg = <0x1100a000 0x1000>;
+			interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
+		};
 
 		btif_tx:btif_tx@11000780 {
 			compatible = "mediatek,btif_tx";

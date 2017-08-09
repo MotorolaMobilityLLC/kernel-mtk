@@ -817,7 +817,13 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clocks = <&perisys PERI_UART4>;
 			clock-names = "uart4-main";
 		};
-
+		spi0:spi@11012000 {
+			compatible = "mediatek,mt6753-spi";
+			cell-index = <0>;
+			spi-padmacro = <0>;
+			reg = <0x1100a000 0x1000>;
+			interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
+		};
 		btif_tx:btif_tx@11000900 {
 			compatible = "mediatek,btif_tx";
 			reg = <0x11000900 0x80>;
