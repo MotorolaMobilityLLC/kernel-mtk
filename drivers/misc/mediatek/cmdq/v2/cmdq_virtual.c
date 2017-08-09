@@ -992,21 +992,38 @@ uint64_t cmdq_virtual_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
  * Event backup
  *
  */
-#ifdef CMDQ_EVENT_NEED_BACKUP
+#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 struct cmdq_backup_event_struct {
 	CMDQ_EVENT_ENUM EventID;
 	uint32_t BackupValue;
 };
 
+#ifdef CMDQ_EVENT_NEED_BACKUP
 static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
 	{CMDQ_SYNC_TOKEN_VENC_EOF, 0,},
 	{CMDQ_SYNC_TOKEN_VENC_INPUT_READY, 0,}
 };
+#else
+#ifdef CMDQ_EVENT_SVP_BACKUP
+static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
+	{CMDQ_SYNC_DISP_OVL0_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_OVL1_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_2LOVL0_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_2LOVL1_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_RDMA0_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_RDMA1_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_WDMA0_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_WDMA1_2NONSEC_END, 0,},
+	{CMDQ_SYNC_DISP_EXT_STREAM_EOF, 0,},
+};
+#endif
+#endif
+
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
 
 void cmdq_virtual_event_backup(void)
 {
-#ifdef CMDQ_EVENT_NEED_BACKUP
+#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 	int i;
 	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
 
@@ -1024,7 +1041,7 @@ void cmdq_virtual_event_backup(void)
 
 void cmdq_virtual_event_restore(void)
 {
-#ifdef CMDQ_EVENT_NEED_BACKUP
+#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 	int i;
 	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
 

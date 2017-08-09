@@ -40,6 +40,11 @@ ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6755" "mt6797"))
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
 endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6755"))
+ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
+endif
+
 endif
 endif
 
