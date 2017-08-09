@@ -5381,11 +5381,38 @@ static const struct sdio_device_id modem_sdio_ids[] = {
 
 MODULE_DEVICE_TABLE(sdio, modem_sdio_ids);
 
+static int c2k_sdio_suspend(struct device *dev)
+{
+	struct sdio_func *func = dev_to_sdio_func(dev);
+	int ret;
+
+	if (func) {
+		LOGPRT(LOG_INFO, "c2k_sdio_suspend\n");
+		ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+	}
+	return 0;
+}
+
+static int c2k_sdio_resume(struct device *dev)
+{
+	return 0;
+}
+
+static const struct dev_pm_ops c2k_sdio_pm_ops = {
+	.suspend = c2k_sdio_suspend,
+	.resume = c2k_sdio_resume,
+};
+
+
 static struct sdio_driver modem_sdio_driver = {
 	.probe = modem_sdio_probe,
 	.remove = modem_sdio_remove,
 	.name = "modem_sdio",
 	.id_table = modem_sdio_ids,
+	.drv = {
+		.owner = THIS_MODULE,
+		.pm = &c2k_sdio_pm_ops,
+	}
 };
 
 #if ENABLE_CCMNI
