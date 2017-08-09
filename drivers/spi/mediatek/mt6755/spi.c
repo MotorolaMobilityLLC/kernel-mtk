@@ -430,6 +430,7 @@ exit:
 	return 0;
 }
 
+#if 0
 static int secspi_session_close(void)
 {
 	enum mc_result mc_ret = MC_DRV_OK;
@@ -481,6 +482,7 @@ static int secspi_session_close(void)
 	return 0;
 
 }
+#endif
 
 /*used for REE to detach IRQ of TEE*/
 void spi_detach_irq_tee(void)
