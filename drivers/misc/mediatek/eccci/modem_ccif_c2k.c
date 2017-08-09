@@ -1066,7 +1066,8 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ccif_read32(md_ctrl->ccif_md_base, APCCIF_BUSY));
 	ccif_write32(md_ctrl->ccif_md_base, APCCIF_ACK, ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY));
 
-	md_ccif_reset_queue(md);
+	/* don't reset queue here, some queue may still have unread data*/
+	/* md_ccif_reset_queue(md); */
 	md->ops->broadcast_state(md, GATED);
 	return 0;
 }
