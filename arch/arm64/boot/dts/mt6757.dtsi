@@ -35,24 +35,24 @@
 			compatible = "mediatek,mt6757-mmc";
 			reg = <0x11230000 0x10000>;
 			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRA_MSDC0>;
-			clock-names = "MSDC0-CLOCK";*/
+			clocks = <&infrasys INFRACFG_AO_MSDC0_CG>;
+			clock-names = "MSDC0-CLOCK";
 		};
 
 		mmc1: msdc1@11240000 {
 			compatible = "mediatek,mt6757-mmc";
 			reg = <0x11240000 0x10000>;
 			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRA_MSDC1>;
-			clock-names = "MSDC1-CLOCK";*/
+			clocks = <&infrasys INFRACFG_AO_MSDC1_CG>;
+			clock-names = "MSDC1-CLOCK";
 		};
 
 		mmc2: msdc2@11250000 {
 			compatible = "mediatek,mt6757-mmc";
 			reg = <0x11250000 0x10000>;
 			interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRA_MSDC2>;
-			clock-names = "MSDC2-CLOCK";*/
+			clocks = <&infrasys INFRACFG_AO_MSDC2_CG>;
+			clock-names = "MSDC2-CLOCK";
 		};
 	};
 

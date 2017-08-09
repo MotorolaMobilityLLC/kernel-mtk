@@ -181,18 +181,22 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
-#if 0
+#ifndef CONFIG_GPIOLIB
+		ERR_MSG("Cannot get gpio %d level", cd_gpio);
+#else
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
 			/* do nothing */
 			/*tasklet_hi_schedule(&host->card_tasklet);*/
-		} else {
+		} else
+#endif
+		{
 			mmc_remove_card(host->mmc->card);
 			host->mmc->card = NULL;
 			mmc_detach_bus(host->mmc);
 			mmc_power_off(host->mmc);
 		}
-#endif
+
 		ERR_MSG("Remove the bad card, block_bad_card=%d, card_inserted=%d",
 			host->block_bad_card, host->card_inserted);
 	}

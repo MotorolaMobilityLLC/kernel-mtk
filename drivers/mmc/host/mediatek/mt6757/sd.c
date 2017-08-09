@@ -4090,8 +4090,10 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 		host->card_inserted = 1;
 		goto end;
 	} else {
-#if 0
+#ifdef CONFIG_GPIOLIB
 		level = __gpio_get_value(cd_gpio);
+#else
+		ERR_MSG("Cannot get gpio %d level", cd_gpio);
 #endif
 		host->card_inserted = (host->hw->cd_level == level) ? 1 : 0;
 	}
@@ -4835,7 +4837,7 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 	host = mmc_priv(mmc);
 	if (host->hw->host_function == MSDC_SD) {
 		if ((host->id == 1) && !(mmc->caps & MMC_CAP_NONREMOVABLE)) {
-#if !defined(FPGA_PLATFORM)
+#ifdef CONFIG_GPIOLIB
 			if ((host->hw->cd_level == __gpio_get_value(cd_gpio))
 			 && host->mmc->card) {
 				mmc_card_set_removed(host->mmc->card);

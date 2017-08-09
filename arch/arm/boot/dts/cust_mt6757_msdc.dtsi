@@ -20,7 +20,7 @@
 };
 
 &mmc1 {
-	clk_src = /bits/ 8 <MSDC30_CLKSRC_208MHZ>;
+	clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
 	msdc-sys-suspend;
@@ -42,7 +42,7 @@
 };
 
 &mmc2 {
-	clk_src = /bits/ 8 <MSDC30_CLKSRC_208MHZ>;
+	clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
