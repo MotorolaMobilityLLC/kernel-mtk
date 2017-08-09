@@ -24,13 +24,8 @@
 #include <mt-plat/mt_ccci_common.h>
 #include "cbp_sdio.h"
 
-#ifdef CONFIG_MTK_C2K_DATA_PPP_SUPPORT
-#define ENABLE_CCMNI	(0)
-#define ENABLE_CHAR_DEV (0)
-#else
 #define ENABLE_CCMNI	(1)
 #define ENABLE_CHAR_DEV (1)
-#endif
 
 #define SDIO_TTY_CHAN_ID_BEGIN	1
 #define SDIO_TTY_CHAN_ID_END	13
