@@ -3352,7 +3352,7 @@ static void _mt_cpufreq_calc_power_throttle_idx(struct mt_cpu_dvfs *p)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	cpufreq_dbg("%s(): original idx = %d\n", __func__, p->idx_pwr_thro_max_opp);
+	cpufreq_ver("%s(): original idx = %d\n", __func__, p->idx_pwr_thro_max_opp);
 
 	if (!p->pwr_thro_mode)
 		p->idx_pwr_thro_max_opp = 0;
@@ -3403,7 +3403,7 @@ static void _mt_cpufreq_calc_power_throttle_idx(struct mt_cpu_dvfs *p)
 		}
 	}
 
-	cpufreq_dbg("%s(): new idx = %d\n", __func__, p->idx_pwr_thro_max_opp);
+	cpufreq_ver("%s(): new idx = %d\n", __func__, p->idx_pwr_thro_max_opp);
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
