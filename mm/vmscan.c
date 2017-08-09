@@ -2550,6 +2550,12 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
 					gfp_zone(sc->gfp_mask), sc->nodemask) {
 		if (!populated_zone(zone))
 			continue;
+
+		/* If no reclaimable pages, just skip ZONE_MOVABLE. */
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE)
+			if (zone_reclaimable_pages(zone) == 0)
+				continue;
+
 		/*
 		 * Take care memory controller reclaiming has small influence
 		 * to global LRU.
@@ -2975,6 +2981,23 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
 static bool zone_balanced(struct zone *zone, int order,
 			  unsigned long balance_gap, int classzone_idx)
 {
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE) {
+		unsigned long reclaimable = zone_reclaimable_pages(zone);
+		unsigned long min = min_wmark_pages(zone);
+
+		/* If no reclaimable pages, view ZONE_MOVABLE as balanced */
+		if (reclaimable == 0)
+			return true;
+
+		/*
+		 * If "the number of free pages is less than min_wmark_pages" and
+		 * "the number of reclaimable pages is less than min_wmark_pages",
+		 * view ZONE_MOVABLE as balanced.
+		 */
+		if (zone_page_state(zone, NR_FREE_PAGES) <= min && reclaimable <= min)
+			return true;
+	}
+
 	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
 				    balance_gap, classzone_idx, 0))
 		return false;
@@ -3101,6 +3124,20 @@ static bool kswapd_shrink_zone(struct zone *zone,
 
 	/* Reclaim above the high watermark. */
 	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+
+	/*
+	 * Reclaim the number of pages in ZONE_MOVABLE to be up to zone_reclaimable_pages(zone)
+	 * if there is fewer reclaimable pages.
+	 */
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE) {
+		unsigned long nr_to_reclaim = zone_reclaimable_pages(zone);
+
+		if (nr_to_reclaim == 0)
+			return true;
+
+		if (nr_to_reclaim < sc->nr_to_reclaim)
+			sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, nr_to_reclaim);
+	}
 
 	/*
 	 * Kswapd reclaims only single pages with compaction enabled. Trying
