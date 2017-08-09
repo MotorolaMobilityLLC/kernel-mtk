@@ -288,6 +288,7 @@ int gt1x_auto_update_proc(void *data)
 		}
 	}
 #endif
+	gt1x_auto_update_done();
 	return 0;
 }
 

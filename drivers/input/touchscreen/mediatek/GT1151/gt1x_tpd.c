@@ -32,17 +32,23 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 
+#include <linux/suspend.h>
+
 /*1 enable,0 disable,touch_panel_eint default status, need to confirm after register eint*/
 int irq_flag = 1;
 /*0 power off,default, 1 power on*/
 static int power_flag;
 static int tpd_flag;
+static int tpd_pm_flag;
 int tpd_halt = 0;
 static int tpd_eint_mode = 1;
 static struct task_struct *thread;
+static struct task_struct *update_thread;
 static struct task_struct *probe_thread;
+static struct notifier_block pm_notifier_block;
 static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
+static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
 u8 int_type = 0;
@@ -485,6 +491,28 @@ static int tpd_irq_registration(void)
 	GTP_INFO("[%s]irq:%d, debounce:%d-%d:", __func__, touch_irq, ints[0], ints[1]);
 	return ret;
 }
+
+void gt1x_auto_update_done(void)
+{
+	tpd_pm_flag = 1;
+	wake_up_interruptible(&pm_waiter);
+}
+#if CONFIG_GTP_AUTO_UPDATE
+int gt1x_pm_notifier(struct notifier_block *nb, unsigned long val, void *ign)
+{
+	switch (val) {
+	case PM_RESTORE_PREPARE:
+		pr_err("%s: PM_RESTORE_PREPARE enter\n", __func__);
+		if (!IS_ERR(update_thread) && update_thread) {
+			wait_event_interruptible(waiter, tpd_pm_flag == 1);
+			/* pr_err("%s: stoping update thread(%d)", __FUNCTION__, kthread_stop(update_thread)); */
+		}
+		pr_err("%s: PM_RESTORE_PREPARE leave\n", __func__);
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+#endif
 static int tpd_registration(void *client)
 {
 	s32 err = 0;
@@ -526,11 +554,14 @@ static int tpd_registration(void *client)
 
 #ifdef CONFIG_GTP_AUTO_UPDATE
 
-	thread = kthread_run(gt1x_auto_update_proc, (void *)NULL, "gt1x_auto_update");
-	if (IS_ERR(thread)) {
-		err = PTR_ERR(thread);
+	update_thread = kthread_run(gt1x_auto_update_proc, (void *)NULL, "gt1x_auto_update");
+	if (IS_ERR(update_thread)) {
+		err = PTR_ERR(update_thread);
 		GTP_INFO(TPD_DEVICE " failed to create auto-update thread: %d\n", err);
 	}
+	pm_notifier_block.notifier_call = gt1x_pm_notifier;
+	pm_notifier_block.priority = 0;
+	register_pm_notifier(&pm_notifier_block);
 #endif
 	return 0;
 }
