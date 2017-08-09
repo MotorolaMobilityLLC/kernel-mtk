@@ -50,7 +50,6 @@
 #include "mmdvfs_mgr.h"
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
-#define MMSYS_CLK_MEDIUM (2)
 
 #define idlemgr_pgc		_get_idlemgr_context()
 #define golden_setting_pgc	_get_golden_setting_context()
@@ -116,7 +115,7 @@ static golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.is_dc = 0;
 		g_golden_setting_context.is_display_idle = 0;
 		g_golden_setting_context.is_wrot_sram = 0;
-		g_golden_setting_context.mmsys_clk = MMSYS_CLK_MEDIUM; /* 286: defalut ; 182: low ; 364: high */
+		g_golden_setting_context.mmsys_clk = MMSYS_CLK_HIGH; /* 320: low ; 450: high */
 
 		/* primary_display */
 		g_golden_setting_context.dst_width	= primary_get_lcm()->params->width;
@@ -125,9 +124,6 @@ static golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.rdma_height = g_golden_setting_context.dst_height;
 		if (g_golden_setting_context.dst_width == 1080
 			&& g_golden_setting_context.dst_height == 1920)
-			g_golden_setting_context.hrt_magicnum = 2;
-		else if (g_golden_setting_context.dst_width == 720
-			&& g_golden_setting_context.dst_height == 1280)
 			g_golden_setting_context.hrt_magicnum = 4;
 		else if (g_golden_setting_context.dst_width == 1440
 			&& g_golden_setting_context.dst_height == 2560)
@@ -434,7 +430,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 
 	cmdqRecReset(handle);
 
-	if (mmsys_clk_old == MMSYS_CLK_MEDIUM && mmsys_clk_new == MMSYS_CLK_LOW) {
+	if (mmsys_clk_old == MMSYS_CLK_HIGH && mmsys_clk_new == MMSYS_CLK_LOW) {
 		/* 2.wait sof */
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 
@@ -448,7 +444,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		set_mmsys_clk(MMSYS_CLK_LOW);
 		need_disable_pll = MM_VENCPLL;
 
-	} else if (mmsys_clk_old == MMSYS_CLK_LOW && mmsys_clk_new == MMSYS_CLK_MEDIUM) {
+	} else if (mmsys_clk_old == MMSYS_CLK_LOW && mmsys_clk_new == MMSYS_CLK_HIGH) {
 		/* 2.wait sof */
 		_cmdq_insert_wait_frame_done_token_mira(handle);
 
@@ -460,22 +456,9 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		cmdqRecWrite(handle, 0x10000004, 8, 8); /* update */
 
 		/* set rdma golden setting parameters */
-		set_mmsys_clk(MMSYS_CLK_MEDIUM);
+		set_mmsys_clk(MMSYS_CLK_HIGH);
 		need_disable_pll = SYSPLL2_D2;
 
-	} else if (mmsys_clk_old == MMSYS_CLK_MEDIUM &&  mmsys_clk_new == MMSYS_CLK_HIGH) {
-		/* 2.wait sof */
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-		/* 286 => 364 */
-		/* set rdma golden setting parameters */
-		set_mmsys_clk(MMSYS_CLK_HIGH);
-
-	} else if (mmsys_clk_old == MMSYS_CLK_HIGH &&  mmsys_clk_new == MMSYS_CLK_MEDIUM) {
-		/* 2.wait sof */
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-		/* 364 => 286 */
-		/* set rdma golden setting parameters */
-		set_mmsys_clk(MMSYS_CLK_MEDIUM);
 	} else {
 		goto cmdq_d;
 	}

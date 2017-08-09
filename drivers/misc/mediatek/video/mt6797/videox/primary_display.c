@@ -74,7 +74,6 @@
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
-#define MMSYS_CLK_MEDIUM (2)
 
 #define _DEBUG_DITHER_HANG_
 

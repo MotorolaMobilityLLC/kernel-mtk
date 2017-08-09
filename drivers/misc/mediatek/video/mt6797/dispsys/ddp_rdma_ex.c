@@ -24,7 +24,6 @@
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
-#define MMSYS_CLK_MEDIUM (2)
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 static golden_setting_context *rdma_golden_setting;
@@ -266,7 +265,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		temp_golden_setting.is_dc = 0;
 		temp_golden_setting.is_display_idle = 0;
 		temp_golden_setting.is_wrot_sram = 0;
-		temp_golden_setting.mmsys_clk = MMSYS_CLK_MEDIUM;/* 450: defalut ; 320: low ; 450: high */
+		temp_golden_setting.mmsys_clk = MMSYS_CLK_HIGH;/* 450: high ; 320: low */
 
 		/* primary_display */
 		temp_golden_setting.dst_width	= 1440;
@@ -307,9 +306,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	switch (rdma_golden_setting->mmsys_clk) {
 	case MMSYS_CLK_LOW:
 		mmsysclk = 320;
-		break;
-	case MMSYS_CLK_MEDIUM:
-		mmsysclk = 450;
 		break;
 	case MMSYS_CLK_HIGH:
 		mmsysclk = 450;

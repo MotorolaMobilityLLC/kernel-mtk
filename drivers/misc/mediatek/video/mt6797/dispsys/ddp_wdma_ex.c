@@ -331,7 +331,18 @@ static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst
 	int wdma_idx = wdma_index(module);
 	unsigned long idx_offset = wdma_idx * DISP_WDMA_INDEX_OFFSET;
 	unsigned long res = width * height;
-	unsigned long res_HD = 720 * 1280;
+	unsigned long res_FHD = 1080 * 1920;
+	/* DISP_REG_WDMA_SMI_CON */
+	regval = 0;
+	regval |= REG_FLD_VAL(SMI_CON_FLD_THRESHOLD, 7);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SLOW_ENABLE, 0);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SLOW_LEVEL, 0);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SLOW_COUNT, 0);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SMI_Y_REPEAT_NUM, 4);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SMI_U_REPEAT_NUM, 2);
+	regval |= REG_FLD_VAL(SMI_CON_FLD_SMI_V_REPEAT_NUM, 2);
+	DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_SMI_CON, regval);
+
 	/* DISP_REG_WDMA_BUF_CON1 */
 	regval = 0;
 	if (dst_mod_type == DST_MOD_REAL_TIME)
@@ -353,19 +364,19 @@ static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst
 
 	/* DISP_REG_WDMA_BUF_CON2 */
 	regval = 0;
-	if (res > res_HD)
+	if (res > res_FHD)
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 45);
 	else
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 20);
 
 	regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_HIGH_OFS, 1);
 
-	if (res > res_HD)
+	if (res > res_FHD)
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 24);
 	else
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 10);
 
-	if (res > res_HD)
+	if (res > res_FHD)
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 93);
 	else
 		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 184);
