@@ -585,7 +585,7 @@ return 0;
 int BigOCPMAFAct(unsigned int *CapMAFAct)
 {
 if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1)
-	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 19:0) * 1000) >> 12; /* mA(mW)*/
+	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 19:0) * 1000) >> 12; /* mA*/
 else
 	*CapMAFAct = 0x0;
 
@@ -1256,7 +1256,7 @@ int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct)
 {
 if (Cluster == OCP_LL) {
 	if (ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0) == 1) {
-		*CapMAFAct = (ocp_read_field(MP0_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA(mW)*/
+		*CapMAFAct = (ocp_read_field(MP0_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA*/
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL0 MAFAct=%d\n", *CapMAFAct);
@@ -1268,7 +1268,7 @@ if (Cluster == OCP_LL) {
 
 } else if (Cluster == OCP_L) {
 	if (ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0) == 1) {
-		*CapMAFAct = (ocp_read_field(MP1_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA(mW)*/
+		*CapMAFAct = (ocp_read_field(MP1_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA*/
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL1 MAFAct=%d\n", *CapMAFAct);
@@ -2076,19 +2076,19 @@ seq_puts(m, "Cluster 2 interrupt function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[2].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[2].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[2].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[2].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[2].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[2].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[2].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[2].CapTotAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[2].CapTotAct);
 /* seq_printf(m, "CapMAFAct  = %d\n", ocp_status[2].CapMAFAct); */
 seq_printf(m, "CGAvgValid   = %d\n", ocp_status[2].CGAvgValid);
 seq_printf(m, "CGAvg        = %llu %%\n", ocp_status[2].CGAvg);
 /*
-seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[2].TopRawLkg);
-seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[2].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[2].CPU1RawLkg);
-seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[2].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[2].CPU3RawLkg);
+seq_printf(m, "TopRawLkg  = %d\n", ocp_status[2].TopRawLkg);
+seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[2].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[2].CPU1RawLkg);
+seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[2].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[2].CPU3RawLkg);
 */
 return 0;
 }
@@ -2152,19 +2152,19 @@ seq_puts(m, "Cluster 0 interrupt function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[0].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[0].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[0].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[0].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[0].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[0].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[0].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[0].CapTotAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[0].CapTotAct);
 /*
 seq_printf(m, "CapMAFAct  = %d\n", ocp_status[0].CapMAFAct);
 seq_printf(m, "CGAvgValid = %d\n", ocp_status[0].CGAvgValid);
 seq_printf(m, "CGAvg      = %d %%\n", ocp_status[0].CGAvg);
-seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[0].TopRawLkg);
-seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[0].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[0].CPU1RawLkg);
-seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[0].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[0].CPU3RawLkg);
+seq_printf(m, "TopRawLkg  = %d\n", ocp_status[0].TopRawLkg);
+seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[0].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[0].CPU1RawLkg);
+seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[0].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[0].CPU3RawLkg);
 */
 return 0;
 }
@@ -2227,18 +2227,18 @@ seq_puts(m, "Cluster 1 interrupt function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[1].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[1].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[1].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[1].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[1].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[1].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[1].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[1].CapTotAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[1].CapTotAct);
 /* seq_printf(m, "CapMAFAct  = %d\n", ocp_status[1].CapMAFAct);
 seq_printf(m, "CGAvgValid = %d\n", ocp_status[1].CGAvgValid);
 seq_printf(m, "CGAvg      = %d %%\n", ocp_status[1].CGAvg);
-seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[1].TopRawLkg);
-seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[1].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[1].CPU1RawLkg);
-seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[1].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[1].CPU3RawLkg);
+seq_printf(m, "TopRawLkg  = %d\n", ocp_status[1].TopRawLkg);
+seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[1].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[1].CPU1RawLkg);
+seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[1].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[1].CPU3RawLkg);
 */
 return 0;
 }
@@ -2303,18 +2303,18 @@ seq_puts(m, "Cluster 2 capture function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[2].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[2].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[2].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[2].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[2].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[2].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[2].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[2].CapTotAct);
-seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[2].CapMAFAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[2].CapTotAct);
+seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[2].CapMAFAct);
 seq_printf(m, "CGAvgValid   = %d\n", ocp_status[2].CGAvgValid);
 seq_printf(m, "CGAvg        = %llu %%\n", ocp_status[2].CGAvg);
-seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[2].TopRawLkg);
-seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[2].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[2].CPU1RawLkg);
-/* seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[2].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[2].CPU3RawLkg);
+seq_printf(m, "TopRawLkg    = %d\n", ocp_status[2].TopRawLkg);
+seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[2].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[2].CPU1RawLkg);
+/* seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[2].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[2].CPU3RawLkg);
 */
 if (Reg_Debug_on) {
 	int i;
@@ -2450,19 +2450,19 @@ seq_puts(m, "Cluster 0 capture function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[0].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[0].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[0].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[0].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[0].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[0].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[0].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[0].CapTotAct);
-seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[0].CapMAFAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[0].CapTotAct);
+seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[0].CapMAFAct);
 seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[0].CGAvgValid);
 seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[0].CGAvg);
 seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[0].AvgLkg);
-seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[0].TopRawLkg);
-seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU1RawLkg);
-seq_printf(m, "CPU2RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU3RawLkg);
+seq_printf(m, "TopRawLkg    = %d\n", ocp_status[0].TopRawLkg);
+seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[0].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[0].CPU1RawLkg);
+seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[0].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[0].CPU3RawLkg);
 
 if (Reg_Debug_on) {
 	int i;
@@ -2591,19 +2591,19 @@ seq_puts(m, "Cluster 1 capture function:\n");
 seq_printf(m, "IntEnDis     = 0x%x\n", ocp_status[1].IntEnDis);
 seq_printf(m, "IRQ1         = 0x%x\n", ocp_status[1].IRQ1);
 seq_printf(m, "IRQ0         = 0x%x\n", ocp_status[1].IRQ0);
-seq_printf(m, "CapToLkg     = %d mA(mW)\n", ocp_status[1].CapToLkg);
+seq_printf(m, "CapToLkg     = %d mA\n", ocp_status[1].CapToLkg);
 seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[1].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[1].CaptureValid);
-seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[1].CapTotAct);
-seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[1].CapMAFAct);
+seq_printf(m, "CapTotAct    = %d mA\n", ocp_status[1].CapTotAct);
+seq_printf(m, "CapMAFAct    = %d mA\n", ocp_status[1].CapMAFAct);
 seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[1].CGAvgValid);
 seq_printf(m, "AvgAct       = %llu mA\n", ocp_status[1].CGAvg);
 seq_printf(m, "AvgLkg       = %llu mA\n", ocp_status[1].AvgLkg);
-seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[1].TopRawLkg);
-seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU0RawLkg);
-seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU1RawLkg);
-seq_printf(m, "CPU2RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU2RawLkg);
-seq_printf(m, "CPU3RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU3RawLkg);
+seq_printf(m, "TopRawLkg    = %d\n", ocp_status[1].TopRawLkg);
+seq_printf(m, "CPU0RawLkg   = %d\n", ocp_status[1].CPU0RawLkg);
+seq_printf(m, "CPU1RawLkg   = %d\n", ocp_status[1].CPU1RawLkg);
+seq_printf(m, "CPU2RawLkg   = %d\n", ocp_status[1].CPU2RawLkg);
+seq_printf(m, "CPU3RawLkg   = %d\n", ocp_status[1].CPU3RawLkg);
 
 if (Reg_Debug_on) {
 	int i;
@@ -2822,31 +2822,31 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 {
 
 if (dvt_test_on == 130 || dvt_test_on == 230)
-	seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[2].CPU0RawLkg);
+	seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[2].CPU0RawLkg);
 else if (dvt_test_on == 131 || dvt_test_on == 231)
-	seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[2].CPU1RawLkg);
+	seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[2].CPU1RawLkg);
 else if (dvt_test_on == 132 || dvt_test_on == 232)
-	seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[2].TopRawLkg);
+	seq_printf(m, "TopRawLkg  = %d\n", ocp_status[2].TopRawLkg);
 else if (dvt_test_on == 110 || dvt_test_on == 210)
-	seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[0].CPU0RawLkg);
+	seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[0].CPU0RawLkg);
 else if (dvt_test_on == 111 || dvt_test_on == 211)
-	seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[0].CPU1RawLkg);
+	seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[0].CPU1RawLkg);
 else if (dvt_test_on == 112 || dvt_test_on == 212)
-	seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[0].CPU2RawLkg);
+	seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[0].CPU2RawLkg);
 else if (dvt_test_on == 113 || dvt_test_on == 213)
-	seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[0].CPU3RawLkg);
+	seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[0].CPU3RawLkg);
 else if (dvt_test_on == 114 || dvt_test_on == 214)
-	seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[0].TopRawLkg);
+	seq_printf(m, "TopRawLkg  = %d\n", ocp_status[0].TopRawLkg);
 else if (dvt_test_on == 120 || dvt_test_on == 220)
-	seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[1].CPU0RawLkg);
+	seq_printf(m, "CPU0RawLkg = %d\n", ocp_status[1].CPU0RawLkg);
 else if (dvt_test_on == 121 || dvt_test_on == 221)
-	seq_printf(m, "CPU1RawLkg = %d * 1.5uA\n", ocp_status[1].CPU1RawLkg);
+	seq_printf(m, "CPU1RawLkg = %d\n", ocp_status[1].CPU1RawLkg);
 else if (dvt_test_on == 122 || dvt_test_on == 222)
-	seq_printf(m, "CPU2RawLkg = %d * 1.5uA\n", ocp_status[1].CPU2RawLkg);
+	seq_printf(m, "CPU2RawLkg = %d\n", ocp_status[1].CPU2RawLkg);
 else if (dvt_test_on == 123 || dvt_test_on == 223)
-	seq_printf(m, "CPU3RawLkg = %d * 1.5uA\n", ocp_status[1].CPU3RawLkg);
+	seq_printf(m, "CPU3RawLkg = %d\n", ocp_status[1].CPU3RawLkg);
 else if (dvt_test_on == 124 || dvt_test_on == 224)
-	seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[1].TopRawLkg);
+	seq_printf(m, "TopRawLkg  = %d\n", ocp_status[1].TopRawLkg);
 
 
 return 0;
@@ -3959,37 +3959,36 @@ int i;
 			seq_printf(m, "Cluster 0 AvgActValid  = %d\n", ocp_hqa[0][i].CGAvgValid);
 			seq_printf(m, "Cluster 0 AvgAct       = %llu mA\n", ocp_hqa[0][i].CGAvg);
 			seq_printf(m, "Cluster 0 AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
-			seq_printf(m, "Cluster 0 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[0][i].TopRawLkg);
-			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU0RawLkg);
-			seq_printf(m, "Cluster 0 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU1RawLkg);
-			seq_printf(m, "Cluster 0 CPU2RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU2RawLkg);
-			seq_printf(m, "Cluster 0 CPU3RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU3RawLkg);
+			seq_printf(m, "Cluster 0 TopRawLkg    = %d\n", ocp_hqa[0][i].TopRawLkg);
+			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d\n", ocp_hqa[0][i].CPU0RawLkg);
+			seq_printf(m, "Cluster 0 CPU1RawLkg   = %d\n", ocp_hqa[0][i].CPU1RawLkg);
+			seq_printf(m, "Cluster 0 CPU2RawLkg   = %d\n", ocp_hqa[0][i].CPU2RawLkg);
+			seq_printf(m, "Cluster 0 CPU3RawLkg   = %d\n", ocp_hqa[0][i].CPU3RawLkg);
 		}
 		if (ocp_cluster1_enable == 1) {
 			seq_printf(m, "Cluster 1 AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
 			seq_printf(m, "Cluster 1 AvgAct       = %llu mA\n", ocp_hqa[1][i].CGAvg);
 			seq_printf(m, "Cluster 1 AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
-			seq_printf(m, "Cluster 1 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[1][i].TopRawLkg);
-			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU0RawLkg);
-			seq_printf(m, "Cluster 1 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU1RawLkg);
-			seq_printf(m, "Cluster 1 CPU2RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU2RawLkg);
-			seq_printf(m, "Cluster 1 CPU3RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU3RawLkg);
+			seq_printf(m, "Cluster 1 TopRawLkg    = %d\n", ocp_hqa[1][i].TopRawLkg);
+			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d\n", ocp_hqa[1][i].CPU0RawLkg);
+			seq_printf(m, "Cluster 1 CPU1RawLkg   = %d\n", ocp_hqa[1][i].CPU1RawLkg);
+			seq_printf(m, "Cluster 1 CPU2RawLkg   = %d\n", ocp_hqa[1][i].CPU2RawLkg);
+			seq_printf(m, "Cluster 1 CPU3RawLkg   = %d\n", ocp_hqa[1][i].CPU3RawLkg);
 		}
 		if (ocp_cluster2_enable == 1) {
 			if (ocp_hqa[2][i].CGAvgValid == 1) {
 				seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
 				seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
-				seq_printf(m, "Cluster 2 CapToLkg     = %d mA(mW)\n", ocp_hqa[2][i].CapToLkg);
+				seq_printf(m, "Cluster 2 CapToLkg     = %d mA\n", ocp_hqa[2][i].CapToLkg);
 				seq_printf(m, "Cluster 2 CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
 				seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
-				seq_printf(m, "Cluster 2 CapTotAct    = %d mA(mW)\n", ocp_hqa[2][i].CapTotAct);
-				seq_printf(m, "Cluster 2 CapMAFAct    = %d mA(mW)\n", ocp_hqa[2][i].CapMAFAct);
-				seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
-				seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
-				seq_printf(m, "Cluster 2 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU1RawLkg);
+				seq_printf(m, "Cluster 2 CapTotAct    = %d mA\n", ocp_hqa[2][i].CapTotAct);
+				seq_printf(m, "Cluster 2 CapMAFAct    = %d mA\n", ocp_hqa[2][i].CapMAFAct);
+				seq_printf(m, "Cluster 2 TopRawLkg    = %d\n", ocp_hqa[2][i].TopRawLkg);
+				seq_printf(m, "Cluster 2 CPU0RawLkg   = %d\n", ocp_hqa[2][i].CPU0RawLkg);
+				seq_printf(m, "Cluster 2 CPU1RawLkg   = %d\n", ocp_hqa[2][i].CPU1RawLkg);
 			} else {
-				seq_printf(m, "Cluster 2 AvgAct       = %llu mA(mW)\n", ocp_hqa[2][i].CGAvg);
-				/*seq_printf(m, "Cluster 2 AvgLkg       = %llu mA\n", ocp_hqa[2][i].AvgLkg);*/
+				seq_printf(m, "Cluster 2 AvgAct       = %llu mA\n", ocp_hqa[2][i].CGAvg);
 			}
 		}
 	}
