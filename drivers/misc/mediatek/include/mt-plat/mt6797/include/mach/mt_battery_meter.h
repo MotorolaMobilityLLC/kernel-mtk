@@ -92,7 +92,7 @@
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
 #define BATTERYPSEUDO100	95
-#define BATTERYPSEUDO1	11
+#define BATTERYPSEUDO1	2
 
 /* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
 #define Q_MAX_SYS_VOLTAGE		3050

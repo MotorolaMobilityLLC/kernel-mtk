@@ -92,7 +92,11 @@
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
 #define BATTERYPSEUDO100	95
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define BATTERYPSEUDO1 2
+#else
 #define BATTERYPSEUDO1 6
+#endif
 
 #define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
 #define Q_MAX_SYS_VOLTAGE		3350
