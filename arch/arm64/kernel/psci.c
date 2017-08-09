@@ -39,6 +39,8 @@
 #include <mt_clkmgr.h>
 #include <mt_idvfs.h>
 #include <mt_ocp.h>
+#include <mt6797/mt_wdt.h>
+#include <ext_wd_drv.h>
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -50,7 +52,6 @@
 
 #ifdef CONFIG_ARCH_MT6797
 #define MT6797_SPM_BASE_ADDR		0x10006000
-#define MT6797_WDT_BASE_ADDR		0x10007000
 #define MT6797_IDVFS_BASE_ADDR		0x10222000
 
 #define CONFIG_CL2_BUCK_CTRL	1
@@ -501,12 +502,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	iounmap(reg_base);
 
 	/* latch RESET */
-	reg_base = ioremap(MT6797_WDT_BASE_ADDR, 0x1000);
-	writel_relaxed((readl(reg_base + 0x018) | 0x88000800), reg_base + 0x018);
-	temp = readl(reg_base + 0x018);
-	if ((temp & 0x10800) != 0x10800)
-		pr_err("RESET reg = 0x%x\n", temp);
-	iounmap(reg_base);
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 1);
 
 	if (hotplug) {
 		ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
@@ -521,10 +517,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	iounmap(reg_base);
 
 	/* unlatch RESET */
-	reg_base = ioremap(MT6797_WDT_BASE_ADDR, 0x1000);
-	temp = (readl(reg_base + 0x018) & ~(0x0800)) | 0x88000000;
-	writel_relaxed(temp, reg_base + 0x018);
-	iounmap(reg_base);
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 0);
 
 	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
 	BigiDVFSSRAMLDOSet(110000);
