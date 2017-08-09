@@ -1909,7 +1909,28 @@
 
 	smi_common@14028000 {
 		compatible = "mediatek,smi_common";
-		reg = <0 0x14028000 0 0x1000>;
+		reg = <0 0x14028000 0 0x1000>,
+					<0 0x14026000 0 0x1000>,
+					<0 0x16010000 0 0x10000>,
+					<0 0x1a001000 0 0x1000>,
+					<0 0x17001000 0 0x1000>,
+					<0 0x14027000 0 0x1000>,
+					<0 0x15021000 0 0x1000>;
+		clocks = <&mmsys MMSYS_SMI_COMMON>,
+				<&mmsys MMSYS_SMI_LARB0>,
+				<&vdecsys VDEC_LARB1>,
+				<&camsys CAMSYS_LARB2_CGPDN>,
+				<&vencsys VENC_GCON_SET0_LARB>,
+				<&mmsys MMSYS_SMI_LARB4>,
+				<&imgsys IMG_LARB5>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_CAM>;
+			clock-names = "smi-common", "smi-larb0", "smi-larb1", "smi-larb2", "smi-larb3",
+			"smi-larb4", "smi-larb5", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp",
+			"mtcmos-dis", "mtcmos-cam";
 	};
 
 	mmsys_vad@14029000 {
