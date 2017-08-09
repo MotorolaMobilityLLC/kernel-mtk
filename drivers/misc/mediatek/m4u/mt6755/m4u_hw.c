@@ -1492,7 +1492,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 					change = 1;
 			}
 		}
-		M4ULOG_HIGH("m4u_config_port_array 1: larb: %d, [0x%x], %d\n", larb, config_larb[larb], change);
+		M4ULOG_MID("m4u_config_port_array 1: larb: %d, [0x%x], %d\n", larb, config_larb[larb], change);
 	}
 
 #ifdef M4U_TEE_SERVICE_ENABLE
@@ -1715,7 +1715,7 @@ void m4u_larb_backup(int larb_idx)
 	}
 
 	larb_base = gLarbBaseAddr[larb_idx];
-	M4UINFO("larb(%d) backup\n", larb_idx);
+	M4ULOG_MID("larb(%d) backup\n", larb_idx);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 	if (m4u_tee_en)
@@ -1741,7 +1741,7 @@ void m4u_larb_restore(int larb_idx)
 	}
 
 	larb_base = gLarbBaseAddr[larb_idx];
-	M4UINFO("larb(%d) restore\n", larb_idx);
+	M4ULOG_MID("larb(%d) restore\n", larb_idx);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 	if (m4u_tee_en) {
