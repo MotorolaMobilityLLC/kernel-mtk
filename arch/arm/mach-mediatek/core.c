@@ -12,7 +12,9 @@
 #include <linux/irqchip.h>
 #include <linux/of_platform.h>
 
-#include "../../../drivers/misc/mediatek/base/power/mt6580/mt-smp.h"
+#ifdef CONFIG_ARCH_MT6580
+#include <mt-smp.h>
+#endif
 
 #ifdef CONFIG_OF
 static const char *mt6580_dt_match[] __initconst = {
