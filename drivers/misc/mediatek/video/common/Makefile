@@ -28,7 +28,7 @@ obj-$(CONFIG_MTK_FB) += 			\
 				mtkfb_fence.o
 
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) ))
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580)))
 obj-$(CONFIG_MTK_FB) += mtkfb.o
 endif
 
