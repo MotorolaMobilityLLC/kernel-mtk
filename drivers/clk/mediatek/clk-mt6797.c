@@ -20,7 +20,7 @@
 #include "clk-pll-v1.h"
 #include "clk-gate-v1.h"
 #include "clk-mt6797-pll.h"
-
+#define _MUX_CLR_SET_UPDS_
 #define _MUX_UPDS_
 #ifdef _MUX_UPDS_
 #include "clk-mux.h"
@@ -864,7 +864,69 @@ static struct mtk_mux top_muxes[] __initdata = {
 #define INVALID_UPDATE_REG 0xFFFFFFFF
 #define INVALID_UPDATE_SHIFT -1
 #define INVALID_MUX_GATE -1
+#ifdef _MUX_CLR_SET_UPDS_
+static struct mtk_mux_clr_set_upd top_muxes[] __initdata = {
+	MUX_CLR_SET_UPD(TOP_MUX_ULPOSC_AXI_CK_MUX_PRE, ulposc_axi_ck_mux_pre, ulposc_axi_ck_mux_pre_parents,
+		0x0040, 0x0044, 0x0048, 3, 1,
+		INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_ULPOSC_AXI_CK_MUX, ulposc_axi_ck_mux, ulposc_axi_ck_mux_parents, 0x0040,
+	0x0044, 0x0048, 2, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AXI, axi_sel, axi_parents, 0x0040, 0x0044, 0x0048, 0, 2, INVALID_MUX_GATE,
+		_UPDATE_REG, 0),	/*AXI no gating */
+	MUX_CLR_SET_UPD(TOP_MUX_MEM, mem_sel, mem_parents, 0x0040, 0x0044, 0x0048, 8, 1, INVALID_MUX_GATE,
+		_UPDATE_REG, 1),	/*15->INVALID_MUX_GATE */
+	MUX_CLR_SET_UPD(TOP_MUX_DDRPHYCFG, ddrphycfg_sel, ddrphycfg_parents, 0x0040, 0x0044, 0x0048, 16, 2,
+		INVALID_MUX_GATE, _UPDATE_REG, 2),/*23 */
+	MUX_CLR_SET_UPD(TOP_MUX_MM, mm_sel, mm_parents, 0x0040, 0x0044, 0x0048, 24, 2, INVALID_MUX_GATE,
+	_UPDATE_REG, 3),/*31*/
+	MUX_CLR_SET_UPD(TOP_MUX_PWM, pwm_sel, pwm_parents, 0x0050, 0x0054, 0x0058, 0, 3, 7, _UPDATE_REG, 4),
+	MUX_CLR_SET_UPD(TOP_MUX_VDEC, vdec_sel, vdec_parents, 0x0050, 0x0054, 0x0058, 8, 3, 15, _UPDATE_REG, 5),
+	MUX_CLR_SET_UPD(TOP_MUX_VENC, venc_sel, venc_parents, 0x0050, 0x0054, 0x0058, 16, 2, 23, _UPDATE_REG, 6),
+	MUX_CLR_SET_UPD(TOP_MUX_MFG, mfg_sel, mfg_parents, 0x0050, 0x0054, 0x0058, 24, 2, 31, _UPDATE_REG, 7),
+	MUX_CLR_SET_UPD(TOP_MUX_CAMTG, camtg_sel, camtg, 0x0060, 0x0064, 0x0068, 0, 2, 7, _UPDATE_REG, 8),
+	MUX_CLR_SET_UPD(TOP_MUX_UART, uart_sel, uart_parents, 0x0060, 0x0064, 0x0068, 8, 1, 15, _UPDATE_REG, 9),
+	MUX_CLR_SET_UPD(TOP_MUX_SPI, spi_sel, spi_parents, 0x0060, 0x0064, 0x0068, 16, 2, 23, _UPDATE_REG, 10),
+	/*      TODO : need special non glitch */
+	MUX_CLR_SET_UPD(TOP_MUX_ULPOSC_SPI_CK_MUX, ulposc_spi_ck_mux, ulposc_spi_ck_mux_parents,
+	0x0060, 0x0064, 0x0068, 18, 1,	INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_USB20, usb20_sel, usb20_parents, 0x0060, 0x0064, 0x0068, 24, 2, 31,
+	_UPDATE_REG, 11),	/*R1 */
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC50_0_HCLK, msdc50_0_hclk_sel, msdc50_0_hclk_parents, 0x0070, 0x0074, 0x0078, 8, 2,
+		INVALID_MUX_GATE, _UPDATE_REG, 12),	/*R1 */
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC50_0, msdc50_0_sel, msdc50_0_parents, 0x0070, 0x0074, 0x0078, 16, 4, 23,
+	_UPDATE_REG, 13),
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC30_1, msdc30_1_sel, msdc30_1_parents, 0x0070, 0x0074, 0x0078, 24, 3, 31,
+	_UPDATE_REG, 14),
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC30_2, msdc30_2_sel, msdc30_2_parents, 0x0080, 0x0084, 0x0088, 0, 3, 7,
+	_UPDATE_REG, 15),
+	MUX_CLR_SET_UPD(TOP_MUX_AUDIO, audio_sel, audio_parents, 0x0080, 0x0084, 0x0088, 16, 2, 23, _UPDATE_REG, 17),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_INTBUS, aud_intbus_sel, aud_intbus_parents, 0x0080, 0x0084, 0x0088, 24, 2,
+		INVALID_MUX_GATE, _UPDATE_REG, 18),
+	MUX_CLR_SET_UPD(TOP_MUX_PMICSPI, pmicspi_sel, pmicspi_parents, 0x0090, 0x0094, 0x0098, 0, 3, INVALID_MUX_GATE,
+		_UPDATE_REG, 19),	/*7->INVALID_MUX_GATE */
+	MUX_CLR_SET_UPD(TOP_MUX_SCP, scp_sel, scp_parents, 0x0090, 0x0094, 0x0098, 8, 2, INVALID_MUX_GATE,
+	_UPDATE_REG, 20),/*15*/
+	MUX_CLR_SET_UPD(TOP_MUX_ATB, atb_sel, atb_parents, 0x0090, 0x0094, 0x0098, 16, 2,
+	INVALID_MUX_GATE, _UPDATE_REG, 21),/*23*/
+	MUX_CLR_SET_UPD(TOP_MUX_MJC, mjc_sel, mjc_parents, 0x0090, 0x0094, 0x0098, 24, 2, 31, _UPDATE_REG, 22),
+	MUX_CLR_SET_UPD(TOP_MUX_DPI0, dpi0_sel, dpi0_parents, 0x00A0, 0x00A4, 0x00A8, 0, 3, 7, _UPDATE_REG, 23),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_1, aud_1_sel, aud_1_parents, 0x00A0, 0x00A4, 0x00A8, 16, 1, 23, _UPDATE_REG, 25),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_2, aud_2_sel, aud_2_parents, 0x00A0, 0x00A4, 0x00A8, 24, 1, 31, _UPDATE_REG, 26),
+	MUX_CLR_SET_UPD(TOP_MUX_SSUSB_TOP_SYS, ssusb_top_sys_sel, ssusb_top_sys_parents, 0x00B0, 0x00B4, 0x00B8, 8, 1,
+		INVALID_MUX_GATE, _UPDATE_REG, 28),
+	MUX_CLR_SET_UPD(TOP_MUX_SPM, spm_sel, spm_parents, 0x00C0, 0x00C4, 0x00C8, 0, 1, INVALID_MUX_GATE,
+	_UPDATE_REG, 30),/*7*/
+	MUX_CLR_SET_UPD(TOP_MUX_BSI_SPI, bsi_spi_sel, bsi_spi_parents, 0x00C0, 0x00C4, 0x00C8, 8, 2,
+	INVALID_MUX_GATE, _UPDATE_REG, 31),
+	MUX_CLR_SET_UPD(TOP_MUX_AUDIO_H, audio_h_sel, audio_h_parents, 0x00C0, 0x00C4, 0x00C8, 16, 2, 23,
+	_UPDATE_REG, 27),
+	MUX_CLR_SET_UPD(TOP_MUX_ANC_MD32, anc_md32_sel, anc_md32_parents, 0x00C0, 0x00C4, 0x00C8, 24, 2, 31,
+	_UPDATE_REG, 29),
+	MUX_CLR_SET_UPD(TOP_MUX_MFG_52M, mfg_52m_sel, mfg_52m_parents, 0x0104, 0x0104,  0x0104, 1, 2,
+	INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),/* non glitch operation */
+};
 
+#else
 static struct mtk_mux_upd top_muxes[] __initdata = {
 	MUX_UPD(TOP_MUX_ULPOSC_AXI_CK_MUX_PRE, ulposc_axi_ck_mux_pre, ulposc_axi_ck_mux_pre_parents,
 		0x0040, 3, 1,
@@ -919,6 +981,7 @@ static struct mtk_mux_upd top_muxes[] __initdata = {
 	MUX_UPD(TOP_MUX_MFG_52M, mfg_52m_sel, mfg_52m_parents, 0x0104, 1, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
 		INVALID_UPDATE_SHIFT),	/*R1 -- 0 *//* non glitch operation */
 };
+#endif
 #endif
 
 #ifndef _MUX_UPDS_
@@ -1485,8 +1548,13 @@ static void __init mt_topckgen_init(struct device_node *node)
 #ifndef _MUX_UPDS_
 	init_clk_topckgen(base, clk_data);
 #else
+	#ifdef _MUX_CLR_SET_UPDS_
+	mtk_clk_register_mux_clr_set_upds(top_muxes, ARRAY_SIZE(top_muxes), base,
+				  &mt6797_clk_lock, clk_data);
+	#else
 	mtk_clk_register_mux_upds(top_muxes, ARRAY_SIZE(top_muxes), base,
 				  &mt6797_clk_lock, clk_data);
+	#endif
 #endif
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
