@@ -23,7 +23,7 @@ void __iomem *lBaseAddr;
 static void mt_power_gs_dump_value(struct seq_file *m, const unsigned int pBaseAddr,
 	const unsigned int *array, unsigned int len)
 {
-	unsigned int i;
+	unsigned int i, value, mask, golden;
 
 #if DEBUG_MSG_ON
 	pr_err("[power_gs_misc] Begin %s\n", __func__);
@@ -38,9 +38,15 @@ static void mt_power_gs_dump_value(struct seq_file *m, const unsigned int pBaseA
 	/*pr_err("[power_gs_misc] lBase %p\n", lBaseAddr);*/
 
 	for (i = 0; i < len; i += 3) {
-		seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x\n",
-			(pBaseAddr + array[i]), readl(lBaseAddr + array[i]),
-			array[i + 1], array[i + 2]);
+		value = readl(lBaseAddr + array[i]);
+		mask = array[i + 1];
+		golden = array[i + 2];
+		if ((value & mask) != golden)
+			seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x - Caution\n",
+				(pBaseAddr + array[i]), value, mask, golden);
+		else
+			seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x\n",
+				(pBaseAddr + array[i]), value, mask, golden);
 #if DEBUG_MSG_ON
 		pr_err("[power_gs_misc] %d value 0x%04x\n", i, readl(lBaseAddr + array[i]));
 #endif
