@@ -143,6 +143,7 @@ static int tps65132_remove(struct i2c_client *client)
 	return 0;
 }
 
+#if !defined(CONFIG_ARCH_MT6797)
 static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 {
 	int ret = 0;
@@ -155,7 +156,8 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	if (ret < 0)
 		printk("tps65132 write data fail !!\n");
 		return ret;
-	}
+}
+#endif
 
 /*
  * module load/unload record keeping
