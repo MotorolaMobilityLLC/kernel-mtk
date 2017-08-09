@@ -109,6 +109,26 @@ struct ppm_power_tbl {
 	unsigned int power_idx_max;
 	unsigned int power_idx;
 };
+
+struct ppm_power_tbl_data {
+	struct ppm_power_tbl *power_tbl;
+	const unsigned int nr_power_tbl;
+};
+
+struct ppm_pwr_idx_ref_tbl {
+	const unsigned int core_dynamic_power[DVFS_OPP_NUM];
+	const unsigned int core_total_power_min[DVFS_OPP_NUM];
+	const unsigned int core_total_power_max[DVFS_OPP_NUM];
+	unsigned int core_total_power[DVFS_OPP_NUM];
+	const unsigned int l2_power_min[DVFS_OPP_NUM];
+	const unsigned int l2_power_max[DVFS_OPP_NUM];
+	unsigned int l2_power[DVFS_OPP_NUM];
+};
+
+struct ppm_pwr_idx_ref_tbl_data {
+	struct ppm_pwr_idx_ref_tbl *pwr_idx_ref_tbl;
+	const unsigned int nr_pwr_idx_ref_tbl;
+};
 #else
 struct ppm_power_tbl {
 	const unsigned int index;
@@ -119,14 +139,9 @@ struct ppm_power_tbl {
 	const unsigned int perf_idx;
 	const unsigned int power_idx;
 };
-#endif
 
 struct ppm_power_tbl_data {
-#ifdef PPM_POWER_TABLE_CALIBRATION
-	struct ppm_power_tbl *power_tbl;
-#else
 	const struct ppm_power_tbl *power_tbl;
-#endif
 	const unsigned int nr_power_tbl;
 };
 
@@ -140,6 +155,7 @@ struct ppm_pwr_idx_ref_tbl_data {
 	const struct ppm_pwr_idx_ref_tbl *pwr_idx_ref_tbl;
 	const unsigned int nr_pwr_idx_ref_tbl;
 };
+#endif
 
 /*==============================================================*/
 /* Global Variables						*/
@@ -152,9 +168,6 @@ extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percent
 #if PPM_DLPT_ENHANCEMENT
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
-#endif
-#ifdef PPM_POWER_TABLE_CALIBRATION
-extern void ppm_gen_sorted_table(void);
 #endif
 
 #ifdef __cplusplus
