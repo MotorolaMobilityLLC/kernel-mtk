@@ -400,7 +400,7 @@ static int hps_resume(struct device *dev)
 	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= little_cpu_num_resume;
 	     cpu++) {
 		if (!cpu_online(cpu))
-			device_online(get_cpu_device(cpu));
+			cpu_up(cpu);
 	}
 
 resume_end:
@@ -435,7 +435,7 @@ static int hps_freeze(struct device *dev)
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
 			if (cpu_online(cpu))
-				device_offline(get_cpu_device(cpu));
+				cpu_down(cpu);
 		}
 	}
 	mutex_unlock(&hps_ctxt.lock);
