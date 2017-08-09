@@ -3873,7 +3873,7 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 #define SIGLE_CORE_IDX 10
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
-	unsigned int online_cpus;
+	/* unsigned int online_cpus; */
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -3882,12 +3882,14 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	cpufreq_ver("new_opp_idx = %d, idx_opp_ppm_base = %d, idx_opp_ppm_limit = %d\n",
 		new_opp_idx , p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
 
+#if 0
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
 		online_cpus = num_online_cpus() + num_online_cpus_delta;
 
 		if (online_cpus == 1 && (new_opp_idx > SIGLE_CORE_IDX))
 			new_opp_idx = SIGLE_CORE_IDX;
 	}
+#endif
 
 	if ((p->idx_opp_ppm_limit != -1) && (new_opp_idx < p->idx_opp_ppm_limit))
 		new_opp_idx = p->idx_opp_ppm_limit;
