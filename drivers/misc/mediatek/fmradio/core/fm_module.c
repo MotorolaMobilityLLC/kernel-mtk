@@ -94,7 +94,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 	struct fm_platform *plat = container_of(filp->f_dentry->d_inode->i_cdev, struct fm_platform, cdev);
 	struct fm *fm = container_of(plat, struct fm, platform);
 
-	WCN_DBG(FM_NTC | MAIN, "%s---pid(%d)---cmd(0x%08x)---arg(0x%08x)\n", current->comm,
+	WCN_DBG(FM_DBG | MAIN, "%s---pid(%d)---cmd(0x%08x)---arg(0x%08x)\n", current->comm,
 		current->pid, cmd, (fm_u32) arg);
 
 	if (fm_sys_state_get(fm) != FM_SUBSYS_RST_OFF) {
