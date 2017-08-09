@@ -13,6 +13,10 @@ ifeq ($(CONFIG_DEBUG_FS),y)
 mediatek-drm-y += mtk_drm_debugfs.o
 endif
 
+ifeq ($(CONFIG_DEBUG_FS),y)
+mediatek-drm-y += mtk_dsi_debugfs.o
+endif
+
 obj-$(CONFIG_DRM_MEDIATEK) += mediatek-drm.o
 
 mediatek-drm-hdmi-objs := mtk_drm_hdmi_drv.o \

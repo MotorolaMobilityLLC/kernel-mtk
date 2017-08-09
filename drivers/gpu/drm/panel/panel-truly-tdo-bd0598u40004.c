@@ -29,6 +29,9 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 
+/* #define PANEL_BIST_PATTERN */	/* enable this to check panel self -bist pattern */
+#define PANEL_SUPPORT_READBACK	/* option function to read data from some panel address*/
+
 struct truly {
 	struct device *dev;
 	struct drm_panel panel;
@@ -73,6 +76,37 @@ static int truly_clear_error(struct truly *ctx)
 	return ret;
 }
 
+#ifdef PANEL_SUPPORT_READBACK
+static int truly_dcs_read(struct truly *ctx, u8 cmd, void *data, size_t len)
+{
+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
+	ssize_t ret;
+
+	if (ctx->error < 0)
+		return 0;
+
+	ret = mipi_dsi_dcs_read(dsi, cmd, data, len);
+	if (ret < 0) {
+		dev_err(ctx->dev, "error %d reading dcs seq:(%#x)\n", ret, cmd);
+		ctx->error = ret;
+	}
+
+	return ret;
+}
+
+static void truly_panel_get_data(struct truly *ctx)
+{
+	u8 buffer[3] = {0};
+	static int ret;
+
+	if (0 == ret) {
+		ret = truly_dcs_read(ctx,  0x0A, buffer, 1);
+		dev_info(ctx->dev, "return %d data(0x%08x) to dsi engine\n",
+			 ret, buffer[0] | (buffer[1] << 8));
+	}
+}
+#endif
+
 static void truly_dcs_write(struct truly *ctx, const void *data, size_t len)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
@@ -100,8 +134,11 @@ static void truly_panel_init(struct truly *ctx)
 	truly_dcs_write_seq_static(ctx, 0x53, 0x24);
 	truly_dcs_write_seq_static(ctx, 0x55, 0x00);
 	truly_dcs_write_seq_static(ctx, 0x5E, 0x00);
+
+#ifndef PANEL_BIST_PATTERN
 	truly_dcs_write_seq_static(ctx, 0x11);
 	mdelay(150);
+#endif
 
 	truly_dcs_write_seq_static(ctx, 0xFF, 0x24);
 	mdelay(2);
@@ -629,9 +666,16 @@ static void truly_panel_init(struct truly *ctx)
 	truly_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	mdelay(2);
 
+#ifdef PANEL_BIST_PATTERN
+	truly_dcs_write_seq_static(ctx, 0xFF, 0x24);
+	mdelay(1);
+
+	truly_dcs_write_seq_static(ctx, 0xEC, 0x01);
+#else
 	truly_dcs_write_seq_static(ctx, 0x35, 0x00);
 	truly_dcs_write_seq_static(ctx, 0x29);
 	mdelay(20);
+#endif
 }
 
 static void truly_set_sequence(struct truly *ctx)
@@ -715,6 +759,10 @@ static int truly_prepare(struct drm_panel *panel)
 		truly_unprepare(panel);
 
 	ctx->prepared = true;
+
+#ifdef PANEL_SUPPORT_READBACK
+	truly_panel_get_data(ctx);
+#endif
 
 	return ret;
 }
@@ -898,6 +946,7 @@ static const struct of_device_id truly_of_match[] = {
 	{ .compatible = "truly,bd0598u4004", },
 	{ }
 };
+
 MODULE_DEVICE_TABLE(of, truly_of_match);
 
 static struct mipi_dsi_driver truly_driver = {
@@ -909,6 +958,7 @@ static struct mipi_dsi_driver truly_driver = {
 		.of_match_table = truly_of_match,
 	},
 };
+
 module_mipi_dsi_driver(truly_driver);
 
 MODULE_AUTHOR("Jitao Shi <jitao.shi@mediatek.com>");

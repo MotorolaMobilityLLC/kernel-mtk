@@ -50,6 +50,10 @@ struct mtk_dsi {
 	bool enabled;
 	bool poweron;
 	int irq_num, irq_data;
+
+#if defined(CONFIG_DEBUG_FS)
+	struct dentry *debugfs;
+#endif
 };
 
 static inline struct mtk_dsi *host_to_dsi(struct mipi_dsi_host *h)

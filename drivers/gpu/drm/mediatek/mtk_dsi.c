@@ -47,6 +47,7 @@
 #include "mtk_drm_gem.h"
 #include "mtk_dsi.h"
 #include "mtk_mipi_tx.h"
+#include "mtk_dsi_debugfs.h"
 
 #define DSI_VIDEO_FIFO_DEPTH	(1920 / 4)
 #define DSI_HOST_FIFO_DEPTH	64
@@ -106,13 +107,13 @@
 
 #define DSI_HSTX_CKL_WC		0x64
 
-#define DSI_RX_DATA0	0x74
-#define DSI_RX_DATA1	0x78
-#define DSI_RX_DATA2	0x7c
-#define DSI_RX_DATA3	0x80
+#define DSI_RX_DATA0		0x74
+#define DSI_RX_DATA1		0x78
+#define DSI_RX_DATA2		0x7c
+#define DSI_RX_DATA3		0x80
 
 #define DSI_RACK		0x84
-#define DSI_MEM_CONTI	0x90
+#define DSI_MEM_CONTI		0x90
 
 #define DSI_PHY_LCCON		0x104
 #define LC_HS_TX_EN		BIT(0)
@@ -149,9 +150,11 @@
 #define DSI_PHY_TIMECON4	0x120
 #define ULPS_WAKEUP		(0x1fffff << 0)
 
-#define DSI_VM_CMD_CON	0x130
+#define DSI_VM_CMD_CON		0x130
 #define VM_CMD_EN		BIT(0)
 #define TS_VFP_EN		BIT(5)
+
+#define DSI_STATE_DBG6		0x160
 
 #define DSI_CMDQ0		0x180
 
@@ -238,6 +241,82 @@ static void mtk_dsi_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
 	writel((temp & ~mask) | (data & mask), dsi->regs + offset);
 }
 
+/* -------------------- Retrieve Information -------------------- */
+void mtk_dsi_dump_registers(struct mtk_dsi *dsi)
+{
+	/*
+	description of dsi status
+	Bit Value   Description
+	[0] 0x0001  Idle (wait for command)
+	[1] 0x0002  Reading command queue for header
+	[2] 0x0004  Sending type-0 command
+	[3] 0x0008  Waiting frame data from RDMA for type-1 command
+	[4] 0x0010  Sending type-1 command
+	[5] 0x0020  Sending type-2 command
+	[6] 0x0040  Reading command queue for data
+	[7] 0x0080  Sending type-3 command
+	[8] 0x0100  Sending BTA
+	[9] 0x0200  Waiting RX-read data
+	[10]    0x0400  Waiting SW RACK for RX-read data
+	[11]    0x0800  Waiting TE
+	[12]    0x1000  Get TE
+	[13]    0x2000  Waiting external TE
+	[14]    0x4000  Waiting SW RACK for TE
+
+	*/
+
+	static unsigned char *DSI_DBG_STATUS_DESCRIPTION[] = {
+		"null",
+		"Idle (wait for command)",
+		"Reading command queue for header",
+		"Sending type-0 command",
+		"Waiting frame data from RDMA for type-1 command",
+		"Sending type-1 command",
+		"Sending type-2 command",
+		"Reading command queue for data",
+		"Sending type-3 command",
+		"Sending BTA",
+		"Waiting RX-read data ",
+		"Waiting SW RACK for RX-read data",
+		"Waiting TE",
+		"Get TE ",
+		"Waiting SW RACK for TE",
+		"Waiting external TE",
+	};
+
+	u32 i, DSI_DBG6_Status = (readl(dsi->regs + DSI_STATE_DBG6)) & 0xffff;
+	int count = 0;
+	struct mtk_mipi_tx *mipi_tx = phy_get_drvdata(dsi->phy);
+
+	while (DSI_DBG6_Status) {
+		DSI_DBG6_Status >>= 1;
+		count++;
+	}
+
+	dev_info(dsi->dev, "---------- Start dump DSI registers ----------\n");
+	dev_info(dsi->dev, "DSI_STATE_DBG6=0x%08x, count=%d, means: [%s]\n",
+		DSI_DBG6_Status, count, DSI_DBG_STATUS_DESCRIPTION[count]);
+	dev_info(dsi->dev, "---------- Start dump DSI registers ----------\n");
+
+	for (i = 0; i < 0x180; i += 0x10) {
+		dev_info(dsi->dev, "DSI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+			i, readl(dsi->regs + i), readl(dsi->regs + i + 0x4),
+			readl(dsi->regs + i + 0x8), readl(dsi->regs + i + 0xc));
+	}
+
+	for (i = 0; i < 0x80; i += 0x10) {
+		dev_info(dsi->dev, "DSI_CMD+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+			i, readl(dsi->regs+0x180+i), readl(dsi->regs+0x180+i+0x4),
+			readl(dsi->regs+0x180+i+0x8), readl(dsi->regs+0x180+i+0xc));
+	}
+
+	for (i = 0; i < 0x90; i += 0x10) {
+		dev_info(dsi->dev, "DSI_PHY+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+			i, readl(mipi_tx->regs+i), readl(mipi_tx->regs+i+0x4),
+			readl(mipi_tx->regs+i+0x8), readl(mipi_tx->regs+i+0xc));
+	}
+}
+
 static void mtk_dsi_phy_timconfig(struct mtk_dsi *dsi)
 {
 	u32 timcon0, timcon1, timcon2, timcon3;
@@ -272,7 +351,7 @@ static void mtk_dsi_disable(struct mtk_dsi *dsi)
 	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_EN, 0);
 }
 
-static void mtk_dsi_reset(struct mtk_dsi *dsi)
+static void mtk_dsi_reset_engine(struct mtk_dsi *dsi)
 {
 	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_RESET, DSI_RESET);
 	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_RESET, 0);
@@ -453,7 +532,7 @@ static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
 		break;
 	}
 
-	writel(tmp_reg, dsi->regs + DSI_TXRX_CTRL);
+	writel(tmp_reg | BIT(16), dsi->regs + DSI_TXRX_CTRL);
 }
 
 static void mtk_dsi_ps_control(struct mtk_dsi *dsi)
@@ -630,7 +709,8 @@ static void mtk_dsi_wait_for_idle(struct mtk_dsi *dsi)
 		dev_info(dsi->dev, "polling dsi wait not busy timeout!\n");
 
 		mtk_dsi_enable(dsi);
-		mtk_dsi_reset(dsi);
+		mtk_dsi_reset_engine(dsi);
+		mtk_dsi_dump_registers(dsi);
 	}
 }
 
@@ -664,7 +744,7 @@ static void mtk_dsi_wait_engine_idle(struct mtk_dsi *dsi)
 	if (0 != ret)
 		dev_info(dsi->dev, "dsi wait engine idle timeout\n");
 
-	mtk_dsi_reset(dsi);
+	mtk_dsi_reset_engine(dsi);
 	mtk_dsi_stop(dsi);
 }
 
@@ -1020,12 +1100,13 @@ static ssize_t mtk_dsi_host_read_cmd(struct mtk_dsi *dsi,
 {
 	u8 max_try_count = 5;
 	u32 recv_data_cnt, tmp_val, recv_data0, recv_data1, recv_data2, recv_data3;
-	struct dsi_rx_data read_data;
+	struct dsi_rx_data read_data0, read_data1, read_data2, read_data3;
 	struct dsi_cmd_t0 t0;
 	s32 ret;
 
 	u8 *buffer = msg->rx_buf;
 	u8 buffer_size = msg->rx_len;
+	u8 packet_type;
 
 	if (readl(dsi->regs + DSI_MODE_CTRL) & 0x03) {
 		dev_info(dsi->dev, "dsi engine is not command mode\n");
@@ -1071,15 +1152,21 @@ static ssize_t mtk_dsi_host_read_cmd(struct mtk_dsi *dsi,
 
 		mtk_dsi_start(dsi);
 
-		ret = mtk_dsi_wait_for_irq_timeout(dsi, DSI_INT_LPRX_RD_RDY_FLAG, 2000); /* 2s timeout*/
+		dev_info(dsi->dev, "Start polling DSI read ready!!!\n");
+
+		 /* 2s timeout*/
+		ret = mtk_dsi_wait_for_irq_timeout(dsi, DSI_INT_LPRX_RD_RDY_FLAG, 2000);
 		if (ret) {
-			dev_info(dsi->dev, "wait for irq timeout\n");
+			dev_info(dsi->dev, "Polling DSI read ready timeout!!!\n");
 
 			mtk_dsi_enable(dsi);
-			mtk_dsi_reset(dsi);
+			mtk_dsi_reset_engine(dsi);
+			mtk_dsi_dump_registers(dsi);
 
 			return ret;
 		}
+
+		dev_info(dsi->dev, "End polling DSI read ready!!!\n");
 
 		mtk_dsi_mask(dsi, DSI_RACK, BIT(0), BIT(0));
 		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
@@ -1089,16 +1176,41 @@ static ssize_t mtk_dsi_host_read_cmd(struct mtk_dsi *dsi,
 		recv_data2 = readl(dsi->regs + DSI_RX_DATA2);
 		recv_data3 = readl(dsi->regs + DSI_RX_DATA3);
 
-		read_data.byte0 = recv_data0 & 0xff;		/* e.g: short packet_type */
-		read_data.byte1 = (recv_data0 >> 8) & 0xff;	/* LS data byte */
-		read_data.byte2 = (recv_data0 >> 16) & 0xff;	/* MS data byte */
-		read_data.byte3 = (recv_data0 >> 24) & 0xff;	/* ECC */
+		read_data0 = *((struct dsi_rx_data *)(&recv_data0));
+		read_data1 = *((struct dsi_rx_data *)(&recv_data1));
+		read_data2 = *((struct dsi_rx_data *)(&recv_data2));
+		read_data3 = *((struct dsi_rx_data *)(&recv_data3));
 
-		if (read_data.byte0 == 0x1A || read_data.byte0 == 0x1C) {
-			/* long packet */
+		ret = readl(dsi->regs + DSI_CMDQ_SIZE);
+		dev_info(dsi->dev, "DSI_CMDQ_SIZE : 0x%x\n", ret & CMDQ_SIZE);
+
+		ret = readl(dsi->regs + DSI_CMDQ0);
+		dev_info(dsi->dev, "DSI_CMDQ_DATA0 : 0x%x\n", ret & 0xff);
+		dev_info(dsi->dev, "DSI_CMDQ_DATA1 : 0x%x\n", (ret >> 8) & 0xff);
+		dev_info(dsi->dev, "DSI_CMDQ_DATA2 : 0x%x\n", (ret >> 16) & 0xff);
+		dev_info(dsi->dev, "DSI_CMDQ_DATA3 : 0x%x\n", (ret >> 24) & 0xff);
+
+		dev_info(dsi->dev, "DSI_RX_DATA0: 0x%x\n", recv_data0);
+		dev_info(dsi->dev, "DSI_RX_DATA1: 0x%x\n", recv_data1);
+		dev_info(dsi->dev, "DSI_RX_DATA2: 0x%x\n", recv_data2);
+		dev_info(dsi->dev, "DSI_RX_DATA3: 0x%x\n", recv_data3);
+
+		dev_info(dsi->dev, "read_data0: %x,%x,%x,%x\n",
+			read_data0.byte0, read_data0.byte1, read_data0.byte2, read_data0.byte3);
+		dev_info(dsi->dev, "read_data1: %x,%x,%x,%x\n",
+			read_data1.byte0, read_data1.byte1, read_data1.byte2, read_data1.byte3);
+		dev_info(dsi->dev, "read_data2: %x,%x,%x,%x\n",
+			read_data2.byte0, read_data2.byte1, read_data2.byte2, read_data2.byte3);
+		dev_info(dsi->dev, "read_data3: %x,%x,%x,%x\n",
+			read_data3.byte0, read_data3.byte1, read_data3.byte2, read_data3.byte3);
+
+		packet_type = read_data0.byte0;
+		dev_info(dsi->dev, "DSI read packet_type is 0x%x\n", packet_type);
+
+		if (packet_type == 0x1A || packet_type == 0x1C) {
 			void *read_tmp = (void *)&recv_data1;
 
-			recv_data_cnt = read_data.byte1 + read_data.byte2 * 16;
+			recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
 			if (recv_data_cnt > 10)
 				recv_data_cnt = 10;
 
@@ -1112,10 +1224,10 @@ static ssize_t mtk_dsi_host_read_cmd(struct mtk_dsi *dsi,
 			if (recv_data_cnt > buffer_size)
 				recv_data_cnt = buffer_size;
 
-			memcpy((void *)buffer, (void *)&read_data.byte1, 2);
+			memcpy((void *)buffer, (void *)&read_data0.byte1, 2);
 		}
-	} while (read_data.byte0 != 0x1C && read_data.byte0 != 0x21 &&
-		read_data.byte0 != 0x22 && read_data.byte0 != 0x1A);
+	} while (packet_type != 0x1C && packet_type != 0x21 &&
+		packet_type != 0x22 && packet_type != 0x1A);
 
 	dev_info(dsi->dev, "dsi get %d byte data from the panel address(0x%x)\n",
 		 recv_data_cnt, *((u8 *)(msg->tx_buf)));
@@ -1131,7 +1243,9 @@ static ssize_t mtk_dsi_host_write_cmd(struct mtk_dsi *dsi,
 	struct dsi_cmd_t0 t0;
 	struct dsi_cmd_t2 t2;
 	const char *tx_buf = msg->tx_buf;
-	struct dsi_tx_cmdq_regs *dsi_cmd_reg = (struct dsi_tx_cmdq_regs *)(dsi->regs + DSI_CMDQ0);
+	struct dsi_tx_cmdq_regs *dsi_cmd_reg;
+
+	dsi_cmd_reg = (struct dsi_tx_cmdq_regs *)(dsi->regs + DSI_CMDQ0);
 
 	mtk_dsi_wait_for_idle(dsi);
 
@@ -1394,6 +1508,12 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 	}
 
+	ret = mtk_drm_dsi_debugfs_init(dsi);
+	if (ret) {
+		dev_err(dev, "Failed to initialize dsi debugfs\n");
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -1403,6 +1523,7 @@ static int mtk_dsi_remove(struct platform_device *pdev)
 
 	mtk_output_dsi_disable(dsi);
 	component_del(&pdev->dev, &mtk_dsi_component_ops);
+	mtk_drm_dsi_debugfs_exit(dsi);
 
 	return 0;
 }
