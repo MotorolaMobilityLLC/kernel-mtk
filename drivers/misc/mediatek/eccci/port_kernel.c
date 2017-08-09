@@ -60,7 +60,7 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 #define MAX_QUEUE_LENGTH 16
 #define EX_TIMER_SWINT 10
 #define EX_TIMER_MD_EX 5
-#define EX_TIMER_MD_EX_REC_OK 30
+#define EX_TIMER_MD_EX_REC_OK 10
 #define EX_TIMER_MD_HANG 5
 
 #if defined(FEATURE_GET_MD_GPIO_NUM)
