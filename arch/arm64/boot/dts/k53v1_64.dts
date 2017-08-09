@@ -617,3 +617,52 @@ memory@00000000 {
 	status = "okay";
 };
 /* NFC end */
+
+/* USB GPIO Kernal Standardization start */
+&pio {
+	usb_default: usb_default {
+	};
+
+	gpio0_mode1_iddig: iddig_irq_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_IDDIG>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	gpio83_mode2_drvvbus: drvvbus_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_USB_DRVVBUS>;
+			slew-rate = <1>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	gpio83_mode2_drvvbus_low: drvvbus_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_USB_DRVVBUS>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio83_mode2_drvvbus_high: drvvbus_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_USB_DRVVBUS>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&usb0 {
+	pinctrl-names = "usb_default", "iddig_irq_init", "drvvbus_init", "drvvbus_low", "drvvbus_high";
+	pinctrl-0 = <&usb_default>;
+	pinctrl-1 = <&gpio0_mode1_iddig>;
+	pinctrl-2 = <&gpio83_mode2_drvvbus>;
+	pinctrl-3 = <&gpio83_mode2_drvvbus_low>;
+	pinctrl-4 = <&gpio83_mode2_drvvbus_high>;
+	status = "okay";
+};
+/* USB GPIO Kernal Standardization end */
