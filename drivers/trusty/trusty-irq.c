@@ -244,14 +244,24 @@ static void trusty_irq_cpu_down(void *info)
 	local_irq_restore(irq_flags);
 }
 
+static void trusty_irq_cpu_dead(void *info)
+{
+	unsigned long irq_flags;
+	struct trusty_irq_state *is = info;
+
+	dev_dbg(is->dev, "%s: cpu %d\n", __func__, smp_processor_id());
+
+	local_irq_save(irq_flags);
+	schedule_work_on(smp_processor_id(), &(this_cpu_ptr(is->irq_work)->work));
+	local_irq_restore(irq_flags);
+}
+
 static int trusty_irq_cpu_notify(struct notifier_block *nb,
 				 unsigned long action, void *hcpu)
 {
 	struct trusty_irq_state *is;
-	struct trusty_irq_work *trusty_irq_work;
 
 	is = container_of(nb, struct trusty_irq_state, cpu_notifier);
-	trusty_irq_work = this_cpu_ptr(is->irq_work);
 
 	dev_dbg(is->dev, "%s: 0x%lx\n", __func__, action);
 
@@ -260,7 +270,7 @@ static int trusty_irq_cpu_notify(struct notifier_block *nb,
 		trusty_irq_cpu_up(is);
 		break;
 	case CPU_DEAD:
-		schedule_work_on(raw_smp_processor_id(), &trusty_irq_work->work);
+		trusty_irq_cpu_dead(is);
 		break;
 	case CPU_DYING:
 		trusty_irq_cpu_down(is);
