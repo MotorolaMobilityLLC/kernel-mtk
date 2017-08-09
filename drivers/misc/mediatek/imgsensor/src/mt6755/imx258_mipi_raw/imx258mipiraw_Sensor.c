@@ -1919,7 +1919,7 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8  pdaf_mode)
 	mdelay(10);
 
 }
-static void hs_video_setting()
+static void hs_video_setting(void)
 {
 	LOG_INF("hs_video E\n");
 
@@ -2026,7 +2026,7 @@ static void hs_video_setting()
 
 }
 
-static void slim_video_setting()
+static void slim_video_setting(void)
 {
 	LOG_INF("slim video E\n");
     write_cmos_sensor(0x0100,0x00);
