@@ -4573,6 +4573,7 @@ static ssize_t eem_offset_proc_write(struct file *file,
 	char *buf = (char *) __get_free_page(GFP_USER);
 	int offset = 0;
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
+	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -4596,7 +4597,9 @@ static ssize_t eem_offset_proc_write(struct file *file,
 	if (!kstrtoint(buf, 10, &offset)) {
 		ret = 0;
 		det->volt_offset = offset;
+		mt_ptp_lock(&flags);
 		eem_set_eem_volt(det);
+		mt_ptp_unlock(&flags);
 	} else {
 		ret = -EINVAL;
 		eem_debug("bad argument_1!! argument should be \"0\"\n");
