@@ -1856,7 +1856,7 @@ static int usb3_switch_en(struct usbtypc *typec, int on)
 		typec->u3_sw->en = DISABLE;
 	}
 
-	fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->en_gpio));
+	/*fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->en_gpio));*/
 end:
 	return retval;
 }
@@ -1881,7 +1881,7 @@ static int usb3_switch_sel(struct usbtypc *typec, int sel)
 		typec->u3_sw->sel = sel;
 	}
 
-	fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->sel_gpio));
+	/*fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->sel_gpio));*/
 end:
 	return retval;
 }
@@ -1991,11 +1991,11 @@ int usb3_switch_init(struct usbtypc *typec)
 	/*dir selection */
 	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->fusb340_sel_init);
 
-	fusb_printk(K_DEBUG, "en_gpio=0x%X, out=%d\n", typec->u3_sw->en_gpio,
-		    gpio_get_value(typec->u3_sw->en_gpio));
+	/*fusb_printk(K_DEBUG, "en_gpio=0x%X, out=%d\n", typec->u3_sw->en_gpio,
+		    gpio_get_value(typec->u3_sw->en_gpio));*/
 
-	fusb_printk(K_DEBUG, "sel_gpio=0x%X, out=%d\n", typec->u3_sw->sel_gpio,
-		    gpio_get_value(typec->u3_sw->sel_gpio));
+	/*fusb_printk(K_DEBUG, "sel_gpio=0x%X, out=%d\n", typec->u3_sw->sel_gpio,
+		    gpio_get_value(typec->u3_sw->sel_gpio));*/
 
 
 	return retval;
@@ -2017,11 +2017,11 @@ int usb_redriver_init(struct usbtypc *typec)
 	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->re_c1_init);
 	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->re_c2_init);
 
-	fusb_printk(K_DEBUG, "c1_gpio=0x%X, out=%d\n", typec->u_rd->c1_gpio,
-		    gpio_get_value(typec->u_rd->c1_gpio));
+	/*fusb_printk(K_DEBUG, "c1_gpio=0x%X, out=%d\n", typec->u_rd->c1_gpio,
+		    gpio_get_value(typec->u_rd->c1_gpio));*/
 
-	fusb_printk(K_DEBUG, "c2_gpio=0x%X, out=%d\n", typec->u_rd->c2_gpio,
-		    gpio_get_value(typec->u_rd->c2_gpio));
+	/*fusb_printk(K_DEBUG, "c2_gpio=0x%X, out=%d\n", typec->u_rd->c2_gpio,
+		    gpio_get_value(typec->u_rd->c2_gpio));*/
 
 	return retval;
 }
@@ -2081,8 +2081,8 @@ int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat)
 		break;
 	}
 
-	fusb_printk(K_DEBUG, "%s gpio=%d, out=%d\n", __func__, pin_num,
-		    gpio_get_value(pin_num));
+	/*fusb_printk(K_DEBUG, "%s gpio=%d, out=%d\n", __func__, pin_num,
+		    gpio_get_value(pin_num));*/
 end:
 	return retval;
 }

@@ -1753,6 +1753,10 @@
 			interrupt-names = "musb-hdrc", "xhci";
 		};
 
+		usb_c_pinctrl:usb_c_pinctrl@0 {
+			compatible = "mediatek,usb_c_pinctrl";
+		};
+
 		xhci0:usb3_xhci@11270000 {
 			compatible = "mediatek,usb3_xhci";
 			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
@@ -3345,7 +3349,7 @@
 	};
 
 	usb_typec: usb_typec {
-		compatible = "mediatek, usb_typec-eint";
+		compatible = "mediatek,fusb300-eint";
 		status = "disabled";
 	};
 
