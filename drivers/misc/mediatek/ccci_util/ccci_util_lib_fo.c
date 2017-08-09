@@ -298,7 +298,7 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 
 /*===== META arguments parse =================== */
 #define ATAG_MDINFO_DATA 0x41000806
-struct tag_header {
+struct lk_tag_header {
 	u32 size;
 	u32 tag;
 };
@@ -310,10 +310,10 @@ static void parse_md_info_tag_val(unsigned int *raw_ptr)
 	unsigned char md_info_tag_array[4];
 
 	/*--- md info tag item ---------------------------------- */
-	/* unsigned int tag_size = tag_header(2) + uchar[4](1)    */
+	/* unsigned int tag_size = lk_tag_header(2) + uchar[4](1) */
 	/* unsigned int tag_key_value                             */
 	/* uchar[0]kuchar[0],uchar[0],uchar[0],uchar[0]           */
-	if (*raw_ptr != ((sizeof(struct tag_header) + sizeof(md_info_tag_array))>>2)) {
+	if (*raw_ptr != ((sizeof(struct lk_tag_header) + sizeof(md_info_tag_array))>>2)) {
 		CCCI_UTIL_ERR_MSG("md info tag size mis-sync.(%d)\n", *raw_ptr);
 		return;
 	}
@@ -448,8 +448,8 @@ static void lk_dt_info_collect(void)
 			if (lk_load_img_err_no[md_id] == 0)
 				md_env_rdy_flag |= 1<<md_id;
 			md_type_at_lk[md_id] = (int)curr->md_type;
-			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%p, MemSize:0x%08X\n", md_id+1,
-					(void *)md_resv_mem_addr[md_id], md_resv_mem_size[md_id]);
+			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%016x, MemSize:0x%08X\n", md_id+1,
+					(unsigned long long)md_resv_mem_addr[md_id], md_resv_mem_size[md_id]);
 		} else {
 			CCCI_UTIL_ERR_MSG("Invalid dt para, id(%d)\n", md_id);
 			lk_load_img_status |= LK_LOAD_MD_ERR_INVALID_MD_ID;
@@ -487,15 +487,15 @@ static void lk_dt_info_collect(void)
 					(unsigned long long)smem_layout.md1_md3_smem_offset);
 	md_resv_smem_addr[MD_SYS3] = (phys_addr_t)(smem_layout.base_addr +
 					(unsigned long long)smem_layout.ap_md3_smem_offset);
-	CCCI_UTIL_INF_MSG("AP  <--> MD1 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS1],
-			(void *)md_resv_smem_addr[MD_SYS1],
-			(void *)(md_resv_smem_addr[MD_SYS1]+md_resv_smem_size[MD_SYS1]-1));
-	CCCI_UTIL_INF_MSG("MD1 <--> MD3 SMEM(0x%08X):%p~%p\n", md1md3_resv_smem_size,
-			(void *)md1md3_resv_smem_addr,
-			(void *)(md1md3_resv_smem_addr+md1md3_resv_smem_size-1));
-	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS3],
-			(void *)md_resv_smem_addr[MD_SYS3],
-			(void *)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
+	CCCI_UTIL_INF_MSG("AP  <--> MD1 SMEM(0x%08X):%016x~%016x\n", md_resv_smem_size[MD_SYS1],
+			(unsigned long long)md_resv_smem_addr[MD_SYS1],
+			(unsigned long long)(md_resv_smem_addr[MD_SYS1]+md_resv_smem_size[MD_SYS1]-1));
+	CCCI_UTIL_INF_MSG("MD1 <--> MD3 SMEM(0x%08X):%016x~%016x\n", md1md3_resv_smem_size,
+			(unsigned long long)md1md3_resv_smem_addr,
+			(unsigned long long)(md1md3_resv_smem_addr+md1md3_resv_smem_size-1));
+	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%016x~%016x\n", md_resv_smem_size[MD_SYS3],
+			(unsigned long long)md_resv_smem_addr[MD_SYS3],
+			(unsigned long long)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
 
 	if (md_usage_case & (1<<MD_SYS1)) {
 		/* The allocated memory will be free after md structure initialized */
@@ -815,13 +815,13 @@ static void cal_md_settings(int md_id)
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md%d memory addr is not 32M align!!!\n", (md_id + 1));
 
 	if ((md_usage_case & (1 << md_id)) && ((md_resv_smem_addr[md_id] & (CCCI_SMEM_ALIGN_MD1 - 1)) != 0))
-		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md%d share memory addr %pa is not 0x%x align!!\n", (md_id + 1),
-					  &md_resv_smem_addr[md_id], CCCI_SMEM_ALIGN_MD1);
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md%d share memory addr %p is not 0x%x align!!\n", (md_id + 1),
+			&md_resv_smem_addr[md_id], CCCI_SMEM_ALIGN_MD1);
 
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "MemStart: 0x%pa, MemSize:0x%08X\n", &md_resv_mem_addr[md_id],
-				  md_resv_mem_size[md_id]);
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "SMemStart: 0x%pa, SMemSize:0x%08X\n", &md_resv_smem_addr[md_id],
-				  md_resv_smem_size[md_id]);
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "MemStart: %016x, MemSize:0x%08X\n",
+		md_resv_mem_addr[md_id], md_resv_mem_size[md_id]);
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "SMemStart: %016x, SMemSize:0x%08X\n",
+		md_resv_smem_addr[md_id], md_resv_smem_size[md_id]);
 }
 
 static void cal_md_settings_v2(struct device_node *node)
@@ -876,8 +876,8 @@ static void cal_md_settings_v2(struct device_node *node)
 		if (md_usage_case & (1 << i)) {
 			md_resv_mem_size[i] = md_resv_size_list[i];
 			md_resv_mem_addr[i] = md_resv_mem_list[i];
-			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%p, MemSize:0x%08X\n", i+1, (void *)md_resv_mem_addr[i],
-				  md_resv_mem_size[i]);
+			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%016x, MemSize:0x%08X\n", i+1,
+				(unsigned long long)md_resv_mem_addr[i], md_resv_mem_size[i]);
 		}
 	}
 
@@ -895,15 +895,15 @@ static void cal_md_settings_v2(struct device_node *node)
 		md_resv_smem_addr[MD_SYS3] = 0;
 		md_resv_smem_size[MD_SYS3] = 0;
 	}
-	CCCI_UTIL_INF_MSG("AP  <--> MD1 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS1],
-			(void *)md_resv_smem_addr[MD_SYS1],
-			(void *)(md_resv_smem_addr[MD_SYS1]+md_resv_smem_size[MD_SYS1]-1));
-	CCCI_UTIL_INF_MSG("MD1 <--> MD3 SMEM(0x%08X):%p~%p\n", md1md3_resv_smem_size,
-			(void *)md1md3_resv_smem_addr,
-			(void *)(md1md3_resv_smem_addr+md1md3_resv_smem_size-1));
-	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS3],
-			(void *)md_resv_smem_addr[MD_SYS3],
-			(void *)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
+	CCCI_UTIL_INF_MSG("AP  <--> MD1 SMEM(0x%08X):%016x~%016x\n", md_resv_smem_size[MD_SYS1],
+			(unsigned long long)md_resv_smem_addr[MD_SYS1],
+			(unsigned long long)(md_resv_smem_addr[MD_SYS1]+md_resv_smem_size[MD_SYS1]-1));
+	CCCI_UTIL_INF_MSG("MD1 <--> MD3 SMEM(0x%08X):%016x~%016x\n", md1md3_resv_smem_size,
+			(unsigned long long)md1md3_resv_smem_addr,
+			(unsigned long long)(md1md3_resv_smem_addr+md1md3_resv_smem_size-1));
+	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%016x~%016x\n", md_resv_smem_size[MD_SYS3],
+			(unsigned long long)md_resv_smem_addr[MD_SYS3],
+			(unsigned long long)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
 }
 
 int modem_run_env_ready(int md_id)
