@@ -107,8 +107,8 @@ static struct governor_profile governor_ctrl = {
 
 	.is_fhd_segment = true,
 	.cpu_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_Position)),
-	.boot_up_opp = OPPI_PERF,	/* boot up with HPM in Jade */
-	.late_init_opp = OPPI_LOW_PWR,	/* late init change to LPM mode in Jade */
+	.boot_up_opp = OPPI_PERF,	/* boot up with HPM */
+	.late_init_opp = OPPI_LOW_PWR,	/* late init change to LPM mode */
 
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SDIO) | (1 << KIR_AUTOK_SD)),
 	.active_autok_kir = 0,
@@ -836,7 +836,7 @@ int get_kicker_group_opp(int kicker, int group_id)
 {
 	u32 group_kickers;
 	int id = -1;
-	int i, result_opp = (NUM_OPP - 1);	/* the lowest power mode, OPP_1 for JADE */
+	int i, result_opp = (NUM_OPP - 1);	/* the lowest power mode, OPP_1 */
 	int total = sizeof(spm_dvfs_func_list) / sizeof(spm_dvfs_func_list[0]);
 
 	if (group_id < 0)

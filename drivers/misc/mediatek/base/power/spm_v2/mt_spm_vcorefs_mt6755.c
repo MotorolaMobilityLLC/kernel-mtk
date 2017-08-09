@@ -31,7 +31,7 @@
 #define LPM_THRES_OFFSET	24
 
 
-/* Jade r6[31] = 1 for DVFS UP, 0 for DVFS DOWN */
+/* r6[31] = 1 for DVFS UP, 0 for DVFS DOWN */
 #define is_dvfs_in_progress() (spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
