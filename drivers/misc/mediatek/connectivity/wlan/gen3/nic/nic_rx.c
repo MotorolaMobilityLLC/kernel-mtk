@@ -2345,7 +2345,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 			}
 		} else if (HAL_RX_STATUS_IS_LLC_MIS(prRxStatus)) {
 			DBGLOG(RSN, EVENT, "LLC_MIS_ERR\n");
-			fgDrop = FALSE;	/* Drop after send de-auth  */
+			fgDrop = TRUE;	/* Drop after send de-auth  */
 		}
 	}
 
