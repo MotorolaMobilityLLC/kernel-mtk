@@ -46,6 +46,7 @@
 #include "truncate.h"
 
 #include <trace/events/ext4.h>
+#include <linux/blkdev.h>
 
 #define MPAGE_DA_EXTENT_TAIL 0x01
 
@@ -888,6 +889,12 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
 	struct page *page;
 	pgoff_t index;
 	unsigned from, to;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+		struct page_pid_logger *tmp_logger;
+		unsigned long page_index;
+		/*extern spinlock_t g_locker;*/
+		unsigned long g_flags;
+#endif
 
 	trace_ext4_write_begin(inode, pos, len, flags);
 	/*
@@ -983,6 +990,24 @@ retry_journal:
 		return ret;
 	}
 	*pagep = page;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+		if (page_logger && (*pagep)) {
+
+
+
+			page_index = (unsigned long)(__page_to_pfn(*pagep)) - PHYS_PFN_OFFSET;
+
+			tmp_logger = ((struct page_pid_logger *)page_logger) + page_index;
+			spin_lock_irqsave(&g_locker, g_flags);
+			if (page_index < (system_dram_size >> PAGE_SHIFT)) {
+				if (tmp_logger->pid1 == 0XFFFF)
+					tmp_logger->pid1 = current->pid;
+				else if (tmp_logger->pid1 != current->pid)
+					tmp_logger->pid2 = current->pid;
+			}
+			spin_unlock_irqrestore(&g_locker, g_flags);
+		}
+#endif
 	return ret;
 }
 
@@ -3785,6 +3810,10 @@ make_io:
 		trace_ext4_load_inode(inode);
 		get_bh(bh);
 		bh->b_end_io = end_buffer_read_sync;
+#ifdef FEATURE_STORAGE_META_LOG
+		if (bh && bh->b_bdev && bh->b_bdev->bd_disk)
+			set_metadata_rw_status(bh->b_bdev->bd_disk->first_minor, WAIT_READ_CNT);
+#endif
 		submit_bh(READ | REQ_META | REQ_PRIO, bh);
 		wait_on_buffer(bh);
 		if (!buffer_uptodate(bh)) {

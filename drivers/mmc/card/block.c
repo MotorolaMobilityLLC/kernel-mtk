@@ -46,9 +46,17 @@
 #include <linux/mmc/sd.h>
 
 #include <asm/uaccess.h>
+/*add vmstat info with block tag log*/
+#include <linux/vmstat.h>
+#include <linux/vmalloc.h>
+#include <linux/memblock.h>
 
+#ifdef CONFIG_MTK_EXTMEM
+#include <linux/exm_driver.h>
+#endif
 #include "queue.h"
-
+#include <linux/time.h>
+#include <linux/debugfs.h>
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -1891,7 +1899,156 @@ static void mmc_blk_revert_packed_req(struct mmc_queue *mq,
 
 	mmc_blk_clear_packed(mq_rq);
 }
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+#define PRT_TIME_PERIOD	1000000000
+#define UP_LIMITS_4BYTE		4294967295UL	/*((4*1024*1024*1024)-1)*/
+#define ID_CNT 10
+pid_t mmcqd[ID_CNT] = {0};
+bool start_async_req[ID_CNT] = {0};
+unsigned long long start_async_req_time[ID_CNT] = {0};
+unsigned long long mmcqd_tag_t1[ID_CNT] = {0}, mmccid_tag_t1 = 0;
+unsigned long long mmcqd_t_usage_wr[ID_CNT] = {0}, mmcqd_t_usage_rd[ID_CNT] = {0};
+unsigned int mmcqd_rq_size_wr[ID_CNT] = {0}, mmcqd_rq_size_rd[ID_CNT] = {0};
+static unsigned int mmcqd_wr_offset_tag[ID_CNT] = {0}, mmcqd_rd_offset_tag[ID_CNT] = {0};
+static unsigned int mmcqd_wr_offset[ID_CNT] = {0}, mmcqd_rd_offset[ID_CNT] = {0};
+static unsigned int mmcqd_wr_bit[ID_CNT] = {0}, mmcqd_wr_tract[ID_CNT] = {0};
+static unsigned int mmcqd_rd_bit[ID_CNT] = {0}, mmcqd_rd_tract[ID_CNT] = {0};
+static unsigned int mmcqd_wr_break[ID_CNT] = {0}, mmcqd_rd_break[ID_CNT] = {0};
+unsigned int mmcqd_rq_count[ID_CNT] = {0}, mmcqd_wr_rq_count[ID_CNT] = {0}, mmcqd_rd_rq_count[ID_CNT] = {0};
+#ifdef FEATURE_STORAGE_META_LOG
+int check_perdev_minors = CONFIG_MMC_BLOCK_MINORS;
+struct metadata_rwlogger metadata_logger[10] = { { {0} } };
+#endif
 
+unsigned int mmcqd_work_percent[ID_CNT] = {0};
+unsigned int mmcqd_w_throughput[ID_CNT] = {0};
+unsigned int mmcqd_r_throughput[ID_CNT] = {0};
+unsigned int mmcqd_read_clear[ID_CNT] = {0};
+char block_io_log_dst_buffer[BLOCK_IO_BUFFER_SIZE] = {0};
+char block_io_log_source_buffer[PID_LOG_LENGTH] = {0};
+struct struct_block_io_ring {
+	char block_io_log_debugfs[BLOCK_IO_BUFFER_SIZE];
+};
+#define MAX_BLOCK_IO_LOG_COUNT 40
+struct struct_block_io_ring block_io_ring[MAX_BLOCK_IO_LOG_COUNT] = { { { 0 } } };
+int block_io_ring_index = 0;
+int stopringlog = 0;
+static void g_var_clear(unsigned int idx)
+{
+				mmcqd_t_usage_wr[idx] = 0;
+				mmcqd_t_usage_rd[idx] = 0;
+				mmcqd_rq_size_wr[idx] = 0;
+				mmcqd_rq_size_rd[idx] = 0;
+				mmcqd_rq_count[idx] = 0;
+				mmcqd_wr_offset[idx] = 0;
+				mmcqd_rd_offset[idx] = 0;
+				mmcqd_wr_break[idx] = 0;
+				mmcqd_rd_break[idx] = 0;
+				mmcqd_wr_tract[idx] = 0;
+				mmcqd_wr_bit[idx] = 0;
+				mmcqd_rd_tract[idx] = 0;
+				mmcqd_rd_bit[idx] = 0;
+				mmcqd_wr_rq_count[idx] = 0;
+				mmcqd_rd_rq_count[idx] = 0;
+}
+
+unsigned int find_mmcqd_index(void)
+{
+	pid_t mmcqd_pid = 0;
+	unsigned int idx = 0;
+	unsigned char i = 0;
+
+	mmcqd_pid = task_pid_nr(current);
+
+	if (mmcqd[0] == 0) {
+		mmcqd[0] = mmcqd_pid;
+		start_async_req[0] = 0;
+	}
+
+	for (i = 0; i < ID_CNT; i++) {
+		if (mmcqd_pid == mmcqd[i]) {
+			idx = i;
+			break;
+		}
+		if ((mmcqd[i] == 0) || (i == ID_CNT-1)) {
+			mmcqd[i] = mmcqd_pid;
+			start_async_req[i] = 0;
+			idx = i;
+			break;
+		}
+	}
+	return idx;
+}
+
+#endif
+
+
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+
+struct struct_pid_logger g_pid_logger[PID_ID_CNT] = { {0, 0, {0} , {0} , {0} , {0} } };
+
+unsigned char *page_logger = NULL;
+spinlock_t g_locker;
+struct dentry *blockio_dbgfs = NULL;
+static unsigned long long get_current_time_us(void)
+{
+	unsigned long long time = sched_clock();
+	/* return do_div(time,1000); */
+	return time;
+}
+
+
+static int block_io_debug_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	size_t count1 = 0;
+	int index = 0;
+	int i = 0;
+	char *debug_fs = NULL;
+	struct struct_block_io_ring *tmp_logger;
+
+	stopringlog = 1;
+	index = block_io_ring_index;
+
+	debug_fs = vmalloc(MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
+	if (debug_fs)
+		memset(debug_fs, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
+	for (i = 0; i < MAX_BLOCK_IO_LOG_COUNT; i++) {
+		tmp_logger = ((struct struct_block_io_ring *)debug_fs) + i;
+		snprintf((tmp_logger->block_io_log_debugfs), BLOCK_IO_BUFFER_SIZE,
+			block_io_ring[(index + i)%MAX_BLOCK_IO_LOG_COUNT].block_io_log_debugfs);
+	}
+	count1 = simple_read_from_buffer(ubuf, count, ppos, debug_fs,
+		sizeof(struct struct_block_io_ring) * MAX_BLOCK_IO_LOG_COUNT);
+	vfree(debug_fs);
+	stopringlog = 0;
+	return count1;
+}
+static ssize_t block_io_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	return 0;
+}
+
+
+static const struct file_operations block_io_debug_fops = {
+	.read = block_io_debug_read,
+	.write = block_io_debug_write,
+	.open = block_io_debug_open,
+};
+void block_io_dbg_Init(void)
+{
+	blockio_dbgfs = debugfs_create_file("blockio", S_IFREG | S_IRUGO, NULL, (void *)0, &block_io_debug_fops);
+}
+void block_io_dbg_deinit(void)
+{
+	debugfs_remove(blockio_dbgfs);
+}
+
+#endif
 static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 {
 	struct mmc_blk_data *md = mq->data;
@@ -1904,9 +2061,27 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 	struct mmc_async_req *areq;
 	const u8 packed_nr = 2;
 	u8 reqs = 0;
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	unsigned long long time1 = 0;
+	pid_t mmcqd_pid = 0;
+	unsigned long long t_period = 0, t_usage = 0;
+	unsigned int t_percent = 0;
+	unsigned int perf_meter = 0;
+	unsigned int rq_byte = 0, rq_sector = 0, sect_offset = 0;
+	unsigned int diversity = 0;
+	unsigned int idx = 0;
+#endif
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+	unsigned int index = 0;
+	uint64_t time = 0;
+	unsigned long rem_nsec;
+#endif
 
 	if (!rqc && !mq->mqrq_prev->req)
 		return 0;
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	time1 = sched_clock();
+#endif
 
 	if (rqc) {
 		reqs = mmc_blk_prep_packed_list(mq, rqc);
@@ -1915,6 +2090,198 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 			card->bkops_info.sectors_changed += blk_rq_sectors(rqc);
 #endif
 	}
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	mmcqd_pid = task_pid_nr(current);
+
+	idx = find_mmcqd_index();
+
+	mmcqd_read_clear[idx] = 1;
+	if (mmccid_tag_t1 == 0)
+		mmccid_tag_t1 = time1;
+	t_period = time1 - mmccid_tag_t1;
+	if (t_period >= (unsigned long long)((PRT_TIME_PERIOD)*(unsigned long long)10))
+		mmccid_tag_t1 = time1;
+	if (mmcqd_tag_t1[idx] == 0)
+		mmcqd_tag_t1[idx] = time1;
+	t_period = time1 - mmcqd_tag_t1[idx];
+
+	if (t_period >= (unsigned long long)PRT_TIME_PERIOD) {
+		mmcqd_read_clear[idx] = 2;
+		mmcqd_work_percent[idx] = 1;
+		mmcqd_r_throughput[idx] = 0;
+		mmcqd_w_throughput[idx] = 0;
+		t_usage = mmcqd_t_usage_wr[idx] + mmcqd_t_usage_rd[idx];
+				if (t_period > t_usage*100) {
+					snprintf(block_io_log_source_buffer, WORKLOAD_LOG_LENGTH,
+						"wl:1%%,%lld,%lld,%d.", t_usage, t_period, mmcqd_rq_count[idx]);
+					strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+						WORKLOAD_LOG_LENGTH);
+				} else {
+
+			do_div(t_period, 100);	/*boundary issue*/
+			t_percent = ((unsigned int)t_usage)/((unsigned int)t_period);
+			mmcqd_work_percent[idx] = t_percent;
+					snprintf(block_io_log_source_buffer, WORKLOAD_LOG_LENGTH,
+						"wl:%d%%,%lld,%lld,%d.", t_percent, t_usage,
+						t_period, mmcqd_rq_count[idx]);
+					strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+						WORKLOAD_LOG_LENGTH);
+		}
+		if (mmcqd_wr_rq_count[idx] >= 2) {
+			diversity = mmcqd_wr_offset[idx]/(mmcqd_wr_rq_count[idx]-1);
+					snprintf(block_io_log_source_buffer , WRITE_DIVERSITY_LOG_LENGTH,
+						"wd:%d,%d,%d,%d,%d.", diversity, mmcqd_wr_rq_count[idx],
+						mmcqd_wr_break[idx], mmcqd_wr_tract[idx], mmcqd_wr_bit[idx]);
+					strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+						WRITE_DIVERSITY_LOG_LENGTH);
+
+		}
+		if (mmcqd_rd_rq_count[idx] >= 2) {
+			diversity = mmcqd_rd_offset[idx]/(mmcqd_rd_rq_count[idx]-1);
+					snprintf(block_io_log_source_buffer, READ_DIVERSITY_LOG_LENGTH,
+						"rd:%d,%d,%d,%d,%d.", diversity, mmcqd_rd_rq_count[idx],
+						mmcqd_rd_break[idx], mmcqd_rd_tract[idx], mmcqd_rd_bit[idx]);
+					strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+						READ_DIVERSITY_LOG_LENGTH);
+		}
+		if (mmcqd_t_usage_wr[idx]) {
+			do_div(mmcqd_t_usage_wr[idx], 1000000);	/*boundary issue*/
+			if (mmcqd_t_usage_wr[idx]) {
+				/* discard print if duration will <1ms*/
+				perf_meter = (mmcqd_rq_size_wr[idx])/((unsigned int)mmcqd_t_usage_wr[idx]); /*kb/s*/
+				mmcqd_w_throughput[idx] = perf_meter;
+						snprintf(block_io_log_source_buffer, WRITE_THROUGHPUT_LOG_LENGTH,
+							"wt:%d,%d,%lld.", perf_meter,
+							mmcqd_rq_size_wr[idx], mmcqd_t_usage_wr[idx]);
+						strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+							WRITE_THROUGHPUT_LOG_LENGTH);
+			}
+		}
+		if (mmcqd_t_usage_rd[idx]) {
+			do_div(mmcqd_t_usage_rd[idx], 1000000);	/*boundary issue*/
+			if (mmcqd_t_usage_rd[idx]) {
+				/* discard print if duration will <1ms*/
+				perf_meter = (mmcqd_rq_size_rd[idx])/((unsigned int)mmcqd_t_usage_rd[idx]); /*kb/s*/
+				mmcqd_r_throughput[idx] = perf_meter;
+						snprintf(block_io_log_source_buffer, READ_THROUGHPUT_LOG_LENGTH,
+							"rt:%d,%d,%lld.", perf_meter,
+							mmcqd_rq_size_rd[idx], mmcqd_t_usage_rd[idx]);
+						strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+							READ_THROUGHPUT_LOG_LENGTH);
+			}
+		}
+		mmcqd_tag_t1[idx] = time1;
+		g_var_clear(idx);
+#if defined(FEATURE_STORAGE_VMSTAT_LOGGER)
+				snprintf(block_io_log_source_buffer, VMSTAT_LOG_LENGTH, "vm:%ld,%ld,%ld,%ld,%ld.",
+							((global_page_state(NR_FILE_PAGES)) << (PAGE_SHIFT - 10)),
+							((global_page_state(NR_FILE_DIRTY)) << (PAGE_SHIFT - 10)),
+							((global_page_state(NR_DIRTIED))    << (PAGE_SHIFT - 10)),
+							((global_page_state(NR_WRITEBACK))  << (PAGE_SHIFT - 10)),
+							((global_page_state(NR_WRITTEN))    << (PAGE_SHIFT - 10)));
+				strncat(block_io_log_dst_buffer, block_io_log_source_buffer, VMSTAT_LOG_LENGTH);
+
+#endif
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+		do {
+			int i;
+
+			for (index = 0; index < PID_ID_CNT; index++) {
+				if (g_pid_logger[index].current_pid != 0 &&
+					g_pid_logger[index].current_pid == mmcqd_pid)
+					break;
+			}
+			if (index == PID_ID_CNT)
+				break;
+			for (i = 0; i < PID_LOGGER_COUNT; i++) {
+				/*printk(KERN_INFO"hank mmcqd %d %d", g_pid_logger[index].pid_logger[i], mmcqd_pid);*/
+				if (g_pid_logger[index].pid_logger[i] == 0)
+					break;
+				sprintf(g_pid_logger[index].pid_buffer+i*37, "{%05d:%05d:%08d:%05d:%08d}",
+						g_pid_logger[index].pid_logger[i],
+						g_pid_logger[index].pid_logger_counter[i],
+						g_pid_logger[index].pid_logger_length[i],
+						g_pid_logger[index].pid_logger_r_counter[i],
+						g_pid_logger[index].pid_logger_r_length[i]);
+
+			}
+			if (i != 0) {
+						snprintf(block_io_log_source_buffer, PID_LOG_LENGTH, "pid:%d,%s.",
+							g_pid_logger[index].current_pid,
+							g_pid_logger[index].pid_buffer);
+						strncat(block_io_log_dst_buffer, block_io_log_source_buffer,
+							PID_LOG_LENGTH);
+				memset(&(g_pid_logger[index].pid_logger), 0, sizeof(unsigned short)*PID_LOGGER_COUNT);
+				memset(&(g_pid_logger[index].pid_logger_counter), 0,
+					sizeof(unsigned short)*PID_LOGGER_COUNT);
+				memset(&(g_pid_logger[index].pid_logger_length), 0,
+					sizeof(unsigned int)*PID_LOGGER_COUNT);
+				memset(&(g_pid_logger[index].pid_logger_r_counter), 0,
+					sizeof(unsigned short)*PID_LOGGER_COUNT);
+				memset(&(g_pid_logger[index].pid_logger_r_length), 0,
+					sizeof(unsigned int)*PID_LOGGER_COUNT);
+				memset(&(g_pid_logger[index].pid_buffer), 0, sizeof(char)*PID_BUFFER_SIZE);
+#if defined(CONFIG_MTK_MORE_PID_LOGGER_COUNT)
+				g_pid_logger[index].reserved = 0;
+#endif
+			}
+			g_pid_logger[index].pid_buffer[0] = '\0';
+
+		} while (0);
+#endif
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+				pr_debug("[BLOCK_TAG] mmcqd:%d %s\n", mmcqd[idx], block_io_log_dst_buffer);
+			if (stopringlog == 0) {
+				memset(&(block_io_ring[block_io_ring_index].block_io_log_debugfs), 0,
+					sizeof(char)*BLOCK_IO_BUFFER_SIZE);
+			    time = get_current_time_us();
+				rem_nsec = do_div(time, 1000000000);
+				snprintf((block_io_ring[block_io_ring_index].block_io_log_debugfs),
+					BLOCK_IO_BUFFER_SIZE, "\n[%5lu.%06lu]q:%d.%s",
+					(unsigned long)time, rem_nsec / 1000, idx, block_io_log_dst_buffer);
+				block_io_ring_index++;
+				block_io_ring_index = block_io_ring_index%MAX_BLOCK_IO_LOG_COUNT;
+			}
+				memset(block_io_log_dst_buffer, 0, BLOCK_IO_BUFFER_SIZE);
+				memset(block_io_log_source_buffer, 0, PID_LOG_LENGTH);
+#endif
+
+			}
+		if (rqc) {
+
+			rq_byte = blk_rq_bytes(rqc);
+			rq_sector = blk_rq_sectors(rqc);
+			if (rq_data_dir(rqc) == WRITE) {
+
+				if (mmcqd_wr_offset_tag[idx] > 0) {
+
+					sect_offset = abs(blk_rq_pos(rqc) - mmcqd_wr_offset_tag[idx]);
+					mmcqd_wr_offset[idx] += sect_offset;
+					if (sect_offset == 1)
+						mmcqd_wr_break[idx]++;
+				}
+				mmcqd_wr_offset_tag[idx] = blk_rq_pos(rqc) + rq_sector;
+				if (rq_sector <= 1)/*512 bytes*/
+					mmcqd_wr_bit[idx]++;
+				else if (rq_sector >= 1016)/*508kB*/
+					mmcqd_wr_tract[idx]++;
+			} else {/*read*/
+
+				if (mmcqd_rd_offset_tag[idx] > 0) {
+
+					sect_offset = abs(blk_rq_pos(rqc) - mmcqd_rd_offset_tag[idx]);
+					mmcqd_rd_offset[idx] += sect_offset;
+					if (sect_offset == 1)
+						mmcqd_rd_break[idx]++;
+				}
+				mmcqd_rd_offset_tag[idx] = blk_rq_pos(rqc) + rq_sector;
+				if (rq_sector <= 1)/*512 bytes*/
+					mmcqd_rd_bit[idx]++;
+				else if (rq_sector >= 1016)/*508kB*/
+					mmcqd_rd_tract[idx]++;
+			}
+		}
+#endif
 	do {
 		if (rqc) {
 			/*
@@ -2222,6 +2589,24 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	ret = mmc_init_queue(&md->queue, card, &md->lock, subname);
 	if (ret)
 		goto err_putdisk;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+	if (!page_logger) {
+		unsigned long count = system_dram_size >> PAGE_SHIFT;
+#ifdef CONFIG_MTK_EXTMEM
+		page_logger = extmem_malloc_page_align(count * sizeof(struct page_pid_logger));
+#else
+		page_logger = vmalloc(count * sizeof(struct page_pid_logger));
+#endif
+		if (page_logger)
+			memset(page_logger, -1, count*sizeof(struct page_pid_logger));
+		else
+			pr_debug("page_logger malloc fail\n");
+		spin_lock_init(&g_locker);
+	}
+#endif
+#if defined(FEATURE_STORAGE_META_LOG)
+	check_perdev_minors = perdev_minors;
+#endif
 
 	md->queue.issue_fn = mmc_blk_issue_rq;
 	md->queue.data = md;
@@ -2695,6 +3080,9 @@ static int __init mmc_blk_init(void)
 	res = mmc_register_driver(&mmc_driver);
 	if (res)
 		goto out2;
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	block_io_dbg_Init();
+#endif
 
 	return 0;
  out2:
@@ -2707,6 +3095,9 @@ static void __exit mmc_blk_exit(void)
 {
 	mmc_unregister_driver(&mmc_driver);
 	unregister_blkdev(MMC_BLOCK_MAJOR, "mmc");
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	block_io_dbg_deinit();
+#endif
 }
 
 module_init(mmc_blk_init);

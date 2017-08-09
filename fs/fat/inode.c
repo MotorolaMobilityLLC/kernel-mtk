@@ -219,11 +219,31 @@ static int fat_write_begin(struct file *file, struct address_space *mapping,
 			struct page **pagep, void **fsdata)
 {
 	int err;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+	struct page_pid_logger *tmp_logger;
+	unsigned long page_index;
+	/*extern spinlock_t g_locker;*/
+	unsigned long g_flags;
+#endif
 
 	*pagep = NULL;
 	err = cont_write_begin(file, mapping, pos, len, flags,
 				pagep, fsdata, fat_get_block,
 				&MSDOS_I(mapping->host)->mmu_private);
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+	if (page_logger && (*pagep)) {
+		page_index = (unsigned long)(__page_to_pfn(*pagep)) - PHYS_PFN_OFFSET;
+		tmp_logger = ((struct page_pid_logger *)page_logger) + page_index;
+		spin_lock_irqsave(&g_locker, g_flags);
+		if (page_index < (system_dram_size >> PAGE_SHIFT)) {
+			if (tmp_logger->pid1 == 0XFFFF)
+				tmp_logger->pid1 = current->pid;
+			else if (tmp_logger->pid1 != current->pid)
+				tmp_logger->pid2 = current->pid;
+		}
+		spin_unlock_irqrestore(&g_locker, g_flags);
+	}
+#endif
 	if (err < 0)
 		fat_write_failed(mapping, pos + len);
 	return err;

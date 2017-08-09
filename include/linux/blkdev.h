@@ -41,6 +41,135 @@ struct blk_flush_queue;
 #define BLKDEV_MIN_RQ	4
 #define BLKDEV_MAX_RQ	128	/* Default maximum */
 
+
+#if !defined(FEATURE_STORAGE_PERF_INDEX) && defined(CONFIG_MT_ENG_BUILD)
+extern bool start_async_req[];
+extern unsigned long long start_async_req_time[];
+extern unsigned int find_mmcqd_index(void);
+extern unsigned long long mmcqd_t_usage_wr[];
+extern unsigned long long mmcqd_t_usage_rd[];
+extern unsigned int mmcqd_rq_size_wr[];
+extern unsigned int mmcqd_rq_size_rd[];
+extern unsigned int mmcqd_rq_count[];
+extern unsigned int mmcqd_wr_rq_count[];
+extern unsigned int mmcqd_rd_rq_count[];
+
+enum METADATA_OPERATION_MODE {
+	WAIT_READ_CNT	= 0,
+	NOWAIT_READ_CNT,
+	HIT_READ_CNT,
+	NOWAIT_DATA_READ_CNT,
+	HIT_DATA_READ_CNT,
+	WAIT_WRITE_CNT,
+	NOWAIT_WRITE_CNT,
+	HIT_WRITE_CNT,
+};
+
+struct metadata_rwlogger {
+	int metadata_rw_logger[8];
+	/*index
+	**0:metadata_wait_read_count
+	**1:metadata_nowait_read_count
+	**2:metadata_hit_read_count
+	**3:metadata_nowait_data_read_count
+	**4:metadata_hit_data_read_count
+	**5:metadata_wait_write_count
+	**6:metadata_nowait_write_count
+	**7:metadata_hit_write_count
+	 */
+};
+
+static inline void set_metadata_rw_status(int mmc_index, int type)
+{
+	extern int check_perdev_minors;
+	extern struct metadata_rwlogger metadata_logger[10];
+
+	metadata_logger[mmc_index/check_perdev_minors].metadata_rw_logger[type]++;
+}
+
+static inline void clear_metadata_rw_status(int mmc_index)
+{
+	extern int check_perdev_minors;
+	extern struct metadata_rwlogger metadata_logger[10];
+
+	memset(&metadata_logger[mmc_index/check_perdev_minors].metadata_rw_logger, 0, sizeof(struct metadata_rwlogger));
+}
+#define FEATURE_STORAGE_PERF_INDEX
+#define FEATURE_STORAGE_META_LOG
+#define FEATURE_STORAGE_VMSTAT_LOGGER
+#endif
+
+
+
+#if !defined(FEATURE_STORAGE_PID_LOGGER) && defined(CONFIG_MT_ENG_BUILD)
+
+
+#define FEATURE_STORAGE_PID_LOGGER
+/*#define CONFIG_MTK_MORE_PID_LOGGER_COUNT*/
+
+struct page_pid_logger {
+	unsigned short pid1;
+	unsigned short pid2;
+};
+struct page_pid_locker {
+	spinlock_t lock;
+};
+
+#if defined(CONFIG_MTK_MORE_PID_LOGGER_COUNT)
+#define PID_LOGGER_COUNT	50
+#define PID_BUFFER_SIZE	2048
+#else
+#define PID_LOGGER_COUNT	20
+#define PID_BUFFER_SIZE	1024
+#endif
+struct struct_pid_logger {
+	unsigned short current_pid;
+	unsigned short reserved;
+	unsigned short pid_logger[PID_LOGGER_COUNT];
+	unsigned short pid_logger_counter[PID_LOGGER_COUNT];
+	unsigned int pid_logger_length[PID_LOGGER_COUNT];
+	unsigned short pid_logger_r_counter[PID_LOGGER_COUNT];
+	unsigned int pid_logger_r_length[PID_LOGGER_COUNT];
+	char pid_buffer[PID_BUFFER_SIZE];
+};
+
+#define PAGE_LOCKER_SHIFT	0
+#define PID_ID_CNT	10
+#define WORKLOAD_OFFSET 0
+#define WORKLOAD_LOG_LENGTH 64
+#define WRITE_DIVERSITY_OFFSET (WORKLOAD_OFFSET+WORKLOAD_LOG_LENGTH)
+#define WRITE_DIVERSITY_LOG_LENGTH 54
+#define READ_DIVERSITY_OFFSET (WRITE_DIVERSITY_OFFSET+WRITE_DIVERSITY_LOG_LENGTH)
+#define READ_DIVERSITY_LOG_LENGTH 54
+#define WRITE_THROUGHPUT_OFFSET (READ_DIVERSITY_OFFSET+READ_DIVERSITY_LOG_LENGTH)
+#define WRITE_THROUGHPUT_LOG_LENGTH 44
+#define READ_THROUGHPUT_OFFSET (WRITE_THROUGHPUT_OFFSET+WRITE_THROUGHPUT_LOG_LENGTH)
+#define READ_THROUGHPUT_LOG_LENGTH 44
+#define VMSTAT_OFFSET (READ_THROUGHPUT_OFFSET+READ_THROUGHPUT_LOG_LENGTH)
+#define VMSTAT_LOG_LENGTH 54
+#define PID_OFFSET (VMSTAT_OFFSET+VMSTAT_LOG_LENGTH)
+#define PID_LOG_LENGTH (PID_BUFFER_SIZE + 8)
+/*log size+header size 18*/
+#define BLOCK_IO_BUFFER_SIZE (64 + 54 + 54 + 44 + 44 + 54 + PID_LOG_LENGTH + 18)
+extern struct struct_pid_logger g_pid_logger[PID_ID_CNT];
+extern spinlock_t g_locker;
+extern unsigned char *page_logger;
+extern unsigned long long system_dram_size;
+#ifdef CONFIG_MTK_EXTMEM
+extern void *extmem_malloc_page_align(size_t bytes);
+#endif
+
+
+struct pid_rw_file_pid {
+	unsigned short current_pid;
+};
+
+struct pid_rw_file_name {
+	unsigned char d_iname[50];
+};
+
+
+#endif /* FEATURE_STORAGE_PID_LOGGER */
 /*
  * Maximum number of blkcg policies allowed to be registered concurrently.
  * Defined here to simplify include dependency.

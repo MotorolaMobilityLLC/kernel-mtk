@@ -41,6 +41,7 @@
 #ifdef MTK_BKOPS_IDLE_MAYA
 #include <linux/workqueue.h>
 #endif
+#include <linux/blkdev.h>
 #include "core.h"
 #include "bus.h"
 #include "host.h"
@@ -709,6 +710,10 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 {
 	int err = 0;
 	int start_err = 0;
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+	unsigned long long time1 = 0;
+	unsigned int idx = 0;
+#endif
 	struct mmc_async_req *data = host->areq;
 
 	/* Prepare a new request */
@@ -725,6 +730,33 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 			 * nothing to return
 			 */
 			return NULL;
+		} else {
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+			time1 = sched_clock();
+
+			idx = find_mmcqd_index();
+			if (start_async_req[idx] == 1) {
+
+
+				mmcqd_rq_count[idx]++;
+
+				if (host->areq->mrq->data->flags == MMC_DATA_WRITE) {
+
+					mmcqd_wr_rq_count[idx]++;
+					mmcqd_rq_size_wr[idx] +=
+						((host->areq->mrq->data->blocks) * (host->areq->mrq->data->blksz));
+					mmcqd_t_usage_wr[idx] += time1 - start_async_req_time[idx];
+				} else if (host->areq->mrq->data->flags == MMC_DATA_READ) {
+
+					mmcqd_rd_rq_count[idx]++;
+					mmcqd_rq_size_rd[idx] +=
+						((host->areq->mrq->data->blocks) * (host->areq->mrq->data->blksz));
+					mmcqd_t_usage_rd[idx] += time1 - start_async_req_time[idx];
+				}
+
+				start_async_req[idx] = 0;
+			}
+#endif
 		}
 		/*
 		 * Check BKOPS urgency for each R1 response
@@ -741,6 +773,11 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 				       areq->mrq->cmd->arg,
 				       areq->mrq->data);
 		start_err = __mmc_start_data_req(host, areq->mrq);
+#if defined(FEATURE_STORAGE_PERF_INDEX)
+		start_async_req[idx] = 1;
+		start_async_req_time[idx] = sched_clock();
+#endif
+
 	}
 
 	if (host->areq)
