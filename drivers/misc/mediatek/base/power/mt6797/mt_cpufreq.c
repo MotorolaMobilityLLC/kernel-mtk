@@ -2300,6 +2300,7 @@ static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 {
 	unsigned int sel = 0;
+	unsigned int ckdiv1 = 0;
 
 	sel = (clk_div == 1) ? 8 :
 		(clk_div == 2) ? 10 :
@@ -2318,6 +2319,33 @@ static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 	ndelay(200);
 	mt6797_0x1001AXXX_unlock();
 	udelay(POS_SETTLE_TIME);
+
+	/* retry */
+	mt6797_0x1001AXXX_lock();
+	ckdiv1 = cpufreq_read((unsigned int *)ARMPLLDIV_CKDIV);
+	mt6797_0x1001AXXX_unlock();
+
+	ckdiv1 = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _GET_BITS_VAL_(9:5, ckdiv1) :
+		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _GET_BITS_VAL_(14:10, ckdiv1) :
+		(cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) ? _GET_BITS_VAL_(19:15, ckdiv1) : _GET_BITS_VAL_(4:0, ckdiv1);
+
+	if (ckdiv1 != sel) {
+		cpufreq_err("%s(), %s CLKDIV write 0x%x (0x%x) failed, retry!\n",
+			__func__, cpu_dvfs_get_name(p), ckdiv1, sel);
+		mt6797_0x1001AXXX_lock();
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
+			cpufreq_write_mask(ARMPLLDIV_CKDIV, 9 : 5, sel);
+		else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
+			cpufreq_write_mask(ARMPLLDIV_CKDIV, 14 : 10, sel);
+		else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+			cpufreq_write_mask(ARMPLLDIV_CKDIV, 4 : 0, sel);
+		else
+			cpufreq_write_mask(ARMPLLDIV_CKDIV, 19 : 15, sel);
+
+		ndelay(200);
+		mt6797_0x1001AXXX_unlock();
+		udelay(POS_SETTLE_TIME);
+	}
 }
 
 static int search_table_idx_by_freq(struct mt_cpu_dvfs *p, unsigned int freq)
