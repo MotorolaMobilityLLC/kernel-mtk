@@ -104,13 +104,13 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 		/* [Vcorefs] disable pcm timer after leaving FW */
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-	}
 
 #ifdef SPM_VCORE_EN_MT6797
-	/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
-				((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
+		/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
+					((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
 #endif
+	}
 
 	/* reset PCM */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
