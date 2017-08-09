@@ -128,7 +128,7 @@ static const struct soc_enum Audio_Speech_Enum[] = {
 static int Audio_Speech_MD_Control_Get(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_Speech_MD_Control_Get = %d\n", speech_md_usage_control);
+	PRINTK_AUDDRV("Audio_Speech_MD_Control_Get = %d\n", speech_md_usage_control);
 	ucontrol->value.integer.value[0] = speech_md_usage_control;
 	return 0;
 }
@@ -141,7 +141,7 @@ static int Audio_Speech_MD_Control_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	speech_md_usage_control = ucontrol->value.integer.value[0];
-	pr_debug("%s(), speech_md_usage_control = %d\n", __func__,
+	PRINTK_AUDDRV("%s(), speech_md_usage_control = %d\n", __func__,
 		speech_md_usage_control);
 
 	return 0;
@@ -163,7 +163,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_ADC_Clk_On();
 
-	pr_debug("mtk_voice_pcm_open\n");
+	PRINTK_AUDDRV("mtk_voice_pcm_open\n");
 
 	runtime->hw = mtk_pcm_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_pcm_hardware,
@@ -178,17 +178,17 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_debug("mtk_voice_pcm_open runtime->rate = %d channels = %d\n",
+	PRINTK_AUDDRV("mtk_voice_pcm_open runtime->rate = %d channels = %d\n",
 		runtime->rate, runtime->channels);
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n");
+		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n");
 		runtime->rate = 16000;
 	} else {
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n");
+		PRINTK_AUDDRV("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n");
 		runtime->rate = 16000;
 	}
 

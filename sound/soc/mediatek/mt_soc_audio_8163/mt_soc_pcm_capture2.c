@@ -91,7 +91,7 @@ static struct snd_pcm_hardware mtk_capture2_hardware = {
 
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StopAudioCaptureHardware\n");
+	PRINTK_AUDDRV("StopAudioCaptureHardware\n");
 
 	/* here to set interrupt */
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
@@ -127,7 +127,7 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StartAudioCaptureHardware\n");
+	PRINTK_AUDDRV("StartAudioCaptureHardware\n");
 
 	ConfigAdcI2S(substream);
 	Set2ndI2SAdcIn(mAudioDigitalI2S);	/* To do */
@@ -160,7 +160,7 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 static int mtk_capture2_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_capture2_pcm_prepare substream->rate = %d substream->channels = %d\n",
+	PRINTK_AUDDRV("mtk_capture2_pcm_prepare substream->rate = %d substream->channels = %d\n",
 	       substream->runtime->rate, substream->runtime->channels);
 	return 0;
 }
@@ -169,7 +169,7 @@ static int mtk_capture2_alsa_stop(struct snd_pcm_substream *substream)
 {
 	AFE_BLOCK_T *Vul_Block = &(VUL2_Control_context->rBlock);
 
-	pr_debug("mtk_capture2_alsa_stop\n");
+	PRINTK_AUDDRV("mtk_capture2_alsa_stop\n");
 	StopAudioCaptureHardware(substream);
 	Vul_Block->u4DMAReadIdx = 0;
 	Vul_Block->u4WriteIdx = 0;
@@ -186,7 +186,7 @@ static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *subs
 	kal_uint32 Frameidx = 0;
 	AFE_BLOCK_T *vul2_Block = &(VUL2_Control_context->rBlock);
 
-	pr_debug("mtk_capture2_pcm_pointer vul2_Block->u4WriteIdx = 0x%x\n",
+	PRINTK_AUD_UL2("mtk_capture2_pcm_pointer vul2_Block->u4WriteIdx = 0x%x\n",
 		vul2_Block->u4WriteIdx);
 	if (VUL2_Control_context->interruptTrigger == 1) {
 		/* get total bytes to copysinewavetohdmi */
@@ -195,12 +195,12 @@ static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *subs
 
 		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_D2_CUR));
 		if (HW_Cur_ReadIdx == 0) {
-			pr_warn("[Auddrv] mtk_capture2_pcm_pointer HW_Cur_ReadIdx == 0\n");
+			pr_warn("mtk_capture2_pcm_pointer HW_Cur_ReadIdx == 0\n");
 			HW_Cur_ReadIdx = vul2_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - vul2_Block->pucPhysBufAddr);
 		Previous_Hw_cur = HW_memory_index;
-		pr_debug("[Auddrv] mtk_capture2_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
+		PRINTK_AUD_UL2("mtk_capture2_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
 		       HW_Cur_ReadIdx, HW_memory_index);
 		VUL2_Control_context->interruptTrigger = 0;
 		return (HW_memory_index >> 2);
@@ -214,7 +214,6 @@ static void SetVULBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &VUL2_Control_context->rBlock;
 
-	pr_debug("SetVULBuffer\n");
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -224,8 +223,8 @@ static void SetVULBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	pblock->u4DataRemained = 0;
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
-	pr_debug("u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
-		pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
+	PRINTK_AUDDRV("%s u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+		__func__, pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_VUL_D2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
@@ -240,39 +239,30 @@ static int mtk_capture2_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_debug("mtk_capture2_pcm_hw_params\n");
-
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
-	pr_debug("Capture2_dma_buf = %p Capture2_dma_buf->area = %p\n", Capture_dma_buf,
-	       Capture_dma_buf->area);
 
 	if (Capture_dma_buf->area) {
-		pr_debug("mtk_capture2_pcm_hw_params Capture_dma_buf->area\n");
 		runtime->dma_bytes = Capture_dma_buf->bytes;
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
 		runtime->buffer_size = Capture_dma_buf->bytes;
 	} else {
-		pr_debug("mtk_capture2_pcm_hw_params snd_pcm_lib_malloc_pages\n");
+		PRINTK_AUDDRV("mtk_capture2_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
-	pr_debug("mtk_capture2_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-	       runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr);
+	PRINTK_AUDDRV("%s dma_bytes=%zu dma_area=%p dma_addr=0x%lx hw.buffer_bytes_max=%zu\n",
+	       __func__, runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr,
+	       runtime->hw.buffer_bytes_max);
 
-	pr_debug("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 	SetVULBuffer(substream, hw_params);
-
-	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-	       substream->runtime->dma_bytes, substream->runtime->dma_area,
-	       (long)substream->runtime->dma_addr);
 	return ret;
 }
 
 static int mtk_capture2_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_capture2_pcm_hw_free\n");
+	PRINTK_AUDDRV("mtk_capture2_pcm_hw_free\n");
 
 	if (Capture_dma_buf->area)
 		return 0;
@@ -295,13 +285,13 @@ static int mtk_capture2_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_ADC2_Clk_On();
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	VUL2_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 
 	runtime->hw = mtk_capture2_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_capture2_hardware,
 	       sizeof(struct snd_pcm_hardware));
-	pr_debug("runtime->hw->rates = 0x%x\n", runtime->hw.rates);
+	PRINTK_AUDDRV("runtime->hw->rates = 0x%x\n", runtime->hw.rates);
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
@@ -310,18 +300,18 @@ static int mtk_capture2_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_debug("mtk_capture2_pcm_open runtime rate = %d channels = %d\n",
+	PRINTK_AUDDRV("mtk_capture2_pcm_open runtime rate = %d channels = %d\n",
 		runtime->rate, runtime->channels);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_capture_constraints\n");
+		PRINTK_AUDDRV("SNDRV_PCM_STREAM_CAPTURE mtkalsa_capture_constraints\n");
 
 	if (ret < 0) {
 		pr_warn("mtk_capture2_pcm_close\n");
 		mtk_capture2_pcm_close(substream);
 		return ret;
 	}
-	pr_debug("mtk_capture2_pcm_open return\n");
+	PRINTK_AUDDRV("mtk_capture2_pcm_open return\n");
 	return 0;
 }
 
@@ -335,7 +325,7 @@ static int mtk_capture2_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_capture2_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_capture2_alsa_start\n");
+	PRINTK_AUDDRV("mtk_capture2_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
 	StartAudioCaptureHardware(substream);
 	return 0;
@@ -343,7 +333,7 @@ static int mtk_capture2_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_capture2_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_capture2_pcm_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_capture2_pcm_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -358,10 +348,9 @@ static int mtk_capture2_pcm_trigger(struct snd_pcm_substream *substream, int cmd
 
 static bool CheckNullPointer(void *pointer)
 {
-	if (pointer == NULL) {
-		pr_debug("CheckNullPointer pointer = NULL");
+	if (pointer == NULL)
 		return true;
-	}
+
 	return false;
 }
 
@@ -386,19 +375,19 @@ static int mtk_capture2_pcm_copy(struct snd_pcm_substream *substream,
 	Vul_Block = &(pVUL_MEM_ConTrol->rBlock);
 
 	if (pVUL_MEM_ConTrol == NULL) {
-		pr_debug("cannot find MEM control !!!!!!!\n");
+		pr_err("cannot find MEM control !!!!!!!\n");
 		msleep(50);
 		return 0;
 	}
 
 	if (Vul_Block->u4BufferSize <= 0) {
 		msleep(50);
-		pr_debug("Vul_Block->u4BufferSize = %d\n", Vul_Block->u4BufferSize);
+		pr_err("Vul_Block->u4BufferSize = %d\n", Vul_Block->u4BufferSize);
 		return 0;
 	}
 
 	if (CheckNullPointer((void *)Vul_Block->pucVirtBufAddr)) {
-		pr_debug("CheckNullPointer pucVirtBufAddr = %p\n", Vul_Block->pucVirtBufAddr);
+		pr_err("CheckNullPointer pucVirtBufAddr = %p\n", Vul_Block->pucVirtBufAddr);
 		return 0;
 	}
 

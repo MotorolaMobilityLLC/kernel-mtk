@@ -97,7 +97,7 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StopAudioCaptureHardware\n");
+	PRINTK_AUDDRV("StopAudioCaptureHardware\n");
 
 	/* here to set interrupt */
 
@@ -134,15 +134,26 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StartAudioCaptureHardware\n");
+	PRINTK_AUDDRV("StartAudioCaptureHardware\n");
 
 	ConfigAdcI2S(substream);
 	SetI2SAdcIn(mAudioDigitalI2S);
 
-	SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
-	SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
-	SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O09);
-	SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O10);
+	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE
+		    || substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL,
+			AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
+			Soc_Aud_InterConnectionOutput_O09);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
+			Soc_Aud_InterConnectionOutput_O10);
+	} else {
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
+			Soc_Aud_InterConnectionOutput_O09);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
+			Soc_Aud_InterConnectionOutput_O10);
+	}
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
@@ -154,17 +165,6 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 		      Soc_Aud_InterConnectionOutput_O09);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
 		      Soc_Aud_InterConnectionOutput_O10);
-
-
-	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE
-	    || substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL,
-					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
-		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					  Soc_Aud_InterConnectionOutput_O09);
-		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					  Soc_Aud_InterConnectionOutput_O10);
-	}
 
 	/* here to set interrupt */
 	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size);
@@ -179,15 +179,13 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	/* pr_debug("mtk_capture_pcm_prepare substream->rate = %d substream->channels = %d\n",
-			substream->runtime->rate, substream->runtime->channels); */
 	return 0;
 }
 
 static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Vul_Block = &(VUL_Control_context->rBlock); */
-	pr_debug("mtk_capture_alsa_stop\n");
+	PRINTK_AUDDRV("mtk_capture_alsa_stop\n");
 	StopAudioCaptureHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	return 0;
@@ -202,13 +200,13 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *subst
 	bool bIsOverflow = false;
 	AFE_BLOCK_T *UL1_Block = &(VUL_Control_context->rBlock);
 
-	PRINTK_AUD_UL1("mtk_capture_pcm_pointer Awb_Block->u4WriteIdx;= 0x%x\n",
+	PRINTK_AUD_UL1("mtk_capture_pcm_pointer Awb_Block->u4WriteIdx = 0x%x\n",
 		       UL1_Block->u4WriteIdx);
 	Auddrv_UL1_Spinlock_lock();
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == true) {
 		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_CUR));
 		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUD_UL1("[Auddrv] mtk_awb_pcm_pointer HW_Cur_ReadIdx == 0\n");
+			PRINTK_AUD_UL1("mtk_awb_pcm_pointer HW_Cur_ReadIdx == 0\n");
 			HW_Cur_ReadIdx = UL1_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - UL1_Block->pucPhysBufAddr);
@@ -226,13 +224,13 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *subst
 		/* buffer overflow */
 		if (UL1_Block->u4DataRemained > UL1_Block->u4BufferSize) {
 			bIsOverflow = true;
-			pr_debug
+			PRINTK_AUD_UL1
 			("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, u4DataRemained:%x, u4BufferSize:%x\n",
 			__func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx, UL1_Block->u4DataRemained,
 			UL1_Block->u4BufferSize);
 		}
 
-		PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
+		PRINTK_AUD_UL1("mtk_capture_pcm_pointer = 0x%x HW_memory_index = 0x%x\n",
 			       HW_Cur_ReadIdx, HW_memory_index);
 		Auddrv_UL1_Spinlock_unlock();
 
@@ -251,7 +249,6 @@ static void SetVULBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &VUL_Control_context->rBlock;
 
-	pr_debug("SetVULBuffer\n");
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -261,8 +258,8 @@ static void SetVULBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	pblock->u4DataRemained = 0;
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
-	pr_debug("u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
-	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
+	PRINTK_AUDDRV("%s u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+	       __func__, pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_VUL_BASE, pblock->pucPhysBufAddr, 0xffffffff);
 	Afe_Set_Reg(AFE_VUL_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
@@ -276,40 +273,34 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_debug("mtk_capture_pcm_hw_params\n");
-
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
 	if (mCaptureUseSram == true) {
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
-		pr_debug("mtk_capture_pcm_hw_params mCaptureUseSram dma_bytes = %zu\n",
+		PRINTK_AUDDRV("%s mCaptureUseSram dma_bytes = %zu\n", __func__,
 		       runtime->dma_bytes);
 		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 		substream->runtime->dma_addr = Get_Afe_Sram_Phys_Addr();
 	} else if (Capture_dma_buf->area) {
-		pr_debug("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
-		     Capture_dma_buf, Capture_dma_buf->area, (long)Capture_dma_buf->addr);
+		PRINTK_AUDDRV("%s Capture_dma_buf->area = %p Capture_dma_buf->addr = 0x%lx\n",
+		     __func__, Capture_dma_buf->area, (long)Capture_dma_buf->addr);
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
 	} else {
-		pr_debug("mtk_capture_pcm_hw_params snd_pcm_lib_malloc_pages\n");
+		PRINTK_AUDDRV("mtk_capture_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
 
 	SetVULBuffer(substream, hw_params);
-
-	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-	       substream->runtime->dma_bytes, substream->runtime->dma_area,
-	       (long)substream->runtime->dma_addr);
 	return ret;
 }
 
 static int mtk_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_capture_pcm_hw_free\n");
+	PRINTK_AUDDRV("mtk_capture_pcm_hw_free\n");
 
 	if (Capture_dma_buf->area)
 		return 0;
@@ -341,12 +332,12 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 #else
 	if (0) {
 #endif
-		pr_debug("mtk_capture_pcm_open use sram\n");
+		PRINTK_AUDDRV("mtk_capture_pcm_open use sram\n");
 		mtk_capture_hardware.buffer_bytes_max = GetCaptureSramSize();
 		SetSramState(SRAM_STATE_CAPTURE);
 		mCaptureUseSram = true;
 	} else {
-		pr_debug("mtk_capture_pcm_open use dram\n");
+		PRINTK_AUDDRV("mtk_capture_pcm_open use dram\n");
 		mtk_capture_hardware.buffer_bytes_max = UL1_MAX_BUFFER_SIZE;
 	}
 	AfeControlSramUnLock();
@@ -371,7 +362,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	if (mCaptureUseSram == false)
 		AudDrv_Emi_Clk_On();
 
-	pr_debug("mtk_capture_pcm_open return\n");
+	PRINTK_AUDDRV("mtk_capture_pcm_open return\n");
 	return 0;
 }
 
@@ -392,7 +383,7 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_capture_alsa_start\n");
+	PRINTK_AUDDRV("mtk_capture_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	StartAudioCaptureHardware(substream);
 	return 0;
@@ -400,7 +391,7 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_capture_pcm_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_capture_pcm_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -415,10 +406,9 @@ static int mtk_capture_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 
 static bool CheckNullPointer(void *pointer)
 {
-	if (pointer == NULL) {
-		pr_debug("CheckNullPointer pointer = NULL");
+	if (pointer == NULL)
 		return true;
-	}
+
 	return false;
 }
 
@@ -434,7 +424,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 	unsigned long flags;
 
-	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lucount = %lu\n", pos, count);
+	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lu count = %lu\n", pos, count);
 	/* get total bytes to copy */
 	count = Align64ByteSize(audio_frame_to_bytes(substream, count));
 
@@ -482,7 +472,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 
 	if (DMA_Read_Ptr + read_size < Vul_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Vul_Block->u4DMAReadIdx) {
-			PRINTK_AUD_UL1("%s 1, read_size:%zu, DataRemained:%x, DMA_Read_Ptr:0x%zu, DMAReadIdx:%x\n",
+			PRINTK_AUD_UL1("%s 1 read_size:%zu DataRemained:%x DMA_Read_Ptr:0x%zu DMAReadIdx:%x\n",
 				__func__, read_size, Vul_Block->u4DataRemained, DMA_Read_Ptr,
 				Vul_Block->u4DMAReadIdx);
 		}
@@ -582,7 +572,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
 				   int channel, snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
-	pr_debug("dummy_pcm_silence\n");
+	PRINTK_AUDDRV("dummy_pcm_silence\n");
 	/* do nothing */
 	return 0;
 }
@@ -592,7 +582,7 @@ static void *dummy_page[2];
 
 static struct page *mtk_capture_pcm_page(struct snd_pcm_substream *substream, unsigned long offset)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]);	/* the same page */
 }
 

@@ -92,7 +92,7 @@ static struct snd_pcm_hardware mtk_mgrrx_awb_hardware = {
 
 static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StopAudioAWBHardware\n");
+	PRINTK_AUDDRV("StopAudioAWBHardware\n");
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
@@ -113,7 +113,7 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StartAudioMrgrxAWBHardware\n");
+	PRINTK_AUDDRV("StartAudioMrgrxAWBHardware\n");
 
 	/* here to set interrupt */
 	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
@@ -143,14 +143,14 @@ static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream)
 
 static int mtk_mrgrx_awb_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s substream->rate = %d, substream->channels = %d\n",
+	PRINTK_AUDDRV("%s substream->rate = %d, substream->channels = %d\n",
 		__func__, substream->runtime->rate, substream->runtime->channels);
 	return 0;
 }
 
 static int mtk_mrgrx_awb_alsa_stop(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_mrgrx_awb_alsa_stop\n");
+	PRINTK_AUDDRV("mtk_mrgrx_awb_alsa_stop\n");
 	StopAudioAWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 
@@ -170,8 +170,7 @@ static snd_pcm_uframes_t mtk_awb_pcm_pointer(struct snd_pcm_substream *substream
 	kal_uint32 Frameidx = 0;
 	AFE_BLOCK_T *Awb_Block = &(Mrgrx_AWB_Control_context->rBlock);
 
-	/* PRINTK_AUD_AWB("mtk_awb_pcm_pointer Awb_Block->u4WriteIdx = 0x%x\n",
-		Awb_Block->u4WriteIdx); */
+	PRINTK_AUD_AWB("%s Awb_Block->u4WriteIdx = 0x%x\n", __func__, Awb_Block->u4WriteIdx);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB) == true) {
 		/* get total bytes to copysinewavetohdmi */
@@ -180,13 +179,13 @@ static snd_pcm_uframes_t mtk_awb_pcm_pointer(struct snd_pcm_substream *substream
 
 		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
 		if (HW_Cur_ReadIdx == 0) {
-			pr_debug("[Auddrv] mtk_awb_pcm_pointer HW_Cur_ReadIdx == 0\n");
+			PRINTK_AUD_AWB("%s HW_Cur_ReadIdx == 0\n", __func__);
 			HW_Cur_ReadIdx = Awb_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - Awb_Block->pucPhysBufAddr);
 		Previous_Hw_cur = HW_memory_index;
-		PRINTK_AUD_AWB("[Auddrv] mtk_awb_pcm_pointer = 0x%x HW_memory_index = 0x%x\n",
-			       HW_Cur_ReadIdx, HW_memory_index);
+		PRINTK_AUD_AWB("%s HW_Cur_ReadIdx = 0x%x HW_memory_index = 0x%x\n", __func__,
+			HW_Cur_ReadIdx, HW_memory_index);
 		return audio_bytes_to_frame(substream, Previous_Hw_cur);
 	}
 	return 0;
@@ -198,8 +197,6 @@ static void SetAWBBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	AFE_BLOCK_T *pblock = &Mrgrx_AWB_Control_context->rBlock;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("SetAWBBuffer\n");
-
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -210,7 +207,7 @@ static void SetAWBBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
 
-	pr_debug("dma_bytes = %d, dma_area = %p, dma_addr = 0x%x\n",
+	PRINTK_AUDDRV("%s dma_bytes = %d, dma_area = %p, dma_addr = 0x%x\n", __func__,
 		pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* set sram address top hardware */
@@ -226,38 +223,27 @@ static int mtk_mgrrx_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_debug("mtk_mgrrx_awb_pcm_hw_params\n");
-
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
 	if (Awb_Capture_dma_buf->area) {
-		pr_debug("mtk_mgrrx_awb_pcm_hw_params Awb_Capture_dma_buf->area\n");
+		PRINTK_AUDDRV("%s Awb_Capture_dma_buf->area\n", __func__);
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Awb_Capture_dma_buf->area;
 		runtime->dma_addr = Awb_Capture_dma_buf->addr;
 	} else {
-		pr_debug("mtk_mgrrx_awb_pcm_hw_params snd_pcm_lib_malloc_pages\n");
+		PRINTK_AUDDRV("%s snd_pcm_lib_malloc_pages\n", __func__);
 		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
-	pr_debug("%s, dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
-		__func__, runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr);
-
-	pr_debug("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 
 	SetAWBBuffer(substream, hw_params);
-
-	pr_debug("dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
-		substream->runtime->dma_bytes, substream->runtime->dma_area,
-		(long)substream->runtime->dma_addr);
-
 	return ret;
 }
 
 static int mtk_mrgrx_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_mrgrx_capture_pcm_hw_free\n");
+	PRINTK_AUDDRV("mtk_mrgrx_capture_pcm_hw_free\n");
 
 	if (Awb_Capture_dma_buf->area)
 		return 0;
@@ -276,8 +262,6 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_debug("mtk_mrgrx_awb_pcm_open\n");
-
 	Mrgrx_AWB_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_AWB);
 
 	runtime->hw = mtk_mgrrx_awb_hardware;
@@ -291,11 +275,11 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_debug("mtk_mrgrx_awb_pcm_open runtime rate = %d channels = %d\n",
+	PRINTK_AUDDRV("%s runtime rate = %d channels = %d\n", __func__,
 		runtime->rate, runtime->channels);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 	else
 		return -1;
 
@@ -305,17 +289,18 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Emi_Clk_On();
 
 	if (ret < 0) {
-		pr_warn("mtk_mrgrx_awb_pcm_close\n");
+		pr_warn("%s ret < 0, close\n", __func__);
 		mtk_mrgrx_awb_pcm_close(substream);
 		return ret;
 	}
 
-	pr_debug("mtk_mrgrx_awb_pcm_open return\n");
+	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;
 }
 
 static int mtk_mrgrx_awb_pcm_close(struct snd_pcm_substream *substream)
 {
+	PRINTK_AUDDRV("%s\n", __func__);
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
 	AudDrv_ANA_Clk_Off();
@@ -324,7 +309,7 @@ static int mtk_mrgrx_awb_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_mrgrx_awb_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_mrgrx_awb_alsa_start\n");
+	PRINTK_AUDDRV("%s\n", __func__);
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 	StartAudioMrgrxAWBHardware(substream);
 	return 0;
@@ -332,7 +317,7 @@ static int mtk_mrgrx_awb_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_capture_mrgrx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_capture_mrgrx_pcm_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("%s cmd = %d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -347,10 +332,9 @@ static int mtk_capture_mrgrx_pcm_trigger(struct snd_pcm_substream *substream, in
 
 static bool CheckNullPointer(void *pointer)
 {
-	if (pointer == NULL) {
-		pr_debug("CheckNullPointer pointer = NULL\n");
+	if (pointer == NULL)
 		return true;
-	}
+
 	return false;
 }
 
@@ -374,24 +358,25 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 	Awb_Block = &(pAWB_MEM_ConTrol->rBlock);
 
 	if (pAWB_MEM_ConTrol == NULL) {
-		pr_warn("cannot find MEM control !!!!!!!\n");
+		pr_err("%s cannot find MEM control !!!!!!!\n", __func__);
 		msleep(50);
 		return 0;
 	}
 
 	if (Awb_Block->u4BufferSize <= 0) {
+		pr_err("%s Awb_Block->u4BufferSize <= 0 !!!!!!!\n", __func__);
 		msleep(50);
 		return 0;
 	}
 
 	if (CheckNullPointer((void *)Awb_Block->pucVirtBufAddr)) {
-		pr_warn("CheckNullPointer pucVirtBufAddr = %p\n", Awb_Block->pucVirtBufAddr);
+		pr_err("%s CheckNullPointer pucVirtBufAddr = %p\n", __func__, Awb_Block->pucVirtBufAddr);
 		return 0;
 	}
 
 	spin_lock_irqsave(&auddrv_AWBInCtl_lock, flags);
 	if (Awb_Block->u4DataRemained > Awb_Block->u4BufferSize) {
-		pr_debug("AudDrv_MEMIF_Read u4DataRemained = %x > u4BufferSize = %x\n",
+		PRINTK_AUD_AWB("%s u4DataRemained = %x > u4BufferSize = %x\n", __func__,
 			Awb_Block->u4DataRemained, Awb_Block->u4BufferSize);
 		Awb_Block->u4DataRemained = 0;
 		Awb_Block->u4DMAReadIdx = Awb_Block->u4WriteIdx;
@@ -405,19 +390,19 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 	DMA_Read_Ptr = Awb_Block->u4DMAReadIdx +
 		Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 
-	PRINTK_AUD_AWB("Awb_Block->u4DMAReadIdx = 0x%x, Get_Mem_CopySizeByStream = 0x%x\n",
-		Awb_Block->u4DMAReadIdx,
+	PRINTK_AUD_AWB("%s Awb_Block->u4DMAReadIdx = 0x%x, Get_Mem_CopySizeByStream = 0x%x\n",
+		__func__, Awb_Block->u4DMAReadIdx,
 		Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream));
 
 	if (DMA_Read_Ptr >= Awb_Block->u4BufferSize) {
-		pr_warn("AudDrv_MEMIF_Read 1, DMA_Read_Ptr out of bound\n");
+		pr_warn("%s AudDrv_MEMIF_Read 1, DMA_Read_Ptr out of bound\n", __func__);
 		DMA_Read_Ptr %= Awb_Block->u4BufferSize;
 	}
 	spin_unlock_irqrestore(&auddrv_AWBInCtl_lock, flags);
 
 	PRINTK_AUD_AWB
 	("%s finish0, read_count:%x, read_size:%x, u4DataRemained:%x, u4DMAReadIdx:%x, u4WriteIdx:%x\n",
-	__func__, read_count, read_size, Awb_Block->u4DataRemained, Awb_Block->u4DMAReadIdx,
+	__func__, (uint32)read_count, (uint32)read_size, Awb_Block->u4DataRemained, Awb_Block->u4DMAReadIdx,
 	Awb_Block->u4WriteIdx);
 
 	if (DMA_Read_Ptr + read_size <= Awb_Block->u4BufferSize) {
@@ -445,11 +430,9 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 		count -= read_size;
 
 		PRINTK_AUD_AWB
-			("%s finish 1, copy size:%x, u4DMAReadIdx:%x, u4WriteIdx:%x,",
-			__func__, read_size, Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx);
-		PRINTK_AUD_AWB
-			(" u4DataRemained:%x, u4MaxCopySize:%x\n", Awb_Block->u4DataRemained,
-			Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream));
+		("%s finish 1 copy size:%x u4DMAReadIdx:%x u4WriteIdx:%x u4DataRemained:%x u4MaxCopySize:%x\n",
+		__func__, (uint32)read_size, Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx, Awb_Block->u4DataRemained,
+		Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream));
 	} else {
 		uint32 size_1, size_2;
 
@@ -476,7 +459,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 		DMA_Read_Ptr += size_1;
 		Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream, size_1);
 		if (DMA_Read_Ptr >= Awb_Block->u4BufferSize) {
-			pr_warn("AudDrv_MEMIF_Read 2, DMA_Read_Ptr out of bound\n");
+			pr_warn("%s 2, DMA_Read_Ptr out of bound\n", __func__);
 			DMA_Read_Ptr %= Awb_Block->u4BufferSize;
 		}
 		spin_unlock(&auddrv_AWBInCtl_lock);
@@ -489,7 +472,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 		if (DMA_Read_Ptr != Awb_Block->u4DMAReadIdx) {
 			PRINTK_AUD_AWB
 				("%s 3, read_size2:%x, DataRemained:%x, DMA_Read_Ptr:%x, DMAReadIdx:%x\n",
-				__func__, size_2, Awb_Block->u4DataRemained, DMA_Read_Ptr,
+				__func__, size_2, Awb_Block->u4DataRemained, (uint32)DMA_Read_Ptr,
 				Awb_Block->u4DMAReadIdx);
 		}
 
@@ -523,7 +506,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
 				   int channel, snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
-	pr_debug("dummy_pcm_silence\n");
+	PRINTK_AUDDRV("%s\n", __func__);
 	return 0;		/* do nothing */
 }
 

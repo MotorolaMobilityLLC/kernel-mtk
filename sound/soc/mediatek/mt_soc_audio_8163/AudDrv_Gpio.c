@@ -129,7 +129,7 @@ int AudDrv_GPIO_PMIC_Select(int bEnable)
 {
 	int retval = 0;
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_PMIC_MODE1].gpio_prepare) {
@@ -159,7 +159,7 @@ int AudDrv_GPIO_I2S_Select(int bEnable)
 {
 	int retval = 0;
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_I2S_MODE1].gpio_prepare) {
@@ -189,7 +189,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable)
 {
 	int retval = 0;
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_EXTAMP_HIGH].gpio_prepare) {
@@ -219,7 +219,7 @@ int AudDrv_GPIO_EXTAMP_Gain_Set(int value)
 {
 	int retval = 0;
 
-	pr_debug("%s value = %d\n", __func__, value);
+	PRINTK_AUDDRV("%s value = %d\n", __func__, value);
 
 	switch (value) {
 	case 3:
@@ -277,7 +277,7 @@ int AudDrv_GPIO_HP_SPK_Switch_Select(int bEnable)
 {
 	int retval = 0;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	PRINTK_AUDDRV("%s bEnable = %d\n", __func__, bEnable);
 
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_HPSPK_SWITCH_HIGH].gpio_prepare) {

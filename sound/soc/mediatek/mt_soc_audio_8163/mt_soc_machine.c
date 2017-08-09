@@ -104,9 +104,19 @@
 
 static int mt_soc_lowjitter_control;
 static struct dentry *mt_sco_audio_debugfs;
+uint32_t AudDrv_Log_On;
 #define DEBUG_FS_NAME "mtksocaudio"
 #define DEBUG_ANA_FS_NAME "mtksocanaaudio"
 
+static void Aud_Log_On(bool enable, uint32 value)
+{
+	pr_debug("Aud_Log_On enable = %d value = 0x%x\n", enable, value);
+
+	if (enable)
+		AudDrv_Log_On = value;
+	else
+		AudDrv_Log_On = 0;
+}
 
 static int mtmachine_startup(struct snd_pcm_substream *substream)
 {
@@ -576,6 +586,7 @@ static const char ParSetkeyAna[] = "Setanareg";
 static const char ParSetkeyCfg[] = "Setcfgreg";
 static const char PareGetkeyAfe[] = "Getafereg";
 static const char PareGetkeyAna[] = "Getanareg";
+static const char ParEnableLog[] = "Enablelog";
 /* static const char ParGetkeyCfg[] = "Getcfgreg"; */
 /* static const char ParSetAddr[] = "regaddr"; */
 /* static const char ParSetValue[] = "regvalue"; */
@@ -605,7 +616,6 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s pointer = %p\n",
 		count, InputString, InputString);
 	token1 = strsep(&temp, delim);
-	pr_debug("token1\n");
 	pr_debug("token1 = %s\n", token1);
 	token2 = strsep(&temp, delim);
 	pr_debug("token2 = %s\n", token2);
@@ -615,6 +625,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	pr_debug("token4 = %s\n", token4);
 	token5 = strsep(&temp, delim);
 	pr_debug("token5 = %s\n", token5);
+
+	AudDrv_ANA_Clk_On();
+	AudDrv_Clk_On();
+	audckbufEnable(true);
 
 	if (strcmp(token1, ParSetkeyAfe) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
@@ -630,10 +644,6 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		ret = kstrtol(token3, 16, &regaddr);
 		ret = kstrtol(token5, 16, &regvalue);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
-		/* clk_buf_ctrl(CLK_BUF_AUDIO, true); */
-		AudDrv_ANA_Clk_On();
-		AudDrv_Clk_On();
-		audckbufEnable(true);
 		Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
 		regvalue = Ana_Get_Reg(regaddr);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
@@ -659,6 +669,21 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		regvalue = Ana_Get_Reg(regaddr);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr, regvalue);
 	}
+	if (strcmp(token1, ParEnableLog) == 0) {
+		ret = kstrtol(token3, 16, &regvalue);
+		if (strncmp(token2, "On", 2) == 0) {
+			pr_debug("Enable aud_drv debug log (0x%lu)\n", regvalue);
+			Aud_Log_On(true, regvalue);
+		} else {
+			pr_debug("Disable aud_drv debug log!\n");
+			Aud_Log_On(false, regvalue);
+		}
+	}
+
+	audckbufEnable(false);
+	AudDrv_Clk_Off();
+	AudDrv_ANA_Clk_Off();
+
 	return count;
 }
 

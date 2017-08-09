@@ -92,13 +92,6 @@
 #include "AudDrv_Clk.h"
 #include "mt_soc_digital_type.h"
 
-
-#ifdef DEBUG_AUDDRV
-#define PRINTK_AUDDRV(format, args...) pr_debug(format, ##args)
-#else
-#define PRINTK_AUDDRV(format, args...)
-#endif
-
 /* mutex lock */
 static DEFINE_MUTEX(afe_connection_mutex);
 

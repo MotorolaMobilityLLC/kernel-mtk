@@ -95,7 +95,7 @@ static const struct soc_enum Audio_fmtx_Enum[] = {
 static int Audio_fmtx_hdoutput_Get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_fmtx_hdoutput_Get = %d\n", fmtx_hdoutput_control);
+	PRINTK_AUDDRV("Audio_fmtx_hdoutput_Get = %d\n", fmtx_hdoutput_control);
 	ucontrol->value.integer.value[0] = fmtx_hdoutput_control;
 	return 0;
 }
@@ -103,7 +103,7 @@ static int Audio_fmtx_hdoutput_Get(struct snd_kcontrol *kcontrol,
 static int Audio_fmtx_hdoutput_Set(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(fmtx_HD_output)) {
 		pr_err("return -EINVAL\n");
@@ -162,7 +162,7 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	/* AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock); */
-	PRINTK_AUD_FMTX("mtk_pcm_fmtx_stop\n");
+	PRINTK_AUDDRV("mtk_pcm_fmtx_stop\n");
 
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
 
@@ -230,9 +230,8 @@ static snd_pcm_uframes_t mtk_pcm_fmtx_pointer(struct snd_pcm_substream *substrea
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 
-		PRINTK_AUD_DL1
-			("[Auddrv] HW_Cur_ReadIdx = 0x%x, HW_memory_index = 0x%x, Afe_consumed_bytes = 0x%x\n",
-			HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
+		PRINTK_AUD_FMTX("%s HW_Cur_ReadIdx=0x%x HW_memory_index=0x%x Afe_consumed_bytes=0x%x\n",
+			__func__, HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
 
 		Auddrv_Dl1_Spinlock_unlock();
 		return audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
@@ -259,7 +258,7 @@ static void SetFMTXBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
 
-	pr_debug("%s, u4BufferSize = %d, pucVirtBufAddr = %p, pucPhysBufAddr = 0x%x\n",
+	PRINTK_AUDDRV("%s, u4BufferSize = %d, pucVirtBufAddr = %p, pucPhysBufAddr = 0x%x\n",
 		__func__, pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* set dram address top hardware */
@@ -288,8 +287,8 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 		SetFMTXBuffer(substream, hw_params);
 	}
 	/* ------------------------------------------------------- */
-	pr_debug("1 dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
-	       substream->runtime->dma_bytes, substream->runtime->dma_area,
+	PRINTK_AUDDRV("%s dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
+	       __func__, substream->runtime->dma_bytes, substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
 
 	return ret;
@@ -298,7 +297,7 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_fmtx_hw_free(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUD_FMTX("mtk_pcm_fmtx_hw_free\n");
+	PRINTK_AUDDRV("mtk_pcm_fmtx_hw_free\n");
 
 	if (fake_buffer)
 		return 0;
@@ -332,8 +331,8 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
-	pr_debug("mtk_I2S0dl1_hardware.buffer_bytes_max = %zu, mPlaybackSramState = %d\n",
-	       mtk_fmtx_hardware.buffer_bytes_max, mPlaybackSramState);
+	PRINTK_AUDDRV("%s mtk_fmtx_hardware.buffer_bytes_max = %zu, mPlaybackSramState = %d\n",
+	       __func__, mtk_fmtx_hardware.buffer_bytes_max, mPlaybackSramState);
 	runtime->hw = mtk_fmtx_hardware;
 
 	AudDrv_ANA_Clk_On();
@@ -349,12 +348,12 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_fmtx_playback_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 	else
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_fmtx_playback_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 
 	if (ret < 0) {
-		pr_err("ret < 0 mtkalsa_fmtx_playback close\n");
+		pr_err("%s ret < 0, close\n", __func__);
 		mtk_pcm_fmtx_close(substream);
 		return ret;
 	}
@@ -365,7 +364,7 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_fmtx_close(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0); */
 
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
@@ -390,6 +389,7 @@ static int mtk_pcm_fmtx_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
+	PRINTK_AUDDRV("%s\n", __func__);
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
 
@@ -451,7 +451,7 @@ static int mtk_pcm_fmtx_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_fmtx_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_pcm_fmtx_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_pcm_fmtx_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -475,19 +475,19 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
 
-	PRINTK_AUD_FMTX("[mtk_pcm_fmtx_copy] pos = %lu count = %lu\n", pos, count);
+	PRINTK_AUD_FMTX("%s pos = %lu count = %lu\n", __func__, pos, count);
 
 	/* check which memif nned to be write */
 	Afe_Block = &pMemControl->rBlock;
 
 	/* handle for buffer management */
 
-	PRINTK_AUD_FMTX("[%s], WriteIdx = %x, ReadIdx = %x, DataRemained = %x\n",
+	PRINTK_AUD_FMTX("%s, WriteIdx = %x, ReadIdx = %x, DataRemained = %x\n",
 		__func__, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
 		Afe_Block->u4DataRemained);
 
 	if (Afe_Block->u4BufferSize == 0) {
-		pr_err("%s: u4BufferSize = 0, Error!!!\n", __func__);
+		pr_err("%s, u4BufferSize = 0, Error!!!\n", __func__);
 		return 0;
 	}
 
@@ -504,7 +504,7 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 	}
 
 	copy_size = Align64ByteSize(copy_size);
-	PRINTK_AUD_DL1("copy_size = 0x%x, count = 0x%x\n", copy_size,
+	PRINTK_AUD_FMTX("%s copy_size = 0x%x, count = 0x%x\n", __func__, copy_size,
 		(unsigned int)count);
 
 	if (copy_size != 0) {
@@ -514,18 +514,18 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 
 		if (Afe_WriteIdx_tmp + copy_size < Afe_Block->u4BufferSize) {	/* copy once */
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
-				PRINTK_AUD_FMTX("[%s] 0 ptr invalid data_w_ptr = 0x%x, size = %d",
-					__func__, (kal_uint32) data_w_ptr, copy_size);
-				PRINTK_AUD_FMTX(" u4BufferSize = %d, u4DataRemained = %d\n",
-					Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
+				pr_warn
+				("%s 0 ptr invalid data_w_ptr=%p size=%d u4BufferSize=%d u4DataRemained=%d\n",
+				__func__, data_w_ptr, copy_size, Afe_Block->u4BufferSize,
+				Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_FMTX
-				("memcpy Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%p, data_w_ptr=%p, copy_size=%x\n",
-				Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp, data_w_ptr, copy_size);
+				("%s copy Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%p data_w_ptr=%p copy_size=%x\n",
+				__func__, Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp, data_w_ptr, copy_size);
 
 				if (copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					data_w_ptr, copy_size)) {
-					PRINTK_AUD_FMTX("[%s] Fail copy from user\n", __func__);
+					pr_err("%s Fail copy from user\n", __func__);
 					return -1;
 				}
 			}
@@ -539,29 +539,28 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 			count -= copy_size;
 
 			PRINTK_AUD_FMTX
-				("[%s] finish 1, copy_size:%x, WriteIdx:%x, ReadIdx:%x, DataRemained:%x, count:%x\n",
+				("%s finish 1, copy_size:%x, WriteIdx:%x, ReadIdx:%x, DataRemained:%x, count:%x\n",
 				__func__, copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
-				Afe_Block->u4DataRemained, count);
+				Afe_Block->u4DataRemained, (unsigned int)count);
 
 		} else {	/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
 			size_1 = Align64ByteSize((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
 			size_2 = Align64ByteSize((copy_size - size_1));
-			PRINTK_AUD_DL1("size_1 = 0x%x, size_2 = 0x%x\n", size_1, size_2);
+			PRINTK_AUD_FMTX("%s size_1 = 0x%x, size_2 = 0x%x\n", __func__, size_1, size_2);
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
-				pr_warn("[%s] 1 ptr invalid, data_w_ptr = %p, size_1 = %d",
-					__func__, data_w_ptr, size_1);
-				pr_warn(" u4BufferSize = %d, u4DataRemained = %d\n",
-					Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
+				pr_warn
+				("%s 1 ptr invalid, data_w_ptr=%p size_1=%d u4BufferSize=%d u4DataRemained=%d\n",
+				__func__, data_w_ptr, size_1, Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_FMTX
-				("[%s] mcmcpy, Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%x, data_w_ptr=%p, size_1=%x\n",
+				("%s copy, Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%p data_w_ptr=%p size_1=%x\n",
 				__func__, Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp, data_w_ptr, size_1);
 
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					data_w_ptr, size_1))) {
-					PRINTK_AUD_FMTX("[%s] Fail 1 copy from user\n", __func__);
+					pr_err("%s Fail 1 copy from user\n", __func__);
 					return -1;
 				}
 			}
@@ -579,14 +578,14 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 					Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_FMTX
-					("[%s] mcmcpy Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%x,",
+					("[%s] mcmcpy Afe_Block->pucVirtBufAddr+Afe_WriteIdx=%p,",
 					__func__, Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp);
 				PRINTK_AUD_FMTX
 					(" data_w_ptr+size_1=%p, size_2=%x\n", data_w_ptr + size_1, size_2);
 
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					(data_w_ptr + size_1), size_2))) {
-					PRINTK_AUD_FMTX("[%s] Fail 2 copy from user\n", __func__);
+					pr_err("[%s] Fail 2 copy from user\n", __func__);
 					return -1;
 				}
 			}
@@ -620,7 +619,7 @@ static void *dummy_page[2];
 
 static struct page *mtk_pcm_fmtx_page(struct snd_pcm_substream *substream, unsigned long offset)
 {
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]);	/* the same page */
 }
 
@@ -649,7 +648,7 @@ static struct snd_soc_platform_driver mtk_fmtx_soc_platform = {
 static int mtk_fmtx_probe(struct platform_device *pdev)
 {
 	/* int ret = 0; */
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
@@ -659,7 +658,7 @@ static int mtk_fmtx_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_FM_MRGTX_PCM);
 
-	PRINTK_AUD_FMTX("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	mDev = &pdev->dev;
 
@@ -670,13 +669,13 @@ static int mtk_asoc_pcm_fmtx_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int ret = 0;
 
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return ret;
 }
 
 static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform)
 {
-	PRINTK_AUD_FMTX("mtk_afe_afe_probe\n");
+	pr_debug("mtk_afe_afe_probe\n");
 	snd_soc_add_platform_controls(platform, Audio_snd_fmtx_controls,
 				      ARRAY_SIZE(Audio_snd_fmtx_controls));
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
@@ -688,7 +687,7 @@ static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform)
 
 static int mtk_fmtx_remove(struct platform_device *pdev)
 {
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -722,7 +721,7 @@ static int __init mtk_soc_platform_init(void)
 {
 	int ret;
 
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtkfmtx_dev = platform_device_alloc(MT_SOC_FM_MRGTX_PCM, -1);
 
@@ -743,7 +742,7 @@ module_init(mtk_soc_platform_init);
 
 static void __exit mtk_soc_platform_exit(void)
 {
-	PRINTK_AUD_FMTX("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_fmtx_driver);
 }

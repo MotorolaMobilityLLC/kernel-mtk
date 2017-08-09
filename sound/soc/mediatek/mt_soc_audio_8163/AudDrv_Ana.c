@@ -72,10 +72,12 @@ void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	Reg_Value |= (value & mask);
 	ret = pwrap_write(offset, Reg_Value);
 	Reg_Value = Ana_Get_Reg(offset);
+#if 0
 	if ((Reg_Value & mask) != (value & mask)) {
 		pr_warn("Ana_Set_Reg offset= 0x%x, value = 0x%x mask = 0x%x ret = %d Reg_Value = 0x%x\n",
 			offset, value, mask, ret, Reg_Value);
 	}
+#endif
 #endif
 }
 EXPORT_SYMBOL(Ana_Set_Reg);
@@ -96,52 +98,52 @@ EXPORT_SYMBOL(Ana_Get_Reg);
 void Ana_Log_Print(void)
 {
 	AudDrv_ANA_Clk_On();
-	pr_debug("ABB_AFE_CON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON0));
-	pr_debug("ABB_AFE_CON1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON1));
-	pr_debug("ABB_AFE_CON2	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON2));
-	pr_debug("ABB_AFE_CON3  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON3));
-	pr_debug("ABB_AFE_CON4  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON4));
-	pr_debug("ABB_AFE_CON5	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON5));
-	pr_debug("ABB_AFE_CON6	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON6));
-	pr_debug("ABB_AFE_CON7	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON7));
-	pr_debug("ABB_AFE_CON8	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON8));
-	pr_debug("ABB_AFE_CON9	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON9));
-	pr_debug("ABB_AFE_CON10	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON10));
-	pr_debug("ABB_AFE_CON11	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON11));
-	pr_debug("ABB_AFE_STA0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA0));
-	pr_debug("ABB_AFE_STA1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA1));
-	pr_debug("ABB_AFE_STA2	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA2));
-	pr_debug("AFE_UP8X_FIFO_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_CFG0));
-	pr_debug("AFE_UP8X_FIFO_LOG_MON0	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_LOG_MON0));
-	pr_debug("AFE_UP8X_FIFO_LOG_MON1	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_LOG_MON1));
-	pr_debug("AFE_PMIC_NEWIF_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG0));
-	pr_debug("AFE_PMIC_NEWIF_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG1));
-	pr_debug("AFE_PMIC_NEWIF_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG2));
-	pr_debug("AFE_PMIC_NEWIF_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG3));
-	pr_debug("ABB_AFE_TOP_CON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_TOP_CON0));
-	pr_debug("ABB_MON_DEBUG0	= 0x%x\n", Ana_Get_Reg(ABB_MON_DEBUG0));
-	pr_debug("TOP_CKPDN0	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN0));
-	pr_debug("TOP_CKPDN1	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN1));
-	pr_debug("TOP_CKPDN2	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN2));
-	pr_debug("TOP_CKCON1	= 0x%x\n", Ana_Get_Reg(TOP_CKCON1));
-	pr_debug("SPK_CON0	= 0x%x\n", Ana_Get_Reg(SPK_CON0));
-	pr_debug("SPK_CON1	= 0x%x\n", Ana_Get_Reg(SPK_CON1));
-	pr_debug("SPK_CON2	= 0x%x\n", Ana_Get_Reg(SPK_CON2));
-	pr_debug("SPK_CON6	= 0x%x\n", Ana_Get_Reg(SPK_CON6));
-	pr_debug("SPK_CON7	= 0x%x\n", Ana_Get_Reg(SPK_CON7));
-	pr_debug("SPK_CON8	= 0x%x\n", Ana_Get_Reg(SPK_CON8));
-	pr_debug("SPK_CON9	= 0x%x\n", Ana_Get_Reg(SPK_CON9));
-	pr_debug("SPK_CON10	= 0x%x\n", Ana_Get_Reg(SPK_CON10));
-	pr_debug("SPK_CON11	= 0x%x\n", Ana_Get_Reg(SPK_CON11));
-	pr_debug("AUDTOP_CON0	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON0));
-	pr_debug("AUDTOP_CON1	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON1));
-	pr_debug("AUDTOP_CON2	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON2));
-	pr_debug("AUDTOP_CON3	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON3));
-	pr_debug("AUDTOP_CON4	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON4));
-	pr_debug("AUDTOP_CON5	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON5));
-	pr_debug("AUDTOP_CON7	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON6));
-	pr_debug("AUDTOP_CON8	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON7));
-	pr_debug("AUDTOP_CON9	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON9));
+	PRINTK_ANA_REG("ABB_AFE_CON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON0));
+	PRINTK_ANA_REG("ABB_AFE_CON1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON1));
+	PRINTK_ANA_REG("ABB_AFE_CON2	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON2));
+	PRINTK_ANA_REG("ABB_AFE_CON3  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON3));
+	PRINTK_ANA_REG("ABB_AFE_CON4  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON4));
+	PRINTK_ANA_REG("ABB_AFE_CON5	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON5));
+	PRINTK_ANA_REG("ABB_AFE_CON6	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON6));
+	PRINTK_ANA_REG("ABB_AFE_CON7	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON7));
+	PRINTK_ANA_REG("ABB_AFE_CON8	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON8));
+	PRINTK_ANA_REG("ABB_AFE_CON9	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON9));
+	PRINTK_ANA_REG("ABB_AFE_CON10	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON10));
+	PRINTK_ANA_REG("ABB_AFE_CON11	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON11));
+	PRINTK_ANA_REG("ABB_AFE_STA0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA0));
+	PRINTK_ANA_REG("ABB_AFE_STA1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA1));
+	PRINTK_ANA_REG("ABB_AFE_STA2	= 0x%x\n", Ana_Get_Reg(ABB_AFE_STA2));
+	PRINTK_ANA_REG("AFE_UP8X_FIFO_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_CFG0));
+	PRINTK_ANA_REG("AFE_UP8X_FIFO_LOG_MON0	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_LOG_MON0));
+	PRINTK_ANA_REG("AFE_UP8X_FIFO_LOG_MON1	= 0x%x\n", Ana_Get_Reg(AFE_UP8X_FIFO_LOG_MON1));
+	PRINTK_ANA_REG("AFE_PMIC_NEWIF_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG0));
+	PRINTK_ANA_REG("AFE_PMIC_NEWIF_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG1));
+	PRINTK_ANA_REG("AFE_PMIC_NEWIF_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG2));
+	PRINTK_ANA_REG("AFE_PMIC_NEWIF_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_PMIC_NEWIF_CFG3));
+	PRINTK_ANA_REG("ABB_AFE_TOP_CON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_TOP_CON0));
+	PRINTK_ANA_REG("ABB_MON_DEBUG0	= 0x%x\n", Ana_Get_Reg(ABB_MON_DEBUG0));
+	PRINTK_ANA_REG("TOP_CKPDN0	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN0));
+	PRINTK_ANA_REG("TOP_CKPDN1	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN1));
+	PRINTK_ANA_REG("TOP_CKPDN2	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN2));
+	PRINTK_ANA_REG("TOP_CKCON1	= 0x%x\n", Ana_Get_Reg(TOP_CKCON1));
+	PRINTK_ANA_REG("SPK_CON0	= 0x%x\n", Ana_Get_Reg(SPK_CON0));
+	PRINTK_ANA_REG("SPK_CON1	= 0x%x\n", Ana_Get_Reg(SPK_CON1));
+	PRINTK_ANA_REG("SPK_CON2	= 0x%x\n", Ana_Get_Reg(SPK_CON2));
+	PRINTK_ANA_REG("SPK_CON6	= 0x%x\n", Ana_Get_Reg(SPK_CON6));
+	PRINTK_ANA_REG("SPK_CON7	= 0x%x\n", Ana_Get_Reg(SPK_CON7));
+	PRINTK_ANA_REG("SPK_CON8	= 0x%x\n", Ana_Get_Reg(SPK_CON8));
+	PRINTK_ANA_REG("SPK_CON9	= 0x%x\n", Ana_Get_Reg(SPK_CON9));
+	PRINTK_ANA_REG("SPK_CON10	= 0x%x\n", Ana_Get_Reg(SPK_CON10));
+	PRINTK_ANA_REG("SPK_CON11	= 0x%x\n", Ana_Get_Reg(SPK_CON11));
+	PRINTK_ANA_REG("AUDTOP_CON0	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON0));
+	PRINTK_ANA_REG("AUDTOP_CON1	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON1));
+	PRINTK_ANA_REG("AUDTOP_CON2	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON2));
+	PRINTK_ANA_REG("AUDTOP_CON3	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON3));
+	PRINTK_ANA_REG("AUDTOP_CON4	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON4));
+	PRINTK_ANA_REG("AUDTOP_CON5	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON5));
+	PRINTK_ANA_REG("AUDTOP_CON7	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON6));
+	PRINTK_ANA_REG("AUDTOP_CON8	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON7));
+	PRINTK_ANA_REG("AUDTOP_CON9	= 0x%x\n", Ana_Get_Reg(AUDTOP_CON9));
 	AudDrv_ANA_Clk_Off();
 	pr_debug("-Ana_Log_Print\n");
 }

@@ -65,7 +65,7 @@
 
 void Speaker_ClassD_Open(void)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	Ana_Set_Reg(SPK_CON2, 0x0214, 0xffff);	/* enable classAB OC function */
 	Ana_Set_Reg(SPK_CON9, 0x0400, 0xffff);	/* Set Spk 6dB gain */
 
@@ -79,7 +79,7 @@ void Speaker_ClassD_Open(void)
 
 void Speaker_ClassD_close(void)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* Mute Spk amp, select to original class AB mode. disable class-D Amp */
 	Ana_Set_Reg(SPK_CON0, 0x0004, 0xffff);
 }
@@ -87,7 +87,7 @@ void Speaker_ClassD_close(void)
 
 void Speaker_ClassAB_Open(void)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	Ana_Set_Reg(SPK_CON2, 0x0214, 0xffff);	/* enable classAB OC function */
 	Ana_Set_Reg(SPK_CON9, 0x0400, 0xffff);	/* Set Spk 6dB gain */
 
@@ -102,14 +102,14 @@ void Speaker_ClassAB_Open(void)
 
 void Speaker_ClassAB_close(void)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* Mute Spk amp, select to original class D mode. disable class-AB Amp */
 	Ana_Set_Reg(SPK_CON0, 0x0000, 0xffff);
 }
 
 void Speaker_ReveiverMode_Open(void)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* enable classAB OC function, enable speaker L receiver mode[6] */
 	Ana_Set_Reg(SPK_CON2, 0x0614, 0xffff);
 
@@ -138,6 +138,6 @@ bool GetSpeakerOcFlag(void)
 	OCregister = Ana_Get_Reg(SPK_CON6);
 	DmodeFlag = OCregister & (bitmask << 14);	/* no.14 bit is SPK_D_OC_L_DEG */
 	ABmodeFlag = OCregister & (bitmask << 15);	/* no.15 bit is SPK_AB_OC_L_DEG */
-	pr_debug("OCregister = %d\n", OCregister);
+	PRINTK_AUDDRV("OCregister = %d\n", OCregister);
 	return (DmodeFlag | ABmodeFlag);
 }

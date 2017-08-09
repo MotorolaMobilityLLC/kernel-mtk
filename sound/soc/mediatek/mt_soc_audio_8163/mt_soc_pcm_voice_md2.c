@@ -150,8 +150,6 @@ static int mtk_voice_md2_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_ADC_Clk_On();
 
-	pr_debug("mtk_voice_md2_pcm_open\n");
-
 	runtime->hw = mtk_pcm_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_pcm_hardware,
 	       sizeof(struct snd_pcm_hardware));
@@ -161,29 +159,29 @@ static int mtk_voice_md2_pcm_open(struct snd_pcm_substream *substream)
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
-		pr_err("snd_pcm_hw_constraint_integer failed\n");
+		pr_err("%s snd_pcm_hw_constraint_integer failed\n", __func__);
 
 	/* print for hw pcm information */
-	pr_debug("mtk_voice_md2_pcm_open runtime->rate = %d channels = %d\n",
+	PRINTK_AUDDRV("%s runtime->rate = %d channels = %d\n", __func__,
 		runtime->rate, runtime->channels);
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_md2_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 		runtime->rate = 16000;
 	} else {
-		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_md2_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		runtime->rate = 16000;
 	}
 
 	if (err < 0) {
-		pr_err("mtk_voice_md2_close\n");
+		pr_err("%s ret < 0, close\n", __func__);
 		mtk_voice_md2_close(substream);
 		return err;
 	}
-	pr_debug("mtk_voice_md2_pcm_open return\n");
+	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;
 }
 
@@ -202,10 +200,10 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_voice_md2_close\n");
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_debug("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		pr_err("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_Clk_Off();
 		AudDrv_ADC_Clk_Off();
 		AudDrv_ANA_Clk_Off();
@@ -241,7 +239,7 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 
 static int mtk_voice_md2_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_voice_md2_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_voice_md2_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -263,7 +261,7 @@ static int mtk_voice_md2_pcm_copy(struct snd_pcm_substream *substream,
 static int mtk_voice_md2_pcm_silence(struct snd_pcm_substream *substream,
 				     int channel, snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
-	pr_debug("mtk_voice_md2_pcm_silence\n");
+	PRINTK_AUDDRV("mtk_voice_md2_pcm_silence\n");
 	return 0;		/* do nothing */
 }
 
@@ -277,7 +275,7 @@ static int mtk_voice1_ext_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtimeStream = substream->runtime;
 
-	pr_debug("mtk_alsa_prepare rate = %d channels = %d period_size = %lu\n",
+	PRINTK_AUDDRV("%s rate = %d channels = %d period_size = %lu\n", __func__,
 	       runtimeStream->rate, runtimeStream->channels, runtimeStream->period_size);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -322,13 +320,13 @@ static int mtk_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_debug("mtk_pcm_hw_params\n");
+	PRINTK_AUDDRV("%s\n", __func__);
 	return ret;
 }
 
 static int mtk_voice_md2_hw_free(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUDDRV("mtk_voice_md2_hw_free\n");
+	PRINTK_AUDDRV("%s\n", __func__);
 	return snd_pcm_lib_free_pages(substream);
 }
 

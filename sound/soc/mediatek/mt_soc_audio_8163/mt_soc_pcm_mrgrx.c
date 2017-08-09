@@ -79,7 +79,7 @@ static bool mPrepareDone;
 static int Audio_mrgrx_Volume_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_mrgrx_Volume_Get = %d\n", mmrgrx_Volume);
+	PRINTK_AUDDRV("Audio_mrgrx_Volume_Get = %d\n", mmrgrx_Volume);
 	ucontrol->value.integer.value[0] = mmrgrx_Volume;
 	return 0;
 
@@ -89,7 +89,7 @@ static int Audio_mrgrx_Volume_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	mmrgrx_Volume = ucontrol->value.integer.value[0];
-	pr_debug("%s mmrgrx_Volume = 0x%x\n", __func__, mmrgrx_Volume);
+	PRINTK_AUDDRV("%s mmrgrx_Volume = 0x%x\n", __func__, mmrgrx_Volume);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT) == true)
 		SetHwDigitalGain(mmrgrx_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
@@ -114,7 +114,7 @@ static int mAudio_Wcn_Cmb;
 
 static int Audio_Wcn_Cmb_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_Wcn_Cmb_Get = %d\n", mAudio_Wcn_Cmb);
+	PRINTK_AUDDRV("Audio_Wcn_Cmb_Get = %d\n", mAudio_Wcn_Cmb);
 	ucontrol->value.integer.value[0] = mAudio_Wcn_Cmb;
 	return 0;
 }
@@ -122,7 +122,7 @@ static int Audio_Wcn_Cmb_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 static int Audio_Wcn_Cmb_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	mAudio_Wcn_Cmb = ucontrol->value.integer.value[0];
-	pr_debug("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
+	PRINTK_AUDDRV("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
 #ifndef DENALI_FPGA_EARLYPORTING
 #ifdef _WCN_SUPPORT
 	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X) mAudio_Wcn_Cmb);
@@ -158,7 +158,7 @@ static struct snd_pcm_hardware mtk_mrgrx_hardware = {
 
 static int mtk_pcm_mrgrx_stop(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_pcm_mrgrx_stop\n");
+	PRINTK_AUDDRV("mtk_pcm_mrgrx_stop\n");
 	return 0;
 }
 
@@ -174,13 +174,13 @@ static int mtk_pcm_mrgrx_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_debug("mtk_pcm_mrgrx_hw_params\n");
+	PRINTK_AUDDRV("mtk_pcm_mrgrx_hw_params\n");
 	return ret;
 }
 
 static int mtk_pcm_mrgrx_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_pcm_mrgrx_hw_free\n");
+	PRINTK_AUDDRV("mtk_pcm_mrgrx_hw_free\n");
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -200,7 +200,6 @@ static int mtk_pcm_mrgrx_open(struct snd_pcm_substream *substream)
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
 
-	pr_debug("mtk_pcm_mrgrx_open\n");
 	runtime->hw = mtk_mrgrx_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_mrgrx_hardware,
 	       sizeof(struct snd_pcm_hardware));
@@ -212,20 +211,20 @@ static int mtk_pcm_mrgrx_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_debug("%s, runtime->rate = %d, channels = %d, substream->pcm->device = %d\n",
+	PRINTK_AUDDRV("%s, runtime->rate = %d, channels = %d, substream->pcm->device = %d\n",
 		__func__, runtime->rate, runtime->channels, substream->pcm->device);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_mrgrx_playback_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 
 	if (ret < 0) {
-		pr_warn("mtk_pcm_mrgrx_close\n");
+		pr_warn("%s ret < 0, close\n", __func__);
 		mtk_pcm_mrgrx_close(substream);
 		return ret;
 	}
 	SetFMEnableFlag(true);
 
-	pr_debug("mtk_pcm_mrgrx_open return\n");
+	PRINTK_AUDDRV("mtk_pcm_mrgrx_open return\n");
 	return 0;
 }
 
@@ -233,7 +232,7 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 #ifndef DENALI_FPGA_EARLYPORTING
 #ifdef _WCN_SUPPORT
@@ -276,7 +275,7 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("%s rate = %d\n", __func__, runtime->rate);
+	PRINTK_AUDDRV("%s rate = %d mPrepareDone = %d\n", __func__, runtime->rate, mPrepareDone);
 
 	if (mPrepareDone == false) {
 #ifndef DENALI_FPGA_EARLYPORTING
@@ -323,13 +322,13 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_mrgrx_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	return 0;
 }
 
 static int mtk_pcm_mrgrx_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_pcm_mrgrx_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_pcm_mrgrx_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -353,7 +352,7 @@ static int mtk_pcm_mrgrx_copy(struct snd_pcm_substream *substream,
 static int mtk_pcm_mrgrx_silence(struct snd_pcm_substream *substream,
 				 int channel, snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	return 0;		/* do nothing */
 }
 

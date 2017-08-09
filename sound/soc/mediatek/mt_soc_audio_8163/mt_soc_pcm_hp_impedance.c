@@ -134,7 +134,7 @@ static void SetDL1Buffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
 
-	pr_debug("%s, u4BufferSize = %d, pucVirtBufAddr = %p, pucPhysBufAddr = 0x%x\n",
+	PRINTK_AUDDRV("%s, u4BufferSize = %d, pucVirtBufAddr = %p, pucPhysBufAddr = 0x%x\n",
 		__func__, pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* set dram address top hardware */
@@ -150,8 +150,6 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_debug("mtk_pcm_hp_impedance_params\n");
-
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
@@ -159,7 +157,7 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 	substream->runtime->dma_addr = Dl1_Playback_dma_buf->addr;
 	SetDL1Buffer(substream, hw_params);
 
-	PRINTK_AUDDRV("dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
+	PRINTK_AUDDRV("%s dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n", __func__,
 		      substream->runtime->dma_bytes, substream->runtime->dma_area,
 		      (long)substream->runtime->dma_addr);
 	return ret;
@@ -203,7 +201,7 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
 
 	if (ret < 0) {
-		PRINTK_AUDDRV("mtk_soc_pcm_hp_impedance_close\n");
+		PRINTK_AUDDRV("%s ret < 0, close\n", __func__);
 		mtk_soc_pcm_hp_impedance_close(substream);
 		return ret;
 	}
@@ -218,7 +216,7 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 	bool mI2SWLen;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("mtk_pcm_hp_impedance_prepare\n");
+	PRINTK_AUDDRV("mtk_pcm_hp_impedance_prepare\n");
 	if (mPrepareDone == false) {
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE
 		    || runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -271,7 +269,7 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 {
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	if (mPrepareDone == true) {
 		mPrepareDone = false;
@@ -333,7 +331,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 #ifdef CONFIG_MTK_FPGA
 	const int off_counter = 20;
 #endif
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
@@ -355,7 +353,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 #else
 		mAuxAdc_Offset = 0;
 #endif
-		pr_debug("mAuxAdc_Offset = %d\n", mAuxAdc_Offset);
+		PRINTK_AUDDRV("mAuxAdc_Offset = %d\n", mAuxAdc_Offset);
 
 #ifdef AUDIO_MEM_IOREMAP
 		memset((void *)Get_Afe_SramBase_Pointer(), ucontrol->value.integer.value[0],
@@ -365,14 +363,14 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		       AFE_INTERNAL_SRAM_SIZE);
 #endif
 		msleep(5 * 1000);
-		pr_debug("4 %s\n", __func__);
+		PRINTK_AUDDRV("4 %s\n", __func__);
 
 		EnableTrimbuffer(false);
 		OpenAnalogTrimHardware(false);
 	}
 
 	if (mhp_impedance == 1) {
-		pr_debug("start open hp impedance setting\n");
+		PRINTK_AUDDRV("start open hp impedance setting\n");
 		OpenHeadPhoneImpedanceSetting(true);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
 		setOffsetTrimBufferGain(3);
@@ -386,9 +384,9 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		       AFE_INTERNAL_SRAM_SIZE);
 #endif
 		msleep(5 * 1000);
-		pr_debug("5 %s\n", __func__);
+		PRINTK_AUDDRV("5 %s\n", __func__);
 	} else if (mhp_impedance == 0) {
-		pr_debug("stop hp impedance setting\n");
+		PRINTK_AUDDRV("stop hp impedance setting\n");
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
@@ -403,7 +401,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 			volatile unsigned short *Sramdata;
 			int i = 0;
 
-			pr_debug("set sram to dc value = %d\n", temp);
+			PRINTK_AUDDRV("set sram to dc value = %d\n", temp);
 			Sramdata = Get_Afe_SramBase_Pointer();
 
 			for (i = 0; i < AFE_INTERNAL_SRAM_SIZE >> 1; i++) {
@@ -412,15 +410,15 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 			}
 
 			Sramdata = Get_Afe_SramBase_Pointer();
-			pr_debug("Sramdata = %p\n", Sramdata);
-			pr_debug("Sramdata = 0x%x, Sramdata + 1 = 0x%x,", *Sramdata, *(Sramdata + 1));
-			pr_debug(" Sramdata + 2 = 0x%x, Sramdata + 3 = 0x%x\n", *(Sramdata + 2),
+			PRINTK_AUDDRV("Sramdata = %p\n", Sramdata);
+			PRINTK_AUDDRV("Sramdata = 0x%x, Sramdata + 1 = 0x%x,", *Sramdata, *(Sramdata + 1));
+			PRINTK_AUDDRV(" Sramdata + 2 = 0x%x, Sramdata + 3 = 0x%x\n", *(Sramdata + 2),
 				*(Sramdata + 3));
 			Sramdata += 4;
 
-			pr_debug("Sramdata = %p\n", Sramdata);
-			pr_debug("Sramdata = 0x%x, Sramdata + 1 = 0x%x,", *Sramdata, *(Sramdata + 1));
-			pr_debug(" Sramdata + 2 = 0x%x, Sramdata + 3 = 0x%x\n", *(Sramdata + 2),
+			PRINTK_AUDDRV("Sramdata = %p\n", Sramdata);
+			PRINTK_AUDDRV("Sramdata = 0x%x, Sramdata + 1 = 0x%x,", *Sramdata, *(Sramdata + 1));
+			PRINTK_AUDDRV(" Sramdata + 2 = 0x%x, Sramdata + 3 = 0x%x\n", *(Sramdata + 2),
 				*(Sramdata + 3));
 
 			/* memset((void *)Get_Afe_SramBase_Pointer(), ucontrol->value.integer.value[0],
@@ -433,7 +431,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 #else
 			dcoffset = 0;
 #endif
-			pr_debug("dcoffset = %d\n", dcoffset);
+			PRINTK_AUDDRV("dcoffset = %d\n", dcoffset);
 			msleep(3 * 1000);
 		}
 	}
@@ -500,10 +498,10 @@ static unsigned short dcinit_value;
 static void CheckDcinitValue(void)
 {
 	if (dcinit_value > (DCoffsetDefault + DCoffsetVariance)) {
-		pr_debug("%s dcinit_value = %d\n", __func__, dcinit_value);
+		PRINTK_AUDDRV("%s dcinit_value = %d\n", __func__, dcinit_value);
 		dcinit_value = DCoffsetDefault;
 	} else if (dcinit_value < (DCoffsetDefault - DCoffsetVariance)) {
-		pr_debug("%s dcinit_value = %d\n", __func__, dcinit_value);
+		PRINTK_AUDDRV("%s dcinit_value = %d\n", __func__, dcinit_value);
 		dcinit_value = DCoffsetDefault;
 	}
 }
@@ -515,7 +513,7 @@ static void ApplyDctoDl(void)
 	unsigned short value = 0, average = 0;
 	unsigned short dcoffset, dcoffset2, dcoffset3;
 
-	pr_debug("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	dcinit_value = DCoffsetDefault;
 	for (value = 0; value <= (HpImpedancePhase2AdcValue + HpImpedancePhase2Step);
@@ -546,7 +544,7 @@ static void ApplyDctoDl(void)
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			dcinit_value = average;
 			CheckDcinitValue();
-			pr_debug("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
+			PRINTK_AUDDRV("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
 			       value);
 		}
 
@@ -566,7 +564,7 @@ static void ApplyDctoDl(void)
 #endif
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			mhp_impedance = Phase1Check(average, dcinit_value);
-			pr_debug("value = %d average = %d dcinit_value = %d mhp_impedance = %d\n",
+			PRINTK_AUDDRV("value = %d average = %d dcinit_value = %d mhp_impedance = %d\n",
 			       value, average, dcinit_value, mhp_impedance);
 
 			if (mhp_impedance)
@@ -587,7 +585,7 @@ static void ApplyDctoDl(void)
 #endif
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
 			mhp_impedance = Phase2Check(average, dcinit_value);
-			pr_debug("value = %d average = %d dcinit_value = %d\n", value,
+			PRINTK_AUDDRV("value = %d average = %d dcinit_value = %d\n", value,
 				average, dcinit_value);
 			break;
 		}
@@ -598,7 +596,7 @@ static void ApplyDctoDl(void)
 static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("+%s()\n", __func__);
+	PRINTK_AUDDRV("+%s()\n", __func__);
 
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
@@ -617,12 +615,12 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		EnableTrimbuffer(false);
 		SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 	} else
-		pr_debug("Audio_HP_ImpeDance_Get just do nothing\n");
+		PRINTK_AUDDRV("Audio_HP_ImpeDance_Get just do nothing\n");
 
 	AudDrv_Clk_Off();
 	AudDrv_ANA_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
-	pr_debug("-%s()\n", __func__);
+	PRINTK_AUDDRV("-%s()\n", __func__);
 	return 0;
 }
 
@@ -657,7 +655,7 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 
 static int mtk_soc_hp_impedance_probe(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
@@ -667,7 +665,7 @@ static int mtk_soc_hp_impedance_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_HP_IMPEDANCE_PCM);
 
-	PRINTK_AUDDRV("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
 }
 
@@ -675,14 +673,14 @@ static int mtk_asoc_pcm_hp_impedance_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int ret = 0;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return ret;
 }
 
 
 static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 {
-	PRINTK_AUDDRV("mtk_asoc_dhp_impedance_probe\n");
+	pr_debug("mtk_asoc_dhp_impedance_probe\n");
 	/* add  controls */
 	snd_soc_add_platform_controls(platform, Audio_snd_hp_impedance_controls,
 				      ARRAY_SIZE(Audio_snd_hp_impedance_controls));
@@ -695,7 +693,7 @@ static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 
 static int mtk_hp_impedance_remove(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -729,7 +727,7 @@ static int __init mtk_soc_hp_impedance_platform_init(void)
 {
 	int ret;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtk_hp_impedance_dev = platform_device_alloc(MT_SOC_HP_IMPEDANCE_PCM, -1);
 
@@ -750,7 +748,7 @@ module_init(mtk_soc_hp_impedance_platform_init);
 
 static void __exit mtk_soc_hp_impedance_platform_exit(void)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_hp_impedance_driver);
 }

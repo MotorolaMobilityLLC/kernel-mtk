@@ -128,7 +128,7 @@ static snd_pcm_uframes_t mtk_dl1bt_pcm_pointer(struct snd_pcm_substream *substre
 
 	AFE_BLOCK_T *Afe_Block = &pdl1btMemControl->rBlock;
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
-	PRINTK_AUD_DL1(" %s Afe_Block->u4DMAReadIdx = 0x%x\n", __func__,
+	PRINTK_AUD_DL1("%s Afe_Block->u4DMAReadIdx = 0x%x\n", __func__,
 		Afe_Block->u4DMAReadIdx);
 
 	spin_lock_irqsave(&pdl1btMemControl->substream_lock, flags);
@@ -140,7 +140,7 @@ static snd_pcm_uframes_t mtk_dl1bt_pcm_pointer(struct snd_pcm_substream *substre
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == true) {
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL1_CUR);
 		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUDDRV("[Auddrv] HW_Cur_ReadIdx == 0\n");
+			PRINTK_AUD_DL1("%s HW_Cur_ReadIdx == 0\n", __func__);
 			HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 		}
 
@@ -160,8 +160,8 @@ static snd_pcm_uframes_t mtk_dl1bt_pcm_pointer(struct snd_pcm_substream *substre
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 
 		PRINTK_AUD_DL1
-			("[Auddrv] HW_Cur_ReadIdx = 0x%x HW_memory_index = 0x%x Afe_consumed_bytes = 0x%x\n",
-			HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
+			("%s HW_Cur_ReadIdx = 0x%x HW_memory_index = 0x%x Afe_consumed_bytes = 0x%x\n",
+			__func__, HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
 
 		spin_unlock_irqrestore(&pdl1btMemControl->substream_lock, flags);
 
@@ -179,8 +179,6 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	PRINTK_AUDDRV("mtk_pcm_dl1bt_hw_params\n");
-
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
@@ -191,9 +189,9 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 	substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 	substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
 
-	PRINTK_AUDDRV("dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n",
-		      substream->runtime->dma_bytes, substream->runtime->dma_area,
-		      (long)substream->runtime->dma_addr);
+	PRINTK_AUDDRV("%s dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx\n", __func__,
+		substream->runtime->dma_bytes, substream->runtime->dma_area,
+		(long)substream->runtime->dma_addr);
 	return ret;
 }
 
@@ -228,7 +226,6 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 	}
 	AfeControlSramUnLock();
 
-	PRINTK_AUDDRV("mtk_dl1bt_pcm_open\n");
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
 
@@ -241,12 +238,12 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_dl1_sample_rates);
 	if (ret < 0)
-		PRINTK_AUDDRV("snd_pcm_hw_constraint_list failed\n");
+		pr_warn("snd_pcm_hw_constraint_list failed\n");
 
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
-		PRINTK_AUDDRV("snd_pcm_hw_constraint_integer failed\n");
+		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
 	PRINTK_AUDDRV("%s runtime->rate = %d, channels = %d, substream->pcm->device = %d\n",
@@ -256,7 +253,7 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
 
 	if (ret < 0) {
-		PRINTK_AUDDRV("mtk_Dl1Bt_close\n");
+		pr_warn("%s ret < 0, close\n", __func__);
 		mtk_Dl1Bt_close(substream);
 		return ret;
 	}
@@ -308,6 +305,7 @@ static int mtk_pcm_dl1bt_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
+	PRINTK_AUDDRV("%s\n", __func__);
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
@@ -422,9 +420,9 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 
 		if (Afe_WriteIdx_tmp + copy_size < Afe_Block->u4BufferSize) {	/* copy once */
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
-				PRINTK_AUDDRV("AudDrv_write 0 ptr invalid data_w_ptr=%p, size=%d",
+				pr_warn("AudDrv_write 0 ptr invalid data_w_ptr=%p, size=%d",
 					      data_w_ptr, copy_size);
-				PRINTK_AUDDRV("AudDrv_write u4BufferSize=%d, u4DataRemained=%d",
+				pr_warn(", u4BufferSize=%d, u4DataRemained=%d\n",
 					      Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_DL1
@@ -433,7 +431,7 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 
 				if (copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					data_w_ptr, copy_size)) {
-					PRINTK_AUDDRV("AudDrv_write Fail copy from user\n");
+					pr_err("AudDrv_write Fail copy from user\n");
 					return -1;
 				}
 			}
@@ -459,9 +457,9 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 			PRINTK_AUD_DL1("size_1=0x%x, size_2=0x%x\n", size_1, size_2);
 
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
-				pr_warn("AudDrv_write 1 ptr invalid data_w_ptr=%p, size_1=%d\n",
+				pr_warn("AudDrv_write 1 ptr invalid data_w_ptr=%p, size_1=%d",
 				       data_w_ptr, size_1);
-				pr_warn("AudDrv_write u4BufferSize=%d, u4DataRemained=%d\n",
+				pr_warn(", u4BufferSize=%d, u4DataRemained=%d\n",
 				       Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_DL1
@@ -470,7 +468,7 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					data_w_ptr, size_1))) {
-					PRINTK_AUDDRV("AudDrv_write Fail 1 copy from user\n");
+					pr_err("AudDrv_write Fail 1 copy from user\n");
 					return -1;
 				}
 			}
@@ -482,11 +480,9 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 			spin_unlock_irqrestore(&auddrv_DL1BTCtl_lock, flags);
 
 			if (!access_ok(VERIFY_READ, data_w_ptr + size_1, size_2)) {
-				PRINTK_AUDDRV
-					("AudDrv_write 2 ptr invalid data_w_ptr=%p, size_1=%d, size_2=%d\n",
+				pr_warn("AudDrv_write 2 ptr invalid data_w_ptr=%p, size_1=%d, size_2=%d",
 					data_w_ptr, size_1, size_2);
-				PRINTK_AUDDRV
-					("AudDrv_write u4BufferSize = %d, u4DataRemained = %d\n",
+				pr_warn(", u4BufferSize = %d, u4DataRemained = %d\n",
 					Afe_Block->u4BufferSize, Afe_Block->u4DataRemained);
 			} else {
 				PRINTK_AUD_DL1
@@ -495,7 +491,7 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 					(data_w_ptr + size_1), size_2))) {
-					PRINTK_AUDDRV("AudDrv_write Fail 2 copy from user\n");
+					pr_err("AudDrv_write Fail 2 copy from user\n");
 					return -1;
 				}
 			}
@@ -530,7 +526,7 @@ static void *dummy_page[2];
 
 static struct page *mtk_pcm_page(struct snd_pcm_substream *substream, unsigned long offset)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]);	/* the same page */
 }
 
@@ -558,7 +554,7 @@ static struct snd_soc_platform_driver mtk_soc_dl1bt_platform = {
 
 static int mtk_dl1bt_probe(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
@@ -568,7 +564,7 @@ static int mtk_dl1bt_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOIP_BT_OUT);
 
-	PRINTK_AUDDRV("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	mDev = &pdev->dev;
 
@@ -579,20 +575,20 @@ static int mtk_asoc_Dl1Bt_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int ret = 0;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return ret;
 }
 
 
 static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
 {
-	PRINTK_AUDDRV("mtk_asoc_dl1bt_probe\n");
+	pr_debug("mtk_asoc_dl1bt_probe\n");
 	return 0;
 }
 
 static int mtk_asoc_dl1bt_remove(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -626,7 +622,7 @@ static int __init mtk_soc_dl1bt_platform_init(void)
 {
 	int ret;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtk_dl1bt_dev = platform_device_alloc(MT_SOC_VOIP_BT_OUT, -1);
 
@@ -647,7 +643,7 @@ module_init(mtk_soc_dl1bt_platform_init);
 
 static void __exit mtk_soc_dl1bt_platform_exit(void)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_dl1bt_driver);
 }
