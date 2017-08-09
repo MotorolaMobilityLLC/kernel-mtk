@@ -611,6 +611,10 @@
 			      <0x10006000 0x1000>;  /*SPM_BASE                  */
 			interrupts = <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, /* BGF_EINT */
 						 <GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>; /* WDT_EINT */
+			vcn18-supply = <&mt_pmic_vcn18_ldo_reg>;
+			vcn28-supply = <&mt_pmic_vcn28_ldo_reg>;
+			vcn33_bt-supply = <&mt_pmic_vcn33_bt_ldo_reg>;
+			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
 		};
 
 	};
