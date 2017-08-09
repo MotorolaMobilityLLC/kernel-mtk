@@ -7,7 +7,7 @@
 #if defined(CONFIG_MTK_CLKMGR)
 #if defined(CONFIG_ARCH_MT6580)
 #define MTK_BTIF_APDMA_CLK_CG MT_CG_APDMA_SW_CG
-#elif defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 #define MTK_BTIF_APDMA_CLK_CG MT_CG_PERI_APDMA
 #endif
 #else
