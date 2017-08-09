@@ -45,8 +45,8 @@
 
 #define TAG "cif"
 
-#define BOOT_TIMER_ON 100	/*10 */
-#define BOOT_TIMER_HS1 100	/*10 */
+#define BOOT_TIMER_ON 10	/*10 */
+#define BOOT_TIMER_HS1 10	/*10 */
 
 #define NET_RX_QUEUE_MASK 0x4
 #define NAPI_QUEUE_MASK NET_RX_QUEUE_MASK	/*Rx, only Rx-exclusive port can enable NAPI */
@@ -253,6 +253,35 @@ static int ccci_ch_to_c2k_ch(struct ccci_modem *md, int ccci_ch, int direction)
 	return -1;
 }
 
+static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct ccci_header *ccci_h, u8 qno, u8 is_tx)
+{
+	switch (ccci_h->channel) {
+	/*debug level*/
+	case CCCI_C2K_AT:
+	case CCCI_C2K_AT2:
+	case CCCI_C2K_AT3:
+		if (is_tx)
+			CCCI_DBG_MSG(md->index, TAG, "TX:OK on Q%d, seq(%d)\n", qno, ccci_h->seq_num);
+		else
+			CCCI_DBG_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		break;
+	/*info level*/
+	case CCCI_UART1_TX:
+	case CCCI_UART1_RX:
+	case CCCI_CONTROL_TX:
+	case CCCI_STATUS_RX:
+		if (is_tx)
+			CCCI_INF_MSG(md->index, TAG, "TX:OK on Q%d, seq(%d)\n", qno, ccci_h->seq_num);
+		else
+			CCCI_INF_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		break;
+	default:
+		break;
+	};
+}
+
 static void md_ccif_sram_rx_work(struct work_struct *work)
 {
 	struct md_ccif_ctrl *md_ctrl =
@@ -420,7 +449,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			goto OUT;
 		}
 		if (IS_PASS_SKB(md, qno)) {
-			skb = ccci_alloc_skb(pkg_size, 1, 0);
+			skb = ccci_alloc_skb(pkg_size, 0, blocking);
 			if (skb == NULL) {
 				ret = -ENOMEM;
 				goto OUT;
@@ -464,27 +493,17 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			}
 		}
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_INF_MSG(md->index, TAG,
-				     "CCIF_MD wakeup source:(%d/%d)\n",
-				     queue->index, *(((u32 *) ccci_h) + 2));
-		if (ccci_h->channel == CCCI_C2K_AT || ccci_h->channel == CCCI_C2K_AT2 ||
-				ccci_h->channel == CCCI_C2K_AT3 || ccci_h->channel == CCCI_UART1_RX ||
-				ccci_h->channel == CCCI_STATUS_RX)
-			CCCI_INF_MSG(md->index, TAG,
-				     "Q%d Rx msg %x %x %x %x, seq(%d)\n", queue->index,
-				     ccci_h->data[0], ccci_h->data[1],
-				     *(((u32 *) ccci_h) + 2), ccci_h->reserved,
-				     ccci_h->seq_num);
+			CCCI_INF_MSG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n",
+				queue->index, *(((u32 *) ccci_h) + 2));
+
+		md_ccif_tx_rx_printk(md, ccci_h, queue->index, 0);
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
 
 		ccci_hdr = *ccci_h;
 
-		if (IS_PASS_SKB(md, qno))
-			ret = ccci_port_recv_request(md, NULL, skb);
-		else
-			ret = ccci_port_recv_request(md, new_req, NULL);
+		ret = ccci_port_recv_request(md, new_req, skb);
 
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			count++;
@@ -1047,11 +1066,8 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		/*int *valid = (int *)(req->skb->data+sizeof(struct ccci_header)+36); */
 		/*CCCI_INF_MSG(md->index, TAG, "tx %p len=%d ipid=%x, valid=%x\n",
 		req->skb->data, req->skb->len, *ipid, *valid); */
-		if (ccci_h->channel == CCCI_C2K_AT || ccci_h->channel == CCCI_C2K_AT2 ||
-					ccci_h->channel == CCCI_C2K_AT3 || ccci_h->channel == CCCI_UART1_RX ||
-					ccci_h->channel == CCCI_STATUS_RX)
-			CCCI_INF_MSG(md->index, TAG, "TX:OK on Q%d, seq(%d)\n", qno,
-				     ccci_h->seq_num);
+
+		md_ccif_tx_rx_printk(md, ccci_h, qno, 1);
 
 		/*free request */
 		if (IS_PASS_SKB(md, qno))
@@ -1083,16 +1099,17 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 				     queue->ringbuf->rx_control.read);
 			queue->debug_id = 1;
 		}
-		if (req->blocking) {
+		if (IS_PASS_SKB(md, qno))
+			return -EBUSY;
+		else if (req->blocking) {
 			udelay(5);
 			/*TODO: add time out check */
 			CCCI_INF_MSG(md->index, TAG,
 				     "TODO: add time out check busy on q%d\n",
 				     qno);
 			goto retry;
-		} else {
+		} else
 			return -EBUSY;
-		}
 	}
 	return 0;
 }
@@ -1163,19 +1180,20 @@ static void dump_runtime_data(struct ccci_modem *md, struct ap_query_md_feature 
 {
 	u8 i = 0;
 
-	CCCI_INF_MSG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
+	CCCI_DBG_MSG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
+
 	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
-		CCCI_INF_MSG(md->index, KERN, "feature %u: mask %u, version %u\n",
+		CCCI_DBG_MSG(md->index, KERN, "feature %u: mask %u, version %u\n",
 				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
 	}
-	CCCI_INF_MSG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
-	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
-	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
-	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
-	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
+	CCCI_DBG_MSG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
+	CCCI_DBG_MSG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
+	CCCI_DBG_MSG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
+	CCCI_DBG_MSG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
+	CCCI_DBG_MSG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
 	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
 	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
-	CCCI_INF_MSG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
+	CCCI_DBG_MSG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
 }
 
 #ifdef FEATURE_DBM_SUPPORT
@@ -1195,7 +1213,7 @@ static void eccci_c2k_smem_sub_region_init(struct ccci_modem *md)
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0x00000000;
 	#endif
-	addr[i] = 0x44444444; /* Guard pattern 1 tail */
+	addr[i++] = 0x44444444; /* Guard pattern 1 tail */
 	addr[i++] = 0x44444444; /* Guard pattern 2 tail */
 
 	/* Notify PBM */
