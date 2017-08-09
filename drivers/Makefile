@@ -4,6 +4,7 @@
 # 15 Sep 2000, Christoph Hellwig <hch@infradead.org>
 # Rewritten to use lists instead of if-statements.
 #
+ccflags-y := -Werror
 
 obj-y				+= irqchip/
 obj-y				+= bus/
