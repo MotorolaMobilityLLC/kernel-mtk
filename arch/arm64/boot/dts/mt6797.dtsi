@@ -1422,28 +1422,30 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt-soc-dl1-pcm";
 			reg = <0x11220000 0x1000>;
 			interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&audiosys audio_afe>,
-				<&audiosys audio_i2s>,
-				<&audiosys audio_dac>,
-				<&audiosys audio_dac_predis>,
-				<&audiosys audio_adc>,
-				<&audiosys audio_22m>,
-				<&audiosys audio_24m>,
-				<&audiosys audio_apll_tuner>,
-				<&audiosys audio_apll2_tuner>,
-				<&audiosys audio_tml>,
-				<&infrasys infra_audio>,
-				<&topckgen top_mux_aud1>,
-				<&topckgen top_mux_aud2>,
-				<&topckgen top_ad_apll1_ck>,
-				<&topckgen top_whpll_audio_ck>,
-				<&topckgen top_mux_audintbus>,
-				<&topckgen top_syspll1_d4>,
-				<&apmixedsys apmixed_apll1>,
-				<&apmixedsys apmixed_apll2>,
+			clocks = <&audiosys AUDIO_PDN_AFE>,
+				<&audiosys AUDIO_PDN_DAC>,
+				<&audiosys AUDIO_PDN_DAC_PREDIS>,
+				<&audiosys AUDIO_PDN_ADC>,
+				<&audiosys AUDIO_PDN_22M>,
+				<&audiosys AUDIO_PDN_24M>,
+				<&audiosys AUDIO_PDN_APLL_TUNER>,
+				<&audiosys AUDIO_PDN_APLL2_TUNER>,
+				<&audiosys AUDIO_PDN_TML>,
+				<&audiosys AUDIO_PDN_ADC_HIRES>,
+				<&audiosys AUDIO_PDN_ADC_HIRES_TML>,
+				<&infrasys INFRA_AUDIO>,
+				<&infrasys INFRA_AUDIO_26M>,
+				<&infrasys INFRA_AUDIO_26M_PAD_TOP>,
+				<&topckgen TOP_MUX_AUD_1>,
+				<&topckgen TOP_MUX_AUD_2>,
+				<&topckgen TOP_APLL1_CK>,
+				<&topckgen TOP_APLL2_CK>,
+				<&topckgen TOP_MUX_AUD_INTBUS>,
+				<&topckgen TOP_SYSPLL1_D4>,
+				<&apmixedsys APMIXED_APLL1>,
+				<&apmixedsys APMIXED_APLL2>,
 				<&clk26m>;
 			clock-names = "aud_afe_clk",
-				"aud_i2s_clk",
 				"aud_dac_clk",
 				"aud_dac_predis_clk",
 				"aud_adc_clk",
@@ -1452,25 +1454,20 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				"aud_apll1_tuner_clk",
 				"aud_apll2_tuner_clk",
 				"aud_tml_clk",
+				"aud_adc_hires_clk",
+				"aud_adc_hires_tml_clk",
 				"aud_infra_clk",
+				"aud_infra_26m",
+				"aud_infra_26m_pad_top",
 				"aud_mux1_clk",
 				"aud_mux2_clk",
 				"top_ad_apll1_clk",
-				"top_whpll_audio_clk",
+				"top_ad_apll2_clk",
 				"top_mux_audio_int",
 				"top_sys_pll1_d4",
 				"apmixed_apll1_clk",
 				"apmixed_apll2_clk",
-				"top_clk26m_clk";*/
-			audclk-gpio = <143 0>;
-			audmiso-gpio = <144 0>;
-			audmosi-gpio = <145 0>;
-			vowclk-gpio = <148 0>;
-			extspkamp-gpio = <117 0>;
-			i2s1clk-gpio = <80 0>;
-			i2s1dat-gpio = <78 0>;
-			i2s1mclk-gpio = <9 0>;
-			i2s1ws-gpio = <79 0>;
+				"top_clk26m_clk";
 		};
 
 		mt_soc_ul1_pcm@11220000 {
