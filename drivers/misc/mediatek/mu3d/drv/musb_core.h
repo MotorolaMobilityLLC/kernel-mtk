@@ -59,8 +59,7 @@ struct musb_hw_ep;
 struct musb_ep;
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-#include <mach/mt_boot_common.h>
-extern BOOTMODE g_boot_mode;
+#include <mt-plat/mt_boot_common.h>
 #endif
 extern u32 fake_CDP;
 

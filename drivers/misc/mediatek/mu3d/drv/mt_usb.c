@@ -123,8 +123,8 @@ void connection_work(struct work_struct *data)
 		    || musb->usb_mode == CABLE_MODE_CHRG_ONLY)
 			cmode_effect_on = true;
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-		if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-		    || g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+		    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 			if (chg_type == STANDARD_HOST)
 				cmode_effect_on = true;
 
