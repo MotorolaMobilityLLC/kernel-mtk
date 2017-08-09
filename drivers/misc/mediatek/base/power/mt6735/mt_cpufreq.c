@@ -1465,7 +1465,7 @@ void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	} else
 		_mt_cpufreq_set_limit_by_pwr_budget(p->limited_power_by_pbm);
 
-	cpufreq_dbg("@%s: limited_power_idx = %d, limited_max_freq = %d, limited_max_ncpu = %d\n",
+	cpufreq_ver("@%s: limited_power_idx = %d, limited_max_freq = %d, limited_max_ncpu = %d\n",
 		    __func__, p->limited_power_idx, p->limited_max_freq, p->limited_max_ncpu);
 
 	cpufreq_unlock(flags);
@@ -2583,7 +2583,7 @@ static int _mt_cpufreq_power_limited_verify(struct mt_cpu_dvfs *p, int new_opp_i
 
 #ifdef CONFIG_ARCH_MT6753
 	if (is_need_5A_throttle(p, p->limited_max_freq, p->limited_max_ncpu)) {
-		cpufreq_dbg("@%s: modify limited max freq and ncpu due to 5A limit enabled!\n", __func__);
+		cpufreq_ver("@%s: modify limited max freq and ncpu due to 5A limit enabled!\n", __func__);
 		p->limited_max_freq = PMIC_5A_THRO_MAX_CPU_FREQ;
 		p->limited_max_ncpu = possible_cpu;
 		p->limited_power_idx = 3;
@@ -2623,7 +2623,7 @@ static int _mt_cpufreq_power_limited_verify(struct mt_cpu_dvfs *p, int new_opp_i
 			break;
 	}
 
-	cpufreq_dbg("%s(): idx = %d, limited_max_ncpu = %d, limited_max_freq = %d\n",
+	cpufreq_ver("%s(): idx = %d, limited_max_ncpu = %d, limited_max_freq = %d\n",
 			__func__, i, p->limited_max_ncpu, p->limited_max_freq);
 
 	for (; i < p->nr_opp_tbl * possible_cpu; i++) {
@@ -2637,7 +2637,7 @@ static int _mt_cpufreq_power_limited_verify(struct mt_cpu_dvfs *p, int new_opp_i
 
 	if (found) {
 		target_khz = p->power_tbl[i].cpufreq_khz;
-		cpufreq_dbg("%s(): freq found, idx = %d, target_khz = %d, online_cpu = %d\n",
+		cpufreq_ver("%s(): freq found, idx = %d, target_khz = %d, online_cpu = %d\n",
 			    __func__, i, target_khz, online_cpu);
 	} else {
 		target_khz = p->limited_max_freq;
@@ -2667,7 +2667,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 
 		if (idx != -1 && new_opp_idx > idx) {
 			new_opp_idx = idx;
-			cpufreq_dbg("%s(): hevc limited freq, idx = %d\n", __func__, new_opp_idx);
+			cpufreq_ver("%s(): hevc limited freq, idx = %d\n", __func__, new_opp_idx);
 		}
 	}
 
@@ -2675,7 +2675,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 	idx = _mt_cpufreq_power_limited_verify(p, new_opp_idx);
 	if (idx != -1 && idx != new_opp_idx) {
 		new_opp_idx = idx;
-		cpufreq_dbg("%s(): thermal/DLPT limited freq, idx = %d\n", __func__, new_opp_idx);
+		cpufreq_ver("%s(): thermal/DLPT limited freq, idx = %d\n", __func__, new_opp_idx);
 	}
 
 	/* for early suspend */
@@ -2693,7 +2693,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 			if (new_opp_idx > p->idx_normal_max_opp)
 				new_opp_idx = p->idx_normal_max_opp;
 		}
-		cpufreq_dbg("%s(): for early suspend, idx = %d\n", __func__, new_opp_idx);
+		cpufreq_ver("%s(): for early suspend, idx = %d\n", __func__, new_opp_idx);
 	}
 
 	/* for suspend */
@@ -2704,7 +2704,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 #ifdef CONFIG_CPU_DVFS_POWER_THROTTLING
 	if (p->pwr_thro_mode && new_opp_idx < p->idx_pwr_thro_max_opp) {
 		new_opp_idx = p->idx_pwr_thro_max_opp;
-		cpufreq_dbg("%s(): for power throttling = %d\n", __func__, new_opp_idx);
+		cpufreq_ver("%s(): for power throttling = %d\n", __func__, new_opp_idx);
 	}
 #endif
 
@@ -2715,7 +2715,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 
 		if (idx != -1 && new_opp_idx < idx) {
 			new_opp_idx = idx;
-			cpufreq_dbg("%s(): limited max freq by user, idx = %d\n",
+			cpufreq_ver("%s(): limited max freq by user, idx = %d\n",
 					__func__, new_opp_idx);
 		}
 	}
@@ -2738,7 +2738,7 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 
 		if (idx != -1 && new_opp_idx < idx) {
 			new_opp_idx = idx;
-			cpufreq_dbg("%s(): limited max freq by PMIC 5A throttle, idx = %d\n",
+			cpufreq_ver("%s(): limited max freq by PMIC 5A throttle, idx = %d\n",
 				    __func__, new_opp_idx);
 		}
 	}
