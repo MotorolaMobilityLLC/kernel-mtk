@@ -83,8 +83,11 @@ bool Set2ndI2SOutAttribute(uint32_t sampleRate);
 bool Set2ndI2SOut(AudioDigtalI2S *DigtalI2S);
 bool Set2ndI2SOutEnable(bool benable);
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool setDmicPath(bool _enable);
+
 bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetExtI2SAdcInEnable(bool bEnable);
+
 bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetDLSrc2(uint32 SampleRate);
 

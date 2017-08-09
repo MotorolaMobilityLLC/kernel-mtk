@@ -120,7 +120,6 @@ static bool mFMEnable;
 static bool mOffloadEnable;
 static bool mOffloadSWMode;
 static bool mIRQ2Enable;
-static bool mAdcHiresEnable;
 
 static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
@@ -150,9 +149,12 @@ static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
 static int APLL1Counter;
 static int APLL2Counter;
+
 static Aud_Irq_Block mAudIrqBlock;
 
 static bool mExternalModemStatus;
+
+static struct mtk_dai mtk_dais[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
 
 #define IrqShortCounter  512
 
@@ -484,6 +486,7 @@ bool InitAfeControl(void)
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
 			Audio_dma_buf[i] = kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
 		memset((void *)&AFE_dL_Abnormal_context, 0, sizeof(AFE_DL_ABNORMAL_CONTROL_T));
+		memset((void *)&mtk_dais, 0, sizeof(mtk_dais));
 	}
 
 	mIRQ2Enable = false;
@@ -1410,48 +1413,75 @@ bool SetExtI2SAdcInEnable(bool bEnable)
 
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 {
-	if (false == AudioAdcI2SStatus) {	/* TODO: KC:  AudioAdcI2SStatus is always false? */
-		uint32 dVoiceModeSelect = 0;
-		/* Using Internal ADC */
-		Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1 << 0);
+	uint32 dVoiceModeSelect = 0;
+	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
 
-		dVoiceModeSelect =
-		    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_ADDA_UL);
+	/* Using Internal ADC */
+	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1 << 0);
+
+	dVoiceModeSelect =
+	    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_ADDA_UL);
+
+	mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate =
+		DigtalI2S->mI2S_SAMPLERATE;
+
+	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
+
+	/* TODO: KC: is this necessary, will this affect playback? */
+	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
+
+	if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
+		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
+
+		/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
+		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
+
+		/* power on adc hires */
+		AudDrv_ADC_Hires_Clk_On();
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-		if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {
-			pr_warn("%s(), enable fpga clock divide by 4", __func__);
-			Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
-		}
+		pr_warn("%s(), enable fpga clock divide by 4", __func__);
+		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
 #endif
-
-
-		Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, dVoiceModeSelect << 17, 0x7 << 17);
-
-		/* TODO: KC: is this necessary, will this affect playback? */
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
-
-		if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
-			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
-
-			/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
-			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
-
-			/* power on adc hires */
-			AudDrv_ADC_Hires_Clk_On();
-			mAdcHiresEnable = true;
-		} else {	/* normal 8~48k */
-			/* use fixed 260k anc path */
-			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 8 << 28, 0xf << 28);
-			/* ul_use_cic_out */
-			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1 << 20, 0x1 << 20);
-		}
-
+	} else {	/* normal 8~48k */
+		/* use fixed 260k anc path */
+		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 8 << 28, 0xf << 28);
+		/* ul_use_cic_out */
+		afeAddaUlSrcCon0 |= 0x1 << 20;
 	}
+
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
 
 	return true;
 }
 
+bool setDmicPath(bool _enable)
+{
+	uint32 sample_rate =
+		mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate;
+	uint32 voiceMode = SampleRateTransform(sample_rate,
+					       Soc_Aud_Digital_Block_ADDA_UL);
+	if (_enable) {
+		if (voiceMode >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {
+			/* hires */
+
+		} else {
+			/* normal 8~48k, use 3.25M */
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0,
+				    0x3 << 21, 0x3 << 21);
+
+			/* 3.25M for 48k support */
+			if (voiceMode >= Soc_Aud_ADDA_UL_SAMPLERATE_48K)
+				Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0,
+					    0x1 << 13, 0x1 << 13);
+
+			/* CIC 130k for 3.25M */
+			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 0x9 << 28, 0xf << 28);
+		}
+	}
+
+	return true;
+}
 
 bool EnableSineGen(uint32 connection, bool direction, bool Enable)
 {
@@ -1646,10 +1676,9 @@ bool SetI2SAdcEnable(bool bEnable)
 	}
 
 	if (bEnable == false) {
-		if (mAdcHiresEnable) {
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
 			/* power on adc hires */
 			AudDrv_ADC_Hires_Clk_Off();
-			mAdcHiresEnable = false;
 		}
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);

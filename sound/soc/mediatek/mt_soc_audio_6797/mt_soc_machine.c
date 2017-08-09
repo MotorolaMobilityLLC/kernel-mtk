@@ -100,6 +100,7 @@
 #include "mt_soc_codec_63xx.h"
 
 static int mt_soc_lowjitter_control;
+static int mt_soc_dmic_control;
 static struct dentry *mt_sco_audio_debugfs;
 #define DEBUG_FS_NAME "mtksocaudio"
 #define DEBUG_ANA_FS_NAME "mtksocanaaudio"
@@ -1209,9 +1210,12 @@ static struct snd_soc_dai_link mt_soc_dai_component[
 	ARRAY_SIZE(mt_soc_extspk_dai)];
 
 static const char const *I2S_low_jittermode[] = {"Off", "On"};
+static const char const *on_off[] = {"Off", "On"};
+
 
 static const struct soc_enum mt_soc_machine_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(I2S_low_jittermode), I2S_low_jittermode),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(on_off), on_off),
 };
 
 
@@ -1231,9 +1235,29 @@ static int mt6595_set_lowjitter(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	return 0;
 }
 
+static int mt_get_dmic_path(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = mt_soc_dmic_control;
+	return 0;
+}
+
+static int mt_set_dmic_path(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+
+	mt_soc_dmic_control = ucontrol->value.integer.value[0];
+	setDmicPath(mt_soc_dmic_control);
+	return 0;
+}
+
 
 static const struct snd_kcontrol_new mt_soc_controls[] = {
-	SOC_ENUM_EXT("I2S low Jitter function", mt_soc_machine_enum[0], mt6595_get_lowjitter, mt6595_set_lowjitter),
+	SOC_ENUM_EXT("I2S low Jitter function", mt_soc_machine_enum[0],
+		     mt6595_get_lowjitter, mt6595_set_lowjitter),
+	SOC_ENUM_EXT("dmic path", mt_soc_machine_enum[1],
+		     mt_get_dmic_path, mt_set_dmic_path),
 };
 
 static struct snd_soc_card snd_soc_card_mt = {

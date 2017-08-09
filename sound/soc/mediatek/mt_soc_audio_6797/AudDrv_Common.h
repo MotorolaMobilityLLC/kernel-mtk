@@ -116,5 +116,9 @@ typedef struct {
 
 } AFE_DL_ABNORMAL_CONTROL_T;
 
+struct mtk_dai {
+	bool enable;
+	uint32_t sample_rate;
+};
 
 #endif
