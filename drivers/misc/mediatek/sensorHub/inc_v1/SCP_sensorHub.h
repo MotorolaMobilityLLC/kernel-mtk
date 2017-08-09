@@ -33,6 +33,7 @@
 #define    SENSOR_HUB_SET_CONFIG	4
 #define    SENSOR_HUB_SET_CUST		5
 #define    SENSOR_HUB_NOTIFY		6
+#define    SENSOR_HUB_POWER_NOTIFY	8
 
 /* SCP_NOTIFY EVENT */
 #define    SCP_INIT_DONE			0

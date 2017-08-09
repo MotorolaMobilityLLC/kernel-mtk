@@ -39,6 +39,8 @@
 static int SCP_sensorHub_probe(void);
 static int SCP_sensorHub_remove(void);
 static int SCP_sensorHub_local_init(void);
+static int scp_sensorHub_power_adjust(void);
+
 typedef enum {
 	SCP_TRC_FUN = 0x01,
 	SCP_TRC_IPI = 0x02,
@@ -63,6 +65,7 @@ struct SCP_sensorHub_data {
 	struct sensorHub_hw *hw;
 	struct work_struct ipi_work;
 	struct work_struct fifo_full_work;
+	struct work_struct power_notify_work;
 	struct timer_list timer;
 	struct timer_list notify_timer;
 
@@ -734,6 +737,14 @@ int SCP_sensorHub_rsp_registration(uint8_t sensor, SCP_sensorHub_handler handler
 	return 0;
 }
 
+static void SCP_power_notify_work(struct work_struct *work)
+{
+	if (SCP_TRC_FUN == atomic_read(&(obj_data->trace)))
+		SCP_FUN();
+	SCP_ERR("xqm SCP_power_notify_work\n");
+	scp_sensorHub_power_adjust();
+}
+
 static void SCP_ipi_work(struct work_struct *work)
 {
 	if (SCP_TRC_FUN == atomic_read(&(obj_data->trace)))
@@ -814,6 +825,9 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 		default:
 			break;
 		}
+		break;
+	case SENSOR_HUB_POWER_NOTIFY:
+		schedule_work(&obj->power_notify_work);
 		break;
 	default:
 		SCP_ERR("SCP_sensorHub_IPI_handler unknown action=%d error\n",
@@ -1109,12 +1123,21 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 }
 
 #endif
+/* when all sensor don't enable, we adjust scp lower power */
+static int scp_sensorHub_power_adjust(void)
+{
+	deregister_feature(SENS_FEATURE_ID);
 
+	return 0;
+}
 int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 {
 	SCP_SENSOR_HUB_DATA req;
 	int len;
 	int err = 0;
+
+	if (enabledisable == 1)
+		register_feature(SENS_FEATURE_ID);
 
 	req.activate_req.sensorType = sensorType;
 	req.activate_req.action = SENSOR_HUB_ACTIVATE;
@@ -1717,6 +1740,7 @@ static int SCP_sensorHub_probe(void)
 	atomic_set(&obj->disable_fifo_full_notify, 0);
 	INIT_WORK(&obj->ipi_work, SCP_ipi_work);
 	INIT_WORK(&obj->fifo_full_work, SCP_fifo_full_work);
+	INIT_WORK(&obj->power_notify_work, SCP_power_notify_work);
 
 	init_waitqueue_head(&SCP_sensorHub_req_wq);
 	init_timer(&obj->timer);
