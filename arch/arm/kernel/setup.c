@@ -1040,6 +1040,11 @@ static int c_show(struct seq_file *m, void *v)
 	int i, j;
 	u32 cpuid;
 
+	pr_err("Dump cpuinfo\n");
+
+	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
+		   cpu_name, read_cpuid_id() & 15, ELF_PLATFORM);
+
 	for_each_online_cpu(i) {
 		/*
 		 * glibc reads /proc/cpuinfo to determine the number of
