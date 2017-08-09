@@ -22,10 +22,12 @@
 #include "trustzone/kree/system.h"
 #include <tz_cross/ta_mem.h>
 #include <linux/mm.h>
+
+#ifdef CONFIG_MTK_RTC /* secure time depends on rtc */
 #if 1 /* disable playready driver for now */
 #define TZ_SECURETIME_SUPPORT
 /* #define CONFIG_HAS_EARLYSUSPEND_GB */
-
+#endif
 #endif
 
 

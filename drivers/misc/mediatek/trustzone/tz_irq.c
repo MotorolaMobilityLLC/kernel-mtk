@@ -79,12 +79,12 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 		/* Generate a token if not already exists.
 		 * Token is used as device for Share IRQ */
 		token = 0;
-		if (!param->token) {
+		if (!param->token64) {
 			token = kmalloc(sizeof(unsigned int), GFP_KERNEL);
 			if (!token)
 				return TZ_RESULT_ERROR_OUT_OF_MEMORY;
 			*token = param->irq;
-			param->token = (void *)token;
+			param->token64 = (uint64_t)(unsigned long)token;
 		}
 
 		virq = tz_hwirq_to_virq(param->irq, flags);
@@ -93,7 +93,7 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 
 		if (virq > 0)
 			rret = request_irq(virq, KREE_IrqHandler, flags,
-					"TEE IRQ", param->token);
+					"TEE IRQ", (void *)(unsigned long)param->token64);
 		else
 			rret = -EINVAL;
 
@@ -112,10 +112,10 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 			virq = param->irq;
 
 		if (virq) {
-			free_irq(virq, param->token);
-			if (param->token &&
-			    *(unsigned int *)param->token == param->irq)
-				kfree(param->token);
+			free_irq(virq, (void *)(unsigned long)param->token64);
+			if (param->token64 &&
+			    *(unsigned int *)(unsigned long)param->token64 == param->irq)
+				kfree((void *)(unsigned long)param->token64);
 		}
 	}
 	return ret;

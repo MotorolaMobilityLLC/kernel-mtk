@@ -65,7 +65,7 @@ struct REE_THREAD_INFO {
 #endif
 
 struct ree_service_irq {
-	void *token;
+	uint64_t token64;
 	unsigned int irq;
 	int enable;
 	unsigned int flags;
