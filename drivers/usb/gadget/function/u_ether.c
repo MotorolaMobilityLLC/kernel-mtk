@@ -756,6 +756,11 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		netif_stop_queue(net);
 	spin_unlock_irqrestore(&dev->req_lock, flags);
 
+	if (dev->port_usb == NULL) {
+		dev_kfree_skb_any(skb);
+		pr_debug("eth_start_xmit, port_usb becomes NULL\n");
+		return NETDEV_TX_OK;
+	}
 
 	if (multi_pkt_xfer) {
 		pr_debug("req->length:%d header_len:%u\n"
