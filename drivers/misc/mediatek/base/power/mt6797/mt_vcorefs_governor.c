@@ -374,7 +374,6 @@ int vcorefs_get_curr_ddr(void)
 
 int vcorefs_get_vcore_by_steps(u32 steps)
 {
-#ifdef BUILD_ERROR
 	switch (steps) {
 	case OPP_0:
 		return vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_00_UV));
@@ -385,7 +384,7 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 	default:
 		break;
 	}
-#endif
+
 	return 0;
 }
 
