@@ -1,0 +1,5 @@
+config MTK_DEVINFO_DRIVER
+	bool "Enable MTK EFUSE driver"
+	default y
+	help
+	  EFUSE driver is a must
