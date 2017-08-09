@@ -1850,6 +1850,7 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 {
 	ktime_t ktime;
 	int temp;
+	static int hasDisabled;
 
 	tscpu_workqueue_start_timer();
 
@@ -1870,19 +1871,23 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 #if ENALBE_UART_LIMIT
 	temp = atm_curr_maxtj;
 	if ((TEMP_DIS_UART - TEMP_TOLERANCE) < temp) {
-		/**************************************************
+		/*************************************************
 			Disable UART log
-		**************************************************/
-		if (mt_get_uartlog_status())
+		*************************************************/
+		if (mt_get_uartlog_status()) {
+			hasDisabled = 1;
 			set_uartlog_status(FALSE);
+		}
 	}
 
 	if (temp < (TEMP_EN_UART + TEMP_TOLERANCE)) {
-		/**************************************************
-			Enable UART log
-		**************************************************/
-		if (!mt_get_uartlog_status())
+		/*************************************************
+			Restore UART log
+		*************************************************/
+		if (!mt_get_uartlog_status() && hasDisabled)
 			set_uartlog_status(TRUE);
+
+		hasDisabled = 0;
 	}
 #endif
 #endif
