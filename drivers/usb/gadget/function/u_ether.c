@@ -49,6 +49,7 @@
 #define UETH__VERSION	"29-May-2008"
 
 static struct workqueue_struct	*uether_wq;
+static struct workqueue_struct	*uether_wq1;
 
 struct eth_dev {
 	/* lock is held while accessing port_usb
@@ -59,7 +60,8 @@ struct eth_dev {
 	struct net_device	*net;
 	struct usb_gadget	*gadget;
 
-	spinlock_t		req_lock;	/* guard {rx,tx}_reqs */
+	spinlock_t		req_lock;	/* guard {tx}_reqs */
+	spinlock_t		reqrx_lock;	/* guard {rx}_reqs */
 	struct list_head	tx_reqs, rx_reqs;
 	unsigned		tx_qlen;
 /* Minimum number of TX USB request queued to UDC */
@@ -82,6 +84,7 @@ struct eth_dev {
 
 	struct work_struct	work;
 	struct work_struct	rx_work;
+	struct work_struct	rx_work1;
 
 	unsigned long		todo;
 #define	WORK_RX_MEMORY		0
@@ -96,6 +99,10 @@ struct eth_dev {
 #define RX_EXTRA	20	/* bytes guarding against rx overflows */
 
 #define DEFAULT_QLEN	2	/* double buffering by default */
+
+static unsigned tx_wakeup_threshold = 13;
+module_param(tx_wakeup_threshold, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(tx_wakeup_threshold, "tx wakeup threshold value");
 
 /* for dual-speed hardware, use deeper queues at high/super speed */
 static inline int qlen(struct usb_gadget *gadget, unsigned qmult)
@@ -337,12 +344,14 @@ quiesce:
 	}
 
 clean:
-	spin_lock(&dev->req_lock);
+	spin_lock(&dev->reqrx_lock);
 	list_add(&req->list, &dev->rx_reqs);
-	spin_unlock(&dev->req_lock);
+	spin_unlock(&dev->reqrx_lock);
 
-	if (queue)
+	if (queue) {
 		queue_work(uether_wq, &dev->rx_work);
+		queue_work(uether_wq1, &dev->rx_work1);
+	}
 }
 
 static int prealloc(struct list_head *list, struct usb_ep *ep, unsigned n)
@@ -402,16 +411,22 @@ static int alloc_requests(struct eth_dev *dev, struct gether *link, unsigned n)
 
 	spin_lock(&dev->req_lock);
 	status = prealloc(&dev->tx_reqs, link->in_ep, n);
-	if (status < 0)
-		goto fail;
-	status = prealloc(&dev->rx_reqs, link->out_ep, n);
-	if (status < 0)
-		goto fail;
-	goto done;
-fail:
-	DBG(dev, "can't alloc requests\n");
-done:
+	if (status < 0) {
+		spin_unlock(&dev->req_lock);
+		DBG(dev, "can't alloc tx requests\n");
+		return status;
+	}
 	spin_unlock(&dev->req_lock);
+
+	spin_lock(&dev->reqrx_lock);
+	status = prealloc(&dev->rx_reqs, link->out_ep, n);
+	if (status < 0) {
+		spin_unlock(&dev->reqrx_lock);
+		DBG(dev, "can't alloc rx requests\n");
+		return status;
+	}
+	spin_unlock(&dev->reqrx_lock);
+
 	return status;
 }
 
@@ -422,7 +437,7 @@ static void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
 	int			req_cnt = 0;
 
 	/* fill unused rxq slots with some skb */
-	spin_lock_irqsave(&dev->req_lock, flags);
+	spin_lock_irqsave(&dev->reqrx_lock, flags);
 	while (!list_empty(&dev->rx_reqs)) {
 		/* break the nexus of continuous completion and re-submission*/
 		if (++req_cnt > qlen(dev->gadget, dev->qmult))
@@ -431,19 +446,19 @@ static void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
 		req = container_of(dev->rx_reqs.next,
 				struct usb_request, list);
 		list_del_init(&req->list);
-		spin_unlock_irqrestore(&dev->req_lock, flags);
+		spin_unlock_irqrestore(&dev->reqrx_lock, flags);
 
 		if (rx_submit(dev, req, gfp_flags) < 0) {
-			spin_lock_irqsave(&dev->req_lock, flags);
+			spin_lock_irqsave(&dev->reqrx_lock, flags);
 			list_add(&req->list, &dev->rx_reqs);
-			spin_unlock_irqrestore(&dev->req_lock, flags);
+			spin_unlock_irqrestore(&dev->reqrx_lock, flags);
 			defer_kevent(dev, WORK_RX_MEMORY);
 			return;
 		}
 
-		spin_lock_irqsave(&dev->req_lock, flags);
+		spin_lock_irqsave(&dev->reqrx_lock, flags);
 	}
-	spin_unlock_irqrestore(&dev->req_lock, flags);
+	spin_unlock_irqrestore(&dev->reqrx_lock, flags);
 }
 
 static void process_rx_w(struct work_struct *work)
@@ -475,8 +490,11 @@ static void process_rx_w(struct work_struct *work)
 		status = netif_rx_ni(skb);
 	}
 
+/* move to another workthread */
+#if 0
 	if (netif_running(dev->net))
 		rx_fill(dev, GFP_KERNEL);
+#endif
 }
 
 static void eth_work(struct work_struct *work)
@@ -490,6 +508,17 @@ static void eth_work(struct work_struct *work)
 
 	if (dev->todo)
 		DBG(dev, "work done, flags = 0x%lx\n", dev->todo);
+}
+
+static void process_rx_w1(struct work_struct *work)
+{
+	struct eth_dev	*dev = container_of(work, struct eth_dev, rx_work1);
+
+	if (!dev->port_usb)
+		return;
+
+	if (netif_running(dev->net))
+		rx_fill(dev, GFP_KERNEL);
 }
 
 static void tx_complete(struct usb_ep *ep, struct usb_request *req)
@@ -615,8 +644,12 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 		dev_kfree_skb_any(skb);
 	}
 
-	if (netif_carrier_ok(dev->net))
-		netif_wake_queue(dev->net);
+	if (netif_carrier_ok(dev->net)) {
+		spin_lock(&dev->req_lock);
+		if (dev->no_tx_req_used < tx_wakeup_threshold)
+			netif_wake_queue(dev->net);
+		spin_unlock(&dev->req_lock);
+	}
 }
 
 static inline int is_promisc(u16 cdc_filter)
@@ -1028,8 +1061,10 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g,
 	dev = netdev_priv(net);
 	spin_lock_init(&dev->lock);
 	spin_lock_init(&dev->req_lock);
+	spin_lock_init(&dev->reqrx_lock);
 	INIT_WORK(&dev->work, eth_work);
 	INIT_WORK(&dev->rx_work, process_rx_w);
+	INIT_WORK(&dev->rx_work1, process_rx_w1);
 	INIT_LIST_HEAD(&dev->tx_reqs);
 	INIT_LIST_HEAD(&dev->rx_reqs);
 
@@ -1425,17 +1460,17 @@ void gether_disconnect(struct gether *link)
 	link->in_ep->desc = NULL;
 
 	usb_ep_disable(link->out_ep);
-	spin_lock(&dev->req_lock);
+	spin_lock(&dev->reqrx_lock);
 	while (!list_empty(&dev->rx_reqs)) {
 		req = container_of(dev->rx_reqs.next,
 					struct usb_request, list);
 		list_del(&req->list);
 
-		spin_unlock(&dev->req_lock);
+		spin_unlock(&dev->reqrx_lock);
 		usb_ep_free_request(link->out_ep, req);
-		spin_lock(&dev->req_lock);
+		spin_lock(&dev->reqrx_lock);
 	}
-	spin_unlock(&dev->req_lock);
+	spin_unlock(&dev->reqrx_lock);
 
 	spin_lock(&dev->rx_frames.lock);
 	while ((skb = __skb_dequeue(&dev->rx_frames)))
@@ -1463,6 +1498,12 @@ static int __init gether_init(void)
 		pr_err("%s: Unable to create workqueue: uether\n", __func__);
 		return -ENOMEM;
 	}
+	uether_wq1  = create_singlethread_workqueue("uether_rx1");
+	if (!uether_wq1) {
+		destroy_workqueue(uether_wq);
+		pr_err("%s: Unable to create workqueue: uether\n", __func__);
+		return -ENOMEM;
+	}
 	return 0;
 }
 module_init(gether_init);
@@ -1470,6 +1511,7 @@ module_init(gether_init);
 static void __exit gether_exit(void)
 {
 	destroy_workqueue(uether_wq);
+	destroy_workqueue(uether_wq1);
 
 }
 module_exit(gether_exit);
