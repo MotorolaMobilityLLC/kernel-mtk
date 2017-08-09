@@ -454,6 +454,8 @@ struct msdc_host {
 	u32                     vmc_cal_default;
 
 	struct clk *clock_control;
+	struct delayed_work	work_init; /* for init mmc card */
+	struct platform_device  *pdev;
 
 #ifdef MSDC_WQ_ERROR_TUNE
 	struct work_struct	work_tune; /* new thread tune */
@@ -740,7 +742,7 @@ void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
-int msdc_get_cache_region(void);
+void msdc_get_cache_region(struct work_struct *work);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,

@@ -111,6 +111,7 @@ struct msdc_host *ghost;
 int src_clk_control;
 
 bool emmc_sleep_failed;
+static struct workqueue_struct *wq_init;
 
 #ifdef MSDC_WQ_ERROR_TUNE
 static struct workqueue_struct *wq_tune;
@@ -4863,10 +4864,10 @@ static int msdc_ops_get_ro(struct mmc_host *mmc)
 static int msdc_ops_get_cd(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
-	unsigned long flags;
+	/* unsigned long flags; */
 	int level = 0;
 
-	spin_lock_irqsave(&host->lock, flags);
+	/* spin_lock_irqsave(&host->lock, flags); */
 
 	/* for sdio, depends on USER_RESUME */
 	if (is_card_sdio(host) && !(host->hw->flags & MSDC_SDIO_IRQ)) {
@@ -4892,7 +4893,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	sd_register_zone[host->id] = 1;
 	INIT_MSG("Card insert<%d> Block bad card<%d>",
 		host->card_inserted, host->block_bad_card);
-	spin_unlock_irqrestore(&host->lock, flags);
+	/* spin_unlock_irqrestore(&host->lock, flags); */
 	return host->card_inserted;
 }
 
@@ -4908,6 +4909,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 	msdc_reset_crc_tune_counter(host, all_counter);
 	msdc_reset_tmo_tune_counter(host, all_counter);
 
+	msdc_ops_get_cd(mmc);
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
 }
@@ -5573,14 +5575,38 @@ static void msdc_deinit_hw(struct msdc_host *host)
 	msdc_set_power_mode(host, MMC_POWER_OFF);
 }
 
+static void msdc_add_host(struct work_struct *work)
+{
+	int ret;
+	struct msdc_host *host = NULL;
+	struct mmc_host *mmc = NULL;
+
+	host = container_of(work, struct msdc_host, work_init.work);
+	BUG_ON(!host);
+	mmc = host->mmc;
+	BUG_ON(!mmc);
+
+	ret = mmc_add_host(mmc);
+
+	if (ret) {
+		free_irq(host->irq, host);
+		pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
+		platform_set_drvdata(host->pdev, NULL);
+		msdc_deinit_hw(host);
+		pr_err("[%s]: msdc%d init fail release!\n", __func__, host->id);
+		kfree(host->hw);
+		mmc_free_host(mmc);
+	}
+}
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
-	struct mmc_host *mmc;
-	struct msdc_host *host;
+	struct mmc_host *mmc = NULL;
+	struct msdc_host *host = NULL;
 	struct msdc_hw *hw = NULL;
-	void __iomem *base;
-	u32 *hclks;
-	int ret;
+	void __iomem *base = NULL;
+	u32 *hclks = NULL;
+	int ret = 0;
 
 	/* Allocate MMC host for this device */
 	mmc = mmc_alloc_host(sizeof(struct msdc_host), &pdev->dev);
@@ -5758,6 +5784,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 			msdc_tasklet_flush_cache, (ulong) host);
 #endif
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
+	INIT_DELAYED_WORK(&host->work_init, msdc_add_host);
+
 	/*INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);*/
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
@@ -5818,7 +5846,14 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->mrq_tune = NULL;
 	#endif
 
-	ret = mmc_add_host(mmc);
+	/* ret = mmc_add_host(mmc); */
+	/* Use ordered workqueue to reduce msdc moudle init time */
+	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
+		pr_err("msdc%d queue delay work failed BUG_ON,[%s]L:%d\n",
+			host->id, __func__, __LINE__);
+		BUG();
+	}
+
 	if (ret)
 		goto free_irq;
 
@@ -5997,6 +6032,13 @@ static int __init mt_msdc_init(void)
 {
 	int ret;
 
+	/* config tune at workqueue */
+	wq_init = alloc_ordered_workqueue("msdc-init", 0);
+	if (!wq_init) {
+		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
+		BUG();
+	}
+
 	#ifdef MSDC_WQ_ERROR_TUNE
 	/*Must config tune at workqueue before platform_driver_reigster()*/
 	wq_tune = create_workqueue("msdc-tune");
@@ -6033,6 +6075,11 @@ static void __exit mt_msdc_exit(void)
 	#endif
 
 	platform_driver_unregister(&mt_msdc_driver);
+
+	if (wq_init) {
+		destroy_workqueue(wq_init);
+		wq_init = NULL;
+	}
 
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_MSDC);

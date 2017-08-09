@@ -88,7 +88,7 @@ int msdc_can_apply_cache(unsigned long long start_addr,
 	return 1;
 }
 
-int msdc_get_cache_region(void)
+void msdc_get_cache_region(struct work_struct *work)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 
@@ -119,10 +119,16 @@ int msdc_get_cache_region(void)
 	pr_err("cache(0x%llX~0x%llX, usrdata(0x%llX~0x%llX)\n",
 		g_cache_part_start, g_cache_part_end,
 		g_usrdata_part_start, g_usrdata_part_end);
-	return 0;
-
 }
+
 EXPORT_SYMBOL(msdc_get_cache_region);
+static struct delayed_work get_cache_info;
+static int __init init_get_cache_work(void)
+{
+	INIT_DELAYED_WORK(&get_cache_info, msdc_get_cache_region);
+	schedule_delayed_work(&get_cache_info, 100);
+	return 0;
+}
 
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 {
@@ -250,5 +256,5 @@ void msdc_proc_emmc_create(void)
 #endif
 
 #ifdef MTK_MSDC_USE_CACHE
-late_initcall_sync(msdc_get_cache_region);
+late_initcall_sync(init_get_cache_work);
 #endif
