@@ -1,0 +1,7 @@
+
+config CUSTOM_KERNEL_GYROSCOPE
+	bool "CUSTOM_KERNEL_GYROSCOPE"
+	help
+	  gyroscope driver
+
+source "drivers/misc/mediatek/gyroscope/ITG1010-new/Kconfig"
