@@ -196,5 +196,6 @@ extern void i2c_dump_info(struct mt_i2c *i2c);
 
 extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 					u32 ext_flag, u32 timing);
+extern void mt_irq_dump_status(unsigned int irq);
 
 #endif

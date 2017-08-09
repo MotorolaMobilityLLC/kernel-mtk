@@ -486,6 +486,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	if (tmo == 0) {
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
 		i2c_dump_info(i2c);
+		mt_irq_dump_status(i2c->irqnr);
 		dump_cg_regs();
 		mt_i2c_init_hw(i2c);
 		return -ETIMEDOUT;
