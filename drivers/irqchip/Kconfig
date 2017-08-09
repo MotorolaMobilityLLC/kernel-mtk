@@ -132,15 +132,28 @@ config MTK_GIC
 	select IRQ_DOMAIN
 	select MULTI_IRQ_HANDLER
 	help
-		Support for Mediatek generic interrupt controller
+	  Support for Mediatek generic interrupt controller
 
 config MTK_EIC
 	bool
 	select IRQ_DOMAIN
 	help
-		Support for Mediatek external interrupt controller
+	  Support for Mediatek external interrupt controller
 
 config MTK_INTPOL
 	bool
 	help
-		Support for MediaTek intpol used on mt65xx/mt81xx
+	  Support for MediaTek intpol used on mt65xx/mt81xx
+
+config MTK_IRQ_NEW_DESIGN
+	bool
+	select MTK_GIC
+	help
+	  Support for MediaTek new interrupt design
+
+config MTK_IRQ_NEW_DESIGN_DEBUG
+	bool
+	select MTK_GIC
+	select MTK_IRQ_NEW_DESIGN
+	help
+	  Support for debugging feature for MediaTek new interrupt design

@@ -240,6 +240,44 @@ static const struct file_operations default_affinity_proc_fops = {
 	.write		= default_affinity_write,
 };
 
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+static int irq_need_migrate_list_show(struct seq_file *m, void *v)
+{
+	struct per_cpu_irq_desc *node;
+	struct list_head *pos, *temp;
+	int cpu;
+
+	rcu_read_lock();
+	for_each_cpu(cpu, cpu_possible_mask) {
+		seq_printf(m, "dump per-cpu irq-need-migrate list of CPU%u\n", cpu);
+		list_for_each_safe(pos, temp, &(irq_need_migrate_list[cpu].list)) {
+			node = list_entry_rcu(pos, struct per_cpu_irq_desc, list);
+			seq_printf(m, "IRQ %d\n", (node->desc->irq_data).irq);
+		}
+	}
+	rcu_read_unlock();
+	return 0;
+}
+
+static int irq_need_migrate_list_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, irq_need_migrate_list_show, PDE_DATA(inode));
+}
+
+static const struct file_operations irq_need_migrate_list_fops = {
+	.open		= irq_need_migrate_list_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static void register_irq_need_migrate_list_proc(void)
+{
+	proc_create("irq/dump_irq_need_migrate_list", 0400, NULL,
+		    &irq_need_migrate_list_fops);
+}
+#endif
+
 static int irq_node_proc_show(struct seq_file *m, void *v)
 {
 	struct irq_desc *desc = irq_to_desc((long) m->private);
@@ -405,6 +443,10 @@ void init_irq_proc(void)
 		return;
 
 	register_default_affinity_proc();
+
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	register_irq_need_migrate_list_proc();
+#endif
 
 	/*
 	 * Create entries for all existing IRQs.

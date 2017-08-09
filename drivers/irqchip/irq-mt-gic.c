@@ -274,8 +274,9 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val, 
 {
 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
 	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
-	u32 val, mask, bit;
+	u32 val, mask, bit = 0;
 
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	if (!force)
 		cpu = cpumask_any_and(mask_val, cpu_online_mask);
 	else
@@ -291,7 +292,31 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val, 
 	val = readl_relaxed(reg) & ~mask;
 	writel_relaxed(val | bit, reg);
 	raw_spin_unlock(&irq_controller_lock);
+#else
+	/*
+	 * no need to update when:
+	 * input mask is equal to the current setting
+	 */
+	if (cpumask_equal(d->affinity, mask_val))
+		return IRQ_SET_MASK_OK_NOCOPY;
 
+	/*
+	 * cpumask_first_and() returns >= nr_cpu_ids when the intersection
+	 * of inputs is an empty set -> return error when this is not a "forced" update
+	 */
+	if (!force && (cpumask_first_and(mask_val, cpu_online_mask) >= nr_cpu_ids))
+		return -EINVAL;
+
+	/* set target cpus */
+	for_each_cpu(cpu, mask_val)
+		bit |= gic_cpu_map[cpu] << shift;
+
+	/* update gic register */
+	raw_spin_lock(&irq_controller_lock);
+	val = readl_relaxed(reg) & ~(0xff << shift);
+	writel_relaxed(val | bit, reg);
+	raw_spin_unlock(&irq_controller_lock);
+#endif
 	return IRQ_SET_MASK_OK;
 }
 #endif
@@ -428,7 +453,11 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	cpumask |= cpumask << 8;
 	cpumask |= cpumask << 16;
 	for (i = 32; i < gic_irqs; i += 4)
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 		writel_relaxed(cpumask, base + GIC_DIST_TARGET + i * 4 / 4);
+#else
+		writel_relaxed(0xffffffff, base + GIC_DIST_TARGET + i * 4 / 4);
+#endif
 
 	/*
 	 * Set priority on all global interrupts.
@@ -1085,53 +1114,170 @@ void mt_irq_set_sens(unsigned int irq, unsigned int sens)
 }
 /* EXPORT_SYMBOL(mt_irq_set_sens); */
 
-void mt_irq_dump_status(int irq)
+char *mt_irq_dump_status_buf(int irq, char *buf)
 {
-#ifndef CONFIG_MTK_PSCI
-	pr_debug("[mt gic dump] not allowed to dump!\n");
-	return;
-#else
 	int rc;
 	unsigned int result;
+	char *ptr = buf;
 
-	pr_debug("[mt gic dump] irq = %d\n", irq);
+	if (!ptr)
+		return NULL;
 
+	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
+#ifndef CONFIG_MTK_PSCI
+	rc = -1;
+#else
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#endif
 	if (rc < 0) {
-		pr_debug("[mt gic dump] not allowed to dump!\n");
-		return;
+		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
+		return ptr;
 	}
 
 	/* get mask */
 	result = rc & 0x1;
-	pr_debug("[mt gic dump] enable = %d\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] enable = %d\n", result);
 
 	/* get group */
 	result = (rc >> 1) & 0x1;
-	pr_debug("[mt gic dump] group = %x (0x1:irq,0x0:fiq)\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] group = %x (0x1:irq,0x0:fiq)\n", result);
 
 	/* get priority */
 	result = (rc >> 2) & 0xff;
-	pr_debug("[mt gic dump] priority = %x\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] priority = %x\n", result);
 
 	/* get sensitivity */
 	result = (rc >> 10) & 0x1;
-	pr_debug("[mt gic dump] sensitivity = %x (edge:0x1, level:0x0)\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] sensitivity = %x (edge:0x1, level:0x0)\n", result);
 
 	/* get pending status */
 	result = (rc >> 11) & 0x1;
-	pr_debug("[mt gic dump] pending = %x\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] pending = %x\n", result);
 
 	/* get active status */
 	result = (rc >> 12) & 0x1;
-	pr_debug("[mt gic dump] active status = %x\n", result);
+	ptr += sprintf(ptr, "[mt gic dump] active status = %x\n", result);
 
 	/* get polarity */
 	result = (rc >> 13) & 0x1;
-	pr_debug("[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n", result);
-#endif
+	ptr += sprintf(ptr, "[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n", result);
+
+	/* get target cpu mask */
+	result = (rc >> 14) & 0xff;
+	ptr += sprintf(ptr, "[mt gic dump] tartget cpu mask = 0x%x\n", result);
+
+	return ptr;
+}
+
+void mt_irq_dump_status(int irq)
+{
+	char buf[1024];
+
+	if (mt_irq_dump_status_buf(irq, &buf[0]))
+		pr_debug("%s", buf);
 }
 EXPORT_SYMBOL(mt_irq_dump_status);
+
+
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+bool mt_is_secure_irq(struct irq_data *d)
+{
+	unsigned int irq = gic_irq(d);
+	/* FIXME */
+	if (irq == 160)
+		return true;
+
+	return false;
+}
+EXPORT_SYMBOL(mt_is_secure_irq);
+
+bool mt_get_irq_gic_targets(struct irq_data *d, cpumask_t *mask)
+{
+	unsigned int irq = gic_irq(d);
+	unsigned int cpu, shift, irq_targets = 0;
+	void __iomem *reg;
+	int rc;
+
+	/* check whether this IRQ is configured as FIQ */
+	if (mt_is_secure_irq(d)) {
+		/* secure call for get the irq targets */
+#ifndef CONFIG_MTK_PSCI
+		rc = -1;
+#else
+		rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#endif
+
+		if (rc < 0) {
+			pr_err("[mt_get_gicd_itargetsr] not allowed to dump!\n");
+			return false;
+		}
+		irq_targets = (rc >> 14) & 0xff;
+	} else {
+		shift = (irq % 4) * 8;
+		reg = gic_dist_base(d) + GIC_DIST_TARGET + (irq & ~3);
+		irq_targets = (readl_relaxed(reg) & (0xff << shift)) >> shift;
+	}
+
+	cpumask_clear(mask);
+	for_each_cpu(cpu, cpu_possible_mask)
+		if (irq_targets & (1<<cpu))
+			cpumask_set_cpu(cpu, mask);
+
+	return true;
+}
+EXPORT_SYMBOL(mt_get_irq_gic_targets);
+#endif
+
+#include <linux/platform_device.h>
+
+static int dump_irq;
+
+static struct device_driver gic_debug_drv = {
+	.name = "gic_debug",
+	.bus = &platform_bus_type,
+	.owner = THIS_MODULE,
+};
+
+static ssize_t dump_irq_show(struct device_driver *driver, char *buf)
+{
+	mt_irq_dump_status_buf(dump_irq, buf);
+
+	return strlen(buf);
+}
+
+static ssize_t dump_irq_store(struct device_driver *driver, const char *buf, size_t count)
+{
+	int ret;
+
+	ret = kstrtoul(buf, 10, (unsigned long *)&dump_irq);
+	if (ret != 0) {
+		pr_err("usage: echo $irq_num > /sys/bus/platform/drivers/gic_debug/dump_irq\n");
+		return -EINVAL;
+	}
+
+	mt_irq_dump_status(dump_irq);
+	return count;
+}
+DRIVER_ATTR(dump_irq, 0644, dump_irq_show, dump_irq_store);
+
+int __init gic_debug_drv_init(void)
+{
+	int ret;
+
+	ret = driver_register(&gic_debug_drv);
+	if (ret)
+		pr_err("fail to create gic debug driver\n");
+	else
+		pr_err("success to create gic debug driver\n");
+
+	ret = driver_create_file(&gic_debug_drv, &driver_attr_dump_irq);
+	if (ret)
+		pr_err("fail to create dump_irq sysfs files\n");
+	else
+		pr_err("success to create dump_irq sysfs files\n");
+	return 0;
+}
+arch_initcall(gic_debug_drv_init);
 
 static unsigned int get_pol(int irq)
 {
@@ -1292,6 +1438,15 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 		mt_gic_cascade_irq(gic_cnt, irq);
 	}
 	gic_cnt++;
+
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	int i;
+
+	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
+		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
+		spin_lock_init(&(irq_need_migrate_list[i].lock));
+	}
+#endif
 
 	/* FIXME: just used to test dump API
 		mt_irq_dump_status(160);

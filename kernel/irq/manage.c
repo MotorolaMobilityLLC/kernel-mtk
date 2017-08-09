@@ -184,7 +184,11 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
 	switch (ret) {
 	case IRQ_SET_MASK_OK:
 	case IRQ_SET_MASK_OK_DONE:
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+		update_affinity_settings(desc, mask, true);
+#else
 		cpumask_copy(data->affinity, mask);
+#endif
 	case IRQ_SET_MASK_OK_NOCOPY:
 		irq_set_thread_affinity(desc);
 		ret = 0;
