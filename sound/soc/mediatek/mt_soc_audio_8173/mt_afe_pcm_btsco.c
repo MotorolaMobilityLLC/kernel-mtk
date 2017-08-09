@@ -115,6 +115,10 @@ static int mt_pcm_btsco_close(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		mt_afe_emi_clk_off();
+#ifndef AUDIO_BTSCO_MEMORY_SRAM
+	else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		mt_afe_emi_clk_off();
+#endif
 
 	return 0;
 }
@@ -173,7 +177,6 @@ static int mt_pcm_btsco_hw_free(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 #ifndef AUDIO_BTSCO_MEMORY_SRAM
 		snd_pcm_lib_free_pages(substream);
-		mt_afe_emi_clk_off();
 #endif
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		snd_pcm_lib_free_pages(substream);
