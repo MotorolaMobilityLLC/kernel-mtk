@@ -18,6 +18,30 @@ extern struct msdc_host *mtk_msdc_host[];
 #define RPMB_IOCTL_WRITE_DATA   3
 #define RPMB_IOCTL_READ_DATA    4
 
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+
+#define RPMB_MULTI_BLOCK_ACCESS 1
+
+#if RPMB_MULTI_BLOCK_ACCESS
+#define MAX_RPMB_TRANSFER_BLK 16
+/* 8KB(16blks) per requests */
+#define MAX_RPMB_REQUEST_SIZE (512*MAX_RPMB_TRANSFER_BLK)
+#else
+#define MAX_RPMB_TRANSFER_BLK 1
+/* 512B(1blks) per requests */
+#define MAX_RPMB_REQUEST_SIZE (512*MAX_RPMB_TRANSFER_BLK)
+#endif
+
+#define RPMB_IOCTL_SOTER_WRITE_DATA   5
+#define RPMB_IOCTL_SOTER_READ_DATA    6
+#define RPMB_IOCTL_SOTER_GET_CNT      7
+
+struct rpmb_infor {
+	unsigned int size;
+	unsigned char *data_frame;
+};
+#endif
+
 struct rpmb_ioc_param {
 	unsigned char *key;
 	unsigned char *data;

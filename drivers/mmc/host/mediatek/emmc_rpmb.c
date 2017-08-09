@@ -69,7 +69,10 @@ do {\
 	} \
 } while (0)
 
-
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+#define RPMB_DATA_BUFF_SIZE (1024 * 33)
+static unsigned char *rpmb_buffer;
+#endif
 
 struct task_struct *open_th;
 struct task_struct *rpmbDci_th;
@@ -970,6 +973,89 @@ int emmc_rpmb_req_read_data(struct mmc_card *card, struct rpmb_ioc_param *param)
 
 	return ret;
 }
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+
+int neu_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
+{
+	struct emmc_rpmb_req rpmb_req;
+	struct s_rpmb rpmb_frame;
+	u8 nonce[RPMB_SZ_NONCE] = {0};
+	u8 hmac[RPMB_SZ_MAC];
+	int ret;
+
+	memset(&rpmb_frame, 0, sizeof(rpmb_frame));
+	get_random_bytes(nonce, RPMB_SZ_NONCE);
+
+	/*
+	 * Prepare request. Get write counter.
+	 */
+	rpmb_req.type = RPMB_GET_WRITE_COUNTER;
+	rpmb_req.blk_cnt = 1;
+	rpmb_req.data_frame = (u8 *)&rpmb_frame;
+
+	/*
+	 * Prepare get write counter frame. only need nonce.
+	 */
+	rpmb_frame.request = cpu_to_be16p(&rpmb_req.type);
+	memcpy(rpmb_frame.nonce, nonce, RPMB_SZ_NONCE);
+
+	ret = emmc_rpmb_req_handle(card, &rpmb_req);
+	if (ret) {
+		MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+		return ret;
+	}
+	if (memcmp(nonce, rpmb_frame.nonce, RPMB_SZ_NONCE) != 0) {
+		MSG(ERR, "%s, nonce compare error!!!\n", __func__);
+		ret = RPMB_NONCE_ERROR;
+		return ret;
+	}
+	if (rpmb_frame.result) {
+		MSG(ERR, "%s, result error!!! (%x)\n", __func__, cpu_to_be16p(&rpmb_frame.result));
+		ret = RPMB_RESULT_ERROR;
+		return cpu_to_be16p(&rpmb_frame.result);
+	}
+	*wc = cpu_to_be32p(&rpmb_frame.write_counter);
+	return ret;
+}
+EXPORT_SYMBOL(neu_rpmb_req_get_wc);
+
+int neu_rpmb_req_read_data(struct mmc_card *card, struct s_rpmb *param, u32 blk_cnt)/*struct mmc_card *card, */
+{
+	struct emmc_rpmb_req rpmb_req;
+	u8 hmac[RPMB_SZ_MAC];
+	int ret;
+
+	rpmb_req.type = RPMB_READ_DATA;
+	rpmb_req.blk_cnt = blk_cnt;
+	rpmb_req.data_frame = (u8 *)param;
+
+	ret = emmc_rpmb_req_handle(card, &rpmb_req);
+	if (ret)
+		MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+
+	return ret;
+}
+EXPORT_SYMBOL(neu_rpmb_req_read_data);
+
+int neu_rpmb_req_write_data(struct mmc_card *card, struct s_rpmb *param, u32 blk_cnt)/*struct mmc_card *card, */
+{
+	struct emmc_rpmb_req rpmb_req;
+	int i = 0, ret;
+	u32 wc = 0xFFFFFFFF;
+	u8 hmac[RPMB_SZ_MAC];
+
+	rpmb_req.type = RPMB_WRITE_DATA;
+	rpmb_req.blk_cnt = blk_cnt;
+	rpmb_req.data_frame = (u8 *)param;
+
+	ret = emmc_rpmb_req_handle(card, &rpmb_req);
+	if (ret)
+		MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+
+	return ret;
+}
+EXPORT_SYMBOL(neu_rpmb_req_write_data);
+#endif
 
 /*
  * End of above.
@@ -1154,7 +1240,14 @@ static int emmc_rpmb_thread(void *context)
 static int emmc_rpmb_open(struct inode *inode, struct file *file)
 {
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
-
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	rpmb_buffer = kzalloc(RPMB_DATA_BUFF_SIZE, 0);
+	if (rpmb_buffer == NULL) {
+		MSG(ERR, "%s, rpmb kzalloc memory fail!!!\n", __func__);
+		return -1;
+	}
+	MSG(INFO, "%s, rpmb kzalloc memory done!!!\n", __func__);
+#endif
 	return 0;
 }
 
@@ -1172,6 +1265,23 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		MSG(ERR, "%s, err=%x\n", __func__, err);
 		return -1;
 	}
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	struct rpmb_infor rpmbinfor;
+	int i;
+
+	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) || (cmd == RPMB_IOCTL_SOTER_READ_DATA)) {
+		err = copy_from_user(rpmb_buffer, (void *)arg, 4);
+		if (err < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, err);
+			return -1;
+		}
+		rpmbinfor.size =  *(unsigned char *)rpmb_buffer | (*((unsigned char *)rpmb_buffer + 1) << 8);
+		rpmbinfor.size |= (*((unsigned char *)rpmb_buffer+2) << 16) | (*((unsigned char *)rpmb_buffer+3) << 24);
+		MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
+		copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
+		rpmbinfor.data_frame = (rpmb_buffer + 4);
+	}
+#endif
 
 	switch (cmd) {
 
@@ -1205,6 +1315,23 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 		break;
 
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	case RPMB_IOCTL_SOTER_WRITE_DATA:
+		ret = neu_rpmb_req_write_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+		copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		break;
+	case RPMB_IOCTL_SOTER_READ_DATA:
+		ret = neu_rpmb_req_read_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+		copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		break;
+	case RPMB_IOCTL_SOTER_GET_CNT:
+		ret = neu_rpmb_req_get_wc(card, (unsigned int *)arg);
+		break;
+#endif
 	default:
 		MSG(ERR, "%s, wrong ioctl code (%d)!!!\n", __func__, cmd);
 		return -ENOTTY;
@@ -1219,6 +1346,10 @@ static int emmc_rpmb_close(struct inode *inode, struct file *file)
 
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	kfree(rpmb_buffer);
+	MSG(INFO, "%s, rpmb free memory done!!!\n", __func__);
+#endif
 	return ret;
 }
 
