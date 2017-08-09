@@ -2049,8 +2049,7 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_PQ_SET_DC_PARAM:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
-		if (!primary_display_is_sleepd())
-			ret = primary_display_user_cmd(cmd, arg);
+		ret = primary_display_user_cmd(cmd, arg);
 		break;
 	default:
 		DISPMSG("[session]ioctl not supported, 0x%08x\n", cmd);

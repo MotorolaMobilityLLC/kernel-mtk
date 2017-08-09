@@ -6522,13 +6522,6 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 #endif
 	cmdqsize = cmdqRecGetInstructionCount(handle);
 
-	_primary_path_lock(__func__);
-	if (pgc->state == DISP_SLEPT) {
-		cmdqRecDestroy(handle);
-		handle = NULL;
-	}
-	_primary_path_unlock(__func__);
-
 #ifdef MTK_DISP_IDLE_LP
 	/* will write register in dpmgr_path_user_cmd, need to exit idle */
 	last_primary_trigger_time = sched_clock();
