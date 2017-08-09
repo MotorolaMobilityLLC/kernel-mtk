@@ -334,7 +334,7 @@ void mt_battery_update_time(struct timespec *pre_time, BATTERY_TIME_ENUM duratio
 
 	battery_duration_time[duration_type] = timespec_sub(time, *pre_time);
 
-	battery_log(BAT_LOG_CRTI,
+	battery_log(BAT_LOG_FULL,
 		    "[Battery] mt_battery_update_duration_time , last_time=%d current_time=%d duration=%d\n",
 		    (int)pre_time->tv_sec, (int)time.tv_sec,
 		    (int)battery_duration_time[duration_type].tv_sec);
@@ -2114,9 +2114,10 @@ void mt_battery_GetBatteryData(void)
 		batteryIndex = 0;
 
 	battery_log(BAT_LOG_CRTI,
-		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d\n",
+		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d\n",
 		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
-		    BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV);
+		    BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
+		    BMT_status.charger_type);
 }
 
 
@@ -2612,7 +2613,7 @@ static void mt_battery_charger_detect_check(void)
 		battery_charging_control(CHARGING_CMD_SET_CHRIND_CK_PDN, &pwr);
 #endif
 
-		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
+		battery_log(BAT_LOG_FULL, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
 			    BMT_status.charger_type);
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
@@ -2638,7 +2639,7 @@ static void mt_battery_charger_detect_check(void)
 
 		BMT_status.charger_vol = 0;
 
-		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable out \r\n");
+		battery_log(BAT_LOG_FULL, "[BAT_thread]Cable out \r\n");
 
 		mt_usb_disconnect();
 
@@ -2840,7 +2841,9 @@ void BAT_thread(void)
 		mt_battery_CheckBatteryStatus();
 		mt_battery_charging_algorithm();
 	}
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	mt_kpoc_power_off_check();
+#endif
 }
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
