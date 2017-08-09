@@ -750,7 +750,7 @@ static void vcodec_lockhw_dec_monitor_duration(VAL_UINT32_T _monitor_duration)
 }
 #endif
 
-static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLockedHW)
+static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T *prHWLock, VAL_BOOL_T *pbLockedHW)
 {
 	VAL_RESULT_T eValRet;
 	VAL_UINT32_T FirstUseEncHW = 0;
@@ -761,9 +761,9 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 
 	eValRet = VAL_RESULT_INVALID_ISR;
 
-	while (bLockedHW == VAL_FALSE) {
+	while (*pbLockedHW == VAL_FALSE) {
 		/* Early break for JPEG VENC */
-		if (rHWLock.u4TimeoutMs == 0) {
+		if (prHWLock->u4TimeoutMs == 0) {
 			if (grVcodecEncHWLock.pvHandle != 0)
 				break;
 		}
@@ -771,7 +771,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 		mutex_lock(&EncHWLockEventTimeoutLock);
 		if (EncHWLockEvent.u4TimeoutMs == 1) {
 			MODULE_MFV_LOGE("VCODEC_LOCKHW, First Use Enc HW %d!!\n",
-				 rHWLock.eDriverType);
+				 prHWLock->eDriverType);
 			FirstUseEncHW = 1;
 		} else {
 			FirstUseEncHW = 0;
@@ -789,7 +789,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 			FirstUseEncHW = 1;
 		} else {
 			FirstUseEncHW = 0;
-			if (rHWLock.u4TimeoutMs == 0)
+			if (prHWLock->u4TimeoutMs == 0)
 				EncHWLockEvent.u4TimeoutMs = 0; /* No wait */
 			else
 				EncHWLockEvent.u4TimeoutMs = 1000;	/* Wait indefinitely */
@@ -800,12 +800,12 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 		/* one process try to lock twice */
 		if (grVcodecEncHWLock.pvHandle ==
 			(VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
-							   rHWLock.pvHandle)) {
+							   prHWLock->pvHandle)) {
 			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, one encoder instance try to lock twice,");
 			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, may cause lock HW timeout!");
 			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, instance = 0x%lx, CurrentTID = %d, type:%d\n",
 				 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-				 current->pid, rHWLock.eDriverType);
+				 current->pid, prHWLock->eDriverType);
 		}
 		mutex_unlock(&VencHWLock);
 
@@ -834,22 +834,22 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 						MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - time out more than 30 times\n");
 						MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - 0x%lx, %lx, 0x%lx, type:%d\n",
 							 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle,
-							 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
-							 (VAL_ULONG_T) rHWLock.pvHandle,
-							 rHWLock.eDriverType);
+							 pmem_user_v2p_video((VAL_ULONG_T)prHWLock->pvHandle),
+							 (VAL_ULONG_T) prHWLock->pvHandle,
+							 prHWLock->eDriverType);
 						gLockTimeOutCount = 0;
 						mutex_unlock(&VencHWLock);
 						return -EFAULT;
 					}
 
-					if (rHWLock.u4TimeoutMs == 0) {
+					if (prHWLock->u4TimeoutMs == 0) {
 						MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - ID %d fail\n", current->pid);
 						MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - someone locked HW already.\n");
 						MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - 0x%lx, %lx, 0x%lx,type:%d\n",
 							 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-							 pmem_user_v2p_video((VAL_ULONG_T) rHWLock.pvHandle),
-							 (VAL_ULONG_T) rHWLock.pvHandle,
-							 rHWLock.eDriverType);
+							 pmem_user_v2p_video((VAL_ULONG_T) prHWLock->pvHandle),
+							 (VAL_ULONG_T) prHWLock->pvHandle,
+							 prHWLock->eDriverType);
 						gLockTimeOutCount = 0;
 						mutex_unlock(&VencHWLock);
 						return -EFAULT;
@@ -864,7 +864,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 		mutex_lock(&VencHWLock);
 		if (grVcodecEncHWLock.pvHandle == 0) {
 			/* No process use HW, so current process can use HW */
-			switch (rHWLock.eDriverType) {
+			switch (prHWLock->eDriverType) {
 			case VAL_DRIVER_TYPE_MP4_ENC:
 				{
 					spin_lock_irqsave(&OalHWContextLock,
@@ -874,7 +874,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 									current->pid);
 					/* Index = search_HWLockSlot_ByHandle
 						(0, pmem_user_v2p_video(
-						(unsigned int)rHWLock.pvHandle)); */
+						(unsigned int)prHWLock->pvHandle)); */
 					spin_unlock_irqrestore(&OalHWContextLock,
 								   ulFlags);
 
@@ -887,11 +887,11 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 
 					grVcodecEncHWLock.pvHandle = (VAL_VOID_T *)
 						pmem_user_v2p_video((unsigned long)
-								rHWLock.pvHandle);
+								prHWLock->pvHandle);
 					MODULE_MFV_LOGD("VCODEC_LOCKHW, current process can use HW, handle = 0x%lx\n",
 						 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle);
 					grVcodecEncHWLock.eDriverType =
-						rHWLock.eDriverType;
+						prHWLock->eDriverType;
 					spin_lock_irqsave(&OalHWContextLock,
 							  ulFlags);
 					oal_hw_context[u4Index].pvHandle =
@@ -911,7 +911,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 						 grVcodecEncHWLock.rLockedTime.u4Sec,
 						 grVcodecEncHWLock.rLockedTime.u4uSec);
 
-					bLockedHW = VAL_TRUE;
+					*pbLockedHW = VAL_TRUE;
 					venc_power_on();
 					enable_irq(VENC_IRQ_ID);
 				}
@@ -922,11 +922,11 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 				{
 					grVcodecEncHWLock.pvHandle = (VAL_VOID_T *)
 						pmem_user_v2p_video((VAL_ULONG_T)
-								rHWLock.pvHandle);
+								prHWLock->pvHandle);
 					MODULE_MFV_LOGD("VCODEC_LOCKHW, current process can use HW, handle = 0x%lx\n",
 						 (VAL_ULONG_T)grVcodecEncHWLock.pvHandle);
 					grVcodecEncHWLock.eDriverType =
-						rHWLock.eDriverType;
+						prHWLock->eDriverType;
 					eVideoGetTimeOfDay
 						(&grVcodecEncHWLock.rLockedTime,
 						 sizeof(VAL_TIME_T));
@@ -939,10 +939,10 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 						 grVcodecEncHWLock.rLockedTime.u4Sec,
 						 grVcodecEncHWLock.rLockedTime.u4uSec);
 
-					bLockedHW = VAL_TRUE;
-					if (rHWLock.eDriverType ==
+					*pbLockedHW = VAL_TRUE;
+					if (prHWLock->eDriverType ==
 						VAL_DRIVER_TYPE_H264_ENC
-						|| rHWLock.eDriverType ==
+						|| prHWLock->eDriverType ==
 						VAL_DRIVER_TYPE_HEVC_ENC) {
 						venc_power_on();
 						/* enable_irq(MT_VENC_IRQ_ID); */
@@ -952,13 +952,13 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 				break;
 			default:
 				{
-					MODULE_MFV_LOGD("Undefined rHWLock.eDriverType");
+					MODULE_MFV_LOGD("Undefined prHWLock->eDriverType");
 				}
 				break;
 			}
 		} else {	/* someone use HW, and check timeout value */
-			if (rHWLock.u4TimeoutMs == 0) {
-				bLockedHW = VAL_FALSE;
+			if (prHWLock->u4TimeoutMs == 0) {
+				*pbLockedHW = VAL_FALSE;
 				mutex_unlock(&VencHWLock);
 				break;
 			}
@@ -974,14 +974,14 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 			MODULE_MFV_LOGD("VCODEC_LOCKHW, someone use enc HW, and check timeout value\n");
 			MODULE_MFV_LOGD("VCODEC_LOCKHW, LockInstance = 0x%lx, CurrentInstance = 0x%lx\n",
 				 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-				 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle));
+				 pmem_user_v2p_video((VAL_ULONG_T)prHWLock->pvHandle));
 			MODULE_MFV_LOGD("VCODEC_LOCKHW, CurrentTID = %d, TimeInterval(ms) = %d, TimeOutValue(ms)) = %d\n",
 				 current->pid, u4TimeInterval,
-				 rHWLock.u4TimeoutMs);
+				 prHWLock->u4TimeoutMs);
 
 			MODULE_MFV_LOGD("VCODEC_LOCKHW, LockInstance = 0x%lx, CurrentInstance = 0x%lx, CurrentTID = %d\n",
 				 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-				 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
+				 pmem_user_v2p_video((VAL_ULONG_T)prHWLock->pvHandle),
 				 current->pid);
 			MODULE_MFV_LOGD("VCODEC_LOCKHW, rLockedTime(s, us) = %d, %d, rCurTime(s, us) = %d, %d\n",
 				 grVcodecEncHWLock.rLockedTime.u4Sec,
@@ -994,21 +994,21 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T rHWLock, VAL_BOOL_T bLock
 					current->pid);
 				MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW - without timeout 0x%lx, %lx, 0x%lx, type:%d\n",
 					 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-					 pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
-					 (VAL_ULONG_T) rHWLock.pvHandle,
-					 rHWLock.eDriverType);
+					 pmem_user_v2p_video((VAL_ULONG_T)prHWLock->pvHandle),
+					 (VAL_ULONG_T) prHWLock->pvHandle,
+					 prHWLock->eDriverType);
 				gLockTimeOutCount = 0;
 				mutex_unlock(&VencHWLock);
 				return -EFAULT;
 			}
 		}
 
-		if (VAL_TRUE == bLockedHW) {
+		if (VAL_TRUE == *pbLockedHW) {
 			MODULE_MFV_LOGI
 				("VCODEC_LOCKHW, Lock ok grVcodecEncHWLock.pvHandle = 0x%lx, va:%lx, type:%d",
 				 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-				 (VAL_ULONG_T) rHWLock.pvHandle,
-				 rHWLock.eDriverType);
+				 (VAL_ULONG_T) prHWLock->pvHandle,
+				 prHWLock->eDriverType);
 			gLockTimeOutCount = 0;
 		}
 		mutex_unlock(&VencHWLock);
@@ -1409,7 +1409,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
 				   rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
 
-				vcodec_lockhw_enc_while_loop(rHWLock, bLockedHW);
+				vcodec_lockhw_enc_while_loop(&rHWLock, &bLockedHW);
 
 				if (VAL_FALSE == bLockedHW) {
 					MODULE_MFV_LOGE
