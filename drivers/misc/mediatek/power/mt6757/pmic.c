@@ -106,6 +106,9 @@
 #include <mt-plat/mt_reboot.h>
 #include <mach/mt_charging.h>
 
+#if defined(EXTERNAL_BUCK_FAN53526)
+#include <fan53526.h>
+#endif
 /*****************************************************************************
  * PMIC extern variable
  ******************************************************************************/
@@ -3617,6 +3620,31 @@ int is_ext_buck_exist(void)
 		return 1;
 	else
 		return 0;
+}
+
+int is_ext_buck2_exist(void)
+{
+#if defined(EXTERNAL_BUCK_FAN53526)
+	if ((is_fan53526_exist() == 1))
+		return 1;
+	else
+		return 0;
+#else
+	return 0;
+#if 0
+#if defined(CONFIG_MTK_FPGA)
+	return 0;
+#else
+#if !defined CONFIG_MTK_LEGACY
+	/*return gpiod_get_value(gpio_to_desc(130));*/
+	return __gpio_get_value(130);
+	/*return mt_get_gpio_in(130);*/
+#else
+	return 0;
+#endif
+#endif
+#endif
+#endif /* End of #if defined(EXTERNAL_BUCK_FAN53526) */
 }
 
 /*****************************************************************************

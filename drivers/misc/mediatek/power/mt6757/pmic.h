@@ -17,6 +17,7 @@
 
 #define PMIC_DEBUG
 
+#define EXTERNAL_BUCK_FAN53526
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 /*

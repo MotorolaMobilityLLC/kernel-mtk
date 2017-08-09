@@ -15,7 +15,7 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 # obj-$(CONFIG_MTK_PMIC)        += mt6311.o
-obj-$(CONFIG_MTK_PMIC)          += pmic.o pmic_irq.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o mt6311.o pmic_initial_setting.o
+obj-$(CONFIG_MTK_PMIC)          += pmic.o pmic_irq.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o mt6311.o fan53526.o pmic_initial_setting.o
 
 ifeq ($(CONFIG_MTK_PMIC_DVT_SUPPORT),y)
      obj-$(CONFIG_MTK_PMIC)     += pmic_dvt.o
