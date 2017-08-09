@@ -89,7 +89,7 @@ static struct thermal_cooling_device *cl_adp_fps_dev;
 static unsigned int cl_adp_fps_state;
 static int cl_adp_fps_limit = MAX_FPS_LIMIT;
 
-#define GPU_LOADING_THRESHOLD	50
+#define GPU_LOADING_THRESHOLD	70
 /* in percentage */
 #if FPS_DEBUGFS
 static int gpu_loading_threshold = GPU_LOADING_THRESHOLD;
@@ -425,7 +425,10 @@ static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
 	if (!in_consistent_scene())
 		unlimit_fps_limit();
 
-	cl_adp_fps_limit = adp_calc_fps_limit();
+	if (cl_adp_fps_state)
+		cl_adp_fps_limit = adp_calc_fps_limit();
+	else
+		cl_adp_fps_limit = unlimit_fps_limit();
 
 	/* 2. set the the limit */
 	mtk_cl_fps_set_fps_limit();
