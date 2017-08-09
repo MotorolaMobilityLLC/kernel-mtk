@@ -36,6 +36,9 @@ struct wake_lock kpd_suspend_lock;	/* For suspend usage */
 /*for kpd_memory_setting() function*/
 static u16 kpd_keymap[KPD_NUM_KEYS];
 static u16 kpd_keymap_state[KPD_NUM_MEMS];
+#ifdef CONFIG_ARCH_MT8173
+static struct wake_lock pwrkey_lock;
+#endif
 /***********************************/
 
 /* for slide QWERTY */
@@ -351,6 +354,12 @@ void kpd_pwrkey_pmic_handler(unsigned long pressed)
 		return;
 	}
 	kpd_pmic_pwrkey_hal(pressed);
+#ifdef CONFIG_ARCH_MT8173
+	if (pressed) /* keep the lock while the button in held pushed */
+		wake_lock(&pwrkey_lock);
+	else /* keep the lock for extra 500ms after the button is released */
+		wake_lock_timeout(&pwrkey_lock, HZ/2);
+#endif
 }
 #endif
 
@@ -809,6 +818,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	kpd_input_dev->open = kpd_open;
 
 	kpd_get_dts_info(pdev->dev.of_node);
+
+#ifdef CONFIG_ARCH_MT8173
+	wake_lock_init(&pwrkey_lock, WAKE_LOCK_SUSPEND, "PWRKEY");
+#endif
 
 	/* fulfill custom settings */
 	kpd_memory_setting();
