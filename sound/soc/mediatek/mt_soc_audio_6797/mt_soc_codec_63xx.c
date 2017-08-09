@@ -1271,7 +1271,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .stream_name = MT_SOC_UL1_STREAM_NAME,
 		     .channels_min = 1,
 		     .channels_max = 2,
-		     .rates = SNDRV_PCM_RATE_8000_192000,
+		     .rates = SOC_HIGH_USE_RATE,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
