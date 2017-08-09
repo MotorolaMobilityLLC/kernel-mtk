@@ -1786,7 +1786,7 @@ static int Voice_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 static int Voice_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] == false)) {
 		Voice_Amp_Change(true);
@@ -1887,7 +1887,7 @@ static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s() value = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	/* pr_warn("%s() value = %ld\n ", __func__, ucontrol->value.integer.value[0]); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] == false)) {
 		Speaker_Amp_Change(true);
@@ -2733,7 +2733,7 @@ void SetMicPGAGain(void)
 	int index = 0;
 
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
-	pr_warn("%s  AUDIO_ANALOG_VOLUME_MICAMP1 index =%d\n", __func__, index);
+	/* pr_warn("%s  AUDIO_ANALOG_VOLUME_MICAMP1 index =%d\n", __func__, index); */
 	Ana_Set_Reg(AUDENC_ANA_CON0, index << 8, 0x0700);
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
 	Ana_Set_Reg(AUDENC_ANA_CON1, index << 8, 0x0700);
@@ -3731,7 +3731,7 @@ static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
@@ -3757,7 +3757,7 @@ static int Audio_PGA2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;

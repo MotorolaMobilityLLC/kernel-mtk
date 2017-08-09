@@ -166,7 +166,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_warn("mtk_voice_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
+	/* pr_warn("mtk_voice_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels); */
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
