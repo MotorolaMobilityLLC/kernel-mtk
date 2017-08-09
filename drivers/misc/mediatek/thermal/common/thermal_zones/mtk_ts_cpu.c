@@ -28,6 +28,7 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>
+#include <linux/ktime.h>
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 
@@ -194,6 +195,7 @@ static void _mt_thermal_aee_init(void)
 	aee_rr_rec_thermal_temp4(0xFF);
 	aee_rr_rec_thermal_temp5(0xFF);
 	aee_rr_rec_thermal_status(0xFF);
+	aee_rr_rec_thermal_ktime(0xFFFFFFFFFFFFFFFF);
 }
 #endif
 static int tscpu_thermal_probe(struct platform_device *dev);
@@ -2028,7 +2030,9 @@ static void read_all_bank_temperature(void)
 void tscpu_update_tempinfo(void)
 {
 	unsigned long flags;
+	ktime_t now;
 
+	now = ktime_get();
 	if (g_tc_resume == 0)
 		read_all_bank_temperature();
 	else if (g_tc_resume == 2) /* resume ready */
@@ -2041,6 +2045,7 @@ void tscpu_update_tempinfo(void)
 	aee_rr_rec_thermal_temp4(get_immediate_ts4_wrap() / 1000);
 	aee_rr_rec_thermal_temp5(get_immediate_tsabb_wrap() / 1000);
 	aee_rr_rec_thermal_status(TSCPU_NORMAL);
+	aee_rr_rec_thermal_ktime(ktime_to_us(now));
 #endif
 
 #if THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET

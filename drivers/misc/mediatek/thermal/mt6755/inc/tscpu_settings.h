@@ -335,6 +335,7 @@ extern void aee_rr_rec_thermal_temp3(u8 val);
 extern void aee_rr_rec_thermal_temp4(u8 val);
 extern void aee_rr_rec_thermal_temp5(u8 val);
 extern void aee_rr_rec_thermal_status(u8 val);
+extern void aee_rr_rec_thermal_ktime(u64 val);
 
 extern u8 aee_rr_curr_thermal_temp1(void);
 extern u8 aee_rr_curr_thermal_temp2(void);
@@ -342,6 +343,7 @@ extern u8 aee_rr_curr_thermal_temp3(void);
 extern u8 aee_rr_curr_thermal_temp4(void);
 extern u8 aee_rr_curr_thermal_temp5(void);
 extern u8 aee_rr_curr_thermal_status(void);
+extern u64 aee_rr_curr_thermal_ktime(void);
 #endif
 
 /*=============================================================
