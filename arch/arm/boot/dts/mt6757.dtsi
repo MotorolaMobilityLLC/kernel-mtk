@@ -1037,24 +1037,40 @@
 	};
 
 	i2c0: i2c@11007000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c0";
-		cell-index = <0>;
-		reg = <0 0x11007000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <0>;
+		reg = <0 0x11007000 0 0x1000>,
+			<0 0x11000100 0 0x80>;
 		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C0_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
+		clock-div = <10>;
 	};
 
 	i2c6: i2c@11008000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c1";
-		cell-index = <6>;
-		reg = <0 0x11008000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <6>;
+		reg = <0 0x11008000 0 0x1000>,
+			<0 0x11000180 0 0x80>;
 		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C1_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C1_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
+		mediatek,buffermode_used;
 	};
 
 	i2c7: i2c@11009000 {
-		compatible = "mediatek,mt6755-i2c", "mediatek,i2c2";
-		cell-index = <7>;
-		reg = <0 0x11009000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <7>;
+		reg = <0 0x11009000 0 0x1000>,
+			<0 0x11000200 0 0x80>;
 		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C2_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C2_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
+		mediatek,buffermode_used;
 	};
 
 	spi1@1100A000 {
@@ -1087,10 +1103,14 @@
 	};
 
 	i2c3: i2c@1100f000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c3";
-		cell-index = <3>;
-		reg = <0 0x1100F000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <3>;
+		reg = <0 0x1100f000 0 0x1000>,
+			<0 0x11000280 0 0x80>;
 		interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C3_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
+		clock-div = <10>;
 	};
 
 	spi2@11010000 {
@@ -1099,11 +1119,16 @@
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	i2c4: i2c@11011000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c4";
-		cell-index = <4>;
-		reg = <0 0x11011000 0 0x1000>;
+	i2c5: i2c@11011000 {
+		compatible = "mediatek,mt6757-i2c";
+		id = <5>;
+		reg = <0 0x11011000 0 0x1000>,
+			<0 0x11000300 0 0x80>;
 		interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C4_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
+		clock-div = <10>;
+		mediatek,appm_used;
 	};
 
 	spi3@11012000 {
@@ -1119,31 +1144,53 @@
 	};
 
 	i2c1: i2c@11014000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c1_imm";
-		cell-index = <1>;
-		reg = <0 0x11014000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <1>;
+		reg = <0 0x11014000 0 0x1000>,
+			<0 0x11000380 0 0x80>;
 		interrupts = <GIC_SPI 270 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C1_IMM_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C1_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
 	};
 
 	i2c2: i2c@11015000 {
-		compatible = "mediatek,mt6755-i2c", "mediatek,i2c2_imm";
-		cell-index = <2>;
-		reg = <0 0x11015000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <2>;
+		reg = <0 0x11015000 0 0x1000>,
+			<0 0x11000400 0 0x80>;
 		interrupts = <GIC_SPI 271 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C2_IMM_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C2_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
 	};
+
 
 	i2c8: i2c@11016000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c5";
-		cell-index = <8>;
-		reg = <0 0x11016000 0 0x1000>;
+		compatible = "mediatek,mt6757-i2c";
+		id = <8>;
+		reg = <0 0x11016000 0 0x1000>,
+			<0 0x11000480 0 0x80>;
 		interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C5_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C5_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
+		mediatek,buffermode_used;
 	};
 
-	i2c5: i2c@11017000 {
-		compatible = "mediatek,mt6757-i2c", "mediatek,i2c5_imm";
-		cell-index = <5>;
-		reg = <0 0x11017000 0 0x1000>;
+	i2c4: i2c@11017000 {
+		compatible = "mediatek,mt6757-i2c";
+		id = <4>;
+		reg = <0 0x11017000 0 0x1000>,
+			<0 0x11000500 0 0x80>;
 		interrupts = <GIC_SPI 272 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_I2C5_IMM_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>,
+					<&infrasys INFRACFG_AO_I2C5_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
+		clock-div = <10>;
 	};
 
 	spi5@11018000 {
