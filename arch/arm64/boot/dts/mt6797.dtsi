@@ -2746,6 +2746,21 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};
 
+		icusb@11200000 {
+			compatible = "mediatek,icusb";
+			reg = <0x11200000 0x10000>, <0x11210000 0x10000>;
+			reg-names = "musbfsh_base", "musbfsh_sif";
+			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_ICUSB>,
+				<&infrasys INFRA_SSUSB_REF>;
+			clock-names = "infra_icusb", "sssub_ref_clk";
+		};
+
+		usb1p_sif@11210000 {
+			compatible = "mediatek,usb1p_sif";
+			reg = <0x11210000 0x10000>;
+		};
+
 		usb3@11270000 {
 			compatible = "mediatek,usb3";
 			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
