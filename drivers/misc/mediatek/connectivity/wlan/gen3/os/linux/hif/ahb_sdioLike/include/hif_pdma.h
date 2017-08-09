@@ -94,6 +94,7 @@ typedef enum _MTK_WCN_HIF_PDMA_BURST_LEN {
 #define ADH_CR_FLUSH                BIT(0)
 
 /* AP_DMA_HIF_0_CON */
+#define ADH_CR_BUS_INCR_OFFSET      31
 #define ADH_CR_BURST_LEN            BITS(16, 17)
 #define ADH_CR_BURST_LEN_OFFSET     16
 #define ADH_CR_SLOW_CNT             BITS(5, 14)

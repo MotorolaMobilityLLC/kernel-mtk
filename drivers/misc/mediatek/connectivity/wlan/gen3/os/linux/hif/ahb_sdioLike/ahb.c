@@ -944,9 +944,13 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
+	if (pfWlanDmaOps != NULL)
+		pfWlanDmaOps->DmaClockCtrl(TRUE);
+
 	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
+	wmb();
 	DBGLOG(RX, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n", Port, info.word, HifInfo->HifRegBaseAddr);
 
 	}
@@ -1006,9 +1010,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 		/* start to read data */
 		AP_DMA_HIF_LOCK(HifInfo);	/* lock to avoid other codes config GDMA */
-
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
 
 		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
 		HifInfo->DmaOps->DmaStart(HifInfo);
@@ -1084,9 +1085,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			}
 		} while (HifInfo->DmaOps->DmaPollStart(HifInfo) != 0);
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(FALSE);
-
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
 #ifdef MTK_DMA_BUF_MEMCPY_SUP
@@ -1100,6 +1098,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		my_sdio_enable(HifLock);
+
+		if (pfWlanDmaOps != NULL)
+			pfWlanDmaOps->DmaClockCtrl(FALSE);
+
 
 		/* MT6797 TODO */
 		kalMemCopy(Buf, rdTestPkt, Size);
@@ -1222,10 +1224,13 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		func->use_dma, Size, count, func->cur_blksize, info.word);
 
+	if (pfWlanDmaOps != NULL)
+		pfWlanDmaOps->DmaClockCtrl(TRUE);
+
 	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
-
+	wmb();
 	DBGLOG(TX, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n", Port, info.word, HifInfo->HifRegBaseAddr);	
 	}
 
@@ -1272,9 +1277,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 		/* start to write */
 		AP_DMA_HIF_LOCK(HifInfo);
-
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(TRUE);
 
 		HifInfo->DmaOps->DmaConfig(HifInfo, &DmaConf);
 		HifInfo->DmaOps->DmaStart(HifInfo);
@@ -1350,9 +1352,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			}
 		} while (HifInfo->DmaOps->DmaPollStart(HifInfo) != 0);
 
-		if (pfWlanDmaOps != NULL)
-			pfWlanDmaOps->DmaClockCtrl(FALSE);
-
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
@@ -1362,6 +1361,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		my_sdio_enable(HifLock);
+
+		if (pfWlanDmaOps != NULL)
+			pfWlanDmaOps->DmaClockCtrl(FALSE);
 
 		HIF_DBG_TX(("[WiFi/HIF] DMA TX OK!\n"));
 	} else
