@@ -103,9 +103,10 @@
 #define C2K_C2K_C2KPLL1_CON0    0x02013018
 #define C2K_C2K_CPPLL_CON0      0x02013040
 #define C2K_C2K_DSPPLL_CON0     0x02013050
+#define C2K_DEBUG_REG		0x0200B10C
+
 #define C2K_MPU_ITRACE		0x020050D0
 #define C2K_WD_MAX_TIME		0x02001084
-
 #define C2K_IRAM_BASE			0x01000000 /*0x39000000*/
 #define C2K_H2X_ZONE_BASE		0x00000000
 #define C2K_CLK_BASE			0x02000000
@@ -174,7 +175,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
-void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg);
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_flag);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);

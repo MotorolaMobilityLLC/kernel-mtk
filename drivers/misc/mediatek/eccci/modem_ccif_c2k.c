@@ -158,46 +158,46 @@ static void md_ccif_dump(unsigned char *title, struct ccci_modem *md)
 	int idx;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_dump: %s\n", title);
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_CON(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "md_ccif_dump: %s\n", title);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_CON(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_CON,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_CON));
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_BUSY(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_BUSY(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_BUSY,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY));
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_START(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_START(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_START,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_START));
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_TCHNUM(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_TCHNUM(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_TCHNUM,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_TCHNUM));
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_RCHNUM(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_RCHNUM(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_RCHNUM,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_RCHNUM));
-	CCCI_NORMAL_LOG(md->index, TAG, "AP_ACK(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_ACK(%p)=%d\n",
 		     md_ctrl->ccif_ap_base + APCCIF_ACK,
 		     ccif_read32(md_ctrl->ccif_ap_base, APCCIF_ACK));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_CON(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_CON(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_CON,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_CON));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_BUSY(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_BUSY(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_BUSY,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_BUSY));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_START(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_START(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_START,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_START));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_TCHNUM(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_TCHNUM(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_TCHNUM,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_TCHNUM));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_RCHNUM(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_RCHNUM(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_RCHNUM,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_RCHNUM));
-	CCCI_NORMAL_LOG(md->index, TAG, "MD_ACK(%p)=%d\n",
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_ACK(%p)=%d\n",
 		     md_ctrl->ccif_md_base + APCCIF_ACK,
 		     ccif_read32(md_ctrl->ccif_md_base, APCCIF_ACK));
 
 	for (idx = 0; idx < md_ctrl->sram_size / sizeof(u32); idx += 4) {
-		CCCI_NORMAL_LOG(md->index, TAG,
+		CCCI_MEM_LOG_TAG(md->index, TAG,
 			     "CHDATA(%p): %08X %08X %08X %08X\n",
 			     md_ctrl->ccif_ap_base + APCCIF_CHDATA +
 			     idx * sizeof(u32),
@@ -706,13 +706,13 @@ static void md_ccif_queue_dump(struct ccci_modem *md)
 	int idx;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump CCIF Queue Control\n");
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue Control\n");
 	for (idx = 0; idx < QUEUE_NUM; idx++) {
-		CCCI_NORMAL_LOG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
 			     idx, md_ctrl->txq[idx].ringbuf->tx_control.write,
 			     md_ctrl->txq[idx].ringbuf->tx_control.read,
 			     md_ctrl->txq[idx].ringbuf->tx_control.length);
-		CCCI_NORMAL_LOG(md->index, TAG, "Q%d RX: w=%d, r=%d, len=%d\n",
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d RX: w=%d, r=%d, len=%d\n",
 			     idx, md_ctrl->rxq[idx].ringbuf->rx_control.write,
 			     md_ctrl->rxq[idx].ringbuf->rx_control.read,
 			     md_ctrl->rxq[idx].ringbuf->rx_control.length);
@@ -1420,21 +1420,22 @@ static int md_ccif_op_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag,
 			     void *buff, int length)
 {
+	/*runtime data, boot, long time no response EE*/
 	if (flag & DUMP_FLAG_CCIF) {
 		md_ccif_dump("Dump CCIF SRAM\n", md);
 		md_ccif_queue_dump(md);
-		CCCI_NORMAL_LOG(md->index, TAG, "dump MD1 exception memory start\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "dump MD1 exception memory start\n");
 		ccci_mem_dump(md->index, md1_excp_smem_vir, md1_excp_smem__size);
 	}
-
+	/*normal EE*/
 	if (flag & DUMP_FLAG_REG) {
 		/* ccci_dump_req_user_list(); */
 		if (md->ee_info_flag & (1 << MD_EE_WDT_GET))
-			dump_c2k_register(md, 0);
+			dump_c2k_register(md, 1);
 	}
 	/*MD boot fail EE*/
 	if (flag & DUMP_FLAG_CCIF_REG)
-		dump_c2k_register(md, 1);
+		dump_c2k_register(md, 2);
 
 	return 0;
 }

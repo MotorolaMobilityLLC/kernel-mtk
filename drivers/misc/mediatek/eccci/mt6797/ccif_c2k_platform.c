@@ -328,7 +328,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "DBG_FLAG_JTAG is set\n");
 		return -1;
 	}
-	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_let_md_go\n");
+	CCCI_BOOTUP_LOG(md->index, TAG, "md_ccif_let_md_go\n");
 	switch (md->index) {
 	case MD_SYS2:
 		/*set the start address to let modem to run */
@@ -358,7 +358,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_MISC2) | INFRA_MISC2_C2K_EN);
-		CCCI_NORMAL_LOG(md->index, TAG, "INFRA_MISC2 = 0x%x\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "INFRA_MISC2 = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_MISC2));
 
@@ -367,7 +367,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		/* ccif_write32(apmixed_base, AP_PLL_CON0,
 			     ccif_read32(apmixed_base,
 					 AP_PLL_CON0) | (0x1 << 1)); */
-		CCCI_NORMAL_LOG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n",
 			     ccif_read32(apmixed_base, AP_PLL_CON0));
 
 		/*step 3: ap hold c2k core*/
@@ -390,7 +390,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 #else
 		mtk_wdt_set_c2k_sysrst(1);
 #endif
-		CCCI_NORMAL_LOG(md->index, TAG,
+		CCCI_BOOTUP_LOG(md->index, TAG,
 			     "[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->toprgu_base,
 					 TOP_RGU_WDT_SWSYSRST));
@@ -407,7 +407,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			  C2K_STATUS) >> 1) & 0x1))
 			;
 
-		CCCI_NORMAL_LOG(md->index, TAG,
+		CCCI_BOOTUP_LOG(md->index, TAG,
 			     "[C2K] C2K_STATUS = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->c2k_misc,
 					 C2K_STATUS));
@@ -416,7 +416,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     INFRA_AO_C2K_HANDSHAKE,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_HANDSHAKE) & (~(0x1 << 1)));
-		CCCI_NORMAL_LOG(md->index, TAG,
+		CCCI_BOOTUP_LOG(md->index, TAG,
 			     "[C2K] C2K_HANDSHAKE = 0x%x, C2K_STATUS = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_HANDSHAKE),
