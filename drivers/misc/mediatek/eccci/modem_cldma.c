@@ -2447,6 +2447,16 @@ static int check_power_off_en(struct ccci_modem *md)
 	#endif
 }
 
+static int md_cd_soft_start(struct ccci_modem *md, unsigned int mode)
+{
+	return md_cd_soft_power_on(md, mode);
+}
+
+static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
+{
+	return md_cd_soft_power_off(md, mode);
+}
+
 static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0, count = 0;
@@ -3420,6 +3430,8 @@ static struct ccci_modem_ops md_cd_ops = {
 	.init = &md_cd_init,
 	.start = &md_cd_start,
 	.stop = &md_cd_stop,
+	.soft_start = &md_cd_soft_start,
+	.soft_stop = &md_cd_soft_stop,
 	.reset = &md_cd_reset,
 	.send_request = &md_cd_send_request,
 	.give_more = &md_cd_give_more,

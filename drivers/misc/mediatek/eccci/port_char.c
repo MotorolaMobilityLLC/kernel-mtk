@@ -1078,6 +1078,19 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 
+	case CCCI_IOC_SET_EFUN:
+		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_ERR_MSG(md->index, CHAR, "set efun fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else {
+			CCCI_INF_MSG(md->index, CHAR, "efun set to %d\n", sim_mode);
+			if (sim_mode == 0 && md->ops->soft_stop)
+				md->ops->soft_stop(md, sim_mode);
+			else if (sim_mode != 0 && md->ops->soft_start)
+				md->ops->soft_start(md, sim_mode);
+		}
+		break;
+
 	default:
 		ret = -ENOTTY;
 		break;

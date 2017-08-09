@@ -403,6 +403,7 @@ enum{
 #define CCCI_IOC_SMEM_GET_STATE			_IOR(CCCI_IOC_MAGIC, 53, unsigned int)
 
 #define CCCI_IOC_SET_CCIF_CG			_IOW(CCCI_IOC_MAGIC, 54, unsigned int) /*md_init*/
+#define CCCI_IOC_SET_EFUN               _IOW(CCCI_IOC_MAGIC, 55, unsigned int) /* RILD */
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */

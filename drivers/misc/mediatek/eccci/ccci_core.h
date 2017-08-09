@@ -701,6 +701,8 @@ struct ccci_modem_ops {
 	int (*start)(struct ccci_modem *md);
 	int (*reset)(struct ccci_modem *md);	/* as pre-stop */
 	int (*stop)(struct ccci_modem *md, unsigned int timeout);
+	int (*soft_start)(struct ccci_modem *md, unsigned int mode);
+	int (*soft_stop)(struct ccci_modem *md, unsigned int mode);
 	int (*send_request)(struct ccci_modem *md, unsigned char txqno, struct ccci_request *req,
 			     struct sk_buff *skb);
 	int (*give_more)(struct ccci_modem *md, unsigned char rxqno);

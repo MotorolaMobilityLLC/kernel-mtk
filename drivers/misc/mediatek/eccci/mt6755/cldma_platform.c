@@ -717,6 +717,18 @@ int md_cd_let_md_go(struct ccci_modem *md)
 	return 0;
 }
 
+int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
+{
+	clk_buf_set_by_flightmode(true);
+	return 0;
+}
+
+int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
+{
+	clk_buf_set_by_flightmode(false);
+	return 0;
+}
+
 int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
