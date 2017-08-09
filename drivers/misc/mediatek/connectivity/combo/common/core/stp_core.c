@@ -1720,7 +1720,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					if (*p_data != 0x80)
 						STP_WARN_FUNC("SDIO not 0x80!!(0x%x)\n", *p_data);
 
-					if (i >= 4 && gStpDbgLvl >= STP_LOG_DBG) {
+					if (i >= 4) {
 #if !(REMOVE_USELESS_LOG)
 						/*print header, when get the full STP header */
 						INT32 type = (*(p_data + 1) & 0x70) >> 4;
@@ -2166,7 +2166,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					/* Geoge FIXME: WHY comment the following line? */
 					/* stp_core_ctx.rx_counter++; */
 
-					if (i >= 4 && gStpDbgLvl >= STP_LOG_DBG) {
+					if (i >= 4) {
 						/*print header, when get the full STP header */
 #if !(REMOVE_USELESS_LOG)
 						INT32 type = (*(p_data + 1) & 0x70) >> 4;
