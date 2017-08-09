@@ -2765,6 +2765,7 @@ static int32_t testcase_monitor_callback(unsigned long data)
 	uint32_t i;
 	uint32_t monitorValue[CMDQ_MONITOR_EVENT_MAX];
 	uint32_t durationTime[CMDQ_MONITOR_EVENT_MAX];
+	int32_t eventVlaue;
 
 	if (false == gEventMonitor.status)
 		return 0;
@@ -2776,14 +2777,16 @@ static int32_t testcase_monitor_callback(unsigned long data)
 		switch (gEventMonitor.waitType[i]) {
 		case CMDQ_MOITOR_TYPE_WFE:
 			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
+			eventVlaue = cmdq_core_get_event_value(gEventMonitor.monitorEvent[i]);
 			CMDQ_LOG("[MONITOR][WFE] event: %s, duration: (%u ns)\n",
-				cmdq_core_get_event_name((int32_t)gEventMonitor.monitorEvent[i]), durationTime[i]);
+				cmdq_core_get_event_name(eventVlaue), durationTime[i]);
 			CMDQ_MSG("[MONITOR][WFE] time:(%u ns)\n", monitorValue[i]);
 			break;
 		case CMDQ_MOITOR_TYPE_WAIT_NO_CLEAR:
 			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
+			eventVlaue = cmdq_core_get_event_value(gEventMonitor.monitorEvent[i]);
 			CMDQ_LOG("[MONITOR][Wait] event: %s, duration: (%u ns)\n",
-				cmdq_core_get_event_name((int32_t)gEventMonitor.monitorEvent[i]), durationTime[i]);
+				cmdq_core_get_event_name(eventVlaue), durationTime[i]);
 			CMDQ_MSG("[MONITOR] time:(%u ns)\n", monitorValue[i]);
 			break;
 		case CMDQ_MOITOR_TYPE_QUERYREGISTER:

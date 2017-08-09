@@ -331,7 +331,7 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 			     CMDQ_U32_PTR(pTask->secData.addrMetadatas));
 		if (0 < pTask->secData.addrMetadataCount) {
 			pIwc->command.metadata.addrListLength = pTask->secData.addrMetadataCount;
-			memcpy((pIwc->command.metadata.addrList), (pTask->secData.addrMetadatas),
+			memcpy((pIwc->command.metadata.addrList), CMDQ_U32_PTR(pTask->secData.addrMetadatas),
 			       (pTask->secData.addrMetadataCount) * sizeof(iwcCmdqAddrMetadata_t));
 		}
 

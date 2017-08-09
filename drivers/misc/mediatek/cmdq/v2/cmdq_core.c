@@ -1964,16 +1964,6 @@ static void cmdq_core_insert_backup_instr(TaskStruct *pTask,
 #ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
 static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t thread)
 {
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
-		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
-		return -EFAULT;
-	}
-
-	if (NULL == gCmdqContext.hSecSharedMem) {
-		CMDQ_ERR("%s, shared memory is not created\n", __func__);
-		return -EFAULT;
-	}
-
 	const uint32_t originalSize = pTask->commandSize;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
@@ -1984,6 +1974,16 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	int32_t offset;
+
+	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
+		return -EFAULT;
+	}
+
+	if (NULL == gCmdqContext.hSecSharedMem) {
+		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		return -EFAULT;
+	}
 
 	/* Shift JUMP and EOC */
 	pTask->pCMDEnd[10] = pTask->pCMDEnd[0];
@@ -2043,16 +2043,6 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 #ifdef CMDQ_SECURE_PATH_HW_LOCK
 static int32_t cmdq_core_insert_secure_IRQ_instr(TaskStruct *pTask, int32_t thread)
 {
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
-		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
-		return -EFAULT;
-	}
-
-	if (NULL == gCmdqContext.hSecSharedMem) {
-		CMDQ_ERR("%s, shared memory is not created\n", __func__);
-		return -EFAULT;
-	}
-
 	const uint32_t originalSize = pTask->commandSize;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
@@ -2064,6 +2054,16 @@ static int32_t cmdq_core_insert_secure_IRQ_instr(TaskStruct *pTask, int32_t thre
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	int32_t offset;
+
+	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
+		return -EFAULT;
+	}
+
+	if (NULL == gCmdqContext.hSecSharedMem) {
+		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		return -EFAULT;
+	}
 
 	/* Shift JUMP and EOC */
 	pTask->pCMDEnd[22] = pTask->pCMDEnd[0];
@@ -2356,13 +2356,6 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	 *         = begin of task_2, so...GCE stop at begin of task_2's command and never exec task_2 & task_3 */
 	const uint32_t reservedAppendBufferSize = 1 * CMDQ_INST_SIZE;
 
-	uint32_t reservedAppendBlockInstrSize = 0;
-#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
-	/* HACK: Insert WAIT CMDQ APPEND event here, due to we need to make sure transparent for user space request
-	 * TODO: Insert WAIT CMDQ APPEND event when make command */
-	reservedAppendBlockInstrSize = 1 * CMDQ_INST_SIZE;
-#endif
-
 #ifdef CMDQ_PROFILE_COMMAND
 	bool profileCommand = false;
 #endif
@@ -2370,7 +2363,13 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	int32_t subsysCode;
 	uint32_t physAddr;
 
+	uint32_t reservedAppendBlockInstrSize = 0;
 	uint32_t reservedBackCookieInstrSize = 0;
+
+#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
+	/* HACK: Insert WAIT CMDQ APPEND event here */
+	reservedAppendBlockInstrSize = 1 * CMDQ_INST_SIZE;
+#endif
 
 	/* HACK: Insert BACKUP secure threads' COOKIE and IRQ here */
 	if (true == pTask->secData.isSecure) {
