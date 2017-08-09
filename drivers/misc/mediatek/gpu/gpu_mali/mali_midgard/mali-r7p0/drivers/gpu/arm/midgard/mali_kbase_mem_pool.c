@@ -516,7 +516,7 @@ static void kbase_mem_pool_add_array(struct kbase_mem_pool *pool,
 		p = phys_to_page(pages[i]);
 		pfn = page_to_pfn(p);
 		if( !pfn_valid(pfn) ){
-		    pr_alert("[Mali][kbase_mem_pool_add_array] phys_to_page(%zu) is invalid. \n",pfn);
+		    pr_alert("[Mali][kbase_mem_pool_add_array] phys_to_page(%lu) is invalid. \n",pfn);
 		    continue;
 		}
 
