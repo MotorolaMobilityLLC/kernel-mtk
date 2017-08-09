@@ -68,7 +68,9 @@ unsigned int _g_bat_sleep_total_time = NORMAL_WAKEUP_PERIOD;
 unsigned int suspend_time = 0;
 #endif
 signed int g_booting_vbat = 0;
+#if !defined(CONFIG_POWER_EXT)
 static unsigned int temperature_change = 1;
+#endif
 
 #if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 static signed int g_currentfactor = 100;

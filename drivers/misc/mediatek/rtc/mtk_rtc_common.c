@@ -390,8 +390,9 @@ void rtc_bbpu_power_down(void)
 
 void mt_power_off(void)
 {
+#if !defined(CONFIG_POWER_EXT)
 	int count = 0;
-
+#endif
 	rtc_xinfo("mt_power_off\n");
 
 	/* pull PWRBB low */

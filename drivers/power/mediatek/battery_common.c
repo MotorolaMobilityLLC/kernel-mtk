@@ -155,8 +155,9 @@ extern unsigned int suspend_time;
 #define SYSTEM_OFF_VOLTAGE CUST_SYSTEM_OFF_VOLTAGE
 #endif
 
+#if !defined(CONFIG_POWER_EXT)
 static unsigned int V_0Percent_Tracking = V_0PERCENT_TRACKING;
-
+#endif
 
 /*
  * Integrate with NVRAM
