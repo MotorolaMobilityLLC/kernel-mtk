@@ -237,6 +237,14 @@ static int mt6797_0x1001AXXX_get_semaphore(void)
 		return 0;
 	}
 
+	{
+		unsigned long g_reg_test;
+
+		g_reg_test = (unsigned long)ioremap_nocache(0x11015000, 1024);
+		hs_write32(g_reg_test, 0x0b160001); /* mt6797-dvfsp enable internal CG bit */
+	}
+
+
 	FH_MSG_DEBUG("0x1001AXXX sema get %lx\n", g_reg_sema3_m0);
 
 	for (i = 0; i < n; i++) {
