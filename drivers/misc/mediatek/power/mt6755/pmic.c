@@ -2950,7 +2950,7 @@ int get_rac_val(void)
 				ret = rac_cal * 1;
 
 		} else if ((curr_1 - curr_2) >= 700 &&
-			   (curr_2 - curr_1) <= 1200 && (volt_2 - volt_1) >= 80) {
+			   (curr_1 - curr_2) <= 1200 && (volt_2 - volt_1) >= 80) {
 			/*40.0mA */
 			rac_cal = ((volt_2 - volt_1) * 1000) / (curr_1 - curr_2);	/*m-ohm */
 
