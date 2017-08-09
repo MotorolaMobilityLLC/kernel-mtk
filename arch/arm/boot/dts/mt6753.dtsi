@@ -1121,18 +1121,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			status = "disabled";
 		};
 
-		i2c4:i2c@1100f000 {
-			compatible = "mediatek,mt6735-i2c";
-			cell-index = <3>;
-			reg = <0x1100f000 0x1000>;
-			interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>,
-						<GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
-			def_speed = <100>;
-			clocks = <&perisys PERI_I2C3>, <&perisys PERI_APDMA>;
-			clock-names = "i2c3-main", "i2c3-dma";
-			clock-frequency = <13600>;
-			clock-div = <1>;
-		};
 	};
 
 	vcorefs {
@@ -1185,55 +1173,48 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		i2c0:i2c@11007000 {
-			compatible = "mediatek,mt6735-i2c";
+			compatible = "mediatek,mt6753-i2c";
 			cell-index = <0>;
 			reg = <0x11007000 0x1000>;
 			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>,
-						<GIC_SPI 99 IRQ_TYPE_LEVEL_LOW>;
+				<GIC_SPI 98 IRQ_TYPE_LEVEL_LOW>;
 			def_speed = <100>;
-			clocks = <&perisys PERI_I2C0>, <&perisys PERI_APDMA>;
-			clock-names = "i2c0-main", "i2c0-dma";
-			clock-frequency = <13600>;
-			clock-div = <1>;
 		};
 
 		i2c1:i2c@11008000 {
-			compatible = "mediatek,mt6735-i2c";
+			compatible = "mediatek,mt6753-i2c";
 			cell-index = <1>;
 			reg = <0x11008000 0x1000>;
 			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>,
-						<GIC_SPI 100 IRQ_TYPE_LEVEL_LOW>;
+				<GIC_SPI 99 IRQ_TYPE_LEVEL_LOW>;
 			def_speed = <100>;
-			clocks = <&perisys PERI_I2C1>, <&perisys PERI_APDMA>;
-			clock-names = "i2c1-main", "i2c1-dma";
-			clock-frequency = <13600>;
-			clock-div = <1>;
 		};
 
 		i2c2:i2c@11009000 {
-			compatible = "mediatek,mt6735-i2c";
+			compatible = "mediatek,mt6753-i2c";
 			cell-index = <2>;
 			reg = <0x11009000 0x1000>;
 			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>,
-						<GIC_SPI 101 IRQ_TYPE_LEVEL_LOW>;
+				<GIC_SPI 100 IRQ_TYPE_LEVEL_LOW>;
 			def_speed = <100>;
-			clocks = <&perisys PERI_I2C2>, <&perisys PERI_APDMA>;
-			clock-names = "i2c2-main", "i2c2-dma";
-			clock-frequency = <13600>;
-			clock-div = <1>;
 		};
 
 		i2c3:i2c@1100f000 {
-			compatible = "mediatek,mt6735-i2c";
+			compatible = "mediatek,mt6753-i2c";
 			cell-index = <3>;
 			reg = <0x1100f000 0x1000>;
 			interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>,
-						<GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+				<GIC_SPI 101 IRQ_TYPE_LEVEL_LOW>;
 			def_speed = <100>;
-			clocks = <&perisys PERI_I2C3>, <&perisys PERI_APDMA>;
-			clock-names = "i2c3-main", "i2c3-dma";
-			clock-frequency = <13600>;
-			clock-div = <1>;
+		};
+
+		i2c4:i2c@11012000 {
+			compatible = "mediatek,mt6753-i2c";
+			cell-index = <4>;
+			reg = <0x11012000 0x1000>;
+			interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
 		};
 
 		eintc: EINTC@0x10005000 {
