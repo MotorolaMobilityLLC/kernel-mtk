@@ -378,6 +378,16 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VCORE_LQ_DIS,
 			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+	if (pwrctrl->pcm_flags_cust & 0x20000) {
+		/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
+		pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
+		/* BUCK_VSRAM_PROC_VOSEL_SLEEP=0.7v */
+		pmic_config_interface(0x6ac, 0x10, 0xffff, 0);
+		/* BUCK_VSRAM_PROC_VSLEEP_EN=HW control */
+		pmic_config_interface(0x6b2, 0x113, 0xffff, 0);
+		/* BUCK_VSRAM_PROC_VOSEL_CTRL=HW control */
+		pmic_config_interface(0x6a0, 0x2, 0xffff, 0);
+	}
 #endif
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);

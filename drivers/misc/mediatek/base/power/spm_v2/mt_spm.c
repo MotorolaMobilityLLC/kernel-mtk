@@ -1344,7 +1344,9 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-
+#if defined(CONFIG_ARCH_MT6797)
+		pmic_config_interface(0xA6E, 0x020E, 0xffff, 0);
+#endif
 		mt_power_gs_dump_suspend();
 		break;
 	default:
