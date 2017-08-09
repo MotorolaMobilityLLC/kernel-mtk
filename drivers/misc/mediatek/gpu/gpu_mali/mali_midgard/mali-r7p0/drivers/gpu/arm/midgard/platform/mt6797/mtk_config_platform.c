@@ -419,13 +419,16 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	/* kick spm_dvfs_gpu */
 	mtk_init_spm_dvfs_gpu();
 
+	mtk_kbase_spm_acquire();
+
 	/* wait idle */
 	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
-
 	/* init gpu hal */
 	mtk_kbase_spm_hal_init();
+
+	mtk_kbase_spm_release();
 
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);

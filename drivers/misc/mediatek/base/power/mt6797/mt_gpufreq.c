@@ -971,6 +971,9 @@ void mt_gpufreq_disable_by_ptpod(void)
 
 #ifdef MTK_GPU_SPM
 	mtk_gpu_spm_pause();
+
+	g_cur_gpu_volt = _mt_gpufreq_get_cur_volt();
+	g_cur_gpu_freq = _mt_gpufreq_get_cur_freq();
 #endif
 
 	mt_gpufreq_ptpod_disable = true;
