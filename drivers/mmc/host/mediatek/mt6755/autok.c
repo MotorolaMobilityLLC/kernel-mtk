@@ -392,10 +392,6 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	}
 
-	if (host == NULL) {
-		pr_debug("[%s] [ERR]host = %p\n", __func__, host);
-		return E_RESULT_FATAL_ERR;
-	}
 	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY))
 		;
 
@@ -1097,6 +1093,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			} else if (Bound_Cnt_F == 0) {
 				/* mode_7: rising edge only one bound (not full), falling no boundary */
 				cycle_cnt = 128;
+				pBdPrev = &(pBdInfo_R->bd_info[0]);
 				if (pBdPrev->Bound_Start == 0) {
 					uDlySel_F = 0;
 					uDlySel_R = 63;
@@ -3385,19 +3382,6 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE, MSDC_EMMC50_PAD_DAT7_TXDLY, dat7_tx);
 
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========end========\r\n");
-	goto end;
-
-	AUTOK_RAWPRINT("[AUTOK]------MSDC host reset------\r\n");
-	autok_msdc_reset();
-	msdc_clear_fifo();
-	MSDC_WRITE32(MSDC_INT, 0xffffffff);
-	response = 0;
-	while (((response >> 9) & 0xF) != 4) {
-		ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
-		response = MSDC_READ32(SDC_RESP0);
-		if ((((response >> 9) & 0xF) == 5) || (((response >> 9) & 0xF) == 6))
-			ret = autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD);
-	}
 
 end:
 	return ret;
