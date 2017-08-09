@@ -486,6 +486,7 @@ static void ApplyDctoDl(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 
+	unsigned int average_tmp;
 	unsigned short  value = 0 , average = 0;
 	unsigned short dcoffset , dcoffset2, dcoffset3;
 
@@ -515,9 +516,10 @@ static void ApplyDctoDl(void)
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			dcinit_value = average;
+			average_tmp = ((unsigned int)average) * 1800 / 4096;
+			dcinit_value = (unsigned short)average_tmp;
 			CheckDcinitValue();
-			PRINTK_AUDDRV("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
+			PRINTK_AUDDRV("dcinit_value = %d average = %d value = %d\n", dcinit_value, average_tmp,
 			       value);
 
 			/*pr_debug("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
@@ -548,9 +550,10 @@ static void ApplyDctoDl(void)
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			mhp_impedance = Phase1Check(average, dcinit_value);
+			average_tmp = ((unsigned int)average) * 1800 / 4096;
+			mhp_impedance = Phase1Check((unsigned short)average_tmp, dcinit_value);
 			PRINTK_AUDDRV("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
-			       value, average, dcinit_value, mhp_impedance);
+			       value, average_tmp, dcinit_value, mhp_impedance);
 			if (mhp_impedance)
 				break;
 		} else if (value >= HpImpedancePhase2AdcValue) {
@@ -561,9 +564,10 @@ static void ApplyDctoDl(void)
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			mhp_impedance = Phase2Check(average, dcinit_value);
+			average_tmp = ((unsigned int)average) * 1800 / 4096;
+			mhp_impedance = Phase2Check((unsigned short)average_tmp, dcinit_value);
 			PRINTK_AUDDRV("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
-			       value, average, dcinit_value, mhp_impedance);
+			       value, average_tmp, dcinit_value, mhp_impedance);
 			break;
 		}
 	}
