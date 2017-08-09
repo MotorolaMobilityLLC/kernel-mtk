@@ -111,25 +111,7 @@ static int in_game_whitelist = 1;
 
 #ifndef __GED_TYPE_H__
 typedef enum GED_INFO_TA {
-GED_LOADING,
-GED_IDLE,
-GED_BLOCKING,
-GED_PRE_FREQ,
-GED_PRE_FREQ_IDX,
-GED_CUR_FREQ,
-GED_CUR_FREQ_IDX,
-GED_MAX_FREQ_IDX,
-GED_MAX_FREQ_IDX_FREQ,
-GED_MIN_FREQ_IDX,
-GED_MIN_FREQ_IDX_FREQ,
-GED_3D_FENCE_DONE_TIME,
-GED_VSYNC_OFFSET,
-GED_EVENT_STATUS,
-GED_EVENT_DEBUG_STATUS,
 GED_EVENT_GAS_MODE,
-GED_SRV_SUICIDE,
-GED_PRE_HALF_PERIOD,
-GED_LATEST_START,
 GED_UNDEFINED
 } GED_INFO;
 #endif
@@ -143,10 +125,12 @@ ged_query_info(GED_INFO eType)
 
 static int game_whitelist_check(void)
 {
-
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
 
-	in_game_whitelist = result;
+	if (1 == result)
+		in_game_whitelist = 0;
+	else if (0 == result)
+		in_game_whitelist = 1;
 
 	return 0;
 }
@@ -511,6 +495,7 @@ static ssize_t clfps_level_write(struct file *file, const char __user *buffer,
 			}
 		}
 
+		kfree(buf);
 		return count;
 	}
 

@@ -715,6 +715,8 @@ static int mtk_thermal_get_tz_idx(char *type)
 		return MTK_THERMAL_SENSOR_SKIN;
 	else if (0 == strncmp(type, "mtktsxtal", 9))
 		return MTK_THERMAL_SENSOR_XTAL;
+	else if (0 == strncmp(type, "mtktsbtsmdpa", 12))
+		return MTK_THERMAL_SENSOR_MD_PA;
 
 	return -1;
 }
