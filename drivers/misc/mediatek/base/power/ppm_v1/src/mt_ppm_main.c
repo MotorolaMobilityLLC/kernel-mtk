@@ -523,6 +523,15 @@ skip_pwr_check:
 }
 
 #define LOG_BUF_SIZE	128
+static void ppm_main_log_print(unsigned int policy_mask, unsigned int min_power_budget,
+	unsigned int root_cluster, char *msg)
+{
+#ifdef PPM_OUTPUT_TRANS_LOG_TO_UART
+	ppm_info("(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
+#else
+	ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
+#endif
+}
 
 int mt_ppm_main(void)
 {
@@ -607,28 +616,35 @@ int mt_ppm_main(void)
 					c_req->cpu_limit[i].advise_cpu_core
 				);
 		}
-#ifdef PPM_OUTPUT_TRANS_LOG_TO_UART
-		ppm_info("(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
-			c_req->root_cluster, buf);
-#else
-		ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
-			c_req->root_cluster, buf);
-#endif
+
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
 
 #ifdef PPM_THERMAL_ENHANCEMENT
 		{
-			bool notify_hps = false, notify_dvfs = false;
+			bool notify_hps = false, notify_dvfs = false, log_print = false;
 
 			for (i = 0; i < c_req->cluster_num; i++) {
 				if (c_req->cpu_limit[i].min_cpu_core != last_req->cpu_limit[i].min_cpu_core
 					|| c_req->cpu_limit[i].max_cpu_core != last_req->cpu_limit[i].max_cpu_core
-					|| c_req->cpu_limit[i].has_advise_core)
+					|| c_req->cpu_limit[i].has_advise_core) {
 					notify_hps = true;
+					log_print = true;
+				}
 				if (c_req->cpu_limit[i].min_cpufreq_idx != last_req->cpu_limit[i].min_cpufreq_idx
 					|| c_req->cpu_limit[i].max_cpufreq_idx != last_req->cpu_limit[i].max_cpufreq_idx
-					|| c_req->cpu_limit[i].has_advise_freq)
+					|| c_req->cpu_limit[i].has_advise_freq) {
+					int min_freq_ori = last_req->cpu_limit[i].min_cpufreq_idx;
+					int max_freq_ori = last_req->cpu_limit[i].max_cpufreq_idx;
+					int min_freq = c_req->cpu_limit[i].min_cpufreq_idx;
+					int max_freq = c_req->cpu_limit[i].max_cpufreq_idx;
+
 					notify_dvfs = true;
+
+					/* check for log reduction */
+					if (!(max_freq < 8 && max_freq_ori < 8 && abs(max_freq - max_freq_ori) < 5)
+					|| !(min_freq > 8 && min_freq_ori > 8 && abs(min_freq - min_freq_ori) < 5))
+						log_print = true;
+				}
 
 				if (notify_hps && notify_dvfs)
 					break;
@@ -637,12 +653,18 @@ int mt_ppm_main(void)
 			/* notify needed client only */
 			if (notify_dvfs && !notify_hps) {
 				now = ktime_get();
+				if (log_print)
+					ppm_main_log_print(policy_mask, ppm_main_info.min_power_budget,
+							c_req->root_cluster, buf);
 				if (ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb(*c_req);
 				delta = ktime_sub(ktime_get(), now);
 				ppm_dbg(TIME_PROFILE, "Done! notify dvfs only! time = %lld us\n", ktime_to_us(delta));
 				goto nofity_end;
 			} else if (notify_hps && !notify_dvfs) {
+				if (log_print)
+					ppm_main_log_print(policy_mask, ppm_main_info.min_power_budget,
+							c_req->root_cluster, buf);
 				now = ktime_get();
 				if (ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb(*c_req);
@@ -652,6 +674,9 @@ int mt_ppm_main(void)
 			}
 		}
 #endif
+
+		ppm_main_log_print(policy_mask, ppm_main_info.min_power_budget,
+				c_req->root_cluster, buf);
 
 		/* check need to notify hps first or not
 		   1. one or more power budget related policy is activate
