@@ -234,7 +234,7 @@ static void ptp_restore_ptp_volt(struct ptp_det *det);
 #if EN_ISR_LOG
 #define ptp_isr_info(fmt, args...)  ptp_notice(fmt, ##args)
 #else
-#define ptp_isr_info(fmt, args...)  ptp_debug(fmt, ##args)
+#define ptp_isr_info(fmt, args...)
 #endif
 
 #define FUNC_LV_MODULE          BIT(0)	/* module, platform driver interface */
