@@ -463,6 +463,10 @@ struct mt_cpu_dvfs {
 	/* limit max freq from user */
 	unsigned int limited_max_freq_by_user;
 
+	/* limit min/max freq from other kernel driver (for BSP package only) */
+	unsigned int limited_min_freq_by_kdriver;
+	unsigned int limited_max_freq_by_kdriver;
+
 #ifdef CONFIG_CPU_DVFS_TURBO_MODE
 	/* turbo mode */
 	unsigned int turbo_mode;
@@ -1493,6 +1497,64 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #else
 	return 0;
 #endif
+}
+
+void mt_cpufreq_set_min_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	FUNC_ENTER(FUNC_LV_API);
+
+	BUG_ON(NULL == p);
+
+	if (!cpu_dvfs_is_available(p)) {
+		FUNC_EXIT(FUNC_LV_API);
+		return;
+	}
+
+	p->limited_min_freq_by_kdriver = freq;
+
+	if ((p->limited_min_freq_by_kdriver != 0)
+	    && (p->limited_min_freq_by_kdriver > cpu_dvfs_get_cur_freq(p))) {
+		struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
+
+		if (policy) {
+			cpufreq_driver_target(
+				policy, p->limited_min_freq_by_kdriver, CPUFREQ_RELATION_L);
+			cpufreq_cpu_put(policy);
+		}
+	}
+
+	FUNC_EXIT(FUNC_LV_API);
+}
+
+void mt_cpufreq_set_max_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	FUNC_ENTER(FUNC_LV_API);
+
+	BUG_ON(NULL == p);
+
+	if (!cpu_dvfs_is_available(p)) {
+		FUNC_EXIT(FUNC_LV_API);
+		return;
+	}
+
+	p->limited_max_freq_by_kdriver = freq;
+
+	if ((p->limited_max_freq_by_kdriver != 0)
+	    && (p->limited_max_freq_by_kdriver < cpu_dvfs_get_cur_freq(p))) {
+		struct cpufreq_policy *policy = cpufreq_cpu_get(p->cpu_id);
+
+		if (policy) {
+			cpufreq_driver_target(
+				policy, p->limited_max_freq_by_kdriver, CPUFREQ_RELATION_H);
+			cpufreq_cpu_put(policy);
+		}
+	}
+
+	FUNC_EXIT(FUNC_LV_API);
 }
 
 unsigned int mt_cpufreq_get_cur_freq(enum mt_cpu_dvfs_id id)
@@ -2662,6 +2724,16 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 
 	BUG_ON(NULL == p);
 
+	/* kdriver limit min freq */
+	if (p->limited_min_freq_by_kdriver) {
+		idx = _mt_cpufreq_get_idx_by_freq(p, p->limited_min_freq_by_kdriver, CPUFREQ_RELATION_L);
+
+		if (idx != -1 && new_opp_idx > idx) {
+			new_opp_idx = idx;
+			cpufreq_ver("%s(): kdriver limited freq, idx = %d\n", __func__, new_opp_idx);
+		}
+	}
+
 	/* HEVC */
 	if (p->limited_freq_by_hevc) {
 		idx = _mt_cpufreq_get_idx_by_freq(p, p->limited_freq_by_hevc, CPUFREQ_RELATION_L);
@@ -2717,6 +2789,18 @@ static unsigned int _mt_cpufreq_calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_
 		if (idx != -1 && new_opp_idx < idx) {
 			new_opp_idx = idx;
 			cpufreq_ver("%s(): limited max freq by user, idx = %d\n",
+					__func__, new_opp_idx);
+		}
+	}
+
+	/* kdriver limit max freq */
+	if (p->limited_max_freq_by_kdriver) {
+		idx = _mt_cpufreq_get_idx_by_freq(
+			p, p->limited_max_freq_by_kdriver, CPUFREQ_RELATION_H);
+
+		if (idx != -1 && new_opp_idx < idx) {
+			new_opp_idx = idx;
+			cpufreq_ver("%s(): limited max freq by kdriver, idx = %d\n",
 					__func__, new_opp_idx);
 		}
 	}

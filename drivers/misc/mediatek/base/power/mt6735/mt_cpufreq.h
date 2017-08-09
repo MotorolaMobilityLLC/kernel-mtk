@@ -211,15 +211,9 @@ extern void mt_cpufreq_thermal_protect(unsigned int limited_power);
 extern void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);
 
-/* SDIO */
-#if 0	/* moved to Vcore DVFS */
-extern void mt_vcore_dvfs_disable_by_sdio(unsigned int type, bool disabled);
-extern void mt_vcore_dvfs_volt_set_by_sdio(unsigned int volt);
-extern unsigned int mt_vcore_dvfs_volt_get_by_sdio(void);
-
-extern unsigned int mt_get_cur_volt_vcore_ao(void);
-/* extern unsigned int mt_get_cur_volt_vcore_pdn(void); */
-#endif
+/* for perfService kernel module */
+extern void mt_cpufreq_set_min_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
+extern void mt_cpufreq_set_max_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 
 /* Generic */
 /* extern int mt_cpufreq_state_set(int enabled); */
