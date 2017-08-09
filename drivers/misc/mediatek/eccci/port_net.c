@@ -23,6 +23,8 @@
 #define NET_DAT_TXQ_INDEX(p) ((p)->modem->md_state == EXCEPTION?(p)->txq_exp_index:(p)->txq_index)
 #define NET_ACK_TXQ_INDEX(p) ((p)->modem->md_state == EXCEPTION?(p)->txq_exp_index:((p)->txq_exp_index&0x0F))
 
+static atomic_t mbim_ccmni_index[MAX_MD_NUM];
+
 #ifdef CCMNI_U
 int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 {
@@ -296,6 +298,59 @@ static inline int skb_is_ack(struct sk_buff *skb)
 	return 0;
 }
 
+int ccmni_send_mbim_skb(int md_id, struct sk_buff *skb)
+{
+	int tx_ch = 0;
+	int mbim_interface_current;
+
+	if (md_id < 0 || md_id > MAX_MD_NUM) {
+		CCCI_ERR_MSG(md_id, NET, "invalid MD id=%d\n", md_id);
+		return -EINVAL;
+	}
+
+	mbim_interface_current = atomic_read(&mbim_ccmni_index[md_id]);
+	if (mbim_interface_current == -1)
+		return -EPERM;
+
+	switch (mbim_interface_current) {
+	case 0:
+		if (skb_is_ack(skb))
+			tx_ch = CCCI_CCMNI1_DL_ACK;
+		else
+			tx_ch = CCCI_CCMNI1_TX;
+		break;
+	case 1:
+		if (skb_is_ack(skb))
+			tx_ch = CCCI_CCMNI2_DL_ACK;
+		else
+			tx_ch = CCCI_CCMNI2_TX;
+		break;
+	case 2:
+		tx_ch = CCCI_CCMNI3_TX;
+		break;
+	case 3:
+		tx_ch = CCCI_CCMNI4_TX;
+		break;
+	case 4:
+		tx_ch = CCCI_CCMNI5_TX;
+		break;
+	case 5:
+		tx_ch = CCCI_CCMNI6_TX;
+		break;
+	case 6:
+		tx_ch = CCCI_CCMNI7_TX;
+		break;
+	case 7:
+		tx_ch = CCCI_CCMNI8_TX;
+		break;
+	default:
+		CCCI_ERR_MSG(-1, NET, "wrong CCMNI ID %d\n", mbim_interface_current);
+		return -EPERM;
+	};
+
+	return ccmni_send_pkt(md_id, tx_ch, skb);
+}
+
 static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct ccci_port *port = *((struct ccci_port **)netdev_priv(dev));
@@ -497,6 +552,8 @@ static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsig
 static int port_net_init(struct ccci_port *port)
 {
 #ifdef CCMNI_U
+	atomic_set(&mbim_ccmni_index[port->modem->index], -1);
+
 	if (port->rx_ch == CCCI_CCMNI1_RX) {
 #if defined CONFIG_MTK_IRAT_SUPPORT
 		CCCI_NOTICE_MSG(port->modem->index, NET, "clear MODEM_CAP_SGIO flag\n");
@@ -556,10 +613,22 @@ static int port_net_init(struct ccci_port *port)
 #endif
 }
 
+void ccmni_update_mbim_interface(int md_id, int id)
+{
+	if (md_id < 0 || md_id > MAX_MD_NUM) {
+		CCCI_ERR_MSG(md_id, NET, "invalid MD id=%d\n", md_id);
+		return;
+	}
+
+	atomic_set(&mbim_ccmni_index[md_id], id);
+	CCCI_INF_MSG(md_id, NET, "MBIM interface id=%d\n", id);
+}
+
 static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 {
 #ifdef CCMNI_U
 	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
+	int mbim_ccmni_current, mbim_ccmni_match = 0;
 #ifdef PORT_NET_TRACE
 	unsigned long long rx_cb_time;
 	unsigned long long total_time;
@@ -569,6 +638,44 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 	skb_pull(skb, sizeof(struct ccci_header));
 	CCCI_DEBUG_LOG(port->modem->index, NET, "[RX]: 0x%08X, 0x%08X, %08X, 0x%08X\n",
 		     ccci_h->data[0], ccci_h->data[1], ccci_h->channel, ccci_h->reserved);
+
+	mbim_ccmni_current = atomic_read(&mbim_ccmni_index[port->modem->index]);
+	if (mbim_ccmni_current != -1) {
+		switch (ccci_h->channel) {
+		case CCCI_CCMNI1_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 0 ? 1 : 0;
+			break;
+		case CCCI_CCMNI2_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 1 ? 1 : 0;
+			break;
+		case CCCI_CCMNI3_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 2 ? 1 : 0;
+			break;
+		case CCCI_CCMNI4_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 3 ? 1 : 0;
+			break;
+		case CCCI_CCMNI5_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 4 ? 1 : 0;
+			break;
+		case CCCI_CCMNI6_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 5 ? 1 : 0;
+			break;
+		case CCCI_CCMNI7_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 6 ? 1 : 0;
+			break;
+		case CCCI_CCMNI8_RX:
+			mbim_ccmni_match = mbim_ccmni_current == 7 ? 1 : 0;
+			break;
+		default:
+			mbim_ccmni_match = 0;
+			break;
+		};
+	}
+	if (mbim_ccmni_match) {
+		mbim_start_xmit(skb, mbim_ccmni_current);
+		return 0;
+	}
+
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock();
 #endif

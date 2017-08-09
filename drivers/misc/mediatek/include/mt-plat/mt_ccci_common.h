@@ -3,6 +3,7 @@
 #include <asm/io.h>
 #include <asm/setup.h>
 #include <linux/device.h>
+#include <linux/skbuff.h>
 /*
  * all code owned by CCCI should use modem index starts from ZERO
  */
@@ -1043,4 +1044,6 @@ int ccci_log_write(const char *fmt, ...);
 int ccci_log_write_raw(unsigned int flags, const char *fmt, ...);
 int ccci_event_log_cpy(char buf[], int size);
 int ccci_event_log(const char *fmt, ...);
+int ccmni_send_mbim_skb(int md_id, struct sk_buff *skb);
+void ccmni_update_mbim_interface(int md_id, int id);
 #endif
