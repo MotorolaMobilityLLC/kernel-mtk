@@ -1185,10 +1185,6 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 			if (ccci_to_c2k_ch >= 0)
 				ccci_h->channel = (u16) ccci_to_c2k_ch;
 			else {
-				if (IS_PASS_SKB(md, qno))
-					dev_kfree_skb_any(skb);
-				else
-					ccci_free_req(req);
 				ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
 				CCCI_ERROR_LOG(md->index, TAG, "channel num error (%d)\n", ccci_to_c2k_ch);
 				return ret;
