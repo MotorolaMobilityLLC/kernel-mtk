@@ -57,6 +57,17 @@ config COMMON_CLK_MT8135
 	---help---
 	  This driver supports Mediatek MT8135 clocks.
 
+config COMMON_CLK_MT8127
+	bool "Clock driver for Mediatek MT8127"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_NEW
+	default y if MACH_MT8127
+	---help---
+	  This driver supports Mediatek MT8127 clocks,
+	  which descripts the whole clock hierarchy about
+	  IC; It will be used to enable IC-special driver
+	  part of CCF framework on MT8127 platform.
+
 config COMMON_CLK_MT8163
 	bool "Clock driver for Mediatek MT8163"
 	depends on COMMON_CLK
