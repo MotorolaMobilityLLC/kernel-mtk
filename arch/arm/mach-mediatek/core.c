@@ -34,4 +34,12 @@ static const char *mt_dt_match[] __initconst = {
 DT_MACHINE_START(MT6735_DT, "MT6735")
 	.dt_compat	= mt_dt_match,
 MACHINE_END
+
+static const char *mt6755_dt_match[] __initconst = {
+	"mediatek,MT6755",
+	NULL
+};
+DT_MACHINE_START(MT6755_DT, "MT6755")
+	.dt_compat	= mt6755_dt_match,
+MACHINE_END
 #endif
