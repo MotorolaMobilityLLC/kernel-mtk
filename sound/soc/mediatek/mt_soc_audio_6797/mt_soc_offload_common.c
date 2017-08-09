@@ -391,10 +391,6 @@ static void mtk_compr_offload_int_wakelock(bool enable)
 static void mtk_compr_offload_draindone(void)
 {
 	if (afe_offload_block.drain_state == AUDIO_DRAIN_ALL) {
-		/* for gapless */
-		OffloadService_SetWriteblocked(false);
-		OffloadService_SetDrain(false, afe_offload_block.drain_state);
-		OffloadService_ReleaseWriteblocked();
 		/* gapless mode clear vars */
 		afe_offload_block.transferred       = 0;
 		afe_offload_block.copied_total      = 0;
@@ -402,6 +398,10 @@ static void mtk_compr_offload_draindone(void)
 		afe_offload_block.buf.u4WriteIdx    = 0;
 		afe_offload_block.drain_state       = AUDIO_DRAIN_NONE;
 		afe_offload_block.state = OFFLOAD_STATE_PREPARE;
+		/* for gapless */
+		OffloadService_SetWriteblocked(false);
+		OffloadService_SetDrain(false, afe_offload_block.drain_state);
+		OffloadService_ReleaseWriteblocked();
 	}
 }
 
@@ -878,6 +878,8 @@ static void mtk_compr_offload_resume(void)
 {
 	pr_debug("%s\n", __func__);
 	afe_offload_block.state = OFFLOAD_STATE_RUNNING;
+	if (!mPrepareDone)
+		mtk_offload_dl3_prepare();
 	if (!irq7_user) {
 		irq_add_user(&irq7_user,
 			Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
@@ -972,6 +974,12 @@ long OffloadService_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	switch (_IOC_NR(cmd)) {
 	case _IOC_NR(OFFLOADSERVICE_WRITEBLOCK):
 		OffloadService_ProcessWriteblocked((int)(unsigned long) arg);
+		ret = 0;
+		/* for power key event */
+		if (afe_offload_block.state == OFFLOAD_STATE_DRAIN &&
+			afe_offload_block.drain_state != AUDIO_DRAIN_NONE) {
+			ret = 1;
+		}
 		break;
 	case _IOC_NR(OFFLOADSERVICE_GETWRITEBLOCK):
 		ret = OffloadService_GetWriteblocked();
