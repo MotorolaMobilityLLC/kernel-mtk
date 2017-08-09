@@ -203,7 +203,11 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	case DPI_CLK_480p:
 		{
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
+#ifdef HDMI_MT8193_SUPPORT
+			clksrc = 3;
+#else
 			clksrc = 4;
+#endif
 #else
 			clksrc = TVDPLL_D4;
 #endif
@@ -425,6 +429,68 @@ enum DPI_STATUS ddp_dpi_ConfigSize(cmdqRecHandle cmdq, unsigned width, unsigned 
 	return DPI_STATUS_OK;
 }
 
+#ifdef HDMI_MT8193_SUPPORT
+enum DPI_STATUS ddp_dpi_ConfigCCIR656(cmdqRecHandle cmdq, bool enable)
+{
+	struct DPI_REG_CNTL csc = DPI_REG->CNTL;
+	struct DPI_REG_OUTPUT_SETTING outputsetting = DPI_REG->OUTPUT_SETTING;
+	struct DPI_REG_Y_LIMIT ylimit = DPI_REG->Y_LIMIT;
+	struct DPI_REG_C_LIMIT climit = DPI_REG->C_LIMIT;
+	struct DPI_REG_YUV422_SETTING yuv422setting = DPI_REG->YUV422_SETTING;
+	struct DPI_REG_EMBSYNC_SETTING embsync = DPI_REG->EMBSYNC_SETTING;
+	struct DPI_REG_ESAV_VTIM_LOAD esavtimload = DPI_REG->ESAV_VTIM_LOAD;
+
+	if (enable == FALSE)
+		return DPI_STATUS_OK;
+
+	csc.YUV422_EN = 1;
+	csc.RGB2YUV_EN = 1;
+	csc.EMBSYNC_EN = 1;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_CNTL, DPI_REG->CNTL, YUV422_EN, csc.YUV422_EN);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_CNTL, DPI_REG->CNTL, RGB2YUV_EN, csc.RGB2YUV_EN);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_CNTL, DPI_REG->CNTL, EMBSYNC_EN, csc.EMBSYNC_EN);
+
+	outputsetting.YC_MAP = 7;
+	outputsetting.CLK_POL = 1;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_OUTPUT_SETTING, DPI_REG->OUTPUT_SETTING, YC_MAP, outputsetting.YC_MAP);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_OUTPUT_SETTING, DPI_REG->OUTPUT_SETTING, CLK_POL, outputsetting.CLK_POL);
+
+	ylimit.Y_LIMIT_BOT = 0x100;
+	ylimit.Y_LIMIT_TOP = 0xF00;
+	climit.C_LIMIT_BOT = 0x100;
+	climit.C_LIMIT_TOP = 0xF00;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_Y_LIMIT, DPI_REG->Y_LIMIT, Y_LIMIT_BOT, ylimit.Y_LIMIT_BOT);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_Y_LIMIT, DPI_REG->Y_LIMIT, Y_LIMIT_TOP, ylimit.Y_LIMIT_TOP);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_C_LIMIT, DPI_REG->C_LIMIT, C_LIMIT_BOT, climit.C_LIMIT_BOT);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_C_LIMIT, DPI_REG->C_LIMIT, C_LIMIT_TOP, climit.C_LIMIT_TOP);
+
+	yuv422setting.UV_SWAP = 1;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_YUV422_SETTING, DPI_REG->YUV422_SETTING, UV_SWAP, yuv422setting.UV_SWAP);
+
+	embsync.EMBVSYNC_R_CR = 1;
+	embsync.EMBVSYNC_G_Y = 1;
+	embsync.EMBVSYNC_B_CB = 1;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_EMBSYNC_SETTING, DPI_REG->EMBSYNC_SETTING, EMBVSYNC_R_CR,
+		      embsync.EMBVSYNC_R_CR);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_EMBSYNC_SETTING, DPI_REG->EMBSYNC_SETTING, EMBVSYNC_G_Y,
+		      embsync.EMBVSYNC_G_Y);
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_EMBSYNC_SETTING, DPI_REG->EMBSYNC_SETTING, EMBVSYNC_B_CB,
+		      embsync.EMBVSYNC_B_CB);
+
+	esavtimload.ESAV_VWID_LODD = 0x1E;
+
+	DPI_OUTREGBIT(cmdq, struct DPI_REG_ESAV_VTIM_LOAD, DPI_REG->ESAV_VTIM_LOAD, ESAV_VWID_LODD,
+		      esavtimload.ESAV_VWID_LODD);
+
+	return DPI_STATUS_OK;
+}
+#endif
+
 enum DPI_STATUS ddp_dpi_EnableColorBar(void)
 {
 	/*enable internal pattern - color bar */
@@ -505,6 +571,10 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 				    dpi_config->hsync_front_porch);
 
 		ddp_dpi_ConfigDualEdge(cmdq_handle, dpi_config->i2x_en, dpi_config->i2x_edge);
+
+		#ifdef HDMI_MT8193_SUPPORT
+		ddp_dpi_ConfigCCIR656(cmdq_handle, true);
+		#endif
 
 		s_isDpiConfig = TRUE;
 		pr_err("DISP/DPI,ddp_dpi_config done\n");
