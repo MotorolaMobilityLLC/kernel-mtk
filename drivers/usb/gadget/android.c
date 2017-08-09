@@ -59,7 +59,7 @@
 
 //#define CONFIG_MTK_C2K_SUPPORT
 #ifdef CONFIG_MTK_C2K_SUPPORT
-#include <mach/viatel_rawbulk.h>
+#include "viatel_rawbulk.h"
 int rawbulk_bind_config(struct usb_configuration *c, int transfer_id);
 int rawbulk_function_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl);
 #endif

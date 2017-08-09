@@ -276,7 +276,7 @@ void do_push_upstream(int transfer_id, char *buf, int len)
 	while (1) {
 		ret = rawbulk_push_upstream_buffer(transfer_id, buf, len);
 		if (ret == len || ret == 0) {
-			C2K_DBG("push ret(%d), %s\n", ret, __TIME__);
+			C2K_DBG("push ret(%d)\n", ret);
 #ifdef C2K_USB_PERF
 			total_cnt += 1;
 			if (total_cnt == 1024) {
@@ -286,7 +286,7 @@ void do_push_upstream(int transfer_id, char *buf, int len)
 #endif
 			break;
 		}
-		C2K_DBG("push ret(%d), %s\n", ret, __TIME__);
+		C2K_DBG("push ret(%d)\n", ret);
 #ifndef C2K_USB_PERF
 		udelay(1000);
 #endif
@@ -343,7 +343,7 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 		if (idx == ATTR_ENABLE) {
 			int ret;
 
-			ret = kstrtol(buf, (int)NULL, (long *)&enable);
+			ret = kstrtol(buf, 0, (long *)&enable);
 			C2K_NOTE("enable:%d\n", enable);
 
 #ifdef C2K_USB_UT
@@ -454,19 +454,19 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 			if (check_enable_state(fn)) {
 				int val, ret;
 
-				ret = kstrtol(buf, (int)NULL, (long *)&val);
+				ret = kstrtol(buf, 0, (long *)&val);
 				modem_dtr_set(val, 1);
 			}
 		}
 	} else if (idx == ATTR_AUTORECONN) {
 		int val, ret;
 
-		ret = kstrtol(buf, (int)NULL, (long *)&val);
+		ret = kstrtol(buf, 0, (long *)&val);
 		fn->autoreconn = !!val;
 	} else {
 		int val, ret;
 
-		ret = kstrtol(buf, (int)NULL, (long *)&val);
+		ret = kstrtol(buf, 0, (long *)&val);
 		switch (idx) {
 		case ATTR_NUPS:
 			nups = val;

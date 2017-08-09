@@ -1533,7 +1533,6 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 	struct usb_composite_dev *cdev = (musb->g).ep0->driver_data;
 	struct usb_configuration *c = cdev->config;
 	struct usb_gadget *gadget = &(musb->g);
-	int cur_epnum = musb_ep->current_epnum;
 
 	if (c == NULL)
 		return 0;
@@ -1571,9 +1570,6 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 			is_in = (ep->bEndpointAddress & 0x80) >> 7;
 			epnum = (ep->bEndpointAddress & 0x0f);
 
-			/* printk(KERN_WARNING "<%s, %d>, is_in:%x, epnum:%x,
-			   cur epnum : %x, name:%s, musb->is_in:%x\n",
-			   __func__, __LINE__, is_in, epnum, cur_epnum, f->name, musb_ep->is_in); */
 			pr_warn("<%s, %d>, ep->bEndpointAddress(%x), address(%x)\n",
 					__func__, __LINE__, ep->bEndpointAddress,
 					(musb_ep->end_point).address);
