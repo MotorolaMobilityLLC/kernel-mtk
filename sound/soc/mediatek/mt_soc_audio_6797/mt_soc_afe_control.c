@@ -1672,6 +1672,9 @@ bool SetDLSrc2(uint32 SampleRate)
 	}
 #endif
 
+	if (SampleRate >= 96000)
+		AudDrv_AUD_Sel(1);
+
 	/* set input sampling rate */
 	AfeAddaDLSrc2Con0 = SampleRateTransform(SampleRate, Soc_Aud_Digital_Block_ADDA_DL) << 28;
 
@@ -2105,6 +2108,8 @@ bool SetI2SDacEnable(bool bEnable)
 		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
 			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
 		}
+
+		AudDrv_AUD_Sel(0);
 	}
 
 #ifdef CONFIG_FPGA_EARLY_PORTING

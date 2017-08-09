@@ -128,6 +128,8 @@ enum audio_system_clock_type {
 	CLOCK_TOP_AUD_MUX2,
 	CLOCK_TOP_AD_APLL1_CK,
 	CLOCK_TOP_AD_APLL2_CK,
+	CLOCK_MUX_AUDIO,
+	CLOCK_TOP_SYSPLL3_D4,
 	CLOCK_MUX_AUDIOINTBUS,
 	CLOCK_TOP_SYSPLL1_D4,
 	CLOCK_TOP_MUX_ANC_MD32,
@@ -169,6 +171,8 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_TOP_AUD_MUX2] = {"aud_mux2_clk", false, false, NULL},		/* select from 26 or apll2 */
 	[CLOCK_TOP_AD_APLL1_CK] = {"top_ad_apll1_clk", false, false, NULL},	/* parent of TOP_AUD_MUX1 */
 	[CLOCK_TOP_AD_APLL2_CK] = {"top_ad_apll2_clk", false, false, NULL},
+	[CLOCK_MUX_AUDIO] = {"top_mux_audio", false, false, NULL},
+	[CLOCK_TOP_SYSPLL3_D4] = {"top_sys_pll3_d4", false, false, NULL},
 	[CLOCK_MUX_AUDIOINTBUS] = {"top_mux_audio_int", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
 	[CLOCK_TOP_SYSPLL1_D4] = {"top_sys_pll1_d4", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
 	[CLOCK_TOP_MUX_ANC_MD32] = {"top_mux_anc_md32", false, false, NULL},
@@ -270,7 +274,6 @@ void AudDrv_Clk_Power_Off(void)
 {
 }
 
-
 /*****************************************************************************
  * FUNCTION
  *  AudDrv_Clk_On / AudDrv_Clk_Off
@@ -333,6 +336,78 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		if (ret) {
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
+			       aud_clks[CLOCK_CLK26M].name, ret);
+			BUG();
+			goto EXIT;
+		}
+	}
+EXIT:
+	pr_debug("-%s()\n", __func__);
+}
+
+
+/*****************************************************************************
+ * FUNCTION
+ *  AudDrv_AUD_Sel
+ *
+ * DESCRIPTION
+ *  TOP_MUX_AUDIO select source
+ *
+ *****************************************************************************
+*/
+
+void AudDrv_AUD_Sel(int parentidx)
+{
+	int ret = 0;
+
+	if (parentidx == 1) {
+		if (aud_clks[CLOCK_MUX_AUDIO].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIO].clock);
+			if (ret) {
+				pr_err
+				("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIO fail",
+				 __func__);
+				BUG();
+				goto EXIT;
+			}
+		} else {
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIO fail",
+			       __func__);
+			BUG();
+			goto EXIT;
+		}
+
+		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIO].clock,
+				     aud_clks[CLOCK_TOP_SYSPLL3_D4].clock);
+		if (ret) {
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
+			       aud_clks[CLOCK_TOP_SYSPLL3_D4].name, ret);
+			BUG();
+			goto EXIT;
+		}
+	} else if (parentidx == 0) {
+		if (aud_clks[CLOCK_MUX_AUDIO].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIO].clock);
+			if (ret) {
+				pr_err
+				("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIO fail",
+				 __func__);
+				BUG();
+				goto EXIT;
+			}
+		} else {
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIO fail",
+			       __func__);
+			BUG();
+			goto EXIT;
+		}
+
+		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIO].clock,
+				     aud_clks[CLOCK_CLK26M].clock);
+		if (ret) {
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
 			       aud_clks[CLOCK_CLK26M].name, ret);
 			BUG();
 			goto EXIT;

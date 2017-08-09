@@ -68,6 +68,8 @@
 
 extern int AudDrv_Clk_probe(void *dev);
 extern void AudDrv_Clk_Deinit(void *dev);
+
+void AudDrv_AUD_Sel(int parentidx);
 void AudDrv_AUDINTBUS_Sel(int parentidx);
 
 void AudDrv_Clk_AllOn(void);
