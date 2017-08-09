@@ -788,7 +788,7 @@ b_host:
 		if (1) {	/* device mode */
 			dev_notice(musb->controller, "BUS RESET as %s\n",
 				   usb_otg_state_string(musb->xceiv->state));
-			os_printk(K_INFO, "BUS RESET\n");
+			os_printk(K_DEBUG, "BUS RESET\n");
 			switch (musb->xceiv->state) {
 			case OTG_STATE_A_SUSPEND:
 				/* We need to ignore disconnect on suspend

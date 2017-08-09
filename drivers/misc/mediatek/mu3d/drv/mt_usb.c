@@ -347,7 +347,7 @@ void usb_check_connect(void)
 
 void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
-	os_printk(K_INFO, "musb_sync_with_bat\n");
+	os_printk(K_DEBUG, "musb_sync_with_bat\n");
 
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_MTK_SMART_BATTERY)

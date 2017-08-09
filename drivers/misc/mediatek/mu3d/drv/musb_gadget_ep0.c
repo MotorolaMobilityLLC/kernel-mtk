@@ -1143,7 +1143,7 @@ setup:
 				if (musb->set_address) {
 					musb->set_address = false;
 					/* musb_writeb(mbase, MUSB_FADDR, musb->address); */
-					os_printk(K_INFO, "Set address to 0x%08x...\n",
+					os_printk(K_DEBUG, "Set address to 0x%08x...\n",
 						  musb->address);
 					os_writel(U3D_DEVICE_CONF,
 						  os_readl(U3D_DEVICE_CONF) | (musb->address
