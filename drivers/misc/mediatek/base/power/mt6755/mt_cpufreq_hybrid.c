@@ -218,11 +218,30 @@
 #define CON1_CFG_KEY		(PROJECT_CODE << 16)
 
 #define PCM_PWRIO_EN_R7		(1U << 7)
+#define PCM_RF_SYNC_R0		(1U << 16)
+#define PCM_RF_SYNC_R1		(1U << 17)
 #define PCM_RF_SYNC_R7		(1U << 23)
 
 #define PCM_SW_INT0		(1U << 0)
 #define PCM_SW_INT1		(1U << 1)
 #define PCM_SW_INT_ALL		(PCM_SW_INT1 | PCM_SW_INT0)
+
+#define TMT_RISING		0
+#define TMT_FALLING		1
+#define TMT_HIGH_LEVEL		2
+#define TMT_LOW_LEVEL		3
+
+#define TWAM_ENABLE		(1U << 0)
+#define TWAM_SPEED_MODE_EN	(1U << 1)
+#define TWAM_SW_RST		(1U << 2)
+#define TWAM_MON_TYPE0(val)	(((val) & 0x3) << 4)
+#define TWAM_MON_TYPE1(val)	(((val) & 0x3) << 6)
+#define TWAM_MON_TYPE2(val)	(((val) & 0x3) << 8)
+#define TWAM_MON_TYPE3(val)	(((val) & 0x3) << 10)
+#define TWAM_SIG_SEL0(val)	(((val) & 0x1f) << 12)
+#define TWAM_SIG_SEL1(val)	(((val) & 0x1f) << 17)
+#define TWAM_SIG_SEL2(val)	(((val) & 0x1f) << 22)
+#define TWAM_SIG_SEL3(val)	(((val) & 0x1f) << 27)
 
 #define IRQM_TWAM		(1U << 2)
 #define IRQM_PCM_RETURN		(1U << 3)
@@ -230,8 +249,8 @@
 #define IRQM_RET_IRQ1		(1U << 9)
 
 #define IRQM_RET_IRQ_SEC	(IRQM_RET_IRQ1)
-#define IRQM_ALL_EXC_TWAM	(IRQM_RET_IRQ_SEC | IRQM_RET_IRQ0 | IRQM_PCM_RETURN)
-#define IRQM_ALL		(IRQM_ALL_EXC_TWAM | IRQM_TWAM)
+#define IRQM_ALL_EXC_RET0	(IRQM_RET_IRQ_SEC | IRQM_TWAM)
+#define IRQM_ALL		(IRQM_ALL_EXC_RET0 | IRQM_RET_IRQ0 | IRQM_PCM_RETURN)
 
 #define WAKE_SRC_CPU		(1U << 0)
 #define WAKE_SRC_TWAM		(1U << 1)
@@ -244,8 +263,8 @@
 #define IRQS_SW_INT1		(1U << 5)
 
 #define IRQC_TWAM		IRQS_TWAM
-#define IRQC_ALL_EXC_TWAM	IRQS_PCM_RETURN
-#define IRQC_ALL		(IRQC_ALL_EXC_TWAM | IRQC_TWAM)
+#define IRQC_PCM_RETURN		IRQS_PCM_RETURN
+#define IRQC_ALL		(IRQC_PCM_RETURN | IRQC_TWAM)
 
 #define FSM_PC_STA_IDLE		(1U << 4)
 #define FSM_PC_STA_INC		(1U << 5)
@@ -308,9 +327,10 @@
 struct pcm_desc;
 
 struct pwr_ctrl {
-	u32 wake_src;
-	u8 bypass_fit;
+	u8 twam_wfi_init;
 	u8 r7_ctrl_en;
+
+	u32 wake_src;
 };
 
 
@@ -382,9 +402,9 @@ struct cpuhvfs_data {
 #include "mt_cpufreq_hybrid_fw.h"
 
 static struct pwr_ctrl dvfs_ctrl = {
-	.wake_src	= WAKE_SRC_TWAM | WAKE_SRC_CPU,
-	.bypass_fit	= 1,
 	.r7_ctrl_en	= 1,
+
+	.wake_src	= WAKE_SRC_TWAM | WAKE_SRC_CPU,
 };
 
 static void __iomem *cspm_base;
@@ -506,6 +526,14 @@ do {								\
 	csram_write(OFFS_FW_RSV2, cspm_read(CSPM_SW_RSV2));	\
 } while (0)
 
+#define cspm_get_timestamp()		cspm_read(CSPM_PCM_TIMER_OUT)
+
+#define cspm_get_min_freq_ll()		((cspm_read(CSPM_SW_RSV4) & SW_L_F_MIN_MASK) >> 0)
+#define cspm_get_min_freq_l()		((cspm_read(CSPM_SW_RSV4) & SW_B_F_MIN_MASK) >> 16)
+
+#define cspm_get_max_freq_ll()		((cspm_read(CSPM_SW_RSV4) & SW_L_F_MAX_MASK) >> 4)
+#define cspm_get_max_freq_l()		((cspm_read(CSPM_SW_RSV4) & SW_B_F_MAX_MASK) >> 20)
+
 #define cspm_is_ll_paused()		(!!(cspm_read(CSPM_SW_RSV4) & SW_L_PAUSE))
 #define cspm_is_l_paused()		(!!(cspm_read(CSPM_SW_RSV4) & SW_B_PAUSE))
 #define cspm_is_all_paused()		((cspm_read(CSPM_SW_RSV4) & SW_ALL_PAUSE) == SW_ALL_PAUSE)
@@ -566,17 +594,6 @@ static inline u32 opp_sw_to_fw(unsigned int index)
 static inline unsigned int opp_fw_to_sw(u32 freq)
 {
 	return freq < NUM_CPU_OPP ? (NUM_CPU_OPP - 1) - freq : 0 /* highest frequency */;
-}
-
-static inline void cspm_save_curr_sta(struct init_sta *sta)
-{
-	csram_write_fw_sta();
-
-	sta->opp[CPU_CLUSTER_LL] = opp_fw_to_sw(cspm_get_curr_freq_ll());
-	sta->opp[CPU_CLUSTER_L] = opp_fw_to_sw(cspm_get_curr_freq_l());
-
-	sta->volt[CPU_CLUSTER_LL] = cspm_get_curr_volt_ll();
-	sta->volt[CPU_CLUSTER_L] = cspm_get_curr_volt_l();
 }
 
 
@@ -725,8 +742,6 @@ static void __cspm_init_event_vector(const struct pcm_desc *pcmdesc)
 
 static void __cspm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
 {
-	u32 mask;
-
 	/* start PCM timer (as free-run timer) */
 	cspm_write(CSPM_PCM_TIMER_VAL, 0xffffffff);
 	cspm_write(CSPM_PCM_CON1, cspm_read(CSPM_PCM_CON1) | CON1_CFG_KEY | CON1_PCM_TIMER_EN);
@@ -734,23 +749,22 @@ static void __cspm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
 	/* unmask PCM wakeup source */
 	cspm_write(CSPM_WAKEUP_EVENT_MASK, ~pwrctrl->wake_src);
 
-	/* unmask CSPM IRQ (keep TWAM setting) */
-	mask = cspm_read(CSPM_IRQ_MASK) & IRQM_TWAM;
-	cspm_write(CSPM_IRQ_MASK, mask | IRQM_RET_IRQ_SEC);
+	/* unmask CSPM IRQ */
+	cspm_write(CSPM_IRQ_MASK, IRQM_ALL_EXC_RET0);
 }
 
 static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct init_sta *sta)
 {
 	u32 con0;
 
-	/* init register to match FW expectation (FW_OPPn => SW_OPP0) */
+	/* init register to match FW expectation */
 	cspm_write(CSPM_SW_RSV4, SW_B_PAUSE |		/* must */
 				 SW_B_F_MAX(NUM_CPU_OPP - 1) |
 				 SW_B_F_MIN(0) |
-				 (pwrctrl->bypass_fit ? BYPASS_FIT : 0) |
 				 SW_L_PAUSE |		/* must */
 				 SW_L_F_MAX(NUM_CPU_OPP - 1) |
-				 SW_L_F_MIN(0));
+				 SW_L_F_MIN(0) |
+				 BYPASS_FIT);		/* must */
 	csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 	cspm_write(CSPM_SW_RSV5, B_F_CURR(opp_sw_to_fw(sta->opp[CPU_CLUSTER_L])) |
@@ -774,8 +788,22 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_PCM_CON0, con0 | CON0_CFG_KEY);
 }
 
+static void __cspm_save_curr_sta(struct init_sta *sta)
+{
+	csram_write_fw_sta();
+
+	sta->opp[CPU_CLUSTER_LL] = opp_fw_to_sw(cspm_get_curr_freq_ll());
+	sta->opp[CPU_CLUSTER_L] = opp_fw_to_sw(cspm_get_curr_freq_l());
+
+	sta->volt[CPU_CLUSTER_LL] = cspm_get_curr_volt_ll();
+	sta->volt[CPU_CLUSTER_L] = cspm_get_curr_volt_l();
+}
+
 static void __cspm_clean_after_pause(void)
 {
+	/* disable TWAM timer */
+	cspm_write(CSPM_TWAM_CON, cspm_read(CSPM_TWAM_CON) & ~TWAM_ENABLE);
+
 	/* disable r7 to control power */
 	cspm_write(CSPM_PCM_PWR_IO_EN, 0);
 
@@ -785,9 +813,9 @@ static void __cspm_clean_after_pause(void)
 	/* clean wakeup event raw status */
 	cspm_write(CSPM_WAKEUP_EVENT_MASK, ~0);
 
-	/* clean IRQ status (except TWAM) */
-	cspm_write(CSPM_IRQ_MASK, cspm_read(CSPM_IRQ_MASK) | IRQM_ALL_EXC_TWAM);
-	cspm_write(CSPM_IRQ_STA, IRQC_ALL_EXC_TWAM);
+	/* clean IRQ status */
+	cspm_write(CSPM_IRQ_MASK, IRQM_ALL);
+	cspm_write(CSPM_IRQ_STA, IRQC_ALL);
 	cspm_write(CSPM_SW_INT_CLEAR, PCM_SW_INT_ALL);
 }
 
@@ -802,6 +830,7 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 
 	cspm_err("%s\n", msg);
 	cspm_err("FW_VER     : %s\n", dvfsp->pcmdesc->version);
+	cspm_err("PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
 	cspm_err("SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
 	cspm_err("SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
 	cspm_err("SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
@@ -823,8 +852,6 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
 	cspm_err("PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
-	cspm_err("AP_SEMA    : 0x%x\n", cspm_read(CSPM_AP_SEMA));
-	cspm_err("SPM_SEMA   : 0x%x\n", cspm_read(CSPM_SPM_SEMA));
 }
 
 static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
@@ -854,7 +881,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 			csram_write(OFFS_PAUSE_SRC, pause_src_map);
 
 		if (cspm_base && psf == PSF_PAUSE_SUSPEND)
-			cspm_save_curr_sta(&suspend_sta);
+			__cspm_save_curr_sta(&suspend_sta);
 	} else {
 		cspm_dump_debug_info(dvfsp, "PAUSE TIMEOUT, psf = 0x%x", psf);
 		BUG_ON(pause_fail_ke);
@@ -1082,14 +1109,15 @@ static unsigned int cspm_get_curr_volt(struct cpuhvfs_dvfsp *dvfsp, unsigned int
 
 static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster)
 {
-	u32 rsv4;
+	u32 time, rsv4;
 
 	spin_lock(&dvfs_lock);
+	time = cspm_get_timestamp();
 	rsv4 = cspm_read(CSPM_SW_RSV4);
 	csram_write(OFFS_SW_RSV4, rsv4);
 
-	cspm_dbgx(CLUSTER, "cluster%u on, pause = 0x%x, RSV4: 0x%x\n",
-			   cluster, pause_src_map, rsv4);
+	cspm_dbgx(CLUSTER, "[%08x] cluster%u on, pause = 0x%x, RSV4: 0x%x\n",
+			   time, cluster, pause_src_map, rsv4);
 
 	switch (cluster) {
 	case CPU_CLUSTER_LL:
@@ -1122,18 +1150,19 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster)
 {
 	int r;
-	u32 rsv4;
+	u32 time, rsv4;
 
 	spin_lock(&dvfs_lock);
 	csram_write(OFFS_FUNC_ENTER, (cluster << 24) | FEF_CLUSTER_OFF);
 
+	time = cspm_get_timestamp();
 	rsv4 = cspm_read(CSPM_SW_RSV4);
 	csram_write(OFFS_SW_RSV4, rsv4);
 
-	cspm_dbgx(CLUSTER, "cluster%u off, pause = 0x%x, RSV4: 0x%x\n",
-			   cluster, pause_src_map, rsv4);
+	cspm_dbgx(CLUSTER, "[%08x] cluster%u off, pause = 0x%x, RSV4: 0x%x\n",
+			   time, cluster, pause_src_map, rsv4);
 
-	/* only DFS to the lowest frequency (no I2C control) */
+	/* DFS only to the lowest frequency (no I2C control) */
 	switch (cluster) {
 	case CPU_CLUSTER_LL:
 		BUG_ON(!(rsv4 & L_CLUSTER_EN));		/* already off */
@@ -1146,7 +1175,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
 
-		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_L_F_DES_MASK;	/* SW_F_DES = 0 */
+		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_L_F_DES_MASK;
 		break;
 	case CPU_CLUSTER_L:
 	default:
@@ -1160,12 +1189,12 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
 
-		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_B_F_DES_MASK;	/* SW_F_DES = 0 */
+		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_B_F_DES_MASK;
 		break;
 	}
 
 	if (r >= 0) {
-		cspm_write(CSPM_SW_RSV4, rsv4);
+		cspm_write(CSPM_SW_RSV4, rsv4);		/* SW_F_DES = 0 */
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 	} else {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
@@ -1192,17 +1221,16 @@ static void __cspm_check_and_update_sta(struct init_sta *sta)
 			sta->opp[i] = suspend_sta.opp[i];
 			suspend_sta.opp[i] = UINT_MAX;
 		}
-		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
-
 		if (sta->volt[i] == VOLT_AT_SUSPEND) {
 			BUG_ON(suspend_sta.volt[i] == UINT_MAX);	/* without suspend */
 
 			sta->volt[i] = suspend_sta.volt[i];
 			suspend_sta.volt[i] = UINT_MAX;
 		}
-		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
 
+		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
 		csram_write(OFFS_INIT_FREQ + i * sizeof(u32), sta->freq[i]);
+		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
 
 		cspm_dbgx(KICK, "cluster%d: opp = %u, freq = %u, volt = 0x%x\n",
 				i, sta->opp[i], sta->freq[i], sta->volt[i]);
@@ -1266,7 +1294,7 @@ static int cspm_probe(struct platform_device *pdev)
 		return r;
 	}
 
-	/* build HW semaphore register mapping */
+	/* build register mapping for general access */
 	sema_reg[SEMA_FHCTL_DRV] = CSPM_AP_SEMA;
 
 	spin_lock_irqsave(&cspm_lock, flags);
@@ -1336,6 +1364,7 @@ static int dvfsp_fw_show(struct seq_file *m, void *v)
 
 static int dvfsp_reg_show(struct seq_file *m, void *v)
 {
+	seq_printf(m, "PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
 	seq_printf(m, "SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
 	seq_printf(m, "SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
 	seq_printf(m, "SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
@@ -1357,8 +1386,6 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_printf(m, "PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
 	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
-	seq_printf(m, "AP_SEMA    : 0x%x\n", cspm_read(CSPM_AP_SEMA));
-	seq_printf(m, "SPM_SEMA   : 0x%x\n", cspm_read(CSPM_SPM_SEMA));
 
 	return 0;
 }
@@ -1702,4 +1729,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.3");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
