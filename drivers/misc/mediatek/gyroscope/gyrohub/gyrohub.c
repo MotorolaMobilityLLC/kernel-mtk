@@ -886,7 +886,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 	ctl.open_report_data = gyrohub_open_report_data;
 	ctl.enable_nodata = gyrohub_enable_nodata;
 	ctl.set_delay = gyrohub_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 
 	err = gyro_register_control_path(&ctl);
@@ -902,7 +902,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 		GYROS_ERR("gyro_register_data_path fail = %d\n", err);
 		goto exit_create_attr_failed;
 	}
-	err = batch_register_support_info(ID_GYROSCOPE, ctl.is_support_batch, data.vender_div, 0);
+	err = batch_register_support_info(ID_GYROSCOPE, ctl.is_support_batch, data.vender_div, 1);
 	if (err) {
 		GYROS_ERR("register gsensor batch support err = %d\n", err);
 		goto exit_create_attr_failed;

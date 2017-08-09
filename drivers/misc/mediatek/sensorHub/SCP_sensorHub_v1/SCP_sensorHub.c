@@ -190,7 +190,136 @@ static int SCP_sensorHub_init_client(void)
 
 	return SCP_SENSOR_HUB_SUCCESS;
 }
+static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_unit_t *data_t)
+{
+	int err = 0;
 
+	switch (data_t->sensor_type) {
+	case ID_ACCELEROMETER:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->accelerometer_t.x;
+		data->values[1] = data_t->accelerometer_t.y;
+		data->values[2] = data_t->accelerometer_t.z;
+		data->values[3] = data_t->accelerometer_t.x_bias;
+		data->values[4] = data_t->accelerometer_t.y_bias;
+		data->values[5] = data_t->accelerometer_t.z_bias;
+		data->status = (int8_t)data_t->accelerometer_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_GRAVITY:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->accelerometer_t.x;
+		data->values[1] = data_t->accelerometer_t.y;
+		data->values[2] = data_t->accelerometer_t.z;
+		data->status = (int8_t)data_t->accelerometer_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_LINEAR_ACCELERATION:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->accelerometer_t.x;
+		data->values[1] = data_t->accelerometer_t.y;
+		data->values[2] = data_t->accelerometer_t.z;
+		data->status = (int8_t)data_t->accelerometer_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_LIGHT:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->light;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_PRESSURE:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->pressure_t.pressure;
+		data->status = (int8_t)data_t->pressure_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_GYROSCOPE:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->gyroscope_t.x;
+		data->values[1] = data_t->gyroscope_t.y;
+		data->values[2] = data_t->gyroscope_t.z;
+		data->values[3] = data_t->gyroscope_t.x_bias;
+		data->values[4] = data_t->gyroscope_t.y_bias;
+		data->values[5] = data_t->gyroscope_t.z_bias;
+		data->status = (int8_t)data_t->gyroscope_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_RELATIVE_HUMIDITY:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->relative_humidity_t.relative_humidity;
+		data->status = (int8_t)data_t->relative_humidity_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_MAGNETIC:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->magnetic_t.x;
+		data->values[1] = data_t->magnetic_t.y;
+		data->values[2] = data_t->magnetic_t.z;
+		data->values[3] = data_t->magnetic_t.x_bias;
+		data->values[4] = data_t->magnetic_t.y_bias;
+		data->values[5] = data_t->magnetic_t.z_bias;
+		data->status = (int8_t)data_t->magnetic_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_GEOMAGNETIC_ROTATION_VECTOR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->magnetic_t.x;
+		data->values[1] = data_t->magnetic_t.y;
+		data->values[2] = data_t->magnetic_t.z;
+		data->status = (int8_t)data_t->magnetic_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_ORIENTATION:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->orientation_t.x;
+		data->values[1] = data_t->orientation_t.y;
+		data->values[2] = data_t->orientation_t.z;
+		data->status = (int8_t)data_t->orientation_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_ROTATION_VECTOR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->orientation_t.azimuth;
+		data->values[1] = data_t->orientation_t.pitch;
+		data->values[2] = data_t->orientation_t.roll;
+		data->status = (int8_t)data_t->orientation_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_GAME_ROTATION_VECTOR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->orientation_t.azimuth;
+		data->values[1] = data_t->orientation_t.pitch;
+		data->values[2] = data_t->orientation_t.roll;
+		data->status = (int8_t)data_t->orientation_t.status;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_STEP_COUNTER:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->step_counter_t.accumulated_step_count;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_PEDOMETER:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->pedometer_t.accumulated_step_count;
+		data->values[1] = data_t->pedometer_t.accumulated_step_length;
+		data->values[2] = data_t->pedometer_t.step_frequency;
+		data->values[3] = data_t->pedometer_t.step_length;
+		data->time = data_t->time_stamp;
+		break;
+	case ID_PDR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->pdr_event.x;
+		data->values[1] = data_t->pdr_event.y;
+		data->values[2] = data_t->pdr_event.z;
+		data->status = (int8_t)data_t->pdr_event.status;
+		data->time = data_t->time_stamp;
+		break;
+	default:
+		err = -1;
+		break;
+	}
+	return err;
+}
 
 static int SCP_sensorHub_ReadChipInfo(char *buf, int bufsize)
 {
@@ -289,12 +418,7 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 	if (err < 0)
 			SCP_ERR("release_scp_semaphore fail : %d\n", err);
 
-	sensorData->sensor = curData.sensor_type;
-	sensorData->value_divide = 1000;	/* need to check */
-	sensorData->status = SENSOR_STATUS_ACCURACY_MEDIUM;
-	sensorData->values[0] = curData.data[0];
-	sensorData->values[1] = curData.data[1];
-	sensorData->values[2] = curData.data[2];
+	err = SCP_sensorHub_extract_data(sensorData, &curData);
 
 	if (rp <= wp)
 		fifo_usage = (int)(wp - rp);
@@ -662,12 +786,7 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 			do_registed_handler = true;
 		break;
 		case SCP_FIFO_FULL:
-			if (atomic_read(&obj->disable_fifo_full_notify) == 0) {
-				atomic_set(&obj->disable_fifo_full_notify, 1);
-				schedule_work(&obj->fifo_full_work);
-			} else {
-				SCP_ERR("SCP_FIFO_FULL disabled\n");
-			}
+			schedule_work(&obj->fifo_full_work);
 			break;
 		case SCP_NOTIFY:
 			do_registed_handler = true;

@@ -159,6 +159,7 @@ static int linearacchub_local_init(void)
 	}
 
 	data.get_data = linearacc_get_data;
+	data.vender_div = 1000;
 	err = la_register_data_path(&data);
 	if (err) {
 		LNACC_ERR("register linearacc data path err\n");

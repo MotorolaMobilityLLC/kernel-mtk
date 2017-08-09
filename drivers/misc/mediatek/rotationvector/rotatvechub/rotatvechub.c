@@ -163,6 +163,7 @@ static int rotatvechub_local_init(void)
 	}
 
 	data.get_data = rotatvec_get_data;
+	data.vender_div = 1000;
 	err = rotationvector_register_data_path(&data);
 	if (err) {
 		ROTVEC_ERR("register rotatvec data path err\n");

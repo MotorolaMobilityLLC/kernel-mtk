@@ -17,6 +17,6 @@
 #define MAGHUB_BUFSIZE 60
 
 #define CONVERT_M_DIV		100
-#define CONVERT_O_DIV		64
+#define CONVERT_O_DIV		100
 
 #endif

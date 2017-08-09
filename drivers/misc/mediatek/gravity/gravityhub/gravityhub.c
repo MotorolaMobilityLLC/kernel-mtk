@@ -159,6 +159,7 @@ static int gravityhub_local_init(void)
 	}
 
 	data.get_data = grav_get_data;
+	data.vender_div = 1000;
 	err = grav_register_data_path(&data);
 	if (err) {
 		GRVTY_ERR("register gravity data path err\n");

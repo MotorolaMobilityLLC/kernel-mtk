@@ -160,6 +160,7 @@ static int gmagrotvechub_local_init(void)
 	}
 
 	data.get_data = gmagrotvec_get_data;
+	data.vender_div = 1000;
 	err = gmrv_register_data_path(&data);
 	if (err) {
 		GMAGROTVEC_ERR("register gmagrotvec data path err\n");

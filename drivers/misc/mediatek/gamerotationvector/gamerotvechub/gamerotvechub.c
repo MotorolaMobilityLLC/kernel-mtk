@@ -160,6 +160,7 @@ static int gamerotvechub_local_init(void)
 	}
 
 	data.get_data = gamerotvec_get_data;
+	data.vender_div = 1000;
 	err = grv_register_data_path(&data);
 	if (err) {
 		GROTVEC_ERR("register gamerotvec data path err\n");

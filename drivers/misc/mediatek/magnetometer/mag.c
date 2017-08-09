@@ -861,8 +861,9 @@ static int check_repeat_data(int x, int y, int z)
 static int check_abnormal_data(int x, int y, int z, int status)
 {
 	long total;
+	struct mag_context *cxt = mag_context_obj;
 
-	total = (x*x + y*y + z*z)/16;
+	total = (x*x + y*y + z*z)/(cxt->mag_dev_data.div_m * cxt->mag_dev_data.div_m);
 	if ((total < 100) || (total > 10000)) {
 		if (count % 10 == 0)
 			MAG_ERR("mag sensor abnormal data: x=%d,y=%d,z=%d, status=%d\n", x, y, z, status);
