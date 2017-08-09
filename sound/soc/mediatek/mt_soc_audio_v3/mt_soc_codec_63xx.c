@@ -2954,6 +2954,12 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* UL turn on */
 		}
 	} else {
+		if (GetMicbias == 0) {
+			MicbiasRef = Ana_Get_Reg(AUDENC_ANA_CON9) & 0x0700;
+			/* save current micbias ref set by accdet */
+			pr_warn("MicbiasRef=0x%x\n", MicbiasRef);
+			GetMicbias = 1;
+		}
 		if (GetAdcStatus() == false) {
 			Ana_Set_Reg(AFE_UL_SRC0_CON0_L, 0x0000, 0xffff);
 			/* UL turn off */
