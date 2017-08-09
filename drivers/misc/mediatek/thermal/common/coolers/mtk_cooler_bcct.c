@@ -347,6 +347,7 @@ static int mtk_cl_abcct_set_cur_temp(struct thermal_cooling_device *cdev, unsign
 	delta = pterm/abcct_kp + abcct_iterm/abcct_ki + dterm/abcct_kd;
 
 	limit = abcct_cur_bat_chr_curr_limit + (int) delta;
+	limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
 	limit = MIN(abcct_max_bat_chr_curr_limit, limit);
 	limit = MAX(abcct_min_bat_chr_curr_limit, limit);
 	abcct_cur_bat_chr_curr_limit = limit;
