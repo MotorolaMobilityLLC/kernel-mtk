@@ -38,9 +38,9 @@
 #include <linux/of_irq.h>
 #endif
 
-#include <mt_pwm.h>
+#include <mt-plat/mt_pwm.h>
+#include <mt-plat/mt_pwm_hal_pub.h>
 #include <mach/mt_pwm_hal.h>
-#include <mach/mt_pwm_hal_pub.h>
 
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>

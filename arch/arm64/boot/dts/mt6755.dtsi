@@ -1380,18 +1380,22 @@ clocks {
 			clock-names = "uart1-main";
 		};
 
-		pwm:PWM@0x11006000 {
-			compatible = "mediatek,PWM";
+		pwm: pwm@11006000 {
+			compatible = "mediatek,pwm";
 			reg = <0x11006000 0x1000>;
-			interrupts = <0 77 0x8>;
-			clocks = <&infrasys INFRA_PWM>,
-					 <&infrasys INFRA_PWM1>,
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_PWM1>,
 					 <&infrasys INFRA_PWM2>,
-					 <&infrasys INFRA_PWM3>;
-			clock-names = "PWM-main",
-						  "PWM1-main",
+					 <&infrasys INFRA_PWM3>,
+					 <&infrasys INFRA_PWM4>,
+					 <&infrasys INFRA_PWM_HCLK>,
+					 <&infrasys INFRA_PWM>;
+			clock-names = "PWM1-main",
 						  "PWM2-main",
-						  "PWM3-main";
+						  "PWM3-main",
+						  "PWM4-main",
+						  "PWM-HCLK-main",
+						  "PWM-main";
 		};
 
 		i2c0: i2c@11007000 {
