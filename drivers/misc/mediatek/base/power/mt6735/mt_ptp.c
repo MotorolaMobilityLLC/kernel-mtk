@@ -136,25 +136,23 @@ unsigned int reg_dump_addr_off[] = {
 #include <linux/completion.h>
 #include <linux/fs.h>
 #include <linux/file.h>
-
+#include <linux/uaccess.h>
 /* project includes */
-#include "mach/mt_reg_base.h"
-#include "mach/mt_typedefs.h"
-
-#include "mach/irqs.h"
-#include "mach/mt_irq.h"
+/* #include "mach/mt_reg_base.h"
+#include "mach/mt_typedefs.h" */
+#include <linux/seq_file.h>
+#include <asm/io.h>
+/* #include "mach/irqs.h"
+#include "mach/mt_irq.h" */
 #include "mt_ptp.h"
-#include "mach/mt_cpufreq.h"
-#include "mach/mt_thermal.h"
-#include "mach/mt_spm_idle.h"
-#include "mach/mt_pmic_wrap.h"
+#include "mt_cpufreq.h"
+/* #include "mach/mt_thermal.h"
+#include "mach/mt_pmic_wrap.h" */
 #include "mach/mt_clkmgr.h"
-#include "mach/mt_freqhopping.h"
-#include "mach/mtk_rtc_hal.h"
-#include "mach/mt_rtc_hw.h"
+/* #include "mach/mt_freqhopping.h"
 #include "mach/upmu_common.h"
 #include "mach/upmu_sw.h"
-#include "mach/upmu_hw.h"
+#include "mach/upmu_hw.h" */
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -163,21 +161,16 @@ unsigned int reg_dump_addr_off[] = {
 #include <linux/of_fdt.h>
 #endif
 /* local includes */
-#include <mach/mt_spm.h>
-#include <linux/aee.h>
-#include <mach/mt_chip.h>
-
-#ifndef CONFIG_MTK_LEGACY
+#include <mt_spm.h>
+#include "aee.h"
+/* #include <mach/mt_chip.h> */
 #include <linux/gpio.h>
-#else
-#include <mach/mt_gpio.h>
-#endif
 
 #ifndef __KERNEL__
 #include "kernel2ctp.h"
 #include "ptp.h"
 #endif
-
+#define CPUDVFS_WORKAROUND_FOR_GIT	1
 /* Global variable for slow idle*/
 unsigned int ptp_data[3] = { 0, 0, 0 };
 
@@ -242,7 +235,7 @@ static void ptp_restore_ptp_volt(struct ptp_det *det);
 #define DCCONFIG_VAL	0x555555
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-#define CONFIG_PTP_AEE_RR_REC 1
+/* #define CONFIG_PTP_AEE_RR_REC 1 */
 #endif
 
 #ifdef CONFIG_PTP_AEE_RR_REC
@@ -321,7 +314,7 @@ static unsigned int func_lv_mask;
  * REG ACCESS
  */
 #ifdef __KERNEL__
-#define ptp_read(addr)	DRV_Reg32(addr)
+#define ptp_read(addr)	__raw_readl(addr)
 #define ptp_read_field(addr, range)	\
 	((ptp_read(addr) & BITMASK(range)) >> LSB(range))
 
@@ -884,6 +877,7 @@ static int base_ops_init02(struct ptp_det *det)
 
 static int base_ops_mon_mode(struct ptp_det *det)
 {
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	struct TS_PTPOD ts_info;
 	thermal_bank_name ts_bank;
 
@@ -929,7 +923,7 @@ static int base_ops_mon_mode(struct ptp_det *det)
 	det->ops->set_phase(det, PTP_PHASE_MON);
 
 	FUNC_EXIT(FUNC_LV_HELP);
-
+#endif
 	return 0;
 }
 
@@ -1094,6 +1088,7 @@ static void base_ops_set_phase(struct ptp_det *det, ptp_phase phase)
 
 static int base_ops_get_temp(struct ptp_det *det)
 {
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	thermal_bank_name ts_bank;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -1110,6 +1105,9 @@ static int base_ops_get_temp(struct ptp_det *det)
 
 #ifdef CONFIG_THERMAL
 	return tscpu_get_temp_by_bank(ts_bank);
+#else
+	return 0;
+#endif
 #else
 	return 0;
 #endif
@@ -1153,16 +1151,29 @@ static void base_ops_get_freq_table(struct ptp_det *det)
 /* Will return 10uV */
 static int get_volt_lte(struct ptp_det *det)
 {
+	int volt;
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	ptp_isr_info("get_lte 0x%X => %d\n", pmic_get_register_value(PMIC_VLTE_VOSEL_ON),
 		     PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VLTE_VOSEL_ON)));
-	return PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VLTE_VOSEL_ON));	/* unit mv * 100 = 10uv */
+	volt = PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VLTE_VOSEL_ON));
+#else
+	volt = 0;
+#endif
+	return volt; /* unit mv * 100 = 10uv */
 }
 
 static int get_volt_vcore(struct ptp_det *det)
 {
+	int volt;
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	ptp_isr_info("get_vcore 0x%X => %d\n", pmic_get_register_value(PMIC_VCORE1_VOSEL_ON),
 		     PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VCORE1_VOSEL_ON)));
-	return PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VCORE1_VOSEL_ON));	/* unit mv * 100 = 10uv */
+	volt = PTP_PMIC_VAL_TO_VOLT(pmic_get_register_value(PMIC_VCORE1_VOSEL_ON));
+#else
+	volt = 0;
+#endif
+	/* unit mv * 100 = 10uv */
+	return volt;
 }
 
 static int get_volt_cpu(struct ptp_det *det)
@@ -1184,22 +1195,14 @@ static int set_volt_lte(struct ptp_det *det)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 
-#ifdef __KERNEL__
-#ifndef CONFIG_MTK_FPGA
-#ifndef CONFIG_MTK_LEGACY
 	if (gpio_get_value(130)) {
-#else
-	if (mt_get_gpio_in(GPIO130)) {
-#endif
 		if (!is_sw_efuse)
 			return mt_cpufreq_set_lte_volt(det->volt_tbl_init2[0]);
 		else
 			return 0;
-	}
-#endif
-#else
-	return dvfs_set_vlte(det->volt_tbl_init2[0]);
-#endif
+	} else
+		return 0;
+
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
@@ -1215,11 +1218,14 @@ static void restore_default_volt_cpu(struct ptp_det *det)
 static void restore_default_volt_lte(struct ptp_det *det)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef __KERNEL__
 	if (0x337 == mt_get_chip_hw_code())
 		mt_cpufreq_set_lte_volt(PTP_VOLT_TO_PMIC_VAL(105000) + PTPOD_PMIC_OFFSET);	/* -700+100 */
 #else
-	dvfs_set_vlte(PTP_VOLT_TO_PMIC_VAL(105000) + PTPOD_PMIC_OFFSET));
+	dvfs_set_vlte(PTP_VOLT_TO_PMIC_VAL(105000) + PTPOD_PMIC_OFFSET);
+#endif
+#else
 #endif
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -1823,17 +1829,18 @@ static inline void handle_mon_mode_isr(struct ptp_det *det)
 	 FUNC_ENTER(FUNC_LV_LOCAL);
 
 	 ptp_isr_info("@ %s(%s)\n", __func__, det->name);
-
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_THERMAL
 	 ptp_isr_info("cpu_temp=%d, soc_temp=%d lte_temp=%d\n",
 		      tscpu_get_temp_by_bank(THERMAL_BANK0), tscpu_get_temp_by_bank(THERMAL_BANK1),
 		      tscpu_get_temp_by_bank(THERMAL_BANK2));
 #endif
-
+#endif
 #ifdef CONFIG_PTP_AEE_RR_REC
 
 	switch (det->ctrl_id) {
 	case PTP_CTRL_CPU:
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_THERMAL
 		if (tscpu_get_temp_by_bank(THERMAL_BANK0) != 0) {
 			aee_rr_rec_ptp_temp((tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000)
@@ -1841,15 +1848,18 @@ static inline void handle_mon_mode_isr(struct ptp_det *det)
 				& ~(0xFF << (8 * PTP_CPU_LITTLE_IS_SET_VOLT))));
 		}
 #endif
+#endif
 		break;
 
 	case PTP_CTRL_LTE:
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_THERMAL
 		if (tscpu_get_temp_by_bank(THERMAL_BANK2) != 0) {
 			aee_rr_rec_ptp_temp((tscpu_get_temp_by_bank(THERMAL_BANK2) / 1000)
 			<< (8 * PTP_CPU_BIG_IS_SET_VOLT) | (aee_rr_curr_ptp_temp()
 				& ~(0xFF << (8 * PTP_CPU_BIG_IS_SET_VOLT))));
 		}
+#endif
 #endif
 		break;
 
@@ -2037,22 +2047,22 @@ void ptp_init01(void)
 	for_each_det_ctrl(det, ctrl) {
 		{
 			unsigned long flag;
-			unsigned int vboot;
+			unsigned int vboot = 0;
 
-			if (NULL != det->ops->get_volt)
+			if (NULL != det->ops->get_volt) {
 				vboot = PTP_VOLT_TO_PMIC_VAL(det->ops->get_volt(det));
-
 			ptp_notice("@%s(),vboot = %d,  det->VBOOT = %d\n", __func__, vboot,
 				det->VBOOT);
+			}
 #ifdef __KERNEL__
 
 			if (vboot != det->VBOOT) {
 				ptp_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 					  __func__, __LINE__, det->name, vboot, det->VBOOT);
-				aee_kernel_warning("mt_ptp",
+				/* aee_kernel_warning("mt_ptp",
 						   "@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 						   __func__, __LINE__, det->name, vboot,
-						   det->VBOOT);
+						   det->VBOOT); */
 			}
 
 			BUG_ON(PTP_VOLT_TO_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT);
@@ -2091,7 +2101,6 @@ unsigned int leakage_gpu;
 unsigned int leakage_sram2;
 unsigned int leakage_sram1;
 
-
 void get_devinfo(struct ptp_devinfo *p)
 {
 	int *val = (int *)p;
@@ -2100,12 +2109,10 @@ void get_devinfo(struct ptp_devinfo *p)
 
 #if 1
 	{
-		int i;
-
 		 val[5] = get_devinfo_with_index(16);	/* M_HW_RES5 */
 		if (val[5] == 2) {
-			val[0] = devinfo[i].M_HW_RES0;	/* M_HW_RES0 */
-			val[1] = devinfo[i].M_HW_RES1;	/* M_HW_RES1 */
+			val[0] = devinfo[0].M_HW_RES0;	/* M_HW_RES0 */
+			val[1] = devinfo[0].M_HW_RES1;	/* M_HW_RES1 */
 			p->PTPINITEN = 1;
 			p->PTPMONEN = 1;
 			is_sw_efuse = 1;
@@ -2203,8 +2210,10 @@ static int ptp_probe(struct platform_device *pdev)
 	for_each_ctrl(ctrl) {
 		ptp_init_ctrl(ctrl);
 	}
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	/* disable frequency hopping (main PLL) */
 	mt_fh_popod_save();
+#endif
 	/* disable DVFS and set vproc = 1.15v (1 GHz) */
 	mt_cpufreq_disable_by_ptpod(MT_CPU_DVFS_LITTLE);
 #ifdef __KERNEL__
@@ -2228,7 +2237,9 @@ static int ptp_probe(struct platform_device *pdev)
 	/* enable DVFS */
 	mt_cpufreq_enable_by_ptpod(MT_CPU_DVFS_LITTLE);
 	/* enable frequency hopping (main PLL) */
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	mt_fh_popod_restore();
+#endif
 #else
 	/* dvfs_enable_by_ptpod(4); */
 #endif
@@ -2351,7 +2362,7 @@ void mt_ptp_opp_status(ptp_det_id id, unsigned int *temp, unsigned int *volt)
 	int i = 0;
 
 	FUNC_ENTER(FUNC_LV_API);
-
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef __KERNEL__
 #ifdef CONFIG_THERMAL
 	*temp = tscpu_get_temp_by_bank((id == PTP_DET_CPU) ? THERMAL_BANK0 :
@@ -2362,7 +2373,7 @@ void mt_ptp_opp_status(ptp_det_id id, unsigned int *temp, unsigned int *volt)
 #else
 	*temp = 0;
 #endif
-
+#endif
 	for (i = 0; i < det->num_freq_tbl; i++)
 		volt[i] = PTP_PMIC_VAL_TO_VOLT(det->volt_tbl_pmic[i]);
 
@@ -2541,10 +2552,10 @@ static int volt_to_buck_volt(u32 cur_volt, int need)
 	if (need) {
 		if (cur_volt >= VPROC_MAX)
 			return VPROC_MAX;
-		if (cur_volt < VPROC_MAX) {
+		else {
 			if (cur_volt % 625 == 0)
 				return cur_volt;
-			if (cur_volt % 625 != 0)
+			else
 				return (cur_volt + 625) / 1000 * 1000;
 		}
 	} else
@@ -2918,7 +2929,7 @@ unsigned int have_550;
 static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int depth, void *data)
 {
 	struct devinfo_ptp_tag *tags;
-	unsigned long size = 0;
+	unsigned int size = 0;
 
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
@@ -2975,15 +2986,7 @@ static int __init vcore_ptp_init(void)
 }
 void process_voltage_bin(struct ptp_devinfo *devinfo)
 {
-#ifndef CONFIG_MTK_FPGA
-#ifndef CONFIG_MTK_LEGACY
 	if (gpio_get_value(130)) {
-#else
-	if (mt_get_gpio_in(GPIO130)) {
-#endif
-#else
-	if (1) {
-#endif
 		switch (devinfo->LTE_VOLTBIN) {
 		case 0:
 			mt_cpufreq_set_lte_volt(PTP_VOLT_TO_PMIC_VAL(110625) + PTPOD_PMIC_OFFSET);

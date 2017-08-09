@@ -115,6 +115,7 @@ int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, in
 		p = interpolate(mV(tab, v1), mV(tab, v2), voltage, p1, p2);
 		return p;
 	}
+	return 0;
 }
 
 /* c1, c2, c3(EFUSE) => make sptab 239, 53, 100 */
@@ -427,7 +428,8 @@ int mt_spower_init(void)
 	/* avoid side effect from multiple invocation */
 	if (tab_validate(&sptab[MT_SPOWER_CPU]))
 		return 0;
-	devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0);	/* ptp_read(0xF020618C); */
+	/* ptp_read(0xF020618C); */
+	devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0);
 
 	cpu = (devinfo >> DEVINFO_MP1_BIT) & 0x0ff;
 	vcore = (devinfo >> DEVINFO_MP0_BIT) & 0x0ff;

@@ -4,7 +4,6 @@
 #include <linux/kernel.h>
 #include <sync_write.h>
 
-#define CONFIG_PTP_AEE_RR_REC 1
 #define EN_PTP_OD (1)
 
 extern void __iomem *ptpod_base;
