@@ -18,18 +18,12 @@
 *  DEV DRIVER SYSFS
 **************************************************************************/
 
-struct devinfo_driver {
-	struct device_driver driver;
-	const struct platform_device_id *id_table;
-};
-
-static struct devinfo_driver dev_info = {
+static struct platform_driver dev_info = {
 	.driver  = {
-	.name = "dev_info",
-	.bus = &platform_bus_type,
-	.owner = THIS_MODULE,
-	},
-	.id_table = NULL,
+		.name = "dev_info",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+	}
 };
 
 static ssize_t devinfo_show(struct device_driver *driver, char *buf)

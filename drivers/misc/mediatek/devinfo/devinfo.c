@@ -196,8 +196,16 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 	tags = (struct devinfo_tag *) of_get_flat_dt_prop(node, "atag,devinfo", NULL);
 	if (tags) {
 		size = tags->data_size;
-		for (i = 0; i < size; i++)
-			g_devinfo_data[i] = tags->data[i];
+		if (size == DEVINFO_MAX_SIZE)
+			for (i = 0; i < size; i++)
+				g_devinfo_data[i] = tags->data[i];
+		else {
+			for (i = 0; i < 50; i++)
+				pr_err("[ERROR][devinfo size mismatch] devinfo size:%d, atag size:%d\n",
+					DEVINFO_MAX_SIZE, size);
+			for (i = 0; i < DEVINFO_MAX_SIZE; i++)
+				g_devinfo_data[i] = (u32)0;
+		}
 		/* print chip id for debugging purpose */
 		pr_debug("tag_devinfo_data size:%d\n", size);
 	}
