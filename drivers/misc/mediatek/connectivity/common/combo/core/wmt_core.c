@@ -124,8 +124,10 @@ static VOID wmt_core_dump_func_state(PINT8 pSource);
 static INT32 wmt_core_stp_init(VOID);
 static INT32 wmt_core_stp_deinit(VOID);
 static INT32 wmt_core_hw_check(VOID);
+#ifdef CONFIG_MTK_COMBO_ANT
 static INT32 opfunc_ant_ram_down(P_WMT_OP pWmtOp);
 static INT32 opfunc_ant_ram_stat_get(P_WMT_OP pWmtOp);
+#endif
 #if CFG_WMT_LTE_COEX_HANDLING
 static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp);
 #endif
@@ -206,20 +208,18 @@ static UINT8 WMT_SET_REG_RD_EVT[] = { 0x02, 0x08, 0x04, 0x00	/*length */
 	    , 0x00, 0x00, 0x00, 0x00	/* value */
 };
 
+#ifdef CONFIG_MTK_COMBO_ANT
 static UINT8 WMT_ANT_RAM_STA_GET_CMD[] = { 0x01, 0x06, 0x02, 0x00, 0x05, 0x02
 };
-
 static UINT8 WMT_ANT_RAM_STA_GET_EVT[] = { 0x02, 0x06, 0x03, 0x00	/*length */
 	    , 0x05, 0x02, 0x00	/*S: result */
 };
-
 static UINT8 WMT_ANT_RAM_DWN_CMD[] = { 0x01, 0x15, 0x00, 0x00, 0x01
 };
-
 static UINT8 WMT_ANT_RAM_DWN_EVT[] = { 0x02, 0x15, 0x01, 0x00	/*length */
 	, 0x00
 };
-
+#endif
 
 
 /* GeorgeKuo: Use designated initializers described in
@@ -246,8 +246,10 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_GPIO_CTRL] = opfunc_gpio_ctrl,
 	[WMT_OPID_SDIO_CTRL] = opfunc_sdio_ctrl,
 	[WMT_OPID_GPIO_STATE] = opfunc_pin_state,
+#ifdef CONFIG_MTK_COMBO_ANT
 	[WMT_OPID_ANT_RAM_DOWN] = opfunc_ant_ram_down,
 	[WMT_OPID_ANT_RAM_STA_GET] = opfunc_ant_ram_stat_get,
+#endif
 #if CFG_WMT_LTE_COEX_HANDLING
 	[WMT_OPID_IDC_MSG_HANDLING] = opfunc_idc_msg_handling,
 #endif
@@ -2117,7 +2119,7 @@ INT32 opfunc_pin_state(P_WMT_OP pWmtOp)
 	return iRet;
 }
 
-
+#ifdef CONFIG_MTK_COMBO_ANT
 INT32 opfunc_ant_ram_down(P_WMT_OP pWmtOp)
 {
 	INT32 iRet = 0;
@@ -2336,7 +2338,7 @@ INT32 opfunc_ant_ram_stat_get(P_WMT_OP pWmtOp)
 	}
 	return iRet;
 }
-
+#endif
 VOID wmt_core_set_coredump_state(ENUM_DRV_STS state)
 {
 	WMT_INFO_FUNC("wmt-core: set coredump state(%d)\n", state);

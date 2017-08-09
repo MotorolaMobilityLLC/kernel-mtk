@@ -506,12 +506,12 @@ VOID mtk_wcn_wmt_exp_deinit(VOID)
 	mtk_wcn_wmt_exp_cb_unreg();
 }
 #endif
+#ifdef CONFIG_MTK_COMBO_ANT
 /*
 	ctrlId: get ram code status opId or ram code download opId
 	pBuf: pointer to ANT ram code
 	length: total length of ANT ram code
 */
-
 ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, PUINT8 pBuf,
 						 UINT32 length, ENUM_WMT_ANT_RAM_SEQ seq)
 {
@@ -590,6 +590,7 @@ ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, P
 
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_ant_ram_ctrl);
+#endif
 MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 {
 	INT32 iRet = -1;

@@ -17,12 +17,20 @@
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-
 #define ANT_DRIVER_NAME "mtk_stp_ANT_chrdev"
 #define ANT_DEV_MAJOR 197	/* never used number */
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME;
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME_E1 = "/system/etc/firmware/ANT_RAM_CODE_E1.BIN";
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME_E2 = "/system/etc/firmware/ANT_RAM_CODE_E2.BIN";
+static PINT8 ANT_PATCH_FILE_NAME;
+static PINT8 ANT_PATCH_FILE_NAME_COMBO_V1 = "/system/etc/firmware/ANT_RAM_CODE_E1.BIN";
+static PINT8 ANT_PATCH_FILE_NAME_COMBO_V2 = "/system/etc/firmware/ANT_RAM_CODE_E2.BIN";
+static PINT8 ANT_PATCH_FILE_NAME_ADDIE_V1 = "/system/etc/firmware/ANT_RAM_CODE_CONN_V1.BIN";
+
+typedef enum _ENUM_ANT_RAM_CODE_T {
+	ANT_RAM_CODE_START = 0,
+	ANT_RAM_CODE_COMBO_V1 = 1,
+	ANT_RAM_CODE_COMBO_V2 = 2,
+	ANT_RAM_CODE_CONN_V1 = 3,
+	ANT_RAM_CODE_MAX
+} ENUM_ANT_RAM_CODE;
 
 #define PFX                         "[MTK-ANT] "
 #define ANT_LOG_DBG                  3
@@ -30,10 +38,11 @@ static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME_E2 = "/system/etc/firmware/ANT_RAM_COD
 #define ANT_LOG_WARN                 1
 #define ANT_LOG_ERR                  0
 
-#define COMBO_IOC_ANT_HWVER           6
-#define COMBO_IOCTL_ANT_IC_HW_VER	7
-#define COMBO_IOCTL_ANT_IC_FW_VER	8
-#define COMBO_IOCTAL_ANT_DOWNLOAD_FIRMWARE 9
+#define COMBO_IOC_ANT_HWVER					6
+#define COMBO_IOCTL_ANT_IC_HW_VER			7
+#define COMBO_IOCTL_ANT_IC_FW_VER			8
+#define COMBO_IOCTAL_ANT_DOWNLOAD_FIRMWARE	9
+#define COMBO_IOCTL_ANT_IC_CHIP_ID			10
 
 #define COMBO_IOC_MAGIC        0xb0
 #define COMBO_IOCTL_FW_ASSERT  _IOWR(COMBO_IOC_MAGIC, 0, void*)
@@ -325,6 +334,7 @@ long ANT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	INT32 retval = 0;
 	UINT32 hw_version = 0;
 	UINT32 fw_version = 0;
+	UINT32 chip_id = 0;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
 	ENUM_WMTHWVER_TYPE_T hw_ver_sym = WMTHWVER_INVALID;
 
@@ -361,6 +371,12 @@ long ANT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			ANT_INFO_FUNC("ANT Set fw assert Failed\n");
 			retval = (-1000);
 		}
+		break;
+	case COMBO_IOCTL_ANT_IC_CHIP_ID:
+		ANT_DBG_FUNC("ANT get chip id\n");
+		hw_version = mtk_wcn_wmt_ic_info_get(WMTCHIN_CHIPID);
+		if (copy_to_user((int __user *)arg, &chip_id, sizeof(chip_id)))
+			retval = -EFAULT;
 		break;
 	case COMBO_IOCTL_ANT_IC_HW_VER:
 		ANT_DBG_FUNC("get hw version setup 1\n");
@@ -409,27 +425,30 @@ static INT32 ANT_DownLoad_RAM_Code(unsigned long ver)
 	set_fs(KERNEL_DS);
 
 	switch (ver) {
-	case 1:
-		ANT_BUILT_IN_PATCH_FILE_NAME = ANT_BUILT_IN_PATCH_FILE_NAME_E1;
-		ANT_INFO_FUNC("download E1 patch\n");
+	case ANT_RAM_CODE_COMBO_V1:
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_COMBO_V1;
+		ANT_INFO_FUNC("download COMBO V1 patch\n");
 		break;
-	case 2:
-		ANT_BUILT_IN_PATCH_FILE_NAME = ANT_BUILT_IN_PATCH_FILE_NAME_E2;
-		ANT_INFO_FUNC("download E2 patch\n");
+	case ANT_RAM_CODE_COMBO_V2:
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_COMBO_V2;
+		ANT_INFO_FUNC("download COMBO V2 patch\n");
+		break;
+	case ANT_RAM_CODE_CONN_V1:
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_ADDIE_V1;
+		ANT_INFO_FUNC("download CONN V1 patch\n");
 		break;
 	default:
 		ANT_INFO_FUNC("Can not support RAM code version:%ld!\n", ver);
 		return 0;
 	}
-	pPatchExtFile = filp_open(ANT_BUILT_IN_PATCH_FILE_NAME, O_RDONLY, 0644);
-
+	pPatchExtFile = filp_open(ANT_PATCH_FILE_NAME, O_RDONLY, 0644);
 
 	if ((IS_ERR(pPatchExtFile))) {
-		ANT_ERR_FUNC("failed to open  %s\r\n", ANT_BUILT_IN_PATCH_FILE_NAME);
+		ANT_ERR_FUNC("failed to open  %s\r\n", ANT_PATCH_FILE_NAME);
 		return -1;
 	}
 
-	ANT_INFO_FUNC("Open %s\r\n", ANT_BUILT_IN_PATCH_FILE_NAME);
+	ANT_INFO_FUNC("Open %s\r\n", ANT_PATCH_FILE_NAME);
 	/* Set the file at end */
 	lFileLen = pPatchExtFile->f_op->llseek(pPatchExtFile, 0, SEEK_END);
 
@@ -628,7 +647,7 @@ const struct file_operations ANT_fops = {
 	.poll = ANT_poll
 };
 
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 struct class *stpant_class = NULL;
 #endif
 
@@ -637,7 +656,7 @@ static int ANT_init(void)
 	dev_t dev = MKDEV(ANT_major, 0);
 	INT32 alloc_ret = 0;
 	INT32 cdev_err = 0;
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	struct device *stpant_dev = NULL;
 #endif
 
@@ -654,8 +673,7 @@ static int ANT_init(void)
 	cdev_err = cdev_add(&ANT_cdev, dev, ANT_devs);
 	if (cdev_err)
 		goto error;
-#if REMOVE_MK_NODE		/* mknod replace */
-
+#if WMT_CREATE_NODE_DYNAMIC
 	stpant_class = class_create(THIS_MODULE, "stpant");
 	if (IS_ERR(stpant_class))
 		goto error;
@@ -674,7 +692,7 @@ static int ANT_init(void)
 	return 0;
 
  error:
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	if (!IS_ERR(stpant_dev))
 		device_destroy(stpant_class, dev);
 	if (!IS_ERR(stpant_class)) {
@@ -699,7 +717,7 @@ static void ANT_exit(void)
 	retflag = 0;
 
 	mtk_wcn_stp_register_event_cb(ANT_TASK_INDX, NULL);	/* unregister event callback function */
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	device_destroy(stpant_class, dev);
 	class_destroy(stpant_class);
 	stpant_class = NULL;

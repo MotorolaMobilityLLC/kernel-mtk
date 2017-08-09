@@ -14,6 +14,10 @@ ccflags-y += \
 	-I$(src)/include \
 	-I$(src)/../common_detect
 
+ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
+subdir-ccflags-y += -DCONFIG_MTK_COMBO_ANT
+endif
+
 COMMON_SRC_PATH := $(src)
 COMMON_OBJ_PATH := $(src)
 
@@ -68,9 +72,6 @@ mtk_stp_sdio-objs	+= linux/osal.o
 
 obj-$(CONFIG_MTK_COMBO_BT) += mtk_stp_bt.o
 mtk_stp_bt-objs		:= linux/stp_chrdev_bt.o
-
-obj-$(CONFIG_MTK_COMBO_ANT) += mtk_stp_ant.o
-mtk_stp_ant-objs	:= linux/stp_chrdev_ant.o
 
 obj-$(CONFIG_MTK_COMBO_WIFI) += mtk_wmt_wifi.o
 mtk_wmt_wifi-objs	:= linux/wmt_chrdev_wifi.o

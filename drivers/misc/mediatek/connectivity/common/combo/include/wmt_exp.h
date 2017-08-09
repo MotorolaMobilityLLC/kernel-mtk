@@ -199,21 +199,18 @@ typedef enum {
 } WMT_SDIO_FUNC_TYPE;
 #endif
 
-
+#ifdef CONFIG_MTK_COMBO_ANT
 typedef enum _ENUM_WMT_ANT_RAM_CTRL_T {
 	WMT_ANT_RAM_GET_STATUS = 0,
 	WMT_ANT_RAM_DOWNLOAD = WMT_ANT_RAM_GET_STATUS + 1,
 	WMT_ANT_RAM_CTRL_MAX
 } ENUM_WMT_ANT_RAM_CTRL, *P_ENUM_WMT_ANT_RAM_CTRL;
-
 typedef enum _ENUM_WMT_ANT_RAM_SEQ_T {
 	WMT_ANT_RAM_START_PKT = 1,
 	WMT_ANT_RAM_CONTINUE_PKT = WMT_ANT_RAM_START_PKT + 1,
 	WMT_ANT_RAM_END_PKT = WMT_ANT_RAM_CONTINUE_PKT + 1,
 	WMT_ANT_RAM_SEQ_MAX
 } ENUM_WMT_ANT_RAM_SEQ, *P_ENUM_WMT_ANT_RAM_SEQ;
-
-
 typedef enum _ENUM_WMT_ANT_RAM_STATUS_T {
 	WMT_ANT_RAM_NOT_EXIST = 0,
 	WMT_ANT_RAM_EXIST = WMT_ANT_RAM_NOT_EXIST + 1,
@@ -223,8 +220,7 @@ typedef enum _ENUM_WMT_ANT_RAM_STATUS_T {
 	WMT_ANT_RAM_OP_ERR = WMT_ANT_RAM_PARA_ERR + 1,
 	WMT_ANT_RAM_MAX
 } ENUM_WMT_ANT_RAM_STATUS, *P_ENUM_WMT_ANT_RAM_STATUS;
-
-
+#endif
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -288,9 +284,10 @@ extern INT32 mtk_wcn_wmt_chipid_query(VOID);
 extern INT32 wmt_lib_set_aif(CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);	/* set AUDIO interface options */
 extern VOID wmt_lib_ps_irq_cb(VOID);
 
+#ifdef CONFIG_MTK_COMBO_ANT
 extern ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, PUINT8 pBuf,
 							UINT32 length, ENUM_WMT_ANT_RAM_SEQ seq);
-
+#endif
 
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 extern VOID mtk_wcn_wmt_exp_init(VOID);
