@@ -7,4 +7,7 @@
 /* Enable secure memory test interface */
 /* #define SECMEM_DEBUG_INTERFACE */
 
+/* Enable secure memory API */
+#define SECMEM_KERNEL_API
+
 #endif				/* end of SECMEM_PLATFORM_H */

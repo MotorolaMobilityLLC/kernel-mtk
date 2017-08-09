@@ -23,6 +23,12 @@
 #define CMD_SEC_MEM_ALLOC_TBL     4
 #define CMD_SEC_MEM_UNREF_TBL     5
 #define CMD_SEC_MEM_USAGE_DUMP    6
+#define CMD_SEC_MEM_ENABLE        7
+#define CMD_SEC_MEM_DISABLE       8
+#define CMD_SEC_MEM_ALLOCATED     9
+#define CMD_SEC_MEM_ALLOC_PA      10
+#define CMD_SEC_MEM_REF_PA        11
+#define CMD_SEC_MEM_UNREF_PA      12
 
 #define CMD_SEC_MEM_DUMP_INFO     255
 
