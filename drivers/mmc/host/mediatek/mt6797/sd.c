@@ -4170,14 +4170,13 @@ int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 	msdc_send_stop(host);
 	polling_tmo = jiffies + POLLING_BUSY;
 	pr_err("msdc%d, waiting device is not busy\n", host->id);
-	do {
-		msleep(100);
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
 		if (time_after(jiffies, polling_tmo)) {
 			pr_err("msdc%d, device stuck in PRG!\n",
 					host->id);
 			return -1;
 		}
-	} while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000);
+	}
 	return 0;
 
 }
@@ -4188,14 +4187,13 @@ int msdc_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 
 	polling_tmo = jiffies + POLLING_BUSY;
 	pr_err("msdc%d, waiting device is not busy\n", host->id);
-	do {
-		msleep(100);
+	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
 		if (time_after(jiffies, polling_tmo)) {
 			pr_err("msdc%d, device stuck in PRG!\n",
 					host->id);
 			return -1;
 		}
-	} while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000);
+	}
 	return 0;
 
 }
@@ -4232,21 +4230,19 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		host->err_cmd != MMC_STOP_TRANSMISSION)) {
 		goto end;
 	}
-	/* If RESP CRC occur in sending CMD13 in mmc_blk_err_check, device may
+	/* 1. If RESP CRC occur in sending CMD13 in mmc_blk_err_check, device may
 	 * be in RCV, DATA, and PRG status. So, send stop first to insure
 	 * device turn to transfer status.
-	 */
-	if ((mrq->cmd->opcode == MMC_SEND_STATUS) &&
-			(host->err_cmd == MMC_SEND_STATUS))
-		if (msdc_stop_and_wait_busy(host, mrq))
-			goto recovery;
-	/* If device is in programming status, mmc_blk_err_check can't send
+	 * 2. If device is in programming status, mmc_blk_err_check can't send
 	 * stop because our driver return cmd->err when data crc,
 	 * So send stop and wait device not busy here
 	 */
-	if (R1_CURRENT_STATE(host->device_status) == R1_STATE_PRG &&
-			mrq->cmd->opcode != MMC_STOP_TRANSMISSION) {
-		host->device_status = 0;
+
+	if (((mrq->cmd->opcode == MMC_SEND_STATUS) &&
+			(host->err_cmd == MMC_SEND_STATUS)) ||
+		((R1_CURRENT_STATE(host->device_status) == R1_STATE_PRG) &&
+			(mrq->cmd->opcode != MMC_STOP_TRANSMISSION))) {
+		host->device_status = 0x0;
 		if (msdc_stop_and_wait_busy(host, mrq))
 			goto recovery;
 	}
