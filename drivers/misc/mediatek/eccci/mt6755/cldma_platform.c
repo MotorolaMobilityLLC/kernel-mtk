@@ -231,6 +231,8 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_clk_ctl13 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR13, MD_Clkctrl_DUMP_LEN13);
 	md_reg->md_clk_ctl14 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR14, MD_Clkctrl_DUMP_LEN14);
 	md_reg->md_clk_ctl15 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR15, MD_Clkctrl_DUMP_LEN15);
+	md_reg->md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 4);
+	md_reg->md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 4);
 
 	md_ctrl->md_pll_base = md_reg;
 
@@ -248,6 +250,24 @@ void md_cd_lock_cldma_clock_src(int locked)
 void md_cd_lock_modem_clock_src(int locked)
 {
 	spm_ap_mdsrc_req(locked);
+}
+
+void md_cd_dump_md_bootup_status(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+
+	md_cd_lock_modem_clock_src(1);
+	/*To avoid AP/MD interface delay, dump 3 times, and buy-in the 3rd dump value.*/
+
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0:0x%X\n", cldma_read32(md_reg->md_boot_stats0, 0));
+
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
+	md_cd_lock_modem_clock_src(0);
 }
 
 void md_cd_dump_debug_register(struct ccci_modem *md)

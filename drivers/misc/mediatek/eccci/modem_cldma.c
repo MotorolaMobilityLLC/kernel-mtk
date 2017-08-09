@@ -3528,6 +3528,10 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		CCCI_MEM_LOG_TAG(md->index, TAG, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
 		mt_irq_dump_status(md_ctrl->hw_info->md_wdt_irq_id);
 	}
+
+	if (flag & DUMP_MD_BOOTUP_STATUS)
+		md_cd_dump_md_bootup_status(md);
+
 	return length;
 }
 

@@ -528,6 +528,8 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		ccci_set_mem_access_protection_second_stage(md);
 #endif
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_UP, 0);
+		md->ops->dump_info(md, DUMP_MD_BOOTUP_STATUS, NULL, 0);
+
 	} else if (ccci_h->data[1] == MD_NORMAL_BOOT && md->boot_stage == MD_BOOT_STAGE_1) {
 		del_timer(&md->bootup_timer);
 		wake_lock_timeout(&md->md_wake_lock, 10 * HZ); /* service of uplayer sync with modem need maybe 10s */
@@ -3512,6 +3514,7 @@ void md_bootup_timeout_func(unsigned long data)
 
 	if (md->boot_stage == MD_BOOT_STAGE_0) {
 		/* Handshake 1 fail */
+		md->ops->dump_info(md, DUMP_MD_BOOTUP_STATUS, NULL, 0);
 #ifndef MD_UMOLY_EE_SUPPORT
 		if (md->flight_mode)
 			md->flight_mode = MD_FIGHT_MODE_NONE;

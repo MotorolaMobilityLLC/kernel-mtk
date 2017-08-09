@@ -672,6 +672,7 @@ typedef enum {
 	DUMP_FLAG_SMEM_MDSLP = (1 << 9),
 	DUMP_FLAG_MD_WDT = (1 << 10),
 	DUMP_FLAG_SMEM_CCISM = (1<<11),
+	DUMP_MD_BOOTUP_STATUS = (1<<12),
 } MODEM_DUMP_FLAG;
 
 typedef enum {

@@ -95,6 +95,7 @@ int md_cd_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE type, in
 int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg *dev_cfg, struct md_hw_info *hw_info);
 int md_cd_io_remap_md_side_register(struct ccci_modem *md);
 void md_cd_dump_debug_register(struct ccci_modem *md);
+void md_cd_dump_md_bootup_status(struct ccci_modem *md);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
 void md_cldma_hw_reset(struct ccci_modem *md);

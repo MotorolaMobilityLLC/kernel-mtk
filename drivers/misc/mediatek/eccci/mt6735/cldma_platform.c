@@ -185,6 +185,10 @@ void md_cd_lock_modem_clock_src(int locked)
 	spm_ap_mdsrc_req(locked);
 }
 
+void md_cd_dump_md_bootup_status(struct ccci_modem *md)
+{
+}
+
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
