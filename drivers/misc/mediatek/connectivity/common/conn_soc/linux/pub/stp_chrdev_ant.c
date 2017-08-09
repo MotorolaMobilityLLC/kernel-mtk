@@ -30,10 +30,11 @@ static PINT8 ANT_PATCH_FILE_NAME_ADDIE_V1 = "/system/etc/firmware/ANT_RAM_CODE_C
 #define ANT_LOG_WARN                 1
 #define ANT_LOG_ERR                  0
 
-#define COMBO_IOC_ANT_HWVER           6
-#define COMBO_IOCTL_ANT_IC_HW_VER	7
-#define COMBO_IOCTL_ANT_IC_FW_VER	8
-#define COMBO_IOCTAL_ANT_DOWNLOAD_FIRMWARE 9
+#define COMBO_IOC_ANT_HWVER					6
+#define COMBO_IOCTL_ANT_IC_HW_VER			7
+#define COMBO_IOCTL_ANT_IC_FW_VER			8
+#define COMBO_IOCTAL_ANT_DOWNLOAD_FIRMWARE	9
+#define COMBO_IOCTL_ANT_IC_CHIP_ID			10
 
 #define COMBO_IOC_MAGIC        0xb0
 #define COMBO_IOCTL_FW_ASSERT  _IOWR(COMBO_IOC_MAGIC, 0, void*)
@@ -325,6 +326,7 @@ long ANT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	INT32 retval = 0;
 	UINT32 hw_version = 0;
 	UINT32 fw_version = 0;
+	UINT32 chip_id = 0;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
 	ENUM_WMTHWVER_TYPE_T hw_ver_sym = WMTHWVER_INVALID;
 
@@ -361,6 +363,12 @@ long ANT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			ANT_INFO_FUNC("ANT Set fw assert Failed\n");
 			retval = (-1000);
 		}
+		break;
+	case COMBO_IOCTL_ANT_IC_CHIP_ID:
+		ANT_DBG_FUNC("ANT get chip id\n");
+		hw_version = mtk_wcn_wmt_ic_info_get(WMTCHIN_CHIPID);
+		if (copy_to_user((int __user *)arg, &chip_id, sizeof(chip_id)))
+			retval = -EFAULT;
 		break;
 	case COMBO_IOCTL_ANT_IC_HW_VER:
 		ANT_DBG_FUNC("get hw version setup 1\n");

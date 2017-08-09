@@ -578,7 +578,7 @@ ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, P
 	/*enable PSM monitor */
 	ENABLE_PSM_MONITOR();
 
-	WMT_INFO_FUNC("CMD_TEST, opid (%d), ret(%d),retVal(%zu) result(%s)\n",
+	WMT_DBG_FUNC("CMD_TEST, opid (%d), ret(%d),retVal(%zu) result(%s)\n",
 		      pOp->op.opId,
 		      bRet,
 		      pOp->op.au4OpData[2], MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
