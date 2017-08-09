@@ -50,7 +50,6 @@
 
 #include <linux/compat.h>
 
-#include <linux/rtpm_prio.h>
 #include <linux/ktime.h>
 #include <linux/of_irq.h>
 
@@ -292,7 +291,7 @@ static int rrc_is_touch_event(void)
 static int rrc_monitor_fps_kthread_func(void *data)
 {
 
-	struct sched_param param = { .sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = { .sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -317,7 +316,7 @@ static int rrc_set_low_refresh_rate_kthread_func(void *data)
 	int curr_refresh;
 	int state;
 
-	struct sched_param param = { .sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = { .sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -384,7 +383,7 @@ static int rrc_set_refresh_rate_kthread_func(void *data)
 	/* int event;	*/
 	/* int enable; */
 
-	struct sched_param param = { .sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = { .sched_priority = 94 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
