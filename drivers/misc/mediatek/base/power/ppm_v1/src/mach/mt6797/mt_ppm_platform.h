@@ -55,6 +55,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 
 #define PPM_THERMAL_ENHANCEMENT		(1)
 #ifdef PPM_THERMAL_ENHANCEMENT
+#define LITTLE_MIN_FREQ_IDX		(10)
 #define BIG_MIN_FREQ_IDX		(12)
 #endif
 

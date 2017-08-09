@@ -809,6 +809,9 @@ int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx)
 				&& power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_B].opp_lv > BIG_MIN_FREQ_IDX
 				&& ppm_hica_algo_data.ppm_cur_tlp < 800)
 				continue;
+			else if (power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_LL].opp_lv > LITTLE_MIN_FREQ_IDX
+				|| power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_L].opp_lv > LITTLE_MIN_FREQ_IDX)
+				continue;
 #endif
 
 			if (tbl->sorted_tbl[i].value <= pwr_idx) {
