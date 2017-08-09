@@ -602,12 +602,16 @@ void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
 	cpumask_clear(fast);
 	cpumask_clear(slow);
 
-	for_each_possible_cpu(cpu) {
+	/* FIXME: temporarily use cluster id to identify cpumask */
+	arch_get_cluster_cpus(slow, 0);
+	arch_get_cluster_cpus(fast, 1);
+/*	for_each_possible_cpu(cpu) {
 		if (arch_cpu_is_little(cpu))
 			cpumask_set_cpu(cpu, slow);
 		else
 			cpumask_set_cpu(cpu, fast);
 	}
+*/
 	if (!cpumask_empty(fast) && !cpumask_empty(slow))
 		return;
 
