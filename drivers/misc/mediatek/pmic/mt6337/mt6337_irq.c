@@ -194,11 +194,11 @@ void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 		~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 
 	/*---To mask interrupt needs to clear mask bit---*/
-	mt6337_config_interface(interrupts[shift].mask_clear, 0x1, 0x1, no);
+	mt6337_config_interface(sub_interrupts[shift].mask_clear, 0x1, 0x1, no);
 
 	/*---the mask in MT6337 needs 'logical not'---*/
 	PMICLOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
-		sub_interrupts[shift].mask_set, ~(mt6337_get_reg_value(sub_interrupts[shift].mask)));
+		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
 void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
@@ -215,15 +215,15 @@ void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 
 	/*---the mask in MT6337 needs 'logical not'---*/
 	PMICLOG("[mt6337_unmask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
-		intNo, str, shift, no, interrupts[shift].mask,
+		intNo, str, shift, no, sub_interrupts[shift].mask,
 		~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 
 	/*---To unmask interrupt needs to set mask bit---*/
-	mt6337_config_interface(interrupts[shift].mask_set, 0x1, 0x1, no);
+	mt6337_config_interface(sub_interrupts[shift].mask_set, 0x1, 0x1, no);
 
 	/*---the mask in MT6337 needs 'logical not'---*/
 	PMICLOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
-		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(interrupts[shift].mask)));
+		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
 void mt6337_register_interrupt_callback(MT6337_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
