@@ -903,19 +903,19 @@ void slp_check_pm_mtcmos_pll(void)
 			continue;
 		if (pll_is_on(i)) {
 			slp_chk_mtcmos_pll_stat = -1;
-			pr_err("%s: on\n", plls[i].name);
+			/*pr_err("%s: on\n", plls[i].name);*/
 			pr_err("suspend warning: %s is on!!!\n", plls[i].name);
 			/*pr_err("warning! warning! warning! it may cause resume fail\n");*/
 		}
 	}
 	for (i = 0; i < NR_SYSS; i++) {
 		if (subsys_is_on(i)) {
-			pr_err("%s: on\n", syss[i].name);
 			if ((i != SYS_MD1) && (i != SYS_C2K)) {
 				slp_chk_mtcmos_pll_stat = -1;
 				pr_err("suspend warning: %s is on!!!\n", syss[i].name);
 				/*pr_err("warning! warning! warning! it may cause resume fail\n");*/
-			}
+			} else
+				pr_err("%s: on\n", syss[i].name);
 		}
 	}
 	if (slp_chk_mtcmos_pll_stat != 1 && gAllowClkDump)

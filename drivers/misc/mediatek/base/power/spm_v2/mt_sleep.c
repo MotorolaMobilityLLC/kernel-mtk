@@ -248,6 +248,10 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	pll_if_on();
 	subsys_if_on();
 #endif
+#if defined(CONFIG_ARCH_MT6797)
+	if (slp_check_mtcmos_pll)
+		slp_check_pm_mtcmos_pll();
+#endif
 #if 0
 #ifndef CONFIG_MTK_FPGA
 	if (slp_check_mtcmos_pll)
