@@ -81,7 +81,6 @@
  * Enable by selecting api version TRUSTY_API_VERSION_SMP (2) or later.
  */
 #define SMC_SC_NOP		SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 3)
-#define SMC_SC_ADD		SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 4)
 
 /*
  * Return from secure os to non-secure os with return value in r1
@@ -131,5 +130,11 @@
 
 #define SMC_SC_VDEV_RESET	SMC_STDCALL_NR(SMC_ENTITY_TRUSTED_OS, 23)
 #define SMC_SC_VDEV_KICK_VQ	SMC_STDCALL_NR(SMC_ENTITY_TRUSTED_OS, 24)
+
+/* Debugging only */
+#ifdef CONFIG_MT_TRUSTY_DEBUGFS
+#define SMC_SC_ADD			SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0xFFF0)
+#define SMC_FC_DUMP_THREADS SMC_FASTCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0xFFF0)
+#endif
 
 #endif /* __LINUX_TRUSTY_SMCALL_H */

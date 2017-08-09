@@ -29,4 +29,8 @@ config TRUSTY_VIRTIO_IPC
 	  If you choose to build a module, it'll be called trusty-ipc.
 	  Say N if unsure.
 
+config MT_TRUSTY_DEBUGFS
+	tristate "Trusty debugfs for Mediatek platforms"
+	default n
+
 endmenu

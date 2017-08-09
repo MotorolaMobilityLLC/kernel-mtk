@@ -12,14 +12,12 @@
  *
  */
 
-#define MT_SMC_ADD_API
-
 #include <asm/compiler.h>
 #include <linux/delay.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
-#ifdef MT_SMC_ADD_API
+#ifdef CONFIG_MT_TRUSTY_DEBUGFS
 #include <linux/random.h>
 #endif
 #include <linux/slab.h>
@@ -248,7 +246,7 @@ ssize_t trusty_version_show(struct device *dev, struct device_attribute *attr,
 
 DEVICE_ATTR(trusty_version, S_IRUSR, trusty_version_show, NULL);
 
-#ifdef MT_SMC_ADD_API
+#ifdef CONFIG_MT_TRUSTY_DEBUGFS
 ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
 			    char *buf)
 {
@@ -263,7 +261,58 @@ ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
 }
 
 DEVICE_ATTR(trusty_smc_sc_add, S_IRUSR, trusty_smc_sc_add, NULL);
-#endif /* MT_SMC_ADD_API */
+
+ssize_t trusty_smc_fc_dump_threads(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	/* Dump Trusty threads info to memlog */
+	trusty_fast_call32(dev, SMC_FC_DUMP_THREADS, 0, 0, 0);
+	/* Dump threads info from memlog to kmsg*/
+	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_smc_fc_dump_threads, S_IRUSR,
+	trusty_smc_fc_dump_threads, NULL);
+
+ssize_t trusty_smc_sc_vdev_reset(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	trusty_std_call32(dev, SMC_SC_VDEV_RESET, 0, 0, 0);
+	return 0;
+}
+
+DEVICE_ATTR(trusty_smc_sc_vdev_reset, S_IRUSR,
+	trusty_smc_sc_vdev_reset, NULL);
+
+
+static void trusty_create_debugfs(struct trusty_state *s, struct device *pdev)
+{
+	int ret;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_smc_sc_add);
+	if (ret)
+		goto err_create_smc_sc_add;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_smc_fc_dump_threads);
+	if (ret)
+		goto err_create_smc_fc_dump_threads;
+
+	ret = device_create_file(pdev, &dev_attr_trusty_smc_sc_vdev_reset);
+	if (ret)
+		goto err_create_smc_sc_vdev_reset;
+
+	return;
+
+err_create_smc_sc_vdev_reset:
+	device_remove_file(pdev, &dev_attr_trusty_smc_sc_vdev_reset);
+err_create_smc_fc_dump_threads:
+	device_remove_file(pdev, &dev_attr_trusty_smc_fc_dump_threads);
+err_create_smc_sc_add:
+	device_remove_file(pdev, &dev_attr_trusty_smc_sc_add);
+}
+
+#endif /* CONFIG_MT_TRUSTY_DEBUGFS */
 
 const char *trusty_version_str_get(struct device *dev)
 {
@@ -299,12 +348,6 @@ static void trusty_init_version(struct trusty_state *s, struct device *dev)
 	ret = device_create_file(dev, &dev_attr_trusty_version);
 	if (ret)
 		goto err_create_file;
-
-#ifdef MT_SMC_ADD_API
-	ret = device_create_file(dev, &dev_attr_trusty_smc_sc_add);
-	if (ret)
-		goto err_create_file;
-#endif /* MT_SMC_ADD_API */
 
 	return;
 
@@ -378,6 +421,10 @@ static int trusty_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to add children: %d\n", ret);
 		goto err_add_children;
 	}
+
+#ifdef CONFIG_MT_TRUSTY_DEBUGFS
+	trusty_create_debugfs(s, &pdev->dev);
+#endif
 
 	return 0;
 
