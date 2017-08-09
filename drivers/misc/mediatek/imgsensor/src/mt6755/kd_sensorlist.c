@@ -2095,6 +2095,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         break;
      case SENSOR_FEATURE_SET_SENSOR_SYNC:    /* Update new sensor exposure time and gain to keep */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
+	 kfree(pFeaturePara);
          PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
          return -EFAULT;
     }
