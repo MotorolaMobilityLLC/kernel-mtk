@@ -4583,8 +4583,6 @@ static int __init hmp_cpu_mask_setup(void)
 	struct list_head *pos;
 	int dc, cpu;
 
-	cpumask_clear(&hmp_fast_cpu_mask);
-	cpumask_clear(&hmp_slow_cpu_mask);
 
 	pr_debug("Initializing HMP scheduler:\n");
 
@@ -4600,22 +4598,7 @@ static int __init hmp_cpu_mask_setup(void)
 	list_for_each(pos, &hmp_domains) {
 		domain = list_entry(pos, struct hmp_domain, hmp_domains);
 		cpulist_scnprintf(buf, 64, &domain->possible_cpus);
-		pr_debug("  HMP domain %d: %s\n", dc, buf);
-
-		/*
-		 * According to the description in "arch_get_hmp_domains",
-		 * Fastest domain is at head of list. Thus, the fast-cpu mask should
-		 * be initialized first, followed by slow-cpu mask.
-		 */
-		if (cpumask_empty(&hmp_fast_cpu_mask)) {
-			cpumask_copy(&hmp_fast_cpu_mask, &domain->possible_cpus);
-			for_each_cpu(cpu, &hmp_fast_cpu_mask)
-				pr_debug("  HMP fast cpu : %d\n", cpu);
-		} else if (cpumask_empty(&hmp_slow_cpu_mask)) {
-			cpumask_copy(&hmp_slow_cpu_mask, &domain->possible_cpus);
-			for_each_cpu(cpu, &hmp_slow_cpu_mask)
-				pr_debug("  HMP slow cpu : %d\n", cpu);
-		}
+		pr_warn("  HMP domain %d: %s\n", dc, buf);
 
 		for_each_cpu_mask(cpu, domain->possible_cpus) {
 			per_cpu(hmp_cpu_domain, cpu) = domain;
@@ -9283,9 +9266,7 @@ static struct sched_entity *hmp_get_lightest_task(
 
 #define hmp_caller_is_gb(caller) ((HMP_GB == caller)?1:0)
 
-#define hmp_cpu_is_fast(cpu) cpumask_test_cpu(cpu, &hmp_fast_cpu_mask)
-#define hmp_cpu_is_slow(cpu) cpumask_test_cpu(cpu, &hmp_slow_cpu_mask)
-#define hmp_cpu_stable(cpu) (hmp_cpu_is_fast(cpu) ? \
+#define hmp_cpu_stable(cpu, up) (up ?	\
 			hmp_up_stable(cpu) : hmp_down_stable(cpu))
 
 #define hmp_inc(v) ((v) + 1)
@@ -9323,7 +9304,7 @@ static int hmp_down_stable(int cpu)
 
 /* Select the most appropriate CPU from hmp cluster */
 static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
-			struct cpumask *mask, int prev)
+			struct cpumask *mask, int prev, int up)
 {
 	int curr = 0;
 	int target = num_possible_cpus();
@@ -9349,7 +9330,7 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 			continue;
 
 		/* For global load balancing, unstable CPU will be bypassed */
-		if (hmp_caller_is_gb(caller) && !hmp_cpu_stable(curr))
+		if (hmp_caller_is_gb(caller) && !hmp_cpu_stable(curr, up))
 			continue;
 
 		curr_wload = hmp_inc(cfs_load(curr));
@@ -9380,6 +9361,8 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	int B_target = num_possible_cpus();
 	int L_target = num_possible_cpus();
 	struct clb_env clbenv;
+	struct list_head *pos;
+	struct cpumask fast_cpu_mask, slow_cpu_mask;
 
 #ifdef CONFIG_HMP_TRACER
 	int cpu = 0;
@@ -9398,8 +9381,28 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	 */
 	if (num_online_cpus() == 1)
 		goto out;
-	B_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_fast_cpu_mask, prev_cpu);
-	L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, prev_cpu);
+
+	cpumask_clear(&fast_cpu_mask);
+	cpumask_clear(&slow_cpu_mask);
+	/* order: fast to slow hmp domain */
+	list_for_each(pos, &hmp_domains) {
+		struct hmp_domain *domain = list_entry(pos, struct hmp_domain, hmp_domains);
+
+		if (!cpumask_empty(&domain->cpus)) {
+			if (cpumask_empty(&fast_cpu_mask)) {
+				cpumask_copy(&fast_cpu_mask, &domain->possible_cpus);
+			} else {
+				cpumask_copy(&slow_cpu_mask, &domain->possible_cpus);
+				break;
+			}
+		}
+	}
+
+	if (cpumask_empty(&fast_cpu_mask) || cpumask_empty(&slow_cpu_mask))
+		return new_cpu;
+
+	B_target = hmp_select_cpu(HMP_SELECT_RQ, p, &fast_cpu_mask, prev_cpu, 0);
+	L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &slow_cpu_mask, prev_cpu, 1);
 
 	/*
 	 * Only one cluster exists or only one cluster is allowed for this task
@@ -9429,8 +9432,8 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	}
 	memset(&clbenv, 0, sizeof(clbenv));
 	clbenv.flags |= HMP_SELECT_RQ;
-	cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
-	cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
+	cpumask_copy(&clbenv.lcpus, &slow_cpu_mask);
+	cpumask_copy(&clbenv.bcpus, &fast_cpu_mask);
 	clbenv.ltarget = L_target;
 	clbenv.btarget = B_target;
 	sched_update_clbstats(&clbenv);
@@ -9441,7 +9444,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	if (hmp_down_migration(B_target, &L_target, se, &clbenv))
 		goto select_slow;
 	step = 4;
-	if (hmp_cpu_is_slow(prev_cpu))
+	if (hmp_cpu_is_slowest(prev_cpu))
 		goto select_slow;
 	goto select_fast;
 
@@ -9865,7 +9868,7 @@ static DEFINE_SPINLOCK(hmp_force_migration);
  */
 static void hmp_force_down_migration(int this_cpu)
 {
-	int curr_cpu, target_cpu;
+	int target_cpu;
 	struct sched_entity *se;
 	struct rq *target;
 	unsigned long flags;
@@ -9876,90 +9879,110 @@ static void hmp_force_down_migration(int this_cpu)
 	struct sched_entity *orig;
 	int B_cpu;
 #endif
+	struct hmp_domain *hmp_domain = NULL;
+	struct cpumask fast_cpu_mask, slow_cpu_mask;
+
+	cpumask_clear(&fast_cpu_mask);
+	cpumask_clear(&slow_cpu_mask);
 
 	/* Migrate light task from big to LITTLE */
-	for_each_cpu(curr_cpu, &hmp_fast_cpu_mask) {
-		/* Check whether CPU is online */
-		if (!cpu_online(curr_cpu) || cpu_park(curr_cpu))
-			continue;
+	if (!hmp_cpu_is_slowest(this_cpu)) {
+		hmp_domain = hmp_cpu_domain(this_cpu);
+		cpumask_copy(&fast_cpu_mask, &hmp_domain->possible_cpus);
+		while (!list_is_last(&hmp_domain->hmp_domains, &hmp_domains)) {
+			struct list_head *pos = &hmp_domain->hmp_domains;
 
-		force = 0;
-		target = cpu_rq(curr_cpu);
-		raw_spin_lock_irqsave(&target->lock, flags);
-		se = target->cfs.curr;
-		if (!se) {
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-			continue;
-		}
+			hmp_domain = list_entry(pos->next, struct hmp_domain, hmp_domains);
 
-		/* Find task entity */
-		if (!entity_is_task(se)) {
-			struct cfs_rq *cfs_rq;
-
-			cfs_rq = group_cfs_rq(se);
-			while (cfs_rq) {
-				se = cfs_rq->curr;
-				cfs_rq = group_cfs_rq(se);
+			if (!cpumask_empty(&hmp_domain->cpus)) {
+				cpumask_copy(&slow_cpu_mask, &hmp_domain->possible_cpus);
+				break;
 			}
 		}
-#ifdef CONFIG_SCHED_HMP_PLUS
-		orig = se;
-		se = hmp_get_lightest_task(orig, 1);
-		if (!entity_is_task(se))
-			p = task_of(orig);
-		else
-#endif
-			p = task_of(se);
-#ifdef CONFIG_SCHED_HMP_PLUS
-		/* Don't offload to little if there is one idle big, let load balance to do it's work */
-		/* Also, to prevent idle_balance from leading to potential ping-pong */
-		B_cpu = hmp_select_cpu(HMP_GB, p, &hmp_fast_cpu_mask, this_cpu);
-		if (B_cpu < nr_cpu_ids && !rq_length(B_cpu)) {
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-			continue;
-		}
-#endif
-		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_slow_cpu_mask, -1);
-		if (target_cpu >= num_possible_cpus()) {
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-			continue;
-		}
+	}
+	if (!hmp_domain || hmp_domain == hmp_cpu_domain(this_cpu))
+		return;
 
-		/* Collect cluster information */
-		memset(&clbenv, 0, sizeof(clbenv));
-		clbenv.flags |= HMP_GB;
-		clbenv.btarget = curr_cpu;
-		clbenv.ltarget = target_cpu;
-		cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
-		cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
-		sched_update_clbstats(&clbenv);
+	if (cpumask_empty(&fast_cpu_mask) || cpumask_empty(&slow_cpu_mask))
+		return;
 
-#ifdef CONFIG_SCHED_HMP_PLUS
-		if (cpu_rq(curr_cpu)->cfs.h_nr_running < 2) {
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-			continue;
-		}
-#endif
-		/* Check migration threshold */
-		if (!target->active_balance &&
-		    hmp_down_migration(curr_cpu, &target_cpu, se, &clbenv)) {
-			get_task_struct(p);
-			target->active_balance = 1; /* force down */
-			target->push_cpu = target_cpu;
-			target->migrate_task = p;
-			force = 1;
-			trace_sched_hmp_migrate(p, target->push_cpu, 1);
-			hmp_next_down_delay(&p->se, target->push_cpu);
-		}
+	force = 0;
+	target = cpu_rq(this_cpu);
+	raw_spin_lock_irqsave(&target->lock, flags);
+	se = target->cfs.curr;
+	if (!se) {
 		raw_spin_unlock_irqrestore(&target->lock, flags);
-		if (force) {
-			if (stop_one_cpu_dispatch(cpu_of(target),
-				hmp_active_task_migration_cpu_stop,
-				target, &target->active_balance_work)) {
-				raw_spin_lock_irqsave(&target->lock, flags);
-				target->active_balance = 0;
-				raw_spin_unlock_irqrestore(&target->lock, flags);
-			}
+		return;
+	}
+
+	/* Find task entity */
+	if (!entity_is_task(se)) {
+		struct cfs_rq *cfs_rq;
+
+		cfs_rq = group_cfs_rq(se);
+		while (cfs_rq) {
+			se = cfs_rq->curr;
+			cfs_rq = group_cfs_rq(se);
+		}
+	}
+#ifdef CONFIG_SCHED_HMP_PLUS
+	orig = se;
+	se = hmp_get_lightest_task(orig, 1);
+	if (!entity_is_task(se))
+		p = task_of(orig);
+	else
+#endif
+		p = task_of(se);
+#ifdef CONFIG_SCHED_HMP_PLUS
+	/* Don't offload to little if there is one idle big, let load balance to do it's work */
+	/* Also, to prevent idle_balance from leading to potential ping-pong */
+	B_cpu = hmp_select_cpu(HMP_GB, p, &fast_cpu_mask, this_cpu, 0);
+	if (B_cpu < nr_cpu_ids && !rq_length(B_cpu)) {
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		return;
+	}
+#endif
+	target_cpu = hmp_select_cpu(HMP_GB, p, &slow_cpu_mask, -1, 1);
+	if (target_cpu >= num_possible_cpus()) {
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		return;
+	}
+
+	/* Collect cluster information */
+	memset(&clbenv, 0, sizeof(clbenv));
+	clbenv.flags |= HMP_GB;
+	clbenv.btarget = this_cpu;
+	clbenv.ltarget = target_cpu;
+	cpumask_copy(&clbenv.lcpus, &slow_cpu_mask);
+	cpumask_copy(&clbenv.bcpus, &fast_cpu_mask);
+	sched_update_clbstats(&clbenv);
+
+#ifdef CONFIG_SCHED_HMP_PLUS
+	if (cpu_rq(this_cpu)->cfs.h_nr_running < 2) {
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		return;
+	}
+#endif
+
+	/* Check migration threshold */
+	if (!target->active_balance &&
+		hmp_down_migration(this_cpu, &target_cpu, se, &clbenv)) {
+		get_task_struct(p);
+		target->active_balance = 1;
+		target->push_cpu = target_cpu;
+		target->migrate_task = p;
+		force = 1;
+		trace_sched_hmp_migrate(p, target->push_cpu, 1);
+		hmp_next_down_delay(&p->se, target->push_cpu);
+	}
+	raw_spin_unlock_irqrestore(&target->lock, flags);
+	if (force) {
+		if (stop_one_cpu_dispatch(cpu_of(target),
+			hmp_active_task_migration_cpu_stop,
+			target, &target->active_balance_work)) {
+			raw_spin_lock_irqsave(&target->lock, flags);
+			target->active_balance = 0;
+			raw_spin_unlock_irqrestore(&target->lock, flags);
 		}
 	}
 }
@@ -9990,9 +10013,35 @@ static void hmp_force_up_migration(int this_cpu)
 #endif
 
 	/* Migrate heavy task from LITTLE to big */
-	for_each_cpu(curr_cpu, &hmp_slow_cpu_mask) {
-		/* Check whether CPU is online */
-		if (!cpu_online(curr_cpu) || cpu_park(curr_cpu))
+	for_each_online_cpu(curr_cpu) {
+		struct hmp_domain *hmp_domain = NULL;
+		struct cpumask fast_cpu_mask, slow_cpu_mask;
+
+		cpumask_clear(&fast_cpu_mask);
+		cpumask_clear(&slow_cpu_mask);
+		if (!hmp_cpu_is_fastest(curr_cpu)) {
+			/* current cpu is slow_cpu_mask*/
+			hmp_domain = hmp_cpu_domain(curr_cpu);
+			cpumask_copy(&slow_cpu_mask, &hmp_domain->possible_cpus);
+
+			while (&hmp_domain->hmp_domains != hmp_domains.next) {
+				struct list_head *pos = &hmp_domain->hmp_domains;
+
+				hmp_domain = list_entry(pos->prev, struct hmp_domain, hmp_domains);
+				if (!cpumask_empty(&hmp_domain->cpus)) {
+					cpumask_copy(&fast_cpu_mask, &hmp_domain->possible_cpus);
+					break;
+				}
+			}
+		} else {
+			hmp_force_down_migration(this_cpu);
+			continue;
+		}
+
+		if (!hmp_domain || hmp_domain == hmp_cpu_domain(curr_cpu))
+			continue;
+
+		if (cpumask_empty(&fast_cpu_mask) || cpumask_empty(&slow_cpu_mask))
 			continue;
 
 		force = 0;
@@ -10027,7 +10076,7 @@ static void hmp_force_up_migration(int this_cpu)
 #endif
 			p = task_of(se);
 
-		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_fast_cpu_mask, -1);
+		target_cpu = hmp_select_cpu(HMP_GB, p, &fast_cpu_mask, -1, 0);
 		if (target_cpu >= num_possible_cpus()) {
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 			continue;
@@ -10038,15 +10087,14 @@ static void hmp_force_up_migration(int this_cpu)
 		clbenv.flags |= HMP_GB;
 		clbenv.ltarget = curr_cpu;
 		clbenv.btarget = target_cpu;
-		cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
-		cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
+		cpumask_copy(&clbenv.lcpus, &slow_cpu_mask);
+		cpumask_copy(&clbenv.bcpus, &fast_cpu_mask);
 		sched_update_clbstats(&clbenv);
 
 #ifdef CONFIG_HMP_PACK_SMALL_TASK
 		if (is_light_task(p) && !is_buddy_busy(per_cpu(sd_pack_buddy, curr_cpu)))
 			goto out_force_up;
 #endif
-
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
@@ -10072,10 +10120,10 @@ out_force_up:
 				target->active_balance = 0;
 				raw_spin_unlock_irqrestore(&target->lock, flags);
 			}
-		}
+		} else
+				hmp_force_down_migration(this_cpu);
 	}
 
-	hmp_force_down_migration(this_cpu);
 #ifdef CONFIG_HMP_TRACER
 	trace_sched_hmp_load(clbenv.bstats.load_avg, clbenv.lstats.load_avg);
 #endif
@@ -10111,8 +10159,8 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	memset(&clbenv, 0, sizeof(clbenv));
 	clbenv.flags |= HMP_GB;
 	clbenv.btarget = this_cpu;
-	cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
-	cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
+	cpumask_copy(&clbenv.lcpus, &hmp_domain->possible_cpus);
+	cpumask_copy(&clbenv.bcpus, &hmp_cpu_domain(this_cpu)->possible_cpus);
 
 	/* first select a task */
 	for_each_cpu(cpu, &hmp_domain->cpus) {
@@ -10887,7 +10935,7 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 		goto check_load;
 	}
 	if (hmp_cpu_is_slow(buddy)) {
-		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy);
+		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy, 1);
 		per_cpu(sd_pack_buddy, cpu) = (L_target >= num_possible_cpus()) ? buddy : L_target;
 		buddy = per_cpu(sd_pack_buddy, cpu);
 	}

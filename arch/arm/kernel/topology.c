@@ -515,75 +515,6 @@ static struct sched_domain_topology_level arm_topology[] = {
 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
 	{ NULL, },
 };
-#ifdef CONFIG_SCHED_HMP
-void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
-										struct cpumask *slow)
-{
-	unsigned int cpu;
-
-	cpumask_clear(fast);
-	cpumask_clear(slow);
-
-	/*
-	 * Use the config options if they are given. This helps testing
-	 * HMP scheduling on systems without a big.LITTLE architecture.
-	 */
-	if (strlen(CONFIG_HMP_FAST_CPU_MASK) && strlen(CONFIG_HMP_SLOW_CPU_MASK)) {
-		if (cpulist_parse(CONFIG_HMP_FAST_CPU_MASK, fast))
-			WARN(1, "Failed to parse HMP fast cpu mask!\n");
-		if (cpulist_parse(CONFIG_HMP_SLOW_CPU_MASK, slow))
-			WARN(1, "Failed to parse HMP slow cpu mask!\n");
-		return;
-	}
-
-	/* check by capacity */
-	for_each_possible_cpu(cpu) {
-		if (cpu_capacity(cpu) > min_cpu_perf)
-			cpumask_set_cpu(cpu, fast);
-		else
-			cpumask_set_cpu(cpu, slow);
-	}
-
-	if (!cpumask_empty(fast) && !cpumask_empty(slow))
-		return;
-
-	/*
-	 * We didn't find both big and little cores so let's call all cores
-	 * fast as this will keep the system running, with all cores being
-	 * treated equal.
-	 */
-	cpumask_setall(slow);
-	cpumask_clear(fast);
-}
-
-struct cpumask hmp_fast_cpu_mask;
-struct cpumask hmp_slow_cpu_mask;
-
-void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
-{
-	struct hmp_domain *domain;
-
-	arch_get_fast_and_slow_cpus(&hmp_fast_cpu_mask, &hmp_slow_cpu_mask);
-
-	/*
-	 * Initialize hmp_domains
-	 * Must be ordered with respect to compute capacity.
-	 * Fastest domain at head of list.
-	 */
-	if (!cpumask_empty(&hmp_slow_cpu_mask)) {
-		domain = (struct hmp_domain *)
-			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
-		cpumask_copy(&domain->possible_cpus, &hmp_slow_cpu_mask);
-		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
-		list_add(&domain->hmp_domains, hmp_domains_list);
-	}
-	domain = (struct hmp_domain *)
-		kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
-	cpumask_copy(&domain->possible_cpus, &hmp_fast_cpu_mask);
-	cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
-	list_add(&domain->hmp_domains, hmp_domains_list);
-}
-#endif /* CONFIG_SCHED_HMP */
 
 static void __init reset_cpu_topology(void)
 {
@@ -728,3 +659,32 @@ int arch_better_capacity(unsigned int cpu)
 	BUG_ON(cpu >= num_possible_cpus());
 	return cpu_capacity(cpu) > min_cpu_perf;
 }
+
+#ifdef CONFIG_SCHED_HMP
+void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
+{
+	struct hmp_domain *domain;
+	struct cpumask cpu_mask;
+	int id, maxid;
+
+	cpumask_clear(&cpu_mask);
+	maxid = arch_get_nr_clusters();
+
+	/*
+	 * Initialize hmp_domains
+	 * Must be ordered with respect to compute capacity.
+	 * Fastest domain at head of list.
+	 */
+	for (id = 0; id < maxid; id++) {
+		arch_get_cluster_cpus(&cpu_mask, id);
+		domain = (struct hmp_domain *)
+			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
+		cpumask_copy(&domain->possible_cpus, &cpu_mask);
+		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+		list_add(&domain->hmp_domains, hmp_domains_list);
+	}
+}
+#else
+void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
+#endif /* CONFIG_SCHED_HMP */
+

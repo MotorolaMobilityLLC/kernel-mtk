@@ -605,59 +605,28 @@ int arch_better_capacity(unsigned int cpu)
 }
 
 #ifdef CONFIG_SCHED_HMP
-void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
-			struct cpumask *slow)
-{
-	int cpu;
-
-	cpumask_clear(fast);
-	cpumask_clear(slow);
-
-	for_each_possible_cpu(cpu) {
-		if (cpu_capacity(cpu) < max_cpu_perf)
-			cpumask_set_cpu(cpu, slow);
-		else
-			cpumask_set_cpu(cpu, fast);
-	}
-
-	if (!cpumask_empty(fast) && !cpumask_empty(slow))
-		return;
-
-	/*
-	 * We didn't find both big and little cores so let's call all cores
-	 * fast as this will keep the system running, with all cores being
-	 * treated equal.
-	 */
-	cpumask_setall(fast);
-	cpumask_clear(slow);
-}
-
-struct cpumask hmp_fast_cpu_mask;
-struct cpumask hmp_slow_cpu_mask;
-
 void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
 {
 	struct hmp_domain *domain;
+	struct cpumask cpu_mask;
+	int id, maxid;
 
-	arch_get_fast_and_slow_cpus(&hmp_fast_cpu_mask, &hmp_slow_cpu_mask);
+	cpumask_clear(&cpu_mask);
+	maxid = arch_get_nr_clusters();
 
 	/*
 	 * Initialize hmp_domains
 	 * Must be ordered with respect to compute capacity.
 	 * Fastest domain at head of list.
 	 */
-	if (!cpumask_empty(&hmp_slow_cpu_mask)) {
+	for (id = 0; id < maxid; id++) {
+		arch_get_cluster_cpus(&cpu_mask, id);
 		domain = (struct hmp_domain *)
 			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
-		cpumask_copy(&domain->possible_cpus, &hmp_slow_cpu_mask);
+		cpumask_copy(&domain->possible_cpus, &cpu_mask);
 		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
 		list_add(&domain->hmp_domains, hmp_domains_list);
 	}
-	domain = (struct hmp_domain *)
-		kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
-	cpumask_copy(&domain->possible_cpus, &hmp_fast_cpu_mask);
-	cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
-	list_add(&domain->hmp_domains, hmp_domains_list);
 }
 #else
 void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
