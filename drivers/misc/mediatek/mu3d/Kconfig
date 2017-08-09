@@ -36,3 +36,12 @@ config USB_MU3D_DVT
 	  Say Y here if your system using Mediatek USB3.0 IP
 	  and would like to do verification program.
 	  If unsure, say N.
+
+config MTK_SIB_USB_SWITCH
+	tristate "MediaTek USB and SIB switch"
+	default n
+	---help---
+	  This selects the MediaTek MediaTek USB and SIB switch.
+	  Say Y here if you want to enable USB adn SIB switch.
+	  Support share USB pin to SIB function.
+	  If unsure, say N.

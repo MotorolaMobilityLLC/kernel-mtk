@@ -1940,6 +1940,10 @@ DEVICE_ATTR(rx, 0444, musb_rx_show, NULL);
 DEVICE_ATTR(uartpath, 0444, musb_uart_path_show, NULL);
 #endif
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+DEVICE_ATTR(sib_enable, 0664, musb_sib_enable_show, musb_sib_enable_store);
+#endif
+
 static struct attribute *musb_attributes[] = {
 	&dev_attr_mode.attr,
 	&dev_attr_vbus.attr,
@@ -1950,6 +1954,9 @@ static struct attribute *musb_attributes[] = {
 	&dev_attr_tx.attr,
 	&dev_attr_rx.attr,
 	&dev_attr_uartpath.attr,
+#endif
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	&dev_attr_sib_enable.attr,
 #endif
 	NULL
 };

@@ -16,7 +16,7 @@
 
 #include "mu3d_hal_osal.h"
 #include "musb_core.h"
-#ifdef CONFIG_MTK_UART_USB_SWITCH
+#if defined(CONFIG_MTK_UART_USB_SWITCH) || defined(CONFIG_MTK_SIB_USB_SWITCH)
 #include "mtk-phy-asic.h"
 /*#include <mach/mt_typedefs.h>*/
 #endif
@@ -617,6 +617,35 @@ ssize_t musb_uart_path_show(struct device *dev, struct device_attribute *attr, c
 	sw_uart_path = var;
 
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var);
+}
+#endif
+
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+ssize_t musb_sib_enable_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int ret;
+
+	if (!dev) {
+		pr_debug("dev is null!!\n");
+		return 0;
+	}
+	ret = usb_phy_sib_enable_switch_status();
+	return scnprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+ssize_t musb_sib_enable_store(struct device *dev, struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned int mode;
+
+	if (!dev) {
+		pr_debug("dev is null!!\n");
+		return count;
+	} else if (!kstrtouint(buf, 0, &mode)) {
+		pr_debug("USB sib_enable: %d\n", mode);
+		usb_phy_sib_enable_switch(mode);
+	}
+	return count;
 }
 #endif
 

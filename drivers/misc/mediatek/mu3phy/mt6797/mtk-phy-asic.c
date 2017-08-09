@@ -329,6 +329,48 @@ void usb_phy_switch_to_usb(void)
 }
 #endif
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+void usb_phy_sib_enable_switch(bool enable)
+{
+	/* f_fusb30_ck:125MHz */
+	usb_enable_clock(true);
+	udelay(50);
+
+	/* USBMAC mode is 0x62910002 (bit 1)
+	 * MDSIB  mode is 0x62910008 (bit 3)
+	 * 0x0629 just likes a signature. Can't be removed.
+	 */
+	if (enable)
+		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910008);
+	else
+		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910002);
+
+	/* f_fusb30_ck:125MHz */
+	usb_enable_clock(false);
+}
+
+bool usb_phy_sib_enable_switch_status(void)
+{
+	int reg;
+	bool ret;
+
+	/* f_fusb30_ck:125MHz */
+	usb_enable_clock(true);
+	udelay(50);
+
+	reg = U3PhyReadReg32((phys_addr_t) (u3_sif2_base + 0x300));
+	if (reg == 0x62910008)
+		ret = true;
+	else
+		ret = false;
+
+	/* f_fusb30_ck:125MHz */
+	usb_enable_clock(false);
+
+	return ret;
+}
+#endif
+
 #define RG_SSUSB_VUSB10_ON (1<<5)
 #define RG_SSUSB_VUSB10_ON_OFST (5)
 

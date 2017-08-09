@@ -774,6 +774,12 @@ extern void init_check_ltssm_work(void);
 extern void Charger_Detect_En(bool enable);
 #endif				/*CONFIG_USBIF_COMPLIANCE */
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+extern ssize_t musb_sib_enable_show(struct device *dev,
+				struct device_attribute *attr, char *buf);
+extern ssize_t musb_sib_enable_store(struct device *dev,
+				struct device_attribute *attr, const char *buf, size_t count);
+#endif
 
 extern void musb_sync_with_bat(struct musb *musb, int usb_state);
 
