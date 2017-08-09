@@ -17,5 +17,6 @@ void disp_register_irq(unsigned int irq_num, char *device_name);
 int disp_init_irq(void);
 irqreturn_t disp_irq_handler(int irq, void *dev_id);
 
+extern atomic_t ESDCheck_byCPU;
 #endif
 

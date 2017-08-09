@@ -36,6 +36,7 @@ unsigned long long rdma_end_time[2] = { 0 };
 static DDP_IRQ_CALLBACK irq_module_callback_table[DISP_MODULE_NUM][DISP_MAX_IRQ_CALLBACK];
 static DDP_IRQ_CALLBACK irq_callback_table[DISP_MAX_IRQ_CALLBACK];
 
+atomic_t ESDCheck_byCPU = ATOMIC_INIT(0);
 int disp_register_irq_callback(DDP_IRQ_CALLBACK cb)
 {
 	int i = 0;

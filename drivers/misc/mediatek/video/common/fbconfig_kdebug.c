@@ -18,6 +18,7 @@
 #include "primary_display.h"
 #include "ddp_ovl.h"
 #include "ddp_dsi.h"
+#include "ddp_irq.h"
 
 /* #include "disp_drv.h" */
 /* #include "lcd_drv.h" */
@@ -122,7 +123,9 @@ int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint
 	/* array[0] = 0x00013700; */
 	array[0] = 0x3700 + (num << 16);
 	dsi_set_cmdq(array, 1, 1);
+	atomic_set(&ESDCheck_byCPU , 1);
 	ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(dsi_id), NULL, cmd, buffer, num);
+	atomic_set(&ESDCheck_byCPU , 0);
 	if (ret == 0)
 		return -1;
 
