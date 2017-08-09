@@ -1109,7 +1109,7 @@ void mt_clkmgr_debug_init(void)
 			&armccipll_fsel_proc_fops);
 	entry =
 	    proc_create("mfgpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
-			&mfgpll_fsel_proc_fops);
+			&mmpll_fsel_proc_fops);
 	entry =
 	    proc_create("pll_mtcmos_clk", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&clk_fsel_proc_fops);

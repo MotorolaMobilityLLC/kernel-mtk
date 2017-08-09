@@ -36,8 +36,6 @@ extern void __iomem	*clk_camsys_base;
 
 
 /* APMIXEDSYS Register */
-#if 0
-#define AP_PLL_CON0             (clk_apmixed_base + 0x00)
 #define AP_PLL_CON0             (clk_apmixed_base + 0x00)
 #define AP_PLL_CON1             (clk_apmixed_base + 0x04)
 #define AP_PLL_CON2             (clk_apmixed_base + 0x08)
@@ -55,7 +53,6 @@ extern void __iomem	*clk_camsys_base;
 #define DIV_STB_CON0            (clk_apmixed_base + 0x38)
 #define PLL_CHG_CON0            (clk_apmixed_base + 0x3C)
 #define PLL_TEST_CON0           (clk_apmixed_base + 0x40)
-#endif
 #define ARMPLL_LL_CON0           (clk_apmixed_base + 0x200)
 #define ARMPLL_LL_CON1            (clk_apmixed_base + 0x204)
 #define ARMPLL_LL_PWR_CON0        (clk_apmixed_base + 0x20C)
@@ -204,7 +201,7 @@ enum {
 	SYS_AUDIO = 8,
 	SYS_CAM = 9,
 	SYS_C2K = 10,
-	SYS_MFG_INTF_INFRA = 11,
+	SYS_MDSYS_INTF_INFRA = 11,
 	SYS_MFG_CORE1 = 12,
 	SYS_MFG_CORE0 = 13,
 	NR_SYSS = 14,
