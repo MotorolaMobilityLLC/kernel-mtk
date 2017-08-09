@@ -1718,7 +1718,7 @@ static int fe_probe(struct platform_device *pdev)
 	if (IS_ENABLED(CONFIG_SUPPORT_OPENWRT))
 		device_reset(&pdev->dev);
 	if (!IS_ENABLED(CONFIG_SUPPORT_OPENWRT))
-		strcpy(netdev->name, "eth2");
+		strcpy(netdev->name, DEV_NAME);
 	SET_NETDEV_DEV(netdev, &pdev->dev);
 	netdev->netdev_ops = &fe_netdev_ops;
 	netdev->base_addr = (unsigned long)fe_base;

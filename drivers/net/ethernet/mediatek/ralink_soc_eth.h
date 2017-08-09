@@ -57,6 +57,12 @@ enum fe_work_flag {
 
 #define FE_DRV_VERSION		"0.1.2"
 
+#if	defined(CONFIG_ARCH_MT7623)
+#define	DEV_NAME		"eth2"
+#else
+#define	DEV_NAME		"eth%d"
+#endif
+
 /* power of 2 to let NEXT_TX_DESP_IDX work */
 #define NUM_DMA_DESC		(1 << 7)
 #define MAX_DMA_DESC		0xfff
