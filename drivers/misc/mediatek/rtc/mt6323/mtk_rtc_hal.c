@@ -201,11 +201,9 @@ void hal_rtc_bbpu_pwdn(void)
 
 		/* 3.   Switch SRCLKENAs GPIO MUX function to GPIO Mode */
 		mt_set_gpio_mode(GPIO_SRCLKEN_PIN, GPIO_MODE_GPIO);
-	} else
 #endif
-	{
+	} else
 		rtc_bbpu_pwrdown(true);
-	}
 }
 
 void hal_rtc_get_pwron_alarm(struct rtc_time *tm, struct rtc_wkalrm *alm)
