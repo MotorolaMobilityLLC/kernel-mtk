@@ -21,7 +21,7 @@
 /* #include <mach/mt_dcm.h> */
 #include <mach/mt_spm_mtcmos.h>
 /* #include <mach/mt_spm_sleep.h> */
-/* #include <mach/mt_freqhopping.h> */
+#include <mach/mt_freqhopping.h>
 /* #include <mach/mt_gpufreq.h> */
 /* #include <mach/irqs.h> */
 
@@ -3834,6 +3834,8 @@ int mt_clkmgr_init(void)
 
 	cg_bootup_pdn();
 
+	mt_freqhopping_init();
+
 	return 1;
 
 	mt_plls_init();
@@ -3843,7 +3845,6 @@ int mt_clkmgr_init(void)
 
 	initialized = 1;
 /* **** */
-/* mt_freqhopping_init(); */
 	print_grp_regs();
 
 #ifndef CONFIG_ARCH_MT6753
