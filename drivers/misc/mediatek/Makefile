@@ -44,3 +44,4 @@ endif
 
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
