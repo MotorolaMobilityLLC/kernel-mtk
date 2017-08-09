@@ -34,7 +34,7 @@ static inline void ipi_host2scp(void)
  */
 void scp_ipi_handler(void)
 {
-	pr_debug("scp_ipi_handler %d\n", scp_rcv_obj->id);
+	/*pr_debug("scp_ipi_handler %d\n", scp_rcv_obj->id);*/
 
 	if (scp_ipi_desc[scp_rcv_obj->id].handler) {
 		memcpy_from_scp(scp_recv_buff, (void *)scp_rcv_obj->share_buf, scp_rcv_obj->len);

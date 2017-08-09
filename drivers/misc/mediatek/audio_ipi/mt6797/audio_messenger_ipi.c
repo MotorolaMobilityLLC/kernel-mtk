@@ -240,16 +240,18 @@ void audio_send_ipi_msg_to_scp(const ipi_msg_t *ipi_msg)
 	AUD_LOG_D("send, task: %d, id: 0x%x, p1: 0x%x, p2: 0x%x\n",
 		  ipi_msg->task_scene, ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2);
 
-	send_status = scp_ipi_send(
-			      IPI_AUDIO,
-			      (void *)ipi_msg,
-			      get_message_buf_size(ipi_msg),
-			      1);  /* default wait */
+	do {
+		send_status = scp_ipi_send(
+				      IPI_AUDIO,
+				      (void *)ipi_msg,
+				      get_message_buf_size(ipi_msg),
+				      1);  /* default wait */
 
-	if (send_status != DONE) {
-		AUD_LOG_E("%s(), scp_ipi_send error\n", __func__);
-		return;
-	}
+		if (send_status != DONE) {
+			AUD_LOG_E("%s(), scp_ipi_send error, send_status = %d\n",
+				  __func__, send_status);
+		}
+	} while (send_status != DONE);
 }
 
 
