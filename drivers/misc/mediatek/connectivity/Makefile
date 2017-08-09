@@ -52,5 +52,8 @@ ifneq ($(CONFIG_MTK_COMBO),)
 	ifneq ($(filter "CONSYS_6580",$(CONFIG_MTK_COMBO_CHIP)),)
 		obj-y   +=  conn_soc/
 	endif
+	ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
+		obj-y   +=  conn_soc/
+	endif
 	obj-y   +=  common_detect/
 endif

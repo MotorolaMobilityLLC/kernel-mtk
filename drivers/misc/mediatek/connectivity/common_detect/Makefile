@@ -51,6 +51,9 @@ ifneq ($(KERNELRELEASE),)
 	ifneq ($(filter "CONSYS_6580",$(CONFIG_MTK_COMBO_CHIP)),)
 		SOC_CHIP_SUPPORT := true
 	endif
+	ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
+		SOC_CHIP_SUPPORT := true
+	endif
 	ifeq ($(SOC_CHIP_SUPPORT), true)
 		subdir-ccflags-y += -D MTK_WCN_SOC_CHIP_SUPPORT
 		CONN_COMMON := ../conn_soc/common
