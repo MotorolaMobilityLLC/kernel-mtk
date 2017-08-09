@@ -355,4 +355,7 @@ extern int ccci_sysmsg_echo_test(int, int);
 extern int ccci_sysmsg_echo_test_l1core(int, int);
 #endif
 
+extern bool spm_is_md1_sleep(void);
+extern void spm_ap_mdsrc_req(u8 lock);
+
 #endif				/* __MODEM_CD_H__ */
