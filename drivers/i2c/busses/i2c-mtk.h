@@ -93,8 +93,28 @@ enum DMA_REGS_OFFSET {
 	OFFSET_TX_LEN = 0x24,
 	OFFSET_RX_LEN = 0x28,
 	OFFSET_INT_BUF_SIZE = 0x38,
+	OFFSET_DEBUG_STA = 0x50,
 	OFFSET_TX_MEM_ADDR2 = 0x54,
 	OFFSET_RX_MEM_ADDR2 = 0x58,
+};
+
+struct i2c_dma_info {
+	unsigned long base;
+	unsigned int int_flag;
+	unsigned int int_en;
+	unsigned int en;
+	unsigned int rst;
+	unsigned int stop;
+	unsigned int flush;
+	unsigned int con;
+	unsigned int tx_mem_addr;
+	unsigned int rx_mem_addr;
+	unsigned int tx_len;
+	unsigned int rx_len;
+	unsigned int int_buf_size;
+	unsigned int debug_sta;
+	unsigned int tx_mem_addr2;
+	unsigned int rx_mem_addr2;
 };
 
 enum i2c_trans_st_rs {
