@@ -13,17 +13,22 @@
 	#include <platform/mt_pmic.h>
 	#include <string.h>
 #else
+#ifdef CONFIG_MTK_LEGACY
 	#include <mach/mt_pm_ldo.h>	/* hwPowerOn */
 	#include <mach/upmu_common.h>
 	#include <mach/upmu_sw.h>
 	#include <mach/upmu_hw.h>
-
 	#include <mach/mt_gpio.h>
 #endif
+#endif
+
+#ifdef CONFIG_MTK_LEGACY
 #include <cust_gpio_usage.h>
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #include <cust_i2c.h>
 #endif
+#endif
+
 #ifdef BUILD_LK
 #define LCD_DEBUG(fmt)  dprintf(CRITICAL, fmt)
 #else
@@ -65,6 +70,8 @@ static LCM_UTIL_FUNCS lcm_util;
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+
+#ifdef CONFIG_MTK_LEGACY
 /*****************************************************************************
  * Define
  *****************************************************************************/
@@ -153,8 +160,6 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	return ret;
 }
 
-
-
 /*
  * module load/unload record keeping
  */
@@ -185,6 +190,12 @@ MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
 MODULE_LICENSE("GPL");
 #endif
 #endif
+#else
+static int tps65132_write_bytes(unsigned char addr, unsigned char value)
+{
+	return 0;
+}
+#endif
 
 /*/static unsigned char lcd_id_pins_value = 0xFF;*/
 static const unsigned char LCD_MODULE_ID = 0x01; /*/  haobing modified 2013.07.11*/
@@ -199,7 +210,7 @@ static const unsigned char LCD_MODULE_ID = 0x01; /*/  haobing modified 2013.07.1
 #define FRAME_WIDTH (1080)
 #define FRAME_HEIGHT (1920)
 #endif
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_MTK_LEGACY)
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
 #endif
 
@@ -984,9 +995,11 @@ static void lcm_init_power(void)
 #ifdef BUILD_LK
 	pmic_set_register_value(PMIC_RG_VGP1_EN, 1);
 #else
+#ifdef CONFIG_MTK_LEGACY
 	pr_debug("%s, begin\n", __func__);
 	hwPowerOn(MT6328_POWER_LDO_VGP1, VOL_DEFAULT, "LCM_DRV");
 	pr_debug("%s, end\n", __func__);
+#endif
 #endif
 #endif
 }
@@ -997,9 +1010,11 @@ static void lcm_suspend_power(void)
 #ifdef BUILD_LK
 	pmic_set_register_value(PMIC_RG_VGP1_EN, 0);
 #else
+#ifdef CONFIG_MTK_LEGACY
 	pr_debug("%s, begin\n", __func__);
 	hwPowerDown(MT6328_POWER_LDO_VGP1, "LCM_DRV");
 	pr_debug("%s, end\n", __func__);
+#endif
 #endif
 #endif
 }
@@ -1010,9 +1025,11 @@ static void lcm_resume_power(void)
 #ifdef BUILD_LK
 	pmic_set_register_value(PMIC_RG_VGP1_EN, 1);
 #else
+#ifdef CONFIG_MTK_LEGACY
 	pr_debug("%s, begin\n", __func__);
 	hwPowerOn(MT6328_POWER_LDO_VGP1, VOL_DEFAULT, "LCM_DRV");
 	pr_debug("%s, end\n", __func__);
+#endif
 #endif
 #endif
 }
@@ -1020,20 +1037,20 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_MTK_LEGACY)
 	unsigned char cmd = 0x0;
 	unsigned char data = 0xFF;
+
 	int ret = 0;
 
-	cmd = 0x00;
-	data = 0x0E;
-/*/data=0x0A;VSP=5V,//data=0x0E;VSP=5.4V*/
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ONE);
 	MDELAY(10);
 
+	/*/data=0x0A;VSP=5V,//data=0x0E;VSP=5.4V*/
+	cmd = 0x00;
+	data = 0x0E;
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
 if (ret)
@@ -1079,9 +1096,11 @@ sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 
 static void lcm_suspend(void)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_MTK_LEGACY)
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ZERO);
+#endif
 	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	/*/SET_RESET_PIN(0);*/
 	MDELAY(10);
