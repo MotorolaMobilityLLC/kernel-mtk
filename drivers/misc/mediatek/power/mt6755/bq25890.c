@@ -518,8 +518,8 @@ void bq25890_en_chg_timer(unsigned int val)
 
 	ret = bq25890_config_interface((unsigned char) (bq25890_CON7),
 				       (unsigned char) (val),
-				       (unsigned char) (CON7_EN_TIM_MASK),
-				       (unsigned char) (CON7_EN_TIMG_SHIFT)
+				       (unsigned char) (CON7_EN_TIMER_MASK),
+				       (unsigned char) (CON7_EN_TIMER_SHIFT)
 	    );
 }
 

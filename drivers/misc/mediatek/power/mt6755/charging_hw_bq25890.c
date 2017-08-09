@@ -151,7 +151,7 @@ static char *DISO_state_s[8] = {
 /* extern unsigned int mt6311_get_chip_id(void); _not_ used*/
 /* extern int is_mt6311_exist(void); _not_ used */
 /* extern int is_mt6311_sw_ready(void); _not_ used */
-
+static int bif_inited;
 static unsigned int charging_error;
 static unsigned int charging_get_error_state(void);
 static unsigned int charging_set_error_state(void *data);
@@ -235,7 +235,7 @@ static unsigned int is_chr_det(void)
 #define ERA (0x100)
 #define WRA (0x200)
 #define RRA (0x300)
-
+#define WD  (0x000)
 /*bus commands*/
 #define BUSRESET (0x00)
 #define RBL2 (0x22)
@@ -244,7 +244,7 @@ static unsigned int is_chr_det(void)
 /*BIF slave address*/
 #define MW3790 (0x00)
 #define MW3790_VBAT (0x0114)
-
+#define MW3790_TBAT (0x0193)
 void bif_reset_irq(void)
 {
 	unsigned int reg_val = 0;
@@ -285,10 +285,11 @@ void bif_waitfor_slave(void)
 
 }
 
-void bif_powerup_slave(void)
+int bif_powerup_slave(void)
 {
-
-	unsigned int bat_lost = 0;
+	int bat_lost = 0;
+	int total_valid = 0;
+	int timeout = 0;
 	int loop_i = 0;
 
 	do {
@@ -308,6 +309,8 @@ void bif_powerup_slave(void)
 
 		/*check_bat_lost(); what to do with this? */
 		bat_lost = pmic_get_register_value(PMIC_BIF_BAT_LOST);
+		total_valid = pmic_get_register_value(PMIC_BIF_TOTAL_VALID);
+		timeout = pmic_get_register_value(PMIC_BIF_TIMEOUT);
 
 		if (loop_i < 5) {
 			loop_i++;
@@ -315,12 +318,14 @@ void bif_powerup_slave(void)
 			battery_log(BAT_LOG_CRTI, "[BIF][powerup_slave]Failed at loop=%d", loop_i);
 			break;
 		}
-	} while (bat_lost == 1);
-	if (bat_lost == 0 && loop_i < 5)
-		battery_log(BAT_LOG_CRTI, "[BIF][powerup_slave]OK at loop=%d", loop_i);
-
-
+	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
+	if (loop_i < 5) {
+		battery_log(BAT_LOG_FULL, "[BIF][powerup_slave]OK at loop=%d", loop_i);
 	bif_reset_irq();
+		return 1;
+	}
+
+	return -1;
 }
 
 void bif_set_cmd(int bif_cmd[], int bif_cmd_len)
@@ -336,11 +341,12 @@ void bif_set_cmd(int bif_cmd[], int bif_cmd_len)
 }
 
 
-void bif_reset_slave(void)
+int bif_reset_slave(void)
 {
-	unsigned int ret = 0;
-
-	unsigned int bat_lost = 0;
+	int ret = 0;
+	int bat_lost = 0;
+	int total_valid = 0;
+	int timeout = 0;
 	int bif_cmd[1] = { 0 };
 	int loop_i = 0;
 
@@ -364,6 +370,9 @@ void bif_reset_slave(void)
 		ret = pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 0);
 		/*check transaction completeness */
 		bat_lost = pmic_get_register_value(PMIC_BIF_BAT_LOST);
+		total_valid = pmic_get_register_value(PMIC_BIF_TOTAL_VALID);
+		timeout = pmic_get_register_value(PMIC_BIF_TIMEOUT);
+
 		if (loop_i < 50)
 			loop_i++;
 		else {
@@ -371,28 +380,162 @@ void bif_reset_slave(void)
 				    loop_i);
 			break;
 		}
-	} while (bat_lost == 1);
+	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
 
-	if (bat_lost == 0 && loop_i < 50)
-		battery_log(BAT_LOG_CRTI, "[BIF][bif_reset_slave]OK at loop=%d", loop_i);
+	if (loop_i < 50) {
+		battery_log(BAT_LOG_FULL, "[BIF][bif_reset_slave]OK at loop=%d", loop_i);
+	/*reset BIF_IRQ */
+	bif_reset_irq();
+		return 1;
+	}
+	return -1;
+}
+
+/*BIF WRITE 8 transaction*/
+int bif_write8(int addr, int *data)
+{
+	int ret = 1;
+	int era, wra;
+	int bif_cmd[4] = { 0, 0, 0, 0};
+	int loop_i = 0;
+	int bat_lost = 0;
+	int total_valid = 0;
+	int timeout = 0;
+
+	era = (addr & 0xFF00) >> 8;
+	wra = addr & 0x00FF;
+	battery_log(BAT_LOG_CRTI, "[BIF][bif_write8]ERA=%x, WRA=%x\n", era, wra);
+	/*set command sequence */
+	bif_cmd[0] = SDA | MW3790;
+	bif_cmd[1] = ERA | era;	/*[15:8] */
+	bif_cmd[2] = WRA | wra;	/*[ 7:0] */
+	bif_cmd[3] = WD  | (*data & 0xFF);	/*data*/
+
+
+	bif_set_cmd(bif_cmd, 4);
+	do {
+		/*command setting : 4 transactions for 1 byte write command(0) */
+		pmic_set_register_value(PMIC_BIF_TRASFER_NUM, 4);
+		pmic_set_register_value(PMIC_BIF_COMMAND_TYPE, 0);
+
+		/*Command set trigger */
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
+
+		udelay(200);
+		/*Command sent; wait for slave */
+		bif_waitfor_slave();
+
+		/*Command clear trigger */
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 0);
+		/*check transaction completeness */
+		bat_lost = pmic_get_register_value(PMIC_BIF_BAT_LOST);
+		total_valid = pmic_get_register_value(PMIC_BIF_TOTAL_VALID);
+		timeout = pmic_get_register_value(PMIC_BIF_TIMEOUT);
+
+		if (loop_i <= 50)
+			loop_i++;
+		else {
+			battery_log(BAT_LOG_CRTI,
+		"[BIF][bif_write8] Failed. bat_lost = %d, timeout = %d, totoal_valid = %d\n",
+		bat_lost, timeout, total_valid);
+			ret = -1;
+			break;
+		}
+	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
+
+	if (ret == 1)
+		battery_log(BAT_LOG_CRTI, "[BIF][bif_write8] OK for %d loop(s)\n", loop_i);
+	else
+		battery_log(BAT_LOG_CRTI, "[BIF][bif_write8] Failed for %d loop(s)\n", loop_i);
 
 	/*reset BIF_IRQ */
 	bif_reset_irq();
+
+	return ret;
 }
 
-/*BIF READ transaction*/
+/*BIF READ 8 transaction*/
+int bif_read8(int addr, int *data)
+{
+	int ret = 1;
+	int era, rra;
+	int val = -1;
+	int bif_cmd[3] = { 0, 0, 0 };
+	int loop_i = 0;
+	int bat_lost = 0;
+	int total_valid = 0;
+	int timeout = 0;
+
+	battery_log(BAT_LOG_FULL, "[BIF][READ8]\n");
+
+	era = (addr & 0xFF00) >> 8;
+	rra = addr & 0x00FF;
+	battery_log(BAT_LOG_CRTI, "[BIF][bif_read8]ERA=%x, RRA=%x\n", era, rra);
+	/*set command sequence */
+	bif_cmd[0] = SDA | MW3790;
+	bif_cmd[1] = ERA | era;	/*[15:8] */
+	bif_cmd[2] = RRA | rra;	/*[ 7:0] */
+
+	bif_set_cmd(bif_cmd, 3);
+	do {
+		/*command setting : 3 transactions for 1 byte read command(1) */
+		pmic_set_register_value(PMIC_BIF_TRASFER_NUM, 3);
+		pmic_set_register_value(PMIC_BIF_COMMAND_TYPE, 1);
+		pmic_set_register_value(PMIC_BIF_READ_EXPECT_NUM, 1);
+
+		/*Command set trigger */
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
+
+		udelay(200);
+		/*Command sent; wait for slave */
+		bif_waitfor_slave();
+
+		/*Command clear trigger */
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 0);
+		/*check transaction completeness */
+		bat_lost = pmic_get_register_value(PMIC_BIF_BAT_LOST);
+		total_valid = pmic_get_register_value(PMIC_BIF_TOTAL_VALID);
+		timeout = pmic_get_register_value(PMIC_BIF_TIMEOUT);
+
+		if (loop_i <= 50)
+			loop_i++;
+		else {
+			battery_log(BAT_LOG_CRTI,
+		"[BIF][bif_read16] Failed. bat_lost = %d, timeout = %d, totoal_valid = %d\n",
+		bat_lost, timeout, total_valid);
+			ret = -1;
+			break;
+		}
+	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
+
+	/*Read data */
+	if (ret == 1) {
+		val = pmic_get_register_value(PMIC_BIF_DATA_0);
+		battery_log(BAT_LOG_CRTI, "[BIF][bif_read8] OK d0=0x%x, for %d loop(s)\n",
+			    val, loop_i);
+	} else
+		battery_log(BAT_LOG_CRTI, "[BIF][bif_read8] Failed for %d loop(s)\n", loop_i);
+
+	/*reset BIF_IRQ */
+	bif_reset_irq();
+
+	*data = val;
+	return ret;
+}
+
+/*bif read 16 transaction*/
 int bif_read16(int addr)
 {
-	int ret = 0;
-
+	int ret = 1;
 	int era, rra;
 	int val = -1;
 	int bif_cmd[4] = { 0, 0, 0, 0 };
 	int loop_i = 0;
 	int bat_lost = 0;
+	int total_valid = 0;
+	int timeout = 0;
 
-
-	battery_log(BAT_LOG_CRTI, "[BIF][READ]\n");
+	battery_log(BAT_LOG_FULL, "[BIF][READ]\n");
 
 	era = (addr & 0xFF00) >> 8;
 	rra = addr & 0x00FF;
@@ -406,32 +549,37 @@ int bif_read16(int addr)
 	bif_set_cmd(bif_cmd, 4);
 	do {
 		/*command setting : 4 transactions for 2 byte read command(1) */
-		ret = pmic_set_register_value(PMIC_BIF_TRASFER_NUM, 4);
-		ret = pmic_set_register_value(PMIC_BIF_COMMAND_TYPE, 1);
-		ret = pmic_set_register_value(PMIC_BIF_READ_EXPECT_NUM, 2);
+		pmic_set_register_value(PMIC_BIF_TRASFER_NUM, 4);
+		pmic_set_register_value(PMIC_BIF_COMMAND_TYPE, 1);
+		pmic_set_register_value(PMIC_BIF_READ_EXPECT_NUM, 2);
 
 		/*Command set trigger */
-		ret = pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
 
 		udelay(200);
 		/*Command sent; wait for slave */
 		bif_waitfor_slave();
 
 		/*Command clear trigger */
-		ret = pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 0);
+		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 0);
 		/*check transaction completeness */
 		bat_lost = pmic_get_register_value(PMIC_BIF_BAT_LOST);
+		total_valid = pmic_get_register_value(PMIC_BIF_TOTAL_VALID);
+		timeout = pmic_get_register_value(PMIC_BIF_TIMEOUT);
+
 		if (loop_i <= 50)
 			loop_i++;
 		else {
 			battery_log(BAT_LOG_CRTI,
-				    "[BIF][bif_read16] read time out for %d loop(s)\n", loop_i);
+		"[BIF][bif_read16] Failed. bat_lost = %d, timeout = %d, totoal_valid = %d\n",
+		bat_lost, timeout, total_valid);
+			ret = -1;
 			break;
 		}
-	} while (bat_lost == 1);
+	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
 
 	/*Read data */
-	if (bat_lost == 0) {
+	if (ret == 1) {
 		int d0, d1;
 
 		d0 = pmic_get_register_value(PMIC_BIF_DATA_0);
@@ -450,9 +598,23 @@ int bif_read16(int addr)
 	return val;
 }
 
-/* BIF init function called only at the first time*/
-void bif_init(void)
+void bif_ADC_enable(void)
 {
+	int reg = 0x18;
+
+	bif_write8(0x0110, &reg);
+	mdelay(50);
+
+	reg = 0x98;
+	bif_write8(0x0110, &reg);
+	mdelay(50);
+
+}
+
+/* BIF init function called only at the first time*/
+int bif_init(void)
+{
+	int pwr, rst;
 	/*disable BIF interrupt */
 	pmic_set_register_value(PMIC_INT_CON0_CLR, 0x4000);
 	/*enable BIF clock */
@@ -462,8 +624,8 @@ void bif_init(void)
 	pmic_set_register_value(PMIC_RG_BATON_HT_EN, 1);
 
 	/*change to HW control mode*/
-	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);
-	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 0);
+	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 0);*/
+	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 1);*/
 	mdelay(50);
 
 	/*Enable RX filter function */
@@ -475,21 +637,25 @@ void bif_init(void)
 
 
 	/*wake up BIF slave */
-	bif_powerup_slave();
+	pwr = bif_powerup_slave();
 	mdelay(10);
-	bif_reset_slave();
+	rst = bif_reset_slave();
+
+	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);*/
+	mdelay(50);
 
 	battery_log(BAT_LOG_CRTI, "[BQ25896][BIF_init] done.");
+
+	if (pwr + rst == 2)
+		return 1;
+
+	return -1;
 }
 #endif
 static unsigned int charging_hw_init(void *data)
 {
 	unsigned int status = STATUS_OK;
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	static unsigned int init;
 
-	init = 0;
-#endif
 	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 3);	/* disable HV DCP for gq25897 */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 2);	/* disbale MaxCharge for gq25897 */
@@ -502,9 +668,13 @@ static unsigned int charging_hw_init(void *data)
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
 	bq25890_config_interface(bq25890_CONA, 0x7, 0xF, 4);	/* boost voltagte 4.998V default */
 	bq25890_config_interface(bq25890_CONA, 0x3, 0x7, 0);	/* boost current limit 1.3A */
-
-	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* disable ir_comp_resistance */
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
 	bq25890_config_interface(bq25890_CON8, 0x7, 0x7, 2);	/* enable ir_comp_vdamp */
+#else
+	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
+	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
+#endif
 	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
 
 	bq25890_config_interface(bq25890_CON9, 0x0, 0x1, 4);	/* JEITA_VSET: VREG-200mV */
@@ -527,23 +697,8 @@ static unsigned int charging_hw_init(void *data)
 	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
 	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
-	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V */
-
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	if (init == 0) {
-		bif_init();
-
-		/*turn off LDO and change SW control back to HW control */
-		/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 0);
-		pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);
-		mdelay(50);*/
-
-		init = 1;
-	}
-#endif
-
-
-
+	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
+	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
 
 /*	upmu_set_rg_vcdt_hv_en(0);*/
 
@@ -575,7 +730,7 @@ static unsigned int charging_dump_register(void *data)
 {
 	unsigned int status = STATUS_OK;
 
-	battery_log(BAT_LOG_CRTI, "charging_dump_register\r\n");
+	battery_log(BAT_LOG_FULL, "charging_dump_register\r\n");
 	bq25890_dump_register();
 
 	/*unsigned int vbat;
@@ -598,10 +753,9 @@ static unsigned int charging_enable(void *data)
 	} else {
 		/* bq25890_config_interface(bq25890_CON3, 0x0, 0x1, 4); //enable charging */
 		bq25890_chg_en(enable);
-		if (charging_get_error_state()) {
-			battery_log(BAT_LOG_CRTI, "[charging_enable] BQ2xxxx entered Hi-Z mode\n");
-			bq25890_set_en_hiz(0x1);	/* disable power path */
-			}
+		if (charging_get_error_state())
+			battery_log(BAT_LOG_CRTI, "[charging_enable] under test mode: disable charging\n");
+
 		/*bq25890_set_en_hiz(0x1);*/
 	}
 
@@ -624,7 +778,7 @@ static unsigned int charging_set_cv_voltage(void *data)
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, *(unsigned int *) data);
 	register_value =
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH), set_cv_voltage);
-	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage register_value=0x%x\n", register_value);
+	battery_log(BAT_LOG_FULL, "charging_set_cv_voltage register_value=0x%x\n", register_value);
 	bq25890_set_vreg(register_value);
 
 	return status;
@@ -845,14 +999,12 @@ static unsigned int charging_get_is_pcm_timer_trigger(void *data)
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = KAL_FALSE;
 #else
-/* temp comment for check in
 	if (slp_get_wake_reason() == WR_PCM_TIMER)
 		*(kal_bool *) (data) = KAL_TRUE;
 	else
 		*(kal_bool *) (data) = KAL_FALSE;
 
 	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
-*/
 #endif
 
 	return status;
@@ -894,8 +1046,6 @@ static unsigned int charging_set_power_off(void *data)
 	/*added dump_stack to see who the caller is */
 	dump_stack();
 	battery_log(BAT_LOG_CRTI, "charging_set_power_off\n");
-	/*entered Hi-Z mode to simulate pulse charger: cable off*/
-	bq25890_set_en_hiz(0x1);
 	kernel_power_off();
 #endif
 
@@ -1084,6 +1234,12 @@ static unsigned int charging_get_bif_vbat(void *data)
 	/* turn on VBIF28 regulator*/
 	/*bif_init();*/
 
+	/*change to HW control mode*/
+	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 0);
+	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 1);*/
+
+	bif_ADC_enable();
+
 	vbat = bif_read16(MW3790_VBAT);
 	*(unsigned int *) (data) = vbat;
 
@@ -1092,6 +1248,35 @@ static unsigned int charging_get_bif_vbat(void *data)
 	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);*/
 #else
 	*(unsigned int *) (data) = 0;
+#endif
+	return status;
+}
+
+static unsigned int charging_get_bif_tbat(void *data)
+{
+	unsigned int status = STATUS_OK;
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	int tbat = 0;
+	int ret;
+	int tried = 0;
+
+	mdelay(50);
+
+	if (bif_inited == 1) {
+		do {
+			bif_ADC_enable();
+			ret = bif_read8(MW3790_TBAT, &tbat);
+			tried++;
+			mdelay(50);
+			if (tried > 3)
+				break;
+		} while (ret != 1);
+
+		if (tried <= 3)
+			*(int *) (data) = tbat;
+		else
+			status =  STATUS_UNSUPPORTED;
+	}
 #endif
 	return status;
 }
@@ -1262,6 +1447,48 @@ static unsigned int charging_set_chrind_ck_pdn(void *data)
 	return status;
 }
 
+static unsigned int charging_sw_init(void *data)
+{
+	unsigned int status = STATUS_OK;
+	/*put here anything needed to be init upon battery_common driver probe*/
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	int vbat;
+
+	if (bif_inited != 1) {
+		bif_init();
+		charging_get_bif_vbat(&vbat);
+		if (vbat != 0) {
+			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery detected.\n");
+			bif_inited = 1;
+		} else
+			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery _NOT_ detected.\n");
+	}
+#endif
+	return status;
+}
+
+static unsigned int charging_enable_safetytimer(void *data)
+{
+	unsigned int status = STATUS_OK;
+	unsigned int en;
+
+	en = *(unsigned int *) data;
+	bq25890_en_chg_timer(en);
+
+	return status;
+}
+
+static unsigned int charging_set_hiz_swchr(void *data)
+{
+	unsigned int status = STATUS_OK;
+	unsigned int en;
+
+	en = *(unsigned int *) data;
+	bq25890_set_en_hiz(en);
+
+	return status;
+}
+
 static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
 	    charging_get_current, charging_set_current, charging_set_input_current,
@@ -1271,9 +1498,10 @@ charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_volta
 	    charging_get_is_pcm_timer_trigger, charging_set_platform_reset,
 	    charging_get_platform_boot_mode, charging_set_power_off,
 	    charging_get_power_source, charging_get_csdac_full_flag,
-	    charging_set_ta_current_pattern, charging_diso_init, charging_get_diso_state,
-	    charging_set_error_state, charging_set_vindpm, charging_set_vbus_ovp_en,
-	    charging_get_bif_vbat, charging_set_chrind_ck_pdn};
+	    charging_set_ta_current_pattern, charging_set_error_state, charging_diso_init,
+	    charging_get_diso_state, charging_set_vindpm, charging_set_vbus_ovp_en,
+	    charging_get_bif_vbat, charging_set_chrind_ck_pdn, charging_sw_init, charging_enable_safetytimer,
+	charging_set_hiz_swchr, charging_get_bif_tbat};
 
 /*
 * FUNCTION

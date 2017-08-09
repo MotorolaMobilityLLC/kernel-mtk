@@ -691,7 +691,11 @@ static struct battery_data battery_main = {
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
 	.BAT_PRESENT = 1,
 	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	.BAT_CAPACITY = -1,
+#else
 	.BAT_CAPACITY = 50,
+#endif
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
 	/* Dual battery */
@@ -1549,8 +1553,14 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 	if (KAL_TRUE == ta_check_chr_type &&
 		STANDARD_CHARGER == BMT_status.charger_type &&
-		BMT_status.SOC >= TA_START_BATTERY_SOC &&
-		BMT_status.SOC < TA_STOP_BATTERY_SOC) {
+#if defined(CONFIG_MTK_HAFG_20)
+	BMT_status.UI_SOC2 >= TA_START_BATTERY_SOC &&
+	BMT_status.UI_SOC2 < TA_STOP_BATTERY_SOC)
+#else
+	BMT_status.SOC >= TA_START_BATTERY_SOC &&
+	BMT_status.SOC < TA_STOP_BATTERY_SOC)
+#endif
+	{
 		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
 		do {
 			icount--;
@@ -2475,11 +2485,11 @@ CHARGER_TYPE mt_charger_type_detection(void)
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-		if (BMT_status.UI_SOC2 == 100) {
+		/*if (BMT_status.UI_SOC2 == 100) {
 			BMT_status.bat_charging_state = CHR_BATFULL;
 			BMT_status.bat_full = KAL_TRUE;
 			g_charging_full_reset_bat_meter = KAL_TRUE;
-		}
+		}*/
 
 		 if (g_battery_soc_ready == KAL_FALSE) {
 			if (BMT_status.nPercent_ZCV == 0)
@@ -3103,7 +3113,11 @@ void check_battery_exist(void)
 					    baton_count);
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+			#ifdef CONFIG_MTK_POWER_PATH_MANAGEMENT_SUPPORT
+			battery_charging_control(CHARGING_CMD_SET_PLATFORM_RESET, NULL);
+			#else
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+			#endif
 		}
 	}
 #endif

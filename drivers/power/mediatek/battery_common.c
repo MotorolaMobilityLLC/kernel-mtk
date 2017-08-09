@@ -3376,7 +3376,11 @@ void check_battery_exist(void)
 				    baton_count);
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+			#ifdef CONFIG_MTK_POWER_PATH_MANAGEMENT_SUPPORT
+			battery_charging_control(CHARGING_CMD_SET_PLATFORM_RESET, NULL);
+			#else
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+			#endif
 		}
 	}
 #endif
@@ -4104,6 +4108,10 @@ static int battery_probe(struct platform_device *dev)
 	get_charging_control();
 
 	batt_init_cust_data();
+#if defined(BATTERY_SW_INIT)
+		battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
+#endif
+
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ", g_platform_boot_mode);

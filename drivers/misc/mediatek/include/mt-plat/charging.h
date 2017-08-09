@@ -97,6 +97,9 @@ typedef enum {
 	CHARGING_CMD_GET_BIF_VBAT,
 	CHARGING_CMD_SET_CHRIND_CK_PDN,
 	CHARGING_CMD_SW_INIT,
+	CHARGING_CMD_ENABLE_SAFETY_TIMER,
+	CHARGING_CMD_SET_HIZ_SWCHR,
+	CHARGING_CMD_GET_BIF_TBAT,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -519,4 +522,6 @@ extern kal_bool pmic_chrdet_status(void);
 #else
 __weak kal_bool pmic_chrdet_status(void);
 #endif
+/*BCCT input current control function over switch charger*/
+extern unsigned int set_chr_input_current_limit(int current_limit);
 #endif				/* #ifndef _CHARGING_H */

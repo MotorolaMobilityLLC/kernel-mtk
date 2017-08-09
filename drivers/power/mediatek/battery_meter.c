@@ -1109,7 +1109,9 @@ int force_get_tbat(kal_bool update)
 
 			bat_temperature_val = BattVoltToTemp(bat_temperature_volt);
 		}
-
+#ifdef CONFIG_MTK_BIF_SUPPORT
+		battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val);
+#endif
 		bm_print(BM_LOG_CRTI, "[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
 			 bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 			 fg_current_temp, fg_r_value, bat_temperature_val);

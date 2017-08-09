@@ -52,6 +52,7 @@
 #include <mach/diso.h>
 #endif
 
+
 /* ============================================================ // */
 /* define */
 /* ============================================================ // */
@@ -64,7 +65,7 @@
 /* ============================================================ // */
 unsigned int g_bcct_flag = 0;
 unsigned int g_bcct_value = 0;
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
+#ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 /*input-output curent distinction*/
 unsigned int g_bcct_input_flag = 0;
 unsigned int g_bcct_input_value = 0;
@@ -75,7 +76,15 @@ CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
+#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+#else
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
+#endif
+unsigned int get_cv_voltage(void)
+{
+	return g_cv_voltage;
+}
 #endif
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -133,17 +142,96 @@ void BATTERY_SetUSBState(int usb_state_value)
 }
 
 
-#if defined(CONFIG_MTK_HAFG_20)
-unsigned int get_cv_voltage(void)
-{
-	return g_cv_voltage;
-}
-#endif
-
 unsigned int get_charging_setting_current(void)
 {
 	return g_temp_CC_value;
 }
+
+#if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
+static unsigned int get_constant_voltage(void)
+{
+	unsigned int cv;
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	unsigned int vbat_bif;
+	unsigned int vbat_auxadc;
+	unsigned int vbat, bif_ok;
+	int i;
+#endif
+	/*unit:mV defined in cust_charging.h */
+	cv = V_CC2TOPOFF_THRES;
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	/*Use BIF API to get vbat_core to adjust cv */
+	i = 0;
+	do {
+		battery_charging_control(CHARGING_CMD_GET_BIF_VBAT, &vbat_bif);
+		vbat_auxadc = battery_meter_get_battery_voltage(KAL_TRUE);
+		if (vbat_bif < vbat_auxadc && vbat_bif != 0) {
+			vbat = vbat_bif;
+			bif_ok = 1;
+			battery_log(BAT_LOG_CRTI, "[BIF]using vbat_bif=%d\n with dV=%dmV", vbat,
+				    (vbat_bif - vbat_auxadc));
+		} else {
+			vbat = vbat_auxadc;
+			if (i < 5)
+				i++;
+			else {
+				battery_log(BAT_LOG_CRTI,
+					    "[BIF]using vbat_auxadc=%d, check vbat_bif=%d\n", vbat,
+					    vbat_bif);
+				bif_ok = 0;
+				break;
+			}
+		}
+	} while (vbat_bif > vbat_auxadc || vbat_bif == 0);
+
+
+	/*CV adjustment according to the obtained vbat */
+	if (bif_ok == 1) {
+#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+		int vbat1 = 4250;
+		int vbat2 = 4300;
+		int cv1 = 4450;
+#else
+		int vbat1 = 4100;
+		int vbat2 = 4150;
+		int cv1 = 4350;
+#endif
+		if (vbat >= 3400 && vbat < vbat1)
+			cv = 4608;
+		else if (vbat >= vbat1 && vbat < vbat2)
+			cv = cv1;
+		else
+			cv = V_CC2TOPOFF_THRES;
+
+		battery_log(BAT_LOG_FULL, "[BIF]dynamic CV=%dmV\n", cv);
+	}
+#endif
+	return cv;
+}
+
+static void switch_charger_set_vindpm(unsigned int chr_v)
+{
+	/*unsigned int delta_v = 0; */
+	unsigned int vindpm = 0;
+
+	/*chr_v = battery_meter_get_charger_voltage();*/
+	/*delta_v = chr_v - ta_v_chr_org; */
+
+	if (chr_v > 11000)
+		vindpm = SWITCH_CHR_VINDPM_12V;
+	else if (chr_v > 8000)
+		vindpm = SWITCH_CHR_VINDPM_9V;
+	else if (chr_v > 6000)
+		vindpm = SWITCH_CHR_VINDPM_7V;
+	else
+		vindpm = SWITCH_CHR_VINDPM_5V;
+
+	battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
+	battery_log(BAT_LOG_CRTI,
+		    "[PE+] switch charger set VINDPM=%dmV with charger volatge=%dmV\n",
+		    vindpm * 100 + 2600, chr_v);
+}
+#endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 static DEFINE_MUTEX(ta_mutex);
@@ -233,12 +321,16 @@ static void mtk_ta_detector(void)
 {
 	int real_v_chrB = 0;
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
-	unsigned int chr_ovp;
+	/*unsigned int chr_ovp;*/
 	unsigned int vindpm;
+	unsigned int hw_ovp_en;
 
 	/*Need to disable CHR_VCDT_HV before pump to 7V */
-	chr_ovp = TA_AC_7V_INPUT_OVER_VOLTAGE;
-	battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);
+	/*chr_ovp = TA_AC_7V_INPUT_OVER_VOLTAGE;
+	battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);*/
+	hw_ovp_en = 0;
+	battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &hw_ovp_en);
+	batt_cust_data.v_charger_max = 15000;
 #endif
 	battery_log(BAT_LOG_CRTI, "[PE+]starting PE+ adapter detection\n");
 
@@ -251,8 +343,11 @@ static void mtk_ta_detector(void)
 	else {
 		is_ta_connect = KAL_FALSE;
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
-		chr_ovp = TA_AC_5V_INPUT_OVER_VOLTAGE;
-		battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);
+		/*chr_ovp = TA_AC_5V_INPUT_OVER_VOLTAGE;
+		battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);*/
+		hw_ovp_en = 1;
+		battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &hw_ovp_en);
+		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 
 		/*Set BQ25896 VINDPM to 4.6V for vbus = 5V */
 		vindpm = SWITCH_CHR_VINDPM_5V;
@@ -309,103 +404,18 @@ static void battery_pump_express_charger_check(void)
 	}
 }
 
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
-static unsigned int get_constant_voltage(void)
-{
-	unsigned int cv;
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	unsigned int vbat_bif;
-	unsigned int vbat_auxadc;
-	unsigned int vbat, bif_ok;
-	int i;
-#endif
-	/*unit:mV defined in cust_charging.h */
-	cv = V_CC2TOPOFF_THRES;
-#ifdef CONFIG_MTK_BIF_SUPPORT
-	/*Use BIF API to get vbat_core to adjust cv */
-	i = 0;
-	do {
-		battery_charging_control(CHARGING_CMD_GET_BIF_VBAT, &vbat_bif);
-		vbat_auxadc = battery_meter_get_battery_voltage(KAL_TRUE);
-		if (vbat_bif < vbat_auxadc && vbat_bif != 0) {
-			vbat = vbat_bif;
-			bif_ok = 1;
-			battery_log(BAT_LOG_CRTI, "[BIF]using vbat_bif=%d\n with dV=%dmV", vbat,
-				    (vbat_bif - vbat_auxadc));
-		} else {
-			vbat = vbat_auxadc;
-			if (i < 5)
-				i++;
-			else {
-				battery_log(BAT_LOG_CRTI,
-					    "[BIF]using vbat_auxadc=%d, check vbat_bif=%d\n", vbat,
-					    vbat_bif);
-				bif_ok = 0;
-				break;
-			}
-		}
-	} while (vbat_bif > vbat_auxadc || vbat_bif == 0);
-
-
-	/*CV adjustment according to the obtained vbat */
-	if (bif_ok == 1) {
-#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-		int vbat1 = 4250;
-		int vbat2 = 4300;
-		int cv1 = 4450;
-#else
-		int vbat1 = 4100;
-		int vbat2 = 4150;
-		int cv1 = 4350;
-#endif
-		if (vbat >= 3400 && vbat < vbat1)
-			cv = 4608;
-		else if (vbat >= vbat1 && vbat < vbat2)
-			cv = cv1;
-		else
-			cv = V_CC2TOPOFF_THRES;
-
-		battery_log(BAT_LOG_FULL, "[BIF]dynamic CV=%dmV\n", cv);
-	}
-#endif
-	return cv;
-}
-
-static void switch_charger_set_vindpm(unsigned int chr_v)
-{
-	unsigned int delta_v = 0;
-	unsigned int vindpm = 0;
-
-	chr_v = battery_meter_get_charger_voltage();
-	delta_v = chr_v - ta_v_chr_org;
-
-	if (delta_v > 6000)
-		vindpm = SWITCH_CHR_VINDPM_12V;
-	else if (delta_v > 3000)
-		vindpm = SWITCH_CHR_VINDPM_9V;
-	else if (delta_v > 1000)
-		vindpm = SWITCH_CHR_VINDPM_7V;
-	else
-		vindpm = SWITCH_CHR_VINDPM_5V;
-
-	battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
-	battery_log(BAT_LOG_CRTI,
-		    "[PE+] switch charger set VINDPM=%dmV with charger volatge=%dmV\n",
-		    vindpm * 100 + 2600, chr_v);
-}
-#endif
-
 static void battery_pump_express_algorithm_start(void)
 {
 	signed int charger_vol;
 	unsigned int charging_enable = KAL_FALSE;
 
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
-	kal_bool pumped_volt;
-	unsigned int chr_ovp;
-	unsigned int chr_ovp_en;
+#if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
 	unsigned int cv;
 	unsigned int vbat;
+#endif
+#if defined(TA_12V_SUPPORT)
+	kal_bool pumped_volt;
+	unsigned int chr_ovp_en;
 
 	battery_log(BAT_LOG_CRTI, "[PE+][battery_pump_express_algorithm_start]start PEP...");
 #endif
@@ -416,20 +426,20 @@ static void battery_pump_express_algorithm_start(void)
 	if (KAL_TRUE == is_ta_connect) {
 		/* check cable impedance */
 		charger_vol = battery_meter_get_charger_voltage();
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
+		batt_cust_data.v_charger_max = 15000;
+#if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
 		cv = get_constant_voltage();
 		vbat = battery_meter_get_battery_voltage(KAL_TRUE);
 #endif
 		if (KAL_FALSE == ta_vchr_tuning) {
-#ifndef CONFIG_MTK_BQ25896_SUPPORT
+#ifndef TA_12V_SUPPORT
 			mtk_ta_retry_increase();
-#endif
 			charger_vol = battery_meter_get_charger_voltage();
 
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
+#else
 			/*1. Set CHR_HV to a higher level than 9V */
-			chr_ovp = TA_AC_9V_INPUT_OVER_VOLTAGE;
-			battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);
+			/*chr_ovp = TA_AC_9V_INPUT_OVER_VOLTAGE;
+			battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);*/
 
 			/* increase TA voltage to 9V */
 			pumped_volt = mtk_ta_retry_increase();
@@ -441,14 +451,16 @@ static void battery_pump_express_algorithm_start(void)
 				/* vindpm = SWITCH_CHR_VINDPM_7V; */
 				/* battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm); */
 				/*2. Set CHR_HV back to a higher level than 7V */
-				chr_ovp = TA_AC_7V_INPUT_OVER_VOLTAGE;
-				battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);
+				/*chr_ovp = TA_AC_7V_INPUT_OVER_VOLTAGE;
+				battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);*/
 			}
+#endif
 #if defined(TA_12V_SUPPORT)
 			else {
 				/*1. disable PMIC VBUS OVP : VCDT */
 				chr_ovp_en = 0;
 				battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &chr_ovp_en);
+				batt_cust_data.v_charger_max = 15000;
 
 				/*2. Set BQ25896 VINDPM to 10.5V for vbus = 12V */
 				/* vindpm = SWITCH_CHR_VINDPM_12V; */
@@ -458,7 +470,7 @@ static void battery_pump_express_algorithm_start(void)
 				pumped_volt = mtk_ta_retry_increase();	/* increase TA voltage to 12V */
 				if (pumped_volt == KAL_FALSE) {
 					/*1. Enable PMIC VBUS OVP : VCDT */
-					chr_ovp_en = 1;
+					chr_ovp_en = 0;
 					battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN,
 								 &chr_ovp_en);
 
@@ -474,7 +486,7 @@ static void battery_pump_express_algorithm_start(void)
 				charger_vol = battery_meter_get_charger_voltage();
 			}
 #endif
-#endif
+
 			ta_vchr_tuning = KAL_TRUE;
 		} else if (BMT_status.SOC > TA_STOP_BATTERY_SOC) {
 			/* disable charging, avoid Iterm issue */
@@ -488,7 +500,7 @@ static void battery_pump_express_algorithm_start(void)
 				    "[PE+]Stop battery_pump_express_algorithm, SOC=%d is_ta_connect =%d, TA_STOP_BATTERY_SOC: %d\n",
 				    BMT_status.SOC, is_ta_connect, TA_STOP_BATTERY_SOC);
 		}
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
+#if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
 /*For BQ25896, voltage is used to check if PE+ should be tuned off.*/
 		else if (vbat >= cv) {
 			/*CV point reached, disable PE+ */
@@ -499,28 +511,39 @@ static void battery_pump_express_algorithm_start(void)
 				is_ta_connect = KAL_FALSE;
 
 			/*1. Recover CHR_OVP status */
-			chr_ovp = TA_AC_5V_INPUT_OVER_VOLTAGE;
-			battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);
+			/*chr_ovp = TA_AC_5V_INPUT_OVER_VOLTAGE;
+			battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &chr_ovp);*/
 			chr_ovp_en = 1;
 			battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &chr_ovp_en);
 
 			/*2. Recover SW_OVP status */
-
+			batt_cust_data.v_charger_max = V_CHARGER_MAX;
 			battery_log(BAT_LOG_CRTI,
 				    "[PE+]CV=%d reached. Stopping PE+, is_ta_connect =%d\n", cv,
 				    is_ta_connect);
+		} else if (0) {
+			/*check charger voltage status if vbus is dropped*/
+			if (abs(charger_vol - ta_v_chr_org) < 1000 && BMT_status.bat_charging_state == CHR_CC) {
+				ta_check_chr_type = KAL_TRUE;
+				battery_log(BAT_LOG_CRTI, "[PE+] abnormal TA chager voltage, rechecking PE+ adapter\n");
+			}
 		}
 		/*Set VINDPM after Vbus voltage is set or reset */
-		charger_vol = battery_meter_get_charger_voltage();
 		switch_charger_set_vindpm(charger_vol);
+
 #endif
 		battery_log(BAT_LOG_CRTI,
-			    "[PE+]check cable impedance, VA(%d) VB(%d) delta(%d), Vbat/CV=%d/%d.\n",
-			    ta_v_chr_org, charger_vol, charger_vol - ta_v_chr_org, vbat, cv);
+			    "[PE+]check cable impedance, VA(%d) VB(%d) delta(%d).\n",
+			    ta_v_chr_org, charger_vol, charger_vol - ta_v_chr_org);
 
 		battery_log(BAT_LOG_CRTI, "[PE+]mtk_ta_algorithm() end\n");
 	} else {
 		battery_log(BAT_LOG_CRTI, "[PE+]Not a TA charger, bypass TA algorithm\n");
+#if defined(TA_12V_SUPPORT)
+		batt_cust_data.v_charger_max = V_CHARGER_MAX;
+		chr_ovp_en = 1;
+		battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &chr_ovp_en);
+#endif
 	}
 
 	wake_unlock(&TA_charger_suspend_lock);
@@ -684,7 +707,14 @@ bool get_usb_current_unlimited(void)
 
 void set_usb_current_unlimited(bool enable)
 {
+	unsigned int en;
 	usb_unlimited = enable;
+
+	if (enable == true)
+		en = 1;
+	else
+		en = 0;
+	battery_charging_control(CHARGING_CMD_ENABLE_SAFETY_TIMER, &en);
 }
 
 void select_charging_current_bcct(void)
@@ -693,7 +723,7 @@ void select_charging_current_bcct(void)
 * any switch charger can use this compile option which may be generalized
 * to be CONFIG_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 */
-#ifndef CONFIG_MTK_BQ25896_SUPPORT
+#ifndef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 	if ((BMT_status.charger_type == STANDARD_HOST) ||
 	    (BMT_status.charger_type == NONSTANDARD_CHARGER)) {
 		if (g_bcct_value < 100)
@@ -810,14 +840,12 @@ void select_charging_current_bcct(void)
 #endif
 }
 
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
+
 /*BQ25896 is the first switch chrager separating input and charge current
-* any switch charger can use this compile option which may be generalized
-* to be CONFIG_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 */
 unsigned int set_chr_input_current_limit(int current_limit)
 {
-
+#ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 	if (current_limit != -1) {
 		g_bcct_input_flag = 1;
 
@@ -850,12 +878,13 @@ unsigned int set_chr_input_current_limit(int current_limit)
 	/* wake_up_bat(); */
 	/*pchr_turn_on_charging();*/
 	/* this function must be followed by set_bat_charging_current_limit()*/
-
-	return g_bcct_flag;
-
-
-}
+	return g_bcct_input_flag;
+#else
+	battery_log(BAT_LOG_CRTI, "[BATTERY] set_chr_input_current_limit _NOT_ supported\n");
+	return 0;
 #endif
+}
+
 
 static void pchr_turn_on_charging(void);
 unsigned int set_bat_charging_current_limit(int current_limit)
@@ -866,7 +895,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 	if (current_limit != -1) {
 		g_bcct_flag = 1;
 		g_bcct_value = current_limit;
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
+#ifdef CONFIG_MTK_THERMAL_TEST_SUPPORT
 		g_temp_CC_value = current_limit * 100;
 #else
 		if (current_limit < 70)
@@ -918,6 +947,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 
 	return g_bcct_flag;
 }
+
 
 void select_charging_current(void)
 {
@@ -1065,7 +1095,7 @@ static void pchr_turn_on_charging(void)
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 			battery_log(BAT_LOG_FULL,
 				    "USB_CURRENT_UNLIMITED, use batt_cust_data.ac_charger_current\n");
-#ifndef CONFIG_MTK_BQ25896_SUPPORT
+#ifndef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		} else if (g_bcct_flag == 1) {
 			select_charging_current_bcct();
 
@@ -1107,11 +1137,10 @@ static void pchr_turn_on_charging(void)
 			else
 				cv_voltage = BATTERY_VOLT_04_200000_V;
 
-			#ifdef CONFIG_MTK_BIF_SUPPORT
+#ifdef CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT
 			cv_voltage = get_constant_voltage() * 1000;
 			battery_log(BAT_LOG_CRTI, "[BATTERY][BIF] Setting CV to %d\n", cv_voltage / 1000);
 			#endif
-
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 			#if defined(CONFIG_MTK_HAFG_20)
@@ -1141,8 +1170,11 @@ PMU_STATUS BAT_PreChargeModeAction(void)
 
 	/*  Enable charger */
 	pchr_turn_on_charging();
-
+#if defined(CONFIG_MTK_HAFG_20)
+	if (BMT_status.UI_SOC2 == 100 && charging_full_check()) {
+#else
 	if (BMT_status.UI_SOC == 100) {
+#endif
 		BMT_status.bat_charging_state = CHR_BATFULL;
 		BMT_status.bat_full = KAL_TRUE;
 		g_charging_full_reset_bat_meter = KAL_TRUE;
