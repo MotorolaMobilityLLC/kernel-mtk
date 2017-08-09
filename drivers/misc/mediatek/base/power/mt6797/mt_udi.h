@@ -2,9 +2,11 @@
 #define _MT_UDI_H
 
 #include <linux/kernel.h>
+#ifdef __MT_UDI_C__
 #include "mach/mt_secure_api.h"
+#endif
 
-#ifdef	__MT_UDI_C__
+#ifdef __MT_UDI_C__
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define mt_secure_call_udi	mt_secure_call
 #else
@@ -28,13 +30,13 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 
 /* define for UDI service */
 #ifdef CONFIG_ARM64
-#define MTK_SIP_KERNEL_UDI_WRITE	0xC200035E /* OCP_WRITE */
-#define MTK_SIP_KERNEL_UDI_READ		0xC200035F /* OCP_READ */
-#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK	0xC20003A0
+#define MTK_SIP_KERNEL_UDI_WRITE     0xC200035E /* MTK_SIP_KERNEL_OCP_WRITE */
+#define MTK_SIP_KERNEL_UDI_READ      0xC200035F /* MTK_SIP_KERNEL_OCP_READ */
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK   0xC20003A0
 #else
-#define MTK_SIP_KERNEL_UDI_WRITE	0x8200035E /* OCP_WRITE */
-#define MTK_SIP_KERNEL_UDI_READ		0x8200035F /* OCP_READ */
-#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK	0x820003A0
+#define MTK_SIP_KERNEL_UDI_WRITE     0x8200035E /* MTK_SIP_KERNEL_OCP_WRITE */
+#define MTK_SIP_KERNEL_UDI_READ      0x8200035F /* MTK_SIP_KERNEL_OCP_READ */
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK   0x820003A0
 #endif
 
 /* dfine for UDI register service */
