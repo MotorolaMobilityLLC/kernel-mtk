@@ -28,6 +28,7 @@
 
 static struct regulator *lcm_vgp;
 static unsigned int GPIO_LCD_PWR_EN;
+static unsigned int GPIO_LCD_RST_EN;
 
 /* get LDO supply */
 static int lcm_get_vgp_supply(struct device *dev)
@@ -124,6 +125,7 @@ void lcm_get_gpio_infor(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,lcm");
 
 	GPIO_LCD_PWR_EN = of_get_named_gpio(node, "lcm_power_gpio", 0);
+	GPIO_LCD_RST_EN = of_get_named_gpio(node, "lcm_reset_gpio", 0);
 }
 
 static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
@@ -575,9 +577,12 @@ static void lcm_init_lcm(void)
 {
 	lcm_vgp_supply_enable();
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 1);
+	lcm_set_gpio_output(GPIO_LCD_RST_EN, 1);
 	SET_RESET_PIN(1);
+	lcm_set_gpio_output(GPIO_LCD_RST_EN, 0);
 	SET_RESET_PIN(0);
 	MDELAY(10);
+	lcm_set_gpio_output(GPIO_LCD_RST_EN, 1);
 	SET_RESET_PIN(1);
 	MDELAY(100);
 	push_table(lcm_initialization_setting,
@@ -591,6 +596,7 @@ static void lcm_suspend(void)
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 0);
 	lcm_vgp_supply_disable();
 	SET_RESET_PIN(0);
+	lcm_set_gpio_output(GPIO_LCD_RST_EN, 0);
 	MDELAY(150);
 }
 
