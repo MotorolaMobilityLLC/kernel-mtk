@@ -9289,8 +9289,11 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	tasklet_kill(&host->card_tasklet);
 
 	mmc_free_host(mmc);
+	/* FIXME: need fix remvoed issue by multi host*/
+#if 0
 	if (wq_tune)
 		destroy_workqueue(wq_tune);
+#endif
 out:
 	return ret;
 }
@@ -9335,10 +9338,11 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		release_mem_region(mem->start, mem->end - mem->start + 1);
 
 	mmc_free_host(host->mmc);
-
+	/* FIXME: need fix remvoed issue by multi host*/
+#if 0
 	if (wq_tune)
 		destroy_workqueue(wq_tune);
-
+#endif
 	return 0;
 }
 
