@@ -17,15 +17,17 @@
 
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/regmap.h>
+#include <linux/pinctrl/pinconf-generic.h>
 
 #define NO_EINT_SUPPORT    255
 #define MTK_CHIP_TYPE_BASE     0
-#define MTK_CHIP_TYPE_PMIC     1
 #define MT_EDGE_SENSITIVE           0
 #define MT_LEVEL_SENSITIVE          1
 #define EINT_DBNC_SET_DBNC_BITS     4
 #define EINT_DBNC_RST_BIT           (0x1 << 1)
 #define EINT_DBNC_SET_EN            (0x1 << 0)
+
+#define MTK_PINCTRL_NOT_SUPPORT	(0xffff)
 
 struct mtk_desc_function {
 	const char *name;
@@ -107,8 +109,8 @@ struct mtk_drv_group_desc {
  * @grp: The group for this pin belongs to.
  */
 struct mtk_pin_drv_grp {
-	unsigned int pin;
-	unsigned int offset;
+	unsigned short pin;
+	unsigned short offset;
 	unsigned char bit;
 	unsigned char grp;
 };
@@ -119,6 +121,54 @@ struct mtk_pin_drv_grp {
 		.offset = _offset,	\
 		.bit = _bit,	\
 		.grp = _grp,	\
+	}
+
+/**
+ * struct mtk_pin_spec_pupd_set_samereg
+ * - For special pins' pull up/down setting which resides in same register
+ * @pin: The pin number.
+ * @offset: The offset of special pull up/down setting register.
+ * @pupd_bit: The pull up/down bit in this register.
+ * @r0_bit: The r0 bit of pull resistor.
+ * @r1_bit: The r1 bit of pull resistor.
+ */
+struct mtk_pin_spec_pupd_set_samereg {
+	unsigned short pin;
+	unsigned short offset;
+	unsigned char pupd_bit;
+	unsigned char r1_bit;
+	unsigned char r0_bit;
+};
+
+#define MTK_PIN_PUPD_SPEC_SR(_pin, _offset, _pupd, _r1, _r0)	\
+	{	\
+		.pin = _pin,	\
+		.offset = _offset,	\
+		.pupd_bit = _pupd,	\
+		.r1_bit = _r1,		\
+		.r0_bit = _r0,		\
+	}
+
+/**
+ * struct mtk_pin_ies_set - For special pins' ies and smt setting.
+ * @start: The start pin number of those special pins.
+ * @end: The end pin number of those special pins.
+ * @offset: The offset of special setting register.
+ * @bit: The bit of special setting register.
+ */
+struct mtk_pin_ies_smt_set {
+	unsigned short start;
+	unsigned short end;
+	unsigned short offset;
+	unsigned char bit;
+};
+
+#define MTK_PIN_IES_SMT_SPEC(_start, _end, _offset, _bit)	\
+	{	\
+		.start = _start,	\
+		.end = _end,	\
+		.bit = _bit,	\
+		.offset = _offset,	\
 	}
 
 struct mtk_eint_offsets {
@@ -199,7 +249,8 @@ struct mtk_pinctrl_devdata {
 	int (*spec_pull_set)(struct regmap *reg, unsigned int pin,
 			unsigned char align, bool isup, unsigned int arg);
 	int (*spec_ies_smt_set)(struct regmap *reg, unsigned int pin,
-			unsigned char align, int value);
+			unsigned char align, int value,
+			enum pin_config_param arg);
 	int (*spec_set_gpio_mode)(unsigned long pin, unsigned long mode);
 	int (*mt_set_gpio_dir)(unsigned long pin, unsigned long dir);
 	int (*mt_get_gpio_dir)(unsigned long pin);
@@ -216,7 +267,6 @@ struct mtk_pinctrl_devdata {
 	unsigned int pullen_offset;
 	unsigned int pullsel_offset;
 	unsigned int drv_offset;
-	unsigned int invser_offset;
 	unsigned int dout_offset;
 	unsigned int din_offset;
 	unsigned int pinmux_offset;
@@ -229,11 +279,6 @@ struct mtk_pinctrl_devdata {
 	struct mtk_eint_offsets eint_offsets;
 	unsigned int	ap_num;
 	unsigned int	db_cnt;
-	unsigned int    max_gpio_mode_pre_reg;
-	unsigned int    gpio_mode_bits;
-	unsigned int    register_shift;
-	unsigned int    max_gpio_pin;
-	unsigned int    gpio_mode_max;
 };
 
 struct mtk_pinctrl {
@@ -252,6 +297,17 @@ struct mtk_pinctrl {
 };
 
 int mtk_pctrl_init(struct platform_device *pdev,
-		const struct mtk_pinctrl_devdata *data);
+		const struct mtk_pinctrl_devdata *data,
+		struct regmap *regmap);
+
+int mtk_pctrl_spec_pull_set_samereg(struct regmap *regmap,
+		const struct mtk_pin_spec_pupd_set_samereg *pupd_infos,
+		unsigned int info_num, unsigned int pin,
+		unsigned char align, bool isup, unsigned int r1r0);
+
+int mtk_pconf_spec_set_ies_smt_range(struct regmap *regmap,
+		const struct mtk_pin_ies_smt_set *ies_smt_infos,
+		unsigned int info_num,
+		unsigned int pin, unsigned char align, int value);
 
 #endif /* __PINCTRL_MTK_COMMON_H */

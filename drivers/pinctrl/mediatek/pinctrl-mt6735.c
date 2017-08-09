@@ -22,27 +22,6 @@
 #include "pinctrl-mtk-common.h"
 #include "pinctrl-mtk-mt6735.h"
 
-/**
- * struct mtk_pin_ies_smt_set - For special pins' ies and smt setting.
- * @start: The start pin number of those special pins.
- * @end: The end pin number of those special pins.
- * @offset: The offset of special setting register.
- * @bit: The bit of special setting register.
- */
-struct mtk_pin_ies_smt_set {
-	unsigned int start;
-	unsigned int end;
-	unsigned int offset;
-	unsigned char bit;
-};
-
-#define MTK_PIN_IES_SMT_SET(_start, _end, _offset, _bit)	\
-	{	\
-		.start = _start,	\
-		.end = _end,	\
-		.bit = _bit,	\
-		.offset = _offset,	\
-	}
 
 /**
  * struct mtk_pin_spec_pupd_set - For special pins' pull up/down setting.
@@ -346,7 +325,7 @@ static const struct mtk_pinctrl_devdata mt6735_pinctrl_data = {
 static int mt6735_pinctrl_probe(struct platform_device *pdev)
 {
 	pr_warn("mt6735 pinctrl probe\n");
-	return mtk_pctrl_init(pdev, &mt6735_pinctrl_data);
+	return mtk_pctrl_init(pdev, &mt6735_pinctrl_data, NULL);
 }
 
 static struct of_device_id mt6735_pctrl_match[] = {
