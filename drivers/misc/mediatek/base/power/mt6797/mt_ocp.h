@@ -127,6 +127,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 #define  OCP_LL    (0)
 #define  OCP_L     (1)
+#define  OCP_B     (2)
 
 #define OCP_DISABLE    (0)
 #define OCP_ENABLE     (1)
@@ -163,9 +164,11 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 #define MTK_SIP_KERNEL_LITTLEOCPINTLIMIT    0XC2000373
 #define MTK_SIP_KERNEL_LITTLEOCPINTENDIS    0XC2000374
 #define MTK_SIP_KERNEL_LITTLEOCPINTCLR      0XC2000375
+#define MTK_SIP_KERNEL_LITTLEOCPAVGPWR      0XC2000376
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE00   0XC2000377
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE10   0XC2000378
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE11   0XC2000379
+#define MTK_SIP_KERNEL_LITTLEOCPAVGPWRGET   0XC200037A
 /* DREQ SMC */
 #define MTK_SIP_KERNEL_BIGSRAMLDOENABLE     0XC2000380
 #define MTK_SIP_KERNEL_BIGDREQHWEN          0XC2000381
@@ -194,9 +197,11 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 #define MTK_SIP_KERNEL_LITTLEOCPINTLIMIT    0X82000373
 #define MTK_SIP_KERNEL_LITTLEOCPINTENDIS    0X82000374
 #define MTK_SIP_KERNEL_LITTLEOCPINTCLR      0X82000375
+#define MTK_SIP_KERNEL_LITTLEOCPAVGPWR      0X82000376
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE00   0X82000377
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE10   0X82000378
 #define MTK_SIP_KERNEL_LITTLEOCPCAPTURE11   0X82000379
+#define MTK_SIP_KERNEL_LITTLEOCPAVGPWRGET   0X8200037A
 /* DREQ SMC */
 #define MTK_SIP_KERNEL_BIGSRAMLDOENABLE     0X82000380
 #define MTK_SIP_KERNEL_BIGDREQHWEN          0X82000381
@@ -214,6 +219,9 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 #endif
 
+extern void aee_rr_rec_ocp_2_target_limit(u32 val);
+extern u32 aee_rr_curr_ocp_2_target_limit(void);
+
 /* OCP */
 extern int BigOCPConfig(int VOffInmV, int VStepInuV);
 extern int BigOCPSetTarget(int OCPMode, int Target);
@@ -221,34 +229,25 @@ extern int BigOCPEnable(int OCPMode, int Units, int ClkPctMin, int FreqPctMin);
 extern void BigOCPDisable(void);
 extern int BigOCPCapture(int EnDis, int Edge, int Count, int Trig);
 extern int BigOCPCaptureStatus(int *Leakage, int *Total, int *ClkPct);
-extern int BigOCPClkAvg(int EnDis, int CGAvgSel);
-extern int BigOCPClkAvgStatus(unsigned int *CGAvg);
-extern int BigOCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg, int *CPU1RawLkg);
-extern int BigOCPMAFAct(unsigned int *CapMAFAct);
-/*extern int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count);*/
 extern unsigned int BigOCPAvgPwrGet(unsigned int Count);
 
-extern int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV);
 extern int LittleOCPSetTarget(int Cluster, int Target);
-extern int LittleOCPEnable(int Cluster, int Units, int ClkPctMin);
 extern int LittleOCPDisable(int Cluster);
 extern int LittleOCPDVFSSet(int Cluster, int FreqMHz, int VoltInmV);
-extern int LittleOCPCapture(int Cluster, int EnDis, int Edge, int Count, int Trig);
-extern int LittleOCPCaptureGet(int Cluster, int *Leakage, int *Total, int *ClkPct);
-extern int CL0OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
-			int *CPU1RawLkg, int *CPU2RawLkg, int *CPU3RawLkg);
-extern int CL1OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
-			int *CPU1RawLkg, int *CPU2RawLkg, int *CPU3RawLkg);
 extern int LittleOCPAvgPwr(int Cluster, int EnDis, int Count);
-extern int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgLkg, unsigned long long *AvgAct);
-extern int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct);
+extern unsigned int LittleOCPAvgPwrGet(int Cluster);
+
+extern unsigned int OCPMcusysPwrGet(void);
+
 extern void Cluster2_OCP_ON(void);
 extern void Cluster0_OCP_ON(void);
 extern void Cluster1_OCP_ON(void);
 
-/* default lower power is ON */
-extern int LittleLowerPowerOff(int Cluster, int Test_bit);
-extern int LittleLowerPowerOn(int Cluster, int Test_bit);
+extern void Cluster2_OCP_OFF(void);
+extern void Cluster0_OCP_OFF(void);
+extern void Cluster1_OCP_OFF(void);
+
+extern int ocp_status_get(int cluster);
 
 /* DREQ + SRAMLDO */
 extern int BigSRAMLDOEnable(int mVolts);

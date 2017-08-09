@@ -148,6 +148,8 @@ struct last_reboot_reason {
 	uint16_t idvfs_sram_ldo;
 	uint8_t idvfs_state_manchine;
 
+	uint32_t ocp_2_target_limit;
+
 	void *kparams;
 };
 
@@ -1485,6 +1487,13 @@ void aee_rr_rec_idvfs_state_manchine(u8 val)
 	LAST_RR_SET(idvfs_state_manchine, val);
 }
 
+void aee_rr_rec_ocp_2_target_limit(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ocp_2_target_limit, val);
+}
+
 u32 aee_rr_curr_ptp_60(void)
 {
 	return LAST_RR_VAL(ptp_60);
@@ -1743,6 +1752,11 @@ u16 aee_rr_curr_idvfs_sram_ldo(void)
 u8 aee_rr_curr_idvfs_state_manchine(void)
 {
 	return LAST_RR_VAL(idvfs_state_manchine);
+}
+
+u32 aee_rr_curr_ocp_2_target_limit(void)
+{
+	return LAST_RR_VAL(ocp_2_target_limit);
 }
 
 void aee_rr_rec_suspend_debug_flag(u32 val)
@@ -2295,6 +2309,11 @@ void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
 	}
 }
 
+void aee_rr_show_ocp_2_target_limit(struct seq_file *m)
+{
+	seq_printf(m, "ocp_2_target_limit = %u mW\n", LAST_RRR_VAL(ocp_2_target_limit));
+}
+
 void aee_rr_show_thermal_status(struct seq_file *m)
 {
 	seq_printf(m, "thermal_status: %d\n", LAST_RRR_VAL(thermal_status));
@@ -2455,7 +2474,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_swreq_curr_pct_x100,
 	aee_rr_show_idvfs_swreq_next_pct_x100,
 	aee_rr_show_idvfs_sram_ldo,
-	aee_rr_show_idvfs_state_manchine
+	aee_rr_show_idvfs_state_manchine,
+	aee_rr_show_ocp_2_target_limit
 };
 
 last_rr_show_cpu_t aee_rr_show_cpu[] = {
