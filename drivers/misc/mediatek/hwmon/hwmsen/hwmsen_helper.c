@@ -85,24 +85,26 @@ int hwmsen_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 {
 	u8 beg = addr;
 	int err;
-	struct i2c_msg msgs[2] = {
-		{
-			.addr = client->addr,	.flags = 0,
-			.len = 1,	.buf = &beg
-		},
-		{
-			.addr = client->addr,	.flags = I2C_M_RD,
-			.len = 1,	.buf = data,
-		}
-	};
+	struct i2c_msg msgs[2] = {{0}, {0} };
 
 	if (!client)
 		return -EINVAL;
+
+	msgs[0].addr = client->addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = &beg;
+
+	msgs[1].addr = client->addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = 1;
+	msgs[1].buf = data;
 
 	err = i2c_transfer(client->adapter, msgs, sizeof(msgs)/sizeof(msgs[0]));
 	if (err != 2) {
 		HWM_ERR("i2c_transfer error: (%d %p) %d\n", addr, data, err);
 		err = -EIO;
+		return err;
 	}
 
 	err = 0;
@@ -137,6 +139,9 @@ int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 	int err;
 	struct i2c_msg msgs[2] = {{0}, {0} };
 
+	if (!client)
+		return -EINVAL;
+
 	if (len == 1)
 		return hwmsen_read_byte(client, addr, data);
 
@@ -151,9 +156,7 @@ int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 	msgs[1].buf = data;
 
 
-	if (!client)
-		return -EINVAL;
-	else if (len > C_I2C_FIFO_SIZE) {
+	if (len > C_I2C_FIFO_SIZE) {
 		HWM_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
@@ -162,6 +165,7 @@ int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 	if (err != 2) {
 		HWM_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
 		err = -EIO;
+		return err;
 	}
 #if defined(HWMSEN_DEBUG)
 	static char buf[128];
