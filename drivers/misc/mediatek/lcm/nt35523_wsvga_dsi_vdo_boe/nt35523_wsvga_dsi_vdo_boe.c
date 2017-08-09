@@ -239,7 +239,7 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-
+	lcm_get_gpio_infor();
 	lcm_set_gpio_output(GPIO_LCD_BL_EN, 0);
 	push_table(lcm_deep_sleep_mode_in_setting,
 		   sizeof(lcm_deep_sleep_mode_in_setting) / sizeof(struct LCM_setting_table), 1);
