@@ -810,6 +810,7 @@ enum {
 
 #define NORMAL_BOOT_ID 0
 #define META_BOOT_ID 1
+#define FACTORY_BOOT_ID	2
 
 typedef enum {
 	INVALID = 0, /* no traffic */

@@ -162,9 +162,12 @@ static unsigned int get_booting_start_id(struct ccci_modem *md)
 
 	if (is_meta_mode() || is_advanced_meta_mode())
 		booting_start_id = ((char)mdlog_flag << 8 | META_BOOT_ID);
+	else if ((get_boot_mode() == FACTORY_BOOT || get_boot_mode() == ATE_FACTORY_BOOT))
+		booting_start_id = ((char)mdlog_flag << 8 | FACTORY_BOOT_ID);
 	else
 		booting_start_id = ((char)mdlog_flag << 8 | NORMAL_BOOT_ID);
 
+	CCCI_BOOTUP_LOG(md->index, KERN, "get_booting_start_id 0x%x\n", booting_start_id);
 	return booting_start_id;
 }
 
