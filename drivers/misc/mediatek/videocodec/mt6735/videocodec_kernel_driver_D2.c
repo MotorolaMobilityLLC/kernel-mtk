@@ -2430,36 +2430,6 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 	long ret = 0;
 	/* MODULE_MFV_LOGD("vcodec_unlocked_compat_ioctl: 0x%x\n", cmd); */
 	switch (cmd) {
-	case VCODEC_ALLOC_NON_CACHE_BUFFER:
-	case VCODEC_FREE_NON_CACHE_BUFFER:
-		{
-			COMPAT_VAL_MEMORY_T __user *data32;
-			VAL_MEMORY_T __user *data;
-			int err;
-
-			data32 = compat_ptr(arg);
-			data = compat_alloc_user_space(sizeof(VAL_MEMORY_T));
-			if (data == NULL)
-				return -EFAULT;
-
-			err =
-			    compat_copy_struct(VAL_MEMORY_TYPE, COPY_FROM_USER, (void *)data32,
-					       (void *)data);
-			if (err)
-				return err;
-
-			ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data);
-
-			err =
-			    compat_copy_struct(VAL_MEMORY_TYPE, COPY_TO_USER, (void *)data32,
-					       (void *)data);
-
-			if (err)
-				return err;
-
-			return ret;
-		}
-		break;
 	case VCODEC_LOCKHW:
 	case VCODEC_UNLOCKHW:
 		{
