@@ -2033,9 +2033,9 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 
 	reg_cfg = g_reg_cfg[pll];
 	if (pause)
-		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 1);	/* pause  */
+		mcu_fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 1);	/* pause  */
 	else
-		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 0);	/* no pause  */
+		mcu_fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 0);	/* no pause  */
 
 	mt6797_0x1001AXXX_unlock();
     /********************************************************/
