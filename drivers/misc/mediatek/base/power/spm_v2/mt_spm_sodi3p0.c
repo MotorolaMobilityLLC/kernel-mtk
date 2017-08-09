@@ -127,6 +127,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
+	.dramc_spcmd_apsrc_req_mask_b = 0,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -308,9 +309,7 @@ static void spm_sodi3_pre_process(void)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {
 		__spm_bsi_top_init_setting();
-#if defined(CONFIG_ARCH_MT6755) /* TODO: || defined(CONFIG_ARCH_MT6757) */
 		__spm_backup_pmic_ck_pdn();
-#endif
 	}
 }
 
@@ -360,7 +359,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-			vcore_status = vcorefs_get_curr_ddr();
+	vcore_status = vcorefs_get_curr_ddr();
 #endif
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
@@ -447,15 +446,11 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 				(1 << SPM_SODI3_B3) | (1 << SPM_SODI3_B4) |
 				(1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
 
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
-#endif
+	soidle3_profile_time(1);
 
 	spm_trigger_wfi_for_sodi(pwrctrl);
 
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[2]);
-#endif
+	soidle3_profile_time(2);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 

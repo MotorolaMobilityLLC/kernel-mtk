@@ -46,6 +46,7 @@
 #include "mt_idle_internal.h"
 #include <mach/mt_spm_mtcmos_internal.h>
 #include "mt_spm_reg.h"
+#include "mt_spm_internal.h"
 #include "mt_cpufreq_hybrid.h"
 
 #if defined(CONFIG_ARCH_MT6797)
@@ -92,12 +93,12 @@
 #endif
 
 #define IDLE_TAG     "Power/swap "
-#define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
-#define spm_alert(fmt, args...)		pr_alert(IDLE_TAG fmt, ##args)
-#define spm_crit(fmt, args...)		pr_crit(IDLE_TAG fmt, ##args)
+#define idle_emerg(fmt, args...)	pr_emerg(IDLE_TAG fmt, ##args)
+#define idle_alert(fmt, args...)	pr_alert(IDLE_TAG fmt, ##args)
+#define idle_crit(fmt, args...)		pr_crit(IDLE_TAG fmt, ##args)
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
 #define idle_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice(IDLE_TAG fmt, ##args)
+#define idle_notice(fmt, args...)	pr_notice(IDLE_TAG fmt, ##args)
 #define idle_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
@@ -437,6 +438,21 @@ static unsigned long long idle_ratio_profile_duration;
 static unsigned long long idle_ratio_start_time[NR_TYPES];
 static unsigned long long idle_ratio_value[NR_TYPES];
 
+/* SPM TAWM */
+#define TRIGGER_TYPE                (2) /* b'10: high */
+#define TWAM_PERIOD_MS              (1000)
+#define WINDOW_LEN_SPEED            (TWAM_PERIOD_MS * 0x65B8)
+#define WINDOW_LEN_NORMAL           (TWAM_PERIOD_MS * 0xD)
+#define GET_EVENT_RATIO_SPEED(x)    ((x)/(WINDOW_LEN_SPEED/1000))
+#define GET_EVENT_RATIO_NORMAL(x)   ((x)/(WINDOW_LEN_NORMAL/1000))
+
+static struct {
+	u32 event;
+	const char **str;
+	bool running;
+	bool speed_mode;
+} idle_twam;
+
 #if SPM_MET_TAGGING
 #define idle_get_current_time_us(x) do {\
 		struct timeval t;\
@@ -479,11 +495,11 @@ static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_i2c_appm_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
-static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
+static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_3P0;
 #ifdef SPM_SODI3_PROFILE_TIME
 unsigned int			soidle3_profile[4];
 #endif
-static int		sodi3_by_uptime_count;
+static int		        sodi3_by_uptime_count;
 /* SODI */
 static unsigned int     soidle_block_mask[NR_GRPS] = {0x0};
 #ifdef USING_STD_TIMER_OPS
@@ -509,7 +525,7 @@ static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
 #ifdef SPM_SODI_PROFILE_TIME
 unsigned int			soidle_profile[4];
 #endif
-static int		sodi_by_uptime_count;
+static int		        sodi_by_uptime_count;
 
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
@@ -534,6 +550,10 @@ static bool             dpidle_by_pass_i2c_appm_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 static unsigned int     dpidle_run_once;
+#ifdef SPM_DEEPIDLE_PROFILE_TIME
+unsigned int            dpidle_profile[4];
+#endif
+
 /* MCDI */
 #ifdef USING_STD_TIMER_OPS
 static unsigned int mcidle_time_critera = 3000;	/* 3ms */
@@ -2010,9 +2030,56 @@ static inline void dpidle_post_handler(void)
 #endif
 }
 
+void  dpidle_profile_time(int idx)
+{
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
-unsigned int dpidle_profile[4];
+	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[idx]);
 #endif
+}
+
+void  soidle3_profile_time(int idx)
+{
+#ifdef SPM_SODI3_PROFILE_TIME
+	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[idx]);
+#endif
+}
+
+void  soidle_profile_time(int idx)
+{
+#ifdef SPM_SODI_PROFILE_TIME
+	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[idx]);
+#endif
+}
+
+static inline void dpidle_show_profile_time(void)
+{
+#ifdef SPM_DEEPIDLE_PROFILE_TIME
+	idle_warn_log("1:%u, 2:%u, 3:%u, 4:%u\n",
+			dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
+#endif
+}
+
+static inline void soidle3_show_profile_time(void)
+{
+#ifdef SPM_SODI3_PROFILE_TIME
+	idle_ver("SODI3: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
+			mt_cpufreq_get_cur_phy_freq(0),
+			((soidle3_profile[1] - soidle3_profile[0])*1000)/APXGPT_RTC_TICKS_PER_MS,
+			((soidle3_profile[2] - soidle3_profile[1])*1000)/APXGPT_RTC_TICKS_PER_MS,
+			((soidle3_profile[3] - soidle3_profile[2])*1000)/APXGPT_RTC_TICKS_PER_MS);
+#endif
+}
+
+static inline void soidle_show_profile_time(void)
+{
+#ifdef SPM_SODI_PROFILE_TIME
+	idle_ver("SODI: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
+			mt_cpufreq_get_cur_phy_freq(0),
+			(soidle_profile[1] - soidle_profile[0])/APXGPT_SYS_TICKS_PER_US,
+			(soidle_profile[2] - soidle_profile[1])/APXGPT_SYS_TICKS_PER_US,
+			(soidle_profile[3] - soidle_profile[2])/APXGPT_SYS_TICKS_PER_US);
+#endif
+}
 
 static inline int dpidle_select_handler(int cpu)
 {
@@ -2031,9 +2098,7 @@ static inline int soidle3_select_handler(int cpu)
 	int ret = 0;
 
 	if (idle_switch[IDLE_TYPE_SO3]) {
-#ifdef SPM_SODI3_PROFILE_TIME
-		gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[0]);
-#endif
+		soidle3_profile_time(0);
 		if (soidle3_can_enter(cpu))
 			ret = 1;
 	}
@@ -2046,9 +2111,7 @@ static inline int soidle_select_handler(int cpu)
 	int ret = 0;
 
 	if (idle_switch[IDLE_TYPE_SO]) {
-#ifdef SPM_SODI_PROFILE_TIME
-		gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
-#endif
+		soidle_profile_time(0);
 		if (soidle_can_enter(cpu))
 			ret = 1;
 	}
@@ -2098,6 +2161,47 @@ static int (*idle_select_handlers[NR_TYPES]) (int) = {
 	slidle_select_handler,
 	rgidle_select_handler,
 };
+
+
+static void spm_idle_twam_callback(struct twam_sig *ts)
+{
+	idle_warn("spm twam %s ratio: %5u/1000\n",
+			(idle_twam.str)?idle_twam.str[idle_twam.event]:"unknown",
+			(idle_twam.speed_mode)?GET_EVENT_RATIO_SPEED(ts->sig0):GET_EVENT_RATIO_NORMAL(ts->sig0));
+}
+
+void spm_idle_twam_disable(void)
+{
+	if (idle_twam.running == false)
+		return;
+	spm_twam_register_handler(NULL);
+	spm_twam_disable_monitor();
+	idle_twam.running = false;
+}
+
+void spm_idle_twam_enable(u32 event)
+{
+	struct twam_sig montype = {0};
+	struct twam_sig twamsig = {0};
+
+	if (idle_twam.event != event)
+		spm_idle_twam_disable();
+
+	if (idle_twam.running == true)
+		return;
+
+	idle_twam.event = (event < 32)?event:29;
+	twamsig.sig0 = idle_twam.event;
+	montype.sig0 = TRIGGER_TYPE;
+
+	spm_twam_set_mon_type(&montype);
+	spm_twam_set_window_length((idle_twam.speed_mode)?WINDOW_LEN_SPEED:WINDOW_LEN_NORMAL);
+	spm_twam_register_handler(spm_idle_twam_callback);
+	spm_twam_set_idle_select(0);
+	spm_twam_enable_monitor(&twamsig, idle_twam.speed_mode);
+	idle_twam.running = true;
+}
+
 
 void dump_idle_cnt_in_interval(int cpu)
 {
@@ -2264,11 +2368,9 @@ int dpidle_enter(int cpu)
 				dpidle_timer_cmp - dpidle_timer_left);
 #endif
 #endif
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[3]);
-	idle_warn_log("1:%u, 2:%u, 3:%u, 4:%u\n",
-				dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
-#endif
+
+	dpidle_profile_time(3);
+	dpidle_show_profile_time();
 
 	/* For test */
 	if (dpidle_run_once)
@@ -2300,7 +2402,7 @@ int soidle3_enter(int cpu)
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags);
+	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags|SODI_FLAG_3P0);
 
 #ifdef DEFAULT_MMP_ENABLE
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagEnd, 0, spm_read(SPM_PASR_DPD_3));
@@ -2326,14 +2428,8 @@ int soidle3_enter(int cpu)
 #endif
 	}
 
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[3]);
-	idle_ver("SODI3: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_phy_freq(0),
-			((soidle3_profile[1] - soidle3_profile[0])*1000)/APXGPT_RTC_TICKS_PER_MS,
-			((soidle3_profile[2] - soidle3_profile[1])*1000)/APXGPT_RTC_TICKS_PER_MS,
-			((soidle3_profile[3] - soidle3_profile[2])*1000)/APXGPT_RTC_TICKS_PER_MS);
-#endif
+	soidle3_profile_time(3);
+	soidle3_show_profile_time();
 
 	return ret;
 }
@@ -2383,14 +2479,8 @@ int soidle_enter(int cpu)
 #endif
 	}
 
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[3]);
-	idle_ver("SODI: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_phy_freq(0),
-			(soidle_profile[1] - soidle_profile[0])/APXGPT_SYS_TICKS_PER_US,
-			(soidle_profile[2] - soidle_profile[1])/APXGPT_SYS_TICKS_PER_US,
-			(soidle_profile[3] - soidle_profile[2])/APXGPT_SYS_TICKS_PER_US);
-#endif
+	soidle_profile_time(3);
+	soidle_show_profile_time();
 
 	return ret;
 }
@@ -2516,16 +2606,22 @@ static ssize_t idle_state_read(struct file *filp,
 
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "idle_ratio_en = %u\n", idle_ratio_en);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		"twam %s, %s mode\n", (idle_twam.running)?"on":"off", (idle_twam.speed_mode)?"speed":"normal");
 
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n********** idle command help **********\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-		      "switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
+		"switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-		      "idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
+		"idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		"spmtwam event:      echo spmtwam value/-1 > /sys/kernel/debug/cpuidle/idle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		"spmtwam speed mode: echo spmtwam_clk 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
 
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-		      "soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
+		"soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "mcidle help:   cat /sys/kernel/debug/cpuidle/mcidle_state\n");
@@ -2563,6 +2659,16 @@ static ssize_t idle_state_write(struct file *filp,
 				for (idx = 0; idx < NR_TYPES; idx++)
 					idle_ratio_value[idx] = 0;
 			}
+		} else if (!strcmp(cmd, "spmtwam_clk")) {
+			idle_twam.speed_mode = param;
+		} else if (!strcmp(cmd, "spmtwam")) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+			idle_dbg("spmtwam_event = %d\n", param);
+			if (param >= 0)
+				spm_idle_twam_enable((u32)param);
+			else
+				spm_idle_twam_disable();
+#endif
 		}
 		return count;
 	}
@@ -2990,8 +3096,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 		      "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 		      "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-		      "spmtwam event:	echo spmtwam value/-1 > /sys/kernel/debug/cpuidle/soidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -3037,14 +3141,6 @@ static ssize_t soidle_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "sodi_flags")) {
 			sodi_flags = param;
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
-		} else if (!strcmp(cmd, "spmtwam")) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-			idle_dbg("spmtwam_event = %d\n", param);
-			if (param >= 0)
-				spm_sodi_twam_enable((u32)param);
-			else
-				spm_sodi_twam_disable();
-#endif
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -3340,6 +3436,10 @@ void mt_cpuidle_framework_init(void)
 #if SPM_MET_TAGGING
 	met_tag_init();
 #endif
+	spm_get_twam_table(&idle_twam.str);
+	idle_twam.running = false;
+	idle_twam.speed_mode = true;
+	idle_twam.event = 29;
 }
 EXPORT_SYMBOL(mt_cpuidle_framework_init);
 

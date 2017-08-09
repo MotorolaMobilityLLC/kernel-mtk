@@ -756,15 +756,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER_WFI);
 #endif
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
-#endif
+	dpidle_profile_time(1);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
-#endif
+	dpidle_profile_time(2);
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_LEAVE_WFI);
