@@ -501,8 +501,17 @@ struct mem_size_stats {
 	unsigned long swap;
 	unsigned long nonlinear;
 	u64 pss;
+#ifdef CONFIG_SWAP
+	u64 pswap;
+#endif
 };
 
+#ifdef CONFIG_SWAP
+static inline unsigned char swap_count(unsigned char ent)
+{
+	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
+}
+#endif
 
 static void smaps_pte_entry(pte_t ptent, unsigned long addr,
 		unsigned long ptent_size, struct mm_walk *walk)
@@ -518,9 +527,29 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
 	} else if (is_swap_pte(ptent)) {
 		swp_entry_t swpent = pte_to_swp_entry(ptent);
 
-		if (!non_swap_entry(swpent))
+		/* M for pswap interface */
+		if (!non_swap_entry(swpent)) {
+#ifdef CONFIG_SWAP
+			swp_entry_t entry;
+			struct swap_info_struct *p;
+#endif /* CONFIG_SWAP*/
 			mss->swap += ptent_size;
-		else if (is_migration_entry(swpent))
+#ifdef CONFIG_SWAP
+			entry = pte_to_swp_entry(ptent);
+			if (non_swap_entry(entry))
+				return;
+			p = swap_info_get(entry);
+			if (p) {
+				int swapcount = swap_count(p->swap_map[swp_offset(entry)]);
+
+				if (swapcount == 0)
+					swapcount = 1;
+
+				mss->pswap += (ptent_size << PSS_SHIFT) / swapcount;
+				swap_info_unlock(p);
+			}
+#endif /* CONFIG_SWAP*/
+		} else if (is_migration_entry(swpent))
 			page = migration_entry_to_page(swpent);
 	} else if (pte_file(ptent)) {
 		if (pte_to_pgoff(ptent) != pgoff)
@@ -676,6 +705,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   "Anonymous:      %8lu kB\n"
 		   "AnonHugePages:  %8lu kB\n"
 		   "Swap:           %8lu kB\n"
+#ifdef CONFIG_SWAP
+		   "PSwap:          %8lu kB\n"
+#endif
 		   "KernelPageSize: %8lu kB\n"
 		   "MMUPageSize:    %8lu kB\n"
 		   "Locked:         %8lu kB\n",
@@ -690,6 +722,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   mss.anonymous >> 10,
 		   mss.anonymous_thp >> 10,
 		   mss.swap >> 10,
+#ifdef CONFIG_SWAP
+		   (unsigned long)(mss.pswap >> (10 + PSS_SHIFT)),
+#endif
 		   vma_kernel_pagesize(vma) >> 10,
 		   vma_mmu_pagesize(vma) >> 10,
 		   (vma->vm_flags & VM_LOCKED) ?

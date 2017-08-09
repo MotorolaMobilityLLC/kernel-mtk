@@ -462,6 +462,9 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
 }
 #endif
 
+/* M for pswap interface */
+extern struct swap_info_struct *swap_info_get(swp_entry_t entry);
+extern void swap_info_unlock(struct swap_info_struct *si);
 #else /* CONFIG_SWAP */
 
 #define swap_address_space(entry)		(NULL)

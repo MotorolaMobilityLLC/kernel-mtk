@@ -12,6 +12,11 @@
 #include <asm/uaccess.h>
 #include "internal.h"
 
+#ifdef CONFIG_SWAP
+#include <linux/swap.h>
+#include <linux/swapops.h>
+#endif
+
 #define KPMSIZE sizeof(u64)
 #define KPMMASK (KPMSIZE - 1)
 
@@ -68,6 +73,67 @@ static const struct file_operations proc_kpagecount_operations = {
 	.llseek = mem_lseek,
 	.read = kpagecount_read,
 };
+
+/* M for pswap interface */
+#ifdef CONFIG_SWAP
+static inline unsigned char swap_count(unsigned char ent)
+{
+	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
+}
+
+/* /proc/kpageswapn - an array exposing page swap counts
+ *
+ * Each entry is a u64 representing the corresponding
+ * physical page swap count.
+ */
+static ssize_t kpageswapn_read(struct file *file, char __user *buf,
+			     size_t count, loff_t *ppos)
+{
+	u64 __user *out = (u64 __user *)buf;
+	unsigned long src = *ppos, dst;
+	swp_entry_t swap_entry;
+	ssize_t ret = 0;
+	struct swap_info_struct *p;
+
+	dst = src / KPMSIZE;
+	/* Format the swap entry from the corresponding pagemap value */
+	swap_entry = swp_entry(dst >> (SWP_TYPE_SHIFT(swap_entry) + RADIX_TREE_EXCEPTIONAL_SHIFT),
+							dst & SWP_OFFSET_MASK(swap_entry));
+
+	/*pr_info("kpageswapn_read src: %lx\n", src); */
+	/*pr_info("kpageswapn_read swap entry: %lx\n", swap_entry.val); */
+
+	if (src & KPMMASK || count & KPMMASK) {
+		pr_err("kpageswapn_read return EINVAL\n");
+		return -EINVAL;
+	}
+
+	p = swap_info_get(swap_entry);
+	if (p) {
+		u64 swapcount = swap_count(p->swap_map[swp_offset(swap_entry)]);
+
+		if (put_user(swapcount, out)) {
+			pr_err("pageswapn_read put user failed\n");
+			ret = -EFAULT;
+		}
+		swap_info_unlock(p);
+	} else {
+		pr_err("kpageswapn_read swap_info_get failed\n");
+		ret = -EFAULT;
+	}
+
+	if (!ret) {
+		*ppos += KPMSIZE;
+		ret = KPMSIZE;
+	}
+	return ret;
+}
+
+static const struct file_operations proc_kpageswapn_operations = {
+	.llseek = mem_lseek,
+	.read = kpageswapn_read,
+};
+#endif /* CONFIG_SWAP*/
 
 /* /proc/kpageflags - an array exposing page flags
  *
@@ -224,6 +290,9 @@ static const struct file_operations proc_kpageflags_operations = {
 static int __init proc_page_init(void)
 {
 	proc_create("kpagecount", S_IRUSR, NULL, &proc_kpagecount_operations);
+#ifdef CONFIG_SWAP /* M for pswap interface */
+	proc_create("kpageswapn", S_IRUSR, NULL, &proc_kpageswapn_operations);
+#endif /* CONFIG_SWAP*/
 	proc_create("kpageflags", S_IRUSR, NULL, &proc_kpageflags_operations);
 	return 0;
 }

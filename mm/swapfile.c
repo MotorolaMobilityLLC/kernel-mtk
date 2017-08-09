@@ -782,7 +782,9 @@ void get_swap_range_of_type(int type, swp_entry_t *start, swp_entry_t *end,
 }
 EXPORT_SYMBOL_GPL(get_swap_range_of_type);
 
-static struct swap_info_struct *swap_info_get(swp_entry_t entry)
+/* M for pswap interface */
+/* static struct swap_info_struct *swap_info_get(swp_entry_t entry)*/
+struct swap_info_struct *swap_info_get(swp_entry_t entry)
 {
 	struct swap_info_struct *p;
 	unsigned long offset, type;
@@ -816,6 +818,12 @@ bad_nofile:
 	pr_err("swap_free: %s%08lx\n", Bad_file, entry.val);
 out:
 	return NULL;
+}
+
+/* M for pswap interface */
+void swap_info_unlock(struct swap_info_struct *si)
+{
+	spin_unlock(&si->lock);
 }
 
 static unsigned char swap_entry_free(struct swap_info_struct *p,
