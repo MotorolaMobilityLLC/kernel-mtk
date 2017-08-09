@@ -135,36 +135,13 @@ void enable_ssusb26m_ck(bool enable)
 
 void usb20_pll_settings(bool host, bool forceOn)
 {
-	if (host) {
-		if (forceOn) {
-			os_printk(K_INFO, "%s-%d - Set USBPLL_FORCE_ON.\n", __func__, __LINE__);
-			U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR0,
-					  RG_USB20_USBPLL_FORCE_ON_OFST, RG_USB20_USBPLL_FORCE_ON,
-					  0x1);
-		} else {
-			os_printk(K_INFO, "%s-%d - Clear USBPLL_FORCE_ON.\n", __func__, __LINE__);
-			U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR0,
-					  RG_USB20_USBPLL_FORCE_ON_OFST, RG_USB20_USBPLL_FORCE_ON,
-					  0x0);
-			return;
-		}
-	}
-
-	os_printk(K_INFO, "%s-%d - Set PLL_FORCE_MODE and SIFSLV PLL_FORCE_ON.\n", __func__,
-		  __LINE__);
-	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR2_0, RG_SIFSLV_USB20_PLL_FORCE_MODE_OFST,
-			  RG_SIFSLV_USB20_PLL_FORCE_MODE, 0x1);
-	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDCR0, RG_SIFSLV_USB20_PLL_FORCE_ON_OFST,
-			  RG_SIFSLV_USB20_PLL_FORCE_ON, 0x0);
+/* MT6797 don't need to do this */
 }
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool in_uart_mode = false;
 void uart_usb_switch_dump_register(void)
 {
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(1); */
-
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(true);
 	udelay(50);
@@ -192,9 +169,6 @@ void uart_usb_switch_dump_register(void)
 #endif
 #endif
 
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(0); */
-
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
@@ -206,17 +180,11 @@ bool usb_phy_check_in_uart_mode(void)
 {
 	PHY_INT32 usb_port_mode;
 
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(1); */
-
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(true);
 
 	udelay(50);
 	usb_port_mode = U3PhyReadReg32((phys_addr_t) U3D_U2PHYDTM0) >> RG_UART_MODE_OFST;
-
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/* set_ada_ssusb_xtal_ck(0); */
 
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
@@ -257,9 +225,6 @@ void usb_phy_switch_to_uart(void)
 	if (ret)
 		pr_debug("VA10 output selection to 1.0v FAIL!!!\n");
 
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(1); */
-
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(true);
 	udelay(50);
@@ -297,9 +262,6 @@ void usb_phy_switch_to_uart(void)
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYACR4, RG_USB20_DM_100K_EN_OFST,
 			  RG_USB20_DM_100K_EN, 1);
 
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(0); */
-
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
@@ -322,8 +284,6 @@ void usb_phy_switch_to_usb(void)
 	phy_init_soc(u3phy);
 
 	/* disable the USB clock turned on in phy_init_soc() */
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(0); */
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 }
@@ -401,8 +361,6 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 		pr_debug("VA10 output selection to 0.95 FAIL!!!\n");
 
 	/*---CLOCK-----*/
-	/* ADA_SSUSB_XTAL_CK:26MHz */
-	/*set_ada_ssusb_xtal_ck(1); */
 
 	/* AD_LTEPLL_SSUSB26M_CK:26MHz always on */
 	/* It seems that when turning on ADA_SSUSB_XTAL_CK, AD_LTEPLL_SSUSB26M_CK will also turn on. */
@@ -467,7 +425,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 #else
 	/*switch to USB function. (system register, force ip into usb mode) */
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
@@ -494,7 +452,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 	/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
 #endif
@@ -509,9 +467,6 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, FORCE_VBUSVALID_OFST, FORCE_VBUSVALID, 1);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, FORCE_AVALID_OFST, FORCE_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, FORCE_SESSEND_OFST, FORCE_SESSEND, 1);
-
-	/* USB PLL Force settings */
-	usb20_pll_settings(false, false);
 
 	os_printk(K_INFO, "%s-\n", __func__);
 
@@ -744,9 +699,6 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 0);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 1);
 
-	/* USB PLL Force settings */
-	usb20_pll_settings(false, false);
-
 	/* TODO:
 	 * Turn off internal 48Mhz PLL if there is no other hardware module is
 	 * using the 48Mhz clock -the control register is in clock document
@@ -763,9 +715,6 @@ void usb_phy_savecurrent(unsigned int clk_on)
 
 		/* f_fusb30_ck:125MHz */
 		usb_enable_clock(false);
-
-		/* ADA_SSUSB_XTAL_CK:26MHz */
-		/*set_ada_ssusb_xtal_ck(0); */
 
 		/*---POWER-----*/
 		/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
@@ -802,8 +751,6 @@ void usb_phy_recover(unsigned int clk_on)
 			pr_debug("VA10 output selection to 0.95v FAIL!!!\n");
 
 		/*---CLOCK-----*/
-		/* ADA_SSUSB_XTAL_CK:26MHz */
-		/*set_ada_ssusb_xtal_ck(1); */
 
 		/* AD_LTEPLL_SSUSB26M_CK:26MHz always on */
 		/* It seems that when turning on ADA_SSUSB_XTAL_CK, AD_LTEPLL_SSUSB26M_CK will also turn on. */
@@ -927,7 +874,7 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(MTK_USB_MODE1)
 	os_printk(K_INFO, "%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
@@ -945,19 +892,6 @@ void usb_phy_recover(unsigned int clk_on)
 			  E60802_RG_USB20_EOP_CTL, 0x9);
 
 	/*
-	 * 1 RG_SSUSB_TX_EIDLE_CM<3:0> / 1100-->1110 / low-power
-	 *   E-idle common mode(650mV to 600mV) - 0x11290b18 bit [31:28]
-	 * 2 RG_SSUSB_CDR_BIR_LTD0[4:0] / 5'b01000-->5'b01100 / Increase BW - 0x1128095c bit [12:8]
-	 * 3 RG_XXX_CDR_BIR_LTD1[4:0] / 5'b00010-->5'b00011 / Increase BW - 0x1128095c bit [28:24]
-	 */
-	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG6, RG_SSUSB_TX_EIDLE_CM_OFST,
-			  RG_SSUSB_TX_EIDLE_CM, 0xE);
-	U3PhyWriteField32((phys_addr_t) U3D_PHYD_CDR1, RG_SSUSB_CDR_BIR_LTD0_OFST,
-			  RG_SSUSB_CDR_BIR_LTD0, 0xC);
-	U3PhyWriteField32((phys_addr_t) U3D_PHYD_CDR1, RG_SSUSB_CDR_BIR_LTD1_OFST,
-			  RG_SSUSB_CDR_BIR_LTD1, 0x3);
-
-	/*
 	 * 1.DA_SSUSB_XTAL_EXT_EN[1:0]  2'b01-->2'b10 - 0x11290c00 bit[11:10]
 	 * 2.DA_SSUSB_XTAL_RX_PWD[9:9]  -->1'b1 - 0x11280018 bit[9]
 	 */
@@ -965,6 +899,40 @@ void usb_phy_recover(unsigned int clk_on)
 			  RG_SSUSB_XTAL_EXT_EN_U3, 2);
 	U3PhyWriteField32((phys_addr_t) U3D_SPLLC_XTALCTL3, RG_SSUSB_XTAL_RX_PWD_OFST,
 			  RG_SSUSB_XTAL_RX_PWD, 1);
+
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x310), 0, 0xf, 0xf);
+
+	/*
+	 * MWriteS32 0x11290914 (MREAD("S32", asd:0x11290914)&~(0xff<<24)|0x8f<<24) ;RXIMP_SEL fine tune
+	 * MWriteS32 0x11290910 (MREAD("S32", asd:0x11290910)&~(0x01<<31)|0x01<<31) ;fore_tx_impsel
+	 * MWriteS32 0x11290910 (MREAD("S32", asd:0x11290910)&~(0x1f<<24)|0x04<<24) ;tx_impsel
+	 * MWriteS32 0x11290b00 (MREAD("S32", asd:0x11290b00)&~(0x1f<<10)|0x2d<<10) ;SSUSB_IEXT_INTR_CTRL
+	 */
+	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x14), 24, (0xff<<24), 0x8f);
+	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x10), 31, (0x01<<31), 0x01);
+	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x10), 24, (0x1f<<24), 0x10);
+	U3PhyWriteField32((phys_addr_t) (U3D_USB30_PHYA_REG0), 10, (0x1f<<10), 0x2d);
+
+	/*
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x1f<<8)|0x2D<<8);rg_ssusb_idrv_3p5db[5:0]
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290a04)&~(0x01<<14)|0x01<<14);rg_ssusb_force_idrv_3p5db
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x1f<<16)|0x13<<16);rg_ssusb_idem_3p5db[5:0]
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x01<<22)|0x01<<22);rg_ssusb_force_idem_3p5db
+	 */
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 8, (0x1f<<8), 0x2d);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 14, (0x01<<14), 0x01);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 16, (0x1f<<16), 0x13);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 22, (0x01<<22), 0x01);
+
+	/* MWriteS32 0x1129095c (MREAD("S32", asd:0x1129095c)&~(0x1f<<24)|0x02<<24) ;rg_ssusb_cdr_bir_ltd1[4:0]
+	 * MWriteS32 0x1129095c (MREAD("S32", asd:0x1129095c)&~(0x0f<<0)|0x02<<0) ;rg_ssusb_cdr_bic_ltd1[3:0]
+	 * MWriteS32 0x11290c60 (MREAD("S32", asd:0x11290c60)&~(0x03<<22)|0x01<<22) ;RG_SSUSB_EQ_RSTEP1_U3[1:0]
+	 * MWriteS32 0x11290c64 (MREAD("S32", asd:0x11290c64)&~(0x03<<0)|0x01<<0) ;RG_SSUSB_EQ_RSTEP2_U3[1:0]
+	 */
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x95c), 24, (0x1f<<24), 0x02);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x95c), 0, (0x0f<<0), 0x02);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xc60), 22, (0x03<<22), 0x01);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xc64), 0, (0x03<<0), 0x01);
 
 	/* Wait 800 usec */
 	udelay(800);
@@ -981,8 +949,6 @@ void usb_phy_recover(unsigned int clk_on)
 		usb_phy_switch_to_uart();
 	}
 #endif
-	/* USB PLL Force settings */
-	usb20_pll_settings(false, false);
 
 	os_printk(K_INFO, "%s-\n", __func__);
 }
