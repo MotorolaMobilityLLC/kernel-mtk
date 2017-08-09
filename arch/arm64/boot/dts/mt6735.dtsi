@@ -147,9 +147,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		reserve-memory-ccci_md1 {
-			compatible = "reserve-memory-ccci_md1";
+			compatible = "mediatek,reserve-memory-ccci_md1";
 			no-map;
-			size = <0 0x3810000>; // md_size+smem_size
+			size = <0 0x3810000>; /* md_size+smem_size */
 			alignment = <0 0x2000000>;
 			alloc-ranges = <0 0x40000000 0 0xC0000000>;
 		};

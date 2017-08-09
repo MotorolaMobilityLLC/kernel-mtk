@@ -17,12 +17,11 @@
 #endif
 #include "ccci_off.h"
 
-#if !defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 #endif
 
+#if !defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #define sync_write32(v, a)			mt_reg_sync_writel(v, a)
 #define sync_write16(v, a)			mt_reg_sync_writew(v, a)
 #define sync_write8(v, a)			mt_reg_sync_writeb(v, a)

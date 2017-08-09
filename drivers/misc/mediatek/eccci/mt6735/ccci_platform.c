@@ -1,8 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
-#include <mach/memory.h>
-#include <mach/upmu_sw.h>
 #include <linux/interrupt.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>

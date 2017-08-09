@@ -142,8 +142,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 					reg = <0 0x43000000 0 0x30000>;
 				};
 
-	reserve-memory-ccci_md1 {
-						compatible = "reserve-memory-ccci_md1";
+		reserve-memory-ccci_md1 {
+						compatible = "mediatek,reserve-memory-ccci_md1";
 						no-map;
 						size = <0 0x3810000>; // md_size+smem_size
 						alignment = <0 0x2000000>;
@@ -698,9 +698,9 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				<0x1021B000 0x1000>, /*MD_CLDMA_PDN*/
 				<0x1020A000 0x1000>, /*AP_CCIF_BASE*/
 				<0x1020B000 0x1000>; /*MD_CCIF_BASE*/
-			interrupts = <0 145 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
-				     <0 140 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
-				     <0 221 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+			interrupts =	<GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
+					<GIC_SPI 140 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
+					<GIC_SPI 221 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
 			mediatek,md_id = <0>;
 			mediatek,cldma_capability = <2>;
 			mediatek,md_smem_size = <0x10000>; /* md share memory size */
