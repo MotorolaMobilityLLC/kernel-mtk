@@ -3,15 +3,28 @@
 
 #include <linux/types.h>
 #include <linux/netlink.h>
-#include "gf_spi_tee.h"
+#include <linux/cdev.h>
+#include "mt_spi.h"
 
 
 /**********************feature defination**********************/
 #undef GF_FASYNC    /* If support fasync mechanism */
 #define GF_NETLINK	/* If support netlink mechanism */
 
-/* #undef GF_SPI_REE_OPERATION */ /* If support SPI read in REE environment */
-#define GF_SPI_REE_OPERATION /* If support SPI read in REE environment */
+/**************************debug******************************/
+#define ERR_LOG  (0)
+#define INFO_LOG (1)
+#define DEBUG_LOG (2)
+
+#define gf_debug(level, fmt, args...) do { \
+			if (g_debug_level >= level) {\
+				pr_warn("[gf] " fmt, ##args); \
+			} \
+		} while (0)
+
+#define FUNC_ENTRY()  gf_debug(DEBUG_LOG, "%s, %d, enter\n", __func__, __LINE__)
+#define FUNC_EXIT()  gf_debug(DEBUG_LOG, "%s, %d, exit\n", __func__, __LINE__)
+
 
 /**********************IO Magic**********************/
 #define GF_IOC_MAGIC	'g'
@@ -35,6 +48,14 @@ enum gf_netlink_cmd {
 	GF_NETLINK_SCREEN_ON
 };
 
+struct gf_ioc_transfer {
+	u8 cmd;    /* spi read = 0, spi  write = 1 */
+	u8 reserved;
+	u16 addr;
+	u32 len;
+	u8 *buf;
+};
+
 /* define commands */
 #define GF_IOC_INIT			_IO(GF_IOC_MAGIC, 0)
 #define GF_IOC_EXIT			_IO(GF_IOC_MAGIC, 1)
@@ -54,20 +75,27 @@ enum gf_netlink_cmd {
 /* fp sensor has change to sleep mode while screen off */
 #define GF_IOC_ENTER_SLEEP_MODE		_IO(GF_IOC_MAGIC, 10)
 
-#define  GF_IOC_MAXNR    11  /* THIS MACRO IS NOT USED NOW... */
+/* for SPI REE transfer */
+#define GF_IOC_TRANSFER_CMD			_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
+#define  GF_IOC_MAXNR    16  /* THIS MACRO IS NOT USED NOW... */
 
 struct gf_dev {
-	dev_t devt;
-	struct device *dev;
-	spinlock_t	spi_lock;
+	dev_t devno;
+	struct cdev cdev;
+	struct device *device;
+	struct class *class;
 	struct spi_device *spi;
+	int device_count;
+	struct mt_chip_conf spi_mcc;
+
+	spinlock_t	spi_lock;
 	struct list_head device_entry;
 
 	struct input_dev *input;
 
 	/* buffer is NULL unless this device is open (users > 0) */
 	unsigned users;
-	u8 *buffer;
+	u8 *spi_buffer;  /* only used for SPI transfer internal */
 	struct mutex buf_lock;
 	u8 buf_status;
 	u8 device_available;	/* changed during fingerprint chip sleep and wakeup phase */
@@ -90,6 +118,7 @@ struct gf_dev {
 #endif
 
 	u8 probe_finish;
+	u8 spi_ree_enable;
 	u8 irq_count;
 
 	/* bit24-bit32 of signal count */
@@ -111,5 +140,8 @@ struct gf_dev {
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
 };
+
+extern struct gf_dev *g_gf_dev;
+extern u8 g_debug_level;
 
 #endif	/* __GF_SPI_TEE_H */

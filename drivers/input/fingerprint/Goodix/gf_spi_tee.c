@@ -14,76 +14,18 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/ioctl.h>
-#include <linux/fs.h>
 #include <linux/device.h>
 #include <linux/input.h>
-#include <linux/err.h>
-#include <linux/list.h>
-#include <linux/errno.h>
 #include <linux/mutex.h>
-#include <linux/slab.h>
-#include <linux/compat.h>
-#include <linux/poll.h>
-#include <linux/delay.h>
-#include <linux/workqueue.h>
 #include <linux/io.h>
-#include <linux/kthread.h>
-
-#include <linux/spi/spi.h>
-#include <linux/spi/spidev.h>
-
-#include <linux/uaccess.h>
-#include <linux/ktime.h>
-
-#include <linux/interrupt.h>
-#include <linux/irq.h>
-/* #include <mach/irqs.h> */
-#include <linux/completion.h>
 #include <linux/gpio.h>
-/* #include <mach/gpio.h> */
-/* #include <plat/gpio-cfg.h> */
-#include <linux/timer.h>
 #include <linux/fb.h>
-#include <linux/pm_qos.h>
-#include <linux/cpufreq.h>
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #else
 #include <linux/notifier.h>
 #endif
-
-#ifdef CONFIG_MTK_CLKMGR
-#include "mach/mt_clkmgr.h"
-#else
-#include <linux/clk.h>
-#endif
-
-/* #include <mach/hardware.h> */
-/* #include <mach/mt_irq.h> */
-/* #include <mach/mt_gpio.h> */
-/* #include <mach/mt_pm_ldo.h> */
-/* #include <mach/mt_spi.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/eint.h> */
-/* #include <mach/mt_spi.h> */
-/* #include <mach/gpio_const.h> */
-
-/* #include <mach/memory.h> */
-/* #include <mach/mt_clkmgr.h> */
-#include <net/sock.h>
-
-/* #include <cust_eint.h> */
-/* #include <cust_gpio_usage.h> */
-
-/* MTK header */
-#include "mt_spi.h"
-#include "mt_spi_hal.h"
-#include "mt_gpio.h"
-#include "mach/gpio_const.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -95,42 +37,40 @@
 #include <linux/compat.h>
 #endif
 
+#ifdef CONFIG_MTK_CLKMGR
+#include "mach/mt_clkmgr.h"
+#else
+#include <linux/clk.h>
+#endif
+
+#include <net/sock.h>
+#include <linux/spi/spi.h>
+#include <linux/spi/spidev.h>
+
+/* MTK header */
+#include "mt_spi.h"
+#include "mt_spi_hal.h"
+#include "mt_gpio.h"
+#include "mach/gpio_const.h"
+
 #include "gf_spi_tee.h"
+#include "gf_spi_ree.h"
 
-/*
- * This supports access to SPI devices using normal userspace I/O calls.
- * Note that while traditional UNIX/POSIX I/O semantics are half duplex,
- * and often mask message boundaries, full SPI support requires full duplex
- * transfers.  There are several kinds of internal message boundaries to
- * handle chipselect management and other protocol options.
- *
- * SPI has a character major number assigned.  We allocate minor numbers
- * dynamically using a bitmask.  You must use hotplug tools, such as udev
- * (or mdev with busybox) to create and destroy the /dev/spidevB.C device
- * nodes, since there is no fixed association of minor numbers with any
- * particular SPI bus or device.
- */
+/**************************defination******************************/
+#define GF_DEV_NAME "goodix_fp"
+#define GF_DEV_MAJOR 0	/* assigned */
 
-/* spi device name */
-#define SPI_DEV_NAME   "gf_spi"
-/* device name after register in character */
-#define DEV_NAME "goodix_fp"
+#define GF_CLASS_NAME "goodix_fp"
+#define GF_INPUT_NAME "gf-keys"
 
-#define CHRD_DRIVER_NAME		"goodix_fp"
-#define CLASS_NAME			"goodix_fp"
-#define SPIDEV_MAJOR			158	/* assigned */
-#define N_SPI_MINORS			32	/* ... up to 256 */
-static DECLARE_BITMAP(minors, N_SPI_MINORS);
+#define GF_SPI_VERSION "gf_spi_tee_v0.93"
 
-#define GF_SPI_VERSION "gf_spi_tee_v0.92"
-
-/**************************feature control******************************/
-#define NETLINK_GF_TEST 26   /* for GF test only, need defined in include/uapi/linux/netlink.h */
+#define NETLINK_GF_TEST 26   /* for GF test temporary, need defined in include/uapi/linux/netlink.h */
 #define MAX_NL_MSG_LEN 16
 
 /***********************GPIO setting port layer*************************/
 /* customer hardware port layer, please change according to customer's hardware */
-/* #ifdef CONFIG_MTK_LEGACY */
+#ifdef CONFIG_MTK_LEGACY
 
 #ifndef GPIO_FP_INT_PIN
 #define GPIO_FP_INT_PIN			(GPIO251 | 0x80000000)
@@ -161,13 +101,10 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
 #define GPIO_FP_SPICS_PIN_M_PWM  GPIO_MODE_03
 #define GPIO_FP_SPICS_PIN_M_SPI_CS	 GPIO_MODE_01
 
-/* GPIO122 used for VOLUMN_UP & VOLUMN_DOWN, change to GPIO8 temporary */
-/* #define GPIO_FP_RESET_PIN		  (GPIO122 | 0x80000000) */
-/* #define GPIO_FP_RESET_PIN		  (GPIO8 | 0x80000000) */
 #define GPIO_FP_RESET_PIN		  (GPIO252 | 0x80000000)
 #define GPIO_FP_RESET_PIN_M_GPIO  GPIO_MODE_00
 
-/* #define GPIO_FP_SPI_BYPASS_PIN		   (GPIO133 | 0x80000000) */
+/* #define GPIO_FP_SPI_BYPASS_PIN		   (GPIOx | 0x80000000) */
 /* #define GPIO_FP_SPI_BYPASS_M_GPIO  GPIO_MODE_00 */
 
 #ifndef	CUST_EINT_FP_EINT_NUM
@@ -177,10 +114,10 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
 #define CUST_EINT_FP_EINT_DEBOUNCE_EN	   0  /* CUST_EINT_DEBOUNCE_DISABLE */
 #endif
 
-/* #endif */ /* CONFIG_MTK_LEGACY */
+#endif /* CONFIG_MTK_LEGACY */
 
 #ifndef GF_INPUT_HOME_KEY
-/* on MTK 6795 EVB board, home key has been redefine to KEY_HOMEPAGE!!! */
+/* on MTK EVB board, home key has been redefine to KEY_HOMEPAGE! */
 /* double check the define on customer board!!! */
 #define GF_INPUT_HOME_KEY KEY_HOMEPAGE /* KEY_HOME */
 
@@ -193,37 +130,61 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
 #endif
 
 /*************************************************************/
+
 struct gf_dev *g_gf_dev = NULL;
+/* debug log setting */
+u8 g_debug_level = DEBUG_LOG;
 
 /* align=2, 2 bytes align */
 /* align=4, 4 bytes align */
 /* align=8, 8 bytes align */
 #define ROUND_UP(x, align)		((x+(align-1))&~(align-1))
 
-/**************************debug******************************/
-#define ERR_LOG  (0)
-#define INFO_LOG (1)
-#define DEBUG_LOG (2)
-
-/* debug log setting */
-u8 g_debug_level = DEBUG_LOG;
-
-#define gf_debug(level, fmt, args...) do { \
-			if (g_debug_level >= level) {\
-				pr_debug("[gf] " fmt, ##args); \
-			} \
-		} while (0)
-
-#define FUNC_ENTRY()  gf_debug(DEBUG_LOG, "%s, %d, entry\n", __func__, __LINE__)
-#define FUNC_EXIT()  gf_debug(DEBUG_LOG, "%s, %d, exit\n", __func__, __LINE__)
 
 /*************************************************************/
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 
-static unsigned bufsiz = (150*150);
+static unsigned bufsiz = (15*1024);
 module_param(bufsiz, uint, S_IRUGO);
-MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
+MODULE_PARM_DESC(bufsiz, "maximum data bytes for SPI message");
+
+#ifdef CONFIG_OF
+static const struct of_device_id gf_of_match[] = {
+	{ .compatible = "mediatek,fingerprint", },
+	{ .compatible = "mediatek,goodix-fp", },
+	{ .compatible = "goodix,goodix-fp", },
+	{},
+};
+MODULE_DEVICE_TABLE(of, gf_of_match);
+#endif
+
+const struct mt_chip_conf spi_ctrdata = {
+	.setuptime = 10,
+	.holdtime = 10,
+	.high_time = 50, /* 1MHz */
+	.low_time = 50,
+	.cs_idletime = 10,
+	.ulthgh_thrsh = 0,
+
+	.cpol = SPI_CPOL_0,
+	.cpha = SPI_CPHA_0,
+
+	.rx_mlsb = SPI_MSB,
+	.tx_mlsb = SPI_MSB,
+
+	.tx_endian = SPI_LENDIAN,
+	.rx_endian = SPI_LENDIAN,
+
+	.com_mod = FIFO_TRANSFER,
+	/* .com_mod = DMA_TRANSFER, */
+
+	.pause = 0,
+	.finish_intr = 1,
+	.deassert = 0,
+	.ulthigh = 0,
+	.tckdly = 0,
+};
 
 /* -------------------------------------------------------------------- */
 /* timer function								*/
@@ -243,16 +204,14 @@ long int kernel_time(unsigned int step)
 		gf_debug(DEBUG_LOG, "%s, use: %ld us\n", __func__, (cur_time - prev_time));
 		return cur_time - prev_time;
 	}
-	/* else { */
-		prev_time = cur_time;
-		return -1;
-	/* } */
+	prev_time = cur_time;
+	return -1;
 }
 
 /* -------------------------------------------------------------------- */
 /* fingerprint chip hardware configuration								  */
 /* -------------------------------------------------------------------- */
-static int gf_get_gpio_info(void)
+static int gf_get_gpio_dts_info(void)
 {
 #ifdef CONFIG_OF
 	int ret;
@@ -322,6 +281,23 @@ static int gf_get_gpio_info(void)
 	return 0;
 }
 
+static int gf_get_sensor_dts_info(void)
+{
+	struct device_node *node;
+	int value;
+
+	node = of_find_compatible_node(NULL, NULL, "goodix,goodix-fp");
+	if (node) {
+		of_property_read_u32(node, "netlink-event", &value);
+		gf_debug(DEBUG_LOG, "%s, get netlink event[%d] from dts\n", __func__, value);
+	} else {
+		gf_debug(ERR_LOG, "%s failed to get device node!\n", __func__);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 static void gf_hw_power_enable(u8 bonoff)
 {
 	/* TODO: LDO configure */
@@ -331,7 +307,6 @@ static void gf_hw_power_enable(u8 bonoff)
 	else
 		hwPowerDown(MT6331_POWER_LDO_VIBR, "fingerprint");
 #endif
-	/* return; */
 }
 
 static void gf_spi_clk_enable(u8 bonoff)
@@ -353,13 +328,11 @@ static void gf_spi_clk_enable(u8 bonoff)
 	else
 		mt_spi_disable_clk(ms);
 #endif
-	/* return; */
 }
 
 static void gf_bypass_flash_gpio_cfg(void)
 {
 	/* TODO: by pass flash IO config, default connect to GND */
-	/* return; */
 }
 
 /* Confure gpio for SPI if necessary */
@@ -374,7 +347,6 @@ static void gf_spi_gpio_cfg(void)
 	/* TODO: config SPI1(0 to 5)to SPI mode using functions provided by SPI module */
 
 #endif
-	/* return; */
 }
 
 /* pull high miso, or change to SPI mode */
@@ -396,7 +368,6 @@ static void gf_miso_gpio_cfg(u8 pullhigh)
 		pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_miso_spi);
 
 #endif
-	/* return; */
 }
 
 static void gf_irq_gpio_cfg(void)
@@ -426,7 +397,6 @@ static void gf_irq_gpio_cfg(void)
 	} else
 		gf_debug(ERR_LOG, "%s can't find compatible node\n", __func__);
 
-	/* return; */
 #endif
 }
 
@@ -443,7 +413,6 @@ static void gf_reset_gpio_cfg(void)
 	pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_reset_high);
 #endif
 
-	/* return; */
 }
 
 /* delay ms after reset */
@@ -465,7 +434,6 @@ static void gf_hw_reset(u8 delay)
 		/* delay is configurable */
 		mdelay(delay);
 	}
-	/* return; */
 }
 
 static void gf_enable_irq(struct gf_dev *gf_dev)
@@ -481,7 +449,6 @@ static void gf_enable_irq(struct gf_dev *gf_dev)
 			gf_debug(DEBUG_LOG, "%s enable interrupt!\n", __func__);
 		}
 	}
-	/* return; */
 }
 
 static void gf_disable_irq(struct gf_dev *gf_dev)
@@ -497,83 +464,8 @@ static void gf_disable_irq(struct gf_dev *gf_dev)
 			gf_debug(DEBUG_LOG, "%s disable interrupt!\n", __func__);
 		}
 	}
-	/* return; */
 }
 
-#ifdef GF_SPI_REE_OPERATION
-/* -------------------------------------------------------------------- */
-/* normal world SPI read/write function                 */
-/* -------------------------------------------------------------------- */
-static u8 tmp_buf[64];
-/* read out data start from offset 4!! */
-static int gf_spi_read_bytes_ree(u16 addr, u32 data_len, u8 *rx_buf)
-{
-	struct spi_message msg;
-	struct spi_transfer *xfer;
-
-	xfer = kzalloc(sizeof(*xfer)*2, GFP_KERNEL);
-	if (xfer == NULL) {
-		/* gf_debug(ERR_LOG, "%s, no memory for SPI transfer\n", __func__); */
-		return -ENOMEM;
-	}
-
-	spi_message_init(&msg);
-	rx_buf[0] = 0xF0;
-	rx_buf[1] = (u8)((addr>>8)&0xFF);
-	rx_buf[2] = (u8)(addr&0xFF);
-	xfer[0].tx_buf = rx_buf;
-	xfer[0].len = 3;
-	xfer[0].delay_usecs = 5;
-	spi_message_add_tail(&xfer[0], &msg);
-	spi_sync(g_gf_dev->spi, &msg);
-
-	spi_message_init(&msg);
-	memset(rx_buf, 0xff, data_len + 1);
-	rx_buf[3] = 0xF1;
-	xfer[1].tx_buf = &rx_buf[3];
-	xfer[1].rx_buf = &rx_buf[3];
-	xfer[1].len = data_len + 1;
-	xfer[1].delay_usecs = 5;
-	spi_message_add_tail(&xfer[1], &msg);
-	spi_sync(g_gf_dev->spi, &msg);
-
-	kfree(xfer);
-	if (xfer != NULL)
-		xfer = NULL;
-
-	return 0;
-}
-
-static int gf_spi_write_byte_ree(u16 addr, u8 value)
-{
-	struct spi_message msg;
-	struct spi_transfer *xfer;
-
-	xfer = kzalloc(sizeof(*xfer), GFP_KERNEL);
-	if (xfer == NULL) {
-		/* gf_debug(ERR_LOG, "%s, no memory for SPI transfer\n", __func__); */
-		return -ENOMEM;
-	}
-
-	spi_message_init(&msg);
-	tmp_buf[0] = 0xF0;
-	tmp_buf[1] = (u8)((addr>>8)&0xFF);
-	tmp_buf[2] = (u8)(addr&0xFF);
-	tmp_buf[3] = value;
-
-	xfer[0].tx_buf = tmp_buf;
-	xfer[0].len = 3 + 1;
-	xfer[0].delay_usecs = 5;
-	spi_message_add_tail(&xfer[0], &msg);
-	spi_sync(g_gf_dev->spi, &msg);
-
-	kfree(xfer);
-	if (xfer != NULL)
-		xfer = NULL;
-
-	return 0;
-}
-#endif
 
 #ifdef GF_NETLINK
 /* -------------------------------------------------------------------- */
@@ -615,10 +507,8 @@ void gf_netlink_send(const int command)
 		gf_debug(ERR_LOG, "[%s] : send failed\n", __func__);
 		return;
 	}
-	/* else { */
-		gf_debug(INFO_LOG, "[%s] : send done, data length is %d\n", __func__, ret);
-	/* return; */
-	/* } */
+
+	gf_debug(INFO_LOG, "[%s] : send done, data length is %d\n", __func__, ret);
 }
 
 static void gf_netlink_recv(struct sk_buff *__skb)
@@ -647,7 +537,6 @@ static void gf_netlink_recv(struct sk_buff *__skb)
 	}
 
 	kfree_skb(skb);
-	/* return; */
 }
 
 static int gf_netlink_init(void)
@@ -662,10 +551,9 @@ static int gf_netlink_init(void)
 		gf_debug(ERR_LOG, "[%s] : netlink create failed\n", __func__);
 		return -1;
 	}
-	/* else { */
-		gf_debug(INFO_LOG, "[%s] : netlink create success\n", __func__);
-		return 0;
-	/* } */
+
+	gf_debug(INFO_LOG, "[%s] : netlink create success\n", __func__);
+	return 0;
 }
 
 static int gf_netlink_destroy(void)
@@ -673,12 +561,12 @@ static int gf_netlink_destroy(void)
 	if (g_gf_dev->nl_sk != NULL) {
 		/* sock_release(g_gf_dev->nl_sk->sk_socket); */
 		netlink_kernel_release(g_gf_dev->nl_sk);
+		g_gf_dev->nl_sk = NULL;
 		return 0;
 	}
-	/* else { */
-		gf_debug(ERR_LOG, "[%s] : no netlink socket yet\n", __func__);
-		return -1;
-	/* } */
+
+	gf_debug(ERR_LOG, "[%s] : no netlink socket yet\n", __func__);
+	return -1;
 }
 #endif
 
@@ -790,17 +678,72 @@ static int gf_resume(struct spi_device *spi)
 /* -------------------------------------------------------------------- */
 /* file operation function                                              */
 /* -------------------------------------------------------------------- */
-
 static ssize_t gf_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	gf_debug(ERR_LOG, "Not support read opertion in TEE version\n");
-	return -EFAULT;
+	u8 status;
+	u8 *transfer_buf = NULL;
+	int retval = 0;
+	u16 checksum = 0;
+	int i;
+
+	FUNC_ENTRY();
+
+	if (!g_gf_dev->spi_ree_enable) {
+		gf_debug(ERR_LOG, "%s: Not support read opertion in TEE mode\n", __func__);
+		return -EFAULT;
+	}
+	gf_spi_read_byte_ree(0x8140, &status);
+	if ((status&0xF0) != 0xC0) {
+		gf_debug(ERR_LOG, "%s: no image data available\n", __func__);
+		return 0;
+	}
+	if ((count > bufsiz) || (count == 0)) {
+		gf_debug(ERR_LOG, "%s: request transfer length larger than maximum buffer\n", __func__);
+		return -EINVAL;
+	}
+	transfer_buf = kzalloc((count + 10), GFP_KERNEL);
+	if (transfer_buf == NULL) {
+		/* gf_debug(ERR_LOG, "%s: failed to allocate transfer buffer\n", __func__); */
+		return -EMSGSIZE;
+	}
+
+	/* set spi to high speed */
+	gf_spi_setup_conf_ree(6, DMA_TRANSFER);
+
+	gf_spi_read_bytes_ree(0x8140, count+10, transfer_buf);
+
+	/* check checksum */
+	checksum = 0;
+
+	for (i = 0; i < (count+6); i++)
+		checksum += *(transfer_buf+2+i);
+
+	if (checksum != ((*(transfer_buf+count+8)<<8) | *(transfer_buf+count+9))) {
+		gf_debug(ERR_LOG, "%s: raw data checksum check failed, cal[0x%x], recevied[0x%x]\n", __func__,
+						checksum, ((*(transfer_buf+count+8)<<8) | *(transfer_buf+count+9)));
+		retval = 0;
+	} else {
+		gf_debug(INFO_LOG, "%s: checksum check passed[0x%x], copy_to_user\n", __func__, checksum);
+		if (copy_to_user(buf, transfer_buf + 8, count)) {
+			gf_debug(ERR_LOG, "%s: Failed to copy gf_ioc_transfer from kernel to user\n", __func__);
+			retval = -EFAULT;
+		} else {
+			retval = count;
+		}
+	}
+
+	/* restore to low speed */
+	gf_spi_setup_conf_ree(1, FIFO_TRANSFER);
+
+	kfree(transfer_buf);
+	FUNC_EXIT();
+	return retval;
 }
 
 static ssize_t gf_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos)
 {
-	gf_debug(ERR_LOG, "Not support write opertion in TEE version\n");
+	gf_debug(ERR_LOG, "%s: Not support write opertion in TEE mode\n", __func__);
 	return -EFAULT;
 }
 
@@ -821,12 +764,12 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	gf_dev->sig_count++;
 
 #if 0
-	tmp_buf[4] = 0x55;
-	tmp_buf[5] = 0x55;
-	gf_spi_read_bytes_ree(0x8140, 2, tmp_buf);
-	gf_debug(INFO_LOG, "%s, read status is 0x%x, 0x%x\n", __func__, tmp_buf[4], tmp_buf[5]);
+	u8 status[2];
 
-	gf_spi_write_byte_ree(0x8140, tmp_buf[4]&0x7F);
+	gf_spi_read_bytes_ree(0x8140, 2, status);
+	gf_debug(INFO_LOG, "%s, read status is 0x%x, 0x%x\n", __func__, status[0], status[1]);
+
+	gf_spi_write_byte_ree(0x8140, (status[0]&0x7F));
 #endif
 
 	FUNC_EXIT();
@@ -839,11 +782,13 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct gf_dev *gf_dev = NULL;
 	struct gf_key gf_key;
 	uint32_t key_event;
+	struct gf_ioc_transfer ioc;
+	u8 *transfer_buf = NULL;
 	int retval = 0;
 
 	FUNC_ENTRY();
 	if (_IOC_TYPE(cmd) != GF_IOC_MAGIC)
-		return -ENOTTY;
+		return -EINVAL;
 
 	/* Check access direction once here; don't repeat below.
 	* IOC_DIR is from the user perspective, while access_ok is
@@ -856,7 +801,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		retval = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 
 	if (retval)
-		return -EFAULT;
+		return -EINVAL;
 
 	gf_dev = (struct gf_dev *)filp->private_data;
 
@@ -888,6 +833,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 
 		gf_dev->sig_count = 0;
+		gf_dev->spi_ree_enable = 0;
 
 		gf_debug(INFO_LOG, "%s: gf init finished======\n", __func__);
 		break;
@@ -899,6 +845,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			gf_dev->irq_count = 0;
 		}
 		gf_dev->device_available = 0;
+		gf_dev->spi_ree_enable = 1;
 
 		#ifdef CONFIG_HAS_EARLYSUSPEND
 		if (gf_dev->early_suspend.suspend)
@@ -954,6 +901,48 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_dev->is_sleep_mode = 1;
 		break;
 
+	case GF_IOC_TRANSFER_CMD:
+		if (copy_from_user(&ioc, (struct gf_ioc_transfer *)arg, sizeof(struct gf_ioc_transfer))) {
+			gf_debug(ERR_LOG, "%s: Failed to copy gf_ioc_transfer from user to kernel\n", __func__);
+			retval = -EFAULT;
+			break;
+		}
+
+		if ((ioc.len > bufsiz) || (ioc.len == 0)) {
+			gf_debug(ERR_LOG, "%s: request transfer length larger than maximum buffer\n", __func__);
+			retval = -EINVAL;
+			break;
+		}
+		transfer_buf = kzalloc(ioc.len, GFP_KERNEL);
+		if (transfer_buf == NULL) {
+			/* gf_debug(ERR_LOG, "%s: failed to allocate transfer buffer\n", __func__); */
+			retval = -EMSGSIZE;
+			break;
+		}
+
+		mutex_lock(&g_gf_dev->buf_lock);
+		if (ioc.cmd) {
+			/* spi write operation */
+			gf_debug(DEBUG_LOG, "%s: write data to 0x%x, len = 0x%x\n", __func__, ioc.addr, ioc.len);
+			if (copy_from_user(transfer_buf, ioc.buf, ioc.len)) {
+				gf_debug(ERR_LOG, "Failed to copy gf_ioc_transfer from user to kernel\n");
+				retval = -EFAULT;
+			} else {
+				gf_spi_write_bytes_ree(ioc.addr, ioc.len, transfer_buf);
+			}
+		} else {
+			/* spi read operation */
+			gf_debug(DEBUG_LOG, "%s: read data from 0x%x, len = 0x%x\n", __func__, ioc.addr, ioc.len);
+			gf_spi_read_bytes_ree(ioc.addr, ioc.len, transfer_buf);
+			if (copy_to_user(ioc.buf, transfer_buf, ioc.len)) {
+				gf_debug(ERR_LOG, "Failed to copy gf_ioc_transfer from kernel to user\n");
+				retval = -EFAULT;
+			}
+		}
+		kfree(transfer_buf);
+		mutex_unlock(&g_gf_dev->buf_lock);
+		break;
+
 	default:
 		gf_debug(ERR_LOG, "gf doesn't support this command(%d)\n", cmd);
 		break;
@@ -971,6 +960,7 @@ static long gf_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	FUNC_ENTRY();
 
 	retval = filp->f_op->unlocked_ioctl(filp, cmd, arg);
+
 	FUNC_EXIT();
 	return retval;
 }
@@ -993,13 +983,13 @@ static ssize_t gf_debug_show(struct device *dev,
 	return sprintf(buf, "0x%x\n", g_debug_level);
 }
 
-static uint8_t test_flag;
-
 static ssize_t gf_debug_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct gf_dev *gf_dev =  dev_get_drvdata(dev);
 	int retval = 0;
+	u8 flag = 0;
+	u8 tmp[16];
 
 	if (!strncmp(buf, "-10", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -10, gf init start===============\n", __func__);
@@ -1033,52 +1023,52 @@ static ssize_t gf_debug_store(struct device *dev,
 
 	} else if (!strncmp(buf, "-12", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -12, REE SPI read/write test=======\n", __func__);
-#ifdef GF_SPI_REE_OPERATION
-		gf_spi_read_bytes_ree(0x4220, 4, tmp_buf);
+		gf_spi_read_bytes_ree(0x4220, 4, tmp);
 		gf_debug(INFO_LOG, "%s, 9p chp version is 0x%x, 0x%x, 0x%x, 0x%x\n", __func__,
-				tmp_buf[4], tmp_buf[5], tmp_buf[6], tmp_buf[7]);
+				tmp[0], tmp[1], tmp[2], tmp[3]);
 
-		gf_spi_read_bytes_ree(0x8000, 10, tmp_buf);
-		gf_debug(INFO_LOG, "%s, read chip version 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x, %02d.%02d.%02d\n", __func__,
-				tmp_buf[4], tmp_buf[5], tmp_buf[6], tmp_buf[7], tmp_buf[8], tmp_buf[9],
-				tmp_buf[11], tmp_buf[12], tmp_buf[13]);
-#endif
+		gf_spi_read_bytes_ree(0x8000, 10, tmp);
+		gf_debug(INFO_LOG, "%s, read fw version 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x, %02d.%02d.%02d\n", __func__,
+				tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[7], tmp[8], tmp[9]);
 
 	} else if (!strncmp(buf, "-13", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -13, set/read sensor mode==========\n", __func__);
-#ifdef GF_SPI_REE_OPERATION
-		gf_spi_read_bytes_ree(0x8043, 1, tmp_buf);
-		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x\n", __func__, tmp_buf[4]);
+		gf_spi_read_byte_ree(0x8043, &tmp[0]);
+		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x\n", __func__, tmp[0]);
+
+		gf_spi_write_byte_ree(0x8043, 0);
+		gf_spi_read_byte_ree(0x8043, &tmp[0]);
+		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x after set to IMAGE mode\n", __func__, tmp[0]);
 
 		gf_spi_write_byte_ree(0x8043, 1);
-		gf_spi_read_bytes_ree(0x8043, 1, tmp_buf);
-		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x after set to KEY mode\n", __func__, tmp_buf[4]);
-#endif
+		gf_spi_read_byte_ree(0x8043, &tmp[0]);
+		gf_debug(INFO_LOG, "%s, read out chip mode=0x%x after set to KEY mode\n", __func__, tmp[0]);
 
 	} else if (!strncmp(buf, "-14", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -14, GPIO test===============\n", __func__);
 		gf_reset_gpio_cfg();
+
 #ifdef CONFIG_MTK_LEGACY
-		if (test_flag == 0) {
+		if (flag == 0) {
 			mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ZERO);
 			gf_debug(INFO_LOG, "%s: set reset PIN to zero\n", __func__);
-			test_flag = 1;
+			flag = 1;
 		} else {
 			mt_set_gpio_out(GPIO_FP_RESET_PIN, GPIO_OUT_ONE);
 			gf_debug(INFO_LOG, "%s: set reset PIN to one\n", __func__);
-			test_flag = 0;
+			flag = 0;
 		}
 #endif
 
 #ifdef CONFIG_OF
-		if (test_flag == 0) {
+		if (flag == 0) {
 			pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_miso_pulllow);
 			gf_debug(INFO_LOG, "%s: set miso PIN to low\n", __func__);
-			test_flag = 1;
+			flag = 1;
 		} else {
 			pinctrl_select_state(g_gf_dev->pinctrl_gpios, g_gf_dev->pins_miso_pullhigh);
 			gf_debug(INFO_LOG, "%s: set miso PIN to high\n", __func__);
-			test_flag = 0;
+			flag = 0;
 		}
 #endif
 
@@ -1114,7 +1104,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 	mutex_lock(&device_list_lock);
 
 	list_for_each_entry(gf_dev, &device_list, device_entry) {
-		if (gf_dev->devt == inode->i_rdev) {
+		if (gf_dev->devno == inode->i_rdev) {
 			gf_debug(INFO_LOG, "%s, Found\n", __func__);
 			status = 0;
 			break;
@@ -1123,10 +1113,10 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 	if (status == 0) {
 		mutex_lock(&gf_dev->buf_lock);
-		if (gf_dev->buffer == NULL) {
-			gf_dev->buffer = kzalloc(bufsiz, GFP_KERNEL);
-			if (gf_dev->buffer == NULL) {
-				gf_debug(ERR_LOG, "%s, allocate dev->buffer failed\n", __func__);
+		if (gf_dev->spi_buffer == NULL) {
+			gf_dev->spi_buffer = kzalloc(bufsiz, GFP_KERNEL);
+			if (gf_dev->spi_buffer == NULL) {
+				gf_debug(ERR_LOG, "%s, allocate dev->spi_buffer failed\n", __func__);
 				status = -ENOMEM;
 			}
 		}
@@ -1136,7 +1126,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 			gf_dev->users++;
 			filp->private_data = gf_dev;
 			nonseekable_open(inode, filp);
-			gf_debug(INFO_LOG, "%s, Succeed to open device. irq = %d\n", __func__, gf_dev->spi->irq);
+			gf_debug(INFO_LOG, "%s, Success to open device. irq = %d\n", __func__, gf_dev->spi->irq);
 		}
 	} else {
 		gf_debug(ERR_LOG, "%s, No device for minor %d\n", __func__, iminor(inode));
@@ -1181,9 +1171,6 @@ static int gf_release(struct inode *inode, struct file *filp)
 	return status;
 }
 
-
-static struct class *gf_spi_class;
-
 static const struct file_operations gf_fops = {
 	.owner =	THIS_MODULE,
 	/* REVISIT switch to aio primitives, so that userspace
@@ -1209,107 +1196,135 @@ static const struct file_operations gf_fops = {
 static int gf_probe(struct spi_device *spi)
 {
 	struct gf_dev *gf_dev = NULL;
-	unsigned long minor;
 	int status = -EINVAL;
 
 	FUNC_ENTRY();
+
 	/* Allocate driver data */
 	gf_dev = kzalloc(sizeof(struct gf_dev), GFP_KERNEL);
 	if (!gf_dev) {
 		/* gf_debug(ERR_LOG, "%s, Failed to alloc memory for gf device.\n", __func__); */
 		FUNC_EXIT();
-		return -ENOMEM;
+		status = -ENOMEM;
+		goto err;
 	}
 
 	g_gf_dev = gf_dev;
-	/* Initialize the driver data */
-	gf_dev->spi = spi;
 	spin_lock_init(&gf_dev->spi_lock);
 	mutex_init(&gf_dev->buf_lock);
 
 	INIT_LIST_HEAD(&gf_dev->device_entry);
 	gf_dev->device_available = 0;
-	gf_dev->spi->irq = 0;
+	gf_dev->device_count = 0;
 	gf_dev->probe_finish = 0;
+	gf_dev->spi_ree_enable = 1;
 
 	/*setup gf configurations.*/
 	gf_debug(INFO_LOG, "%s, Setting gf device configuration==========\n", __func__);
 
-	/*SPI parameters.*/
+	/* Initialize the driver data */
+	gf_dev->spi = spi;
+
+	/* setup SPI parameters */
 	/* CPOL=CPHA=0, speed 1MHz */
 	gf_dev->spi->mode = SPI_MODE_0;
-	gf_dev->spi->max_speed_hz = 1*1000*1000;
-
-	/* TODO: confirm gpio pins!!! */
 	gf_dev->spi->bits_per_word = 8;
+	gf_dev->spi->max_speed_hz = 1*1000*1000;
+	memcpy(&gf_dev->spi_mcc, &spi_ctrdata, sizeof(struct mt_chip_conf));
+	gf_dev->spi->controller_data = (void *)&gf_dev->spi_mcc;
 
-	/* not work for platform */
 	spi_setup(gf_dev->spi);
+	gf_dev->spi->irq = 0;
 	spi_set_drvdata(spi, gf_dev);
 
-	/* If we can allocate a minor number, hook up this device.
-	* Reusing minors is fine so long as udev or mdev is working.
-	*/
 	mutex_lock(&device_list_lock);
-	minor = find_first_zero_bit(minors, N_SPI_MINORS);
-	if (minor < N_SPI_MINORS) {
-		status = sysfs_create_group(&spi->dev.kobj, &gf_debug_attr_group);
-		if (status) {
-			gf_debug(ERR_LOG, "%s, Failed to create sysfs file.\n", __func__);
-			status = -ENODEV;
-			goto err;
-		}
-		gf_debug(INFO_LOG, "%s, Success create sysfs file.\n", __func__);
+	/* create class */
+	gf_dev->class = class_create(THIS_MODULE, GF_CLASS_NAME);
+	if (IS_ERR(gf_dev->class)) {
+		gf_debug(ERR_LOG, "%s, Failed to create class.\n", __func__);
+		status = -ENODEV;
+		goto err_class;
+	};
 
-		gf_dev->devt = MKDEV(SPIDEV_MAJOR, minor);
-		gf_dev->dev = device_create(gf_spi_class, &spi->dev, gf_dev->devt, gf_dev, DEV_NAME);
-		status = IS_ERR(gf_dev->dev) ? PTR_ERR(gf_dev->dev) : 0;
+	/* get device no */
+	if (GF_DEV_MAJOR > 0) {
+		gf_dev->devno = MKDEV(GF_DEV_MAJOR, gf_dev->device_count++);
+		status = register_chrdev_region(gf_dev->devno, 1, GF_DEV_NAME);
 	} else {
-		gf_debug(ERR_LOG, "%s, no minor number available!\n", __func__);
-		goto err;
+		status = alloc_chrdev_region(&gf_dev->devno, gf_dev->device_count++,
+			1, GF_DEV_NAME);
 	}
-	if (status == 0) {
-		set_bit(minor, minors);
+	if (status < 0) {
+		gf_debug(ERR_LOG, "%s, Failed to alloc devno.\n", __func__);
+		goto err_devno;
+	} else {
+		gf_debug(INFO_LOG, "%s, major=%d, minor=%d\n",
+			__func__, MAJOR(gf_dev->devno), MINOR(gf_dev->devno));
+	}
+
+	/* create device */
+	gf_dev->device = device_create(gf_dev->class, &spi->dev, gf_dev->devno, gf_dev, GF_DEV_NAME);
+	if (IS_ERR(gf_dev->device)) {
+		gf_debug(ERR_LOG, "%s, Failed to create device.\n", __func__);
+		status = -ENODEV;
+		goto err_device;
+	} else {
 		list_add(&gf_dev->device_entry, &device_list);
+		gf_debug(INFO_LOG, "%s, device create success.\n", __func__);
+	}
+
+	/* create sysfs */
+	status = sysfs_create_group(&spi->dev.kobj, &gf_debug_attr_group);
+	if (status) {
+		gf_debug(ERR_LOG, "%s, Failed to create sysfs file.\n", __func__);
+		status = -ENODEV;
+		goto err_sysfs;
+	} else {
+		gf_debug(INFO_LOG, "%s, Success create sysfs file.\n", __func__);
+	}
+
+	/* allocate buffer for SPI transfer */
+	gf_dev->spi_buffer = kzalloc(bufsiz, GFP_KERNEL);
+	if (gf_dev->spi_buffer == NULL) {
+		status = -ENOMEM;
+		goto err_allocate_buf;
+	}
+
+	/* cdev init and add */
+	cdev_init(&gf_dev->cdev, &gf_fops);
+	gf_dev->cdev.owner = THIS_MODULE;
+	status = cdev_add(&gf_dev->cdev, gf_dev->devno, 1);
+	if (status) {
+		gf_debug(ERR_LOG, "%s, Failed to add cdev.\n", __func__);
+		goto err_cdev;
+	}
+
+	/*register device within input system.*/
+	gf_dev->input = input_allocate_device();
+	if (gf_dev->input == NULL) {
+		gf_debug(ERR_LOG, "%s, Failed to allocate input device.\n", __func__);
+		status = -ENOMEM;
+		goto err_input;
+	}
+
+	__set_bit(EV_KEY, gf_dev->input->evbit);
+	__set_bit(GF_INPUT_HOME_KEY, gf_dev->input->keybit);
+
+	__set_bit(GF_INPUT_MENU_KEY, gf_dev->input->keybit);
+	__set_bit(GF_INPUT_BACK_KEY, gf_dev->input->keybit);
+	__set_bit(GF_INPUT_FF_KEY, gf_dev->input->keybit);
+
+	gf_dev->input->name = GF_INPUT_NAME;
+	if (input_register_device(gf_dev->input)) {
+		gf_debug(ERR_LOG, "%s, Failed to register input device.\n", __func__);
+		status = -ENODEV;
+		goto err_input_2;
 	}
 	mutex_unlock(&device_list_lock);
-	if (status == 0) {
-		gf_dev->buffer = kzalloc(bufsiz, GFP_KERNEL);
-		if (gf_dev->buffer == NULL) {
-			kfree(gf_dev);
-			status = -ENOMEM;
-			goto err;
-		}
-
-		/*register device within input system.*/
-		gf_dev->input = input_allocate_device();
-		if (gf_dev->input == NULL) {
-			gf_debug(ERR_LOG, "%s, Failed to allocate input device.\n", __func__);
-			status = -ENOMEM;
-			kfree(gf_dev->buffer);
-			kfree(gf_dev);
-			goto err;
-		}
-
-		__set_bit(EV_KEY, gf_dev->input->evbit);
-		__set_bit(GF_INPUT_HOME_KEY, gf_dev->input->keybit);
-
-		__set_bit(GF_INPUT_MENU_KEY, gf_dev->input->keybit);
-		__set_bit(GF_INPUT_BACK_KEY, gf_dev->input->keybit);
-		__set_bit(GF_INPUT_FF_KEY, gf_dev->input->keybit);
-
-		gf_dev->input->name = "gf-keys";
-		if (input_register_device(gf_dev->input)) {
-			gf_debug(ERR_LOG, "%s, Failed to register input device.\n", __func__);
-			goto err;
-		}
-	} else {
-		gf_debug(ERR_LOG, "%s, device create failed", __func__);
-		goto err;
-	}
 
 	/* get gpio info from dts or defination */
-	gf_get_gpio_info();
+	gf_get_gpio_dts_info();
+	gf_get_sensor_dts_info();
 
 	/*enable the power*/
 	gf_hw_power_enable(1);
@@ -1339,10 +1354,35 @@ static int gf_probe(struct spi_device *spi)
 	FUNC_EXIT();
 	return 0;
 
-err:
-	device_destroy(gf_spi_class, gf_dev->devt);
+err_input_2:
+	input_free_device(gf_dev->input);
 
+err_input:
+	cdev_del(&gf_dev->cdev);
+
+err_cdev:
+	kfree(gf_dev->spi_buffer);
+
+err_allocate_buf:
+	sysfs_remove_group(&spi->dev.kobj, &gf_debug_attr_group);
+
+err_sysfs:
+	device_destroy(gf_dev->class, gf_dev->devno);
+	list_del(&gf_dev->device_entry);
+
+err_device:
+	unregister_chrdev_region(gf_dev->devno, 1);
+
+err_devno:
+	class_destroy(gf_dev->class);
+
+err_class:
+	mutex_unlock(&device_list_lock);
+	spi_set_drvdata(spi, NULL);
+	gf_dev->spi = NULL;
 	kfree(gf_dev);
+
+err:
 	FUNC_EXIT();
 	return status;
 }
@@ -1352,6 +1392,7 @@ static int gf_remove(struct spi_device *spi)
 	struct gf_dev *gf_dev = spi_get_drvdata(spi);
 
 	FUNC_ENTRY();
+
 	/* make sure ops on existing fds can abort cleanly */
 	if (gf_dev->spi->irq)
 		free_irq(gf_dev->spi->irq, gf_dev);
@@ -1360,50 +1401,46 @@ static int gf_remove(struct spi_device *spi)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	if (gf_dev->early_suspend.suspend)
 		unregister_early_suspend(&gf_dev->early_suspend);
+#else
+	if (&gf_dev->notifier)
+		fb_unregister_client(&gf_dev->notifier);
 #endif
 
 	gf_netlink_destroy();
 
-	spin_lock_irq(&gf_dev->spi_lock);
-	gf_dev->spi = NULL;
-	spi_set_drvdata(spi, NULL);
-	spin_unlock_irq(&gf_dev->spi_lock);
-
-	/* prevent new opens */
 	mutex_lock(&device_list_lock);
-	sysfs_remove_group(&spi->dev.kobj, &gf_debug_attr_group);
-	list_del(&gf_dev->device_entry);
-	device_destroy(gf_spi_class, gf_dev->devt);
-	clear_bit(MINOR(gf_dev->devt), minors);
 	if (gf_dev->users == 0) {
 		if (gf_dev->input != NULL)
 			input_unregister_device(gf_dev->input);
 
-		if (gf_dev->buffer != NULL)
-			kfree(gf_dev->buffer);
-
-		kfree(gf_dev);
+		if (gf_dev->spi_buffer != NULL)
+			kfree(gf_dev->spi_buffer);
 	}
+
+	cdev_del(&gf_dev->cdev);
+	sysfs_remove_group(&spi->dev.kobj, &gf_debug_attr_group);
+	device_destroy(gf_dev->class, gf_dev->devno);
+	list_del(&gf_dev->device_entry);
+
+	unregister_chrdev_region(gf_dev->devno, 1);
+	class_destroy(gf_dev->class);
 	mutex_unlock(&device_list_lock);
 
-	gf_debug(INFO_LOG, "%s remove finished\n", __func__);
+	spin_lock_irq(&gf_dev->spi_lock);
+	spi_set_drvdata(spi, NULL);
+	gf_dev->spi = NULL;
+	spin_unlock_irq(&gf_dev->spi_lock);
 
+	kfree(gf_dev);
 	FUNC_EXIT();
 	return 0;
 }
 
-#ifdef CONFIG_OF
-static const struct of_device_id gf_of_match[] = {
-	{ .compatible = "mediatek,fingerprint", },
-	{ .compatible = "mediatek,goodix-fp", },
-	{ .compatible = "goodix,goodix-fp", },
-	{},
-};
-#endif
-
+/*-------------------------------------------------------------------------*/
 static struct spi_driver gf_spi_driver = {
 	.driver = {
-		.name = SPI_DEV_NAME,
+		.name = GF_DEV_NAME,
+		.bus = &spi_bus_type,
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		.of_match_table = gf_of_match,
@@ -1417,76 +1454,18 @@ static struct spi_driver gf_spi_driver = {
 #endif
 };
 
-struct mt_chip_conf spi_ctrdata = {
-	.setuptime = 10,
-	.holdtime = 10,
-	.high_time = 50, /* 1MHz */
-	.low_time = 50,
-	.cs_idletime = 10,
-	.ulthgh_thrsh = 0,
-
-	.cpol = SPI_CPOL_0,
-	.cpha = SPI_CPHA_0,
-
-	.rx_mlsb = SPI_MSB,
-	.tx_mlsb = SPI_MSB,
-
-	.tx_endian = SPI_LENDIAN,
-	.rx_endian = SPI_LENDIAN,
-
-	.com_mod = FIFO_TRANSFER,
-	/* .com_mod = DMA_TRANSFER, */
-
-	.pause = 0,
-	.finish_intr = 1,
-	.deassert = 0,
-	.ulthigh = 0,
-	.tckdly = 0,
-};
-
-static struct spi_board_info spi_fp_board_info[] __initdata = {
-	[0] = {
-		.modalias		= "gf_spi",
-		.platform_data		= NULL,
-		.chip_select = 0,
-		.bus_num		= 1,  /* use spi1 for fingerprint sensor */
-		.controller_data	= &spi_ctrdata,
-	},
-};
-
-/*-------------------------------------------------------------------------*/
 static int __init gf_init(void)
 {
-	int status;
+	int status = 0;
 
 	FUNC_ENTRY();
-	/* Claim our 256 reserved device numbers.  Then register a class
-	 * that will key udev/mdev to add/remove /dev nodes.  Last, register
-	 * the driver which manages those device numbers.
-	*/
-	BUILD_BUG_ON(N_SPI_MINORS > 256);
-	status = register_chrdev(SPIDEV_MAJOR, CHRD_DRIVER_NAME, &gf_fops);
-	if (status < 0) {
-		gf_debug(ERR_LOG, "%s, Failed to register char device!\n", __func__);
-		FUNC_EXIT();
-		return status;
-	}
-	gf_spi_class = class_create(THIS_MODULE, CLASS_NAME);
-	if (IS_ERR(gf_spi_class)) {
-		unregister_chrdev(SPIDEV_MAJOR, gf_spi_driver.driver.name);
-		gf_debug(ERR_LOG, "%s, Failed to create class.\n", __func__);
-		FUNC_EXIT();
-		return PTR_ERR(gf_spi_class);
-	}
-
-	spi_register_board_info(spi_fp_board_info, ARRAY_SIZE(spi_fp_board_info));
 
 	status = spi_register_driver(&gf_spi_driver);
 	if (status < 0) {
-		class_destroy(gf_spi_class);
-		unregister_chrdev(SPIDEV_MAJOR, gf_spi_driver.driver.name);
 		gf_debug(ERR_LOG, "%s, Failed to register SPI driver.\n", __func__);
+		return -EINVAL;
 	}
+
 	FUNC_EXIT();
 	return status;
 }
@@ -1496,14 +1475,12 @@ static void __exit gf_exit(void)
 {
 	FUNC_ENTRY();
 	spi_unregister_driver(&gf_spi_driver);
-	class_destroy(gf_spi_class);
-	unregister_chrdev(SPIDEV_MAJOR, gf_spi_driver.driver.name);
 	FUNC_EXIT();
 }
 module_exit(gf_exit);
 
 
 MODULE_AUTHOR("Ke Yang<yangke@goodix.com>");
-MODULE_DESCRIPTION("Goodix Fingerprint chip GF516/GF318M TEE driver");
+MODULE_DESCRIPTION("Goodix Fingerprint chip GF318M/GF516M/GF516 TEE driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("spi:gf_spi");
