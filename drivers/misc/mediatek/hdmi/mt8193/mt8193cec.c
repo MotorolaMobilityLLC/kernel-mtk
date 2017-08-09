@@ -33,7 +33,7 @@
 #include <linux/string.h>
 #include <linux/completion.h>
 #include <linux/types.h>
-#include "mt_typedefs.h"
+#include <linux/types.h>
 #include "mach/irqs.h"
 
 #include "hdmi_drv.h"
@@ -387,7 +387,7 @@ static void _CEC_Receiving(void)
 
 	/* no data available */
 	if (!IS_INT_BR_RDY()) {
-		ASSERT(0);
+		/*ASSERT(0);*/
 		return;
 	}
 	/* <polling message> only */
@@ -447,7 +447,7 @@ static void _CEC_Receiving(void)
 			MT8193_CEC_LOG("[CEC] Receive Data Length is wrong !\n");
 			; break;
 		} else {
-			ASSERT((*size) >= 2);
+			/*ASSERT((*size) >= 2);*/
 			frame->blocks.operand[(*size) - 2] = data & 0xff;
 			data >>= 8;
 			(*size)++;
@@ -807,17 +807,19 @@ static void _CEC_TX_Queue_Loop(void)
 		if (IsCECStatus(STATE_TX_FRAME_SUCCESS)) {
 			MT8193_CEC_LOG("[CEC] This message is successful\n");
 			frame = _CEC_Get_Cur_TX_Q_Msg();
+/*
 			if (frame == NULL)
 				ASSERT(0);
-
+*/
 			_CEC_TX_Dequeue();
 			ClrCECStatus(STATE_TX_FRAME_SUCCESS);
 		}
 		if (IsCECStatus(STATE_TX_NOACK)) {
 			frame = _CEC_Get_Cur_TX_Q_Msg();
+/*
 			if (frame == NULL)
 				ASSERT(0);
-
+*/
 			MT8193_CEC_LOG("[CEC] This message is failed: %d\n", frame->reTXcnt);
 			frame->reTXcnt++;
 			frame->sendidx = 0;
@@ -833,9 +835,10 @@ static void _CEC_TX_Queue_Loop(void)
 		/* if the tx is not active, send the next message */
 	{
 		frame = _CEC_Get_Cur_TX_Q_Msg();
+/*
 		if (frame == NULL)
 			ASSERT(0);
-
+*/
 		if (_u1TxFailCause == FAIL_SOURCE) {
 			if (_u1ReTxCnt < 15) {
 				_u1ReTxCnt++;
@@ -1287,7 +1290,7 @@ void CECMWSetLA(CEC_LA_ADDRESS *prLA)
 
 	memcpy(&_rCECLaAddr, prLA, sizeof(CEC_LA_ADDRESS));
 
-	ASSERT(_rCECLaAddr.ui1_num <= 3);
+	/*ASSERT(_rCECLaAddr.ui1_num <= 3);*/
 
 	if (_rCECLaAddr.ui1_num == 0) {
 		SET_LA3(0x0F);

@@ -33,7 +33,7 @@
 #include <linux/string.h>
 #include <linux/completion.h>
 #include <linux/types.h>
-#include "mt_typedefs.h"
+#include <linux/types.h>
 
 #include "mt8193_ctrl.h"
 
@@ -97,7 +97,7 @@ static const unsigned char _cFsStr[][7] = { {"32khz  "},
 
 static unsigned char cDstStr[50];
 
-BOOL fgIsHdmiNoEDIDCheck(void)
+bool fgIsHdmiNoEDIDCheck(void)
 {
 	MT8193_EDID_FUNC();
 

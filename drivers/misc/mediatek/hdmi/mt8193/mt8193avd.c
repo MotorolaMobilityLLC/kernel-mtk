@@ -1,5 +1,5 @@
 #ifdef HDMI_MT8193_SUPPORT
-#include "mt_typedefs.h"
+#include <linux/types.h>
 #include "mt8193avd.h"
 #include "mt8193hdmictrl.h"
 #include "mt8193hdcp.h"

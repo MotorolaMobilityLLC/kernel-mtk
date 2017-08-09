@@ -482,7 +482,7 @@ void vUnBlackHDMIOnly(void)
 
 void UnMuteHDMIAudio(void)
 {
-	BYTE bData;
+	unsigned char bData;
 
 	HDMI_DEF_LOG("[hdmi]aud unmute\n");
 	bData = bReadByteHdmiGRL(GRL_AUDIO_CFG);
@@ -653,7 +653,7 @@ void vChangeVpll(unsigned char bRes, unsigned char bdeepmode)
 	vEnableDeepColor(bdeepmode);
 }
 
-void vResetHDMI(BYTE bRst)
+void vResetHDMI(unsigned char bRst)
 {
 	MT8193_DRV_FUNC();
 	if (bRst) {
@@ -890,7 +890,7 @@ void vSetHdmiI2SDataFmt(unsigned char bFmt)
 	vWriteByteHdmiGRL(GRL_CFG0, bData);
 }
 
-void vAOUT_BNUM_SEL(BYTE bBitNum)
+void vAOUT_BNUM_SEL(unsigned char bBitNum)
 {
 	MT8193_AUDIO_FUNC();
 	vWriteByteHdmiGRL(GRL_AOUT_BNUM_SEL, bBitNum);

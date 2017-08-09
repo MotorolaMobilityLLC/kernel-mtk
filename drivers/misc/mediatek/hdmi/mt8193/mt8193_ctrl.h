@@ -33,7 +33,7 @@
 #include <linux/string.h>
 #include <linux/completion.h>
 #include <linux/types.h>
-#include "mt_typedefs.h"
+#include <linux/types.h>
 
 #include "mach/irqs.h"
 
@@ -59,6 +59,9 @@ extern unsigned int mt8193_log_on;
 #define mt8193hdmialllog   (0xffff)
 
 #define hdmi_print printk
+
+#define TRUE true
+#define FALSE false
 /* ////////////////////////////////////////////PLL////////////////////////////////////////////////////// */
 #define MT8193_PLL_LOG(fmt, arg...) \
 	do {\

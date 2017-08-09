@@ -359,7 +359,7 @@ void vMiAnUpdateOrFix(unsigned char bUpdate)
 
 }
 
-void vReadAksvFromReg(BYTE *PrBuff)
+void vReadAksvFromReg(unsigned char *PrBuff)
 {
 	unsigned char bTemp, i;
 
@@ -508,7 +508,7 @@ void vSendAKey(unsigned char *prAKey)
 	}
 }
 
-void bClearGRLInt(BYTE bInt)
+void bClearGRLInt(unsigned char bInt)
 {
 	MT8193_DRV_FUNC();
 	vWriteByteHdmiGRL(GRL_INT, bInt);
