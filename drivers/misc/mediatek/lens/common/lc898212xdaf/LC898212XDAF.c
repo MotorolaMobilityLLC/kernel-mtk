@@ -31,10 +31,6 @@ static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 
-static int g_ReadCalibData_FirstTime;
-static unsigned long g_u4AF_CalibData_INF;
-static unsigned long g_u4AF_CalibData_MACRO;
-
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
@@ -115,11 +111,12 @@ static int s4EEPROM_ReadReg_LC898212XDAF_IMX258(u16 addr, u8 *data)
 	return i4RetValue;
 }
 
-static unsigned long convertAF_DAC(short ReadData)
+static int convertAF_DAC(short ReadData)
 {
-	short DacVal = ( (ReadData - Hall_Min) * (Max_Pos - Min_Pos) ) / ( (unsigned short)(Hall_Max - Hall_Min) ) + Min_Pos;
+	int DacVal = ((ReadData - Hall_Min) * (Max_Pos - Min_Pos)) /
+		((unsigned short)(Hall_Max - Hall_Min)) + Min_Pos;
 
-	return (unsigned long)DacVal;
+	return DacVal;
 }
 
 static void LC898212XD_init(void)
@@ -129,11 +126,6 @@ static void LC898212XD_init(void)
 
 	int Hall_Off = 0x00;	/* Please Read Offset from EEPROM or OTP */
 	int Hall_Bias = 0x00;	/* Please Read Bias from EEPROM or OTP */
-
-	int AF_Infi = 0x00;	/* Please Read Bias from EEPROM or OTP */
-	int AF_Marco = 0x00;	/* Please Read Bias from EEPROM or OTP */
-
-	g_ReadCalibData_FirstTime = 1;
 
 	g_SelectEEPROM = 1;
 
@@ -145,34 +137,25 @@ static void LC898212XD_init(void)
 
 		LOG_INF("Select imx258 e2prom!!\n");
 
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x001A, &val1);
-		Hall_Bias = val1;
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
+		Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0019, &val1);
-		Hall_Off = val1;
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val2);
+		Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0016, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0015, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0018, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0017, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
 	} else {
 
 		LOG_INF("Select ov23850 e2prom!!\n");
-
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0011, &val2); /* low byte */
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0012, &val1);
-		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0013, &val2);
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0014, &val1);
-		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-		LOG_INF("=====LC898212XD: Infi:0x%x, Marco:0x%x\n",
-		     AF_Infi, AF_Marco);
 
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F63, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F64, &val2);
@@ -189,13 +172,6 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-		g_u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
-		g_u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
-
-		LOG_INF("=====LC898212XD DAC: Infi:%d, Marco:%d\n",
-		     (int)g_u4AF_CalibData_INF, (int)g_u4AF_CalibData_MACRO);
-
 	}
 
 
@@ -235,14 +211,8 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 {
 	stAF_MotorInfo stMotorInfo;
 
-	if (g_ReadCalibData_FirstTime == 1) {
-		stMotorInfo.u4MacroPosition = g_u4AF_CalibData_MACRO;
-		stMotorInfo.u4InfPosition = g_u4AF_CalibData_INF;
-		g_ReadCalibData_FirstTime = 0;
-	} else {
-		stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
-		stMotorInfo.u4InfPosition = g_u4AF_INF;
-	}
+	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
+	stMotorInfo.u4InfPosition = g_u4AF_INF;
 	stMotorInfo.u4CurrentPosition = g_u4CurrPosition;
 	stMotorInfo.bIsSupportSR = 1;
 
@@ -312,6 +282,48 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
+{
+	stAF_MotorCalPos stMotorCalPos;
+	u32 u4AF_CalibData_INF;
+	u32 u4AF_CalibData_MACRO;
+
+	u4AF_CalibData_INF = 0;
+	u4AF_CalibData_MACRO = 0;
+
+	if (g_SelectEEPROM == 1) {
+		u8 val1 = 0, val2 = 0;
+		int AF_Infi = 0x00;
+		int AF_Marco = 0x00;
+
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0012, &val1);
+		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0013, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0014, &val1);
+		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
+			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
+			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+		}
+	}
+
+	if (0 < u4AF_CalibData_INF && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
+		stMotorCalPos.u4MacroPos = u4AF_CalibData_MACRO;
+		stMotorCalPos.u4InfPos = u4AF_CalibData_INF;
+	} else {
+		stMotorCalPos.u4MacroPos = 0;
+		stMotorCalPos.u4InfPos = 0;
+	}
+
+	if (copy_to_user(pstMotorCalPos, &stMotorCalPos, sizeof(stMotorCalPos)))
+		LOG_INF("copy to user failed when getting motor information\n");
+
+	return 0;
+}
+
 /* ////////////////////////////////////////////////////////////// */
 long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -334,6 +346,9 @@ long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsign
 		i4RetValue = setAFMacro(a_u4Param);
 		break;
 
+	case AFIOC_G_MOTORCALPOS:
+		i4RetValue = getAFCalPos((__user stAF_MotorCalPos *) (a_u4Param));
+		break;
 	default:
 		LOG_INF("No CMD\n");
 		i4RetValue = -EPERM;

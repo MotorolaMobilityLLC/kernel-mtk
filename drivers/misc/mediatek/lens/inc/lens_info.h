@@ -38,7 +38,7 @@ typedef struct {
 	u32 u4CurrentPosition;
 /* macro position */
 	u32 u4MacroPosition;
-/* Infiniti position */
+/* Infinity position */
 	u32 u4InfPosition;
 /* Motor Status */
 	bool bIsMotorMoving;
@@ -47,6 +47,14 @@ typedef struct {
 /* Support SR? */
 	bool bIsSupportSR;
 } stAF_MotorInfo;
+
+/* Structures */
+typedef struct {
+/* macro position */
+	u32 u4MacroPos;
+/* Infinity position */
+	u32 u4InfPos;
+} stAF_MotorCalPos;
 
 /* Structures */
 typedef struct {
@@ -78,6 +86,8 @@ typedef struct {
 #define AFIOC_T_SETINFPOS _IOW(AF_MAGIC, 2, u32)
 
 #define AFIOC_T_SETMACROPOS _IOW(AF_MAGIC, 3, u32)
+
+#define AFIOC_G_MOTORCALPOS _IOR(AF_MAGIC, 4, stAF_MotorCalPos)
 
 #define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
 
