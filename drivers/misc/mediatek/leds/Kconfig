@@ -13,4 +13,5 @@ config LIGHTNESS_MAPPING_VALUE
  	---help---
 	  Backlight brightness mapping value, from 0 to 255.
 
-source "drivers/misc/mediatek/leds/mt8173/Kconfig"
+config TB8173_EVB
+	bool "Support TB8173 EVB board"
