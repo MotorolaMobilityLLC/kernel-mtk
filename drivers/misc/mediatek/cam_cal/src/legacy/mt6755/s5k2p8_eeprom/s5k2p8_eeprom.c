@@ -315,7 +315,10 @@ static long CAM_CAL_Ioctl(
 	}
 
 	ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
-	pu1Params = kmalloc(ptempbuf->u4Length, GFP_KERNEL);
+	if(NULL == pBuff) 
+		return -ENOMEM;
+	else 
+		pu1Params = kmalloc(ptempbuf->u4Length, GFP_KERNEL);
 	if (NULL == pu1Params) {
 		kfree(pBuff);
 		CAM_CALDB("[CAM_CAL] ioctl allocate mem failed\n");
