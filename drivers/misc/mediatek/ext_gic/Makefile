@@ -1,0 +1,1 @@
+obj-$(CONFIG_MTK_GIC_EXT) += mtk-gic-extend.o

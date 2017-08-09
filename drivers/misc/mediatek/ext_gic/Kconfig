@@ -1,0 +1,4 @@
+config MTK_GIC_EXT
+	bool "gic extend"
+	depends on !MTK_GIC
+	default n
