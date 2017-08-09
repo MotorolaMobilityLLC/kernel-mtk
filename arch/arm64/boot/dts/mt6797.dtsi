@@ -3837,6 +3837,18 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,camera_hw2";
 			reg = <0x1a040000 0x1000>;  /* SENINF_ADDR */
 		};
+
+		gpufreq {
+			compatible = "mediatek,mt6797-gpufreq";
+			clocks =
+				<&topckgen TOP_MUX_MFG>,
+				<&topckgen TOP_MFGPLL_CK>,
+				<&topckgen TOP_UNIVPLL_D3>;
+			clock-names =
+				"clk_mux",
+				"clk_main_parent",
+				"clk_sub_parent";
+		};
 	};/*End of SOC*/
 /* sensor part */
 	hwmsensor@0 {

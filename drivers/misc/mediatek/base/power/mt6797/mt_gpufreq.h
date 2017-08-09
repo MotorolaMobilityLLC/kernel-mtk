@@ -2,6 +2,7 @@
 #define _MT_GPUFREQ_H
 
 #include <linux/module.h>
+#include <linux/clk.h>
 
 enum post_div_enum {
 	POST_DIV2 = 0,
@@ -21,6 +22,11 @@ struct mt_gpufreq_power_table_info {
 	unsigned int gpufreq_power;
 };
 
+struct mt_gpufreq_clk_t {
+	struct clk *clk_mux;          /* main clock for mfg setting */
+	struct clk *clk_main_parent;	 /* substitution clock for mfg transient mux setting */
+	struct clk *clk_sub_parent;	 /* substitution clock for mfg transient parent setting */
+};
 /*****************
  * extern function
  ******************/
