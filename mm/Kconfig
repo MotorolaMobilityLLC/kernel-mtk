@@ -618,3 +618,12 @@ config MAX_STACK_SIZE_MB
 	  changed to a smaller value in which case that is used.
 
 	  A sane initial value is 80 MB.
+
+config ZNDSWAP
+	bool "Enable MTK feature of 2ndswap with dynamic selection"
+	depends on SWAP && (ARM || ARM64)
+	default n
+	help
+	  2ndswap with dynamic selection can help kernel to identify which swap
+	  area is better for swapped-out pages presently. This will be valid only
+	  when we have 2 or more swap areas in the system.

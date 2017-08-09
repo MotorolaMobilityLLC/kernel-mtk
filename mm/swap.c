@@ -44,6 +44,13 @@ static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
 static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
 static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
 
+#ifdef CONFIG_ZNDSWAP
+int dt_swapcache;
+int dt_writeback;
+int dt_filecache;
+int dt_watermark;
+#endif
+
 /*
  * This path almost never happens for VM activity - pages are normally
  * freed via pagevecs.  But it gets used by networking.
@@ -1155,4 +1162,11 @@ void __init swap_setup(void)
 	 * Right now other parts of the system means that we
 	 * _really_ don't want to cluster much more
 	 */
+
+#ifdef CONFIG_ZNDSWAP
+	dt_swapcache = 2560;	/* 10MB */
+	dt_writeback = 1024;	/* 4MB */
+	dt_filecache = (int)totalram_pages;
+	dt_watermark = (int)low_wmark_pages(NODE_DATA(0)->node_zones);
+#endif
 }

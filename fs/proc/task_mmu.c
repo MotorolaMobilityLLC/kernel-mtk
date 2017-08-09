@@ -504,6 +504,9 @@ struct mem_size_stats {
 #ifdef CONFIG_SWAP
 	u64 pswap;
 #endif
+#ifdef CONFIG_ZNDSWAP
+	u64 pswap_zndswap;
+#endif
 };
 
 #ifdef CONFIG_SWAP
@@ -545,7 +548,15 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
 				if (swapcount == 0)
 					swapcount = 1;
 
+#ifdef CONFIG_ZNDSWAP
+				/* It indicates 2ndswap ONLY */
+				if (swp_type(entry) == 1UL)
+					mss->pswap_zndswap += (ptent_size << PSS_SHIFT) / swapcount;
+				else
+					mss->pswap += (ptent_size << PSS_SHIFT) / swapcount;
+#else
 				mss->pswap += (ptent_size << PSS_SHIFT) / swapcount;
+#endif
 				swap_info_unlock(p);
 			}
 #endif /* CONFIG_SWAP*/
@@ -708,6 +719,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 #ifdef CONFIG_SWAP
 		   "PSwap:          %8lu kB\n"
 #endif
+#ifdef CONFIG_ZNDSWAP
+		   "PSwap_zndswap:  %8lu kB\n"
+#endif
 		   "KernelPageSize: %8lu kB\n"
 		   "MMUPageSize:    %8lu kB\n"
 		   "Locked:         %8lu kB\n",
@@ -724,6 +738,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   mss.swap >> 10,
 #ifdef CONFIG_SWAP
 		   (unsigned long)(mss.pswap >> (10 + PSS_SHIFT)),
+#endif
+#ifdef CONFIG_ZNDSWAP
+		   (unsigned long)(mss.pswap_zndswap >> (10 + PSS_SHIFT)),
 #endif
 		   vma_kernel_pagesize(vma) >> 10,
 		   vma_mmu_pagesize(vma) >> 10,

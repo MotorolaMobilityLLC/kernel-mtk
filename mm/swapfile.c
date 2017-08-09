@@ -86,6 +86,46 @@ static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
 /* Activity counter to indicate that a swapon or swapoff has occurred */
 static atomic_t proc_poll_event = ATOMIC_INIT(0);
 
+#ifdef CONFIG_ZNDSWAP
+/*
+ * The principle of this function is to mitigate memory pressure(might be caused by in-RAM swap).
+ * If low first, return true, else, return false.
+ */
+static bool dynamic_swap_selection(void)
+{
+	int file_cache_threshold, swap_cache_size, wb, free_threshold;
+
+	/* If there is only 1 swapfile, never fall through */
+	if (nr_swapfiles < 2)
+		return false;
+
+	/* Get the size of swapcache for judgement */
+	swap_cache_size = total_swapcache_pages();
+
+	/* Is swapcache/wb too high? It implies some congestion may happen in storage */
+	wb = global_page_state(NR_WRITEBACK);
+	if (swap_cache_size > dt_swapcache && wb > dt_writeback)
+		return false;
+	else
+		return true;
+
+	/* Is the size of cache memory < 1/8 kernel manageable memory - minimum working set */
+	file_cache_threshold = (global_page_state(NR_FILE_PAGES) - global_page_state(NR_SHMEM) - swap_cache_size) << 3;
+	if (file_cache_threshold < dt_filecache)
+		return true;
+
+	/* Is there too few free memory */
+	free_threshold = global_page_state(NR_FREE_PAGES);
+	if (free_threshold <= dt_watermark)
+		return true;
+
+	/* Default: No dynamic swap selection */
+	return false;
+}
+#else /* CONFIG_ZNDSWAP */
+#define dynamic_swap_selection()	(false)
+#endif
+
 static inline unsigned char swap_count(unsigned char ent)
 {
 	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
@@ -643,6 +683,7 @@ swp_entry_t get_swap_page(void)
 {
 	struct swap_info_struct *si, *next;
 	pgoff_t offset;
+	bool low_prio_first = false, low_prio_tried = false;
 
 	if (atomic_long_read(&nr_swap_pages) <= 0)
 		goto noswap;
@@ -650,8 +691,18 @@ swp_entry_t get_swap_page(void)
 
 	spin_lock(&swap_avail_lock);
 
+	/* Check whether it should be low priority first */
+	low_prio_first = dynamic_swap_selection();
+
 start_over:
 	plist_for_each_entry_safe(si, next, &swap_avail_head, avail_list) {
+
+		/* If low prio first, check the next si */
+		if (low_prio_first && !low_prio_tried) {
+			low_prio_tried = true;
+			goto nextsi;
+		}
+
 		/* requeue si to after same-priority siblings */
 		plist_requeue(&si->avail_list, &swap_avail_head);
 		spin_unlock(&swap_avail_lock);
@@ -694,6 +745,13 @@ nextsi:
 		 */
 		if (plist_node_empty(&next->avail_list))
 			goto start_over;
+	}
+
+	/* If no entry found, try again */
+	if (low_prio_tried) {
+		/* Reset low_prio_* to avoid infinite loop */
+		low_prio_first = low_prio_tried = false;
+		goto start_over;
 	}
 
 	spin_unlock(&swap_avail_lock);
