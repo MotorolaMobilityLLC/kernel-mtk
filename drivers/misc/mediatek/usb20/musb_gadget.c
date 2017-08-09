@@ -2534,6 +2534,11 @@ static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
 	return usb_phy_set_power(musb->xceiv, mA);
 }
 
+int first_connect = 1;
+int check_delay_done = 1;
+static unsigned long target_jffy;
+#define ENUM_GAP_DELAY 50
+#define ENUM_GAP_SEC 2
 static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct musb *musb = gadget_to_musb(gadget);
@@ -2544,9 +2549,28 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 
 	is_on = !!is_on;
 
+	/* delay peform at most once to avoid pmic cocurrency with init */
+	if (!check_delay_done && musb->is_ready && !first_connect) {
+		/* perform delay*/
+		DBG(0, "check perform delay needed\n");
+		while (time_before_eq(jiffies, target_jffy)) {
+			DBG(0, "sleep %d ms\n", ENUM_GAP_DELAY);
+			msleep(ENUM_GAP_DELAY);
+			if (first_connect) {
+				DBG(0, "got first_conn in loop\n");
+				break;
+			}
+		}
+		DBG(0, "delay done, check_delay_done to 1\n");
+		check_delay_done = 1;
+	}
+
+
 	/* only set once when user space function is ready */
-	if (is_on && !musb->is_ready)
+	if (is_on && !musb->is_ready) {
 		musb->is_ready = true;
+		target_jffy = jiffies + ENUM_GAP_SEC*HZ;
+	}
 
 	pm_runtime_get_sync(musb->controller);
 

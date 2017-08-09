@@ -46,6 +46,8 @@ typedef enum {
 	STANDARD_CHARGER,	/* AC : ~1A */
 } CHARGER_TYPE;
 
+extern int first_connect;
+extern int check_delay_done;
 extern void wake_up_bat(void);
 extern CHARGER_TYPE mt_charger_type_detection(void);
 extern kal_bool upmu_is_chr_det(void);

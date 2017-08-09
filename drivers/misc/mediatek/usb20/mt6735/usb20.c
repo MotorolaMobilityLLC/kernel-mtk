@@ -54,7 +54,6 @@ void set_usb_rdy(void)
 	wake_up_bat();
 }
 #endif
-static int first_connect;	/* default value 0 */
 kal_bool is_usb_rdy(void)
 {
 	if (usb_rdy)
@@ -422,11 +421,16 @@ void mt_usb_connect(void)
 	} else {
 		DBG(0, "!mtk_musb\n");
 	}
-	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || mtk_musb->power)
+	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || mtk_musb->power) {
+		DBG(0, "first_connect to 1\n");
+		first_connect = 1;
 		return;
+	}
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (usb_phy_check_in_uart_mode()) {
 		DBG(0, "CHECK In UART Mode, not enable USB.\n");
+		DBG(0, "first_connect to 1\n");
+		first_connect = 1;
 		return;
 	}
 #endif
@@ -461,6 +465,8 @@ void mt_usb_connect(void)
 			musb_sync_with_bat(mtk_musb, USB_CONFIGURED);
 			mtk_musb->power = true;
 			spin_unlock(&musb_connect_lock);
+			DBG(0, "first_connect to 1\n");
+			first_connect = 1;
 			return;
 #ifndef FPGA_PLATFORM
 		}
@@ -478,6 +484,7 @@ void mt_usb_connect(void)
 	usb_connected = true;
 	spin_unlock(&musb_connect_lock);
 	musb_start(mtk_musb);
+	DBG(0, "first_connect to 1\n");
 	first_connect = 1;
 
 	DBG(0, "[MUSB] USB connect\n");
@@ -577,43 +584,10 @@ bool usb_cable_connected(void)
 
 	charger_type = mt_get_charger_type();
 	DBG(0, "type(%d)\n", charger_type);
-	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
-		/* if (upmu_is_chr_det()){ */
-
-		/* get charger type indicates that bat thread is able to detect usb cable */
-		if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready)
-			set_usb_rdy();
-
-		return true;
-	}
-	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
-		int cnt = 0;
-
+	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready)
 		set_usb_rdy();
-
-#define FIRST_CONN_DELAY_INTVAL 50
-#define FIRST_TYPE_CHECK_CNT 25
-#define FIRST_CONN_DELAY_CNT 40
-
-		DBG(0, "intval:%d, cnt:<%d,%d>\n", FIRST_CONN_DELAY_INTVAL,
-				FIRST_TYPE_CHECK_CNT, FIRST_CONN_DELAY_CNT);
-		while (cnt++ < FIRST_TYPE_CHECK_CNT) {
-
-			charger_type = mt_get_charger_type();
-			DBG(0, "type(%d)\n", charger_type);
-			if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST)
-				break;
-			msleep(FIRST_CONN_DELAY_INTVAL);
-		}
-		DBG(0, "type check delay %d %d ms done\n", cnt, FIRST_CONN_DELAY_INTVAL);
-		if (cnt < FIRST_TYPE_CHECK_CNT) {	/* got type case, should have mt_usb_connect */
-			while (cnt++ < FIRST_CONN_DELAY_CNT) {
-				if (first_connect)
-					break;
-				msleep(FIRST_CONN_DELAY_INTVAL);
-			}
-		}
-		DBG(0, "delay %d %d ms done\n", cnt, FIRST_CONN_DELAY_INTVAL);
+	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
+		return true;
 	}
 	return false;
 #endif				/* end FPGA_PLATFORM */
@@ -1402,6 +1376,10 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 	/* enable uart log */
 	musb_uart_debug = 1;
+
+	DBG(0, "first_connect, check_delay_done to 0\n");
+	first_connect = 0;
+	check_delay_done = 0;
 
 #ifndef CONFIG_MTK_CLKMGR
 	musb_clk = devm_clk_get(&pdev->dev, "usb0");
