@@ -770,9 +770,28 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10209F00 0x100>;
 		};
 
+		DRAMC_NAO@0x1020E000 {
+			compatible = "mediatek,DRAMC_NAO";
+			reg = <0x1020E000 0x1000>;
+		};
+
+		DDRPHY@0x10213000 {
+			compatible = "mediatek,DDRPHY";
+			reg = <0x10213000 0x1000>;
+		};
+
 		DRAMC0@0x10214000 {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10214000 0x1000>;
+			/* clocks = <&infrasys INFRA_GCE>; */
+			clock-names = "infra-cqdma";
+		};
+
+		CQDMA@0x10217C00 {
+			compatible = "mediatek,CQDMA";
+			reg = <0x10217c00 0xC00>;
+			interrupts = <0 143 0x8>;
+			nr_channel = <1>;
 		};
 
 		EMI@0x10203000 {
@@ -812,11 +831,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		APMIXED@0x10209000 {
 			compatible = "mediatek,APMIXED";
 			reg = <0x10209000 0x1000>;
-		};
-
-		DDRPHY@0x10213000 {
-			compatible = "mediatek,DDRPHY";
-			reg = <0x10213000 0x1000>;
 		};
 
 		apuart0: AP_UART0@0x11002000 {

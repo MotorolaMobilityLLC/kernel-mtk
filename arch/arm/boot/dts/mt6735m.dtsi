@@ -463,11 +463,6 @@
 			reg = <0x1020D000 0x1000>;
 		};
 
-		DRAMC_NAO@0x1020E000 {
-			compatible = "mediatek,DRAMC_NAO";
-			reg = <0x1020E000 0x1000>;
-		};
-
 		TRNG@0x1020F000 {
 			compatible = "mediatek,TRNG";
 			reg = <0x1020F000 0x1000>;
@@ -479,6 +474,10 @@
 			reg = <0x10210000 0x1000>;
 		};
 
+		DRAMC_NAO@0x1020E000 {
+			compatible = "mediatek,DRAMC_NAO";
+			reg = <0x1020E000 0x1000>;
+		};
 
 		DDRPHY@0x10213000 {
 			compatible = "mediatek,DDRPHY";
@@ -488,7 +487,8 @@
 		DRAMC0@0x10214000 {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10214000 0x1000>;
-			interrupts = <0 149 0x2>;
+			/* clocks = <&infrasys INFRA_GCE>; */
+			clock-names = "infra-cqdma";
 		};
 
 		MIPI_RX_ANA_CSI0@0x10215800 {
@@ -514,7 +514,7 @@
 									 <0 148 0x8>;
 		};
 
-		CQ_DMA@0x10217c00 {
+		CQDMA@0x10217c00 {
 			compatible = "mediatek,CQDMA";
 			reg = <0x10217c00 0x400>;
 			interrupts = <0 138 0x8>;
