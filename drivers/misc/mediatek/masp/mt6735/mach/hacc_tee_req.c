@@ -8,12 +8,10 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/device.h>
-#include <linux/xlog.h>
 #include <linux/platform_device.h>
 #include <linux/vmalloc.h>
 
-#include <mach/mt_reg_base.h>
-#include <mach/mt_typedefs.h>
+#include <linux/types.h>
 #include "mobicore_driver_api.h"
 #include "tlcApisec.h"
 #include "sec_error.h"

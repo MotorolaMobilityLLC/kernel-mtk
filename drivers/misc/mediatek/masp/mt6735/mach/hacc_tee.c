@@ -1,11 +1,16 @@
 
-#include <mach/mt_typedefs.h>
-#include <mach/mt_sec_hal.h>
-#include <mach/sec_osal.h>
+#include <linux/types.h>
+#include "sec_hal.h"
+#include "sec_osal.h"
 
 #include "hacc_mach.h"
 #include "hacc_tee.h"
 #include "sec_error.h"
+
+
+#define TRUE 1
+#define FALSE 0
+#define BOOL uint8_t
 
 /* To turn on HACC module clock if required */
 unsigned char masp_hal_secure_algo_init(void)

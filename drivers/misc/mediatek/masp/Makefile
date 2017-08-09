@@ -32,7 +32,7 @@ include $(MASP_CORE_DRIVER_DIR)/asf/Makefile.core
 ###################################################################
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/include/trustzone/sec/Tlsec/inc
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/sec/Tlsec/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/trustzone/sec/Tlsec/inc
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 
 mach_obj += $(MTK_PLATFORM)/mach/hacc_tee_req.o

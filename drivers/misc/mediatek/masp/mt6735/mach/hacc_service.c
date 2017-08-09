@@ -1,4 +1,4 @@
-#include <mach/mt_typedefs.h>
+#include <linux/types.h>
 
 #include "hacc_tee.h"
 
