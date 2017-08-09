@@ -60,6 +60,18 @@ config COMMON_CLK_MT6757
 	  instead of old clkmgr architecture.
 	  MT6757 default will use CCF.
 
+config COMMON_CLK_ELBRUS
+	bool "Clock driver for Mediatek ELBRUS"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_V1
+	default y if ARCH_ELBRUS && !MTK_CLKMGR
+	---help---
+	  This driver supports Mediatek ELBRUS clocks.
+	  Use the config to support CCF on ELBRUS,
+	  instead of old clkmgr architecture.
+	  ELBRUS support CCF for Linux K.S Migration
+	  The value is default on.
+
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"
 	depends on COMMON_CLK

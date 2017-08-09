@@ -24,3 +24,4 @@ obj-$(CONFIG_COMMON_CLK_MT6735) += clk-mt6735.o clk-mt6735-pll.o clk-mt6735-pg.o
 obj-$(CONFIG_COMMON_CLK_MT6755) += clk-mt6755.o clk-mt6755-pll.o clk-mt6755-pg.o
 obj-$(CONFIG_COMMON_CLK_MT6797) += clk-mt6797.o clk-mt6797-pll.o clk-mt6797-pg.o
 obj-$(CONFIG_COMMON_CLK_MT6757) += clk-mt6757.o clk-mt6757-pll.o clk-mt6757-pg.o
+obj-$(CONFIG_COMMON_CLK_ELBRUS) += clk-elbrus.o clk-elbrus-pll.o clk-elbrus-pg.o
