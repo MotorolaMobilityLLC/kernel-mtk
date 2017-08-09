@@ -12,30 +12,20 @@
 #include <linux/notifier.h>
 #endif
 
-#include <mach/mt_pmic_wrap.h>
-
-#include "spm_v2/mt_spm_pmic_wrap.h"
-#include "mt_vcorefs_manager.h"
-#include "mt_spm_vcore_dvfs.h"
-#include "mt_spm_reg.h"
-#include "mt_spm.h"
-#include "mt_dramc.h"
-#include "mt_ptp.h"
-
-/* #define BUILD_ERROR */
-
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
 #endif
 
-#include <linux/of_irq.h>
-#include <linux/debugfs.h>
-#include <linux/seq_file.h>
+#include <mach/mt_pmic_wrap.h>
 
-#include <linux/interrupt.h>
-#include <mach/irqs.h>
-#include <linux/irqchip/mt-eic.h>
+#include "spm_v2/mt_spm_pmic_wrap.h"
+#include "mt_vcorefs_manager.h"
+#include "mt_spm_vcore_dvfs.h"
+#include "mt_dramc.h"
+#include "mt_ptp.h"
+
+/* #define BUILD_ERROR */
 
 /*
  * AutoK options
@@ -251,7 +241,6 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
  */
 static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 {
-#ifdef BUILD_ERROR
 	u32 diff;
 
 	diff = opp_ctrl_table[OPPI_PERF].vcore_uv - opp_ctrl_table[OPPI_LOW_PWR].vcore_uv;
@@ -291,7 +280,6 @@ static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 	vcorefs_crit("TRANS1: %u (0x%x)\n", trans[TRANS1], vcore_uv_to_pmic(trans[TRANS1]));
 	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv,
 		     vcore_uv_to_pmic(opp_ctrl_table[OPPI_LOW_PWR].vcore_uv));
-#endif
 }
 
 void vcorefs_update_opp_table(char *cmd, int val)
