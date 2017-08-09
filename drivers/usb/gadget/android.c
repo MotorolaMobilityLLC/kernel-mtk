@@ -1594,8 +1594,6 @@ static DEVICE_ATTR(inquiry_string, S_IRUGO | S_IWUSR,
 					mass_storage_inquiry_show,
 					mass_storage_inquiry_store);
 
-#ifdef CONFIG_MTK_BICR_SUPPORT
-
 static ssize_t mass_storage_bicr_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -1632,13 +1630,9 @@ static DEVICE_ATTR(bicr, S_IRUGO | S_IWUSR,
 					mass_storage_bicr_show,
 					mass_storage_bicr_store);
 
-#endif
-
 static struct device_attribute *mass_storage_function_attributes[] = {
 	&dev_attr_inquiry_string,
-#ifdef CONFIG_MTK_BICR_SUPPORT
 	&dev_attr_bicr,
-#endif
 	NULL
 };
 
