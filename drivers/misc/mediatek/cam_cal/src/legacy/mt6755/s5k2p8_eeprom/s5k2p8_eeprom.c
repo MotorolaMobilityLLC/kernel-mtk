@@ -285,7 +285,7 @@ static long CAM_CAL_Ioctl(
 	int i4RetValue = 0;
 	u8 *pBuff = NULL;
 	u8 *pu1Params = NULL;
-	stCAM_CAL_INFO_STRUCT *ptempbuf;
+	stCAM_CAL_INFO_STRUCT *ptempbuf = NULL;/*LukeHu++160201=Fix Code Defect.*/
 
 	CAM_CALDB("[CAM_CAL] ioctl\n");
 
