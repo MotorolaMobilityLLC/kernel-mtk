@@ -144,6 +144,18 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 
 static DEFINE_MUTEX(pmic_access_mutex);
 
+static void md1_pmic_setting_off(void)
+{
+     /* VMODEM off */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 0); /* 0x063A[8]=0, 0:SW control, 1:HW control */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 0); /* 0x062C[0]=0, 0:Disable, 1:Enable */
+     /* VMD1 off */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VSLEEP_EN, 0); /* 0x064E[8]=0, 0:SW control, 1:HW control */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_EN, 0); /* 0x0640[0]=0, 0:Disable, 1:Enable */
+     /* VSRAM_MD off */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_EN, 0); /* 0x0662[8]=0, 0:SW control, 1:HW control */
+	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_EN, 0); /* 0x0654[0]=0, 0:Disable, 1:Enable */
+}
 
 unsigned int pmic_read_vbif28_volt(unsigned int *val)
 {
@@ -4596,6 +4608,7 @@ static int pmic_mt_remove(struct platform_device *dev)
 static void pmic_mt_shutdown(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver shutdown!! ********\n");
+	md1_pmic_setting_off();
 }
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
