@@ -41,6 +41,8 @@
 #define EVENT_TYPE_ACCEL_Y			ABS_Y
 #define EVENT_TYPE_ACCEL_Z			ABS_Z
 #define EVENT_TYPE_ACCEL_UPDATE              REL_X
+#define EVENT_TYPE_ACCEL_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_ACCEL_TIMESTAMP_LO		REL_DIAL
 #define EVENT_TYPE_ACCEL_STATUS     ABS_WHEEL
 #define EVENT_TYPE_ACCEL_DIV        ABS_GAS
 
@@ -102,7 +104,10 @@ struct acc_context {
 	atomic_t            delay; /*polling period for reporting input event*/
 	atomic_t            wake;  /*user-space request to wake-up, used with stop*/
 	struct timer_list   timer;  /* polling timer */
+	struct hrtimer		hrTimer;
+	ktime_t			target_ktime;
 	atomic_t            trace;
+	struct workqueue_struct	*accel_workqueue;
 
 	atomic_t                early_suspend;
 	/* struct acc_drv_obj    drv_obj; */
@@ -121,7 +126,7 @@ struct acc_context {
 
 /* for auto detect */
 extern int acc_driver_add(struct acc_init_info *obj);
-extern int acc_data_report(int x, int y, int z, int status);
+extern int acc_data_report(int x, int y, int z, int status, int64_t nt);
 extern int acc_register_control_path(struct acc_control_path *ctl);
 extern int acc_register_data_path(struct acc_data_path *data);
 

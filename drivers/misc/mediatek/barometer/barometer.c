@@ -3,6 +3,40 @@
 
 struct baro_context *baro_context_obj = NULL;
 
+static void initTimer(struct hrtimer *timer, enum hrtimer_restart (*callback)(struct hrtimer *))
+{
+	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+	timer->function = callback;
+}
+
+static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
+{
+	struct baro_context *obj = (struct baro_context *)container_of(timer, struct baro_context, hrTimer);
+
+	if (obj == NULL) {
+		BARO_ERR("NULL pointer\n");
+		return;
+	}
+
+	if (first) {
+		obj->target_ktime = ktime_add_ns(ktime_get(), (int64_t)delay_ms*1000000);
+		/* BARO_ERR("cur_ns = %lld, first_target_ns = %lld\n",
+			ktime_to_ns(ktime_get()), ktime_to_ns(obj->target_ktime)); */
+	} else {
+		do {
+			obj->target_ktime = ktime_add_ns(obj->target_ktime, (int64_t)delay_ms*1000000);
+		} while (ktime_to_ns(obj->target_ktime) < ktime_to_ns(ktime_get()));
+		/* BARO_ERR("cur_ns = %lld, target_ns = %lld\n", ktime_to_ns(ktime_get()),
+			ktime_to_ns(obj->target_ktime)); */
+	}
+
+	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
+}
+
+static void stopTimer(struct hrtimer *timer)
+{
+	hrtimer_cancel(timer);
+}
 
 static struct baro_init_info *barometer_init_list[MAX_CHOOSE_BARO_NUM] = { 0 };
 
@@ -12,18 +46,20 @@ static void baro_work_func(struct work_struct *work)
 	struct baro_context *cxt = NULL;
 	/* hwm_sensor_data sensor_data; */
 	int value, status;
-	int64_t nt;
+	int64_t pre_ns, cur_ns;
+	int64_t delay_ms;
 	struct timespec time;
 	int err;
 
 	cxt = baro_context_obj;
+	delay_ms = atomic_read(&cxt->delay);
 
 	if (NULL == cxt->baro_data.get_data)
 		BARO_LOG("baro driver not register data path\n");
 
 	time.tv_sec = time.tv_nsec = 0;
-	time = get_monotonic_coarse();
-	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
+	get_monotonic_boottime(&time);
+	cur_ns = time.tv_sec*1000000000LL+time.tv_nsec;
 
 	/* add wake lock to make sure data can be read before system suspend */
 	err = cxt->baro_data.get_data(&value, &status);
@@ -35,11 +71,13 @@ static void baro_work_func(struct work_struct *work)
 		{
 			cxt->drv_data.baro_data.values[0] = value;
 			cxt->drv_data.baro_data.status = status;
-			cxt->drv_data.baro_data.time = nt;
+			pre_ns = cxt->drv_data.baro_data.time;
+			cxt->drv_data.baro_data.time = cur_ns;
 		}
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
+		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
 		if (BARO_INVALID_VALUE == cxt->drv_data.baro_data.values[0]) {
@@ -52,23 +90,32 @@ static void baro_work_func(struct work_struct *work)
 	/*BARO_LOG("new baro work run....\n"); */
 	/*BARO_LOG("baro data[%d].\n", cxt->drv_data.baro_data.values[0]); */
 
+	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
+		pre_ns += delay_ms*1000000LL;
+		baro_data_report(cxt->idev,
+			cxt->drv_data.baro_data.values[0],
+			cxt->drv_data.baro_data.status, pre_ns);
+	}
+
 	baro_data_report(cxt->idev,
-			 cxt->drv_data.baro_data.values[0], cxt->drv_data.baro_data.status);
+		cxt->drv_data.baro_data.values[0],
+		cxt->drv_data.baro_data.status, cxt->drv_data.baro_data.time);
 
 baro_loop:
 	if (true == cxt->is_polling_run) {
 		{
-			mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+			startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), false);
 		}
 	}
 }
 
-static void baro_poll(unsigned long data)
+enum hrtimer_restart baro_poll(struct hrtimer *timer)
 {
-	struct baro_context *obj = (struct baro_context *)data;
+	struct baro_context *obj = (struct baro_context *)container_of(timer, struct baro_context, hrTimer);
 
-	if (obj != NULL)
-		schedule_work(&obj->report);
+	queue_work(obj->baro_workqueue, &obj->report);
+
+	return HRTIMER_NORESTART;
 }
 
 static struct baro_context *baro_context_alloc_object(void)
@@ -84,10 +131,13 @@ static struct baro_context *baro_context_alloc_object(void)
 	atomic_set(&obj->delay, 200);	/*5Hz set work queue delay time 200 ms */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, baro_work_func);
-	init_timer(&obj->timer);
-	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
-	obj->timer.function = baro_poll;
-	obj->timer.data = (unsigned long)obj;
+	obj->baro_workqueue = NULL;
+	obj->baro_workqueue = create_workqueue("baro_polling");
+	if (!obj->baro_workqueue) {
+		kfree(obj);
+		return NULL;
+	}
+	initTimer(&obj->hrTimer, baro_poll);
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->baro_op_mutex);
@@ -151,8 +201,7 @@ static int baro_enable_data(int enable)
 		baro_real_enable(enable);
 		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
 			if (false == cxt->baro_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
 			}
 		}
@@ -164,7 +213,9 @@ static int baro_enable_data(int enable)
 		if (true == cxt->is_polling_run) {
 			if (false == cxt->baro_ctl.is_report_input_direct) {
 				cxt->is_polling_run = false;
-				del_timer_sync(&cxt->timer);
+				smp_mb();  /* for memory barrier */
+				stopTimer(&cxt->hrTimer);
+				smp_mb();  /* for memory barrier */
 				cancel_work_sync(&cxt->report);
 				cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
 			}
@@ -274,8 +325,8 @@ static ssize_t baro_show_active(struct device *dev, struct device_attribute *att
 static ssize_t baro_store_delay(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	int delay;
-	int mdelay = 0;
+	int64_t delay;
+	int64_t mdelay = 0;
 	int ret = 0;
 	struct baro_context *cxt = NULL;
 
@@ -288,7 +339,7 @@ static ssize_t baro_store_delay(struct device *dev, struct device_attribute *att
 		return count;
 	}
 
-	ret = kstrtoint(buf, 10, &delay);
+	ret = kstrtoll(buf, 10, &delay);
 	if (ret != 0) {
 		BARO_ERR("invalid format!!\n");
 		mutex_unlock(&baro_context_obj->baro_op_mutex);
@@ -296,11 +347,12 @@ static ssize_t baro_store_delay(struct device *dev, struct device_attribute *att
 	}
 
 	if (false == cxt->baro_ctl.is_report_input_direct) {
-		mdelay = (int)delay / 1000 / 1000;
+		mdelay = delay;
+		do_div(mdelay, 1000000);
 		atomic_set(&baro_context_obj->delay, mdelay);
 	}
 	cxt->baro_ctl.set_delay(delay);
-	BARO_LOG(" baro_delay %d ns\n", delay);
+	BARO_LOG(" baro_delay %lld ns\n", delay);
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	return count;
 
@@ -329,7 +381,9 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 		cxt->is_batch_enable = true;
 		if (true == cxt->is_polling_run) {
 			cxt->is_polling_run = false;
-			del_timer_sync(&cxt->timer);
+			smp_mb();  /* for memory barrier */
+			stopTimer(&cxt->hrTimer);
+			smp_mb();  /* for memory barrier */
 			cancel_work_sync(&cxt->report);
 			cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
 			cxt->drv_data.baro_data.values[1] = BARO_INVALID_VALUE;
@@ -338,9 +392,8 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 	} else if (!strncmp(buf, "0", 1)) {
 		cxt->is_batch_enable = false;
 		if (false == cxt->is_polling_run) {
-			if (false == cxt->baro_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+			if (false == cxt->baro_ctl.is_report_input_direct && true == cxt->is_active_data) {
+				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
 			}
 		}
@@ -506,6 +559,8 @@ static int baro_input_init(struct baro_context *cxt)
 	set_bit(EV_REL, dev->evbit);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_BARO_VALUE);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_BARO_STATUS);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_BARO_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_BARO_TIMESTAMP_LO);
 
 	/* input_set_abs_params(dev, EVENT_TYPE_BARO_VALUE, BARO_VALUE_MIN, BARO_VALUE_MAX, 0, 0); */
 	input_set_abs_params(dev, EVENT_TYPE_BARO_STATUS, BARO_STATUS_MIN, BARO_STATUS_MAX, 0, 0);
@@ -596,11 +651,13 @@ int baro_register_control_path(struct baro_control_path *ctl)
 	return 0;
 }
 
-int baro_data_report(struct input_dev *dev, int value, int status)
+int baro_data_report(struct input_dev *dev, int value, int status, int64_t nt)
 {
 	/* BARO_LOG("+baro_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	input_report_rel(dev, EVENT_TYPE_BARO_VALUE, value);
 	input_report_abs(dev, EVENT_TYPE_BARO_STATUS, status);
+	input_report_rel(dev, EVENT_TYPE_BARO_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(dev, EVENT_TYPE_BARO_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(dev);
 
 	return 0;

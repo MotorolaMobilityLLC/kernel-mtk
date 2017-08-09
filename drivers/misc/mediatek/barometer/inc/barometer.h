@@ -41,6 +41,8 @@
 
 #define EVENT_TYPE_BARO_VALUE	REL_X
 #define EVENT_TYPE_BARO_STATUS	ABS_WHEEL
+#define EVENT_TYPE_BARO_TIMESTAMP_HI             REL_HWHEEL
+#define EVENT_TYPE_BARO_TIMESTAMP_LO             REL_DIAL
 
 
 #define BARO_VALUE_MAX (32767)
@@ -96,7 +98,10 @@ struct baro_context {
 	atomic_t delay;
 	atomic_t wake;
 	struct timer_list timer;
+	struct hrtimer      hrTimer;
+	ktime_t             target_ktime;
 	atomic_t trace;
+	struct workqueue_struct *baro_workqueue;
 
 	struct baro_data drv_data;
 	struct baro_control_path baro_ctl;
@@ -109,7 +114,7 @@ struct baro_context {
 };
 
 extern int baro_driver_add(struct baro_init_info *obj);
-extern int baro_data_report(struct input_dev *dev, int value, int status);
+extern int baro_data_report(struct input_dev *dev, int value, int status, int64_t nt);
 extern int baro_register_control_path(struct baro_control_path *ctl);
 extern int baro_register_data_path(struct baro_data_path *data);
 

@@ -46,6 +46,9 @@
 #define EVENT_TYPE_MAGEL_UPDATE	 REL_X
 #define EVENT_DIV_MAGEL			 ABS_RUDDER
 #define EVENT_TYPE_MAGEL_STATUS	 ABS_WHEEL
+#define EVENT_TYPE_MAG_UPDATE                    REL_X
+#define EVENT_TYPE_MAG_TIMESTAMP_HI              REL_HWHEEL
+#define EVENT_TYPE_MAG_TIMESTAMP_LO              REL_DIAL
 
 #define EVENT_TYPE_O_X		  ABS_RX
 #define EVENT_TYPE_O_Y		  ABS_RY
@@ -53,6 +56,9 @@
 #define EVENT_TYPE_O_UPDATE	 REL_RX
 #define EVENT_DIV_O			 ABS_GAS
 #define EVENT_TYPE_O_STATUS	 ABS_THROTTLE
+#define EVENT_TYPE_ORIENT_UPDATE                 REL_RX
+#define EVENT_TYPE_ORIENT_TIMESTAMP_HI           REL_WHEEL
+#define EVENT_TYPE_ORIENT_TIMESTAMP_LO           REL_MISC
 
 #define MAG_DIV_MAX (32767)
 #define MAG_DIV_MIN (1)
@@ -124,7 +130,10 @@ struct mag_context {
 	atomic_t			delay; /*polling period for reporting input event*/
 	atomic_t			wake;  /*user-space request to wake-up, used with stop*/
 	struct timer_list   timer;  /* polling timer */
+	struct hrtimer      hrTimer;
+	ktime_t             target_ktime;
 	atomic_t			trace;
+	struct workqueue_struct *mag_workqueue;
 
 	struct mag_data_path mag_dev_data;
 	struct mag_control_path mag_ctl;
@@ -141,7 +150,7 @@ struct mag_context {
 extern int mag_attach(int sensor, struct mag_drv_obj *obj);
 
 extern int mag_driver_add(struct mag_init_info *obj);
-extern int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status);
+extern int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t nt);
 extern int mag_register_control_path(struct mag_control_path *ctl);
 extern int mag_register_data_path(struct mag_data_path *ctl);
 

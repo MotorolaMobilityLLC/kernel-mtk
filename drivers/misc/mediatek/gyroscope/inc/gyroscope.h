@@ -47,6 +47,11 @@
 #define EVENT_TYPE_GYRO_Z			ABS_Z
 #define EVENT_TYPE_GYRO_UPDATE               REL_X
 #define EVENT_TYPE_GYRO_STATUS     ABS_WHEEL
+#define EVENT_TYPE_GYRO_UPDATE                 REL_X
+#define EVENT_TYPE_GYRO_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_GYRO_TIMESTAMP_LO		REL_DIAL
+
+
 #define GYRO_VALUE_MAX (32767)
 #define GYRO_VALUE_MIN (-32768)
 #define GYRO_STATUS_MIN (0)
@@ -102,7 +107,10 @@ struct gyro_context {
 	atomic_t            delay; /*polling period for reporting input event*/
 	atomic_t            wake;  /*user-space request to wake-up, used with stop*/
 	struct timer_list   timer;  /* polling timer */
+	struct hrtimer      hrTimer;
+	ktime_t             target_ktime;
 	atomic_t            trace;
+	struct workqueue_struct *gyro_workqueue;
 	struct gyro_data       drv_data;
 	int                    cali_sw[GYRO_AXES_NUM+1];
 	struct gyro_control_path   gyro_ctl;
@@ -115,7 +123,7 @@ struct gyro_context {
 };
 
 extern int gyro_driver_add(struct gyro_init_info *obj);
-extern int gyro_data_report(int x, int y, int z, int status);
+extern int gyro_data_report(int x, int y, int z, int status, int64_t nt);
 extern int gyro_register_control_path(struct gyro_control_path *ctl);
 extern int gyro_register_data_path(struct gyro_data_path *data);
 #endif

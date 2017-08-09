@@ -7,25 +7,73 @@ struct acc_context *acc_context_obj = NULL;
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
 
+static int64_t getCurNS(void)
+{
+	int64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
+
+	return ns;
+}
+
+static void initTimer(struct hrtimer *timer, enum hrtimer_restart (*callback)(struct hrtimer *))
+{
+	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+	timer->function = callback;
+}
+
+static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
+{
+	struct acc_context *obj = (struct acc_context *)container_of(timer, struct acc_context, hrTimer);
+	static int count;
+
+	if (obj == NULL) {
+		ACC_ERR("NULL pointer\n");
+		return;
+	}
+
+	if (first) {
+		obj->target_ktime = ktime_add_ns(ktime_get(), (int64_t)delay_ms*1000000);
+		/* ACC_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
+			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		count = 0;
+	} else {
+		do {
+			obj->target_ktime = ktime_add_ns(obj->target_ktime, (int64_t)delay_ms*1000000);
+		} while (ktime_to_ns(obj->target_ktime) < ktime_to_ns(ktime_get()));
+		/* ACC_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
+			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		count++;
+	}
+
+	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
+}
+
+static void stopTimer(struct hrtimer *timer)
+{
+	hrtimer_cancel(timer);
+}
+
 static void acc_work_func(struct work_struct *work)
 {
 	struct acc_context *cxt = NULL;
 	int x, y, z, status;
-	int64_t nt;
-	struct timespec time;
+	int64_t pre_ns, cur_ns;
+	int64_t delay_ms;
 	int err;
 
 	cxt = acc_context_obj;
+	delay_ms = atomic_read(&cxt->delay);
 
 	if (NULL == cxt->acc_data.get_data) {
 		ACC_ERR("acc driver not register data path\n");
 		return;
 	}
 
-
-	time.tv_sec = time.tv_nsec = 0;
-	time = get_monotonic_coarse();
-	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
+	cur_ns = getCurNS();
 
 	err = cxt->acc_data.get_data(&x, &y, &z, &status);
 
@@ -40,11 +88,12 @@ static void acc_work_func(struct work_struct *work)
 			cxt->drv_data.acc_data.values[1] = y;
 			cxt->drv_data.acc_data.values[2] = z;
 			cxt->drv_data.acc_data.status = status;
-			cxt->drv_data.acc_data.time = nt;
-
+			pre_ns = cxt->drv_data.acc_data.time;
+			cxt->drv_data.acc_data.time = cur_ns;
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
+		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
 		if (ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[0] ||
@@ -60,22 +109,31 @@ static void acc_work_func(struct work_struct *work)
 	/* ACC_LOG("acc data[%d,%d,%d]\n" ,cxt->drv_data.acc_data.values[0], */
 	/* cxt->drv_data.acc_data.values[1],cxt->drv_data.acc_data.values[2]); */
 
+	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
+		pre_ns += delay_ms*1000000LL;
+		acc_data_report(cxt->drv_data.acc_data.values[0],
+			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],
+			cxt->drv_data.acc_data.status, pre_ns);
+	}
+
 	acc_data_report(cxt->drv_data.acc_data.values[0],
 			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],
-			cxt->drv_data.acc_data.status);
+			cxt->drv_data.acc_data.status, cxt->drv_data.acc_data.time);
 
  acc_loop:
 	if (true == cxt->is_polling_run)
-		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+		startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), false);
 }
 
-static void acc_poll(unsigned long data)
+enum hrtimer_restart acc_poll(struct hrtimer *timer)
 {
-	struct acc_context *obj = (struct acc_context *)data;
+	struct acc_context *obj = (struct acc_context *)container_of(timer, struct acc_context, hrTimer);
 
-	if (obj != NULL)
-		schedule_work(&obj->report);
+	queue_work(obj->accel_workqueue, &obj->report);
 
+	/* ACC_LOG("cur_ns = %lld\n", getCurNS()); */
+
+	return HRTIMER_NORESTART;
 }
 
 static struct acc_context *acc_context_alloc_object(void)
@@ -91,10 +149,13 @@ static struct acc_context *acc_context_alloc_object(void)
 	atomic_set(&obj->delay, 200);	/*5Hz ,  set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, acc_work_func);
-	init_timer(&obj->timer);
-	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
-	obj->timer.function = acc_poll;
-	obj->timer.data = (unsigned long)obj;
+	obj->accel_workqueue = NULL;
+	obj->accel_workqueue = create_workqueue("accel_polling");
+	if (!obj->accel_workqueue) {
+		kfree(obj);
+		return NULL;
+	}
+	initTimer(&obj->hrTimer, acc_poll);
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->acc_op_mutex);
@@ -160,8 +221,7 @@ static int acc_enable_data(int enable)
 	acc_real_enable(enable);
 		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
 			if (false == cxt->acc_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
 			}
 		}
@@ -175,7 +235,7 @@ static int acc_enable_data(int enable)
 			if (false == cxt->acc_ctl.is_report_input_direct) {
 				cxt->is_polling_run = false;
 				smp_mb();/* for memory barrier */
-				del_timer_sync(&cxt->timer);
+				stopTimer(&cxt->hrTimer);
 				smp_mb();/* for memory barrier */
 				cancel_work_sync(&cxt->report);
 				cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
@@ -288,8 +348,8 @@ static ssize_t acc_show_active(struct device *dev, struct device_attribute *attr
 static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	int delay = 0;
-	int mdelay = 0;
+	int64_t delay = 0;
+	int64_t mdelay = 0;
 	int ret = 0;
 	struct acc_context *cxt = NULL;
 
@@ -301,7 +361,7 @@ static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr
 		return count;
 	}
 
-	ret = kstrtoint(buf, 10, &delay);
+	ret = kstrtoll(buf, 10, &delay);
 	if (ret != 0) {
 		ACC_ERR("invalid format!!\n");
 		mutex_unlock(&acc_context_obj->acc_op_mutex);
@@ -309,11 +369,12 @@ static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr
 	}
 
 	if (false == cxt->acc_ctl.is_report_input_direct) {
-		mdelay = (int)delay / 1000 / 1000;
+		mdelay = delay;
+		do_div(mdelay, 1000000);
 		atomic_set(&acc_context_obj->delay, mdelay);
 	}
 	cxt->acc_ctl.set_delay(delay);
-	ACC_LOG(" acc_delay %d ns\n", delay);
+	ACC_LOG(" acc_delay %lld ns\n", delay);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return count;
 }
@@ -353,7 +414,9 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 			cxt->is_batch_enable = true;
 			if (true == cxt->is_polling_run) {
 				cxt->is_polling_run = false;
-				del_timer_sync(&cxt->timer);
+				smp_mb();  /* for memory barrier */
+				stopTimer(&cxt->hrTimer);
+				smp_mb();  /* for memory barrier */
 				cancel_work_sync(&cxt->report);
 				cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
 				cxt->drv_data.acc_data.values[1] = ACC_INVALID_VALUE;
@@ -362,8 +425,8 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 		} else if (!strncmp(buf, "0", 1)) {
 			cxt->is_batch_enable = false;
 			if (false == cxt->is_polling_run) {
-				if (false == cxt->acc_ctl.is_report_input_direct) {
-					mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay)/(1000/HZ));
+				if (false == cxt->acc_ctl.is_report_input_direct && true == cxt->is_active_data) {
+					startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 					cxt->is_polling_run = true;
 				}
 			}
@@ -510,6 +573,8 @@ static int acc_input_init(struct acc_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_ACCEL_Z);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_ACCEL_STATUS);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_ACCEL_UPDATE);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_ACCEL_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_ACCEL_TIMESTAMP_LO);
 
 	input_set_abs_params(dev, EVENT_TYPE_ACCEL_X, ACC_VALUE_MIN, ACC_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_ACCEL_Y, ACC_VALUE_MIN, ACC_VALUE_MAX, 0, 0);
@@ -598,7 +663,7 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	return 0;
 }
 
-int acc_data_report(int x, int y, int z, int status)
+int acc_data_report(int x, int y, int z, int status, int64_t nt)
 {
 	/* ACC_LOG("+acc_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct acc_context *cxt = NULL;
@@ -610,6 +675,8 @@ int acc_data_report(int x, int y, int z, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_ACCEL_Z, z);
 	input_report_abs(cxt->idev, EVENT_TYPE_ACCEL_STATUS, status);
 	input_report_rel(cxt->idev, EVENT_TYPE_ACCEL_UPDATE, 1);
+	input_report_rel(cxt->idev, EVENT_TYPE_ACCEL_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_ACCEL_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return err;
 }
