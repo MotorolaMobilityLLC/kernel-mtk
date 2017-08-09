@@ -3,7 +3,8 @@
  *
  *
  */
-
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -251,7 +252,7 @@ static int compat_put_cal_info_struct(
 	err |= put_user(i, &data32->u4Length);
 	/* Assume pointer is not change */
 #if 1
-	err |= get_user(p, &data->pu1Params);
+	err |= get_user(p, (compat_uptr_t *)&data->pu1Params);
 	err |= put_user(p, &data32->pu1Params);
 #endif
 	return err;

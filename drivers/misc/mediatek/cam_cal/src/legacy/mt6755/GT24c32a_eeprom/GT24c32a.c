@@ -19,6 +19,8 @@
 #include <asm/system.h>  /* for SMP */
 #else
 
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -62,6 +64,9 @@ static struct i2c_board_info kd_eeprom_dev __initdata = { I2C_BOARD_INFO("CAM_CA
 /* #define FM50AF_EEPROM_I2C_ID 0x28 */
 #define FM50AF_EEPROM_I2C_ID 0xA1
 
+/* EEPROM READ/WRITE ID */
+#define S24CS64A_DEVICE_ID	0xAA
+#define EEPROM_DEV_MAJOR_NUMBER 226
 
 /*******************************************************************************
 /* define LSC data for M24C08F EEPROM on L10 project */

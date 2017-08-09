@@ -4,6 +4,8 @@
  *
  */
 
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -56,7 +58,12 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP*/
 *
 ********************************************************************************/
 #define CAM_CAL_DRVNAME "CAM_CAL_DRV1"
-#define CAM_CAL_I2C_GROUP_ID 0
+#define CAM_CAL_I2C_GROUP_ID     0
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
+
+/* CAM_CAL READ/WRITE ID */
+#define S5K2P8_DEVICE_ID         0xA2
+
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -92,108 +99,10 @@ static void kdSetI2CSpeed(u32 i2cSpeed)
 
 }
 
-
-/*******************************************************************************
-* iWriteRegI2C
-********************************************************************************/
-/*
-int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
-{
-    int  i4RetValue = 0;
-    int retry = 3;
-
-//    PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data);
-
-    //KD_IMGSENSOR_PROFILE_INIT();
-    spin_lock(&g_CAM_CALLock);
-    g_pstI2Cclient->addr = (i2cId >> 1);
-    g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
-	spin_unlock(&g_CAM_CALLock);
-    //
-
-    do {
-		i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
-	if (i4RetValue != a_sizeSendData) {
-	    CAM_CALERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n",
-	    a_pSendData[0], a_pSendData[1] );
-	}
-	else {
-	    break;
-	}
-	udelay(50);
-    } while ((retry--) > 0);
-    //KD_IMGSENSOR_PROFILE("iWriteRegI2C");
-    return 0;
-}
-*/
-
-
 /*******************************************************************************
 * iWriteReg
 ********************************************************************************/
-#if 0
-static int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
-{
-	int  i4RetValue = 0;
-	int u4Index = 0;
-	u8 *puDataInBytes = (u8 *)&a_u4Data;
-	int retry = 3;
 
-	char puSendCmd[6] = {(char)(a_u2Addr >> 8) , (char)(a_u2Addr & 0xFF) ,
-			     0 , 0 , 0 , 0
-			    };
-
-	spin_lock(&g_CAM_CALLock);
-
-
-	g_pstI2Cclient->addr = (i2cId >> 1);
-	g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) & (~I2C_DMA_FLAG);
-
-	spin_unlock(&g_CAM_CALLock);
-
-
-	if (a_u4Bytes > 2) {
-		CAM_CALERR(" exceed 2 bytes\n");
-		return -1;
-	}
-
-	if (a_u4Data >> (a_u4Bytes << 3))
-		CAM_CALERR(" warning!! some data is not sent!!\n");
-
-	for (u4Index = 0; u4Index < a_u4Bytes; u4Index += 1)
-		puSendCmd[(u4Index + 2)] = puDataInBytes[(a_u4Bytes - u4Index - 1)];
-	do {
-		i4RetValue = i2c_master_send(g_pstI2Cclient, puSendCmd, (a_u4Bytes + 2));
-
-		if (i4RetValue != (a_u4Bytes + 2))
-			CAM_CALERR(" I2C send failed addr = 0x%x, data = 0x%x !!\n", a_u2Addr, a_u4Data);
-		else
-			break;
-		mdelay(5);
-	} while ((retry--) > 0);
-	return 0;
-}
-#endif
-
-/*
-static bool selective_read_byte(u32 addr, BYTE* data,u16 i2c_id)
-{
-//      CAM_CALDB("selective_read_byte\n");
-
-    u8 page = addr/PAGE_SIZE_; size of page was 256
-	u8 offset = addr%PAGE_SIZE_;
-	kdSetI2CSpeed(EEPROM_I2C_SPEED);
-
-	if(iReadRegI2C(&offset, 1, (u8*)data, 1, i2c_id+(page<<1))<0) {
-		CAM_CALERR("[CAM_CAL] fail selective_read_byte addr =0x%x data = 0x%x,page %d, offset 0x%x",
-		addr, *data,page,offset);
-		return false;
-	}
-	//CAM_CALDB("selective_read_byte addr =0x%x data = 0x%x,page %d, offset 0x%x", addr, *data,page,
-	offset);
-    return true;
-}
-*/
 static bool byteread_cmos_sensor(unsigned char SLAVEID, unsigned short addr, unsigned char *data)
 {
 	/* To call your IIC function here*/
@@ -212,7 +121,6 @@ static bool byteread_cmos_sensor(unsigned char SLAVEID, unsigned short addr, uns
 	return true;
 
 }
-
 
 static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size)
 {
@@ -263,94 +171,6 @@ static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size)
 	return ret;
 }
 
-/*
-static int iReadRegI2C2(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData,
-u16 a_sizeRecvData, u16 i2cId)
-{
-    int  i4RetValue = 0;
-
-    spin_lock(&g_CAM_CALLock);
-    g_pstI2Cclient->addr = (i2cId >> 1);
-    g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
-
-    spin_unlock(&g_CAM_CALLock);
-    i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
-    if (i4RetValue != a_sizeSendData) {
-	CAM_CALERR(" I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
-	return -1;
-    }
-    i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
-    if (i4RetValue != a_sizeRecvData) {
-	CAM_CALERR(" I2C read failed!!\n");
-	return -1;
-    }
-    return 0;
-}
-*/
-/*
-static int lm75_read_value(struct i2c_client *client)
-{
-		struct i2c_msg msgs[2];
-		int status;
-		char buf1[2];
-		char buf2[2];
-		msgs[0].len = 1;
-		msgs[0].addr = client->addr; // lm75 ????
-		msgs[0].flags = 0;//write
-		msgs[0].buf = buf1;
-		msgs[0].buf[0] = LM75_REG_TEMP[0];
-		msgs[1].len = 2;//?????
-		msgs[1].addr = client->addr;// lm75 ????
-		msgs[1].flags = I2C_M_RD;//read
-		msgs[1].buf = buf2;//?????????
-		status = i2c_transfer(client->adapter, msgs, 2);
-		if(status < 0)
-				return status;
-		//printk("1 = %2x %2x\n", buf2[0], buf2[1]);
-		return (buf2[0] << 8) | buf2[1];
-}
-
-// maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes
-int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 * a_puBuff)
-{
-    int  i4RetValue = 0;
-    char puReadCmd[2] = {(char)(a_u2Addr >> 8) , (char)(a_u2Addr & 0xFF)};
-
-    //EEPROMDB("[EEPROM] iReadEEPROM!!\n");
-
-    if(ui4_length > 8)
-    {
-	EEPROMDB("[BRCC064GWZ_3_eeprom] exceed I2c-mt65xx.c 8 bytes limitation\n");
-	return -1;
-    }
-    spin_lock(&g_EEPROMLock); //for SMP
-    g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
-    spin_unlock(&g_EEPROMLock); // for SMP
-
-    //EEPROMDB("[EEPROM] i2c_master_send\n");
-    i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
-    if (i4RetValue != 2)
-    {
-	EEPROMDB("[BRCC064GWZ_3_eeprom] I2C send read address failed!!\n");
-	return -1;
-    }
-
-    //EEPROMDB("[EEPROM] i2c_master_recv\n");
-    i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_puBuff, ui4_length);
-    if (i4RetValue != ui4_length)
-    {
-	EEPROMDB("[BRCC064GWZ_3_eeprom] I2C read data failed!!\n");
-	return -1;
-    }
-    spin_lock(&g_EEPROMLock); //for SMP
-    g_pstI2Cclient->addr = g_pstI2Cclient->addr & I2C_MASK_FLAG;
-    spin_unlock(&g_EEPROMLock); // for SMP
-
-    //EEPROMDB("[EEPROM] iReadEEPROM done!!\n");
-    return 0;
-}
-*/
-
 
 /* Burst Write Data */
 static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length,
@@ -378,7 +198,7 @@ static int compat_put_cal_info_struct(
 	err |= put_user(i, &data32->u4Length);
 	/* Assume pointer is not change */
 #if 1
-	err |= get_user(p, &data->pu1Params);
+	err |= get_user(p, (compat_uptr_t *)&data->pu1Params);
 	err |= put_user(p, &data32->pu1Params);
 #endif
 	return err;

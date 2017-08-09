@@ -4,6 +4,8 @@
  *
  */
 
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -42,7 +44,11 @@ static struct i2c_board_info kd_cam_cal_dev __initdata = {
 *
 ********************************************************************************/
 #define CAM_CAL_DRVNAME "dummy_cam_cal"
-#define CAM_CAL_I2C_GROUP_ID 0
+#define CAM_CAL_I2C_GROUP_ID     0
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
+/* CAM_CAL READ/WRITE ID */
+#define S24CS64A_DEVICE_ID       0xAB /*0xFE */
+
 /*******************************************************************************
 *
 ********************************************************************************/

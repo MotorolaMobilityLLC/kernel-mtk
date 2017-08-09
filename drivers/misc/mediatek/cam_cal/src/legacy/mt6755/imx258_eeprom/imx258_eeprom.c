@@ -4,6 +4,8 @@
  *
  */
 
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -57,6 +59,12 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP*/
 ********************************************************************************/
 #define CAM_CAL_DRVNAME "CAM_CAL_DRV"
 #define CAM_CAL_I2C_GROUP_ID 0
+
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
+
+/* CAM_CAL READ/WRITE ID */
+#define IMX258_DEVICE_ID	0xA0
+
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -378,7 +386,7 @@ static int compat_put_cal_info_struct(
 	err |= put_user(i, &data32->u4Length);
 	/* Assume pointer is not change */
 #if 1
-	err |= get_user(p, &data->pu1Params);
+	err |= get_user(p, (compat_uptr_t *)&data->pu1Params);
 	err |= put_user(p, &data32->pu1Params);
 #endif
 	return err;
