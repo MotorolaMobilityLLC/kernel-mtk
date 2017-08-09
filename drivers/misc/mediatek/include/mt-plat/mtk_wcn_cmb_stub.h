@@ -7,8 +7,6 @@
 #ifndef _MTK_WCN_CMB_STUB_H_
 #define _MTK_WCN_CMB_STUB_H_
 
-#include <linux/pm.h>
-
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -81,16 +79,6 @@ typedef signed long (*wmt_thermal_query_cb) (void);
 typedef int (*wmt_deep_idle_ctrl_cb) (unsigned int);
 typedef int (*wmt_func_do_reset) (unsigned int);
 
-typedef void (*msdc_sdio_irq_handler_t) (void *);	/* external irq handler */
-typedef void (*pm_callback_t) (pm_message_t state, void *data);
-
-struct sdio_ops {
-	void (*sdio_request_eirq)(msdc_sdio_irq_handler_t irq_handler, void *data);
-	void (*sdio_enable_eirq)(void);
-	void (*sdio_disable_eirq)(void);
-	void (*sdio_register_pm)(pm_callback_t pm_cb, void *data);
-};
-
 typedef struct _CMB_STUB_CB_ {
 	unsigned int size;	/* structure size */
 	/*wmt_bgf_eirq_cb bgf_eirq_cb; *//* remove bgf_eirq_cb from stub. handle it in platform */
@@ -116,8 +104,6 @@ typedef struct _CMB_STUB_CB_ {
 ********************************************************************************
 */
 
-extern struct sdio_ops mt_sdio_ops[4];
-
 extern int mtk_wcn_cmb_stub_reg(P_CMB_STUB_CB p_stub_cb);
 extern int mtk_wcn_cmb_stub_unreg(void);
 
@@ -138,19 +124,9 @@ extern int mt_combo_plt_exit_deep_idle(COMBO_IF src);
 extern void mtk_wcn_cmb_stub_func_ctrl(unsigned int type, unsigned int on);
 extern int mtk_wcn_cmb_stub_query_ctrl(void);
 extern int board_sdio_ctrl(unsigned int sdio_port_num, unsigned int on);
-extern int mtk_wcn_sdio_irq_flag_set(int falg);
 
 extern int mtk_wcn_wmt_chipid_query(void);
 extern void mtk_wcn_wmt_set_chipid(int chipid);
-
-/* mtk_uart_pdn_enable -- request uart port enter/exit deep idle mode, this API is defined in uart driver
- *
- * @ port - uart port name, Eg: "ttyMT0", "ttyMT1", "ttyMT2"
- * @ enable - "1", enable deep idle; "0", disable deep idle
- *
- * Return 0 if success, else -1
- */
-extern unsigned int mtk_uart_pdn_enable(char *port, int enable);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
