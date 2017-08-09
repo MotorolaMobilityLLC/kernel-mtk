@@ -4529,7 +4529,7 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 	return 1;
 }
 
-static int evaluate_bandwidth_save(disp_ddp_path_config *cfg)
+static int evaluate_bandwidth_save(disp_ddp_path_config *cfg, int *ori, int *act)
 {
 	int i = 0;
 	int pixel = 0;
@@ -4562,8 +4562,11 @@ static int evaluate_bandwidth_save(disp_ddp_path_config *cfg)
 
 	if (pixel)
 		save = (pixel - partial_pixel) * 100 / pixel;
-	DISPDBG("Partial save:%d, %d, %d\n",
-			pixel, partial_pixel, save);
+
+	*ori = pixel;
+	*act = partial_pixel;
+
+	DISPDBG("frame partial save:%d, %d, %%%d\n", pixel, partial_pixel, save);
 	return 0;
 }
 
@@ -4723,8 +4726,28 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			data_config->ovl_partial_dirty = 1;
 
-		if (0)
-			evaluate_bandwidth_save(data_config);
+		if (1) {
+			static long long total_ori;
+			static long long total_partial;
+
+			if (ddp_debug_partial_statistic()) {
+				int frame_ori = 0;
+				int frame_partial = 0;
+				int save = 0;
+
+				evaluate_bandwidth_save(data_config, &frame_ori, &frame_partial);
+				total_ori += frame_ori;
+				total_partial += frame_partial;
+
+				if (total_ori)
+					save = (total_ori - total_partial) * 100 / total_ori;
+
+				DISPDBG("total partial save:%%%d\n", save);
+			} else {
+				total_ori = 0;
+				total_partial = 0;
+			}
+		}
 	}
 
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);

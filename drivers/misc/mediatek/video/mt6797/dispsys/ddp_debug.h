@@ -39,6 +39,7 @@ int ddp_debug_force_roi_x(void);
 int ddp_debug_force_roi_y(void);
 int ddp_debug_force_roi_w(void);
 int ddp_debug_force_roi_h(void);
+int ddp_debug_partial_statistic(void);
 
 int ddp_mem_test(void);
 int ddp_lcd_test(void);
