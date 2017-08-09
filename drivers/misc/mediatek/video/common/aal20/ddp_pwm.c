@@ -27,7 +27,7 @@
 #define PWM_DEFAULT_DIV_VALUE 0x0
 
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
-#define PWM_NOTICE(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
+#define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 
 #define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
@@ -288,6 +288,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 {
 	int i;
 	struct timeval pwm_time;
+	char buffer[512] = "";
 
 	do_gettimeofday(&pwm_time);
 	g_pwm_log_buffer[g_pwm_log_index].value = level_1024;
@@ -296,33 +297,18 @@ static void disp_pwm_log(int level_1024, int log_type)
 	g_pwm_log_index += 1;
 
 	if (g_pwm_log_index == PWM_LOG_BUFFER_SIZE || level_1024 == 0) {
-		if (log_type == MSG_LOG) {
-			PWM_MSG("disp_pwm(%2d): %5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d)",
-				(int)g_pwm_log_index,
-				(int)g_pwm_log_buffer[0].value,
-				(int)g_pwm_log_buffer[0].tsec, (int)g_pwm_log_buffer[0].tusec,
-				(int)g_pwm_log_buffer[1].value,
-				(int)g_pwm_log_buffer[1].tsec, (int)g_pwm_log_buffer[1].tusec,
-				(int)g_pwm_log_buffer[2].value,
-				(int)g_pwm_log_buffer[2].tsec, (int)g_pwm_log_buffer[2].tusec,
-				(int)g_pwm_log_buffer[3].value,
-				(int)g_pwm_log_buffer[3].tsec, (int)g_pwm_log_buffer[3].tusec,
-				(int)g_pwm_log_buffer[4].value,
-				(int)g_pwm_log_buffer[4].tsec, (int)g_pwm_log_buffer[4].tusec);
-		} else {
-			PWM_NOTICE("disp_pwm(%2d):%5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d) %5d(%4d %4d)",
-				(int)g_pwm_log_index,
-				(int)g_pwm_log_buffer[0].value,
-				(int)g_pwm_log_buffer[0].tsec, (int)g_pwm_log_buffer[0].tusec,
-				(int)g_pwm_log_buffer[1].value,
-				(int)g_pwm_log_buffer[1].tsec, (int)g_pwm_log_buffer[1].tusec,
-				(int)g_pwm_log_buffer[2].value,
-				(int)g_pwm_log_buffer[2].tsec, (int)g_pwm_log_buffer[2].tusec,
-				(int)g_pwm_log_buffer[3].value,
-				(int)g_pwm_log_buffer[3].tsec, (int)g_pwm_log_buffer[3].tusec,
-				(int)g_pwm_log_buffer[4].value,
-				(int)g_pwm_log_buffer[4].tsec, (int)g_pwm_log_buffer[4].tusec);
-			}
+		sprintf(buffer + strlen(buffer), "(latest=%2u): ", g_pwm_log_index);
+		for (i = 0; i < g_pwm_log_index; i += 1) {
+			sprintf(buffer + strlen(buffer), "%5u(%4lu,%4lu)",
+				g_pwm_log_buffer[i].value,
+				g_pwm_log_buffer[i].tsec,
+				g_pwm_log_buffer[i].tusec);
+		}
+
+		if (log_type == MSG_LOG)
+			PWM_MSG("%s", buffer);
+		else
+			PWM_NOTICE("%s", buffer);
 
 		g_pwm_log_index = 0;
 
@@ -357,7 +343,9 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 
 		if (old_pwm == 0 || level_1024 == 0 || abs_diff > 64) {
 			/* To be printed in UART log */
-			disp_pwm_log(level_1024, NOTICE_LOG);
+			disp_pwm_log(level_1024, MSG_LOG);
+			PWM_NOTICE("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d", id, level_1024,
+				   old_pwm);
 		} else {
 			disp_pwm_log(level_1024, MSG_LOG);
 		}
