@@ -244,6 +244,16 @@ const struct ppm_power_tbl_data power_table_SB = {
 	.nr_power_tbl = ARRAY_SIZE(cpu_tlp_power_tbl_SB),
 };
 
+const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_FY = {
+	.pwr_idx_ref_tbl = cpu_pwr_idx_ref_tbl_FY,
+	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_FY),
+};
+
+const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_SB = {
+	.pwr_idx_ref_tbl = cpu_pwr_idx_ref_tbl_SB,
+	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_SB),
+};
+
 /* PPM power state static data */
 struct ppm_power_state_data pwr_state_info_FY[NR_PPM_POWER_STATE] = {
 	[0] = {
@@ -504,6 +514,11 @@ static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 	return false;
 }
 
+static const struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void)
+{
+	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
+		? pwr_idx_ref_tbl_FY : pwr_idx_ref_tbl_SB;
+}
 
 /*==============================================================*/
 /* Global Function Implementation				*/
@@ -603,79 +618,30 @@ enum ppm_power_state ppm_find_next_state(enum ppm_power_state state,
 
 int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 {
-	int i, j;
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-	int core[NR_PPM_CLUSTERS] = {-1};
-	int opp[NR_PPM_CLUSTERS] = {-1};
-	char buf[128];
-	char *ptr = buf;
-	unsigned int *mapping_tbl;
+	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
+	unsigned int pwr_idx = 0;
+	int i;
 
-	/* copy core/opp info */
 	for_each_ppm_clusters(i) {
-		core[i] = cluster_status[i].core_num;
-		opp[i] = (!core[i]) ? -1 : cluster_status[i].freq_idx;
+		int core = cluster_status[i].core_num;
+		int opp = cluster_status[i].freq_idx;
 
-		/* Workaround: remap freq idx from 16 opp to 8 opp (waiting for 16 opp power tbl) */
-		if (opp[i] != -1) {
-			if (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
-				mapping_tbl = (i == PPM_CLUSTER_B) ? freq_idx_mapping_tbl_FY_BIG
-								: freq_idx_mapping_tbl_FY;
-			else
-				mapping_tbl = (i == PPM_CLUSTER_B) ? freq_idx_mapping_tbl_SB_BIG
-								: freq_idx_mapping_tbl_SB;
-
-			for (j = 0; j < 8; j++) {
-				if (opp[i] == mapping_tbl[j])
-					break;
-				else if (opp[i] < mapping_tbl[j]) {
-					opp[i] = mapping_tbl[j-1];
-					break;
-				}
-			}
-			if (j == 8)
-				opp[i] = mapping_tbl[j-1];
+		if (core != 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
+			pwr_idx += (ref_tbl.pwr_idx_ref_tbl[i].core_power[opp] * core)
+				+ ref_tbl.pwr_idx_ref_tbl[i].l2_power[opp];
 		}
 
-		ptr += sprintf(ptr, "(%d)(%d)(%d) ", opp[i], core[i], cluster_status[i].volt);
+		ppm_ver("[%d] core = %d, opp = %d\n", i, core, opp);
 	}
 
-	ppm_ver("@%s: %s\n", __func__, buf);
-
-	/* set LL and L to max core/freq if big core is on */
-	if (core[PPM_CLUSTER_B] > 0) {
-		core[PPM_CLUSTER_LL] = core[PPM_CLUSTER_L] = 4;
-		opp[PPM_CLUSTER_LL] = opp[PPM_CLUSTER_L] = 0;
-	} else {
-		/* sync opp to little one due to shared bulk */
-		if (opp[PPM_CLUSTER_LL] != -1 && opp[PPM_CLUSTER_L] != -1)
-			opp[PPM_CLUSTER_LL] = opp[PPM_CLUSTER_L] = MIN(opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L]);
-
-		/* modify LL or L core num if current state is 4LL+L or 4L+LL */
-		if (ppm_main_info.cur_power_state == PPM_POWER_STATE_4LL_L)
-			core[PPM_CLUSTER_LL] = 4;
-		else if (ppm_main_info.cur_power_state == PPM_POWER_STATE_4L_LL)
-			core[PPM_CLUSTER_L] = 4;
+	if (!pwr_idx) {
+		ppm_warn("@%s: pwr_idx is 0!\n", __func__);
+		return -1; /* not found */
 	}
 
-	for_each_pwr_tbl_entry(i, power_table) {
-		for_each_ppm_clusters(j) {
-			if (power_table.power_tbl[i].cluster_cfg[j].core_num != core[j]
-				|| power_table.power_tbl[i].cluster_cfg[j].opp_lv != opp[j])
-				break;
-		}
+	ppm_ver("@%s: pwr_idx = %d\n", __func__, pwr_idx);
 
-		if (j == ppm_main_info.cluster_num) {
-			ppm_ver("[index][power] = [%d][%d]\n",
-					i, power_table.power_tbl[i].power_idx);
-			return power_table.power_tbl[i].power_idx;
-		}
-	}
-
-	ppm_ver("@%s: power_idx not found!\n", __func__);
-
-	/* return -1 if not found */
-	return -1;
+	return pwr_idx;
 }
 
 enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_state,

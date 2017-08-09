@@ -96,6 +96,16 @@ struct ppm_power_tbl_data {
 	const unsigned int nr_power_tbl;
 };
 
+struct ppm_pwr_idx_ref_tbl {
+	const unsigned int core_power[DVFS_OPP_NUM];
+	const unsigned int l2_power[DVFS_OPP_NUM];
+};
+
+struct ppm_pwr_idx_ref_tbl_data {
+	const struct ppm_pwr_idx_ref_tbl *pwr_idx_ref_tbl;
+	const unsigned int nr_pwr_idx_ref_tbl;
+};
+
 /*==============================================================*/
 /* Global Variables						*/
 /*==============================================================*/
