@@ -743,13 +743,6 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host);
 /* Function provided by drivers/irqchip/irq-mt-eic.c */
 int mt_eint_get_polarity_external(unsigned int irq_num);
 
-/* FIXME: mt_dump.c use those API,
- * ask pwrap owner to add these 2 functions to a header file,
- * shall be in <mach/mt_pmic_wrap.h>, but commented-out in that file */
-#ifndef FPGA_PLATFORM
-s32 pwrap_read_nochk(u32  adr, u32 *rdata);
-s32 pwrap_write_nochk(u32  adr, u32  wdata);
-#endif
 #define MET_USER_EVENT_SUPPORT
 /* #include <linux/met_drv.h> */
 #if defined(FEATURE_MET_MMC_INDEX)
