@@ -758,8 +758,6 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 		skb->protocol = htons(ETH_P_IP);
 #ifdef CCCI_SKB_TRACE
 		md->netif_rx_profile[2] = ((struct iphdr *)skb->data)->id;
-		skb->mark &= 0x0FFFFFFF;
-		skb->mark |= (0x1<<28);
 #endif
 	}
 	skb->ip_summed = CHECKSUM_NONE;

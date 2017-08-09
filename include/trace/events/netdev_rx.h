@@ -23,9 +23,6 @@
  */
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM netdev_rx
-//#define NETDEV_TRACE 1
-//#define NETDEV_DL_TRACE 1
-//#define NETDEV_UL_TRACE 1
 
 /*
  * Notice that this file is not protected like a normal header.
@@ -42,9 +39,6 @@
  * All trace headers should include tracepoint.h, until we finally
  * make it into a standard header.
  */
-#include <linux/skbuff.h>
-#include <linux/netdevice.h>
-#include <linux/ip.h>
 #include <linux/tracepoint.h>
 /*
  * The TRACE_EVENT macro is broken up into 5 parts.
@@ -93,8 +87,8 @@ TRACE_EVENT(netd_skb_rx,
 		memcpy(__entry->net_deta, net_deta, 8*sizeof(unsigned long long));
 	),
 
-	TP_printk("	%llu	%llx	%llu	%llu	%llu	%llu	%llu	%llu", 
-										   __entry->net_deta[0], __entry->net_deta[1], __entry->net_deta[2],__entry->net_deta[3],
+	TP_printk("	%llu	%04X	%llu	%llu	%llu	%llu	%llu	%llu", 
+										   __entry->net_deta[0], (unsigned int)__entry->net_deta[1], __entry->net_deta[2],__entry->net_deta[3],
 										   __entry->net_deta[4], __entry->net_deta[5],__entry->net_deta[6], __entry->net_deta[7])
 );
 
@@ -113,8 +107,8 @@ TRACE_EVENT(rpsd_skb_rx,
 		memcpy(__entry->dl_delay, dl_delay, 8*sizeof(unsigned long long));
 	),
 
-	TP_printk("	%llu	%llx	%llu	%llu	%llu	%llu	%llu	%llu", 
-										__entry->dl_delay[0], __entry->dl_delay[1], __entry->dl_delay[2], __entry->dl_delay[3],
+	TP_printk("	%llu	%04X	%llu	%llu	%llu	%llu	%llu	%llu", 
+										__entry->dl_delay[0], (unsigned int)__entry->dl_delay[1], __entry->dl_delay[2], __entry->dl_delay[3],
 										__entry->dl_delay[4], __entry->dl_delay[5], __entry->dl_delay[6], __entry->dl_delay[7])
 );
 #endif

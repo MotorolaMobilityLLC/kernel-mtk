@@ -26,7 +26,6 @@
 #include <linux/ethtool.h>
 #include <linux/if_vlan.h>
 #include "u_ether.h"
-#include <trace/events/netdev_rx.h>
 
 /*
  * This component encapsulates the Ethernet link glue needed to provide
@@ -548,8 +547,7 @@ static void process_rx_w(struct work_struct *work)
 		dev->net->stats.rx_bytes += skb->len;
 
 #if defined(NETDEV_TRACE) && defined(NETDEV_UL_TRACE)
-		skb->mark &= 0x0FFFFFFF;
-		skb->mark |= (0x4<<28);
+		skb->dbg_flag = 0x4;
 #endif
 		rndis_test_rx_net_out ++ ;
 		status = netif_rx_ni(skb);

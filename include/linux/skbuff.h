@@ -34,6 +34,13 @@
 #include <linux/sched.h>
 #include <net/flow_keys.h>
 
+/* net device ftrace debug define */
+#undef NETDEV_TRACE
+#ifdef NETDEV_TRACE
+#define NETDEV_DL_TRACE 1
+#define NETDEV_UL_TRACE 1
+#endif
+
 /* A. Checksumming of received packets by device.
  *
  * CHECKSUM_NONE:
@@ -654,6 +661,10 @@ struct sk_buff {
 				*data;
 	unsigned int		truesize;
 	atomic_t		users;
+
+#ifdef NETDEV_TRACE
+	unsigned int		dbg_flag;
+#endif
 };
 
 #ifdef __KERNEL__

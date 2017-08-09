@@ -44,9 +44,10 @@
 #include <linux/sockios.h>
 #include <linux/device.h>
 #include <linux/debugfs.h>
-#include <trace/events/netdev_rx.h>
 #include "ccmni.h"
 
+
+#define IS_CCMNI_LAN(dev)    (strncmp(dev->name, "ccmni-lan", 9) == 0)
 
 ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
 unsigned int ccmni_debug_level = 0;
@@ -81,7 +82,7 @@ static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsig
 {
 	struct ethhdr *eth_hdr = _eth_hdr;
 
-	memcpy(eth_hdr->h_dest,   mac_addr, sizeof(eth_hdr->h_dest));
+	memcpy(eth_hdr->h_dest, mac_addr, sizeof(eth_hdr->h_dest));
 	memset(eth_hdr->h_source, 0, sizeof(eth_hdr->h_source));
 	if (packet_type == 0x60)
 		eth_hdr->h_proto = cpu_to_be16(ETH_P_IPV6);
@@ -795,7 +796,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			/* initial irat source ccmni instance */
 			memcpy(ccmni_irat_src, ctlb_irat_src->ccmni_inst[i], sizeof(ccmni_instance_t));
 			ctlb_irat_src->ccmni_inst[i] = ccmni_irat_src;
-			CCMNI_DBG_MSG(ccmni->md_id, "[IRAT]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
+			CCMNI_DBG_MSG(md_id, "[IRAT]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
 				i, ccmni, ccmni->ctlb, ccmni->ctlb->ccci_ops, ccmni->dev);
 		}
 	}
@@ -860,7 +861,7 @@ ccmni_exit_ret:
 static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *priv_data)
 {
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
-/* struct ccci_header *ccci_h = (struct ccci_header*)skb->data; */
+	/* struct ccci_header *ccci_h = (struct ccci_header*)skb->data; */
 	ccmni_instance_t *ccmni = NULL;
 	struct net_device *dev = NULL;
 	int pkt_type, skb_len, ccmni_idx;
@@ -880,7 +881,7 @@ static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *pr
 	ccmni = ctlb->ccmni_inst[ccmni_idx];
 	dev = ccmni->dev;
 
-/* skb_pull(skb, sizeof(struct ccci_header)); */
+	/* skb_pull(skb, sizeof(struct ccci_header)); */
 	pkt_type = skb->data[0] & 0xF0;
 	ccmni_make_etherframe(skb->data-ETH_HLEN, dev->dev_addr, pkt_type);
 	skb_set_mac_header(skb, -ETH_HLEN);
@@ -901,12 +902,12 @@ static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *pr
 		ccmni_dbg_skb_header(ccmni->md_id, false, skb);
 
 #if defined(NETDEV_TRACE) && defined(NETDEV_DL_TRACE)
-	skb->mark &= 0x0FFFFFFF;
-	skb->mark |= (0x1<<28);
+	skb->dbg_flag = 0x1;
 #endif
 
 #if defined(CCCI_SKB_TRACE)
 	struct iphdr *iph = (struct iphdr *)skb->data;
+
 	net_rx_delay[2] = iph->id;
 	net_rx_delay[3] = sched_clock();
 #endif
@@ -1073,7 +1074,6 @@ static void ccmni_dump(int md_id, int rx_ch, unsigned int flag)
 			dev->qdisc->q.qlen, dev->stats.tx_dropped, dev->qdisc->qstats.drops, dev->stats.rx_dropped,
 			atomic_long_read(&dev->rx_dropped), ccmni->tx_busy_cnt[0], ccmni->tx_busy_cnt[1],
 			dev->state, dev->flags, dev_queue->state);
-	return;
 }
 
 static void ccmni_dump_rx_status(int md_id, int rx_ch, unsigned long long *status)
