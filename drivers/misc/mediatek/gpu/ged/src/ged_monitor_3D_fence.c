@@ -249,6 +249,10 @@ void ged_monitor_3D_fence_notify(void)
 	g_ul3DFenceDoneTime = (unsigned long)t;
 }
 
+int ged_monitor_3D_fence_get_count(void)
+{
+	return atomic_read(&g_i32Count);
+}
 
 module_param(ged_monitor_3D_fence_debug, uint, 0644);
 module_param(ged_monitor_3D_fence_disable, uint, 0644);
