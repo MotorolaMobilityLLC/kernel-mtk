@@ -2446,7 +2446,7 @@ EXPORT_SYMBOL(mtk_thermal_zone_bind_trigger_trip);
 
 int mtk_thermal_get_temp(MTK_THERMAL_SENSOR_ID id)
 {
-	int ret = *tz_last_values[id];
+	int ret = 0;
 
 	if (id < 0 || id >= MTK_THERMAL_SENSOR_COUNT)
 		return -127000;
@@ -2457,6 +2457,7 @@ int mtk_thermal_get_temp(MTK_THERMAL_SENSOR_ID id)
 		return -127000;
 	}
 
+	ret = *tz_last_values[id];
 	mutex_unlock(&MTM_GET_TEMP_LOCK);
 	return ret;
 }
