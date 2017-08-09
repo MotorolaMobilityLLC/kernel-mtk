@@ -69,7 +69,7 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 	struct ppm_cluster_status *cluster_status;
 	struct cpumask cluster_cpu, online_cpu;
 	int i;
-#if PPM_DLPT_ENHANCEMENT
+#if 0 /* PPM_DLPT_ENHANCEMENT */
 	unsigned int power;
 #else
 	int power;
@@ -95,7 +95,7 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 			i, cluster_status[i].core_num, cluster_status[i].freq_idx);
 	}
 
-#if PPM_DLPT_ENHANCEMENT
+#if 0 /* PPM_DLPT_ENHANCEMENT */
 	power = ppm_calc_total_power(cluster_status, ppm_main_info.cluster_num, 100);
 	return (power == 0) ? mt_ppm_thermal_get_max_power() : power;
 #else
