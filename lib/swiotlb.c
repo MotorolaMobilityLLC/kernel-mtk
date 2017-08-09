@@ -713,6 +713,7 @@ swiotlb_full(struct device *dev, size_t size, enum dma_data_direction dir,
 	 */
 	printk(KERN_ERR "DMA: Out of SW-IOMMU space for %zu bytes at "
 	       "device %s\n", size, dev ? dev_name(dev) : "?");
+	BUG();
 
 	if (size <= io_tlb_overflow || !do_panic)
 		return;
