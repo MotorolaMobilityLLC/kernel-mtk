@@ -315,8 +315,7 @@ static void gpt_devs_init(void)
 
 	for (i = 0; i < NR_GPTS; i++) {
 		gpt_devs[i].id = i;
-			gpt_devs[i].base_addr = GPT1_BASE + 0x10 * i;
-		pr_alert("gpt_devs_init: base_addr=0x%lx\n", (unsigned long)gpt_devs[i].base_addr);
+		gpt_devs[i].base_addr = GPT1_BASE + 0x10 * i;
 	}
 
 	gpt_devs[GPT6].features |= GPT_FEAT_64_BIT;
@@ -436,7 +435,7 @@ static inline void setup_clkevt(u32 freq)
 			     freq / HZ, clkevt_handler, GPT_ISR);
 
 	__gpt_get_cmp(dev, &cmp);
-	pr_alert("GPT1_CMP = %d, HZ = %d\n", cmp, HZ);
+	pr_debug("GPT1_CMP = %d, HZ = %d\n", cmp, HZ);
 
 	clockevents_register_device(evt);
 }
@@ -458,8 +457,6 @@ static inline void setup_clksrc(u32 freq)
 	struct timecounter *mt_timecounter;
 	u64 start_count;
 
-	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
-		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 	cs->mult = clocksource_hz2mult(freq, cs->shift);
 	sched_clock_register(mt_read_sched_clock, 32, freq);
 
@@ -475,8 +472,6 @@ static inline void setup_clksrc(u32 freq)
 	timecounter_init(mt_timecounter, &mt_cyclecounter, start_count);
 	pr_alert("setup_clksrc1: mt_cyclecounter.mult=0x%x mt_cyclecounter.shift=0x%x\n",
 		mt_cyclecounter.mult, mt_cyclecounter.shift);
-	pr_alert("setup_clksrc2: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
-		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 }
 
 static void setup_syscnt(void)
@@ -489,8 +484,6 @@ static void setup_syscnt(void)
 		/*set_cpuxgpt_clk(CLK_DIV2);*/
 		/* enable cpuxgpt */
 		/*enable_cpuxgpt();*/
-
-	pr_alert("fwq sysc count\n");
 }
 
 static ssize_t gpt_stat_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
@@ -545,8 +538,6 @@ static int __init gpt_mod_init(void)
 
 	xgpt_dir = proc_mkdir("mt_xgpt", NULL);
 	proc_create("gpt_stat", S_IRUGO, xgpt_dir, &xgpt_cmd_proc_fops);
-
-	pr_alert("GPT: init\n");
 
 	return 0;
 }
