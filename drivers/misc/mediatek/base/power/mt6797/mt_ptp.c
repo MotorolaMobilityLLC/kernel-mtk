@@ -1334,13 +1334,14 @@ static int base_ops_mon_mode(struct eem_det *det)
 	det->MTS =  0x2cf; /* (2048 * TS_SLOPE) + 2048; */
 	det->BTS =  0x80E; /* 4 * TS_INTERCEPT; */
 #endif
-	eem_debug("MTS = %d, BTS = %d\n", det->MTS, det->BTS);
+	eem_debug("Bk = %d, MTS = %d, BTS = %d\n", det->ctrl_id, det->MTS, det->BTS);
+	/*
 	if ((det->EEMINITEN == 0x0) || (det->EEMMONEN == 0x0)) {
-		eem_debug("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
+		eem_error("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
 		FUNC_EXIT(FUNC_LV_HELP);
 		return 1;
 	}
-
+	*/
 	/* det->ops->dump_status(det); */
 	det->ops->set_phase(det, EEM_PHASE_MON);
 
@@ -2873,7 +2874,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	det->t250 = eem_read(TEMP);
 
 	if (((det->t250 & 0xff)  > 0x4b) && ((det->t250  & 0xff) < 0xd3)) {
-		eem_isr_info("thermal sensor init has not been completed.(temp = 0x%08X)\n", det->t250);
+		eem_error("thermal sensor init has not been completed.(temp = 0x%08X)\n", det->t250);
 		goto out;
 	}
 
@@ -3162,7 +3163,7 @@ void eem_init01(void)
 					vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
 			}
 
-			eem_error("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);
+			eem_debug("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);
 			#ifdef __KERNEL__
 				if (vboot != det->VBOOT) {
 					aee_kernel_warning("mt_eem",
@@ -3783,7 +3784,10 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 			continue;
 		for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {
 			seq_printf(m, "Bank_number = %d\n", det->ctrl_id);
-			seq_printf(m, "mode = init%d\n", i);
+			if (i < EEM_PHASE_MON)
+				seq_printf(m, "mode = init%d\n", i+1);
+			else
+				seq_puts(m, "mode = mon\n");
 			if (eem_log_en) {
 				seq_printf(m, "0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
 					det->dcvalues[i],
