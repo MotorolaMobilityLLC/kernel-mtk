@@ -351,7 +351,7 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 	dsi_set_cmdq(data_array, 1, 0);
 }
 #endif
-static int lcm_adjust_fps(void *cmdq, int fps)
+static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 {
 #ifdef BUILD_LK
 	dprintf(0, "%s:from %d to %d\n", __func__, lcm_fps, fps);
