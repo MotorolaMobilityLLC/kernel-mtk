@@ -943,6 +943,7 @@ static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 #else
 
 	struct i2c_msg wr_msgs[2];
+	buffer[0] = a_u2Addr;
 
 	wr_msgs[0].addr = new_client->addr;
 	wr_msgs[0].flags = 0x00;
@@ -955,12 +956,6 @@ static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 	wr_msgs[1].buf = &buffer[1];
 
 	ret = i2c_transfer(adap, &wr_msgs[0], 2);
-
-	/*
-	mtk_i2c_transfer(adap, &wr_msgs,2, 0,100000);
-	*/
-
-	pr_err("%s mtk_i2c_transfer \n", __func__);
 
 	*a_pu2Result = buffer[1];
 #endif
