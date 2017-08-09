@@ -861,7 +861,7 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 	KREE_SESSION_HANDLE session;
 	uint32_t mem_handle;
 	struct MTIOMMU_PIN_RANGE_T *pin;
-	uint32_t *map_p;
+	uint64_t *map_p;
 	TZ_RESULT ret;
 	struct page **page;
 	int i;
@@ -896,7 +896,7 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 		goto client_regshm_mapfail_1;
 	}
 	/* 2. build PA table */
-	map_p = kzalloc(sizeof(uint32_t) * (pin->nrPages + 1), GFP_KERNEL);
+	map_p = kzalloc(sizeof(uint64_t) * (pin->nrPages + 1), GFP_KERNEL);
 	if (map_p == NULL) {
 		errcode = -ENOMEM;
 		goto client_regshm_mapfail_2;
