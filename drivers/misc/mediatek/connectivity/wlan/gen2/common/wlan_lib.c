@@ -4045,6 +4045,15 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	return WLAN_STATUS_SUCCESS;
 }
 
+UINT_32 wlanGetFwIDVersion(void)
+{
+	UINT_32 u4FwIDVersion = 0;
+
+	u4FwIDVersion = g_u2FwIDVersion;
+
+	return u4FwIDVersion;
+}
+EXPORT_SYMBOL(wlanGetFwIDVersion);
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to retrieve NIC capability from firmware
