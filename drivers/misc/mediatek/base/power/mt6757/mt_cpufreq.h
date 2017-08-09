@@ -45,6 +45,12 @@ enum dvfs_time_profile {
 
 typedef void (*cpuVoltsampler_func) (enum mt_cpu_dvfs_id, unsigned int mv);
 
+/* PMIC */
+extern int is_ext_buck_sw_ready(void);
+extern int is_ext_buck_exist(void);
+extern void mt6311_set_vdvfs11_vosel_on(unsigned char val);
+extern unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData);
+
 extern u32 get_devinfo_with_index(u32 index);
 extern void (*cpufreq_freq_check)(enum mt_cpu_dvfs_id id);
 
