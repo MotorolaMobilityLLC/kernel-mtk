@@ -13,6 +13,7 @@
 */
 
 #include <mtk_wcn_cmb_stub.h>
+#include <linux/platform_device.h>
 
 #ifdef DFT_TAG
 #undef DFT_TAG
@@ -20,6 +21,7 @@
 #define DFT_TAG         "[WMT-DETECT]"
 
 #include "wmt_detect.h"
+#include "wmt_gpio.h"
 
 #if MTK_WCN_REMOVE_KO
 #include "conn_drv_init.h"
@@ -210,12 +212,12 @@ int wmt_detect_ext_chip_detect(void)
 
 	/*todo: if there is external combo chip, power on chip return 0 */
 }
-
-static int wmt_detect_init(void)
+static int wmt_detect_probe(struct platform_device *pdev)
 {
 	dev_t devID = MKDEV(gWmtDetectMajor, 0);
 	int cdevErr = -1;
 	int ret = -1;
+	WMT_DETECT_ERR_FUNC("platform name: %s\n", pdev->name);
 
 	ret = register_chrdev_region(devID, WMT_DETECT_DEV_NUM, WMT_DETECT_DRVIER_NAME);
 	if (ret) {
@@ -248,7 +250,10 @@ static int wmt_detect_init(void)
 
 	/*init SDIO-DETECT module */
 	sdio_detect_init();
-
+#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
+	if (-1 == wmt_gpio_init(pdev))
+		goto err2;
+#endif
 	return 0;
 
 err2:
@@ -273,7 +278,7 @@ err1:
 	return -1;
 }
 
-static void wmt_detect_exit(void)
+static int wmt_detect_remove(struct platform_device *pdev)
 {
 	dev_t dev = MKDEV(gWmtDetectMajor, 0);
 
@@ -294,12 +299,48 @@ static void wmt_detect_exit(void)
 /*deinit SDIO-DETECT module*/
 	sdio_detect_exit();
 #endif
-
+#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
+	wmt_gpio_deinit();
+#endif
 	WMT_DETECT_INFO_FUNC("done\n");
+	return 0;
 }
 
-module_init(wmt_detect_init);
-module_exit(wmt_detect_exit);
+static struct of_device_id wmt_detect_match[] = {
+	{ .compatible = "mediatek,connectivity-combo", },
+	{}
+};
+MODULE_DEVICE_TABLE(of, wmt_detect_match);
+
+static struct platform_driver wmt_detect_driver = {
+	.probe = wmt_detect_probe,
+	.remove = wmt_detect_remove,
+	.driver = {
+		.owner = THIS_MODULE,
+		.name = "mediatek,connectivity-combo",
+		.of_match_table = wmt_detect_match,
+	},
+};
+
+/*module_platform_driver(wmt_detect_driver);*/
+static int wmt_detect_driver_init(void)
+{
+	int ret = 0;
+
+	ret = platform_driver_register(&wmt_detect_driver);
+	if (ret)
+		WMT_DETECT_ERR_FUNC("platform driver register fail ret: %d\n", ret);
+
+	return ret;
+}
+
+static void wmt_detect_driver_exit(void)
+{
+	platform_driver_unregister(&wmt_detect_driver);
+}
+
+module_init(wmt_detect_driver_init);
+module_exit(wmt_detect_driver_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Zhiguo.Niu & Chaozhong.Liang @ MBJ/WCNSE/SS1");

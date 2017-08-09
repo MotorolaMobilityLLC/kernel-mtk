@@ -104,7 +104,7 @@ typedef INT32(*MTK_WCN_STP_REG_IF_TX) (ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_I
 typedef INT32(*MTK_WCN_STP_REG_IF_RX) (MTK_WCN_STP_IF_RX func);
 typedef INT32(*MTK_WCN_STP_REG_EVENT_CB) (INT32 type, MTK_WCN_STP_EVENT_CB func);
 typedef INT32(*MTK_WCN_STP_RGE_TX_EVENT_CB) (INT32 type, MTK_WCN_STP_EVENT_CB func);
-typedef INT32(*MTK_WCN_STP_COREDUMP_START_GET) (VOID);
+typedef INT32(*MTK_WCN_STP_COREDUMP_START_GET)(VOID);
 
 typedef struct _MTK_WCN_STP_EXP_CB_INFO_ {
 	MTK_WCN_STP_SEND_DATA stp_send_data_cb;
@@ -214,6 +214,8 @@ typedef INT32(*MTK_WCN_WMT_MSGCB_UNREG) (ENUM_WMTDRV_TYPE_T eType);
 typedef INT32(*MTK_WCN_WMT_SDIO_OP_REG) (PF_WMT_SDIO_PSOP own_cb);
 typedef INT32(*MTK_WCN_WMT_SDIO_HOST_AWAKE) (VOID);
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT) (ENUM_WMTDRV_TYPE_T type, UINT32 reason);
+typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT_TIMEOUT)(ENUM_WMTDRV_TYPE_T type,
+		UINT32 reason, INT32 timeout);
 typedef UINT32(*MTK_WCN_WMT_IC_INFO_GET) (ENUM_WMT_CHIPINFO_TYPE_T type);
 
 typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
@@ -227,6 +229,7 @@ typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_SDIO_OP_REG wmt_sdio_op_reg_cb;
 	MTK_WCN_WMT_SDIO_HOST_AWAKE wmt_sdio_host_awake_cb;
 	MTK_WCN_WMT_ASSERT wmt_assert_cb;
+	MTK_WCN_WMT_ASSERT_TIMEOUT wmt_assert_timeout_cb;
 	MTK_WCN_WMT_IC_INFO_GET wmt_ic_info_get_cb;
 } MTK_WCN_WMT_EXP_CB_INFO, *P_MTK_WCN_WMT_EXP_CB_INFO;
 
@@ -572,6 +575,21 @@ extern INT32 mtk_wcn_stp_wmt_sdio_host_awake(VOID);
 *  MTK_WCN_BOOL_TRUE: OK; MTK_WCN_BOOL_FALSE:error
 *****************************************************************************/
 extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
+
+/*****************************************************************************
+ * * FUNCTION
+ * *  mtk_wcn_wmt_assert_timeout
+ * * DESCRIPTION
+ * *  host trigger firmware assert
+ * * PARAMETERS
+ * *  type   [IN] subsystem driver type
+ * *  reason [IN] trigger assert reason
+ * *  timeout [IN] trigger assert timeout data
+ * * RETURNS
+ * *  MTK_WCN_BOOL_TRUE: OK; MTK_WCN_BOOL_FALSE:error
+ * *****************************************************************************/
+extern MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type,
+		UINT32 reason, INT32 timeout);
 
 #endif
 

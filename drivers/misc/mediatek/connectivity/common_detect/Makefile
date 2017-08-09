@@ -64,6 +64,7 @@ ifeq ($(CONFIG_MTK_COMBO),y)
 	ccflags-y += -I$(src)/drv_init/inc
 	obj-y += mtk_wcn_stub_alps.o
 	obj-y += wmt_stp_exp.o
+	obj-y += wmt_gpio.o
 
 	obj-y += wmt_detect.o
 	obj-y += sdio_detect.o
@@ -76,6 +77,7 @@ endif
 ifeq ($(CONFIG_MTK_COMBO),m)
 	obj-y += mtk_wcn_stub_alps.o
 	obj-y += wmt_stp_exp.o
+	obj-y += wmt_gpio.o
 
 	obj-$(CONFIG_MTK_COMBO) += mtk_wmt_detect.o
 	mtk_wmt_detect-objs := wmt_detect.o

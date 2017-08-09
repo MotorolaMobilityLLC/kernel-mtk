@@ -57,6 +57,7 @@ MTK_WCN_WMT_MSGCB_UNREG mtk_wcn_wmt_msgcb_unreg_f = NULL;
 MTK_WCN_WMT_SDIO_OP_REG mtk_wcn_wmt_sdio_op_reg_f = NULL;
 MTK_WCN_WMT_SDIO_HOST_AWAKE mtk_wcn_wmt_sdio_host_awake_f = NULL;
 MTK_WCN_WMT_ASSERT mtk_wcn_wmt_assert_f = NULL;
+MTK_WCN_WMT_ASSERT_TIMEOUT mtk_wcn_wmt_assert_timeout_f = NULL;
 MTK_WCN_WMT_IC_INFO_GET mtk_wcn_wmt_ic_info_get_f = NULL;
 
 /*******************************************************************************
@@ -101,7 +102,6 @@ UINT32 mtk_wcn_stp_exp_cb_unreg(VOID)
 	mtk_wcn_stp_reg_event_cb_f = NULL;
 	mtk_wcn_stp_reg_tx_event_cb_f = NULL;
 	mtk_wcn_stp_coredump_start_get_f = NULL;
-	mtk_wcn_wmt_ic_info_get_f = NULL;
 
 	return 0;
 }
@@ -278,6 +278,7 @@ UINT32 mtk_wcn_wmt_exp_cb_reg(P_MTK_WCN_WMT_EXP_CB_INFO pWmtExpCb)
 	mtk_wcn_wmt_sdio_op_reg_f = pWmtExpCb->wmt_sdio_op_reg_cb;
 	mtk_wcn_wmt_sdio_host_awake_f = pWmtExpCb->wmt_sdio_host_awake_cb;
 	mtk_wcn_wmt_assert_f = pWmtExpCb->wmt_assert_cb;
+	mtk_wcn_wmt_assert_timeout_f = pWmtExpCb->wmt_assert_timeout_cb;
 	mtk_wcn_wmt_ic_info_get_f = pWmtExpCb->wmt_ic_info_get_cb;
 	return 0;
 }
@@ -297,6 +298,8 @@ UINT32 mtk_wcn_wmt_exp_cb_unreg(VOID)
 	mtk_wcn_wmt_sdio_op_reg_f = NULL;
 	mtk_wcn_wmt_sdio_host_awake_f = NULL;
 	mtk_wcn_wmt_assert_f = NULL;
+	mtk_wcn_wmt_assert_timeout_f = NULL;
+	mtk_wcn_wmt_ic_info_get_f = NULL;
 
 	return 0;
 }
@@ -432,6 +435,18 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
 	return ret;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_assert);
+
+MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, INT32 timeout)
+{
+	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
+
+	if (mtk_wcn_wmt_assert_timeout_f)
+		ret = (*mtk_wcn_wmt_assert_timeout_f)(type, reason, timeout);
+	else
+		WMT_STP_EXP_ERR_FUNC("mtk_wcn_wmt_assert_timeout_f cb is null\n");
+	return ret;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_assert_timeout);
 
 UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type)
 {
