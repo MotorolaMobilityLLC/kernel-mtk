@@ -1013,7 +1013,7 @@ unsigned int lcm_common_compare_id(void)
 
 
 LCM_DRIVER lcm_common_drv = {
-	.name = "lcm_common",
+	.name = NULL,
 	.set_util_funcs = lcm_common_set_util_funcs,
 	.get_params = lcm_common_get_params,
 	.init = lcm_common_init,

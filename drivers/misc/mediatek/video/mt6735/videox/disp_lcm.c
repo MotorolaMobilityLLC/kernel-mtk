@@ -769,6 +769,9 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 			isLCMInited = false;
 		} else {
 			lcm_drv = lcm_driver_list[0];
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+			lcm_drv->name = lcm_name_list[0];
+#endif
 			if (strcmp(lcm_drv->name, plcm_name)) {
 				DISPERR
 				    ("FATAL ERROR!!!LCM Driver defined in kernel is different with LK\n");
@@ -787,6 +790,9 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+				lcm_drv->name = lcm_name_list[i];
+#endif
 				if (!strcmp(lcm_drv->name, plcm_name)) {
 					isLCMFound = true;
 					isLCMInited = true;
