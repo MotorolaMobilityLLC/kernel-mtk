@@ -65,21 +65,35 @@ enum FH_CMD {
 };
 
 /* Olympus */
+/* FHCTL,			APMIXEDSYS				*/
+/* ARMPLL1,		ARMPLL_LL					*/
+/* ARMPLL2,		ARMPLL_L					*/
+/* ARMPLL3,		Not used					*/
+/* CCIPLL,		CCIPLL						*/
+/* GPUPLL,		Not used					*/
+/* MPLL,			MPLL							*/
+/* MEMPLL,		not in apmixedsys	*/
+/* MAINPLL,		MAINPLL						*/
+/* MSDCPLL,		MSDCPLL						*/
+/* MMPLL,			MMPLL							*/
+/* VDECPLL,		VENCPLL						*/
+/* TVDPLL,		TVDPLL						*/
+
 enum FH_PLL_ID {
-	FH_MIN_PLLID		= 0,
-	FH_ARMPLL1_PLLID	= FH_MIN_PLLID,		/* ARMPLL1, ARMPLL_LL */
-	FH_ARMPLL2_PLLID	= 1,			/* ARMPLL2, ARMPLL_L */
-	FH_ARMPLL3_PLLID	= 2,			/* ARMPLL3 */
-	FH_CCI_PLLID		= 3,
-	FH_GPU_PLLID		= 4,
-	FH_M_PLLID		= 5,
-	FH_MEM_PLLID		= 6,
-	FH_MAIN_PLLID		= 7,
-	FH_MSDC_PLLID		= 8,
-	FH_MM_PLLID		= 9,
-	FH_VENC_PLLID		= 10,			/* FH_VDEC_PLLID */
-	FH_TVD_PLLID		= 11,
-	FH_MAX_PLLID		= FH_TVD_PLLID,
+	FH_MIN_PLLID			= 0,
+	FH_ARMPLL1_PLLID	= FH_MIN_PLLID,
+	FH_ARMPLL2_PLLID	= 1,
+	FH_ARMPLL3_PLLID	= 2,
+	FH_CCI_PLLID			= 3,
+	FH_GPU_PLLID			= 4,
+	FH_M_PLLID				= 5,
+	FH_MEM_PLLID			= 6,
+	FH_MAIN_PLLID			= 7,
+	FH_MSDC_PLLID			= 8,
+	FH_MM_PLLID				= 9,
+	FH_VENC_PLLID			= 10,
+	FH_TVD_PLLID			= 11,
+	FH_MAX_PLLID			= FH_TVD_PLLID,
 	FH_PLL_NUM
 };
 

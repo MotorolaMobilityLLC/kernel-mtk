@@ -220,6 +220,9 @@ static struct freqhopping_ssc mt_ssc_fhpll_userdefined[FH_PLL_NUM] = {
 	{0, 1, 1, 2, 2, 0},
 	{0, 1, 1, 2, 2, 0},
 	{0, 1, 1, 2, 2, 0},
+	{0, 1, 1, 2, 2, 0},
+	{0, 1, 1, 2, 2, 0},
+	{0, 1, 1, 2, 2, 0},
 	{0, 1, 1, 2, 2, 0}
 };
 
@@ -316,8 +319,14 @@ static const unsigned long g_reg_dvfs[] = {
 /* caller: clk mgr */
 static void mt_fh_hal_default_conf(void)
 {
+	int id;
 	FH_MSG_DEBUG("%s", __func__);
-#if 1
+
+	/* According to setting to enable PLL SSC during init FHCTL. */
+	for (id = 0; id < FH_PLL_NUM; id++)
+		freqhopping_config(id, g_default_freq[id], g_fh_pll[id].pll_status);
+
+#if 0
 	/* Default turn off all PLL SSC on Olympus */
 	/*
 	freqhopping_config(FH_ARMPLL1_PLLID, g_default_freq[FH_ARMPLL1_PLLID], true);
@@ -1541,19 +1550,21 @@ static int __fh_debug_proc_read(struct seq_file *m, void *v, fh_pll_t *pll)
 
 	seq_puts(m, "\r\n[freqhopping debug flag]\r\n");
 	seq_puts(m, "===============================================\r\n");
-	seq_puts(m, "id=ARMCA15PLL=ARMCA7PLL=MAINPLL=MEMPLL=MMPLL=MPLL=VENCPLL=MSDCPLL=TVDPLL\r\n");
-	seq_printf(m, "  =%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d=\r\n",
+	seq_puts(m, "id=ARMPLL1=ARMPLL2=ARMPLL3=CCIPLL=GPUPLL=MPLL=MEMPLL=MAINPLL=MSDCPLL=MMPLL=VDECPLL=TVDPLL\r\n");
+	seq_printf(m, "  =%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d=\r\n",
 				pll[FH_ARMPLL1_PLLID].fh_status, pll[FH_ARMPLL2_PLLID].fh_status,
-				pll[FH_MAIN_PLLID].fh_status, pll[FH_MEM_PLLID].fh_status,
-				pll[FH_MM_PLLID].fh_status, pll[FH_M_PLLID].fh_status,
-				pll[FH_VENC_PLLID].fh_status, pll[FH_MSDC_PLLID].fh_status,
-				pll[FH_TVD_PLLID].fh_status);
-	seq_printf(m, "  =%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d=\r\n",
+				pll[FH_ARMPLL3_PLLID].fh_status, pll[FH_CCI_PLLID].fh_status,
+				pll[FH_GPU_PLLID].fh_status, pll[FH_M_PLLID].fh_status,
+				pll[FH_MEM_PLLID].fh_status, pll[FH_MAIN_PLLID].fh_status,
+				pll[FH_MSDC_PLLID].fh_status, pll[FH_MM_PLLID].fh_status,
+				pll[FH_VENC_PLLID].fh_status, pll[FH_TVD_PLLID].fh_status);
+	seq_printf(m, "  =%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d==%04d=\r\n",
 				pll[FH_ARMPLL1_PLLID].setting_id, pll[FH_ARMPLL2_PLLID].setting_id,
-				pll[FH_MAIN_PLLID].setting_id, pll[FH_MEM_PLLID].setting_id,
-				pll[FH_MM_PLLID].setting_id, pll[FH_M_PLLID].setting_id,
-				pll[FH_VENC_PLLID].setting_id, pll[FH_MSDC_PLLID].setting_id,
-				pll[FH_TVD_PLLID].setting_id);
+				pll[FH_ARMPLL3_PLLID].setting_id, pll[FH_CCI_PLLID].setting_id,
+				pll[FH_GPU_PLLID].setting_id, pll[FH_M_PLLID].setting_id,
+				pll[FH_MEM_PLLID].setting_id, pll[FH_MAIN_PLLID].setting_id,
+				pll[FH_MSDC_PLLID].setting_id, pll[FH_MM_PLLID].setting_id,
+				pll[FH_VENC_PLLID].setting_id, pll[FH_TVD_PLLID].setting_id);
 
 	return 0;
 }
