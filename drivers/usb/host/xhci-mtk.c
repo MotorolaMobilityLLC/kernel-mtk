@@ -461,6 +461,8 @@ int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type,
 		maxp, interval, burst, mult,
 		ep, ep_ctx, sch_ep);
 
+	ret = SCH_FAIL; /* default value */
+
 	if (isTT && ep_type == USB_EP_INT
 	    && ((dev_speed == USB_SPEED_LOW) || (dev_speed == USB_SPEED_FULL))) {
 		frame_interval = interval >> 3;
