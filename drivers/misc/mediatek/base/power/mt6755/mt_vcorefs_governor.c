@@ -36,7 +36,7 @@
 #include <linux/suspend.h>
 
 /* todo */
-__weak void mt_eint_virq_soft_clr(int irq)
+__weak void mt_eint_virq_soft_clr(unsigned int irq)
 {
 }
 
