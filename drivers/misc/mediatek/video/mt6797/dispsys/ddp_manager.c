@@ -48,7 +48,7 @@ typedef struct {
 typedef struct {
 	cmdqRecHandle cmdqhandle;
 	int hwmutexid;
-	int power_sate;
+	int power_state;
 	DDP_MODE mode;
 	struct mutex mutex_lock;
 	DDP_IRQ_EVENT_MAPPING irq_event_map[DISP_PATH_EVENT_NUM];
@@ -61,7 +61,7 @@ typedef struct {
 typedef struct {
 	int handle_cnt;
 	int mutex_idx;
-	int power_sate;
+	int power_state;
 	struct mutex mutex_lock;
 	int module_usage_table[DISP_MODULE_NUM];
 	ddp_path_handle module_path_table[DISP_MODULE_NUM];
@@ -161,14 +161,14 @@ static int path_top_clock_off(void)
 {
 	int i = 0;
 	DDP_MANAGER_CONTEXT *context = _get_context();
-	if (context->power_sate) {
+	if (context->power_state) {
 		for (i = 0; i < DDP_MAX_MANAGER_HANDLE; i++) {
 			if (context->handle_pool[i] != NULL
-			    && context->handle_pool[i]->power_sate != 0)
+			    && context->handle_pool[i]->power_state != 0)
 				return 0;
 
 		}
-		context->power_sate = 0;
+		context->power_state = 0;
 		ddp_path_top_clock_off();
 	}
 	return 0;
@@ -177,8 +177,8 @@ static int path_top_clock_off(void)
 static int path_top_clock_on(void)
 {
 	DDP_MANAGER_CONTEXT *context = _get_context();
-	if (!context->power_sate) {
-		context->power_sate = 1;
+	if (!context->power_state) {
+		context->power_state = 1;
 		ddp_path_top_clock_on();
 	}
 	return 0;
@@ -859,7 +859,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 		}
 	}
 	/* after init this path will power on; */
-	handle->power_sate = 1;
+	handle->power_state = 1;
 	return 0;
 }
 
@@ -888,7 +888,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 
 		}
 	}
-	handle->power_sate = 0;
+	handle->power_state = 0;
 	/* close top clock when last path init */
 	path_top_clock_off();
 	return 0;
@@ -1212,7 +1212,7 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 								   NULL);
 		}
 	}
-	handle->power_sate = 0;
+	handle->power_state = 0;
 	path_top_clock_off();
 	return 0;
 }
@@ -1237,7 +1237,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 		}
 	}
 	/* modules on this path will resume power on; */
-	handle->power_sate = 1;
+	handle->power_state = 1;
 	return 0;
 }
 
@@ -1263,7 +1263,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 			}
 		}
 	}
-	handle->power_sate = 0;
+	handle->power_state = 0;
 	path_top_clock_off();
 	return 0;
 }
@@ -1292,7 +1292,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 		}
 	}
 	/* modules on this path will resume power on; */
-	handle->power_sate = 1;
+	handle->power_state = 1;
 	return 0;
 }
 
@@ -1509,8 +1509,14 @@ int dpmgr_check_status_by_scenario(DDP_SCENARIO_ENUM scenario)
 	int i = 0;
 	int *modules = ddp_get_scenario_list(scenario);
 	int module_num = ddp_get_module_num(scenario);
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	DDPDUMP("check status on scenario %s\n", ddp_get_scenario_name(scenario));
+
+	if (!(context->power_state)) {
+		DDPDUMP("cannot check ddp status due to already power off\n");
+		return 0;
+	}
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
 	ddp_check_path(scenario);
@@ -1518,7 +1524,7 @@ int dpmgr_check_status_by_scenario(DDP_SCENARIO_ENUM scenario)
 	{
 		DDPDUMP("path:\n");
 		for (i = 0; i < module_num; i++)
-			DDPDUMP("%s-", ddp_get_module_name(modules[i]));
+			DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
 
 		DDPDUMP("\n");
 	}
@@ -1543,9 +1549,15 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	ddp_path_handle handle = (ddp_path_handle) dp_handle;
 	int *modules = ddp_get_scenario_list(handle->scenario);
 	int module_num = ddp_get_module_num(handle->scenario);
+	DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	DDPDUMP("check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+
+	if (!(context->power_state)) {
+		DDPDUMP("cannot check ddp status due to already power off\n");
+		return 0;
+	}
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
 	ddp_check_path(handle->scenario);
@@ -1553,7 +1565,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 
 	/* dump path */
 	{
-		DDPDUMP("path:");
+		DDPDUMP("path:\n");
 		for (i = 0; i < module_num; i++)
 			DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
 
