@@ -2891,8 +2891,9 @@ static int battery_probe(struct platform_device *pdev)
 	 */
 	atomic_set(&bat_thread_wakeup, 0);
 
-	/* TODO: hard-code chr_det irq temporarily. get from dts after pmic irq is ready */
-	g_bat.irq = 512 + 14;
+	g_bat.irq = platform_get_irq(pdev, 0);
+	if (g_bat.irq <= 0)
+		return -EINVAL;
 
 	p_bat_charging_data = (struct mt_battery_charging_custom_data *)dev_get_platdata(dev);
 	if (!p_bat_charging_data) {
