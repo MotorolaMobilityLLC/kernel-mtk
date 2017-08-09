@@ -28,7 +28,11 @@
 #endif
 #define SMITMP(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
 
-#define SMIERR(string, args...)	pr_debug("error: " string, ##args)
+#define SMIERR(string, args...)\
+	do {\
+		pr_debug("error: " string, ##args); \
+		aee_kernel_warning(SMI_LOG_TAG, "error: "string, ##args);  \
+	} while (0)
 #define smi_aee_print(string, args...)\
 	do {\
 		char smi_name[100];\
@@ -36,11 +40,6 @@
 	} while (0)
 
 /*
-#define SMIERR(string, args...)\
-	do {\
-		pr_debug("error: " string, ##args); \
-		aee_kernel_warning(SMI_LOG_TAG, "error: "string, ##args);  \
-	} while (0)
 #define smi_aee_print(string, args...)\
 	do {\
 		char smi_name[100];\
@@ -63,6 +62,6 @@ extern void smi_dumpCommon(void);
 /* void register_base_dump(void); */
 
 extern struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM];
-extern int smi_bus_regs_setting(int profile, struct SMI_SETTING *settings);
+extern int smi_bus_regs_setting(int larb_id, int profile, struct SMI_SETTING *settings);
 
 #endif
