@@ -660,7 +660,7 @@ static int init_volumes(struct ubi_device *ubi,
 	ubi->vol_count += 1;
 	vol->ubi = ubi;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	/* And add the backup volume */
 	vol = kzalloc(sizeof(struct ubi_volume), GFP_KERNEL);
 	if (!vol)

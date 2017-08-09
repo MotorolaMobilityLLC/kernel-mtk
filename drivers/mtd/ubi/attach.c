@@ -128,7 +128,7 @@ static int add_to_list(struct ubi_attach_info *ai, int pnum, int vol_id,
 	} else if (list == &ai->alien) {
 		dbg_bld("add to alien: PEB %d, EC %d", pnum, ec);
 		ai->alien_peb_count += 1;
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	} else if (list == &ai->waiting) {
 		dbg_bld("add to waiting: PEB %d, EC %d", pnum, ec);
 #endif
@@ -977,7 +977,7 @@ static int scan_peb(struct ubi_device *ubi, struct ubi_attach_info *ai,
 			return err;
 		else if (!err)
 			/* This corruption is caused by a power cut */
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 			err = add_to_list(ai, pnum, UBI_UNKNOWN, UBI_UNKNOWN, ec, 1, &ai->waiting);
 #else
 			err = add_to_list(ai, pnum, UBI_UNKNOWN, UBI_UNKNOWN, ec, 1, &ai->erase);
@@ -1190,7 +1190,7 @@ static void destroy_ai(struct ubi_attach_info *ai)
 	struct ubi_ainf_volume *av;
 	struct rb_node *rb;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	list_for_each_entry_safe(aeb, aeb_tmp, &ai->waiting, u.list) {
 		list_del(&aeb->u.list);
 		kmem_cache_free(ai->aeb_slab_cache, aeb);
@@ -1401,7 +1401,7 @@ static struct ubi_attach_info *alloc_ai(const char *slab_name)
 	INIT_LIST_HEAD(&ai->free);
 	INIT_LIST_HEAD(&ai->erase);
 	INIT_LIST_HEAD(&ai->alien);
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	INIT_LIST_HEAD(&ai->waiting);
 #endif
 	ai->volumes = RB_ROOT;
@@ -1476,7 +1476,7 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
 	ubi->ec_sum = ai->ec_sum + ubi->mean_ec * (ubi->good_peb_count - ai->ec_count);	/*MTK: calc ec_sum */
 	dbg_gen("max. sequence number:       %llu", ai->max_sqnum);
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	ubi->scanning = 1;
 	err = ubi_backup_init_scan(ubi, ai);
 	if (err)
@@ -1807,7 +1807,7 @@ out:
 	return -EINVAL;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 /**
  * check_pattern - check if buffer contains only a certain byte pattern.
  * @buf: buffer to check

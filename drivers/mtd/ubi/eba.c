@@ -79,7 +79,7 @@ unsigned long long ubi_next_sqnum(struct ubi_device *ubi)
  * This function returns compatibility flags for an internal volume. User
  * volumes have no compatibility flags, so %0 is returned.
  */
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int ubi_get_compat(const struct ubi_device *ubi, int vol_id)
 #else
 static int ubi_get_compat(const struct ubi_device *ubi, int vol_id)
@@ -642,7 +642,7 @@ write_error:
 	goto retry;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int blb_get_startpage(void)
 {
 	int _start = 0, _start0, _start1;
@@ -1026,7 +1026,7 @@ int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
 			len, offset, vol_id, lnum, pnum);
 #endif
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 #ifdef CONFIG_MTK_HIBERNATION
 		if (strcmp(vol->name, IPOH_VOLUME_NANE) != 0) {
 #endif
@@ -1556,7 +1556,7 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 	}
 	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	err = ubi_io_write_vid_hdr_blb(ubi, to, vid_hdr);
 #else
 	err = ubi_io_write_vid_hdr(ubi, to, vid_hdr);

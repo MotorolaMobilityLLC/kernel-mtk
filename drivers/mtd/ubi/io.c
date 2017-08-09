@@ -922,7 +922,7 @@ static int validate_vid_hdr(const struct ubi_device *ubi,
 	if (vol_id >= UBI_INTERNAL_VOL_START && compat != UBI_COMPAT_DELETE &&
 	    compat != UBI_COMPAT_RO && compat != UBI_COMPAT_PRESERVE &&
 	    compat != UBI_COMPAT_REJECT) {
-#ifndef CONFIG_BLB
+#ifndef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 		ubi_err("bad compat");
 		goto bad;
 #else
@@ -1126,7 +1126,7 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 	if (err)
 		return err;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	{
 		int vol_id =  be32_to_cpu(vid_hdr->vol_id);
 
@@ -1143,7 +1143,7 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 	return err;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int ubi_io_write_vid_hdr_blb(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr)
 {
@@ -1500,7 +1500,7 @@ error:
 	return err;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 /* Read one page with oob one time */
 int ubi_io_read_oob(const struct ubi_device *ubi, void *databuf, void *oobbuf,
 		int pnum, int offset) {

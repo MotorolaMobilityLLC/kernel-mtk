@@ -1319,7 +1319,7 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 	ubi_free_internal_volumes(ubi);
 	vfree(ubi->vtbl);
 	put_mtd_device(ubi->mtd);
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	vfree(ubi->databuf);
 	vfree(ubi->oobbuf);
 #endif

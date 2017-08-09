@@ -605,7 +605,7 @@ struct ubi_device {
 	struct mutex ckvol_mutex;
 
 	struct ubi_debug_info dbg;
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	int next_offset[2];
 	int leb_scrub[2];
 	struct mutex blb_mutex;
@@ -721,7 +721,7 @@ struct ubi_attach_info {
 	struct list_head free;
 	struct list_head erase;
 	struct list_head alien;
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	struct list_head waiting;
 #endif
 	int corr_peb_count;
@@ -777,7 +777,7 @@ extern const struct file_operations ubi_vol_cdev_operations;
 extern struct class *ubi_class;
 extern struct mutex ubi_devices_mutex;
 extern struct blocking_notifier_head ubi_notifiers;
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 extern u32 mtk_nand_paired_page_transfer(u32, bool);
 #endif
 
@@ -830,7 +830,7 @@ void ubi_calculate_reserved(struct ubi_device *ubi);
 int ubi_check_pattern(const void *buf, uint8_t patt, int size);
 
 /* eba.c */
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int blb_record_page1(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vidh, int work);
 int blb_get_startpage(void);
@@ -887,7 +887,7 @@ int ubi_io_read_vid_hdr(struct ubi_device *ubi, int pnum,
 			struct ubi_vid_hdr *vid_hdr, int verbose);
 int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr);
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int ubi_io_write_vid_hdr_blb(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr);
 int ubi_backup_init_scan(struct ubi_device *ubi, struct ubi_attach_info *ai);

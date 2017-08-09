@@ -30,9 +30,6 @@
 #ifndef __UBI_MEDIA_H__
 #define __UBI_MEDIA_H__
 
-#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
-#define CONFIG_BLB 1
-#endif
 #define CONFIG_UBI_SHARE_BUFFER
 
 #include <asm/byteorder.h>
@@ -300,7 +297,7 @@ struct ubi_vid_hdr {
 } __packed;
 
 /* Internal UBI volumes count */
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 #define UBI_INT_VOL_COUNT 2
 #else
 #define UBI_INT_VOL_COUNT 1
@@ -322,7 +319,7 @@ struct ubi_vid_hdr {
 #define UBI_LAYOUT_VOLUME_COMPAT UBI_COMPAT_REJECT
 
 /* The backup volume contains LSB page backup */
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 #define UBI_BACKUP_VOLUME_ID     (UBI_LAYOUT_VOLUME_ID+1)
 #define UBI_BACKUP_VOLUME_TYPE   UBI_VID_DYNAMIC
 #define UBI_BACKUP_VOLUME_ALIGN  1
@@ -394,7 +391,7 @@ struct ubi_vtbl_record {
 	__be32  crc;
 } __packed;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 struct ubi_blb_spare {
 	__be16  pnum;
 	__be16  lnum;
