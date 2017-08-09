@@ -1034,9 +1034,8 @@ EXPORT_SYMBOL(mt_spm_base_get);
 
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
-#define SPM_D_LEN		(13) /* # of cmd + arg0 + arg1 + ... */
+#define SPM_D_LEN		(11) /* # of cmd + arg0 + arg1 + ... */
 #define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
-	unsigned int len = SPM_D_LEN;
 	int ack_data;
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
@@ -1045,7 +1044,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	switch (cmd) {
 	case SPM_SUSPEND:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1055,7 +1054,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_RESUME:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1065,7 +1064,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_PWR_CTRL_SUSPEND:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1077,7 +1076,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_REGISTER_INIT:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1087,7 +1086,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_DPD_WRITE:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1097,7 +1096,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_IRQ0_HANDLER:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1107,7 +1106,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_AP_MDSRC_REQ:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1118,7 +1117,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	/* TO: spm_dpidle_task */
 	case SPM_DPIDLE_ENTER:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1128,7 +1127,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_DPIDLE_LEAVE:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1138,7 +1137,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_PWR_CTRL_DPIDLE:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_NOLOCK, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_DEEP_IDLE, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1148,7 +1147,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_ENTER_SODI:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1158,7 +1157,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_LEAVE_SODI:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_DEFAUT, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1168,7 +1167,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_PWR_CTRL_SODI:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_NOLOCK, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SODI, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
