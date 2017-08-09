@@ -1674,6 +1674,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	if (kalHardStartXmit(prSkb, prDev, prGlueInfo, ucBssIndex) == WLAN_STATUS_SUCCESS) {
 		/* Successfully enqueue to Tx queue */
 		/* Successfully enqueue to Tx queue */
+		if (netif_carrier_ok(prDev))
+			kalPerMonStart(prGlueInfo);
 	}
 
 	/* For Linux, we'll always return OK FLAG, because we'll free this skb by ourself */
