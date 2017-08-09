@@ -39,7 +39,7 @@ static VOID
 p2pFuncProcessP2pProbeRspAction(IN P_ADAPTER_T prAdapter,
 				IN PUINT_8 pucIEBuf, IN UINT_8 ucElemIdType,
 				OUT UINT_8 *ucBssIdx, OUT P_BSS_INFO_T *prP2pBssInfo, OUT BOOLEAN *fgIsWSCIE,
-				OUT BOOLEAN *fgIsP2PIE, OUT BOOLEAN *fgIsWFDIE);
+				OUT BOOLEAN * fgIsP2PIE, OUT BOOLEAN * fgIsWFDIE, OUT BOOLEAN * fgIsVenderIE);
 static VOID
 p2pFuncGetSpecAttriAction(IN P_IE_P2P_T prP2pIE,
 			  IN UINT_8 ucOuiType, IN UINT_8 ucAttriID, OUT P_ATTRIBUTE_HDR_T *prTargetAttri);
@@ -2503,6 +2503,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 	UINT_16 u2Offset = 0, u2IELength = 0, u2ProbeRspHdrLen = 0;
 	BOOLEAN fgIsP2PIE = FALSE, fgIsWSCIE = FALSE;
 	BOOLEAN fgIsWFDIE = FALSE;
+	BOOLEAN fgIsVenderIE = FALSE;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2EstimateSize = 0, u2EstimatedExtraIELen = 0;
 	UINT_32 u4IeArraySize = 0, u4Idx = 0;
@@ -2523,7 +2524,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 		u2IELength = prMgmtTxMsdu->u2FrameLength - u2ProbeRspHdrLen;
 
 #if CFG_SUPPORT_WFD
-		/* prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen = 0; */
+		prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen = 0;
 		/* Reset in each time ?? */
 		prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen = 0;
 #endif
@@ -2534,14 +2535,14 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 				{
 					p2pFuncProcessP2pProbeRspAction(prAdapter, pucIEBuf, ELEM_ID_SSID,
 									&ucBssIdx, &prP2pBssInfo, &fgIsWSCIE,
-									&fgIsP2PIE, &fgIsWFDIE);
+									&fgIsP2PIE, &fgIsWFDIE, &fgIsVenderIE);
 				}
 				break;
 			case ELEM_ID_VENDOR:
 				{
 					p2pFuncProcessP2pProbeRspAction(prAdapter, pucIEBuf, ELEM_ID_VENDOR,
 									&ucBssIdx, &prP2pBssInfo, &fgIsWSCIE,
-									&fgIsP2PIE, &fgIsWFDIE);
+									&fgIsP2PIE, &fgIsWFDIE, &fgIsVenderIE);
 				}
 				break;
 			default:
@@ -2588,9 +2589,8 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 		       prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen);
 		if (fgIsWFDIE)
 			u2EstimatedExtraIELen += prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
-#if 0
+
 		u2EstimatedExtraIELen += prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen;
-#endif
 #endif
 
 		u2EstimateSize += u2EstimatedExtraIELen;
@@ -2661,16 +2661,15 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 			prRetMsduInfo->u2FrameLength += (UINT_16) prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
 
 		}
-#if 0
-		if (prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen > 0) {
+		if (fgIsVenderIE) {
+			ASSERT(prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen > 0);
 			kalMemCopy((PUINT_8)
-				   ((UINT_32) prRetMsduInfo->prPacket +
-				    (UINT_32) prRetMsduInfo->u2FrameLength),
+				   ((ULONG) prRetMsduInfo->prPacket +
+				    (ULONG) prRetMsduInfo->u2FrameLength),
 				   prAdapter->prGlueInfo->prP2PInfo->aucVenderIE,
 				   prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen);
 			prRetMsduInfo->u2FrameLength += (UINT_16) prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen;
 		}
-#endif
 #endif /* CFG_SUPPORT_WFD */
 
 	} while (FALSE);
@@ -2686,7 +2685,7 @@ static VOID
 p2pFuncProcessP2pProbeRspAction(IN P_ADAPTER_T prAdapter,
 				IN PUINT_8 pucIEBuf, IN UINT_8 ucElemIdType,
 				OUT UINT_8 *ucBssIdx, OUT P_BSS_INFO_T *prP2pBssInfo, OUT BOOLEAN *fgIsWSCIE,
-				OUT BOOLEAN *fgIsP2PIE, OUT BOOLEAN *fgIsWFDIE)
+				OUT BOOLEAN *fgIsP2PIE, OUT BOOLEAN *fgIsWFDIE, OUT BOOLEAN *fgIsVenderIE)
 {
 	switch (ucElemIdType) {
 	case ELEM_ID_SSID:
@@ -2747,6 +2746,16 @@ p2pFuncProcessP2pProbeRspAction(IN P_ADAPTER_T prAdapter,
 			} else {
 				DBGLOG(P2P, INFO,
 				       "Other vender IE is found in probe resp (supp). Len %u\n", IE_SIZE(pucIEBuf));
+#if CFG_SUPPORT_WFD
+				*fgIsVenderIE = TRUE;
+				if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen + IE_SIZE(pucIEBuf)) < 1024) {
+					kalMemCopy(prAdapter->prGlueInfo->prP2PInfo->aucVenderIE +
+						prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen,
+						pucIEBuf,
+						IE_SIZE(pucIEBuf));
+					prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen += IE_SIZE(pucIEBuf);
+				}
+#endif
 			}
 		}
 		break;

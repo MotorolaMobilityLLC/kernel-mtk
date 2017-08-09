@@ -120,8 +120,8 @@ struct _GL_P2P_INFO_T {
 #if CFG_SUPPORT_WFD
 	UINT_8 aucWFDIE[400];	/* 0 for beacon, 1 for probe req, 2 for probe response */
 	UINT_16 u2WFDIELen;
-	/* UINT_8                      aucVenderIE[1024]; *//* Save the other IE for prove resp */
-/* UINT_16                     u2VenderIELen; */
+	UINT_8 aucVenderIE[1024]; /* Save the other IE for prove resp, PLS DON'T COMMENT OUT, CROSSMOUNT */
+	UINT_16 u2VenderIELen;
 #endif
 
 	UINT_8 ucOperatingChnl;
