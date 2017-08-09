@@ -59,10 +59,6 @@
 /******************************
  * Forward ref
  *******************************/
-/* TODO: remove it! */
-#ifndef GPUDVFS_WORKAROUND_FOR_GIT
-extern int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int num);
-#endif
 extern u32 get_devinfo_with_index(u32 index);
 #ifdef MT_GPUFREQ_AEE_RR_REC
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
