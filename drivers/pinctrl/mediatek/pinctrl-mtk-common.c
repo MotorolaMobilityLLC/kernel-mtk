@@ -424,7 +424,7 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 	int ret = 0;
 	struct mtk_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
 
-	pr_debug("fwq pinconfig param=%d, arg=%d\n", param, arg);
+	/*pr_debug("fwq pinconfig param=%d, arg=%d\n", param, arg);*/
 
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
