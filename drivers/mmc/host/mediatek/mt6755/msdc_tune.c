@@ -51,14 +51,6 @@
 
 u8 emmc_id; /* FIX ME: check if it can be removed */
 
-int g_ett_tune = 0;       /* enable or disable the ETT tune */
-int g_ett_hs400_tune = 0; /* record the number of failed HS400 ETT settings */
-int g_ett_cmd_tune = 0;   /* record the number of failed command ETT settings*/
-int g_ett_read_tune = 0;  /* record the number of failed read ETT settings */
-int g_ett_write_tune = 0; /* record the number of failed write ETT settings */
-int g_reset_tune = 0;     /* do not record the pass settigns, but try the worst
-			     setting of each request. */
-
 u32 sdio_tune_flag = 0; /* FIX ME: check if it can be removed since it is set
 			   but referenced */
 
@@ -107,28 +99,13 @@ void msdc_reset_crc_tune_counter(struct msdc_host *host, unsigned int index)
 	switch (index) {
 	case all_counter:
 		/* FIX ME: This part might be removed if HS400 AUTOK work fine*/
-		if (t_counter->time_hs400 != 0) {
-			/*
-			if (g_reset_tune) {
-				MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-					MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
-				MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-					MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
-			}
-			*/
+		if (t_counter->time_hs400 != 0)
 			ERR_MSG("TUNE HS400 Times(%d)", t_counter->time_hs400);
-			if (g_ett_tune)
-				g_ett_hs400_tune = t_counter->time_hs400;
-		}
 		t_counter->time_hs400 = 0;
 		/* fallthrough*/
 	case cmd_counter:
-		if (t_counter->time_cmd != 0) {
-			ERR_MSG("CRC TUNE CMD Times(%d)",
-				t_counter->time_cmd);
-			if (g_ett_tune)
-				g_ett_cmd_tune = t_counter->time_cmd;
-		}
+		if (t_counter->time_cmd != 0)
+			ERR_MSG("CRC TUNE CMD Times(%d)", t_counter->time_cmd);
 		t_counter->time_cmd = 0;
 		if (index == cmd_counter)
 			break;
@@ -136,8 +113,6 @@ void msdc_reset_crc_tune_counter(struct msdc_host *host, unsigned int index)
 		if (t_counter->time_read != 0) {
 			ERR_MSG("CRC TUNE READ Times(%d)",
 				t_counter->time_read);
-			if (g_ett_tune)
-				g_ett_read_tune = t_counter->time_read;
 		}
 		t_counter->time_read = 0;
 		if (index == read_counter)
@@ -146,8 +121,6 @@ void msdc_reset_crc_tune_counter(struct msdc_host *host, unsigned int index)
 		if (t_counter->time_write != 0) {
 			ERR_MSG("CRC TUNE WRITE Times(%d)",
 				t_counter->time_write);
-			if (g_ett_tune)
-				g_ett_write_tune = t_counter->time_write;
 		}
 		t_counter->time_write = 0;
 		break;
@@ -448,28 +421,16 @@ int emmc_hs400_tune_rw(struct msdc_host *host)
 	MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
 		orig_ds_dly3);
 
-	if (g_ett_tune) {
+	cur_ds_dly1 = orig_ds_dly1 - 1;
+	cur_ds_dly3 = orig_ds_dly3;
+	if (cur_ds_dly1 < 0) {
+		cur_ds_dly1 = 17;
 		cur_ds_dly3 = orig_ds_dly3 + 1;
-		cur_ds_dly1 = orig_ds_dly1;
-		if (cur_ds_dly3 >= 32) {
+		if (cur_ds_dly3 >= 32)
 			cur_ds_dly3 = 0;
-			cur_ds_dly1 = orig_ds_dly1 + 1;
-			if (cur_ds_dly1 >= 32)
-				cur_ds_dly1 = 0;
-		}
-	} else {
-		cur_ds_dly1 = orig_ds_dly1 - 1;
-		cur_ds_dly3 = orig_ds_dly3;
-		if (cur_ds_dly1 < 0) {
-			cur_ds_dly1 = 17;
-			cur_ds_dly3 = orig_ds_dly3 + 1;
-			if (cur_ds_dly3 >= 32)
-				cur_ds_dly3 = 0;
-		}
 	}
 
-	if (++host->t_counter.time_hs400 ==
-		(g_ett_tune ? (32 * 32) : MAX_HS400_TUNE_COUNT)) {
+	if (++host->t_counter.time_hs400 == MAX_HS400_TUNE_COUNT) {
 		ERR_MSG("Failed to update EMMC50_PAD_DS_TUNE_DLY, cur_ds_dly3=0x%x, cur_ds_dly1=0x%x",
 			cur_ds_dly3, cur_ds_dly1);
 #ifdef MSDC_LOWER_FREQ
@@ -659,7 +620,7 @@ int msdc_tune_cmdrsp(struct msdc_host *host)
 	MSDC_GET_FIELD(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_CMDRDLY2, dly2);
 
 	if (rsmpl >= 2) {
-		dly = ((dly1_sel ? dly : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
+		dly = ((dly1_sel ? dly1 : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
 
 		dly1_sel = 1;
 		if (dly < 32) {
@@ -730,7 +691,7 @@ int msdc_tune_read(struct msdc_host *host)
 	MSDC_GET_FIELD(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_DATRRDLY2, dly2);
 
 	if (dsmpl >= 2) {
-		dly = ((dly1_sel ? dly : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
+		dly = ((dly1_sel ? dly1 : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
 
 		dly1_sel = 1;
 		if (dly < 32) {
@@ -806,7 +767,7 @@ int msdc_tune_write(struct msdc_host *host)
 	MSDC_GET_FIELD(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_DATRRDLY2, dly2);
 
 	if (dsmpl >= 2) {
-		dly = ((dly1_sel ? dly : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
+		dly = ((dly1_sel ? dly1 : 0) + (dly2_sel ? dly2 : 0) + 1) % 63;
 
 		dly1_sel = 1;
 		if (dly < 32) {
@@ -1137,7 +1098,7 @@ static u32 msdc_status_verify_case4(struct msdc_host *host,
 	u32 err = 0;/*0: can tune normaly; 1: tune pass;*/
 	void __iomem *base = host->base;
 
-	if (cmd->arg && (0x1UL << 15))
+	if (cmd->arg & (0x1UL << 15))
 		return MSDC_VERIFY_NEED_NOT_TUNE;
 	while (1) {
 		msdc_reset_hw(host->id);

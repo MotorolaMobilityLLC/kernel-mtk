@@ -864,7 +864,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	mmc_claim_host(mmc);
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
-	if (!g_ett_tune && (host_ctl->hw->host_function == MSDC_EMMC))
+	if (host_ctl->hw->host_function == MSDC_EMMC)
 		msdc_switch_part(host_ctl, 0);
 #endif
 
@@ -911,10 +911,9 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	mmc_set_data_timeout(&msdc_data, mmc->card);
 	mmc_wait_for_req(mmc, &msdc_mrq);
 	/* compare */
-	if ((!read || g_ett_tune) && (type == MMC_TYPE_MMC))
+	if (!read)
 		goto skip_check;
-	if ((!read) && (type == MMC_TYPE_SD))
-		goto skip_check;
+
 	for (forIndex = 0; forIndex < MSDC_MULTI_BUF_LEN; forIndex++) {
 		/*
 		pr_err("index[%d]\tW_buffer[0x%x]\tR_buffer[0x%x]\t\n",
@@ -2182,18 +2181,6 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 			MSDC_READ32(pericfg_reg_base),
 			MSDC_READ32(pericfg_reg_base + 0x210),
 			MSDC_READ32(infracfg_ao_reg_base + 0x40));
-	} else if (cmd == MMC_CRC_STRESS) {
-		pr_err("==== CRC Stress Test ====\n");
-		if (0 == p1) {
-			g_reset_tune = 0;
-		} else {
-			g_reset_tune = 1;
-			base = mtk_msdc_host[0]->base;
-			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-				MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
-			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-				MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
-		}
 	} else if (cmd == SDIO_AUTOK_RESULT) {
 		id = p1;
 		vcore = p2;
