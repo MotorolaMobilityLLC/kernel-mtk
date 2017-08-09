@@ -55,6 +55,8 @@ static unsigned int  g_cust_upbound_freq_id;
 
 #endif
 
+static unsigned int  g_computed_freq_id = 0;
+
 static unsigned int gpu_debug_enable;
 
 
@@ -64,7 +66,7 @@ static unsigned int  g_cust_boost_freq_id;
 
 static unsigned int gpu_pre_loading = 0;
 unsigned int gpu_loading = 0;
-static unsigned int gpu_av_loading = 0;
+unsigned int gpu_av_loading = 0;
 static unsigned int gpu_block = 0;
 static unsigned int gpu_idle = 0;
 
@@ -406,6 +408,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
     ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] rdy to commit (%u)",ui32NewFreqID);
 
+    g_computed_freq_id = ui32NewFreqID;
     ged_dvfs_gpu_freq_commit(ui32NewFreqID, GED_DVFS_DEFAULT_COMMIT);
     
     g_ulWorkingPeriod_us = 0;
@@ -594,6 +597,8 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
         
 	gpu_bottom_freq = mt_gpufreq_get_freq_by_idx(g_bottom_freq_id);
 
+    //if current id is larger, ie lower freq, we need to reflect immedately
+    if(g_bottom_freq_id < mt_gpufreq_get_cur_freq_index()) 
 	ged_dvfs_gpu_freq_commit(g_bottom_freq_id, GED_DVFS_SET_BOTTOM_COMMIT);
      
 	mutex_unlock(&gsDVFSLock);
@@ -759,6 +764,7 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
             
             if (ged_dvfs_policy(gpu_loading, &g_ui32FreqIDFromPolicy, t, phase, ul3DFenceDoneTime, false))
             {
+                g_computed_freq_id = g_ui32FreqIDFromPolicy;
                 ged_dvfs_gpu_freq_commit(g_ui32FreqIDFromPolicy, GED_DVFS_DEFAULT_COMMIT);
             }
             
@@ -818,13 +824,13 @@ unsigned int ged_dvfs_get_gpu_loading(void)
 
 unsigned int ged_dvfs_get_gpu_blocking(void)
 {
-    return 100-gpu_av_loading; //gpu_block;
+    return gpu_block;
 }
 
 
 unsigned int ged_dvfs_get_gpu_idle(void)
 {
-    return gpu_idle;
+    return 100 - gpu_av_loading;
 }
 
 void ged_dvfs_get_gpu_cur_freq(GED_DVFS_FREQ_DATA* psData)

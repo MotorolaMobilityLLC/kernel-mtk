@@ -209,7 +209,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
     return GED_OK;
 }
 
-extern unsigned int gpu_loading;
+extern unsigned int gpu_av_loading;
 enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 {
     unsigned long long temp;
@@ -224,7 +224,7 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
     {
         psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
         
-        if(false==g_bGPUClock && 0==gpu_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
+        if(false==g_bGPUClock && 0==gpu_av_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
         {
             if (psNotify)
             {
