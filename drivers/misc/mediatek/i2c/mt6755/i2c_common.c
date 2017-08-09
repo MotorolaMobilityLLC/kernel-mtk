@@ -116,11 +116,8 @@ int i2c_trans_data(int bus_id, int address, char *buf, int count, unsigned int e
 int mt_i2c_test(int id, int addr)
 {
 	int ret = 0;
-	unsigned int flag;
+	/* unsigned int flag; */
 	/* unsigned char buffer[]={0x55}; */
-	if (id > 3)
-		flag = I2C_DIRECTION_FLAG;
-
 	/* flag |= 0x80000000; */
 	/* ret = i2c_trans_data(id, addr,buffer,1,flag,200); */
 	return ret;
@@ -237,7 +234,6 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 	int timing;
 	int trans_num;
 	int trans_auxlen;
-	int dir = 0;
 
 	int number = 0;
 	int length = 0;
@@ -272,8 +268,6 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				I2CERR("invalid operation\n");
 				goto err;
 			}
-			if (dir > 0)
-				ext_flag |= I2C_DIRECTION_FLAG;
 
 			if (trans_mode == 0) {
 				/* default is fifo */
@@ -483,9 +477,18 @@ static struct platform_device i2c_common_device = {
 
 static int __init xxx_init(void)
 {
+	int err = 0;
+
 	I2CLOG("i2c_common device init\n");
-	platform_device_register(&i2c_common_device);
-	return platform_driver_register(&i2c_common_driver);
+	err = platform_device_register(&i2c_common_device);
+	if (err)
+		return err;
+
+	err = platform_driver_register(&i2c_common_driver);
+	if (err)
+		platform_device_unregister(&i2c_common_device);
+
+	return err;
 }
 
 static void __exit xxx_exit(void)
