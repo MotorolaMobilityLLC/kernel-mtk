@@ -66,32 +66,20 @@ static bool usb_enable_clock(bool enable)
 
 	if (enable && count == 0) {
 
-		if (clk_enable(ssusb_ref_clk) == 0)
-			pr_debug("ssusb_ref_clk enable done\n");
-		else
+		if (clk_enable(ssusb_ref_clk) != 0)
 			pr_err("ssusb_ref_clk enable fail\n");
 
-		if (clk_enable(ssusb_bus_clk) == 0)
-			pr_debug("ssusb_bus_clk enable done\n");
-		else
+		if (clk_enable(ssusb_bus_clk) != 0)
 			pr_err("ssusb_bus_clk enable fail\n");
 
-
-		if (clk_enable(ssusb_sys_clk) == 0)
-			pr_debug("ssusb_sys_clk enable done\n");
-		else
+		if (clk_enable(ssusb_sys_clk) != 0)
 			pr_err("ssusb_sys_clk enable fail\n");
 
 	} else if (!enable && count == 1) {
 
 		clk_disable(ssusb_sys_clk);
-		pr_debug("ssusb_sys_clk disable done\n");
-
 		clk_disable(ssusb_bus_clk);
-		pr_debug("ssusb_bus_clk disable done\n");
-
 		clk_disable(ssusb_ref_clk);
-		pr_debug("ssusb_ref_clk disable done\n");
 	}
 
 	if (enable)
@@ -685,7 +673,6 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
 		u4FmOut = U3PhyReadReg32((phys_addr_t) (u3_sif_base + 0x10C));
-		pr_debug("FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
 
 		/* check if FM detection done */
 		if (u4FmOut != 0) {
@@ -1229,14 +1216,10 @@ void Charger_Detect_Init(void)
 			  __func__);
 	}
 #endif
-
-	pr_debug("%s-\n", __func__);
 }
 
 void Charger_Detect_Release(void)
 {
-	pr_debug("%s+\n", __func__);
-
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
 #endif
