@@ -9277,15 +9277,7 @@ static MINT32 ISP_suspend(
 		After VF enable, The frame count will be 0 at next VD;
 		if it has P1_DON after set vf disable, g_BkReg no need to add 1 */
 		regTGSt = ISP_RD32_TG_CAM_FRM_CNT(IrqType, module);
-
-		if (regTGSt - sof_count[IrqType] == 0)
-			g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt + 1;
-		else if (regTGSt - sof_count[IrqType] == 1)
-			g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt;
-		else {
-			LOG_ERR("%s: error: frame cnt(%d_%d)\n", moduleName, sof_count[IrqType], regTGSt);
-			g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt;
-		}
+		g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt;
 
 		Disable_Unprepare_cg_clock();
 	}
