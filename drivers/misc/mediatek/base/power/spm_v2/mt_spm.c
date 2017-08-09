@@ -59,11 +59,10 @@ static char *dyna_load_pcm_path[] = {
 #else
 	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs.bin",
 	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1.bin",
+	[DYNA_LOAD_PCM_MCDI] = "pcm_mcdi_ddrdfs.bin",
 #endif
-
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
-	[DYNA_LOAD_PCM_MCDI] = "pcm_mcdi_ddrdfs.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
 };
 
@@ -80,11 +79,11 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1_ULTRA]);
 #else
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_MCDI]);
 #endif
-
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_MCDI]);
+
 
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 #if defined(CONFIG_ARCH_MT6797)
