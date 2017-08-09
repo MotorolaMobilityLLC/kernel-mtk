@@ -76,6 +76,16 @@ config INET
 
 	  Short answer: say Y.
 
+config MTK_VOLTE_SUPPORT
+	  bool
+	  default n
+	  depends on !CRYPTO_NULL
+	  help
+	      dummy option for dependency check.if MTK_VOLTE_SUPPORT is set,
+	      CRYPTO_NULL is not set, build error will happen. only CRYPTO_NULL
+	      is set, build error will be fixed; when MTK_VOLTE_SUPPORT is not
+	      set, there is no error whatever CRYPTO_NULL is set or not set
+
 if INET
 source "net/ipv4/Kconfig"
 source "net/ipv6/Kconfig"
