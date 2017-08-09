@@ -920,7 +920,8 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		   result = MTK_NFC_PULL_INVALID;
 		   } */
 
-		pr_debug("%s : get gpio value. %d\n", __func__, result);
+		if (0 == result)
+			pr_debug("%s : get gpio value: %d, gpio_num: %d\n", __func__, result, gpio_num);
 
 		/*error handler for eint_registration abnormal case */
 		if (tmp_gpio == MTK_NFC_GPIO_IRQ && result == 0x01) {
