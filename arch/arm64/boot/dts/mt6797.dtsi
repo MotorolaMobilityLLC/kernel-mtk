@@ -1035,6 +1035,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			seninf_6_fifo_full = <396>;
 			seninf_7_fifo_full = <397>;
 			apxgpt2_count = <0x10008028>;
+			clocks = <&infrasys INFRA_GCE>;
+			clock-names = "GCE";
 		};
 
 		md2md_md2_ccif0@10213000 {
@@ -1699,67 +1701,88 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mmsys_config";
 			reg = <0x14000000 0x1000>;
 			interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
-			#clock-cells = <1>;
+			clocks = <&mmsys MM_CAM_MDP>;
+			clock-names = "CAM_MDP";
 		};
 
 		mdp_rdma0@14001000 {
 			compatible = "mediatek,mdp_rdma0";
 			reg = <0x14001000 0x1000>;
 			interrupts = <GIC_SPI 203 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_RDMA0>;
+			clock-names = "MDP_RDMA0";
 		};
 
 		mdp_rdma1@14002000 {
 			compatible = "mediatek,mdp_rdma1";
 			reg = <0x14002000 0x1000>;
 			interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_RDMA1>;
+			clock-names = "MDP_RDMA1";
 		};
 
 		mdp_rsz0@14003000 {
 			compatible = "mediatek,mdp_rsz0";
 			reg = <0x14003000 0x1000>;
 			interrupts = <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_RSZ0>;
+			clock-names = "MDP_RSZ0";
 		};
 
 		mdp_rsz1@14004000 {
 			compatible = "mediatek,mdp_rsz1";
 			reg = <0x14004000 0x1000>;
 			interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_RSZ1>;
+			clock-names = "MDP_RSZ1";
 		};
 
 		mdp_rsz2@14005000 {
 			compatible = "mediatek,mdp_rsz2";
 			reg = <0x14005000 0x1000>;
 			interrupts = <GIC_SPI 207 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_RSZ2>;
+			clock-names = "MDP_RSZ2";
 		};
 
 		mdp_wdma@14006000 {
 			compatible = "mediatek,mdp_wdma";
 			reg = <0x14006000 0x1000>;
 			interrupts = <GIC_SPI 210 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_WDMA>;
+			clock-names = "MDP_WDMA";
 		};
 
 		mdp_wrot0@14007000 {
 			compatible = "mediatek,mdp_wrot0";
 			reg = <0x14007000 0x1000>;
 			interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_WROT0>;
+			clock-names = "MDP_WROT0";
 		};
 
 		mdp_wrot1@14008000 {
 			compatible = "mediatek,mdp_wrot1";
 			reg = <0x14008000 0x1000>;
 			interrupts = <GIC_SPI 212 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_WROT1>;
+			clock-names = "MDP_WROT1";
 		};
 
 		mdp_tdshp@14009000 {
 			compatible = "mediatek,mdp_tdshp";
 			reg = <0x14009000 0x1000>;
 			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_TDSHP>;
+			clock-names = "MDP_TDSHP";
 		};
 
 		mdp_color@1400a000 {
 			compatible = "mediatek,mdp_color";
 			reg = <0x1400a000 0x1000>;
 			interrupts = <GIC_SPI 209 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_MDP_COLOR>;
+			clock-names = "MDP_COLOR";
 		};
 
 		mtkfb@0 {
