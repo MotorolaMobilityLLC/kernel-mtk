@@ -455,9 +455,6 @@ struct battery_meter_table_custom_data {
 
 struct battery_meter_custom_data batt_meter_cust_data;
 struct battery_meter_table_custom_data batt_meter_table_cust_data;
-struct battery_custom_data batt_cust_data;
-
-
 
 /* Temperature window size */
 #define TEMP_AVERAGE_SIZE	30
@@ -536,151 +533,6 @@ typedef enum {
 */
 
 /* ============================================================ // */
-
-int __batt_init_cust_data_from_cust_header(void)
-{
-	/* cust_charging.h */
-	/* stop charging while in talking mode */
-#if defined(STOP_CHARGING_IN_TAKLING)
-	batt_cust_data.stop_charging_in_takling = 1;
-#else				/* #if defined(STOP_CHARGING_IN_TAKLING) */
-	batt_cust_data.stop_charging_in_takling = 0;
-#endif				/* #if defined(STOP_CHARGING_IN_TAKLING) */
-
-#if defined(TALKING_RECHARGE_VOLTAGE)
-	batt_cust_data.talking_recharge_voltage = TALKING_RECHARGE_VOLTAGE;
-#endif
-
-#if defined(TALKING_SYNC_TIME)
-	batt_cust_data.talking_sync_time = TALKING_SYNC_TIME;
-#endif
-
-	/* Battery Temperature Protection */
-#if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT)
-	batt_cust_data.mtk_temperature_recharge_support = 1;
-#else				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
-	batt_cust_data.mtk_temperature_recharge_support = 0;
-#endif				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
-
-#if defined(MAX_CHARGE_TEMPERATURE)
-	batt_cust_data.max_charge_temperature = MAX_CHARGE_TEMPERATURE;
-#endif
-
-#if defined(MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE)
-	batt_cust_data.max_charge_temperature_minus_x_degree =
-	    MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
-#endif
-
-#if defined(MIN_CHARGE_TEMPERATURE)
-	batt_cust_data.min_charge_temperature = MIN_CHARGE_TEMPERATURE;
-#endif
-
-#if defined(MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE)
-	batt_cust_data.min_charge_temperature_plus_x_degree = MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
-#endif
-
-#if defined(ERR_CHARGE_TEMPERATURE)
-	batt_cust_data.err_charge_temperature = ERR_CHARGE_TEMPERATURE;
-#endif
-
-	/* Linear Charging Threshold */
-#if defined(V_PRE2CC_THRES)
-	batt_cust_data.v_pre2cc_thres = V_PRE2CC_THRES;
-#endif
-#if defined(V_CC2TOPOFF_THRES)
-	batt_cust_data.v_cc2topoff_thres = V_CC2TOPOFF_THRES;
-#endif
-#if defined(RECHARGING_VOLTAGE)
-	batt_cust_data.recharging_voltage = RECHARGING_VOLTAGE;
-#endif
-#if defined(CHARGING_FULL_CURRENT)
-	batt_cust_data.charging_full_current = CHARGING_FULL_CURRENT;
-#endif
-
-	/* Charging Current Setting */
-#if defined(CONFIG_USB_IF)
-	batt_cust_data.config_usb_if = 1;
-#else				/* #if defined(CONFIG_USB_IF) */
-	batt_cust_data.config_usb_if = 0;
-#endif				/* #if defined(CONFIG_USB_IF) */
-
-#if defined(USB_CHARGER_CURRENT_SUSPEND)
-	batt_cust_data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
-#endif
-#if defined(USB_CHARGER_CURRENT_UNCONFIGURED)
-	batt_cust_data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
-#endif
-#if defined(USB_CHARGER_CURRENT_CONFIGURED)
-	batt_cust_data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
-#endif
-#if defined(USB_CHARGER_CURRENT)
-	batt_cust_data.usb_charger_current = USB_CHARGER_CURRENT;
-#endif
-#if defined(AC_CHARGER_CURRENT)
-	batt_cust_data.ac_charger_current = AC_CHARGER_CURRENT;
-#endif
-#if defined(NON_STD_AC_CHARGER_CURRENT)
-	batt_cust_data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
-#endif
-#if defined(CHARGING_HOST_CHARGER_CURRENT)
-	batt_cust_data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_0_5A_CHARGER_CURRENT)
-	batt_cust_data.apple_0_5a_charger_current = APPLE_0_5A_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_1_0A_CHARGER_CURRENT)
-	batt_cust_data.apple_1_0a_charger_current = APPLE_1_0A_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_2_1A_CHARGER_CURRENT)
-	batt_cust_data.apple_2_1a_charger_current = APPLE_2_1A_CHARGER_CURRENT;
-#endif
-
-	/* Precise Tunning
-	   batt_cust_data.battery_average_data_number = BATTERY_AVERAGE_DATA_NUMBER;
-	   batt_cust_data.battery_average_size = BATTERY_AVERAGE_SIZE;
-	 */
-
-	/* charger error check */
-#if defined(BAT_LOW_TEMP_PROTECT_ENABLE)
-	batt_cust_data.bat_low_temp_protect_enable = 1;
-#else				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
-	batt_cust_data.bat_low_temp_protect_enable = 0;
-#endif				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
-
-#if defined(V_CHARGER_ENABLE)
-	batt_cust_data.v_charger_enable = V_CHARGER_ENABLE;
-#endif
-#if defined(V_CHARGER_MAX)
-	batt_cust_data.v_charger_max = V_CHARGER_MAX;
-#endif
-#if defined(V_CHARGER_MIN)
-	batt_cust_data.v_charger_min = V_CHARGER_MIN;
-#endif
-
-	/* Tracking TIME */
-#if defined(ONEHUNDRED_PERCENT_TRACKING_TIME)
-	batt_cust_data.onehundred_percent_tracking_time = ONEHUNDRED_PERCENT_TRACKING_TIME;
-#endif
-#if defined(NPERCENT_TRACKING_TIME)
-	batt_cust_data.npercent_tracking_time = NPERCENT_TRACKING_TIME;
-#endif
-#if defined(SYNC_TO_REAL_TRACKING_TIME)
-	batt_cust_data.sync_to_real_tracking_time = SYNC_TO_REAL_TRACKING_TIME;
-#endif
-#if defined(V_0PERCENT_TRACKING)
-	batt_cust_data.v_0percent_tracking = V_0PERCENT_TRACKING;
-#endif
-
-	/* High battery support */
-#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	batt_cust_data.high_battery_voltage_support = 1;
-#else				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
-	batt_cust_data.high_battery_voltage_support = 0;
-#endif				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
-
-	return 0;
-}
-
 
 int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 {
@@ -1345,7 +1197,6 @@ int batt_meter_init_cust_data(struct platform_device *dev)
 	/* #ifdef CONFIG_OF */
 	/* return __batt_meter_init_cust_data_from_dt(dev); */
 	/* #else */
-	__batt_init_cust_data_from_cust_header();
 	return __batt_meter_init_cust_data_from_cust_header(dev);
 	/* #endif */
 }
