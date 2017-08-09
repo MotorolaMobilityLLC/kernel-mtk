@@ -4100,7 +4100,6 @@ void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 	uint32 Audio_I2S0 = 0;
 	uint32 Audio_I2S3 = 0;
 
-	AudDrv_Clk_On();
 	/*Afe_Set_Reg(AUDIO_TOP_CON1, 0x2,  0x2);*/  /* I2S_SOFT_Reset  4 wire i2s mode*/
 	Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
 	Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */

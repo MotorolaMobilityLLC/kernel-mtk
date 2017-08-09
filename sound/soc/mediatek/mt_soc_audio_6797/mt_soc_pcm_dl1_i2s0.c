@@ -249,7 +249,7 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	AudDrv_Clk_On();
+
 	mi2s0_hdoutput_control = ucontrol->value.integer.value[0];
 #if 0
 	if (mi2s0_hdoutput_control) {
@@ -266,7 +266,6 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 	}
 #endif
-	AudDrv_Clk_Off();
 	return 0;
 }
 

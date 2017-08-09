@@ -255,7 +255,6 @@ static int mtk_voice_md2_bt_prepare(struct snd_pcm_substream *substream)
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		return 0;
 	}
-	AudDrv_Clk_On();
 
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I02, Soc_Aud_InterConnectionOutput_O07);

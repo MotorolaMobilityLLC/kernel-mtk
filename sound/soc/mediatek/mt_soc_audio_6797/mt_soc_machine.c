@@ -855,11 +855,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		ret =  kstrtoul(token5, 16, &regvalue);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr,
 			regvalue);
-		/* clk_buf_ctrl(CLK_BUF_AUDIO, true); //6752 need? */
-		AudDrv_Clk_On();
 		audckbufEnable(true);
 		Ana_Set_Reg(regaddr,  regvalue, 0xffffffff);
 		regvalue = Ana_Get_Reg(regaddr);
+		audckbufEnable(false);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr,
 			regvalue);
 	}
