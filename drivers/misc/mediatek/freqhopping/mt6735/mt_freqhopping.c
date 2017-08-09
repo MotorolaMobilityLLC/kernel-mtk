@@ -108,7 +108,7 @@ static const struct freqhopping_ssc ssc_mainpll_setting[] = {
 static const struct freqhopping_ssc ssc_mempll_setting[] = {
 	{0, 0, 0, 0, 0, 0},
 	{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-	{MEMPLL_DEF_FREQ, 0, 9, 0, 8, 0x1C000},	/* 0 ~ -8% */
+	{MEMPLL_DEF_FREQ, 0, 5, 0, 8, 0x1C000},	/* 0 ~ -8% */
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -514,7 +514,6 @@ static void wait_mempll_dds_stable(unsigned int target_dds,
 	fh_dds = fh_read32(reg_mon) & MASK21b;
 	while ((target_dds != fh_dds) && (i < wait_count)) {
 		DFS_APDMA_Enable();
-		udelay(4);
 		fh_dds = (fh_read32(reg_mon)) & MASK21b;
 		DFS_APDMA_END();
 		++i;
@@ -601,7 +600,7 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	/* 4.1 ensure jump to target DDS */
 	if (pll_id == FH_MEM_PLLID) {
 		/* mempll need dummy read */
-		wait_mempll_dds_stable(dds_value, g_reg_mon[pll_id], 200);
+		wait_mempll_dds_stable(dds_value, g_reg_mon[pll_id], 10000);
 	} else {
 		wait_dds_stable(dds_value, g_reg_mon[pll_id], 100);
 	}
