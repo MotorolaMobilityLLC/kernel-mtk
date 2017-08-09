@@ -815,6 +815,10 @@
 ********************************************************************************
 */
 #include "precomp.h"
+#if defined(MT6797)
+#include "sdio.h"
+#endif
+
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -1144,16 +1148,21 @@ VOID nicEnableInterrupt(IN P_ADAPTER_T prAdapter)
 		/* If INT was not enabled, enable it and also set LPOwn now */
 		else {
 			HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_SET | WHLPCR_INT_EN_SET);
+#if defined(MT6797)
+			__enable_irq();
+#endif
 			prAdapter->fgIsFwOwn = TRUE;
 		}
 	}
 	/* If INT was not enabled, enable it now */
-	else if (!fgIsIntEnableCache)
+	else if (!fgIsIntEnableCache) {
 #if defined(MT6797)
 		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_SET);
+		__enable_irq();
 #else
 		HAL_BYTE_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_SET);
 #endif
+	}
 
 }				/* end of nicEnableInterrupt() */
 

@@ -171,6 +171,7 @@
 #include "mt6630_reg.h"
 #include "sdio.h"
 #define NIC_TX_PAGE_SIZE                        128	/* in unit of bytes */
+DEFINE_SPINLOCK(HifLock);
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -933,17 +934,17 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	else
 	{
 		info.field.block_mode = SDIO_GEN3_BYTE_MODE; /* byte  mode */
-		info.field.count = count;			 
-	}	 
+		info.field.count = count;
+	}
 
 	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
 	info.field.addr = Port;
 
 
-	DBGLOG(RX, TRACE,"use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n", 
+	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
-	__disable_irq();
+	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	DBGLOG(RX, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n", Port, info.word, HifInfo->HifRegBaseAddr);
@@ -1026,14 +1027,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		PollTimeout = jiffies + HZ * 5;
 
 		do {
-#if 0
-			if (LoopCnt++ > 100000) {
-#else
 			if (time_before(jiffies, PollTimeout)) {
 				/* Do nothing */
 				/* not timeout, continue to poll */
 			} else {
-#endif
 
 #if (CONF_HIF_CONNSYS_DBG == 0)
 				/* TODO: impossible! reset DMA */
@@ -1057,15 +1054,14 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 #if (CONF_HIF_DMA_DBG == 0)
 				{
-/* UCHAR AeeBuffer[100]; */
+				/* UCHAR AeeBuffer[100]; */
 				UINT_32 FwCnt;
 				/* UINT_32 RegValChip, RegValLP; */
 				for (FwCnt = 0; FwCnt < 512; FwCnt++) {
 					/* DBGLOG(RX, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR)); */
 					/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
-					if ((FwCnt + 1) % 16 == 0){
+					if ((FwCnt + 1) % 16 == 0)
 						DBGLOG(RX, WARN, "\n");
-					}
 				}
 				DBGLOG(RX, WARN, "\n\n");
 				return TRUE;
@@ -1103,7 +1099,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
-		__enable_irq();
+		my_sdio_enable(HifLock);
 
 		/* MT6797 TODO */
 		kalMemCopy(Buf, rdTestPkt, Size);
@@ -1121,15 +1117,14 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			DBGLOG(RX, TRACE, "basic readl idx = %x, addr = %x, rVal = %x, HifBase = %p\n", IdLoop, Port, *LoopBuf, HifInfo->HifRegBaseAddr);
 			LoopBuf++;
 		}
-		
-		__enable_irq();
+
+		my_sdio_enable(HifLock);
 
 	}
 
 	return TRUE;
-
 }				/* end of kalDevPortRead() */
-	
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Write device I/O port
@@ -1210,30 +1205,27 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
     info.field.rw_flag = SDIO_GEN3_WRITE;
     info.field.func_num = func->num;
 
-    if (count >= func->cur_blksize)
-    {
-        info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block  mode */
-        info.field.count = count/func->cur_blksize;
-        if (count % func->cur_blksize > 0)
-            info.field.count++;
-        count = info.field.count * func->cur_blksize;
+	if (count >= func->cur_blksize) {
+		info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block  mode */
+		info.field.count = count/func->cur_blksize;
+		if (count % func->cur_blksize > 0)
+			info.field.count++;
+		count = info.field.count * func->cur_blksize;
+	} else {
+		info.field.block_mode = SDIO_GEN3_BYTE_MODE; /* byte  mode */
+		info.field.count = count;
     }
-    else
-    {
-        info.field.block_mode = SDIO_GEN3_BYTE_MODE; /* byte  mode */
-        info.field.count = count;            
-    }    
 
-    info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
-    info.field.addr = Port;
+	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
+	info.field.addr = Port;
 
-    DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n", 
-        func->use_dma, Size, count, func->cur_blksize, info.word);
+	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+		func->use_dma, Size, count, func->cur_blksize, info.word);
 
-	__disable_irq();
+	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
-	
+
 	DBGLOG(TX, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n", Port, info.word, HifInfo->HifRegBaseAddr);	
 	}
 
@@ -1369,7 +1361,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
-		__enable_irq();
+		my_sdio_enable(HifLock);
 
 		HIF_DBG_TX(("[WiFi/HIF] DMA TX OK!\n"));
 	} else
@@ -1387,12 +1379,12 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 
 		for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
-			writel(*LoopBuf, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));			
+			writel(*LoopBuf, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));
 			DBGLOG(TX, TRACE, "basic writel idx = %x, addr = %x, wVal = %x, HifBase = %p\n", IdLoop, Port, *LoopBuf, HifInfo->HifRegBaseAddr);
 			LoopBuf++;
 		}
 
-		__enable_irq();
+		my_sdio_enable(HifLock);
 
 		HIF_DBG_TX(("\n\n"));
 	}
@@ -1433,11 +1425,11 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	HifInfo = &GlueInfo->rHifInfo;
 
 	if (GlueInfo->ulFlag & GLUE_FLAG_HALT) {
-		HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
+		__disable_irq();
 		return IRQ_HANDLED;
 	}
 
-	HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
+	__disable_irq();
 
 	/* lock 100ms to avoid suspend */
     /* MT6797 TODO */
@@ -1447,7 +1439,7 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	set_bit(GLUE_FLAG_INT_BIT, &GlueInfo->ulFlag);
 
 	/* when we got sdio interrupt, we wake up the tx servie thread */
-	
+
 	wake_up_interruptible(&GlueInfo->waitq_hif);
 
 	IsrPassCnt++;

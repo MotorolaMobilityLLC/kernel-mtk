@@ -27,7 +27,7 @@
     Who         When            What
     --------    ----------      ----------------------------------------------
 */
-#include <linux/kernel.h>	
+#include <linux/kernel.h>
 #include "sdio.h"
 #include <asm/io.h>
 #include "debug.h"
@@ -44,9 +44,8 @@
  *	and @err_ret will contain the error code.
  */
 
-extern UINT_8 **g_pHifRegBaseAddr;	
 struct sdio_func g_sdio_func;
-	
+
 int sdio_open(void)
 {
 	struct sdio_func *func = &g_sdio_func;
@@ -78,7 +77,7 @@ int sdio_open(void)
 	{
 		/* DBGLOG(INIT, TRACE, "Set block size failed. Error = %d.\n", ret); */
 		goto err;
-	}	
+	}
 
 	/* register sdio irq */
 	sdio_claim_host(func);
@@ -109,7 +108,7 @@ int sdio_cccr_read(UINT_32 addr, UINT_8 *value)
 		/* DBGLOG(INIT, TRACE, "Read CCCR 0x%02x failed. Error = %d\n", addr, ret); */
 	}
 
-	return ret;   
+	return ret;
 }
 
 
@@ -148,23 +147,19 @@ UINT_32 sdio_cr_readl(volatile unsigned int *HifBaseAddr, unsigned int addr)
 	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 
-	
+
 	/* CMD53 incremental mode to read 4-byte */
 	/* 1. Setup command information */
 	info.word = 0;
 	info.field.rw_flag = SDIO_GEN3_READ;
 	info.field.func_num = func->num;/* SDIO_GEN3_FUNCTION_WIFI */
 	info.field.block_mode = SDIO_GEN3_BYTE_MODE;
-	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; 
+	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE;
 	info.field.addr = addr;
 	info.field.count = 4;
 
-	__disable_irq();
-
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));		
-	value = readl((volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));	
-
-	__enable_irq();
+	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));
+	value = readl((volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));
 
 	return value;
 }
@@ -186,24 +181,21 @@ void sdio_cr_writel(UINT_32 b, volatile unsigned int *HifBaseAddr, unsigned int 
 {
     sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
-	
-		
+
+
     /* CMD53 incremental mode to read 4-byte */
     /* 1. Setup command information */
-    info.word = 0;
-    info.field.rw_flag = SDIO_GEN3_WRITE;
-    info.field.func_num = func->num; /* SDIO_GEN3_FUNCTION_WIFI */
-    info.field.block_mode = SDIO_GEN3_BYTE_MODE;
-    info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; 
-    info.field.addr = addr;
-    info.field.count = 4;
-	
+	info.word = 0;
+	info.field.rw_flag = SDIO_GEN3_WRITE;
+	info.field.func_num = func->num; /* SDIO_GEN3_FUNCTION_WIFI */
+	info.field.block_mode = SDIO_GEN3_BYTE_MODE;
+	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE;
+	info.field.addr = addr;
+	info.field.count = 4;
 
-	__disable_irq();
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));		
-	writel(b, (volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));	
-	__enable_irq();
-	
+	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));
+	writel(b, (volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));
+
 }
 
 
@@ -214,7 +206,7 @@ unsigned char ahb_sdio_f0_readb(struct sdio_func *func, unsigned int addr,
     sdio_gen3_cmd52_info info;
     info.word = 0;
     /* CMD52 read 1-byte of func0 */
-	
+
 	if (err_ret)
 		*err_ret = 0;
 
@@ -224,8 +216,8 @@ unsigned char ahb_sdio_f0_readb(struct sdio_func *func, unsigned int addr,
     info.field.addr = addr;
 
 	__disable_irq();
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + *g_pHifRegBaseAddr));		
-	val = readl((volatile UINT_32 *)(SDIO_GEN3_CMD52_DATA + *g_pHifRegBaseAddr));	
+	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + *g_pHifRegBaseAddr));
+	val = readl((volatile UINT_32 *)(SDIO_GEN3_CMD52_DATA + *g_pHifRegBaseAddr));
 	__enable_irq();
 
 	return val;
@@ -251,19 +243,19 @@ void ahb_sdio_f0_writeb(struct sdio_func *func, unsigned char b, unsigned int ad
     sdio_gen3_cmd52_info info;
     info.word = 0;
     /* CMD52 write 1-byte of func0 */
-	
+
 	if (err_ret)
 		*err_ret = 0;
 
     /* 1. Setup command information */
-    info.field.rw_flag = SDIO_GEN3_WRITE;
-    info.field.func_num = 0;
-    info.field.addr = addr;    
-    info.field.data = b;
+	info.field.rw_flag = SDIO_GEN3_WRITE;
+	info.field.func_num = 0;
+	info.field.addr = addr;
+	info.field.data = b;
 
 	__disable_irq();
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + *g_pHifRegBaseAddr)); 	
-	writel(b, (volatile UINT_32 *)(SDIO_GEN3_CMD52_DATA + *g_pHifRegBaseAddr));	
+	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + *g_pHifRegBaseAddr));
+	writel(b, (volatile UINT_32 *)(SDIO_GEN3_CMD52_DATA + *g_pHifRegBaseAddr));
 	__enable_irq();
 
 }
@@ -297,11 +289,10 @@ int ahb_sdio_enable_func(struct sdio_func *func)
 	if (ret)
 		goto err;
     /* DBGLOG(INIT, TRACE, "Read CCCR_IORx=0x%x\n", reg); */
-	if (!(reg & (1 << func->num)))
-    {   
-    	ret = -ETIME;
-        goto err;
-    }
+	if (!(reg & (1 << func->num))) {
+		ret = -ETIME;
+		goto err;
+	}
 	/* DBGLOG(INIT, TRACE, "SDIO: Enabled Function %d\n", func->num); */
 
 	return 0;
@@ -330,7 +321,7 @@ int ahb_sdio_disable_func(struct sdio_func *func)
 
 	reg &= ~(1 << func->num);
 
-    
+
     sdio_f0_writeb(func, reg, SDIO_CCCR_IOEx, &ret);
     if (ret)
         goto err;
@@ -368,15 +359,15 @@ err:
 int ahb_sdio_set_block_size(struct sdio_func *func, unsigned blksz)
 {
 	int ret;
-    
-    sdio_f0_writeb(func, (blksz & 0xff), 
-        SDIO_FBR_BASE(func->num) + SDIO_FBR_BLKSIZE, &ret);
+
+	sdio_f0_writeb(func, (blksz & 0xff),
+		SDIO_FBR_BASE(func->num) + SDIO_FBR_BLKSIZE, &ret);
 
 	if (ret)
 		return ret;
 
-    sdio_f0_writeb(func, ((blksz >> 8) & 0xff), 
-        SDIO_FBR_BASE(func->num) + SDIO_FBR_BLKSIZE + 1, &ret);
+	sdio_f0_writeb(func, ((blksz >> 8) & 0xff),
+		SDIO_FBR_BASE(func->num) + SDIO_FBR_BLKSIZE + 1, &ret);
 
 	if (ret)
 		return ret;
@@ -403,7 +394,7 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler)
 
 	if (func->irq_handler) {
 		/* DBGLOG(INIT, TRACE, "SDIO: IRQ for func%d already in use.\n", func->num); */
-		return -2; 
+		return -2;
 	}
 
 

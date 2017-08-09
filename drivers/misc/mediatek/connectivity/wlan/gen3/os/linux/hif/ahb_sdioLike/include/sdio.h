@@ -120,12 +120,14 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler);
 #define sdio_enable_func(func) ahb_sdio_enable_func((func))
 #define sdio_disable_func(func) ahb_sdio_disable_func((func))
 #define sdio_set_block_size(func, blksz) ahb_sdio_set_block_size((func),(blksz))
-#define sdio_claim_irq(func, handler) ahb_sdio_claim_irq((func), (handler)) 
+#define sdio_claim_irq(func, handler) ahb_sdio_claim_irq((func), (handler))
 
-#define sdio_claim_host(__func) 
+#define sdio_claim_host(__func)
 #define sdio_release_host(__func)
 
 #define MY_SDIO_BLOCK_SIZE  512
+
+extern UINT_8 **g_pHifRegBaseAddr;
 
 #define __disable_irq()						\
 {	UINT32 __RegVal;					\
@@ -139,20 +141,9 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler);
 }
 
 
-#define my_sdio_disable(__flags)\
-{\
-	__disable_irq();\
-}
-
-#define my_sdio_enable(__flags)\
-{\
-	__enable_irq();\
-}
-
-
 /*  ===========================  PART 2: mmc/sdio.h ============================ */
 /* Following are from include/linux/mmc/sdio.h */
- 
+
 
 /* SDIO commands                         type  argument     response */
 #define SD_IO_SEND_OP_COND          5 /* bcr  [23:0] OCR         R4  */

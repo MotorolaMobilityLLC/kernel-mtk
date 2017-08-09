@@ -263,7 +263,6 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 #define HIF_REG_WRITEL(_hif, _addr, _val) \
 	sdio_cr_writel(_val, (volatile UINT_32 *)((_hif)->HifRegBaseAddr), (_addr));
 
-
 /* PIO mode DMA register read/write */
 #define HIF_DMAR_READL(_hif, _addr)          \
 		readl((volatile UINT_32 *)((_hif)->DmaRegBaseAddr + _addr))
@@ -271,6 +270,15 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 #define HIF_DMAR_WRITEL(_hif, _addr, _val)   \
 		writel(_val, (volatile UINT_32 *)((_hif)->DmaRegBaseAddr + _addr))
 
+#define my_sdio_disable(__lock)\
+{\
+	spin_lock_bh(&__lock);\
+}
+
+#define my_sdio_enable(__lock)\
+{\
+	spin_unlock_bh(&__lock);\
+}
 #else
 #define HIF_REG_READL(_hif, _addr)          \
 	    sdio_readl((volatile UINT_32 *)((_hif)->HifRegBaseAddr + _addr))
