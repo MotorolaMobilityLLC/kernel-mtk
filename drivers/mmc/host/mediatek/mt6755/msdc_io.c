@@ -199,18 +199,35 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		   Use calibration -100mv to get target VMCH = 2.9V */
 		pmic_read_interface(REG_VMCH_VOSEL_CAL, &val,
 			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-		val -= 5;
+
+		pr_err("msdc1, 0xACE=%x\n", val);
+
+		if (5 > val)
+			val = 0x20 + val - 5;
+		else
+			val = val - 5;
+
 		pmic_config_interface(REG_VMCH_VOSEL_CAL, val,
 			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
+
+		pr_err("msdc1, 0xACE=%x\n", val);
 
 		/* VMC vosel is 2.8V with some calibration value,
 		   Add extra 100mV calibration value to get tar VMC = 2.9V */
 		pmic_read_interface(REG_VMC_VOSEL_CAL, &val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
-		val += 5;
+
+		pr_err("msdc1, 0xAE2=%x\n", val);
+
+		if (0x1b > val)
+			val = 0x20 + val - 0x1b;
+		else
+			val = val - 0x1b;
+
 		host->vmc_cal_default = val;
 		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
+
 	}
 }
 
