@@ -72,10 +72,12 @@ int kbase_gpuprops_uk_get_props(struct kbase_context *kctx, struct kbase_uk_gpup
 		}
 #endif				/* CONFIG_MALI_DEBUG */
 	}
+#ifdef CONFIG_HAVE_CLK  // MTK
 	if (kctx->kbdev->clock) {
 		gpu_speed_mhz = clk_get_rate(kctx->kbdev->clock) / 1000000;
 		rc = 0;
 	}
+#endif  /* CONFIG_HAVE_CLK */
 	if (rc != 0)
 		gpu_speed_mhz = kctx->kbdev->gpu_props.props.core_props.gpu_freq_khz_max / 1000;
 

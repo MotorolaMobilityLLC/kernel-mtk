@@ -3725,6 +3725,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #ifdef CONFIG_MALI_PLATFORM_DEVICETREE
 	pm_runtime_enable(kbdev->dev);
 #endif
+#ifdef CONFIG_HAVE_CLK  // MTK
 	kbdev->clock = clk_get(kbdev->dev, "clk_mali");
 	if (IS_ERR_OR_NULL(kbdev->clock)) {
 		dev_info(kbdev->dev, "Continuing without Mali clock control\n");
@@ -3738,7 +3739,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 			goto out_clock_prepare;
 		}
 	}
-
+#endif  /* CONFIG_HAVE_CLK */
 	/* MTK: common */
 	if (mtk_platform_init(pdev, kbdev))
 	{
@@ -3802,9 +3803,13 @@ out_common_init:
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
 	of_free_opp_table(kbdev->dev);
 #endif
+#ifdef CONFIG_HAVE_CLK  // MTK
 	clk_disable_unprepare(kbdev->clock);
+#endif  /* CONFIG_HAVE_CLK */
 out_clock_prepare:
+#ifdef CONFIG_HAVE_CLK  // MTK
 	clk_put(kbdev->clock);
+#endif  /* CONFIG_HAVE_CLK */
 #ifdef CONFIG_MALI_PLATFORM_DEVICETREE
 	pm_runtime_disable(kbdev->dev);
 #endif
@@ -3879,11 +3884,13 @@ static int kbase_common_device_remove(struct kbase_device *kbdev)
 	put_device(kbdev->dev);
 		kbase_common_reg_unmap(kbdev);
 	kbase_device_term(kbdev);
+#ifdef CONFIG_HAVE_CLK  // MTK
 	if (kbdev->clock) {
 		clk_disable_unprepare(kbdev->clock);
 		clk_put(kbdev->clock);
 		kbdev->clock = NULL;
 	}
+#endif  /* CONFIG_HAVE_CLK */
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0)) && defined(CONFIG_OF) \
 			&& defined(CONFIG_REGULATOR)
 	regulator_put(kbdev->regulator);
