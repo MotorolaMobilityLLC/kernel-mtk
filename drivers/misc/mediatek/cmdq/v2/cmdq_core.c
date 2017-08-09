@@ -7057,7 +7057,13 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 	bool isSecure;
 	/* the work item is embeded in pTask already */
 	/* but we need to initialized it */
-	INIT_WORK(&pTask->autoReleaseWork, cmdq_core_auto_release_work);
+	if (false == pTask->useWorkQueue) {
+		/* use work queue to release task */
+		INIT_WORK(&pTask->autoReleaseWork, cmdq_core_auto_release_work);
+	} else {
+		/* Error occurs when Double INIT_WORK */
+		CMDQ_ERR("[Double INIT WORK] useWorkQueue is already TRUE, pTask(%p)", pTask);
+	}
 	pTask->useWorkQueue = true;
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_add,
 		      MMProfileFlagPulse, ((unsigned long)pTask), pTask->thread);
