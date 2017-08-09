@@ -164,6 +164,15 @@ config ARM64_ERRATUM_836870
 	  ATF and preloader are already default enable these patches.
 
 
+config ARM64_ERRATUM_843419
+	bool "Cortex-A53: 843419 Adrp might load incorrect address"
+	default n
+        help
+           Enable GCC linker option to workaround Cortex-a53 erratum 843419. Linker will scan
+           machine code and rewrite ADRP when static condition meet "ADRP in the last two
+           instructions of a 4KByte page, followed within four instructions by a load/store
+           dependent on the ADRP"
+
 config ARM64_ERRATUM_845719
 	bool "Cortex-A53: 845719: a load might read incorrect data"
 	depends on COMPAT
@@ -245,6 +254,7 @@ config ARCH_MT6735
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC
+	select ARM64_ERRATUM_843419
 	select ARM64_ERRATUM_845719
 	select ARM64_ERRATUM_836870
 	select MTK_IRQ_NEW_DESIGN
@@ -278,6 +288,7 @@ config ARCH_MT6753
 	select PINCTRL
 	select PINCTRL_MT6735
 	select MFD_SYSCON
+	select ARM64_ERRATUM_843419
 	select ARM64_ERRATUM_845719
 	select ARM64_ERRATUM_836870
 	select MTK_IRQ_NEW_DESIGN
@@ -312,6 +323,7 @@ config ARCH_MT6755
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC
+	select ARM64_ERRATUM_843419
 	select ARM64_ERRATUM_845719
 	select ARM64_ERRATUM_836870
 	select MTK_POWER_GS
@@ -349,6 +361,7 @@ config ARCH_MT6797
 	select PINCTRL_MT6797
 	select MFD_SYSCON
 	select MTK_BASE_POWER
+	select ARM64_ERRATUM_843419
 	select MTK_POWER_GS
 	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
@@ -416,6 +429,7 @@ config ARCH_MT6735M
 	select PINCTRL
 	select PINCTRL_MT6735
 	select MFD_SYSCON
+	select ARM64_ERRATUM_843419
 	select MTK_BASE_POWER
 	select MTK_POWER_GS
 	select MTK_CPU_STRESS
