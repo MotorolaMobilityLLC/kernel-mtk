@@ -118,42 +118,38 @@ static const u32 ldo_volt_table1[] = {
 };
 
 static const u32 ldo_volt_table2[] = {
-	1800000, 2500000,
-};
-
-static const u32 ldo_volt_table3[] = {
 	1500000, 1800000, 2500000, 2800000,
 };
 
-static const u32 ldo_volt_table4[] = {
+static const u32 ldo_volt_table3[] = {
 	1800000, 3300000,
 };
 
-static const u32 ldo_volt_table5[] = {
+static const u32 ldo_volt_table4[] = {
 	3000000, 3300000,
 };
 
-static const u32 ldo_volt_table6[] = {
+static const u32 ldo_volt_table5[] = {
 	1200000, 1300000, 1500000, 1800000, 2000000, 2800000, 3000000, 3300000,
 };
 
-static const u32 ldo_volt_table7[] = {
+static const u32 ldo_volt_table6[] = {
 	1200000, 1300000, 1500000, 1800000, 2500000, 2800000, 3000000, 2000000,
 };
 
-static const u32 ldo_volt_table8[] = {
+static const u32 ldo_volt_table7[] = {
 	1200000, 1300000, 1500000, 1800000,
 };
 
-static const u32 ldo_volt_table9[] = {
+static const u32 ldo_volt_table8[] = {
 	1800000, 3000000,
 };
 
-static const u32 ldo_volt_table10[] = {
+static const u32 ldo_volt_table9[] = {
 	1200000, 1350000, 1500000, 1800000,
 };
 
-static const u32 ldo_volt_table11[] = {
+static const u32 ldo_volt_table10[] = {
 	1200000, 1300000, 1500000, 1800000,
 };
 
@@ -221,39 +217,38 @@ static struct mt6323_regulator_info mt6323_regulators[] = {
 		MT6323_ANALDO_CON16, 7, MT6323_ANALDO_CON16, 0xC),
 	MT6323_LDO("ldo_vcn33_wifi", VCN33_WIFI, ldo_volt_table1,
 		MT6323_ANALDO_CON17, 12, MT6323_ANALDO_CON16, 0xC),
-	MT6323_LDO("ldo_va", VA, ldo_volt_table2,
-		MT6323_ANALDO_CON2, 14, MT6323_ANALDO_CON8, 0x40),
-	MT6323_LDO("ldo_vcama", VCAMA, ldo_volt_table3,
+	MT6323_REG_FIXED("ldo_va", VA, MT6323_ANALDO_CON2, 14, 2800000),
+	MT6323_LDO("ldo_vcama", VCAMA, ldo_volt_table2,
 		MT6323_ANALDO_CON4, 15, MT6323_ANALDO_CON10, 0x60),
 	MT6323_REG_FIXED("ldo_vio28", VIO28, MT6323_DIGLDO_CON0, 14, 2800000),
 	MT6323_REG_FIXED("ldo_vusb", VUSB, MT6323_DIGLDO_CON2, 14, 3300000),
-	MT6323_LDO("ldo_vmc", VMC, ldo_volt_table4,
+	MT6323_LDO("ldo_vmc", VMC, ldo_volt_table3,
 		MT6323_DIGLDO_CON3, 12, MT6323_DIGLDO_CON24, 0x10),
-	MT6323_LDO("ldo_vmch", VMCH, ldo_volt_table5,
+	MT6323_LDO("ldo_vmch", VMCH, ldo_volt_table4,
 		MT6323_DIGLDO_CON5, 14, MT6323_DIGLDO_CON26, 0x80),
-	MT6323_LDO("ldo_vemc3v3", VEMC3V3, ldo_volt_table5,
+	MT6323_LDO("ldo_vemc3v3", VEMC3V3, ldo_volt_table4,
 		MT6323_DIGLDO_CON6, 14, MT6323_DIGLDO_CON27, 0x80),
-	MT6323_LDO("ldo_vgp1", VGP1, ldo_volt_table6,
+	MT6323_LDO("ldo_vgp1", VGP1, ldo_volt_table5,
 		MT6323_DIGLDO_CON7, 15, MT6323_DIGLDO_CON28, 0xE0),
-	MT6323_LDO("ldo_vgp2", VGP2, ldo_volt_table7,
+	MT6323_LDO("ldo_vgp2", VGP2, ldo_volt_table6,
 		MT6323_DIGLDO_CON8, 15, MT6323_DIGLDO_CON29, 0xE0),
-	MT6323_LDO("ldo_vgp3", VGP3, ldo_volt_table8,
+	MT6323_LDO("ldo_vgp3", VGP3, ldo_volt_table7,
 		MT6323_DIGLDO_CON9, 15, MT6323_DIGLDO_CON30, 0x60),
 	MT6323_REG_FIXED("ldo_vcn18", VCN18, MT6323_DIGLDO_CON11, 14, 1800000),
-	MT6323_LDO("ldo_vsim1", VSIM1, ldo_volt_table9,
+	MT6323_LDO("ldo_vsim1", VSIM1, ldo_volt_table8,
 		MT6323_DIGLDO_CON13, 15, MT6323_DIGLDO_CON34, 0x20),
-	MT6323_LDO("ldo_vsim2", VSIM2, ldo_volt_table9,
+	MT6323_LDO("ldo_vsim2", VSIM2, ldo_volt_table8,
 		MT6323_DIGLDO_CON14, 15, MT6323_DIGLDO_CON35, 0x20),
 	MT6323_REG_FIXED("ldo_vrtc", VRTC, MT6323_DIGLDO_CON15, 8, 2800000),
-	MT6323_LDO("ldo_vcamaf", VCAMAF, ldo_volt_table6,
+	MT6323_LDO("ldo_vcamaf", VCAMAF, ldo_volt_table5,
 		MT6323_DIGLDO_CON31, 15, MT6323_DIGLDO_CON32, 0xE0),
-	MT6323_LDO("ldo_vibr", VIBR, ldo_volt_table6,
+	MT6323_LDO("ldo_vibr", VIBR, ldo_volt_table5,
 		MT6323_DIGLDO_CON39, 15, MT6323_DIGLDO_CON40, 0xE0),
 	MT6323_REG_FIXED("ldo_vrf18", VRF18, MT6323_DIGLDO_CON45, 15, 1825000),
-	MT6323_LDO("ldo_vm", VM, ldo_volt_table10,
+	MT6323_LDO("ldo_vm", VM, ldo_volt_table9,
 		MT6323_DIGLDO_CON47, 14, MT6323_DIGLDO_CON48, 0x30),
 	MT6323_REG_FIXED("ldo_vio18", VIO18, MT6323_DIGLDO_CON49, 14, 1800000),
-	MT6323_LDO("ldo_vcamd", VCAMD, ldo_volt_table11,
+	MT6323_LDO("ldo_vcamd", VCAMD, ldo_volt_table10,
 		MT6323_DIGLDO_CON51, 14, MT6323_DIGLDO_CON52, 0x60),
 	MT6323_REG_FIXED("ldo_vcamio", VCAMIO, MT6323_DIGLDO_CON53, 14, 1800000),
 };
