@@ -196,7 +196,7 @@ HIF_OBJS += $(HIF_DIR)ahb.o\
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 else
-HIF_OBJS += $(HIF_DIR)sdio.o			
+HIF_OBJS += $(HIF_DIR)sdio.o
 endif
 
 

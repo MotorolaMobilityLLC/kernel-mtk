@@ -595,6 +595,7 @@
 #include <linux/module.h>
 #include <linux/can/netlink.h>
 #include <net/netlink.h>
+#include <linux/fb.h>
 
 #ifdef CONFIG_IPV6
 #include <linux/ipv6.h>

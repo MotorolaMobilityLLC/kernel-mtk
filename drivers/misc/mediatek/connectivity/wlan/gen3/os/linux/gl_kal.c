@@ -5516,7 +5516,7 @@ VOID kalDumpWTBL(P_ADAPTER_T prAdapter)
 #if 0
 VOID kalPerMonDump(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, WARN, "ulPerfMonFlag:0x%lx\n", prPerMonitor->ulPerfMonFlag);
@@ -5537,15 +5537,15 @@ VOID kalPerMonDump(IN P_GLUE_INFO_T prGlueInfo)
 
 inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, INFO, "enter %s\n", __func__);
-	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag))
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag))
 		DBGLOG(SW4, WARN, "abnormal, perf monitory already running\n");
-	KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
-	KAL_CLR_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
-	KAL_SET_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
+	KAL_SET_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
 	prPerMonitor->u4UpdatePeriod = 1000;
 	cnmTimerInitTimer(prGlueInfo->prAdapter,
 		&prPerMonitor->rPerfMonTimer,
@@ -5556,72 +5556,72 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 
 inline INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 
 	DBGLOG(SW4, INFO, "enter %s\n", __func__);
-	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag)) {
 		DBGLOG(SW4, TRACE, "need to stop before disable\n");
 		kalPerMonStop(prGlueInfo);
 	}
-	KAL_SET_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_SET_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
 	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
 inline INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 
 	DBGLOG(SW4, INFO, "enter %s\n", __func__);
-	KAL_CLR_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag);
 	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
 inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
-	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag))
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag))
 		return 0;
-	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag)) {
 		DBGLOG(SW4, TRACE, "perf monitor already running\n");
 		return 0;
 	}
 	cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
-	KAL_SET_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
-	KAL_CLR_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_SET_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
 	DBGLOG(SW4, INFO, "perf monitor started\n");
 	return 0;
 }
 
 inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
 {
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 
-	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {
 		DBGLOG(SW4, TRACE, "perf monitory disabled\n");
 		return 0;
 	}
 
-	if (KAL_TEST_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+	if (KAL_TEST_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag)) {
 		DBGLOG(SW4, TRACE, "perf monitory already stopped\n");
 		return 0;
 	}
 
-	KAL_SET_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
-	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+	KAL_SET_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag);
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag)) {
 		cnmTimerStopTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer);
-		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 		prPerMonitor->ulLastRxBytes = 0;
 		prPerMonitor->ulLastTxBytes = 0;
 		prPerMonitor->ulP2PLastRxBytes = 0;
@@ -5646,7 +5646,7 @@ inline INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo)
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	/*Calculate current throughput*/
-	struct GL_PER_MON_T *prPerMonitor;
+	struct PERF_MONITOR_T *prPerMonitor;
 
 	LONG latestTxBytes, latestRxBytes, txDiffBytes, rxDiffBytes;
 	LONG p2pLatestTxBytes, p2pLatestRxBytes, p2pTxDiffBytes, p2pRxDiffBytes;
@@ -5656,14 +5656,14 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		return;
 	prPerMonitor = &prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter kalPerMonHandler\n");
-	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
-		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 		DBGLOG(SW4, WARN, "perf monitory disabled, omit timeout event\n");
 		return;
 	}
 
-	if (KAL_TEST_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
-		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	if (KAL_TEST_BIT(PERF_MON_STOP_BIT, prPerMonitor->ulPerfMonFlag)) {
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
 		DBGLOG(SW4, WARN, "perf monitory stopped, omit timeout event\n");
 		return;
 	}
@@ -5734,5 +5734,53 @@ INT_32 __weak kalBoostCpu(UINT_32 core_num)
 {
 	DBGLOG(SW4, WARN, "enter weak kalBoostCpu, core_num:%d\n", core_num);
 	return 0;
+}
+
+static struct notifier_block wlan_fb_notifier;
+void *wlan_fb_notifier_priv_data = NULL;
+static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	INT_32 blank;
+	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
+
+	/* If we aren't interested in this event, skip it immediately ... */
+	if (event != FB_EVENT_BLANK || !prGlueInfo)
+		return 0;
+
+	blank = *(INT_32 *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		kalPerMonEnable(prGlueInfo);
+		break;
+	case FB_BLANK_POWERDOWN:
+		kalPerMonDisable(prGlueInfo);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo)
+{
+	INT_32 i4Ret;
+
+	wlan_fb_notifier_priv_data = prGlueInfo;
+	wlan_fb_notifier.notifier_call = wlan_fb_notifier_callback;
+	i4Ret = fb_register_client(&wlan_fb_notifier);
+	if (i4Ret)
+		DBGLOG(SW4, WARN, "Register wlan_fb_notifier failed:%d\n", i4Ret);
+	else
+		DBGLOG(SW4, TRACE, "Register wlan_fb_notifier succeed\n");
+
+	return i4Ret;
+}
+
+VOID kalFbNotifierUnReg(VOID)
+{
+	fb_unregister_client(&wlan_fb_notifier);
+	wlan_fb_notifier_priv_data = NULL;
 }
 
