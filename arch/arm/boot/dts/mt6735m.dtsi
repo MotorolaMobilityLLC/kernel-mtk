@@ -709,15 +709,15 @@
 		};
 
 
-				BAT_METTER {
-						compatible = "mediatek,bat_meter";
-				};
+		bat_meter: bat_meter {
+			compatible = "mediatek,bat_meter";
+		};
 
-				BAT_NOTIFY {
-						compatible = "mediatek,bat_notify";
-				};
+		bat_notify: bat_notify {
+			compatible = "mediatek,bat_notify";
+		};
 
-		BATTERY {
+		battery: battery {
 			compatible = "mediatek,battery";
 		};
 
