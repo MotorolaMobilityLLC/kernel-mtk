@@ -19,9 +19,9 @@ extern "C" {
 #include "mt_ocp.h"
 #endif
 
-#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-extern unsigned int sched_get_nr_heavy_task(int cluster_id);
+extern unsigned int sched_get_nr_heavy_task2(int cluster_id);
 #endif
 
 /* DLPT mode */
@@ -30,7 +30,9 @@ extern unsigned int sched_get_nr_heavy_task(int cluster_id);
 #define DLPT_MAX_REAL_POWER_SB	(13763)
 
 #define	LCMOFF_MIN_FREQ		(598000)	/* TODO: check this */
-#define	PTPOD_FREQ_IDX		(3)		/* TODO: check this */
+#define	PTPOD_FREQ_IDX_FY	(7)
+#define	PTPOD_FREQ_IDX_FY_B	(8)
+#define	PTPOD_FREQ_IDX_SB	(9)
 #define SUSPEND_FREQ_LL		(897000)
 #define SUSPEND_FREQ_L		(1274000)
 #define SUSPEND_FREQ_B		(1001000)
@@ -48,7 +50,10 @@ extern unsigned int sched_get_nr_heavy_task(int cluster_id);
 #define PPM_TLP_CRITERIA		(400)
 
 #define get_cluster_lcmoff_min_freq(id)		LCMOFF_MIN_FREQ	/* the same for each cluster */
-#define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX	/* the same for each cluster */
+#define get_cluster_ptpod_fix_freq_idx(id)						\
+	((ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? PTPOD_FREQ_IDX_SB	\
+	: (id == PPM_CLUSTER_B) ? PTPOD_FREQ_IDX_FY_B					\
+	: PTPOD_FREQ_IDX_FY)
 #define get_cluster_suspend_fix_freq(id)		\
 	((id == PPM_CLUSTER_LL) ? SUSPEND_FREQ_LL	\
 	: (id == PPM_CLUSTER_L) ? SUSPEND_FREQ_L	\
@@ -100,9 +105,6 @@ struct ppm_power_tbl_data {
 /*==============================================================*/
 /* APIs								*/
 /*==============================================================*/
-#if PPM_HW_OCP_SUPPORT
-extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
-#endif
 
 #ifdef __cplusplus
 }

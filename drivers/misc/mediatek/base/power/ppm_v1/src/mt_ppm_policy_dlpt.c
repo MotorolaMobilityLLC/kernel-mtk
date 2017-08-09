@@ -21,6 +21,7 @@ static unsigned int ppm_dlpt_calc_trans_precentage(void);
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
 #if PPM_HW_OCP_SUPPORT
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx);
+static unsigned int ppm_dlpt_set_ocp(unsigned int limited_power, unsigned int percentage);
 #else
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget);
 #endif
@@ -72,6 +73,10 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 				BigOCPCapture(1, 1, 0, 15);
 				BigOCPCaptureStatus(&leakage, &total, &clkpct);
 			} else {
+				unsigned int freq =
+					ppm_main_info.cluster_info[i].dvfs_tbl[cluster_status[i].freq_idx].frequency;
+
+				LittleOCPDVFSSet(i, freq / 1000, cluster_status[i].volt);
 				LittleOCPCapture(i, 1, 1, 0, 15);
 				LittleOCPCaptureGet(i, &leakage, &total, &clkpct);
 			}
@@ -122,7 +127,7 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 	case HYBRID_MODE:
 #if PPM_HW_OCP_SUPPORT
 		dlpt_policy.req.power_budget = (dlpt_mode == SW_MODE)
-			? budget : ppm_set_ocp(budget, dlpt_percentage_to_real_power);
+			? budget : ppm_dlpt_set_ocp(budget, dlpt_percentage_to_real_power);
 #else
 		dlpt_policy.req.power_budget = budget;
 #endif
@@ -176,6 +181,68 @@ static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigne
 	ppm_ver("new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_to_real_power, pwr_idx, budget);
 
 	return budget;
+}
+
+static unsigned int max_power;
+#define MAX_OCP_TARGET_POWER	127000
+
+static bool ppm_dlpt_is_big_cluster_on(void)
+{
+	struct cpumask cpumask, cpu_online_cpumask;
+
+	arch_get_cluster_cpus(&cpumask, PPM_CLUSTER_B);
+	cpumask_and(&cpu_online_cpumask, &cpumask, cpu_online_mask);
+
+	return (cpumask_weight(&cpu_online_cpumask) > 0) ? true : false;
+}
+
+/* return value is the remaining power budget for SW DLPT */
+static unsigned int ppm_dlpt_set_ocp(unsigned int limited_power, unsigned int percentage)
+{
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	int i, ret = 0;
+	unsigned int power_for_ocp = 0, power_for_tbl_lookup = 0;
+
+	/* no need to set big OCP since big cluster is powered off */
+	if (!ppm_dlpt_is_big_cluster_on())
+		return limited_power;
+
+	/* if max_power < limited_power, set (limited_power - max_power) to HW OCP */
+	if (!max_power) {
+		/* get max power budget for SW DLPT */
+		for_each_pwr_tbl_entry(i, power_table) {
+			if (power_table.power_tbl[i].cluster_cfg[PPM_CLUSTER_B].core_num == 0) {
+				max_power = (power_table.power_tbl[i].power_idx);
+				break;
+			}
+		}
+		ppm_info("@%s: max_power = %d\n", __func__, max_power);
+	}
+
+
+
+	if (limited_power <= max_power) {
+		/* disable HW OCP by setting maximum budget */
+		power_for_ocp = MAX_OCP_TARGET_POWER;
+		power_for_tbl_lookup = limited_power;
+	} else {
+		/* pass remaining power to HW OCP */
+		power_for_ocp = (percentage)
+			? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
+			: (limited_power - max_power);
+		power_for_tbl_lookup = max_power;
+	}
+
+	ret = BigOCPSetTarget(OCP_ALL, power_for_ocp);
+	if (ret) {
+		/* pass all limited power for tbl lookup if set ocp target failed */
+		ppm_err("@%s: OCP set target(%d) failed, ret = %d\n", __func__, power_for_ocp, ret);
+		return limited_power;
+	}
+
+	ppm_ver("set budget = %d to OCP done!\n", power_for_ocp);
+
+	return power_for_tbl_lookup;
 }
 #else
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget)
@@ -323,8 +390,10 @@ static int __init ppm_dlpt_policy_init(void)
 #endif
 	LittleOCPConfig(300, 10000);		/* cluster 0/1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000 */
 	LittleOCPSetTarget(0, 127000);		/* cluster 0 Target=127W_x1000 */
-	LittleOCPEnable(0, 1, 625);		/* cluster 0 Target_unit=mW, CG=6.25_x100 */
 	LittleOCPSetTarget(1, 127000);		/* cluster 1 Target=127W_x1000 */
+	LittleOCPDVFSSet(0, 897, 1000);		/* cluster 0 FreqMH= 897 Mhz, VoltInmV = 1.0v (base on DVFS) */
+	LittleOCPDVFSSet(1, 1274, 1000);	/* cluster 1 FreqMHz = 1274 Mhz , VoltInmV = 1.0v (base on DVFS) */
+	LittleOCPEnable(0, 1, 625);		/* cluster 0 Target_unit=mW, CG=6.25_x100 */
 	LittleOCPEnable(1, 1, 625);		/* cluster 1 Target_unit=mW, CG=6.25_x100 */
 #endif
 

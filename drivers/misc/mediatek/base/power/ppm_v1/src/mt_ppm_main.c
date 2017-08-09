@@ -31,11 +31,7 @@ static int ppm_main_pdrv_remove(struct platform_device *pdev);
 /* Global variables						*/
 /*==============================================================*/
 struct ppm_data ppm_main_info = {
-#ifdef CONFIG_ARCH_MT6797 /* disable PPM temporarily */
-	.is_enabled = false,
-#else
 	.is_enabled = true,
-#endif
 	.is_in_suspend = false,
 
 	.cur_mode = PPM_MODE_PERFORMANCE,

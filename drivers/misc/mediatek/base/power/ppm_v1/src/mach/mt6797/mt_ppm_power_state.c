@@ -319,7 +319,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	/* check heavy task */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
-		unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
+		unsigned int heavy_task = sched_get_nr_heavy_task2(PPM_CLUSTER_LL);
 
 		if (heavy_task && data.ppm_cur_tlp <= settings->tlp_bond) {
 			if (ppm_hica_is_log_enabled())
@@ -358,7 +358,7 @@ static bool ppm_trans_rule_LL_ONLY_to_4LL_L(
 {
 	/* check heavy task */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_LL);
+	unsigned int heavy_task = sched_get_nr_heavy_task2(PPM_CLUSTER_LL);
 
 	if (heavy_task && data.ppm_cur_tlp > settings->tlp_bond) {
 		if (ppm_hica_is_log_enabled())
@@ -391,7 +391,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	/* stay if L has heavy task, should be transferred to 4L+LL */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
-		unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_L);
+		unsigned int heavy_task = sched_get_nr_heavy_task2(PPM_CLUSTER_L);
 
 		if (heavy_task) {
 			if (ppm_hica_is_log_enabled())
@@ -420,7 +420,7 @@ static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 {
 	/* check heavy task */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = sched_get_nr_heavy_task(PPM_CLUSTER_L);
+	unsigned int heavy_task = sched_get_nr_heavy_task2(PPM_CLUSTER_L);
 
 	if (heavy_task) {
 		if (ppm_hica_is_log_enabled())
@@ -449,7 +449,7 @@ static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 	int i;
 
 	for_each_ppm_clusters(i) {
-		heavy_task = sched_get_nr_heavy_task(i);
+		heavy_task = sched_get_nr_heavy_task2(i);
 		if (heavy_task) {
 			if (ppm_hica_is_log_enabled())
 				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
@@ -478,7 +478,7 @@ static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 	int i;
 
 	for_each_ppm_clusters(i) {
-		heavy_task = sched_get_nr_heavy_task(i);
+		heavy_task = sched_get_nr_heavy_task2(i);
 		if (heavy_task) {
 			if (ppm_hica_is_log_enabled())
 				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
@@ -864,68 +864,4 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 
 	return root_cluster;
 }
-
-#if PPM_HW_OCP_SUPPORT
-static unsigned int max_power;
-#define MAX_OCP_TARGET_POWER	127000
-
-static bool ppm_is_big_cluster_on(void)
-{
-	struct cpumask cpumask, cpu_online_cpumask;
-
-	arch_get_cluster_cpus(&cpumask, PPM_CLUSTER_B);
-	cpumask_and(&cpu_online_cpumask, &cpumask, cpu_online_mask);
-
-	return (cpumask_weight(&cpu_online_cpumask) > 0) ? true : false;
-}
-
-/* return value is the remaining power budget for SW DLPT */
-unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
-{
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-	int i, ret = 0;
-	unsigned int power_for_ocp = 0, power_for_tbl_lookup = 0;
-
-	/* no need to set big OCP since big cluster is powered off */
-	if (!ppm_is_big_cluster_on())
-		return limited_power;
-
-	/* if max_power < limited_power, set (limited_power - max_power) to HW OCP */
-	if (!max_power) {
-		/* get max power budget for SW DLPT */
-		for_each_pwr_tbl_entry(i, power_table) {
-			if (power_table.power_tbl[i].cluster_cfg[PPM_CLUSTER_B].core_num == 0) {
-				max_power = (power_table.power_tbl[i].power_idx);
-				break;
-			}
-		}
-		ppm_info("@%s: max_power = %d\n", __func__, max_power);
-	}
-
-
-
-	if (limited_power <= max_power) {
-		/* disable HW OCP by setting maximum budget */
-		power_for_ocp = MAX_OCP_TARGET_POWER;
-		power_for_tbl_lookup = limited_power;
-	} else {
-		/* pass remaining power to HW OCP */
-		power_for_ocp = (percentage)
-			? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
-			: (limited_power - max_power);
-		power_for_tbl_lookup = max_power;
-	}
-
-	ret = BigOCPSetTarget(OCP_ALL, power_for_ocp);
-	if (ret) {
-		/* pass all limited power for tbl lookup if set ocp target failed */
-		ppm_err("@%s: OCP set target(%d) failed, ret = %d\n", __func__, power_for_ocp, ret);
-		return limited_power;
-	}
-
-	ppm_ver("set budget = %d to OCP done!\n", power_for_ocp);
-
-	return power_for_tbl_lookup;
-}
-#endif
 
