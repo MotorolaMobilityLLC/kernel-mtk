@@ -685,8 +685,6 @@ p2pDevFsmRunEventChnlGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr, IN
 
 		ASSERT(prMsgChGrant->ucPrimaryChannel == prChnlReqInfo->ucReqChnlNum);
 		ASSERT(prMsgChGrant->eReqType == prChnlReqInfo->eChnlReqType);
-		ASSERT(prMsgChGrant->u4GrantInterval == prChnlReqInfo->u4MaxInterval);
-		prChnlReqInfo->u4MaxInterval = prMsgChGrant->u4GrantInterval;
 
 		DBGLOG(P2P, INFO, "P2P: channel grant: u4MaxInterval: %d, Cookie: 0x%llx\n",
 			prChnlReqInfo->u4MaxInterval, prChnlReqInfo->u8Cookie);
