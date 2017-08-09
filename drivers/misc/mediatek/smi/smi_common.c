@@ -1204,7 +1204,8 @@ void smi_bus_optimization(int optimization_larbs, int smi_profile)
 		}
 	}
 
-	smi_bus_regs_setting(smi_profile,
+	if (enable_bw_optimization)
+		smi_bus_regs_setting(smi_profile,
 			smi_profile_config[smi_profile].setting);
 
 	for (i = 0; i < SMI_LARB_NR; i++) {
