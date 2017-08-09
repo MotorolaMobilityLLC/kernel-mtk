@@ -206,17 +206,17 @@ struct dsi_cmd_t3 {
 };
 
 struct dsi_rx_data {
-	unsigned char byte0;
-	unsigned char byte1;
-	unsigned char byte2;
-	unsigned char byte3;
+	u8 byte0;
+	u8 byte1;
+	u8 byte2;
+	u8 byte3;
 };
 
 struct dsi_tx_cmdq {
-	unsigned char byte0;
-	unsigned char byte1;
-	unsigned char byte2;
-	unsigned char byte3;
+	u8 byte0;
+	u8 byte1;
+	u8 byte2;
+	u8 byte3;
 };
 
 struct dsi_tx_cmdq_regs {
@@ -224,13 +224,13 @@ struct dsi_tx_cmdq_regs {
 };
 
 enum {
-	DSI_INT_SLEEPOUT_DONE_FLAG	= (1<<6),
-	DSI_INT_VM_CMD_DONE_FLAG	= (1<<5),
-	DSI_INT_EXT_TE_RDY_FLAG		= (1<<4),
-	DSI_INT_VM_DONE_FLAG		= (1<<3),
-	DSI_INT_TE_RDY_FLAG		= (1<<2),
-	DSI_INT_CMD_DONE_FLAG		= (1<<1),
-	DSI_INT_LPRX_RD_RDY_FLAG	= (1<<0),
+	DSI_INT_SLEEPOUT_DONE_FLAG	= BIT(6),
+	DSI_INT_VM_CMD_DONE_FLAG	= BIT(5),
+	DSI_INT_EXT_TE_RDY_FLAG		= BIT(4),
+	DSI_INT_VM_DONE_FLAG		= BIT(3),
+	DSI_INT_TE_RDY_FLAG		= BIT(2),
+	DSI_INT_CMD_DONE_FLAG		= BIT(1),
+	DSI_INT_LPRX_RD_RDY_FLAG	= BIT(0),
 	DSI_INT_ALL_BITS		= (0x7F)
 };
 
@@ -262,10 +262,9 @@ void mtk_dsi_dump_registers(struct mtk_dsi *dsi)
 	[12]    0x1000  Get TE
 	[13]    0x2000  Waiting external TE
 	[14]    0x4000  Waiting SW RACK for TE
-
 	*/
 
-	static unsigned char *DSI_DBG_STATUS_DESCRIPTION[] = {
+	const u8 *dsi_dbg_status_description[] = {
 		"null",
 		"Idle (wait for command)",
 		"Reading command queue for header",
@@ -284,18 +283,18 @@ void mtk_dsi_dump_registers(struct mtk_dsi *dsi)
 		"Waiting external TE",
 	};
 
-	u32 i, DSI_DBG6_Status = (readl(dsi->regs + DSI_STATE_DBG6)) & 0xffff;
+	u32 i, dsi_dbg6_status = (readl(dsi->regs + DSI_STATE_DBG6)) & 0xffff;
 	int count = 0;
 	struct mtk_mipi_tx *mipi_tx = phy_get_drvdata(dsi->phy);
 
-	while (DSI_DBG6_Status) {
-		DSI_DBG6_Status >>= 1;
+	while (dsi_dbg6_status) {
+		dsi_dbg6_status >>= 1;
 		count++;
 	}
 
 	dev_info(dsi->dev, "---------- Start dump DSI registers ----------\n");
-	dev_info(dsi->dev, "DSI_STATE_DBG6=0x%08x, count=%d, means: [%s]\n",
-		DSI_DBG6_Status, count, DSI_DBG_STATUS_DESCRIPTION[count]);
+	dev_info(dsi->dev, "dsi_status_dbg6=0x%08x, count=%d, means: [%s]\n",
+		dsi_dbg6_status, count, dsi_dbg_status_description[count]);
 	dev_info(dsi->dev, "---------- Start dump DSI registers ----------\n");
 
 	for (i = 0; i < 0x180; i += 0x10) {
@@ -512,7 +511,7 @@ static void mtk_dsi_ps_control_vact(struct mtk_dsi *dsi)
 
 static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
 {
-	u32 tmp_reg;
+	u32 tmp_reg = 0;
 
 	switch (dsi->lanes) {
 	case 1:
@@ -532,7 +531,10 @@ static void mtk_dsi_rxtx_control(struct mtk_dsi *dsi)
 		break;
 	}
 
-	writel(tmp_reg | BIT(16), dsi->regs + DSI_TXRX_CTRL);
+	tmp_reg |= (dsi->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS) << 6;
+	tmp_reg |= (dsi->mode_flags & MIPI_DSI_MODE_EOT_PACKET) >> 3;
+
+	writel(tmp_reg, dsi->regs + DSI_TXRX_CTRL);
 }
 
 static void mtk_dsi_ps_control(struct mtk_dsi *dsi)
