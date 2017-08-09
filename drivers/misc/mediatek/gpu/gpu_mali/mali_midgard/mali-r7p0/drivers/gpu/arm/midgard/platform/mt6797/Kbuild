@@ -4,3 +4,4 @@
 include $(src)/../../Kbuild-mtk-custom-env
 
 obj-y += mtk_config_platform.o
+obj-y += mtk_kbase_spm.o

@@ -1902,7 +1902,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				   <&scpsys SCP_SYS_MFG_CORE1>,
 				   <&scpsys SCP_SYS_MFG_CORE2>,
 				   <&scpsys SCP_SYS_MFG_CORE3>,
-				   <&scpsys SCP_SYS_DIS>;
+				   <&scpsys SCP_SYS_DIS>,
+				   <&infrasys INFRA_DVFS_SPM1>,
+				   <&infrasys INFRA_I2C_GPUPM>,
+				   <&infrasys INFRA_AP_DMA>;
 			clock-names = "mfg-main",
 				"mfg-smi-common",
 				"mtcmos-mfg-async",
@@ -1911,7 +1914,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				"mtcmos-mfg-core1",
 				"mtcmos-mfg-core2",
 				"mtcmos-mfg-core3",
-				"mtcmos-display";
+				"mtcmos-display",
+				"infra-dvfs-gpu",
+				"infra-gpupm",
+				"infra-ap-dma";
 		};
 
 		mmsys: mmsys_config@14000000 {
