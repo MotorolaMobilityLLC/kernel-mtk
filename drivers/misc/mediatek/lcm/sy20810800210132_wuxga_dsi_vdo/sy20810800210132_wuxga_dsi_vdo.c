@@ -284,7 +284,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 		/*params->dsi.ssc_disable = 1;*/
-		params->dsi.PLL_CLOCK = 498;
+		params->dsi.PLL_CLOCK = 519;
+		params->dsi.edp_panel = 1;
 }
 
 /* --------------------------------------------------------------------------- */
