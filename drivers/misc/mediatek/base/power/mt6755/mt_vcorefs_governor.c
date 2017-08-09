@@ -61,11 +61,14 @@ __weak int sdio_autok(void)
 
 #define vcore_pmic_to_uv(pmic)	\
 	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
+
 /*
  *  sram debug info
  */
 void __iomem *vcorefs_sram_base;
 u32 spm_vcorefs_err_irq = 154;
+
+unsigned int vcorefs_log_mask = (~(DBG_MSG_ALL | DBG_MSG_ENG));
 
 /*
  * struct define
@@ -90,6 +93,8 @@ struct governor_profile {
 	u32 active_autok_kir;
 
 	u32 cpu_dvfs_req;
+
+	u32 log_mask;
 
 	u32 total_bw_lpm_threshold;
 	u32 total_bw_hpm_threshold;
@@ -175,6 +180,13 @@ static struct timing_debug_profile timing_debug_ctrl = {
 	.max_emi_block_time = 0,
 };
 
+void vcorefs_set_log_mask(u32 value)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	gvrctrl->log_mask = value;
+	vcorefs_log_mask = value;
+}
 /*
  * Unit Test API
  */
@@ -579,6 +591,7 @@ char *vcorefs_get_dvfs_info(char *p)
 	p += sprintf(p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
 	p += sprintf(p, "[fhd_segment ]: %d\n", gvrctrl->is_fhd_segment);
 	p += sprintf(p, "[cpu_dvfs_req]: 0x%x\n", vcorefs_get_cpu_dvfs_req());
+	p += sprintf(p, "[log_mask    ]: 0x%x\n", gvrctrl->log_mask);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
@@ -788,6 +801,8 @@ int governor_debug_store(const char *buf)
 			vcorefs_reload_spm_firmware(val);
 		else if (!strcmp(cmd, "dvfs_latency_spec"))
 			vcorefs_set_dvfs_latency_spec(val);
+		else if (!strcmp(cmd, "log_mask"))
+			vcorefs_set_log_mask(val);
 		else
 			r = -EPERM;
 	} else {
@@ -1138,6 +1153,7 @@ static int __init vcorefs_module_init(void)
 	vcorefs_fb_notif.notifier_call = vcorefs_fb_notifier_callback;
 	r = fb_register_client(&vcorefs_fb_notif);
 #endif
+	vcorefs_set_log_mask(vcorefs_log_mask);
 	vcorefs_info("vcorefs_sram_base = %p, spm_vcorefs_err_irq = %d\n", vcorefs_sram_base,
 		     spm_vcorefs_err_irq);
 	return r;

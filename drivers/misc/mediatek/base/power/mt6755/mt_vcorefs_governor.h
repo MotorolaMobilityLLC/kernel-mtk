@@ -11,10 +11,21 @@
 #define vcorefs_warn(fmt, args...)	\
 	pr_warn(VCPREFS_TAG"[WARN]"fmt, ##args)
 #define vcorefs_info(fmt, args...)	\
-	pr_warn(VCPREFS_TAG""fmt, ##args)	/* pr_info(TAG""fmt, ##args) */
+	pr_warn(VCPREFS_TAG""fmt, ##args)
 #define vcorefs_debug(fmt, args...)	\
 	pr_debug(VCPREFS_TAG""fmt, ##args)
 
+#define DBG_MSG_ALL (1U << 31)
+#define DBG_MSG_ENG (1U << 30)
+#define vcorefs_debug_mask(type, fmt, args...)	\
+	do {							\
+		if (vcorefs_log_mask & DBG_MSG_ALL)		\
+			vcorefs_info(fmt, ##args);		\
+		else if (vcorefs_log_mask & DBG_MSG_ENG)	\
+			vcorefs_debug(fmt, ##args);		\
+		else if (vcorefs_log_mask & (1U << type))	\
+			vcorefs_info(fmt, ##args);		\
+	} while (0)
 
 /* log_mask[15:0]: show nothing, log_mask[16:31]: show only on MobileLog */
 #define vcorefs_crit_mask(fmt, args...)				\
@@ -94,6 +105,8 @@ struct opp_profile {
 	int vcore_uv;
 	int ddr_khz;
 };
+
+extern unsigned int vcorefs_log_mask;
 
 extern int kicker_table[LAST_KICKER];
 
