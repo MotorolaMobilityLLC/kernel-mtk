@@ -56,6 +56,10 @@ static uint32_t in_lowmem;
 #include <linux/ion_drv.h>
 #endif
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
+#include <mt-plat/mtk_gpu_utility.h>
+#endif
+
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 #define CONVERT_ADJ(x) ((x * OOM_SCORE_ADJ_MAX) / -OOM_DISABLE)
 #define REVERT_ADJ(x)  (x * (-OOM_DISABLE + 1) / OOM_SCORE_ADJ_MAX)
@@ -432,6 +436,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			#ifdef CONFIG_ION_MTK
 				/* Show ION status */
 				ion_mm_heap_memory_detail();
+			#endif
+			#ifdef CONFIG_MTK_GPU_SUPPORT
+				if (mtk_dump_gpu_memory_usage() == false)
+					lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
 			#endif
 			}
 		}
