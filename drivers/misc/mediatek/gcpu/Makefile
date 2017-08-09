@@ -3,4 +3,8 @@
 #######################################
 
 # BUILD-IN
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/gcpu/$(MTK_PLATFORM)),)
+obj-y += $(MTK_PLATFORM)/
+else
+obj-y += common/
+endif
