@@ -220,10 +220,12 @@ static inline int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)	{ return
 #endif
 
 
-#if defined(CONFIG_ARCH_MT6797) && defined(CONFIG_HYBRID_CPU_DVFS)
+#ifdef CONFIG_ARCH_MT6797
+#ifdef CONFIG_HYBRID_CPU_DVFS
 extern void cpuhvfs_get_pause_status_i2c(void);		/* deprecated */
 #else
 static inline void cpuhvfs_get_pause_status_i2c(void)	{}
+#endif
 #endif
 
 #endif	/* _MT_CPUFREQ_HYBRID_ */
