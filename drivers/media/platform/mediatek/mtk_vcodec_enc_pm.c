@@ -15,7 +15,7 @@
 #include <linux/clk.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
-#include <soc/mediatek/mtk-smi.h>
+#include <soc/mediatek/smi.h>
 #include <linux/pm_runtime.h>
 
 #include "mtk_vcodec_pm.h"
