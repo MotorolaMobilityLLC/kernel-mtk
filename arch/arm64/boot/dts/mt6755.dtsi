@@ -3234,10 +3234,6 @@
 		touch: touch {
 			compatible = "mediatek,mt6755-touch";
 			/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
-			interrupt-parent = <&eintc>;
-			interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
-			debounce = <1 0>;
-			status = "okay";
 		};
 
 		psci {
@@ -3269,11 +3265,6 @@
 
 	ext_buck_oc: ext_buck_oc {
 		compatible = "mediatek, ext_buck_oc-eint";
-		status = "disabled";
-	};
-
-	touch_panel: touch_panel {
-		compatible = "mediatek, touch_panel-eint";
 		status = "disabled";
 	};
 

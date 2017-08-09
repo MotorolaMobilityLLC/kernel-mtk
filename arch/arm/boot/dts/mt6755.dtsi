@@ -2360,11 +2360,6 @@
 		status = "disabled";
 	};
 
-	touch_panel: touch_panel {
-		compatible = "mediatek, touch_panel-eint";
-		status = "disabled";
-	};
-
 	msdc1_ins: msdc1_ins {
 		compatible = "mediatek, msdc1_ins-eint";
 		status = "disabled";
