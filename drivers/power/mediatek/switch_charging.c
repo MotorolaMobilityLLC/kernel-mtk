@@ -50,6 +50,7 @@
 
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
 #include <mt-plat/diso.h>
+#include <mach/mt_diso.h>
 #endif
 
 
