@@ -345,6 +345,11 @@ int tracing_is_enabled(void)
 
 static unsigned long		trace_buf_size = TRACE_BUF_SIZE_DEFAULT;
 
+void update_buf_size(unsigned long size)
+{
+	trace_buf_size = size;
+}
+
 /* trace_types holds a link list of available tracers. */
 static struct tracer		*trace_types __read_mostly;
 
