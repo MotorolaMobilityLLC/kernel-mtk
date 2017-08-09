@@ -46,7 +46,6 @@ unsigned int g_LC898212_SearchDir;
 static signed short Hall_Max = 0x5800;	/* Please read INF position from EEPROM or OTP */
 static signed short Hall_Min = 0xA800;	/* Please read MACRO position from EEPROM or OTP */
 
-
 int s4AF_ReadReg_LC898212XDAF(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
 			  u16 a_sizeRecvData, u16 i2cId)
 {
@@ -111,6 +110,13 @@ static int s4EEPROM_ReadReg_LC898212XDAF_IMX258(u16 addr, u8 *data)
 		LOG_INF("I2C read e2prom failed!!\n");
 
 	return i4RetValue;
+}
+
+static void s4AF_WriteReg(unsigned short addr, unsigned char data)
+{
+	u8 puSendCmd[2] = {(u8)(addr & 0xFF), (u8)(data & 0xFF)};
+
+	s4AF_WriteReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), AF_I2C_SLAVE_ADDR);
 }
 
 static int convertAF_DAC(short ReadData)
@@ -197,6 +203,12 @@ static void LC898212XD_init(void)
 
 	LOG_INF("=====LC898212XD:=init=hall_max:0x%x==hall_min:0x%x====halloff:0x%x, hallbias:0x%x===\n",
 	     Hall_Max, Hall_Min, Hall_Off, Hall_Bias);
+
+	/* Wake up */
+	s4AF_WriteReg(0x80, 0x68);
+	s4AF_WriteReg(0x80, 0x64);
+	s4AF_WriteReg(0x95, 0x00);
+
 	AfInit(Hall_Off, Hall_Bias);	/* Initialize driver IC */
 
 	/* Step move parameter set */
@@ -423,6 +435,11 @@ int LC898212XDAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
+
+		/* Sleep In */
+		s4AF_WriteReg(0x95, 0x80);
+		s4AF_WriteReg(0x80, 0x68);
+		s4AF_WriteReg(0x80, 0x69);
 
 		msleep(20);
 	}
