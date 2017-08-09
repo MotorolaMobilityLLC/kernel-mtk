@@ -5038,26 +5038,3 @@ EXPORT_SYMBOL_GPL(xhci_init_driver);
 MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_LICENSE("GPL");
-
-static int __init xhci_hcd_init(void)
-{
-	/*
-	 * Check the compiler generated sizes of structures that must be laid
-	 * out in specific ways for hardware access.
-	 */
-	BUILD_BUG_ON(sizeof(struct xhci_doorbell_array) != 256*32/8);
-	BUILD_BUG_ON(sizeof(struct xhci_slot_ctx) != 8*32/8);
-	BUILD_BUG_ON(sizeof(struct xhci_ep_ctx) != 8*32/8);
-	/* xhci_device_control has eight fields, and also
-	 * embeds one xhci_slot_ctx and 31 xhci_ep_ctx
-	 */
-	BUILD_BUG_ON(sizeof(struct xhci_stream_ctx) != 4*32/8);
-	BUILD_BUG_ON(sizeof(union xhci_trb) != 4*32/8);
-	BUILD_BUG_ON(sizeof(struct xhci_erst_entry) != 4*32/8);
-	BUILD_BUG_ON(sizeof(struct xhci_cap_regs) != 7*32/8);
-	BUILD_BUG_ON(sizeof(struct xhci_intr_reg) != 8*32/8);
-	/* xhci_run_regs has eight fields and embeds 128 xhci_intr_regs */
-	BUILD_BUG_ON(sizeof(struct xhci_run_regs) != (8+8*128)*32/8);
-	return 0;
-}
-module_init(xhci_hcd_init);
