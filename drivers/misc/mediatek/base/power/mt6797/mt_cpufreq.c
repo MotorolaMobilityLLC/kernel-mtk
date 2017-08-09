@@ -868,6 +868,10 @@ static unsigned int idvfs_get_cur_phy_freq_b(struct mt_cpu_dvfs *p);
 static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz);
 static int idvfs_set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
 static int idvfs_set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
+int idvfs_sync_dcm_set_mp2_freq(unsigned int mp2)
+{
+	return 0;
+}
 #endif
 
 static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt);
@@ -1919,13 +1923,6 @@ static unsigned int _cpu_freq_calc(unsigned int con1, unsigned int ckdiv1)
 
 	return freq;
 }
-
-#ifdef ENABLE_IDVFS
-int idvfs_sync_dcm_set_mp2_freq(unsigned int mp2)
-{
-	return 0;
-}
-#endif
 
 #ifdef ENABLE_IDVFS
 static unsigned int idvfs_get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
@@ -3661,10 +3658,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 	int ret = -EINVAL;
 	unsigned long flags;
 
-#ifdef ENABLE_IDVFS
-	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100 = 0;
-#endif
-
 	FUNC_ENTER(FUNC_LV_MODULE);
 #if 0
 	max_cpu_num = num_possible_cpus();
@@ -3726,6 +3719,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
 #if 0
+		unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100 = 0;
 /* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
 			if (!disable_idvfs_flag) {
