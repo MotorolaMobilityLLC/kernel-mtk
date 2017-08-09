@@ -1278,6 +1278,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 {
+	struct msdc_host *host = mmc_priv(mmc);
 	unsigned int id = 0;
 	int ret;
 	static const char const *msdc_names[] = {
@@ -1303,6 +1304,9 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 		pr_err("%s: Can not find msdc host\n", __func__);
 		return 1;
 	}
+
+	host = mmc_priv(mmc);
+	host->id = id;
 
 	ret = msdc_of_parse(mmc);
 	if (ret) {
