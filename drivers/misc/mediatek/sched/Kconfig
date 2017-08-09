@@ -146,3 +146,13 @@ config MTK_SCHED_CMP_TGS_WAKEUP
 	   the cluster which has idle CPU with most tasks in the same thread group.
 
 endmenu
+
+menu "MTK Heterogenous MultiProcessor Scheduler"
+config DISABLE_CPU_SCHED_DOMAIN_BALANCE
+	bool "(EXPERIMENTAL) Disable CPU level scheduler load-balancing"
+	help
+	  Disables scheduler load-balancing at CPU sched domain level.
+	  In hmp scheduler, use hmp global balance, a.k.a. force up/down
+	  migration, instead.
+	  If unsure say N here.
+endmenu

@@ -6342,12 +6342,22 @@ static int sched_domains_curr_level;
  * Odd one out:
  * SD_ASYM_PACKING        - describes SMT quirks
  */
+#ifdef CONFIG_DISABLE_CPU_SCHED_DOMAIN_BALANCE
+#define TOPOLOGY_SD_FLAGS               \
+	(SD_LOAD_BALANCE |              \
+	 SD_SHARE_CPUCAPACITY |         \
+	 SD_SHARE_PKG_RESOURCES |       \
+	 SD_NUMA |                      \
+	 SD_ASYM_PACKING |              \
+	 SD_SHARE_POWERDOMAIN)
+#else
 #define TOPOLOGY_SD_FLAGS		\
 	(SD_SHARE_CPUCAPACITY |		\
 	 SD_SHARE_PKG_RESOURCES |	\
 	 SD_NUMA |			\
 	 SD_ASYM_PACKING |		\
 	 SD_SHARE_POWERDOMAIN)
+#endif
 
 static struct sched_domain *
 sd_init(struct sched_domain_topology_level *tl, int cpu)
@@ -6383,7 +6393,11 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
 		.wake_idx		= 0,
 		.forkexec_idx		= 0,
 
-		.flags			= 1*SD_LOAD_BALANCE
+#ifdef CONFIG_DISABLE_CPU_SCHED_DOMAIN_BALANCE
+		.flags			= 0*SD_LOAD_BALANCE
+#else
+		.flags                  = 1*SD_LOAD_BALANCE
+#endif
 					| 1*SD_BALANCE_NEWIDLE
 					| 1*SD_BALANCE_EXEC
 					| 1*SD_BALANCE_FORK

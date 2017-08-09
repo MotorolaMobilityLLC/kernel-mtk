@@ -884,14 +884,22 @@ enum cpu_idle_type {
 #ifdef CONFIG_SCHED_SMT
 static inline int cpu_smt_flags(void)
 {
+#ifdef CONFIG_DISABLE_CPU_SCHED_DOMAIN_BALANCE
+	return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES | SD_LOAD_BALANCE;
+#else
 	return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
+#endif
 }
 #endif
 
 #ifdef CONFIG_SCHED_MC
 static inline int cpu_core_flags(void)
 {
+#ifdef CONFIG_DISABLE_CPU_SCHED_DOMAIN_BALANCE
+	return SD_SHARE_PKG_RESOURCES | SD_LOAD_BALANCE;
+#else
 	return SD_SHARE_PKG_RESOURCES;
+#endif
 }
 #endif
 

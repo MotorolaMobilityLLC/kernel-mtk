@@ -424,13 +424,18 @@ void store_cpu_topology(unsigned int cpuid)
 		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 0);
 		cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL(mpidr, 1);
 	}
+#ifndef CONFIG_SCHED_HMP
 	cpuid_topo->partno = read_cpuid_part_number();
+#endif
 
 	pr_debug("CPU%u: cluster %d core %d thread %d mpidr %#016llx\n",
 		 cpuid, cpuid_topo->cluster_id, cpuid_topo->core_id,
 		 cpuid_topo->thread_id, mpidr);
 
 topology_populated:
+#ifdef CONFIG_SCHED_HMP
+	cpuid_topo->partno = read_cpuid_part_number();
+#endif
 	update_siblings_masks(cpuid);
 	update_cpu_capacity(cpuid);
 }
