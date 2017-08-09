@@ -8,7 +8,7 @@
 #include "../cmdq_device.h"
 
 #ifndef CMDQ_OF_SUPPORT
-#define GCE_BASEPA_NO_OF		0x10212000
+#define GCE_BASEPA_NO_OF		0x10217000
 #endif
 
 #define GCE_BASE_PA cmdq_dev_get_module_base_PA_GCE()
@@ -53,13 +53,13 @@
 
 #define CMDQ_THR_EXEC_CNT_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x128)
 
-/* use DUMMY_1(0x894) because DUMMY_0(0x890) is reserved for FPGA or CG flag */
-#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x894)
+/* use DUMMY_3(0x89C) because DUMMY_0/1 is CLKMGR SW */
+#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x89C)
 
 #define CMDQ_TEST_MMSYS_DUMMY_PA     (0x14000000 + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
 #define CMDQ_TEST_MMSYS_DUMMY_VA     (cmdq_dev_get_module_base_VA_MMSYS_CONFIG() + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
 
-#define CMDQ_APXGPT2_COUNT           (0x10008028)	/* each count is 76ns */
+#define CMDQ_APXGPT2_COUNT           (0x10004028)	/* each count is 76ns */
 
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)
 #define CMDQ_REG_GET16(addr)         (readl((void *)addr) & 0x0000FFFF)

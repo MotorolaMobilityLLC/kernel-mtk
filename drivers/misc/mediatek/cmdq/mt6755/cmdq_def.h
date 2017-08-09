@@ -12,7 +12,7 @@
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define CMDQ_SECURE_PATH_SUPPORT
-/* #define CMDQ_SECURE_PATH_NORMAL_IRQ		(1) */
+#define CMDQ_SECURE_PATH_NORMAL_IRQ		(1)
 #endif
 
 /* CMDQ capability */
@@ -26,6 +26,10 @@
 #define CMDQ_DUMP_GIC (1)	/* TODO: enable when GIC porting done */
 /* #define CMDQ_PROFILE_MMP (0) */
 
+#ifdef CONFIG_MTK_SMI
+/* #define CMDQ_CONFIG_SMI (1) */
+#endif
+
 #define CMDQ_DUMP_FIRSTERROR
 /* #define CMDQ_INSTRUCTION_COUNT */
 
@@ -34,11 +38,17 @@
 #define CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT (7)	/* Thread that are high-priority (display threads) */
 #define CMDQ_MIN_SECURE_THREAD_ID		(12)
 #define CMDQ_MAX_SECURE_THREAD_COUNT	(3)
-#define CMDQ_MAX_RECORD_COUNT           (1024)
 #define CMDQ_MAX_ERROR_COUNT            (2)
 #define CMDQ_MAX_RETRY_COUNT            (1)
 #define CMDQ_MAX_TASK_IN_THREAD         (16)
 #define CMDQ_MAX_READ_SLOT_COUNT        (4)
+
+/* ram optimization related configuration */
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+#define CMDQ_MAX_RECORD_COUNT           (100)
+#else
+#define CMDQ_MAX_RECORD_COUNT           (1024)
+#endif
 
 #define CMDQ_MAX_PREFETCH_INSTUCTION    (240)	/* Maximum prefetch buffer size, in instructions. */
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
@@ -127,15 +137,15 @@ typedef enum CMDQ_ENG_ENUM {
 	CMDQ_ENG_MDP_TDSHP0,	/* 7 */
 	CMDQ_ENG_MDP_WROT0,	/* 8 */
 	CMDQ_ENG_MDP_WDMA,	/* 9 */
-	CMDQ_ENG_MDP_COLOR,	/* 10 */
 
 	/* JPEG & VENC */
-	CMDQ_ENG_JPEG_ENC,	/* 11 */
-	CMDQ_ENG_VIDEO_ENC,	/* 12 */
-	CMDQ_ENG_JPEG_DEC,	/* 13 */
-	CMDQ_ENG_JPEG_REMDC,	/* 14 */
+	CMDQ_ENG_JPEG_ENC,	/* 10 */
+	CMDQ_ENG_VIDEO_ENC,	/* 11 */
+	CMDQ_ENG_JPEG_DEC,	/* 12 */
+	CMDQ_ENG_JPEG_REMDC,	/* 13 */
 
 	/* DISP */
+	CMDQ_ENG_DISP_UFOE,	/* 14 */
 	CMDQ_ENG_DISP_AAL,	/* 15 */
 	CMDQ_ENG_DISP_COLOR0,	/* 16 */
 	CMDQ_ENG_DISP_RDMA0,	/* 17 */

@@ -27,10 +27,10 @@
 						 (1LL << CMDQ_ENG_MDP_RSZ1) |       \
 						 (1LL << CMDQ_ENG_MDP_TDSHP0) |     \
 						 (1LL << CMDQ_ENG_MDP_WROT0) |      \
-						 (1LL << CMDQ_ENG_MDP_WDMA) |	   \
-						 (1LL << CMDQ_ENG_MDP_COLOR))
+						 (1LL << CMDQ_ENG_MDP_WDMA))
 
-#define CMDQ_ENG_DISP_GROUP_BITS               ((1LL << CMDQ_ENG_DISP_AAL) |       \
+#define CMDQ_ENG_DISP_GROUP_BITS                ((1LL << CMDQ_ENG_DISP_UFOE) |      \
+						 (1LL << CMDQ_ENG_DISP_AAL) |       \
 						 (1LL << CMDQ_ENG_DISP_COLOR0) |    \
 						 (1LL << CMDQ_ENG_DISP_RDMA0) |     \
 						 (1LL << CMDQ_ENG_DISP_RDMA1) |     \

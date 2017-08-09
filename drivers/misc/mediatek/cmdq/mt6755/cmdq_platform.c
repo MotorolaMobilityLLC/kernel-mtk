@@ -5,8 +5,6 @@
 #include "../cmdq_device.h"
 #include <linux/vmalloc.h>
 
-#include "m4u.h"
-
 #ifndef CMDQ_USE_CCF
 #include <mach/mt_clkmgr.h>
 #endif				/* !defined(CMDQ_USE_CCF) */
@@ -21,6 +19,33 @@ typedef struct RegDef {
 const bool cmdq_platform_support_sync_non_suspendable(void)
 {
 	return true;
+}
+
+int32_t cmdq_platform_subsys_from_phys_addr(uint32_t physAddr)
+{
+#define DISP_PWM_BASE 0x1100E000
+
+	const int32_t msb = (physAddr & 0x0FFFF0000) >> 16;
+	int32_t subsysID = -1;
+
+#undef DECLARE_CMDQ_SUBSYS
+#define DECLARE_CMDQ_SUBSYS(addr, id, grp, base) { if (addr == msb) {subsysID = id; break; } }
+	do {
+#include "cmdq_subsys.h"
+		/* Extra handle for HW registers which not in GCE subsys table, should check and add by case */
+		if (DISP_PWM_BASE == (physAddr & 0xFFFFF000)) {
+			CMDQ_MSG("Special handle subsys (PWM), physAddr:0x%08x\n", physAddr);
+			subsysID = CMDQ_SPECIAL_SUBSYS_ADDR;
+			break;
+		}
+	} while (0);
+#undef DECLARE_CMDQ_SUBSYS
+
+	if (-1 == subsysID) {
+		/* printf error message */
+		CMDQ_ERR("unrecognized subsys, msb=0x%04x, physAddr:0x%08x\n", msb, physAddr);
+	}
+	return subsysID;
 }
 
 void cmdq_platform_get_reg_id_from_hwflag(uint64_t hwflag,
@@ -65,26 +90,18 @@ const char *cmdq_platform_module_from_event_id(const int32_t event)
 		break;
 
 	case CMDQ_EVENT_DISP_WDMA0_SOF:
-	case CMDQ_EVENT_DISP_WDMA1_SOF:
 	case CMDQ_EVENT_DISP_WDMA0_EOF:
-	case CMDQ_EVENT_DISP_WDMA1_EOF:
 		module = "DISP_WDMA";
 		break;
 
 	case CMDQ_EVENT_DISP_OVL0_SOF:
-	case CMDQ_EVENT_DISP_OVL1_SOF:
 	case CMDQ_EVENT_DISP_OVL0_EOF:
-	case CMDQ_EVENT_DISP_OVL1_EOF:
-	case CMDQ_EVENT_DISP_2L_OVL0_SOF ... CMDQ_EVENT_DISP_2L_OVL1_SOF:
-	case CMDQ_EVENT_DISP_2L_OVL0_EOF ... CMDQ_EVENT_DISP_2L_OVL1_EOF:
 		module = "DISP_OVL";
 		break;
 
 	case CMDQ_EVENT_DSI_TE:
-	case CMDQ_EVENT_DISP_COLOR_SOF ... CMDQ_EVENT_DISP_DITHER_SOF:
-	case CMDQ_EVENT_DISP_PWM0_SOF:
+	case CMDQ_EVENT_DISP_COLOR_SOF ... CMDQ_EVENT_DISP_PWM0_SOF:
 	case CMDQ_EVENT_DISP_COLOR_EOF ... CMDQ_EVENT_DISP_DPI0_EOF:
-	case CMDQ_EVENT_DISP_DSI0_EOF:
 	case CMDQ_EVENT_MUTEX0_STREAM_EOF ... CMDQ_EVENT_MUTEX4_STREAM_EOF:
 		module = "DISP";
 		break;
@@ -93,14 +110,23 @@ const char *cmdq_platform_module_from_event_id(const int32_t event)
 		module = "DISP";
 		break;
 
-	case CMDQ_EVENT_MDP_RDMA0_SOF ... CMDQ_EVENT_MDP_COLOR_SOF:
-	case CMDQ_EVENT_MDP_RDMA0_EOF ... CMDQ_EVENT_MDP_COLOR_EOF:
+	case CMDQ_EVENT_MDP_RDMA0_SOF ... CMDQ_EVENT_MDP_RSZ1_SOF:
+	case CMDQ_EVENT_MDP_TDSHP_SOF:
+	case CMDQ_EVENT_MDP_WDMA_SOF ... CMDQ_EVENT_MDP_WROT_SOF:
+	case CMDQ_EVENT_MDP_RDMA0_EOF ... CMDQ_EVENT_MDP_WROT_READ_EOF:
 	case CMDQ_EVENT_MUTEX5_STREAM_EOF ... CMDQ_EVENT_MUTEX9_STREAM_EOF:
 		module = "MDP";
 		break;
 
-	case CMDQ_EVENT_ISP_PASS2_2_EOF ... CMDQ_EVENT_ISP_PASS1_0_EOF:
-	case CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE ... CMDQ_EVENT_ISP_SENINF_CAM0_FULL:
+	case CMDQ_EVENT_ISP_PASS2_2_EOF:
+	case CMDQ_EVENT_ISP_PASS2_1_EOF:
+	case CMDQ_EVENT_ISP_PASS2_0_EOF:
+	case CMDQ_EVENT_ISP_PASS1_1_EOF:
+	case CMDQ_EVENT_ISP_PASS1_0_EOF:
+	case CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE:
+	case CMDQ_EVENT_ISP_CAMSV_1_PASS1_DONE:
+	case CMDQ_EVENT_ISP_SENINF_CAM1_2_3_FULL:
+	case CMDQ_EVENT_ISP_SENINF_CAM0_FULL:
 		module = "ISP";
 		break;
 
@@ -306,7 +332,7 @@ uint64_t cmdq_platform_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
 		    (1LL << CMDQ_ENG_DISP_AAL) |
 		    (1LL << CMDQ_ENG_DISP_GAMMA) |
 		    (1LL << CMDQ_ENG_DISP_RDMA0) |
-		    (1LL << CMDQ_ENG_DISP_DSI0_CMD);
+		    (1LL << CMDQ_ENG_DISP_UFOE) | (1LL << CMDQ_ENG_DISP_DSI0_CMD);
 		break;
 	case CMDQ_SCENARIO_PRIMARY_MEMOUT:
 		flag = 0LL;
@@ -318,7 +344,7 @@ uint64_t cmdq_platform_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
 			(1LL << CMDQ_ENG_DISP_AAL) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
 			(1LL << CMDQ_ENG_DISP_RDMA0) |
-			(1LL << CMDQ_ENG_DISP_DSI0_CMD));
+			(1LL << CMDQ_ENG_DISP_UFOE) | (1LL << CMDQ_ENG_DISP_DSI0_CMD));
 		break;
 	case CMDQ_SCENARIO_SUB_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
@@ -340,7 +366,7 @@ uint64_t cmdq_platform_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
 			(1LL << CMDQ_ENG_DISP_COLOR0) |
 			(1LL << CMDQ_ENG_DISP_AAL) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
-			(1LL << CMDQ_ENG_DISP_DSI0_CMD));
+			(1LL << CMDQ_ENG_DISP_UFOE) | (1LL << CMDQ_ENG_DISP_DSI0_CMD));
 		break;
 	case CMDQ_SCENARIO_MHL_DISP:
 	case CMDQ_SCENARIO_RDMA1_DISP:
@@ -355,6 +381,70 @@ uint64_t cmdq_platform_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
 	return flag;
 }
 
+void cmdq_platform_init_module_PA_stat(void)
+{
+#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_INSTRUCTION_COUNT)
+	int32_t i;
+	CmdqModulePAStatStruct *modulePAStat = cmdq_core_Initial_and_get_module_stat();
+
+	/* Get MM_SYS config registers range */
+	cmdq_dev_get_module_PA_for_stat("mediatek,MMSYS_CONFIG", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MMSYS_CONFIG],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MMSYS_CONFIG]);
+	/* Get MDP module registers range */
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_RDMA", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RDMA],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RDMA]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_RSZ0", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RSZ0],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RSZ0]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_RSZ1", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RSZ1],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RSZ1]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_WDMA", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_WDMA],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_WDMA]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_WROT", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_WROT],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_WROT]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MDP_TDSHP", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_TDSHP],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_TDSHP]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,MM_MUTEX", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_MM_MUTEX],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_MM_MUTEX]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,VENC", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_VENC],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_VENC]);
+	/* Get DISP module registers range */
+	for (i = CMDQ_MODULE_STAT_DISP_OVL0; i <= CMDQ_MODULE_STAT_DISP_DPI0; i++) {
+		cmdq_dev_get_module_PA_for_stat("mediatek,DISPSYS",
+						    (i - CMDQ_MODULE_STAT_DISP_OVL0),
+						    &modulePAStat->start[i], &modulePAStat->end[i]);
+	}
+	cmdq_dev_get_module_PA_for_stat("mediatek,DISPSYS", 31,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_DISP_OD],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_DISP_OD]);
+	/* Get CAM module registers range */
+	cmdq_dev_get_module_PA_for_stat("mediatek,CAM0", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM0],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM0]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,CAM1", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM1],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM1]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,CAM2", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM2],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM2]);
+	cmdq_dev_get_module_PA_for_stat("mediatek,CAM3", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM3],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM3]);
+	/* Get SODI registers range */
+	cmdq_dev_get_module_PA_for_stat("mediatek,SLEEP", 0,
+					    &modulePAStat->start[CMDQ_MODULE_STAT_SODI],
+					    &modulePAStat->end[CMDQ_MODULE_STAT_SODI]);
+#endif
+}
+
 void cmdq_platform_function_setting(void)
 {
 	cmdqCoreFuncStruct *pFunc;
@@ -365,6 +455,7 @@ void cmdq_platform_function_setting(void)
 	 * GCE capability
 	 */
 	pFunc->syncNonSuspendable = cmdq_platform_support_sync_non_suspendable;
+	pFunc->subsysPA = cmdq_platform_subsys_from_phys_addr;
 
 	/**
 	 * Module dependent
@@ -388,4 +479,10 @@ void cmdq_platform_function_setting(void)
 	 *
 	 */
 	pFunc->flagFromScenario = cmdq_platform_flag_from_scenario;
+
+	/**
+	 * Test
+	 *
+	 */
+	pFunc->initModulePAStat = cmdq_platform_init_module_PA_stat;
 }
