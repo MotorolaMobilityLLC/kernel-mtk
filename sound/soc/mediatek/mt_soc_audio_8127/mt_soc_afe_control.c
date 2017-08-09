@@ -129,11 +129,11 @@ static struct mt_afe_mem_if_attribute *audio_mem_if[Soc_Aud_Digital_Block_NUM_OF
 
 static struct AudioAfeRegCache mAudioRegCache;
 static struct AudioSramManager mAudioSramManager;
-const unsigned int AudioSramPlaybackFullSize = 1024 * 36;
-const unsigned int AudioSramPlaybackPartialSize = 1024 * 36;
-const unsigned int AudioDramPlaybackSize = 1024 * 36;
-const size_t AudioSramCaptureSize = 1024 * 36;
-const size_t AudioDramCaptureSize = 1024 * 36;
+const unsigned int AudioSramPlaybackFullSize = 1024 * 16;
+const unsigned int AudioSramPlaybackPartialSize = 1024 * 16;
+const unsigned int AudioDramPlaybackSize = 1024 * 16;
+const size_t AudioSramCaptureSize = 1024 * 16;
+const size_t AudioDramCaptureSize = 1024 * 16;
 const size_t AudioInterruptLimiter = 100;
 #if 0
 static int Aud_APLL_DIV_APLL1_cntr;

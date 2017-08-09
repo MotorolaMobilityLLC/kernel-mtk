@@ -87,14 +87,14 @@ define for PCM settings
 /*
      PCM buufer size and pperiod size setting
 */
-#define BT_DAI_MAX_BUFFER_SIZE     (16*1024)
+#define BT_DAI_MAX_BUFFER_SIZE     (8*1024)
 #define BT_DAI_MIN_PERIOD_SIZE     1
 #define BT_DAI_MAX_PERIOD_SIZE     BT_DAI_MAX_BUFFER_SIZE
 
 #define Dl1_MAX_BUFFER_SIZE     (16*1024) /*ori 48*1024*/
 #define Dl1_MIN_PERIOD_SIZE       1
 #define Dl1_MAX_PERIOD_SIZE     Dl1_MAX_BUFFER_SIZE
-#define Dl2_MAX_BUFFER_SIZE     (36*1024)
+#define Dl2_MAX_BUFFER_SIZE     (16*1024)
 #define Dl2_MIN_PERIOD_SIZE       1
 #define Dl2_MAX_PERIOD_SIZE     Dl2_MAX_BUFFER_SIZE
 
@@ -102,7 +102,7 @@ define for PCM settings
 #define MIN_PERIOD_SIZE       1
 #define MAX_PERIOD_SIZE     MAX_BUFFER_SIZE
 
-#define UL1_MAX_BUFFER_SIZE     (48*1024)
+#define UL1_MAX_BUFFER_SIZE     (16*1024)
 #define UL1_MIN_PERIOD_SIZE       1
 #define UL1_MAX_PERIOD_SIZE     UL1_MAX_BUFFER_SIZE
 
@@ -110,7 +110,7 @@ define for PCM settings
 #define UL2_MIN_PERIOD_SIZE       1
 #define UL2_MAX_PERIOD_SIZE     UL2_MAX_BUFFER_SIZE
 
-#define AWB_MAX_BUFFER_SIZE     (64*1024)
+#define AWB_MAX_BUFFER_SIZE     (16*1024)
 #define AWB_MIN_PERIOD_SIZE       1
 #define AWB_MAX_PERIOD_SIZE     AWB_MAX_BUFFER_SIZE
 
