@@ -24,3 +24,4 @@ obj-$(CONFIG_MTK_BMA255_SDO0)   +=  bma255-sdo0/
 obj-$(CONFIG_MTK_BMA255_SDO1)   +=  bma255-sdo1/
 obj-$(CONFIG_MTK_BMA056)   +=  bma056/
 obj-$(CONFIG_MTK_LSM6DS3)   +=  lsm6ds3/
+obj-$(CONFIG_MTK_ICM20645G)   +=  icm20645g/

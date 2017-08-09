@@ -16,3 +16,4 @@ config CUSTOM_KERNEL_MAGNETOMETER
           cardinal directions, or "points".
 
 source "drivers/misc/mediatek/magnetometer/akm09911-new/Kconfig"
+source "drivers/misc/mediatek/magnetometer/akm09912/Kconfig"

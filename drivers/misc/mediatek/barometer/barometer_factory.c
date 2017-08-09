@@ -1,4 +1,4 @@
-#include "barometer_factory.h"
+#include "inc/barometer_factory.h"
 
 static int baro_factory_open(struct inode *inode, struct file *file)
 {

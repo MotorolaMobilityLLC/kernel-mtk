@@ -6,6 +6,7 @@ obj-y   +=  aal_control.o
 
 obj-$(CONFIG_MTK_GP2AP002S00F)	+=  gp2ap002s00f/
 obj-$(CONFIG_MTK_CM36283)	+=  cm36283/
+obj-$(CONFIG_MTK_CM36558)	+=  cm36558/
 obj-$(CONFIG_MTK_CM36283_NEW)	+=  cm36283-new/
 obj-$(CONFIG_MTK_APM_16D)	+=  apm_16d/
 obj-$(CONFIG_MTK_EPL2182)	+=  epl2182/

@@ -6,9 +6,6 @@ struct baro_context *baro_context_obj = NULL;
 
 static struct baro_init_info *barometer_init_list[MAX_CHOOSE_BARO_NUM] = { 0 };
 
-static void baro_early_suspend(struct early_suspend *h);
-static void baro_late_resume(struct early_suspend *h);
-
 static void baro_work_func(struct work_struct *work)
 {
 
@@ -609,7 +606,7 @@ int baro_data_report(struct input_dev *dev, int value, int status)
 	return 0;
 }
 
-static int baro_probe(void)
+static int baro_probe(struct platform_device *pdev)
 {
 
 	int err;
@@ -641,14 +638,6 @@ static int baro_probe(void)
 		BARO_ERR("unable to register baro input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-	atomic_set(&(baro_context_obj->early_suspend), 0);
-	baro_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    baro_context_obj->early_drv.suspend = baro_early_suspend,
-	    baro_context_obj->early_drv.resume = baro_late_resume,
-	    register_early_suspend(&baro_context_obj->early_drv);
-#endif
-
 
 	BARO_LOG("----baro_probe OK !!\n");
 	return 0;
@@ -670,13 +659,13 @@ exit_alloc_input_dev_failed:
 exit_alloc_data_failed:
 
 
-	BARO_ERR("----baro_probe fail !!!\n");
+	BARO_LOG("----baro_probe fail !!!\n");
 	return err;
 }
 
 
 
-static int baro_remove(void)
+static int baro_remove(struct platform_device *pdev)
 {
 	int err = 0;
 
@@ -693,26 +682,42 @@ static int baro_remove(void)
 	return 0;
 }
 
-static void baro_early_suspend(struct early_suspend *h)
+static int baro_suspend(struct platform_device *dev, pm_message_t state)
 {
-	atomic_set(&(baro_context_obj->early_suspend), 1);
-	BARO_LOG(" baro_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-atomic_read(&(baro_context_obj->early_suspend)));
+	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
-static void baro_late_resume(struct early_suspend *h)
+static int baro_resume(struct platform_device *dev)
 {
-	atomic_set(&(baro_context_obj->early_suspend), 0);
-	BARO_LOG(" baro_late_resume ok------->hwm_obj->early_suspend=%d\n",
-atomic_read(&(baro_context_obj->early_suspend)));
+	return 0;
 }
+
+#ifdef CONFIG_OF
+static const struct of_device_id m_baro_pl_of_match[] = {
+	{.compatible = "mediatek,m_baro_pl",},
+	{},
+};
+#endif
+
+static struct platform_driver baro_driver = {
+	.probe = baro_probe,
+	.remove = baro_remove,
+	.suspend = baro_suspend,
+	.resume = baro_resume,
+	.driver = {
+		   .name = BARO_PL_DEV_NAME,
+#ifdef CONFIG_OF
+		   .of_match_table = m_baro_pl_of_match,
+#endif
+		   }
+};
 
 static int __init baro_init(void)
 {
 	BARO_FUN();
 
-	if (baro_probe()) {
+	if (platform_driver_register(&baro_driver)) {
 		BARO_ERR("failed to register baro driver\n");
 		return -ENODEV;
 	}
@@ -722,7 +727,7 @@ static int __init baro_init(void)
 
 static void __exit baro_exit(void)
 {
-	baro_remove();
+	platform_driver_unregister(&baro_driver);
 	platform_driver_unregister(&barometer_driver);
 }
 

@@ -3,6 +3,14 @@
 #define __BARO_H__
 
 
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/kobject.h>
+#include <linux/types.h>
+#include <linux/atomic.h>
+#include <linux/io.h>
+#include <linux/sched.h>
 #include <linux/wakelock.h>
 #include <linux/interrupt.h>
 #include <linux/miscdevice.h>
@@ -10,11 +18,14 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
-#include <barometer_factory.h>
+
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
+#include "barometer_factory.h"
 
 #define BARO_TAG					"<BAROMETER> "
 #define BARO_FUN(f)				pr_debug(BARO_TAG"%s\n", __func__)
@@ -66,7 +77,7 @@ struct baro_init_info {
 };
 
 struct baro_data {
-	hwm_sensor_data baro_data;
+	struct hwm_sensor_data baro_data;
 	int data_updata;
 };
 
@@ -86,9 +97,6 @@ struct baro_context {
 	atomic_t wake;
 	struct timer_list timer;
 	atomic_t trace;
-
-	struct early_suspend early_drv;
-	atomic_t early_suspend;
 
 	struct baro_data drv_data;
 	struct baro_control_path baro_ctl;
