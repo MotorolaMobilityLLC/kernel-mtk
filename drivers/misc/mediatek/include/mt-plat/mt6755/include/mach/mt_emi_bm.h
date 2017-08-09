@@ -8,8 +8,7 @@
 #define EMI_ARBD    (EMI_BASE_ADDR + 0x118)
 #define EMI_ARBE    (EMI_BASE_ADDR + 0x120)
 #define EMI_ARBF    (EMI_BASE_ADDR + 0x128)
-#define EMI_ARBG    (EMI_BASE_ADDR + 0x130)
-#define EMI_ARBH    (EMI_BASE_ADDR + 0x138)
+#define EMI_ARBG_2ND     (EMI_BASE_ADDR + 0x134)
 #define EMI_BMEN    (EMI_BASE_ADDR + 0x400)
 #define EMI_BCNT    (EMI_BASE_ADDR + 0x408)
 #define EMI_TACT    (EMI_BASE_ADDR + 0x410)
@@ -51,7 +50,16 @@
 #define EMI_TTYPE14  (EMI_BASE_ADDR + 0x568)
 #define EMI_TTYPE15  (EMI_BASE_ADDR + 0x570)
 #define EMI_TTYPE16  (EMI_BASE_ADDR + 0x578)
+#define EMI_TTYPE17  (EMI_BASE_ADDR + 0x580)
+#define EMI_TTYPE18  (EMI_BASE_ADDR + 0x588)
+#define EMI_TTYPE19  (EMI_BASE_ADDR + 0x590)
+#define EMI_TTYPE20  (EMI_BASE_ADDR + 0x598)
+#define EMI_TTYPE21  (EMI_BASE_ADDR + 0x5A0)
 
+#define EMI_CONH   (EMI_BASE_ADDR + 0x038)
+#define EMI_CONO   (EMI_BASE_ADDR + 0x04C)
+#define EMI_BWST   (EMI_BASE_ADDR + 0x03C)
+#define EMI_BWST1  (EMI_BASE_ADDR + 0x05C)
 #define DRAMC_R2R_PAGE_HIT      (0x280)
 #define DRAMC_R2R_PAGE_MISS     (0x284)
 #define DRAMC_R2R_INTERBANK     (0x288)
@@ -160,6 +168,12 @@ extern unsigned int DRAMC_GetPageMissCount(const unsigned int CountType);
 extern unsigned int DRAMC_GetInterbankCount(const unsigned int CountType);
 extern unsigned int DRAMC_GetIdleCount(void);
 extern unsigned int ucDram_Register_Read(unsigned long u4reg_addr);
+extern int BM_SetBW(const unsigned int BW_config);
+extern int BM_SetBW1(const unsigned int BW_config);
+extern unsigned int BM_GetBWST(void);
+extern unsigned int BM_GetBWST1(void);
+extern unsigned int BM_GetBW(void);
+extern unsigned int BM_GetBW1(void);
 extern void *mt_emi_base_get(void);
 
 #endif				/* !__MT_EMI_BW_H__ */
