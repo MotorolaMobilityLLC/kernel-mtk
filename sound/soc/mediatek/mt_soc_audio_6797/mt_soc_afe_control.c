@@ -4342,12 +4342,12 @@ static bool is_tgt_rate_ok(unsigned int _rate,
 
 	return true;
 }
-
+/*
 static bool is_min_rate_ok(unsigned int _rate, unsigned int _count)
 {
 	return is_tgt_rate_ok(_rate, _count, IRQ_MIN_RATE);
 }
-
+*/
 static bool is_period_smaller(enum Soc_Aud_IRQ_MCU_MODE _irq,
 			      struct irq_user *_user)
 {
@@ -4396,15 +4396,9 @@ static const struct irq_user *get_min_period_user(
 static int check_and_update_irq(const struct irq_user *_irq_user,
 				enum Soc_Aud_IRQ_MCU_MODE _irq)
 {
-	if (is_tgt_rate_ok(_irq_user->request_rate,
-			   _irq_user->request_count,
-			   irq_managers[_irq].rate)) {
-		update_aud_irq(_irq_user,
-			       _irq,
-			       get_tgt_count(_irq_user->request_rate,
-					     _irq_user->request_count,
-					     irq_managers[_irq].rate));
-	} else {
+	if (!is_tgt_rate_ok(_irq_user->request_rate,
+			    _irq_user->request_count,
+			    irq_managers[_irq].rate)) {
 		/* if you got here, you should reconsider your irq usage */
 		pr_err("error, irq not updated, irq %d, irq rate %d, rate %d, count %d\n",
 			_irq,
@@ -4412,9 +4406,18 @@ static int check_and_update_irq(const struct irq_user *_irq_user,
 			_irq_user->request_rate,
 			_irq_user->request_count);
 		dump_irq_manager();
-		AUDIO_AEE("error, irq not updated\n");
+
+		/* mt6797 disable for MP, enable before enter SQC !!!! */
+		/* AUDIO_AEE("error, irq not updated\n"); */
+
 		return -EINVAL;
 	}
+
+	update_aud_irq(_irq_user,
+		       _irq,
+		       get_tgt_count(_irq_user->request_rate,
+				     _irq_user->request_count,
+				     irq_managers[_irq].rate));
 
 	return 0;
 }
@@ -4471,16 +4474,10 @@ int irq_add_user(const void *_user,
 		if (is_period_smaller(_irq, new_user))
 			check_and_update_irq(new_user, _irq);
 	} else {
-		if (is_min_rate_ok(_rate, _count))
-			enable_aud_irq(new_user,
-				_irq,
-				IRQ_MIN_RATE,
-				get_tgt_count(_rate, _count, IRQ_MIN_RATE));
-		else
-			enable_aud_irq(new_user,
-				_irq,
-				IRQ_MAX_RATE,
-				get_tgt_count(_rate, _count, IRQ_MAX_RATE));
+		enable_aud_irq(new_user,
+			       _irq,
+			       _rate,
+			       _count);
 	}
 
 	spin_unlock_irqrestore(&afe_control_lock, flags);
@@ -4558,6 +4555,7 @@ int irq_update_user(const void *_user,
 	/* if _rate == 0, just update count */
 	if (_rate)
 		corr_user->request_rate = _rate;
+
 	corr_user->request_count = _count;
 
 	/* update irq user */
