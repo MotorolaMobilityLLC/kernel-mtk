@@ -69,10 +69,19 @@ static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
 	raw_spin_unlock(&rt_b->rt_runtime_lock);
 }
 
+#ifdef CONFIG_PROVE_LOCKING
+DEFINE_RAW_SPINLOCK(rt_rq_runtime_spinlock);
+#define MAX_SPIN_KEY 10
+DEFINE_PER_CPU(struct lock_class_key, spin_key[MAX_SPIN_KEY]);
+DEFINE_PER_CPU(int, spin_key_idx);
+#endif
 void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
 {
 	struct rt_prio_array *array;
 	int i;
+#ifdef CONFIG_PROVE_LOCKING
+	int cpu, idx;
+#endif
 
 	array = &rt_rq->active;
 	for (i = 0; i < MAX_RT_PRIO; i++) {
@@ -95,7 +104,18 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
 	rt_rq->rt_time = 0;
 	rt_rq->rt_throttled = 0;
 	rt_rq->rt_runtime = 0;
+#ifdef CONFIG_PROVE_LOCKING
+	raw_spin_lock(&rt_rq_runtime_spinlock);
+	cpu = rq->cpu;
+	idx = per_cpu(spin_key_idx, cpu);
+#endif
 	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
+#ifdef CONFIG_PROVE_LOCKING
+	lockdep_set_class(&rt_rq->rt_runtime_lock, &per_cpu(spin_key[idx], cpu));
+	per_cpu(spin_key_idx, cpu)++;
+	BUG_ON(per_cpu(spin_key_idx, cpu) >= MAX_SPIN_KEY);
+	raw_spin_unlock(&rt_rq_runtime_spinlock);
+#endif
 }
 
 #ifdef CONFIG_RT_GROUP_SCHED
