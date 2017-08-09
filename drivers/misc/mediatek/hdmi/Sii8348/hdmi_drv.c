@@ -15,9 +15,13 @@
 #include "si_timing_defs.h"
 
 #include "hdmi_drv.h"
+#ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 #include "smartbook.h"
+#endif
 
-/*#include "hdmi_cust.h"*/
+#ifdef CONFIG_MTK_LEGACY
+#include "hdmi_cust.h"
+#endif
 /**
 * MHL TX Chip Driver User Layer Interface
 */
@@ -31,8 +35,6 @@ extern void set_platform_bitwidth(int bitWidth);
 extern bool si_mhl_tx_set_path_en_I(struct mhl_dev_context *dev_context);
 extern bool packed_pixel_available(struct mhl_dev_context *dev_context);
 extern void configure_and_send_audio_info(struct mhl_dev_context *dev_context, int audio_format);
-
-#define MHL_RESOLUTION_LIMIT_720P_60
 
 //Should align to mhl_linux_tx.h
 #define	MHL_TX_EVENT_DISCONNECTION	0x01
@@ -261,17 +263,12 @@ static int hdmi_drv_audio_enable(bool enable)
     MHL_DBG("[EXTD]Set_I2S_Pin, enable = %d\n", enable);   
     //gpio:uart
 #ifdef CONFIG_MTK_LEGACY
-/*
     if(not_switch_to_d3 == 1)
         cust_hdmi_i2s_gpio_on(2);
     else
         cust_hdmi_i2s_gpio_on(enable);
-*/
 #else
-	if (enable)
-		i2s_gpio_ctrl(1);
-	else
-		i2s_gpio_ctrl(0);
+	i2s_gpio_ctrl(1);
 #endif
     audio_enable = enable;
 
@@ -394,8 +391,8 @@ int hdmi_drv_power_on(void)
     }
 */
 #ifdef CONFIG_MTK_LEGACY     
-	/*cust_hdmi_power_on(true);*/	
-	/*cust_hdmi_dpi_gpio_on(true);*/  
+	cust_hdmi_power_on(1);	
+	cust_hdmi_dpi_gpio_on(1);  
 #else
 	dpi_gpio_ctrl(1);
 	i2s_gpio_ctrl(1);
@@ -452,9 +449,8 @@ void hdmi_drv_power_off(void)
 
 
 #ifdef CONFIG_MTK_LEGACY      
-    /*cust_hdmi_dpi_gpio_on(false);*/
     if(audio_enable == 0)
-	    cust_hdmi_i2s_gpio_on(false);
+	    cust_hdmi_i2s_gpio_on(0);
 #else
     dpi_gpio_ctrl(0);
 	i2s_gpio_ctrl(0);
@@ -504,8 +500,8 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
             case 0x2:
             	pal_resulution |= SINK_480P;
             	break;
-			default:
-				MHL_DBG("param1: %d\n", param1);
+	    default:
+		MHL_DBG("param1: %x\n", param1);
     	}
 	}	
 

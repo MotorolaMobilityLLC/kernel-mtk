@@ -39,8 +39,9 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include "platform.h"
 #include "si_8348_drv.h"
 #include "hdmi_drv.h"
+#ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 #include "smartbook.h"
-
+#endif
 int si_mhl_tx_post_initialize(struct mhl_dev_context *dev_context, bool bootup);
 
 static void cbus_abort_timer_callback(void *callback_param);

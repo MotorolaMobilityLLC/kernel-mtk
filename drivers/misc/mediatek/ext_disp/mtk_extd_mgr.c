@@ -347,7 +347,7 @@ const struct file_operations external_display_fops = {
 };
 
 static const struct of_device_id extd_of_ids[] = {
-	{.compatible = "mediatek,sii8348-hdmi",},
+	{.compatible = "mediatek,extd_dev",},
 	{}
 };
 

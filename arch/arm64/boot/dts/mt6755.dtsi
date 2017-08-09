@@ -1964,7 +1964,7 @@
 		};
 
 		mhl:mhl@0 {
-			compatible = "mediatek,sii8348-hdmi";
+			compatible = "mediatek,extd_dev";
 		};
 
 		disp_ovl0@14008000 {

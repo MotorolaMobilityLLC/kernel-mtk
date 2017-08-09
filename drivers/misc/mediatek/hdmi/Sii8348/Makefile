@@ -3,5 +3,5 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
-obj-y	+= hdmi_drv.o mhl_linux_tx.o mhl_rcp_inputdev.o mhl_supp.o platform.o si_8348_drv.o si_mdt_inputdev.o si_mhl2_edid_3d.o smartbook.o
+obj-y	+= hdmi_drv.o mhl_linux_tx.o mhl_rcp_inputdev.o mhl_supp.o platform.o si_8348_drv.o si_mdt_inputdev.o si_mhl2_edid_3d.o
 

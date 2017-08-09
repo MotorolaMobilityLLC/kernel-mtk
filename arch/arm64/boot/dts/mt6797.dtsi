@@ -650,6 +650,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			vcn28-supply = <&mt_pmic_vcn28_ldo_reg>;
 			vcn33_bt-supply = <&mt_pmic_vcn33_bt_ldo_reg>;
 			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
+			mhl_12v-supply = <&mt_pmic_vgp3_ldo_reg>;
 		};/* End of regulators_supply */
 	};/* End of mt_pmic_regulator */
 
@@ -3173,7 +3174,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>;
 		};
 		mhl:mhl@0 {
-			compatible = "mediatek,sii8348-hdmi";
+			compatible = "mediatek,extd_dev";
 		};
 		mm_mutex@1401f000 {
 			compatible = "mediatek,mm_mutex";

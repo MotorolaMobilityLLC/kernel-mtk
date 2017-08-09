@@ -58,14 +58,13 @@
 #include "mtk_ovl.h"
 #include "ddp_mmp.h"
 #include "mtkfb_fence.h"
-/* #include "extd_multi_control.h" */
+#include "extd_multi_control.h"
 #include "m4u.h"
 
 #include "compat_mtk_disp_mgr.h"
 
 
 #define DDP_OUTPUT_LAYID 4
-#undef CONFIG_MTK_HDMI_SUPPORT
 
 #define NO_PQ_IOCTL /* FIXME: workaround for RDMA underflow*/
 

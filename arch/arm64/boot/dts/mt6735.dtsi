@@ -1245,7 +1245,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		mhl:mhl@0 {
-			compatible = "mediatek,sii8348-hdmi";
+			compatible = "mediatek,extd_dev";
 		};
 
 		smi_larb0@14015000 {
