@@ -282,7 +282,7 @@ void mt_cpuxgpt_map_base(void)
 	#ifdef CONFIG_ARM64
 	pr_err("cpuxgpt_r.start = 0x%llx\n", mt_cpuxgpt_base_phys);
 	#else
-	pr_err("cpuxgpt_r.start = 0x%x\n", mt_cpuxgpt_base_phys);
+	pr_err("cpuxgpt_r.start = 0x%lx\n", (unsigned long)mt_cpuxgpt_base_phys);
 	#endif
 }
 
