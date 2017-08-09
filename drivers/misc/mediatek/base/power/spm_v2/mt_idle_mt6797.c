@@ -263,20 +263,24 @@ bool cg_check_idle_can_enter(
 	/* MTCMOS status */
 	sta = idle_readl(SPM_PWR_STATUS);
 	if (mode == MT_DPIDLE) {
-		if (sta & (MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK |
-					MJC_PWR_STA_MASK |
-					DIS_PWR_STA_MASK))
-			return false;
+		if (!dpidle_by_pass_pg) {
+			if (sta & (MFG_PWR_STA_MASK |
+						ISP_PWR_STA_MASK |
+						VDE_PWR_STA_MASK |
+						VEN_PWR_STA_MASK |
+						MJC_PWR_STA_MASK |
+						DIS_PWR_STA_MASK))
+				return false;
+		}
 	} else if (mode == MT_SOIDLE) {
-		if (sta & (MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK |
-					MJC_PWR_STA_MASK))
-			return false;
+		if (!soidle_by_pass_pg) {
+			if (sta & (MFG_PWR_STA_MASK |
+						ISP_PWR_STA_MASK |
+						VDE_PWR_STA_MASK |
+						VEN_PWR_STA_MASK |
+						MJC_PWR_STA_MASK))
+				return false;
+		}
 	}
 
 	return ret;

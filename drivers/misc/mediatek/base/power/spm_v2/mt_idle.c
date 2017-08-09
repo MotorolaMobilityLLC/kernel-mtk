@@ -372,6 +372,7 @@ static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
+bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
 static u32				sodi_fw = SODI_FW_LPM;
@@ -394,6 +395,7 @@ static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
+bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 /* MCDI */
 static unsigned int mcidle_timer_left[NR_CPUS];
@@ -2280,6 +2282,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 			dpidle_blocking_stat[i][k] = 0;
 
 	p += sprintf(p, "dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
+	p += sprintf(p, "dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	p += sprintf(p, "dpidle_dump_log = %u\n", dpidle_dump_log);
 	p += sprintf(p, "(0: None, 1: Reduced, 2: Full\n");
 
@@ -2323,7 +2326,10 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_time_critera = param;
 		else if (!strcmp(cmd, "bypass"))
 			dpidle_by_pass_cg = param;
-		else if (!strcmp(cmd, "log"))
+		else if (!strcmp(cmd, "bypass_pg")) {
+			dpidle_by_pass_pg = param;
+			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);
+		} else if (!strcmp(cmd, "log"))
 			dpidle_dump_log = param;
 
 		return count;
@@ -2502,6 +2508,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	p += sprintf(p, "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
+	p += sprintf(p, "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
 	p += sprintf(p, "soidle_bypass_en=%u\n", soidle_by_pass_en);
 	p += sprintf(p, "sodi_flags=0x%x\n", sodi_flags);
 	p += sprintf(p, "sodi_fw=0x%x\n", sodi_fw);
@@ -2548,6 +2555,9 @@ static ssize_t soidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
+		} else if (!strcmp(cmd, "bypass_pg")) {
+			soidle_by_pass_pg = param;
+			idle_warn("bypass_pg = %d\n", soidle_by_pass_pg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle_by_pass_en = param;
 			idle_dbg("bypass_en = %d\n", soidle_by_pass_en);

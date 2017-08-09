@@ -31,6 +31,9 @@ enum {
 	NR_GRPS,
 };
 
+extern bool             soidle_by_pass_pg;
+extern bool             dpidle_by_pass_pg;
+
 extern void __iomem *infrasys_base;
 extern void __iomem *mmsys_base;
 extern void __iomem *sleepsys_base;
