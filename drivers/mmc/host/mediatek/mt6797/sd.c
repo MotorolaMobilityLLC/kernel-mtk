@@ -1837,7 +1837,9 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	/* use polling way */
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
 	rawarg = cmd->arg;
-
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+#endif
 	sdc_send_cmd(rawcmd, rawarg);
 
 	return 0;
@@ -1935,6 +1937,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			*rsp = MSDC_READ32(SDC_RESP0);
 			break;
 		}
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
+#endif
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
@@ -1956,6 +1961,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		    (cmd->opcode != 5) && (cmd->opcode != 55) &&
 		    (cmd->opcode != 19) && (cmd->opcode != 21) &&
 		    (cmd->opcode != 1)) {
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			mmc_cmd_dump(host->mmc);
+#endif
 			msdc_dump_info(host->id);
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
@@ -2159,8 +2167,8 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+			msdc_dump_info(host->id);
 			mmc_cmd_dump(host->mmc);
-			/* msdc_dump_info(host->id); */
 			/*msdc_reset_hw(host->id);*/
 		}
 	}
@@ -3665,6 +3673,21 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 		}
 	} while (err);
 
+	/* wait for transfer done */
+	if (!atomic_read(&mmc->cq_tuning_now)) {
+		polling_tmo = jiffies + 10 * HZ;
+		pr_err("msdc%d waiting data transfer done\n", host->id);
+		while (mmc->is_data_dma) {
+			if (time_after(jiffies, polling_tmo)) {
+				ERR_MSG("waiting data transfer done TMO");
+				msdc_dump_info(host->id);
+				msdc_dma_stop(host);
+				msdc_dma_clear(host);
+				msdc_reset_hw(host->id);
+				return -1;
+			}
+		}
+	}
 	if (msdc_execute_tuning(mmc, MMC_SEND_STATUS)) {
 		pr_err("msdc%d autok failed\n", host->id);
 		return 1;
