@@ -103,6 +103,8 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.emi_bw_dvfs_req_mask = 1,		/* Total BW default disable */
 	.emi_boost_dvfs_req_mask_b = 0,		/* C+G BW default disable, enable by fliper */
 
+	.dvfs_halt_src_chk = 1,
+
 	/* +450 SPM_EMI_BW_MODE */
 	/* [0]EMI_BW_MODE, [1]EMI_BOOST_MODE default is 0 */
 };
