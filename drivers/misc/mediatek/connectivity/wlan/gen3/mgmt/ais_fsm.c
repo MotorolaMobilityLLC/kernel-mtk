@@ -2254,7 +2254,25 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->arChnlInfoList[0].eBand = eBand;
 				prScanReqMsg->arChnlInfoList[0].ucChannelNum = ucChannel;
 			} else {
-				aisFsmSetChannelInfo(prAdapter, prScanReqMsg);
+#if 0
+				aisFsmSetChannelInfo(prAdapter, prScanReqMsg, prAisFsmInfo->eCurrentState);
+#endif
+				if (prAdapter->aePreferBand[prAdapter->prAisBssInfo->ucBssIndex] == BAND_NULL) {
+					if (prAdapter->fgEnable5GBand == TRUE)
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+					else
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+				} else if (prAdapter->aePreferBand[prAdapter->prAisBssInfo->ucBssIndex]
+						== BAND_2G4) {
+					prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+				} else if (prAdapter->aePreferBand[prAdapter->prAisBssInfo->ucBssIndex]
+						== BAND_5G) {
+					prScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
+				} else {
+					prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+					ASSERT(0);
+				}
+
 			}
 
 			if (prAisFsmInfo->u4ScanIELength > 0) {
@@ -2493,7 +2511,7 @@ enum _ENUM_AIS_STATE_T aisFsmStateSearchAction(IN struct _ADAPTER_T *prAdapter, 
 	}
 	return eState;
 }
-
+#if 0
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
@@ -2503,7 +2521,9 @@ enum _ENUM_AIS_STATE_T aisFsmStateSearchAction(IN struct _ADAPTER_T *prAdapter, 
 * \return none
 */
 /*----------------------------------------------------------------------------*/
-VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ_V2 ScanReqMsg)
+VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ_V2 ScanReqMsg,
+			IN ENUM_AIS_STATE_T CurrentState)
+
 {
 	/*get scan channel infro from prAdapter->prGlueInfo->prScanRequest*/
 	struct cfg80211_scan_request *scan_req_t = NULL;
@@ -2516,69 +2536,76 @@ VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ_V2 Sca
 
 	if ((prAdapter == NULL) || (ScanReqMsg == NULL))
 		return;
+	if ((CurrentState == AIS_STATE_SCAN) || (CurrentState == AIS_STATE_ONLINE_SCAN)) {
+		if (prAdapter->prGlueInfo->prScanRequest != NULL) {
+			scan_req_t = prAdapter->prGlueInfo->prScanRequest;
+			if ((scan_req_t != NULL) && (scan_req_t->n_channels != 0) &&
+				(scan_req_t->channels != NULL)) {
+				channel_counts = scan_req_t->n_channels;
+				DBGLOG(AIS, TRACE, "channel_counts=%d\n", channel_counts);
 
-	if (prAdapter->prGlueInfo->prScanRequest != NULL) {
-		scan_req_t = prAdapter->prGlueInfo->prScanRequest;
-		if ((scan_req_t != NULL) && (scan_req_t->n_channels != 0) &&
-			(scan_req_t->channels != NULL)) {
-			channel_counts = scan_req_t->n_channels;
-			DBGLOG(AIS, TRACE, "channel_counts=%d\n", channel_counts);
+				while (j < channel_counts) {
+					channel_tmp = scan_req_t->channels[j];
+					if (channel_tmp == NULL)
+						break;
 
-			while (j < channel_counts) {
-				channel_tmp = scan_req_t->channels[j];
+					DBGLOG(AIS, TRACE, "set channel band=%d\n", channel_tmp->band);
+					if (channel_tmp->band >= IEEE80211_BAND_60GHZ) {
+						j++;
+						continue;
+					}
+					if (i >= MAXIMUM_OPERATION_CHANNEL_LIST)
+						break;
+					if (channel_tmp->band == IEEE80211_BAND_2GHZ)
+						ScanReqMsg->arChnlInfoList[i].eBand = BAND_2G4;
+					else if (channel_tmp->band == IEEE80211_BAND_5GHZ)
+						ScanReqMsg->arChnlInfoList[i].eBand = BAND_5G;
 
-				DBGLOG(AIS, TRACE, "set channel band=%d\n", channel_tmp->band);
-				if (channel_tmp->band >= IEEE80211_BAND_60GHZ) {
+					DBGLOG(AIS, TRACE, "set channel channel_rer =%d\n",
+						channel_tmp->center_freq);
+
+					channel_num = (UINT_8)nicFreq2ChannelNum(
+						channel_tmp->center_freq * 1000);
+
+					DBGLOG(AIS, TRACE, "set channel channel_num=%d\n",
+						channel_num);
+					ScanReqMsg->arChnlInfoList[i].ucChannelNum = channel_num;
+
 					j++;
-					continue;
+					i++;
 				}
-				if (i >= MAXIMUM_OPERATION_CHANNEL_LIST)
-					break;
-				if (channel_tmp->band == IEEE80211_BAND_2GHZ)
-					ScanReqMsg->arChnlInfoList[i].eBand = BAND_2G4;
-				else if (channel_tmp->band == IEEE80211_BAND_5GHZ)
-					ScanReqMsg->arChnlInfoList[i].eBand = BAND_5G;
-
-				DBGLOG(AIS, TRACE, "set channel channel_rer =%d\n",
-					channel_tmp->center_freq);
-
-				channel_num = (UINT_8)nicFreq2ChannelNum(
-					channel_tmp->center_freq * 1000);
-
-				DBGLOG(AIS, TRACE, "set channel channel_num=%d\n",
-					channel_num);
-				ScanReqMsg->arChnlInfoList[i].ucChannelNum = channel_num;
-
-				j++;
-				i++;
 			}
-		}
-		DBGLOG(AIS, TRACE, "set channel i=%d\n", i);
-		if (i > 0) {
-			ScanReqMsg->ucChannelListNum = i;
-			ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
-		} else {
-			BssIndex_t = prAdapter->prAisBssInfo->ucBssIndex;
-			if (prAdapter->aePreferBand[BssIndex_t] == BAND_NULL) {
-				if (prAdapter->fgEnable5GBand == TRUE)
-					ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-				else
-					ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-				} else if (prAdapter->aePreferBand[BssIndex_t]
-						== BAND_2G4) {
-					ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-				} else if (prAdapter->aePreferBand[BssIndex_t]
-						== BAND_5G) {
-					ScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
-				} else {
-					ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-					ASSERT(0);
-				}
+
 		}
 	}
 
-}
+	DBGLOG(AIS, INFO, "set channel i=%d\n", i);
+	if (i > 0) {
+		ScanReqMsg->ucChannelListNum = i;
+		ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
 
+		return;
+	}
+
+	BssIndex_t = prAdapter->prAisBssInfo->ucBssIndex;
+	if (prAdapter->aePreferBand[BssIndex_t] == BAND_NULL) {
+		if (prAdapter->fgEnable5GBand == TRUE)
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+		else
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+		} else if (prAdapter->aePreferBand[BssIndex_t]
+				== BAND_2G4) {
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+		} else if (prAdapter->aePreferBand[BssIndex_t]
+				== BAND_5G) {
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
+		} else {
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+			ASSERT(0);
+		}
+
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief

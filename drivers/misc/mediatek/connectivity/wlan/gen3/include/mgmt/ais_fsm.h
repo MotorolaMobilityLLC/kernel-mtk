@@ -485,8 +485,10 @@ VOID aisFsmStateAbort_SCAN(IN P_ADAPTER_T prAdapter);
 VOID aisFsmStateAbort_NORMAL_TR(IN P_ADAPTER_T prAdapter);
 
 VOID aisFsmStateAbort_IBSS(IN P_ADAPTER_T prAdapter);
-
-VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ_V2 ScanReqMsg);
+#if 0
+VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ_V2 ScanReqMsg,
+		IN ENUM_AIS_STATE_T CurrentState);
+#endif
 
 VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState);
 
