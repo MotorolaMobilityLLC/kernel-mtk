@@ -2479,7 +2479,7 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
 	if (err) {
 		GSE_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
+		goto exit_kfree;
 	}
 #ifdef CUSTOM_KERNEL_SENSORHUB
 	INIT_WORK(&obj->irq_work, gsensor_irq_work);
@@ -2584,7 +2584,7 @@ exit_create_attr_failed:
 exit_misc_device_register_failed:
 exit_init_failed:
 	/* i2c_detach_client(new_client); */
-/*    exit_kfree: */
+exit_kfree:
 	kfree(obj);
 exit:
 	GSE_ERR("%s: err = %d\n", __func__, err);
