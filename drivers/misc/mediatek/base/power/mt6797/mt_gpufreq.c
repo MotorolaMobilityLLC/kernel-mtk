@@ -2011,7 +2011,9 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 {
 #ifndef DISABLE_PBM_FEATURE
 	int temp = 0;
+#ifdef STATIC_PWR_READY2USE
 	unsigned int cur_vcore = _mt_gpufreq_get_cur_volt() / 100;
+#endif
 
 #ifdef CONFIG_THERMAL
 	temp = get_immediate_gpu_wrap() / 1000;
