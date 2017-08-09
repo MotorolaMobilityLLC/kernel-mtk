@@ -340,11 +340,12 @@ void wdt_arch_reset(char mode)
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 	pr_debug("wdt_arch_reset: SW_reset happen\n");
 	spin_unlock(&rgu_reg_operation_spinlock);
-
+/*
 	while (1) {
 		wdt_dump_reg();
 		pr_err("wdt_arch_reset dump\n");
 	}
+*/
 
 }
 
