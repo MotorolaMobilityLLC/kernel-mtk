@@ -12,7 +12,7 @@
 #endif
 
 #include <mt-plat/mt_boot.h>
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -397,7 +397,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	}
 	mt_irq_mask_all(mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -492,7 +492,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
 
 RESTORE_IRQ:
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif

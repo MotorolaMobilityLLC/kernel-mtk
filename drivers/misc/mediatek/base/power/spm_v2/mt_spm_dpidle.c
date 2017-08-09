@@ -13,7 +13,7 @@
 
 #include <mach/irqs.h>
 #include <mach/mt_secure_api.h>
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
 #endif
 #include "mt_spm_idle.h"
@@ -546,7 +546,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -613,7 +613,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
 
 RESTORE_IRQ:
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
@@ -689,7 +689,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -733,7 +733,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	last_wr = __spm_output_wake_reason(&wakesta, pcmdesc, true);
 
 RESTORE_IRQ:
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
