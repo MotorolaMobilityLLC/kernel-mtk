@@ -547,11 +547,11 @@ WLAN_STATUS bowCmdGetMacStatus(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND prCmd
 		       "bowCmdGetMacStatus, Get channel list. Current number of channel, %d.\n", ucNumOfChannel);
 #endif
 
-		rlmDomainGetChnlList(prAdapter, BAND_2G4, MAX_BOW_NUMBER_OF_CHANNEL_2G4, &ucNumOfChannel,
-				     aucChannelList);
+		rlmDomainGetChnlList(prAdapter, BAND_2G4, FALSE, MAX_BOW_NUMBER_OF_CHANNEL_2G4,
+				     &ucNumOfChannel, aucChannelList);
 
 		if (ucNumOfChannel > 0) {
-			for (idx = 0; idx < ucNumOfChannel /*MAX_BOW_NUMBER_OF_CHANNEL_2G4 */; idx++) {
+			for (idx = 0; idx < ucNumOfChannel; idx++) {
 				prMacStatus->arChannelList[idx].ucChannelBand = aucChannelList[idx].eBand;
 				prMacStatus->arChannelList[idx].ucChannelNum = aucChannelList[idx].ucChannelNum;
 			}
@@ -559,10 +559,11 @@ WLAN_STATUS bowCmdGetMacStatus(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND prCmd
 			prMacStatus->ucNumOfChannel = ucNumOfChannel;
 		}
 
-		rlmDomainGetChnlList(prAdapter, BAND_5G, MAX_BOW_NUMBER_OF_CHANNEL_5G, &ucNumOfChannel, aucChannelList);
+		rlmDomainGetChnlList(prAdapter, BAND_5G, FALSE, MAX_BOW_NUMBER_OF_CHANNEL_5G,
+				     &ucNumOfChannel, aucChannelList);
 
 		if (ucNumOfChannel > 0) {
-			for (idx = 0; idx < ucNumOfChannel /*MAX_BOW_NUMBER_OF_CHANNEL_5G */; idx++) {
+			for (idx = 0; idx < ucNumOfChannel; idx++) {
 				prMacStatus->arChannelList[prMacStatus->ucNumOfChannel + idx].ucChannelBand =
 				    aucChannelList[idx].eBand;
 				prMacStatus->arChannelList[prMacStatus->ucNumOfChannel + idx].ucChannelNum =

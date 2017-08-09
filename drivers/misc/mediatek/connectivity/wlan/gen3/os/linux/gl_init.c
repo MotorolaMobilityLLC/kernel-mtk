@@ -1932,7 +1932,7 @@ VOID wlanUpdateChannelTable(P_GLUE_INFO_T prGlueInfo)
 
 	/* 2. Get current domain channel list */
 	rlmDomainGetChnlList(prGlueInfo->prAdapter,
-			     BAND_NULL,
+			     BAND_NULL, FALSE,
 			     ARRAY_SIZE(mtk_2ghz_channels) + ARRAY_SIZE(mtk_5ghz_channels),
 			     &ucNumOfChannel, aucChannelList);
 
@@ -2706,9 +2706,6 @@ bailout:
 
 		if (FALSE == prAdapter->fgEnable5GBand)
 			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
-
-		/* Update supported channel list in channel table based on NVRAM */
-		wlanUpdateChannelTable(prGlueInfo);
 
 		kalSetHalted(FALSE);
 		/* set MAC address */

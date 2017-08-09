@@ -96,6 +96,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
+#include "rlm_txpwr_init.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -131,13 +132,13 @@ static const UINT_16 g_u2CountryGroup0[] = {
 	COUNTRY_CODE_ST, COUNTRY_CODE_SC, COUNTRY_CODE_SL, COUNTRY_CODE_SB,
 	COUNTRY_CODE_SO, COUNTRY_CODE_SR, COUNTRY_CODE_SZ, COUNTRY_CODE_TJ,
 	COUNTRY_CODE_TG, COUNTRY_CODE_TO, COUNTRY_CODE_TM, COUNTRY_CODE_TV,
-	COUNTRY_CODE_VU, COUNTRY_CODE_IL, COUNTRY_CODE_YE
+	COUNTRY_CODE_VU, COUNTRY_CODE_YE
 };
 
 static const UINT_16 g_u2CountryGroup1[] = {
 	COUNTRY_CODE_AS, COUNTRY_CODE_AI, COUNTRY_CODE_BM, COUNTRY_CODE_CA,
 	COUNTRY_CODE_KY, COUNTRY_CODE_GU, COUNTRY_CODE_FM, COUNTRY_CODE_PR,
-	COUNTRY_CODE_US, COUNTRY_CODE_VI,
+	COUNTRY_CODE_US, COUNTRY_CODE_VI
 };
 
 static const UINT_16 g_u2CountryGroup2[] = {
@@ -179,7 +180,7 @@ static const UINT_16 g_u2CountryGroup5[] = {
 	COUNTRY_CODE_SN, COUNTRY_CODE_RS, COUNTRY_CODE_SK, COUNTRY_CODE_SI,
 	COUNTRY_CODE_ZA, COUNTRY_CODE_ES, COUNTRY_CODE_SE, COUNTRY_CODE_CH,
 	COUNTRY_CODE_TR, COUNTRY_CODE_TC, COUNTRY_CODE_GB, COUNTRY_CODE_VA,
-	COUNTRY_CODE_FR
+	COUNTRY_CODE_EU
 };
 
 static const UINT_16 g_u2CountryGroup6[] = { COUNTRY_CODE_JP };
@@ -200,7 +201,7 @@ static const UINT_16 g_u2CountryGroup10[] = {
 	COUNTRY_CODE_CN,
 #endif
 	COUNTRY_CODE_SV, COUNTRY_CODE_IN, COUNTRY_CODE_MY, COUNTRY_CODE_MV,
-	COUNTRY_CODE_PA, COUNTRY_CODE_VE, COUNTRY_CODE_ZM,
+	COUNTRY_CODE_PA, COUNTRY_CODE_VE, COUNTRY_CODE_ZM
 };
 
 static const UINT_16 g_u2CountryGroup11[] = { COUNTRY_CODE_JO, COUNTRY_CODE_PG };
@@ -208,7 +209,7 @@ static const UINT_16 g_u2CountryGroup11[] = { COUNTRY_CODE_JO, COUNTRY_CODE_PG }
 static const UINT_16 g_u2CountryGroup12[] = {
 	COUNTRY_CODE_BF, COUNTRY_CODE_GY, COUNTRY_CODE_HT, COUNTRY_CODE_HN,
 	COUNTRY_CODE_JM, COUNTRY_CODE_MO, COUNTRY_CODE_MW, COUNTRY_CODE_PK,
-	COUNTRY_CODE_QA, COUNTRY_CODE_RW, COUNTRY_CODE_KN, COUNTRY_CODE_TZ,
+	COUNTRY_CODE_QA, COUNTRY_CODE_RW, COUNTRY_CODE_KN, COUNTRY_CODE_TZ
 };
 
 static const UINT_16 g_u2CountryGroup13[] = { COUNTRY_CODE_ID };
@@ -230,16 +231,16 @@ static const UINT_16 g_u2CountryGroup18[] = { COUNTRY_CODE_TW };
 
 static const UINT_16 g_u2CountryGroup19[] = {
 	COUNTRY_CODE_CK, COUNTRY_CODE_CU, COUNTRY_CODE_TL, COUNTRY_CODE_FO,
-	COUNTRY_CODE_GI, COUNTRY_CODE_GB, COUNTRY_CODE_IR, COUNTRY_CODE_IM,
+	COUNTRY_CODE_GI, COUNTRY_CODE_GG, COUNTRY_CODE_IR, COUNTRY_CODE_IM,
 	COUNTRY_CODE_JE, COUNTRY_CODE_KP, COUNTRY_CODE_MH, COUNTRY_CODE_NU,
 	COUNTRY_CODE_NF, COUNTRY_CODE_PS, COUNTRY_CODE_PN, COUNTRY_CODE_PM,
 	COUNTRY_CODE_SS, COUNTRY_CODE_SD, COUNTRY_CODE_SY
 };
 
 static const UINT_16 g_u2CountryGroup20[] = {
-	COUNTRY_CODE_EU, COUNTRY_CODE_FF
-	/* When country code is not found and no matched NVRAM setting, this domain info will be used.
-	 * So mark all country codes to reduce search time. 20110908
+	COUNTRY_CODE_DF, COUNTRY_CODE_FF
+	/* When country code is not found and no matched NVRAM setting,
+	 * this domain info will be used.
 	 */
 };
 
@@ -274,9 +275,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -292,9 +293,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -310,9 +311,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 4, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_161 */
@@ -328,9 +329,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
 	  {125, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
@@ -346,9 +347,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
@@ -365,9 +366,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	  ,			/* CH_SET_2G4_14_14 */
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
@@ -382,7 +383,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_WW_NA */
@@ -400,7 +401,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_WW_NA */
@@ -436,7 +437,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_WW_NA */
@@ -526,9 +527,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_NULL, 0, 0, 0, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -546,7 +547,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	  ,			/* CH_SET_UNII_LOW_36_48 */
 	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -562,9 +563,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -598,9 +599,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_149_165 */
@@ -609,7 +610,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	}
 	,
 	{
-	 /* Note: REG_DOMAIN_DEF_IDX group is Europe union */
+	 /* Note: Default group if no matched country code */
 	 (PUINT_16) g_u2CountryGroup20, sizeof(g_u2CountryGroup20) / 2,
 	 {
 	  {81, BAND_2G4, CHNL_SPAN_5, 1, 13, FALSE}
@@ -617,12 +618,12 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
 	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 7, FALSE}
-	  ,			/* CH_SET_UNII_UPPER_149_173 */
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 5, FALSE}
+	  ,			/* CH_SET_UNII_UPPER_149_165 */
 	  {0, BAND_NULL, 0, 0, 0, FALSE}
 	 }
 	}
@@ -646,11 +647,6 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	 }
 	}
 };
-
-#define REG_DOMAIN_DEF_IDX             20 /* EU (Europe Union) */
-#define REG_DOMAIN_GROUP_NUM  \
-	(sizeof(arSupportedRegDomains) / sizeof(DOMAIN_INFO_ENTRY))
-
 
 static UINT_16 g_u2CountryGroup0_Passive[] = {
 	COUNTRY_CODE_UDF
@@ -685,70 +681,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	}
 };
 
-#define REG_DOMAIN_PASSIVE_DEF_IDX      0
-#define REG_DOMAIN_PASSIVE_UDF_IDX      1
-
-#if 0
-COUNTRY_CH_SET_T arCountryChSets[] = {
-	/* idx=0: US, Bahamas, Barbados, Bolivia(Voluntary), Dominica (the Commonwealth of Dominica),
-	   The Dominican Republic, Haiti */
-	{CH_SET_2G4_1_11, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_165},
-	/* idx=1: Brazil, Ecuador, Hong Kong, Mexico, Peru */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_165},
-	/* idx=2: JP1, Colombia(Voluntary), Paraguay */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_NA},
-	/* idx=3: JP2 */
-	{CH_SET_2G4_1_14, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_NA},
-	/* idx=4: CN, Uruguay, Morocco */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_NA, CH_SET_UNII_MID_NA,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_149_165},
-	/* idx=5: Argentina */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_NA, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_149_165},
-	/* idx=6: Australia, New Zealand */
-	{CH_SET_2G4_1_11, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_161},
-	/* idx=7: Russia */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_161},
-	/* idx=8: Indonesia */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_NA, CH_SET_UNII_MID_NA,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_149_161},
-	/* idx=9: Canada */
-	{CH_SET_2G4_1_11, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_116_132_140, CH_SET_UNII_UPPER_149_165},
-	/* idx=10: Chile, India, Saudi Arabia, Singapore */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_149_165},
-	/* idx=11: Israel, Ukraine */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_NA},
-	/* idx=12: Jordan, Kuwait */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_NA,
-	 CH_SET_UNII_WW_NA, CH_SET_UNII_UPPER_NA},
-	/* idx=13: South Korea */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_128, CH_SET_UNII_UPPER_149_165},
-	/* idx=14: Taiwan */
-	{CH_SET_2G4_1_11, CH_SET_UNII_LOW_NA, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_165},
-	/* idx=15: EU all countries */
-	{CH_SET_2G4_1_13, CH_SET_UNII_LOW_36_48, CH_SET_UNII_MID_52_64,
-	 CH_SET_UNII_WW_100_140, CH_SET_UNII_UPPER_149_173}
-};
-#endif
-
-
-
-#include "rlm_txpwr_init.h"
-
-
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
-
 SUBBAND_CHANNEL_T g_rRlmSubBand[] = {
 
 	{BAND_2G4_LOWER_BOUND, BAND_2G4_UPPER_BOUND, 1, 0}
@@ -759,7 +692,8 @@ SUBBAND_CHANNEL_T g_rRlmSubBand[] = {
 	,			/* ch52,54,56,..,64 */
 	{UNII2C_LOWER_BOUND, UNII2C_UPPER_BOUND, 2, 0}
 	,			/* ch100,102,104,...,144 */
-	{UNII3_LOWER_BOUND, UNII3_UPPER_BOUND, 2, 0}	/* ch149,151,153,....,173 */
+	{UNII3_LOWER_BOUND, UNII3_UPPER_BOUND, 2, 0}
+				/* ch149,151,153,....,173 */
 };
 #endif
 
@@ -783,44 +717,6 @@ SUBBAND_CHANNEL_T g_rRlmSubBand[] = {
 ********************************************************************************
 */
 
-UINT32 rlmDomainSupOperatingClassIeFill(UINT_8 *pBuf)
-{
-	/*
-	   The Country element should only be included for Status Code 0 (Successful).
-	 */
-	UINT32 u4IeLen;
-	UINT8 aucClass[12] = { 0x01, 0x02, 0x03, 0x05, 0x16, 0x17, 0x19, 0x1b,
-		0x1c, 0x1e, 0x20, 0x21
-	};
-
-	/*
-	   The Supported Operating Classes element is used by a STA to advertise the
-	   operating classes that it is capable of operating with in this country.
-
-	   The Country element (see 8.4.2.10) allows a STA to configure its PHY and MAC
-	   for operation when the operating triplet of Operating Extension Identifier,
-	   Operating Class, and Coverage Class fields is present.
-	 */
-	SUP_OPERATING_CLASS_IE(pBuf)->ucId = ELEM_ID_SUP_OPERATING_CLASS;
-	SUP_OPERATING_CLASS_IE(pBuf)->ucLength = 1 + sizeof(aucClass);
-	SUP_OPERATING_CLASS_IE(pBuf)->ucCur = 0x0c;	/* 0x51 */
-	kalMemCopy(SUP_OPERATING_CLASS_IE(pBuf)->ucSup, aucClass, sizeof(aucClass));
-	u4IeLen = (SUP_OPERATING_CLASS_IE(pBuf)->ucLength + 2);
-	pBuf += u4IeLen;
-
-	COUNTRY_IE(pBuf)->ucId = ELEM_ID_COUNTRY_INFO;
-	COUNTRY_IE(pBuf)->ucLength = 6;
-	COUNTRY_IE(pBuf)->aucCountryStr[0] = 0x55;
-	COUNTRY_IE(pBuf)->aucCountryStr[1] = 0x53;
-	COUNTRY_IE(pBuf)->aucCountryStr[2] = 0x20;
-	COUNTRY_IE(pBuf)->arCountryStr[0].ucFirstChnlNum = 1;
-	COUNTRY_IE(pBuf)->arCountryStr[0].ucNumOfChnl = 11;
-	COUNTRY_IE(pBuf)->arCountryStr[0].cMaxTxPwrLv = 0x1e;
-	u4IeLen += (COUNTRY_IE(pBuf)->ucLength + 2);
-
-	return u4IeLen;
-}
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
@@ -832,6 +728,10 @@ UINT32 rlmDomainSupOperatingClassIeFill(UINT_8 *pBuf)
 /*----------------------------------------------------------------------------*/
 P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 {
+#define REG_DOMAIN_DEF_IDX             20 /* Default country domain */
+#define REG_DOMAIN_GROUP_NUM  \
+	(sizeof(arSupportedRegDomains) / sizeof(DOMAIN_INFO_ENTRY))
+
 	P_DOMAIN_INFO_ENTRY prDomainInfo;
 	P_REG_INFO_T prRegInfo;
 	UINT_16 u2TargetCountryCode;
@@ -879,9 +779,9 @@ P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 			}
 		}
 
-		/* If no matched country code, use EU as default */
+		/* If no matched country code, use the default country domain */
 		if (i >= REG_DOMAIN_GROUP_NUM) {
-			DBGLOG(RLM, INFO, "No matched country code, use EU as default\n");
+			DBGLOG(RLM, INFO, "No matched country code, use the default country domain\n");
 			prDomainInfo = &arSupportedRegDomains[REG_DOMAIN_DEF_IDX];
 		}
 	}
@@ -902,7 +802,7 @@ P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 VOID
 rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
-		     ENUM_BAND_T eSpecificBand,
+		     ENUM_BAND_T eSpecificBand, BOOLEAN fgNoDfs,
 		     UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList)
 {
 	UINT_8 i, j, ucNum;
@@ -922,6 +822,9 @@ rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
 
 		if (prSubband->ucBand == BAND_NULL || prSubband->ucBand >= BAND_NUM ||
 		    (prSubband->ucBand == BAND_5G && !prAdapter->fgEnable5GBand))
+			continue;
+
+		if (fgNoDfs == TRUE && prSubband->fgDfs == TRUE)
 			continue;
 
 		if (eSpecificBand == BAND_NULL || prSubband->ucBand == eSpecificBand) {
@@ -970,7 +873,6 @@ VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 {
 	P_DOMAIN_INFO_ENTRY prDomainInfo;
 	P_CMD_SET_DOMAIN_INFO_T prCmd;
-	WLAN_STATUS rStatus;
 	P_DOMAIN_SUBBAND_INFO prSubBand;
 	UINT_8 i;
 
@@ -1005,20 +907,18 @@ VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 	}
 
 	/* Set domain info to chip */
-	rStatus = wlanSendSetQueryCmd(prAdapter, /* prAdapter */
-				      CMD_ID_SET_DOMAIN_INFO, /* ucCID */
-				      TRUE, /* fgSetQuery */
-				      FALSE, /* fgNeedResp */
-				      fgIsOid, /* fgIsOid */
-				      NULL, /* pfCmdDoneHandler */
-				      NULL, /* pfCmdTimeoutHandler */
-				      sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
-				      (PUINT_8)prCmd, /* pucInfoBuffer */
-				      NULL, /* pvSetQueryBuffer */
-				      0	/* u4SetQueryBufferLen */
+	wlanSendSetQueryCmd(prAdapter, /* prAdapter */
+			 CMD_ID_SET_DOMAIN_INFO, /* ucCID */
+			 TRUE,  /* fgSetQuery */
+			 FALSE, /* fgNeedResp */
+			 fgIsOid, /* fgIsOid */
+			 NULL,  /* pfCmdDoneHandler */
+			 NULL,  /* pfCmdTimeoutHandler */
+			 sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
+			 (PUINT_8)prCmd, /* pucInfoBuffer */
+			 NULL,  /* pvSetQueryBuffer */
+			 0      /* u4SetQueryBufferLen */
 	    );
-
-	ASSERT(rStatus == WLAN_STATUS_PENDING);
 
 	cnmMemFree(prAdapter, prCmd);
 }
@@ -1034,9 +934,11 @@ VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 /*----------------------------------------------------------------------------*/
 VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 {
+#define REG_DOMAIN_PASSIVE_DEF_IDX      0
+#define REG_DOMAIN_PASSIVE_UDF_IDX      1
+
 	P_DOMAIN_INFO_ENTRY prDomainInfo;
 	P_CMD_SET_DOMAIN_INFO_T prCmd;
-	WLAN_STATUS rStatus;
 	P_DOMAIN_SUBBAND_INFO prSubBand;
 	UINT_8 i;
 
@@ -1075,20 +977,18 @@ VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 	}
 
 	/* Set passive scan channel info to chip */
-	rStatus = wlanSendSetQueryCmd(prAdapter, /* prAdapter */
-				      CMD_ID_SET_DOMAIN_INFO, /* ucCID */
-				      TRUE, /* fgSetQuery */
-				      FALSE, /* fgNeedResp */
-				      fgIsOid, /* fgIsOid */
-				      NULL, /* pfCmdDoneHandler */
-				      NULL, /* pfCmdTimeoutHandler */
-				      sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
-				      (PUINT_8) prCmd, /* pucInfoBuffer */
-				      NULL, /* pvSetQueryBuffer */
-				      0	/* u4SetQueryBufferLen */
+	wlanSendSetQueryCmd(prAdapter, /* prAdapter */
+			 CMD_ID_SET_DOMAIN_INFO, /* ucCID */
+			 TRUE,  /* fgSetQuery */
+			 FALSE, /* fgNeedResp */
+			 fgIsOid, /* fgIsOid */
+			 NULL,  /* pfCmdDoneHandler */
+			 NULL,  /* pfCmdTimeoutHandler */
+			 sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
+			 (PUINT_8) prCmd, /* pucInfoBuffer */
+			 NULL,  /* pvSetQueryBuffer */
+			 0      /* u4SetQueryBufferLen */
 	    );
-
-	ASSERT(rStatus == WLAN_STATUS_PENDING);
 
 	cnmMemFree(prAdapter, prCmd);
 }
@@ -1129,6 +1029,54 @@ BOOLEAN rlmDomainIsLegalChannel(P_ADAPTER_T prAdapter, ENUM_BAND_T eBand, UINT_8
 	}
 
 	return FALSE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief
+*
+* \param[in/out]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+
+UINT_32 rlmDomainSupOperatingClassIeFill(PUINT_8 pBuf)
+{
+	/*
+	   The Country element should only be included for Status Code 0 (Successful).
+	 */
+	UINT_32 u4IeLen;
+	UINT_8 aucClass[12] = { 0x01, 0x02, 0x03, 0x05, 0x16, 0x17, 0x19, 0x1b,
+		0x1c, 0x1e, 0x20, 0x21
+	};
+
+	/*
+	   The Supported Operating Classes element is used by a STA to advertise the
+	   operating classes that it is capable of operating with in this country.
+
+	   The Country element (see 8.4.2.10) allows a STA to configure its PHY and MAC
+	   for operation when the operating triplet of Operating Extension Identifier,
+	   Operating Class, and Coverage Class fields is present.
+	 */
+	SUP_OPERATING_CLASS_IE(pBuf)->ucId = ELEM_ID_SUP_OPERATING_CLASS;
+	SUP_OPERATING_CLASS_IE(pBuf)->ucLength = 1 + sizeof(aucClass);
+	SUP_OPERATING_CLASS_IE(pBuf)->ucCur = 0x0c;	/* 0x51 */
+	kalMemCopy(SUP_OPERATING_CLASS_IE(pBuf)->ucSup, aucClass, sizeof(aucClass));
+	u4IeLen = (SUP_OPERATING_CLASS_IE(pBuf)->ucLength + 2);
+	pBuf += u4IeLen;
+
+	COUNTRY_IE(pBuf)->ucId = ELEM_ID_COUNTRY_INFO;
+	COUNTRY_IE(pBuf)->ucLength = 6;
+	COUNTRY_IE(pBuf)->aucCountryStr[0] = 0x55;
+	COUNTRY_IE(pBuf)->aucCountryStr[1] = 0x53;
+	COUNTRY_IE(pBuf)->aucCountryStr[2] = 0x20;
+	COUNTRY_IE(pBuf)->arCountryStr[0].ucFirstChnlNum = 1;
+	COUNTRY_IE(pBuf)->arCountryStr[0].ucNumOfChnl = 11;
+	COUNTRY_IE(pBuf)->arCountryStr[0].cMaxTxPwrLv = 0x1e;
+	u4IeLen += (COUNTRY_IE(pBuf)->ucLength + 2);
+
+	return u4IeLen;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1708,7 +1656,6 @@ VOID rlmDomainBuildCmdByConfigTable(P_ADAPTER_T prAdapter, P_CMD_SET_COUNTRY_CHA
 VOID rlmDomainSendPwrLimitCmd(P_ADAPTER_T prAdapter)
 {
 	P_CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T prCmd;
-	WLAN_STATUS rStatus;
 	UINT_8 i;
 	UINT_16 u2DefaultTableIndex;
 	UINT_32 u4SetCmdTableMaxSize;
@@ -1823,22 +1770,20 @@ VOID rlmDomainSendPwrLimitCmd(P_ADAPTER_T prAdapter)
 
 	/* Update domain info to chip */
 	if (prCmd->ucNum <= MAX_CMD_SUPPORT_CHANNEL_NUM) {
-		rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
-					      CMD_ID_SET_COUNTRY_POWER_LIMIT,	/* ucCID */
-					      TRUE,	/* fgSetQuery */
-					      FALSE,	/* fgNeedResp */
-					      FALSE,	/* fgIsOid */
-					      NULL,	/* pfCmdDoneHandler */
-					      NULL,	/* pfCmdTimeoutHandler */
-					      u4SetQueryInfoLen,	/* u4SetQueryInfoLen */
-					      (PUINT_8) prCmd,	/* pucInfoBuffer */
-					      NULL,	/* pvSetQueryBuffer */
-					      0	/* u4SetQueryBufferLen */
+		wlanSendSetQueryCmd(prAdapter, /* prAdapter */
+			     CMD_ID_SET_COUNTRY_POWER_LIMIT, /* ucCID */
+			     TRUE,  /* fgSetQuery */
+			     FALSE, /* fgNeedResp */
+			     FALSE, /* fgIsOid */
+			     NULL,  /* pfCmdDoneHandler */
+			     NULL,  /* pfCmdTimeoutHandler */
+			     u4SetQueryInfoLen, /* u4SetQueryInfoLen */
+			     (PUINT_8) prCmd, /* pucInfoBuffer */
+			     NULL,  /* pvSetQueryBuffer */
+			     0      /* u4SetQueryBufferLen */
 		    );
 	} else
 		DBGLOG(RLM, ERROR, "Domain: illegal power limit table");
-
-	/* ASSERT(rStatus == WLAN_STATUS_PENDING); */
 
 	cnmMemFree(prAdapter, prCmd);
 

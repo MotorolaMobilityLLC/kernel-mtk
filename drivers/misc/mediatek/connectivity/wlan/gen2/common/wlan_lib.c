@@ -4536,9 +4536,9 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled,
 		prRegInfo->au2CountryCode[0], prRegInfo->au2CountryCode[1]);
 
-#if 0				/* Bandwidth control will be controlled by GUI. 20110930
-				 * So ignore the setting from registry/NVRAM
-				 */
+#if 0  /* Bandwidth control will be controlled by GUI. 20110930
+	* So ignore the setting from registry/NVRAM
+	*/
 	prAdapter->rWifiVar.rConnSettings.uc2G4BandwidthMode =
 	    prRegInfo->uc2G4BwFixed20M ? CONFIG_BW_20M : CONFIG_BW_20_40M;
 	prAdapter->rWifiVar.rConnSettings.uc5GBandwidthMode =
@@ -4547,8 +4547,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 
 	/* 6. Set domain and channel information to chip */
 	rlmDomainSendCmd(prAdapter, FALSE);
+	/* Update supported channel list in channel table */
+	wlanUpdateChannelTable(prAdapter->prGlueInfo);
 
-	/* 7. set band edge tx power if available */
+	/* 7. Set band edge tx power if available */
 	if (prRegInfo->fg2G4BandEdgePwrUsed) {
 		CMD_EDGE_TXPWR_LIMIT_T rCmdEdgeTxPwrLimit;
 

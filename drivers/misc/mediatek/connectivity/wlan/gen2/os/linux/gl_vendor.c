@@ -142,10 +142,10 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 		return -EFAULT;
 
 	if (band == 0) { /* 2.4G band */
-		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4,
+		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
 	} else { /* 5G band */
-		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_5G,
+		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_5G, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
 	}
 

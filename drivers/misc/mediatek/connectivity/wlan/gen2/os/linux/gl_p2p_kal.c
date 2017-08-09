@@ -794,7 +794,8 @@ kalGetChnlList(IN P_GLUE_INFO_T prGlueInfo,
 	       IN ENUM_BAND_T eSpecificBand,
 	       IN UINT_8 ucMaxChannelNum, IN PUINT_8 pucNumOfChannel, IN P_RF_CHANNEL_INFO_T paucChannelList)
 {
-	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, ucMaxChannelNum, pucNumOfChannel, paucChannelList);
+	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, FALSE, ucMaxChannelNum,
+			     pucNumOfChannel, paucChannelList);
 }				/* kalGetChnlList */
 
 /* ////////////////////////////////////ICS SUPPORT////////////////////////////////////// */
