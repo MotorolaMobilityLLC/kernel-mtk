@@ -522,9 +522,10 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	iounmap(reg_base);
 
 	pr_info("power on vsram (%d) (max:%d)\n", cpu, num_possible_cpus());
-	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
-	writel_relaxed((readl(reg_base + 0x2b0) | (0xf << 4)), reg_base + 0x2b0);
-	iounmap(reg_base);
+	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
+	pr_info("Vsram = 1100mv and load eFuse.\n");
+	BigiDVFSSRAMLDOSet(110000);
+	udelay(240);
 
 	return ret;
 }
@@ -539,9 +540,7 @@ static int cpu_power_off_buck(unsigned int cpu)
 	ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
 
 	pr_info("power down vsram\n");
-	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
-	writel_relaxed((readl(reg_base + 0x02B0) & ~(0xf << 4)), reg_base + 0x02B0);
-	iounmap(reg_base);
+	BigiDVFSSRAMLDODisable();
 
 	return ret;
 }
