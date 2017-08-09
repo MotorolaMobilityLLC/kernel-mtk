@@ -1119,15 +1119,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		/* NFC start */
-		nfc:NFC@0 {
-			compatible = "mediatek,nfc-gpio-v2";
-			gpio-ven = <4>;
-			gpio-rst = <3>;
-			gpio-eint = <1>;
-			gpio-irq = <2>;
-		};
-
 		als: als {
 			compatible = "mediatek, als-eint";
 		};
