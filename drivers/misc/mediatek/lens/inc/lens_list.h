@@ -32,6 +32,12 @@ extern long FM50AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsig
 extern int FM50AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+#ifdef CONFIG_MTK_LENS_LC898122AF_SUPPORT
+extern void LC898122AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long LC898122AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int LC898122AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
 extern void LC898212AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long LC898212AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);

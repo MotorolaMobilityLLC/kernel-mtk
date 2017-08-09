@@ -24,7 +24,6 @@ endif
 
 
 
-
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/inc
 
 
@@ -36,5 +35,6 @@ obj-$(CONFIG_MTK_LENS_BU6429AF_SUPPORT)    += common/bu6429af/
 obj-$(CONFIG_MTK_LENS_DW9714AF_SUPPORT)    += common/dw9714af/
 obj-$(CONFIG_MTK_LENS_DW9718AF_SUPPORT)    += common/dw9718af/
 obj-$(CONFIG_MTK_LENS_LC898212AF_SUPPORT)  += common/lc898212af/
+obj-$(CONFIG_MTK_LENS_LC898122AF_SUPPORT)  += common/lc898122af/
 obj-$(CONFIG_MTK_LENS_AD5820AF_SUPPORT)    += common/ad5820af/
 
