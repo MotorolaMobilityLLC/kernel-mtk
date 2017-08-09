@@ -347,7 +347,7 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 
 
 static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-/*
+
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
@@ -360,12 +360,12 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 		closeFlash();
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
-*/
+
 		/*unlimit cpu and gpu*/
-/*
+
 	}
 }
-*/
+
 
 /*
 static int gLowPowerOc=BATTERY_OC_LEVEL_0;
@@ -796,8 +796,8 @@ static int __init flashlight_init(void)
 	}
 
 	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
-/*	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
-					BATTERY_PERCENT_PRIO_FLASHLIGHT);*/
+	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
+					BATTERY_PERCENT_PRIO_FLASHLIGHT);
 /* @@    register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT); */
 
 	logI("[flashlight_probe] done! ~");
