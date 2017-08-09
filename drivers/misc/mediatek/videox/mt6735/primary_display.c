@@ -3231,6 +3231,10 @@ int _esd_check_config_handle_vdo(void)
 
 	primary_display_esd_cust_bycmdq(1);
 
+#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+	spm_enable_sodi(0);
+#endif
+
 	/* 1.reset */
 	cmdqRecReset(pgc->cmdq_handle_config_esd);
 
@@ -3242,10 +3246,6 @@ int _esd_check_config_handle_vdo(void)
 	DISP_REG_SET_PA(pgc->cmdq_handle_config_esd, DISP_REG_CMDQ_TOKEN_ID, DISP_MUTEX0_STREAM_EOF_ID);
 	cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config_esd, pgc->event_status, 1, DISP_REG_CMDQ_TOKEN_VALUE);
 #endif
-
-	/* disable SODI by CMDQ */
-	if (gESDEnableSODI == 1)
-		disp_set_sodi(0, pgc->cmdq_handle_config_esd);
 
 	_primary_path_lock(__func__);
 	/* 2.stop dsi vdo mode */
@@ -3265,10 +3265,6 @@ int _esd_check_config_handle_vdo(void)
 
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ENABLE);
 
-	/* enable SODI by  CMDQ */
-	if (gESDEnableSODI == 1)
-		disp_set_sodi(1, pgc->cmdq_handle_config_esd);
-
 	/* 6.flush instruction */
 	dprec_logger_start(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
@@ -3279,6 +3275,10 @@ int _esd_check_config_handle_vdo(void)
 
 	_primary_path_unlock(__func__);
 	ret = cmdqRecFlush(pgc->cmdq_handle_config_esd);
+
+#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+	spm_enable_sodi(1);
+#endif
 
 #ifdef DISP_DUMP_EVENT_STATUS
 	{
