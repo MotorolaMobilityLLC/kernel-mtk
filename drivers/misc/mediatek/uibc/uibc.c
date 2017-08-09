@@ -291,16 +291,24 @@ static long uibc_kbd_dev_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 static int uibc_kbd_dev_open(struct inode *inode, struct file *file)
 	{
+	int i;
 
 	PR_DEBUG("*** uibckeyboard uibc_kbd_dev_open ***\n");
 
 	uibckbd = kzalloc(sizeof(struct uibckeyboard), GFP_KERNEL);
 	uibc_input_dev = input_allocate_device();
+
 	if (!uibckbd || !uibc_input_dev)
 		goto fail;
 
 	memcpy(uibckbd->keymap, uibc_keycode, sizeof(uibc_keycode));
 	uibckbd->input = uibc_input_dev;
+	__set_bit(EV_KEY, uibc_input_dev->evbit);
+
+	for (i = 0; i < ARRAY_SIZE(uibckbd->keymap); i++)
+		__set_bit(uibckbd->keymap[i], uibc_input_dev->keybit);
+
+	input_set_capability(uibc_input_dev, EV_MSC, MSC_SCAN);
 
 	set_bit(INPUT_PROP_DIRECT, uibc_input_dev->propbit);
 
@@ -360,30 +368,9 @@ static struct miscdevice uibc_kbd_dev = {
 static int
 uibc_keyboard_register(void)
 	{
-	int i, err;
+	int err;
 
 	PR_DEBUG("*** uibc_keyboard_register ***\n");
-
-	uibckbd = kzalloc(sizeof(struct uibckeyboard), GFP_KERNEL);
-	uibc_input_dev = input_allocate_device();
-	if (!uibckbd || !uibc_input_dev)
-		goto fail;
-
-	memcpy(uibckbd->keymap, uibc_keycode, sizeof(uibc_keycode));
-	uibckbd->input = uibc_input_dev;
-	__set_bit(EV_KEY, uibc_input_dev->evbit);
-
-	uibc_input_dev->name = UIBC_KBD_NAME;
-	uibc_input_dev->keycode = uibckbd->keymap;
-	uibc_input_dev->keycodesize = sizeof(unsigned short);
-	uibc_input_dev->keycodemax = ARRAY_SIZE(uibc_keycode);
-	uibc_input_dev->id.bustype = BUS_HOST;
-
-
-	for (i = 0; i < ARRAY_SIZE(uibckbd->keymap); i++)
-		__set_bit(uibckbd->keymap[i], uibc_input_dev->keybit);
-
-	input_set_capability(uibc_input_dev, EV_MSC, MSC_SCAN);
 
 	err = misc_register(&uibc_kbd_dev);
 	if (err) {
@@ -392,12 +379,6 @@ uibc_keyboard_register(void)
 	}
 
 	return 0;
-
-fail:
-	input_free_device(uibc_input_dev);
-	kfree(uibckbd);
-
-	return -EINVAL;
 }
 
 static int uibc_keyboard_init(void)
