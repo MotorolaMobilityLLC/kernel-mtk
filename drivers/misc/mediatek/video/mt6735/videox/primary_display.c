@@ -5934,7 +5934,7 @@ int primary_display_memory_trigger(int blocking, void *callback, unsigned int us
 			_trigger_ovl_to_memory(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
 					       (fence_release_callback)_ovl_ext_fence_release_callback,
 					       DISP_SESSION_MEMORY, 1);
-			_ovl_fence_release_callback(DISP_SESSION_MEMORY);
+			_ovl_ext_fence_release_callback(DISP_SESSION_MEMORY);
 		} else {
 			_trigger_ovl_to_memory(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
 					       (fence_release_callback)_ovl_ext_fence_release_callback,
