@@ -114,7 +114,7 @@ static LCM_UTIL_FUNCS lcm_util;
 #endif
 #define I2C_ID_NAME "tps65132"
 #define TPS_ADDR 0x3E
-
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 /*****************************************************************************
  * GLobal Variable
  *****************************************************************************/
@@ -445,6 +445,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->height = FRAME_HEIGHT;
 	params->lcm_if = LCM_INTERFACE_DSI_DUAL;
 	params->lcm_cmd_if = LCM_INTERFACE_DSI0;
+	params->virtual_width = ALIGN_TO(FRAME_WIDTH, 32);
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode   = CMD_MODE;
