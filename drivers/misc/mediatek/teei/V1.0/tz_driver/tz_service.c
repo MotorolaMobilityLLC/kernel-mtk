@@ -24,6 +24,7 @@
 #include "../tz_vfs/VFS.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/cpu.h>
 
 #define MAX_BUFF_SIZE           (4096)
 #define NQ_SIZE                 (4096)
@@ -328,10 +329,13 @@ static void secondary_teei_ack_invoke_drv(void)
 
 static void post_teei_ack_invoke_drv(int cpu_id)
 {
+	get_online_cpus();
 	smp_call_function_single(cpu_id,
 				secondary_teei_ack_invoke_drv,
 				NULL,
 				1);
+	put_online_cpus();
+	
 	return;
 }
 
@@ -483,8 +487,11 @@ static int reetime_handle(struct service_handler *handler)
 
 	/* with a wmb() */
 	wmb();
+	
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
+	put_online_cpus();
 
 	rmb();
 	return reetime_handle_entry.retVal;
@@ -620,8 +627,12 @@ static int vfs_handle(struct service_handler *handler)
 
 	/* with a wmb() */
 	wmb();
+
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
+	put_online_cpus();
+	
 	rmb();
 	return vfs_handle_entry.retVal;
 }
@@ -698,8 +709,11 @@ static void secondary_invoke_fastcall(void *info)
 static void invoke_fastcall(void)
 {
 	int cpu_id = 0;
+
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
+	put_online_cpus();
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -808,11 +822,11 @@ static void load_func(struct work_struct *entry)
 
 	down(&smc_lock);
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
-	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
-	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
+	put_online_cpus();
 
 	return;
 }
@@ -1443,8 +1457,10 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
+	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();
