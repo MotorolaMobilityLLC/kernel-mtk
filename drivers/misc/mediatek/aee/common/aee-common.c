@@ -115,9 +115,9 @@ struct aee_oops *aee_oops_create(AE_DEFECT_ATTR attr, AE_EXP_CLASS clazz, const 
 	if (module != NULL)
 		strlcpy(oops->module, module, sizeof(oops->module));
 	else
-		strcpy(oops->module, "N/A");
-	strcpy(oops->backtrace, "N/A");
-	strcpy(oops->process_path, "N/A");
+		strlcpy(oops->module, "N/A", sizeof(oops->module));
+	strlcpy(oops->backtrace, "N/A", sizeof(oops->backtrace));
+	strlcpy(oops->process_path, "N/A", sizeof(oops->process_path));
 
 	return oops;
 }
