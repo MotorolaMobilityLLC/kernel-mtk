@@ -2305,7 +2305,13 @@ static int mtk_cooling_wrapper_set_cur_state
 	ops = recoveryClientCooler(cdev, &mcdata);
 	ops_ext = mcdata->ops_ext;
 
-	if (ops != NULL && ops->get_cur_state)
+	if (ops == NULL) {
+		THRML_ERROR_LOG("[.set_cur_state]E no cdev ops.\n");
+		mutex_unlock(&MTM_COOLER_LOCK);
+		return -1;
+	}
+
+	if (ops->get_cur_state)
 		ret = ops->get_cur_state(cdev, &cur_state);
 
 /* check conditions */

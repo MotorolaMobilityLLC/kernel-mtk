@@ -836,6 +836,14 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 		mtkts_btsmdpa_dprintk("[mtkts_btsmdpa_write] mtkts_btsmdpa_unregister_thermal\n");
 		mtkts_btsmdpa_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtkts_btsmdpa_write",
+				"Bad argument");
+			mtkts_btsmdpa_dprintk("[mtkts_btsmdpa_write] bad argument\n");
+			kfree(ptr_btsmdpa_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_btsmdpa_data->t_type[i];
 
@@ -892,6 +900,9 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 	}
 
 	mtkts_btsmdpa_dprintk("[mtkts_btsmdpa_write] bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtkts_btsmdpa_write",
+		"Bad argument");
+
 	kfree(ptr_btsmdpa_data);
 	return -EINVAL;
 }

@@ -335,7 +335,10 @@ static ssize_t tsallts_write(struct file *file, const char __user *buffer, size_
 			thz_dev = NULL;
 		}
 
-		if (num_trip < 0) {
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "tsallts_write1",
+					"Bad argument");
+			tsallts_dprintk("[tsallts_write1] bad argument\n");
 			kfree(ptr_temp_data);
 			return -EINVAL;
 		}
@@ -396,6 +399,8 @@ static ssize_t tsallts_write(struct file *file, const char __user *buffer, size_
 	}
 
 	tsallts_dprintk("[tsallts_write1] bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "tsallts_write1",
+			"Bad argument");
 	kfree(ptr_temp_data);
 	return -EINVAL;
 }

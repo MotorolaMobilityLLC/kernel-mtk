@@ -464,6 +464,14 @@ static ssize_t mtktspa_write(struct file *file, const char __user *buffer, size_
 		mtktspa_dprintk("[mtktspa_write] mtktspa_unregister_thermal\n");
 		mtktspa_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktspa_write",
+					"Bad argument");
+			mtktspa_dprintk("[mtktspa_write] bad argument\n");
+			kfree(ptr_mtktspa_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktspa_data->t_type[i];
 
@@ -514,6 +522,8 @@ static ssize_t mtktspa_write(struct file *file, const char __user *buffer, size_
 		return count;
 	}
 
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktspa_write",
+			"Bad argument");
 	mtktspa_dprintk("[mtktspa_write] bad argument\n");
 	kfree(ptr_mtktspa_data);
 	return -EINVAL;

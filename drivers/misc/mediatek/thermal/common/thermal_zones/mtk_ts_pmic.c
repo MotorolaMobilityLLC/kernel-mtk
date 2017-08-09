@@ -321,6 +321,14 @@ static ssize_t mtktspmic_write(struct file *file, const char __user *buffer, siz
 		mtktspmic_dprintk("[mtktspmic_write] mtktspmic_unregister_thermal\n");
 		mtktspmic_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktspmic_write",
+					"Bad argument");
+			mtktspmic_dprintk("[mtktspmic_write] bad argument\n");
+			kfree(ptr_mtktspmic_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktspmic_data->t_type[i];
 
@@ -370,6 +378,8 @@ static ssize_t mtktspmic_write(struct file *file, const char __user *buffer, siz
 	}
 
 	mtktspmic_dprintk("[mtktspmic_write] bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktspmic_write",
+			"Bad argument");
 	kfree(ptr_mtktspmic_data);
 	return -EINVAL;
 }

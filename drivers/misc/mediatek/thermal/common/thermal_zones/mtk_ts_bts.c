@@ -824,6 +824,14 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 		mtkts_bts_dprintk("[mtkts_bts_write] mtkts_bts_unregister_thermal\n");
 		mtkts_bts_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtkts_bts_write",
+					"Bad argument");
+			mtkts_bts_dprintk("[mtkts_bts_write] bad argument\n");
+			kfree(ptr_mtktsbts_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktsbts_data->t_type[i];
 
@@ -876,6 +884,8 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 	}
 
 	mtkts_bts_dprintk("[mtkts_bts_write] bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtkts_bts_write",
+			"Bad argument");
 	kfree(ptr_mtktsbts_data);
 	return -EINVAL;
 }

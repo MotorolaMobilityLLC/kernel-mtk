@@ -466,6 +466,14 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 		mtktsbattery_dprintk("[mtktsbattery_write] mtktsbattery_unregister_thermal\n");
 		mtktsbattery_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktsbattery_write",
+					"Bad argument");
+			mtktsbattery_dprintk("[mtktsbattery_write] bad argument\n");
+			kfree(ptr_mtktsbattery_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktsbattery_data->t_type[i];
 
@@ -520,6 +528,8 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 	}
 
 	mtktsbattery_dprintk("[mtktsbattery_write] bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktsbattery_write",
+			"Bad argument");
 	kfree(ptr_mtktsbattery_data);
 	return -EINVAL;
 }

@@ -1466,6 +1466,14 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 			p_linux_if->thz_dev = NULL;
 		}
 
+		if (g_num_trip < 0 || g_num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "wmt_tm_write",
+					"Bad argument");
+			wmt_tm_info("[%s] bad argument = %s\n", __func__, ptr_tm_data->desc);
+			kfree(ptr_tm_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < g_num_trip; i++)
 			g_thermal_trip[i] = ptr_tm_data->thermal_trip[i];
 
@@ -1533,6 +1541,8 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 	}
 
 	wmt_tm_info("[%s] bad argument = %s\n", __func__, ptr_tm_data->desc);
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "wmt_tm_write",
+			"Bad argument");
 	kfree(ptr_tm_data);
 	return -EINVAL;
 }

@@ -1098,6 +1098,13 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 
 		tscpu_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "tscpu_write",
+					"Bad argument");
+			tscpu_dprintk("tscpu_write bad argument\n");
+			kfree(ptr_mtktscpu_data);
+			return -EINVAL;
+		}
 
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] =  ptr_mtktscpu_data->t_type[i];
@@ -1205,9 +1212,11 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		proc_write_flag = 1;
 		kfree(ptr_mtktscpu_data);
 		return count;
-	} else {
-	tscpu_dprintk("tscpu_write bad argument\n");
 	}
+
+	tscpu_dprintk("tscpu_write bad argument\n");
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "tscpu_write",
+			"Bad argument");
 	kfree(ptr_mtktscpu_data);
 	return -EINVAL;
 }
