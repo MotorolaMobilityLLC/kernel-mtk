@@ -1173,7 +1173,7 @@ static void mt_setup_gpufreqs_power_table(int num)
 	}
 
 #ifdef CONFIG_THERMAL
-	/* mtk_gpufreq_register(mt_gpufreqs_power, num); */
+	mtk_gpufreq_register(mt_gpufreqs_power, num);
 #endif
 }
 
