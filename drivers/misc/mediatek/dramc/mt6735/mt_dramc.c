@@ -60,9 +60,7 @@ static void __iomem *DDRPHY_BASE_ADDR;
 static void __iomem *DRAMCNAO_BASE_ADDR;
 
 volatile unsigned char *dst_array_v;
-volatile unsigned char *src_array_v;
 volatile unsigned int dst_array_p;
-volatile unsigned int src_array_p;
 static char dfs_dummy_buffer[BUFF_LEN] __aligned(PAGE_SIZE);
 int init_done = 0;
 static DEFINE_MUTEX(dram_dfs_mutex);
@@ -867,9 +865,14 @@ int dram_fh_steps_freq(unsigned int step)
 	int freq;
 
 #if defined(CONFIG_ARCH_MT6735)
+	unsigned int ddr_type = get_ddr_type();
+
 	switch (step) {
 	case 0:
-		freq = 1280;
+		if (ddr_type == TYPE_LPDDR2)
+			freq = 1066;
+		else
+			freq = 1280;
 		break;
 	case 1:
 		freq = 938;
@@ -956,6 +959,9 @@ int dram_do_dfs_by_fh(unsigned int freq)
 			target_dds = 0x10cefe;	/* ///< 938Mbps for LPDDR2 */
 		else
 			target_dds = 0xe38fe;	/* ///< 938Mbps for LPDDR3 */
+		break;
+	case 1066000:
+		target_dds = 0x131A2D;	/* ///< 1066Mbps */
 		break;
 	case 1280000:
 		target_dds = 0x136885;	/* ///< 1280Mbps */
@@ -1195,39 +1201,35 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 		return 0;
 
 	endp = reg + (l / sizeof(__be32));
+
 	if (node) {
 		/* orig_dram_info */
 		dram_info = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
+		if (dram_info == NULL)
+			return 0;
+
+		dram_rank_num = dram_info->rank_num;
+		dram_base = dram_info->rank_info[0].start;
+
+		if (dram_rank_num == SINGLE_RANK)
+			pr_warn("[DFS]  enable (dram base): (%pa)\n", &dram_base);
+		else {
+			dram_add_rank0_base = dram_info->rank_info[1].start;
+			pr_warn("[DFS]  enable (dram base, dram rank1 base): (%pa,%pa)\n",
+								&dram_base, &dram_add_rank0_base);
+		}
 	}
-	dram_rank_num = dram_info->rank_num;
-	dram_base = dram_info->rank_info[0].start;
-	dram_add_rank0_base = (dram_info->rank_info[0].start) + (dram_info->rank_info[0].size);
-	pr_warn("[DFS]  enable (dram base, dram rank1 base): (%pa,%pa)\n", &dram_base, &dram_add_rank0_base);
 
 	return node;
 }
 
 int DFS_APDMA_early_init(void)
 {
-	phys_addr_t max_dram_size = get_max_DRAM_size();
-	phys_addr_t dummy_read_center_address = 0;
-
 	if (init_done == 0) {
-		if (max_dram_size == 0x100000000ULL) {	/* dram size = 4GB */
-			dummy_read_center_address = 0x80000000ULL;
-		} else if (max_dram_size <= 0xC0000000)	{	/* dram size <= 3GB */
-			dummy_read_center_address = DRAM_BASE + (max_dram_size >> 1);
-		} else {
-			pr_err("[DRAMC] DRAM max size incorrect!!!\n");
-			/* ASSERT(0); */ /* need porting*/
-		}
-
-		src_array_p = (volatile unsigned int)(dummy_read_center_address - (BUFF_LEN >> 1));
 		dst_array_p = __pa(dfs_dummy_buffer);
-		pr_warn("[DFS]dfs_dummy_buffer va: 0x%p, dst_pa: 0x%llx, src_pa: 0x%llx  size: %d\n",
+		pr_warn("[DFS]dfs_dummy_buffer va: 0x%p, dst_pa: 0x%llx, size: %d\n",
 				(void *)dfs_dummy_buffer, (unsigned long long)dst_array_p,
-				(unsigned long long)src_array_p, BUFF_LEN);
-
+				BUFF_LEN);
 #ifdef APDMAREG_DUMP
 		src_array_v =
 				ioremap(rounddown(src_array_p, IOREMAP_ALIGMENT),
@@ -1270,8 +1272,10 @@ int DFS_APDMA_Enable(void)
 		writel(dst_array_p, DMA_DST);
 		writel(BUFF_LEN, DMA_LEN1);
 		writel(DMA_CON_BURST_8BEAT, DMA_CON);
-	} else
+	} else {
 		pr_warn("[DFS] error rank number = %x\n", dram_rank_num);
+		return 1;
+	}
 
 
 #ifdef APDMAREG_DUMP
@@ -1437,8 +1441,10 @@ static ssize_t DFS_APDMA_TEST_show(struct device_driver *driver, char *buf)
 	if (dram_rank_num == DULE_RANK)
 		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa src2:%pa\n",
 				&dram_base, &dram_add_rank0_base);
-	else
+	else if (dram_rank_num == SINGLE_RANK)
 		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa\n", &dram_base);
+	else
+		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read rank number incorrect = %d !!!\n", dram_rank_num);
 }
 
 static ssize_t DFS_APDMA_TEST_store(struct device_driver *driver,
