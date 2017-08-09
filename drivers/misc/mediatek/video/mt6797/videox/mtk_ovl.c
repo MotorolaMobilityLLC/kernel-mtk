@@ -379,6 +379,7 @@ int ovl2mem_input_config(disp_session_input_config *input)
 	int i = 0;
 	int config_layer_id = 0;
 	disp_ddp_path_config *data_config;
+	struct ddp_io_golden_setting_arg gset_arg;
 
 	DISPFUNC();
 	_ovl2mem_path_lock(__func__);
@@ -414,6 +415,12 @@ int ovl2mem_input_config(disp_session_input_config *input)
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_COMPLETE, HZ / 5);
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, pgc->cmdq_handle_config);
+
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
+	gset_arg.is_decouple_mode = 1;
+
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 
 	_ovl2mem_path_unlock(__func__);
 
