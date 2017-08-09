@@ -246,12 +246,12 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		break;
 	case ID_GYROSCOPE_UNCALIBRATED:
 		data->sensor	= data_t->sensor_type;
-		data->values[0] = data_t->uncalibrated_gyro_t.x - data_t->uncalibrated_gyro_t.x_bias;
-		data->values[1] = data_t->uncalibrated_gyro_t.y - data_t->uncalibrated_gyro_t.y_bias;
-		data->values[2] = data_t->uncalibrated_gyro_t.z - data_t->uncalibrated_gyro_t.z_bias;
-		data->values[3] = 0 - data_t->uncalibrated_gyro_t.x_bias;
-		data->values[4] = 0 - data_t->uncalibrated_gyro_t.y_bias;
-		data->values[5] = 0 - data_t->uncalibrated_gyro_t.z_bias;
+		data->values[0] = data_t->uncalibrated_gyro_t.x;
+		data->values[1] = data_t->uncalibrated_gyro_t.y;
+		data->values[2] = data_t->uncalibrated_gyro_t.z;
+		data->values[3] = data_t->uncalibrated_gyro_t.x_bias;
+		data->values[4] = data_t->uncalibrated_gyro_t.y_bias;
+		data->values[5] = data_t->uncalibrated_gyro_t.z_bias;
 		data->time = data_t->time_stamp;
 		break;
 	case ID_RELATIVE_HUMIDITY:
@@ -273,12 +273,12 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		break;
 	case ID_MAGNETIC_UNCALIBRATED:
 		data->sensor	= data_t->sensor_type;
-		data->values[0] = data_t->uncalibrated_mag_t.x - data_t->uncalibrated_mag_t.x_bias;
-		data->values[1] = data_t->uncalibrated_mag_t.y - data_t->uncalibrated_mag_t.y_bias;
-		data->values[2] = data_t->uncalibrated_mag_t.z - data_t->uncalibrated_mag_t.z_bias;
-		data->values[3] = 0 - data_t->uncalibrated_mag_t.x_bias;
-		data->values[4] = 0 - data_t->uncalibrated_mag_t.y_bias;
-		data->values[5] = 0 - data_t->uncalibrated_mag_t.z_bias;
+		data->values[0] = data_t->uncalibrated_mag_t.x;
+		data->values[1] = data_t->uncalibrated_mag_t.y;
+		data->values[2] = data_t->uncalibrated_mag_t.z;
+		data->values[3] = data_t->uncalibrated_mag_t.x_bias;
+		data->values[4] = data_t->uncalibrated_mag_t.y_bias;
+		data->values[5] = data_t->uncalibrated_mag_t.z_bias;
 		data->time = data_t->time_stamp;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:

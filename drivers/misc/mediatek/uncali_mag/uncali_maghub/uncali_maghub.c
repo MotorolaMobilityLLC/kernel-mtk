@@ -114,12 +114,12 @@ static int uncali_mag_get_data(int *dat, int *offset, int *status)
 	}
 	time_stamp = data.time_stamp;
 	time_stamp_gpt = data.time_stamp_gpt;
-	dat[0] = data.uncalibrated_mag_t.x - data.uncalibrated_mag_t.x_bias;
-	dat[1] = data.uncalibrated_mag_t.y - data.uncalibrated_mag_t.z_bias;
-	dat[2] = data.uncalibrated_mag_t.z - data.uncalibrated_mag_t.z_bias;
-	offset[0] = 0 - data.uncalibrated_mag_t.x_bias;
-	offset[1] = 0 - data.uncalibrated_mag_t.y_bias;
-	offset[2] = 0 - data.uncalibrated_mag_t.z_bias;
+	dat[0] = data.uncalibrated_mag_t.x;
+	dat[1] = data.uncalibrated_mag_t.y;
+	dat[2] = data.uncalibrated_mag_t.z;
+	offset[0] = data.uncalibrated_mag_t.x_bias;
+	offset[1] = data.uncalibrated_mag_t.y_bias;
+	offset[2] = data.uncalibrated_mag_t.z_bias;
 	*status = data.uncalibrated_mag_t.status;
 	return 0;
 }
