@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 /* GCE subsys */
 DECLARE_CMDQ_SUBSYS(CMDQ_SUBSYS_G3D_CONFIG_BASE, 0, MFG, g3d_config_base)
 DECLARE_CMDQ_SUBSYS(CMDQ_SUBSYS_MMSYS_CONFIG, 1, MMSYS, mmsys_config_base)

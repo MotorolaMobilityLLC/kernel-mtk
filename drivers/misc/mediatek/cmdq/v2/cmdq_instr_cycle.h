@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 /* id	HW_OP     MASK_EN     cycle   name */
 DECLARE_CMDQ_INSTR_CYCLE(CMDQ_STA_WRI, CMDQ_CODE_WRITE, 4, WRI)
 DECLARE_CMDQ_INSTR_CYCLE(CMDQ_STA_WRI_WITH_MASK, CMDQ_CODE_WRITE, 36, WRI_W_MASK)	/* 32 for read, 4 for write */
