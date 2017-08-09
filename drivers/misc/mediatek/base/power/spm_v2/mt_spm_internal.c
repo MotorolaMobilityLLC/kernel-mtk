@@ -233,9 +233,7 @@ void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 	/* tell IM where is PCM code (use slave mode if code existed) */
 	if (pcmdesc->base_dma) {
 		ptr = pcmdesc->base_dma;
-		/* for 4GB mode */
-		if (enable_4G())
-			MAPPING_DRAM_ACCESS_ADDR(ptr);
+		MAPPING_DRAM_ACCESS_ADDR(ptr);
 	} else {
 		ptr = base_va_to_pa(pcmdesc->base);
 	}
