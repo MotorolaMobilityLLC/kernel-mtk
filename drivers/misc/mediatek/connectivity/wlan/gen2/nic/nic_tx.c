@@ -1589,6 +1589,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		/* Broadcast/multicast data frames, 1x frames, command packets, MMPDU */
 		ucPortIdx = 1;
 	}
+	wlanTraceTxCmd(prCmdInfo);
 
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		/* <2> Compose HIF_TX_HEADER */
@@ -1724,7 +1725,6 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 			  (UINT_32) u2OverallBufferLength,
 			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
 
-	wlanTraceTxCmd(prCmdInfo);
 	return WLAN_STATUS_SUCCESS;
 }				/* end of nicTxCmd() */
 
