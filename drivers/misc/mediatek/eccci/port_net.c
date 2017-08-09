@@ -496,6 +496,10 @@ static int port_net_init(struct ccci_port *port)
 {
 #ifdef CCMNI_U
 	if (port->rx_ch == CCCI_CCMNI1_RX) {
+#if defined CONFIG_MTK_IRAT_SUPPORT
+		CCCI_NOTICE_MSG(port->modem->index, NET, "clear MODEM_CAP_SGIO flag\n");
+		port->modem->capability &= (~(MODEM_CAP_SGIO));
+#endif
 		eccci_ccmni_ops.md_ability |= port->modem->capability;
 		if (port->modem->index == MD_SYS1)
 			ccmni_ops.init(port->modem->index, &eccci_ccmni_ops);
@@ -517,10 +521,13 @@ static int port_net_init(struct ccci_port *port)
 	dev->flags = IFF_NOARP &	/* ccmni is a pure IP device */
 	    (~IFF_BROADCAST & ~IFF_MULTICAST);	/* ccmni is P2P */
 	dev->features = NETIF_F_VLAN_CHALLENGED;	/* not support VLAN */
+
+#ifndef CONFIG_MTK_IRAT_SUPPORT
 	if (port->modem->capability & MODEM_CAP_SGIO) {
 		dev->features |= NETIF_F_SG;
 		dev->hw_features |= NETIF_F_SG;
 	}
+#endif
 	dev->addr_len = ETH_ALEN;	/* ethernet header size */
 	dev->destructor = free_netdev;
 	dev->hard_header_len += sizeof(struct ccci_header);	/* reserve Tx CCCI header room */

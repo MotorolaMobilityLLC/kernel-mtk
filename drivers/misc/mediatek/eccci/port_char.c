@@ -393,7 +393,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	struct ccci_header *ccci_h = NULL;
 	size_t actual_count = 0;
 	int ret = 0, header_len = 0;
-	char *dump_buf = NULL;
 
 	if (port->tx_ch == CCCI_MONITOR_CH)
 		return -EPERM;
@@ -467,12 +466,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			port_ch_dump(port->modem->index, "chr_write", req->skb->data + sizeof(struct ccci_header),
 				     actual_count);
 		}
-		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3) {
-			dump_buf = (char *)(req->skb->data+sizeof(struct ccci_header));
-			CCCI_INF_MSG(port->modem->index, CHAR, "mdlog_ctrl: 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-				     *dump_buf, *(dump_buf+1), *(dump_buf+2), *(dump_buf+3),
-					 *(dump_buf+4), *(dump_buf+5), *(dump_buf+6), *(dump_buf+7));
-		}
+
 		/* 4. send out */
 		/* for md3, ccci_h->channel will probably change after call send_request,
 		because md3's channel mapping */
@@ -482,9 +476,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			/* CCCI_INF_MSG(port->modem->index, CHAR,
 				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret); */
 		}
-		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3)
-			CCCI_INF_MSG(port->modem->index, CHAR, "write done on %s, l=%zu r=%d\n",
-			 port->name, actual_count, ret);
 
 		if (ret) {
 			if (ret == -EBUSY && !req->blocking)
