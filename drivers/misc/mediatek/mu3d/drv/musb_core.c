@@ -136,7 +136,7 @@ const char musb_driver_name[] = MUSB_DRIVER_NAME;
 
 struct musb *_mu3d_musb = NULL;
 
-/* u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO; */
+
 u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
 u32 fake_CDP = 0;
 
@@ -868,7 +868,6 @@ static void ep_prof_work(struct work_struct *data)
 static void musb_restore_context(struct musb *musb);
 static void musb_save_context(struct musb *musb);
 
-
 /*-------------------------------------------------------------------------*/
 /*
 * Program the HDRC to start (enable interrupts, dma, etc.).
@@ -1019,6 +1018,17 @@ static void gadget_stop(struct musb *musb)
 	}
 }
 
+static void set_ssusb_ip_sleep(struct musb *musb)
+{
+	/* Set below sequence to avoid power leakage */
+	os_setmsk(U3D_SSUSB_U3_CTRL_0P, SSUSB_U3_PORT_PDN | SSUSB_U3_PORT_DIS);
+	os_setmsk(U3D_SSUSB_U2_CTRL_0P, SSUSB_U2_PORT_PDN | SSUSB_U2_PORT_DIS);
+	os_setmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
+	os_setmsk(U3D_SSUSB_IP_PW_CTRL1, SSUSB_IP_HOST_PDN);
+	udelay(50);
+	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+}
+
 /*
  * Make the HDRC stop (disable interrupts, etc.);
  * reversible by musb_start
@@ -1058,9 +1068,9 @@ void musb_stop(struct musb *musb)
 	/* Set SSUSB_IP_SW_RST to avoid power leakage */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode)
-		os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+		set_ssusb_ip_sleep(musb);
 #else
-	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+	set_ssusb_ip_sleep(musb);
 #endif
 
 #ifndef CONFIG_MTK_FPGA
@@ -2019,8 +2029,7 @@ static void musb_suspend_work(struct work_struct *data)
 		 */
 		musb_save_context(musb);
 
-		/* Set SSUSB_IP_SW_RST to avoid power leakage */
-		os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+		set_ssusb_ip_sleep(musb);
 
 #ifndef CONFIG_MTK_FPGA
 		/* Let PHY enter savecurrent mode. And turn off CLK. */
@@ -2766,15 +2775,13 @@ static int musb_suspend_noirq(struct device *dev)
 	 */
 	musb_save_context(musb);
 
-	/* Set SSUSB_IP_SW_RST to avoid power leakage */
-	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+	set_ssusb_ip_sleep(musb);
 
 #ifndef CONFIG_MTK_FPGA
 	/* Let PHY enter savecurrent mode. And turn off CLK. */
 	usb_phy_savecurrent(musb->is_clk_on);
 	musb->is_clk_on = 0;
 #endif
-
 
 	return 0;
 }
