@@ -181,7 +181,7 @@
 	pinctrl-4 = <&uart0_tx_clr_cfg>;
 	status = "okay";
 	*/
-}
+};
 
 &apuart1 {
 	/*
@@ -198,11 +198,12 @@
 	pinctrl-4 = <&uart1_tx_clr_cfg>;
 	status = "okay";
 	*/
-}
+};
 
 &pio {
 	/* UART GPIO Settings - Start */
 	/* UART0: rx set, rx clear, tx clear, tx clear*/
+	/*
 	uart0_gpio_def_cfg:uart0gpiodefault {
 	};
 	uart0_rx_set_cfg:uart0_rx_set@gpio97 {
@@ -229,7 +230,9 @@
 			output-high;
 		};
 	};
+	*/
 	/* UART1: rx set, rx clear, tx clear, tx clear*/
+	/*
 	uart1_gpio_def_cfg:uart1gpiodefault {
 	};
 	uart1_rx_set_cfg:uart1_rx_set@gpio232 {
@@ -256,6 +259,7 @@
 			output-high;
 		};
 	};
+	*/
 	/* UART GPIO Settings - End */
 };
 
