@@ -301,7 +301,14 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->md2_req_mask_b << 20) |
 			(!!pwrctrl->md1_req_mask_b << 19) |
 			(!!pwrctrl->md_ddr_dbc_en << 18) |
+#if defined(CONFIG_ARCH_MT6797)
+			(!!pwrctrl->mcusys_idle_mask << 6) |
+			(!!pwrctrl->mptop_idle_mask << 5) |
+			(!!pwrctrl->mp3top_idle_mask << 4) |
+			(!!pwrctrl->mp2top_idle_mask << 3) |
+#else
 			(!!pwrctrl->mcusys_idle_mask << 4) |
+#endif
 			(!!pwrctrl->mp1top_idle_mask << 2) |
 			(!!pwrctrl->mp0top_idle_mask << 1) |
 			(!!pwrctrl->wfi_op << 0));
@@ -324,6 +331,10 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->md_srcclkena_1_dvfs_req_mask_b << 30) |
 			(!!pwrctrl->md_srcclkena_0_dvfs_req_mask_b << 29) |
 			(!!pwrctrl->emi_bw_dvfs_req_mask << 28) |
+#if defined(CONFIG_ARCH_MT6797)
+			(!!pwrctrl->cpu_dvfs_req_mask << 27) |
+			(!!pwrctrl->md1_dvfs_req_mask << 25) |
+#endif
 			(!!pwrctrl->md_vrf18_req_1_mask_b << 24) |
 			(!!pwrctrl->md_vrf18_req_0_mask_b << 23) |
 			(!!pwrctrl->md_ddr_en_1_mask_b << 22) |
@@ -372,6 +383,10 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(pwrctrl->srclkenai_mask ? CC_SRCLKENA_MASK_0 : 0));
 
 	/* set CPU WFI mask */
+#if defined(CONFIG_ARCH_MT6797)
+	spm_write(MP2_CPU0_WFI_EN, !!pwrctrl->mp2_cpu0_wfi_en);
+	spm_write(MP2_CPU1_WFI_EN, !!pwrctrl->mp2_cpu1_wfi_en);
+#endif
 	spm_write(MP1_CPU0_WFI_EN, !!pwrctrl->mp1_cpu0_wfi_en);
 	spm_write(MP1_CPU1_WFI_EN, !!pwrctrl->mp1_cpu1_wfi_en);
 	spm_write(MP1_CPU2_WFI_EN, !!pwrctrl->mp1_cpu2_wfi_en);

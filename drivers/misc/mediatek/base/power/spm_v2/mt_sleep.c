@@ -71,7 +71,7 @@ static bool slp_dump_regs = 1;
 static bool slp_check_mtcmos_pll = 1;
 
 static u32 slp_spm_flags = {
-#if 0
+#if defined(CONFIG_ARCH_MT6797)
 	SPM_FLAG_DIS_CPU_PDN |
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_DDRPHY_PDN |
@@ -284,8 +284,8 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
 	else
 #endif
-		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
 #endif
+		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
 
 LEAVE_SLEEP:
 #ifdef CONFIG_MTKPASR

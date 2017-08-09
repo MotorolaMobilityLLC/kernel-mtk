@@ -185,7 +185,16 @@ struct pwr_ctrl {
 	u8 mcusys_idle_mask;
 	u8 mp1top_idle_mask;
 	u8 mp0top_idle_mask;
+#if defined(CONFIG_ARCH_MT6797)
+	u8 mp2top_idle_mask;
+	u8 mp3top_idle_mask;
+	u8 mptop_idle_mask;
+#endif
 	u8 wfi_op;		/* 1:WFI_OP_AND, 0:WFI_OP_OR */
+#if defined(CONFIG_ARCH_MT6797)
+	u8 mp2_cpu0_wfi_en;
+	u8 mp2_cpu1_wfi_en;
+#endif
 	u8 mp1_cpu0_wfi_en;
 	u8 mp1_cpu1_wfi_en;
 	u8 mp1_cpu2_wfi_en;
@@ -222,6 +231,10 @@ struct pwr_ctrl {
 	u8 md_ddr_en_1_mask_b;
 	u8 md_vrf18_req_0_mask_b;
 	u8 md_vrf18_req_1_mask_b;
+#if defined(CONFIG_ARCH_MT6797)
+	u8 md1_dvfs_req_mask;
+	u8 cpu_dvfs_req_mask;
+#endif
 	u8 emi_bw_dvfs_req_mask;
 	u8 md_srcclkena_0_dvfs_req_mask_b;
 	u8 md_srcclkena_1_dvfs_req_mask_b;

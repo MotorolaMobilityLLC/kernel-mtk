@@ -53,6 +53,9 @@
 #endif
 #define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C)
 #define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
+#if defined(CONFIG_ARCH_MT6797)
+#define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
+#endif
 #define ACINACTM                (1<<4)
 
 int spm_dormant_sta = MT_CPU_DORMANT_RESET;
@@ -66,6 +69,7 @@ u8 spm_snapshot_golden_setting = 0;
 struct wake_status spm_wakesta; /* record last wakesta */
 
 /**************************************
+
  * SW code for suspend
  **************************************/
 #define SPM_SYSCLK_SETTLE       99	/* 3ms */
@@ -73,7 +77,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
 #define SPM_WAKE_PERIOD         600	/* sec */
-
+#if defined(CONFIG_ARCH_MT6755)
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
@@ -92,6 +96,22 @@ struct wake_status spm_wakesta; /* record last wakesta */
 	WAKE_SRC_R12_SEJ_WDT_GPT_B | \
 	WAKE_SRC_R12_ALL_MD32_WAKEUP_B)
 
+#else
+#define WAKE_SRC_FOR_SUSPEND \
+	(WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_USB_CDSC_B | \
+	WAKE_SRC_R12_USB_POWERDWN_B | \
+	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_CSYSPWREQ_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_SEJ_WDT_GPT_B)
+#endif
 #define WAKE_SRC_FOR_MD32  0 \
 				/* (WAKE_SRC_AUD_MD32) */
 
@@ -120,6 +140,7 @@ enum spm_suspend_step {
 #endif
 
 static struct pwr_ctrl suspend_ctrl = {
+
 	.wake_src = WAKE_SRC_FOR_SUSPEND,
 	.wake_src_md32 = WAKE_SRC_FOR_MD32,
 	.r0_ctrl_en = 1,
@@ -129,6 +150,11 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	.mp0top_idle_mask = 0,
 	.mp1top_idle_mask = 0,
+#if defined(CONFIG_ARCH_MT6797)
+	.mp2top_idle_mask = 0,
+	.mp3top_idle_mask = 1,
+	.mptop_idle_mask = 0,
+#endif
 	.mcusys_idle_mask = 0,
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
@@ -164,6 +190,10 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 1,
 	.md_vrf18_req_1_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6797)
+	.md1_dvfs_req_mask = 0,
+	.cpu_dvfs_req_mask = 0,
+#endif
 	.emi_bw_dvfs_req_mask = 1,
 	.md_srcclkena_0_dvfs_req_mask_b = 0,
 	.md_srcclkena_1_dvfs_req_mask_b = 0,
@@ -187,12 +217,21 @@ static struct pwr_ctrl suspend_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
+#if defined(CONFIG_ARCH_MT6797)
+	.disp_od_req_mask_b = 0,
 
+	.spm_apsrc_req = 1,
+	.spm_f26m_req = 1,
+	.spm_lte_req = 1,
+	.spm_infra_req = 1,
+	.spm_vrf18_req = 1,
+#else
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
+#endif
 	.spm_dvfs_req = 0,
 	.spm_dvfs_force_down = 1,
 	.spm_ddren_req = 0,
@@ -209,7 +248,10 @@ static struct pwr_ctrl suspend_ctrl = {
 	.mp1_cpu1_wfi_en = 1,
 	.mp1_cpu2_wfi_en = 1,
 	.mp1_cpu3_wfi_en = 1,
-
+#if defined(CONFIG_ARCH_MT6797)
+	.mp2_cpu0_wfi_en = 1,
+	.mp2_cpu1_wfi_en = 1,
+#endif
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 1,
 #endif
@@ -250,6 +292,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 		__spm_backup_pmic_ck_pdn();
 	}
+#else
+	spm_write(BIG_CLK_CON, spm_read(BIG_CLK_CON) | 0x1f);
+	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
 #endif
 }
 
@@ -319,6 +364,10 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 #endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
+#if defined(CONFIG_ARCH_MT6797)
+		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) | (ACINACTM + 1));
+		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
+#endif
 		spm_dormant_sta = mt_cpu_dormant(CPU_SHUTDOWN_MODE /* | DORMANT_SKIP_WFI */);
 		switch (spm_dormant_sta) {
 		case MT_CPU_DORMANT_RESET:
@@ -330,13 +379,23 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 		case MT_CPU_DORMANT_BYPASS:
 			break;
 		}
+#if defined(CONFIG_ARCH_MT6797)
+		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) & ~ACINACTM);
+		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) & ~(ACINACTM + 1));
+#endif
 	} else {
 		spm_dormant_sta = -1;
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
+#if defined(CONFIG_ARCH_MT6797)
+		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) | (ACINACTM + 1));
+#endif
 		wfi_with_sync();
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) & ~ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) & ~ACINACTM);
+#if defined(CONFIG_ARCH_MT6797)
+		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) & ~(ACINACTM + 1));
+#endif
 	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
@@ -583,12 +642,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spm_crit2("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
-
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
-
 	__spm_reset_and_init_pcm(pcmdesc);
 
 	__spm_kick_im_to_fetch(pcmdesc);
@@ -610,6 +667,18 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(SPM_SUSPEND_ENTER_WFI);
 #endif
+#if defined(CONFIG_ARCH_MT6797)
+	spm_crit2("spm_trigger_wfi_for_sleep\n");
+	spm_crit2("SPM_AP_STANDBY_CON 0x%x\n", spm_read(SPM_AP_STANDBY_CON));
+	spm_crit2("SPM_SRC_REQ 0x%x\n", spm_read(SPM_SRC_REQ));
+	spm_crit2("SPM_SRC_MASK 0x%x\n", spm_read(SPM_SRC_MASK));
+	spm_crit2("SPM_SRC2_MASK 0x%x\n", spm_read(SPM_SRC2_MASK));
+	spm_crit2("SPM_SW_FLAG 0x%x\n", spm_read(SPM_SW_FLAG));
+	spm_crit2("SPM_CLK_CON = %x\n", spm_read(SPM_CLK_CON));
+	spm_crit2("PCM_PWR_IO_EN = %x\n", spm_read(PCM_PWR_IO_EN));
+	spm_crit2("PCM_CON0 = %x\n", spm_read(PCM_CON0));
+	spm_crit2("PCM_CON1 = %x\n", spm_read(PCM_CON1));
+#endif
 	spm_trigger_wfi_for_sleep(pwrctrl);
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(SPM_SUSPEND_LEAVE_WFI);
@@ -626,7 +695,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* record last wakesta */
 	/* last_wr = spm_output_wake_reason(&wakesta, pcmdesc); */
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
-
 RESTORE_IRQ:
 #if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_flush();
