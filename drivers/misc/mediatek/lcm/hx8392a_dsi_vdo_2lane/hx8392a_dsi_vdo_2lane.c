@@ -289,7 +289,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init(void)
 {
-	pr_info("lcm_init\n");
+	pr_debug("lcm_init\n");
 	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
 	MDELAY(10);
