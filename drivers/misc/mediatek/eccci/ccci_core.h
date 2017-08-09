@@ -35,6 +35,8 @@
 
 #define C2K_MD_LOG_TX_Q		3
 #define C2K_MD_LOG_RX_Q		3
+#define C2K_PCM_TX_Q		1
+#define C2K_PCM_RX_Q		1
 
 #define EX_TIMER_SWINT 10
 #define EX_TIMER_MD_EX 5
