@@ -110,11 +110,15 @@ int flashlight_gpio_init(struct platform_device *pdev)
 
 int flashlight_gpio_hwen_high(void)
 {
+	if (flashlight_pinctrl == NULL || flashlight_hwen_high == NULL)
+		return 0;
 	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_high);
 }
 
 int flashlight_gpio_hwen_low(void)
 {
+	if (flashlight_pinctrl == NULL || flashlight_hwen_low == NULL)
+		return 0;
 	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_low);
 }
 /* ============================== */
