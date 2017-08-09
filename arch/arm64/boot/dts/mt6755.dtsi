@@ -1482,8 +1482,14 @@
 			reg = <0x11210000 0x10000>;
 		};
 
-		audiosys:mt_soc_dl1_pcm@11220000 {
-			compatible = "mediatek,mt_soc_pcm_dl1", "mediatek,audio";
+		audiosys: audiosys@11220000 {
+			compatible = "mediatek,mt6755-audiosys";
+			reg = <0x11220000 0x10000>;
+			#clock-cells = <1>;
+		};
+
+		audgpio:mt_soc_dl1_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl1";
 			reg = <0x11220000 0x1000>;
 			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&audiosys AUDIO_AFE>,
