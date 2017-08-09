@@ -559,7 +559,7 @@ void dcm_peri_preset(void)
 #define MEM_BUS_DCM_CTRL_MASK	((0x1 << 6) | (0x1 << 7) | (0x1 << 8) | (0x7f << 9) | \
 								 (0x1f << 16) | (0x1f << 21) | (0x1 << 26) | \
 								 (0x1 << 29) | (0x1 << 31))
-#define MEM_BUS_DCM_CTRL_EN		((0x0 << 6) | (0x0 << 7) | (0x0 << 8) | (0x2f << 9) | \
+#define MEM_BUS_DCM_CTRL_EN		((0x0 << 6) | (0x1 << 7) | (0x0 << 8) | (0x2f << 9) | \
 								 (0x0 << 16) | (0x1f << 21) | (0x0 << 26) | \
 								 (0x0 << 29) | (0x0 << 31))
 #define MEM_BUS_DCM_CTRL_DIS	((0x0 << 6) | (0x0 << 7) | (0x0 << 8) | (0x2f << 9) | \
@@ -1394,8 +1394,8 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .name = "MEM_DCM",
 	 .func = (DCM_FUNC) dcm_mem,
 	 .preset_func = (DCM_PRESET_FUNC) dcm_mem_preset,
-	 .current_state = MEM_DCM_ON,
-	 .default_state = MEM_DCM_ON,
+	 .current_state = MEM_DCM_OFF,
+	 .default_state = MEM_DCM_OFF,
 	 .disable_refcnt = 0,
 	 },
 #endif
