@@ -3393,6 +3393,7 @@ signed int fgauge_update_dod(void)
 
 	gFG_temp = force_get_tbat(KAL_FALSE);
 
+#if !defined(CONFIG_POWER_EXT)
 	if (temperature_change == 1) {
 		gFG_BATT_CAPACITY = fgauge_get_Q_max(gFG_temp);
 		bm_print(BM_LOG_CRTI,
@@ -3401,6 +3402,7 @@ signed int fgauge_update_dod(void)
 			 gFG_BATT_CAPACITY_init_high_current);
 		temperature_change = 0;
 	}
+#endif
 #if 0
 	C_0mA = fgauge_get_Q_max(gFG_temp);
 	C_400mA = fgauge_get_Q_max_high_current(gFG_temp);
@@ -5197,7 +5199,7 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
-static void battery_aging_check(void)
+void battery_aging_check(void)
 {
 	signed int hw_ocv_after_sleep;
 	struct timespec xts;
