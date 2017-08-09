@@ -357,8 +357,8 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
 
 		/* set APLL clock setting */
-		/*EnableApll1(true); */
-		/*EnableApll2(true); */
+		EnableApll1(true);
+		EnableApll2(true);
 		EnableI2SDivPower(AUDIO_APLL12_DIV4, true);
 		EnableI2SDivPower(AUDIO_APLL12_DIVB, true);
 
@@ -686,8 +686,8 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 		mtk_pcm_hdmi_close(substream);
 		return err;
 	}
-	/*EnableApll1(true);
-	EnableApll2(true);*/
+	EnableApll1(true);
+	EnableApll2(true);
 	EnableI2SDivPower(AUDIO_APLL12_DIV4, true);
 	EnableI2SDivPower(AUDIO_APLL12_DIVB, true);
 
@@ -714,8 +714,8 @@ static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 	EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 #endif
 	mHDMIPrepareDone = false;
-	/*EnableApll1(false);
-	EnableApll2(false);*/
+	EnableApll1(false);
+	EnableApll2(false);
 
 	AudDrv_Clk_Off();
 
