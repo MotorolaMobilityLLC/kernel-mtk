@@ -746,6 +746,7 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 	void __iomem	*mbase = musb->mregs;
 	void __iomem	*regs = musb->endpoints[0].regs;
 	irqreturn_t	retval = IRQ_NONE;
+	bool setup_end_err = false;
 
 	musb_ep_select(mbase, 0);	/* select ep0 */
 	csr = musb_readw(regs, MUSB_CSR0);
@@ -789,10 +790,13 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		default:
 			ERR("SetupEnd came in a wrong ep0stage %s\n",
 			    decode_ep0stage(musb->ep0_state));
-			ERR("csr = %x\n", csr);
+			ERR("SetupEnd, csr = %x\n", csr);
+			setup_end_err = true;
 		}
 		csr = musb_readw(regs, MUSB_CSR0);
 		/* NOTE:  request may need completion */
+		if (unlikely(setup_end_err))
+			ERR("SetupEnd, csr2 = %x\n", csr);
 	}
 
 	/* docs from Mentor only describe tx, rx, and idle/setup states.
@@ -847,9 +851,15 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		{
 			struct musb_request	*req;
 
+			if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 giveback\n");
+
 			req = next_ep0_request(musb);
 			if (req)
 				musb_g_ep0_giveback(musb, &req->request);
+
+			if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 giveback done\n");
 		}
 
 		/*
@@ -858,6 +868,9 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		 */
 		if (csr & MUSB_CSR0_RXPKTRDY)
 			goto setup;
+
+		if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 idle\n");
 
 		retval = IRQ_HANDLED;
 		musb->ep0_state = MUSB_EP0_STAGE_IDLE;
@@ -985,6 +998,9 @@ finish:
 		musb->ep0_state = MUSB_EP0_STAGE_IDLE;
 		break;
 	}
+
+	if (unlikely(setup_end_err))
+		ERR("SetupEnd, retval=%d\n", retval);
 
 	return retval;
 }
