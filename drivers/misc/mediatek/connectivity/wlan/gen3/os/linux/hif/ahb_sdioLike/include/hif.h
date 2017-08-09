@@ -172,7 +172,7 @@ typedef struct _GL_HIF_INFO_T {
 	/* HIF related */
 	UINT_8 *HifRegBaseAddr;	/* HIF register base */
 	UINT_8 *McuRegBaseAddr;	/* CONN MCU register base */
-
+	UINT_32 *confRegBaseAddr; /* the connsys/ap remap configure CR base */
 #if (CONF_HIF_LOOPBACK_AUTO == 1)
 	struct timer_list HifTmrLoopbkFn;	/* HIF loopback test trigger timer */
 	wait_queue_head_t HifWaitq;
@@ -203,6 +203,9 @@ typedef struct _GL_HIF_INFO_T {
 #if defined(MT6797)
 #define HIF_DRV_BASE                0x180F0000
 #define HIF_DRV_LENGTH				0x1100
+#define DYNAMIC_REMAP_CONF_BASE		0x10001340
+#define DYNAMIC_REMAP_CONF_LENGTH	0x4
+#define DYNAMIC_REMAP_BASE			0x180E0000
 #else
 #define HIF_DRV_BASE                0x180F0000
 #define HIF_DRV_LENGTH				0x005c
@@ -297,6 +300,11 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 	    sdio_writel(_val, ((volatile UINT_32 *)((_hif)->DmaRegBaseAddr + _addr)))
 #endif
 
+#define CONNSYS_REG_READ(base_addr, offset) \
+		readl((PUINT_32)((PUINT_8)base_addr + offset))
+#define CONNSYS_REG_WRITE(base_addr, offset, _val) \
+			writel(_val, (PUINT_32)((PUINT_8)base_addr + offset))
+
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -335,6 +343,8 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie);
 VOID glSetPowerState(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 ePowerMode);
 
 VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo);
+PUINT_8 glRemapConnsysAddr(P_GLUE_INFO_T prGlueInfo, UINT_32 consysAddr, UINT_32 remapLength);
+VOID glUnmapConnsysAddr(P_GLUE_INFO_T prGlueInfo, PUINT_8 remapAddr, UINT_32 consysAddr);
 
 #endif /* MODULE_AHB_DMA */
 

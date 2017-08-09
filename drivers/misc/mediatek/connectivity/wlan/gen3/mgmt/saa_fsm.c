@@ -981,6 +981,10 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	ASSERT(prSwRfb);
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+	if (!prStaRec) {
+		nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+		prStaRec = prSwRfb->prStaRec;
+	}
 
 	/* We should have the corresponding Sta Record. */
 	if (!prStaRec)
@@ -1094,6 +1098,10 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 	ASSERT(prSwRfb);
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+	if (!prStaRec) {
+		nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+		prStaRec = prSwRfb->prStaRec;
+	}
 
 	/* We should have the corresponding Sta Record. */
 	if (!prStaRec) {
@@ -1182,6 +1190,10 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	prSwRfb->ucStaRecIdx);
 
 	do {
+		if (!prStaRec) {
+			nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+			prStaRec = prSwRfb->prStaRec;
+		}
 
 		/* We should have the corresponding Sta Record. */
 		if (!prStaRec)
@@ -1362,6 +1374,10 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 		prDisassocFrame->u2ReasonCode);
 
 	do {
+		if (!prStaRec) {
+			nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+			prStaRec = prSwRfb->prStaRec;
+		}
 
 		/* We should have the corresponding Sta Record. */
 		if (!prStaRec)

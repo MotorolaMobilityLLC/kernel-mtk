@@ -1322,6 +1322,9 @@ BOOL
 kalDevPortWrite(P_GLUE_INFO_T prGlueInfo,
 		IN UINT_16 u2Port, IN UINT_32 u2Len, IN PUINT_8 pucBuf, IN UINT_32 u2ValidInBufSize);
 
+/* dump WTBL settings in HW */
+VOID kalDumpWTBL(P_ADAPTER_T prAdapter);
+
 BOOL kalDevWriteWithSdioCmd52(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Addr, IN UINT_8 ucData);
 
 #if CFG_SUPPORT_EXT_CONFIG

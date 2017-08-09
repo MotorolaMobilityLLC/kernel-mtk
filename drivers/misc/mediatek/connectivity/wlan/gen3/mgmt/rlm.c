@@ -2600,6 +2600,11 @@ VOID rlmProcessSpecMgtAction(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 	pucIE = prRxFrame->aucInfoElem;
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+	if (!prStaRec)
+		nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+	if (!prSwRfb->prStaRec)
+		return;
+	prStaRec = prSwRfb->prStaRec;
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prStaRec->ucBssIndex);
 
 	DBGLOG_MEM8(RLM, INFO, pucIE, u2IELength);

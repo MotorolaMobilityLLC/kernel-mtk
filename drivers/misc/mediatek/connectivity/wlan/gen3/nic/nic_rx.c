@@ -4239,6 +4239,9 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			u4RxAggCount = 0;
 
 			for (i = 0; i < u2RxPktNum; i++) {
+				PUINT_8 pucZeroArray = NULL;
+
+restart:
 				u4RxLength = (rxNum == 0 ?
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
@@ -4252,24 +4255,52 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 					if (u4RxAggCount < u4CurrAvailFreeRfbCnt) {
 						u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
 						u4RxAggCount++;
-					} else {
-						/* no FreeSwRfb for rx packet */
-						DBGLOG(RX, ERROR,
-						       "[%s] RxAggCount(%d) is greater than AvailableFreeCount(%d)\n",
-						       __func__, u4RxAggCount, u4CurrAvailFreeRfbCnt);
-
-						ASSERT(0);
-						break;
+						continue;
 					}
-				} else {
-					/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
+					/* no FreeSwRfb for rx packet */
 					DBGLOG(RX, ERROR,
-					       "[%s] Request_len(%d) is greater than Available_len(%d)\n",
-					       __func__,
-					       (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
+					       "[%s] RxAggCount(%d) is greater than AvailableFreeCount(%d)\n",
+					       __func__, u4RxAggCount, u4CurrAvailFreeRfbCnt);
 					ASSERT(0);
 					break;
 				}
+
+				/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
+				DBGLOG(RX, ERROR,
+				       "[%s] Request_len(%d) is greater than Available_len(%d)\n",
+				       __func__,
+				       (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
+				u4RxLength += (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
+				pucZeroArray = kalMemAlloc(1000, VIR_MEM_TYPE);
+				if (!pucZeroArray)
+					break;
+				kalMemZero(pucZeroArray, 1000);
+				HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
+						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
+				/* dump RXD if total u4RxLength is greater than u4RxAvailAggLen */
+				DBGLOG(RX, ERROR,
+					"RXD for the wrong packet is\n");
+				DBGLOG_MEM32(RX, ERROR, prRxCtrl->pucRxCoalescingBufPtr+
+					(CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen),
+					sizeof(HW_MAC_RX_DESC_T));
+				u4RxLength -= CFG_RX_COALESCING_BUFFER_SIZE;
+				/* we should read out all pending data, otherwise,
+					DE said the port will be in abnormal case */
+				while (CFG_RX_COALESCING_BUFFER_SIZE < u4RxLength) {
+					HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
+						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
+					/* if continuous 1000 bytes were zeros, means there's no data in this port */
+					if (!kalMemCmp(pucZeroArray, prRxCtrl->pucRxCoalescingBufPtr, 1000)) {
+						kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
+						goto restart;
+					}
+				}
+				if (u4RxLength > 0) {
+					HAL_READ_RX_PORT(prAdapter, rxNum, ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN),
+							prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
+				}
+				kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
+				goto restart;
 			}
 
 			u4RxAggLength = (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
@@ -4298,8 +4329,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
 					       CFG_RX_MAX_PKT_SIZE);
 					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
-					DBGLOG_MEM32(RX, ERROR, pucSrcAddr,
-						     ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+					DBGLOG_MEM32(RX, ERROR, pucSrcAddr, sizeof(HW_MAC_RX_DESC_T));
 
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
@@ -4849,6 +4879,8 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		fgRobustAction = TRUE;
 	}
 	/* DBGLOG(RSN, TRACE, ("[Rx] fgRobustAction=%d\n", fgRobustAction)); */
+	if (!prSwRfb->prStaRec)
+		nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
 
 	if (fgRobustAction && prSwRfb->prStaRec &&
 	    GET_BSS_INFO_BY_INDEX(prAdapter, prSwRfb->prStaRec->ucBssIndex)->eNetworkType == NETWORK_TYPE_AIS) {
@@ -4952,4 +4984,24 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 	}			/* end of switch case */
 
 	return WLAN_STATUS_SUCCESS;
+}
+
+VOID nicRxMgmtNoWTBLHandling(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
+{
+	/* WTBL error handling. if no WTBL */
+	P_WLAN_MAC_MGMT_HEADER_T prMgmtHdr = (P_WLAN_MAC_MGMT_HEADER_T)prSwRfb->pvHeader;
+
+	prSwRfb->ucStaRecIdx = secLookupStaRecIndexFromTA(prAdapter, prMgmtHdr->aucSrcAddr);
+	if (prSwRfb->ucStaRecIdx >= CFG_NUM_OF_STA_RECORD)
+		return;
+	prSwRfb->prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+
+	if (prSwRfb->prStaRec) {
+		prSwRfb->ucWlanIdx = prSwRfb->prStaRec->ucWlanIndex;
+		DBGLOG(RX, INFO, "current wlan index is %d, dump all used wtbl entry\n");
+	} else
+		DBGLOG(RX, INFO, "not find station record base on TA, dump all used wtbl entry\n");
+#ifdef MT6797
+	kalDumpWTBL(prAdapter);
+#endif
 }

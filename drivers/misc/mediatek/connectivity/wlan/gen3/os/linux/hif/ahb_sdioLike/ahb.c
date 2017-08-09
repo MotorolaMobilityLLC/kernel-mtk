@@ -445,6 +445,9 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 
 	HifInfo->HifRegBaseAddr = ioremap(HIF_DRV_BASE, HIF_DRV_LENGTH);
 	HifInfo->McuRegBaseAddr = ioremap(CONN_MCU_DRV_BASE, CONN_MCU_REG_LENGTH);
+#if defined(MT6797)
+	HifInfo->confRegBaseAddr = ioremap(DYNAMIC_REMAP_CONF_BASE, DYNAMIC_REMAP_CONF_LENGTH);
+#endif
 	g_pHifRegBaseAddr = &(HifInfo->HifRegBaseAddr);
 
 	DBGLOG(INIT, INFO, "[WiFi/HIF]HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
@@ -533,6 +536,9 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	iounmap(GlueInfo->rHifInfo.HifRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.DmaRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
+#ifdef MT6797
+	iounmap(GlueInfo->rHifInfo.confRegBaseAddr);
+#endif
 	return;
 
 }				/* end of glClearHifInfo() */
@@ -1795,4 +1801,40 @@ VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo)
 	}
 }
 
+PUINT_8 glRemapConnsysAddr(P_GLUE_INFO_T prGlueInfo, UINT_32 consysAddr, UINT_32 remapLength)
+{
+	/* 0x180E0000 is the customized address and can be remaped to any connsys address */
+	PUINT_8 pucRemapCrAddr = NULL;
+	GL_HIF_INFO_T *hifInfo = &prGlueInfo->rHifInfo;
+	UINT_32 u4ConfCrValue = 0;
+
+	u4ConfCrValue = readl(hifInfo->confRegBaseAddr);
+	if ((u4ConfCrValue & 0xFFFF0000) != 0x180E0000) {
+		DBGLOG(RX, ERROR, "remap CR is used by others, value is %u\n", u4ConfCrValue);
+		return NULL;
+	}
+	u4ConfCrValue &= 0xFFFF; /* don't touch low 16 bits, since it is used by others */
+	u4ConfCrValue |= consysAddr; /* the start address in connsys side */
+	writel(u4ConfCrValue, hifInfo->confRegBaseAddr);
+	pucRemapCrAddr = ioremap(DYNAMIC_REMAP_BASE, remapLength);
+	return pucRemapCrAddr;
+}
+
+VOID glUnmapConnsysAddr(P_GLUE_INFO_T prGlueInfo, PUINT_8 remapAddr, UINT_32 consysAddr)
+{
+	UINT_32 u4ConfCrValue = 0;
+	GL_HIF_INFO_T *hifInfo = &prGlueInfo->rHifInfo;
+
+	iounmap(remapAddr);
+	u4ConfCrValue = readl(hifInfo->confRegBaseAddr);
+	if ((u4ConfCrValue & 0xFFFF0000) != consysAddr) {
+		DBGLOG(RX, ERROR,
+			"remap configure CR is changed during we are using! new value is %u\n",
+			u4ConfCrValue);
+		return;
+	}
+	u4ConfCrValue &= 0xFFFF;
+	u4ConfCrValue |= DYNAMIC_REMAP_BASE;
+	writel(u4ConfCrValue, hifInfo->confRegBaseAddr);
+}
 /* End of ahb.c */

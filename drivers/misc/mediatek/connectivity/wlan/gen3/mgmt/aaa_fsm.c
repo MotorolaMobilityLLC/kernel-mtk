@@ -533,8 +533,12 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		/* 4 <1> Check if we have the STA_RECORD_T for incoming Assoc Req */
 		prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
 
+		if (!prStaRec) {
+			nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
+			prStaRec = prSwRfb->prStaRec;
+		}
 		/* We should have the corresponding Sta Record. */
-		if ((!prStaRec) || (!prStaRec->fgIsInUse)) {
+		if (!prStaRec || !prStaRec->fgIsInUse) {
 			/* Not to reply association response with failure code due to lack of STA_REC */
 			break;
 		}

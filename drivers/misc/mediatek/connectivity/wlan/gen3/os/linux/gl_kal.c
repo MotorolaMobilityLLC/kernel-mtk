@@ -5471,3 +5471,27 @@ BOOLEAN kalIsHalted(VOID)
 {
 	return rHaltCtrl.fgHalt;
 }
+#ifdef MT6797
+VOID kalDumpWTBL(P_ADAPTER_T prAdapter)
+{
+	UINT_8 i = 0;
+	UINT_32 au4WTBL[4] = {0,};
+	P_WLAN_TABLE_T prWtbl = prAdapter->rWifiVar.arWtbl;
+	PUINT_8 pucWtblBaseAddr = NULL;
+
+	pucWtblBaseAddr = glRemapConnsysAddr(prAdapter->prGlueInfo, 0x60320000, 1024);
+	if (!pucWtblBaseAddr)
+		return;
+
+	for (i = 0; i < WTBL_SIZE; i++)
+		if (prWtbl[i].ucUsed) {
+			au4WTBL[0] = CONNSYS_REG_READ(pucWtblBaseAddr, i*0x20);
+			au4WTBL[1] = CONNSYS_REG_READ(pucWtblBaseAddr, i*0x20+4);
+			au4WTBL[2] = CONNSYS_REG_READ(pucWtblBaseAddr, i*0x20+8);
+			au4WTBL[3] = CONNSYS_REG_READ(pucWtblBaseAddr, i*0x20+12);
+			DBGLOG(RX, ERROR, "content of wlan index %d:0x%08x%08x%08x%08x\n",
+				i, au4WTBL[0], au4WTBL[1], au4WTBL[2], au4WTBL[3]);
+		}
+	glUnmapConnsysAddr(prAdapter->prGlueInfo, pucWtblBaseAddr, 0x60320000);
+}
+#endif
