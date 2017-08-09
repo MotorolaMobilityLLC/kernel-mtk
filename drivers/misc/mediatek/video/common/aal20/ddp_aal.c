@@ -243,6 +243,7 @@ static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	memcpy(&g_aal_hist_db, &g_aal_hist, sizeof(DISP_AAL_HIST));
 	g_aal_hist.serviceFlags = 0;
+	g_aal_hist.colorHist = DISP_REG_GET(DISP_COLOR_TWO_D_W1_RESULT);
 	g_aal_hist_available = 0;
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 

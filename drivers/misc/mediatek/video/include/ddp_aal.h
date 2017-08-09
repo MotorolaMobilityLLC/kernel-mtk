@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
 	unsigned int serviceFlags;
 	int backlight;
+	int colorHist;
 	unsigned int maxHist[AAL_HIST_BIN];
 } DISP_AAL_HIST;
 
