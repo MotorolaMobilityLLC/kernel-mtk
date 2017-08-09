@@ -614,7 +614,7 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (0 == strncmp(opt, "regw:", 5)) {
 		unsigned long addr = 0;
-		unsigned int val = 0;
+		unsigned long val = 0;
 
 		p = (char *)opt + 5;
 		ret = kstrtoul(p, 16, (unsigned long int *)&addr);
@@ -630,8 +630,8 @@ static void process_dbg_opt(const char *opt)
 
 			DISP_CPU_REG_SET(addr, val);
 			regVal = DISP_REG_GET(addr);
-			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
-			sprintf(buf, "regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
+			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n", addr, (int) val, regVal);
+			sprintf(buf, "regw: 0x%lx, 0x%08X = 0x%08X\n", addr, (int) val, regVal);
 		} else {
 			sprintf(buf, "regw, invalid address 0x%lx\n", addr);
 			goto Error;
@@ -754,7 +754,7 @@ static void process_dbg_opt(const char *opt)
 		sprintf(buf, "met_on:%d,rdma0_mode:%d,rdma1_mode:%d\n",
 			(unsigned int)met_on, rdma0_mode, rdma1_mode);
 	} else if (0 == strncmp(opt, "backlight:", 10)) {
-		unsigned int level = 0;
+		unsigned long level = 0;
 
 		p = (char *)opt + 10;
 		ret = kstrtoul(p, 10, (unsigned long int *)&level);
@@ -763,7 +763,7 @@ static void process_dbg_opt(const char *opt)
 
 		if (level) {
 			disp_bls_set_backlight(level);
-			sprintf(buf, "backlight: %d\n", level);
+			sprintf(buf, "backlight: %d\n", (int) level);
 		} else {
 			goto Error;
 		}
