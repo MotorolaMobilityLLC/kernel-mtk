@@ -412,6 +412,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_init_event_vector(pcmdesc);
 
+	__spm_check_md_pdn_power_control(pwrctrl);
+
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
 	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {

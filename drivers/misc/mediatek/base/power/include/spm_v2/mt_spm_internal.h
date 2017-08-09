@@ -430,20 +430,10 @@ static inline u32 base_va_to_pa(const u32 *base)
 
 static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 {
-	u32 md_infra_pwr = 0;
-
 	if (pwrctrl->pcm_flags_cust == 0)
 		pwrctrl->pcm_flags = flags;
 	else
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
-
-	md_infra_pwr = spm_read(MDSYS_INTF_INFRA_PWR_CON);
-	if (md_infra_pwr == 0x12)
-		pwrctrl->pcm_flags &= ~(1 << 7);
-	else if (md_infra_pwr == 0xd)
-		pwrctrl->pcm_flags |= (1 << 7);
-	else
-		BUG();
 }
 
 static inline void set_pwrctrl_pcm_data(struct pwr_ctrl *pwrctrl, u32 data)
