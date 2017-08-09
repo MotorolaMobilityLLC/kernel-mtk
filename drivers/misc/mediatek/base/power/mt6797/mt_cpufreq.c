@@ -161,6 +161,10 @@ static u32 enable_cpuhvfs = 2;
 #else
 static u32 enable_cpuhvfs = 1;
 #endif
+
+#ifdef CPUHVFS_HW_GOVERNOR
+static u32 enable_hw_gov = 1;
+#endif
 #endif
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -3562,9 +3566,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
 	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_record_cpu_dvfs_cb(1);
-#endif
 
 	cluster_id = arch_get_cluster_id(cpu);
 	arch_get_cluster_cpus(&dvfs_cpumask, cluster_id);
@@ -3601,9 +3603,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 		}
 	}
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_record_cpu_dvfs_cb(2);
-#endif
 
 	if (dev) {
 		switch (action & ~CPU_TASKS_FROZEN) {
@@ -3611,17 +3611,19 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_ONLINE -> cpus = %d\n", cpus);
 			if (cpus == 1) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 				aee_record_cpu_dvfs_cb(3);
-#endif
+
 				cpufreq_ver("CPU_ONLINE first CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				p->armpll_is_available = 1;
-				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_ONLINE)) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-					aee_record_cpu_dvfs_cb(4);
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+				if (enable_cpuhvfs && enable_hw_gov)
+					goto UNLOCK_OL;
 #endif
+				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_ONLINE)) {
+					aee_record_cpu_dvfs_cb(4);
+
 					new_opp_idx = BOOST_B_FREQ_IDX;
 					/* Get cci opp idx */
 					new_cci_opp_idx = _calc_new_cci_opp_idx(p, new_opp_idx);
@@ -3639,16 +3641,13 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+
 					aee_record_freq_idx(p, p->idx_opp_tbl);
 					aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
-#endif
 				} else {
-#if 1
 					if (action == CPU_ONLINE) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 						aee_record_cpu_dvfs_cb(5);
-#endif
+
 						cur_volt = p->ops->get_cur_volt(p);
 						cpufreq_ver("CB - adjust the freq to V:%d  due to L/LL on\n", cur_volt);
 						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
@@ -3657,8 +3656,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
 #endif
 					}
-#endif
 				}
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+UNLOCK_OL:
+#endif
 				cpufreq_unlock(flags);
 			}
 			break;
@@ -3666,16 +3667,13 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_DOWN_PREPARE -> cpus = %d\n", cpus);
 			if (cpus == 1) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 				aee_record_cpu_dvfs_cb(6);
-#endif
+
 				cpufreq_ver("CPU_DOWN_PREPARE last CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 					aee_record_cpu_dvfs_cb(7);
-#endif
 
 #ifdef CONFIG_CPU_FREQ
 					_cpufreq_dfs_locked(p->mt_policy, p, p->nr_opp_tbl - 1, action);
@@ -3689,18 +3687,14 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
 							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
-#endif
-
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					}
 #endif
 				} else {
 					if (disable_idvfs_flag) {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 						aee_record_cpu_dvfs_cb(8);
-#endif
+
 						new_opp_idx = DEFAULT_B_FREQ_IDX;
 						/* Get cci opp idx */
 						new_cci_opp_idx = _calc_new_cci_opp_idx(p, new_opp_idx);
@@ -3718,28 +3712,22 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+
 						aee_record_freq_idx(p, p->idx_opp_tbl);
 						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
-#endif
 					} else {
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 						aee_record_cpu_dvfs_cb(9);
-#endif
+
 						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 						aee_record_freq_idx(p, p->idx_opp_tbl);
-#endif
 					}
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-						aee_record_cpu_dvfs_cb(10);
-#endif
+
+					aee_record_cpu_dvfs_cb(10);
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
 						cpuhvfs_notify_cluster_off(cpu_dvfs_to_cluster(p));
 #endif
-
 #if 0
 					if (!disable_idvfs_flag)
 						BigiDVFSDisable_hp();
@@ -3747,9 +3735,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				}
 				p->armpll_is_available = 0;
 				cpufreq_unlock(flags);
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+
 				aee_record_cpu_dvfs_cb(11);
-#endif
 			}
 			break;
 		case CPU_DOWN_FAILED:
@@ -3758,6 +3745,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			if (cpus == 1) {
 				cpufreq_lock(flags);
 				p->armpll_is_available = 1;
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+				if (enable_cpuhvfs && enable_hw_gov)
+					goto UNLOCK_DF;
+#endif
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DOWN_FAILED)) {
 					new_opp_idx = BOOST_B_FREQ_IDX;
 					/* Get cci opp idx */
@@ -3777,12 +3768,9 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 					aee_record_freq_idx(p, p->idx_opp_tbl);
 					aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
-#endif
 				} else {
-#if 1
 					if (action == CPU_DOWN_FAILED) {
 						cur_volt = p->ops->get_cur_volt(p);
 						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
@@ -3791,8 +3779,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
 #endif
 					}
-#endif
 				}
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+UNLOCK_DF:
+#endif
 				cpufreq_unlock(flags);
 			}
 			break;
@@ -3802,6 +3792,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			cpufreq_ver("CPU_DEAD -> cpus = %d\n", cpus);
 			if (cpus == 0) {
 				cpufreq_lock(flags);
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+				if (enable_cpuhvfs && enable_hw_gov)
+					goto UNLOCK_DD;
+#endif
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DEAD)) {
 					if (p_ll->armpll_is_available) {
 						cur_volt = p_cci->ops->get_cur_volt(p_cci);
@@ -3822,14 +3816,15 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 					}
 				}
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+UNLOCK_DD:
+#endif
 				cpufreq_unlock(flags);
 			}
 #endif
 		}
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 		aee_record_cpu_dvfs_cb(12);
-#endif
 
 #ifndef DISABLE_PBM_FEATURE
 		/* Notify PBM after CPU on/off */
@@ -3838,9 +3833,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 
 			cpufreq_lock(flags);
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 			aee_record_cpu_dvfs_cb(13);
-#endif
+
 			if (!p->dvfs_disable_by_suspend)
 				_kick_PBM_by_cpu(p);
 
@@ -3855,9 +3849,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	cpufreq_ver("@%s():%d, cpu = %d, action = %lu, oppidx = %d, num_online_cpus = %d\n"
 	, __func__, __LINE__, cpu, action, p->idx_opp_tbl, online_cpus);
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_record_cpu_dvfs_cb(0);
-#endif
+
 	return NOTIFY_OK;
 }
 
