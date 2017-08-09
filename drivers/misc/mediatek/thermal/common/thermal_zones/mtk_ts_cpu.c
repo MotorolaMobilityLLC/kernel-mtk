@@ -1867,6 +1867,42 @@ static const struct file_operations mtktscpu_fastpoll_fops = {
 };
 #endif
 
+static int tscpu_read_ttpct(struct seq_file *m, void *v)
+{
+	unsigned int cpu_power, gpu_power;
+
+	cpu_power = apthermolmt_get_cpu_power_limit();
+	gpu_power = apthermolmt_get_gpu_power_limit();
+
+	cpu_power = ((cpu_power != 0x7FFFFFFF) ? cpu_power : 0);
+	gpu_power = ((gpu_power != 0x7FFFFFFF) ? gpu_power : 0);
+
+#ifdef ATM_USES_PPM
+	cpu_power = cpu_power*100/(mt_ppm_thermal_get_max_power() + 1);
+#else
+	cpu_power = 0;
+#endif
+	gpu_power = gpu_power*100/(mt_gpufreq_get_max_power() + 1);
+
+	seq_printf(m, "%d,%d\n", cpu_power, gpu_power);
+
+	return 0;
+}
+
+static int tscpu_ttpct_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, tscpu_read_ttpct, NULL);
+}
+
+static const struct file_operations mtktscpu_ttpct_fops = {
+	.owner = THIS_MODULE,
+	.open = tscpu_ttpct_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+
 #if THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET
 int tscpu_get_cpu_temp_met(MTK_THERMAL_SENSOR_CPU_ID_MET id)
 {
@@ -2272,6 +2308,8 @@ static void tscpu_create_fs(void)
 		    proc_create("tzcpu_log", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_log_fops);
 
 		entry = proc_create("thermlmt", S_IRUGO, NULL, &mtktscpu_opp_fops);
+
+		entry = proc_create("ttpct", S_IRUGO, NULL, &mtktscpu_ttpct_fops);
 
 		entry = proc_create("tzcpu_cal", S_IRUSR, mtktscpu_dir, &mtktscpu_cal_fops);
 
