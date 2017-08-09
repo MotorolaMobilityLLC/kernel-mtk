@@ -557,7 +557,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 #else
 	/*switch to USB function. (system register, force ip into usb mode) */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
@@ -584,7 +584,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 	/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
 #endif
@@ -1016,7 +1016,7 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
 			  RG_USB20_OTG_VBUSCMP_EN, 1);
 	/*Pass RX sensitivity HQA requirement */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x6);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(MTK_USB_MODE1)
 	os_printk(K_INFO, "%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
@@ -1025,8 +1025,8 @@ void usb_phy_recover(unsigned int clk_on)
 #else
 	/*Change 100uA current switch to SSUSB */
 	/* RG_USB20_HS_100U_U3_EN        1'b1 */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
-			  RG_USB20_HS_100U_U3_EN, 1);
+	/*U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
+			  RG_USB20_HS_100U_U3_EN, 1);*/
 #endif
 
 	/*
@@ -1066,6 +1066,13 @@ void usb_phy_recover(unsigned int clk_on)
 		usb_phy_switch_to_uart();
 	}
 #endif
+	if (get_devinfo_with_index(9) & 0x1F) {
+		os_printk(K_INFO, "USB HW reg: index9=0x%x\n", get_devinfo_with_index(9));
+		/*PORT0 11290804[23:19]*/
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL,  RG_USB20_INTR_CAL,
+			get_devinfo_with_index(9) & (0x1F));
+	}
+
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
 

@@ -3175,7 +3175,7 @@ void usb_phy_savecurrent(unsigned int clk_on);
 void usb_phy_recover(unsigned int clk_on);
 void usb_fake_powerdown(unsigned int clk_on);
 void usb20_pll_settings(bool host, bool forceOn);
-
+extern u32 get_devinfo_with_index(u32 index);
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 extern void usb_phy_sib_enable_switch(bool enable);
 extern bool usb_phy_sib_enable_switch_status(void);
