@@ -3312,6 +3312,10 @@
 		status = "disabled";
 	};
 
+	usb_typec: usb_typec {
+		compatible = "mediatek, usb_typec-eint";
+		status = "disabled";
+	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";
