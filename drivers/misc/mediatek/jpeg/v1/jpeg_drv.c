@@ -268,9 +268,9 @@ void jpeg_drv_enc_power_off(void)
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
 	#ifdef MTK_CHIP_MT7623
-		mtk_smi_larb_clock_on(2, true);
+		mtk_smi_larb_clock_off(2, true);
 	#else
-		mtk_smi_larb_clock_on(3, true);
+		mtk_smi_larb_clock_off(3, true);
 	#endif
 #else
 #ifndef FPGA_VERSION
