@@ -429,22 +429,30 @@ static const struct file_operations rcutorture_fops = {
 #ifdef RCU_MONITOR
 static struct rcu_callback_log rcu_callback_log_head;
 static struct rcu_invoke_log rcu_invoke_callback_log;
+static DEFINE_SPINLOCK(rcu_callback_log_lock);
+
 
 struct rcu_callback_log_entry *rcu_callback_log_add(void)
 {
 	struct rcu_callback_log *log = &rcu_callback_log_head;
 	struct rcu_callback_log_entry *e;
+	unsigned long irq_flags;
 
 	if (log->entry == NULL)
 		return NULL;
 
+	spin_lock_irqsave(&rcu_callback_log_lock, irq_flags);
 	e = &log->entry[log->next];
+	spin_unlock_irqrestore(&rcu_callback_log_lock, irq_flags);
+
 	memset(e, 0, sizeof(*e));
+	spin_lock_irqsave(&rcu_callback_log_lock, irq_flags);
 	log->next++;
 	if (log->next == log->size) {
 		log->next = 0;
 		log->full = 1;
 	}
+	spin_unlock_irqrestore(&rcu_callback_log_lock, irq_flags);
 	return e;
 }
 
