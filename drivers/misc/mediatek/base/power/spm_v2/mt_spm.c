@@ -571,7 +571,11 @@ int spm_module_init(void)
 		/* aee_kernel_warning("SPM Warring", "dram golden setting mismach"); */
 	}
 #endif
+
+#if defined(CONFIG_ARCH_MT6755)
 	spm_set_dummy_read_addr();
+#endif
+
 #if defined(CONFIG_ARCH_MT6755)
 	/* debug code */
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
