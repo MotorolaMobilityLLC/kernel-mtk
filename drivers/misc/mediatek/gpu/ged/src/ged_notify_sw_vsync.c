@@ -51,20 +51,57 @@ typedef struct GED_NOTIFY_SW_SYNC_TAG
 	unsigned long ul3DFenceDoneTime;
 } GED_NOTIFY_SW_SYNC;
 
-
+extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
+int (*ged_sw_vsync_event_fp)(bool bMode) = NULL;
+EXPORT_SYMBOL(ged_sw_vsync_event_fp);
+static struct mutex gsVsyncModeLock;
+static int ged_sw_vsync_event(bool bMode)
+{
+	static bool bCurMode = false;
+	int ret;
+	
+	ret = -1;
+	mutex_lock(&gsVsyncModeLock);
+	
+	if(bCurMode!=bMode)
+	{
+		bCurMode = bMode;
+		if(ged_sw_vsync_event_fp)
+		{
+			ret = ged_sw_vsync_event_fp(bMode);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] ALL mode change to %d ",bCurMode);
+		}
+		else
+		{
+			ret =  -1;
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] LOCAL mode change to %d ",bCurMode);
+		}		
+	}
+	else
+	{
+		ret = 0;
+	}	
+	
+	mutex_unlock(&gsVsyncModeLock);
+	
+	return ret;
+}
 
 static void ged_notify_sw_sync_work_handle(struct work_struct *psWork)
 {
 	GED_NOTIFY_SW_SYNC* psNotify = GED_CONTAINER_OF(psWork, GED_NOTIFY_SW_SYNC, sWork);
 	if (psNotify)
 	{
+		ged_sw_vsync_event(false); // if this callback is queued, send mode off to real driver
+#ifdef ENABLE_TIMER_BACKUP		
 		ged_dvfs_run(psNotify->t, psNotify->phase, psNotify->ul3DFenceDoneTime);
+#endif		
 		ged_free(psNotify, sizeof(GED_NOTIFY_SW_SYNC));
 	}
 }
 
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
-extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
+
 
 static unsigned long long sw_vsync_ts;
 #ifdef ENABLE_COMMON_DVFS	
@@ -77,17 +114,9 @@ static unsigned long long g_timer_on_ts=0;
 
 static bool g_bGPUClock = false;
 
-int (*ged_sw_vsync_event_fp)(int msCount) = NULL;
-EXPORT_SYMBOL(ged_sw_vsync_event_fp);
 
-static int ged_sw_vsync_event(int msCount)
-{
-	if(ged_sw_vsync_event_fp)
-	{
-		return ged_sw_vsync_event_fp(msCount);
-	}
-	return -1;
-}
+
+
 
 /*
  * void timer_switch(bool bTock)
@@ -136,10 +165,11 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	unsigned long t;
 	long phase = 0;
 
-	ged_sw_vsync_event(20);
+	ged_sw_vsync_event(true);
 	temp = ged_get_time();
 
-	if(g_gpu_timer_based_emu)
+	
+	if(g_gpu_timer_based_emu) 
 	{
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Vsync ignored (ts=%llu)", temp);
 		return GED_INTENTIONAL_BLOCK;
@@ -237,8 +267,27 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	psNotify->phase = phase;
 	psNotify->ul3DFenceDoneTime = ged_monitor_3D_fence_done_time();
 	queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
-#endif /// #if 0
-ged_sw_vsync_event(20);
+#endif /// #ifdef ENABLE_COMMON_DVFS
+	unsigned long long temp;
+	temp = ged_get_time();
+	ged_sw_vsync_event(true);
+	
+		/*if no timer-backup need to start timer for event notify to real driver*/
+#ifndef ENABLE_TIMER_BACKUP				
+		if(hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL)) // timer not start
+		{
+			hrtimer_try_to_cancel ( &g_HT_hwvsync_emu );
+			hrtimer_restart(&g_HT_hwvsync_emu);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer Restart (ts=%llu)", temp);
+		}
+		else // timer active
+		{
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] New Timer Start (ts=%llu)", temp);
+			timer_switch_locked(true);
+		}				
+
+#endif			///	#ifdef ENABLE_TIMER_BACKUP		
+	return GED_INTENTIONAL_BLOCK; // not to do further operations
 #endif
 
 	return GED_OK;
@@ -258,8 +307,12 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 	if(llDiff > GED_VSYNC_MISS_QUANTUM_NS)
 	{
 		psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
-
+		
+#ifndef ENABLE_TIMER_BACKUP		
+		mtk_get_gpu_loading(&gpu_loading);
+#endif
 		if(false==g_bGPUClock && 0==gpu_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
+			
 		{
 			if (psNotify)
 			{
@@ -287,12 +340,27 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 	return HRTIMER_NORESTART;
 }
 
+
+enum hrtimer_restart ged_swvsync_alarm_cb( struct hrtimer *timer )
+{
+	GED_NOTIFY_SW_SYNC* psNotify;
+	psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
+	if (psNotify)
+	{
+		INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
+		psNotify->t = 0;
+		psNotify->phase = GED_DVFS_FALLBACK;
+		psNotify->ul3DFenceDoneTime = 0;
+		queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
+		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Alarm kick");
+	}	
+	return HRTIMER_NORESTART;
+}
+
 bool ged_gpu_power_on_notified = 0;
 bool ged_gpu_power_off_notified = 0;
 void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 {
-#ifdef ENABLE_COMMON_DVFS
-#ifdef ENABLE_TIMER_BACKUP
 
 	if(bSwitch)
 	{				
@@ -315,8 +383,7 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 		ged_gpu_power_off_notified = true;
 		g_bGPUClock = false;
 	}
-#endif
-#endif						 
+						 
 }
 EXPORT_SYMBOL(ged_dvfs_gpu_clock_switch_notify);
 
@@ -333,9 +400,9 @@ EXPORT_SYMBOL(ged_dvfs_gpu_clock_switch_notify);
  */
 void ged_sodi_start(void)
 {
-#ifdef ENABLE_COMMON_DVFS	
+
 	hrtimer_try_to_cancel(&g_HT_hwvsync_emu); 
-#endif		 
+
 }
 
 
@@ -344,7 +411,7 @@ void ged_sodi_start(void)
  */
 void ged_sodi_stop(void)
 {
-#ifdef ENABLE_COMMON_DVFS	
+
 	unsigned long long ns_cur_time;
 	unsigned long long ns_timer_remains;
 	if(g_timer_on)
@@ -375,7 +442,7 @@ void ged_sodi_stop(void)
 			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(ns_timer_remains), HRTIMER_MODE_REL);						
 		}				
 	}
-#endif		 
+
 }
 
 
@@ -388,18 +455,13 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
 		return GED_ERROR_OOM;
 	}
 	mutex_init(&gsVsyncStampLock);
-
-#ifdef ENABLE_COMMON_DVFS
-#ifdef ENABLE_TIMER_BACKUP
+	mutex_init(&gsVsyncModeLock);
+	
 	hrtimer_init(&g_HT_hwvsync_emu, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	g_HT_hwvsync_emu.function = ged_sw_vsync_check_cb;		
 
 	mtk_gpu_sodi_entry_fp= ged_sodi_start;
 	mtk_gpu_sodi_exit_fp= ged_sodi_stop;
-
-
-#endif
-#endif		 
 
 	return GED_OK;
 }
@@ -417,5 +479,6 @@ void ged_notify_sw_vsync_system_exit(void)
 #ifdef ENABLE_COMMON_DVFS			 
 	hrtimer_cancel( &g_HT_hwvsync_emu );
 #endif	
-	mutex_destroy(&gsVsyncStampLock);
+	mutex_destroy(&gsVsyncModeLock);
+	mutex_destroy(&gsVsyncStampLock);	
 }
