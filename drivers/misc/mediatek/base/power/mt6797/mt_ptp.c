@@ -3009,7 +3009,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	det->t250 = eem_read(TEMP);
 
 	if (((det->t250 & 0xff)  > 0x4b) && ((det->t250  & 0xff) < 0xd3)) {
-		eem_error("thermal sensor init has not been completed.(temp = 0x%X)\n", det->t250);
+		eem_error("Temperature to high, (%d) degree, EEM-1 stop to update voltage\n", det->t250 + 25);
 		goto out;
 	}
 
