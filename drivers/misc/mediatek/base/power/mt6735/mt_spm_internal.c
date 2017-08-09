@@ -15,6 +15,11 @@ void __weak aee_sram_printk(const char *fmt, ...)
 {
 }
 
+int __weak is_ext_buck_exist(void)
+{
+	return 0;
+}
+
 /*
  * Config and Parameter
  */
