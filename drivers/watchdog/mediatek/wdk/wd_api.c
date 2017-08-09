@@ -546,11 +546,9 @@ int get_wd_api(struct wd_api **obj)
 	*obj = &g_wd_api_obj;
 	if (NULL == *obj) {
 		res = -1;
-		/* printk("get_wd_public_interface_obj null pointer error\n"); */
 	}
 	if ((*obj)->ready == 0) {
 		res = -2;
-		/* printk("get_wd_public_api not ready\n"); */
 	}
 	return res;
 }
@@ -585,7 +583,7 @@ void arch_reset(char mode, const char *cmd)
 	}
 
 	if (res)
-		pr_notice("arch_reset, get wd api error %d\n", res);
+		pr_err("arch_reset, get wd api error %d\n", res);
 	else
 		wd_api->wd_sw_reset(reboot);
  #endif
