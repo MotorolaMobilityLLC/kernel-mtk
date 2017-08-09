@@ -1055,9 +1055,7 @@ int dispsys_hrt_calc(disp_layer_info *disp_info_user)
 	dump_disp_info(&disp_info_hrt);
 #endif
 
-	/*
-	Set corresponding hrt bound for 60HZ and 120HZ.
-	*/
+	/* Set corresponding hrt bound for 60HZ and 120HZ. */
 	primary_fps = set_hrt_bound();
 
 	/*
@@ -1073,11 +1071,14 @@ int dispsys_hrt_calc(disp_layer_info *disp_info_user)
 	*/
 	calc_hrt_num(&disp_info_hrt);
 
-	/*
-	Fill layer id for each input layers. All the gles layer set as same layer id.
-	*/
+	/* Fill layer id for each input layers. All the gles layer set as same layer id. */
 	ret = dispatch_ovl_id(&disp_info_hrt);
 	dump_disp_info(&disp_info_hrt);
+
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	/* Make hrt number with primary fps. */
+	disp_info_hrt.hrt_num = MAKE_HRT_NUM(primary_fps, disp_info_hrt.hrt_num);
+#endif
 
 	ret = copy_layer_info_to_user(disp_info_user);
 	return ret;

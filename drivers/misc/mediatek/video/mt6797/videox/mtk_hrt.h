@@ -21,6 +21,12 @@
 #define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
 #define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
 
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+#define HRT_LEVEL(id) ((id)&0xff)
+#define HRT_FPS(id) (((id)>>8)&0xff)
+#define MAKE_HRT_NUM(fps, level) (unsigned int)((fps)<<8 | (level))
+#endif
+
 /* #define HRT_DEBUG */
 
 int dispsys_hrt_calc(disp_layer_info *disp_info);

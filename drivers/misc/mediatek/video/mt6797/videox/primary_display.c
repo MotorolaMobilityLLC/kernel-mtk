@@ -205,6 +205,9 @@ typedef struct {
 
 	int is_primary_sec;
 	int primary_display_scenario;
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	int request_fps;
+#endif
 } display_primary_path_context;
 
 #define pgc	_get_context()
@@ -3408,6 +3411,7 @@ static void _primary_protect_mode_switch(void)
 		DISPCHECK("display warning:switch mode when hwc config\n");
 }
 
+static int request_lcm_refresh_rate_change(int fps);
 int primary_display_set_lcm_refresh_rate(int fps)
 {
 	int ret = 0;
@@ -3430,7 +3434,16 @@ int primary_display_set_lcm_refresh_rate(int fps)
 
 	/* TODO: Should skip while MHL connected */
 
-	ret = _display_set_lcm_refresh_rate(fps);
+	/*
+	Do not change to 120HZ here due to the last 60HZ frame update request, which ovl
+	layers has been dispatched by HRT cacualtion with 60HZ, has not been executed yet.
+	If the 60HZ frame request executed in 120HZ mode, the HRT may out of bound.
+	Switch to 120HZ mode when the first 120 frame update request coming.
+	*/
+	if (fps == 120)
+		ret = request_lcm_refresh_rate_change(fps);
+	else
+		ret = _display_set_lcm_refresh_rate(fps);
 	_primary_path_unlock(__func__);
 	return ret;
 }
@@ -3463,6 +3476,51 @@ static void _display_set_refresh_rate_post_proc(int fps)
 }
 #endif
 
+static int request_lcm_refresh_rate_change(int fps)
+{
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	static cmdqRecHandle cmdq_handle, cmdq_pre_handle;
+	int ret;
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPCHECK("Sleep State set lcm rate\n");
+		return -EPERM;
+	}
+
+	if (primary_display_get_lcm_max_refresh_rate() <= 60) {
+		DISPCHECK("not support set lcm rate!!\n");
+		return -EPERM;
+	}
+
+	if (fps == pgc->lcm_refresh_rate) {
+		pgc->request_fps = 0;
+		return 0;
+	}
+
+	if (cmdq_handle == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+		if (ret != 0) {
+			DISPCHECK("fail to create primary cmdq handle for adjust fps\n");
+			return -EINVAL;
+		}
+	}
+	if (cmdq_pre_handle == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_MEMOUT, &cmdq_pre_handle);
+		if (ret != 0) {
+			DISPCHECK("fail to create memout cmdq handle for adjust fps\n");
+			cmdqRecDestroy(cmdq_handle);
+			cmdq_handle = NULL;
+			return -EINVAL;
+		}
+	}
+	primary_display_idlemgr_kick(__func__, 0);
+
+	pgc->request_fps = fps;
+	pgc->lcm_refresh_rate = fps;
+#endif
+	return 0;
+}
+
 int _display_set_lcm_refresh_rate(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
@@ -3473,22 +3531,29 @@ int _display_set_lcm_refresh_rate(int fps)
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("Sleep State set lcm rate\n");
-		return -1;
+		return -EPERM;
 	}
 
 	if (primary_display_get_lcm_max_refresh_rate() <= 60) {
 		DISPCHECK("not support set lcm rate!!\n");
-		return 0;
+		return -EPERM;
 	}
 
-	if (fps == pgc->lcm_refresh_rate)
+	if (fps == pgc->lcm_refresh_rate && pgc->request_fps == 0)
 		return 0;
+
+	if (fps == 60 && pgc->request_fps == 120) {
+		pgc->lcm_refresh_rate = fps;
+		pgc->request_fps = 0;
+		DISPCHECK("LCM refresh rate is 60fps already\n");
+		return 0;
+	}
 
 	if (cmdq_handle == NULL) {
 		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 		if (ret != 0) {
 			DISPCHECK("fail to create primary cmdq handle for adjust fps\n");
-			return -1;
+			return -EINVAL;
 		}
 	}
 	if (cmdq_pre_handle == NULL) {
@@ -3497,13 +3562,14 @@ int _display_set_lcm_refresh_rate(int fps)
 			DISPCHECK("fail to create memout cmdq handle for adjust fps\n");
 			cmdqRecDestroy(cmdq_handle);
 			cmdq_handle = NULL;
-			return -1;
+			return -EINVAL;
 		}
 	}
 	primary_display_idlemgr_kick(__func__, 0);
 
 	/* don't move ,switch need this part*/
 	pgc->lcm_refresh_rate = fps;
+	pgc->request_fps = 0;
 	DISPCHECK("[refresh_rate]:fps(%d)\n", fps);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_fps, MMProfileFlagStart, fps, 0);
@@ -4665,7 +4731,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	hrt_level = HRT_LEVEL(cfg->overlap_layer_num);
+#else
 	hrt_level = cfg->overlap_layer_num;
+#endif
 	data_config->overlap_layer_num = hrt_level;
 
 	if (hrt_level > HRT_LEVEL_HIGH)
@@ -4952,6 +5022,11 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 	}
 
 	_primary_path_lock(__func__);
+
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	if (pgc->request_fps && HRT_FPS(cfg->overlap_layer_num) == 120)
+		_display_set_lcm_refresh_rate(pgc->request_fps);
+#endif
 
 	/* set input */
 	dprec_start(input_event, cfg->overlap_layer_num, cfg->input_layer_num);
