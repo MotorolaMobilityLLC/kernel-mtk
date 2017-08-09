@@ -14,6 +14,8 @@
 #include <linux/device.h>
 #include <linux/ioport.h>
 #include <linux/delay.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 
 #include <mali_kbase.h>
 #include <mali_kbase_defs.h>
@@ -33,6 +35,9 @@
 #include <fan53555.h>
 
 struct mtk_config *g_config;
+
+#define MFG_PROT_MASK                    ((0x1 << 21) | (0x1 << 23))
+int spm_topaxi_protect(unsigned int mask_value, int en);
 
 #ifdef MTK_GPU_DPM
 static int dfp_weights[] = {
@@ -255,9 +260,6 @@ static int mtk_pm_callback_power_on(void)
 	base_write32(g_ldo_base+0xfbc, 0x1ff);
 	mt_gpufreq_voltage_enable_set(1);
 
-	/* test: dealy for EMI violation issue */
-	udelay(100);
-
 	MTKCLK_prepare_enable(clk_mfg52m_vcg);
 
 	MTKCLK_prepare_enable(clk_mfg_async);
@@ -269,6 +271,10 @@ static int mtk_pm_callback_power_on(void)
 	MTKCLK_prepare_enable(clk_mfg_core3);
 #endif
 	MTKCLK_prepare_enable(clk_mfg_main);
+
+	/* Release MFG PROT */
+	udelay(100);
+	spm_topaxi_protect(MFG_PROT_MASK, 0);
 
 #ifdef MTK_GPU_APM
 	/* enable GPU hot-plug */
@@ -362,6 +368,9 @@ static void mtk_pm_callback_power_off(void)
 
 	lasttime = _get_time();
 #endif
+
+	/* Set MFG PROT */
+	spm_topaxi_protect(MFG_PROT_MASK, 1);
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
 #ifndef MTK_GPU_APM
@@ -583,6 +592,18 @@ static DEVICE_ATTR(dvfs_gpu_dump, S_IRUGO | S_IWUSR, mtk_kbase_dvfs_gpu_show, mt
 
 #endif
 
+static void *_mtk_of_ioremap(const char *node_name)
+{
+	struct device_node *node;
+	node = of_find_compatible_node(NULL, NULL, node_name);
+
+	if (node)
+		return of_iomap(node, 0);
+
+	pr_MTK_err("cannot find [%s] of_node, please fix me\n", node_name);
+	return NULL;
+}
+
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
 	struct mtk_config* config = kmalloc(sizeof(struct mtk_config), GFP_KERNEL);
@@ -595,13 +616,12 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	spin_lock_init(&mtk_power_lock);
 
-	/* MTK: TODO, using device_treee */
-	g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
-	g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
-	g_DVFS_CPU_base = ioremap_nocache(0x11015000, 0x1000);
-	g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
-	g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
-	g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
+	g_ldo_base =        _mtk_of_ioremap("mediatek,infracfg_ao");
+	g_MFG_base = 	    _mtk_of_ioremap("mediatek,g3d_config");
+	g_DFP_base =        _mtk_of_ioremap("mediatek,g3d_dfp_config");
+	g_DVFS_CPU_base =   _mtk_of_ioremap("mediatek,mt6797-dvfsp");
+	g_DVFS_GPU_base =   _mtk_of_ioremap("mediatek,dvfs_proc2");
+	g_TOPCK_base =      _mtk_of_ioremap("mediatek,topckgen");
 
 	config->clk_mfg_async = devm_clk_get(&pdev->dev, "mtcmos-mfg-async");
 	config->clk_mfg = devm_clk_get(&pdev->dev, "mtcmos-mfg");
@@ -687,6 +707,9 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
 #endif
+
+	/* Set MFG PROT */
+	spm_topaxi_protect(MFG_PROT_MASK, 1);
 
 	return 0;
 }

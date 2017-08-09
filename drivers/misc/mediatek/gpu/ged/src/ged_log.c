@@ -201,6 +201,13 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 	buf_n = psGEDLogBuf->i32BufferSize - psGEDLogBuf->i32BufferCurrent;
 	len = vsnprintf(psGEDLogBuf->pcBuffer + psGEDLogBuf->i32BufferCurrent, buf_n, fmt, args);
 
+	if (psGEDLogBuf->pcBuffer[psGEDLogBuf->i32BufferCurrent + len - 1] == '\n')
+	{
+		/* remove tailing newline */
+		psGEDLogBuf->pcBuffer[psGEDLogBuf->i32BufferCurrent + len - 1] = 0;
+		len -= 1;
+	}
+
 	if (len > buf_n) len = buf_n;
 
 	buf_n -= len;
@@ -267,10 +274,6 @@ static int __ged_log_buf_write(GED_LOG_BUF *psGEDLogBuf, const char __user *pszB
 	ged_copy_from_user(buf, pszBuffer, cnt);
 
 	buf[cnt] = 0;
-	if (buf[cnt-1] == '\n')
-	{
-		buf[cnt-1] = 0;
-	}
 
 	__ged_log_buf_print(psGEDLogBuf, buf);
 

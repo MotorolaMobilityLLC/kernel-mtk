@@ -122,7 +122,7 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 				break;
 			case GED_BRIDGE_COMMAND_LOG_BUF_RESET:
 				pFunc = (ged_bridge_func_type*)ged_bridge_log_buf_reset;
-				break;            
+				break;
 			case GED_BRIDGE_COMMAND_BOOST_GPU_FREQ:
 				pFunc = (ged_bridge_func_type*)ged_bridge_boost_gpu_freq;
 				break;
@@ -131,7 +131,7 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 				break;
 			case GED_BRIDGE_COMMAND_QUERY_INFO:
 				pFunc = (ged_bridge_func_type*)ged_bridge_query_info;
-				break;            
+				break;
 			case GED_BRIDGE_COMMAND_NOTIFY_VSYNC:
 				pFunc = (ged_bridge_func_type*)ged_bridge_notify_vsync;
 				break;
@@ -171,7 +171,7 @@ static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long a
 	GED_BRIDGE_PACKAGE *psBridgePackageKM, *psBridgePackageUM = (GED_BRIDGE_PACKAGE*)arg;
 	GED_BRIDGE_PACKAGE sBridgePackageKM;
 
-	if (down_interruptible(&ged_dal_sem) < 0) 
+	if (down_interruptible(&ged_dal_sem) < 0)
 	{
 		GED_LOGE("Fail to down ged_dal_sem\n");
 		return -ERESTARTSYS;
@@ -208,10 +208,10 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	int ret = -EFAULT;
 	GED_BRIDGE_PACKAGE sBridgePackageKM64;
 	GED_BRIDGE_PACKAGE_32 sBridgePackageKM32;
-	GED_BRIDGE_PACKAGE_32 *psBridgePackageKM32 = &sBridgePackageKM32;    
+	GED_BRIDGE_PACKAGE_32 *psBridgePackageKM32 = &sBridgePackageKM32;
 	GED_BRIDGE_PACKAGE_32 *psBridgePackageUM32 = (GED_BRIDGE_PACKAGE_32*)arg;
 
-	if (down_interruptible(&ged_dal_sem) < 0) 
+	if (down_interruptible(&ged_dal_sem) < 0)
 	{
 		GED_LOGE("Fail to down ged_dal_sem\n");
 		return -ERESTARTSYS;
@@ -271,7 +271,7 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_ged_srv);
 	ghLogBuf_DVFS = 0;
 	ghLogBuf_ged_srv = 0;
-#endif   
+#endif
 #ifdef GED_DEBUG
 	ged_log_buf_free(ghLogBuf_GED);
 	ghLogBuf_GED = 0;
@@ -282,7 +282,7 @@ static void ged_exit(void)
 	ghLogBuf_FENCE = 0;
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
-	
+
 	ged_dvfs_system_exit();
 
 	ged_profile_dvfs_exit();
@@ -374,7 +374,7 @@ static int ged_init(void)
 #endif
 	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
 	ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
-	
+
 #ifdef GED_DVFS_DEBUG_BUF
 #ifdef GED_LOG_SIZE_LIMITED
 	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60, 20*60*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug_limited");
@@ -382,7 +382,7 @@ static int ged_init(void)
 	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
 #endif
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
-#endif    
+#endif
 
 	return 0;
 

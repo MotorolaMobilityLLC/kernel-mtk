@@ -120,6 +120,8 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	_mtk_kbase_spm_kick_unlock();
 
 	spm_release();
+
+	MTK_err("spm-kick done");
 }
 
 int mtk_kbase_spm_isonline(void)

@@ -3,6 +3,8 @@
 
 #include <mt_gpufreq.h>
 
+#include <mtk_mali_config.h>
+
 #ifdef MTK_GPU_SPM
 
 static unsigned int max_level = 7;
@@ -267,47 +269,15 @@ void mtk_gpu_spm_reset_fix(void)
 	spm_update_fc();
 }
 
-static int en_backup = -1;
 void mtk_gpu_spm_pause(void)
 {
-	struct mtk_config *config = g_config;
-
-	if (config && en_backup == -1)
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_acquire();
-		en_backup = DVFS_GPU_read32(SPM_RSV_CON);
-		DVFS_GPU_write32(SPM_RSV_CON, 0);
-		mtk_kbase_spm_wait();
-	}
+	/* do nothing */
+	MTK_err("spm_pause");
 }
-
-#include <fan53555.h>
-
 void mtk_gpu_spm_resume(void)
 {
-	struct mtk_config *config = g_config;
-
-	if (config && en_backup != -1)
-	{
-		unsigned char x;
-		volatile void *g_apmixed_base;
-
-		fan53555_read_interface(0x0, &x, 0xff, 0x0);
-		g_apmixed_base = ioremap_nocache(0x1000C000, 0x1000);
-		if (g_apmixed_base)
-		{
-			DVFS_GPU_write32(0x608, x);
-			DVFS_GPU_write32(0x60C, base_read32(g_apmixed_base + 0x244));
-			iounmap(g_apmixed_base);
-		}
-
-		DVFS_GPU_write32(SPM_RSV_CON, en_backup);
-		mtk_kbase_spm_wait();
-		mtk_kbase_spm_release();
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-		en_backup = -1;
-	}
+	/* do nothing */
+	MTK_err("spm_resume");
 }
 
 #endif

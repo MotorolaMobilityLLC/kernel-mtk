@@ -925,18 +925,6 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE3" */
-		/* TINFO="Set bus protect" */
-		#ifdef TOPAXI_PROTECT_LOCK
-		spm_topaxi_protect(MFG_PROT_MASK, 1);
-		#else
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
-			#ifdef CONFIG_MTK_RAM_CONSOLE
-			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
-			#endif
-		}
-		#endif
-
 		/* TINFO="Set SRAM_PDN = 1" */
 
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | MFG_CORE3_SRAM_PDN);
@@ -1002,18 +990,6 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-		/* TINFO="Release bus protect" */
-		#ifdef TOPAXI_PROTECT_LOCK
-		spm_topaxi_protect(MFG_PROT_MASK, 0);
-		#else
-		spm_write(INFRA_TOPAXI_PROTECTEN,
-			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_MASK);
-		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) {
-			#ifdef CONFIG_MTK_RAM_CONSOLE
-			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
-			#endif
-		}
-		#endif
 		/* TINFO="Finish to turn on MFG_CORE3" */
 	}
 	#ifdef CONFIG_MTK_RAM_CONSOLE
