@@ -1842,6 +1842,7 @@ static void restore_record(struct eem_det *det)
 static int get_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -1912,6 +1913,7 @@ static void mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
 static int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -2052,6 +2054,7 @@ static int get_volt_gpu(struct eem_det *det)
 static int set_volt_gpu(struct eem_det *det)
 {
 	int i;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -2825,6 +2828,7 @@ static inline void handle_init01_isr(struct eem_det *det)
 #if DUMP_DATA_TO_DE
 	{
 		unsigned int i;
+
 		for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
 			det->reg_dump_data[i][EEM_PHASE_INIT01] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
 			#ifdef __KERNEL__
@@ -3536,6 +3540,7 @@ void eem_init02(void)
 	for_each_det_ctrl(det, ctrl) {
 		if (HAS_FEATURE(det, FEA_MON)) {
 			unsigned long flag;
+
 			mt_ptp_lock(&flag);
 			det->ops->init02(det);
 			mt_ptp_unlock(&flag);
@@ -3678,6 +3683,7 @@ void get_devinfo(struct eem_devinfo *p)
 {
 	int *val = (int *)p;
 	int i;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	checkEfuse = 1;
 
