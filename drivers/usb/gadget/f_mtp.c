@@ -1005,7 +1005,7 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 	struct usb_request *req = 0;
 	ssize_t r = count;
 	unsigned xfer;
-	/*int sendZLP = 0;*/
+	int sendZLP = 0;
 	int ret;
 
 	DBG(cdev, "mtp_write(%zu)\n", count);
@@ -1036,14 +1036,14 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 	/* we need to send a zero length packet to signal the end of transfer
 	 * if the transfer size is aligned to a packet boundary.
 	 */
-	/*if ((count & (dev->ep_in->maxpacket - 1)) == 0)
-		sendZLP = 1; */
+	if ((count & (dev->ep_in->maxpacket - 1)) == 0)
+		sendZLP = 1;
 
-	while (count > 0/* || sendZLP*/) {
+	while (count > 0 || sendZLP) {
 
 		/* so we exit after sending ZLP */
-		/*if (count == 0)
-			sendZLP = 0;*/
+		if (count == 0)
+			sendZLP = 0;
 
 		if (dev->state != STATE_BUSY) {
 			DBG(cdev, "mtp_write dev->error\n");
@@ -1120,7 +1120,7 @@ static void send_file_work(struct work_struct *data)
 	int64_t count;
 	int xfer, ret, hdr_size;
 	int r = 0;
-	/*int sendZLP = 0;*/
+	int sendZLP = 0;
 
 	#define IOMAXNUM	5
 	int iotimeMax[IOMAXNUM] = {0};
@@ -1145,13 +1145,13 @@ static void send_file_work(struct work_struct *data)
 	/* we need to send a zero length packet to signal the end of transfer
 	 * if the transfer size is aligned to a packet boundary.
 	 */
-	/*if ((count & (dev->ep_in->maxpacket - 1)) == 0)
-		sendZLP = 1;*/
+	if ((count & (dev->ep_in->maxpacket - 1)) == 0)
+		sendZLP = 1;
 
-	while (count > 0 /*|| sendZLP*/) {
+	while (count > 0 || sendZLP) {
 		/* so we exit after sending ZLP */
-		/*if (count == 0)
-			sendZLP = 0;*/
+		if (count == 0)
+			sendZLP = 0;
 
 		/* get an idle tx request to use */
 		req = 0;
@@ -1287,8 +1287,7 @@ static void receive_file_work(struct work_struct *data)
 	int64_t count;
 	int ret, cur_buf = 0;
 	int r = 0;
-
-#ifdef CONFIG_MTK_SHARED_SDCARD
+#if 1 /* #ifdef CONFIG_MTK_SHARED_SDCARD */
 	int64_t total_size=0;
 #endif
 
@@ -1326,7 +1325,7 @@ static void receive_file_work(struct work_struct *data)
 
 		/* This might be modified TBD,
 		so far, there is only sharedSD with EXT4 FFS could transfer Object with size oevr 4GBs*/
-		#ifdef CONFIG_MTK_SHARED_SDCARD
+		#if 1 /* #ifdef CONFIG_MTK_SHARED_SDCARD */
 			if(total_size >= 0xFFFFFFFF)
 				read_req->short_not_ok = 0;
 			else {
@@ -1433,7 +1432,7 @@ static void receive_file_work(struct work_struct *data)
 				count -= read_req->actual;
 
 
-			#if defined(CONFIG_MTK_SHARED_SDCARD)
+			#if 1 /* #ifdef CONFIG_MTK_SHARED_SDCARD */
 				total_size += read_req->actual;
 				DBG(cdev, "%s, line %d: count = %lld, total_size = %lld, read_req->actual = %d, read_req->length= %d\n", __func__, __LINE__, count, total_size, read_req->actual, read_req->length);
 			#endif
