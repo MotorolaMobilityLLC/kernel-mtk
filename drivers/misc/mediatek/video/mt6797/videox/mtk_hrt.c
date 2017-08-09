@@ -714,6 +714,9 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 	if (disp_info->hrt_num > HRT_LEVEL_HIGH) {
 		int valid_ovl_cnt = emi_upper_bound;
 
+		if (dal_enable)
+			valid_ovl_cnt = emi_upper_bound - 1;
+
 		/*
 		Arrange 4 ovl layers to secondary display, so no need to
 		redistribute gles layer since it's already meet the larb
@@ -729,8 +732,7 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 				disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
 			} else {
 				if (disp_info->gles_head[HRT_PRIMARY] + 1 - valid_ovl_cnt >= 0) {
-					disp_info->gles_head[HRT_PRIMARY] =
-						disp_info->gles_head[HRT_PRIMARY] + 1 - valid_ovl_cnt;
+					disp_info->gles_head[HRT_PRIMARY] = valid_ovl_cnt - 1;
 					disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
 				} else {
 					int tail_ovl_num = valid_ovl_cnt - disp_info->gles_head[HRT_PRIMARY] + 1;
@@ -739,9 +741,6 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 						disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num) {
 						disp_info->gles_tail[HRT_PRIMARY] =
 							disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num;
-					} else {
-						valid_ovl_cnt = disp_info->gles_tail[disp_idx] -
-							(disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num);
 					}
 				}
 			}
