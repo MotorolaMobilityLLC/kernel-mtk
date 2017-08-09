@@ -420,7 +420,8 @@ void __iomem  *camsys_base;
 
 
 #define INFRA_BUS_DCM_CTRL_OFS (0x70)
-
+#define MSDCPLL_CON0_OFS (0x250)
+#define MSDCPLL_PWR_CON0_OFS (0x25c)
 #define TVDPLL_CON0_OFS (0x270)
 #define TVDPLL_PWR_CON0_OFS (0x27c)
 #define APLL1_CON0_OFS (0x2A0)
@@ -1270,42 +1271,46 @@ static struct mtk_gate mm_clks[] __initdata = {
 	GATE(MM_SMI_COMMON, mm_smi_common, mm_sel, mm0_cg_regs, 0, 0),
 	GATE(MM_SMI_LARB0, mm_smi_larb0, mm_sel, mm0_cg_regs, 1, 0),
 	GATE(MM_SMI_LARB5, mm_smi_larb5, mm_sel, mm0_cg_regs, 2, 0),
-	GATE(MM_CAM_MDP, mm_cam_mdp, mm_sel, mm0_dummy_cg_regs, 3, 0),
-	GATE(MM_MDP_RDMA0, mm_mdp_rdma0, mm_sel, mm0_dummy_cg_regs, 4, 0),
-	GATE(MM_MDP_RDMA1, mm_mdp_rdma1, mm_sel, mm0_dummy_cg_regs, 5, 0),
-	GATE(MM_MDP_RSZ0, mm_mdp_rsz0, mm_sel, mm0_dummy_cg_regs, 6, 0),
-	GATE(MM_MDP_RSZ1, mm_mdp_rsz1, mm_sel, mm0_dummy_cg_regs, 7, 0),
-	GATE(MM_MDP_RSZ2, mm_mdp_rsz2, mm_sel, mm0_dummy_cg_regs, 8, 0),
-	GATE(MM_MDP_TDSHP, mm_mdp_tdshp, mm_sel, mm0_dummy_cg_regs, 9, 0),
-	GATE(MM_MDP_COLOR, mm_mdp_color, mm_sel, mm0_dummy_cg_regs, 10, 0),
-	GATE(MM_MDP_WDMA, mm_mdp_wdma, mm_sel, mm0_dummy_cg_regs, 11, 0),
-	GATE(MM_MDP_WROT0, mm_mdp_wrot0, mm_sel, mm0_dummy_cg_regs, 12, 0),
-	GATE(MM_MDP_WROT1, mm_mdp_wrot1, mm_sel, mm0_dummy_cg_regs, 13, 0),
+	GATE(MM_CAM_MDP, mm_cam_mdp, mm_sel, mm0_dummy_cg_regs, 3, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_RDMA0, mm_mdp_rdma0, mm_sel, mm0_dummy_cg_regs, 4, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_RDMA1, mm_mdp_rdma1, mm_sel, mm0_dummy_cg_regs, 5, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_RSZ0, mm_mdp_rsz0, mm_sel, mm0_dummy_cg_regs, 6, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_RSZ1, mm_mdp_rsz1, mm_sel, mm0_dummy_cg_regs, 7, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_RSZ2, mm_mdp_rsz2, mm_sel, mm0_dummy_cg_regs, 8, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_TDSHP, mm_mdp_tdshp, mm_sel, mm0_dummy_cg_regs, 9, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_COLOR, mm_mdp_color, mm_sel, mm0_dummy_cg_regs, 10, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_WDMA, mm_mdp_wdma, mm_sel, mm0_dummy_cg_regs, 11, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_WROT0, mm_mdp_wrot0, mm_sel, mm0_dummy_cg_regs, 12, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_MDP_WROT1, mm_mdp_wrot1, mm_sel, mm0_dummy_cg_regs, 13, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
 	GATE(MM_FAKE_ENG, mm_fake_eng, mm_sel, mm0_cg_regs, 14, 0),
-	GATE(MM_DISP_OVL0, mm_disp_ovl0, mm_sel, mm0_dummy_cg_regs, 15, 0),
-	GATE(MM_DISP_OVL1, mm_disp_ovl1, mm_sel, mm0_dummy_cg_regs, 16, 0),
-	GATE(MM_DISP_OVL0_2L, mm_disp_ovl0_2l, mm_sel, mm0_dummy_cg_regs, 17, 0),
-	GATE(MM_DISP_OVL1_2L, mm_disp_ovl1_2l, mm_sel, mm0_dummy_cg_regs, 18, 0),
-	GATE(MM_DISP_RDMA0, mm_disp_rdma0, mm_sel, mm0_dummy_cg_regs, 19, 0),
-	GATE(MM_DISP_RDMA1, mm_disp_rdma1, mm_sel, mm0_dummy_cg_regs, 20, 0),
-	GATE(MM_DISP_WDMA0, mm_disp_wdma0, mm_sel, mm0_dummy_cg_regs, 21, 0),
-	GATE(MM_DISP_WDMA1, mm_disp_wdma1, mm_sel, mm0_dummy_cg_regs, 22, 0),
-	GATE(MM_DISP_COLOR, mm_disp_color, mm_sel, mm0_dummy_cg_regs, 23, 0),
-	GATE(MM_DISP_CCORR, mm_disp_ccorr, mm_sel, mm0_dummy_cg_regs, 24, 0),
-	GATE(MM_DISP_AAL, mm_disp_aal, mm_sel, mm0_dummy_cg_regs, 25, 0),
-	GATE(MM_DISP_GAMMA, mm_disp_gamma, mm_sel, mm0_dummy_cg_regs, 26, 0),
-	GATE(MM_DISP_OD, mm_disp_od, mm_sel, mm0_dummy_cg_regs, 27, 0),
-	GATE(MM_DISP_DITHER, mm_disp_dither, mm_sel, mm0_dummy_cg_regs, 28, 0),
-	GATE(MM_DISP_UFOE, mm_disp_ufoe, mm_sel, mm0_dummy_cg_regs, 29, 0),
-	GATE(MM_DISP_DSC, mm_disp_dsc, mm_sel, mm0_dummy_cg_regs, 30, 0),
-	GATE(MM_DISP_SPLIT, mm_disp_split, mm_sel, mm0_dummy_cg_regs, 31, 0),
+	GATE(MM_DISP_OVL0, mm_disp_ovl0, mm_sel, mm0_dummy_cg_regs, 15, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_OVL1, mm_disp_ovl1, mm_sel, mm0_dummy_cg_regs, 16, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_OVL0_2L, mm_disp_ovl0_2l, mm_sel, mm0_dummy_cg_regs, 17,
+	CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_OVL1_2L, mm_disp_ovl1_2l, mm_sel, mm0_dummy_cg_regs, 18,
+	CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_RDMA0, mm_disp_rdma0, mm_sel, mm0_dummy_cg_regs, 19, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_RDMA1, mm_disp_rdma1, mm_sel, mm0_dummy_cg_regs, 20, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_WDMA0, mm_disp_wdma0, mm_sel, mm0_dummy_cg_regs, 21, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_WDMA1, mm_disp_wdma1, mm_sel, mm0_dummy_cg_regs, 22, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_COLOR, mm_disp_color, mm_sel, mm0_dummy_cg_regs, 23, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_CCORR, mm_disp_ccorr, mm_sel, mm0_dummy_cg_regs, 24, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_AAL, mm_disp_aal, mm_sel, mm0_dummy_cg_regs, 25, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_GAMMA, mm_disp_gamma, mm_sel, mm0_dummy_cg_regs, 26, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_OD, mm_disp_od, mm_sel, mm0_dummy_cg_regs, 27, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_DITHER, mm_disp_dither, mm_sel, mm0_dummy_cg_regs, 28, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_UFOE, mm_disp_ufoe, mm_sel, mm0_dummy_cg_regs, 29, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_DSC, mm_disp_dsc, mm_sel, mm0_dummy_cg_regs, 30, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
+	GATE(MM_DISP_SPLIT, mm_disp_split, mm_sel, mm0_dummy_cg_regs, 31, CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
 	GATE(MM_DSI0_MM_CLOCK, mm_dsi0_mm_clock, mm_sel, mm1_cg_regs, 0, 0),
 	GATE(MM_DSI1_MM_CLOCK, mm_dsi1_mm_clock, mm_sel, mm1_cg_regs, 2, 0),
 	GATE(MM_DPI_MM_CLOCK, mm_dpi_mm_clock, mm_sel, mm1_cg_regs, 4, 0),
-	GATE(MM_DPI_INTERFACE_CLOCK, mm_dpi_interface_clock, dpi0_sel, mm1_dummy_cg_regs, 5, 0),
+	GATE(MM_DPI_INTERFACE_CLOCK, mm_dpi_interface_clock, dpi0_sel, mm1_dummy_cg_regs, 5,
+	CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
 	GATE(MM_LARB4_AXI_ASIF_MM_CLOCK, mm_larb4_axi_asif_mm_clock, mm_sel, mm1_cg_regs, 6, 0),
 	GATE(MM_LARB4_AXI_ASIF_MJC_CLOCK, mm_larb4_axi_asif_mjc_clock, mjc_sel, mm1_cg_regs, 7, 0),
-	GATE(MM_DISP_OVL0_MOUT_CLOCK, mm_disp_ovl0_mout_clock, mm_sel, mm1_dummy_cg_regs, 8, 0),
+	GATE(MM_DISP_OVL0_MOUT_CLOCK, mm_disp_ovl0_mout_clock, mm_sel, mm1_dummy_cg_regs, 8,
+	CLK_GATE_NO_SETCLR_REG | CLK_GATE_INVERSE),
 	GATE(MM_FAKE_ENG2, mm_fake_eng2, mm_sel, mm1_cg_regs, 9, 0),
 	GATE(MM_DSI0_INTERFACE_CLOCK, mm_dsi0_interface_clock, clk_null, mm1_cg_regs, 1, 0),
 	GATE(MM_DSI1_INTERFACE_CLOCK, mm_dsi1_interface_clock, clk_null, mm1_cg_regs, 3, 0),
@@ -1523,6 +1528,13 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	mt_reg_sync_writel(0xC, (base + 0x10));	/* AP_PLL_CON4, temp & 0xC */
 
 	/*disable*/
+/* MSDCPLL */
+	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_CON0_OFS) & ~ON_BIT,
+			   (base + MSDCPLL_CON0_OFS)); /*CON0[0]=0*/
+	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_PWR_CON0_OFS) | ISO_EN_BIT,
+			   (base + MSDCPLL_PWR_CON0_OFS)); /*PWR_CON0[1]=1*/
+	mt_reg_sync_writel(__raw_readl(base + MSDCPLL_PWR_CON0_OFS) & ~ON_BIT,
+			   (base + MSDCPLL_PWR_CON0_OFS)); /*PWR_CON0[0]=0*/
 /*TVDPLL*/
 	mt_reg_sync_writel(__raw_readl(base + TVDPLL_CON0_OFS) & ~ON_BIT,
 			   (base + TVDPLL_CON0_OFS)); /*CON0[0]=0*/
@@ -1715,8 +1727,8 @@ static void __init mt_mmsys_init(struct device_node *node)
 	mmsys_config_base = base;
 	clk_writel(MM_CG_SET0, MM_0_CG);
 	clk_writel(MM_CG_SET1, MM_1_CG);
-	clk_writel(MM_DUMMY_CG_SET0, MM_DUMMY_0_CG);
-	clk_writel(MM_DUMMY_CG_SET1, MM_DUMMY_1_CG);
+	clk_writel(MM_DUMMY_CG_SET0, ~MM_DUMMY_0_CG);
+	clk_writel(MM_DUMMY_CG_SET1, ~MM_DUMMY_1_CG);
 #endif
 
 }
