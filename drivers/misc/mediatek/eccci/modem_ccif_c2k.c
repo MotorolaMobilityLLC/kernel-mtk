@@ -551,10 +551,10 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 
 			if (queue->debug_id == 0) {
 				queue->debug_id = 1;
-				CCCI_ERR_MSG(md->index, TAG, "Q%d Rx err\n",
-					     queue->index);
+				CCCI_ERR_MSG(md->index, TAG, "Q%d Rx err, ret = 0x%x\n",
+					     queue->index, ret);
 			}
-			ret = -EAGAIN;
+
 			goto OUT;
 		}
 		if (count > budget) {
@@ -571,7 +571,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 	CCCI_DBG_MSG(md->index, TAG, "Q%d rx %d pkg,ret=%d\n", queue->index,
 		     count, ret);
 	spin_lock_irqsave(&queue->rx_lock, flags);
-	if (ret != -EAGAIN) {
+	if (queue->index != C2K_MD_LOG_RX_Q && ret != -CCCI_ERR_PORT_RX_FULL && ret != -EAGAIN) {
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		if (pkg_size > 0)
 			ret = -EAGAIN;
@@ -587,7 +587,7 @@ static void ccif_rx_work(struct work_struct *work)
 	    container_of(work, struct md_ccif_queue, qwork);
 	ret = ccif_rx_collect(queue, queue->budget, 1, &result);
 	if (ret == -EAGAIN) {
-		CCCI_DBG_MSG(queue->modem->index, TAG, "queue again\n");
+		CCCI_DBG_MSG(queue->modem->index, TAG, "Q%u queue again\n", queue->index);
 		queue_work(queue->worker, &queue->qwork);
 	}
 }
@@ -617,8 +617,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 		ret = md->ops->reset(md);
 		CCCI_INF_MSG(md->index, TAG, "reset MD after WDT %d\n", ret);
 		/*4. send message, only reset MD on non-eng load */
-		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET,
-					 0);
+		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 		/* #ifdef CONFIG_MTK_SVLTE_SUPPORT */
 		#ifdef CONFIG_MTK_ECCCI_C2K
 		if (md->index == MD_SYS3)
@@ -627,7 +626,19 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 		/* #endif */
 
 	} else {
-		ccci_md_exception_notify(md, MD_WDT);
+		if (md->critical_user_active[2] == 0) {
+			ret = md->ops->reset(md);
+			CCCI_INF_MSG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
+			/* 4. send message, only reset MD on non-eng load */
+			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
+			#ifdef CONFIG_MTK_ECCCI_C2K
+			if (md->index == MD_SYS3)
+				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+			#endif
+		} else {
+			ccci_md_exception_notify(md, MD_WDT);
+			CCCI_INF_MSG(md->index, TAG, "exception notify after WDT\n");
+		}
 	}
 	return IRQ_HANDLED;
 }

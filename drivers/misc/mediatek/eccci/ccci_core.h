@@ -20,6 +20,9 @@
 #define MAX_RXQ_NUM 8
 #define PACKET_HISTORY_DEPTH 16	/* must be power of 2 */
 
+#define C2K_MD_LOG_TX_Q		3
+#define C2K_MD_LOG_RX_Q		3
+
 struct ccci_log {
 	struct ccci_header msg;
 	u64 tv;
