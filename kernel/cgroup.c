@@ -2418,6 +2418,7 @@ retry_find_task:
 			warning problem(cgroup_migrate_add_src).
 			list_add(&cset->mg_node, &tset.src_csets);*/
 			ret = cgroup_allow_attach(cgrp, &tset);
+			list_del(&tset.src_csets);
 			if (ret) {
 				rcu_read_unlock();
 				goto out_unlock_cgroup;
