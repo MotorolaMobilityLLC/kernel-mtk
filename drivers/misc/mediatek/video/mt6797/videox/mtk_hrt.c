@@ -14,6 +14,7 @@
 
 #include "mtk_hrt.h"
 
+static int emi_extreme_lower_bound;
 static int emi_lower_bound;
 static int emi_upper_bound;
 static int larb_lower_bound;
@@ -401,7 +402,7 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 		else
 			return HRT_OVER_LIMIT;
 	} else {
-		if (sum_overlap_w <= EMI_EXTREME_LOWER_BOUND * 240 && primary_fps == 60)
+		if (sum_overlap_w <= emi_extreme_lower_bound * 240 && primary_fps == 60)
 			return HRT_LEVEL_EXTREME_LOW;
 
 		if (sum_overlap_w <= emi_lower_bound * 240)
@@ -935,6 +936,11 @@ static int set_hrt_bound(void)
 	emi_upper_bound = EMI_UPPER_BOUND;
 	larb_lower_bound = LARB_LOWER_BOUND;
 	larb_upper_bound = LARB_UPPER_BOUND;
+	if (primary_display_get_width() > 1080)
+		emi_extreme_lower_bound = EMI_EXTREME_LOWER_BOUND;
+	else
+		emi_extreme_lower_bound = EMI_EXTREME_LOWER_BOUND + 1;
+
 #ifdef HRT_DEBUG
 	DISPMSG("60hz hrt bound\n");
 #endif
