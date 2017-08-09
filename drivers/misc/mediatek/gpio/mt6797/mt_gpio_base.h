@@ -2,13 +2,12 @@
 #define _MT_GPIO_BASE_H_
 
 #include "mt-plat/sync_write.h"
-#ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mach/gpio_const.h>
-#else
-#include <mach/mt_gpio_fpga.h>
-#endif
-#define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, (GPIO_BASE + addr))
-#define GPIO_RD32(addr)         __raw_readl(((GPIO_BASE + addr)))
+
+
+#define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, addr)
+#define GPIO_RD32(addr)         __raw_readl(addr)
+
 /* #define GPIO_SET_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) = (unsigned long)(BIT)) */
 /* #define GPIO_CLR_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) &= ~((unsigned long)(BIT))) */
 #define GPIO_SW_SET_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) | ((unsigned long)(BIT)))
@@ -37,12 +36,8 @@ typedef struct {
 
 } GPIO_REGS;
 
-#ifdef CONFIG_ARCH_MT6797M
-/* Denali2 */
-#define MAX_GPIO_PIN (197+1)
-#else
-/* Denali1 & Denali3 */
-#define MAX_GPIO_PIN (203+1)
-
+#ifdef SELF_TEST
+void mt_gpio_self_test_base(void);
 #endif
+
 #endif				/* _MT_GPIO_BASE_H_ */

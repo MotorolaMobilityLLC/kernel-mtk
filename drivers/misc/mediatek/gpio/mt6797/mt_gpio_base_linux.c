@@ -8,7 +8,7 @@
 
 #include <mt_gpio_base.h>
 #include <mt-plat/mt_gpio_core.h>
-/*#include <mach/eint.h>*/
+#include <linux/irqchip/mt-eic.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/spinlock.h>
@@ -66,7 +66,7 @@ static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset, unsigned debounce)
 {
-	/*mt_eint_set_hw_debounce(offset, debounce);*/
+	mt_eint_set_hw_debounce(offset, debounce);
 	return 0;
 }
 

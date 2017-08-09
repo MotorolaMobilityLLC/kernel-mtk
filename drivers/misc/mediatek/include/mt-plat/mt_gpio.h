@@ -5,8 +5,6 @@
 #include <linux/ioctl.h>
 #include <linux/fs.h>
 
-
-
 extern struct mt_gpio_vbase gpio_vbase;
 
 
@@ -26,7 +24,6 @@ typedef enum {
 	GPIO_MODE_05 = 5,
 	GPIO_MODE_06 = 6,
 	GPIO_MODE_07 = 7,
-
 	GPIO_MODE_MAX,
 	GPIO_MODE_DEFAULT = GPIO_MODE_01,
 } GPIO_MODE;
@@ -36,7 +33,6 @@ typedef enum {
 	GPIO_DIR_UNSUPPORTED = -1,
 	GPIO_DIR_IN = 0,
 	GPIO_DIR_OUT = 1,
-
 	GPIO_DIR_MAX,
 	GPIO_DIR_DEFAULT = GPIO_DIR_IN,
 } GPIO_DIR;
@@ -44,9 +40,10 @@ typedef enum {
 /* GPIO PULL ENABLE*/
 typedef enum {
 	GPIO_PULL_EN_UNSUPPORTED = -1,
+	GPIO_NOPULLUP		= -4,
+	GPIO_NOPULLDOWN		= -5,
 	GPIO_PULL_DISABLE = 0,
-	GPIO_PULL_ENABLE = 1,
-
+	GPIO_PULL_ENABLE  = 1,
 	GPIO_PULL_EN_MAX,
 	GPIO_PULL_EN_DEFAULT = GPIO_PULL_ENABLE,
 } GPIO_PULL_EN;
@@ -56,6 +53,7 @@ typedef enum {
 	GPIO_SMT_UNSUPPORTED = -1,
 	GPIO_SMT_DISABLE = 0,
 	GPIO_SMT_ENABLE  = 1,
+
 	GPIO_SMT_MAX,
 	GPIO_SMT_DEFAULT = GPIO_SMT_ENABLE,
 } GPIO_SMT;
@@ -65,6 +63,7 @@ typedef enum {
 	GPIO_IES_UNSUPPORTED = -1,
 	GPIO_IES_DISABLE = 0,
 	GPIO_IES_ENABLE = 1,
+
 	GPIO_IES_MAX,
 	GPIO_IES_DEFAULT = GPIO_IES_ENABLE,
 } GPIO_IES;
@@ -72,9 +71,9 @@ typedef enum {
 /* GPIO PULL-UP/PULL-DOWN*/
 typedef enum {
 	GPIO_PULL_UNSUPPORTED = -1,
-	GPIO_PULL_DOWN = 0,
-	GPIO_PULL_UP = 1,
-
+	GPIO_PULL_DOWN  = 0,
+	GPIO_PULL_UP    = 1,
+	GPIO_NO_PULL = 2,
 	GPIO_PULL_MAX,
 	GPIO_PULL_DEFAULT = GPIO_PULL_DOWN
 } GPIO_PULL;

@@ -29,9 +29,8 @@
 #include <linux/types.h>
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
-#ifndef CONFIG_MTK_FPGA
 #include <mach/gpio_const.h>
-#endif
+
 
 /***********************/
 struct mt_gpio_ops {
@@ -181,6 +180,24 @@ static struct mt_gpio_obj_t *mt_gpio = &mt_gpio_obj;
 	};\
 	retval; })
 
+#if (defined(MACH_FPGA) && !defined(GPIO_FPGA_SIMULATION))
+
+	S32 mt_set_gpio_dir(u32 pin, u32 dir)			{return RSUCCESS; }
+	S32 mt_get_gpio_dir(u32 pin)				{return GPIO_DIR_UNSUPPORTED; }
+	S32 mt_set_gpio_pull_enable(u32 pin, u32 enable)	{return RSUCCESS; }
+	S32 mt_get_gpio_pull_enable(u32 pin)			{return GPIO_PULL_EN_UNSUPPORTED; }
+	S32 mt_set_gpio_pull_select(u32 pin, u32 select)	{return RSUCCESS; }
+	S32 mt_get_gpio_pull_select(u32 pin)			{return GPIO_PULL_UNSUPPORTED; }
+	S32 mt_set_gpio_smt(u32 pin, u32 enable)		{return RSUCCESS; }
+	S32 mt_get_gpio_smt(u32 pin)				{return GPIO_SMT_UNSUPPORTED; }
+	S32 mt_set_gpio_ies(u32 pin, u32 enable)		{return RSUCCESS; }
+	S32 mt_get_gpio_ies(u32 pin)				{return GPIO_IES_UNSUPPORTED; }
+	S32 mt_set_gpio_out(u32 pin, u32 output)		{return RSUCCESS; }
+	S32 mt_get_gpio_out(u32 pin)				{return GPIO_OUT_UNSUPPORTED; }
+	S32 mt_get_gpio_in(u32 pin)				{return GPIO_IN_UNSUPPORTED; }
+	S32 mt_set_gpio_mode(u32 pin, u32 mode)			{return RSUCCESS; }
+	S32 mt_get_gpio_mode(u32 pin)				{return GPIO_MODE_UNSUPPORTED; }
+#else
 int mt_set_gpio_dir(unsigned long pin, unsigned long dir)
 {
 	/* int ret=0; */
@@ -318,6 +335,7 @@ int mt_get_gpio_mode(unsigned long pin)
 }
 EXPORT_SYMBOL(mt_get_gpio_mode);
 
+#endif
 /*****************************************************************************/
 /* File operation                                                            */
 /*****************************************************************************/
@@ -637,7 +655,6 @@ static struct platform_driver gpio_driver = {
 		   },
 };
 
-#ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_OF
 struct device_node *get_gpio_np(void)
 {
@@ -653,8 +670,6 @@ struct device_node *get_gpio_np(void)
 	return np_gpio;
 }
 #endif
-#endif
-
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/

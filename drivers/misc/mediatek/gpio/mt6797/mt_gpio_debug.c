@@ -9,12 +9,12 @@
  ******************************************************************************/
 
 #include <linux/slab.h>
-#include <6735_gpio.h>
+#include <6797_gpio.h>
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
 
-/*----------------------------------------------------------------------------*/
-typedef struct {		/*FIXME: check GPIO spec */
+typedef struct {
+	/*FIXME: check GPIO spec */
 	unsigned int no:16;
 	unsigned int mode:3;
 	unsigned int pullsel:1;
@@ -221,83 +221,7 @@ void mt_gpio_load_base(GPIO_REGS *regs)
 		regs->din[idx].val = __raw_readl(&pReg->din[idx]);
 }
 
-/* EXPORT_SYMBOL(mt_gpio_load_base); */
-/*----------------------------------------------------------------------------
-void mt_gpio_dump_ext( GPIOEXT_REGS *regs)
-{
-    GPIOEXT_REGS *cur = NULL ;
-    int idx;
-    GPIOMSG("%s\n", __func__);
-	//if arg is null, load & dump; otherwise, dump only
-	if (regs == NULL) {
-		cur = kzalloc(sizeof(*cur), GFP_KERNEL);
-		if (cur == NULL) {
-			GPIOERR("GPIO extend null pointer\n");
-			return;
-		}
-	regs = cur;
-		mt_gpio_load_ext(cur);
-	GPIOMSG("dump current: %p\n", regs);
-    } else {
-	GPIOMSG("dump %p ...\n", regs);
-    }
-    GPIOMSG("\nGPIO extend-------------------------------------------------------------------\n");
-    GPIOMSG("---# dir #-----------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->dir[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->dir)/sizeof(regs->dir[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->dir[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    //GPIOMSG("\n---# ies #-----------------------------------------------------------------\n");
-    //GPIOMSG("Offset 0x%04X\n",(void *)(&regs->ies[0]);
-    //for (idx = 0; idx < sizeof(regs->ies)/sizeof(regs->ies[0]); idx++) {
-    //    GPIOMSG("0x%04X ", regs->ies[idx].val);
-    //    if (7 == (idx % 8)) GPIOMSG("\n");
-    //}
-    GPIOMSG("\n---# pullen #--------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->pullen[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->pullen)/sizeof(regs->pullen[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->pullen[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---# pullsel #-------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->pullsel[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->pullsel)/sizeof(regs->pullsel[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->pullsel[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---# dinv #----------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->dinv[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->dinv)/sizeof(regs->dinv[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->dinv[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---# dout #----------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->dout[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->dout)/sizeof(regs->dout[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->dout[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---# din  #----------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->din[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->din)/sizeof(regs->din[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->din[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---# mode #----------------------------------------------------------------\n");
-    GPIOMSG("Offset 0x%04X\n",(void *)(&regs->mode[0])-(void *)regs);
-    for (idx = 0; idx < sizeof(regs->mode)/sizeof(regs->mode[0]); idx++) {
-	GPIOMSG("0x%04X ", regs->mode[idx].val);
-	if (7 == (idx % 8)) GPIOMSG("\n");
-    }
-    GPIOMSG("\n---------------------------------------------------------------------------\n");
 
-
-	if (cur != NULL) {
-		kfree(cur);
-	}
-}
-----------------------------------------------------------------------------*/
 void mt_gpio_dump_base(GPIO_REGS *regs)
 {
 	GPIO_REGS *cur = NULL;
@@ -566,16 +490,7 @@ static ssize_t mt_gpio_compare_base(void)
 static ssize_t mt_gpio_dump_regs(char *buf, ssize_t bufLen)
 {
 	int idx = 0, len = 0;
-#ifdef CONFIG_MTK_FPGA
-	char tmp[] = "PIN: [DIN] [DOUT] [DIR]\n";
 
-	len += snprintf(buf + len, bufLen - len, "%s", tmp);
-	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		len += snprintf(buf + len, bufLen - len, "%3d:%d%d%d\n",
-				idx, mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
-				mt_get_gpio_dir_base(idx));
-	}
-#else
 	/*char tmp[]="PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [INV] [IES]\n"; */
 	char tmp[] = "PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT]\n";
 
@@ -587,7 +502,6 @@ static ssize_t mt_gpio_dump_regs(char *buf, ssize_t bufLen)
 				mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
 				mt_get_gpio_ies_base(idx), mt_get_gpio_smt_base(idx));
 	}
-#endif
 
 	return len;
 }
@@ -603,13 +517,11 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 {
 	int pin;
 	int ret;
-#ifndef CONFIG_MTK_FPGA
-	int smt;
-#endif
+
 #ifdef MTK_MT6306_SUPPORT
 	int group, on;
 #endif
-	int mode, pullsel, dout, pullen, dir, ies;
+	int mode, pullsel, dout, pullen, dir, ies, smt;
 	u32 num, src, div;
 	char md_str[128] = "GPIO_MD_TEST";
 	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
@@ -655,11 +567,6 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
 		/* else if (!strncmp(buf, "dinv", 4) && (2 == sscanf(buf+4, "%d %d", &pin, &dinv))) */
 		/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
-#ifdef CONFIG_MTK_FPGA
-		else if (3 == sscanf(buf, "=%d:%d %d", &pin, &dout, &dir)) {
-			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
-			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
-#else
 		else if (8 == sscanf(buf, "=%d:%d %d %d %d %d %d %d", &pin, &mode, &pullsel, &dout,
 				&pullen, &dir, &ies, &smt)) {
 			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
@@ -672,7 +579,7 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 			/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
 			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
 			GPIOMSG("set smt (%3d, %d)=%d\n", pin, smt, mt_set_gpio_smt(pin, smt));
-#endif
+
 		} else
 			GPIOMSG("invalid format: '%s'", buf);
 	} else if (!strncmp(buf, "ww", 2)) {
