@@ -8,7 +8,8 @@
 #include <mt-plat/aee.h>
 #include <linux/printk.h>
 
-#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#if (defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || \
+	defined(CONFIG_TRUSTY))
 #include "trustzone/kree/system.h"
 #include "trustzone/tz_cross/ta_gcpu.h"
 #define GCPU_TEE_ENABLE 1
@@ -29,7 +30,7 @@
 #define GCPU_LOG_ERR(log, args...) \
 	pr_err("[GCPU Kernel] [%s] [%d] *** ERROR: "log, __func__, __LINE__, ##args)
 #define GCPU_LOG_INFO(log, args...) \
-	pr_info("[GCPU Kernel] [%s] [%d] "log, __func__, __LINE__, ##args)
+	pr_debug("[GCPU Kernel] [%s] [%d] "log, __func__, __LINE__, ##args)
 #endif
 
 #if 0
