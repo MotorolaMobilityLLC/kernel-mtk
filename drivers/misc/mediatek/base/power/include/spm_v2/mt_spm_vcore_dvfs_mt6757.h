@@ -18,23 +18,23 @@
 #include "mt_spm.h"
 #include <mt-plat/aee.h>
 
-#undef VCOREFS_SPM_TAG
-#define VCOREFS_SPM_TAG "[VcoreFS_SPM]"
+#undef TAG
+#define TAG "[VcoreFS_SPM]"
 
 #define spm_vcorefs_crit(fmt, args...)	\
-	pr_err(VCOREFS_SPM_TAG"[CRTT]"fmt, ##args)
+	pr_err(TAG""fmt, ##args)
 #define spm_vcorefs_err(fmt, args...)	\
-	pr_err(VCOREFS_SPM_TAG"[ERR]"fmt, ##args)
+	pr_err(TAG""fmt, ##args)
 #define spm_vcorefs_warn(fmt, args...)	\
-	pr_warn(VCOREFS_SPM_TAG"[WARN]"fmt, ##args)
+	pr_warn(TAG""fmt, ##args)
 #define spm_vcorefs_info(fmt, args...)	\
-	pr_warn(VCOREFS_SPM_TAG""fmt, ##args)	/* pr_info(TAG""fmt, ##args) */
+	pr_warn(TAG""fmt, ##args)
 #define spm_vcorefs_debug(fmt, args...)	\
-	pr_debug(VCOREFS_SPM_TAG""fmt, ##args)
+	pr_debug(TAG""fmt, ##args)
 
 #define spm_vcorefs_aee_warn(string, args...) do {\
 	pr_err("[ERR]"string, ##args); \
-	aee_kernel_warning(VCOREFS_SPM_TAG, "[ERR]"string, ##args);  \
+	aee_kernel_warning(TAG, "[ERR]"string, ##args);  \
 } while (0)
 
 /* load fw for boot up */
@@ -48,13 +48,12 @@ extern int spm_vcorefs_set_opp_fix(int opp, int vcore, int ddr);
 extern void spm_vcorefs_set_pcm_flag(u32 flag, bool set);
 
 /* bw monitor threshold setting to spm */
-extern int spm_vcorefs_set_total_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
-extern int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
+extern int spm_vcorefs_set_perform_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold);
+extern int spm_vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold);
 
 /* bw monitor enable/disable in spm dvfs logic */
 extern void spm_vcorefs_enable_total_bw(bool enable);
 extern void spm_vcorefs_enable_perform_bw(bool enable);
-extern int spm_vcorefs_get_clk_mem_pll(void);
 
 /* misc vcore dvfs support func */
 extern char *spm_vcorefs_dump_dvfs_regs(char *p);

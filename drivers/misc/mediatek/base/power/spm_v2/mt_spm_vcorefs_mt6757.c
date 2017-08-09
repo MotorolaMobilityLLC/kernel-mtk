@@ -46,8 +46,9 @@
 #define SPM_DVFS_STATE	(3 << 0)
 
 /* bw threshold  for SPM_SW_RSV_5, SPM_SW_RSV_4 */
-#define HPM_THRES_OFFSET	16
-#define LPM_THRES_OFFSET	24
+#define HPM_THRES_OFFSET	24
+#define LPM_THRES_OFFSET	16
+#define ULPM_THRES_OFFSET	8
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define VCOREFS_AEE_RR_REC 1
@@ -413,24 +414,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 	return p;
 }
 
-int spm_vcorefs_get_clk_mem_pll(void)
-{
-	int r;
-/*
-    -1 : dvfs in progress
-    0  : MEMPLL1PLL
-    1  : MEMPLL3PLL
-*/
-	if ((spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE))
-		r = -1;
-	else if ((spm_read(SPM_SW_RSV_5) & 0x1))
-		r = 1;
-	else
-		r = 0;
-
-	return r;
-}
-
 /* first time kick SPM FW for vcore dvfs */
 void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 {
@@ -446,69 +429,6 @@ void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 	__go_to_vcore_dvfs(spm_flags, spm_data);
 
 	spm_vcorefs_dump_dvfs_regs(NULL);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-}
-
-int spm_vcorefs_set_total_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
-{
-	u32 value;
-	unsigned long flags;
-
-	if (((hpm_threshold & (~0xFF)) != 0) || ((lpm_threshold & (~0xFF)) != 0)) {
-		spm_vcorefs_err("total bw threshold out-of-range !\n");
-		spm_vcorefs_err("hpm:%d lpm:%d\n", hpm_threshold, lpm_threshold);
-		return -1;
-	}
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	value = spm_read(SPM_SW_RSV_5) & (~(0xFF << HPM_THRES_OFFSET | 0xFF << LPM_THRES_OFFSET));
-	spm_write(SPM_SW_RSV_5,
-		  value | (hpm_threshold << HPM_THRES_OFFSET) | (lpm_threshold <<
-								 LPM_THRES_OFFSET));
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	return 0;
-}
-
-int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
-{
-	u32 value;
-	unsigned long flags;
-
-	if (((hpm_threshold & (~0x7F)) != 0) || ((lpm_threshold & (~0x7F)) != 0)) {
-		spm_vcorefs_err("perform bw threshold out-of-range !\n");
-		spm_vcorefs_err("hpm:%d lpm:%d\n", hpm_threshold, lpm_threshold);
-		return -1;
-	}
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	value = spm_read(SPM_SW_RSV_4) & (~(0xFF << HPM_THRES_OFFSET | 0xFF << LPM_THRES_OFFSET));
-	spm_write(SPM_SW_RSV_4,
-		  value | (hpm_threshold << HPM_THRES_OFFSET) | (lpm_threshold <<
-								 LPM_THRES_OFFSET));
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	return 0;
-}
-
-void spm_vcorefs_enable_total_bw(bool enable)
-{
-	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	unsigned long flags;
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	if (enable == true) {
-		pwrctrl->emi_bw_dvfs_req_mask = 0;
-		spm_write(SPM_SRC_MASK, spm_read(SPM_SRC_MASK) & (~EMI_BW_DVFS_REQ_MASK_LSB));
-	} else {
-		pwrctrl->emi_bw_dvfs_req_mask = 1;
-		spm_write(SPM_SRC_MASK, spm_read(SPM_SRC_MASK) | EMI_BW_DVFS_REQ_MASK_LSB);
-	}
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
@@ -530,6 +450,70 @@ void spm_vcorefs_enable_perform_bw(bool enable)
 	}
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("perform BW enable: %d, SPM_SRC2_MASK: 0x%x\n", enable, spm_read(SPM_SRC2_MASK));
+}
+
+int spm_vcorefs_set_perform_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold)
+{
+	u32 value;
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	value = spm_read(SPM_SW_RSV_4) &
+		(~(0xFF << HPM_THRES_OFFSET | 0xFF << LPM_THRES_OFFSET | 0xFF << ULPM_THRES_OFFSET));
+	value |= ((hpm_threshold << HPM_THRES_OFFSET) |
+		  (lpm_threshold << LPM_THRES_OFFSET) |
+		  (ulpm_threshold << ULPM_THRES_OFFSET));
+	spm_write(SPM_SW_RSV_4, value);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("perform BW threshold, ULPM: %u LPM: %u, HPM: %u, SPM_SW_RSV_4: 0x%x\n",
+				ulpm_threshold, lpm_threshold, hpm_threshold, spm_read(SPM_SW_RSV_4));
+	return 0;
+}
+
+void spm_vcorefs_enable_total_bw(bool enable)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	if (enable == true) {
+		pwrctrl->emi_bw_dvfs_req_mask = 0;
+		spm_write(SPM_SRC_MASK, spm_read(SPM_SRC_MASK) & (~EMI_BW_DVFS_REQ_MASK_LSB));
+	} else {
+		pwrctrl->emi_bw_dvfs_req_mask = 1;
+		spm_write(SPM_SRC_MASK, spm_read(SPM_SRC_MASK) | EMI_BW_DVFS_REQ_MASK_LSB);
+	}
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("total BW enable: %d, SPM_SRC_MASK: 0x%x\n", enable, spm_read(SPM_SRC_MASK));
+}
+
+int spm_vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold)
+{
+	u32 value;
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	value = spm_read(SPM_SW_RSV_3) &
+		(~(0xFF << HPM_THRES_OFFSET | 0xFF << LPM_THRES_OFFSET | 0xFF << ULPM_THRES_OFFSET));
+	value |= ((hpm_threshold << HPM_THRES_OFFSET) |
+		  (lpm_threshold << LPM_THRES_OFFSET) |
+		  (ulpm_threshold << ULPM_THRES_OFFSET));
+	spm_write(SPM_SW_RSV_3, value);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("total BW threshold, ULPM: %u LPM: %u, HPM: %u, SPM_SW_RSV_4: 0x%x\n",
+				ulpm_threshold, lpm_threshold, hpm_threshold, spm_read(SPM_SW_RSV_3));
+	return 0;
 }
 
 static void spm_vcorefs_config_hpm(int opp)

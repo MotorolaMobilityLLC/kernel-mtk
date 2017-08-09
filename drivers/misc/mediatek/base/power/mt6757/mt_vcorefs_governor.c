@@ -16,8 +16,6 @@
 #include <linux/init.h>
 #include <linux/mutex.h>
 
-#include <linux/platform_device.h>
-
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
@@ -78,6 +76,10 @@ __weak int sdio_autok(void)
 	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
 
 /*
+ *  sram debug info
+ */
+void __iomem *vcorefs_sram_base;
+/*
  * struct define
  */
 static DEFINE_MUTEX(governor_mutex);
@@ -108,8 +110,14 @@ struct governor_profile {
 	u32 dvfs_timer;
 
 	bool perform_bw_enable;
+	u32 perform_bw_ulpm_threshold;
 	u32 perform_bw_lpm_threshold;
 	u32 perform_bw_hpm_threshold;
+
+	bool total_bw_enable;
+	u32 total_bw_ulpm_threshold;
+	u32 total_bw_lpm_threshold;
+	u32 total_bw_hpm_threshold;
 };
 
 static struct governor_profile governor_ctrl = {
@@ -137,8 +145,14 @@ static struct governor_profile governor_ctrl = {
 	.curr_ddr_khz = FDDR_S0_KHZ,
 
 	.perform_bw_enable = 0,
+	.perform_bw_ulpm_threshold = 0,
 	.perform_bw_lpm_threshold = 0,
 	.perform_bw_hpm_threshold = 0,
+
+	.total_bw_enable = 0,
+	.total_bw_ulpm_threshold = 0,
+	.total_bw_lpm_threshold = 0,
+	.total_bw_hpm_threshold = 0,
 };
 
 int kicker_table[LAST_KICKER] __nosavedata;
@@ -163,11 +177,12 @@ static struct opp_profile opp_table[] __nosavedata = {
 
 static char *kicker_name[] = {
 	"KIR_MM",
+	"KIR_MM_NON_FORCE",
+	"KIR_AUDIO",
 	"KIR_PERF",
-	"KIR_REESPI",
-	"KIR_TEESPI",
 	"KIR_SCP",
 	"KIR_SYSFS",
+	"KIR_SYSFS_N",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -411,6 +426,78 @@ static int set_init_opp_index(void)
 }
 
 /*
+ *  sram debug info
+ */
+#define SRAM_DEBUG_COUNT 9
+static u32 sram_debug_info[SRAM_DEBUG_COUNT];
+static char *vcorefs_get_sram_debug_info(char *p)
+{
+	if (p) {
+		p += sprintf(p, "dvfs  up count   : 0x%xn", spm_read(VCOREFS_SRAM_DVFS_UP_COUNT));
+		p += sprintf(p, "dvfs  down count : 0x%xn", spm_read(VCOREFS_SRAM_DVFS_DOWN_COUNT));
+		p += sprintf(p, "dvfs2 up count   : 0x%xn", spm_read(VCOREFS_SRAM_DVFS2_UP_COUNT));
+		p += sprintf(p, "dvfs2 down count : 0x%xn", spm_read(VCOREFS_SRAM_DVFS2_DOWN_COUNT));
+		p += sprintf(p, "dvfs up time     : 0x%xn", spm_read(VCOREFS_SRAM_DVFS_UP_TIME));
+		p += sprintf(p, "dvfs down time   : 0x%xn", spm_read(VCOREFS_SRAM_DVFS_DOWN_TIME));
+		p += sprintf(p, "dvfs2 up time    : 0x%xn", spm_read(VCOREFS_SRAM_DVFS2_UP_TIME));
+		p += sprintf(p, "dvfs2 down time  : 0x%xn", spm_read(VCOREFS_SRAM_DVFS2_DOWN_TIME));
+		p += sprintf(p, "emi block time   : 0x%xn", spm_read(VCOREFS_SRAM_EMI_BLOCK_TIME));
+
+	} else {
+		sram_debug_info[0] = spm_read(VCOREFS_SRAM_DVFS_UP_COUNT);
+		sram_debug_info[1] = spm_read(VCOREFS_SRAM_DVFS_DOWN_COUNT);
+		sram_debug_info[2] = spm_read(VCOREFS_SRAM_DVFS2_UP_COUNT);
+		sram_debug_info[3] = spm_read(VCOREFS_SRAM_DVFS2_DOWN_COUNT);
+		sram_debug_info[4] = spm_read(VCOREFS_SRAM_DVFS_UP_TIME);
+		sram_debug_info[5] = spm_read(VCOREFS_SRAM_DVFS_DOWN_TIME);
+		sram_debug_info[6] = spm_read(VCOREFS_SRAM_DVFS2_UP_TIME);
+		sram_debug_info[7] = spm_read(VCOREFS_SRAM_DVFS2_DOWN_TIME);
+		sram_debug_info[8] = spm_read(VCOREFS_SRAM_EMI_BLOCK_TIME);
+		vcorefs_crit("dvfs count: %d %d %d %d\n",
+				sram_debug_info[0], sram_debug_info[1], sram_debug_info[2], sram_debug_info[3]);
+		vcorefs_crit("dvfs time: %d %d %d %d %d\n",
+				sram_debug_info[4], sram_debug_info[5], sram_debug_info[6], sram_debug_info[7],
+				sram_debug_info[8]);
+	}
+	return p;
+}
+
+static void vcorefs_set_sram_data(int index, u32 data)
+{
+	spm_write(VCOREFS_SRAM_BASE + index * 4, data);
+}
+
+static void vcorefs_init_sram_debug(void)
+{
+	int i;
+
+	if (!vcorefs_sram_base) {
+		vcorefs_err("vcorefs_sram_base is not valid\n");
+		return;
+	}
+
+	vcorefs_get_sram_debug_info(NULL);
+
+	vcorefs_crit("clean debug sram info\n");
+	for (i = 0; i < 32; i++)
+		vcorefs_set_sram_data(i, 0);
+}
+
+u32 get_vcore_dvfs_sram_debug_regs(uint32_t index)
+{
+	u32 value = 0;
+
+	if (index == 0)
+		value = SRAM_DEBUG_COUNT;
+	else if (index < SRAM_DEBUG_COUNT)
+		value = sram_debug_info[index-1];
+	else
+		vcorefs_err("out of sram debug count\n");
+
+	return value;
+}
+
+/*
  *  governor debug sysfs
  */
 int vcorefs_enable_debug_isr(bool enable)
@@ -568,6 +655,21 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[HPM_thres ]: 0x%x\n", gvrctrl->perform_bw_hpm_threshold);
 	p += sprintf(p, "\n");
 
+	p += sprintf(p, "[perform_bw]: %s ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+			(gvrctrl->perform_bw_enable) ? "[O]" : "[X]",
+			gvrctrl->perform_bw_ulpm_threshold,
+			gvrctrl->perform_bw_lpm_threshold,
+			gvrctrl->perform_bw_hpm_threshold);
+	p += sprintf(p, "[total_bw]: %s ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+			(gvrctrl->total_bw_enable) ? "[O]" : "[X]",
+			gvrctrl->total_bw_ulpm_threshold,
+			gvrctrl->total_bw_lpm_threshold,
+			gvrctrl->total_bw_hpm_threshold);
+	p += sprintf(p, "\n");
+
+	p = vcorefs_get_sram_debug_info(p);
+	p += sprintf(p, "\n");
+
 	return p;
 }
 
@@ -586,20 +688,53 @@ int vcorefs_enable_perform_bw(bool enable)
 	return 0;
 }
 
-int vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
+int vcorefs_set_perform_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
-	if (((hpm_threshold & (~0x7F)) != 0) || ((lpm_threshold & (~0x7F)) != 0)) {
-		vcorefs_err("perform BW threshold out-of-range, LPM: %u, HPM: %u\n", lpm_threshold, hpm_threshold);
+	if (((hpm_threshold & (~0x7F)) != 0) || ((lpm_threshold & (~0x7F)) != 0) || ((ulpm_threshold & (~0x7F)) != 0)) {
+		vcorefs_err("perform BW threshold out-of-range, ULPM: %u, LPM: %u, HPM: %u\n",
+				ulpm_threshold, lpm_threshold, hpm_threshold);
 		return -1;
 	}
-
+	gvrctrl->perform_bw_ulpm_threshold = ulpm_threshold;
 	gvrctrl->perform_bw_lpm_threshold = lpm_threshold;
 	gvrctrl->perform_bw_hpm_threshold = hpm_threshold;
 
 	mutex_lock(&governor_mutex);
-	spm_vcorefs_set_perform_bw_threshold(lpm_threshold, hpm_threshold);
+	spm_vcorefs_set_perform_bw_threshold(ulpm_threshold, lpm_threshold, hpm_threshold);
+	mutex_unlock(&governor_mutex);
+
+	return 0;
+}
+
+int vcorefs_enable_total_bw(bool enable)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	mutex_lock(&governor_mutex);
+	gvrctrl->total_bw_enable = enable;
+	spm_vcorefs_enable_total_bw(enable);
+	mutex_unlock(&governor_mutex);
+
+	return 0;
+}
+
+int vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	if (((hpm_threshold & (~0x7F)) != 0) || ((lpm_threshold & (~0x7F)) != 0) || ((ulpm_threshold & (~0x7F)) != 0)) {
+		vcorefs_err("perform BW threshold out-of-range, ULPM: %u, LPM: %u, HPM: %u\n",
+				ulpm_threshold, lpm_threshold, hpm_threshold);
+		return -1;
+	}
+	gvrctrl->total_bw_ulpm_threshold = ulpm_threshold;
+	gvrctrl->total_bw_lpm_threshold = lpm_threshold;
+	gvrctrl->total_bw_hpm_threshold = hpm_threshold;
+
+	mutex_lock(&governor_mutex);
+	spm_vcorefs_set_total_bw_threshold(ulpm_threshold, lpm_threshold, hpm_threshold);
 	mutex_unlock(&governor_mutex);
 
 	return 0;
@@ -809,37 +944,6 @@ bool governor_autok_lock_check(int kicker, int opp)
 	return lock_r;
 }
 
-static int vcorefs_probe(struct platform_device *pdev);
-static int vcorefs_remove(struct platform_device *pdev);
-
-#ifdef CONFIG_OF
-static const struct of_device_id alsps_of_match[] = {
-	{ .compatible = "mediatek,mt6757-vcorefs" },
-	{},
-};
-#endif
-
-static struct platform_driver vcorefs_driver = {
-	.probe      = vcorefs_probe,
-	.remove     = vcorefs_remove,
-	.driver     = {
-		.name = "VCOREFS",
-		#ifdef CONFIG_OF
-		.of_match_table = alsps_of_match,
-		#endif
-	}
-};
-
-static int vcorefs_probe(struct platform_device *pdev)
-{
-	return 0;
-}
-
-static int vcorefs_remove(struct platform_device *pdev)
-{
-	return 0;
-}
-
 bool vcorefs_sodi_rekick_lock(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -949,16 +1053,11 @@ static int init_vcorefs_cmd_table(void)
 static int __init vcorefs_module_init(void)
 {
 	int r;
+	struct device_node *node;
 
 	r = init_vcorefs_cmd_table();
 	if (r) {
 		vcorefs_err("FAILED TO INIT CONFIG (%d)\n", r);
-		return r;
-	}
-
-	r = platform_driver_register(&vcorefs_driver);
-	if (r) {
-		vcorefs_err("FAILED TO REGISTER PLATFORM DRIVER (%d)\n", r);
 		return r;
 	}
 
@@ -973,6 +1072,18 @@ static int __init vcorefs_module_init(void)
 		vcorefs_err("FAILED TO REGISTER FB CLIENT (%d)\n", r);
 		return r;
 	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	if (!node)
+		vcorefs_err("find sleep node failed\n");
+
+	vcorefs_sram_base = of_iomap(node, 1);
+	if (!vcorefs_sram_base) {
+		vcorefs_err("FAILED TO MAP SRAM MEMORY OF VCORE DVFS\n");
+		return -ENOMEM;
+	}
+
+	vcorefs_init_sram_debug();
 
 	return r;
 }

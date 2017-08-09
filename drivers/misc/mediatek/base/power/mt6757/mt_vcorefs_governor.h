@@ -50,16 +50,6 @@ struct kicker_config {
 #define FDDR_S1_KHZ		2667000
 #define FDDR_S2_KHZ		1600000
 
-enum vcore_trans {
-	TRANS1,
-	TRANS2,
-	TRANS3,
-	TRANS4,
-	TRANS5,
-	TRANS6,
-	TRANS7,
-	NUM_TRANS,
-};
 
 enum dvfs_kicker {
 	KIR_MM = 0,
@@ -78,6 +68,8 @@ enum dvfs_kicker {
 	KIR_AUTOK_SD,
 	LAST_KICKER,
 };
+
+extern int kicker_table[LAST_KICKER];
 
 enum dvfs_opp {
 	OPP_OFF = -1,
@@ -105,7 +97,17 @@ struct opp_profile {
 	int axi_khz;
 };
 
-extern int kicker_table[LAST_KICKER];
+#define VCOREFS_SRAM_BASE		vcorefs_sram_base	/* map 0x0011cf80 */
+/* VcoreFS debug */
+#define VCOREFS_SRAM_DVFS_UP_COUNT		(VCOREFS_SRAM_BASE + 0x54)
+#define VCOREFS_SRAM_DVFS_DOWN_COUNT		(VCOREFS_SRAM_BASE + 0x58)
+#define VCOREFS_SRAM_DVFS2_UP_COUNT		(VCOREFS_SRAM_BASE + 0x5c)
+#define VCOREFS_SRAM_DVFS2_DOWN_COUNT		(VCOREFS_SRAM_BASE + 0x60)
+#define VCOREFS_SRAM_DVFS_UP_TIME	(VCOREFS_SRAM_BASE + 0x64)
+#define VCOREFS_SRAM_DVFS_DOWN_TIME	(VCOREFS_SRAM_BASE + 0x68)
+#define VCOREFS_SRAM_DVFS2_UP_TIME	(VCOREFS_SRAM_BASE + 0x6c)
+#define VCOREFS_SRAM_DVFS2_DOWN_TIME	(VCOREFS_SRAM_BASE + 0x70)
+#define VCOREFS_SRAM_EMI_BLOCK_TIME	(VCOREFS_SRAM_BASE + 0x74)
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
@@ -134,14 +136,14 @@ extern unsigned int ckgen_meter(int ID);
 
 /* EMIBW API */
 extern int vcorefs_enable_perform_bw(bool enable);
-extern int vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
+extern int vcorefs_set_perform_bw_threshold_v2(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold);
+extern int vcorefs_enable_total_bw(bool enable);
+extern int vcorefs_set_total_bw_threshold_v2(u32 ulpm_threshold, u32 lpm_threshold, u32 hpm_threshold);
 
 /* AutoK related API */
 extern void governor_autok_manager(void);
 extern bool governor_autok_check(int kicker);
 extern bool governor_autok_lock_check(int kicker, int opp);
 
-/* sram debug info */
-extern int vcorefs_enable_debug_isr(bool enable);
 
 #endif	/* _MT_VCOREFS_GOVERNOR_H */
