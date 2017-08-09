@@ -581,17 +581,17 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 		break;
 	default:
 		pr_err("[msdc] Invalid power id\n");
-		return FALSE;
+		return false;
 	}
 	if (reg == NULL) {
 		pr_err("[msdc] regulator pointer is NULL\n");
-		return FALSE;
+		return false;
 	}
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
 	regulator_enable(reg);
 	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
-	return TRUE;
+	return true;
 }
 
 bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
@@ -610,17 +610,17 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 		break;
 	default:
 		pr_err("[msdc] Invalid power id\n");
-		return FALSE;
+		return false;
 	}
 	if (reg == NULL) {
 		pr_err("[msdc] regulator pointer is NULL\n");
-		return FALSE;
+		return false;
 	}
 	/* New API voltage use micro V */
 	regulator_disable(reg);
 	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
 
-	return TRUE;
+	return true;
 }
 
 #else /*for CONFIG_MTK_LEGACY defined*/
