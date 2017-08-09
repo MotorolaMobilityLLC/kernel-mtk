@@ -46,6 +46,7 @@
 
 #include <mt-plat/mtk_memcfg.h>
 #include "ccci_util_log.h"
+#include "ccci_util_lib_main.h"
 /**************************************************************************
 **** Local debug option for this file only ********************************
 **************************************************************************/
@@ -782,7 +783,7 @@ static int collect_lk_boot_arguments(void)
 		goto _common_process;
 	}
 
-	CCCI_UTIL_INF_MSG("ccci,modem_info_v1 still not found, abnormal!!!\n");
+	CCCI_UTIL_INF_MSG("ccci,modem_info_v1 still not found, using v0!!!\n");
 	return -1;
 
 _common_process:
@@ -814,6 +815,7 @@ _common_process:
 /* functions will be called by external */
 int get_lk_load_md_info(char buf[], int size)
 {
+	int i;
 	int has_write;
 
 	if (s_g_lk_load_img_status & LK_LOAD_MD_EN)
@@ -829,20 +831,26 @@ int get_lk_load_md_info(char buf[], int size)
 	has_write += snprintf(&buf[has_write], size - has_write, "LK load MD has error:\n");
 	has_write += snprintf(&buf[has_write], size - has_write, "---- More details ----------------\n");
 	if (s_g_lk_load_img_status & LK_LOAD_MD_ERR_INVALID_MD_ID)
-		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got invalid md id(%d)\n",
-					s_g_lk_ld_md_errno);
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got invalid md id(%d:%s)\n",
+					s_g_lk_ld_md_errno, ld_md_errno_to_str(s_g_lk_ld_md_errno));
 	else if (s_g_lk_load_img_status & LK_LOAD_MD_ERR_NO_MD_LOAD)
-		has_write += snprintf(&buf[has_write], size - has_write, "Err: No valid md image(%d)\n",
-					s_g_lk_ld_md_errno);
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: No valid md image(%d:%s)\n",
+					s_g_lk_ld_md_errno, ld_md_errno_to_str(s_g_lk_ld_md_errno));
 	else if (s_g_lk_load_img_status & LK_LOAD_MD_ERR_LK_INFO_FAIL)
-		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got lk info fail(%d)\n",
-					s_g_lk_ld_md_errno);
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got lk info fail(%d:%s)\n",
+					s_g_lk_ld_md_errno, ld_md_errno_to_str(s_g_lk_ld_md_errno));
 	else if (s_g_lk_load_img_status & LK_KERNEL_SETTING_MIS_SYNC)
 		has_write += snprintf(&buf[has_write], size - has_write, "Err: lk kernel setting mis sync\n");
 
-	has_write += snprintf(&buf[has_write], size - has_write, "ERR> 1:[%d] 2:[%d] 3:[%d] 4:[%d] 5:[%d]\n",
-			lk_load_img_err_no[0], lk_load_img_err_no[1], lk_load_img_err_no[2], lk_load_img_err_no[3],
-			lk_load_img_err_no[4]);
+	has_write += snprintf(&buf[has_write], size - has_write, "ERR> 1:[%d] 2:[%d] 3:[%d] 4:[%d]\n",
+			lk_load_img_err_no[0], lk_load_img_err_no[1], lk_load_img_err_no[2], lk_load_img_err_no[3]);
+
+	for (i = 0; i < MAX_MD_NUM_AT_LK; i++) {
+		if (lk_load_img_err_no[i] == 0)
+			continue;
+		has_write += snprintf(&buf[has_write], size - has_write, "hint for MD%d: %s\n",
+			i+1, ld_md_errno_to_str(lk_load_img_err_no[i]));
+	}
 
 	return has_write;
 }
