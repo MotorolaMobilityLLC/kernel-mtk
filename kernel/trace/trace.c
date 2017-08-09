@@ -436,17 +436,10 @@ static inline void trace_access_lock_init(void)
 #endif
 
 /* trace_flags holds trace_options default values */
-#ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
-unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
-	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
-	TRACE_ITER_GRAPH_TIME | TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS |
-	TRACE_ITER_FUNCTION;
-#else
 unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
 	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
-#endif
 
 static void tracer_tracing_on(struct trace_array *tr)
 {
