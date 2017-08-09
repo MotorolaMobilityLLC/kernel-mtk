@@ -2126,8 +2126,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 #endif
 	if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 		/* post_div 1 -> 2 */
-		if (!cpu_dvfs_is(p, MT_CPU_DVFS_B) &&
-			opp_tbl_m[CUR_OPP_IDX].slot->pos_div < opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
+		if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div < opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
 			adjust_posdiv(p, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 	}
 	/* armpll_div 1 -> 2 */
@@ -2155,8 +2154,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 
 	if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 		/* post_div 2 -> 1 */
-		if (!cpu_dvfs_is(p, MT_CPU_DVFS_B) && opp_tbl_m[CUR_OPP_IDX].slot->pos_div >
-			opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
+		if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div > opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
 			adjust_posdiv(p, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 	}
 #ifdef DCM_ENABLE
@@ -4024,8 +4022,10 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 				cpufreq_lock(flags);
 				cur_freq = p->ops->get_cur_phy_freq(p);
 
-				if (freq != cur_freq)
+				if (freq != cur_freq) {
 					p->ops->set_cur_freq(p, cur_freq, freq);
+					p->idx_opp_tbl = i;
+				}
 #ifndef DISABLE_PBM_FEATURE
 				if (!p->dvfs_disable_by_suspend)
 					_kick_PBM_by_cpu(p);

@@ -111,7 +111,7 @@ static unsigned int abist_meter(int ID)
 	pminit_write(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC) | (ID << 16));
 
 	clk_misc_cfg_0 = pminit_read(CLK_MISC_CFG_0);
-	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider, WAIT CONFIRM*/
+	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x01FFFFFF));	/* select divider, WAIT CONFIRM*/
 
 	clk26cali_1 = pminit_read(CLK26CALI_1);
 	/*pminit_write(CLK26CALI_1, 0x00ff0000); // cycle count default 1024,[25:16]=3FF*/
@@ -131,7 +131,7 @@ static unsigned int abist_meter(int ID)
 
 	temp = pminit_read(CLK26CALI_1) & 0xFFFF;
 
-	output = ((temp * 26000)) / 1024;	/* Khz*/
+	output = ((temp * 26000)) / 1024 * 2;	/* Khz*/
 
 	pminit_write(CLK_DBG_CFG, clk_dbg_cfg);
 	pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);
@@ -472,10 +472,10 @@ static int cpu_speed_dump_read(struct seq_file *m, void *v)
 	seq_printf(m, "%s(BiG) :  %d Khz, CKDIV: %d\n", ckgen_abist_array[45], abist_meter(46),
 		   cpu_div_info(ARMPLL_BIG));
 #else
-	seq_printf(m, "%s(LL): %d Khz\n", ckgen_abist_array[41], abist_meter(42));
-	seq_printf(m, "%s(L): %d Khz\n", ckgen_abist_array[42], abist_meter(43));
-	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[43], abist_meter(44));
-	seq_printf(m, "%s(BIG): %d Khz\n", ckgen_abist_array[45], abist_meter(46));
+	seq_printf(m, "%s(LL): %d Khz\n", ckgen_abist_array[41], abist_meter(34));
+	seq_printf(m, "%s(L): %d Khz\n", ckgen_abist_array[42], abist_meter(35));
+	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[43], abist_meter(36));
+	seq_printf(m, "%s(BIG): %d Khz\n", ckgen_abist_array[45], abist_meter(37));
 #endif
 	pminit_write(ARMPLLDIV_MON_EN, temp);
 	return 0;
