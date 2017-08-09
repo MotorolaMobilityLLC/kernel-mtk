@@ -364,13 +364,21 @@ static struct snd_soc_platform_driver mt_pcm_btsco_platform = {
 
 static int mt_pcm_btsco_dev_probe(struct platform_device *pdev)
 {
-	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
-	if (pdev->dev.of_node) {
-		dev_set_name(&pdev->dev, "%s", MT_SOC_BTSCO_PCM);
-		pr_debug("%s set dev name %s\n", __func__, dev_name(&pdev->dev));
+	struct device *dev = &pdev->dev;
+	int rc;
+
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
+
+	rc = dma_set_mask(dev, DMA_BIT_MASK(33));
+	if (rc)
+		return rc;
+
+	if (dev->of_node) {
+		dev_set_name(dev, "%s", MT_SOC_BTSCO_PCM);
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
-	return snd_soc_register_platform(&pdev->dev, &mt_pcm_btsco_platform);
+	return snd_soc_register_platform(dev, &mt_pcm_btsco_platform);
 }
 
 static int mt_pcm_btsco_dev_remove(struct platform_device *pdev)

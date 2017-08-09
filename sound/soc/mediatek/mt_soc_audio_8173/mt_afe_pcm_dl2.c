@@ -450,8 +450,13 @@ static int mt_pcm_dl2_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_dl2_priv *priv;
+	int rc;
 
 	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
+
+	rc = dma_set_mask(dev, DMA_BIT_MASK(33));
+	if (rc)
+		return rc;
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_DL2_PCM);

@@ -327,8 +327,13 @@ static int mt_pcm_i2s0_awb_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_i2s0_awb_priv *priv;
+	int rc;
 
-	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
+
+	rc = dma_set_mask(dev, DMA_BIT_MASK(33));
+	if (rc)
+		return rc;
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_I2S0_AWB_PCM);
