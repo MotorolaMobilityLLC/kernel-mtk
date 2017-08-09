@@ -183,7 +183,6 @@ static int mtk_dai_anc_record_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_RESUME:
 		if (!anc_ul_record_is_started) {
 			anc_ul_record_is_started = true;
-			AudDrv_Emi_Clk_On();
 			Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 11, 0x1 << 11);
 		}
 		return 0;
@@ -191,7 +190,6 @@ static int mtk_dai_anc_record_trigger(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		if (anc_ul_record_is_started) {
 			anc_ul_record_is_started = false;
-			AudDrv_Emi_Clk_Off();
 			Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 11, 0x1 << 11);
 		}
 		return 0;

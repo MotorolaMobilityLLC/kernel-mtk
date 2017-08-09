@@ -1840,30 +1840,28 @@ EXIT:
 
 void AudDrv_Emi_Clk_On(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _MT_IDLE_HEADER
+		/* mutex is used in these api */
 		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
 		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
 #endif
 	}
 	Aud_EMI_cntr++;
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_pmic_mutex);
 }
 
 void AudDrv_Emi_Clk_Off(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_pmic_mutex);
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _MT_IDLE_HEADER
+		/* mutex is used in these api */
 		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
 		enable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
@@ -1874,7 +1872,7 @@ void AudDrv_Emi_Clk_Off(void)
 		Aud_EMI_cntr = 0;
 		PRINTK_AUD_ERROR("Aud_EMI_cntr = %d\n", Aud_EMI_cntr);
 	}
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_pmic_mutex);
 }
 
 /*****************************************************************************
