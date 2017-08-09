@@ -1576,7 +1576,12 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		irtx@1101d000 {
 			compatible = "mediatek,irtx";
 			reg = <0x1101d000 0x1000>;
-			interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 168 IRQ_TYPE_LEVEL_HIGH>;
+			pwm_ch = <3>;
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&infrasys INFRA_IRTX>;
+			clock-names = "clk-irtx-main";
 		};
 
 		anc_md32@11020000 {
