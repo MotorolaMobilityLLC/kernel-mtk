@@ -10,6 +10,7 @@
 #include <linux/cpumask.h>
 #include <linux/cpufreq.h>
 #include <linux/kthread.h>
+#include <linux/ktime.h>
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
 #include <linux/string.h>
@@ -502,6 +503,7 @@ int mt_ppm_main(void)
 	enum ppm_power_state next_state;
 	unsigned int policy_mask = 0;
 	int i, notify_hps_first = 0;
+	ktime_t now, delta;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -574,10 +576,51 @@ int mt_ppm_main(void)
 					c_req->cpu_limit[i].advise_cpu_core
 				);
 		}
-
+#ifdef PPM_OUTPUT_TRANS_LOG_TO_UART
+		ppm_info("(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
+			c_req->root_cluster, buf);
+#else
 		ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
 			c_req->root_cluster, buf);
+#endif
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
+
+#ifdef PPM_FAST_ATM_SUPPORT
+		{
+			bool notify_hps = false, notify_dvfs = false;
+
+			for (i = 0; i < c_req->cluster_num; i++) {
+				if (c_req->cpu_limit[i].min_cpu_core != last_req->cpu_limit[i].min_cpu_core
+					|| c_req->cpu_limit[i].max_cpu_core != last_req->cpu_limit[i].max_cpu_core
+					|| c_req->cpu_limit[i].has_advise_core)
+					notify_hps = true;
+				if (c_req->cpu_limit[i].min_cpufreq_idx != last_req->cpu_limit[i].min_cpufreq_idx
+					|| c_req->cpu_limit[i].max_cpufreq_idx != last_req->cpu_limit[i].max_cpufreq_idx
+					|| c_req->cpu_limit[i].has_advise_freq)
+					notify_dvfs = true;
+
+				if (notify_hps && notify_dvfs)
+					break;
+			}
+
+			/* notify needed client only */
+			if (notify_dvfs && !notify_hps) {
+				now = ktime_get();
+				if (ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
+					ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb(*c_req);
+				delta = ktime_sub(ktime_get(), now);
+				ppm_dbg(MAIN, "Done! notify dvfs only! time = %lld us\n", ktime_to_us(delta));
+				goto nofity_end;
+			} else if (notify_hps && !notify_dvfs) {
+				now = ktime_get();
+				if (ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb)
+					ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb(*c_req);
+				delta = ktime_sub(ktime_get(), now);
+				ppm_dbg(MAIN, "Done! notify hps only! time = %lld us\n", ktime_to_us(delta));
+				goto nofity_end;
+			}
+		}
+#endif
 
 		/* check need to notify hps first or not
 		   1. one or more power budget related policy is activate
@@ -607,16 +650,27 @@ int mt_ppm_main(void)
 		/* send request to client */
 		if (notify_hps_first) {
 			for (i = NR_PPM_CLIENTS - 1; i >= 0; i--) {
+				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
+				delta = ktime_sub(ktime_get(), now);
+				ppm_dbg(MAIN, "%s callback done! time = %lld us\n",
+					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
 			}
 		} else {
 			for_each_ppm_clients(i) {
+				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
+				delta = ktime_sub(ktime_get(), now);
+				ppm_dbg(MAIN, "%s callback done! time = %lld us\n",
+					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
 			}
 		}
 
+#ifdef PPM_FAST_ATM_SUPPORT
+nofity_end:
+#endif
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,
 			ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit));
 	}

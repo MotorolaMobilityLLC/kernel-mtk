@@ -214,6 +214,45 @@ unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned 
 				return i;
 		}
 	} else {
+#ifdef PPM_FAST_ATM_SUPPORT
+		struct cpumask cluster_cpu[NR_PPM_CLUSTERS];
+		struct cpumask online_cpu[NR_PPM_CLUSTERS];
+		unsigned int online_core_num[NR_PPM_CLUSTERS];
+		int i, j, idx = -1, best_idx = -1;
+
+		for_each_ppm_clusters(i) {
+			arch_get_cluster_cpus(&cluster_cpu[i], i);
+			cpumask_and(&online_cpu[i], &cluster_cpu[i], cpu_online_mask);
+			online_core_num[i] = cpumask_weight(&online_cpu[i]);
+		}
+
+		state_info = ppm_get_power_state_info();
+		tbl = state_info[state].pwr_sorted_tbl;
+
+		for (i = 0; i < tbl->size; i++) {
+			idx = tbl->sorted_tbl[i].advise_index;
+
+			if (tbl->sorted_tbl[i].value <= pwr_idx) {
+				if (best_idx == -1)
+					best_idx = idx;
+
+				for_each_ppm_clusters(j) {
+					if (power_table.power_tbl[idx].cluster_cfg[j].core_num
+						< online_core_num[j])
+						break;
+				}
+				if (j == NR_PPM_CLUSTERS) {
+					if (best_idx != idx)
+						ppm_ver("pwr_idx change from %d to %d for thermal enhancement\n",
+							best_idx, idx);
+					return idx;
+				}
+			}
+		}
+
+		if (best_idx != -1)
+			return best_idx;
+#else
 		state_info = ppm_get_power_state_info();
 		tbl = state_info[state].pwr_sorted_tbl;
 
@@ -221,6 +260,7 @@ unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned 
 			if (tbl->sorted_tbl[i].value <= pwr_idx)
 				return tbl->sorted_tbl[i].advise_index;
 		}
+#endif
 	}
 
 	/* not found */
