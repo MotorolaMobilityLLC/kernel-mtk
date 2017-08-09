@@ -49,6 +49,7 @@
 #include <linux/sched.h>
 #include <linux/proc_fs.h>
 #include <linux/kthread.h>
+#include <linux/seq_file.h>
 
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -185,8 +186,8 @@ static int g_start_debug_thread;
 static int g_adc_init_flag;
 
 static u32 cali_reg;
-static u32 cali_oe;
-static u32 cali_ge;
+static s32 cali_oe;
+static s32 cali_ge;
 static u32 cali_ge_a;
 static u32 cali_oe_a;
 static u32 gain;
@@ -1606,12 +1607,16 @@ exit:
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i, res;
+	int i, j, res;
 	int data[4] = { 0, 0, 0, 0 };
+	int data2[4] = { 0, 0, 0, 0 };
+	int rawdata;
+	long brawdata;
+	int err;
 
 	seq_puts(m, "********** Auxadc status dump **********\n");
 
-	seq_printf(m, "reg=0x%x ADC_GE_A=0x%x ADC_OE_A=0x%x GE:0x%x OE:0x%x gain:0x%x\n",
+	seq_printf(m, "reg=0x%x ADC_GE_A=%d ADC_OE_A=%d GE:%d OE:%d gain:0x%x\n",
 	cali_reg, cali_ge_a, cali_oe_a, cali_ge, cali_oe, gain);
 #if defined(EFUSE_CALI)
 	seq_printf(m, "ADC_GE_A_MASK:0x%x ADC_GE_A_SHIFT:0x%x\n", ADC_GE_A_MASK, ADC_GE_A_SHIFT);
@@ -1626,12 +1631,25 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 		seq_printf(m, "raw:%d data:%d %d %d without cali\n", i, data[0], data[1], data[2]);
 	}
 
-	for (i = 0; i < 5; i++) {
-		res = IMM_auxadc_GetOneChannelValue(i, data, NULL);
-		if (res < 0)
-			seq_printf(m, "[adc_driver]: get data error res:%d\n", res);
-		else
-			seq_printf(m, "channel[%d]=%d.%d %d\n", i, data[0], data[1], data[2]);
+	for (i = 0; i < 16; i++) {
+
+		brawdata = 0;
+		err = 0;
+		for (j = 0; j < 100; j++) {
+			res = IMM_auxadc_GetOneChannelValue(i, data, &rawdata);
+			if (res < 0)
+				err++;
+			brawdata += rawdata;
+		}
+
+		brawdata = brawdata/100;
+		mt_auxadc_get_cali_data(brawdata, data, true);
+
+		mt_auxadc_get_cali_data(brawdata, data2, false);
+
+		seq_printf(m, "channel[%d]=%d.%d wi cali , %d.%d wo cali raw:%d %d err:%d\n",
+			i, data[0], data[2], data2[0], data2[2], (int)brawdata, rawdata, err);
+
 	}
 
 	return 0;
@@ -1850,6 +1868,7 @@ static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6735-auxadc",},
 	{.compatible = "mediatek,mt6797-auxadc",},
 	{.compatible = "mediatek,mt6755-auxadc",},
+	{.compatible = "mediatek,mt6757-auxadc",},
 	{},
 };
 #endif

@@ -1,11 +1,24 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __HW_BREAKPOINT_H
 #define __HW_BREAKPOINT_H
 
-typedef int (*wp_handler) (phys_addr_t addr);
+typedef int (*wp_handler) (unsigned long addr);
 
 struct wp_event {
-	phys_addr_t virt;
-	phys_addr_t phys;
+	unsigned long virt;
+	unsigned long phys;
 	int type;
 	wp_handler handler;
 	int in_use;
@@ -32,5 +45,5 @@ struct wp_event {
 
 extern int add_hw_watchpoint(struct wp_event *wp_event);
 extern int del_hw_watchpoint(struct wp_event *wp_event);
-
+extern void reset_watchpoint(void);
 #endif				/* !__HW_BREAKPOINT_H */
