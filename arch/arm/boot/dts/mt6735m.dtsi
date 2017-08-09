@@ -1703,7 +1703,7 @@
 /* sensor end */
 	MOBICORE {
 		compatible = "trustonic,mobicore";
-		interrupts = <0 248 0x1>;
+		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {

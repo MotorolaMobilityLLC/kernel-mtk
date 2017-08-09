@@ -1744,7 +1744,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 /* sensor end */
 	MOBICORE {
 		compatible = "trustonic,mobicore";
-		interrupts = <0 248 0x1>;
+		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {
