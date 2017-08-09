@@ -1584,7 +1584,7 @@ static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 		if (strstr(buf, "common") == NULL)
 			goto exit;
 		strsep(&buf, " ");
-		if (kstrtoint(buf, 10, &__theta) != 1)
+		if (kstrtoint(buf, 10, &__theta) != 0)
 			goto exit;
 
 		if (__theta < phpb_theta_min)
@@ -1833,6 +1833,9 @@ static void atm_hrtimer_init(void)
 	hrtimer_start(&atm_hrtimer, ktime, HRTIMER_MODE_REL);
 }
 
+static int krtatm_curr_maxtj;
+static int krtatm_prev_maxtj;
+
 static int krtatm_thread(void *arg)
 {
 	struct sched_param param = {.sched_priority = 98 };
@@ -1855,7 +1858,12 @@ static int krtatm_thread(void *arg)
 			if (!mtk_get_gpu_loading(&gpu_loading))
 				gpu_loading = 0;
 
-			_adaptive_power_calc(atm_prev_maxtj, atm_curr_maxtj, (unsigned int) gpu_loading);
+			/* use separate prev/curr in krtatm because krtatm may be blocked by PPM */
+			krtatm_prev_maxtj = krtatm_curr_maxtj;
+			krtatm_curr_maxtj = atm_curr_maxtj;
+			if (krtatm_prev_maxtj == 0)
+				krtatm_prev_maxtj = atm_prev_maxtj;
+			_adaptive_power_calc(krtatm_prev_maxtj, krtatm_curr_maxtj, (unsigned int) gpu_loading);
 		}
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
