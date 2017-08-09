@@ -315,65 +315,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	is_wrot_sram = rdma_golden_setting->is_wrot_sram;
 	fifo_mode = rdma_golden_setting->fifo_mode;
 
-	if (idx == 0) {
-		if (fifo_mode == 0) {
-#if 0
-			ultra_low_us = 1;
-			ultra_high_us = 3;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 4;
-#else
-			ultra_low_us = 4;
-			ultra_high_us = 6;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 7;
-#endif
-		} else if (fifo_mode == 1) {
-			ultra_low_us = 4;
-			ultra_high_us = 6;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 7;
-		} else {
-			ultra_low_us = 4;
-			ultra_high_us = 6;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 7;
-		}
-	} else {
-		if (rdma_golden_setting->ext_dst_width  == 1920 && rdma_golden_setting->ext_dst_height == 1080) {
-			ultra_low_us = 4;
-			ultra_high_us = 6;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 7;
-		} else if ((rdma_golden_setting->ext_dst_width == 1280 && rdma_golden_setting->ext_dst_height == 720)
-		|| (rdma_golden_setting->ext_dst_width == 720 && rdma_golden_setting->ext_dst_height == 480)) {
-			if (rdma_golden_setting->ext_hrt_num > rdma_golden_setting->hrt_magicnum) {
-				ultra_low_us = 8;
-				ultra_high_us = 12;
-				preultra_low_us = ultra_high_us;
-				preultra_high_us = 15;
-			} else {
-				ultra_low_us = 4;
-				ultra_high_us = 6;
-				preultra_low_us = ultra_high_us;
-				preultra_high_us = 7;
-			}
-		}  else if (rdma_golden_setting->ext_dst_width == 3840 && rdma_golden_setting->ext_dst_height == 2160) {
-			DDPDUMP("[disp_lowpower]p_golden_setting is 2160p\n");
-			ultra_low_us = 4;
-			ultra_high_us = 6;
-			preultra_low_us = ultra_high_us;
-			preultra_high_us = 7;
-
-		} else {
-				ultra_low_us = 8;
-				ultra_high_us = 12;
-				preultra_low_us = ultra_high_us;
-				preultra_high_us = 15;
-		}
-
-
-	}
+	ultra_low_us = 4;
+	ultra_high_us = 6;
+	preultra_low_us = ultra_high_us;
+	preultra_high_us = 7;
 
 	if (rdma_golden_setting->is_dc)
 		fill_rate = 960*mmsysclk; /* FIFO depth / us  */
@@ -418,7 +363,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		else
 			fifo_valid_size = 512;
 	} else
-		fifo_valid_size = 256;
+		fifo_valid_size = 512;
 
 
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
