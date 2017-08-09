@@ -1669,10 +1669,10 @@ wlanoidQueryP2pOpChannel(IN P_ADAPTER_T prAdapter,
 		rResult = WLAN_STATUS_INVALID_DATA;
 		break;
 #endif
-
+/*
 		*pu4QueryInfoLen = sizeof(UINT_8);
 		rResult = WLAN_STATUS_SUCCESS;
-
+*/
 	} while (FALSE);
 
 	return rResult;
