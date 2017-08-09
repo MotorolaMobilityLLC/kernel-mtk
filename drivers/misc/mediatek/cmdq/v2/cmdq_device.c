@@ -101,11 +101,12 @@ void cmdq_dev_deinit_module_base_VA(void)
 
 long cmdq_dev_alloc_module_base_VA_by_name(const char *name)
 {
-	unsigned long VA;
+	unsigned long VA = 0L;
 	struct device_node *node = NULL;
 
 	node = of_find_compatible_node(NULL, NULL, name);
-	VA = (unsigned long)of_iomap(node, 0);
+	if (node != NULL)
+		VA = (unsigned long)of_iomap(node, 0);
 	CMDQ_LOG("DEV: VA(%s): 0x%lx\n", name, VA);
 	return VA;
 }

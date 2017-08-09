@@ -232,7 +232,7 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_WROT = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_wrot");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_tdshp");
 	gCmdqMdpModuleBaseVA.MDP_COLOR = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_color");
-	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,VENC");
+	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt6755-venc");
 #endif
 }
 

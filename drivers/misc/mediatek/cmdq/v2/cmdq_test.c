@@ -206,8 +206,6 @@ static void testcase_sync_token(void)
 
 		/* clear token */
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
-
-		BUG_ON(ret >= 0);
 	} while (0);
 
 	cmdqRecDestroy(hRec);
@@ -265,7 +263,6 @@ static void testcase_async_suspend_resume(void)
 static void testcase_errors(void)
 {
 	cmdqRecHandle hReq;
-	cmdqRecHandle hLoop;
 	TaskStruct *pTask;
 	int32_t ret;
 	const unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -277,16 +274,10 @@ static void testcase_errors(void)
 		/* SW timeout */
 		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 
-		cmdqRecCreate(CMDQ_SCENARIO_TRIGGER_LOOP, &hLoop);
-		cmdqRecReset(hLoop);
-		cmdqRecSetSecure(hLoop, false);
-		cmdqRecPoll(hLoop, CMDQ_TEST_MMSYS_DUMMY_PA, 1, 0xFFFFFFFF);
-		cmdqRecStartLoop(hLoop);
-
 		CMDQ_MSG("=============== INIFINITE Wait ===================\n");
 
 		cmdqCoreClearEvent(CMDQ_EVENT_MDP_RSZ0_EOF);
-		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &hReq);
+		cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &hReq);
 
 		/* turn on ALL engine flag to test dump */
 		for (ret = 0; ret < CMDQ_MAX_ENGINE_COUNT; ++ret)
@@ -343,11 +334,9 @@ static void testcase_errors(void)
 			hReq->blockSize += 8;
 		}
 		cmdqRecFlush(hReq);
-
 	} while (0);
 
 	cmdqRecDestroy(hReq);
-	cmdqRecDestroy(hLoop);
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -667,12 +656,10 @@ static void testcase_loop(void)
 
 	/* should success */
 	status = cmdqRecStartLoop(hLoopReq);
-	BUG_ON(status != 0);
 
 	/* should fail because already started */
 	CMDQ_MSG("============testcase_loop start loop\n");
 	status = cmdqRecStartLoop(hLoopReq);
-	BUG_ON(status >= 0);
 
 	cmdqRecDumpCommand(hLoopReq);
 
@@ -842,7 +829,6 @@ static void testcase_prefetch_scenarios(void)
 			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
 
 		ret = cmdqRecFlush(hConfig);
-		BUG_ON(ret < 0);
 	}
 
 	cmdqRecDestroy(hConfig);
@@ -1152,6 +1138,16 @@ static void testcase_perisys_apb(void)
 	cmdqRecHandle handle = NULL;
 	uint32_t data = 0;
 	uint32_t dataRead = 0;
+
+#ifdef CMDQ_OF_SUPPORT
+	if (0L == MSDC_VA_BASE || 0L == AUDIO_VA_BASE) {
+		if (MSDC_VA_BASE != 0)
+			cmdq_dev_free_module_base_VA(MSDC_VA_BASE);
+		if (AUDIO_VA_BASE != 0)
+			cmdq_dev_free_module_base_VA(AUDIO_VA_BASE);
+		return;
+	}
+#endif
 
 	CMDQ_MSG("%s\n", __func__);
 	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
@@ -1559,19 +1555,12 @@ static void testcase_update_value_to_slot(void)
 static void testcase_poll(void)
 {
 	cmdqRecHandle handle;
+	TaskStruct *p_task;
 
 	uint32_t value = 0;
 	uint32_t pollingVal = 0x00003001;
 
 	CMDQ_MSG("%s\n", __func__);
-
-	CMDQ_REG_SET32(CMDQ_TEST_MMSYS_DUMMY_VA, ~0);
-
-	/* it's too slow that set value after enable CMDQ */
-	/* sw timeout will be hanppened before CPU schedule to set value..., so we set value here */
-	CMDQ_REG_SET32(CMDQ_TEST_MMSYS_DUMMY_VA, pollingVal);
-	value = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
-	CMDQ_MSG("target value is 0x%08x\n", value);
 
 	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdqRecReset(handle);
@@ -1579,15 +1568,17 @@ static void testcase_poll(void)
 
 	cmdqRecPoll(handle, CMDQ_TEST_MMSYS_DUMMY_PA, pollingVal, ~0);
 
-	cmdqRecFlush(handle);
-	cmdqRecDestroy(handle);
+	cmdq_rec_finalize_command(handle, false);
+	_test_submit_async(handle, &p_task);
 
-	/* value check */
+	/* Set MMSYS dummy register value after clock is on */
+	CMDQ_REG_SET32(CMDQ_TEST_MMSYS_DUMMY_VA, pollingVal);
 	value = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
-	if (pollingVal != value) {
-		/* Print error status */
-		CMDQ_ERR("polling target value is 0x%08x\n", value);
-	}
+	CMDQ_MSG("target value is 0x%08x\n", value);
+
+	cmdqCoreWaitAndReleaseTask(p_task, 500);
+
+	cmdqRecDestroy(handle);
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -3284,7 +3275,7 @@ void testcase_prefetch_from_DTS(void)
 }
 
 typedef enum CMDQ_TESTCASE_ENUM {
-	CMDQ_TESTCASE_ALL = 0,
+	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
 	CMDQ_TESTCASE_ERROR = 2,
 	CMDQ_TESTCASE_FPGA = 3,
@@ -3473,7 +3464,6 @@ static void testcase_general_handling(int32_t testID)
 		testcase_dram_access();
 		testcase_backup_register();
 		testcase_fire_and_forget();
-		testcase_sync_token_threaded();
 		testcase_long_command();
 		testcase_backup_reg_to_slot();
 		testcase_write_from_data_reg();
@@ -3481,9 +3471,12 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case CMDQ_TESTCASE_ERROR:
 		testcase_errors();
+		testcase_async_request();
+		testcase_module_full_dump();
 		break;
 	case CMDQ_TESTCASE_BASIC:
 		testcase_write();
+		testcase_write_with_mask();
 		testcase_poll();
 		testcase_scenario();
 		break;
@@ -3494,43 +3487,28 @@ static void testcase_general_handling(int32_t testID)
 		testcase_read_to_data_reg();	/* must verify! */
 		testcase_dram_access();
 		break;
-	case CMDQ_TESTCASE_ALL:
+	case CMDQ_TESTCASE_DEFAULT:
 		testcase_multiple_async_request();
 		testcase_read_to_data_reg();
 		testcase_get_result();
-		testcase_errors();
-
 		testcase_scenario();
-		testcase_sync_token();
-
 		testcase_write();
 		testcase_poll();
 		testcase_write_address();
-		testcase_async_request();
 		testcase_async_suspend_resume();
 		testcase_async_request_partial_engine();
 		testcase_prefetch_scenarios();
 		testcase_loop();
 		testcase_trigger_thread();
 		testcase_prefetch();
-
-		/* testcase_sync_token_threaded(); */
-
 		testcase_long_command();
-
-		/* testcase_clkmgr(); */
 		testcase_dram_access();
-		testcase_perisys_apb();
 		testcase_backup_register();
 		testcase_fire_and_forget();
-
 		testcase_backup_reg_to_slot();
-
 		testcase_emergency_buffer();
-
 		testcase_thread_dispatch();
 		testcase_full_thread_array();
-		testcase_module_full_dump();
 		break;
 	default:
 		CMDQ_LOG("[TESTCASE]CONFIG Not Found: gCmdqTestSecure: %d, testType: %lld\n",
@@ -3552,6 +3530,9 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 	CMDQ_LOG("[TESTCASE]CONFIG PARAMETER: [1]: %lld, [2]: %lld, [3]: %lld\n",
 		 gCmdqTestConfig[1], gCmdqTestConfig[2], gCmdqTestConfig[3]);
 	memcpy(testParameter, gCmdqTestConfig, sizeof(testParameter));
+	gCmdqTestSecure = false;
+	gCmdqTestConfig[0] = 0LL;
+	gCmdqTestConfig[1] = -1LL;
 	mutex_unlock(&gCmdqTestProcLock);
 
 	/* trigger test case here */
@@ -3666,7 +3647,10 @@ static int __init cmdq_test_init(void)
 {
 #ifdef _CMDQ_TEST_PROC_
 	CMDQ_MSG("cmdq_test_init\n");
-
+	/* Initial value */
+	gCmdqTestSecure = false;
+	gCmdqTestConfig[0] = 0LL;
+	gCmdqTestConfig[1] = -1LL;
 	/* Mout proc entry for debug */
 	gCmdqTestProcEntry = proc_mkdir("cmdq_test", NULL);
 	if (NULL != gCmdqTestProcEntry) {

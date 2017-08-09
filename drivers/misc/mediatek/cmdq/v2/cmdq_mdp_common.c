@@ -384,6 +384,12 @@ void cmdq_mdp_loop_off(CMDQ_ENG_ENUM engine,
 
 void cmdq_mdp_dump_venc(const unsigned long base, const char *label)
 {
+	if (0L == base) {
+		/* print error message */
+		CMDQ_ERR("venc base VA [0x%lx] is not correct\n", base);
+		return;
+	}
+
 	CMDQ_ERR("======== cmdq_mdp_dump_venc + ========\n");
 	CMDQ_ERR("[0x%lx] to [0x%lx]\n", base, base + 0x1000 * 4);
 
