@@ -9921,7 +9921,7 @@ static MINT32 __init ISP_Init(void)
 	LOG_DBG("register isp callback for GCE");
 	cmdqCoreRegisterDebugRegDumpCB(ISP_BeginGCECallback, ISP_EndGCECallback);
 
-	m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);
+	/* m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);*/
 
 	/* TODO: Check this */
 #ifndef EVEREST_EP_CODE_MARK
