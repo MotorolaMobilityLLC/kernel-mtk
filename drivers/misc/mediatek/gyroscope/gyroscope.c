@@ -67,15 +67,15 @@ static void gyro_work_func(struct work_struct *work)
 	cxt  = gyro_context_obj;
 	delay_ms = atomic_read(&cxt->delay);
 
-	if (NULL == cxt->gyro_data.get_data)
+	if (NULL == cxt->gyro_data.get_data) {
 		GYRO_ERR("gyro driver not register data path\n");
-
+		return;
+	}
 
 	cur_ns = getCurNS();
 
     /* add wake lock to make sure data can be read before system suspend */
-	if (cxt->gyro_data.get_data)
-		cxt->gyro_data.get_data(&x, &y, &z, &status);
+	err = cxt->gyro_data.get_data(&x, &y, &z, &status);
 
 	if (err) {
 		GYRO_ERR("get gyro data fails!!\n");
