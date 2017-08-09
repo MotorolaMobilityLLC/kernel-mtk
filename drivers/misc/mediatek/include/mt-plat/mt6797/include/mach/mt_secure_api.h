@@ -81,6 +81,9 @@ mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission)
 #if defined(CONFIG_MCUSYS_WRITE_PROTECT) && \
 	(defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI))
 
+#define kernel_smc_msg(x1, x2, x3) \
+	mt_secure_call(MTK_SIP_KERNEL_MSG, x1, x2, x3)
+
 #ifdef CONFIG_ARM64		/* Kernel 64 */
 #define mcusys_smc_write(virt_addr, val) \
 	mt_reg_sync_writel(val, virt_addr)
@@ -108,9 +111,7 @@ mt_secure_call(MTK_SIP_KERNEL_MCUSYS_ACCESS_COUNT, 0, 0, 0)
 #define mcusys_smc_write(virt_addr, val) \
 	mt_reg_sync_writel(val, virt_addr)
 #define mcusys_access_count()               (0)
+#define kernel_smc_msg(x1, x2, x3)
 #endif
-
-#define kernel_smc_msg(x1, x2, x3) \
-	mt_secure_call(MTK_SIP_KERNEL_MSG, x1, x2, x3)
 
 #endif				/* _MT_SECURE_API_H_ */

@@ -45,9 +45,6 @@ unsigned long *sleep_aee_rec_cpu_dormant_pa;
 unsigned long *sleep_aee_rec_cpu_dormant_va;
 #endif
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-static unsigned long biu_base;
-#endif
 static unsigned long gic_id_base;
 
 static unsigned int kp_irq_bit;
@@ -62,23 +59,15 @@ static unsigned int c2k_wdt_bit;
 #define MAX_CORES 4
 #define MAX_CLUSTER 2
 
-#if defined(CONFIG_ARCH_MT6797)
-#define BIU_NODE		"mediatek,mt6797-mcu_biu"
-#elif defined(CONFIG_ARCH_MT6797M)
-#define BIU_NODE		"mediatek,mt6797m-mcu_biu"
-#endif
-#define GIC_NODE		"mtk,mt-gic"
+#define GIC_NODE		"arm,gic-v3"
 #define KP_NODE			"mediatek,mt6797-keypad"
 #define CONSYS_NODE		"mediatek,mt6797-consys"
 #define AUXADC_NODE		"mediatek,mt6797-auxadc"
 #define MDCLDMA_NODE		"mediatek,mdcldma"
 #ifdef CONFIG_MTK_C2K_SUPPORT
-#define MDC2K_NODE		"mediatek,MDC2K"
+#define MDC2K_NODE		"mediatek,ap2c2k_ccif"
 #endif
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-#define DMT_BIU_BASE		(biu_base)
-#endif
 #define DMT_GIC_DIST_BASE	(gic_id_base)
 #define DMT_KP_IRQ_BIT		(kp_irq_bit)
 #define DMT_CONN_WDT_IRQ_BIT	(conn_wdt_irq_bit)
@@ -86,13 +75,6 @@ static unsigned int c2k_wdt_bit;
 #define DMT_MD1_WDT_BIT		(md1_wdt_bit)
 #ifdef CONFIG_MTK_C2K_SUPPORT
 #define DMT_C2K_WDT_BIT		(c2k_wdt_bit)
-#endif
-
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-#define BIU_CONTROL		(DMT_BIU_BASE)
-#define CMD_QUEUE_EN		(1 << 0)
-#define DCM_EN			(1 << 1)
-#define TLB_ULTRA_EN		(1 << 8)
 #endif
 
 #define reg_read(addr)		__raw_readl(IOMEM(addr))
@@ -198,6 +180,16 @@ struct interrupt_distributor {
 	unsigned const int primecell_id[4];		/* 0xFF0 */
 };
 
+unsigned int __weak *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
+{
+	return p;
+}
+void __weak mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid) { }
+void __weak mt_copy_dbg_regs(int to, int from) { }
+void __weak mt_save_banked_registers(unsigned int *container) { }
+void __weak mt_restore_banked_registers(unsigned int *container) { }
+void __weak mt_gic_cpu_init_for_low_power(void) { }
+
 static void restore_gic_spm_irq(unsigned long gic_distributor_address)
 {
 	struct interrupt_distributor *id = (struct interrupt_distributor *) gic_distributor_address;
@@ -208,28 +200,28 @@ static void restore_gic_spm_irq(unsigned long gic_distributor_address)
 	id->control = 0;
 
 	/* Set the pending bit for spm wakeup source that is edge triggerd */
-	if (reg_read(SPM_SLEEP_ISR_RAW_STA) & WAKE_SRC_KP) {
+	if (reg_read(SPM_WAKEUP_STA) & WAKE_SRC_R12_KP_IRQ_B) {
 		i = DMT_KP_IRQ_BIT / GIC_PRIVATE_SIGNALS;
 		j = DMT_KP_IRQ_BIT % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
 	}
-	if (reg_read(SPM_SLEEP_ISR_RAW_STA) & WAKE_SRC_CONN_WDT) {
+	if (reg_read(SPM_WAKEUP_STA) & WAKE_SRC_R12_CONN_WDT_IRQ_B) {
 		i = DMT_CONN_WDT_IRQ_BIT / GIC_PRIVATE_SIGNALS;
 		j = DMT_CONN_WDT_IRQ_BIT % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
 	}
-	if (reg_read(SPM_SLEEP_ISR_RAW_STA) & WAKE_SRC_LOW_BAT) {
+	if (reg_read(SPM_WAKEUP_STA) & WAKE_SRC_R12_LOWBATTERY_IRQ_B) {
 		i = DMT_LOWBATTERY_IRQ_BIT / GIC_PRIVATE_SIGNALS;
 		j = DMT_LOWBATTERY_IRQ_BIT % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
 	}
-	if (reg_read(SPM_SLEEP_ISR_RAW_STA) & WAKE_SRC_MD_WDT) {
+	if (reg_read(SPM_WAKEUP_STA) & WAKE_SRC_R12_MD1_WDT_B) {
 		i = DMT_MD1_WDT_BIT / GIC_PRIVATE_SIGNALS;
 		j = DMT_MD1_WDT_BIT % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
 	}
 #ifdef CONFIG_MTK_C2K_SUPPORT
-	if (reg_read(SPM_SLEEP_ISR_RAW_STA) & WAKE_SRC_C2K_WDT) {
+	if (reg_read(SPM_WAKEUP_STA) & WAKE_SRC_R12_C2K_WDT_IRQ_B) {
 		i = DMT_C2K_WDT_BIT / GIC_PRIVATE_SIGNALS;
 		j = DMT_C2K_WDT_BIT % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
@@ -239,34 +231,10 @@ static void restore_gic_spm_irq(unsigned long gic_distributor_address)
 	id->control = backup;
 }
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-static inline void biu_reconfig(void)
-{
-	int val;
-
-	val = reg_read(BIU_CONTROL);
-	val |= TLB_ULTRA_EN;
-	val |= DCM_EN;
-	val |= CMD_QUEUE_EN;
-	reg_write(BIU_CONTROL, val);
-}
-#endif
-
 static void mt_cluster_restore(int flags)
 {
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-	biu_reconfig();
-#endif
+	mt_gic_cpu_init_for_low_power();
 }
-
-unsigned int __weak *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
-{
-	return p;
-}
-void __weak mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid) { }
-void __weak mt_copy_dbg_regs(int to, int from) { }
-void __weak mt_save_banked_registers(unsigned int *container) { }
-void __weak mt_restore_banked_registers(unsigned int *container) { }
 
 void mt_cpu_save(void)
 {
@@ -283,9 +251,9 @@ void mt_cpu_save(void)
 	stop_generic_timer();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(SPM_SLEEP_TIMER_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 16) & 0x0f;
 	else
-		sleep_sta = (spm_read(SPM_SLEEP_TIMER_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 20) & 0x0f;
 
 	if ((sleep_sta | (1 << cpuid)) == 0x0f) { /* last core */
 		cluster = GET_CLUSTER_DATA();
@@ -305,9 +273,9 @@ void mt_cpu_restore(void)
 	core = GET_CORE_DATA();
 
 	if (clusterid == 0)
-		sleep_sta = (spm_read(SPM_SLEEP_TIMER_STA) >> 16) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 16) & 0x0f;
 	else
-		sleep_sta = (spm_read(SPM_SLEEP_TIMER_STA) >> 20) & 0x0f;
+		sleep_sta = (spm_read(CPU_IDLE_STA) >> 20) & 0x0f;
 
 	sleep_sta = (sleep_sta | (1 << cpuid));
 
@@ -363,10 +331,6 @@ int mt_cpu_dormant_psci(unsigned long flags)
 
 static int mt_cpu_dormant_abort(unsigned long index)
 {
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-	biu_reconfig();
-#endif
-
 	start_generic_timer();
 
 	return 0;
@@ -389,22 +353,7 @@ int mt_cpu_dormant(unsigned long flags)
 	/* to mark as cpu clobs vfp register.*/
 	kernel_neon_begin();
 
-	/* dormant break */
-	if (IS_DORMANT_BREAK_CHECK(flags) && SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())) {
-		ret = MT_CPU_DORMANT_BREAK_V(IRQ_PENDING_1);
-		goto dormant_exit;
-	}
-
 	mt_platform_save_context(flags);
-
-	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x102);
-
-	/* dormant break */
-	if (IS_DORMANT_BREAK_CHECK(flags) && SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())) {
-		mt_cpu_dormant_abort(flags);
-		ret = MT_CPU_DORMANT_BREAK_V(IRQ_PENDING_2);
-		goto dormant_exit;
-	}
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x103);
 
@@ -439,8 +388,6 @@ int mt_cpu_dormant(unsigned long flags)
 
 	local_fiq_enable();
 
-dormant_exit:
-
 	kernel_neon_end();
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x0);
@@ -458,20 +405,6 @@ static int mt_dormant_dts_map(void)
 	u32 mdcldma_interrupt[9];
 #ifdef CONFIG_MTK_C2K_SUPPORT
 	u32 mdc2k_interrupt[3];
-#endif
-
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6797M)
-	node = of_find_compatible_node(NULL, NULL, BIU_NODE);
-	if (!node) {
-		dormant_err("error: cannot find node " BIU_NODE);
-		BUG();
-	}
-	biu_base = (unsigned long)of_iomap(node, 0);
-	if (!biu_base) {
-		dormant_err("error: cannot iomap " BIU_NODE);
-		BUG();
-	}
-	of_node_put(node);
 #endif
 
 	node = of_find_compatible_node(NULL, NULL, GIC_NODE);
@@ -537,7 +470,7 @@ static int mt_dormant_dts_map(void)
 		dormant_err("error: cannot property_read " MDCLDMA_NODE);
 		BUG();
 	}
-	md1_wdt_bit = ((1 - mdcldma_interrupt[6]) << 5) + mdcldma_interrupt[7]; /* irq[0] = 0 => spi */
+	md1_wdt_bit = ((1 - mdcldma_interrupt[3]) << 5) + mdcldma_interrupt[4]; /* irq[0] = 0 => spi */
 	of_node_put(node);
 	dormant_dbg("md1_wdt_bit = %u\n", md1_wdt_bit);
 
@@ -552,7 +485,7 @@ static int mt_dormant_dts_map(void)
 		dormant_err("error: cannot property_read " MDC2K_NODE);
 		BUG();
 	}
-	c2k_wdt_bit = ((1 - mdc2k_interrupt[0]) << 5) + mdc2k_interrupt[1]; /* irq[0] = 0 => spi */
+	c2k_wdt_bit = ((1 - mdc2k_interrupt[3]) << 5) + mdc2k_interrupt[4]; /* irq[0] = 0 => spi */
 	of_node_put(node);
 	dormant_dbg("c2k_wdt_bit = %u\n", c2k_wdt_bit);
 #endif

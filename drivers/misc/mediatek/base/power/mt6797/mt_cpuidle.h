@@ -94,4 +94,6 @@ extern void mt_restore_generic_timer(unsigned int *container, int sw);
 extern unsigned long *aee_rr_rec_cpu_dormant(void);
 extern unsigned long *aee_rr_rec_cpu_dormant_pa(void);
 
+extern void mt_gic_cpu_init_for_low_power(void);
+
 #endif

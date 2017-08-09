@@ -29,8 +29,7 @@
 #include <mach/mt_clkmgr.h>
 /* #include "mach/mt_cpufreq.h" */
 /* #include "mach/mt_gpufreq.h" */
-/* #include "mach/mt_dormant.h" */
-/* #include "mach/mt_cpuidle.h" */
+#include "mt_cpuidle.h"
 /* #include "mach/mt_clkbuf_ctl.h" */
 /* #include "mach/mt_chip.h" */
 #include <mach/mt_freqhopping.h>
@@ -597,10 +596,9 @@ static int __init mt_power_management_init(void)
 
 #if !defined(CONFIG_MTK_FPGA)
 	/* cpu dormant driver init */
-/* **** */
-#if 0
 	mt_cpu_dormant_init();
 
+#if 0
 	/* SPM driver init*/
 	spm_module_init();
 

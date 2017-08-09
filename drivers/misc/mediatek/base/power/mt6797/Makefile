@@ -37,7 +37,7 @@ obj-y += mt_udi.o
 obj-y += mt_ocp.o
 obj-y += mt_otp.o
 obj-y += mt_gpufreq.o
-#obj-y += mt_cpuidle.o
+obj-y += mt_cpuidle.o
 
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
