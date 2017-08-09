@@ -91,6 +91,9 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	struct mmc_data msdc_data;
 	struct mmc_command msdc_cmd;
 	struct mmc_command msdc_stop;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	int is_cmdq_en;
+#endif
 	int ret = 0;
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 	char part_id;
@@ -144,8 +147,26 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	}
 	mmc_claim_host(host_ctl->mmc);
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	is_cmdq_en = false;
+#endif
+
 #if DEBUG_MMC_IOCTL
 	pr_debug("user want access %d partition\n", msdc_ctl->partition);
+#endif
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (host_ctl->mmc->card->ext_csd.cmdq_mode_en) {
+		/* cmdq enabled, turn it off first */
+		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
+		is_cmdq_en = true;
+		ret = mmc_blk_cmdq_switch_tmp(host_ctl->mmc->card, 0);
+		if (ret) {
+			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
+	}
 #endif
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -265,6 +286,18 @@ skip_sbc_prepare:
 
 	if (msdc_ctl->partition)
 		msdc_switch_part(host_ctl, 0);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (is_cmdq_en) {
+		pr_debug("[MSDC_DBG] turn on cmdq\n");
+		ret = mmc_blk_cmdq_switch_tmp(host_ctl->mmc->card, 1);
+		if (ret) {
+			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
+	}
+#endif
 
 	mmc_release_host(host_ctl->mmc);
 	if (!msdc_ctl->iswrite) {

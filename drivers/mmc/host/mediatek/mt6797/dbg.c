@@ -354,6 +354,169 @@ skip_sdio_tune_reg:
 skip_emmc50_reg:
 	return;
 }
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+static unsigned int printk_cpu_test = UINT_MAX;
+struct timeval cur_tv;
+struct timeval prev_tv, curr_tv;
+
+void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
+{
+	unsigned long long t;
+	unsigned long long nanosec_rem;
+	unsigned long flags;
+
+	spin_lock_irqsave(&host->cmd_dump_lock, flags);
+	t = cpu_clock(printk_cpu_test);
+	nanosec_rem = do_div(t, 1000000000)/1000;
+	do_gettimeofday(&cur_tv);
+	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_sec = t;
+	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_usec = nanosec_rem;
+	host->dbg_run_host_log_dat[host->dbg_host_cnt].type = type;
+	host->dbg_run_host_log_dat[host->dbg_host_cnt].cmd = cmd;
+	host->dbg_run_host_log_dat[host->dbg_host_cnt].arg = arg;
+	host->dbg_host_cnt++;
+	if (host->dbg_host_cnt >= dbg_max_cnt)
+		host->dbg_host_cnt = 0;
+	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+}
+
+void mmc_cmd_dump(struct mmc_host *host)
+{
+	int i;
+	int tag = -1;
+	unsigned long flags;
+
+	pr_err("-------------------------------------------------------------------------------\n");
+	spin_lock_irqsave(&host->cmd_dump_lock, flags);
+	for (i = host->dbg_host_cnt; i < dbg_max_cnt; i++) {
+		if (host->dbg_run_host_log_dat[i].cmd == 44
+			&& (host->dbg_run_host_log_dat[i].type == 0)) {
+			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
+				host->dbg_run_host_log_dat[i].time_sec,
+				host->dbg_run_host_log_dat[i].time_usec,
+				host->dbg_run_host_log_dat[i].type,
+				host->dbg_run_host_log_dat[i].cmd,
+				host->dbg_run_host_log_dat[i].arg, tag,
+				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((host->dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((host->dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				);
+		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
+			|| host->dbg_run_host_log_dat[i].cmd == 47)
+			&& !host->dbg_run_host_log_dat[i].type) {
+			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
+				host->dbg_run_host_log_dat[i].time_sec,
+				host->dbg_run_host_log_dat[i].time_usec,
+				host->dbg_run_host_log_dat[i].type,
+				host->dbg_run_host_log_dat[i].cmd,
+				host->dbg_run_host_log_dat[i].arg, tag);
+		} else
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
+			host->dbg_run_host_log_dat[i].time_sec,
+			host->dbg_run_host_log_dat[i].time_usec,
+			host->dbg_run_host_log_dat[i].type,
+			host->dbg_run_host_log_dat[i].cmd,
+			host->dbg_run_host_log_dat[i].arg);
+	}
+
+	for (i = 0; i < host->dbg_host_cnt; i++) {
+		if (host->dbg_run_host_log_dat[i].cmd == 44
+			&& !host->dbg_run_host_log_dat[i].type) {
+			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
+				host->dbg_run_host_log_dat[i].time_sec,
+				host->dbg_run_host_log_dat[i].time_usec,
+				host->dbg_run_host_log_dat[i].type,
+				host->dbg_run_host_log_dat[i].cmd,
+				host->dbg_run_host_log_dat[i].arg, tag,
+				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((host->dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((host->dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				);
+		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
+			|| host->dbg_run_host_log_dat[i].cmd == 47)
+			&& !host->dbg_run_host_log_dat[i].type) {
+			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
+				host->dbg_run_host_log_dat[i].time_sec,
+				host->dbg_run_host_log_dat[i].time_usec,
+				host->dbg_run_host_log_dat[i].type,
+				host->dbg_run_host_log_dat[i].cmd,
+				host->dbg_run_host_log_dat[i].arg, tag);
+		} else
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
+			host->dbg_run_host_log_dat[i].time_sec,
+			host->dbg_run_host_log_dat[i].time_usec,
+			host->dbg_run_host_log_dat[i].type,
+			host->dbg_run_host_log_dat[i].cmd,
+			host->dbg_run_host_log_dat[i].arg);
+	}
+	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+}
+#endif
+
+void msdc_cmdq_status_print(struct msdc_host *host)
+{
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_host *mmc = host->mmc;
+
+	if (!mmc)
+		return;
+
+	pr_err("===============================\n");
+	pr_err("cmdq support : %s\n",
+		mmc->card->ext_csd.cmdq_support ? "yes":"no");
+	pr_err("cmdq mode    : %s\n",
+		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
+	pr_err("cmdq depth   : %d\n",
+		mmc->card->ext_csd.cmdq_depth);
+	pr_err("===============================\n");
+	pr_err("task_id_index: %08lx\n",
+		mmc->task_id_index);
+	pr_err("cq_cmd       : %d\n",
+		atomic_read(&mmc->cq_cmd));
+	pr_err("cq_wait_rdy  : %d\n",
+		atomic_read(&mmc->cq_wait_rdy));
+	pr_err("cq_tuning_now: %d\n",
+		atomic_read(&mmc->cq_tuning_now));
+
+#else
+	pr_err("driver not supported\n");
+#endif
+}
+
+void msdc_cmdq_func(struct msdc_host *host, const int num)
+{
+	if (!host || !host->mmc || !host->mmc->card)
+		return;
+
+	switch (num) {
+	case 0:
+		msdc_cmdq_status_print(host);
+		break;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	case 1:
+		pr_err("force enable cmdq\n");
+		host->mmc->card->ext_csd.cmdq_support = 1;
+		host->mmc->cmdq_support_changed = 1;
+		break;
+	case 2:
+		mmc_cmd_dump(host->mmc);
+		break;
+#endif
+	default:
+		pr_err("unknown function id %d\n", num);
+		break;
+	}
+}
+
 void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 		int spd_mode, int cmdq)
 {
@@ -446,10 +609,22 @@ void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 			spd_mode);
 		break;
 	}
-	if (cmdq)
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (cmdq) {
 		seq_puts(m, "[SD_Debug] enable command queue feature\n");
-	else
+		host->mmc->card->ext_csd.cmdq_support = 1;
+		host->mmc->cmdq_support_changed = 1;
+	} else {
 		seq_puts(m, "[SD_Debug] disable command queue feature\n");
+		host->mmc->card->ext_csd.cmdq_support = 0;
+		host->mmc->cmdq_support_changed = 1;
+		host->mmc->card->ext_csd.cmdq_mode_en = 0;
+	}
+#else
+	seq_puts(m, "[SD_Debug] not support command queue feature yet\n");
+#endif
+
 	/*
 	 * support hw reset operation
 	 */
@@ -2488,6 +2663,14 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		autok_offline_tuning_TX(host);
 		#endif
 		mmc_release_host(host->mmc);
+		break;
+	case MMC_CMDQ_STATUS:
+		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
+		id = p1;
+		if (id >= HOST_MAX_NUM || id < 0)
+			goto invalid_host_id;
+		host = mtk_msdc_host[id];
+		msdc_cmdq_func(host, p2);
 		break;
 	default:
 		seq_puts(m, "[SD_Debug]: Invalid Command\n");

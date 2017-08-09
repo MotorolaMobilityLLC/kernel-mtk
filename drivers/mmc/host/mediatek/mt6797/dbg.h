@@ -37,6 +37,7 @@ enum {
 	MMC_DUMP_EXT_CSD = 27,
 	MMC_DUMP_CSD = 28,
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
+	MMC_CMDQ_STATUS = 30,
 };
 /* Debug message event */
 #define DBG_EVT_NONE	    (0)		/* No event */
@@ -147,5 +148,9 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 		uint address, int count, uint type, int multi_thread);
 void msdc_select_card_type(struct mmc_host *host);
 int msdc_reinit(struct msdc_host *host);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg);
+void mmc_cmd_dump(struct mmc_host *host);
+#endif
 
 #endif

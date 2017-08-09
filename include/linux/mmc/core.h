@@ -11,6 +11,10 @@
 #include <linux/interrupt.h>
 #include <linux/completion.h>
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define CONFIG_CMDQ_CMD_DAT_PARALLEL
+#endif
+
 struct request;
 struct mmc_data;
 struct mmc_request;
@@ -136,6 +140,12 @@ struct mmc_request {
 	struct completion	completion;
 	void			(*done)(struct mmc_request *);/* completion function */
 	struct mmc_host		*host;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_async_req	*areq;
+	int			flags;
+	struct list_head	link;
+	struct list_head	hlist;
+#endif
 };
 
 struct mmc_card;

@@ -71,6 +71,10 @@
 
 /*#define MTK_MSDC_DUMP_FIFO*/
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define CONFIG_CMDQ_CMD_DAT_PARALLEL
+#endif
+
 #define CID_MANFID_SANDISK		0x2
 #define CID_MANFID_TOSHIBA		0x11
 #define CID_MANFID_MICRON		0x13
@@ -587,6 +591,18 @@ static inline unsigned int uffs(unsigned int x)
 #define sdc_is_busy()		(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
 #define sdc_is_cmd_busy()	(MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
 
+#ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
+#define sdc_send_cmdq_cmd(opcode, arg) \
+	do { \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_EN, (1)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_NUM, (opcode)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_RSPTYP, (1)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_DTYPE, (0)); \
+		MSDC_WRITE32(SDC_ARG, (arg)); \
+		MSDC_WRITE32(SDC_CMD, (0x0)); \
+	} while (0)
+#endif
+
 #define sdc_send_cmd(cmd, arg) \
 	do { \
 		MSDC_WRITE32(SDC_ARG, (arg)); \
@@ -694,6 +710,24 @@ extern u8 g_emmc_id;
 #define check_mmc_cmd1825(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
+#define check_mmc_cmd01213(opcode) \
+	((opcode == MMC_GO_IDLE_STATE) || \
+	(opcode == MMC_STOP_TRANSMISSION) || \
+	(opcode == MMC_SEND_STATUS))
+#define check_mmc_cmd4445(opcode) \
+	((opcode == MMC_SET_QUEUE_CONTEXT) || \
+	 (opcode == MMC_QUEUE_READ_ADDRESS))
+#define check_mmc_cmd4647(opcode) \
+	((opcode == MMC_READ_REQUESTED_QUEUE) || \
+	 (opcode == MMC_WRITE_REQUESTED_QUEUE))
+#define check_mmc_cmd48(opcode) \
+	(opcode == MMC_CMDQ_TASK_MGMT)
+#define check_mmc_cmd44(x) \
+	((x) && \
+	 ((x)->opcode == MMC_SET_QUEUE_CONTEXT))
+#define check_mmc_cmd13_sqs(x) \
+	(((x)->opcode == MMC_SEND_STATUS) && \
+	 ((x)->arg & (1 << 15)))
 
 struct gendisk *mmc_get_disk(struct mmc_card *card);
 int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
@@ -730,6 +764,14 @@ int msdc_switch_part(struct msdc_host *host, char part_id);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+unsigned int msdc_do_cmdq_command(struct msdc_host	 *host,
+	struct mmc_command *cmd,
+	int tune,
+	unsigned long timeout);
+#endif
+
 /* Function provided by msdc_partition.c */
 void msdc_proc_emmc_create(void);
 int msdc_can_apply_cache(unsigned long long start_addr,

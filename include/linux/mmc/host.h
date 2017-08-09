@@ -154,12 +154,30 @@ struct device;
 
 struct mmc_async_req {
 	/* active mmc request */
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_request	*mrq_que;
+#endif
 	struct mmc_request	*mrq;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	bool cmdq_en;
+#endif
 	/*
 	 * Check error status of completed mmc request.
 	 * Returns 0 if success otherwise non zero.
 	 */
 	int (*err_check) (struct mmc_card *, struct mmc_async_req *);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define MMC_QUEUE_BEFORE_ENQ			(0)	/* mrq is entered in driver */
+#define MMC_QUEUE_ENQ					(1)	/* mrq is enqueued in device */
+#define MMC_QUEUE_BEFORE_QRDY			(2)	/* mrq is 44/45 issue & wait for qrdy */
+#define MMC_QUEUE_BEFORE_TRAN			(3)	/* mrq is checking qrdy & ready to transfer */
+#define MMC_QUEUE_TRAN					(4)	/* mrq is transfer */
+#define MMC_QUEUE_BUSY					(5) /* mrq is transfer done & cheking busy in case of write */
+#define MMC_QUEUE_BEFORE_POST			(7) /* mrq is terminated transfer
+									including busy check & ready to post process */
+	unsigned long		state;
+	unsigned int		prio;
+#endif
 };
 
 /**
@@ -196,12 +214,34 @@ struct mmc_context_info {
 	spinlock_t		lock;
 };
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define EMMC_MAX_QUEUE_DEPTH		(32)
+#define EMMC_MIN_RT_CLASS_TAG_COUNT	(4)
+#endif
 struct regulator;
 
 struct mmc_supply {
 	struct regulator *vmmc;		/* Card power supply */
 	struct regulator *vqmmc;	/* Optional Vccq supply */
 };
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define dbg_max_cnt (500)
+struct dbg_run_host_log {
+	unsigned long long time_sec;
+	unsigned long long time_usec;
+	int type;
+	int cmd;
+	int arg;
+};
+
+#define dbg_claimed_cnt (100)
+struct dbg_host_claim_hist {
+	int claim_cnt;
+	struct task_struct	*claimer;
+	int type;
+};
+#endif
 
 struct mmc_host {
 	struct device		*parent;
@@ -364,6 +404,64 @@ struct mmc_host {
 	struct mmc_async_req	*areq;		/* active async req */
 	struct mmc_context_info	context_info;	/* async synchronization info */
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_async_req	*areq_que[EMMC_MAX_QUEUE_DEPTH];
+	struct mmc_async_req	*areq_cur;
+	atomic_t		areq_cnt;
+
+	spinlock_t		cmd_que_lock;
+	spinlock_t		dat_que_lock;
+	spinlock_t		thread_lock;
+	spinlock_t		que_lock;
+	struct list_head	cmd_que;
+	struct list_head	dat_que;
+
+	unsigned long		state;
+#define MMC_CMDQ_IDLE		(0)
+#define MMC_CMDQ_CMD		(1 << 0)
+#define MMC_CMDQ_DAT		(1 << 1)
+#define MMC_CMDQ_QRDY		(1 << 2)
+	wait_queue_head_t	cmp_que;
+	struct mmc_request	*busy_mrq;
+	struct mmc_request	*done_mrq;
+	struct mmc_command	chk_cmd;
+	struct mmc_request	chk_mrq;
+	struct mmc_command	que_cmd;
+	struct mmc_request	que_mrq;
+	struct mmc_command	deq_cmd;
+	struct mmc_request	deq_mrq;
+
+	struct mmc_queue_req	*mqrq_cur;
+	struct mmc_queue_req	*mqrq_prev;
+	struct mmc_request	*prev_mrq;
+
+	struct task_struct	*cmdq_thread_cmd;
+	struct task_struct	*cmdq_thread_dat;
+	atomic_t		cq_rw;
+	atomic_t		cq_w;
+	atomic_t		cq_cmd;
+	unsigned int	cq_write;
+	unsigned int	cq_write_status;
+	unsigned int	wp_error;
+	atomic_t		cq_wait_rdy;
+	unsigned long	task_id_index;
+	unsigned int	polling_times;
+	int				cur_rw_task;
+	int				is_data_dma;
+	atomic_t		cq_tuning_now;
+#ifdef CONFIG_MMC_FFU
+	atomic_t		stop_queue;
+#endif
+	unsigned int	data_mrq_queued[32];
+	unsigned int	cmdq_support_changed;
+	struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
+	int dbg_host_cnt;
+	struct dbg_host_claim_hist dbg_host_claim_hist_dat[dbg_claimed_cnt];
+	int dbg_host_claim_cnt;
+	spinlock_t		cmd_dump_lock;
+	spinlock_t		host_claim_lock;
+	int			align_size;
+#endif
 #ifdef CONFIG_FAIL_MMC_REQUEST
 	struct fault_attr	fail_mmc_request;
 #endif
@@ -417,6 +515,12 @@ int mmc_power_restore_host(struct mmc_host *host);
 
 void mmc_detect_change(struct mmc_host *, unsigned long delay);
 void mmc_request_done(struct mmc_host *, struct mmc_request *);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+void mmc_handle_queued_request(struct mmc_host *host);
+int mmc_blk_end_queued_req(struct mmc_host *host,
+	struct mmc_async_req *areq, int index, int status);
+#endif
 
 static inline void mmc_signal_sdio_irq(struct mmc_host *host)
 {
