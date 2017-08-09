@@ -32,7 +32,7 @@ void __iomem *scp_i2c0_base;
 void __iomem *scp_i2c1_base;
 void __iomem *scp_i2c2_base;
 void __iomem *i2c4_base;
-void __iomem *ddrphy_base;
+#include <mt_dramc.h> /* for ucDram_Register_Read () */
 #if defined(CONFIG_ARCH_MT6753)
 void __iomem *_mcucfg_base;
 void __iomem *_mcucfg_phys_base;
@@ -256,16 +256,9 @@ static void spm_register_init(void)
 	if (!i2c4_base)
 		spm_err("base i2c4_base failed\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
-	if (!node)
-		spm_err("find SCP_I2C2 node failed\n");
-	ddrphy_base = of_iomap(node, 0);
-	if (!ddrphy_base)
-		spm_err("base ddrphy_base failed\n");
-
 	spm_err
-	    ("spm_base = %p, scp_i2c0_base = %p, scp_i2c1_base = %p, scp_i2c2_base = %p, ddrphy_base = %p\n",
-	     spm_base, scp_i2c0_base, scp_i2c1_base, scp_i2c2_base, ddrphy_base);
+	    ("spm_base = %p, scp_i2c0_base = %p, scp_i2c1_base = %p, scp_i2c2_base = %p\n",
+	     spm_base, scp_i2c0_base, scp_i2c1_base, scp_i2c2_base);
 	spm_err("spm_irq_0 = %d, spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n", spm_irq_0,
 		spm_irq_1, spm_irq_2, spm_irq_3);
 #endif
@@ -504,10 +497,10 @@ int spm_golden_setting_cmp(bool en)
 	ddrphy_num = sizeof(ddrphy_setting) / sizeof(ddrphy_setting[0]);
 	for (i = 0; i < ddrphy_num; i++) {
 #ifdef CONFIG_OF
-		if (spm_read(ddrphy_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
-			spm_err("dramc setting mismatch addr: %p, val: 0x%x\n",
-				ddrphy_base + ddrphy_setting[i].addr,
-				spm_read(ddrphy_base + ddrphy_setting[i].addr));
+		if (ucDram_Register_Read(ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
+			spm_err("dramc setting mismatch addr: 0x%x, val: 0x%x\n",
+				ddrphy_setting[i].addr,
+				ucDram_Register_Read(ddrphy_setting[i].addr));
 			r = -EPERM;
 		}
 #else
