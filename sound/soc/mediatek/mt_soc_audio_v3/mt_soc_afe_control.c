@@ -1941,12 +1941,14 @@ bool EnableSideToneFilter(bool stf_on)
 
 				if (new_write_ready == old_write_ready) { /* flip => ok */
 					udelay(3);
-					if (try_cnt == 10) {
-						BUG_ON(new_write_ready != old_write_ready);
+					if (try_cnt == 9) {
+						BUG_ON(new_write_ready == old_write_ready);
+						AudDrv_Clk_Off();
 						return false;
 					}
+				} else {
+					break;
 				}
-				break;
 			}
 		}
 	}

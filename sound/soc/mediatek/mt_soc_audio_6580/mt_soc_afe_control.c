@@ -1715,12 +1715,14 @@ bool EnableSideToneFilter(bool stf_on)
 				new_write_ready = (read_reg_value >> 29) & 0x1;
 				if (new_write_ready == old_write_ready) { /* flip => ok */
 					udelay(3);
-					if (try_cnt == 10) {
-						BUG_ON(new_write_ready != old_write_ready);
+					if (try_cnt == 9) {
+						BUG_ON(new_write_ready == old_write_ready);
+						AudDrv_Clk_Off();
 						return false;
 					}
+				} else {
+					break;
 				}
-				break;
 
 			}
 		}
