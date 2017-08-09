@@ -49,3 +49,11 @@ config COMMON_CLK_MT8173
 	default y if ARCH_MT8173
 	---help---
 	  This driver supports Mediatek MT8173 clocks.
+
+config COMMON_CLK_MT2701
+	bool "Clock driver for Mediatek MT2701"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_NEW
+	default y if MACH_MT2701
+	---help---
+	  This driver supports Mediatek MT2701 clocks.
