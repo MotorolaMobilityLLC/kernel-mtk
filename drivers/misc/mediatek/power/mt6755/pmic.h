@@ -7,19 +7,36 @@
 /*
  * The CHIP INFO
  */
-#define PMIC6328_E1_CID_CODE    0x2810
-#define PMIC6328_E2_CID_CODE    0x2820
-#define PMIC6328_E3_CID_CODE    0x2830
+#define PMIC6351_E1_CID_CODE    0x5110
+#define PMIC6351_E2_CID_CODE    0x5120
+#define PMIC6351_E3_CID_CODE    0x5130
+
+
+#define pmic_emerg(fmt, args...)		pr_emerg("[SPM-PMIC] " fmt, ##args)
+#define pmic_alert(fmt, args...)		pr_alert("[SPM-PMIC] " fmt, ##args)
+#define pmic_crit(fmt, args...)		pr_crit("[SPM-PMIC] " fmt, ##args)
+#define pmic_err(fmt, args...)		pr_err("[SPM-PMIC] " fmt, ##args)
+#define pmic_warn(fmt, args...)		pr_warn("[SPM-PMIC] " fmt, ##args)
+#define pmic_notice(fmt, args...)	pr_notice("[SPM-PMIC] " fmt, ##args)
+#define pmic_info(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)
+#define pmic_debug(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)	/* pr_debug show nothing */
+
+/* just use in suspend flow for important log due to console suspend */
+#define pmic_spm_crit2(fmt, args...)		\
+do {					\
+	aee_sram_printk(fmt, ##args);	\
+	pmic_crit(fmt, ##args);		\
+} while (0)
 
 
 #define PMICTAG                "[PMIC] "
 #ifdef PMIC_DEBUG
-#define PMICDEB(fmt, arg...)     pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
-#define PMICFUC(fmt, arg...)     pr_debug(PMICTAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
+#define PMICDEB(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
+#define PMICFUC(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
 #endif
-#define PMICLOG(fmt, arg...)     pr_debug(PMICTAG fmt, ##arg)
-#define PMICERR(fmt, arg...)     pr_debug(PMICTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#define PMICREG(fmt, arg...)     pr_debug(PMICTAG fmt, ##arg)
+#define PMICLOG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+#define PMICERR(fmt, arg...)   pr_debug(PMICTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#define PMICREG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
 
 #define PMIC_EN REGULATOR_CHANGE_STATUS
 #define PMIC_VOL REGULATOR_CHANGE_VOLTAGE
@@ -31,7 +48,7 @@
 
 /* extern functions */
 extern void mt_power_off(void);
-extern PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
+extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_IM_current(void *data);
 extern void pmic_auxadc_lock(void);

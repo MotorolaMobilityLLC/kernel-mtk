@@ -1,7 +1,6 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-#obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o mt6311.o
-obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o mt6311.o
+obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o mt6311.o  pmic_initial_setting.o
 
 ifeq ($(CONFIG_MTK_PMIC_DVT_SUPPORT),y)
      obj-$(CONFIG_MTK_PMIC)     += pmic_dvt.o

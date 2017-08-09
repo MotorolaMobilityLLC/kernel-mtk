@@ -1,20 +1,14 @@
 #ifndef _MT_PMIC_UPMU_SW_H_
 #define _MT_PMIC_UPMU_SW_H_
+#include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
 #define BATTERY_DTS_SUPPORT
+#define RBAT_PULL_UP_VOLT_BY_BIF
 
-#define BATTERY_CDP_WORKAROUND
-
-#if !defined(MTK_PLUG_OUT_DETECTION)
-#define MTK_PLUG_OUT_DETECTION
-#endif
-
-extern void PMIC_INIT_SETTING_V1(void);
-
-/* ============================================================================== */
-/* Low battery level define */
-/* ============================================================================== */
+/*==============================================================================
+ * Low battery level define
+ * ============================================================================== */
 typedef enum LOW_BATTERY_LEVEL_TAG {
 	LOW_BATTERY_LEVEL_0 = 0,
 	LOW_BATTERY_LEVEL_1 = 1,
@@ -38,9 +32,9 @@ extern void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTER
 					LOW_BATTERY_PRIO prio_val);
 
 
-/* ============================================================================== */
-/* Battery OC level define */
-/* ============================================================================== */
+/* ==============================================================================
+ * Battery OC level define
+ * ============================================================================== */
 typedef enum BATTERY_OC_LEVEL_TAG {
 	BATTERY_OC_LEVEL_0 = 0,
 	BATTERY_OC_LEVEL_1 = 1
@@ -56,9 +50,9 @@ extern void (*battery_oc_callback)(BATTERY_OC_LEVEL);
 extern void register_battery_oc_notify(void (*battery_oc_callback) (BATTERY_OC_LEVEL),
 				       BATTERY_OC_PRIO prio_val);
 
-/* ============================================================================== */
-/* Battery percent define */
-/* ============================================================================== */
+/*==============================================================================
+ * Battery percent define
+ *==============================================================================*/
 typedef enum BATTERY_PERCENT_LEVEL_TAG {
 	BATTERY_PERCENT_LEVEL_0 = 0,
 	BATTERY_PERCENT_LEVEL_1 = 1
@@ -83,67 +77,66 @@ register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_PERCEN
 
 /* ADC Channel Number */
 typedef enum {
-	/* MT6328 */
-
-	MT6328_AUX_BATSNS_AP = 0x000,
-	MT6328_AUX_ISENSE_AP,
-	MT6328_AUX_VCDT_AP,
-	MT6328_AUX_BATON_AP,
-	MT6328_AUX_CH4,
-	MT6328_AUX_VACCDET_AP,
-	MT6328_AUX_CH6,
-	MT6328_AUX_TSX,
-	MT6328_AUX_CH8,
-	MT6328_AUX_CH9,
-	MT6328_AUX_CH10,
-	MT6328_AUX_CH11,
-	MT6328_AUX_CH12,
-	MT6328_AUX_CH13,
-	MT6328_AUX_CH14,
-	MT6328_AUX_CH15,
+	PMIC_AUX_BATSNS_AP =		0x000,
+	PMIC_AUX_ISENSE_AP,
+	PMIC_AUX_VCDT_AP,
+	PMIC_AUX_BATON_AP, /* BATON/BIF */
+	PMIC_AUX_CH4,
+	PMIC_AUX_VACCDET_AP,
+	PMIC_AUX_CH6,
+	PMIC_AUX_TSX,
+	PMIC_AUX_CH8,
+	PMIC_AUX_CH9,
+	PMIC_AUX_CH10,
+	PMIC_AUX_CH11,
+	PMIC_AUX_CH12,
+	PMIC_AUX_CH13,
+	PMIC_AUX_CH14,
+	PMIC_AUX_CH15,
+	PMIC_AUX_CH16,
 } pmic_adc_ch_list_enum;
 
-typedef enum MT65XX_POWER_TAG {
-	MT6328_POWER_LDO_VAUX18 = 0,
-	MT6328_POWER_LDO_VTCXO_0,
-	MT6328_POWER_LDO_VTCXO_1,
-	MT6328_POWER_LDO_VAUD28,
-	MT6328_POWER_LDO_VCN28,
-	MT6328_POWER_LDO_VCAMA,
-	MT6328_POWER_LDO_VCN33_BT,
-	MT6328_POWER_LDO_VCN33_WIFI,
-	MT6328_POWER_LDO_VUSB33,
-	MT6328_POWER_LDO_VEFUSE,
-	MT6328_POWER_LDO_VSIM1,
-	MT6328_POWER_LDO_VSIM2,
-	MT6328_POWER_LDO_VEMC_3V3,
-	MT6328_POWER_LDO_VMCH,
-	MT6328_POWER_LDO_VTREF,
-	MT6328_POWER_LDO_VMC,
-	MT6328_POWER_LDO_VCAMAF,
-	MT6328_POWER_LDO_VIO28,
-	MT6328_POWER_LDO_VGP1,
-	MT6328_POWER_LDO_VIBR,
-	MT6328_POWER_LDO_VCAMD,
-	MT6328_POWER_LDO_VRF18_0,
-	MT6328_POWER_LDO_VRF18_1,
-	MT6328_POWER_LDO_VIO18,
-	MT6328_POWER_LDO_VCN18,
-	MT6328_POWER_LDO_VCAMIO,
-	MT6328_POWER_LDO_VSRAM,
-	MT6328_POWER_LDO_VM,
+typedef enum MT_POWER_TAG {
+	MT6351_POWER_LDO_VA18,
+	MT6351_POWER_LDO_VTCXO24,
+	MT6351_POWER_LDO_VTCXO28,
+	MT6351_POWER_LDO_VCN28,
+	MT6351_POWER_LDO_VCAMA,
+	MT6351_POWER_LDO_VUSB33,
+	MT6351_POWER_LDO_VSIM1,
+	MT6351_POWER_LDO_VSIM2,
+	MT6351_POWER_LDO_VEMC,
+	MT6351_POWER_LDO_VMCH,
+	MT6351_POWER_LDO_VIO28,
+	MT6351_POWER_LDO_VIBR,
+	MT6351_POWER_LDO_VCAMD,
+	MT6351_POWER_LDO_VRF18,
+	MT6351_POWER_LDO_VIO18,
+	MT6351_POWER_LDO_VCN18,
+	MT6351_POWER_LDO_VCAMIO,
+	MT6351_POWER_LDO_VSRAM_PROC,
+	MT6351_POWER_LDO_VXO22,
+	MT6351_POWER_LDO_VRF12,
+	MT6351_POWER_LDO_VA10,
+	MT6351_POWER_LDO_VDRAM,
+	MT6351_POWER_LDO_VMIPI,
+	MT6351_POWER_LDO_VGP3,
+	MT6351_POWER_LDO_VBIF28,
+	MT6351_POWER_LDO_VEFUSE,
+	MT6351_POWER_LDO_VCN33_BT,
+	MT6351_POWER_LDO_VCN33_WIFI,
+	MT6351_POWER_LDO_VLDO28,
+	MT6351_POWER_LDO_VMC,
+	MT6351_POWER_LDO_VLDO28_0,
+	MT6351_POWER_LDO_VLDO28_1,
 	MT65XX_POWER_COUNT_END,
 	MT65XX_POWER_LDO_DEFAULT,
-	MT65XX_POWER_NONE = -1,
+	MT65XX_POWER_NONE = -1
 } MT65XX_POWER;
 
-#define MT6328_POWER_LDO_VCAM_IO MT6328_POWER_LDO_VCAMIO
-#define MT6328_POWER_LDO_VCAM_AF MT6328_POWER_LDO_VCAMAF
-#define MT6328_POWER_LDO_VEMC33 MT6328_POWER_LDO_VEMC_3V3
-
-/* ============================================================================== */
-/* DLPT define */
-/* ============================================================================== */
+/*==============================================================================
+ * DLPT define
+ *==============================================================================*/
 typedef enum DLPT_PRIO_TAG {
 	DLPT_PRIO_PBM = 0,
 	DLPT_PRIO_CPU_B = 1,
@@ -159,15 +152,42 @@ typedef enum DLPT_PRIO_TAG {
 
 extern void (*dlpt_callback)(unsigned int);
 extern void register_dlpt_notify(void (*dlpt_callback)(unsigned int), DLPT_PRIO prio_val);
+extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 
-/* ============================================================================== */
-/* PMIC LDO define */
-/* ============================================================================== */
+extern unsigned short is_battery_remove;
+extern unsigned short is_wdt_reboot_pmic;
+extern unsigned int g_pmic_pad_vbif28_vol;
 
+/*==============================================================================
+// PMIC LDO define
+//==============================================================================*/
 
+/*==============================================================================
+// PMIC auxadc define
+//==============================================================================*/
+extern signed int g_I_SENSE_offset;
+extern void pmic_auxadc_init(void);
+extern void pmic_auxadc_lock(void);
+extern void pmic_auxadc_unlock(void);
+extern void mt_power_off(void);
+/*==============================================================================
+// PMIC fg define
+//==============================================================================*/
+extern unsigned int bat_get_ui_percentage(void);
+extern signed int fgauge_read_v_by_d(int d_val);
+extern signed int fgauge_read_r_bat_by_v(signed int voltage);
+extern signed int fgauge_read_IM_current(void *data);
+extern void kpd_pwrkey_pmic_handler(unsigned long pressed);
+extern void kpd_pmic_rstkey_handler(unsigned long pressed);
+extern int is_mt6311_sw_ready(void);
+extern int is_mt6311_exist(void);
+extern int get_mt6311_i2c_ch_num(void);
+extern bool crystal_exist_status(void);
+#if defined CONFIG_MTK_LEGACY
+extern void pmu_drv_tool_customization_init(void);
+#endif
+extern int batt_init_cust_data(void);
+extern void PMIC_INIT_SETTING_V1(void);
 
+#endif /* _MT_PMIC_UPMU_SW_H_ */
 
-
-
-
-#endif				/* _MT_PMIC_UPMU_SW_H_ */

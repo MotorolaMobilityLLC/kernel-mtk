@@ -39,34 +39,50 @@
 #endif
 #endif
 
-/*
- *   [I2C Slave Setting]
- */
+/**********************************************************
+  *
+  *   [I2C Slave Setting]
+  *
+  *********************************************************/
 #define mt6311_SLAVE_ADDR_WRITE   0xD6
 #define mt6311_SLAVE_ADDR_Read    0xD7
 
-/*#ifdef I2C_EXT_BUCK_CHANNEL*/
-/*#define mt6311_BUSNUM I2C_EXT_BUCK_CHANNEL*/
-/*#else*/
+#define I2C_EXT_BUCK_CHANNEL 3 /*TBD for bring up only, need to change to DTS*/
+
+#ifdef I2C_EXT_BUCK_CHANNEL
+#define mt6311_BUSNUM I2C_EXT_BUCK_CHANNEL
+#else
 #define mt6311_BUSNUM 4
-/*#endif*/
+#endif
 
 static struct i2c_client *new_client;
 static const struct i2c_device_id mt6311_i2c_id[] = { {"mt6311", 0}, {} };
+
+#ifdef CONFIG_OF
+static const struct of_device_id mt6311_of_ids[] = {
+			{.compatible = "mediatek,ext_buck"},
+			{},
+};
+#endif
 
 static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
 
 static struct i2c_driver mt6311_driver = {
 	.driver = {
-		   .name = "mt6311",
+			.name = "mt6311",
+#ifdef CONFIG_OF
+			.of_match_table = mt6311_of_ids,
+#endif
 		   },
 	.probe = mt6311_driver_probe,
 	.id_table = mt6311_i2c_id,
 };
 
-/*
- *   [Global Variable]
- */
+/**********************************************************
+  *
+  *   [Global Variable]
+  *
+  *********************************************************/
 static DEFINE_MUTEX(mt6311_i2c_access);
 static DEFINE_MUTEX(mt6311_lock_mutex);
 
@@ -79,12 +95,17 @@ extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void battery_oc_protect_reinit(void);
 */
 #define PMICTAG                "[MT6311] "
-#define PMICLOG(fmt, arg...)   pr_notice(PMICTAG fmt, ##arg)
+#if defined PMIC_DEBUG
+#define PMICLOG1(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+#else
+#define PMICLOG1(fmt, arg...)
+#endif
 
-
-/*
- *   [I2C Function For Read/Write mt6311]
- */
+/**********************************************************
+  *
+  *   [I2C Function For Read/Write mt6311]
+  *
+  *********************************************************/
 unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData)
 {
 	char cmd_buf[1] = { 0x00 };
@@ -92,16 +113,22 @@ unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData)
 	int ret = 0;
 
 	mutex_lock(&mt6311_i2c_access);
-
+#if 1
 	new_client->ext_flag =
 	    ((new_client->
 	      ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_PUSHPULL_FLAG | I2C_HS_FLAG;
 	new_client->timing = 3400;
+#else
+	new_client->ext_flag =
+	    ((new_client->
+	      ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_PUSHPULL_FLAG;
+	new_client->timing = 100;
+#endif
 
 	cmd_buf[0] = cmd;
 	ret = i2c_master_send(new_client, &cmd_buf[0], (1 << 8 | 1));
 	if (ret < 0) {
-		PMICLOG("[mt6311_read_byte] ret=%d\n", ret);
+		PMICLOG1("[mt6311_read_byte] ret=%d\n", ret);
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
@@ -127,14 +154,21 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 	write_data[0] = cmd;
 	write_data[1] = writeData;
 
+#if 1
 	new_client->ext_flag =
 	    ((new_client->
 	      ext_flag) & I2C_MASK_FLAG) | I2C_DIRECTION_FLAG | I2C_PUSHPULL_FLAG | I2C_HS_FLAG;
 	new_client->timing = 3400;
+#else
+	new_client->ext_flag =
+	    ((new_client->
+	      ext_flag) & I2C_MASK_FLAG) | I2C_PUSHPULL_FLAG;
+	new_client->timing = 100;
+#endif
 
 	ret = i2c_master_send(new_client, write_data, 2);
 	if (ret < 0) {
-		PMICLOG("[mt6311_write_byte] ret=%d\n", ret);
+		PMICLOG1("[mt6311_write_byte] ret=%d\n", ret);
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
@@ -152,23 +186,23 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 unsigned int mt6311_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK, unsigned char SHIFT)
 {
 #if 0
-	PMICLOG("[mt6311_read_interface] HW no mt6311\n");
+	PMICLOG1("[mt6311_read_interface] HW no mt6311\n");
 	*val = 0;
 	return 1;
 #else
 	unsigned char mt6311_reg = 0;
 	unsigned int ret = 0;
 
-	/* PMICLOG("--------------------------------------------------\n"); */
+	/* PMICLOG1("--------------------------------------------------\n"); */
 
 	ret = mt6311_read_byte(RegNum, &mt6311_reg);
 
-	/* PMICLOG("[mt6311_read_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg); */
+	/* PMICLOG1("[mt6311_read_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg); */
 
 	mt6311_reg &= (MASK << SHIFT);
 	*val = (mt6311_reg >> SHIFT);
 
-	/* PMICLOG("[mt6311_read_interface] val=0x%x\n", *val); */
+	/* PMICLOG1("[mt6311_read_interface] val=0x%x\n", *val); */
 
 	return ret;
 #endif
@@ -177,26 +211,26 @@ unsigned int mt6311_read_interface(unsigned char RegNum, unsigned char *val, uns
 unsigned int mt6311_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK, unsigned char SHIFT)
 {
 #if 0
-	PMICLOG("[mt6311_config_interface] HW no mt6311\n");
+	PMICLOG1("[mt6311_config_interface] HW no mt6311\n");
 	return 1;
 #else
 	unsigned char mt6311_reg = 0;
 	unsigned int ret = 0;
 
-	/*PMICLOG("--------------------------------------------------\n"); */
+	/*PMICLOG1("--------------------------------------------------\n"); */
 
 	ret = mt6311_read_byte(RegNum, &mt6311_reg);
-	/* PMICLOG("[mt6311_config_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
+	/* PMICLOG1("[mt6311_config_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
 
 	mt6311_reg &= ~(MASK << SHIFT);
 	mt6311_reg |= (val << SHIFT);
 
 	ret = mt6311_write_byte(RegNum, mt6311_reg);
-	/*PMICLOG("[mt6311_config_interface] write Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
+	/*PMICLOG1("[mt6311_config_interface] write Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
 
 	/* Check*/
 	/*ret = mt6311_read_byte(RegNum, &mt6311_reg);
-	PMICLOG("[mt6311_config_interface] Check Reg[%x]=0x%x\n", RegNum, mt6311_reg);
+	PMICLOG1("[mt6311_config_interface] Check Reg[%x]=0x%x\n", RegNum, mt6311_reg);
 	*/
 
 	return ret;
@@ -245,7 +279,7 @@ unsigned char mt6311_get_cid(void)
 				    (unsigned char) (MT6311_PMIC_CID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG("[mt6311_get_cid] ret=%d\n", ret);
+		PMICLOG1("[mt6311_get_cid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -266,7 +300,7 @@ unsigned char mt6311_get_swcid(void)
 				    (unsigned char) (MT6311_PMIC_SWCID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG("[mt6311_get_swcid] ret=%d\n", ret);
+		PMICLOG1("[mt6311_get_swcid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -287,7 +321,7 @@ unsigned char mt6311_get_hwcid(void)
 				    (unsigned char) (MT6311_PMIC_HWCID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG("[mt6311_get_hwcid] ret=%d\n", ret);
+		PMICLOG1("[mt6311_get_hwcid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -6677,19 +6711,19 @@ unsigned int update_mt6311_chip_id(void)
 
 	id_l = mt6311_get_cid();
 	if (id_l < 0) {
-		PMICLOG("[update_mt6311_chip_id] id_l=%d\n", id_l);
+		PMICLOG1("[update_mt6311_chip_id] id_l=%d\n", id_l);
 		return id_l;
 	}
 	id_r = mt6311_get_swcid();
 	if (id_r < 0) {
-		PMICLOG("[update_mt6311_chip_id] id_r=%d\n", id_r);
+		PMICLOG1("[update_mt6311_chip_id] id_r=%d\n", id_r);
 		return id_r;
 	}
 	id = ((id_l << 8) | (id_r));
 
 	g_mt6311_cid = id;
 
-	PMICLOG("[update_mt6311_chip_id] id_l=0x%x, id_r=0x%x, id=0x%x\n", id_l, id_r, id);
+	PMICLOG1("[update_mt6311_chip_id] id_l=0x%x, id_r=0x%x, id=0x%x\n", id_l, id_r, id);
 
 	return id;
 }
@@ -6702,12 +6736,12 @@ unsigned int mt6311_get_chip_id(void)
 		ret = update_mt6311_chip_id();
 		if (ret < 0) {
 			g_mt6311_hw_exist = 0;
-			PMICLOG("[mt6311_get_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+			PMICLOG1("[mt6311_get_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
 			return ret;
 		}
 	}
 
-	PMICLOG("[mt6311_get_chip_id] g_mt6311_cid=0x%x\n", g_mt6311_cid);
+	PMICLOG1("[mt6311_get_chip_id] g_mt6311_cid=0x%x\n", g_mt6311_cid);
 
 	return g_mt6311_cid;
 }
@@ -6716,59 +6750,53 @@ void mt6311_hw_init(void)
 {
 	unsigned int ret = 0;
 
-	PMICLOG("[mt6311_hw_init] 20140513, CC Lee\n");
+	PMICLOG1("[mt6311_hw_init] 20140513, CC Lee\n");
 
 	/*put init setting from DE/SA*/
 	/*ret=mt6311_config_interface(0x04,0x11,0xFF,0); set pin to interrupt, DVT only*/
 
 	if (mt6311_get_chip_id() >= PMIC6311_E1_CID_CODE) {
-		PMICLOG("[mt6311_hw_init] 6311 PMIC Chip = 0x%x\n", mt6311_get_chip_id());
-		PMICLOG("[mt6311_hw_init] 2014-08-13\n");
+		PMICLOG1("[mt6311_hw_init] 6311 PMIC Chip = 0x%x\n", mt6311_get_chip_id());
+		PMICLOG1("[mt6311_hw_init] 2014-08-13\n");
 
 	/*put init setting from DE/SA*/
-		/* [5:3]: GPIO1_MODE; CC, initial INT function*/
-		ret = mt6311_config_interface(0x4, 0x2, 0x7, 3);
-		/* [0:0]: VDVFS11_PG_H2L_EN; Ricky*/
-		ret = mt6311_config_interface(0x1F, 0x0, 0x1, 0);
-		/* [1:1]: VDVFS12_PG_H2L_EN; Ricky*/
-		ret = mt6311_config_interface(0x1F, 0x0, 0x1, 1);
-		/* [2:2]: VBIASN_PG_H2L_EN; Ricky*/
-		ret = mt6311_config_interface(0x1F, 0x0, 0x1, 2);
-		ret = mt6311_config_interface(0x6D, 0x3, 0x3, 5);
-		/* [6:5]: RG_UVLO_VTHL; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
-		ret = mt6311_config_interface(0x6E, 0x3, 0x3, 0);
-		/* [1:0]: RG_UVLO_VTHH; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
-		ret = mt6311_config_interface(0x8B, 0x1, 0x7F, 0);
-		/* [6:0]: VDVFS11_SFCHG_RRATE; Johnson, for DVFS slew rate rising=0.67us,20150305*/
-		ret = mt6311_config_interface(0x8C, 0x5, 0x7F, 0);
-		/* [6:0]: VDVFS11_SFCHG_FRATE; Johnson, for DVFS slew rate, falling 2.0us,20150305*/
-		ret = mt6311_config_interface(0x8E, 0x58, 0x7F, 0);
-		/* [6:0]: VDVFS11_VOSEL_ON; Setting by DVFS owner, 1.15V forD3T init. Johnson, 20150409*/
-		ret = mt6311_config_interface(0x94, 0x3, 0x3, 0);
-		/* [1:0]: VDVFS11_TRANS_TD; Johnson, for DVFS sof change, falling 50us,,20150305 */
-		ret = mt6311_config_interface(0x94, 0x1, 0x3, 4);
-		/* [5:4]: VDVFS11_TRANS_CTRL; Johnson, for DVFS sof change, falling only,,20150305 */
-		ret = mt6311_config_interface(0xCF, 0x0, 0x1, 0);
-		/* [0:0]: RG_VBIASN_EN; Johnson, OFF LDO */
-		ret = mt6311_config_interface(0x88, 0x1, 0x1, 1);
-		/* [1:1]: VDVFS11_VOSEL_CTRL; Johnson, setting for low power because D3T use normal 0.85V for sleep */
-		ret = mt6311_config_interface(0x88, 0x0, 0x1, 0);
-		/* [0:0]: VDVFS11_EN_CTRL; Johnson, Sleep SW control from SPM, after Vosel_on,20150305 */
+
+	ret = mt6311_config_interface(0x4, 0x2, 0x7, 3); /* [5:3]: GPIO1_MODE; CC, initial INT function*/
+	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 0); /*  [0:0]: VDVFS11_PG_H2L_EN; Ricky*/
+	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 1); /*  [1:1]: VDVFS12_PG_H2L_EN; Ricky*/
+	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 2); /*  [2:2]: VBIASN_PG_H2L_EN; Ricky*/
+	ret = mt6311_config_interface(0x69, 0x0, 0x1, 0);
+	ret = mt6311_config_interface(0x6D, 0x3, 0x3, 5);
+	/* [6:5]: RG_UVLO_VTHL; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
+	ret = mt6311_config_interface(0x6E, 0x3, 0x3, 0);
+	/* [1:0]: RG_UVLO_VTHH; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
+	ret = mt6311_config_interface(0x8B, 0x1, 0x7F, 0);
+	/* [6:0]: VDVFS11_SFCHG_RRATE; Johnson, for DVFS slew rate rising=0.67us,20150305*/
+	ret = mt6311_config_interface(0x8C, 0x5, 0x7F, 0);
+	/* [6:0]: VDVFS11_VOSEL_ON; Setting by DVFS owner, 1.15V forD3T init. Johnson, 20150409*/
+	ret = mt6311_config_interface(0x94, 0x3, 0x3, 0);
+	/* [1:0]: VDVFS11_TRANS_TD; Johnson, for DVFS sof change, falling 50us,,20150305 */
+	ret = mt6311_config_interface(0x94, 0x1, 0x3, 4);
+	ret = mt6311_config_interface(0xCF, 0x0, 0x1, 0);
+	ret = mt6311_config_interface(0x8F, 0x20, 0x7F, 0);
+	ret = mt6311_config_interface(0x88, 0x0, 0x1, 0);
+	ret = mt6311_config_interface(0x88, 0x1, 0x1, 1);
+	ret = mt6311_config_interface(0x8D, 0x20, 0x7F, 0);
 
 #if 1
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x04, mt6311_get_reg_value(0x04));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x15, mt6311_get_reg_value(0x15));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x1F, mt6311_get_reg_value(0x1F));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x6A, mt6311_get_reg_value(0x6A));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8B, mt6311_get_reg_value(0x8B));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8C, mt6311_get_reg_value(0x8C));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x94, mt6311_get_reg_value(0x94));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x93, mt6311_get_reg_value(0x93));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0xCF, mt6311_get_reg_value(0xCF));
-		PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x88, mt6311_get_reg_value(0x88));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x04, mt6311_get_reg_value(0x04));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x15, mt6311_get_reg_value(0x15));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x1F, mt6311_get_reg_value(0x1F));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x6A, mt6311_get_reg_value(0x6A));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x8B, mt6311_get_reg_value(0x8B));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x8C, mt6311_get_reg_value(0x8C));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x94, mt6311_get_reg_value(0x94));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x93, mt6311_get_reg_value(0x93));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0xCF, mt6311_get_reg_value(0xCF));
+	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x88, mt6311_get_reg_value(0x88));
 #endif
 	} else {
-		PMICLOG("[mt6311_hw_init] Unknown PMIC Chip (0x%x)\n", mt6311_get_chip_id());
+		PMICLOG1("[mt6311_hw_init] Unknown PMIC Chip (0x%x)\n", mt6311_get_chip_id());
 	}
 }
 
@@ -6779,13 +6807,13 @@ unsigned int mt6311_hw_component_detect(void)
 	ret = update_mt6311_chip_id();
 	if (ret < 0) {
 		g_mt6311_hw_exist = 0;
-		PMICLOG("[update_mt6311_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+		PMICLOG1("[update_mt6311_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
 		return ret;
 	}
 
 	chip_id = mt6311_get_chip_id();
 	if (chip_id < 0) {
-		PMICLOG("[mt6311_get_chip_id] ret=%d\n", chip_id);
+		PMICLOG1("[mt6311_get_chip_id] ret=%d\n", chip_id);
 		return chip_id;
 	}
 	if ((chip_id == PMIC6311_E1_CID_CODE) ||
@@ -6795,20 +6823,20 @@ unsigned int mt6311_hw_component_detect(void)
 		g_mt6311_hw_exist = 1;
 	} else
 		g_mt6311_hw_exist = 0;
-	PMICLOG("[mt6311_hw_component_detect] exist=%d\n", g_mt6311_hw_exist);
+	PMICLOG1("[mt6311_hw_component_detect] exist=%d\n", g_mt6311_hw_exist);
 	return 0;
 }
 
 int is_mt6311_sw_ready(void)
 {
-	/*PMICLOG("g_mt6311_driver_ready=%d\n", g_mt6311_driver_ready);*/
+	/*PMICLOG1("g_mt6311_driver_ready=%d\n", g_mt6311_driver_ready);*/
 
 	return g_mt6311_driver_ready;
 }
 
 int is_mt6311_exist(void)
 {
-	/*PMICLOG("g_mt6311_hw_exist=%d\n", g_mt6311_hw_exist);*/
+	/*PMICLOG1("g_mt6311_hw_exist=%d\n", g_mt6311_hw_exist);*/
 
 	return g_mt6311_hw_exist;
 }
@@ -6850,7 +6878,7 @@ struct wake_lock pmicThread_lock_mt6311;
 
 void wake_up_pmic_mt6311(void)
 {
-	PMICLOG("[wake_up_pmic_mt6311]\n");
+	PMICLOG1("[wake_up_pmic_mt6311]\n");
 	wake_up_process(pmic_6311_thread_handle);
 	wake_lock(&pmicThread_lock_mt6311);
 }
@@ -6858,7 +6886,7 @@ EXPORT_SYMBOL(wake_up_pmic_mt6311);
 
 void mt_pmic_eint_irq_mt6311(void)
 {
-	PMICLOG("[mt_pmic_eint_irq_mt6311] receive interrupt\n");
+	PMICLOG1("[mt_pmic_eint_irq_mt6311] receive interrupt\n");
 	wake_up_pmic_mt6311();
 }
 
@@ -6914,14 +6942,14 @@ void cust_pmic_interrupt_en_setting_mt6311(void)
 void mt6311_lbat_min_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG("[mt6311_lbat_min_int_handler]....\n");
+	PMICLOG1("[mt6311_lbat_min_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,0);*/
 }
 
 void mt6311_lbat_max_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG("[mt6311_lbat_max_int_handler]....\n");
+	PMICLOG1("[mt6311_lbat_max_int_handler]....\n");
 
 #if 0
 	mt6311_set_auxadc_lbat_irq_en_max(0);
@@ -6940,25 +6968,25 @@ unsigned int thr_h_int_status = 0;
 void mt6311_clr_thr_l_int_status(void)
 {
 	thr_l_int_status = 0;
-	PMICLOG("[mt6311_clr_thr_l_int_status]....\n");
+	PMICLOG1("[mt6311_clr_thr_l_int_status]....\n");
 }
 
 void mt6311_clr_thr_h_int_status(void)
 {
 	thr_h_int_status = 0;
-	PMICLOG("[mt6311_clr_thr_h_int_status]....\n");
+	PMICLOG1("[mt6311_clr_thr_h_int_status]....\n");
 }
 
 unsigned int mt6311_get_thr_l_int_status(void)
 {
-	PMICLOG("[mt6311_get_thr_l_int_status]....\n");
+	PMICLOG1("[mt6311_get_thr_l_int_status]....\n");
 
 	return thr_l_int_status;
 }
 
 unsigned int mt6311_get_thr_h_int_status(void)
 {
-	PMICLOG("[mt6311_get_thr_h_int_status]....\n");
+	PMICLOG1("[mt6311_get_thr_h_int_status]....\n");
 
 	return thr_h_int_status;
 }
@@ -6967,7 +6995,7 @@ void mt6311_thr_l_int_handler(void)
 {
 	/*unsigned int ret=0;*/
 	thr_l_int_status = 1;
-	PMICLOG("[mt6311_thr_l_int_handler]....\n");
+	PMICLOG1("[mt6311_thr_l_int_handler]....\n");
 	/*return thr_l_int_status;*/
 
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,2);*/
@@ -6977,14 +7005,14 @@ void mt6311_thr_h_int_handler(void)
 {
 	/*unsigned int ret=0;*/
 	thr_h_int_status = 1;
-	PMICLOG("[mt6311_thr_h_int_handler]....\n");
+	PMICLOG1("[mt6311_thr_h_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,3);*/
 }
 
 void mt6311_buck_oc_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG("[mt6311_buck_oc_int_handler]....\n");
+	PMICLOG1("[mt6311_buck_oc_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,4);*/
 }
 
@@ -6995,7 +7023,7 @@ static void mt6311_int_handler(void)
 
 	/*--------------------------------------------------------------------------------*/
 	ret = mt6311_read_interface(MT6311_TOP_INT_MON, (&mt6311_int_status_val_0), 0xFF, 0x0);
-	PMICLOG("[MT6311_INT] mt6311_int_status_val_0=0x%x\n", mt6311_int_status_val_0);
+	PMICLOG1("[MT6311_INT] mt6311_int_status_val_0=0x%x\n", mt6311_int_status_val_0);
 
 	if ((((mt6311_int_status_val_0) & (0x01)) >> 0) == 1)
 		mt6311_lbat_min_int_handler();
@@ -7018,7 +7046,7 @@ static int pmic_thread_kthread_mt6311(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	PMICLOG("[MT6311_INT] enter\n");
+	PMICLOG1("[MT6311_INT] enter\n");
 
 	/* Run on a process content */
 	while (1) {
@@ -7032,7 +7060,7 @@ static int pmic_thread_kthread_mt6311(void *x)
 		    mt6311_read_interface(MT6311_TOP_INT_MON, (&mt6311_int_status_val_0), 0xFF,
 					  0x0);
 
-		PMICLOG("[MT6311_INT] after ,mt6311_int_status_val_0=0x%x\n",
+		PMICLOG1("[MT6311_INT] after ,mt6311_int_status_val_0=0x%x\n",
 			mt6311_int_status_val_0);
 
 		mdelay(1);
@@ -7074,13 +7102,13 @@ void mt6311_eint_setting(void)
 
 	ret = request_irq(g_mt6311_irq, mt6311_eint_handler, g_cust_eint_mt_pmic_mt6311_type, "mt6311-eint", NULL);
 	if (ret)
-		PMICLOG("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6311_irq, ret);
+		PMICLOG1("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6311_irq, ret);
 
-	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
+	PMICLOG1("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_cn);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_en);
 #else
 	mt_eint_set_hw_debounce(g_eint_pmic_mt6311_num, g_cust_eint_mt_pmic_mt6311_debounce_cn);
@@ -7090,11 +7118,11 @@ void mt6311_eint_setting(void)
 
 	mt_eint_unmask(g_eint_pmic_mt6311_num);
 
-	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
+	PMICLOG1("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_cn);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
+	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_en);
 #endif
 
@@ -7111,21 +7139,21 @@ void mt6311_eint_init(void)
 {
 	/*---------------------*/
 #if defined(CONFIG_MTK_FPGA)
-	PMICLOG("[MT6311_EINT] disable when CONFIG_MTK_FPGA\n");
+	PMICLOG1("[MT6311_EINT] disable when CONFIG_MTK_FPGA\n");
 #else
 	/*PMIC Interrupt Service*/
 	pmic_6311_thread_handle =
 	    kthread_create(pmic_thread_kthread_mt6311, (void *)NULL, "pmic_6311_thread");
 	if (IS_ERR(pmic_6311_thread_handle)) {
 		pmic_6311_thread_handle = NULL;
-		PMICLOG("[MT6311_EINT] creation fails\n");
+		PMICLOG1("[MT6311_EINT] creation fails\n");
 	} else {
 		wake_up_process(pmic_6311_thread_handle);
-		PMICLOG("[MT6311_EINT] kthread_create Done\n");
+		PMICLOG1("[MT6311_EINT] kthread_create Done\n");
 	}
 
 	/*mt6311_eint_setting();*/
-	PMICLOG("[MT6311_EINT] TBD\n");
+	PMICLOG1("[MT6311_EINT] TBD\n");
 #endif
 
 }
@@ -7141,7 +7169,7 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	int err = 0;
 	unsigned int ret = 0;
 
-	PMICLOG("[mt6311_driver_probe]\n");
+	PMICLOG1("[mt6311_driver_probe]\n");
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
 	if (new_client == NULL) {
 		err = -ENOMEM;
@@ -7152,6 +7180,8 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	new_client = client;
 
 	/*---------------------        */
+    /* force change GPIO to SDA/SCA mode */
+
 	ret = mt6311_hw_component_detect();
 	if (ret < 0) {
 		err = -ENOMEM;
@@ -7166,29 +7196,25 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	}
 	g_mt6311_driver_ready = 1;
 
-	PMICLOG("[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
+	PMICLOG1("[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 		g_mt6311_hw_exist, g_mt6311_driver_ready);
 
-#if defined(CONFIG_ARCH_MT6753)
 	PMIC_INIT_SETTING_V1();
-#else
-#endif
 
 	if (g_mt6311_hw_exist == 0) {
+#ifdef BATTERY_OC_PROTECT
 		/*re-init battery oc protect point for platform without extbuck*/
-		/* battery_oc_protect_reinit(); TBD */
-
-		PMICLOG("[mt6311_driver_probe] return err\n");
+		battery_oc_protect_reinit();
+#endif
+		PMICLOG1("[mt6311_driver_probe] return err\n");
 		return err;
 	}
 
 	return 0;
 
 exit:
-#if defined(CONFIG_ARCH_MT6753)
+	PMICLOG1("[mt6311_driver_probe] exit: return err\n");
 	PMIC_INIT_SETTING_V1();
-#else
-#endif
 	return err;
 }
 
@@ -7201,11 +7227,10 @@ exit:
 /*
  * mt6311_access
  */
-#ifdef I2C_EXT_BUCK_CHANNEL	/* auto detect*/
 unsigned char g_reg_value_mt6311 = 0;
 static ssize_t show_mt6311_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG("[show_mt6311_access] 0x%x\n", g_reg_value_mt6311);
+	PMICLOG1("[show_mt6311_access] 0x%x\n", g_reg_value_mt6311);
 	return sprintf(buf, "%u\n", g_reg_value_mt6311);
 }
 
@@ -7217,28 +7242,29 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	PMICLOG("[store_mt6311_access]\n");
+	PMICLOG1("[store_mt6311_access]\n");
 
 	if (buf != NULL && size != 0) {
-		/*PMICLOG("[store_mt6311_access] buf is %s and size is %d\n",buf,size);*/
+		/*PMICLOG1("[store_mt6311_access] buf is %s and size is %d\n",buf,size);*/
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
-		/*reg_value = kstrtoul(buf, &pvalue, 16);*/
-		ret = kstrtoul(buf, 16, (unsigned long *)&reg_address);
+		/*ret = kstrtoul(buf, 16, (unsigned long *)&reg_address);*/
 
 		if (size > 4) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*reg_value = kstrtoul((pvalue + 1), NULL, 16);*/
+/*
+			buf = buf + 1;
 			ret = kstrtoul(buf, 16, (unsigned long *)&reg_value);
-			PMICLOG("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
+*/
+			PMICLOG1("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 
 			ret = mt6311_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = mt6311_read_interface(reg_address, &g_reg_value_mt6311, 0xFF, 0x0);
 
-			PMICLOG("[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
+			PMICLOG1("[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_mt6311);
-			PMICLOG
+			PMICLOG1
 			    ("[store_mt6311_access] Please use \"cat mt6311_access\" to get value\r\n");
 		}
 	}
@@ -7253,26 +7279,24 @@ static DEVICE_ATTR(mt6311_access, 0664, show_mt6311_access, store_mt6311_access)
 int g_mt6311_vosel_pin = 0;
 static ssize_t show_mt6311_vosel_pin(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG("[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
+	PMICLOG1("[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
 	return sprintf(buf, "%u\n", g_mt6311_vosel_pin);
 }
 
 static ssize_t store_mt6311_vosel_pin(struct device *dev, struct device_attribute *attr,
 				      const char *buf, size_t size)
 {
-	int ret;
 	int val = 0;
 	/*char *pvalue = NULL;*/
 
-	PMICLOG("[store_mt6311_vosel_pin]\n");
+	PMICLOG1("[store_mt6311_vosel_pin]\n");
 
 	/*val = simple_strtoul(buf, &pvalue, 16);*/
-	/*val = kstrtoul(buf, &pvalue, 16);*/
-	ret = kstrtoul(buf, 16, (unsigned long *)&val);
+	/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
 
 	g_mt6311_vosel_pin = val;
 
-	PMICLOG("[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
+	PMICLOG1("[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
 
 	return size;
 }
@@ -7286,7 +7310,7 @@ static int mt6311_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	PMICLOG("******** mt6311_user_space_probe!! ********\n");
+	PMICLOG1("******** mt6311_user_space_probe!! ********\n");
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6311_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6311_vosel_pin);
@@ -7306,8 +7330,6 @@ static struct platform_driver mt6311_user_space_driver = {
 		   },
 };
 
-static struct i2c_board_info i2c_mt6311 __initdata = { I2C_BOARD_INFO("mt6311", (mt6311_SLAVE_ADDR_WRITE >> 1)) };
-#endif
 
 #endif
 
@@ -7315,55 +7337,38 @@ static int __init mt6311_init(void)
 {
 #ifdef mt6311_AUTO_DETECT_DISABLE
 
-	PMICLOG("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
+	PMICLOG1("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
 	g_mt6311_hw_exist = 0;
 	g_mt6311_driver_ready = 1;
 
 #else
 
-#ifdef I2C_EXT_BUCK_CHANNEL	/* auto detect*/
 	int ret = 0;
 
 	wake_lock_init(&pmicThread_lock_mt6311, WAKE_LOCK_SUSPEND,
 		       "pmicThread_lock_mt6311 wakelock");
-
-/*#ifdef I2C_EXT_BUCK_CHANNEL*/	/* auto detect*/
 	{
-		PMICLOG("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
+		PMICLOG1("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
 
-		i2c_register_board_info(mt6311_BUSNUM, &i2c_mt6311, 1);
+		/*i2c_register_board_info(mt6311_BUSNUM, &i2c_mt6311, 1);*/
 
 		if (i2c_add_driver(&mt6311_driver) != 0)
-			PMICLOG("[mt6311_init] failed to register mt6311 i2c driver.\n");
+			PMICLOG1("[mt6311_init] failed to register mt6311 i2c driver.\n");
 		else
-			PMICLOG("[mt6311_init] Success to register mt6311 i2c driver.\n");
+			PMICLOG1("[mt6311_init] Success to register mt6311 i2c driver.\n");
 
 		/* mt6311 user space access interface*/
 		ret = platform_device_register(&mt6311_user_space_device);
 		if (ret) {
-			PMICLOG("****[mt6311_init] Unable to device register(%d)\n", ret);
+			PMICLOG1("****[mt6311_init] Unable to device register(%d)\n", ret);
 			return ret;
 		}
 		ret = platform_driver_register(&mt6311_user_space_driver);
 		if (ret) {
-			PMICLOG("****[mt6311_init] Unable to register driver (%d)\n", ret);
+			PMICLOG1("****[mt6311_init] Unable to register driver (%d)\n", ret);
 			return ret;
 		}
 	}
-#else
-	{
-		PMICLOG("[mt6311_init] DCT no define EXT BUCK\n");
-		g_mt6311_hw_exist = 0;
-		g_mt6311_driver_ready = 1;
-		PMICLOG("[mt6311_init] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
-			g_mt6311_hw_exist, g_mt6311_driver_ready);
-#if defined(CONFIG_ARCH_MT6753)
-	PMIC_INIT_SETTING_V1();
-#else
-#endif
-	}
-#endif
-
 #endif
 
 	return 0;
