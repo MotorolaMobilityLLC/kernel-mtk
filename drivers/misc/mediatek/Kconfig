@@ -182,6 +182,16 @@ config MTK_SEC_VIDEO_PATH_SUPPORT
 	  This enable MTK Secure Video Path Support. (depending on
 	  MTK In-House TEE Support or Trustonic TEE Support)
 
+config MTK_DRM_KEY_MNG_SUPPORT
+        bool "Enable MTK DRM Key Manager Support"
+        depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY)
+        default n
+        help
+          This enable MTK DRM Key Manager Support.
+          depending on
+          MTK In-House TEE Support
+          or Trustonic TEE Support
+
 config MTK_LDVT
 	bool "LDVT"
 	default n
