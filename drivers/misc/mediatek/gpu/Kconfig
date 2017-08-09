@@ -15,3 +15,9 @@ config MTK_GPU_COMMON_DVFS_SUPPORT
   default n
   help
     CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT define to use COMMON DVFS
+
+config MTK_GPU_R5P0
+	bool CONFIG_MTK_GPU_R5P0
+	default n
+	help
+	  CONFIG_MTK_GPU_R5P0 define to use r5p0 drivers
