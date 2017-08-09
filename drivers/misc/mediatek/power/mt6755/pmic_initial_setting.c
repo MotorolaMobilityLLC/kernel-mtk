@@ -25,6 +25,7 @@ void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
 	unsigned int ret = 0;
+	unsigned int pmic_reg = 0;
 
 	chip_version = pmic_get_register_value(PMIC_SWCID);
 
@@ -40,8 +41,8 @@ void PMIC_INIT_SETTING_V1(void)
 	pr_debug("[Kernel_PMIC_INIT_SETTING_V1] is_battery_remove =%d is_wdt_reboot=%d\n",
 	is_battery_remove,  is_wdt_reboot_pmic);
 
-ret = pmic_config_interface(0x8,  0x1,  0x1,  0);
-ret = pmic_config_interface(0xA,  0x1,  0x1,  1);
+ret = pmic_config_interface(0x8, 0x1, 0x1, 0);
+ret = pmic_config_interface(0xA, 0x1, 0x1, 1);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 3);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 4);
@@ -102,8 +103,10 @@ ret = pmic_config_interface(0x4A2, 0x2, 0x7, 6);
 ret = pmic_config_interface(0x4A6, 0x1, 0x1, 1);
 ret = pmic_config_interface(0x4A8, 0x1, 0x7, 4);
 ret = pmic_config_interface(0x4AC, 0x1, 0x1, 1);
-ret = pmic_config_interface(0x4B6, 0x4, 0x7, 6);
+ret = pmic_config_interface(0x4B6, 0x6, 0x7, 6);
 ret = pmic_config_interface(0x4C2, 0x10, 0xFFFF, 0);
+ret = pmic_config_interface(0x4C8, 0xF, 0xF, 11);
+ret = pmic_config_interface(0x4CA, 0x5, 0x7, 6);
 ret = pmic_config_interface(0x4CE, 0x1, 0x1, 1);
 ret = pmic_config_interface(0x4D0, 0x1, 0x7, 4);
 ret = pmic_config_interface(0x4DC, 0x3, 0x3, 0);
@@ -157,10 +160,26 @@ ret = pmic_config_interface(0x6A6, 0x4, 0x7F, 8);
 ret = pmic_config_interface(0x6AC, 0x35, 0x7F, 0);
 ret = pmic_config_interface(0x6B2, 0x3, 0x3, 0);
 ret = pmic_config_interface(0x6B2, 0x1, 0x3, 4);
-ret = pmic_config_interface(0x6B2, 0x1, 0x1, 8);
+ret = pmic_config_interface(0x6B2, 0x0, 0x1, 8);
 ret = pmic_config_interface(0xA02, 0x1, 0x1, 9);
+/* 32k less crystal auto detect start */
+ret |= pmic_config_interface(0x701E, 0x1, 0x1, 0);
+ret |= pmic_config_interface(0x701E, 0x3, 0xF, 1);
+ret = pmic_read_interface(0x7000, &pmic_reg, 0xffff, 0);
+ret |= pmic_config_interface(0x701E, 0x0, 0x1, 0);
 ret = pmic_config_interface(0xA04, 0x1, 0x1, 3);
-ret = pmic_config_interface(0xA04, 0x0, 0x7, 11);
+if ((pmic_reg & 0x200) == 0x200) {
+	/* VCTCXO on MT6176 , OFF XO on MT6351
+	HW control, use srclken_0 */
+	ret = pmic_config_interface(0xA04, 0x0, 0x7, 11);
+	pr_err("VCTCXO on MT6176 , OFF XO on MT6351\n");
+} else {
+	/*  HW control, use srclken_1, for LP */
+	ret = pmic_config_interface(0xA04, 0x1, 0x1, 4);
+	ret = pmic_config_interface(0xA04, 0x1, 0x7, 11);
+	pr_err("VCTCXO 0x7000=0x%x\n", pmic_reg);
+}
+/* 32k less crystal auto detect end */
 ret = pmic_config_interface(0xA06, 0x1, 0x1, 9);
 ret = pmic_config_interface(0xA08, 0x1, 0x1, 3);
 ret = pmic_config_interface(0xA08, 0x1, 0x7, 11);

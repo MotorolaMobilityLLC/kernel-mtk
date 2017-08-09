@@ -95,8 +95,8 @@ extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void battery_oc_protect_reinit(void);
 */
 #define PMICTAG                "[MT6311] "
-#if defined PMIC_DEBUG
-#define PMICLOG1(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+#if defined PMIC_DEBUG_PR_DBG
+#define PMICLOG1(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
 #else
 #define PMICLOG1(fmt, arg...)
 #endif
@@ -7330,6 +7330,8 @@ static struct platform_driver mt6311_user_space_driver = {
 		   },
 };
 
+/*static struct i2c_board_info i2c_mt6311 __initdata =
+{ I2C_BOARD_INFO("mt6311", (mt6311_SLAVE_ADDR_WRITE >> 1)) };*/ /* auto add  by dts */
 
 #endif
 

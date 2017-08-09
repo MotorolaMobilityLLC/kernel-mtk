@@ -33,8 +33,9 @@
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
-
-/*#include <mach/battery_common.h> TBD*/
+#if defined(CONFIG_MTK_SMART_BATTERY)
+#include <mt-plat/battery_common.h>
+#endif
 #include <linux/time.h>
 
 /* ============================================================ // */
@@ -63,8 +64,9 @@ static void hw_bc11_dump_register(void)
 static void hw_bc11_init(void)
 {
 	msleep(200);
-	/* Charger_Detect_Init(); TBD */
-
+#if defined(CONFIG_MTK_SMART_BATTERY)
+	Charger_Detect_Init();
+#endif
 	/* RG_bc11_BIAS_EN=1 */
 	bc11_set_register_value(PMIC_RG_BC11_BIAS_EN, 1);
 	/* RG_bc11_VSRC_EN[1:0]=00 */
