@@ -173,9 +173,20 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x)\n", user, enable, pdn1);
 }
 
+void rtc_disable_2sec_reboot(void)
+{
+	u16 reboot;
+
+	reboot = (rtc_read(RTC_AL_SEC) & ~RTC_BBPU_2SEC_EN) & ~RTC_BBPU_AUTO_PDN_SEL;
+	rtc_write(RTC_AL_SEC, reboot);
+	rtc_write_trigger();
+}
+
 void hal_rtc_bbpu_pwdn(void)
 {
 	u16 ret_val, con;
+
+	rtc_disable_2sec_reboot();
 
 	/* disable 32K export if there are no RTC_GPIO users */
 	if (!(rtc_read(RTC_PDN1) & RTC_GPIO_USER_MASK)) {

@@ -74,6 +74,7 @@
 #define RTC_BBPU_2SEC_MODE        (3U << 9)
 #define RTC_BBPU_2SEC_EN        (1U << 8)
 #define RTC_BBPU_2SEC_CK_SEL        (1U << 7)
+#define RTC_BBPU_AUTO_PDN_SEL		(1U << 6)
 #define RTC_AL_SEC_MASK 0x003f
 
 #define RTC_AL_MIN            (RTC_BASE + 0x001a)
