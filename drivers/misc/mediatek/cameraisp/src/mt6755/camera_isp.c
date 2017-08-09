@@ -1397,7 +1397,7 @@ static MUINT32 ISP_DumpDmaDeepDbg(void)
 #define	RegDump(start, end)	{\
 	MUINT32	i;\
 	for	(i = start;	i <= end; i	+= 0x10) {\
-		LOG_INF("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
+		LOG_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
 				(unsigned int)(ISP_TPIPE_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i),\
 				(unsigned int)(ISP_TPIPE_ADDR +	i+0x4),	(unsigned int)ISP_RD32(ISP_ADDR	+ i+0x4),\
 				(unsigned int)(ISP_TPIPE_ADDR +	i+0x8),	(unsigned int)ISP_RD32(ISP_ADDR	+ i+0x8),\
@@ -9880,7 +9880,7 @@ static MINT32 ISP_WaitImemDump(unsigned int userpid)
 		LOG_ERR("too many process (0x%x)", userpid);
 		return 0;
 	}
-	LOG_INF("enter ISP_WaitImemDump,(0x%x)", userpid);
+	LOG_DBG("enter ISP_WaitImemDump,(0x%x)", userpid);
 
 	retWait = wait_event_interruptible(
 			WaitQueueHead_ImemDbgDump,
@@ -9892,7 +9892,7 @@ static MINT32 ISP_WaitImemDump(unsigned int userpid)
 	P2_IMEM_DBGList[i].processID = 0x0;
 	P2_IMEM_DBGList[i].bImemDbgDumpDone = false;
 	spin_unlock(&(SpinLockImemDump));
-	LOG_INF("leave ISP_WaitImemDump,(0x%x)", userpid);
+	LOG_DBG("leave ISP_WaitImemDump,(0x%x)", userpid);
 
 	return Ret;
 }
@@ -9904,7 +9904,7 @@ static MINT32 ISP_WriteImemDump(unsigned int userpid, int type)
 	int i = 0;
 	int find = -1;
 
-	LOG_INF("enter ISP_WriteImemDump,(%d)", type);
+	LOG_DBG("enter ISP_WriteImemDump,(%d)", type);
 	spin_lock(&(SpinLockImemDump));
 	for (i = 0; i < PROCESS_MAX; i++) {
 		if (P2_IMEM_DBGList[i].processID == userpid) {
@@ -9914,7 +9914,9 @@ static MINT32 ISP_WriteImemDump(unsigned int userpid, int type)
 	}
 	spin_unlock(&(SpinLockImemDump));
 	if (find == -1) {
-		LOG_ERR("too many process (0x%x)", userpid);
+		/*the same process will enter twice, it could do nothing at 2nd*/
+		/*LOG_ERR("too many process (0x%x)", userpid);*/
+		LOG_DBG("leave ISP_WriteImemDump -(%d)", type);
 		return 0;
 	}
 	switch (type) {
@@ -9935,7 +9937,7 @@ static MINT32 ISP_WriteImemDump(unsigned int userpid, int type)
 	default:
 		break;
 	}
-	LOG_INF("leave ISP_WriteImemDump,(%d)", type);
+	LOG_DBG("leave ISP_WriteImemDump,(%d)", type);
 	return Ret;
 }
 
@@ -11190,12 +11192,14 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	} else {
 		IspInfo.UserCount++;
 		spin_unlock(&(IspInfo.SpinLockIspRef));
-		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	first user",
-			IspInfo.UserCount, current->comm, current->pid, current->tgid);
-		/* kernellog limit to 250 lines per second */
+
+		/* kernellog limit to (current+150) lines per second */
 		pr_detect_count = get_detect_count();
-		if (pr_detect_count < 250)
-			set_detect_count(250);
+		i = pr_detect_count + 150;
+		set_detect_count(i);
+
+		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	first user, %d",
+			IspInfo.UserCount, current->comm, current->pid, current->tgid, i);
 	}
 	spin_lock(&(SpinLockImemDump));
 	for (i = 0; i <	PROCESS_MAX; i++) {
@@ -11375,7 +11379,7 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 	/*      */
 	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	last user",
 		IspInfo.UserCount, current->comm, current->pid, current->tgid);
-	/* kernellog limit back to default */
+	/* kernel log limit back to default */
 	set_detect_count(pr_detect_count);
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
 	Reg = ISP_RD32(ISP_REG_ADDR_TG_VF_CON);
