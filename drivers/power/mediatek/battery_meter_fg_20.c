@@ -4342,6 +4342,11 @@ static void nl_data_handler(struct sk_buff *skb)
 	size = fgd_msg->fgd_ret_data_len + FGD_NL_MSG_T_HDR_LEN;
 
 	fgd_ret_msg = vmalloc(size);
+	if (!fgd_ret_msg) {
+		/* bm_err("Error: nl_data_handler() vmalloc fail!!!\n"); */
+		return;
+	}
+
 	memset(fgd_ret_msg, 0, size);
 
 	bmd_ctrl_cmd_from_user(data, fgd_ret_msg);
@@ -4365,6 +4370,11 @@ int wakeup_fg_algo(int flow_state)
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
 		fgd_msg = vmalloc(size);
+		if (!fgd_msg) {
+			/* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
+			return -1;
+		}
+
 		bm_debug("[battery_meter_driver] malloc size=%d\n", size);
 		memset(fgd_msg, 0, size);
 		fgd_msg->fgd_cmd = FG_DAEMON_CMD_NOTIFY_DAEMON;
