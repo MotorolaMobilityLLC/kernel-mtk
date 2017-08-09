@@ -2864,7 +2864,7 @@ static void preview_setting_11_new(void)
 	sensor_WDR_zhdr();
 	//write_cmos_sensor_twobyte(0x0216,0x0000);
 	//write_cmos_sensor_twobyte(0x021A,0x0100);
-	write_cmos_sensor_twobyte(0x0202,0x0400);
+	//write_cmos_sensor_twobyte(0x0202,0x0400);
 	write_cmos_sensor_twobyte(0x0200,0x0001);
 	write_cmos_sensor_twobyte(0x0086,0x0080);
 	write_cmos_sensor_twobyte(0x0204,0x0020);
@@ -3269,7 +3269,7 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		//write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR*/
 		//write_cmos_sensor_twobyte(0x0218, 0x0101);
 		write_cmos_sensor_twobyte(0x021A, 0x0100);
-		write_cmos_sensor_twobyte(0x0202, 0x0400);
+		//write_cmos_sensor_twobyte(0x0202, 0x0400);
 		write_cmos_sensor_twobyte(0x0200, 0x0001);
 		write_cmos_sensor_twobyte(0x0086, 0x0200);
 		write_cmos_sensor_twobyte(0x0204, 0x0020);
@@ -3425,7 +3425,7 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		//write_cmos_sensor_twobyte(0x0218, 0x0101);
 		//write_cmos_sensor_twobyte(0x021A, 0x0100);
 
-		write_cmos_sensor_twobyte(0x0202, 0x0400);
+		//write_cmos_sensor_twobyte(0x0202, 0x0400);
 		write_cmos_sensor_twobyte(0x0200, 0x0001);
 		write_cmos_sensor_twobyte(0x0086, 0x0200);
 		write_cmos_sensor_twobyte(0x0204, 0x0020);
@@ -3582,7 +3582,7 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		//write_cmos_sensor_twobyte(0x0218, 0x0101);
 		//write_cmos_sensor_twobyte(0x021A, 0x0100);
 
-		write_cmos_sensor_twobyte(0x0202, 0x0400);
+		//write_cmos_sensor_twobyte(0x0202, 0x0400);
 		write_cmos_sensor_twobyte(0x0200, 0x0001);
 		write_cmos_sensor_twobyte(0x0086, 0x0200);
 		write_cmos_sensor_twobyte(0x0204, 0x0020);
