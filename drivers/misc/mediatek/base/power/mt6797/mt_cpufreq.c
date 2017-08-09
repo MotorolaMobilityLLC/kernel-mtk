@@ -67,7 +67,7 @@
 #if defined(CONFIG_OF)
 static unsigned long infracfg_ao_base;
 static unsigned long topckgen_base;
-static unsigned long mcumixed_base;
+/* static unsigned long mcumixed_base; */
 
 #define INFRACFG_AO_NODE	"mediatek,infracfg_ao"
 #define TOPCKGEN_NODE		"mediatek,topckgen"
@@ -79,7 +79,8 @@ static unsigned long mcumixed_base;
 
 #define INFRACFG_AO_BASE		(infracfg_ao_base)	/* 0xF0001000 */
 #define TOPCKGEN_BASE			(topckgen_base)		/* 0xF0000000 */
-#define MCUMIXED_BASE			(mcumixed_base)		/* 0xF000A000 */
+/* #define MCUMIXED_BASE		(mcumixed_base) */
+/* 0xF000A000 */
 
 #else				/* #if defined (CONFIG_OF) */
 #undef INFRACFG_AO_BASE
@@ -92,28 +93,28 @@ static unsigned long mcumixed_base;
 #endif				/* #if defined (CONFIG_OF) */
 
 /* LL */
-#define ARMCAXPLL0_CON0		(MCUMIXED_BASE+0x200)
-#define ARMCAXPLL0_CON1		(MCUMIXED_BASE+0x204)
-#define ARMCAXPLL0_CON2		(MCUMIXED_BASE+0x208)
+#define ARMCAXPLL0_CON0		(0x200)
+#define ARMCAXPLL0_CON1		(0x204)
+#define ARMCAXPLL0_CON2		(0x208)
 
 /* L */
-#define ARMCAXPLL1_CON0		(MCUMIXED_BASE+0x210)
-#define ARMCAXPLL1_CON1		(MCUMIXED_BASE+0x214)
-#define ARMCAXPLL1_CON2		(MCUMIXED_BASE+0x218)
+#define ARMCAXPLL1_CON0		(0x210)
+#define ARMCAXPLL1_CON1		(0x214)
+#define ARMCAXPLL1_CON2		(0x218)
 
 /* CCI */
-#define ARMCAXPLL2_CON0		(MCUMIXED_BASE+0x220)
-#define ARMCAXPLL2_CON1		(MCUMIXED_BASE+0x224)
-#define ARMCAXPLL2_CON2		(MCUMIXED_BASE+0x228)
+#define ARMCAXPLL2_CON0		(0x220)
+#define ARMCAXPLL2_CON1		(0x224)
+#define ARMCAXPLL2_CON2		(0x228)
 
 /* Backup */
-#define ARMCAXPLL3_CON0		(MCUMIXED_BASE+0x230)
-#define ARMCAXPLL3_CON1		(MCUMIXED_BASE+0x234)
-#define ARMCAXPLL3_CON2		(MCUMIXED_BASE+0x238)
+#define ARMCAXPLL3_CON0		(0x230)
+#define ARMCAXPLL3_CON1		(0x234)
+#define ARMCAXPLL3_CON2		(0x238)
 
 /* ARMPLL DIV */
-#define ARMPLLDIV_MUXSEL	(MCUMIXED_BASE+0x270)
-#define ARMPLLDIV_CKDIV		(MCUMIXED_BASE+0x274)
+#define ARMPLLDIV_MUXSEL	(0x270)
+#define ARMPLLDIV_CKDIV		(0x274)
 
 /* INFRASYS Register */
 /* L VSRAM */
@@ -637,6 +638,11 @@ enum ppb_power_mode {
 #define cpufreq_write(addr, val)            mt_reg_sync_writel((val), ((void *)addr))
 #define cpufreq_write_mask(addr, mask, val) \
 cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
+
+#define cpufreq_read_armpll(addr)				mt6797_0x1001AXXX_reg_read((unsigned long)addr)
+#define cpufreq_write_armpll(addr, val)			mt6797_0x1001AXXX_reg_write((unsigned long)addr, val)
+#define cpufreq_write_mask_armpll(addr, mask, val) \
+mt6797_0x1001AXXX_reg_set(addr, (_BITMASK_(mask)), val)
 
 /*
  * LOCK
@@ -2063,9 +2069,7 @@ static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 	pcw = BigiDVFSPLLGetPCW();
 	posdiv = BigiDVFSPOSDIVGet();
 
-	mt6797_0x1001AXXX_lock();
-	ckdiv1 = cpufreq_read(ARMPLLDIV_CKDIV);
-	mt6797_0x1001AXXX_unlock();
+	ckdiv1 = cpufreq_read_armpll(ARMPLLDIV_CKDIV);
 	ckdiv1 = _GET_BITS_VAL_(4:0, ckdiv1);
 
 	if (ckdiv1 == 10)
@@ -2093,10 +2097,8 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 
 	BUG_ON(NULL == p);
 
-	mt6797_0x1001AXXX_lock();
-	con1 = cpufreq_read(p->armpll_addr);
-	ckdiv1 = cpufreq_read((unsigned int *)ARMPLLDIV_CKDIV);
-	mt6797_0x1001AXXX_unlock();
+	con1 = cpufreq_read_armpll(p->armpll_addr);
+	ckdiv1 = cpufreq_read_armpll(ARMPLLDIV_CKDIV);
 
 	ckdiv1 = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _GET_BITS_VAL_(9:5, ckdiv1) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _GET_BITS_VAL_(14:10, ckdiv1) :
@@ -2107,9 +2109,7 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 			cur_khz = _cpu_freq_calc(con1, ckdiv1);
 			/* Read con1 fail */
 			if (cur_khz > cpu_dvfs_get_max_freq(p) || cur_khz < cpu_dvfs_get_min_freq(p)) {
-				mt6797_0x1001AXXX_lock();
-				con1 = cpufreq_read(p->armpll_addr);
-				mt6797_0x1001AXXX_unlock();
+				con1 = cpufreq_read_armpll(p->armpll_addr);
 				cur_khz = _cpu_freq_calc(con1, ckdiv1);
 				con1_result = 0;
 				cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x, retry = %d\n",
@@ -2202,19 +2202,14 @@ static void _cpu_clock_switch(struct mt_cpu_dvfs *p, enum top_ckmuxsel sel)
 
 	BUG_ON(sel >= NR_TOP_CKMUXSEL);
 
-	mt6797_0x1001AXXX_lock();
-
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 3 : 2, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_MUXSEL, 3 : 2, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 5 : 4, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_MUXSEL, 5 : 4, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 1 : 0, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_MUXSEL, 1 : 0, sel);
 	else /* CCI */
-		cpufreq_write_mask(ARMPLLDIV_MUXSEL, 7 : 6, sel);
-
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+		cpufreq_write_mask_armpll(ARMPLLDIV_MUXSEL, 7 : 6, sel);
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -2226,11 +2221,7 @@ static enum top_ckmuxsel _get_cpu_clock_switch(struct mt_cpu_dvfs *p)
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	mt6797_0x1001AXXX_lock();
-
-	val = cpufreq_read(ARMPLLDIV_MUXSEL);
-
-	mt6797_0x1001AXXX_unlock();
+	val = cpufreq_read_armpll(ARMPLLDIV_MUXSEL);
 
 	mask = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _BITMASK_(3:2) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _BITMASK_(5:4) :
@@ -2298,13 +2289,10 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned 
 
 		dds = _cpu_dds_calc(vco);
 		/* dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(vco)); */
-		mt6797_0x1001AXXX_lock();
-		reg = cpufreq_read(p->armpll_addr);
+		reg = cpufreq_read_armpll(p->armpll_addr);
 		dds = (((reg & ~(_BITMASK_(26:24))) | (shift << 24)) & ~(_BITMASK_(20:0))) | dds;
 		/* dbg_print("DVFS: Set ARMPLL CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
-		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
+		cpufreq_write_armpll(p->armpll_addr, dds | _BIT_(31)); /* CHG */
 	}
 	udelay(PLL_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
@@ -2334,13 +2322,10 @@ static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 			(pos_div == 2) ? 1 :
 			(pos_div == 4) ? 2 : 0;
 
-		mt6797_0x1001AXXX_lock();
-		reg = cpufreq_read(p->armpll_addr);
+		reg = cpufreq_read_armpll(p->armpll_addr);
 		dds = (reg & ~(_BITMASK_(26:24))) | (shift << 24);
 		/* dbg_print("DVFS: Set POSDIV CON1: 0x%x as 0x%x\n", p->armpll_addr, dds | _BIT_(31)); */
-		cpufreq_write(p->armpll_addr, dds | _BIT_(31)); /* CHG */
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
+		cpufreq_write_armpll(p->armpll_addr, dds | _BIT_(31)); /* CHG */
 	}
 	udelay(POS_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
@@ -2358,24 +2343,19 @@ static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 		(clk_div == 2) ? 10 :
 		(clk_div == 4) ? 11 : 8;
 
-	mt6797_0x1001AXXX_lock();
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-		cpufreq_write_mask(ARMPLLDIV_CKDIV, 9 : 5, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 9 : 5, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-		cpufreq_write_mask(ARMPLLDIV_CKDIV, 14 : 10, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 14 : 10, sel);
 	else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-		cpufreq_write_mask(ARMPLLDIV_CKDIV, 4 : 0, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 4 : 0, sel);
 	else
-		cpufreq_write_mask(ARMPLLDIV_CKDIV, 19 : 15, sel);
+		cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 19 : 15, sel);
 
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
 	udelay(POS_SETTLE_TIME);
 
 	/* retry */
-	mt6797_0x1001AXXX_lock();
-	ckdiv1 = cpufreq_read((unsigned int *)ARMPLLDIV_CKDIV);
-	mt6797_0x1001AXXX_unlock();
+	ckdiv1 = cpufreq_read_armpll(ARMPLLDIV_CKDIV);
 
 	ckdiv1 = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? _GET_BITS_VAL_(9:5, ckdiv1) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _GET_BITS_VAL_(14:10, ckdiv1) :
@@ -2384,18 +2364,16 @@ static void adjust_clkdiv(struct mt_cpu_dvfs *p, unsigned int clk_div)
 	if (ckdiv1 != sel) {
 		cpufreq_err("%s(), %s CLKDIV write 0x%x (0x%x) failed, retry!\n",
 			__func__, cpu_dvfs_get_name(p), ckdiv1, sel);
-		mt6797_0x1001AXXX_lock();
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-			cpufreq_write_mask(ARMPLLDIV_CKDIV, 9 : 5, sel);
-		else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-			cpufreq_write_mask(ARMPLLDIV_CKDIV, 14 : 10, sel);
-		else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-			cpufreq_write_mask(ARMPLLDIV_CKDIV, 4 : 0, sel);
-		else
-			cpufreq_write_mask(ARMPLLDIV_CKDIV, 19 : 15, sel);
 
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
+			cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 9 : 5, sel);
+		else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
+			cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 14 : 10, sel);
+		else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+			cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 4 : 0, sel);
+		else
+			cpufreq_write_mask_armpll(ARMPLLDIV_CKDIV, 19 : 15, sel);
+
 		udelay(POS_SETTLE_TIME);
 	}
 }
@@ -5395,11 +5373,13 @@ static int mt_cpufreq_dts_map(void)
 		cpufreq_info("error: cannot find node " MCUMIXED_NODE);
 		BUG();
 	}
+#if 0
 	mcumixed_base = (unsigned long)of_iomap(node, 0);
 	if (!mcumixed_base) {
 		cpufreq_info("error: cannot iomap " MCUMIXED_NODE);
 		BUG();
 	}
+#endif
 	return 0;
 }
 #else
