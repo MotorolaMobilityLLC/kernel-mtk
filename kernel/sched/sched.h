@@ -435,8 +435,6 @@ struct rt_rq {
 	int rt_queued;
 
 	int rt_throttled;
-	/* sched:  prevent normal task could run anymore */
-	int rt_disable_borrow;
 	u64 rt_time;
 	u64 rt_runtime;
 	/* Nests inside the rq lock: */
