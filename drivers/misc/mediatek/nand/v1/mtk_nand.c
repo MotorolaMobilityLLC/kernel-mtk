@@ -7424,18 +7424,18 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #endif
 
 
-	mtk_nfi_node = of_find_compatible_node(NULL, NULL, "mediatek, NFI");
-		mtk_nfi_base = of_iomap(mtk_nfi_node, 0);
+	mtk_nfi_node = of_find_compatible_node(NULL, NULL, "mediatek,NFI");
+	mtk_nfi_base = of_iomap(mtk_nfi_node, 0);
 
 	MSG(INIT, "of_iomap for nfi base @ 0x%p\n", mtk_nfi_base);
 
 	if (mtk_nfiecc_node == NULL) {
-		mtk_nfiecc_node = of_find_compatible_node(NULL, NULL, "mediatek, NFIECC");
+		mtk_nfiecc_node = of_find_compatible_node(NULL, NULL, "mediatek,NFIECC");
 		mtk_nfiecc_base = of_iomap(mtk_nfiecc_node, 0);
 		MSG(INIT, "of_iomap for nfiecc base @ 0x%p\n", mtk_nfiecc_base);
 	}
 	if (mtk_io_node == NULL) {
-		mtk_io_node = of_find_compatible_node(NULL, NULL, "mediatek, IOCFG_B");
+		mtk_io_node = of_find_compatible_node(NULL, NULL, "mediatek,IOCFG_B");
 		mtk_io_base = of_iomap(mtk_io_node, 0);
 		MSG(INIT, "of_iomap for io base @ 0x%p\n", mtk_io_base);
 	}
@@ -8276,7 +8276,7 @@ static struct miscdevice nand_otp_dev = {
 Device driver structure
 ******************************************************************************/
 static const struct of_device_id mtk_nand_of_ids[] = {
-	{ .compatible = "mediatek, NFI",},
+	{ .compatible = "mediatek,NFI",},
 	{}
 };
 
