@@ -8,6 +8,9 @@
 #include <linux/printk.h>
 
 #include "internal.h"
+#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
+#include "mt_sched_mon.h"
+#endif
 #include <mt_cpufreq.h>
 
 #define BOOT_STR_SIZE 64 /* Before: 128 */
@@ -55,6 +58,9 @@ static void bootup_finish(void)
 {
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 	mt_disable_uart();
+#endif
+#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
+	mt_sched_monitor_switch(1);
 #endif
 	set_logtoomuch_enable(1);
 #ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST

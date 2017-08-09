@@ -71,20 +71,24 @@ static inline void mt_trace_rqlock_end(raw_spinlock_t *lock) {};
 extern spinlock_t mt_irq_count_lock;
 extern void mt_show_last_irq_counts(void);
 extern void mt_show_current_irq_counts(void);
+extern void mt_sched_monitor_switch(int on);
+
 
 /*Schedule disable event: IRQ/Preempt disable monitor*/
 struct sched_stop_event {
 	unsigned long long cur_ts;
 	unsigned long long last_ts;
 	unsigned long long last_te;
+	unsigned long long lock_dur;
+	unsigned long lock_owner;
+	raw_spinlock_t *lock;
 };
 
 struct sched_lock_event {
 	unsigned long long lock_ts;
 	unsigned long long lock_te;
 	unsigned long long lock_dur;
-	unsigned long curr_owner;
-	unsigned long last_owner;
+	unsigned long lock_owner;
 };
 
 DECLARE_PER_CPU(struct sched_stop_event, IRQ_disable_mon);
@@ -98,16 +102,16 @@ extern void MT_trace_irq_off(void);
 extern void MT_trace_preempt_on(void);
 extern void MT_trace_preempt_off(void);
 extern void MT_trace_check_preempt_dur(void);
-extern void MT_trace_raw_spin_lock_s(void *owner);
-extern void MT_trace_raw_spin_lock_e(void *owner);
+extern void MT_trace_raw_spin_lock_s(raw_spinlock_t *lock);
+extern void MT_trace_raw_spin_lock_e(raw_spinlock_t *lock);
 #else
 static inline void MT_trace_irq_on(void) {};
 static inline void MT_trace_irq_off(void) {};
 static inline void MT_trace_preempt_on(void) {};
 static inline void MT_trace_preempt_off(void) {};
 static inline void MT_trace_check_preempt_dur(void) {};
-static inline void MT_trace_raw_spin_lock_s(void *owner) {};
-static inline void MT_trace_raw_spin_lock_e(void *owner) {};
+static inline void MT_trace_raw_spin_lock_s(raw_spinlock_t *lock) {};
+static inline void MT_trace_raw_spin_lock_e(raw_spinlock_t *lock) {};
 #endif
 
 /* [IRQ-disable] White List
