@@ -622,8 +622,8 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			enter_cnt++;
 			pr_debug("[LP] - enter: %d, flag:%d,%d\n", enter_cnt,
 				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
-			atomic_set(&isDdp_Idle, 1);
 			primary_display_save_power_for_idle(1, 1);
+			atomic_set(&isDdp_Idle, 1);
 			_primary_path_esd_check_unlock();
 		} else {
 			/* _disp_primary_idle_unlock(); */
