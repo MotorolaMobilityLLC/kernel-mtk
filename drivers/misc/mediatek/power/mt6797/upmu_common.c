@@ -3,7 +3,7 @@
 
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-#include <mach/upmu_common.h>
+#include <mt-plat/upmu_common.h>
 
 const PMU_FLAG_TABLE_ENTRY pmu_flags_table[] = {
 	{PMIC_THR_DET_DIS, MT6351_PMIC_THR_DET_DIS_ADDR, MT6351_PMIC_THR_DET_DIS_MASK,

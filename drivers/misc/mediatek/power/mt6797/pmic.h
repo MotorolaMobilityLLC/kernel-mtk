@@ -4,6 +4,8 @@
 
 #define PMIC_DEBUG
 
+#include <linux/regulator/driver.h>
+#include <linux/regulator/machine.h>
 /*
  * The CHIP INFO
  */
@@ -33,8 +35,12 @@ do {					\
 #ifdef PMIC_DEBUG
 #define PMICDEB(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
 #define PMICFUC(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
-#endif
-#define PMICLOG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+#endif  /*-- defined PMIC_DEBUG --*/
+#if defined PMIC_DEBUG_PR_DBG
+#define PMICLOG(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
+#else
+#define PMICLOG(fmt, arg...)
+#endif  /*-- defined PMIC_DEBUG_PR_DBG --*/
 #define PMICERR(fmt, arg...)   pr_debug(PMICTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #define PMICREG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
 
@@ -46,9 +52,34 @@ do {					\
 
 #define GETSIZE(array) (sizeof(array)/sizeof(array[0]))
 
+/* PMIC EXTERN VARIABLE */
+/*----- LOW_BATTERY_PROTECT -----*/
+extern int g_lowbat_int_bottom;
+extern int g_low_battery_level;
+/*----- BATTERY_OC_PROTECT -----*/
+extern int g_battery_oc_level;
+
+/* PMIC EXTERN FUNCTIONS */
+/*----- LOW_BATTERY_PROTECT -----*/
+extern void lbat_min_en_setting(int en_val);
+extern void lbat_max_en_setting(int en_val);
+extern void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level);
+/*----- BATTERY_OC_PROTECT -----*/
+extern void exec_battery_oc_callback(BATTERY_OC_LEVEL battery_oc_level);
+extern void bat_oc_h_en_setting(int en_val);
+extern void bat_oc_l_en_setting(int en_val);
+/*----- CHRDET_PROTECT -----*/
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+extern unsigned int upmu_get_rgs_chrdet(void);
+#endif
+/*----- PMIC thread -----*/
+extern void pmic_enable_charger_detection_int(int x);
+/*----- LDO OC  -----*/
+extern void msdc_sd_power_off(void);
+
 /* extern functions */
-extern PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern void mt_power_off(void);
+extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_IM_current(void *data);
 extern void pmic_auxadc_lock(void);
@@ -62,6 +93,7 @@ extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
+extern bool crystal_exist_status(void);
 #if !defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif

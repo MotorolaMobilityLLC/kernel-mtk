@@ -24,25 +24,25 @@
 
 #include <asm/uaccess.h>
 
-#include <mach/upmu_common.h>
+#include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
-#include <mach/eint.h>
+/*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-#include <mach/mt_gpio.h>
+#include <mt-plat/mt_gpio.h>
 #endif
-#include <mach/mtk_rtc.h>
+/*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mach/battery_meter.h>
-#include <mach/battery_common.h>
+#include <mt-plat/battery_meter.h>
+#include <mt-plat/battery_common.h>
 #endif
 #include <linux/time.h>
 /*#include <mach/pmic_mt6328_sw.h>*/
 
-#include <cust_pmic.h>
-#include <cust_battery_meter.h>
+#include <mach/mt_pmic.h>
+#include <mach/mt_battery_meter.h>
 
 
 /*
@@ -107,11 +107,9 @@ signed int PMIC_IMM_GetCurrent(void)
 	signed int ICharging = 0;
 
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);	/* enable 26MHz */
-	pmic_set_register_value(PMIC_RG_AUXADC_26M_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_BUCK_AUD_1M_CK_PDN, 0);
-	pmic_set_register_value(PMIC_AUXADC_AVG_NUM_SEL_LBAT, 1);
-	usleep_range(2000, 3000);
+	pmic_set_register_value(PMIC_AUXADC_VBUF_EN, 1);
+	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);
+
 	wake_lock(&pmicAuxadc_irq_lock);
 	mutex_lock(&pmic_adc_mutex);
 	ret = pmic_config_interface(MT6351_AUXADC_RQST0_SET, 0x3, 0xffff, 0);
@@ -125,11 +123,7 @@ signed int PMIC_IMM_GetCurrent(void)
 		}
 	}
 	batsns = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH0_BY_AP);
-	if (batsns == 0) {
-		pr_err("[AUXADC]impedence-B(%x, %x)\n",
-			pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
-			pmic_get_register_value(PMIC_RG_VBIF28_EN));
-	}
+
 	while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH1_BY_AP) != 1) {
 		/*msleep(1);*/
 		usleep_range(1000, 2000);
@@ -139,11 +133,7 @@ signed int PMIC_IMM_GetCurrent(void)
 		}
 	}
 	isense = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH1_BY_AP);
-	if (isense == 0) {
-		pr_err("[AUXADC]impedence-I(%x, %x)\n",
-			pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
-			pmic_get_register_value(PMIC_RG_VBIF28_EN));
-	}
+
 
 	ADC_BAT_SENSE = (batsns * 3 * VOLTAGE_FULL_RANGE) / 32768;
 	ADC_I_SENSE = (isense * 3 * VOLTAGE_FULL_RANGE) / 32768;
@@ -156,11 +146,6 @@ signed int PMIC_IMM_GetCurrent(void)
 
 	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
-	pmic_set_register_value(PMIC_RG_AUXADC_26M_CK_PDN, 0x1);
-	pmic_set_register_value(PMIC_RG_BUCK_AUD_1M_CK_PDN, 0x1);
-	pmic_set_register_value(PMIC_AUXADC_CK_AON, 0);
-	pmic_set_register_value(PMIC_AUXADC_AVG_NUM_SEL_LBAT, 0);
-	usleep_range(2000, 3000);
 
 	return ICharging;
 
@@ -205,16 +190,14 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 
 	 */
 
-	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0);
-/* maybe used for debug
-	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN, 0);
-*/
-	if (dwChannel == 3) {
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 0);
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_EN, 1);
-		mdelay(5); /* delay 1~5ms, wait ldo settle */
-	}
+	/*upmu_set_reg_value(0x28c,0x0002); */
+
+	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
+	/* mt6351 change to hw control, but reserve sw control register */
+	/* pmic_set_register_value(PMIC_AUXADC_VBUF_EN,1); //use ch4 only, pmic temp or dcxo temp */
+	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);	/* enable 26MHz */
+
+	/*upmu_set_reg_value(0x0a44,0x010a); */
 #if defined PMIC_DVT_TC_EN
 	/* only used for PMIC_DVT */
 	pmic_set_register_value(PMIC_STRUP_AUXADC_START_SEL, 1);
@@ -279,14 +262,6 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 			}
 		}
 		ret_data = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH3);
-		if (ret_data == 0) {
-			pr_err("[AUXADC]VBIF28_ON_CTL, EN(%x, %x)\n",
-				pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
-				pmic_get_register_value(PMIC_RG_VBIF28_EN));
-		}
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 1);
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_EN, 0);
-
 		break;
 	case 4:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH4) != 1) {
@@ -434,10 +409,6 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 3:
 		r_val_temp = 2;
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
-		if (adc_result < 0x200) {
-			pr_err("[AUXADC] ch3(%x, %x, %x)\n", adc_result,
-				ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
-		}
 		break;
 	case 4:
 		r_val_temp = 1;
@@ -470,19 +441,17 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 11:
 		r_val_temp = 2;
 		g_pmic_pad_vbif28_vol = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
-		if ((g_pmic_pad_vbif28_vol < 2700) || (g_pmic_pad_vbif28_vol >= 2912)) {
-			pr_err("[AUXADC] VBIF28_def_volt(%x, %x, %x)\n", g_pmic_pad_vbif28_vol,
-				ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
-			g_pmic_pad_vbif28_vol = 2770;
-		}
 		/* mt6351 sw workaround, PAD_VBIF28 SWITCH TURN ON */
 		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
 		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 0);
 		ret = pmic_set_register_value(PMIC_RG_VBIF28_MODE_CTRL, 0);
 		ret = pmic_set_register_value(PMIC_RG_VBIF28_EN, 0);
+/*		ret = pmic_config_interface(MT6351_LDO_VBIF28_CON0,0xda6a,0xffff,0); */
 		ret = pmic_set_register_value(PMIC_TOP_CKPDN_CON2_SET, 0x70);
 		mdelay(3); /* delay 1~3ms */
 		ret = pmic_set_register_value(PMIC_BATON_TDET_EN, 0x1);
+		PMICLOG2("[AUXADC] VBIF28_def_volt(%x, %x, %x)\n", g_pmic_pad_vbif28_vol,
+			ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
 		break;
 	case 12:
 		r_val_temp = 1;
@@ -511,12 +480,10 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		return -1;
 		break;
 	}
-	PMICLOG2("[AUXADC] ch:%d(%x, %x, %x, %x)\n", dwChannel, adc_result,
-		ret_data, g_pmic_pad_vbif28_vol, pmic_get_register_value(PMIC_BATON_TDET_EN));
+
 	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
 
-	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0x1);
 	/*PMICLOG2("[AUXADC] ch=%d raw=%d data=%d\n", dwChannel, ret_data,adc_result);*/
 
 	/*return ret_data;*/

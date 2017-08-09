@@ -24,17 +24,17 @@
 
 #include <asm/uaccess.h>
 
-#include <mach/upmu_common.h>
+#include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
 #include <mach/mt_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-#include <mach/mt_gpio.h>
+/*#include <mach/mt_gpio.h> TBD*/
 #endif
-#include <mach/mtk_rtc.h>
+/*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mach/battery_common.h>
+#include <mt-plat/battery_common.h>
 #endif
 #include <linux/time.h>
 
