@@ -27,10 +27,23 @@
 #include "humidity_factory.h"
 
 #define HMDY_TAG					"<HUMIDITY> "
-#define HMDY_FUN(f)				pr_debug(HMDY_TAG"%s\n", __func__)
 #define HMDY_ERR(fmt, args...)	pr_err(HMDY_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define HMDY_LOG(fmt, args...)	pr_debug(HMDY_TAG fmt, ##args)
 #define HMDY_VER(fmt, args...)	pr_debug(HMDY_TAG"%s: "fmt, __func__, ##args)
+
+#define HMDY_LOGLEVEL 0
+
+#if ((HMDY_LOGLEVEL) >= 0)
+#define HMDY_FUN(f)				pr_debug(HMDY_TAG"%s\n", __func__)
+#else
+#define HMDY_FUN(f)
+#endif
+
+#if ((HMDY_LOGLEVEL) >= 1)
+#define HMDY_LOG(fmt, args...)	pr_debug(HMDY_TAG fmt, ##args)
+#else
+#define HMDY_LOG(fmt, args...)
+#endif
+
 
 #define OP_HMDY_DELAY		0X01
 #define	OP_HMDY_ENABLE		0X02
