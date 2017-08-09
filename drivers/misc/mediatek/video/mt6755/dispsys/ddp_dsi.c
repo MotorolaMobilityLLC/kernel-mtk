@@ -273,7 +273,6 @@ static const char *_dsi_vdo_mode_parse_state(unsigned int state)
 		return "unknown";
 	}
 
-	return "unknown";
 }
 
 DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)

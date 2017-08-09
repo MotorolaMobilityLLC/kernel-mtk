@@ -691,6 +691,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		break;
 	default:
 		DISPERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
+		kfree(session_input);
 		return -1;
 	}
 	input->alpha_enable = false;
@@ -711,6 +712,8 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	}
 	ret = primary_display_config_input_multiple(session_input);
 	ret = primary_display_trigger(true, NULL, 0);
+
+	kfree(session_input);
 
 	return ret;
 }
@@ -1271,6 +1274,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				if (primary_display_is_sleepd()) {
 					DISPMSG
 					    ("[FB] error, set overlay in early suspend ,skip!\n");
+					kfree(layerInfo);
 					return MTKFB_ERROR_IS_EARLY_SUSPEND;
 				}
 
@@ -1656,6 +1660,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			/* in early suspend mode ,will not update buffer index, info SF by return value */
 			if (primary_display_is_sleepd()) {
 				pr_debug("[FB Driver] error, set overlay in early suspend ,skip!\n");
+				kfree(compat_layerInfo);
 				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
 			memset((void *)&session_input, 0, sizeof(session_input));

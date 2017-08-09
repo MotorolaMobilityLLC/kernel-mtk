@@ -1048,8 +1048,10 @@ void dprec_logger_vdump(const char *fmt, ...)
 
 	va_start(vargs, fmt);
 
-	if (analysize_length >= dprec_dump_max_length - 10)
+	if (analysize_length >= dprec_dump_max_length - 10) {
+		va_end(vargs);
 		return;
+	}
 
 	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
 		      dprec_dump_max_length - analysize_length, fmt, vargs);
