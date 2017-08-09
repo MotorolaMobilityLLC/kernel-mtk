@@ -36,7 +36,7 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 #define read_reg					 lcm_util.dsi_read_reg()
 
 
-static struct LCM_setting_table {
+struct LCM_setting_table {
 	unsigned cmd;
 	unsigned char count;
 	unsigned char para_list[64];
@@ -175,38 +175,12 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{ 0x29, 0, {} },
 };
 
-
-static struct LCM_setting_table lcm_set_window[] = {
-	{ 0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
-	{ 0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT & 0xFF)} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
-
-static struct LCM_setting_table lcm_sleep_out_setting[] = {
-	/* Sleep Out */
-	{ 0x11, 0, {} },
-	{ REGFLAG_DELAY, 120, {} },
-
-	/* Display ON */
-	{ 0x29, 0, {} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
-
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 	/* Sleep Mode On */
 	{ 0x10, 0, {} },
 	{ REGFLAG_DELAY, 120, {} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
-
-
-static struct LCM_setting_table lcm_backlight_level_setting[] = {
-	{ 0x51, 1, {0xFF} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
 
 static void push_table(struct LCM_setting_table *table, unsigned int count,
 		       unsigned char force_update)
@@ -284,11 +258,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if (LCM_DSI_CMD_MODE)
-	params->dsi.PLL_CLOCK = 350;	/* this value must be in MTK suggested table */
-#else
 	params->dsi.PLL_CLOCK = 218;	/* this value must be in MTK suggested table */
-#endif
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
@@ -329,74 +299,6 @@ static void lcm_suspend(void)
 static void lcm_resume(void)
 {
 	lcm_init();
-}
-
-
-static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
-{
-	unsigned int x0 = x;
-	unsigned int y0 = y;
-	unsigned int x1 = x0 + width - 1;
-	unsigned int y1 = y0 + height - 1;
-
-	unsigned char x0_MSB = ((x0 >> 8) & 0xFF);
-	unsigned char x0_LSB = (x0 & 0xFF);
-	unsigned char x1_MSB = ((x1 >> 8) & 0xFF);
-	unsigned char x1_LSB = (x1 & 0xFF);
-	unsigned char y0_MSB = ((y0 >> 8) & 0xFF);
-	unsigned char y0_LSB = (y0 & 0xFF);
-	unsigned char y1_MSB = ((y1 >> 8) & 0xFF);
-	unsigned char y1_LSB = (y1 & 0xFF);
-
-	unsigned int data_array[16];
-
-	data_array[0] = 0x00053902;
-	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
-	data_array[2] = (x1_LSB);
-	data_array[3] = 0x00053902;
-	data_array[4] = (y1_MSB << 24) | (y0_LSB << 16) | (y0_MSB << 8) | 0x2b;
-	data_array[5] = (y1_LSB);
-	data_array[6] = 0x002c3909;
-
-	dsi_set_cmdq(&data_array, 7, 0);
-
-}
-
-
-static void lcm_setbacklight(unsigned int level)
-{
-	unsigned int default_level = 145;
-	unsigned int mapped_level = 0;
-
-	/* for LGE backlight IC mapping table */
-	if (level > 255)
-		level = 255;
-
-	if (level > 0)
-		mapped_level = default_level + (level) * (255 - default_level) / (255);
-	else
-		mapped_level = 0;
-
-	/* Refresh value of backlight level. */
-	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
-
-	push_table(lcm_backlight_level_setting,
-		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-}
-
-
-static void lcm_setpwm(unsigned int divider)
-{
-	/* TBD */
-}
-
-
-static unsigned int lcm_getpwm(unsigned int divider)
-{
-	/* ref freq = 15MHz, B0h setting 0x80, so 80.6% * freq is pwm_clk; */
-	/* pwm_clk / 255 / 2(lcm_setpwm() 6th params) = pwm_duration = 23706 */
-	unsigned int pwm_clk = 23706 / (1 << divider);
-	return pwm_clk;
 }
 
 LCM_DRIVER hx8392a_dsi_vdo_lcm_drv = {
