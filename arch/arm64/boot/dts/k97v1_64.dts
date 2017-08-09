@@ -586,7 +586,7 @@
 		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <1>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		accdet-mic-mode = <6>;
+		accdet-mic-mode = <2>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
 		headset-three-key-threshold = <0 80 220 400>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/

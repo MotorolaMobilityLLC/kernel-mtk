@@ -1219,9 +1219,10 @@ static inline void accdet_init(void)
 		;
 	else if (accdet_dts_data.accdet_mic_mode == 2)	/* Low cost mode without internal bias*/
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
-	else if (accdet_dts_data.accdet_mic_mode == 6)	/* Low cost mode with internal bias*/
+	else if (accdet_dts_data.accdet_mic_mode == 6) {	/* Low cost mode with internal bias*/
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
 		pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG) | 0x0104);
+	}
     /**************************************************************************************************/
 #if defined CONFIG_ACCDET_EINT
 	/* disable ACCDET unit*/
