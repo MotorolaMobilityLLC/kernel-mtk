@@ -384,7 +384,6 @@ void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eComm
 			*pbCommited = false;
 		}
 	}
-		
 }
 ///
 #ifdef CONFIG_MALI_MIPE_ENABLED
@@ -3659,9 +3658,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	int err = 0;
 	int i;
 
-
 	pr_alert("[MALI] Midgard r7p0-02rel0 DDK kernel device driver. GPU probe() begin.\n");
-	
+
 #ifdef CONFIG_OF
 	err = kbase_platform_early_init();
 	if (err) {
@@ -3802,12 +3800,13 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	bl_core_set_threshold(kbdev->buslogger, 1024*1024*1024);
 #endif
 
-    gpsMaliData = kbdev;
-#ifdef ENABLE_COMMON_DVFS      
-/// MTK_GED {	
-   ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
-   ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
-///}
+	kbdev->gpu_fault_wq = alloc_workqueue(
+		"kbase_gpu_fault_work_queue", WQ_MEM_RECLAIM, 1);
+
+	gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+	ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
 #endif
 
 	pr_alert("[MALI] Midgard r7p0-02rel0 DDK kernel device driver. GPU probe() end.\n");

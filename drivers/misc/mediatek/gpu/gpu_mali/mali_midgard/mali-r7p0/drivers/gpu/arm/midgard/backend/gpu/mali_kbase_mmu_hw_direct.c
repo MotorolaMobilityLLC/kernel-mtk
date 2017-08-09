@@ -78,7 +78,7 @@ static int wait_ready(struct kbase_device *kbdev,
 
 	if (max_loops == 0) {
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck\n");
-		mtk_trigger_aee(kbdev->mtk_log, "AS_ACTIVE bit stuck");
+		mtk_trigger_aee_report("AS_ACTIVE bit stuck");
 		return -1;
 	}
 

@@ -12,6 +12,8 @@
 #include <linux/workqueue.h>
 #include <mt-plat/aee.h>
 
+static unsigned int g_mtk_log;
+
 #ifdef ENABLE_MTK_MEMINFO
 /*
    Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to
@@ -210,7 +212,7 @@ static int proc_gpu_utilization_show(struct seq_file *m, void *v)
     unsigned int iCurrentFreq;
 
     iCurrentFreq = mt_gpufreq_get_cur_freq_index();
-    
+
     gl  = kbasep_get_gl_utilization();
     cl0 = kbasep_get_cl_js0_utilization();
     cl1 = kbasep_get_cl_js1_utilization();
@@ -325,10 +327,10 @@ static void aee_Handle(struct work_struct *_psWork)
 #endif
 
 }
-void mtk_trigger_aee(unsigned int mtk_log, const char *msg)
+void mtk_trigger_aee_report(const char *msg)
 {
     static int called = 0;
-    ged_log_buf_print2(mtk_log, GED_LOG_ATTR_TIME, "trigger aee: %s (aee warnning once)", msg);
+    ged_log_buf_print2(g_mtk_log, GED_LOG_ATTR_TIME, "trigger aee: %s (aee warnning once)", msg);
     if (called == 0)
     {
         if (g_aee_workqueue)
@@ -343,15 +345,16 @@ static struct work_struct          g_pa_work;
 static u64 g_pa;
 static void pa_Handle(struct work_struct *_psWork)
 {
-	bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
+    bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
     /* avoid the build warnning */
     _psWork = _psWork;
-	kbase_debug_gpu_mem_mapping_check_pa(g_pa);
+    kbase_debug_gpu_mem_mapping_check_pa(g_pa);
 }
-void mtk_trigger_emi(u64 pa)
+void mtk_trigger_emi_report(u64 pa)
 {
-	g_pa = pa;
-	queue_work(g_aee_workqueue, &g_pa_work);
+    g_pa = pa;
+    ged_log_buf_print2(g_mtk_log, GED_LOG_ATTR_TIME, "emi mpu violation: pa: 0x%llx", pa);
+    queue_work(g_aee_workqueue, &g_pa_work);
 }
 
 void proc_mali_register(void)
@@ -360,6 +363,8 @@ void proc_mali_register(void)
 
     if (!mali_pentry)
         return;
+
+    ged_log_buf_get_early("FENCE", (GED_LOG_BUF_HANDLE *)&g_mtk_log);
 
     g_aee_workqueue = alloc_ordered_workqueue("mali_aeewp", WQ_FREEZABLE | WQ_MEM_RECLAIM);
     INIT_WORK(&g_aee_work, aee_Handle);

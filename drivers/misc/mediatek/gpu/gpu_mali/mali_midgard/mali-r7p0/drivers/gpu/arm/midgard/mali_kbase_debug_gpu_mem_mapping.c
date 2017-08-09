@@ -397,7 +397,7 @@ static int kbase_backend_nr_atoms_on_slot(struct kbase_device *kbdev, int js)
 */
 void kbase_check_PA(u64 pa)
 {
-	mtk_trigger_emi(pa);
+	mtk_trigger_emi_report(pa);
 }
 bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 {
@@ -456,14 +456,14 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 			ret = kbasep_mmu_dump_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, pa);
 			kbase_gpu_vm_unlock(kctx);
 			if (ret == true) {
-				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in PID:%llx\n", pa, (u64)(kctx->tgid));	
+				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in PID:%llx\n", pa, (u64)(kctx->tgid));
 			}
 			else {
 				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in GPU page table\n", pa);
 			}
 		}
 
-		mtk_trigger_aee(kbdev->mtk_log, "check_pa");
+		mtk_trigger_aee_report("check_pa");
 	}
 	kbase_dev_list_put(kbdev_list);
 

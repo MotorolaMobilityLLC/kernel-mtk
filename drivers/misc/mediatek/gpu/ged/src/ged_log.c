@@ -275,7 +275,7 @@ static int __ged_log_buf_write(GED_LOG_BUF *psGEDLogBuf, const char __user *pszB
 	return cnt;
 }
 
-static void __ged_log_buf_check_get_early_list(GED_LOG_BUF_HANDLE hLogBuf, const char *pszName)
+static int __ged_log_buf_check_get_early_list(GED_LOG_BUF_HANDLE hLogBuf, const char *pszName)
 {
 	struct list_head *psListEntry, *psListEntryTemp, *psList;
 	GED_LOG_LISTEN *psFound = NULL, *psLogListen;
@@ -302,6 +302,8 @@ static void __ged_log_buf_check_get_early_list(GED_LOG_BUF_HANDLE hLogBuf, const
 		list_del(&psFound->sList);
 		write_unlock_bh(&gsGEDLogBufList.sLock);
 	}
+
+	return !!psFound;
 }
 
 static ssize_t ged_log_buf_write_entry(const char __user *pszBuffer, size_t uiCount, loff_t uiPosition, void *pvData)
@@ -533,7 +535,7 @@ GED_LOG_BUF_HANDLE ged_log_buf_alloc(
 
 	GED_LOGI("ged_log_buf_alloc OK\n");
 
-	__ged_log_buf_check_get_early_list(psGEDLogBuf->ui32HashNodeID, pszName);
+	while (__ged_log_buf_check_get_early_list(psGEDLogBuf->ui32HashNodeID, pszName));
 
 	return (GED_LOG_BUF_HANDLE)psGEDLogBuf->ui32HashNodeID;
 }

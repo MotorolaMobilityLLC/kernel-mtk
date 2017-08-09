@@ -58,6 +58,20 @@ volatile void *g_DVFS_GPU_base;
 volatile void *g_DFP_base;
 volatile void *g_TOPCK_base;
 
+static DEFINE_MUTEX(power_lock);
+
+static void power_acquire(void)
+{
+	mutex_lock(&power_lock);
+}
+static void power_release(void)
+{
+	mutex_unlock(&power_lock);
+}
+
+static int mtk_pm_callback_power_on(void);
+static void mtk_pm_callback_power_off(void);
+
 #define MTKCLK_prepare_enable(clk) \
 	if (config->clk) { if (clk_prepare_enable(config->clk)) \
 		pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
@@ -67,7 +81,11 @@ volatile void *g_TOPCK_base;
 
 #ifdef MTK_MT6797_DEBUG
 
-static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
+#define PRINT_LOGS(mtklog, fmt, ...) \
+	if (mtklog) ged_log_buf_print2(mtklog, GED_LOG_ATTR_TIME, fmt, ##__VA_ARGS__); \
+	else pr_err(fmt, ##__VA_ARGS__);
+
+static void _mtk_dump_register(unsigned int mtklog, unsigned int pa, int size, int offset, int dsize)
 {
 	int i;
 	volatile void *base = NULL;
@@ -79,9 +97,9 @@ static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
 		int dump_size = dsize >> 2;
 		for (i = 0; i < dump_size; i += 4)
 		{
-			if (mtk_log)
+			if (mtklog)
 			{
-				ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+				PRINT_LOGS(mtklog,
 						"[dump][0x%08x] 0x%08x 0x%08x 0x%08x 0x%08x",
 						pa + c_offset,
 						base_read32(base+c_offset),
@@ -96,9 +114,9 @@ static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
 	}
 	else
 	{
-		if (mtk_log)
+		if (mtklog)
 		{
-			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+			PRINT_LOGS(mtklog,
 					"[dump] map 0x%08x size 0x%08x fail",
 					pa, size
 					);
@@ -106,27 +124,56 @@ static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
 	}
 }
 
+static int _dump_mfg_n_ldo_registers(unsigned int mtklog)
+{
+	char x;
+	fan53555_read_interface(0x0, &x, 0xff, 0x0);
+
+	PRINT_LOGS(mtklog,
+			"[dump][fan53555 0x0][0x%x]", (unsigned int)x
+			);
+	_mtk_dump_register(mtklog, 0x1000C000, 0x1000, 0x240, 0x10);
+	_mtk_dump_register(mtklog, 0x10001000, 0x1000, 0xfc0, 0x10);
+
+	_mtk_dump_register(mtklog, 0x10006000, 0x1000, 0x170, 0x10);
+	_mtk_dump_register(mtklog, 0x10201000, 0x1000, 0x1B0, 0x10);
+	_mtk_dump_register(mtklog, 0x10001000, 0x1000, 0x220, 0x10);
+	_mtk_dump_register(mtklog, 0x10201000, 0x1000, 0x190, 0x10);
+	_mtk_dump_register(mtklog, 0x10201000, 0x1000, 0x010, 0x10);
+
+	return !!(x & 0x8);
+}
+
 void mtk_debug_dump_registers(void)
 {
-	{
-		char x;
-		fan53555_read_interface(0x0, &x, 0xff, 0x0);
+	unsigned int mtklog;
 
-		if (mtk_log)
-		{
-			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
-					"[dump][fan53555 0x0][0x%x]", (unsigned int)x
-					);
-		}
-		_mtk_dump_register(0x1000C000, 0x1000, 0x240, 0x10);
-		_mtk_dump_register(0x10001000, 0x1000, 0xfc0, 0x10);
+	mtklog = (mtk_log) ? *mtk_log : 0;
+
+	if (mtklog != 0)
+	{
+		int power_is_on;
+
+		power_acquire();
+
+		power_is_on = _dump_mfg_n_ldo_registers(mtklog);
+
+		_mtk_dump_register(mtklog, 0x1000f000, 0x1000, 0xfc0, 0x10);
+		_mtk_dump_register(mtklog, 0x10018000, 0x1000, 0xfc0, 0x10);
+		_mtk_dump_register(mtklog, 0x10012000, 0x1000, 0xfc0, 0x10);
+		_mtk_dump_register(mtklog, 0x10019000, 0x1000, 0xfc0, 0x10);
+
+		/* Power on before dump registers */
+		if (!power_is_on) mtk_pm_callback_power_on();
+
+		_mtk_dump_register(mtklog, 0x13000000, 0x1000, 0x0, 0x470);
+		_mtk_dump_register(mtklog, 0x13040000, 0x4000, 0x0, 0x4000);
+
+		/* Power off if it was on-ed by this function */
+		if (!power_is_on) mtk_pm_callback_power_off();
+
+		power_release();
 	}
-	_mtk_dump_register(0x1000f000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10018000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10012000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10019000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x13000000, 0x1000, 0x0, 0x470);
-	_mtk_dump_register(0x13040000, 0x4000, 0x0, 0x4000);
 }
 
 void mtk_debug_mfg_reset(void)
@@ -167,9 +214,9 @@ static void mtk_init_spm_dvfs_gpu(void)
 }
 #endif
 
-static int pm_callback_power_on(struct kbase_device *kbdev)
+static int mtk_pm_callback_power_on(void)
 {
-	struct mtk_config *config = kbdev->mtk_config;
+	struct mtk_config *config = g_config;
 
 	base_write32(g_ldo_base+0xfbc, 0x1ff);
 	mt_gpufreq_voltage_enable_set(1);
@@ -246,10 +293,10 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	return 1;
 }
 
-static void pm_callback_power_off(struct kbase_device *kbdev)
+static void mtk_pm_callback_power_off(void)
 {
 	int polling_retry = 100000;
-	struct mtk_config *config = kbdev->mtk_config;
+	struct mtk_config *config = g_config;
 
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(0);
@@ -258,10 +305,11 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	/* polling mfg idle */
 	MFG_write32(MFG_DEBUG_SEL, 0x3);
-	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
+	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry) udelay(1);
 	if (polling_retry <= 0)
 	{
-		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
+		pr_err("[dump] polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
+		_dump_mfg_n_ldo_registers(0);
 	}
 
 #ifdef MTK_GPU_OCP
@@ -293,6 +341,21 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	mt_gpufreq_voltage_enable_set(0);
 	base_write32(g_ldo_base+0xfbc, 0x0);
+}
+
+static int pm_callback_power_on(struct kbase_device *kbdev)
+{
+	int ret;
+	power_acquire();
+	ret = mtk_pm_callback_power_on();
+	power_release();
+	return ret;
+}
+static void pm_callback_power_off(struct kbase_device *kbdev)
+{
+	power_acquire();
+	mtk_pm_callback_power_off();
+	power_release();
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
