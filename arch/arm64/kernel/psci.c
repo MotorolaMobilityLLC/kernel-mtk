@@ -517,8 +517,8 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 1);
 
 	if (hotplug) {
-		ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
-		ret = da9214_config_interface(0x5E, 0x1, 0x1, 0);
+		BUG_ON(da9214_config_interface(0x0, 0x0, 0xF, 0) < 0);
+		BUG_ON(da9214_config_interface(0x5E, 0x1, 0x1, 0) < 0);
 
 		udelay(500);
 	}
