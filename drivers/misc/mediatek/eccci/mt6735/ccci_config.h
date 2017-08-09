@@ -33,8 +33,9 @@
 #ifdef CONFIG_MTK_CONN_MD
 #define FEATURE_CONN_MD_EXP_EN
 #endif
-
+#ifndef CONFIG_ARM64
 #define FEATURE_USING_4G_MEMORY_API
+#endif
 #define FEATURE_VLTE_SUPPORT
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
 #ifdef CONFIG_MTK_FPGA
