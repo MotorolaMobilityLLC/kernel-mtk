@@ -1024,11 +1024,6 @@ unsigned int get_dram_data_rate_from_reg(void)
 }
 
 void DVFS_gating_auto_save(void)
-#if 1
-{
-
-}
-#else
 {
 	unsigned int u4HWTrackPICH0R0, u4HWTrackPICH0R1;
 	unsigned int u4HWTrackUICH0R0P0, u4HWTrackUICH0R1P0;
@@ -1039,6 +1034,7 @@ void DVFS_gating_auto_save(void)
 
 	/* ddrphy_conf shuffle_three */
 	/*TINFO="===  ddrphy shuffle_three reg start ==="*/
+	writel(0x0, IOMEM(INFRACFG_AO_BASE_ADDR + 0x0A4));
 
 	dfs_level =
 	(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028)) & 0x00003000) >> 12;
@@ -1612,9 +1608,8 @@ void DVFS_gating_auto_save(void)
 		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc98));
 
 	/* *(UINT32P)DRAMC_WBR  = 0x0;          */
-	writel(0x0, IOMEM(INFRACFG_AO_BASE_ADDR + 0x0A4));
+	writel(0x7, IOMEM(INFRACFG_AO_BASE_ADDR + 0x0A4));
 }
-#endif
 
 unsigned int get_dram_data_rate(void)
 {
