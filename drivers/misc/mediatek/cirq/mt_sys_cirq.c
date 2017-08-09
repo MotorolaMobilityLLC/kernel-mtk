@@ -66,17 +66,19 @@ static unsigned long cirq_pattern_list;
 
 
 
-/*
- * mt_cirq_ack_all: Ack all the interrupt on SYS_CIRQ
- */
-void mt_cirq_ack_all(void)
+static int mt_cirq_ack(unsigned int cirq_num)
 {
-	unsigned int i;
+	void __iomem *base;
+	unsigned int bit = 1 << (cirq_num % 32);
 
-	for (i = 0; i < CIRQ_CTRL_REG_NUM; i++)
-		writel_relaxed(0xFFFFFFFF, CIRQ_ACK_BASE + (i * 4));
-	/* make sure all cirq setting take effect before doing other things */
-	mb();
+	if (cirq_num >= CIRQ_IRQ_NUM) {
+		pr_err("[CIRQ] %s: invalid cirq num %d\n", __func__, cirq_num);
+		return -1;
+	}
+	base = (cirq_num / 32) * 4 + CIRQ_ACK_BASE;
+
+	mt_reg_sync_writel(bit, base);
+	return 0;
 }
 
 /*
@@ -104,6 +106,35 @@ static int mt_cirq_get_mask(unsigned int cirq_num)
 /*
  * mt_cirq_mask_all: Mask all interrupts on SYS_CIRQ.
  */
+
+
+/*
+ * mt_cirq_ack_all: Ack all the interrupt on SYS_CIRQ
+ */
+void mt_cirq_ack_all(void)
+{
+	unsigned int i;
+	unsigned int gic_pen;
+	unsigned int cirq_mask;
+/*
+	for (i = 0; i < CIRQ_CTRL_REG_NUM; i++)
+	{
+		writel_relaxed(0xFFFFFFFF, CIRQ_ACK_BASE + (i * 4));
+	}
+*/
+
+	for (i = 0; i < CIRQ_IRQ_NUM; i++) {
+		gic_pen = mt_irq_get_pending(CIRQ_TO_IRQ_NUM(i));
+		cirq_mask = mt_cirq_get_mask(i);
+		if (gic_pen == 1 && cirq_mask == 0)
+			continue;
+		else
+			mt_cirq_ack(i);
+	}
+	/* make sure all cirq setting take effect before doing other things */
+	mb();
+
+}
 void mt_cirq_mask_all(void)
 {
 	unsigned int i;
@@ -687,21 +718,26 @@ void mt_cirq_dump_reg(void)
 {
 	int cirq_num;
 	int pol, sens, mask;
+	int pen;
 #if defined(__CHECK_IRQ_TYPE)
 	int irq_iter;
 	unsigned char pass = 1;
 #endif
 
-	pr_debug("[CIRQ] IRQ:\tPOL\tSENS\tMASK\n");
+	pr_debug("[CIRQ] IRQ:\tPOL\tSENS\tMASK\tGIC_PENDING\n");
 	for (cirq_num = 0; cirq_num < CIRQ_IRQ_NUM; cirq_num++) {
 		pol = mt_cirq_get_pol(cirq_num);
 		sens = mt_cirq_get_sens(cirq_num);
 		mask = mt_cirq_get_mask(cirq_num);
-
+		pen =  mt_irq_get_pending(CIRQ_TO_IRQ_NUM(cirq_num));
 #if defined(__CHECK_IRQ_TYPE)
 		if (mask == 0) {
-			pr_debug("[CIRQ] IRQ:%d\t%d\t%d\t%d\n",
-				  CIRQ_TO_IRQ_NUM(cirq_num), pol, sens, mask);
+			pr_debug("[CIRQ] IRQ:%d\t%d\t%d\t%d\t%d\n",
+				 CIRQ_TO_IRQ_NUM(cirq_num),
+				 pol,
+				 sens,
+				 mask,
+				 pen);
 			irq_iter = cirq_num + 32;
 			if (__check_irq_type[irq_iter].num ==
 			    CIRQ_TO_IRQ_NUM(cirq_num)) {
