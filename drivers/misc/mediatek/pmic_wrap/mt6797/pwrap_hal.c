@@ -247,7 +247,7 @@ static inline void pwrap_dump_ap_register(void)
 	PWRAPREG("dump pwrap register\n");
 	for (i = 0; i <= PMIC_WRAP_REG_RANGE; i++) {
 		reg_addr = (PMIC_WRAP_BASE + i * 4);
-		reg_value = WRAP_RD32(((UINT32P) (PMIC_WRAP_BASE + i * 4)));
+		reg_value = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + i * 4)));
 
 		PWRAPREG("reg_addr:0x%x = 0x%x\n", *reg_addr, reg_value);
 	}
@@ -317,9 +317,9 @@ static bool _pwrap_timeout_ns(u64 start_time_ns, u64 timeout_time_ns)
 		/* timeout */
 		PWRAPERR("@@@@Timeout: elapse time%lld,start%lld setting timer%lld\n",
 			 elapse_time, start_time_ns, timeout_time_ns);
-		return TRUE;
+		return 1;
 	}
-	return FALSE;
+	return 0;
 }
 
 static u64 _pwrap_time2ns(u64 time_us)
@@ -335,7 +335,7 @@ static u64 _pwrap_get_current_time(void)
 
 static BOOL _pwrap_timeout_ns(u64 start_time_ns, u64 elapse_time)	/* ,u64 timeout_ns) */
 {
-	return FALSE;
+	return 0;
 }
 
 static u64 _pwrap_time2ns(u64 time_us)
