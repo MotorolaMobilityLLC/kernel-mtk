@@ -1152,9 +1152,11 @@ bool EnableSineGen(uint32 connection, bool direction, bool Enable)
 			break;
 		case Soc_Aud_InterConnectionOutput_O25:
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xec6c26c2, 0xffffffff);
+			break;
 		case Soc_Aud_InterConnectionOutput_O28:
 		case Soc_Aud_InterConnectionOutput_O29:
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xfc9c29c2, 0xffffffff);
+			break;
 		default:
 			break;
 		}

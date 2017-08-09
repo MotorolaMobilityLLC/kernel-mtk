@@ -190,25 +190,12 @@ static int mtk_mod_dai_alsa_stop(struct snd_pcm_substream *substream)
 static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_mod_dai_pcm_pointer(struct snd_pcm_substream *substream)
 {
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_uint32 Frameidx = 0;
 	AFE_BLOCK_T *pModDai_Block = &(MOD_DAI_Control_context->rBlock);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI) == true) {
 		Frameidx = audio_bytes_to_frame(substream , pModDai_Block->u4WriteIdx);
 		return Frameidx;
-
-		HW_Cur_ReadIdx = Align64ByteSize(AFE_MOD_DAI_CUR);
-		if (HW_Cur_ReadIdx == 0) {
-			pr_debug("[Auddrv] mtk_mod_dai_pcm_pointer  HW_Cur_ReadIdx ==0\n");
-			HW_Cur_ReadIdx = pModDai_Block->pucPhysBufAddr;
-		}
-		HW_memory_index = (HW_Cur_ReadIdx - pModDai_Block->pucPhysBufAddr);
-		Previous_Hw_cur = HW_memory_index;
-		pr_debug("[Auddrv] mtk_mod_dai_pcm_pointer =0x%x HW_memory_index = 0x%x\n"
-			, HW_Cur_ReadIdx, HW_memory_index);
-		return audio_bytes_to_frame(substream, Previous_Hw_cur);
 	}
 	return audio_bytes_to_frame(substream, Previous_Hw_cur);
 }
