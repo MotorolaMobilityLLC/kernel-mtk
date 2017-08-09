@@ -59,8 +59,10 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
         KERNEL_ZIMAGE_OUT := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/zImage
       endif
     endif
-    KBUILD_BUILD_USER ?= mediatek
-    KBUILD_BUILD_HOST ?= mediatek
+    ifeq ($(strip $(MTK_INTERNAL)),yes)
+      KBUILD_BUILD_USER ?= mediatek
+      KBUILD_BUILD_HOST ?= mediatek
+    endif
     export KBUILD_BUILD_USER
     export KBUILD_BUILD_HOST
     BUILT_KERNEL_TARGET := $(KERNEL_ZIMAGE_OUT).bin
@@ -75,7 +77,7 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
     KERNEL_MAKE_OPTION := O=$(KERNEL_OUT) ARCH=$(TARGET_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) ROOTDIR=$(KERNEL_ROOT_DIR) $(if $(strip $(SHOW_COMMANDS)),V=1)
 
 # .config cannot be PHONY due to config_data.gz
-$(TARGET_KERNEL_CONFIG): $(KERNEL_CONFIG_FILE)
+$(TARGET_KERNEL_CONFIG): $(KERNEL_CONFIG_FILE) $(LOCAL_PATH)/Android.mk
 ifneq ($(wildcard $(TARGET_KERNEL_CONFIG)),)
 $(TARGET_KERNEL_CONFIG): $(shell find $(KERNEL_DIR) -name "Kconfig*")
 endif
@@ -99,23 +101,23 @@ ifneq ($(KERNEL_CONFIG_MODULES),)
 endif
 
 ifeq ($(strip $(MTK_HEADER_SUPPORT)), yes)
-$(BUILT_KERNEL_TARGET): $(KERNEL_ZIMAGE_OUT) $(TARGET_KERNEL_CONFIG) | $(HOST_OUT_EXECUTABLES)/mkimage$(HOST_EXECUTABLE_SUFFIX)
+$(BUILT_KERNEL_TARGET): $(KERNEL_ZIMAGE_OUT) $(TARGET_KERNEL_CONFIG) $(LOCAL_PATH)/Android.mk | $(HOST_OUT_EXECUTABLES)/mkimage$(HOST_EXECUTABLE_SUFFIX)
 	$(hide) $(HOST_OUT_EXECUTABLES)/mkimage$(HOST_EXECUTABLE_SUFFIX) $< KERNEL 0xffffffff > $@
 
 else
-$(BUILT_KERNEL_TARGET): $(KERNEL_ZIMAGE_OUT) $(TARGET_KERNEL_CONFIG) | $(ACP)
+$(BUILT_KERNEL_TARGET): $(KERNEL_ZIMAGE_OUT) $(TARGET_KERNEL_CONFIG) $(LOCAL_PATH)/Android.mk | $(ACP)
 	$(copy-file-to-target)
 
 endif
 
-$(TARGET_PREBUILT_KERNEL): $(BUILT_KERNEL_TARGET) | $(ACP)
+$(TARGET_PREBUILT_KERNEL): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
 	$(copy-file-to-new-target)
 
   else
     BUILT_KERNEL_TARGET := $(TARGET_PREBUILT_KERNEL)
   endif#TARGET_PREBUILT_KERNEL
 
-$(INSTALLED_KERNEL_TARGET): $(BUILT_KERNEL_TARGET) | $(ACP)
+$(INSTALLED_KERNEL_TARGET): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
 	$(copy-file-to-target)
 
 ifneq ($(KERNEL_CONFIG_MODULES),)
