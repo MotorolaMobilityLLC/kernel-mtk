@@ -4439,7 +4439,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	pr_debug("[PMIC]pmic_mt_probe %s %s\n", dev->name, dev->id_entry->name);
 #endif /* #ifdef DLPT_FEATURE_SUPPORT */
 	/*get PMIC CID */
-	pr_debug
+	pr_err
 	    ("PMIC CID=0x%x PowerGoodStatus = 0x%x OCStatus = 0x%x ThermalStatus = 0x%x rsvStatus = 0x%x\n",
 	     pmic_get_register_value(PMIC_SWCID), upmu_get_reg_value(0x21c),
 	     upmu_get_reg_value(0x214), upmu_get_reg_value(0x21e), upmu_get_reg_value(0x2a6));
