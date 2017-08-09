@@ -583,7 +583,6 @@ static irqreturn_t gdma1_irq_handler(int irq, void *dev_id)
 
 		mt_reg_sync_writel(DMA_INT_FLAG_CLR_BIT, DMA_INT_FLAG(i));
 	} else {
-		pr_debug("[CQDMA] discard interrupt\n");
 		return IRQ_NONE;
 	}
 
