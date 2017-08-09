@@ -513,6 +513,12 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 {
 	unsigned int wdt_status;
 
+	if (!buffer) {
+		pr_err("ram_console: buffer is null\n");
+		seq_puts(m, "buffer is null.\n");
+		return 0;
+	}
+
 	if (ram_console_check_header(buffer) && buffer->sz_buffer != 0) {
 		pr_err("ram_console: buffer %p, size %x(%x)\n", buffer, buffer->sz_buffer,
 		       ram_console_buffer->sz_buffer);
