@@ -596,7 +596,9 @@ static long st480d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int valuebuf[4];
 	int retval = 0;
 	int enable = 0;
-	char buff[0x20];
+	char buff[96];
+	struct hwm_sensor_data *hwm_data;
+
 	/*
 	   MSE_LOG("st480d:[%x]%s\n",cmd,cmd==MSENSOR_IOCTL_SENSOR_ENABLE?"MSENSOR_IOCTL_SENSOR_ENABLE":
 	   cmd==MSENSOR_IOCTL_READ_SENSORDATA?"MSENSOR_IOCTL_READ_SENSORDATA":
@@ -636,7 +638,8 @@ static long st480d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case MSENSOR_IOCTL_READ_SENSORDATA:
 		st480_work_func();
-		if (copy_to_user(argp, (void *)&mag, sizeof(mag)) != 0) {
+		sprintf(buff, "%04x %04x %04x", mag.mag_x, mag.mag_y, mag.mag_z);
+		if (copy_to_user(argp, buff, strlen(buff) + 1)) {
 			MSE_ERR("copy to user error.\n");
 			retval = -EFAULT;
 			goto err_out;
@@ -645,8 +648,21 @@ static long st480d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		/* add by sen.luo */
 	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
-		st480_work_func();
-		sprintf(buff, "%04x %04x %04x", mag.mag_x, mag.mag_y, mag.mag_z);
+		if (argp == NULL) {
+			MSE_ERR("IO parameter pointer is NULL!\n");
+			break;
+		}
+
+		hwm_data = (struct hwm_sensor_data *) buff;
+		hwm_data->values[0] = st480sensordata.yaw;
+		hwm_data->values[1] = st480sensordata.pitch;
+		hwm_data->values[2] = st480sensordata.roll;
+		hwm_data->status = SENSOR_STATUS_ACCURACY_HIGH;
+		hwm_data->value_divide = 1000;
+
+		sprintf(buff, "%x %x %x %x %x", hwm_data->values[0],
+			hwm_data->values[1], hwm_data->values[2],
+			hwm_data->status, hwm_data->value_divide);
 		if (copy_to_user(argp, buff, strlen(buff) + 1)) {
 			MSE_ERR("copy to user error.\n");
 			retval = -EFAULT;
