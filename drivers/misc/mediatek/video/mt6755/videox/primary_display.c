@@ -2960,7 +2960,7 @@ unsigned long get_dim_layer_mva_addr(void)
 	static unsigned long dim_layer_mva;
 	if (dim_layer_mva == 0) {
 		int frame_buffer_size = ALIGN_TO(DISP_GetScreenWidth(), MTK_FB_ALIGNMENT) *
-		    ALIGN_TO(DISP_GetScreenHeight(), MTK_FB_ALIGNMENT) * 4;
+		    DISP_GetScreenHeight() * 4;
 		dim_layer_mva = pgc->framebuffer_mva + (DISP_GetPages() - 1) * frame_buffer_size;
 		DISPMSG("init dim layer mva %lu, size %d", dim_layer_mva, frame_buffer_size);
 	}
@@ -5762,8 +5762,7 @@ uint32_t DISP_GetPages(void)
 uint32_t DISP_GetFBRamSize(void)
 {
 	return ALIGN_TO(DISP_GetScreenWidth(), MTK_FB_ALIGNMENT) *
-	    ALIGN_TO(DISP_GetScreenHeight(), MTK_FB_ALIGNMENT) *
-	    ((DISP_GetScreenBpp() + 7) >> 3) * DISP_GetPages();
+	    DISP_GetScreenHeight() * ((DISP_GetScreenBpp() + 7) >> 3) * DISP_GetPages();
 }
 
 uint32_t DISP_GetVRamSize(void)

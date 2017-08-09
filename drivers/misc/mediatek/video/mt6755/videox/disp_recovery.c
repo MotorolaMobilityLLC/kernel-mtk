@@ -282,10 +282,17 @@ int primary_display_switch_esd_mode(int mode)
 						   ARRAY_SIZE(ints));
 			/* mt_gpio_set_debounce(ints[0], ints[1]); */
 			irq = irq_of_parse_and_map(node, 0);
-			if (request_irq(irq, _esd_check_ext_te_irq_handler,
-					IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
-				/*IRQF_TRIGGER_NONE*/
-				DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			if (primary_get_lcm()->params->dsi.ext_te_edge == LCM_POLARITY_FALLING) {
+				if (request_irq(irq, _esd_check_ext_te_irq_handler,
+						IRQF_TRIGGER_FALLING, "DSI_TE-eint", NULL))
+					/*IRQF_TRIGGER_NONE*/
+					DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			} else {
+				if (request_irq(irq, _esd_check_ext_te_irq_handler,
+						IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
+					/*IRQF_TRIGGER_NONE*/
+					DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			}
 
 		} else
 			DISPERR("[ESD][%s] can't find DSI_TE eint compatible node\n", __func__);
@@ -299,7 +306,8 @@ int primary_display_switch_esd_mode(int mode)
 		if (node) {
 			irq = irq_of_parse_and_map(node, 0);
 			free_irq(irq, NULL);
-		}
+		} else
+			DISPERR("[ESD][%s] can't find DSI_TE eint compatible node\n",  __func__);
 
 		/* disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_TE); */
 
