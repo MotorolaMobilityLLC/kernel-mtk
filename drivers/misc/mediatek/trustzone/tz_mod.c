@@ -1302,7 +1302,6 @@ static int __init tz_client_init(void)
 }
 #ifdef CONFIG_TRUSTY
 device_initcall(tz_client_init);
-/* subsys_initcall(tz_client_init); */
 #else
 arch_initcall(tz_client_init);
 #endif

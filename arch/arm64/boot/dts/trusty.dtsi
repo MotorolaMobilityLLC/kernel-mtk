@@ -17,5 +17,10 @@
 		virtio {
 			compatible = "android,trusty-virtio-v1";
 		};
+
+		mtee {
+			compatible = "mediatek,trusty-mtee-v1";
+		};
+
 	};
 };

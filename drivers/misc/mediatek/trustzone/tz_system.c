@@ -12,11 +12,13 @@
 #include "trustzone/kree/system.h"
 #include "kree_int.h"
 #include "sys_ipc.h"
+#include "kree/tz_trusty.h"
 
 #ifdef CONFIG_ARM64
 #define ARM_SMC_CALLING_CONVENTION
 #endif
 
+#ifndef CONFIG_TRUSTY
 static TZ_RESULT KREE_ServPuts(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE]);
 static TZ_RESULT KREE_ServUSleep(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE]);
 static TZ_RESULT tz_ree_service(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE]);
@@ -57,10 +59,46 @@ static const KREE_REE_Service_Func ree_service_funcs[] = {
 
 #define ree_service_funcs_num \
 	(sizeof(ree_service_funcs)/sizeof(ree_service_funcs[0]))
-
+#endif
 
 #if defined(ARM_SMC_CALLING_CONVENTION)
 #define SMC_UNK 0xffffffff
+#ifdef CONFIG_TRUSTY
+struct smc_args_s {
+	void *param;
+	void *reebuf;
+	uint32_t handle;
+	uint32_t command;
+	uint32_t paramTypes;
+};
+
+#define SMC_MTEE_SERVICE_CALL (0x34000008)
+static u32 tz_service_call(struct smc_args_s *smc_arg)
+{
+	s32 ret;
+	u64 param[REE_SERVICE_BUFFER_SIZE / sizeof(u64)];
+
+	smc_arg->reebuf = param;
+	ret = trusty_mtee_std_call32(SMC_MTEE_SERVICE_CALL,
+					(u32)(u64)smc_arg,
+					(u32)((u64)smc_arg >> 32),
+					(u32)(u64)param);
+
+	return ret;
+}
+
+TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
+					uint32_t command, uint32_t paramTypes,
+					MTEEC_PARAM param[4])
+{
+	struct smc_args_s smc_arg = {	.param = param,
+					.handle = handle,
+					.command = command,
+					.paramTypes = paramTypes };
+
+	return (TZ_RESULT) tz_service_call(&smc_arg);
+}
+#else /* ~CONFIG_TRUSTY */
 #define SMC_MTEE_SERVICE_CALL (0x32000008)
 static u32 tz_service_call(u32 handle, u32 op, u32 arg1, unsigned long arg2)
 {
@@ -170,6 +208,7 @@ TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 	return (TZ_RESULT) tz_service_call(handle, command, paramTypes,
 						(unsigned long) param);
 }
+#endif /* CONFIG_TRUSTY */
 
 #else
 static u32 tz_service_call(u32 handle, u32 op, u32 arg1, u32 arg2)
@@ -335,7 +374,7 @@ error:
 }
 EXPORT_SYMBOL(KREE_TeeServiceCall);
 
-
+#ifndef CONFIG_TRUSTY
 static TZ_RESULT KREE_ServPuts(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 {
 	param[REE_SERVICE_BUFFER_SIZE - 1] = 0;
@@ -410,6 +449,7 @@ static TZ_RESULT tz_ree_service(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 
 	return (func) (op, param);
 }
+#endif /* ~CONFIG_TRUSTY */
 
 TZ_RESULT KREE_InitTZ(void)
 {
