@@ -710,7 +710,7 @@ fm_s32 fm_seek(struct fm *fm, struct fm_seek_parm *parm)
 		space = 0x0002;
 	}
 
-#ifdef MTK_FM_50KHZ_SUPPORT
+#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 	if (parm->band == FM_BAND_UE) {
 		fm->min_freq = FM_UE_FREQ_MIN;
 		fm->max_freq = FM_UE_FREQ_MAX;
@@ -822,7 +822,7 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 	   //default
 	   space = 2;
 	   } */
-#ifdef MTK_FM_50KHZ_SUPPORT
+#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 	if (parm->band == FM_BAND_UE) {
 		fm->min_freq = FM_UE_FREQ_MIN * 10;
 		fm->max_freq = FM_UE_FREQ_MAX * 10;
@@ -913,7 +913,7 @@ fm_s32 fm_scan(struct fm *fm, struct fm_scan_parm *parm)
 		space = 0x0002;
 	}
 
-#ifdef MTK_FM_50KHZ_SUPPORT
+#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 	if (parm->band == FM_BAND_UE) {
 		fm->min_freq = FM_UE_FREQ_MIN * 10;
 		fm->max_freq = FM_UE_FREQ_MAX * 10;
