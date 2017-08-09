@@ -3300,39 +3300,33 @@ static MINT32 ISP_DumpSeninfReg(void)
 	MINT32 Ret = 0;
 	/*  */
 	LOG_INF("- E.");
-	/*Sensor interface Top mux*/
-	LOG_INF("seninf: 1a040008(0x%x)-1a040010(0x%x)-1a040a10(0x%x)-1a041a10(0x%x)\n", \
+	/*Sensor interface Top mux and Package counter*/
+	LOG_INF("seninf:0008(0x%x)-0010(0x%x)-0a10(0x%x)-1a10(0x%x) 0a1c(0x%x)-1a1c(0x%x)-0a1c(0x%x)-1a1c(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0008), ISP_RD32(ISP_SENINF0_BASE + 0x0010), \
-		ISP_RD32(ISP_SENINF0_BASE + 0x0a10), ISP_RD32(ISP_SENINF1_BASE + 0x0a10));
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a10), ISP_RD32(ISP_SENINF1_BASE + 0x0a10), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c));
 	/*Sensor interface0 control*/
-	LOG_INF("seninf: 1a040200(0x%x)-1a040204(0x%x)-1a040a00(0x%x)-1a040a14(0x%x)\n", \
+	LOG_INF("seninf:0200(0x%x)-0204(0x%x)-0a00(0x%x)-0a14(0x%x) 0a3c(0x%x)-0a44(0x%x)-0af0(0x%x)-0af4(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0200), ISP_RD32(ISP_SENINF0_BASE + 0x0204), \
-		ISP_RD32(ISP_SENINF0_BASE + 0x0a00), ISP_RD32(ISP_SENINF0_BASE + 0x0a14));
-	LOG_INF("seninf: 1a040a3c(0x%x)-1a040a44(0x%x)-1a040af0(0x%x)-1a040af4(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a00), ISP_RD32(ISP_SENINF0_BASE + 0x0a14), \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0a3c), ISP_RD32(ISP_SENINF0_BASE + 0x0a44), \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0af0), ISP_RD32(ISP_SENINF0_BASE + 0x0af4));
 	/*Sensor interface1 control*/
-	LOG_INF("seninf: 1a041200(0x%x)-1a041204(0x%x)-1a041a00(0x%x)-1a041a14(0x%x)\n", \
+	LOG_INF("seninf:1200(0x%x)-1204(0x%x)-1a00(0x%x)-1a14(0x%x) 1a3c(0x%x)-1a44(0x%x)-1af0(0x%x)-1af4(0x%x)\n", \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0200), ISP_RD32(ISP_SENINF1_BASE + 0x0204), \
-		ISP_RD32(ISP_SENINF1_BASE + 0x0a00), ISP_RD32(ISP_SENINF1_BASE + 0x0a14));
-	LOG_INF("seninf: 1a040a3c(0x%x)-1a040a44(0x%x)-1a040af0(0x%x)-1a040af4(0x%x)\n", \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0a00), ISP_RD32(ISP_SENINF1_BASE + 0x0a14), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0a3c), ISP_RD32(ISP_SENINF1_BASE + 0x0a44), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0af0), ISP_RD32(ISP_SENINF1_BASE + 0x0af4));
-	/*Package counter*/
-	LOG_INF("seninf: 1a040a1c(0x%x)-1a041a1c(0x%x)-1a040a1c(0x%x)-1a041a1c(0x%x)\n", \
-		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c), \
-		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c));
 	/*Sensor interface mux*/
-	LOG_INF("seninf: 1a040d00(0x%x)-1a040d08(0x%x)-1a040d14(0x%x)-1a040d18(0x%x)\n", \
+	LOG_INF("seninf:0d00(0x%x)-0d08(0x%x)-0d14(0x%x)-0d18(0x%x) 1d00(0x%x)-1d08(0x%x)-1d14(0x%x)-1d18(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0d00), ISP_RD32(ISP_SENINF0_BASE + 0x0d08), \
-		ISP_RD32(ISP_SENINF0_BASE + 0x0d14), ISP_RD32(ISP_SENINF0_BASE + 0x0d18));
-	LOG_INF("seninf: 1a041d00(0x%x)-1a041d08(0x%x)-1a041d14(0x%x)-1a041d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0d14), ISP_RD32(ISP_SENINF0_BASE + 0x0d18), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0d00), ISP_RD32(ISP_SENINF1_BASE + 0x0d08), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0d14), ISP_RD32(ISP_SENINF1_BASE + 0x0d18));
-	LOG_INF("seninf: 1a042d00(0x%x)-1a042d08(0x%x)-1a042d14(0x%x)-1a042d18(0x%x)\n", \
+	LOG_INF("seninf:2d00(0x%x)-2d08(0x%x)-2d14(0x%x)-2d18(0x%x) 3d00(0x%x)-3d08(0x%x)-3d14(0x%x)-3d18(0x%x)\n", \
 		ISP_RD32(ISP_SENINF2_BASE + 0x0d00), ISP_RD32(ISP_SENINF2_BASE + 0x0d08), \
-		ISP_RD32(ISP_SENINF2_BASE + 0x0d14), ISP_RD32(ISP_SENINF2_BASE + 0x0d18));
-	LOG_INF("seninf: 1a043d00(0x%x)-1a043d08(0x%x)-1a043d14(0x%x)-1a043d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF2_BASE + 0x0d14), ISP_RD32(ISP_SENINF2_BASE + 0x0d18), \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d00), ISP_RD32(ISP_SENINF3_BASE + 0x0d08), \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d14), ISP_RD32(ISP_SENINF3_BASE + 0x0d18));
 	/* IMGPLL frequency */
