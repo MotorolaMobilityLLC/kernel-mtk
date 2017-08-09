@@ -676,7 +676,7 @@ static void backup_larb_smi(int index)
 {
 	int port_index = 0;
 	unsigned short int *backup_ptr = NULL;
-	unsigned long larb_base = gLarbBaseAddr[index];
+	unsigned long larb_base = 0;
 	unsigned long larb_offset = 0x200;
 	int total_port_num = 0;
 
@@ -684,6 +684,7 @@ static void backup_larb_smi(int index)
 	if (index < 0 || index >= SMI_LARB_NR)
 		return;
 
+	larb_base = gLarbBaseAddr[index];
 	total_port_num = larb_port_num[index];
 	backup_ptr = larb_port_backup[index];
 
@@ -707,7 +708,7 @@ static void restore_larb_smi(int index)
 {
 	int port_index = 0;
 	unsigned short int *backup_ptr = NULL;
-	unsigned long larb_base = gLarbBaseAddr[index];
+	unsigned long larb_base = 0;
 	unsigned long larb_offset = 0x200;
 	unsigned int backup_value = 0;
 	int total_port_num = 0;
@@ -716,6 +717,7 @@ static void restore_larb_smi(int index)
 	if (index < 0 || index >= SMI_LARB_NR)
 		return;
 
+	larb_base = gLarbBaseAddr[index];
 	total_port_num = larb_port_num[index];
 	backup_ptr = larb_port_backup[index];
 
