@@ -2708,7 +2708,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += sprintf(p, "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
 
 	len = p - dbg_buf;
 

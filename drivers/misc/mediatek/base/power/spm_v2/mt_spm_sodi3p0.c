@@ -191,6 +191,16 @@ static void spm_sodi3_pre_process(void)
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
+#elif defined(CONFIG_ARCH_MT6797)
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &val, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+			IDX_DI_VCORE_LQ_EN,
+			val | (1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+			IDX_DI_VCORE_LQ_DIS,
+			val & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+
+	__spm_pmic_low_iq_mode(1);
 #endif
 
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
@@ -219,6 +229,8 @@ static void spm_sodi3_post_process(void)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
+#elif defined(CONFIG_ARCH_MT6797)
+	__spm_pmic_low_iq_mode(0);
 #endif
 
 	/* set PMIC WRAP table for normal power control */
@@ -354,7 +366,6 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				}
 				BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-#if defined(CONFIG_ARCH_MT6755)
 				sodi3_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
 						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version,
@@ -362,19 +373,6 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
-#elif defined(CONFIG_ARCH_MT6797)
-				sodi3_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-
-				sodi3_warn("sodi3_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-						logout_sodi3_cnt, logout_selfrefresh_cnt,
-						wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
-
-				sodi3_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
-						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
-						wakesta->event_reg, wakesta->isr);
-#endif
 			}
 
 			logout_sodi3_cnt = 0;
