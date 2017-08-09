@@ -2743,7 +2743,7 @@ bool SetTDMChannelsSdata(uint32 channels)
 		index = 2;
 		break;
 	}
-	Afe_Set_Reg(AFE_TDM_CON1, index << 10, 0x00000300);
+	Afe_Set_Reg(AFE_TDM_CON1, index << 10, 0x00000c00);
 	return true;
 }
 

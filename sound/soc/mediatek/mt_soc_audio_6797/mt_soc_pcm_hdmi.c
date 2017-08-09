@@ -908,6 +908,12 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	kal_uint32 volatile u4tmpValue;
 	kal_uint32 volatile u4tmpValue1;
 	kal_uint32 volatile u4tmpValue2;
+	kal_uint32 volatile u4tmpClkdiv0;
+	kal_uint32 volatile u4tmpClkdiv1;
+	kal_uint32 volatile u4tmpClkdiv2;
+	kal_uint32 volatile u4tmpHDMode;
+	kal_uint32 volatile u4tmpHDAlign;
+
 	/* uint32 u32AudioI2S = 0; */
 
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_HDMI, substream);
@@ -943,20 +949,28 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	EnableAfe(true);
 
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
-	u4RegValue &= 0xff;
+	u4RegValue &= 0xffffffff;
 
 	u4tmpValue = Afe_Get_Reg(AFE_HDMI_CONN0);
-	u4tmpValue &= 0xff;
+	u4tmpValue &= 0xffffffff;
 
 	u4tmpValue1 = Afe_Get_Reg(AFE_TDM_CON1);
-	u4tmpValue1 &= 0x0003ffff;
+	u4tmpValue1 &= 0xffffffff;
 
 	u4tmpValue2 = Afe_Get_Reg(AFE_TDM_CON2);
-	u4tmpValue2 &= 0x0003ffff;
+	u4tmpValue2 &= 0xffffffff;
+
+	u4tmpClkdiv0 = Afe_Get_Reg(CLK_AUDDIV_0);
+	u4tmpClkdiv1 = Afe_Get_Reg(CLK_AUDDIV_1);
+	u4tmpClkdiv2 = Afe_Get_Reg(CLK_AUDDIV_2);
+
+	u4tmpHDMode = Afe_Get_Reg(AFE_MEMIF_HD_MODE);
+	u4tmpHDAlign = Afe_Get_Reg(AFE_MEMIF_HDALIGN);
 
 	pr_debug
-	    ("[mtk_pcm_hdmi_start] IRQ_MCU_STATUS =0x%x, AFE_HDMI_CONN0= 0x%x, AFE_TDM_CON1=0x%x, AFE_TDM_CON2 =0x%x\n",
-	     u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2);
+	    ("%s IRQ =0x%x, CONN0= 0x%x, CON1=0x%x, CON2 =0x%x,DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x\n",
+	     __func__, u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2,
+	     u4tmpClkdiv0, u4tmpClkdiv1, u4tmpClkdiv2, u4tmpHDMode, u4tmpHDAlign);
 
 	return 0;
 }
