@@ -103,7 +103,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
 #define HW_TRIGGER_I2C_SUPPORT 1
-/*I2C trigger header file*/
+/*I2C trigger header file. drivers\i2c\busses\i2c-mtk.h*/
 #include "i2c-mtk.h"
 
 
@@ -410,57 +410,92 @@ int iReadReg(u16 a_u2Addr , u8 *a_puBuff , u16 i2cId)
 int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
 {
     int  i4RetValue = 0;
-    if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
-	    spin_lock(&kdsensor_drv_lock);
-	    g_pstI2Cclient->addr = (i2cId >> 1);
+	if (g_IsSearchSensor != 1){
+		if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
+			spin_lock(&kdsensor_drv_lock);
+			g_pstI2Cclient->addr = (i2cId >> 1);
 #ifdef CONFIG_MTK_I2C_EXTENSION
-	    g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
-
-	    /* Remove i2c ack error log during search sensor */
-	    /* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
-	    if (g_IsSearchSensor == 1)
-	        g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
-	    else
-	        g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+	
+			/* Remove i2c ack error log during search sensor */
+			/* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
+			if (g_IsSearchSensor == 1)
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
+			else
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
 #endif
-	    spin_unlock(&kdsensor_drv_lock);
-	    /*  */
-	    i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
-	    if (i4RetValue != a_sizeSendData) {
-	        PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
-	        return -1;
-	    }
-
-	    i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
-	    if (i4RetValue != a_sizeRecvData) {
-	        PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
-	        return -1;
-	    }
-    }
-    else{
-	    spin_lock(&kdsensor_drv_lock);
-	    g_pstI2Cclient2->addr = (i2cId >> 1);
+			spin_unlock(&kdsensor_drv_lock);
+			/*	*/
+			i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+				return -1;
+			}
+	
+			i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
+			if (i4RetValue != a_sizeRecvData) {
+				PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
+				return -1;
+			}
+		}
+		else{
+			spin_lock(&kdsensor_drv_lock);
+			g_pstI2Cclient2->addr = (i2cId >> 1);
 #ifdef CONFIG_MTK_I2C_EXTENSION
-	    /* Remove i2c ack error log during search sensor */
-	    /* PK_ERR("g_pstI2Cclient2->ext_flag: %d", g_IsSearchSensor); */
-	    if (g_IsSearchSensor == 1)
-	        g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag) | I2C_A_FILTER_MSG;
-	    else
-	        g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_A_FILTER_MSG);
+			/* Remove i2c ack error log during search sensor */
+			/* PK_ERR("g_pstI2Cclient2->ext_flag: %d", g_IsSearchSensor); */
+			if (g_IsSearchSensor == 1)
+				g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag) | I2C_A_FILTER_MSG;
+			else
+				g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_A_FILTER_MSG);
 #endif
-	    spin_unlock(&kdsensor_drv_lock);
-	    i4RetValue = i2c_master_send(g_pstI2Cclient2, a_pSendData, a_sizeSendData);
-	    if (i4RetValue != a_sizeSendData) {
-	        PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
-	        return -1;
-	    }
+			spin_unlock(&kdsensor_drv_lock);
+			i4RetValue = i2c_master_send(g_pstI2Cclient2, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+				return -1;
+			}
+	
+			i4RetValue = i2c_master_recv(g_pstI2Cclient2, (char *)a_pRecvData, a_sizeRecvData);
+			if (i4RetValue != a_sizeRecvData) {
+				PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
+				return -1;
+			}
+		}
+	}
+	else{
+		int ret = 0;
+		u32 speed_timing;
+		u16 i2c_msg_size;
+		struct i2c_client *pClient = NULL;
+		struct i2c_msg msg[2];
+		
+		if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+			pClient = g_pstI2Cclient;
+		else 
+			pClient = g_pstI2Cclient2;
 
-	    i4RetValue = i2c_master_recv(g_pstI2Cclient2, (char *)a_pRecvData, a_sizeRecvData);
-	    if (i4RetValue != a_sizeRecvData) {
-	        PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
-	        return -1;
-	    }
-    }
+		speed_timing = 400000;
+		/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
+		
+		msg[0].addr = i2cId >> 1;
+		msg[0].flags = 0; /*write flag = 0*/
+		msg[0].len = a_sizeSendData;
+		msg[0].buf = a_pSendData;
+		
+		msg[1].addr = i2cId >> 1;
+		msg[1].flags = I2C_M_RD; /*Read flag = 0*/
+		msg[1].len = a_sizeRecvData;
+		msg[1].buf = a_pRecvData;
+		i2c_msg_size = 2;
+		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
+		
+		if (i2c_msg_size != ret) {
+			PK_ERR("[iReadRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+				ret, a_pSendData[0], a_pSendData[1],speed_timing);
+		}
+	}
+
     return 0;
 }
 
@@ -2401,7 +2436,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			memset(pValue, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue;
-			PK_ERR("[CAMERA_HW] %p %p %p\n",
+			PK_DBG("[CAMERA_HW] %p %p %p\n",
 			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
 			       (void *)pFeaturePara_64, (void *)(pValue));
 			if (g_pSensorFunc) {
@@ -2474,7 +2509,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 									(unsigned int *)
 									&FeatureParaLen);
 			} else {
-				PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+				PK_ERR("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
 			}
 			*(pFeaturePara_64) = *pValue0;
 			*(pFeaturePara_64 + 1) = *pValue1;
@@ -3742,7 +3777,7 @@ static long CAMERA_HW_Ioctl(
 		//AD_CSI1A_DELAYCAL_CK_MUX =	56	
 		//AD_CSI1B_DELAYCAL_CK_MUX	=	57	
 		//AD_CSI2_DELAYCAL_CK_MUX	=	58	
-		PK_DBG("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
+		PK_ERR("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
 		*(unsigned int*)pBuff = abist_meter(54);
     break;
 

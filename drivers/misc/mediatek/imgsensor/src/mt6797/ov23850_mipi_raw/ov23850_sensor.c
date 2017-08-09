@@ -2886,6 +2886,11 @@ static void capture_setting(kal_uint16 currefps)
 static void normal_video_setting(kal_uint16 currefps)//1080p
 {
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_normal_video, sizeof(addr_data_pair_normal_video)/sizeof(kal_uint16));
+
+    if(imgsensor.pdaf_mode == 1)
+		ov23850_setting_PDAF(PDAF_ON);
+    else
+		ov23850_setting_PDAF(PDAF_OFF);
 	write_cmos_sensor(0x0100,0x01);
 }
 

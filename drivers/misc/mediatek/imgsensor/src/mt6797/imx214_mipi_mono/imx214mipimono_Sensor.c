@@ -379,13 +379,16 @@ static kal_uint16 sensorGainMapping[MIPI_MaxGainIndex][2] = {
 	{512, 448}
 };
 
-extern int iReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId);
+extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
 	kal_uint16 get_byte=0;
-      iReadReg((u16) addr ,(u8*)&get_byte, imgsensor.i2c_write_id);
-      return get_byte;
+
+	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
+
+	return get_byte;
 }
 
 #define write_cmos_sensor(addr, para) iWriteReg((u16) addr , (u32) para , 1,  imgsensor.i2c_write_id)
