@@ -782,7 +782,7 @@ void SetHplTrimOffset(int Offset)
 {
 	pr_warn("%s Offset = %d\n", __func__, Offset);
 	mHplTrimOffset = Offset;
-	if ((Offset > 2098) || (Offset < 1998)) {
+	if ((Offset > 2198) || (Offset < 1898)) {
 		mHplTrimOffset = 2048;
 		pr_err("SetHplTrimOffset offset may be invalid offset = %d\n", Offset);
 	}
@@ -792,7 +792,7 @@ void SetHprTrimOffset(int Offset)
 {
 	pr_warn("%s Offset = %d\n", __func__, Offset);
 	mHprTrimOffset = Offset;
-	if ((Offset > 2098) || (Offset < 1998)) {
+	if ((Offset > 2198) || (Offset < 1898)) {
 		mHprTrimOffset = 2048;
 		pr_err("SetHprTrimOffset offset may be invalid offset = %d\n", Offset);
 	}
@@ -1010,8 +1010,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0x7f00, 0xffff);
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, 0x0001, 0xffff);
 #endif
-		HP_Switch_to_Ground();
-
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
@@ -1021,8 +1019,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
 		/* Disable headphone, voice and short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0001);
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x2000);
-		/* De_OSC of HP and output STBENH disable(470Ohm disconnect) */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x4000, 0x4000);
 		/* HPDET circuit enable */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
@@ -1033,12 +1029,11 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0009, 0xffff);
 		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
-
-		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x2000);
+		/* De_OSC of HP and output STBENH disable(470Ohm disconnect) */
 	} else {
-		HP_Switch_to_Ground();
-
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0x2000);
+		/* De_OSC of HP and output STBENH disable(470Ohm connect) */
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0000, 0xffff);
 		/* Disable headphone speaker detection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
@@ -1053,11 +1048,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable NV regulator (-1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0155, 0xA000);
 		/* Disable cap-less LDOs (1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0x2000);
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
-
-		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
 
 		TurnOffDacPower();
 	}
