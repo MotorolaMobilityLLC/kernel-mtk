@@ -483,7 +483,6 @@ static void mtk_compr_offload_drain(bool enable, int draintype)
 
 static int mtk_compr_offload_open(void)
 {
-	afe_offload_block.buf.u4BufferSize = 0;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	scp_reserve_mblock_t MP3DRAM;
 
