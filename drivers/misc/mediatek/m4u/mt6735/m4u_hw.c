@@ -2157,6 +2157,11 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	smi_larb0_clock_on();
 #endif
 
+#ifdef M4U_4GBDRAM
+	gM4U_4G_DRAM_Mode = enable_4G();
+#endif
+	M4UMSG("4G DRAM Mode is: %d\n", gM4U_4G_DRAM_Mode);
+
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 
 	pProtectVA = (unsigned long) kmalloc(TF_PROTECT_BUFFER_SIZE*2, GFP_KERNEL|__GFP_ZERO);

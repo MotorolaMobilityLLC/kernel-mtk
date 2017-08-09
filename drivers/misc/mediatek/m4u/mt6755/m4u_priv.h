@@ -24,6 +24,7 @@
 
 /* #define M4U_FPGAPORTING */
 /* #define M4U_PROFILE */
+#define M4U_4GBDRAM
 
 #define M4U_DVT 0
 
