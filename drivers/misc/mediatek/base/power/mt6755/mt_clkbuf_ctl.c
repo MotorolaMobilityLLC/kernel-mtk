@@ -359,17 +359,17 @@ bool is_clk_buf_from_pmic(void)
 	bool ret = false;
 
 	/* switch to debug mode */
-	pmic_config_interface(PMIC_CW15_ADDR, 0x1,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x1,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
-	pmic_config_interface(PMIC_CW15_ADDR, 0x3,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x3,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_SHIFT);
 	/* bit 6, 7, 8, 9 => 32K Less Mode, Buffer Mode, RTC Mode, Off Mode */
-	pmic_read_interface(PMIC_CW00_ADDR, &reg,
+	pmic_read_interface_nolock(PMIC_CW00_ADDR, &reg,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	/* switch back from debug mode */
-	pmic_config_interface(PMIC_CW15_ADDR, 0x0,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x0,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
 	if ((reg & 0x200) == 0x200) {
