@@ -122,8 +122,7 @@ typedef bool MBOOL;
 
 #define DPE_DEV_NAME                "camera-dpe"
 
-#define EVEREST_EP_CODE_MARK	/* Mark codes first, should check it in later */
-#define EVEREST_EP_DEBUG_LOG
+/* #define DPE_WAITIRQ_LOG  */
 #define DPE_USE_GCE
 #define DPE_DEBUG_USE
 /* #define DPE_MULTIPROCESS_TIMEING_ISSUE  */
@@ -532,7 +531,7 @@ static SV_LOG_STR gSvLog[DPE_IRQ_TYPE_AMOUNT];
 #endif
 
 
-/* Everest DPE registers */
+/* DPE registers */
 #define DPE_RST_HW                    (DPE_BASE_HW)
 #define DPE_INT_CTL_HW                (DPE_BASE_HW + 0x08)
 #define DPE_INT_STATUS_HW             (DPE_BASE_HW + 0x18)
@@ -2583,7 +2582,7 @@ static MINT32 DPE_WaitIrq(DPE_WAIT_IRQ_STRUCT *WaitIrq)
 	}
 
 
-#ifdef EVEREST_EP_DEBUG_LOG
+#ifdef DPE_WAITIRQ_LOG
 	LOG_INF("before wait_event: WaitIrq Timeout(%d) Clear(%d), Type(%d), IrqStatus(0x%08X),\
 	     WaitStatus(0x%08X), Timeout(%d),userKey(%d),whichReq(%d),ProcessID(%d),\
 	     DveIrqCnt(0x%08X), WmfeIrqCnt(0x%08X), WriteReqIdx(0x%08X), ReadReqIdx(0x%08X)\n",\
@@ -2635,7 +2634,6 @@ static MINT32 DPE_WaitIrq(DPE_WAIT_IRQ_STRUCT *WaitIrq)
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-#ifdef EVEREST_EP_DEBUG_LOG
 	else {
 		/* Store irqinfo status in here to redeuce time of spin_lock_irqsave */
 #ifdef __DPE_KERNEL_PERFORMANCE_MEASURE__
@@ -2675,7 +2673,7 @@ static MINT32 DPE_WaitIrq(DPE_WAIT_IRQ_STRUCT *WaitIrq)
 			spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[WaitIrq->Type]), flags);
 		}
 
-
+#ifdef DPE_WAITIRQ_LOG
 		LOG_INF\
 		    ("no Timeout!!!: WaitIrq Timeout(%d) Clear(%d), Type(%d), IrqStatus(0x%08X),\
 		     WaitStatus(0x%08X), Timeout(%d),userKey(%d),whichReq(%d),ProcessID(%d),\
@@ -2684,14 +2682,13 @@ static MINT32 DPE_WaitIrq(DPE_WAIT_IRQ_STRUCT *WaitIrq)
 		     WaitIrq->Timeout, WaitIrq->UserKey, whichReq, WaitIrq->ProcessID,\
 		     DPEInfo.IrqInfo.DveIrqCnt, DPEInfo.IrqInfo.WmfeIrqCnt, DPEInfo.WriteReqIdx,\
 		     DPEInfo.ReadReqIdx);
+#endif
 
 #ifdef __DPE_KERNEL_PERFORMANCE_MEASURE__
 		mt_kernel_trace_end();
 #endif
 
 	}
-#endif
-
 
 
 EXIT:
