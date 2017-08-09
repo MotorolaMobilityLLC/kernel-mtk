@@ -9762,6 +9762,9 @@ static int hmp_active_task_migration_cpu_stop(void *data)
 	/* Is there any task to move? */
 	if (busiest_rq->nr_running <= 1)
 		goto out_unlock;
+	/* Are both target and busiest cpu online */
+	if (!cpu_online(busiest_cpu) || !cpu_online(target_cpu))
+		goto out_unlock;
 	/* Task has migrated meanwhile, abort forced migration */
 	if ((!p) || (task_rq(p) != busiest_rq))
 		goto out_unlock;
@@ -9860,8 +9863,11 @@ static void hmp_force_down_migration(int this_cpu)
 #ifdef CONFIG_SCHED_HMP_PLUS
 		orig = se;
 		se = hmp_get_lightest_task(orig, 1);
+		if (!entity_is_task(se))
+			p = task_of(orig);
+		else
 #endif
-		p = task_of(se);
+			p = task_of(se);
 #ifdef CONFIG_SCHED_HMP_PLUS
 		/* Don't offload to little if there is one idle big, let load balance to do it's work */
 		/* Also, to prevent idle_balance from leading to potential ping-pong */
@@ -9925,6 +9931,9 @@ static void hmp_force_up_migration(int this_cpu)
 	unsigned int force = 0;
 	struct task_struct *p;
 	struct clb_env clbenv;
+#ifdef CONFIG_SCHED_HMP_PLUS
+	struct sched_entity *orig;
+#endif
 
 	if (!spin_trylock(&hmp_force_migration))
 		return;
@@ -9960,13 +9969,18 @@ static void hmp_force_up_migration(int this_cpu)
 			}
 		}
 #ifdef CONFIG_SCHED_HMP_PLUS
+		orig = se;
 		se = hmp_get_heaviest_task(se, -1);
 		if (!se) {
 			raw_spin_unlock_irqrestore(&target->lock, flags);
 			continue;
 		}
+		if (!entity_is_task(se))
+			p = task_of(orig);
+		else
 #endif
-		p = task_of(se);
+			p = task_of(se);
+
 		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_fast_cpu_mask, -1);
 		if (target_cpu >= num_possible_cpus()) {
 			raw_spin_unlock_irqrestore(&target->lock, flags);
@@ -10079,7 +10093,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 		clbenv.ltarget = cpu;
 		sched_update_clbstats(&clbenv);
 
-		if (curr && (se_contrib(curr) > clbenv.bstats.threshold) &&
+		if (curr && entity_is_task(curr) && (se_contrib(curr) > clbenv.bstats.threshold) &&
 				(se_contrib(curr) > ratio) &&
 				cpumask_test_cpu(this_cpu, tsk_cpus_allowed(task_of(curr)))) {
 			p = task_of(curr);
