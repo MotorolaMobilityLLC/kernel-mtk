@@ -1913,6 +1913,31 @@ static void mtkfb_fbinfo_cleanup(struct mtkfb_device *fbdev)
 	MSG_FUNC_LEAVE();
 }
 
+/* fast memset for hw test tool */
+void DISP_memset_io(volatile void __iomem *dst, int c, size_t count)
+{
+	u32 qc = (u8)c;
+
+	qc |= qc << 8;
+	qc |= qc << 16;
+
+	while (count && !IS_ALIGNED((unsigned long)dst, 8)) {
+		__raw_writeb(c, dst);
+		dst++;
+		count--;
+	}
+	while (count >= 4) {
+		__raw_writel(qc, dst);
+		dst += 4;
+		count -= 4;
+	}
+
+	while (count) {
+		__raw_writeb(c, dst);
+		dst++;
+		count--;
+	}
+}
 /* Init frame buffer content as 3 R/G/B color bars for debug */
 static int init_framebuffer(struct fb_info *info)
 {
@@ -1924,7 +1949,7 @@ static int init_framebuffer(struct fb_info *info)
 	/*memset_io(buffer, 0, info->screen_size);*/
 
 	size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
-	memset_io(buffer, 0, size);
+	DISP_memset_io(buffer, 0, size);
 	return 0;
 }
 
