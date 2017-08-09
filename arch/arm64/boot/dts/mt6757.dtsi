@@ -409,7 +409,7 @@
 
 	syscfg_pctl_a: syscfg_pctl_a@10002000 {
 		compatible = "mediatek,mt6757-pctl-a-syscfg", "syscon";
-		reg = <0x10002000 0x1000>;
+		reg = <0 0x10002000 0 0x1000>;
 	};
 
 	iocfg_1@10002200 {
@@ -444,7 +444,7 @@
 
 	pio: pinctrl@10005000 {
 		compatible = "mediatek,mt6757-pinctrl";
-		reg = <0x10005000 0x1000>;
+		reg = <0 0x10005000 0 0x1000>;
 		mediatek,pctl-regmap = <&syscfg_pctl_a>;
 		pins-are-numbered;
 		gpio-controller;
