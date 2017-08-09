@@ -1306,7 +1306,14 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 	};
 
+	rf_clock_buffer_ctrl:rf_clock_buffer {
+		compatible = "mediatek,rf_clock_buffer";
+		mediatek,clkbuf-quantity = <4>;
+		mediatek,clkbuf-config = <2 1 1 1>;
+	};
 };
+
+/* /include/ "cust_clk_buf.dtsi" */
 /include/ "cust_kpd.dtsi"
 /include/ "cust_i2c.dtsi"
 /include/ "cust_eint.dtsi"
