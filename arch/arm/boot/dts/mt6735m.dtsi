@@ -58,46 +58,55 @@
 				};
 	};
 
+	psci {
+		compatible	= "arm,psci";
+		method		= "smc";
+		cpu_suspend	= <0x84000001>;
+		cpu_off		= <0x84000002>;
+		cpu_on		= <0x84000003>;
+		affinity_info	= <0x84000004>;
+	};
 
-	cpus {	#address-cells = <1>;
-			 #size-cells = <0>;
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+/*		enable-method = "mediatek,mt6735-smp"; */
 
-				cpu0: cpu@0 {
-						device_type = "cpu";
-						compatible = "arm,cortex-a53";
-						reg = <0x000>;
-						enable-method = "spin-table";
-						cpu-release-addr = <0x0 0x40000200>;
-						clock-frequency = <1000000000>;
-				};
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x000>;
+			enable-method = "spin-table";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1000000000>;
+		};
 
-				cpu1: cpu@1 {
-						device_type = "cpu";
-						compatible = "arm,cortex-a53";
-						reg = <0x001>;
-						enable-method = "spin-table";
-						cpu-release-addr = <0x0 0x40000200>;
-						clock-frequency = <1000000000>;
-				};
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x001>;
+			enable-method = "spin-table";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1000000000>;
+		};
 
-				cpu2: cpu@2 {
-						device_type = "cpu";
-						compatible = "arm,cortex-a53";
-						reg = <0x002>;
-						enable-method = "spin-table";
-						cpu-release-addr = <0x0 0x40000200>;
-						clock-frequency = <1000000000>;
-				};
+		cpu2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x002>;
+			enable-method = "spin-table";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1000000000>;
+		};
 
-				cpu3: cpu@3 {
-						device_type = "cpu";
-						compatible = "arm,cortex-a53";
-						reg = <0x003>;
-						enable-method = "spin-table";
-						cpu-release-addr = <0x0 0x40000200>;
-						clock-frequency = <1000000000>;
-				};
-
+		cpu3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x003>;
+			enable-method = "spin-table";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1000000000>;
+		};
 	};
 
 	memory@00000000 {
@@ -1641,15 +1650,6 @@
 		};
 	};
 
-		psci {
-				compatible  = "arm,psci";
-				method      = "smc";
-				cpu_suspend = <0x84000001>;
-				cpu_off     = <0x84000002>;
-				cpu_on      = <0x84000003>;
-				affinity_info = <0x84000004>;
-		};
-
 /* sensor part */
 		hwmsensor@0 {
 			compatible = "mediatek,hwmsensor";
@@ -1726,4 +1726,3 @@
 	debounce = <206 1000>;
 	};
 };
-

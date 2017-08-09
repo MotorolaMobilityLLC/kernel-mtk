@@ -53,8 +53,9 @@ static DEFINE_SPINLOCK(boot_lock);
 static void __cpuinit write_pen_release(int val)
 {
 	pen_release = val;
-	/* */
+	/* Make sure this is visible to other CPUs */
 	smp_wmb();
+	/* sync_cache_w(&pen_release); */
 	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
 	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
 }
@@ -80,6 +81,26 @@ void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 	 */
 	spin_lock(&boot_lock);
 	spin_unlock(&boot_lock);
+}
+
+#define MT6735_INFRACFG_AO	0x10001000
+
+static void __init smp_set_boot_addr(void)
+{
+	static void __iomem *infracfg_ao_base;
+
+	infracfg_ao_base = ioremap(MT6735_INFRACFG_AO, 0x1000);
+
+	if (!infracfg_ao_base)
+		pr_err("%s: Unable to map I/O memory\n", __func__);
+
+	/* Write the address of slave startup into boot address
+	   register for bootrom power down mode */
+
+	writel_relaxed(virt_to_phys(mt_secondary_startup),
+			infracfg_ao_base + 0x800);
+
+	iounmap(infracfg_ao_base);
 }
 
 int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
@@ -113,7 +134,8 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 */
 	write_pen_release(cpu);
 
-	mt_smp_set_boot_addr(virt_to_phys(mt_secondary_startup), cpu);
+	smp_set_boot_addr();
+
 	switch (cpu) {
 	case 1:
 #ifdef CONFIG_MTK_FPGA
@@ -135,61 +157,6 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 		HOTPLUG_INFO("SLAVE3_MAGIC_NUM:%x\n", SLAVE3_MAGIC_NUM);
 #endif
 		spm_mtcmos_ctrl_cpu3(STA_POWER_ON, 1);
-		break;
-	case 4:
-#ifdef CONFIG_MTK_FPGA
-		mt_reg_sync_writel(SLAVE4_MAGIC_NUM, SLAVE4_MAGIC_REG);
-		HOTPLUG_INFO("SLAVE4_MAGIC_NUM:%x\n", SLAVE4_MAGIC_NUM);
-#endif
-		spm_mtcmos_ctrl_cpu4(STA_POWER_ON, 1);
-		break;
-
-	case 5:
-		if ((cpu_online(4) == 0) && (cpu_online(6) == 0)
-		    && (cpu_online(7) == 0)) {
-			HOTPLUG_INFO("up CPU%d fail, please up CPU4 first\n",
-				     cpu);
-			spin_unlock(&boot_lock);
-			atomic_dec(&hotplug_cpu_count);
-			return -ENOSYS;
-		}
-#ifdef CONFIG_MTK_FPGA
-		mt_reg_sync_writel(SLAVE5_MAGIC_NUM, SLAVE5_MAGIC_REG);
-		HOTPLUG_INFO("SLAVE5_MAGIC_NUM:%x\n", SLAVE5_MAGIC_NUM);
-#endif
-		spm_mtcmos_ctrl_cpu5(STA_POWER_ON, 1);
-		break;
-
-	case 6:
-		if ((cpu_online(4) == 0) && (cpu_online(5) == 0)
-		    && (cpu_online(7) == 0)) {
-			HOTPLUG_INFO("up CPU%d fail, please up CPU4 first\n",
-				     cpu);
-			spin_unlock(&boot_lock);
-			atomic_dec(&hotplug_cpu_count);
-			return -ENOSYS;
-		}
-#ifdef CONFIG_MTK_FPGA
-		mt_reg_sync_writel(SLAVE6_MAGIC_NUM, SLAVE6_MAGIC_REG);
-		HOTPLUG_INFO("SLAVE6_MAGIC_NUM:%x\n", SLAVE6_MAGIC_NUM);
-#endif
-		spm_mtcmos_ctrl_cpu6(STA_POWER_ON, 1);
-		break;
-
-	case 7:
-		if ((cpu_online(4) == 0) && (cpu_online(5) == 0)
-		    && (cpu_online(6) == 0)) {
-			HOTPLUG_INFO("up CPU%d fail, please up CPU4 first\n",
-				     cpu);
-			spin_unlock(&boot_lock);
-			atomic_dec(&hotplug_cpu_count);
-			return -ENOSYS;
-		}
-#ifdef CONFIG_MTK_FPGA
-		mt_reg_sync_writel(SLAVE7_MAGIC_NUM, SLAVE7_MAGIC_REG);
-		HOTPLUG_INFO("SLAVE7_MAGIC_NUM:%x\n", SLAVE7_MAGIC_NUM);
-#endif
-		spm_mtcmos_ctrl_cpu7(STA_POWER_ON, 1);
 		break;
 
 	default:

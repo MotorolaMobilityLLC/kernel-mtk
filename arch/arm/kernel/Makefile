@@ -13,6 +13,10 @@ endif
 
 CFLAGS_REMOVE_return_address.o = -pg
 
+ifdef CONFIG_ARCH_MT6735M
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+endif
+
 # Object file lists.
 
 obj-y		:= elf.o entry-common.o irq.o opcodes.o \
