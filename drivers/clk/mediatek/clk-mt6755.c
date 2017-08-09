@@ -14,6 +14,7 @@
 
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/delay.h>
 #include <linux/slab.h>
 
 #include "clk-mtk-v1.h"
@@ -75,6 +76,7 @@ static DEFINE_SPINLOCK(mt6755_clk_lock);
 #define tvdpll		"tvdpll"
 #define apll1		"apll1"
 #define apll2		"apll2"
+#define oscpll		"oscpll"
 
 /* DIV */
 #define syspll_ck		"syspll_ck"
@@ -133,6 +135,7 @@ static DEFINE_SPINLOCK(mt6755_clk_lock);
 #define vencpll_d3		"vencpll_d3"
 #define whpll_audio_ck		"whpll_audio_ck"
 /*---------------------------------------------*/
+#define osc_ck	"osc_ck"
 #define osc_d8	"osc_d8"
 #define osc_d2	"osc_d2"
 #define syspll_d7	"syspll_d7"
@@ -453,6 +456,7 @@ void __iomem  *mmsys_config_base;
 void __iomem  *img_base;
 void __iomem  *vdec_gcon_base;
 void __iomem  *venc_gcon_base;
+void __iomem  *scp_base;
 /*PLL INIT*/
 #define ARMCA15PLL_CON0					(apmixed_base + 0x200)
 #define ARMCA7PLL_CON0					(apmixed_base + 0x210)
@@ -478,6 +482,7 @@ void __iomem  *venc_gcon_base;
 #define LARB_CKEN_CLR           (vdec_gcon_base + 0x000C)
 #define VENC_CG_CON             (venc_gcon_base + 0x0)
 #define AUDIO_TOP_CON0          (audio_base + 0x0000)
+#define ULPOSC_CON							(scp_base + 0x0458)
 #endif
 
 #define INFRA0_CG  0x832ff910/*0: Disable  ( with clock), 1: Enable ( without clock )*/
@@ -493,7 +498,9 @@ void __iomem  *venc_gcon_base;
 #define VENC_CG   0x00001111/*set*/
 
 #define CG_BOOTUP_PDN			1
-
+#define ULPOSC_EN BIT(0)
+#define ULPOSC_RST BIT(1)
+#define ULPOSC_CG_EN BIT(2)
 
 struct mtk_fixed_factor {
 	int id;
@@ -560,11 +567,16 @@ static struct mtk_fixed_factor top_divs[] __initdata = {
 
 	FACTOR(TOP_MMPLL_CK, mmpll_ck, mmpll, 1, 1),
 	/*FACTOR(TOP_MPLL_208M_CK, mmpll_208m_ck, mmpll, 1, 1),used for scpsys, no use*/
-
+#if 1
+	FACTOR(TOP_OSC_CK, osc_ck, oscpll, 1, 1),
+	FACTOR(TOP_OSC_D2, osc_d2, oscpll, 1, 2),
+	FACTOR(TOP_OSC_D4, osc_d4, oscpll, 1, 4),
+	FACTOR(TOP_OSC_D8, osc_d8, oscpll, 1, 8),
+#else
 	FACTOR(TOP_OSC_D2, osc_d2, clk_null, 1, 1),
 	FACTOR(TOP_OSC_D4, osc_d4, clk_null, 1, 1),
 	FACTOR(TOP_OSC_D8, osc_d8, clk_null, 1, 1),
-
+#endif
 	FACTOR(TOP_MSDCPLL_CK, msdcpll_ck, msdcpll, 1, 1),
 	FACTOR(TOP_MSDCPLL_D16, msdcpll_d16, msdcpll, 1, 16),
 	FACTOR(TOP_MSDCPLL_D2, msdcpll_d2, msdcpll, 1, 2),
@@ -1069,10 +1081,11 @@ static struct mtk_pll plls[] __initdata = {
 	/*No.29 JADE NO VCODEPLL? not list in PLL SPEC*/
 	PLL(APMIXED_APLL1, apll1, clk26m, 0x02A0, 0x02B0, 0x00000001, HAVE_FIX_FRQ, &mt_clk_aud_pll_ops),
 	PLL(APMIXED_APLL2, apll2, clk26m, 0x02B4, 0x02C4, 0x00000001, HAVE_FIX_FRQ, &mt_clk_aud_pll_ops),
+	PLL(SCP_OSCPLL, oscpll, clk26m, 0x0458, 0x0458, 0x00000001, HAVE_FIX_FRQ, &mt_clk_spm_pll_ops),
 	/*PLL(APMIXED_ARMPLL, armpll, clk26m, 0x0200, 0x020C, 0x00000001, HAVE_PLL_HP, &mt_clk_arm_pll_ops),*/
 };
 
-static void __init init_clk_apmixedsys(void __iomem *apmixed_base,
+static void __init init_clk_apmixedsys(void __iomem *apmixed_base, void __iomem *spm_base,
 		struct clk_onecell_data *clk_data)
 {
 	int i;
@@ -1080,11 +1093,17 @@ static void __init init_clk_apmixedsys(void __iomem *apmixed_base,
 
 	for (i = 0; i < ARRAY_SIZE(plls); i++) {
 		struct mtk_pll *pll = &plls[i];
-
-		clk = mtk_clk_register_pll(pll->name, pll->parent_name,
+			if (!strcmp("oscpll", pll->name)) {
+				clk = mtk_clk_register_pll(pll->name, pll->parent_name,
+				spm_base + pll->reg,
+				spm_base + pll->pwr_reg,
+				pll->en_mask, pll->flags, pll->ops);
+			} else {
+				clk = mtk_clk_register_pll(pll->name, pll->parent_name,
 				apmixed_base + pll->reg,
 				apmixed_base + pll->pwr_reg,
 				pll->en_mask, pll->flags, pll->ops);
+			}
 
 		if (IS_ERR(clk)) {
 			pr_err("Failed to register clk %s: %ld\n",
@@ -1625,23 +1644,26 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
 	void __iomem *base;
+	void __iomem *spm_base;
 	int r;
 
 	pr_debug("[CCF] %s: %s\n", __func__, node->name);
 
 	base = get_reg(node, 0);
-	if (!base) {
-		pr_err("ioremap apmixedsys failed\n");
+	spm_base = get_reg(node, 1);
+	if ((!base) || (!spm_base)) {
+		pr_err("ioremap apmixedsys/spm failed\n");
 		return;
 	}
 
 	clk_data = alloc_clk_data(APMIXED_NR_CLK);
 
-	init_clk_apmixedsys(base, clk_data);
+	init_clk_apmixedsys(base, spm_base, clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+	scp_base = spm_base;
 #if CG_BOOTUP_PDN
 	apmixed_base = base;
 	/*msdcpll*/
@@ -1662,6 +1684,17 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 		clk_clrl(APLL2_CON0, 0x1);
 		clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 		clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
+/*oscpll default enable*/
+	/* OSC EN = 1 */
+		clk_setl(ULPOSC_CON, ULPOSC_EN);
+		udelay(11);
+	/* OSC RST  */
+		clk_setl(ULPOSC_CON, ULPOSC_RST);
+		udelay(40);
+		clk_clrl(ULPOSC_CON, ULPOSC_RST);
+		udelay(130);
+	/* OSC CG_EN = 1 */
+		clk_setl(ULPOSC_CON, ULPOSC_CG_EN);
 #endif
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6755-apmixedsys",

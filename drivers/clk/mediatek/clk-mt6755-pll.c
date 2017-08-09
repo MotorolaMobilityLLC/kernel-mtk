@@ -41,6 +41,10 @@
 #define PLL_PCW_CHG	BIT(31)
 #define RST_BAR_MASK	BIT(24)
 #define AUDPLL_TUNER_EN	BIT(31)
+#define ULPOSC_EN BIT(0)
+#define ULPOSC_RST BIT(1)
+#define ULPOSC_CG_EN BIT(2)
+
 
 static const u32 pll_posdiv_map[8] = { 1, 2, 4, 8, 16, 16, 16, 16 };
 
@@ -946,4 +950,132 @@ const struct clk_ops mt_clk_aud_pll_ops = {
 	.recalc_rate	= clk_aud_pll_recalc_rate,
 	.round_rate	= clk_aud_pll_round_rate,
 	.set_rate	= clk_aud_pll_set_rate,
+};
+
+
+static int clk_spm_pll_enable(struct clk_hw *hw)
+{
+	unsigned long flags = 0;
+	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
+	u32 r;
+
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	/*return 0;*/
+#endif /* MT_CCF_BRINGUP */
+/*	pr_debug("%s\n", __clk_get_name(hw->clk));*/
+
+	mtk_clk_lock(flags);
+/* OSC EN = 1 */
+	r = readl_relaxed(pll->base_addr) | ULPOSC_EN;
+	writel_relaxed(r, pll->base_addr);
+	wmb();	/* sync write before delay */
+	udelay(11);
+/* OSC RST  */
+	r = readl_relaxed(pll->base_addr) | ULPOSC_RST;
+	writel_relaxed(r, pll->base_addr);
+	wmb();	/* sync write before delay */
+	udelay(40);
+	r = readl_relaxed(pll->base_addr) & ~ULPOSC_RST;
+	writel_relaxed(r, pll->base_addr);
+	wmb();	/* sync write before delay */
+	udelay(130);
+/* OSC CG_EN = 1 */
+	r = readl_relaxed(pll->base_addr) | ULPOSC_CG_EN;
+	writel_relaxed(r, pll->base_addr);
+
+	mtk_clk_unlock(flags);
+
+	return 0;
+}
+
+static void clk_spm_pll_disable(struct clk_hw *hw)
+{
+	unsigned long flags = 0;
+	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
+	u32 r;
+
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	/*return;*/
+#endif /* MT_CCF_BRINGUP */
+/*	pr_debug("%s: PLL_AO: %d\n",
+		__clk_get_name(hw->clk), !!(pll->flags & PLL_AO));*/
+
+	if (pll->flags & PLL_AO)
+		return;
+
+	mtk_clk_lock(flags);
+
+/* OSC CG_EN = 0 */
+	r = readl_relaxed(pll->base_addr) & ~ULPOSC_CG_EN;
+	writel_relaxed(r, pll->base_addr);
+	wmb();	/* sync write before delay */
+	udelay(40);
+/* OSC EN = 0 */
+	r = readl_relaxed(pll->base_addr) & ~ULPOSC_EN;
+	writel_relaxed(r, pll->base_addr);
+
+	mtk_clk_unlock(flags);
+}
+
+
+
+static unsigned long clk_spm_pll_recalc_rate(
+		struct clk_hw *hw,
+		unsigned long parent_rate)
+{
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	/*return 0;*/
+#endif /* MT_CCF_BRINGUP */
+
+	return 208000000;
+}
+
+static void clk_spm_pll_set_rate_regs(
+		struct clk_hw *hw,
+		u32 pcw,
+		u32 postdiv_idx)
+{
+}
+
+static long clk_spm_pll_round_rate(
+		struct clk_hw *hw,
+		unsigned long rate,
+		unsigned long *prate)
+{
+
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	/*return 0;*/
+#endif /* MT_CCF_BRINGUP */
+/*	pr_debug("%s, rate: %lu\n", __clk_get_name(hw->clk), rate);*/
+
+	return 208000000;
+}
+
+static int clk_spm_pll_set_rate(
+		struct clk_hw *hw,
+		unsigned long rate,
+		unsigned long parent_rate)
+{
+
+
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: rate=%lu, parent_rate=%lu\n", __func__,
+		 __clk_get_name(hw->clk), rate, parent_rate);*/
+	/*return 0;*/
+#endif /* MT_CCF_BRINGUP */
+
+	return 208000000;
+}
+
+const struct clk_ops mt_clk_spm_pll_ops = {
+	.is_enabled	= clk_pll_is_enabled,
+	.enable		= clk_spm_pll_enable,
+	.disable	= clk_spm_pll_disable,
+	.recalc_rate	= clk_spm_pll_recalc_rate,
+	.round_rate	= clk_spm_pll_round_rate,
+	.set_rate	= clk_spm_pll_set_rate,
 };

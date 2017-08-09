@@ -856,7 +856,7 @@
 
 		apmixedsys: apmixedsys@1000c000 {
 			compatible = "mediatek,mt6755-apmixedsys", "mediatek,apmixed";
-			reg = <0x1000c000 0x1000>;
+			reg = <0x1000c000 0x1000>, <0x10006000 0x1000>;
 			#clock-cells = <1>;
 		};
 

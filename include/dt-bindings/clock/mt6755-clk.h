@@ -120,7 +120,8 @@
 #define TOP_UNIVPLL1_CK		101
 #define TOP_UNIVPLL2_CK		102
 #define TOP_UNIVPLL3_CK		103
-#define TOP_NR_CLK		104
+#define TOP_OSC_CK        104
+#define TOP_NR_CLK		105
 
 /* APMIXED_SYS */
 #define APMIXED_ARMBPLL	1
@@ -134,7 +135,8 @@
 #define APMIXED_APLL1	9
 #define APMIXED_APLL2	10
 #define APMIXED_ARMPLL	11
-#define APMIXED_NR_CLK		12
+#define SCP_OSCPLL	12
+#define APMIXED_NR_CLK		13
 
 /* INFRA_SYS0, infrasys0 */
 #define	INFRA_PMIC_TMR	1
