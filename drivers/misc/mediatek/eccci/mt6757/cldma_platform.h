@@ -125,6 +125,7 @@
 #define R_PSMCU_AO_CLK_CTL		(0x00C0)
 /* MD_PERI_MISC_BASE+ */
 #define R_L1_PMS			(0x00C4)
+#define R_PD_PSMCU_SRAM_PMS	(0x0094) /*Bit 13: 1 allow to access 0x200D0000 region*/
 /* PMDL1A0_BASE+ */
 #define REG_DCM_PLLCK_SEL		(0x0188) /* Bit 7: 0: clock do not from PLL, 1: clock from PLL */
 #define R_L1MCU_PWR_AWARE		(0x0190)

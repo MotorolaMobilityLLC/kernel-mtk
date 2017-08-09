@@ -19,7 +19,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-
+#include "ccci_config.h"
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
@@ -36,7 +36,6 @@
 #include <mach/mt_pbm.h>
 #include <mt_spm_sleep.h>
 
-#include "ccci_config.h"
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"

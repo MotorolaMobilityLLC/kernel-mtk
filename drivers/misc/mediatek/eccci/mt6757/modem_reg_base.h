@@ -18,11 +18,6 @@
 /* Modem 1 part */
 /* ============================================================ */
 /* MD peripheral register: MD bank8; AP bank2 */
-#define CLDMA_AP_BASE 0x200F0000
-#define CLDMA_AP_LENGTH 0x3000
-#define CLDMA_MD_BASE 0x200E0000
-#define CLDMA_MD_LENGTH 0x3000
-
 #define MD_BOOT_VECTOR_EN 0x20000024
 
 #define MD_GLOBAL_CON0 0x20000450
@@ -38,7 +33,7 @@
 #define MD_TOPSM_STATUS_LENGTH  0xC30 /* 0xBFF */
 #define MD_OST_STATUS_BASE  0x200E000 /* 0x20040000 */
 #define MD_OST_STATUS_LENGTH  0x228 /* 0x1FF */
-/* #define _MD_CCIF0_BASE (AP_CCIF0_BASE+0x1000) */
+
 #define CCIF_SRAM_SIZE 512
 
 #define BASE_ADDR_MDRSTCTL   0x200f0000  /* From md, no use by AP directly */
@@ -65,6 +60,34 @@
 #define MD1_CFG_BASE (0x20000000)
 #define MD1_CFG_BOOT_STATS0 (MD1_CFG_BASE+0x70)
 #define MD1_CFG_BOOT_STATS1 (MD1_CFG_BASE+0x74)
+
+/*MD PCore SRAM register*/
+#define MD_SRAM_PMS_BASE	(0x20060000)
+#define MD_SRAM_PMS_LEN		(0xD0)
+#define MD_SRAM_MDSYS_MD_PMS		(0x80)
+#define MD_SRAM_MDPERISYS1_MD_PMS	(0x84)
+#define MD_SRAM_MDPERISYS2_MD_PMS	(0x88)
+#define MD_SRAM_PSMCUAPB_MD_PMS		(0x8C)
+#define MD_SRAM_MDSYS_AP_PMS		(0x90)
+#define MD_SRAM_MDPERISYS1_AP_PMS	(0x94)
+#define MD_SRAM_MDPERISYS2_AP_PMS	(0x98)
+#define MD_SRAM_PSMCUAPB_AP_PMS		(0x9C)
+#define MD_SRAM_MDSYS_TZ_PMS		(0xA0)
+#define MD_SRAM_MDPERISYS1_TZ_PMS	(0xA4)
+#define MD_SRAM_MDPERISYS2_TZ_PMS	(0xA8)
+#define MD_SRAM_PSMCUAPB_TZ_PMS		(0xAC)
+#define MD_SRAM_MDSYS_L1_PMS		(0xB0)
+#define MD_SRAM_MDPERISYS1_L1_PMS	(0xB4)
+#define MD_SRAM_MDPERISYS2_L1_PMS	(0xB8)
+#define MD_SRAM_PSMCUAPB_L1_PMS		(0xBC)
+#define MD_SRAM_L1SYS_PMS			(0xC4)
+
+#define MD_SRAM_PD_PSMCUSYS_SRAM_BASE	(0x200D0100)
+#define MD_SRAM_PD_PSMCUSYS_SRAM_LEN	(0x30)
+#define MD_SRAM_PD_PSMCUSYS_SRAM_1		(0x14)
+#define MD_SRAM_PD_PSMCUSYS_SRAM_2		(0x18)
+#define MD_SRAM_PD_PSMCUSYS_SRAM_3		(0x1C)
+#define MD_SRAM_PD_PSMCUSYS_SRAM_4		(0x20)
 
 /* ============================================================ */
 /* Modem 2 part */
