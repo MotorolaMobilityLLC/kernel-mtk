@@ -6,6 +6,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/types.h>
+#include <linux/ktime.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/vmalloc.h>
@@ -47,6 +48,7 @@
 #include "display_recorder.h"
 #include "fbconfig_kdebug_k2.h"
 #include "primary_display.h"
+#include "disp_helper.h"
 
 #include "ddp_hal.h"
 #include "ddp_dump.h"
@@ -1437,9 +1439,10 @@ static unsigned long get_current_time_us(void)
 	return (t.tv_sec & 0xFFF) * 1000000 + t.tv_usec;
 }
 
+static struct hrtimer cmd_mode_update_timer;
+static int is_fake_timer_inited;
 static enum hrtimer_restart _DISP_CmdModeTimer_handler(struct hrtimer *timer)
 {
-	DISPMSG("fake timer, wake up\n");
 	dpmgr_signal_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 #if 0
 	if ((get_current_time_us() - pgc->last_vsync_tick) > 16666) {
@@ -1447,22 +1450,25 @@ static enum hrtimer_restart _DISP_CmdModeTimer_handler(struct hrtimer *timer)
 		pgc->last_vsync_tick = get_current_time_us();
 	}
 #endif
+	hrtimer_forward_now(timer, ns_to_ktime(16666666));
 	return HRTIMER_RESTART;
 }
 
 int _init_vsync_fake_monitor(int fps)
 {
-	static struct hrtimer cmd_mode_update_timer;
-	static ktime_t cmd_mode_update_timer_period;
+	if (is_fake_timer_inited)
+		return 0;
+
+	is_fake_timer_inited = 1;
 
 	if (fps == 0)
-		fps = 60;
+		fps = 6000;
 
-	cmd_mode_update_timer_period = ktime_set(0, 1000 / fps * 1000);
-	DISPMSG("[MTKFB] vsync timer_period=%d\n", 1000 / fps);
 	hrtimer_init(&cmd_mode_update_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	cmd_mode_update_timer.function = _DISP_CmdModeTimer_handler;
+	hrtimer_start(&cmd_mode_update_timer, ns_to_ktime(16666666), HRTIMER_MODE_REL);
 
+	DISPMSG("fake timer, init\n");
 	return 0;
 }
 
@@ -2117,6 +2123,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	return ret;
 }
+
 
 static int _DC_switch_to_DL_fast(void)
 {
@@ -4493,13 +4500,17 @@ static int _present_fence_release_worker_thread(void *data)
 
 			/* if session not created, do not release present fence */
 			if (pgc->session_id == 0) {
-				DISPDBG("NULL session_id in present_fence_release thread\n");
+				MMProfileLogEx(ddp_mmp_get_events()->present_fence_release,
+					       MMProfileFlagPulse, -1, 0x4a4a4a4a);
+				/* DISPDBG("_get_sync_info fail in present_fence_release thread\n"); */
 				continue;
 			}
 
 			layer_info = _get_sync_info(pgc->session_id, disp_sync_get_present_timeline_id());
 			if (layer_info == NULL) {
-				DISPERR("_get_sync_info fail in present_fence_release thread\n");
+				MMProfileLogEx(ddp_mmp_get_events()->present_fence_release,
+					       MMProfileFlagPulse, -1, 0x5a5a5a5a);
+				/* DISPERR("_get_sync_info fail in present_fence_release thread\n"); */
 				continue;
 			}
 
@@ -4863,6 +4874,23 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 	/* dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE); */
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	/* dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE); */
+
+	/* use fake timer to generate vsync signal for cmd mode w/o LCM(originally using LCM TE Signal as VSYNC) */
+	/* so we don't need to modify display driver's behavior. */
+	if (disp_helper_get_option
+	    (DISP_HELPER_OPTION_NO_LCM_FOR_LOW_POWER_MEASUREMENT)) {
+		/* only for low power measurement */
+		DISPCHECK("WARNING!!!!!! FORCE NO LCM MODE!!!\n");
+		islcmconnected = 0;
+
+		/* no need to change video mode vsync behavior */
+		if (!primary_display_is_video_mode()) {
+			_init_vsync_fake_monitor(lcm_fps);
+
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+					       DDP_IRQ_UNKNOWN);
+		}
+	}
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -5548,6 +5576,25 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]wait frame done[begin]\n");
 	dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 10);
 	DISPCHECK("[POWER]wait frame done[end]\n");
+
+	/* reinit fake timer for debug, we can enable option then press powerkey to enable thsi feature. */
+	/* use fake timer to generate vsync signal for cmd mode w/o LCM(originally using LCM TE Signal as VSYNC) */
+	/* so we don't need to modify display driver's behavior. */
+	if (disp_helper_get_option
+	    (DISP_HELPER_OPTION_NO_LCM_FOR_LOW_POWER_MEASUREMENT)) {
+		/* only for low power measurement */
+		DISPCHECK("WARNING!!!!!! FORCE NO LCM MODE!!!\n");
+		islcmconnected = 0;
+
+		/* no need to change video mode vsync behavior */
+		if (!primary_display_is_video_mode()) {
+			_init_vsync_fake_monitor(pgc->lcm_fps);
+
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+					       DDP_IRQ_UNKNOWN);
+		}
+	}
+
 #if 0
 	DISPCHECK("[POWER]wakeup aal/od trigger process[begin]\n");
 	wake_up_process(primary_path_aal_task);
@@ -5557,6 +5604,7 @@ int primary_display_resume(void)
 
 done:
 	_primary_path_unlock(__func__);
+
 	/* primary_display_diagnose(); */
 #ifndef DISP_NO_AEE
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);

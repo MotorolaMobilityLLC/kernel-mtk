@@ -261,6 +261,30 @@ static unsigned int rdma_index(DISP_MODULE_ENUM module)
 	return idx;
 }
 
+int rdma_enable_irq(DISP_MODULE_ENUM module, void *handle, DDP_IRQ_LEVEL irq_level)
+{
+	unsigned int idx = rdma_index(module);
+
+	ASSERT(idx <= 2);
+
+	switch (irq_level) {
+	case DDP_IRQ_LEVEL_ALL:
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x1E);
+		break;
+	case DDP_IRQ_LEVEL_ERROR:
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x18);
+		/* only enable underflow/abnormal irq */
+		break;
+	case DDP_IRQ_LEVEL_NONE:
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x0);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 int rdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
@@ -799,4 +823,5 @@ DDP_MODULE_DRIVER ddp_driver_rdma = {
 	.bypass = NULL,
 	.build_cmdq = NULL,
 	.set_lcm_utils = NULL,
+	.enable_irq = rdma_enable_irq
 };

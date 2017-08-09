@@ -354,6 +354,39 @@ disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmd
 	return path_handle;
 }
 
+int dpmgr_get_scenario(disp_path_handle dp_handle)
+{
+	ddp_path_handle handle = (ddp_path_handle) dp_handle;
+
+	return handle->scenario;
+}
+
+int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
+					   DDP_SCENARIO_ENUM new_scenario, int sw_only)
+{
+	int i = 0;
+	int module_name = 0;
+	DDP_MANAGER_CONTEXT *content = _get_context();
+	ddp_path_handle handle = (ddp_path_handle) dp_handle;
+
+	int *new_modules = ddp_get_scenario_list(new_scenario);
+	int new_module_num = ddp_get_module_num(new_scenario);
+
+	for (i = 0; i < new_module_num; i++) {
+		module_name = new_modules[i];
+		if (content->module_usage_table[module_name] == 0) {
+			content->module_usage_table[module_name]++;
+			DISP_LOG_D("add module %s\n", ddp_get_module_name(module_name));
+
+			content->module_path_table[module_name] = handle;
+			if (!sw_only)
+				module_power_on(module_name);
+		}
+	}
+	return 0;
+
+}
+
 /* please ensure thread/irq safe by caller */
 int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario,
 		      cmdqRecHandle cmdq_handle, DDP_MODE isvdomode)
@@ -416,6 +449,31 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 
 	return 0;
 }
+
+int dpmgr_modify_path_power_off_old_modules(DDP_SCENARIO_ENUM old_scenario,
+					    DDP_SCENARIO_ENUM new_scenario, int sw_only)
+{
+	int i = 0;
+	int module_name = 0;
+	DDP_MANAGER_CONTEXT *content = _get_context();
+
+	int *old_modules = ddp_get_scenario_list(old_scenario);
+	int old_module_num = ddp_get_module_num(old_scenario);
+
+	for (i = 0; i < old_module_num; i++) {
+		module_name = old_modules[i];
+		if (!ddp_is_module_in_scenario(new_scenario, module_name)) {
+			content->module_usage_table[module_name]--;
+			DISP_LOG_D("remove module %s\n", ddp_get_module_name(module_name));
+			content->module_path_table[module_name] = NULL;
+			if (!sw_only)
+				module_power_off(module_name);
+		}
+	}
+
+	return 0;
+}
+
 
 int dpmgr_destroy_path(disp_path_handle dp_handle, cmdqRecHandle cmdq_handle)
 {
@@ -1025,6 +1083,45 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, DDP_IOCTL_NA
 				    ddp_modules_driver[module_name]->ioctl(module_name, cmdq_handle,
 									   (unsigned int)ioctl_cmd,
 									   params);
+			}
+		}
+	}
+	return ret;
+}
+
+int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ_LEVEL irq_level)
+{
+	int i = 0;
+	int ret = 0;
+	int module_name;
+	ddp_path_handle handle;
+	int *modules;
+	int module_num;
+
+	ASSERT(dp_handle != NULL);
+	handle = (ddp_path_handle) dp_handle;
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+
+	DISP_LOG_I("path enable irq on scenario %s, level %d\n",
+		   ddp_get_scenario_name(handle->scenario), irq_level);
+
+	if (irq_level != DDP_IRQ_LEVEL_ALL)
+		ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdq_handle);
+	else
+		ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdq_handle);
+
+	for (i = module_num - 1; i >= 0; i--) {
+		module_name = modules[i];
+		if (ddp_modules_driver[module_name] != 0) {
+			if (ddp_modules_driver[module_name]->enable_irq != 0) {
+				DISP_LOG_I("scenario %s, module %s enable irq level %d\n",
+				       ddp_get_scenario_name(handle->scenario),
+				       ddp_get_module_name(module_name), irq_level);
+				ret +=
+				    ddp_modules_driver[module_name]->enable_irq(module_name,
+										cmdq_handle,
+										irq_level);
 			}
 		}
 	}

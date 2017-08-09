@@ -122,6 +122,12 @@ typedef enum {
 	CMDQ_DSI_RESET
 } CMDQ_STATE;
 
+typedef enum {
+	DDP_IRQ_LEVEL_ALL = 0,
+	DDP_IRQ_LEVEL_NONE,
+	DDP_IRQ_LEVEL_ERROR
+} DDP_IRQ_LEVEL;
+
 
 typedef struct module_map_s {
 	DISP_MODULE_ENUM module;

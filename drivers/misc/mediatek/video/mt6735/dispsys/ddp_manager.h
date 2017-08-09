@@ -90,8 +90,22 @@ int dpmgr_init(void);
 */
 disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmdq_handle);
 
+
+int dpmgr_get_scenario(disp_path_handle dp_handle);
+
+/* NOTES: modify path should call API like this :
+	old_scenario = dpmgr_get_scenario(handle);
+	dpmgr_modify_path_power_on_new_modules();
+	dpmgr_modify_path();
+  after cmdq handle exec done:
+	dpmgr_modify_path_power_off_old_modules();
+*/
+int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
+					   DDP_SCENARIO_ENUM new_scenario, int sw_only);
 int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario,
 		      cmdqRecHandle cmdq_handle, DDP_MODE isvdomode);
+int dpmgr_modify_path_power_off_old_modules(DDP_SCENARIO_ENUM old_scenario,
+					    DDP_SCENARIO_ENUM new_scenario, int sw_only);
 
 /* destroy path, it will release mutex to pool, and disconnect path,
   * clear  mapping between handle and modules.
@@ -405,6 +419,7 @@ int dpmgr_path_get_parameter(disp_path_handle dp_handle, int io_evnet, void *dat
 int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
 		     unsigned long *params);
 
+int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ_LEVEL irq_level);
 /* get last config parameter of path
  * return  pointer to last config
  * dp_handle: disp path handle.
