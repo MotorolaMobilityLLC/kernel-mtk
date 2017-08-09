@@ -243,8 +243,8 @@ bool mt_afe_set_hdmi_connection(uint32_t ConnectionState, uint32_t Input, uint32
 	uint32_t output_index;
 
 	/* check if connection request is valid */
-	if (input < HDMI_INTER_CONN_INPUT_BASE || input > HDMI_INTER_CONN_INPUT_MAX ||
-	    output < HDMI_INTER_CONN_OUTPUT_BASE || output > HDMI_INTER_CONN_OUTPUT_MAX) {
+	if (Input < HDMI_INTER_CONN_INPUT_BASE || Input > HDMI_INTER_CONN_INPUT_MAX ||
+	    Output < HDMI_INTER_CONN_OUTPUT_BASE || Output > HDMI_INTER_CONN_OUTPUT_MAX) {
 		return false;
 	}
 
