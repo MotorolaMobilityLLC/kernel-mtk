@@ -217,7 +217,7 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 #ifdef FAST_RESPONSE_ATM
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 static struct hrtimer atm_hrtimer;
-static int atm_hrtimer_polling_delay = TS_MS_TO_NS(10); /* default 10ms*/
+static int atm_hrtimer_polling_delay = TS_MS_TO_NS(20); /* default 20ms*/
 static int atm_curr_maxtj;
 static int atm_prev_maxtj;
 static int krtatm_curr_maxtj;
@@ -1862,11 +1862,19 @@ static void atm_hrtimer_init(void)
 	hrtimer_start(&atm_hrtimer, ktime, HRTIMER_MODE_REL);
 }
 
+#define KRTATM_RT	(1)
+#define KRTATM_CFS	(2)
+#define KRTATM_SCH	KRTATM_CFS
+
 static int krtatm_thread(void *arg)
 {
+#if KRTATM_SCH == KRTATM_RT
 	struct sched_param param = {.sched_priority = 98 };
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
+#elif KRTATM_SCH == KRTATM_CFS
+	set_user_nice(current, MIN_NICE);
+#endif
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	tscpu_dprintk("%s 1st run\n", __func__);
