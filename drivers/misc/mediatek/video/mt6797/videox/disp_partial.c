@@ -81,6 +81,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 	int j = 0;
 	int size = 0;
 	int num = 0;
+	int disable_layer = 0;
 	void __user *roi_addr = NULL;
 	OVL_CONFIG_STRUCT *old_ovl_cfg = NULL;
 	static struct layer_dirty_roi layers[20];
@@ -100,9 +101,10 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 		struct disp_rect layer_total_roi = {0, 0, 0, 0};
 		disp_input_config *input_cfg = &cfg->input_cfg[i];
 
-		if (!input_cfg->layer_enable)
+		if (!input_cfg->layer_enable) {
+			disable_layer++;
 			continue;
-
+		}
 		num = input_cfg->dirty_roi_num;
 		if (input_cfg->dirty_roi_num) {
 			roi_addr = input_cfg->dirty_roi_addr;
@@ -153,6 +155,11 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 			break;
 
 	}
+	if (disable_layer >= cfg->input_layer_num) {
+		DISPMSG(" all layer disabled, force full roi\n");
+		assign_full_lcm_roi(result);
+	}
+
 	return 0;
 }
 
