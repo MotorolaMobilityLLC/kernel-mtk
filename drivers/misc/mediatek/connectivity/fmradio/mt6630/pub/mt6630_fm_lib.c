@@ -1845,7 +1845,7 @@ static fm_bool mt6630_TDD_chan_check(fm_u16 freq)
 
 	i = (freq_tmp - 6500) / 5;
 	if ((i / 4) >= (sizeof(mt6630_TDD_list) / sizeof(mt6630_TDD_list[0]))) {
-		WCN_DBG(FM_ERR | CHIP, "Freq index out of range(%d),max(%ld)\n",
+		WCN_DBG(FM_ERR | CHIP, "Freq index out of range(%d),max(%zd)\n",
 			i / 4, (sizeof(mt6630_TDD_list) / sizeof(mt6630_TDD_list[0])));
 		return fm_false;
 	}
