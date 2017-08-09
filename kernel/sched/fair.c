@@ -4537,6 +4537,35 @@ static int __init hmp_cpu_mask_setup(void)
 	return 1;
 }
 
+static struct hmp_domain *hmp_get_hmp_domain_for_cpu(int cpu)
+{
+	struct hmp_domain *domain;
+	struct list_head *pos;
+
+	list_for_each(pos, &hmp_domains) {
+		domain = list_entry(pos, struct hmp_domain, hmp_domains);
+		if (cpumask_test_cpu(cpu, &domain->possible_cpus))
+			return domain;
+	}
+	return NULL;
+}
+
+static void hmp_online_cpu(int cpu)
+{
+	struct hmp_domain *domain = hmp_get_hmp_domain_for_cpu(cpu);
+
+	if (domain)
+		cpumask_set_cpu(cpu, &domain->cpus);
+}
+
+static void hmp_offline_cpu(int cpu)
+{
+	struct hmp_domain *domain = hmp_get_hmp_domain_for_cpu(cpu);
+
+	if (domain)
+		cpumask_clear_cpu(cpu, &domain->cpus);
+}
+
 unsigned int hmp_next_up_threshold = 4096;
 unsigned int hmp_next_down_threshold = 4096;
 #define hmp_last_up_migration(cpu) \
@@ -4587,6 +4616,22 @@ static inline unsigned int hmp_select_faster_cpu(struct task_struct *tsk,
 				tsk_cpus_allowed(tsk));
 }
 
+static inline void hmp_next_up_delay(struct sched_entity *se, int cpu)
+{
+	struct cfs_rq *cfs_rq = &cpu_rq(cpu)->cfs;
+
+	hmp_last_up_migration(cpu) = cfs_rq_clock_task(cfs_rq);
+	hmp_last_down_migration(cpu) = 0;
+}
+
+static inline void hmp_next_down_delay(struct sched_entity *se, int cpu)
+{
+	struct cfs_rq *cfs_rq = &cpu_rq(cpu)->cfs;
+
+	hmp_last_down_migration(cpu) = cfs_rq_clock_task(cfs_rq);
+	hmp_last_up_migration(cpu) = 0;
+}
+
 static inline unsigned int hmp_domain_min_load(struct hmp_domain *hmpd,
 						int *min_cpu)
 {
@@ -4614,6 +4659,8 @@ static inline unsigned int hmp_domain_min_load(struct hmp_domain *hmpd,
 static int __init hmp_cpu_mask_setup(void) {}
 static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 			int prev_cpu, int new_cpu) {}
+static void hmp_online_cpu(int cpu) {}
+static void hmp_offline_cpu(int cpu) {}
 #endif /* CONFIG_SCHED_HMP */
 
 /*
@@ -6158,6 +6205,20 @@ struct lb_env {
 	int			mt_ignore_cachehot_in_idle;
 #endif
 };
+
+#ifdef CONFIG_SCHED_HMP
+/*
+ * move_task - move a task from one runqueue to another runqueue.
+ * Both runqueues must be locked.
+ */
+static void move_task(struct task_struct *p, struct lb_env *env)
+{
+	deactivate_task(env->src_rq, p, 0);
+	set_task_cpu(p, env->dst_cpu);
+	activate_task(env->dst_rq, p, 0);
+	check_preempt_curr(env->dst_rq, p, 0);
+}
+#endif
 
 /*
  * Is this task likely cache-hot:
@@ -8903,6 +8964,17 @@ static inline bool nohz_kick_needed(struct rq *rq)
 	if (time_before(now, nohz.next_balance))
 		return false;
 
+#ifdef CONFIG_SCHED_HMP
+	/*
+	 * Bail out if there are no nohz CPUs in our
+	 * HMP domain, since we will move tasks between
+	 * domains through wakeup and force balancing
+	 * as necessary based upon task load.
+	 */
+	if (sched_feat(SCHED_HMP) && cpumask_first_and(nohz.idle_cpus_mask,
+			&((struct hmp_domain *)hmp_cpu_domain(cpu))->cpus) >= nr_cpu_ids)
+		return false;
+#endif
 	if (rq->nr_running >= 2)
 		return true;
 
@@ -9381,6 +9453,323 @@ trace:
 out:
 	return check->result;
 }
+
+static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
+{
+	int tsk_cache_hot = 0;
+
+	/*
+	 * We do not migrate tasks that are:
+	 * 1) running (obviously), or
+	 * 2) cannot be migrated to this CPU due to cpus_allowed
+	 */
+	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
+		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
+		return 0;
+	}
+	env->flags &= ~LBF_ALL_PINNED;
+
+	if (task_running(env->src_rq, p)) {
+		schedstat_inc(p, se.statistics.nr_failed_migrations_running);
+		return 0;
+	}
+
+	/*
+	 * Aggressive migration if:
+	 * 1) task is cache cold, or
+	 * 2) too many balance attempts have failed.
+	 */
+
+	tsk_cache_hot = task_hot(p, env);
+
+	if (!tsk_cache_hot ||
+		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+#ifdef CONFIG_SCHEDSTATS
+		if (tsk_cache_hot) {
+			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
+			schedstat_inc(p, se.statistics.nr_forced_migrations);
+		}
+#endif
+		return 1;
+	}
+
+	return 1;
+}
+
+/*
+ * move_specific_task tries to move a specific task.
+ * Returns 1 if successful and 0 otherwise.
+ * Called with both runqueues locked.
+ */
+static int move_specific_task(struct lb_env *env, struct task_struct *pm)
+{
+	struct task_struct *p, *n;
+
+	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
+		if (throttled_lb_pair(task_group(p), env->src_rq->cpu,
+				env->dst_cpu))
+			continue;
+
+		if (!hmp_can_migrate_task(p, env))
+			continue;
+		/* Check if we found the right task */
+		if (p != pm)
+			continue;
+
+		move_task(p, env);
+		/*
+		 * Right now, this is only the third place move_task()
+		 * is called, so we can safely collect move_task()
+		 * stats here rather than inside move_task().
+		 */
+		schedstat_inc(env->sd, lb_gained[env->idle]);
+		return 1;
+	}
+	return 0;
+}
+
+/*
+ * hmp_active_task_migration_cpu_stop is run by cpu stopper and used to
+ * migrate a specific task from one runqueue to another.
+ * hmp_force_up_migration uses this to push a currently running task
+ * off a runqueue.
+ * Based on active_load_balance_stop_cpu and can potentially be merged.
+ */
+static int hmp_active_task_migration_cpu_stop(void *data)
+{
+	struct rq *busiest_rq = data;
+	struct task_struct *p = busiest_rq->migrate_task;
+	int busiest_cpu = cpu_of(busiest_rq);
+	int target_cpu = busiest_rq->push_cpu;
+	struct rq *target_rq = cpu_rq(target_cpu);
+	struct sched_domain *sd;
+
+	raw_spin_lock_irq(&busiest_rq->lock);
+	/* make sure the requested cpu hasn't gone down in the meantime */
+	if (unlikely(busiest_cpu != smp_processor_id() ||
+		!busiest_rq->active_balance)) {
+		goto out_unlock;
+	}
+	/* Is there any task to move? */
+	if (busiest_rq->nr_running <= 1)
+		goto out_unlock;
+	/* Task has migrated meanwhile, abort forced migration */
+	if (task_rq(p) != busiest_rq)
+		goto out_unlock;
+	/*
+	 * This condition is "impossible", if it occurs
+	 * we need to fix it. Originally reported by
+	 * Bjorn Helgaas on a 128-cpu setup.
+	 */
+	BUG_ON(busiest_rq == target_rq);
+
+	/* move a task from busiest_rq to target_rq */
+	double_lock_balance(busiest_rq, target_rq);
+
+	/* Search for an sd spanning us and the target CPU. */
+	rcu_read_lock();
+	for_each_domain(target_cpu, sd) {
+		if (cpumask_test_cpu(busiest_cpu, sched_domain_span(sd)))
+			break;
+	}
+
+	if (likely(sd)) {
+		struct lb_env env = {
+			.sd		= sd,
+			.dst_cpu	= target_cpu,
+			.dst_rq		= target_rq,
+			.src_cpu	= busiest_rq->cpu,
+			.src_rq		= busiest_rq,
+			.idle		= CPU_IDLE,
+		};
+
+		schedstat_inc(sd, alb_count);
+
+		if (move_specific_task(&env, p))
+			schedstat_inc(sd, alb_pushed);
+		else
+			schedstat_inc(sd, alb_failed);
+	}
+	rcu_read_unlock();
+	double_unlock_balance(busiest_rq, target_rq);
+out_unlock:
+	busiest_rq->active_balance = 0;
+	raw_spin_unlock_irq(&busiest_rq->lock);
+	return 0;
+}
+
+/*
+ * Heterogenous Multi-Processor (HMP) Global Load Balance
+ */
+static DEFINE_SPINLOCK(hmp_force_migration);
+
+/*
+ * According to Linaro's comment, we should only check the currently running
+ * tasks because selecting other tasks for migration will require extensive
+ * book keeping.
+ */
+static void hmp_force_down_migration(int this_cpu)
+{
+	int curr_cpu, target_cpu;
+	struct sched_entity *se;
+	struct rq *target;
+	unsigned long flags;
+	unsigned int force;
+	struct task_struct *p;
+	struct clb_env clbenv;
+
+	/* Migrate light task from big to LITTLE */
+	for_each_cpu(curr_cpu, &hmp_fast_cpu_mask) {
+		/* Check whether CPU is online */
+		if (!cpu_online(curr_cpu))
+			continue;
+
+		force = 0;
+		target = cpu_rq(curr_cpu);
+		raw_spin_lock_irqsave(&target->lock, flags);
+		se = target->cfs.curr;
+		if (!se) {
+			raw_spin_unlock_irqrestore(&target->lock, flags);
+			continue;
+		}
+
+		/* Find task entity */
+		if (!entity_is_task(se)) {
+			struct cfs_rq *cfs_rq;
+
+			cfs_rq = group_cfs_rq(se);
+			while (cfs_rq) {
+				se = cfs_rq->curr;
+				cfs_rq = group_cfs_rq(se);
+			}
+		}
+
+		p = task_of(se);
+		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_slow_cpu_mask, -1);
+		if (target_cpu == num_possible_cpus()) {
+			raw_spin_unlock_irqrestore(&target->lock, flags);
+			continue;
+		}
+
+		/* Collect cluster information */
+		memset(&clbenv, 0, sizeof(clbenv));
+		clbenv.flags |= HMP_GB;
+		clbenv.btarget = curr_cpu;
+		clbenv.ltarget = target_cpu;
+		clbenv.lcpus = &hmp_slow_cpu_mask;
+		clbenv.bcpus = &hmp_fast_cpu_mask;
+		sched_update_clbstats(&clbenv);
+
+		/* Check migration threshold */
+		if (!target->active_balance &&
+		    hmp_down_migration(curr_cpu, &target_cpu, se, &clbenv)) {
+			target->active_balance = 1;
+			target->push_cpu = target_cpu;
+			target->migrate_task = p;
+			force = 1;
+			trace_sched_hmp_migrate(p, target->push_cpu, 1);
+			hmp_next_down_delay(&p->se, target->push_cpu);
+		}
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		if (force) {
+			stop_one_cpu_nowait(cpu_of(target),
+				hmp_active_task_migration_cpu_stop,
+				target, &target->active_balance_work);
+		}
+	}
+}
+
+/*
+ * hmp_force_up_migration checks runqueues for tasks that need to
+ * be actively migrated to a faster cpu.
+ */
+static void hmp_force_up_migration(int this_cpu)
+{
+	int curr_cpu, target_cpu;
+	struct sched_entity *se;
+	struct rq *target;
+	unsigned long flags;
+	unsigned int force;
+	struct task_struct *p;
+	struct clb_env clbenv;
+
+	if (!spin_trylock(&hmp_force_migration))
+		return;
+
+#ifdef CONFIG_HMP_TRACER
+	for_each_online_cpu(curr_cpu)
+		trace_sched_cfs_runnable_load(curr_cpu, cfs_load(curr_cpu), cfs_length(curr_cpu));
+#endif
+
+	/* Migrate heavy task from LITTLE to big */
+	for_each_cpu(curr_cpu, &hmp_slow_cpu_mask) {
+		/* Check whether CPU is online */
+		if (!cpu_online(curr_cpu))
+			continue;
+
+		force = 0;
+		target = cpu_rq(curr_cpu);
+		raw_spin_lock_irqsave(&target->lock, flags);
+		se = target->cfs.curr;
+		if (!se) {
+			raw_spin_unlock_irqrestore(&target->lock, flags);
+			continue;
+		}
+
+		/* Find task entity */
+		if (!entity_is_task(se)) {
+			struct cfs_rq *cfs_rq;
+
+			cfs_rq = group_cfs_rq(se);
+			while (cfs_rq) {
+				se = cfs_rq->curr;
+				cfs_rq = group_cfs_rq(se);
+			}
+		}
+
+		p = task_of(se);
+		target_cpu = hmp_select_cpu(HMP_GB, p, &hmp_fast_cpu_mask, -1);
+		if (target_cpu == num_possible_cpus()) {
+			raw_spin_unlock_irqrestore(&target->lock, flags);
+			continue;
+		}
+
+		/* Collect cluster information */
+		memset(&clbenv, 0, sizeof(clbenv));
+		clbenv.flags |= HMP_GB;
+		clbenv.ltarget = curr_cpu;
+		clbenv.btarget = target_cpu;
+		clbenv.lcpus = &hmp_slow_cpu_mask;
+		clbenv.bcpus = &hmp_fast_cpu_mask;
+		sched_update_clbstats(&clbenv);
+
+		/* Check migration threshold */
+		if (!target->active_balance &&
+			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
+			target->active_balance = 1;
+			target->push_cpu = target_cpu;
+			target->migrate_task = p;
+			force = 1;
+			trace_sched_hmp_migrate(p, target->push_cpu, 1);
+			hmp_next_up_delay(&p->se, target->push_cpu);
+		}
+
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		if (force) {
+			stop_one_cpu_nowait(cpu_of(target),
+				hmp_active_task_migration_cpu_stop,
+				target, &target->active_balance_work);
+		}
+	}
+
+	hmp_force_down_migration(this_cpu);
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_hmp_load(clbenv.bstats.load_avg, clbenv.lstats.load_avg);
+#endif
+	spin_unlock(&hmp_force_migration);
+}
+#else
+static void hmp_force_up_migration(int this_cpu) {}
 #endif /* CONFIG_SCHED_HMP */
 /*
  * run_rebalance_domains is triggered when needed from the scheduler tick.
@@ -9391,6 +9780,10 @@ static void run_rebalance_domains(struct softirq_action *h)
 	struct rq *this_rq = this_rq();
 	enum cpu_idle_type idle = this_rq->idle_balance ?
 						CPU_IDLE : CPU_NOT_IDLE;
+	int this_cpu = smp_processor_id();
+
+	if (sched_feat(SCHED_HMP))
+		hmp_force_up_migration(this_cpu);
 
 	rebalance_domains(this_rq, idle);
 
@@ -9421,6 +9814,9 @@ void trigger_load_balance(struct rq *rq)
 
 static void rq_online_fair(struct rq *rq)
 {
+	if (sched_feat(SCHED_HMP))
+		hmp_online_cpu(rq->cpu);
+
 	update_sysctl();
 
 	update_runtime_enabled(rq);
@@ -9428,6 +9824,9 @@ static void rq_online_fair(struct rq *rq)
 
 static void rq_offline_fair(struct rq *rq)
 {
+	if (sched_feat(SCHED_HMP))
+		hmp_offline_cpu(rq->cpu);
+
 	update_sysctl();
 
 	/* Ensure any throttled groups are reachable by pick_next_task */
