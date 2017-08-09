@@ -103,7 +103,7 @@ static s32 i2c_dma_write_mtk(u16 addr, u8 *buffer, s32 len)
 		.ext_flag = (gt1x_i2c_client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
 		.addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG),
 		.timing = I2C_MASTER_CLOCK,
-		.buf = (u8 *) gpDMABuf_pa,
+		.buf = (u8 *)(uintptr_t)gpDMABuf_pa,
 	};
 
 	mutex_lock(&dma_mutex);
@@ -154,7 +154,7 @@ static s32 i2c_dma_read_mtk(u16 addr, u8 *buffer, s32 len)
 		 .ext_flag = (gt1x_i2c_client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
 		 .addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG),
 		 .timing = I2C_MASTER_CLOCK,
-		 .buf = (u8 *) gpDMABuf_pa,
+		 .buf = (u8 *)(uintptr_t)gpDMABuf_pa,
 		},
 	};
 	mutex_lock(&dma_mutex);
