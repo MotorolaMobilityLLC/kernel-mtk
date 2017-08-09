@@ -73,7 +73,7 @@ static unsigned short force[] = { 0, GTP_I2C_ADDRESS, I2C_CLIENT_END, I2C_CLIENT
 static const unsigned short *const forces[] = { force, NULL };
 
 static const struct of_device_id tpd_of_match[] = {
-	{.compatible = "mediatek,CAP_TOUCH"},
+	{.compatible = "mediatek,cap_touch"},
 	{},
 };
 static struct i2c_driver tpd_i2c_driver = {
@@ -101,9 +101,11 @@ static s32 i2c_dma_write_mtk(u16 addr, u8 *buffer, s32 len)
 	s32 pos = 0;
 	s32 transfer_length;
 	u16 address = addr;
+
 	struct i2c_msg msg = {
 		.flags = !I2C_M_RD,
-		.addr = gt1x_i2c_client->addr,
+		.ext_flag = (gt1x_i2c_client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
+		.addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG),
 		.timing = I2C_MASTER_CLOCK,
 		.buf = (u8 *) gpDMABuf_pa,
 	};
@@ -142,16 +144,20 @@ static s32 i2c_dma_read_mtk(u16 addr, u8 *buffer, s32 len)
 	s32 transfer_length;
 	u16 address = addr;
 	u8 addr_buf[GTP_ADDR_LENGTH] = { 0 };
+
 	struct i2c_msg msgs[2] = {
 		{
 		 .flags = 0,	/*!I2C_M_RD,*/
-		 .addr = gt1x_i2c_client->addr,
+		 .addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG),
+		 .timing = I2C_MASTER_CLOCK,
 		 .len = GTP_ADDR_LENGTH,
 		 .buf = addr_buf,
 		 },
 		{
 		 .flags = I2C_M_RD,
-		 .addr = gt1x_i2c_client->addr,
+		 .ext_flag = (gt1x_i2c_client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
+		 .addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG),
+		 .timing = I2C_MASTER_CLOCK,
 		 .buf = (u8 *) gpDMABuf_pa,
 		},
 	};
@@ -189,7 +195,8 @@ static s32 i2c_write_mtk(u16 addr, u8 *buffer, s32 len)
 
 	struct i2c_msg msg = {
 		.flags = 0,
-		.addr = gt1x_i2c_client->addr,	/*remain*/
+		.addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG),	/*remain*/
+		.timing = I2C_MASTER_CLOCK,
 	};
 
 	ret = _do_i2c_write(&msg, addr, buffer, len);
@@ -203,14 +210,16 @@ static s32 i2c_read_mtk(u16 addr, u8 *buffer, s32 len)
 
 	struct i2c_msg msgs[2] = {
 		{
-		 .addr = gt1x_i2c_client->addr,
+		 .addr = ((gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
 		 .flags = 0,
 		 .buf = addr_buf,
 		 .len = GTP_ADDR_LENGTH,
-		 },
+		 .timing = I2C_MASTER_CLOCK,
+		},
 		{
-		 .addr = gt1x_i2c_client->addr,
+		 .addr = ((gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
 		 .flags = I2C_M_RD,
+		 .timing = I2C_MASTER_CLOCK,
 		},
 	};
 
@@ -874,7 +883,16 @@ static int tpd_local_init(void)
 		GTP_ERROR("regulator_get() failed!\n");
 #endif
 #endif
-
+#if TPD_SUPPORT_I2C_DMA
+		tpd->dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+		gpDMABuf_va = (u8 *) dma_alloc_coherent(&tpd->dev->dev, IIC_DMA_MAX_TRANSFER_SIZE,
+			&gpDMABuf_pa, GFP_KERNEL);
+		if (!gpDMABuf_va) {
+			GTP_ERROR("Allocate DMA I2C Buffer failed!");
+			return -1;
+		}
+		memset(gpDMABuf_va, 0, IIC_DMA_MAX_TRANSFER_SIZE);
+#endif
 	if (i2c_add_driver(&tpd_i2c_driver) != 0) {
 		GTP_ERROR("unable to add i2c driver.");
 		return -1;
