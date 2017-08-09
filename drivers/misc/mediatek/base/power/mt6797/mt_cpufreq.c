@@ -2527,6 +2527,10 @@ static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
+	/* For avoiding i2c violation during suspend */
+	if (p->dvfs_disable_by_suspend)
+		return cpu_dvfs_get_cur_volt(p);
+
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
 		addr = DA9214_VPROC2;
 	else
