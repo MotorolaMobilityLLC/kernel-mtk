@@ -24,6 +24,10 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#include <mt-plat/mt_lpae.h>
+
+#define PWM_PERI_ADDR_SHIFT_CTRL0 0x10003430
+#define PWM_OFFSET 0x3
 
 /**********************************
 * Global  data
@@ -449,10 +453,22 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, u32 *addr)
 {
 	unsigned long reg_buff0_addr;
+	unsigned long user_addr;
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+#if 0
 	/*OUTREG32(reg_buff0_addr, addr);*/
 	OUTREG32_DMA(reg_buff0_addr, addr);
+#else
+	if (enable_4G())
+		user_addr = (unsigned long)addr & 0xFFFFFFFFUL;
+	else {
+		user_addr = (unsigned long)addr & 0xFFFFFFFFUL;
+		OUTREG32(PWM_PERI_ADDR_SHIFT_CTRL0, ((unsigned long)addr >> 32) << PWM_OFFSET);
+	}
+	/*OUTREG32(reg_buff0_addr, user_addr);*/
+	OUTREG32_DMA(reg_buff0_addr , user_addr);
+#endif
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
