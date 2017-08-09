@@ -642,7 +642,7 @@ cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val
 #define cpufreq_read_armpll(addr)				mt6797_0x1001AXXX_reg_read((unsigned long)addr)
 #define cpufreq_write_armpll(addr, val)			mt6797_0x1001AXXX_reg_write((unsigned long)addr, val)
 #define cpufreq_write_mask_armpll(addr, mask, val) \
-mt6797_0x1001AXXX_reg_set(addr, (_BITMASK_(mask)), val)
+mt6797_0x1001AXXX_reg_set((unsigned long)addr, (_BITMASK_(mask)), val)
 
 /*
  * LOCK
