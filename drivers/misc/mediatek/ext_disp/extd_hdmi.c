@@ -1301,7 +1301,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			dispif_info->vsyncFPS = 60;
 
 		if (dispif_info->displayWidth * dispif_info->displayHeight <= 240 * 432)
-			dispif_info->physicalHeight = dispif_info2d->physicalWidth = 0;
+			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
 		else if (dispif_info->displayWidth * dispif_info->displayHeight <= 320 * 480)
 			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
 		else if (dispif_info->displayWidth * dispif_info->displayHeight <= 480 * 854)
