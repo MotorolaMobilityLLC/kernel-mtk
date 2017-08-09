@@ -1814,9 +1814,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 	g_adc_init_flag = 1;
 
-	if (mt_auxadc_create_device_attr(adc_dev))
-		goto exit;
-exit:
+	mt_auxadc_create_device_attr(adc_dev);
 	return ret;
 }
 
