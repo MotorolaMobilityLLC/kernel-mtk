@@ -67,5 +67,11 @@ extern void __iomem *auxadc_efuse_base;
 
 #define AUXADC_CON_RTP			(APMIXED_BASE + 0x0404)
 #define AUXADC_CLOCK_BY_SPM
+
+/* the new efuse cali has 2 regs with platform--mt6797 */
+#if defined(CONFIG_ARCH_MT6797)
+#define NEW_EFUSE_CALI_REG
+#endif
+
 #endif   /*_MTK_ADC_HW_H*/
 

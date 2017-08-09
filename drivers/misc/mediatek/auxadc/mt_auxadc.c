@@ -64,6 +64,13 @@
 #include <linux/of_address.h>
 #endif
 
+/* the new efuse cali has 2 regs, and the old has one only */
+#if defined(NEW_EFUSE_CALI_REG)
+#define EFUSE_CALI_REG        1
+#else
+#define EFUSE_CALI_REG        0
+#endif
+
 #if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 static struct clk *clk_auxadc;
@@ -80,7 +87,7 @@ void __iomem *auxadc_efuse_base = NULL;
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 #else
-/*#include <cust_adc.h>*/		/* generate by DCT Tool */
+/*#include <cust_adc.h>*//* generate by DCT Tool */
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -186,6 +193,12 @@ static int g_start_debug_thread;
 static int g_adc_init_flag;
 
 static u32 cali_reg;
+#if defined(EFUSE_CALI)
+#if EFUSE_CALI_REG
+static u32 cali_ge_reg;
+static u32 cali_oe_reg;
+#endif
+#endif
 static s32 cali_oe;
 static s32 cali_ge;
 static u32 cali_ge_a;
@@ -199,9 +212,18 @@ static void mt_auxadc_update_cali(void)
 
 #if defined(EFUSE_CALI)
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
+#if EFUSE_CALI_REG
+	cali_ge_reg = (*(volatile unsigned int *const)(ADC_GE_A_REG));
+	cali_oe_reg = (*(volatile unsigned int *const)(ADC_OE_A_REG));
+#endif
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
+#if EFUSE_CALI_REG
+		cali_oe_a = (cali_oe_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
+		cali_ge_a = ((cali_ge_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
+#else
 		cali_oe_a = (cali_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
 		cali_ge_a = ((cali_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
+#endif
 		cali_ge = cali_ge_a - 512;
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
@@ -440,11 +462,11 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #if defined(EFUSE_CALI)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
 	if (!node)
-		pr_debug("[AUXADC] find node failed\n");
+		pr_err("[AUXADC] find node failed\n");
 
 	auxadc_efuse_base = of_iomap(node, 0);
 	if (!auxadc_efuse_base)
-		pr_debug("[AUXADC] auxadc_efuse_base base failed\n");
+		pr_err("[AUXADC] auxadc_efuse_base base failed\n");
 
 	pr_debug("[AUXADC]: auxadc_efuse_base:0x%p\n", auxadc_efuse_base);
 #endif
@@ -1441,7 +1463,7 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 	}
 	pr_debug("[adc_driver] start flag =%d\n", start_flag);
 	g_start_debug_thread = start_flag;
-	if (1 == start_flag) {
+	if ('1' == start_flag) {
 		thread = kthread_run(dbug_thread, 0, "AUXADC");
 
 		if (IS_ERR(thread)) {
@@ -1607,12 +1629,8 @@ exit:
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i, j, res;
+	int i, res;
 	int data[4] = { 0, 0, 0, 0 };
-	int data2[4] = { 0, 0, 0, 0 };
-	int rawdata;
-	long brawdata;
-	int err;
 
 	seq_puts(m, "********** Auxadc status dump **********\n");
 
@@ -1631,25 +1649,12 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 		seq_printf(m, "raw:%d data:%d %d %d without cali\n", i, data[0], data[1], data[2]);
 	}
 
-	for (i = 0; i < 16; i++) {
-
-		brawdata = 0;
-		err = 0;
-		for (j = 0; j < 100; j++) {
-			res = IMM_auxadc_GetOneChannelValue(i, data, &rawdata);
-			if (res < 0)
-				err++;
-			brawdata += rawdata;
-		}
-
-		brawdata = brawdata/100;
-		mt_auxadc_get_cali_data(brawdata, data, true);
-
-		mt_auxadc_get_cali_data(brawdata, data2, false);
-
-		seq_printf(m, "channel[%d]=%d.%d wi cali , %d.%d wo cali raw:%d %d err:%d\n",
-			i, data[0], data[2], data2[0], data2[2], (int)brawdata, rawdata, err);
-
+	for (i = 0; i < 5; i++) {
+		res = IMM_auxadc_GetOneChannelValue(i, data, NULL);
+		if (res < 0)
+			seq_printf(m, "[adc_driver]: get data error res:%d\n", res);
+		else
+			seq_printf(m, "channel[%d]=%d.%d %d\n", i, data[0], data[1], data[2]);
 	}
 
 	return 0;
@@ -1806,6 +1811,27 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			pr_warn("[AUXADC_AP] find node REF_CURRENT:%d\n", of_value);
 			used_channel_counter++;
 		}
+		ret = of_property_read_u32_array(node, "mediatek,board_id", &of_value, 1);
+		if (ret == 0) {
+			sprintf(g_adc_info[used_channel_counter].channel_name, "BOARD_ID");
+			g_adc_info[used_channel_counter].channel_number = of_value;
+			pr_warn("[AUXADC_AP] find node BOARD_ID:%d\n", of_value);
+			used_channel_counter++;
+		}
+		ret = of_property_read_u32_array(node, "mediatek,board_id_2", &of_value, 1);
+		if (ret == 0) {
+			sprintf(g_adc_info[used_channel_counter].channel_name, "BOARD_ID_2");
+			g_adc_info[used_channel_counter].channel_number = of_value;
+			pr_warn("[AUXADC_AP] find node BOARD_ID_2:%d\n", of_value);
+			used_channel_counter++;
+		}
+		ret = of_property_read_u32_array(node, "mediatek,board_id_3", &of_value, 1);
+		if (ret == 0) {
+			sprintf(g_adc_info[used_channel_counter].channel_name, "BOARD_ID_3");
+			g_adc_info[used_channel_counter].channel_number = of_value;
+			pr_warn("[AUXADC_AP] find node BOARD_ID_3:%d\n", of_value);
+			used_channel_counter++;
+		}
 	} else {
 		pr_err("[AUXADC_AP] find node failed\n");
 	}
@@ -1832,9 +1858,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 	g_adc_init_flag = 1;
 
-	if (mt_auxadc_create_device_attr(adc_dev))
-		goto exit;
-exit:
+	mt_auxadc_create_device_attr(adc_dev);
 	return ret;
 }
 
@@ -1869,6 +1893,7 @@ static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6797-auxadc",},
 	{.compatible = "mediatek,mt6755-auxadc",},
 	{.compatible = "mediatek,mt6757-auxadc",},
+	{.compatible = "mediatek,elbrus-auxadc",},
 	{},
 };
 #endif
