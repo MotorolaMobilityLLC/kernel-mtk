@@ -613,7 +613,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
 		if (MTK_WCN_BOOL_FALSE == bRet) {
 			WMT_WARN_FUNC("WMT_OPID_IDC_MSG_HANDLING fail(%d)\n", bRet);
 		} else {
-			WMT_DBG_FUNC("OPID(%d) type(%d) ok\n",
+			WMT_DBG_FUNC("OPID(%d) type(%zu) ok\n",
 				     lxop->op.opId, lxop->op.au4OpData[1]);
 		}
 	} else {
@@ -638,7 +638,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
 		if (MTK_WCN_BOOL_FALSE == bRet) {
 			WMT_WARN_FUNC("WMT_OPID_IDC_MSG_HANDLING fail(%d)\n", bRet);
 		} else {
-		    WMT_DBG_FUNC("wmt_lib_handle_idc_msg OPID(%d) type(%d) ok\n",
+		    WMT_DBG_FUNC("wmt_lib_handle_idc_msg OPID(%d) type(%zu) ok\n",
 				     lxop->op.opId, lxop->op.au4OpData[1]);
 		}
 	} else {
