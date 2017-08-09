@@ -55,7 +55,7 @@ config MOBICORE_API
 
 config TRUSTONIC_TRUSTED_UI
 	tristate "<t-base TUI"
-	depends on MOBICORE_API
+	depends on TRUSTONIC_TEE_SUPPORT
 	default n
 	---help---
 	  Enable <t-base Trusted User Interface
