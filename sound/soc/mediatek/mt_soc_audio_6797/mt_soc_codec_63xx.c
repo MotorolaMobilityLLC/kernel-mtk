@@ -1445,6 +1445,21 @@ static void HeadsetVoloumeSet(void)
 	Ana_Set_Reg(ZCD_CON2, (index << 7) | (index), 0xf9f);
 }
 
+static void Hp_Zcd_Enable(bool _enable)
+{
+	if (_enable) {
+		/* Enable ZCD, for minimize pop noise */
+		/* when adjust gain during HP buffer on */
+		Ana_Set_Reg(ZCD_CON0, 0x1 << 8, 0x7 << 8);
+		Ana_Set_Reg(ZCD_CON0, 0x0 << 7, 0x1 << 7);
+		Ana_Set_Reg(ZCD_CON0, 0x0 << 4, 0x3 << 4);
+		Ana_Set_Reg(ZCD_CON0, 0x5 << 1, 0x7 << 1);
+		Ana_Set_Reg(ZCD_CON0, 0x1 << 0, 0x1 << 0);
+	} else {
+		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
+	}
+}
+
 static void Audio_Amp_Change(int channels, bool enable)
 {
 	if (enable) {
@@ -1464,7 +1479,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Enable cap-less LDOs (1.6V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
 			/* Enable NV regulator (-1.6V) */
-			Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
+			Hp_Zcd_Enable(false);
 			/* Disable AUD_ZCD */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
 			/* Disable headphone, voice and short-ckt protection */
@@ -1512,6 +1527,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0300, 0xffff);
 			/* from yoyo HQA script */
 
+			/* Enable ZCD, for minimize pop noise */
+			/* when adjust gain during HP buffer on */
+			Hp_Zcd_Enable(true);
+
 			/* HP output swtich release to normal output */
 			HP_Switch_to_Release();
 
@@ -1534,6 +1553,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 			/* switch to ground to de pop-noise */
 			HP_Switch_to_Ground();
+
+			/* Disable AUD_ZCD */
+			Hp_Zcd_Enable(false);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */
@@ -2174,6 +2196,10 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0B00, 0xffff);
 		/* from yoyo HQA script */
 
+		/* Enable ZCD, for minimize pop noise */
+		/* when adjust gain during HP buffer on */
+		Hp_Zcd_Enable(true);
+
 		/* HP output swtich release to normal output */
 		HP_Switch_to_Release();
 
@@ -2187,6 +2213,10 @@ static void Headset_Speaker_Amp_Change(bool enable)
 
 		HP_Switch_to_Ground();
 		/* switch to ground to de pop-noise */
+
+		/* Disable AUD_ZCD */
+		Hp_Zcd_Enable(false);
+
 
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xEA0F, 0xffff);
 		/* Disable HPR/HPL */
