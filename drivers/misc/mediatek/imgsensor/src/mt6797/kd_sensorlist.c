@@ -3307,8 +3307,7 @@ static long CAMERA_HW_Ioctl(
         }
     }
     }
-	printk("[CAMERA SENSOR] a_u4Command(%x)\n",a_u4Command);
-
+	
     pIdx = (u32 *)pBuff;
     switch (a_u4Command) {
 
@@ -3321,44 +3320,33 @@ static long CAMERA_HW_Ioctl(
         break;
 #endif
     case KDIMGSENSORIOC_X_SET_DRIVER:
-		printk("KDIMGSENSORIOC_X_SET_DRIVER\n");
         i4RetValue = kdSetDriver((unsigned int *)pBuff);
         break;
     case KDIMGSENSORIOC_T_OPEN:
-		printk("KDIMGSENSORIOC_T_OPEN\n");
         i4RetValue = adopt_CAMERA_HW_Open();
         break;
     case KDIMGSENSORIOC_X_GETINFO:
-		printk("x1\n");
         i4RetValue = adopt_CAMERA_HW_GetInfo(pBuff);
-		printk("x11\n");
         break;
     case KDIMGSENSORIOC_X_GETRESOLUTION2:
-		printk("x2\n");
         i4RetValue = adopt_CAMERA_HW_GetResolution(pBuff);
         break;
     case KDIMGSENSORIOC_X_GETINFO2:
-		printk("x3\n");
         i4RetValue = adopt_CAMERA_HW_GetInfo2(pBuff);
         break;
     case KDIMGSENSORIOC_X_FEATURECONCTROL:
-		printk("x4\n");
         i4RetValue = adopt_CAMERA_HW_FeatureControl(pBuff);
         break;
     case KDIMGSENSORIOC_X_CONTROL:
-		printk("x5\n");
         i4RetValue = adopt_CAMERA_HW_Control(pBuff);
         break;
     case KDIMGSENSORIOC_T_CLOSE:
-		printk("x6\n");
         i4RetValue = adopt_CAMERA_HW_Close();
         break;
     case KDIMGSENSORIOC_T_CHECK_IS_ALIVE:
-		printk("x7\n");
         i4RetValue = adopt_CAMERA_HW_CheckIsAlive();
         break;
     case KDIMGSENSORIOC_X_GET_SOCKET_POS:
-		printk("x8\n");
         i4RetValue = kdGetSocketPostion((unsigned int *)pBuff);
         break;
     case KDIMGSENSORIOC_X_SET_I2CBUS:
@@ -3369,22 +3357,18 @@ static long CAMERA_HW_Ioctl(
         break;
 
     case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
-		printk("x9\n");
         i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);
         break;
 
     case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
-		printk("x10\n");
         i4RetValue = kdSetCurrentSensorIdx(*pIdx);
         break;
 
     case KDIMGSENSORIOC_X_SET_MCLK_PLL:
-		printk("x11\n");
         //i4RetValue = kdSetSensorMclk(pBuff);
         break;
 
     case KDIMGSENSORIOC_X_SET_GPIO:
-		printk("x12\n");
         i4RetValue = kdSetSensorGpio(pBuff);
         break;
 
