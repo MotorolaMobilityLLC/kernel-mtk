@@ -68,6 +68,7 @@ void Auddrv_Reg_map(void);
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
 bool SetChannels(uint32 Memory_Interface, uint32 channel);
+int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch);
 /*
 DO NOT USER DIRECTLY, use irq manager
 bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter);

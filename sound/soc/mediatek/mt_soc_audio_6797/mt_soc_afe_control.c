@@ -1177,7 +1177,25 @@ bool SetChannels(uint32 Memory_Interface, uint32 channel)
 	return true;
 }
 
-
+int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch)
+{
+	switch (Memory_Interface) {
+	case Soc_Aud_Digital_Block_MEM_AWB:
+		Afe_Set_Reg(AFE_DAC_CON1, mono_use_r_ch << 25, 0x1 << 25);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+		Afe_Set_Reg(AFE_DAC_CON1, mono_use_r_ch << 28, 0x1 << 28);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+		Afe_Set_Reg(AFE_DAC_CON0, mono_use_r_ch << 11, 0x1 << 11);
+		break;
+	default:
+		pr_warn("[AudioWarn] %s(), invalid Memory_Interface = %d\n",
+			__func__, Memory_Interface);
+		return -EINVAL;
+	}
+	return 0;
+}
 
 bool Set2ndI2SOutAttribute(uint32_t sampleRate)
 {

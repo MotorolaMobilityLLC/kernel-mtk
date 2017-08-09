@@ -255,6 +255,9 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 		SetI2SDacEnable(false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 
+		/* disable 260k ul record */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 11, 0x1 << 11);
+
 		/* disable irq */
 		irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE);
 
@@ -407,6 +410,9 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 		SetI2SDacEnable(true);
 
+		/* enable 260k ul record */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 11, 0x1 << 11);
+
 		/* set memif, enable memif in cm4 */
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, ultra_info.dl_rate);
 		SetChannels(Soc_Aud_Digital_Block_MEM_DL3, runtime->channels);
@@ -419,6 +425,9 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, ultra_info.ultra_ul_rate);
 		SetChannels(Soc_Aud_Digital_Block_MEM_VUL_DATA2, runtime->channels);
 		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);*/
+
+		/* ultra use reference mic */
+		SetMemifMonoSel(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 
 		/* enable irq */
 		irq_add_user(substream,
