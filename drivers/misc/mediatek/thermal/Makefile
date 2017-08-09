@@ -18,7 +18,7 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_kshutdown.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_cam.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_vrt.o
 
-ifneq ($(CONFIG_ARCH_MT8173),y)
+ifeq (,$(filter $(CONFIG_ARCH_MT8173) $(CONFIG_ARCH_MT8163), y))
 obj-y += common/
 endif
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
