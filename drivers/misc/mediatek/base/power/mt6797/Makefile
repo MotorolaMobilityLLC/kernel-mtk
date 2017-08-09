@@ -13,12 +13,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 endif
 
 #obj-y += mt_pm_init.o
-#obj-$(CONFIG_ARCH_MT6797) += mt_sleep.o
-#obj-$(CONFIG_ARCH_MT6797) += mt_spm_sleep.o
-#obj-$(CONFIG_ARCH_MT6797M) += mt_sleep.o
-#obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sleep.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_sleep.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_spm_sleep.o
 #obj-y += mt_clkbuf_ctl.o
 #obj-y += mt_dcm.o
 #ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
