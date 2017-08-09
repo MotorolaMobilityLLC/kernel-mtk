@@ -1072,7 +1072,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.init = mt_soc_audio_init,
 		.ops = &mt_machine_audio_ops,
 	},
-
 	{
 		.name = "Voice_MD2",
 		.stream_name = MT_SOC_VOICE_MD2_STREAM_NAME,
@@ -1204,6 +1203,16 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.stream_name = MT_SOC_VOICEMD2_SPEAKER_STREAM_NAME,
 		.cpu_dai_name   = MT_SOC_VOICEMD2_EXTSPKDAI_NAME,
 		.platform_name  = MT_SOC_VOICE_MD2,
+		.codec_dai_name = "max98926-aif1",
+		.codec_name = "MAX98926_MT",
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+	{
+		.name = "FM_Playback_Ext_Speaker",
+		.stream_name = MT_SOC_FMPLAYBACK_EXTSPEAKER_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_VOICEMD2_EXTSPKDAI_NAME,
+		.platform_name  = MT_SOC_FM_I2S_PCM,
 		.codec_dai_name = "max98926-aif1",
 		.codec_name = "MAX98926_MT",
 		.init = mt_soc_audio_init,
