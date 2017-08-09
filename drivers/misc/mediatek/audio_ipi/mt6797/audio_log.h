@@ -35,8 +35,13 @@
 #else /* force dump audio log (local debug only) */
 
 #ifndef AUD_LOG_V
-#define AUD_LOG_V pr_emerg
+#if 0
+#define AUD_LOG_V(x...) pr_emerg(x)
+#else
+#define AUD_LOG_V(x...)
 #endif
+#endif
+
 
 #ifndef AUD_LOG_D
 #define AUD_LOG_D pr_emerg

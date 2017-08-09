@@ -32,8 +32,8 @@ typedef enum {
 
 typedef enum {
 	AUDIO_IPI_MSG_ONLY, /* param1: defined by user,       param2: defined by user */
-	AUDIO_IPI_PAYLOAD,  /* param1: payload length (<=32), param2: 0xffffffff */
-	AUDIO_IPI_DMA,      /* param1: dma data length,       param2: 0xffffffff */
+	AUDIO_IPI_PAYLOAD,  /* param1: payload length (<=32), param2: defined by user */
+	AUDIO_IPI_DMA,      /* param1: dma data length,       param2: defined by user */
 } audio_ipi_msg_data_t;
 
 

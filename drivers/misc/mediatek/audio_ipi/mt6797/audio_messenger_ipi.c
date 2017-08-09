@@ -13,7 +13,6 @@
  *============================================================================*/
 
 #define MAX_IPI_MSG_QUEUE_SIZE (8)
-#define IPI_MSG_DUMMY_PAYLOAD_ADDR (0xFFFFFFFF)
 
 /* DEBUG FLAGS */
 /*#define ENABLE_DUMP_IPI_MSG*/
@@ -84,7 +83,7 @@ uint16_t get_message_buf_size(const ipi_msg_t *ipi_msg)
 	else if (ipi_msg->data_type == AUDIO_IPI_PAYLOAD)
 		return (IPI_MSG_HEADER_SIZE + ipi_msg->param1);
 	else if (ipi_msg->data_type == AUDIO_IPI_DMA)
-		return (IPI_MSG_HEADER_SIZE + sizeof(uint32_t)); /* sizeof(char *) */
+		return (IPI_MSG_HEADER_SIZE + 8); /* 64-bits addr */
 	else
 		return 0;
 }
@@ -196,6 +195,9 @@ void audio_send_ipi_msg(
 	ipi_msg_t *ipi_msg = NULL;
 	uint32_t ipi_msg_len = 0;
 
+	AUD_LOG_D("send, task: %d, id: 0x%x, p1: 0x%x, p2: 0x%x\n",
+		  ipi_msg->task_scene, ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2);
+
 	ipi_msg = getIpiMsg(task_scene);
 	if (ipi_msg == NULL) {
 		AUD_LOG_E("%s(), ipi_msg = NULL, return\n", __func__);
@@ -222,7 +224,9 @@ void audio_send_ipi_msg(
 			ipi_msg->param1 = MAX_IPI_MSG_PAYLOAD_SIZE;
 		}
 		memcpy(ipi_msg->payload, payload, ipi_msg->param1);
-		ipi_msg->param2 = IPI_MSG_DUMMY_PAYLOAD_ADDR;
+	} else if (ipi_msg->data_type == AUDIO_IPI_DMA) {
+		AUD_ASSERT(payload != NULL);
+		ipi_msg->dma_addr = payload;
 	}
 
 	ipi_msg_len = get_message_buf_size(ipi_msg);
@@ -235,6 +239,9 @@ void audio_send_ipi_msg(
 void audio_send_ipi_msg_to_scp(const ipi_msg_t *ipi_msg)
 {
 	ipi_status send_status = ERROR;
+
+	AUD_LOG_D("send, task: %d, id: 0x%x, p1: 0x%x, p2: 0x%x\n",
+		  ipi_msg->task_scene, ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2);
 
 	send_status = scp_ipi_send(
 			      IPI_AUDIO,
@@ -254,9 +261,9 @@ void audio_send_ipi_msg_ack_back(const ipi_msg_t *ipi_msg)
 	if (ipi_msg->ack_type == AUDIO_IPI_MSG_NEED_ACK) {
 		AUD_LOG_V("%s(), msg_id = 0x%x\n", __func__, ipi_msg->msg_id);
 		audio_send_ipi_msg(ipi_msg->task_scene,
-				   AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_ACK_BACK,
+				   ipi_msg->data_type, AUDIO_IPI_MSG_ACK_BACK,
 				   ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2,
-				   NULL);
+				   ipi_msg->dma_addr);
 	}
 }
 
