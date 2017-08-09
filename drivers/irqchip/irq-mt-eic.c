@@ -161,9 +161,7 @@ static struct deint_des *deint_descriptors;
 static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
-#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 static unsigned long cur_debug_eint;
-#endif
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -835,7 +833,12 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 	unsigned int i;
 
 	unsigned int dbnc = 0;
+
 	eint_num = mt_gpio_to_irq(gpio_pin) - EINT_IRQ_BASE;
+
+	pr_debug("%s, gpio=%d, eint=%d, %dus\n",
+		 __func__,
+		 gpio_pin, eint_num, us);
 
 	if (eint_num >= EINT_MAX_CHANNEL) {
 		pr_err("%s: eint_num %d invalid\n", __func__, eint_num);
@@ -844,34 +847,39 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 
 	base = (eint_num / 4) * 4 + EINT_DBNC_SET_BASE;
 	clr_base = (eint_num / 4) * 4 + EINT_DBNC_CLR_BASE;
-	EINT_FUNC.deb_time[eint_num] = us >> 10;
+	EINT_FUNC.deb_time[eint_num] = us;
 
 	/*
 	 * Don't enable debounce once debounce time is 0 or
 	 * its type is edge sensitive.
 	 */
 	if (!mt_can_en_debounce(eint_num)) {
-		dbgmsg("Can't enable debounce of eint_num:%d in %s\n", eint_num, __func__);
+		pr_debug("Can't enable debounce of eint_num:%d in %s\n",
+			 eint_num,
+			 __func__);
 		return;
 	}
 
 	for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
 		dbnc = eint_debtime_setting.setting[i].setting;
-		if (us <= eint_debtime_setting.setting[i].deb_time) {
+		if (us <= eint_debtime_setting.setting[i].deb_time)
 			break;
 		}
-	}
-
 
 	/* setp 1: mask the EINT */
 	if (!mt_eint_get_mask(eint_num)) {
 		mt_eint_mask(eint_num);
 		unmask = 1;
 	}
-	/* step 2: Check hw debouce number to decide which type should be used */
-	if (eint_num >= MAX_HW_DEBOUNCE_CNT)
+	/*
+	 * step 2: Check hw debouce number to decide
+	 * which type should be used
+	 */
+	if (eint_num >= MAX_HW_DEBOUNCE_CNT) {
+		pr_debug("eint %d not support hw deboucen\n", eint_num);
+		pr_debug("Use sw debounce\n");
 		mt_eint_en_sw_debounce(eint_num);
-	else {
+	} else {
 		/* step 2.1: set hw debounce flag */
 		EINT_FUNC.is_deb_en[eint_num] = 1;
 
@@ -880,19 +888,23 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 		mt_reg_sync_writel(clr_bit, clr_base);
 
 		/* step 2.3: set new debounce value */
-		bit =
-		    ((dbnc << EINT_DBNC_SET_DBNC_BITS) |
-		     (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS)) << ((eint_num % 4) * 8);
+		bit = ((dbnc << EINT_DBNC_SET_DBNC_BITS) |
+		       (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS))
+			<< ((eint_num % 4) * 8);
 		mt_reg_sync_writel(bit, base);
 
-		/* step 2.4: Delay a while (more than 2T) to wait for hw debounce enable work correctly */
+		/* step 2.4: Delay a while (more than 2T) to wait for
+		   hw debounce enable work correctly */
 		udelay(500);
 
-		/* step 2.5: Reset hw debounce counter to avoid unexpected interrupt */
-		rst = (EINT_DBNC_RST_BIT << EINT_DBNC_SET_RST_BITS) << ((eint_num % 4) * 8);
+		/* step 2.5: Reset hw debounce counter to avoid
+		   unexpected interrupt */
+		rst = (EINT_DBNC_RST_BIT << EINT_DBNC_SET_RST_BITS)
+			<< ((eint_num % 4) * 8);
 		mt_reg_sync_writel(rst, base);
 
-		/* step 2.6: Delay a while (more than 2T) to wait for hw debounce counter reset work correctly */
+		/* step 2.6: Delay a while (more than 2T) to wait for
+		   hw debounce counter reset work correctly */
 		udelay(500);
 	}
 	/* step 3: unmask the EINT */
@@ -950,10 +962,12 @@ static void mt_eint_set_timer_event(unsigned int eint_num)
 	int cpu = 0;
 
 	/* register timer for this sw debounce eint */
-	eint_timer->expires = jiffies + msecs_to_jiffies(EINT_FUNC.deb_time[eint_num]);
-	dbgmsg("EINT Module - expires:%lu, jiffies:%lu, deb_in_jiffies:%lu, ",
-	       eint_timer->expires, jiffies, msecs_to_jiffies(EINT_FUNC.deb_time[eint_num]));
-	dbgmsg("deb:%d, in %s\n", EINT_FUNC.deb_time[eint_num], __func__);
+	eint_timer->expires =
+		jiffies + usecs_to_jiffies(EINT_FUNC.deb_time[eint_num]);
+	pr_debug("EINT Module - expires:%lu, jiffies:%lu, deb_in_jiffies:%lu, ",
+		 eint_timer->expires, jiffies,
+		 usecs_to_jiffies(EINT_FUNC.deb_time[eint_num]));
+	pr_debug("deb:%d, in %s\n", EINT_FUNC.deb_time[eint_num], __func__);
 	eint_timer->data = eint_num;
 	eint_timer->function = &mt_eint_timer_event_handler;
 	if (!timer_pending(eint_timer)) {
@@ -971,7 +985,9 @@ static void eint_trigger_history_init(void)
 }
 
 static DEFINE_SPINLOCK(eint_dump);
-static void insert_trigger_entity(unsigned int eint, unsigned char arch, unsigned long long ts_trigger)
+static void insert_trigger_entity(unsigned int eint,
+				  unsigned char arch,
+				  unsigned long long ts_trigger)
 {
 	unsigned int rb_status;
 	unsigned int cur_cpu = smp_processor_id();
@@ -1067,8 +1083,7 @@ static ssize_t eint_dump_history_store(struct device_driver *driver, const char 
 	return count;
 }
 DRIVER_ATTR(eint_history, 0644, eint_dump_history_show, eint_dump_history_store);
-
-
+#endif
 
 static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
 {
@@ -1077,13 +1092,21 @@ static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
 	if (cur_debug_eint >= EINT_MAX_CHANNEL)
 		return -EINVAL;
 
-	ret = snprintf(buf, PAGE_SIZE, "[EINT] eint:%ld,mask:%x,pol:%x,deb:%d us,sens:%x\n", cur_debug_eint,
-			mt_eint_get_mask(cur_debug_eint), mt_eint_get_polarity(cur_debug_eint),
-			mt_eint_get_debounce_cnt(cur_debug_eint), mt_eint_get_sens(cur_debug_eint));
+	ret = snprintf(buf, PAGE_SIZE,
+		       "[EINT] eint:%ld,mask:%x,pol:%x,deb:%d us,sens:%x(%s)\n",
+		       cur_debug_eint,
+		       mt_eint_get_mask(cur_debug_eint),
+		       mt_eint_get_polarity(cur_debug_eint),
+		       mt_eint_get_debounce_cnt(cur_debug_eint),
+		       mt_eint_get_sens(cur_debug_eint),
+		       mt_eint_get_sens(cur_debug_eint) == MT_EDGE_SENSITIVE ?
+		       "edge" : "level");
 	return ret;
 }
 
-static ssize_t per_eint_dump_store(struct device_driver *driver, const char *buf, size_t count)
+static ssize_t per_eint_dump_store(struct device_driver *driver,
+				   const char *buf,
+				   size_t count)
 {
 	char *p = (char *)buf;
 	unsigned long num;
@@ -1097,10 +1120,6 @@ static ssize_t per_eint_dump_store(struct device_driver *driver, const char *buf
 }
 
 DRIVER_ATTR(per_eint_dump, 0644, per_eint_dump_show, per_eint_dump_store);
-
-
-
-#endif
 
 /*
  * mt_eint_isr: EINT interrupt service routine.
@@ -1769,8 +1788,6 @@ void mt_eint_virq_soft_clr(unsigned int virq)
 }
 EXPORT_SYMBOL(mt_eint_virq_soft_clr);
 
-
-#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
 struct platform_driver eint_driver = {
 	.driver = {
 		.name = "eint",
@@ -1778,8 +1795,6 @@ struct platform_driver eint_driver = {
 		.owner = THIS_MODULE,
 		}
 };
-#endif
-
 
 static int __init mt_eint_init(void)
 {
@@ -1789,10 +1804,7 @@ static int __init mt_eint_init(void)
 	struct device_node *node;
 	const __be32 *spec;
 	u32 len;
-
-#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
 	int ret;
-#endif
 
 	/* DTS version */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt-eic");
@@ -2004,17 +2016,25 @@ static int __init mt_eint_init(void)
 	irq_set_chained_handler(irq, (irq_flow_handler_t) mt_eint_demux);
 	irq_set_handler_data(irq, mt_eint_chip);
 
-
-
-#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
 	ret = platform_driver_register(&eint_driver);
 	if (ret)
 		pr_err("Fail to register eint_driver");
 
-	ret |= driver_create_file(&eint_driver.driver, &driver_attr_eint_history);
-	ret |= driver_create_file(&eint_driver.driver, &driver_attr_per_eint_dump);
-	if (ret)
+	ret = driver_create_file(&eint_driver.driver,
+				 &driver_attr_per_eint_dump);
+
+	if (ret) {
 		pr_err("Fail to create eint_driver sysfs files");
+		return -1;
+	}
+
+#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
+	ret = driver_create_file(&eint_driver.driver,
+				 &driver_attr_eint_history);
+	if (ret) {
+		pr_err("Fail to create eint_driver sysfs files");
+		return -1;
+	}
 
 	eint_trigger_history_init();
 #endif
@@ -2059,9 +2079,11 @@ void mt_eint_dump_status(unsigned int eint)
 {
 	if (eint >= EINT_MAX_CHANNEL)
 		return;
-	pr_notice("[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x\n", eint,
+	pr_notice("[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x(%s)\n", eint,
 			mt_eint_get_mask(eint), mt_eint_get_polarity(eint),
-			mt_eint_get_debounce_cnt(eint), mt_eint_get_sens(eint));
+		  mt_eint_get_debounce_cnt(eint), mt_eint_get_sens(eint),
+		  mt_eint_get_sens(eint) == MT_EDGE_SENSITIVE ? "edge" : "level"
+		);
 }
 
 
