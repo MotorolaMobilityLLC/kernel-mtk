@@ -1700,7 +1700,9 @@ static irqreturn_t HifDmaISR(IN int Irq, IN void *Arg)
 */
 /*----------------------------------------------------------------------------*/
 #if defined(CONFIG_MTK_CLKMGR)
+#if defined(MTK_EXTERNAL_LDO) || defined(MTK_ALPS_BOX_SUPPORT)
 #include <mach/mt_gpio.h>
+#endif
 #endif
 
 static int HifAhbProbe(VOID)
