@@ -280,12 +280,19 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 			c_limit->min_cpu_core = c_limit->max_cpu_core = p_limit->max_cpu_core;
 		}
 		break;
-	case PPM_POLICY_LCM_OFF:
-	case PPM_POLICY_DLPT:
-	case PPM_POLICY_PWR_THRO:
-	case PPM_POLICY_THERMAL:
-	case PPM_POLICY_PERF_SERV:
-	case PPM_POLICY_USER_LIMIT:
+	/* base */
+	case PPM_POLICY_HICA:
+		c_limit->min_cpufreq_idx = p_limit->min_cpufreq_idx;
+		c_limit->max_cpufreq_idx = p_limit->max_cpufreq_idx;
+		c_limit->min_cpu_core = p_limit->min_cpu_core;
+		c_limit->max_cpu_core = p_limit->max_cpu_core;
+		/* reset advise */
+		c_limit->has_advise_freq = false;
+		c_limit->advise_cpufreq_idx = -1;
+		c_limit->has_advise_core = false;
+		c_limit->advise_cpu_core = -1;
+		break;
+	default:
 		/* out of range! use policy's min/max cpufreq idx setting */
 		if (c_limit->min_cpufreq_idx <  p_limit->max_cpufreq_idx ||
 			c_limit->max_cpufreq_idx >  p_limit->min_cpufreq_idx) {
@@ -319,20 +326,6 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 			c_limit->has_advise_core = false;
 			c_limit->advise_cpu_core = -1;
 		}
-
-		break;
-	/* base */
-	case PPM_POLICY_HICA:
-	default:
-		c_limit->min_cpufreq_idx = p_limit->min_cpufreq_idx;
-		c_limit->max_cpufreq_idx = p_limit->max_cpufreq_idx;
-		c_limit->min_cpu_core = p_limit->min_cpu_core;
-		c_limit->max_cpu_core = p_limit->max_cpu_core;
-		/* reset advise */
-		c_limit->has_advise_freq = false;
-		c_limit->advise_cpufreq_idx = -1;
-		c_limit->has_advise_core = false;
-		c_limit->advise_cpu_core = -1;
 		break;
 	}
 

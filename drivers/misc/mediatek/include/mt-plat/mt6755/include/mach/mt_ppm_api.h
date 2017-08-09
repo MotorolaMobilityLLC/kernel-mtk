@@ -26,6 +26,14 @@ enum dvfs_table_type {
 	NR_DVFS_TABLE_TYPE,
 };
 
+enum ppm_sysboost_user {
+	BOOST_BY_WIFI = 0,
+	BOOST_BY_PERFSERV,
+	BOOST_BY_UT,
+
+	NR_PPM_SYSBOOST_USER,
+};
+
 /*==============================================================*/
 /* Definition							*/
 /*==============================================================*/
@@ -74,6 +82,10 @@ struct ppm_cluster_status {
 extern void mt_ppm_set_dvfs_table(unsigned int cpu, struct cpufreq_frequency_table *tbl,
 	unsigned int num, enum dvfs_table_type type);
 extern void mt_ppm_register_client(enum ppm_client client, void (*limit)(struct ppm_client_req req));
+
+/* SYS boost policy */
+extern void mt_ppm_sysboost_core(enum ppm_sysboost_user user, unsigned int core_num);
+extern void mt_ppm_sysboost_freq(enum ppm_sysboost_user user, unsigned int freq);
 
 /* DLPT policy */
 extern void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power);

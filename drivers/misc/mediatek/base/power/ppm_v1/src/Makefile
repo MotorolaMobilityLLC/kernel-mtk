@@ -13,6 +13,7 @@ obj-y += mt_ppm_api.o
 # policies
 obj-y += mt_ppm_policy_dlpt.o
 obj-y += mt_ppm_policy_perfserv.o
+obj-y += mt_ppm_policy_sys_boost.o
 obj-y += mt_ppm_policy_ptpod.o
 obj-y += mt_ppm_policy_pwr_thro.o
 obj-y += mt_ppm_policy_thermal.o
