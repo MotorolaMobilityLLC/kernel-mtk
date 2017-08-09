@@ -44,19 +44,19 @@
 
 		mmc0_pins_default: mmc0@default {
 			pins_cmd {
-				drive-strength = /bits/ 8 <2>;
+				drive-strength = /bits/ 8 <1>;
 			};
 			pins_dat {
-				drive-strength = /bits/ 8 <2>;
+				drive-strength = /bits/ 8 <1>;
 			};
 			pins_clk {
-				drive-strength = /bits/ 8 <2>;
+				drive-strength = /bits/ 8 <1>;
 			};
 			pins_rst {
-				drive-strength = /bits/ 8 <2>;
+				drive-strength = /bits/ 8 <1>;
 			};
 			pins_ds {
-				drive-strength = /bits/ 8 <2>;
+				drive-strength = /bits/ 8 <1>;
 			};
 		};
 
@@ -75,77 +75,53 @@
 			cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 			rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 			wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-
-			ett-hs200-cells = <12>;
-			ett-hs200-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL 0x0
-				OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_CKGEN_MSDC_DLY_SEL   0x0
-				OFFSET_MSDC_PATCH_BIT1	MSDC_PB1_CMD_RSP_TA_CNTR      0x1
-				OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL               0x0
-				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRDLY        0x7
-				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRRDLY       0xb
-				OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_WRDAT_CRCS_TA_CNTR   0x1
-				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATWRDLY       0xb
-				OFFSET_MSDC_IOCON			MSDC_IOCON_W_D0SPL            0x0
-				OFFSET_MSDC_DAT_RDDLY0		MSDC_DAT_RDDLY0_D0            0x7
-				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATRRDLY       0x9
-				OFFSET_MSDC_IOCON		MSDC_IOCON_R_D_SMPL           0x0>;
-
-			ett-hs400-cells = <8>;
-			ett-hs400-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL	0x0
-				OFFSET_MSDC_PATCH_BIT0		MSDC_PB0_CKGEN_MSDC_DLY_SEL		0x0
-				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY1	0x2
-				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY3	0x10
-				OFFSET_MSDC_PATCH_BIT1			MSDC_PB1_CMD_RSP_TA_CNTR	0x1
-				OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL				0x0
-				OFFSET_MSDC_PAD_TUNE0			MSDC_PAD_TUNE0_CMDRDLY		0x6
-				OFFSET_MSDC_PAD_TUNE0		MSDC_PAD_TUNE0_CMDRRDLY		0x6>;
 		};
 
 		mmc1_pins_default: mmc1@default {
 			   pins_cmd {
-				   drive-strength = /bits/ 8 <3>;
+				   drive-strength = /bits/ 8 <6>;
 			   };
 			   pins_dat {
-				   drive-strength = /bits/ 8 <3>;
+				   drive-strength = /bits/ 8 <6>;
 			   };
 			   pins_clk {
-				   drive-strength = /bits/ 8 <3>;
+				   drive-strength = /bits/ 8 <6>;
 			   };
 		};
 
 		mmc1_pins_sdr104: mmc1@sdr104 {
 			  pins_cmd {
-				  drive-strength = /bits/ 8 <2>;
+				  drive-strength = /bits/ 8 <3>;
 			  };
 			  pins_dat {
-				  drive-strength = /bits/ 8 <2>;
+				  drive-strength = /bits/ 8 <3>;
 			  };
 			  pins_clk {
-				  drive-strength = /bits/ 8 <3>;
+				  drive-strength = /bits/ 8 <4>;
 			  };
 		};
 
 		mmc1_pins_sdr50: mmc1@sdr50 {
 			 pins_cmd {
-				 drive-strength = /bits/ 8 <2>;
+				 drive-strength = /bits/ 8 <3>;
 			 };
 			 pins_dat {
-				 drive-strength = /bits/ 8 <2>;
+				 drive-strength = /bits/ 8 <3>;
 			 };
 			 pins_clk {
-				 drive-strength = /bits/ 8 <3>;
+				 drive-strength = /bits/ 8 <4>;
 			 };
 		};
 
 		mmc1_pins_ddr50: mmc1@ddr50 {
 			 pins_cmd {
-				 drive-strength = /bits/ 8 <2>;
+				 drive-strength = /bits/ 8 <3>;
 			 };
 			 pins_dat {
-				 drive-strength = /bits/ 8 <2>;
+				 drive-strength = /bits/ 8 <3>;
 			 };
 			 pins_clk {
-				 drive-strength = /bits/ 8 <3>;
+				 drive-strength = /bits/ 8 <4>;
 			 };
 		 };
 
