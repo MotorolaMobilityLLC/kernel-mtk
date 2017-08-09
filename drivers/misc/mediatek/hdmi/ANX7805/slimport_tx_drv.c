@@ -5216,7 +5216,7 @@ if(audio_format_change)
 }
 if(video_format_change)
 {
-	mute_count = 30;
+	mute_count = 45;
 	slimport_config_video_output();
 	video_format_change=0;
 }
