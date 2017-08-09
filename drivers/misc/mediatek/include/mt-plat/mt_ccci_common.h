@@ -650,6 +650,9 @@ enum c2k_channel {
 	NET3_CH_C2K = 14,	/*need sync with c2k */
 	NET4_CH_C2K = 15,
 	NET5_CH_C2K = 16,
+	NET6_CH_C2K = 17,	/*need sync with c2k */
+	NET7_CH_C2K = 18,
+	NET8_CH_C2K = 19,
 
 	C2K_MAX_CH_NUM,
 
