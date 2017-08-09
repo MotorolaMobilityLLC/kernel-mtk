@@ -13,9 +13,9 @@
 
 #ifndef __CCCI_BM_H__
 #define __CCCI_BM_H__
-
-#include "ccci_core.h"
 #include "ccci_config.h"
+#include "ccci_core.h"
+
 /*
  * the actually allocated skb's buffer is much bigger than what we request, so when we judge
  * which pool it belongs, the comparision is quite tricky...
@@ -37,16 +37,6 @@
 #define skb_data_size(x) ((x)->end - (x)->data)
 #endif
 
-struct ccci_req_queue {
-	unsigned int magic_header;
-	struct list_head req_list;
-	unsigned int count;
-	unsigned int max_len;
-	spinlock_t req_lock;
-	wait_queue_head_t req_wq;
-	unsigned int magic_footer;
-};
-
 struct ccci_skb_queue {
 	unsigned int magic_header;
 	struct sk_buff_head skb_list;
@@ -54,20 +44,20 @@ struct ccci_skb_queue {
 	struct work_struct reload_work;
 	unsigned char pre_filled;
 	unsigned int max_history;
+	unsigned int max_occupied;
+	unsigned int enq_count;
+	unsigned int deq_count;
 	unsigned int magic_footer;
 };
 
-struct sk_buff *ccci_alloc_skb(int size, char from_pool, char blocking);
-void ccci_free_skb(struct sk_buff *skb, DATA_POLICY policy);
+struct sk_buff *ccci_alloc_skb(int size, unsigned char from_pool, unsigned char blocking);
+void ccci_free_skb(struct sk_buff *skb);
 
 struct sk_buff *ccci_skb_dequeue(struct ccci_skb_queue *queue);
 void ccci_skb_enqueue(struct ccci_skb_queue *queue, struct sk_buff *newsk);
 void ccci_skb_queue_init(struct ccci_skb_queue *queue, unsigned int skb_size, unsigned int max_len,
 	char fill_now);
-
-struct ccci_request *ccci_alloc_req(DIRECTION dir, int size, char blk1, char blk2);
-void ccci_free_req(struct ccci_request *req);
-void ccci_dump_req(struct ccci_request *req);
+void ccci_dump_skb_pool_usage(void);
 
 void ccci_mem_dump(int md_id, void *start_addr, int len);
 void ccci_cmpt_mem_dump(int md_id, void *start_addr, int len);

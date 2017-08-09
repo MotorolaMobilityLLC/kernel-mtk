@@ -11,12 +11,12 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _CCCCI_PLATFORM_H_
-#define _CCCCI_PLATFORM_H_
+#ifndef __CCCI_PLATFORM_H__
+#define __CCCI_PLATFORM_H__
 
 #include <mt-plat/sync_write.h>
 #include "ccci_config.h"
-#include "ccci_core.h"
+#include "ccci_modem.h"
 
 #define INVALID_ADDR (0xF0000000)	/* the last EMI bank, properly not used */
 #define KERN_EMI_BASE (0x40000000)	/* Bank4 */
@@ -62,4 +62,4 @@ extern unsigned int get_phys_offset(void);
 #endif
 int Is_MD_EMI_voilation(void);
 #define MD_IN_DEBUG(md) (0)/* ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0) */
-#endif				/* _CCCCI_PLATFORM_H_ */
+#endif	/* __CCCI_PLATFORM_H__ */

@@ -50,6 +50,8 @@ struct ccmni_ch {
 	int		   rx_ack;
 	int		   tx;
 	int		   tx_ack;
+	int		   dl_ack;
+	int		   multiq;
 };
 
 typedef struct ccmni_instance {
@@ -58,9 +60,10 @@ typedef struct ccmni_instance {
 	struct ccmni_ch    ch;
 	int                net_if_off;
 	atomic_t           usage;
-	struct timer_list  timer;
+	/* use pointer to keep these items unique, while switching between CCMNI instances */
+	struct timer_list  *timer;
 	struct net_device  *dev;
-	struct napi_struct napi;
+	struct napi_struct *napi;
 	unsigned int       rx_seq_num;
 	unsigned int       tx_seq_num[2];
 	unsigned int       flags;
@@ -77,14 +80,14 @@ typedef struct ccmni_ccci_ops {
 	unsigned int       md_ability;
 	unsigned int       irat_md_id;  /* with which md on iRAT */
 	unsigned int       napi_poll_weigh;
-	int (*send_pkt)(int md_id, int tx_ch, void *data);
-	int (*napi_poll)(int md_id, int rx_ch, struct napi_struct *napi , int weight);
+	int (*send_pkt)(int md_id, int ccmni_idx, void *data, int is_ack);
+	int (*napi_poll)(int md_id, int ccmni_idx, struct napi_struct *napi , int weight);
 	int (*get_ccmni_ch)(int md_id, int ccmni_idx, struct ccmni_ch *channel);
 } ccmni_ccci_ops_t;
 
 typedef struct ccmni_ctl_block {
 	ccmni_ccci_ops_t   *ccci_ops;
-	ccmni_instance_t   *ccmni_inst[16];
+	ccmni_instance_t   *ccmni_inst[32];
 	unsigned int       md_sta;
 	struct wake_lock   ccmni_wakelock;
 	char               wakelock_name[16];
@@ -94,11 +97,13 @@ struct ccmni_dev_ops {
 	/* must-have */
 	int  skb_alloc_size;
 	int  (*init)(int md_id, ccmni_ccci_ops_t *ccci_info);
-	int  (*rx_callback)(int md_id, int rx_ch, struct sk_buff *skb, void *priv_data);
-	void (*md_state_callback)(int md_id, int rx_ch, MD_STATE state);
+	int  (*rx_callback)(int md_id, int ccmni_idx, struct sk_buff *skb, void *priv_data);
+	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state, int is_ack);
 	void (*exit)(int md_id);
-	void (*dump)(int md_id, int rx_ch, unsigned int flag);
-	void (*dump_rx_status)(int md_id, int rx_ch, unsigned long long *status);
+	void (*dump)(int md_id, int ccmni_idx, unsigned int flag);
+	void (*dump_rx_status)(int md_id, int ccmni_idx, unsigned long long *status);
+	struct ccmni_ch *(*get_ch)(int md_id, int ccmni_idx);
+	int (*is_ack_skb)(int md_id, struct sk_buff *skb);
 };
 
 

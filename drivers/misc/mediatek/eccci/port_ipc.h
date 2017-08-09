@@ -21,7 +21,6 @@
 #define MAX_NUM_IPC_TASKS 10
 #define CCCI_TASK_PENDING 0x01
 #define IPC_MSGSVC_RVC_DONE 0x12344321
-#define CCCI_IPC_MINOR_BASE 100
 
 /* MD <-> AP Msg_id mapping enum */
 typedef enum {
@@ -126,16 +125,6 @@ typedef enum {
 	GF_TCP = 6,
 	GF_UDP = 17
 } GF_PROTOCOL_TYPE;
-
-/* internal API */
-int port_ipc_init(struct ccci_port *port);
-int port_ipc_req_match(struct ccci_port *port, struct ccci_request *req);
-int port_ipc_tx_wait(struct ccci_port *port);
-int port_ipc_rx_ack(struct ccci_port *port);
-int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg);
-void port_ipc_md_state_notice(struct ccci_port *port, MD_STATE state);
-int port_ipc_write_check_id(struct ccci_port *port, struct ccci_request *req);
-unsigned int port_ipc_poll(struct file *fp, struct poll_table_struct *poll);
 
 /* export API */
 int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm);

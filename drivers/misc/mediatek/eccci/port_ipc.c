@@ -24,7 +24,8 @@
 #include "ccci_bm.h"
 #include "port_ipc.h"
 #include "ccci_ipc_msg_id.h"
-
+#include "port_proxy.h"
+#include "ccci_modem.h"
 static struct ipc_task_id_map ipc_msgsvc_maptbl[] = {
 
 #define __IPC_ID_TABLE
@@ -70,20 +71,13 @@ static struct ipc_task_id_map *unify_xx_id_2_local_id(u32 unify_id, int AP)
 	return NULL;
 }
 
-static int port_ipc_ack_init(struct ccci_port *port)
-{
-	return 0;
-}
-
-static int port_ipc_ack_recv_req(struct ccci_port *port, struct ccci_request *req)
+static int port_ipc_ack_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 {
 	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
 
-	list_del(&req->entry);	/* dequeue from queue's list */
 	clear_bit(CCCI_TASK_PENDING, &ipc_ctrl->flag);
 	wake_up_all(&ipc_ctrl->tx_wq);
-	req->policy = RECYCLE;
-	ccci_free_req(req);
+	ccci_free_skb(skb);
 	wake_lock_timeout(&port->rx_wakelock, HZ / 2);
 	return 0;
 }
@@ -95,20 +89,19 @@ static int port_ipc_ack_recv_req(struct ccci_port *port, struct ccci_request *re
  * ALL IPC ports share one ACK port.
  */
 struct ccci_port_ops ipc_port_ack_ops = {
-	.init = &port_ipc_ack_init,
-	.recv_request = &port_ipc_ack_recv_req,
+	.recv_skb = &port_ipc_ack_recv_skb,
 };
 
-int port_ipc_req_match(struct ccci_port *port, struct ccci_request *req)
+int port_ipc_recv_match(struct ccci_port *port, struct sk_buff *skb)
 {
-	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
+	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
 	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
 	struct ipc_task_id_map *id_map;
 
 	if (port->rx_ch != CCCI_IPC_RX)
 		return 1;
 
-	CCCI_DEBUG_LOG(port->modem->index, IPC, "task_id matching: (%x/%x)\n", ipc_ctrl->task_id, ccci_h->reserved);
+	CCCI_DEBUG_LOG(port->md_id, IPC, "task_id matching: (%x/%x)\n", ipc_ctrl->task_id, ccci_h->reserved);
 	id_map = unify_AP_id_2_local_id(ccci_h->reserved);
 	if (id_map == NULL)
 		return 0;
@@ -117,46 +110,22 @@ int port_ipc_req_match(struct ccci_port *port, struct ccci_request *req)
 	return 0;
 }
 
-int port_ipc_tx_wait(struct ccci_port *port)
-{
-	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
-	int ret;
-
-	ret = wait_event_interruptible(ipc_ctrl->tx_wq, !test_and_set_bit(CCCI_TASK_PENDING, &ipc_ctrl->flag));
-	if (ret == -ERESTARTSYS)
-		return -EINTR;
-	return 0;
-}
-
-int port_ipc_rx_ack(struct ccci_port *port)
-{
-	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
-
-	return ccci_send_msg_to_md(port->modem, CCCI_IPC_RX_ACK, IPC_MSGSVC_RVC_DONE, ipc_ctrl->task_id, 1);
-}
-
 static int send_new_time_to_md(struct ccci_modem *md, int tz);
 volatile int current_time_zone = 0;
 int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	struct ccci_request *req = NULL;
-	struct ccci_request *reqn;
+	struct sk_buff *skb = NULL;
 	unsigned long flags;
 	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
 
 	switch (cmd) {
 	case CCCI_IPC_RESET_RECV:
 		/* purge the Rx list */
-		spin_lock_irqsave(&port->rx_req_lock, flags);
-		list_for_each_entry_safe(req, reqn, &port->rx_req_list, entry) {
-			list_del(&req->entry);
-			port->rx_length++;
-			req->policy = RECYCLE;
-			ccci_free_req(req);
-		}
-		INIT_LIST_HEAD(&port->rx_req_list);
-		spin_unlock_irqrestore(&port->rx_req_lock, flags);
+		spin_lock_irqsave(&port->rx_skb_list.lock, flags);
+		while ((skb = __skb_dequeue(&port->rx_skb_list)) != NULL)
+			ccci_free_skb(skb);
+		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		break;
 
 	case CCCI_IPC_RESET_SEND:
@@ -174,22 +143,22 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 
 	case CCCI_IPC_UPDATE_TIME:
 #ifdef FEATURE_MD_GET_CLIB_TIME
-		CCCI_DEBUG_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
+		CCCI_DEBUG_LOG(port->md_id, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
 		ret = send_new_time_to_md(port->modem, (int)arg);
 #else
-		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x(dummy)\n", (unsigned int)arg);
+		CCCI_REPEAT_LOG(port->md_id, IPC, "CCCI_IPC_UPDATE_TIME 0x%x(dummy)\n", (unsigned int)arg);
 #endif
 		break;
 
 	case CCCI_IPC_WAIT_TIME_UPDATE:
-		CCCI_DEBUG_LOG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
+		CCCI_DEBUG_LOG(port->md_id, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
 		ret = wait_time_update_notify();
-		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
+		CCCI_REPEAT_LOG(port->md_id, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
 		break;
 
 	case CCCI_IPC_UPDATE_TIMEZONE:
-		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIMEZONE keep 0x%x\n", (unsigned int)arg);
+		CCCI_REPEAT_LOG(port->md_id, IPC, "CCCI_IPC_UPDATE_TIMEZONE keep 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
 		break;
 	};
@@ -210,14 +179,14 @@ void port_ipc_md_state_notice(struct ccci_port *port, MD_STATE state)
 	};
 }
 
-int port_ipc_write_check_id(struct ccci_port *port, struct ccci_request *req)
+int port_ipc_write_check_id(struct ccci_port *port, struct sk_buff *skb)
 {
-	struct ccci_ipc_ilm *ilm = (struct ccci_ipc_ilm *)((char *)req->skb->data + sizeof(struct ccci_header));
+	struct ccci_ipc_ilm *ilm = (struct ccci_ipc_ilm *)((char *)skb->data + sizeof(struct ccci_header));
 	struct ipc_task_id_map *id_map;
 
 	id_map = local_MD_id_2_unify_id(ilm->dest_mod_id);
 	if (id_map == NULL) {
-		CCCI_ERROR_LOG(port->modem->index, IPC, "Invalid Dest MD ID (%d)\n", ilm->dest_mod_id);
+		CCCI_ERROR_LOG(port->md_id, IPC, "Invalid Dest MD ID (%d)\n", ilm->dest_mod_id);
 		return -CCCI_ERR_IPC_ID_ERROR;
 	}
 	return id_map->extq_id;
@@ -231,7 +200,7 @@ unsigned int port_ipc_poll(struct file *fp, struct poll_table_struct *poll)
 
 	poll_wait(fp, &ipc_ctrl->tx_wq, poll);
 	poll_wait(fp, &port->rx_wq, poll);
-	if (!list_empty(&port->rx_req_list))
+	if (!skb_queue_empty(&port->rx_skb_list))
 		mask |= POLLIN | POLLRDNORM;
 	if (!test_bit(CCCI_TASK_PENDING, &ipc_ctrl->flag))
 		mask |= POLLOUT | POLLWRNORM;
@@ -239,17 +208,9 @@ unsigned int port_ipc_poll(struct file *fp, struct poll_table_struct *poll)
 	return mask;
 }
 
-static struct ccci_port *find_ipc_port_by_task_id(struct ccci_modem *md, int task_id)
+static struct ccci_port *find_ipc_port_by_task_id(struct port_proxy *proxy_p, int task_id)
 {
-	int i;
-	struct ccci_port *port;
-
-	for (i = 0; i < md->port_number; i++) {
-		port = md->ports + i;
-		if (port->minor == task_id + CCCI_IPC_MINOR_BASE)
-			return port;
-	}
-	return NULL;
+	return port_proxy_get_port_by_minor(proxy_p, task_id + CCCI_IPC_MINOR_BASE);
 }
 
 int port_ipc_init(struct ccci_port *port)
@@ -266,6 +227,7 @@ int port_ipc_init(struct ccci_port *port)
 	init_waitqueue_head(&ipc_ctrl->md_rdy_wq);
 	ipc_ctrl->md_is_ready = 0;
 	ipc_ctrl->port = port;
+	port->skb_from_pool = 1;
 
 	return 0;
 }
@@ -294,7 +256,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 {
 	struct garbage_filter_header gf_header;
 	int ret, actual_count, count = 0;
-	struct ccci_request *req;
+	struct skb_buff *skb;
 	struct ccci_header *ccci_h;
 	struct ccci_ipc_ilm *ilm;
 	struct local_para *local_para_ptr;
@@ -303,7 +265,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 
 	memset(gf_port_list, 0, sizeof(gf_port_list));
 
-	port = find_ipc_port_by_task_id(md, AP_IPC_GF);
+	port = find_ipc_port_by_task_id(md->port_proxy_obj, AP_IPC_GF);
 	if (!port)
 		return -EINVAL;
 	if (port->modem->md_state != READY)
@@ -348,18 +310,16 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		actual_count += (sizeof(struct garbage_filter_header) + count * sizeof(struct garbage_filter_item));
 	else
 		actual_count += (sizeof(struct garbage_filter_header) + count * sizeof(int));
-	req = ccci_alloc_req(OUT, actual_count, 1, 1);
-	if (req) {
-		req->policy = RECYCLE;
-		req->ioc_override = 0;
+	skb = ccci_alloc_skb(actual_count, 1, 1);
+	if (skb) {
 		/* ccci header */
-		ccci_h = (struct ccci_header *)skb_put(req->skb, sizeof(struct ccci_header));
+		ccci_h = (struct ccci_header *)skb_put(skb, sizeof(struct ccci_header));
 		ccci_h->data[0] = 0;
 		ccci_h->data[1] = actual_count;
 		ccci_h->channel = port->tx_ch;
 		ccci_h->reserved = 0;
 		/* set ilm */
-		ilm = (struct ccci_ipc_ilm *)skb_put(req->skb, sizeof(struct ccci_ipc_ilm));
+		ilm = (struct ccci_ipc_ilm *)skb_put(skb, sizeof(struct ccci_ipc_ilm));
 		ilm->src_mod_id = AP_MOD_GF;
 		ilm->dest_mod_id = MD_MOD_IPCORE;
 		ilm->sap_id = 0;
@@ -370,7 +330,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		ilm->local_para_ptr = 1;	/* to let MD treat it as != NULL */
 		ilm->peer_buff_ptr = 0;
 		/* set ilm->local_para_ptr structure */
-		local_para_ptr = (struct local_para *)skb_put(req->skb, sizeof(struct local_para));
+		local_para_ptr = (struct local_para *)skb_put(skb, sizeof(struct local_para));
 		local_para_ptr->ref_count = 0;
 		local_para_ptr->_stub = 0;
 		if (reg)
@@ -380,29 +340,29 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		local_para_ptr->msg_len =
 		    garbage_length + sizeof(struct garbage_filter_header) + sizeof(struct local_para);
 		/* copy gf header */
-		memcpy(skb_put(req->skb, sizeof(struct garbage_filter_header)),
+		memcpy(skb_put(skb, sizeof(struct garbage_filter_header)),
 		       &gf_header, sizeof(struct garbage_filter_header));
 		/* copy gf items */
 		if (reg)
-			memcpy(skb_put(req->skb, garbage_length), gf_port_list, garbage_length);
+			memcpy(skb_put(skb, garbage_length), gf_port_list, garbage_length);
 		else
-			memcpy(skb_put(req->skb, garbage_length), gf_port_list_unreg, garbage_length);
+			memcpy(skb_put(skb, garbage_length), gf_port_list_unreg, garbage_length);
 		CCCI_NORMAL_LOG(md->index, IPC, "garbage filer data length %d/%d\n", garbage_length, actual_count);
-		ccci_mem_dump(md->index, req->skb->data, req->skb->len);
+		ccci_mem_dump(md->index, skb->data, skb->len);
 		/* send packet */
-		ret = port_ipc_write_check_id(port, req);
+		ret = port_ipc_write_check_id(port, skb);
 		if (ret < 0)
 			goto err_out;
 		else
 			ccci_h->reserved = ret;	/* Unity ID */
-		ret = ccci_port_send_request(port, req);
+		ret = ccci_port_send_skb(port, skb);
 		if (ret)
 			goto err_out;
 		else
 			return actual_count - sizeof(struct ccci_header);
 
  err_out:
-		ccci_free_req(req);
+		ccci_free_skb(skb);
 		return ret;
 	} else {
 		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
@@ -417,11 +377,11 @@ static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 	struct ccci_port *port;
 	struct ccci_header *ccci_h;
 	struct ccci_ipc_ilm *ilm;
-	struct ccci_request *req;
+	struct sk_buff *skb;
 
 	/* src module id check */
 	task_id = in_ilm->src_mod_id & (~AP_UNIFY_ID_FLAG);
-	port = find_ipc_port_by_task_id(md, task_id);
+	port = find_ipc_port_by_task_id(md->port_proxy_obj, task_id);
 	if (!port) {
 		CCCI_ERROR_LOG(-1, IPC, "invalid task ID %x\n", in_ilm->src_mod_id);
 		return -EINVAL;
@@ -431,29 +391,25 @@ static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 		return -EINVAL;
 	}
 
-	if (port->modem->md_state != READY)
-		return -ENODEV;
-
 	count = sizeof(struct ccci_ipc_ilm) + in_ilm->local_para_ptr->msg_len;
 	if (count > CCCI_MTU) {
-		CCCI_ERROR_LOG(port->modem->index, IPC, "reject packet(size=%d ), lager than MTU on %s\n", count,
+		CCCI_ERROR_LOG(port->md_id, IPC, "reject packet(size=%d ), lager than MTU on %s\n", count,
 			     port->name);
 		return -ENOMEM;
 	}
-	CCCI_DEBUG_LOG(port->modem->index, IPC, "write on %s for %d\n", port->name, in_ilm->local_para_ptr->msg_len);
+	CCCI_DEBUG_LOG(port->md_id, IPC, "write on %s for %d\n", port->name, in_ilm->local_para_ptr->msg_len);
 
 	actual_count = count + sizeof(struct ccci_header);
-	req = ccci_alloc_req(OUT, actual_count, 1, 1);
-	if (req) {
-		req->policy = RECYCLE;
+	skb = ccci_alloc_skb(actual_count, 1, 1);
+	if (skb) {
 		/* ccci header */
-		ccci_h = (struct ccci_header *)skb_put(req->skb, sizeof(struct ccci_header));
+		ccci_h = (struct ccci_header *)skb_put(skb, sizeof(struct ccci_header));
 		ccci_h->data[0] = 0;
 		ccci_h->data[1] = actual_count;
 		ccci_h->channel = port->tx_ch;
 		ccci_h->reserved = 0;
 		/* copy ilm */
-		ilm = (struct ccci_ipc_ilm *)skb_put(req->skb, sizeof(struct ccci_ipc_ilm));
+		ilm = (struct ccci_ipc_ilm *)skb_put(skb, sizeof(struct ccci_ipc_ilm));
 		ilm->src_mod_id = in_ilm->src_mod_id;
 		ilm->dest_mod_id = in_ilm->dest_mod_id;
 		ilm->sap_id = in_ilm->sap_id;
@@ -462,21 +418,21 @@ static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 		ilm->peer_buff_ptr = 0;
 		/* copy data */
 		count = in_ilm->local_para_ptr->msg_len;
-		memcpy(skb_put(req->skb, count), in_ilm->local_para_ptr, count);
+		memcpy(skb_put(skb, count), in_ilm->local_para_ptr, count);
 		/* send packet */
-		ret = port_ipc_write_check_id(port, req);
+		ret = port_ipc_write_check_id(port, skb);
 		if (ret < 0)
 			goto err_out;
 		else
 			ccci_h->reserved = ret;	/* Unity ID */
-		ret = ccci_port_send_request(port, req);
+		ret = port_proxy_send_skb_to_md(port->port_proxy, port, skb, 1);
 		if (ret)
 			goto err_out;
 		else
 			return actual_count - sizeof(struct ccci_header);
 
  err_out:
-		ccci_free_req(req);
+		ccci_free_skb(skb);
 		return ret;
 	} else {
 		return -EBUSY;
@@ -485,98 +441,64 @@ static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 
 int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm)
 {
-	struct ccci_modem *md = ccci_get_modem_by_id(md_id);
+	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
 
 	if (!md)
 		return -EINVAL;
 	return port_ipc_kernel_write(md, in_ilm);
 }
 
+#ifdef FEATURE_CONN_MD_EXP_EN
 static int ccci_ipc_send_ilm_to_md1(ipc_ilm_t *in_ilm)
 {
-	struct ccci_modem *md = ccci_get_modem_by_id(0);
+	struct ccci_modem *md = ccci_md_get_modem_by_id(0);
 
 	if (!md)
 		return -EINVAL;
 	return port_ipc_kernel_write(md, in_ilm);
 }
-
-static int port_ipc_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&port->rx_req_lock, flags);
-	CCCI_DEBUG_LOG(port->modem->index, IPC, "recv on %s, len=%d\n", port->name, port->rx_length);
-	if (port->rx_length < port->rx_length_th) {
-		port->flags &= ~PORT_F_RX_FULLED;
-		port->rx_length++;
-		list_del(&req->entry);	/* dequeue from queue's list */
-		list_add_tail(&req->entry, &port->rx_req_list);
-		spin_unlock_irqrestore(&port->rx_req_lock, flags);
-		wake_lock_timeout(&port->rx_wakelock, HZ);
-		wake_up_all(&port->rx_wq);
-		return 0;
-	}
-	port->flags |= PORT_F_RX_FULLED;
-	spin_unlock_irqrestore(&port->rx_req_lock, flags);
-	if (port->flags & PORT_F_ALLOW_DROP /* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
-		CCCI_NORMAL_LOG(port->modem->index, IPC, "port %s Rx full, drop packet\n", port->name);
-		goto drop;
-	} else {
-		return -CCCI_ERR_PORT_RX_FULL;
-	}
-
- drop:
-	/* drop this packet */
-	CCCI_NORMAL_LOG(port->modem->index, IPC, "drop on %s, len=%d\n", port->name, port->rx_length);
-	list_del(&req->entry);
-	req->policy = RECYCLE;
-	ccci_free_req(req);
-	return -CCCI_ERR_DROP_PACKET;
-}
-
+#endif
 static int port_ipc_kernel_thread(void *arg)
 {
 	struct ccci_port *port = arg;
-	struct ccci_request *req;
+	struct sk_buff *skb;
 	struct ccci_header *ccci_h;
 	unsigned long flags;
-	int ret;
+	int ret = 0;
 	struct ccci_ipc_ilm *ilm;
 	ipc_ilm_t out_ilm;
 	struct ipc_task_id_map *id_map;
 
-	CCCI_DEBUG_LOG(port->modem->index, IPC, "port %s's thread running\n", port->name);
+	CCCI_DEBUG_LOG(port->md_id, IPC, "port %s's thread running\n", port->name);
 
 	while (1) {
-		if (list_empty(&port->rx_req_list)) {
-			ret = wait_event_interruptible(port->rx_wq, !list_empty(&port->rx_req_list));
+		if (skb_queue_empty(&port->rx_skb_list)) {
+			ret = wait_event_interruptible(port->rx_wq, !skb_queue_empty(&port->rx_skb_list));
 			if (ret == -ERESTARTSYS)
 				continue;	/* FIXME */
 		}
 		if (kthread_should_stop())
 			break;
-		CCCI_DEBUG_LOG(port->modem->index, IPC, "read on %s\n", port->name);
+		CCCI_DEBUG_LOG(port->md_id, IPC, "read on %s\n", port->name);
 		/* 1. dequeue */
-		spin_lock_irqsave(&port->rx_req_lock, flags);
-		req = list_first_entry(&port->rx_req_list, struct ccci_request, entry);
-		list_del(&req->entry);
-		if (--(port->rx_length) == 0)
-			ccci_port_ask_more_request(port);
-		spin_unlock_irqrestore(&port->rx_req_lock, flags);
+		spin_lock_irqsave(&port->rx_skb_list.lock, flags);
+		skb = __skb_dequeue(&port->rx_skb_list);
+		if (port->rx_skb_list.qlen == 0)
+			port_proxy_ask_more_req_to_md(port->port_proxy, port);
+		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		/* 2. process the request */
 		/* ccci header */
-		ccci_h = (struct ccci_header *)req->skb->data;
-		skb_pull(req->skb, sizeof(struct ccci_header));
-		ilm = (struct ccci_ipc_ilm *)(req->skb->data);
+		ccci_h = (struct ccci_header *)skb->data;
+		skb_pull(skb, sizeof(struct ccci_header));
+		ilm = (struct ccci_ipc_ilm *)(skb->data);
 		/* copy ilm */
 		out_ilm.src_mod_id = ilm->src_mod_id;
 		out_ilm.dest_mod_id = ccci_h->reserved;
 		out_ilm.sap_id = ilm->sap_id;
 		out_ilm.msg_id = ilm->msg_id;
 		/* data pointer */
-		skb_pull(req->skb, sizeof(struct ccci_ipc_ilm));
-		out_ilm.local_para_ptr = (struct local_para *)(req->skb->data);
+		skb_pull(skb, sizeof(struct ccci_ipc_ilm));
+		out_ilm.local_para_ptr = (struct local_para *)(skb->data);
 		out_ilm.peer_buff_ptr = 0;
 		id_map = unify_AP_id_2_local_id(ccci_h->reserved);
 		if (id_map != NULL) {
@@ -597,16 +519,15 @@ static int port_ipc_kernel_thread(void *arg)
 #endif
 				break;
 			default:
-				CCCI_ERROR_LOG(port->modem->index, IPC, "recv unknown task ID %d\n", id_map->task_id);
+				CCCI_ERROR_LOG(port->md_id, IPC, "recv unknown task ID %d\n", id_map->task_id);
 				break;
 			}
 		} else {
-			CCCI_ERROR_LOG(port->modem->index, IPC, "recv unknown module ID %d\n", ccci_h->reserved);
+			CCCI_ERROR_LOG(port->md_id, IPC, "recv unknown module ID %d\n", ccci_h->reserved);
 		}
-		CCCI_DEBUG_LOG(port->modem->index, IPC, "read done on %s l=%d\n", port->name,
+		CCCI_DEBUG_LOG(port->md_id, IPC, "read done on %s l=%d\n", port->name,
 			     out_ilm.local_para_ptr->msg_len);
-		req->policy = RECYCLE;
-		ccci_free_req(req);
+		ccci_free_skb(skb);
 	}
 	return 0;
 }
@@ -615,7 +536,7 @@ static int port_ipc_kernel_init(struct ccci_port *port)
 {
 	struct ccci_ipc_ctrl *ipc_ctrl;
 
-	CCCI_DEBUG_LOG(port->modem->index, IPC, "IPC kernel port %s is initializing\n", port->name);
+	CCCI_DEBUG_LOG(port->md_id, IPC, "IPC kernel port %s is initializing\n", port->name);
 	kthread_run(port_ipc_kernel_thread, port, "%s", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 
@@ -633,8 +554,8 @@ static int port_ipc_kernel_init(struct ccci_port *port)
 
 struct ccci_port_ops ipc_kern_port_ops = {
 	.init = &port_ipc_kernel_init,
-	.recv_request = &port_ipc_kernel_recv_req,
-	.req_match = &port_ipc_req_match,
+	.recv_skb = &port_recv_skb,
+	.recv_match = &port_ipc_recv_match,
 	.md_state_notice = &port_ipc_md_state_notice,
 };
 
@@ -675,7 +596,7 @@ int send_new_time_to_md(struct ccci_modem *md, int tz)
 
 int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info)
 {
-	struct ccci_modem *md = ccci_get_modem_by_id(md_id);
+	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
 
 	if (!md || !emi_info)
 		return -EINVAL;

@@ -88,19 +88,13 @@
  * TP_STRUCT__entry.
  */
 TRACE_EVENT(ccci_bm,
-	    TP_PROTO(unsigned int req_bool_size, unsigned int bm_pool1_size, unsigned int bm_pool2_size,
-		     unsigned int bm_pool3_size), TP_ARGS(req_bool_size, bm_pool1_size, bm_pool2_size, bm_pool3_size),
-	    TP_STRUCT__entry(__field(unsigned int, req_bool_size)
-			     __field(unsigned int, bm_pool1_size)
+	    TP_PROTO(unsigned int bm_pool1_size, unsigned int bm_pool2_size), TP_ARGS(bm_pool1_size, bm_pool2_size),
+	    TP_STRUCT__entry(__field(unsigned int, bm_pool1_size)
 			     __field(unsigned int, bm_pool2_size)
-			     __field(unsigned int, bm_pool3_size)
 		),
-	    TP_fast_assign(__entry->req_bool_size = req_bool_size;
-			   __entry->bm_pool1_size = bm_pool1_size;
-			   __entry->bm_pool2_size = bm_pool2_size;
-			   __entry->bm_pool3_size = bm_pool3_size;),
-	    TP_printk("%u,%u,%u,%u", _entry->req_bool_size, __entry->bm_pool1_size, __entry->bm_pool2_size,
-		      __entry->bm_pool3_size)
+	    TP_fast_assign(__entry->bm_pool1_size = bm_pool1_size;
+			   __entry->bm_pool2_size = bm_pool2_size;),
+	    TP_printk("%u,%u", __entry->bm_pool1_size, __entry->bm_pool2_size)
 	);
 #endif
 

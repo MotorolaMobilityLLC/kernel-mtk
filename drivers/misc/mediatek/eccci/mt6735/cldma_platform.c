@@ -14,12 +14,26 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include "ccci_config.h"
+#include <linux/of.h>
+#include <linux/of_fdt.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif /*CONFIG_MTK_CLKMGR */
+#include <mt-plat/upmu_common.h>
+#include <mach/mt_pbm.h>
+#include <mt_spm_sleep.h>
+
+#include "ccci_config.h"
+#include "ccci_modem.h"
+#include "ccci_platform.h"
+#include "modem_cldma.h"
+#include "cldma_platform.h"
+#include "cldma_reg.h"
+#include "modem_reg_base.h"
 
 #ifdef FEATURE_RF_CLK_BUF
 #include <mt_clkbuf_ctl.h>
@@ -27,23 +41,6 @@
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
 #endif
-#include <mt-plat/upmu_common.h>
-#include <mach/mt_pbm.h>
-#include <mt_spm_sleep.h>
-#include "ccci_core.h"
-#include "ccci_platform.h"
-#include "modem_cldma.h"
-#include "cldma_platform.h"
-#include "cldma_reg.h"
-#include "modem_reg_base.h"
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_fdt.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-#include "ccci_core.h"
 
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
@@ -587,17 +584,18 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0) {
 				CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base, md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base, md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
 			} else {
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
+				unsigned int bk_addr = cldma_read32(md_ctrl->cldma_ap_ao_base,
+								CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index));
+
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base,
+					md_ctrl->txq[i].index, bk_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base,
+					md_ctrl->txq[i].index, bk_addr);
 			}
 		}
 		/* wait write done*/
@@ -632,7 +630,7 @@ void ccci_modem_sysresume(void)
 	struct ccci_modem *md;
 
 	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_sysresume\n");
-	md = ccci_get_modem_by_id(0);
+	md = ccci_md_get_modem_by_id(0);
 	if (md != NULL)
 		ccci_modem_restore_reg(md);
 }

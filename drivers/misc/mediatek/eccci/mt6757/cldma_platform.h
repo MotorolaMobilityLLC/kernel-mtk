@@ -17,6 +17,8 @@
 #include <linux/skbuff.h>
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
+#define AP_REMAP_ADDR_FOR_MD_CLDMA 0xA0000000
+
 /* Modem WDT */
 /* BASE_ADDR_MDRSTCTL+ */
 #define REG_MDRSTCTL_WDTCR            (0x0000) /*WDT_MODE*/
@@ -311,11 +313,6 @@ void md_cldma_hw_reset(struct ccci_modem *md);
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void md_cd_check_md_DCM(struct ccci_modem *md);
-
-#ifndef _MT_SPM_SLEEP_
-extern bool spm_is_md1_sleep(void);
-extern void spm_ap_mdsrc_req(u8 set);
-#endif
 
 extern unsigned long infra_ao_base;
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);

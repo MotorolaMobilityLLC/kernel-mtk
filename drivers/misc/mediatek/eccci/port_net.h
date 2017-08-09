@@ -10,14 +10,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
-#ifdef CONFIG_MTK_NET_CCMNI
-#define CCMNI_U
+#ifndef __PORT_NET_H__
+#define __PORT_NET_H__
 #include "ccmni.h"
 extern struct ccmni_dev_ops ccmni_ops;
-#endif
-
-#define ENABLE_GRO
 
 extern int mbim_start_xmit(struct sk_buff *skb, int ifid);
-
+#endif /*__PORT_NET_H__*/

@@ -16,7 +16,7 @@
 
 #include <mt-plat/sync_write.h>
 #include "ccci_config.h"
-#include "ccci_core.h"
+#include "ccci_modem.h"
 
 #define INVALID_ADDR (0xF0000000)	/* the last EMI bank, properly not used */
 #define KERN_EMI_BASE (0x40000000)	/* Bank4 */
@@ -51,6 +51,6 @@ void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded);
 void ccci_clear_dsp_region_protection(struct ccci_modem *md);
 int ccci_plat_common_init(void);
 int ccci_platform_init(struct ccci_modem *md);
-
+int Is_MD_EMI_voilation(void);
 #define MD_IN_DEBUG(md) ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0)
 #endif				/* _CCCCI_PLATFORM_H_ */

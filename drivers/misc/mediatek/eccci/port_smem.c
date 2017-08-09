@@ -1,5 +1,6 @@
 #include "port_smem.h"
-
+#include "port_proxy.h"
+#define TAG "smem"
 /* FIXME, global structures are indexed by SMEM_USER_ID */
 static struct ccci_smem_port md1_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c */
@@ -17,14 +18,14 @@ static enum hrtimer_restart smem_tx_timer_func(struct hrtimer *timer)
 {
 	struct tx_notify_task *notify_task = container_of(timer, struct tx_notify_task, notify_timer);
 
-	notify_task->port->modem->ops->send_ccb_tx_notify(notify_task->port->modem, notify_task->core_id);
+	port_proxy_send_ccb_tx_notify_to_md(notify_task->port->port_proxy, notify_task->core_id);
 	return HRTIMER_NORESTART;
 }
 
 int port_smem_init(struct ccci_port *port)
 {
 	/* FIXME, port->minor is indexed by SMEM_USER_ID */
-	switch (port->modem->index) {
+	switch (port->md_id) {
 	case MD_SYS1:
 		port->private_data = &(md1_ccci_smem_ports[port->minor]);
 		md1_ccci_smem_ports[port->minor].port = port;
@@ -37,6 +38,7 @@ int port_smem_init(struct ccci_port *port)
 		return -1;
 	}
 	port->minor += CCCI_SMEM_MINOR_BASE;
+
 	return 0;
 }
 
@@ -47,7 +49,7 @@ int port_smem_tx_nofity(struct ccci_port *port, unsigned int user_data)
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
 	if (!hrtimer_active(&(md1_tx_notify_tasks[smem_port->user_id].notify_timer))) {
-		port->modem->ops->send_ccb_tx_notify(port->modem, user_data);
+		port_proxy_send_ccb_tx_notify_to_md(port->port_proxy, user_data);
 		md1_tx_notify_tasks[smem_port->user_id].core_id = user_data;
 		md1_tx_notify_tasks[smem_port->user_id].port = port;
 		hrtimer_start(&(md1_tx_notify_tasks[smem_port->user_id].notify_timer),
@@ -81,33 +83,33 @@ int port_smem_rx_wakeup(struct ccci_port *port)
 	return 0;
 }
 
-int md_smem_port_cfg(struct ccci_modem *md)
+int port_smem_cfg(int md_id, struct ccci_smem_layout *smem_layout)
 {
 	int i;
 
-	switch (md->index) {
+	switch (md_id) {
 	case MD_SYS1:
 #ifdef FEATURE_DBM_SUPPORT
-		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = md->smem_layout.ccci_exp_smem_dbm_debug_vir +
+		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = smem_layout->ccci_exp_smem_dbm_debug_vir +
 								CCCI_SMEM_DBM_GUARD_SIZE;
 		md1_ccci_smem_ports[SMEM_USER_RAW_DBM].length = CCCI_SMEM_DBM_SIZE;
 #endif
 
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_vir = md->smem_layout.ccci_ccb_dhl_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_phy = md->smem_layout.ccci_ccb_dhl_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].length = md->smem_layout.ccci_ccb_dhl_size;
+		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_vir = smem_layout->ccci_ccb_dhl_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].addr_phy = smem_layout->ccci_ccb_dhl_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_CCB_DHL].length = smem_layout->ccci_ccb_dhl_size;
 
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_vir = md->smem_layout.ccci_raw_dhl_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_phy = md->smem_layout.ccci_raw_dhl_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].length = md->smem_layout.ccci_raw_dhl_size;
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_vir = smem_layout->ccci_raw_dhl_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].addr_phy = smem_layout->ccci_raw_dhl_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].length = smem_layout->ccci_raw_dhl_size;
 
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_vir = md->smem_layout.ccci_dt_netd_smem_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_phy = md->smem_layout.ccci_dt_netd_smem_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].length = md->smem_layout.ccci_dt_netd_smem_size;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_vir = smem_layout->ccci_dt_netd_smem_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].addr_phy = smem_layout->ccci_dt_netd_smem_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_NETD].length = smem_layout->ccci_dt_netd_smem_size;
 
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_vir = md->smem_layout.ccci_dt_usb_smem_base_vir;
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_phy = md->smem_layout.ccci_dt_usb_smem_base_phy;
-		md1_ccci_smem_ports[SMEM_USER_RAW_USB].length = md->smem_layout.ccci_dt_usb_smem_size;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_vir = smem_layout->ccci_dt_usb_smem_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_phy = smem_layout->ccci_dt_usb_smem_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_USB].length = smem_layout->ccci_dt_usb_smem_size;
 
 		for (i = 0; i < ARRAY_SIZE(md1_ccci_smem_ports); i++) {
 			md1_ccci_smem_ports[i].state = CCB_USER_INVALID;
@@ -122,7 +124,7 @@ int md_smem_port_cfg(struct ccci_modem *md)
 		break;
 	case MD_SYS3:
 #ifdef FEATURE_DBM_SUPPORT
-		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = md->smem_layout.ccci_exp_smem_dbm_debug_vir +
+		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].addr_vir = smem_layout->ccci_exp_smem_dbm_debug_vir +
 								CCCI_SMEM_DBM_GUARD_SIZE;
 		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].length = CCCI_SMEM_DBM_SIZE;
 #endif
@@ -156,4 +158,85 @@ void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o)
 		return NULL;
 	}
 	return addr;
+}
+
+long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
+{
+	long ret = 0;
+	int md_id = port->md_id;
+	unsigned int data;
+	struct ccci_smem_port *smem_port;
+
+	if (port->rx_ch == CCCI_SMEM_CH)
+		return ret = -EPERM;
+	switch (cmd) {
+	case CCCI_IOC_SMEM_BASE:
+		smem_port = (struct ccci_smem_port *)port->private_data;
+		ret = put_user((unsigned int)smem_port->addr_phy,
+			(unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_SMEM_LEN:
+		smem_port = (struct ccci_smem_port *)port->private_data;
+		ret = put_user((unsigned int)smem_port->length,
+			(unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_SMEM_TX_NOTIFY:
+		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_NORMAL_LOG(md_id, TAG, "smem tx notify fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else
+			ret = port_smem_tx_nofity(port, data);
+		break;
+	case CCCI_IOC_SMEM_RX_POLL:
+		ret = port_smem_rx_poll(port);
+		break;
+	case CCCI_IOC_SMEM_SET_STATE:
+		smem_port = (struct ccci_smem_port *)port->private_data;
+		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_NORMAL_LOG(md_id, TAG, "smem set state fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else
+			smem_port->state = data;
+		break;
+	case CCCI_IOC_SMEM_GET_STATE:
+		smem_port = (struct ccci_smem_port *)port->private_data;
+		ret = put_user((unsigned int)smem_port->state,
+				(unsigned int __user *)arg);
+		break;
+	default:
+		ret = -ENOTTY;
+	}
+
+	return ret;
+}
+int port_smem_mmap(struct ccci_port *port, struct vm_area_struct *vma)
+{
+	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+	int pfn, len, ret;
+	int md_id = port->md_id;
+
+	CCCI_NORMAL_LOG(md_id, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
+			(unsigned long long)smem_port->addr_phy, smem_port->length, vma->vm_end - vma->vm_start);
+	if ((vma->vm_end - vma->vm_start) > smem_port->length) {
+		CCCI_ERROR_LOG(md_id, CHAR,
+			     "invalid mm size request from %s\n", port->name);
+		return -EINVAL;
+	}
+
+	len =
+	    (vma->vm_end - vma->vm_start) <
+	    smem_port->length ? vma->vm_end - vma->vm_start : smem_port->length;
+	pfn = smem_port->addr_phy;
+	pfn >>= PAGE_SHIFT;
+	/* ensure that memory does not get swapped to disk */
+	vma->vm_flags |= VM_IO;
+	/* ensure non-cacheable */
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+	ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
+	if (ret) {
+		CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%x, 0x%llx -> 0x%llx\n", ret, pfn,
+			(unsigned long long)smem_port->addr_phy, (unsigned long long)vma->vm_start);
+		return -EAGAIN;
+	}
+	return 0;
 }

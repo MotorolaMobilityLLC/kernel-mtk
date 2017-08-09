@@ -17,6 +17,7 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include "ccci_ringbuf.h"
+#include "ccci_core.h"
 #include "ccci_debug.h"
 
 #define TAG "rbf"

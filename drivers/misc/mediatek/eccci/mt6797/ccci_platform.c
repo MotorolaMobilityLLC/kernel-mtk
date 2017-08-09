@@ -23,8 +23,7 @@
 #endif
 #include <mt-plat/mt_ccci_common.h>
 #include "ccci_config.h"
-#include "ccci_core.h"
-#include "ccci_debug.h"
+#include "ccci_modem.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
 
@@ -111,13 +110,13 @@ int Is_MD_EMI_voilation(void)
 /* #define MPU_REGION_ID_MD3_ROM       17
  * note that D3 was set to NO_PROTECTION, but the mpu indicate it be SEC_R_NSEC_R*/
 #define MPU_ACCESS_PERMISSON_MD3_ROM_ATTR    SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R);
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
 /* #define MPU_REGION_ID_MD3_RW        18 */
 #define MPU_ACCESS_PERMISSON_MD3_RW_ATTR     SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R);
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
 /* #define MPU_REGION_ID_MD3_SMEM      7 */
 #define MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION);
+	NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION)
 /* #define MPU_REGION_ID_MD1MD3_SMEM   8, AP need to clear smem, so set it to NO_PROTECTION*/
 #define MPU_ACCESS_PERMISSON_MD1MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
 	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION)
@@ -205,8 +204,9 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int rom_mem_mpu_id, rw_mem_mpu_id;
+
 	if (modem_run_env_ready(md->index)) { /* LK has did it, bypass this step */
-		CCCI_NORMAL_LOG(md->index, TAG, "Ignore Clear MPU for md%d\n", md->index+1);
+		CCCI_BOOTUP_LOG(md->index, TAG, "Ignore Clear MPU for md%d\n", md->index+1);
 		return;
 	}
 	switch (md->index) {
@@ -219,17 +219,17 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 		rw_mem_mpu_id = MPU_REGION_ID_MD3_RW;
 		break;
 	default:
-		CCCI_NORMAL_LOG(md->index, TAG, "[error]MD ID invalid when clear MPU protect\n");
+		CCCI_BOOTUP_LOG(md->index, TAG, "[error]MD ID invalid when clear MPU protect\n");
 		return;
 	}
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect MD ROM region<%d>\n", rom_mem_mpu_id);
+	CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect MD ROM region<%d>\n", rom_mem_mpu_id);
 	emi_mpu_set_region_protection(0,	/*START_ADDR */
 				      0,	/*END_ADDR */
 				      rom_mem_mpu_id,	/*region */
 				      MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect MD R/W region<%d>\n", rw_mem_mpu_id);
+	CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect MD R/W region<%d>\n", rw_mem_mpu_id);
 	emi_mpu_set_region_protection(0,	/*START_ADDR */
 				      0,	/*END_ADDR */
 				      rw_mem_mpu_id,	/*region */
@@ -239,21 +239,21 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 /* - Clear HW-related region protection -*/
 /*---------------------------------------*/
 	if (md->index == MD_SYS1) {
-		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n",
 						MPU_REGION_ID_MD1_MCURW_HWRW);
 		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 						0,                       /*END_ADDR*/
 						MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
 						MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n",
 						MPU_REGION_ID_MD1_MCURW_HWRO);
 	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 					0,                       /*END_ADDR*/
 					MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
 					MPU_ACCESS_PERMISSON_CLEAR);
 
-		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n",
 						MPU_REGION_ID_MD1_MCURO_HWRW);
 		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 						0,                       /*END_ADDR*/
@@ -877,7 +877,7 @@ static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE
 			reserve = 0;	/* 0 */
 		else if (level == LOW_BATTERY_LEVEL_1 || level == LOW_BATTERY_LEVEL_2)
 			reserve = (1 << 6);	/* 64 */
-		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
 			CCCI_ERROR_LOG(md->index, TAG, "send low battery notification fail, ret=%d\n", ret);
 		break;
@@ -886,7 +886,7 @@ static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE
 			reserve = 0;	/* 0 */
 		else if (level == BATTERY_PERCENT_LEVEL_1)
 			reserve = (1 << 6);	/* 64 */
-		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
 			CCCI_ERROR_LOG(md->index, TAG, "send battery percent notification fail, ret=%d\n", ret);
 		break;
@@ -903,7 +903,7 @@ static void ccci_md_low_battery_cb(LOW_BATTERY_LEVEL level)
 	struct ccci_modem *md;
 
 	for (idx = 0; idx < MAX_MD_NUM; idx++) {
-		md = ccci_get_modem_by_id(idx);
+		md = ccci_md_get_modem_by_id(idx);
 		if (md != NULL)
 			ccci_md_low_power_notify(md, LOW_BATTERY, level);
 	}
@@ -915,7 +915,7 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 	struct ccci_modem *md;
 
 	for (idx = 0; idx < MAX_MD_NUM; idx++) {
-		md = ccci_get_modem_by_id(idx);
+		md = ccci_md_get_modem_by_id(idx);
 		if (md != NULL)
 			ccci_md_low_power_notify(md, BATTERY_PERCENT, level);
 	}

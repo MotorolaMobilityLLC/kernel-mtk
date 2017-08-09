@@ -38,10 +38,4 @@ struct ccci_smem_port {
 	struct ccci_port *port;
 	wait_queue_head_t rx_wq;
 };
-
-int port_smem_init(struct ccci_port *port);
-int port_smem_tx_nofity(struct ccci_port *port, unsigned int user_data);
-int port_smem_rx_poll(struct ccci_port *port);
-int port_smem_rx_wakeup(struct ccci_port *port);
-
 #endif

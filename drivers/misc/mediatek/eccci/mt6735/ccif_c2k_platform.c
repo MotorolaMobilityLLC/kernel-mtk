@@ -14,8 +14,8 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <mach/mt_spm_sleep.h>
-
-#include "ccci_core.h"
+#include "ccci_config.h"
+#include "ccci_modem.h"
 #include "ccci_platform.h"
 #include "ccif_c2k_platform.h"
 #include "modem_ccif.h"

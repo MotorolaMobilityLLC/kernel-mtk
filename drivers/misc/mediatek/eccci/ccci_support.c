@@ -19,21 +19,10 @@
 #include <linux/of_fdt.h>
 #include <mt-plat/mt_ccci_common.h>
 #include "ccci_config.h"
-#include "port_kernel.h"
 #include "ccci_support.h"
+#include "port_proxy.h"
 
 static struct ccci_setting ccci_cfg_setting;
-
-void ccci_reload_md_type(struct ccci_modem *md, int type)
-{
-	if (type != md->config.load_type) {
-		if (set_modem_support_cap(md->index, type) == 0) {
-			md->config.load_type = type;
-			md->config.setting |= MD_SETTING_RELOAD;
-		}
-	}
-}
-
 struct ccci_setting *ccci_get_common_setting(int md_id)
 {
 #ifdef CONFIG_EVDO_DT_SUPPORT
@@ -47,7 +36,7 @@ int ccci_store_sim_switch_mode(struct ccci_modem *md, int simmode)
 {
 	if (ccci_cfg_setting.sim_mode != simmode) {
 		ccci_cfg_setting.sim_mode = simmode;
-		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_CFG_UPDATE, 1);
+		port_proxy_send_msg_to_user(md->port_proxy_obj, CCCI_MONITOR_CH, CCCI_MD_MSG_CFG_UPDATE, 1);
 	} else {
 		CCCI_NORMAL_LOG(md->index, CORE, "same sim mode as last time(0x%x)\n", simmode);
 	}

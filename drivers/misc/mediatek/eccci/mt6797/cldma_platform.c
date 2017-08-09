@@ -14,37 +14,37 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include "ccci_config.h"
+#include <linux/of.h>
+#include <linux/of_fdt.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
-#endif				/*CONFIG_MTK_CLKMGR */
+#endif/*CONFIG_MTK_CLKMGR */
+#include <mach/mt_pbm.h>
+
+#ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
+#include <mach/mt6605.h>
+#endif
+
 
 #ifdef FEATURE_RF_CLK_BUF
 #include <mt_clkbuf_ctl.h>
 #endif
-#ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
-#include <mach/mt6605.h>
-#endif
 #include <mt-plat/upmu_common.h>
 #include <mach/mt_pbm.h>
 #include <mt_spm_sleep.h>
+#include "ccci_config.h"
+
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
-#include <mach/mt_pbm.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_fdt.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-#include "ccci_core.h"
 
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
@@ -337,8 +337,6 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_clk_ctl13 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR13, MD_Clkctrl_DUMP_LEN13);
 	md_reg->md_clk_ctl14 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR14, MD_Clkctrl_DUMP_LEN14);
 	md_reg->md_clk_ctl15 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR15, MD_Clkctrl_DUMP_LEN15);
-	md_reg->md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 4);
-	md_reg->md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 4);
 
 	md_ctrl->md_pll_base = md_reg;
 
@@ -360,20 +358,23 @@ void md_cd_lock_modem_clock_src(int locked)
 
 void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 {
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
-
-	md_cd_lock_modem_clock_src(1);
+	/*dump in AP infra side*/
 	/*To avoid AP/MD interface delay, dump 3 times, and buy-in the 3rd dump value.*/
+	void __iomem *md_boot_stats0, *md_boot_stats1;
 
-	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
-	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
-	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0:0x%X\n", cldma_read32(md_reg->md_boot_stats0, 0));
+	md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 0x4);
+	md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 0x4);
 
-	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
-	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
-	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
-	md_cd_lock_modem_clock_src(0);
+	cldma_read32(md_boot_stats0, 0);	/* dummy read */
+	cldma_read32(md_boot_stats0, 0);	/* dummy read */
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0:0x%X\n", cldma_read32(md_boot_stats0, 0));
+
+	cldma_read32(md_boot_stats1, 0);	/* dummy read */
+	cldma_read32(md_boot_stats1, 0);	/* dummy read */
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_boot_stats1, 0));
+
+	iounmap(md_boot_stats0);
+	iounmap(md_boot_stats1);
 }
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
@@ -386,7 +387,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 #endif
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
-	if (md->boot_stage == MD_BOOT_STAGE_0)
+	if (md->md_state == BOOT_WAITING_FOR_HS1)
 		return;
 
 	md_cd_lock_modem_clock_src(1);
@@ -1067,18 +1068,22 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0) {
-				CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
+				if (i != 7) /* Queue 7 not used currently */
+					CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base,
+					md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base,
+					md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
 			} else {
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
+				unsigned int bk_addr = cldma_read32(md_ctrl->cldma_ap_ao_base,
+								CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index));
+
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base,
+					md_ctrl->txq[i].index, bk_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base,
+					md_ctrl->txq[i].index, bk_addr);
 			}
 		}
 		/* wait write done*/
@@ -1117,7 +1122,7 @@ void ccci_modem_sysresume(void)
 	struct ccci_modem *md;
 
 	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_sysresume\n");
-	md = ccci_get_modem_by_id(0);
+	md = ccci_md_get_modem_by_id(0);
 	if (md != NULL)
 		ccci_modem_restore_reg(md);
 }

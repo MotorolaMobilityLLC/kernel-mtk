@@ -11,101 +11,10 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __PORT_KERNEL_H__
-#define __PORT_KERNEL_H__
+#ifndef __PORT_RPC_H__
+#define __PORT_RPC_H__
 
 #include <ccci_core.h>
-
-#define CCCI_AED_DUMP_EX_MEM		(1<<0)
-#define CCCI_AED_DUMP_MD_IMG_MEM	(1<<1)
-#define CCCI_AED_DUMP_CCIF_REG		(1<<2)
-#define CCCI_AED_DUMP_EX_PKT		(1<<3)
-
-#ifdef MD_UMOLY_EE_SUPPORT
-#define EE_BUF_LEN_UMOLY		(0x700)
-#define AED_STR_LEN		(2048)
-#define EE_BUF_LEN		(256)
-#else
-#define EE_BUF_LEN		(256)
-#define AED_STR_LEN		(512)
-#endif
-
-#define CCCI_EXREC_OFFSET_OFFENDER 288
-
-extern u64 last_rx_done, last_q0_rx_isr, last_cldma_isr;
-
-enum {
-	MD_EX_TYPE_INVALID = 0,
-	MD_EX_TYPE_UNDEF = 1,
-	MD_EX_TYPE_SWI = 2,
-	MD_EX_TYPE_PREF_ABT = 3,
-	MD_EX_TYPE_DATA_ABT = 4,
-	MD_EX_TYPE_ASSERT = 5,
-	MD_EX_TYPE_FATALERR_TASK = 6,
-	MD_EX_TYPE_FATALERR_BUF = 7,
-	MD_EX_TYPE_LOCKUP = 8,
-	MD_EX_TYPE_ASSERT_DUMP = 9,
-	MD_EX_TYPE_ASSERT_FAIL = 10,
-	DSP_EX_TYPE_ASSERT = 11,
-	DSP_EX_TYPE_EXCEPTION = 12,
-	DSP_EX_FATAL_ERROR = 13,
-
-	/*cross core trigger exception, only md3 will trigger this exception*/
-	CC_MD1_EXCEPTION = 15,
-
-	NUM_EXCEPTION,
-	MD_EX_TYPE_C2K_ERROR = 0x25,
-	MD_EX_TYPE_EMI_CHECK = 99,
-	MD_EX_C2K_FATAL_ERROR = 0x3000,
-};
-
-#ifdef MD_UMOLY_EE_SUPPORT
-enum {
-	MD_EX_DUMP_INVALID = 0,
-	MD_EX_DUMP_ASSERT = 1,
-	MD_EX_DUMP_3P_EX = 2,
-	MD_EX_DUMP_2P_EX = 3,
-
-	MD_EX_DUMP_EMI_CHECK = MD_EX_TYPE_EMI_CHECK,
-
-	/*MD_EX_C2K_FATAL_ERROR = 0x3000,*/
-	MD_EX_DUMP_UNKNOWN,
-};
-#endif
-
-enum {
-	MD_EE_FLOW_START = 0,
-	MD_EE_DUMP_ON_GOING,
-	MD_STATE_UPDATE,
-	MD_EE_MSG_GET,
-	MD_EE_TIME_OUT_SET,
-	MD_EE_OK_MSG_GET,
-	MD_EE_FOUND_BY_ISR,	/* not using */
-	MD_EE_FOUND_BY_TX,	/* not using */
-	MD_EE_PENDING_TOO_LONG,
-	MD_EE_SWINT_GET,
-	MD_EE_WDT_GET,
-	MD_EE_PASS_MSG_GET,
-
-	MD_EE_INFO_OFFSET = 20,	/* not using */
-	MD_EE_EXCP_OCCUR = 20,	/* not using */
-	MD_EE_AP_MASK_I_BIT_TOO_LONG = 21,	/* not using */
-	MD_EE_TIMER1_DUMP_ON_GOING,
-	MD_EE_TIMER2_DUMP_ON_GOING,
-};
-
-enum {
-	MD_EE_CASE_NORMAL = 0,
-	MD_EE_CASE_ONLY_EX,
-	MD_EE_CASE_ONLY_EX_OK,
-	MD_EE_CASE_TX_TRG,	/* not using */
-	MD_EE_CASE_ISR_TRG,	/* not using */
-	MD_EE_CASE_NO_RESPONSE,
-	MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG,	/* not using */
-	MD_EE_CASE_ONLY_SWINT,
-	MD_EE_CASE_SWINT_MISSING,
-	MD_EE_CASE_WDT,
-};
 
 typedef enum {
 	IPC_RPC_CPSVC_SECURE_ALGO_OP = 0x2001,
@@ -300,24 +209,6 @@ struct gpio_item {
 	char gpio_name_from_dts[64];
 };
 
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
-#define SWTP_EINT_PIN_PLUG_IN        (1)
-#define SWTP_EINT_PIN_PLUG_OUT       (0)
-struct swtp_t {
-	unsigned int	md_id;
-	unsigned int	irq;
-	unsigned int	gpiopin;
-	unsigned int	setdebounce;
-	unsigned int	eint_type;
-	unsigned int	curr_mode;
-	unsigned int	retry_cnt;
-	spinlock_t		spinlock;
-	struct delayed_work delayed_work;
-};
-#endif
-int port_kernel_init(struct ccci_port *port);
-int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req);
-
 #if defined(FEATURE_GET_MD_ADC_NUM)
 extern int IMM_get_adc_channel_num(char *channel_name, int len);
 #endif
@@ -341,8 +232,7 @@ extern int get_dram_info(int *clk, int *type);
 extern int get_eint_attribute(char *name, unsigned int name_len, unsigned int type, char *result, unsigned int *len);
 #endif
 #endif
-extern void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded);
 extern bool is_clk_buf_from_pmic(void);
 extern void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
 extern void clk_buf_save_afc_val(unsigned int afcdac);
-#endif				/* __PORT_KERNEL_H__ */
+#endif	/* __PORT_RPC_H__ */

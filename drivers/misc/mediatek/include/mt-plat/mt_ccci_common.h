@@ -406,7 +406,10 @@ enum{
 #define CCCI_IOC_SET_EFUN               _IOW(CCCI_IOC_MAGIC, 55, unsigned int) /* RILD */
 #define CCCI_IOC_MDLOG_DUMP_DONE		_IO(CCCI_IOC_MAGIC, 56) /*mdlogger*/
 #define CCCI_IOC_GET_OTHER_MD_STATE		_IOR(CCCI_IOC_MAGIC, 57, unsigned int) /* mdlogger */
-#define CCCI_IOC_GET_AT_CH_NUM			_IOR(CCCI_IOC_MAGIC, 58, unsigned int) /* RILD */
+#define CCCI_IOC_SET_MD_BOOT_MODE       _IOW(CCCI_IOC_MAGIC, 58, unsigned int) /* META */
+#define CCCI_IOC_GET_MD_BOOT_MODE       _IOR(CCCI_IOC_MAGIC, 59, unsigned int) /* md_init */
+
+#define CCCI_IOC_GET_AT_CH_NUM			_IOR(CCCI_IOC_MAGIC, 60, unsigned int) /* RILD */
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
@@ -585,27 +588,27 @@ typedef enum {
 	CCCI_CCMNI4_RX_ACK              = 70,
 	CCCI_CCMNI4_TX                  = 71,
 	CCCI_CCMNI4_TX_ACK              = 72,
-	CCCI_CCMNI4_DLACK_RX            = 73, /*__CCMNI_ACK_FAST_PATH__*/
+	CCCI_CCMNI4_DLACK_RX            = 73,
 	CCCI_CCMNI5_RX                  = 74,
 	CCCI_CCMNI5_RX_ACK              = 75,
 	CCCI_CCMNI5_TX                  = 76,
 	CCCI_CCMNI5_TX_ACK              = 77,
-	CCCI_CCMNI5_DLACK_RX            = 78, /*__CCMNI_ACK_FAST_PATH__*/
+	CCCI_CCMNI5_DLACK_RX            = 78,
 	CCCI_CCMNI6_RX                  = 79,
 	CCCI_CCMNI6_RX_ACK              = 80,
 	CCCI_CCMNI6_TX                  = 81,
 	CCCI_CCMNI6_TX_ACK              = 82,
-	CCCI_CCMNI6_DLACK_RX            = 83, /*__CCMNI_ACK_FAST_PATH__*/
+	CCCI_CCMNI6_DLACK_RX            = 83,
 	CCCI_CCMNI7_RX                  = 84,
 	CCCI_CCMNI7_RX_ACK              = 85,
 	CCCI_CCMNI7_TX                  = 86,
 	CCCI_CCMNI7_TX_ACK              = 87,
-	CCCI_CCMNI7_DLACK_RX            = 88, /*__CCMNI_ACK_FAST_PATH__*/
+	CCCI_CCMNI7_DLACK_RX            = 88,
 	CCCI_CCMNI8_RX                  = 89,
 	CCCI_CCMNI8_RX_ACK              = 90,
 	CCCI_CCMNI8_TX                  = 91,
 	CCCI_CCMNI8_TX_ACK              = 92,
-	CCCI_CCMNI8_DLACK_RX            = 93, /*__CCMNI_ACK_FAST_P*/
+	CCCI_CCMNI8_DLACK_RX            = 93,
 	CCCI_MDL_MONITOR_DL             = 94,
 	CCCI_MDL_MONITOR_UL             = 95,
 	CCCI_CCMNILAN_RX                = 96,
@@ -613,8 +616,53 @@ typedef enum {
 	CCCI_CCMNILAN_TX                = 98,
 	CCCI_CCMNILAN_TX_ACK            = 99,
 	CCCI_CCMNILAN_DLACK_RX          = 100,
-	CCCI_IMSEM_UL = 101,
-	CCCI_IMSEM_DL = 102,
+	CCCI_IMSEM_UL                   = 101,
+	CCCI_IMSEM_DL                   = 102,
+	CCCI_CCMNI10_RX                 = 103,
+	CCCI_CCMNI10_RX_ACK             = 104,
+	CCCI_CCMNI10_TX                 = 105,
+	CCCI_CCMNI10_TX_ACK             = 106,
+	CCCI_CCMNI10_DLACK_RX           = 107,
+	CCCI_CCMNI11_RX                 = 108,
+	CCCI_CCMNI11_RX_ACK             = 109,
+	CCCI_CCMNI11_TX                 = 110,
+	CCCI_CCMNI11_TX_ACK             = 111,
+	CCCI_CCMNI11_DLACK_RX           = 112,
+	CCCI_CCMNI12_RX                 = 113,
+	CCCI_CCMNI12_RX_ACK             = 114,
+	CCCI_CCMNI12_TX                 = 115,
+	CCCI_CCMNI12_TX_ACK             = 116,
+	CCCI_CCMNI12_DLACK_RX           = 117,
+	CCCI_CCMNI13_RX                 = 118,
+	CCCI_CCMNI13_RX_ACK             = 119,
+	CCCI_CCMNI13_TX                 = 120,
+	CCCI_CCMNI13_TX_ACK             = 121,
+	CCCI_CCMNI13_DLACK_RX           = 122,
+	CCCI_CCMNI14_RX                 = 123,
+	CCCI_CCMNI14_RX_ACK             = 124,
+	CCCI_CCMNI14_TX                 = 125,
+	CCCI_CCMNI14_TX_ACK             = 126,
+	CCCI_CCMNI14_DLACK_RX           = 127,
+	CCCI_CCMNI15_RX                 = 128,
+	CCCI_CCMNI15_RX_ACK             = 129,
+	CCCI_CCMNI15_TX                 = 130,
+	CCCI_CCMNI15_TX_ACK             = 131,
+	CCCI_CCMNI15_DLACK_RX           = 132,
+	CCCI_CCMNI16_RX                 = 133,
+	CCCI_CCMNI16_RX_ACK             = 134,
+	CCCI_CCMNI16_TX                 = 135,
+	CCCI_CCMNI16_TX_ACK             = 136,
+	CCCI_CCMNI16_DLACK_RX           = 137,
+	CCCI_CCMNI17_RX                 = 138,
+	CCCI_CCMNI17_RX_ACK             = 139,
+	CCCI_CCMNI17_TX                 = 140,
+	CCCI_CCMNI17_TX_ACK             = 141,
+	CCCI_CCMNI17_DLACK_RX           = 142,
+	CCCI_CCMNI18_RX                 = 143,
+	CCCI_CCMNI18_RX_ACK             = 144,
+	CCCI_CCMNI18_TX                 = 145,
+	CCCI_CCMNI18_TX_ACK             = 146,
+	CCCI_CCMNI18_DLACK_RX           = 147,
 
 	/*5 chs for C2K only*/
 	CCCI_C2K_PPP_DATA,		/* data ch for c2k */
@@ -633,6 +681,7 @@ typedef enum {
 	CCCI_DUMMY_CH,
 	CCCI_SMEM_CH,
 	CCCI_MAX_CH_NUM, /* RX channel ID should NOT be >= this!! */
+	CCCI_OVER_MAX_CH,
 
 	CCCI_MONITOR_CH_ID = 0xf0000000, /* for backward compatible */
 	CCCI_FORCE_ASSERT_CH = 20090215,
@@ -666,6 +715,7 @@ enum c2k_channel {
 	AT8_CH_C2K = 23,
 
 	C2K_MAX_CH_NUM,
+	C2K_OVER_MAX_CH,
 
 	LOOPBACK_C2K = 255,
 	MD2AP_LOOPBACK_C2K = 256,
@@ -695,12 +745,12 @@ typedef enum {
 
 
 /* export to other kernel modules, better not let other module include ECCCI header directly (except IPC...) */
-enum {
+typedef enum {
 	MD_STATE_INVALID = 0,
 	MD_STATE_BOOTING = 1,
 	MD_STATE_READY = 2,
 	MD_STATE_EXCEPTION = 3
-}; /* align to MD_BOOT_STAGE */
+} MD_STATE_FOR_USER;
 
 enum {
 	ID_GET_MD_WAKEUP_SRC = 0,   /* for SPM */
@@ -723,7 +773,8 @@ enum {
 	ID_PMIC_INTR = 17, /* for PMIC to notify MD buck over current, called from kernel thread context */
 	ID_STOP_MD = 18,
 	ID_START_MD = 19,
-	ID_MD_MPU_ASSERT = 20,
+	ID_UPDATE_MD_BOOT_MODE = 20,
+	ID_MD_MPU_ASSERT = 21,
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 
@@ -815,17 +866,17 @@ enum {
 typedef enum {
 	INVALID = 0, /* no traffic */
 	GATED, /* broadcast by modem driver, no traffic */
-	BOOTING, /* broadcast by modem driver */
+	BOOT_WAITING_FOR_HS1, /* broadcast by modem driver */
+	BOOT_WAITING_FOR_HS2, /* broadcast by modem driver */
 	READY, /* broadcast by port_kernel */
 	EXCEPTION, /* broadcast by port_kernel */
 	RESET, /* broadcast by modem driver, no traffic */
+	WAITING_TO_STOP,
 
 	RX_IRQ, /* broadcast by modem driver, illegal for md->md_state, only for NAPI! */
 	TX_IRQ, /* broadcast by modem driver, illegal for md->md_state, only for network! */
 	TX_FULL, /* broadcast by modem driver, illegal for md->md_state, only for network! */
-	BOOT_FAIL, /* broadcast by port_kernel, illegal for md->md_state */
 } MD_STATE; /* for CCCI internal */
-
 
 /* ================================================================================= */
 /* Image type and header defination part */

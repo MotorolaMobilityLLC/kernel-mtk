@@ -13,7 +13,6 @@
 
 #ifndef __CCCI_RINGBUF_H__
 #define __CCCI_RINGBUF_H__
-#include "ccci_core.h"
 typedef enum {
 	CCCI_RINGBUF_OK = 0,
 	CCCI_RINGBUF_PARAM_ERR,

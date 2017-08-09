@@ -24,7 +24,7 @@
 #include <mt-plat/mt_ccci_common.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "ccci_config.h"
-#include "ccci_core.h"
+#include "ccci_modem.h"
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
@@ -46,6 +46,10 @@ static int is_4g_memory_size_support(void)
 #endif
 }
 
+int Is_MD_EMI_voilation(void)
+{
+	return 0;
+}
 /* =================================================== */
 /* MPU Region defination */
 /* =================================================== */
@@ -676,7 +680,7 @@ static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE
 			reserve = 0;	/* 0 */
 		else if (level == LOW_BATTERY_LEVEL_1 || level == LOW_BATTERY_LEVEL_2)
 			reserve = (1 << 6);	/* 64 */
-		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
 			CCCI_ERROR_LOG(md->index, TAG, "send low battery notification fail, ret=%d\n", ret);
 		break;
@@ -685,7 +689,7 @@ static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE
 			reserve = 0;	/* 0 */
 		else if (level == BATTERY_PERCENT_LEVEL_1)
 			reserve = (1 << 6);	/* 64 */
-		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
 			CCCI_ERROR_LOG(md->index, TAG, "send battery percent notification fail, ret=%d\n", ret);
 		break;
@@ -702,7 +706,7 @@ static void ccci_md_low_battery_cb(LOW_BATTERY_LEVEL level)
 	struct ccci_modem *md;
 
 	for (idx = 0; idx < MAX_MD_NUM; idx++) {
-		md = ccci_get_modem_by_id(idx);
+		md = ccci_md_get_modem_by_id(idx);
 		if (md != NULL)
 			ccci_md_low_power_notify(md, LOW_BATTERY, level);
 	}
@@ -714,7 +718,7 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 	struct ccci_modem *md;
 
 	for (idx = 0; idx < MAX_MD_NUM; idx++) {
-		md = ccci_get_modem_by_id(idx);
+		md = ccci_md_get_modem_by_id(idx);
 		if (md != NULL)
 			ccci_md_low_power_notify(md, BATTERY_PERCENT, level);
 	}

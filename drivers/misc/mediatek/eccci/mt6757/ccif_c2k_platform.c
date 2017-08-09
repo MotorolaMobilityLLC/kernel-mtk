@@ -16,7 +16,8 @@
 #include <mt_spm_sleep.h>
 #include <mach/mt_pbm.h>
 
-#include "ccci_core.h"
+#include "ccci_config.h"
+#include "ccci_modem.h"
 #include "ccci_platform.h"
 #include "ccif_c2k_platform.h"
 #include "modem_ccif.h"
@@ -95,10 +96,8 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 	switch (dev_cfg->index) {
 	case 1:		/*MD_SYS2 */
 #ifdef CONFIG_OF
-		of_property_read_u32(dev_ptr->dev.of_node, "ccif,major",
-				     &dev_cfg->major);
-		of_property_read_u32(dev_ptr->dev.of_node, "ccif,minor_base",
-				     &dev_cfg->minor_base);
+		dev_cfg->major = 0;
+		dev_cfg->minor_base = 0;
 		of_property_read_u32(dev_ptr->dev.of_node, "ccif,capability",
 				     &dev_cfg->capability);
 
@@ -166,14 +165,14 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		    of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 		hw_info->infra_ao_base = (unsigned long)of_iomap(node, 0);
 
-		/*C2K related register move to c2k_misc in mt6757*/
+		/*C2K related register move to c2k_misc in mt6797*/
 		node = of_find_compatible_node(NULL, NULL, "mediatek,c2kmisc");
 		hw_info->c2k_misc = (unsigned long)of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 		hw_info->sleep_base = (unsigned long)of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-toprgu");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-toprgu");
 		hw_info->toprgu_base = (unsigned long)of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");

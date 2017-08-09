@@ -21,6 +21,7 @@
 #include "ccci_config.h"
 #include "ccci_ringbuf.h"
 #include "ccci_core.h"
+#include "ccci_modem.h"
 
 #define QUEUE_NUM   8
 
@@ -30,7 +31,6 @@
 struct ccif_flow_control {
 	unsigned int head_magic;
 	volatile unsigned int ap_busy_queue;
-
 	volatile unsigned int md_busy_queue;
 	unsigned int tail_magic;
 };
@@ -151,8 +151,15 @@ static inline void ccif_wake_up_tx_queue(struct ccci_modem *md, unsigned int qno
 	wake_up(&queue->req_wq);
 }
 
-/* always keep this in mind: what if there are more than 1 modems using CLDMA... */
+static inline int ccif_queue_broadcast_state(struct ccci_modem *md, MD_STATE state, DIRECTION dir, int index)
+{
+	ccci_md_status_notice(md, dir, -1, index, state);
+	return 0;
+}
 
+
+/* always keep this in mind: what if there are more than 1 modems using CLDMA... */
+extern void mt_irq_dump_status(int irq);
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 /* used for throttling feature - start */

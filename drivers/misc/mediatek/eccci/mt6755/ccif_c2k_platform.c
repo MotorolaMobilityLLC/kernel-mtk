@@ -16,7 +16,8 @@
 #include <mt_spm_sleep.h>
 #include <mach/mt_pbm.h>
 
-#include "ccci_core.h"
+#include "ccci_config.h"
+#include "ccci_modem.h"
 #include "ccci_platform.h"
 #include "ccif_c2k_platform.h"
 #include "modem_ccif.h"
@@ -147,10 +148,8 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		break;
 	case 2:		/*MD_SYS3 */
 #ifdef CONFIG_OF
-		of_property_read_u32(dev_ptr->dev.of_node, "ccif,major",
-				     &dev_cfg->major);
-		of_property_read_u32(dev_ptr->dev.of_node, "ccif,minor_base",
-				     &dev_cfg->minor_base);
+		dev_cfg->major = 0;
+		dev_cfg->minor_base = 0;
 		of_property_read_u32(dev_ptr->dev.of_node, "ccif,capability",
 				     &dev_cfg->capability);
 

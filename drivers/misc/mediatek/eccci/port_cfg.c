@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include "ccci_config.h"
 #include "port_cfg.h"
 
 #define TAG     "cfg"
@@ -18,17 +19,27 @@
 #ifdef CONFIG_MTK_ENABLE_MD1
 static struct ccci_port md1_ccci_ports[] = {
 /* network port first for performace */
-	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 0xFF, "ccmni0",},
-	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 0xFF, "ccmni1",},
-	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xFF, "ccmni2",},
-	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni3",},
-	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni4",},
-	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni5",},
-	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni6",},
-	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 0xFF, "ccmni7",},
-/* for direct tethering */
-	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni-lan",},
-/* char port, notes ccci_monitor must be first for md_cd_get_port_by_minor() implement */
+	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0, "ccmni0",},
+	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 1, "ccmni1",},
+	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 2, "ccmni2",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 3, "ccmni3",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 4, "ccmni4",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 5, "ccmni5",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 6, "ccmni6",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 7, "ccmni7",},
+#ifdef FEATURE_DIRECT_TETHERING_LOGGING
+	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 8, "ccmni-lan",},
+#endif
+	{CCCI_CCMNI10_TX, CCCI_CCMNI10_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 9, "ccmni9",},
+	{CCCI_CCMNI11_TX, CCCI_CCMNI11_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 10, "ccmni10",},
+	{CCCI_CCMNI12_TX, CCCI_CCMNI12_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 11, "ccmni11",},
+	{CCCI_CCMNI13_TX, CCCI_CCMNI13_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 12, "ccmni12",},
+	{CCCI_CCMNI14_TX, CCCI_CCMNI14_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 13, "ccmni13",},
+	{CCCI_CCMNI15_TX, CCCI_CCMNI15_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 14, "ccmni14",},
+	{CCCI_CCMNI16_TX, CCCI_CCMNI16_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 15, "ccmni15",},
+	{CCCI_CCMNI17_TX, CCCI_CCMNI17_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 16, "ccmni16",},
+	{CCCI_CCMNI18_TX, CCCI_CCMNI18_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 17, "ccmni17",},
+/* char port, notes ccci_monitor must be first for get_port_by_minor() implement */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 1, "ccci_aud",},
 	{CCCI_UART1_TX, CCCI_UART1_RX, 1, 1, 3, 3, 0, &char_port_ops, 2, "ccci_md_log_ctrl",},
@@ -50,7 +61,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, 0, &char_port_ops, 18, "ccci_lb_it",},
 	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, 0, &char_port_ops, 19, "ccci_mdl_monitor",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 20, "ccci_rpc",},
-	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0xFF, "ccci_rpc_k",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &rpc_port_ops, 0xFF, "ccci_rpc_k",},
 	{CCCI_IMSEM_UL, CCCI_IMSEM_DL, 6, 6, 0xFF, 0xFF, 0, &char_port_ops, 21, "ccci_imsem",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
@@ -64,9 +75,9 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 7, "ccci_ipc_7",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 8, "ccci_ipc_8",},
 /* sys port */
-	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0xFF, "ccci_ctrl",},
-	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &kernel_port_ops, 0xFF, "ccci_sys",},
-	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0xFF, "ccci_poll",},
+	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &sys_port_ops, 0xFF, "ccci_sys",},
+	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0xFF, "ccci_ctrl",},
+	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &poller_port_ops, 0xFF, "ccci_poll",},
 /* smem port */
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_raw_dbm",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci_ccb_dhl",},
@@ -79,15 +90,14 @@ static struct ccci_port md1_ccci_ports[] = {
 #ifdef CONFIG_MTK_ENABLE_MD2
 static struct ccci_port md2_ccci_ports[] = {
 /* network port first for performace */
-	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0xF1, "cc2mni0",},
-	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 0xF2, "cc2mni1",},
-	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF3, "cc2mni2",},
-/*for IMS*/
-	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF4, "ccmni3",},
-	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF5, "ccmni4",},
-	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF6, "ccmni5",},
-	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF7, "ccmni6",},
-	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF8, "ccmni7",},
+	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0, "cc2mni0",},
+	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 1, "cc2mni1",},
+	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 2, "cc2mni2",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 3, "cc2mni3",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 4, "cc2mni4",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 5, "cc2mni5",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 6, "cc2mni6",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 7, "cc2mni7",},
 /* char port, notes ccci_monitor must be first */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci2_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 1, "ccci2_aud",},
@@ -109,7 +119,7 @@ static struct ccci_port md2_ccci_ports[] = {
 	{CCCI_IT_TX, CCCI_IT_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 17, "ccci2_it",},
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, 0, &char_port_ops, 18, "ccci2_lb_it",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 19, "ccci2_rpc",},
-	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0, "ccci2_rpc_k",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &rpc_port_ops, 0, "ccci2_rpc_k",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci2_ipc_0",},
@@ -118,9 +128,9 @@ static struct ccci_port md2_ccci_ports[] = {
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 3, "ccci2_ipc_3",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 4, "ccci2_ipc_4",},
 /* sys port */
-	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci2_ctrl",},
-	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &kernel_port_ops, 0, "ccci2_sys",},
-	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci_poll",},
+	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &sys_port_ops, 0, "ccci2_sys",},
+	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0, "ccci2_ctrl",},
+	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &poller_port_ops, 0, "ccci_poll",},
 };
 
 #endif
@@ -128,14 +138,14 @@ static struct ccci_port md2_ccci_ports[] = {
 #ifdef CONFIG_MTK_ECCCI_C2K
 static struct ccci_port md3_ccci_ports[] = {
 /* network port first for performace */
-	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF1, "cc3mni0",},
-	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF2, "cc3mni1",},
-	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF3, "cc3mni2",},
-	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF4, "cc3mni3",},
-	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF5, "cc3mni4",},
-	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF6, "cc3mni5",},
-	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF7, "cc3mni6",},
-	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0xF8, "cc3mni7",},
+	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 0, "cc3mni0",},
+	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 1, "cc3mni1",},
+	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 2, "cc3mni2",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 3, "cc3mni3",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 4, "cc3mni4",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 5, "cc3mni5",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 6, "cc3mni6",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 2, 2, 0xF2, 0xFF, 8, &net_port_ops, 7, "cc3mni7",},
 /* char port, notes ccci_monitor must be first */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci3_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, C2K_PCM_TX_Q, C2K_PCM_RX_Q, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci3_aud",},
@@ -161,40 +171,42 @@ static struct ccci_port md3_ccci_ports[] = {
 	{CCCI_C2K_AT6, CCCI_C2K_AT6, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 25, "ccci3_at6",},
 	{CCCI_C2K_AT7, CCCI_C2K_AT7, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 26, "ccci3_at7",},
 	{CCCI_C2K_AT8, CCCI_C2K_AT8, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 27, "ccci3_at8",},
-	{CCCI_C2K_LB_DL, CCCI_C2K_LB_DL, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 24, "ccci3_lb_dl",},
+	{CCCI_C2K_LB_DL, CCCI_C2K_LB_DL, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 28, "ccci3_lb_dl",},
 /* sys port */
-	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci3_ctrl",},
-	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0,	&kernel_port_ops, 0, "ccci3_poll",},
+	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0, "ccci3_ctrl",},
+	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0,	&poller_port_ops, 0, "ccci3_poll",},
 };
 
 #endif
 
-int md_port_cfg(struct ccci_modem *md)
+int get_md_port_cfg(int md_id, struct ccci_port **ports)
 {
-	switch (md->index) {
+	int port_number = 0;
+
+	switch (md_id) {
 #ifdef CONFIG_MTK_ENABLE_MD1
 	case MD_SYS1:
-		md->ports = md1_ccci_ports;
-		md->port_number = ARRAY_SIZE(md1_ccci_ports);
+		*ports = md1_ccci_ports;
+		port_number = ARRAY_SIZE(md1_ccci_ports);
 		break;
 #endif
 #ifdef CONFIG_MTK_ENABLE_MD2
 	case MD_SYS2:
-		md->ports = md2_ccci_ports;
-		md->port_number = ARRAY_SIZE(md2_ccci_ports);
+		*ports = md2_ccci_ports;
+		port_number = ARRAY_SIZE(md2_ccci_ports);
 		break;
 #endif
 #ifdef CONFIG_MTK_ECCCI_C2K
 	case MD_SYS3:
-		md->ports = md3_ccci_ports;
-		md->port_number = ARRAY_SIZE(md3_ccci_ports);
+		*ports = md3_ccci_ports;
+		port_number = ARRAY_SIZE(md3_ccci_ports);
 		break;
 #endif
 	default:
-		md->ports = NULL;
-		md->port_number = 0;
-		CCCI_ERROR_LOG(md->index, TAG, "md_port_cfg:no md enable\n");
-		return -1;
+		*ports = NULL;
+		port_number = 0;
+		CCCI_ERROR_LOG(md_id, TAG, "md_port_cfg:no md enable\n");
+		return port_number;
 	}
-	return 0;
+	return port_number;
 }

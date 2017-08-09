@@ -14,7 +14,12 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include "ccci_config.h"
+#include <linux/of.h>
+#include <linux/of_fdt.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+
+
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
@@ -30,20 +35,17 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/mt_pbm.h>
 #include <mt_spm_sleep.h>
+
+#include "ccci_config.h"
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
 #include "cldma_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_fdt.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#include "include/pmic_api_buck.h"
 #endif
-#include "ccci_core.h"
 
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
@@ -280,7 +282,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 #endif
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
-	if (md->boot_stage == MD_BOOT_STAGE_0)
+	if (md->md_state == BOOT_WAITING_FOR_HS1)
 		return;
 
 	CCCI_MEM_LOG(md->index, TAG, "Dump subsys_if_on\n");
@@ -451,6 +453,17 @@ void ccci_power_off(void)
 {
 }
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+void md1_pmic_setting_off(void)
+{
+	vmd1_pmic_setting_off();
+}
+
+void md1_pmic_setting_on(void)
+{
+	vmd1_pmic_setting_on();
+}
+#else
 void md1_pmic_setting_off(void)
 {
 	/* VMODEM off */
@@ -484,6 +497,7 @@ void md1_pmic_setting_on(void)
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x63C */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x628 */
 }
+#endif
 
 #define ROr2W(a, b, c)  cldma_write32(a, b, (cldma_read32(a, b)|c))
 #define RAnd2W(a, b, c)  cldma_write32(a, b, (cldma_read32(a, b)&c))
@@ -982,17 +996,18 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0) {
 				if (i != 7) /* Queue 7 not used currently */
 					CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      md_ctrl->txq[i].tr_done->gpd_addr);
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base, md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base, md_ctrl->txq[i].index,
+					md_ctrl->txq[i].tr_done->gpd_addr);
 			} else {
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
-				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQSABAK(md_ctrl->txq[i].index),
-					      cldma_read32(md_ctrl->cldma_ap_ao_base,
-							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
+				unsigned int bk_addr = cldma_read32(md_ctrl->cldma_ap_ao_base,
+								CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index));
+
+				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base,
+					md_ctrl->txq[i].index, bk_addr);
+				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base,
+					md_ctrl->txq[i].index, bk_addr);
 			}
 		}
 		/* wait write done*/
@@ -1031,7 +1046,7 @@ void ccci_modem_sysresume(void)
 	struct ccci_modem *md;
 
 	CCCI_DEBUG_LOG(0, TAG, "ccci_modem_sysresume\n");
-	md = ccci_get_modem_by_id(0);
+	md = ccci_md_get_modem_by_id(0);
 	if (md != NULL)
 		ccci_modem_restore_reg(md);
 }
