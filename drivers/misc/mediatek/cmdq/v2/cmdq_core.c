@@ -7012,6 +7012,9 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 	int32_t waitingTimeMS;
 	bool needLog = false;
 	bool dumpTriggerLoop = false;
+	bool timeout_flag = false;
+	uint32_t disp_list_count = 0;
+	uint32_t user_list_count = 0;
 
 	/* when we're suspending, do not execute any tasks. delay & hold them. */
 	if (gCmdqSuspended)
@@ -7037,7 +7040,20 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 				   pTask->priority, pTask->engineFlag, pTask->scenario);
 
 		CMDQ_GET_TIME_IN_MS(pTask->submit, consumeTime, waitingTimeMS);
-		needLog = waitingTimeMS >= CMDQ_PREDUMP_TIMEOUT_MS;
+		timeout_flag = waitingTimeMS >= CMDQ_PREDUMP_TIMEOUT_MS;
+		needLog = timeout_flag;
+
+		if (true == timeout_flag) {
+			if (true == cmdq_get_func()->isDispScenario(pTask->scenario)) {
+				if (disp_list_count > 0)
+					needLog = false;
+				disp_list_count++;
+			} else {
+				if (user_list_count > 0)
+					needLog = false;
+				user_list_count++;
+			}
+		}
 
 		/* Allocate hw thread */
 		thread = cmdq_core_acquire_thread(pTask->engineFlag,
@@ -7087,6 +7103,14 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 			cmdq_core_release_task_unlocked(pTask);
 			pTask = NULL;
 		}
+	}
+
+	if ((disp_list_count > 0) && (disp_list_count >= user_list_count)) {
+		/* print error message */
+		CMDQ_ERR("There too many DISP (%d) tasks cannot acquire thread\n", disp_list_count);
+	} else if ((user_list_count > 0) && (user_list_count >= disp_list_count)) {
+		/* print error message */
+		CMDQ_ERR("There too many user space (%d) tasks cannot acquire thread\n", user_list_count);
 	}
 
 	if (dumpTriggerLoop) {
@@ -7341,7 +7365,13 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 	int32_t threadNo = CMDQ_INVALID_THREAD;
 	bool isSecure;
 
-	if (false == cmdq_core_is_valid_in_active_list(pTask)) {
+	if (NULL == pTask) {
+		/* Error occurs when Double INIT_WORK */
+		CMDQ_ERR("[Double INIT WORK] pTask is NULL");
+		return 0;
+	}
+
+	if (NULL == pTask->pCMDEnd || NULL == pTask->pVABase) {
 		/* Error occurs when Double INIT_WORK */
 		CMDQ_ERR("[Double INIT WORK] pTask(%p) is already released", pTask);
 		return 0;
