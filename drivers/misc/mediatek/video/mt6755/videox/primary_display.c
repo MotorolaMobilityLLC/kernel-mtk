@@ -4096,6 +4096,7 @@ typedef enum {
 	SVP_EXIT_POINT
 } SVP_STATE;
 static SVP_STATE svp_state = SVP_NOMAL;
+static int svp_sum;
 
 #ifndef OPT_BACKUP_NUM
 	#define OPT_BACKUP_NUM 3
@@ -4181,9 +4182,15 @@ static int setup_disp_sec(disp_ddp_path_config *data_config, cmdqRecHandle cmdq_
 	}
 
 	if ((has_sec_layer == primary_is_sec()) && (primary_is_sec() == 0)) {
+
 		if (svp_state == SVP_2_NOMAL) {
-			svp_state = SVP_EXIT_POINT;
-			disp_leave_svp(svp_state);
+			svp_sum++;
+			/*after 3 normal frame, we restore the normal environment*/
+			if (svp_sum > 2) {
+				svp_sum = 0;
+				svp_state = SVP_EXIT_POINT;
+				disp_leave_svp(svp_state);
+			}
 		} else
 			svp_state = SVP_NOMAL;
 

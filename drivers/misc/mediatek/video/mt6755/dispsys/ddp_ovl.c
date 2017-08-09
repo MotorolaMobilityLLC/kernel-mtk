@@ -722,7 +722,7 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 	} else {
 		if (ovl_is_sec[ovl_idx] == 1) {
 			/* ovl is in sec stat, we need to switch it to nonsec */
-			static cmdqRecHandle nonsec_switch_handle;
+			cmdqRecHandle nonsec_switch_handle;
 			int ret;
 			ret =
 			    cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,

@@ -895,6 +895,13 @@ void rdma_get_info(int idx, RDMA_BASIC_STRUCT *info)
 
 }
 
+static inline enum RDMA_MODE get_rdma_mode(DISP_MODULE_ENUM module)
+{
+	unsigned int idx = rdma_index(module);
+
+	return DISP_REG_GET_FIELD(GLOBAL_CON_FLD_MODE_SEL, (DISP_RDMA_INDEX_OFFSET * idx) + DISP_REG_RDMA_GLOBAL_CON);
+}
+
 static inline enum RDMA_MODE rdma_config_mode(unsigned long address)
 {
 	return address ? RDMA_MODE_MEMORY : RDMA_MODE_DIRECT_LINK;
@@ -998,8 +1005,8 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 
 				/*ugly work around by kzhang !!. will remove when cmdq delete disable scenario.
 				 * To avoid translation fault like ovl (see notes in ovl.c)*/
-				do_rdma_config_l(module, pConfig, nonsec_switch_handle);
-
+				if (get_rdma_mode(module) == RDMA_MODE_MEMORY)
+					do_rdma_config_l(module, pConfig, nonsec_switch_handle);
 				/*in fact, dapc/port_sec will be disabled by cmdq */
 				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle,
 								(1LL << cmdq_engine));
