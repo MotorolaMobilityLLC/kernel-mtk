@@ -2066,6 +2066,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	/* DLY3 keep default value 20 */
 	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = 20;
 	cycle_value = uCmdDatInfo.cycle_cnt;
+	p_autok_tune_res[DAT_RD_D_DLY1] = 10;
+	p_autok_tune_res[DAT_RD_D_DLY1_SEL] = 1;
 	/* Step2 : Tuning DS Clk Path-ZCLK only tune DLY1 */
 #ifdef CMDQ
 	opcode = MMC_SEND_EXT_CSD; /* can also use MMC_READ_SINGLE_BLOCK */
