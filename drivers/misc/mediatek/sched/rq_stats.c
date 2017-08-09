@@ -68,6 +68,7 @@ struct cpu_load_data {
 };
 
 static DEFINE_PER_CPU(struct cpu_load_data, cpuload);
+static DEFINE_PER_CPU(struct cpufreq_policy, cpupolicy);
 
 #ifdef CONFIG_CPU_FREQ
 #include <linux/cpufreq.h>
@@ -485,10 +486,10 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 			this_cpu->cur_freq = cpufreq_quick_get(cpu);
 		for_each_cpu(i, cpu_online_mask) {
 			struct cpu_load_data *cld = &per_cpu(cpuload, i);
-			struct cpufreq_policy cpu_policy;
+			struct cpufreq_policy *cpu_policy  = &per_cpu(cpupolicy, i);
 
-			cpufreq_get_policy(&cpu_policy, i);
-			cpumask_copy(cld->related_cpus, cpu_policy.cpus);
+			cpufreq_get_policy(cpu_policy, i);
+			cpumask_copy(cld->related_cpus, cpu_policy->cpus);
 		}
 		/* cpu_online()=0 here, count cpu offline period as idle */
 		spin_lock_irqsave(&this_cpu->cpu_load_lock, flags);
@@ -760,12 +761,21 @@ static int __init rq_stats_init(void)
 	int ret = 0;
 	int i;
 #ifdef CONFIG_CPU_FREQ
-	struct cpufreq_policy cpu_policy;
+	struct cpufreq_policy *cpu_policy;
+
+	cpu_policy = kmalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
+	if (!cpu_policy) {
+		rq_info.init = 0;
+		return -ENOSYS;
+	}
 #endif
 	/* Bail out if this is not an SMP Target */
 #ifndef CONFIG_SMP
-		rq_info.init = 0;
-		return -ENOSYS;
+#ifdef CONFIG_CPU_FREQ
+	kfree(cpu_policy);
+#endif
+	rq_info.init = 0;
+	return -ENOSYS;
 #endif
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US_ENABLE_WQ
@@ -787,11 +797,11 @@ static int __init rq_stats_init(void)
 		spin_lock_init(&pcpu->cpu_load_lock);
 		pcpu->cur_freq = pcpu->policy_max = 1;
 #ifdef CONFIG_CPU_FREQ
-		cpufreq_get_policy(&cpu_policy, i);
-		pcpu->policy_max = cpu_policy.cpuinfo.max_freq;
+		cpufreq_get_policy(cpu_policy, i);
+		pcpu->policy_max = cpu_policy->cpuinfo.max_freq;
 		if (cpu_online(i))
 			pcpu->cur_freq = cpufreq_quick_get(i);
-		cpumask_copy(pcpu->related_cpus, cpu_policy.cpus);
+		cpumask_copy(pcpu->related_cpus, cpu_policy->cpus);
 #endif /* CONFIG_CPU_FREQ */
 		if (!cpufreq_variant)
 			pcpu->cur_freq = pcpu->policy_max;
@@ -804,6 +814,9 @@ static int __init rq_stats_init(void)
 	register_hotcpu_notifier(&cpu_hotplug);
 
 	rq_info.init = 1;
+#ifdef CONFIG_CPU_FREQ
+	kfree(cpu_policy);
+#endif
 
 	return ret;
 }
