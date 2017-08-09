@@ -113,6 +113,17 @@ extern void printascii(char *);
 #endif
 
 bool printk_disable_uart = 0;
+bool mt_get_uartlog_status(void)
+{
+	return !printk_disable_uart;
+}
+
+void set_uartlog_status(bool value)
+{
+	printk_disable_uart = !value;
+	pr_info("set uart log status %d.\n", value);
+}
+
 static DEFINE_PER_CPU(char, printk_state);
 int console_printk[4] = {
 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
