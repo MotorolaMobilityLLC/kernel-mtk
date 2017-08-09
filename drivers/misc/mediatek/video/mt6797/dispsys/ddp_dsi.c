@@ -216,7 +216,7 @@ static int dsi0_te_enable = 1;
 static const LCM_UTIL_FUNCS lcm_utils_dsi0;
 static const LCM_UTIL_FUNCS lcm_utils_dsi1;
 static const LCM_UTIL_FUNCS lcm_utils_dsidual;
-static bool _dsi_trigger_cmd;
+static cmdqBackupSlotHandle _h_intstat;
 
 unsigned int clock_lane[2] = { 0 }; /* MIPITX_DSI_CLOCK_LANE */
 unsigned int data_lane0[2] = { 0 }; /* MIPITX_DSI_DATA_LANE0 */
@@ -2081,13 +2081,6 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT
 			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[1], AS_UINT32(&t0));
 			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 2);
 
-			if (_dsi_trigger_cmd) {
-				if (d == 1) /* DSI1 is only used for triggering video data */
-					_dsi_trigger_cmd = false;
-			} else {
-				DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0);
-			}
-
 			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 0);
 			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 1);
 
@@ -2442,13 +2435,6 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
 				}
 			}
-
-			if (_dsi_trigger_cmd) {
-				if (d == 1) /* DSI1 is only used for triggering video data */
-					_dsi_trigger_cmd = false;
-			} else {
-				DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0);
-			}
 		}
 	}
 
@@ -2585,13 +2571,6 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
 				}
 
-				if (_dsi_trigger_cmd) {
-					if (d == 1) /* DSI1 is only used for triggering video data */
-						_dsi_trigger_cmd = false;
-				} else {
-					DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0);
-				}
-
 				if (force_update) {
 					DSI_Start(module, cmdq);
 					DSI_WaitForNotBusy(module, cmdq);
@@ -2656,13 +2635,6 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 			}
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_CMDQ_SIZE, queue_size);
-
-			if (_dsi_trigger_cmd) {
-				if (i == 1) /* DSI1 is only used for triggering video data */
-					_dsi_trigger_cmd = false;
-			} else {
-				DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0);
-			}
 		}
 	}
 
@@ -2896,7 +2868,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI0;
-		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
+		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
@@ -2904,7 +2876,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI1;
-		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
+		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI1;
 	} else if (module == DISP_MODULE_DSIDUAL) {
 		/* TODO: Ugly workaround, hope we can found better resolution */
 		LCM_PARAMS lcm_param;
@@ -2917,14 +2889,14 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 			utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
-			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
+			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI0;
 		} else if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI1) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 			utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 			utils->dsi_set_cmdq_V22	= DSI_set_cmdq_V2_DSI1;
-			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
+			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI1;
 		} else {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSIDual;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSIDual;
@@ -3005,6 +2977,8 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 		init_waitqueue_head(&_dsi_wait_sleep_out_done_queue[i]);
 		DISPCHECK("dsi%d initializing event queue\n", i);
 	}
+
+	cmdqBackupAllocateSlot(&_h_intstat, 1);
 
 	disp_register_module_irq_callback(DISP_MODULE_DSI0, _DSI_INTERNAL_IRQ_Handler);
 	disp_register_module_irq_callback(DISP_MODULE_DSI1, _DSI_INTERNAL_IRQ_Handler);
@@ -3367,8 +3341,10 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
 
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+		if (_dsi_context[i].dsi_params.mode != CMD_MODE) {
+			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+		}
 
 		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
@@ -3800,11 +3776,31 @@ int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 	unsigned int data_array[16];
 
 	if (_dsi_context[i].dsi_params.mode == CMD_MODE) {
-		_dsi_trigger_cmd = true;
 		data_array[0] = 0x002c3909;
 		DSI_set_cmdq(module, cmdq, data_array, 1, 0);
+
+		/*
+		 * DSI1 is only used for triggering video data; thus pull up DSI_DUAL_EN.
+		 * Otherwise, pull down DSI_DUAL_EN after triggering video data is done.
+		 */
+		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 	}
+
 	DSI_Start(module, cmdq);
+
+	if (_dsi_context[i].dsi_params.mode == CMD_MODE) {
+		/* Reading one reg is only used for delay in order to pull down DSI_DUAL_EN. */
+		if (cmdq)
+			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0, 0x1401c00c);
+		else
+			INREG32(&DSI_REG[0]->DSI_INTSTA);
+
+		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+	}
 
 	return 0;
 }
