@@ -1249,7 +1249,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 	do { \
 		cmdqRecCreate(scenario, &__cmdq);\
 		cmdqRecReset(__cmdq);\
-		/* ddp_insert_config_allow_rec(__cmdq); */ /* To be ported */ \
+		ddp_insert_config_allow_rec(__cmdq);\
 	} while (0)
 
 #define DISP_CMDQ_REG_SET(__cmdq, reg32, val, mask) DISP_REG_MASK(__cmdq, reg32, val, mask)

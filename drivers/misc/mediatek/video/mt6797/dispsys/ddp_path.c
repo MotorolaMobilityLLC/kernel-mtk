@@ -1227,6 +1227,21 @@ int ddp_path_top_clock_off(void)
 	return 0;
 }
 
+int ddp_insert_config_allow_rec(void *handle)
+{
+	int ret = 0;
+
+	if (handle == NULL)
+		ASSERT(0);
+
+	if (primary_display_is_video_mode())
+		ret = cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	else
+		ret = cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+
+	return ret;
+}
+
 int ddp_insert_config_dirty_rec(void *handle)
 {
 	int ret = 0;

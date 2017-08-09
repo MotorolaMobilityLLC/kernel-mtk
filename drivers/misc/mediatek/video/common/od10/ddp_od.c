@@ -26,6 +26,7 @@
 #include <lcm_drv.h>
 #include <ddp_dither.h>
 #include <ddp_od.h>
+#include <ddp_path.h>
 #include "ddp_od_reg.h"
 #include "ddp_od_table.h"
 
