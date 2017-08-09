@@ -1950,13 +1950,13 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 		for_each_cpu_dvfs_only(i, p) {
 			if (cpu_dvfs_is(p, MT_CPU_DVFS_LL) && p->armpll_is_available) {
 				temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
+				mw += mt_spower_get_leakage(MT_SPOWER_CPULL, cpu_dvfs_get_cur_volt(p) / 100, temp);
 			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L) && p->armpll_is_available) {
 				temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
+				mw += mt_spower_get_leakage(MT_SPOWER_CPUL, cpu_dvfs_get_cur_volt(p) / 100, temp);
 			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
 				temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-				mw += mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
+				mw += mt_spower_get_leakage(MT_SPOWER_CPUBIG, cpu_dvfs_get_cur_volt(p) / 100, temp);
 			}
 		}
 	} else if (id > 0) {
@@ -1964,13 +1964,13 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 		p = id_to_cpu_dvfs(id);
 		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
 			temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
+			mw = mt_spower_get_leakage(MT_SPOWER_CPULL, cpu_dvfs_get_cur_volt(p) / 100, temp);
 		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
 			temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
+			mw = mt_spower_get_leakage(MT_SPOWER_CPUL, cpu_dvfs_get_cur_volt(p) / 100, temp);
 		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 			temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-			mw = mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
+			mw = mt_spower_get_leakage(MT_SPOWER_CPUBIG, cpu_dvfs_get_cur_volt(p) / 100, temp);
 		}
 	}
 	return mw;
@@ -2011,7 +2011,7 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 #else
 		ppm_data[i].freq_idx = p_dvfs[i]->idx_opp_tbl;
 #endif
-		ppm_data[i].volt = p_dvfs[i]->ops->get_cur_volt(p_dvfs[i]) / 100;
+		ppm_data[i].volt = cpu_dvfs_get_cur_volt(p_dvfs[i]) / 100;
 
 		cpufreq_ver("%d: core = %d, idx = %d, volt = %d\n",
 			i, ppm_data[i].core_num, ppm_data[i].freq_idx, ppm_data[i].volt);
