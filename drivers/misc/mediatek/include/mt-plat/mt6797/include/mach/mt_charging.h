@@ -15,7 +15,7 @@
 #define ERR_CHARGE_TEMPERATURE  0xFF
 
 /* Linear Charging Threshold */
-#define V_PRE2CC_THRES			3000	/* mV */
+#define V_PRE2CC_THRES			3400	/* mV */
 #define V_CC2TOPOFF_THRES		4352
 #define RECHARGING_VOLTAGE      4110
 #define CHARGING_FULL_CURRENT    150	/* mA */
@@ -44,7 +44,7 @@
 /* charger error check */
 /* #define BAT_LOW_TEMP_PROTECT_ENABLE         // stop charging if temp < MIN_CHARGE_TEMPERATURE */
 #define V_CHARGER_ENABLE 0				/* 1:ON , 0:OFF */
-#define V_CHARGER_MAX 13500				/* 6.5 V */
+#define V_CHARGER_MAX 6500				/* 6.5 V */
 #define V_CHARGER_MIN 4400				/* 4.4 V */
 
 /* Tracking TIME */
@@ -105,5 +105,26 @@
 #ifdef CONFIG_MTK_FAN5405_SUPPORT
 #define FAN5405_BUSNUM 1
 #endif
+
+/*VINDPM moved from cust_pe.h to de-relating from PE+*/
+#define SWITCH_CHR_VINDPM_5V 0x13  /* 4.5V */
+#define SWITCH_CHR_VINDPM_7V 0x25  /* 6.3V */
+#define SWITCH_CHR_VINDPM_9V 0x37  /* 8.1V */
+#define SWITCH_CHR_VINDPM_12V 0x54 /* 11.0 set this tp prevent adapters from failure and reset*/
+
+/*Added switch chr OPTIONS for BQ25896 on Jade*/
+/*switch charger input/output current separation; moved to Kconfig.driver*/
+/*#define CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT*/
+/*Dynamic CV using BIF
+* Note: CONFIG_MTK_BAT_BIF_SUPPORT=yes, otherwise default constant CV
+*/
+/*Define this macro for thermal team experiment:no current limitation*/
+#define CONFIG_MTK_THERMAL_TEST_SUPPORT
+/*enable to save charger in detection power by turning off Chr clock*/
+#define CONFIG_MTK_CHRIND_CLK_PDN_SUPPORT
+
+/*Added battery_common options for jade*/
+/*enable this to change thread wakeup period to 10 secs to avoid suspend failure*/
+#define CONFIG_MTK_I2C_CHR_SUPPORT
 
 #endif /* _CUST_BAT_H_ */
