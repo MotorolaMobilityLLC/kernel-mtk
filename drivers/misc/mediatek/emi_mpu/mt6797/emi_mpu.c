@@ -2239,7 +2239,7 @@ static void protect_ap_region(void)
 
 	ap_mem_mpu_id = AP_REGION_ID;
 	ap_mem_mpu_attr = SET_ACCESS_PERMISSON(FORBIDDEN,
-	NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN,
+	SEC_R_NSEC_RW, FORBIDDEN, NO_PROTECTION, FORBIDDEN,
 	FORBIDDEN, FORBIDDEN, NO_PROTECTION);
 
 	emi_mpu_set_region_protection(kernel_base,
