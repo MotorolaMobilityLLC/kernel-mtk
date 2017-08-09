@@ -34,6 +34,7 @@
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
+#define SODI3_LOGOUT_MAXTIME_CRITERIA	(2000)
 #define SODI3_LOGOUT_INTERVAL_CRITERIA	(5000U) /* unit:ms */
 
 
@@ -277,7 +278,8 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 #elif defined(CONFIG_ARCH_MT6797)
 			need_log_out = 1;
 #endif
-		} else if (wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) {
+		} else if ((wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) ||
+			   (wakesta->timer_out >= SODI3_LOGOUT_MAXTIME_CRITERIA)) {
 			need_log_out = 1;
 		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
 				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
