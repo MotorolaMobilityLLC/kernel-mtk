@@ -119,6 +119,7 @@ static int func_lv_mask_idvfs = 500;
 #define IDVFS_FMAX_DEFAULT		2500
 #define IDVFS_FMIN_DEFAULT		505
 #define IDVFS_FREQMz_STORE		750
+#define IDVFS_CTRL_REG_DEFAULT	0x0010a203
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	#define CONFIG_IDVFS_AEE_RR_REC 1
@@ -283,6 +284,7 @@ static struct IDVFS_INIT_OPT idvfs_init_opt = {
 	.i2c_speed = 0,
 	.ocp_endis = IDVFS_OCP_ENABLE,
 	.otp_endis = IDVFS_OTP_ENABLE,
+	.idvfs_ctrl_reg = IDVFS_CTRL_REG_DEFAULT,
 	.idvfs_enable_cnt = 0,
 	.idvfs_swreq_cnt = 0,
 	.channel = channel_status,
@@ -621,9 +623,9 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	BigiDVFSSWAvg(0, 1);
 
 	/* call smc function_id = SMC_IDVFS_BigiDVFSEnable(Fmax, Vproc_mv_x100, Vsram_mv_x100) */
-	SEC_BIGIDVFSENABLE(IDVFS_FMAX_DEFAULT, cur_vproc_mv_x100, cur_vsram_mv_x100);
+	SEC_BIGIDVFSENABLE(idvfs_init_opt.idvfs_ctrl_reg, cur_vproc_mv_x100, cur_vsram_mv_x100);
 	/* ram console, 0x00107203 is ATF define */
-	aee_rr_rec_idvfs_ctrl_reg(0x00107203);
+	aee_rr_rec_idvfs_ctrl_reg(idvfs_init_opt.idvfs_ctrl_reg | 0x1);
 
 	/* enable sw channel status and clear oct/otpl channel status by struct */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].status = 1;
@@ -1413,7 +1415,8 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 			"freq_cur = %d MHz\n"
 			"i2c_spd  = %d KHz\n"
 			"OCP/OTP = %s/%s\n"
-			"idvfs Enable/SWREQ cnt = %d/%d\n",
+			"idvfs Enable/SWREQ cnt = %d/%d\n"
+			"Idvfs_ctrl_reg = 0x%08x\n",
 			idvfs_init_opt.idvfs_status,
 			idvfs_init_opt.freq_max,
 			idvfs_init_opt.freq_min,
@@ -1422,7 +1425,8 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 			(idvfs_init_opt.ocp_endis) ? "Enable" : "Disable",
 			(idvfs_init_opt.otp_endis) ? "Enable" : "Disable",
 			idvfs_init_opt.idvfs_enable_cnt,
-			idvfs_init_opt.idvfs_swreq_cnt);
+			idvfs_init_opt.idvfs_swreq_cnt,
+			idvfs_init_opt.idvfs_ctrl_reg);
 
 #if 0
 	/* enable all freq meter and get freq */
@@ -1438,7 +1442,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	/* idvfs_write(0x1-0-0-1-a-2-8-4, armplldiv_mon_en); */
 #endif
 
-	seq_puts(m, "================= 2015/11/09 Ver 3.9 ===================\n");
+	seq_puts(m, "================= 2015/11/10 Ver 5.1 ===================\n");
 
 	/* if big cluster offline then return */
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
@@ -1485,8 +1489,8 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 		break;
 	case 10:
 		i = SEC_BIGIDVFS_READ(0x102224c8);
-		seq_printf(m, "Debug cur_vsram[7:0] = %d, cur_vproc[15:8] = %d, chip_ldo[27:24] = %d.\n",
-		(i & 0xff), ((i & 0xff00) >> 8), ((i & 0xf000000) >> 24));
+		seq_printf(m, "Debug cur_vsram[7:0] = %d, cur_vproc[15:8] = %dmv, next_vproc[15:8] = %dmv.\n",
+		(i & 0xff), (((i & 0xff00) >> 8) * 10), (((i & 0xff0000) >> 16) * 10));
 		break;
 	}
 
@@ -1617,7 +1621,12 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 		case 9:
 			/* reserve for ptp1, don't remove case 9, when ptp1 enable then unrun this command */
 			/* if (err == 1) */
-			/*	eem_init_det_tmp(); */
+			/* eem_init_det_tmp(); */
+			/* new for set idvfs_init_opt.idvfs_ctrl_reg */
+			if (err == 2) {
+				err = sscanf(buf, "%d %x ", &func_code, &func_para[0]);
+				idvfs_init_opt.idvfs_ctrl_reg = func_para[0];
+			}
 			rc = 0;
 			break;
 		case 10:
@@ -1626,7 +1635,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 				rc = BigiDVFSPllSetFreq(func_para[0]);
 			break;
 		case 11:
-			/* get again */
+			/* send i2c6 PMIC command */
 			err = sscanf(buf, "%d %x %x %x", &func_code, &func_para[0], &func_para[1], &func_para[2]);
 			if (err == 3) {
 				/* da9214_config_interface(reg, val, filter, shift) */

@@ -92,8 +92,8 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 
 /* ATF only support */
 #ifdef __KERNEL__
-#define SEC_BIGIDVFSENABLE(FMax, Vproc, Vsram) \
-			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSENABLE, FMax, Vproc, Vsram)
+#define SEC_BIGIDVFSENABLE(idvfs_ctrl, Vproc, Vsram) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSENABLE, idvfs_ctrl, Vproc, Vsram)
 #define SEC_BIGIDVFSDISABLE() \
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSDISABLE, 0, 0, 0)
 #define SEC_BIGIDVFSPLLSETFREQ(Freq) \
@@ -105,8 +105,8 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 #define SEC_BIGIDVFS_WRITE(addr, val) \
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_WRITE, addr, val, 0)
 #else
-#define SEC_BIGIDVFSENABLE(FMax, Vproc_x100, Vsram_x100) \
-			API_BIGIDVFSENABLE(FMax, Vproc_x100, Vsram_x100)
+#define SEC_BIGIDVFSENABLE(idvfs_ctrl, Vproc_x100, Vsram_x100) \
+			API_BIGIDVFSENABLE(idvfs_ctrl, Vproc_x100, Vsram_x100)
 #define SEC_BIGIDVFSDISABLE() \
 			API_BIGIDVFSDISABLE()
 #define SEC_BIGIDVFSPLLSETFREQ(Freq) \
@@ -166,6 +166,7 @@ struct  IDVFS_INIT_OPT {
 	unsigned short i2c_speed;
 	unsigned short ocp_endis;
 	unsigned short otp_endis;
+	unsigned int idvfs_ctrl_reg;
 	unsigned int idvfs_enable_cnt;
 	unsigned int idvfs_swreq_cnt;
 	struct CHANNEL_STATUS *channel;
