@@ -9484,8 +9484,8 @@ static MINT32 ISP_suspend(
 		/* Only print cama log */
 		if (0 == strcmp(moduleName, IRQ_CB_TBL[ISP_IRQ_TYPE_INT_CAM_A_ST].device_name)) {
 			LOG_DBG("%s - X. UserCount=0\n", moduleName);
-			return 0;
 		}
+		return 0;
 	}
 
 	for (IrqType = 0; IrqType < ISP_IRQ_TYPE_AMOUNT; IrqType++) {
@@ -9681,8 +9681,8 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 		/* Only print cama log */
 		if (0 == strcmp(moduleName, IRQ_CB_TBL[ISP_IRQ_TYPE_INT_CAM_A_ST].device_name)) {
 			LOG_DBG("%s - X. UserCount=0\n", moduleName);
-			return 0;
 		}
+		return 0;
 	}
 
 	for (IrqType = 0; IrqType < ISP_IRQ_TYPE_AMOUNT; IrqType++) {
