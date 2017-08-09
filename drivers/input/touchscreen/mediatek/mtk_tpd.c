@@ -50,14 +50,20 @@ struct tpd_dts_info tpd_dts_data;
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
+static const struct of_device_id touch_of_match[] = {
+	{ .compatible = "mediatek,mt6735-touch", },
+	{ .compatible = "mediatek,mt6580-touch", },
+	{},
+};
 
 void tpd_get_dts_info(void)
 {
 	struct device_node *node1 = NULL;
 	int key_dim_local[16], i;
 
-	node1 = of_find_compatible_node(NULL, NULL, "mediatek, TPD");
+	node1 = of_find_matching_node(node1, touch_of_match);
 	if (node1) {
+		of_property_read_u32(node1, "tpd-key-dim-local", &tpd_dts_data.touch_max_num);
 		of_property_read_u32(node1, "use-tpd-button", &tpd_dts_data.use_tpd_button);
 		pr_info("[tpd]use-tpd-button = %d\n", tpd_dts_data.use_tpd_button);
 		of_property_read_u32_array(node1, "tpd-resolution",
@@ -76,10 +82,22 @@ void tpd_get_dts_info(void)
 				pr_info("[tpd]key[%d].key_H = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_height);
 			}
 		}
+		of_property_read_u32(node1, "tpd-filter-enable", &tpd_dts_data.touch_filter.enable);
+		if (tpd_dts_data.touch_filter.enable) {
+			of_property_read_u32(node1, "tpd-filter-pixel-density",
+						&tpd_dts_data.touch_filter.pixel_density);
+			of_property_read_u32_array(node1, "tpd-filter-custom-prameters",
+				(u32 *)tpd_dts_data.touch_filter.W_W, ARRAY_SIZE(tpd_dts_data.touch_filter.W_W));
+			of_property_read_u32_array(node1, "tpd-filter-custom-speed",
+				tpd_dts_data.touch_filter.VECLOCITY_THRESHOLD,
+				ARRAY_SIZE(tpd_dts_data.touch_filter.VECLOCITY_THRESHOLD));
+		}
+		memcpy(&tpd_filter, &tpd_dts_data.touch_filter, sizeof(tpd_filter));
+		pr_info("[tpd]tpd-filter-enable = %d, pixel_density = %d\n",
+					tpd_filter.enable, tpd_filter.pixel_density);
 	} else {
 		pr_err("[tpd]%s can't find touch compatible custom node\n", __func__);
 	}
-
 }
 
 static DEFINE_MUTEX(tpd_set_gpio_mutex);
@@ -297,10 +315,7 @@ static void __exit tpd_device_exit(void);
 static int tpd_probe(struct platform_device *pdev);
 static int tpd_remove(struct platform_device *pdev);
 
-#ifndef CONFIG_HAS_EARLYSUSPEND
 static int tpd_suspend_flag;
-#endif
-/* int tpd_load_status = 0; 0: failed, 1: success */
 int tpd_register_flag = 0;
 /* global variable definitions */
 struct tpd_device *tpd = 0;
@@ -310,44 +325,24 @@ struct platform_device tpd_device = {
 	.name		= TPD_DEVICE,
 	.id			= -1,
 };
-static const struct of_device_id touch_of_match[] = {
-	{ .compatible = "mediatek, touch", },
-	{},
-};
-#ifndef CONFIG_HAS_EARLYSUSPEND
 const struct dev_pm_ops tpd_pm_ops = {
 	.suspend = NULL,
 	.resume = NULL,
 };
-#endif
 static struct platform_driver tpd_driver = {
 	.remove = tpd_remove,
 	.shutdown = NULL,
 	.probe = tpd_probe,
 	.driver = {
 			.name = TPD_DEVICE,
-#ifndef CONFIG_HAS_EARLYSUSPEND
 			.pm = &tpd_pm_ops,
-#endif
 			.owner = THIS_MODULE,
 			.of_match_table = touch_of_match,
 	},
 };
 static struct tpd_driver_t *g_tpd_drv;
-
-/*20091105, Kelvin, re-locate touch screen driver to earlysuspend*/
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#ifndef CONFIG_MTK_FPGA
-static struct early_suspend MTK_TS_early_suspend_handler = {
-	.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	.suspend = NULL,
-	.resume = NULL,
-};
-#endif
-#else
 /* hh: use fb_notifier */
 static struct notifier_block tpd_fb_notifier;
-
 /* use fb_notifier */
 static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
@@ -381,7 +376,6 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	}
 	return 0;
 }
-#endif
 /* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
 int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 {
@@ -466,21 +460,6 @@ static int tpd_probe(struct platform_device *pdev)
 #endif
 
 	TPD_DMESG("enter %s, %d\n", __func__, __LINE__);
-	/* Select R-Touch */
-	/* if(g_tpd_drv == NULL||tpd_load_status == 0) */
-#if 0
-	if (g_tpd_drv == NULL) {
-		g_tpd_drv = &tpd_driver_list[0];
-		/* touch_type:0: r-touch, 1: C-touch */
-		touch_type = 0;
-		TPD_DMESG("Generic touch panel driver\n");
-	}
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	MTK_TS_early_suspend_handler.suspend = g_tpd_drv->suspend;
-	MTK_TS_early_suspend_handler.resume = g_tpd_drv->resume;
-	register_early_suspend(&MTK_TS_early_suspend_handler);
-#endif
-#endif
 
 	if (misc_register(&tpd_misc_device))
 		pr_err("mtk_tpd: tpd_misc_device register failed\n");
@@ -553,7 +532,6 @@ static int tpd_probe(struct platform_device *pdev)
 
 	/* save dev for regulator_get() before tpd_local_init() */
 	tpd->tpd_dev = &pdev->dev;
-#if 1
 	for (i = 1; i < TP_DRV_MAX_COUNT; i++) {
 		/* add tpd driver into list */
 		if (tpd_driver_list[i].tpd_device_name != NULL) {
@@ -579,22 +557,10 @@ static int tpd_probe(struct platform_device *pdev)
 			return 0;
 		}
 	}
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#ifndef CONFIG_MTK_FPGA
-	MTK_TS_early_suspend_handler.suspend = g_tpd_drv->suspend;
-	MTK_TS_early_suspend_handler.resume = g_tpd_drv->resume;
-#ifdef CONFIG_EARLYSUSPEND
-	register_early_suspend(&MTK_TS_early_suspend_handler);
-#endif
-#endif
-#else
 	/* use fb_notifier */
 	tpd_fb_notifier.notifier_call = tpd_fb_notifier_callback;
 	if (fb_register_client(&tpd_fb_notifier))
 		TPD_DMESG("register fb_notifier fail!\n");
-#endif
-#endif
-/* #ifdef TPD_TYPE_CAPACITIVE */
 	/* TPD_TYPE_CAPACITIVE handle */
 	if (touch_type == 1) {
 
@@ -603,14 +569,6 @@ static int tpd_probe(struct platform_device *pdev)
 		set_bit(ABS_MT_TOUCH_MINOR, tpd->dev->absbit);
 		set_bit(ABS_MT_POSITION_X, tpd->dev->absbit);
 		set_bit(ABS_MT_POSITION_Y, tpd->dev->absbit);
-#if 0				/* linux kernel update from 2.6.35 --> 3.0 */
-		tpd->dev->absmax[ABS_MT_POSITION_X] = TPD_RES_X;
-		tpd->dev->absmin[ABS_MT_POSITION_X] = 0;
-		tpd->dev->absmax[ABS_MT_POSITION_Y] = TPD_RES_Y;
-		tpd->dev->absmin[ABS_MT_POSITION_Y] = 0;
-		tpd->dev->absmax[ABS_MT_TOUCH_MAJOR] = 100;
-		tpd->dev->absmin[ABS_MT_TOUCH_MINOR] = 0;
-#else
 		input_set_abs_params(tpd->dev, ABS_MT_POSITION_X, 0, TPD_RES_X, 0, 0);
 		input_set_abs_params(tpd->dev, ABS_MT_POSITION_Y, 0, TPD_RES_Y, 0, 0);
 #if defined(CONFIG_MTK_S3320) || defined(CONFIG_MTK_S3320_47) \
@@ -624,19 +582,8 @@ static int tpd_probe(struct platform_device *pdev)
 		input_set_abs_params(tpd->dev, ABS_MT_TOUCH_MAJOR, 0, 100, 0, 0);
 		input_set_abs_params(tpd->dev, ABS_MT_TOUCH_MINOR, 0, 100, 0, 0);
 #endif /* CONFIG_MTK_S3320 */
-#endif
 		TPD_DMESG("Cap touch panel driver\n");
 	}
-/* #endif */
-#if 0				/* linux kernel update from 2.6.35 --> 3.0 */
-	tpd->dev->absmax[ABS_X] = TPD_RES_X;
-	tpd->dev->absmin[ABS_X] = 0;
-	tpd->dev->absmax[ABS_Y] = TPD_RES_Y;
-	tpd->dev->absmin[ABS_Y] = 0;
-
-	tpd->dev->absmax[ABS_PRESSURE] = 255;
-	tpd->dev->absmin[ABS_PRESSURE] = 0;
-#else
 	input_set_abs_params(tpd->dev, ABS_X, 0, TPD_RES_X, 0, 0);
 	input_set_abs_params(tpd->dev, ABS_Y, 0, TPD_RES_Y, 0, 0);
 	input_abs_set_res(tpd->dev, ABS_X, TPD_RES_X);
@@ -644,16 +591,10 @@ static int tpd_probe(struct platform_device *pdev)
 	input_set_abs_params(tpd->dev, ABS_PRESSURE, 0, 255, 0, 0);
 	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, 10, 0, 0);
 
-#endif
 	if (input_register_device(tpd->dev))
 		TPD_DMESG("input_register_device failed.(tpd)\n");
 	else
 		tpd_register_flag = 1;
-	/* init R-Touch */
-#if 0
-	if (touch_type == 0)
-		g_tpd_drv->tpd_local_init();
-#endif
 	if (g_tpd_drv->tpd_have_button)
 		tpd_button_init();
 
@@ -665,20 +606,13 @@ static int tpd_probe(struct platform_device *pdev)
 static int tpd_remove(struct platform_device *pdev)
 {
 	input_unregister_device(tpd->dev);
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#ifndef CONFIG_MTK_FPGA
-#ifdef CONFIG_EARLYSUSPEND
-	unregister_early_suspend(&MTK_TS_early_suspend_handler);
-#endif
-#endif
-#endif
 	return 0;
 }
 
 /* called when loaded into kernel */
 static int __init tpd_device_init(void)
 {
-	pr_info("MediaTek touch panel driver init\n");
+	TPD_DMESG("MediaTek touch panel driver init\n");
 	if (platform_driver_register(&tpd_driver) != 0) {
 		TPD_DMESG("unable to register touch panel driver.\n");
 		return -1;
@@ -692,13 +626,6 @@ static void __exit tpd_device_exit(void)
 	TPD_DMESG("MediaTek touch panel driver exit\n");
 	/* input_unregister_device(tpd->dev); */
 	platform_driver_unregister(&tpd_driver);
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#ifndef CONFIG_MTK_FPGA
-#ifdef CONFIG_EARLYSUSPEND
-	unregister_early_suspend(&MTK_TS_early_suspend_handler);
-#endif
-#endif
-#endif
 }
 
 late_initcall(tpd_device_init);

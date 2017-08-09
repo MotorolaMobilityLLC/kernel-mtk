@@ -8,13 +8,7 @@
 #include <linux/seq_file.h>
 #include <linux/list.h>
 #include <linux/proc_fs.h>
-
 #include <linux/slab.h>
-#ifndef CONFIG_ARM64 /*MT6795*/
-/*#include <mach/mt_reg_base.h>*/
-/*#include <mach/irqs.h>*/
-#endif
-
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <generated/autoconf.h>
@@ -97,12 +91,22 @@ struct tpd_key_dim_local {
 	int key_width;
 	int key_height;
 };
+
+struct tpd_filter_t {
+	int enable; /*0: disable, 1: enable*/
+	int pixel_density; /*XXX pixel/cm*/
+	int W_W[3][4];/*filter custom setting prameters*/
+	unsigned int VECLOCITY_THRESHOLD[3];/*filter speed custom settings*/
+};
+
 struct tpd_dts_info {
 	int tpd_resolution[2];
+	int touch_max_num;
 	int use_tpd_button;
 	int tpd_key_num;
 	int tpd_key_local[4];
 	struct tpd_key_dim_local tpd_key_dim_local[4];
+	struct tpd_filter_t touch_filter;
 };
 extern struct tpd_dts_info tpd_dts_data;
 struct tpd_attrs {
@@ -118,12 +122,6 @@ struct tpd_driver_t {
 	struct tpd_attrs attrs;
 };
 
-struct tpd_filter_t {
-	int enable; /*0: disable, 1: enable*/
-	int pixel_density; /*XXX pixel/cm*/
-	int W_W[3][4];/*filter custom setting prameters*/
-	unsigned int VECLOCITY_THRESHOLD[3];/*filter speed custom settings*/
-};
 
 #if 1				/* #ifdef TPD_HAVE_BUTTON */
 void tpd_button(unsigned int x, unsigned int y, unsigned int down);

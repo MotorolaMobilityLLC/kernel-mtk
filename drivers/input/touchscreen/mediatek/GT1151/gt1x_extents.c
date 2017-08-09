@@ -36,9 +36,9 @@
 #include <linux/proc_fs.h>	/*proc */
 
 #include <asm/ioctl.h>
-#include "gt1x_generic.h"
+#include "include/gt1x_tpd_common.h"
 
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 
 #define GESTURE_NODE "goodix_gesture"
 #define GESTURE_MAX_POINT_COUNT    64
@@ -201,10 +201,10 @@ void gesture_clear_wakeup_data(void)
 	memset(gesture_data.data, 0, 4);
 	mutex_unlock(&gesture_data_mutex);
 }
-#endif				/*GTP_GESTURE_WAKEUP*/
+#endif				/*CONFIG_GTP_GESTURE_WAKEUP*/
 
 /*HotKnot module*/
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 
 #define HOTKNOT_NODE "hotknot"
 
@@ -231,7 +231,7 @@ static s32 hotknot_enter_transfer_mode(void)
 	u8 buffer[5] = { 0 };
 
 	hotknot_transfer_mode = 1;
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_OFF);
 #endif
 
@@ -314,14 +314,14 @@ static s32 hotknot_recovery_main_system(void)
 	gt1x_irq_disable();
 	gt1x_reset_guitar();
 	gt1x_irq_enable();
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_ON);
 #endif
 	hotknot_transfer_mode = 0;
 	return 0;
 }
 
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 DECLARE_WAIT_QUEUE_HEAD(bp_waiter);
 static u8 got_hotknot_state;
 static u8 got_hotknot_extra_state;
@@ -451,8 +451,8 @@ s32 hotknot_event_handler(u8 *data)
 
 	return -1;
 }
-#endif				/*HOTKNOT_BLOCK_RW*/
-#endif				/*GTP_HOTKNOT*/
+#endif				/*CONFIG_HOTKNOT_BLOCK_RW*/
+#endif				/*CONFIG_GTP_HOTKNOT*/
 
 #define GOODIX_MAGIC_NUMBER        'G'
 #define NEGLECT_SIZE_MASK           (~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
@@ -620,14 +620,14 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case IO_DISABLE_IRQ:
 		gt1x_irq_disable();
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 		gt1x_esd_switch(SWITCH_OFF);
 #endif
 		break;
 
 	case IO_ENABLE_IRQ:
 		gt1x_irq_enable();
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 		gt1x_esd_switch(SWITCH_ON);
 #endif
 		break;
@@ -638,7 +638,7 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			GTP_INFO("%s", (char *)data);
 		break;
 
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	case GESTURE_ENABLE_TOTALLY:
 		GTP_DEBUG("ENABLE_GESTURE_TOTALLY");
 		gesture_enabled = (is_all_dead(gestures_flag, sizeof(gestures_flag)) ? 0 : 1);
@@ -689,15 +689,15 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		GTP_DEBUG("ERASE_GESTURE_DATA");
 		gesture_clear_wakeup_data();
 		break;
-#endif				/*GTP_GESTURE_WAKEUP*/
+#endif				/*CONFIG_GTP_GESTURE_WAKEUP*/
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	case HOTKNOT_LOAD_HOTKNOT:
 		ret = hotknot_load_hotknot_subsystem();
 		break;
 
 	case HOTKNOT_LOAD_AUTHENTICATION:
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 		gt1x_esd_switch(SWITCH_ON);
 #endif
 		ret = hotknot_load_authentication_subsystem();
@@ -706,7 +706,7 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case HOTKNOT_RECOVERY_MAIN:
 		ret = hotknot_recovery_main_system();
 		break;
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 	case HOTKNOT_DEVICES_PAIRED:
 		hotknot_paired_flag = 0;
 		force_wake_flag = 0;
@@ -737,8 +737,8 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case HOTKNOT_WAKEUP_BLOCK:
 		hotknot_wakeup_block();
 		break;
-#endif				/*HOTKNOT_BLOCK_RW*/
-#endif				/*GTP_HOTKNOT*/
+#endif				/*CONFIG_HOTKNOT_BLOCK_RW*/
+#endif				/*CONFIG_GTP_HOTKNOT*/
 
 	default:
 		GTP_INFO("Unknown cmd.");
@@ -750,7 +750,7 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		kfree(data);
 	return ret;
 }
-
+#ifdef CONFIG_GTP_HOTKNOT
 #ifdef CONFIG_COMPAT
 static long gt1x_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -879,16 +879,17 @@ static long gt1x_compat_ioctl(struct file *file, unsigned int cmd, unsigned long
 	return ret;
 }
 #endif
+#endif
 static const struct file_operations gt1x_fops = {
 	.owner = THIS_MODULE,
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	.read = gt1x_gesture_data_read,
 	.write = gt1x_gesture_data_write,
 #endif
 	.unlocked_ioctl = gt1x_ioctl,
 };
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 static const struct file_operations hotknot_fops = {
 	.unlocked_ioctl = gt1x_ioctl,
 	.open = hotknot_open,
@@ -907,7 +908,7 @@ static struct miscdevice hotknot_misc_device = {
 
 s32 gt1x_init_node(void)
 {
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	struct proc_dir_entry *proc_entry = NULL;
 
 	mutex_init(&gesture_data_mutex);
@@ -922,7 +923,7 @@ s32 gt1x_init_node(void)
 	GTP_INFO("Create proc entry[GESTURE_NODE] success!");
 #endif
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	if (misc_register(&hotknot_misc_device)) {
 		GTP_ERROR("Couldn't create [HOTKNOT_NODE] device!");
 		return -1;
@@ -934,11 +935,11 @@ s32 gt1x_init_node(void)
 
 void gt1x_deinit_node(void)
 {
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	remove_proc_entry(GESTURE_NODE, NULL);
 #endif
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	misc_deregister(&hotknot_misc_device);
 #endif
 }

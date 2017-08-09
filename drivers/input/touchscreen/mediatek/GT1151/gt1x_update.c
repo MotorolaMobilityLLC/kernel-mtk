@@ -28,8 +28,9 @@
 #include <linux/mount.h>
 #include <linux/uaccess.h>
 
-#include "gt1x_generic.h"
-#if (GTP_HOTKNOT || GTP_HEADER_FW_UPDATE)
+#include "gt1x_config.h"
+#include "include/gt1x_tpd_common.h"
+#if defined(CONFIG_GTP_HOTKNOT) || defined(CONFIG_GTP_HEADER_FW_UPDATE)
 #include "gt1x_firmware.h"
 #endif
 
@@ -200,7 +201,7 @@ u32 getUint(u8 *buffer, int len)
 	}
 	return num;
 }
-#if !GTP_HEADER_FW_UPDATE
+#ifndef CONFIG_GTP_HEADER_FW_UPDATE
 static int gt1x_search_update_files(void)
 {
 	int retry = 20 * 2;	/*ait 10s(max) if fs is not ready*/
@@ -255,7 +256,7 @@ static int gt1x_search_update_files(void)
 int gt1x_auto_update_proc(void *data)
 {
 
-#if GTP_HEADER_FW_UPDATE
+#ifdef CONFIG_GTP_HEADER_FW_UPDATE
 	GTP_INFO("Start auto update thread...");
 	gt1x_update_firmware(NULL);
 #else
@@ -293,7 +294,7 @@ int gt1x_auto_update_proc(void *data)
 
 void gt1x_enter_update_mode(void)
 {
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_OFF);
 #endif
 	gt1x_irq_disable();
@@ -305,7 +306,7 @@ int gt1x_update_prepare(char *filename)
 	int retry = 5;
 
 	if (filename == NULL) {
-#if GTP_HEADER_FW_UPDATE
+#ifdef CONFIG_GTP_HEADER_FW_UPDATE
 		update_info.fw_name = NULL;
 		update_info.update_type = UPDATE_TYPE_HEADER;
 		update_info.fw_data = gt1x_default_FW;
@@ -1067,7 +1068,7 @@ void gt1x_leave_update_mode(void)
 	GTP_DEBUG("[leave_update_mode]reset chip.");
 	gt1x_reset_guitar();
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_ON);
 #endif
 	gt1x_irq_enable();

@@ -19,13 +19,12 @@
  *
  */
 
-#include "gt1x_tpd_custom.h"
-#include "gt1x_generic.h"
+#include "include/gt1x_tpd_common.h"
 #if TPD_SUPPORT_I2C_DMA
 #include <linux/dma-mapping.h>
 #endif
 
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 #include <linux/input/mt.h>
 #endif
 
@@ -43,9 +42,6 @@ static int tpd_eint_mode = 1;
 static struct task_struct *thread;
 static struct task_struct *probe_thread;
 static int tpd_polling_time = 50;
-#if TOUCH_FILTER
-static struct tpd_filter_t tpd_filter_local = TPD_FILTER_PARA;
-#endif
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
@@ -499,12 +495,8 @@ static int tpd_registration(void *client)
 		for (idx = 0; idx < tpd_dts_data.tpd_key_num; idx++)
 			input_set_capability(tpd->dev, EV_KEY, tpd_dts_data.tpd_key_local[idx]);
 	}
-#if TOUCH_FILTER
-	memcpy(&tpd_filter, &tpd_filter_local, sizeof(struct tpd_filter_t));
 
-#endif
-
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	input_set_capability(tpd->dev, EV_KEY, KEY_GESTURE);
 #endif
 
@@ -514,13 +506,13 @@ static int tpd_registration(void *client)
 	/* EINT device tree, default EINT enable */
 	tpd_irq_registration();
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	/*  must before auto update */
 	gt1x_init_esd_protect();
 	gt1x_esd_switch(SWITCH_ON);
 #endif
 
-#if GTP_AUTO_UPDATE
+#ifdef CONFIG_GTP_AUTO_UPDATE
 
 	thread = kthread_run(gt1x_auto_update_proc, (void *)NULL, "gt1x_auto_update");
 	if (IS_ERR(thread)) {
@@ -574,14 +566,14 @@ static irqreturn_t tpd_eint_interrupt_handler(unsigned irq, struct irq_desc *des
 static int tpd_history_x, tpd_history_y;
 void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 {
-#if GTP_CHANGE_X2Y
+#ifdef CONFIG_GTP_CHANGE_X2Y
 	GTP_SWAP(x, y);
 #endif
 #ifdef CONFIG_CUSTOM_LCM_X
 	unsigned long lcm_x = 0, lcm_y = 0;
 	int ret;
 #endif
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(tpd->dev, id);
 	input_report_abs(tpd->dev, ABS_MT_PRESSURE, size);
 	input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, size);
@@ -637,7 +629,7 @@ void gt1x_touch_down(s32 x, s32 y, s32 size, s32 id)
 
 void gt1x_touch_up(s32 id)
 {
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(tpd->dev, id);
 	input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, -1);
 #else
@@ -656,7 +648,7 @@ void gt1x_touch_up(s32 id)
 #endif
 }
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 u32 gt1x_get_charger_status(void)
 {
 	u32 chr_status = 0;
@@ -694,7 +686,7 @@ static int tpd_event_handler(void *unused)
 		mutex_lock(&i2c_access);
 		/* don't reset before "if (tpd_halt..."  */
 
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 		ret = gesture_event_handler(tpd->dev);
 		if (ret >= 0) {
 			gt1x_irq_enable();
@@ -712,7 +704,7 @@ static int tpd_event_handler(void *unused)
 		ret = gt1x_i2c_read(GTP_READ_COOR_ADDR, point_data, sizeof(point_data));
 		if (ret < 0) {
 			GTP_ERROR("I2C transfer error!");
-#if !GTP_ESD_PROTECT
+#ifndef CONFIG_GTP_ESD_PROTECT
 			gt1x_power_reset();
 #endif
 			goto exit_work_func;
@@ -724,27 +716,27 @@ static int tpd_event_handler(void *unused)
 			gt1x_request_event_handler();
 
 		if ((finger & 0x80) == 0) {
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 			if (!hotknot_paired_flag) {
 #endif
 				gt1x_irq_enable();
 				mutex_unlock(&i2c_access);
 				continue;
 			}
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 		}
 		ret = hotknot_event_handler(point_data);
 		if (!ret)
 			goto exit_work_func;
 #endif
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 		ret = gt1x_prox_event_handler(point_data);
 		if (ret > 0)
 			goto exit_work_func;
 #endif
 
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 		ret = gt1x_touch_event_handler(point_data, tpd->dev, pen_dev);
 #else
 		ret = gt1x_touch_event_handler(point_data, tpd->dev, NULL);
@@ -839,40 +831,12 @@ static int tpd_local_init(void)
 {
 #if !defined CONFIG_MTK_LEGACY
 	int ret;
-	char *cust_tpd_name = NULL;
-	struct device_node *node = NULL, *tpd_node;
 
 	GTP_INFO("Device Tree get regulator!");
-	/* check if cust defined */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,regulator_supply");
-	if (node) {
-		cust_tpd_name = of_get_property(node, "CAP_TOUCH_VDD", NULL);
-		if (cust_tpd_name == NULL) {
-			/* no customer setting, use default touch regulator */
-			tpd->reg = regulator_get(tpd->tpd_dev, "VTOUCH");
-			ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
-			if (ret) {
-				GTP_ERROR("regulator_set_voltage(%d) failed!\n", ret);
-				return -1;
-			}
-		} else {
-			/* customer setting existed */
-			GTP_INFO("Using Cust-LDO. Touch regulator name =%s!\n", cust_tpd_name);
-			/* backup tpd node */
-			tpd_node = tpd->tpd_dev->of_node;
-			/* get customer regulator supply node */
-			tpd->tpd_dev->of_node = node;
-			tpd->reg = regulator_get(tpd->tpd_dev, "CAP_TOUCH_VDD");
-			ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
-			if (ret) {
-				GTP_ERROR("regulator_set_voltage() failed!\n");
-				return -1;
-			}
-			/* restore tpd node */
-			tpd->tpd_dev->of_node = tpd_node;
-		}
-	} else {
-		GTP_ERROR("regulator get touch node failed!\n");
+	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
+	if (ret) {
+		GTP_ERROR("regulator_set_voltage(%d) failed!\n", ret);
 		return -1;
 	}
 #endif
@@ -935,21 +899,23 @@ static int tpd_local_init(void)
 static void tpd_suspend(struct device *h)
 {
 	s32 ret = -1;
-#if GTP_HOTKNOT && !HOTKNOT_BLOCK_RW
+#if defined(CONFIG_GTP_HOTKNOT)
+#ifndef CONFIG_HOTKNOT_BLOCK_RW
 	u8 buf[1] = { 0 };
+#endif
 #endif
 	GTP_INFO("TPD suspend start...");
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 	if (gt1x_proximity_flag == 1) {
 		GTP_INFO("Suspend: proximity is detected!");
 		return;
 	}
 #endif
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	if (hotknot_enabled) {
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 		if (hotknot_paired_flag) {
 			GTP_INFO("Suspend: hotknot is paired!");
 			return;
@@ -966,17 +932,17 @@ static void tpd_suspend(struct device *h)
 #endif
 	tpd_halt = 1;
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_OFF);
 #endif
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	gt1x_charger_switch(SWITCH_OFF);
 #endif
 
 	mutex_lock(&i2c_access);
 
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 	gesture_clear_wakeup_data();
 	if (gesture_enabled) {
 		gesture_enter_doze();
@@ -1000,16 +966,16 @@ static void tpd_resume(struct device *h)
 
 	GTP_INFO("TPD resume start...");
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 	if (gt1x_proximity_flag == 1) {
 		GTP_INFO("Resume: proximity is on!");
 		return;
 	}
 #endif
 
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	if (hotknot_enabled) {
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 		if (hotknot_paired_flag) {
 			hotknot_paired_flag = 0;
 			GTP_INFO("Resume: hotknot is paired!");
@@ -1022,12 +988,12 @@ static void tpd_resume(struct device *h)
 	ret = gt1x_wakeup_sleep();
 	if (ret < 0)
 		GTP_ERROR("GTP later resume failed.");
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	if (!hotknot_enabled)
 		gt1x_send_cmd(GTP_CMD_HN_EXIT_SLAVE, 0);
 #endif
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	gt1x_charger_config(0);
 	gt1x_charger_switch(SWITCH_ON);
 #endif
@@ -1035,7 +1001,7 @@ static void tpd_resume(struct device *h)
 	tpd_halt = 0;
 	gt1x_irq_enable();
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_esd_switch(SWITCH_ON);
 #endif
 
@@ -1074,7 +1040,6 @@ void tpd_on(void)
 		GTP_ERROR("GTP later resume failed.");
 	tpd_halt = 0;
 }
-
 /* called when loaded into kernel */
 static int __init tpd_driver_init(void)
 {

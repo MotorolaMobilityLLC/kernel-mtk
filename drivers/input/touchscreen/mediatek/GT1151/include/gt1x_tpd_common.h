@@ -1,4 +1,4 @@
-/* drivers/input/touchscreen/gt1x_generic.h
+/* drivers/input/touchscreen/gt1x_tpd_custom.h
  *
  * 2010 - 2014 Goodix Technology.
  *
@@ -16,16 +16,20 @@
  * Version: 1.0
  * Revision Record:
  *      V1.0:  first release. 2014/09/28.
- *
  */
 
-#ifndef _GT1X_GENERIC_H_
-#define _GT1X_GENERIC_H_
+#ifndef GT1X_TPD_COMMON_H__
+#define GT1X_TPD_COMMON_H__
 
+#include <asm/uaccess.h>
+#ifdef CONFIG_MTK_BOOT
+#include "mt_boot_common.h"
+#endif
+#include "tpd.h"
+#include "upmu_common.h"
 #include <linux/hrtimer.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>
-
 #include <linux/jiffies.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -42,144 +46,38 @@
 #include <linux/byteorder/generic.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
-
+#include <linux/input.h>
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 
-/***************************PART1:ON/OFF define*******************************/
+#define TPD_SUPPORT_I2C_DMA         1	/* if gt9l, better enable it if hardware platform supported*/
 
-#define GTP_DRIVER_SEND_CFG   1	/* send config to TP while initializing (for no config built in TP's flash) */
-#define GTP_CUSTOM_CFG        1	/* customize resolution & interrupt trigger mode */
+#if defined(CONFIG_MTK_LEGACY)
+#define TPD_POWER_SOURCE_CUSTOM	MT6328_POWER_LDO_VGP1
+#endif
 
-#define GTP_CHANGE_X2Y        0	/* exchange xy */
-#define GTP_WARP_X_ON         0
-#define GTP_WARP_Y_ON         0
+#define GTP_GPIO_AS_INT(pin) tpd_gpio_as_int(pin)
+#define GTP_GPIO_OUTPUT(pin, level) tpd_gpio_output(pin, level)
 
-#define GTP_GESTURE_WAKEUP    0	/* gesture wakeup module */
+#define IIC_MAX_TRANSFER_SIZE         8
+#define IIC_DMA_MAX_TRANSFER_SIZE     250
+#define I2C_MASTER_CLOCK              300
+#define TPD_MAX_RESET_COUNT           3
+#define TPD_HAVE_CALIBRATION
+#define TPD_CALIBRATION_MATRIX        {962, 0, 0, 0, 1600, 0, 0, 0}
 #define KEY_GESTURE           KEY_F24	/* customize gesture-key */
-
-#define GTP_HOTKNOT           1	/* hotknot module */
-#define HOTKNOT_TYPE          0	/* 0: hotknot in flash; 1: hotknot in driver */
-#define HOTKNOT_BLOCK_RW      0
-
-#define GTP_PROXIMITY         0	/* proximity module (function as the p-sensor),only supports MTK platform */
-
-#define GTP_WITH_STYLUS       0
-#define GTP_HAVE_STYLUS_KEY   0
-
-#define GTP_AUTO_UPDATE       1	/* auto update FW to TP FLASH while initializing */
-#define GTP_HEADER_FW_UPDATE  1	/* firmware in gt1x_firmware.h */
-
-#define GTP_POWER_CTRL_SLEEP  1	/*turn off power on suspend */
-#define GTP_ICS_SLOT_REPORT   0
-#define GTP_CREATE_WR_NODE    1	/* create the interface to support gtp_tools */
-
-#define GTP_ESD_PROTECT       0	/* esd-protection module (with a cycle of 2 seconds) */
-#define GTP_CHARGER_SWITCH    0	/* charger plugin & plugout detect */
-
-#define GTP_DEBUG_ON          0	/* enable log printed by GTP_DEBUG(...) */
-#define GTP_DEBUG_ARRAY_ON    0
-#define GTP_DEBUG_FUNC_ON     1
 
 extern int tpd_em_log;
 
 #define CFG_GROUP_LEN(p_cfg_grp)  (sizeof(p_cfg_grp) / sizeof(p_cfg_grp[0]))
 
-/***************************PART2:TODO define**********************************/
-/*TODO: puts the config info corresponded to your TP here, the following is just
-		a sample config, send this config should cause the chip can not work normally*/
-
-/* TODO define your config for Sensor_ID == 0 here, if needed */
-#define GTP_CFG_GROUP0 {\
-0x44, 0xD0, 0x02, 0x00, 0x05, 0x05, 0x3D, 0x10, 0x00, 0x08, \
-0x00, 0x05, 0x3C, 0x28, 0x5E, 0x00, 0x11, 0x00, 0x00, 0x00, \
-0x28, 0x82, 0x96, 0xFC, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x87, 0x26, 0x17, 0x64, \
-0x66, 0xDF, 0x07, 0x91, 0x31, 0x18, 0x0C, 0x43, 0x24, 0x00, \
-0x06, 0x28, 0x6E, 0x80, 0x94, 0x02, 0x05, 0x08, 0x04, 0xDA, \
-0x33, 0xAF, 0x3F, 0x92, 0x4A, 0x7F, 0x56, 0x71, 0x62, 0x66, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x0F, 0x19, 0x04, \
-0x0F, 0x10, 0x42, 0xD8, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0xFF, 0xFF, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x05, 0x1E, 0x00, 0x70, 0x17, 0x50, 0x1E, \
-0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0F, 0x0E, 0x10, 0x0D, 0x12, \
-0x13, 0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18, 0x17, \
-0x16, 0x15, 0x14, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, \
-0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, \
-0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC8, 0x00, 0x00, \
-0x00, 0x00, 0x24, 0x1E, 0x6D, 0x00, 0x14, 0x28, 0x00, 0x00, \
-0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x23, 0x99, 0x01\
-}
-
-/* TODO define your config for Sensor_ID == 0 here, if needed */
-#define GTP_CFG_GROUP0_CHARGER {\
-}
-
-/* TODO define your config for Sensor_ID == 1 here, if needed */
-#define GTP_CFG_GROUP1 {\
-	}
-
-/* TODO define your config for Sensor_ID == 1 here, if needed */
-#define GTP_CFG_GROUP1_CHARGER {\
-	}
-
-/* TODO define your config for Sensor_ID == 2 here, if needed */
-#define GTP_CFG_GROUP2 {\
-	}
-
-/* TODO define your config for Sensor_ID == 2 here, if needed */
-#define GTP_CFG_GROUP2_CHARGER {\
-	}
-
-/* TODO define your config for Sensor_ID == 3 here, if needed */
-#define GTP_CFG_GROUP3 {\
-	}
-
-/* TODO define your config for Sensor_ID == 3 here, if needed */
-#define GTP_CFG_GROUP3_CHARGER {\
-	}
-
-/* TODO define your config for Sensor_ID == 4 here, if needed */
-#define GTP_CFG_GROUP4 {\
-	}
-
-/* TODO define your config for Sensor_ID == 4 here, if needed */
-#define GTP_CFG_GROUP4_CHARGER {\
-	}
-
-/* TODO define your config for Sensor_ID == 5 here, if needed */
-#define GTP_CFG_GROUP5 {\
-	}
-
-/* TODO define your config for Sensor_ID == 5 here, if needed */
-#define GTP_CFG_GROUP5_CHARGER {\
-	}
-
-#if GTP_CUSTOM_CFG
-#define GTP_MAX_HEIGHT   1280
-#define GTP_MAX_WIDTH    720
+#ifdef CONFIG_GTP_CUSTOM_CFG
 #define GTP_INT_TRIGGER  1	/*0:Rising 1:Falling*/
 #define GTP_WAKEUP_LEVEL 1
-#else
-#define GTP_MAX_HEIGHT   1280
-#define GTP_MAX_WIDTH    720
-#define GTP_INT_TRIGGER  1
-#define GTP_WAKEUP_LEVEL 1
-#endif
-#define TOUCH_FILTER 1
-#if TOUCH_FILTER
-#define TPD_FILTER_PARA {1, 124}	/*{enable, pixel density}*/
 #endif
 
 #define GTP_MAX_TOUCH    5
-
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 #define GTP_STYLUS_KEY_TAB {BTN_STYLUS, BTN_STYLUS2}
 #endif
 
@@ -262,13 +160,13 @@ extern int tpd_em_log;
 
 #define GTP_I2C_ADDRESS				0xBA
 
-#if GTP_WARP_X_ON
+#ifdef CONFIG_GTP_WARP_X_ON
 #define GTP_WARP_X(x_max, x) (x_max - 1 - x)
 #else
 #define GTP_WARP_X(x_max, x) x
 #endif
 
-#if GTP_WARP_Y_ON
+#ifdef CONFIG_GTP_WARP_Y_ON
 #define GTP_WARP_Y(y_max, y) (y_max - 1 - y)
 #else
 #define GTP_WARP_Y(y_max, y) y
@@ -284,29 +182,28 @@ extern int tpd_em_log;
 		if (tpd_em_log)						\
 			pr_debug("<<GTP-DBG>>[%s:%d]"fmt"\n", __func__, __LINE__, ##arg);\
 	} while (0)
-
+#ifdef CONFIG_GTP_DEBUG_ARRAY_ON
 #define GTP_DEBUG_ARRAY(array, num)			\
 	do {									\
 		s32 i;								\
 		u8 *a = array;						\
-		if (GTP_DEBUG_ARRAY_ON) {			\
-			pr_debug("<<GTP-DBG>>");		\
-			for (i = 0; i < (num); i++) {	\
-				pr_debug("%02x ", (a)[i]);	\
-				if ((i + 1) % 10 == 0) {	\
-					pr_debug("\n<<GTP-DBG>>");\
-				}							\
-			}								\
+		pr_debug("<<GTP-DBG>>");		\
+		for (i = 0; i < (num); i++) {	\
+			pr_debug("%02x ", (a)[i]);	\
+			if ((i + 1) % 10 == 0) {	\
+				pr_debug("\n<<GTP-DBG>>");\
+			}							\
+		}								\
 		pr_debug("\n");						\
-		}									\
 	} while (0)
-
-#define GTP_DEBUG_FUNC()			\
-	do {							\
-		if (GTP_DEBUG_FUNC_ON)		\
-			pr_debug("<<GTP-FUNC>> Func:%s@Line:%d\n", __func__, __LINE__);	\
-	} while (0)
-
+#else
+#define GTP_DEBUG_ARRAY(array, num)	do {} while (0)
+#endif
+#ifdef CONFIG_GTP_DEBUG_FUNC_ON
+#define GTP_DEBUG_FUNC()	pr_debug("<<GTP-FUNC>> Func:%s@Line:%d\n", __func__, __LINE__)
+#else
+#define GTP_DEBUG_FUNC()	do {} while (0)
+#endif
 #define GTP_SWAP(x, y)		\
 	do {					\
 		typeof(x) z = x;	\
@@ -363,26 +260,27 @@ typedef enum {
 #define BIT_STYLUS_KEY		0x08
 #define BIT_HOVER			0x10
 
-#include <linux/input.h>
 struct i2c_msg;
-
+extern void tpd_on(void);
+extern void tpd_off(void);
 /*          Export global variables and functions          */
 
 /* Export from gt1x_extents.c and gt1x_firmware.h */
-#if GTP_HOTKNOT
+
+#ifdef CONFIG_GTP_HOTKNOT
 extern u8 hotknot_enabled;
 extern u8 hotknot_transfer_mode;
 extern u8 gt1x_patch_jump_fw[];
 extern u8 hotknot_auth_fw[];
 extern u8 hotknot_transfer_fw[];
-#if HOTKNOT_BLOCK_RW
+#ifdef CONFIG_HOTKNOT_BLOCK_RW
 extern s32 hotknot_paired_flag;
 extern s32 hotknot_event_handler(u8 *data);
 #endif
-#endif				/*GTP_HOTKNOT */
+#endif				/*CONFIG_GTP_HOTKNOT */
 extern s32 gt1x_init_node(void);
 extern bool check_flag;
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 extern DOZE_T gesture_doze_status;
 extern int gesture_enabled;
 extern s32 gesture_event_handler(struct input_dev *dev);
@@ -430,7 +328,7 @@ extern int gt1x_load_patch(u8 *patch, u32 patch_size, int offset, int bank_size)
 extern int gt1x_startup_patch(void);
 
 /* Export from gt1x_tool.c */
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 extern int gt1x_init_tool_node(void);
 extern void gt1x_deinit_tool_node(void);
 #endif
@@ -479,13 +377,13 @@ extern int gt1x_parse_config(char *filename, u8 *gt1x_config);
 extern s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *pen_dev);
 
 
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 extern struct input_dev *pen_dev;
 extern void gt1x_pen_down(s32 x, s32 y, s32 size, s32 id);
 extern void gt1x_pen_up(s32 id);
 #endif
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 extern u8 gt1x_proximity_flag;
 extern u8 gt1x_proximity_detect;
 extern void gt1x_report_ps(u8 state);
@@ -493,14 +391,14 @@ extern void gt1x_ps_init(void);
 extern int gt1x_prox_event_handler(u8 *data);
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 extern void gt1x_init_esd_protect(void);
 extern void gt1x_deinit_esd_protect(void);
 extern s32 gt1x_init_ext_watchdog(void);
 extern void gt1x_esd_switch(s32 on);
 #endif
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 extern u8 gt1x_config_charger[GTP_CONFIG_MAX_LENGTH];
 extern u32 gt1x_get_charger_status(void);
 extern void gt1x_charger_switch(s32 on);
@@ -511,8 +409,6 @@ extern void gt1x_charger_config(s32 dir_update);
 extern bool upmu_is_chr_det(void);
 #endif
 #endif
-#if TOUCH_FILTER
 extern struct tpd_filter_t tpd_filter;
-#endif
 
-#endif				/* _GT1X_GENERIC_H_ */
+#endif /* GT1X_TPD_COMMON_H__ */

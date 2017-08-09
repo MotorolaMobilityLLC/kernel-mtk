@@ -21,16 +21,16 @@
 
 #include <linux/input.h>
 
-#include "gt1x_tpd_custom.h"
-#include "gt1x_generic.h"
+#include "include/gt1x_tpd_common.h"
+#include "gt1x_config.h"
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
 #endif
 
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 #include <linux/input/mt.h>
 #endif
 
@@ -53,7 +53,7 @@ struct gt1x_version_info gt1x_version = {
 };
 
 
-#if GTP_WITH_STYLUS && GTP_HAVE_STYLUS_KEY
+#if defined(CONFIG_GTP_WITH_STYLUS) && defined(CONFIG_GTP_HAVE_STYLUS_KEY)
 const u16 gt1x_stylus_key_array[] = GTP_STYLUS_KEY_TAB;
 #endif
 
@@ -232,7 +232,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 		gt1x_reset_guitar();
 		return count;
 	}
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	if (strcmp(mode_str, "charger") == 0) {
 		gt1x_charger_config(mode);
 		return count;
@@ -515,7 +515,7 @@ s32 gt1x_get_info(void)
  */
 s32 gt1x_send_cfg(u8 *config, int cfg_len)
 {
-#if GTP_DRIVER_SEND_CFG
+#ifdef CONFIG_GTP_DRIVER_SEND_CFG
 	int i;
 	s32 ret = 0;
 	s32 retry = 0;
@@ -553,7 +553,7 @@ s32 gt1x_init_panel(void)
 	s32 ret = 0;
 	u8 cfg_len = 0;
 
-#if GTP_DRIVER_SEND_CFG
+#ifdef CONFIG_GTP_DRIVER_SEND_CFG
 	u8 sensor_id = 0;
 
 	const u8 cfg_grp0[] = GTP_CFG_GROUP0;
@@ -575,7 +575,7 @@ s32 gt1x_init_panel(void)
 		CFG_GROUP_LEN(cfg_grp5)
 	};
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	const u8 cfg_grp0_charger[] = GTP_CFG_GROUP0_CHARGER;
 	const u8 cfg_grp1_charger[] = GTP_CFG_GROUP1_CHARGER;
 	const u8 cfg_grp2_charger[] = GTP_CFG_GROUP2_CHARGER;
@@ -594,7 +594,7 @@ s32 gt1x_init_panel(void)
 		CFG_GROUP_LEN(cfg_grp4_charger),
 		CFG_GROUP_LEN(cfg_grp5_charger)
 	};
-#endif				/* end  GTP_CHARGER_SWITCH */
+#endif				/* end  CONFIG_GTP_CHARGER_SWITCH */
 
 	GTP_DEBUG("Config Groups Length: %d, %d, %d, %d, %d, %d", cfg_lens[0], cfg_lens[1], cfg_lens[2], cfg_lens[3],
 		  cfg_lens[4], cfg_lens[5]);
@@ -623,22 +623,23 @@ s32 gt1x_init_panel(void)
 	/* clear the flag, avoid failure when send the_config of driver. */
 	gt1x_config[0] &= 0x7F;
 
-#if GTP_CUSTOM_CFG
-	gt1x_config[RESOLUTION_LOC] = (u8) GTP_MAX_WIDTH;
-	gt1x_config[RESOLUTION_LOC + 1] = (u8) (GTP_MAX_WIDTH >> 8);
-	gt1x_config[RESOLUTION_LOC + 2] = (u8) GTP_MAX_HEIGHT;
-	gt1x_config[RESOLUTION_LOC + 3] = (u8) (GTP_MAX_HEIGHT >> 8);
+#ifdef CONFIG_GTP_CUSTOM_CFG
+	gt1x_config[RESOLUTION_LOC] = (u8) tpd_dts_data.tpd_resolution[0];
+	gt1x_config[RESOLUTION_LOC + 1] = (u8) (tpd_dts_data.tpd_resolution[0] >> 8);
+	gt1x_config[RESOLUTION_LOC + 2] = (u8) tpd_dts_data.tpd_resolution[1];
+	gt1x_config[RESOLUTION_LOC + 3] = (u8) (tpd_dts_data.tpd_resolution[1] >> 8);
 
-	GTP_INFO("Res: %d * %d, trigger: %d", GTP_MAX_WIDTH, GTP_MAX_HEIGHT, GTP_INT_TRIGGER);
+	GTP_INFO("Res: %d * %d, trigger: %d", tpd_dts_data.tpd_resolution[0],
+		tpd_dts_data.tpd_resolution[1], GTP_INT_TRIGGER);
 
 	if (GTP_INT_TRIGGER == 0) {	/* RISING  */
 		gt1x_config[TRIGGER_LOC] &= 0xfe;
 	} else if (GTP_INT_TRIGGER == 1) {	/* FALLING */
 		gt1x_config[TRIGGER_LOC] |= 0x01;
 	}
-#endif				/* END GTP_CUSTOM_CFG */
+#endif				/* END CONFIG_GTP_CUSTOM_CFG */
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	GTP_DEBUG("Charger Config Groups Length: %d, %d, %d, %d, %d, %d", cfg_lens_charger[0],
 		  cfg_lens_charger[1], cfg_lens_charger[2], cfg_lens_charger[3], cfg_lens_charger[4],
 		  cfg_lens_charger[5]);
@@ -650,28 +651,28 @@ s32 gt1x_init_panel(void)
 	/* clear the flag, avoid failure when send the config of driver. */
 	gt1x_config_charger[0] &= 0x7F;
 
-#if GTP_CUSTOM_CFG
-	gt1x_config_charger[RESOLUTION_LOC] = (u8) GTP_MAX_WIDTH;
-	gt1x_config_charger[RESOLUTION_LOC + 1] = (u8) (GTP_MAX_WIDTH >> 8);
-	gt1x_config_charger[RESOLUTION_LOC + 2] = (u8) GTP_MAX_HEIGHT;
-	gt1x_config_charger[RESOLUTION_LOC + 3] = (u8) (GTP_MAX_HEIGHT >> 8);
+#ifdef CONFIG_GTP_CUSTOM_CFG
+	gt1x_config_charger[RESOLUTION_LOC] = (u8) tpd_dts_data.tpd_resolution[0];
+	gt1x_config_charger[RESOLUTION_LOC + 1] = (u8) (tpd_dts_data.tpd_resolution[0] >> 8);
+	gt1x_config_charger[RESOLUTION_LOC + 2] = (u8) tpd_dts_data.tpd_resolution[1];
+	gt1x_config_charger[RESOLUTION_LOC + 3] = (u8) (tpd_dts_data.tpd_resolution[1] >> 8);
 
 	if (GTP_INT_TRIGGER == 0) {	/* RISING  */
 		gt1x_config_charger[TRIGGER_LOC] &= 0xfe;
 	} else if (GTP_INT_TRIGGER == 1) {	/* FALLING */
 		gt1x_config_charger[TRIGGER_LOC] |= 0x01;
 	}
-#endif				/* END GTP_CUSTOM_CFG */
+#endif				/* END CONFIG_GTP_CUSTOM_CFG */
 	if (cfg_lens_charger[sensor_id] != cfg_len)
 		memset(gt1x_config_charger, 0, sizeof(gt1x_config_charger));
-#endif				/* END GTP_CHARGER_SWITCH */
+#endif				/* END CONFIG_GTP_CHARGER_SWITCH */
 
 #else				/* DRIVER NOT SEND CONFIG */
 	cfg_len = GTP_CONFIG_MAX_LENGTH;
 	ret = gt1x_i2c_read(GTP_REG_CONFIG_DATA, gt1x_config, cfg_len);
 	if (ret < 0)
 		return ret;
-#endif				/* END GTP_DRIVER_SEND_CFG */
+#endif				/* END CONFIG_GTP_DRIVER_SEND_CFG */
 
 	GTP_DEBUG_FUNC();
 	/* match resolution when gt1x_abs_x_max & gt1x_abs_y_max have been set already */
@@ -687,7 +688,7 @@ s32 gt1x_init_panel(void)
 		gt1x_config[RESOLUTION_LOC + 3] = (u8) (gt1x_abs_y_max >> 8);
 		set_reg_bit(gt1x_config[MODULE_SWITCH3_LOC], 5, !gt1x_wakeup_level);
 		gt1x_config[TRIGGER_LOC] = (gt1x_config[TRIGGER_LOC] & 0xFC) | gt1x_int_type;
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 		gt1x_config_charger[RESOLUTION_LOC] = (u8) gt1x_abs_x_max;
 		gt1x_config_charger[RESOLUTION_LOC + 1] = (u8) (gt1x_abs_x_max >> 8);
 		gt1x_config_charger[RESOLUTION_LOC + 2] = (u8) gt1x_abs_y_max;
@@ -733,7 +734,7 @@ s32 gt1x_reset_guitar(void)
 		GTP_GPIO_AS_INT(GTP_INT_PORT);
 	}
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	ret = gt1x_init_ext_watchdog();
 #else
 	ret = gt1x_i2c_test();
@@ -855,7 +856,7 @@ s32 gt1x_enter_sleep(void)
 		if (ret)
 			GTP_ERROR("[gt1x_enter_sleep]Store bak ref failed.");
 	}
-#if GTP_POWER_CTRL_SLEEP
+#ifdef CONFIG_GTP_POWER_CTRL_SLEEP
 	gt1x_power_switch(SWITCH_OFF);
 	GTP_INFO("GTP enter sleep by poweroff!");
 	return 0;
@@ -889,19 +890,19 @@ s32 gt1x_enter_sleep(void)
  */
 s32 gt1x_wakeup_sleep(void)
 {
-#if !GTP_POWER_CTRL_SLEEP
+#ifndef CONFIG_GTP_POWER_CTRL_SLEEP
 	u8 retry = 0;
 	s32 ret = -1;
 #endif
 	GTP_DEBUG("GTP wakeup begin.");
 
-#if GTP_POWER_CTRL_SLEEP	/* power manager unit control the procedure */
+#ifdef CONFIG_GTP_POWER_CTRL_SLEEP	/* power manager unit control the procedure */
 	gt1x_power_reset();
 	GTP_INFO("Ic wakeup by poweron");
 	return 0;
 #else				/* gesture wakeup & int port wakeup */
 	while (retry++ < 2) {
-#if GTP_GESTURE_WAKEUP
+#ifdef CONFIG_GTP_GESTURE_WAKEUP
 		if (gesture_enabled) {
 			if (DOZE_WAKEUP != gesture_doze_status)
 				GTP_INFO("Powerkey wakeup.");
@@ -932,7 +933,7 @@ s32 gt1x_wakeup_sleep(void)
 			if (!ret) {
 
 				/* i2c test succeed, init externl watchdog */
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 				ret = gt1x_init_ext_watchdog();
 				if (!ret)
 					break;
@@ -957,7 +958,7 @@ s32 gt1x_wakeup_sleep(void)
 	}
 	GTP_INFO("GTP wakeup sleep.");
 	return 0;
-#endif				/* END GTP_POWER_CTRL_SLEEP */
+#endif				/* END CONFIG_GTP_POWER_CTRL_SLEEP */
 }
 
 /**
@@ -1050,7 +1051,7 @@ s32 gt1x_request_event_handler(void)
 	case GTP_RQST_MAIN_CLOCK:
 		GTP_INFO("Request main clock.");
 		break;
-#if GTP_HOTKNOT
+#ifdef CONFIG_GTP_HOTKNOT
 	case GTP_RQST_HOTKNOT_CODE:
 		GTP_INFO("Request HotKnot Code.");
 		break;
@@ -1113,7 +1114,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 	key_value = touch_data[1 + 8 * touch_num];
 	/* check current event */
 	if ((touch_data[0] & 0x10) && key_value) {
-#if (GTP_HAVE_STYLUS_KEY)
+#ifdef CONFIG_GTP_HAVE_STYLUS_KEY
 		/* get current key states */
 		if (key_value & 0xF0)
 			SET_BIT(cur_event, BIT_STYLUS_KEY);
@@ -1128,7 +1129,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 				SET_BIT(cur_event, BIT_TOUCH_KEY);
 		}
 	}
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 	else if (touch_data[1] & 0x80)
 		SET_BIT(cur_event, BIT_STYLUS);
 #endif
@@ -1136,7 +1137,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 		SET_BIT(cur_event, BIT_TOUCH);
 
 /* handle current event and pre-event */
-#if GTP_HAVE_STYLUS_KEY
+#ifdef CONFIG_GTP_HAVE_STYLUS_KEY
 	if (CHK_BIT(cur_event, BIT_STYLUS_KEY) || CHK_BIT(pre_event, BIT_STYLUS_KEY)) {
 		/*
 		 * 0x10 -- stylus key0 down
@@ -1151,7 +1152,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 	}
 #endif
 
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 	if (CHK_BIT(cur_event, BIT_STYLUS)) {
 		coor_data = &touch_data[1];
 		id = coor_data[0] & 0x7F;
@@ -1203,14 +1204,14 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 				}
 				pre_index |= 0x01 << i;
 			} else if (pre_index & (0x01 << i)) {
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 				gt1x_touch_up(i);
 #endif
 				pre_index &= ~(0x01 << i);
 			}
 		}
 	} else if (CHK_BIT(pre_event, BIT_TOUCH)) {
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 		int cycles = pre_index < 3 ? 3 : GTP_MAX_TOUCH;
 
 		for (i = 0; i < cycles; i++) {
@@ -1243,7 +1244,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 	return 0;
 }
 
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 struct input_dev *pen_dev;
 
 void gt1x_pen_init(void)
@@ -1262,7 +1263,7 @@ void gt1x_pen_init(void)
 	set_bit(BTN_TOOL_PEN, pen_dev->keybit);
 	set_bit(INPUT_PROP_DIRECT, pen_dev->propbit);
 
-#if GTP_HAVE_STYLUS_KEY
+#ifdef CONFIG_GTP_HAVE_STYLUS_KEY
 	input_set_capability(pen_dev, EV_KEY, BTN_STYLUS);
 	input_set_capability(pen_dev, EV_KEY, BTN_STYLUS2);
 #endif
@@ -1287,11 +1288,11 @@ void gt1x_pen_init(void)
 void gt1x_pen_down(s32 x, s32 y, s32 size, s32 id)
 {
 	input_report_key(pen_dev, BTN_TOOL_PEN, 1);
-#if GTP_CHANGE_X2Y
+#ifdef CONFIG_GTP_CHANGE_X2Y
 	GTP_SWAP(x, y);
 #endif
 
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(pen_dev, id);
 	input_report_abs(pen_dev, ABS_MT_PRESSURE, size);
 	input_report_abs(pen_dev, ABS_MT_TOUCH_MAJOR, size);
@@ -1318,7 +1319,7 @@ void gt1x_pen_down(s32 x, s32 y, s32 size, s32 id)
 void gt1x_pen_up(s32 id)
 {
 	input_report_key(pen_dev, BTN_TOOL_PEN, 0);
-#if GTP_ICS_SLOT_REPORT
+#ifdef CONFIG_GTP_ICS_SLOT_REPORT
 	input_mt_slot(pen_dev, id);
 	input_report_abs(pen_dev, ABS_MT_TRACKING_ID, -1);
 #else
@@ -1331,7 +1332,7 @@ void gt1x_pen_up(s32 id)
 /**
  *		PROXIMITY
  */
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 #define GTP_REG_PROXIMITY_VALID                   0x814E
 #define GTP_REG_PROXIMITY_ENABLE                  0x8049
 u8 gt1x_proximity_flag = 0;
@@ -1463,12 +1464,12 @@ int gt1x_prox_event_handler(u8 *data)
 	return -1;
 }
 
-#endif				/*GTP_PROXIMITY */
+#endif				/*CONFIG_GTP_PROXIMITY */
 
 /**
  *			ESD PROTECT
  */
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 static int esd_work_cycle = 200;
 static struct delayed_work esd_check_work;
 static int esd_running;
@@ -1565,7 +1566,7 @@ static void gt1x_esd_check_func(struct work_struct *work)
 /**
  *         CHARGER SWITCH
  */
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 
 u8 gt1x_config_charger[GTP_CONFIG_MAX_LENGTH] = { 0 };
 
@@ -1722,8 +1723,8 @@ s32 gt1x_init(void)
 	ret |= gt1x_init_failed;
 	if (ret) {
 		GTP_INFO("Init failed, use default setting");
-		gt1x_abs_x_max = GTP_MAX_WIDTH;
-		gt1x_abs_y_max = GTP_MAX_HEIGHT;
+		gt1x_abs_x_max = tpd_dts_data.tpd_resolution[0];
+		gt1x_abs_y_max = tpd_dts_data.tpd_resolution[1];
 		gt1x_int_type = GTP_INT_TRIGGER;
 		gt1x_wakeup_level = GTP_WAKEUP_LEVEL;
 	}
@@ -1735,25 +1736,25 @@ s32 gt1x_init(void)
 /* init auxiliary  node and functions */
 	gt1x_init_debug_node();
 
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 	gt1x_init_tool_node();
 #endif
 
-#if GTP_GESTURE_WAKEUP || GTP_HOTKNOT
+#if defined(CONFIG_GTP_GESTURE_WAKEUP) || defined(CONFIG_GTP_HOTKNOT)
 	gt1x_init_node();
 #endif
 
-#if GTP_PROXIMITY
+#ifdef CONFIG_GTP_PROXIMITY
 	gt1x_ps_init();
 #endif
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	gt1x_charger_config(1);
 	gt1x_init_charger();
 	gt1x_charger_switch(SWITCH_ON);
 #endif
 
-#if GTP_WITH_STYLUS
+#ifdef CONFIG_GTP_WITH_STYLUS
 	gt1x_pen_init();
 #endif
 
@@ -1762,15 +1763,15 @@ s32 gt1x_init(void)
 
 void gt1x_deinit(void)
 {
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 	gt1x_deinit_tool_node();
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	gt1x_deinit_esd_protect();
 #endif
 
-#if GTP_CHARGER_SWITCH
+#ifdef CONFIG_GTP_CHARGER_SWITCH
 	gt1x_charger_switch(SWITCH_OFF);
 #endif
 
