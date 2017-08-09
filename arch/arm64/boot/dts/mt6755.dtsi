@@ -941,8 +941,8 @@
 			clock-names = "scp-sys-md1-main";
 		};
 
-		cpu_dbgapb {
-			compatible = "mediatek,mt6755-dbg_debug";
+		cpu_dbgapb: cpu_dbgapb {
+			compatible = "mediatek,hw_dbg";
 			num = <8>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000

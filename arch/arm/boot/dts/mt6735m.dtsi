@@ -1030,7 +1030,7 @@
 		};
 
 		cpu_dbgapb: cpu_dbgapb {
-			compatible = "mediatek,mt6735-dbg_debug";
+			compatible = "mediatek,hw_dbg";
 			num = <4>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000

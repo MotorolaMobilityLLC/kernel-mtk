@@ -2242,8 +2242,8 @@
 			reg = <0x10390000 0x10000>;
 		};
 
-		cpu_dbgapb: cpu_dbgapb@10410000 {
-			compatible = "mediatek,mt6797-dbg_debug";
+		cpu_dbgapb: cpu_dbgapb {
+			compatible = "mediatek,hw_dbg";
 			num = <10>;
 			reg =  <0x10410000 0x1000
 				0x10510000 0x1000
