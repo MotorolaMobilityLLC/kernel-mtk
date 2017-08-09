@@ -643,7 +643,7 @@ static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long *qll)
 }
 #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
 
-#ifdef MT_RCU_MONITOR
+#ifdef CONFIG_MT_RCU_MONITOR
 #include <linux/sched.h>
 
 #define MAX_RCU_BUFF_LEN			1024

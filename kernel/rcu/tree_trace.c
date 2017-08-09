@@ -424,7 +424,7 @@ static const struct file_operations rcutorture_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-#ifdef MT_RCU_MONITOR
+#ifdef CONFIG_MT_RCU_MONITOR
 DEFINE_PER_CPU(struct rcu_callback_log, rcu_callback_log_head);
 DEFINE_PER_CPU(struct rcu_invoke_log, rcu_invoke_callback_log);
 
@@ -628,7 +628,7 @@ static int __init rcutree_trace_init(void)
 	struct dentry *retval;
 	struct dentry *rspdir;
 
-#ifdef MT_RCU_MONITOR
+#ifdef CONFIG_MT_RCU_MONITOR
 	alloc_rcu_log_entry();
 #endif
 
@@ -683,7 +683,7 @@ static int __init rcutree_trace_init(void)
 
 	retval = debugfs_create_file("rcutorture", 0444, rcudir,
 						NULL, &rcutorture_fops);
-#ifdef MT_RCU_MONITOR
+#ifdef CONFIG_MT_RCU_MONITOR
 	retval = debugfs_create_file("rcu_callback_log", 0444, rcudir,
 						NULL, &rcu_callback_log_fops);
 #endif
