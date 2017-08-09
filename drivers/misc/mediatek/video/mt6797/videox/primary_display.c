@@ -3843,6 +3843,10 @@ done:
 	primary_trigger_cnt = 0;
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagEnd, 0, 0);
 	DISPCHECK("primary_display_suspend end\n");
+
+	/* set MMDVFS to low gear, prevent keep low_low gear after suspend */
+	_request_dvfs_perf(HRT_LEVEL_LOW);
+
 	return ret;
 }
 
