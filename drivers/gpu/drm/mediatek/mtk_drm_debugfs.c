@@ -54,6 +54,7 @@ struct mtk_drm_debugfs_table gdrm_hdmi_table[6] = {
 	{ -1, "CONFIG ", {0, 0}, {0x120, 0} },
 	{ -1, "MUTEX ", {0, 0}, {0x100, 0} }
 };
+static bool dbgfs_alpha;
 
 /* ------------------------------------------------------------------------- */
 /* Debug Options */
@@ -196,6 +197,14 @@ static void process_dbg_opt(const char *opt)
 					readl(gdrm_hdmi_base[i] + j + 0x8),
 					readl(gdrm_hdmi_base[i] + j + 0xc));
 		}
+	} else if (strncmp(opt, "alpha", 5) == 0) {
+		if (dbgfs_alpha) {
+			DRM_INFO("set src alpha to src alpha\n");
+			dbgfs_alpha = false;
+		} else {
+			DRM_INFO("set src alpha to ONE\n");
+			dbgfs_alpha = true;
+		}
 	} else {
 	    goto error;
 	}
@@ -258,6 +267,11 @@ static const struct file_operations debug_fops = {
 	.write = debug_write,
 	.open = debug_open,
 };
+
+bool force_alpha(void)
+{
+	return dbgfs_alpha;
+}
 
 void mtk_drm_debugfs_init(struct drm_device *dev,
 			  struct mtk_drm_private *priv)

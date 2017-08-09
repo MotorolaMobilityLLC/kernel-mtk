@@ -26,5 +26,6 @@ static inline void mtk_drm_debugfs_init(struct drm_device *dev,
 					struct mtk_drm_private *priv) {}
 static inline void mtk_drm_debugfs_deinit(void) {}
 #endif
+bool force_alpha(void);
 
 #endif /* MTK_DRM_DEBUGFS_H */

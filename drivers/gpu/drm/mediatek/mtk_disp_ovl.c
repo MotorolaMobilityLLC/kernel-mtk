@@ -20,6 +20,7 @@
 
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_ddp_comp.h"
+#include "mtk_drm_debugfs.h"
 
 #define DISP_REG_OVL_INTEN			0x0004
 #define OVL_FME_CPL_INT					BIT(1)
@@ -47,6 +48,10 @@ enum OVL_INPUT_FORMAT {
 #define	OVL_RDMA_MEM_GMC	0x40402020
 #define	OVL_AEN			BIT(8)
 #define	OVL_ALPHA		0xff
+#define	OVL_CON_ALPHA		BIT(13)
+#define	OVL_SURFL_EN		BIT(31)
+#define	OVL_DST_BLENDING	BIT(23)
+#define	OVL_SRC_BLENDING	BIT(18)
 
 /**
  * struct mtk_disp_ovl - DISP_OVL driver structure
@@ -182,8 +187,13 @@ static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int ovl_addr,
 
 	con = has_rb_swapped(fmt) << 24 |
 		ovl_fmt_convert(fmt, rgb888, rgb565) << 12;
-	if (idx != 0)
+	if (con & OVL_CON_ALPHA) {
 		con |= OVL_AEN | OVL_ALPHA;
+		if (force_alpha())
+			pitch |= OVL_SURFL_EN | OVL_DST_BLENDING;
+		else
+			pitch |= OVL_SURFL_EN | OVL_DST_BLENDING | OVL_SRC_BLENDING;
+	}
 
 	writel(con, ovl_base + DISP_REG_OVL_CON(idx));
 	writel(pitch, ovl_base + DISP_REG_OVL_PITCH(idx));
