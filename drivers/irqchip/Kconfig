@@ -147,13 +147,11 @@ config MTK_INTPOL
 
 config MTK_IRQ_NEW_DESIGN
 	bool
-	select MTK_GIC
 	help
 	  Support for MediaTek new interrupt design
 
 config MTK_IRQ_NEW_DESIGN_DEBUG
 	bool
-	select MTK_GIC
 	select MTK_IRQ_NEW_DESIGN
 	help
 	  Support for debugging feature for MediaTek new interrupt design

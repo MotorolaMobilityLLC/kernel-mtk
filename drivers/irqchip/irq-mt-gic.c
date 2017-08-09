@@ -1180,14 +1180,11 @@ EXPORT_SYMBOL(mt_irq_dump_status);
 
 
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+unsigned int wdt_irq;
+
 bool mt_is_secure_irq(struct irq_data *d)
 {
-	unsigned int irq = gic_irq(d);
-	/* FIXME */
-	if (irq == 160)
-		return true;
-
-	return false;
+	return (gic_irq(d) == wdt_irq);
 }
 EXPORT_SYMBOL(mt_is_secure_irq);
 
@@ -1446,6 +1443,9 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
 		spin_lock_init(&(irq_need_migrate_list[i].lock));
 	}
+
+	if (of_property_read_u32(node, "mediatek,wdt_irq", &wdt_irq))
+		wdt_irq = 0;
 #endif
 
 	/* FIXME: just used to test dump API
