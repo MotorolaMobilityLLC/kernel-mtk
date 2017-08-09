@@ -361,9 +361,9 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		/* [Vcorefs] disable pcm timer after leaving FW */
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 
-		/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
-					((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
+		/* backup vcore state from REG6[24:23] to RSV_5[24:23] */
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) |
+					(spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG));
 	}
 
 	/* reset PCM */
@@ -915,7 +915,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 void __spm_backup_vcore_dvfs_dram_shuffle(void)
 {
 #ifdef SPM_VCORE_EN_MT6797
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5)&~(0x3 << 23)) | (0x2 << 23));
+	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | (0x2 << 23));
 #endif
 }
 

@@ -38,7 +38,7 @@
 #define SPM_OFFLOAD			0xF
 
 /* PCM_REG6_DATA[24:23]: F/W do DVFS target state */
-#define SPM_VCORE_STA_REG	((1 << 23) | (1 << 24))
+#define SPM_VCORE_STA_REG	(0x3 << 23)
 #define SPM_SCREEN_ON_HPM	(0x3 << 23)
 #define SPM_SCREEN_ON_LPM	(0x2 << 23)
 #define SPM_SCREEN_ON_ULPM	(0x0 << 23)
