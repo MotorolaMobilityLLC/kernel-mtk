@@ -129,135 +129,72 @@ struct pinctrl *consys_pinctrl = NULL;
 #if CONSYS_ENALBE_SET_JTAG
 UINT32 gJtagCtrl = 0;
 
-#define JTAG_ADDR1_BASE 0x10002000
+#define JTAG_ADDR1_BASE 0x10005000
+#define JTAG_ADDR2_BASE 0x10002000
 
 char *jtag_addr1 = (char *)JTAG_ADDR1_BASE;
+char *jtag_addr2 = (char *)JTAG_ADDR2_BASE;
 
 #define JTAG1_REG_WRITE(addr, value)	\
 writel(value, ((PUINT32)(jtag_addr1+(addr-JTAG_ADDR1_BASE))))
 #define JTAG1_REG_READ(addr)			\
 readl(((PUINT32)(jtag_addr1+(addr-JTAG_ADDR1_BASE))))
 
+#define JTAG2_REG_WRITE(addr, value)	\
+	writel(value, ((PUINT32)(jtag_addr2+(addr-JTAG_ADDR2_BASE))))
+#define JTAG2_REG_READ(addr)			\
+	readl(((PUINT32)(jtag_addr2+(addr-JTAG_ADDR2_BASE))))
+
 static INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID)
 {
-#if 0
-	int iRet = -1;
+#if 1
+	INT32 iRet = -1;
+	UINT32 tmp = 0;
 
 	WMT_PLAT_INFO_FUNC("WCN jtag_set_for_mcu start...\n");
-	jtag_addr1 = ioremap(JTAG_ADDR1_BASE, 0x5000);
+	jtag_addr1 = ioremap(JTAG_ADDR1_BASE, 0x1000);
 	if (jtag_addr1 == 0) {
 		WMT_PLAT_ERR_FUNC("remap jtag_addr1 fail!\n");
 		return iRet;
 	}
 	WMT_PLAT_INFO_FUNC("jtag_addr1 = 0x%p\n", jtag_addr1);
-
-	JTAG1_REG_WRITE(0x100053c4, 0x11111100);
-	JTAG1_REG_WRITE(0x100053d4, 0x00111111);
-
-	/*Enable IES of all pins */
-	JTAG1_REG_WRITE(0x10002014, 0x00000003);
-	JTAG1_REG_WRITE(0x10005334, 0x55000000);
-	JTAG1_REG_WRITE(0x10005344, 0x00555555);
-	JTAG1_REG_WRITE(0x10005008, 0xc0000000);
-	JTAG1_REG_WRITE(0x10005018, 0x0000000d);
-	JTAG1_REG_WRITE(0x10005014, 0x00000032);
-	JTAG1_REG_WRITE(0x100020a4, 0x000000ff);
-	JTAG1_REG_WRITE(0x100020d4, 0x000000b4);
-	JTAG1_REG_WRITE(0x100020d8, 0x0000004b);
-
-	WMT_PLAT_INFO_FUNC("WCN jtag set for mcu start...\n");
-	kal_int32 iRet = 0;
-	kal_uint32 tmp = 0;
-	kal_int32 addr = 0;
-	kal_int32 remap_addr1 = 0;
-	kal_int32 remap_addr2 = 0;
-
-	remap_addr1 = ioremap(JTAG_ADDR1_BASE, 0x1000);
-	if (remap_addr1 == 0) {
-		WMT_PLAT_ERR_FUNC("remap jtag_addr1 fail!\n");
-		return -1;
-	}
-
-	remap_addr2 = ioremap(JTAG_ADDR2_BASE, 0x100);
-	if (remap_addr2 == 0) {
+	jtag_addr2 = ioremap(JTAG_ADDR2_BASE, 0x1000);
+	if (jtag_addr2 == 0) {
 		WMT_PLAT_ERR_FUNC("remap jtag_addr2 fail!\n");
-		return -1;
+		return iRet;
 	}
+	WMT_PLAT_INFO_FUNC("jtag_addr2 = 0x%p\n", jtag_addr2);
 
-	/*Pinmux setting for MT6625 I/F */
-	addr = remap_addr1 + 0x03C0;
-	tmp = DRV_Reg32(addr);
-	tmp = tmp & 0xff;
-	tmp = tmp | 0x11111100;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
+	tmp = JTAG1_REG_READ(0x10005330);
+	tmp &= 0xff00ffff;
+	tmp |= 0x00550000;
+	JTAG1_REG_WRITE(0x10005330, tmp);
+	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x10005330, tmp);
 
-	addr = remap_addr1 + 0x03D0;
-	tmp = DRV_Reg32(addr);
-	tmp = tmp & 0xff000000;
-	tmp = tmp | 0x00111111;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
+	tmp = JTAG1_REG_READ(0x10005340);
+	tmp &= 0xfff00000;
+	tmp |= 0x00055555;
+	JTAG1_REG_WRITE(0x10005340, tmp);
+	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x10005340, tmp);
 
-	/*AP GPIO Setting 1 <default use> */
-	/*Enable IES */
-	/* addr = 0x10002014; */
-	addr = remap_addr2 + 0x0014;
-	tmp = 0x00000003;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
-	/*GPIO mode setting */
-	/* addr = 0x10005334; */
-	addr = remap_addr1 + 0x0334;
-	tmp = 0x55000000;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
+	tmp = JTAG2_REG_READ(0x100020F0);
+	tmp &= 0xfffffc0c;
+	tmp |= 0x000003f3;
+	JTAG2_REG_WRITE(0x100020F0, tmp);
+	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020F0, tmp);
 
-	/* addr = 0x10005344; */
-	addr = remap_addr1 + 0x0344;
-	tmp = 0x00555555;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
-	/*GPIO direction control */
-	/* addr = 0x10005008; */
-	addr = remap_addr1 + 0x0008;
-	tmp = 0xc0000000;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
+	tmp = JTAG2_REG_READ(0x100020b0);
+	tmp &= 0xfffffe0c;
+	tmp |= 0x00000180;
+	JTAG2_REG_WRITE(0x100020b0, tmp);
+	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020b0, tmp);
 
-	/* addr = 0x10005018; */
-	addr = remap_addr1 + 0x0018;
-	tmp = 0x0000000d;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
+	tmp = JTAG2_REG_READ(0x100020d0);
+	tmp &= 0xfffffe0c;
+	JTAG2_REG_WRITE(0x100020d0, tmp);
+	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020d0, tmp);
 
-	/* addr = 0x10005014; */
-	addr = remap_addr1 + 0x0014;
-	tmp = 0x00000032;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
-
-	/*PULL Enable */
-	/* addr = 0x100020a4; */
-	addr = remap_addr2 + 0x00a4;
-	tmp = 0x000000ff;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
-
-	/*PULL select enable */
-	/* addr = 0x100020d4; */
-	addr = remap_addr2 + 0x00d4;
-	tmp = 0x000000b4;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
-
-	/* addr = 0x100020d8; */
-	addr = remap_addr2 + 0x00d8;
-	tmp = 0x0000004b;
-	DRV_WriteReg32(addr, tmp);
-	WMT_PLAT_INFO_FUNC("(RegAddr, RegVal):(0x%08x, 0x%08x)", addr, DRV_Reg32(addr));
 #endif
-
 	return 0;
 }
 
@@ -324,9 +261,12 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 {
 	INT32 iRet = -1;
-	UINT8 *consys_afe_reg_base = NULL;
 	UINT32 retry = 10;
 	UINT32 consysHwChipId = 0;
+#if CONSYS_AFE_REG_SETTING
+	UINT8 *consys_afe_reg_base = NULL;
+	UINT8 i = 0;
+#endif
 
 	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
 
@@ -341,7 +281,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		hwPowerOn(MT6351_POWER_LDO_VCN18, VOL_1800, "wcn_drv");
 #else
 		if (reg_VCN18) {
-			regulator_set_voltage(reg_VCN18, VOL_1800, VOL_1800);
+			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
 			if (regulator_enable(reg_VCN18))
 				WMT_PLAT_ERR_FUNC("enable VCN18 fail\n");
 			else
@@ -355,7 +295,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, VOL_2800, VOL_2800);
+			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
 			if (regulator_enable(reg_VCN28))
 				WMT_PLAT_INFO_FUNC("enable VCN_2V8 fail!\n");
 			else
@@ -484,20 +424,47 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 				 CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_MCU_CFG_ACR_OFFSET) |
 				 CONSYS_MCU_CFG_ACR_MBIST_BIT);
 
-#if 1
+#if CONSYS_AFE_REG_SETTING
 		/*15.default no need,update ANA_WBG(AFE) CR if needed, CONSYS_AFE_REG */
 		consys_afe_reg_base = ioremap_nocache(CONSYS_AFE_REG_BASE, 0x100);
+#if defined(CONFIG_MTK_GPS_REGISTER_SETTING)
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_GPS_SINGLE_OFFSET,
+				CONSYS_REG_READ(consys_afe_reg_base + CONSYS_AFE_REG_GPS_SINGLE_OFFSET) |
+				CONSYS_AFE_REG_GPS_SINGLE_12_VALUE);
+#endif
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_RCK_01_OFFSET,
 				CONSYS_AFE_REG_DIG_RCK_01_VALUE);
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_GPS_01_OFFSET,
 				CONSYS_AFE_REG_WBG_RX_01_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_GPS_02_OFFSET,
+				CONSYS_AFE_REG_WBG_RX_02_VALUE);
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_BT_RX_01_OFFSET,
 				CONSYS_AFE_REG_WBG_RX_01_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_BT_RX_02_OFFSET,
+				CONSYS_AFE_REG_WBG_RX_02_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_BT_TX_01_OFFSET,
+				CONSYS_AFE_REG_WBG_TX_01_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_BT_TX_02_OFFSET,
+				CONSYS_AFE_REG_WBG_TX_02_VALUE);
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_BT_TX_03_OFFSET,
 				CONSYS_AFE_REG_WBG_TX_03_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_WF_RX_02_OFFSET,
+				CONSYS_AFE_REG_WBG_RX_02_VALUE);
+		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_WF_TX_01_OFFSET,
+				CONSYS_AFE_REG_WBG_TX_01_VALUE);
+		/* CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_WF_TX_02_OFFSET,
+		 * CONSYS_AFE_REG_WBG_TX_02_VALUE); */
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_WF_TX_03_OFFSET,
 				CONSYS_AFE_REG_WBG_TX_03_VALUE);
+#if 1
+		WMT_PLAT_INFO_FUNC("Dump AFE register\n");
+		for (i = 0; i < 64; i++) {
+			WMT_PLAT_INFO_FUNC("reg:0x%08x|val:0x%08x\n",
+				CONSYS_AFE_REG_BASE + 4*i, CONSYS_REG_READ(consys_afe_reg_base + 4*i));
+		}
 #endif
+#endif
+
 		/*16.deassert CONNSYS CPU SW reset 0x10007018 "[12]=1'b0 [31:24] =8'h88 (key)" */
 		CONSYS_REG_WRITE(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET,
 				 (CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) &
@@ -912,7 +879,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 1);
 #else
 		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, VOL_3300, VOL_3300);
+			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_BT))
 				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
 		}
@@ -951,7 +918,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 1);
 #else
 		if (reg_VCN33_WIFI) {
-			regulator_set_voltage(reg_VCN33_WIFI, VOL_3300, VOL_3300);
+			regulator_set_voltage(reg_VCN33_WIFI, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_WIFI))
 				WMT_PLAT_ERR_FUNC("WMT do WIFI PMIC on fail!\n");
 		}
@@ -988,7 +955,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 		hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, VOL_2800, VOL_2800);
+			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
 			if (regulator_enable(reg_VCN28))
 				WMT_PLAT_ERR_FUNC("WMT do VCN28 PMIC on fail!\n");
 		}

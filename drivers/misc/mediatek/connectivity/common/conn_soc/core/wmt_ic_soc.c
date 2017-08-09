@@ -1403,13 +1403,17 @@ static INT32 mtk_wcn_soc_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 	INT32 iRet = -1;
 	UINT32 uVal = 0;
 
-	if (WMT_IC_PIN_MUX == state)
-		uVal = 0x1 << 28;
-	else
-		uVal = 0x5 << 28;
-	iRet = wmt_core_reg_rw_raw(1, 0x80050078, &uVal, 0x7 << 28);
-	if (iRet)
-		WMT_ERR_FUNC("gps_sync pin ctrl failed, iRet(%d)\n", iRet);
+	/* mt6797 can not access reg:0x80050078 and no need to do GPS SYNC */
+	if (0x0279 != wmt_ic_ops_soc.icId) {
+		if (WMT_IC_PIN_MUX == state)
+			uVal = 0x1 << 28;
+		else
+			uVal = 0x5 << 28;
+		iRet = wmt_core_reg_rw_raw(1, 0x80050078, &uVal, 0x7 << 28);
+		if (iRet)
+			WMT_ERR_FUNC("gps_sync pin ctrl failed, iRet(%d)\n", iRet);
+	} else
+		WMT_INFO_FUNC("This chip no need to sync GPS and MODEM!\n");
 
 	/* anyway, we return 0 */
 	return 0;

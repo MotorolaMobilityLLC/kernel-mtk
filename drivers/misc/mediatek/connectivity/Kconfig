@@ -257,3 +257,9 @@ config MTK_CONN_LTE_IDC_SUPPORT
 	default y
 	help
 	  This option enables CONN LTE IDC support
+
+config MTK_GPS_REGISTER_SETTING
+	tristate "MediaTek GPS Register Setting"
+	depends on MTK_COMBO_GPS
+	help
+	   GPS register settings.
