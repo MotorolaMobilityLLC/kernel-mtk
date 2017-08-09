@@ -30,35 +30,19 @@
 
 
 static int cg_lpm_bw_threshold, cg_hpm_bw_threshold;
-static int total_lpm_bw_threshold, total_hpm_bw_threshold;
-static int cg_fliper_enabled, total_fliper_enabled;
+static int cg_fliper_enabled;
 static int fliper_debug;
 
 /******* FLIPER SETTING *********/
-
-int getTotalHistory(void)
-{
-	return BM_GetBWST();
-}
 
 int getCGHistory(void)
 {
 	return BM_GetBWST1();
 }
 
-int getTotalConfiguration(void)
-{
-	return BM_GetBW();
-}
-
 int getCGConfiguration(void)
 {
 	return BM_GetBW1();
-}
-
-int setTotal(const unsigned int value)
-{
-	return BM_SetBW(value);
 }
 
 int setCG(const unsigned int value)
@@ -76,19 +60,6 @@ void enable_cg_fliper(int enable)
 		vcorefs_enable_perform_bw(false);
 		pr_emerg(TAG"CG fliper disabled\n");
 		cg_fliper_enabled = 0;
-	}
-}
-
-void enable_total_fliper(int enable)
-{
-	if (enable) {
-		vcorefs_enable_total_bw(true);
-		pr_emerg(TAG"TOTAL fliper enabled\n");
-		total_fliper_enabled = 1;
-	} else {
-		vcorefs_enable_total_bw(false);
-		pr_emerg(TAG"TOTAL fliper disabled\n");
-		total_fliper_enabled = 0;
 	}
 }
 
@@ -127,42 +98,6 @@ int cg_set_threshold(int bw1, int bw2)
 	return 0;
 }
 
-int total_set_threshold(int bw1, int bw2)
-{
-	int lpm_threshold, hpm_threshold;
-	int ddr_perf = vcorefs_get_ddr_by_steps(OPPI_PERF);
-	int ddr_curr = vcorefs_get_curr_ddr();
-
-	pr_emerg(TAG"arg bw1=%d bw2=%d\n", bw1, bw2);
-	if (bw1 <= BW_THRESHOLD_MAX && bw1 >= BW_THRESHOLD_MIN &&
-			bw2 <= BW_THRESHOLD_MAX && bw2 >= BW_THRESHOLD_MIN) {
-		lpm_threshold = bw1 * THRESHOLD_SCALE / LPM_MAX_BW;
-		hpm_threshold = bw2 * THRESHOLD_SCALE / HPM_MAX_BW;
-		if (lpm_threshold > 127 || lpm_threshold < 1 || hpm_threshold > 127 || hpm_threshold < 1) {
-			pr_emerg(TAG"error set threshold out of range\n");
-			return 0;
-		}
-		if (ddr_perf == ddr_curr) {
-			setTotal(0x2100a0 | (hpm_threshold << 8));
-			pr_emerg(TAG"ddr high, Configure TOTAL: 0x%08x\n", getTotalConfiguration());
-		} else {
-			setTotal(0x2100a0 | (lpm_threshold << 8));
-			pr_emerg(TAG"ddr low, Configure TOTAL: 0x%08x\n", getTotalConfiguration());
-		}
-		vcorefs_set_total_bw_threshold(lpm_threshold, hpm_threshold);
-		pr_emerg(TAG"Set TOTAL bdw threshold %d %d-> %d %d\n",
-				total_lpm_bw_threshold, total_hpm_bw_threshold, bw1, bw2);
-		pr_emerg(TAG"TOTAL lpm: %d hpm: %d\n", lpm_threshold, hpm_threshold);
-		total_lpm_bw_threshold = bw1;
-		total_hpm_bw_threshold = bw2;
-	} else {
-		pr_emerg(TAG"Set TOTAL bdw threshold Error: (MAX:%d, MIN:%d)\n",
-				BW_THRESHOLD_MAX, BW_THRESHOLD_MIN);
-	}
-
-	return 0;
-}
-
 int cg_restore_threshold(void)
 {
 	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
@@ -170,17 +105,6 @@ int cg_restore_threshold(void)
 		cg_lpm_bw_threshold, cg_hpm_bw_threshold, CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 	cg_lpm_bw_threshold = CG_DEFAULT_LPM;
 	cg_hpm_bw_threshold = CG_DEFAULT_HPM;
-	return 0;
-}
-
-int total_restore_threshold(void)
-{
-	total_set_threshold(TOTAL_LPM_BW_THRESHOLD, TOTAL_HPM_BW_THRESHOLD);
-	pr_emerg(TAG"Restore TOTAL bdw threshold %d %d -> %d %d\n",
-		total_lpm_bw_threshold, total_hpm_bw_threshold,
-		TOTAL_LPM_BW_THRESHOLD, TOTAL_HPM_BW_THRESHOLD);
-	total_lpm_bw_threshold = TOTAL_LPM_BW_THRESHOLD;
-	total_hpm_bw_threshold = TOTAL_HPM_BW_THRESHOLD;
 	return 0;
 }
 
@@ -239,20 +163,12 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 
 	if (strncmp(option, "ENABLE_CG", 9) == 0) {
 		enable_cg_fliper(arg1);
-	} else if (strncmp(option, "ENABLE_TOTAL", 12) == 0) {
-		enable_total_fliper(arg1);
 	} else if (strncmp(option, "SET_CG_THRES", 12) == 0) {
 		cg_set_threshold(arg1, arg2);
-	} else if (strncmp(option, "SET_TOTAL_THRES", 15) == 0) {
-		total_set_threshold(arg1, arg2);
 	} else if (strncmp(option, "RESTORE_CG", 10) == 0) {
 		cg_restore_threshold();
-	} else if (strncmp(option, "RESTORE_TOTAL", 13) == 0) {
-		total_restore_threshold();
 	}	else if (strncmp(option, "SET_CG", 6) == 0) {
 		setCG(arg1);
-	}	else if (strncmp(option, "SET_TOTAL", 9) == 0) {
-		setTotal(arg1);
 	}  else if (strncmp(option, "POWER_MODE", 10) == 0) {
 		if (!fliper_debug) {
 			if (arg1 == Default) {
@@ -294,12 +210,8 @@ static int mt_fliper_show(struct seq_file *m, void *v)
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	SEQ_printf(m, "CG Fliper Enabled:%d, bw threshold:%d %dMB/s\n",
 			cg_fliper_enabled, cg_lpm_bw_threshold, cg_hpm_bw_threshold);
-	SEQ_printf(m, "TOTAL Fliper Enabled:%d, bw threshold:%d %dMB/s\n",
-			total_fliper_enabled, total_lpm_bw_threshold, total_hpm_bw_threshold);
 	SEQ_printf(m, "CG History: 0x%08x\n", getCGHistory());
-	SEQ_printf(m, "TOTAL History: 0x%08x\n", getTotalHistory());
 	SEQ_printf(m, "CG Configuration: 0x%08x\n", getCGConfiguration());
-	SEQ_printf(m, "TOTAL Configuration: 0x%08x\n", getTotalConfiguration());
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	return 0;
 }
@@ -357,14 +269,9 @@ static int __init init_fliper(void)
 
 	cg_lpm_bw_threshold = CG_DEFAULT_LPM;
 	cg_hpm_bw_threshold = CG_DEFAULT_HPM;
-	total_lpm_bw_threshold = TOTAL_LPM_BW_THRESHOLD;
-	total_hpm_bw_threshold = TOTAL_HPM_BW_THRESHOLD;
 	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
-	total_set_threshold(TOTAL_LPM_BW_THRESHOLD, TOTAL_HPM_BW_THRESHOLD);
 	enable_cg_fliper(1);
-	enable_total_fliper(1);
 	cg_fliper_enabled = 1;
-	total_fliper_enabled = 1;
 
 	fliper_debug = 0;
 
