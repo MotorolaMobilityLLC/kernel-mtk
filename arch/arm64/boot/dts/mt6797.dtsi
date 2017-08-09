@@ -2143,6 +2143,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		met_cci400@10390000 {
+			compatible = "mediatek,met_cci400";
+			reg = <0x10390000 0x10000>;
+		};
+
 		cpu_dbgapb: cpu_dbgapb@10410000 {
 			compatible = "mediatek,mt6797-dbg_debug";
 			num = <10>;
@@ -3240,6 +3245,35 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x14022000 0x1000>,	/* SMI_COMMON */
 				<0x14020000 0x1000>,	/* LARB 0 */
 				<0x16010000 0x10000>,	/* LARB 1 */
+				<0x1a001000 0x1000>,	/* LARB 2 */
+				<0x17001000 0x1000>,	/* LARB 3 */
+				<0x12002000 0x1000>,	/* LARB 4 */
+				<0x14021000 0x1000>,	/* LARB 5 */
+				<0x15001000 0x1000>;	/* LARB 6 */
+			clocks = <&mmsys MM_SMI_COMMON>,
+				<&mmsys MM_SMI_LARB0>,
+				<&vdecsys VDEC_LARB1_CKEN>,
+				<&camsys CAM_LARB2>,
+				<&vencsys VENC_1>,
+				<&mmsys MM_LARB4_AXI_ASIF_MM_CLOCK>,
+				<&mmsys MM_LARB4_AXI_ASIF_MJC_CLOCK>,
+				<&mmsys MM_SMI_LARB5>,
+				<&imgsys IMG_LARB6>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_MJC>,
+				<&scpsys SCP_SYS_DIS>;
+			clock-names = "smi-common", "smi-larb0", "vdec-larb1", "cam-larb2", "venc-larb3",
+				"mm-larb4", "mjc-larb4",  "smi-larb5", "img-larb6",
+				"mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-mjc", "mtcmos-dis";
+		};
+
+		met_smi: met_smi@14022000 {
+			compatible = "mediatek,met_smi";
+			reg = <0x14022000 0x1000>,	/* SMI_COMMON */
+				<0x14020000 0x1000>,	/* LARB 0 */
+				<0x16010000 0x1000>,	/* LARB 1 */
 				<0x1a001000 0x1000>,	/* LARB 2 */
 				<0x17001000 0x1000>,	/* LARB 3 */
 				<0x12002000 0x1000>,	/* LARB 4 */
