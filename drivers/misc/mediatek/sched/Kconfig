@@ -211,4 +211,16 @@ config HMP_PACK_SMALL_TASK
 	  Packing small task mechanism is try to limit small tasks to run
 	  on as little CPUs as possible and meke better power efficiency.
 	  If unsure say N here.
+
+config SCHED_HMP_PLUS
+	bool "(EXPERIMENTAL) Corepilot enhancement"
+	depends on SCHED_HMP
+	default n
+	help
+	  Corepilot hmp enhancement.
+	  1. Do hmp_idle_pull at idle_balance
+	  2. At global balance, consider the tasks in rq, move heaviest/lightest
+             of first 5 tasks in rq.
+	  3. Enhance down migration rule: Do not migrate task when big core
+             is idle
 endmenu
