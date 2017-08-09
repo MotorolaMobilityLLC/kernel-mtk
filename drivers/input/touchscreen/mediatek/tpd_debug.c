@@ -247,8 +247,11 @@ static int tpd_debug_log_open(struct inode *inode, struct file *file)
 		pr_err("tpd_log: nomem for tpd_buf->buffer\n");
 		return -ENOMEM;
 	}
-	tpd_buf.head = tpd_buf.tail = 0;
 	spin_lock_init(&tpd_buf.buffer_lock);
+	spin_lock(&tpd_buf.buffer_lock);
+	tpd_buf.head = tpd_buf.tail = 0;
+	spin_unlock(&tpd_buf.buffer_lock);
+
 
 	file->private_data = &tpd_buf;
 	pr_debug("[tpd_em_log]: open log file\n");

@@ -628,7 +628,10 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				GTP_ERROR("touch is suspended.");
 			break;
 		}
-		ret = io_iic_read(data, (void __user *)arg);
+		if (data != NULL)
+			ret = io_iic_read(data, (void __user *)arg);
+		else
+			GTP_ERROR("Touch read data is NULL.");
 		break;
 
 	case IO_IIC_WRITE:
@@ -637,7 +640,10 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				GTP_ERROR("touch is suspended.");
 			break;
 		}
-		ret = io_iic_write(data);
+		if (data != NULL)
+			ret = io_iic_write(data);
+		else
+			GTP_ERROR("Touch write data is NULL.");
 		break;
 
 	case IO_RESET_GUITAR:

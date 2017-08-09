@@ -1051,10 +1051,12 @@ s32 gt1x_request_event_handler(void)
 	case GTP_RQST_MAIN_CLOCK:
 		GTP_INFO("Request main clock.");
 		break;
+#if 0
 #ifdef CONFIG_GTP_HOTKNOT
 	case GTP_RQST_HOTKNOT_CODE:
 		GTP_INFO("Request HotKnot Code.");
 		break;
+#endif
 #endif
 	default:
 		break;
