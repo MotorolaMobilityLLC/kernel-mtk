@@ -103,6 +103,14 @@ config MTK_FAN5405_SUPPORT
           Set to Yes if FAN5405 is used.
 	default n
 
+config MTK_DUAL_INPUT_CHARGER_SUPPORT
+        bool "MTK_DUAL_INPUT_CHARGER_SUPPORT"
+        help
+          This is to enable MediaTek dual input charging.
+          The feature can charge battery and use otg device
+          at the same time with specific hardware.
+        default n
+
 config MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	bool "MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION"
 	help
