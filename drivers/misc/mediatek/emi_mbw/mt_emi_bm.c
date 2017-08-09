@@ -1,6 +1,5 @@
 #include <linux/kernel.h>
 #include <mt-plat/sync_write.h>
-#include <mt-plat/mt_typedefs.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mt-plat/mt_io.h>
