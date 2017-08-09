@@ -5,6 +5,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
 
+# Enable AEE
+ccflags-y += -DCMDQ_AEE_READY
+
 # Enable MET
 ccflags-y += -DMET_USER_EVENT_SUPPORT
 
