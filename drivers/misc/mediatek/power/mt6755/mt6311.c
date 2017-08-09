@@ -21,15 +21,15 @@
 #include <asm/atomic.h>
 
 #if defined CONFIG_MTK_LEGACY
-/*#include <mach/mt_gpio.h> TBD*/
+#include <mt-plat/mt_gpio.h>
 #endif
-/*#include <mach/mt_boot.h> TBD*/
+#include <mt-plat/mt_boot.h>
 /*#include <mach/eint.h> TBD*/
 
 #include <mt-plat/upmu_common.h>
 #include <mt6311.h>
 
-/*#include <cust_pmic.h> TBD*/
+#include <mach/mt_pmic.h>
 
 #if defined(CONFIG_MTK_FPGA)
 #else
