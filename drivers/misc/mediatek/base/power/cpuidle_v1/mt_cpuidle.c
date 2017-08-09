@@ -34,7 +34,7 @@
 #if defined(CONFIG_MTK_RAM_CONSOLE) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include <mach/mt_secure_api.h>
 #endif
-#if defined(CONFIG_TRUSTY)
+#if defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 #include <mach/mt_trusty_api.h>
 #endif
 
@@ -846,7 +846,7 @@ static int mt_cpu_dormant_abort(unsigned long index)
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 	if (cpuid == 0)
 		mt_secure_call(MC_FC_SLEEP_CANCELLED, 0, 0, 0);
-#elif defined(CONFIG_TRUSTY)
+#elif defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 	if (cpuid == 0)
 		mt_trusty_call(SMC_FC_CPU_DORMANT_CANCEL, 0, 0, 0);
 #endif
@@ -912,7 +912,7 @@ int mt_cpu_dormant(unsigned long flags)
 	dormant_data[0].poc.cpu_resume_phys = (void (*)(void))(long)virt_to_phys(cpu_resume);
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 	mt_secure_call(MC_FC_SLEEP, virt_to_phys(cpu_resume), cpuid, 0);
-#elif defined(CONFIG_TRUSTY)
+#elif defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 	mt_trusty_call(SMC_FC_CPU_DORMANT, virt_to_phys(cpu_resume), cpuid, 0);
 #else
 	writel_relaxed(virt_to_phys(cpu_resume), DMT_BOOTROM_BOOT_ADDR);
@@ -931,7 +931,7 @@ int mt_cpu_dormant(unsigned long flags)
 			mt_secure_call(MC_FC_SET_RESET_VECTOR, virt_to_phys(cpu_wake_up_errata_802022), 2, 0);
 			mt_secure_call(MC_FC_SET_RESET_VECTOR, virt_to_phys(cpu_wake_up_errata_802022), 3, 0);
 		}
-#elif defined(CONFIG_TRUSTY)
+#elif defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 		mt_trusty_call(SMC_FC_CPU_ON, virt_to_phys(cpu_wake_up_errata_802022), 1, 0);
 		if (num_possible_cpus() == 4) {
 			mt_trusty_call(SMC_FC_CPU_ON, virt_to_phys(cpu_wake_up_errata_802022), 2, 0);
@@ -950,7 +950,7 @@ int mt_cpu_dormant(unsigned long flags)
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 		mt_secure_call(MC_FC_ERRATA_808022, 0, 0, 0);
-#elif defined(CONFIG_TRUSTY)
+#elif defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 		mt_trusty_call(SMC_FC_CPU_ERRATA_802022, 0, 0, 0);
 #endif
 	}
