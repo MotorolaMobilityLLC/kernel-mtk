@@ -32,7 +32,9 @@ enum {
 	CG_MFG,
 	CG_VDEC,
 	CG_VENC,
-	NR_GRPS,
+	CG_AUDIO,
+
+	NR_GRPS
 };
 
 extern bool             soidle_by_pass_pg;
@@ -46,10 +48,7 @@ extern void __iomem *mfgsys_base;
 extern void __iomem *imgsys_base;
 extern void __iomem *vdecsys_base;
 extern void __iomem *vencsys_base;
-#if 0 /* no need Audio CG check */
 extern void __iomem *audiosys_base_in_idle;
-#endif
-
 extern void __iomem  *apmixed_base_in_idle;
 
 #define INFRA_REG(ofs)      (infrasys_base + ofs)
@@ -60,10 +59,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define IMGSYS_REG(ofs)     (imgsys_base + ofs)
 #define VDECSYS_REG(ofs)    (vdecsys_base + ofs)
 #define VENCSYS_REG(ofs)    (vencsys_base + ofs)
-#if 0 /* no need Audio CG check */
 #define AUDIOSYS_REG(ofs)   (audiosys_base_in_idle + ofs)
-#endif
-
 #define APMIXEDSYS(ofs)	    (apmixed_base_in_idle + ofs)
 
 #ifdef SPM_PWR_STATUS
@@ -82,9 +78,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define DISP_CG_DUMMY1      MM_REG(0x8A8)
 #define DISP_CG_DUMMY2      MM_REG(0x8AC)
 
-#if 0 /* no need Audio CG check */
 #define AUDIO_TOP_CON0      AUDIOSYS_REG(0x0)
-#endif
 
 #define SPM_PWR_STATUS      SPM_REG(0x0180)
 #define SPM_PWR_STATUS_2ND  SPM_REG(0x0184)

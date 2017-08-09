@@ -31,9 +31,8 @@ enum subsys_id {
 	SYS_VEN,
 	SYS_MFG_2D,
 	SYS_MFG_ASYNC,
-#if 0 /* no need Audio CG check */
 	SYS_AUDIO,
-#endif
+
 	NR_SYSS__,
 };
 
@@ -48,11 +47,7 @@ void __iomem *mfgsys_base;
 void __iomem *imgsys_base;
 void __iomem *vdecsys_base;
 void __iomem *vencsys_base;
-
-#if 0 /* no need Audio CG check */
 void __iomem *audiosys_base_in_idle;
-#endif
-
 void __iomem  *apmixed_base_in_idle;
 
 /* Idle handler on/off */
@@ -81,6 +76,7 @@ unsigned int dpidle_condition_mask[NR_GRPS] = {
 	0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
 	0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
 	0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+	0x00000000, /* AUDIO */
 };
 
 unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
@@ -100,6 +96,7 @@ unsigned int soidle3_condition_mask[NR_GRPS] = {
 	0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
 	0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
 	0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+	0x00000000, /* AUDIO */
 };
 
 unsigned int soidle_condition_mask[NR_GRPS] = {
@@ -112,6 +109,7 @@ unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x00000112, /* MFG,   use SPM MTCMOS off as condition: */
 	0x00000112, /* VDEC,  use SPM MTCMOS off as condition: */
 	0x00000F12, /* VENC,  use SPM MTCMOS off as condition: */
+	0x00000000, /* AUDIO */
 };
 
 unsigned int slidle_condition_mask[NR_GRPS] = {
@@ -124,6 +122,7 @@ unsigned int slidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* MFG,   use SPM MTCMOS off as condition: */
 	0x00000000, /* VDEC,  use SPM MTCMOS off as condition: */
 	0x00000000, /* VENC,  use SPM MTCMOS off as condition: */
+	0x00000000, /* AUDIO */
 };
 
 const char *idle_name[NR_TYPES] = {
@@ -160,6 +159,7 @@ static char cg_group_name[NR_GRPS][10] = {
 	"MFG",
 	"VDEC",
 	"VENC",
+	"AUDIO",
 };
 
 /*
@@ -183,9 +183,7 @@ static int sys_is_on(enum subsys_id id)
 		VEN_PWR_STA_MASK,
 		MFG_2D_PWR_STA_MASK,
 		MFG_ASYNC_PWR_STA_MASK,
-#if 0 /* no need Audio CG check */
 		AUDIO_PWR_STA_MASK,
-#endif
 	};
 
 	u32 mask = pwr_sta_mask[id];
@@ -233,10 +231,8 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_VEN))
 		clks[CG_VENC] = ~idle_readl(SPM_VEN_PWR_CON); /* VENC */
 
-#if 0 /* no need Audio CG check */
 	if (sys_is_on(SYS_AUDIO))
 		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
-#endif
 }
 
 bool cg_check_idle_can_enter(
@@ -351,7 +347,7 @@ bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_
 	return true;
 }
 
-#if 0 /* no need Audio CG check */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static int __init get_base_from_matching_node(
 				     const struct of_device_id *ids, void __iomem **pbase, int idx, const char *cmp)
 {
@@ -371,9 +367,7 @@ static int __init get_base_from_matching_node(
 
 	return 0;
 }
-#endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static int __init get_base_from_node(
 	const char *cmp, void __iomem **pbase, int idx)
 {
@@ -400,13 +394,11 @@ void __init iomap_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 
-#if 0 /* no need Audio CG check */
 	static const struct of_device_id audiosys_ids[] = {
 		{.compatible = "mediatek,audio"},
 		{.compatible = "mediatek,mt6755-audiosys"},
 		{ /* sentinel */ }
 	};
-#endif
 	
 	get_base_from_node("mediatek,infracfg_ao", &infrasys_base, 0);
 	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
@@ -418,10 +410,7 @@ void __init iomap_init(void)
 	get_base_from_node("mediatek,mt6755-vdecsys", &vdecsys_base, 0);
 	get_base_from_node("mediatek,mt6755-vencsys", &vencsys_base, 0);
 
-#if 0 /* no need Audio CG check */
 	get_base_from_matching_node(audiosys_ids, &audiosys_base_in_idle, 0, "audio");
-#endif
-
 #endif
 }
 

@@ -327,7 +327,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
+	.spm_dvfs_force_down = 1,
 	.spm_ddren_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
@@ -386,7 +386,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
+	.dramc_spcmd_apsrc_req_mask_b = 1,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,

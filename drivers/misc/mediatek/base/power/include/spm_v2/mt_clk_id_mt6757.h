@@ -112,7 +112,7 @@ enum mt_cg_clk_id {
 	MT_CG_ID_DISP0_DISP_AAL1				=  96 + 29,
 	MT_CG_ID_DISP0_DISP_GAMMA0				=  96 + 30,
 	MT_CG_ID_DISP0_DISP_GAMMA1				=  96 + 31,
-	
+
 	MT_CG_ID_DISP1_DISP_OD					= 128 +  0,
 	MT_CG_ID_DISP1_DISP_DITHER0				= 128 +  1,
 	MT_CG_ID_DISP1_DISP_DITHER1				= 128 +  2,
@@ -131,7 +131,7 @@ enum mt_cg_clk_id {
 	MT_CG_ID_DISP1_FAKE_ENG2				= 128 +  15,
 	MT_CG_ID_DISP1_DFP_CK                	= 128 +  16,
 	MT_CG_ID_DISP1_DFP_CK_52M				= 128 +  17,
-	
+
 	MT_CG_IMAGE_ISP_PWR_RST_B				= 160 +  0,
 	MT_CG_IMAGE_ISP_PWR_ISO					= 160 +  1,
 	MT_CG_IMAGE_ISP_PWR_ON					= 160 +  2,
@@ -172,7 +172,18 @@ enum mt_cg_clk_id {
 	MT_CG_VEN_SRAM_PDN0						= 256 +  8,
 	MT_CG_VEN_SRAM_PDN1						= 256 +  9,
 	MT_CG_VEN_SRAM_PDN2						= 256 + 10,
-	MT_CG_VEN_SRAM_PDN3						= 256 + 11
+	MT_CG_VEN_SRAM_PDN3						= 256 + 11,
+
+	MT_CG_ID_AUDIO_AFE						= 288 +  2,      /* PDN_AFE         */
+	MT_CG_ID_AUDIO_I2S						= 288 +  6,      /* PDN_I2S         */
+	MT_CG_ID_AUDIO_22M						= 288 +  8,      /* PDN_22M         */
+	MT_CG_ID_AUDIO_24M						= 288 +  9,      /* PDN_24M         */
+	MT_CG_ID_AUDIO_APLL2_TUNER				= 288 + 18,      /* PDN_APLL2_TUNER */
+	MT_CG_ID_AUDIO_APLL_TUNER				= 288 + 19,      /* PDN_APLL_TUNER  */
+	MT_CG_ID_AUDIO_ADC						= 288 + 24,
+	MT_CG_ID_AUDIO_DAC						= 288 + 25,
+	MT_CG_ID_AUDIO_DAC_PREDIS				= 288 + 26,
+	MT_CG_ID_AUDIO_TML						= 288 + 27
 };
 
 #endif /* __MT_CLK_ID_MT6757_H__ */
