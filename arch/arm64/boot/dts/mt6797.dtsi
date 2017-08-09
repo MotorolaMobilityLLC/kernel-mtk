@@ -366,6 +366,13 @@
 			reg = <0 0x44610000 0 0x30000>;
 		};
 
+		/* reserve 192KB after ATF ramdump, for icache dump */
+		cache-dump-memory@44640000 {
+			compatible = "mediatek,cache-dump-memory";
+			no-map;
+			reg = <0 0x44640000 0 0x30000>;
+		};
+
 		reserve-memory-scp_share {
 			compatible = "mediatek,reserve-memory-scp_share";
 			no-map;

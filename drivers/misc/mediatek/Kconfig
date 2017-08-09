@@ -48,6 +48,16 @@ config MTK_MEM
 	  some debug features. Please see
 	  MTK_MEMCFG.
 
+config MTK_CACHE_DUMP
+	bool "enable cache dump"
+	depends on MTK_MEM
+	default y
+	help
+	  Enable cache dump feature. When undef instrunction occurred,
+	  we need to check cache data is correct or not. This will use
+	  cpu op code to dump tag, data in current l1 cache. AEE will
+	  store this data in db file after reboot.
+
 config MTK_MEMCFG
 	bool "Support enhanced memory configurations"
 	depends on MTK_MEM
