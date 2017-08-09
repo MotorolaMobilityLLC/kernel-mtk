@@ -108,6 +108,7 @@ extern bool is_already_snap_shot;
 
 /* power golden setting */
 extern void mt_power_gs_dump_suspend(void);
+extern bool slp_chk_golden;
 
 /* gpio */
 extern int mt_get_gpio_dir(unsigned long pin);

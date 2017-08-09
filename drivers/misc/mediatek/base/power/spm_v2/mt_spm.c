@@ -1347,7 +1347,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6797)
 		pmic_config_interface(0xA6E, 0x020E, 0xffff, 0);
 #endif
-		/* mt_power_gs_dump_suspend(); */
+		if (slp_chk_golden)
+			mt_power_gs_dump_suspend();
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);

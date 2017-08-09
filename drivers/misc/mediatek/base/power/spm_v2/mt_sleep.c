@@ -80,7 +80,7 @@ static DEFINE_SPINLOCK(slp_lock);
 static wake_reason_t slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
-static bool slp_chk_golden = 1;
+bool slp_chk_golden = 0;
 bool slp_dump_gpio = 0;
 static bool slp_dump_regs = 1;
 static bool slp_check_mtcmos_pll = 1;
