@@ -529,8 +529,8 @@ static void write_shutter(kal_uint16 shutter)
         if (shutter < imgsensor_info.min_shutter)
             shutter = imgsensor_info.min_shutter;
 
-        if (imgsensor.autoflicker_en == KAL_TRUE)
-        {
+		if (imgsensor.autoflicker_en == KAL_TRUE)
+		{
             realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
             if(realtime_fps >= 297 && realtime_fps <= 305)
                 set_max_framerate(296,0);
@@ -1892,7 +1892,7 @@ kal_uint16 addr_data_pair_cap[] =
 };
 kal_uint16 addr_data_pair_prv[] = {
 	0x0303,0x10,
-	0x0317,0x2 ,
+	0x0317,0x1 ,
 	0x3501,0x9 ,
 	0x3502,0xe1, 
 	0x3662,0x10,
@@ -2747,6 +2747,8 @@ static void sensor_init(void)
 {
 //int i = 0 ;
 LOG_INF("sensor_init MULTI_WRITE");
+write_cmos_sensor(0x0103, 0x01);//SW Reset  , need delay 
+mdelay(10);
 ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_init, sizeof(addr_data_pair_init)/sizeof(kal_uint16));
 #if 0 //for debug
 for(i=0;i<(sizeof(addr_data_pair_init)/sizeof(kal_uint16));i+=2){
