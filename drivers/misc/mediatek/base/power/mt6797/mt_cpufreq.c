@@ -3050,7 +3050,7 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 int release_dvfs = 0;
 int thres_ll = 8;
 int thres_l = 8;
-int thres_b = 15;
+int thres_b = 8;
 
 static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id id, int new_opp_idx)
 {
@@ -3094,20 +3094,11 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 		new_opp_idx = p->idx_opp_tbl;
 
 	if (do_dvfs_stress_test) {
-		/* new_opp_idx = jiffies & 0x7; */
 		new_opp_idx = jiffies & 0xF;
 
 		if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
 			if (new_opp_idx < thres_b)
 				new_opp_idx = thres_b;
-
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-			if (new_opp_idx < thres_l)
-				new_opp_idx = thres_l;
-
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-			if (new_opp_idx < thres_ll)
-				new_opp_idx = thres_ll;
 	} else
 		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
