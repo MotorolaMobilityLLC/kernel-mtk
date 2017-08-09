@@ -3660,12 +3660,28 @@ void get_devinfo(struct eem_devinfo *p)
 
 	for (i = 0; i < 12; i++) {
 		if (0 == val[i]) {
-			ctrl_EEM_Enable = 0;
-			infoIdvfs = 0x55;
-			eem_error("No EEM EFUSE available, Turn off EEM-1 !!\n");
+			/* ctrl_EEM_Enable = 0; */
+			/* infoIdvfs = 0x55; */
+			eem_error("No EEM EFUSE available, will apply fake E-Fuse !!\n");
 			break;
 		}
 	}
+
+	if (i < 12) {
+		val[0] = 0x1410595E;
+		val[1] = 0x004C0003;
+		val[2] = 0x14C0570C;
+		val[3] = 0x004B0003;
+		val[4] = 0x14C06B01;
+		val[5] = 0x003F0003;
+		val[6] = 0x14C06B05;
+		val[7] = 0x003F0303;
+		val[8] = 0x14C06804;
+		val[9] = 0x003F0000;
+		val[10] = 0x00000047;
+		val[11] = 0x0D2B365A;
+	}
+
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
