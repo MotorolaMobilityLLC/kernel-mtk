@@ -1,4 +1,7 @@
+#include "dpi_dvt_test.h"
+
 #if defined(RDMA_DPI_PATH_SUPPORT) || defined(DPI_DVT_TEST_SUPPORT)
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/fs.h>
@@ -18,36 +21,49 @@
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/timer.h>
-#include <mach/mt_irq.h>
+/*#include <mach/mt_irq.h>*/
 #include <linux/types.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
+/*
 #include <mach/m4u.h>
 #include <mach/m4u_port.h>
-
+*/
+#include "m4u.h"
 #include "ddp_log.h"
-#include "cmdq_record.h"
+/*#include "cmdq_record.h"*/
 #include "dpi_dvt_platform.h"
 
 #include "ddp_clkmgr.h"
+#include "ddp_reg.h"
 
-static DPI_BOOL top_power_on;
-#define SOF_DPI0 2
+#undef kal_uint32
+#define kal_uint32 unsigned int
+
+/*static DPI_BOOL top_power_on;*/
+#define SOF_DPI0 0xC3
 
 /*
-connect RDMA1(SOUT) -> (SEL)DPI
-DISP_REG_CONFIG_DPI_SEL_IN
+connect RDMA1(SOUT) -> DSC(SEL) -> DSC(MOUT) -> DPI(SEL)
 DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN
+DISP_REG_CONFIG_DISP_DSC_SEL_IN
+DISP_REG_CONFIG_DISP_DSC_MOUT_EN
+DISP_REG_CONFIG_DPI_SEL_IN
 */
 int dvt_connect_path(void *handle)
 {
 	kal_uint32 value = 0;
-
-	value = 2;		/*from RDMA1 */
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
-	value = 1;		/*out to DPI0 */
+	/*RDMA1 TO DISP_DSC*/
+	value = 1;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN, value);
+	value = 1;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_SEL_IN, value);
+	/*DISP_DSC TO DPI0*/
+	value = 0x4;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_MOUT_EN, value);
+	value = 2;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
 
 	return 0;
 }
@@ -56,8 +72,11 @@ int dvt_disconnect_path(void *handle)
 {
 	kal_uint32 value = 0;
 
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_MOUT_EN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
+
 
 	return 0;
 }
@@ -153,6 +172,7 @@ void dvt_mutex_dump_reg(void)
 
 }
 
+/*
 static char *dvt_ddp_get_mutex_sof_name(MUTEX_SOF mode)
 {
 	switch (mode) {
@@ -169,7 +189,7 @@ static char *dvt_ddp_get_mutex_sof_name(MUTEX_SOF mode)
 		return "unknown";
 	}
 }
-
+*/
 static char *dvt_ddp_get_mutex_sof_name(unsigned int regval)
 {
 	if (regval == SOF_VAL_MUTEX0_SOF_SINGLE_MODE)
@@ -230,6 +250,7 @@ int dvt_mutex_set(DPI_U32 mutex_id, void *handle)
 	DPI_I32 sof = SOF_DPI0;
 
 	mode |= 1 << RDMA_MOD_FOR_MUTEX_SHORT;
+	mode |= 1 << DISP_DSC_MOD_FOR_MUTEX;
 
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
@@ -237,9 +258,9 @@ int dvt_mutex_set(DPI_U32 mutex_id, void *handle)
 	}
 
 	dvt_mutex_mod(handle, mutex_id, mode);
-	dvt_mutex_sof(handle, mutex_id, 0x00000082);
-	DPI_DVT_LOG_W("dvt_mutex_set %d mode=0x%x, sof=%s\n", mutex_id, mode,
-		      dvt_ddp_get_mutex_sof_name(sof));
+	dvt_mutex_sof(handle, mutex_id, sof);
+	DPI_DVT_LOG_W("dvt_mutex_set %d mode=0x%x, sof=%s, sof=%x\n", mutex_id, mode,
+		      dvt_ddp_get_mutex_sof_name(sof), sof);
 
 	return 0;
 }
@@ -271,7 +292,7 @@ int dvt_connect_ovl0_dpi(void *handle)
 
 	/* DPI in from RDMA0 */
 	value = 1;
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
 
 	return 0;
 }
@@ -284,7 +305,7 @@ int dvt_disconnect_ovl0_dpi(void *handle)
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_COLOR0_SEL_IN, value);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DITHER_MOUT_EN, value);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN, value);
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
 
 	return 0;
 }
@@ -292,7 +313,7 @@ int dvt_disconnect_ovl0_dpi(void *handle)
 int dvt_mutex_set_ovl0_dpi(DPI_U32 mutex_id, void *handle)
 {
 	kal_uint32 mode = 0;
-	MUTEX_SOF sof = K2_SOF_DPI0;
+	DPI_I32 sof = SOF_DPI0;
 
 	/*OVL0 -> OVL0_MOUT -> COLOR0_SEL -> COLOR0 -> CCORRO -> AAL0 -> GAMMA0 -> DITHER0 -> DITHER0_MUT */
 	/*DISP_RDMA0 -> RDMA0_SOUT -> DPI_SEL -> DPI */
@@ -329,13 +350,17 @@ int dvt_connect_ovl1_dpi(void *handle)
 	value = 0x1;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_OVL1_MOUT_EN, value);
 
-	/*RDMA1 out to dpi0 */
+	/*RDMA1 TO DISP_DSC*/
 	value = 1;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN, value);
+	value = 1;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_SEL_IN, value);
 
-	/*DPI in from RDMA1 */
+	/*DISP_DSC TO DPI0*/
+	value = 0x4;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_MOUT_EN, value);
 	value = 2;
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
 
 	return 0;
 }
@@ -346,7 +371,9 @@ int dvt_disconnect_ovl1_dpi(void *handle)
 
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_OVL1_MOUT_EN, value);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN, value);
-	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_SEL_IN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DISP_DSC_MOUT_EN, value);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_IN, value);
 
 	return 0;
 }
@@ -355,11 +382,11 @@ int dvt_disconnect_ovl1_dpi(void *handle)
 int dvt_mutex_set_ovl1_dpi(DPI_U32 mutex_id, void *handle)
 {
 	kal_uint32 mode = 0;
-	MUTEX_SOF sof = K2_SOF_DPI0;
+	DPI_I32 sof = SOF_DPI0;
 
-	/*connect OVL1 -> RDMA1 -> DPI0 7,9 */
-	mode |= 1 << 7;
-	mode |= 1 << 9;
+	mode |= 1 << OVL1_MOD_FOR_MUTEX;
+	mode |= 1 << RDMA_MOD_FOR_MUTEX_SHORT;
+	mode |= 1 << DISP_DSC_MOD_FOR_MUTEX;
 
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
@@ -374,6 +401,5 @@ int dvt_mutex_set_ovl1_dpi(DPI_U32 mutex_id, void *handle)
 	return 0;
 }
 
-*/
 #endif				/*DPI_DVT_TEST_SUPPORT */
 #endif				/*#if defined(RDMA_DPI_PATH_SUPPORT) || defined(DPI_DVT_TEST_SUPPORT) */
