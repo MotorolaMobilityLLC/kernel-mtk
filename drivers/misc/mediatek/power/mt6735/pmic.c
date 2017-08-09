@@ -4060,13 +4060,11 @@ void PMIC_INIT_SETTING_V1(void)
 	}
 	/*--------------------------------------------------------*/
 
-#ifdef CONFIG_CRYSTAL /*TBD*/
 	if (crystal_exist_status() == 0) {
 		PMICLOG("32k-less VTCXO always on...\n");
 		pmic_set_register_value(PMIC_RG_VTCXO_0_ON_CTRL, 0);
 		pmic_set_register_value(PMIC_RG_VTCXO_0_EN, 1);
 	}
-#endif
 #if defined(PMIC_HW_USE_4L_SS_LAYOUT)
 	ret = pmic_config_interface(0x494, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
 	ret = pmic_config_interface(0x496, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
