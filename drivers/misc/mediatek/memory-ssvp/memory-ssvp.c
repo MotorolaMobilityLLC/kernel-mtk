@@ -169,6 +169,7 @@ static int memory_ssvp_init(struct reserved_mem *rmem)
 		return 1;
 	}
 
+	ssvp_cma.base = cma_get_base(ssvp_cma.cma);
 	ssvp_cma.base_pfn = page_to_pfn(phys_to_page(cma_get_base(ssvp_cma.cma)));
 	ssvp_cma.count = cma_get_size(ssvp_cma.cma) >> PAGE_SHIFT;
 	ssvp_cma.end_pfn = ssvp_cma.base_pfn + ssvp_cma.count;
@@ -209,6 +210,11 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 				*pa = ssvp_cma.base + (_svpregs[SSVP_SUB_TUI].start << PAGE_SHIFT);
 			if (size)
 				*size = _svpregs[SSVP_SUB_TUI].count << PAGE_SHIFT;
+
+			pr_alert("%s %d: pa %llx, size %lu\n",
+					__func__, __LINE__,
+					ssvp_cma.base + (_svpregs[SSVP_SUB_TUI].start << PAGE_SHIFT),
+					_svpregs[SSVP_SUB_TUI].count << PAGE_SHIFT);
 		} else {
 			_svpregs[SSVP_SUB_TUI].state = SVP_STATE_ON;
 			retval = -EAGAIN;
@@ -570,7 +576,10 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 			if (size)
 				*size = _svpregs[SSVP_SUB_SVP].count << PAGE_SHIFT;
 
-			pr_alert("%s %d: secmem_enable, res %d\n", __func__, __LINE__, res);
+			pr_alert("%s %d: secmem_enable, res %d pa %llx, size %lu\n",
+					__func__, __LINE__, res,
+					ssvp_cma.base + (_svpregs[SSVP_SUB_SVP].start << PAGE_SHIFT),
+					_svpregs[SSVP_SUB_SVP].count << PAGE_SHIFT);
 		} else {
 			_svpregs[SSVP_SUB_SVP].state = SVP_STATE_ON;
 			retval = -EAGAIN;
@@ -785,8 +794,10 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 			&cma_base, &cma_end,
 			cma_get_size(ssvp_cma.cma));
 
-	seq_printf(m, "cma info: pfn [%lu-%lu]\n",
-			ssvp_cma.base_pfn, ssvp_cma.end_pfn);
+	seq_printf(m, "cma info: base %pa pfn [%lu-%lu] count %lu\n",
+			&ssvp_cma.base,
+			ssvp_cma.base_pfn, ssvp_cma.end_pfn,
+			ssvp_cma.count);
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 	seq_printf(m, "cma info: wrap: %pa\n", &wrap_cma_pages);
