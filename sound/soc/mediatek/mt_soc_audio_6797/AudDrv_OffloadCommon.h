@@ -48,9 +48,6 @@
 #include <sound/compress_driver.h>
 #include <sound/pcm.h>
 #include "scp_helper.h"
-/* #ifdef AUDIO_IPI
-#include <audio_messenger_ipi.h>
-#endi */
 /***********************************************************************************
 ** OFFLOAD Service Control Message
 ************************************************************************************/
@@ -175,7 +172,4 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count);
 extern phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id);
-/* #ifdef AUDIO_IPI
-void OffloadService_IPICmd_Received(ipi_msg_t *ipi_msg);
-#endif */
 #endif

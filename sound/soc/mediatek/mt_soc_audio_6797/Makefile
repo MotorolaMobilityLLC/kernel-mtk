@@ -16,6 +16,7 @@ ccflags-y += -D_MT_IDLE_HEADER
 ifeq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)
 ccflags-y += -DMTK_AURISYS_PHONE_CALL_SUPPORT
+ccflags-y += -DMTK_AUDIO_TUNNELING_SUPPORT
 endif
 
 #
