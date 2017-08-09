@@ -84,13 +84,14 @@ enum md_status {
 };
 
 enum dvfs_timer {
+	RANGE_0 = 0,
 	RANGE_1 = 50,
 	RANGE_2 = 75,
 	RANGE_3 = 100,
 	RANGE_4 = 125,
 	RANGE_5 = 150,
-	RANGE_6 = 175,
-	RANGE_7 = 200,
+	RANGE_6 = 200,
+	NUM_RANGE = 7,
 };
 
 struct opp_profile {

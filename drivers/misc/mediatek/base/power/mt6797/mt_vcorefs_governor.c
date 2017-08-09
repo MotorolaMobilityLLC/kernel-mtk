@@ -50,6 +50,9 @@
 static int vcorefs_curr_opp __nosavedata = OPPI_PERF;
 static int vcorefs_prev_opp __nosavedata = OPPI_PERF;
 
+static unsigned int	vcorefs_range[NUM_RANGE] = {RANGE_0, RANGE_1, RANGE_2, RANGE_3, RANGE_4, RANGE_5, RANGE_6};
+static unsigned long	vcorefs_cnt[NUM_RANGE] = {0};
+
 __weak int emmc_autok(void)
 {
 	return 0;
@@ -109,18 +112,11 @@ struct governor_profile {
 	u32 active_autok_kir;
 	u32 autok_kir_group;
 	u32 cpu_dvfs_req;
+	u32 dvfs_timer;
 
 	bool perform_bw_enable;
 	u32 perform_bw_lpm_threshold;
 	u32 perform_bw_hpm_threshold;
-
-	u32 dvfs_work_timer_1;
-	u32 dvfs_work_timer_2;
-	u32 dvfs_work_timer_3;
-	u32 dvfs_work_timer_4;
-	u32 dvfs_work_timer_5;
-	u32 dvfs_work_timer_6;
-	u32 dvfs_work_timer_7;
 };
 
 static struct governor_profile governor_ctrl = {
@@ -137,6 +133,7 @@ static struct governor_profile governor_ctrl = {
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
 	.cpu_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_NON_CA_DATALINK) | (1 << MD_POSITION)),
+	.dvfs_timer = 0,
 
 	.curr_vcore_uv = VCORE_1_P_00_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
@@ -145,14 +142,6 @@ static struct governor_profile governor_ctrl = {
 	.perform_bw_enable = 0,
 	.perform_bw_lpm_threshold = 0,
 	.perform_bw_hpm_threshold = 0,
-
-	.dvfs_work_timer_1 = 0,
-	.dvfs_work_timer_2 = 0,
-	.dvfs_work_timer_3 = 0,
-	.dvfs_work_timer_4 = 0,
-	.dvfs_work_timer_5 = 0,
-	.dvfs_work_timer_6 = 0,
-	.dvfs_work_timer_7 = 0,
 };
 
 int kicker_table[NUM_KICKER] __nosavedata;
@@ -473,34 +462,29 @@ static int set_init_opp_index(void)
 void record_dvfs_timer(u32 timer)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
+	int i;
 
-	if (timer > RANGE_1 && timer <= RANGE_2)
-		gvrctrl->dvfs_work_timer_1++;
-	else if (timer > RANGE_2 && timer <= RANGE_3)
-		gvrctrl->dvfs_work_timer_2++;
-	else if (timer > RANGE_3 && timer <= RANGE_4)
-		gvrctrl->dvfs_work_timer_3++;
-	else if (timer > RANGE_4 && timer <= RANGE_5)
-		gvrctrl->dvfs_work_timer_4++;
-	else if (timer > RANGE_5 && timer <= RANGE_6)
-		gvrctrl->dvfs_work_timer_5++;
-	else if (timer > RANGE_6 && timer <= RANGE_7)
-		gvrctrl->dvfs_work_timer_6++;
-	else if (timer > RANGE_7)
-		gvrctrl->dvfs_work_timer_7++;
+	gvrctrl->dvfs_timer = timer;
+
+	if (timer != 0) {
+		for (i = 0; i < NUM_RANGE; i++) {
+			if (i == NUM_RANGE-1) {
+				vcorefs_cnt[i]++;
+				break;
+			} else if (timer > vcorefs_range[i] && timer <= vcorefs_range[i+1]) {
+				vcorefs_cnt[i]++;
+				break;
+			}
+		}
+	}
 }
 
-void clean_dvfs_timer(int timer)
+void clean_dvfs_counter(int timer)
 {
-	struct governor_profile *gvrctrl = &governor_ctrl;
+	int i;
 
-	gvrctrl->dvfs_work_timer_1 = timer;
-	gvrctrl->dvfs_work_timer_2 = timer;
-	gvrctrl->dvfs_work_timer_3 = timer;
-	gvrctrl->dvfs_work_timer_4 = timer;
-	gvrctrl->dvfs_work_timer_5 = timer;
-	gvrctrl->dvfs_work_timer_6 = timer;
-	gvrctrl->dvfs_work_timer_7 = timer;
+	for (i = 0; i < NUM_RANGE; i++)
+		vcorefs_cnt[i] = timer;
 }
 
 /*
@@ -645,8 +629,8 @@ int governor_debug_store(const char *buf)
 			gvrctrl->freq_dfs = val;
 		else if (!strcmp(cmd, "load_spm"))
 			vcorefs_reload_spm_firmware(val);
-		else if (!strcmp(cmd, "timer"))
-			clean_dvfs_timer(val);
+		else if (!strcmp(cmd, "dvfs_cnt"))
+			clean_dvfs_counter(val);
 		else
 			r = -EPERM;
 	} else {
@@ -658,6 +642,8 @@ int governor_debug_store(const char *buf)
 
 char *governor_get_dvfs_info(char *p)
 {
+	int i;
+
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int uv = vcorefs_get_curr_vcore();
 
@@ -684,14 +670,12 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[HPM_thres ]: 0x%x\n", gvrctrl->perform_bw_hpm_threshold);
 	p += sprintf(p, "\n");
 
-	p += sprintf(p, "[timer]: [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u\n",
-						RANGE_1, gvrctrl->dvfs_work_timer_1,
-						RANGE_2, gvrctrl->dvfs_work_timer_2,
-						RANGE_3, gvrctrl->dvfs_work_timer_3,
-						RANGE_4, gvrctrl->dvfs_work_timer_4,
-						RANGE_5, gvrctrl->dvfs_work_timer_5,
-						RANGE_6, gvrctrl->dvfs_work_timer_6,
-						RANGE_7, gvrctrl->dvfs_work_timer_7);
+	p += sprintf(p, "[dvfs_timer]: %u\n", gvrctrl->dvfs_timer);
+	p += sprintf(p, "[dvfs_cnt  ]: ");
+	for (i = 0; i < NUM_RANGE; i++)
+		p += sprintf(p, "[%d] %lu ", vcorefs_range[i], vcorefs_cnt[i]);
+	p += sprintf(p, "\n");
+
 	return p;
 }
 

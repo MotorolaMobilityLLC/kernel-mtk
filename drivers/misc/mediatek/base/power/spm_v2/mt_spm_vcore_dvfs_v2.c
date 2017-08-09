@@ -341,7 +341,6 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 
 		/* DVFS time is out of spec */
 		if (timer < 0) {
-			spm_vcorefs_err("wait DVFS finish timeout, SPM_SW_RSV_5: 0x%x\n", spm_read(SPM_SW_RSV_5));
 			spm_vcorefs_err("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			BUG();
