@@ -331,6 +331,7 @@ int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 	/* printk("fwq pullset pin=%d,select(%d)\n",pin,select); */
 	if (PULL_offset[pin].offset != -1) {
 
+		bit = PULL_offset[pin].offset;
 		/* reg = GPIO_RD32(PULL_addr[pin].addr); */
 		if (select == GPIO_PULL_DOWN)
 			GPIO_SET_BITS((1L << bit), PULL_addr[pin].addr + 8);

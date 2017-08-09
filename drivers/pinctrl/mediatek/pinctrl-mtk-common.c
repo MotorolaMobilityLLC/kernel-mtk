@@ -883,12 +883,12 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 	int value =  -1;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
-	if (pctl->devdata->mt_get_gpio_out != NULL || pctl->devdata->mt_get_gpio_in != NULL) {
-		if (mtk_gpio_get_direction(chip, offset)) {
+	if (pctl->devdata->mt_get_gpio_out != NULL && pctl->devdata->mt_get_gpio_in != NULL) {
+		if (mtk_gpio_get_direction(chip, offset))
 			value = pctl->devdata->mt_get_gpio_out(offset|0x80000000);
-			return value;
-		}
-		return 0;
+		else
+			value = pctl->devdata->mt_get_gpio_in(offset|0x80000000);
+		return value;
 	}
 
 	if (mtk_gpio_get_direction(chip, offset))
