@@ -354,8 +354,12 @@ TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
 		switch (type) {
 		case TZPT_VALUE_INPUT:
 		case TZPT_VALUE_INOUT:
-		case TZPT_VALUE_OUTPUT:
 			param[i] = oparam[i];
+			break;
+		case TZPT_VALUE_OUTPUT:
+			/* reset to zero if output */
+			param[i].value.a = 0;
+			param[i].value.b = 0;
 			break;
 
 		case TZPT_MEM_INPUT:
@@ -379,9 +383,10 @@ TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
 					goto error;
 				}
 
-				memcpy(param[i].mem.buffer,
-					oparam[i].mem.buffer,
-					param[i].mem.size);
+				if (TZPT_MEM_OUTPUT != type)
+					memcpy(param[i].mem.buffer,
+						oparam[i].mem.buffer,
+						param[i].mem.size);
 			}
 			break;
 
