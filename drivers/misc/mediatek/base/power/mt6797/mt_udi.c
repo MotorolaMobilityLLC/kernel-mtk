@@ -82,6 +82,7 @@ static unsigned int func_lv_mask_udi;
 unsigned int IR_bit_count, DR_bit_count;
 unsigned char IR_byte[UDI_FIFOSIZE], DR_byte[UDI_FIFOSIZE];
 unsigned int jtag_sw_tck;	/* default debug channel = 1 */
+unsigned int udi_addr_phy = 10222470;
 
 #define CTOI(char_ascii)    ((char_ascii <= 0x39) ? (char_ascii - 0x30) :	\
 							((char_ascii <= 0x46) ? (char_ascii - 55) : (char_ascii - 87)))
@@ -233,33 +234,33 @@ out:
 /* udi_debug_reg */
 static int udi_reg_proc_show(struct seq_file *m, void *v)
 {
-	seq_puts(m, "empty.\n");
+	seq_printf(m, "Reg[%x] = 0x%x.\n", udi_addr_phy, udi_reg_read(udi_addr_phy));
 	return 0;
 }
 
 static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	char *buf = _copy_from_user_for_proc(buffer, count);
-	unsigned int udi_addr_offset = 0, udi_value = 0, udi_reg_msb, udi_reg_lsb;
+	unsigned int udi_value = 0, udi_reg_msb, udi_reg_lsb;
 	unsigned char udi_rw[5] = { 0, 0, 0, 0, 0 };
 
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%s %x %d %d %x", udi_rw, &udi_addr_offset, &udi_reg_msb , &udi_reg_lsb, &udi_value) == 5) {
+	if (sscanf(buf, "%s %x %d %d %x", udi_rw, &udi_addr_phy, &udi_reg_msb , &udi_reg_lsb, &udi_value) == 5) {
 		/* f format or 'f', addr, MSB, LSB, value */
-		udi_reg_field(udi_addr_offset, udi_reg_msb : udi_reg_lsb, udi_value);
-		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
-				udi_addr_offset, udi_reg_read(udi_addr_offset));
-	} else if (sscanf(buf, "%s %x %x", udi_rw, &udi_addr_offset, &udi_value) == 3) {
+		udi_reg_field(udi_addr_phy, udi_reg_msb : udi_reg_lsb, udi_value);
+		udi_info("Read back, Reg[%x] = 0x%x.\n",
+				udi_addr_phy, udi_reg_read(udi_addr_phy));
+	} else if (sscanf(buf, "%s %x %x", udi_rw, &udi_addr_phy, &udi_value) == 3) {
 		/* w format or 'w', addr, value */
-		udi_reg_write(udi_addr_offset, udi_value);
-		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
-				udi_addr_offset, udi_reg_read(udi_addr_offset));
-	} else if (sscanf(buf, "%s %x", udi_rw, &udi_addr_offset) == 2) {
+		udi_reg_write(udi_addr_phy, udi_value);
+		udi_info("Read back, Reg[%x] = 0x%x.\n",
+				udi_addr_phy, udi_reg_read(udi_addr_phy));
+	} else if (sscanf(buf, "%s %x", udi_rw, &udi_addr_phy) == 2) {
 		/* r format or 'r', addr */
-		udi_info("Read back, addr = 0x%x, value = 0x%x\n",
-				udi_addr_offset, udi_reg_read(udi_addr_offset));
+		udi_info("Read back, aReg[%x] = 0x%x.\n",
+				udi_addr_phy, udi_reg_read(udi_addr_phy));
 	} else {
 		udi_info("echo dbg_lv (dec) > /proc/udi/udi_debug\n");
 		memset(udi_rw, 0, sizeof(udi_rw));
@@ -324,6 +325,8 @@ In this form there are 4 calling parameters:
 
 e.g. echo 3 12 a05 30 9b6a4109 > /proc/udi/udi_jtag_clock
      echo 0 11 006 11 000 > /proc/udi/udi_jtag_clock
+     echo 0 58 003ffbffbfff807 35 7c000003f > /proc/udi/udi_jtag_clock
+     (ans: IR 58 0000550000355000 DR 35 000003f000)
 */
 
 static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)

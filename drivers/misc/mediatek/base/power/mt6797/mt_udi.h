@@ -111,7 +111,8 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 #endif /* CONFIG_ARM64 */
 
 /* #define UDI_FIFOSIZE 16384  */
-#define UDI_FIFOSIZE 128 /* recv string for temp */
+/* recv string for temp  */
+#define UDI_FIFOSIZE 256
 
 /* udi extern function for ATF test */
 #ifndef __KERNEL__
