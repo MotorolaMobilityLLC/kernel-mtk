@@ -78,7 +78,7 @@ static void ppm_pwrthro_bat_per_protect(BATTERY_PERCENT_LEVEL level)
 
 	FUNC_ENTER(FUNC_LV_API);
 
-	ppm_info("@%s: bat percent lv = %d\n", __func__, level);
+	ppm_ver("@%s: bat percent lv = %d\n", __func__, level);
 
 	ppm_lock(&pwrthro_policy.lock);
 
@@ -115,7 +115,7 @@ static void ppm_pwrthro_bat_oc_protect(BATTERY_OC_LEVEL level)
 
 	FUNC_ENTER(FUNC_LV_API);
 
-	ppm_info("@%s: bat OC lv = %d\n", __func__, level);
+	ppm_ver("@%s: bat OC lv = %d\n", __func__, level);
 
 	ppm_lock(&pwrthro_policy.lock);
 
@@ -152,7 +152,7 @@ void ppm_pwrthro_low_bat_protect(LOW_BATTERY_LEVEL level)
 
 	FUNC_ENTER(FUNC_LV_API);
 
-	ppm_info("@%s: low bat lv = %d\n", __func__, level);
+	ppm_ver("@%s: low bat lv = %d\n", __func__, level);
 
 	ppm_lock(&pwrthro_policy.lock);
 
