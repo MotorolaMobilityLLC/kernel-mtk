@@ -210,7 +210,7 @@ static ssize_t rawbulk_attr_show(struct device *dev, struct device_attribute *at
 	int idx;
 	int enab;
 	struct rawbulk_function *fn;
-	ssize_t count;
+	ssize_t count = 0;
 
 	for (n = 0; n < _MAX_TID; n++) {
 		fn = rawbulk_lookup_function(n);
@@ -264,7 +264,7 @@ static ssize_t rawbulk_attr_show(struct device *dev, struct device_attribute *at
 	default:
 		break;
 	}
-	return 0;
+	return count;
 }
 
 #ifdef C2K_USB_UT
