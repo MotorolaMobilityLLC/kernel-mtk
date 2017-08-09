@@ -1624,11 +1624,12 @@ static void testcase_write(void)
 
 	/* use CMDQ to set to PATTERN */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdqRecSetSecureMode(handle, CMDQ_DISP_SINGLE_MODE);
 
 	for (count = 0; count < loopCount; count++) {
 		cmdqRecReset(handle);
 		cmdqRecSetSecure(handle, gCmdqTestSecure);
-		cmdqRecWrite(handle, CMDQ_TEST_DISP_PWM0_DUMMY_PA, PATTERN, ~0);
+		cmdqRecWrite(handle, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
 		cmdqRecFlushAsyncCallback(handle, flush_callback, PATTERN);
 	}
 	cmdqRecDestroy(handle);

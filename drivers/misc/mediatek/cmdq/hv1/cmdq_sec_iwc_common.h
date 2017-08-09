@@ -2,7 +2,7 @@
 #define __CMDQ_SEC_IWC_COMMON_H__
 #include "cmdqSecTl_Api.h"
 /* shared DRAM */
-#define CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET    (0x100)	/* bit x = 1 means thread x raise IRQ */
+#define CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET	(0x100)	/* bit x = 1 means thread x raise IRQ */
 /* #define CMDQ_SEC_SHARED_THR_CNT_OFFSET (0x100) */
 #define CMDQ_SEC_SHARED_THR_CNT_OFFSET (0x0)
 
@@ -20,6 +20,7 @@ typedef enum CMDQ_IWC_ADDR_METADATA_TYPE {
 	CMDQ_IWC_H_2_MVA = 1,	/* sec handle to sec MVA */
 	CMDQ_IWC_NMVA_2_MVA = 2,	/* map normal MVA to secure world */
 	CMDQ_IWC_DDP_REG_HDCP = 3,	/* DDP register needs to set opposite value when HDCP fail */
+	CMDQ_IWC_MEMSET_BUFFER = 4,	/*memset this specify buffer*/
 } CMDQ_IWC_ADDR_METADATA_TYPE;
 
 
@@ -179,6 +180,7 @@ typedef struct {
 /* ERROR code number (ERRNO) */
 /* note the error result returns negative value, i.e, -(ERRNO) */
 /*  */
+#if 0
 #define	CMDQ_ERR_NOMEM		(12)	/* out of memory */
 #define	CMDQ_ERR_FAULT		(14)	/* bad address */
 
@@ -203,6 +205,58 @@ typedef struct {
 #define CMDQ_ERR_DR_IPC_CLOSE_SESSION	 (5002)
 #define CMDQ_ERR_DR_EXEC_FAILED		   (5003)
 
+#endif
+/*  */
+/* ERROR code number (ERRNO) */
+/* note the error result returns negative value, i.e, -(ERRNO) */
+/*  */
+enum ERROR_STATUS {
+	CMDQ_ERR_INVALID_PARAM				=	50,
+	CMDQ_ERR_INVALID_SECURE_THREAD_ID	=	51,
+	CMDQ_ERR_INVALID_THREAD				=	52,
+	CMDQ_ERR_INVALID_IRQ_FLAG			=	53,
+
+	CMDQ_ERR_NOMEM						=	12,	/*alloc secure memeory fail*/
+	CMDQ_ERR_FAULT						=	13,
+	CMDQ_ERR_NO_PREV_TASK				=	14,
+
+	CMDQ_ERR_SECURE_PATH_NOT_READY		=	15,
+	/*acqire secure task error*/
+	CMDQ_ERR_ACQUIRE_TASK_FAILED		=	17,
+	CMDQ_ERR_TASK_BUFFER_SIZE_WRONG		=	18,
+	CMDQ_ERR_METADATA_COUNT_MISMATCH	=	19,
+	CMDQ_ERR_METADATA_INDEX_TOO_LARGE	=	20,
+
+	CMDQ_ERR_RESET_THREAD_WITH_TASK		=	21,
+	CMDQ_ERR_INSET_WRONG_COOKIE			=	22,
+
+
+	CMDQ_ERR_RESET_HW_THREAD_FAIL		=	23,
+	CMDQ_ERR_SUSPEND_HW_THREAD_FAIL		=	24,
+	CMDQ_ERR_ERR_TASK_IS_NULL			=	25,
+
+	CMDQ_ERR_RELEASE_TASK_IS_NULL		=	26,
+	CMDQ_ERR_REMOVE_TASK_IS_NOT_BUSY	=	27,
+	CMDQ_ERR_NON_SUPPORT_DISP_MODE		=	28,
+
+	/*m4u convert handle to secure addr error*/
+	CMDQ_ERR_ADDR_CONVERT_HANDLE_2_PA	=	1000,
+	CMDQ_ERR_ADDR_CONVERT_HANDLE_2_VA	=	1001,
+	CMDQ_ERR_M4U_MAP_NONSEC_BUFFER_FAILED	=	1100,
+	CMDQ_ERR_M4U_ALLOC_SEC_MVA_FAILED		=	1101,
+
+	/* param check error*/
+	CMDQ_ERR_UNKNOWN_ADDR_METADATA_TYPE	=	1400,
+	CMDQ_ERR_TOO_MANY_SEC_HANDLE		=	1401,	/*Too many secure handle address in one secure task*/
+		/* security check error*/
+	CMDQ_ERR_SECURITY_INVALID_SUBSYS_ID	=	1500,
+	CMDQ_ERR_SECURITY_INVALID_SEC_HANDLE		=	1501,
+	CMDQ_ERR_SECURITY_INVALID_DAPC_FALG			=	1502,
+	CMDQ_ERR_NO_M4U_PORT_CONFIGED				=	1503,
+	CMDQ_ERR_NO_DAPC_ENGINE_CONFIGED			=	1504,
+
+	ERROR_STATUS_MAX_COUNT
+};
 
 
 #endif				/* __CMDQ_SEC_TLAPI_H__ */
