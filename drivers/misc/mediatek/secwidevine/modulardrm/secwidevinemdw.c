@@ -306,7 +306,7 @@ static long secwidevinemdw_read(struct file *file, char *buf, u32 size,
 	u32 hdcpversion = secwidevinemdw_dci->request.currenthdcpversion;
 
 	if (size < sizeof(hdcpversion)) {
-		MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small %u", size, sizeof(hdcpversion));
+		MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small 0x%08lx", size, sizeof(hdcpversion));
 		return -1;
 	}
 	memset(buf, 0, sizeof(hdcpversion));
