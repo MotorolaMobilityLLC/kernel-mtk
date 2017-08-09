@@ -1,5 +1,4 @@
 #ccflags-y += -I$(src)/core/include
-subdir-ccflags-y += -DWMT_PLAT_APEX=0
 subdir-ccflags-y += -DWMT_PLAT_ALPS=1
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eemcs/

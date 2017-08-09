@@ -18,11 +18,8 @@
 ********************************************************************************
 */
 #define HIF_SDIO_UPDATE (1)
-#if (WMT_PLAT_APEX == 1)
 #define HIF_SDIO_SUPPORT_SUSPEND (1)
-#else
-#define HIF_SDIO_SUPPORT_SUSPEND (0)
-#endif
+#define HIF_SDIO_SUPPORT_WAKEUP (0)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -1576,38 +1573,51 @@ static INT32 hif_sdio_suspend(struct device *dev)
 
 	func = dev_to_sdio_func(dev);
 	HIF_SDIO_DBG_FUNC("prepare for func(0x%p)\n", func);
-
 	flag = sdio_get_host_pm_caps(func);
+#if HIF_SDIO_SUPPORT_WAKEUP
 	if (!(flag & MMC_PM_KEEP_POWER) || !(flag & MMC_PM_WAKE_SDIO_IRQ)) {
 		HIF_SDIO_WARN_FUNC
-		    ("neither MMC_PM_KEEP_POWER nor MMC_PM_WAKE_SDIO_IRQ is supported by host, return -ENOTSUPP\n");
+		    ("neither MMC_PM_KEEP_POWER or MMC_PM_WAKE_SDIO_IRQ is supported by host, return -ENOTSUPP\n");
 		return -ENOTSUPP;
 	}
 
 	/* set both */
-	flag = MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
+	flag |= MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
+#else
+	if (!(flag & MMC_PM_KEEP_POWER)) {
+		HIF_SDIO_WARN_FUNC
+		    ("neither MMC_PM_KEEP_POWER is supported by host, return -ENOTSUPP\n");
+		return -ENOTSUPP;
+	}
+	flag |= MMC_PM_KEEP_POWER;
+#endif
 	ret = sdio_set_host_pm_flags(func, flag);
 	if (ret) {
 		HIF_SDIO_INFO_FUNC
-		    ("set MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ to host fail(%d)\n", ret);
+		    ("set MMC_PM_KEEP_POWER to host fail(%d)\n", ret);
 		return -EFAULT;
 	}
+#if HIF_SDIO_SUPPORT_WAKEUP
 	sdio_claim_host(func);
-	HIF_SDIO_INFO_FUNC("set MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ ok\n");
+#endif
+	HIF_SDIO_INFO_FUNC("set MMC_PM_KEEP_POWER ok\n");
 	return 0;
 }
 
 static INT32 hif_sdio_resume(struct device *dev)
 {
+#if HIF_SDIO_SUPPORT_WAKEUP
 	struct sdio_func *func;
-
+#endif
 	if (!dev) {
 		HIF_SDIO_WARN_FUNC("null dev!\n");
 		return -EINVAL;
 	}
+#if HIF_SDIO_SUPPORT_WAKEUP
 	func = dev_to_sdio_func(dev);
 	sdio_release_host(func);
-	HIF_SDIO_DBG_FUNC("do nothing for func(0x%p)\n", func);
+#endif
+	HIF_SDIO_INFO_FUNC("do nothing\n");
 
 	return 0;
 }
