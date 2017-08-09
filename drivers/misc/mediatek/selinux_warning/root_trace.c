@@ -29,12 +29,17 @@ static struct platform_driver root_trace = {
 		   .owner = THIS_MODULE,
 		   }
 };
+
 #define MAX_PATH        (256)
-/* the exclusive list for root trace*/
+/* the exclusive list for root trace, below is an example, please configure your own list*/
 const char *exclusive_list[] = {
-	"/system/bin/xxx",
+	"/system/bin/app_process32",
+	"/system/bin/app_process64",
+	"/system/bin/pppd"
 };
-/* by default not to traverse exclusive list
+
+/*
+*  by default not to traverse exclusive list
 *  0 : not to traverse exclusive list
 *  1 : traverse exclusive list
 */
@@ -54,7 +59,6 @@ static ssize_t root_trace_show(struct device_driver *driver, char *buf)
 }
 
 
-
 DRIVER_ATTR(root_trace, 0444, root_trace_show, NULL);
 
 
@@ -67,22 +71,20 @@ static int __init root_trace_init(void)
 	ret = driver_register(&root_trace.driver);
 
 	if (ret) {
-		pr_warn("fail to register root_trace driver\n");
+		pr_warn("[%s] fail to register root_trace driver\n", __func__);
 		return -1;
 	}
 
 	ret = driver_create_file(&root_trace.driver, &driver_attr_root_trace);
 
 	if (ret) {
-		pr_warn("[BOOT INIT] Fail to create root_trace sysfs file\n");
+		pr_warn("[%s] fail to create root_trace sysfs file\n", __func__);
 		driver_unregister(&root_trace.driver);
 		return -1;
 	}
 
 	return 0;
 }
-
-
 
 
 int sec_trace_root(const struct cred *old, const struct cred *new)
@@ -113,10 +115,12 @@ int sec_trace_root(const struct cred *old, const struct cred *new)
 
 			if (pmm->exe_file) {
 				pathname = kmalloc(MAX_PATH, GFP_KERNEL);
-				if (pathname) {
-					exec_path =
-					    d_path(&pmm->exe_file->f_path, pathname, MAX_PATH);
+				if (!pathname) {
+					pr_warn("[%s] fail to kmalloc !\n", __func__);
+					ret = -ENOMEM;
+					goto _exit;
 				}
+				exec_path = d_path(&pmm->exe_file->f_path, pathname, MAX_PATH);
 
 				for (i = 0; i < ARRAY_SIZE(exclusive_list); i++) {
 					if (!strcmp(exclusive_list[i], exec_path)) {
