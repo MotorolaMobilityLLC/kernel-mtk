@@ -4150,6 +4150,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	msdc_init_tune_path(host, mmc->ios.timing);
 	host->tuning_in_progress = true;
 
+	msdc_ungate_clock(host);
 	switch (host->hw->host_function) {
 	case MSDC_EMMC:
 		if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
@@ -4185,6 +4186,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		break;
 	}
 	host->tuning_in_progress = false;
+	msdc_gate_clock(host, 1);
 	return 0;
 }
 int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
@@ -4229,6 +4231,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	int autok_err_type = -1;
 	unsigned int tune_smpl = 0;
 
+	msdc_ungate_clock(host);
 	host->tuning_in_progress = true;
 
 	/* autok_err_type is used for switch edge tune and CMDQ tune */
@@ -4342,10 +4345,12 @@ recovery:
 		}
 	} else {
 		/* SDIO tuning is not ported */
+		msdc_gate_clock(host, 1);
 		return 0;
 	}
 end:
 	host->tuning_in_progress = false;
+	msdc_gate_clock(host, 1);
 	return ret;
 }
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
