@@ -757,6 +757,8 @@ static void receive_file_work(struct work_struct *data)
 	int64_t count;
 	int ret, cur_buf = 0;
 	int r = 0;
+	/* use this to avoid 4G copy issue */
+	int64_t total_size = 0;
 
 	/* read our parameters */
 	smp_rmb();
@@ -774,6 +776,16 @@ static void receive_file_work(struct work_struct *data)
 
 			read_req->length = (count > MTP_BULK_BUFFER_SIZE
 					? MTP_BULK_BUFFER_SIZE : count);
+
+			if (total_size >= 0xFFFFFFFF)
+				read_req->short_not_ok = 0;
+			else {
+				if (0 == (read_req->length % dev->ep_out->maxpacket))
+					read_req->short_not_ok = 1;
+				else
+					read_req->short_not_ok = 0;
+			}
+
 			dev->rx_done = 0;
 			ret = usb_ep_queue(dev->ep_out, read_req, GFP_KERNEL);
 			if (ret < 0) {
@@ -811,6 +823,11 @@ static void receive_file_work(struct work_struct *data)
 			 */
 			if (count != 0xFFFFFFFF)
 				count -= read_req->actual;
+
+			total_size += read_req->actual;
+			DBG(cdev, "%s, line %d: count = %lld, total_sz = %lld, rd_req->actual = %d, rd_req->leng= %d\n",
+					__func__, __LINE__, count, total_size, read_req->actual, read_req->length);
+
 			if (read_req->actual < read_req->length) {
 				/*
 				 * short packet is used to signal EOF for
@@ -819,10 +836,18 @@ static void receive_file_work(struct work_struct *data)
 				DBG(cdev, "got short packet\n");
 				count = 0;
 			}
+			/* Add for RX mode 1 */
+			read_req->short_not_ok = 0;
 
 			write_req = read_req;
 			read_req = NULL;
 		}
+	}
+
+	if (dev->state == STATE_ERROR || dev->state == STATE_OFFLINE) {
+		DBG(dev->cdev, "%s, line %d: read_req = %p\n", __func__, __LINE__, read_req);
+		if (read_req)
+			read_req->short_not_ok = 0;
 	}
 
 	DBG(cdev, "receive_file_work returning %d\n", r);
@@ -993,6 +1018,9 @@ static const struct file_operations mtp_fops = {
 	.read = mtp_read,
 	.write = mtp_write,
 	.unlocked_ioctl = mtp_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = mtp_ioctl,
+#endif
 	.open = mtp_open,
 	.release = mtp_release,
 };
