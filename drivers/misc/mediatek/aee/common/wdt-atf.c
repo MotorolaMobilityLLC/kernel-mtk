@@ -523,14 +523,17 @@ static int __init aee_wdt_init(void)
 	memset_io(stacks_buffer_bin, 0, sizeof(stacks_buffer_bin));
 	memset_io(wdt_percpu_stackframe, 0, sizeof(wdt_percpu_stackframe));
 
-	/* send SMC to ATF to register call back function */
+	/* send SMC to ATF to register call back function
+	   Notes: return phys_addr of mt_secure_call() from atf will always < 4G
+	 */
 #ifdef CONFIG_ARM64
-	atf_aee_debug_phy_addr = (phys_addr_t) (0x00000000FFFFFFFF &
+	atf_aee_debug_phy_addr = (phys_addr_t) (0x00000000FFFFFFFFULL &
 						mt_secure_call(MTK_SIP_KERNEL_WDT,
-							       (u64) &aee_wdt_atf_entry, 0, 0));
+							(u64) &aee_wdt_atf_entry, 0, 0));
 #else
-	atf_aee_debug_phy_addr = (phys_addr_t)
-	    mt_secure_call(MTK_SIP_KERNEL_WDT, (u32) &aee_wdt_atf_entry, 0, 0);
+	atf_aee_debug_phy_addr = (phys_addr_t) (0x00000000FFFFFFFFULL &
+						mt_secure_call(MTK_SIP_KERNEL_WDT,
+							(u32) &aee_wdt_atf_entry, 0, 0));
 #endif
 	LOGD("\n MTK_SIP_KERNEL_WDT - 0x%p\n", &aee_wdt_atf_entry);
 
