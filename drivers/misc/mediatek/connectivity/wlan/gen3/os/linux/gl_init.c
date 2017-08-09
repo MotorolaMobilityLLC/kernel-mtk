@@ -2597,18 +2597,10 @@ static INT_32 wlanProbe(PVOID pvData)
 			kalMemZero(pucConfigBuf, WLAN_CFG_FILE_BUF_SIZE);
 			if (pucConfigBuf) {
 				if (kalReadToFile("/storage/sdcard0/wifi.cfg", pucConfigBuf,
-						  WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-					/* ToDo:: Nothing */
-				} else if (kalReadToFile("/data/misc/wifi.cfg", pucConfigBuf,
-							 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-					/* ToDo:: Nothing */
-				} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
-							 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-					/* ToDo:: Nothing */
-				} else if (kalReadToFile("/etc/firmware/wifi.cfg", pucConfigBuf,
-							 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-					/* ToDo:: Nothing */
-				}
+						  WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0);
+				else
+					kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
+							 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen);
 
 				if (pucConfigBuf[0] != '\0' && u4ConfigReadLen > 0)
 					wlanCfgInit(prAdapter, pucConfigBuf, u4ConfigReadLen, 0);
