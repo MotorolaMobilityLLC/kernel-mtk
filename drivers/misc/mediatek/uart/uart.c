@@ -2288,7 +2288,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 {
 	struct mtk_uart *uart;
 	int err;
-#if !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if !defined(CONFIG_MTK_CLKMGR)
 	static const char * const clk_uart_name[] = {
 		"uart0-main",
@@ -2303,7 +2303,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	/* for GPIO pinctrl */
 	struct pinctrl *ppinctrl = NULL;
 #endif
-#endif /* !defined(CONFIG_MTK_FPGA) */
+#endif /* !defined(CONFIG_FPGA_EARLY_PORTING) */
 
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
@@ -2322,7 +2322,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	MSG_FUNC_ENTRY();
 
 /* For clock setting */
-#if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	uart_setting = get_uart_default_settings(pdev->id);
 	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[pdev->id]);
 	if (IS_ERR(uart_setting->clk_uart_main)) {
@@ -2342,12 +2342,12 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		set_uart_dma_clk(pdev->id, clk_uart0_dma);
 		pr_debug("[UART][CCF]clk_uart0_dma:%p\n", clk_uart0_dma);
 	}
-#else /* !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA) */
-	pr_debug("[UART][CCF]mtk_uart_probe CONFIG_MTK_CLKMGR or CONFIG_MTK_FPGA is defined!\n");
-#endif /*!defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA) */
+#else /* !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING) */
+	pr_debug("[UART][CCF]mtk_uart_probe CONFIG_MTK_CLKMGR or CONFIG_FPGA_EARLY_PORTING is defined!\n");
+#endif /*!defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING) */
 
 /* For GPIO setting */
-#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	ppinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(ppinctrl)) {
 		err = PTR_ERR(ppinctrl);
@@ -2356,9 +2356,9 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	}
 	set_uart_pinctrl(pdev->id, ppinctrl);
 	pr_debug("[UART%d][PinC]set idx:%d, ppinctrl:%p\n", pdev->id, pdev->id, ppinctrl);
-#else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
-	pr_debug("[UART][PinC]mtk_uart_probe CONFIG_MTK_LEGACY or CONFIG_MTK_FPGA is defined!\n");
-#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+#else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_FPGA_EARLY_PORTING) */
+	pr_debug("[UART][PinC]mtk_uart_probe CONFIG_MTK_LEGACY or CONFIG_FPGA_EARLY_PORTING is defined!\n");
+#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_FPGA_EARLY_PORTING) */
 
 	if (uart->setting->support_33bits) {
 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(33);
@@ -2741,7 +2741,7 @@ static int mtk_uart_init_ports(void)
 static const struct of_device_id apuart_of_ids[] = {
 	{.compatible = "mediatek,AP_UART0",},
 	{.compatible = "mediatek,AP_UART1",},
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	{.compatible = "mediatek,AP_UART2",},
 	{.compatible = "mediatek,AP_UART3",},
 #if (UART_NR > 4)
