@@ -1465,7 +1465,7 @@
 			reg = <0x11210000 0x10000>;
 		};
 
-		audiosys:mt_soc_dl1_pcm@11220000 {
+		audgpio: mt_soc_dl1_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl1", "mediatek,audio";
 			reg = <0x11220000 0x1000>;
 			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
