@@ -903,7 +903,7 @@ static struct mtk_mux_upd top_muxes[] __initdata = {
 	MUX_UPD(TOP_MUX_PMICSPI, pmicspi_sel, pmicspi_parents, 0x0090, 0, 3, INVALID_MUX_GATE,
 		_UPDATE_REG, 19),	/*7->INVALID_MUX_GATE */
 	MUX_UPD(TOP_MUX_SCP, scp_sel, scp_parents, 0x0090, 8, 2, INVALID_MUX_GATE, _UPDATE_REG, 20),/*15*/
-	MUX_UPD(TOP_MUX_ATB, atb_sel, atb_parents, 0x0090, 16, 2, 23, _UPDATE_REG, 21),
+	MUX_UPD(TOP_MUX_ATB, atb_sel, atb_parents, 0x0090, 16, 2, INVALID_MUX_GATE, _UPDATE_REG, 21),/*23*/
 	MUX_UPD(TOP_MUX_MJC, mjc_sel, mjc_parents, 0x0090, 24, 2, 31, _UPDATE_REG, 22),
 	MUX_UPD(TOP_MUX_DPI0, dpi0_sel, dpi0_parents, 0x00A0, 0, 3, 7, _UPDATE_REG, 23),
 	MUX_UPD(TOP_MUX_AUD_1, aud_1_sel, aud_1_parents, 0x00A0, 16, 1, 23, _UPDATE_REG, 25),
