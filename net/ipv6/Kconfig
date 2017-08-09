@@ -258,4 +258,9 @@ config IPV6_PIMSM_V2
 	  Support for IPv6 PIM multicast routing protocol PIM-SMv2.
 	  If unsure, say N.
 
+config MTK_DHCPV6C_WIFI
+	bool "dhcpv6 on wifi"
+	default y
+
+
 endif # IPV6
