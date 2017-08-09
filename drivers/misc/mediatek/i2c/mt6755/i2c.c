@@ -696,7 +696,6 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 		/* aee_kernel_warning(I2CTAG, "@%s():%d,\n", __func__, __LINE__); */
 		/* i2c_writel(i2c, OFFSET_HS, i2c->high_speed_reg); */
 	}
-	i2c_writel(i2c, OFFSET_DCM_EN, 0x0);	/* disable dcm, since default/reset is 1 */
 }
 
 static s32 _i2c_get_transfer_len(struct mt_i2c_t *i2c)
@@ -1531,6 +1530,10 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	mutex_init(&i2c->mutex);
 	init_waitqueue_head(&i2c->wait);
 
+	mt_i2c_clock_enable(i2c);
+	mt_i2c_init_hw(i2c);
+	mt_i2c_clock_disable(i2c);
+
 	ret = request_irq(i2c->irqnr, mt_i2c_irq, IRQF_TRIGGER_LOW,
 			  dev_name(&pdev->dev), i2c);
 
@@ -1541,7 +1544,6 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	/* pdata= dev_get_platdata(i2c->adap.dev.parent); */
 	I2CLOG("i2c-bus%d speed is %dKhz\n", i2c->id, i2c->default_speed);
 
-	mt_i2c_init_hw(i2c);
 	i2c_set_adapdata(&i2c->adap, i2c);
 	ret = i2c_add_numbered_adapter(&i2c->adap);
 	if (ret) {
