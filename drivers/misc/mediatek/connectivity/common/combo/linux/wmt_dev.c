@@ -1148,7 +1148,6 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case 10:
 		{
 			wmt_lib_host_awake_get();
-			mtk_wcn_stp_coredump_start_ctrl(1);
 			osal_strcpy(pBuffer, "MT662x f/w coredump start-");
 			if (copy_from_user
 			    (pBuffer + osal_strlen(pBuffer), (void *)arg,
