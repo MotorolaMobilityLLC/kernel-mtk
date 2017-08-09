@@ -22,8 +22,11 @@
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
+#endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_MTK_FPGA)*/
+
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_idle.h>
 #include "mach/mt_gpio.h"
 #include <cust_gpio_usage.h>
@@ -56,7 +59,7 @@ void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
 }
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 /* struct clk *clk_uart_main; */
 struct clk *clk_uart_dma;
 void set_uart_dma_clk(int idx, struct clk *dma_clk)
@@ -64,7 +67,7 @@ void set_uart_dma_clk(int idx, struct clk *dma_clk)
 	pr_debug("[UART%d][CCF]enabled clk_uart%d_dma:%p\n", idx, idx, dma_clk);
 	clk_uart_dma = dma_clk;
 }
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 #ifdef ENABLE_RAW_DATA_DUMP
 static void save_tx_raw_data(struct mtk_uart *uart, void *addr);
@@ -87,9 +90,7 @@ unsigned int uart_rx_history_cnt[RECORD_NUMBER];
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	{
-	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0, */
 	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
-	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0, */
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -133,7 +134,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
-	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
+	 /* .uart_base = AP_UART4_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART5, .clr_bit = PDN_FOR_UART5, .pll_id = PDN_FOR_UART5,
 #endif
@@ -192,22 +193,22 @@ void set_uart_default_settings(int idx)
 
 	switch (idx) {
 	case 0:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_UART0");
+		node = of_find_node_by_name(NULL, "apuart0");
 		break;
 	case 1:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_UART1");
+		node = of_find_node_by_name(NULL, "apuart1");
 		break;
 	case 2:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_UART2");
+		node = of_find_node_by_name(NULL, "apuart2");
 		break;
 	case 3:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_UART3");
+		node = of_find_node_by_name(NULL, "apuart3");
 		break;
 #ifndef CONFIG_VERSION_D2
 	case 4:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_UART4");
+		node = of_find_node_by_name(NULL, "apuart4");
 		break;
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}
@@ -239,27 +240,12 @@ void set_uart_default_settings(int idx)
 void *get_apdma_uart0_base(void)
 {
 	struct device_node *node = NULL;
-	struct device_node *apdma_uart0_node = NULL;
 	void *base;
-	unsigned int apdma_reg;
-	unsigned int apdma_uart0_reg;
-	unsigned int apdma_uart0_offset;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA");
-	apdma_uart0_node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART0_TX");
+	node = of_find_node_by_name(NULL, "apuart0");
+	base = of_iomap(node, 1);
 
-	base = of_iomap(node, 0);
-
-	if (of_property_read_u32_index(node, "reg", 0, &apdma_reg))
-		pr_debug("[UART] get AP_DMA reg from DTS fail!!\n");
-
-	if (of_property_read_u32_index(apdma_uart0_node, "reg", 0, &apdma_uart0_reg))
-		pr_debug("[UART] get AP_DMA_UART0_TX reg from DTS fail!!\n");
-
-	apdma_uart0_offset = apdma_uart0_reg - apdma_reg;
-	base += apdma_uart0_offset;
 	pr_debug("[UART] apdma uart0 base=0x%p\n", base);
-
 	return base;
 }
 
@@ -271,41 +257,34 @@ unsigned int get_uart_vfifo_irq_id(int idx)
 
 	switch (idx) {
 	case 0:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART0_TX");
-		break;
 	case 1:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART0_RX");
+		node = of_find_node_by_name(NULL, "apuart0");
 		break;
 	case 2:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART1_TX");
-		break;
 	case 3:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART1_RX");
+		node = of_find_node_by_name(NULL, "apuart1");
 		break;
 	case 4:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART2_TX");
-		break;
 	case 5:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART2_RX");
+		node = of_find_node_by_name(NULL, "apuart2");
 		break;
 	case 6:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART3_TX");
-		break;
 	case 7:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART3_RX");
+		node = of_find_node_by_name(NULL, "apuart3");
 		break;
 #ifndef CONFIG_VERSION_D2
 	case 8:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART4_TX");
-		break;
 	case 9:
-		node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA_UART4_RX");
+		node = of_find_node_by_name(NULL, "apuart4");
 		break;
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}
-	irq_id = irq_of_parse_and_map(node, 0);
+	if (idx % 2 == 0)
+		irq_id = irq_of_parse_and_map(node, 1);
+	else
+		irq_id = irq_of_parse_and_map(node, 2);
 	pr_debug("[UART_DMA%d] irq=%d\n", idx, irq_id);
 
 	return irq_id;
@@ -1620,9 +1599,9 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 #ifndef CONFIG_MTK_FPGA
 	struct mtk_uart_setting *setting;
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	int clk_en_ret = 0;
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 	setting = uart->setting;
 
@@ -1634,7 +1613,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 	} else {
 #ifdef POWER_FEATURE
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 		clk_en_ret = clk_prepare_enable(setting->clk_uart_main);
 		if (clk_en_ret) {
 			pr_err("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_main:%p\n", uart->nport,
@@ -1654,7 +1633,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 			}
 		}
 
-#else				/* !defined(CONFIG_MTK_LEGACY) */
+#else				/* !defined(CONFIG_MTK_CLKMGR) */
 		if (0 != enable_clock(setting->pll_id, "UART"))
 			MSG(ERR, "power on fail!!\n");
 		if ((uart != console_port)
@@ -1662,7 +1641,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 			if (0 != enable_clock(PDN_FOR_DMA, "VFIFO"))
 				MSG(ERR, "power on dma fail!\n");
 		}
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 		uart->poweron_count++;
 #endif
@@ -1686,7 +1665,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
 	} else {
 #ifdef POWER_FEATURE
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 		pr_debug("[UART%d][CCF]disable clk_uart%d_main:%p\n", uart->nport, uart->nport,
 			  setting->clk_uart_main);
 
@@ -1696,7 +1675,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 			clk_disable_unprepare(clk_uart_dma);
 			pr_debug("[UART%d][CCF]disable clk_uart_dma:%p\n", uart->nport, clk_uart_dma);
 		}
-#else				/* !defined(CONFIG_MTK_LEGACY) */
+#else				/* !defined(CONFIG_MTK_CLKMGR) */
 		if (0 != disable_clock(setting->pll_id, "UART"))
 			MSG(ERR, "power off fail!!\n");
 		if ((uart != console_port)
@@ -1704,7 +1683,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 			if (0 != disable_clock(PDN_FOR_DMA, "VFIFO"))
 				MSG(ERR, "power off dma fail!\n");
 		}
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 		uart->poweron_count--;
 #endif
 		MSG(FUC, "%s(%d) => dn\n", __func__, uart->poweron_count);

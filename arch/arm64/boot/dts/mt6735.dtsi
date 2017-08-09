@@ -704,6 +704,86 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10003000 0x1000>;
 			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
 		};
+
+		apuart0: apuart0@11002000 {
+			cell-index = <0>;
+			compatible = "mediatek,mt6735-uart";
+			reg = <0x11002000 0x1000>, /* UART base */
+				  <0x11000380 0x1000>, /* DMA Tx base */
+				  <0x11000400 0x80>; /* DMA Rx base */
+			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
+						 <GIC_SPI 103 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
+						 <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_UART0>, <&perisys PERI_APDMA>;
+			clock-names = "uart0-main", "uart-apdma";
+		};
+
+		apuart1: apuart1@11003000 {
+			cell-index = <1>;
+			compatible = "mediatek,mt6735-uart";
+			reg = <0x11003000 0x1000>, /* UART base */
+				  <0x11000480 0x80>, /* DMA Tx base */
+				  <0x11000500 0x80>; /* DMA Rx base */
+			interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
+						 <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
+						 <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_UART1>;
+			clock-names = "uart1-main";
+		};
+
+		apuart2: apuart2@11004000 {
+			cell-index = <2>;
+			compatible = "mediatek,mt6735-uart";
+			reg = <0x11004000 0x1000>, /* UART base */
+				  <0x11000580 0x80>, /* DMA Tx base */
+				  <0x11000600 0x80>; /* DMA Rx base */
+			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
+						 <GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
+						 <GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_UART2>;
+			clock-names = "uart2-main";
+		};
+
+		apuart3: apuart3@11005000 {
+			cell-index = <3>;
+			compatible = "mediatek,mt6735-uart";
+			reg = <0x11005000 0x1000>, /* UART base */
+				  <0x11000680 0x80>, /* DMA Tx base */
+				  <0x11000700 0x80>; /* DMA Rx base */
+			interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
+						 <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
+						 <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_UART3>;
+			clock-names = "uart3-main";
+		};
+
+		apuart4: apuart4@1100D000 {
+			cell-index = <4>;
+			compatible = "mediatek,mt6735-uart";
+			reg = <0x1100D000 0x1000>, /* UART base */
+				  <0x11000780 0x80>, /* DMA Tx base */
+				  <0x11000800 0x80>; /* DMA Rx base */
+			interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
+						 <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
+						 <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clocks = <&perisys PERI_UART4>;
+			clock-names = "uart4-main";
+		};
 	};
 
 	vcorefs {
@@ -907,62 +987,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		APMIXED@0x10209000 {
 			compatible = "mediatek,APMIXED";
 			reg = <0x10209000 0x1000>;
-		};
-
-		apuart0: AP_UART0@0x11002000 {
-			cell-index = <0>;
-			compatible = "mediatek,AP_UART0";
-			reg = <0x11002000 0x1000>;
-			interrupts = <0 91 0x8>;
-
-			clock-frequency = <26000000>;
-			clock-div = <1>;
-			clock-names = "uart0-main", "uart-apdma";
-		};
-
-		apuart1: AP_UART1@0x11003000 {
-			cell-index = <1>;
-			compatible = "mediatek,AP_UART1";
-			reg = <0x11003000 0x1000>;
-			interrupts = <0 92 0x8>;
-
-			clock-frequency = <26000000>;
-			clock-div = <1>;
-			clock-names = "uart1-main";
-
-		};
-
-		apuart2: AP_UART2@0x11004000 {
-			cell-index = <2>;
-			compatible = "mediatek,AP_UART2";
-			reg = <0x11004000 0x1000>;
-			interrupts = <0 93 0x8>;
-
-			clock-frequency = <26000000>;
-			clock-div = <1>;
-			clock-names = "uart2-main";
-		};
-
-		apuart3: AP_UART3@0x11005000 {
-			cell-index = <3>;
-			compatible = "mediatek,AP_UART3";
-			reg = <0x11005000 0x1000>;
-			interrupts = <0 94 0x8>;
-
-			clock-frequency = <26000000>;
-			clock-div = <1>;
-			clock-names = "uart3-main";
-		};
-
-		apuart4: AP_UART4@0x1100D000 {
-			cell-index = <4>;
-			compatible = "mediatek,AP_UART4";
-			reg = <0x1100D000 0x1000>;
-			interrupts = <0 95 0x8>;
-
-			clock-frequency = <26000000>;
-			clock-div = <1>;
-			clock-names = "uart4-main";
 		};
 
 		dispsys@14007000 {

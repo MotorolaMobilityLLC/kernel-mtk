@@ -2281,8 +2281,8 @@ static int mtk_uart_probe(struct platform_device *pdev)
 {
 	struct mtk_uart *uart;
 	int err;
-
-#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_CLKMGR)
 	static const char * const clk_uart_name[] = {
 		"uart0-main",
 		"uart1-main",
@@ -2290,12 +2290,13 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		"uart3-main",
 		"uart4-main",
 	};
-	int idx = -1;
 	struct mtk_uart_setting *uart_setting = NULL;
-
+#endif
+#if !defined(CONFIG_MTK_LEGACY)
 	/* for GPIO pinctrl */
 	struct pinctrl *ppinctrl = NULL;
-#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+#endif
+#endif /* !defined(CONFIG_MTK_FPGA) */
 
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
@@ -2305,49 +2306,51 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		if (err)
 			pr_err("[DTS] get uart platform_device id fail!!\n");
 	}
+	if (pdev->id >= UART_NR) {
+		pr_err("DTS cell ID %d > UART nuber %d\n", pdev->id, UART_NR);
+		return -ENODEV;
+	}
 #endif
-
 	uart = &mtk_uarts[pdev->id];
-
 	MSG_FUNC_ENTRY();
 
-#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-	idx = pdev->id;
-	uart_setting = get_uart_default_settings(idx);
-	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[idx]);
+/* For clock setting */
+#if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
+	uart_setting = get_uart_default_settings(pdev->id);
+	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[pdev->id]);
 	if (IS_ERR(uart_setting->clk_uart_main)) {
-		pr_err("[UART%d][CCF]cannot get %s clock. ptr_err:%ld\n", idx, clk_uart_name[idx]
+		pr_err("[UART%d][CCF]cannot get %s clock. ptr_err:%ld\n", pdev->id, clk_uart_name[pdev->id]
 		       , PTR_ERR(uart_setting->clk_uart_main));
 		return PTR_ERR(uart_setting->clk_uart_main);
 	}
-	pr_debug("[UART%d][CCF]clk_uart%d_main:%p\n", idx, idx, uart_setting->clk_uart_main);
+	pr_debug("[UART%d][CCF]clk_uart%d_main:%p\n", pdev->id, pdev->id, uart_setting->clk_uart_main);
 
-	if (idx == 0) {
+	if (pdev->id == 0) {
 		struct clk *clk_uart0_dma = devm_clk_get(&pdev->dev, "uart-apdma");
 
 		if (IS_ERR(clk_uart0_dma)) {
 			pr_err("[UART][CCF]cannot get clk_uart0_dma clock. ptr_err:%ld\n", PTR_ERR(clk_uart0_dma));
 			return PTR_ERR(clk_uart0_dma);
 		}
-		set_uart_dma_clk(idx, clk_uart0_dma);
+		set_uart_dma_clk(pdev->id, clk_uart0_dma);
 		pr_debug("[UART][CCF]clk_uart0_dma:%p\n", clk_uart0_dma);
 	}
-#else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
-	pr_debug("[UART][CCF]mtk_platform_uart_probe CONFIG_MTK_LEGACY and CONFIG_MTK_FPGA not defined!\n");
-#endif /*!defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+#else /* !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA) */
+	pr_debug("[UART][CCF]mtk_uart_probe CONFIG_MTK_CLKMGR or CONFIG_MTK_FPGA is defined!\n");
+#endif /*!defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA) */
 
 /* For GPIO setting */
 #if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	ppinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(ppinctrl)) {
 		err = PTR_ERR(ppinctrl);
-		pr_err("[UART%d][PinC]cannot find pinctrl. ptr_err:%ld\n", idx, PTR_ERR(ppinctrl));
+		pr_err("[UART%d][PinC]cannot find pinctrl. ptr_err:%ld\n", pdev->id, PTR_ERR(ppinctrl));
 		return err;
 	}
-	set_uart_pinctrl(idx, ppinctrl);
-	pr_debug("[UART%d][PinC]set idx:%d, ppinctrl:%p\n", idx, idx, ppinctrl);
+	set_uart_pinctrl(pdev->id, ppinctrl);
+	pr_debug("[UART%d][PinC]set idx:%d, ppinctrl:%p\n", pdev->id, pdev->id, ppinctrl);
 #else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
-	pr_debug("[UART][PinC]mtk_platform_uart_probe CONFIG_MTK_LEGACY and CONFIG_MTK_FPGA not defined!\n");
+	pr_debug("[UART][PinC]mtk_uart_probe CONFIG_MTK_LEGACY or CONFIG_MTK_FPGA is defined!\n");
 #endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 	if (mtk_uart_plat_info_query("ADD_DMA_BIT_MASK_32"))
@@ -2730,6 +2733,7 @@ static const struct of_device_id apuart_of_ids[] = {
 	{.compatible = "mediatek,AP_UART4",},
 #endif
 #endif
+	{.compatible = "mediatek,mt6735-uart",},
 	{}
 };
 #endif
