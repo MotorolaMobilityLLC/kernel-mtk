@@ -1,3 +1,6 @@
+#ifndef __TSPMIC_SETTINGS_H__
+#define __TSPMIC_SETTINGS_H__
+
 #include <mach/upmu_hw.h>
 #include <mach/mt_pmic_wrap.h>
 
@@ -27,3 +30,5 @@ extern void mtktspmic_cali_prepare(void);
 extern void mtktspmic_cali_prepare2(void);
 extern int mtktspmic_get_hw_temp(void);
 extern u32 pmic_Read_Efuse_HPOffset(int i);
+
+#endif	/* __TSPMIC_SETTINGS_H__ */

@@ -127,18 +127,18 @@ static U32 calefuse3;
  * else, use interval*tscpu_polling_factor2
  */
 /* chip dependent */
-int tscpu_polling_trip_temp1 = 30000;
+int tscpu_polling_trip_temp1 = 40000;
 int tscpu_polling_trip_temp2 = 20000;
-int tscpu_polling_factor1 = 1;
-int tscpu_polling_factor2 = 2;
+int tscpu_polling_factor1 = 4;
+int tscpu_polling_factor2 = 8;
 
 #if MTKTSCPU_FAST_POLLING
 /* Combined fast_polling_trip_temp and fast_polling_factor,
 it means polling_delay will be 1/5 of original interval
 after mtktscpu reports > 65C w/o exit point */
 int fast_polling_trip_temp = 60000;
-int fast_polling_trip_temp_high = 60000;
-int fast_polling_factor = 10;
+int fast_polling_trip_temp_high = 60000; /* deprecaed */
+int fast_polling_factor = 2;
 int tscpu_cur_fp_factor = 1;
 int tscpu_next_fp_factor = 1;
 #endif

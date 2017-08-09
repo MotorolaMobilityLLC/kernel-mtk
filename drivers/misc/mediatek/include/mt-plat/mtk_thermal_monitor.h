@@ -41,6 +41,10 @@ struct thermal_cooling_device *mtk_thermal_cooling_device_register_wrapper_extra
 const struct thermal_cooling_device_ops_extra *ops_ext);
 
 extern
+int mtk_thermal_cooling_device_add_exit_point
+(struct thermal_cooling_device *cdev, int exit_point);
+
+extern
 void mtk_thermal_cooling_device_unregister_wrapper(struct thermal_cooling_device *cdev);
 
 extern int mtk_thermal_zone_bind_cooling_device_wrapper

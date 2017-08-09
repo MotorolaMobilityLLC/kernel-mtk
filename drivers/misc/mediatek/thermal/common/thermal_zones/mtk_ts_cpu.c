@@ -83,7 +83,11 @@ int apmixed_phy_base;
 int pericfg_phy_base;
 #endif
 
+#if defined(TZCPU_SET_INIT_CFG)
+static unsigned int interval = TZCPU_INITCFG_INTERVAL;	/* mseconds, 0 : no auto polling */
+#else
 static unsigned int interval = 1000;	/* mseconds, 0 : no auto polling */
+#endif
 
 int tscpu_g_curr_temp = 0;
 int tscpu_g_prev_temp = 0;
@@ -97,10 +101,20 @@ static int thermal5A_status;
 
 static int tc_mid_trip = -275000;
 /* trip_temp[0] must be initialized to the thermal HW protection point. */
-#if !defined(CONFIG_ARCH_MT6755) && !defined(CONFIG_ARCH_MT6797)
-static int trip_temp[10] = { 117000, 100000, 85000, 75000, 65000, 55000, 45000, 35000, 25000, 15000 };
+#if defined(TZCPU_SET_INIT_CFG)
+static int trip_temp[10] = {
+	TZCPU_INITCFG_TRIP_0_TEMP,
+	TZCPU_INITCFG_TRIP_1_TEMP,
+	TZCPU_INITCFG_TRIP_2_TEMP,
+	TZCPU_INITCFG_TRIP_3_TEMP,
+	TZCPU_INITCFG_TRIP_4_TEMP,
+	TZCPU_INITCFG_TRIP_5_TEMP,
+	TZCPU_INITCFG_TRIP_6_TEMP,
+	TZCPU_INITCFG_TRIP_7_TEMP,
+	TZCPU_INITCFG_TRIP_8_TEMP,
+	TZCPU_INITCFG_TRIP_9_TEMP };
 #else
-static int trip_temp[10] = { 117000,  90000, 85000, 75000, 65000, 55000, 45000, 35000, 25000, 15000 };
+static int trip_temp[10] = { 117000, 100000, 85000, 75000, 65000, 55000, 45000, 35000, 25000, 15000 };
 #endif
 int tscpu_read_curr_temp;
 
@@ -110,7 +124,11 @@ static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static int temperature_switch;
 
+#if defined(TZCPU_SET_INIT_CFG)
+static int num_trip = TZCPU_INITCFG_NUM_TRIPS;
+#else
 static int num_trip = 5;
+#endif
 static int tscpu_num_opp;
 static struct mtk_cpu_power_info *mtk_cpu_power;
 
@@ -119,23 +137,29 @@ static int MA_len_temp;
 static int proc_write_flag;
 
 static struct thermal_zone_device *thz_dev;
+#if defined(TZCPU_SET_INIT_CFG)
+static char g_bind0[20] = TZCPU_INITCFG_TRIP_0_COOLER;
+static char g_bind1[20] = TZCPU_INITCFG_TRIP_1_COOLER;
+static char g_bind2[20] = TZCPU_INITCFG_TRIP_2_COOLER;
+static char g_bind3[20] = TZCPU_INITCFG_TRIP_3_COOLER;
+static char g_bind4[20] = TZCPU_INITCFG_TRIP_4_COOLER;
+static char g_bind5[20] = TZCPU_INITCFG_TRIP_5_COOLER;
+static char g_bind6[20] = TZCPU_INITCFG_TRIP_6_COOLER;
+static char g_bind7[20] = TZCPU_INITCFG_TRIP_7_COOLER;
+static char g_bind8[20] = TZCPU_INITCFG_TRIP_8_COOLER;
+static char g_bind9[20] = TZCPU_INITCFG_TRIP_9_COOLER;
+#else
 static char g_bind0[20] = "mtktscpu-sysrst";
-#if !defined(CONFIG_ARCH_MT6755) && !defined(CONFIG_ARCH_MT6797)
 static char g_bind1[20] = "cpu02";
 static char g_bind2[20] = "cpu15";
 static char g_bind3[20] = "cpu22";
 static char g_bind4[20] = "cpu28";
-#else
-static char g_bind1[20] = "cpu00";
-static char g_bind2[20] = "cpu00";
-static char g_bind3[20] = "cpu03";
-static char g_bind4[20] = "cpu04";
-#endif
 static char g_bind5[20] = "";
 static char g_bind6[20] = "";
 static char g_bind7[20] = "";
 static char g_bind8[20] = "";
 static char g_bind9[20] = "";
+#endif
 
 struct mt_gpufreq_power_table_info *mtk_gpu_power = NULL;
 #if 0
@@ -553,7 +577,7 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 	tscpu_dprintk("tscpu_get_temp CPU Max T=%d\n", curr_temp);
 
 	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000)) {
-		printk_ratelimited("%d %d CPU T=%d\n",
+		printk_ratelimited(TSCPU_LOG_TAG " %d %d CPU T=%d\n",
 			get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
 	}
 
@@ -1051,10 +1075,10 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	struct mtktscpu_data {
 		int trip[10];
 		int t_type[10];
-	char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
-	char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+		char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
+		char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
 		int time_msec;
-	char desc[512];
+		char desc[512];
 	};
 
 	struct mtktscpu_data *ptr_mtktscpu_data = kmalloc(sizeof(*ptr_mtktscpu_data), GFP_KERNEL);
@@ -1091,7 +1115,6 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	     &ptr_mtktscpu_data->trip[8], &ptr_mtktscpu_data->t_type[8], ptr_mtktscpu_data->bind8,
 	     &ptr_mtktscpu_data->trip[9], &ptr_mtktscpu_data->t_type[9], ptr_mtktscpu_data->bind9,
 	     &ptr_mtktscpu_data->time_msec) == 32) {
-
 
 		tscpu_dprintk("tscpu_write tscpu_unregister_thermal MA_len_temp=%d\n", MA_len_temp);
 

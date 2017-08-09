@@ -67,13 +67,39 @@ static int g_total_power;
 #if CPT_ADAPTIVE_AP_COOLER
 static struct thermal_cooling_device *cl_dev_adp_cpu[MAX_CPT_ADAPTIVE_COOLERS] = { NULL };
 static unsigned int cl_dev_adp_cpu_state[MAX_CPT_ADAPTIVE_COOLERS] = { 0 };
+#if defined(CLATM_SET_INIT_CFG)
+int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_TARGET_TJ, CLATM_INIT_CFG_1_TARGET_TJ, CLATM_INIT_CFG_2_TARGET_TJ };
+#else
 int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS] = { 85000, 0 };
+#endif
 
 static unsigned int cl_dev_adp_cpu_state_active;
-#endif				/* end of CPT_ADAPTIVE_AP_COOLER */
+#endif	/* end of CPT_ADAPTIVE_AP_COOLER */
 
 #if CPT_ADAPTIVE_AP_COOLER
 char *adaptive_cooler_name = "cpu_adaptive_";
+
+#if defined(CLATM_SET_INIT_CFG)
+static int FIRST_STEP_TOTAL_POWER_BUDGETS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_FIRST_STEP, CLATM_INIT_CFG_1_FIRST_STEP, CLATM_INIT_CFG_2_FIRST_STEP };
+static int PACKAGE_THETA_JA_RISES[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_THETA_RISE, CLATM_INIT_CFG_1_THETA_RISE, CLATM_INIT_CFG_2_THETA_RISE };
+static int PACKAGE_THETA_JA_FALLS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_THETA_FALL, CLATM_INIT_CFG_1_THETA_FALL, CLATM_INIT_CFG_2_THETA_FALL };
+static int MINIMUM_BUDGET_CHANGES[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_MIN_BUDGET_CHG,
+	CLATM_INIT_CFG_1_MIN_BUDGET_CHG,
+	CLATM_INIT_CFG_2_MIN_BUDGET_CHG };
+static int MINIMUM_CPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_MIN_CPU_PWR, CLATM_INIT_CFG_1_MIN_CPU_PWR, CLATM_INIT_CFG_2_MIN_CPU_PWR };
+static int MAXIMUM_CPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_MAX_CPU_PWR, CLATM_INIT_CFG_1_MAX_CPU_PWR, CLATM_INIT_CFG_2_MAX_CPU_PWR };
+static int MINIMUM_GPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_MIN_GPU_PWR, CLATM_INIT_CFG_1_MIN_GPU_PWR, CLATM_INIT_CFG_2_MIN_GPU_PWR };
+static int MAXIMUM_GPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = {
+	CLATM_INIT_CFG_0_MAX_GPU_PWR, CLATM_INIT_CFG_1_MAX_GPU_PWR, CLATM_INIT_CFG_2_MAX_GPU_PWR };
+#else
 static int FIRST_STEP_TOTAL_POWER_BUDGETS[MAX_CPT_ADAPTIVE_COOLERS] = { 3300, 0 };
 static int PACKAGE_THETA_JA_RISES[MAX_CPT_ADAPTIVE_COOLERS] = { 35, 0 };
 static int PACKAGE_THETA_JA_FALLS[MAX_CPT_ADAPTIVE_COOLERS] = { 25, 0 };
@@ -82,8 +108,13 @@ static int MINIMUM_CPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = { 1200, 0 };
 static int MAXIMUM_CPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = { 4400, 0 };
 static int MINIMUM_GPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = { 350, 0 };
 static int MAXIMUM_GPU_POWERS[MAX_CPT_ADAPTIVE_COOLERS] = { 960, 0 };
+#endif
 
+#if defined(CLATM_SET_INIT_CFG)
+static int active_adp_cooler = CLATM_INIT_CFG_ACTIVE_ATM_COOLER;
+#else
 static int active_adp_cooler;
+#endif
 
 static int GPU_L_H_TRIP = 80, GPU_L_L_TRIP = 40;
 
@@ -145,7 +176,11 @@ static int thp_threshold_tj;
 #endif
 
 #if CONTINUOUS_TM
+#if defined(CLATM_SET_INIT_CFG)
+static int ctm_on = CLATM_INIT_CFG_CATM; /* 2: cATM+, 1: cATMv1, 0: off */
+#else
 static int ctm_on = -1; /* 2: cATM+, 1: cATMv1, 0: off */
+#endif
 static int MAX_TARGET_TJ = -1;
 static int STEADY_TARGET_TJ = -1;
 static int TRIP_TPCB = -1;
@@ -174,7 +209,7 @@ static int MIN_TTJ = 65000;
 static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience */
 /* --- cATM+ parameters --- */
 #endif
-#endif				/* end of CPT_ADAPTIVE_AP_COOLER */
+#endif	/* end of CPT_ADAPTIVE_AP_COOLER */
 
 #ifdef FAST_RESPONSE_ATM
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
@@ -246,13 +281,15 @@ int tsatm_thermal_get_catm_type(void)
 	return ctm_on;
 }
 
-
 int mtk_thermal_get_tpcb_target(void)
 {
 	return STEADY_TARGET_TPCB;
 }
 EXPORT_SYMBOL(mtk_thermal_get_tpcb_target);
 
+/**
+ * TODO: What's the diff from get_cpu_target_tj?
+ */
 int get_target_tj(void)
 {
 	return TARGET_TJ;
@@ -337,6 +374,9 @@ int is_cpu_power_min(void)
 }
 EXPORT_SYMBOL(is_cpu_power_min);
 
+/**
+ * TODO: What's the diff from get_target_tj?
+ */
 int get_cpu_target_tj(void)
 {
 	return cpu_target_tj;
@@ -372,7 +412,6 @@ EXPORT_SYMBOL(tscpu_get_min_gpu_pwr);
 
 struct CATM_T thermal_atm_t;
 
-
 static void catmplus_update_params(void)
 {
 
@@ -396,7 +435,6 @@ static void catmplus_update_params(void)
 	ret = wakeup_ta_algo(TA_CATMPLUS);
 	/*tscpu_warn("catmplus_update_params : ret %d\n" , ret);*/
 }
-
 
 #endif
 
@@ -1099,7 +1137,6 @@ static int tscpu_read_atm_setting(struct seq_file *m, void *v)
 		seq_printf(m, " M gpu = %d\n", MAXIMUM_GPU_POWERS[i]);
 	}
 
-
 	return 0;
 }
 
@@ -1113,7 +1150,6 @@ static ssize_t tscpu_write_atm_setting(struct file *file, const char __user *buf
 
 	int i_id = -1, i_first_step = -1, i_theta_r = -1, i_theta_f = -1, i_budget_change =
 	    -1, i_min_cpu_pwr = -1, i_max_cpu_pwr = -1, i_min_gpu_pwr = -1, i_max_gpu_pwr = -1;
-
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -1215,7 +1251,6 @@ static ssize_t tscpu_write_atm_setting(struct file *file, const char __user *buf
 					"tscpu_write_atm_setting", "Wrong thermal policy");
 				#endif
 
-
 			active_adp_cooler = i_id;
 
 			tscpu_printk("tscpu_write_dtm_setting applied %d %d %d %d %d %d %d %d %d\n",
@@ -1294,9 +1329,6 @@ static int tscpu_read_atm(struct seq_file *m, void *v)
 	return 0;
 }
 
-/* -ASC- */
-
-/* +ASC+ */
 static ssize_t tscpu_write_atm(struct file *file, const char __user *buffer, size_t count,
 			       loff_t *data)
 {
@@ -1360,7 +1392,6 @@ static int tscpu_read_thp(struct seq_file *m, void *v)
 
 	return 0;
 }
-
 
 static ssize_t tscpu_write_thp(struct file *file, const char __user *buffer, size_t count,
 			       loff_t *data)
@@ -1600,17 +1631,27 @@ exit:
 
 static void phpb_params_init(void)
 {
+#if defined(CLATM_SET_INIT_CFG)
+	phpb_params[PHPB_PARAM_CPU].tt = CLATM_INIT_CFG_PHPB_CPU_TT;
+	phpb_params[PHPB_PARAM_CPU].tp = CLATM_INIT_CFG_PHPB_CPU_TP;
+#else
 	phpb_params[PHPB_PARAM_CPU].tt = 20;
 	phpb_params[PHPB_PARAM_CPU].tp = 20;
+#endif
 	strncpy(phpb_params[PHPB_PARAM_CPU].type, "cpu", strlen("cpu"));
 
+#if defined(CLATM_SET_INIT_CFG)
+	phpb_params[PHPB_PARAM_GPU].tt = CLATM_INIT_CFG_PHPB_GPU_TT;
+	phpb_params[PHPB_PARAM_GPU].tp = CLATM_INIT_CFG_PHPB_GPU_TP;
+#else
 	phpb_params[PHPB_PARAM_GPU].tt = 80;
 	phpb_params[PHPB_PARAM_GPU].tp = 80;
+#endif
 	strncpy(phpb_params[PHPB_PARAM_GPU].type, "gpu", strlen("gpu"));
 }
-#endif
+#endif	/* PRECISE_HYBRID_POWER_BUDGET */
 
-#endif
+#endif	/* CPT_ADAPTIVE_AP_COOLER */
 
 #if CPT_ADAPTIVE_AP_COOLER
 static int tscpu_atm_setting_open(struct inode *inode, struct file *file)
@@ -1626,7 +1667,6 @@ static const struct file_operations mtktscpu_atm_setting_fops = {
 	.write = tscpu_write_atm_setting,
 	.release = single_release,
 };
-
 
 static int tscpu_gpu_threshold_open(struct inode *inode, struct file *file)
 {
@@ -1656,7 +1696,6 @@ static const struct file_operations mtktscpu_atm_fops = {
 	.write = tscpu_write_atm,
 	.release = single_release,
 };
-
 /* -ASC- */
 
 #if THERMAL_HEADROOM
@@ -1767,8 +1806,6 @@ static void tscpu_cooler_create_fs(void)
 		phpb_init(mtktscpu_dir);
 #endif
 	}
-
-
 }
 
 #ifdef FAST_RESPONSE_ATM
@@ -1873,7 +1910,7 @@ static int krtatm_thread(void *arg)
 
 	return 0;
 }
-#endif
+#endif	/* FAST_RESPONSE_ATM */
 
 static int __init mtk_cooler_atm_init(void)
 {
@@ -1894,6 +1931,13 @@ static int __init mtk_cooler_atm_init(void)
 
 	cl_dev_adp_cpu[2] = mtk_thermal_cooling_device_register("cpu_adaptive_2", NULL,
 								&mtktscpu_cooler_adp_cpu_ops);
+
+#if defined(CLATM_SET_INIT_CFG)
+	mtk_thermal_cooling_device_add_exit_point(cl_dev_adp_cpu[0], CLATM_INIT_CFG_0_EXIT_POINT);
+	mtk_thermal_cooling_device_add_exit_point(cl_dev_adp_cpu[1], CLATM_INIT_CFG_1_EXIT_POINT);
+	mtk_thermal_cooling_device_add_exit_point(cl_dev_adp_cpu[2], CLATM_INIT_CFG_2_EXIT_POINT);
+#endif
+
 #endif
 	if (err) {
 		tscpu_printk("%s fail\n", __func__);
@@ -1945,5 +1989,6 @@ static void __exit mtk_cooler_atm_exit(void)
 	}
 #endif
 }
+
 module_init(mtk_cooler_atm_init);
 module_exit(mtk_cooler_atm_exit);

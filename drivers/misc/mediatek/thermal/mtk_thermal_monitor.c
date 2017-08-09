@@ -2471,6 +2471,29 @@ const struct thermal_cooling_device_ops_extra *ops_ext){
 }
 EXPORT_SYMBOL(mtk_thermal_cooling_device_register_wrapper_extra);
 
+int mtk_thermal_cooling_device_add_exit_point(struct thermal_cooling_device *cdev, int exit_point)
+{
+	struct mtk_thermal_cooler_data *mcdata;
+
+	if (!cdev)
+		return -1;
+
+	mutex_lock(&MTM_COOLER_LOCK);
+	mcdata = cdev->devdata;
+
+	if (!mcdata) {
+		mutex_unlock(&MTM_COOLER_LOCK);
+		return -1;
+	}
+
+	mcdata->exit_threshold = exit_point;
+	mutex_unlock(&MTM_COOLER_LOCK);
+
+	THRML_LOG("%s type:%s exit:%d\n", __func__, cdev->type, exit_point);
+	return 0;
+}
+EXPORT_SYMBOL(mtk_thermal_cooling_device_add_exit_point);
+
 /*
  * MTK Cooling Unregister
  */

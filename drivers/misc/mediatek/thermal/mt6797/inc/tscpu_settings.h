@@ -1,7 +1,14 @@
+#ifndef __TSCPU_SETTINGS_H__
+#define __TSCPU_SETTINGS_H__
+
 #include "mt_gpufreq.h"
 
 #include <linux/of.h>
 #include <linux/of_address.h>
+
+#include "tzcpu_initcfg.h"
+#include "clatm_initcfg.h"
+
 /*=============================================================
  * Genernal
  *=============================================================*/
@@ -146,16 +153,17 @@ they means one reading is a avg of X samples*/
 /*=============================================================
  *LOG
  *=============================================================*/
+#define TSCPU_LOG_TAG		"[CPU_Thermal]"
 
 #define tscpu_dprintk(fmt, args...)   \
 do {                                    \
 	if (tscpu_debug_log) {                \
-		pr_debug("[Power/CPU_Thermal]" fmt, ##args); \
+		pr_debug(TSCPU_LOG_TAG fmt, ##args); \
 	}                                   \
 } while (0)
 
-#define tscpu_printk(fmt, args...) pr_debug("[Power/CPU_Thermal]" fmt, ##args)
-#define tscpu_warn(fmt, args...)  pr_warn("[Power/CPU_Thermal]" fmt, ##args)
+#define tscpu_printk(fmt, args...) pr_debug(TSCPU_LOG_TAG fmt, ##args)
+#define tscpu_warn(fmt, args...)  pr_warn(TSCPU_LOG_TAG fmt, ##args)
 
 /*=============================================================
  * Structures
@@ -585,3 +593,5 @@ extern void __iomem *INFRACFG_AO_base;
 #define THERMAL_MSRCTL0_MASK    0x00000007
 #define THERMAL_MSRCTL1_MASK    0x00000038
 #define THERMAL_MSRCTL2_MASK    0x000001C0
+
+#endif	/* __TSCPU_SETTINGS_H__ */

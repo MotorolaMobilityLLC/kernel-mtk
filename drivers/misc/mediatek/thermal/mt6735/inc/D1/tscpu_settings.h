@@ -135,16 +135,17 @@ they means one reading is a avg of X samples */
 /*=============================================================
  *LOG
  *=============================================================*/
+#define TSCPU_LOG_TAG		"[CPU_Thermal]"
 
 #define tscpu_dprintk(fmt, args...)   \
 	do {                                    \
 		if (tscpu_debug_log) {                \
-			pr_debug("[Power/CPU_Thermal]" fmt, ##args); \
+			pr_debug(TSCPU_LOG_TAG fmt, ##args); \
 		}                                   \
 	} while (0)
 
-#define tscpu_printk(fmt, args...) pr_debug("[Power/CPU_Thermal]" fmt, ##args)
-#define tscpu_warn(fmt, args...)  pr_warn("[Power/CPU_Thermal]" fmt, ##args)
+#define tscpu_printk(fmt, args...) pr_debug(TSCPU_LOG_TAG fmt, ##args)
+#define tscpu_warn(fmt, args...)  pr_warn(TSCPU_LOG_TAG fmt, ##args)
 /*=============================================================
  * Structures
  *=============================================================*/
