@@ -128,6 +128,7 @@ static struct task_struct *primary_display_switch_dst_mode_task;
 static struct task_struct *present_fence_release_worker_task;
 static struct task_struct *primary_path_aal_task;
 static struct task_struct *primary_delay_trigger_task;
+static struct task_struct *primary_od_trigger_task;
 static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
@@ -163,6 +164,7 @@ static int dvfs_last_ovl_req = OPPI_UNREQ;
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
+static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
 typedef struct {
 	DISP_POWER_STATE state;
@@ -2491,6 +2493,19 @@ static int _disp_primary_path_check_trigger_delay_33ms(void *data)
 	return 0;
 }
 
+static int _disp_primary_path_check_trigger_od(void *data)
+{
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_OD_TRIGGER);
+	while (1) {
+		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_OD_TRIGGER);
+		atomic_set(&od_trigger_kick, 1);
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
 unsigned int cmdqDdpClockOn(uint64_t engineFlag)
 {
 	return 0;
@@ -2987,6 +3002,11 @@ static int _present_fence_release_worker_thread(void *data)
 		MMProfileLogEx(ddp_mmp_get_events()->present_fence_release, MMProfileFlagPulse,
 			       gPresentFenceIndex, fence_increment);
 		_primary_path_unlock(__func__);
+
+		if (atomic_read(&od_trigger_kick)) {
+			atomic_set(&od_trigger_kick, 0);
+			__primary_check_trigger();
+		}
 	}
 
 	return 0;
@@ -3291,6 +3311,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		primary_delay_trigger_task =
 		    kthread_create(_disp_primary_path_check_trigger_delay_33ms, NULL, "disp_delay_trigger");
 		wake_up_process(primary_delay_trigger_task);
+	}
+
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
+		primary_od_trigger_task =
+		    kthread_create(_disp_primary_path_check_trigger_od, NULL, "disp_od_trigger");
+		wake_up_process(primary_od_trigger_task);
 	}
 
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE)) {

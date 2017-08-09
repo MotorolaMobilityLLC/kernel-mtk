@@ -204,7 +204,7 @@ static void _od_reg_init(void *cmdq)
 static void od_refresh_screen(void)
 {
 	if (g_od_ddp_notify != NULL)
-		g_od_ddp_notify(DISP_MODULE_OD, DISP_PATH_EVENT_TRIGGER);
+		g_od_ddp_notify(DISP_MODULE_OD, DISP_PATH_EVENT_OD_TRIGGER);
 }
 
 
