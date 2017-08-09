@@ -20,7 +20,7 @@
 /* FIXME: change to mt_clkmgr.h after CCF is ready */
 #include <mach/mt_clkmgr1_legacy.h>
 /* #include <mach/mt_dcm.h> */
-#include <mach/mt_spm.h>
+#include "mt_spm.h"
 #include <mach/mt_spm_mtcmos.h>
 /* #include <mach/mt_spm_sleep.h> */
 /* #include <mach/mt_freqhopping.h> */
