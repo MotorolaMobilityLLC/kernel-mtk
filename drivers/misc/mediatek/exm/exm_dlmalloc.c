@@ -18,7 +18,7 @@
 
 /* #define EXTMEM_DEBUG */
 #ifdef EXTMEM_DEBUG
-#define extmem_printk(fmt, args...) pr_info(fmt, ##arg)
+#define extmem_printk(fmt, args...) pr_debug(fmt, ## args)
 #else
 #define extmem_printk(...)
 #endif
