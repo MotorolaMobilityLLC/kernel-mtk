@@ -4446,7 +4446,7 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
 	/* Store the number of chips and calc total size for mtd */
 	chip->numchips = i;
 	mtd->size = i * chip->chipsize;
-#ifdef defined(CONFIG_MTK_MLC_NAND_SUPPORT) && defined(CFG_2CS_NAND)
+#if defined(CONFIG_MTK_MLC_NAND_SUPPORT)
 	if (g_b2Die_CS && (i > 1)) {
 		chip->pagemask = (mtd->size >> chip->page_shift) - 1;
 		if (mtd->size & 0xffffffff)

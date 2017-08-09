@@ -72,3 +72,10 @@ config MTK_FACTORY_RESET_PROTECTION_SUPPORT
 	  FRP stands for factory reset protect.
 	  This feature backup customer data after factory reset.
 	  Turn on this configuration to enable data save after factory reset.
+
+config MTK_NAND_V2
+	bool "Mediatek NAND Driver Version 2 Support"
+	depends on MTK_MTD_NAND
+	help
+	  Enable mtk nand driver version 2.
+
