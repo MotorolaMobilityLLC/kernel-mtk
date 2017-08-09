@@ -6077,7 +6077,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	if ((!strcmp(name, "PM_CLK")) || (!strcmp(name, "PM_SSC")))
 		Panel_Master_primary_display_config_dsi(name, *config_dsi);
 	else if (!strcmp(name, "PM_DDIC_CONFIG")) {
-		/*Panel_Master_DDIC_config();*/
+		Panel_Master_DDIC_config();
 		force_trigger_path = 1;
 	} else if (!strcmp(name, "DRIVER_IC_RESET")) {
 		if (pLcm_drv && pLcm_drv->init_power)
