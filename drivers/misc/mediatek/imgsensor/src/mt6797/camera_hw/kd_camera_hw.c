@@ -719,7 +719,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		}
 	} else if (pwInfo.PowerType == AFVDD) {
 		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
+			if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
 				PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
 				return FALSE;
 			}
