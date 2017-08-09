@@ -563,8 +563,8 @@ static void write_shutter(kal_uint16 shutter)
 		write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
 		write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
 		write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-		write_cmos_sensor(0x3501,(shutter >> 8) & 0xFF);
-		write_cmos_sensor(0x3502, shutter  & 0xFF);
+		//write_cmos_sensor(0x3501,(shutter >> 8) & 0xFF);
+		//write_cmos_sensor(0x3502, shutter  & 0xFF);
 		
 		write_cmos_sensor(0x3208, 0x10);//group end
 		write_cmos_sensor(0x3208, 0xa0);//group latch
@@ -575,19 +575,20 @@ static void write_shutter(kal_uint16 shutter)
         //write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
         // write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
 		write_cmos_sensor(0x3208, 0);//group start
-		
+		write_cmos_sensor(0x380c, imgsensor.line_length >> 8);
+		write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
 		write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
 		write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-		write_cmos_sensor(0x3501,(shutter >> 8) & 0xFF);
-		write_cmos_sensor(0x3502, shutter  & 0xFF);
+		//write_cmos_sensor(0x3501,(shutter >> 8) & 0xFF);
+		//write_cmos_sensor(0x3502, shutter  & 0xFF);
 		
 		write_cmos_sensor(0x3208, 0x10);//group end
-		write_cmos_sensor(0x3208, 0xa0);//group latch
+	     write_cmos_sensor(0x3208, 0xa0);//group latch
 
     }
 	
-    //write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
-    //write_cmos_sensor(0x3502, shutter  & 0xFF);
+    write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
+    write_cmos_sensor(0x3502, shutter  & 0xFF);
     //LOG_INF("realtime_fps =%d\n", realtime_fps);
     LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d\n", shutter, imgsensor.frame_length, realtime_fps);
 }
