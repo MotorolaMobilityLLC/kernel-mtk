@@ -634,8 +634,8 @@ int md_cd_power_on(struct ccci_modem *md)
 		CCCI_INF_MSG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_INF_MSG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md1_main);
-		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md1_main);
+		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable() ret=%d\n", ret);
 #endif
 
 		kicker_pbm_by_md(KR_MD1, true);
