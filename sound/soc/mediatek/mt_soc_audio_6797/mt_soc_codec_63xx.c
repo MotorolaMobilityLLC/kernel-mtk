@@ -3632,15 +3632,15 @@ static bool TurnOnVOWADcPowerACC(int MicType, bool enable)
 		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0xffff);   /*gamma K value setting*/
 		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting*/
 #endif
-		Ana_Set_Reg(AFE_VOW_CFG0, 0x082a, 0xffff); /* 0xFFFF   0x082a*/
+		Ana_Set_Reg(AFE_VOW_CFG0, 0xffff, 0xffff);
 		pr_warn("AFE_VOW_CFG0: %x\n", Ana_Get_Reg(AFE_VOW_CFG0));
-		Ana_Set_Reg(AFE_VOW_CFG1, 0x0000, 0xffff); /* 0x0200   0x0000*/
+		Ana_Set_Reg(AFE_VOW_CFG1, 0x0200, 0xffff);
 		pr_warn("AFE_VOW_CFG1: %x\n", Ana_Get_Reg(AFE_VOW_CFG1));
-		Ana_Set_Reg(AFE_VOW_CFG2, 0x2222, 0xffff); /* VOW A,B value setting 0x2424  0x2222 */
+		Ana_Set_Reg(AFE_VOW_CFG2, 0x2424, 0xffff); /* VOW A,B value setting */
 		pr_warn("AFE_VOW_CFG2: %x\n", Ana_Get_Reg(AFE_VOW_CFG2));
-		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff); /* alhpa and beta K value setting    0xDBAC  0x8767 */
+		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff); /* alhpa and beta K value setting */
 		pr_warn("AFE_VOW_CFG3: %x\n", Ana_Get_Reg(AFE_VOW_CFG3));
-		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff); /* N mini value setting  0x0000  0x0001 */
+		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff); /* N mini value setting */
 		pr_warn("AFE_VOW_CFG5: %x\n", Ana_Get_Reg(AFE_VOW_CFG5));
 		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xffff); /* gamma K value setting    16K*/
 		pr_warn("AFE_VOW_CFG4: %x\n", Ana_Get_Reg(AFE_VOW_CFG4));
