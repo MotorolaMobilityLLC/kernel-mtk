@@ -779,6 +779,19 @@ static int mt_fh_hal_hopping_mcu(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		mcu_fh_write32(reg_pll_con1, val, MASK21b);
 
 		if ((mcu_fh_read32(reg_pll_con1) & MASK21b) != mon_reg_val) {
+			FH_MSG("ERROR1 PLL:%d con1_reg:0x%lx mon_reg:0x%lx",
+				pll_id, reg_pll_con1, reg_mon);
+			FH_MSG("ERROR1 PLL:%d dds_value:0x%08x mon_dds:0x%08x con1:0x%08x",
+				pll_id, dds_value, mon_reg_val, mcu_fh_read32(reg_pll_con1));
+			fh_dumpregs_read(pll_id);
+			BUG_ON(1);
+		}
+
+		if ((dds_value & MASK21b) != (mcu_fh_read32(reg_pll_con1) & MASK21b)) {
+			FH_MSG("ERROR2 PLL:%d con1_reg:0x%lx mon_reg:0x%lx",
+				pll_id, reg_pll_con1, reg_mon);
+			FH_MSG("ERROR2 PLL:%d dds_value:0x%08x mon_dds%08x con1:0x%08x",
+				pll_id, dds_value, mon_reg_val, mcu_fh_read32(reg_pll_con1));
 			fh_dumpregs_read(pll_id);
 			BUG_ON(1);
 		}
