@@ -181,7 +181,7 @@ unsigned int bq25890_read_byte(unsigned char cmd, unsigned char *returnData)
 		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
 
 		if (ret == -ENXIO) {
-			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -219,7 +219,7 @@ unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
 		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
 
 		if (ret == -ENXIO) {
-			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
 			break;
 		}
 	} while (ret != xfers && --retries);
