@@ -176,8 +176,9 @@ struct i2c_dma_buf {
 };
 
 struct mt_i2c_ext {
-#define I2C_HWTRIG_FLAG		0x00000001
+#define I2C_A_FILTER_MSG	0x00000001
 	bool isEnable;
+	bool isFilterMsg;
 	u32 timing;
 };
 

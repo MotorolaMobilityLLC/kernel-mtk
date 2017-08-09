@@ -538,7 +538,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 		dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
-		i2c_dump_info(i2c);
+		if (i2c->ext_data.isEnable ==  false || i2c->ext_data.isFilterMsg == false)
+			i2c_dump_info(i2c);
 		mt_i2c_init_hw(i2c);
 		return -EREMOTEIO;
 	}
@@ -789,8 +790,8 @@ static int mt_i2c_transfer(struct i2c_adapter *adap,
 
 static void mt_i2c_parse_extension(struct mt_i2c_ext *pext, u32 ext_flag, u32 timing)
 {
-/*	if (ext_flag & I2C_HWTRIG_FLAG)
-		pext->is_hw_trig = true;*/
+	if (ext_flag & I2C_A_FILTER_MSG)
+		pext->isFilterMsg = true;
 	if (timing)
 		pext->timing = timing;
 }
