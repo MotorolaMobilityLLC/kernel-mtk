@@ -21,4 +21,5 @@ ifeq ($(CONFIG_MALI_PLATFORM_THIRDPARTY),y)
 # remove begin and end quotes from the Kconfig string type
 	platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
 	obj-y += $(platform_name)/
+	obj-y += mtk_platform_common/
 endif

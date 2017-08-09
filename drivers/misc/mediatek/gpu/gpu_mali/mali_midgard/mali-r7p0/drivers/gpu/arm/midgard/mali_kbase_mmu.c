@@ -44,6 +44,10 @@
 
 #define KBASE_MMU_PAGE_ENTRIES 512
 
+#ifdef ENABLE_MTK_MEMINFO
+extern atomic_t g_mtk_gpu_total_memory_usage_in_pages;
+#endif /* ENABLE_MTK_MEMINFO */
+
 /**
  * kbase_mmu_sync_pgd - sync page directory to memory
  * @dev:	Device pointer.
@@ -321,6 +325,10 @@ phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
 	kbase_atomic_add_pages(1, &kctx->used_pages);
 	kbase_atomic_add_pages(1, &kctx->kbdev->memdev.used_pages);
 
+#ifdef ENABLE_MTK_MEMINFO
+	kbase_atomic_add_pages(1, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
+
 	p = kbase_mem_pool_alloc(&kctx->mem_pool);
 	if (!p)
 		goto sub_pages;
@@ -344,6 +352,10 @@ alloc_free:
 sub_pages:
 	kbase_atomic_sub_pages(1, &kctx->used_pages);
 	kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
+
+#ifdef ENABLE_MTK_MEMINFO
+	kbase_atomic_sub_pages(1, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
 
 	return 0;
 }
@@ -971,6 +983,11 @@ static void mmu_teardown_level(struct kbase_context *kctx, phys_addr_t pgd, int 
 				kbase_process_page_usage_dec(kctx, 1);
 				kbase_atomic_sub_pages(1, &kctx->used_pages);
 				kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
+
+#ifdef ENABLE_MTK_MEMINFO
+				kbase_atomic_sub_pages(1, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
+
 			}
 		}
 	}
@@ -1013,6 +1030,11 @@ void kbase_mmu_free_pgd(struct kbase_context *kctx)
 	kbase_process_page_usage_dec(kctx, 1);
 	kbase_atomic_sub_pages(1, &kctx->used_pages);
 	kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
+
+#ifdef ENABLE_MTK_MEMINFO
+	kbase_atomic_sub_pages(1, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
+
 }
 
 KBASE_EXPORT_TEST_API(kbase_mmu_free_pgd);

@@ -3504,6 +3504,14 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 	inited |= inited_devfreq;
 #endif /* CONFIG_MALI_DEVFREQ */
 
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_kbase_gpu_memory_debug_init();
+#endif /* ENABLE_MTK_MEMINFO */
+
+#ifdef CONFIG_PROC_FS
+	proc_mali_register();
+#endif /* CONFIG_PROC_FS */
+
 	err = kbase_device_debugfs_init(kbdev);
 	if (err)
 		goto out_partial;
@@ -3810,6 +3818,10 @@ out:
 
 static int kbase_common_device_remove(struct kbase_device *kbdev)
 {
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_kbase_gpu_memory_debug_remove();
+#endif /* ENABLE_MTK_MEMINFO */
+
 	kbase_ipa_term(kbdev->ipa_ctx);
 	kbase_vinstr_term(kbdev->vinstr_ctx);
 	sysfs_remove_group(&kbdev->dev->kobj, &kbase_attr_group);
