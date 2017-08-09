@@ -92,7 +92,6 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
-#ifdef MTK_MSDC_BRINGUP_DEBUG
 	u32 ldo_en = 0, ldo_vol = 0;
 	u32 id = host->id;
 
@@ -131,7 +130,6 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 	default:
 		break;
 	}
-#endif
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
@@ -252,31 +250,10 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	void __iomem *base = host->base;
 	unsigned int sa_timeout;
 
-	/* if MMC_CAP_WAIT_WHILE_BUSY not set, mmc core layer will wait for
-	 sa_timeout */
-	if (host->mmc && host->mmc->card && (on == 0) &&
-	    host->mmc->caps & MMC_CAP_WAIT_WHILE_BUSY) {
-		/* max timeout: 1000ms */
-		sa_timeout = host->mmc->card->ext_csd.sa_timeout;
-		if ((DIV_ROUND_UP(sa_timeout, 10000)) < 1000)
-			tmo = DIV_ROUND_UP(sa_timeout, 10000000/HZ) + HZ/100;
-		else
-			tmo = HZ;
-		tmo += jiffies;
-
-		while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("Dat0 keep low before power off,sa_timeout = 0x%x",
-					sa_timeout);
-				#ifdef EMMC_SLEEP_FAIL_HANDLE
-				emmc_sleep_failed = 1;
-				#endif
-				break;
-			}
-		}
-	}
-
-	if (on) {
+	if (on == 0) {
+		if ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000)
+			emmc_sleep_failed = 1;
+	} else {
 		msdc_set_driving(host, host->hw, 0);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
 		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
@@ -284,7 +261,9 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &g_msdc0_flash);
 
+#ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
+#endif
 }
 
 void msdc_sd_power(struct msdc_host *host, u32 on)
@@ -313,7 +292,9 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		break;
 	}
 
+#ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
+#endif
 }
 
 void msdc_sd_power_off(void)
@@ -423,7 +404,6 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 
 void msdc_dump_clock_sts(void)
 {
-#ifdef MTK_MSDC_BRINGUP_DEBUG
 	void __iomem *reg;
 
 	if (apmixed_reg_base && topckgen_reg_base && infracfg_ao_reg_base) {
@@ -450,7 +430,6 @@ void msdc_dump_clock_sts(void)
 		pr_err(" apmixed_reg_base = %p, topckgen_reg_base = %p, clk_infra_base = %p\n",
 			apmixed_reg_base, topckgen_reg_base, infracfg_ao_reg_base);
 	}
-#endif
 }
 
 void msdc_clk_status(int *status)

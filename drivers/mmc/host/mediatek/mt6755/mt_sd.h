@@ -4,7 +4,7 @@
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #else
-#define MTK_MSDC_BRINGUP_DEBUG
+/*#define MTK_MSDC_BRINGUP_DEBUG*/
 #endif
 
 #include <mt-plat/sync_write.h>
@@ -25,8 +25,6 @@
 #ifdef MSDC_AUTOK_ON_ERROR
 /*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
 #endif
-
-/*#define EMMC_SLEEP_FAIL_HANDLE*/
 
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
@@ -706,9 +704,7 @@ extern unsigned char msdc_clock_src[];
 
 extern u32 sdio_pro_enable;
 
-#ifdef EMMC_SLEEP_FAIL_HANDLE
 extern bool emmc_sleep_failed;
-#endif
 
 extern int msdc_rsp[];
 

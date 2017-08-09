@@ -97,13 +97,12 @@ static u16 u_msdc_irq_counter;
 struct msdc_host *ghost;
 int src_clk_control;
 
-#ifdef EMMC_SLEEP_FAIL_HANDLE
 bool emmc_sleep_failed;
-#endif
-static int emmc_do_sleep_awake;
+
 #ifdef MSDC_WQ_ERROR_TUNE
 static struct workqueue_struct *wq_tune;
 #endif
+
 bool sdio_lock_dvfs;
 
 #define DRV_NAME                "mtk-msdc"
@@ -1193,8 +1192,6 @@ static void msdc_pm(pm_message_t state, void *data)
 	int evt = state.event;
 
 	msdc_ungate_clock(host);
-	if (host->hw->host_function == MSDC_EMMC)
-		emmc_do_sleep_awake = 1;
 
 	if (evt == PM_EVENT_SUSPEND || evt == PM_EVENT_USER_SUSPEND) {
 		if (host->suspend)
@@ -1206,11 +1203,6 @@ static void msdc_pm(pm_message_t state, void *data)
 		pr_err("msdc%d -> %s Suspend", host->id,
 			evt == PM_EVENT_SUSPEND ? "PM" : "USR");
 		if (host->hw->flags & MSDC_SYS_SUSPEND) {
-
-			#ifdef EMMC_SLEEP_FAIL_HANDLE
-			emmc_sleep_failed = 0;
-			#endif
-
 			if (host->hw->host_function == MSDC_EMMC) {
 				msdc_save_timing_setting(host, 1);
 				msdc_set_power_mode(host, MMC_POWER_OFF);
@@ -1254,22 +1246,16 @@ static void msdc_pm(pm_message_t state, void *data)
 			msdc_set_power_mode(host, MMC_POWER_ON);
 			msdc_restore_timing_setting(host);
 
-			#ifdef EMMC_SLEEP_FAIL_HANDLE
 			if (emmc_sleep_failed) {
 				msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
 				msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
 				mdelay(200);
 				mmc_card_clr_sleep(host->mmc->card);
+				emmc_sleep_failed = 0;
+				host->mmc->ios.timing = MMC_TIMING_LEGACY;
+				mmc_set_clock(host->mmc, 260000);
 			}
-			#endif
 		}
-
-		#ifdef EMMC_SLEEP_FAIL_HANDLE
-		if ((host->hw->host_function == MSDC_EMMC)
-		 && emmc_sleep_failed)
-			emmc_sleep_failed = 0;
-		/* End for host->hw->flags & MSDC_SYS_SUSPEND*/
-		#endif
 	}
 
 end:
@@ -1292,9 +1278,6 @@ end:
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 		host->mmc->rescan_entered = 0;
 	}
-
-	if (host->hw->host_function == MSDC_EMMC)
-		emmc_do_sleep_awake = 0;
 }
 #endif
 
@@ -1894,8 +1877,6 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 			msdc_dump_info(host->id);
 		}
-		if ((cmd->opcode == 5) && emmc_do_sleep_awake)
-			msdc_dump_info(host->id);
 
 		if (((MMC_RSP_R1B == mmc_resp_type(cmd)) || (cmd->opcode == 13))
 			&& (host->hw->host_function != MSDC_SDIO)) {
@@ -1961,8 +1942,8 @@ unsigned int msdc_do_command(struct msdc_host *host,
 
 	if (msdc_command_resp_polling(host, cmd, tune, timeout))
 		goto end;
- end:
 
+ end:
 	N_MSG(CMD, "        return<%d> resp<0x%.8x>", cmd->error, cmd->resp[0]);
 	return cmd->error;
 }
@@ -3171,12 +3152,9 @@ done:
 	}
 
 	if (mrq->cmd->error == (unsigned int)-ETIMEDOUT) {
-		if ((mrq->cmd->opcode == MMC_SLEEP_AWAKE) &&
-		    emmc_do_sleep_awake) {
-			#ifdef EMMC_SLEEP_FAIL_HANDLE
-			emmc_sleep_failed = 1;
-			#endif
-			if (mrq->cmd->arg & (1<<15)) {
+		if (mrq->cmd->opcode == MMC_SLEEP_AWAKE) {
+			if (mrq->cmd->arg & 0x8000) {
+				emmc_sleep_failed = 1;
 				mrq->cmd->error = 0x0;
 				pr_err("eMMC sleep CMD5 TMO will reinit\n");
 			} else {
