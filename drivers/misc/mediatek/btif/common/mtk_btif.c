@@ -247,42 +247,45 @@ int _btif_suspend(p_mtk_btif p_btif)
 {
 	int i_ret;
 
-	if (NULL == p_btif)
-		return -1;
-	if (!(p_btif->enable))
-		return 0;
 	if (_btif_state_hold(p_btif))
 		return E_BTIF_INTR;
-
-	if (B_S_ON == _btif_state_get(p_btif)) {
-		BTIF_ERR_FUNC("BTIF in ON state,",
-			"there are data need to be send or recev,suspend fail\n");
-		i_ret = -1;
-	} else {
-		/*before disable BTIF controller and DMA controller
-		we need to set BTIF to ON state*/
-		i_ret = _btif_exit_dpidle(p_btif);
-		if (0 == i_ret) {
-			i_ret += _btif_controller_free(p_btif);
-			i_ret = _btif_controller_tx_free(p_btif);
-			i_ret += _btif_controller_rx_free(p_btif);
-		}
-		if (0 != i_ret) {
-			BTIF_INFO_FUNC("failed\n");
-			/*Chaozhong: what if failed*/
-		} else {
-			BTIF_INFO_FUNC("succeed\n");
-			i_ret = _btif_state_set(p_btif, B_S_SUSPEND);
-			if (i_ret && _btif_init(p_btif)) {
-				/*Chaozhong:BTIF re-init failed? what to do*/
-				i_ret = _btif_state_set(p_btif,	B_S_OFF);
+	if (NULL != p_btif) {
+		if (!(p_btif->enable))
+			i_ret = 0;
+		else {
+			if (B_S_ON == _btif_state_get(p_btif)) {
+				BTIF_ERR_FUNC("BTIF in ON state,",
+					"there are data need to be send or recev,suspend fail\n");
+				i_ret = -1;
+			} else {
+				/*before disable BTIF controller and DMA controller
+				we need to set BTIF to ON state*/
+				i_ret = _btif_exit_dpidle(p_btif);
+				if (0 == i_ret) {
+					i_ret += _btif_controller_free(p_btif);
+					i_ret = _btif_controller_tx_free(p_btif);
+					i_ret += _btif_controller_rx_free(p_btif);
+				}
+				if (0 != i_ret) {
+					BTIF_INFO_FUNC("failed\n");
+					/*Chaozhong: what if failed*/
+				} else {
+					BTIF_INFO_FUNC("succeed\n");
+					i_ret = _btif_state_set(p_btif, B_S_SUSPEND);
+					if (i_ret && _btif_init(p_btif)) {
+						/*Chaozhong:BTIF re-init failed? what to do*/
+						i_ret = _btif_state_set(p_btif,	B_S_OFF);
+					}
+				}
 			}
 		}
-	}
+	} else
+		i_ret = -1;
 	BTIF_STATE_RELEASE(p_btif);
 
 	return i_ret;
 }
+
 
 static int mtk_btif_drv_suspend(struct device *dev)
 {
@@ -389,6 +392,7 @@ int _btif_resume(p_mtk_btif p_btif)
 				("BTIF state: %s before resume, do nothing\n", g_state[state]);
 	} else
 		i_ret = -1;
+	BTIF_STATE_RELEASE(p_btif);
 
 	return i_ret;
 }
