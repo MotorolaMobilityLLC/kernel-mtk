@@ -318,8 +318,10 @@ void spm_dpd_dram_init(void)
 	unsigned int u4value_E4 = 0;
 	unsigned int u4value_F4 = 0;
 	unsigned int frequency = 0;
+	unsigned int u4AutoRefreshBak = 0;
 
 	/* p->channel = CHANNEL_A; */
+	u4AutoRefreshBak = readl(PDEF_DRAMC0_CHA_REG_008) & 0x10000000;
 	u4value_E4 = readl(PDEF_DRAMC0_CHA_REG_0E4);
 	u4value_F4 = readl(PDEF_DRAMC0_CHA_REG_0F4);
 	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) & 0xffdfffff,
@@ -336,6 +338,11 @@ void spm_dpd_dram_init(void)
 	mb(); /* flush memory */
 	udelay(220);
 
+	writel(readl(PDEF_DRAMC0_CHA_REG_008) | 0x10000000,
+	PDEF_DRAMC0_CHA_REG_008);
+	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) | 0x4000000,
+	PDEF_DRAMC0_CHA_REG_1DC);
+	udelay(1);
 	writel(readl(PDEF_DRAMC0_CHA_REG_0E4) | 0x00000004,
 	PDEF_DRAMC0_CHA_REG_0E4);
 	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
@@ -344,6 +351,7 @@ void spm_dpd_dram_init(void)
 	PDEF_DRAMC0_CHA_REG_1EC);
 	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
 	PDEF_DRAMC0_CHA_REG_0F4);
+	udelay(200);
 	writel(readl(PDEF_DRAMC0_CHA_REG_138) & 0xffff7fff,
 	PDEF_DRAMC0_CHA_REG_138);
 	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) & 0xfffffffd,
@@ -424,6 +432,10 @@ void spm_dpd_dram_init(void)
 	writel(u4value_E4, PDEF_DRAMC0_CHA_REG_0E4);
 	writel(u4value_F4, PDEF_DRAMC0_CHA_REG_0F4);
 
+	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) & 0xFBFFFFFF,
+	PDEF_DRAMC0_CHA_REG_1DC);
+	writel(readl(PDEF_DRAMC0_CHA_REG_008) | u4AutoRefreshBak,
+	PDEF_DRAMC0_CHA_REG_008);
 	u4value = readl(PDEF_SPM_PASR_DPD_0);
 	recover7_0 = (u4value & 0x00ff0000);
 	recover8 = u4value & 0x00000001;
@@ -437,6 +449,7 @@ void spm_dpd_dram_init(void)
 	writel(0x00000000, PDEF_DRAMC0_CHA_REG_088);
 
 	/* p->channel = CHANNEL_B; */
+	u4AutoRefreshBak = readl(PDEF_DRAMC0_CHB_REG_008) & 0x10000000;
 	u4value_E4 = readl(PDEF_DRAMC0_CHB_REG_0E4);
 	u4value_F4 = readl(PDEF_DRAMC0_CHB_REG_0F4);
 	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) & 0xffdfffff,
@@ -453,6 +466,11 @@ void spm_dpd_dram_init(void)
 	mb(); /* flush memory */
 	udelay(220);
 
+	writel(readl(PDEF_DRAMC0_CHB_REG_008) | 0x10000000,
+	PDEF_DRAMC0_CHB_REG_008);
+	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) | 0x4000000,
+	PDEF_DRAMC0_CHB_REG_1DC);
+	udelay(1);
 	writel(readl(PDEF_DRAMC0_CHB_REG_0E4) | 0x00000004,
 	PDEF_DRAMC0_CHB_REG_0E4);
 	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
@@ -461,6 +479,7 @@ void spm_dpd_dram_init(void)
 	PDEF_DRAMC0_CHB_REG_1EC);
 	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
 	PDEF_DRAMC0_CHB_REG_0F4);
+	udelay(200);
 	writel(readl(PDEF_DRAMC0_CHB_REG_138) & 0xffff7fff,
 	PDEF_DRAMC0_CHB_REG_138);
 	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) & 0xfffffffd,
@@ -540,6 +559,10 @@ void spm_dpd_dram_init(void)
 	PDEF_DRAMC0_CHB_REG_110);
 	writel(u4value_E4, PDEF_DRAMC0_CHB_REG_0E4);
 	writel(u4value_F4, PDEF_DRAMC0_CHB_REG_0F4);
+	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) & 0xFBFFFFFF,
+	PDEF_DRAMC0_CHB_REG_1DC);
+	writel(readl(PDEF_DRAMC0_CHB_REG_008) | u4AutoRefreshBak,
+	PDEF_DRAMC0_CHB_REG_008);
 
 	u4value = readl(PDEF_SPM_PASR_DPD_3);
 	recover7_0 = (u4value & 0x00ff0000);
