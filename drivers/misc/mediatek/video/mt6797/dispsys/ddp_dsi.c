@@ -3779,19 +3779,21 @@ int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 		data_array[0] = 0x002c3909;
 		DSI_set_cmdq(module, cmdq, data_array, 1, 0);
 
-		/*
-		 * DSI1 is only used for triggering video data; thus pull up DSI_DUAL_EN.
-		 * Otherwise, pull down DSI_DUAL_EN after triggering video data is done.
-		 */
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+		if (module == DISP_MODULE_DSIDUAL) {
+			/*
+			 * DSI1 is only used for triggering video data; thus pull up DSI_DUAL_EN,
+			 * and pull down DSI_DUAL_EN after triggering video data is done.
+			 */
+			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+		}
 	}
 
 	DSI_Start(module, cmdq);
 
-	if (_dsi_context[i].dsi_params.mode == CMD_MODE) {
+	if (module == DISP_MODULE_DSIDUAL && _dsi_context[i].dsi_params.mode == CMD_MODE) {
 		/* Reading one reg is only used for delay in order to pull down DSI_DUAL_EN. */
 		if (cmdq)
 			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0, 0x1401c00c);
