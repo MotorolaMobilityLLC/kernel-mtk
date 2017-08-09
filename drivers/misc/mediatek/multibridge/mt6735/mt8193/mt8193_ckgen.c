@@ -83,7 +83,7 @@ static const struct file_operations mt8193_ckgen_fops = {
 };
 #endif
 
-static void mt8193_ckgen_early_suspend(void)
+void mt8193_ckgen_early_suspend(void)
 {
 	pr_err("[CKGEN] mt8193_ckgen_early_suspend() enter\n");
 
@@ -110,7 +110,7 @@ static void mt8193_ckgen_early_suspend(void)
 	pr_debug("[CKGEN] mt8193_ckgen_early_suspend() exit\n");
 }
 
-static void mt8193_ckgen_late_resume(void)
+void mt8193_ckgen_late_resume(void)
 {
 	pr_err("[CKGEN] mt8193_ckgen_late_resume() enter\n");
 
@@ -144,7 +144,7 @@ static struct early_suspend mt8193_ckgen_early_suspend_desc = {
 	.resume		= mt8193_ckgen_late_resume,
 };
 #endif
-
+#if 0
 #ifdef CONFIG_PM_AUTOSLEEP
 static int mt8193_ckgen_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
 {
@@ -177,6 +177,7 @@ static int mt8193_ckgen_fb_notifier_callback(struct notifier_block *self, unsign
 static struct notifier_block mt8193ckgen_fb_notif = {
 	.notifier_call = mt8193_ckgen_fb_notifier_callback,
 };
+#endif
 #endif
 
 #if MT8193_CKGEN_VFY
@@ -319,6 +320,7 @@ static int __init mt8193_ckgen_init(void)
 	register_early_suspend(&mt8193_ckgen_early_suspend_desc);
 #endif
 
+#if 0
 #ifdef CONFIG_PM_AUTOSLEEP
 	ret = fb_register_client(&mt8193ckgen_fb_notif);
 	if (ret) {
@@ -326,7 +328,7 @@ static int __init mt8193_ckgen_init(void)
 		return ret;
 	}
 #endif
-
+#endif
 	pr_debug("[CKGEN] mt8193_ckgen_init() exit\n");
 
 	return 0;

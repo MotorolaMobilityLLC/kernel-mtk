@@ -28,6 +28,10 @@
 #include <ext_wd_drv.h>
 
 #include <mach/wd_api.h>
+#ifdef CONFIG_MTK_MULTIBRIDGE_SUPPORT
+#include <mt8193_ckgen.h>
+#endif
+
 #ifdef CONFIG_OF
 void __iomem *toprgu_base = 0;
 int	wdt_irq_id = 0;
@@ -304,6 +308,11 @@ void wdt_arch_reset(char mode)
 	struct device_node *np_rgu;
 #endif
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
+
+#ifdef CONFIG_MTK_MULTIBRIDGE_SUPPORT
+	mt8193_bus_clk_switch(false);
+#endif
+
 #ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 

@@ -162,6 +162,8 @@ void mt8193_nfi_ana_pwr_control(bool power_on);
 int mt8193_ckgen_config_pad_level_shift(int i4GroupNum, int i4TurnLow);
 void mt8193_spm_control_test(int u4Func);
 u32 mt8193_ckgen_measure_clk(u32 u4Func);
+void mt8193_ckgen_early_suspend(void);
+void mt8193_ckgen_late_resume(void);
 
 #endif
 
