@@ -29,8 +29,7 @@
 
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
-/* FIXME: cache is ready */
-/* #define MTK_MSDC_USE_CACHE */
+#define MTK_MSDC_USE_CACHE
 #endif
 
 #ifdef MTK_MSDC_USE_CMD23
