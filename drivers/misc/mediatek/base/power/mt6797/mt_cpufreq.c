@@ -3436,7 +3436,7 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	if ((p->idx_opp_ppm_base == p->idx_opp_ppm_limit) && p->idx_opp_ppm_base != -1)
 		new_opp_idx = p->idx_opp_ppm_base;
 
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && new_opp_idx < 8 && !release_dvfs)
+	if (new_opp_idx < 8 && !release_dvfs)
 		new_opp_idx = 8;
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
