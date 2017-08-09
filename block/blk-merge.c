@@ -210,11 +210,6 @@ static int __blk_bios_map_sg(struct request_queue *q, struct bio *bio,
 	int nsegs, cluster;
 #if defined(FEATURE_STORAGE_PID_LOGGER)
 	struct page_pid_logger *prev_logger = 0;
-	unsigned long flags;
-	struct page_pid_logger *tmp_logger;
-	unsigned long page_offset;
-	int index, mmcqd_index;
-	pid_t current_pid = 0;
 #endif
 
 	nsegs = 0;
@@ -248,8 +243,16 @@ single_segment:
 			__blk_segment_map_sg(q, &bvec, sglist, &bvprv, sg,
 					     &nsegs, &cluster);
 #if defined(FEATURE_STORAGE_PID_LOGGER)
-	if (!page_logger)
-		continue;
+	do {
+		unsigned long flags;
+
+		if (page_logger) {
+			struct page_pid_logger *tmp_logger;
+			unsigned long page_offset;
+			int index, mmcqd_index;
+			pid_t current_pid = 0;
+
+
 
 	page_offset = (unsigned long)(__page_to_pfn(bvec.bv_page)) - PHYS_PFN_OFFSET;
 
@@ -333,6 +336,9 @@ single_segment:
 		spin_unlock_irqrestore(&g_locker, flags);
 		}
 		prev_logger = tmp_logger;
+		}
+	} while (0);
+
 #endif
 
 			}
