@@ -11,6 +11,8 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 
+#include <linux/ktime.h>
+
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -2393,6 +2395,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		break;
 	case 8:
 		BigOCPClkAvg(1, 0);
+		mdelay(1);
 		BigOCPCapture(1, 1, 0, 15);
 		BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
 		ocp_status[2].CapToLkg = Leakage;
@@ -2549,7 +2552,8 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	case 8: /* capture all*/
 		LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
-		LittleOCPAvgPwr(0, 1, 800000);
+		LittleOCPAvgPwr(0, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL));
+		mdelay(1);
 		LittleOCPCapture(0, 1, 1, 0, 15);
 		ocp_status[0].CapToLkg = Leakage;
 		ocp_status[0].CapTotAct = Total;
@@ -2712,7 +2716,8 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	case 8: /* capture all*/
 		LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
-		LittleOCPAvgPwr(1, 1, 800000);
+		LittleOCPAvgPwr(1, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L));
+		mdelay(1);
 		LittleOCPCapture(1, 1, 1, 0, 15);
 		ocp_status[1].CapToLkg = Leakage;
 		ocp_status[1].CapTotAct = Total;
@@ -4012,36 +4017,48 @@ int i;
 
 static ssize_t hqa_test_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-int i, j, function_id, val[4];
+int i, j, function_id, val[4], calibration, tmp, count_LL, count_L;
+unsigned int freq_LL, freq_L, volt_LL, volt_L;
 int Leakage, Total, ClkPct, CapMAFAct, CGAvg;
 unsigned long long AvgAct, AvgLkg;
 int TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg;
 char *buf = _copy_from_user_for_proc(buffer, count);
+ktime_t now, delta;
 
 	if (!buf)
 		return -EINVAL;
 
-if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
+if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) > 0) {
 		switch (function_id) {
 		case 1:
-				/* LL/L workload calibration */
-				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
-					hqa_test = val[0];
-					if (hqa_test > NR_HQA)
-						hqa_test = NR_HQA;
+			/* LL/L workload calibration */
+			if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5) {
+				hqa_test = val[0];
+				if (hqa_test > NR_HQA)
+					hqa_test = NR_HQA;
+
+					calibration = 0;
+					freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
+					volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
+					freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
+					volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
+					LittleOCPDVFSSet(0, freq_LL, volt_LL);
+					LittleOCPDVFSSet(1, freq_L, volt_L);
+					count_LL = freq_LL * val[1] * 10;
+					count_L = freq_L * val[2] * 10;
+					ocp_info("L_freq=%u Mhz/L_volt=%u mV/LL_freq=%u Mhz/LL_volt=%u mV\n",
+							freq_L, volt_L, freq_LL, volt_LL);
 
 					for (i = 0; i < hqa_test; i++) {
 						/* This test must disable PPM*/
-						LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
-								mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
-						LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
-								mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
+						/* now = ktime_get(); */
+
+						LittleOCPAvgPwr(0, 1, count_LL);
+						LittleOCPAvgPwr(1, 1, count_L);
+						udelay(val[3]);
+
 						LittleOCPCapture(0, 1, 1, 0, 15);
 						LittleOCPCapture(1, 1, 1, 0, 15);
-						LittleOCPAvgPwr(0, 1, val[1]);
-						LittleOCPAvgPwr(1, 1, val[1]);
-						mdelay(val[2]);
-
 						CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
 								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 						ocp_hqa[0][i].TopRawLkg = TopRawLkg;
@@ -4060,16 +4077,19 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 						ocp_hqa[1][i].CPU3RawLkg = CPU3RawLkg;
 						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
 
-						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
-						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
-						ocp_hqa[0][i].CGAvg = AvgAct;
-						ocp_hqa[0][i].AvgLkg = AvgLkg;
-
 						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
 						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 						ocp_hqa[1][i].CGAvg = AvgAct;
 						ocp_hqa[1][i].AvgLkg = AvgLkg;
 
+						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
+						ocp_hqa[0][i].CGAvg = AvgAct;
+						ocp_hqa[0][i].AvgLkg = AvgLkg;
+
+						/* delta = ktime_sub(ktime_get(), now); */
+
+						/* ocp_info("Cluster 0/1 delta=%lld us\n", ktime_to_us(delta)); */
 					}
 				}
 				break;
@@ -4079,10 +4099,16 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					if (hqa_test > NR_HQA)
 						hqa_test = NR_HQA;
 
+					calibration = 0;
 					BigOCPClkAvg(1, val[1]);
 					for (j = 0; j < hqa_test; j++) {
+						now = ktime_get();
 						BigOCPCapture(1, 1, 0, 15);
-						mdelay(val[2]);
+						tmp = (val[2] - calibration);
+					if (tmp < 0)
+						tmp = 0;
+					else
+						udelay(tmp);
 
 						BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
 						ocp_hqa[2][j].CapToLkg = Leakage;
@@ -4101,6 +4127,11 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 						BigOCPClkAvgStatus(&CGAvg);
 						ocp_hqa[2][j].CGAvgValid = ocp_read_field(OCPAPBSTATUS04, 27:27);
 						ocp_hqa[2][j].CGAvg = (unsigned long long)CGAvg;
+
+						delta = ktime_sub(ktime_get(), now);
+						calibration = ktime_to_us(delta) - tmp;
+
+						ocp_info("Cluster 2 calibration=%d us\n", calibration);
 					}
 				}
 				break;
@@ -4110,10 +4141,20 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					if (hqa_test > NR_HQA)
 						hqa_test = NR_HQA;
 
+					calibration = 0;
 					for (j = 0; j < hqa_test; j++) {
+						now = ktime_get();
+						ocp_hqa[2][j].CGAvgValid = 0;
 						ocp_hqa[2][j].CGAvg = BigOCPAvgPwrGet(val[1]);
+						tmp = (val[2] - calibration);
+					if (tmp < 0)
+						tmp = 0;
+					else
+						udelay(tmp);
 
-						mdelay(val[2]);
+						delta = ktime_sub(ktime_get(), now);
+						calibration = ktime_to_us(delta) - tmp;
+						ocp_info("Cluster 2 calibration=%d us\n", calibration);
 
 					}
 				}
