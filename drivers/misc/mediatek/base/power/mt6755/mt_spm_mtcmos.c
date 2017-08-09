@@ -1,47 +1,41 @@
-/*
- * Copyright (c) 2015 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
-#include <linux/delay.h>
+#include <linux/delay.h>	/* udelay */
+#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#include <mach/mt_spm_mtcmos.h>
+#endif
+
+/*#include <mach/mt_typedefs.h>*/
+/*#include <mach/mt_spm_cpu.h>*/
+/*#include <mach/mt_spm_reg.h>*/
+#include <mt_spm_mtcmos.h>
 #include <mach/mt_spm_mtcmos_internal.h>
 #include <mach/mt_clkmgr.h>
 
+#define BUILDERROR
+
 #include "mt_spm_cpu.h"
-#include "hotplug.h"
+/*#include "hotplug.h"*/
+/**************************************
+ * extern
+ **************************************/
 
-/*
+/**************************************
  * for CPU MTCMOS
- */
-
+ **************************************/
 static DEFINE_SPINLOCK(spm_cpu_lock);
+#ifdef CONFIG_OF
 void __iomem *spm_cpu_base;
-
-#define DBG_TEST (1)
+#endif /* #ifdef CONFIG_OF */
 
 int spm_mtcmos_cpu_init(void)
 {
+#ifdef CONFIG_OF
 	struct device_node *node;
-	static int init;
-
-	if (init)
-		return 0;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
 	if (!node) {
@@ -53,22 +47,111 @@ int spm_mtcmos_cpu_init(void)
 		pr_err("base spm_cpu_base failed\n");
 		return -EINVAL;
 	}
-	init = 1;
 
 	return 0;
+#else /* #ifdef CONFIG_OF */
+	return -EINVAL;
+#endif /* #ifdef CONFIG_OF */
 }
 
 void spm_mtcmos_cpu_lock(unsigned long *flags)
 {
-	/* mutex_lock(&cpufreq_mutex); */
 	spin_lock_irqsave(&spm_cpu_lock, *flags);
 }
 
 void spm_mtcmos_cpu_unlock(unsigned long *flags)
 {
 	spin_unlock_irqrestore(&spm_cpu_lock, *flags);
-	/* mutex_unlock(&cpufreq_mutex); */
 }
+
+/* Define MTCMOS Bus Protect Mask */
+#define MD1_PROT_MASK                    ((0x1 << 16) \
+					  |(0x1 << 17) \
+					  |(0x1 << 18) \
+					  |(0x1 << 19) \
+					  |(0x1 << 20) \
+					  |(0x1 << 21))
+#define CONN_PROT_MASK                   ((0x1 << 13) \
+					  |(0x1 << 14))
+#define DIS_PROT_MASK                    ((0x1 << 1))
+#define MFG_PROT_MASK                    ((0x1 << 21))
+#define MP0_CPUTOP_PROT_MASK             ((0x1 << 26) \
+					  |(0x1 << 29))
+#define MP1_CPUTOP_PROT_MASK             ((0x1 << 30))
+#define C2K_PROT_MASK                    ((0x1 << 22) \
+					  |(0x1 << 23) \
+					  |(0x1 << 24))
+#define MDSYS_INTF_INFRA_PROT_MASK       ((0x1 << 3) \
+					  |(0x1 << 4))
+
+ /* Define MTCMOS Power Status Mask */
+
+#define MD1_PWR_STA_MASK                 (0x1 << 0)
+#define CONN_PWR_STA_MASK                (0x1 << 1)
+#define DPY_PWR_STA_MASK                 (0x1 << 2)
+#define DIS_PWR_STA_MASK                 (0x1 << 3)
+#define MFG_PWR_STA_MASK                 (0x1 << 4)
+#define ISP_PWR_STA_MASK                 (0x1 << 5)
+#define IFR_PWR_STA_MASK                 (0x1 << 6)
+#define VDE_PWR_STA_MASK                 (0x1 << 7)
+#define MP0_CPUTOP_PWR_STA_MASK          (0x1 << 8)
+#define MP0_CPU0_PWR_STA_MASK            (0x1 << 9)
+#define MP0_CPU1_PWR_STA_MASK            (0x1 << 10)
+#define MP0_CPU2_PWR_STA_MASK            (0x1 << 11)
+#define MP0_CPU3_PWR_STA_MASK            (0x1 << 12)
+#define MCU_PWR_STA_MASK                 (0x1 << 14)
+#define MP1_CPUTOP_PWR_STA_MASK          (0x1 << 15)
+#define MP1_CPU0_PWR_STA_MASK            (0x1 << 16)
+#define MP1_CPU1_PWR_STA_MASK            (0x1 << 17)
+#define MP1_CPU2_PWR_STA_MASK            (0x1 << 18)
+#define MP1_CPU3_PWR_STA_MASK            (0x1 << 19)
+#define VEN_PWR_STA_MASK                 (0x1 << 21)
+#define MFG_ASYNC_PWR_STA_MASK           (0x1 << 23)
+#define AUDIO_PWR_STA_MASK               (0x1 << 24)
+#define C2K_PWR_STA_MASK                 (0x1 << 28)
+#define MDSYS_INTF_INFRA_PWR_STA_MASK    (0x1 << 29)
+/* Define Non-CPU SRAM Mask */
+#define MD1_SRAM_PDN                     (0x1 << 8)
+#define MD1_SRAM_PDN_ACK                 (0x0 << 12)
+#define DIS_SRAM_PDN                     (0x1 << 8)
+#define DIS_SRAM_PDN_ACK                 (0x1 << 12)
+#define MFG_SRAM_PDN                     (0x1 << 8)
+#define MFG_SRAM_PDN_ACK                 (0x1 << 16)
+#define ISP_SRAM_PDN                     (0x3 << 8)
+#define ISP_SRAM_PDN_ACK                 (0x3 << 12)
+#define IFR_SRAM_PDN                     (0xF << 8)
+#define IFR_SRAM_PDN_ACK                 (0xF << 12)
+#define VDE_SRAM_PDN                     (0x1 << 8)
+#define VDE_SRAM_PDN_ACK                 (0x1 << 12)
+#define VEN_SRAM_PDN                     (0xF << 8)
+#define VEN_SRAM_PDN_ACK                 (0xF << 12)
+#define AUDIO_SRAM_PDN                   (0xF << 8)
+#define AUDIO_SRAM_PDN_ACK               (0xF << 12)
+/* Define CPU SRAM Mask */
+#define MP0_CPUTOP_SRAM_PDN              (0x1 << 0)
+#define MP0_CPUTOP_SRAM_PDN_ACK          (0x1 << 8)
+#define MP0_CPUTOP_SRAM_SLEEP_B          (0x1 << 0)
+#define MP0_CPUTOP_SRAM_SLEEP_B_ACK      (0x1 << 8)
+#define MP0_CPU0_SRAM_PDN                (0x1 << 0)
+#define MP0_CPU0_SRAM_PDN_ACK            (0x1 << 8)
+#define MP0_CPU1_SRAM_PDN                (0x1 << 0)
+#define MP0_CPU1_SRAM_PDN_ACK            (0x1 << 8)
+#define MP0_CPU2_SRAM_PDN                (0x1 << 0)
+#define MP0_CPU2_SRAM_PDN_ACK            (0x1 << 8)
+#define MP0_CPU3_SRAM_PDN                (0x1 << 0)
+#define MP0_CPU3_SRAM_PDN_ACK            (0x1 << 8)
+#define MP1_CPUTOP_SRAM_PDN              (0x1 << 0)
+#define MP1_CPUTOP_SRAM_PDN_ACK          (0x1 << 8)
+#define MP1_CPUTOP_SRAM_SLEEP_B          (0x1 << 0)
+#define MP1_CPUTOP_SRAM_SLEEP_B_ACK      (0x1 << 8)
+#define MP1_CPU0_SRAM_PDN                (0x1 << 0)
+#define MP1_CPU0_SRAM_PDN_ACK            (0x1 << 8)
+#define MP1_CPU1_SRAM_PDN                (0x1 << 0)
+#define MP1_CPU1_SRAM_PDN_ACK            (0x1 << 8)
+#define MP1_CPU2_SRAM_PDN                (0x1 << 0)
+#define MP1_CPU2_SRAM_PDN_ACK            (0x1 << 8)
+#define MP1_CPU3_SRAM_PDN                (0x1 << 0)
+#define MP1_CPU3_SRAM_PDN_ACK            (0x1 << 8)
 
 typedef int (*spm_cpu_mtcmos_ctrl_func) (int state, int chkWfiBeforePdn);
 static spm_cpu_mtcmos_ctrl_func spm_cpu_mtcmos_ctrl_funcs[] = {
@@ -90,963 +173,1300 @@ int spm_mtcmos_ctrl_cpu(unsigned int cpu, int state, int chkWfiBeforePdn)
 int spm_mtcmos_ctrl_cpu0(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
-		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA7_CPU0_STANDBYWFI) == 0)
+		if (chkWfiBeforePdn) {
+			while ((spm_read(CPU_IDLE_STA) &
+				MP0_CPU0_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+		}
+		}
+		/* TINFO="Start to turn off MP0_CPU0" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU0_L1_PDN,
-			  spm_read(SPM_CA7_CPU0_L1_PDN) | L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU0_L1_PDN) & L1_PDN_ACK) !=
-		       L1_PDN_ACK)
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP0_CPU0_L1_PDN,
+			  spm_read(MP0_CPU0_L1_PDN) | MP0_CPU0_SRAM_PDN);
+		/* TINFO="Wait until MP0_CPU0_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP0_CPU0_L1_PDN) & MP0_CPU0_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU0) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU0) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP0_CPU0_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP0_CPU0_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
+		/* TINFO="Finish to turn off MP0_CPU0" */
+		if (!
+		    (spm_read(PWR_STATUS) &
+		     (MP0_CPU1_PWR_STA_MASK | MP0_CPU2_PWR_STA_MASK |
+		      MP0_CPU3_PWR_STA_MASK))
+					&& !(spm_read(PWR_STATUS_2ND) &
+				(MP0_CPU1_PWR_STA_MASK | MP0_CPU2_PWR_STA_MASK |
+				MP0_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
+		}
+
+		/* TINFO="Finish to turn off MP0_CPU0" */
 	} else {		/* STA_POWER_ON */
-
+		if (!(spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK) &&
+		    !(spm_read(PWR_STATUS_2ND) & MP0_CPUTOP_PWR_STA_MASK))
+			spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP0_CPU0" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU0) != CA7_CPU0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU0) !=
-			   CA7_CPU0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP0_CPU0_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP0_CPU0_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA7_CPU0_L1_PDN,
-			  spm_read(SPM_CA7_CPU0_L1_PDN) & ~L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU0_L1_PDN) & L1_PDN_ACK) != 0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP0_CPU0_L1_PDN,
+			  spm_read(MP0_CPU0_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP0_CPU0_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP0_CPU0_L1_PDN) & MP0_CPU0_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		};
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA7_CPU0_PWR_CON,
-			  spm_read(SPM_CA7_CPU0_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP0_CPU0_PWR_CON,
+			  spm_read(MP0_CPU0_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP0_CPU0" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu1(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA7_CPU1_STANDBYWFI) == 0)
-				;
-
+			while ((spm_read(CPU_IDLE_STA) &
+				MP0_CPU1_STANDBYWFI_LSB) == 0) {
+					/* no ops */
+					;
+		}
+		/* TINFO="Start to turn off MP0_CPU1" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU1_L1_PDN,
-			  spm_read(SPM_CA7_CPU1_L1_PDN) | L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU1_L1_PDN) & L1_PDN_ACK) !=
-		       L1_PDN_ACK)
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP0_CPU1_L1_PDN,
+			  spm_read(MP0_CPU1_L1_PDN) | MP0_CPU1_SRAM_PDN);
+		/* TINFO="Wait until MP0_CPU1_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP0_CPU1_L1_PDN) & MP0_CPU1_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU1) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU1) != 0))
-			;
-#endif
-
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP0_CPU1_PWR_STA_MASK)
+					|| (spm_read(PWR_STATUS_2ND) &
+					MP0_CPU1_PWR_STA_MASK))
+						;
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
+		/* TINFO="Finish to turn off MP0_CPU0" */
+		if (!
+		    (spm_read(PWR_STATUS) &
+		     (MP0_CPU0_PWR_STA_MASK | MP0_CPU2_PWR_STA_MASK |
+		      MP0_CPU3_PWR_STA_MASK))
+				&& !(spm_read(PWR_STATUS_2ND) &
+				(MP0_CPU0_PWR_STA_MASK | MP0_CPU2_PWR_STA_MASK |
+				 MP0_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
+		}
+
+		/* TINFO="Finish to turn off MP0_CPU1" */
 	} else {		/* STA_POWER_ON */
-
+		if (!(spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK) &&
+		    !(spm_read(PWR_STATUS_2ND) & MP0_CPUTOP_PWR_STA_MASK))
+			spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP0_CPU1" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU1) != CA7_CPU1)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU1) !=
-			   CA7_CPU1))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP0_CPU1_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP0_CPU1_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA7_CPU1_L1_PDN,
-			  spm_read(SPM_CA7_CPU1_L1_PDN) & ~L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU1_L1_PDN) & L1_PDN_ACK) != 0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP0_CPU1_L1_PDN,
+			  spm_read(MP0_CPU1_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP0_CPU1_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP0_CPU1_L1_PDN) & MP0_CPU1_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA7_CPU1_PWR_CON,
-			  spm_read(SPM_CA7_CPU1_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP0_CPU1_PWR_CON,
+			  spm_read(MP0_CPU1_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP0_CPU1" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu2(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA7_CPU2_STANDBYWFI) == 0)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP0_CPU2_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+		}
+		/* TINFO="Start to turn off MP0_CPU2" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU2_L1_PDN,
-			  spm_read(SPM_CA7_CPU2_L1_PDN) | L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU2_L1_PDN) & L1_PDN_ACK) !=
-		       L1_PDN_ACK)
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP0_CPU2_L1_PDN,
+			  spm_read(MP0_CPU2_L1_PDN) | MP0_CPU2_SRAM_PDN);
+		/* TINFO="Wait until MP0_CPU2_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP0_CPU2_L1_PDN) & MP0_CPU2_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU2) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU2) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP0_CPU2_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP0_CPU2_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
+		/* TINFO="Finish to turn off MP0_CPU0" */
+		if (!
+		    (spm_read(PWR_STATUS) &
+		     (MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		      MP0_CPU3_PWR_STA_MASK))
+			&& !(spm_read(PWR_STATUS_2ND) &
+			(MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+			MP0_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
+		}
+
+		/* TINFO="Finish to turn off MP0_CPU2" */
 	} else {		/* STA_POWER_ON */
-
+		if (!(spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK) &&
+		    !(spm_read(PWR_STATUS_2ND) & MP0_CPUTOP_PWR_STA_MASK))
+			spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP0_CPU2" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU2) != CA7_CPU2)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU2) !=
-			   CA7_CPU2))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP0_CPU2_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP0_CPU2_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA7_CPU2_L1_PDN,
-			  spm_read(SPM_CA7_CPU2_L1_PDN) & ~L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU2_L1_PDN) & L1_PDN_ACK) != 0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP0_CPU2_L1_PDN,
+			  spm_read(MP0_CPU2_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP0_CPU2_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP0_CPU2_L1_PDN) & MP0_CPU2_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA7_CPU2_PWR_CON,
-			  spm_read(SPM_CA7_CPU2_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP0_CPU2_PWR_CON,
+			  spm_read(MP0_CPU2_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP0_CPU2" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu3(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA7_CPU3_STANDBYWFI) == 0)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP0_CPU3_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+		}
+		/* TINFO="Start to turn off MP0_CPU3" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU3_L1_PDN,
-			  spm_read(SPM_CA7_CPU3_L1_PDN) | L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU3_L1_PDN) & L1_PDN_ACK) !=
-		       L1_PDN_ACK)
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP0_CPU3_L1_PDN,
+			  spm_read(MP0_CPU3_L1_PDN) | MP0_CPU3_SRAM_PDN);
+		/* TINFO="Wait until MP0_CPU3_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP0_CPU3_L1_PDN) & MP0_CPU3_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU3) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU3) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP0_CPU3_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP0_CPU3_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
+		/* TINFO="Finish to turn off MP0_CPU0" */
+		if (!
+		    (spm_read(PWR_STATUS) &
+		     (MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		      MP0_CPU2_PWR_STA_MASK))
+					&& !(spm_read(PWR_STATUS_2ND) &
+				(MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+					MP0_CPU2_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
+		}
+
+		/* TINFO="Finish to turn off MP0_CPU3" */
 	} else {		/* STA_POWER_ON */
-
+		if (!(spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK) &&
+		    !(spm_read(PWR_STATUS_2ND) & MP0_CPUTOP_PWR_STA_MASK))
+			spm_mtcmos_ctrl_cpusys0(state, chkWfiBeforePdn);
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP0_CPU3" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPU3) != CA7_CPU3)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPU3) !=
-			   CA7_CPU3))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP0_CPU3_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP0_CPU3_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA7_CPU3_L1_PDN,
-			  spm_read(SPM_CA7_CPU3_L1_PDN) & ~L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPU3_L1_PDN) & L1_PDN_ACK) != 0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP0_CPU3_L1_PDN,
+			  spm_read(MP0_CPU3_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP0_CPU3_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP0_CPU3_L1_PDN) & MP0_CPU3_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA7_CPU3_PWR_CON,
-			  spm_read(SPM_CA7_CPU3_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP0_CPU3_PWR_CON,
+			  spm_read(MP0_CPU3_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP0_CPU3" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu4(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
-		if (chkWfiBeforePdn) {
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA15_CPU0_STANDBYWFI) == 0) {
+		if (chkWfiBeforePdn)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP1_CPU0_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-			}
 		}
-
-		/* mdelay(500); */
-
+		/* TINFO="Start to turn off MP1_CPU0" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU0_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU0_CA15_L1_PDN_ACK) !=
-		       CPU0_CA15_L1_PDN_ACK)
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP1_CPU0_L1_PDN,
+			  spm_read(MP1_CPU0_L1_PDN) | MP1_CPU0_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPU0_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP1_CPU0_L1_PDN) & MP1_CPU0_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU0_CA15_L1_PDN_ISO);
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU0) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU0) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP1_CPU0_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP1_CPU0_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
 
+		/* TINFO="Finish to turn off MP1_CPU0" */
 		if (!
-		    (spm_read(SPM_PWR_STATUS) &
-		     (CA15_CPU1 | CA15_CPU2 | CA15_CPU3))
-		    && !(spm_read(SPM_PWR_STATUS_2ND) &
-			 (CA15_CPU1 | CA15_CPU2 | CA15_CPU3)))
-			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		    (spm_read(PWR_STATUS) &
+		     (MP1_CPU1_PWR_STA_MASK | MP1_CPU2_PWR_STA_MASK |
+		      MP1_CPU3_PWR_STA_MASK))
+					&& !(spm_read(PWR_STATUS_2ND) &
+				(MP1_CPU1_PWR_STA_MASK | MP1_CPU2_PWR_STA_MASK |
+					MP1_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		}
 	} else {		/* STA_POWER_ON */
-
-		if (!(spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) &&
-		    !(spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP))
+		if (!(spm_read(PWR_STATUS) & MP1_CPUTOP_PWR_STA_MASK) &&
+		    !(spm_read(PWR_STATUS_2ND) & MP1_CPUTOP_PWR_STA_MASK))
 			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
-
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP1_CPU0" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU0) != CA15_CPU0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU0) !=
-			   CA15_CPU0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP1_CPU0_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP1_CPU0_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) &
-			  ~CPU0_CA15_L1_PDN_ISO);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) & ~CPU0_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU0_CA15_L1_PDN_ACK) !=
-		       0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP1_CPU0_L1_PDN,
+			  spm_read(MP1_CPU0_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPU0_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP1_CPU0_L1_PDN) & MP1_CPU0_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA15_CPU0_PWR_CON,
-			  spm_read(SPM_CA15_CPU0_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP1_CPU0_PWR_CON,
+			  spm_read(MP1_CPU0_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP1_CPU0" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu5(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA15_CPU1_STANDBYWFI) == 0)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP1_CPU1_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+		}
+		/* TINFO="Start to turn off MP1_CPU1" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU1_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU1_CA15_L1_PDN_ACK) !=
-		       CPU1_CA15_L1_PDN_ACK)
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP1_CPU1_L1_PDN,
+			  spm_read(MP1_CPU1_L1_PDN) | MP1_CPU1_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPU1_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP1_CPU1_L1_PDN) & MP1_CPU1_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU1_CA15_L1_PDN_ISO);
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU1) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU1) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP1_CPU1_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP1_CPU1_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
-
+		/* TINFO="Finish to turn off MP1_CPU1" */
 		if (!
-		    (spm_read(SPM_PWR_STATUS) &
-		     (CA15_CPU0 | CA15_CPU2 | CA15_CPU3))
-		    && !(spm_read(SPM_PWR_STATUS_2ND) &
-			 (CA15_CPU0 | CA15_CPU2 | CA15_CPU3)))
-			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		    (spm_read(PWR_STATUS) &
+		     (MP1_CPU0_PWR_STA_MASK | MP1_CPU2_PWR_STA_MASK |
+		      MP1_CPU3_PWR_STA_MASK))
+					&& !(spm_read(PWR_STATUS_2ND) &
+				(MP1_CPU0_PWR_STA_MASK | MP1_CPU2_PWR_STA_MASK |
+					MP1_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		}
 	} else {		/* STA_POWER_ON */
-
-		if (!(spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) &&
-		    !(spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP))
+		if (!(spm_read(PWR_STATUS) & CA15_CPUTOP) &&
+		    !(spm_read(PWR_STATUS_2ND) & CA15_CPUTOP))
 			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
-
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP1_CPU1" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU1) != CA15_CPU1)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU1) !=
-			   CA15_CPU1))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP1_CPU1_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP1_CPU1_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) &
-			  ~CPU1_CA15_L1_PDN_ISO);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) & ~CPU1_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU1_CA15_L1_PDN_ACK) !=
-		       0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP1_CPU1_L1_PDN,
+			  spm_read(MP1_CPU1_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPU1_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP1_CPU1_L1_PDN) & MP1_CPU1_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA15_CPU1_PWR_CON,
-			  spm_read(SPM_CA15_CPU1_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP1_CPU1_PWR_CON,
+			  spm_read(MP1_CPU1_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP1_CPU1" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu6(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA15_CPU2_STANDBYWFI) == 0)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP1_CPU2_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+			}
+		/* TINFO="Start to turn off MP1_CPU2" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU2_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU2_CA15_L1_PDN_ACK) !=
-		       CPU2_CA15_L1_PDN_ACK)
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP1_CPU2_L1_PDN,
+			  spm_read(MP1_CPU2_L1_PDN) | MP1_CPU2_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPU2_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP1_CPU2_L1_PDN) & MP1_CPU2_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU2_CA15_L1_PDN_ISO);
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU2) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU2) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP1_CPU2_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP1_CPU2_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
-
+		/* TINFO="Finish to turn off MP1_CPU2" */
 		if (!
-		    (spm_read(SPM_PWR_STATUS) &
-		     (CA15_CPU0 | CA15_CPU1 | CA15_CPU3))
-		    && !(spm_read(SPM_PWR_STATUS_2ND) &
-			 (CA15_CPU0 | CA15_CPU1 | CA15_CPU3)))
-			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		    (spm_read(PWR_STATUS) &
+		     (MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		      MP1_CPU3_PWR_STA_MASK))
+					&& !(spm_read(PWR_STATUS_2ND) &
+				(MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+					MP1_CPU3_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		}
 	} else {		/* STA_POWER_ON */
-
-		if (!(spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) &&
-		    !(spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP))
+		if (!(spm_read(PWR_STATUS) & CA15_CPUTOP) &&
+		    !(spm_read(PWR_STATUS_2ND) & CA15_CPUTOP))
 			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
-
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP1_CPU2" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU2) != CA15_CPU2)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU2) !=
-			   CA15_CPU2))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP1_CPU2_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP1_CPU2_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) &
-			  ~CPU2_CA15_L1_PDN_ISO);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) & ~CPU2_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU2_CA15_L1_PDN_ACK) !=
-		       0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP1_CPU2_L1_PDN,
+			  spm_read(MP1_CPU2_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPU2_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP1_CPU2_L1_PDN) & MP1_CPU2_SRAM_PDN_ACK) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA15_CPU2_PWR_CON,
-			  spm_read(SPM_CA15_CPU2_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP1_CPU2_PWR_CON,
+			  spm_read(MP1_CPU2_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP1_CPU2" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpu7(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
-#ifndef CONFIG_MTK_FPGA
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA15_CPU3_STANDBYWFI) == 0)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP1_CPU3_STANDBYWFI_LSB) == 0) {
+				/* no ops */
 				;
-
+		}
+		/* TINFO="Start to turn off MP1_CPU3" */
+		/* TINFO="Set PWR_ISO = 1" */
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU3_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU3_CA15_L1_PDN_ACK) !=
-		       CPU3_CA15_L1_PDN_ACK)
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP1_CPU3_L1_PDN,
+			  spm_read(MP1_CPU3_L1_PDN) | MP1_CPU3_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPU3_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!(spm_read(MP1_CPU3_L1_PDN) & MP1_CPU3_SRAM_PDN_ACK)) {
+			/* no ops */
 			;
-#endif
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) | CPU3_CA15_L1_PDN_ISO);
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU3) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU3) != 0))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP1_CPU3_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MP1_CPU3_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
-
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 		spm_mtcmos_cpu_unlock(&flags);
-
+		/* TINFO="Finish to turn off MP1_CPU3" */
 		if (!
-		    (spm_read(SPM_PWR_STATUS) &
-		     (CA15_CPU0 | CA15_CPU1 | CA15_CPU2))
-		    && !(spm_read(SPM_PWR_STATUS_2ND) &
-			 (CA15_CPU0 | CA15_CPU1 | CA15_CPU2)))
-			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		    (spm_read(PWR_STATUS) &
+		     (MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		      MP1_CPU2_PWR_STA_MASK))
+&& !(spm_read(PWR_STATUS_2ND) &
+(MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK | MP1_CPU2_PWR_STA_MASK))) {
+#ifdef CONFIG_MTK_L2C_SHARE
+			if (!IS_L2_BORROWED())
+#endif /* #ifdef CONFIG_MTK_L2C_SHARE */
+				spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
+		}
 	} else {		/* STA_POWER_ON */
-
-		if (!(spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) &&
-		    !(spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP))
+		if (!(spm_read(PWR_STATUS) & CA15_CPUTOP) &&
+		    !(spm_read(PWR_STATUS_2ND) & CA15_CPUTOP))
 			spm_mtcmos_ctrl_cpusys1(state, chkWfiBeforePdn);
 
 		spm_mtcmos_cpu_lock(&flags);
+		/* TINFO="Start to turn on MP1_CPU3" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | PWR_ON);
-		udelay(1);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPU3) != CA15_CPU3)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPU3) !=
-			   CA15_CPU3))
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP1_CPU3_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MP1_CPU3_PWR_STA_MASK)) {
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
 
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) &
-			  ~CPU3_CA15_L1_PDN_ISO);
-		spm_write(SPM_CA15_L1_PWR_CON,
-			  spm_read(SPM_CA15_L1_PWR_CON) & ~CPU3_CA15_L1_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L1_PWR_CON) & CPU3_CA15_L1_PDN_ACK) !=
-		       0)
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP1_CPU3_L1_PDN,
+			  spm_read(MP1_CPU3_L1_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPU3_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP1_CPU3_L1_PDN) & MP1_CPU3_SRAM_PDN_ACK) {
+			/* no ops */
 			;
+		}
 #endif
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | SRAM_ISOINT_B);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA15_CPU3_PWR_CON,
-			  spm_read(SPM_CA15_CPU3_PWR_CON) | PWR_RST_B);
-
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP1_CPU3_PWR_CON,
+			  spm_read(MP1_CPU3_PWR_CON) | PWR_RST_B);
+		/* TINFO="Finish to turn on MP1_CPU3" */
 		spm_mtcmos_cpu_unlock(&flags);
 	}
-#endif
 	return 0;
 }
 
 int spm_mtcmos_ctrl_cpusys0(int state, int chkWfiBeforePdn)
 {
+	int err = 0;
 	unsigned long flags;
-
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
-		if (chkWfiBeforePdn) {
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA7_CPUTOP_STANDBYWFI) == 0) {
+		/* TINFO="Start to turn off MP1_CPUTOP" */
+		/* TINFO="Set bus protect" */
+		if (chkWfiBeforePdn)
+			while ((spm_read(CPU_IDLE_STA) &
+				MP0_CPUTOP_IDLE_LSB) == 0) {
+				/* no ops */
 				;
-			}
 		}
-
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~SRAM_ISOINT_B);
-		spm_write(SPM_CA7_CPUTOP_L2_PDN,
-			  spm_read(SPM_CA7_CPUTOP_L2_PDN) | L2_SRAM_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPUTOP_L2_PDN) & L2_SRAM_PDN_ACK) !=
-		       L2_SRAM_PDN_ACK)
+#if 0
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) |
+			  MP0_CPUTOP_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) &
+			MP0_CPUTOP_PROT_MASK) != MP0_CPUTOP_PROT_MASK){
+			/* no ops */
 			;
+		}
+#else
+		/*spm_topaxi_protect(MP0_CPUTOP_PROT_MASK, 1); */
 #endif
-		ndelay(1500);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPUTOP) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPUTOP) != 0))
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP0_CPUTOP_L2_PDN,
+			  spm_read(MP0_CPUTOP_L2_PDN) | MP0_CPUTOP_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPUTOP_SRAM_PDN_ACK = 1" */
+		while (!
+		       (spm_read(MP0_CPUTOP_L2_PDN) &
+			MP0_CPUTOP_SRAM_PDN_ACK)){
+			/* no ops */
 			;
+		}
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~PWR_ON_2ND);
+
+#ifndef IGNORE_PWR_ACK
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) &
+			   MP0_CPUTOP_PWR_STA_MASK)){
+			/* no ops */
+			;
+		}
 #endif
 
 		spm_mtcmos_cpu_unlock(&flags);
-	} else { /* STA_POWER_ON */
-
+		/* TINFO="Finish to turn off MP1_CPUTOP" */
+	} else {
 		spm_mtcmos_cpu_lock(&flags);
+		/* STA_POWER_ON */
+		/* TINFO="Start to turn on MP1_CPUTOP" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | PWR_ON_2ND);
 
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | PWR_ON);
+#ifndef IGNORE_PWR_ACK
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP0_CPUTOP_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) &
+			    MP0_CPUTOP_PWR_STA_MASK)){
+			/* no ops */
+			;
+		}
+#endif
+
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP0_CPUTOP_L2_PDN,
+			  spm_read(MP0_CPUTOP_L2_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPUTOP_SRAM_PDN_ACK = 0" */
+		while (spm_read(MP0_CPUTOP_L2_PDN) & MP0_CPUTOP_SRAM_PDN_ACK) {
+			/* no ops */
+			;
+		}
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA7_CPUTOP) != CA7_CPUTOP)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA7_CPUTOP) !=
-			   CA7_CPUTOP))
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Delay 1us" */
+		udelay(1);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP0_CPUTOP_PWR_CON,
+			  spm_read(MP0_CPUTOP_PWR_CON) | PWR_RST_B);
+		/* TINFO="Release bus protect" */
+#if 0
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) &
+			  ~MP0_CPUTOP_PROT_MASK);
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) &
+		       MP0_CPUTOP_PROT_MASK){
+			/* no ops */
 			;
+		}
+#else
+		/*spm_topaxi_protect(MP0_CPUTOP_PROT_MASK, 0); */
 #endif
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA7_CPUTOP_L2_PDN,
-			  spm_read(SPM_CA7_CPUTOP_L2_PDN) & ~L2_SRAM_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA7_CPUTOP_L2_PDN) & L2_SRAM_PDN_ACK) !=
-		       0)
-			;
-#endif
-		ndelay(900);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | SRAM_ISOINT_B);
-		ndelay(100);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA7_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA7_CPUTOP_PWR_CON) | PWR_RST_B);
-
 		spm_mtcmos_cpu_unlock(&flags);
-	}
 
-	return 0;
+		/* TINFO="Finish to turn on MP1_CPUTOP" */
+	}
+	return err;
 }
 
 int spm_mtcmos_ctrl_cpusys1(int state, int chkWfiBeforePdn)
 {
 	unsigned long flags;
 
-	/* enable register control */
-	spm_write(SPM_POWERON_CONFIG_SET, (SPM_PROJECT_CODE << 16) | (1U << 0));
+	/* TINFO="enable SPM register control" */
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
-		if (chkWfiBeforePdn)
-			while ((spm_read(SPM_SLEEP_TIMER_STA) &
-				CA15_CPUTOP_STANDBYWFI) == 0)
-				;
+		/* TINFO="Start to turn off MP1_CPUTOP" */
+		/* TINFO="Set bus protect" */
+		if (chkWfiBeforePdn) {
+			while ((spm_read(CPU_IDLE_STA) &
+				MP1_CPUTOP_IDLE_LSB) == 0) {
+				; /* no ops */
+			}
+		}
 		spm_mtcmos_cpu_lock(&flags);
-
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | PWR_ISO);
-
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | SRAM_CKISO);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~SRAM_ISOINT_B);
-
-		spm_write(SPM_CA15_L2_PWR_CON,
-			  spm_read(SPM_CA15_L2_PWR_CON) | CA15_L2_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L2_PWR_CON) & CA15_L2_PDN_ACK) !=
-		       CA15_L2_PDN_ACK)
+#if 0
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) |
+			  MP1_CPUTOP_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) &
+			MP1_CPUTOP_PROT_MASK) != MP1_CPUTOP_PROT_MASK){
+			/* no ops */
 			;
+		}
+#else
+		/*spm_topaxi_protect(MP1_CPUTOP_PROT_MASK, 1); */
 #endif
-		spm_write(SPM_CA15_L2_PWR_CON,
-			  spm_read(SPM_CA15_L2_PWR_CON) | CA15_L2_PDN_ISO);
-		ndelay(1500);
-
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~PWR_RST_B);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | PWR_CLK_DIS);
-
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~PWR_ON);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) != 0)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP) != 0))
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | PWR_ISO);
+		/* TINFO="Set SRAM_CKISO = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | SRAM_CKISO);
+		/* TINFO="Set SRAM_ISOINT_B = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~SRAM_ISOINT_B);
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MP1_CPUTOP_L2_PDN,
+			  spm_read(MP1_CPUTOP_L2_PDN) | MP1_CPUTOP_SRAM_PDN);
+		/* TINFO="Wait until MP1_CPUTOP_SRAM_PDN_ACK = 1" */
+#ifndef CFG_FPGA_PLATFORM
+		while (!
+		       (spm_read(MP1_CPUTOP_L2_PDN) &
+			MP1_CPUTOP_SRAM_PDN_ACK)){
+			/* no ops */
 			;
-#endif
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~PWR_ON_2ND);
 
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & MP1_CPUTOP_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) &
+			   MP1_CPUTOP_PWR_STA_MASK)){
+			/* no ops */
+			;
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+
+#if 0
+		switch_armpll_l_hwmode(0);	/*Switch to SW mode */
+		mt_pause_armpll(FH_ARMCA15_PLLID, 1);	/*Pause FQHP function */
+		disable_armpll_l();	/*Turn off arm pll */
+#endif
 		spm_mtcmos_cpu_unlock(&flags);
-	} else { /* STA_POWER_ON */
+
+		/* TINFO="Finish to turn off MP1_CPUTOP" */
+	} else {		/* STA_POWER_ON */
 
 		spm_mtcmos_cpu_lock(&flags);
+#if 0
+		enable_armpll_l();	/*Turn on arm pll */
+		mt_pause_armpll(FH_ARMCA15_PLLID, 0);
+		/*Non-pause FQHP function */
+		switch_armpll_l_hwmode(1);	/*Switch to HW mode */
+#endif
 
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | PWR_ON);
+		/* TINFO="Start to turn on MP1_CPUTOP" */
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | PWR_ON_2ND);
+
+#ifndef CFG_FPGA_PLATFORM
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (!(spm_read(PWR_STATUS) & MP1_CPUTOP_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) &
+			    MP1_CPUTOP_PWR_STA_MASK)){
+			/* no ops */
+			;
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MP1_CPUTOP_L2_PDN,
+			  spm_read(MP1_CPUTOP_L2_PDN) & ~(0x1 << 0));
+		/* TINFO="Wait until MP1_CPUTOP_SRAM_PDN_ACK = 0" */
+#ifndef CFG_FPGA_PLATFORM
+		while (spm_read(MP1_CPUTOP_L2_PDN) & MP1_CPUTOP_SRAM_PDN_ACK) {
+			/* no ops */
+			;
+		}
+#endif /* #ifndef CFG_FPGA_PLATFORM */
+		/* TINFO="Delay 1us" */
 		udelay(1);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | PWR_ON_2ND);
-#ifndef CONFIG_MTK_FPGA
-		while (((spm_read(SPM_PWR_STATUS) & CA15_CPUTOP) != CA15_CPUTOP)
-		       || ((spm_read(SPM_PWR_STATUS_2ND) & CA15_CPUTOP) !=
-			   CA15_CPUTOP))
-			;
+		/* TINFO="Set SRAM_ISOINT_B = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | SRAM_ISOINT_B);
+		/* TINFO="Delay 1us" */
+		udelay(1);
+		/* TINFO="Set SRAM_CKISO = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~SRAM_CKISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(MP1_CPUTOP_PWR_CON,
+			  spm_read(MP1_CPUTOP_PWR_CON) | PWR_RST_B);
+		/* TINFO="Release bus protect" */
+#if 0
+		/* #ifndef CFG_FPGA_PLATFORM */
+
+		/*spm_topaxi_protect(MP1_CPUTOP_PROT_MASK, 0); */
 #endif
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~PWR_ISO);
-
-		spm_write(SPM_CA15_L2_PWR_CON,
-			  spm_read(SPM_CA15_L2_PWR_CON) & ~CA15_L2_PDN_ISO);
-		spm_write(SPM_CA15_L2_PWR_CON,
-			  spm_read(SPM_CA15_L2_PWR_CON) & ~CA15_L2_PDN);
-#ifndef CONFIG_MTK_FPGA
-		while ((spm_read(SPM_CA15_L2_PWR_CON) & CA15_L2_PDN_ACK) != 0)
-			;
-#endif
-		ndelay(900);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | SRAM_ISOINT_B);
-		ndelay(100);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~SRAM_CKISO);
-
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CA15_CPUTOP_PWR_CON,
-			  spm_read(SPM_CA15_CPUTOP_PWR_CON) | PWR_RST_B);
-
 		spm_mtcmos_cpu_unlock(&flags);
+		/* TINFO="Finish to turn on MP1_CPUTOP" */
 	}
-
 	return 0;
 }
 
@@ -1058,7 +1478,7 @@ void spm_mtcmos_ctrl_cpusys1_init_1st_bring_up(int state)
 		spm_mtcmos_ctrl_cpu6(STA_POWER_DOWN, 0);
 		spm_mtcmos_ctrl_cpu5(STA_POWER_DOWN, 0);
 		spm_mtcmos_ctrl_cpu4(STA_POWER_DOWN, 0);
-	} else { /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 
 		spm_mtcmos_ctrl_cpu4(STA_POWER_ON, 1);
 		spm_mtcmos_ctrl_cpu5(STA_POWER_ON, 1);
@@ -1069,827 +1489,35 @@ void spm_mtcmos_ctrl_cpusys1_init_1st_bring_up(int state)
 
 bool spm_cpusys0_can_power_down(void)
 {
-	return !(spm_read(SPM_PWR_STATUS) & (CA7_CPU1 | CA7_CPU2 | CA7_CPU3)) &&
-	    !(spm_read(SPM_PWR_STATUS_2ND) & (CA7_CPU1 | CA7_CPU2 | CA7_CPU3));
+	return !(spm_read(PWR_STATUS) &
+		 (MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		  MP1_CPU2_PWR_STA_MASK | MP1_CPU3_PWR_STA_MASK |
+		  MP1_CPUTOP_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		  MP0_CPU2_PWR_STA_MASK | MP0_CPU3_PWR_STA_MASK))
+	    && !(spm_read(PWR_STATUS_2ND) &
+		 (MP1_CPU0_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		  MP1_CPU2_PWR_STA_MASK | MP1_CPU3_PWR_STA_MASK |
+		  MP1_CPUTOP_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		  MP0_CPU2_PWR_STA_MASK | MP0_CPU3_PWR_STA_MASK));
 }
 
 bool spm_cpusys1_can_power_down(void)
 {
-	return !(spm_read(SPM_PWR_STATUS) &
-		 (CA7_CPU0 | CA7_CPU1 | CA7_CPU2 | CA7_CPU3 | CA7_CPUTOP |
-		  CA15_CPU1 | CA15_CPU2 | CA15_CPU3))
-	    && !(spm_read(SPM_PWR_STATUS_2ND) &
-		 (CA7_CPU0 | CA7_CPU1 | CA7_CPU2 | CA7_CPU3 | CA7_CPUTOP |
-		  CA15_CPU1 | CA15_CPU2 | CA15_CPU3));
+	return !(spm_read(PWR_STATUS) &
+		 (MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		  MP0_CPU2_PWR_STA_MASK | MP0_CPU3_PWR_STA_MASK |
+		  MP0_CPUTOP_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		  MP1_CPU2_PWR_STA_MASK | MP1_CPU3_PWR_STA_MASK))
+	    && !(spm_read(PWR_STATUS_2ND) &
+		 (MP0_CPU0_PWR_STA_MASK | MP0_CPU1_PWR_STA_MASK |
+		  MP0_CPU2_PWR_STA_MASK | MP0_CPU3_PWR_STA_MASK |
+		  MP0_CPUTOP_PWR_STA_MASK | MP1_CPU1_PWR_STA_MASK |
+		  MP1_CPU2_PWR_STA_MASK | MP1_CPU3_PWR_STA_MASK));
 }
 
-/**************************************
- * for non-CPU MTCMOS
- **************************************/
-/* **** */
-#if 1
-static DEFINE_SPINLOCK(spm_noncpu_lock);
-
-#if 0
-void spm_mtcmos_noncpu_lock(unsigned long *flags)
+static int mt_spm_mtcmos_init(void)
 {
-	spin_lock_irqsave(&spm_noncpu_lock, *flags);
-}
-
-void spm_mtcmos_noncpu_unlock(unsigned long *flags)
-{
-	spin_unlock_irqrestore(&spm_noncpu_lock, *flags);
-}
-#else
-
-#define spm_mtcmos_noncpu_lock(flags) spin_lock_irqsave(&spm_noncpu_lock, flags)
-#define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
-
-#endif
-#endif				/* end **** */
-
-
-#define MD2_PWR_STA_MASK    (0x1 << 22)
-#define VEN_PWR_STA_MASK    (0x1 << 8)
-#define VDE_PWR_STA_MASK    (0x1 << 7)
-/* #define IFR_PWR_STA_MASK    (0x1 << 6) */
-#define ISP_PWR_STA_MASK    (0x1 << 5)
-#define MFG_PWR_STA_MASK    (0x1 << 4)
-#define DIS_PWR_STA_MASK    (0x1 << 3)
-/* #define DPY_PWR_STA_MASK    (0x1 << 2) */
-#define CONN_PWR_STA_MASK   (0x1 << 1)
-#define MD1_PWR_STA_MASK    (0x1 << 0)
-
-#if 0
-#define PWR_RST_B           (0x1 << 0)
-#define PWR_ISO             (0x1 << 1)
-#define PWR_ON              (0x1 << 2)
-#define PWR_ON_2ND          (0x1 << 3)
-#define PWR_CLK_DIS         (0x1 << 4)
-#endif
-
-#define SRAM_PDN            (0xf << 8)	/* VDEC, VENC, ISP, DISP */
-#define MFG_SRAM_PDN        (0xf << 8)
-#define MD_SRAM_PDN         (0x1 << 8)	/* MD1, C2K */
-#define CONN_SRAM_PDN       (0x1 << 8)
-
-#define VDE_SRAM_ACK        (0x1 << 12)
-#define VEN_SRAM_ACK        (0xf << 12)
-#define ISP_SRAM_ACK        (0x3 << 12)
-#define DIS_SRAM_ACK        (0x1 << 12)
-/* #define MFG_SRAM_ACK        (0x3f << 16) */
-/* #define MFG_SRAM_ACK        (0x1 << 16) */
-#define MFG_SRAM_ACK        (0x1 << 12)
-
-#define MD1_PROT_MASK        ((0x1<<24) | (0x1<<25) | (0x1<<26) | (0x1<<27) | (0x1<<28))	/* bit 24,25,26,27,28 */
-#define MD2_PROT_MASK        ((0x1<<29) | (0x1<<30) | (0x1<<31))	/* bit 29, 30, 31 */
-/* bit16 is GCE, Dram dummy read use cqdma, and it is in GCE. */
-#define DISP_PROT_MASK       ((0x1<<1))	/* bit 1, 6, 16; if bit6 set, MMSYS PDN, access reg will hang, */
-#define MFG_PROT_MASK        ((0x1<<14))	/* bit 14 */
-#define CONN_PROT_MASK       ((0x1<<2) | (0x1<<8))	/* bit 2, 8 */
-
-#if defined(CONFIG_ARCH_MT6735M)
-/* #define MD_PWRON_BY_CPU */
-#elif defined(CONFIG_ARCH_MT6753)
-#define MD_PWRON_BY_CPU
-#else
-/* #define MD_PWRON_BY_CPU */
-#endif
-
-int spm_mtcmos_ctrl_vdec(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_cpu_init();
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) | SRAM_PDN);
-
-		while ((spm_read(SPM_VDE_PWR_CON) & VDE_SRAM_ACK) != VDE_SRAM_ACK) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_VDE_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_VDE_PWR_CON, val);
-
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & VDE_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & VDE_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {		/* STA_POWER_ON */
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) | PWR_ON);
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & VDE_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & VDE_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) & ~SRAM_PDN);
-
-		while ((spm_read(SPM_VDE_PWR_CON) & VDE_SRAM_ACK)) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-int spm_mtcmos_ctrl_venc(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) | SRAM_PDN);
-
-		while ((spm_read(SPM_VEN_PWR_CON) & VEN_SRAM_ACK) != VEN_SRAM_ACK) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_VEN_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_VEN_PWR_CON, val);
-
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & VEN_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & VEN_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {		/* STA_POWER_ON */
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) | PWR_ON);
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & VEN_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & VEN_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_VEN_PWR_CON, spm_read(SPM_VEN_PWR_CON) & ~SRAM_PDN);
-
-		while ((spm_read(SPM_VEN_PWR_CON) & VEN_SRAM_ACK)) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-
-#else
-	return 1;
-#endif
-}
-
-int spm_mtcmos_ctrl_isp(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | SRAM_PDN);
-
-		while ((spm_read(SPM_ISP_PWR_CON) & ISP_SRAM_ACK) != ISP_SRAM_ACK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_ISP_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_ISP_PWR_CON, val);
-
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & ISP_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & ISP_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {		/* STA_POWER_ON */
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_ON);
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & ISP_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & ISP_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~SRAM_PDN);
-
-		while ((spm_read(SPM_ISP_PWR_CON) & ISP_SRAM_ACK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-#if 0
-int spm_mtcmos_ctrl_disp(int state)
-{
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | DISP_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & DISP_PROT_MASK) != DISP_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | SRAM_PDN);
-#if 0
-		while ((spm_read(SPM_DIS_PWR_CON) & DIS_SRAM_ACK) != DIS_SRAM_ACK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-#endif
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_DIS_PWR_CON);
-		/* val = (val & ~PWR_RST_B) | PWR_CLK_DIS; */
-		val = val | PWR_CLK_DIS;
-		spm_write(SPM_DIS_PWR_CON, val);
-
-		/* spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~(PWR_ON | PWR_ON_2ND)); */
-
-#if 0
-		udelay(1);
-		if (spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK)
-			err = 1;
-#else
-		/* while ((spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK) */
-		/* || (spm_read(SPM_PWR_STATUS_S) & DIS_PWR_STA_MASK)) { */
-		/* } */
-#endif
-	} else {		/* STA_POWER_ON */
-		/* spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ON); */
-		/* spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ON_2ND); */
-#if 0
-		udelay(1);
-#else
-		/* while (!(spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK) */
-		/* || !(spm_read(SPM_PWR_STATUS_S) & DIS_PWR_STA_MASK)) { */
-		/* } */
-#endif
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~PWR_ISO);
-		/* spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_RST_B); */
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~SRAM_PDN);
-
-#if 0
-		while ((spm_read(SPM_DIS_PWR_CON) & DIS_SRAM_ACK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-#endif
-
-#if 0
-		udelay(1);
-		if (!(spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK))
-			err = 1;
-
-#endif
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~DISP_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & DISP_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-}
-
-#else
-
-int spm_mtcmos_ctrl_disp(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | DISP_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & DISP_PROT_MASK) != DISP_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | SRAM_PDN);
-
-		while ((spm_read(SPM_DIS_PWR_CON) & DIS_SRAM_ACK) != DIS_SRAM_ACK) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_DIS_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_DIS_PWR_CON, val);
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & DIS_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {		/* STA_POWER_ON */
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ON);
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & DIS_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & DIS_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_DIS_PWR_CON, spm_read(SPM_DIS_PWR_CON) & ~SRAM_PDN);
-
-		while ((spm_read(SPM_DIS_PWR_CON) & DIS_SRAM_ACK)) {
-			count++;
-			if (count > 1000 && count < 1010) {
-				pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n",
-					 spm_read(CLK_CFG_0));
-			}
-			if (count > 2000) {
-#if defined(CONFIG_MTK_LEGACY)
-				clk_stat_check(SYS_DIS);
-#endif
-				BUG();
-			}
-		}
-
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~DISP_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & DISP_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-#endif
-
-int spm_mtcmos_ctrl_mfg(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | MFG_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
-			count++;
-			if (count > 1000)
-				break;
-		}
-
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) | MFG_SRAM_PDN);
-
-		while ((spm_read(SPM_MFG_PWR_CON) & MFG_SRAM_ACK) != MFG_SRAM_ACK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_MFG_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_MFG_PWR_CON, val);
-
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & MFG_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {		/* STA_POWER_ON */
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) | PWR_ON);
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & MFG_PWR_STA_MASK) ||
-		       !(spm_read(SPM_PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) & ~MFG_SRAM_PDN);
-
-		while ((spm_read(SPM_MFG_PWR_CON) & MFG_SRAM_ACK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~MFG_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & MFG_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-int spm_mtcmos_ctrl_mdsys1(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | MD1_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & MD1_PROT_MASK) != MD1_PROT_MASK) {
-			count++;
-			if (count > 1000)
-				break;
-		}
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | MD_SRAM_PDN);
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | PWR_ISO);
-
-		/* enable LTE LS ISO */
-		val = spm_read(C2K_SPM_CTRL);
-		val |= 0x40;
-		spm_write(C2K_SPM_CTRL, val);
-
-		val = spm_read(SPM_MD_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_MD_PWR_CON, val);
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & MD1_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & MD1_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-	} else {		/* STA_POWER_ON */
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | PWR_ON);
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & MD1_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & MD1_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-#ifdef MD_PWRON_BY_CPU
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) & ~PWR_ISO);
-
-		/* disable LTE LS ISO */
-		val = spm_read(C2K_SPM_CTRL);
-		val &= ~(0x40);
-		spm_write(C2K_SPM_CTRL, val);
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | PWR_RST_B);
-#else
-		pr_debug("MD power on by SPM\n");
-		spm_write(SPM_PCM_PASR_DPD_3, 0xbeef);
-		spm_write(SPM_SLEEP_CPU_WAKEUP_EVENT, 0x1);
-		while (spm_read(SPM_PCM_PASR_DPD_3)) {
-			count++;
-			udelay(1);
-			if (count > 1000) {
-				pr_err("MD power on: SPM no response\n");
-				pr_err("PCM_IM_PTR : 0x%x (%u)\n", spm_read(SPM_PCM_IM_PTR),
-				       spm_read(SPM_PCM_IM_LEN));
-				BUG();
-			}
-		}
-		/* disable LTE LS ISO */
-		val = spm_read(C2K_SPM_CTRL);
-		val &= ~(0x40);
-		spm_write(C2K_SPM_CTRL, val);
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) | PWR_RST_B);
-
-#endif
-
-		spm_write(SPM_MD_PWR_CON, spm_read(SPM_MD_PWR_CON) & ~MD_SRAM_PDN);
-
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~MD1_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & MD1_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-int spm_mtcmos_ctrl_mdsys2(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | MD2_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & MD2_PROT_MASK) != MD2_PROT_MASK) {
-			count++;
-			if (count > 1000)
-				break;
-		}
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) | MD_SRAM_PDN);
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_C2K_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_C2K_PWR_CON, val);
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & MD2_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & MD2_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-	} else {		/* STA_POWER_ON */
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) | PWR_ON);
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & MD2_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & MD2_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_C2K_PWR_CON, spm_read(SPM_C2K_PWR_CON) & ~MD_SRAM_PDN);
-
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~MD2_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & MD2_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-int spm_mtcmos_ctrl_connsys(int state)
-{
-/* **** */
-#if 1
-	int err = 0;
-	/* volatile */unsigned int val;
-	unsigned long flags;
-	int count = 0;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (state == STA_POWER_DOWN) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | CONN_PROT_MASK);
-		while ((spm_read(TOPAXI_PROT_STA1) & CONN_PROT_MASK) != CONN_PROT_MASK) {
-			count++;
-			if (count > 1000)
-				break;
-		}
-
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) | CONN_SRAM_PDN);
-
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) | PWR_ISO);
-
-		val = spm_read(SPM_CONN_PWR_CON);
-		val = (val & ~PWR_RST_B) | PWR_CLK_DIS;
-		spm_write(SPM_CONN_PWR_CON, val);
-
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) & ~(PWR_ON | PWR_ON_2ND));
-
-		while ((spm_read(SPM_PWR_STATUS) & CONN_PWR_STA_MASK)
-		       || (spm_read(SPM_PWR_STATUS_2ND) & CONN_PWR_STA_MASK)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) | PWR_ON);
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) | PWR_ON_2ND);
-
-		while (!(spm_read(SPM_PWR_STATUS) & CONN_PWR_STA_MASK)
-		       || !(spm_read(SPM_PWR_STATUS_2ND) & CONN_PWR_STA_MASK))
-			;
-
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) & ~PWR_CLK_DIS);
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) & ~PWR_ISO);
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) | PWR_RST_B);
-
-		spm_write(SPM_CONN_PWR_CON, spm_read(SPM_CONN_PWR_CON) & ~CONN_SRAM_PDN);
-
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~CONN_PROT_MASK);
-		while (spm_read(TOPAXI_PROT_STA1) & CONN_PROT_MASK) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
-	return err;
-#else
-	return 1;
-#endif
-}
-
-int spm_topaxi_prot(int bit, int en)
-{
-/* **** */
-#if 1
-	unsigned long flags;
-
-	spm_mtcmos_noncpu_lock(flags);
-
-	if (en == 1) {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) | (1 << bit));
-		while ((spm_read(TOPAXI_PROT_STA1) & (1 << bit)) != (1 << bit)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	} else {
-		spm_write(TOPAXI_PROT_EN, spm_read(TOPAXI_PROT_EN) & ~(1 << bit));
-		while (spm_read(TOPAXI_PROT_STA1) & (1 << bit)) {
-			/* read hw status */
-			/* until hw ack ok */
-		}
-	}
-
-	spm_mtcmos_noncpu_unlock(flags);
-
 	return 0;
-#else
-	return 1;
-#endif
 }
 
+module_init(mt_spm_mtcmos_init);
