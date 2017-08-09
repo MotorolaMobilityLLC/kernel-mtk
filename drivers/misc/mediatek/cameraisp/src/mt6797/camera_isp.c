@@ -12951,7 +12951,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		/*LOG_INF("CAMA N3D:0x%x\n", Vsync_cnt[0]);*/
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
-		time = ktime_get_boottime(); /* ns */
+		time = ktime_get(); /* ns */
 		sec = time.tv64;
 		do_div(sec, 1000);	  /* usec */
 		usec = do_div(sec, 1000000);	/* sec and usec */
@@ -13000,7 +13000,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 		MUINT32 irqDelay = 0, sofCntGrpHw = 0;
 
-		time = ktime_get_boottime(); /* ns */
+		time = ktime_get(); /* ns */
 		sec = time.tv64;
 		do_div(sec, 1000);    /* usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
@@ -13383,7 +13383,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		/* LOG_INF("CAMB N3D:0x%x\n",Vsync_cnt[1]); */
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
-		time = ktime_get_boottime(); /* ns */
+		time = ktime_get(); /* ns */
 		sec = time.tv64;
 		do_div(sec, 1000);	  /* usec */
 		usec = do_div(sec, 1000000);	/* sec and usec */
@@ -13432,7 +13432,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 		MUINT32 irqDelay = 0, sofCntGrpHw = 0;
 
-		time = ktime_get_boottime(); /* ns */
+		time = ktime_get(); /* ns */
 		sec = time.tv64;
 		do_div(sec, 1000);    /* usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
