@@ -244,6 +244,10 @@ static int cmd_discharging = -1;
 static int adjust_power = -1;
 static int suspend_discharging = -1;
 
+#if !defined(CONFIG_POWER_EXT)
+static int is_uisoc_ever_100 = KAL_FALSE;
+#endif
+
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ANDROID BATTERY SERVICE */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -429,7 +433,8 @@ void wake_up_bat(void)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 	suspend_time = 0;
 #endif
-	_g_bat_sleep_total_time = 0;
+	battery_meter_reset_sleep_time();
+
 	wake_up(&bat_thread_wq);
 }
 EXPORT_SYMBOL(wake_up_bat);
@@ -446,11 +451,25 @@ void wake_up_bat2(void)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 	suspend_time = 0;
 #endif
-	_g_bat_sleep_total_time = 0;
+	battery_meter_reset_sleep_time();
 	wake_up(&bat_thread_wq);
 }
 EXPORT_SYMBOL(wake_up_bat2);
 #endif				/* #ifdef FG_BAT_INT */
+
+void wake_up_bat3(void)
+{
+	battery_log(BAT_LOG_CRTI, "[BATTERY] wake_up_bat3. \r\n");
+
+	bat_thread_timeout = KAL_TRUE;
+#ifdef MTK_ENABLE_AGING_ALGORITHM
+	suspend_time = 0;
+#endif
+	battery_meter_reset_sleep_time();
+	wake_up(&bat_thread_wq);
+}
+EXPORT_SYMBOL(wake_up_bat3);
+
 
 
 
@@ -1699,8 +1718,19 @@ static kal_bool mt_battery_100Percent_tracking_check(void)
 			resetBatteryMeter = KAL_TRUE;
 		}
 
-		battery_log(BAT_LOG_CRTI, "[100percent], UI_SOC(%d), reset(%d)\n",
-			    BMT_status.UI_SOC, resetBatteryMeter);
+		if (BMT_status.UI_SOC == 100)
+			is_uisoc_ever_100 = KAL_TRUE;
+
+		if ((BMT_status.UI_SOC - BMT_status.SOC) > 10 && is_uisoc_ever_100 == KAL_TRUE) {
+			is_uisoc_ever_100 = KAL_FALSE;
+			BMT_status.bat_full = KAL_FALSE;
+		}
+
+		battery_log(BAT_LOG_CRTI, "[100percent], UI_SOC(%d), reset(%d) bat_full(%d) ever100(%d)\n",
+			    BMT_status.UI_SOC, resetBatteryMeter, BMT_status.bat_full, is_uisoc_ever_100);
+	} else if (is_uisoc_ever_100 == KAL_TRUE) {
+			battery_log(BAT_LOG_CRTI, "[100percent-ever100],UI_SOC=%d SOC=%d\n",
+			BMT_status.UI_SOC, BMT_status.UI_SOC);
 	} else {
 		/* charging is not full,  UI keep 99% if reaching 100%, */
 
@@ -1825,19 +1855,8 @@ static void mt_battery_Sync_UI_Percentage_to_Real(void)
 	} else {
 		timer_counter = 0;
 
-#if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 		BMT_status.UI_SOC = BMT_status.SOC;
-#else
-		if (BMT_status.UI_SOC == -1)
-			BMT_status.UI_SOC = BMT_status.SOC;
-		else if (BMT_status.charger_exist && BMT_status.bat_charging_state != CHR_ERROR) {
-			if (BMT_status.UI_SOC < BMT_status.SOC
-			    && (BMT_status.SOC - BMT_status.UI_SOC > 1))
-				BMT_status.UI_SOC++;
-			else
-				BMT_status.UI_SOC = BMT_status.SOC;
-		}
-#endif
+
 	}
 
 	if (BMT_status.UI_SOC <= 0) {
@@ -1885,7 +1904,7 @@ static void battery_update(struct battery_data *bat_data)
 	if (resetBatteryMeter == KAL_TRUE) {
 		battery_meter_reset();
 	} else {
-		if (bat_is_recharging_phase() == KAL_TRUE) {
+		if (BMT_status.bat_full == KAL_TRUE) {
 			BMT_status.UI_SOC = 100;
 			battery_log(BAT_LOG_CRTI, "[recharging] UI_SOC=%d, SOC=%d\n",
 				    BMT_status.UI_SOC, BMT_status.SOC);
@@ -1894,25 +1913,16 @@ static void battery_update(struct battery_data *bat_data)
 		}
 	}
 
-	battery_log(BAT_LOG_FULL, "UI_SOC=(%d), resetBatteryMeter=(%d)\n",
+	battery_log(BAT_LOG_CRTI, "UI_SOC=(%d), resetBatteryMeter=(%d)\n",
 		    BMT_status.UI_SOC, resetBatteryMeter);
 
-#if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
+
 	/* set RTC SOC to 1 to avoid SOC jump in charger boot.*/
 	if (BMT_status.UI_SOC <= 1)
 		set_rtc_spare_fg_value(1);
 	else
 		set_rtc_spare_fg_value(BMT_status.UI_SOC);
 
-#else
-	/* We store capacity before loading compenstation in RTC */
-	if (battery_meter_get_battery_soc() <= 1)
-		set_rtc_spare_fg_value(1);
-	else
-		set_rtc_spare_fg_value(battery_meter_get_battery_soc());	/*use battery_soc */
-
-	battery_log(BAT_LOG_FULL, "RTC_SOC=(%d)\n", get_rtc_spare_fg_value());
-#endif
 
 	mt_battery_update_EM(bat_data);
 
@@ -2346,12 +2356,12 @@ void mt_battery_GetBatteryData(void)
 	BMT_status.SOC = SOC;
 	BMT_status.ZCV = ZCV;
 
-#if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
+
 	if (BMT_status.charger_exist == KAL_FALSE) {
 		if (BMT_status.SOC > previous_SOC && previous_SOC >= 0)
 			BMT_status.SOC = previous_SOC;
 	}
-#endif
+
 
 	previous_SOC = BMT_status.SOC;
 
@@ -2364,13 +2374,14 @@ void mt_battery_GetBatteryData(void)
 		g_battery_soc_ready = KAL_TRUE;
 
 	battery_log(BAT_LOG_CRTI,
-		    "AvgVbat=(%d),bat_vol=(%d),AvgI=(%d),I=(%d),VChr=(%d),AvgT=(%d),T=(%d),pre_SOC=(%d),SOC=(%d),ZCV=(%d)\n",
+	"AvgVbat=(%d,%d),AvgI=(%d,%d),VChr=%d,AvgT=(%d,%d),SOC=(%d,%d),UI_SOC=%d,ZCV=%d bcct:%d:%d I:%d\n",
 		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
 		    BMT_status.charger_vol, BMT_status.temperature, temperature,
-		    previous_SOC, BMT_status.SOC, BMT_status.ZCV);
-
+		previous_SOC, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.ZCV,
+		g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level());
 
 }
+
 
 
 static PMU_STATUS mt_battery_CheckBatteryTemp(void)
@@ -3142,9 +3153,6 @@ int bat_thread_kthread(void *x)
 #endif
 
 			g_smartbook_update = 0;
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-			battery_meter_set_reset_soc(KAL_FALSE);
-#endif
 			battery_meter_reset();
 			chr_wake_up_bat = KAL_FALSE;
 
@@ -3167,7 +3175,7 @@ void bat_thread_wakeup(void)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 	suspend_time = 0;
 #endif
-	_g_bat_sleep_total_time = 0;
+	battery_meter_reset_sleep_time();
 	wake_up(&bat_thread_wq);
 }
 
@@ -4300,11 +4308,7 @@ static int battery_probe(struct platform_device *dev)
 	BMT_status.TOPOFF_charging_time = 0;
 	BMT_status.POSTFULL_charging_time = 0;
 	BMT_status.SOC = 0;
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
-	BMT_status.UI_SOC = -1;
-#else
 	BMT_status.UI_SOC = 0;
-#endif
 
 	BMT_status.bat_charging_state = CHR_PRE;
 	BMT_status.bat_in_recharging_state = KAL_FALSE;

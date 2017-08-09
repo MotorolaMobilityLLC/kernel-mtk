@@ -85,21 +85,6 @@ signed int g_booting_vbat = 0;
 static unsigned int temperature_change = 1;
 #endif
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-#ifndef CV_CURRENT
-#define CV_CURRENT 6000 /* 600mA */
-#endif
-
-#ifndef STEP_OF_QMAX
-#define STEP_OF_QMAX 60
-#endif
-static signed int g_currentfactor = 100;
-static kal_bool g_USE_UI_SOC = KAL_TRUE;
-#if defined(CUST_SYSTEM_OFF_VOLTAGE)
-#define SYSTEM_OFF_VOLTAGE CUST_SYSTEM_OFF_VOLTAGE
-#endif
-#endif
-
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // PMIC AUXADC Related Variable */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -195,7 +180,7 @@ signed int d5_count_time_rate = 1;
 signed int g_d_hw_ocv = 0;
 signed int g_vol_bat_hw_ocv = 0;
 signed int g_hw_ocv_before_sleep = 0;
-struct timespec g_rtc_time_before_sleep, xts_before_sleep;
+struct timespec g_rtc_time_before_sleep, xts_before_sleep, g_sleep_total_time;
 signed int g_sw_vbat_temp = 0;
 struct timespec last_oam_run_time;
 
@@ -264,6 +249,14 @@ signed int gFG_min_temperature = 100;
 #define TEMP_AVERAGE_SIZE	30
 
 kal_bool gFG_Is_offset_init = KAL_FALSE;
+
+
+void battery_meter_reset_sleep_time(void)
+{
+	g_sleep_total_time.tv_sec = 0;
+	g_sleep_total_time.tv_nsec = 0;
+}
+
 
 #ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 /*extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);*/
@@ -1759,110 +1752,6 @@ void fgauge_construct_table_by_temp(void)
 #endif
 }
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-/*
-	ZCV table is created by 600mA loading.
-	Here we calculate average current and get a factor based on 600mA.
-*/
-void fgauge_get_current_factor(void)
-{
-#if defined(CONFIG_POWER_EXT)
-#else
-	unsigned int i;
-	static signed int init_current = KAL_TRUE;
-	static signed int inst_current, avg_current;
-	static signed int battCurrentBuffer[TEMP_AVERAGE_SIZE];
-	static signed int current_sum;
-	static unsigned char tempcurrentIndex;
-
-	if (KAL_TRUE == gFG_Is_Charging) {
-		init_current = KAL_TRUE;
-		g_currentfactor = 100;
-		bm_print(BM_LOG_CRTI, "[fgauge_get_current_factor] Charging!!\r\n");
-		return;
-	}
-
-	inst_current = gFG_current;
-
-	if (init_current == KAL_TRUE) {
-		for (i = 0; i < TEMP_AVERAGE_SIZE; i++)
-			battCurrentBuffer[i] = inst_current;
-
-		/*set current_sum from inst_current*TEMP_AVERAGE_SIZE to CV_CURRENT*TEMP_AVERAGE_SIZE
-		to avoid SOC have a large jump at platform boot-up or dischager after charger at once*/
-		current_sum = CV_CURRENT * TEMP_AVERAGE_SIZE;
-		init_current = KAL_FALSE;
-	}
-
-	/* current sliding window */
-	current_sum -= battCurrentBuffer[tempcurrentIndex];
-	current_sum += inst_current;
-	battCurrentBuffer[tempcurrentIndex] = inst_current;
-	avg_current = (current_sum) / TEMP_AVERAGE_SIZE;
-
-	g_currentfactor = avg_current * 100 / CV_CURRENT;	/* calculate factor by 600ma */
-
-	bm_print(BM_LOG_CRTI, "[fgauge_get_current_factor] %d,%d,%d,%d\r\n",
-		 inst_current, avg_current, g_currentfactor, gFG_Is_Charging);
-
-	tempcurrentIndex = (tempcurrentIndex + 1) % TEMP_AVERAGE_SIZE;
-#endif
-}
-
-/*
-	ZCV table has battery OCV-to-resistance information.
-	Based on a given discharging current value, we can get a new estimated Qmax.
-	Qmax is defined as OCV -I*R < power off voltage.
-	Default power off voltage is 3400mV.
-*/
-
-signed int fgauge_get_Q_max_high_current_by_current(signed int i_current, signed short val_temp)
-{
-	signed int ret_Q_max = 0;
-	signed int iIndex = 0, saddles = 0;
-	signed int OCV_temp = 0, Rbat_temp = 0, V_drop = 0;
-	R_PROFILE_STRUCT_P p_profile_r;
-	BATTERY_PROFILE_STRUCT_P p_profile_battery;
-	signed int threshold = SYSTEM_OFF_VOLTAGE;
-	/* for Qmax initialization */
-	ret_Q_max = fgauge_get_Q_max_high_current(val_temp);
-
-	/* get Rbat and OCV table of the current temperature */
-	p_profile_r = fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t);
-	p_profile_battery = fgauge_get_profile(batt_meter_cust_data.temperature_t);
-	if (p_profile_r == NULL || p_profile_battery == NULL) {
-		bm_print(BM_LOG_CRTI, "get R-Table profile/OCV table profile : fail !\r\n");
-		return ret_Q_max;
-	}
-
-	if (0 == p_profile_r->resistance || 0 == p_profile_battery->voltage) {
-		bm_print(BM_LOG_CRTI, "get R-Table profile/OCV table profile : not ready !\r\n");
-		return ret_Q_max;
-	}
-
-	saddles = fgauge_get_saddles();
-
-	/* get Qmax in current temperature (>3.4) */
-	for (iIndex = 0; iIndex < saddles - 1; iIndex++) {
-		OCV_temp = (p_profile_battery + iIndex)->voltage;
-		Rbat_temp = (p_profile_r + iIndex)->resistance;
-		V_drop = (i_current * Rbat_temp) / 10000;
-
-		if (OCV_temp - V_drop < threshold) {
-			if (iIndex <= 1)
-				ret_Q_max = STEP_OF_QMAX;
-			else
-				ret_Q_max = (iIndex - 1) * STEP_OF_QMAX;
-			break;
-		}
-	}
-
-	bm_print(BM_LOG_CRTI, "[fgauge_get_Q_max_by_current] %d,%d,%d,%d,%d\r\n",
-		 i_current, iIndex, OCV_temp, Rbat_temp, ret_Q_max);
-
-	return ret_Q_max;
-}
-#endif
 
 void fg_qmax_update_for_aging(void)
 {
@@ -2448,9 +2337,7 @@ void oam_run(void)
 	else
 		gFG_current = -oam_i_2;
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-	fgauge_get_current_factor();
-#endif
+
 }
 
 /* ============================================================ // */
@@ -2804,9 +2691,7 @@ void fgauge_algo_run(void)
 	gFG_voltage = gFG_voltage + fgauge_compensate_battery_voltage_recursion(gFG_voltage, 5);	/* mV */
 	gFG_voltage = gFG_voltage + batt_meter_cust_data.ocv_board_compesate;
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-	fgauge_get_current_factor();
-#endif
+
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR, &gFG_columb);
 
@@ -3104,9 +2989,8 @@ void fgauge_initialization(void)
 	}
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR, &gFG_columb);
-#if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
+
 	fgauge_construct_battery_profile_init();
-#endif
 	gFG_temp = force_get_tbat(KAL_FALSE);
 	gFG_capacity = fgauge_read_capacity(0);
 
@@ -3170,15 +3054,19 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 
 	signed int car_instant = 0;
 	signed int current_instant = 0;
-	static signed int car_sleep = 0x12345678;
-	signed int car_wakeup = 0;
 	static signed int last_time;
-
-	signed int ret_val = -1;
-	signed int I_sleep = 0;
-	signed int new_time = 0;
 	signed int vbat_val = 0;
 	int ret = 0;
+
+#if defined(FG_BAT_INT)
+#else
+	signed int I_sleep = 0;
+	signed int new_time = 0;
+	signed int ret_val = -1;
+	signed int car_wakeup = 0;
+	static signed int car_sleep = 0x12345678;
+
+#endif
 
 	vbat_val = g_sw_vbat_temp;
 
@@ -3189,7 +3077,21 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		car_instant = car_instant - (car_instant * 2);
 
 
+	if (BMT_status.UI_SOC != BMT_status.SOC) {
+		last_time = 10;
+		g_spm_timer = 10;
+		bm_print(BM_LOG_CRTI, "[get_dynamic_period] UISOC:%d SOC:%d vbat:%d current:%d car:%d new_time:%d\n",
+			BMT_status.UI_SOC, BMT_status.SOC, vbat_val, current_instant, car_instant, g_spm_timer);
+		return g_spm_timer;
+	}
+
+
 	if (vbat_val > batt_meter_cust_data.vbat_normal_wakeup) {	/* 3.6v */
+
+#if defined(FG_BAT_INT)
+				g_spm_timer = LOW_POWER_WAKEUP_PERIOD * 3;
+#else
+
 		car_wakeup = car_instant;
 
 		if (last_time == 0)
@@ -3227,6 +3129,7 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		car_sleep = car_wakeup;
 		last_time = ret_val;
 		g_spm_timer = ret_val;
+#endif
 	} else if (vbat_val > batt_meter_cust_data.vbat_low_power_wakeup) {	/* 3.5v */
 		g_spm_timer = batt_meter_cust_data.low_power_wakeup_period;	/* 5 min */
 	} else {
@@ -3454,67 +3357,6 @@ signed int battery_meter_get_charger_voltage(void)
 	return val;
 }
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC)
-{
-	g_USE_UI_SOC = bUSE_UI_SOC;
-}
-
-signed int battery_meter_get_battery_soc(void)
-{
-#if defined(SOC_BY_HW_FG)
-	return gFG_capacity_by_c;
-#else
-	return 50;
-#endif
-
-#if defined(SOC_BY_SW_FG)
-#if (OAM_D5 == 1)
-	return 100 - oam_d_5;
-#else
-	return 100 - oam_d_2;
-#endif
-#else
-	return 50;
-#endif
-}
-
-/* Here we compensate D1 by a factor from Qmax with loading. */
-signed int battery_meter_trans_battery_percentage(kal_bool d_val)
-{
-	signed int d_val_before = 0;
-	signed int temp_val = 0;
-	signed int C_0mA = 0;
-	signed int C_600mA = 0;
-	signed int C_current = 0;
-	signed int i_avg_current = 0;
-
-	d_val_before = d_val;
-	temp_val = battery_meter_get_battery_temperature();
-	C_0mA = fgauge_get_Q_max(temp_val);
-
-	/* discharging and current > 600ma */
-	i_avg_current = g_currentfactor * CV_CURRENT / 100;
-	if (KAL_FALSE == gFG_Is_Charging && g_currentfactor > 100) {
-		C_600mA = fgauge_get_Q_max_high_current(temp_val);
-		C_current = fgauge_get_Q_max_high_current_by_current(i_avg_current, temp_val);
-		if (C_current < C_600mA)
-			C_600mA = C_current;
-	} else
-		C_600mA = fgauge_get_Q_max_high_current(temp_val);
-
-	if (C_0mA > C_600mA)
-		d_val = d_val + (((C_0mA - C_600mA) * (d_val)) / C_600mA);
-
-	if (d_val > 100)
-		d_val = 100;
-
-	bm_print(BM_LOG_CRTI, "[battery_meter_trans_battery_percentage] %d,%d,%d,%d,%d,%d\r\n",
-		 temp_val, C_0mA, C_600mA, d_val_before, d_val, g_currentfactor);
-
-	return d_val;
-}
-#endif
 
 #if defined(FG_BAT_INT)
 signed int battery_meter_set_columb_interrupt(unsigned int val)
@@ -4461,7 +4303,10 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 		if (_g_bat_sleep_total_time < g_spm_timer)
 			return 0;
 
-		_g_bat_sleep_total_time = 0;
+
+		g_sleep_total_time.tv_sec = 0;
+		g_sleep_total_time.tv_nsec = 0;
+
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &g_hw_ocv_before_sleep);
 	}
 #endif
@@ -4673,10 +4518,16 @@ static int battery_meter_resume(struct platform_device *dev)
 
 	get_monotonic_boottime(&rtc_time_after_sleep);
 
-	_g_bat_sleep_total_time += rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec;
+	g_sleep_total_time = timespec_add(g_sleep_total_time,
+		timespec_sub(rtc_time_after_sleep, g_rtc_time_before_sleep));
+	_g_bat_sleep_total_time = g_sleep_total_time.tv_sec;
+
 	battery_log(BAT_LOG_CRTI,
-		    "[battery_meter_resume] sleep time = %d, g_spm_timer = %d\n",
-		    _g_bat_sleep_total_time, g_spm_timer);
+			"[battery_meter_resume] sleep time = %d, g_spm_timer = %d , %ld %ld %ld %ld %ld %ld\n",
+			_g_bat_sleep_total_time, g_spm_timer,
+			g_rtc_time_before_sleep.tv_sec, g_rtc_time_before_sleep.tv_nsec,
+			rtc_time_after_sleep.tv_sec, rtc_time_after_sleep.tv_nsec,
+			g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM

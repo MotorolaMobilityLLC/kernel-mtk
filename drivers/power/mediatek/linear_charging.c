@@ -860,7 +860,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 		g_bcct_flag = 0;
 	}
 
-	wake_up_bat();
+	wake_up_bat3();
 
 	return g_bcct_flag;
 }
@@ -1101,7 +1101,7 @@ static void pchr_turn_on_charging(void)
 		battery_pump_express_algorithm_start();
 #endif
 
-		/* Set Charging Current */
+		/* Set Charging Current
 		if (get_usb_current_unlimited()) {
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 			battery_log(BAT_LOG_FULL,
@@ -1111,6 +1111,22 @@ static void pchr_turn_on_charging(void)
 				battery_log(BAT_LOG_FULL,
 					    "[BATTERY] select_charging_curret_bcct !\n");
 				select_charging_curret_bcct();
+			} else {
+				battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
+				select_charging_curret();
+			}
+		}*/
+
+		/* Set Charging Current */
+		if (g_bcct_flag == 1) {
+			battery_log(BAT_LOG_FULL,
+					"[BATTERY] select_charging_curret_bcct !\n");
+			select_charging_curret_bcct();
+		} else {
+			if (get_usb_current_unlimited()) {
+				g_temp_CC_value = batt_cust_data.ac_charger_current;
+				battery_log(BAT_LOG_FULL,
+						"USB_CURRENT_UNLIMITED, use AC_CHARGER_CURRENT\n");
 			} else {
 				battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 				select_charging_curret();
