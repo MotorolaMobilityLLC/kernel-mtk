@@ -1,4 +1,4 @@
-include $(srctree)/drivers/misc/mediatek/imgsensor/src/Makefile.custom
+#include $(srctree)/drivers/misc/mediatek/imgsensor/src/Makefile.custom
 
 ifneq ($(CONFIG_MTK_CAM_CAL),y)
 obj-y += imx135_otp.o

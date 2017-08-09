@@ -1,6 +1,6 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
-include $(srctree)/drivers/misc/mediatek/imgsensor/src/Makefile.custom
+#include $(srctree)/drivers/misc/mediatek/imgsensor/src/Makefile.custom
 
 define FILTER_PROJECT_DRV
 ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/imgsensor/$(1)),)
