@@ -349,7 +349,7 @@ static int slimport_drv_audio_enable(bool enable)
 static int slimport_drv_enter(void)  {return 0;}
 static int slimport_drv_exit(void)  {return 0;}
 
-static int slimport_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, enum HDMI_VIDEO_OUTPUT_FORMAT vout)
+static int slimport_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, int vout)
 {
 #ifdef dp_to_do
 	if(vformat == HDMI_VIDEO_720x480p_60Hz)
