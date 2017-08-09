@@ -81,7 +81,7 @@ static long fm_ops_compat_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg
 		break;
 		}
 	default:
-	ret = filp->f_op->unlocked_ioctl(filp, cmd, arg);
+		ret = filp->f_op->unlocked_ioctl(filp, ((cmd & 0xFF) | (FM_IOCTL_POWERUP & 0xFFFFFF00)), arg);
 		break;
 	}
 	return ret;
