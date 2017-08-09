@@ -1527,7 +1527,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl;
 
 #ifndef DISABLE_DLPT_FEATURE
-	/*get_dlpt_imix_spm();*/
+	get_dlpt_imix_spm();
 #endif
 
 #if SPM_AEE_RR_REC
