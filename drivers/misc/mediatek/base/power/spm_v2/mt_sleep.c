@@ -71,8 +71,8 @@ static bool slp_dump_regs = 1;
 static bool slp_check_mtcmos_pll = 1;
 
 static u32 slp_spm_flags = {
-#if defined(CONFIG_ARCH_MT6797)
-	/* SPM_FLAG_DIS_CPU_PDN | */
+#if 0
+	SPM_FLAG_DIS_CPU_PDN  |
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_DPD |

@@ -151,6 +151,24 @@ int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_ti
 	return 60;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+void __attribute__((weak)) mt_cirq_clone_gic(void)
+{
+}
+
+void __attribute__((weak)) mt_cirq_enable(void)
+{
+}
+
+void __attribute__((weak)) mt_cirq_flush(void)
+{
+}
+
+void __attribute__((weak)) mt_cirq_disable(void)
+{
+}
+#endif
+
 #if SPM_AEE_RR_REC
 enum spm_suspend_step {
 	SPM_SUSPEND_ENTER = 0,
@@ -682,7 +700,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_ARCH_MT6797)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -734,7 +752,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* last_wr = spm_output_wake_reason(&wakesta, pcmdesc); */
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
 RESTORE_IRQ:
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_ARCH_MT6797)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
