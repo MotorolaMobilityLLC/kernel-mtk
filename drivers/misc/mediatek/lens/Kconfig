@@ -170,6 +170,15 @@ config MTK_LENS_LC898212XDAF_SUPPORT
     lens driver for the camera sensor module
     Set as y if the driver is used in this project
 
+config MTK_LENS_LC898214AF_SUPPORT
+  bool "LC898214AF Lens Driver"
+  default n
+  help
+    LC898212AF Lens Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project
+
 config MTK_LENS_FM50AF_SUPPORT
   bool "FM50AF Lens Driver"
   default n

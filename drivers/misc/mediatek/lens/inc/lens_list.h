@@ -74,6 +74,12 @@ extern long LC898212XDAF_F_Ioctl(struct file *a_pstFile, unsigned int a_u4Comman
 extern int LC898212XDAF_F_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+#ifdef CONFIG_MTK_LENS_LC898214AF_SUPPORT
+extern void LC898214AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long LC898214AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int LC898214AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #ifdef CONFIG_MTK_LENS_AD5820AF_SUPPORT
 extern void AD5820AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long AD5820AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
