@@ -1642,7 +1642,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 static struct task_struct *
 pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 {
-	struct task_struct *p;
+	struct task_struct *p = NULL;
 	struct rt_rq *rt_rq = &rq->rt;
 
 	if (need_pull_rt_task(rq, prev)) {
@@ -1675,17 +1675,39 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 				p = rt_task_of(rt_se);
 				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "wdtk", 4))) {
 					p->se.exec_start = rq->clock_task;
-					printk_deferred("sched: unthrottle %s\n", p->comm);
-					return p;
+					if (prev != p) {
+						printk_deferred("sched: unthrottle %d:%s state=%lu\n",
+							p->pid, p->comm, p->state);
+					}
+					goto found;
 				}
 			}
 		}
+
+		/*sched: prevent hps_main from RT throttle */
+		idx = 2;
+		prio = MAX_RT_PRIO - 1 - idx;
+		if (test_bit(idx, array->bitmap)) {
+			list_for_each_entry(rt_se, array->queue + idx, run_list) {
+				p = rt_task_of(rt_se);
+				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "hps_main", 8))) {
+					p->se.exec_start = rq->clock_task;
+					if (prev != p) {
+						printk_deferred("sched: unthrottle %d:%s state=%lu\n",
+							p->pid, p->comm, p->state);
+					}
+					goto found;
+				}
+			}
+		}
+
 		return NULL;
 	}
-
+found:
 	put_prev_task(rq, prev);
 
-	p = _pick_next_task_rt(rq);
+	if (NULL == p)
+		p = _pick_next_task_rt(rq);
 
 	/* The running task is never eligible for pushing */
 	dequeue_pushable_task(rq, p);
