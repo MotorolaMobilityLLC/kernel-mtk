@@ -28,14 +28,19 @@
 /* --------------------------------------------------------------------------- */
 
 
-static const char STR_HELP[] = "\n" "USAGE\n" "        echo [ACTION]... > hdmi\n" "\n" "ACTION\n"
-		"        hdmitx:[on|off]\n" "             enable hdmi video output\n" "\n";
+static const char STR_HELP[] = "\n" "USAGE\n" "        echo [ACTION]... > /d/extd\n" "\n" "ACTION\n"
+		"        fakecablein:[enable|disable]\n" "	fake mhl cable in/out\n" "\n"
+		"        force_res:0xffff\n" "	fix resolution or 3d enable(high 16 bit)\n" "\n";
 
 /* TODO: this is a temp debug solution */
 /* extern void hdmi_cable_fake_plug_in(void); */
 /* extern int hdmi_drv_init(void); */
 static void process_dbg_opt(const char *opt)
 {
+	char *p = NULL;
+	unsigned int res = 0;
+	int ret = 0;
+
 	if (0 == strncmp(opt, "on", 2))
 		hdmi_power_on();
 	else if (0 == strncmp(opt, "off", 3))
@@ -51,6 +56,10 @@ static void process_dbg_opt(const char *opt)
 			hdmi_cable_fake_plug_out();
 		else
 			goto Error;
+	} else if (0 == strncmp(opt, "force_res:", 10)) {
+		p = (char *)opt + 10;
+		ret = kstrtouint(p, 0, &res);
+		hdmi_force_resolution(res);
 	} else if (0 == strncmp(opt, "hdmireg", 7))
 		ext_disp_diagnose();
 	else if (0 == strncmp(opt, "I2S1:", 5)) {

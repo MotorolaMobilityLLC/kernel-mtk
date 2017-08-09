@@ -84,6 +84,7 @@ static bool otg_enable_status;
 static bool hdmi_vsync_flag;
 static wait_queue_head_t hdmi_vsync_wq;
 static unsigned long hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
+static unsigned long force_reschange = 0xffff;
 
 static struct switch_dev hdmi_switch_data;
 static struct switch_dev hdmires_switch_data;
@@ -162,6 +163,18 @@ void hdmi_force_on(int from_uart_drv)
 		hdmi_drv->force_on(from_uart_drv);*/
 }
 
+/*params & 0xff: resolution,  params & 0xff00 : 3d support*/
+void hdmi_force_resolution(int params)
+{
+	force_reschange = params;
+	if ((force_reschange > 0xff) && (force_reschange < 0x0fff))
+		hdmi_params->is_3d_support = 1;
+	else
+		hdmi_params->is_3d_support = 0;
+
+	HDMI_LOG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange, hdmi_params->is_3d_support);
+}
+
 /* <--for debug */
 void hdmi_cable_fake_plug_in(void)
 {
@@ -192,6 +205,7 @@ void hdmi_cable_fake_plug_out(void)
 			}
 		}
 	}
+	force_reschange = 0xffff;
 }
 
 int hdmi_cable_fake_connect(int connect)
@@ -1047,6 +1061,9 @@ int hdmi_set_resolution(int res)
 		return 0;
 	}
 
+	/* just for debug */
+	if ((force_reschange & 0xff) < 0xff)
+		res = force_reschange & 0xff;
 
 	if (hdmi_reschange == res) {
 		HDMI_LOG("hdmi_reschange=%ld\n", hdmi_reschange);
@@ -1191,8 +1208,14 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		dispif_info->isConnected = 1;
 		dispif_info->isHDCPSupported = hdmi_params->HDCPSupported;
 
-		HDMI_LOG("DEV_INFO configuration get displayType-%d, HDMI support version:%u\n",
-			dispif_info->displayType, dispif_info->isHDCPSupported);
+		/* fake 3d assert for debug */
+		if ((force_reschange > 0xff) && (force_reschange < 0xffff))
+			hdmi_params->is_3d_support = 1;
+
+		dispif_info->is3DSupport = hdmi_params->is_3d_support;
+
+		HDMI_LOG("DEV_INFO configuration get displayType-%d, HDMI support version:%u, 3d support %d\n",
+			dispif_info->displayType, dispif_info->isHDCPSupported, dispif_info->is3DSupport);
 		HDMI_LOG("DEV_INFO configuration displayHeight:%u, displayWidth:%u\n",
 			dispif_info->displayHeight, dispif_info->displayWidth);
 	}

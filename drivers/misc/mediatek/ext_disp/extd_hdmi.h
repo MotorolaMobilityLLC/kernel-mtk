@@ -196,6 +196,7 @@ int hdmi_post_init(void);
 void hdmi_force_on(int from_uart_drv);
 void hdmi_cable_fake_plug_in(void);
 void hdmi_cable_fake_plug_out(void);
+void hdmi_force_resolution(int params);
 
 void hdmi_suspend(void);
 void hdmi_resume(void);
