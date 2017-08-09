@@ -2294,7 +2294,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 	struct pinctrl *ppinctrl = NULL;
 	struct pinctrl_state *pins_uart = NULL;
 
-	pr_debug("[UART%d][PinC]%s(%d, %d)+\n", uartport, __func__, uartport, gpioopid);
+	/*pr_debug("[UART%d][PinC]%s(%d, %d)+\n", uartport, __func__, uartport, gpioopid);*/
 
 	if ((uartport >= UART_NR) || (uartport > 3)) {
 		pr_err("[UART%d][PinC]%s: port error!!\n", uartport, __func__);
@@ -2309,8 +2309,8 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 	pins_uart = pinctrl_lookup_state(ppinctrl, uart_gpio_cmds[uartport][gpioopid]);
 
-	pr_debug("[UART%d][PinC]pinctrl_lookup_state[%s] - pins_uart[%p]\n", uartport,
-		  uart_gpio_cmds[uartport][gpioopid], pins_uart);
+	/*pr_debug("[UART%d][PinC]pinctrl_lookup_state[%s] - pins_uart[%p]\n", uartport,
+		  uart_gpio_cmds[uartport][gpioopid], pins_uart);*/
 
 	if (IS_ERR(pins_uart)) {
 		pr_err("[UART%d][PinC]%s pinctrl_lockup(%d, %s) fail!! pctrl:%p, err:%ld\n", uartport, __func__,
@@ -2320,7 +2320,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 	pinctrl_select_state(ppinctrl, pins_uart);
 
-	pr_debug("[UART%d][PinC]%s(%d, %d)- Succeeded!\n", uartport, __func__, uartport, gpioopid);
+	/*pr_debug("[UART%d][PinC]%s(%d, %d)- Succeeded!\n", uartport, __func__, uartport, gpioopid);*/
 }
 #endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
@@ -2331,7 +2331,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 #endif
 	int uartport = uart->nport;
 
-	pr_warn("[UART]%s port:0x%x\n", __func__, uartport);
+	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
@@ -2376,7 +2376,8 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY)*/
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport,
+		__func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
@@ -2390,7 +2391,7 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 #endif
 	int uartport = uart->nport;
 
-	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
+	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
@@ -2431,7 +2432,8 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport,
+		__func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
@@ -2445,7 +2447,7 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 #endif
 	int uartport = uart->nport;
 
-	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
+	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
@@ -2486,7 +2488,8 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport,
+		__func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
@@ -2500,7 +2503,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 #endif
 	int uartport = uart->nport;
 
-	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
+	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
@@ -2544,7 +2547,8 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport,
+		__func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif

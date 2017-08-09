@@ -2471,7 +2471,7 @@ static int mtk_uart_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev;
 
-	pr_debug("calling %s()\n", __func__);
+	/*pr_debug("calling %s()\n", __func__);*/
 
 	pdev = to_platform_device(device);
 	BUG_ON(pdev == NULL);
@@ -2483,7 +2483,7 @@ static int mtk_uart_pm_resume(struct device *device)
 {
 	struct platform_device *pdev;
 
-	pr_debug("calling %s()\n", __func__);
+	/*pr_debug("calling %s()\n", __func__);*/
 
 	pdev = to_platform_device(device);
 	BUG_ON(pdev == NULL);
