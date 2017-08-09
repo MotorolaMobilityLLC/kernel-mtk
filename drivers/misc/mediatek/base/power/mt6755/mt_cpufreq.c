@@ -323,22 +323,6 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		func_code_1,
 		binLevel_eng);
 
-	if (func_code_0 == 0) {
-		if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
-			return CPU_LEVEL_0;
-		else
-			return CPU_LEVEL_1;
-	} else if (func_code_0 == 1)
-		return CPU_LEVEL_0;
-	else if (func_code_0 == 2)
-		return CPU_LEVEL_1;
-	else if (func_code_0 == 3)
-		return CPU_LEVEL_0;
-	else if (func_code_0 == 4)
-		return CPU_LEVEL_1;
-	else
-		return CPU_LEVEL_0;
-
 	/* get CPU clock-frequency from DT */
 #ifdef CONFIG_OF
 	{
@@ -356,56 +340,27 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 
 		cpufreq_ver("CPU clock-frequency from DT = %d MHz\n", cpu_speed);
 
-		if (cpu_speed >= 1700)
-			lv = CPU_LEVEL_1;	/* 1.7G */
-		else if (cpu_speed >= 1500)
-			lv = CPU_LEVEL_2;	/* 1.5G */
-		else if (cpu_speed >= 1300)
-			lv = CPU_LEVEL_3;	/* 1.3G */
+		if (cpu_speed == 1001) /* FY */
+			return CPU_LEVEL_0;
 		else {
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU level! clock-frequency=%d\n",
-			     cpu_speed);
-			lv = CPU_LEVEL_1;
-		}
+			if (func_code_0 == 0) {
+				if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
+					return CPU_LEVEL_0;
+				else
+					return CPU_LEVEL_1;
+			} else if (func_code_0 == 1)
+				return CPU_LEVEL_0;
+			else if (func_code_0 == 2)
+				return CPU_LEVEL_1;
+			else if (func_code_0 == 3)
+				return CPU_LEVEL_0;
+			else if (func_code_0 == 4)
+				return CPU_LEVEL_1;
+			else
+				return CPU_LEVEL_0;
 	}
-#else				/* CONFIG_OF */
-	/* no DT, we should check efuse for CPU speed HW bounding */
-	{
-		unsigned int cpu_speed_bounding = _GET_BITS_VAL_(3:0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
-
-		cpufreq_info("No DT, get CPU frequency bounding from efuse = %x\n",
-			     cpu_speed_bounding);
-
-		switch (cpu_speed_bounding) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-			lv = CPU_LEVEL_1;	/* 1.7G */
-			break;
-
-		case 5:
-		case 6:
-			lv = CPU_LEVEL_2;	/* 1.5G */
-			break;
-
-		case 7:
-		case 8:
-			lv = CPU_LEVEL_3;	/* 1.3G */
-			break;
-
-		default:
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU level! efuse=0x%x\n",
-			     cpu_speed_bounding);
-			lv = CPU_LEVEL_1;
-			break;
 		}
 
-		cpufreq_info("current CPU efuse is %d\n", cpu_speed_bounding);
-	}
 #endif
 
 	return lv;

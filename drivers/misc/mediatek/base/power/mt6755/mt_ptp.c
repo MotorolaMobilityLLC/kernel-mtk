@@ -164,6 +164,7 @@ unsigned int gpuSb[8] = {0x54, 0x54, 0x54, 0x40, 0x40, 0x40, 0x40, 0x35};
 unsigned int gpuFy[8] = {0x54, 0x40, 0x40, 0x40, 0x40, 0x35, 0x00, 0x00};
 
 static unsigned int *recordTbl;
+static unsigned int cpu_speed;
 
 /**
  * @file    mt_ptp.c
@@ -1510,32 +1511,38 @@ static void get_freq_table_cpu(struct eem_det *det)
 		#else
 			/* I-Chang */
 			/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
-
-			if ((1 == binLevel) || (3 == binLevel)) {
+			if (1001 == cpu_speed) {
 				det->freq_tbl[i] =
-					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] : bigFreq_FY[i],
-						det->max_freq_khz);
-			} else if ((2 == binLevel) || (4 == binLevel)) {
-				det->freq_tbl[i] =
-					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
-						det->max_freq_khz);
+				PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] : bigFreq_FY[i],
+				det->max_freq_khz);
+				eem_debug("2--->Get cpu speed from Device tree = %d\n", cpu_speed);
 			} else {
-				if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
+				if ((1 == binLevel) || (3 == binLevel)) {
 					det->freq_tbl[i] =
-						PERCENT(
+					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] : bigFreq_FY[i],
+					det->max_freq_khz);
+				} else if ((2 == binLevel) || (4 == binLevel)) {
+					det->freq_tbl[i] =
+					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
+					det->max_freq_khz);
+				} else {
+					if ((2 == ((binLevel_eng >> 4) & 0x07)) ||
+					    (2 == ((binLevel_eng >> 10) & 0x07))) {
+						det->freq_tbl[i] =
+							PERCENT(
 							(det_to_id(det) == EEM_DET_LITTLE) ?
 								littleFreq_FY[i] :
 								bigFreq_FY[i],
 							det->max_freq_khz);
-				} else {
-					det->freq_tbl[i] =
-						PERCENT(
+					} else {
+						det->freq_tbl[i] =
+							PERCENT(
 							(det_to_id(det) == EEM_DET_LITTLE) ?
 								littleFreq_SB[i] :
 								bigFreq_SB[i],
 							det->max_freq_khz);
+					}
 				}
-
 			}
 		#endif
 		if (0 == det->freq_tbl[i])
@@ -4170,6 +4177,7 @@ static int __init eem_conf(void)
 {
 	int i;
 	unsigned int binLevel, binLevel_eng;
+	struct device_node *cpuSpeedNode = NULL;
 
 	recordRef = ioremap_nocache(EEMCONF_S, EEMCONF_SIZE);
 	eem_debug("@(Record)%s----->(%p)\n", __func__, recordRef);
@@ -4177,20 +4185,36 @@ static int __init eem_conf(void)
 	if (!recordRef)
 		return -ENOMEM;
 
+	cpuSpeedNode = of_find_node_by_type(NULL, "cpu");
+	cpu_speed = 0;
+
+	if (!of_property_read_u32(cpuSpeedNode, "clock-frequency", &cpu_speed))
+		cpu_speed = cpu_speed / 1000 / 1000; /* MHz */
+	else {
+		eem_error("missing clock-frequency property, use EFUSE to get FY/SB\n");
+		cpu_speed = 0;
+	}
+	eem_error("0--->The cpu_speed = %d\n", cpu_speed);
+
 	/* read E-fuse for segment selection */
 	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 	binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
-	if ((1 == binLevel) || (3 == binLevel)) {
+	if (1001 == cpu_speed) {
 		recordTbl = &fyTbl[0][0];
-		eem_error("@The table ----->(fyTbl)\n");
-	} else if ((2 == binLevel) || (4 == binLevel)) {
-		recordTbl = &sbTbl[0][0];
-		eem_error("@The table ----->(sbTbl)\n");
+		eem_debug("1--->The table ----->(fyTbl), cpu_speed = %d\n", cpu_speed);
 	} else {
-		if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
+		if ((1 == binLevel) || (3 == binLevel)) {
 			recordTbl = &fyTbl[0][0];
-		else
+			eem_error("@The table ----->(fyTbl)\n");
+		} else if ((2 == binLevel) || (4 == binLevel)) {
 			recordTbl = &sbTbl[0][0];
+			eem_error("@The table ----->(sbTbl)\n");
+		} else {
+			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
+				recordTbl = &fyTbl[0][0];
+			else
+				recordTbl = &sbTbl[0][0];
+		}
 	}
 
 	/* [13:7] = Vsram pmic value, [6:0] = Vproc pmic value */
