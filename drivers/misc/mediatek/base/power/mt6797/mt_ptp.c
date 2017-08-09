@@ -370,6 +370,8 @@ static unsigned int *recordTbl;
 	#include "mt_cpufreq.h"
 	#include "mt_ptp.h"
 	#include "mt_defptp.h"
+	#include "spm_v2/mt_spm_idle.h"
+	#include "spm_v2/mt_spm.h"
 	#include "../../../power/mt6797/da9214.h"
 	#include "../../../power/mt6797/fan53555.h"
 #else
@@ -4475,9 +4477,15 @@ void process_voltage_bin(struct eem_devinfo *devinfo)
 }
 #endif
 
-#define VCORE_VOLT_0 1000000
-#define VCORE_VOLT_1 900000
-#define VCORE_VOLT_2 900000
+#define VCORE_VOLT_0 0
+#define VCORE_VOLT_1 1
+#define VCORE_VOLT_2 2
+
+/* SOC Voltage */
+unsigned int DDR1866[4] = {105000, 102500, 100000, 97500};
+unsigned int DDR1700[4] = {100000, 97500, 95000, 92500};
+unsigned int DDR1270[4] = {90000, 87500, 85000, 82500};
+unsigned int DDR1066[4] = {90000, 87500, 85000, 82500};
 
 unsigned int vcore0;
 unsigned int vcore1;
@@ -4489,30 +4497,27 @@ int is_have_550(void)
 	return have_550;
 }
 
-unsigned int get_vcore_ptp_volt(int uv)
+unsigned int get_vcore_ptp_volt(int seg)
 {
 	unsigned int ret;
-	switch (uv) {
+
+	switch (seg) {
 	case VCORE_VOLT_0:
-		ret = ((1000000 / 10) - 60000 + 625 - 1) / 625; /* vcore0; */
+		ret = vcore0;
 		break;
 
 	case VCORE_VOLT_1:
-		ret = ((900000 / 10) - 60000 + 625 - 1) / 625; /* vcore1; */
+		ret = vcore1;
 		break;
 
-	/* Jade only use 2 level voltage
 	case VCORE_VOLT_2:
 		ret = vcore2;
 		break;
-	*/
+
 	default:
-		ret = ((uv / 10) - 60000 + 625 - 1) / 625;
+		ret = ((1000000 / 10) - 60000 + 625 - 1) / 625;
 		break;
 	}
-
-	if (ret == 0)
-		ret = ((uv / 10) - 60000 + 625 - 1) / 625;
 
 	return ret;
 }
@@ -4520,6 +4525,7 @@ unsigned int get_vcore_ptp_volt(int uv)
 #ifdef __KERNEL__
 static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int depth, void *data)
 {
+	#if 0
 	struct devinfo_ptp_tag *tags;
 	unsigned int size = 0;
 
@@ -4536,6 +4542,44 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 		eem_debug("[EEM][VCORE] - Kernel Got from DT (0x%0X, 0x%0X, 0x%0X, 0x%0X)\n",
 			vcore0, vcore1, vcore2, have_550);
 	}
+	#endif
+
+	unsigned int soc_efuse;
+
+	/* Read EFUSE */
+	soc_efuse = get_devinfo_with_index(54);
+	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
+
+	/* Read SODI level U, H, L */
+	switch (get_sodi_fw_mode()) {
+	case SODI_FW_LPM: /* 1066/1270/1600 */
+		eem_error("[DDR] segment = 1600\n");
+		vcore0 = (DDR1700[((soc_efuse >> 4) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore2 = (DDR1066[(soc_efuse & 0x03)] - 60000 + 625 - 1) / 625;
+		break;
+
+	case SODI_FW_HPM: /* 1066/1270/1700 */
+		eem_error("[DDR] segment = 1700\n");
+		vcore0 = (DDR1700[((soc_efuse >> 4) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore2 = (DDR1066[(soc_efuse & 0x03)] - 60000 + 625 - 1) / 625;
+		break;
+
+	case SODI_FW_ULTRA: /* 1066/1270/1866 */
+		eem_error("[DDR] segment = 1866\n");
+		vcore0 = (DDR1866[((soc_efuse >> 6) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;
+		vcore2 = (DDR1066[(soc_efuse & 0x03)] - 60000 + 625 - 1) / 625;
+		break;
+
+	default:
+		break;
+	}
+	have_550 = 0;
+	eem_error("[EEM][VCORE] - Kernel Got from DT (0x%0X, 0x%0X, 0x%0X, 0x%0X)\n",
+			vcore0, vcore1, vcore2, have_550);
+
 	return 1;
 }
 
