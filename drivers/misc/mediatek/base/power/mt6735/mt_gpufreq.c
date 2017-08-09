@@ -789,6 +789,10 @@ static unsigned int _mt_gpufreq_dds_calc(unsigned int khz)
 {
 	unsigned int dds = 0;
 
+#if 1
+	dds = ((khz * 4 / 1000) * 8192) / 13;
+#else
+
 	if ((khz >= 250250) && (khz <= 747500))
 		dds = 0x0209A000 + ((khz - 250250) * 4 / 13000) * 0x2000;
 	else if ((khz > 747500) && (khz <= 793000))
@@ -797,7 +801,7 @@ static unsigned int _mt_gpufreq_dds_calc(unsigned int khz)
 		gpufreq_err("@%s: target khz(%d) out of range!\n", __func__, khz);
 		BUG();
 	}
-
+#endif
 	return dds;
 }
 
@@ -2843,11 +2847,6 @@ static int mt_gpufreq_create_procfs(void)
 static int __init _mt_gpufreq_init(void)
 {
 	int ret = 0;
-
-#if defined(CONFIG_ARCH_MT6753)
-	mt_gpufreq_create_procfs();
-	return 0;
-#endif
 
 	gpufreq_info("@%s\n", __func__);
 
