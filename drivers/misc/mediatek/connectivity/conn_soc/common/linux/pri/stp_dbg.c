@@ -83,7 +83,7 @@ MTKSTP_DBG_T *g_stp_dbg = NULL;
 #define STP_DBG_FAMILY_NAME        "STP_DBG"
 #define MAX_BIND_PROCESS    (4)
 #ifdef WMT_PLAT_ALPS
-#define STP_DBG_AEE_EXP_API (0)
+#define STP_DBG_AEE_EXP_API (1)
 #else
 #define STP_DBG_AEE_EXP_API (0)
 #endif
@@ -447,7 +447,7 @@ INT32 wcn_wmtd_timeout_collect_ftrace(void)
 	pbuf = "Wait wmtd complation timeout";
 	len = osal_strlen("Wait wmtd complation timeout");
 	osal_strcpy(&g_core_dump->info[0], WMTD_TIMEOUT_INFO_HEAD);
-/*	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);*/
+	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
 	return 0;
 }
 /* wcn_psm_flag_trigger_collect_ftrace - wmtd timeout ,this func can collect SYS_FTRACE
@@ -463,7 +463,7 @@ INT32 wcn_psm_flag_trigger_collect_ftrace(void)
 	pbuf = "Abnormal PSM flag be set";
 	len = osal_strlen("Abnormal PSM flag be set");
 	osal_strcpy(&g_core_dump->info[0], PSM_ABNORMAL_FLAG_INFO_HEAD);
-/*	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);*/
+	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
 	return 0;
 }
 /* wcn_core_dump_timeout - wait for FW assert info timeout ,this func can collect SYS_FTRACE
@@ -479,7 +479,7 @@ INT32 wcn_core_dump_timeout(void)
 	pbuf = "Trigger assert timeout";
 	len = osal_strlen("Trigger assert timeout");
 	osal_strcpy(&g_core_dump->info[0], TIMEOUT_INFO_HEAD);
-/*	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);*/
+	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
 	return 0;
 }
 
@@ -510,9 +510,9 @@ INT32 wcn_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 		aee_kernel_dal_show("++ SOC_CONSYS coredump get successfully ++\n");
 	/* call AEE driver API */
 #if ENABLE_F_TRACE
-/*	aed_combo_exception_api(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info, DB_OPT_FTRACE);*/
+	aed_combo_exception_api(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info, DB_OPT_FTRACE);
 #else
-/*	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);*/
+	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
 #endif
 
 #endif
