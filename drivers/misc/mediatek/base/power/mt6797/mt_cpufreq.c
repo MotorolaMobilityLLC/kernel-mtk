@@ -53,33 +53,8 @@
 /* local includes */
 #include "../../../power/mt6797/da9214.h"
 #include "mt_cpufreq.h"
+#include "mt_idvfs.h"
 /* #include "mach/mt_cpufreq_hybrid.h" */
-void  SEC_BIGIDVFSPLLSETFREQ(unsigned int val)
-{
-}
-unsigned int SEC_BIGIDVFSPLLGETPOSDIV(void)
-{
-	return 0;
-}
-unsigned int SEC_BIGIDVFSPLLGETPCW(void)
-{
-	return 0;
-}
-unsigned int SEC_BIGIDVFSPLLGETFREQ(void)
-{
-	return 0;
-}
-void SEC_BIGIDVFSPLLSETPOSDIV(unsigned int posdiv)
-{
-}
-unsigned int SEC_BIGIDVFSSRAMLDOGET(void)
-{
-	return 0;
-}
-int SEC_BIGIDVFSSRAMLDOSET(unsigned int volt)
-{
-	return 0;
-}
 
 #define MCU_FH_PLL0  0
 #define MCU_FH_PLL1  1
@@ -1824,9 +1799,9 @@ static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 
 	BUG_ON(NULL == p);
 
-	freq = SEC_BIGIDVFSPLLGETFREQ(); /* Mhz */
-	pcw = SEC_BIGIDVFSPLLGETPCW();
-	posdiv = SEC_BIGIDVFSPLLGETPOSDIV();
+	freq = BigiDVFSPllGetFreq(); /* Mhz */
+	pcw = BigiDVFSPLLGetPCW();
+	posdiv = BigiDVFSPOSDIVGet();
 
 	ckdiv1 = cpufreq_read(ARMPLLDIV_CKDIV);
 	ckdiv1 = _GET_BITS_VAL_(4:0, ckdiv1);
@@ -1997,14 +1972,9 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned 
 	}
 	_cpu_clock_switch(p, TOP_CKMUXSEL_MAINPLL);
 
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-#if 0
-		SEC_BIGIDVFSPLLSETPOSDIV(pos_div);
-		SEC_BIGIDVFSPLLSETPCW(vco/pos_div/1000); /* Mhz */
-#else
-		SEC_BIGIDVFSPLLSETFREQ(vco/pos_div/1000); /* Mhz */
-#endif
-	} else {
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+		BigiDVFSPllSetFreq(vco/pos_div/1000); /* Mhz */
+	else {
 		shift = (pos_div == 1) ? 0 :
 			(pos_div == 2) ? 1 :
 			(pos_div == 4) ? 2 : 0;
@@ -2038,7 +2008,7 @@ static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 	_cpu_clock_switch(p, TOP_CKMUXSEL_MAINPLL);
 
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-		SEC_BIGIDVFSPLLSETPOSDIV(pos_div);
+		BigiDVFSPOSDIVSet(pos_div);
 	else {
 		shift = (pos_div == 1) ? 0 :
 			(pos_div == 2) ? 1 :
@@ -2175,7 +2145,7 @@ static int set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	int ret;
 
-	ret = SEC_BIGIDVFSSRAMLDOSET(volt);
+	ret = BigiDVFSSRAMLDOSet(volt);
 
 	return ret;
 }
@@ -2184,7 +2154,7 @@ static unsigned int get_cur_volt_sram_b(struct mt_cpu_dvfs *p)
 {
 	unsigned int volt = 0;
 
-	volt = SEC_BIGIDVFSSRAMLDOGET();
+	volt = BigiDVFSSRAMLDOGet();
 
 	return volt;
 }
