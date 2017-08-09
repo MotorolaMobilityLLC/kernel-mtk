@@ -26,6 +26,7 @@
 /* #define MTK_WCN_CMB_AUD_IO_NAMING_STYLE_2 1 */
 /* Audio GPIO naming style for 6595 */
 #define MTK_WCN_CMB_AUD_IO_NAMING_STYLE_3 1
+#define MTK_WCN_CMB_FOR_SDIO_1V_AUTOK 1
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -81,6 +82,11 @@ typedef signed long (*wmt_thermal_query_cb) (void);
 typedef int (*wmt_deep_idle_ctrl_cb) (unsigned int);
 typedef int (*wmt_func_do_reset) (unsigned int);
 
+/* for DVFS driver do 1v autok */
+#if MTK_WCN_CMB_FOR_SDIO_1V_AUTOK
+typedef unsigned int (*wmt_get_drv_status)(unsigned int);
+#endif
+
 typedef void (*msdc_sdio_irq_handler_t) (void *);	/* external irq handler */
 typedef void (*pm_callback_t) (pm_message_t state, void *data);
 
@@ -99,6 +105,9 @@ typedef struct _CMB_STUB_CB_ {
 	wmt_thermal_query_cb thermal_query_cb;
 	wmt_deep_idle_ctrl_cb deep_idle_ctrl_cb;
 	wmt_func_do_reset wmt_do_reset_cb;
+#if MTK_WCN_CMB_FOR_SDIO_1V_AUTOK
+	wmt_get_drv_status get_drv_status_cb;
+#endif
 } CMB_STUB_CB, *P_CMB_STUB_CB;
 
 /*******************************************************************************
@@ -139,6 +148,10 @@ extern void mtk_wcn_cmb_stub_func_ctrl(unsigned int type, unsigned int on);
 extern int mtk_wcn_cmb_stub_query_ctrl(void);
 extern int board_sdio_ctrl(unsigned int sdio_port_num, unsigned int on);
 extern int mtk_wcn_sdio_irq_flag_set(int falg);
+
+#if MTK_WCN_CMB_FOR_SDIO_1V_AUTOK
+extern int mtk_wcn_cmb_stub_1vautok_for_dvfs(void);
+#endif
 
 extern int mtk_wcn_wmt_chipid_query(void);
 extern void mtk_wcn_wmt_set_chipid(int chipid);
