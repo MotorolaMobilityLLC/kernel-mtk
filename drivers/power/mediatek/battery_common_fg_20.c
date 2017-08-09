@@ -1574,6 +1574,17 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	}
 #endif
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+
+	if ((KAL_TRUE == ta_check_chr_type) && (STANDARD_CHARGER == BMT_status.charger_type)) {
+		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
+		do {
+			msleep(200);
+		} while (ta_check_chr_type);
+	}
+#endif
+
+
 	battery_log(BAT_LOG_CRTI, "Pump express = %d\n", is_ta_connect);
 	return sprintf(buf, "%u\n", is_ta_connect);
 }
