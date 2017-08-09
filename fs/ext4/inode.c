@@ -3944,10 +3944,6 @@ make_io:
 		trace_ext4_load_inode(inode);
 		get_bh(bh);
 		bh->b_end_io = end_buffer_read_sync;
-#ifdef FEATURE_STORAGE_META_LOG
-		if (bh && bh->b_bdev && bh->b_bdev->bd_disk)
-			set_metadata_rw_status(bh->b_bdev->bd_disk->first_minor, WAIT_READ_CNT);
-#endif
 		submit_bh(READ | REQ_META | REQ_PRIO, bh);
 		wait_on_buffer(bh);
 		if (!buffer_uptodate(bh)) {
