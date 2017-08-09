@@ -85,7 +85,6 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
 	#if defined(CONFIG_ARCH_MT6797)
-	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	#endif
