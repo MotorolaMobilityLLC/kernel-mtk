@@ -4,6 +4,7 @@
 #include "mmprofile.h"
 #include "ddp_info.h"
 #include "ddp_ovl.h"
+#include "mmprofile_internal.h"
 
 typedef struct {
 	MMP_Event DDP;

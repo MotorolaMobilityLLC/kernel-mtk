@@ -126,7 +126,7 @@ static void dprec_to_mmp(unsigned int type_logsrc, MMP_LogType mmp_log, unsigned
 {
 	int MMP_Event = dprec_mmp_event_spy(type_logsrc);
 
-	if (MMP_Event < 0xffff)
+	if (MMP_Event <= MMProfileMaxEventCount)  /* if (MMP_Event < 0xffff) */
 		MMProfileLogEx(MMP_Event, mmp_log, data1, data2);
 
 }
