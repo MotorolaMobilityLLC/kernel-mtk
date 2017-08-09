@@ -334,7 +334,9 @@ fliper_pm_callback(struct notifier_block *nb,
 
 	case PM_POST_SUSPEND:
 		pr_debug(TAG"Resume, restore CG configuration\n");
-		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
+		pre_bw1 = BW_THRESHOLD_MAX;
+		pre_bw2 = BW_THRESHOLD_MAX;
+		cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 		enable_fliper_polling();
 		break;
 
