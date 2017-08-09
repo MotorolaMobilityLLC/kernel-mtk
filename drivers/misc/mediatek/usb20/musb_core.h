@@ -52,17 +52,17 @@
 /* data type used from mt_typdefs.h, mt_typedefs.h is removed now */
 typedef enum {
 	KAL_FALSE = 0,
-	KAL_TRUE  = 1,
+	KAL_TRUE = 1,
 } kal_bool;
 #ifndef TRUE
-  #define TRUE  true
+#define TRUE  true
 #endif
-typedef unsigned int    kal_uint32;
-typedef  uint8_t kal_uint8;
+typedef unsigned int kal_uint32;
+typedef uint8_t kal_uint8;
 
 /* data type and MACRO used from mt_typdefs.h for UART USB SWITCH */
-typedef unsigned char   UINT8;
-typedef unsigned int    UINT32;
+typedef unsigned char UINT8;
+typedef unsigned int UINT32;
 
 #define WRITE_REGISTER_UINT32(reg, val)	((*(volatile UINT32 * const)(reg)) = (val))
 #define READ_REGISTER_UINT8(reg)	((*(volatile UINT8 * const)(reg)))
@@ -195,6 +195,14 @@ extern void musb_host_tx(struct musb *, u8);
 extern void musb_host_rx(struct musb *, u8);
 
 /****************************** CONSTANTS ********************************/
+
+#ifdef CONFIG_MTK_MUSB_CARPLAY_SUPPORT
+extern bool apple;
+extern void musb_id_pin_work_device(void);
+extern void musb_id_pin_work_host(struct work_struct *data);
+extern int send_switch_cmd(void);
+#endif
+
 
 
 #ifndef MUSB_C_NUM_EPS
@@ -384,7 +392,9 @@ struct musb {
 	struct work_struct otg_notifier_work;
 	u16 hwvers;
 	struct delayed_work id_pin_work;
-
+#ifdef CONFIG_MTK_MUSB_CARPLAY_SUPPORT
+	struct delayed_work carplay_work;
+#endif
 	struct musb_fifo_cfg *fifo_cfg;
 	unsigned fifo_cfg_size;
 	struct musb_fifo_cfg *fifo_cfg_host;

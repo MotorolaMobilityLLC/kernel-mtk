@@ -565,8 +565,8 @@ static void musb_otg_timer_func(unsigned long data)
 		musb->otg_event = OTG_EVENT_DEV_CONN_TMOUT;
 		schedule_work(&musb->otg_notifier_work);
 #endif
-		/*musb_platform_set_vbus(musb, 0);*/
-		vbus_off = true; /* I2C can't use with spin_lock */
+		/*musb_platform_set_vbus(musb, 0); */
+		vbus_off = true;	/* I2C can't use with spin_lock */
 
 		musb->xceiv->state = OTG_STATE_A_WAIT_VFALL;
 		break;
@@ -678,7 +678,6 @@ void musb_hnp_stop(struct musb *musb)
 	musb->port1_status &= ~(USB_PORT_STAT_C_CONNECTION << 16);
 }
 EXPORT_SYMBOL_GPL(musb_hnp_stop);
-
 /*
  * Interrupt Service Routine to record USB "global" interrupts.
  * Since these do not happen often and signify things of
@@ -953,6 +952,13 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 			musb->is_active = 0;
 			break;
 		}
+#ifdef CONFIG_MTK_MUSB_CARPLAY_SUPPORT
+		if ((apple) && (int_usb & MUSB_INTR_SUSPEND)) {
+			apple = false;
+			DBG(0, "musb stage0 irq musb_id_pin_work_host\n");
+			schedule_delayed_work(&mtk_musb->carplay_work, 1000 * HZ / 1000);
+		}
+#endif
 	}
 #if defined(CONFIG_USBIF_COMPLIANCE)
 	DBG(0, "After SUSPEND Before CONNECT: int_usb: 0x%x, (%s)\n",

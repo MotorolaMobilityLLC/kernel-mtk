@@ -38,3 +38,9 @@ config MTK_UART_USB_SWITCH
 	  Using the UI in the EngineerMode to switch between USB and UART mode.
 	  After switching to UART mode and connect to the PC with a USB to UART cable,
 	  you can connect to a Virtual COM port on the PC and get the log output to the UART console.
+
+config MTK_MUSB_CARPLAY_SUPPORT
+    bool "MediaTek MUSB Carplay support"
+    default n
+	help
+	  Say Y here if your want to use carplay.
