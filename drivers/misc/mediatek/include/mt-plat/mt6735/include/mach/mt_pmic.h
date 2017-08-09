@@ -22,7 +22,7 @@
 
 #define POWER_INT0_VOLT 3400
 #define POWER_INT1_VOLT 3250
-#define POWER_INT2_VOLT 3000
+#define POWER_INT2_VOLT 3100
 
 #if defined(CONFIG_ARCH_MT6753)
 #define POWER_BAT_OC_CURRENT_H    4670
@@ -43,7 +43,7 @@
 /*#define BATTERY_MODULE_INIT*/
 
 /* ADC Channel Number */
-typedef enum {
+enum {
 	AUX_BATSNS_AP =	0x000,
 	AUX_ISENSE_AP,
 	AUX_VCDT_AP,
@@ -64,6 +64,6 @@ typedef enum {
 	AUX_CH13 = 0x2011,
 	AUX_CH14 = 0x3011,
 	AUX_CH15 = 0x4011,
-} upmu_adc_chl_list_enum;
+};
 
 #endif /* _CUST_PMIC_H_ */
