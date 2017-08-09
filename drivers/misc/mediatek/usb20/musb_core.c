@@ -2602,7 +2602,7 @@ static struct platform_driver musb_driver = {
 	.driver = {
 		   .name = (char *)musb_driver_name,
 		   .bus = &platform_bus_type,
-#ifndef CONFIG_MACH_MT2701
+#if (!defined(CONFIG_MACH_MT2701)) || (!defined(CONFIG_ARCH_MT7623))
 		   .of_match_table = apusb_of_ids,
 #endif
 		   .owner = THIS_MODULE,
@@ -2624,7 +2624,7 @@ static int __init musb_init(void)
 	return platform_driver_register(&musb_driver);
 }
 
-#ifdef CONFIG_MACH_MT2701
+#if defined(CONFIG_MACH_MT2701) || defined(CONFIG_ARCH_MT7623)
 module_init(musb_init);
 #else
 fs_initcall(musb_init);

@@ -994,7 +994,30 @@ config ARCH_MT8127
 	help
 	  This enable support for MediaTek MT8127
 
-
+config ARCH_MT7623
+	bool "MediaTek MT7623"
+	select ARCH_MEDIATEK
+	select SPARSE_IRQ
+	select COMMON_CLK if !MTK_CLKMGR
+	select GENERIC_CLOCKEVENTS
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select ARCH_REQUIRE_GPIOLIB
+	select KERNEL_MODE_NEON
+	select CRYPTO_AES_ARM_BS
+	select ARM_HAS_SG_CHAIN
+	select MTK_BASE_POWER
+	select MFD_SYSCON
+	select CPU_IDLE
+	select ARM_ERRATA_814220
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
+	help
+	  This enable support for MediaTek MT7623
 
 endchoice
 
