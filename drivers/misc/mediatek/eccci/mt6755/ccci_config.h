@@ -6,14 +6,14 @@
 /*#define CCCI_STATISTIC*/
 #define FEATURE_GET_MD_GPIO_NUM
 #define FEATURE_GET_MD_GPIO_VAL
-#define FEATURE_GET_MD_ADC_NUM
-#define FEATURE_GET_MD_ADC_VAL
+/*#define FEATURE_GET_MD_ADC_NUM*/
+/*#define FEATURE_GET_MD_ADC_VAL*/
 #define FEATURE_GET_MD_EINT_ATTR
 #if defined(FEATURE_GET_MD_EINT_ATTR) && !defined(CONFIG_MTK_LEGACY)
 #define FEATURE_GET_MD_EINT_ATTR_DTS
 #endif
 
-#define FEATURE_GET_MD_BAT_VOL
+/*#define FEATURE_GET_MD_BAT_VOL*/
 #define FEATURE_PM_IPO_H
 /*#define FEATURE_DFO_EN*/
 #define FEATURE_SEQ_CHECK_EN
@@ -39,19 +39,18 @@
 #define FEATURE_CONN_MD_EXP_EN
 #endif
 
-#define FEATURE_USING_4G_MEMORY_API
+/*#define FEATURE_USING_4G_MEMORY_API*/
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
 #else
-#define FEATURE_RF_CLK_BUF
-#define ENABLE_32K_CLK_LESS
+/*#define FEATURE_RF_CLK_BUF*/
+/*#define ENABLE_32K_CLK_LESS*/
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
 #define FEATURE_DBM_SUPPORT
 
-#define ENABLE_EMI_PROTECTION
-
+/*#define ENABLE_EMI_PROTECTION*/
 #ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
 /* #define SET_AP_MPU_REGION */ /*no need set ap region in Jade */

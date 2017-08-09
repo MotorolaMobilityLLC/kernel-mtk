@@ -1,8 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
-#include <mach/memory.h>
-#include <mach/upmu_sw.h>
 #include <linux/interrupt.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -16,6 +14,10 @@
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
+#ifdef FEATURE_USING_4G_MEMORY_API
+#include <mach/memory.h>
+#endif
+
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
 #endif
@@ -53,6 +55,8 @@ static int is_4g_memory_size_support(void)
 #define MPU_REGION_ID_MD3_RW            16
 #define MPU_REGION_ID_AP                17
 #define MPU_REGION_ID_TOTAL_NUM         (MPU_REGION_ID_AP + 1)
+
+#ifdef ENABLE_EMI_PROTECTION
 /* ////////////////////////////////////////////////////////////// (D7(MDHW),       D6(MFG), \
 	D5(MD3),        D4(MM),        D3(Resv),      D2(CONN),      D1(MD1),       D0(AP)) */
 #define MPU_ACCESS_PERMISSON_CLEAR	SET_ACCESS_PERMISSON(NO_PROTECTION, NO_PROTECTION, \
@@ -90,7 +94,7 @@ static int is_4g_memory_size_support(void)
 
 static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_ID_TOTAL_NUM] = {
 /*===================================================================================================================*/
-/* No |  | D0(AP)    | D1(MD1)      | D2(CONN) | D3(Res)  | D4(MM)       | D5(MD3 )      | D6(MFG)      | D7(MDHW)    |
+/* No |  | D0(AP)    | D1(MD1)      | D2(CONN) | D3(Res)  | D4(MM)       | D5(MD3 )      | D6(MFG)     | D7(MDHW)   |*/
 /*--------------+----------------------------------------------------------------------------------------------------*/
 /* 0*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
 /* 1*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
@@ -111,6 +115,7 @@ static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_I
 /*16*/{ SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
 /*17*/{ NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN},
 }; /*=================================================================================================================*/
+#endif
 
 #define MPU_REGION_INFO_ID0    MPU_REGION_ID_MD1_ROM
 #define MPU_REGION_INFO_ID1    MPU_REGION_ID_MD1_MCURW_HWRO
@@ -845,7 +850,7 @@ int ccci_plat_common_init(void)
 {
 	struct device_node *node;
 	/* Get infra cfg ao base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	infra_ao_base = (unsigned long)of_iomap(node, 0);
 	CCCI_INF_MSG(-1, TAG, "infra_ao_base:0x%p\n", (void *)infra_ao_base);
 	node = of_find_compatible_node(NULL, NULL, "mediatek,dbgapb_base");

@@ -1,7 +1,7 @@
 #ifndef __CCIF_PLATFORM_H__
 #define __CCIF_PLATFORM_H__
 #include "ccci_core.h"
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 #define ccif_write32(b, a, v)           mt_reg_sync_writel(v, (b)+(a))
 #define ccif_write16(b, a, v)           mt_reg_sync_writew(v, (b)+(a))
@@ -56,9 +56,7 @@
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
 
 #define INFRA_TOPAXI_PROTECTEN_1 0x250	/*((UINT32P)(INFRACFG_AO_BASE+0x250))*/
-#define POWERON_CONFIG_EN        0x000	/*((UINT32P)(SLEEP_BASE+0x000))*/
-#define PWR_STATUS               0x180	/*((UINT32P)(SLEEP_BASE+0x180))*/
-#define PWR_STATUS_2ND           0x184	/*((UINT32P)(SLEEP_BASE+0x184))*/
+
 #define PWR_RST_B     0
 #define PWR_ISO       1
 #define PWR_ON        2

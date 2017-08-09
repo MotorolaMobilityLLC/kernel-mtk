@@ -3,8 +3,8 @@
 
 #include <mt-plat/sync_write.h>
 /* INFRA */
-#define INFRA_RST0_REG_PD (0x0150) /*(0x0030)	/* rgu reset cldma reg */
-#define INFRA_RST1_REG_PD (0x0154) /*(0x0034)	/* rgu clear cldma reset reg */
+#define INFRA_RST0_REG_PD (0x0150) /*(0x0030)*/	/* rgu reset cldma reg */
+#define INFRA_RST1_REG_PD (0x0154) /*(0x0034)*/	/* rgu clear cldma reset reg */
 #define CLDMA_PD_RST_MASK (1<<2)
 #define INFRA_RST0_REG_AO (0x0140)
 #define INFRA_RST1_REG_AO (0x0144)

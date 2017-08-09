@@ -15,8 +15,6 @@
 #include <mach/mt6605.h>
 #endif
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/upmu_sw.h>
-#include <mt-plat/upmu_hw.h>
 #include <mach/mt_pbm.h>
 #include <mt_spm_sleep.h>
 #include "ccci_core.h"
