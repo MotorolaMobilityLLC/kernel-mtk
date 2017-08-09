@@ -401,7 +401,10 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 {
 	unsigned long flags;
 	int count = 0;
+	struct timeval tm_s, tm_e;
+	unsigned int tm_val = 0;
 
+	do_gettimeofday(&tm_s);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (en == 1) {
@@ -429,7 +432,9 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 	spm_mtcmos_noncpu_unlock(flags);
 
 	if (count > _TOPAXI_TIMEOUT_CNT_) {
-		pr_err("TOPAXI Bus Protect Timeout Error!!\n");
+		do_gettimeofday(&tm_e);
+		tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000000 + (tm_e.tv_usec - tm_s.tv_usec);
+		pr_err("TOPAXI Bus Protect Timeout Error (%d us)(%d) !!\n", tm_val, count);
 		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN));
 		pr_err("INFRA_TOPAXI_PROTECTSTA0 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA0));
 		pr_err("INFRA_TOPAXI_PROTECTSTA1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
