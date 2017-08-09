@@ -329,7 +329,9 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 		/* out of range! use policy's min/max cpufreq idx setting */
 		if (c_limit->min_cpufreq_idx <  p_limit->max_cpufreq_idx ||
 			c_limit->max_cpufreq_idx >  p_limit->min_cpufreq_idx) {
-			c_limit->min_cpufreq_idx = p_limit->min_cpufreq_idx;
+			/* no need to set min freq for power budget related policy */
+			if (p->priority != PPM_POLICY_PRIO_POWER_BUDGET_BASE)
+				c_limit->min_cpufreq_idx = p_limit->min_cpufreq_idx;
 			c_limit->max_cpufreq_idx = p_limit->max_cpufreq_idx;
 		} else {
 			c_limit->min_cpufreq_idx = MIN(c_limit->min_cpufreq_idx, p_limit->min_cpufreq_idx);
@@ -339,7 +341,9 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 		/* out of range! use policy's min/max cpu core setting */
 		if (c_limit->min_cpu_core >  p_limit->max_cpu_core ||
 			c_limit->max_cpu_core <  p_limit->min_cpu_core) {
-			c_limit->min_cpu_core = p_limit->min_cpu_core;
+			/* no need to set min core for power budget related policy */
+			if (p->priority != PPM_POLICY_PRIO_POWER_BUDGET_BASE)
+				c_limit->min_cpu_core = p_limit->min_cpu_core;
 			c_limit->max_cpu_core = p_limit->max_cpu_core;
 		} else {
 			c_limit->min_cpu_core = MAX(c_limit->min_cpu_core, p_limit->min_cpu_core);
@@ -363,16 +367,10 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 	}
 
 	/* error check */
-	if (c_limit->min_cpu_core > c_limit->max_cpu_core) {
-		ppm_warn("mismatch! min_core(%d) > max_core(%d)\n",
-			c_limit->min_cpu_core, c_limit->max_cpu_core);
+	if (c_limit->min_cpu_core > c_limit->max_cpu_core)
 		c_limit->min_cpu_core = c_limit->max_cpu_core;
-	}
-	if (c_limit->min_cpufreq_idx < c_limit->max_cpufreq_idx) {
-		ppm_warn("mismatch! min_freq_idx(%d) < max_freq_idx(%d)\n",
-			c_limit->min_cpufreq_idx, c_limit->max_cpufreq_idx);
+	if (c_limit->min_cpufreq_idx < c_limit->max_cpufreq_idx)
 		c_limit->min_cpufreq_idx = c_limit->max_cpufreq_idx;
-	}
 
 	ppm_ver("Result --> (%d)(%d)(%d)(%d) (%d)(%d)(%d)(%d)\n",
 		c_limit->min_cpufreq_idx, c_limit->max_cpufreq_idx, c_limit->min_cpu_core,

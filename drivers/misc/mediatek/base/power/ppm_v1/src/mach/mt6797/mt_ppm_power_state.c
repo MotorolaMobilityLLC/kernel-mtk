@@ -1048,7 +1048,8 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_policy_req *req,
 			struct ppm_userlimit_data user_limit)
 {
-	if (req && ((cur_state == PPM_POWER_STATE_L_ONLY) || (cur_state == PPM_POWER_STATE_4L_LL))) {
+	if (req && ((cur_state == PPM_POWER_STATE_L_ONLY) || (cur_state == PPM_POWER_STATE_4L_LL))
+		&& (req->limit[PPM_CLUSTER_L].max_cpu_core >= req->limit[PPM_CLUSTER_LL].min_cpu_core)) {
 		unsigned int LL_min_core = req->limit[PPM_CLUSTER_LL].min_cpu_core;
 		unsigned int L_min_core = req->limit[PPM_CLUSTER_L].min_cpu_core;
 		unsigned int sum = LL_min_core + L_min_core;

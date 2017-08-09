@@ -64,7 +64,7 @@ static enum ppm_power_state ppm_perfserv_get_power_state_cb(enum ppm_power_state
 	if (perfserv_policy.req.perf_idx)
 		return ppm_hica_get_state_by_perf_idx(cur_state, perfserv_policy.req.perf_idx);
 	else
-		return PPM_POWER_STATE_NONE;
+		return cur_state;
 }
 
 static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)

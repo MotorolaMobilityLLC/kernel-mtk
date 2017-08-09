@@ -63,6 +63,7 @@ static enum ppm_power_state ppm_userlimit_get_power_state_cb(enum ppm_power_stat
 static void ppm_userlimit_update_limit_cb(enum ppm_power_state new_state)
 {
 	unsigned int i;
+	struct ppm_policy_req *req = &userlimit_policy.req;
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
@@ -72,22 +73,30 @@ static void ppm_userlimit_update_limit_cb(enum ppm_power_state new_state)
 	if (userlimit_data.is_freq_limited_by_user || userlimit_data.is_core_limited_by_user) {
 		ppm_hica_set_default_limit_by_state(new_state, &userlimit_policy);
 
-		for (i = 0; i < userlimit_policy.req.cluster_num; i++) {
-			userlimit_policy.req.limit[i].min_cpu_core = (userlimit_data.limit[i].min_core_num == -1)
-				? userlimit_policy.req.limit[i].min_cpu_core
+		for (i = 0; i < req->cluster_num; i++) {
+			req->limit[i].min_cpu_core = (userlimit_data.limit[i].min_core_num == -1)
+				? req->limit[i].min_cpu_core
 				: userlimit_data.limit[i].min_core_num;
-			userlimit_policy.req.limit[i].max_cpu_core = (userlimit_data.limit[i].max_core_num == -1)
-				? userlimit_policy.req.limit[i].max_cpu_core
+			req->limit[i].max_cpu_core = (userlimit_data.limit[i].max_core_num == -1)
+				? req->limit[i].max_cpu_core
 				: userlimit_data.limit[i].max_core_num;
-			userlimit_policy.req.limit[i].min_cpufreq_idx = (userlimit_data.limit[i].min_freq_idx == -1)
-				? userlimit_policy.req.limit[i].min_cpufreq_idx
+			req->limit[i].min_cpufreq_idx = (userlimit_data.limit[i].min_freq_idx == -1)
+				? req->limit[i].min_cpufreq_idx
 				: userlimit_data.limit[i].min_freq_idx;
-			userlimit_policy.req.limit[i].max_cpufreq_idx = (userlimit_data.limit[i].max_freq_idx == -1)
-				? userlimit_policy.req.limit[i].max_cpufreq_idx
+			req->limit[i].max_cpufreq_idx = (userlimit_data.limit[i].max_freq_idx == -1)
+				? req->limit[i].max_cpufreq_idx
 				: userlimit_data.limit[i].max_freq_idx;
 		}
 
-		ppm_limit_check_for_user_limit(new_state, &userlimit_policy.req, userlimit_data);
+		ppm_limit_check_for_user_limit(new_state, req, userlimit_data);
+
+		/* error check */
+		for (i = 0; i < req->cluster_num; i++) {
+			if (req->limit[i].max_cpu_core < req->limit[i].min_cpu_core)
+				req->limit[i].min_cpu_core = req->limit[i].max_cpu_core;
+			if (req->limit[i].max_cpufreq_idx > req->limit[i].min_cpufreq_idx)
+				req->limit[i].min_cpufreq_idx = req->limit[i].max_cpufreq_idx;
+		}
 	}
 
 	FUNC_EXIT(FUNC_LV_POLICY);
