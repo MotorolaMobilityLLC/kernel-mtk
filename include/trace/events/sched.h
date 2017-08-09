@@ -840,7 +840,7 @@ TRACE_EVENT(sched_task_entity_avg,
 		__entry->ratio     = 0;
 		__entry->usage_sum = -1;
 		__entry->rq_time   = avg->runnable_avg_sum;
-		__entry->live_time =  avg->runnable_avg_period;
+		__entry->live_time = avg->avg_period;
 	),
 
 	TP_printk("[%d]comm=%s tgid=%d pid=%d contrib=%lu ratio=%lu exe_time=%d rq_time=%lu live_time=%lu",
