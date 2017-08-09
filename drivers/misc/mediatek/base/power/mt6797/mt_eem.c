@@ -6100,7 +6100,7 @@ int __init eem_init(void)
 	}
 
 	/* Read E-Fuse to control ITurbo mode */
-	if ((ateVer > 7) && (eem_devinfo.BIG_TURBO))
+	if ((ateVer >= 7) && (eem_devinfo.BIG_TURBO))
 		ctrl_ITurbo = 1;
 
 #ifdef __KERNEL__
