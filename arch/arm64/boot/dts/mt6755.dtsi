@@ -10,7 +10,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt67xx-msdc.h>
-
+#include "mt6755-pinfunc.h"
 / {
 	model = "MT6755";
 	compatible = "mediatek,MT6755";
@@ -771,7 +771,7 @@ clocks {
 
 		IOCFG_0@0x10002000 {
 			compatible = "mediatek,IOCFG_0";
-			reg = <0x10002000 0x200>;
+			reg = <0x10002000 0x1000>;
 		};
 
 		IOCFG_1@0x10002200 {
@@ -822,6 +822,20 @@ clocks {
 		GPIO@0x10005000 {
 			compatible = "mediatek,GPIO";
 			reg = <0x10005000 0x1000>;
+		};
+
+		syscfg_pctl_a: syscfg_pctl_a@0x10005000 {
+			compatible = "mediatek,mt6755-pctl-a-syscfg", "syscon";
+			reg = <0x10002000 0x1000>;
+		};
+
+		pio: pinctrl@0x10005000 {
+			compatible = "mediatek,mt6755-pinctrl";
+			reg = <0x10005000 0x1000>;
+			mediatek,pctl-regmap = <&syscfg_pctl_a>;
+			pins-are-numbered;
+			gpio-controller;
+			#gpio-cells = <2>;
 		};
 
 		SLEEP@0x10006000 {
