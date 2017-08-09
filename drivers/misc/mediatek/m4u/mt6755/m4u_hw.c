@@ -8,6 +8,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
+#include <mt-plat/mt_lpae.h>
+
 static m4u_domain_t gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
@@ -2311,6 +2313,11 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	smi_larb_clock_prepare();
 	smi_common_clock_on();
 #endif
+
+#ifdef M4U_4GBDRAM
+	gM4U_4G_DRAM_Mode = enable_4G();
+#endif
+	M4UMSG("4G DRAM Mode is: %d\n", gM4U_4G_DRAM_Mode);
 
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 
