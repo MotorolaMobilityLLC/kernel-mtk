@@ -134,7 +134,6 @@ extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
 /*void get_mempll_table_info(u32 *high_addr, u32 *low_addr, u32 *num);*/
 unsigned int get_dram_data_rate(void);
-void DVFS_gating_auto_save(void);
 unsigned int read_dram_temperature(unsigned char channel);
 /*void sync_hw_gating_value(void);*/
 /*unsigned int is_one_pll_mode(void);*/
