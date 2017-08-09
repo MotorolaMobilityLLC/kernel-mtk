@@ -23,38 +23,33 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-#if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_clkmgr.h>
+#if defined(CONFIG_MTK_CLKMGR)
+#include <mt_clkmgr.h>
 #else
 #include <linux/clk.h>
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #include <linux/delay.h>
 #include <asm/memblock.h>
 #include "osal_typedef.h"
 #include "mtk_wcn_consys_hw.h"
 
 #if CONSYS_EMI_MPU_SETTING
-#include <mach/emi_mpu.h>
+#include <emi_mpu.h>
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#include <mach/mt_pm_ldo.h>
-#if defined(CONFIG_MTK_LEGACY)
 #include <upmu_common.h>
-#else
-#include <mach/upmu_hw.h>
 #include <linux/regulator/consumer.h>
-#endif
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include <mach/mtk_hibernate_dpm.h>
+#include <mtk_hibernate_dpm.h>
 #endif
 
 #include <linux/of_reserved_mem.h>
 
 #if CONSYS_CLOCK_BUF_CTRL
-#include <mach/mt_clkbuf_ctl.h>
+#include <mt_clkbuf_ctl.h>
 #endif
 
 /*******************************************************************************
@@ -83,10 +78,10 @@ phys_addr_t gConEmiPhyBase;
 struct CONSYS_BASE_ADDRESS conn_reg;
 
 /* CCF part */
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 struct clk *clk_infra_conn_main;	/*ctrl infra_connmcu_bus clk */
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #ifdef CONFIG_OF
 static const struct of_device_id apwmt_of_ids[] = {
@@ -109,7 +104,7 @@ static struct platform_driver mtk_wmt_dev_drv = {
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 struct regulator *reg_VCN18;
 struct regulator *reg_VCN28;
 struct regulator *reg_VCN33_BT;
@@ -118,7 +113,7 @@ struct regulator *reg_VCN33_WIFI;
 #endif
 
 /* GPIO part */
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 struct pinctrl *consys_pinctrl = NULL;
 #endif
 
@@ -277,7 +272,7 @@ UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
 
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	clk_scp_conn_main = devm_clk_get(&pdev->dev, "conn");
 	if (IS_ERR(clk_scp_conn_main)) {
 		WMT_PLAT_ERR_FUNC("[CCF]cannot get clk_scp_conn_main clock.\n");
@@ -291,10 +286,10 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		return PTR_ERR(clk_infra_conn_main);
 	}
 	WMT_PLAT_DBG_FUNC("[CCF]clk_infra_conn_main=%p\n", clk_infra_conn_main);
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	reg_VCN18 = regulator_get(&pdev->dev, "vcn18");
 	if (!reg_VCN18)
 		WMT_PLAT_ERR_FUNC("Regulator_get VCN_1V8 fail\n");
@@ -310,13 +305,13 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 #endif
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	consys_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(consys_pinctrl)) {
 		WMT_PLAT_ERR_FUNC("cannot find consys pinctrl.\n");
 		return PTR_ERR(consys_pinctrl);
 	}
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 	return 0;
 }
@@ -346,7 +341,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 		pmic_set_register_value(PMIC_RG_VCN18_ON_CTRL, 0);
 		/* VOL_DEFAULT, VOL_1200, VOL_1300, VOL_1500, VOL_1800... */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerOn(MT6328_POWER_LDO_VCN18, VOL_1800, "wcn_drv");
 #else
 		if (reg_VCN18) {
@@ -375,7 +370,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			pmic_set_register_value(PMIC_RG_VCN28_ON_CTRL, 1);
 			/*2.2.turn on VCN28 LDO (with PMIC_WRAP API)" */
 			/*fix vcn28 not balance warning */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 			hwPowerOn(MT6328_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 			if (reg_VCN28) {
@@ -400,7 +395,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET), CONSYS_PWRON_CONFG_EN_VALUE);
 
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		iRet = conn_power_on();	/* consult clkmgr owner. */
 		if (iRet)
 			WMT_PLAT_ERR_FUNC("conn_power_on fail(%d)\n", iRet);
@@ -410,7 +405,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		if (iRet)
 			WMT_PLAT_ERR_FUNC("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
 		WMT_PLAT_DBG_FUNC("clk_prepare_enable(clk_scp_conn_main) ok\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #else
 		/*2.write conn_top1_pwr_on=1, power on conn_top1 0x10006280 [2]  1'b1 */
 		CONSYS_REG_WRITE(conn_reg.spm_base + CONSYS_TOP1_PWR_CTRL_OFFSET,
@@ -452,13 +447,13 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		udelay(10);
 		/*enable AP bus clock : connmcu_bus_pd  API: enable_clock() ++?? */
 #if CONSYS_AHB_CLK_MAGEMENT
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		enable_clock(MT_CG_INFRA_CONNMCU_BUS, "WCN_MOD");
 		WMT_PLAT_DBG_FUNC("enable MT_CG_INFRA_CONNMCU_BUS CLK\n");
 #else
 		clk_prepare_enable(clk_infra_conn_main);
 		WMT_PLAT_DBG_FUNC("[CCF]enable clk_infra_conn_main\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif
 		/*12.poll CONNSYS CHIP ID until chipid is returned  0x18070008 */
 		while (retry-- > 0) {
@@ -516,7 +511,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		CONSYS_REG_WRITE(CONSYS_PWRON_CONFG_EN_REG, CONSYS_PWRON_CONFG_EN_VALUE);
 
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		iRet = conn_power_on();	/* consult clkmgr owner */
 		if (iRet)
 			WMT_PLAT_ERR_FUNC("conn_power_on fail(%d)\n", iRet);
@@ -526,7 +521,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		if (iRet)
 			WMT_PLAT_ERR_FUNC("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
 		WMT_PLAT_DBG_FUNC("clk_prepare_enable(clk_scp_conn_main) ok\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #else
 		/*2.write conn_top1_pwr_on=1, power on conn_top1 0x10006280 [2]  1'b1 */
 		CONSYS_REG_WRITE(CONSYS_TOP1_PWR_CTRL_REG,
@@ -560,13 +555,13 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		udelay(10);
 		/*enable AP bus clock : connmcu_bus_pd  API: enable_clock() ++?? */
 #if CONSYS_AHB_CLK_MAGEMENT
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		enable_clock(MT_CG_INFRA_CONNMCU_BUS, "WCN_MOD");
 		WMT_PLAT_DBG_FUNC("enable MT_CG_INFRA_CONNMCU_BUS CLK\n");
 #else
 		clk_prepare_enable(clk_infra_conn_main);
 		WMT_PLAT_DBG_FUNC("[CCF]enable clk_infra_conn_main\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif
 		/*12.poll CONNSYS CHIP ID until 6752 is returned 0x18070008 32'h6752 */
 		while (retry-- > 0) {
@@ -624,16 +619,16 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #ifdef CONFIG_OF
 
 #if CONSYS_AHB_CLK_MAGEMENT
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		disable_clock(MT_CG_INFRA_CONNMCU_BUS, "WMT_MOD");
 #else
 		clk_disable_unprepare(clk_infra_conn_main);
 		WMT_PLAT_DBG_FUNC("[CCF] clk_disable_unprepare(clk_infra_conn_main) calling\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif
 
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		/*power off connsys by API (MT6582, MT6572 are different) API: conn_power_off() */
 		iRet = conn_power_off();	/* consult clkmgr owner */
 		if (iRet)
@@ -642,7 +637,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #else
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_DBG_FUNC("clk_disable_unprepare(clk_scp_conn_main) calling\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #else
 		{
 			INT32 count = 0;
@@ -683,14 +678,14 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 
 #if CONSYS_AHB_CLK_MAGEMENT
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		disable_clock(MT_CG_INFRA_CONNMCU_BUS, "WMT_MOD");
 #else
 		clk_disable_unprepare(clk_infra_conn_main);
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		/*power off connsys by API: conn_power_off() */
 		iRet = conn_power_off();	/* consult clkmgr owner */
 		if (iRet)
@@ -699,7 +694,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #else
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_DBG_FUNC("clk_disable_unprepare(clk_scp_conn_main) calling\n");
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 #else
 		{
 			INT32 count = 0;
@@ -740,7 +735,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		} else {
 			pmic_set_register_value(PMIC_RG_VCN28_ON_CTRL, 0);
 			/*turn off VCN28 LDO (with PMIC_WRAP API)" */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 			hwPowerDown(MT6328_POWER_LDO_VCN28, "wcn_drv");
 #else
 			if (reg_VCN28) {
@@ -754,7 +749,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 		/*AP power off MT6625L VCN_1V8 LDO */
 		pmic_set_register_value(PMIC_RG_VCN18_ON_CTRL, 0);
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerDown(MT6328_POWER_LDO_VCN18, "wcn_drv");
 #else
 		if (reg_VCN18) {
@@ -916,7 +911,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerOn(MT6328_POWER_LDO_VCN33_BT, VOL_3300, "wcn_drv");
 #else
 		if (reg_VCN33_BT) {
@@ -934,7 +929,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		pmic_set_register_value(PMIC_RG_VCN33_ON_CTRL_BT, 0);
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerDown(MT6328_POWER_LDO_VCN33_BT, "wcn_drv");
 #else
 		if (reg_VCN33_BT)
@@ -955,7 +950,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		/*do WIFI PMIC on,depenency PMIC API ready */
 		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerOn(MT6328_POWER_LDO_VCN33_WIFI, VOL_3300, "wcn_drv");
 #else
 		if (reg_VCN33_WIFI) {
@@ -972,7 +967,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		pmic_set_register_value(PMIC_RG_VCN33_ON_CTRL_WIFI, 0);
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerDown(MT6328_POWER_LDO_VCN33_WIFI, "wcn_drv");
 #else
 		if (reg_VCN33_WIFI)
@@ -993,7 +988,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 	if (enable) {
 		/*in co-clock mode,need to turn on vcn28 when fm on */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerOn(MT6328_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 		if (reg_VCN28) {
@@ -1007,7 +1002,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 	} else {
 		/*in co-clock mode,need to turn off vcn28 when fm off */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		hwPowerDown(MT6328_POWER_LDO_VCN28, "wcn_drv");
 #else
 		if (reg_VCN28)
@@ -1230,7 +1225,7 @@ UINT32 mtk_wcn_consys_soc_chipid(void)
 	return PLATFORM_SOC_CHIP;
 }
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 struct pinctrl *mtk_wcn_consys_get_pinctrl()
 {
 	return consys_pinctrl;

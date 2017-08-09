@@ -8,7 +8,7 @@
 #define _MTK_WCN_CONSYS_HW_H_
 
 #include <sync_write.h>
-#include <mach/mt_reg_base.h>
+/* #include <mt_reg_base.h> */
 #include "wmt_plat.h"
 
 /*device tree mode*/
@@ -281,7 +281,7 @@ extern UINT8 *mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 extern UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en);
 #endif
 extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
 #endif /* _MTK_WCN_CMB_HW_H_ */

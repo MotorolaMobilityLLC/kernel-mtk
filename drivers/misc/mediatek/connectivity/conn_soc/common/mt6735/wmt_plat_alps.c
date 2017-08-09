@@ -26,11 +26,10 @@
 #include <linux/delay.h>
 
 /* ALPS header files */
-#include <mach/mtk_rtc.h>
-#include <mach/mt_irq.h>
-#include <mach/mtk_rtc.h>
-#if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
+#include <mtk_rtc.h>
+/*#include <mt_irq.h>*/
+#if defined(CONFIG_MTK_CLKMGR)
+#include <mt_gpio.h>
 #endif
 #include <mtk_wcn_cmb_stub.h>
 
@@ -48,7 +47,7 @@
 #endif
 
 #if	MTK_WCN_MT6306_IS_READY
-#include <mach/dcl_sim_gpio.h>
+#include <dcl_sim_gpio.h>
 
 #ifdef	GPIO_GPS_LNA_PIN
 #undef	GPIO_GPS_LNA_PIN
@@ -376,7 +375,7 @@ EXPORT_SYMBOL(wmt_plat_deinit);
 static INT32 wmt_plat_dump_pin_conf(VOID)
 {
 	WMT_PLAT_DBG_FUNC("[WMT-PLAT]=>dump wmt pin configuration start<=\n");
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 
 #ifdef GPIO_COMBO_BGF_EINT_PIN
 	WMT_PLAT_DBG_FUNC("BGF_EINT(GPIO%d)\n", GPIO_COMBO_BGF_EINT_PIN);
@@ -426,7 +425,7 @@ static INT32 wmt_plat_dump_pin_conf(VOID)
 	WMT_PLAT_INFO_FUNC("GPS_LNA(not defined)\n");
 #endif
 
-#else /* #if defined(CONFIG_MTK_LEGACY) */
+#else /* #if defined(CONFIG_MTK_CLKMGR) */
 #endif
 	WMT_PLAT_DBG_FUNC("[WMT-PLAT]=>dump wmt pin configuration emds<=\n");
 	return 0;
@@ -567,7 +566,7 @@ EXPORT_SYMBOL(wmt_plat_gpio_ctrl);
 
 INT32 wmt_plat_bgf_eint_ctrl(ENUM_PIN_STATE state)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #ifdef GPIO_COMBO_BGF_EINT_PIN
 	switch (state) {
 	case PIN_STA_INIT:
@@ -604,14 +603,14 @@ INT32 wmt_plat_bgf_eint_ctrl(ENUM_PIN_STATE state)
 #else
 	WMT_PLAT_INFO_FUNC("WMT-PLAT:BGF EINT not defined\n");
 #endif
-#else /* #if defined(CONFIG_MTK_LEGACY) */
+#else /* #if defined(CONFIG_MTK_CLKMGR) */
 #endif
 	return 0;
 }
 
 static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 
 #ifdef GPIO_GPS_SYNC_PIN
 #ifndef GPIO_GPS_SYNC_PIN_M_GPS_SYNC
@@ -640,7 +639,7 @@ static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state)
 	}
 #endif
 
-#else /* #if defined(CONFIG_MTK_LEGACY) */
+#else /* #if defined(CONFIG_MTK_CLKMGR) */
 #endif
 	return 0;
 }
@@ -679,7 +678,7 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	static struct pinctrl_state *gps_lna_init;
 	static struct pinctrl_state *gps_lna_oh;
 	static struct pinctrl_state *gps_lna_ol;
@@ -756,7 +755,7 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 	WMT_PLAT_WARN_FUNC("host gps lna pin not defined!!!\n");
 	    return 0;
 #endif
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 }
 #endif
 
@@ -764,7 +763,7 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 {
 	/* TODO: [NewFeature][GeorgeKuo]: GPIO_I2Sx is changed according to different project. */
 	/* TODO: provide a translation table in board_custom.h for different ALPS project customization. */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 
 #if defined(FM_DIGITAL_INPUT) || defined(FM_DIGITAL_OUTPUT)
 #if defined(GPIO_COMBO_I2S_CK_PIN)
@@ -803,7 +802,7 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 	    ("[MT6620]warnning:FM digital mode is not set, no I2S GPIO settings should be modified by combo driver\n");
 #endif
 
-#else /* #if defined(CONFIG_MTK_LEGACY) */
+#else /* #if defined(CONFIG_MTK_CLKMGR) */
 #endif
 	return 0;
 }

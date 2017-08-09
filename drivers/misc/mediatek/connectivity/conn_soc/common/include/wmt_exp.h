@@ -21,7 +21,7 @@
 #ifndef _WMT_EXP_H_
 #define _WMT_EXP_H_
 
-#include <mach/mtk_wcn_cmb_stub.h>
+#include <mtk_wcn_cmb_stub.h>
 #include "osal.h"
 #include "wmt_plat.h"
 #include "wmt_stp_exp.h"

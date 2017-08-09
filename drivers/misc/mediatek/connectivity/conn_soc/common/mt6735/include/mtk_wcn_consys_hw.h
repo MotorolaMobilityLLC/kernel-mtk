@@ -8,7 +8,7 @@
 #define _MTK_WCN_CONSYS_HW_H_
 
 #include <sync_write.h>
-#include <mach/mt_reg_base.h>
+/*#include <mt_reg_base.h>*/
 #include "wmt_plat.h"
 
 /*device tree mode*/
@@ -26,11 +26,11 @@
 */
 #define CONSYS_BT_WIFI_SHARE_V33        0
 #define CONSYS_PMIC_CTRL_ENABLE         1
-#define CONSYS_EMI_MPU_SETTING          1
+#define CONSYS_EMI_MPU_SETTING          0
 #define CONSYS_AHB_CLK_MAGEMENT         1
 #define CONSYS_USE_PLATFORM_WRITE       1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE 1
-#define CONSYS_CLOCK_BUF_CTRL           1
+#define CONSYS_CLOCK_BUF_CTRL           0
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -281,7 +281,7 @@ extern UINT8 *mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 extern UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en);
 #endif
 extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
 #endif /* _MTK_WCN_CMB_HW_H_ */

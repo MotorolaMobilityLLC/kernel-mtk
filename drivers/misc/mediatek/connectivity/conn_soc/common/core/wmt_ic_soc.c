@@ -42,7 +42,7 @@
 #include "wmt_core.h"
 #include "wmt_lib.h"
 #include "stp_core.h"
-/* #include <mach/mt_pmic_wrap.h> */
+#include <upmu_common.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S

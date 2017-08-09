@@ -9,7 +9,7 @@
 #include <linux/cdev.h>
 #include <linux/poll.h>
 
-#include <mach/eint.h>
+/*#include <mach/eint.h>*/
 /*-----------driver own header files----------------*/
 #ifdef DFT_TAG
 #undef DFT_TAG

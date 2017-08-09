@@ -12,7 +12,7 @@
 #include <linux/slab.h>
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
-#include <mach/mt_io.h>
+#include <mt_io.h>
 
 #ifdef CONFIG_OF
 #include <linux/of_irq.h>
@@ -28,7 +28,7 @@
 #include <linux/clk.h>
 #include <linux/platform_device.h>
 #endif /* defined(CONFIG_MTK_CLKMGR) */
-#include <mach/sync_write.h>
+#include <sync_write.h>
 
 extern int mtk_btif_hal_get_log_lvl(void);
 
