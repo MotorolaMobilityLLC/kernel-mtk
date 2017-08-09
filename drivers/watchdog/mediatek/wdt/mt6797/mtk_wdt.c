@@ -343,7 +343,7 @@ void wdt_arch_reset(char mode)
 
 	while (1) {
 		wdt_dump_reg();
-		pr_err("wdt_arch_reset error\n");
+		pr_err("wdt_arch_reset dump\n");
 	}
 
 }
