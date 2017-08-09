@@ -50,9 +50,10 @@
 #include <mach/mt_spm_mtcmos.h>
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-#include <mach/mt_boot.h>
-#include <mach/system.h>
-#include "mach/mt_gpt.h"
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/mt_boot_common.h>
+/*#include <mach/system.h> TBD*/
+#include <mt-plat/mt_gpt.h>
 #endif
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
@@ -62,6 +63,7 @@
 #endif
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
+#include <mt-plat/mt_reboot.h>
 
 /*****************************************************************************
  * Global variable
@@ -76,7 +78,7 @@ unsigned int g_cust_eint_mt_pmic_debounce_en = 1;
  * PMIC extern variable
  ******************************************************************************/
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-static kal_bool long_pwrkey_press;
+static bool long_pwrkey_press;
 static unsigned long timer_pre;
 static unsigned long timer_pos;
 #define LONG_PWRKEY_PRESS_TIME_UNIT     500     /*500ms */
@@ -205,7 +207,7 @@ void pwrkey_int_handler(void)
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 		timer_pre = sched_clock();
 #endif
 #if defined(CONFIG_MTK_FPGA)
@@ -219,7 +221,7 @@ void pwrkey_int_handler_r(void)
 	PMICLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
 		timer_pos = sched_clock();
 		if (timer_pos - timer_pre >=
 		    LONG_PWRKEY_PRESS_TIME_UNIT * LONG_PWRKEY_PRESS_TIME_US) {

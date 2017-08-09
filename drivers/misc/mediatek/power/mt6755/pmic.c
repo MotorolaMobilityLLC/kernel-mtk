@@ -76,9 +76,10 @@
 #include "pmic_dvt.h"
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-#include <mach/mt_boot.h>
-#include <mach/system.h>
-#include "mach/mt_gpt.h"
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/mt_boot_common.h>
+/*#include <mach/system.h> TBD*/
+#include <mt-plat/mt_gpt.h>
 #endif
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
@@ -88,7 +89,7 @@
 #endif
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
-
+#include <mt-plat/mt_reboot.h>
 
 /*****************************************************************************
  * PMIC extern variable
