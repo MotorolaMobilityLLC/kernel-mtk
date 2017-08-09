@@ -112,7 +112,7 @@ static struct                clk *idvfs_i2c6_clk;    /* i2c6 clk ctrl */
 
 /* 0x10001000 0x2000, GPU, L-LL, BIG sarm ldo probe reg */
 
-static int func_lv_mask_idvfs;
+static int func_lv_mask_idvfs = 100;
 #define IDVFS_DREQ_ENABLE		0
 #define IDVFS_OCP_ENABLE		1
 #define IDVFS_OTP_ENABLE		1
@@ -123,8 +123,15 @@ static int func_lv_mask_idvfs;
 #define IDVFS_FREQMz_STORE		750
 #define IDVFS_CTRL_REG_DEFAULT	0x0010a203
 
+/* for ram console print flag */
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	#define CONFIG_IDVFS_AEE_RR_REC 0
+#endif
+
+#if CONFIG_IDVFS_AEE_RR_REC
+#define AEE_RR_REC(name, value)		aee_rr_rec_##name(value)
+#else
+#define AEE_RR_REC(name, value)
 #endif
 
 #if 1
@@ -235,17 +242,6 @@ static int func_lv_mask_idvfs;
 	#define	idvfs_info(fmt,	args...)		printf(IDVFS_TAG fmt, ##args)
 	#define	idvfs_debug(fmt, args...)		printf(IDVFS_TAG fmt, ##args)
 	#define idvfs_ver(fmt, args...)			printf(IDVFS_TAG fmt, ##args)
-#endif
-
-/* for ram console print flag */
-#if 0
-#define AEE_RR_REC(name, value) \
-	do { \
-		if (func_lv_mask_idvfs > 0) \
-			aee_rr_rec_##name(value); \
-	} while (0)
-#else
-#define AEE_RR_REC(name, value)
 #endif
 
 #define DA9214_MV_TO_STEP(volt_mv)			((volt_mv -	300) / 10)
@@ -610,11 +606,11 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1500);
 	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1501);
 	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1505);
-	udelay(50); /* wait DREQ stable */
+	udelay(2); /* wait DREQ stable */
 #endif
 
-	/* auto set AVG status*/
-	BigiDVFSSWAvg(0, 1);
+	/* auto set AVG status, enable at ATF code */
+	/* BigiDVFSSWAvg(0, 1); */
 
 	/* call smc function_id = SMC_IDVFS_BigiDVFSEnable(Fmax, Vproc_mv_x100, Vsram_mv_x100) */
 	SEC_BIGIDVFSENABLE(idvfs_init_opt.idvfs_ctrl_reg, cur_vproc_mv_x100, cur_vsram_mv_x100);
@@ -865,6 +861,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		idvfs_warning("iDVFS state machine = %u, can't into SWREQ mode.", idvfs_init_opt.idvfs_status);
 		return -2;
 	}
+#endif
 
 	/* check freqpct */
 	/* ATF clemp 20.41% ~ 116% percentage */
@@ -874,7 +871,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		((Freqpct_x100 <= (idvfs_init_opt.freq_min * 4)) ? (idvfs_init_opt.freq_min * 4) :
 		((Freqpct_x100 >= (idvfs_init_opt.freq_max * 4)) ? (idvfs_init_opt.freq_max * 4) :
 		  Freqpct_x100));
-#endif
 
 	/* get freq_swreq integer */
 	freq_swreq = (Freqpct_x100 / 100) << 12;
@@ -892,9 +888,9 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* for ram console printf */
 	AEE_RR_REC(idvfs_curr_volt, ((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300));
 
-#if 0
+#if 1
 	/* leave lower 505MHz */
-	if ((Freqpct_x100 > 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage < 2000)) {
+	if ((Freqpct_x100 >= 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage < 2000)) {
 		idvfs_ver("Low Freq leave %uMHz.\n",
 			(idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage / 4));
 		/* 01001: 3/4, 10001:4/5, 11001: 5/6, 11100:2/6, 01000: 4/4 */
@@ -917,7 +913,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* swreq = cur/max */
 	SEC_BIGIDVFS_WRITE(0x10222498, freq_swreq);
 
-#if 0
+#if 1
 	/* into lower 505MHz */
 	if ((Freqpct_x100 < 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage > 2000)) {
 		idvfs_low_freq_cnt++;
