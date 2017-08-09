@@ -504,13 +504,12 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 #if DLPT_FEATURE
 				kicker_pbm_by_flash(kdArg.arg);
 #endif
-				if (gLowPowerVbat == LOW_BATTERY_LEVEL_0 &&
+				if (!(gLowPowerVbat == LOW_BATTERY_LEVEL_0 &&
 				gLowPowerPer == BATTERY_PERCENT_LEVEL_0 &&
-				gLowPowerOc == BATTERY_OC_LEVEL_0)
-					i4RetValue = pF->flashlight_ioctl(cmd, kdArg.arg);
-				else
+				gLowPowerOc == BATTERY_OC_LEVEL_0))
 					logI("[FLASH_IOC_SET_ONOFF] PT condition (%d, %d, %d)",
 					gLowPowerVbat, gLowPowerPer, gLowPowerOc);
+				i4RetValue = pF->flashlight_ioctl(cmd, kdArg.arg);
 			} else {
 				logI("[FLASH_IOC_SET_ONOFF] function pointer is wrong -");
 			}
