@@ -35,7 +35,12 @@
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
+#if defined(CONFIG_ARCH_MT6797)
+#define MT_CCF_BRINGUP  1
+#else
 #define MT_CCF_BRINGUP	0
+#endif
+
 #endif
 #define MT_CCF_DEBUG	0
 #define	CHECK_PWR_ST	1

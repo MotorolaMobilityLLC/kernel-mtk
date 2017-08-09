@@ -28,6 +28,8 @@
 #define MT_CCF_DEBUG	1
 #if defined(CONFIG_ARCH_MT6755)
 #define MT_CCF_BRINGUP  1
+#elif defined(CONFIG_ARCH_MT6797)
+#define MT_CCF_BRINGUP  0
 #else
 #define MT_CCF_BRINGUP	0
 #endif
