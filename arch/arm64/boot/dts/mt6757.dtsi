@@ -621,10 +621,20 @@
 		interrupts = <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	ap_ccif1@1020b000 {
-		compatible = "mediatek,ap_ccif1";
-		reg = <0 0x1020b000 0 0x1000>;
-		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>;
+	ap2c2k_ccif@1020b000 {
+		compatible = "mediatek,ap2c2k_ccif";
+		reg = <0x1020b000 0x1000>, //CCIF
+		<0x10211000 0x300>, // MD1 PCCIF
+		<0x10213000 0x300>; // MD3 PCCIF
+		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>, // C2K_CCIF
+				<GIC_SPI 249 IRQ_TYPE_EDGE_FALLING>; // C2K_WDT
+		cell-index = <2>;
+		ccif,major = <169>;
+		ccif,minor_base = <0>;
+		ccif,capability = <2>;	// tx busy stop
+		mediatek,md_smem_size = <0x400000>; //md share memory size
+		clocks = <&scpsys SCP_SYS_C2K>;
+		clock-names = "scp-sys-c2k-main";
 	};
 
 	md_ccif1@1020c000 {
