@@ -491,7 +491,7 @@ static int mt_soc_debug_open(struct inode *inode, struct file *file)
 
 static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
-	const int size = 4096;
+	const int size = 6144;
 	/* char buffer[size]; */
 	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
@@ -506,97 +506,97 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 	AudDrv_Clk_On();
 
 	pr_debug("mt_soc_debug_read\n");
-	n = scnprintf(buffer + n, size - n, "AUDIO_TOP_CON0  = 0x%x\n",
+	n = scnprintf(buffer + n, size - n, "AUDIO_TOP_CON0	   = 0x%x\n",
 		      Afe_Get_Reg(AUDIO_TOP_CON0));
-	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AUDIO_TOP_CON1));
-	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON2	   = 0x%x\n",
 		       Afe_Get_Reg(AUDIO_TOP_CON2));
-	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON3		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON3	   = 0x%x\n",
 		       Afe_Get_Reg(AUDIO_TOP_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_DAC_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAC_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAC_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_DAC_CON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAC_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAC_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_I2S_CON));
-	n += scnprintf(buffer + n, size - n, "AFE_DAIBT_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAIBT_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAIBT_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN0			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN0		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN0));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN1			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN1		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN1));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN2			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN2		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN2));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN3			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN3		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN3));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN4			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN4		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN4));
-	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_I2S_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_I2S_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_CON		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_CON	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MRGIF_CON));
-	n += scnprintf(buffer + n, size - n, "AFE_DL1_BASE		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL1_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_DL1_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL1_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_DL1_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL1_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_END));
 	n += scnprintf(buffer + n, size - n, "AFE_DL1_D2_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_D2_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_DL1_D2_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL1_D2_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_D2_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_DL1_D2_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL1_D2_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL1_D2_END));
 	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_D2_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_D2_END));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_D2_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_D2_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON3		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_I2S_CON3	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_I2S_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_DL2_BASE		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL2_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL2_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_DL2_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL2_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL2_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_DL2_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DL2_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DL2_END));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN5			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN5		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN5));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN_24BIT		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN_24BIT	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN_24BIT));
-	n += scnprintf(buffer + n, size - n, "AFE_AWB_BASE		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_AWB_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_AWB_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_AWB_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_AWB_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_AWB_END));
-	n += scnprintf(buffer + n, size - n, "AFE_AWB_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_AWB_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_AWB_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_BASE		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_END));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_VUL_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_VUL_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_DAI_BASE		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAI_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAI_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_DAI_END		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAI_END	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAI_END));
-	n += scnprintf(buffer + n, size - n, "AFE_DAI_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_DAI_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAI_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN6			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN6		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN6));
-	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MSB		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MSB	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MSB));
-	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MON0));
-	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MON1));
-	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MON2));
-	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON4		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MON4	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MON4));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_DL_SRC2_CON0  = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_DL_SRC2_CON0));
@@ -610,7 +610,7 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_ADDA_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_UL_DL_CON0    = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_UL_DL_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_ADDA_SRC_DEBUG	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_SRC_DEBUG   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_SRC_DEBUG));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_SRC_DEBUG_MON0= 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_SRC_DEBUG_MON0));
@@ -620,31 +620,31 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_ADDA_NEWIF_CFG0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_NEWIF_CFG1    = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_NEWIF_CFG1));
-	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_DEBUG	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_DEBUG   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_DEBUG));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_MON	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_MON));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_COEFF	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_COEFF   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_COEFF));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_CON1));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_GAIN	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SIDETONE_GAIN));
-	n += scnprintf(buffer + n, size - n, "AFE_SGEN_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_SGEN_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_SGEN_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_TOP_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_TOP_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_PREDIS_CON0   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_PREDIS_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_PREDIS_CON1   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ADDA_PREDIS_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MRGIF_MON0));
-	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MRGIF_MON1));
-	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_MRGIF_MON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MRGIF_MON2));
 	n += scnprintf(buffer + n, size - n, "AFE_MOD_DAI_BASE	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MOD_DAI_BASE));
@@ -654,7 +654,7 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_MOD_DAI_CUR));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CON	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_CON));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_STATUS	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_STATUS   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_STATUS));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CLR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_CLR));
@@ -662,11 +662,11 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_IRQ_MCU_CNT1));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_CNT2));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_EN		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_EN	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_EN));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_MON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_MON2));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_CNT5		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_CNT5	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_CNT5));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ1_MCU_CNT_MON   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ1_MCU_CNT_MON));
@@ -674,29 +674,29 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_IRQ2_MCU_CNT_MON));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ1_MCU_EN_CNT_MON= 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ1_MCU_EN_CNT_MON));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_DEBUG		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_DEBUG	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_DEBUG));
 	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_MAXLEN	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_MAXLEN));
 	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_PBUF_SIZE    = 0x%x\n",
 		       Afe_Get_Reg(AFE_MEMIF_PBUF_SIZE));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT7	   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT7    = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_CNT7));
 	n += scnprintf(buffer + n, size - n, "AFE_APLL1_TUNER_CFG    = 0x%x\n",
 		       Afe_Get_Reg(AFE_APLL1_TUNER_CFG));
 	n += scnprintf(buffer + n, size - n, "AFE_APLL2_TUNER_CFG    = 0x%x\n",
 		       Afe_Get_Reg(AFE_APLL2_TUNER_CFG));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON3		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON3	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CONN		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CONN	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CONN));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CUR));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN2_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN2_CON0));
@@ -708,7 +708,7 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_GAIN2_CON3));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN2_CONN	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN2_CONN));
-	n += scnprintf(buffer + n, size - n, "AFE_GAIN2_CUR		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_GAIN2_CUR	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN2_CUR));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN2_CONN2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN2_CONN2));
@@ -718,51 +718,51 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_GAIN1_CONN2));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CONN3	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_GAIN1_CONN3));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN7			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN7		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN7));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN8			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN8		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN8));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN9			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN9		   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN9));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN10		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN10	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_CONN10));
-	n += scnprintf(buffer + n, size - n, "FPGA_CFG0			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "FPGA_CFG0		   = 0x%x\n",
 		       Afe_Get_Reg(FPGA_CFG0));
-	n += scnprintf(buffer + n, size - n, "FPGA_CFG1			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "FPGA_CFG1		   = 0x%x\n",
 		       Afe_Get_Reg(FPGA_CFG1));
-	n += scnprintf(buffer + n, size - n, "FPGA_VER			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "FPGA_VER		   = 0x%x\n",
 		       Afe_Get_Reg(FPGA_VER));
-	n += scnprintf(buffer + n, size - n, "FPGA_STC			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "FPGA_STC		   = 0x%x\n",
 		       Afe_Get_Reg(FPGA_STC));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON0		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON0	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON1		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON1	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON2	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON3		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON3	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON4		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON4	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON4));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON5		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON5	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON5));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON6		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON6	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON6));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON7		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON7	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON7));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON8		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON8	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON8));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON9		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON9	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON9));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON10	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON10));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON11	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON11));
-	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON	   = 0x%x\n",
 		       Afe_Get_Reg(PCM_INTF_CON));
-	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON2		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON2	   = 0x%x\n",
 		       Afe_Get_Reg(PCM_INTF_CON2));
-	n += scnprintf(buffer + n, size - n, "PCM2_INTF_CON		   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "PCM2_INTF_CON	   = 0x%x\n",
 		       Afe_Get_Reg(PCM2_INTF_CON));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON13	   = 0x%x\n",
 		       Afe_Get_Reg(AFE_ASRC_CON13));
@@ -916,7 +916,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr, regvalue);
 	}
 
-	AudDrv_Clk_Off();
+	/* AudDrv_Clk_Off(); */
 	return count;
 }
 
