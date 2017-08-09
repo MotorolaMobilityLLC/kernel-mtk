@@ -353,7 +353,7 @@ const uint32_t hdmi_connection_reg[HDMI_INTER_CONN_OUTPUT_NUM] = {
 static bool check_bits_and_reg(short reg_addr, char bits)
 {
 	if (reg_addr <= 0 || bits < 0) {
-		pr_notice("reg_addr = %x bits = %d\n", reg_addr, bits);
+		pr_warn("reg_addr = %x bits = %d\n", reg_addr, bits);
 		return false;
 	}
 	return true;

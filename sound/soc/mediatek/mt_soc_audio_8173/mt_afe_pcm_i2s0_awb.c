@@ -146,8 +146,6 @@ static int mt_pcm_i2s0_awb_open(struct snd_pcm_substream *substream)
 	mt_afe_main_clk_on();
 	mt_afe_emi_clk_on();
 
-	pr_info("%s device = %d\n", __func__, substream->pcm->device);
-
 	if (ret < 0) {
 		pr_err("%s mt_pcm_i2s0_awb_close\n", __func__);
 		mt_pcm_i2s0_awb_close(substream);
@@ -164,7 +162,7 @@ static int mt_pcm_i2s0_awb_close(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_i2s0_awb_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (priv->prepared) {
 		if (priv->enable_i2s0_low_jitter) {
@@ -209,7 +207,7 @@ static int mt_pcm_i2s0_awb_hw_params(struct snd_pcm_substream *substream,
 
 static int mt_pcm_i2s0_awb_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -254,7 +252,7 @@ static int mt_pcm_i2s0_awb_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_i2s0_awb_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_info("%s cmd=%d\n", __func__, cmd);
+	pr_debug("%s cmd=%d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -330,11 +328,11 @@ static int mt_pcm_i2s0_awb_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_i2s0_awb_priv *priv;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_I2S0_AWB_PCM);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_i2s0_awb_priv), GFP_KERNEL);

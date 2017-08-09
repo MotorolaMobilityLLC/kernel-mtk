@@ -306,7 +306,7 @@ void mt_afe_set_irq_state(uint32_t irq_mode, bool enable)
 	case MT_AFE_IRQ_MCU_MODE_IRQ2:
 		if (unlikely(!enable && mt_afe_is_ul_memif_enable())) {
 			/* IRQ2 is in used */
-			pr_info("skip disable IRQ2, AFE_DAC_CON0 = 0x%x\n",
+			pr_debug("skip disable IRQ2, AFE_DAC_CON0 = 0x%x\n",
 				mt_afe_get_reg(AFE_DAC_CON0));
 			break;
 		}
@@ -692,7 +692,6 @@ void mt_afe_set_hw_digital_gain_mode(uint32_t gain_type, uint32_t sample_rate,
 
 void mt_afe_set_hw_digital_gain_state(int gain_type, bool enable)
 {
-	pr_info("%s gain_type = %d enable = %d\n", __func__, gain_type, enable);
 	switch (gain_type) {
 	case MT_AFE_HW_DIGITAL_GAIN1:
 		if (enable) {
@@ -716,7 +715,6 @@ void mt_afe_set_hw_digital_gain_state(int gain_type, bool enable)
 
 void mt_afe_set_hw_digital_gain(uint32_t gain, int gain_type)
 {
-	pr_info("%s gain = 0x%x gain_type = %d\n", __func__, gain, gain_type);
 	switch (gain_type) {
 	case MT_AFE_HW_DIGITAL_GAIN1:
 		mt_afe_set_reg(AFE_GAIN1_CON1, gain, 0xffffffff);
@@ -1301,7 +1299,7 @@ void mt_afe_suspend(void)
 	if (aud_drv_suspend_status)
 		return;
 
-	pr_notice("+%s\n", __func__);
+	pr_debug("+%s\n", __func__);
 
 	mt_afe_store_reg(&suspend_reg);
 
@@ -1314,7 +1312,7 @@ void mt_afe_suspend(void)
 
 	aud_drv_suspend_status = true;
 
-	pr_notice("-%s\n", __func__);
+	pr_debug("-%s\n", __func__);
 }
 
 void mt_afe_resume(void)
@@ -1322,7 +1320,7 @@ void mt_afe_resume(void)
 	if (!aud_drv_suspend_status)
 		return;
 
-	pr_notice("+%s\n", __func__);
+	pr_debug("+%s\n", __func__);
 
 	if (!audio_power_status) {
 		int ret = pm_runtime_get_sync(mach_dev);
@@ -1340,7 +1338,7 @@ void mt_afe_resume(void)
 
 	aud_drv_suspend_status = false;
 
-	pr_notice("-%s\n", __func__);
+	pr_debug("-%s\n", __func__);
 }
 
 struct mt_afe_mem_control_t *mt_afe_get_mem_ctx(enum mt_afe_mem_context mem_context)
@@ -1630,8 +1628,6 @@ static void mt_afe_init_control(void *dev)
 {
 	int i = 0;
 
-	pr_info("%s\n", __func__);
-
 	audio_mrg = devm_kzalloc(dev, sizeof(struct mt_afe_merge_interface), GFP_KERNEL);
 	audio_dai_bt = devm_kzalloc(dev, sizeof(struct mt_afe_digital_dai_bt), GFP_KERNEL);
 	audio_adc_i2s = devm_kzalloc(dev, sizeof(struct mt_afe_digital_i2s), GFP_KERNEL);
@@ -1675,7 +1671,6 @@ static int mt_afe_register_irq(void *dev)
 static irqreturn_t mt_afe_irq_handler(int irq, void *dev_id)
 {
 	const uint32_t reg_value = (mt_afe_get_reg(AFE_IRQ_MCU_STATUS) & IRQ_STATUS_BIT);
-	/* pr_info("%s AFE_IRQ_MCU_STATUS = %x\n", __func__, reg_value); */
 
 	if (unlikely(reg_value == 0)) {
 		pr_warn("%s reg_value = 0\n", __func__);
@@ -1780,14 +1775,14 @@ static void mt_afe_dl_interrupt_handler(void)
 	hw_cur_read_index = mt_afe_get_reg(AFE_DL1_CUR);
 
 	if (hw_cur_read_index == 0) {
-		pr_notice("%s hw_cur_read_index == 0\n", __func__);
+		pr_warn("%s hw_cur_read_index == 0\n", __func__);
 		hw_cur_read_index = afe_block->phy_buf_addr;
 	}
 
 	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
 
 	/*
-	   pr_notice("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   pr_debug("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
 	   __func__, hw_cur_read_index, hw_memory_index, afe_block->physical_buffer_addr);
 	 */
 
@@ -1828,14 +1823,14 @@ static void mt_afe_dl2_interrupt_handler(void)
 	hw_cur_read_index = mt_afe_get_reg(AFE_DL2_CUR);
 
 	if (hw_cur_read_index == 0) {
-		pr_notice("%s hw_cur_read_index == 0\n", __func__);
+		pr_warn("%s hw_cur_read_index == 0\n", __func__);
 		hw_cur_read_index = afe_block->phy_buf_addr;
 	}
 
 	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
 
 	/*
-	   pr_notice("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   pr_debug("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
 	   __func__, hw_cur_read_index, hw_memory_index, afe_block->physical_buffer_addr);
 	 */
 
@@ -1890,14 +1885,14 @@ static void mt_afe_hdmi_interrupt_handler(void)
 
 	hw_cur_read_index = mt_afe_get_reg(AFE_HDMI_OUT_CUR);
 	if (hw_cur_read_index == 0) {
-		pr_notice("%s hw_cur_read_index = 0\n", __func__);
+		pr_warn("%s hw_cur_read_index = 0\n", __func__);
 		hw_cur_read_index = afe_block->phy_buf_addr;
 	}
 
 	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
 
 	/*
-	   pr_info("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   pr_debug("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
 	   __func__, hw_cur_read_index, hw_memory_index, afe_block->physical_buffer_addr);
 	 */
 
@@ -1913,7 +1908,7 @@ static void mt_afe_hdmi_interrupt_handler(void)
 		pr_warn("%s DMA address is not aligned 16 bytes\n", __func__);
 
 	/*
-	   pr_info("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
+	   pr_debug("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
 	   __func__, afe_block->read_index, afe_consumed_bytes, hw_memory_index);
 	 */
 
@@ -1934,20 +1929,20 @@ static void mt_afe_hdmi_raw_interrupt_handler(void)
 	    &(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI_RAW)->block);
 
 	if (mt_afe_get_reg(AFE_IEC_BURST_INFO) & 0x000010000) {
-		pr_notice("%s HW is Not ready to get next burst info\n", __func__);
+		pr_debug("%s HW is Not ready to get next burst info\n", __func__);
 		return;
 	}
 
 	hw_cur_read_index = mt_afe_get_reg(AFE_SPDIF_CUR);
 	if (hw_cur_read_index == 0) {
-		pr_notice("%s hw_cur_read_index = 0\n", __func__);
+		pr_warn("%s hw_cur_read_index = 0\n", __func__);
 		hw_cur_read_index = afe_block->phy_buf_addr;
 	}
 
 	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
 
 	/*
-	   pr_notice("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   pr_debug("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
 	   __func__, hw_cur_read_index, hw_memory_index, afe_block->pucPhysBufAddr);
 	 */
 
@@ -1960,7 +1955,7 @@ static void mt_afe_hdmi_raw_interrupt_handler(void)
 	}
 
 	/*
-	   pr_notice("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
+	   pr_debug("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
 	   __func__, afe_block->read_index, afe_consumed_bytes, hw_memory_index);
 	 */
 
@@ -1980,7 +1975,7 @@ static void mt_afe_hdmi_raw_interrupt_handler(void)
 			0xffffffff);
 
 	/*
-	   pr_notice("%s burst_len 0x%x iec_nsadr 0x%x read_index 0x%x afe_consumed_bytes 0x%x\n",
+	   pr_debug("%s burst_len 0x%x iec_nsadr 0x%x read_index 0x%x afe_consumed_bytes 0x%x\n",
 	   __func__, burst_len, afe_block->iec_nsadr, afe_block->read_index, afe_consumed_bytes);
 	 */
 
@@ -1998,20 +1993,20 @@ static void mt_afe_spdif_interrupt_handler(void)
 		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_SPDIF)->block);
 
 	if (mt_afe_get_reg(AFE_IEC2_BURST_INFO) & 0x000010000) {
-		pr_notice("%s HW is Not ready to get next burst info\n", __func__);
+		pr_debug("%s HW is Not ready to get next burst info\n", __func__);
 		return;
 	}
 
 	hw_cur_read_index = mt_afe_get_reg(AFE_SPDIF2_CUR);
 	if (hw_cur_read_index == 0) {
-		pr_notice("%s hw_cur_read_index = 0\n", __func__);
+		pr_warn("%s hw_cur_read_index = 0\n", __func__);
 		hw_cur_read_index = afe_block->phy_buf_addr;
 	}
 
 	hw_memory_index = (hw_cur_read_index - afe_block->phy_buf_addr);
 
 	/*
-	   pr_notice("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
+	   pr_debug("%s hw_cur_read_index = 0x%x hw_memory_index = 0x%x addr = 0x%x\n",
 	   __func__, hw_cur_read_index, hw_memory_index, afe_block->pucPhysBufAddr);
 	 */
 
@@ -2024,7 +2019,7 @@ static void mt_afe_spdif_interrupt_handler(void)
 	}
 
 	/*
-	   pr_notice("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
+	   pr_debug("%s read_index:%x afe_consumed_bytes:%x hw_memory_index:%x\n",
 	   __func__, afe_block->read_index, afe_consumed_bytes, hw_memory_index);
 	 */
 
@@ -2044,7 +2039,7 @@ static void mt_afe_spdif_interrupt_handler(void)
 		    0xffffffff);
 
 	/*
-	   pr_notice("%s burst_len 0x%x iec_nsadr 0x%x read_index 0x%x afe_consumed_bytes 0x%x\n",
+	   pr_debug("%s burst_len 0x%x iec_nsadr 0x%x read_index 0x%x afe_consumed_bytes 0x%x\n",
 	   __func__, burst_len, afe_block->iec_nsadr, afe_block->read_index, afe_consumed_bytes);
 	 */
 
@@ -2089,9 +2084,9 @@ static void mt_afe_handle_mem_context(enum mt_afe_mem_context mem_context)
 		hw_get_bytes += block->buffer_size;
 
 	/*
-	   pr_notice("%s hw_get_bytes:%x hw_cur_read_index:%x read_index:%x write_index:0x%x\n",
+	   pr_debug("%s hw_get_bytes:%x hw_cur_read_index:%x read_index:%x write_index:0x%x\n",
 	   __func__, hw_get_bytes, hw_cur_read_index, block->read_index, block->write_index);
-	   pr_notice("%s physical_buffer_addr:%x mem_context = %d\n",
+	   pr_debug("%s physical_buffer_addr:%x mem_context = %d\n",
 	   __func__, block->physical_buffer_addr, mem_context); */
 
 	block->write_index += hw_get_bytes;
@@ -2181,7 +2176,7 @@ static uint32_t mt_afe_get_apll_by_rate(uint32_t sample_rate)
 
 static void mt_afe_recover_reg(struct mt_afe_suspend_reg *backup_reg)
 {
-	pr_notice("+%s\n", __func__);
+	pr_debug("+%s\n", __func__);
 
 	if (!backup_reg) {
 		pr_warn("%s backup_reg is null\n", __func__);
@@ -2343,12 +2338,12 @@ static void mt_afe_recover_reg(struct mt_afe_suspend_reg *backup_reg)
 	mt_afe_set_reg(AFE_TDM_CON2, backup_reg->reg_AFE_TDM_CON2, MASK_ALL);
 
 	mt_afe_main_clk_off();
-	pr_notice("-%s\n", __func__);
+	pr_debug("-%s\n", __func__);
 }
 
 static void mt_afe_store_reg(struct mt_afe_suspend_reg *backup_reg)
 {
-	pr_notice("+%s\n", __func__);
+	pr_debug("+%s\n", __func__);
 
 	if (!backup_reg) {
 		pr_warn("%s backup_reg is null\n", __func__);
@@ -2510,7 +2505,7 @@ static void mt_afe_store_reg(struct mt_afe_suspend_reg *backup_reg)
 	backup_reg->reg_AFE_TDM_CON2 = mt_afe_get_reg(AFE_TDM_CON2);
 
 	mt_afe_main_clk_off();
-	pr_notice("-%s\n", __func__);
+	pr_debug("-%s\n", __func__);
 }
 
 static void mt_afe_enable_i2s_div_power(uint32_t divider)

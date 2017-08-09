@@ -118,9 +118,6 @@ static int mt_pcm_mrgrx_open(struct snd_pcm_substream *substream)
 
 	snd_soc_set_runtime_hwparams(substream, &mt_pcm_mrgrx_hardware);
 
-	pr_info("%s rates= 0x%x mt_pcm_mrgrx_hardware= %p hw= %p\n",
-		__func__, runtime->hw.rates, &mt_pcm_mrgrx_hardware, &runtime->hw);
-
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &mrgrx_constraints_sample_rates);
 	if (unlikely(ret < 0))
@@ -148,7 +145,7 @@ static int mt_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_mrgrx_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X) CMB_STUB_AIF_0);
 
@@ -191,7 +188,7 @@ static int mt_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_mrgrx_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_info("%s rate = %u channels = %u period_size = %lu\n",
+	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
 		__func__, runtime->rate, runtime->channels, runtime->period_size);
 
 	if (priv->prepare_done == false) {
@@ -269,11 +266,11 @@ static int mt_pcm_mrgrx_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_mrgrx_priv *priv;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
 
 	if (pdev->dev.of_node) {
 		dev_set_name(dev, "%s", MT_SOC_MRGRX_PLARFORM_NAME);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_mrgrx_priv), GFP_KERNEL);

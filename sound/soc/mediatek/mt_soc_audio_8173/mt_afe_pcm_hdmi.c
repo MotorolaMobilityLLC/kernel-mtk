@@ -119,8 +119,6 @@ static int mt_pcm_hdmi_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_err("%s snd_pcm_hw_constraint_integer fail %d\n", __func__, ret);
 
-	pr_info("%s substream->pcm->device = %d\n", __func__, substream->pcm->device);
-
 	mt_afe_main_clk_on();
 	mt_afe_emi_clk_on();
 
@@ -159,7 +157,7 @@ static int mt_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		pr_err("%s snd_pcm_lib_malloc_pages fail %d\n", __func__, ret);
 
-	pr_info("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%llx\n",
+	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%llx\n",
 		__func__, runtime->dma_bytes, runtime->dma_area,
 		(unsigned long long)runtime->dma_addr);
 	return ret;
@@ -176,7 +174,7 @@ static int mt_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_hdmi_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_info("%s rate = %u channels = %u period_size = %lu\n",
+	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
 		__func__, runtime->rate, runtime->channels, runtime->period_size);
 
 	if (!priv->prepared) {
@@ -199,7 +197,7 @@ static int mt_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	uint32_t mclk_div;
 
-	pr_info("%s period_size = %lu\n", __func__, runtime->period_size);
+	pr_debug("%s period_size = %lu\n", __func__, runtime->period_size);
 
 	mt_afe_add_ctx_substream(MT_AFE_MEM_CTX_HDMI, substream);
 
@@ -244,7 +242,7 @@ static int mt_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	mt_pcm_hdmi_set_interconnection(INTER_DISCONNECT, runtime->channels);
 
@@ -275,7 +273,7 @@ static int mt_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_hdmi_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_info("%s cmd = %d\n", __func__, cmd);
+	pr_debug("%s cmd = %d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -312,7 +310,7 @@ static int hdmi_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	struct mt_pcm_hdmi_priv *priv = snd_soc_component_get_drvdata(component);
 
 	if (priv->hdmi_loop_type == ucontrol->value.integer.value[0]) {
-		pr_notice("%s dummy operation for %u\n", __func__, priv->hdmi_loop_type);
+		pr_debug("%s dummy operation for %u\n", __func__, priv->hdmi_loop_type);
 		return 0;
 	}
 
@@ -379,7 +377,7 @@ static int hdmi_sinegen_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	uint32_t channels = 2;
 
 	if (priv->hdmi_sinegen_switch == ucontrol->value.integer.value[0]) {
-		pr_notice("%s dummy operation for %u\n", __func__, priv->hdmi_sinegen_switch);
+		pr_debug("%s dummy operation for %u\n", __func__, priv->hdmi_sinegen_switch);
 		return 0;
 	}
 
@@ -528,11 +526,11 @@ static int mt_pcm_hdmi_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_hdmi_priv *priv;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_HDMI_PLATFORM_NAME);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_hdmi_priv), GFP_KERNEL);
@@ -548,7 +546,6 @@ static int mt_pcm_hdmi_dev_probe(struct platform_device *pdev)
 
 static int mt_pcm_hdmi_dev_remove(struct platform_device *pdev)
 {
-	pr_info("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }

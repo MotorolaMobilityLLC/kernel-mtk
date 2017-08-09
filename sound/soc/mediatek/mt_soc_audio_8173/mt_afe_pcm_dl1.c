@@ -86,9 +86,6 @@ static int mt_pcm_dl1_open(struct snd_pcm_substream *substream)
 
 	snd_soc_set_runtime_hwparams(substream, &mt_pcm_dl1_hardware);
 
-	pr_info("%s rates= 0x%x mt_pcm_dl1_hardware= %p hw= %p\n",
-		__func__, runtime->hw.rates, &mt_pcm_dl1_hardware, &runtime->hw);
-
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &mt_pcm_dl1_constraints_rates);
 	if (unlikely(ret < 0))
@@ -101,9 +98,6 @@ static int mt_pcm_dl1_open(struct snd_pcm_substream *substream)
 	/* here open audio clocks */
 	mt_afe_main_clk_on();
 	mt_afe_dac_clk_on();
-
-	/* print for hw pcm information */
-	pr_debug("%s substream->pcm->device = %d\n", __func__, substream->pcm->device);
 
 	if (unlikely(ret < 0)) {
 		pr_err("%s mt_pcm_dl1_close\n", __func__);
@@ -130,7 +124,7 @@ static int mt_pcm_dl1_close(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	if (priv->prepared) {
 		mt_pcm_dl1_post_stop(substream);
 		mt_afe_remove_ctx_substream(MT_AFE_MEM_CTX_DL1);
@@ -389,7 +383,7 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_dl1_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_info("%s cmd=%d\n", __func__, cmd);
+	pr_debug("%s cmd=%d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -494,11 +488,11 @@ static int mt_pcm_dl1_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_dl1_priv *priv;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_DL1_PCM);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_dl1_priv), GFP_KERNEL);

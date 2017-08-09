@@ -134,9 +134,6 @@ static int mt_pcm_capture2_open(struct snd_pcm_substream *substream)
 	mt_afe_main_clk_on();
 	mt_afe_emi_clk_on();
 
-	/* print for hw pcm information */
-	pr_info("%s device = %d\n", __func__, substream->pcm->device);
-
 	if (unlikely(ret < 0)) {
 		pr_err("%s mt_pcm_capture2_close\n", __func__);
 		mt_pcm_capture2_close(substream);
@@ -149,7 +146,7 @@ static int mt_pcm_capture2_open(struct snd_pcm_substream *substream)
 
 static int mt_pcm_capture2_close(struct snd_pcm_substream *substream)
 {
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	mt_afe_main_clk_off();
 	mt_afe_emi_clk_off();
@@ -179,7 +176,7 @@ static int mt_pcm_capture2_hw_params(struct snd_pcm_substream *substream,
 
 static int mt_pcm_capture2_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -207,7 +204,7 @@ static int mt_pcm_capture2_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_capture2_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_info("%s cmd=%d\n", __func__, cmd);
+	pr_debug("%s cmd=%d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -260,10 +257,10 @@ static struct snd_soc_platform_driver mt_pcm_capture2_platform = {
 
 static int mt_pcm_capture2_dev_probe(struct platform_device *pdev)
 {
-	pr_notice("%s dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
 	if (pdev->dev.of_node) {
 		dev_set_name(&pdev->dev, "%s", MT_SOC_UL2_PCM);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(&pdev->dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(&pdev->dev));
 	}
 	return snd_soc_register_platform(&pdev->dev, &mt_pcm_capture2_platform);
 }

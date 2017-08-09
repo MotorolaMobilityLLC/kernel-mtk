@@ -32,8 +32,6 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 
 	mt_afe_main_clk_on();
 
-	pr_notice("%s\n", __func__);
-
 	n = scnprintf(buffer + n, size - n, "AUDIO_TOP_CON0 = 0x%x\n",
 		      mt_afe_get_reg(AUDIO_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON1 = 0x%x\n",
@@ -289,7 +287,6 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON21  = 0x%x\n",
 		       mt_afe_get_reg(AFE_ASRC_CON21));
 #endif
-	pr_notice("%s len = %d\n", __func__, n);
 
 	mt_afe_main_clk_off();
 

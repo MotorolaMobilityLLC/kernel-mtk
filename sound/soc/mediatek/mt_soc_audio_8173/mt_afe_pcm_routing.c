@@ -84,10 +84,8 @@ static int ap_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	uint32_t sample_rate = 48000;
 	long set_value = ucontrol->value.integer.value[0];
 
-	pr_info("%s %ld\n", __func__, set_value);
-
 	if (priv->ap_loopback_type == set_value) {
-		pr_notice("%s dummy operation for %u", __func__, priv->ap_loopback_type);
+		pr_debug("%s dummy operation for %u", __func__, priv->ap_loopback_type);
 		return 0;
 	}
 
@@ -244,7 +242,7 @@ static int afe_sinegen_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	struct mt_pcm_routing_priv *priv = snd_soc_component_get_drvdata(component);
 
 	if (priv->afe_sinegen_type == ucontrol->value.integer.value[0]) {
-		pr_notice("%s dummy operation for %u", __func__, priv->afe_sinegen_type);
+		pr_debug("%s dummy operation for %u", __func__, priv->afe_sinegen_type);
 		return 0;
 	}
 
@@ -394,8 +392,6 @@ static const struct snd_kcontrol_new mt_pcm_routing_controls[] = {
 
 static int mt_pcm_routing_probe(struct snd_soc_platform *platform)
 {
-	pr_notice("%s\n", __func__);
-
 	snd_soc_add_platform_controls(platform, mt_pcm_routing_controls,
 				      ARRAY_SIZE(mt_pcm_routing_controls));
 	return 0;
@@ -446,11 +442,11 @@ static int mt_pcm_routing_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_routing_priv *priv;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_ROUTING_PCM);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_routing_priv), GFP_KERNEL);

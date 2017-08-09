@@ -53,8 +53,6 @@ static int mt_pcm_spdif_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_err("%s snd_pcm_hw_constraint_integer fail %d\n", __func__, ret);
 
-	pr_notice("%s substream->pcm->device = %d\n", __func__, substream->pcm->device);
-
 	mt_afe_main_clk_on();
 	mt_afe_emi_clk_on();
 	return ret;
@@ -92,7 +90,7 @@ static int mt_pcm_spdif_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		pr_err("%s snd_pcm_lib_malloc_pages fail %d\n", __func__, ret);
 
-	pr_info("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%llx\n",
+	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%llx\n",
 		__func__, runtime->dma_bytes, runtime->dma_area,
 		(unsigned long long)runtime->dma_addr);
 
@@ -110,7 +108,7 @@ static int mt_pcm_spdif_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_spdif_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_notice("%s rate = %u channels = %u period_size = %lu\n",
+	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
 		  __func__, runtime->rate, runtime->channels, runtime->period_size);
 
 	if (!priv->prepared) {
@@ -134,7 +132,7 @@ static int mt_pcm_spdif_start(struct snd_pcm_substream *substream)
 	struct mt_afe_block_t *block = &(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_SPDIF)->block);
 	int channel_status;
 
-	pr_notice("%s period_size = %lu\n", __func__, runtime->period_size);
+	pr_debug("%s period_size = %lu\n", __func__, runtime->period_size);
 
 	mt_afe_add_ctx_substream(MT_AFE_MEM_CTX_SPDIF, substream);
 
@@ -225,7 +223,7 @@ static int mt_pcm_spdif_start(struct snd_pcm_substream *substream)
 	/* set IEC enable, valid bit, encoded data & raw data from DRAM */
 	mt_afe_set_reg(AFE_IEC2_CFG, 0x00910011, 0xffffffff);
 
-	pr_notice("%s channel_status 0x%x AFE_IEC2_BURST_INFO 0x%x AFE_SPDIF2_CUR 0x%x\n",
+	pr_debug("%s channel_status 0x%x AFE_IEC2_BURST_INFO 0x%x AFE_SPDIF2_CUR 0x%x\n",
 		  __func__, channel_status, mt_afe_get_reg(AFE_IEC2_BURST_INFO),
 		  mt_afe_get_reg(AFE_SPDIF2_CUR));
 
@@ -236,7 +234,7 @@ static int mt_pcm_spdif_stop(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_notice("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	mt_afe_set_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ8, false);
 
@@ -264,7 +262,7 @@ static int mt_pcm_spdif_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_spdif_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_notice("%s cmd = %d\n", __func__, cmd);
+	pr_debug("%s cmd = %d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -306,11 +304,11 @@ static int mt_pcm_spdif_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mt_pcm_spdif_priv *priv;
 
-	pr_notice("%s: dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_SPDIF_PLATFORM_NAME);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_spdif_priv), GFP_KERNEL);
@@ -324,7 +322,6 @@ static int mt_pcm_spdif_dev_probe(struct platform_device *pdev)
 
 static int mt_pcm_spdif_dev_remove(struct platform_device *pdev)
 {
-	pr_notice("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }

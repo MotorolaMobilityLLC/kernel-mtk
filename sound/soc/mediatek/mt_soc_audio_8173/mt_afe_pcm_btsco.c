@@ -320,7 +320,7 @@ static int mt_pcm_btsco_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_btsco_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_info("%s stream = %d cmd = %d\n", __func__, substream->stream, cmd);
+	pr_debug("%s stream = %d cmd = %d\n", __func__, substream->stream, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -364,10 +364,10 @@ static struct snd_soc_platform_driver mt_pcm_btsco_platform = {
 
 static int mt_pcm_btsco_dev_probe(struct platform_device *pdev)
 {
-	pr_notice("%s dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(&pdev->dev));
 	if (pdev->dev.of_node) {
 		dev_set_name(&pdev->dev, "%s", MT_SOC_BTSCO_PCM);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(&pdev->dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(&pdev->dev));
 	}
 
 	return snd_soc_register_platform(&pdev->dev, &mt_pcm_btsco_platform);
