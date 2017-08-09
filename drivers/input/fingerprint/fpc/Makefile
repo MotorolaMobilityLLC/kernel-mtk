@@ -1,7 +1,3 @@
-
-#
-# Makefile for the fingerprint device.
-#
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
