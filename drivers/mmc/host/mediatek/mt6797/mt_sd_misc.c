@@ -18,6 +18,7 @@
 #include <linux/mmc/sd.h>
 #include <linux/mmc/sdio.h>
 #include <linux/dma-mapping.h>
+#include <core.h>
 
 #include "mt_sd.h"
 #include "msdc_io.h"
@@ -768,6 +769,7 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 {
 	struct msdc_ioctl msdc_ctl;
 	int ret;
+	struct msdc_host *host;
 
 	if ((struct msdc_ioctl *)arg == NULL) {
 		switch (cmd) {
@@ -779,6 +781,19 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 			ret = sd_ioctl_cd_pin_en((struct msdc_ioctl *)arg);
 			break;
 
+		case MSDC_SD_POWER_OFF:
+			pr_err("sd ioctl power off!!!\n");
+			host = msdc_get_host(MSDC_SD, 0, 0);
+			mmc_claim_host(host->mmc);
+			mmc_power_off(host->mmc);
+			mmc_release_host(host->mmc);
+			break;
+
+		case MSDC_SD_POWER_ON:
+			pr_err("sd ioctl power on!!!\n");
+			host = msdc_get_host(MSDC_SD, 0, 0);
+			ret = mmc_power_restore_host(host->mmc);
+			break;
 		default:
 			pr_err("mt_sd_ioctl:this opcode value is illegal!!\n");
 			return -EINVAL;
