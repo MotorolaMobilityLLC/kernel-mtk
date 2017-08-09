@@ -1258,11 +1258,11 @@ wlanoidGetP2PSDResponse(IN P_ADAPTER_T prAdapter,
 			IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
 {
 	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
-	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
+	/*P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;*/
 	/* UINT_8 ucSeqNum = 0, */
-	UINT_8 ucVersionNum = 0;
-	PUINT_8 pucPacketContent = (PUINT_8) NULL, pucTA = (PUINT_8) NULL;
-	PUINT_16 pu2PacketLength = (PUINT_16) NULL;
+	/*UINT_8 ucVersionNum = 0;*/
+	/*PUINT_8 pucPacketContent = (PUINT_8) NULL, pucTA = (PUINT_8) NULL;*/
+	/*PUINT_16 pu2PacketLength = (PUINT_16) NULL;*/
 
 	ASSERT(prAdapter);
 	ASSERT(pu4QueryInfoLen);
@@ -1306,6 +1306,7 @@ wlanoidGetP2PSDResponse(IN P_ADAPTER_T prAdapter,
 	*pu4QueryInfoLen = 0;
 	return rWlanStatus;
 #endif
+	/*
 	prWlanHdr = (P_WLAN_MAC_HEADER_T) pucPacketContent;
 
 	kalMemCopy(pucTA, prWlanHdr->aucAddr2, MAC_ADDR_LEN);
@@ -1318,6 +1319,7 @@ wlanoidGetP2PSDResponse(IN P_ADAPTER_T prAdapter,
 	}
 
 	return rWlanStatus;
+	*/
 }				/* end of wlanoidGetP2PSDResponse() */
 
 /*----------------------------------------------------------------------------*/
