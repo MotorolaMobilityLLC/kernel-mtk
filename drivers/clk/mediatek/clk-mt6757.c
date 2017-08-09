@@ -352,7 +352,7 @@ static const char *f52m_mfg_parents[] __initconst = {
 
 static const char *camtg_parents[] __initconst = {
 	clk26m,
-	univpll_192m_d4,
+	univpll_192m_d4,/*univpll_d26*/
 	univpll2_d2
 };
 
@@ -414,7 +414,7 @@ static const char *msdc30_3_parents[] __initconst = {
 	msdcpll_d8,
 	msdcpll_d4,
 	univpll1_d4,
-	univpll_192m_d4,
+	univpll_192m_d4,/*univpll_d26*/
 	syspll_d7,
 	univpll_d7,
 	syspll3_d4,
@@ -451,9 +451,7 @@ static const char *dpi0_parents[] __initconst = {
 	tvdpll_d2,
 	tvdpll_d4,
 	tvdpll_d8,
-	tvdpll_d16,
-	clk26m,
-	clk26m
+	tvdpll_d16
 };
 
 static const char *scam_parents[] __initconst = {
