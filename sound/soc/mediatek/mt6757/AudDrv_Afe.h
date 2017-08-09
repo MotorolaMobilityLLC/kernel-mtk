@@ -379,6 +379,10 @@ typedef struct {
 
 /* Dram */
 #define AFE_EXTERNAL_DRAM_SIZE  (0x8000) /* 32k */
+
+/* IRQ */
+#define AFE_IRQ_MASK  (0x43)
+
 /*****************************************************************************
  *                         M A C R O
  *****************************************************************************/
@@ -627,6 +631,8 @@ typedef struct {
 #define AFE_ASRC_CONNSYS_CON24    (AFE_BASE + 0x0cfc)
 
 #define AFE_MAXLENGTH             (AFE_BASE + 0x0cfc)
+#define AFE_REG_UNDEFINED          (AFE_MAXLENGTH + 0x1)
+
 
 /* do afe register ioremap */
 void Auddrv_Reg_map(void);

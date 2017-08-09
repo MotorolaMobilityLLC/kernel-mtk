@@ -379,6 +379,10 @@ typedef struct {
 
 /* Dram */
 #define AFE_EXTERNAL_DRAM_SIZE  (0x8000) /* 32k */
+
+/* IRQ */
+#define AFE_IRQ_MASK  (0x5f)
+
 /*****************************************************************************
  *                         M A C R O
  *****************************************************************************/
@@ -664,7 +668,7 @@ typedef struct {
 #define AFE_CBIP_SLV_DECODER_MON0 (AFE_BASE + 0x084c)
 
 #define AFE_MAXLENGTH             (AFE_BASE + 0x084c)
-
+#define AFE_REG_UNDEFINED              (AFE_MAXLENGTH + 0x1)
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_CFG0                      (AFE_BASE + 0x05b0)
 #endif

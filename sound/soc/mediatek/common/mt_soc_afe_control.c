@@ -149,7 +149,7 @@ static bool mExternalModemStatus;
 
 static struct mtk_dai mtk_dais[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
 
-static struct irq_manager irq_managers[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
+static struct irq_manager irq_managers[Soc_Aud_IRQ_MCU_MODE_NUM];
 
 #define IrqShortCounter  512
 #define SramBlockSize (4096)
@@ -536,13 +536,16 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	/* unsigned long flags; */
 	kal_uint32 volatile u4RegValue;
 	kal_uint32 volatile irq_mcu_en;
+	uint32 irqIndex = 0;
+	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg;
 
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
-	u4RegValue &= 0x5f;
+	u4RegValue &= AFE_IRQ_MASK;
 
 	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
 	if (u4RegValue == 0) {
-		irq_mcu_en = Afe_Get_Reg(AFE_IRQ_MCU_EN);
+		irqMcuEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_MCU);
+		irq_mcu_en = Afe_Get_Reg(irqMcuEnReg->reg);
 		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x\n",
 			__func__,
 			u4RegValue,
@@ -550,23 +553,23 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			irq_mcu_en);
 
 		/* only clear IRQ which is sent to MCU */
-		irq_mcu_en &= 0x7f;
+		irq_mcu_en &= irqMcuEnReg->mask;
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_mcu_en, irq_mcu_en);
 		irqcount++;
 
 		if (irqcount > AudioInterruptLimiter) {
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 0, 1 << 0);
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 1, 1 << 1);
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 2, 1 << 2);
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 3, 1 << 3);
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 12, 1 << 12);
-			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE))
-				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 14, 1 << 14);
+			for (irqIndex = 0; irqIndex < Soc_Aud_IRQ_MCU_MODE_NUM; irqIndex++) {
+				if (GetIRQCtrlReg(irqIndex)->irqPurpose != Soc_Aud_IRQ_MCU)
+					continue;
+
+				irqEnReg = &GetIRQCtrlReg(irqIndex)->en;
+				if (irq_mcu_en & (1 << irqEnReg->sbit)) {
+					irqOnReg = &GetIRQCtrlReg(irqIndex)->on;
+					Afe_Set_Reg(irqOnReg->reg,
+						    0 << irqOnReg->sbit,
+						    irqOnReg->mask << irqOnReg->sbit);
+				}
+			}
 			irqcount = 0;
 		}
 
@@ -574,38 +577,17 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	}
 
 	/* clear irq */
-	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0x5f);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, AFE_IRQ_MASK);
 
-	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE)) {
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
-			Auddrv_DL1_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
-			Auddrv_DL2_Interrupt_Handler();
+	/*call each IRQ handler function*/
+	for (irqIndex = 0; irqIndex < Soc_Aud_IRQ_MCU_MODE_NUM; irqIndex++) {
+		if (GetIRQCtrlReg(irqIndex)->irqPurpose != Soc_Aud_IRQ_MCU)
+			continue;
+
+		irqStatusReg = &GetIRQCtrlReg(irqIndex)->status;
+		if (u4RegValue & (0x1 << irqStatusReg->sbit))
+			RunIRQHandler(irqIndex);
 	}
-
-	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE)) {
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL]->mState == true)
-			Auddrv_UL1_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_AWB]->mState == true)
-			Auddrv_AWB_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DAI]->mState == true)
-			Auddrv_DAI_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
-			Auddrv_UL2_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mState == true)
-			Auddrv_MOD_DAI_Interrupt_Handler();
-	}
-
-	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE)) {
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_HDMI]->mState == true)
-			Auddrv_HDMI_Interrupt_Handler();
-	}
-
-	/*if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE)) {
-		if ((mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
-		    && (mOffloadSWMode == true))
-			Auddrv_DL2_Interrupt_Handler();
-	}*/
 
 AudDrv_IRQ_handler_exit:
 	return IRQ_HANDLED;
@@ -1850,79 +1832,84 @@ bool SetIntfConnection(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_b
 	return SetIntfConnectionState(ConnectionState, Aud_block_In, Aud_block_Out);
 }
 
-
-static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
+static bool SetIrqEnable(uint32 irqmode, bool bEnable)
 {
-	pr_aud("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
-		/* irq 4 default send to cm4 */
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 12), (1 << 12));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
-		Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
-		Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
-		break;
-	default:
-		pr_err("%s(), error, not supported IRQ %d", __func__, Irqmode);
-		break;
+	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqClrReg, *irqMissClrReg;
+	const struct Aud_RegBitsInfo *irqPurposeEnReg;
+	uint32 enShift, purposeIndex;
+	bool enSet;
+
+	pr_aud("%s(), Irqmode %d, bEnable %d\n", __func__, irqmode, bEnable);
+
+	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM) {
+		pr_err("%s(), error, not supported IRQ %d", __func__, irqmode);
+		return false;
+	}
+
+	irqOnReg = &GetIRQCtrlReg(irqmode)->on;
+	Afe_Set_Reg(irqOnReg->reg,
+		    (bEnable << irqOnReg->sbit),
+		    (irqOnReg->mask << irqOnReg->sbit));
+
+	/* set irq signal target */
+	irqEnReg = &GetIRQCtrlReg(irqmode)->en;
+	for (purposeIndex = 0; purposeIndex < Soc_Aud_IRQ_PURPOSE_NUM; purposeIndex++) {
+		irqPurposeEnReg = GetIRQPurposeReg(purposeIndex);
+		enSet = bEnable &&
+			(GetIRQCtrlReg(irqmode)->irqPurpose == purposeIndex);
+		enShift = irqPurposeEnReg->sbit + irqEnReg->sbit;
+		Afe_Set_Reg(irqPurposeEnReg->reg,
+			    (enSet << enShift),
+			    (irqEnReg->mask << enShift));
 	}
 
 	/* clear irq status */
 	if (bEnable == false) {
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << Irqmode), (1 << Irqmode));
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << (Irqmode + 8)),
-			    (1 << (Irqmode + 8)));
+		irqClrReg = &GetIRQCtrlReg(irqmode)->clr;
+		Afe_Set_Reg(irqClrReg->reg,
+			    (1 << irqClrReg->sbit),
+			    (irqClrReg->mask << irqClrReg->sbit));
+
+		irqMissClrReg = &GetIRQCtrlReg(irqmode)->missclr;
+		Afe_Set_Reg(irqMissClrReg->reg,
+			    (1 << irqMissClrReg->sbit),
+			    (irqMissClrReg->mask << irqMissClrReg->sbit));
 	}
 
 	return true;
 }
 
 
-static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
+static bool SetIrqMcuSampleRate(uint32 irqmode, uint32 SampleRate)
 {
 	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
+	const struct Aud_RegBitsInfo *irqModeReg;
 
 	pr_aud("%s(), Irqmode %d, SampleRate %d\n",
-		__func__, Irqmode, SampleRate);
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 8, 0xf << 8);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 16, 0xf << 16);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 20, 0xf << 20);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
-		/* set by HDMI */
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 24, 0xf << 24);
-		break;
-	default:
-		return false;
-	}
+		__func__, irqmode, SampleRate);
 
+	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM)
+		return false;
+
+	irqModeReg = &GetIRQCtrlReg(irqmode)->mode;
+	Afe_Set_Reg(irqModeReg->reg,
+		    SRIdx << irqModeReg->sbit,
+		    irqModeReg->mask << irqModeReg->sbit);
 	return true;
 }
 
-static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
+static bool SetIrqMcuCounter(uint32 irqmode, uint32 Counter)
 {
-	return SetIrqMcuCounterReg(Irqmode, Counter);
+	const struct Aud_RegBitsInfo *irqCntReg;
+
+	pr_aud("%s(), Irqmode %d, Counter %d\n", __func__, irqmode, Counter);
+
+	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM)
+		return false;
+
+	irqCntReg = &GetIRQCtrlReg(irqmode)->cnt;
+	Afe_Set_Reg(irqCntReg->reg, Counter, irqCntReg->mask);
+	return true;
 }
 
 bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode)
@@ -3190,7 +3177,7 @@ static void dump_irq_manager(void)
 	struct irq_user *ptr;
 	int i;
 
-	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++) {
+	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM; i++) {
 		pr_warn("irq_managers[%d], is_on %d, rate %d, count %d, selected_user %p\n",
 			i,
 			irq_managers[i].is_on,
@@ -3324,7 +3311,7 @@ int init_irq_manager(void)
 	int i;
 
 	memset((void *)&irq_managers, 0, sizeof(irq_managers));
-	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE; i++)
+	for (i = 0; i < Soc_Aud_IRQ_MCU_MODE_NUM; i++)
 		INIT_LIST_HEAD(&irq_managers[i].users);
 
 	return 0;
@@ -3515,5 +3502,4 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram)
 	}
 	return true;
 }
-
 

@@ -142,39 +142,39 @@ static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* re
 	{AFE_DAC_CON1, 21, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL1 */
 	{AFE_DAC_CON1, 22, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_DAC_CON1, 27, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
 	{AFE_DAC_CON1, 23, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL3 */
 	{AFE_DAC_CON1, 24, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
 	{AFE_DAC_CON0, 10, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
 static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_DAC_CON1, 28, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
 	{AFE_DAC_CON1, 25, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
 	{AFE_DAC_CON0, 11, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
 static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL */
 	{AFE_DAC_CON1, 29, 0x1}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_AWB */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_AWB */
 	{AFE_DAC_CON0, 26, 0x1}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
 static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = { /* audio block, reg, bit position */
@@ -188,6 +188,168 @@ static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = 
 	{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},
 	{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 9},
 };
+
+const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
+	{	/*IRQ0*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ1*/
+		{AFE_IRQ_MCU_CON, 0, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON, 4, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT1, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 0, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 8, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 0, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ2*/
+		{AFE_IRQ_MCU_CON, 1, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON, 8, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT2, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 1, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 9, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 1, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 1, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ3*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ4*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ5*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ6*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ7*/
+		{AFE_IRQ_MCU_CON, 14, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON, 24, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT7, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 6, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 14, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 6, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 6, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ8*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ9*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ10*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ11*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ12*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ_ACC1*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+	{	/*IRQ_ACC2*/
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
+};
+
+const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
+	{AFE_IRQ_MCU_EN, 0, 0x7f}, /* Soc_Aud_IRQ_MCU */
+	{AFE_IRQ_MCU_EN, 8, 0x3f}, /* Soc_Aud_IRQ_MD32 */
+	{AFE_IRQ_MCU_EN, 16, 0x3f}, /* Soc_Aud_IRQ_MD32_H */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_DSP */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_CM4 */
+};
+
 /*  Above structures may vary with chips!!!! */
 
 static const int MEM_BLOCK_ENABLE_REG_NUM = sizeof(mMemAudioBlockEnableReg) / sizeof(mMemAudioBlockEnableReg[0]);
@@ -785,45 +947,6 @@ bool SetDLSrc2(uint32 SampleRate)
 	AfeAddaDLSrc2Con1 = 0xf74f0000;
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, AfeAddaDLSrc2Con0, MASK_ALL);
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, AfeAddaDLSrc2Con1, MASK_ALL);
-
-	return true;
-}
-
-bool SetIrqMcuCounterReg(uint32 Irqmode, uint32 Counter)
-{
-	/* printk(" %s Irqmode = %d Counter = %d ", __func__, Irqmode, Counter); */
-	uint32 CurrentCount = 0;
-
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0xffffffff);
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
-			CurrentCount = Afe_Get_Reg(AFE_IRQ_MCU_CNT2);
-			if (CurrentCount == 0) {
-				Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0xffffffff);
-			} else if (Counter < CurrentCount) {
-				pr_warn("update counter latency CurrentCount = %d Counter = %d",
-					CurrentCount, Counter);
-				Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0xffffffff);
-			} else {
-				pr_warn
-				    ("not to add counter latency CurrentCount = %d Counter = %d",
-				     CurrentCount, Counter);
-			}
-			break;
-		}
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:{
-			Afe_Set_Reg(AFE_IRQ_MCU_CNT7, Counter, 0xffffffff);
-			/* ox3BC [0~17] , ex 24bit , stereo, 48BCKs @CNT */
-			break;
-		}
-	default: {
-			pr_warn("No such IRQ Mode Irqmode = %d", Irqmode);
-			return false;
-		}
-	}
 
 	return true;
 }
@@ -1607,5 +1730,67 @@ bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 bool SetAncRecordReg(uint32 value, uint32 mask)
 {
 	return false;
+}
+
+const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
+{
+	return &mIRQCtrlRegs[irqIndex];
+}
+
+const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE irqPurpose)
+{
+	return &mIRQPurposeRegs[irqPurpose];
+}
+
+/*Irq handler function array*/
+static void Aud_IRQ1_Handler(void)
+{
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1))
+		Auddrv_DL1_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2))
+		Auddrv_DL2_Interrupt_Handler();
+}
+static void Aud_IRQ2_Handler(void)
+{
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL))
+		Auddrv_UL1_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB))
+		Auddrv_AWB_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI))
+		Auddrv_DAI_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2))
+		Auddrv_UL2_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI))
+		Auddrv_MOD_DAI_Interrupt_Handler();
+}
+static void Aud_IRQ5_Handler(void)
+{
+	/*write handler of IRQ5*/
+}
+
+static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
+	NULL,
+	Aud_IRQ1_Handler,
+	Aud_IRQ2_Handler,
+	NULL,
+	NULL,
+	Aud_IRQ5_Handler,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+};
+
+void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
+{
+	if (Aud_IRQ_Handler_Funcs[irqIndex] != NULL)
+		Aud_IRQ_Handler_Funcs[irqIndex]();
+	else
+		pr_aud("%s(), Aud_IRQ%d_Handler is Null", __func__, irqIndex);
 }
 

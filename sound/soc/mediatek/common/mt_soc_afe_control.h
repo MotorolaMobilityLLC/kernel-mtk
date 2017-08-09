@@ -239,10 +239,10 @@ int irq_update_user(const void *_user,
 		    unsigned int _rate,
 		    unsigned int _count);
 
-/* IRQ Manager */
-
-/* SetIrqMcuCounterReg */
-bool SetIrqMcuCounterReg(uint32 Irqmode, uint32 Counter);
+/* IRQ Register Control Table and Handler Function Table*/
+void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
+const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
+const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE sIrqPurpose);
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 

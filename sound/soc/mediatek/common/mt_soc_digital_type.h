@@ -280,14 +280,48 @@ enum Soc_Aud_AFEClockType {
 };
 
 enum Soc_Aud_IRQ_MCU_MODE {
-	Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE = 0,
+	Soc_Aud_IRQ_MCU_MODE_IRQ0_MCU_MODE = 0,
+	Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE,
 	Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
-	Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE
+	Soc_Aud_IRQ_MCU_MODE_IRQ8_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ9_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ10_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ11_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ12_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ_ACC1_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_IRQ_ACC2_MCU_MODE,
+	Soc_Aud_IRQ_MCU_MODE_NUM
+};
+
+enum Soc_Aud_IRQ_PURPOSE {
+	Soc_Aud_IRQ_MCU = 0,
+	Soc_Aud_IRQ_MD32,
+	Soc_Aud_IRQ_MD32_H,
+	Soc_Aud_IRQ_DSP,
+	Soc_Aud_IRQ_CM4,
+	Soc_Aud_IRQ_PURPOSE_NUM
+};
+
+struct Aud_RegBitsInfo {
+	uint32 reg;
+	uint32 sbit;
+	uint32 mask;
+};
+
+struct Aud_IRQ_CTRL_REG {
+	struct Aud_RegBitsInfo on;
+	struct Aud_RegBitsInfo mode;
+	struct Aud_RegBitsInfo cnt;
+	struct Aud_RegBitsInfo clr;
+	struct Aud_RegBitsInfo missclr;
+	struct Aud_RegBitsInfo status;
+	struct Aud_RegBitsInfo en;
+	enum Soc_Aud_IRQ_PURPOSE irqPurpose;
 };
 
 enum Soc_Aud_SGEN_AMP_DIV {
