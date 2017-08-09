@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_MT8173)			+= cpuidle-mt8173.o
 obj-$(CONFIG_ARCH_MT6755)			+= cpuidle-mt67xx_v2.o
 obj-$(CONFIG_ARCH_MT6757)			+= cpuidle-mt67xx_v2.o
 obj-$(CONFIG_ARCH_MT6797)			+= cpuidle-mt67xx_v2.o
+obj-$(CONFIG_ARCH_ELBRUS)			+= cpuidle-mt67xx_v2.o
 
 ##################################################################################
 # ARM SoC drivers

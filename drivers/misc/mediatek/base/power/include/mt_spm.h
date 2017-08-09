@@ -24,6 +24,10 @@
 
 #include "spm_v1/mt_spm_mt6580.h"
 
+#elif defined(CONFIG_ARCH_ELBRUS)
+
+#include "spm_v3/mt_spm.h"
+
 #endif
 
 #endif /* __MT_SPM_H__ */

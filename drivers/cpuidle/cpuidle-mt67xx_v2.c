@@ -18,7 +18,7 @@
 
 #include "dt_idle_states.h"
 
-#ifdef CONFIG_ARCH_MT6755
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS)
 #define USING_TICK_BROADCAST
 #endif
 
@@ -159,7 +159,7 @@ static struct cpuidle_driver mt67xx_v2_cpuidle_driver = {
 	.safe_state_index = 0,
 };
 
-#ifdef CONFIG_ARM64
+#if defined(CONFIG_ARM64) && !defined(CONFIG_MTK_FPGA)
 
 static const struct of_device_id mt67xx_v2_idle_state_match[] __initconst = {
 	{ .compatible = "arm,idle-state" },

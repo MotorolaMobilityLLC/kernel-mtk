@@ -26,6 +26,10 @@
 
 #include "spm_v1/mt_sleep.h"
 
+#elif defined(CONFIG_ARCH_ELBRUS)
+
+#include "spm_v3/mt_sleep.h"
+
 #endif
 
 #endif /* __MT_SLEEP_H__ */
