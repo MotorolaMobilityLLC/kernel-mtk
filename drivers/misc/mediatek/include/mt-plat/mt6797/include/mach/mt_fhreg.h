@@ -285,7 +285,7 @@ static inline void mcu_fh_write32(unsigned long reg, unsigned int val, unsigned 
 	volatile unsigned int cnt = 5;
 
 	mt_reg_sync_writel(val, reg);
-	ndelay(100);
+	ndelay(200);
 
 	c_val = val & cmp_mask;
 	r_val = mcu_fh_read32(reg) & cmp_mask;
@@ -293,7 +293,7 @@ static inline void mcu_fh_write32(unsigned long reg, unsigned int val, unsigned 
 	while ((r_val != c_val) && (cnt > 0)) {
 		/* retry */
 		mt_reg_sync_writel(val, reg);
-		ndelay(100);
+		ndelay(200);
 		r_val = mcu_fh_read32(reg) & cmp_mask;
 		cnt = cnt - 1;
 	}

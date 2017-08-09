@@ -136,5 +136,11 @@ void mt_fh_popod_restore(void);
 void mt_fh_unlock(void);
 void mt_fh_lock(void);
 
+/* Special lock for Everest only */
+/* All driver access 0x1001AXX should use the lock to protect (Everest only) */
+void mt6797_0x1001AXXX_lock(void);
+void mt6797_0x1001AXXX_unlock(void);
+
+
 
 #endif				/* !__MT_FREQHOPPING_H__ */
