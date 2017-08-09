@@ -7134,6 +7134,13 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 {
 	int32_t threadNo = CMDQ_INVALID_THREAD;
 	bool isSecure;
+
+	if (false == cmdq_core_is_valid_in_active_list(pTask)) {
+		/* Error occurs when Double INIT_WORK */
+		CMDQ_ERR("[Double INIT WORK] pTask(%p) is already released", pTask);
+		return 0;
+	}
+
 	/* the work item is embeded in pTask already */
 	/* but we need to initialized it */
 	if (false == pTask->useWorkQueue) {
