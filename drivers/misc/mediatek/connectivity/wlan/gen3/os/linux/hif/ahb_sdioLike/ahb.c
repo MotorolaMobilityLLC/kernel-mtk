@@ -461,18 +461,6 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->DmaOps = NULL;
 
 #if defined(MT6797)
-	{/* for WIFI sleep */
-			UINT_8 *AhbProtectAddr = ioremap(0x10001350, 0x10);
-			UINT_32 Val;
-
-			Val = readl((volatile UINT_32 *)AhbProtectAddr);
-			DBGLOG(INIT, TRACE, "protectCR=%x\n", Val);
-			Val = Val | 0x100;
-			writel(Val, (volatile UINT_32 *)(AhbProtectAddr));
-			Val = readl((volatile UINT_32 *)AhbProtectAddr);
-			DBGLOG(INIT, TRACE, "protectCR=%x\n", Val);
-			iounmap(AhbProtectAddr);
-	}
 	sdio_open();
 #endif
 
