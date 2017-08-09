@@ -25,7 +25,14 @@ extern void __iomem *spm_mcucfg;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 extern void __iomem *spm_bsi1cfg;
 #endif
+#if defined(CONFIG_ARCH_MT6757)
+extern void __iomem *spm_dramc_ch0_top0_base;
+extern void __iomem *spm_dramc_ch0_top1_base;
+extern void __iomem *spm_dramc_ch1_top0_base;
+extern void __iomem *spm_dramc_ch1_top1_base;
+#else
 extern void __iomem *spm_ddrphy_base;
+#endif
 extern u32 spm_irq_0;
 extern u32 spm_irq_1;
 extern u32 spm_irq_2;

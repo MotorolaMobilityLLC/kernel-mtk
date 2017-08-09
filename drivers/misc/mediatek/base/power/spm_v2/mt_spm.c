@@ -162,7 +162,14 @@ static struct cdev gSPMDetectCdev;
 
 void __iomem *spm_base;
 void __iomem *spm_infracfg_ao_base;
+#if defined(CONFIG_ARCH_MT6757)
+void __iomem *spm_dramc_ch0_top0_base;
+void __iomem *spm_dramc_ch0_top1_base;
+void __iomem *spm_dramc_ch1_top0_base;
+void __iomem *spm_dramc_ch1_top1_base;
+#else
 void __iomem *spm_ddrphy_base;
+#endif
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
@@ -505,12 +512,42 @@ static void spm_register_init(void)
 		spm_err("[spm_thermal] base failed\n");
 
 #endif
+#if defined(CONFIG_ARCH_MT6757)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top0");
+	if (!node)
+		spm_err("find dramc_ch0_top0 node failed\n");
+	spm_dramc_ch0_top0_base = of_iomap(node, 0);
+	if (!spm_dramc_ch0_top0_base)
+		spm_err("[dramc_ch0_top0] base failed\n");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top1");
+	if (!node)
+		spm_err("find dramc_ch0_top1 node failed\n");
+	spm_dramc_ch0_top1_base = of_iomap(node, 0);
+	if (!spm_dramc_ch0_top1_base)
+		spm_err("[dramc_ch0_top1] base failed\n");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top0");
+	if (!node)
+		spm_err("find dramc_ch1_top0 node failed\n");
+	spm_dramc_ch1_top0_base = of_iomap(node, 0);
+	if (!spm_dramc_ch1_top0_base)
+		spm_err("[dramc_ch1_top0] base failed\n");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top1");
+	if (!node)
+		spm_err("find dramc_ch1_top1 node failed\n");
+	spm_dramc_ch1_top1_base = of_iomap(node, 0);
+	if (!spm_dramc_ch1_top1_base)
+		spm_err("[dramc_ch1_top1] base failed\n");
+#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy");
 	if (!node)
 		spm_err("find DDRPHY node failed\n");
 	spm_ddrphy_base = of_iomap(node, 0);
 	if (!spm_ddrphy_base)
 		spm_err("[DDRPHY] base failed\n");
+#endif
 
 #ifdef SPM_VCORE_EN_MT6755
 	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_start_eint");
@@ -1316,6 +1353,102 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
 /**************************************
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
+#if defined(CONFIG_ARCH_MT6757)
+struct ddrphy_golden_cfg {
+	u32 addr;
+	u32 value;
+};
+
+static struct ddrphy_golden_cfg ddrphy_setting[] = {
+	{0x088, 0x0},
+	{0x08c, 0x2e800},
+	{0x108, 0x0},
+	{0x10c, 0x2e800},
+	{0x188, 0x800},
+	{0x18c, 0xba000},
+	{0x274, 0xffffffff},
+	{0x278, 0x0},
+	{0x27c, 0xfe3fffff},
+};
+
+int spm_golden_setting_cmp(bool en)
+{
+	u32 val;
+	int i, ddrphy_num, r = 0;
+
+	if (!en)
+		return r;
+
+	/* DRAMC0/DRAMC1 AO */
+	val = spm_read(spm_dramc_ch0_top1_base + 0x038);
+	if ((val & 0xc4000027) != 0xc00000007) {
+		spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+			spm_dramc_ch0_top1_base + 0x038, val);
+		r = -EPERM;
+	}
+
+	val = spm_read(spm_dramc_ch1_top1_base + 0x038);
+	if ((val & 0xc4000027) != 0xc00000007) {
+		spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+			spm_dramc_ch1_top1_base + 0x038, val);
+		r = -EPERM;
+	}
+
+	/* DDRPHY0/DDRPHY1 DCM */
+	val = spm_read(spm_infracfg_ao_base + 0x078);
+	if ((val & 0x000000c0) != 0x0) {
+		spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+			spm_infracfg_ao_base + 0x078, val);
+		r = -EPERM;
+	}
+
+	val = spm_read(spm_dramc_ch0_top0_base + 0x284);
+	if ((val & 0x000bff00) != 0x0) {
+		spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+			spm_dramc_ch0_top0_base + 0x284, val);
+		r = -EPERM;
+	}
+
+	val = spm_read(spm_dramc_ch1_top0_base + 0x284);
+	if ((val & 0x000bff00) != 0x0) {
+		spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+			spm_dramc_ch1_top0_base + 0x284, val);
+		r = -EPERM;
+	}
+	if (get_ddr_type() == TYPE_LPDDR3) {
+		if ((val & 0x00100000) != 0x100000) {
+			spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+				 spm_dramc_ch1_top0_base + 0x284, val);
+			r = -EPERM;
+		}
+	} else {
+		if ((val & 0x001b0000) != 0x0) {
+			spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+				spm_dramc_ch1_top0_base + 0x284, val);
+			r = -EPERM;
+		}
+	}
+
+	/* ANA_DDRPHY low power */
+	ddrphy_num = sizeof(ddrphy_setting) / sizeof(ddrphy_setting[0]);
+	for (i = 0; i < ddrphy_num; i++) {
+		if (spm_read(spm_dramc_ch0_top0_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
+			spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+				spm_dramc_ch0_top0_base + ddrphy_setting[i].addr,
+				spm_read(spm_dramc_ch0_top0_base + ddrphy_setting[i].addr));
+			r = -EPERM;
+		}
+		if (spm_read(spm_dramc_ch1_top0_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
+			spm_err("dramc setting mismatch: addr = %p, val = 0x%x\n",
+				spm_dramc_ch1_top0_base + ddrphy_setting[i].addr,
+				spm_read(spm_dramc_ch1_top0_base + ddrphy_setting[i].addr));
+			r = -EPERM;
+		}
+	}
+
+	return r;
+}
+#else
 struct ddrphy_golden_cfg {
 	u32 addr;
 	u32 value;
@@ -1357,6 +1490,7 @@ int spm_golden_setting_cmp(bool en)
 	return r;
 
 }
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 /* for PMIC power settings */
