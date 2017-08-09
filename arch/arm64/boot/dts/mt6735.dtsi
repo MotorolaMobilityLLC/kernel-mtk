@@ -289,6 +289,14 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <1>;
 		ranges;
 
+		chipid@08000000 {
+			compatible = "mediatek,chipid";
+			reg = <0x08000000 0x0004>,
+					<0x08000004 0x0004>,
+					<0x08000008 0x0004>,
+					<0x0800000C 0x0004>;
+		};
+
 		topckgen: topckgen@0x10210000 {
 			compatible = "mediatek,mt6735-topckgen";
 			reg = <0x10210000 0x1000>;

@@ -26,3 +26,6 @@ obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
 obj-$(CONFIG_MTK_MEM) += mem/
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
+obj-$(CONFIG_MTK_BOOT) += boot/
+obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
+obj-$(CONFIG_MTK_CHIP) += chip/

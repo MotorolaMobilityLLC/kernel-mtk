@@ -23,7 +23,7 @@
 
 #include <asm/uaccess.h>
 #ifdef CONFIG_MTK_BOOT
-#include <mach/mt_boot.h>
+#include "mt_boot_common.h"
 #endif
 #include "tpd.h"
 #include "upmu_common.h"
