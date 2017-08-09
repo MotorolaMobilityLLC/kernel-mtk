@@ -6,6 +6,8 @@
 #include <linux/vmalloc.h>
 #include <linux/reboot.h>
 
+#include <mt-plat/mtk_ram_console.h>
+
 /*
  *	Notifier list for kernel code which wants to be called
  *	at shutdown. This is used to stop any idling DMA operations
@@ -78,6 +80,12 @@ static int notifier_call_chain(struct notifier_block **nl,
 	int ret = NOTIFY_DONE;
 	struct notifier_block *nb, *next_nb;
 
+#if defined(CONFIG_SMP)
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+	int index = 0;
+#endif
+#endif /* CONFIG_SMP */
+
 	nb = rcu_dereference_raw(*nl);
 
 	while (nb && nr_to_call) {
@@ -90,6 +98,23 @@ static int notifier_call_chain(struct notifier_block **nl,
 			continue;
 		}
 #endif
+
+#if defined(CONFIG_SMP)
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+		if (nl == &cpu_chain.head) {
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1)
+			pr_debug("[cpu_ntf] %02lx_%02d, %p\n",
+				val, index, nb->notifier_call);
+#endif
+#if defined(MTK_CPU_HOTPLUG_DEBUG_2)
+			aee_rr_rec_hotplug(0, val & 0xff, index & 0xff,
+				(unsigned long)nb->notifier_call);
+#endif
+			++index;
+		}
+#endif
+#endif /* CONFIG_SMP */
+
 		ret = nb->notifier_call(nb, val, v);
 
 		if (nr_calls)
@@ -100,6 +125,21 @@ static int notifier_call_chain(struct notifier_block **nl,
 		nb = next_nb;
 		nr_to_call--;
 	}
+
+#if defined(CONFIG_SMP)
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+	if (nl == &cpu_chain.head) {
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1)
+		pr_debug("[cpu_ntf] %02lx_%02d, %p\n", val, index, 0);
+#endif
+#if defined(MTK_CPU_HOTPLUG_DEBUG_2)
+		/* aee_rr_rec_hoplug(0, val & 0xff, index & 0xff); */
+		aee_rr_rec_hotplug(0, val & 0xff, index & 0xff, 0);
+#endif
+	}
+#endif
+#endif /* CONFIG_SMP */
+
 	return ret;
 }
 NOKPROBE_SYMBOL(notifier_call_chain);

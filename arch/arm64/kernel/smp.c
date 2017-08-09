@@ -57,6 +57,7 @@
 #ifdef CONFIG_MTPROF
 #include "mt_sched_mon.h"
 #endif
+#include <mt-plat/mtk_ram_console.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
@@ -149,6 +150,8 @@ asmlinkage void secondary_start_kernel(void)
 	struct mm_struct *mm = &init_mm;
 	unsigned int cpu = smp_processor_id();
 
+	aee_rr_rec_hoplug(cpu, 1, 0);
+
 	/*
 	 * All kernel threads share the same mm context; grab a
 	 * reference and switch to it.
@@ -157,33 +160,55 @@ asmlinkage void secondary_start_kernel(void)
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
 
+	aee_rr_rec_hoplug(cpu, 2, 0);
+
 	set_my_cpu_offset(per_cpu_offset(smp_processor_id()));
 	printk("CPU%u: Booted secondary processor\n", cpu);
+
+	aee_rr_rec_hoplug(cpu, 3, 0);
 
 	/*
 	 * TTBR0 is only used for the identity mapping at this stage. Make it
 	 * point to zero page to avoid speculatively fetching new entries.
 	 */
 	cpu_set_reserved_ttbr0();
+
+	aee_rr_rec_hoplug(cpu, 4, 0);
+
 	flush_tlb_all();
 
+	aee_rr_rec_hoplug(cpu, 5, 0);
+
 	preempt_disable();
+
+	aee_rr_rec_hoplug(cpu, 6, 0);
+
 	trace_hardirqs_off();
+
+	aee_rr_rec_hoplug(cpu, 7, 0);
 
 	if (cpu_ops[cpu]->cpu_postboot)
 		cpu_ops[cpu]->cpu_postboot();
+
+	aee_rr_rec_hoplug(cpu, 8, 0);
 
 	/*
 	 * Log the CPU info before it is marked online and might get read.
 	 */
 	cpuinfo_store_cpu();
 
+	aee_rr_rec_hoplug(cpu, 9, 0);
+
 	/*
 	 * Enable GIC and timers.
 	 */
 	notify_cpu_starting(cpu);
 
+	aee_rr_rec_hoplug(cpu, 10, 0);
+
 	smp_store_cpu_info(cpu);
+
+	aee_rr_rec_hoplug(cpu, 11, 0);
 
 	/*
 	 * OK, now it's safe to let the boot CPU continue.  Wait for
@@ -191,16 +216,31 @@ asmlinkage void secondary_start_kernel(void)
 	 * before we continue.
 	 */
 	set_cpu_online(cpu, true);
+
+	aee_rr_rec_hoplug(cpu, 12, 0);
+
 	complete(&cpu_running);
 
+	aee_rr_rec_hoplug(cpu, 13, 0);
+
 	local_dbg_enable();
+
+	aee_rr_rec_hoplug(cpu, 14, 0);
+
 	local_irq_enable();
+
+	aee_rr_rec_hoplug(cpu, 15, 0);
+
 	local_async_enable();
+
+	aee_rr_rec_hoplug(cpu, 16, 0);
 
 	/*
 	 * OK, it's off to the idle thread for us
 	 */
 	cpu_startup_entry(CPUHP_ONLINE);
+
+	aee_rr_rec_hoplug(cpu, 17, 0);
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
@@ -239,17 +279,25 @@ int __cpu_disable(void)
 	 * Take this CPU offline.  Once we clear this, we can't return,
 	 * and we must not schedule until we're ready to give up the cpu.
 	 */
+	aee_rr_rec_hoplug(cpu, 71, 0);
+
 	set_cpu_online(cpu, false);
+
+	aee_rr_rec_hoplug(cpu, 72, 0);
 
 	/*
 	 * OK - migrate IRQs away from this CPU
 	 */
 	migrate_irqs();
 
+	aee_rr_rec_hoplug(cpu, 73, 0);
+
 	/*
 	 * Remove this CPU from the vm mask set of all processes.
 	 */
 	clear_tasks_mm_cpumask(cpu);
+
+	aee_rr_rec_hoplug(cpu, 74, 0);
 
 	return 0;
 }
@@ -303,12 +351,20 @@ void cpu_die(void)
 {
 	unsigned int cpu = smp_processor_id();
 
+	aee_rr_rec_hoplug(cpu, 51, 0);
+
 	idle_task_exit();
+
+	aee_rr_rec_hoplug(cpu, 52, 0);
 
 	local_irq_disable();
 
+	aee_rr_rec_hoplug(cpu, 53, 0);
+
 	/* Tell __cpu_die() that this CPU is now safe to dispose of */
 	complete(&cpu_died);
+
+	aee_rr_rec_hoplug(cpu, 54, 0);
 
 	/*
 	 * Actually shutdown the CPU. This must never fail. The specific hotplug
@@ -316,6 +372,8 @@ void cpu_die(void)
 	 * no dirty lines are lost in the process of shutting down the CPU.
 	 */
 	cpu_ops[cpu]->cpu_die(cpu);
+
+	aee_rr_rec_hoplug(cpu, 55, 0);
 
 	BUG();
 }

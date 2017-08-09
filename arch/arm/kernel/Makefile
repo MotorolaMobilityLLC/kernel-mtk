@@ -13,9 +13,10 @@ endif
 
 CFLAGS_REMOVE_return_address.o = -pg
 
+ccflags-y += -Idrivers/misc/mediatek/mtprof/
+ccflags-y += -Idrivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 
-ccflags-y += -Idrivers/misc/mediatek/mtprof/
 # Object file lists.
 
 obj-y		:= elf.o entry-common.o irq.o opcodes.o \

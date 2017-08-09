@@ -48,7 +48,11 @@ void cpu_maps_update_done(void)
 }
 EXPORT_SYMBOL(cpu_notifier_register_done);
 
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+RAW_NOTIFIER_HEAD(cpu_chain);
+#else
 static RAW_NOTIFIER_HEAD(cpu_chain);
+#endif
 
 /* If set, cpu_up and cpu_down will return -EBUSY and do nothing.
  * Should always be manipulated under cpu_add_remove_lock
@@ -210,6 +214,26 @@ void cpu_hotplug_enable(void)
 int __ref register_cpu_notifier(struct notifier_block *nb)
 {
 	int ret;
+#ifdef MTK_CPU_HOTPLUG_DEBUG_0
+	int index = 0;
+#ifdef CONFIG_KALLSYMS
+	char namebuf[128] = {0};
+	const char *symname;
+
+	symname = kallsyms_lookup((unsigned long)nb->notifier_call,
+			NULL, NULL, NULL, namebuf);
+	if (symname)
+		pr_info("[cpu_ntf] <%02d>%08lx (%s)\n",
+			index++, (unsigned long)nb->notifier_call, symname);
+	else
+		pr_info("[cpu_ntf] <%02d>%08lx\n",
+			index++, (unsigned long)nb->notifier_call);
+#else
+	pr_info("[cpu_ntf] <%02d>%08lx\n",
+		index++, (unsigned long)nb->notifier_call);
+#endif
+#endif /* MTK_CPU_HOTPLUG_DEBUG_0 */
+
 	cpu_maps_update_begin();
 	ret = raw_notifier_chain_register(&cpu_chain, nb);
 	cpu_maps_update_done();
