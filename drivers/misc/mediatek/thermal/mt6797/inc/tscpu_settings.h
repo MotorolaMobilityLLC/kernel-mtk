@@ -109,6 +109,7 @@ they means one reading is a avg of X samples*/
 /**/
 #define OTP_HIGH_OFFSET_TEMP	80000
 #define OTP_LOW_OFFSET_TEMP	70000
+#define OTP_TEMP_TOLERANCE	3000
 
 /*double check*/
 #define TS_CONFIGURE     TS_CON1_TM    /* depend on CPU design*/

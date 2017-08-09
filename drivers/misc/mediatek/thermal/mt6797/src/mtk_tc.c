@@ -789,7 +789,8 @@ static void thermal_interrupt_handler(int bank)
 	temp = get_immediate_big_wrap();
 	tscpu_dprintk("[tIRQ] thermal_interrupt_handler,BIG T=%d\n", temp);
 
-	if (ret & THERMAL_MON_LOINTSTS0) {
+	if (ret & THERMAL_MON_LOINTSTS0 ||
+		(!ret && temp < (OTP_LOW_OFFSET_TEMP + OTP_TEMP_TOLERANCE))) {
 		tscpu_dprintk("[tIRQ] thermal_isr: THERMAL_MON_LOINTSTS0\n");
 		/**************************************************
 			disable OTP here
@@ -803,7 +804,8 @@ static void thermal_interrupt_handler(int bank)
 
 	}
 
-	if (ret & THERMAL_MON_HOINTSTS0) {
+	if (ret & THERMAL_MON_HOINTSTS0 ||
+		(!ret && (OTP_HIGH_OFFSET_TEMP - OTP_TEMP_TOLERANCE) < temp)) {
 		tscpu_dprintk("[tIRQ] thermal_isr: THERMAL_MON_HOINTSTS0\n");
 		/**************************************************
 			enable OTP here
