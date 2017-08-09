@@ -126,7 +126,7 @@ static void hps_algo_do_cluster_action(unsigned int cluster_id)
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (!cpu_online(cpu)) {	/* For CPU offline */
 				if (cpu_up(cpu))
-					hps_warn("CPU %d power on Fail\n", cpu);
+					hps_warn("[Info]CPU %d ++!\n", cpu);
 				++online_cores;
 			}
 			if (target_cores == online_cores)
@@ -137,7 +137,7 @@ static void hps_algo_do_cluster_action(unsigned int cluster_id)
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
 			if (cpu_online(cpu)) {
 				if (cpu_down(cpu))
-					hps_warn("CPU %d power down Fail\n", cpu);
+					hps_warn("[Info]CPU %d --!\n", cpu);
 				--online_cores;
 			}
 			if (target_cores == online_cores)
@@ -181,11 +181,13 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 	/* Process root cluster */
 	root_cluster = hps_sys->root_cluster_id;
 	for (cpu = hps_sys->cluster_info[root_cluster].base_value;
-	     cpu < hps_sys->cluster_info[root_cluster].limit_value;
-	     cpu++, hps_sys->cluster_info[root_cluster].target_core_num++, core_val--) {
-		if (core_val <= 0) {
-			hps_sys->cluster_info[root_cluster].target_core_num--;
+		cpu <= hps_sys->cluster_info[root_cluster].limit_value;
+		cpu++) {
+		if (core_val <= 0)
 			goto out;
+		else {
+			hps_sys->cluster_info[root_cluster].target_core_num++;
+			core_val--;
 		}
 	}
 
@@ -193,11 +195,13 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 		if (root_cluster == i)	/* Skip root cluster */
 			continue;
 		for (cpu = hps_sys->cluster_info[i].base_value;
-		     cpu < hps_sys->cluster_info[i].limit_value;
-		     cpu++, hps_sys->cluster_info[i].target_core_num++, core_val--) {
-			if (core_val <= 0) {
-				hps_sys->cluster_info[root_cluster].target_core_num--;
+			cpu <= hps_sys->cluster_info[i].limit_value;
+			cpu++) {
+			if (core_val <= 0)
 				goto out;
+			else {
+				hps_sys->cluster_info[root_cluster].target_core_num++;
+				core_val--;
 			}
 		}
 	}
