@@ -19,7 +19,6 @@
 #include <mt-plat/sync_write.h>
 #include <mach/mt_clkmgr.h>
 /* #include <mach/mt_dcm.h> */
-#include <mach/mt_spm.h>
 #include <mach/mt_spm_mtcmos.h>
 /* #include <mach/mt_spm_sleep.h> */
 /* #include <mach/mt_freqhopping.h> */
@@ -29,6 +28,7 @@
 /* #include <mach/upmu_common.h> */
 /* #include <mach/upmu_sw.h> */
 /* #include <mach/upmu_hw.h> */
+#include "mt_spm.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>

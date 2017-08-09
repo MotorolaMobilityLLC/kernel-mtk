@@ -22,6 +22,8 @@
 #include <linux/of.h>
 #include <linux/string.h>
 
+#include "../../../drivers/misc/mediatek/base/power/mt6735/mt_cpu_psci_ops.h"
+
 extern const struct cpu_operations smp_spin_table_ops;
 extern const struct cpu_operations cpu_psci_ops;
 
@@ -30,6 +32,9 @@ const struct cpu_operations *cpu_ops[NR_CPUS];
 static const struct cpu_operations *supported_cpu_ops[] __initconst = {
 #ifdef CONFIG_SMP
 	&smp_spin_table_ops,
+#ifdef CONFIG_MTK_PSCI
+	&mt_cpu_psci_ops,
+#endif
 #endif
 	&cpu_psci_ops,
 	NULL,
@@ -55,6 +60,7 @@ static const struct cpu_operations * __init cpu_get_ops(const char *name)
 int __init cpu_read_ops(struct device_node *dn, int cpu)
 {
 	const char *enable_method = of_get_property(dn, "enable-method", NULL);
+
 	if (!enable_method) {
 		/*
 		 * The boot CPU may not have an enable method (e.g. when
@@ -79,6 +85,7 @@ int __init cpu_read_ops(struct device_node *dn, int cpu)
 void __init cpu_read_bootcpu_ops(void)
 {
 	struct device_node *dn = of_get_cpu_node(0, NULL);
+
 	if (!dn) {
 		pr_err("Failed to find device node for boot cpu\n");
 		return;

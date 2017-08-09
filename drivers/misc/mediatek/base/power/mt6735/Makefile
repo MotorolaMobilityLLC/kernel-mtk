@@ -10,3 +10,15 @@ obj-y += mt_spm_mtcmos.o
 obj-y += mt_pbm.o
 obj-y += mt_vcore_dvfs_1.o
 
+ifneq ($(CONFIG_ARM64), y)
+
+obj-y += mt-smp.o
+obj-y += hotplug.o
+obj-y += mt-headsmp.o
+obj-y += mt_hotplug.o
+
+else
+
+obj-$(CONFIG_MTK_PSCI)  += mt_psci.o
+
+endif

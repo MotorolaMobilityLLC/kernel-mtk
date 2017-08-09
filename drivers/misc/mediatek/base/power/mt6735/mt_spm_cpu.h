@@ -1,11 +1,12 @@
-#ifndef _MT_SPM_
-#define _MT_SPM_
+#ifndef _MT_SPM_CPU
+#define _MT_SPM_CPU
 
 #include <linux/kernel.h>
 #include <linux/io.h>
+#include <linux/module.h>
 
 #ifdef CONFIG_OF
-extern void __iomem *spm_base;
+extern void __iomem *spm_cpu_base;
 extern void __iomem *scp_i2c0_base;
 extern void __iomem *scp_i2c1_base;
 extern void __iomem *scp_i2c2_base;
@@ -19,9 +20,9 @@ extern u32 spm_irq_6;
 extern u32 spm_irq_7;
 
 #undef SPM_BASE
-#define SPM_BASE spm_base
+#define SPM_BASE spm_cpu_base
 #else
-#include <mach/mt_reg_base.h>
+/* #include <mach/mt_reg_base.h> */
 #endif
 
 /* #include <mach/mt_irq.h> */
@@ -31,8 +32,7 @@ extern u32 spm_irq_7;
  * Config and Parameter
  **************************************/
 
-/* ****: for bring up */
-#ifdef CONFIG_OF		/* device tree */
+#ifdef CONFIG_OF
 #undef SPM_I2C0_BASE
 #undef SPM_I2C1_BASE
 #undef SPM_I2C2_BASE
@@ -48,12 +48,12 @@ extern u32 spm_irq_7;
 #define SPM_IRQ5_ID		spm_irq_5
 #define SPM_IRQ6_ID		spm_irq_6
 #define SPM_IRQ7_ID		spm_irq_7
-#else				/* no device tree: 6795: 163+32=195, 6735: 165+32=197 */
+#else
 #define SPM_BASE		SLEEP_BASE
-/* 6735 no SCP, so no peripheral i2c interface */
-#define SPM_I2C0_BASE	0xF0059C00	/* SCP_I2C0_BASE */
-#define SPM_I2C1_BASE	0xF0059C00	/* SCP_I2C1_BASE */
-#define SPM_I2C2_BASE	0xF0059C00	/* SCP_I2C2_BASE */
+
+#define SPM_I2C0_BASE	0xF0059C00
+#define SPM_I2C1_BASE	0xF0059C00
+#define SPM_I2C2_BASE	0xF0059C00
 
 #define SPM_IRQ0_ID		195	/* SLEEP_IRQ_BIT0_ID */
 #define SPM_IRQ1_ID		196	/* SLEEP_IRQ_BIT1_ID */
@@ -105,14 +105,14 @@ extern u32 spm_irq_7;
 #define SPM_CA15_CPUTOP_PWR_CON		(SPM_BASE + 0x2b0)
 #define SPM_CA15_L1_PWR_CON		(SPM_BASE + 0x2b4)
 #define SPM_CA15_L2_PWR_CON		(SPM_BASE + 0x2b8)
-#define SPM_MFG_2D_PWR_CON      (SPM_BASE + 0x2c0)	/* Need to remove in K2 */
-#define SPM_MFG_ASYNC_PWR_CON		(SPM_BASE + 0x2c4)	/* mt6735 */
+#define SPM_MFG_2D_PWR_CON		(SPM_BASE + 0x2c0)
+#define SPM_MFG_ASYNC_PWR_CON		(SPM_BASE + 0x2c4)
 #define SPM_MD32_SRAM_CON		(SPM_BASE + 0x2c8)
-#define SPM_ARMPLL_DIV_PWR_CON  (SPM_BASE + 0x2cc)
-#define SPM_MD2_PWR_CON         (SPM_BASE + 0x2d0)
-#define SPM_C2K_PWR_CON         (SPM_BASE + 0x2d4)	/* mt6735 */
-#define SPM_INFRA_MD_PWR_CON    (SPM_BASE + 0x2d8)	/* mt6735 */
-#define SPM_CPU_EXT_ISO         (SPM_BASE + 0x2dc)	/* mt6735 */
+#define SPM_ARMPLL_DIV_PWR_CON		(SPM_BASE + 0x2cc)
+#define SPM_MD2_PWR_CON			(SPM_BASE + 0x2d0)
+#define SPM_C2K_PWR_CON			(SPM_BASE + 0x2d4)
+#define SPM_INFRA_MD_PWR_CON		(SPM_BASE + 0x2d8)
+#define SPM_CPU_EXT_ISO			(SPM_BASE + 0x2dc)
 #define SPM_PCM_CON0			(SPM_BASE + 0x310)
 #define SPM_PCM_CON1			(SPM_BASE + 0x314)
 #define SPM_PCM_IM_PTR			(SPM_BASE + 0x318)
@@ -152,25 +152,24 @@ extern u32 spm_irq_7;
 #define SPM_PCM_EVENT_VECTOR7		(SPM_BASE + 0x3dc)
 #define SPM_PCM_SW_INT_SET		(SPM_BASE + 0x3e0)
 #define SPM_PCM_SW_INT_CLEAR		(SPM_BASE + 0x3e4)
-#define SPM_PCM_REG12_MASK		(SPM_BASE + 0x3e8)
 #define SPM_CLK_CON			(SPM_BASE + 0x400)
 #define SPM_SLEEP_DUAL_VCORE_PWR_CON	(SPM_BASE + 0x404)
 #define SPM_SLEEP_PTPOD2_CON		(SPM_BASE + 0x408)
 #define SPM_APMCU_PWRCTL		(SPM_BASE + 0x600)
 #define SPM_AP_DVFS_CON_SET		(SPM_BASE + 0x604)
-#define SPM_AP_STANBY_CON		(SPM_BASE + 0x608)	/* mt6735 */
+#define SPM_AP_STANBY_CON		(SPM_BASE + 0x608)
 #define SPM_PWR_STATUS			(SPM_BASE + 0x60c)
 #define SPM_PWR_STATUS_2ND		(SPM_BASE + 0x610)
-/* #define SPM_AP_BSI_REQ                        (SPM_BASE + 0x614) */
-#define SPM_SLEEP_MDBSI_CON		(SPM_BASE + 0x614)	/* mt6735 */
-#define SPM_BSI_GEN		        (SPM_BASE + 0x620)	/* mt6735 */
-#define SPM_BSI_EN_SR		      (SPM_BASE + 0x624)	/* mt6735 */
-#define SPM_BSI_CLK_SR		    (SPM_BASE + 0x628)	/* mt6735 */
-#define SPM_BSI_DO_SR		      (SPM_BASE + 0x62c)	/* mt6735 */
-#define SPM_BSI_D1_SR		      (SPM_BASE + 0x630)	/* mt6735 */
-#define SPM_BSI_D2_SR		      (SPM_BASE + 0x634)	/* mt6735 */
-#define SPM_AP_SEMA		        (SPM_BASE + 0x638)	/* mt6735 */
-#define SPM_SPM_SEMA		      (SPM_BASE + 0x63c)	/* mt6735 */
+/* #define SPM_AP_BSI_REQ		(SPM_BASE + 0x614) */
+#define SPM_SLEEP_MDBSI_CON		(SPM_BASE + 0x614)
+#define SPM_BSI_GEN			(SPM_BASE + 0x620)
+#define SPM_BSI_EN_SR			(SPM_BASE + 0x624)
+#define SPM_BSI_CLK_SR			(SPM_BASE + 0x628)
+#define SPM_BSI_DO_SR			(SPM_BASE + 0x62c)
+#define SPM_BSI_D1_SR			(SPM_BASE + 0x630)
+#define SPM_BSI_D2_SR			(SPM_BASE + 0x634)
+#define SPM_AP_SEMA			(SPM_BASE + 0x638)
+#define SPM_SPM_SEMA			(SPM_BASE + 0x63c)
 #define SPM_SLEEP_TIMER_STA		(SPM_BASE + 0x720)
 #define SPM_SLEEP_TWAM_CON		(SPM_BASE + 0x760)
 #define SPM_SLEEP_TWAM_STATUS0		(SPM_BASE + 0x764)
@@ -183,7 +182,7 @@ extern u32 spm_irq_7;
 #define SPM_SLEEP_TWAM_CURR_STATUS3	(SPM_BASE + 0x780)
 #define SPM_SLEEP_TWAM_TIMER_OUT	(SPM_BASE + 0x784)
 #define SPM_SLEEP_TWAM_WINDOW_LEN	(SPM_BASE + 0x788)
-#define SPM_SLEEP_IDLE_SEL	(SPM_BASE + 0x78C)
+#define SPM_SLEEP_IDLE_SEL		(SPM_BASE + 0x78C)
 #define SPM_SLEEP_WAKEUP_EVENT_MASK	(SPM_BASE + 0x810)
 #define SPM_SLEEP_CPU_WAKEUP_EVENT	(SPM_BASE + 0x814)
 #define SPM_SLEEP_MD32_WAKEUP_EVENT_MASK	(SPM_BASE + 0x818)
@@ -202,8 +201,6 @@ extern u32 spm_irq_7;
 #define SPM_PCM_RESERVE2		(SPM_BASE + 0xb04)
 #define SPM_PCM_FLAGS			(SPM_BASE + 0xb08)
 #define SPM_PCM_SRC_REQ			(SPM_BASE + 0xb0c)
-#define SPM_PCM_RESERVE3		(SPM_BASE + 0xb14)
-#define SPM_PCM_RESERVE4		(SPM_BASE + 0xb18)
 #define SPM_PCM_DEBUG_CON		(SPM_BASE + 0xb20)
 #define SPM_CA7_CPU0_IRQ_MASK		(SPM_BASE + 0xb30)
 #define SPM_CA7_CPU1_IRQ_MASK		(SPM_BASE + 0xb34)
@@ -231,30 +228,48 @@ extern u32 spm_irq_7;
 #define SPM_REGWR_EN		(1U << 0)
 #define SPM_REGWR_CFG_KEY	(SPM_PROJECT_CODE << 16)
 
+#if 1
 /* PCM Flags store in PCM_RESERVE4(0xB18)*/
+#define SPM_CPU_PDN_DIS			(1U << 0)
+#define SPM_INFRA_PDN_DIS		(1U << 1)
+#define SPM_DDRPHY_PDN_DIS		(1U << 2)
+#define SPM_VCORE_DVS_DIS		(1U << 3)
+#define SPM_PASR_DIS			(1U << 4)
+#define SPM_MD_VRF18_DIS		(1U << 5)
+#define SPM_MEMPLL_CG_EN		(1U << 6)
+/* #define SPM_MEMPLL_RESET		(1U << 7) */
+#define SPM_VCORE_DVFS_EN		(1U << 8)
+#define SPM_CPU_DVS_DIS			(1U << 9)
+#define SPM_IFRA_MD_PDN_DIS		(1U << 10)
+#define SPM_VCORE_DVS_EVENT_DIS		(1U << 11)
+#define SPM_DDR_HIGH_SPEED		(1U << 12)
+#define SPM_DISABLE_ATF_ABORT		(1U << 13)
+#define SPM_MEMPLL_1PLL_3PLL_SEL	(1U << 16)
+#define SPM_VCORE_DVS_POSITION		(1U << 17)
+#define SPM_DRAM_RANK1_ADDR_SEL0	(1U << 19)
+#define SPM_DRAM_RANK1_ADDR_SEL1	(1U << 20)
+#define SPM_DRAM_RANK1_ADDR_SEL2	(1U << 21)
+#define SPM_DRAM_RANK1_ADDR_SEL3	(1U << 24)
+#define SPM_BUCK_SEL			(1U << 26)
+#else
 #define SPM_CPU_PDN_DIS		  (1U << 0)
 #define SPM_INFRA_PDN_DIS	  (1U << 1)
 #define SPM_DDRPHY_PDN_DIS	(1U << 2)
+#define SPM_VCORE_DVS_DIS	  (1U << 3)
 #define SPM_PASR_DIS		    (1U << 4)
-#define SPM_MD_VRF18_DIS		(1U << 5)	/* mt6735 */
-#define SPM_MEMPLL_CG_EN		(1U << 6)	/* mt6735 */
-/* #define SPM_MEMPLL_RESET        (1U << 7)//mt6735 no use */
-#define SPM_VCORE_DVFS_EN	  (1U << 8)	/* mt6735 */
-#define SPM_CPU_DVS_DIS		    (1U << 9)
-#define SPM_IFRA_MD_PDN_DIS		(1U << 10)	/* mt6735 */
-#define SPM_VCORE_DVS_EVENT_DIS    (1U << 11)	/* mt6735 */
-#define SPM_DDR_HIGH_SPEED	      (1U << 12)	/* mt6735 no use */
-#define SPM_DISABLE_ATF_ABORT     (1U << 13)	/* mt6735 */
-#define SPM_DRAM_RANK1_ADDR_SEL0	(1U << 19)	/* 0x60000000, 0x70000000 */
-#define SPM_DRAM_RANK1_ADDR_SEL1	(1U << 20)	/* 0x80000000 */
-#define SPM_DRAM_RANK1_ADDR_SEL2	(1U << 21)	/* 0xc0000000 */
-#define SPM_DRAM_RANK1_ADDR_SEL3	(1U << 24)	/* 0xa0000000 */
-#define SPM_BUCK_SEL				      (1U << 26)	/* mt6753 use */
+#define SPM_DPD_DIS		      (1U << 5)
+#define SPM_SODI_DIS		    (1U << 6)
+#define SPM_MEMPLL_RESET	  (1U << 7)
+#define SPM_MAINPLL_PDN_DIS	(1U << 8)
+#define SPM_CPU_DVS_DIS		  (1U << 9)
+#define SPM_CPU_DORMANT		  (1U << 10)
+#define SPM_EXT_VSEL_GPIO103	    (1U << 11)
+#define SPM_DDR_HIGH_SPEED	      (1U << 12)
+#define SPM_SCREEN_OFF		        (1U << 13)
+#endif
 
-/******/
 #if 0
 /* Wakeup Source*/
-#if 1
 #define SPM_WAKE_SRC_LIST	{	\
 	SPM_WAKE_SRC(0, SPM_MERGE),	/* PCM timer, TWAM or CPU */	\
 	SPM_WAKE_SRC(1, LTE_PTP),	\
@@ -289,74 +304,29 @@ extern u32 spm_irq_7;
 	SPM_WAKE_SRC(30, APSRC_WAKE),	\
 	SPM_WAKE_SRC(31, APSRC_SLEEP)	\
 }
-#else
-#define SPM_WAKE_SRC_LIST	{	\
-	SPM_WAKE_SRC(0, SPM_MERGE),	/* PCM timer, TWAM or CPU */	\
-	SPM_WAKE_SRC(1, MD32_WDT),	\
-	SPM_WAKE_SRC(2, KP),		\
-	SPM_WAKE_SRC(3, WDT),		\
-	SPM_WAKE_SRC(4, GPT),		\
-	SPM_WAKE_SRC(5, CONN2AP),	\
-	SPM_WAKE_SRC(6, EINT),		\
-	SPM_WAKE_SRC(7, CONN_WDT),	\
-	SPM_WAKE_SRC(8, CCIF0_MD),	\
-	SPM_WAKE_SRC(9, LOW_BAT),	\
-	SPM_WAKE_SRC(10, MD32_SPM),	\
-	SPM_WAKE_SRC(11, F26M_WAKE),	\
-	SPM_WAKE_SRC(12, F26M_SLEEP),	\
-	SPM_WAKE_SRC(13, PCM_WDT),	\
-	SPM_WAKE_SRC(14, USB_CD),	\
-	SPM_WAKE_SRC(15, USB_PDN),	\
-	SPM_WAKE_SRC(16, LTE_WAKE),	\
-	SPM_WAKE_SRC(17, LTE_SLEEP),	\
-	SPM_WAKE_SRC(18, CCIF1_MD),	\
-	SPM_WAKE_SRC(19, UART0),	\
-	SPM_WAKE_SRC(20, AFE),		\
-	SPM_WAKE_SRC(21, THERM),	\
-	SPM_WAKE_SRC(22, CIRQ),		\
-	SPM_WAKE_SRC(23, MD2_WDT),	\
-	SPM_WAKE_SRC(24, SYSPWREQ),	\
-	SPM_WAKE_SRC(25, MD_WDT),	\
-	SPM_WAKE_SRC(26, CLDMA_MD),	\
-	SPM_WAKE_SRC(27, SEJ),		\
-	SPM_WAKE_SRC(28, ALL_MD32),	\
-	SPM_WAKE_SRC(29, CPU_IRQ),	\
-	SPM_WAKE_SRC(30, APSRC_WAKE),	\
-	SPM_WAKE_SRC(31, APSRC_SLEEP)	\
-}
-#endif
+
 /* define WAKE_SRC_XXX */
 #undef SPM_WAKE_SRC
-#define SPM_WAKE_SRC(id, name) (WAKE_SRC_##name = (1U << (id)))
-
+#define SPM_WAKE_SRC(id, name)	(WAKE_SRC_##name = (1U << (id)))
 enum SPM_WAKE_SRC_LIST;
-
 #endif
 
-/* typedef */enum {
-	WR_NONE = 0,
-	WR_UART_BUSY = 1,
-	WR_PCM_ASSERT = 2,
-	WR_PCM_TIMER = 3,
-	WR_WAKE_SRC = 4,
-	WR_UNKNOWN = 5,
+/*
+typedef enum {
+	WR_NONE			= 0,
+	WR_UART_BUSY		= 1,
+	WR_PCM_ASSERT		= 2,
+	WR_PCM_TIMER		= 3,
+	WR_WAKE_SRC		= 4,
+	WR_UNKNOWN		= 5,
 } wake_reason_t;
-
+*/
 struct twam_sig {
 	u32 sig0;		/* signal 0: config or status */
 	u32 sig1;		/* signal 1: config or status */
 	u32 sig2;		/* signal 2: config or status */
 	u32 sig3;		/* signal 3: config or status */
 };
-
-enum spm_clk_buf_pad_id {
-	BSI_EN_SR = 0,
-	BSI_CLK_SR = 1,
-	BSI_D0_SR = 2,
-	BSI_D1_SR = 3,
-	BSI_D2_SR = 4,
-};
-
 
 typedef void (*twam_handler_t) (struct twam_sig *twamsig);
 
@@ -369,24 +339,17 @@ extern void spm_mainpll_on_unrequest(const char *drv_name);
 
 /* for TWAM in MET */
 extern void spm_twam_register_handler(twam_handler_t handler);
-extern void spm_twam_enable_monitor(const struct twam_sig *twamsig, bool speed_mode,
-				    unsigned int window_len);
+extern void spm_twam_enable_monitor(const struct twam_sig *twamsig,
+				    bool speed_mode);
 extern void spm_twam_disable_monitor(void);
 
 /* for Vcore DVFS */
-extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
-extern int spm_set_vcore_dvs_voltage(unsigned int opp);
-extern char *spm_dump_vcore_dvs_regs(char *p);
-
-/*for AP BSI Generator*/
-void spm_ap_bsi_gen(unsigned int *clk_buf_cfg);
-
-
+extern int spm_go_to_ddrdfs(u32 spm_flags, u32 spm_data);
 
 /**************************************
  * Macro and Inline
  **************************************/
-#define spm_read(addr)			__raw_readl(IOMEM(addr))
+#define spm_read(addr)			__raw_readl((void __force __iomem *)(addr))
 #define spm_write(addr, val)		mt_reg_sync_writel(val, addr)
 
 #define is_cpu_pdn(flags)		(!((flags) & SPM_CPU_PDN_DIS))
@@ -396,6 +359,5 @@ void spm_ap_bsi_gen(unsigned int *clk_buf_cfg);
 
 #define get_high_cnt(sigsta)		((sigsta) & 0x3ff)
 #define get_high_percent(sigsta)	((get_high_cnt(sigsta) * 100 + 511) / 1023)
-#define get_percent(sigsta, tick)  ((sigsta * 100) / tick)
 
 #endif

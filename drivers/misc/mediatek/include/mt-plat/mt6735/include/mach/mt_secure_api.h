@@ -25,7 +25,8 @@
 
 #ifdef CONFIG_ARM64
 /* SIP SMC Call 64 */
-static noinline int mt_secure_call(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
+static noinline int mt_secure_call(u64 function_id,
+	u64 arg0, u64 arg1, u64 arg2)
 {
 	register u64 reg0 __asm__("x0") = function_id;
 	register u64 reg1 __asm__("x1") = arg0;
@@ -33,7 +34,8 @@ static noinline int mt_secure_call(u64 function_id, u64 arg0, u64 arg1, u64 arg2
 	register u64 reg3 __asm__("x3") = arg2;
 	int ret = 0;
 
-	asm volatile ("smc    #0\n" : "+r" (reg0) : "r"(reg1), "r"(reg2), "r"(reg3));
+	asm volatile ("smc    #0\n" : "+r" (reg0) :
+		"r"(reg1), "r"(reg2), "r"(reg3));
 
 	ret = (int)reg0;
 	return ret;
@@ -43,7 +45,8 @@ static noinline int mt_secure_call(u64 function_id, u64 arg0, u64 arg1, u64 arg2
 #include <asm/opcodes-sec.h>
 #include <asm/opcodes-virt.h>
 /* SIP SMC Call 32 */
-static noinline int mt_secure_call(u32 function_id, u32 arg0, u32 arg1, u32 arg2)
+static noinline int mt_secure_call(u32 function_id,
+	u32 arg0, u32 arg1, u32 arg2)
 {
 	register u32 reg0 __asm__("r0") = function_id;
 	register u32 reg1 __asm__("r1") = arg0;
@@ -51,21 +54,25 @@ static noinline int mt_secure_call(u32 function_id, u32 arg0, u32 arg1, u32 arg2
 	register u32 reg3 __asm__("r3") = arg2;
 	int ret = 0;
 
-	asm volatile (__SMC(0) : "+r"(reg0), "+r"(reg1), "+r"(reg2), "+r"(reg3));
+	asm volatile (__SMC(0) : "+r"(reg0),
+		"+r"(reg1), "+r"(reg2), "+r"(reg3));
 
 	ret = reg0;
 	return ret;
 }
 #endif
-#define tbase_trigger_aee_dump()    mt_secure_call(TBASE_SMC_AEE_DUMP, 0, 0, 0)
+#define tbase_trigger_aee_dump() \
+	mt_secure_call(TBASE_SMC_AEE_DUMP, 0, 0, 0)
 #endif
 
 #define CONFIG_MCUSYS_WRITE_PROTECT
 
-#if defined(CONFIG_MCUSYS_WRITE_PROTECT) && (defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI))
+#if defined(CONFIG_MCUSYS_WRITE_PROTECT) && \
+	(defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI))
 
 #ifdef CONFIG_ARM64		/* Kernel 64 */
-#define mcusys_smc_write(virt_addr, val)    mt_reg_sync_writel(val, virt_addr)
+#define mcusys_smc_write(virt_addr, val) \
+	mt_reg_sync_writel(val, virt_addr)
 
 #define mcusys_smc_write_phy(addr, val) \
 mt_secure_call(MTK_SIP_KERNEL_MCUSYS_WRITE, addr, val, 0)
@@ -76,7 +83,8 @@ mt_secure_call(MTK_SIP_KERNEL_MCUSYS_ACCESS_COUNT, 0, 0, 0)
 #else				/* Kernel 32 */
 #define SMC_IO_VIRT_TO_PHY(addr) (addr-0xF0000000+0x10000000)
 #define mcusys_smc_write(virt_addr, val) \
-mt_secure_call(MTK_SIP_KERNEL_MCUSYS_WRITE, SMC_IO_VIRT_TO_PHY(virt_addr), val, 0)
+	mt_secure_call(MTK_SIP_KERNEL_MCUSYS_WRITE, \
+		SMC_IO_VIRT_TO_PHY(virt_addr), val, 0)
 
 #define mcusys_smc_write_phy(addr, val) \
 mt_secure_call(MTK_SIP_KERNEL_MCUSYS_WRITE, addr, val, 0)
@@ -86,10 +94,12 @@ mt_secure_call(MTK_SIP_KERNEL_MCUSYS_ACCESS_COUNT, 0, 0, 0)
 #endif
 
 #else
-#define mcusys_smc_write(virt_addr, val)    mt_reg_sync_writel(val, virt_addr)
+#define mcusys_smc_write(virt_addr, val) \
+	mt_reg_sync_writel(val, virt_addr)
 #define mcusys_access_count()               (0)
 #endif
 
-#define kernel_smc_msg(x1, x2, x3)     mt_secure_call(MTK_SIP_KERNEL_MSG, x1, x2, x3)
+#define kernel_smc_msg(x1, x2, x3) \
+	mt_secure_call(MTK_SIP_KERNEL_MSG, x1, x2, x3)
 
 #endif				/* _MT_SECURE_API_H_ */
