@@ -277,7 +277,7 @@ long BT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			retval = 0;
 		} else {
 			BT_ERR_FUNC("Host trigger FW assert Failed\n");
-			retval = (-1000);
+			retval = (-EBUSY);
 		}
 		break;
 	case COMBO_IOCTL_BT_IC_HW_VER:
