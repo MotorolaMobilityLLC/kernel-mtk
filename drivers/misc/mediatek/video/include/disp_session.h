@@ -339,6 +339,7 @@ typedef enum {
 
 typedef enum {
 	DISP_FEATURE_TIME_SHARING = 0x00000001,
+	DISP_FEATURE_HRT = 0x00000002,
 } DISP_FEATURE;
 
 typedef struct disp_caps_t {
@@ -357,6 +358,23 @@ typedef struct disp_session_buf_t {
 	unsigned int session_id;
 	unsigned int buf_hnd[3];
 } disp_session_buf_info;
+
+typedef struct layer_config_t {
+	unsigned int layer_id;
+	unsigned int ovl_id;
+	DISP_FORMAT src_fmt;
+	unsigned int dst_offset_x, dst_offset_y;
+	unsigned int dst_width, dst_height;
+} layer_config;
+
+typedef struct disp_layer_info_t {
+	layer_config * input_config[2];
+	int disp_mode[2];
+	int layer_num[2];
+	int gles_head[2];
+	int gles_tail[2];
+	int hrt_num;
+} disp_layer_info;
 
 /* IOCTL commands. */
 #define DISP_IOW(num, dtype)     _IOW('O', num, dtype)
@@ -389,7 +407,7 @@ typedef struct disp_session_buf_t {
 #define DISP_IOCTL_GET_DISPLAY_CAPS			DISP_IOW(218, disp_caps_info)
 #define DISP_IOCTL_INSERT_SESSION_BUFFERS			DISP_IOW(219, disp_session_buf_info)
 #define	DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, disp_session_output_config)
-
+#define DISP_IOCTL_QUERY_VALID_LAYER			DISP_IOW(221, disp_layer_info)
 
 #ifdef __KERNEL__
 
