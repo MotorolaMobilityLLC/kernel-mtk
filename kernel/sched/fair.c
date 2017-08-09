@@ -2690,10 +2690,12 @@ unsigned int hmp_up_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
 #ifdef CONFIG_SCHED_HMP
 /* Schedule entity */
 #define se_load(se) se->avg.utilization_avg_contrib
+#define se_contrib(se) se->avg.load_avg_contrib
 
 /* CPU related : load information */
 #define cfs_pending_load(cpu) cpu_rq(cpu)->cfs.avg.pending_load
 #define cfs_load(cpu) cpu_rq(cpu)->cfs.avg.utilization_avg_contrib
+#define cfs_contrib(cpu) cpu_rq(cpu)->cfs.avg.load_avg_contrib
 
 /* CPU related : the number of tasks */
 #define cfs_nr_normal_prio(cpu) cpu_rq(cpu)->cfs.avg.nr_normal_prio
@@ -2798,12 +2800,17 @@ static inline void update_entity_load_avg(struct sched_entity *se,
 	if (se->on_rq) {
 		cfs_rq->runnable_load_avg += contrib_delta;
 		cfs_rq->utilization_load_avg += utilization_delta;
+		if (entity_is_task(se)) {
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
-		update_tg_info(cfs_rq, se, contrib_delta);
+			update_tg_info(cfs_rq, se, contrib_delta);
 #endif
+#ifdef CONFIG_SCHED_HMP
+			cpu_rq(cpu)->cfs.avg.load_avg_contrib += contrib_delta;
 #ifdef CONFIG_HMP_TRACER
-		trace_sched_cfs_load_update(task_of(se), se_load(se), utilization_delta, cpu);
+			trace_sched_cfs_load_update(task_of(se), se_contrib(se), contrib_delta, cpu);
 #endif /* CONFIG_HMP_TRACER */
+#endif
+		}
 	} else {
 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
 		subtract_utilization_blocked_contrib(cfs_rq,
@@ -2900,6 +2907,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
 #endif
 	if (sched_feat(SCHED_HMP) && entity_is_task(se)) {
 #ifdef CONFIG_SCHED_HMP
+		cpu_rq(cpu)->cfs.avg.load_avg_contrib += se->avg.load_avg_contrib;
 		cfs_nr_pending(cpu) = 0;
 		cfs_pending_load(cpu) = 0;
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
@@ -2907,7 +2915,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
 			cfs_nr_normal_prio(cpu)++;
 #endif
 #ifdef CONFIG_HMP_TRACER
-		trace_sched_cfs_enqueue_task(task_of(se), se_load(se), cpu);
+		trace_sched_cfs_enqueue_task(task_of(se), se_contrib(se), cpu);
 #endif
 #endif /* CONFIG_SCHED_HMP */
 	}
@@ -2946,13 +2954,14 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
 
 	if (sched_feat(SCHED_HMP) && entity_is_task(se)) {
 #ifdef CONFIG_SCHED_HMP
+		cpu_rq(cpu)->cfs.avg.load_avg_contrib -= se->avg.load_avg_contrib;
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 		cfs_reset_nr_dequeuing_low_prio(cpu);
 		if (!task_low_priority(task_of(se)->prio))
 			cfs_nr_normal_prio(cpu)--;
 #endif
 #ifdef CONFIG_HMP_TRACER
-		trace_sched_cfs_dequeue_task(task_of(se), se_load(se), cpu);
+		trace_sched_cfs_dequeue_task(task_of(se), se_contrib(se), cpu);
 #endif
 #endif /* CONFIG_SCHED_HMP */
 	}
@@ -4350,7 +4359,7 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 		if (cpu_online(cpu)) {
 			clbs->ncpu++;
 			clbs->ntask += cpu_rq(cpu)->cfs.h_nr_running;
-			clbs->load_avg += cpu_rq(cpu)->cfs.avg.utilization_avg_contrib;
+			clbs->load_avg += cpu_rq(cpu)->cfs.avg.load_avg_contrib;
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 			clbs->nr_normal_prio_task += cfs_nr_normal_prio(cpu);
 			clbs->nr_dequeuing_low_prio += cfs_nr_dequeuing_low_prio(cpu);
@@ -4379,15 +4388,15 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	 * reasonable value.
 	 */
 	clbs->load_avg /= clbs->ncpu;
-	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.utilization_avg_contrib;
+	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.load_avg_contrib;
 	clbs->scaled_acap = hmp_scale_down(clbs->acap);
-	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running * cpu_rq(target)->cfs.avg.utilization_avg_contrib;
+	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running * cpu_rq(target)->cfs.avg.load_avg_contrib;
 	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
 	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
 
 	mt_sched_printf(sched_log, "[%s] cpu/cluster:%d/%02lx load/len:%lu/%u stats:%d,%d,%d,%d,%d,%d,%d,%d\n",
 					__func__, target, *cpumask_bits(cluster_cpus),
-					cpu_rq(target)->cfs.avg.utilization_avg_contrib,
+					cpu_rq(target)->cfs.avg.load_avg_contrib,
 					cpu_rq(target)->cfs.h_nr_running,
 					clbs->ncpu, clbs->ntask, clbs->load_avg, clbs->cpu_capacity,
 					clbs->acap, clbs->scaled_acap, clbs->scaled_atask, clbs->threshold);
@@ -4426,11 +4435,11 @@ static void adj_threshold(struct clb_env *clbenv)
 	bcpu = clbenv->btarget;
 	lcpu = clbenv->ltarget;
 	if (bcpu < nr_cpu_ids) {
-		b_load = cpu_rq(bcpu)->cfs.avg.utilization_avg_contrib;
+		b_load = cpu_rq(bcpu)->cfs.avg.load_avg_contrib;
 		b_task = cpu_rq(bcpu)->cfs.h_nr_running;
 	}
 	if (lcpu < nr_cpu_ids) {
-		l_load = cpu_rq(lcpu)->cfs.avg.utilization_avg_contrib;
+		l_load = cpu_rq(lcpu)->cfs.avg.load_avg_contrib;
 		l_task = cpu_rq(lcpu)->cfs.h_nr_running;
 	}
 
@@ -9120,7 +9129,7 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 	 * RT class is taken into account because CPU load is multiplied
 	 * by the total number of CPU runnable tasks that includes RT tasks.
 	 */
-	target_wload = hmp_inc(cfs_load(target));
+	target_wload = hmp_inc(cfs_contrib(target));
 	target_wload += cfs_pending_load(target);
 	target_wload *= rq_length(target);
 	for_each_cpu(curr, mask) {
@@ -9132,7 +9141,7 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 		if (hmp_caller_is_gb(caller) && !hmp_cpu_stable(curr))
 			continue;
 
-		curr_wload = hmp_inc(cfs_load(curr));
+		curr_wload = hmp_inc(cfs_contrib(curr));
 		curr_wload += cfs_pending_load(curr);
 		curr_wload *= rq_length(curr);
 		if (curr_wload < target_wload) {
@@ -9165,7 +9174,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	int cpu = 0;
 
 	for_each_online_cpu(cpu)
-		trace_sched_cfs_runnable_load(cpu, cfs_load(cpu), cfs_length(cpu));
+		trace_sched_cfs_runnable_load(cpu, cfs_contrib(cpu), cfs_length(cpu));
 #endif
 
 	/* error handling */
@@ -9246,11 +9255,11 @@ out:
 	}
 
 	cfs_nr_pending(new_cpu)++;
-	cfs_pending_load(new_cpu) += se_load(se);
+	cfs_pending_load(new_cpu) += se_contrib(se);
 #ifdef CONFIG_HMP_TRACER
 	trace_sched_hmp_load(clbenv.bstats.load_avg, clbenv.lstats.load_avg);
 	trace_sched_hmp_select_task_rq(p, step, sd_flag, prev_cpu, new_cpu,
-				       se_load(se), &clbenv.bstats, &clbenv.lstats);
+				       se_contrib(se), &clbenv.bstats, &clbenv.lstats);
 #endif
 	return new_cpu;
 }
@@ -9260,26 +9269,26 @@ out:
 			(HMP_RATIO(B->cpu_capacity) - (B->cpu_capacity >> 2)))
 
 #define hmp_task_fast_cpu_afford(B, se, cpu) (B->acap > 0 \
-			&& hmp_fast_cpu_has_spare_cycles(B, se_load(se) + cfs_load(cpu)))
+			&& hmp_fast_cpu_has_spare_cycles(B, se_contrib(se) + cfs_contrib(cpu)))
 
 #define hmp_fast_cpu_oversubscribed(caller, B, se, cpu) \
 			(hmp_caller_is_gb(caller) ? \
-			!hmp_fast_cpu_has_spare_cycles(B, cfs_load(cpu)) : \
+			!hmp_fast_cpu_has_spare_cycles(B, cfs_contrib(cpu)) : \
 			!hmp_task_fast_cpu_afford(B, se, cpu))
 
 #define hmp_task_slow_cpu_afford(L, se) \
-			(L->acap > 0 && L->acap >= se_load(se))
+			(L->acap > 0 && L->acap >= se_contrib(se))
 
 /* Macro used by low-priority task filter */
 #define hmp_low_prio_task_up_rejected(p, B, L) \
 			(task_low_priority(p->prio) && \
 			(B->ntask >= B->ncpu || 0 != L->nr_normal_prio_task) && \
-			 (p->se.avg.utilization_avg_contrib < 800))
+			 (p->se.avg.load_avg_contrib < 800))
 
 #define hmp_low_prio_task_down_allowed(p, B, L) \
 			(task_low_priority(p->prio) && !B->nr_dequeuing_low_prio && \
 			B->ntask >= B->ncpu && 0 != L->nr_normal_prio_task && \
-			(p->se.avg.utilization_avg_contrib < 800))
+			(p->se.avg.load_avg_contrib < 800))
 
 /* Migration check result */
 #define HMP_BIG_NOT_OVERSUBSCRIBED           (0x01)
@@ -9370,7 +9379,7 @@ static unsigned int hmp_up_migration(int cpu, int *target_cpu, struct sched_enti
 	 * [4] Check dynamic migration threshold
 	 * Migrate task from LITTLE to big if load is greater than up-threshold
 	 */
-	if (se_load(se) > B->threshold) {
+	if (se_contrib(se) > B->threshold) {
 		check->status |= HMP_MIGRATION_APPROVED;
 		check->result = 1;
 	}
@@ -9381,7 +9390,7 @@ trace:
 		hmp_stats.nr_force_up++;
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), B->threshold, check->status,
-				      curr_cpu, *target_cpu, se_load(se), B, L);
+				      curr_cpu, *target_cpu, se_contrib(se), B, L);
 #endif
 out:
 	return check->result;
@@ -9474,7 +9483,7 @@ static unsigned int hmp_down_migration(int cpu, int *target_cpu, struct sched_en
 	 * Migrate task from big to LITTLE if load ratio is less than
 	 * or equal to down-threshold
 	 */
-	if (L->threshold >= se_load(se)) {
+	if (L->threshold >= se_contrib(se)) {
 		check->status |= HMP_MIGRATION_APPROVED;
 		check->result = 1;
 	}
@@ -9485,7 +9494,7 @@ trace:
 		hmp_stats.nr_force_down++;
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), L->threshold, check->status,
-				      curr_cpu, *target_cpu, se_load(se), B, L);
+				      curr_cpu, *target_cpu, se_contrib(se), B, L);
 #endif
 out:
 	return check->result;
@@ -9735,7 +9744,7 @@ static void hmp_force_up_migration(int this_cpu)
 
 #ifdef CONFIG_HMP_TRACER
 	for_each_online_cpu(curr_cpu)
-		trace_sched_cfs_runnable_load(curr_cpu, cfs_load(curr_cpu), cfs_length(curr_cpu));
+		trace_sched_cfs_runnable_load(curr_cpu, cfs_contrib(curr_cpu), cfs_length(curr_cpu));
 #endif
 
 	/* Migrate heavy task from LITTLE to big */
