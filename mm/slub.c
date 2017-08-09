@@ -4079,7 +4079,7 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
 	/*
 	 * Not found. Insert new tracking element.
 	 */
-	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, GFP_ATOMIC))
+	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, GFP_ATOMIC|__GFP_NO_KSWAPD))
 		return 0;
 
 	l = t->loc + pos;
@@ -4128,7 +4128,7 @@ static int list_locations(struct kmem_cache *s, char *buf,
 	struct kmem_cache_node *n;
 
 	if (!map || !alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
-				     GFP_TEMPORARY)) {
+				     GFP_TEMPORARY|__GFP_NO_KSWAPD)) {
 		kfree(map);
 		return sprintf(buf, "Out of memory\n");
 	}
@@ -5460,7 +5460,7 @@ static int mtk_memcfg_add_location(struct loc_track *t, struct kmem_cache *s,
 	/*
 	 * Not found. Insert new tracking element.
 	 */
-	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, GFP_ATOMIC))
+	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, GFP_ATOMIC|__GFP_NO_KSWAPD))
 		return 0;
 
 	l = t->loc + pos;
@@ -5509,7 +5509,7 @@ static int mtk_memcfg_list_locations(struct kmem_cache *s, struct seq_file *m,
 	struct kmem_cache_node *n;
 
 	if (!map || !alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
-				     GFP_TEMPORARY)) {
+				     GFP_TEMPORARY|__GFP_NO_KSWAPD)) {
 		kfree(map);
 		return seq_puts(m, "Out of memory\n");
 	}
