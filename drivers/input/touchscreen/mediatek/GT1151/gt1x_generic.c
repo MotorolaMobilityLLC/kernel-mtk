@@ -991,7 +991,7 @@ void gt1x_power_reset(void)
 	s32 i = 0;
 	s32 ret = 0;
 
-	if (is_resetting)
+	if (is_resetting || update_info.status)
 		return;
 	GTP_INFO("force_reset_guitar");
 	is_resetting = 1;
@@ -1728,7 +1728,6 @@ s32 gt1x_init(void)
 		gt1x_abs_y_max = tpd_dts_data.tpd_resolution[1];
 		gt1x_int_type = GTP_INT_TRIGGER;
 		gt1x_wakeup_level = GTP_WAKEUP_LEVEL;
-		return ret;
 	}
 
 	gt1x_workqueue = create_singlethread_workqueue("gt1x_workthread");

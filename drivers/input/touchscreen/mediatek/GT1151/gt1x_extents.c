@@ -574,12 +574,17 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	u32 value = 0;
 	s32 ret = 0;		/*the initial value must be 0*/
 	u8 *data = NULL;
+	int cnt = 30;
 	static struct ratelimit_state ratelimit = {
 		.lock = __RAW_SPIN_LOCK_UNLOCKED(ratelimit.lock),
 		.interval = HZ/2,
 		.burst = 1,
 		.begin = 1,
 	};
+
+    /* Blocking when firmwaer updating */
+	while (cnt-- && update_info.status)
+		ssleep(1);
 
 	GTP_DEBUG("IOCTL CMD:%x", cmd);
 	/*GTP_DEBUG("command:%d, length:%d, rw:%s", _IOC_NR(cmd), _IOC_SIZE(cmd),

@@ -554,7 +554,6 @@ static int tpd_registration(void *client)
 		/* TP resolution == LCD resolution, no need to match resolution when initialized fail */
 		gt1x_abs_x_max = 0;
 		gt1x_abs_y_max = 0;
-		return 0;
 	}
 
 	thread = kthread_run(tpd_event_handler, 0, TPD_DEVICE);
@@ -1014,6 +1013,8 @@ static void tpd_suspend(struct device *h)
 	u8 buf[1] = { 0 };
 #endif
 #endif
+	if (is_resetting || update_info.status)
+		return;
 	GTP_INFO("TPD suspend start...");
 
 #ifdef CONFIG_GTP_PROXIMITY
@@ -1075,6 +1076,8 @@ static void tpd_suspend(struct device *h)
 static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
+	if (is_resetting || update_info.status)
+		return;
 
 	GTP_INFO("TPD resume start...");
 	gtp_suspend = false;
