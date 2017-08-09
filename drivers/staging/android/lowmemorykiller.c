@@ -64,7 +64,7 @@ static uint32_t in_lowmem;
 #define REVERT_ADJ(x) (x)
 #endif /* CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES */
 
-static short lowmem_debug_adj = CONVERT_ADJ(1);
+static short lowmem_debug_adj = CONVERT_ADJ(0);
 #ifdef CONFIG_MT_ENG_BUILD
 static short lowmem_kernel_warn_adj = CONVERT_ADJ(0);
 #define output_expect(x) likely(x)
@@ -272,15 +272,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			if (time_after_eq(jiffies, lowmem_print_extra_info_timeout)) {
 				lowmem_print_extra_info_timeout = jiffies + HZ;
 				print_extra_info = 1;
-			} else if (min_score_adj <= 0) {
-				print_extra_info = 1;
 			}
 		}
 
-		if (print_extra_info) {
-			lowmem_print(1, "======low memory killer=====\n");
+		if (print_extra_info)
 			lowmem_print(1, "Free memory other_free: %d, other_file:%d pages\n", other_free, other_file);
-		}
 	}
 
 	rcu_read_lock();
@@ -313,6 +309,44 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		}
 		oom_score_adj = p->signal->oom_score_adj;
 
+#ifdef CONFIG_MT_ENG_BUILD
+		tasksize = get_mm_rss(p->mm);
+#ifdef CONFIG_ZRAM
+		tasksize += get_mm_counter(p->mm, MM_SWAPENTS);
+#endif
+		/*
+		* dump memory info when framework low memory:
+		* record the first two pid which consumed most memory.
+		*/
+		if (tasksize > max_mem) {
+			max_mem = tasksize;
+			/* pid_sec_mem = pid_dump; */
+			pid_dump = p->pid;
+
+			if (output_expect(enable_candidate_log)) {
+				if (print_extra_info) {
+#ifdef CONFIG_ZRAM
+					pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, rswap %lu, to kill\n",
+								p->pid, p->comm,
+								REVERT_ADJ(oom_score_adj), oom_score_adj,
+								get_mm_rss(p->mm),
+								get_mm_counter(p->mm, MM_SWAPENTS));
+#else /* CONFIG_ZRAM */
+					pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, to kill\n",
+								p->pid, p->comm,
+								REVERT_ADJ(oom_score_adj), oom_score_adj,
+								get_mm_rss(p->mm));
+#endif
+				}
+			}
+		}
+
+		if (p->pid == pid_flm_warn &&
+			time_before_eq(jiffies, flm_warn_timeout)) {
+			task_unlock(p);
+			continue;
+		}
+#else
 		if (output_expect(enable_candidate_log)) {
 			if (print_extra_info) {
 #ifdef CONFIG_ZRAM
@@ -328,27 +362,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 								get_mm_rss(p->mm));
 #endif
 			}
-		}
-
-#ifdef CONFIG_MT_ENG_BUILD
-		tasksize = get_mm_rss(p->mm);
-#ifdef CONFIG_ZRAM
-		tasksize += get_mm_counter(p->mm, MM_SWAPENTS);
-#endif
-		/*
-		* dump memory info when framework low memory:
-		* record the first two pid which consumed most memory.
-		*/
-		if (tasksize > max_mem) {
-			max_mem = tasksize;
-			/* pid_sec_mem = pid_dump; */
-			pid_dump = p->pid;
-		}
-
-		if (p->pid == pid_flm_warn &&
-			time_before_eq(jiffies, flm_warn_timeout)) {
-			task_unlock(p);
-			continue;
 		}
 #endif
 
@@ -415,12 +428,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		if (output_expect(enable_candidate_log)) {
 			if (print_extra_info) {
-				lowmem_print(1, "low memory info:\n");
 				show_free_areas(0);
 			#ifdef CONFIG_ION_MTK
 				/* Show ION status */
-				lowmem_print(1, "ion_mm_heap_total_memory[%ld]\n",
-								(unsigned long)ion_mm_heap_total_memory());
 				ion_mm_heap_memory_detail();
 			#endif
 			}
