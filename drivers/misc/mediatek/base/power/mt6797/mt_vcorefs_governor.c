@@ -12,23 +12,17 @@
 #include <linux/notifier.h>
 #endif
 
-#include <mt_pmic_wrap.h>
+#include <mach/mt_pmic_wrap.h>
 
-#include "mt_vcorefs_manager.h"
-#include "mt_spm_reg.h"
-#include "spm_v2/mt_spm.h"
 #include "spm_v2/mt_spm_pmic_wrap.h"
+#include "mt_vcorefs_manager.h"
+#include "mt_spm_vcore_dvfs.h"
+#include "mt_spm_reg.h"
+#include "mt_spm.h"
+#include "mt_dramc.h"
+#include "mt_ptp.h"
 
 /* #define BUILD_ERROR */
-
-#ifdef BUILD_ERROR
-/* #include <mach/mt_pmic_wrap.h> */
-/* #include <mach/mt_spm.h> */
-/* #include "mt_spm_pmic_wrap.h" */
-#include "mt_spm_vcore_dvfs.h"
-#include <mach/mt_ptp.h>
-#include <mach/mt_dramc.h>
-#endif
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -195,9 +189,7 @@ static void vcorefs_early_suspend_cb(struct early_suspend *h)
 	mutex_lock(&governor_mutex);
 	/* set screen OFF state */
 	gvrctrl->screen_on = 0;
-#ifdef BUILD_ERROR
 	spm_vcorefs_screen_off_setting(gvrctrl->cpu_dvfs_req);
-#endif
 	mutex_unlock(&governor_mutex);
 }
 
@@ -211,9 +203,7 @@ static void vcorefs_late_resume_cb(struct early_suspend *h)
 	mutex_lock(&governor_mutex);
 	/* set screen ON state */
 	gvrctrl->screen_on = 1;
-#ifdef BUILD_ERROR
 	spm_vcorefs_screen_on_setting();
-#endif
 	mutex_unlock(&governor_mutex);
 }
 
@@ -244,17 +234,14 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 		mutex_lock(&governor_mutex);
 		/* set screen OFF state */
 		gvrctrl->screen_on = 0;
-#ifdef BUILD_ERROR
 		spm_vcorefs_screen_off_setting(gvrctrl->cpu_dvfs_req);
-#endif
+
 		mutex_unlock(&governor_mutex);
 	} else if ((blank == FB_BLANK_UNBLANK) && (event == FB_EARLY_EVENT_BLANK)) {
 		mutex_lock(&governor_mutex);
 		/* set screen ON state */
 		gvrctrl->screen_on = 1;
-#ifdef BUILD_ERROR
 		spm_vcorefs_screen_on_setting();
-#endif
 		mutex_unlock(&governor_mutex);
 	}
 
@@ -558,9 +545,9 @@ int vcorefs_enable_debug_isr(bool enable)
 
 	if (enable)
 		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
-#ifdef BUILD_ERROR
+
 	spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
-#endif
+
 	mutex_unlock(&governor_mutex);
 
 	return 0;
@@ -575,9 +562,9 @@ static void vcorefs_set_cpu_dvfs_req(u32 value)
 
 	mutex_lock(&governor_mutex);
 	gvrctrl->cpu_dvfs_req = (value & mask);
-#ifdef BUILD_ERROR
+
 	spm_vcorefs_set_cpu_dvfs_req(value, mask);
-#endif
+
 	mutex_unlock(&governor_mutex);
 }
 
@@ -589,7 +576,7 @@ static int vcorefs_enable_vcore(bool enable)
 	mutex_lock(&governor_mutex);
 
 	gvrctrl->vcore_dvs = enable;
-#ifdef BUILD_ERROR
+
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
 					gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
@@ -602,7 +589,7 @@ static int vcorefs_enable_vcore(bool enable)
 	} else {
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
 	}
-#endif
+
 	mutex_unlock(&governor_mutex);
 	return 0;
 }
@@ -614,7 +601,7 @@ static int vcorefs_enable_ddr(bool enable)
 	mutex_lock(&governor_mutex);
 
 	gvrctrl->ddr_dfs = enable;
-#ifdef BUILD_ERROR
+
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
 					gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
@@ -627,7 +614,7 @@ static int vcorefs_enable_ddr(bool enable)
 	} else {
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
 	}
-#endif
+
 	mutex_unlock(&governor_mutex);
 	return 0;
 }
@@ -650,9 +637,8 @@ static void vcorefs_reload_spm_firmware(int flag)
 		gvrctrl->ddr_dfs = 1;
 
 	vcorefs_crit("re-kick vcore dvfs FW (vcore_dvs: %d ddr_dfs: %d)\n", gvrctrl->vcore_dvs, gvrctrl->ddr_dfs);
-#ifdef BUILD_ERROR
 	spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
-#endif
+
 	mutex_unlock(&governor_mutex);
 }
 
@@ -747,9 +733,7 @@ int vcorefs_enable_perform_bw(bool enable)
 
 	mutex_lock(&governor_mutex);
 	gvrctrl->perform_bw_enable = enable;
-#ifdef BUILD_ERROR
 	spm_vcorefs_enable_perform_bw(enable);
-#endif
 	mutex_unlock(&governor_mutex);
 
 	return 0;
@@ -768,9 +752,7 @@ int vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
 	gvrctrl->perform_bw_hpm_threshold = hpm_threshold;
 
 	mutex_lock(&governor_mutex);
-#ifdef BUILD_ERROR
 	spm_vcorefs_set_perform_bw_threshold(lpm_threshold, hpm_threshold);
-#endif
 	mutex_unlock(&governor_mutex);
 
 	return 0;
@@ -798,11 +780,9 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
-#ifdef BUILD_ERROR
 	#ifndef CONFIG_MTK_FPGA
 	r = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 	#endif
-#endif
 
 	if (r) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");
@@ -1057,7 +1037,6 @@ int vcorefs_late_init_dvfs(void)
 	vcorefs_init_sram_debug();
 #endif
 
-#ifdef BUILD_ERROR
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
 /* if have common bug need default load F/W when Vcore DVFS disable
@@ -1066,7 +1045,6 @@ int vcorefs_late_init_dvfs(void)
 						gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
 	}
 */
-#endif
 	mutex_lock(&governor_mutex);
 	gvrctrl->late_init_opp = set_init_opp_index();
 

@@ -13,6 +13,7 @@
 #endif
 #include <mt-plat/upmu_common.h>
 
+#include "mt_spm_vcore_dvfs.h"
 #include "mt_vcorefs_governor.h"
 
 #include "mt_spm_internal.h"

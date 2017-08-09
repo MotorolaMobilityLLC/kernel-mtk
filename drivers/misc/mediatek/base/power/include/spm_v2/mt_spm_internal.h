@@ -120,27 +120,6 @@ extern struct clk *i2c3_clk_main;
 #endif
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-/* SPM_SW_RSV_1[3:0], trigger by cpu_wake_up_event */
-#define SPM_SCREEN_ON			0x1
-#define SPM_SCREEN_OFF			0x2
-#define SPM_CLEAN_WAKE_EVENT_DONE	0xA
-#define SPM_SCREEN_SETTING_DONE		0xB
-#define SPM_OFFLOAD			0xF
-
-/*
- * SPM_SW_RSV_5[1:0]: F/W do DVFS target state
- * 0x0:1600, 0x1:1270, 0x2:1066
- */
-#define SPM_SCREEN_ON_HPM	0x3	/* 1.0/1600 */
-#define SPM_SCREEN_ON_LPM	0x2	/* 0.9/1270 */
-#define SPM_SCREEN_OFF_HPM	0x1	/* 0.9/1270 */
-#define SPM_SCREEN_OFF_LPM	0x0	/* 0.9/1066 */
-
-/* read shuffle value for mapping ddr freq */
-#define SPM_SHUFFLE_ADDR	0x63c
-#endif
-
 struct pcm_desc {
 	const char *version;	/* PCM code version */
 	const u32 *base;	/* binary array base */

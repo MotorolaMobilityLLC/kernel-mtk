@@ -4,12 +4,9 @@
 #include <linux/sysfs.h>
 
 #include "mt_vcorefs_manager.h"
+#include "mt_spm_vcore_dvfs.h"
 
 /* #define BUILD_ERROR */
-
-#ifdef BUILD_ERROR
-#include "mt_spm_vcore_dvfs.h"
-#endif
 
 static DEFINE_MUTEX(vcorefs_mutex);
 
@@ -369,11 +366,8 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 	p += sprintf(p, "\n");
 #endif
 
-#ifdef BUILD_ERROR
-#ifndef CONFIG_MTK_FPGA
 	p = spm_vcorefs_dump_dvfs_regs(p);
-#endif
-#endif
+
 	return p - buf;
 }
 

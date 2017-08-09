@@ -1,7 +1,6 @@
 #ifndef _MT_SPM_VCORE_DVFS_H
 #define _MT_SPM_VCORE_DVFS_H
 
-#include <linux/kernel.h>
 #include "mt_spm.h"
 
 #undef TAG
@@ -18,6 +17,25 @@
 #define spm_vcorefs_debug(fmt, args...)	\
 	pr_debug(TAG""fmt, ##args)
 
+/* SPM_SW_RSV_1[3:0], trigger by cpu_wake_up_event */
+#define SPM_SCREEN_ON			0x1
+#define SPM_SCREEN_OFF			0x2
+#define SPM_CLEAN_WAKE_EVENT_DONE	0xA
+#define SPM_SCREEN_SETTING_DONE		0xB
+#define SPM_OFFLOAD			0xF
+
+/*
+ * SPM_SW_RSV_5[1:0]: F/W do DVFS target state
+ * 0x0:1600, 0x1:1270, 0x2:1066
+ */
+#define SPM_SCREEN_ON_HPM	0x3	/* 1.0/1600 */
+#define SPM_SCREEN_ON_LPM	0x2	/* 0.9/1270 */
+#define SPM_SCREEN_OFF_HPM	0x1	/* 0.9/1270 */
+#define SPM_SCREEN_OFF_LPM	0x0	/* 0.9/1066 */
+
+/* read shuffle value for mapping ddr freq */
+#define SPM_SHUFFLE_ADDR	0x63c
+
 /* load fw for boot up */
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 cpu_dvfs_req);
 
@@ -29,7 +47,6 @@ extern int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_thres
 
 /* bw monitor enable/disable in spm dvfs logic */
 extern void spm_vcorefs_enable_perform_bw(bool enable);
-extern int spm_vcorefs_get_clk_mem_pll(void);
 
 /* misc vcore dvfs support func */
 extern char *spm_vcorefs_dump_dvfs_regs(char *p);
