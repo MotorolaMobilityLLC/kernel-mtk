@@ -621,6 +621,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 179 IRQ_TYPE_EDGE_FALLING>;
 		};
 
+		touch: touch@ {
+			compatible = "mediatek,mt6797-touch";
+		};
+
+		accdet: accdet@ {
+			compatible = "mediatek,mt6797-accdet";
+		};
+
 		topmisc@10011000 {
 			compatible = "mediatek,topmisc";
 			reg = <0x10011000 0x1000>;

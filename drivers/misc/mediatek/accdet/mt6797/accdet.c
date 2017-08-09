@@ -552,7 +552,7 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	pins_default = pinctrl_lookup_state(accdet_pinctrl1, "default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl default!\n");
+		/*dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl default!\n");*/
 	}
 
 	pins_eint_int = pinctrl_lookup_state(accdet_pinctrl1, "state_eint_as_int");
@@ -1096,7 +1096,7 @@ static void accdet_work_callback(struct work_struct *work)
 	wake_unlock(&accdet_irq_lock);
 }
 
-void accdet_get_dts_data(void)
+int accdet_get_dts_data(void)
 {
 	struct device_node *node = NULL;
 	int debounce[7];
@@ -1135,7 +1135,9 @@ void accdet_get_dts_data(void)
 		     accdet_dts_data.accdet_mic_mode);
 	} else {
 		ACCDET_ERROR("[Accdet]%s can't find compatible dts node\n", __func__);
+		return -1;
 	}
+	return 0;
 }
 void accdet_pmic_Read_Efuse_HPOffset(void)
 {
@@ -1193,8 +1195,8 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_NEGV_IRQ_SET);
 #endif
    /*********************ACCDET Analog Setting***********************************************************/
-	pmic_set_register_value(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
-	pmic_set_register_value(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
+	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
+	pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
 		| (accdet_dts_data.mic_mode_vol<<4) | 0x80);
 	pmic_pwrap_write(ACCDET_RSV, 0x0010);
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -1549,19 +1551,21 @@ int mt_accdet_probe(struct platform_device *dev)
 		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
 #endif
 		/*Accdet Hardware Init*/
-		accdet_get_dts_data();
-		accdet_init();
-		accdet_pmic_Read_Efuse_HPOffset();
-		/*schedule a work for the first detection*/
-		queue_work(accdet_workqueue, &accdet_work);
+		ret = accdet_get_dts_data();
+		if (ret == 0) {
+			accdet_init();
+			accdet_pmic_Read_Efuse_HPOffset();
+			/*schedule a work for the first detection*/
+			queue_work(accdet_workqueue, &accdet_work);
 #ifdef CONFIG_ACCDET_EINT
-		accdet_disable_workqueue = create_singlethread_workqueue("accdet_disable");
-		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
-		accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
-		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
-		accdet_setup_eint(dev);
+			accdet_disable_workqueue = create_singlethread_workqueue("accdet_disable");
+			INIT_WORK(&accdet_disable_work, disable_micbias_callback);
+			accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
+			INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
+			accdet_setup_eint(dev);
 #endif
-		g_accdet_first = 0;
+			g_accdet_first = 0;
+		}
 	}
 	ACCDET_INFO("[Accdet]accdet_probe done!\n");
 	return 0;

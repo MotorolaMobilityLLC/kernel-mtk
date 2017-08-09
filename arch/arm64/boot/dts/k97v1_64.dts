@@ -340,7 +340,34 @@
 	};
 };
 /* TOUCH end */
-
+&accdet {
+		accdet-mic-vol = <7>;
+		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
+		accdet-plugout-debounce = <1>;
+		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
+		accdet-mic-mode = <6>;
+		/*0--MD_MAX--UP_MAX--DW_MAX*/
+		headset-three-key-threshold = <0 80 220 400>;
+		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
+		headset-four-key-threshold = <0 58 121 192 400>;
+		/* ACCDET GPIO standardization ACC mode use */
+		pinctrl-names = "default", "state_eint_as_int";
+		pinctrl-0 = <&ACCDET_pins_default>;
+		pinctrl-1 = <&ACCDET_pins_eint_as_int>;
+		status = "okay";
+};
+&pio {
+	ACCDET_pins_default: eint0default {
+	};
+	ACCDET_pins_eint_as_int: eint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO92__FUNC_GPIO92>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*ACCDET end*/
 /* mmc start */
 &mmc0 {
 		clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
