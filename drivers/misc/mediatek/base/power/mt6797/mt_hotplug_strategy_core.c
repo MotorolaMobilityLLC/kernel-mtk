@@ -163,15 +163,15 @@ static int _hps_task_main(void *data)
 			goto HPS_WAIT_EVENT;
 		}
 #endif
+			/*Get sys status */
+			hps_get_sysinfo();
+		if (!hps_ctxt.is_interrupt) {
+			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
 
-		/*Get sys status */
-		hps_get_sysinfo();
-
-		mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
-
-		/*Execute PPM main function */
-		mt_ppm_main();
-
+			/*Execute PPM main function */
+			mt_ppm_main();
+		} else
+			hps_ctxt.is_interrupt = 0;
 
 		/*execute hotplug algorithm */
 		(*algo_func_ptr) ();
@@ -191,11 +191,12 @@ HPS_WAIT_EVENT:
 				schedule();
 			}
 		} else if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
-
-			hrtimer_cancel(&hps_ctxt.hr_timer);
-			hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
-			set_current_state(TASK_INTERRUPTIBLE);
-			schedule();
+			if (atomic_read(&hps_ctxt.is_ondemand) == 0) {
+				hrtimer_cancel(&hps_ctxt.hr_timer);
+				hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
+				set_current_state(TASK_INTERRUPTIBLE);
+				schedule();
+			}
 		}
 
 		if (kthread_should_stop())
@@ -215,14 +216,14 @@ HPS_WAIT_EVENT:
  */
 int hps_task_start(void)
 {
+	struct sched_param param = {.sched_priority = HPS_TASK_PRIORITY };
+
 	if (hps_ctxt.tsk_struct_ptr == NULL) {
-		/* struct sched_param param = {.sched_priority = HPS_TASK_RT_PRIORITY }; */
 		hps_ctxt.tsk_struct_ptr = kthread_create(_hps_task_main, NULL, "hps_main");
 		if (IS_ERR(hps_ctxt.tsk_struct_ptr))
 			return PTR_ERR(hps_ctxt.tsk_struct_ptr);
 
-		/* sched_setscheduler_nocheck(hps_ctxt.tsk_struct_ptr, SCHED_NORMAL, &param); */
-		set_user_nice(hps_ctxt.tsk_struct_ptr, HPS_TASK_NORMAL_PRIORITY);
+		sched_setscheduler_nocheck(hps_ctxt.tsk_struct_ptr, SCHED_NORMAL, &param);
 		get_task_struct(hps_ctxt.tsk_struct_ptr);
 		wake_up_process(hps_ctxt.tsk_struct_ptr);
 		hps_warn("hps_task_start success, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,
@@ -264,35 +265,26 @@ void hps_task_wakeup(void)
 	mutex_unlock(&hps_ctxt.lock);
 }
 
-int little_min = -1;
-int little_max = -1;
-int big_min = -1;
-int big_max = -1;
-
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
-	void (*algo_func_ptr)(void);
 	int i;
 
-	mutex_lock(&hps_ctxt.lock);
+	mutex_lock(&hps_ctxt.para_lock);
 	for (i = 0; i < p->cluster_num; i++) {
 		if (!p->cpu_limit[i].has_advise_core) {
-			hps_sys.cluster_info[i].base_value = p->cpu_limit[i].min_cpu_core;
-			hps_sys.cluster_info[i].limit_value = p->cpu_limit[i].max_cpu_core;
+			hps_sys.cluster_info[i].ref_base_value = p->cpu_limit[i].min_cpu_core;
+			hps_sys.cluster_info[i].ref_limit_value = p->cpu_limit[i].max_cpu_core;
 		} else {
-			hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].limit_value =
+			hps_sys.cluster_info[i].ref_base_value =
+			    hps_sys.cluster_info[i].ref_limit_value =
 			    p->cpu_limit[i].advise_cpu_core;
 		}
 	}
-	if (hps_get_break_en())
-		hps_set_break_en(0);
-	mutex_unlock(&hps_ctxt.lock);
+	mutex_unlock(&hps_ctxt.para_lock);
+	hps_ctxt.is_interrupt = 1;
+	hps_task_wakeup();
 
-	algo_func_ptr = hps_algo_main;
-
-	/*execute hotplug algorithm */
-	(*algo_func_ptr) ();
 }
 
 /*

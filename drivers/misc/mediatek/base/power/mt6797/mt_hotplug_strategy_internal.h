@@ -30,8 +30,7 @@
 /*
  * CONFIG - compile time
  */
-#define HPS_TASK_RT_PRIORITY                (MAX_RT_PRIO - 3)
-#define HPS_TASK_NORMAL_PRIORITY            (MIN_NICE)
+#define HPS_TASK_PRIORITY                   (-20)
 #define HPS_TIMER_INTERVAL_MS               (40)
 
 #define HPS_PERIODICAL_BY_WAIT_QUEUE        (1)
@@ -62,7 +61,6 @@
 
 #define EN_HPS_LOG                          (1)
 #define EN_ISR_LOG                          (0)
-
 #define HPS_HRT_BT_DBG						(75)
 #define HPS_HRT_BT_EN						(1)
 
@@ -125,6 +123,7 @@ typedef enum {
 
 
 /* TODO: verify do you need action? no use now */
+
 typedef enum {
 	ACTION_NONE = 0,
 	ACTION_BASE_LITTLE,	/* bit  1, 0x0002 */
@@ -143,20 +142,6 @@ typedef enum {
 	ACTION_ROOT_2_BIG,	/*bit 14, 0x4000 */
 	ACTION_COUNT
 } hps_ctxt_action_e;
-typedef struct hps_func_data {
-	int cores;
-	unsigned int target_root_cpu;
-	unsigned int action_LL;
-	unsigned int action_L;
-	unsigned int target_LL;
-	unsigned int target_L;
-	unsigned int limit_LL;
-	unsigned int limit_L;
-	unsigned int base_LL;
-	unsigned int base_L;
-} hps_func_data_t;
-
-
 #define HPS_SYS_CHANGE_ROOT	(0x001)
 struct hps_sys_ops {
 	char *func_name;
@@ -172,6 +157,8 @@ struct hps_cluster_info {
 	unsigned int cpu_id_max;
 	unsigned int limit_value;
 	unsigned int base_value;
+	unsigned int ref_limit_value;
+	unsigned int ref_base_value;
 	unsigned int is_root;
 	unsigned int hvyTsk_value;
 	unsigned int online_core_num;
@@ -197,6 +184,7 @@ typedef struct hps_ctxt_struct {
 	/* state */
 	unsigned int init_state;
 	unsigned int state;
+	unsigned int is_interrupt;
 
 	/* enabled */
 	unsigned int enabled;
@@ -211,6 +199,7 @@ typedef struct hps_ctxt_struct {
 	/* core */
 	struct mutex lock;	/* Synchronizes accesses */
 	struct mutex break_lock;	/* Synchronizes accesses */
+	struct mutex para_lock;
 	struct task_struct *tsk_struct_ptr;
 	wait_queue_head_t wait_queue;
 	struct timer_list tmr_list;
@@ -347,9 +336,6 @@ extern void hps_task_wakeup(void);
 /*
  * mt_hotplug_strategy_algo.c
  */
-extern void hps_algo_hmp(void);
-extern void hps_algo_smp(void);
-extern void hps_algo_amp(void);
 extern void hps_algo_main(void);
 extern int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val);
 extern unsigned int hps_get_cluster_cpus(unsigned int cluster_id);

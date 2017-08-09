@@ -83,7 +83,7 @@ hps_ctxt_t hps_ctxt = {
 	/* state */
 	.init_state = INIT_STATE_NOT_READY,
 	.state = STATE_LATE_RESUME,
-
+	.is_interrupt = 0,
 	/* enabled */
 	.enabled = 1,
 	.suspend_enabled = 1,
@@ -93,6 +93,7 @@ hps_ctxt_t hps_ctxt = {
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */
 	.break_lock = __MUTEX_INITIALIZER(hps_ctxt.break_lock),	/* Synchronizes accesses to control break of hps */
+	.para_lock = __MUTEX_INITIALIZER(hps_ctxt.para_lock),	/* Synchronizes accesses to control break of hps */
 	.tsk_struct_ptr = NULL,
 	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(hps_ctxt.wait_queue),
 	/*.periodical_by = HPS_PERIODICAL_BY_WAIT_QUEUE, */

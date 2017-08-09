@@ -48,9 +48,11 @@ static int cal_base_cores(void)
 	int i, base_val;
 
 	i = base_val = 0;
+	mutex_lock(&hps_ctxt.para_lock);
 	for (i = 0; i < hps_sys.cluster_num; i++)
 		base_val += hps_sys.cluster_info[i].base_value;
 
+	mutex_unlock(&hps_ctxt.para_lock);
 	return base_val;
 }
 
@@ -143,7 +145,8 @@ static int hps_algo_up(void)
 
 				/*Disable operation of in big cluster */
 				if (0 == get_efuse_status())
-					hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
+					hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num =
+					    0;
 				return 1;
 			}
 		}		/* if (hps_ctxt.up_loads_count >= hps_ctxt.up_times) */
