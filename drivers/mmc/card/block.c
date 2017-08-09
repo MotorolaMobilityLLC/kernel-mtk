@@ -2937,6 +2937,29 @@ static const struct mmc_fixup blk_fixups[] =
 	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
 		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
 
+#ifdef CONFIG_MTK_EMMC_CACHE
+	/*
+	 * Some MMC cards cache feature, cannot flush the previous
+	 * cache data by force programming or reliable write
+	 * which cannot gurrantee the strong order betwee meta data and file data.
+	 */
+
+	/*
+	 * Toshiba eMMC after enable cache feature, write performance drop,
+	 * because flush operation waste much time
+	 */
+	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_TOSHIBA, CID_OEMID_ANY, add_quirk_mmc,
+		  MMC_QUIRK_DISABLE_CACHE),
+
+	/*
+	 * Samsung eMMC after enable cache feature, command will timeout in some condition
+	 */
+	MMC_FIXUP("FJ27MB", CID_MANFID_SAMSUNG, 0x100, add_quirk_mmc,
+		  MMC_QUIRK_DISABLE_CACHE),
+	MMC_FIXUP("FJ25AB", CID_MANFID_SAMSUNG, 0x100, add_quirk_mmc,
+		  MMC_QUIRK_DISABLE_CACHE),
+#endif
+
 	END_FIXUP
 };
 

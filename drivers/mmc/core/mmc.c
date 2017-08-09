@@ -1526,6 +1526,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.hpi_en = 1;
 	}
 
+#ifdef CONFIG_MTK_EMMC_CACHE
+	if (card->quirks & MMC_QUIRK_DISABLE_CACHE)
+		goto skip_cache;
+#endif
 	/*
 	 * If cache size is higher than 0, this indicates
 	 * the existence of cache and it can be turned on.
@@ -1549,6 +1553,9 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.cache_ctrl = 1;
 		}
 	}
+#ifdef CONFIG_MTK_EMMC_CACHE
+skip_cache:
+#endif
 
 	/*
 	 * The mandatory minimum values are defined for packed command.
