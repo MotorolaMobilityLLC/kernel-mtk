@@ -1699,7 +1699,7 @@ static int mmc_sleep(struct mmc_host *host)
 	/*
 	 * Send sleep_notification if eMMC reversion after v5.0
 	 */
-	if (card->ext_csd.rev >= 7) {
+	if (card->ext_csd.rev >= 7 && !(card->quirks & MMC_QUIRK_DISABLE_SNO)) {
 		err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				EXT_CSD_POWER_OFF_NOTIFICATION,
 				EXT_CSD_SLEEP_NOTIFICATION, sn_timeout_ms, true, false, false);

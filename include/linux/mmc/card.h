@@ -347,6 +347,8 @@ struct mmc_card {
 #ifdef CONFIG_MTK_EMMC_CACHE
 #define MMC_QUIRK_DISABLE_CACHE     (1<<12) /* eMMC cache feature */
 #endif
+/* disable sleep notifation, this may cause card busy long time on some eMMC*/
+#define MMC_QUIRK_DISABLE_SNO       (1<<13)
 
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */
