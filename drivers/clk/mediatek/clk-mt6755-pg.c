@@ -31,11 +31,12 @@
 /* #include <mach/upmu_common.h> */
 #endif /* VLTE_SUPPORT */
 
-#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
+/*#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
-#endif
+#endif*/
 #define MT_CCF_DEBUG	0
+#define MT_CCF_BRINGUP	1
 #define	CHECK_PWR_ST	1
 
 #ifndef GENMASK
@@ -92,7 +93,7 @@ struct subsys {
 	struct subsys_ops	*ops;
 };
 
-static struct subsys_ops general_sys_ops;
+/*static struct subsys_ops general_sys_ops;*/
 static struct subsys_ops MD1_sys_ops;
 static struct subsys_ops C2K_sys_ops;
 static struct subsys_ops CONN_sys_ops;
@@ -101,8 +102,8 @@ static struct subsys_ops DIS_sys_ops;
 static struct subsys_ops ISP_sys_ops;
 static struct subsys_ops VDE_sys_ops;
 static struct subsys_ops VEN_sys_ops;
-static struct subsys_ops AUD_sys_ops;
-static struct subsys_ops IFR_sys_ops;
+/*static struct subsys_ops AUD_sys_ops;
+static struct subsys_ops IFR_sys_ops;*/
 static void __iomem *infracfg_base;
 static void __iomem *spm_base;
 
@@ -112,10 +113,10 @@ static void __iomem *spm_base;
 /**************************************
  * for non-CPU MTCMOS
  **************************************/
-static DEFINE_SPINLOCK(spm_noncpu_lock);
+/*static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define spm_mtcmos_noncpu_lock(flags)   spin_lock_irqsave(&spm_noncpu_lock, flags)
 
-#define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
+#define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)*/
 
 /* FIXME: set correct value: S */
 #define POWERON_CONFIG_EN			SPM_REG(0x0000)
@@ -184,7 +185,7 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define MD1_PROT_MASK       ((0x1<<16) | (0x1<<17) | (0x1<<18) | (0x1<<19) | (0x1<<20) | (0x1<<21))
 #define C2K_PROT_MASK       ((0x1<<22) | (0x1<<23) | (0x1<<24)) /* bit 29, 30, 31 */
 #define CONN_PROT_MASK      ((0x1<<13) | (0x1<<14))/* bit 2, 8 */
-#define MDSYS_INTF_INFRA_PWR_STA_MASK    (0x1 << 29)
+
 #define MDSYS_INTF_INFRA_PROT_MASK       ((0x1 << 3) \
 					  |(0x1 << 4))
 #define CONN_SRAM_PDN                     (0x1 << 8)
@@ -1115,11 +1116,12 @@ int spm_mtcmos_ctrl_audio(int state)
 	}
 	return err;
 }
+#if 0
 static void set_bus_protect(int en, uint32_t mask, unsigned long expired)
 {
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: en=%d, mask=%u, expired=%lu: S\n", __func__,
-		 en, mask, expired);*/
+	pr_debug("[CCF] %s: en=%d, mask=%u, expired=%lu: S\n", __func__,
+		 en, mask, expired);
 #endif /* MT_CCF_DEBUG */
 	if (!mask)
 		return;
@@ -1258,8 +1260,8 @@ static int spm_mtcmos_power_on_general_locked(
 
 	return 0;
 }
-
-static int general_sys_enable_op(struct subsys *sys)
+#endif
+/*static int general_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_power_on_general_locked(sys, 1, 0);
 }
@@ -1267,7 +1269,7 @@ static int general_sys_enable_op(struct subsys *sys)
 static int general_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_power_off_general_locked(sys, 1, 0);
-}
+}*/
 
 static int MD1_sys_enable_op(struct subsys *sys)
 {
@@ -1311,6 +1313,7 @@ static int VEN_sys_enable_op(struct subsys *sys)
 	/*printk("VEN_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_ven(STA_POWER_ON);
 }
+#if 0
 static int AUD_sys_enable_op(struct subsys *sys)
 {
 	/*printk("AUD_sys_enable_op\r\n");*/
@@ -1321,7 +1324,7 @@ static int IFR_sys_enable_op(struct subsys *sys)
 	/*printk("IFR_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_ifr(STA_POWER_ON);
 }
-
+#endif
 static int MD1_sys_disable_op(struct subsys *sys)
 {
 	/*printk("MD1_sys_disable_op\r\n");*/
@@ -1366,6 +1369,7 @@ static int VEN_sys_disable_op(struct subsys *sys)
 	/*printk("VEN_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 }
+#if 0
 static int AUD_sys_disable_op(struct subsys *sys)
 {
 	/*printk("AUD_sys_disable_op\r\n");*/
@@ -1376,6 +1380,7 @@ static int IFR_sys_disable_op(struct subsys *sys)
 	/*printk("IFR_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
 }
+#endif
 static int sys_get_state_op(struct subsys *sys)
 {
 	unsigned int sta = clk_readl(PWR_STATUS);
@@ -1384,11 +1389,11 @@ static int sys_get_state_op(struct subsys *sys)
 	return (sta & sys->sta_mask) && (sta_s & sys->sta_mask);
 }
 
-static struct subsys_ops general_sys_ops = {
+/*static struct subsys_ops general_sys_ops = {
 	.enable = general_sys_enable_op,
 	.disable = general_sys_disable_op,
 	.get_state = sys_get_state_op,
-};
+};*/
 
 static struct subsys_ops MD1_sys_ops = {
 	.enable = MD1_sys_enable_op,
@@ -1437,16 +1442,16 @@ static struct subsys_ops VEN_sys_ops = {
 	.disable = VEN_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-static struct subsys_ops AUD_sys_ops = {
+/*static struct subsys_ops AUD_sys_ops = {
 	.enable = AUD_sys_enable_op,
 	.disable = AUD_sys_disable_op,
 	.get_state = sys_get_state_op,
-};
-static struct subsys_ops IFR_sys_ops = {
+};*/
+/*static struct subsys_ops IFR_sys_ops = {
 	.enable = IFR_sys_enable_op,
 	.disable = IFR_sys_disable_op,
 	.get_state = sys_get_state_op,
-};
+};*/
 
 
 static int subsys_is_on(enum subsys_id id)
@@ -1473,7 +1478,7 @@ static int enable_subsys(enum subsys_id id)
 
 	BUG_ON(!sys);
 
-#if 0/*MT_CCF_BRINGUP*/
+#if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_MD1:
@@ -1526,7 +1531,7 @@ static int disable_subsys(enum subsys_id id)
 
 	BUG_ON(!sys);
 
-#if 1/*MT_CCF_BRINGUP*/
+#if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_DIS:
@@ -1576,8 +1581,8 @@ static int pg_enable(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
-		 __clk_get_name(hw->clk), pg->pd_id);*/
+	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
+		 __clk_get_name(hw->clk), pg->pd_id);
 #endif /* MT_CCF_DEBUG */
 
 	return enable_subsys(pg->pd_id);
@@ -1588,8 +1593,8 @@ static void pg_disable(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
-		 __clk_get_name(hw->clk), pg->pd_id);*/
+	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
+		 __clk_get_name(hw->clk), pg->pd_id);
 #endif /* MT_CCF_DEBUG */
 
 	disable_subsys(pg->pd_id);
@@ -1598,7 +1603,7 @@ static void pg_disable(struct clk_hw *hw)
 static int pg_is_enabled(struct clk_hw *hw)
 {
 	struct mt_power_gate *pg = to_power_gate(hw);
-#if 0/*MT_CCF_BRINGUP*/
+#if MT_CCF_BRINGUP
 	return 1;
 #endif /* MT_CCF_BRINGUP */
 
@@ -1611,9 +1616,9 @@ int pg_prepare(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pre_sys=%s\n", __func__,
+	pr_debug("[CCF] %s: sys=%s, pre_sys=%s\n", __func__,
 		 __clk_get_name(hw->clk),
-		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");*/
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
 #endif /* MT_CCF_DEBUG */
 
 	if (pg->pre_clk) {
@@ -1631,9 +1636,9 @@ void pg_unprepare(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: clk=%s, pre_clk=%s\n", __func__,
+	pr_debug("[CCF] %s: clk=%s, pre_clk=%s\n", __func__,
 		 __clk_get_name(hw->clk),
-		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");*/
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
 #endif /* MT_CCF_DEBUG */
 
 	pg_disable(hw);
@@ -1767,7 +1772,7 @@ static void __init init_clk_scpsys(
 			clk_data->clks[pg->id] = clk;
 
 #if MT_CCF_DEBUG
-/*		pr_debug("[CCF] %s: pgate %3d: %s\n", __func__, i, pg->name);*/
+		pr_debug("[CCF] %s: pgate %3d: %s\n", __func__, i, pg->name);
 #endif /* MT_CCF_DEBUG */
 	}
 }
@@ -1838,8 +1843,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 #if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
-	disable_subsys(SYS_MD1);
-	disable_subsys(SYS_MD2);
+/*	disable_subsys(SYS_MD1);
+	disable_subsys(SYS_MD2);*/
 #endif /* !MT_CCF_BRINGUP */
 }
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6755-scpsys", mt_scpsys_init);

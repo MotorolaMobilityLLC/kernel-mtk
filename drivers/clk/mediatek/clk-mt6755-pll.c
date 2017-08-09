@@ -21,11 +21,12 @@
 #include "clk-pll-v1.h"
 #include "clk-mt6755-pll.h"
 
-#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
+/*#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	1
 #define MT_CCF_BRINGUP	0
-#endif
-
+#endif*/
+#define MT_CCF_DEBUG	0
+#define MT_CCF_BRINGUP	1
 #ifndef GENMASK
 #define GENMASK(h, l)	(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
 #endif
@@ -123,7 +124,7 @@ static int clk_pll_is_enabled(struct clk_hw *hw)
 	int r;
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 1;*/
+	return 1;
 #endif /* MT_CCF_BRINGUP */
 
 	r = (readl_relaxed(pll->base_addr) & PLL_BASE_EN) != 0;
@@ -145,7 +146,7 @@ static int clk_pll_enable(struct clk_hw *hw)
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
 #endif /* MT_CCF_DEBUG */
 #if MT_CCF_BRINGUP
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 
 	mtk_clk_lock(flags);
@@ -186,7 +187,7 @@ static void clk_pll_disable(struct clk_hw *hw)
 		 __clk_get_name(hw->clk), pll->flags, !!(pll->flags & PLL_AO));*/
 #endif /* MT_CCF_DEBUG */
 #if MT_CCF_BRINGUP
-	/*return;*/
+	return;
 #endif /* MT_CCF_BRINGUP */
 
 	if (pll->flags & PLL_AO)
@@ -224,7 +225,7 @@ static long clk_pll_round_rate(
 /*	pr_debug("[CCF] %s: %s: rate=%lu\n", __func__, __clk_get_name(hw->clk),
 		 rate);*/
 #if MT_CCF_BRINGUP
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 
 	*prate = *prate ? *prate : 26000000;
@@ -251,7 +252,7 @@ static unsigned long clk_sdm_pll_recalc_rate(
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: parent_rate=%lu\n", __func__,
 		 __clk_get_name(hw->clk), parent_rate);*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
@@ -329,7 +330,7 @@ static int clk_sdm_pll_set_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 	r = calc_pll_freq_cfg(&pcw, &postdiv_idx, rate, parent_rate, pcwfbits);
@@ -376,7 +377,7 @@ static unsigned long clk_arm_pll_recalc_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
@@ -442,7 +443,7 @@ static int clk_arm_pll_set_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 	r = calc_pll_freq_cfg(&pcw, &postdiv_idx, rate, parent_rate, pcwfbits);
@@ -477,7 +478,7 @@ static long clk_mm_pll_round_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s, rate: %lu\n", __clk_get_name(hw->clk), rate);*/
 
@@ -506,7 +507,7 @@ static int clk_mm_pll_set_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	if (rate <= 702000000)
 		postdiv_idx = 2;
@@ -540,7 +541,7 @@ static int clk_univ_pll_enable(struct clk_hw *hw)
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s\n", __clk_get_name(hw->clk));*/
 
@@ -569,7 +570,7 @@ static void clk_univ_pll_disable(struct clk_hw *hw)
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return;*/
+	return;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s: PLL_AO: %d\n",
 		__clk_get_name(hw->clk), !!(pll->flags & PLL_AO));*/
@@ -603,7 +604,7 @@ static unsigned long clk_univ_pll_recalc_rate(
 {
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
@@ -677,7 +678,7 @@ static long clk_univ_pll_round_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s, rate: %lu\n", __clk_get_name(hw->clk), rate);*/
 
@@ -703,7 +704,7 @@ static int clk_univ_pll_set_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 	r = calc_pll_freq_cfg(&pcw, &postdiv_idx, rate, parent_rate, pcwfbits);
@@ -734,7 +735,7 @@ static int clk_aud_pll_enable(struct clk_hw *hw)
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s\n", __clk_get_name(hw->clk));*/
 
@@ -776,7 +777,7 @@ static void clk_aud_pll_disable(struct clk_hw *hw)
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return;*/
+	return;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s: PLL_AO: %d\n",
 		__clk_get_name(hw->clk), !!(pll->flags & PLL_AO));*/
@@ -819,7 +820,7 @@ static unsigned long clk_aud_pll_recalc_rate(
 {
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
@@ -899,7 +900,7 @@ static long clk_aud_pll_round_rate(
 
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s, rate: %lu\n", __clk_get_name(hw->clk), rate);*/
 
@@ -926,7 +927,7 @@ static int clk_aud_pll_set_rate(
 #if MT_CCF_BRINGUP
 /*	pr_debug("[CCF] %s: %s: rate=%lu, parent_rate=%lu\n", __func__,
 		 __clk_get_name(hw->clk), rate, parent_rate);*/
-	/*return 0;*/
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 	r = calc_pll_freq_cfg(&pcw, &postdiv_idx, rate, parent_rate, pcwfbits);

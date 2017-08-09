@@ -24,11 +24,12 @@
 #include "clk-mtk-v1.h"
 #include "clk-gate-v1.h"
 
-#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
+/*#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	1
 #define MT_CCF_BRINGUP	0
-#endif
-
+#endif*/
+#define MT_CCF_DEBUG	0
+#define MT_CCF_BRINGUP	1
 /*
  * clk_gate
  */
@@ -75,7 +76,7 @@ static int cg_enable(struct clk_hw *hw)
 			__clk_get_name(hw->clk), cg->bit);
 #endif /* MT_CCF_DEBUG */
 #if MT_CCF_BRINGUP
-	return 0;
+/*	return 0;*/
 #endif /* MT_CCF_BRINGUP */
 
 	mtk_clk_lock(flags);
