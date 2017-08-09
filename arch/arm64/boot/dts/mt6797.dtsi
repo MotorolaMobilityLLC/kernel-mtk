@@ -2431,6 +2431,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			clock-names = "therm-main";
 		};
 
+		eem_fsm@1100b000 {
+			compatible = "mediatek,mt6797-eem_fsm";
+			reg = <0x1100b000 0x1000>;
+			interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mfgsys MFG_BG3D>, <&scpsys SCP_SYS_MFG>, <&infrasys INFRA_THERM>;
+			clock-names = "mfg-main", "mtcmos-mfg", "therm-eem";
+		};
+
 		btif_tx: btif_tx@11000a00 {
 			compatible = "mediatek,btif_tx";
 			reg = <0x11000a00 0x80>;

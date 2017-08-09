@@ -298,7 +298,7 @@ unsigned int sbTbl[][16] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x04, 0x32},/* 247 */
 	{0x02, 0xa, 0x05, 0xa, 0x1, 0x0B0, 0x04, 0x2F},/* 182 */
 };
-static unsigned int ctrl_EEM_Enable = 1;
+static unsigned int ctrl_EEM_Enable;
 static unsigned int *recordTbl;
 
 /**
@@ -1079,7 +1079,7 @@ static struct eem_det eem_detectors[NR_EEM_DET] = {
 		.ctrl_id	= EEM_CTRL_GPU,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 		.max_freq_khz	= 800000,/* 800 MHz */
-		.VBOOT		= 100000, /* 0.975V */
+		.VBOOT		= 98778, /* 0.975V */
 		.volt_offset	= 0,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
