@@ -42,6 +42,12 @@
 #endif
 #include "zram_drv.h"
 
+#ifdef CONFIG_MT_ENG_BUILD
+#define GUARD_BYTES_LENGTH	64
+#define GUARD_BYTES_HALFLEN	32
+#define GUARD_BYTES		(0x0)
+#endif
+
 /* Globals */
 static int zram_major;
 static struct zram *zram_devices;
@@ -117,6 +123,11 @@ static struct zram_table_entry *search_node_in_zram_list(struct zram *zram, stru
 		} else {
 			if (zsm_test_flag(meta, current_node, ZRAM_ZSM_DONE_NODE) && (current_node->handle != 0)) {
 				cmem = zs_map_object(meta->mem_pool, current_node->handle, ZS_MM_RO);
+#ifdef CONFIG_MT_ENG_BUILD
+				/* Move to the start of bitstream */
+				if (TABLE_GET_SIZE(current_node->value) != PAGE_SIZE)
+					cmem += GUARD_BYTES_HALFLEN;
+#endif
 				ret = memcmp(cmem, match_content, TABLE_GET_SIZE(input_node->value));
 				compare_count++;
 				if (ret == 0) {
@@ -740,7 +751,7 @@ static void zram_free_page(struct zram *zram, size_t index)
 			spin_unlock(&zram_node_mutex);
 		}
 	} else if (!zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE))
-		pr_err("[ZSM]ERROR! try to free noexist ZSM node index %x\n", index);
+		pr_err("[ZSM]ERROR! try to free noexist ZSM node index %lx\n", (unsigned long)index);
 	if (ret == 0) {
 		zs_free(meta->mem_pool, handle);
 		atomic64_sub(zram_get_obj_size(meta, index), &zram->stats.compr_data_size);
@@ -755,6 +766,51 @@ static void zram_free_page(struct zram *zram, size_t index)
 	zram_set_obj_size(meta, index, 0);
 }
 
+#ifdef CONFIG_MT_ENG_BUILD
+static void zram_check_guardbytes(unsigned char *cmem, bool is_header)
+{
+	int idx;
+
+	for (idx = 0; idx < GUARD_BYTES_HALFLEN; idx++) {
+		if (*cmem != (unsigned char)GUARD_BYTES) {
+			if (is_header)
+				pr_err("<<HEADER>>\n");
+			else
+				pr_err("<<TAIL>>\n");
+
+			cmem -= idx;
+			for (idx = 0; idx < GUARD_BYTES_HALFLEN; idx++)
+				pr_err("%x ", (int)*cmem++);
+
+			pr_err("\n<<END>>\n");
+			/* Just return */
+			return;
+		}
+		cmem++;
+	}
+}
+static void dump_object(unsigned char *cmem, size_t tlen)
+{
+	int idx;
+
+	pr_err("\n@@@@@@@@@@\n");
+	/* Head */
+	for (idx = 0; idx < GUARD_BYTES_HALFLEN; idx++)
+		pr_err("%x ", (int)*cmem++);
+
+	pr_err("\n+++++++++\n");
+	/* Body */
+	for (; idx < tlen - GUARD_BYTES_HALFLEN; idx++)
+		pr_err("%x ", (int)*cmem++);
+
+	pr_err("\n---------\n");
+	/* Tail */
+	for (; idx < tlen; idx++)
+		pr_err("%x ", (int)*cmem++);
+
+	pr_err("\n!!!!!!!!!\n");
+}
+#endif
 static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 {
 	int ret = 0;
@@ -776,14 +832,30 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 	if (size == PAGE_SIZE)
 		copy_page(mem, cmem);
+#ifndef CONFIG_MT_ENG_BUILD
 	else
 		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+#else
+	else {
+		/* Check header */
+		zram_check_guardbytes(cmem, true);
+		/* Move to the start of bitstream */
+		ret = zcomp_decompress(zram->comp, cmem += GUARD_BYTES_HALFLEN, size, mem);
+		/* Check tail */
+		zram_check_guardbytes(cmem + size, false);
+	}
+#endif
 	zs_unmap_object(meta->mem_pool, handle);
 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
 
 	/* Should NEVER happen. Return bio error if it does. */
 	if (unlikely(ret)) {
 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+#ifdef CONFIG_MT_ENG_BUILD
+		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
+		dump_object(cmem, size + GUARD_BYTES_LENGTH);
+		zs_unmap_object(meta->mem_pool, handle);
+#endif
 		return ret;
 	}
 
@@ -1001,6 +1073,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		}
 	}
 #endif
+
+#ifdef CONFIG_MT_ENG_BUILD
+	if (clen != PAGE_SIZE)
+		clen += GUARD_BYTES_LENGTH;
+#endif
+
 	handle = zs_malloc(meta->mem_pool, clen);
 	if (!handle) {
 		pr_info("Error allocating memory for compressed page: %u, size=%zu\n",
@@ -1025,6 +1103,28 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		copy_page(cmem, src);
 		kunmap_atomic(src);
 	} else {
+#ifdef CONFIG_MT_ENG_BUILD
+		if (clen < PAGE_SIZE) {
+			int idx;
+
+			/* Head guard bytes */
+			for (idx = 0; idx < GUARD_BYTES_HALFLEN; idx++) {
+				*cmem = GUARD_BYTES;
+				cmem++;
+			}
+
+			/* Tail guard bytes */
+			clen -= GUARD_BYTES_LENGTH;
+			cmem += clen;
+			for (idx = 0; idx < GUARD_BYTES_HALFLEN; idx++) {
+				*cmem = GUARD_BYTES;
+				cmem++;
+			}
+
+			/* Move cmem to the right offset */
+			cmem -= (clen + GUARD_BYTES_HALFLEN);
+		}
+#endif
 		memcpy(cmem, src, clen);
 	}
 
