@@ -2398,28 +2398,35 @@ static int msdc_debug_proc_read_FT_show(struct seq_file *m, void *data)
 	u8 u8_wdat, u8_cmddat;
 	u8 u8_DDLSEL;
 
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0) {
-#if defined(CFG_DEV_MSDC0)
-		base = mtk_msdc_host[0]->base;
-		msdc_id = 0;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1) {
-#if defined(CFG_DEV_MSDC1)
-		base = mtk_msdc_host[1]->base;
-		msdc_id = 1;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2) {
-#if defined(CFG_DEV_MSDC2)
-		base = mtk_msdc_host[2]->base;
-		msdc_id = 2;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3) {
-#if defined(CFG_DEV_MSDC3)
-		base = mtk_msdc_host[3]->base;
-		msdc_id = 3;
-#endif
+	switch (CONFIG_MTK_WCN_CMB_SDIO_SLOT) {
+	case 0:
+		if (mtk_msdc_host[0]) {
+			base = mtk_msdc_host[0]->base;
+			msdc_id = 0;
+		}
+		break;
+	case 1:
+		if (mtk_msdc_host[1]) {
+			base = mtk_msdc_host[1]->base;
+			msdc_id = 1;
+		}
+		break;
+	case 2:
+		if (mtk_msdc_host[2]) {
+			base = mtk_msdc_host[2]->base;
+			msdc_id = 2;
+		}
+		break;
+	case 3:
+		if (mtk_msdc_host[3]) {
+			base = mtk_msdc_host[3]->base;
+			msdc_id = 3;
+		}
+		break;
+	default:
+		pr_err("Invalid Host number: %d\n", CONFIG_MTK_WCN_CMB_SDIO_SLOT);
+		break;
 	}
-
 	msdc_clk_enable(host);
 
 	MSDC_GET_FIELD((base+0x04), MSDC_IOCON_RSPL, cmd_edge);
@@ -2526,22 +2533,14 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	pr_err("i_case=%d i_par1=%d i_par2=%d\n", i_case, i_par1, i_par2);
 
 #if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
-#if defined(CFG_DEV_MSDC0)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0 && mtk_msdc_host[0])
 		base = mtk_msdc_host[0]->base;
-#endif
-#if defined(CFG_DEV_MSDC1)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1 && mtk_msdc_host[1])
 		base = mtk_msdc_host[1]->base;
-#endif
-#if defined(CFG_DEV_MSDC2)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2 && mtk_msdc_host[2])
 		base = mtk_msdc_host[2]->base;
-#endif
-#if defined(CFG_DEV_MSDC3)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3 && mtk_msdc_host[3])
 		base = mtk_msdc_host[3]->base;
-#endif
 #else
 	return -1;
 #endif

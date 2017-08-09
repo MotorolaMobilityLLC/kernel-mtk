@@ -261,8 +261,7 @@ skip_sbc_prepare:
 	mmc_set_data_timeout(&msdc_data, host_ctl->mmc->card);
 	mmc_wait_for_req(host_ctl->mmc, &msdc_mrq);
 
-	/* clear the global buffer of R/W IOCTL */
-	memset(sg_msdc_multi_buffer, 0 , msdc_ctl->total_size);
+
 
 	if (msdc_ctl->partition)
 		msdc_switch_part(host_ctl, 0);
@@ -282,6 +281,9 @@ skip_sbc_prepare:
 				msdc_ctl->total_size);
 		}
 	}
+	/* clear the global buffer of R/W IOCTL */
+	memset(sg_msdc_multi_buffer, 0 , msdc_ctl->total_size);
+	goto rw_end_without_release;
 
 rw_end:
 	mmc_release_host(host_ctl->mmc);

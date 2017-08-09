@@ -1944,10 +1944,6 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		break;
 	case MMC_WRITE_BLOCK:
 		rawcmd |= ((1 << 11) | (1 << 13));
-#ifdef MTK_MSDC_USE_CACHE
-		if (check_mmc_cache_ctrl(host->mmc->card))
-			ERR_MSG("[Warning]: Single write(0x%x) happend when cache enabled", cmd->arg);
-#endif
 		break;
 	case SD_IO_RW_EXTENDED:
 		if (cmd->data->flags & MMC_DATA_WRITE)

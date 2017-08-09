@@ -568,13 +568,10 @@ static unsigned int simp_msdc_init(struct simp_mmc_host *mmc_host)
 
 	/* set Driving SMT PUPD */
 
-	if (host->id == 0)
+	if (host->id == 0 && mtk_msdc_host[0])
 		msdc_set_driving_by_id(host->id, mtk_msdc_host[0]->hw, 0);
-
-	#if defined(CFG_DEV_MSDC1)
-	else  if (host->id == 1)
+	else  if (host->id == 1 && mtk_msdc_host[1]->hw)
 		msdc_set_driving_by_id(host->id, mtk_msdc_host[1]->hw, 0);
-	#endif
 
 	msdc_set_smt_by_id(host->id, 1);
 	msdc_pin_config_by_id(host->id, MSDC_PIN_PULL_UP);

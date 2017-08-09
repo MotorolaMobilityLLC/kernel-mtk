@@ -25,24 +25,15 @@
 #endif
 
 const struct of_device_id msdc_of_ids[] = {
-	{   .compatible = "mediatek,MSDC0", },
-	{   .compatible = "mediatek,MSDC1", },
+	{   .compatible = "mediatek,mt6797-mmc", },
 	{   .compatible = "mediatek,MSDC2", },
 	{   .compatible = "mediatek,MSDC3", },
 	{ },
 };
 
 unsigned int msdc_host_enable[HOST_MAX_NUM] = {
-#if defined(CFG_DEV_MSDC0)
 	1,
-#else
-	0,
-#endif
-#if defined(CFG_DEV_MSDC1)
 	1,
-#else
-	0,
-#endif
 #if defined(CFG_DEV_MSDC2)
 	1,
 #else
@@ -297,9 +288,9 @@ int msdc_of_parse(struct mmc_host *mmc)
 	host->hw = kzalloc(sizeof(struct msdc_hw), GFP_KERNEL);
 
 	/*basic settings*/
-	if (0 == strcmp(np->name, "MSDC0"))
+	if (0 == strcmp(np->name, "msdc0"))
 		host->id = 0;
-	else if (0 == strcmp(np->name, "MSDC1"))
+	else if (0 == strcmp(np->name, "msdc1"))
 		host->id = 1;
 	else if (0 == strcmp(np->name, "MSDC2"))
 		host->id = 2;
@@ -362,7 +353,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	unsigned int host_id = 0;
 	int i, ret;
 	struct msdc_host *host = mmc_priv(mmc);
-	static const char const *msdc_names[] = {"MSDC0", "MSDC1", "MSDC2", "MSDC3"};
+	static const char const *msdc_names[] = {"msdc0", "msdc1", "MSDC2", "MSDC3"};
 	static const char const *ioconfig_names[] = {
 		"mediatek,IOCFG_5", "mediatek,IOCFG_0",
 		"mediatek,IOCFG_1", "mediatek,IOCFG_2"

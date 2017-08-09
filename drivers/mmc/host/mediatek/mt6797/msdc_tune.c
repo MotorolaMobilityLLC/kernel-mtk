@@ -1051,11 +1051,9 @@ void msdc_init_tune_setting(struct msdc_host *host, int re_init)
 	void __iomem *base = host->base;
 	u32 cur_rxdly0, cur_rxdly1;
 
-#ifdef CFG_DEV_MSDC2
 	if (host->id == 2)
 		MSDC_WRITE32(MSDC_PAD_TUNE0,   0x00000000);
 	else
-#endif
 		MSDC_WRITE32(MSDC_PAD_TUNE0,   0x00008000);
 
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATWRDLY,
