@@ -6,7 +6,7 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 
-#include <mach/mt_sleep.h>
+#include <mt_sleep.h>
 #include <mach/mt_boot.h>
 #include <mach/system.h>
 

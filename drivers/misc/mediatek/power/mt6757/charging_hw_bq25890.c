@@ -21,7 +21,7 @@
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
 #include "bq25890.h"
-#include <mach/mt_sleep.h>
+#include <mt_sleep.h>
 #include <mt-plat/mt_gpio.h>
 /* ============================================================ // */
 /* Define */

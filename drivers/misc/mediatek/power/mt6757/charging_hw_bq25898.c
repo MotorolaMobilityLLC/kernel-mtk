@@ -8,7 +8,7 @@
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
 #include "bq25898.h"
-#include <mach/mt_sleep.h>
+#include <mt_sleep.h>
 #include <linux/gpio.h>
 #include <mt-plat/mt_gpio.h>
 /* ============================================================ // */
