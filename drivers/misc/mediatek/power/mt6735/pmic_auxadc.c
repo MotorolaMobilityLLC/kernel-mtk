@@ -106,8 +106,8 @@ void pmic_auxadc_lock(void)
 
 void pmic_auxadc_unlock(void)
 {
-	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
+	wake_unlock(&pmicAuxadc_irq_lock);
 }
 
 signed int PMIC_IMM_GetCurrent(void)
@@ -157,8 +157,9 @@ signed int PMIC_IMM_GetCurrent(void)
 	     g_I_SENSE_offset) * 1000 / batt_meter_cust_data.cust_r_sense;
 #endif
 
-	wake_unlock(&pmicAuxadc_irq_lock);
+
 	mutex_unlock(&pmic_adc_mutex);
+	wake_unlock(&pmicAuxadc_irq_lock);
 
 	return ICharging;
 
@@ -387,8 +388,8 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 
 	default:
 		PMICLOG2("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
-		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
+		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
 		break;
 	}
@@ -442,15 +443,14 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		break;
 	default:
 		PMICLOG2("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
-		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
+		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
 		break;
 	}
 
-	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
-
+	wake_unlock(&pmicAuxadc_irq_lock);
 	/*PMICLOG2("[AUXADC] ch=%d raw=%d data=%d\n", dwChannel, ret_data,adc_result);*/
 
 	/*return ret_data;*/
