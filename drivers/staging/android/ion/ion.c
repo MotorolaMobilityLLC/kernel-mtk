@@ -542,7 +542,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("%s error: size (%zu) is more than 1G !!\n", __func__, len);
 		return ERR_PTR(-EINVAL);
 	}
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagStart, len, 0); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagStart, len, 0);
 	start = sched_clock();
 
 	down_read(&dev->lock);
@@ -594,7 +594,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("warn: ion alloc buffer size: %zu time: %lld ns\n", buffer->size, end-start);
 	}
 
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagEnd, buffer->size, 0); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagEnd, buffer->size, 0);
 
 	return handle;
 }
@@ -624,8 +624,8 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 {
 	struct ion_buffer *buffer;
 	int ret;
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagStart,
-	 * (unsigned long)client, (unsigned long)handle); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagStart,
+		(unsigned long)client, (unsigned long)handle);
 
 	mutex_lock(&client->lock);
 	if (!ion_handle_validate(client, handle)) {
@@ -645,7 +645,7 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 	mutex_unlock(&client->lock);
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagEnd, buffer->size, *addr); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagEnd, buffer->size, *addr);
 
 	return ret;
 }
@@ -694,9 +694,9 @@ static void ion_buffer_kmap_put(struct ion_buffer *buffer)
 {
 	buffer->kmap_cnt--;
 	if (!buffer->kmap_cnt) {
-		/* MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagStart, buffer->size, 0); */
+		MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagStart, buffer->size, 0);
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
-		/* MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagEnd, buffer->size, 0); */
+		MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagEnd, buffer->size, 0);
 		buffer->vaddr = NULL;
 	}
 }
@@ -795,13 +795,12 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
-		unsigned int id = handle->buffer->heap->id;
+		struct ion_buffer *buffer = handle->buffer;
+		unsigned int id = buffer->heap->id;
 
 		if (!names[id])
-			names[id] = handle->buffer->heap->name;
-		sizes[id] += handle->buffer->size;
-
-		struct ion_buffer *buffer = handle->buffer;
+			names[id] = buffer->heap->name;
+		sizes[id] += buffer->size;
 
 		seq_printf(s, "%16.s %3d %8zu %3d %p %p.\n", buffer->heap->name,
 						client->pid, buffer->size, buffer->handle_count, handle, buffer);
@@ -1134,7 +1133,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	struct ion_buffer *buffer = dmabuf->priv;
 	int ret = 0;
 
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagStart, buffer->size, vma->vm_start); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagStart, buffer->size, vma->vm_start);
 
 	if (!buffer->heap->ops->map_user) {
 		pr_err("%s: this heap does not define a method for mapping to userspace\n",
@@ -1163,7 +1162,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	if (ret)
 		pr_err("%s: failure mapping buffer to userspace\n",
 		       __func__);
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagEnd, buffer->size, vma->vm_start); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagEnd, buffer->size, vma->vm_start);
 
 	return ret;
 }
@@ -1288,7 +1287,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 	struct ion_handle *handle;
 	int ret;
 
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagStart, 1, 1); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagStart, 1, 1);
 
 	dmabuf = dma_buf_get(fd);
 	if (IS_ERR(dmabuf)) {
@@ -1333,7 +1332,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 end:
 	dma_buf_put(dmabuf);
 
-	/* MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagEnd, 1, 1); */
+	MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagEnd, 1, 1);
 
 	return handle;
 }
@@ -1641,11 +1640,15 @@ static const struct file_operations debug_heap_fops = {
 static int ion_debug_heap_pool_show(struct seq_file *s, void *unused)
 {
 	struct ion_heap *heap = s->private;
-	struct ion_device *dev = heap->dev;
-	struct rb_node *n;
-	size_t total_size = heap->ops->page_pool_total(heap);
+	size_t total_size;
 
-	seq_printf(s, "%16.s %16zu\n", "total_in_pool ", total_size);
+	if (!heap->ops->page_pool_total) {
+		pr_err("%s: ion page pool total is not implemented by heap(%s).\n",
+		       __func__, heap->name);
+		return -ENODEV;
+	}
+
+	total_size = heap->ops->page_pool_total(heap);
 
 	return 0;
 }
@@ -1705,6 +1708,7 @@ DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
 void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 {
 	struct dentry *debug_file;
+	char tmp_name[64];
 
 	if (!heap->ops->allocate || !heap->ops->free || !heap->ops->map_dma ||
 	    !heap->ops->unmap_dma)
@@ -1752,8 +1756,6 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 		}
 	}
 #endif
-
-	char tmp_name[64];
 
 	snprintf(tmp_name, 64, "%s_total_in_pool", heap->name);
 	debug_file = debugfs_create_file(
@@ -1905,13 +1907,12 @@ int ion_drv_put_kernel_handle(void *kernel_handle)
 int ion_device_destroy_heaps(struct ion_device *dev, int need_lock)
 {
 	struct ion_heap *heap, *tmp;
-	int i;
 
 	if (need_lock)
 		down_write(&dev->lock);
 
 	plist_for_each_entry_safe(heap, tmp, &dev->heaps, node) {
-		plist_del(heap, &dev->heaps);
+		plist_del((struct plist_node *)heap, &dev->heaps);
 		ion_heap_destroy(heap);
 	}
 
@@ -1923,7 +1924,6 @@ int ion_device_destroy_heaps(struct ion_device *dev, int need_lock)
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock)
 {
 	struct ion_heap *_heap, *heap = NULL, *tmp;
-	int i;
 
 	if (need_lock)
 		down_write(&dev->lock);

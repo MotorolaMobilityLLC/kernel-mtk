@@ -1,6 +1,5 @@
 #if !defined(__ION_PROFILE_H__)
 #define __ION_PROFILE_H__
-#include <mmprofile.h>
 
 typedef enum {
 	PROFILE_ALLOC = 0,
@@ -22,17 +21,23 @@ typedef enum {
 	PROFILE_MAX,
 } ION_PROFILE_TYPE;
 
-/* #define ION_PROFILE */
+#define ION_PROFILE
 
 #ifndef ION_PROFILE
 #define MMProfileLogEx(...)
 #define MMProfileEnable(...)
 #define MMProfileStart(...)
-#endif
+#define MMP_Event unsigned int
+#define MMP_RootEvent 1
+#else
+#include <mmprofile.h>
 
 extern void MMProfileEnable(int enable);
 extern void MMProfileStart(int start);
 
 extern void ion_profile_init(void);
+#endif
+
+extern MMP_Event ION_MMP_Events[PROFILE_MAX];
 
 #endif

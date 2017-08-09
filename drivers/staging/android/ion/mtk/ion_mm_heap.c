@@ -542,7 +542,7 @@ int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache,
 	return 0;
 }
 
-static int write_mm_page_pool(int high, int order, int cache, size_t size)
+/*static int write_mm_page_pool(int high, int order, int cache, size_t size)
 {
 	if (cache)
 		IONMSG("%s order_%u in cached_pool = %zu total\n", high ? "high" : "low", order, size);
@@ -550,7 +550,7 @@ static int write_mm_page_pool(int high, int order, int cache, size_t size)
 		IONMSG("%s order_%u in pool = %zu total\n", high ? "high" : "low", order, size);
 
 	return 0;
-}
+}*/
 
 static size_t ion_debug_mm_heap_total(struct ion_client *client, unsigned int id)
 {

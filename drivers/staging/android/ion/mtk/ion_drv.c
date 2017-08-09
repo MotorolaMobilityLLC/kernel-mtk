@@ -124,7 +124,6 @@ static long ion_sys_cache_sync(struct ion_client *client,
 		/* By range operation */
 		unsigned long start = -1;
 		size_t size = 0;
-		unsigned long end, page_num, page_start;
 		struct ion_handle *kernel_handle;
 
 		kernel_handle = ion_drv_get_handle(client, pParam->handle,
@@ -208,6 +207,8 @@ static long ion_sys_cache_sync(struct ion_client *client,
 		}
 
 #if 0
+		unsigned long end, page_num, page_start;
+
 		/* Cache line align */
 		end = start + size;
 		start = (start / L1_CACHE_BYTES * L1_CACHE_BYTES);
@@ -442,7 +443,7 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 
 		if (ion_phys(client, kernel_handle,
 				(ion_phys_addr_t *) &(Param.get_phys_param.phy_addr),
-				&(Param.get_phys_param.len)) < 0) {
+				(size_t *)&(Param.get_phys_param.len)) < 0) {
 			Param.get_phys_param.phy_addr = 0;
 			Param.get_phys_param.len = 0;
 			IONMSG("[ion_sys_ioctl]: Error. Cannot get physical address.\n");
@@ -466,7 +467,7 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 		struct ion_handle *kernel_handle;
 
 		kernel_handle = ion_drv_get_handle(client,
-				Param.record_param.handle, NULL, from_kernel);
+				NULL, Param.record_param.handle, from_kernel);
 		if (IS_ERR(kernel_handle)) {
 			IONMSG("ion_set_handle_bt fail!\n");
 			ret = -EINVAL;
@@ -582,7 +583,7 @@ static int ion_drv_probe(struct platform_device *pdev)
 		}
 
 		ret = ion_drv_create_heap(heap_data);
-		if (IS_ERR(ret))
+		if (ret)
 			goto err;
 	}
 
@@ -606,7 +607,6 @@ err:
 
 int ion_drv_remove(struct platform_device *pdev)
 {
-	unsigned int i;
 	struct ion_device *idev = platform_get_drvdata(pdev);
 
 	ion_device_destroy_heaps(idev, 1);
