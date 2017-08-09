@@ -2960,14 +2960,14 @@ bool _hwPowerOn(PowerType type, int powerVolt)
 
 	if (!IS_ERR(reg)) {
 		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
-			PK_DBG("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
+			PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
 			return ret;
-	}
+	    }
 		if (regulator_enable(reg) != 0) {
-			PK_DBG("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
-	    return ret;
-	}
-	ret = true;
+			PK_ERR("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
+			return ret;
+		}
+		ret = true;
     } else {
 		PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
 		return ret;
@@ -2991,7 +2991,7 @@ bool _hwPowerDown(PowerType type)
 	 reg = regVCAMAF;
 	 } else if (type == SUB_DVDD) {
 	 reg = regSubVCAMD;
-	 } else if (type == SUB_DVDD) {
+	 } else if (type == MAIN2_DVDD) {
 	 reg = regMain2VCAMD;
 	 } else
 		return ret;
@@ -2999,16 +2999,16 @@ bool _hwPowerDown(PowerType type)
 
 
     if (!IS_ERR(reg)) {
-	if (regulator_is_enabled(reg) != 0) {
+		if (regulator_is_enabled(reg) != 0) {
 			PK_DBG("[_hwPowerDown]%d is enabled\n", type);
-	}
-		if (regulator_disable(reg) != 0) {
-			PK_DBG("[_hwPowerDown]fail to regulator_disable, powertype: %d\n\n", type);
-			return ret;
+			if (regulator_disable(reg) != 0) {
+				PK_ERR("[_hwPowerDown]fail to regulator_disable, powertype: %d\n\n", type);
+				return ret;
+			}
 		}
-	ret = true;
+		ret = true;
     } else {
-		PK_DBG("[_hwPowerDown]%d fail to power down  due to regVCAM == NULL\n", type);
+		PK_ERR("[_hwPowerDown]%d fail to power down  due to regVCAM == NULL\n", type);
 		return ret;
     }
     return ret;
