@@ -36,7 +36,7 @@
 #define DPIDLE_TAG     "[DP] "
 #define dpidle_dbg(fmt, args...)	pr_debug(DPIDLE_TAG fmt, ##args)
 
-#define SPM_BYPASS_SYSPWREQ     1
+#define SPM_BYPASS_SYSPWREQ     0
 
 #define WAKE_SRC_FOR_MD32  0
 

@@ -32,11 +32,7 @@
 #define sodi_warn(fmt, args...)		pr_warn(SODI_TAG fmt, ##args)
 #define sodi_debug(fmt, args...)	pr_debug(SODI_TAG fmt, ##args)
 
-#if defined(CONFIG_ARCH_MT6755)
-#define SPM_BYPASS_SYSPWREQ         1	/* JTAG is used */
-#elif defined(CONFIG_ARCH_MT6797)
 #define SPM_BYPASS_SYSPWREQ         0
-#endif
 
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)

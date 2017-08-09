@@ -28,11 +28,7 @@
 #define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
-#if defined(CONFIG_ARCH_MT6755)
-#define SPM_BYPASS_SYSPWREQ         1	/* JTAG is used */
-#elif defined(CONFIG_ARCH_MT6797)
 #define SPM_BYPASS_SYSPWREQ         0
-#endif
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
