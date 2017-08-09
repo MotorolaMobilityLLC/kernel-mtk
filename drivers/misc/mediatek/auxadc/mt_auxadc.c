@@ -1388,7 +1388,7 @@ static ssize_t show_AUXADC_chanel(struct device *dev, struct device_attribute *a
 {
 	/* read data */
 	int i = 0, data[4] = { 0, 0, 0, 0 };
-	char buf_temp[960];
+	char buf_temp[256];
 	int res = 0;
 
 	for (i = 0; i < 5; i++) {
