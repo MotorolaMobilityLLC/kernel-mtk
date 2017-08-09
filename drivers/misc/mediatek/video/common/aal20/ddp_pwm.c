@@ -15,8 +15,8 @@
 
 /* #include <mach/mt_gpio.h> */
 #include <disp_dts_gpio.h> /* DTS GPIO */
-/* #include <cust_leds.h> */
-/* #include <cust_leds_def.h> */
+#include <leds_drv.h>
+#include <leds_sw.h>
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <primary_display.h>
@@ -56,45 +56,63 @@ enum PWM_LOG_TYPE {
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE];
 static int g_pwm_log_index;
 
+int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
+{
+	struct device_node *led_node = NULL;
+	int ret = 0;
+	int pwm_config[5] = { 0 };
+
+	PWM_MSG("get_cust_led_dtsi: get the leds info from device tree\n");
+	led_node = of_find_compatible_node(NULL, NULL, "mediatek,lcd-backlight");
+	if (!led_node) {
+		ret = -1;
+		PWM_MSG("Cannot find LED node from dts\n");
+	} else {
+		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
+						       ARRAY_SIZE(pwm_config));
+		if (!ret) {
+			PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",
+			     pwm_config[0], pwm_config[1], pwm_config[2], pwm_config[3], pwm_config[4]);
+			*clocksource = pwm_config[0];
+			*clockdiv = pwm_config[1];
+		} else {
+			PWM_MSG("led dts can not get pwm config data.\n");
+		}
+	}
+
+	if (!ret)
+		PWM_MSG("The backlight's pwm config mode src:%d div:%d\n", *clocksource, *clockdiv);
+	else
+		PWM_ERR("get pwm cust info fail");
+	return ret;
+}
 
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
-	/* struct cust_mt65xx_led *cust_led_list; */
-	/* struct cust_mt65xx_led *cust; */
-	/* struct PWM_config *config_data; */
-	unsigned int pwm_div;
+	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int index = index_of_pwm(DISP_PWM0);
-	int i;
+	int i, ret;
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
-#if 0
-	cust_led_list = get_cust_led_list();
-	if (cust_led_list) {
+#if 1
+	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
+	if (!ret) {
 		/* WARNING: may overflow if MT65XX_LED_TYPE_LCD not configured properly */
-		cust = &cust_led_list[MT65XX_LED_TYPE_LCD];
-		if ((strcmp(cust->name, "lcd-backlight") == 0)
-		    && (cust->mode == MT65XX_LED_MODE_CUST_BLS_PWM)) {
-			config_data = &cust->config_data;
-			if (config_data->clock_source >= 0 && config_data->clock_source <= 3) {
-				unsigned int regVal = DISP_REG_GET(CLK_CFG_1);
-				/*
-				* TODO: Apply CCF API, replace clkmux_sel() with
-				* clk_set_parent() if this code block is enabled.
-				*/
-				clkmux_sel(MT_MUX_DISPPWM, config_data->clock_source, "DISP_PWM");
-				PWM_MSG("disp_pwm_init : CLK_CFG_1 0x%x => 0x%x", regVal, DISP_REG_GET(CLK_CFG_1));
-			}
-			/* Some backlight chip/PMIC(e.g. MT6332) only accept slower clock */
-			pwm_div =
-				(config_data->div == 0) ? PWM_DEFAULT_DIV_VALUE : config_data->div;
-			pwm_div &= 0x3FF;
-			PWM_MSG("disp_pwm_init : PWM config data (%d,%d)",
-				config_data->clock_source, config_data->div);
+		if (pwm_src >= 0 && pwm_src <= 3) {
+			/*
+			* TODO: Apply CCF API, replace clkmux_sel() with
+			* clk_set_parent() if this code block is enabled.
+			*/
 		}
+		/* Some backlight chip/PMIC(e.g. MT6332) only accept slower clock */
+		pwm_div = (pwm_div == 0) ? PWM_DEFAULT_DIV_VALUE : pwm_div;
+		pwm_div &= 0x3FF;
+		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 #endif
+
 
 	atomic_set(&g_pwm_backlight[index], -1);
 
@@ -125,7 +143,6 @@ static int disp_pwm_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfi
 
 	return ret;
 }
-
 
 static void disp_pwm_trigger_refresh(disp_pwm_id_t id)
 {
@@ -544,15 +561,39 @@ static void disp_pwm_test_pin_mux(void)
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_COMMIT_OFF, 0, ~0);
 }
 
-static int pwm_parse_triple(const char *cmd, unsigned long *offset, unsigned int *value, unsigned int *mask)
+static int pwm_simple_strtoul(char *ptr, unsigned long *res)
+{
+	int i;
+	char buffer[20];
+	int end = 0;
+	int ret = 0;
+
+	for (i = 0; i < 20; i += 1) {
+		end = i;
+		PWM_MSG("%c\n", ptr[i]);
+		if (ptr[i] < '0' || ptr[i] > '9')
+			break;
+	}
+
+	if (end > 0) {
+		strncpy(buffer, ptr, end);
+		buffer[end] = '\0';
+		ret = kstrtoul(buffer, 0, res);
+
+	}
+	return end;
+}
+
+static int pwm_parse_triple(const char *cmd, unsigned long *offset, unsigned long *value, unsigned long *mask)
 {
 	int count = 0;
 	char *next = (char *)cmd;
+	int end;
 
 	*value = 0;
 	*mask = 0;
-	*offset = (unsigned long)kstrtoul(next, 0, (unsigned long *)&next);
-
+	end = pwm_simple_strtoul(next, offset);
+	next += end;
 	if (*offset > 0x1000UL || (*offset & 0x3UL) != 0)  {
 		*offset = 0UL;
 		return 0;
@@ -563,14 +604,17 @@ static int pwm_parse_triple(const char *cmd, unsigned long *offset, unsigned int
 	if (*next == ',')
 		next++;
 
-	*value = (unsigned int)kstrtoul(next, 0, (unsigned long *)&next);
+	end = pwm_simple_strtoul(next, value);
+	next += end;
 	count++;
 
 	if (*next == ',')
 		next++;
 
-	*mask = (unsigned int)kstrtoul(next, 0, (unsigned long *)&next);
+	end = pwm_simple_strtoul(next, mask);
+	next += end;
 	count++;
+
 	return count;
 }
 
@@ -590,8 +634,7 @@ static void disp_pwm_dump(void)
 
 void disp_pwm_test(const char *cmd, char *debug_output)
 {
-	unsigned long offset;
-	unsigned int value, mask;
+	unsigned long offset, value, mask;
 
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 
@@ -616,7 +659,7 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 			mask = 0xffffffff;
 		}
 		if (count >= 2)
-			PWM_MSG("[+0x%03lx] = 0x%08x(%d) & 0x%08x", offset, value, value, mask);
+			PWM_MSG("[+0x%03lx] = 0x%08lx(%lu) & 0x%08lx", offset, value, value, mask);
 	} else if (strncmp(cmd, "dump", 4) == 0) {
 		disp_pwm_dump();
 	} else if (strncmp(cmd, "pinmux", 6) == 0) {
