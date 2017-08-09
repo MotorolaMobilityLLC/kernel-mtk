@@ -233,7 +233,7 @@ long xlog_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return 0;
 
 	case XLOGF_GET_LEVEL:
-		copy_to_user((void __user *)arg, (void *)&xlog_global_tag_level, sizeof(u32));
+		ret = copy_to_user((void __user *)arg, (void *)&xlog_global_tag_level, sizeof(u32));
 		break;
 
 	case XLOGF_SET_LEVEL:{

@@ -120,3 +120,4 @@ obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
 obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
+obj-&(CONFIG_HAVE_XLOG_SUPPORT) += xlog/
