@@ -22,6 +22,19 @@ typedef enum _VDEC_DRV_FBSTSTUS {
 }
 VDEC_DRV_FBSTSTUS;
 
+/**
+ * @par Enumeration
+ *   VDEC_DRV_FBSTSTUS
+ * @par Description
+ *   This is the item for frame buffer status
+ */
+typedef enum _VDEC_DRV_FBTYPE {
+	VDEC_DRV_FBTYPE_NORMAL      = 0,   /* /< normal type */
+	VDEC_DRV_FBTYPE_3D_SBS      = 1,   /* /< side by side 3D frame */
+	VDEC_DRV_FBTYPE_3D_TAB      = 2,   /* /< top and bottim 3D frame */
+}
+VDEC_DRV_FBTYPE;
+
 
 /**
  * @par Enumeration
