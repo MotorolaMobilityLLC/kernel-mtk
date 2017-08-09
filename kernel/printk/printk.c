@@ -69,6 +69,7 @@ int printk_too_much_enable = 0;
 #ifdef CONFIG_MT_ENG_BUILD
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
 static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines in 1 second*/
+static bool detect_count_change; /* detect_count change flag*/
 #define DETECT_TIME 1000000000 /* 1s = 1000000000ns */
 #define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*60)	/* 30 min */
 static int log_in_resume;
@@ -79,6 +80,7 @@ static int log_count;
 inline void set_detect_count(int count)
 {
 	detect_count = count;
+	detect_count_change = true;
 }
 
 inline int get_detect_count(void)
@@ -2489,6 +2491,12 @@ skip:
 			}
 
 			t1 = sched_clock();
+			if (detect_count_change) {
+				detect_count_change = false;
+				time_count += 1000000000;
+				line_count = 0;
+				size_count = 0;
+			}
 			if (time_count > t1) {
 				call_console_drivers(level, text, len);
 			} else if (t1 - time_count > DETECT_TIME) {
