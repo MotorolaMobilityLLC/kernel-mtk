@@ -330,7 +330,10 @@ static void mmc_ffu_free_mem(struct mmc_ffu_mem *mem)
 		return;
 	while (mem->cnt--)
 		__free_pages(mem->arr[mem->cnt].page, mem->arr[mem->cnt].order);
+
 	kfree(mem->arr);
+
+	kfree(mem);
 }
 
 /*
@@ -832,7 +835,6 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 		pr_err("FFU: %s: error %d FFU install:\n",
 			mmc_hostname(card->host), err);
 		err = -EINVAL;
-		goto exit;
 	}
 
 exit:
