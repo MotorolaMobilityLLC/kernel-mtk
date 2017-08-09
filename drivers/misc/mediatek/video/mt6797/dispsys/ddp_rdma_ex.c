@@ -387,7 +387,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
 	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp / (16*8) - 1;
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
-
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	if (frame_rate	== 120)
+		output_valid_fifo_threshold = ultra_low;
+#endif
 	temp = fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000;
 	if (temp < 0)
 		sodi_threshold_high = preultra_high;
