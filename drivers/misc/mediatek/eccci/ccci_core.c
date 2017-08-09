@@ -829,7 +829,7 @@ int ccci_register_dev_node(const char *name, int major_id, int minor)
 /*
  * kernel inject CCCI message to modem.
  */
-int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 resv, int blocking)
+int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, u32 msg, u32 resv, int blocking)
 {
 	struct ccci_port *port = NULL;
 	struct ccci_request *req = NULL;
@@ -840,6 +840,11 @@ int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 
 		return -CCCI_ERR_MD_NOT_READY;
 	if (ch == CCCI_SYSTEM_TX && md->md_state != READY)
 		return -CCCI_ERR_MD_NOT_READY;
+	if ((msg == CCISM_SHM_INIT || msg == CCISM_SHM_INIT_DONE ||
+		msg == C2K_CCISM_SHM_INIT || msg == C2K_CCISM_SHM_INIT_DONE) &&
+		md->md_state != READY) {
+		return -CCCI_ERR_MD_NOT_READY;
+	}
 
 	port = md->ops->get_port_by_channel(md, ch);
 	if (port) {
