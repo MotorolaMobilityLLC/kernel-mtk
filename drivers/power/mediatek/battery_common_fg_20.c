@@ -125,7 +125,7 @@ int g_battery_tt_check_flag = 0;	/* 0:default enable check batteryTT, 1:default 
 /* // Global Variable */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 
-struct wake_lock battery_suspend_lock;
+struct wake_lock battery_suspend_lock, battery_meter_lock;
 CHARGING_CONTROL battery_charging_control;
 unsigned int g_BatteryNotifyCode = 0x0000;
 unsigned int g_BN_TestMode = 0x0000;
@@ -2816,6 +2816,7 @@ int bat_routine_thread(void *x)
 
 	/* Run on a process content */
 	while (1) {
+		wake_lock(&battery_meter_lock);
 		mutex_lock(&bat_mutex);
 
 		if (((chargin_hw_init_done == KAL_TRUE) && (battery_suspended == KAL_FALSE))
@@ -2826,6 +2827,7 @@ int bat_routine_thread(void *x)
 			chr_wake_up_bat = KAL_FALSE;
 
 		mutex_unlock(&bat_mutex);
+		wake_unlock(&battery_meter_lock);
 
 		battery_log(BAT_LOG_CRTI, "wait event 1\n");
 
@@ -3728,6 +3730,7 @@ static int battery_probe(struct platform_device *dev)
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ", g_platform_boot_mode);
 
 	wake_lock_init(&battery_suspend_lock, WAKE_LOCK_SUSPEND, "battery suspend wakelock");
+	wake_lock_init(&battery_meter_lock, WAKE_LOCK_SUSPEND, "battery meter wakelock");
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	wake_lock_init(&TA_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA charger suspend wakelock");
 #endif
