@@ -658,6 +658,7 @@ clocks {
 			compatible = "mediatek,APXGPT";
 			reg = <0x10008000 0x1000>;
 			interrupts = <0 154 0x8>;
+			clock-frequency = <13000000>;
 		};
 
 		RSVD@0x10009000 {
