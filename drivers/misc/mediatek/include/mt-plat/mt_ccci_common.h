@@ -612,6 +612,8 @@ typedef enum {
 	CCCI_CCMNILAN_TX                = 98,
 	CCCI_CCMNILAN_TX_ACK            = 99,
 	CCCI_CCMNILAN_DLACK_RX          = 100,
+	CCCI_IMSEM_UL = 101,
+	CCCI_IMSEM_DL = 102,
 
 	/*5 chs for C2K only*/
 	CCCI_C2K_PPP_DATA,		/* data ch for c2k */

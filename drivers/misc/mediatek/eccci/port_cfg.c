@@ -51,6 +51,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, 0, &char_port_ops, 19, "ccci_mdl_monitor",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 20, "ccci_rpc",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0xFF, "ccci_rpc_k",},
+	{CCCI_IMSEM_UL, CCCI_IMSEM_DL, 6, 6, 0xFF, 0xFF, 0, &char_port_ops, 21, "ccci_imsem",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_ipc_1220_0",},
