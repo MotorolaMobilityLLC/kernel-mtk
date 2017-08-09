@@ -1022,7 +1022,9 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 
 	if (g_color_bypass == 0) {
 #if defined(CONFIG_ARCH_MT6797)
-		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21) | (1 << 20) | (1 << 15) | (0 << 8));
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
+						| (g_Color_Index.LSP_EN << 20)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8));
 #else
 		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
 #endif
@@ -1066,6 +1068,10 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	int offset = C0_OFFSET;
 	DISP_PQ_PARAM *pq_param_p = &g_Color_Param[COLOR_ID_0];
 	void *cmdq = __cmdq;
+#if defined(CONFIG_ARCH_MT6797)
+	int i, j, reg_index;
+#endif
+
 
 	if (DISP_MODULE_COLOR1 == module) {
 		offset = C1_OFFSET;
@@ -1320,32 +1326,20 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 
 #if defined(CONFIG_ARCH_MT6797)
 	/* S Gain By Y */
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset,   0x78808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_1 + offset,   0x72767676);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_2 + offset,   0x66806E6F);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_3 + offset,   0x6D696564);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_4 + offset,   0x806C6C80);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_0 + offset,  0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_1 + offset,  0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_2 + offset,  0x6F807676);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_3 + offset,  0x75726E6D);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_4 + offset,  0x80807480);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_0 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_1 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_2 + offset, 0x78808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_3 + offset, 0x80808077);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_4 + offset, 0x7A808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_0 + offset, 0x79808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_1 + offset, 0x77767576);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_2 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_3 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_4 + offset, 0x72718080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_0 + offset, 0x73808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_1 + offset, 0x706E6D6F);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_2 + offset, 0x80807572);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_3 + offset, 0x73707280);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_4 + offset, 0x69677380);
+	u4Temp = 0;
 
+	reg_index = 0;
+	for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
+		for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
+			u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
+
+			_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
+			reg_index += 4;
+		}
+	}
 	/* LSP */
 	_color_reg_set(cmdq, DISP_COLOR_LSP_1 + offset, (0x0 << 0) | (0x7 << 7) | (0x50 << 14) | (0x50 << 22));
 	_color_reg_set(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x50 << 16) | (0x7 << 23));
@@ -1363,6 +1357,9 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 	int index;
 	unsigned char h_series[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	unsigned int u4Temp = 0;
+#if defined(CONFIG_ARCH_MT6797)
+	int i, j, reg_index;
+#endif
 
 	if (DISP_MODULE_COLOR1 == module)
 		offset = C1_OFFSET;
@@ -1560,32 +1557,20 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 
 #if defined(CONFIG_ARCH_MT6797)
 	/* S Gain By Y */
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset,   0x78808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_1 + offset,   0x72767676);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_2 + offset,   0x66806E6F);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_3 + offset,   0x6D696564);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_4 + offset,   0x806C6C80);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_0 + offset,  0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_1 + offset,  0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_2 + offset,  0x6F807676);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_3 + offset,  0x75726E6D);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_4 + offset,  0x80807480);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_0 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_1 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_2 + offset, 0x78808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_3 + offset, 0x80808077);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_4 + offset, 0x7A808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_0 + offset, 0x79808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_1 + offset, 0x77767576);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_2 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_3 + offset, 0x80808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_4 + offset, 0x72718080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_0 + offset, 0x73808080);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_1 + offset, 0x706E6D6F);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_2 + offset, 0x80807572);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_3 + offset, 0x73707280);
-	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_4 + offset, 0x69677380);
+	u4Temp = 0;
 
+	reg_index = 0;
+	for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
+		for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
+			u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
+				(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
+
+			_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
+			reg_index += 4;
+		}
+	}
 	/* LSP */
 	_color_reg_set(cmdq, DISP_COLOR_LSP_1 + offset, (0x0 << 0) | (0x7 << 7) | (0x50 << 14) | (0x50 << 22));
 	_color_reg_set(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x50 << 16) | (0x7 << 23));

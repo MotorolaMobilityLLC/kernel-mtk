@@ -68,6 +68,8 @@ typedef struct DISP_EXEC_COMMAND {
 #define GRASS_TONE_SIZE 6	/* (-2) */
 #define SKY_TONE_SIZE 3
 #define CCORR_COEF_CNT 4 /* ccorr feature */
+#define S_GAIN_BY_Y_CONTROL_CNT 5
+#define S_GAIN_BY_Y_HUE_PHASE_CNT 20
 
 typedef struct {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
@@ -125,7 +127,9 @@ typedef struct {
 	unsigned char GRASS_TONE_H[COLOR_TUNING_INDEX][GRASS_TONE_SIZE];
 	unsigned char SKY_TONE_H[COLOR_TUNING_INDEX][SKY_TONE_SIZE];
 	unsigned int  CCORR_COEF[CCORR_COEF_CNT][3][3];
-
+	unsigned char S_GAIN_BY_Y[S_GAIN_BY_Y_CONTROL_CNT][S_GAIN_BY_Y_HUE_PHASE_CNT];
+	unsigned char S_GAIN_BY_Y_EN;
+	unsigned char LSP_EN;
 } DISPLAY_PQ_T;
 
 typedef struct {
@@ -141,6 +145,9 @@ typedef struct {
 	unsigned char SKIN_TONE_H[SKIN_TONE_SIZE];
 	unsigned char GRASS_TONE_H[GRASS_TONE_SIZE];
 	unsigned char SKY_TONE_H[SKY_TONE_SIZE];
+	unsigned char S_GAIN_BY_Y[S_GAIN_BY_Y_CONTROL_CNT][S_GAIN_BY_Y_HUE_PHASE_CNT];
+	unsigned char S_GAIN_BY_Y_EN;
+	unsigned char LSP_EN;
 } DISPLAY_COLOR_REG_T;
 
 typedef struct {
