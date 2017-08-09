@@ -104,12 +104,14 @@ static int xhci_plat_start(struct usb_hcd *hcd)
 #define XHCI_DMA_BIT_MASK DMA_BIT_MASK(32)
 #endif
 
+#ifdef CONFIG_USB_XHCI_MTK
 static u64 xhci_dma_mask = XHCI_DMA_BIT_MASK;
 
 static void xhci_hcd_release(struct device *dev)
 {
 	;
 }
+#endif
 
 static int xhci_plat_probe(struct platform_device *pdev)
 {
