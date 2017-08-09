@@ -15,6 +15,7 @@ enum subsys_id {
 	SYS_MFG,
 	SYS_MJC,
 	SYS_VEN,
+	SYS_AUDIO,
 	NR_SYSS__,
 };
 
@@ -29,6 +30,7 @@ void __iomem *mfgsys_base;
 void __iomem *imgsys_base;
 void __iomem *vdecsys_base;
 void __iomem *vencsys_base;
+void __iomem *audiosys_base_in_idle;
 
 void __iomem  *apmixed_base_in_idle;
 
@@ -174,6 +176,7 @@ static int sys_is_on(enum subsys_id id)
 		MFG_PWR_STA_MASK,
 		MJC_PWR_STA_MASK,
 		VEN_PWR_STA_MASK,
+		AUDIO_PWR_STA_MASK,
 	};
 
 	u32 mask = pwr_sta_mask[id];
@@ -216,6 +219,9 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 
 	if (sys_is_on(SYS_MJC))
 		clks[CG_MJC] = ~idle_readl(SPM_MJC_PWR_CON); /* VMJC */
+
+	if (sys_is_on(SYS_AUDIO))
+		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
 }
 
 bool cg_check_idle_can_enter(
@@ -363,6 +369,7 @@ void __init iomap_init(void)
 	get_base_from_node("mediatek,imgsys_config", &imgsys_base, 0);
 	get_base_from_node("mediatek,mt6797-vdec_gcon", &vdecsys_base, 0);
 	get_base_from_node("mediatek,mt6797-venc_gcon", &vencsys_base, 0);
+	get_base_from_node("mediatek,audio", &audiosys_base_in_idle, 0);
 }
 
 const char *cg_grp_get_name(int id)

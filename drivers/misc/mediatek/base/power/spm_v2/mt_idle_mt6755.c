@@ -31,6 +31,7 @@ void __iomem *mfgsys_base;
 void __iomem *imgsys_base;
 void __iomem *vdecsys_base;
 void __iomem *vencsys_base;
+void __iomem *audiosys_base_in_idle;
 
 void __iomem  *apmixed_base_in_idle;
 
@@ -199,6 +200,9 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 
 	if (sys_is_on(SYS_VEN))
 		clks[CG_VENC] = ~idle_readl(SPM_VEN_PWR_CON); /* VENC */
+
+	if (sys_is_on(SYS_AUDIO))
+		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
 }
 
 bool cg_check_idle_can_enter(
@@ -306,6 +310,25 @@ bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_
 	return true;
 }
 
+static int __init get_base_from_matching_node(
+				     const struct of_device_id *ids, void __iomem **pbase, int idx, const char *cmp)
+{
+	struct device_node *node;
+
+	node = of_find_matching_node(NULL, ids);
+	if (!node) {
+		idle_err("node '%s' not found!\n", cmp);
+		/* TODO: BUG() */
+	}
+
+	*pbase = of_iomap(node, idx);
+	if (!(*pbase)) {
+		idle_err("node '%s' cannot iomap!\n", cmp);
+		/* TODO: BUG() */
+	}
+
+	return 0;
+}
 
 static int __init get_base_from_node(
 	const char *cmp, void __iomem **pbase, int idx)
@@ -330,6 +353,12 @@ static int __init get_base_from_node(
 
 void __init iomap_init(void)
 {
+	static const struct of_device_id audiosys_ids[] = {
+		{.compatible = "mediatek,audio"},
+		{.compatible = "mediatek,mt6755-audiosys"},
+		{ /* sentinel */ }
+	};
+
 	get_base_from_node("mediatek,infracfg_ao", &infrasys_base, 0);
 	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
 	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
@@ -339,6 +368,8 @@ void __init iomap_init(void)
 	get_base_from_node("mediatek,mt6755-imgsys", &imgsys_base, 0);
 	get_base_from_node("mediatek,mt6755-vdecsys", &vdecsys_base, 0);
 	get_base_from_node("mediatek,mt6755-vencsys", &vencsys_base, 0);
+
+	get_base_from_matching_node(audiosys_ids, &audiosys_base_in_idle, 0, "audio");
 }
 
 const char *cg_grp_get_name(int id)

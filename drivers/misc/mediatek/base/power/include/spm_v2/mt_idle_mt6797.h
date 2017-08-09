@@ -39,6 +39,7 @@ extern void __iomem *mfgsys_base;
 extern void __iomem *imgsys_base;
 extern void __iomem *vdecsys_base;
 extern void __iomem *vencsys_base;
+extern void __iomem *audiosys_base_in_idle;
 
 extern void __iomem  *apmixed_base_in_idle;
 
@@ -50,6 +51,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define IMGSYS_REG(ofs)     (imgsys_base + ofs)
 #define VDECSYS_REG(ofs)    (vdecsys_base + ofs)
 #define VENCSYS_REG(ofs)    (vencsys_base + ofs)
+#define AUDIOSYS_REG(ofs)   (audiosys_base_in_idle + ofs)
 
 #define APMIXEDSYS(ofs)	    (apmixed_base_in_idle + ofs)
 
@@ -69,6 +71,8 @@ extern void __iomem  *apmixed_base_in_idle;
 #define DISP_CG_CON1        MM_REG(0x110)
 #define DISP_CG_DUMMY1      MM_REG(0x894)
 #define DISP_CG_DUMMY2      MM_REG(0x898)
+
+#define AUDIO_TOP_CON0      AUDIOSYS_REG(0x0)
 
 #define SPM_PWR_STATUS      SPM_REG(0x0180)
 #define SPM_PWR_STATUS_2ND  SPM_REG(0x0184)
@@ -114,6 +118,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define MFG_PWR_STA_MASK        BIT(12)
 #define MJC_PWR_STA_MASK        BIT(20)
 #define VEN_PWR_STA_MASK        BIT(21)
+#define AUDIO_PWR_STA_MASK      BIT(24)
 
 #endif /* __MT_IDLE_MT6797__H__ */
 
