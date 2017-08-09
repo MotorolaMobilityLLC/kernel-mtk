@@ -309,6 +309,9 @@ static int mtk_pm_callback_power_on(void)
 	MFG_write32(0x448, MFG_read32(0x448) | 0x1);
 #endif
 
+	/* timing */
+	MFG_write32(0x1c, MFG_read32(0x1c) | 0x5);
+
 	/* enable PMU */
 	MFG_write32(0x3e0, 0xffffffff);
 	MFG_write32(0x3e4, 0xffffffff);
