@@ -339,7 +339,8 @@ void VdecDvfsMonitorStart(void)
 		if (gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
 			if (VAL_TRUE == gFirstDvfsLock) {
 				gFirstDvfsLock = VAL_FALSE;
-				MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor\n");
+				MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor instance = 0x%p\n",
+						grVcodecDecHWLock.pvHandle);
 				eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T));
 			}
 			eVideoGetTimeOfDay(&gMMDFVFSLastLockTime, sizeof(VAL_TIME_T));
@@ -741,7 +742,8 @@ static long vcodec_lockhw_dec_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseD
 			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, maybe mediaserver restart before, please check!!\n");
 		} else {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, someone use HW, and check timeout value!!\n");
+			MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, someone (0x%p) use HW, and check timeout value!!\n",
+					grVcodecDecHWLock.pvHandle);
 		}
 		mutex_unlock(&VdecHWLock);
 	}
