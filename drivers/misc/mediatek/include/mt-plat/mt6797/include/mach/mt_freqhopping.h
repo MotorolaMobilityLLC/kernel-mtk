@@ -109,24 +109,31 @@ struct freqhopping_ioctl {
 	int result;
 };
 
-/* FHCTL HAL driver Interface */
-int freqhopping_config(unsigned int pll_id, unsigned long def_set_idx, unsigned int enable);
-void mt_freqhopping_init(void);
-void mt_freqhopping_pll_init(void);
+
+/* FHCTL Legacy Interface. These API are useless in Everest */
+int mt_fh_dram_overclock(int clk);
+int mt_fh_get_dramc(void);
+int mt_is_support_DFS_mode(void);
 int mt_h2l_mempll(void);
 int mt_l2h_mempll(void);
 int mt_h2l_dvfs_mempll(void);
 int mt_l2h_dvfs_mempll(void);
-int mt_is_support_DFS_mode(void);
-void mt_fh_popod_save(void);
-void mt_fh_popod_restore(void);
-int mt_fh_dram_overclock(int clk);
-int mt_fh_get_dramc(void);
-int mt_freqhopping_devctl(unsigned int cmd, void *args);
+
+/* FHCTL HAL driver Interface. */
+int mt_pause_armpll(unsigned int pll, unsigned int pause);
 
 
-/* FHCTL Common driver Interface */
+/* FHCTL Common driver Interface. */
 int mt_dfs_mmpll(unsigned int dds);
 int mt_dfs_armpll(unsigned int current_freq, unsigned int dds);
+int freqhopping_config(unsigned int pll_id, unsigned long def_set_idx, unsigned int enable);
+int mt_freqhopping_devctl(unsigned int cmd, void *args);
+void mt_freqhopping_pll_init(void);
+void mt_freqhopping_init(void);
+void mt_fh_popod_save(void);
+void mt_fh_popod_restore(void);
+void mt_fh_unlock(void);
+void mt_fh_lock(void);
+
 
 #endif				/* !__MT_FREQHOPPING_H__ */
