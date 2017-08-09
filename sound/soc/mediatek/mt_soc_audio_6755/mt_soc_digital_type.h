@@ -141,6 +141,8 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_O23,
 	Soc_Aud_InterConnectionOutput_O24,
 	Soc_Aud_InterConnectionOutput_O25,
+	Soc_Aud_InterConnectionOutput_O26,
+	Soc_Aud_InterConnectionOutput_O27,
 	Soc_Aud_InterConnectionOutput_Num_Output
 } Soc_Aud_InterConnectionOutput;
 
