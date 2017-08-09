@@ -1,38 +1,17 @@
 #define LOG_TAG "WDMA"
 #include "ddp_log.h"
-
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include "ddp_clkmgr.h"
 #endif
 #include <linux/delay.h>
 #include "ddp_reg.h"
 #include "ddp_matrix_para.h"
 #include "ddp_info.h"
 #include "ddp_wdma.h"
-#include "ddp_color_format.h"
 #include "primary_display.h"
-#include "m4u.h"
-#include "ddp_drv.h"
-
-#define WDMA_COLOR_SPACE_RGB (0)
-#define WDMA_COLOR_SPACE_YUV (1)
-
-
-
-enum WDMA_OUTPUT_FORMAT {
-	WDMA_OUTPUT_FORMAT_BGR565 = 0x00,	/* basic format */
-	WDMA_OUTPUT_FORMAT_RGB888 = 0x01,
-	WDMA_OUTPUT_FORMAT_RGBA8888 = 0x02,
-	WDMA_OUTPUT_FORMAT_ARGB8888 = 0x03,
-	WDMA_OUTPUT_FORMAT_VYUY = 0x04,
-	WDMA_OUTPUT_FORMAT_YVYU = 0x05,
-	WDMA_OUTPUT_FORMAT_YONLY = 0x07,
-	WDMA_OUTPUT_FORMAT_YV12 = 0x08,
-	WDMA_OUTPUT_FORMAT_NV21 = 0x0c,
-
-	WDMA_OUTPUT_FORMAT_UNKNOWN = 0x100,
-};
-
+#include <mach/m4u_port.h>
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
@@ -77,7 +56,7 @@ static unsigned int wdma_index(DISP_MODULE_ENUM module)
 		idx = 1;
 		break;
 	default:
-		pr_debug("[DDP] error: invalid wdma module=%d\n", module);	/* invalid module */
+		DDPERR("[DDP] error: invalid wdma module=%d\n", module);	/* invalid module */
 		ASSERT(0);
 	}
 	return idx;
@@ -87,7 +66,7 @@ static int wdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 
-	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x07);
+	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x03);
 	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x01);
 
 	return 0;
@@ -129,34 +108,39 @@ static int wdma_reset(DISP_MODULE_ENUM module, void *handle)
 }
 
 static int wdma_config_yuv420(DISP_MODULE_ENUM module,
-			      DpColorFormat fmt,
+			      enum UNIFIED_COLOR_FMT fmt,
 			      unsigned int dstPitch,
 			      unsigned int Height,
 			      unsigned long dstAddress, DISP_BUFFER_TYPE sec, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 	unsigned int idx_offst = idx * DISP_WDMA_INDEX_OFFSET;
+	size_t size;
 	unsigned int u_off = 0;
 	unsigned int v_off = 0;
 	unsigned int u_stride = 0;
 	unsigned int y_size = 0;
 	unsigned int u_size = 0;
+	unsigned int v_size = 0;
 	unsigned int stride = dstPitch;
 	int has_v = 1;
 
-	if (fmt == eYV12) {
+	if (fmt != UFMT_YV12 && fmt != UFMT_I420 && fmt != UFMT_NV12 && fmt != UFMT_NV21)
+		return 0;
+
+	if (fmt == UFMT_YV12) {
+		y_size = stride * Height;
+		u_stride = ALIGN_TO(stride / 2, 16);
+		u_size = u_stride * Height / 2;
+		v_off = y_size;
+		u_off = y_size + u_size;
+	} else if (fmt == UFMT_I420) {
 		y_size = stride * Height;
 		u_stride = ALIGN_TO(stride / 2, 16);
 		u_size = u_stride * Height / 2;
 		u_off = y_size;
 		v_off = y_size + u_size;
-	} else if (fmt == eYV21) {
-		y_size = stride * Height;
-		u_stride = ALIGN_TO(stride / 2, 16);
-		u_size = u_stride * Height / 2;
-		u_off = y_size;
-		v_off = y_size + u_size;
-	} else if (fmt == eNV12 || fmt == eNV21) {
+	} else if (fmt == UFMT_NV12 || fmt == UFMT_NV21) {
 		y_size = stride * Height;
 		u_stride = stride / 2;
 		u_size = u_stride * Height / 2;
@@ -172,7 +156,7 @@ static int wdma_config_yuv420(DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = M4U_PORT_DISP_WDMA0;
+		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_DISP_WDMA1;
 
 		cmdqRecWriteSecure(handle, disp_addr_convert(idx_offst + DISP_REG_WDMA_DST_ADDR1),
 				   CMDQ_SAM_H_2_MVA, dstAddress, u_off, u_size, m4u_port);
@@ -186,99 +170,6 @@ static int wdma_config_yuv420(DISP_MODULE_ENUM module,
 	return 0;
 }
 
-/* -------------------------------------------------------- */
-/* calculate disp_wdma ultra/pre-ultra setting */
-/* to start to issue ultra from fifo having 4us data */
-/* to stop  to issue ultra until fifo having 6us data */
-/* to start to issue pre-ultra from fifo having 6us data */
-/* to stop  to issue pre-ultra until fifo having 7us data */
-/* the sequence is pre_ultra_low < ultra_low < pre_ultra_high < ultra_high */
-/* 4us             6us         6us+1level       7us */
-/* -------------------------------------------------------- */
-void wdma_calc_ultra(unsigned int idx, unsigned int width, unsigned int height, unsigned int bpp,
-		     unsigned int frame_rate, void *handle)
-{
-	/* constant */
-	unsigned int blank_overhead = 115;	/* it is 1.15, need to divide 100 later */
-	unsigned int rdma_fifo_width = 16;	/* in unit of byte */
-	/* bpp is defined by disp_wdma's output format */
-	unsigned int pre_ultra_low_time;	/* in unit of 0.5 us */
-	unsigned int ultra_low_time;	/* in unit of 0.5 us */
-	unsigned int ultra_high_time = 0;	/* in unit of 0.5 us */
-
-	/* working variables */
-	unsigned int consume_levels_per_sec;
-	unsigned int ultra_low_level;
-	unsigned int pre_ultra_low_level;
-	unsigned int ultra_high_level;
-	unsigned int ultra_high_ofs;
-	unsigned int ultra_low_ofs;
-	unsigned int pre_ultra_high_ofs;
-
-	if (bpp == 3) {		/* YV12 */
-		pre_ultra_low_time = 2;	/* in unit of 0.5 us */
-		ultra_low_time = 4;	/* in unit of 0.5 us */
-		ultra_high_time = 8;	/* in unit of 0.5 us */
-	} else if (bpp == 6) {	/* RGB888 */
-		pre_ultra_low_time = 2;	/* in unit of 0.5 us */
-		ultra_low_time = 4;	/* in unit of 0.5 us */
-		ultra_high_time = 5;	/* in unit of 0.5 us */
-	}
-	/* consume_levels_per_sec = ((long long unsigned int)width * height * frame_rate * blank_overhead * bpp) /
-						rdma_fifo_width / 100;
-	 */
-	/* change calculation order to prevent overflow of unsigned int */
-	/* bpp/2 for bpp in unit of 0.5 bytes/pixel */
-	consume_levels_per_sec =
-	    (width * height * frame_rate * bpp / 2 / rdma_fifo_width / 100) * blank_overhead;
-
-	/* /1000000 /2 for ultra_low_time in unit of 0.5 us */
-	ultra_low_level = (unsigned int)(ultra_low_time * consume_levels_per_sec / 1000000 / 2);
-	pre_ultra_low_level =
-	    (unsigned int)(pre_ultra_low_time * consume_levels_per_sec / 1000000 / 2);
-	ultra_high_level = (unsigned int)(ultra_high_time * consume_levels_per_sec / 1000000 / 2);
-
-	ultra_low_ofs = ultra_low_level - pre_ultra_low_level;
-	pre_ultra_high_ofs = 1;
-	ultra_high_ofs = ultra_high_level - ultra_low_level;
-
-	ultra_low_level = 0x86;
-	ultra_low_ofs = 0x35;
-	pre_ultra_high_ofs = 1;
-	ultra_high_ofs = 0x1b;
-	/* write ultra_high_ofs, pre_ultra_high_ofs, ultra_low_ofs,
-	 * pre_ultra_low_ofs=pre_ultra_low_level into register DISP_WDMA_BUF_CON2
-	 */
-	/* DISP_REG_SET(handle,idx*DISP_WDMA_INDEX_OFFSET+DISP_REG_WDMA_BUF_CON2, */
-	/* ultra_low_level|(ultra_low_ofs<<8)|(pre_ultra_high_ofs<<16)|(ultra_high_ofs<<24)); */
-
-	/* TODO: set ultra/pre-ultra by resolution and format */
-	/*
-	   YV12: FHD=0x19010ea2, HD=0x0b0106d6, qHD=0x060103e9
-	   UYVY: FHD=0x22011283, HD=0x0f0108c8, qHD=0x080104e1
-	   RGB:  FHD=0x35011b44, HD=0x17010bad, qHD=0x0c0107d1
-	 */
-	if (idx == 0 && primary_display_is_decouple_mode() == 0) {
-		DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON2,
-			     0x1B010E22);
-		DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON1,
-			     0xD0100080);
-	} else {
-		DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON2,
-			     0x1B010E22);
-		DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON1,
-			     0x50100080);
-	}
-
-
-	DDPDBG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
-	DDPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
-	DDPDBG("ultra_high_level     = 0x%03x = %d\n", ultra_high_level, ultra_high_level);
-	DDPDBG("ultra_low_ofs        = 0x%03x = %d\n", ultra_low_ofs, ultra_low_ofs);
-	DDPDBG("pre_ultra_high_ofs   = 0x%03x = %d\n", pre_ultra_high_ofs, pre_ultra_high_ofs);
-	DDPDBG("ultra_high_ofs       = 0x%03x = %d\n", ultra_high_ofs, ultra_high_ofs);
-}
-
 static int wdma_config(DISP_MODULE_ENUM module,
 		       unsigned srcWidth,
 		       unsigned srcHeight,
@@ -286,42 +177,36 @@ static int wdma_config(DISP_MODULE_ENUM module,
 		       unsigned clipY,
 		       unsigned clipWidth,
 		       unsigned clipHeight,
-		       DpColorFormat out_format,
+		       enum UNIFIED_COLOR_FMT out_format,
 		       unsigned long dstAddress,
 		       unsigned dstPitch,
 		       unsigned int useSpecifiedAlpha,
 		       unsigned char alpha, DISP_BUFFER_TYPE sec, void *handle)
 {
 	unsigned int idx = wdma_index(module);
-	unsigned int output_swap = fmt_swap(out_format);
-	unsigned int output_color_space = fmt_color_space(out_format);
-	unsigned int out_fmt_reg = fmt_hw_value(out_format);
-	unsigned int yuv444_to_yuv422 = 0;
+	unsigned int output_swap = UFMT_GET_SWAP(out_format);
+	unsigned int is_rgb = UFMT_GET_RGB(out_format);
+	unsigned int out_fmt_reg = UFMT_GET_FORMAT(out_format);
 	int color_matrix = 0x2;	/* 0010 RGB_TO_BT601 */
 	unsigned int idx_offst = idx * DISP_WDMA_INDEX_OFFSET;
 	size_t size = dstPitch * clipHeight;
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	DDPMSG("module %s, src(w=%d,h=%d), clip(x=%d,y=%d,w=%d,h=%d),out_fmt=%s,dst_address=0x%lx,dst_p=%d,\n",
-		ddp_get_module_name(module), srcWidth, srcHeight, clipX, clipY, clipWidth, clipHeight,
-		fmt_string(out_format), dstAddress, dstPitch);
-	DDPMSG("spific_alfa=%d,alpa=%d,handle=0x%p,sec%d\n", useSpecifiedAlpha, alpha, handle, sec);
-#endif
+	DDPMSG
+	    ("%s,src(w%d,h%d),clip(x%d,y%d,w%d,h%d),fmt=%s,addr=0x%lx,pitch=%d,s_alfa=%d,alpa=%d,hnd=0x%p,sec%d\n",
+	     ddp_get_module_name(module), srcWidth, srcHeight, clipX, clipY, clipWidth, clipHeight,
+	     unified_color_fmt_name(out_format), dstAddress, dstPitch, useSpecifiedAlpha, alpha,
+	     handle, sec);
+
 	/* should use OVL alpha instead of sw config */
 	DISP_REG_SET(handle, idx_offst + DISP_REG_WDMA_SRC_SIZE, srcHeight << 16 | srcWidth);
 	DISP_REG_SET(handle, idx_offst + DISP_REG_WDMA_CLIP_COORD, clipY << 16 | clipX);
 	DISP_REG_SET(handle, idx_offst + DISP_REG_WDMA_CLIP_SIZE, clipHeight << 16 | clipWidth);
 	DISP_REG_SET_FIELD(handle, CFG_FLD_OUT_FORMAT, idx_offst + DISP_REG_WDMA_CFG, out_fmt_reg);
 
-	if (output_color_space == WDMA_COLOR_SPACE_YUV) {
-		yuv444_to_yuv422 = fmt_is_yuv422(out_format);
+	if (!is_rgb) {
 		/* set DNSP for UYVY and YUV_3P format for better quality */
-		DISP_REG_SET_FIELD(handle, CFG_FLD_DNSP_SEL, idx_offst + DISP_REG_WDMA_CFG,
-				   yuv444_to_yuv422);
-		if (fmt_is_yuv420(out_format)) {
-			wdma_config_yuv420(module, out_format, dstPitch, clipHeight, dstAddress,
-					   sec, handle);
-		}
+		wdma_config_yuv420(module, out_format, dstPitch, clipHeight, dstAddress, sec,
+				   handle);
 		/*user internal matrix */
 		DISP_REG_SET_FIELD(handle, CFG_FLD_EXT_MTX_EN, idx_offst + DISP_REG_WDMA_CFG, 0);
 		DISP_REG_SET_FIELD(handle, CFG_FLD_CT_EN, idx_offst + DISP_REG_WDMA_CFG, 1);
@@ -337,7 +222,7 @@ static int wdma_config(DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = M4U_PORT_DISP_WDMA0;
+		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_DISP_WDMA1;
 
 		/* for sec layer, addr variable stores sec handle */
 		/* we need to pass this handle and offset to cmdq driver */
@@ -350,8 +235,6 @@ static int wdma_config(DISP_MODULE_ENUM module,
 			   useSpecifiedAlpha);
 	DISP_REG_SET_FIELD(handle, ALPHA_FLD_A_VALUE, idx_offst + DISP_REG_WDMA_ALPHA, alpha);
 
-	wdma_calc_ultra(idx, srcWidth, srcHeight, 6, 60, handle);
-
 	return 0;
 }
 
@@ -360,13 +243,17 @@ static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 	unsigned int idx = wdma_index(module);
 	/* DDPMSG("wmda%d_clock_on\n",idx); */
 #ifdef ENABLE_CLK_MGR
-	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
+	if (idx == 0)
 		enable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
+	else
+		enable_clock(MT_CG_DISP0_DISP_WDMA1, "WDMA1");
 #else
-		disp_clk_enable(DISP0_DISP_WDMA0);
+	if (idx == 0)
+		ddp_clk_enable(DISP0_DISP_WDMA0);
+	else
+		ddp_clk_enable(DISP0_DISP_WDMA1);
 #endif
-	}
 #endif
 	return 0;
 }
@@ -376,13 +263,18 @@ static int wdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 	unsigned int idx = wdma_index(module);
 	/* DDPMSG("wdma%d_clock_off\n",idx); */
 #ifdef ENABLE_CLK_MGR
-	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
+	if (idx == 0)
 		disable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
+	else
+		disable_clock(MT_CG_DISP0_DISP_WDMA1, "WDMA1");
 #else
-		disp_clk_disable(DISP0_DISP_WDMA0);
+	if (idx == 0)
+		ddp_clk_disable(DISP0_DISP_WDMA0);
+	else
+		ddp_clk_disable(DISP0_DISP_WDMA1);
 #endif
-	}
+
 #endif
 	return 0;
 }
@@ -393,8 +285,7 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned int idx_offst = index * DISP_WDMA_INDEX_OFFSET;
 
 	DDPDUMP("==DISP WDMA%d ANALYSIS==\n", index);
-	DDPDUMP
-	    ("wdma%d:en=%d,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
+	DDPDUMP("wdma%d:en=%d,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
 	     index, DISP_REG_GET(DISP_REG_WDMA_EN + idx_offst),
 	     DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + idx_offst) & 0x3fff,
 	     (DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + idx_offst) >> 16) & 0x3fff,
@@ -407,11 +298,11 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 	     DISP_REG_GET(DISP_REG_WDMA_DST_ADDR0 + idx_offst),
 	     DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + idx_offst),
 	     DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + idx_offst),
-	     fmt_string(fmt_type
-			((DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 4) & 0xf,
-			 (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 11) & 0x1))
+	     unified_color_fmt_name(display_fmt_reg_to_unified_fmt
+				    ((DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 4) & 0xf,
+				     (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 11) & 0x1))
 	    );
-	DDPDUMP("wdma%d:status=%s,in_req=%d,in_ack=%d, exec=%d, input_pixel=(L:%d,P:%d)\n",
+	DDPDUMP("wdma%d:status=%s,in_req=%d(prev sent data),in_ack=%d(ask data to prev),exec=%d,in_pix=(L:%d,P:%d)\n",
 		index,
 		wdma_get_status(DISP_REG_GET_FIELD
 				(FLOW_CTRL_DBG_FLD_WDMA_STA_FLOW_CTRL,
@@ -431,7 +322,6 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 	unsigned int off_sft = idx * DISP_WDMA_INDEX_OFFSET;
 
 	DDPDUMP("==DISP WDMA%d REGS==\n", idx);
-
 	DDPDUMP("WDMA:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
 		DISP_REG_GET(DISP_REG_WDMA_INTEN + off_sft),
 		DISP_REG_GET(DISP_REG_WDMA_INTSTA + off_sft),
@@ -483,12 +373,63 @@ static int wdma_dump(DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
+static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_mod_type,
+	unsigned int width, unsigned int height, void *cmdq)
+{
+	unsigned int regval;
+	int wdma_idx = wdma_index(module);
+	unsigned long idx_offset = wdma_idx * DISP_WDMA_INDEX_OFFSET;
+	unsigned long res = width * height;
+	unsigned long res_HD = 720 * 1280;
+	/* DISP_REG_WDMA_BUF_CON1 */
+	regval = 0;
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 1);
+	else
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 0);
+
+	regval |= REG_FLD_VAL(BUF_CON1_FLD_PRE_ULTRA_ENABLE, 1);
+
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 1);
+	else
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 0);
+
+	regval |= REG_FLD_VAL(BUF_CON1_FLD_ISSUE_REQ_TH, 64);
+	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, 256);
+
+	DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_BUF_CON1, regval);
+
+	/* DISP_REG_WDMA_BUF_CON2 */
+	regval = 0;
+	if (res > res_HD)
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 45);
+	else
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 20);
+
+	regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_HIGH_OFS, 1);
+
+	if (res > res_HD)
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 24);
+	else
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 10);
+
+	if (res > res_HD)
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 93);
+	else
+		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 184);
+
+	DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_BUF_CON2, regval);
+
+	return 0;
+}
+
+
 static int wdma_check_input_param(WDMA_CONFIG_STRUCT *config)
 {
-	int unique = fmt_hw_value(config->outputFormat);
-
-	if (unique > WDMA_OUTPUT_FORMAT_YV12 && unique != WDMA_OUTPUT_FORMAT_NV21) {
-		DDPERR("wdma parameter invalidate outfmt 0x%x\n", config->outputFormat);
+	if (!is_unified_color_fmt_supported(config->outputFormat)) {
+		DDPERR("wdma parameter invalidate outfmt %s:0x%x\n",
+		       unified_color_fmt_name(config->outputFormat), config->outputFormat);
 		return -1;
 	}
 
@@ -512,20 +453,6 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	if (!pConfig->wdma_dirty)
 		return 0;
 
-	/* warm reset wdma every time we use it */
-	if (handle) {
-		if (/*(primary_display_is_video_mode()==0 && primary_display_is_decouple_mode()==0) || */
-			   primary_display_is_decouple_mode() == 1) {
-			unsigned int idx_offst = wdma_idx * DISP_WDMA_INDEX_OFFSET;
-
-			DISP_REG_SET(handle, idx_offst + DISP_REG_WDMA_RST, 0x01);	/* trigger soft reset */
-			cmdqRecPoll(handle,
-				    disp_addr_convert(idx_offst + DISP_REG_WDMA_FLOW_CTRL_DBG), 1,
-				    0x1);
-			DISP_REG_SET(handle, idx_offst + DISP_REG_WDMA_RST, 0x0);	/* trigger soft reset */
-		}
-	}
-
 	cmdq_engine = wdma_idx == 0 ? CMDQ_ENG_DISP_WDMA0 : CMDQ_ENG_DISP_WDMA1;
 
 	if (config->security == DISP_SECURE_BUFFER) {
@@ -538,7 +465,7 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			DDPMSG("[SVP] switch wdma%d to sec\n", wdma_idx);
 		wdma_is_sec[wdma_idx] = 1;
 	} else {
-		if (wdma_is_sec[wdma_idx] && !primary_display_is_ovl1to2_handle(handle)) {
+		if (wdma_is_sec[wdma_idx]) {
 			/* wdma is in sec stat, we need to switch it to nonsec */
 			cmdqRecHandle nonsec_switch_handle;
 			int ret;
@@ -557,14 +484,16 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			/*in fact, dapc/port_sec will be disabled by cmdq */
 			cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
 			cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine));
-			cmdqRecFlush(nonsec_switch_handle);
+			cmdqRecFlushAsync(nonsec_switch_handle);
 			cmdqRecDestroy(nonsec_switch_handle);
 			DDPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
 		}
 		wdma_is_sec[wdma_idx] = 0;
 	}
 
-	if (wdma_check_input_param(config) == 0)
+	if (wdma_check_input_param(config) == 0) {
+		enum dst_module_type dst_mod_type;
+
 		wdma_config(module,
 			    config->srcWidth,
 			    config->srcHeight,
@@ -576,6 +505,10 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			    config->dstAddress,
 			    config->dstPitch,
 			    config->useSpecifiedAlpha, config->alpha, config->security, handle);
+
+		dst_mod_type = dpmgr_path_get_dst_module_type(pConfig->path_handle);
+		wdma_golden_setting(module, dst_mod_type, config->srcWidth, config->srcHeight, handle);
+	}
 	return 0;
 }
 
@@ -584,28 +517,10 @@ unsigned int ddp_wdma_get_cur_addr(void)
 	return INREG32(DISP_REG_WDMA_DST_ADDR0);
 }
 
-int wdma_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
-{
-
-	if (cmdq_trigger_handle == NULL) {
-		DDPERR("cmdq_trigger_handle is NULL\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/* wdma */
-
 DDP_MODULE_DRIVER ddp_driver_wdma = {
 	.module = DISP_MODULE_WDMA0,
-#ifdef WDMA_PATH_CLOCK_DYNAMIC_SWITCH
-	.init = NULL,
-	.deinit = NULL,
-#else
 	.init = wdma_clock_on,
 	.deinit = wdma_clock_off,
-#endif
 	.config = wdma_config_l,
 	.start = wdma_start,
 	.trigger = NULL,

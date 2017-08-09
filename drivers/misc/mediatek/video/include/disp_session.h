@@ -130,6 +130,10 @@ typedef enum {
 	/* two ouputs */
 	DISP_SESSION_DIRECT_LINK_MIRROR_MODE = 3,
 	DISP_SESSION_DECOUPLE_MIRROR_MODE = 4,
+
+	DISP_SESSION_RDMA_MODE,
+	DISP_SESSION_MODE_NUM,
+
 } DISP_MODE;
 
 typedef enum {
@@ -171,6 +175,7 @@ typedef struct {
 	unsigned int session_id;
 	unsigned int vsync_cnt;
 	long int vsync_ts;
+	int lcm_fps;
 } disp_session_vsync_config;
 
 typedef struct disp_input_config_t {
@@ -241,6 +246,30 @@ typedef struct disp_session_layer_num_config_t {
 	unsigned int max_layer_num;
 } disp_session_layer_num_config;
 
+struct disp_frame_cfg_t {
+	DISP_SESSION_USER setter;
+	unsigned int session_id;
+
+	/* input config */
+	unsigned int input_layer_num;
+	disp_input_config input_cfg[8];
+	unsigned int overlap_layer_num;
+
+	/* constant layer */
+	unsigned int const_layer_num;
+	disp_input_config const_layer[1];
+
+	/* output config */
+	int output_en;
+	disp_output_config output_cfg;
+
+	/* trigger config */
+	DISP_MODE mode;
+	unsigned int present_fence_idx;
+	EXTD_TRIGGER_MODE tigger_mode;
+	DISP_SESSION_USER user;
+};
+
 typedef struct disp_session_info_t {
 	unsigned int session_id;
 	unsigned int maxLayerNum;
@@ -257,6 +286,7 @@ typedef struct disp_session_info_t {
 	unsigned int isHDCPSupported;
 	unsigned int isOVLDisabled;
 	unsigned int is3DSupport;
+	unsigned int const_layer_num;
 } disp_session_info;
 
 typedef struct disp_buffer_info_t {
@@ -314,6 +344,7 @@ typedef struct disp_caps_t {
 	unsigned int max_pq_num;
 #endif
 	unsigned int disp_feature;
+	int is_support_frame_cfg_ioctl;
 } disp_caps_info;
 
 typedef struct disp_session_buf_t {
@@ -351,4 +382,6 @@ typedef struct disp_session_buf_t {
 #define DISP_IOCTL_GET_IS_DRIVER_SUSPEND		DISP_IOW(217, unsigned int)
 #define DISP_IOCTL_GET_DISPLAY_CAPS			DISP_IOW(218, disp_caps_info)
 #define DISP_IOCTL_INSERT_SESSION_BUFFERS			DISP_IOW(219, disp_session_buf_info)
+#define	DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, disp_session_output_config)
+
 #endif				/* __DISP_SESSION_H */

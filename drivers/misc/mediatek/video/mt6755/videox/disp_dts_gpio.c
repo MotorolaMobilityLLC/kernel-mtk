@@ -1,17 +1,18 @@
 #include "disp_dts_gpio.h"
-#include <linux/bug.h>
-
+#include "mach/mt_typedefs.h" /* ASSERT */
+#include "disp_helper.h"
 #include <linux/kernel.h> /* printk */
 
 static struct pinctrl *this_pctrl; /* static pinctrl instance */
 
 /* DTS state mapping name */
 static const char *this_state_name[DTS_GPIO_STATE_MAX] = {
-	"mode_te_gpio",                 /* DTS_GPIO_STATE_TE_MODE_GPIO */
-	"mode_te_te",                   /* DTS_GPIO_STATE_TE_MODE_TE */
-	"pwm_test_pin_mux_gpio55",      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_55 */
-	"pwm_test_pin_mux_gpio69",      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_69 */
-	"pwm_test_pin_mux_gpio129"      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_129 */
+	"mode_te_gpio",
+	"mode_te_te",
+	"lcm_rst_out0_gpio",
+	"lcm_rst_out1_gpio",
+	"lcd_bias_enp0_gpio",
+	"lcd_bias_enp1_gpio"
 };
 
 /* pinctrl implementation */
@@ -20,7 +21,7 @@ static long _set_state(const char *name)
 	long ret = 0;
 	struct pinctrl_state *pState = 0;
 
-	BUG_ON(!this_pctrl);
+	ASSERT(this_pctrl);
 
 	pState = pinctrl_lookup_state(this_pctrl, name);
 	if (IS_ERR(pState)) {
@@ -57,7 +58,7 @@ exit:
 
 long disp_dts_gpio_select_state(DTS_GPIO_STATE s)
 {
-	BUG_ON(!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)));
+	ASSERT((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX));
 	return _set_state(this_state_name[s]);
 }
 

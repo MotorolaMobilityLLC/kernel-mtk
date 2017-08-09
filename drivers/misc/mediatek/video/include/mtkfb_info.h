@@ -18,7 +18,6 @@ extern "C" {
 		HDMI_SMARTBOOK,
 		MHL,
 		DISPIF_TYPE_EPD
-
 	} MTKFB_DISPIF_TYPE;
 
 	typedef enum {
@@ -52,9 +51,9 @@ extern "C" {
 		unsigned int physicalWidth;
 		unsigned int physicalHeight;
 		unsigned int isConnected;
-		/* this value is for DFO Multi-Resolution feature, which stores the original LCM Wdith */
+/* this value is for DFO Multi-Resolution feature, which stores the original LCM Wdith */
 		unsigned int lcmOriginalWidth;
-		/* this value is for DFO Multi-Resolution feature, which stores the original LCM Height */
+/* this value is for DFO Multi-Resolution feature, which stores the original LCM Height */
 		unsigned int lcmOriginalHeight;
 	} mtk_dispif_info_t;
 

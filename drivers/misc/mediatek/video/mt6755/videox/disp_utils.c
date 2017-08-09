@@ -1,9 +1,9 @@
 #include <linux/kthread.h>
-/* #include <linux/rtpm_prio.h> */
+#include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
 #include <linux/semaphore.h>
 #include <linux/time.h>
-#include "m4u.h"
+#include <mach/m4u.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include "disp_drv_log.h"
@@ -60,12 +60,12 @@ unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID p
 		DISPMSG("create client fail!\n");
 
 	mva = pa;
-	ret = m4u_alloc_mva(client, port, 0, sg_table, size, M4U_PROT_READ | M4U_PROT_WRITE,
-			    M4U_FLAGS_FIX_MVA, &mva);
+	ret =
+	    m4u_alloc_mva(client, port, 0, sg_table, size, M4U_PROT_READ | M4U_PROT_WRITE,
+			  M4U_FLAGS_FIX_MVA, &mva);
 	/* m4u_alloc_mva(M4U_PORT_DISP_OVL0, pa_start, (pa_end - pa_start + 1), 0, 0, mva); */
 	if (ret)
 		DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
-
 	DISPMSG("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", mva, pa);
 
 	return mva;

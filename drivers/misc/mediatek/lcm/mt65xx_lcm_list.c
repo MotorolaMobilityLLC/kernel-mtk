@@ -16,7 +16,7 @@
 #ifdef BUILD_LK
 #define LCD_DEBUG(fmt)  dprintf(CRITICAL, fmt)
 #else
-#define LCD_DEBUG(fmt)  pr_debug(fmt)
+#define LCD_DEBUG(fmt, args...)  pr_notice("[KERNEL/LCM]"fmt, ##args)
 #endif
 
 
@@ -864,6 +864,21 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35510_dsi_cmd_lcm_drv,
 #endif
 
+#if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358)
+	&nt35695_fhd_dsi_cmd_truly_nt50358_lcm_drv,
+#endif
+
+#if defined(NT35695_FHD_DSI_VDO_TRULY_NT50358)
+	&nt35695_fhd_dsi_vdo_truly_nt50358_lcm_drv,
+#endif
+
+#if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_720P)
+	&nt35695_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv,
+#endif
+
+#if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_QHD)
+	&nt35695_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv,
+#endif
 #if defined(RM69032_DSI_CMD)
 	&rm69032_dsi_cmd_lcm_drv,
 #endif
@@ -874,6 +889,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(CM_N070ICE_DSI_VDO_MT8173)
 	&cm_n070ice_dsi_vdo_mt8173_lcm_drv,
+#endif
+
+#if defined(NT35595_FHD_DSI_CMD_TRULY_NT50358_EXTERN)
+	&nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv,
 #endif
 };
 
@@ -1030,15 +1049,15 @@ unsigned char which_lcd_module_triple(void)
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
 #else
-	pr_debug("which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
-	pr_debug("which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
+	LCD_DEBUG("which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
+	LCD_DEBUG("which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
 #endif
 	lcd_id =  lcd_id0 | (lcd_id1 << 2);
 
 #ifdef BUILD_LK
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id:%d\n", lcd_id);
 #else
-	pr_debug("which_lcd_module_triple,lcd_id:%d\n", lcd_id);
+	LCD_DEBUG("which_lcd_module_triple,lcd_id:%d\n", lcd_id);
 #endif
 
 	lcd_id_pins_value = lcd_id;

@@ -1,7 +1,7 @@
 #ifndef __DISP_EVENT_H__
 #define __DISP_EVENT_H__
 
-typedef enum {
+typedef enum{
 	DISP_PATH_EVENT_FRAME_DONE = 0,
 	DISP_PATH_EVENT_FRAME_START,
 	DISP_PATH_EVENT_FRAME_REG_UPDATE,

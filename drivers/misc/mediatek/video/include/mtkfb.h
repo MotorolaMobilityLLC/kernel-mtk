@@ -24,85 +24,87 @@
 #define MTK_IO(num)             _IO('O', num)
 #define MTKFB_QUEUE_OVERLAY_CONFIG			MTK_IOW(137, struct fb_overlay_config)
 /* -------------------------------------------------------------------------- */
-#define MTKFB_SET_OVERLAY_LAYER		MTK_IOW(0, struct fb_overlay_layer)
-#define MTKFB_TRIG_OVERLAY_OUT		MTK_IO(1)
-#define MTKFB_SET_VIDEO_LAYERS		MTK_IOW(2, struct fb_overlay_layer)
-#define MTKFB_CAPTURE_FRAMEBUFFER		MTK_IOW(3, unsigned long)
-#define MTKFB_CONFIG_IMMEDIATE_UPDATE		MTK_IOW(4, unsigned long)
-#define MTKFB_SET_MULTIPLE_LAYERS		MTK_IOW(5, struct fb_overlay_layer)
-#define MTKFB_REGISTER_OVERLAYBUFFER		MTK_IOW(6, struct fb_overlay_buffer_info)
-#define MTKFB_UNREGISTER_OVERLAYBUFFER		MTK_IOW(7, unsigned int)
-#define MTKFB_SET_ORIENTATION		MTK_IOW(8, unsigned long)
-#define MTKFB_FBLAYER_ENABLE		MTK_IOW(9, unsigned int)
-#define MTKFB_LOCK_FRONT_BUFFER		MTK_IO(10)
-#define MTKFB_UNLOCK_FRONT_BUFFER		MTK_IO(11)
-#define MTKFB_POWERON		MTK_IO(12)
-#define MTKFB_POWEROFF		MTK_IO(13)
+#define MTKFB_SET_OVERLAY_LAYER                MTK_IOW(0, struct fb_overlay_layer)
+#define MTKFB_TRIG_OVERLAY_OUT                 MTK_IO(1)
+#define MTKFB_SET_VIDEO_LAYERS                 MTK_IOW(2, struct fb_overlay_layer)
+#define MTKFB_CAPTURE_FRAMEBUFFER              MTK_IOW(3, unsigned long)
+#define MTKFB_CONFIG_IMMEDIATE_UPDATE          MTK_IOW(4, unsigned long)
+#define MTKFB_SET_MULTIPLE_LAYERS              MTK_IOW(5, struct fb_overlay_layer)
+#define MTKFB_REGISTER_OVERLAYBUFFER           MTK_IOW(6, struct fb_overlay_buffer_info)
+#define MTKFB_UNREGISTER_OVERLAYBUFFER         MTK_IOW(7, unsigned int)
+#define MTKFB_SET_ORIENTATION                  MTK_IOW(8, unsigned long)
+#define MTKFB_FBLAYER_ENABLE                   MTK_IOW(9, unsigned int)
+#define MTKFB_LOCK_FRONT_BUFFER                MTK_IO(10)
+#define MTKFB_UNLOCK_FRONT_BUFFER              MTK_IO(11)
+#define MTKFB_POWERON				           MTK_IO(12)
+#define MTKFB_POWEROFF				           MTK_IO(13)
 
 /* Fence/Ion, OVL decoupling */
-#define MTKFB_PREPARE_OVERLAY_BUFFER		MTK_IOW(14, struct fb_overlay_buffer)
+#define MTKFB_PREPARE_OVERLAY_BUFFER           MTK_IOW(14, struct fb_overlay_buffer)
 
 /* S3D control */
-#define MTKFB_SET_COMPOSING3D		MTK_IOW(15, unsigned long)
-#define MTKFB_SET_S3D_FTM		MTK_IOW(16, unsigned long)
+#define MTKFB_SET_COMPOSING3D                  MTK_IOW(15, unsigned long)
+#define MTKFB_SET_S3D_FTM		               MTK_IOW(16, unsigned long)
 
 /* FM De-sense for EM and Normal mode */
-#define MTKFB_GET_DEFAULT_UPDATESPEED		MTK_IOR(17, unsigned long)
-#define MTKFB_GET_CURR_UPDATESPEED		MTK_IOR(18, unsigned long)
+#define MTKFB_GET_DEFAULT_UPDATESPEED          MTK_IOR(17, unsigned long)
+#define MTKFB_GET_CURR_UPDATESPEED             MTK_IOR(18, unsigned long)
 /* for EM, not called change writecycle because DPI change pll ckl */
-#define MTKFB_CHANGE_UPDATESPEED		MTK_IOW(19, unsigned long)
-#define MTKFB_GET_INTERFACE_TYPE		MTK_IOR(20, unsigned long)	/* 0 DBI, 1 DPI, 2 MIPI */
-#define MTKFB_GET_POWERSTATE			MTK_IOR(21, unsigned long)	/* 0: power off  1: power on */
-#define MTKFB_GET_DISPLAY_IF_INFORMATION	MTK_IOR(22, mtk_dispif_info_t)
-/* called before SET_OVERLAY each time, if true, hwc will not use FB_LAYER again */
-#define MTKFB_AEE_LAYER_EXIST			MTK_IOR(23, unsigned long)
-#define MTKFB_GET_OVERLAY_LAYER_INFO		MTK_IOR(24, struct fb_overlay_layer_info)
-#define MTKFB_FACTORY_AUTO_TEST			MTK_IOR(25, unsigned long)
-#define MTKFB_GET_FRAMEBUFFER_MVA		MTK_IOR(26, unsigned int)
-#define MTKFB_SLT_AUTO_CAPTURE			MTK_IOWR(27, struct fb_slt_catpure)
+#define MTKFB_CHANGE_UPDATESPEED               MTK_IOW(19, unsigned long)
+#define MTKFB_GET_INTERFACE_TYPE               MTK_IOR(20, unsigned long)	/* /0 DBI, 1 DPI, 2 MIPI */
+#define MTKFB_GET_POWERSTATE		           MTK_IOR(21, unsigned long)	/* /0: power off  1: power on */
+#define MTKFB_GET_DISPLAY_IF_INFORMATION       MTK_IOR(22, mtk_dispif_info_t)
+/*called before SET_OVERLAY each time, if true, hwc will not use FB_LAYER again*/
+#define MTKFB_AEE_LAYER_EXIST                  MTK_IOR(23, unsigned long)
+#define MTKFB_GET_OVERLAY_LAYER_INFO           MTK_IOR(24, struct fb_overlay_layer_info)
+#define MTKFB_FACTORY_AUTO_TEST                MTK_IOR(25, unsigned long)
+#define MTKFB_GET_FRAMEBUFFER_MVA              MTK_IOR(26, unsigned int)
+#define MTKFB_SLT_AUTO_CAPTURE                 MTK_IOWR(27, struct fb_slt_catpure)
 
-/*error handling */
-#define MTKFB_META_RESTORE_SCREEN		MTK_IOW(101, unsigned long)
-#define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT	MTK_IO(103)
-#define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT_AEE	MTK_IO(104)
+/*error handling*/
+#define MTKFB_META_RESTORE_SCREEN              MTK_IOW(101, unsigned long)
+#define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT       MTK_IO(103)
+#define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT_AEE   MTK_IO(104)
 
 /*restore bootlogo and character in meta mode*/
-#define MTKFB_META_SHOW_BOOTLOGO		MTK_IO(105)
+#define MTKFB_META_SHOW_BOOTLOGO               MTK_IO(105)
 
-/* Extension FB active option */
+/*Extension FB active option*/
 #define FB_ACTIVATE_NO_UPDATE  512       /* Skip frame update */
-
-
 /**
  * Just for mt6589 Platform
  * @{
  */
-#define MTKFB_GETVFRAMEPHYSICAL			MTK_IOW(41, unsigned long)
-#define MTKFB_WAIT_OVERLAY_READY		MTK_IO(42)
-#define MTKFB_GET_OVERLAY_LAYER_COUNT		MTK_IOR(43, unsigned long)
-#define MTKFB_GET_VIDEOLAYER_SIZE		MTK_IOR(44, struct fb_overlay_layer)
-#define MTKFB_CAPTURE_VIDEOBUFFER		MTK_IOW(45, unsigned long)
+#define MTKFB_GETVFRAMEPHYSICAL                MTK_IOW(41, unsigned long)
+#define MTKFB_WAIT_OVERLAY_READY               MTK_IO(42)
+#define MTKFB_GET_OVERLAY_LAYER_COUNT          MTK_IOR(43, unsigned long)
+#define MTKFB_GET_VIDEOLAYER_SIZE              MTK_IOR(44, struct fb_overlay_layer)
+#define MTKFB_CAPTURE_VIDEOBUFFER              MTK_IOW(45, unsigned long)
 
 /* -------------------------------------------------------------------------- */
 /* Video Playback Mode */
-#define MTKFB_TV_POST_VIDEO_BUFFER		MTK_IOW(46, unsigned long)
-#define MTKFB_TV_LEAVE_VIDEO_PLAYBACK_MODE	MTK_IOW(47, unsigned long)
+#define MTKFB_TV_POST_VIDEO_BUFFER             MTK_IOW(46, unsigned long)
+#define MTKFB_TV_LEAVE_VIDEO_PLAYBACK_MODE     MTK_IOW(47, unsigned long)
 /* For Factory Mode */
-#define MTKFB_IS_TV_CABLE_PLUG_IN		MTK_IOW(48, unsigned long)
+#define MTKFB_IS_TV_CABLE_PLUG_IN              MTK_IOW(48, unsigned long)
 
 /* -------------------------------------------------------------------------- */
-#define MTKFB_BOOTANIMATION			MTK_IO(49)
-#define MTKFB_GETFPS				MTK_IOW(50, unsigned long)
-#define MTKFB_VSYNC				MTK_IO(51)
+#define MTKFB_BOOTANIMATION			           MTK_IO(49)
+#define MTKFB_GETFPS			               MTK_IOW(50, unsigned long)
+#define MTKFB_VSYNC                            MTK_IO(51)
 
 /* ----------------------------------------------------------------------FM De-sense for EM and Normal mode */
-#define MTKFB_FM_NOTIFY_FREQ			MTK_IOW(52, unsigned long)	/* for Normal mode */
-#define MTKFB_RESET_UPDATESPEED			MTK_IO(53)
-#define MTKFB_SET_UI_LAYER_ALPHA		MTK_IOW(54, unsigned long)
-#define MTKFB_SET_UI_LAYER_SRCKEY		MTK_IOW(55, unsigned long)
+#define MTKFB_FM_NOTIFY_FREQ                   MTK_IOW(52, unsigned long)	/* for Normal mode */
+#define MTKFB_RESET_UPDATESPEED                MTK_IO(53)
+#define MTKFB_SET_UI_LAYER_ALPHA               MTK_IOW(54, unsigned long)
+#define MTKFB_SET_UI_LAYER_SRCKEY              MTK_IOW(55, unsigned long)
 
-#define MTKFB_GET_MAX_DISPLAY_COUNT		MTK_IOR(56, unsigned int)
-#define MTKFB_SET_FB_LAYER_SECURE		MTK_IOW(57, int)
+#define MTKFB_GET_MAX_DISPLAY_COUNT		       MTK_IOR(56, unsigned int)
+#define MTKFB_SET_FB_LAYER_SECURE              MTK_IOW(57, int)
+/**
+ * @}
+ */
+/* ---------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
 
@@ -131,7 +133,7 @@ typedef enum {
 	LAYER_NORMAL_BUFFER = 0,
 	LAYER_SECURE_BUFFER = 1,
 	LAYER_PROTECTED_BUFFER = 2,
-	LAYER_SECURE_BUFFER_WITH_ALIGN = 0x10001, /* the higher 16 bits =1 for adding 64 bytes alignment */
+	LAYER_SECURE_BUFFER_WITH_ALIGN = 0x10001,	/* the higher 16 bits =1 for adding 64 bytes alignment */
 } MTK_FB_OVL_LAYER_SECURE_MODE;
 
 typedef struct _disp_dfo_item {
@@ -178,7 +180,6 @@ typedef enum {
 	DISP_DIRECT_LINK_MODE,
 	DISP_DECOUPLE_MODE
 } MTK_DISP_MODE;
-
 struct fb_overlay_mode {
 	MTK_DISP_MODE mode;
 };
@@ -186,7 +187,8 @@ struct fb_overlay_mode {
 typedef enum {			/* map sessions to scenairos in kernel driver */
 	DISP_SESSION_LCM = 1 << 0,	/* DSI0 */
 	DISP_SESSION_MEM = 1 << 1,	/* OVL0->WDMA0 */
-	DISP_SESSION_WFD = 1 << 2, /* Extension mode, Dst buf is provided by user, for Wifi Display or other purpose */
+/* Extension mode, Dst buf is provided by user,for Wifi Display or other purpose */
+	DISP_SESSION_WFD = 1 << 2,
 	DISP_SESSION_MHL = 1 << 3,	/* DPI */
 	DISP_SESSION_LCM1 = 1 << 4,	/* DSI1 */
 	DISP_SESSION_MEM1 = 1 << 5,	/* OVL1->WDMA1 */
@@ -287,6 +289,7 @@ extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
 int mtkfb_set_backlight_mode(unsigned int mode);
+int mtkfb_set_backlight_level(unsigned int level);
 int mtkfb_get_debug_state(char *stringbuf, int buf_len);
 unsigned int mtkfb_fm_auto_test(void);
 void mtkfb_clear_lcm(void);
@@ -297,7 +300,7 @@ void mtkfb_clear_lcm(void);
 #include <linux/completion.h>
 #include <linux/interrupt.h>
 #include <linux/workqueue.h>
-
+#include <linux/version.h>
 #include <../drivers/staging/android/sw_sync.h>
 
 
@@ -357,10 +360,6 @@ struct mtkfb_device {
 
 extern long hdmi_handle_cmd(unsigned int cmd, unsigned long arg);
 
-#if defined(CONFIG_ARCH_MT6797)
-extern unsigned int vramsize;
-#endif
-
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 #if !defined(CONFIG_MTK_LEGACY)
 extern unsigned int lcm_driver_id;
@@ -381,4 +380,4 @@ extern char *saved_command_line;
 #endif /* CONFIG_ARCH_MT6735 */
 
 
-#endif	/* __MTKFB_H */
+#endif				/* __MTKFB_H */

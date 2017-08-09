@@ -3,32 +3,139 @@
 #include "ddp_log.h"
 
 #include <linux/types.h>
+#include <mach/mt_typedefs.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include "ddp_clkmgr.h"
 #endif
-
-#define DISP_LIST_SCENARIO
 #include "ddp_reg.h"
 
-#include "disp_drv_platform.h"
 #include "ddp_debug.h"
 #include "ddp_path.h"
 #include "primary_display.h"
 #include "ddp_hal.h"
+#include "disp_helper.h"
+#include "ddp_path.h"
 
 #include "m4u.h"
-#include "ddp_drv.h"
 
 #pragma GCC optimize("O0")
 
-/* 1st para is mout's input, 2nd para is mout's output*/
-mout_t mout_map[DDP_MOUT_NUM] = {
+typedef struct module_map_s {
+	DISP_MODULE_ENUM module;
+	int bit;
+} module_map_t;
+
+typedef struct {
+	int m;
+	int v;
+} m_to_b;
+
+typedef struct mout_s {
+	int id;
+	m_to_b out_id_bit_map[5];
+
+	volatile unsigned long *reg;
+	unsigned int reg_val;
+} mout_t;
+
+typedef struct selection_s {
+	int id;
+	int id_bit_map[5];
+
+	volatile unsigned long *reg;
+
+	unsigned int reg_val;
+} sel_t;
+
+#define DDP_ENING_NUM    (15)
+
+#define DDP_MOUT_NUM     4
+#define DDP_SEL_OUT_NUM  4
+#define DDP_SEL_IN_NUM   6
+#define DDP_MUTEX_MAX    5
+
+unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
+	/*PRIMARY_DISP */
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
+	 DISP_MODULE_DITHER,
+	 DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1},
+
+	/*PRIMARY_RDMA0_COLOR0_DISP */
+	{
+	 DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL,
+	 DISP_MODULE_GAMMA, DISP_MODULE_DITHER, DISP_MODULE_UFOE, DISP_MODULE_PWM0,
+	 DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1},
+
+	/*PRIMARY_RDMA0_DISP */
+	{
+	 DISP_MODULE_RDMA0, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+
+	/*PRIMARY_BYPASS_RDMA */
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
+	 DISP_MODULE_DITHER,
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1},
+
+	/*PRIMARY_OVL_MEMOUT */
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+
+	/*PRIMARY_DITHER_MEMOUT */
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
+	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1},
+	/*PRIMARY_UFOE_MEMOUT */
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
+	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, -1, -1, -1, -1,
+	 -1, -1},
+	/*SUB_DISP */
+	{
+	 DISP_MODULE_OVL1, DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	 -1, -1, -1},
+	/*SUB_RDMA1_DISP */
+	{
+	 DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	/*SUB_OVL_MEMOUT */
+	{
+	 DISP_MODULE_OVL1, DISP_MODULE_WDMA1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	/*PRIMARY_DISP ALL*/
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_DITHER,
+	 DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1},
+	/*SUB_ALL */
+	{
+	 DISP_MODULE_OVL1, DISP_MODULE_WDMA1, DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1,
+	 -1, -1, -1, -1, -1, -1, -1},
+	/*DDP_SCENARIO_DITHER_1TO2*/
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_DITHER,
+	 DISP_MODULE_WDMA0, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1},
+	/*DDP_SCENARIO_UFOE_1TO2*/
+	{
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_DITHER,
+	 DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1},
+};
+
+/* 1st para is mout's input, 2nd para is mout's output */
+static mout_t mout_map[DDP_MOUT_NUM] = {
 	/* OVL_MOUT */
-	{DISP_MODULE_OVL0,
+	{DISP_MODULE_OVL0_VIRTUAL,
 	 {{DISP_MODULE_COLOR0, 1 << 0}, {DISP_MODULE_WDMA0, 1 << 1}, {-1, 0} }, 0, 0},
 	{DISP_MODULE_OVL1,
-	 {{DISP_MODULE_RDMA1, 1 << 0}, {DISP_MODULE_WDMA1, 1 << 1}, {DISP_MODULE_OVL0, 1 << 2},
-	  {-1, 0} }, 0, 0},
+	 {{DISP_MODULE_RDMA1, 1 << 0}, {DISP_MODULE_WDMA1, 1 << 1},
+	  {DISP_MODULE_OVL0_VIRTUAL, 1 << 2}, {-1, 0} }, 0, 0},
 	/* DITHER0_MOUT */
 	{DISP_MODULE_DITHER,
 	 {{DISP_MODULE_RDMA0, 1 << 0}, {DISP_MODULE_UFOE, 1 << 1}, {DISP_MODULE_WDMA0, 1 << 2},
@@ -39,54 +146,137 @@ mout_t mout_map[DDP_MOUT_NUM] = {
 	  {-1, 0} }, 0, 0},
 };
 
-sel_t sel_out_map[DDP_SEL_OUT_NUM] = {
+static sel_t sel_out_map[DDP_SEL_OUT_NUM] = {
+	/* OVL0_SOUT */
+	{DISP_MODULE_OVL0, {DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_OVL1_2L, -1}, 0, 0},
+	/* OVL1_SOUT */
+	{DISP_MODULE_OVL1_2L, {DISP_MODULE_OVL1, DISP_MODULE_OVL0_VIRTUAL, -1}, 0, 0},
 	/* RDMA_SOUT */
 	{DISP_MODULE_RDMA0,
-		{DISP_MODULE_UFOE, DISP_MODULE_COLOR0, DISP_MODULE_DSI0, DISP_MODULE_DPI, -1}, 0, 0},
-	{DISP_MODULE_RDMA1,
-		{DISP_MODULE_DSI0, DISP_MODULE_DPI, -1}, 0, 0},
+	 {DISP_MODULE_UFOE, DISP_MODULE_COLOR0, DISP_MODULE_DSI0, DISP_MODULE_DPI, -1}, 0, 0},
+	{DISP_MODULE_RDMA1, {DISP_MODULE_DSI0, DISP_MODULE_DPI, -1}, 0, 0},
 };
 
-/* 1st para is sout's output, 2nd para is sout's input*/
-sel_t sel_in_map[DDP_SEL_IN_NUM] = {
+/* 1st para is sout's output, 2nd para is sout's input */
+static sel_t sel_in_map[DDP_SEL_IN_NUM] = {
+	/* OVL0_SEL */
+	{DISP_MODULE_OVL0_VIRTUAL, {DISP_MODULE_OVL0, DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L, -1}, 0,
+	 0},
+
 	/* COLOR_SEL */
-	{DISP_MODULE_COLOR0,
-		{DISP_MODULE_RDMA0, DISP_MODULE_OVL0, -1}, 0, 0},
-	/*UFOE_SEL */
-	{DISP_MODULE_UFOE,
-		{DISP_MODULE_RDMA0, DISP_MODULE_DITHER, -1}, 0, 0},
-	/*DSI0_SEL */
-	{DISP_MODULE_DSI0,
-		{DISP_MODULE_UFOE, DISP_MODULE_RDMA0, DISP_MODULE_RDMA1, -1}, 0, 0},
-	/*DPI0_SEL */
-	{DISP_MODULE_DPI,
-		{DISP_MODULE_UFOE, DISP_MODULE_RDMA0, DISP_MODULE_RDMA1, -1}, 0, 0},
+	{DISP_MODULE_COLOR0, {DISP_MODULE_RDMA0, DISP_MODULE_OVL0_VIRTUAL, -1}, 0, 0},
+
+	/* UFOE_SEL */
+	{DISP_MODULE_UFOE, {DISP_MODULE_RDMA0, DISP_MODULE_DITHER, -1}, 0, 0},
+
+	/* DSI0_SEL */
+	{DISP_MODULE_DSI0, {DISP_MODULE_UFOE, DISP_MODULE_RDMA0, DISP_MODULE_RDMA1, -1}, 0, 0},
+
+	/* DPI0_SEL */
+	{DISP_MODULE_DPI, {DISP_MODULE_UFOE, DISP_MODULE_RDMA0, DISP_MODULE_RDMA1, -1}, 0, 0},
+
 	/* WDMA_SEL */
-	{DISP_MODULE_WDMA0,
-		{DISP_MODULE_OVL0, DISP_MODULE_DITHER, DISP_MODULE_UFOE, -1}, 0, 0},
+	{DISP_MODULE_WDMA0, {DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_DITHER, DISP_MODULE_UFOE, -1}, 0, 0},
 };
+
 
 int ddp_path_init(void)
 {
 	/* mout */
-	mout_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL0_MOUT_EN;
-#if defined(MTK_FB_OVL1_SUPPORT)
-	mout_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_OVL1_MOUT_EN;
-#endif
-	mout_map[2].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_DITHER_MOUT_EN;
-	mout_map[3].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_UFOE_MOUT_EN;
+	mout_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_MOUT_EN;
+	mout_map[1].reg = DISP_REG_CONFIG_DISP_OVL1_MOUT_EN;
+	mout_map[2].reg = DISP_REG_CONFIG_DISP_DITHER_MOUT_EN;
+	mout_map[3].reg = DISP_REG_CONFIG_DISP_UFOE_MOUT_EN;
 	/* sel_out */
-	sel_out_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
-	sel_out_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
+	sel_out_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN;
+	sel_out_map[1].reg = DISP_REG_CONFIG_DISP_OVL1_SOUT_SEL_IN;
+	sel_out_map[2].reg = DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
+	sel_out_map[3].reg = DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
 	/* sel_in */
-	sel_in_map[0].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_COLOR0_SEL_IN;	/* COLOR_SEL */
-	sel_in_map[1].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_UFOE_SEL_IN;	/* UFOE_SEL */
-	sel_in_map[2].reg = (volatile unsigned long *)DISP_REG_CONFIG_DSI0_SEL_IN;	/* DSI0_SEL */
-	sel_in_map[3].reg = (volatile unsigned long *)DISP_REG_CONFIG_DPI0_SEL_IN;	/* DPI0_SEL */
-	sel_in_map[4].reg = (volatile unsigned long *)DISP_REG_CONFIG_DISP_WDMA0_SEL_IN;	/* WDMA_SEL */
-
+	sel_in_map[0].reg = DISP_REG_CONFIG_DISP_OVL0_SEL_IN;	/* OVL_SEL */
+	sel_in_map[1].reg = DISP_REG_CONFIG_DISP_COLOR0_SEL_IN;	/* COLOR_SEL */
+	sel_in_map[2].reg = DISP_REG_CONFIG_DISP_UFOE_SEL_IN;	/* UFOE_SEL */
+	sel_in_map[3].reg = DISP_REG_CONFIG_DSI0_SEL_IN;	/* DSI0_SEL */
+	sel_in_map[4].reg = DISP_REG_CONFIG_DPI0_SEL_IN;	/* DPI0_SEL */
+	sel_in_map[5].reg = DISP_REG_CONFIG_DISP_WDMA0_SEL_IN;	/* WDMA_SEL */
 	return 0;
 }
+
+static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
+	{DISP_MODULE_OVL0, 7},
+	{DISP_MODULE_OVL1, 8},
+	{DISP_MODULE_OVL0_2L, 19},
+	{DISP_MODULE_OVL1_2L, 20},
+	{DISP_MODULE_RDMA0, 9},
+	{DISP_MODULE_RDMA1, 10},
+	{DISP_MODULE_WDMA0, 11},
+	{DISP_MODULE_COLOR0, 12},
+	{DISP_MODULE_CCORR, 13},
+	{DISP_MODULE_AAL, 14},
+	{DISP_MODULE_GAMMA, 15},
+	{DISP_MODULE_DITHER, 16},
+	{DISP_MODULE_UFOE, -1},
+	{DISP_MODULE_PWM0, 18},
+	{DISP_MODULE_WDMA1, 17},
+	{DISP_MODULE_DSI0, -1},
+	{DISP_MODULE_DPI, -1},
+	{DISP_MODULE_SMI, -1},
+	{DISP_MODULE_CONFIG, -1},
+	{DISP_MODULE_CMDQ, -1},
+	{DISP_MODULE_MUTEX, -1},
+	{DISP_MODULE_COLOR1, -1},
+	{DISP_MODULE_RDMA2, -1},
+	{DISP_MODULE_PWM1, -1},
+	{DISP_MODULE_OD, -1},
+	{DISP_MODULE_MERGE, -1},
+	{DISP_MODULE_SPLIT0, -1},
+	{DISP_MODULE_SPLIT1, -1},
+	{DISP_MODULE_DSI1, -1},
+	{DISP_MODULE_DSIDUAL, -1},
+	{DISP_MODULE_SMI_LARB0, -1},
+	{DISP_MODULE_SMI_COMMON, -1},
+	{DISP_MODULE_OVL0_VIRTUAL, -1},
+	{DISP_MODULE_UNKNOWN, -1},
+};
+
+/* module can be connect if 1 */
+static module_map_t module_can_connect[DISP_MODULE_NUM] = {
+	{DISP_MODULE_OVL0, 1},
+	{DISP_MODULE_OVL1, 1},
+	{DISP_MODULE_OVL0_2L, 0},
+	{DISP_MODULE_OVL1_2L, 1},
+	{DISP_MODULE_RDMA0, 1},
+	{DISP_MODULE_RDMA1, 1},
+	{DISP_MODULE_WDMA0, 1},
+	{DISP_MODULE_COLOR0, 1},
+	{DISP_MODULE_CCORR, 1},
+	{DISP_MODULE_AAL, 1},
+	{DISP_MODULE_GAMMA, 1},
+	{DISP_MODULE_DITHER, 1},
+	{DISP_MODULE_UFOE, 1},
+	{DISP_MODULE_PWM0, 0},
+	{DISP_MODULE_WDMA1, 1},
+	{DISP_MODULE_DSI0, 1},
+	{DISP_MODULE_DPI, 1},
+	{DISP_MODULE_SMI, 0},
+	{DISP_MODULE_CONFIG, 0},
+	{DISP_MODULE_CMDQ, 0},
+	{DISP_MODULE_MUTEX, 0},
+	{DISP_MODULE_COLOR1, 0},
+	{DISP_MODULE_RDMA2, 0},
+	{DISP_MODULE_PWM1, 0},
+	{DISP_MODULE_OD, 0},
+	{DISP_MODULE_MERGE, 0},
+	{DISP_MODULE_SPLIT0, 0},
+	{DISP_MODULE_SPLIT1, 0},
+	{DISP_MODULE_DSI1, 0},
+	{DISP_MODULE_DSIDUAL, 0},
+	{DISP_MODULE_SMI_LARB0, 0},
+	{DISP_MODULE_SMI_COMMON, 0},
+	{DISP_MODULE_OVL0_VIRTUAL, 1},
+	{DISP_MODULE_UNKNOWN, 0},
+};
+
 
 
 char *ddp_get_scenario_name(DDP_SCENARIO_ENUM scenario)
@@ -116,8 +306,10 @@ char *ddp_get_scenario_name(DDP_SCENARIO_ENUM scenario)
 		return "primary_all";
 	case DDP_SCENARIO_SUB_ALL:
 		return "sub_all";
-	case DDP_SCENARIO_MULTIPLE_OVL:
-		return "multi_ovl";
+	case DDP_SCENARIO_DITHER_1TO2:
+		return "dither_1to2";
+	case DDP_SCENARIO_UFOE_1TO2:
+		return "ufoe_1to2";
 	default:
 		DDPMSG("invalid scenario id=%d\n", scenario);
 		return "unknown";
@@ -137,7 +329,8 @@ int ddp_is_scenario_on_primary(DDP_SCENARIO_ENUM scenario)
 	case DDP_SCENARIO_PRIMARY_DITHER_MEMOUT:
 	case DDP_SCENARIO_PRIMARY_UFOE_MEMOUT:
 	case DDP_SCENARIO_PRIMARY_ALL:
-	case DDP_SCENARIO_MULTIPLE_OVL:
+	case DDP_SCENARIO_DITHER_1TO2:
+	case DDP_SCENARIO_UFOE_1TO2:
 		on_primary = 1;
 		break;
 	case DDP_SCENARIO_SUB_DISP:
@@ -154,22 +347,16 @@ int ddp_is_scenario_on_primary(DDP_SCENARIO_ENUM scenario)
 
 }
 
-
-char *ddp_get_mutex_sof_name(MUTEX_SOF mode)
+char *ddp_get_mutex_sof_name(unsigned int regval)
 {
-	switch (mode) {
-	case SOF_SINGLE:
+	if (regval == SOF_VAL_MUTEX0_SOF_SINGLE_MODE)
 		return "single";
-	case SOF_DSI0:
+	else if (regval == SOF_VAL_MUTEX0_SOF_FROM_DSI0)
 		return "dsi0";
-	case SOF_DSI1:
-		return "dsi1";
-	case SOF_DPI0:
-		return "dpi0";
-	default:
-		DDPMSG("invalid sof =%d\n", mode);
-		return "unknown";
-	}
+	else if (regval == SOF_VAL_MUTEX0_SOF_FROM_DPI)
+		return "dpi";
+	DDPDUMP("%s, unknown reg=%d\n", __func__, regval);
+	return "unknown";
 }
 
 char *ddp_get_mode_name(DDP_MODE ddp_mode)
@@ -265,7 +452,8 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 						DDPDBG("connect out_s %s to %s, bits=0x%x\n",
 						       ddp_get_module_name(module_list[i]),
 						       ddp_get_module_name(module_list[step]), k);
-						DISP_REG_SET(handle, sel_out_map[j].reg, (uint16_t)k);
+						DISP_REG_SET(handle, sel_out_map[j].reg,
+							     (kal_uint16) k);
 						break;
 					}
 				}
@@ -276,6 +464,8 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 	for (i = 1; i < module_num; i++) {
 		for (j = 0; j < DDP_SEL_IN_NUM; j++) {
 			if (module_list[i] == sel_in_map[j].id) {
+				int found = 0;
+
 				step = i - 1;
 				/* find next module which can be connected */
 				while (module_can_connect[module_list[step]].bit == 0 && step > 0)
@@ -289,10 +479,15 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 						DDPDBG("connect in_s %s to %s, bits=0x%x\n",
 						       ddp_get_module_name(module_list[step]),
 						       ddp_get_module_name(module_list[i]), k);
-						DISP_REG_SET(handle, sel_in_map[j].reg, (uint16_t)k);
+						DISP_REG_SET(handle, sel_in_map[j].reg,
+							     (kal_uint16) k);
+						found = 1;
 						break;
 					}
 				}
+				if (!found)
+					pr_err("%s error: %s sel_in not set\n", __func__,
+						ddp_get_module_name(module_list[i]));
 			}
 		}
 	}
@@ -353,7 +548,6 @@ static void ddp_check_path_l(int *module_list)
 		for (j = 0; j < DDP_SEL_OUT_NUM; j++) {
 			if (module_list[i] != sel_out_map[j].id)
 				continue;
-
 			/* find next module which can be connected */
 			step = i + 1;
 			while (module_can_connect[module_list[step]].bit == 0
@@ -368,7 +562,7 @@ static void ddp_check_path_l(int *module_list)
 					if (DISP_REG_GET(sel_out_map[j].reg) != k) {
 						path_error += 1;
 						DDPDUMP
-						    ("error:out_s %s not connect to %s,expect=0x%x,real=0x%x\n",
+						    ("error:out_s %s not connect to %s, expect=0x%x, real=0x%x\n",
 						     ddp_get_module_name(module_list[i]),
 						     ddp_get_module_name(module_list[step]),
 						     k, DISP_REG_GET(sel_out_map[j].reg));
@@ -378,18 +572,15 @@ static void ddp_check_path_l(int *module_list)
 			}
 		}
 	}
-
 	/* check input select */
 	for (i = 1; i < module_num; i++) {
 		for (j = 0; j < DDP_SEL_IN_NUM; j++) {
 			if (module_list[i] != sel_in_map[j].id)
 				continue;
-
 			/* find next module which can be connected */
 			step = i - 1;
 			while (module_can_connect[module_list[step]].bit == 0 && step > 0)
 				step--;
-
 			ASSERT(step >= 0);
 			for (k = 0; k < 4; k++) {
 				if (sel_in_map[j].id_bit_map[k] == -1)
@@ -397,8 +588,7 @@ static void ddp_check_path_l(int *module_list)
 				if (sel_in_map[j].id_bit_map[k] == module_list[step]) {
 					if (DISP_REG_GET(sel_in_map[j].reg) != k) {
 						path_error += 1;
-						DDPDUMP
-						    ("error:in_s%s not connect to %s,expect=0x%x,real=0x%x\n",
+						DDPDUMP("error:in_s %s not conn to %s,expect0x%x,real0x%x\n",
 						     ddp_get_module_name(module_list[step]),
 						     ddp_get_module_name(module_list[i]), k,
 						     DISP_REG_GET(sel_in_map[j].reg));
@@ -464,54 +654,55 @@ static void ddp_disconnect_path_l(int *module_list, void *handle)
 	}
 }
 
-
-static MUTEX_SOF ddp_get_mutex_sof(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode)
+static int ddp_get_mutex_src(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode,
+			     unsigned int *SOF_src, unsigned int *EOF_src)
 {
-	MUTEX_SOF mode = SOF_SINGLE;
+	unsigned int src_from_dst_module = 0;
 
-	switch (dest_module) {
-	case DISP_MODULE_DSI0:
-		{
-			mode = (ddp_mode == DDP_VIDEO_MODE ? SOF_DSI0 : SOF_SINGLE);
-			break;
-		}
-	case DISP_MODULE_DSI1:
-		{
-			mode = (ddp_mode == DDP_VIDEO_MODE ? SOF_DSI1 : SOF_SINGLE);
-			break;
-		}
-	case DISP_MODULE_DSIDUAL:
-		{
-			mode = (ddp_mode == DDP_VIDEO_MODE ? SOF_DSI0 : SOF_SINGLE);
-			break;
-		}
-	case DISP_MODULE_DPI:
-		{
-			mode = SOF_DSI1;	/* SOF_DPI0;   has one DSI, so the DPI should use 1 for mutex_sof */
-			break;
-		}
-	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
-		mode = SOF_SINGLE;
-		break;
-	default:
+	if (dest_module == DISP_MODULE_WDMA0 || dest_module == DISP_MODULE_WDMA1) {
+
+		if (ddp_mode == DDP_VIDEO_MODE)
+			DISP_LOG_W("%s: dst_mode=%s, but is video mode !!\n", __func__,
+				   ddp_get_module_name(dest_module));
+
+		*SOF_src = *EOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
+		return 0;
+	}
+
+	if (dest_module == DISP_MODULE_DSI0) {
+		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DSI0;
+	} else if (dest_module == DISP_MODULE_DPI) {
+		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DPI;
+	} else {
 		DDPERR("get mutex sof, invalid param dst module = %s(%d), dis mode %s\n",
 		       ddp_get_module_name(dest_module), dest_module, ddp_get_mode_name(ddp_mode));
+		BUG();
 	}
-	DDPDBG("mutex sof: %s dst module %s:%s\n",
-	       ddp_get_mutex_sof_name(mode), ddp_get_module_name(dest_module),
-	       ddp_get_mode_name(ddp_mode));
-	return mode;
+
+	if (ddp_mode == DDP_CMD_MODE) {
+		*SOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
+		if (disp_helper_get_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE))
+			*EOF_src = src_from_dst_module;
+		else
+			*EOF_src = SOF_VAL_MUTEX0_EOF_SINGLE_MODE;
+
+	} else {
+		*SOF_src = *EOF_src = src_from_dst_module;
+	}
+
+	return 0;
 }
 
 /* id: mutex ID, 0~5 */
 static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, void *handle)
 {
 	int i = 0;
-	uint32_t value = 0;
+	unsigned int value = 0;
+	unsigned int sof_val;
+	unsigned int sof_src, eof_src;
 	int module_num = ddp_get_module_num_l(module_list);
-	MUTEX_SOF mode = ddp_get_mutex_sof(module_list[module_num - 1], ddp_mode);
 
+	ddp_get_mutex_src(module_list[module_num - 1], ddp_mode, &sof_src, &eof_src);
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
 		return -1;
@@ -527,40 +718,23 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 		}
 	}
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD(mutex_id), value);
-	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), mode);
 
-	/* for primary config thread, save more time for register config */
-	if (gEnableMutexRisingEdge == 1 && primary_display_is_video_mode() == 1 && mutex_id == 0) {
-		DISP_REG_SET_FIELD(handle, SOF_FLD_MUTEX0_SOF_TIMING, DISP_REG_CONFIG_MUTEX0_SOF,
-				   1);
-	}
+	sof_val = REG_FLD_VAL(SOF_FLD_MUTEX0_SOF, sof_src);
+	sof_val |= REG_FLD_VAL(SOF_FLD_MUTEX0_EOF, eof_src);
+	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), sof_val);
 
-	if (gEnableSWTrigger == 1 && primary_display_is_video_mode() == 1 && mutex_id == 0) {
-		/* set OVL0/OVL1 to separate mutex */
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD(DISP_OVL_SEPARATE_MUTEX_ID),
-			     value & ((1 << module_mutex_map[DISP_MODULE_OVL0].bit) |
-				      (1 << module_mutex_map[DISP_MODULE_OVL1].bit)));
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(DISP_OVL_SEPARATE_MUTEX_ID),
-			     SOF_SINGLE);
-		/* move OVL0/OVL1 out from primary path */
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD(mutex_id),
-			     value &
-			     (~
-			      ((1 << module_mutex_map[DISP_MODULE_OVL0].
-				bit) | (1 << module_mutex_map[DISP_MODULE_OVL1].bit))));
-	}
-
-	DDPDBG("mutex %d value=0x%x, sof=%s\n", mutex_id, value, ddp_get_mutex_sof_name(mode));
+	DDPDBG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
+	       value, ddp_get_mutex_sof_name(sof_src), ddp_get_mutex_sof_name(eof_src));
 	return 0;
 }
 
 static void ddp_check_mutex_l(int mutex_id, int *module_list, DDP_MODE ddp_mode)
 {
 	int i = 0;
-	uint32_t real_value = 0;
-	uint32_t expect_value = 0;
-	uint32_t real_sof = 0;
-	MUTEX_SOF expect_sof = SOF_SINGLE;
+	kal_uint32 real_value = 0;
+	kal_uint32 expect_value = 0;
+	unsigned int real_sof, real_eof, val;
+	unsigned int expect_sof, expect_eof;
 	int module_num = ddp_get_module_num_l(module_list);
 
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
@@ -572,41 +746,27 @@ static void ddp_check_mutex_l(int mutex_id, int *module_list, DDP_MODE ddp_mode)
 		if (module_mutex_map[module_list[i]].bit != -1)
 			expect_value |= (1 << module_mutex_map[module_list[i]].bit);
 	}
-	if (expect_value != real_value) {
+	if (expect_value != real_value)
 		DDPDUMP("error:mutex %d error: expect 0x%x, real 0x%x\n", mutex_id, expect_value,
 			real_value);
-	}
-	real_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(mutex_id));
-	expect_sof = ddp_get_mutex_sof(module_list[module_num - 1], ddp_mode);
-	if ((uint32_t) expect_sof != real_sof) {
+
+	val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(mutex_id));
+	real_sof = REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF, val);
+	real_eof = REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF, val);
+	ddp_get_mutex_src(module_list[module_num - 1], ddp_mode, &expect_sof, &expect_eof);
+	if (expect_sof != real_sof)
 		DDPDUMP("error:mutex %d sof error: expect %s, real %s\n", mutex_id,
-			ddp_get_mutex_sof_name(expect_sof),
-			ddp_get_mutex_sof_name((MUTEX_SOF) real_sof));
-	}
+			ddp_get_mutex_sof_name(expect_sof), ddp_get_mutex_sof_name(real_sof));
+	if (expect_eof != real_eof)
+		DDPDUMP("error:mutex %d eof error: expect %s, real %s\n", mutex_id,
+			ddp_get_mutex_sof_name(expect_eof), ddp_get_mutex_sof_name(real_eof));
+
 }
 
 static int ddp_mutex_enable_l(int mutex_idx, void *handle)
 {
 	DDPDBG("mutex %d enable\n", mutex_idx);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_EN(mutex_idx), 1);
-	return 0;
-}
-
-int ddp_mutex_hw_dcm_on(int mutex_idx, void *handle)
-{
-	if (gMutexFreeRun == 1 && primary_display_is_video_mode() == 0 && mutex_idx == 0)
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_HW_DCM, 1);
-
-	DDPDBG("mutex %d hw_dcm 0x%x\n", mutex_idx, DISP_REG_GET(DISP_REG_CONFIG_MUTEX_HW_DCM));
-	return 0;
-}
-
-int ddp_mutex_hw_dcm_off(int mutex_idx, void *handle)
-{
-	if (gMutexFreeRun == 1 && primary_display_is_video_mode() == 0 && mutex_idx == 0)
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_HW_DCM, 0);
-
-	DDPDBG("mutex %d hw_dcm 0x%x\n", mutex_idx, DISP_REG_GET(DISP_REG_CONFIG_MUTEX_HW_DCM));
 	return 0;
 }
 
@@ -623,7 +783,6 @@ static void ddp_print_scenario(DDP_SCENARIO_ENUM scenario)
 
 	for (i = 0; i < num; i++)
 		strcat(path, ddp_get_module_name(module_list_scenario[scenario][i]));
-
 	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
 }
 
@@ -634,6 +793,7 @@ static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENU
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return i;
+
 	}
 	DDPDBG("find module: can not find module %s on scenario %s\n", ddp_get_module_name(module),
 	       ddp_get_scenario_name(ddp_scenario));
@@ -674,7 +834,11 @@ int ddp_set_dst_module(DDP_SCENARIO_ENUM scenario, DISP_MODULE_ENUM dst_module)
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL)
 		ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, dst_module);
 	else if (scenario == DDP_SCENARIO_SUB_ALL)
-		ddp_set_dst_module(DDP_SCENARIO_SUB_DISP, dst_module);
+		ddp_set_dst_module(DDP_SCENARIO_SUB_RDMA1_DISP, dst_module);
+	else if (scenario == DDP_SCENARIO_DITHER_1TO2)
+		ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, dst_module);
+	else if (scenario == DDP_SCENARIO_UFOE_1TO2)
+		ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, dst_module);
 
 	ddp_print_scenario(scenario);
 	return 0;
@@ -688,9 +852,8 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
 
-	/* DDPMSG("ddp_get_dst_module, scneario=%s, dst_module=%s\n", */
-	/* ddp_get_scenario_name(ddp_scenario), */
-	/* ddp_get_module_name(module_name)); */
+	DDPMSG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
+	       ddp_get_scenario_name(ddp_scenario), ddp_get_module_name(module_name));
 
 	return module_name;
 }
@@ -707,8 +870,8 @@ int ddp_is_module_in_scenario(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM m
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return 1;
-	}
 
+	}
 	return 0;
 }
 
@@ -727,7 +890,7 @@ int ddp_insert_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM place,
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module) {
 			DDPERR("error: ddp_insert_module , module=%s is already in scenario %s!\n",
-				ddp_get_module_name(module), ddp_get_scenario_name(ddp_scenario));
+			       ddp_get_module_name(module), ddp_get_scenario_name(ddp_scenario));
 			return -1;
 		}
 	}
@@ -737,17 +900,15 @@ int ddp_insert_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM place,
 
 	for (i = DDP_ENING_NUM - 2; i >= idx; i--)
 		module_list_scenario[ddp_scenario][i + 1] = module_list_scenario[ddp_scenario][i];
-
 	module_list_scenario[ddp_scenario][idx] = module;
 
-	if (0) {
+	{
 		int *modules = ddp_get_scenario_list(ddp_scenario);
 		int module_num = ddp_get_module_num(ddp_scenario);
 
 		DDPMSG("after insert module, module list is:\n");
 		for (i = 0; i < module_num; i++)
 			DDPMSG("%s-", ddp_get_module_name(modules[i]));
-
 	}
 
 	return 0;
@@ -766,7 +927,6 @@ int ddp_remove_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 
 	for (i = idx; i < DDP_ENING_NUM - 1; i++)
 		module_list_scenario[ddp_scenario][i] = module_list_scenario[ddp_scenario][i + 1];
-
 	module_list_scenario[ddp_scenario][DDP_ENING_NUM - 1] = -1;
 
 	{
@@ -789,6 +949,12 @@ void ddp_connect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
+		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], handle);
 	} else {
 		ddp_connect_path_l(module_list_scenario[scenario], handle);
 	}
@@ -800,11 +966,17 @@ void ddp_disconnect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT],
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT],
 				      handle);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], handle);
+	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], handle);
 	} else {
 		ddp_disconnect_path_l(module_list_scenario[scenario], handle);
 	}
@@ -820,6 +992,12 @@ void ddp_check_path(DDP_SCENARIO_ENUM scenario)
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
 		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
 		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
+	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
+		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT]);
+	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
+		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
+		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT]);
 	} else {
 		ddp_check_path_l(module_list_scenario[scenario]);
 	}
@@ -835,7 +1013,6 @@ int ddp_mutex_set(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode, void 
 {
 	if (scenario < DDP_SCENARIO_MAX)
 		return ddp_mutex_set_l(mutex_id, module_list_scenario[scenario], mode, handle);
-
 	DDPERR("Invalid scenario %d when setting mutex\n", scenario);
 	return -1;
 }
@@ -844,10 +1021,6 @@ int ddp_mutex_Interrupt_enable(int mutex_id, void *handle)
 {
 
 	DDPDBG("mutex %d interrupt enable\n", mutex_id);
-
-	if (gEnableIRQ == 0 && mutex_id == 0)
-		return 0;
-
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0x1 << mutex_id, 0x1 << mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 1 << (mutex_id + DISP_MUTEX_TOTAL),
 		      0x1 << (mutex_id + DISP_MUTEX_TOTAL));
@@ -870,6 +1043,24 @@ int ddp_mutex_reset(int mutex_id, void *handle)
 
 	return 0;
 }
+
+int ddp_is_moudule_in_mutex(int mutex_id, DISP_MODULE_ENUM module)
+{
+	int ret = 0;
+	kal_uint32 real_value = 0;
+
+	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
+		DDPDUMP("error:check_moudule_in_mute fail:exceed mutex max (0 ~ %d)\n",
+			DISP_MUTEX_DDP_LAST);
+		return ret;
+	}
+	real_value = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutex_id));
+	if (1 == ((real_value >> module_mutex_map[module].bit) & 0x01))
+		ret = 1;
+
+	return ret;
+}
+
 
 int ddp_mutex_add_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 {
@@ -925,6 +1116,18 @@ int ddp_mutex_disenable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
 	return 0;
 }
 
+int ddp_mutex_set_sof_wait(int mutex_id, cmdqRecHandle handle, int wait)
+{
+	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
+		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
+		return -1;
+	}
+
+	DISP_REG_SET_FIELD(handle, SOF_FLD_MUTEX0_SOF_WAIT, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), wait);
+	return 0;
+}
+
+
 int ddp_check_engine_status(int mutexID)
 {
 	/* check engines' clock bit &  enable bit & status bit before unlock mutex */
@@ -936,17 +1139,17 @@ int ddp_check_engine_status(int mutexID)
 int ddp_path_top_clock_on(void)
 {
 #ifdef ENABLE_CLK_MGR
+	DDPMSG("ddp path top clock on\n");
 #ifdef CONFIG_MTK_CLKMGR
-	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
-	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP"); */
+	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
+	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 #else
-	disp_clk_enable(DISP_MTCMOS_CLK);
-	disp_clk_enable(DISP0_SMI_COMMON);
-	disp_clk_enable(DISP0_SMI_LARB0);
-	/*disp_clk_enable(DISP0_MUTEX_32K); */
+	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+	ddp_clk_enable(DISP0_SMI_COMMON);
+	ddp_clk_enable(DISP0_SMI_LARB0);
 #endif
-	DDPMSG("ddp path top clock on CG:%08x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
+	DDPMSG("ddp CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
 	return 0;
 }
@@ -954,97 +1157,45 @@ int ddp_path_top_clock_on(void)
 int ddp_path_top_clock_off(void)
 {
 #ifdef ENABLE_CLK_MGR
-	DDPMSG("ddp path top clock off\n");
 #ifdef CONFIG_MTK_CLKMGR
+	DDPMSG("ddp path top clock off\n");
 	if (clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON)) {
 		DDPMSG("clear SMI_LARB0 & SMI_COMMON forced on\n");
 		clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
 		clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
 	}
-#endif
-#ifdef CONFIG_MTK_CLKMGR
-	/* disable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP"); */
-	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
+	/* disable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
+	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
+	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 #else
-	/*disp_clk_disable(DISP0_MUTEX_32K); */
-	disp_clk_disable(DISP0_SMI_LARB0);
-	disp_clk_disable(DISP0_SMI_COMMON);
-	disp_clk_disable(DISP_MTCMOS_CLK);
+	ddp_clk_disable(DISP0_SMI_LARB0);
+	ddp_clk_disable(DISP0_SMI_COMMON);
+	ddp_clk_unprepare_disable(DISP_MTCMOS_CLK);
 #endif
 #endif
 	return 0;
-}
-
-int ddp_path_lp_top_clock_on(void)
-{
-#ifdef ENABLE_CLK_MGR
-#ifdef CONFIG_MTK_CLKMGR
-	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
-	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-#else
-	disp_clk_enable(DISP_MTCMOS_CLK);
-	disp_clk_enable(DISP0_SMI_COMMON);
-	disp_clk_enable(DISP0_SMI_LARB0);
-#endif
-#endif
-	return 0;
-}
-
-int ddp_path_lp_top_clock_off(void)
-{
-#ifdef ENABLE_CLK_MGR
-#ifdef CONFIG_MTK_CLKMGR
-	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
-#else
-	disp_clk_disable(DISP0_SMI_LARB0);
-	disp_clk_disable(DISP0_SMI_COMMON);
-	disp_clk_disable(DISP_MTCMOS_CLK);
-#endif
-#endif
-	return 0;
-}
-
-/* should remove */
-
-int ddp_insert_config_allow_rec(void *handle)
-{
-	int ret = 0;
-
-	if (handle == NULL)
-		ASSERT(0);
-
-	if (primary_display_is_video_mode()) {
-		if (gEnableMutexRisingEdge == 1)
-			ret = cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
-		else
-			ret = cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	} else {
-		ret = cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
-	}
-
-	return ret;
-}
-
-int ddp_insert_config_dirty_rec(void *handle)
-{
-	int ret = 0;
-
-	if (handle == NULL)
-		ASSERT(0);
-
-	if (primary_display_is_video_mode())
-		/* TODO: modify this */
-	{
-		/* do nothing */
-	} else {
-		ret = cmdqRecSetEventToken(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
-	}
-	return ret;
 }
 
 int disp_get_dst_module(DDP_SCENARIO_ENUM scenario)
 {
 	return ddp_get_dst_module(scenario);
 }
+
+int ddp_convert_ovl_input_to_rdma(RDMA_CONFIG_STRUCT *rdma_cfg, OVL_CONFIG_STRUCT *ovl_cfg,
+					int dst_w, int dst_h)
+{
+	rdma_cfg->dst_y = ovl_cfg->dst_y;
+	rdma_cfg->dst_x = ovl_cfg->dst_x;
+	rdma_cfg->dst_h = dst_h;
+	rdma_cfg->dst_w = dst_w;
+	rdma_cfg->inputFormat = ovl_cfg->fmt;
+	rdma_cfg->address = ovl_cfg->addr;
+	rdma_cfg->pitch = ovl_cfg->src_pitch;
+	rdma_cfg->width = ovl_cfg->dst_w;
+	rdma_cfg->height = ovl_cfg->dst_h;
+	rdma_cfg->security = ovl_cfg->security;
+	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
+	return 0;
+}
+
+

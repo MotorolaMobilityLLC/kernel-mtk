@@ -1,72 +1,10 @@
-/*
- * File: drivers/video/omap_new/debug.c
- *
- * Debug support for the omapfb driver
- *
- * Copyright (C) 2004 Nokia Corporation
- * Author: Imre Deak <imre.deak@nokia.com>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program.
- */
-
 #ifndef __MTKFB_DEBUG_H
 #define __MTKFB_DEBUG_H
 
 void DBG_Init(void);
 void DBG_Deinit(void);
 
-void DBG_OnTriggerLcd(void);
-void DBG_OnTeDelayDone(void);
-void DBG_OnLcdDone(void);
-
-#include "mmprofile.h"
-extern struct MTKFB_MMP_Events_t {
-	MMP_Event MTKFB;
-	MMP_Event CreateSyncTimeline;
-	MMP_Event PanDisplay;
-	MMP_Event SetOverlayLayer;
-	MMP_Event SetOverlayLayers;
-	MMP_Event SetMultipleLayers;
-	MMP_Event CreateSyncFence;
-	MMP_Event IncSyncTimeline;
-	MMP_Event SignalSyncFence;
-	MMP_Event TrigOverlayOut;
-	MMP_Event UpdateScreenImpl;
-	MMP_Event VSync;
-	MMP_Event UpdateConfig;
-	MMP_Event ConfigOVL;
-	MMP_Event ConfigAAL;
-	MMP_Event ConfigMemOut;
-	MMP_Event ScreenUpdate;
-	MMP_Event CaptureFramebuffer;
-	MMP_Event RegUpdate;
-	MMP_Event EarlySuspend;
-	MMP_Event DispDone;
-	MMP_Event DSICmd;
-	MMP_Event DSIIRQ;
-	MMP_Event EsdCheck;
-	MMP_Event WaitVSync;
-	MMP_Event LayerDump;
-	MMP_Event Layer[4];
-	MMP_Event OvlDump;
-	MMP_Event FBDump;
-	MMP_Event DSIRead;
-	MMP_Event GetLayerInfo;
-	MMP_Event LayerInfo[4];
-	MMP_Event IOCtrl;
-	MMP_Event Debug;
-} MTKFB_MMP_Events;
+#include <linux/mmprofile.h>
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
@@ -94,10 +32,10 @@ static inline void dbg_print(int level, const char *fmt, ...)
 			if (ind > MAX_DBG_INDENT_LEVEL)
 				ind = MAX_DBG_INDENT_LEVEL;
 
-			pr_info("DISP/DBG " "%*s", ind * DBG_INDENT_SIZE, "");
+			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "%*s", ind * DBG_INDENT_SIZE, "");
 			va_start(args, fmt);
 			vsnprintf(dbg_buf, sizeof(dbg_buf), fmt, args);
-			pr_info("DISP/DBG " dbg_buf);
+			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", dbg_buf);
 			va_end(args);
 			spin_unlock_irqrestore(&dbg_spinlock, flags);
 		}
@@ -106,14 +44,14 @@ static inline void dbg_print(int level, const char *fmt, ...)
 
 #define DBGPRINT	dbg_print
 
-#define DBGENTER(level)	do {					\
-		dbg_print(level, "%s: Enter\n", __func__);	\
-		dbg_indent++;					\
+#define DBGENTER(level)	do { \
+		dbg_print(level, "%s: Enter\n", __func__); \
+		dbg_indent++; \
 	} while (0)
 
-#define DBGLEAVE(level)	do {					\
-		dbg_indent--;					\
-		dbg_print(level, "%s: Leave\n", __func__);	\
+#define DBGLEAVE(level)	do { \
+		dbg_indent--; \
+		dbg_print(level, "%s: Leave\n", __func__); \
 	} while (0)
 
 /* Debug Macros */
@@ -125,10 +63,11 @@ static inline void dbg_print(int level, const char *fmt, ...)
 
 #define MTKFB_DBG_EVT_MASK    (MTKFB_DBG_EVT_NONE)
 
-#define MSG(evt, fmt, args...)					\
-	do {							\
-		if ((MTKFB_DBG_EVT_##evt) & MTKFB_DBG_EVT_MASK)	\
-			pr_info("DISP/DBG " fmt, ##args);	\
+#define MSG(evt, fmt, args...)                              \
+	do {                                                    \
+		if ((MTKFB_DBG_EVT_##evt) & MTKFB_DBG_EVT_MASK) {   \
+			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", fmt, ##args);                            \
+		}                                                   \
 	} while (0)
 
 #define MSG_FUNC_ENTER(f)   MSG(FUNC, "<FB_ENTER>: %s\n", __func__)
@@ -146,14 +85,15 @@ static inline void dbg_print(int level, const char *fmt, ...)
 #define MSG(evt, fmt, args...)
 #define MSG_FUNC_ENTER()
 #define MSG_FUNC_LEAVE()
-void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
+void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned int h,
 		    unsigned int linepitch, unsigned int color, unsigned int layerid,
 		    unsigned int bufidx);
-void _debug_fps_meter(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
-		      unsigned int linepitch, unsigned int color, unsigned int layerid,
-		      unsigned int bufidx);
 
-bool get_ovl1_to_mem_on(void);
+/* defined in mtkfb.c */
+extern unsigned int mtkfb_fm_auto_test(void);
+extern int pan_display_test(int frame_num, int bpp);
+extern int mtkfb_get_debug_state(char *stringbuf, int buf_len);
+
 
 #endif				/* MTKFB_DBG */
 

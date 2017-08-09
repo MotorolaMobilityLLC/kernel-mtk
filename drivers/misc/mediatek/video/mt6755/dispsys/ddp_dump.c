@@ -1,151 +1,167 @@
 #define LOG_TAG "dump"
 
-#include "disp_drv_platform.h"
-#include "ddp_irq.h"
 #include "ddp_reg.h"
 #include "ddp_log.h"
 #include "ddp_dump.h"
 #include "ddp_ovl.h"
 #include "ddp_wdma.h"
 #include "ddp_rdma.h"
-
-#if defined(MTK_FB_SODI_SUPPORT)
-#include "mt_spm.h"
-#endif
-
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#endif
-
-#include "disp_assert_layer.h"
+#include "ddp_dsi.h"
 
 static char *ddp_signal_0(int bit)
 {
 	switch (bit) {
 	case 31:
-		return "dpi0_sel_mm_dpi0          ";
+		return "dpi0_sel_mm_dpi0";
 	case 30:
-		return "dis0_sel_mm_dsi0          ";
+		return "dis0_sel_mm_dsi0";
 	case 29:
-		return "rdma1_sout1_mm_dpi0_sin2  ";
+		return "rdma1_sout1_mm_dpi0_sin2";
 	case 28:
-		return "rdma1_sout0_mm_dsi0_sin2  ";
+		return "rdma1_sout0_mm_dsi0_sin2";
 	case 27:
-		return "rdma1_mm_rdma1_sout       ";
-	case 26:
-		return "ovl1_mout2_mm_ovl0        ";
+		return "rdma1_mm_rdma1_sout";
+		/* case 26: return "bit26-unused"; */
 	case 25:
-		return "ovl1_mout1_mm_wdma1       ";
+		return "ovl1_mout1_wdma1";
 	case 24:
-		return "ovl1_mout0_mm_rdma1       ";
+		return "ovl1_mout0_rdma1";
 	case 23:
-		return "ovl1_mm_ovl1_mout         ";
+		return "ovl1_mm_ovl1_mout";
 	case 22:
-		return "wdma0_sel_mm_wdma0        ";
+		return "wdma0_sel_wdma0";
 	case 21:
-		return "ufoe_mout2_mm_wdma0_sin2  ";
+		return "ufoe_mout2_wdma0_sin2";
 	case 20:
-		return "ufoe_mout1_mm_dpi0_sin0   ";
+		return "ufoe_mout1_dpi0_sin0";
 	case 19:
-		return "ufoe_mout0_mm_dsi0_sin0   ";
+		return "ufoe_mout0_dsi0_sin0";
 	case 18:
-		return "ufoe_mm_ufoe_mout         ";
+		return "ufoe_mm_ufoe_mout";
 	case 17:
-		return "ufoe_sel_mm_ufoe          ";
+		return "ufoe_sel_mm_ufoe";
 	case 16:
-		return "rdma0_sout3_mm_dpi0_sin1  ";
+		return "rdma0_sout3_dpi0_sin1";
 	case 15:
-		return "rdma0_sout2_mm_dsi0_sin1  ";
+		return "rdma0_sout2_dsi0_sin1";
 	case 14:
-		return "rdma0_sout1_mm_color_sin0 ";
+		return "rdma0_sout1_color_sin0";
 	case 13:
-		return "rdma0_sout0_mm_ufoe_sin0  ";
+		return "rdma0_sout0_ufoe_sin0";
 	case 12:
-		return "rdma0_mm_rdma0_sout       ";
+		return "rdma0_mm_rdma0_sout";
 	case 11:
-		return "dither_mout2_mm_wdma0_sin1";
+		return "dither_mout2_wdma0_sin1";
 	case 10:
-		return "dither_mout1_mm_ufoe_sin1 ";
+		return "dither_mout1_ufoe_sin1";
 	case 9:
-		return "dither_mout0_mm_rdma0     ";
+		return "dither_mout0_rdma0";
 	case 8:
-		return "dither_mm_dither_mout     ";
-	case 7:
-		return "gamma_mm_dither           ";
+		return "dither_mm_dither_mout";
+		/* case 7:  return "bit7-unused"; */
 	case 6:
-		return "aal_mm_gamma              ";
+		return "aal_mm_gamma";
 	case 5:
-		return "ccorr_mm_aal              ";
+		return "ccorr_mm_aal";
 	case 4:
-		return "color_mm_ccorr            ";
+		return "color_mm_ccorr";
 	case 3:
-		return "color_sel_mm_color        ";
+		return "color_sel_mm_color";
 	case 2:
-		return "ovl0_mout1_mm_wdma0_sin0  ";
+		return "ovl0_mout1_wdma0_sin0";
 	case 1:
-		return "ovl0_mout0_mm_color_sin1  ";
-	case 0:
-		return "ovl0_mm_ovl0_mout         ";
+		return "ovl0_mout0_color_sin1";
+		/* case 0:  return "bit0-unused"; */
 	default:
-		DDPERR("ddp_signal_0, unknown bit=%d\n", bit);
-		return "unknown";
+		return NULL;
 	}
 }
 
-/* 1 means SMI dose not grant, maybe SMI hang */
-static int ddp_greq_check(int reg_val)
+static char *ddp_signal_1(int bit)
 {
-	if (reg_val & 0x3f)
-		DDPMSG("smi greq not grant module: ");
-	else
-		return 0;
+	switch (bit) {
+	case 15:
+		return "ovl0_sel_ovl0_mout";
+	case 14:
+		return "ovl1_mout2_ovl0_sel";
+	case 13:
+		return "ovl1_sout1_ovl0_sel";
+	case 12:
+		return "ovl1_sout0_ovl1_4L";
+	case 11:
+		return "ovl1_2L_OVL1_sout";
+	case 10:
+		return "ovl0_sout1_ovl1_2L";
+	case 9:
+		return "ovl0_sout0_ovl0_sel";
+	case 8:
+		return "ovl0_ovl0_sout";
+	default:
+		return NULL;
+	}
+}
 
-	if (reg_val & 0x1)
-		pr_debug("disp_wdma1, ");
-	if (reg_val & 0x1)
-		pr_debug("disp_rdma1, ");
-	if (reg_val & 0x1)
-		pr_debug("disp_ovl1, ");
-	if (reg_val & 0x1)
-		pr_debug("disp_wdma0, ");
-	if (reg_val & 0x1)
-		pr_debug("disp_rdma0, ");
-	if (reg_val & 0x1)
-		pr_debug("disp_ovl0, ");
-	pr_debug("\n");
-
-	return 0;
+static char *ddp_greq_name(int bit)
+{
+	switch (bit) {
+	case 10:
+		return "mdp_wrot";
+	case 9:
+		return "mdp_wdma";
+	case 8:
+		return "mdp_rdma";
+	case 7:
+		return "ovl1_2L";
+	case 6:
+		return "ovl0_2L";
+	case 5:
+		return "wdma1";
+	case 4:
+		return "rdma1";
+	case 3:
+		return "ovl1";
+	case 2:
+		return "wdma0";
+	case 1:
+		return "rdma0";
+	case 0:
+		return "ovl0";
+	default:
+		return NULL;
+	}
 }
 
 static char *ddp_get_mutex_module_name(unsigned int bit)
 {
 	switch (bit) {
-	case 6:
-		return "ovl0";
 	case 7:
-		return "ovl1";
+		return "ovl0";
 	case 8:
-		return "rdma0";
+		return "ovl1";
 	case 9:
-		return "rdma1";
+		return "rdma0";
 	case 10:
-		return "wdma0";
+		return "rdma1";
 	case 11:
-		return "color0";
+		return "wdma0";
 	case 12:
-		return "ccorr";
+		return "color0";
 	case 13:
-		return "aal";
+		return "ccorr";
 	case 14:
-		return "gamma";
+		return "aal";
 	case 15:
-		return "dither";
+		return "gamma";
 	case 16:
-		return "ufoe";
+		return "dither";
 	case 17:
-		return "pwm0";
-	case 18:
 		return "wdma1";
+	case 18:
+		return "pwm0";
+	case 19:
+		return "ovl0_2l";
+	case 20:
+		return "ovl1_2l";
 	default:
 		return "mutex-unknown";
 	}
@@ -153,7 +169,7 @@ static char *ddp_get_mutex_module_name(unsigned int bit)
 
 char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt)
 {
-	if (module == DISP_MODULE_WDMA0 || module == DISP_MODULE_WDMA1) {
+	if (module == DISP_MODULE_WDMA0) {
 		switch (fmt) {
 		case 0:
 			return "rgb565";
@@ -177,7 +193,7 @@ char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt)
 			DDPDUMP("ddp_get_fmt_name, unknown fmt=%d, module=%d\n", fmt, module);
 			return "unknown";
 		}
-	} else if (module == DISP_MODULE_OVL0 || module == DISP_MODULE_OVL1) {
+	} else if (module == DISP_MODULE_OVL0) {
 		switch (fmt) {
 		case 0:
 			return "rgb565";
@@ -196,7 +212,6 @@ char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt)
 			return "unknown";
 		}
 	} else if (module == DISP_MODULE_RDMA0 || module == DISP_MODULE_RDMA1 || module == DISP_MODULE_RDMA2) {
-		/* todo: confirm with designers */
 		switch (fmt) {
 		case 0:
 			return "rgb565";
@@ -210,20 +225,6 @@ char *ddp_get_fmt_name(DISP_MODULE_ENUM module, unsigned int fmt)
 			return "uyvy";
 		case 5:
 			return "yuyv";
-		default:
-			DDPDUMP("ddp_get_fmt_name, unknown fmt=%d, module=%d\n", fmt, module);
-			return "unknown";
-		}
-	} else if (module == DISP_MODULE_MUTEX) {
-		switch (fmt) {
-		case 0:
-			return "single";
-		case 1:
-			return "dsi0_vdo";
-		case 2:
-			return "dsi1_vdo";
-		case 3:
-			return "dpi";
 		default:
 			DDPDUMP("ddp_get_fmt_name, unknown fmt=%d, module=%d\n", fmt, module);
 			return "unknown";
@@ -262,16 +263,18 @@ static char *ddp_clock_0(int bit)
 		return "gamma, ";
 	case 19:
 		return "dither, ";
-	case 20:
-		return "ufoe, ";
 	case 21:
-		return "larb4_mm, ";
+		return "ufoe_mout, ";
 	case 22:
-		return "larb4_mjc, ";
-	case 23:
 		return "wdma1, ";
+	case 23:
+		return "ovl0_2L, ";
+	case 24:
+		return "ovl1_2L, ";
+	case 25:
+		return "ovl0_mout, ";
 	default:
-		return "";
+		return NULL;
 	}
 }
 
@@ -279,19 +282,15 @@ static char *ddp_clock_1(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "disp_pwm_mm, ";
-	case 1:
-		return "disp_pwm_26m, ";
-	case 2:
 		return "dsi_engine, ";
-	case 3:
+	case 1:
 		return "dsi_digital, ";
-	case 4:
+	case 2:
 		return "dpi_pixel, ";
-	case 5:
+	case 3:
 		return "dpi_engine, ";
 	default:
-		return "";
+		return NULL;
 	}
 }
 
@@ -300,7 +299,6 @@ static void mutex_dump_reg(void)
 	DDPDUMP("==DISP MUTEX REGS==\n");
 	DDPDUMP("(0x000)M_INTEN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTEN));
 	DDPDUMP("(0x004)M_INTSTA  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA));
-	DDPDUMP("(0x008)M_HW_DCM  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_HW_DCM));
 	DDPDUMP("(0x020)M0_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX0_EN));
 	DDPDUMP("(0x028)M0_RST    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX0_RST));
 	DDPDUMP("(0x02c)M0_MOD    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX0_MOD));
@@ -328,6 +326,7 @@ static void mutex_dump_reg(void)
 	DDPDUMP("(0x200)DEBUG_OUT_SEL =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DEBUG_OUT_SEL));
 }
 
+
 static void mutex_dump_analysis(void)
 {
 	int i = 0;
@@ -335,58 +334,55 @@ static void mutex_dump_analysis(void)
 	char mutex_module[512] = { '\0' };
 	char *p = NULL;
 	int len = 0;
+	unsigned int val;
 
 	DDPDUMP("==DISP Mutex Analysis==\n");
 	for (i = 0; i < 5; i++) {
 		p = mutex_module;
 		len = 0;
-		if (DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i)) != 0 &&
-		    ((DISP_REG_GET(DISP_REG_CONFIG_MUTEX_EN(i) + 0x20 * i) == 1 &&
-		      DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(i) + 0x20 * i) != SOF_SINGLE) ||
-		     DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(i) + 0x20 * i) == SOF_SINGLE)) {
-			len =
-			    sprintf(p, "MUTEX%d :mode=%s,module=(", i,
-				    ddp_get_fmt_name(DISP_MODULE_MUTEX,
-						     DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(i))));
-			p += len;
-			for (j = 6; j <= 18; j++) {
-				if ((DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i)) >> j) & 0x1) {
-					len = sprintf(p, "%s,", ddp_get_mutex_module_name(j));
-					p += len;
-				}
+		if (DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i)) == 0)
+			continue;
+
+		val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(i));
+		len = sprintf(p, "MUTEX%d :SOF=%s,EOF=%s,WAIT=%d,module=(", i,
+				ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF, val)),
+				ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF, val)),
+				REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF_WAIT, val));
+
+		p += len;
+		unsigned int regval = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i));
+
+		for (j = 0; j < 32; j++) {
+			if ((regval & (1 << j))) {
+				len = sprintf(p, "%s,", ddp_get_mutex_module_name(j));
+				p += len;
 			}
-			DDPDUMP("%s)\n", mutex_module);
-			DDPDUMP("irq cnt: start=%d, end=%d\n", mutex_start_irq_cnt,
-				mutex_done_irq_cnt);
 		}
+		DDPDUMP("%s)\n", mutex_module);
 	}
 }
 
 static void mmsys_config_dump_reg(void)
 {
-#if defined(MTK_FB_SODI_SUPPORT)
-	unsigned int i = 0;
-#endif
-
 	DDPMSG("== DISP Config  ==\n");
-	DDPMSG("(0x0 )MMSYS_INTEN      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTEN));
-	DDPMSG("(0x4 )MMSYS_INTSTA     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA));
-	DDPMSG("(0x30)OVL0_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_MOUT_EN));
-#if defined(MTK_FB_OVL1_SUPPORT)
-	DDPMSG("(0x34)OVL1_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_MOUT_EN));
-#endif
-	DDPMSG("(0x38)DITHER_MOUT_EN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER_MOUT_EN));
-	DDPMSG("(0x3C)UFOE_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_MOUT_EN));
-	DDPMSG("(0x40)MMSYS_MOUT_RST   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MOUT_RST));
-	DDPMSG("(0x58)COLOR0_SIN       =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_COLOR0_SEL_IN));
-	DDPMSG("(0x5C)WDMA0_SIN        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA0_SEL_IN));
-	DDPMSG("(0x60)UFOE_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
-	DDPMSG("(0x64)DSI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
-	DDPMSG("(0x68)DPI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
-	DDPMSG("(0x6C)RDMA0_SOUT_SIN   =0x%x\n",
-	       DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN));
-	DDPMSG("(0x70)RDMA1_SOUT_SIN   =0x%x\n",
-	       DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN));
+	DDPMSG("MMSYS_INTEN      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTEN));
+	DDPMSG("MMSYS_INTSTA     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA));
+	DDPMSG("OVL0_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_MOUT_EN));
+	DDPMSG("OVL1_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_MOUT_EN));
+	DDPMSG("DITHER_MOUT_EN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER_MOUT_EN));
+	DDPMSG("UFOE_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_MOUT_EN));
+	DDPMSG("MMSYS_MOUT_RST   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MOUT_RST));
+	DDPMSG("COLOR0_SIN       =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_COLOR0_SEL_IN));
+	DDPMSG("WDMA0_SIN        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA0_SEL_IN));
+	DDPMSG("UFOE_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
+	DDPMSG("DSI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
+	DDPMSG("DPI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
+	DDPMSG("OVL0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_SEL_IN));
+	DDPMSG("RDMA0_SOUT_SIN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN));
+	DDPMSG("RDMA1_SOUT_SIN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN));
+	DDPMSG("OVL0_SOUT_SIN    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN));
+	DDPMSG("OVL1_SOUT_SIN    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_SOUT_SEL_IN));
+
 	DDPMSG("(0x0F0)MM_MISC         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MISC));
 	DDPMSG("(0x100)MM_CG_CON0      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	DDPMSG("(0x110)MM_CG_CON1      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
@@ -395,20 +391,14 @@ static void mmsys_config_dump_reg(void)
 	DDPMSG("(0x144)MM_SW1_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW1_RST_B));
 	DDPMSG("(0x150)MM_LCM_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_LCM_RST_B));
 	DDPMSG("(0x880)MM_DBG_OUT_SEL  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL));
-	DDPMSG("(0x890)MM_DUMMY        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY));
+	DDPMSG("(0x890)MM_DUMMY0        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY0));
+	DDPMSG("(0x894)MM_DUMMY1        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY1));
+	DDPMSG("(0x898)MM_DUMMY2        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY2));
+	DDPMSG("(0x89C)MM_DUMMY3        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY3));
 	DDPMSG("(0x8a0)DISP_VALID_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
+	DDPMSG("(0x8a4)DISP_VALID_1    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1));
 	DDPMSG("(0x8a8)DISP_READY_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
-	DDPMSG("(0xc08)C08             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C08));
-	DDPMSG("(0x40 )C09             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C09));
-	DDPMSG("(0x44 )C10             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C10));
-
-#if defined(MTK_FB_SODI_SUPPORT)
-	DDPMSG("==DISP SPM REGS==\n");
-	for (i = 0; i < 4 * 16; i += 16)
-		DDPMSG("SPM_PCM_DATA+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-		       INREG32(SPM_PCM_REG0_DATA + i), INREG32(SPM_PCM_REG0_DATA + i + 0x4),
-		       INREG32(SPM_PCM_REG0_DATA + i + 0x8), INREG32(SPM_PCM_REG0_DATA + i + 0xc));
-#endif
+	DDPMSG("(0x8aC)DISP_READY_1    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1));
 }
 
 /* ------ clock:
@@ -437,129 +427,102 @@ static void mmsys_config_dump_analysis(void)
 	unsigned int reg = 0;
 	char clock_on[512] = { '\0' };
 	char *pos = NULL;
+	char *name;
 	int len = 0;
-	unsigned int valid0, valid1, ready0, ready1, greq;
 
-	pr_debug("==DISP MMSYS_CONFIG ANALYSIS==\n");
-	pr_debug("[ddp] mmsys_clock=0x%x\n", DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK));
-#ifdef CONFIG_MTK_CLKMGR
-	pr_debug("larb0_force_on=%d, smi_common_force_on=%d\n",
-		 clk_is_force_on(MT_CG_DISP0_SMI_LARB0), clk_is_force_on(MT_CG_DISP0_SMI_COMMON));
-#endif
+	unsigned int valid0 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0);
+	unsigned int valid1 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1);
+	unsigned int ready0 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0);
+	unsigned int ready1 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1);
+	unsigned int greq = DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB0_GREQ);
 
-	if ((DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK) >> 31) & 0x1) {
-		DDPERR("mmsys clock abnormal!!\n");
-		return;
-	}
-
+	DDPDUMP("==DISP MMSYS_CONFIG ANALYSIS==\n");
 	DDPDUMP("mmsys clock=0x%x, CG_CON0=0x%x, CG_CON1=0x%x\n",
 		DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK),
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
-#if 0
-	DDPDUMP("PLL clock=0x%x\n", DISP_REG_GET(DISP_REG_VENCPLL_CON0));
-	if (!(DISP_REG_GET(DISP_REG_VENCPLL_CON0) & 0x1))
-		DDPERR("PLL clock abnormal!!\n");
+	if ((DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK) >> 31) & 0x1)
+		DDPERR("mmsys clock abnormal!!\n");
 
-#endif
 	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
+	for (i = 0; i < 32; i++) {
+		if ((reg & (1 << i)) == 0) {
+			name = ddp_clock_0(i);
+			if (name)
+				strncat(clock_on, name, sizeof(clock_on));
+		}
+	}
 
-	for (i = 0; i <= 1; i++) {
-		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_0(i));
-	}
-	for (i = 10; i <= 31; i++) {
-		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_0(i));
-	}
 	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1);
-	for (i = 0; i <= 5; i++) {
-		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_1(i));
+	for (i = 0; i < 32; i++) {
+		if ((reg & (1 << i)) == 0) {
+			name = ddp_clock_1(i);
+			if (name)
+				strncat(clock_on, name, sizeof(clock_on));
+		}
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
 
-	DDPDUMP("clock_ef setting:%u,%u\n",
-		DISP_REG_GET(DISP_REG_CONFIG_C09), DISP_REG_GET(DISP_REG_CONFIG_C10));
-#if 0
-	DDPDUMP("clock_mm setting:%u\n", DISP_REG_GET(DISP_REG_CONFIG_C11));
-	if (DISP_REG_GET(DISP_REG_CONFIG_C11) & 0xff000000 != 0xff000000) {
-		DDPDUMP("error, MM clock bit 24~bit31 should be 1, but real value=0x%x",
-			DISP_REG_GET(DISP_REG_CONFIG_C11));
-	}
-#endif
-
-	if (((DISP_REG_GET(DISP_REG_CONFIG_C09) >> 7) & 0x7) == 5 &&
-	    ((DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0) & 0xfff) > 1200 ||
-	     (DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1) & 0xfffff) > 1920)) {
-		DDPERR("check clock1 setting error:(120,192),(%d, %d)\n",
-		       DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0) & 0xfff,
-		       DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1) & 0xfffff);
-	} else if (((DISP_REG_GET(DISP_REG_CONFIG_C09) >> 8) & 0x3) == 3 &&
-		   ((DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0) & 0xfff) > 800 ||
-		    (DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1) & 0xfffff) > 1280)) {
-		DDPERR("check clock1 setting error:(80,128),(%d, %d)\n",
-		       DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0) & 0xfff,
-		       DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1) & 0xfffff);
-	}
-	if (((DISP_REG_GET(DISP_REG_CONFIG_C10) >> 7) & 0x7) == 5 &&
-	    ((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) & 0xfff) > 1200 ||
-	     ((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) >> 16) & 0xfff) > 1920)) {
-		DDPERR("check clock2 setting error:(120,192),(%d, %d)\n",
-		       DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) & 0xfff,
-		       (DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) >> 16) &
-		       0xfff);
-	} else if (((DISP_REG_GET(DISP_REG_CONFIG_C10) >> 8) & 0x3) == 3 &&
-		   ((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) & 0xfff) > 800 ||
-		   ((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) >> 16) & 0xfff) > 1280)) {
-		DDPERR("check clock2 setting error:(80,128),(%d, %d)\n",
-		       DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) & 0xfff,
-		       (DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + DISP_OVL_INDEX_OFFSET * 1) >> 16) & 0xfff);
-	}
-
-
-	valid0 = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a0);
-	valid1 = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a4);
-	ready0 = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a8);
-	ready1 = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8ac);
-	greq = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8d0);
-	for (i = 0; i < 5; i++) {
-		DDPDUMP("v0=0x%x, v1=0x%x, r0=0x%x, r1=0x%x, greq=0%x\n",
-			DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a0),
-			DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a4),
-			DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8a8),
-			DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8ac),
-			DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8d0));
-	}
+	DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x, greq=0%x\n",
+		valid0, valid1, ready0, ready1, greq);
 	for (i = 0; i < 32; i++) {
-		pos = clock_on;
-		if ((valid0 & (1 << i)) == 0)
-			len = sprintf(pos, "%s:-", ddp_signal_0(i));
-		else
-			len = sprintf(pos, "%s:V,", ddp_signal_0(i));
+		name = ddp_signal_0(i);
+		if (!name)
+			continue;
 
-		pos += len;
-		if ((ready0 & (1 << i)) == 0)
-			len = sprintf(pos, "-");
+		pos = clock_on;
+		pos += sprintf(pos, "%25s: ", name);
+
+		if ((valid0 & (1 << i)))
+			pos += sprintf(pos, "%10s,", "valid");
 		else
-			len = sprintf(pos, "R");
+			pos += sprintf(pos, "%10s,", "not valid");
+
+		if ((ready0 & (1 << i)))
+			pos += sprintf(pos, "%10s", "ready");
+		else
+			pos += sprintf(pos, "%10s", "not ready");
 
 		DDPDUMP("%s\n", clock_on);
 	}
 
-	ddp_greq_check(greq);
+	for (i = 0; i < 32; i++) {
+		name = ddp_signal_1(i);
+		if (!name)
+			continue;
 
-	/* AEE status dump */
-	{
-		if (isAEEEnabled == 0) {
-			DDPDUMP("isAEEEnabled=%d\n", isAEEEnabled);
-		} else {
-			DDPDUMP("isAEEEnabled=%d, O0L3=0x%x, AEE=0x%lx\n", isAEEEnabled,
-				DISP_REG_GET(DISP_REG_OVL_L3_ADDR), get_Assert_Layer_PA());
-			if (DISP_REG_GET(DISP_REG_OVL_L3_ADDR) != get_Assert_Layer_PA())
-				DDPDUMP("error: AEE enabled but O-L3 Addr wrong!\n");
-		}
+		pos = clock_on;
+		pos += sprintf(pos, "%25s: ", name);
+
+		if ((valid1 & (1 << i)))
+			pos += sprintf(pos, "%10s,", "valid");
+		else
+			pos += sprintf(pos, "%10s,", "not valid");
+
+		if ((ready1 & (1 << i)))
+			pos += sprintf(pos, "%10s", "ready");
+		else
+			pos += sprintf(pos, "%10s", "not ready");
+
+		DDPDUMP("%s\n", clock_on);
 	}
+
+	/* greq: 1 means SMI dose not grant, maybe SMI hang */
+	if (greq)
+		DDPMSG("smi greq not grant module: ");
+	else
+		return 0;
+
+	clock_on[0] = '\0';
+	for (i = 0; i < 32; i++) {
+		name = ddp_greq_name(i);
+		if (!name)
+			continue;
+		strncat(clock_on, name, sizeof(clock_on));
+		DDPDUMP("%s\n", clock_on);
+	}
+
+	return 0;
 }
 
 static void gamma_dump_reg(void)
@@ -766,13 +729,13 @@ static void ccorr_dump_reg(void)
 static void ccorr_dump_analyze(void)
 {
 	DDPDUMP("ccorr: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-		DISP_REG_GET(DISP_REG_CCORR_EN), DISP_REG_GET(DISP_REG_CCORR_CFG),
-		(DISP_REG_GET(DISP_REG_CCORR_SIZE) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_CCORR_SIZE) & 0x1fff,
-		DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff,
-		DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
-		(DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff);
+	     DISP_REG_GET(DISP_REG_CCORR_EN), DISP_REG_GET(DISP_REG_CCORR_CFG),
+	     (DISP_REG_GET(DISP_REG_CCORR_SIZE) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_SIZE) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_CCORR_IN_CNT) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_CCORR_IN_CNT) >> 16) & 0x1fff);
 }
 
 static void dither_dump_reg(void)
@@ -787,81 +750,68 @@ static void dither_dump_reg(void)
 
 static void dither_dump_analyze(void)
 {
-	DDPDUMP("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
-		     DISP_REG_GET(DISPSYS_DITHER_BASE + 0x000), DISP_REG_GET(DISPSYS_DITHER_BASE + 0x020),
-		     (DISP_REG_GET(DISP_REG_DITHER_SIZE) >> 16) & 0x1fff,
-		     DISP_REG_GET(DISP_REG_DITHER_SIZE) & 0x1fff,
-		     DISP_REG_GET(DISP_REG_DITHER_IN_CNT) & 0x1fff,
-		     (DISP_REG_GET(DISP_REG_DITHER_IN_CNT) >> 16) & 0x1fff,
-		     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) & 0x1fff,
-		     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
+	DDPDUMP
+	    ("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
+	     DISP_REG_GET(DISPSYS_DITHER_BASE + 0x000), DISP_REG_GET(DISPSYS_DITHER_BASE + 0x020),
+	     (DISP_REG_GET(DISP_REG_DITHER_SIZE) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_SIZE) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_IN_CNT) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_IN_CNT) >> 16) & 0x1fff,
+	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) & 0x1fff,
+	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
+}
+
+static void ufoe_dump_reg(void)
+{
+	DDPDUMP("==DISP UFOE REGS==\n");
+}
+
+static void ufoe_dump_analysis(void)
+{
+	DDPDUMP("==DISP UFOE ANALYSIS==\n");
 }
 
 static void dsi_dump_reg(DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
-	if (DISP_MODULE_DSI0 == module) {
+	if (DISP_MODULE_DSI0) {
 		DDPDUMP("==DISP DSI0 REGS==\n");
-		for (i = 0; i < 25 * 16; i += 16)
-			pr_debug("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-				 INREG32(DISPSYS_DSI0_BASE + i),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0x4),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0x8),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0xc));
-
-		pr_debug("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
-			 INREG32(DISPSYS_DSI0_BASE + 0x200),
-			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x4),
-			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x8),
-			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0xc));
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-		DDPDUMP("==DISP MIPI REGS==\n");
-		for (i = 0; i < 10 * 16; i += 16)
-			pr_debug("MIPI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-				 INREG32(MIPITX_BASE + i), INREG32(MIPITX_BASE + i + 0x4),
-				 INREG32(MIPITX_BASE + i + 0x8), INREG32(MIPITX_BASE + i + 0xc));
-
-#endif
+		for (i = 0; i < 25 * 16; i += 16) {
+			DDPDUMP("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			       INREG32(DISPSYS_DSI0_BASE + i), INREG32(DISPSYS_DSI0_BASE + i + 0x4),
+			       INREG32(DISPSYS_DSI0_BASE + i + 0x8),
+			       INREG32(DISPSYS_DSI0_BASE + i + 0xc));
+		}
+		DDPDUMP("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+		       INREG32(DISPSYS_DSI0_BASE + 0x200), INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x4),
+		       INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x8),
+		       INREG32(DISPSYS_DSI0_BASE + 0x200 + 0xc));
 	}
-#if 0
-	else if (DISP_MODULE_DSI1 == module) {
-		DDPDUMP("==DISP DSI1 REGS==\n");
-		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-				 INREG32(DISPSYS_DSI1_BASE + i),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0x4),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0x8),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0xc));
+}
 
-	} else {
-		DDPDUMP("==DISP DSIDUAL REGS==\n");
-		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-				 INREG32(DISPSYS_DSI0_BASE + i),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0x4),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0x8),
-				 INREG32(DISPSYS_DSI0_BASE + i + 0xc));
+static void dpi_dump_reg(void)
+{
+	int i;
 
-		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-				 INREG32(DISPSYS_DSI1_BASE + i),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0x4),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0x8),
-				 INREG32(DISPSYS_DSI1_BASE + i + 0xc));
-	}
-#endif
+	DDPDUMP("---------- Start dump DPI registers ----------\n");
+
+	for (i = 0; i <= 0x40; i += 4)
+		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+
+	for (i = 0x68; i <= 0x7C; i += 4)
+		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+
+	DDPDUMP("DPI+Color Bar    : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
+	DDPDUMP("DPI MMSYS_CG_CON0: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DDPDUMP("DPI MMSYS_CG_CON1: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	return 0;
 }
 
 static void dpi_dump_analysis(void)
 {
 	DDPDUMP("==DISP DPI ANALYSIS==\n");
 	DDPDUMP("DPI clock=0x%x\n", DISP_REG_GET(DISP_REG_CLK_CFG_6_DPI));
-#if 0
-	if ((DISP_REG_GET(DISP_REG_VENCPLL_CON0) >> 7) & 0x1)
-		DDPDUMP("DPI clock abnormal!!\n");
-#endif
 	DDPDUMP("DPI  clock_clear=%d\n", (DISP_REG_GET(DISP_REG_CLK_CFG_6_CLR) >> 7) & 0x1);
 }
 
@@ -869,7 +819,6 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
 		wdma_dump_reg(module);
 		break;
 	case DISP_MODULE_RDMA0:
@@ -879,6 +828,8 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
+	case DISP_MODULE_OVL0_2L:
+	case DISP_MODULE_OVL1_2L:
 		ovl_dump_reg(module);
 		break;
 	case DISP_MODULE_GAMMA:
@@ -908,8 +859,6 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 	case DISP_MODULE_PWM1:
 		pwm_dump_reg(module);
 		break;
-	case DISP_MODULE_UFOE:
-		break;
 	case DISP_MODULE_OD:
 		od_dump_reg();
 		break;
@@ -918,6 +867,7 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		dsi_dump_reg(module);
 		break;
 	case DISP_MODULE_DPI:
+		dpi_dump_reg();
 		break;
 	case DISP_MODULE_CCORR:
 		ccorr_dump_reg();
@@ -926,7 +876,7 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		dither_dump_reg();
 		break;
 	default:
-		DDPDUMP("DDP error, dump_reg unknown module=%d\n", module);
+		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
 	}
 	return 0;
 }
@@ -935,7 +885,6 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_WDMA1:
 		wdma_dump_analysis(module);
 		break;
 	case DISP_MODULE_RDMA0:
@@ -945,6 +894,8 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
+	case DISP_MODULE_OVL0_2L:
+	case DISP_MODULE_OVL1_2L:
 		ovl_dump_analysis(module);
 		break;
 	case DISP_MODULE_GAMMA:
@@ -970,8 +921,6 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 	case DISP_MODULE_AAL:
 		aal_dump_analysis();
 		break;
-	case DISP_MODULE_UFOE:
-		break;
 	case DISP_MODULE_OD:
 		od_dump_analysis();
 		break;
@@ -982,6 +931,7 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 	case DISP_MODULE_DSI0:
 	case DISP_MODULE_DSI1:
 	case DISP_MODULE_DSIDUAL:
+		dsi_analysis(module);
 		break;
 	case DISP_MODULE_DPI:
 		dpi_dump_analysis();
@@ -993,7 +943,8 @@ int ddp_dump_analysis(DISP_MODULE_ENUM module)
 		dither_dump_analyze();
 		break;
 	default:
-		DDPDUMP("DDP error, dump_analysis unknown module=%d\n", module);
+		DDPDUMP("no dump_analysis for module %s(%d)\n", ddp_get_module_name(module),
+			module);
 	}
 	return 0;
 }

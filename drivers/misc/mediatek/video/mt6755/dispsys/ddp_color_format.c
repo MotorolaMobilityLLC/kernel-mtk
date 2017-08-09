@@ -1,120 +1,201 @@
-#define LOG_TAG "color_format"
-
+#include <linux/kernel.h>
+#include <asm-generic/bug.h>
+#include "ddp_info.h"
 #include "ddp_log.h"
-#include "DpDataType.h"
 
-enum FORMAT_UNIQUE {
-	FORMAT_UNIQUE_BGR565 = 0x00,	/* basic format */
-	FORMAT_UNIQUE_RGB888 = 0x01,
-	FORMAT_UNIQUE_RGBA8888 = 0x02,
-	FORMAT_UNIQUE_ARGB8888 = 0x03,
-	FORMAT_UNIQUE_VYUY = 0x04,
-	FORMAT_UNIQUE_YVYU = 0x05,
-	FORMAT_UNIQUE_YONLY = 0x07,
-	FORMAT_UNIQUE_YV12 = 0x08,
-	FORMAT_UNIQUE_NV21 = 0x0c,
-	FORMAT_UNIQUE_UNKNOWN = 0x100,
-};
+#define LOG_TAG "color_fmt"
 
-int fmt_bpp(DpColorFormat fmt)
-{
-	return DP_COLOR_BITS_PER_PIXEL(fmt) / 4;
-}
-
-int fmt_swap(DpColorFormat fmt)
-{
-	return DP_COLOR_GET_SWAP_ENABLE(fmt);
-}
-
-int fmt_color_space(DpColorFormat fmt)
-{
-	return DP_COLOR_GET_COLOR_GROUP(fmt);
-}
-
-int fmt_is_yuv422(DpColorFormat fmt)
-{
-	return DP_COLOR_GET_H_SUBSAMPLE(fmt) && (!DP_COLOR_GET_V_SUBSAMPLE(fmt));
-}
-
-int fmt_is_yuv420(DpColorFormat fmt)
-{
-	return DP_COLOR_GET_H_SUBSAMPLE(fmt) && DP_COLOR_GET_V_SUBSAMPLE(fmt);
-}
-
-int fmt_hw_value(DpColorFormat fmt)
-{
-	return DP_COLOR_GET_HW_FORMAT(fmt);
-}
-
-char *fmt_string(DpColorFormat fmt)
+char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt)
 {
 	switch (fmt) {
-	case eBGR565:
-		return "eBGR565";
-	case eRGB565:
-		return "eRGB565";
-	case eRGB888:
-		return "eRGB888";
-	case eBGR888:
-		return "eBGR888";
-	case eRGBA8888:
-		return "eRGBA8888";
-	case eBGRA8888:
-		return "eBGRA8888";
-	case eARGB8888:
-		return "eARGB8888";
-	case eABGR8888:
-		return "eABGR8888";
-	case eVYUY:
-		return "eVYUY";
-	case eUYVY:
-		return "eUYVY";
-	case eYVYU:
-		return "eYVYU";
-	case eYUY2:
-		return "eYUY2";
-	case eY800:
-		return "eY800";
-	case eYV21:
-		return "eYV21";
-	case eYV12:
-		return "eYV12";
-	case eNV21:
-		return "eNV21";
-	case eNV12:
-		return "eNV12";
+	case UFMT_Y8:
+		return "Y8";
+	case UFMT_RGBA4444:
+		return "RGBA4444";
+	case UFMT_RGBA5551:
+		return "RGBA5551";
+	case UFMT_RGB565:
+		return "RGB565";
+	case UFMT_BGR565:
+		return "BGR565";
+	case UFMT_RGB888:
+		return "RGB888";
+	case UFMT_BGR888:
+		return "BGR888";
+	case UFMT_RGBA8888:
+		return "RGBA8888";
+	case UFMT_BGRA8888:
+		return "BGRA8888";
+	case UFMT_ARGB8888:
+		return "ARGB8888";
+	case UFMT_ABGR8888:
+		return "ABGR8888";
+	case UFMT_RGBX8888:
+		return "RGBX8888";
+	case UFMT_BGRX8888:
+		return "BGRX8888";
+	case UFMT_XRGB8888:
+		return "XRGB8888";
+	case UFMT_XBGR8888:
+		return "XBGR8888";
+	case UFMT_AYUV:
+		return "AYUV";
+	case UFMT_YUV:
+		return "YUV";
+	case UFMT_UYVY:
+		return "UYVY";
+	case UFMT_VYUY:
+		return "VYUY";
+	case UFMT_YUYV:
+		return "YUYV";
+	case UFMT_YVYU:
+		return "YVYU";
+	case UFMT_UYVY_BLK:
+		return "UYVY_BLK";
+	case UFMT_VYUY_BLK:
+		return "VYUY_BLK";
+	case UFMT_YUY2_BLK:
+		return "YUY2_BLK";
+	case UFMT_YVYU_BLK:
+		return "YVYU_BLK";
+	case UFMT_YV12:
+		return "YV12";
+	case UFMT_I420:
+		return "I420";
+	case UFMT_YV16:
+		return "YV16";
+	case UFMT_I422:
+		return "I422";
+	case UFMT_YV24:
+		return "YV24";
+	case UFMT_I444:
+		return "I444";
+	case UFMT_NV12:
+		return "NV12";
+	case UFMT_NV21:
+		return "NV21";
+	case UFMT_NV12_BLK:
+		return "NV12_BLK";
+	case UFMT_NV21_BLK:
+		return "NV21_BLK";
+	case UFMT_NV12_BLK_FLD:
+		return "NV12_BLK_FLD";
+	case UFMT_NV21_BLK_FLD:
+		return "NV21_BLK_FLD";
+	case UFMT_NV16:
+		return "NV16";
+	case UFMT_NV61:
+		return "NV61";
+	case UFMT_NV24:
+		return "NV24";
+	case UFMT_NV42:
+		return "NV42";
 	default:
-		DDPERR("fmt_string unknown fmt=0x%x\n", fmt);
-		break;
+		return "fmt_unknown";
 	}
-	return "unknown";
 }
 
-DpColorFormat fmt_type(int unique, int swap)
+
+static enum UNIFIED_COLOR_FMT display_engine_supported_color[] = {
+	/* ovl/rdma supported */
+	UFMT_RGB565, UFMT_BGR565,
+	UFMT_RGB888, UFMT_BGR888,
+	UFMT_RGBA8888, UFMT_BGRA8888,
+	UFMT_ARGB8888, UFMT_ABGR8888,
+	UFMT_XRGB8888, UFMT_RGBX8888,
+	UFMT_UYVY, UFMT_VYUY,
+	UFMT_YUYV, UFMT_YVYU,
+	/* wdma supported */
+	UFMT_YV12, UFMT_I420,
+	UFMT_NV12, UFMT_NV21,
+};
+
+int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt)
 {
-	switch (unique) {
-	case FORMAT_UNIQUE_BGR565:
-		return swap ? eBGR565 : eRGB565;
-	case FORMAT_UNIQUE_RGB888:
-		return swap ? eRGB888 : eBGR888;
-	case FORMAT_UNIQUE_RGBA8888:
-		return swap ? eRGBA8888 : eBGRA8888;
-	case FORMAT_UNIQUE_ARGB8888:
-		return swap ? eARGB8888 : eABGR8888;
-	case FORMAT_UNIQUE_VYUY:
-		return swap ? eVYUY : eUYVY;
-	case FORMAT_UNIQUE_YVYU:
-		return swap ? eYVYU : eYUY2;
-	case FORMAT_UNIQUE_YONLY:
-		return eY800;
-	case FORMAT_UNIQUE_YV12:
-		return swap ? eYV12 : eYV21;
-	case FORMAT_UNIQUE_NV21:
-		return swap ? eNV21 : eNV12;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(display_engine_supported_color); i++) {
+		if (ufmt == display_engine_supported_color[i])
+			return 1;
+	}
+	return 0;
+}
+
+enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int swap)
+{
+	int i;
+	enum UNIFIED_COLOR_FMT ufmt;
+
+	for (i = 0; i < ARRAY_SIZE(display_engine_supported_color); i++) {
+		ufmt = display_engine_supported_color[i];
+		if (UFMT_GET_FORMAT(ufmt) == fmt_reg_val && UFMT_GET_SWAP(ufmt) == swap)
+			return ufmt;
+	}
+	DDPERR("unknown_fmt fmt=%d, swap=%d\n", fmt_reg_val, swap);
+	return UFMT_UNKNOWN;
+}
+
+enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
+{
+	switch (src_fmt) {
+	case DISP_FORMAT_RGB565:
+		return UFMT_RGB565;
+	case DISP_FORMAT_RGB888:
+		return UFMT_RGB888;
+	case DISP_FORMAT_BGR888:
+		return UFMT_BGR888;
+	case DISP_FORMAT_ARGB8888:
+		return UFMT_ARGB8888;
+	case DISP_FORMAT_ABGR8888:
+		return UFMT_ABGR8888;
+	case DISP_FORMAT_RGBA8888:
+		return UFMT_RGBA8888;
+	case DISP_FORMAT_BGRA8888:
+		return UFMT_BGRA8888;
+	case DISP_FORMAT_YUV422:
+		return UFMT_YUYV;
+	case DISP_FORMAT_XRGB8888:
+		return UFMT_XRGB8888;
+	case DISP_FORMAT_XBGR8888:
+		return UFMT_XBGR8888;
+	case DISP_FORMAT_RGBX8888:
+		return UFMT_RGBX8888;
+	case DISP_FORMAT_BGRX8888:
+		return UFMT_BGRX8888;
+	case DISP_FORMAT_UYVY:
+		return UFMT_UYVY;
+	case DISP_FORMAT_YUV420_P:
+		return UFMT_I420;
+	case DISP_FORMAT_YV12:
+		return UFMT_YV12;
 	default:
-		DDPERR("fmt_type unknown unique=%d, swap=%d\n", unique, swap);
-		ASSERT(0);
+		DDPERR("Invalid color format: 0x%x\n", src_fmt);
+		BUG();
+		return UFMT_UNKNOWN;
+	}
+}
+
+int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt)
+{
+	int ret = 1;
+
+	switch (src_fmt) {
+	case UFMT_XRGB8888:
+		*dst_fmt = UFMT_ARGB8888;
+		break;
+	case UFMT_XBGR8888:
+		*dst_fmt = UFMT_ABGR8888;
+		break;
+	case UFMT_RGBX8888:
+		*dst_fmt = UFMT_RGBA8888;
+		break;
+	case UFMT_BGRX8888:
+		*dst_fmt = UFMT_BGRA8888;
+		break;
+	default:
+		*dst_fmt = src_fmt;
+		ret = 0;
 		break;
 	}
-	return eBGR565;
+	return ret;
 }

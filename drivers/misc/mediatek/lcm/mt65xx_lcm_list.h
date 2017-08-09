@@ -216,13 +216,17 @@ extern LCM_DRIVER s6d7aa0_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER it6151_lp079qx1_edp_dsi_video_8163evb_lcm_drv;
 extern LCM_DRIVER sy20810800210132_wuxga_dsi_vdo_lcm_drv;
-
+extern LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv;
+extern LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv;
+extern LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_lcm_drv;
+extern LCM_DRIVER nt35695_fhd_dsi_vdo_truly_nt50358_lcm_drv;
 extern LCM_DRIVER nt35510_dsi_cmd_lcm_drv;
 extern LCM_DRIVER rm69032_dsi_cmd_lcm_drv;
 extern LCM_DRIVER st7789h2_dbi_lcm_drv;
 extern LCM_DRIVER ek79007_wsvgalnl_dsi_vdo_lcm_drv;
 
 extern LCM_DRIVER cm_n070ice_dsi_vdo_mt8173_lcm_drv;
+extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);

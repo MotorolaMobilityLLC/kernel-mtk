@@ -1884,8 +1884,10 @@ clocks {
 					<&infrasys INFRA_DISP_PWM>,
 					<&scpsys SCP_SYS_DIS>,
 					<&topckgen TOP_MUX_DPI0>,
-					<&topckgen TOP_TVDPLL_CK>,
 					<&topckgen TOP_TVDPLL_D2>,
+					<&topckgen TOP_TVDPLL_D4>,
+					<&topckgen TOP_TVDPLL_D8>,
+					<&topckgen TOP_TVDPLL_D16>,
 					<&topckgen TOP_DPI_CK>;
 
 		clock-names = "DISP0_SMI_COMMON",
@@ -1912,8 +1914,10 @@ clocks {
 					"DISP_PWM",
 					"DISP_MTCMOS_CLK",
 					"MUX_DPI0",
-					"TVDPLL_CK",
 					"TVDPLL_D2",
+					"TVDPLL_D4",
+					"TVDPLL_D8",
+					"TVDPLL_D16",
 					"DPI_CK";
 		};
 

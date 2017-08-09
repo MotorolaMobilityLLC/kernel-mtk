@@ -6,11 +6,6 @@
 #include "ddp_aal.h"
 #include "ddp_gamma.h"
 #include "disp_event.h"
-#include "DpDataType.h"
-#ifndef CONFIG_MTK_CLKMGR
-#include <linux/clk.h>
-#endif
-
 
 typedef struct {
 	unsigned int reg;
@@ -41,18 +36,6 @@ typedef struct DISP_EXEC_COMMAND {
 	uint32_t blockSize;
 } DISP_EXEC_COMMAND;
 
-typedef struct {
-	int layer;
-
-	unsigned long addr;
-	DpColorFormat fmt;
-
-	int x;
-	int y;
-	int w;
-	int h;			/* clip region */
-	int pitch;
-} DISP_OVL_INFO;
 
 /* PQ */
 #define COLOR_TUNING_INDEX 19
@@ -91,8 +74,8 @@ typedef struct {
 
 typedef struct {
 
-	unsigned char GLOBAL_SAT[GLOBAL_SAT_SIZE];
-	unsigned char CONTRAST[CONTRAST_SIZE];
+	unsigned short GLOBAL_SAT[GLOBAL_SAT_SIZE];
+	unsigned short CONTRAST[CONTRAST_SIZE];
 	unsigned short BRIGHTNESS[BRIGHTNESS_SIZE];
 	unsigned char PARTIAL_Y[PARTIAL_Y_SIZE];
 	unsigned char PURP_TONE_S[COLOR_TUNING_INDEX][PQ_PARTIALS_CONTROL][PURP_TONE_SIZE];
@@ -180,6 +163,13 @@ typedef enum {
 	DISP_INTERLACE_FORMAT_BOTTOM_FIELD
 } DISP_INTERLACE_FORMAT;
 
+
+extern unsigned int dispsys_irq[DISP_REG_NUM];
+extern volatile unsigned long dispsys_reg[DISP_REG_NUM];
+struct device *disp_get_device(void);
+
+
+
 #define DISP_IOCTL_MAGIC        'x'
 
 #define DISP_IOCTL_WRITE_REG       _IOW(DISP_IOCTL_MAGIC, 1, DISP_WRITE_REG)	/* also defined in atci_pq_cmd.h */
@@ -206,7 +196,6 @@ typedef enum {
 
 #define DISP_IOCTL_RUN_DPF         _IOW(DISP_IOCTL_MAGIC, 30, int)
 #define DISP_IOCTL_CHECK_OVL       _IOR(DISP_IOCTL_MAGIC, 31, int)
-#define DISP_IOCTL_GET_OVL         _IOWR(DISP_IOCTL_MAGIC, 32, DISP_OVL_INFO)
 
 #define DISP_IOCTL_EXEC_COMMAND    _IOW(DISP_IOCTL_MAGIC, 33, DISP_EXEC_COMMAND)
 #define DISP_IOCTL_RESOURCE_REQUIRE   _IOR(DISP_IOCTL_MAGIC, 34, int)
@@ -266,56 +255,6 @@ typedef enum {
 #define DISP_IOCTL_OVL_ENABLE_CASCADE  _IOW(DISP_IOCTL_MAGIC, 90 , int)
 #define DISP_IOCTL_OVL_DISABLE_CASCADE  _IOW(DISP_IOCTL_MAGIC, 91 , int)
 
-/* secure video path implementation: the handle value */
+/*secure video path implementation: the handle value*/
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
-
-#ifndef CONFIG_MTK_CLKMGR
-enum disp_clk_id {
-	DISP0_SMI_COMMON = 0,
-	DISP0_SMI_LARB0,
-	DISP0_DISP_OVL0,
-	DISP0_DISP_RDMA0,
-	DISP0_DISP_RDMA1,
-	DISP0_DISP_WDMA0,
-	DISP0_DISP_COLOR,
-	DISP0_DISP_CCORR,
-	DISP0_DISP_AAL,
-	DISP0_DISP_GAMMA,
-	DISP0_DISP_DITHER,
-	DISP1_DSI_ENGINE,
-	DISP1_DSI_DIGITAL,
-	DISP1_DPI_ENGINE,
-	DISP1_DPI_PIXEL,
-	DISP_PWM,
-	MUX_DPI0,
-	TVDPLL_CK,
-	TVDPLL_D2,
-	DPI_CK,
-	DISP_MTCMOS_CLK,
-	MAX_DISP_CLK_CNT
-};
-
-int disp_clk_prepare(enum disp_clk_id id);
-void disp_clk_unprepare(enum disp_clk_id id);
-int disp_clk_enable(enum disp_clk_id id);
-void disp_clk_disable(enum disp_clk_id id);
-int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent);
-#endif
-
-extern unsigned int dispsys_irq[DISP_REG_NUM];
-extern unsigned long dispsys_reg[DISP_REG_NUM];
-
-extern void disp_m4u_tf_disable(void);
-
-/* TODO: FIXME */
-#include <linux/types.h>
-
-#include "disp_drv_platform.h"
-#ifndef DISP_NO_DPI
-#include "ddp_dpi_reg.h"
-extern PDPI_REGS DPI_REG;
-#endif
-
-extern int m4u_enable_tf(int port, bool fgenable);
-
 #endif
