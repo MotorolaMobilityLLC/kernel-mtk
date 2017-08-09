@@ -420,18 +420,22 @@ static void smi_enable_clk(struct clk *smi_clk, char *name)
 
 static void smi_unprepare_clk(struct clk *smi_clk, char *name)
 {
-	if (smi_clk != NULL)
+	if (smi_clk != NULL) {
 		clk_unprepare(smi_clk);
-	else
+		SMIDBG(1, "clk:%s unprepare done.\n", name);
+	} else {
 		SMIMSG("smi_unprepare error, smi_clk can't be NULL, %s\n", name);
+	}
 }
 
 static void smi_disable_clk(struct clk *smi_clk, char *name)
 {
-	if (smi_clk != NULL)
+	if (smi_clk != NULL) {
 		clk_disable(smi_clk);
-	else
+		SMIDBG(1, "clk:%s disable done.\n", name);
+	} else {
 		SMIMSG("smi_disable error, smi_clk can't be NULL, %s\n", name);
+	}
 }
 
 /* end MTCMOS*/
@@ -1013,11 +1017,6 @@ void on_larb_power_off(struct larb_monitor *h, int larb_idx)
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 void on_larb_power_on_with_ccf(int larb_idx)
 {
-	if (!bus_optimization) {
-		SMIDBG(1, "larb%d will not restore\n", larb_idx);
-		return;
-	}
-
 	/* MTCMOS has already enable, only enable clk here to set register value */
 	if (larb_idx < 0 || larb_idx >= SMI_LARB_NR) {
 		SMIMSG("incorrect larb:%d/\n", larb_idx);
@@ -1034,10 +1033,6 @@ void on_larb_power_on_with_ccf(int larb_idx)
 
 void on_larb_power_off_with_ccf(int larb_idx)
 {
-	if (!bus_optimization) {
-		SMIDBG(1, "larb%d will not backup\n", larb_idx);
-		return;
-	}
 	if (larb_idx < 0 || larb_idx >= SMI_LARB_NR) {
 		SMIMSG("incorrect larb:%d/\n", larb_idx);
 		return;
@@ -1141,15 +1136,13 @@ static void smiclk_subsys_after_on(enum subsys_id sys)
 	}
 
 	do {
-		if (i4larbid & 1) {
-			if (i != 0) {
+		if ((i4larbid & 1) && (1 << i & bus_optimization)) {
 				SMIDBG(1, "ready to call restore with larb%d.\n", i);
 				on_larb_power_on_with_ccf(i);
 				#if defined(SMI_D1)
 				/* inform m4u to restore register value */
 				m4u_larb_backup((int)i4larbid);
 				#endif
-			}
 		}
 		i4larbid = i4larbid >> 1;
 		i++;
@@ -1167,15 +1160,13 @@ static void smiclk_subsys_before_off(enum subsys_id sys)
 	}
 
 	do {
-		if (i4larbid & 1) {
-			if (i != 0) {
+		if ((i4larbid & 1) && (1 << i & bus_optimization)) {
 				SMIDBG(1, "ready to call backup with larb%d.\n", i);
 				on_larb_power_off_with_ccf(i);
 #if defined(SMI_D1)
 			/* inform m4u to backup register value */
 			m4u_larb_restore((int)i4larbid);
 #endif
-			}
 		}
 		i4larbid = i4larbid >> 1;
 		i++;
@@ -1228,12 +1219,12 @@ void smi_bus_optimization(int optimization_larbs, int smi_profile)
 		int larb_mask = 1 << i;
 
 		if (optimization_larbs & larb_mask) {
-			SMIDBG(1, "enable clock%d", i);
+			SMIDBG(1, "enable clock%d\n", i);
 			larb_clock_enable(i, 1);
 			smi_enable_dcm();
 			smi_bus_regs_setting(smi_profile,
 				smi_profile_config[smi_profile].setting);
-			SMIDBG(1, "disable clock%d", i);
+			SMIDBG(1, "disable clock%d\n", i);
 			larb_clock_disable(i, 1);
 		}	else {
 			SMIMSG("Larb:%d optimization disabled\n", i);
@@ -1687,7 +1678,9 @@ static int smi_probe(struct platform_device *pdev)
 
 	static unsigned int smi_probe_cnt;
 	struct device *smiDevice = NULL;
+	int prev_smi_debug_level = smi_debug_level;
 
+	smi_debug_level = 1;
 	SMIMSG("Enter smi_probe\n");
 	/* Debug only */
 	if (smi_probe_cnt != 0) {
@@ -1852,6 +1845,7 @@ static int smi_probe(struct platform_device *pdev)
 	SMIMSG("Execute smi_common_init\n");
 	smi_common_init();
 
+	smi_debug_level = prev_smi_debug_level;
 	return 0;
 
 }
