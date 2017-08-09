@@ -10,14 +10,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 /*
  * Driver for CAM_CAL
  *
  *
  */
 
+#ifndef CONFIG_MTK_I2C_EXTENSION
 #define CONFIG_MTK_I2C_EXTENSION
+#endif
 #include <linux/i2c.h>
 #undef CONFIG_MTK_I2C_EXTENSION
 #include <linux/platform_device.h>
@@ -44,7 +45,7 @@
 #ifdef CAM_CAL_DEBUG
 #define PFX "cat2416c"
 #define CAM_CALINF(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
-#define CAM_CALDB(fmt, arg...)     pr_debug("[%s] " fmt, __func__, ##arg)
+#define CAM_CALDB(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
 #define CAM_CALERR(fmt, arg...)    pr_debug("[%s] " fmt, __func__, ##arg)
 #else
 #define CAM_CALINF(fmt, arg...)

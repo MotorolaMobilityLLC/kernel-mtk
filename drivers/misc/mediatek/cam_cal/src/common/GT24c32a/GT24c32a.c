@@ -1,5 +1,18 @@
 /*
- * Driver for EEPROM
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+/*
+ * Driver for CAM_CAL
  *
  *
  */
@@ -19,8 +32,9 @@
 #include <asm/system.h>  /* for SMP */
 #else
 
-
+#ifndef CONFIG_MTK_I2C_EXTENSION
 #define CONFIG_MTK_I2C_EXTENSION
+#endif
 #include <linux/i2c.h>
 #undef CONFIG_MTK_I2C_EXTENSION
 #include <linux/platform_device.h>
