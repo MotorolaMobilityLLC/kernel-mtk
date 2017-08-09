@@ -466,8 +466,8 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (*f_pos > 0)
 		return 0;
 
-	kalStrCpy(temp, "\nERROR|WARN|STATE|EVENT|TRACE|INFO|LOUD|TEMP\n"
-			"bit0 |bit1|bit2 |bit3 |bit4 |bit5|bit6|bit7\n\n"
+	kalStrCpy(temp, "\nTEMP |LOUD |INFO |TRACE|EVENT|STATE|WARN |ERROR\n"
+			"bit7 |bit6 |bit5 |bit4 |bit3 |bit2 |bit1 |bit0\n\n"
 			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n");
 	temp += kalStrLen(temp);
 
@@ -485,7 +485,7 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (u4CopySize > count)
 		u4CopySize = count;
 	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
-		pr_err("copy to user failed\n");
+		kalPrint("copy to user failed\n");
 		return -EFAULT;
 	}
 
@@ -505,14 +505,14 @@ static ssize_t procDbgLevelWrite(struct file *file, const char *buffer, size_t c
 		u4CopySize = count;
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
+		kalPrint("error of copy from user\n");
 		return -EFAULT;
 	}
 	aucProcBuf[u4CopySize] = '\0';
 
 	while (temp) {
 		if (sscanf(temp, "0x%x:0x%x", &u4NewDbgModule, &u4NewDbgLevel) != 2)  {
-			pr_info("debug module and debug level should be one byte in length\n");
+			kalPrint("debug module and debug level should be one byte in length\n");
 			break;
 		}
 		if (u4NewDbgModule == 0xFF) {
@@ -521,7 +521,7 @@ static ssize_t procDbgLevelWrite(struct file *file, const char *buffer, size_t c
 
 			break;
 		} else if (u4NewDbgModule >= DBG_MODULE_NUM) {
-			pr_info("debug module index should less than %d\n", DBG_MODULE_NUM);
+			kalPrint("debug module index should less than %d\n", DBG_MODULE_NUM);
 			break;
 		}
 		aucDebugModule[u4NewDbgModule] =  u4NewDbgLevel & DBG_CLASS_MASK;
@@ -551,15 +551,16 @@ static ssize_t procTxDoneCfgRead(struct file *filp, char __user *buf, size_t cou
 		return 0;
 
 	u2TxDoneCfg = StatsGetCfgTxDone();
-	SPRINTF(temp, ("Tx Done Configure:\nARP %d\nDNS %d\nTCP %d\nUDP %d\n",
-			u2TxDoneCfg & 0x1, (u2TxDoneCfg>>CFG_DNS) & 0x1,
-			(u2TxDoneCfg>>CFG_TCP) & 0x1, (u2TxDoneCfg>>CFG_UDP) & 0x1));
+	SPRINTF(temp, ("Tx Done Configure:\nARP %d\tDNS %d\nTCP %d\tUDP %d\nEAPOL %d\tDHCP %d\nICMP %d\n",
+			!!(u2TxDoneCfg & CFG_ARP), !!(u2TxDoneCfg & CFG_DNS), !!(u2TxDoneCfg & CFG_TCP),
+			!!(u2TxDoneCfg & CFG_UDP), !!(u2TxDoneCfg & CFG_EAPOL), !!(u2TxDoneCfg & CFG_DHCP),
+			!!(u2TxDoneCfg & CFG_ICMP)));
 
 	u4CopySize = kalStrLen(aucProcBuf);
 	if (u4CopySize > count)
 		u4CopySize = count;
 	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
-		pr_err("copy to user failed\n");
+		kalPrint("copy to user failed\n");
 		return -EFAULT;
 	}
 
@@ -569,7 +570,7 @@ static ssize_t procTxDoneCfgRead(struct file *filp, char __user *buf, size_t cou
 
 static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
-#define MODULE_NAME_LENGTH 5
+#define MODULE_NAME_LENGTH 6
 
 	UINT_8 i = 0;
 	UINT_32 u4CopySize = sizeof(aucProcBuf);
@@ -578,14 +579,14 @@ static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t 
 	UINT_16 u2ClsTxDoneCfg = 0;
 	UINT_8 aucModule[MODULE_NAME_LENGTH];
 	UINT_32 u4Enabled;
-	UINT_8 aucModuleArray[CFG_NUM][MODULE_NAME_LENGTH] = {"ARP", "DNS", "TCP", "UDP"};
+	UINT_8 aucModuleArray[][MODULE_NAME_LENGTH] = {"ARP", "DNS", "TCP", "UDP", "EAPOL", "DHCP", "ICMP"};
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count + 1)
 		u4CopySize = count;
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
+		kalPrint("error of copy from user\n");
 		return -EFAULT;
 	}
 	aucProcBuf[u4CopySize] = '\0';
@@ -593,10 +594,10 @@ static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t 
 	while (temp) {
 		/* pick up a string and teminated after meet : */
 		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
-			pr_info("read param fail, aucModule=%s\n", aucModule);
+			kalPrint("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
-		for (i = 0; i < CFG_NUM; i++) {
+		for (i = 0; i < sizeof(aucModuleArray)/MODULE_NAME_LENGTH; i++) {
 			if (kalStrniCmp(aucModule, aucModuleArray[i], MODULE_NAME_LENGTH) == 0) {
 				if (u4Enabled)
 					u2SetTxDoneCfg |= 1 << i;
@@ -855,7 +856,7 @@ INT_32 procInitFs(VOID)
 	struct proc_dir_entry *prEntry;
 
 	if (init_net.proc_net == (struct proc_dir_entry *)NULL) {
-		pr_err("init proc fs fail: proc_net == NULL\n");
+		kalPrint("init proc fs fail: proc_net == NULL\n");
 		return -ENOENT;
 	}
 
@@ -865,21 +866,21 @@ INT_32 procInitFs(VOID)
 
 	gprProcRoot = proc_mkdir(PROC_ROOT_NAME, init_net.proc_net);
 	if (!gprProcRoot) {
-		pr_err("gprProcRoot == NULL\n");
+		kalPrint("gprProcRoot == NULL\n");
 		return -ENOENT;
 	}
 	proc_set_user(gprProcRoot, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
 	prEntry = proc_create(PROC_DBG_LEVEL_NAME, 0664, gprProcRoot, &dbglevel_ops);
 	if (prEntry == NULL) {
-		pr_err("Unable to create /proc entry dbgLevel\n\r");
+		kalPrint("Unable to create /proc entry dbgLevel\n\r");
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
 	prEntry = proc_create(PROC_NEED_TX_DONE, 0664, gprProcRoot, &proc_txdone_ops);
 	if (prEntry == NULL) {
-		pr_err("Unable to create /proc entry dbgLevel\n\r");
+		kalPrint("Unable to create /proc entry dbgLevel\n\r");
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));

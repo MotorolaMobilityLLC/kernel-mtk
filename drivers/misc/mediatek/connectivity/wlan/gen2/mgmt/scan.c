@@ -1459,8 +1459,7 @@ P_BSS_DESC_T scanAllocateBssDesc(IN P_ADAPTER_T prAdapter)
 		 * inserted to BSSDescList immediately.
 		 */
 		LINK_INSERT_TAIL(prBSSDescList, &prBssDesc->rLinkEntry);
-	} else
-		DBGLOG(SCN, ERROR, "no bss desc available\n");
+	}
 
 	return prBssDesc;
 
@@ -1625,6 +1624,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			if (prBssDesc)
 				break;
 			/* 4 <1.2.6> no space, should not happen */
+			DBGLOG(SCN, ERROR, "no bss desc available after remove policy\n");
 			return NULL;
 
 		} while (FALSE);
@@ -2521,7 +2521,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 		/* 4 <2> Check PHY Type and attributes */
 		/* 4 <2.1> Check Unsupported BSS PHY Type */
 		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
-			DBGLOG(SCN, INFO, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
+			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
 			continue;
 		}
 		/* 4 <2.2> Check if has unknown NonHT BSS Basic Rate Set. */
@@ -2554,7 +2554,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 #endif
 
 			if (fgIsNeedToCheckTimeout == TRUE) {
-				DBGLOG(SCN, INFO, "Ignore stale bss %pM\n", prBssDesc->aucBSSID);
+				DBGLOG(SCN, TRACE, "Ignore stale bss %pM\n", prBssDesc->aucBSSID);
 				continue;
 			}
 		}
@@ -2613,14 +2613,16 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 			/* 4 <4.1> Check BSS Type for the corresponding Operation Mode in Connection Setting */
 			/* NOTE(Kevin): For NET_TYPE_AUTO_SWITCH, we will always pass following check. */
 			if (((prConnSettings->eOPMode == NET_TYPE_INFRA) &&
-			     (prBssDesc->eBSSType != BSS_TYPE_INFRASTRUCTURE)) ||
-			    ((prConnSettings->eOPMode == NET_TYPE_IBSS
+			     (prBssDesc->eBSSType != BSS_TYPE_INFRASTRUCTURE))
+#if CFG_SUPPORT_ADHOC
+			     || ((prConnSettings->eOPMode == NET_TYPE_IBSS
 			      || prConnSettings->eOPMode == NET_TYPE_DEDICATED_IBSS)
-			     && (prBssDesc->eBSSType != BSS_TYPE_IBSS))) {
+			     && (prBssDesc->eBSSType != BSS_TYPE_IBSS))
+#endif
+			     ) {
 
-				DBGLOG(SCN, INFO, "SEARCH: Ignore eBSSType = %s\n",
-						   ((prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE) ?
-						    "INFRASTRUCTURE" : "IBSS"));
+				DBGLOG(SCN, TRACE, "Cur OPMode %d, Ignore eBSSType = %d\n",
+						prConnSettings->eOPMode, prBssDesc->eBSSType);
 				continue;
 			}
 			/* 4 <4.2> Check AP's BSSID if OID_802_11_BSSID has been set. */
@@ -3040,7 +3042,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 
 	if (prCandidateBssDesc != NULL) {
 		DBGLOG(SCN, INFO,
-		       "SEARCH: prCandidateBssDesc MAC: [%pM]\n", prCandidateBssDesc->aucBSSID);
+		       "SEARCH: Candidate BSS: %pM\n", prCandidateBssDesc->aucBSSID);
 	}
 
 	return prCandidateBssDesc;

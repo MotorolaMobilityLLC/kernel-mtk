@@ -2341,8 +2341,6 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
 
-	DBGLOG(AIS, WARN, "ScanDone\n");
-	DBGLOG(AIS, LOUD, "EVENT-SCAN DONE: Current Time = %u\n", kalGetTimeTick());
 	ucScanTimeoutTimes = 0;
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
@@ -3664,7 +3662,6 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 
 	ASSERT(prAdapter);
 
-	DBGLOG(INIT, INFO, "aisFsmDisconnect\n");
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
 	nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_AIS_INDEX);
@@ -3697,7 +3694,7 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 
 			/* trials for re-association */
 			if (fgDelayIndication) {
-				DBGLOG(INIT, INFO, "try to do re-association due to radio lost!\n");
+				DBGLOG(AIS, INFO, "try to do re-association due to radio lost!\n");
 				aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
 				aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
 			}

@@ -704,7 +704,7 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
 	if (!prStaRec) {
-		DBGLOG(SAA, INFO, "EVENT-TX DONE: Invalid StaRec\n");
+		DBGLOG(SAA, INFO, "EVENT-TX DONE: Status %d, Invalid StaRec\n", rTxDoneStatus);
 		return WLAN_STATUS_INVALID_PACKET;
 	}
 

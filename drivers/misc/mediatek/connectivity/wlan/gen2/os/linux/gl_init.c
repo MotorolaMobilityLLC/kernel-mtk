@@ -2485,8 +2485,6 @@ void wlanHandleSystemSuspend(void)
 	UINT_32 i;
 	P_PARAM_NETWORK_ADDRESS_IP prParamIpAddr;
 
-	DBGLOG(INIT, INFO, "*********wlan System Suspend************\n");
-
 	/* <1> Sanity check and acquire the net_device */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
@@ -2494,37 +2492,27 @@ void wlanHandleSystemSuspend(void)
 		return;
 	}
 	prDev = arWlanDevInfo[u4WlanDevNum - 1].prDev;
-/* ASSERT(prDev); */
 
 	fgIsUnderSuspend = true;
-	/* <2> acquire the prGlueInfo */
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 
-	/* <3> get the IPv4 address */
 	if (!prDev || !(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
-		DBGLOG(INIT, INFO, "ip is not available.\n");
 		goto notify_suspend;
 	}
-
-	/* <4> copy the IPv4 address */
 	kalMemCopy(ip, &(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local), sizeof(ip));
-	DBGLOG(INIT, INFO, "ip is %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
 	/* todo: traverse between list to find whole sets of IPv4 addresses */
 	if (!((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] == 0)))
 		u4NumIPv4++;
 #ifdef CONFIG_IPV6
-	/* <5> get the IPv6 address */
 	if (!prDev || !(prDev->ip6_ptr) ||
 	    !((struct in_device *)(prDev->ip6_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local))) {
-		DBGLOG(INIT, INFO, "ipv6 is not available.\n");
 		goto notify_suspend;
 	}
-	/* <6> copy the IPv6 address */
 	kalMemCopy(ip6, &(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local), sizeof(ip6));
 	DBGLOG(INIT, INFO, "ipv6 is %d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d\n",
 			    ip6[0], ip6[1], ip6[2], ip6[3],
@@ -2542,10 +2530,8 @@ void wlanHandleSystemSuspend(void)
 	/* <7> set up the ARP filter */
 	{
 		UINT_32 u4SetInfoLen = 0;
-/* UINT_8 aucBuf[32] = {0}; */
 		UINT_32 u4Len = OFFSET_OF(PARAM_NETWORK_ADDRESS_LIST, arAddress);
 		P_PARAM_NETWORK_ADDRESS_LIST prParamNetAddrList = (P_PARAM_NETWORK_ADDRESS_LIST) g_aucBufIpAddr;
-		/* aucBuf; */
 		P_PARAM_NETWORK_ADDRESS prParamNetAddr = prParamNetAddrList->arAddress;
 
 		kalMemZero(g_aucBufIpAddr, sizeof(g_aucBufIpAddr));
@@ -2555,17 +2541,11 @@ void wlanHandleSystemSuspend(void)
 		for (i = 0; i < u4NumIPv4; i++) {
 			prParamNetAddr->u2AddressLength = sizeof(PARAM_NETWORK_ADDRESS_IP);	/* 4;; */
 			prParamNetAddr->u2AddressType = PARAM_PROTOCOL_ID_TCP_IP;
-#if 0
-			kalMemCopy(prParamNetAddr->aucAddress, ip, sizeof(ip));
-			prParamNetAddr = (P_PARAM_NETWORK_ADDRESS) ((UINT_32) prParamNetAddr + sizeof(ip));
-			u4Len += OFFSET_OF(PARAM_NETWORK_ADDRESS, aucAddress) + sizeof(ip);
-#else
 			prParamIpAddr = (P_PARAM_NETWORK_ADDRESS_IP) prParamNetAddr->aucAddress;
 			kalMemCopy(&prParamIpAddr->in_addr, ip, sizeof(ip));
 			prParamNetAddr =
 			    (P_PARAM_NETWORK_ADDRESS) ((ULONG) prParamNetAddr + sizeof(PARAM_NETWORK_ADDRESS));
 			u4Len += OFFSET_OF(PARAM_NETWORK_ADDRESS, aucAddress) + sizeof(PARAM_NETWORK_ADDRESS);
-#endif
 		}
 #ifdef CONFIG_IPV6
 		for (i = 0; i < u4NumIPv6; i++) {
@@ -2576,7 +2556,7 @@ void wlanHandleSystemSuspend(void)
 			u4Len += OFFSET_OF(PARAM_NETWORK_ADDRESS, aucAddress) + sizeof(ip6);
 		}
 #endif
-		ASSERT(u4Len <= sizeof(g_aucBufIpAddr /*aucBuf */));
+		ASSERT(u4Len <= sizeof(g_aucBufIpAddr));
 
 		rStatus = kalIoctl(prGlueInfo,
 				   wlanoidSetNetworkAddress,
@@ -2584,10 +2564,9 @@ void wlanHandleSystemSuspend(void)
 	}
 
 notify_suspend:
-	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, INFO, "set HW pattern filter fail 0x%x\n", rStatus);
+	DBGLOG(INIT, INFO, "IP: %d.%d.%d.%d, rStatus: %u\n", ip[0], ip[1], ip[2], ip[3], rStatus);
+	if (rStatus != WLAN_STATUS_SUCCESS)
 		wlanNotifyFwSuspend(prGlueInfo, TRUE);
-	}
 }
 
 void wlanHandleSystemResume(void)
@@ -2601,8 +2580,6 @@ void wlanHandleSystemResume(void)
 #endif
 	EVENT_AIS_BSS_INFO_T rParam;
 	UINT_32 u4BufLen = 0;
-
-	DBGLOG(INIT, INFO, "*********wlan System Resume************\n");
 
 	/* <1> Sanity check and acquire the net_device */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
@@ -2623,7 +2600,6 @@ void wlanHandleSystemResume(void)
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 
-#if 1
 	/*
 	   We will receive the event in rx, we will check if the status is the same in driver
 	   and FW, if not the same, trigger disconnetion procedure.
@@ -2636,30 +2612,22 @@ void wlanHandleSystemResume(void)
 			   &rParam, sizeof(EVENT_AIS_BSS_INFO_T), TRUE, TRUE, TRUE, FALSE, &u4BufLen);
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		DBGLOG(INIT, ERROR, "Query BSSinfo fail 0x%x!!\n", rStatus);
-	} else {
-		DBGLOG(INIT, INFO,
-		       "Status[%d], Mode[%d], Active[%d]\\n", rParam.eConnectionState, rParam.eCurrentOPMode,
-			rParam.fgIsNetActive);
 	}
-#endif
 
 	/* <2> get the IPv4 address */
 	if (!(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
-		DBGLOG(INIT, INFO, "ip is not available.\n");
 		goto notify_resume;
 	}
 	/* <4> copy the IPv4 address */
 	kalMemCopy(ip, &(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local), sizeof(ip));
-	DBGLOG(INIT, INFO, "ip is %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
 #ifdef CONFIG_IPV6
 	/* <5> get the IPv6 address */
 	if (!prDev || !(prDev->ip6_ptr) ||
 	    !((struct in_device *)(prDev->ip6_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local))) {
-		DBGLOG(INIT, INFO, "ipv6 is not available.\n");
 		goto notify_resume;
 	}
 	/* <6> copy the IPv6 address */
@@ -2690,8 +2658,10 @@ void wlanHandleSystemResume(void)
 	}
 
 notify_resume:
+	DBGLOG(INIT, INFO, "Query BSS result: %d %d %d, IP: %d.%d.%d.%d, rStatus: %u\n",
+		       rParam.eConnectionState, rParam.eCurrentOPMode, rParam.fgIsNetActive,
+		       ip[0], ip[1], ip[2], ip[3], rStatus);
 	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, INFO, "set HW pattern filter fail 0x%x\n", rStatus);
 		wlanNotifyFwSuspend(prGlueInfo, FALSE);
 	}
 }

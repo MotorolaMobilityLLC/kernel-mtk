@@ -25,8 +25,6 @@
  */
 #include "precomp.h"
 
-#if (CFG_SUPPORT_STATISTICS == 1)
-
 enum EVENT_TYPE {
 	EVENT_RX,
 	EVENT_TX,
@@ -52,8 +50,8 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 */
 UINT_64 u8DrvOwnStart, u8DrvOwnEnd;
 UINT32 u4DrvOwnMax = 0;
-static UINT_16 su2TxDoneCfg;
-
+#define CFG_USER_LOAD 0
+static UINT_16 su2TxDoneCfg = CFG_ARP | CFG_DHCP | CFG_DNS | CFG_ICMP | CFG_EAPOL;
 /*******************************************************************************
 *						P R I V A T E  F U N C T I O N S
 ********************************************************************************
@@ -1011,8 +1009,11 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 	{
 		UINT_16 u2OpCode = (pucEthBody[6] << 8) | pucEthBody[7];
 
-		if ((su2TxDoneCfg & (1 << CFG_ARP)) == 0)
+		if ((su2TxDoneCfg & CFG_ARP) == 0) {
+			if (eventType == EVENT_TX)
+				prMsduInfo->fgIsBasicRate = TRUE;
 			break;
+		}
 		switch (eventType) {
 		case EVENT_RX:
 			if (u2OpCode == ARP_PRO_REQ)
@@ -1060,7 +1061,8 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			PUINT_8 pucIcmp = &pucEthBody[20];
 
 			ucIcmpType = pucIcmp[0];
-			if (ucIcmpType == 3) /* don't log network unreachable packet */
+			/* don't log network unreachable packet */
+			if (((su2TxDoneCfg & CFG_ICMP) == 0) || ucIcmpType == 3)
 				break;
 			u2IcmpId = *(UINT_16 *) &pucIcmp[4];
 			u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
@@ -1116,7 +1118,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			} else if (u2UdpDstPort == UDP_PORT_DNS) { /* tx dns */
 				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
 
-				if ((su2TxDoneCfg & (1 << CFG_DNS)) == 0)
+				if ((su2TxDoneCfg & CFG_DNS) == 0)
 					break;
 				if (eventType == EVENT_TX) {
 					DBGLOG(TX, INFO, "<TX> DNS: IPID 0x%02x, TransID 0x%04x\n", u2IpId, u2TransId);
@@ -1127,10 +1129,10 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			} else if (u2UdpSrcPort == UDP_PORT_DNS && eventType == EVENT_RX) { /* rx dns */
 				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
 
-				if ((su2TxDoneCfg & (1 << CFG_DNS)) == 0)
+				if ((su2TxDoneCfg & CFG_DNS) == 0)
 					break;
 				DBGLOG(RX, INFO, "<RX> DNS: IPID 0x%02x, TransID 0x%04x\n", u2IpId, u2TransId);
-			} else if ((su2TxDoneCfg & (1 << CFG_UDP)) != 0) {
+			} else if ((su2TxDoneCfg & CFG_UDP) != 0) {
 				switch (eventType) {
 				case EVENT_RX:
 					DBGLOG(RX, INFO, "<RX> UDP: IPID 0x%04x\n", u2IpId);
@@ -1147,7 +1149,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			break;
 		}
 		case IP_PRO_TCP:
-			if ((su2TxDoneCfg & (1 << CFG_TCP)) == 0)
+			if ((su2TxDoneCfg & CFG_TCP) == 0)
 				break;
 
 			switch (eventType) {
@@ -1336,6 +1338,3 @@ UINT_16 StatsGetCfgTxDone(VOID)
 {
 	return su2TxDoneCfg;
 }
-#endif /* CFG_SUPPORT_STATISTICS */
-
-/* End of stats.c */

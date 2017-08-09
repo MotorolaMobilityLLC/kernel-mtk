@@ -1050,7 +1050,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone)
 		/* switch to next pending scan */
 		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
 	} else {
-		DBGLOG(SCN, LOUD, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
+		DBGLOG(SCN, WARN, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
 				   prScanDone->ucSeqNum, prScanInfo->eCurrentState);
 	}
 
@@ -1078,6 +1078,8 @@ scnFsmGenerateScanDoneMsg(IN P_ADAPTER_T prAdapter,
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
+	DBGLOG(SCN, INFO, "Rcv Scan Done, NetIdx %d, Obss %d, Status %d, Seq %d\n",
+					ucNetTypeIndex, prScanParam->fgIsObssScan, eScanStatus, ucSeqNum);
 	prScanDoneMsg = (P_MSG_SCN_SCAN_DONE) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SCN_SCAN_DONE));
 	if (!prScanDoneMsg) {
 		ASSERT(0);	/* Can't indicate SCAN FSM Complete */
@@ -1105,7 +1107,6 @@ scnFsmGenerateScanDoneMsg(IN P_ADAPTER_T prAdapter,
 #endif
 
 		default:
-			DBGLOG(SCN, LOUD, "Unexpected Network Type: %d\n", ucNetTypeIndex);
 			ASSERT(0);
 			break;
 		}

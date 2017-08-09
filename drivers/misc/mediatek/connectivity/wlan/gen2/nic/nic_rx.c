@@ -1418,25 +1418,6 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 	nicRxFillRFB(prAdapter, prSwRfb);
 
-#if 1				/* Check 1x Pkt */
-	if (prSwRfb->u2PacketLen > 14) {
-		PUINT_8 pc = (PUINT_8) prSwRfb->pvHeader;
-		UINT_16 u2Etype = 0;
-
-		u2Etype = (pc[ETH_TYPE_LEN_OFFSET] << 8) | (pc[ETH_TYPE_LEN_OFFSET + 1]);
-
-#if CFG_SUPPORT_WAPI
-		if (u2Etype == ETH_P_1X || u2Etype == ETH_WPI_1X)
-			DBGLOG(RSN, INFO, "R1X len=%d\n", prSwRfb->u2PacketLen);
-#else
-		if (u2Etype == ETH_P_1X)
-			DBGLOG(RSN, INFO, "R1X len=%d\n", prSwRfb->u2PacketLen);
-#endif
-		else if (u2Etype == ETH_P_PRE_1X)
-			DBGLOG(RSN, INFO, "Pre R1X len=%d\n", prSwRfb->u2PacketLen);
-	}
-#endif
-
 #if CFG_TCP_IP_CHKSUM_OFFLOAD || CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60
 	{
 		UINT_32 u4TcpUdpIpCksStatus;
@@ -1749,7 +1730,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 	prGlueInfo = prAdapter->prGlueInfo;
 
-	DBGLOG(RX, INFO, "prEvent->ucEID = 0x%02x\n", prEvent->ucEID);
+	DBGLOG(RX, EVENT, "prEvent->ucEID = 0x%02x\n", prEvent->ucEID);
 	/* Event Handling */
 	switch (prEvent->ucEID) {
 	case EVENT_ID_WARNING_TO_DRIVER:

@@ -1437,7 +1437,7 @@
  * Migration Option
  *------------------------------------------------------------------------------
  */
-#define CFG_SUPPORT_ADHOC                       1
+#define CFG_SUPPORT_ADHOC                       0
 #define CFG_SUPPORT_AAA                         1
 
 #define CFG_SUPPORT_BCM                         0

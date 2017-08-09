@@ -7539,7 +7539,8 @@ wlanoidRftestSetTestMode(IN P_ADAPTER_T prAdapter,
 	} else {
 		rStatus = WLAN_STATUS_INVALID_DATA;
 	}
-
+	DBGLOG(OID, INFO, "Enter TestMode, setBufLen %u, InTestMode %d, rStatus %u\n",
+				u4SetBufferLen, prAdapter->fgTestMode, rStatus);
 	return rStatus;
 }
 
@@ -7599,7 +7600,8 @@ wlanoidRftestSetAbortTestMode(IN P_ADAPTER_T prAdapter,
 	} else {
 		rStatus = WLAN_STATUS_INVALID_DATA;
 	}
-
+	DBGLOG(OID, INFO, "Abort TestMode, setBufLen %u, InTestMode %d, rStatus %u\n",
+					u4SetBufferLen, prAdapter->fgTestMode, rStatus);
 	return rStatus;
 }
 

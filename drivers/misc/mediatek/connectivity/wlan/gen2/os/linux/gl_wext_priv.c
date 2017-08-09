@@ -2848,7 +2848,7 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 		goto exit;
 	}
 
-	DBGLOG(REQ, INFO, "%s: driver cmd \"%s\" on %s\n", __func__, pcCommand, prReq->ifr_name);
+	DBGLOG(REQ, TRACE, "%s: driver cmd \"%s\" on %s\n", __func__, pcCommand, prReq->ifr_name);
 
 	i4BytesWritten = priv_driver_cmds(prNetDev, pcCommand, i4TotalLen);
 
@@ -3065,7 +3065,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 
 	/* i4CmdFound */
 	if (i4CmdFound == 0)
-		DBGLOG(REQ, INFO, "Unknown driver command %s - ignored\n", pcCommand);
+		DBGLOG(REQ, TRACE, "Unknown driver command %s - ignored\n", pcCommand);
 
 	if (i4BytesWritten >= 0) {
 		if ((i4BytesWritten == 0) && (i4TotalLen > 0)) {

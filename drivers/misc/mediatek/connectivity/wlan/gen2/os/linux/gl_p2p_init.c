@@ -135,10 +135,9 @@ void p2pHandleSystemSuspend(void)
 	UINT_32 i;
 	P_PARAM_NETWORK_ADDRESS_IP prParamIpAddr;
 
-	DBGLOG(P2P, INFO, "*********p2pEarlySuspend************\n");
 
 	if (!wlanExportGlueInfo(&prGlueInfo)) {
-		DBGLOG(P2P, INFO, "*********p2pEarlySuspend ignored************\n");
+		DBGLOG(P2P, INFO, "No glue info\n");
 		return;
 	}
 
@@ -156,7 +155,6 @@ void p2pHandleSystemSuspend(void)
 	}
 	/* <4> copy the IPv4 address */
 	kalMemCopy(ip, &(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local), sizeof(ip));
-	DBGLOG(P2P, INFO, "ip is %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
 	/* todo: traverse between list to find whole sets of IPv4 addresses */
 	if (!((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] == 0)))
@@ -236,8 +234,7 @@ void p2pHandleSystemSuspend(void)
 				   wlanoidSetP2pSetNetworkAddress,
 				   (PVOID) prParamNetAddrList, u4Len, FALSE, FALSE, TRUE, TRUE, &u4SetInfoLen);
 
-		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(P2P, ERROR, "set HW pattern filter fail 0x%x\n", rStatus);
+		DBGLOG(INIT, INFO, "IP: %d.%d.%d.%d, rStatus: %u\n", ip[0], ip[1], ip[2], ip[3], rStatus);
 	}
 }
 
@@ -250,9 +247,8 @@ void p2pHandleSystemResume(void)
 	UINT_8 ip6[16] = { 0 };	/* FIX ME: avoid to allocate large memory in stack */
 #endif
 
-	DBGLOG(P2P, INFO, "*********wlanP2PLateResume************\n");
 	if (!wlanExportGlueInfo(&prGlueInfo)) {
-		DBGLOG(P2P, INFO, "*********p2pLateResume ignored************\n");
+		DBGLOG(P2P, WARN, "no glue info\n");
 		return;
 	}
 
@@ -270,7 +266,6 @@ void p2pHandleSystemResume(void)
 	}
 	/* <4> copy the IPv4 address */
 	kalMemCopy(ip, &(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local), sizeof(ip));
-	DBGLOG(P2P, INFO, "ip is %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
 #ifdef CONFIG_IPV6
 	/* <5> get the IPv6 address */
@@ -305,8 +300,7 @@ void p2pHandleSystemResume(void)
 				   wlanoidSetP2pSetNetworkAddress,
 				   (PVOID) prParamNetAddrList, u4Len, FALSE, FALSE, TRUE, TRUE, &u4SetInfoLen);
 
-		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(P2P, ERROR, "set HW pattern filter fail 0x%x\n", rStatus);
+		DBGLOG(INIT, INFO, "IP: %d.%d.%d.%d, rStatus: %u\n", ip[0], ip[1], ip[2], ip[3], rStatus);
 	}
 }
 

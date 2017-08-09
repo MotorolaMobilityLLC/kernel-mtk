@@ -42,13 +42,13 @@ typedef enum _STATS_EVENT_HOST_ID {
 	STATS_HOST_EVENT_RX_DROP
 } STATS_EVENT_HOST_ID;
 
-enum TX_DONE_CFG {
-	CFG_ARP = 0,
-	CFG_DNS = 1,
-	CFG_TCP = 2,
-	CFG_UDP = 3,
-	CFG_NUM
-};
+#define CFG_ARP BIT(0)
+#define CFG_DNS BIT(1)
+#define CFG_TCP BIT(2)
+#define CFG_UDP BIT(3)
+#define CFG_EAPOL BIT(4)
+#define CFG_DHCP BIT(5)
+#define CFG_ICMP BIT(6)
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
