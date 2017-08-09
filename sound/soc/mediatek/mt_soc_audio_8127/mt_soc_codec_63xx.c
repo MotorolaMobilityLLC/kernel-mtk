@@ -1121,10 +1121,12 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 		}
 
+#if 0	/* no need to reset the DC compensation value to fix the pop noise when turn off */
 		pmic_set_ana_reg(ABB_AFE_CON3, 0, 0xffff);	/* LCH cancel DC */
 		pmic_set_ana_reg(ABB_AFE_CON4, 0, 0xffff);	/* RCH cancel DC */
 		pmic_set_ana_reg(ABB_AFE_CON10, 0x0000, 0x0001);	/* enable DC cpmpensation */
 		DCChangeTrigger();	/* Trigger DC compensation */
+#endif
 
 		if (GetDLStatus() == false)
 			TurnOffDacPower();
@@ -1707,10 +1709,12 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		HeadsetVoloumeRestore();
 
 		if (GetDLStatus() == false) {
+#if 0	/* do not reset DC calibration value when turn off to fix pop noise issue when turn off */
 			pmic_set_ana_reg(ABB_AFE_CON3, 0, 0xffff);	/* LCH cancel DC */
 			pmic_set_ana_reg(ABB_AFE_CON4, 0, 0xffff);	/* RCH cancel DC */
 			pmic_set_ana_reg(ABB_AFE_CON10, 0x0000, 0x0001);	/* enable DC cpmpensation */
 			DCChangeTrigger();	/* Trigger DC compensation */
+#endif
 			TurnOffDacPower();
 		}
 	}

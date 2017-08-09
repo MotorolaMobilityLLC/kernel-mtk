@@ -20,7 +20,7 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
-/* #include <mt-plat/upmu_common.h> */
+#include <mt-plat/upmu_common.h>
 /* #include <mach/upmu_sw.h> */
 /* #include <mach/upmu_hw.h> */
 /* #include <mach/mt_pmic_wrap.h> */
@@ -101,6 +101,9 @@ static int mHplOffset;
 static bool mHprCalibrated;
 static int mHprOffset;
 static bool AudDrvSuspend_ipoh_Status;
+
+#define AUXADC_HP_L_CHANNEL 15
+#define AUXADC_HP_R_CHANNEL 14
 
 int Get_Audio_Mode(void)
 {
@@ -569,119 +572,50 @@ static struct snd_dma_buffer *Dl1_Playback_dma_buf;
 static void GetAudioTrimOffset(int channels)
 {
 	int Buffer_on_value = 0, Buffer_offl_value = 0, Buffer_offr_value = 0;
-#ifdef MTK_FPGA
-	const int off_counter = 20, on_counter = 20;
-#endif
-	const int Const_DC_OFFSET = 2048;
+	int count = 0, countlimit = 5;
+	int val_hpr_on_sum = 0, val_hpl_on_sum = 0;
+	const int off_counter = 20, on_counter = 20, Const_DC_OFFSET = 0;
 
 	pr_debug("%s channels = %d\n", __func__, channels);
 	/* open headphone and digital part */
 	mt_afe_main_clk_on();
 	mt_afe_emi_clk_on();
 	OpenAfeDigitaldl1(true);
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenTrimBufferHardware(true);
-			setHpGainZero();
-			break;
-		}
-	default:
-		break;
+
+	setHpDcCalibration(AUDIO_ANALOG_DEVICE_OUT_HEADSETR, 0);
+	setHpDcCalibration(AUDIO_ANALOG_DEVICE_OUT_HEADSETL, 0);
+	/* get DC value when off */
+	Buffer_offl_value = PMIC_IMM_GetOneChannelValue(AUXADC_HP_L_CHANNEL, off_counter, 0);
+	pr_debug("%s, Buffer_offl_value = %d\n", __func__, Buffer_offl_value);
+
+	Buffer_offr_value = PMIC_IMM_GetOneChannelValue(AUXADC_HP_R_CHANNEL, off_counter, 0);
+	pr_debug("%s, Buffer_offr_value = %d\n", __func__, Buffer_offr_value);
+
+	OpenAnalogHeadphone(true);
+	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETR, 10);	/* -1dB, (9-(-1) = 10) */
+	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETL, 10);
+
+	usleep_range(10*1000, 15*1000);
+
+	for (count = 0; count < countlimit; count++) {
+		Buffer_on_value = PMIC_IMM_GetOneChannelValue(AUXADC_HP_L_CHANNEL, on_counter, 0);
+		val_hpl_on_sum += Buffer_on_value;
+		pr_debug
+		("%s,on=%d,offl=%d,hpl_on_sum=%d\n", __func__, Buffer_on_value, Buffer_offl_value, val_hpl_on_sum);
+
+		Buffer_on_value = PMIC_IMM_GetOneChannelValue(AUXADC_HP_R_CHANNEL, on_counter, 0);
+		val_hpr_on_sum += Buffer_on_value;
+		pr_debug
+		("%s,on=%d,offr=%d,hpr_on_sum=%d\n", __func__, Buffer_on_value, Buffer_offr_value, val_hpr_on_sum);
 	}
-	/* Get HPL off offset */
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	/* msleep(1); */
-	usleep_range(1*1000, 20*1000);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/* msleep(1); */
-	usleep_range(1*1000, 20*1000);
-#ifdef MTK_FPGA
-	Buffer_offl_value = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, off_counter, 0);
-#else
-	Buffer_offl_value = 0;
-#endif
-	pr_debug("Buffer_offl_value = %d\n", Buffer_offl_value);
-	EnableTrimbuffer(false);
-	/* Get HPR off offset */
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/* msleep(5); */
-	usleep_range(5*1000, 20*1000);
-#ifdef MTK_FPGA
-	Buffer_offr_value = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, off_counter, 0);
-#else
-	Buffer_offr_value = 0;
-#endif
-	pr_debug("Buffer_offr_value = %d\n", Buffer_offr_value);
-	EnableTrimbuffer(false);
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenTrimBufferHardware(false);
-			break;
-		}
-	default:
-		break;
-	}
-	/* calibrate HPL offset trim */
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
-	setOffsetTrimBufferGain(3);
-#if 0
-	EnableTrimbuffer(true);
-	/* msleep(5); */
-	usleep_range(5*1000, 20*1000);
-#endif
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenAnalogHeadphone(true);
-			setHpGainZero();
-			break;
-		}
-	default:
-		break;
-	}
-	EnableTrimbuffer(true);
-	/* msleep(10); */
-	usleep_range(10*1000, 20*1000);
-#ifdef CONFIG_MTK_FPGA
-	Buffer_on_value = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, on_counter, 0);
-#else
-	Buffer_on_value = 0;
-#endif
-	mHplOffset = Buffer_on_value - Buffer_offl_value + Const_DC_OFFSET;
-	pr_debug("Buffer_on_value = %d Buffer_offl_value = %d mHplOffset = %d\n", Buffer_on_value,
-		 Buffer_offl_value, mHplOffset);
-	EnableTrimbuffer(false);
-	/* calibrate HPL offset trim */
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/* msleep(10); */
-	usleep_range(10*1000, 20*1000);
-#ifdef CONFIG_MTK_FPGA
-	Buffer_on_value = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, on_counter, 0);
-#else
-	Buffer_on_value = 0;
-#endif
-	mHprOffset = Buffer_on_value - Buffer_offr_value + Const_DC_OFFSET;
-	pr_debug("Buffer_on_value = %d Buffer_offr_value = %d mHprOffset = %d\n", Buffer_on_value,
-		 Buffer_offr_value, mHprOffset);
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:
-		OpenAnalogHeadphone(false);
-		break;
-	}
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	EnableTrimbuffer(false);
+	mHplOffset = (val_hpl_on_sum / countlimit) - Buffer_offl_value + Const_DC_OFFSET;
+	mHprOffset = (val_hpr_on_sum / countlimit) - Buffer_offr_value + Const_DC_OFFSET;
+	pr_debug("%s, mHplOffset = %d, mHprOffset=%d\n", __func__, mHplOffset, mHprOffset);
+
+	OpenAnalogHeadphone(false);
+
 	OpenAfeDigitaldl1(false);
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
 	mt_afe_emi_clk_off();
 	mt_afe_main_clk_off();
 }
