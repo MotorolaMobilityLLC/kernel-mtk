@@ -841,7 +841,7 @@ static void sensor_init(void)
     write_cmos_sensor(0x9341,0x3C);
     write_cmos_sensor(0x9342,0x03);
     write_cmos_sensor(0x9343,0xFF);
-    //write_cmos_sensor(0x0101,0x03);
+    write_cmos_sensor(0x0101,0x03);
 }	/*	sensor_init  */
 
 
