@@ -4338,12 +4338,11 @@ static int battery_probe(struct platform_device *dev)
 	g_bat_init_flag = KAL_TRUE;
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	if (g_vcdt_irq_delay_flag == KAL_TRUE)
+	if ((g_vcdt_irq_delay_flag == KAL_TRUE) || (upmu_is_chr_det() == KAL_TRUE))
 		do_chrdet_int_task();
 #endif
 
 	return 0;
-
 }
 
 static void battery_timer_pause(void)
