@@ -349,7 +349,7 @@ int do_esd_check_read(void)
 	cmdqRecHandle handle;
 
 	/* 0.create esd check cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
 
 	primary_display_manual_lock();
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
