@@ -73,6 +73,7 @@
 #define MSDC_DMA_CFG     0x9c
 #define MSDC_PATCH_BIT   0xb0
 #define MSDC_PATCH_BIT1  0xb4
+#define MSDC_PATCH_BIT2  0xb8
 #define MSDC_PAD_TUNE    0xec
 #define MSDC_PAD_TUNE0   0xf0
 #define PAD_DS_TUNE      0x188
@@ -213,6 +214,9 @@
 #define MSDC_PATCH_BIT_SPCPUSH    (0x1 << 29)	/* RW */
 #define MSDC_PATCH_BIT_DECRCTMO   (0x1 << 30)	/* RW */
 
+#define MSDC_PATCH_BIT2_CFGRESP   (0x1 << 15)   /* RW */
+#define MSDC_PATCH_BIT2_CFGCRCSTS (0x1 << 28)   /* RW */
+
 #define MSDC_PAD_TUNE_DATRRDLY	  (0x1f <<  8)	/* RW */
 #define MSDC_PAD_TUNE_CMDRDLY	  (0x1f << 16)  /* RW */
 #define MSDC_PAD_TUNE_CMDRRDLY    (0x1f << 22)  /* RW */
@@ -288,6 +292,7 @@ struct msdc_save_para {
 	u32 pad_tune;
 	u32 patch_bit0;
 	u32 patch_bit1;
+	u32 patch_bit2;
 	u32 pad_ds_tune;
 	u32 emmc50_cfg0;
 };
@@ -1211,8 +1216,13 @@ static void msdc_init_hw(struct msdc_host *host)
 	writel(val, host->base + MSDC_INT);
 
 	writel(0, host->base + tune_reg);
-	if (host->dev_comp->pad_tune0 == 1)
-		sdr_set_field(host->base + tune_reg, MSDC_PAD_TUNE_RXDLYSEL, 1);
+	if (host->dev_comp->pad_tune0 == 1) {
+		sdr_set_bits(host->base + tune_reg, MSDC_PAD_TUNE_RXDLYSEL);
+		sdr_set_bits(host->base + MSDC_PATCH_BIT2,
+			     MSDC_PATCH_BIT2_CFGRESP);
+		sdr_clr_bits(host->base + MSDC_PATCH_BIT2,
+			     MSDC_PATCH_BIT2_CFGCRCSTS);
+	}
 	writel(0, host->base + MSDC_IOCON);
 	sdr_set_field(host->base + MSDC_IOCON, MSDC_IOCON_DDLSEL, 0);
 	writel(0x403c0046, host->base + MSDC_PATCH_BIT);
@@ -1801,6 +1811,7 @@ static void msdc_save_reg(struct msdc_host *host)
 	host->save_para.pad_tune = readl(host->base + tune_reg);
 	host->save_para.patch_bit0 = readl(host->base + MSDC_PATCH_BIT);
 	host->save_para.patch_bit1 = readl(host->base + MSDC_PATCH_BIT1);
+	host->save_para.patch_bit2 = readl(host->base + MSDC_PATCH_BIT2);
 	host->save_para.pad_ds_tune = readl(host->base + PAD_DS_TUNE);
 	host->save_para.emmc50_cfg0 = readl(host->base + EMMC50_CFG0);
 }
@@ -1817,6 +1828,7 @@ static void msdc_restore_reg(struct msdc_host *host)
 	writel(host->save_para.pad_tune, host->base + tune_reg);
 	writel(host->save_para.patch_bit0, host->base + MSDC_PATCH_BIT);
 	writel(host->save_para.patch_bit1, host->base + MSDC_PATCH_BIT1);
+	writel(host->save_para.patch_bit2, host->base + MSDC_PATCH_BIT2);
 	writel(host->save_para.pad_ds_tune, host->base + PAD_DS_TUNE);
 	writel(host->save_para.emmc50_cfg0, host->base + EMMC50_CFG0);
 }
