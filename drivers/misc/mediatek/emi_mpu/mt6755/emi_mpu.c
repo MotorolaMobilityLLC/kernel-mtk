@@ -1976,24 +1976,45 @@ unsigned int enable_4G(void)
 
 static int __init dram_4gb_init(void)
 {
-	void __iomem *INFRASYS_BASE_ADDR = NULL;
+	void __iomem *INFRA_BASE_ADDR = NULL;
+	void __iomem *PERISYS_BASE_ADDR = NULL;
 	struct device_node *node;
+	unsigned int infra_4g_sp, perisis_4g_sp;
 
-	/* get the information for 4G mode */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-infrasys");
-	if (node) {
-		INFRASYS_BASE_ADDR = of_iomap(node, 0);
-	} else {
-		pr_err("INFRASYS_BASE_ADDR can't find compatible node\n");
-		return -1;
-	}
 
-	if ((readl(IOMEM(INFRASYS_BASE_ADDR + 0xf00)) & 0x2000) == 0) {
-		enable_4gb = 0;
-		pr_err("[EMI MPU] Not 4G mode\n");
-	} else { /* enable 4G mode */
+	if (!node)
+		pr_err("find INFRACFG_AO node failed\n");
+
+	INFRA_BASE_ADDR = of_iomap(node, 0);
+
+	if (!INFRA_BASE_ADDR)
+		pr_err("INFRACFG_AO ioremap failed\n");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-perisys");
+
+	if (!node)
+		pr_err("find PERICFG node failed\n");
+
+	PERISYS_BASE_ADDR = of_iomap(node, 0);
+
+	if (!PERISYS_BASE_ADDR)
+		pr_err("PERISYS_BASE_ADDR ioremap failed\n");
+
+	infra_4g_sp = readl(IOMEM(INFRA_BASE_ADDR + 0xf00)) & (1 << 13);
+	perisis_4g_sp = readl(IOMEM(PERISYS_BASE_ADDR + 0x208)) & (1 << 15);
+
+	pr_err("infra = 0x%x   perisis = 0x%x   result = %d\n",
+	       infra_4g_sp,
+	       perisis_4g_sp,
+	       (infra_4g_sp && perisis_4g_sp));
+
+	if (infra_4g_sp && perisis_4g_sp) {
 		enable_4gb = 1;
 		pr_err("[EMI MPU] 4G mode\n");
+	} else {
+		enable_4gb = 0;
+		pr_err("[EMI MPU] Not 4G mode\n");
 	}
 
 	return 0;
