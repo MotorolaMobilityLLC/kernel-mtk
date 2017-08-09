@@ -570,7 +570,7 @@ static int __init dt_get_ram_console(unsigned long node, const char *uname, int 
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
 
-	sram = (struct mem_desc_t *) of_get_flat_dt_prop(node, "non_secure_sram", NULL);
+	sram = (struct mem_desc_t *) of_get_flat_dt_prop(node, "ram_console", NULL);
 	if (sram) {
 		pr_notice("ram_console:[DT] 0x%lx@0x%lx\n", sram->size, sram->start);
 		*(struct mem_desc_t *) data = *sram;
