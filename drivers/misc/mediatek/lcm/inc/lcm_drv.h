@@ -1,6 +1,9 @@
 #ifndef __LCM_DRV_H__
 #define __LCM_DRV_H__
 
+#include <linux/device.h>
+#include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
 
 #ifndef ARY_SIZE
 #define ARY_SIZE(x) (sizeof((x)) / sizeof((x[0])))
@@ -570,7 +573,7 @@ typedef struct {
 	MIPITX_PHY_LANE_SWAP lane_swap[MIPITX_PHY_PORT_NUM][MIPITX_PHY_LANE_NUM];
 
 	unsigned int        vertical_vfp_lp;
-
+	unsigned int		PLL_CLOCK_lp;
 	unsigned int		ulps_sw_enable;
 	unsigned int		null_packet_en;
 	unsigned int		mixmode_enable;

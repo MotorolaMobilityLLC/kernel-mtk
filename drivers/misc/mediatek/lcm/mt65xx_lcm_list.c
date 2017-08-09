@@ -871,6 +871,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(ST7789H2_DBI)
 	&st7789h2_dbi_lcm_drv,
 #endif
+
+#if defined(CM_N070ICE_DSI_VDO_MT8173)
+	&cm_n070ice_dsi_vdo_mt8173_lcm_drv,
+#endif
 };
 
 #define LCM_COMPILE_ASSERT(condition) LCM_COMPILE_ASSERT_X(condition, __LINE__)
