@@ -978,7 +978,6 @@ int CM36558_setup_eint(struct i2c_client *client)
 /* eint request */
 	if (CM36558_obj->irq_node) {
 		of_property_read_u32_array(CM36558_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
-		gpio_request(ints[0], "p-sensor");
 		gpio_set_debounce(ints[0], ints[1]);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
