@@ -1779,63 +1779,6 @@ static long sock_wait_for_wmem(struct sock *sk, long timeo)
 	return timeo;
 }
 
-static int sock_dump_info(struct sock *sk)
-{
-	if (sk->sk_family == AF_UNIX) {
-		struct unix_sock *u = unix_sk(sk);
-		struct sock *other = NULL;
-
-		if ((u->path.dentry != NULL) && (u->path.dentry->d_iname != NULL)) {
-#ifdef CONFIG_MTK_NET_LOGGING
-			pr_debug("[mtk_net][sock]sockdbg: socket-Name:%s\n", u->path.dentry->d_iname);
-#endif
-		} else {
-#ifdef CONFIG_MTK_NET_LOGGING
-			pr_debug("[mtk_net][sock]sockdbg:socket Name (NULL)\n");
-#endif
-		}
-
-		if (sk->sk_socket && SOCK_INODE(sk->sk_socket)) {
-#ifdef CONFIG_MTK_NET_LOGGING
-			pr_debug("[mtk_net][sock]sockdbg:socket Inode[%lu]\n",
-				 SOCK_INODE(sk->sk_socket)->i_ino);
-#endif
-		}
-
-		other = unix_sk(sk)->peer;
-		if (!other) {
-#ifdef CONFIG_MTK_NET_LOGGING
-			pr_debug("[mtk_net][sock]sockdbg:peer is (NULL)\n");
-#endif
-		} else {
-			if ((((struct unix_sock *)other)->path.dentry != NULL) &&
-			    (((struct unix_sock *)other)->path.dentry->d_iname != NULL)) {
-#ifdef CONFIG_MTK_NET_LOGGING
-				char *name = ((struct unix_sock *)other)->path.dentry->d_iname;
-
-				pr_debug("[mtk_net][sock]sockdbg: Peer Name:%s\n", name);
-#endif
-			} else {
-#ifdef CONFIG_MTK_NET_LOGGING
-				pr_debug("[mtk_net][sock]sockdbg: Peer Name (NULL)\n");
-#endif
-			}
-
-			if (other->sk_socket && SOCK_INODE(other->sk_socket)) {
-#ifdef CONFIG_MTK_NET_LOGGING
-				char *name = ((struct unix_sock *)other)->path.dentry->d_iname;
-
-				pr_debug("[mtk_net][sock]sockdbg: Peer Inode [%lu]\n", name);
-#endif
-			}
-#ifdef CONFIG_MTK_NET_LOGGING
-			pr_debug("[mtk_net][sock]sockdbg: Peer Receive Queue len:%d\n", other->sk_receive_queue.qlen);
-#endif
-		}
-	}
-	return 0;
-}
-
 /*
  *	Generic send/receive buffer handlers
  */
@@ -1868,7 +1811,6 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 			goto failure;
 		if (signal_pending(current))
 			goto interrupted;
-	sock_dump_info(sk);
 		#ifdef CONFIG_MTK_NET_LOGGING
 		pr_debug("[mtk_net][sock]sockdbg: wait_for_wmem, timeo =%ld, wmem =%d, snd buf =%d\n",
 			 timeo, atomic_read(&sk->sk_wmem_alloc), sk->sk_sndbuf);
