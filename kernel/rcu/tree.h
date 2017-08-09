@@ -642,4 +642,59 @@ static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long *qll)
 	*qll = 0;
 }
 #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
+
+#ifdef CONFIG_MT_ENG_BUILD
+#define RCU_MONITOR			1	/* RCU_MONITOR only turn on for eng build */
+#endif
+
+#ifdef RCU_MONITOR
+#include <linux/sched.h>
+
+#define MAX_RCU_BUFF_LEN			10240
+#define MAX_SERVICE_NAME_LEN		16
+
+#define CALL_RCU			0
+#define INVOKE_RCU			1
+
+struct rcu_callback_log_entry {
+	int cpu;
+	char rcuname[MAX_SERVICE_NAME_LEN];
+	char comm[TASK_COMM_LEN];
+	unsigned long rhp;
+	unsigned long func;
+	long qlen;
+	unsigned long gpnum;
+	unsigned long ip;
+	ktime_t time;
+};
+
+struct rcu_callback_log {
+	int next;
+	int full;
+	unsigned size;
+	struct rcu_callback_log_entry *entry;
+};
+
+struct rcu_invoke_log_entry {
+	int cpu;
+	char rcuname[MAX_SERVICE_NAME_LEN];
+	unsigned long rhp;
+	unsigned long func;
+	long qlen;
+	unsigned long gpnum;
+	ktime_t time_start;
+	s64 time_dur;
+	ktime_t timestamp;
+};
+
+struct rcu_invoke_log {
+	int next;
+	int full;
+	unsigned size;
+	struct rcu_invoke_log_entry *entry;
+};
+
+extern struct rcu_callback_log_entry *rcu_callback_log_add(void);
+extern struct rcu_invoke_log_entry *rcu_invoke_log_add(void);
+#endif /* #ifdef RCU_MONITOR */
 #endif /* #ifdef CONFIG_RCU_TRACE */

@@ -46,6 +46,13 @@
 #define RCU_TREE_NONCORE
 #include "tree.h"
 
+#ifdef CONFIG_MTK_EXTMEM
+#include <linux/exm_driver.h>
+#else
+static struct rcu_callback_log_entry callback_entry_t[MAX_RCU_BUFF_LEN];
+static struct rcu_invoke_log_entry invoke_entry_t[MAX_RCU_BUFF_LEN];
+#endif
+
 static int r_open(struct inode *inode, struct file *file,
 					const struct seq_operations *op)
 {
@@ -419,6 +426,170 @@ static const struct file_operations rcutorture_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+#ifdef RCU_MONITOR
+static struct rcu_callback_log rcu_callback_log_head;
+static struct rcu_invoke_log rcu_invoke_callback_log;
+
+struct rcu_callback_log_entry *rcu_callback_log_add(void)
+{
+	struct rcu_callback_log *log = &rcu_callback_log_head;
+	struct rcu_callback_log_entry *e;
+
+	if (log->entry == NULL)
+		return NULL;
+
+	e = &log->entry[log->next];
+	memset(e, 0, sizeof(*e));
+	log->next++;
+	if (log->next == log->size) {
+		log->next = 0;
+		log->full = 1;
+	}
+	return e;
+}
+
+struct rcu_invoke_log_entry *rcu_invoke_log_add(void)
+{
+	struct rcu_invoke_log *log = &rcu_invoke_callback_log;
+	struct rcu_invoke_log_entry *e;
+
+	if (log->entry == NULL)
+		return NULL;
+
+	e = &log->entry[log->next];
+	memset(e, 0, sizeof(*e));
+	log->next++;
+	if (log->next == log->size) {
+		log->next = 0;
+		log->full = 1;
+	}
+	return e;
+}
+
+static void print_rcu_callback_log_entry(struct seq_file *m, struct
+					       rcu_callback_log_entry * e)
+{
+	seq_puts(m, "callrcu:");
+	if (__is_kfree_rcu_offset(e->func)) {
+		seq_printf(m, "kreercu %s rhp=%p func=%ld caller:%s ",
+			e->rcuname, (void *)e->rhp, e->func, e->comm);
+		seq_printf(m, "qlen=%ld gpnum=%lu (%pf) time:%lld us\n",
+			e->qlen, e->gpnum, (void *)e->ip, ktime_to_us(e->time));
+	} else {
+		seq_printf(m, "callback %s rhp=%p func=%pf caller:%s ",
+			e->rcuname, (void *)e->rhp, (void *)e->func, e->comm);
+		seq_printf(m, "qlen=%ld gpnum=%lu (%pf) time:%lld us\n",
+			e->qlen, e->gpnum, (void *)e->ip, ktime_to_us(e->time));
+	}
+}
+
+static void print_rcu_invoke_log_entry(struct seq_file *m, struct
+					       rcu_invoke_log_entry * e)
+{
+	seq_puts(m, "invoke:");
+	if (__is_kfree_rcu_offset(e->func)) {
+		seq_printf(m, "kreercu %s rhp=%p func=%ld ",
+			e->rcuname, (void *)e->rhp, e->func);
+		seq_printf(m, "qlen=%ld gpnum=%lu time:%lld us ",
+			e->qlen, e->gpnum, ktime_to_us(e->timestamp));
+	} else {
+		seq_printf(m, "callback %s rhp=%p func=%pf ",
+			e->rcuname, (void *)e->rhp, (void *)e->func);
+		seq_printf(m, "qlen=%ld gpnum=%lu time:%lld us ",
+			e->qlen, e->gpnum, ktime_to_us(e->timestamp));
+	}
+	if (e->time_dur)
+		seq_printf(m, "dur_time:%lld us start:%lld us",
+		e->time_dur, ktime_to_us(e->time_start));
+	seq_puts(m, "\n");
+}
+
+static int rcu_callback_log_show(struct seq_file *m, void *unused)
+{
+	struct rcu_callback_log *rcu_log = &rcu_callback_log_head;
+	struct rcu_invoke_log *invoke_log = &rcu_invoke_callback_log;
+	int i;
+
+	if (!rcu_log->entry || !invoke_log->entry)
+		return 0;
+
+	seq_puts(m, "========================");
+	seq_puts(m, "RCU CALLBACK LIST");
+	seq_puts(m, "========================\n");
+
+	if (rcu_log->full) {
+		for (i = rcu_log->next; i < rcu_log->size; i++)
+			print_rcu_callback_log_entry(m, &rcu_log->entry[i]);
+	}
+
+	for (i = 0; i < rcu_log->next; i++)
+		print_rcu_callback_log_entry(m, &rcu_log->entry[i]);
+
+	seq_puts(m, "========================");
+	seq_puts(m, "RCU INVOKE CALLBACK LIST");
+	seq_puts(m, "========================\n");
+
+	if (invoke_log->full) {
+		for (i = invoke_log->next; i < invoke_log->size; i++)
+			print_rcu_invoke_log_entry(m, &invoke_log->entry[i]);
+	}
+
+	for (i = 0; i < invoke_log->next; i++)
+		print_rcu_invoke_log_entry(m, &invoke_log->entry[i]);
+
+	return 0;
+}
+
+static int rcu_callback_log_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, rcu_callback_log_show, NULL);
+}
+
+static const struct file_operations rcu_callback_log_fops = {
+	.owner = THIS_MODULE,
+	.open = rcu_callback_log_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static void alloc_rcu_log_entry(void)
+{
+#ifdef CONFIG_MTK_EXTMEM
+	rcu_callback_log_head.entry =
+		extmem_malloc_page_align(sizeof(struct rcu_callback_log_entry)
+					* MAX_RCU_BUFF_LEN);
+	rcu_callback_log_head.size = MAX_RCU_BUFF_LEN;
+	rcu_callback_log_head.next = 0;
+
+	if (rcu_callback_log_head.entry == NULL) {
+		pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
+		rcu_callback_log_head.entry =
+		vmalloc(sizeof(struct rcu_callback_log_entry) *
+					MAX_RCU_BUFF_LEN);
+	}
+
+	rcu_invoke_callback_log.entry =
+		extmem_malloc_page_align(sizeof(struct rcu_invoke_log_entry)
+					* MAX_RCU_BUFF_LEN);
+	rcu_invoke_callback_log.size = MAX_RCU_BUFF_LEN;
+	rcu_invoke_callback_log.next = 0;
+
+	if (rcu_invoke_callback_log.entry == NULL) {
+		pr_err("%s[%s] ext emory alloc failed!!!\n", __FILE__, __func__);
+		rcu_invoke_callback_log.entry =
+		vmalloc(sizeof(struct rcu_invoke_log_entry) *
+					MAX_RCU_BUFF_LEN);
+	}
+#else
+	rcu_callback_log_head.entry = &callback_entry_t[0];
+	rcu_callback_log_head.size = ARRAY_SIZE(callback_entry_t);
+
+	rcu_invoke_callback_log.entry = &invoke_entry_t[0];
+	rcu_invoke_callback_log.size = ARRAY_SIZE(invoke_entry_t);
+#endif
+}
+#endif
 
 static struct dentry *rcudir;
 
@@ -427,6 +598,10 @@ static int __init rcutree_trace_init(void)
 	struct rcu_state *rsp;
 	struct dentry *retval;
 	struct dentry *rspdir;
+
+#ifdef RCU_MONITOR
+	alloc_rcu_log_entry();
+#endif
 
 	rcudir = debugfs_create_dir("rcu", NULL);
 	if (!rcudir)
@@ -479,6 +654,10 @@ static int __init rcutree_trace_init(void)
 
 	retval = debugfs_create_file("rcutorture", 0444, rcudir,
 						NULL, &rcutorture_fops);
+#ifdef RCU_MONITOR
+	retval = debugfs_create_file("rcu_callback_log", 0444, rcudir,
+						NULL, &rcu_callback_log_fops);
+#endif
 	if (!retval)
 		goto free_out;
 	return 0;
