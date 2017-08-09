@@ -11,6 +11,7 @@ config MTK_WATCHDOG
 # common watchdog driver
 config MTK_WATCHDOG_COMMON
 	bool "WatchDog Support Common"
+	select RESET_CONTROLLER
 	---help---
 	Watch dog mtk driver support common code between different Socs.
 

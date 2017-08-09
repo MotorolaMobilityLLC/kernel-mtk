@@ -29,6 +29,10 @@
 
 #include <mach/wd_api.h>
 
+#include <linux/reset-controller.h>
+#include <linux/slab.h>
+#include <linux/reset.h>
+
 void __iomem *toprgu_base = 0;
 int wdt_irq_id = 0;
 #define AP_RGU_WDT_IRQ_ID    wdt_irq_id
@@ -53,6 +57,97 @@ static unsigned int timeout;
 
 static int g_last_time_time_out_value;
 static int g_wdt_enable = 1;
+
+#define TOPRGU_SWRST_KEY 0x88000000
+
+struct toprgu_reset {
+	spinlock_t lock;
+	void __iomem *toprgu_swrst_base;
+	int regofs;
+	struct reset_controller_dev rcdev;
+};
+
+static int toprgu_reset_assert(struct reset_controller_dev *rcdev,
+			      unsigned long id)
+{
+	unsigned int tmp;
+	unsigned long flags;
+	struct toprgu_reset *data = container_of(rcdev, struct toprgu_reset, rcdev);
+
+	spin_lock_irqsave(&data->lock, flags);
+
+	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
+	tmp |= BIT(id);
+	tmp |= TOPRGU_SWRST_KEY;
+	writel(tmp, data->toprgu_swrst_base + data->regofs);
+
+	spin_unlock_irqrestore(&data->lock, flags);
+
+	return 0;
+}
+
+static int toprgu_reset_deassert(struct reset_controller_dev *rcdev,
+				unsigned long id)
+{
+	unsigned int tmp;
+	unsigned long flags;
+	struct toprgu_reset *data = container_of(rcdev, struct toprgu_reset, rcdev);
+
+	spin_lock_irqsave(&data->lock, flags);
+
+	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
+	tmp &= ~BIT(id);
+	tmp |= TOPRGU_SWRST_KEY;
+	writel(tmp, data->toprgu_swrst_base + data->regofs);
+
+	spin_unlock_irqrestore(&data->lock, flags);
+
+	return 0;
+}
+
+static int toprgu_reset(struct reset_controller_dev *rcdev,
+			      unsigned long id)
+{
+	int ret;
+
+	ret = toprgu_reset_assert(rcdev, id);
+	if (ret)
+		return ret;
+
+	return toprgu_reset_deassert(rcdev, id);
+}
+
+static struct reset_control_ops toprgu_reset_ops = {
+	.assert = toprgu_reset_assert,
+	.deassert = toprgu_reset_deassert,
+	.reset = toprgu_reset,
+};
+
+static void toprgu_register_reset_controller(void __iomem *toprgu_base,
+			unsigned int num_regs, int regofs)
+{
+	struct toprgu_reset *data;
+	int ret;
+
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return;
+
+	spin_lock_init(&data->lock);
+
+	data->toprgu_swrst_base = toprgu_base;
+	data->regofs = regofs;
+	data->rcdev.owner = THIS_MODULE;
+	data->rcdev.nr_resets = num_regs * 32;
+	data->rcdev.ops = &toprgu_reset_ops;
+
+	ret = reset_controller_register(&data->rcdev);
+	if (ret) {
+		pr_err("could not register toprgu reset controller: %d\n", ret);
+		kfree(data);
+		return;
+	}
+}
 
 #ifndef __USING_DUMMY_WDT_DRV__	/* FPGA will set this flag */
 /*
@@ -513,6 +608,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_MODE(%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_IRQ_EN(%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
+
+	toprgu_register_reset_controller(toprgu_base, 1, 0x18);
 
 	return ret;
 }
