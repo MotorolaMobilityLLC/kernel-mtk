@@ -291,7 +291,6 @@
 		compatible = "mediatek, swtp-eint";
 	};
 
-
 	pmic_clock_buffer_ctrl:pmic_clock_buffer {
 		compatible = "mediatek,pmic_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
@@ -1165,6 +1164,8 @@
 		compatible = "mediatek,therm_ctrl";
 		reg = <0 0x1100b000 0 0x1000>;
 		interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_THERM_CG>, <&infrasys INFRACFG_AO_AUXADC_CG>;
+		clock-names = "therm-main", "therm-auxadc";
 	};
 
 	btif@1100c000 {
@@ -2321,6 +2322,13 @@
 
 	mt_soc_pcm_voice_ultra {
 		compatible = "mediatek,mt_soc_pcm_voice_ultra";
+	};
+
+	rf_clock_buffer_ctrl:rf_clock_buffer {
+		compatible = "mediatek,rf_clock_buffer";
+		mediatek,clkbuf-quantity = <4>;
+		mediatek,clkbuf-config = <2 0 1 1>;
+		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
 };
 
