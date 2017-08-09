@@ -717,11 +717,12 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	   due to adb command direct disable .ocp_endis ctrl */
 	/* BigiDVFSChannel(1, 0); */
 	/* BigOCPDisable(); */
-	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status)
+
+	if (idvfs_init_opt.ocp_endis)
 		Cluster2_OCP_OFF();
 
 	/* disable OTP channel */
-	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status) {
+	if (idvfs_init_opt.otp_endis) {
 		/* wait otp move to itself disable channel */
 		BigiDVFSChannel(2, 0);
 		BigOTPDisable();
@@ -1627,8 +1628,13 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 		case 3:
 			/* Channel = 0(SW), 1(OCP), 2(OTP), EnDis = 0/1 */
 			if (err == 3) {
-				if ((cpu_online(8) == 1) || (cpu_online(9) == 1))
+				if ((cpu_online(8) == 1) || (cpu_online(9) == 1)) {
 					rc = BigiDVFSChannel(func_para[0], func_para[1]);
+					if (idvfs_init_opt.ocp_endis)
+						Cluster2_OCP_OFF();
+					if (idvfs_init_opt.otp_endis)
+						BigOTPDisable();
+				}
 				if (func_para[0] == 1)
 					idvfs_init_opt.ocp_endis = func_para[1];
 				if (func_para[0] == 2)
@@ -1715,6 +1721,11 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			if (err == 2)
 				if (func_para[0] == 11072)
 					BUG_ON(1);
+			break;
+		case 13:
+			if (err == 2)
+				infoIdvfs = func_para[0];
+			rc = 0;
 			break;
 		case 15:
 			/* iDVFSAPB stress test command */
