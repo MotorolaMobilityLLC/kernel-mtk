@@ -105,6 +105,35 @@ TRACE_EVENT(gpu_freq,
 	TP_printk("frequency=%lu", (unsigned long)__entry->frequency)
 );
 
+TRACE_EVENT(ppm_update,
+
+	TP_PROTO(
+		unsigned int policy_mask,
+		unsigned int power_budget,
+		unsigned int root_cluster,
+		char *ppm_limits
+	),
+
+	TP_ARGS(policy_mask, power_budget, root_cluster, ppm_limits),
+
+	TP_STRUCT__entry(
+		__field(unsigned int,	mask)
+		__field(unsigned int,	budget)
+		__field(unsigned int,	root)
+		__string(limits,	ppm_limits)
+	),
+
+	TP_fast_assign(
+		__entry->mask = policy_mask;
+		__entry->budget = power_budget;
+		__entry->root = root_cluster;
+		__assign_str(limits, ppm_limits);
+	),
+
+	TP_printk("(0x%x)(%d)(%d)%s", __entry->mask, __entry->budget,
+		__entry->root, __get_str(limits))
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 /* This part must be outside protection */
 #include <trace/define_trace.h>

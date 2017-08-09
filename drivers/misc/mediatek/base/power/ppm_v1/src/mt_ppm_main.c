@@ -14,6 +14,7 @@
 #include <linux/sched/rt.h>
 #include <linux/string.h>
 #include <asm/topology.h>
+#include <trace/events/mtk_events.h>
 
 #include "mt_ppm_internal.h"
 
@@ -576,6 +577,7 @@ int mt_ppm_main(void)
 
 		ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
 			c_req->root_cluster, buf);
+		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
 
 		/* check need to notify hps first or not
 		   1. one or more power budget related policy is activate
