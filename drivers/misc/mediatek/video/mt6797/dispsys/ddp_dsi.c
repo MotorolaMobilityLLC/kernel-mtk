@@ -850,40 +850,40 @@ DSI_STATUS DSI_BIST_Pattern_Test(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bo
 int ddp_dsi_porch_setting(DISP_MODULE_ENUM module, void *handle,
 		DSI_PORCH_TYPE type, unsigned int value)
 {
-	int ret = 0;
+	int i, ret = 0;
 
-	if (DISP_MODULE_DSI0 == module) {
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (DSI_VFP == type) {
-			DISPMSG("set dsi vfp to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_VFP_NL, value);
+			DISPMSG("set dsi%d vfp to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VFP_NL, value);
 		}
 		if (DSI_VSA == type) {
-			DISPMSG("set dsi vsa to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_VSA_NL, value);
+			DISPMSG("set dsi%d vsa to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VSA_NL, value);
 		}
 		if (DSI_VBP == type) {
-			DISPMSG("set dsi vbp to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_VBP_NL, value);
+			DISPMSG("set dsi%d vbp to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VBP_NL, value);
 		}
 		if (DSI_VACT == type) {
-			DISPMSG("set dsi vact to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_VACT_NL, value);
+			DISPMSG("set dsi%d vact to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VACT_NL, value);
 		}
 		if (DSI_HFP == type) {
-			DISPMSG("set dsi hfp to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_HFP_WC, value);
+			DISPMSG("set dsi%d hfp to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_HFP_WC, value);
 		}
 		if (DSI_HSA == type) {
-			DISPMSG("set dsi hsa to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_HSA_WC, value);
+			DISPMSG("set dsi%d hsa to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_HSA_WC, value);
 		}
 		if (DSI_HBP == type) {
-			DISPMSG("set dsi hbp to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_HBP_WC, value);
+			DISPMSG("set dsi%d hbp to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_HBP_WC, value);
 		}
 		if (DSI_BLLP == type) {
-			DISPMSG("set dsi bllp to %d\n", value);
-			DSI_OUTREG32(handle, &DSI_REG[0]->DSI_BLLP_WC, value);
+			DISPMSG("set dsi%d bllp to %d\n", i, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_BLLP_WC, value);
 		}
 	}
 	return ret;
