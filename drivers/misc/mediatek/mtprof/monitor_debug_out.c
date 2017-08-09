@@ -39,21 +39,21 @@ void mt_show_last_irq_counts(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&mt_irq_count_lock, flags);
-	pr_err("Last irq counts record at [%llu] ns\n", mt_save_irq_count_time);
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		pr_err("CPU#%d:\n", cpu);
+		pr_err("Last irq counts record at [%llu] ns\n", per_cpu(save_irq_count_time, cpu));
+		pr_err("CPU%d state:%s\n", cpu, cpu_online(cpu) ? "online" : "offline");
 		for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
-			if (mt_irq_count[cpu][irq] != 0)
-				pr_err("[%3d] = %8d\n", irq, mt_irq_count[cpu][irq]);
+			if (per_cpu(irq_count_mon, cpu).irqs[irq] != 0)
+				pr_err("[%3d] = %8d\n", irq, per_cpu(irq_count_mon, cpu).irqs[irq]);
 		}
 	}
 
 #ifdef CONFIG_SMP
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
 		for (irq = 0; irq < NR_IPI; irq++) {
-			if (mt_local_irq_count[cpu][irq] != 0)
+			if (per_cpu(ipi_count_mon, cpu).ipis[irq] != 0)
 				pr_err("(CPU#%d)IPI[%3d] = %8d\n", cpu, irq,
-				       mt_local_irq_count[cpu][irq]);
+				       per_cpu(ipi_count_mon, cpu).ipis[irq]);
 		}
 	}
 #endif
@@ -64,22 +64,22 @@ void mt_show_current_irq_counts(void)
 {
 	int irq, cpu, count;
 	unsigned long flags;
-	unsigned long long t_cur, t_diff;
+	unsigned long long t_cur, t_diff = 0;
 
 	t_cur = sched_clock();
 	spin_lock_irqsave(&mt_irq_count_lock, flags);
 
-	t_diff = t_cur - mt_save_irq_count_time;
 	pr_err("=========================================\nIRQ Status:\n");
-	pr_err("Current irq counts record at [%llu] ns.(last at %llu, diff:+%llu ns)\n", t_cur,
-	       mt_save_irq_count_time, t_diff);
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		pr_err(" --CPU%d--\n", cpu);
+		t_diff = t_cur - per_cpu(save_irq_count_time, cpu);
+		pr_err("Current irq counts record at [%llu] ns.(last at %llu, diff:+%llu ns)\n", t_cur,
+	       per_cpu(save_irq_count_time, cpu), usec_high(t_diff));
+		pr_err("CPU%d state:%s\n", cpu, cpu_online(cpu) ? "online" : "offline");
 		for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
 			count = kstat_irqs_cpu(irq, cpu);
 			if (count != 0)
 				pr_err(" IRQ[%3d:%14s] = %8d, (+%d times in %lld us)\n", irq,
-				       isr_name(irq), count, count - mt_irq_count[cpu][irq],
+				       isr_name(irq), count, count - per_cpu(irq_count_mon, cpu).irqs[irq],
 				       usec_high(t_diff));
 		}
 	}
@@ -90,7 +90,7 @@ void mt_show_current_irq_counts(void)
 			count = __get_irq_stat(cpu, ipi_irqs[irq]);
 			if (count != 0)
 				pr_err(" IRQ[%2d:  IPI] = %8d,(+%d times in %lld us)\n", irq, count,
-				       count - mt_local_irq_count[cpu][irq], usec_high(t_diff));
+				       count - per_cpu(ipi_count_mon, cpu).ipis[irq], usec_high(t_diff));
 		}
 	}
 #endif
@@ -117,17 +117,18 @@ static void mt_aee_show_current_irq_counts(void)
 	t_cur = sched_clock();
 	/* spin_lock_irqsave(&mt_irq_count_lock, flags); */
 
-	t_diff = t_cur - mt_save_irq_count_time;
+
 	aee_wdt_printf("\nIRQ Status\n");
-	aee_wdt_printf("Dur:%lld us,(now:%lld,last:%lld)\n", usec_high(t_diff), usec_high(t_cur),
-		 usec_high(mt_save_irq_count_time));
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		aee_wdt_printf(" CPU%d\n", cpu);
+		t_diff = t_cur - per_cpu(save_irq_count_time, cpu);
+		aee_wdt_printf("Dur:%lld us,(now:%lld,last:%lld)\n", usec_high(t_diff), usec_high(t_cur),
+		 usec_high(per_cpu(save_irq_count_time, cpu)));
+		aee_wdt_printf("CPU%d state:%s\n", cpu, cpu_online(cpu) ? "online" : "offline");
 		for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
 			count = kstat_irqs_cpu(irq, cpu);
 			if (count != 0)
 				aee_wdt_printf(" %d:%s +%d(%d)\n", irq, isr_name(irq),
-					       count - mt_irq_count[cpu][irq], count);
+					       count - per_cpu(irq_count_mon, cpu).irqs[irq], count);
 		}
 	}
 #ifdef CONFIG_SMP
@@ -137,7 +138,7 @@ static void mt_aee_show_current_irq_counts(void)
 			count = __get_irq_stat(cpu, ipi_irqs[irq]);
 			if (count != 0)
 				aee_wdt_printf(" %d:IPI +%d(%d)\n", irq,
-					       count - mt_local_irq_count[cpu][irq], count);
+					       count - per_cpu(ipi_count_mon, cpu).ipis[irq], count);
 		}
 	}
 #endif

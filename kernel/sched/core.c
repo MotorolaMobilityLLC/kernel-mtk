@@ -2662,12 +2662,17 @@ void scheduler_tick(void)
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	update_cpu_load_active(rq);
+#ifdef CONFIG_MT_SCHED_MONITOR
+	mt_trace_rqlock_start(&rq->lock);
+#endif
 	raw_spin_unlock(&rq->lock);
+#ifdef CONFIG_MT_SCHED_MONITOR
+	mt_trace_rqlock_end(&rq->lock);
+#endif
 
 	perf_event_task_tick();
 #ifdef CONFIG_MT_SCHED_MONITOR
-	if (smp_processor_id() == 0)	/* only record by CPU#0 */
-		mt_save_irq_counts();
+	mt_save_irq_counts(SCHED_TICK);
 #endif
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);

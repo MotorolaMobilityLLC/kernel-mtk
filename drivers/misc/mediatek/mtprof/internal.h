@@ -87,13 +87,3 @@ unsigned long long mtprof_get_cpu_iowait(int cpu);
 void start_record_task(void);
 void stop_record_task(void);
 void reset_record_task(void);
-
-#include <asm/hardirq.h>
-
-#define MAX_NR_IRQS 512
-extern int mt_irq_count[NR_CPUS][MAX_NR_IRQS];
-#ifdef CONFIG_SMP
-extern int mt_local_irq_count[NR_CPUS][NR_IPI];
-#endif
-extern unsigned long long mt_save_irq_count_time;
-extern spinlock_t mt_irq_count_lock;
