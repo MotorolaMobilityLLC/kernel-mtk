@@ -215,12 +215,12 @@ static void fill_nand_bmt_buffer(bmt_struct *bmt, u8 *dat, u8 *oob)
 {
 	struct phys_bmt_struct *phys_bmt;
 
-	phys_bmt = kmalloc(sizeof(struct phys_bmt_header), GFP_KERNEL);
+	phys_bmt = kmalloc(sizeof(struct phys_bmt_struct), GFP_KERNEL);
 
 	dump_bmt_info(bmt);
 
 	/* fill struct phys_bmt_struct structure with bmt_struct */
-	memset(phys_bmt, 0xFF, sizeof(struct phys_bmt_header));
+	memset(phys_bmt, 0xFF, sizeof(struct phys_bmt_struct));
 
 	memcpy(phys_bmt->header.signature, MAIN_SIGNATURE, SIGNATURE_SIZE);
 	phys_bmt->header.version = BMT_VERSION;
@@ -230,7 +230,7 @@ static void fill_nand_bmt_buffer(bmt_struct *bmt, u8 *dat, u8 *oob)
 
 	phys_bmt->header.checksum = cal_bmt_checksum(phys_bmt, bmt_block_count);
 
-	memcpy(dat + MAIN_SIGNATURE_OFFSET, phys_bmt, sizeof(struct phys_bmt_header));
+	memcpy(dat + MAIN_SIGNATURE_OFFSET, phys_bmt, sizeof(struct phys_bmt_struct));
 	memcpy(oob + OOB_SIGNATURE_OFFSET, OOB_SIGNATURE, SIGNATURE_SIZE);
 	kfree(phys_bmt);
 }
@@ -241,7 +241,7 @@ static int load_bmt_data(int start, int pool_size)
 	int bmt_index = start + pool_size - 1;	/* find from the end */
 	struct phys_bmt_struct *phys_table;
 
-	phys_table = kmalloc(sizeof(struct phys_bmt_header), GFP_KERNEL);
+	phys_table = kmalloc(sizeof(struct phys_bmt_struct), GFP_KERNEL);
 
 	MSG(INIT, "[%s]: begin to search BMT from block 0x%x\n", __func__, bmt_index);
 
@@ -267,7 +267,7 @@ static int load_bmt_data(int start, int pool_size)
 
 		MSG(INIT, "Match bmt signature @ block: 0x%x\n", bmt_index);
 
-		memcpy(phys_table, dat_buf + MAIN_SIGNATURE_OFFSET, sizeof(struct phys_bmt_header));
+		memcpy(phys_table, dat_buf + MAIN_SIGNATURE_OFFSET, sizeof(struct phys_bmt_struct));
 
 		if (!valid_bmt_data(phys_table)) {
 			MSG(INIT, "BMT data is not correct %d\n", bmt_index);
