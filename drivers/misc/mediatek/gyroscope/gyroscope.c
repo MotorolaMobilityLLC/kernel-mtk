@@ -74,7 +74,8 @@ static void gyro_work_func(struct work_struct *work)
 	cur_ns = getCurNS();
 
     /* add wake lock to make sure data can be read before system suspend */
-	cxt->gyro_data.get_data(&x, &y, &z, &status);
+	if (cxt->gyro_data.get_data)
+		cxt->gyro_data.get_data(&x, &y, &z, &status);
 
 	if (err) {
 		GYRO_ERR("get gyro data fails!!\n");
@@ -554,13 +555,13 @@ static int gyro_misc_init(struct gyro_context *cxt)
 	return err;
 }
 
-static void gyro_input_destroy(struct gyro_context *cxt)
+/* static void gyro_input_destroy(struct gyro_context *cxt)
 {
 	struct input_dev *dev = cxt->idev;
 
 	input_unregister_device(dev);
 	input_free_device(dev);
-}
+} */
 
 static int gyro_input_init(struct gyro_context *cxt)
 {
@@ -746,10 +747,11 @@ static int gyro_probe(void)
 	GYRO_LOG("----gyro_probe OK !!\n");
 	return 0;
 
-	if (err) {
+	/* Structurally dead code (UNREACHABLE) */
+	/* if (err) {
 		GYRO_ERR("sysfs node creation error\n");
 		gyro_input_destroy(gyro_context_obj);
-	}
+	} */
 
 real_driver_init_fail:
 exit_alloc_input_dev_failed:
