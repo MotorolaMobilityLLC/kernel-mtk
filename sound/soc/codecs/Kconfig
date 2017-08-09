@@ -813,3 +813,9 @@ config SND_SOC_TPA6130A2
 	depends on I2C
 
 endmenu
+
+config SND_SOC_MAX98926
+  bool "SND_SOC_MAX98926"
+  default n
+  help
+      for max98926 codec

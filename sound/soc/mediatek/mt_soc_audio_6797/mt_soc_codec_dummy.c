@@ -203,6 +203,16 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		     }
 	 },
 	{
+	.name = MT_SOC_CODEC_4PINI2S0AWB_NAME,
+	.capture = {
+		.stream_name = MT_SOC_4PINI2S0AWB_STREAM_NAME,
+		.channels_min = 1,
+		.channels_max = 2,
+		.rates = SNDRV_PCM_RATE_8000_48000,
+		.formats = SND_SOC_ADV_MT_FMTS,
+	}
+	},
+	{
 	 .name = MT_SOC_CODEC_VOICE_MD2_BTDAI_NAME,
 	 .playback = {
 		      .stream_name = MT_SOC_VOICE_MD2_BT_STREAM_NAME,

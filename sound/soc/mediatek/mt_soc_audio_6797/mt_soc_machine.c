@@ -1126,6 +1126,23 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	},
 };
 
+static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
+	{
+		.name = "ext_Speaker_Multimedia",
+		.stream_name = MT_SOC_SPEAKER_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_EXTSPKDAI_NAME,
+		.platform_name  = MT_SOC_I2S0DL1_PCM,
+		.codec_dai_name = "max98926-aif1",
+		.codec_name = "MAX98926_MT",
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+};
+
+static struct snd_soc_dai_link mt_soc_dai_component[
+	ARRAY_SIZE(mt_soc_dai_common) +
+	ARRAY_SIZE(mt_soc_extspk_dai)];
+
 static const char const *I2S_low_jittermode[] = {"Off", "On"};
 
 static const struct soc_enum mt_soc_machine_enum[] = {
@@ -1166,16 +1183,34 @@ static struct platform_device *mt_snd_device;
 
 static int __init mt_soc_snd_init(void)
 {
-	int ret;
-	struct snd_soc_card *card = &snd_soc_card_mt;
+	int ret = 0;
+	int daiLinkNum = 0;
+	struct device_node *node = NULL;
 
-	pr_warn("mt_soc_snd_init card addr = %p\n", card);
+	pr_debug("mt_soc_snd_init dai_link = %p\n", snd_soc_card_mt.dai_link);
+	/* DEAL WITH DAI LINK */
+	memcpy(mt_soc_dai_component, mt_soc_dai_common, sizeof(mt_soc_dai_common));
 
+	daiLinkNum += ARRAY_SIZE(mt_soc_dai_common);
+	node = of_find_compatible_node(NULL, NULL, "maxim,max98926L");
+	if (node != NULL) {
+		memcpy(mt_soc_dai_component + ARRAY_SIZE(mt_soc_dai_common),
+		mt_soc_extspk_dai, sizeof(mt_soc_extspk_dai));
+		daiLinkNum += ARRAY_SIZE(mt_soc_extspk_dai);
+	} else
+		pr_err("max98926L is not find");
+
+	snd_soc_card_mt.dai_link = mt_soc_dai_component;
+	snd_soc_card_mt.num_links = daiLinkNum;
+	snd_soc_card_mt.controls = mt_soc_controls;
+	snd_soc_card_mt.num_controls = ARRAY_SIZE(mt_soc_controls);
 	mt_snd_device = platform_device_alloc("soc-audio", -1);
+
 	if (!mt_snd_device) {
 		pr_err("mt6797_probe  platform_device_alloc fail\n");
 		return -ENOMEM;
 	}
+
 	platform_set_drvdata(mt_snd_device, &snd_soc_card_mt);
 	ret = platform_device_add(mt_snd_device);
 
@@ -1207,7 +1242,7 @@ static void __exit mt_soc_snd_exit(void)
 	platform_device_unregister(mt_snd_device);
 }
 
-module_init(mt_soc_snd_init);
+late_initcall(mt_soc_snd_init);
 module_exit(mt_soc_snd_exit);
 
 /* Module information */
