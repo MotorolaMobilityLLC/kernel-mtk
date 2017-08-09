@@ -347,6 +347,10 @@ VOID p2pDevFsmRunEventTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pDevFsmInfo != NULL));
 
+		DBGLOG(P2P, INFO, "p2p dev fsm timeout, current state: %d:%s\n",
+			prP2pDevFsmInfo->eCurrentState,
+			apucDebugP2pDevState[prP2pDevFsmInfo->eCurrentState]);
+
 		switch (prP2pDevFsmInfo->eCurrentState) {
 		case P2P_DEV_STATE_IDLE:
 			/* TODO: IDLE timeout for low power mode. */
@@ -492,7 +496,7 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
-		DBGLOG(P2P, STATE, "p2pDevFsmRunEventChannelRequest\n");
+		DBGLOG(P2P, INFO, "p2pDevFsmRunEventChannelRequest\n");
 
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
@@ -540,6 +544,7 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 
 		if (prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_IDLE) {
 			/* Re-enter IDLE state would trigger channel request. */
+			DBGLOG(P2P, INFO, "prepare to enter idle to trigger channel req\n");
 			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_IDLE);
 		}
 	} while (FALSE);
@@ -628,6 +633,9 @@ p2pDevFsmRunEventChnlGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr, IN
 		ASSERT(prMsgChGrant->u4GrantInterval == prChnlReqInfo->u4MaxInterval);
 		prChnlReqInfo->u4MaxInterval = prMsgChGrant->u4GrantInterval;
 
+		DBGLOG(P2P, INFO, "P2P: channel grant: u4MaxInterval: %d, Cookie: 0x%llx\n",
+			prChnlReqInfo->u4MaxInterval, prChnlReqInfo->u8Cookie);
+
 		if (prMsgChGrant->eReqType == CH_REQ_TYPE_P2P_LISTEN) {
 			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_CHNL_ON_HAND);
 		} else {
@@ -661,7 +669,7 @@ VOID p2pDevFsmRunEventMgmtTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		}
 
 		DBGLOG(P2P, TRACE, " Device Interface\n");
-		DBGLOG(P2P, STATE, "p2pDevFsmRunEventMgmtTx\n");
+		DBGLOG(P2P, TRACE, "p2pDevFsmRunEventMgmtTx\n");
 
 		prMgmtTxMsg->ucBssIdx = P2P_DEV_BSS_INDEX;
 
@@ -675,6 +683,7 @@ VOID p2pDevFsmRunEventMgmtTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		if ((!prMgmtTxMsg->fgIsOffChannel) ||
 		    ((prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_OFF_CHNL_TX) &&
 		     (LINK_IS_EMPTY(&prP2pMgmtTxReqInfo->rP2pTxReqLink)))) {
+			DBGLOG(P2P, INFO, "send without roc\n");
 			p2pFuncTxMgmtFrame(prAdapter,
 					   prP2pDevFsmInfo->ucBssIndex,
 					   prMgmtTxMsg->prMgmtMsduInfo, prMgmtTxMsg->fgNoneCckRate);
@@ -688,6 +697,7 @@ VOID p2pDevFsmRunEventMgmtTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				ASSERT(FALSE);
 				break;
 			}
+			DBGLOG(P2P, INFO, "send roc\n");
 
 			prOffChnlTxReq->prMgmtTxMsdu = prMgmtTxMsg->prMgmtMsduInfo;
 			prOffChnlTxReq->fgNoneCckRate = prMgmtTxMsg->fgNoneCckRate;

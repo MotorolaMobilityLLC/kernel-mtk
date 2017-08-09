@@ -1224,7 +1224,7 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 	P_MSG_P2P_CHNL_REQUEST_T prMsgChnlReq = (P_MSG_P2P_CHNL_REQUEST_T) NULL;
 
-	DBGLOG(P2P, STATE, "mtk_p2p_cfg80211_remain_on_channel\n");
+	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_remain_on_channel\n");
 
 	do {
 		if ((wiphy == NULL) ||
@@ -1246,13 +1246,12 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_remain_on_channel:%d\n", (INT_32) *cookie);
+		DBGLOG(P2P, INFO, "Cookie: 0x%llx, duration: %d\n", *cookie, duration);
 
 		prMsgChnlReq->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_REQ;
 		prMsgChnlReq->u8Cookie = *cookie;
 		prMsgChnlReq->u4Duration = duration;
 		prMsgChnlReq->eChnlReqType = CH_REQ_TYPE_P2P_LISTEN;
-
 
 		mtk_p2p_cfg80211func_channel_format_switch(chan,
 							   NL80211_CHAN_NO_HT,
@@ -1292,7 +1291,7 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_cancel_remain_on_channel%d\n", (INT_32) cookie);
+		DBGLOG(P2P, INFO, "P2P: cancel remain on channel 0x%llx\n", cookie);
 
 		prMsgChnlAbort->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_ABORT;
 		prMsgChnlAbort->u8Cookie = cookie;
@@ -1354,7 +1353,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		}
 
 		if (params->offchan) {
-			DBGLOG(P2P, TRACE, "   Off channel TRUE\n");
+			DBGLOG(P2P, INFO, "   Off channel TRUE\n");
 			prMsgTxReq->fgIsOffChannel = TRUE;
 
 			mtk_p2p_cfg80211func_channel_format_switch(params->chan,
