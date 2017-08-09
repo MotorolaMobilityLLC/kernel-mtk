@@ -681,7 +681,7 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 	int err = 0;
 	int ret = 0;
 
-	PRINTK_AUD_HDMI("mtk_pcm_hdmi_open\n");
+	pr_warn("mtk_pcm_hdmi_open\n");
 
 	pMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_HDMI);
 
@@ -730,7 +730,7 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUD_HDMI("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 
 	/* SetTDMEnable(false); //enable TDM */
 	/* SetHDMIEnable(false); */
@@ -758,9 +758,9 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 	uint32 Tdm_Lrck = 0;
 	uint32 MclkDiv = 0;
 
-	PRINTK_AUD_HDMI
-	    ("mtk_pcm_hdmi_prepare format =%d, rate = %d  channels = %d period_size = %lu\n",
-	     runtime->format, runtime->rate, runtime->channels, runtime->period_size);
+	pr_warn
+	    ("%s format =%d, rate = %d  channels = %d period_size = %lu, mHdmi_display_control=%d\n",
+	     __func__, runtime->format, runtime->rate, runtime->channels, runtime->period_size, mHdmi_display_control);
 #if 0
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
 
@@ -799,7 +799,11 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 
 			SetTDMLrckWidth(Tdm_Lrck);
 			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
-			SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
+
+			if (mHdmi_display_control == 1)
+				SetTDMChannelsSdata(2);	/* ANX7805 only I2s  */
+			else
+				SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
 
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_32BITS);
 			/*SetTDMLrckInverse(true);*/
@@ -821,11 +825,14 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 
 			SetTDMLrckWidth(Tdm_Lrck);
 
-			if (mHdmi_display_control == 1)
+			if (mHdmi_display_control == 1) {
 				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
-			else
+				SetTDMChannelsSdata(2);	/* ANX7805 only I2s  */
+			} else {
 				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
-			SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
+				SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
+			}
+
 
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			/*SetTDMLrckInverse(true);*/
@@ -846,24 +853,39 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 #endif
 		SetTDMI2Smode(Soc_Aud_I2S_FORMAT_I2S);
 
-		Afe_Set_Reg(AFE_TDM_CON2, 0, 0x0000000f);	/*  0: Channel starts from O30/O31. */
-		Afe_Set_Reg(AFE_TDM_CON2, 4 << 4, 0x000000f0);	/* tmp    1: Channel 0 */
-		Afe_Set_Reg(AFE_TDM_CON2, 4 << 8, 0x00000f00);	/* tmp    2: Channel 0. */
-		Afe_Set_Reg(AFE_TDM_CON2, 4 << 12, 0x0000f000);	/* tmp    3: Channel 0. */
-		Afe_Set_Reg(AUDIO_TOP_CON3, 1 << 3, 1 << 3);	/*  inverse HDMI BCLK */
-/*        Afe_Set_Reg(AFE_MEMIF_MAXLEN, 2 << 24,  0x0f000000); // 64-byte burst
-	  Afe_Set_Reg(AFE_MEMIF_MAXLEN, 0x11111115,  0xffffffff); // 64-byte burst*/
+		if (mHdmi_display_control == 1) {
+			Afe_Set_Reg(AFE_TDM_CON2, 0, 0x0000000f);	/*  0: Channel starts from O30/O31. */
+			Afe_Set_Reg(AFE_TDM_CON2, 1 << 4, 0x000000f0);	/*     1: Channel O32/O33 */
+			Afe_Set_Reg(AFE_TDM_CON2, 2 << 8, 0x00000f00);	/*     2: Channel O34/O35 */
+			Afe_Set_Reg(AFE_TDM_CON2, 3 << 12, 0x0000f000);	/*     3: Channel O67/O37 */
+		} else {
+			Afe_Set_Reg(AFE_TDM_CON2, 0, 0x0000000f);	/*  0: Channel starts from O30/O31. */
+			Afe_Set_Reg(AFE_TDM_CON2, 4 << 4, 0x000000f0);	/*     1: Channel 0 */
+			Afe_Set_Reg(AFE_TDM_CON2, 4 << 8, 0x00000f00);	/*     2: Channel 0. */
+			Afe_Set_Reg(AFE_TDM_CON2, 4 << 12, 0x0000f000);	/*     3: Channel 0. */
+		}
+		/*Afe_Set_Reg(AUDIO_TOP_CON3, 1 << 3, 1 << 3);
+		Afe_Set_Reg(AFE_MEMIF_MAXLEN, 2 << 24,  0x0f000000); // 64-byte burst
+		Afe_Set_Reg(AFE_MEMIF_MAXLEN, 0x11111115,  0xffffffff); // 64-byte burst*/
 
-/*follow CEA861E (0x13)*/
+		/*follow CEA861E (0x13)*/
 
 		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I30,
 				  Soc_Aud_InterConnectionOutput_O30);
 		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I31,
 				  Soc_Aud_InterConnectionOutput_O31);
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I32,
-			Soc_Aud_InterConnectionOutput_O33);	/* O33 center */
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I33,
-			Soc_Aud_InterConnectionOutput_O32);	/* O32 LFE */
+
+		if (mHdmi_display_control == 1) {
+			SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I32,
+				Soc_Aud_InterConnectionOutput_O32);
+			SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I33,
+				Soc_Aud_InterConnectionOutput_O33);
+		} else {
+			SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I32,
+				Soc_Aud_InterConnectionOutput_O33);	/* O33 center */
+			SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I33,
+				Soc_Aud_InterConnectionOutput_O32);	/* O32 LFE */
+		}
 		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I34,
 				  Soc_Aud_InterConnectionOutput_O34);
 		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I35,
@@ -967,7 +989,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	u4tmpHDMode = Afe_Get_Reg(AFE_MEMIF_HD_MODE);
 	u4tmpHDAlign = Afe_Get_Reg(AFE_MEMIF_HDALIGN);
 
-	pr_debug
+	pr_warn
 	    ("%s IRQ =0x%x, CON0= 0x%x, CON1=0x%x, CON2 =0x%x,DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x\n",
 	     __func__, u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2,
 	     u4tmpClkdiv0, u4tmpClkdiv1, u4tmpClkdiv2, u4tmpHDMode, u4tmpHDAlign);
