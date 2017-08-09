@@ -1148,10 +1148,9 @@ unsigned int BigiDVFSPllGetFreq(void)
 
 int BigiDVFSPllDisable(void)
 {
-	if ((idvfs_read(0x102224a0) & 0x1) == 0) {
-		idvfs_error("PLL already disable.\n");
-		return -1;
-	}
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	idvfs_write_field(0x102224a0, 0:0, 0);
 	udelay(1);
@@ -1165,6 +1164,10 @@ int BigiDVFSPllDisable(void)
 int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 {
 	int	rc = 0;
+
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	if ((mVolts_x100 < 50000) || (mVolts_x100 > 120000)) {
 		idvfs_error("Error: SRAM LDO volte = %dmv, out of range 500mv~1200mv.\n", mVolts_x100);
@@ -1183,6 +1186,10 @@ int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 
 int BigiDVFSSRAMLDODisable(void)
 {
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
+
 	/* disable SRAMLDO volt */
 	idvfs_write_field(0x102222b0, 7:4, 0);
 	return 0;
@@ -1191,6 +1198,10 @@ int BigiDVFSSRAMLDODisable(void)
 unsigned int BigiDVFSSRAMLDOGet(void)
 {
 	int vosel = 0, volt;
+
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	vosel =	(idvfs_read(0x102222b0) & 0xf);
 
@@ -1219,11 +1230,19 @@ unsigned int BigiDVFSSRAMLDOGet(void)
 /* bit[31:16] = SRAM LDO cal, bit[15:0] = eFuse cal */
 unsigned int BigiDVFSSRAMLDOEFUSE(void)
 {
-	return (((idvfs_read(0x102222b4) & 0xffff) << 16) | (idvfs_read(0x1020666C) & 0xffff));
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return (idvfs_read(0x1020666C) & 0xffff);
+	else
+		return (((idvfs_read(0x102222b4) & 0xffff) << 16) | (idvfs_read(0x1020666C) & 0xffff));
 }
 
 int BigiDVFSPOSDIVSet(unsigned int pos_div)
 {
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
+
 	if ((pos_div > 7) || (pos_div < 0)) {
 		idvfs_error("iDVFS Pos Div set = %d, out of range 0 ~ 7.\n", pos_div);
 		return -1;
@@ -1237,11 +1256,19 @@ int BigiDVFSPOSDIVSet(unsigned int pos_div)
 
 unsigned int BigiDVFSPOSDIVGet(void)
 {
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
+
 	return ((idvfs_read(0x102224a0) >> 12) & 0x7);	  /* 0~7 */
 }
 
 int BigiDVFSPLLSetPCM(unsigned int freq)	/* <1000 ~ = 3000(MHz), with our pos div value */
 {
+
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	if ((freq > 3000) || (freq <= 1000)) {
 		idvfs_error("Source PLL Freq = %d out of 1000 ~ 3000MHz range.\n", freq);
@@ -1274,6 +1301,10 @@ int BigiDVFSPLLSetPCM(unsigned int freq)	/* <1000 ~ = 3000(MHz), with our pos di
 unsigned int BigiDVFSPLLGetPCW(void) /* <1000 ~ = 3000(MHz), with our pos div value */
 {
 	unsigned int freq;
+
+	/* check big cluster online */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	/* default fcur = 1500MHz */
 	freq = (((unsigned long long)(idvfs_read(0x102224a4) & 0x7fffffff) * 26L) / (1L << 24));
