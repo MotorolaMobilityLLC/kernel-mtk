@@ -26,7 +26,7 @@
 
 
 static struct gyro_init_info gyrohub_init_info;
-struct platform_device *gyroPltFmDev;
+
 static int gyrohub_init_flag = -1;
 
 typedef enum {
@@ -773,36 +773,6 @@ static int gyrohub_set_delay(u64 ns)
 	return 0;
 }
 
-static int gpio_config(void)
-{
-	int ret;
-	struct pinctrl *pinctrl;
-	struct pinctrl_state *pins_default;
-	struct pinctrl_state *pins_cfg;
-
-	pinctrl = devm_pinctrl_get(&gyroPltFmDev->dev);
-	if (IS_ERR(pinctrl)) {
-		ret = PTR_ERR(pinctrl);
-		GYRO_ERR("Cannot find gyro pinctrl!\n");
-		return ret;
-	}
-	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
-	if (IS_ERR(pins_default)) {
-		ret = PTR_ERR(pins_default);
-		GYRO_ERR("Cannot find gyro pinctrl default!\n");
-	}
-
-	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
-	if (IS_ERR(pins_cfg)) {
-		ret = PTR_ERR(pins_cfg);
-		GYRO_ERR("Cannot find gyro pinctrl pin_cfg!\n");
-		return ret;
-	}
-	pinctrl_select_state(pinctrl, pins_cfg);
-
-	return 0;
-}
-
 static int gyrohub_get_data(int *x, int *y, int *z, int *status)
 {
 	char buff[GYROHUB_BUFSIZE];
@@ -858,12 +828,6 @@ static int gyrohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->first_ready_after_boot, 0);
 	atomic_set(&obj->scp_init_done, 0);
 	INIT_WORK(&obj->init_done_work, scp_init_work_done);
-
-	err = gpio_config();	
-	if (err < 0) {
-		GYROS_ERR("gpio_config failed\n");
-		goto exit_kfree;
-	}
 	scp_register_notify(&scp_ready_notifier);
 	err = SCP_sensorHub_rsp_registration(ID_GYROSCOPE, gyro_recv_interrupt_ipidata);
 	if (err < 0) {
