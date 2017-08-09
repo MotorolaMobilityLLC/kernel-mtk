@@ -72,12 +72,6 @@
 
 #include <sound/mt_soc_audio.h>
 #include "mt_soc_afe_control.h"
-/*
-#include <mach/upmu_common_sw.h>
-#include <mach/upmu_hw.h>
-#include <mach/mt_pmic_wrap.h>
-#include <mach/upmu_common.h>
-*/
 #include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_MTK_SPEAKER
@@ -1706,12 +1700,12 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
-#ifdef CONFIG_OF
 static unsigned int pin_extspkamp;
 static unsigned int pin_mode_extspkamp;
 /* static unsigned int pin_vowclk, pin_audmiso;*/
 /* static unsigned int pin_mode_vowclk, pin_mode_audmiso; */
 
+#ifdef CONFIG_OF
 
 #define GAP (2)			/* unit: us */
 #ifdef CONFIG_MTK_LEGACY
@@ -3843,6 +3837,8 @@ static int mt6350_codec_probe(struct snd_soc_codec *codec)
 	pr_warn("%s()\n", __func__);
 	if (mInitCodec == true)
 		return 0;
+
+	pin_extspkamp = pin_mode_extspkamp = 0;
 
 	snd_soc_dapm_new_controls(dapm, mt6350_dapm_widgets, ARRAY_SIZE(mt6350_dapm_widgets));
 	snd_soc_dapm_add_routes(dapm, mtk_audio_map, ARRAY_SIZE(mtk_audio_map));

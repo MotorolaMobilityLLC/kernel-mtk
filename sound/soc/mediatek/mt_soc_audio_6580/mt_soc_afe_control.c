@@ -81,17 +81,10 @@
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
-/*#include <mach/irqs.h>*/
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
-/*#include <mach/mt_reg_base.h>*/
 #include <asm/div64.h>
-/*#include <linux/aee.h>
-#include <mach/upmu_common.h>
-#include <mach/upmu_hw.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_typedefs.h>*/
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/aee.h>
 
@@ -116,9 +109,9 @@
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/mt_boot_common.h>
 
-/*#include <mach/eint.h>*/
 #include "AudDrv_Common.h"
 #include "AudDrv_Common_func.h"
+#include "AudDrv_Gpio.h"
 
 static DEFINE_SPINLOCK(afe_control_lock);
 static DEFINE_SPINLOCK(afe_sram_control_lock);
