@@ -1607,6 +1607,9 @@ static int inode_has_perm(const struct cred *cred,
 	sid = cred_sid(cred);
 	isec = inode->i_security;
 
+	if (NULL == isec)
+		return -EINVAL;
+
 	return avc_has_perm(sid, isec->sid, isec->sclass, perms, adp);
 }
 
@@ -4055,6 +4058,9 @@ static int sock_has_perm(struct task_struct *task, struct sock *sk, u32 perms)
 	struct common_audit_data ad;
 	struct lsm_network_audit net = {0,};
 	u32 tsid = task_sid(task);
+
+	if (NULL == sksec)
+		return -EINVAL;
 
 	if (sksec->sid == SECINITSID_KERNEL)
 		return 0;

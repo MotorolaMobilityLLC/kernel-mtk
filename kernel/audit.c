@@ -402,6 +402,20 @@ static void audit_printk_skb(struct sk_buff *skb)
 	audit_hold_skb(skb);
 }
 
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+/*
+ * return skb field of audit buffer
+ */
+struct sk_buff *audit_get_skb(struct audit_buffer *ab)
+{
+	if (ab)
+		return (struct sk_buff *)(ab->skb);
+	else
+		return NULL;
+}
+#endif
+
 static void kauditd_send_skb(struct sk_buff *skb)
 {
 	int err;
