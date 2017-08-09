@@ -46,7 +46,6 @@ obj-y += cpu_dormant-v7.o
 
 else
 
-obj-$(CONFIG_MTK_PSCI)  += mt_psci.o
 obj-y += cpu_dormant.o
 
 endif
