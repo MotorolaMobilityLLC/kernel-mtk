@@ -67,7 +67,6 @@ void __iomem *clk_venc_gcon_base;
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #define VLTE_SUPPORT
-/* #define SPM_BRINGUP */
 
 /************************************************
  **********         log debug          **********
@@ -1381,14 +1380,11 @@ static int aud_sys_disable_op(struct subsys *sys)
 
 static int sys_get_state_op(struct subsys *sys)
 {
-
 #ifndef CONFIG_FPGA_EARLY_PORTING
-/* **** */
-/* unsigned int sta = clk_readl(SPM_PWR_STATUS); */
-/* unsigned int sta_s = clk_readl(SPM_PWR_STATUS_2ND); */
+	unsigned int sta = clk_readl(SPM_PWR_STATUS);
+	unsigned int sta_s = clk_readl(SPM_PWR_STATUS_2ND);
 
-/* return (sta & sys->sta_mask) && (sta_s & sys->sta_mask); */
-	return 0;
+	return (sta & sys->sta_mask) && (sta_s & sys->sta_mask);
 #else
 	return 0;
 #endif
@@ -3411,10 +3407,8 @@ void print_grp_regs(void)
 	unsigned int value[3] = {0, 0, 0};
 	const char *name;
 	struct pll *pll;
-#ifndef SPM_BRINGUP
 	int state;
 	unsigned int val_subsys = 0, sta, sta_s;
-#endif
 
 	clk_info("********** cg register dump *********\n");
 	for (i = 0; i < NR_GRPS; i++) {
@@ -3452,7 +3446,6 @@ void print_grp_regs(void)
 			clk_info("[%d][%-7s reg%d]=[0x%08x]\n", i, name, j, value[j]);
 	}
 
-#ifndef SPM_BRINGUP
 	clk_info("********** subsys register dump **********\n");
 	sta = clk_readl(SPM_PWR_STATUS);
 	sta_s = clk_readl(SPM_PWR_STATUS_2ND);
@@ -3463,7 +3456,6 @@ void print_grp_regs(void)
 		clk_info("[%d][%-7s]=[0x%08x], state(%u)\n", i, name, val_subsys, state);
 	}
 	clk_info("SPM_PWR_STATUS=0x%08x, SPM_PWR_STATUS_2ND=0x%08x\n", sta, sta_s);
-#endif
 }
 EXPORT_SYMBOL(print_grp_regs);
 
@@ -3552,17 +3544,16 @@ static void mt_subsys_init(void)
 {
 	int i;
 	struct subsys *sys;
-/* **** */
-/*
-    syss[SYS_MD1].ctl_addr = SPM_MD_PWR_CON;
-    syss[SYS_CONN].ctl_addr = SPM_CONN_PWR_CON;
-    syss[SYS_DIS].ctl_addr = SPM_DIS_PWR_CON;
-    syss[SYS_MFG].ctl_addr = SPM_MFG_PWR_CON;
-    syss[SYS_ISP].ctl_addr = SPM_ISP_PWR_CON;
-    syss[SYS_VDE].ctl_addr = SPM_VDE_PWR_CON;
-    syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON;
-    syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON;
-*/
+
+	syss[SYS_MD1].ctl_addr = SPM_MD_PWR_CON;
+	syss[SYS_CONN].ctl_addr = SPM_CONN_PWR_CON;
+	syss[SYS_DIS].ctl_addr = SPM_DIS_PWR_CON;
+	syss[SYS_MFG].ctl_addr = SPM_MFG_PWR_CON;
+	syss[SYS_ISP].ctl_addr = SPM_ISP_PWR_CON;
+	syss[SYS_VDE].ctl_addr = SPM_VDE_PWR_CON;
+	syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON;
+	syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON;
+
 	for (i = 0; i < NR_SYSS; i++) {
 		sys = &syss[i];
 		sys->state = sys->ops->get_state(sys);
@@ -4122,9 +4113,9 @@ static int subsys_test_read(struct seq_file *m, void *v)
 	int state;
 	unsigned int value = 0, sta = 0, sta_s = 0;
 	const char *name;
-/* **** */
-/* sta = clk_readl(SPM_PWR_STATUS); */
-/* sta_s = clk_readl(SPM_PWR_STATUS_2ND); */
+
+	sta = clk_readl(SPM_PWR_STATUS);
+	sta_s = clk_readl(SPM_PWR_STATUS_2ND);
 
 	seq_puts(m, "********** subsys register dump **********\n");
 	for (i = 0; i < NR_SYSS; i++) {
