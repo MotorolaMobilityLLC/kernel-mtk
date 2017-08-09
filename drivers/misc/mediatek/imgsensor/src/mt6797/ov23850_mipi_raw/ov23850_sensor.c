@@ -548,6 +548,8 @@ static void write_shutter(kal_uint16 shutter)
                 set_max_framerate(296,0);
             else if(realtime_fps >= 147 && realtime_fps <= 150)
                 set_max_framerate(146,0);
+            else if(realtime_fps >= 197 && realtime_fps <= 200)
+                set_max_framerate(196,0);
             else
             {
                 write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
