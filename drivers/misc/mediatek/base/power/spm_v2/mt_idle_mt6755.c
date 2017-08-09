@@ -394,10 +394,12 @@ bool is_disp_pwm_rosc(void)
 
 bool is_auxadc_released(void)
 {
+#if 0
 	if ((~idle_readl(INFRA_SW_CG_0_STA) & 0x400) == 0x400) {
 		idle_err("AUXADC CG does not be released\n");
 		return false;
 	}
+#endif
 
 	return true;
 }

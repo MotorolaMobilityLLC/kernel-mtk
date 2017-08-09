@@ -47,10 +47,7 @@
 #endif
 
 #define FEATURE_ENABLE_SODI2P5
-
-#if defined(CONFIG_ARCH_MT6797)
 #define FEATURE_ENABLE_F26MSLEEP
-#endif
 
 /*
 * MCDI DVT IPI Test and GPT test

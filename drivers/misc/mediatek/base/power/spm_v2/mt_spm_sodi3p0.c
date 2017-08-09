@@ -66,11 +66,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 
 	/* SPM_SRC_REQ */
 	.spm_apsrc_req = 0,
-#if defined(CONFIG_ARCH_MT6755)
-	.spm_f26m_req = 1,
-#elif defined(CONFIG_ARCH_MT6797)
 	.spm_f26m_req = 0,
-#endif
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
@@ -171,6 +167,9 @@ static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
+#if defined(CONFIG_ARCH_MT6755)
+static int by_ccif1_count;
+#endif
 
 
 static void spm_sodi3_pre_process(void)
@@ -253,7 +252,21 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
+#if defined(CONFIG_ARCH_MT6755)
+			if (wakesta->r12 & (0x1 << 18)) {
+				/* wake up by R12_CCIF1_EVENT_B */
+				if ((by_ccif1_count >= 5) ||
+				    ((sodi3_logout_curr_time - sodi3_logout_prev_time) > 20U)) {
+					need_log_out = 1;
+					by_ccif1_count = 0;
+				} else if (by_ccif1_count == 0) {
+					need_log_out = 1;
+				}
+				by_ccif1_count++;
+			}
+#elif defined(CONFIG_ARCH_MT6797)
 			need_log_out = 1;
+#endif
 		} else if (wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
 		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
@@ -329,6 +342,15 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				}
 				BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
 
+#if defined(CONFIG_ARCH_MT6755)
+				sodi3_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
+						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+						spm_read(DUMMY1_PWR_CON), pcmdesc->version,
+						logout_sodi3_cnt, logout_selfrefresh_cnt,
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
+						wakesta->event_reg, wakesta->isr);
+#elif defined(CONFIG_ARCH_MT6797)
 				sodi3_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
 						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
@@ -340,6 +362,7 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				sodi3_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
+#endif
 			}
 
 			logout_sodi3_cnt = 0;
