@@ -47,12 +47,12 @@
 #include <mt-plat/mtk_memcfg.h>
 #endif
 void __iomem *DRAMCAO_CHA_BASE_ADDR;
-void __iomem *DDRPHY_BASE_ADDR;
-void __iomem *DRAMCNAO_CHA_BASE_ADDR;
-void __iomem *TOPCKGEN_BASE_ADDR;
 void __iomem *DRAMCAO_CHB_BASE_ADDR;
-void __iomem *INFRACFG_AO_BASE_ADDR;
+void __iomem *DRAMCNAO_CHA_BASE_ADDR;
 void __iomem *DRAMCNAO_CHB_BASE_ADDR;
+void __iomem *DDRPHY_BASE_ADDR;
+void __iomem *TOPCKGEN_BASE_ADDR;
+void __iomem *INFRACFG_AO_BASE_ADDR;
 void __iomem *SLEEP_BASE_ADDR;
 #define DRAM_RSV_SIZE 0x1000
 
@@ -789,24 +789,13 @@ unsigned int get_dram_data_rate(void)
 {
 	unsigned int MEMPLL_FOUT = 0;
 
+	return 0; /* will sync code from SA later */
 	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
 
 	/* DVFS owner to request provide a spec. frequency,
 	not real frequency */
 	if (MEMPLL_FOUT == 1820)
 		MEMPLL_FOUT = 1866;
-	else if (MEMPLL_FOUT == 1716)
-		MEMPLL_FOUT = 1700;
-	else if (MEMPLL_FOUT == 1560)
-		MEMPLL_FOUT = 1600;
-	else if (MEMPLL_FOUT == 1586)
-		MEMPLL_FOUT = 1600;
-	else if (MEMPLL_FOUT == 1274)
-		MEMPLL_FOUT = 1270;
-	else if (MEMPLL_FOUT == 1040)
-		MEMPLL_FOUT = 1066;
-	else if (MEMPLL_FOUT == 792)
-		MEMPLL_FOUT = 800;
 
 	return MEMPLL_FOUT;
 }
