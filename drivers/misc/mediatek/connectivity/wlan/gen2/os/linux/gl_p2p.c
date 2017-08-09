@@ -1788,7 +1788,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	P_QUE_T prTxQueue = NULL;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_16 u2QueueIdx = 0;
-
+	P_BSS_INFO_T prP2pBssInfo = NULL;
 	GLUE_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prSkb);
@@ -1851,7 +1851,12 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
 	/* prDev->stats.tx_packets++; */
-	kalPerMonStart(prGlueInfo);
+
+	prP2pBssInfo = &prGlueInfo->prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX];
+	if ((prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
+		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0))
+		kalPerMonStart(prGlueInfo);
+
 	return NETDEV_TX_OK;
 }				/* end of p2pHardStartXmit() */
 

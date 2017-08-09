@@ -572,6 +572,7 @@ extern struct delayed_work sched_workq;
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 #endif
 
+extern BOOLEAN fgIsUnderSuspend;
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************

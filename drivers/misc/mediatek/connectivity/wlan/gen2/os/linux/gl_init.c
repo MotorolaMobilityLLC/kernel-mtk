@@ -1979,7 +1979,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	DBGLOG(TX, EVENT, "\n+++++ pending frame %d len = %d +++++\n", prGlueInfo->i4TxPendingFrameNum, prSkb->len);
 	prGlueInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->rNetDevStats.tx_packets++;
-	kalPerMonStart(prGlueInfo);
+	if (netif_carrier_ok(prDev))
+		kalPerMonStart(prGlueInfo);
 
 	/* set GLUE_FLAG_TXREQ_BIT */
 

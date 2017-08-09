@@ -1135,12 +1135,13 @@ typedef struct _P2P_FUNCTION_LINKER {
 #endif
 
 /*
- *State Machine:
- *-->STOP: No Tx/Rx traffic
- *-->DISABLE: Screen is off
- *-->ENABLE: Screen is on && Tx/Rx traffic is active
- *----->clear DISABLE
- *-->RUNNING: Screen was on && Tx/Rx was ongoing (wlanHardStartXmit/kalRxIndicatePkts)
+ * State Machine:
+ * --> STOP: No Tx/Rx traffic
+ * -----> clear RUNNING
+ * --> DISABLE: Screen is off
+ * --> ENABLE: Screen is on && Tx/Rx traffic is active
+ * -----> clear DISABLE
+ * --> RUNNING: Screen was on && Tx/Rx was ongoing
  */
 struct PERF_MONITOR_T {
 	TIMER_T rPerfMonTimer;
