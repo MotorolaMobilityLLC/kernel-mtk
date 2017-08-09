@@ -463,14 +463,14 @@ static ssize_t store_fan53555_access(struct device *dev, struct device_attribute
 		/*reg_address = simple_strtoul(buf, &pvalue, 16); */
 
 		pvalue = (char *)buf;
-		if (size > 4) {
+		if (size > 5) {
 			addr = strsep(&pvalue, " ");
 			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
 		} else
 			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
 		/*ret = kstrtoul(buf, 16, (unsigned long *)&reg_address); */
 
-		if (size > 4) {
+		if (size > 5) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16); */
 			val = strsep(&pvalue, " ");
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
