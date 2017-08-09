@@ -38,7 +38,7 @@
 #endif
 
 #include <mt_ptp.h>
-#include <mt_otp.h>
+
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>
 #include <linux/time.h>
@@ -46,6 +46,10 @@
 #include <mach/mt_clkmgr.h>
 #define __MT_MTK_TS_CPU_C__
 #include <tscpu_settings.h>
+
+#if THERMAL_INFORM_OTP
+#include <mt_otp.h>
+#endif
 
 /* 1: turn on RT kthread for thermal protection in this sw module; 0: turn off */
 #if MTK_TS_CPU_RT
@@ -778,7 +782,10 @@ static void thermal_interrupt_handler(int bank)
 {
 	U32 ret = 0;
 	unsigned long flags;
+
+#if THERMAL_INFORM_OTP
 	int temp = 0;
+#endif
 
 	mt_ptp_lock(&flags);
 
@@ -786,6 +793,8 @@ static void thermal_interrupt_handler(int bank)
 
 	ret = DRV_Reg32(TEMPMONINTSTS);
 	tscpu_dprintk("[tIRQ] thermal_interrupt_handler,bank=0x%08x,ret=0x%08x\n", bank, ret);
+
+#if THERMAL_INFORM_OTP
 	temp = get_immediate_big_wrap();
 	tscpu_dprintk("[tIRQ] thermal_interrupt_handler,BIG T=%d\n", temp);
 
@@ -818,6 +827,7 @@ static void thermal_interrupt_handler(int bank)
 		THERMAL_WRAP_WR32(temp, TEMPMONINT);	/* set low offset */
 
 	}
+#endif
 	/* for SPM reset debug */
 	/* dump_spm_reg(); */
 
@@ -1223,6 +1233,7 @@ void tscpu_thermal_initial_all_bank(void)
 	}
 }
 
+#if THERMAL_INFORM_OTP
 void tscpu_config_tc_sw_protect(int highoffset, int lowoffset)
 {
 	int raw_highoffset = 0, raw_lowoffsett = 0, temp = 0;
@@ -1260,6 +1271,7 @@ void tscpu_config_tc_sw_protect(int highoffset, int lowoffset)
 
 	mt_ptp_unlock(&flags);
 }
+#endif
 
 void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 {
@@ -1310,7 +1322,9 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	/*Thermal need to config to direct reset mode
 	   this API provide by Weiqi Fu(RGU SW owner). */
 	wd_api->wd_thermal_direct_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);	/* reset mode */
+#if THERMAL_INFORM_OTP
 	tscpu_config_tc_sw_protect(OTP_HIGH_OFFSET_TEMP, OTP_LOW_OFFSET_TEMP);
+#endif
 }
 
 void tscpu_reset_thermal(void)

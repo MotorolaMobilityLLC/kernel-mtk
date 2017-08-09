@@ -107,6 +107,7 @@ they means one reading is a avg of X samples*/
  * Chip related
  *=============================================================*/
 /**/
+#define THERMAL_INFORM_OTP	(0)
 #define OTP_HIGH_OFFSET_TEMP	80000
 #define OTP_LOW_OFFSET_TEMP	70000
 #define OTP_TEMP_TOLERANCE	3000
