@@ -404,7 +404,7 @@ struct msdc_host {
 #ifdef MSDC_NEW_TUNE
 #define MSDC_AUTOK_ON_ERROR
 #ifdef MSDC_AUTOK_ON_ERROR
-#define EIO	EILSEQ
+/*#define EIO	EILSEQ*/
 #endif
 /*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
 #endif
