@@ -487,7 +487,7 @@ static int __init mtk_cooler_mutt_init(void)
 				proc_set_user(entry, uid, gid);
 
 			entry =
-			    proc_create("tm_pid", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, dir_entry,
+			    proc_create("tm_3Gpid", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, dir_entry,
 					&mddulthro_pid_fops);
 			if (entry)
 				proc_set_user(entry, uid, gid);
