@@ -782,6 +782,22 @@ static struct ctl_table ipv4_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &one
 	},
+#ifdef UDP_SKT_WIFI
+	{
+		.procname	= "udp_met_port",
+		.data		= &sysctl_udp_met_port,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec
+	},
+	{
+		.procname	= "met_is_enable",
+		.data		= &sysctl_met_is_enable,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec
+	},
+#endif
 	{ }
 };
 
