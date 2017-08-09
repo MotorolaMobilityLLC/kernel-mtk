@@ -2586,8 +2586,7 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
 
-/* Sarah */
-#if 0//CFG_SUPPORT_CFG_FILE
+#if CFG_SUPPORT_CFG_FILE
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
@@ -2860,13 +2859,12 @@ bailout:
 		}
 	}
 
-#if 0/* Sarah */
 	wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 
 	wlanCfgSetChip(prGlueInfo->prAdapter);
 
 	wlanCfgSetCountryCode(prGlueInfo->prAdapter);
-#endif
+
 	return i4Status;
 }				/* end of wlanProbe() */
 

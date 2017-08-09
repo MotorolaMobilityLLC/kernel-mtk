@@ -1486,12 +1486,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		}
 #endif
 
-#if 0//Sarah
 
 		/* 4 <2.3> Overwrite debug level settings */
 		wlanCfgSetDebugLevel(prAdapter);
 
-#endif
 
 		/* 4 <3> Initialize Tx */
 		nicTxInitialize(prAdapter);
@@ -6693,14 +6691,14 @@ WLAN_STATUS wlanCfgGet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 
 UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u4ValueDef)
 {
-/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
+	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
 	P_WLAN_CFG_T prWlanCfg;
-/*	UINT_32 u4Value; */
-/*	INT_32 u4Ret; */
+	UINT_32 u4Value;
+	INT_32 u4Ret;
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
-#if 0/* Sarah */
+
 	ASSERT(prWlanCfg);
 
 	u4Value = u4ValueDef;
@@ -6716,23 +6714,17 @@ UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u
 
 	return u4Value;
 
-#else
-
-	return u4ValueDef;
-
-#endif
 }
 
 INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4ValueDef)
 {
-/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
+	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
 	P_WLAN_CFG_T prWlanCfg;
-/*	INT_32 i4Value = 0; */
-/*	INT_32 i4Ret = 0; */
+	INT_32 i4Value = 0;
+	INT_32 i4Ret = 0;
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
-#if 0/* Sarah */
 	ASSERT(prWlanCfg);
 
 	i4Value = i4ValueDef;
@@ -6748,11 +6740,6 @@ INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4Va
 
 	return i4Value;
 
-#else
-
-	return i4ValueDef;
-
-#endif
 }
 
 WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucValue, UINT_32 u4Flags)
