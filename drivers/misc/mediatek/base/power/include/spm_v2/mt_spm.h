@@ -5,7 +5,6 @@
 #include <linux/io.h>
 #include <mach/upmu_hw.h> /* for PMIC power settings */
 
-#ifdef CONFIG_OF
 extern void __iomem *spm_base;
 extern void __iomem *spm_infracfg_ao_base;
 extern void __iomem *spm_cksys_base;
@@ -26,9 +25,6 @@ extern u32 spm_irq_7;
 #undef SPM_BASE
 #define SPM_BASE spm_base
 #define SPM_INFRACFG_AO_BASE spm_infracfg_ao_base
-#else
-#include <mach/mt_reg_base.h>
-#endif
 
 /* #include <mach/mt_irq.h> */
 #include <mt-plat/sync_write.h>
@@ -36,7 +32,6 @@ extern u32 spm_irq_7;
 /**************************************
  * Config and Parameter
  **************************************/
-#ifdef CONFIG_OF
 #define SPM_IRQ0_ID		spm_irq_0
 #define SPM_IRQ1_ID		spm_irq_1
 #define SPM_IRQ2_ID		spm_irq_2
@@ -45,7 +40,6 @@ extern u32 spm_irq_7;
 #define SPM_IRQ5_ID		spm_irq_5
 #define SPM_IRQ6_ID		spm_irq_6
 #define SPM_IRQ7_ID		spm_irq_7
-#endif
 
 #include "mt_spm_reg.h"
 

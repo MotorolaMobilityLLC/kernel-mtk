@@ -6,26 +6,20 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include "mt_spm_idle.h"
-/* #include <mach/mt_boot.h> */
 #include <mach/irqs.h>
-#ifdef CONFIG_MTK_WD_KICKER
-#include <mach/wd_api.h>
-#endif
 #include <mt-plat/upmu_common.h>
-
 #include "mt_spm_vcore_dvfs.h"
 #include "mt_vcorefs_governor.h"
-
 #include "mt_spm_internal.h"
-
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#endif
-
 #include <linux/irqchip/mt-eic.h>
 /* #include <mach/eint.h> */
+/* #include <mach/mt_boot.h> */
+#ifdef CONFIG_MTK_WD_KICKER
+#include <mach/wd_api.h>
+#endif
 
 #define ENABLE_DYNA_LOAD_PCM
 #ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
@@ -40,13 +34,10 @@
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 #include "mt_spm_misc.h"
-
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
-
 #include <mt-plat/mt_typedefs.h>
-
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif
@@ -90,7 +81,6 @@ static struct cdev gSPMDetectCdev;
 
 #endif				/* ENABLE_DYNA_LOAD_PCM */
 
-#ifdef CONFIG_OF
 void __iomem *spm_base;
 void __iomem *spm_infracfg_ao_base;
 void __iomem *spm_ddrphy_base;
@@ -117,7 +107,6 @@ u32 spm_irq_0 = 180;
 #ifdef SPM_VCORE_EN_MT6755
 u32 spm_vcorefs_start_irq = 152;
 u32 spm_vcorefs_end_irq = 153;
-#endif
 #endif
 
 /**************************************
@@ -262,7 +251,6 @@ static irqreturn_t spm_irq7_handler(int irq, void *dev_id)
 static int spm_irq_register(void)
 {
 	int i, err, r = 0;
-#ifdef CONFIG_OF
 #if defined(CONFIG_ARCH_MT6755)
 	struct spm_irq_desc irqdesc[] = {
 		{.irq = 0, .handler = spm_irq0_handler,},
@@ -297,7 +285,6 @@ static int spm_irq_register(void)
 			r = -EPERM;
 		}
 	}
-#endif
 	return r;
 }
 
@@ -336,7 +323,6 @@ static void spm_register_init(void)
 {
 	unsigned long flags;
 
-#ifdef CONFIG_OF
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
@@ -460,7 +446,6 @@ static void spm_register_init(void)
 		spm_err("find mediatek,GPIO failed\n");
 	if (of_property_read_u32_array(node, "reg", &gpio_base_addr, 1))
 		spm_err("mediatek,GPIO base addr can NOT found!\n");
-#endif
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -563,9 +548,8 @@ int spm_module_init(void)
 		/* aee_kernel_warning("SPM Warring", "dram golden setting mismach"); */
 	}
 #endif
-#if defined(CONFIG_ARCH_MT6755)
 	spm_set_dummy_read_addr();
-
+#if defined(CONFIG_ARCH_MT6755)
 	/* debug code */
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
@@ -892,53 +876,6 @@ err1:
 late_initcall(spm_module_late_init);
 #endif				/* ENABLE_DYNA_LOAD_PCM */
 
-#if 0
-static INT32 spm_probe(struct platform_device *pdev)
-{
-#if !defined(CONFIG_MTK_LEGACY)
-	i2c3_clk_main = devm_clk_get(&pdev->dev, "i2c3-main");
-	if (IS_ERR(i2c3_clk_main)) {
-		pr_err("cannot get i2c3 main clock. main clk err : %ld\n",
-			 PTR_ERR(i2c3_clk_main));
-	}
-
-	if (IS_ERR(i2c3_clk_main)) {
-		pr_err("cannot get i2c3 main clock. main clk err : %ld\n",
-			 PTR_ERR(i2c3_clk_main));
-		pr_debug("cannot get i2c3 main clock. main clk err : %ld\n",
-			 PTR_ERR(i2c3_clk_main));
-		return PTR_ERR(i2c3_clk_main);
-	}
-#endif /* !defined(CONFIG_MTK_LEGACY) */
-	return 0;
-}
-
-static INT32 spm_remove(struct platform_device *pdev)
-{
-	return 0;
-}
-
-
-#ifdef CONFIG_OF
-static const struct of_device_id apwmt_of_ids[] = {
-	{.compatible = "mediatek,SLEEP",},
-	{}
-};
-#endif
-
-static struct platform_driver spm_dev_drv = {
-	.probe = spm_probe,
-	.remove = spm_remove,
-	.driver = {
-		   .name = "spm",
-		   .owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		   .of_match_table = apwmt_of_ids,
-#endif
-		   },
-};
-#endif
-
 /**************************************
  * PLL Request API
  **************************************/
@@ -1070,7 +1007,6 @@ struct ddrphy_golden_cfg {
 };
 
 static struct ddrphy_golden_cfg ddrphy_setting[] = {
-#ifdef CONFIG_OF
 	{0x5c0, 0x21271b1b, 0xffffffff},
 	{0x5c4, 0x5096001e, 0xffffffff},
 	{0x5c8, 0x9010f010, 0xffffffff},
@@ -1078,15 +1014,6 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{0x640, 0x000220b1, 0x00022091},
 	{0x650, 0x00000018, 0xffffffff},
 	{0x698, 0x00011e00, 0x00018030},
-#else
-	{0xf02085c0, 0x21271b1b, 0xffffffff},
-	{0xf02085c4, 0x5096001e, 0xffffffff},
-	{0xf02085c8, 0x9010f010, 0xffffffff},
-	{0xf02085cc, 0x50101010, 0xffffffff},
-	{0xf0208640, 0x000220b1, 0x00022091},
-	{0xf0208650, 0x00000018, 0xffffffff},
-	{0xf0208698, 0x00011e00, 0x00018030},
-#endif
 };
 
 int spm_golden_setting_cmp(bool en)
@@ -1100,7 +1027,6 @@ int spm_golden_setting_cmp(bool en)
 	/*Compare Dramc Goldeing Setting */
 	ddrphy_num = sizeof(ddrphy_setting) / sizeof(ddrphy_setting[0]);
 	for (i = 0; i < ddrphy_num; i++) {
-#ifdef CONFIG_OF
 		if ((spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value)
 		    && ((ddrphy_setting[i].value1 == 0xffffffff)
 			|| (spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) !=
@@ -1110,17 +1036,6 @@ int spm_golden_setting_cmp(bool en)
 				spm_read(spm_ddrphy_base + ddrphy_setting[i].addr));
 			r = -EPERM;
 		}
-#else
-		if ((spm_read(ddrphy_setting[i].addr) != ddrphy_setting[i].value) &&
-		    ((ddrphy_setting[i].value1 == 0xffffffff) ||
-		     (spm_read(ddrphy_setting[i].addr) != ddrphy_setting[i].value1))) {
-			if (spm_read(ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
-				spm_err("dramc setting mismatch addr: 0x%x, val: 0x%x\n",
-					ddrphy_setting[i].addr, spm_read(ddrphy_setting[i].addr));
-				r = -EPERM;
-			}
-		}
-#endif
 	}
 
 	return r;
