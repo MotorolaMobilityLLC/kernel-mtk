@@ -260,6 +260,9 @@ int primary_display_dsi_vfp_change(int state)
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
 
+	/* make sure token rdma_sof is clear */
+	cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+
 	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
 	cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
