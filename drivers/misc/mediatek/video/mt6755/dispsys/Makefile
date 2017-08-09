@@ -25,6 +25,7 @@ endif
 obj-y += ddp_ovl.o
 obj-y += ddp_rdma.o
 obj-y += ddp_wdma.o
+obj-y += ddp_color.o
 #obj-y += ddp_aal.o
 #obj-y += ddp_pwm.o
 #obj-y += ddp_gamma.o

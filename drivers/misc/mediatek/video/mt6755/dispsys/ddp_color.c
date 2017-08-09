@@ -6,7 +6,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
-
+#include "ddp_clkmgr.h"
 #include "ddp_reg.h"
 #include "ddp_path.h"
 #include "ddp_drv.h"
@@ -1278,22 +1278,26 @@ static unsigned long color_pa2va(unsigned int addr)
 	/* check disp module */
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if ((addr >= ddp_reg_pa_base[i]) && (addr < (ddp_reg_pa_base[i] + 0x1000))) {
+			/*
 			COLOR_DBG("color_pa2va(), COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n",
 				  addr, ddp_reg_pa_base[i], dispsys_reg[i]);
+			*/
 			return dispsys_reg[i] + (addr - ddp_reg_pa_base[i]);
 		}
 	}
 
 	/* TDSHP */
 	if ((TDSHP_PA_BASE <= addr) && (addr < (TDSHP_PA_BASE + 0x1000))) {
+		/*
 		COLOR_DBG("color_pa2va(), TDSHP PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 			  TDSHP_PA_BASE, g_tdshp_va);
+		*/
 		return g_tdshp_va + (addr - TDSHP_PA_BASE);
 	}
-
+/*
 	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 		  ddp_reg_pa_base[0], dispsys_reg[0]);
-
+*/
 	return 0;
 }
 
@@ -1390,7 +1394,7 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 #else
-	disp_clk_enable(DISP0_DISP_COLOR);
+	ddp_clk_enable(DISP0_DISP_COLOR);
 #endif
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
@@ -1405,7 +1409,7 @@ static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 #else
-	disp_clk_disable(DISP0_DISP_COLOR);
+	ddp_clk_disable(DISP0_DISP_COLOR);
 #endif
 #endif
 	return 0;
