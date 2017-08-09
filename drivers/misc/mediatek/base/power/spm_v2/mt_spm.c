@@ -1333,4 +1333,10 @@ u32 spm_get_sodi_pcm_index(void)
 }
 #endif
 
+void *mt_spm_base_get(void)
+{
+	return spm_base;
+}
+EXPORT_SYMBOL(mt_spm_base_get);
+
 MODULE_DESCRIPTION("SPM Driver v0.1");
