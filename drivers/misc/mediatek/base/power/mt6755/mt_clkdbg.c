@@ -225,7 +225,11 @@ static void __iomem *scpsys_base;	/* 0x10006000 */
 
 static bool is_valid_reg(void __iomem *addr)
 {
-	return ((u64)addr & 0xf0000000) || (((u64)addr >> 32) & 0xf0000000);
+	#ifndef CONFIG_ARM64
+		return 1;
+	#else
+		return ((u64)addr & 0xf0000000) || (((u64)addr >> 32) & 0xf0000000);
+	#endif
 }
 
 enum FMETER_TYPE {
