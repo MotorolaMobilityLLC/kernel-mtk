@@ -602,7 +602,21 @@ static fm_s32 mt6631_DspPatch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 
 	return 0;
 }
+static void mt6631_show_reg(void)
+{
+	fm_u32 debug_reg1[3] = {0};
+	fm_u16 debug_reg2[3] = {0};
 
+	mt6631_top_read(0x00c0, &debug_reg1[0]);
+	mt6631_top_read(0x00c8, &debug_reg1[1]);
+	mt6631_top_read(0x0060, &debug_reg1[2]);
+	mt6631_read(0x7f, &debug_reg2[0]);
+	mt6631_read(0x62, &debug_reg2[1]);
+	mt6631_read(0x60, &debug_reg2[2]);
+	WCN_DBG(FM_ALT | CHIP,
+		"top cr 0xc0 = 0x%08x, 0xc8 = 0x%08x, 0x60 = 0x%08x, fmreg 0x7f = 0x%08x, 0x62 = 0x%08x, 0x60 = 0x%08x\n",
+		debug_reg1[0], debug_reg1[1], debug_reg1[2], debug_reg2[0], debug_reg2[1], debug_reg2[2]);
+}
 static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 {
 #define PATCH_BUF_SIZE (4096*6)
@@ -669,6 +683,7 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	}
 
 	/* Wholechip FM Power Up: step 2, read HW version */
+	mt6631_show_reg();
 	mt6631_read(0x62, &tmp_reg);
 	/* chip_id = tmp_reg; */
 	if (tmp_reg == 0x6631)
@@ -678,7 +693,8 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	WCN_DBG(FM_DBG | CHIP, "chip_id:0x%04x\n", tmp_reg);
 
 	if ((mt6631_hw_info.chip_id != 0x6631)) {
-		WCN_DBG(FM_NTC | CHIP, "fm sys error, reset hw\n");
+		mt6631_show_reg();
+		WCN_DBG(FM_NTC | CHIP, "fm sys error, reset hw, chip_id = 0x%08x\n", mt6631_hw_info.chip_id);
 		return -FM_EFW;
 	}
 
