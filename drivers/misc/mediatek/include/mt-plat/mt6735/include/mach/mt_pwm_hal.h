@@ -12,44 +12,34 @@
 * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
 * more details.
 *
-*
-********************************************************************************
-* Author : How  Wang (how.wang@mediatek.com)
-********************************************************************************
 */
 
 #ifndef __MT_PWM_HAL_H__
 #define __MT_PWM_HAL_H__
-#if 0
-#include <mach/mt_reg_base.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_clkmgr.h>
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_gpio.h>
-#endif
-#include <mach/irqs.h>
-#include <mach/upmu_common.h>
-#include <mach/sync_write.h>
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-#endif
+
 #include <linux/types.h>
-/**********************************
-* Global enum data
-***********************************/
-enum PWN_NO {
-	PWM_MIN,
-	PWM1 = PWM_MIN,
-	PWM2,
-	PWM3,
-	PWM4,
-	PWM5,
-	PWM_NUM,
-	PWM_MAX = PWM_NUM
-};
+
+#include <mt-plat/sync_write.h>
+#if defined(CONFIG_MTK_CLKMGR)
+#include <mach/mt_clkmgr.h>
+#endif
+
+/******************* Register Manipulations*****************/
+#define INREG32(reg)          __raw_readl((void *)reg)
+#define OUTREG32(reg, val)      mt_reg_sync_writel(val, reg)
+#define OUTREG32_DMA(reg, val)   ((*(volatile long*)(reg)) |= (long)(val))
+#define SETREG32(reg, val)      OUTREG32(reg, INREG32(reg)|(val))
+#define CLRREG32(reg, val)      OUTREG32(reg, INREG32(reg)&~(val))
+#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
+
+
+#define PWM_NEW_MODE_DUTY_TOTAL_BITS 64
+
+#ifdef CONFIG_OF
+extern void __iomem *pwm_base;
+#endif
+
+/******************************************/
 
 enum TEST_SEL_BIT {
 	TEST_SEL_FALSE,
@@ -72,7 +62,7 @@ enum PWM_CON_IDLE_BIT {
 	IDLE_MAX
 };
 
-enum PWM_CON_GUARD_BIT {
+enum  PWM_CON_GUARD_BIT {
 	GUARD_FALSE,
 	GUARD_TRUE,
 	GUARD_MAX
@@ -170,7 +160,6 @@ enum PWM_MODE_ENUM {
 	PWM_MODE_DELAY,
 	PWM_MODE_INVALID,
 };
-#define PWM_NEW_MODE_DUTY_TOTAL_BITS 64
 
 void mt_set_pwm_3dlcm_enable_hal(u8 enable);
 void mt_set_pwm_3dlcm_inv_hal(u32 pwm_no, u8 inv);
