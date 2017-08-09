@@ -63,6 +63,9 @@ static cpumask_t speedchange_cpumask;
 static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
+/* system boost flag*/
+static int system_boost;
+
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
@@ -366,7 +369,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	do_div(cputime_speedadj, delta_time);
 	loadadjfreq = (unsigned int)cputime_speedadj * 100;
 	cpu_load = loadadjfreq / pcpu->policy->cur;
-	tunables->boosted = tunables->boost_val || now < tunables->boostpulse_endtime;
+	tunables->boosted = tunables->boost_val || now < tunables->boostpulse_endtime || system_boost;
 
 	if (cpu_load >= tunables->go_hispeed_load || tunables->boosted) {
 		if (pcpu->policy->cur < tunables->hispeed_freq) {
@@ -871,6 +874,33 @@ static ssize_t store_timer_slack(struct cpufreq_interactive_tunables *tunables,
 	return count;
 }
 
+int interactive_boost_cpu(int boost)
+{
+	int	i;
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	struct cpufreq_interactive_tunables *tunables;
+
+	system_boost = boost;
+
+	if (system_boost) {
+		trace_cpufreq_interactive_boost("on");
+		pr_debug("system boost on\n");
+
+		for_each_online_cpu(i) {
+			pcpu = &per_cpu(cpuinfo, i);
+			tunables = pcpu->policy->governor_data;
+			cpufreq_interactive_boost(tunables);
+		}
+	} else {
+		trace_cpufreq_interactive_unboost("off");
+		pr_debug("system unboost off\n");
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(interactive_boost_cpu);
+
+
 static ssize_t show_boost(struct cpufreq_interactive_tunables *tunables,
 			  char *buf)
 {
@@ -1221,6 +1251,11 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		}
 
 		mutex_unlock(&gov_lock);
+		if (system_boost) {
+			trace_cpufreq_interactive_boost("on");
+			pr_debug("system boost on\n");
+			cpufreq_interactive_boost(tunables);
+		}
 		break;
 
 	case CPUFREQ_GOV_STOP:
