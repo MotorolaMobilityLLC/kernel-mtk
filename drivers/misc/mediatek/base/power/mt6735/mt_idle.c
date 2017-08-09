@@ -22,9 +22,12 @@
 #include "mt_dcm.h"
 #include <mach/mt_gpt.h>
 #include <mach/mt_cpuxgpt.h>
+#include <mach/mt_spm_mtcmos_internal.h>
 #include "hotplug.h"
 #include "mt_cpufreq.h"
 #include "mt_idle.h"
+#include "mt_spm.h"
+#include "mt_spm_idle.h"
 
 #define IDLE_TAG     "[Power/swap]"
 #define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
@@ -162,16 +165,6 @@ void __attribute__((weak)) mtkts_allts_start_thermal_timer(void)
 }
 
 void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
-{
-
-}
-
-int __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
-{
-	return 0;
-}
-
-void __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 {
 
 }
@@ -352,7 +345,6 @@ static void __iomem *mmsys_base;
 static void __iomem *imgsys_base;
 static void __iomem *vdecsys_base;
 static void __iomem *vencsys_base;
-static void __iomem *sleepsys_base;
 static void __iomem *cksys_base;
 
 #define INFRA_REG(ofs)      (infrasys_base + ofs)
@@ -363,7 +355,6 @@ static void __iomem *cksys_base;
 #define IMG_REG(ofs)        (imgsys_base + ofs)
 #define VDEC_REG(ofs)       (vdecsys_base + ofs)
 #define VENC_REG(ofs)       (vencsys_base + ofs)
-#define SPM_REG(ofs)        (sleepsys_base + ofs)
 #define CKSYS_REG(ofs)      (cksys_base + ofs)
 
 #define INFRA_PDN_STA       INFRA_REG(0x0048)
@@ -377,9 +368,6 @@ static void __iomem *cksys_base;
 #define VDEC_CKEN_SET       VDEC_REG(0x0000)
 #define LARB_CKEN_SET       VDEC_REG(0x0008)
 #define VENC_CG_CON         VENC_REG(0x0)
-
-#define SPM_PWR_STATUS      SPM_REG(0x060c)
-#define SPM_PWR_STATUS_2ND  SPM_REG(0x0610)
 
 #define CLK_CFG_4               CKSYS_REG(0x080)
 
@@ -534,7 +522,6 @@ static void __init iomap_init(void)
 	get_base_from_node("mediatek,IMGSYS", &imgsys_base, 0);
 	get_base_from_node("mediatek,VDEC_GCON", &vdecsys_base, 0);
 	get_base_from_node("mediatek,VENC_GCON", &vencsys_base, 0);
-	get_base_from_node("mediatek,SLEEP", &sleepsys_base, 0);
 	get_base_from_node("mediatek,CKSYS", &cksys_base, 0);
 }
 
@@ -618,7 +605,7 @@ static bool soidle_can_enter(int cpu)
 	bool retval = false;
 
 #ifdef CONFIG_SMP
-	if (num_online_cpus() != 1) {
+	if (!(spm_get_cpu_pwr_status() == CA7_CPU0)) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -789,7 +776,7 @@ static bool dpidle_can_enter(void)
 	bool retval = false;
 
 #ifdef CONFIG_SMP
-	if (num_online_cpus() != 1) {
+	if (!(spm_get_cpu_pwr_status() == CA7_CPU0)) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -957,7 +944,7 @@ static bool slidle_can_enter(void)
 {
 	int reason = NR_REASONS;
 
-	if (num_online_cpus() != 1) {
+	if (!(spm_get_cpu_pwr_status() == CA7_CPU0)) {
 		reason = BY_CPU;
 		goto out;
 	}

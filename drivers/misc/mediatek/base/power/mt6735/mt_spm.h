@@ -333,8 +333,10 @@ extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
 extern int spm_set_vcore_dvs_voltage(unsigned int opp);
 extern char *spm_dump_vcore_dvs_regs(char *p);
 
-/*for AP BSI Generator*/
+/* for AP BSI Generator */
 void spm_ap_bsi_gen(unsigned int *clk_buf_cfg);
+
+unsigned int spm_get_cpu_pwr_status(void);
 
 /**************************************
  * Macro and Inline

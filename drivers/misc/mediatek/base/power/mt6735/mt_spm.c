@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include <mt-plat/aee.h>
+#include <mach/mt_spm_mtcmos_internal.h>
 
 #include "mt_spm_idle.h"
 #include <irq.h>
@@ -529,6 +530,20 @@ void spm_ap_bsi_gen(unsigned int *clk_buf_cfg)
 	/* Polling SPM_BSI_START finish */
 	while ((spm_read(SPM_BSI_GEN) & 0x1))
 		;
+}
+
+unsigned int spm_get_cpu_pwr_status(void)
+{
+	unsigned int val[2] = {0};
+	unsigned int stat = 0;
+
+	val[0] = spm_read(SPM_PWR_STATUS);
+	val[1] = spm_read(SPM_PWR_STATUS_2ND);
+
+	stat = (val[0] & (CA15_CPU3 | CA15_CPU2 | CA15_CPU1 | CA15_CPU0 | CA7_CPU3 | CA7_CPU2 | CA7_CPU1 | CA7_CPU0));
+	stat &= (val[1] & (CA15_CPU3 | CA15_CPU2 | CA15_CPU1 | CA15_CPU0 | CA7_CPU3 | CA7_CPU2 | CA7_CPU1 | CA7_CPU0));
+
+	return stat;
 }
 
 MODULE_DESCRIPTION("SPM Driver v0.1");
