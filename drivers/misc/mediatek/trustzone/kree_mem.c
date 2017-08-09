@@ -27,7 +27,7 @@ static inline TZ_RESULT _allocFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] %s Error: %d\n", dbg, ret);
+		pr_debug("[kree] %s Error: %d\n", dbg, ret);
 #endif
 		return ret;
 	}
@@ -51,7 +51,7 @@ static inline TZ_RESULT _handleOpFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 					TZ_ParamTypes1(TZPT_VALUE_INPUT), p);
 	if (ret < 0) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] %s Error: %d\n", dbg, ret);
+		pr_debug("[kree] %s Error: %d\n", dbg, ret);
 #endif
 		return ret;
 	}
@@ -77,7 +77,7 @@ static inline TZ_RESULT _handleOpFunc_1(uint32_t cmd,
 					p);
 	if (ret < 0) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] %s Error: %d\n", dbg, ret);
+		pr_debug("[kree] %s Error: %d\n", dbg, ret);
 #endif
 		*count = 0;
 		return ret;
@@ -152,13 +152,13 @@ TZ_RESULT KREE_RegisterSharedmem(KREE_SESSION_HANDLE session,
 						0); /* set 0 for no remap... */
 		if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-			pr_info("[kree] KREE_RegisterSharedmem Error: %d\n",
+			pr_debug("[kree] KREE_RegisterSharedmem Error: %d\n",
 				ret);
 #endif
 			return ret;
 		}
 	} else {
-		pr_info("[kree] KREE_RegisterSharedmem Error: support kmalloc only!!!\n");
+		pr_debug("[kree] KREE_RegisterSharedmem Error: support kmalloc only!!!\n");
 		return TZ_RESULT_ERROR_NOT_IMPLEMENTED;
 	}
 
@@ -176,7 +176,7 @@ TZ_RESULT KREE_UnregisterSharedmem(KREE_SESSION_HANDLE session,
 	ret = kree_unregister_sharedmem(session, shm_handle);
 	if (ret < 0) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_UnregisterSharedmem Error: %d\n", ret);
+		pr_debug("[kree] KREE_UnregisterSharedmem Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -219,7 +219,7 @@ TZ_RESULT KREE_UnreferenceSecuremem(KREE_SESSION_HANDLE session,
 	    _handleOpFunc_1(TZCMD_MEM_SECUREMEM_UNREF, session, mem_handle,
 				&count, "KREE_UnreferenceSecuremem");
 #ifdef DBG_KREE_MEM
-	pr_info("KREE_UnreferenceSecuremem: count = 0x%x\n", count);
+	pr_debug("KREE_UnreferenceSecuremem: count = 0x%x\n", count);
 #endif
 
 	return ret;
@@ -261,7 +261,7 @@ TZ_RESULT KREE_UnreferenceSecurechunkmem(KREE_SESSION_HANDLE session,
 	    _handleOpFunc_1(TZCMD_MEM_SECURECM_UNREF, session, cm_handle,
 				&count, "KREE_UnreferenceSecurechunkmem");
 #ifdef DBG_KREE_MEM
-	pr_info("KREE_UnreferenceSecurechunkmem: count = 0x%x\n", count);
+	pr_debug("KREE_UnreferenceSecurechunkmem: count = 0x%x\n", count);
 #endif
 
 	return ret;
@@ -287,7 +287,7 @@ TZ_RESULT KREE_ReadSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_ReadSecurechunkmem Error: %d\n", ret);
+		pr_debug("[kree] KREE_ReadSecurechunkmem Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -315,7 +315,7 @@ TZ_RESULT KREE_WriteSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_WriteSecurechunkmem Error: %d\n", ret);
+		pr_debug("[kree] KREE_WriteSecurechunkmem Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -335,7 +335,7 @@ TZ_RESULT KREE_GetSecurechunkReleaseSize(KREE_SESSION_HANDLE session,
 				TZ_ParamTypes1(TZPT_VALUE_OUTPUT), p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_GetSecurechunkReleaseSize Error: %d\n",
+		pr_debug("[kree] KREE_GetSecurechunkReleaseSize Error: %d\n",
 			ret);
 #endif
 		return ret;
@@ -360,7 +360,7 @@ TZ_RESULT KREE_StartSecurechunkmemSvc(KREE_SESSION_HANDLE session,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_StartSecurechunkmemSvc Error: %d\n", ret);
+		pr_debug("[kree] KREE_StartSecurechunkmemSvc Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -380,7 +380,7 @@ TZ_RESULT KREE_StopSecurechunkmemSvc(KREE_SESSION_HANDLE session,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_StopSecurechunkmemSvc Error: %d\n", ret);
+		pr_debug("[kree] KREE_StopSecurechunkmemSvc Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -405,7 +405,7 @@ TZ_RESULT KREE_QuerySecurechunkmem(KREE_SESSION_HANDLE session,
 					p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_info("[kree] KREE_QuerySecurechunkmem Error: %d\n", ret);
+		pr_debug("[kree] KREE_QuerySecurechunkmem Error: %d\n", ret);
 #endif
 		return ret;
 	}
@@ -427,7 +427,7 @@ TZ_RESULT KREE_GetTEETotalSize(KREE_SESSION_HANDLE session, uint32_t *size)
 					TZ_ParamTypes1(TZPT_VALUE_OUTPUT), p);
 	if (ret != TZ_RESULT_SUCCESS) {
 #ifdef DBG_KREE_MEM
-		pr_err("[kree] KREE_GetTEETotalSize Error: %d\n", ret);
+		pr_warn("[kree] KREE_GetTEETotalSize Error: %d\n", ret);
 #endif
 		return ret;
 	}

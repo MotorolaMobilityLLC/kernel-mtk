@@ -174,7 +174,7 @@ static long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange,
  out:
 	up_read(&current->mm->mmap_sem);
 	if (res < 0) {
-		pr_info("_map_user_pages error = %d\n", res);
+		pr_warn("_map_user_pages error = %d\n", res);
 		goto out_free;
 	}
 
@@ -186,7 +186,7 @@ static long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange,
 	return 0;
 
  out_unmap:
-	pr_info("_map_user_pages fail\n");
+	pr_warn("_map_user_pages fail\n");
 	if (pinRange->isPage) {
 		for (j = 0; j < res; j++)
 			put_page(pages[j]);
@@ -801,7 +801,7 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 	cret = _map_user_pages(pin, (unsigned long)cparam.buffer,
 				cparam.size, cparam.control);
 	if (cret != 0) {
-		pr_info("tz_client_reg_sharedmem fail: map user pages = 0x%x\n",
+		pr_warn("tz_client_reg_sharedmem fail: map user pages = 0x%x\n",
 			(uint32_t) cret);
 		errcode = -EFAULT;
 		goto client_regshm_mapfail_1;
@@ -817,14 +817,14 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 		page = (struct page **)pin->pageArray;
 		for (i = 0; i < pin->nrPages; i++) {
 			map_p[1 + i] = PFN_PHYS(page_to_pfn(page[i])); /* PA */
-			/* pr_info("tz_client_reg_sharedmem ---> 0x%x\n",
+			/* pr_debug("tz_client_reg_sharedmem ---> 0x%x\n",
 					map_p[1+i]); */
 		}
 	} else { /* pfn */
 		pfns = (unsigned long *)pin->pageArray;
 		for (i = 0; i < pin->nrPages; i++) {
 			map_p[1 + i] = PFN_PHYS(pfns[i]);	/* get PA */
-			/* pr_info("tz_client_reg_sharedmem ---> 0x%x\n",
+			/* pr_debug("tz_client_reg_sharedmem ---> 0x%x\n",
 					map_p[1+i]); */
 		}
 	}
@@ -834,7 +834,7 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 	ret = kree_register_sharedmem(session, &mem_handle, pin->start,
 					pin->size, (void *)map_p);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("tz_client_reg_sharedmem fail: register shm 0x%x\n",
+		pr_warn("tz_client_reg_sharedmem fail: register shm 0x%x\n",
 			ret);
 		kfree(map_p);
 		errcode = -EFAULT;
@@ -848,7 +848,7 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 					(KREE_SHAREDMEM_HANDLE) mem_handle,
 					(uint32_t *) pin);
 	if (cret < 0) {
-		pr_info("tz_client_reg_sharedmem fail: register fd 0x%x\n",
+		pr_warn("tz_client_reg_sharedmem fail: register fd 0x%x\n",
 			(uint32_t) cret);
 		errcode = -EFAULT;
 		goto client_regshm_free_1;
@@ -869,7 +869,7 @@ client_regshm_free:
 	kfree(pin);
 	cparam.ret = ret;	/* TEE service call return */
 	cret = copy_to_user((void *)arg, &cparam, sizeof(cparam));
-	pr_info("tz_client_reg_sharedmem fail: shm reg\n");
+	pr_warn("tz_client_reg_sharedmem fail: shm reg\n");
 	return errcode;
 
 client_regshm_mapfail_2:
@@ -877,7 +877,7 @@ client_regshm_mapfail_2:
 client_regshm_mapfail_1:
 	kfree(pin);
 client_regshm_mapfail:
-	pr_info("tz_client_reg_sharedmem fail: map memory\n");
+	pr_warn("tz_client_reg_sharedmem fail: map memory\n");
 	return errcode;
 }
 
@@ -901,7 +901,7 @@ static long tz_client_unreg_sharedmem(struct file *file, unsigned long arg)
 	 */
 	ret = kree_unregister_sharedmem(session, (uint32_t) cparam.mem_handle);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("tz_client_unreg_sharedmem: 0x%x\n", ret);
+		pr_warn("tz_client_unreg_sharedmem: 0x%x\n", ret);
 		cparam.ret = ret;
 		cret = copy_to_user((void *)arg, &cparam, sizeof(cparam));
 		return -EFAULT;
@@ -911,7 +911,7 @@ static long tz_client_unreg_sharedmem(struct file *file, unsigned long arg)
 	 */
 	ret = tz_client_unregister_sharedmem(file, cparam.mem_handle);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("tz_client_unreg_sharedmem: unregister shm = 0x%x\n",
+		pr_warn("tz_client_unreg_sharedmem: unregister shm = 0x%x\n",
 			ret);
 		return -EFAULT;
 	}
@@ -999,13 +999,13 @@ static int securetime_savefile(void)
 
 	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("[securetime]CreateSession error %d\n", ret);
+		pr_warn("[securetime]CreateSession error %d\n", ret);
 
 	TEE_update_pr_time_infile(securetime_session);
 
 	ret = KREE_CloseSession(securetime_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("CloseSession error %d\n", ret);
+		pr_warn("CloseSession error %d\n", ret);
 
 
 	return ret;
@@ -1014,7 +1014,7 @@ static int securetime_savefile(void)
 
 static void st_shutdown(struct platform_device *pdev)
 {
-	pr_err("[securetime]st_shutdown: kickoff\n");
+	pr_warn("[securetime]st_shutdown: kickoff\n");
 }
 #endif
 
@@ -1101,7 +1101,7 @@ static int __init register_tz_driver(void)
 
 	if (platform_device_register(&tz_device)) {
 		ret = -ENODEV;
-		pr_err("[%s] could not register device for the device, ret:%d\n",
+		pr_warn("[%s] could not register device for the device, ret:%d\n",
 			MODULE_NAME,
 			ret);
 		return ret;
@@ -1109,7 +1109,7 @@ static int __init register_tz_driver(void)
 
 	if (platform_driver_register(&tz_driver)) {
 		ret = -ENODEV;
-		pr_err("[%s] could not register device for the device, ret:%d\n",
+		pr_warn("[%s] could not register device for the device, ret:%d\n",
 			MODULE_NAME,
 			ret);
 		platform_device_unregister(&tz_device);
@@ -1124,7 +1124,7 @@ static int __init register_tz_driver(void)
 
 static void st_early_suspend(struct early_suspend *h)
 {
-	pr_info("st_early_suspend: start\n");
+	pr_debug("st_early_suspend: start\n");
 	securetime_savefile();
 }
 
@@ -1135,12 +1135,12 @@ static void st_late_resume(struct early_suspend *h)
 
 	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("[securetime]CreateSession error %d\n", ret);
+		pr_warn("[securetime]CreateSession error %d\n", ret);
 
 	TEE_update_pr_time_intee(securetime_session);
 	ret = KREE_CloseSession(securetime_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("[securetime]CloseSession error %d\n", ret);
+		pr_warn("[securetime]CloseSession error %d\n", ret);
 }
 
 static struct early_suspend securetime_early_suspend = {
@@ -1189,7 +1189,7 @@ static int __init tz_client_init(void)
 
 	ret = register_tz_driver();
 	if (ret) {
-		pr_err("[%s] register device/driver failed, ret:%d\n",
+		pr_warn("[%s] register device/driver failed, ret:%d\n",
 			MODULE_NAME,
 			ret);
 		return ret;
@@ -1197,11 +1197,11 @@ static int __init tz_client_init(void)
 
 	tz_client_dev = MKDEV(MAJOR_DEV_NUM, 0);
 
-	pr_info(" init\n");
+	pr_debug(" init\n");
 
 	ret = register_chrdev_region(tz_client_dev, 1, TZ_DEV_NAME);
 	if (ret) {
-		pr_err("[%s] register device failed, ret:%d\n",
+		pr_warn("[%s] register device failed, ret:%d\n",
 			MODULE_NAME, ret);
 		return ret;
 	}
@@ -1212,7 +1212,7 @@ static int __init tz_client_init(void)
 
 	ret = cdev_add(&tz_client_cdev, tz_client_dev, 1);
 	if (ret < 0) {
-		pr_err("[%s] could not allocate chrdev for the device, ret:%d\n",
+		pr_warn("[%s] could not allocate chrdev for the device, ret:%d\n",
 			MODULE_NAME,
 			ret);
 		return ret;
@@ -1220,7 +1220,7 @@ static int __init tz_client_init(void)
 
 	tzret = KREE_InitTZ();
 	if (tzret != TZ_RESULT_SUCCESS) {
-		pr_info("tz_client_init: TZ Failed %d\n", (int)tzret);
+		pr_warn("tz_client_init: TZ Failed %d\n", (int)tzret);
 		BUG();
 	}
 
@@ -1231,7 +1231,7 @@ static int __init tz_client_init(void)
 	thread = kthread_run(update_counter_thread, NULL, "update_tz_counter");
 #endif
 
-	pr_info("tz_client_init: successfully\n");
+	pr_debug("tz_client_init: successfully\n");
 
 	/* tz_test(); */
 
@@ -1240,7 +1240,7 @@ static int __init tz_client_init(void)
 	if (IS_ERR(pTzClass)) {
 		int ret = PTR_ERR(pTzClass);
 
-		pr_err("[%s] could not create class for the device, ret:%d\n",
+		pr_warn("[%s] could not create class for the device, ret:%d\n",
 			MODULE_NAME,
 			ret);
 		return ret;

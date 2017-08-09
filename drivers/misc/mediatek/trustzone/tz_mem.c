@@ -73,14 +73,14 @@ static TZ_RESULT _tzmem_get_poolsize(uint32_t *size)
 
 	ret = KREE_CreateSession(TZ_TA_MEM_UUID, &session);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_err("[%s] _tzmem_get_poolsize: KREE_CreateSession Error = 0x%x\n",
+		pr_warn("[%s] _tzmem_get_poolsize: KREE_CreateSession Error = 0x%x\n",
 			MODULE_NAME, ret);
 		return ret;
 	}
 	/* get ta preset tzmem size */
 	ret = KREE_GetSecurechunkReleaseSize(session, size);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_err("[%s] _tzmem_get_poolsize: KREE_GetSecurechunkReleaseSize Error = 0x%x\n",
+		pr_warn("[%s] _tzmem_get_poolsize: KREE_GetSecurechunkReleaseSize Error = 0x%x\n",
 			MODULE_NAME, ret);
 		KREE_CloseSession(session);
 		return ret;
@@ -88,7 +88,7 @@ static TZ_RESULT _tzmem_get_poolsize(uint32_t *size)
 
 	ret = KREE_CloseSession(session);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_err("[%s] _tzmem_get_poolsize: KREE_CloseSession Error = 0x%x\n",
+		pr_warn("[%s] _tzmem_get_poolsize: KREE_CloseSession Error = 0x%x\n",
 			    MODULE_NAME, ret);
 		return ret;
 	}
@@ -101,7 +101,7 @@ static long tzmem_gen_ioctl(dev_t dev, unsigned int cmd, unsigned long arg)
 	int ret = 0;
 
 #ifdef MTEE_TZMEM_DBG
-	pr_info("====> tzmem_gen_ioctl\n");
+	pr_debug("====> tzmem_gen_ioctl\n");
 #endif
 
 	switch (cmd) {
@@ -118,7 +118,7 @@ static void do_tzmem_blk_request(struct request_queue *q)
 	uint32_t i;
 
 #ifdef MTEE_TZMEM_DBG
-	pr_info("====> do_tzmem_blk_request\n");
+	pr_debug("====> do_tzmem_blk_request\n");
 #endif
 
 	req = blk_fetch_request(q);
@@ -134,7 +134,7 @@ static void do_tzmem_blk_request(struct request_queue *q)
 		session = diskInfo->session;
 
 #ifdef MTEE_TZMEM_DBG
-		pr_info("====> 0x%x 0x%x\n", session, diskInfo->size);
+		pr_debug("====> 0x%x 0x%x\n", session, diskInfo->size);
 #endif
 
 		if ((start + len > diskInfo->size) || (start > diskInfo->size)
@@ -145,7 +145,7 @@ static void do_tzmem_blk_request(struct request_queue *q)
 
 		if (rq_data_dir(req) == READ) {
 #ifdef MTEE_TZMEM_DBG
-			pr_info("====> do_tzmem_blk_request: read = 0x%x, 0x%x\n",
+			pr_debug("====> do_tzmem_blk_request: read = 0x%x, 0x%x\n",
 				(uint32_t) start,
 				(uint32_t) len);
 #endif
@@ -165,7 +165,7 @@ static void do_tzmem_blk_request(struct request_queue *q)
 			}
 		} else {
 #ifdef MTEE_TZMEM_DBG
-			pr_info("====> do_tzmem_blk_request: write = 0x%x, 0x%x\n",
+			pr_debug("====> do_tzmem_blk_request: write = 0x%x, 0x%x\n",
 				(uint32_t) start, (uint32_t) len);
 #endif
 			for (i = 0; i < len / KREE_RELEASECM_MAX_SIZE; i++) {
@@ -217,7 +217,7 @@ static struct kobject *tzmem_blk_probe(dev_t dev, int *part, void *data)
 	KREE_SESSION_HANDLE session;
 
 #ifdef MTEE_TZMEM_DBG
-	pr_info("====> tzmem_blk_probe\n");
+	pr_debug("====> tzmem_blk_probe\n");
 #endif
 
 	mutex_lock(&tzmem_probe_mutex);
@@ -250,7 +250,7 @@ static struct kobject *tzmem_blk_probe(dev_t dev, int *part, void *data)
 
 		ret = KREE_CreateSession(TZ_TA_MEM_UUID, &session);
 		if (ret != TZ_RESULT_SUCCESS) {
-			pr_err("[%s] _tzmem_get_poolsize: KREE_CreateSession Error = 0x%x\n",
+			pr_warn("[%s] _tzmem_get_poolsize: KREE_CreateSession Error = 0x%x\n",
 				MODULE_NAME, ret);
 			goto out_init;
 		}
@@ -281,11 +281,11 @@ static struct kobject *tzmem_blk_probe(dev_t dev, int *part, void *data)
 static int __init tzmem_blkdev_init(void)
 {
 #ifdef MTEE_TZMEM_DBG
-	pr_info("====> tzmem_blkdev_init\n");
+	pr_debug("====> tzmem_blkdev_init\n");
 #endif
 
 	if (register_blkdev(IO_NODE_MAJOR_TZMEM, DEV_TZMEM)) {
-		pr_err("[%s] tzmem_blkdev_init: register_blkdev error\n",
+		pr_warn("[%s] tzmem_blkdev_init: register_blkdev error\n",
 			MODULE_NAME);
 		return -EFAULT;
 	}

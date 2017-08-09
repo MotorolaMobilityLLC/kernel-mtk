@@ -25,7 +25,7 @@ uint32_t TEECK_Test_Add(KREE_SESSION_HANDLE session, uint32_t a, uint32_t b)
 
 	ret = KREE_TeeServiceCall(session, TZCMD_TEST_ADD, paramTypes, param);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("ServiceCall error %d\n", ret);
+		pr_warn("ServiceCall error %d\n", ret);
 		param[2].value.a = 0;
 	}
 
@@ -51,12 +51,12 @@ void tz_test(void)
 
 	ret = KREE_CreateSession(TZ_TA_TEST_UUID, &test_session);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("CreateSession error %d\n", ret);
+		pr_warn("CreateSession error %d\n", ret);
 		return;
 	}
 
 	result = TEECK_Test_Add(test_session, 10, 20);
-	pr_info("tz_test TZCMD_TEST_ADD %d\n", result);
+	pr_debug("tz_test TZCMD_TEST_ADD %d\n", result);
 
 	/* / Time test. */
 	getnstimeofday(&start);
@@ -66,15 +66,15 @@ void tz_test(void)
 	getnstimeofday(&end);
 	ns = ((long long)end.tv_sec - start.tv_sec) * 1000000000 +
 			(end.tv_nsec - start.tv_nsec);
-	pr_info("100 times TEST_ADD %lld ns\n", ns);
+	pr_debug("100 times TEST_ADD %lld ns\n", ns);
 
 	ret = KREE_CreateSession(TZ_TA_MEM_UUID, &mem_session);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("Create memory session error %d\n", ret);
+		pr_warn("Create memory session error %d\n", ret);
 		return;
 	}
 
-	pr_info("test A\n");
+	pr_debug("test A\n");
 	size = 4 * 1024;
 	ptr = kmalloc(size, GFP_KERNEL);
 
@@ -83,11 +83,11 @@ void tz_test(void)
 	shm_param.size = size;
 	ret = KREE_RegisterSharedmem(mem_session, &shm_handle, &shm_param);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_err("KREE_RegisterSharedmem Error: %s\n",
+		pr_warn("KREE_RegisterSharedmem Error: %s\n",
 			TZ_GetErrorString(ret));
 		return;
 	}
-	pr_info("shm handle = 0x%x\n", shm_handle);
+	pr_debug("shm handle = 0x%x\n", shm_handle);
 
 	for (i = 0; i < 4 * 1024 / 4; i++)
 		ptr[i] = i;
@@ -102,14 +102,14 @@ void tz_test(void)
 							TZPT_VALUE_OUTPUT),
 					param);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("TZCMD_TEST_ADD_MEM error %d\n", ret);
+		pr_warn("TZCMD_TEST_ADD_MEM error %d\n", ret);
 		return;
 	}
-	pr_info("KREE ADD MEM result = 0x%x\n", param[2].value.a);
+	pr_debug("KREE ADD MEM result = 0x%x\n", param[2].value.a);
 
 	ret = KREE_AllocSecuremem(mem_session, &mem_handle, 0, 1024);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("Secure memory allocate error %d\n", ret);
+		pr_warn("Secure memory allocate error %d\n", ret);
 		return;
 	}
 
@@ -119,12 +119,12 @@ void tz_test(void)
 							TZPT_VALUE_OUTPUT,
 							TZPT_VALUE_OUTPUT),
 					param);
-	pr_info("Do A = 0x%x, 0x%x (%d)\n",
+	pr_debug("Do A = 0x%x, 0x%x (%d)\n",
 		param[1].value.a, param[2].value.a, ret);
 
 	ret = KREE_ReferenceSecuremem(mem_session, mem_handle);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("KREE_ReferenceSecuremem Error: %d\n", ret);
+		pr_warn("KREE_ReferenceSecuremem Error: %d\n", ret);
 
 	param[0].value.a = (uint32_t) mem_handle;
 	ret = KREE_TeeServiceCall(test_session, TZCMD_TEST_DO_B,
@@ -132,32 +132,32 @@ void tz_test(void)
 							TZPT_VALUE_OUTPUT,
 							TZPT_VALUE_OUTPUT),
 					param);
-	pr_info("Do B = 0x%x, 0x%x (%d)\n",
+	pr_debug("Do B = 0x%x, 0x%x (%d)\n",
 		param[1].value.a, param[2].value.a, ret);
 
 	/* Free/Unreference secure memory */
 	ret = KREE_UnreferenceSecuremem(mem_session, mem_handle);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("KREE_UnReferenceSecureMem Error 1: %d\n", ret);
+		pr_warn("KREE_UnReferenceSecureMem Error 1: %d\n", ret);
 
 	ret = KREE_UnreferenceSecuremem(mem_session, mem_handle);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("KREE_UnReferenceSecureMem Error 2: %d\n", ret);
+		pr_warn("KREE_UnReferenceSecureMem Error 2: %d\n", ret);
 
 	ret = KREE_UnregisterSharedmem(mem_session, shm_handle);
 	if (ret != TZ_RESULT_SUCCESS) {
-		pr_info("KREE_UnregisterSharedmem Error: %s\n",
+		pr_warn("KREE_UnregisterSharedmem Error: %s\n",
 			TZ_GetErrorString(ret));
 		return;
 	}
 
 	ret = KREE_CloseSession(test_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("CloseSession error %d\n", ret);
+		pr_warn("CloseSession error %d\n", ret);
 
 	ret = KREE_CloseSession(mem_session);
 	if (ret != TZ_RESULT_SUCCESS)
-		pr_info("Close memory session error %d\n", ret);
+		pr_warn("Close memory session error %d\n", ret);
 
-	pr_info("KREE test done!!!!\n");
+	pr_debug("KREE test done!!!!\n");
 }

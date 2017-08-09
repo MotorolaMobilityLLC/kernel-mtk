@@ -23,7 +23,7 @@ DRM_UINT64 cur_counter;
 rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
 
 if (rtc == NULL) {
-	pr_err("%s: unable to open rtc device (%s)\n",
+	pr_warn("%s: unable to open rtc device (%s)\n",
 				__FILE__, CONFIG_RTC_HCTOSYS_DEVICE);
 	goto err_open;
 }
@@ -64,16 +64,16 @@ memcpy((char *) &cur_counter, (char *) &time_count64, sizeof(DRM_UINT64));
 ret = KREE_TeeServiceCall(session, TZCMD_PLAYREADY_SET_CURRENT_COUNTER,
 				paramTypes, param);
 if (ret != TZ_RESULT_SUCCESS)
-	pr_info("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER error %d\n",
+	pr_warn("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER error %d\n",
 		ret);
 
 if (param[2].value.a == PR_TIME_FILE_ERROR_SIGN) {
 	file_result = PR_TIME_FILE_ERROR_SIGN;
-	pr_info("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER file_result %d\n",
+	pr_warn("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER file_result %d\n",
 		file_result);
 } else if (param[2].value.a == PR_TIME_FILE_OK_SIGN) {
 	file_result = PR_TIME_FILE_OK_SIGN;
-	pr_info("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER file_result %d\n",
+	pr_warn("ServiceCall TZCMD_PLAYREADY_SET_CURRENT_COUNTER file_result %d\n",
 		file_result);
 }
 
@@ -107,7 +107,7 @@ param[1].value.a = 0;
 ret = KREE_TeeServiceCall(session, TZCMD_PLAYREADY_GET_CURRENT_COUNTER,
 					paramTypes, param);
 if (ret != TZ_RESULT_SUCCESS) {
-	pr_info("ServiceCall error %d\n", ret);
+	pr_warn("ServiceCall error %d\n", ret);
 	goto tz_error;
 }
 
@@ -117,7 +117,7 @@ if (file) {
 			sizeof(struct TZ_JG_SECURECLOCK_INFO), &u8Offset);
 	filp_close(file, NULL);
 } else {
-	pr_info("FILE_Open PR_TIME_FILE_SAVE_PATH return NULL\n");
+	pr_warn("FILE_Open PR_TIME_FILE_SAVE_PATH return NULL\n");
 }
 
 tz_error:
@@ -147,7 +147,7 @@ param[1].mem.size = sizeof(struct TM_PR);
 rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
 
 if (rtc == NULL) {
-	pr_err("%s: unable to open rtc device (%s)\n",
+	pr_warn("%s: unable to open rtc device (%s)\n",
 			__FILE__, CONFIG_RTC_HCTOSYS_DEVICE);
 	goto err_open;
 }
@@ -169,7 +169,7 @@ if (err) {
 
 rtc_tm_to_time(&tm, &time_count);
 #if 0
-pr_info("securetime increase result: %d %d %d %d %d %d %d\n",
+pr_debug("securetime increase result: %d %d %d %d %d %d %d\n",
 	tm.tm_yday, tm.tm_year, tm.tm_mon, tm.tm_mday,
 	tm.tm_hour, tm.tm_min, tm.tm_sec);
 #endif
@@ -178,10 +178,10 @@ param[0].value.a = time_count;
 ret = KREE_TeeServiceCall(session, TZCMD_PLAYREADY_INC_CURRENT_COUNTER,
 				paramTypes, param);
 if (ret != TZ_RESULT_SUCCESS)
-	pr_info("ServiceCall error %d\n", ret);
+	pr_warn("ServiceCall error %d\n", ret);
 
 #if 0
-pr_info("securetime increase result: %d %d %d %d %d %d %d\n", secure_TM.tm_yday
+pr_debug("securetime increase result: %d %d %d %d %d %d %d\n", secure_TM.tm_yday
 	, secure_TM.tm_year, secure_TM.tm_mon, secure_TM.tm_mday
 	, secure_TM.tm_hour, secure_TM.tm_min, secure_TM.tm_sec);
 #endif
@@ -207,7 +207,7 @@ uint32_t nsec = THREAD_COUNT_FREQ;
 
 ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &icnt_session);
 if (ret != TZ_RESULT_SUCCESS) {
-	pr_info("CreateSession error %d\n", ret);
+	pr_warn("CreateSession error %d\n", ret);
 	return 1;
 }
 
@@ -239,7 +239,7 @@ for (;;) {
 
 ret = KREE_CloseSession(icnt_session);
 if (ret != TZ_RESULT_SUCCESS)
-	pr_info("CloseSession error %d\n", ret);
+	pr_warn("CloseSession error %d\n", ret);
 
 return 0;
 }
