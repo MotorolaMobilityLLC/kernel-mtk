@@ -1807,7 +1807,7 @@ static ssize_t idle_state_write(struct file *filp,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(cmd_buf, "%s %x", cmd, &param) == 2) {
+	if (sscanf(cmd_buf, "%31s %x", cmd, &param) == 2) {
 		if (!strcmp(cmd, "switch")) {
 			for (idx = 0; idx < NR_TYPES; idx++)
 				idle_switch[idx] = (param & (1U << idx)) ? 1 : 0;
@@ -1902,7 +1902,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(cmd_buf, "%s %d", cmd, &param) == 2) {
+	if (sscanf(cmd_buf, "%31s %d", cmd, &param) == 2) {
 		if (!strcmp(cmd, "dpidle"))
 			idle_switch[IDLE_TYPE_DP] = param;
 		else if (!strcmp(cmd, "enable"))
@@ -2003,7 +2003,7 @@ static ssize_t soidle_state_write(struct file *filp,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(cmd_buf, "%s %d", cmd, &param) == 2) {
+	if (sscanf(cmd_buf, "%31s %d", cmd, &param) == 2) {
 		if (!strcmp(cmd, "soidle"))
 			idle_switch[IDLE_TYPE_SO] = param;
 		else if (!strcmp(cmd, "enable"))
@@ -2091,7 +2091,7 @@ static ssize_t slidle_state_write(struct file *filp, const char __user *userbuf,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(userbuf, "%s %d", cmd, &param) == 2) {
+	if (sscanf(userbuf, "%31s %d", cmd, &param) == 2) {
 		if (!strcmp(cmd, "slidle"))
 			idle_switch[IDLE_TYPE_SL] = param;
 		else if (!strcmp(cmd, "enable"))
