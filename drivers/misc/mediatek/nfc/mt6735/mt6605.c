@@ -396,8 +396,11 @@ static int mt6605_probe(struct i2c_client *client,
 		pr_err("%s : failed to allocate dma buffer\n", __func__);
 		goto err_request_irq_failed;
 	}
+	/* 2015/08/25 reduce print_log
 	pr_debug("%s :I2CDMAWriteBuf_pa %d, I2CDMAReadBuf_pa,%d\n", __func__,
 		 I2CDMAWriteBuf_pa, I2CDMAReadBuf_pa);
+	*/
+
 	/* request irq.  the irq is set whenever the chip has data available
 	 * for reading.  it is cleared when all data has been read.
 	 */
@@ -541,7 +544,9 @@ static int mt_nfc_remove(struct platform_device *pdev)
 irqreturn_t mt6605_dev_irq_handler(int irq, void *data)
 {
 	struct mt6605_dev *mt6605_dev = mt6605_dev_ptr;
+	/* 2015/08/25 reduce print_log
 	pr_debug("%s : &mt6605_dev=%p\n", __func__, mt6605_dev);
+	*/
 
 	if (NULL == mt6605_dev) {
 		pr_debug("mt6605_dev NULL.\n");
@@ -706,9 +711,11 @@ static ssize_t mt6605_dev_write(struct file *filp, const char __user *buf,
 		    i2c_master_send(mt6605_dev->client,
 				    (unsigned char *)(uintptr_t)
 				    I2CDMAWriteBuf_pa, count);
+		/* 2015/08/25 reduce print_log
 		pr_debug
 			    ("%s, i2c_master_send return %d.\n",
 			     __func__, ret);
+	  */
 		if (ret_tmp != count) {
 			pr_debug("%s : i2c_master_send returned %d\n", __func__,
 				 ret);
@@ -827,7 +834,9 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			       __func__);
 		}
 
+		/* 2015/08/25 reduce print_log
 		pr_debug("mt6605_dev_unlocked_ioctl,Re-registered IRQ.\n");
+		*/
 		return 0;
 	} else if ((cmd & 0xFFFF) == 0xFEFF) {	/* EXIT EINT */
 		mutex_lock(&mt6605_dev->read_mutex);
@@ -903,7 +912,6 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		return result;
 	}
 
-	/* if (result != MTK_NFC_PULL_INVALID) { */
 	if (cmd == MTK_NFC_IOCTL_READ) {
 		result = mt_nfc_get_gpio_value(gpio_num);
 		/*
@@ -1276,7 +1284,9 @@ static int __init mt6605_dev_init(void)
 		return ret;
 	}
 
+  /* 2015/08/25 reduce print_log
 	pr_debug("mt6605_dev_init success\n");
+	*/
 
 	return 0;
 }
