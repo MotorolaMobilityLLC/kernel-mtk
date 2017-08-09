@@ -124,19 +124,6 @@ int __init mt6735_cpuidle_init(void)
 	struct cpuidle_driver *drv = &mt6735_cpuidle_driver;
 
 	/*
-	 * Initialize idle states data, starting at index 1.
-	 * This driver is DT only, if no DT idle states are detected (ret == 0)
-	 * let the driver initialization fail accordingly since there is no
-	 * reason to initialize the idle driver if only wfi is supported.
-	 */
-	ret = dt_init_idle_driver(drv, mt6735_idle_state_match, 1);
-	if (ret <= 0) {
-		if (ret)
-			pr_err("failed to initialize idle states\n");
-		return ret ? : -ENODEV;
-	}
-
-	/*
 	 * Call arch CPU operations in order to initialize
 	 * idle states suspend back-end specific data
 	 */

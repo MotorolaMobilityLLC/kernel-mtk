@@ -1400,7 +1400,7 @@ int mt_idle_select(int cpu)
 			break;
 	}
 
-	return -1;
+	return i;
 }
 EXPORT_SYMBOL(mt_idle_select);
 
