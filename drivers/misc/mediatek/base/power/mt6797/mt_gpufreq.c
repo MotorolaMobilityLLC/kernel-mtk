@@ -1853,6 +1853,7 @@ static unsigned int mt_gpufreq_low_batt_volt_limited_index;	/* Limited frequency
 #endif
 
 static unsigned int mt_gpufreq_thermal_limited_gpu_power;	/* thermal limit power */
+static unsigned int mt_gpufreq_prev_thermal_limited_freq;	/* thermal limited freq */
 /* limit frequency index array */
 static unsigned int mt_gpufreq_power_limited_index_array[NR_IDX_POWER_LIMITED] = { 0 };
 
@@ -2119,8 +2120,6 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 
 	mt_gpufreq_thermal_limited_gpu_power = limited_power;
 
-	gpufreq_info("@%s: limited_power = %d\n", __func__, limited_power);
-
 #ifdef MT_GPUFREQ_DYNAMIC_POWER_TABLE_UPDATE
 	mt_update_gpufreqs_power_table();
 #endif
@@ -2138,10 +2137,13 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 		}
 	}
 
-	gpufreq_info("Thermal limit frequency upper bound to id = %d\n",
+	if (mt_gpufreq_prev_thermal_limited_freq != limited_freq) {
+		mt_gpufreq_prev_thermal_limited_freq = limited_freq;
+		gpufreq_info("@%s: p %u f %u i %u\n", __func__, limited_power, limited_freq,
 		     mt_gpufreq_power_limited_index_array[IDX_THERMAL_LIMITED]);
 
-	mt_gpufreq_power_throttle_protect();
+		mt_gpufreq_power_throttle_protect();
+	}
 
 	mutex_unlock(&mt_gpufreq_power_lock);
 }
