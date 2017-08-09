@@ -1188,7 +1188,7 @@
 		/* NFC end */
 
 		gps {
-			compatible = "mediatek,mt3326-gps";
+			compatible = "mediatek,gps";
 		};
 
 		btcvsd@10000000 {

@@ -1765,7 +1765,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	/* NFC end */
 
 	gps {
-		compatible = "mediatek,mt3326-gps";
+		compatible = "mediatek,gps";
 	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {

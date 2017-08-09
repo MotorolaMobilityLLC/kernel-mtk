@@ -54,7 +54,7 @@
  * Definition
 ******************************************************************************/
 /* device name and major number */
-#define GPS_DEVNAME            "mt3326-gps"
+#define GPS_DEVNAME            "gps"
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
@@ -1096,7 +1096,7 @@ static int mt3326_gps_resume(struct platform_device *dev)
 /*****************************************************************************/
 #ifdef CONFIG_OF
 static const struct of_device_id apgps_of_ids[] = {
-	{.compatible = "mediatek,mt3326-gps",},
+	{.compatible = "mediatek,gps",},
 	{}
 };
 #endif

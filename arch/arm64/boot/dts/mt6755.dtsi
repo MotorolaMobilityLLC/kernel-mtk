@@ -2397,7 +2397,7 @@
 		};
 
 		gps {
-			compatible = "mediatek,mt3326-gps";
+			compatible = "mediatek,gps";
 		};
 
 		accdet: accdet@ {

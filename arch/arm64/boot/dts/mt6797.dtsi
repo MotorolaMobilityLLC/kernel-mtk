@@ -3759,7 +3759,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		gps {
-			compatible = "mediatek,mt3326-gps";
+			compatible = "mediatek,gps";
 		};
 
 		vcorefs {
