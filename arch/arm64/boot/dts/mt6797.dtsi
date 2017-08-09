@@ -280,7 +280,7 @@
 			no-map;
 			size = <0 0x600000>; /* md_size+smem_size */
 			alignment = <0 0x4000000>;
-			alloc-ranges = <0 0x40000000 0 0x60000000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
 
 		minirdump-reserved-memory@444f0000 {
