@@ -2817,8 +2817,6 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			if (ucBssIndex >= BSS_INFO_NUM)
 				ucBssIndex = 1;	/* No hit(bss1 for default ais network) */
-			/* printk("=======> rssi with bss%d ,%d\n",ucBssIndex,
-			 * ((P_EVENT_LINK_QUALITY_V2)(prEvent->aucBuffer))->rLq[ucBssIndex].cRssi); */
 			nicUpdateLinkQuality(prAdapter, ucBssIndex, (P_EVENT_LINK_QUALITY_V2) (prEvent->aucBuffer));
 		}
 

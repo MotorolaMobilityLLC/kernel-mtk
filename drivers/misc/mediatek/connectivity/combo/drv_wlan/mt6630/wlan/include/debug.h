@@ -150,6 +150,9 @@ extern UINT_32 u4DebugModule;
 #define OID_DBG_CLASSES \
 		(DBG_CLASS_DEFAULT)
 
+#define HS20_DBG_CLASSES \
+		(DBG_CLASS_DEFAULT)
+
 #define NIC_DBG_CLASSES \
 		(DBG_CLASS_DEFAULT)
 
@@ -3304,6 +3307,111 @@ extern UINT_32 u4DebugModule;
 #define OID_TEMP_LOGDUMP32(_StartAddr, _Length)
 #endif
 
+/* Define HS20 related debug classes */
+#if (HS20_DBG_CLASSES & DBG_CLASS_ERROR)
+#define HS20_ERROR_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_ERROR_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#define HS20_ERROR_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_ERROR, _StartAddr, _Length)
+#else
+#define HS20_ERROR_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_ERROR_LOGDUMP8(_StartAddr, _Length)
+#define HS20_ERROR_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_WARN)
+#define HS20_WARN_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_WARN_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#define HS20_WARN_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_WARN, _StartAddr, _Length)
+#else
+#define HS20_WARN_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_WARN_LOGDUMP8(_StartAddr, _Length)
+#define HS20_WARN_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_STATE)
+#define HS20_STATE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_STATE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#define HS20_STATE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_STATE, _StartAddr, _Length)
+#else
+#define HS20_STATE_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_STATE_LOGDUMP8(_StartAddr, _Length)
+#define HS20_STATE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_EVENT)
+#define HS20_EVENT_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_EVENT_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#define HS20_EVENT_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_EVENT, _StartAddr, _Length)
+#else
+#define HS20_EVENT_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_EVENT_LOGDUMP8(_StartAddr, _Length)
+#define HS20_EVENT_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_TRACE)
+#define HS20_TRACE_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_TRACE_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#define HS20_TRACE_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_TRACE, _StartAddr, _Length)
+#else
+#define HS20_TRACE_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_TRACE_LOGDUMP8(_StartAddr, _Length)
+#define HS20_TRACE_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_INFO)
+#define HS20_INFO_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_INFO_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#define HS20_INFO_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_INFO, _StartAddr, _Length)
+#else
+#define HS20_INFO_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_INFO_LOGDUMP8(_StartAddr, _Length)
+#define HS20_INFO_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_LOUD)
+#define HS20_LOUD_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_LOUD_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#define HS20_LOUD_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_LOUD, _StartAddr, _Length)
+#else
+#define HS20_LOUD_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_LOUD_LOGDUMP8(_StartAddr, _Length)
+#define HS20_LOUD_LOGDUMP32(_StartAddr, _Length)
+#endif
+
+#if (HS20_DBG_CLASSES & DBG_CLASS_TEMP)
+#define HS20_TEMP_LOGFUNC(_Module, _Class, _Fmt...) \
+	DBGLOG_FUNC(_Module, _Class, _Fmt)
+#define HS20_TEMP_LOGDUMP8(_StartAddr, _Length) \
+	dumpMemory8(DBG_HS20_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#define HS20_TEMP_LOGDUMP32(_StartAddr, _Length) \
+	dumpMemory32(DBG_HS20_IDX, DBG_CLASS_TEMP, _StartAddr, _Length)
+#else
+#define HS20_TEMP_LOGFUNC(_Module, _Class, _Fmt...)
+#define HS20_TEMP_LOGDUMP8(_StartAddr, _Length)
+#define HS20_TEMP_LOGDUMP32(_StartAddr, _Length)
+#endif
+
 /* Define NIC related debug classes */
 #if (NIC_DBG_CLASSES & DBG_CLASS_ERROR)
 #define NIC_ERROR_LOGFUNC(_Module, _Class, _Fmt...) \
@@ -3456,6 +3564,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 	DBG_ROAMING_IDX,	/* 0x1B */ /* ROAMING */
 	DBG_TDLS_IDX,		/* 0x1C */ /* TDLS */ /* CFG_SUPPORT_TDLS */
 	DBG_OID_IDX,
+	DBG_HS20_IDX,           /* 0x1E */ /* HotSpot 2.0 */
 	DBG_NIC_IDX,
 	DBG_MODULE_NUM		/* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;

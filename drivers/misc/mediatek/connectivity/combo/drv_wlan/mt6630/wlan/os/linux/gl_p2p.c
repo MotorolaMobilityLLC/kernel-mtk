@@ -2897,7 +2897,6 @@ int
 mtk_p2p_wext_set_powermode(IN struct net_device *prNetDev,
 			   IN struct iw_request_info *info, IN OUT union iwreq_data *wrqu, IN OUT char *extra)
 {
-	/* printk("set_powermode = %d, value = %d\n", wrqu->power.disabled, wrqu->power.value); */
 	struct iw_param *prPower = (struct iw_param *)&wrqu->power;
 #if 1
 	PARAM_POWER_MODE ePowerMode;
@@ -2913,7 +2912,6 @@ mtk_p2p_wext_set_powermode(IN struct net_device *prNetDev,
 		return -EINVAL;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	/* printk(KERN_INFO "wext_set_power value(%d) disabled(%d) flag(0x%x)\n", */
 	/* prPower->value, prPower->disabled, prPower->flags); */
 
 	if (prPower->disabled) {
@@ -2968,7 +2966,6 @@ int
 mtk_p2p_wext_get_powermode(IN struct net_device *prNetDev,
 			   IN struct iw_request_info *info, IN OUT union iwreq_data *wrqu, IN OUT char *extra)
 {
-	/* printk("mtk_p2p_wext_get_powermode\n"); */
 	/* wrqu->power.disabled = 0; */
 	/* wrqu->power.value = 1; */
 
@@ -3219,7 +3216,6 @@ mtk_p2p_wext_discovery_results(IN struct net_device *prDev,
 			current_ev =
 			    iwe_stream_add_point(info, current_ev, extra + IW_SCAN_MAX_DATA, &iwe, (char *)data);
 
-			/* printk("%s\n", data); */
 			kalMemZero(data, 40);
 
 			iwe.cmd = IWEVCUSTOM;
@@ -3235,7 +3231,6 @@ mtk_p2p_wext_discovery_results(IN struct net_device *prDev,
 				 (UINT_8) prTargetResult->arSecDevType[1].u2SubCategoryID, '\0');
 			current_ev =
 			    iwe_stream_add_point(info, current_ev, extra + IW_SCAN_MAX_DATA, &iwe, (char *)data);
-			/* printk("%s\n", data); */
 
 			kalMemZero(data, 40);
 
@@ -3247,7 +3242,6 @@ mtk_p2p_wext_discovery_results(IN struct net_device *prDev,
 				 MAC2STR(prTargetResult->aucBSSID), '\0');
 			current_ev = iwe_stream_add_point(info, current_ev,
 							  extra + IW_SCAN_MAX_DATA, &iwe, (char *)data);
-			/* printk("%s\n", data); */
 
 		}
 #endif
@@ -3795,7 +3789,6 @@ mtk_p2p_wext_set_int(IN struct net_device *prDev,
 	ASSERT(prDev);
 	ASSERT(wrqu);
 
-	/* printk("mtk_p2p_wext_set_int\n"); */
 	pu4IntBuf = (PUINT_32) extra;
 
 	if (FALSE == GLUE_CHK_PR2(prDev, wrqu))

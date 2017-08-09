@@ -503,8 +503,6 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 
 		DBGLOG(P2P, TRACE, "p2pDevFsmRunEventChannelRequest\n");
 
-		/* printk("p2pDevFsmRunEventChannelRequest check cookie =%lld\n",prChnlReqInfo->u8Cookie); */
-
 		if (!LINK_IS_EMPTY(&prChnlReqInfo->rP2pChnlReqLink)) {
 			P_LINK_ENTRY_T prLinkEntry = (P_LINK_ENTRY_T) NULL;
 			P_MSG_P2P_CHNL_REQUEST_T prP2pMsgChnlReq = (P_MSG_P2P_CHNL_REQUEST_T) NULL;

@@ -323,7 +323,7 @@ void debug_gpio_init(void)
 		if (GPIO_INVALID == dbgPinSTP[i])
 			continue;
 
-		/* printk(KERN_INFO "[%s] %ld\n", __FUNCTION__, dbgPinSTP[i]); */
+		/* DBGLOG(INIT, INFO, "[%s] %ld\n", __func__, dbgPinSTP[i]);*/
 		mt_set_gpio_pull_enable(dbgPinSTP[i], 0);	/* disable pull */
 		mt_set_gpio_dir(dbgPinSTP[i], GPIO_DIR_OUT);	/* set output */
 		mt_set_gpio_mode(dbgPinSTP[i], GPIO_MODE_00);	/* set gpio mode */
@@ -334,7 +334,7 @@ void debug_gpio_init(void)
 		mt_set_gpio_out(dbgPinSTP[i], GPIO_OUT_ZERO);	/* tie low */
 		mt_set_gpio_out(dbgPinSTP[i], GPIO_OUT_ONE);	/* tie high */
 	}
-	/* printk(KERN_INFO "[%s] initialization ok\n", __FUNCTION__); */
+	DBGLOG(INIT, INFO, "[%s] initialization ok\n", __func__)
 }
 
 void debug_gpio_deinit(void)
@@ -345,11 +345,11 @@ void debug_gpio_deinit(void)
 		if (GPIO_INVALID == dbgPinSTP[i])
 			continue;
 
-		/* printk(KERN_INFO "[%s] %ld\n", __FUNCTION__, dbgPinSTP[i]); */
+		/* DBGLOG(INIT, INFO, "[%s] %ld\n", __func__, dbgPinSTP[i]); */
 		mt_set_gpio_dir(dbgPinSTP[i], GPIO_DIR_IN);
 	}
 
-	/* printk(KERN_INFO "[%s] k\n", __FUNCTION__); */
+	DBGLOG(INIT, INFO, "[%s] k\n", __func__);
 }
 
 void mtk_wcn_stp_debug_gpio_assert(UINT_32 dwIndex, UINT_32 dwMethod)
@@ -357,11 +357,11 @@ void mtk_wcn_stp_debug_gpio_assert(UINT_32 dwIndex, UINT_32 dwMethod)
 	unsigned int i;
 
 	if (dwIndex >= (sizeof(dbgPinSTP) / sizeof(dbgPinSTP[0])))
-		/* printk(KERN_INFO "[%s] invalid dwIndex(%ld)\n", __FUNCTION__, dwIndex); */
+		DBGLOG(INIT, INFO, "[%s] invalid dwIndex(%ld)\n", __func__, dwIndex);
 		return;
 
 	if (dwIndex > IDX_STP_MAX)
-		/* printk(KERN_INFO "[%s] dwIndex(%ld) > IDX_STP_MAX(%d)\n", __FUNCTION__, dwIndex, IDX_STP_MAX); */
+		DBGLOG(INIT, INFO, "[%s] dwIndex(%ld) > IDX_STP_MAX(%d)\n", __func__, dwIndex, IDX_STP_MAX);
 
 		if (GPIO_INVALID == dbgPinSTP[dwIndex])
 			return;
@@ -408,12 +408,10 @@ static INT_32 mtk_sdio_interrupt(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 	/* ASSERT(prGlueInfo); */
 
 	if (!prGlueInfo) {
-		/* printk(KERN_INFO DRV_NAME"No glue info in mtk_sdio_interrupt()\n"); */
 		return -HIF_SDIO_ERR_FAIL;
 	}
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-		/* printk(KERN_INFO DRV_NAME"GLUE_FLAG_HALT skip INT\n"); */
 		ret = mtk_wcn_hif_sdio_writel(cltCtx, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 		return ret;
 	}
@@ -448,13 +446,11 @@ static void mtk_sdio_interrupt(struct sdio_func *func)
 	/* ASSERT(prGlueInfo); */
 
 	if (!prGlueInfo) {
-		/* printk(KERN_INFO DRV_NAME"No glue info in mtk_sdio_interrupt()\n"); */
 		return;
 	}
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		sdio_writel(prGlueInfo->rHifInfo.func, WHLPCR_INT_EN_CLR, MCR_WHLPCR, &ret);
-		/* printk(KERN_INFO DRV_NAME"GLUE_FLAG_HALT skip INT\n"); */
 		return;
 	}
 
@@ -465,7 +461,6 @@ static void mtk_sdio_interrupt(struct sdio_func *func)
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		/* Should stop now... skip pending interrupt */
-		/* printk(KERN_INFO DRV_NAME"ignore pending interrupt\n"); */
 	} else {
 		wlanIST(prGlueInfo->prAdapter);
 	}
@@ -505,11 +500,11 @@ static INT_32 mtk_sdio_probe(MTK_WCN_HIF_SDIO_CLTCTX cltCtx, const MTK_WCN_HIF_S
 	prFunc = prFuncInfo;
 
 	if (pfWlanProbe((PVOID)&cltCtx) != WLAN_STATUS_SUCCESS) {
-		/* printk(KERN_WARNING DRV_NAME"pfWlanProbe fail!call pfWlanRemove()\n"); */
+		DBGLOG(INIT, ERROR, "pfWlanProbe fail!call pfWlanRemove()\n");
 		pfWlanRemove();
 		ret = -(HIF_SDIO_ERR_FAIL);
 	} else {
-		/* printk(KERN_INFO DRV_NAME"mtk_wifi_sdio_probe() done(%d)\n", ret); */
+		DBGLOG(INIT, INFO, "mtk_wifi_sdio_probe() done(%d)\n", ret);
 	}
 	return ret;
 }
@@ -519,28 +514,13 @@ static int mtk_sdio_probe(struct sdio_func *func, const struct sdio_device_id *i
 	int ret = 0;
 	int i = 0;
 
-	/* printk(KERN_INFO DRV_NAME "mtk_sdio_probe()\n"); */
+	DBGLOG(INIT, INFO, "mtk_sdio_probe()\n");
 
 	ASSERT(func);
 	ASSERT(id);
 
-	/* printk(KERN_INFO DRV_NAME "Basic struct size checking...\n"); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct device) = %d\n", sizeof(struct device)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_host) = %d\n", sizeof(struct mmc_host)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_card) = %d\n", sizeof(struct mmc_card)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_driver) = %d\n", sizeof(struct mmc_driver)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_data) = %d\n", sizeof(struct mmc_data)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_command) = %d\n", sizeof(struct mmc_command)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct mmc_request) = %d\n", sizeof(struct mmc_request)); */
-	/* printk(KERN_INFO DRV_NAME "sizeof(struct sdio_func) = %d\n", sizeof(struct sdio_func)); */
-
-	/* printk(KERN_INFO DRV_NAME "Card information checking...\n"); */
-	/* printk(KERN_INFO DRV_NAME "func = 0x%p\n", func); */
-	/* printk(KERN_INFO DRV_NAME "Number of info = %d:\n", func->card->num_info); */
-
 	for (i = 0; i < func->card->num_info; i++) {
-		/* printk(KERN_INFO
-			DRV_NAME "info[%d]: %s\n", i, func->card->info[i]); */
+		DBGLOG(INIT, INFO, "info[%d]: %s\n", i, func->card->info[i]);
 	}
 
 	sdio_claim_host(func);
@@ -548,25 +528,25 @@ static int mtk_sdio_probe(struct sdio_func *func, const struct sdio_device_id *i
 	sdio_release_host(func);
 
 	if (ret) {
-		/* printk(KERN_INFO DRV_NAME"sdio_enable_func failed!\n"); */
+		DBGLOG(INIT, ERROR, "sdio_enable_func failed!\n");
 		goto out;
 	}
-	/* printk(KERN_INFO DRV_NAME"sdio_enable_func done!\n"); */
+	DBGLOG(INIT, INFO, "sdio_enable_func done!\n");
 
 	if (pfWlanProbe((PVOID) func) != WLAN_STATUS_SUCCESS) {
-		/* printk(KERN_WARNING DRV_NAME"pfWlanProbe fail!call pfWlanRemove()\n"); */
+		DBGLOG(INIT, WARN, "pfWlanProbe fail!call pfWlanRemove()\n");
 		pfWlanRemove();
 		ret = -1;
 	} else {
 #if CFG_DBG_GPIO_PINS
-		/* printk(KERN_INFO "[%s] init debug gpio, 20100815\n", __FUNCTION__); */
+		DBGLOG(INIT, INFO, "[%s] init debug gpio, 20100815\n", __func__);
 		/* Debug pins initialization */
 		debug_gpio_init();
 #endif
 	}
 
 out:
-	/* printk(KERN_INFO DRV_NAME"mtk_sdio_probe() done(%d)\n", ret); */
+	DBGLOG(INIT, INFO, "mtk_sdio_probe() done(%d)\n", ret);
 	return ret;
 }
 #endif
@@ -575,7 +555,7 @@ out:
 static INT_32 mtk_sdio_remove(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 {
 	INT_32 ret = HIF_SDIO_ERR_SUCCESS;
-	/* printk(KERN_INFO DRV_NAME"pfWlanRemove done\n"); */
+	DBGLOG(INIT, INFO , "pfWlanRemove done\n");
 	pfWlanRemove();
 
 	return ret;
@@ -583,38 +563,36 @@ static INT_32 mtk_sdio_remove(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 #else
 static void mtk_sdio_remove(struct sdio_func *func)
 {
-	/* printk(KERN_INFO DRV_NAME"mtk_sdio_remove()\n"); */
+	DBGLOG(INIT, INFO, "mtk_sdio_remove()\n");
 
 #if CFG_DBG_GPIO_PINS
-	/* printk(KERN_INFO "[%s] deinit debug gpio\n", __FUNCTION__); */
+	DBGLOG(INIT, INFO, "[%s] deinit debug gpio\n", __func__);
 	debug_gpio_deinit();
 #endif
 
 	ASSERT(func);
-	/* printk(KERN_INFO DRV_NAME"pfWlanRemove done\n"); */
 	pfWlanRemove();
 
 	sdio_claim_host(func);
 	sdio_disable_func(func);
-	/* printk(KERN_INFO DRV_NAME"sdio_disable_func() done\n"); */
 	sdio_release_host(func);
 
-	/* printk(KERN_INFO DRV_NAME"mtk_sdio_remove() done\n"); */
+	DBGLOG(INIT, INFO, "mtk_sdio_remove() done\n");
 }
 #endif
 
 #if (MTK_WCN_HIF_SDIO == 0)
 static int mtk_sdio_suspend(struct device *pDev, pm_message_t state)
 {
-	/* printk(KERN_INFO "mtk_sdio: mtk_sdio_suspend dev(0x%p)\n", pDev); */
-	/* printk(KERN_INFO "mtk_sdio: MediaTek SDIO WLAN driver\n"); */
+	DBGLOG(INIT, INFO, "mtk_sdio: mtk_sdio_suspend dev(0x%p)\n", pDev);
+	DBGLOG(INIT, INFO, "mtk_sdio: MediaTek SDIO WLAN driver\n");
 
 	return 0;
 }
 
 int mtk_sdio_resume(struct device *pDev)
 {
-	/* printk(KERN_INFO "mtk_sdio: mtk_sdio_resume dev(0x%p)\n", pDev); */
+	DBGLOG(INIT, INFO, "mtk_sdio: mtk_sdio_resume dev(0x%p)\n", pDev);
 
 	return 0;
 }
@@ -637,8 +615,8 @@ WLAN_STATUS glRegisterBus(probe_card pfProbe, remove_card pfRemove)
 	ASSERT(pfProbe);
 	ASSERT(pfRemove);
 
-	/* printk(KERN_INFO "mtk_sdio: MediaTek SDIO WLAN driver\n"); */
-	/* printk(KERN_INFO "mtk_sdio: Copyright MediaTek Inc.\n"); */
+	DBGLOG(INIT, INFO, "mtk_sdio: MediaTek SDIO WLAN driver\n");
+	DBGLOG(INIT, INFO, "mtk_sdio: Copyright MediaTek Inc.\n");
 
 	pfWlanProbe = pfProbe;
 	pfWlanRemove = pfRemove;
@@ -709,10 +687,10 @@ VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 #else
 	prHif->func = (struct sdio_func *)ulCookie;
 
-	/* printk(KERN_INFO DRV_NAME"prHif->func->dev = 0x%p\n", &prHif->func->dev); */
-	/* printk(KERN_INFO DRV_NAME"prHif->func->vendor = 0x%04X\n", prHif->func->vendor); */
-	/* printk(KERN_INFO DRV_NAME"prHif->func->device = 0x%04X\n", prHif->func->device); */
-	/* printk(KERN_INFO DRV_NAME"prHif->func->func = 0x%04X\n", prHif->func->num); */
+	DBGLOG(INIT, LOUD, "prHif->func->dev = 0x%p\n", &prHif->func->dev);
+	DBGLOG(INIT, LOUD, "prHif->func->vendor = 0x%04X\n", prHif->func->vendor);
+	DBGLOG(INIT, LOUD, "prHif->func->device = 0x%04X\n", prHif->func->device);
+	DBGLOG(INIT, LOUD, "prHif->func->func = 0x%04X\n", prHif->func->num);
 
 	sdio_set_drvdata(prHif->func, prGlueInfo);
 
@@ -764,17 +742,15 @@ BOOL glBusInit(PVOID pvData)
 	sdio_release_host(func);
 
 	if (ret) {
-		/* printk(KERN_INFO
-			DRV_NAME"sdio_set_block_size 512 failed!\n"); */
+		DBGLOG(INIT, ERROR, "sdio_set_block_size 512 failed!\n");
 	} else {
-		/* printk(KERN_INFO
-			DRV_NAME"sdio_set_block_size 512 done!\n"); */
+		DBGLOG(INIT, INFO, "sdio_set_block_size 512 done!\n");
 	}
 
-	/* printk(KERN_INFO DRV_NAME"param: func->cur_blksize(%d)\n", func->cur_blksize); */
-	/* printk(KERN_INFO DRV_NAME"param: func->max_blksize(%d)\n", func->max_blksize); */
-	/* printk(KERN_INFO DRV_NAME"param: func->card->host->max_blk_size(%d)\n", func->card->host->max_blk_size); */
-	/* printk(KERN_INFO DRV_NAME"param: func->card->host->max_blk_count(%d)\n", func->card->host->max_blk_count); */
+	DBGLOG(INIT, LOUD, "param: func->cur_blksize(%d)\n", func->cur_blksize);
+	DBGLOG(INIT, LOUD, "param: func->max_blksize(%d)\n", func->max_blksize);
+	DBGLOG(INIT, LOUD, "param: func->card->host->max_blk_size(%d)\n", func->card->host->max_blk_size);
+	DBGLOG(INIT, LOUD, "param: func->card->host->max_blk_count(%d)\n", func->card->host->max_blk_count);
 #endif
 	return TRUE;
 }				/* end of glBusInit() */
@@ -853,15 +829,11 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 	P_GL_HIF_INFO_T prHifInfo = NULL;
 
 	ASSERT(pvData);
-	if (!pvData) {
-		/* printk(KERN_INFO DRV_NAME"%s null pvData\n", __FUNCTION__); */
-		return;
-	}
 	prNetDevice = (struct net_device *)pvData;
 	prGlueInfo = (P_GLUE_INFO_T) pvCookie;
 	ASSERT(prGlueInfo);
 	if (!prGlueInfo) {
-		/* printk(KERN_INFO DRV_NAME"%s no glue info\n", __FUNCTION__); */
+		DBGLOG(INTR, INFO, "%s no glue info\n", __func__);
 		return;
 	}
 
@@ -1038,7 +1010,7 @@ kalDevPortRead(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 
 #if DBG
-	/* printk(KERN_INFO DRV_NAME"++kalDevPortRead++ buf:0x%p, port:0x%x, length:%d\n", pucBuf, u2Port, u4Len); */
+	DBGLOG(INIT, LOUD, "++kalDevPortRead++ buf:0x%p, port:0x%x, length:%d\n", pucBuf, u2Port, u4Len);
 #endif
 
 	ASSERT(prGlueInfo);
@@ -1139,7 +1111,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 
 #if DBG
-	/* printk(KERN_INFO DRV_NAME"++kalDevPortWrite++ buf:0x%p, port:0x%x, length:%d\n", pucBuf, u2Port, u2Len); */
+	DBGLOG(INIT, LOUD, "++kalDevPortWrite++ buf:0x%p, port:0x%x, length:%d\n", pucBuf, u2Port, u2Len);
 #endif
 
 	ASSERT(prGlueInfo);

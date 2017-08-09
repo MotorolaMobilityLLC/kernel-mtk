@@ -147,8 +147,8 @@ WLAN_STATUS glRegisterBus(probe_card pfProbe, remove_card pfRemove)
 	ASSERT(pfProbe);
 	ASSERT(pfRemove);
 
-	pr_info("mtk_sdio: MediaTek eHPI WLAN driver\n");
-	pr_info("mtk_sdio: Copyright MediaTek Inc.\n");
+	DBGLOG(INIT, INFO, "mtk_sdio: MediaTek eHPI WLAN driver\n");
+	DBGLOG(INIT, INFO, "mtk_sdio: Copyright MediaTek Inc.\n");
 
 	if (pfProbe(NULL) != WLAN_STATUS_SUCCESS) {
 		pfRemove();
@@ -298,9 +298,9 @@ INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 			       IRQF_DISABLED | IRQF_SHARED | IRQF_TRIGGER_FALLING, pDev->name, pvCookie);
 
 	if (i4Status < 0)
-		pr_debug("request_irq(%d) failed\n", pDev->irq);
+		DBGLOG(INTR, ERROR, "request_irq(%d) failed\n", pDev->irq);
 	else
-		pr_info("request_irq(%d) success with dev_id(%x)\n", pDev->irq, (unsigned int)pvCookie);
+		DBGLOG(INTR, INFO, "request_irq(%d) success with dev_id(%x)\n", pDev->irq, (unsigned int)pvCookie);
 
 	return i4Status;
 }
@@ -320,7 +320,7 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 	struct net_device *prDev = (struct net_device *)pvData;
 
 	if (!prDev) {
-		pr_info("Invalid net_device context.\n");
+		DBGLOG(IRQ, INFO, "Invalid net_device context.\n");
 		return;
 	}
 
@@ -436,7 +436,7 @@ static VOID collibri_ehpi_reg_init(VOID)
 	u4RegValue |= EHPI_CONFIG;
 	MSC2 = u4RegValue;
 
-	pr_info("EHPI new MSC2:0x%08x\n", MSC2);
+	DBGLOG(INIT, INFO, "EHPI new MSC2:0x%08x\n", MSC2);
 
 }
 
@@ -472,7 +472,7 @@ static VOID mt5931_ehpi_reg_init(VOID)
 	/* 1. request memory regioin */
 	reso = request_mem_region((unsigned long)MEM_MAPPED_ADDR, (unsigned long)MEM_MAPPED_LEN, (char *)MODULE_PREFIX);
 	if (!reso) {
-		pr_err("request_mem_region(0x%08X) failed.\n", MEM_MAPPED_ADDR);
+		DBGLOG(INIT, ERROR, "request_mem_region(0x%08X) failed.\n", MEM_MAPPED_ADDR);
 		return;
 	}
 
@@ -480,7 +480,7 @@ static VOID mt5931_ehpi_reg_init(VOID)
 	mt5931_mcr_base = ioremap_nocache(MEM_MAPPED_ADDR, MEM_MAPPED_LEN);
 	if (!(mt5931_mcr_base)) {
 		release_mem_region(MEM_MAPPED_ADDR, MEM_MAPPED_LEN);
-		pr_err("ioremap_nocache(0x%08X) failed.\n", MEM_MAPPED_ADDR);
+		DBGLOG(INIT, ERROR, "ioremap_nocache(0x%08X) failed.\n", MEM_MAPPED_ADDR);
 		return;
 	}
 

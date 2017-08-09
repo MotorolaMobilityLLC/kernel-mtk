@@ -178,7 +178,7 @@ static int netdev_event(struct notifier_block *nb, unsigned long notification, v
 	}
 #if 0				/* CFG_SUPPORT_PASSPOINT */
 	{
-		/* printk(KERN_INFO "[netdev_event] IPV4_DAD is unlock now!!\n"); */
+		/* DBGLOG(REQ, INFO, "[netdev_event] IPV4_DAD is unlock now!!\n"); */
 		prGlueInfo->fgIsDad = FALSE;
 	}
 #endif /* CFG_SUPPORT_PASSPOINT */
@@ -230,7 +230,7 @@ static int net6dev_event(struct notifier_block *nb, unsigned long notification, 
 		DBGLOG(REQ, INFO, "netdev_event: prGlueInfo is empty.\n");
 		return NOTIFY_DONE;
 	}
-	/* printk(KERN_INFO "[net6dev_event] IPV6_DAD is unlock now!!\n"); */
+	/* DBGLOG(REQ, INFO, "[net6dev_event] IPV6_DAD is unlock now!!\n"); */
 	prGlueInfo->fgIs6Dad = FALSE;
 
 	return NOTIFY_DONE;

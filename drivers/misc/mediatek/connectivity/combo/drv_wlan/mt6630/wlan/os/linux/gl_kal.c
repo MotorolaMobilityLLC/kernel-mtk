@@ -1415,7 +1415,8 @@ VOID kalQueryTxChksumOffloadParam(IN PVOID pvPacket, OUT PUINT_8 pucFlag)
 		 * we'll process IP packet only.
 		 */
 		if (skb->protocol != htons(ETH_P_IP)) {
-			/* printk("Wrong skb->protocol( = %08x) for TX Checksum Offload.\n", skb->protocol); */
+			/* DBGLOG(INIT, INFO, "Wrong skb->protocol( = %08x)
+				 for TX Checksum Offload.\n", skb->protocol); */
 		} else
 #endif
 			ucFlag |= (TX_CS_IP_GEN | TX_CS_TCP_UDP_GEN);
@@ -1879,12 +1880,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		if (pStatus) {
 			switch (pStatus->eStatusType) {
 			case ENUM_STATUS_TYPE_AUTHENTICATION:
-				/*
-				   printk(KERN_NOTICE "ENUM_STATUS_TYPE_AUTHENTICATION: L(%ld) [" MACSTR "] F:%lx\n",
-				   pAuth->Request[0].Length,
-				   MAC2STR(pAuth->Request[0].Bssid),
-				   pAuth->Request[0].Flags);
-				 */
 				/* indicate (UC/GC) MIC ERROR event only */
 				if ((pAuth->arRequest[0].u4Flags ==
 				     PARAM_AUTH_REQUEST_PAIRWISE_ERROR) ||
@@ -1901,16 +1896,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				break;
 
 			case ENUM_STATUS_TYPE_CANDIDATE_LIST:
-				/*
-				   printk(KERN_NOTICE "Param_StatusType_PMKID_CandidateList: Ver(%ld) Num(%ld)\n",
-				   pPmkid->u2Version,
-				   pPmkid->u4NumCandidates);
-				   if (pPmkid->u4NumCandidates > 0) {
-				   printk(KERN_NOTICE "candidate[" MACSTR "] preAuth Flag:%lx\n",
-				   MAC2STR(pPmkid->arCandidateList[0].rBSSID),
-				   pPmkid->arCandidateList[0].fgFlags);
-				   }
-				 */
 				{
 					UINT_32 i = 0;
 
@@ -1930,15 +1915,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			default:
 				/* case ENUM_STATUS_TYPE_MEDIA_STREAM_MODE */
 				/*
-				   printk(KERN_NOTICE "unknown media specific indication type:%x\n",
-				   pStatus->StatusType);
 				 */
 				break;
 			}
-		} else {
-			/*
-			   printk(KERN_WARNING "media specific indication buffer NULL\n");
-			 */
 		}
 		break;
 
@@ -1966,9 +1945,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			break;
 		}
 	default:
-		/*
-		   printk(KERN_WARNING "unknown indication:%lx\n", eStatus);
-		 */
 		break;
 	}
 }				/* kalIndicateStatusAndComplete */
@@ -2003,16 +1979,10 @@ kalUpdateReAssocReqInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 	if (fgReassocRequest) {
 		if (u4FrameBodyLen < 15) {
-			/*
-			   printk(KERN_WARNING "frameBodyLen too short:%ld\n", frameBodyLen);
-			 */
 			return;
 		}
 	} else {
 		if (u4FrameBodyLen < 9) {
-			/*
-			   printk(KERN_WARNING "frameBodyLen too short:%ld\n", frameBodyLen);
-			 */
 			return;
 		}
 	}
@@ -3376,7 +3346,6 @@ int tx_thread(void *data)
 #endif
 		if (test_and_clear_bit(GLUE_FLAG_FRAME_FILTER_AIS_BIT, &prGlueInfo->ulFlag)) {
 			P_AIS_FSM_INFO_T prAisFsmInfo = (P_AIS_FSM_INFO_T) NULL;
-			/* printk("prGlueInfo->u4OsMgmtFrameFilter = %x", prGlueInfo->u4OsMgmtFrameFilter); */
 			prAisFsmInfo = &(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo);
 			prAisFsmInfo->u4AisPacketFilter = prGlueInfo->u4OsMgmtFrameFilter;
 		}
@@ -5100,7 +5069,6 @@ VOID kalMetTagPacket(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACKET prPacket, I
 	switch (eTag) {
 	case TX_PROF_TAG_OS_TO_DRV:
 		if (kalMetCheckProfilingPacket(prGlueInfo, prPacket)) {
-			/* trace_printk("S|%d|%s|%d\n", current->pid, "WIFI-CHIP", GLUE_GET_PKT_IP_ID(prPacket)); */
 			__mt_update_tracing_mark_write_addr();
 #ifdef CONFIG_TRACING		/* #if CFG_MET_PACKET_TRACE_SUPPORT */
 			event_trace_printk(tracing_mark_write_addr, "S|%d|%s|%d\n", current->tgid, "WIFI-CHIP",
@@ -5112,7 +5080,6 @@ VOID kalMetTagPacket(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACKET prPacket, I
 
 	case TX_PROF_TAG_DRV_TX_DONE:
 		if (GLUE_GET_PKT_IS_PROF_MET(prPacket)) {
-			/* trace_printk("F|%d|%s|%d\n", current->pid, "WIFI-CHIP", GLUE_GET_PKT_IP_ID(prPacket)); */
 			__mt_update_tracing_mark_write_addr();
 #ifdef CONFIG_TRACING		/* #if CFG_MET_PACKET_TRACE_SUPPORT */
 			event_trace_printk(tracing_mark_write_addr, "F|%d|%s|%d\n", current->tgid, "WIFI-CHIP",

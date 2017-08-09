@@ -169,7 +169,7 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (u4CopySize > count)
 		u4CopySize = count;
 	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
-		pr_err("copy to user failed\n");
+		DBGLOG(HAL, ERROR, "copy to user failed\n");
 		return -EFAULT;
 	}
 

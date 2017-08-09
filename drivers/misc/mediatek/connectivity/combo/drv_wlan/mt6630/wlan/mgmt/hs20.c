@@ -109,7 +109,7 @@ VOID hs20GenerateHS20IE(IN P_ADAPTER_T prAdapter, OUT P_MSDU_INFO_T prMsduInfo)
 	ASSERT(prMsduInfo);
 
 	if (prMsduInfo->ucBssIndex != KAL_NETWORK_TYPE_AIS_INDEX) {
-		pr_info("[%s] prMsduInfo->ucBssIndex(%d) is not KAL_NETWORK_TYPE_AIS_INDEX\n",
+		DBGLOG(HS20, INFO, "[%s] prMsduInfo->ucBssIndex(%d) is not KAL_NETWORK_TYPE_AIS_INDEX\n",
 			__func__, prMsduInfo->ucBssIndex);
 		return;
 	}
@@ -158,7 +158,8 @@ VOID hs20FillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO
 		SET_EXT_CAP(prExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_WNM_NOTIFICATION_BIT);
 	}
 
-	pr_info("IE_SIZE(prExtCap) = %d, %d %d\n", IE_SIZE(prExtCap), ELEM_HDR_LEN, ELEM_MAX_LEN_EXT_CAP);
+	DBGLOG(HS20, INFO, "IE_SIZE(prExtCap) = %d, %d %d\n", IE_SIZE(prExtCap),
+		ELEM_HDR_LEN, ELEM_MAX_LEN_EXT_CAP);
 	ASSERT(IE_SIZE(prExtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP));
 
 	prMsduInfo->u2FrameLength += IE_SIZE(prExtCap);
@@ -489,12 +490,13 @@ WLAN_STATUS hs20SetBssidPool(IN P_ADAPTER_T prAdapter, IN PVOID pvBuffer, IN ENU
 
 	prHS20Info = &(prAdapter->rWifiVar.rHS20Info);
 
-	pr_info("[%s]Set Bssid Pool! enable[%d] num[%d]\n", __func__, prParamBssidPool->fgIsEnable,
+	DBGLOG(HS20, INFO, "[%s]Set Bssid Pool! enable[%d] num[%d]\n", __func__, prParamBssidPool->fgIsEnable,
 		prParamBssidPool->ucNumBssidPool);
 
 	for (ucIdx = 0; ucIdx < prParamBssidPool->ucNumBssidPool; ucIdx++) {
 		COPY_MAC_ADDR(prHS20Info->arBssidPool[ucIdx].aucBSSID, &prParamBssidPool->arBSSID[ucIdx]);
-		pr_info("[%s][%d][" MACSTR "]\n", __func__, ucIdx, MAC2STR(prHS20Info->arBssidPool[ucIdx].aucBSSID));
+		DBGLOG(HS20, INFO, "[%s][%d][" MACSTR "]\n", __func__, ucIdx,
+			MAC2STR(prHS20Info->arBssidPool[ucIdx].aucBSSID));
 	}
 	prHS20Info->fgIsHS2SigmaMode = prParamBssidPool->fgIsEnable;
 	prHS20Info->ucNumBssidPoolEntry = prParamBssidPool->ucNumBssidPool;

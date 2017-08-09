@@ -96,7 +96,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 	prCmd = (TDLS_CMD_LINK_MGT_T *) pvSetBuffer;
 	prBssInfo = prAdapter->prAisBssInfo;
 
-	/* printk("\n\n\n  TdlsexLinkMgt\n\n\n"); */
 
 #if 1
 	/* AIS only */
@@ -114,7 +113,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 	switch (prCmd->ucActionCode) {
 
 	case TDLS_FRM_ACTION_DISCOVERY_REQ:
-		/* printk("\n\n\n  TDLS_FRM_ACTION_DISCOVERY_REQ\n\n\n"); */
 		if (prStaRec == NULL)
 			return 0;
 		if (TdlsDataFrameSend_DISCOVERY_REQ(prAdapter,
@@ -131,7 +129,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 		break;
 
 	case TDLS_FRM_ACTION_SETUP_REQ:
-		/* printk("\n\n\n  TDLS_FRM_ACTION_SETUP_REQ\n\n\n"); */
 		if (prStaRec == NULL)
 			return 0;
 		prStaRec = cnmGetTdlsPeerByAddress(prAdapter, prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeer);
@@ -157,7 +154,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 		if (prBssInfo->fgTdlsIsProhibited)
 			return 0;
 
-		/* printk("\n\n\n  TDLS_FRM_ACTION_SETUP_RSP\n\n\n"); */
 		if (TdlsDataFrameSend_SETUP_RSP(prAdapter,
 						prStaRec,
 						prCmd->aucPeer,
@@ -172,7 +168,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 		break;
 
 	case TDLS_FRM_ACTION_DISCOVERY_RSP:
-		/* printk("\n\n\n  TDLS_FRM_ACTION_DISCOVERY_RSP\n\n\n"); */
 		if (TdlsDataFrameSend_DISCOVERY_RSP(prAdapter,
 						    prStaRec,
 						    prCmd->aucPeer,
@@ -187,7 +182,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 		break;
 
 	case TDLS_FRM_ACTION_CONFIRM:
-		/* printk("\n\n\n  TDLS_FRM_ACTION_CONFIRM\n\n\n"); */
 		if (TdlsDataFrameSend_CONFIRM(prAdapter,
 					      prStaRec,
 					      prCmd->aucPeer,
@@ -204,10 +198,8 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 
 		prStaRec = cnmGetTdlsPeerByAddress(prAdapter, prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeer);
 		if (prCmd->u2StatusCode == TDLS_REASON_CODE_UNREACHABLE) {
-			/* printk("\n\n\n  u2StatusCode == TDLS_REASON_CODE_UNREACHABLE\n\n\n"); */
 			g_arTdlsLink[prStaRec->ucTdlsIndex] = 0;
 		}
-		/* printk("\n\n\n  TDLS_FRM_ACTION_TEARDOWN\n\n\n"); */
 		if (TdlsDataFrameSend_TearDown(prAdapter,
 					       prStaRec,
 					       prCmd->aucPeer,
@@ -216,13 +208,11 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 					       prCmd->u2StatusCode,
 					       (UINT_8 *) (prCmd->aucSecBuf),
 					       prCmd->u4SecBufLen) != TDLS_STATUS_SUCCESS) {
-			/* printk("\n teardown frrame  send failure\n"); */
 			return -1;
 		}
 		break;
 
 	default:
-		/* printk("\n\n\n  default\n\n\n"); */
 		return -EINVAL;
 	}
 
@@ -245,8 +235,6 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 /*----------------------------------------------------------------------------*/
 UINT_32 TdlsexLinkOper(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, PUINT_32 pu4SetInfoLen)
 {
-	/* printk("TdlsexLinkOper\n"); */
-
 	/* from supplicant -- wpa_supplicant_tdls_peer_addset() */
 	UINT_16 i;
 	STA_RECORD_T *prStaRec;
@@ -269,13 +257,11 @@ UINT_32 TdlsexLinkOper(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBu
 			}
 		}
 
-		/* printk("TDLS_ENABLE_LINK %d\n", i); */
 		break;
 	case TDLS_DISABLE_LINK:
 
 		prStaRec = cnmGetTdlsPeerByAddress(prAdapter, prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeerMac);
 
-		/* printk("TDLS_ENABLE_LINK %d\n", prStaRec->ucTdlsIndex); */
 		g_arTdlsLink[prStaRec->ucTdlsIndex] = 0;
 		if (IS_DLS_STA(prStaRec))
 			cnmStaRecFree(prAdapter, prStaRec);
@@ -457,8 +443,6 @@ TdlsDataFrameSend_TearDown(ADAPTER_T *prAdapter,
 
 	ReasonCode = u2StatusCode;
 
-	/* printk("\n\n ReasonCode = %u\n\n",ReasonCode ); */
-
 	kalMemCopy(pPkt, &ReasonCode, 2);
 	pPkt = pPkt + 2;
 	u4PktLen = u4PktLen + 2;
@@ -496,8 +480,6 @@ TdlsDataFrameSend_TearDown(ADAPTER_T *prAdapter,
 	/* if(u2StatusCode == UNREACH_ABLE ){ */
 	/* g_arTdlsLink[prStaRec->ucTdlsIndex] = FALSE; */
 	/* } */
-
-	/* printk(" TdlsDataFrameSend_TearDown !!\n"); */
 
 	/* 5. send the data frame */
 	wlanHardStartXmit(prMsduInfo, prMsduInfo->dev);

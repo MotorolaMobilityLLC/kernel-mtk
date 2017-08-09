@@ -1094,11 +1094,6 @@ wext_set_freq(IN struct net_device *prNetDev,
 		return -EINVAL;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	/*
-	   printk("set m:%d, e:%d, i:%d, flags:%d\n",
-	   prIwFreq->m, prIwFreq->e, prIwFreq->i, prIwFreq->flags);
-	 */
-
 	/* If setting by frequency, convert to a channel */
 	if ((prIwFreq->e == 1) && (prIwFreq->m >= (int)2.412e8) && (prIwFreq->m <= (int)2.484e8)) {
 
@@ -1224,8 +1219,6 @@ wext_set_mode(IN struct net_device *prNetDev,
 		DBGLOG(INIT, INFO, "%s(): Set UNSUPPORTED Mode = %d.\n", __func__, *pu4Mode);
 		return -EOPNOTSUPP;
 	}
-
-	/* printk("%s(): Set Mode = %d\n", __FUNCTION__, *pu4Mode); */
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetInfrastructureMode, &eOpMode, sizeof(eOpMode), FALSE, FALSE, TRUE, &u4BufLen);
@@ -1702,14 +1695,11 @@ wext_get_scan(IN struct net_device *prNetDev,
 	prList->u4NumberOfItems = 0;
 
 	/* wait scan done */
-	/* printk ("wait for scan results\n"); */
 	/* wait_for_completion_interruptible_timeout(&prGlueInfo->rScanComp, 4 * KAL_HZ); */
 
 	rStatus = kalIoctl(prGlueInfo, wlanoidQueryBssidList, prList, u4AllocBufLen, TRUE, FALSE, FALSE, &u4BufLen);
 
 	if (rStatus == WLAN_STATUS_INVALID_LENGTH) {
-		/* Buffer length is not large enough. */
-		/* printk(KERN_INFO "[wifi] buf:%d result:%ld\n", pData->length, u4BufLen); */
 
 #if WIRELESS_EXT >= 17
 		/* This feature is supported in WE-17 or above, limited by iwlist.
@@ -1858,7 +1848,6 @@ wext_get_scan(IN struct net_device *prNetDev,
 				u4BufIndex += sprintf(aucRatesBuf + u4BufIndex, " %d", curRate / 2);
 #if DBG
 			if (u4BufIndex > sizeof(aucRatesBuf)) {
-				/* printk("rate info too long\n"); */
 				break;
 			}
 #endif
@@ -2008,8 +1997,6 @@ wext_get_scan(IN struct net_device *prNetDev,
 	 * applications.
 	 */
 	prData->length = (pcValidEntryEnd - pcExtra);
-	/* printk(KERN_INFO "[wifi] buf:%d result:%ld\n", pData->length, u4BufLen); */
-
 	/* kalIndicateStatusAndComplete(prGlueInfo, WLAN_STATUS_SCAN_COMPLETE, NULL, 0); */
 
 error:
@@ -2064,8 +2051,6 @@ wext_set_essid(IN struct net_device *prNetDev,
 	if (prGlueInfo->rWpaInfo.u4WpaVersion == IW_AUTH_WPA_VERSION_DISABLED) {
 		eAuthMode = (prGlueInfo->rWpaInfo.u4AuthAlg == IW_AUTH_ALG_OPEN_SYSTEM) ?
 		    AUTH_MODE_OPEN : AUTH_MODE_AUTO_SWITCH;
-		/* printk(KERN_INFO "IW_AUTH_WPA_VERSION_DISABLED->Param_AuthMode%s\n", */
-		/* (eAuthMode == AUTH_MODE_OPEN) ? "Open" : "Shared"); */
 	} else {
 		/* set auth mode */
 		switch (prGlueInfo->rWpaInfo.u4KeyMgmt) {
@@ -2073,15 +2058,11 @@ wext_set_essid(IN struct net_device *prNetDev,
 			eAuthMode =
 			    (prGlueInfo->rWpaInfo.u4WpaVersion == IW_AUTH_WPA_VERSION_WPA) ?
 			    AUTH_MODE_WPA : AUTH_MODE_WPA2;
-			/* printk("IW_AUTH_KEY_MGMT_802_1X->AUTH_MODE_WPA%s\n", */
-			/* (eAuthMode == AUTH_MODE_WPA) ? "" : "2"); */
 			break;
 		case IW_AUTH_KEY_MGMT_PSK:
 			eAuthMode =
 			    (prGlueInfo->rWpaInfo.u4WpaVersion == IW_AUTH_WPA_VERSION_WPA) ?
 			    AUTH_MODE_WPA_PSK : AUTH_MODE_WPA2_PSK;
-			/* printk("IW_AUTH_KEY_MGMT_PSK->AUTH_MODE_WPA%sPSK\n", */
-			/* (eAuthMode == AUTH_MODE_WPA_PSK) ? "" : "2"); */
 			break;
 #if CFG_SUPPORT_WAPI		/* Android+ */
 		case IW_AUTH_KEY_MGMT_WAPI_PSK:
@@ -2093,7 +2074,6 @@ wext_set_essid(IN struct net_device *prNetDev,
 /* #if defined (IW_AUTH_KEY_MGMT_WPA_NONE) */
 /* case IW_AUTH_KEY_MGMT_WPA_NONE: */
 /* eAuthMode = AUTH_MODE_WPA_NONE; */
-/* //printk("IW_AUTH_KEY_MGMT_WPA_NONE->AUTH_MODE_WPA_NONE\n"); */
 /* break; */
 /* #endif */
 #if CFG_SUPPORT_802_11W
@@ -2105,8 +2085,6 @@ wext_set_essid(IN struct net_device *prNetDev,
 			break;
 #endif
 		default:
-			/* printk(KERN_INFO DRV_NAME"strange IW_AUTH_KEY_MGMT : %ld set auto switch\n", */
-			/* prGlueInfo->rWpaInfo.u4KeyMgmt); */
 			eAuthMode = AUTH_MODE_AUTO_SWITCH;
 			break;
 		}
@@ -2118,22 +2096,17 @@ wext_set_essid(IN struct net_device *prNetDev,
 	/* set encryption status */
 	cipher = prGlueInfo->rWpaInfo.u4CipherGroup | prGlueInfo->rWpaInfo.u4CipherPairwise;
 	if (cipher & IW_AUTH_CIPHER_CCMP) {
-		/* printk("IW_AUTH_CIPHER_CCMP->ENUM_ENCRYPTION3_ENABLED\n"); */
 		eEncStatus = ENUM_ENCRYPTION3_ENABLED;
 	} else if (cipher & IW_AUTH_CIPHER_TKIP) {
-		/* printk("IW_AUTH_CIPHER_TKIP->ENUM_ENCRYPTION2_ENABLED\n"); */
 		eEncStatus = ENUM_ENCRYPTION2_ENABLED;
 	} else if (cipher & (IW_AUTH_CIPHER_WEP104 | IW_AUTH_CIPHER_WEP40)) {
-		/* printk("IW_AUTH_CIPHER_WEPx->ENUM_ENCRYPTION1_ENABLED\n"); */
 		eEncStatus = ENUM_ENCRYPTION1_ENABLED;
 	} else if (cipher & IW_AUTH_CIPHER_NONE) {
-		/* printk("IW_AUTH_CIPHER_NONE->ENUM_ENCRYPTION_DISABLED\n"); */
 		if (prGlueInfo->rWpaInfo.fgPrivacyInvoke)
 			eEncStatus = ENUM_ENCRYPTION1_ENABLED;
 		else
 			eEncStatus = ENUM_ENCRYPTION_DISABLED;
 	} else {
-		/* printk("unknown IW_AUTH_CIPHER->Param_EncryptionDisabled\n"); */
 		eEncStatus = ENUM_ENCRYPTION_DISABLED;
 	}
 
@@ -2152,13 +2125,11 @@ wext_set_essid(IN struct net_device *prNetDev,
 
 	/*
 	   rNewSsid.aucSsid[rNewSsid.u4SsidLen] = '\0';
-	   printk("set ssid(%lu): %s\n", rNewSsid.u4SsidLen, rNewSsid.aucSsid);
 	 */
 
 	if (kalIoctl(prGlueInfo,
 		     wlanoidSetSsid,
 		     (PVOID)&rNewSsid, sizeof(PARAM_SSID_T), FALSE, FALSE, TRUE, &u4BufLen) != WLAN_STATUS_SUCCESS) {
-		/* printk(KERN_WARNING "Fail to set ssid\n"); */
 		return -EFAULT;
 	}
 
@@ -2259,11 +2230,6 @@ wext_set_rate(IN struct net_device *prNetDev,
 		return -EINVAL;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	/*
-	   printk("value = %d, fixed = %d, disable = %d, flags = %d\n",
-	   prRate->value, prRate->fixed, prRate->disabled, prRate->flags);
-	 */
-
 	rStatus = wlanQueryInformation(prGlueInfo->prAdapter,
 				       wlanoidQuerySupportedRates, &aucSuppRate, sizeof(aucSuppRate), &u4BufLen);
 
@@ -2273,7 +2239,6 @@ wext_set_rate(IN struct net_device *prNetDev,
 			/* iwconfig wlan0 rate auto */
 
 			/* set full supported rate to device */
-			/* printk("wlanoidQuerySupportedRates():u4BufLen = %ld\n", u4BufLen); */
 			rStatus = wlanSetInformation(prGlueInfo->prAdapter,
 						     wlanoidSetDesiredRates,
 						     &aucSuppRate, sizeof(aucSuppRate), &u4BufLen);
@@ -2745,7 +2710,6 @@ wext_set_encode(IN struct net_device *prNetDev,
 				   wlanoidSetAuthMode, &eAuthMode, sizeof(eAuthMode), FALSE, FALSE, FALSE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS) {
-			/* printk(KERN_INFO DRV_NAME"wlanoidSetAuthMode fail 0x%lx\n", rStatus); */
 			return -EFAULT;
 		}
 
@@ -2759,7 +2723,6 @@ wext_set_encode(IN struct net_device *prNetDev,
 				   &eEncStatus, sizeof(ENUM_PARAM_ENCRYPTION_STATUS_T), FALSE, FALSE, FALSE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS) {
-			/* printk(KERN_INFO DRV_NAME"wlanoidSetEncryptionStatus fail 0x%lx\n", rStatus); */
 			return -EFAULT;
 		}
 
@@ -2807,8 +2770,6 @@ wext_set_power(IN struct net_device *prNetDev,
 
 	if (!prGlueInfo->prAdapter->prAisBssInfo)
 		return -EFAULT;
-	/* printk(KERN_INFO "wext_set_power value(%d) disabled(%d) flag(0x%x)\n", */
-	/* prPower->value, prPower->disabled, prPower->flags); */
 
 	if (prPower->disabled) {
 		ePowerMode = Param_PowerModeCAM;
@@ -2839,7 +2800,6 @@ wext_set_power(IN struct net_device *prNetDev,
 			   &rPowerMode, sizeof(PARAM_POWER_MODE_T), FALSE, FALSE, TRUE, &u4BufLen);
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
-		/* printk(KERN_INFO DRV_NAME"wlanoidSet802dot11PowerSaveProfile fail 0x%lx\n", rStatus); */
 		return -EFAULT;
 	}
 #endif
@@ -2913,9 +2873,6 @@ wext_get_power(IN struct net_device *prNetDev,
 #if WIRELESS_EXT < 21
 	prPower->value *= 1000000;
 #endif
-
-	/* printk(KERN_INFO "wext_get_power value(%d) disabled(%d) flag(0x%x)\n", */
-	/* prPower->value, prPower->disabled, prPower->flags); */
 
 	return 0;
 }				/* wext_get_power */
@@ -3001,7 +2958,6 @@ wext_set_auth(IN struct net_device *prNetDev,
 		break;
 #if CFG_SUPPORT_802_11W
 	case IW_AUTH_MFP:
-		/* printk("wext_set_auth IW_AUTH_MFP=%d\n", prAuth->value); */
 		prGlueInfo->rWpaInfo.u4Mfp = prAuth->value;
 		break;
 #endif
@@ -3019,9 +2975,6 @@ wext_set_auth(IN struct net_device *prNetDev,
 		break;
 #endif
 	default:
-		/*
-		   printk(KERN_INFO "[wifi] unsupported IW_AUTH_INDEX :%d\n", prAuth->flags);
-		 */
 		break;
 	}
 	return 0;
@@ -3084,7 +3037,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 #if CFG_SUPPORT_WAPI
 	if (prIWEncExt->alg == IW_ENCODE_ALG_SMS4) {
 		if (prEnc->flags & IW_ENCODE_DISABLED) {
-			/* printk(KERN_INFO "[wapi] IW_ENCODE_DISABLED\n"); */
 			return 0;
 		}
 		/* KeyID */
@@ -3092,16 +3044,13 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 		prWpiKey->ucKeyID--;
 		if (prWpiKey->ucKeyID > 1) {
 			/* key id is out of range */
-			/* printk(KERN_INFO "[wapi] add key error: key_id invalid %d\n", prWpiKey->ucKeyID); */
 			return -EINVAL;
 		}
 
 		if (prIWEncExt->key_len != 32) {
 			/* key length not valid */
-			/* printk(KERN_INFO "[wapi] add key error: key_len invalid %d\n", prIWEncExt->key_len); */
 			return -EINVAL;
 		}
-		/* printk(KERN_INFO "[wapi] %d ext_flags %d\n", prEnc->flags, prIWEncExt->ext_flags); */
 
 		if (prIWEncExt->ext_flags & IW_ENCODE_EXT_GROUP_KEY) {
 			prWpiKey->eKeyType = ENUM_WPI_GROUP_KEY;
@@ -3128,7 +3077,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 
 		if (rStatus != WLAN_STATUS_SUCCESS) {
 			/* do nothing*/
-			/* printk(KERN_INFO "[wapi] add key error:%lx\n", rStatus); */
 		}
 
 	} else
@@ -3138,10 +3086,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 		if ((prEnc->flags & IW_ENCODE_MODE) == IW_ENCODE_DISABLED) {
 			prRemoveKey->u4Length = sizeof(*prRemoveKey);
 			memcpy(prRemoveKey->arBSSID, prIWEncExt->addr.sa_data, 6);
-			/*
-			   printk("IW_ENCODE_DISABLED: ID:%d, Addr:[" MACSTR "]\n",
-			   prRemoveKey->KeyIndex, MAC2STR(prRemoveKey->BSSID));
-			 */
 
 			rStatus = kalIoctl(prGlueInfo,
 					   wlanoidSetRemoveKey,
@@ -3152,7 +3096,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 			return 0;
 		}
 		/* return 0; */
-		/* printk ("alg %x\n", prIWEncExt->alg); */
 
 		switch (prIWEncExt->alg) {
 		case IW_ENCODE_ALG_NONE:
@@ -3356,8 +3299,6 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 	UINT_32 u4ExtraSize = 0;
 
 	/* prDev is verified in the caller function wlanDoIOCTL() */
-
-	/* printk("%d CMD:0x%x\n", jiffies_to_msecs(jiffies), i4Cmd); */
 
 	/* Prepare the call */
 	rIwReqInfo.cmd = (__u16) i4Cmd;
@@ -3573,11 +3514,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 		if (copy_from_user(prExtraBuf, iwr->u.essid.pointer, iwr->u.essid.length)) {
 			ret = -EFAULT;
 		} else {
-			/* Add trailing '\0' for printk */
-			/* prExtraBuf[iwr->u.essid.length] = 0; */
-			/* printk(KERN_INFO "wext_set_essid: %s (%d)\n", prExtraBuf, iwr->u.essid.length); */
 			ret = wext_set_essid(prDev, NULL, &iwr->u.essid, prExtraBuf);
-			/* printk ("set essid %d\n", ret); */
 		}
 
 		kalMemFree(prExtraBuf, VIR_MEM_TYPE, IW_ESSID_MAX_SIZE + 4);
@@ -3786,25 +3723,14 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			} else {
 				switch (((struct iw_pmksa *)prExtraBuf)->cmd) {
 				case IW_PMKSA_ADD:
-					/*
-					   printk(KERN_INFO "IW_PMKSA_ADD [" MACSTR "]\n",
-					   MAC2STR(((struct iw_pmksa *)pExtraBuf)->bssid.sa_data));
-					 */
 					{
 						wext_support_ioctl_SIOCSIWPMKSA_Action(prDev, prExtraBuf, IW_PMKSA_ADD,
 										       &ret);
 					}
 					break;
 				case IW_PMKSA_REMOVE:
-					/*
-					   printk(KERN_INFO "IW_PMKSA_REMOVE [" MACSTR "]\n",
-					   MAC2STR(((struct iw_pmksa *)buf)->bssid.sa_data));
-					 */
 					break;
 				case IW_PMKSA_FLUSH:
-					/*
-					   printk(KERN_INFO "IW_PMKSA_FLUSH\n");
-					 */
 					{
 						wext_support_ioctl_SIOCSIWPMKSA_Action(prDev, prExtraBuf,
 										       IW_PMKSA_FLUSH, &ret);
@@ -3832,12 +3758,9 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #endif
 
 	default:
-		/* printk(KERN_NOTICE "unsupported IOCTL: 0x%x\n", i4Cmd); */
 		ret = -EOPNOTSUPP;
 		break;
 	}
-
-	/* printk("%ld CMD:0x%x ret:%d\n", jiffies_to_msecs(jiffies), i4Cmd, ret); */
 
 	return ret;
 }				/* wext_support_ioctl */
@@ -3860,7 +3783,6 @@ static void wext_support_ioctl_SIOCSIWGENIE(IN P_GLUE_INFO_T prGlueInfo, IN char
 				     prDesiredIE, IE_SIZE(prDesiredIE), FALSE, FALSE, TRUE, &u4BufLen);
 			if (rStatus != WLAN_STATUS_SUCCESS) {
 				/* do nothing */
-				/* printk(KERN_INFO "[WSC] set WSC assoc info error:%lx\n", rStatus); */
 			}
 		}
 #endif
@@ -3991,7 +3913,6 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 		}
 #if CFG_SUPPORT_WAPI		/* Android+ */
 		else if (wextSrchDesiredWAPIIE(pucData, u4dataLen, &pucDesiredIE)) {
-			/* printk("wextSrchDesiredWAPIIE!!\n"); */
 			/* WAPI IE found */
 		}
 #endif
@@ -4005,7 +3926,6 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 		u4Cmd = IWEVCUSTOM;
 		pucExtraInfo = aucExtraInfoBuf;
 		pucExtraInfo += sprintf(pucExtraInfo, "ASSOCINFO(ReqIEs=");
-		/* printk(KERN_DEBUG "assoc info buffer size needed:%d\n", infoElemLen * 2 + 17); */
 		/* translate binary string to hex string, requirement of IWEVCUSTOM */
 		for (i = 0; i < pucDesiredIE[1] + 2; ++i)
 			pucExtraInfo += sprintf(pucExtraInfo, "%02x", pucDesiredIE[i]);
@@ -4064,11 +3984,9 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 			/* pmkid canadidate list is supported after WE-18 */
 			/* indicate struct iw_pmkid_cand */
 #else
-			/* printk(KERN_INFO "IWEVPMKIDCAND event skipped, WE < 18\n"); */
 			goto skip_indicate_event;
 #endif
 		} else {
-			/* printk(KERN_INFO "IWEVPMKIDCAND event skipped, NOT WPA2\n"); */
 			goto skip_indicate_event;
 		}
 		break;
@@ -4081,7 +3999,6 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 		break;
 
 	default:
-		/* printk(KERN_INFO "Unsupported wext event:%x\n", cmd); */
 		goto skip_indicate_event;
 	}
 

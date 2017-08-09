@@ -153,10 +153,6 @@ nicRxAddP2pDevice(IN P_ADAPTER_T prAdapter,
 			/* then buffer */
 			kalMemCopy(prTargetResult, (PVOID) prP2pResult, sizeof(EVENT_P2P_DEV_DISCOVER_RESULT_T));
 
-			/* printk("DVC FND %d " MACSTR", " MACSTR "\n",
-			 * prP2pInfo->u4DeviceNum, MAC2STR(prP2pResult->aucDeviceAddr),
-			 * MAC2STR(prTargetResult->aucDeviceAddr)); */
-
 			if (u2RxIELength) {
 				prTargetResult->pucIeBuf = prP2pInfo->pucCurrIePtr;
 

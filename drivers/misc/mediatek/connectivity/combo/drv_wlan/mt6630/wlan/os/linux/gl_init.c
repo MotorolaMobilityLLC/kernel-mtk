@@ -1442,7 +1442,6 @@ int wlanDoIOCTL(struct net_device *prDev, struct ifreq *prIFReq, int i4Cmd)
 
 	if (prGlueInfo->u4ReadyFlag == 0)
 		return -EINVAL;
-	/* printk ("ioctl %x\n", i4Cmd); */
 
 	if (i4Cmd == SIOCGIWPRIV) {
 		/* 0x8B0D, get private ioctl table */
@@ -3018,7 +3017,6 @@ static int initWlan(void)
 /* 1 Module Leave Point */
 static VOID exitWlan(void)
 {
-	/* printk("remove %p\n", wlanRemove); */
 #if CFG_CHIP_RESET_SUPPORT
 	glResetUninit();
 #endif

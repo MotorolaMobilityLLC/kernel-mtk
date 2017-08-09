@@ -1758,7 +1758,6 @@ BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARA
 		rCmdGscnParam.arChannelBucket[ucChannelBuckIndex].ucReportFlag =
 		    prCmdGscnParam->buckets[ucChannelBuckIndex].report_events;
 
-		/* printk("\n"); */
 		/* TODO: This is not make sense at all, always return true*/
 	}
 
