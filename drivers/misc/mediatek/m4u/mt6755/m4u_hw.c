@@ -37,6 +37,18 @@ int gM4U_4G_DRAM_Mode = 0;
 static spinlock_t gM4u_reg_lock;
 int gM4u_port_num = M4U_PORT_UNKNOWN;
 
+static int _is_display_port(int m4u_port)
+{
+	if (M4U_PORT_DISP_OVL0 == m4u_port ||
+	    M4U_PORT_DISP_OVL1 == m4u_port ||
+	    M4U_PORT_DISP_2L_OVL0 == m4u_port ||
+	    M4U_PORT_DISP_2L_OVL1 == m4u_port ||
+	    M4U_PORT_DISP_RDMA0 == m4u_port || M4U_PORT_DISP_WDMA0 == m4u_port)
+		return 1;
+
+	return 0;
+}
+
 int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start, unsigned int mva_end)
 {
 	unsigned int reg = 0;
@@ -2003,9 +2015,10 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 		if (IntrSrc & (F_INT_MMU0_MAIN_MSK | F_INT_MMU0_MAU_MSK))
 			m4u_slave_id = 0;
-		else
+		else {
 			m4u_clear_intr(m4u_index);
-		return 0;
+			return 0;
+		}
 
 		/* read error info from registers */
 		fault_mva = M4U_ReadReg32(m4u_base, REG_MMU_FAULT_VA(m4u_slave_id));
@@ -2029,11 +2042,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 			M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x\n",
 				m4u_get_port_name(m4u_port), fault_mva, fault_pa, layer, write, regval);
 
-			if (M4U_PORT_DISP_OVL0 == m4u_port
-#if defined(CONFIG_ARCH_MT6753)
-				|| M4U_PORT_DISP_OVL1 == m4u_port
-#endif
-			) {
+			if (_is_display_port(m4u_port)) {
 				unsigned int valid_mva = 0;
 				unsigned int valid_size = 0;
 				unsigned int valid_mva_end = 0;
