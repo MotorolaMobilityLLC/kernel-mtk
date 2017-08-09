@@ -1,0 +1,159 @@
+--- git_tk_everest_v03_teei_new/kernel-3.18/drivers/misc/mediatek/teei/V1.0/tz_driver/nt_smc_call.h	2015-11-07 15:36:14.000000000 +0800
++++ git_tk_everest_v03_teei/kernel-3.18/drivers/misc/mediatek/teei/V1.0/tz_driver/nt_smc_call.h	2015-11-07 15:36:12.000000000 +0800
+@@ -198,9 +196,9 @@
+ 	"smc 0\n\t"
+ 	"nop"
+ 	"str x0, [%[temp]]\n\t"
+-	"str x1, [%[temp], #8]\n\t"
+-	"str x2, [%[temp], #16]\n\t"
+-	"str x3, [%[temp], #24]\n\t"
++	"str x1, [%[temp], #4]\n\t"
++	"str x2, [%[temp], #8]\n\t"
++	"str x3, [%[temp], #12]\n\t"
+ 	: :
+ 	[fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
+ 	: "x0", "x1", "x2", "x3", "memory");
+@@ -225,8 +223,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -247,8 +245,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -286,8 +284,8 @@
+ 	/* ".arch_extension sec\n */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -309,8 +307,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -332,8 +330,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -355,8 +353,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -378,8 +376,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -401,8 +399,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -424,8 +422,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -447,8 +445,8 @@
+ 	/* ".arch_extension sec\n" */
+ 	"mov x0, %[fun_id]\n\t"
+ 	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
++	"ldr x2, [%[temp], #4]\n\t"
++	"ldr x3, [%[temp], #8]\n\t"
+ 	"smc 0\n\t"
+ 	"nop"
+ 	: :
+@@ -456,33 +454,4 @@
+ 	: "x0", "x1", "x2", "x3", "memory");
+ }
+ 
+-
+-static inline void nt_sched_core(
+-	uint64_t p0,
+-	uint64_t p1,
+-	uint64_t p2)
+-{
+-	uint64_t temp[3];
+-	temp[0] = p0;
+-	temp[1] = p1;
+-	temp[2] = p2;
+-
+-	__asm__ volatile(
+-	/* ".arch_extension sec\n" */
+-	"mov x0, %[fun_id]\n\t"
+-	"ldr x1, [%[temp], #0]\n\t"
+-	"ldr x2, [%[temp], #8]\n\t"
+-	"ldr x3, [%[temp], #16]\n\t"
+-	"smc 0\n\t"
+-	"nop"
+-	: :
+-	[fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
+-	: "x0", "x1", "x2", "x3", "memory");
+-}
+-
+-
+-
+-
+-
+-
+ #endif /* SMC_CALL_H_ */

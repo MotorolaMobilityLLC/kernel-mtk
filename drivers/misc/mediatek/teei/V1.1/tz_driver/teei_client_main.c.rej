@@ -1,0 +1,105 @@
+--- git_tk_everest_v03_teei_new/kernel-3.18/drivers/misc/mediatek/teei/V1.0/tz_driver/teei_client_main.c	2015-11-07 15:36:14.000000000 +0800
++++ git_tk_everest_v03_teei/kernel-3.18/drivers/misc/mediatek/teei/V1.0/tz_driver/teei_client_main.c	2015-11-07 15:36:12.000000000 +0800
+@@ -95,23 +93,13 @@
+ #define GLSCH_NONE				(0x00)
+ #define GLSCH_LOW				(0x01)
+ #define GLSCH_HIGH				(0x02)
+-#define GLSCH_FOR_SOTER				(0x04)
+-#define IRQ_OFFSET				(50)
+-
+-#define BOOT_IRQ				(283+50)
+-#define SCHED_IRQ				(284+50)
+-#define SOTER_IRQ				(285+50)
+-#define FP_ACK_IRQ				(287+50)
+-#define BDRV_IRQ				(278+50)
+-#define TEEI_LOG_IRQ				(277+50)
+-#define SOTER_ERROR_IRQ				(276+50)
+-
+-#define TLOG_CONTEXT_LEN			(300)
+-#define TLOG_MAX_CNT				(50)
+-
+-#define TLOG_UNUSE				(0)
+-#define TLOG_INUSE				(1)
++#define GLSCH_FOR_SOTER			(0x04)
+ 
++#define BOOT_IRQ				(283)
++#define SCHED_IRQ				(284)
++#define SOTER_IRQ				(285)
++#define FP_ACK_IRQ				(287)
++#define BDRV_IRQ				(278)
+ #if 0
+ /******************************
+  * Message header
+@@ -2915,72 +2785,7 @@
+ 	}
+ }
+ 
+-void init_tlog_entry(void)
+-{
+-	int i = 0;
+-
+-	for (i = 0; i < TLOG_MAX_CNT; i++)
+-		tlog_ent[i].valid = TLOG_UNUSE;
+-
+-	return;
+-}
+-
+-int search_tlog_entry(void)
+-{
+-	int i = 0;
+-
+-	for (i = 0; i < TLOG_MAX_CNT; i++) {
+-		if (tlog_ent[i].valid == TLOG_UNUSE) {
+-			tlog_ent[i].valid = TLOG_INUSE;
+-			return i;
+-		}
+-	}
+-
+-	return -1;
+-}
+-
+-
+-void tlog_func(struct work_struct *entry)
+-{
+-	struct tlog_struct *ts = container_of(entry, struct tlog_struct, work);
+-
+-	printk("TLOG %s", (char *)(ts->context));
+-	ts->valid = TLOG_UNUSE;
+-	return;
+-}
+-
+-
+-irqreturn_t tlog_handler(void)
+-{
+-	int pos = 0;
+-	printk("~tlog handler~\n");
+-	pos = search_tlog_entry();
+-
+-	if (-1 != pos) {
+-		memset(tlog_ent[pos].context, 0, TLOG_CONTEXT_LEN);
+-		memcpy(tlog_ent[pos].context, (char *)tlog_message_buff, TLOG_CONTEXT_LEN);
+-		Flush_Dcache_By_Area((unsigned long)tlog_message_buff, (unsigned long)tlog_message_buff + TLOG_CONTEXT_LEN);
+-		INIT_WORK(&(tlog_ent[pos].work), tlog_func);
+-		queue_work(secure_wq, &(tlog_ent[pos].work));
+-	}
+-		//irq_call_flag = GLSCH_HIGH;
+-		//up(&smc_lock);
+-
+-		return IRQ_HANDLED;
+-}
+-
+-int register_tlog_handler(void)
+-{
+-		int retVal = 0;
+-		retVal = request_irq(TEEI_LOG_IRQ, tlog_handler, 0, "tz_drivers_service", NULL);
+ 
+-		if (retVal)
+-			printk("ERROR for request_irq %d error code : %d.\n", TEEI_LOG_IRQ, retVal);
+-		else
+-			printk("request irq [ %d ] OK.\n", TEEI_LOG_IRQ);
+-
+-		return 0;
+-}
+ 
+ int register_boot_irq_handler(void)
+ {
