@@ -501,7 +501,7 @@ static unsigned int ITurbo_offset[16];
 static int eem_log_en;
 static int isGPUDCBDETOverflow, is2LDCBDETOverflow, isLDCBDETOverflow, isCCIDCBDETOverflow;
 
-static unsigned int checkEfuse;
+static unsigned int checkEfuse, ateVer;
 static unsigned int informGpuEEMisReady;
 
 /* Global variable for slow idle*/
@@ -576,7 +576,7 @@ static void eem_restore_eem_volt(struct eem_det *det);
 /* CPU */
 #define CPU_PMIC_BASE	(30000) /* 45000 for MT6313 */
 #define CPU_PMIC_STEP	(1000) /* 625 for MT6313 */
-#define MAX_ITURBO_OFFSET	(3000) /* 30mV */
+#define MAX_ITURBO_OFFSET	(2000) /* 20mV */
 
 /* GPU */
 #define GPU_PMIC_BASE	(60300)
@@ -1660,7 +1660,8 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	if (((det_to_id(det) == EEM_DET_GPU) && isGPUDCBDETOverflow) ||
 		((det_to_id(det) == EEM_DET_2L) && is2LDCBDETOverflow) ||
 		((det_to_id(det) == EEM_DET_L) && isLDCBDETOverflow) ||
-		((det_to_id(det) == EEM_DET_CCI) && isCCIDCBDETOverflow)) {
+		((det_to_id(det) == EEM_DET_CCI) && isCCIDCBDETOverflow) ||
+		(ateVer > 5)) {
 		eem_write(EEM_CHKSHIFT, (eem_read(EEM_CHKSHIFT) & ~0x0F) | 0x07); /* 0x07 = DCBDETOFF */
 	}
 
@@ -2074,10 +2075,6 @@ static void get_freq_table_cpu(struct eem_det *det)
 					det->max_freq_khz);
 		}
 		/* eem_debug("Timer Bank = %d, freq_procent = (%d)\n", det->ctrl_id, det->freq_tbl[i]); */
-		if ((det_to_id(det) == EEM_DET_L) && (1 == ctrl_ITurbo))
-			ITurbo_offset[i] = det->ops->volt_2_eem(det, MAX_ITURBO_OFFSET + det->eem_v_base) *
-						(det->freq_tbl[i] - det->freq_tbl[NR_FREQ]) /
-						(det->freq_tbl[0] - det->freq_tbl[NR_FREQ]);
 		if (0 == det->freq_tbl[i])
 			break;
 	}
@@ -2506,7 +2503,7 @@ static void eem_init_ctrl(struct eem_ctrl *ctrl)
 static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 {
 	enum eem_det_id det_id = det_to_id(det);
-	unsigned int binLevel, ateVer;
+	unsigned int binLevel;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	eem_debug("det=%s, id=%d\n", ((char *)(det->name) + 8), det_id);
@@ -2733,7 +2730,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 		low_temp_offset = 0;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
 	}
-	/* eem_debug("ctrl->volt_update |= EEM_VOLT_UPDATE\n"); */
+	/*
+	eem_error("Temp=(%d) ITR=(%d), ITRS=(%d)\n", cur_temp, ITurboRun, ITurboRunSet);
+	eem_debug("ctrl->volt_update |= EEM_VOLT_UPDATE\n");
+	*/
 
 	/* scale of det->volt_offset must equal 10uV */
 	for (i = 0; i < det->num_freq_tbl; i++) {
@@ -2760,12 +2760,18 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_L:
+			if (1 == ITurboRunSet) {
+				ITurbo_offset[i] = det->ops->volt_2_eem(det, MAX_ITURBO_OFFSET + det->eem_v_base) *
+						(det->volt_tbl[i] - det->volt_tbl[NR_FREQ-1]) /
+						(det->volt_tbl[0] - det->volt_tbl[NR_FREQ-1]);
+			} else
+				ITurbo_offset[i] = 0;
+
 			det->volt_tbl_pmic[i] =
 			min(
 			(unsigned int)(clamp(
 				det->ops->eem_2_pmic(det,
-					(det->volt_tbl[i] + det->volt_offset + low_temp_offset -
-						((1 == ITurboRunSet) ? ITurbo_offset[i] : 0))) +
+					(det->volt_tbl[i] + det->volt_offset + low_temp_offset - ITurbo_offset[i])) +
 					det->pi_offset,
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
@@ -3671,7 +3677,7 @@ int ptp_isr(void)
 #endif
 }
 
-#define SINGLE_CPU_NUM 1
+#define ITURBO_CPU_NUM 2
 static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					unsigned long action, void *hcpu)
 {
@@ -3714,18 +3720,19 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	if (dev) {
 		det = id_to_eem_det(EEM_DET_L);
 		switch (action) {
+		case CPU_ONLINE:
 		case CPU_POST_DEAD:
-			if (SINGLE_CPU_NUM == online_cpus) { /* Online cpu is single */
+			if (ITURBO_CPU_NUM >= online_cpus) { /* Online cpus */
 				arch_get_cluster_cpus(&eem_cpumask, MT_EEM_CPU_L);
 				cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
 				cpus = cpumask_weight(&cpu_online_cpumask);
 				if (eem_log_en)
-					eem_error("L_cluster_cpus = (%d)\n", cpus);
-				if (SINGLE_CPU_NUM == cpus) { /* The single cpu located at L cluster */
+					eem_error("L_cpus=(%d), IT=(%d)\n", cpus, ITurboRun);
+				if (online_cpus == cpus) { /* The cpus located at L cluster */
 					if (0 == ITurboRun) {
 						eem_error("ITurbo(1) L_cc(%d)\n", cpus);
-						ITurboRun = 1;
 						mt_ptp_lock(&flags);
+						ITurboRun = 1;
 						eem_set_eem_volt(det);
 						mt_ptp_unlock(&flags);
 					} else {
@@ -3735,16 +3742,17 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 			}
 		break;
 		case CPU_UP_PREPARE:
-			if (1 == ITurboRun) {
+			if ((1 == ITurboRun) && ((ITURBO_CPU_NUM == online_cpus) || (MT_EEM_CPU_L != cluster_id))) {
 				if (eem_log_en)
 					eem_error("ITurbo(0) ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
-				ITurboRun = 0;
 				mt_ptp_lock(&flags);
+				ITurboRun = 0;
 				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
-					eem_error("ITurbo(0)ed ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
+					eem_error("ITurbo(%d)ed !! (%d), c(%d), cc(%d)\n",
+						ITurboRun, online_cpus, cluster_id, cpus);
 			}
 		break;
 		}
@@ -5498,7 +5506,8 @@ int __init eem_init(void)
 #endif
 
 	get_devinfo(&eem_devinfo);
-	eem_efuse_calibration(&eem_devinfo);
+	if (ateVer <= 5)
+		eem_efuse_calibration(&eem_devinfo);
 #if 0 /* def __KERNEL__ */
 	if (new_eem_val == 0) {
 		ctrl_EEM_Enable = 0;
