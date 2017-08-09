@@ -258,6 +258,7 @@ int primary_display_ipoh_recover(void);
 int primary_display_get_width(void);
 int primary_display_get_height(void);
 int primary_display_get_bpp(void);
+int primary_display_get_dc_bpp(void);
 int primary_display_get_pages(void);
 
 int primary_display_set_overlay_layer(primary_disp_input_config *input);

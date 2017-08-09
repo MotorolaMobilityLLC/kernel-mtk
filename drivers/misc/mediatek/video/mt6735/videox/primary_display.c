@@ -184,7 +184,7 @@ disp_internal_buffer_info *dequeue_buffer(display_primary_path_context *ctx,
 			return NULL;
 
 			size = primary_display_get_width() * primary_display_get_height() *
-					    primary_display_get_bpp() / 4;
+					    primary_display_get_dc_bpp() / 4;
 			DISPMSG("size=0x%lx\n", size);
 			if (ion_client == NULL)
 				ion_client = ion_client_create(g_ion_device, "disp_decouple");
@@ -2282,7 +2282,7 @@ static int init_decouple_buffers(void)
 	int i = 0;
 	int height = primary_display_get_height();
 	int width = primary_display_get_width();
-	int bpp = primary_display_get_bpp();
+	int bpp = primary_display_get_dc_bpp();
 
 	int buffer_size = width * height * bpp / 8;
 
@@ -2324,7 +2324,7 @@ static int allocate_idle_lp_dc_buffer(void)
 {
 	int height = primary_display_get_height();
 	int width = primary_display_get_width();
-	int bpp = primary_display_get_bpp();
+	int bpp = primary_display_get_dc_bpp();
 	int buffer_size =  width * height * bpp / 8;
 
 	decouple_buffer_info[0] = allocat_decouple_buffer(buffer_size);
@@ -2433,7 +2433,7 @@ static void copy_lklogo_to_dc_buf(void)
 	for (line = 0; line < primary_display_get_height(); line++) {
 		d = (char *)(dc_vAddr[0] + line * primary_display_get_width() * DP_COLOR_BITS_PER_PIXEL(eRGB888) / 8);
 		s = (int *)(pgc->framebuffer_va + line * ALIGN_TO(primary_display_get_width(),
-								  MTK_FB_ALIGNMENT) * primary_display_get_bpp() / 8);
+								  MTK_FB_ALIGNMENT) * primary_display_get_dc_bpp() / 8);
 		for (k = 0; k < primary_display_get_width(); k++) {
 			src_argb8888 = *s++;
 			*d++ = ((src_argb8888 & 0xFF));
@@ -4468,7 +4468,7 @@ int primary_display_capture_framebuffer_wdma(void *data)
 	m4u_client_t *m4uClient = NULL;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
-	unsigned int pixel_byte = primary_display_get_bpp() / 8; /* bpp is either 32 or 16, can not be other value */
+	unsigned int pixel_byte = primary_display_get_dc_bpp() / 8; /* bpp is either 32 or 16, can not be other value */
 	int buffer_size = h_yres * w_xres * pixel_byte;
 	int buf_idx = 0;
 	unsigned int mva[2] = { 0, 0 };
@@ -6794,6 +6794,11 @@ int primary_display_get_original_height(void)
 
 int primary_display_get_bpp(void)
 {
+	return 32;
+}
+
+int primary_display_get_dc_bpp(void)
+{
 	return 24;
 }
 
@@ -7429,7 +7434,7 @@ int primary_display_capture_framebuffer_decouple(unsigned long pbuf, unsigned in
 	unsigned int mapped_size = 0;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
-	unsigned int pixel_byte = primary_display_get_bpp() / 8;/* bpp is either 32 or 16, can not be other value */
+	unsigned int pixel_byte = primary_display_get_dc_bpp() / 8;/* bpp is either 32 or 16, can not be other value */
 	unsigned int pitch = 0;
 	int buffer_size = h_yres * w_xres * pixel_byte;
 
@@ -7510,7 +7515,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int for
 	unsigned int mva = 0;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
-	unsigned int pixel_byte = primary_display_get_bpp() / 8; /* bpp is either 32 or 16, can not be other value */
+	unsigned int pixel_byte = primary_display_get_dc_bpp() / 8; /* bpp is either 32 or 16, can not be other value */
 	int buffer_size = h_yres * w_xres * pixel_byte;
 
 	DISPMSG("primary capture: begin\n");
@@ -7655,7 +7660,8 @@ int primary_display_capture_framebuffer(unsigned long pbuf)
 	unsigned int fb_layer_id = primary_display_get_option("FB_LAYER");
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
-	unsigned int pixel_bpp = primary_display_get_bpp() / 8;	/* bpp is either 32 or 16, can not be other value */
+	/* bpp is either 32 or 16, can not be other value */
+	unsigned int pixel_bpp = primary_display_get_dc_bpp() / 8;
 	unsigned int w_fb = ALIGN_TO(w_xres, MTK_FB_ALIGNMENT);
 	unsigned int fbsize = w_fb * h_yres * pixel_bpp; /* frame buffer size */
 	unsigned long fbaddress = dpmgr_path_get_last_config(pgc->dpmgr_handle)->ovl_config[fb_layer_id].addr;
