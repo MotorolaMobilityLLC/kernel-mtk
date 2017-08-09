@@ -22,7 +22,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_io.h>
 
-#include <mt_spm_sodi.h>
+#include <mt_spm_sodi3.h>
 
 
 /**************************************

@@ -1752,7 +1752,7 @@ int mt_idle_select(int cpu)
 
 int dpidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_DP;
 
 	dpidle_pre_handler();
 #ifndef CONFIG_MTK_FPGA
@@ -1782,7 +1782,7 @@ EXPORT_SYMBOL(dpidle_enter);
 
 int soidle3_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_SO3;
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
 
@@ -1832,7 +1832,7 @@ EXPORT_SYMBOL(soidle3_enter);
 
 int soidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_SO;
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
 
@@ -1882,7 +1882,7 @@ EXPORT_SYMBOL(soidle_enter);
 
 int mcidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_MC;
 
 #ifndef CONFIG_MTK_FPGA
 	go_to_mcidle(cpu);
@@ -1895,7 +1895,7 @@ EXPORT_SYMBOL(mcidle_enter);
 
 int slidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_SL;
 
 	go_to_slidle(cpu);
 
@@ -1905,7 +1905,7 @@ EXPORT_SYMBOL(slidle_enter);
 
 int rgidle_enter(int cpu)
 {
-	int ret = 1;
+	int ret = IDLE_TYPE_RG;
 
 	go_to_rgidle(cpu);
 
