@@ -1166,6 +1166,24 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		}  \
 	} while (0)
 
+/* Helper macros for local command queue */
+#define DISP_CMDQ_BEGIN(__cmdq, scenario) \
+	do { \
+		cmdqRecCreate(scenario, &__cmdq);\
+		cmdqRecReset(__cmdq);\
+		/* ddp_insert_config_allow_rec(__cmdq); */ /* To be ported */ \
+	} while (0)
+
+#define DISP_CMDQ_REG_SET(__cmdq, reg32, val, mask) DISP_REG_MASK(__cmdq, reg32, val, mask)
+
+#define DISP_CMDQ_CONFIG_STREAM_DIRTY(__cmdq) /* ddp_insert_config_dirty_rec(__cmdq) */ /* To be ported */
+
+#define DISP_CMDQ_END(__cmdq) \
+	do {					\
+		cmdqRecFlush(__cmdq); \
+		cmdqRecDestroy(__cmdq); \
+	} while (0)
+
 /* field definition */
 /* ------------------------------------------------------------- */
 /* AAL */

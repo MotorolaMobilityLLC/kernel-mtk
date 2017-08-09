@@ -1498,7 +1498,6 @@ extern unsigned int gEnableReduceRegWrite;
 /* Helper macros for local command queue */
 #define DISP_CMDQ_BEGIN(__cmdq, scenario) \
 	do { \
-		cmdqRecHandle __cmdq; \
 		cmdqRecCreate(scenario, &__cmdq);\
 		cmdqRecReset(__cmdq);\
 		ddp_insert_config_allow_rec(__cmdq); \
