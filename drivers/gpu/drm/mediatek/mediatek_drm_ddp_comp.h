@@ -36,6 +36,8 @@ void main_disp_path_power_on(unsigned int width, unsigned int height,
 void ext_disp_path_power_on(unsigned int width, unsigned int height,
 		void __iomem *ovl_base, void __iomem *rdma_base,
 		void __iomem *color_base);
+int disp_bls_set_backlight(unsigned int level);
+void dump_bls_regs(void);
 
 #endif /* MEDIATEK_DRM_DDP_COMP_H */
 

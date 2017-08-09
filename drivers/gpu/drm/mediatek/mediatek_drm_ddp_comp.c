@@ -78,6 +78,7 @@
 #define DISP_REG_BLS_SRC_SIZE	                0x0018
 #define DISP_REG_BLS_PWM_DUTY	                0x00A0
 #define DISP_REG_BLS_PWM_CON                    0x00A8
+#define DISP_REG_BLS_DEBUG                      0x00B0
 
 enum DISPLAY_PATH {
 	PRIMARY_PATH = 0,
@@ -371,14 +372,79 @@ static void mediatek_color_start(void __iomem *color_base)
 	writel(0x333, color_base + DISP_COLOR_OUT_SEL);
 }
 
+static void __iomem *g_bls_base;
+
 static void mediatek_bls_init(void __iomem *bls_base, unsigned int width, unsigned int height)
 {
+	g_bls_base = bls_base;
 	writel((height << 16) | width, bls_base + DISP_REG_BLS_SRC_SIZE);
 	writel(0, bls_base + DISP_REG_BLS_PWM_DUTY);
 	writel(0x0 | (1 << 16), bls_base + DISP_REG_BLS_PWM_CON);
 	writel(0x00010000, bls_base + DISP_REG_BLS_EN);
 }
 
+/* add bls api for led driver to set backlight */
+/* ------------------------------------------------------------------------------------ */
+static DEFINE_MUTEX(backlight_mutex);
+
+static unsigned int brightness_mapping(unsigned int level)
+{
+	unsigned int mapped_level;
+	static int gMaxLevel = 1023;
+
+	mapped_level = level;
+
+	if (mapped_level > gMaxLevel)
+		mapped_level = gMaxLevel;
+
+	DRM_INFO("after mapping, mapped_level: %d\n", mapped_level);
+
+	return mapped_level;
+}
+
+int disp_bls_set_backlight(unsigned int level)
+{
+	unsigned int regVal;
+	unsigned int mapped_level;
+	void __iomem *bls_base = g_bls_base;
+
+	DRM_INFO("disp_bls_set_backlight: %d\n", level);
+	mutex_lock(&backlight_mutex);
+
+	writel(0x3, bls_base + DISP_REG_BLS_DEBUG);
+	mapped_level = brightness_mapping(level);
+	writel(mapped_level, bls_base + DISP_REG_BLS_PWM_DUTY);
+	if (level != 0) {
+		regVal = readl(bls_base + DISP_REG_BLS_EN);
+		if (!(regVal & 0x10000))
+			writel(regVal | 0x10000, bls_base + DISP_REG_BLS_EN);
+	} else {
+		regVal = readl(bls_base + DISP_REG_BLS_EN);
+		if (regVal & 0x10000)
+			writel(regVal & 0xFFFEFFFF, bls_base + DISP_REG_BLS_EN);
+	}
+	DRM_INFO("after SET, PWM_DUTY: %d\n", readl(bls_base + DISP_REG_BLS_PWM_DUTY));
+	writel(0x0, bls_base + DISP_REG_BLS_DEBUG);
+
+	mutex_unlock(&backlight_mutex);
+
+	return 0;
+}
+
+void dump_bls_regs(void)
+{
+	void __iomem *bls_base = g_bls_base;
+
+	DRM_INFO("dump_bls_regs\n");
+	DRM_INFO("-------------------------------------------------------------\n");
+	DRM_INFO("bls_en       = 0x%x\n", readl(bls_base + DISP_REG_BLS_EN));
+	DRM_INFO("bls_src_size = 0x%x\n", readl(bls_base + DISP_REG_BLS_SRC_SIZE));
+	DRM_INFO("bls_pwm_duty = 0x%x\n", readl(bls_base + DISP_REG_BLS_PWM_DUTY));
+	DRM_INFO("bls_pwm_con  = 0x%x\n", readl(bls_base + DISP_REG_BLS_PWM_CON));
+	DRM_INFO("bls_debug    = 0x%x\n", readl(bls_base + DISP_REG_BLS_DEBUG));
+	DRM_INFO("-------------------------------------------------------------\n");
+}
+/* ------------------------------------------------------------------------------------ */
 
 void main_disp_path_power_on(unsigned int width, unsigned int height,
 		void __iomem *ovl_base,

@@ -42,6 +42,8 @@ struct crtc_main_context {
 	struct clk		*color0_disp_clk;
 	struct clk		*ufoe_disp_clk;
 	struct clk		*bls_disp_clk;
+	struct clk		*mdp_bls_26m_clk;
+	struct clk		*top_pwm_sel_clk;
 
 	void __iomem		*ovl0_regs;
 	void __iomem		*rdma0_regs;
@@ -115,6 +117,18 @@ static void crtc_main_power_on(struct crtc_main_context *ctx)
 		goto err_ufoe;
 	}
 
+	ret = clk_enable(ctx->top_pwm_sel_clk);
+	if (ret != 0) {
+		DRM_ERROR("clk_enable(ctx->top_pwm_sel_clk) error!\n");
+		goto err_bls;
+	}
+
+	ret = clk_enable(ctx->mdp_bls_26m_clk);
+	if (ret != 0) {
+		DRM_ERROR("clk_enable(ctx->mdp_bls_26m_clk) error!\n");
+		goto err_bls;
+	}
+
 	ret = clk_enable(ctx->bls_disp_clk);
 	if (ret != 0) {
 		DRM_ERROR("clk_enable(ctx->bls_disp_clk) error!\n");
@@ -146,6 +160,10 @@ static void crtc_main_power_off(struct crtc_main_context *ctx)
 	clk_disable(ctx->ufoe_disp_clk);
 
 	clk_disable(ctx->bls_disp_clk);
+
+	clk_disable(ctx->mdp_bls_26m_clk);
+
+	clk_disable(ctx->top_pwm_sel_clk);
 }
 
 static void crtc_main_hw_init(struct crtc_main_context *ctx)
@@ -442,6 +460,20 @@ static int crtc_main_probe(struct platform_device *pdev)
 		goto err;
 	}
 
+	ctx->mdp_bls_26m_clk = devm_clk_get(dev, "mdp_bls_26m");
+	if (IS_ERR(ctx->mdp_bls_26m_clk)) {
+		dev_err(dev, "crtc_main_probe: Get mdp_bls_26m_clk fail.\n");
+		ret = PTR_ERR(ctx->mdp_bls_26m_clk);
+		goto err;
+	}
+
+	ctx->top_pwm_sel_clk = devm_clk_get(dev, "top_pwm_sel");
+	if (IS_ERR(ctx->top_pwm_sel_clk)) {
+		dev_err(dev, "crtc_main_probe: Get top_pwm_sel_clk fail.\n");
+		ret = PTR_ERR(ctx->top_pwm_sel_clk);
+		goto err;
+	}
+
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	ctx->ovl0_regs = devm_ioremap_resource(dev, regs);
 	if (IS_ERR(ctx->ovl0_regs))
@@ -486,6 +518,14 @@ static int crtc_main_probe(struct platform_device *pdev)
 	ret = clk_prepare(ctx->bls_disp_clk);
 	if (ret != 0)
 		DRM_ERROR("clk_prepare(ctx->bls_disp_clk) error!\n");
+
+	ret = clk_prepare(ctx->mdp_bls_26m_clk);
+	if (ret != 0)
+		DRM_ERROR("clk_prepare(ctx->mdp_bls_26m_clk) error!\n");
+
+	ret = clk_prepare(ctx->top_pwm_sel_clk);
+	if (ret != 0)
+		DRM_ERROR("clk_prepare(ctx->top_pwm_sel_clk) error!\n");
 
 	irq = platform_get_irq(pdev, 0);
 	ret = devm_request_irq(dev, irq, crtc_main_irq_handler,

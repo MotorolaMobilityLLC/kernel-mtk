@@ -433,6 +433,14 @@ static void process_dbg_opt(const char *opt)
 			readl(gdrm_hdmi_base[4] + i + 4),
 			readl(gdrm_hdmi_base[4] + i + 8),
 			readl(gdrm_hdmi_base[4] + i + 12));
+	} else if (0 == strncmp(opt, "backlight:", 10)) {
+		char *p = (char *)opt + 10;
+		unsigned int level;
+
+		if (kstrtouint(p, 16, &level))
+			goto error;
+		disp_bls_set_backlight(level);
+		dump_bls_regs();
 	} else {
 	    goto error;
 	}
