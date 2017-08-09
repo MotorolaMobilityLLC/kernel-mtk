@@ -176,6 +176,12 @@ int32_t cmdqMdpClockOff_virtual(uint64_t engineFlag)
 	return 0;
 }
 
+/* MDP Initialization setting */
+void cmdqMdpInitialSetting_virtual(void)
+{
+	/* Do Nothing */
+}
+
 /* test MDP clock function */
 uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr_virtual(void)
 {
@@ -225,6 +231,8 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->mdpDumpInfo = cmdqMdpDumpInfo_virtual;
 	pFunc->mdpResetEng = cmdqMdpResetEng_virtual;
 	pFunc->mdpClockOff = cmdqMdpClockOff_virtual;
+
+	pFunc->mdpInitialSet = cmdqMdpInitialSetting_virtual;
 
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr_virtual;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr_virtual;

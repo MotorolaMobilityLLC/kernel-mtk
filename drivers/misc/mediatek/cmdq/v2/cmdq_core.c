@@ -850,6 +850,28 @@ static uint32_t *cmdq_core_get_pc(const TaskStruct *pTask, uint32_t thread, uint
 	return (uint32_t *) pInst;
 }
 
+void cmdq_core_dump_tasks_info(void)
+{
+	TaskStruct *pTask = NULL;
+	struct list_head *p = NULL;
+	int32_t index = 0;
+
+	mutex_lock(&gCmdqTaskMutex);
+
+	CMDQ_ERR("========= Active List Task Dump =========\n");
+	index = 0;
+	list_for_each(p, &gCmdqContext.taskActiveList) {
+		pTask = list_entry(p, struct TaskStruct, listEntry);
+		CMDQ_ERR("Task(%d) 0x%p, Pid: %d, Name: %s, Scenario: %d, engineFlag: 0x%llx\n",
+			   index, pTask, pTask->callerPid, pTask->callerName,
+			   pTask->scenario, pTask->engineFlag);
+		++index;
+	}
+	CMDQ_ERR("====== Total %d in Active Task =======\n", index);
+
+	mutex_unlock(&gCmdqTaskMutex);
+}
+
 int cmdq_core_print_profile_marker(const RecordStruct *pRecord, char *_buf, int bufLen)
 {
 	int length = 0;
@@ -7433,7 +7455,6 @@ int32_t cmdqCoreInitialize(void)
 	/* Initialize test case structure */
 	cmdq_test_init_setting();
 	/* Initialize DTS Setting structure */
-
 	memset(&g_dts_setting, 0x0, sizeof(cmdq_dts_setting));
 	/* Initialize setting for legacy chip */
 	g_dts_setting.prefetch_thread_count = 3;
@@ -7445,6 +7466,9 @@ int32_t cmdqCoreInitialize(void)
 
 	/* Initialize Features */
 	gCmdqContext.features[CMDQ_FEATURE_SRAM_SHARE] = 1;
+
+	/* MDP initialization setting */
+	cmdq_mdp_get_func()->mdpInitialSet();
 
 	return 0;
 }

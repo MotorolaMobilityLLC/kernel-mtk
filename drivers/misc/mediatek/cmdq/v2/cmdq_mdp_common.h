@@ -29,6 +29,9 @@ typedef int32_t(*CmdqMdpResetEng) (uint64_t engineFlag);
 
 typedef int32_t(*CmdqMdpClockOff) (uint64_t engineFlag);
 
+/* MDP Initialization setting */
+typedef void(*CmdqMdpInitialSet) (void);
+
 /* Initialization & de-initialization MDP base VA */
 typedef void (*CmdqMdpInitModuleBaseVA) (void);
 
@@ -62,6 +65,7 @@ typedef struct cmdqMDPFuncStruct {
 	CmdqMdpDumpInfo mdpDumpInfo;
 	CmdqMdpResetEng mdpResetEng;
 	CmdqMdpClockOff mdpClockOff;
+	CmdqMdpInitialSet mdpInitialSet;
 	CmdqMdpRdmaGetRegOffsetSrcAddr rdmaGetRegOffsetSrcAddr;
 	CmdqMdpWrotGetRegOffsetDstAddr wrotGetRegOffsetDstAddr;
 	CmdqMdpWdmaGetRegOffsetDstAddr wdmaGetRegOffsetDstAddr;

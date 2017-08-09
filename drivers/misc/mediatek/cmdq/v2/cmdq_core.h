@@ -843,6 +843,7 @@ extern "C" {
 	ssize_t cmdqCoreWriteProfileEnable(struct device *dev, struct device_attribute *attr,
 					   const char *buf, size_t size);
 
+	void cmdq_core_dump_tasks_info(void);
 	void cmdq_core_dump_secure_metadata(cmdqSecDataStruct *pSecData);
 	int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount,
 					  uint32_t **regAddress);

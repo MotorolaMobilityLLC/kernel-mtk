@@ -7,6 +7,7 @@
 #ifndef CMDQ_USE_CCF
 #include <mach/mt_clkmgr.h>
 #endif				/* !defined(CMDQ_USE_CCF) */
+#include "m4u.h"
 
 #include "cmdq_device.h"
 
@@ -256,6 +257,39 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 	}
 
 	return 0;
+}
+
+m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva, void *data)
+{
+	CMDQ_ERR("================= [MDP M4U] Dump Begin ================\n");
+	CMDQ_ERR("[MDP M4U]fault call port=%d, mva=0x%x", port, mva);
+
+	cmdq_core_dump_tasks_info();
+
+	switch (port) {
+	case M4U_PORT_MDP_RDMA0:
+		cmdq_mdp_dump_rdma(MDP_RDMA0_BASE, "RDMA0");
+		break;
+	case M4U_PORT_MDP_RDMA1:
+		cmdq_mdp_dump_rdma(MDP_RDMA1_BASE, "RDMA1");
+		break;
+	case M4U_PORT_MDP_WDMA0:
+		cmdq_mdp_dump_wdma(MDP_WDMA_BASE, "WDMA");
+		break;
+	case M4U_PORT_MDP_WROT0:
+		cmdq_mdp_dump_rot(MDP_WROT0_BASE, "WROT0");
+		break;
+	case M4U_PORT_MDP_WROT1:
+		cmdq_mdp_dump_rot(MDP_WROT1_BASE, "WROT1");
+		break;
+	default:
+		CMDQ_ERR("[MDP M4U]fault callback function");
+		break;
+	}
+
+	CMDQ_ERR("================= [MDP M4U] Dump End ================\n");
+
+	return M4U_CALLBACK_HANDLED;
 }
 
 int32_t cmdqVEncDumpInfo(uint64_t engineFlag, int logLevel)
@@ -807,6 +841,16 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 	return 0;
 }
 
+void cmdqMdpInitialSetting(void)
+{
+	/* Register M4U Translation Fault function */
+	m4u_register_fault_callback(M4U_PORT_MDP_RDMA0, cmdq_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_MDP_RDMA1, cmdq_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_MDP_WDMA0, cmdq_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_MDP_WROT0, cmdq_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_MDP_WROT1, cmdq_M4U_TranslationFault_callback, NULL);
+}
+
 uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void)
 {
 	return 0xF00;
@@ -907,6 +951,8 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->mdpDumpInfo = cmdqMdpDumpInfo;
 	pFunc->mdpResetEng = cmdqMdpResetEng;
 	pFunc->mdpClockOff = cmdqMdpClockOff;
+
+	pFunc->mdpInitialSet = cmdqMdpInitialSetting;
 
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr;
