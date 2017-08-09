@@ -748,7 +748,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			/* initial irat ccmni instance */
 			ccmni->index = i;
 			dev = ctlb_irat_src->ccmni_inst[i]->dev;
-			if ((ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_IRAT) != 0)
+			if ((ctlb->ccci_ops->md_ability & MODEM_CAP_WORLD_PHONE) != 0)
 				ccmni->dev = dev;
 			else {
 				ret = ccmni_inst_init(md_id, ccmni, dev);
