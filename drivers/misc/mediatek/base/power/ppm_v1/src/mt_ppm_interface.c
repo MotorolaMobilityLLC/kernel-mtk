@@ -315,9 +315,10 @@ static int ppm_mode_proc_show(struct seq_file *m, void *v)
 		BUG();
 	}
 
-	seq_printf(m, "Current PPM mode = %s\n", mode);
+	seq_printf(m, "%s\n", mode);
 
-	seq_puts(m, "\nUsage: echo <mode_name> > /proc/ppm/mode\n\n");
+	seq_puts(m, "\nUsage: echo <mode_name> > /proc/ppm/mode\n");
+	seq_puts(m, "Support mode: Low_Power / Just_Make / Performance\n\n");
 
 	return 0;
 }
