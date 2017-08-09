@@ -656,7 +656,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 	else
 	{
 		u32 speed_timing;
-		int ret = 0;
+		int retry = 3;
 		u16 i2c_msg_size;
 		struct i2c_msg msg[2];
 		struct i2c_client *pClient = NULL;
@@ -674,11 +674,19 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 		msg[0].len = a_sizeSendData;
 		msg[0].buf = a_pSendData;
 		i2c_msg_size = 1;
-		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
-		if (ret != i2c_msg_size) {
-			PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
-				ret, a_pSendData[0], a_pSendData[1],speed_timing);
-		}
+		do {
+			i4RetValue = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
+			if (i4RetValue != i2c_msg_size) {
+				PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+					i4RetValue, a_pSendData[0], a_pSendData[1],speed_timing);
+				i4RetValue = -1;
+			}
+			else {
+				i4RetValue = 0;
+				break;
+			}
+			uDELAY(50);
+		}while ((retry--) > 0);
 	}
 
     return i4RetValue;
@@ -690,6 +698,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing)
 {
 	u32 speed_timing;
+	int retry = 3;
 	int ret = 0;
 	u16 i2c_msg_size;
 	struct i2c_msg msg[2];
@@ -711,12 +720,23 @@ int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timi
 	msg[0].len = a_sizeSendData;
 	msg[0].buf = a_pSendData;
 	i2c_msg_size = 1;
-	ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, 0, speed_timing);
-	if (ret != i2c_msg_size) {
-		PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
-			ret, a_pSendData[0], a_pSendData[1],speed_timing);
-	}
-    return 0;
+	do {
+		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, 0, speed_timing);
+		if (ret != i2c_msg_size) {
+			PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+				ret, a_pSendData[0], a_pSendData[1],speed_timing);
+			/*I2C write fail , change I2C Write Speed*/
+			speed_timing = speed_timing >> 1; 
+			ret = -1;
+		}
+		else {
+			ret = 0;
+			break;
+		}
+		uDELAY(50);
+	}while ((retry--) > 0);
+	
+    return ret;
 }
 
 int kdSetI2CBusNum(u32 i2cBusNum) {
