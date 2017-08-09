@@ -849,9 +849,9 @@ balanced:
 			rt_rq->rt_time = 0;
 			rt_rq->rt_throttled = 0;
 			printk_deferred("sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
-				rt_rq->rq->cpu);
+				rq->cpu);
 			printk_deferred("sched: cpu=%d, rt_time[%llu -> %llu], rt_throttled = %d\n",
-				rt_rq->rq->cpu, rt_time_pre, rt_rq->rt_time, rt_rq->rt_throttled);
+				rq->cpu, rt_time_pre, rt_rq->rt_time, rt_rq->rt_throttled);
 			printk_deferred("sched: rt_runtime=[%llu]\n",
 				rt_rq->rt_runtime);
 		}
@@ -1077,10 +1077,10 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		if (likely(rt_b->rt_runtime)) {
 			rt_rq->rt_throttled = 1;
 			/* sched:print throttle every time*/
-			printk_deferred("sched: RT throttling activated cpu=%d\n", cpu);
+			printk_deferred("sched: RT throttling activated\n");
+#ifdef CONFIG_RT_GROUP_SCHED
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
-#ifdef CONFIG_RT_GROUP_SCHED
 			per_cpu(rt_throttling_start, cpu) = rq_clock_task(rt_rq->rq);
 #endif
 #ifdef CONFIG_MTPROF
