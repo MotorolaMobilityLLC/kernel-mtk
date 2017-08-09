@@ -256,7 +256,7 @@ ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
 	a &= 0xFF;
 	get_random_bytes(&b, sizeof(s32));
 	b &= 0xFF;
-	ret = trusty_std_call32(dev, SMC_SC_ADD, a, b, 0);
+	ret = trusty_std_call32(dev, MT_SMC_SC_ADD, a, b, 0);
 	return scnprintf(buf, PAGE_SIZE, "%d + %d = %d\n", a, b, ret);
 }
 
@@ -266,7 +266,7 @@ ssize_t trusty_smc_fc_dump_threads(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	/* Dump Trusty threads info to memlog */
-	trusty_fast_call32(dev, SMC_FC_DUMP_THREADS, 0, 0, 0);
+	trusty_fast_call32(dev, MT_SMC_FC_DUMP_THREADS, 0, 0, 0);
 	/* Dump threads info from memlog to kmsg*/
 	trusty_std_call32(dev, SMC_SC_NOP, 0, 0, 0);
 	return 0;

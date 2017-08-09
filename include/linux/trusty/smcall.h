@@ -52,7 +52,9 @@
 #define	SMC_ENTITY_TRUSTED_APP		48	/* Trusted Application calls */
 #define	SMC_ENTITY_TRUSTED_OS		50	/* Trusted OS calls */
 #define	SMC_ENTITY_LOGGING		51	/* Used for secure -> nonsecure logging */
+#define	SMC_ENTITY_MT_TRUSTED_OS	59	/* MTK Trusted OS calls */
 #define	SMC_ENTITY_SECURE_MONITOR	60	/* Trusted OS calls internal to secure monitor */
+
 
 /* FC = Fast call, SC = Standard call */
 #define SMC_SC_RESTART_LAST	SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0)
@@ -133,8 +135,8 @@
 
 /* Debugging only */
 #ifdef CONFIG_MT_TRUSTY_DEBUGFS
-#define SMC_SC_ADD			SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0xFFF0)
-#define SMC_FC_DUMP_THREADS SMC_FASTCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0xFFF0)
+#define MT_SMC_SC_ADD			SMC_STDCALL_NR(SMC_ENTITY_MT_TRUSTED_OS, 0xFF00)
 #endif
+#define MT_SMC_FC_DUMP_THREADS SMC_FASTCALL_NR(SMC_ENTITY_MT_TRUSTED_OS, 0xFF00)
 
 #endif /* __LINUX_TRUSTY_SMCALL_H */

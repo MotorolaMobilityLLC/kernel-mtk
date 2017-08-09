@@ -27,6 +27,8 @@
 #include <linux/virtio_ids.h>
 #include <linux/virtio_config.h>
 
+#include <linux/trusty/smcall.h>
+#include <linux/trusty/trusty.h>
 #include <linux/trusty/trusty_ipc.h>
 
 #define MAX_DEVICES			4
@@ -895,6 +897,13 @@ static long tipc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case TIPC_IOC_CONNECT:
 		ret = dn_connect_ioctl(dn, (char __user *)arg);
+		if (ret) {
+			pr_err("%s: TIPC_IOC_CONNECT error (%d)!\n", __func__, ret);
+			trusty_fast_call32(dn->chan->vds->vdev->dev.parent->parent,
+					MT_SMC_FC_DUMP_THREADS, 0, 0, 0);
+			trusty_std_call32(dn->chan->vds->vdev->dev.parent->parent,
+					SMC_SC_NOP, 0, 0, 0);
+		}
 		break;
 	default:
 		pr_warn("%s: Unhandled ioctl cmd: 0x%x\n",

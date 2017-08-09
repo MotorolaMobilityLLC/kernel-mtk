@@ -21,7 +21,7 @@
 #include <asm/page.h>
 #include "trusty-log.h"
 
-#define TRUSTY_LOG_SIZE (PAGE_SIZE * 2)
+#define TRUSTY_LOG_SIZE (PAGE_SIZE * 32)
 #define TRUSTY_LINE_BUFFER_SIZE 256
 
 struct trusty_log_state {
