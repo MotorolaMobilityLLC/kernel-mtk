@@ -2016,7 +2016,11 @@ static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 	else
 		freq = freq * 1000;
 
-	cpufreq_ver("@%s: freq = %d, pcw = 0x%x, posdiv = 0x%x, ckdiv1 = 0x%x\n",
+	if (do_dvfs_stress_test)
+		cpufreq_dbg("@%s: cur_khz = %d, pcw = 0x%x, posdiv = 0x%x, ckdiv1_val = 0x%x\n",
+			__func__, freq, pcw, posdiv, ckdiv1);
+	else
+		cpufreq_ver("@%s: cur_khz = %d, pcw = 0x%x, posdiv = 0x%x, ckdiv1_val = 0x%x\n",
 		__func__, freq, pcw, posdiv, ckdiv1);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
@@ -2043,11 +2047,11 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 	cur_khz = _cpu_freq_calc(con1, ckdiv1);
 
 	if (do_dvfs_stress_test)
-		cpufreq_dbg("@%s: cur_khz = %d, con1 = 0x%x, ckdiv1_val = 0x%x\n", __func__, cur_khz, con1,
-				ckdiv1);
+		cpufreq_dbg("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
+			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
 	else
-		cpufreq_ver("@%s: cur_khz = %d, con1 = 0x%x, ckdiv1_val = 0x%x\n", __func__, cur_khz, con1,
-				ckdiv1);
+		cpufreq_ver("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
+			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -2302,8 +2306,9 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
-	cpufreq_ver("%s: cur_khz = %d, target_khz = %d\n",
-		__func__, cur_khz, target_khz);
+	if (do_dvfs_stress_test)
+		cpufreq_dbg("%s: %s: cur_khz = %d, target_khz = %d\n",
+			__func__, cpu_dvfs_get_name(p), cur_khz, target_khz);
 
 	/* CUR_OPP_IDX */
 	opp_tbl_m[CUR_OPP_IDX].p = p;
@@ -3027,9 +3032,8 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 			unsigned int freq = p->ops->get_cur_phy_freq(p);
 
 			if (volt < target_volt || freq != target_khz) {
-				cpufreq_err("volt = %u, target_volt = %u, freq = %u(0x%x), target_khz = %u(0x%x)\n",
-					    volt, target_volt, freq, opp_tbl_m[CUR_OPP_IDX].slot->vco_dds,
-						target_khz, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds);
+				cpufreq_err("volt = %u, target_volt = %u, freq = %u, target_khz = %u\n",
+					volt, target_volt, freq, target_khz);
 				dump_opp_table(p);
 				BUG();
 			}
