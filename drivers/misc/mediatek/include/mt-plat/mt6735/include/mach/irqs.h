@@ -8,7 +8,11 @@
 #define MT_NR_PPI               (5)
 #define MT_NR_SPI               (256)
 #define NR_MT_IRQ_LINE          (GIC_PPI_OFFSET + MT_NR_PPI + MT_NR_SPI)
+
+#ifdef NR_IRQS
+#undef NR_IRQS
 #define NR_IRQS			(NR_MT_IRQ_LINE+220)
+#endif
 
 #define GIC_PPI_GLOBAL_TIMER    (GIC_PPI_OFFSET + 0)
 #define GIC_PPI_LEGACY_FIQ      (GIC_PPI_OFFSET + 1)

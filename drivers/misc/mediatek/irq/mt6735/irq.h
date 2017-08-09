@@ -15,26 +15,6 @@
 #define MT_POLARITY_HIGH  1
 
 #if !defined(__ASSEMBLY__)
-
-enum {
-	IRQ_MASK_HEADER = 0xF1F1F1F1,
-	IRQ_MASK_FOOTER = 0xF2F2F2F2
-};
-
-struct mtk_irq_mask {
-	unsigned int header;	/* for error checking */
-	__u32 mask0;
-	__u32 mask1;
-	__u32 mask2;
-	__u32 mask3;
-	__u32 mask4;
-	__u32 mask5;
-	__u32 mask6;
-	__u32 mask7;
-	__u32 mask8;
-	unsigned int footer;	/* for error checking */
-};
-
 typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
 
 #endif				/* !__ASSEMBLY__ */

@@ -70,4 +70,4 @@ source "drivers/misc/mediatek/sync/Kconfig"
 
 source "drivers/misc/mediatek/gud/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
-
+source "drivers/misc/mediatek/cirq/Kconfig"
