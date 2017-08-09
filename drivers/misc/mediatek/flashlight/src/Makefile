@@ -16,7 +16,11 @@ CUSTOM_KERNEL_FLAGS := $(addprefix -D, $(shell echo \
 subdir-ccflags-y += $(CUSTOM_KERNEL_FLAGS)
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/flashlight/src/$(MTK_PLATFORM)),)
+ifeq ($(MTK_PLATFORM),mt8163)
+obj-y += ../dummy_flashlight/
+else
 obj-y += $(MTK_PLATFORM)/
+endif
 else
 obj-y += ../dummy_flashlight/
 endif
