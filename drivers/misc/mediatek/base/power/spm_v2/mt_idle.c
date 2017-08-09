@@ -346,7 +346,10 @@ static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
-static u32		sodi3_flags;
+static u32				sodi3_flags;
+#ifdef SPM_SODI3_PROFILE_TIME
+unsigned int			soidle3_profile[4];
+#endif
 /* SODI */
 static unsigned int     soidle_block_mask[NR_GRPS] = {0x0};
 static unsigned int     soidle_timer_left;
@@ -361,7 +364,11 @@ static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 static bool             soidle_by_pass_en;
-static u32		sodi_flags;
+static u32				sodi_flags;
+#ifdef SPM_SODI_PROFILE_TIME
+unsigned int			soidle_profile[4];
+#endif
+
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
 static unsigned int     dpidle_timer_left;
@@ -486,101 +493,6 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_UPDATE,  1U << 18);
 }
 
-#define APMIXEDSYS(offset)	(apmixed_base_in_idle + offset)
-
-#if defined(CONFIG_ARCH_MT6755)
-#define ARMCA15PLL_BASE				APMIXEDSYS(0x200)
-#define ARMCA15PLL_CON0				APMIXEDSYS(0x0200)
-#define ARMCA7PLL_CON0				APMIXEDSYS(0x0210)
-#define MAINPLL_CON0				APMIXEDSYS(0x0220)
-#define UNIVPLL_CON0				APMIXEDSYS(0x0230)
-#define MMPLL_CON0					APMIXEDSYS(0x0240)
-#define MSDCPLL_CON0				APMIXEDSYS(0x0250)
-#define VENCPLL_CON0				APMIXEDSYS(0x0260)
-#define TVDPLL_CON0					APMIXEDSYS(0x0270)
-#define APLL1_CON0					APMIXEDSYS(0x02a0)
-#define APLL2_CON0					APMIXEDSYS(0x02b4)
-
-#define clk_readl(addr)		DRV_Reg32(addr)
-
-char pll_name[NR_PLLS][10] = {
-	"UNIVPLL",
-	"MMPLL",
-	"MSDCPLL",
-	"VENCPLL",
-};
-
-const char *pll_grp_get_name(int id)
-{
-	return pll_name[id];
-}
-
-int is_pll_on(int id)
-{
-	return clk_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
-}
-
-#elif defined(CONFIG_ARCH_MT6797)
-
-#define MAINPLL_CON0	APMIXEDSYS(0x0220)
-#define UNIVPLL_CON0	APMIXEDSYS(0x0230)
-#define MFGPLL_CON0		APMIXEDSYS(0x0240)
-#define MSDCPLL_CON0	APMIXEDSYS(0x0250)
-#define IMGPLL_CON0		APMIXEDSYS(0x0260)
-#define TVDPLL_CON0		APMIXEDSYS(0x0270)
-#define MPLL_CON0		APMIXEDSYS(0x0280)
-#define CODECPLL_CON0	APMIXEDSYS(0x0290)
-#define APLL1_CON0		APMIXEDSYS(0x02a0)
-#define APLL2_CON0		APMIXEDSYS(0x02b4)
-#define MDPLL1_CON0		APMIXEDSYS(0x02c8)
-#define VDECPLL_CON0	APMIXEDSYS(0x02e4)
-
-#define clk_readl(addr)		DRV_Reg32(addr)
-
-struct{
-	const unsigned int offset;
-	const char name[10];
-} pll_info[NR_PLLS] = {
-	{0x230, "UNIVPLL"},
-	{0x240, "MFGPLL"},
-	{0x250, "MSDCPLL"},
-	{0x260, "IMGPLL"},
-	{0x270, "TVDPLL"},
-	{0x280, "MPLL"},
-	{0x290, "CODECPLL"},
-	{0x2c8, "MDPLL"},
-	{0x2e4, "VENCPLL"},
-};
-
-const char *pll_grp_get_name(int id)
-{
-	return pll_info[id].name;
-}
-
-int is_pll_on(int id)
-{
-	return clk_readl(APMIXEDSYS(pll_info[id].offset)) & 0x1;
-}
-#endif
-
-
-bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
-{
-	int i, j;
-	unsigned int pll_mask;
-
-	for (i = 0; i < NR_PLLS; i++) {
-		pll_mask = is_pll_on(i) & condition_mask[i];
-		if (pll_mask) {
-			for (j = 0; j < NR_PLLS; j++)
-				block_mask[j] = is_pll_on(j) & condition_mask[j];
-
-			return false;
-		}
-	}
-
-	return true;
-}
 
 bool soidle3_can_enter(int cpu)
 {
@@ -641,7 +553,6 @@ bool soidle3_can_enter(int cpu)
 	}
 
 	if (soidle3_by_pass_pll == 0) {
-		memset(soidle3_pll_block_mask, 0, NR_PLLS * sizeof(unsigned int));
 		if (!pll_check_idle_can_enter(soidle3_pll_condition_mask, soidle3_pll_block_mask)) {
 			reason = BY_PLL;
 			goto out;
@@ -1733,10 +1644,6 @@ static inline int dpidle_select_handler(int cpu)
 	return ret;
 }
 
-#ifdef SPM_SODI3_PROFILE_TIME
-unsigned int soidle3_profile[4];
-#endif
-
 static inline int soidle3_select_handler(int cpu)
 {
 	int ret = 0;
@@ -1751,10 +1658,6 @@ static inline int soidle3_select_handler(int cpu)
 
 	return ret;
 }
-
-#ifdef SPM_SODI_PROFILE_TIME
-unsigned int soidle_profile[4];
-#endif
 
 static inline int soidle_select_handler(int cpu)
 {

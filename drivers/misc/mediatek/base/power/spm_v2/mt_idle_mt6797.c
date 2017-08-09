@@ -289,6 +289,49 @@ bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask)
 	return true;
 }
 
+struct{
+	const unsigned int offset;
+	const char name[10];
+} pll_info[NR_PLLS] = {
+	{0x230, "UNIVPLL"},
+	{0x240, "MFGPLL"},
+	{0x250, "MSDCPLL"},
+	{0x260, "IMGPLL"},
+	{0x270, "TVDPLL"},
+	{0x280, "MPLL"},
+	{0x290, "CODECPLL"},
+	{0x2c8, "MDPLL"},
+	{0x2e4, "VENCPLL"},
+};
+
+const char *pll_grp_get_name(int id)
+{
+	return pll_info[id].name;
+}
+
+int is_pll_on(int id)
+{
+	return idle_pll_readl(APMIXEDSYS(pll_info[id].offset)) & 0x1;
+}
+
+bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
+{
+	int i, j;
+
+	memset(block_mask, 0, NR_PLLS * sizeof(unsigned int));
+
+	for (i = 0; i < NR_PLLS; i++) {
+		if (condition_mask[i] && is_pll_on(i)) {
+			for (j = i; j < NR_PLLS; j++)
+				block_mask[j] = is_pll_on(j) & condition_mask[j];
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static int __init get_base_from_node(
 	const char *cmp, void __iomem **pbase, int idx)
 {

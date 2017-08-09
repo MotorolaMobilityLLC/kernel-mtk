@@ -53,6 +53,13 @@ bool spm_get_sodi_en(void);
 void spm_sodi_mempll_pwr_mode(bool pwr_mode);
 bool spm_get_sodi_mempll(void);
 
+enum mt_sodi_flag {
+	SODI_FLAG_V3          = (1 << 0),
+	SODI_FLAG_RESIDENCY   = (1 << 1),
+	SODI_FLAG_REDUCE_LOG  = (1 << 2),
+	SODI_FLAG_DUMP_REG    = (1 << 3),
+};
+
 /*
  * for Multi Core Deep Idle
  */

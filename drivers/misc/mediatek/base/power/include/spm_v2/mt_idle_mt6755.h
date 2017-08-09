@@ -44,6 +44,8 @@ extern void __iomem  *apmixed_base_in_idle;
 #define VDECSYS_REG(ofs)    (vdecsys_base + ofs)
 #define VENCSYS_REG(ofs)    (vencsys_base + ofs)
 
+#define APMIXEDSYS(ofs)	    (apmixed_base_in_idle + ofs)
+
 #ifdef SPM_PWR_STATUS
 #undef SPM_PWR_STATUS
 #endif
@@ -74,6 +76,18 @@ extern void __iomem  *apmixed_base_in_idle;
 
 #define	CLK_CFG_UPDATE          TOPCKSYS_REG(0x004)
 #define CLK_CFG_4               TOPCKSYS_REG(0x080)
+
+#define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
+#define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)
+#define ARMCA7PLL_CON0		APMIXEDSYS(0x0210)
+#define MAINPLL_CON0		APMIXEDSYS(0x0220)
+#define UNIVPLL_CON0		APMIXEDSYS(0x0230)
+#define MMPLL_CON0			APMIXEDSYS(0x0240)
+#define MSDCPLL_CON0		APMIXEDSYS(0x0250)
+#define VENCPLL_CON0		APMIXEDSYS(0x0260)
+#define TVDPLL_CON0			APMIXEDSYS(0x0270)
+#define APLL1_CON0			APMIXEDSYS(0x02a0)
+#define APLL2_CON0			APMIXEDSYS(0x02b4)
 
 #define MFG_CG_CON          MFGSYS_REG(0x0)
 #define IMG_CG_CON          IMGSYS_REG(0x0)

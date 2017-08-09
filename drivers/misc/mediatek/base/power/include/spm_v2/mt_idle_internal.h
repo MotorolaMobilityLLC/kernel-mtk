@@ -49,8 +49,9 @@ enum {
 	NR_REASONS,
 };
 
-#define INVALID_GRP_ID(grp) (grp < 0 || grp >= NR_GRPS)
-#define idle_readl(addr)	DRV_Reg32(addr)
+#define INVALID_GRP_ID(grp)     (grp < 0 || grp >= NR_GRPS)
+#define idle_readl(addr)	    DRV_Reg32(addr)
+#define idle_pll_readl(addr)	DRV_Reg32(addr)
 
 extern unsigned int dpidle_blocking_stat[NR_GRPS][32];
 extern int idle_switch[NR_TYPES];
@@ -69,6 +70,8 @@ const char *cg_grp_get_name(int id);
 bool cg_check_idle_can_enter(
 	unsigned int *condition_mask, unsigned int *block_mask, enum mt_idle_mode mode);
 bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask);
+bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask);
+const char *pll_grp_get_name(int id);
 void __init iomap_init(void);
 
 #endif /* __MT_IDLE_INTERNAL_H__ */

@@ -22,13 +22,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_io.h>
 
-#include <mt_spm_idle.h>
-#include <mt_cpuidle.h>
-#include <mt_spm_misc.h>
-
-#include "mt_spm_internal.h"
-#include "mt_spm_pmic_wrap.h"
-
+#include <mt_spm_sodi.h>
 
 
 /**************************************
@@ -87,10 +81,6 @@
 #error "Does not support!"
 #endif
 
-#define WAKE_SRC_FOR_MD32  0
-
-#define reg_read(addr)         __raw_readl(IOMEM(addr))
-#define reg_write(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
 
 #if defined(CONFIG_OF)
 #define MCUCFG_NODE "mediatek,MCUCFG"
@@ -124,41 +114,6 @@ static unsigned long m4u_phys_base;
 #define MMU_SMI_ASYNC_CFG	(M4U_BASE + 0xB80)
 #define MMU_SMI_ASYNC_CFG_PHYS	(m4u_phys_base + 0xB80)
 #define SMI_COMMON_ASYNC_DCM	(0x3 << 14)
-
-#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-#include <mach/mt_secure_api.h>
-#define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
-#else
-#define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
-#endif
-
-#if SPM_AEE_RR_REC
-enum spm_sodi3_step {
-	SPM_SODI3_ENTER = 0,
-	SPM_SODI3_ENTER_UART_SLEEP,
-	SPM_SODI3_ENTER_SPM_FLOW,
-	SPM_SODI3_B3,
-	SPM_SODI3_B4,
-	SPM_SODI3_B5,
-	SPM_SODI3_B6,
-	SPM_SODI3_ENTER_WFI,
-	SPM_SODI3_LEAVE_WFI,
-	SPM_SODI3_LEAVE_SPM_FLOW,
-	SPM_SODI3_ENTER_UART_AWAKE,
-	SPM_SODI3_LEAVE,
-};
-
-void __attribute__((weak)) aee_rr_rec_sodi3_val(u32 val)
-{
-	aee_rr_rec_sodi_val(val);
-}
-
-u32 __attribute__((weak)) aee_rr_curr_sodi3_val(void)
-{
-	return aee_rr_curr_sodi_val();
-}
-
-#endif
 
 static struct pwr_ctrl sodi3_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI3,
@@ -399,9 +354,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	}
 	pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].desc);
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(1 << SPM_SODI3_ENTER);
-#endif
+	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
 	if (spm_get_sodi_mempll() == 1)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE;	/* CG mode */
@@ -429,17 +382,14 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_ENTER_UART_SLEEP));
-#endif
+	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_ENTER_SPM_FLOW));
-#endif
+
+	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
 
 	__spm_reset_and_init_pcm(pcmdesc);
 
@@ -486,11 +436,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_kick_pcm_to_run(pwrctrl);
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_ENTER_WFI) |
+	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 				(1 << SPM_SODI3_B3) | (1 << SPM_SODI3_B4) |
 				(1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
-#endif
 
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
@@ -502,9 +450,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[2]);
 #endif
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_LEAVE_WFI));
-#endif
+	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 
 	spm_sodi3_post_process();
 
@@ -515,11 +461,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_clean_after_wakeup();
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_ENTER_UART_AWAKE));
-#endif
+	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
 	request_uart_to_wakeup();
+
 
 #if REDUCE_SODI3_LOG == 0
 	sodi3_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
@@ -532,7 +477,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 				wakesta.assert_pc, pcmdesc->version, wakesta.r13, wakesta.debug_flag);
 	}
 #else
-	if (!(sodi_flags & (1 << 1))) {
+	if (!(sodi_flags & SODI_FLAG_RESIDENCY)) {
 		sodi3_logout_curr_time = idle_get_current_time_ms();
 
 		if (wakesta.assert_pc != 0) {
@@ -632,9 +577,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	}
 #endif
 
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(aee_rr_curr_sodi3_val() | (1 << SPM_SODI3_LEAVE_SPM_FLOW));
-#endif
+	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
 
 RESTORE_IRQ:
 	mt_cirq_flush();
@@ -650,10 +593,8 @@ RESTORE_IRQ:
 	if (!wd_ret)
 		wd_api->wd_resume_notify();
 #endif
-#if SPM_AEE_RR_REC
-	aee_rr_rec_sodi3_val(0);
-#endif
 
+	spm_sodi3_reset_footprint();
 	return wr;
 }
 
@@ -666,13 +607,6 @@ bool spm_get_sodi3_en(void)
 {
 	return gSpm_sodi3_en;
 }
-
-#if SPM_AEE_RR_REC
-static void spm_sodi3_aee_init(void)
-{
-	aee_rr_rec_sodi3_val(0);
-}
-#endif
 
 void spm_sodi3_init(void)
 {
@@ -725,9 +659,7 @@ m4u_exit:
 	sodi3_debug("spm_sodi3_init\n");
 #endif
 
-#if SPM_AEE_RR_REC
 	spm_sodi3_aee_init();
-#endif
 }
 
 MODULE_DESCRIPTION("SPM-SODI3 Driver v0.1");
