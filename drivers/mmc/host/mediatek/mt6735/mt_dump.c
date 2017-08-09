@@ -2596,7 +2596,8 @@ int get_emmc_dump_status(void)
 	return partition_ready_flag;
 }
 
-static int __init get_emmc_dump_info(void)
+
+static void get_emmc_dump_info(struct delayed_work *work)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 
@@ -2606,6 +2607,7 @@ static int __init get_emmc_dump_info(void)
 		lp_nr_sects = lp_hd_struct->nr_sects;
 		put_part(lp_hd_struct);
 		partition_ready_flag = 1;
+		pr_err("get expdb info\n");
 	} else {
 		lp_start_sect = (sector_t) (-1);
 		lp_nr_sects = (sector_t) (-1);
@@ -2614,9 +2616,16 @@ static int __init get_emmc_dump_info(void)
 	}
 
 	partition_ready_flag = 1;
+}
+
+static struct delayed_work get_dump_info;
+static int __init init_get_dump_work(void)
+{
+	INIT_DELAYED_WORK(&get_dump_info, get_emmc_dump_info);
+	schedule_delayed_work(&get_dump_info, 100);
 	return 0;
 }
 
-late_initcall_sync(get_emmc_dump_info);
+late_initcall_sync(init_get_dump_work);
 #endif
 #endif

@@ -3455,7 +3455,7 @@ int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	return err;
 }
 
-int msdc_get_cache_region(void)
+int get_emmc_cache_info(struct delayed_work *work)
 {
 #ifdef MTK_MSDC_USE_CACHE
 	struct msdc_host *host;
@@ -3484,7 +3484,7 @@ int msdc_get_cache_region(void)
 	} else {
 		g_usrdata_part_start = (sector_t) (-1);
 		g_usrdata_part_end = (sector_t) (-1);
-		pr_debug("There is no userdata info\n");
+		pr_err("There is no userdata info\n");
 	}
 
 	pr_debug("msdc0:cache(0x%lld~0x%lld), usrdata(0x%lld~0x%lld)\n",
@@ -3495,6 +3495,14 @@ int msdc_get_cache_region(void)
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
 #endif
+
+static struct delayed_work get_cache_info;
+static int __init init_get_cache_work(void)
+{
+	INIT_DELAYED_WORK(&get_cache_info, get_emmc_cache_info);
+	schedule_delayed_work(&get_cache_info, 100);
+	return 0;
+}
 
 /*--------------------------------------------------------------------------*/
 /* mmc_host_ops members                                                     */
@@ -9467,7 +9475,7 @@ static void __exit mt_msdc_exit(void)
 module_init(mt_msdc_init);
 module_exit(mt_msdc_exit);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
-late_initcall_sync(msdc_get_cache_region);
+late_initcall_sync(init_get_cache_work);
 #endif
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek SD/MMC Card Driver");
