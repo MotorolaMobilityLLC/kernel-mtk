@@ -1379,15 +1379,14 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		r = wait_complete_us(cspm_curr_freq(hwsta_reg[cluster]) == 0 &&
 				     cspm_is_paused(swctrl_reg[cluster]), 10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
-
-		if (r >= 0) {
-			swctrl = cspm_read(swctrl_reg[cluster]) & ~SW_F_DES_MASK;
-			cspm_write(swctrl_reg[cluster], swctrl);	/* SW_F_DES = 0 */
-			csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
-		}
 	}
 
-	if (r < 0) {
+	if (r >= 0) {
+		/* sync SW_F_DES with F_CURR to avoid DVFS at cluster on */
+		swctrl = cspm_read(swctrl_reg[cluster]) & ~SW_F_DES_MASK;
+		cspm_write(swctrl_reg[cluster], swctrl | SW_F_DES(cspm_curr_freq(hwsta_reg[cluster])));
+		csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
+	} else {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
 		BUG();
 	}
