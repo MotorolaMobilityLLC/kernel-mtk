@@ -96,6 +96,20 @@ struct mtk_composite {
 		.flags = CLK_SET_RATE_PARENT,				\
 	}
 
+#define MUX_GATE_FLAGS(_id, _name, _parents, _reg, _shift, _width, _gate, _flags) {	\
+		.id = _id,						\
+		.name = _name,						\
+		.mux_reg = _reg,					\
+		.mux_shift = _shift,					\
+		.mux_width = _width,					\
+		.gate_reg = _reg,					\
+		.gate_shift = _gate,					\
+		.divider_shift = -1,					\
+		.parent_names = _parents,				\
+		.num_parents = ARRAY_SIZE(_parents),			\
+		.flags = _flags,				\
+	}
+
 #define MUX(_id, _name, _parents, _reg, _shift, _width) {		\
 		.id = _id,						\
 		.name = _name,						\
@@ -181,6 +195,9 @@ void mtk_clk_register_plls(struct device_node *node,
 
 struct clk *mtk_clk_register_ref2usb_tx(const char *name,
 			const char *parent_name, void __iomem *reg);
+
+struct clk *mtk_clk_register_hdmi_pll_mt2701(struct device_node *node,
+			void __iomem *reg, const char *name, const char *parent);
 
 #ifdef CONFIG_RESET_CONTROLLER
 void mtk_register_reset_controller(struct device_node *np,
