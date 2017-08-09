@@ -239,7 +239,7 @@ static int da9212_regulator_init(struct da9212 *chip)
 	}
 
 	for (i = 0; i < chip->num_regulator; i++) {
-		if (chip->pdata)
+		if (chip->pdata->init_data[i])
 			config.init_data = chip->pdata->init_data[i];
 		config.ena_gpio = 0; /* initialize */
 		if (chip->pdata->gpio_en[i]) {
@@ -368,13 +368,17 @@ static ssize_t store_da9212_access(struct device *dev,
 				   struct device_attribute *attr, const char *buf, size_t size)
 {
 	int ret = 0;
-	char *pvalue = NULL;
+	char *pvalue;
+	char temp_buf[32];
 	unsigned long reg_value = 0;
 	unsigned long reg_address = 0;
 	struct da9212 *chip = dev_get_drvdata(dev);
 
-	strcpy(pvalue, buf);
-	if (buf != NULL && size != 0) {
+	strncpy(temp_buf, buf, sizeof(temp_buf));
+	temp_buf[sizeof(temp_buf) - 1] = 0;
+	pvalue = temp_buf;
+
+	if (size != 0) {
 		if (size > 4) {
 			ret = kstrtoul(strsep(&pvalue, " "), 16, &reg_address);
 			if (ret)
@@ -382,7 +386,6 @@ static ssize_t store_da9212_access(struct device *dev,
 			ret = kstrtoul(pvalue, 16, &reg_value);
 			if (ret)
 				return ret;
-
 			ret = regmap_update_bits(chip->regmap, reg_address, 0xff, reg_value);
 			if (ret < 0)
 				dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
@@ -393,7 +396,7 @@ static ssize_t store_da9212_access(struct device *dev,
 			if (ret < 0)
 				dev_err(chip->dev, "Failed to update PAGE reg: %d\n", ret);
 		} else {
-			ret = kstrtoul(pvalue, 16, &reg_value);
+			ret = kstrtoul(pvalue, 16, &reg_address);
 			if (ret)
 				return ret;
 
