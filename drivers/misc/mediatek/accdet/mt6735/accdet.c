@@ -1,4 +1,5 @@
 #include "accdet.h"
+#include "ts3a225e.h"
 #ifdef CONFIG_ACCDET_EINT
 #include <linux/gpio.h>
 #endif
@@ -40,7 +41,7 @@ static int cable_type;
 static int cable_pin_recognition;
 static int show_icon_delay;
 #endif
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
+#if defined(CONFIG_TS3A225E_ACCDET)
 #define TS3A225E_CONNECTOR_NONE				0
 #define TS3A225E_CONNECTOR_TRS				1
 #define TS3A225E_CONNECTOR_TRRS_STANDARD	2
@@ -399,7 +400,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		ACCDET_DEBUG("[Accdet] FSA8049 enable!\n");
 		msleep(250);	/*PIN swap need ms */
 #endif
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
+#if defined(CONFIG_TS3A225E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A225E enable!\n");
 		ts3a225e_write_byte(0x04, 0x01);
 		msleep(500);
@@ -458,7 +459,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		accdet_FSA8049_disable();	/*disable GPIOxxx for PIN swap*/
 		ACCDET_DEBUG("[Accdet] FSA8049 disable!\n");
 #endif
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
+#if defined(CONFIG_TS3A225E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A225E disable!\n");
 		ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 #endif
@@ -563,7 +564,8 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	}
 	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
 
-	node = of_find_matching_node(node, accdet_of_match);
+	/*node = of_find_matching_node(node, accdet_of_match);*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek, ACCDET-eint");
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
@@ -1259,7 +1261,7 @@ static int dump_register(void)
 	return 0;
 }
 
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
+#if defined(CONFIG_TS3A225E_ACCDET)
 static ssize_t show_TS3A225EConnectorType(struct device_driver *ddri, char *buf)
 {
 	ACCDET_DEBUG("[Accdet] TS3A225E ts3a225e_connector_type=%d\n", ts3a225e_connector_type);
@@ -1410,7 +1412,7 @@ static struct driver_attribute *accdet_attr_list[] = {
 	/*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
 	/*#endif*/
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
+#if defined(CONFIG_TS3A225E_ACCDET)
 	&driver_attr_TS3A225EConnectorType,
 #endif
 };

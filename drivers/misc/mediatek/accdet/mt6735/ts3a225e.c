@@ -43,7 +43,7 @@
 
 static struct i2c_client *ts3a225e_i2c_client;
 static const struct i2c_device_id ts3a225e_i2c_id[] = { {"TS3A225E", 0}, {} };
-static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO("TS3A225E", (0X76 >> 1)) };
+/*static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO("TS3A225E", (0X76 >> 1)) };*/
 
 static int ts3a225e_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -82,6 +82,11 @@ static int ts3a225e_i2c_resume(struct i2c_client *client)
 	return 0;
 }
 
+static const struct of_device_id ts3a225e_of_match[] = {
+	{.compatible = "mediatek,ts3a225e"},
+	{},
+};
+
 static struct i2c_driver ts3a225e_i2c_driver = {
 	.probe = ts3a225e_i2c_probe,
 	.remove = ts3a225e_i2c_remove,
@@ -90,6 +95,7 @@ static struct i2c_driver ts3a225e_i2c_driver = {
 	.id_table = ts3a225e_i2c_id,
 	.driver = {
 		   .name = TS3A225E_DEV_NAME,
+		   .of_match_table = ts3a225e_of_match,
 		   },
 };
 
@@ -197,7 +203,7 @@ static int __init ts3a225e_init(void)
 {
 	pr_warn("ts3a225e_init\n");
 
-	i2c_register_board_info(3, &i2c_TS3A225E, 1);
+	/*i2c_register_board_info(3, &i2c_TS3A225E, 1);*/
 
 	if (platform_driver_register(&ts3a225e_audio_switch_driver)) {
 		pr_err("ts3a225e failed to register driver");
