@@ -217,4 +217,15 @@ config GTP_DEBUG_FUNC_ON
 
 	To compile this dirver as a module, choose M here: the
 	module will be called.
+
+config GTP_POWER_CTRL_SLEEP
+	bool "GT1151 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT1151 touch panel GTP_POWER_CTRL_SLEEP.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
 endif
