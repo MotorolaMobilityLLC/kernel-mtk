@@ -8,17 +8,19 @@
  *
  ******************************************************************************/
 
+/*#include <mach/mt_reg_base.h>
+#include <mach/mt_pmic_wrap.h>*/
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
 #include <mt_gpio_ext.h>
 
-/* #define MAX_GPIO_REG_BITS      16 */
-/* #define MAX_GPIO_MODE_PER_REG  5 */
-/* #define GPIO_MODE_BITS         3 */
-#define GPIOEXT_BASE        (0x0)	/* PMIC GPIO base. */
+/*#define MAX_GPIO_REG_BITS      16*/
+/*#define MAX_GPIO_MODE_PER_REG  5*/
+/*#define GPIO_MODE_BITS         3*/
+#define GPIOEXT_BASE        (0x0)	/*PMIC GPIO base. */
 
-/* static GPIOEXT_REGS *gpioext_reg = (GPIOEXT_REGS*)(GPIOEXT_BASE); */
-/* set extend GPIO */
+/*static GPIOEXT_REGS *gpioext_reg = (GPIOEXT_REGS*)(GPIOEXT_BASE);*/
+/*set extend GPIO*/
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_dir_ext(unsigned long pin, unsigned long dir)
 {

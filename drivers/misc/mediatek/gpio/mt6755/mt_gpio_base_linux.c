@@ -39,13 +39,12 @@ static int mtk_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 
 static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 {
-	int status = mt_get_gpio_dir_base(offset);
-
-	if (status == 0)
+	/*int status = mt_get_gpio_dir_base(offset);*/
+	/*if (status == 0)*/
 		return mt_get_gpio_in_base(offset);
-	else if (status == 1)
-		return mt_get_gpio_out_base(offset);
-	return 1;
+	/*else if (status == 1)*/
+	/*	return mt_get_gpio_out_base(offset);*/
+	/*return 1;*/
 }
 
 static int mtk_gpio_direction_output(struct gpio_chip *chip, unsigned offset, int value)
@@ -66,7 +65,7 @@ static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset, unsigned debounce)
 {
-	/*mt_eint_set_hw_debounce(offset, debounce);*/
+	/*mt_eint_set_hw_debounce(offset, debounce >> 10);*/
 	return 0;
 }
 

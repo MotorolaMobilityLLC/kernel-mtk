@@ -4,42 +4,40 @@
 #include "mt-plat/sync_write.h"
 #include <mach/gpio_const.h>
 
-#define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, (GPIO_BASE + addr))
-#define GPIO_RD32(addr)         __raw_readl(((GPIO_BASE + addr)))
+#define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, (unsigned long)addr)
+#define GPIO_RD32(addr)         __raw_readl(addr)
 /* #define GPIO_SET_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) = (unsigned long)(BIT)) */
 /* #define GPIO_CLR_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) &= ~((unsigned long)(BIT))) */
-#define GPIO_SW_SET_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) | ((unsigned long)(BIT)))
-#define GPIO_SET_BITS(BIT, REG)   GPIO_WR32(REG, (unsigned long)(BIT))
-#define GPIO_CLR_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) & ~((unsigned long)(BIT)))
+#define GPIO_SW_SET_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) | ((BIT)))
+#define GPIO_SET_BITS(BIT, REG)   GPIO_WR32(REG, (BIT))
+#define GPIO_CLR_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) & ~((BIT)))
 
+
+#define IOCFG_WR32(addr, data)   mt_reg_sync_writel(data, (IOCFG_BASE + (unsigned long)addr))
+#define IOCFG_RD32(addr)         __raw_readl((IOCFG_BASE + (unsigned long)addr))
+#define IOCFG_SW_SET_BITS(BIT, REG)   IOCFG_WR32(REG, IOCFG_RD32(REG) | ((unsigned long)(BIT)))
+#define IOCFG_SET_BITS(BIT, REG)   IOCFG_WR32(REG, (unsigned long)(BIT))
+#define IOCFG_CLR_BITS(BIT, REG)   IOCFG_WR32(REG, IOCFG_RD32(REG) & ~((unsigned long)(BIT)))
 
 /*----------------------------------------------------------------------------*/
 typedef struct {		/*FIXME: check GPIO spec */
 	unsigned int val;
 	unsigned int set;
-	unsigned int clr;
 	unsigned int rst;
+	unsigned int _align1;
 } VAL_REGS;
-
-
 /*----------------------------------------------------------------------------*/
 typedef struct {
-	VAL_REGS dir[7];	/*0x0000 ~ 0x006F: 112 bytes */
-	unsigned char rsv00[144];	/*0x00E0 ~ 0x00FF: 32 bytes */
-	VAL_REGS dout[7];	/*0x0400 ~ 0x04DF: 224 bytes */
-	unsigned char rsv04[144];	/*0x04B0 ~ 0x04FF: 32 bytes */
-	VAL_REGS din[7];	/*0x0500 ~ 0x05DF: 224 bytes */
-	unsigned char rsv05[144];	/*0x05E0 ~ 0x05FF:      32 bytes */
-	VAL_REGS mode[21];	/*0x0600 ~ 0x08AF: 688 bytes */
-
+	VAL_REGS dir[6];	/*0x0000 ~ 0x005F: 96  bytes */
+	u8 rsv00[160];		/*0x0060 ~ 0x00FF: 160 bytes */
+	VAL_REGS dout[6];	/*0x0100 ~ 0x015F: 96  bytes */
+	u8 rsv01[160];		/*0x0160 ~ 0x01FF: 160 bytes */
+	VAL_REGS din[6];	/*0x0200 ~ 0x025F: 96  bytes */
+	u8 rsv02[160];		/*0x0260 ~ 0x02FF: 160 bytes */
+	VAL_REGS mode[19];	/*0x0300 ~ 0x042F: 384 bytes */
 } GPIO_REGS;
+#define MAX_GPIO_PIN MT_GPIO_BASE_MAX
 
-#ifdef CONFIG_ARCH_MT6735M
-/* Denali2 */
-#define MAX_GPIO_PIN (197+1)
-#else
-/* Denali1 & Denali3 */
-#define MAX_GPIO_PIN (203+1)
-
-#endif
+extern struct device_node *get_gpio_np(void);
+extern struct device_node *get_iocfg_np(void);
 #endif				/* _MT_GPIO_BASE_H_ */
