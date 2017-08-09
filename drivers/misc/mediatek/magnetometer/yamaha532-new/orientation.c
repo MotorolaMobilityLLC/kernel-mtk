@@ -623,10 +623,11 @@ int yamaha532_o_probe(struct platform_device *pdev)
 err:
 	if (data != NULL) {
 		if (input_data != NULL) {
-			if (sysfs_created) {
+			/* sysfs_created = 1 after goto err */
+			/* if (sysfs_created) {
 				sysfs_remove_group(&input_data->dev.kobj,
 				&sensor_attribute_group);
-			}
+			} */
 			if (input_registered)
 				input_unregister_device(input_data);
 			else
