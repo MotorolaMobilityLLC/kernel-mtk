@@ -449,9 +449,14 @@ static ssize_t proc_generate_ee_read(struct file *file,
 	if ((*ppos)++)
 		return 0;
 	ptr = kmalloc(TEST_EE_PHY_SIZE, GFP_KERNEL);
-	log = kmalloc(TEST_EE_LOG_SIZE, GFP_KERNEL);
 	if (ptr == NULL) {
 		LOGE("proc_generate_ee_read kmalloc fail\n");
+		return sprintf(buffer, "kmalloc fail\n");
+	}
+	log = kmalloc(TEST_EE_LOG_SIZE, GFP_KERNEL);
+	if (log == NULL) {
+		LOGE("proc_generate_ee_read kmalloc fail\n");
+		kfree(ptr);
 		return sprintf(buffer, "kmalloc fail\n");
 	}
 	for (i = 0; i < TEST_EE_PHY_SIZE; i++)
