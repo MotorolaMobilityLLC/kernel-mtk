@@ -78,6 +78,19 @@ static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
 
+#ifndef CONFIG_MTK_CLKMGR
+static struct clk *clk_MT_CG_DISP0_SMI_COMMON;  /* MM_DISP0_SMI_COMMON */
+static struct clk *clk_MT_CG_VDEC0_VDEC;        /* VDEC0_VDEC */
+static struct clk *clk_MT_CG_VDEC1_LARB;        /* VDEC1_LARB */
+
+static struct clk *clk_MT_CG_VENC_VENC;         /* VENC_VENC */
+static struct clk *clk_MT_CG_VENC_LARB;         /* VENC_LARB */
+
+static struct clk *clk_MT_SCP_SYS_VDE;          /* SCP_SYS_VDE */
+static struct clk *clk_MT_SCP_SYS_VEN;          /* SCP_SYS_VEN */
+static struct clk *clk_MT_SCP_SYS_DIS;          /* SCP_SYS_DIS */
+#endif
+
 static DEFINE_MUTEX(IsOpenedLock);
 static DEFINE_MUTEX(PWRLock);
 static DEFINE_MUTEX(VdecHWLock);
@@ -183,6 +196,8 @@ VAL_ULONG_T KVA_VENC_SW_PAUSE, KVA_VENC_SW_HRST_N;
 
 void vdec_power_on(void)
 {
+	int ret = 0;
+
 	mutex_lock(&VdecPWRLock);
 	gu4VdecPWRCounter++;
 	mutex_unlock(&VdecPWRLock);
@@ -195,6 +210,37 @@ void vdec_power_on(void)
 #ifdef VDEC_USE_L2C
 	/* enable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
 #endif
+#else
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_VDE);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_VDE is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_VDEC0_VDEC);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC0_VDEC is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_VDEC1_LARB);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB is not enabled, ret = %d\n", ret);
+	}
 #endif
 }
 
@@ -213,6 +259,12 @@ void vdec_power_off(void)
 #ifdef VDEC_USE_L2C
 		/* disable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
 #endif
+#else
+		clk_disable_unprepare(clk_MT_CG_VDEC1_LARB);
+		clk_disable_unprepare(clk_MT_CG_VDEC0_VDEC);
+		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
+		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
+		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
 	}
 	mutex_unlock(&VdecPWRLock);
@@ -220,6 +272,8 @@ void vdec_power_off(void)
 
 void venc_power_on(void)
 {
+	int ret = 0;
+
 	mutex_lock(&VencPWRLock);
 	gu4VencPWRCounter++;
 	mutex_unlock(&VencPWRLock);
@@ -233,7 +287,39 @@ void venc_power_on(void)
 #ifdef VENC_USE_L2C
 	enable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
 #endif
+#else
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_VEN);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_VEN is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_VENC_VENC);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_VENC is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MT_CG_VENC_LARB);
+	if (ret) {
+		/* print error log & error handling */
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_LARB is not enabled, ret = %d\n", ret);
+	}
 #endif
+
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on -\n");
 }
 
@@ -252,6 +338,12 @@ void venc_power_off(void)
 #ifdef VENC_USE_L2C
 		disable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
 #endif
+#else
+		clk_disable_unprepare(clk_MT_CG_VENC_LARB);
+		clk_disable_unprepare(clk_MT_CG_VENC_VENC);
+		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
+		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
+		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
@@ -2125,6 +2217,56 @@ static int vcodec_probe(struct platform_device *dev)
 
 	disable_irq(VDEC_IRQ_ID);
 	disable_irq(VENC_IRQ_ID);
+
+#ifndef CONFIG_MTK_CLKMGR
+	clk_MT_CG_DISP0_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_DISP0_SMI_COMMON");
+	if (IS_ERR(clk_MT_CG_DISP0_SMI_COMMON)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_DISP0_SMI_COMMON\n");
+		return PTR_ERR(clk_MT_CG_DISP0_SMI_COMMON);
+	}
+
+	clk_MT_CG_VDEC0_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC0_VDEC");
+	if (IS_ERR(clk_MT_CG_VDEC0_VDEC)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC0_VDEC\n");
+		return PTR_ERR(clk_MT_CG_VDEC0_VDEC);
+	}
+
+	clk_MT_CG_VDEC1_LARB = devm_clk_get(&dev->dev, "MT_CG_VDEC1_LARB");
+	if (IS_ERR(clk_MT_CG_VDEC1_LARB)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC1_LARB\n");
+		return PTR_ERR(clk_MT_CG_VDEC1_LARB);
+	}
+
+	clk_MT_CG_VENC_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC_VENC");
+	if (IS_ERR(clk_MT_CG_VENC_VENC)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_VENC\n");
+		return PTR_ERR(clk_MT_CG_VENC_VENC);
+	}
+
+	clk_MT_CG_VENC_LARB = devm_clk_get(&dev->dev, "MT_CG_VENC_LARB");
+	if (IS_ERR(clk_MT_CG_VENC_LARB)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_LARB\n");
+		return PTR_ERR(clk_MT_CG_VENC_LARB);
+	}
+
+	clk_MT_SCP_SYS_VDE = devm_clk_get(&dev->dev, "MT_SCP_SYS_VDE");
+	if (IS_ERR(clk_MT_SCP_SYS_VDE)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VDE\n");
+		return PTR_ERR(clk_MT_SCP_SYS_VDE);
+	}
+
+	clk_MT_SCP_SYS_VEN = devm_clk_get(&dev->dev, "MT_SCP_SYS_VEN");
+	if (IS_ERR(clk_MT_SCP_SYS_VEN)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_VEN\n");
+		return PTR_ERR(clk_MT_SCP_SYS_VEN);
+	}
+
+	clk_MT_SCP_SYS_DIS = devm_clk_get(&dev->dev, "MT_SCP_SYS_DIS");
+	if (IS_ERR(clk_MT_SCP_SYS_DIS)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
+		return PTR_ERR(clk_MT_SCP_SYS_DIS);
+	}
+#endif
 
 	MODULE_MFV_LOGD("vcodec_probe Done\n");
 
