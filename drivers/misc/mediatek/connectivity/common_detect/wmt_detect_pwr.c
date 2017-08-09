@@ -12,7 +12,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <mtk_rtc.h>
+/*#include <mtk_rtc.h>*/
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mt_gpio.h>
 #include <cust_gpio_usage.h>
@@ -275,7 +275,7 @@ static int wmt_detect_chip_pwr_on(void)
 	msleep(MAX_LDO_STABLE_TIME);
 
 	/*export RTC clock, sleep for RTC stable time */
-	rtc_gpio_enable_32k(RTC_GPIO_USER_GPS);
+	/*rtc_gpio_enable_32k(RTC_GPIO_USER_GPS);*/
 	msleep(MAX_RTC_STABLE_TIME);
 
 	/*PMU output low, RST output low, to make chip power off completely */

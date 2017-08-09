@@ -22,14 +22,14 @@
 #include <asm/current.h>
 #include <asm/uaccess.h>
 #include <linux/skbuff.h>
-#include <mach/mtk_rtc.h>
+/*#include <mtk_rtc.h>*/
 #if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
 #endif
 #include "stp_exp.h"
 #include "wmt_exp.h"
 #if defined(CONFIG_ARCH_MT6580)
-#include <mach/mt_clkbuf_ctl.h>
+#include <mt_clkbuf_ctl.h>
 #endif
 MODULE_LICENSE("GPL");
 
@@ -103,7 +103,8 @@ bool rtc_GPS_low_power_detected(void)
 
 	if (first_query) {
 		first_query = false;
-		return rtc_low_power_detected();
+		/*return rtc_low_power_detected();*/
+		return 0;
 	} else {
 		return false;
 	}

@@ -19,9 +19,9 @@ endif
 
 obj-y += osal.o \
          bgw_desense.o \
-         stp_chrdev_bt.o \
-         stp_chrdev_gps.o \
-         wmt_chrdev_wifi.o \
-         wmt_idc.o
+	 wmt_idc.o \
+         stp_chrdev_gps.o
+#         stp_chrdev_bt.o \
+#         wmt_chrdev_wifi.o
 
 endif

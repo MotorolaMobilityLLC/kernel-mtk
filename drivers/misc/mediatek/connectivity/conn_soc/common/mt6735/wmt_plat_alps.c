@@ -26,7 +26,7 @@
 #include <linux/delay.h>
 
 /* ALPS header files */
-#include <mtk_rtc.h>
+/*#include <mtk_rtc.h>*/
 /*#include <mt_irq.h>*/
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mt_gpio.h>

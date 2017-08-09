@@ -1085,9 +1085,9 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 }
 
 /*Reserved memory by device tree!*/
-reservedmem_of_init_fn reserve_memory_consys_fn(struct reserved_mem *rmem, unsigned long node, const char *uname)
+int reserve_memory_consys_fn(struct reserved_mem *rmem)
 {
-	WMT_PLAT_WARN_FUNC(" name: %s, uname: %s, base: 0x%llx, size: 0x%llx\n", rmem->name, uname,
+	WMT_PLAT_WARN_FUNC(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
 			   (unsigned long long)rmem->base, (unsigned long long)rmem->size);
 	gConEmiPhyBase = rmem->base;
 	return 0;

@@ -139,3 +139,6 @@ source "drivers/misc/mediatek/fmradio/Kconfig"
 source "drivers/misc/mediatek/imgsensor/Kconfig"
 source "drivers/misc/mediatek/gps/Kconfig"
 source "drivers/misc/mediatek/multibridge/Kconfig"
+source "drivers/misc/mediatek/btif/Kconfig"
+source "drivers/misc/mediatek/connectivity/Kconfig"
+
