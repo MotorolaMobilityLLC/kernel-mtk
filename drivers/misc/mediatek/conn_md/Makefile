@@ -3,8 +3,10 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
 
-    ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
-    ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
+    ccflags-$(CONFIG_MTK_ECCCI_DRIVER) += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+    ccflags-$(CONFIG_MTK_ECCCI_DRIVER) += -I$(srctree)/drivers/misc/mediatek/eccci/
+    ccflags-$(CONFIG_MTK_CCCI_EXT) += -I$(srctree)/drivers/misc/mediatek/dual_ccci/
+
     ccflags-y += -I$(src)/include/
 
     obj-y += conn_md_bridge.o
