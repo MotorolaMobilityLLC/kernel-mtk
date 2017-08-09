@@ -713,7 +713,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		}
 	}
 
-#if defined(SPM_VCORE_EN_MT6797) || defined(SPM_VCORE_EN_MT6755)
+#if defined(SPM_VCORE_EN_MT6797)
 	if (dyna_load_pcm_done)
 		vcorefs_late_init_dvfs();
 #endif

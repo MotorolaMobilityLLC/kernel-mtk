@@ -115,7 +115,7 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
-	.vcore_dvfs_en = 1,	/* vcore dvfs feature enable */
+	.vcore_dvfs_en = 0,	/* vcore dvfs feature enable */
 	.vcore_dvs = 1,
 	.ddr_dfs = 1,
 	.isr_debug = 0,
