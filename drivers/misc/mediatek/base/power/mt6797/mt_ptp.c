@@ -302,7 +302,7 @@ unsigned int gpuFy[16] = {0x2A, 0x2A, 0x24, 0x24, 0x20, 0x20, 0x1E, 0x1E,
 			0x1B, 0x1B, 0x18, 0x18, 0x14, 0x14, 0x10, 0x10};
 unsigned int gpuSb[16] = {0x2A, 0x2A, 0x26, 0x26, 0x20, 0x20, 0x1E, 0x1E,
 			0x18, 0x18, 0x18, 0x18, 0x14, 0x14, 0x10, 0x10};
-
+unsigned int gpuOutput[8];
 static unsigned int *recordTbl;
 
 /**
@@ -1872,7 +1872,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 	for (i = 0; i < NR_FREQ; i++) {
 		/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
-		binLevel = 1; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
+		binLevel = 0; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
 		if (binLevel == 0) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
@@ -1918,19 +1918,23 @@ static int get_volt_gpu(struct eem_det *det)
 
 static int set_volt_gpu(struct eem_det *det)
 {
+	int i;
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
+
 	/*
-	eem_debug("set_volt_gpu=%x %x %x %x\n",
-		det->volt_tbl_pmic[0],
-		det->volt_tbl_pmic[1],
-		det->volt_tbl_pmic[2],
-		det->volt_tbl_pmic[3]);
+	eem_error("set_volt_gpu= ");
+	for (i = 0; i < 15; i++)
+		eem_error("%x(%d), ", det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+	eem_error("%x\n", det->volt_tbl_pmic[i]);
 	*/
+	for (i = 0; i < 8; i++)
+		gpuOutput[i] = det->volt_tbl_pmic[i * 2];
+
 	#ifdef EARLY_PORTING
 		return 0;
 	#else
-		return 0; /* mt_gpufreq_update_volt(det->volt_tbl_pmic, det->num_freq_tbl); */
+		return mt_gpufreq_update_volt(gpuOutput, 8);
 	#endif
 }
 
@@ -4542,7 +4546,7 @@ static int __init eem_conf(void)
 		return -ENOMEM;
 
 	/* read E-fuse for segment selection */
-	binLevel =  1; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
+	binLevel =  0; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
 	if (binLevel == 0) {
 		recordTbl = &fyTbl[0][0];
 		eem_error("@The table ----->(fyTbl)\n");
