@@ -69,22 +69,47 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
 #define ZRAM_FLAG_SHIFT 24
 
 /* Flags for zram pages (table[page_no].value) */
+#ifdef CONFIG_ZSM
+enum zram_pageflags {
+	/* Page consists entirely of zeros */
+	ZRAM_FIRST_NODE ,
+	ZRAM_RB_NODE,
+	ZRAM_ZSM_NODE,
+	ZRAM_ZSM_DONE_NODE,
+	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
+	ZRAM_ACCESS,	/* page in now accessed */
+	__NR_ZRAM_PAGEFLAGS,
+};
+#else
 enum zram_pageflags {
 	/* Page consists entirely of zeros */
 	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
 	ZRAM_ACCESS,	/* page in now accessed */
-
 	__NR_ZRAM_PAGEFLAGS,
 };
+#endif
 
 /*-- Data structures */
 
 /* Allocated for each disk page */
+#ifdef CONFIG_ZSM
+struct zram_table_entry {
+	unsigned long handle;
+	unsigned long value;
+	struct rb_node node;
+	struct list_head head;
+	u32 copy_count;
+	u32 next_index;
+	u32 copy_index;
+	u32 checksum;
+	u8 flags;
+};
+#else
 struct zram_table_entry {
 	unsigned long handle;
 	unsigned long value;
 };
-
+#endif
 struct zram_stats {
 	atomic64_t compr_data_size;	/* compressed size of pages stored */
 	atomic64_t num_reads;	/* failed + successful */
@@ -96,6 +121,10 @@ struct zram_stats {
 	atomic64_t zero_pages;		/* no. of zero filled pages */
 	atomic64_t pages_stored;	/* no. of pages currently stored */
 	atomic_long_t max_used_pages;	/* no. of maximum pages stored */
+#ifdef CONFIG_ZSM
+	atomic64_t zsm_saved;          /* saved physical size*/
+	atomic64_t zsm_saved4k;
+#endif
 };
 
 struct zram_meta {
@@ -125,4 +154,5 @@ struct zram {
 
 	char compressor[10];
 };
+
 #endif

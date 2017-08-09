@@ -306,14 +306,21 @@ void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm)
 {
 	comp->strm_release(comp, zstrm);
 }
-
+#ifdef CONFIG_ZSM
+int zcomp_compress_zram(struct zcomp *comp, struct zcomp_strm *zstrm,
+		const unsigned char *src, size_t *dst_len, int *checksum)
+{
+	return comp->backend->compress(src, zstrm->buffer, dst_len,
+			zstrm->private, checksum);
+}
+#else
 int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
 		const unsigned char *src, size_t *dst_len)
 {
 	return comp->backend->compress(src, zstrm->buffer, dst_len,
 			zstrm->private);
 }
-
+#endif
 int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
 		size_t src_len, unsigned char *dst)
 {

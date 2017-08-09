@@ -29,11 +29,17 @@
 #include <linux/genhd.h>
 #include <linux/highmem.h>
 #include <linux/slab.h>
+#include <linux/lzo.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/err.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
+#ifdef CONFIG_ZSM
+#include <linux/rbtree.h>
+#include <linux/time.h>
+#endif
 #include "zram_drv.h"
 
 /* Globals */
@@ -43,6 +49,315 @@ static const char *default_compressor = "lzo";
 
 /* Module params (documentation at end) */
 static unsigned int num_devices = 1;
+#ifdef CONFIG_ZSM
+#define SIZE_MASK (BIT(ZRAM_FLAG_SHIFT) - 1)
+#define TABLE_GET_SIZE(X) (X & SIZE_MASK)
+static struct rb_root root_zram_tree = RB_ROOT;
+static struct rb_root root_zram_tree_4k = RB_ROOT;
+spinlock_t zram_node_mutex;
+spinlock_t zram_node4k_mutex;
+
+static int zram_test_flag(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag);
+
+static void zram_set_flag(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag);
+
+static void zram_clear_flag(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag);
+
+static int zsm_test_flag(struct zram_meta *meta, struct zram_table_entry *node,
+			enum zram_pageflags flag)
+{
+	return node->flags & BIT(flag);
+}
+
+static void zsm_set_flag(struct zram_meta *meta, struct zram_table_entry *node,
+			enum zram_pageflags flag)
+{
+	node->flags |= BIT(flag);
+}
+static int zsm_test_flag_index(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag)
+{
+	return meta->table[index].flags & BIT(flag);
+}
+
+static void zsm_set_flag_index(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag)
+{
+	meta->table[index].flags |= BIT(flag);
+}
+
+static void zsm_clear_flag_index(struct zram_meta *meta, u32 index,
+			enum zram_pageflags flag)
+{
+	meta->table[index].flags &= ~BIT(flag);
+}
+static struct zram_table_entry *search_node_in_zram_list(struct zram *zram, struct zram_meta *meta,
+	struct zram_table_entry *input_node, struct zram_table_entry *found_node, unsigned char *match_content,
+	u32 clen)
+{
+	struct list_head *list_node = NULL;
+	struct zram_table_entry *current_node = NULL;
+	unsigned char *cmem;
+	int one_node_in_list = 0;
+	int compare_count = 0;
+	int ret;
+
+	list_node = found_node->head.next;
+	if (list_node == &(found_node->head))
+		one_node_in_list = 1;
+	while ((list_node != &(found_node->head)) || one_node_in_list) {
+		one_node_in_list = 0;
+		current_node  = list_entry(list_node, struct zram_table_entry, head);
+		if ((clen != TABLE_GET_SIZE(current_node->value)) || !zsm_test_flag(meta, current_node,
+			ZRAM_FIRST_NODE)) {
+			list_node = list_node->next;
+		} else {
+			if (zsm_test_flag(meta, current_node, ZRAM_ZSM_DONE_NODE) && (current_node->handle != 0)) {
+				cmem = zs_map_object(meta->mem_pool, current_node->handle, ZS_MM_RO);
+				ret = memcmp(cmem, match_content, TABLE_GET_SIZE(input_node->value));
+				compare_count++;
+				if (ret == 0) {
+					zs_unmap_object(meta->mem_pool, current_node->handle);
+					return current_node;
+				}
+				list_node = list_node->next;
+				zs_unmap_object(meta->mem_pool, current_node->handle);
+			} else {
+				pr_warn("[ZSM] current node is not ready %x and handle is %x\n",
+					current_node->copy_index, current_node->handle, current_node->handle);
+				list_node = list_node->next;
+			}
+		}
+	}
+	return NULL;
+}
+static struct zram_table_entry *search_node_in_zram_tree(struct zram_table_entry *input_node,
+		struct rb_node **parent_node, struct rb_node ***new_node, unsigned char *match_content,
+		struct rb_root *local_root_zram_tree)
+{
+	struct rb_node **new = &(local_root_zram_tree->rb_node);
+	struct zram_table_entry *current_node = NULL;
+	struct rb_node *parent = NULL;
+
+	current_node = rb_entry(*new, struct zram_table_entry, node);
+	if (input_node == NULL) {
+		pr_err("[zram][search_node_in_zram_tree] input_node is NULL\n");
+		return NULL;
+	}
+	if (current_node == NULL) {
+		*new_node = new;
+		*parent_node = NULL;
+		return NULL;
+	}
+
+	while (*new) {
+		current_node = rb_entry(*new, struct zram_table_entry, node);
+		parent = *new;
+		if (input_node->checksum > current_node->checksum) {
+			new = &parent->rb_right;
+		} else if (input_node->checksum < current_node->checksum) {
+			new = &parent->rb_left;
+		} else {
+			if (TABLE_GET_SIZE(input_node->value) > TABLE_GET_SIZE(current_node->value))
+				new = &parent->rb_right;
+			else if (TABLE_GET_SIZE(input_node->value) < TABLE_GET_SIZE(current_node->value))
+				new = &parent->rb_left;
+			else
+				return current_node;
+		}
+	}
+	*parent_node = parent;
+	*new_node = new;
+	return NULL;
+}
+static u32 insert_node_to_zram_tree(struct zram *zram, struct zram_meta *meta, u32 index, unsigned char *match_content,
+		struct rb_root *local_root_zram_tree, u32 clen)
+{
+	struct zram_table_entry *current_node = NULL;
+	struct zram_table_entry *node_in_list = NULL;
+	struct rb_node *parent = NULL;
+	struct rb_node **new = NULL;
+	struct zram_table_entry *input_node;
+
+	input_node = &(meta->table[index]);
+	zsm_set_flag_index(meta, index, ZRAM_ZSM_NODE);
+	current_node = search_node_in_zram_tree(input_node, &parent, &new, match_content, local_root_zram_tree);
+
+	/* found node in zram_tree */
+	if (NULL != current_node) {
+		if (!zsm_test_flag(meta, current_node, ZRAM_RB_NODE)) {
+			pr_err("[ZRAM]ERROR !!found wrong rb node 0x%p\n", (void *)current_node);
+			BUG_ON(1);
+		}
+
+		/* check if there is any other node in this position. */
+		node_in_list = search_node_in_zram_list(zram, meta, input_node, current_node, match_content, clen);
+
+		/* found the same node in list */
+		if (NULL != node_in_list) {
+			/* insert node after the found node */
+			if (!zsm_test_flag(meta, current_node, ZRAM_FIRST_NODE)) {
+				pr_err("[ZRAM]ERROR !!found wrong first node 0x%p\n", (void *)node_in_list);
+				BUG_ON(1);
+			}
+			input_node->next_index = node_in_list->next_index;
+			node_in_list->next_index = index;
+			input_node->copy_index = node_in_list->copy_index;
+
+			/* found the same node and add ref count */
+			node_in_list->copy_count++;
+			if (unlikely(TABLE_GET_SIZE(input_node->value) > max_zpage_size))
+				atomic64_add((u64)TABLE_GET_SIZE(input_node->value), &zram->stats.zsm_saved4k);
+			else
+				atomic64_add((u64)TABLE_GET_SIZE(input_node->value), &zram->stats.zsm_saved);
+			input_node->handle = node_in_list->handle;
+			list_add(&input_node->head, &node_in_list->head);
+			zsm_set_flag_index(meta, index, ZRAM_ZSM_DONE_NODE);
+			return 1;
+		}
+		/* can't found node in list */
+		zsm_set_flag_index(meta, index, ZRAM_FIRST_NODE);
+		list_add(&input_node->head, &current_node->head);
+	} else {
+		/* insert node into rb tree */
+		zsm_set_flag_index(meta, index, ZRAM_FIRST_NODE);
+		zsm_set_flag_index(meta, index, ZRAM_RB_NODE);
+		rb_link_node(&(meta->table[index].node), parent, new);
+		rb_insert_color(&(meta->table[index].node), local_root_zram_tree);
+	}
+	return 0;
+}
+static int remove_node_from_zram_list(struct zram *zram, struct zram_meta *meta, u32 index)
+{
+	u32 next_index = 0xffffffff;
+	u32 pre_index = 0xffffffff;
+	u32 current_index = 0xffffffff;
+	u32 copy_index = 0xffffffff;
+	u32 i = 0;
+
+	next_index  = meta->table[index].next_index;
+	list_del(&(meta->table[index].head));
+	/* check if there is the same content in list */
+	if (index != next_index) {/* found the same page content */
+		if (zsm_test_flag_index(meta, index, ZRAM_FIRST_NODE)) {/* delete the fist node of content */
+			if (meta->table[index].copy_count <= 0) {
+				pr_err("[ZRAM]ERROR !!count < 0\n ");
+				BUG_ON(1);
+				return 1;
+			}
+			current_index = meta->table[next_index].next_index;
+			meta->table[next_index].copy_index = next_index;
+			pre_index = next_index;
+			while (current_index != index) {
+				i++;
+				if (i >= 4096 && (i%1000 == 0)) {
+					pr_err("[ZRAM]can't find meta->table[%d].size %d chunksum %lx\n"
+						, index, TABLE_GET_SIZE(meta->table[index].value)
+						, meta->table[index].checksum);
+					if (i > meta->table[index].copy_count) {
+						BUG_ON(1);
+						break;
+					}
+				}
+				meta->table[current_index].copy_index = next_index;
+				pre_index = current_index;
+				current_index = meta->table[current_index].next_index;
+			}
+			meta->table[pre_index].next_index = meta->table[index].next_index;
+			meta->table[next_index].copy_count = meta->table[index].copy_count - 1;
+			zsm_clear_flag_index(meta, index, ZRAM_FIRST_NODE);
+			zsm_set_flag_index(meta, next_index, ZRAM_FIRST_NODE);
+		} else {
+			current_index  = meta->table[index].copy_index;
+			pre_index = current_index;
+			current_index = meta->table[current_index].next_index;
+			while (index != current_index) {
+				i++;
+				if (i >= 4096 && (i%1000 == 0)) {
+					u32 tmp_index = 0;
+
+					pr_warn("[ZRAM]!!can't find2 meta->table[%d].size %d chunksum %lx\n"
+						, index, TABLE_GET_SIZE(meta->table[index].value),
+						meta->table[index].checksum);
+					tmp_index = meta->table[current_index].copy_index;
+					if (i > meta->table[tmp_index].copy_count) {
+						BUG_ON(1);
+						break;
+					}
+				}
+				pre_index = current_index;
+				current_index = meta->table[current_index].next_index;
+			}
+			meta->table[pre_index].next_index = meta->table[index].next_index;
+			copy_index = meta->table[index].copy_index;
+			meta->table[copy_index].copy_count = meta->table[copy_index].copy_count - 1;
+		}
+		if (unlikely(TABLE_GET_SIZE(meta->table[index].value) > max_zpage_size))
+			atomic64_sub((u64)TABLE_GET_SIZE(meta->table[index].value), &zram->stats.zsm_saved4k);
+		else
+			atomic64_sub((u64)TABLE_GET_SIZE(meta->table[index].value), &zram->stats.zsm_saved);
+		return 1;
+	}
+	/* can't found the same page content */
+	if (zsm_test_flag_index(meta, index, ZRAM_FIRST_NODE)) {
+		zsm_clear_flag_index(meta, index, ZRAM_FIRST_NODE);
+	} else {
+		pr_err("[ZRAM]ERROR!index != next_index, flag != ZRAM_FIRST_NODE index %x\n ", index);
+		BUG_ON(1);
+	}
+	if (meta->table[index].copy_count != 0) {
+		pr_err("[ZRAM]ERROR !!index != next_index and count != 0 index %x\n ", index);
+		BUG_ON(1);
+	}
+	return 0;
+}
+static int remove_node_from_zram_tree(struct zram *zram, struct zram_meta *meta, u32 index,
+		struct rb_root *local_root_zram_tree)
+{
+	int ret;
+
+	if (zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE)) {
+		zsm_clear_flag_index(meta, index, ZRAM_ZSM_NODE);
+	} else {
+		pr_err("[ZSM] index %x is not belongs to zsm node\n", index);
+		BUG_ON(1);
+	}
+	if (zsm_test_flag_index(meta, index, ZRAM_ZSM_DONE_NODE))
+		zsm_clear_flag_index(meta, index, ZRAM_ZSM_DONE_NODE);
+	else
+		pr_err("[ZSM] index node %x is not set and will be removed\n", index);
+	/* if it is rb node, choose other node from list and replace original node. */
+	if (zsm_test_flag_index(meta, index, ZRAM_RB_NODE)) {
+		zsm_clear_flag_index(meta, index, ZRAM_RB_NODE);
+		/* found next node in list */
+		if (&(meta->table[index].head) != meta->table[index].head.next) {
+			struct zram_table_entry *next_table;
+
+			next_table = list_entry(meta->table[index].head.next, struct zram_table_entry, head);
+			rb_replace_node(&(meta->table[index].node), &(next_table->node), local_root_zram_tree);
+			zsm_set_flag(meta, next_table, ZRAM_RB_NODE);
+			ret = remove_node_from_zram_list(zram, meta, index);
+			return ret;
+		}
+		/* if no other node can be found in list just remove node from rb tree and free handle */
+		if (zsm_test_flag_index(meta, index, ZRAM_FIRST_NODE)) {
+			zsm_clear_flag_index(meta, index, ZRAM_FIRST_NODE);
+		} else {
+			pr_err("[ZRAM]ERROR !!ZRAM_RB_NODR's flag != ZRAM_FIRST_NODE index %x\n ",
+					index);
+			BUG_ON(1);
+		}
+		rb_erase(&(meta->table[index].node), local_root_zram_tree);
+		return 0;
+	}
+	ret = remove_node_from_zram_list(zram, meta, index);
+	return ret;
+}
+#endif
+
 
 #define ZRAM_ATTR_RO(name)						\
 static ssize_t zram_attr_##name##_show(struct device *d,		\
@@ -399,7 +714,9 @@ static void zram_free_page(struct zram *zram, size_t index)
 {
 	struct zram_meta *meta = zram->meta;
 	unsigned long handle = meta->table[index].handle;
-
+#ifdef CONFIG_ZSM
+	int ret;
+#endif
 	if (unlikely(!handle)) {
 		/*
 		 * No memory is allocated for zero filled pages.
@@ -411,13 +728,29 @@ static void zram_free_page(struct zram *zram, size_t index)
 		}
 		return;
 	}
-
+#ifdef CONFIG_ZSM
+	if (!zram_test_flag(meta, index, ZRAM_ZERO) && zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE)) {
+		if (TABLE_GET_SIZE(meta->table[index].value) == PAGE_SIZE) {
+			spin_lock(&zram_node4k_mutex);
+			ret = remove_node_from_zram_tree(zram, meta, index, &root_zram_tree_4k);
+			spin_unlock(&zram_node4k_mutex);
+		} else {
+			spin_lock(&zram_node_mutex);
+			ret = remove_node_from_zram_tree(zram, meta, index, &root_zram_tree);
+			spin_unlock(&zram_node_mutex);
+		}
+	} else if (!zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE))
+		pr_err("[ZSM]ERROR! try to free noexist ZSM node index %x\n", index);
+	if (ret == 0) {
+		zs_free(meta->mem_pool, handle);
+		atomic64_sub(zram_get_obj_size(meta, index), &zram->stats.compr_data_size);
+		atomic64_dec(&zram->stats.pages_stored);
+	}
+#else
 	zs_free(meta->mem_pool, handle);
-
-	atomic64_sub(zram_get_obj_size(meta, index),
-			&zram->stats.compr_data_size);
+	atomic64_sub(zram_get_obj_size(meta, index), &zram->stats.compr_data_size);
 	atomic64_dec(&zram->stats.pages_stored);
-
+#endif
 	meta->table[index].handle = 0;
 	zram_set_obj_size(meta, index, 0);
 }
@@ -527,6 +860,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 			   int offset)
 {
 	int ret = 0;
+#ifdef CONFIG_ZSM
+	int checksum = 0;
+#endif
 	size_t clen;
 	unsigned long handle;
 	struct page *page;
@@ -537,6 +873,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 	unsigned long alloced_pages;
 
 	page = bvec->bv_page;
+
 	if (is_partial_io(bvec)) {
 		/*
 		 * This is a partial IO. We need to read the full page
@@ -550,6 +887,19 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		ret = zram_decompress_page(zram, uncmem, index);
 		if (ret)
 			goto out;
+#ifdef CONFIG_ZSM
+		if (!zram_test_flag(meta, index, ZRAM_ZERO)) {
+			if (zram_get_obj_size(meta, index) == PAGE_SIZE) {
+				spin_lock(&zram_node4k_mutex);
+				ret = remove_node_from_zram_tree(zram, meta, index, &root_zram_tree_4k);
+				spin_unlock(&zram_node4k_mutex);
+			} else {
+				spin_lock(&zram_node_mutex);
+				ret = remove_node_from_zram_tree(zram, meta, index, &root_zram_tree);
+				spin_unlock(&zram_node_mutex);
+			}
+		}
+#endif
 	}
 
 	zstrm = zcomp_strm_find(zram->comp);
@@ -578,8 +928,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		ret = 0;
 		goto out;
 	}
-
+#ifdef CONFIG_ZSM
+	ret = zcomp_compress_zram(zram->comp, zstrm, uncmem, &clen, &checksum);
+#else
 	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
+#endif
 	if (!is_partial_io(bvec)) {
 		kunmap_atomic(user_mem);
 		user_mem = NULL;
@@ -595,8 +948,59 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		clen = PAGE_SIZE;
 		if (is_partial_io(bvec))
 			src = uncmem;
-	}
+#ifdef CONFIG_ZSM
+		{
+		int search_ret = 0;
 
+		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+		zram_free_page(zram, index);
+		meta->table[index].checksum = checksum;
+		zram_set_obj_size(meta, index, clen);
+		meta->table[index].next_index = index;
+		meta->table[index].copy_index = index;
+		meta->table[index].copy_count = 0;
+		INIT_LIST_HEAD(&(meta->table[index].head));
+		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+		if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+			src = kmap_atomic(page);
+			spin_lock(&zram_node4k_mutex);
+			search_ret = insert_node_to_zram_tree(zram, meta, index, src, &root_zram_tree_4k, clen);
+			spin_unlock(&zram_node4k_mutex);
+			kunmap_atomic(src);
+		} else {
+			spin_lock(&zram_node4k_mutex);
+			search_ret = insert_node_to_zram_tree(zram, meta, index, src, &root_zram_tree_4k, clen);
+			spin_unlock(&zram_node4k_mutex);
+		}
+		if (search_ret) {
+			ret = 0;
+			goto out;
+		}
+		}
+#endif
+	}
+#ifdef CONFIG_ZSM
+	if (unlikely(clen <= max_zpage_size)) {
+		int search_ret = 0;
+
+		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+		zram_free_page(zram, index);
+		meta->table[index].checksum = checksum;
+		zram_set_obj_size(meta, index, clen);
+		meta->table[index].next_index = index;
+		meta->table[index].copy_index = index;
+		meta->table[index].copy_count = 0;
+		INIT_LIST_HEAD(&(meta->table[index].head));
+		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+		spin_lock(&zram_node_mutex);
+		search_ret = insert_node_to_zram_tree(zram, meta, index, src, &root_zram_tree, clen);
+		spin_unlock(&zram_node_mutex);
+		if (search_ret) {
+			ret = 0;
+			goto out;
+		}
+	}
+#endif
 	handle = zs_malloc(meta->mem_pool, clen);
 	if (!handle) {
 		pr_info("Error allocating memory for compressed page: %u, size=%zu\n",
@@ -634,9 +1038,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 	 */
 	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
 	zram_free_page(zram, index);
-
 	meta->table[index].handle = handle;
 	zram_set_obj_size(meta, index, clen);
+#ifdef CONFIG_ZSM
+	zsm_set_flag_index(meta, index, ZRAM_ZSM_DONE_NODE);
+#endif
 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
 
 	/* Update stats */
@@ -1016,7 +1422,10 @@ static int create_device(struct zram *zram, int device_id)
 	int ret = -ENOMEM;
 
 	init_rwsem(&zram->init_lock);
-
+#ifdef CONFIG_ZSM
+	spin_lock_init(&zram_node_mutex);
+	spin_lock_init(&zram_node4k_mutex);
+#endif
 	zram->queue = blk_alloc_queue(GFP_KERNEL);
 	if (!zram->queue) {
 		pr_err("Error allocating disk queue for device %d\n",
@@ -1123,7 +1532,12 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 				"NumReads:       %8lu kB\n"
 				"NumWrites:      %8lu kB\n"
 				"InvalidIO:      %8lu kB\n"
+#ifdef CONFIG_ZSM
+				"ZSM saved:      %8lu kB\n"
+				"ZSM4k saved:    %8lu kB\n"
+#endif
 				"MaxUsedPages:   %8lu kB\n"
+
 				,
 				B2K(zram_devices->disksize),
 				P2K(atomic64_read(&zram_devices->stats.pages_stored)),
@@ -1136,7 +1550,13 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 				P2K(atomic64_read(&zram_devices->stats.num_reads)),
 				P2K(atomic64_read(&zram_devices->stats.num_writes)),
 				P2K(atomic64_read(&zram_devices->stats.invalid_io)),
-				P2K(atomic_long_read(&zram_devices->stats.max_used_pages)));
+#ifdef CONFIG_ZSM
+				B2K(atomic64_read(&zram_devices->stats.zsm_saved)),
+				B2K(atomic64_read(&zram_devices->stats.zsm_saved4k)),
+#endif
+				P2K(atomic_long_read(&zram_devices->stats.max_used_pages))
+
+				);
 #undef P2K
 #undef B2K
 		seq_printf(m, "Algorithm: [%s]\n", zram_devices->compressor);

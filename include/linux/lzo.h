@@ -27,6 +27,9 @@ int lzo1x_1_compress(const unsigned char *src, size_t src_len,
 int lzo1x_decompress_safe(const unsigned char *src, size_t src_len,
 			  unsigned char *dst, size_t *dst_len);
 
+int lzo1x_1_compress_zram(const unsigned char *in, size_t in_len,
+			unsigned char *out, size_t *out_len,
+			void *wrkmem, int *checksum);
 /*
  * Return values (< 0 = Error)
  */
