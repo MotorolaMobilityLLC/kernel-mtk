@@ -1142,7 +1142,7 @@ static void __init init_clk_infrasys(void __iomem *infrasys_base,
 		clk_data);
 }
 
-#if 1
+#if 0
 static struct mtk_gate_regs peri0_cg_regs = {
 	.set_ofs = 0x0008,
 	.clr_ofs = 0x0010,
@@ -1185,7 +1185,7 @@ static struct mtk_gate peri_clks[] __initdata = {
 	GATE(PERI_IRTX, peri_irtx, irtx_sel, peri0_cg_regs, 29, 0),
 #endif
 };
-#endif
+
 static void __init init_clk_perisys(void __iomem *perisys_base,
 		struct clk_onecell_data *clk_data)
 {
@@ -1193,7 +1193,7 @@ static void __init init_clk_perisys(void __iomem *perisys_base,
 	init_clk_gates(perisys_base, peri_clks, ARRAY_SIZE(peri_clks),
 		clk_data);
 }
-
+#endif
 static struct mtk_gate_regs mfg_cg_regs = {
 	.set_ofs = 0x0004,
 	.clr_ofs = 0x0008,
@@ -1530,7 +1530,7 @@ static void __init mt_infrasys_init(struct device_node *node)
 		pr_err("could not register clock provide\n");
 }
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt6755-infrasys", mt_infrasys_init);
-
+#if 0
 static void __init mt_perisys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1554,7 +1554,7 @@ static void __init mt_perisys_init(struct device_node *node)
 		pr_err("could not register clock provide\n");
 }
 CLK_OF_DECLARE(mtk_perisys, "mediatek,mt6755-perisys", mt_perisys_init);
-
+#endif
 static void __init mt_mfgsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;

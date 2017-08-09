@@ -249,11 +249,7 @@ static unsigned long clk_sdm_pll_recalc_rate(
 		struct clk_hw *hw,
 		unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: parent_rate=%lu\n", __func__,
-		 __clk_get_name(hw->clk), parent_rate);*/
-	return 0;
-#endif /* MT_CCF_BRINGUP */
+
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -265,7 +261,11 @@ static unsigned long clk_sdm_pll_recalc_rate(
 
 	u32 vco_freq;
 	unsigned long r;
-
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: parent_rate=%lu\n", __func__,
+		 __clk_get_name(hw->clk), parent_rate);*/
+	return 0;
+#endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
 	vco_freq = calc_pll_vco_freq(parent_rate, pcw, 1, 1, pcwfbits);
@@ -602,10 +602,6 @@ static unsigned long clk_univ_pll_recalc_rate(
 		struct clk_hw *hw,
 		unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	return 0;
-#endif /* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -616,7 +612,10 @@ static unsigned long clk_univ_pll_recalc_rate(
 
 	u32 vco_freq;
 	unsigned long r;
-
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	return 0;
+#endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
 	vco_freq = parent_rate * fbkdiv;
@@ -818,10 +817,6 @@ static unsigned long clk_aud_pll_recalc_rate(
 		struct clk_hw *hw,
 		unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	return 0;
-#endif /* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -833,7 +828,10 @@ static unsigned long clk_aud_pll_recalc_rate(
 
 	u32 vco_freq;
 	unsigned long r;
-
+#if MT_CCF_BRINGUP
+/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
+	return 0;
+#endif /* MT_CCF_BRINGUP */
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
 	vco_freq = calc_pll_vco_freq(parent_rate, pcw, 1, 1, pcwfbits);
