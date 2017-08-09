@@ -376,9 +376,7 @@ static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
 #ifdef SPM_SODI3_PROFILE_TIME
 unsigned int			soidle3_profile[4];
 #endif
-#if defined(CONFIG_ARCH_MT6755)
 static int		sodi3_by_uptime_count;
-#endif
 /* SODI */
 static unsigned int     soidle_block_mask[NR_GRPS] = {0x0};
 static unsigned int     soidle_timer_left;
@@ -400,9 +398,7 @@ static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
 #ifdef SPM_SODI_PROFILE_TIME
 unsigned int			soidle_profile[4];
 #endif
-#if defined(CONFIG_ARCH_MT6755)
 static int		sodi_by_uptime_count;
-#endif
 
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
@@ -702,7 +698,6 @@ bool soidle3_can_enter(int cpu)
 		}
 	}
 
-#if defined(CONFIG_ARCH_MT6755)
 	if (sodi3_by_uptime_count != -1) {
 		struct timespec uptime;
 		unsigned long val;
@@ -718,7 +713,6 @@ bool soidle3_can_enter(int cpu)
 			sodi3_by_uptime_count = -1;
 		}
 	}
-#endif
 
 out:
 #ifdef CONFIG_CPU_ISOLATION
@@ -1005,7 +999,6 @@ bool soidle_can_enter(int cpu)
 		}
 	}
 
-#if defined(CONFIG_ARCH_MT6755)
 	if (sodi_by_uptime_count != -1) {
 		struct timespec uptime;
 		unsigned long val;
@@ -1021,7 +1014,6 @@ bool soidle_can_enter(int cpu)
 			sodi_by_uptime_count = -1;
 		}
 	}
-#endif
 
 out:
 #ifdef CONFIG_CPU_ISOLATION

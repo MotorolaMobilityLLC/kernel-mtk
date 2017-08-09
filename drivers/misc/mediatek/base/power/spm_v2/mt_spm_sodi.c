@@ -344,9 +344,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				by_ccif1_count++;
 			}
 #elif defined(CONFIG_ARCH_MT6797)
-			/* ignore SCP IRQ temporarily*/
-			if (!(wakesta->r12 & (0x1 << 10)))
-				need_log_out = 1;
+			need_log_out = 1;
 #endif
 		} else if ((wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
 			   (wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA)) {
@@ -510,20 +508,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	__spm_check_md_pdn_power_control(pwrctrl);
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-
-#if defined(CONFIG_ARCH_MT6797)
-	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
-		/* the following masks set to be 1 only for SODI CG mode */
-		pwrctrl->md_apsrc1_sel = 1;
-		pwrctrl->md_apsrc0_sel = 1;
-		pwrctrl->conn_apsrc_sel = 1;
-	} else {
-		/* the following masks set to be 0 which dynamic switch by FW */
-		pwrctrl->md_apsrc1_sel = 0;
-		pwrctrl->md_apsrc0_sel = 0;
-		pwrctrl->conn_apsrc_sel = 0;
-	}
-#endif
 
 	__spm_set_power_control(pwrctrl);
 
