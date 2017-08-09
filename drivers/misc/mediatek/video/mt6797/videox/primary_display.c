@@ -1785,10 +1785,12 @@ static int _DC_switch_to_DL_sw_only(void)
 	int ret = 0;
 	int layer = 0;
 	disp_ddp_path_config *data_config_dc = NULL;
+	disp_ddp_path_config *data_config_dl = NULL;
 	DDP_SCENARIO_ENUM old_scenario, new_scenario;
 
 	/* 3.destroy ovl->mem path. */
 	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 
 	dpmgr_destroy_path_handle(pgc->ovl2mem_path_handle);
 
@@ -1812,6 +1814,14 @@ static int _DC_switch_to_DL_sw_only(void)
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 1);
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 1);
+
+	/* 5.config rdma from memory mode to directlink mode */
+	data_config_dl->rdma_config = decouple_rdma_config;
+	data_config_dl->rdma_config.address = 0;
+	data_config_dl->rdma_config.pitch = 0;
+	data_config_dl->rdma_config.security = DISP_NORMAL_BUFFER;
+	/* no need ioctl because of rdma_dirty */
+	set_is_dc(0);
 
 	/* release output buffer */
 	layer = disp_sync_get_output_interface_timeline_id();
