@@ -2356,6 +2356,7 @@ kal_uint16 addr_data_pair_init_RWB[] =
 	0x3ACA,0x0000,
 	0x3ACC,0x0000,
 	0x3ACE,0x0000,
+        0xB0CA,0xC000,
 };
 
 kal_uint16 addr_data_pair_capture_pip_15[] =
