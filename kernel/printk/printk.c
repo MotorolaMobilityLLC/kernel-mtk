@@ -341,7 +341,7 @@ void mt_enable_uart(void)
 
 bool is_logbuf_lock(raw_spinlock_t *lock)
 {
-	if (lock == &logbuf_lock)
+	if (lock == &logbuf_lock || lock == &console_sem.lock)
 		return true;
 	return false;
 }
