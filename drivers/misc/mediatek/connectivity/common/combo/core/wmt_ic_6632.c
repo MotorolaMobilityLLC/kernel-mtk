@@ -101,15 +101,9 @@ static UINT8 WMT_BTP2_CMD[] = { 0x01, 0x10, 0x03, 0x00, 0x01, 0x03, 0x01 };
 static UINT8 WMT_BTP2_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 #endif
 
-static UINT8 WMT_PATCH_ADDRESS_CMD[] = { 0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
-0xD4, 0x03, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff };
+static UINT8 WMT_PATCH_ADDRESS_CMD[] = { 0x01, 0x01, 0x05, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00};
 
-static UINT8 WMT_PATCH_ADDRESS_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
-
-static UINT8 WMT_PATCH_P_ADDRESS_CMD[] = { 0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
-0xfc, 0x08, 0x09, 0x02, 0x00, 0x00, 0x08, 0x00, 0xff, 0xff, 0xff, 0xff };
-
-static UINT8 WMT_PATCH_P_ADDRESS_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
+static UINT8 WMT_PATCH_ADDRESS_EVT[] = { 0x02, 0x01, 0x01, 0x00, 0x00};
 
 /*coex cmd/evt++*/
 static UINT8 WMT_COEX_SETTING_CONFIG_CMD[] = { 0x01, 0x10, 0x02, 0x00, 0x01, 0x00 };
@@ -1550,6 +1544,13 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 	patchSize -= sizeof(WMT_PATCH);
 	pbuf += sizeof(WMT_PATCH);
 	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
+
+	/* remove patch checksum, MT6632 no need:
+	 * |<-patch checksum: 2Bytes->|<-patch body: X Bytes (X=patchSize)--->|
+	 */
+	pbuf += BCNT_PATCH_BUF_CHECKSUM;
+	patchSize -= BCNT_PATCH_BUF_CHECKSUM;
+
 	/* reserve 1st patch cmd space before patch body
 	 *        |<-WMT_CMD: 5Bytes->|<-patch body: X Bytes (X=patchSize)----->|
 	 */
@@ -1560,14 +1561,17 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 
 	WMT_DBG_FUNC("patch size(%d) fragNum(%d)\n", patchSize, fragNum);
 
-
-	/*send wmt part patch address command */
-	iRet =
-	    wmt_core_tx((PUINT8) &WMT_PATCH_ADDRESS_CMD[0], sizeof(WMT_PATCH_ADDRESS_CMD), &u4Res,
+	/*send patch address command */
+	osal_memcpy(&WMT_PATCH_ADDRESS_CMD[5], addressByte, osal_sizeof(addressByte));
+	WMT_INFO_FUNC("4 bytes address command:0x%02x,0x%02x,0x%02x,0x%02x",
+			WMT_PATCH_ADDRESS_CMD[5], WMT_PATCH_ADDRESS_CMD[6],
+			WMT_PATCH_ADDRESS_CMD[7], WMT_PATCH_ADDRESS_CMD[8]);
+	iRet = wmt_core_tx((PUINT8) & WMT_PATCH_ADDRESS_CMD[0], sizeof(WMT_PATCH_ADDRESS_CMD), &u4Res,
 			MTK_WCN_BOOL_FALSE);
 
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_CMD))) {
-		WMT_ERR_FUNC("wmt_core:wmt patch address CMD fail(%d),size(%d)\n", iRet, u4Res);
+		WMT_ERR_FUNC("wmt_core:wmt part patch address CMD fail(%d),size(%d),index(%d)\n",
+			     iRet, u4Res, index);
 		iRet -= 1;
 		goto done;
 	}
@@ -1576,41 +1580,6 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_ADDRESS_EVT), &u4Res);
 
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT))) {
-		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
-		iRet -= 1;
-		goto done;
-	}
-#if CFG_CHECK_WMT_RESULT
-
-	if (osal_memcmp(addressevtBuf, WMT_PATCH_ADDRESS_EVT, osal_sizeof(WMT_PATCH_ADDRESS_EVT)) !=
-	    0) {
-		WMT_ERR_FUNC("wmt_core: write WMT_PATCH_ADDRESS_CMD status fail\n");
-		iRet -= 1;
-		goto done;
-	}
-#endif
-
-	/*send part patch address command */
-	osal_memcpy(&WMT_PATCH_P_ADDRESS_CMD[12], addressByte, osal_sizeof(addressByte));
-	WMT_INFO_FUNC("4 bytes address command:0x%02x,0x%02x,0x%02x,0x%02x",
-		      WMT_PATCH_P_ADDRESS_CMD[12],
-		      WMT_PATCH_P_ADDRESS_CMD[13],
-		      WMT_PATCH_P_ADDRESS_CMD[14], WMT_PATCH_P_ADDRESS_CMD[15]);
-	iRet =
-	    wmt_core_tx((PUINT8) &WMT_PATCH_P_ADDRESS_CMD[0], sizeof(WMT_PATCH_P_ADDRESS_CMD),
-			&u4Res, MTK_WCN_BOOL_FALSE);
-
-	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_CMD))) {
-		WMT_ERR_FUNC("wmt_core:wmt part patch address CMD fail(%d),size(%d),index(%d)\n",
-			     iRet, u4Res, index);
-		iRet -= 1;
-		goto done;
-	}
-
-	osal_memset(addressevtBuf, 0, sizeof(addressevtBuf));
-	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_P_ADDRESS_EVT), &u4Res);
-
-	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d),index(%d)\n", iRet,
 			     u4Res, index);
 		iRet -= 1;
@@ -1618,7 +1587,7 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 	}
 #if CFG_CHECK_WMT_RESULT
 
-	if (osal_memcmp(addressevtBuf, WMT_PATCH_P_ADDRESS_EVT, osal_sizeof(WMT_PATCH_ADDRESS_EVT))
+	if (osal_memcmp(addressevtBuf, WMT_PATCH_ADDRESS_EVT, osal_sizeof(WMT_PATCH_ADDRESS_EVT))
 	    != 0) {
 		WMT_ERR_FUNC("wmt_core: write WMT_PATCH_ADDRESS_CMD status fail,index(%d)\n",
 			     index);

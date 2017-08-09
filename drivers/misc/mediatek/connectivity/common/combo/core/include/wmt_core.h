@@ -52,6 +52,8 @@
 
 #define BCNT_PATCH_BUF_HEADROOM (8)
 
+#define BCNT_PATCH_BUF_CHECKSUM (2)
+
 #define DWCNT_HIF_CONF    (4)
 #define DWCNT_STRAP_CONF  (4)
 #define DWCNT_RESERVED    (8)
