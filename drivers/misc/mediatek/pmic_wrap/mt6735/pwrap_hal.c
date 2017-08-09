@@ -222,6 +222,8 @@ static inline void pwrap_dump_ap_register(void)
 				WRAP_RD32(PMIC_WRAP_BASE+i+8),
 				WRAP_RD32(PMIC_WRAP_BASE+i+12));
 	}
+	PWRAPREG("infra clock1 0x10000048 =0x%x\n", WRAP_RD32(infracfg_ao_base+0x48));
+	PWRAPREG("infra clock2 0x10210080 =0x%x\n", WRAP_RD32(topckgen_base+0x80));
 	#endif
 }
 static inline void pwrap_dump_pmic_register(void)
