@@ -425,6 +425,7 @@ EXPORT_SYMBOL(mt_combo_plt_exit_deep_idle);
 
 int mtk_wcn_wmt_chipid_query(void)
 {
+	CMB_STUB_LOG_INFO("query current consys chipid (0x%x)\n", gConnectivityChipId);
 	return gConnectivityChipId;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_chipid_query);

@@ -126,8 +126,8 @@ int hif_sdio_match_chipid_by_dev_id(const struct sdio_device_id *id)
 			WMT_DETECT_INFO_FUNC
 			    ("valid chipId found, index(%d), vendor id(0x%x), device id(0x%x), chip id(0x%x)\n", index,
 			     localId->vendor, localId->device, chipId);
+			mtk_wcn_wmt_set_chipid(chipId);
 			gComboChipId = chipId;
-			mtk_wcn_wmt_set_chipid(gComboChipId);
 			break;
 		}
 	}
