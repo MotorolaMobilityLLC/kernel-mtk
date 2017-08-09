@@ -696,10 +696,10 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_2;
 
 	/* get CPU clock-frequency from DT */
-/* #ifdef CONFIG_OF */
-#if 0
+#ifdef CONFIG_OF
 	{
-		struct device_node *node = of_find_node_by_type(NULL, "cpu");
+		/* struct device_node *node = of_find_node_by_type(NULL, "cpu"); */
+		struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a72");
 		unsigned int cpu_speed = 0;
 
 		if (!of_property_read_u32(node, "clock-frequency", &cpu_speed))
@@ -708,23 +708,14 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			cpufreq_err
 			    ("@%s: missing clock-frequency property, use default CPU level\n",
 			     __func__);
-			return CPU_LEVEL_1;
+			return CPU_LEVEL_0;
 		}
 
 		cpufreq_ver("CPU clock-frequency from DT = %d MHz\n", cpu_speed);
 
-		if (cpu_speed >= 1700)
-			lv = CPU_LEVEL_1;	/* 1.7G */
-		else if (cpu_speed >= 1500)
-			lv = CPU_LEVEL_2;	/* 1.5G */
-		else if (cpu_speed >= 1300)
-			lv = CPU_LEVEL_3;	/* 1.3G */
-		else {
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU level! clock-frequency=%d\n",
-			     cpu_speed);
-			lv = CPU_LEVEL_1;
-		}
+		if (cpu_speed == 1989) /* M */
+			return CPU_LEVEL_2;
+
 	}
 #endif
 
@@ -3146,9 +3137,6 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	target_volt = get_turbo_volt(p->cpu_id, target_volt);
 	target_khz = get_turbo_freq(p->cpu_id, target_khz);
 
-	if (cur_khz == target_khz)
-		goto out;
-
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	if (!enable_cpuhvfs) {
 #endif
@@ -3337,14 +3325,13 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	if (ktime_to_us(delta[SET_DVFS]) > ktime_to_us(max[SET_DVFS]))
 		max[SET_DVFS] = delta[SET_DVFS];
 
-	if (p->idx_opp_tbl != new_opp_idx) {
-		p->idx_opp_tbl = new_opp_idx;
-		p_cci->idx_opp_tbl = new_cci_opp_idx;
+	p->idx_opp_tbl = new_opp_idx;
+	p_cci->idx_opp_tbl = new_cci_opp_idx;
+
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-		aee_record_freq_idx(p, p->idx_opp_tbl);
-		aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
+	aee_record_freq_idx(p, p->idx_opp_tbl);
+	aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 #endif
-	}
 
 #ifndef DISABLE_PBM_FEATURE
 	if (!ret && !p->dvfs_disable_by_suspend)
