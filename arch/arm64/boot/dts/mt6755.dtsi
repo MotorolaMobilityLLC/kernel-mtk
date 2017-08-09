@@ -121,7 +121,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1300000000>;
+			clock-frequency = <1144000000>;
 		};
 
 		cpu1: cpu@001 {
@@ -132,7 +132,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1300000000>;
+			clock-frequency = <1144000000>;
 		};
 
 		cpu2: cpu@002 {
@@ -143,7 +143,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1300000000>;
+			clock-frequency = <1144000000>;
 		};
 
 		cpu3: cpu@003 {
@@ -154,7 +154,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1300000000>;
+			clock-frequency = <1144000000>;
 		};
 
 		cpu4: cpu@100 {
@@ -165,7 +165,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu5: cpu@101 {
@@ -176,7 +176,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu6: cpu@102 {
@@ -187,7 +187,7 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu7: cpu@103 {
@@ -198,8 +198,40 @@
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 
+		};
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <&cpu0>;
+				};
+				core1 {
+					cpu = <&cpu1>;
+				};
+				core2 {
+					cpu = <&cpu2>;
+				};
+				core3 {
+					cpu = <&cpu3>;
+				};
+			};
+
+			cluster1 {
+				core0 {
+					cpu = <&cpu4>;
+				};
+				core1 {
+					cpu = <&cpu5>;
+				};
+				core2 {
+					cpu = <&cpu6>;
+				};
+				core3 {
+					cpu = <&cpu7>;
+				};
+			};
 		};
 
 		idle-states {
