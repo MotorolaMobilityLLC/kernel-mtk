@@ -114,16 +114,22 @@ void bootprof_probe(unsigned long long ts, struct device *dev,
 	/* log more than 15ms probes*/
 	unsigned long msec_rem;
 	char msgbuf[MSG_SIZE];
+	int pos = 0;
 
 	if (ts <= PROBE_THRESHOLD)
 		return;
 	msec_rem = do_div(ts, NSEC_PER_MSEC);
-	snprintf(msgbuf, MSG_SIZE, "probe:%s%s(%p)%s%s(%p) probe=%pf %5llu.%06lums",
-		 drv ? " drv=" : "",
-		 drv->name ? drv->name : "", (void *)drv,
-		 dev ? " dev=" : "",
-		 dev->init_name ? dev->init_name : "", (void *)dev,
-		 (void *)probe, ts, msec_rem);
+
+	pos += snprintf(msgbuf, MSG_SIZE, "probe: probe=%pf", (void *)probe);
+	if (drv)
+		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " drv=%s(%p)",
+				drv->name ? drv->name : "",
+				(void *)drv);
+	if (dev && dev->init_name)
+		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " dev=%s(%p)",
+				dev->init_name, (void *)dev);
+	pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " %5llu.%06lums",
+			ts, msec_rem);
 	log_boot(msgbuf);
 }
 
@@ -134,7 +140,7 @@ void bootprof_pdev_register(unsigned long long ts, struct platform_device *pdev)
 	unsigned long msec_rem;
 	char msgbuf[MSG_SIZE];
 
-	if (ts <= PROBE_THRESHOLD)
+	if (ts <= PROBE_THRESHOLD || !pdev)
 		return;
 	msec_rem = do_div(ts, NSEC_PER_MSEC);
 	snprintf(msgbuf, MSG_SIZE, "probe: pdev=%s(%p) %5llu.%06lums",
@@ -170,7 +176,8 @@ static void mt_bootprof_switch(int on)
 		if (on) {
 			mt_bootprof_enabled = 1;
 			timestamp_on = ts;
-		} else {	/* boot up complete */
+		} else {
+			/* boot up complete */
 			mt_bootprof_enabled = 0;
 			timestamp_off = ts;
 			boot_finish = 1;
@@ -193,11 +200,11 @@ mt_bootprof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 	if (copy_from_user(&buf, ubuf, copy_size))
 		return -EFAULT;
 
-	if (cnt == 1) {
-		if (buf[0] == '0')
-			mt_bootprof_switch(0);
-		else if (buf[0] == '1')
-			mt_bootprof_switch(1);
+	if (cnt == 1 && buf[0] == '1') {
+		mt_bootprof_switch(1);
+		return 1;
+	} else if (cnt == 1 && buf[0] == '0') {
+		mt_bootprof_switch(0);
 		return 1;
 	}
 
