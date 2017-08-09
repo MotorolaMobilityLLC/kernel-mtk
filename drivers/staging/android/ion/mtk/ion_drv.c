@@ -145,6 +145,9 @@ static long ion_sys_cache_sync(struct ion_client *client,
 			int i, j;
 			struct sg_table *table = NULL;
 			int npages = 0;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			int ret = 0;
+#endif
 
 			mutex_lock(&client->lock);
 			/*if (!ion_handle_validate(client, kernel_handle)) {
@@ -165,10 +168,13 @@ static long ion_sys_cache_sync(struct ion_client *client,
 				if (!ion_sync_kernel_func)
 					ion_sync_kernel_func = &__ion_cache_sync_kernel;
 
-				if (mt_smp_cache_flush(table, pParam->sync_type, npages) < 0) {
+				ret = mt_smp_cache_flush(table, pParam->sync_type, npages);
+				if (ret < 0) {
 					pr_emerg("[smp cache flush] error in smp_sync_sg_list\n");
 					return -EFAULT;
 				}
+
+				return ret;
 			} else {
 #endif
 			mutex_lock(&gIon_cache_sync_user_lock);
@@ -318,6 +324,9 @@ long ion_dma_op(struct ion_client *client, ion_sys_dma_param_t *pParam, int from
 	struct sg_table *table = NULL;
 	int npages = 0;
 	unsigned long start = -1;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	int ret = 0;
+#endif
 
 	struct ion_handle *kernel_handle;
 
@@ -342,10 +351,13 @@ long ion_dma_op(struct ion_client *client, ion_sys_dma_param_t *pParam, int from
 		if (!ion_sync_kernel_func)
 			ion_sync_kernel_func = &ion_cache_sync_flush;
 
-		if (mt_smp_cache_flush(table, pParam->dma_type, npages) < 0) {
+		ret = mt_smp_cache_flush(table, pParam->dma_type, npages);
+		if (ret < 0) {
 			pr_emerg("[smp cache flush] error in smp_sync_sg_list\n");
 			return -EFAULT;
 		}
+
+		return ret;
 	} else {
 #endif
 	mutex_lock(&gIon_cache_sync_user_lock);
