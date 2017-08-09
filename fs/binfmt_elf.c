@@ -953,8 +953,20 @@ static int load_elf_binary(struct linux_binprm *bprm)
 
 #ifdef arch_randomize_brk
 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
-		current->mm->brk = current->mm->start_brk =
-			arch_randomize_brk(current->mm);
+		int rand_tries = 0;
+
+		while (++rand_tries < 32) {
+			current->mm->brk = current->mm->start_brk =
+				arch_randomize_brk(current->mm);
+
+			if (find_vma_intersection(current->mm, current->mm->brk,
+						  current->mm->brk + PAGE_SIZE) &&
+			    rand_tries < 32) {
+				current->mm->brk = current->mm->start_brk = elf_brk;
+				continue;
+			} else
+				break;
+		}
 #ifdef CONFIG_COMPAT_BRK
 		current->brk_randomized = 1;
 #endif
