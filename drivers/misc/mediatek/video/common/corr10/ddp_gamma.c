@@ -298,7 +298,7 @@ static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int
 	}
 
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_EN, 1);
-	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG, 0x2, 0x2);
+	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG, 0x2, 0x3);
 
 	DISP_REG_SET(cmdq, CCORR_REG(ccorr_base, 0),
 		     ((ccorr->coef[0][0] << 16) | (ccorr->coef[0][1])));
