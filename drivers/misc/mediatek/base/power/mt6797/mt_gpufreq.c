@@ -207,11 +207,11 @@
 
 #define EXTIC_VOLT_ON_OFF_DELAY_US		300
 #define EXTIC_VOLT_STEP			12826	/* 12.826mV per step */
-#define EXTIC_SLEW_STEP			10000	/* 10.000mV per step */
+#define EXTIC_SLEW_STEP			100	/* 10.000mV per step */
 #define EXTIC_VOLT_UP_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
-	((((new_volt) - (old_volt) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate) / 100)	/* us */
+	(((((new_volt) - (old_volt)) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate))	/* us */
 #define EXTIC_VOLT_DOWN_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
-	((((old_volt) - (new_volt) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate) / 100)	/* us */
+	(((((old_volt) - (new_volt)) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate))	/* us */
 #endif
 /* efuse */
 #define GPUFREQ_EFUSE_INDEX		(8)
@@ -827,7 +827,7 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 		delay = PMIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new);
 #elif defined(VGPU_SET_BY_EXTIC)
 		fan53555_read_byte(0x2, &reg_val);
-		slew_rate = reg_val >> 4 & (0x7);
+		slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
 		delay = EXTIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	} else {
@@ -835,7 +835,7 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 		delay = PMIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new);
 #elif defined(VGPU_SET_BY_EXTIC)
 		fan53555_read_byte(0x2, &reg_val);
-		slew_rate = reg_val >> 4 & (0x7);
+		slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
 		delay = EXTIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	}
@@ -990,7 +990,7 @@ EXPORT_SYMBOL(mt_gpufreq_enable_by_ptpod);
  *************************************************/
 void mt_gpufreq_disable_by_ptpod(void)
 {
-	int i = 0, volt_level_reached = 0, target_idx = 0;
+	int i = 0, target_idx = 0;
 
 	if (mt_gpufreq_ready == false) {
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
@@ -1009,18 +1009,9 @@ void mt_gpufreq_disable_by_ptpod(void)
 
 	for (i = 0; i < mt_gpufreqs_num; i++) {
 		/* VBoot = 1v for PTPOD */
-		if (mt_gpufreqs_default[i].gpufreq_volt <= GPU_DVFS_PTPOD_DISABLE_VOLT) {
-			volt_level_reached = 1;
-			if (i == (mt_gpufreqs_num - 1)) {
-				target_idx = i;
-				break;
-			}
-		} else {
-			if (volt_level_reached == 1) {
-				target_idx = i - 1;
-				break;
-			}
-		}
+		target_idx = i;
+		if (mt_gpufreqs_default[i].gpufreq_volt <= GPU_DVFS_PTPOD_DISABLE_VOLT)
+			break;
 	}
 
 	mt_gpufreq_ptpod_disable_idx = target_idx;
@@ -1926,12 +1917,12 @@ static int mt_gpufreq_power_throttle_protect(void)
 	}
 
 	g_limited_max_id = limited_index;
-	gpufreq_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
-		     g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
 
 	if (NULL != g_pGpufreq_power_limit_notify)
 		g_pGpufreq_power_limit_notify(g_limited_max_id);
 
+	gpufreq_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
+		g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
 	return ret;
 }
 
