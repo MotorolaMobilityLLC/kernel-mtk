@@ -761,6 +761,8 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 				ret = ccmni_inst_init(md_id, ccmni, dev);
 				if (ret) {
 					CCMNI_ERR_MSG(md_id, "initial ccmni instance fail\n");
+					kfree(ccmni);
+					kfree(ccmni_irat_src);
 					goto alloc_mem_fail;
 				}
 				ctlb->ccmni_inst[i] = ccmni;
