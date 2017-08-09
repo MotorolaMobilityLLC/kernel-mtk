@@ -45,6 +45,20 @@ int kree_pm_cpu_dormant(int mode)
 
 	return 0;
 }
+
+int kree_pm_cpu_dormant_workaround_wake(int workaround_wake)
+{
+	MTEEC_PARAM param[4];
+	TZ_RESULT ret;
+
+	param[0].value.a = workaround_wake;
+	ret = KREE_TeeServiceCall(pm_session, TZCMD_PM_CPU_ERRATA_802022_WA,
+				  TZ_ParamTypes1(TZPT_VALUE_INPUT), param);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("%s error: %s\n", __func__, TZ_GetErrorString(ret));
+
+	return 0;
+}
 #endif
 
 int kree_pm_device_ops(int state)

@@ -11,6 +11,7 @@ void kree_pm_init(void);
 void kree_pm_cpu_lowpower(volatile int *ppen_release, int logical_cpuid);
 int kree_pm_cpu_dormant(int mode);
 int kree_pm_device_ops(int state);
+int kree_pm_cpu_dormant_workaround_wake(int workaround_wake);
 
 #else
 
