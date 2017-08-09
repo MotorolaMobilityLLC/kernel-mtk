@@ -19,6 +19,7 @@
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
 #include "mt_ptp.h"
+#include <trace/events/mtk_events.h>
 /* forward references */
 
 /*============================================================================*/
@@ -531,7 +532,7 @@ void hps_algo_main(void)
 				     hps_sys.up_load_avg,
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				     str_target);
-			else
+			else {
 				hps_warn
 				    ("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
 				     hps_sys.action_id, str_online, hps_ctxt.cur_loads,
@@ -539,6 +540,12 @@ void hps_algo_main(void)
 				     str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				     str_target);
+				trace_hps_update(hps_sys.action_id, str_online, hps_ctxt.cur_loads,
+						 hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
+						 str_criteria_limit, str_criteria_base,
+						 hps_sys.up_load_avg, hps_sys.down_load_avg,
+						 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
+			}
 			hps_ctxt_reset_stas_nolock();
 		}
 	}
