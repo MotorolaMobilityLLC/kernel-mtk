@@ -27,6 +27,10 @@
 
 #include <asm/local.h>
 
+#ifdef CONFIG_MTK_EXTMEM
+#include <linux/exm_driver.h>
+#endif
+
 static void update_pages_handler(struct work_struct *work);
 
 /*
@@ -397,7 +401,11 @@ size_t ring_buffer_page_len(void *page)
  */
 static void free_buffer_page(struct buffer_page *bpage)
 {
+#ifdef CONFIG_MTK_EXTMEM
+	extmem_free((void *)bpage->page);
+#else
 	free_page((unsigned long)bpage->page);
+#endif
 	kfree(bpage);
 }
 
@@ -1153,7 +1161,9 @@ static int __rb_allocate_pages(int nr_pages, struct list_head *pages, int cpu)
 	struct buffer_page *bpage, *tmp;
 
 	for (i = 0; i < nr_pages; i++) {
+#if !defined(CONFIG_MTK_EXTMEM)
 		struct page *page;
+#endif
 		/*
 		 * __GFP_NORETRY flag makes sure that the allocation fails
 		 * gracefully without invoking oom-killer and the system is
@@ -1167,11 +1177,19 @@ static int __rb_allocate_pages(int nr_pages, struct list_head *pages, int cpu)
 
 		list_add(&bpage->list, pages);
 
+#ifdef CONFIG_MTK_EXTMEM
+		bpage->page = extmem_malloc_page_align(PAGE_SIZE);
+		if (bpage->page == NULL) {
+			pr_err("%s[%s] ext memory alloc failed!!!\n", __FILE__, __func__);
+			goto free_pages;
+		}
+#else
 		page = alloc_pages_node(cpu_to_node(cpu),
 					GFP_KERNEL | __GFP_NORETRY, 0);
 		if (!page)
 			goto free_pages;
 		bpage->page = page_address(page);
+#endif
 		rb_init_page(bpage->page);
 	}
 
@@ -1216,7 +1234,9 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
 {
 	struct ring_buffer_per_cpu *cpu_buffer;
 	struct buffer_page *bpage;
+#if !defined(CONFIG_MTK_EXTMEM)
 	struct page *page;
+#endif
 	int ret;
 
 	cpu_buffer = kzalloc_node(ALIGN(sizeof(*cpu_buffer), cache_line_size()),
@@ -1242,10 +1262,16 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int nr_pages, int cpu)
 	rb_check_bpage(cpu_buffer, bpage);
 
 	cpu_buffer->reader_page = bpage;
+#ifdef CONFIG_MTK_EXTMEM
+	bpage->page = extmem_malloc_page_align(PAGE_SIZE);
+	if (bpage->page == NULL)
+		goto fail_free_reader;
+#else
 	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
 	if (!page)
 		goto fail_free_reader;
 	bpage->page = page_address(page);
+#endif
 	rb_init_page(bpage->page);
 
 	INIT_LIST_HEAD(&cpu_buffer->reader_page->list);

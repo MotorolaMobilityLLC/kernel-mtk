@@ -47,6 +47,10 @@
 #include <asm/tlb.h>
 #include <asm/mmu_context.h>
 
+#ifdef CONFIG_MTK_EXTMEM
+#include <linux/exm_driver.h>
+#endif
+
 #include "internal.h"
 
 #ifndef arch_mmap_check
@@ -2549,6 +2553,12 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 		return 0;
 	prev = vma->vm_prev;
 	/* we have  start < vma->vm_end  */
+
+#ifdef CONFIG_MTK_EXTMEM
+	/* get correct mmap size if in mspace. */
+	if (extmem_in_mspace(vma))
+		len = extmem_get_mem_size(vma->vm_pgoff);
+#endif
 
 	/* if it doesn't overlap, we have nothing.. */
 	end = start + len;
