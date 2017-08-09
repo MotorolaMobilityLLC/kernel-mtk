@@ -244,7 +244,7 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE sIrqPurpose);
 
-bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
+bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr);
 
 /* GetEnableAudioBlockRegOffset */
 enum MEM_BLOCK_ENABLE_REG_INDEX {

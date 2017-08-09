@@ -82,6 +82,8 @@
 #include <asm/io.h>
 #include <asm/div64.h>
 
+#include <mt-plat/mt_lpae.h>
+
 /*#include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -1792,5 +1794,50 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 		Aud_IRQ_Handler_Funcs[irqIndex]();
 	else
 		pr_aud("%s(), Aud_IRQ%d_Handler is Null", __func__, irqIndex);
+}
+
+bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
+{
+	return (enable_4G() & usingdram & (0 < (addr >> 32)));
+}
+
+bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr)
+{
+	bool highBitEnable = IsNeedToSetHighAddr(usingdram, addr);
+
+	/*pr_debug("%s MemBlock = %d usingdram = %d\n",
+		 __func__,
+		 MemBlock,
+		 usingdram);*/
+
+	switch (MemBlock) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 0, 0x1 << 0);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 1, 0x1 << 1);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 6, 0x1 << 6);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DAI:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 5, 0x1 << 5);
+		break;
+	case Soc_Aud_Digital_Block_MEM_AWB:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 3, 0x1 << 3);
+		break;
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 4, 0x1 << 4);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 2, 0x1 << 2);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 7, 0x1 << 7);
+		break;
+	default:
+		break;
+	}
+	return true;
 }
 

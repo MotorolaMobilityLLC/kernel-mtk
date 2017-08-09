@@ -561,7 +561,7 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 	if (AllocateAudioSram((dma_addr_t *)&afe_offload_block.hw_buffer_addr,
 		(unsigned char **)&afe_offload_block.hw_buffer_area,
 		afe_offload_block.hw_buffer_size, &afe_offload_block) == 0) {
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false);
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false, (dma_addr_t)afe_offload_block.hw_buffer_addr);
 	} else {
 		afe_offload_block.hw_buffer_size = Dl3_MAX_BUFFER_SIZE;
 		afe_offload_block.hw_buffer_area = (afe_offload_block.buf.pucVirtBufAddr +
@@ -569,7 +569,7 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 		afe_offload_block.hw_buffer_addr = (afe_offload_block.buf.pucPhysBufAddr +
 						    afe_offload_block.buf.u4BufferSize);
 		mPlaybackDramState = true;
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, true);
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, true, (dma_addr_t)afe_offload_block.hw_buffer_addr);
 		AudDrv_Emi_Clk_On();
 	}
 

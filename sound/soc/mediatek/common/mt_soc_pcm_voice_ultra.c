@@ -545,7 +545,7 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 		    ultra_info.dl_dma_addr + (ultra_info.dl_size - 1),
 		    0xffffffff);
 	memset_io(ultra_info.dl_dma_area, 0, ultra_info.dl_size);
-	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false);
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false, ultra_info.dl_dma_addr);
 
 	/* set memif for voice dl */
 	Afe_Set_Reg(AFE_AWB_BASE, ultra_info.voice_dl_dma_addr, 0xffffffff);
@@ -554,7 +554,7 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 		    (ultra_info.voice_dl_size - 1),
 		    0xffffffff);
 	memset_io(ultra_info.voice_dl_dma_area, 0, ultra_info.voice_dl_size);
-	SetHighAddr(Soc_Aud_Digital_Block_MEM_AWB, false);
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_AWB, false, ultra_info.voice_dl_dma_addr);
 
 	/* set memif for ultra ul */
 	Afe_Set_Reg(AFE_VUL_D2_BASE, ultra_info.ultra_ul_dma_addr, 0xffffffff);
@@ -563,7 +563,7 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 		    (ultra_info.ultra_ul_size - 1),
 		    0xffffffff);
 	memset_io(ultra_info.ultra_ul_dma_area, 0, ultra_info.ultra_ul_size);
-	SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false, ultra_info.ultra_ul_dma_addr);
 
 	pr_warn("%s(), dl: bytes = %d, area = %p, addr = 0x%lx\n",
 		__func__,
