@@ -199,7 +199,7 @@ static ssize_t mrdump_proc_cmd_write(struct file *file, const char *buf, size_t 
 	int ret = 0;
 	int mrdump_rst_source;
 	int en, mode;		/* enable or disable ext wdt 1<-->enable 0<-->disable */
-	char mrdump_cmd_buf[128];
+	char mrdump_cmd_buf[256];
 	struct wd_api *my_wd_api = NULL;
 
 	ret = get_wd_api(&my_wd_api);
