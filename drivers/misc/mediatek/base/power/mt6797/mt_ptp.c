@@ -298,7 +298,7 @@ unsigned int sbTbl[][16] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x04, 0x32},/* 247 */
 	{0x02, 0xa, 0x05, 0xa, 0x1, 0x0B0, 0x04, 0x2F},/* 182 */
 };
-#ifdef ENABLE_IDVFS
+#ifdef IDVFS_ENABLE
 static unsigned int ctrl_EEM_Enable = 1;
 #else
 static unsigned int ctrl_EEM_Enable;
@@ -518,7 +518,7 @@ static void _mt_eem_aee_init(void)
  * LOG
  */
 #ifdef __KERNEL__
-#define EEM_TAG     "[xxxxx] "
+#define EEM_TAG     "[xxxx1] "
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
 	#define eem_emerg(fmt, args...)     pr_err(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)
@@ -1729,29 +1729,29 @@ static int set_volt_cpu(struct eem_det *det)
 		#ifdef __KERNEL__
 			record(det);
 		#endif
-		/*
+
 		switch (det_to_id(det)) {
 		case EEM_DET_BIG:
-			value = mt_cpufreq_update_volt( MT_CPU_DVFS_B, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt_b(MT_CPU_DVFS_B, det->volt_tbl_pmic, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_L:
-			value = mt_cpufreq_update_volt( MT_CPU_DVFS_L, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, det->volt_tbl_pmic, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_2L:
-			value = mt_cpufreq_update_volt( MT_CPU_DVFS_LL, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, det->volt_tbl_pmic, det->num_freq_tbl);
 			break;
 
 		case EEM_DET_CCI:
-			value = mt_cpufreq_update_volt( MT_CPU_DVFS_CCI, det->volt_tbl_pmic, det->num_freq_tbl);
+			value = mt_cpufreq_update_volt(MT_CPU_DVFS_CCI, det->volt_tbl_pmic, det->num_freq_tbl);
 			break;
 
 		default:
 			value = 0;
 			break;
 		}
-		*/
+
 		return value;
 	#endif
 }
@@ -2431,6 +2431,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX));
 		}
+		eem_debug("[%s].volt_tbl[%d] = 0x%08X ----- volt_tbl_pmic[%d] = 0x%08X (%d)\n",
+			det->name,
+			i, det->volt_tbl[i],
+			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
 	}
 
 	#if defined(__MTK_SLT_)
