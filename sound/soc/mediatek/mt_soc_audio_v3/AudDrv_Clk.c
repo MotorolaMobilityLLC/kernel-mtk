@@ -53,7 +53,7 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-#define _MT_IDLE_HEADER
+/*#define _MT_IDLE_HEADER*/
 
 /*#include <mach/mt_pm_ldo.h>*/
 /*#include <mach/pmic_mt6325_sw.h>
