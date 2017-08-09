@@ -58,8 +58,11 @@
 
 static AFE_MEM_CONTROL_T  *I2S2_ADC2_Control_context;
 static struct snd_dma_buffer *Adc2_Capture_dma_buf;
+static unsigned int mPlaybackDramState;
+
 static DEFINE_SPINLOCK(auddrv_I2s2adc2InCtl_lock);
 static kal_int32 Previous_Hw_cur;
+static struct device *mDev;
 
 /*
  *    function implementation
@@ -74,7 +77,7 @@ static int mtk_i2s2_adc2_data_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_I2S2_adc2_hardware = {
 	.info = (SNDRV_PCM_INFO_INTERLEAVED),
-	.formats =      SND_SOC_STD_MT_FMTS,
+	.formats =      SND_SOC_ADV_MT_FMTS,
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
 	.rate_max =     SOC_HIGH_USE_RATE_MAX,
@@ -123,8 +126,19 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 	SetExtI2SAdcIn(&DigtalI2SIn);
 	SetExtI2SAdcInEnable(true);
 
-	SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O21);
-	SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O22);
+	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
+		pr_warn("+StartAudioI2S2ADC2Hardware SNDRV_PCM_FORMAT_U32_LE\n");
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O21);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O22);
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+			AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+
+	} else {
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O21);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_InterConnectionOutput_O22);
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
+	}
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I25, Soc_Aud_InterConnectionOutput_O21);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I26, Soc_Aud_InterConnectionOutput_O22);
@@ -206,21 +220,20 @@ static int mtk_i2s2_adc2_pcm_hw_params(struct snd_pcm_substream *substream,
 				       struct snd_pcm_hw_params *hw_params)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
-	dma_buf->dev.dev = substream->pcm->card->dev;
-	dma_buf->private_data = NULL;
-
-	if (Adc2_Capture_dma_buf->area) {
-		runtime->dma_bytes = params_buffer_bytes(hw_params);
-		runtime->dma_area = Adc2_Capture_dma_buf->area;
-		runtime->dma_addr = Adc2_Capture_dma_buf->addr;
-		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
+	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
+	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
+		substream->runtime->dma_bytes, substream) == 0) {
+		mPlaybackDramState = false;
+		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {
-		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+		substream->runtime->dma_area = Adc2_Capture_dma_buf->area;
+		substream->runtime->dma_addr = Adc2_Capture_dma_buf->addr;
+		mPlaybackDramState = true;
+		AudDrv_Emi_Clk_On();
 	}
+
 	pr_warn("mtk_i2s2_adc2_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr);
 	SetADC2Buffer(substream, hw_params);
@@ -230,11 +243,12 @@ static int mtk_i2s2_adc2_pcm_hw_params(struct snd_pcm_substream *substream,
 static int mtk_i2s2_adc2_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_i2s2_adc2_capture_pcm_hw_free\n");
-	if (Adc2_Capture_dma_buf->area)
-		return 0;
-	else
-		return snd_pcm_lib_free_pages(substream);
-
+	if (mPlaybackDramState == true) {
+		AudDrv_Emi_Clk_Off();
+		mPlaybackDramState = false;
+	} else
+		freeAudioSram((void *)substream);
+	return 0;
 }
 
 static struct snd_pcm_hw_constraint_list i2s2_adc2_constraints_sample_rates = {
@@ -246,6 +260,8 @@ static int mtk_i2s2_adc2_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
+
+	mPlaybackDramState = false;
 
 	pr_warn("mtk_i2s2_adc2_pcm_open\n");
 	I2S2_ADC2_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
@@ -259,22 +275,19 @@ static int mtk_i2s2_adc2_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
-	AudDrv_Clk_On();
-
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_MMAP_VALID;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
-	 else
-		return -1;
+		pr_debug("SNDRV_PCM_STREAM_CAPTURE\n");
 
 	if (ret < 0) {
 		pr_err("mtk_i2s2_adc2_pcm_close\n");
 		mtk_i2s2_adc2_pcm_close(substream);
 		return ret;
 	}
+	AudDrv_Clk_On();
 	pr_debug("mtk_i2s2_adc2_pcm_open return\n");
 	return 0;
 }
@@ -503,6 +516,7 @@ static int mtk_i2s2_adc2_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_I2S2_ADC2_PCM);
 
 	pr_err("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	mDev = &pdev->dev;
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
