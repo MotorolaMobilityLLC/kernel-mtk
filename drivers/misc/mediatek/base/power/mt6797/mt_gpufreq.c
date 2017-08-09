@@ -205,7 +205,7 @@
 #define EXTIC_VGPU_SLEW_MASK		0x7
 #define EXTIC_VGPU_SLEW_SHIFT		0x4
 
-#define EXTIC_VOLT_ON_OFF_DELAY_US		300
+#define EXTIC_VOLT_ON_OFF_DELAY_US		350
 #define EXTIC_VOLT_STEP			12826	/* 12.826mV per step */
 #define EXTIC_SLEW_STEP			100	/* 10.000mV per step */
 #define EXTIC_VOLT_UP_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
@@ -490,7 +490,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 #endif
 
 	gpu_speed_bounding = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >>
-			      EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
+				EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
 	gpufreq_info("GPU frequency bounding from efuse = %x\n", gpu_speed_bounding);
 
 	/* No efuse or free run? use clock-frequency from device tree to determine GPU table type! */
@@ -850,7 +850,6 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 /* Set VGPU enable/disable when GPU clock be switched on/off */
 unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
-	unsigned int delay = 0;
 	int ret = 0;
 #ifdef VGPU_SET_BY_EXTIC
 	unsigned char reg_val = 0;
@@ -910,7 +909,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	/* (g_cur_gpu_volt / 1250) + 26; */
 	/* delay = mt_gpufreq_calc_pmic_settle_time(0, g_cur_gpu_volt); */
 
-	gpufreq_dbg("@%s: enable = %x, delay = %d\n", __func__, enable, delay);
+	gpufreq_dbg("@%s: enable = %x\n", __func__, enable);
 
 	udelay(PMIC_VOLT_ON_OFF_DELAY_US);
 #elif defined(VGPU_SET_BY_EXTIC)
@@ -938,21 +937,25 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		/* VGPU enable fail, dump info and trigger BUG() */
 		int i = 0;
 
-		gpufreq_err("@%s: enable = %x, delay = %d\n", __func__, enable, delay);
+		gpufreq_err("@%s: enable = %x, reg_val = %d\n", __func__, enable, reg_val);
 
 		/* read PMIC chip id via PMIC wrapper */
 		for (i = 0; i < 10; i++) {
 #ifdef VGPU_SET_BY_EXTIC
-			fan53555_dump_register();
-			gpufreq_err("@%s: i2c num = 0x%x, fan53555 sw ready is %d\n",
-				__func__, get_fan53555_i2c_ch_num(), is_fan53555_sw_ready());
+			fan53555_read_interface(EXTIC_VSEL0, &reg_val,
+				EXTIC_BUCK_EN0_MASK,
+				EXTIC_BUCK_EN0_SHIFT);
+			gpufreq_err("@%s: i2c num = 0x%x, fan53555 sw ready is %d, reg_val = 0x%x\n",
+				__func__, get_fan53555_i2c_ch_num(), is_fan53555_sw_ready(), reg_val);
 #else
 			pwrap_read(0x200, &reg_val);
 			gpufreq_err("@%s: PMIC CID via pwap = 0x%x\n", __func__, reg_val);
 #endif
 		}
-
-		BUG();
+#ifdef VGPU_SET_BY_EXTIC
+		if (((reg_val >> EXTIC_BUCK_EN0_SHIFT) & EXTIC_BUCK_EN0_MASK) != EXTIC_BUCK_EN0_MASK)
+#endif
+			BUG();
 	}
 
 	if (enable == 1)
@@ -1922,7 +1925,8 @@ static int mt_gpufreq_power_throttle_protect(void)
 		g_pGpufreq_power_limit_notify(g_limited_max_id);
 
 	gpufreq_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
-		g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
+			g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
+
 	return ret;
 }
 
