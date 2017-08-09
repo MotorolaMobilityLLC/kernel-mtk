@@ -19,13 +19,14 @@
 #include <linux/of_address.h>
 #include <linux/of.h>
 
+#include <mt-plat/mt_dbg.h>
 #include <mt-plat/mt_io.h>
-#include <mt-plat/mt6735/include/mach/irqs.h>
 #include <mt-plat/sync_write.h>
 
 #include "mt_cpuidle.h"
 #include "mt_spm.h"
 
+#include <mach/irqs.h>
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mach/mt_secure_api.h>
 #endif
@@ -645,14 +646,14 @@ int mt_cpu_dormant_init(void)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	sleep_aee_rec_cpu_dormant_va = aee_rr_rec_cpu_dormant();
-	sleep_aee_rec_cpu_dormant = aee_rr_rec_cpu_dormant_pa();
+	sleep_aee_rec_cpu_dormant_pa = aee_rr_rec_cpu_dormant_pa();
 
-	BUG_ON(!sleep_aee_rec_cpu_dormant_va || !sleep_aee_rec_cpu_dormant);
+	BUG_ON(!sleep_aee_rec_cpu_dormant_va || !sleep_aee_rec_cpu_dormant_pa);
 
-	kernel_smc_msg(0, 2, (phys_addr_t)sleep_aee_rec_cpu_dormant);
+	kernel_smc_msg(0, 2, (phys_addr_t)sleep_aee_rec_cpu_dormant_pa);
 
 	dormant_dbg("init aee_rec_cpu_dormant: va:%p pa:%p\n",
-		    sleep_aee_rec_cpu_dormant_va, sleep_aee_rec_cpu_dormant);
+		    sleep_aee_rec_cpu_dormant_va, sleep_aee_rec_cpu_dormant_pa);
 #endif
 
 	mt_dormant_initialized = 1;
