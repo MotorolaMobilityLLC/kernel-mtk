@@ -159,8 +159,8 @@ static int od_need_start;
 #endif
 
 /* dvfs */
-static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(OPPI_UNREQ);
-static int dvfs_last_ovl_req = OPPI_UNREQ;
+static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
+static int dvfs_last_ovl_req = HRT_LEVEL_LOW;
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
@@ -2716,8 +2716,17 @@ static int decouple_update_rdma_config(void)
 static int _request_dvfs_perf(int req)
 {
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
-		mmdvfs_set_step(MMDVFS_SCEN_DISP, (req == OPPI_PERF) ? MMDVFS_VOLTAGE_HIGH :
-			MMDVFS_VOLTAGE_LOW);
+		switch (req) {
+		case HRT_LEVEL_HIGH:
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH);
+			break;
+		case HRT_LEVEL_LOW:
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW);
+			break;
+		case HRT_LEVEL_EXTREME_LOW:
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW_LOW);
+			break;
+		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
 
@@ -2742,12 +2751,15 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	if (real_hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 
-		_request_dvfs_perf(OPPI_PERF);
-	} else {
+		_request_dvfs_perf(HRT_LEVEL_HIGH);
+	} else if (real_hrt_level > HRT_LEVEL_EXTREME_LOW) {
 		/* be carefull for race condition !! because callback may delay */
 		/* so we need to check last request when ovl_config */
-		if (dvfs_last_ovl_req == OPPI_UNREQ)
-			_request_dvfs_perf(OPPI_UNREQ);
+		if (dvfs_last_ovl_req == HRT_LEVEL_LOW)
+			_request_dvfs_perf(HRT_LEVEL_LOW);
+	} else {
+		if (dvfs_last_ovl_req == HRT_LEVEL_EXTREME_LOW)
+			_request_dvfs_perf(HRT_LEVEL_EXTREME_LOW);
 	}
 	_primary_path_unlock(__func__);
 
@@ -4641,10 +4653,12 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
-		_request_dvfs_perf(OPPI_PERF);
-		dvfs_last_ovl_req = OPPI_PERF;
-	} else {
-		dvfs_last_ovl_req = OPPI_UNREQ;
+		_request_dvfs_perf(HRT_LEVEL_HIGH);
+		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
+	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
+		dvfs_last_ovl_req = HRT_LEVEL_LOW;
+	} else{
+		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
 	}
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
