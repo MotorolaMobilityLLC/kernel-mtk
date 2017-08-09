@@ -1306,22 +1306,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 /* field definition */
 /* ------------------------------------------------------------- */
-/* DISP OD */
-#define DISP_OD_EN                              (DISPSYS_OD_BASE + 0x000)
-#define DISP_OD_RESET                           (DISPSYS_OD_BASE + 0x004)
-#define DISP_OD_INTEN                           (DISPSYS_OD_BASE + 0x008)
-#define DISP_OD_INTS                            (DISPSYS_OD_BASE + 0x00C)
-#define DISP_OD_STATUS                          (DISPSYS_OD_BASE + 0x010)
-#define DISP_OD_CFG                             (DISPSYS_OD_BASE + 0x020)
-#define DISP_OD_INPUT_COUNT                     (DISPSYS_OD_BASE + 0x024)
-#define DISP_OD_OUTPUT_COUNT                    (DISPSYS_OD_BASE + 0x028)
-#define DISP_OD_CHKS_UM                         (DISPSYS_OD_BASE + 0x02c)
-#define DISP_OD_SIZE                            (DISPSYS_OD_BASE + 0x030)
-#define DISP_OD_HSYNC_WIDTH                     (DISPSYS_OD_BASE + 0x040)
-#define DISP_OD_VSYNC_WIDTH                     (DISPSYS_OD_BASE + 0x044)
-#define DISP_OD_MISC                            (DISPSYS_OD_BASE + 0x048)
-/* field definition */
-/* ------------------------------------------------------------- */
 /* COLOR */
 #define CFG_MAIN_FLD_M_REG_RESET                 REG_FLD(1, 31)
 #define CFG_MAIN_FLD_M_DISP_RESET                REG_FLD(1, 30)

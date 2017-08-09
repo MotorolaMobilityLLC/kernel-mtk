@@ -257,11 +257,11 @@ void _disp_od_core_enabled(void *cmdq, int enabled)
 	if (enabled == 1) {
 		DISP_REG_MASK(cmdq, OD_REG00, 0, (1 << 31)); /* bypass_all = 0 */
 		DISP_REG_MASK(cmdq, OD_REG00, 1, 1);         /* EN = 1 */
-		DISP_REG_MASK(cmdq, DISP_OD_CFG, 1<<1, 0x2); /* core en */
+		DISP_REG_MASK(cmdq, DISP_REG_OD_CFG, 1<<1, 0x2); /* core en */
 	} else {
 		DISP_REG_MASK(cmdq, OD_REG00, 1, (1 << 31)); /* bypass_all = 1 */
 		DISP_REG_MASK(cmdq, OD_REG00, 0, 1);         /* EN = 0 */
-		DISP_REG_MASK(cmdq, DISP_OD_CFG, 0<<1, 0x2); /* core disable */
+		DISP_REG_MASK(cmdq, DISP_REG_OD_CFG, 0<<1, 0x2); /* core disable */
 	}
 
 	ODDBG(OD_DBG_ALWAYS, "_disp_od_core_enabled value=%d\n", enabled);
@@ -331,7 +331,7 @@ static void _od_set_dram_buffer_addr(void *cmdq, int manual_comp, int image_widt
 	static int is_inited;
 
 	/* set line size : ( h active/4* manual CR )/128  ==>linesize = (h active * manual CR)/512*/
-	u4Linesize = ((image_width * manual_comp) >> 9) + 2;
+	u4Linesize = ((image_width * manual_comp) >> 9) + OD_LINESIZE_BUFFER;
 	u4ODDramSize = u4Linesize * (image_height / 2) * 16;
 
 	if (!is_inited) {
@@ -466,6 +466,24 @@ static void _od_set_param(void *cmdq, int manual_comp, int image_width, int imag
 	OD_REG_SET_FIELD(cmdq, OD_REG76, 0x2, CURR_Q_UV);
 	OD_REG_SET_FIELD(cmdq, OD_REG76, 0x2, CURR_Q_BYPASS);
 	OD_REG_SET_FIELD(cmdq, OD_REG77, 0x8, IP_SAD_TH);
+
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 40, RG_WR_HIGH);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 40, RG_WR_PRE_HIGH);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 1, RG_WRULTRA_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 40, RG_WR_LOW);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 40, RG_WR_PRELOW);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 1, RG_WGPREULTRA_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 1, RG_WDRAM_HOLD_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG71, 1, RG_WDRAM_LEN_X8);
+
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 40, RG_RD_HIGH);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 40, RG_RD_PRE_HIGH);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 1, RG_RDULTRA_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 40, RG_RD_LOW);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 40, RG_RD_PRELOW);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 1, RG_RGPREULTRA_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 1, RG_RDRAM_HOLD_EN);
+	OD_REG_SET_FIELD(cmdq, OD_REG72, 1, RG_RDRAM_LEN_X8);
 }
 
 
@@ -639,8 +657,8 @@ static void _od_set_table(void *cmdq, int tableSelect, const u8 *od_table, int t
 
 static void od_dbg_dump(void)
 {
-	ODDBG(OD_DBG_ALWAYS, "OD EN %d INPUT %d %d\n", DISP_REG_GET(DISP_OD_EN),
-		DISP_REG_GET(DISP_OD_INPUT_COUNT) >> 16, DISP_REG_GET(DISP_OD_INPUT_COUNT) & 0xFFFF);
+	ODDBG(OD_DBG_ALWAYS, "OD EN %d INPUT %d %d\n", DISP_REG_GET(DISP_REG_OD_EN),
+		DISP_REG_GET(DISP_REG_OD_INPUT_COUNT) >> 16, DISP_REG_GET(DISP_REG_OD_INPUT_COUNT) & 0xFFFF);
 	ODDBG(OD_DBG_ALWAYS, "STA 0x%08x\n", DISP_REG_GET(OD_STA00));
 	ODDBG(OD_DBG_ALWAYS, "REG49 0x%08x\n", DISP_REG_GET(OD_REG49));
 }
@@ -675,11 +693,11 @@ void disp_config_od(unsigned int width, unsigned int height, void *cmdq, unsigne
 		BUG();
 	}
 
-	DISP_REG_SET(cmdq, DISP_OD_EN, 1);
+	DISP_REG_SET(cmdq, DISP_REG_OD_EN, 1);
 
-	DISP_REG_SET(cmdq, DISP_OD_SIZE, (width << 16) | height);
-	DISP_REG_SET(cmdq, DISP_OD_HSYNC_WIDTH, OD_HSYNC_WIDTH);
-	DISP_REG_SET(cmdq, DISP_OD_VSYNC_WIDTH, (OD_HSYNC_WIDTH << 16) | (width * 3 / 2));
+	DISP_REG_SET(cmdq, DISP_REG_OD_SIZE, (width << 16) | height);
+	DISP_REG_SET(cmdq, DISP_REG_OD_HSYNC_WIDTH, OD_HSYNC_WIDTH);
+	DISP_REG_SET(cmdq, DISP_REG_OD_VSYNC_WIDTH, (OD_HSYNC_WIDTH << 16) | (width * 3 / 2));
 
 	_od_reg_init(cmdq);
 	_od_set_dram_buffer_addr(cmdq, manual_cpr, width, height);
@@ -694,12 +712,12 @@ void disp_config_od(unsigned int width, unsigned int height, void *cmdq, unsigne
 
 	DISP_REG_SET(cmdq, OD_REG53, 0x6BFB7E00);
 
-	DISP_REG_SET(cmdq, DISP_OD_MISC, 1); /* [1]:can access OD table; [0]:can't access OD table */
+	DISP_REG_SET(cmdq, DISP_REG_OD_MISC, 1); /* [1]:can access OD table; [0]:can't access OD table */
 
 	/* _od_set_table(OD_TABLE_17, 0); /// default use 17x17 table */
 	_od_set_table(cmdq, od_table_select, od_table, 0);
 
-	DISP_REG_SET(cmdq, DISP_OD_MISC, 0); /* [1]:can access OD table; [0]:can't access OD table */
+	DISP_REG_SET(cmdq, DISP_REG_OD_MISC, 0); /* [1]:can access OD table; [0]:can't access OD table */
 
 	/* modified ALBUF2_DLY OD_REG01 */
 
@@ -730,7 +748,7 @@ void disp_config_od(unsigned int width, unsigned int height, void *cmdq, unsigne
 
 	/* GO OD. relay = 0, od_core_en = 1, DITHER_EN = 1 */
 	/* Dynamic turn on from ioctl */
-	/* DISP_REG_SET(cmdq, DISP_OD_CFG, 2); */
+	DISP_REG_SET(cmdq, DISP_REG_OD_CFG, 2);
 
 	/* clear crc error first */
 	OD_REG_SET_FIELD(cmdq, OD_REG38, 1, DRAM_CRC_CLR);
@@ -973,7 +991,7 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			disp_config_od(pConfig->dst_w, pConfig->dst_h, cmdq, od_table_size, od_table);
 	#if 0
 			/* For debug */
-			DISP_REG_MASK(cmdq, DISP_OD_INTEN, (1<<6)|(1<<3)|(1<<2), (1<<6)|(1<<3)|(1<<2));
+			DISP_REG_MASK(cmdq, DISP_REG_OD_INTEN, (1<<6)|(1<<3)|(1<<2), (1<<6)|(1<<3)|(1<<2));
 	#endif
 		} else {
 			ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
@@ -982,14 +1000,6 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 #else /* Not support OD */
 		ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
 #endif
-	}
-
-	if (pConfig->dst_dirty) {
-		/*
-		dither0 is in the OD module, and it uses OD clk,
-		such that the OD clock must be on when screen is on.
-		*/
-		disp_dither_init(DISP_DITHER0, pConfig->lcm_bpp, pConfig->dst_w, pConfig->dst_h, cmdq);
 	}
 
 #if defined(CONFIG_MTK_OD_SUPPORT)
@@ -1037,7 +1047,7 @@ static int od_clock_off(DISP_MODULE_ENUM module, void *handle)
 /* for SODI to check OD is enabled or not, this will be called when screen is on and disp clock is enabled */
 int disp_od_is_enabled(void)
 {
-	return (DISP_REG_GET(DISP_OD_CFG) & (1 << 1)) ? 1 : 0;
+	return (DISP_REG_GET(DISP_REG_OD_CFG) & (1 << 1)) ? 1 : 0;
 }
 
 
@@ -1090,7 +1100,7 @@ static unsigned long od_simple_strtoul(char *next, char **new_next, int base)
 	unsigned long value;
 
 	for (i = 0; i < sizeof(buffer) - 1; i++) {
-		char ch = *next;
+		char ch = next[i];
 
 		if ((ch == 'x') || ('0' <= ch && ch <= '9') ||
 			('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F')) {
@@ -1123,17 +1133,18 @@ static int od_parse_triple(const char *cmd, unsigned long *offset, unsigned int 
 		*offset = 0UL;
 		return 0;
 	}
-
 	count++;
 
-	if (*next == ',')
-		next++;
+	if (*next != ',')
+		return count;
+	next++;
 
 	*value = (unsigned int)od_simple_strtoul(next, &next, 0);
 	count++;
 
-	if (*next == ',')
-		next++;
+	if (*next != ',')
+		return count;
+	next++;
 
 	*mask = (unsigned int)od_simple_strtoul(next, &next, 0);
 	count++;
@@ -1228,7 +1239,7 @@ static void od_test_stress_table(void *cmdq)
 
 	ODDBG(OD_DBG_ALWAYS, "OD TEST -- STRESS TABLE START\n");
 
-	DISP_REG_SET(cmdq, DISP_OD_MISC, 1); /* [1]:can access OD table; [0]:can't access OD table */
+	DISP_REG_SET(cmdq, DISP_REG_OD_MISC, 1); /* [1]:can access OD table; [0]:can't access OD table */
 
 	/* read/write table for 100 times, 17x17 and 33x33 50 times each */
 	for (i = 0; i < 50; i++) {
@@ -1245,7 +1256,7 @@ static void od_test_stress_table(void *cmdq)
 		_od_read_table(cmdq, OD_TABLE_33, 2, OD_Table_33x33, 0);
 	}
 
-	DISP_REG_SET(cmdq, DISP_OD_MISC, 0); /* [1]:can access OD table; [0]:can't access OD table */
+	DISP_REG_SET(cmdq, DISP_REG_OD_MISC, 0); /* [1]:can access OD table; [0]:can't access OD table */
 
 	ODDBG(OD_DBG_ALWAYS, "OD TEST -- STRESS TABLE END\n");
 }
