@@ -118,7 +118,24 @@
 #define XHCI_SIF_REGS_ADDR_RES_NAME		"ssusb_sif"
 #define XHCI_SIF2_REGS_ADDR_RES_NAME	"ssusb_sif2"
 
+#define K_ALET	(1<<6)
+#define K_CRIT	(1<<5)
+#define K_ERR	(1<<4)
+#define K_WARNIN	(1<<3)
+#define K_NOTICE	(1<<2)
+#define K_INFO		(1<<1)
+#define K_DEBUG	(1<<0)
+
+/*Set the debug level for xhci driver*/
+extern u32 xhci_debug_level;
+
 extern struct xhci_hcd *mtk_xhci;
+
+#define mtk_xhci_mtk_printk(level, fmt, args...) do { \
+		if (xhci_debug_level & level) { \
+			pr_debug("[XHCI]" fmt, ## args); \
+		} \
+	} while (0)
 
 extern int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci);
 

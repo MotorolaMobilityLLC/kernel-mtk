@@ -53,7 +53,7 @@ static void mtk_chk_usb_ip_ck_sts(struct xhci_hcd *xhci)
 	    wait_for_value(_SSUSB_IP_PW_STS1(xhci->sif_regs), SSUSB_SYS125_RST_B_STS,
 			   SSUSB_SYS125_RST_B_STS, 1, 10);
 	if (ret == false)
-		mtk_power_log("sys125_ck is still active!!!\n");
+		mtk_xhci_mtk_printk(K_DEBUG, "sys125_ck is still active!!!\n");
 
 	/* do not check when SSUSB_U2_PORT_PDN = 1, because U2 port stays in reset state */
 	if (num_u2_port
@@ -62,7 +62,7 @@ static void mtk_chk_usb_ip_ck_sts(struct xhci_hcd *xhci)
 		    wait_for_value(_SSUSB_IP_PW_STS2(xhci->sif_regs), SSUSB_U2_MAC_SYS_RST_B_STS,
 				   SSUSB_U2_MAC_SYS_RST_B_STS, 1, 10);
 		if (ret == false)
-			mtk_power_log("mac2_sys_ck is still active!!!\n");
+			mtk_xhci_mtk_printk(K_DEBUG, "mac2_sys_ck is still active!!!\n");
 	}
 
 	/* do not check when SSUSB_U3_PORT_PDN = 1, because U3 port stays in reset state */
@@ -72,7 +72,7 @@ static void mtk_chk_usb_ip_ck_sts(struct xhci_hcd *xhci)
 		    wait_for_value(_SSUSB_IP_PW_STS1(xhci->sif_regs), SSUSB_U3_MAC_RST_B_STS,
 				   SSUSB_U3_MAC_RST_B_STS, 1, 10);
 		if (ret == false)
-			mtk_power_log("mac3_mac_ck is still active!!!\n");
+			mtk_xhci_mtk_printk(K_DEBUG, "mac3_mac_ck is still active!!!\n");
 	}
 }
 
@@ -126,7 +126,7 @@ void disableXhciAllPortPower(struct xhci_hcd *xhci)
 	num_u3_port = SSUSB_U3_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
 	num_u2_port = SSUSB_U2_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
 
-	mtk_power_log("port number, u3-%d, u2-%d\n", num_u3_port, num_u2_port);
+	mtk_xhci_mtk_printk(K_DEBUG, "port number, u3-%d, u2-%d\n", num_u3_port, num_u2_port);
 
 	for (i = 1; i <= num_u3_port; i++) {
 		port_id = i;
@@ -163,8 +163,8 @@ void enableAllClockPower(struct xhci_hcd *xhci, bool is_reset)
 	num_u3_port = SSUSB_U3_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
 	num_u2_port = SSUSB_U2_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP((xhci->sif_regs))));
 
-	pr_debug("%s(%d): u3 port number = %d\n", __func__, __LINE__, num_u3_port);
-	pr_debug("%s(%d): u2 port number = %d\n", __func__, __LINE__, num_u2_port);
+	mtk_xhci_mtk_printk(K_DEBUG, "%s(%d): u3 port number = %d\n", __func__, __LINE__, num_u3_port);
+	mtk_xhci_mtk_printk(K_DEBUG, "%s(%d): u2 port number = %d\n", __func__, __LINE__, num_u2_port);
 
 	/* reset whole ip */
 	if (is_reset) {
