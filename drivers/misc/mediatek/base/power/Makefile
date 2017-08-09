@@ -26,6 +26,7 @@ obj-$(CONFIG_ARCH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT8127) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT2701) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT7623) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT2701) += mt2701_dcm/
 obj-$(CONFIG_ARCH_MT6735) += spm_v1/
 obj-$(CONFIG_ARCH_MT6735M) += spm_v1/
 obj-$(CONFIG_ARCH_MT6753) += spm_v1/
