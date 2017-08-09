@@ -15,12 +15,11 @@ extern unsigned int enable_4G(void);
 /* For HW modules which support 33-bit address setting */
 #define CROSS_OVERFLOW_ADDR_TRANSFER(phy_addr, size, ret) \
 	do { \
+		ret = 0; \
 		if (enable_4G()) {\
 			if (((phys_addr_t)phy_addr < MT_OVERFLOW_ADDR_START)\
 					&& (((phys_addr_t)phy_addr + size) >= MT_OVERFLOW_ADDR_START)) \
 				ret = MT_OVERFLOW_ADDR_START - phy_addr; \
-			else \
-				ret = 0;\
 		} \
 	}  while (0) \
 
