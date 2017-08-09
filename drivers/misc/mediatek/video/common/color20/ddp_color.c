@@ -25,6 +25,7 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
+u4Ccorr:0
 	 },
 	{
 u4SHPGain:2,
@@ -32,7 +33,9 @@ u4SatGain:4,
 u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
-u4Brightness:4}
+u4Brightness:4,
+u4Ccorr:1
+	}
 };
 
 static DISP_PQ_PARAM g_Color_Cam_Param = {
@@ -41,7 +44,8 @@ u4SatGain:4,
 u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
-u4Brightness:4
+u4Brightness:4,
+u4Ccorr:2
 };
 
 static DISP_PQ_PARAM g_Color_Gal_Param = {
@@ -51,7 +55,7 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
-
+u4Ccorr:3
 };
 
 static DISP_PQ_DC_PARAM g_PQ_DC_Param = {
@@ -800,8 +804,30 @@ SKY_TONE_H :
 	 {0x80, 0x80, 0x80},
 	 {0x80, 0x80, 0x80},
 	 {0x80, 0x80, 0x80}
-	 }
-
+	},
+CCORR_COEF : /* ccorr feature */
+	{
+	 {
+	 {0x400, 0x0, 0x0},
+	 {0x0, 0x400, 0x0},
+	 {0x0, 0x0, 0x400},
+	 },
+	 {
+	 {0x400, 0x0, 0x0},
+	 {0x0, 0x400, 0x0},
+	 {0x0, 0x0, 0x400},
+	 },
+	 {
+	 {0x400, 0x0, 0x0},
+	 {0x0, 0x400, 0x0},
+	 {0x0, 0x0, 0x400},
+	 },
+	 {
+	 {0x400, 0x0, 0x0},
+	 {0x0, 0x400, 0x0},
+	 {0x0, 0x0, 0x400},
+	 },
+	}
 };
 
 int color_dbg_en = 1;
@@ -839,7 +865,10 @@ static unsigned long g_tdshp1_va;
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
-
+#ifdef DISP_MDP_COLOR_ON
+#define MDP_COLOR_PA_BASE 0x14007000
+static unsigned long g_mdp_color_va;
+#endif
 static unsigned long g_tdshp_va;
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
@@ -1203,14 +1232,6 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsi
 	/* color window */
 
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
-
-	/* ccorr feature : support scenario ccorr only on specified platform */
-#if defined(CCORR_SUPPORT)
-	ccorr_interface_for_color(pq_param_p->u4Ccorr,
-		g_Color_Index.CCORR_COEF[pq_param_p->u4Ccorr], cmdq);
-#endif
-
-
 }
 
 
@@ -1291,6 +1312,20 @@ static unsigned long color_get_TDSHP1_VA(void)
 }
 #endif
 
+#ifdef DISP_MDP_COLOR_ON
+static unsigned long color_get_MDP_COLOR_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_color");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_COLOR VA: 0x%lx\n", VA);
+
+	return VA;
+}
+#endif
+
 static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
 	unsigned int i = 0;
@@ -1304,6 +1339,14 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, ddp_get_reg_module_name(i));
 		return 1;
 	}
+
+	/*Check if MDP color base address*/
+#ifdef DISP_MDP_COLOR_ON
+	if ((addr >= g_mdp_color_va) && (addr < (g_mdp_color_va + 0x1000))) {			/* MDP COLOR */
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_COLOR");
+		return 2;
+	}
+#endif
 
 	/* check if TDSHP base address */
 	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {			/* TDSHP0 */
@@ -1347,6 +1390,15 @@ static unsigned long color_pa2va(unsigned int addr)
 		COLOR_DBG("color_pa2va(), TDSHP1 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 			  TDSHP1_PA_BASE, g_tdshp1_va);
 		return g_tdshp1_va + (addr - TDSHP1_PA_BASE);
+	}
+#endif
+
+#ifdef DISP_MDP_COLOR_ON
+	/* MDP_COLOR */
+	if ((MDP_COLOR_PA_BASE <= addr) && (addr < (MDP_COLOR_PA_BASE + 0x1000))) {
+		COLOR_DBG("color_pa2va(), MDP_COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+			  MDP_COLOR_PA_BASE, g_mdp_color_va);
+		return g_mdp_color_va + (addr - MDP_COLOR_PA_BASE);
 	}
 #endif
 
@@ -1399,6 +1451,18 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	case SWREG_TDSHP_BASE_ADDRESS:
 		{
 			ret = TDSHP_PA_BASE;
+			break;
+		}
+#ifdef DISP_MDP_COLOR_ON
+	case SWREG_MDP_COLOR_BASE_ADDRESS:
+		{
+			ret = MDP_COLOR_PA_BASE;
+			break;
+		}
+#endif
+	case SWREG_COLOR_MODE:
+		{
+			ret = COLOR_MODE;
 			break;
 		}
 
@@ -1457,6 +1521,10 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* color is DCM , do nothing */
+	return 0;
+#endif
 #ifdef ENABLE_CLK_MGR
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
@@ -1472,7 +1540,7 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
  #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
- #elif defined(CONFIG_ARCH_MT6755)
+ #else
 	ddp_clk_enable(DISP0_DISP_COLOR);
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
  #endif
@@ -1484,6 +1552,10 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* color is DCM , do nothing */
+	return 0;
+#endif
 #ifdef ENABLE_CLK_MGR
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
@@ -1497,7 +1569,7 @@ static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 	COLOR_DBG("color[0]_clock_off\n");
  #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
- #elif defined(CONFIG_ARCH_MT6755)
+ #else
 	ddp_clk_disable(DISP0_DISP_COLOR);
  #endif
 #endif
@@ -1510,6 +1582,9 @@ static int _color_init(DISP_MODULE_ENUM module, void *cmq_handle)
 	_color_clock_on(module, cmq_handle);
 
 	g_tdshp_va = color_get_TDSHP_VA();
+#ifdef DISP_MDP_COLOR_ON
+	g_mdp_color_va = color_get_MDP_COLOR_VA();
+#endif
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	g_tdshp1_va = color_get_TDSHP1_VA();
 #endif

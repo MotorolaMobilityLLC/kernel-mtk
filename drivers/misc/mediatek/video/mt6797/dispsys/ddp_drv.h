@@ -75,6 +75,12 @@ typedef struct {
 } DISP_PQ_WIN_PARAM;
 
 typedef struct {
+	int image;
+	int video;
+	int camera;
+} DISP_PQ_MAPPING_PARAM;
+
+typedef struct {
 
 	unsigned short GLOBAL_SAT[GLOBAL_SAT_SIZE];
 	unsigned short CONTRAST[CONTRAST_SIZE];

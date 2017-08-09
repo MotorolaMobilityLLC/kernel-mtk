@@ -54,6 +54,7 @@ typedef struct DISP_EXEC_COMMAND {
 #define SKIN_TONE_SIZE 8	/* (-6) */
 #define GRASS_TONE_SIZE 6	/* (-2) */
 #define SKY_TONE_SIZE 3
+#define CCORR_COEF_CNT 4	/* ccorr feature */
 
 typedef struct {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
@@ -62,6 +63,7 @@ typedef struct {
 	unsigned int u4SatAdj[PQ_SAT_ADJ_PHASE_CNT];
 	unsigned int u4Contrast;	/* 0 : min , 9 : max. */
 	unsigned int u4Brightness;	/* 0 : min , 9 : max. */
+	unsigned int u4Ccorr;	/* 0 : min , 3 : max.  ccorr feature */
 } DISP_PQ_PARAM;
 
 typedef struct {
@@ -71,6 +73,12 @@ typedef struct {
 	int end_x;
 	int end_y;
 } DISP_PQ_WIN_PARAM;
+
+typedef struct {
+	int image;
+	int video;
+	int camera;
+} DISP_PQ_MAPPING_PARAM;
 
 typedef struct {
 
@@ -86,7 +94,7 @@ typedef struct {
 	unsigned char SKIN_TONE_H[COLOR_TUNING_INDEX][SKIN_TONE_SIZE];
 	unsigned char GRASS_TONE_H[COLOR_TUNING_INDEX][GRASS_TONE_SIZE];
 	unsigned char SKY_TONE_H[COLOR_TUNING_INDEX][SKY_TONE_SIZE];
-
+	unsigned int CCORR_COEF[CCORR_COEF_CNT][3][3];
 } DISPLAY_PQ_T;
 
 typedef struct {
