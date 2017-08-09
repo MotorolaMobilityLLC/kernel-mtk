@@ -384,11 +384,12 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 		break;
 	case FB_BLANK_POWERDOWN:
 		TPD_DMESG("LCD OFF Notify\n");
-		if (g_tpd_drv)
+		if (g_tpd_drv) {
 			err = cancel_work_sync(&touch_resume_work);
 			if (!err)
 				TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
 			g_tpd_drv->suspend(NULL);
+		}
 		tpd_suspend_flag = 1;
 		break;
 	default:
