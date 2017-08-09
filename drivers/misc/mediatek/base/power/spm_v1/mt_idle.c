@@ -613,6 +613,7 @@ static void __iomem *cksys_base;
 #define MFG_CG_CON          MFG_REG(0)
 #define DISP_CG_CON0        MM_REG(0x100)
 #define DISP_CG_CON1        MM_REG(0x110)
+#define DISP_CG_DUMMY       MM_REG(0x894)
 #define IMG_CG_CON          IMG_REG(0x0000)
 #define VDEC_CKEN_SET       VDEC_REG(0x0000)
 #define LARB_CKEN_SET       VDEC_REG(0x0008)
@@ -664,7 +665,11 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_PERI] = ~idle_readl(PERI_PDN0_STA); /* PERI */
 
 	if (sys_is_on(SYS_DIS)) {
+#if defined(CONFIG_ARCH_MT6753)
+		clks[CG_DISP0] = ~idle_readl(DISP_CG_DUMMY); /* DUMMY */
+#else
 		clks[CG_DISP0] = ~idle_readl(DISP_CG_CON0); /* DISP0 */
+#endif
 		clks[CG_DISP1] = ~idle_readl(DISP_CG_CON1); /* DISP1 */
 	}
 
