@@ -697,7 +697,8 @@ static int __init init(void)
 {
 	int n;
 	int rc = 0;
-
+	/* Force turn off to prevent boot fail */
+	return 0;
 	C2K_NOTE("rawbulk functions init.\n");
 	rawbulk_class = class_create(THIS_MODULE, "usb_rawbulk");
 	if (IS_ERR(rawbulk_class))
