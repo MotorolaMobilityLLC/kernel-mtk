@@ -871,6 +871,9 @@ int fib6_add(struct fib6_node *root, struct rt6_info *rt, struct nl_info *info,
 	int replace_required = 0;
 	int sernum = fib6_new_sernum(info->nl_net);
 
+	if (WARN_ON_ONCE((rt->dst.flags & DST_NOCACHE) && !atomic_read(&rt->dst.__refcnt)))
+		return -EINVAL;
+
 	if (info->nlh) {
 		if (!(info->nlh->nlmsg_flags & NLM_F_CREATE))
 			allow_create = 0;
@@ -963,6 +966,7 @@ int fib6_add(struct fib6_node *root, struct rt6_info *rt, struct nl_info *info,
 		fib6_start_gc(info->nl_net, rt);
 		if (!(rt->rt6i_flags & RTF_CACHE))
 			fib6_prune_clones(info->nl_net, pn);
+			rt->dst.flags &= ~DST_NOCACHE;
 	}
 
 out:
@@ -987,6 +991,7 @@ out:
 			atomic_inc(&pn->leaf->rt6i_ref);
 		}
 #endif
+	if (!(rt->dst.flags & DST_NOCACHE))
 		dst_free(&rt->dst);
 	}
 	return err;
@@ -998,6 +1003,7 @@ out:
 st_failure:
 	if (fn && !(fn->fn_flags & (RTN_RTINFO|RTN_ROOT)))
 		fib6_repair_tree(info->nl_net, fn);
+if (!(rt->dst.flags & DST_NOCACHE))
 	dst_free(&rt->dst);
 	return err;
 #endif
