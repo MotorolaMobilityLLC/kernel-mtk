@@ -1197,7 +1197,7 @@ static int mtk_pinmux_get(struct gpio_chip *chip, unsigned offset)
 {
 	unsigned int reg_addr;
 	unsigned char bit;
-	unsigned int pinmux;
+	unsigned int pinmux = 0;
 	unsigned int mask = (1L << GPIO_MODE_BITS) - 1;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
@@ -1270,7 +1270,7 @@ int mtk_spec_pull_get_samereg(struct regmap *regmap,
 {
 	unsigned int i;
 	unsigned int reg_pupd;
-	unsigned int val, bit_pupd, bit_r0, bit_r1;
+	unsigned int val = 0, bit_pupd, bit_r0, bit_r1;
 	const struct mtk_pin_spec_pupd_set_samereg *spec_pupd_pin;
 	bool find = false;
 
@@ -1323,7 +1323,7 @@ int mtk_spec_get_ies_smt_range(struct regmap *regmap,
 		unsigned int info_num,
 		unsigned int pin)
 {
-	unsigned int i, reg_addr, bit, val;
+	unsigned int i, reg_addr, bit, val = 0;
 
 	for (i = 0; i < info_num; i++) {
 		if (pin >= ies_smt_infos[i].start &&
@@ -1401,7 +1401,7 @@ static int mtk_smt_get(struct gpio_chip *chip, unsigned offset)
 static int mtk_driving_get(struct gpio_chip *chip, unsigned offset)
 {
 	const struct mtk_pin_drv_grp *pin_drv;
-	unsigned int val;
+	unsigned int val = 0;
 	unsigned int bits, mask, shift;
 	const struct mtk_drv_group_desc *drv_grp;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);

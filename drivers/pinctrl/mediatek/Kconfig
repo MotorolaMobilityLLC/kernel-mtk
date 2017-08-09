@@ -72,3 +72,8 @@ config PINCTRL_MT6757
 	def_bool MACH_MT6757
 	select PINCTRL_MTK_COMMON
 
+config PINCTRL_ELBRUS
+	bool "Mediatek elbrus pin control"
+	default n
+	def_bool MACH_ELBRUS
+	select PINCTRL_MTK_COMMON
