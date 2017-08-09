@@ -3338,6 +3338,11 @@ int primary_display_set_lcm_refresh_rate(int fps)
 	return ret;
 }
 
+int primary_display_get_lcm_refresh_rate(void)
+{
+	return pgc->lcm_refresh_rate;
+}
+
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_by_pass;
 

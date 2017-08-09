@@ -857,6 +857,12 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			continue;
 		}
 
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+		if (primary_display_get_lcm_refresh_rate() == 120) {
+			primary_display_manual_unlock();
+			continue;
+		}
+#endif
 		if (((local_clock() - idlemgr_pgc->idlemgr_last_kick_time) / 1000) < 500 * 1000) {
 			/* kicked in 500ms, it's not idle */
 			primary_display_manual_unlock();
