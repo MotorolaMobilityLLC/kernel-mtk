@@ -347,7 +347,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	} else
 		pr_err("[AUXADC] auxadc_apmix_base error\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUXADC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-auxadc");
 	if (!node)
 		pr_err("[AUXADC] find node failed\n");
 
@@ -1586,16 +1586,16 @@ static int mt_auxadc_probe(struct platform_device *dev)
 #ifdef CONFIG_OF
 	pr_debug("[MT AUXADC_probe3] get device tree info : start !!\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUXADC_CH");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,adc_channel");
 	if (node) {
-		ret = of_property_read_u32_array(node, "TEMPERATURE", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,temperature0", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_RFTMP");
 			g_adc_info[used_channel_counter].channel_number = of_value;
 			pr_debug("[AUXADC_AP] find node TEMPERATURE:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "TEMPERATURE1", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,temperature1", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_APTMP");
 			g_adc_info[used_channel_counter].channel_number = of_value;
@@ -1603,7 +1603,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			used_channel_counter++;
 		}
 		ret =
-		    of_property_read_u32_array(node, "ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH",
+		    of_property_read_u32_array(node, "mediatek,adc_fdd_rf_params_dynamic_custom_ch",
 					       &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name,
@@ -1613,21 +1613,21 @@ static int mt_auxadc_probe(struct platform_device *dev)
 				 of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "HF_MIC", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,hf_mic", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_MIC");
 			g_adc_info[used_channel_counter].channel_number = of_value;
 			pr_debug("[AUXADC_AP] find node HF_MIC:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "LCM_VOLTAGE", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,lcm_voltage", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_LCM_VOLTAGE");
 			g_adc_info[used_channel_counter].channel_number = of_value;
 			pr_debug("[AUXADC_AP] find node LCM_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "BATTERY_VOLTAGE", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,battery_voltage", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name,
 				"ADC_BATTERY_VOLTAGE");
@@ -1635,7 +1635,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			pr_debug("[AUXADC_AP] find node BATTERY_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "CHARGER_VOLTAGE", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,charger_voltage", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name,
 				"ADC_CHARGER_VOLTAGE");
@@ -1643,14 +1643,14 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			pr_debug("[AUXADC_AP] find node CHARGER_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "UTMS", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,utms", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_UTMS");
 			g_adc_info[used_channel_counter].channel_number = of_value;
 			pr_debug("[AUXADC_AP] find node UTMS:%d\n", of_value);
 			used_channel_counter++;
 		}
-		ret = of_property_read_u32_array(node, "REF_CURRENT", &of_value, 1);
+		ret = of_property_read_u32_array(node, "mediatek,ref_current", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_REF_CURRENT");
 			g_adc_info[used_channel_counter].channel_number = of_value;
@@ -1717,7 +1717,7 @@ static int mt_auxadc_resume(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_auxadc_of_match[] = {
-	{.compatible = "mediatek,AUXADC",},
+	{.compatible = "mediatek,mt6735-auxadc",},
 	{},
 };
 #endif

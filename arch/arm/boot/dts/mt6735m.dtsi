@@ -645,10 +645,12 @@
 			interrupts = <0 112 0x8>;
 		};
 
-		AUXADC@0x11001000 {
-			compatible = "mediatek,AUXADC";
+		auxadc: adc_hw@11001000 {
+			compatible = "mediatek,mt6735-auxadc";
 			reg = <0x11001000 0x1000>;
-			interrupts = <0 74 0x2>;
+			interrupts = <GIC_SPI 76 IRQ_TYPE_EDGE_FALLING>;
+			clocks = <&perisys PERI_AUXADC>;
+			clock-names = "auxadc-main";
 		};
 
 		AP_UART0@0x11002000 {
