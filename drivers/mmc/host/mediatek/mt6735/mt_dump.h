@@ -227,7 +227,6 @@ extern void __iomem *toprgu_reg_base;
 extern void __iomem *apmixed_reg_base1;
 extern void __iomem *topckgen_reg_base;
 
-extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int sd_debug_zone[HOST_MAX_NUM];
 extern int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
 

@@ -174,12 +174,8 @@ u32 sdio_tune_flag = 0;
 
 #define CAPACITY_2G                      (2 * 1024 * 1024 * 1024ULL)
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
 u32 g_emmc_mode_switch = 0;
-EXPORT_SYMBOL(g_emmc_mode_switch);
 
-/* #define MTK_EMMC_ETT_TO_DRIVER for eMMC off-line apply to driver */
-#endif
 static void msdc_init_hw(struct msdc_host *host);
 
 #ifndef FPGA_PLATFORM
@@ -204,7 +200,6 @@ unsigned long long g_cache_part_end;
 unsigned long long g_usrdata_part_start;
 unsigned long long g_usrdata_part_end;
 
-unsigned int g_emmc_cache_size = 0;
 /* if disable cache by vendor fill CID.MID to g_emmc_cache_quirk[i] */
 unsigned char g_emmc_cache_quirk[256];
 #define CID_MANFID_SANDISK		0x2
@@ -215,6 +210,7 @@ unsigned char g_emmc_cache_quirk[256];
 #define CID_MANFID_HYNIX		0x90
 #define CID_MANFID_KSI			0x70
 #endif
+unsigned int g_emmc_cache_size = 0;
 
 unsigned long long msdc_print_start_time;
 unsigned long long msdc_print_end_time;
@@ -1545,52 +1541,6 @@ void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
 	}
 }
 
-/* weiping fix */
-#if 0
-void msdc_get_driving(struct msdc_host *host, struct msdc_ioctl *msdc_ctl)
-{
-/* for try submit */
-	switch (host->id) {
-	case 0:
-		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
-			MSDC0_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
-		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
-			MSDC0_DRV_DSL_MASK, msdc_ctl->ds_pu_driving);
-		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
-			MSDC0_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
-		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
-			MSDC0_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
-		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
-			MSDC0_DRV_RSTB_MASK, msdc_ctl->rst_pu_driving);
-		break;
-	case 1:
-		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
-			MSDC1_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
-		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
-			MSDC1_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
-		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
-			MSDC1_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
-		msdc_ctl->rst_pu_driving = 0;
-		msdc_ctl->ds_pu_driving = 0;
-		break;
-#ifdef CFG_DEV_MSDC2 /* FIXME: For 6630 */
-	case 2:
-		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
-			MSDC2_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
-		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
-			MSDC2_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
-		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
-			MSDC2_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
-		msdc_ctl->rst_pu_driving = 0;
-		msdc_ctl->ds_pu_driving = 0;
-		break;
-#endif
-	default:
-		pr_err("error...[%s] host->id out of range!!!\n", __func__);
-		break;
-	}
-}
-#endif
 static void msdc_pin_pud(struct msdc_host *host, u32 mode)
 {
 	switch (host->id) {
@@ -2632,39 +2582,6 @@ static void msdc_send_stop(struct msdc_host *host)
 	err = msdc_do_command(host, &stop, 0, CMD_TIMEOUT);
 }
 
-#if 0
-static void msdc_remove_card(struct work_struct *work)
-{
-	struct msdc_host *host = container_of(work, struct msdc_host,
-		remove_card.work);
-
-	BUG_ON(!host);
-	BUG_ON(!(host->mmc));
-	ERR_MSG("Need remove card");
-	if (host->mmc->card) {
-		if (mmc_card_present(host->mmc->card)) {
-			ERR_MSG("1.remove card");
-			mmc_remove_card(host->mmc->card);
-		} else {
-			ERR_MSG("card was not present can not remove");
-			host->block_bad_card = 0;
-			host->card_inserted = 1;
-			host->mmc->card->state &= ~MMC_CARD_REMOVED;
-			return;
-		}
-		mmc_claim_host(host->mmc);
-		ERR_MSG("2.detach bus");
-		host->mmc->card = NULL;
-		mmc_detach_bus(host->mmc);
-		ERR_MSG("3.Power off");
-		mmc_power_off(host->mmc);
-		ERR_MSG("4.Gate clock");
-		msdc_gate_clock(host, 0);
-		mmc_release_host(host->mmc);
-	}
-	ERR_MSG("Card removed");
-}
-#endif
 int msdc_reinit(struct msdc_host *host)
 {
 	struct mmc_host *mmc;
@@ -3052,7 +2969,7 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			host->power_control(host, 1);
 		else
 			ERR_MSG
-			    ("No power control, host_function<0x%lx> & Power_domain<%d>",
+			    ("No power control, host_function<%d> & Power_domain<%d>",
 			     host->hw->host_function, host->power_domain);
 
 #endif
@@ -3070,7 +2987,7 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			if (host->power_control)
 				host->power_control(host, 0);
 			else
-				ERR_MSG("No power control,host_function<0x%lx>&Power_domain<%d>"
+				ERR_MSG("No power control,host_function<%d>&Power_domain<%d>"
 					, host->hw->host_function, host->power_domain);
 #endif
 			msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
@@ -3378,35 +3295,6 @@ static void msdc_pm(pm_message_t state, void *data)
 }
 #endif
 
-#if 0 /* weiping fix reserve */
-static u64 msdc_get_user_capacity(struct msdc_host *host)
-{
-	u64 device_capacity = 0;
-	u32 device_legacy_capacity = 0;
-	struct mmc_host *mmc = NULL;
-
-	BUG_ON(!host);
-	BUG_ON(!host->mmc);
-	BUG_ON(!host->mmc->card);
-	mmc = host->mmc;
-	if (mmc_card_mmc(mmc->card)) {
-		if (mmc->card->csd.read_blkbits) {
-			device_legacy_capacity = mmc->card->csd.capacity *
-				(2 << (mmc->card->csd.read_blkbits - 1));
-		} else {
-			device_legacy_capacity = mmc->card->csd.capacity;
-			ERR_MSG("XXX read_blkbits = 0 XXX");
-		}
-		device_capacity =
-			(u64) (mmc->card->ext_csd.sectors) * 512 > device_legacy_capacity ?
-		    (u64) (mmc->card->ext_csd.sectors) * 512 : device_legacy_capacity;
-	} else if (mmc_card_sd(mmc->card)) {
-		device_capacity =
-			(u64) (mmc->card->csd.capacity) << (mmc->card->csd.read_blkbits);
-	}
-	return device_capacity;
-}
-#endif
 struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 {
 	int host_index = 0;
@@ -3434,15 +3322,7 @@ struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 EXPORT_SYMBOL(msdc_get_host);
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
-
-u8 ext_csd[512];
-EXPORT_SYMBOL(ext_csd);
-
-int offset = 0;
-char partition_access = 0;
-
-static int msdc_get_ext_csd(u8 *dst, struct mmc_data *data,
-	struct msdc_host *host)
+static int msdc_get_ext_csd(struct mmc_data *data, struct msdc_host *host)
 {
 	u8 *ptr;
 	int i;
@@ -3453,11 +3333,12 @@ static int msdc_get_ext_csd(u8 *dst, struct mmc_data *data,
 
 	sg = data->sg;
 	ptr = (u8 *) sg_virt(sg);
-#ifdef MTK_MSDC_USE_CACHE
 	g_emmc_cache_size = (*(ptr + 252) << 24) +
 						(*(ptr + 251) << 16) +
 						(*(ptr + 250) << 8) +
 						(*(ptr + 249) << 0);
+
+#ifdef MTK_MSDC_USE_CACHE
 	/*
 	 * only enable the emmc cache feature for normal boot up,
 	 * alarm boot up, and sw reboot
@@ -3472,7 +3353,6 @@ static int msdc_get_ext_csd(u8 *dst, struct mmc_data *data,
 #else
 	*(ptr + 252) = *(ptr + 251) = *(ptr + 250) = *(ptr + 249) = 0;
 #endif
-	memcpy(dst, ptr, msdc_sg_len(sg, host->dma_xfer));
 
 	return 0;
 }
@@ -3497,8 +3377,6 @@ static void msdc_set_cache_quirk(struct msdc_host *host)
 			host->id, i, g_emmc_cache_quirk[i]);
 	 }
 }
-
-
 
 static int msdc_can_apply_cache(unsigned long long start_addr,
 			unsigned int size)
@@ -3569,7 +3447,7 @@ int msdc_get_cache_region(void)
 
 	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
 
-	struct hd_struct *lp_hd_struct = NULL;
+	struct hd_struct *lp_hd_struct;
 
 	lp_hd_struct = get_part("cache");
 	if (likely(lp_hd_struct)) {
@@ -3601,151 +3479,8 @@ int msdc_get_cache_region(void)
 		return 0;
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
-
-#if 0 /* weiping fix reserve */
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-/* parse part_info struct, support otp & mtk reserve */
-#ifndef CONFIG_MTK_GPT_SCHEME_SUPPORT
-static struct excel_info *msdc_reserve_part_info(unsigned char *name)
-{
-	int i;
-
-	/* find reserve partition */
-	for (i = 0; i < PART_NUM; i++) {
-		pr_debug("name = %s\n", PartInfo[i].name);
-		if (0 == strcmp(name, PartInfo[i].name)) {
-			pr_debug("size = %llu\n", PartInfo[i].size);
-			return &PartInfo[i];
-		}
-	}
-
-	return NULL;
-}
-#endif
-#endif
-static u32 msdc_get_other_capacity(void)
-{
-	u32 device_other_capacity = 0;
-	int idx;
-
-	device_other_capacity = ext_csd[EXT_CSD_BOOT_MULT] * 128 * 1024
-	    + ext_csd[EXT_CSD_BOOT_MULT] * 128 * 1024
-	    + ext_csd[EXT_CSD_RPMB_MULT] * 128 * 1024;
-
-	for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
-		device_other_capacity +=
-			(ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2] << 16) +
-			(ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1] << 8) +
-			ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
-	}
-
-	return device_other_capacity;
-}
-
-int msdc_get_offset(void)
-{
-	u32 l_offset;
-	/* l_offset =  MBR_START_ADDRESS_BYTE - msdc_get_other_capacity(); */
-	l_offset = 0;
-
-	return l_offset >> 9;
-}
-EXPORT_SYMBOL(msdc_get_offset);
-int msdc_get_reserve(void)
-{
-	u32 l_offset;
-#ifndef CONFIG_MTK_GPT_SCHEME_SUPPORT
-	struct excel_info *lp_excel_info;
-#endif
-	u32 l_otp_reserve = 0;
-	u32 l_mtk_reserve = 0;
-
-	l_offset = msdc_get_offset();	/* ==========check me */
-
-#ifndef CONFIG_MTK_GPT_SCHEME_SUPPORT
-	lp_excel_info = msdc_reserve_part_info("bmtpool");
-	if (NULL == lp_excel_info) {
-		pr_err("can't get otp info from part_info struct\n");
-		return -1;
-	}
-	/* unit is 512B */
-	l_mtk_reserve =
-		(unsigned int)(lp_excel_info->start_address & 0xFFFFUL) << 8;
-
-	pr_debug("mtk reserve: start address = %llu\n",
-		lp_excel_info->start_address);
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	lp_excel_info = msdc_reserve_part_info("otp");
-	if (NULL == lp_excel_info) {
-		pr_err("can't get otp info from part_info struct\n");
-		return -1;
-	}
-	/* unit is 512B */
-	l_otp_reserve =
-		(unsigned int)(lp_excel_info->start_address & 0xFFFFUL) << 8;
-
-	pr_debug("otp reserve: start address = %llu\n",
-		lp_excel_info->start_address);
-	/* the size info stored with total reserved size */
-	l_otp_reserve -= l_mtk_reserve;
-#endif
-	pr_debug("otp_reserve=0x%x blks,mtk_reserve=0x%x blks,offset=0x%x blks\n",
-	    l_otp_reserve, l_mtk_reserve, l_offset);
 #endif
 
-	return l_offset + l_otp_reserve + l_mtk_reserve;
-}
-EXPORT_SYMBOL(msdc_get_reserve);
-#if 0 /* removed in new combo eMMC feature */
-static bool msdc_cal_offset(struct msdc_host *host)
-{
-/*
-	u64 device_capacity = 0;
-	offset =  MBR_START_ADDRESS_BYTE - msdc_get_other_capacity();
-	device_capacity = msdc_get_user_capacity(host);
-	if(mmc_card_blockaddr(host->mmc->card))
-	offset /= 512;
-	ERR_MSG("Address offset in USER REGION(Capacity %lld MB) is 0x%x",
-		device_capacity/(1024*1024),offset);
-	if(offset < 0) {
-	ERR_MSG("XXX Address offset error(%d),please check MBR start address!!",
-		(int)offset);
-	BUG();
-	}
-*/
-	offset = 0;
-	return true;
-}
-#endif
-#endif /* weiping fix reserve */
-#endif
-#if 0 /* weiping fix reserve */
-u64 msdc_get_capacity(int get_emmc_total)
-{
-	u64 user_size = 0;
-	u32 other_size = 0;
-	u64 total_size = 0;
-	int index = 0;
-
-	for (index = 0; index < HOST_MAX_NUM; ++index) {
-		if ((mtk_msdc_host[index] != NULL)
-			&& (mtk_msdc_host[index]->hw->boot)) {
-			user_size = msdc_get_user_capacity(mtk_msdc_host[index]);
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-			if (get_emmc_total) {
-				if (mmc_card_mmc(mtk_msdc_host[index]->mmc->card))
-					other_size = msdc_get_other_capacity();
-			}
-#endif
-			break;
-		}
-	}
-	total_size = user_size + (u64) other_size;
-	return total_size / 512;
-}
-EXPORT_SYMBOL(msdc_get_capacity);
-#endif
 /*--------------------------------------------------------------------------*/
 /* mmc_host_ops members                                                     */
 /*--------------------------------------------------------------------------*/
@@ -5024,13 +4759,6 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		if (msdc_do_command(host, cmd, 0, CMD_TIMEOUT))
 			goto done;
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-		if (host->hw->host_function == MSDC_EMMC &&
-		    host->hw->boot == MSDC_BOOT_EN &&
-		    cmd->opcode == MMC_SWITCH
-		    && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_PART_CONFIG))
-			partition_access = (char)((cmd->arg >> 8) & 0x07);
-#endif
 		if ((host->hw->host_function == MSDC_EMMC) &&
 			(cmd->opcode == MMC_ALL_SEND_CID))
 			emmc_id = UNSTUFF_BITS(cmd->resp, 120, 8);
@@ -5323,29 +5051,6 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		host->data = NULL;
 		host->dma_xfer = 0;
 
-#if 0				/* read MBR */
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-		{
-			char *ptr = sg_virt(data->sg);
-			int i;
-
-			if (cmd->arg == 0x0 && (cmd->opcode == MMC_READ_SINGLE_BLOCK
-				|| cmd->opcode == MMC_READ_MULTIPLE_BLOCK)) {
-				pr_debug("XXXX CMD<%d> ARG<%X> offset = <%d> data<%s %s>;"
-					"sg <%p> ptr <%p> blksz<%d> block<%d> error<%d>\n",
-				     cmd->opcode, cmd->arg, offset, (dma ? "dma" : "pio"),
-				     (read ? "read " : "write"), data->sg, ptr, data->blksz,
-				     data->blocks, data->error);
-
-				for (i = 0; i < 512; i++) {
-					if (i % 32 == 0)
-						pr_debug("\n");
-					pr_debug(" %2x ", ptr[i]);
-				}
-			}
-		}
-#endif
-#endif				/* end read MBR */
 		if (dma != 0) {
 			msdc_dma_off();
 			host->dma.used_bd = 0;
@@ -5361,7 +5066,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		}
 		if ((cmd->opcode == MMC_SEND_EXT_CSD) &&
 			(host->hw->host_function == MSDC_EMMC))
-			msdc_get_ext_csd(ext_csd, data, host);
+			msdc_get_ext_csd(data, host);
 
 		host->blksz = 0;
 
@@ -8406,7 +8111,6 @@ tune:
 static void msdc_check_write_timeout(struct work_struct *work)
 {
 	struct msdc_host *host = container_of(work, struct msdc_host, write_timeout.work);
-	void __iomem *base = host->base;
 
 	struct mmc_data  *data = host->data;
 	struct mmc_request *mrq = host->mrq;
@@ -8710,90 +8414,6 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
-#if 0 /*weiping fix emmc_proc */
-struct gendisk *mmc_get_disk(struct mmc_card *card)
-{
-	struct mmc_blk_data *md;
-	/* struct gendisk *disk; */
-
-	BUG_ON(!card);
-	md = mmc_get_drvdata(card);
-	BUG_ON(!md);
-	BUG_ON(!md->disk);
-
-	return md->disk;
-}
-
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
-static struct proc_dir_entry *proc_emmc;
-
-#ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
-static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
-{
-	char *no_partition_name = "n/a";
-
-	return seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", this->partno,
-			  (unsigned int)this->start_sect,
-			  (unsigned int)this->nr_sects,
-			  ((this->info) ?
-			  (char *)(this->info->volname) : no_partition_name));
-}
-#else
-static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
-{
-	int i = 0;
-	char *no_partition_name = "n/a";
-
-	for (i = 0; i < PART_NUM; i++) {
-		if (PartInfo[i].partition_idx != 0
-			&& PartInfo[i].partition_idx == this->partno)
-			break;
-	}
-
-	return seq_printf(m, "emmc_p%d: %8.8x %8.8x \"%s\"\n", this->partno,
-			  (unsigned int)this->start_sect, (unsigned int)this->nr_sects,
-			  (i >= PART_NUM ? no_partition_name : PartInfo[i].name));
-}
-#endif
-
-static int proc_emmc_show(struct seq_file *m, void *v)
-{
-	struct disk_part_iter piter;
-	struct hd_struct *part;
-	struct msdc_host *host;
-	struct gendisk *disk;
-
-	/* emmc always in slot0 */
-	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
-	BUG_ON(!host);
-	BUG_ON(!host->mmc);
-	BUG_ON(!host->mmc->card);
-	disk = mmc_get_disk(host->mmc->card);
-
-	seq_puts(m, "partno:    start_sect   nr_sects  partition_name\n");
-	disk_part_iter_init(&piter, disk, 0);
-	while ((part = disk_part_iter_next(&piter)))
-		emmc_proc_info(m, part);
-	disk_part_iter_exit(&piter);
-
-	return 0;
-}
-
-static int proc_emmc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, proc_emmc_show, NULL);
-}
-
-static const struct file_operations proc_emmc_fops = {
-	.open = proc_emmc_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-#endif				/* CONFIG_MTK_EMMC_SUPPORT && CONFIG_PROC_FS */
-#endif /*weiping fix emmc_proc */
-
 /* This is called by run_timer_softirq */
 static void msdc_timer_pm(unsigned long data)
 {
@@ -8819,7 +8439,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 		if (MSDC_EMMC == host->hw->host_function) {
 			host->power_control = msdc_emmc_power;
 		} else {
-			ERR_MSG("Host function error.Please check host_function<0x%lx>",
+			ERR_MSG("Host function error.Please check host_function<%d>",
 				host->hw->host_function);
 			BUG();
 		}
@@ -8829,7 +8449,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 			host->power_control = msdc_sd_power;
 			host->power_switch = msdc_sd_power_switch;
 		} else {
-			ERR_MSG("Host function error.Please check host_function<0x%lx>",
+			ERR_MSG("Host function error.Please check host_function<%d>",
 				host->hw->host_function);
 			BUG();
 		}
@@ -8838,7 +8458,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 		if (MSDC_SDIO == host->hw->host_function) {
 			host->power_control = msdc_sdio_power;
 		} else {
-			ERR_MSG("Host function error,Please check host_function<0x%lx>",
+			ERR_MSG("Host function error,Please check host_function<%d>",
 				host->hw->host_function);
 			BUG();
 		}
@@ -9478,8 +9098,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");
 	}
 
-	/*weiping fix sd hot-plug*/
-	/*tasklet_init(&host->card_tasklet, msdc_tasklet_card, (ulong) host);*/
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 	atomic_set(&host->ot_done, 1);
 	atomic_set(&host->sdio_stopping, 0);
@@ -9489,7 +9107,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	atomic_set(&host->ot_work.ot_disable, 1);	/* ccyeh */
 	atomic_set(&host->ot_work.autok_done, 0);
 #endif
-	/* INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card); */
 
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
 
@@ -9782,12 +9399,7 @@ static int __init mt_msdc_init(void)
 		pr_err(DRV_NAME ": Can't register driver");
 		return ret;
 	}
-/* weiping fix emmc_proc */
-#if 0
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
-	proc_emmc = proc_create("emmc", 0, NULL, &proc_emmc_fops);
-#endif				/* CONFIG_MTK_EMMC_SUPPORT && CONFIG_PROC_FS */
-#endif
+
 	pr_debug(DRV_NAME ": MediaTek MSDC Driver\n");
 
 	msdc_debug_proc_init();

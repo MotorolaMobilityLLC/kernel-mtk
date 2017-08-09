@@ -106,6 +106,50 @@ void msdc_check_init_done(void)
 	pr_err("[%s]: get the emmc init done signal\n", __func__);
 }
 #endif
+static void simple_sd_get_driving(struct msdc_host *host,
+	struct msdc_ioctl *msdc_ctl)
+{
+	switch (host->id) {
+	case 0:
+		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
+			MSDC0_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
+		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
+			MSDC0_DRV_DSL_MASK, msdc_ctl->ds_pu_driving);
+		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
+			MSDC0_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
+		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
+			MSDC0_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
+		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
+			MSDC0_DRV_RSTB_MASK, msdc_ctl->rst_pu_driving);
+		break;
+	case 1:
+		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
+			MSDC1_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
+		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
+			MSDC1_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
+		sdr_get_field(MSDC1_GPIO_DRV0_G4_ADDR,
+			MSDC1_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
+		msdc_ctl->rst_pu_driving = 0;
+		msdc_ctl->ds_pu_driving = 0;
+		break;
+#ifdef CFG_DEV_MSDC2 /* FIXME: For 6630 */
+	case 2:
+		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
+			MSDC2_DRV_CMD_MASK, msdc_ctl->cmd_pu_driving);
+		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
+			MSDC2_DRV_CLK_MASK, msdc_ctl->clk_pu_driving);
+		sdr_get_field(MSDC2_GPIO_DRV0_G0_ADDR,
+			MSDC2_DRV_DAT_MASK, msdc_ctl->dat_pu_driving);
+		msdc_ctl->rst_pu_driving = 0;
+		msdc_ctl->ds_pu_driving = 0;
+		break;
+#endif
+	default:
+		pr_err("error...[%s] host->id out of range!!!\n", __func__);
+		break;
+	}
+}
+
 static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 {
 	char l_buf[512];
@@ -684,7 +728,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 #else
 	clk_enable(host->clock_control);
 #endif
-/*    msdc_get_driving(mtk_msdc_host[msdc_ctl->host_num], msdc_ctl);*/
+	simple_sd_get_driving(mtk_msdc_host[msdc_ctl->host_num], msdc_ctl);
 #if DEBUG_MMC_IOCTL
 	pr_debug("read: clk driving is 0x%x\n", msdc_ctl->clk_pu_driving);
 	pr_debug("read: cmd driving is 0x%x\n", msdc_ctl->cmd_pu_driving);
@@ -777,77 +821,6 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 
 	pr_debug("\n [%s]: msdc%d, line:%d, msdc_host_mode2=%d\n",
 		 __func__, id, __LINE__, msdc_host_mode2[id]);
-	switch (msdc_ctl->sd30_drive) {
-	case DRIVER_TYPE_A:
-		msdc_host_mode[id] |= MMC_CAP_DRIVER_TYPE_A;
-		msdc_host_mode[id] &= (~MMC_CAP_DRIVER_TYPE_C) & (~MMC_CAP_DRIVER_TYPE_D);
-		pr_debug("[****SD_Debug****]host will support DRIVING TYPE A\n");
-		break;
-	case DRIVER_TYPE_B:
-		msdc_host_mode[id] &= (~MMC_CAP_DRIVER_TYPE_A) &
-		    (~MMC_CAP_DRIVER_TYPE_C) & (~MMC_CAP_DRIVER_TYPE_D);
-		pr_debug("[****SD_Debug****]host will support DRIVING TYPE B\n");
-		break;
-	case DRIVER_TYPE_C:
-		msdc_host_mode[id] |= MMC_CAP_DRIVER_TYPE_C;
-		msdc_host_mode[id] &= (~MMC_CAP_DRIVER_TYPE_A) & (~MMC_CAP_DRIVER_TYPE_D);
-		pr_debug("[****SD_Debug****]host will support DRIVING TYPE C\n");
-		break;
-	case DRIVER_TYPE_D:
-		msdc_host_mode[id] |= MMC_CAP_DRIVER_TYPE_D;
-		msdc_host_mode[id] &= (~MMC_CAP_DRIVER_TYPE_A) & (~MMC_CAP_DRIVER_TYPE_C);
-		pr_debug("[****SD_Debug****]host will support DRIVING TYPE D\n");
-		break;
-	default:
-		pr_debug("[****SD_Debug****]invalid sd30_drive:%d\n", msdc_ctl->sd30_drive);
-		break;
-	}
-#if 0
-	switch (msdc_ctl->sd30_max_current) {
-	case MAX_CURRENT_200:
-		msdc_host_mode[id] |= MMC_CAP_MAX_CURRENT_200;
-		msdc_host_mode[id] &= (~MMC_CAP_MAX_CURRENT_400) &
-		    (~MMC_CAP_MAX_CURRENT_600) & (~MMC_CAP_MAX_CURRENT_800);
-		pr_debug("[****SD_Debug****]host will support MAX_CURRENT_200\n");
-		break;
-	case MAX_CURRENT_400:
-		msdc_host_mode[id] |= MMC_CAP_MAX_CURRENT_200 | MMC_CAP_MAX_CURRENT_400;
-		msdc_host_mode[id] &= (~MMC_CAP_MAX_CURRENT_600) & (~MMC_CAP_MAX_CURRENT_800);
-		pr_debug("[****SD_Debug****]host will support MAX_CURRENT_400\n");
-		break;
-	case MAX_CURRENT_600:
-		msdc_host_mode[id] |= MMC_CAP_MAX_CURRENT_200 |
-		    MMC_CAP_MAX_CURRENT_400 | MMC_CAP_MAX_CURRENT_600;
-		msdc_host_mode[id] &= (~MMC_CAP_MAX_CURRENT_800);
-		pr_debug("[****SD_Debug****]host will support MAX_CURRENT_600\n");
-		break;
-	case MAX_CURRENT_800:
-		msdc_host_mode[id] |= MMC_CAP_MAX_CURRENT_200 |
-		    MMC_CAP_MAX_CURRENT_400 | MMC_CAP_MAX_CURRENT_600 | MMC_CAP_MAX_CURRENT_800;
-		pr_debug("[****SD_Debug****]host will support MAX_CURRENT_800\n");
-		break;
-	default:
-		pr_debug("[****SD_Debug****]invalid sd30_max_current:%d\n",
-			 msdc_ctl->sd30_max_current);
-		break;
-	}
-	switch (msdc_ctl->sd30_power_control) {
-	case SDXC_NO_POWER_CONTROL:
-		msdc_host_mode[id] &= (~MMC_CAP_SET_XPC_330) &
-		    (~MMC_CAP_SET_XPC_300) & (~MMC_CAP_SET_XPC_180);
-		pr_debug("[****SD_Debug****]host will not support SDXC power control\n");
-		break;
-	case SDXC_POWER_CONTROL:
-		msdc_host_mode[id] |= MMC_CAP_SET_XPC_330 |
-		    MMC_CAP_SET_XPC_300 | MMC_CAP_SET_XPC_180;
-		pr_debug("[****SD_Debug****]host will support SDXC power control\n");
-		break;
-	default:
-		pr_debug("[****SD_Debug****]invalid sd30_power_control:%d\n",
-			 msdc_ctl->sd30_power_control);
-		break;
-	}
-#endif
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 	/* just for emmc slot */
@@ -880,74 +853,6 @@ struct __mmc_blk_data {
 	unsigned int usage;
 	unsigned int read_only;
 };
-
-int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type, struct storage_info *info)
-{
-	struct msdc_host *host = NULL;
-	int host_function = 0;
-	bool boot = 0;
-
-	if (!info)
-		return -EINVAL;
-
-	switch (storage_type) {
-	case EMMC_CARD_BOOT:
-		host_function = MSDC_EMMC;
-		boot = MSDC_BOOT_EN;
-		break;
-	case EMMC_CARD:
-		host_function = MSDC_EMMC;
-		break;
-	case SD_CARD_BOOT:
-		host_function = MSDC_SD;
-		boot = MSDC_BOOT_EN;
-		break;
-	case SD_CARD:
-		host_function = MSDC_SD;
-		break;
-	default:
-		pr_err("No supported storage type!");
-		return 0;
-	}
-	host = msdc_get_host(host_function, boot, 0);
-	BUG_ON(!host);
-	BUG_ON(!host->mmc);
-	BUG_ON(!host->mmc->card);
-	switch (info_type) {
-	case CARD_INFO:
-		if (host->mmc && host->mmc->card)
-			info->card = host->mmc->card;
-		else {
-			pr_err("CARD was not ready<get card>!");
-			return 0;
-		}
-		break;
-	case DISK_INFO:
-		if (host->mmc && host->mmc->card)
-			return 0;
-		/*     info->disk = mmc_get_disk(host->mmc->card);*/
-		else {
-			pr_err("CARD was not ready<get disk>!");
-			return 0;
-		}
-		break;
-	case EMMC_USER_CAPACITY:
-		/*      info->emmc_user_capacity = msdc_get_capacity(0);*/
-		break;
-	case EMMC_CAPACITY:
-		/*      info->emmc_capacity = msdc_get_capacity(1);*/
-		break;
-	case EMMC_RESERVE:
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-		/*      info->emmc_reserve = msdc_get_reserve();*/
-#endif
-		break;
-	default:
-		pr_err("Please check INFO_TYPE");
-		return 0;
-	}
-	return 1;
-}
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT

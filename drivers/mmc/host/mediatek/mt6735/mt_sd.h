@@ -1514,6 +1514,16 @@ do { \
 extern int drv_mode[HOST_MAX_NUM];
 extern int msdc_latest_transfer_mode[HOST_MAX_NUM];
 extern int msdc_latest_operation_type[HOST_MAX_NUM];
+extern struct msdc_host *mtk_msdc_host[HOST_MAX_NUM];
+extern u32 msdc_host_mode[HOST_MAX_NUM];
+extern u32 msdc_host_mode2[HOST_MAX_NUM];
+extern u32 g_emmc_mode_switch;
+
+extern struct msdc_host *msdc_get_host(int host_function, bool boot,
+	bool secondary);
+extern int msdc_reinit(struct msdc_host *host);
+extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw,
+	bool sd_18);
 
 extern void mmc_remove_card(struct mmc_card *card);
 extern void mmc_detach_bus(struct mmc_host *host);

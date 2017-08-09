@@ -16,7 +16,6 @@ extern void __iomem *apmixed_reg_base1;
 extern void __iomem *topckgen_reg_base;
 
 extern void msdc_dump_info(u32 id);
-extern struct msdc_host *mtk_msdc_host[];
 
 #ifndef FPGA_PLATFORM
 extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
@@ -123,7 +122,6 @@ typedef struct {
 } drv_mod;
 
 extern u32 dma_size[HOST_MAX_NUM];
-extern struct msdc_host *mtk_msdc_host[HOST_MAX_NUM];	/* for fpga early porting */
 extern unsigned char msdc_clock_src[HOST_MAX_NUM];
 extern drv_mod msdc_drv_mode[HOST_MAX_NUM];
 extern u32 msdc_host_mode[HOST_MAX_NUM];	/*SD/eMMC mode (HS/DDR/UHS) */
