@@ -669,6 +669,30 @@ static struct platform_driver mtk_wdt_driver = {
 	},
 };
 
+/* this function is for those user who need WDT APIs before WDT driver's probe */
+static int __init mtk_wdt_get_base_addr(void)
+{
+	struct device_node *np_rgu = NULL;
+	int i;
+
+	for (i = 0; rgu_of_match[i].compatible; i++) {
+		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[i].compatible);
+		if (np_rgu)
+			break;
+	}
+
+	if (!toprgu_base) {
+		toprgu_base = of_iomap(np_rgu, 0);
+		if (!toprgu_base)
+			pr_err("RGU iomap failed\n");
+
+		pr_debug("RGU base: 0x%p\n", toprgu_base);
+	}
+
+	return 0;
+}
+
+core_initcall(mtk_wdt_get_base_addr);
 module_platform_driver(mtk_wdt_driver);
 
 MODULE_AUTHOR("MTK");
