@@ -20,10 +20,37 @@
 #include "mu3d_hal_usb_drv.h"
 #include <linux/platform_device.h>
 
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+
+struct tx_haddr {
+	DEV_UINT8 hiaddr;
+	DEV_UINT8 reserved;
+};
+
+struct rx_haddr {
+	DEV_UINT8 hiaddr;
+};
+
+union gpd_b14 {
+	DEV_UINT8 ExtLength;		/*Tx ExtLength for  TXGPD*/
+	struct rx_haddr rx_haddr;	/*Rx hi address for RXGPD*/
+};
+
+union gpd_w1 {
+	DEV_UINT16 DataBufferLen;	/*Rx Allow Length for RXGPD*/
+	struct tx_haddr tx_haddr;   /*Tx hi address for TXGPD */
+};
+
+#endif
+
 typedef struct _TGPD {
 	DEV_UINT8 flag;
 	DEV_UINT8 chksum;
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	union gpd_w1 gpd_W1;
+#else
 	DEV_UINT16 DataBufferLen;	/*Rx Allow Length */
+#endif
 #ifdef CONFIG_ARM64
 	DEV_UINT32 pNext;
 	DEV_UINT32 pBuf;
@@ -32,7 +59,11 @@ typedef struct _TGPD {
 	DEV_UINT8 *pBuf;
 #endif
 	DEV_UINT16 bufLen;
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	union gpd_b14 gpd_B14;
+#else
 	DEV_UINT8 ExtLength;
+#endif
 	DEV_UINT8 ZTepFlag;
 /*} __attribute__ ((packed, aligned(4))) TGPD, *PGPD;*/
 } __packed __aligned(4)TGPD, *PGPD;
@@ -128,12 +159,58 @@ struct qmu_desc_map {
 #define TGPD_GET_CHKSUM(_pd)		(((TGPD *)_pd)->chksum)
 #define TGPD_SET_FORMAT(_pd, _fmt)	(((TGPD *)_pd)->flag = (((TGPD *)_pd)->flag&(~TGPD_FORMAT_BDP))|(_fmt))
 #define TGPD_GET_FORMAT(_pd)		((((TGPD *)_pd)->flag & TGPD_FORMAT_BDP)>>1)
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+#define TGPD_SET_DataBUF_LEN(_pd, _len) (((TGPD *)_pd)->gpd_W1.DataBufferLen = _len)
+#define TGPD_ADD_DataBUF_LEN(_pd, _len) (((TGPD *)_pd)->gpd_W1.DataBufferLen += _len)
+#define TGPD_GET_DataBUF_LEN(_pd)       (((TGPD *)_pd)->gpd_W1.DataBufferLen)
+#else
 #define TGPD_SET_DataBUF_LEN(_pd, _len) (((TGPD *)_pd)->DataBufferLen = _len)
 #define TGPD_ADD_DataBUF_LEN(_pd, _len) (((TGPD *)_pd)->DataBufferLen += _len)
 #define TGPD_GET_DataBUF_LEN(_pd)       (((TGPD *)_pd)->DataBufferLen)
+#endif
 
 #ifdef CONFIG_ARM64
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+#define TGPD_SET_NEXT(_pd, _next)	(((TGPD *)_pd)->pNext = (u32)_next)
+#define TGPD_SET_NEXT_TXHI(_pd, _next)	\
+	do {	\
+		((TGPD *) _pd)->gpd_W1.tx_haddr.hiaddr &= 0x0F;	\
+		((TGPD *) _pd)->gpd_W1.tx_haddr.hiaddr |= ((u8)_next << 4);	\
+	} while (0)
 
+#define TGPD_SET_NEXT_RXHI(_pd, _next)	\
+	do {	\
+		((TGPD *) _pd)->gpd_B14.rx_haddr.hiaddr &= 0x0F; \
+		((TGPD *) _pd)->gpd_B14.rx_haddr.hiaddr |= ((u8)_next << 4); \
+	} while (0)
+
+#define TGPD_GET_NEXT(_pd)		((uintptr_t)((TGPD *)_pd)->pNext)
+#define TGPD_GET_NEXT_TXHI(_pd)		((uintptr_t)((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr >> 4)
+#define TGPD_GET_NEXT_RXHI(_pd)		((uintptr_t)((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr >> 4)
+#define TGPD_GET_NEXT_TX(_pd)		((TGPD *)(TGPD_GET_NEXT(_pd) |  (TGPD_GET_NEXT_TXHI(_pd) << 32)))
+#define TGPD_GET_NEXT_RX(_pd)		((TGPD *)(TGPD_GET_NEXT(_pd) |  (TGPD_GET_NEXT_RXHI(_pd) << 32)))
+#define TGPD_SET_TBD(_pd, _tbd)	(((TGPD *)_pd)->pBuf = (u32)_tbd; TGPD_SET_FORMAT_BDP(_pd))
+#define TGPD_GET_TBD(_pd)		((TBD *)(uintptr_t)((TGPD *)_pd)->pBuf)
+#define TGPD_SET_DATA(_pd, _data)	(((TGPD *)_pd)->pBuf = (u32)_data)
+#define TGPD_SET_DATA_TXHI(_pd, _next)	\
+	do {	\
+		((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr &= 0xF0; \
+		((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr |= ((u8)_next & 0x0F); \
+	} while (0)
+
+#define TGPD_SET_DATA_RXHI(_pd, _next)	\
+	do {	\
+		((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr &= 0xF0; \
+		((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr |= ((u8)_next & 0x0F); \
+	} while (0)
+
+#define TGPD_GET_DATA(_pd)		((uintptr_t)((TGPD *)_pd)->pBuf)
+#define TGPD_GET_DATA_TXHI(_pd)		((uintptr_t)((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr & 0x0F)
+#define TGPD_GET_DATA_RXHI(_pd)		((uintptr_t)((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr & 0x0F)
+#define TGPD_GET_DATA_TX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd) |  (TGPD_GET_DATA_TXHI(_pd) << 32)))
+#define TGPD_GET_DATA_RX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd) |  (TGPD_GET_DATA_RXHI(_pd) << 32)))
+
+#else
 #define TGPD_SET_NEXT(_pd, _next)	(((TGPD *)_pd)->pNext = (u32)_next)
 #define TGPD_GET_NEXT(_pd)		((TGPD *)(uintptr_t)((TGPD *)_pd)->pNext)
 
@@ -142,6 +219,8 @@ struct qmu_desc_map {
 
 #define TGPD_SET_DATA(_pd, _data)	(((TGPD *)_pd)->pBuf = (u32)_data)
 #define TGPD_GET_DATA(_pd)		((DEV_UINT8 *)(uintptr_t)((TGPD *)_pd)->pBuf)
+
+#endif
 
 #else
 
@@ -159,8 +238,13 @@ struct qmu_desc_map {
 #define TGPD_SET_BUF_LEN(_pd, _len)	(((TGPD *)_pd)->bufLen = _len)
 #define TGPD_ADD_BUF_LEN(_pd, _len)	(((TGPD *)_pd)->bufLen += _len)
 #define TGPD_GET_BUF_LEN(_pd)	(((TGPD *)_pd)->bufLen)
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+#define TGPD_SET_EXT_LEN(_pd, _len)	(((TGPD *)_pd)->gpd_B14.ExtLength = _len)
+#define TGPD_GET_EXT_LEN(_pd)		(((TGPD *)_pd)->gpd_B14.ExtLength)
+#else
 #define TGPD_SET_EXT_LEN(_pd, _len)	(((TGPD *)_pd)->ExtLength = _len)
 #define TGPD_GET_EXT_LEN(_pd)		(((TGPD *)_pd)->ExtLength)
+#endif
 #define TGPD_SET_EPaddr(_pd, _EP)		(((TGPD *)_pd)->ZTepFlag = (((TGPD *)_pd)->ZTepFlag&0xF0)|(_EP))
 #define TGPD_GET_EPaddr(_pd)		(((TGPD *)_pd)->ZTepFlag & 0x0F)
 #define TGPD_FORMAT_TGL		0x10

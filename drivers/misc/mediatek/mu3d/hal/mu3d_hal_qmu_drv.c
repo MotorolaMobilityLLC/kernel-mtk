@@ -592,11 +592,15 @@ TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 				  DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT8 zlp)
 {
 	qmu_printk(K_DEBUG,
-		   "[TX]" "%s gpd=%p, epnum=%d, len=%d, zlp=%d, size(TGPD)=%lld, pBuf=%08lx\n",
-		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(TGPD), (unsigned long)pBuf);
-
+		   "[TX]" "%s gpd=%p, epnum=%d, len=%d, zlp=%d, size(TGPD)=%lld, pBuf=%llx\n",
+		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(TGPD), pBuf);
 	/*Set actual data point to "DATA Buffer" */
 	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
+
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	TGPD_SET_DATA_TXHI(gpd, (unsigned long) (pBuf >> 32));
+#endif
+
 	/*Clear "BDP(Buffer Descriptor Present)" flag */
 	TGPD_CLR_FORMAT_BDP(gpd);
 	/*
@@ -633,7 +637,10 @@ TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 	/*Set "Next GDP pointer" as the next GPD */
 	TGPD_SET_NEXT(gpd,
 		      (unsigned long)mu3d_hal_gpd_virt_to_phys(Tx_gpd_end[ep_num], USB_TX, ep_num));
-
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	TGPD_SET_NEXT_TXHI(gpd,
+		      (unsigned long) (mu3d_hal_gpd_virt_to_phys(Tx_gpd_end[ep_num], USB_TX, ep_num) >> 32));
+#endif
 	/*Default: isHWO=true */
 	TGPD_SET_CHKSUM(gpd, CHECKSUM_LENGTH);	/*Set GPD Checksum */
 	TGPD_SET_FLAGS_HWO(gpd);	/*Set HWO flag */
@@ -843,11 +850,14 @@ TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 				  DEV_UINT8 ep_num, DEV_UINT8 _is_bdp, DEV_UINT8 isHWO,
 				  DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT32 cMaxPacketSize)
 {
-	qmu_printk(K_DEBUG, "[RX]" "%s gpd=%p, epnum=%d, len=%d, pBuf=%08lx\n", __func__,
-		   gpd, ep_num, data_len, (unsigned long)pBuf);
+	qmu_printk(K_DEBUG, "[RX]" "%s gpd=%p, epnum=%d, len=%d, pBuf=%llx\n", __func__,
+		   gpd, ep_num, data_len, pBuf);
 
 	/*Set actual data point to "DATA Buffer" */
 	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	TGPD_SET_DATA_RXHI(gpd, (unsigned long) (pBuf >> 32));
+#endif
 	/*Clear "BDP(Buffer Descriptor Present)" flag */
 	TGPD_CLR_FORMAT_BDP(gpd);
 	/*
@@ -881,6 +891,11 @@ TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 	/*Set Next GDP pointer to the next GPD */
 	TGPD_SET_NEXT(gpd,
 		      (unsigned long)mu3d_hal_gpd_virt_to_phys(Rx_gpd_end[ep_num], USB_RX, ep_num));
+
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		TGPD_SET_NEXT_RXHI(gpd,
+			(unsigned long) (mu3d_hal_gpd_virt_to_phys(Rx_gpd_end[ep_num], USB_RX, ep_num) >> 32));
+#endif
 
 	/*Default: isHWO=true */
 	TGPD_SET_CHKSUM(gpd, CHECKSUM_LENGTH);	/*Set GPD Checksum */

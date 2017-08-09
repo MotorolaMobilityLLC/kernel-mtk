@@ -69,7 +69,22 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 	}
 
 	while (gpd != gpd_current && !TGPD_IS_FLAGS_HWO(gpd)) {
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		qmu_printk(K_DEBUG,
+			"[TXD]" "gpd=%p ->HWO=%d, BPD=%d, Next_GPD=%lx, DataBuffer=%lx,BufferLen=%d request=%p\n",
+			gpd, (u32) TGPD_GET_FLAG(gpd),
+			(u32) TGPD_GET_FORMAT(gpd), (uintptr_t) TGPD_GET_NEXT_TX(gpd),
+			(uintptr_t) TGPD_GET_DATA_TX(gpd), (u32) TGPD_GET_BUF_LEN(gpd), req);
 
+		if (!TGPD_GET_NEXT_TX(gpd)) {
+			qmu_printk(K_ERR, "[TXD][ERROR]" "Next GPD is null!!\n");
+			/* BUG_ON(1); */
+			break;
+		}
+
+		gpd = TGPD_GET_NEXT_TX(gpd);
+
+#else
 		qmu_printk(K_DEBUG,
 			"[TXD]" "gpd=%p ->HWO=%d, BPD=%d, Next_GPD=%lx, DataBuffer=%lx,BufferLen=%d request=%p\n",
 			gpd, (u32) TGPD_GET_FLAG(gpd),
@@ -83,6 +98,8 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 		}
 
 		gpd = TGPD_GET_NEXT(gpd);
+
+#endif
 
 		gpd = gpd_phys_to_virt(gpd, USB_TX, ep_num);
 
@@ -111,7 +128,15 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 		qmu_printk(K_ERR, "[TXD][ERROR]" "QCR0=%x, QCR1=%x, QCR2=%x, QCR3=%x, QGCSR=%x\n",
 			   os_readl(U3D_QCR0), os_readl(U3D_QCR1), os_readl(U3D_QCR2),
 			   os_readl(U3D_QCR3), os_readl(U3D_QGCSR));
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		qmu_printk(K_ERR, "[TXD][ERROR]" "HWO=%d, BPD=%d, Next_GPD=%lx\n",
+			   (u32) TGPD_GET_FLAG(gpd),
+			   (u32) TGPD_GET_FORMAT(gpd), (uintptr_t) TGPD_GET_NEXT_TX(gpd));
 
+		qmu_printk(K_ERR, "[TXD][ERROR]" "DataBuffer=%lx, BufferLen=%d, Endpoint=%d\n",
+			   (uintptr_t) TGPD_GET_DATA_TX(gpd), (u32) TGPD_GET_BUF_LEN(gpd),
+			   (u32) TGPD_GET_EPaddr(gpd));
+#else
 		qmu_printk(K_ERR, "[TXD][ERROR]" "HWO=%d, BPD=%d, Next_GPD=%lx\n",
 			   (u32) TGPD_GET_FLAG(gpd),
 			   (u32) TGPD_GET_FORMAT(gpd), (uintptr_t) TGPD_GET_NEXT(gpd));
@@ -119,6 +144,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 		qmu_printk(K_ERR, "[TXD][ERROR]" "DataBuffer=%lx, BufferLen=%d, Endpoint=%d\n",
 			   (uintptr_t) TGPD_GET_DATA(gpd), (u32) TGPD_GET_BUF_LEN(gpd),
 			   (u32) TGPD_GET_EPaddr(gpd));
+#endif
 	}
 
 	qmu_printk(K_DEBUG, "[TXD]" "%s EP%d, Last=%p, End=%p, complete\n", __func__,
@@ -211,9 +237,15 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 			qmu_printk(K_ERR, "[RXD][ERROR] QCR0=%x, QCR1=%x, QCR2=%x, QCR3=%x, QGCSR=%x\n",
 				   os_readl(U3D_QCR0), os_readl(U3D_QCR1), os_readl(U3D_QCR2),
 				   os_readl(U3D_QCR3), os_readl(U3D_QGCSR));
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
+			   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT_RX(gpd),
+			   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA_RX(gpd));
+#else
 			qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
 				   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT(gpd),
 				   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA(gpd));
+#endif
 			qmu_printk(K_INFO, "[RXD][ERROR] RecvLen=%d, Endpoint=%d\n",
 				   (u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
 		}
@@ -242,14 +274,27 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 		if (rcv_len > buf_len)
 			qmu_printk(K_ERR, "[RXD][ERROR]" "%s rcv(%d) > buf(%d) AUK!?\n", __func__,
 				   rcv_len, buf_len);
-
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		qmu_printk(K_DEBUG,
+			   "[RXD]" "gpd=%p ->HWO=%d, Next_GPD=%p, RcvLen=%d, BufLen=%d, pBuf=%p\n",
+			   gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd), rcv_len, buf_len,
+			   TGPD_GET_DATA_RX(gpd));
+#else
 		qmu_printk(K_DEBUG,
 			   "[RXD]" "gpd=%p ->HWO=%d, Next_GPD=%p, RcvLen=%d, BufLen=%d, pBuf=%p\n",
 			   gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd), rcv_len, buf_len,
 			   TGPD_GET_DATA(gpd));
-
+#endif
 		request->actual += rcv_len;
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		if (!TGPD_GET_NEXT_RX(gpd) || !TGPD_GET_DATA_RX(gpd)) {
+			qmu_printk(K_ERR, "[RXD][ERROR]" "%s EP%d ,gpd=%p\n", __func__, ep_num,
+				   gpd);
+			BUG_ON(1);
+		}
 
+		gpd = TGPD_GET_NEXT_RX(gpd);
+#else
 		if (!TGPD_GET_NEXT(gpd) || !TGPD_GET_DATA(gpd)) {
 			qmu_printk(K_ERR, "[RXD][ERROR]" "%s EP%d ,gpd=%p\n", __func__, ep_num,
 				   gpd);
@@ -257,7 +302,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 		}
 
 		gpd = TGPD_GET_NEXT(gpd);
-
+#endif
 		gpd = gpd_phys_to_virt(gpd, USB_RX, ep_num);
 
 		if (!gpd) {
@@ -282,11 +327,16 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 		qmu_printk(K_ERR, "[RXD][ERROR]" "QCR0=%x, QCR1=%x, QCR2=%x, QCR3=%x, QGCSR=%x\n",
 			   os_readl(U3D_QCR0), os_readl(U3D_QCR1), os_readl(U3D_QCR2),
 			   os_readl(U3D_QCR3), os_readl(U3D_QGCSR));
-
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+		qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
+			   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT_RX(gpd),
+			   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA_RX(gpd));
+#else
 		qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
 			   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT(gpd),
 			   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA(gpd));
 
+#endif
 		qmu_printk(K_INFO, "[RXD][ERROR] RecvLen=%d, Endpoint=%d\n",
 			   (u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
 	}
