@@ -117,14 +117,14 @@ static int get_sys_battery_info(char *dev)
 /* ********************************************* */
 /* Get Wifi Tx throughput */
 /* ********************************************* */
-static int get_sys_wifi_throughput(char *dev, int nRetryNr)
+static int get_sys_node(char *dev, int nRetryNr)
 {
 	int fd;
-	long nRet;
+	int nRet;
 	int eCheck;
 	int nReadSize;
 	int nRetryCnt = 0;
-	char buf[64];
+	char buf[32];
 
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
@@ -133,7 +133,7 @@ static int get_sys_wifi_throughput(char *dev, int nRetryNr)
 	do {
 		fd = sys_open(dev, O_RDONLY, 0);
 		if (nRetryCnt > nRetryNr) {
-			THRML_LOG("[get_sys_wifi_throughput] open fail dev:%s fd:%d\n", dev, fd);
+			THRML_LOG("[get_sys_node] open fail dev:%s fd:%d\n", dev, fd);
 			set_fs(oldfs);
 			return fd;
 		}
@@ -141,18 +141,18 @@ static int get_sys_wifi_throughput(char *dev, int nRetryNr)
 	} while (fd < 0);
 
 	if (nRetryCnt > 1)
-		THRML_LOG("[get_sys_wifi_throughput] open fail nRetryCnt:%d\n", nRetryCnt);
+		THRML_LOG("[get_sys_node] open fail nRetryCnt:%d\n", nRetryCnt);
 
 
 	nReadSize = sys_read(fd, buf, sizeof(buf) - 1);
-	THRML_LOG("[get_sys_wifi_throughput] nReadSize:%d\n", nReadSize);
-	eCheck = kstrtol(buf, 10, &nRet);
+	THRML_LOG("[get_sys_node] nReadSize:%d\n", nReadSize);
+	eCheck = kstrtoint(buf, 10, &nRet);
 
 	set_fs(oldfs);
 	sys_close(fd);
 
 	if (eCheck == 0)
-		return (int) nRet;
+		return nRet;
 	else
 		return 0;
 }
@@ -565,7 +565,39 @@ int mtk_thermal_get_batt_info(int *batt_voltage, int *batt_current, int *batt_te
 }
 EXPORT_SYMBOL(mtk_thermal_get_batt_info);
 
-#define NO_EXTRA_THERMAL_ATTR (7)
+/* ********************************************* */
+/* Get Extra Info */
+/* ********************************************* */
+#define MIN(_a_, _b_) ((_a_) < (_b_) ? (_a_) : (_b_))
+static unsigned int ma_len = 5;	/* max 60 */
+static unsigned int ma_counter;
+static unsigned int ma[60];
+
+static unsigned int  get_sma(unsigned int  latest_val)
+{
+	unsigned int ret = 0;
+	int i = 0;
+
+	ma[(ma_counter) % (ma_len)] = latest_val;
+	ma_counter++;
+	for (i = 0; i < MIN(ma_counter, ma_len); i++)
+		ret += ma[i];
+	ret = ret / (MIN(ma_counter, ma_len));
+
+	return ret;
+}
+
+enum {
+/*	TXPWR_MD1 = 0,
+	TXPWR_MD2 =1,
+	RFTEMP_2G_MD1 =2,
+	RFTEMP_2G_MD2 = 3,
+	RFTEMP_3G_MD1 = 4,
+	RFTEMP_3G_MD2 = 5, */
+	WiFi_TP = 6,
+	Mobile_TP = 7,
+	NO_EXTRA_THERMAL_ATTR
+};
 static char *extra_attr_names[NO_EXTRA_THERMAL_ATTR] = { 0 };
 static int extra_attr_values[NO_EXTRA_THERMAL_ATTR] = { 0 };
 static char *extra_attr_units[NO_EXTRA_THERMAL_ATTR] = { 0 };
@@ -582,13 +614,13 @@ int mtk_thermal_get_extra_info(int *no_extra_attr,
 	/* ****************** */
 	/* Modem Index */
 	/* ****************** */
-	THRML_LOG("[mtk_thermal_get_gpu_info] mtk_mdm_get_md_info\n");
+	THRML_LOG("[mtk_thermal_get_extra_info] mtk_mdm_get_md_info\n");
 	{
 		struct md_info *p_info;
 
 		mtk_mdm_get_md_info(&p_info, &size);
-		THRML_LOG("[mtk_thermal_get_gpu_info] mtk_mdm_get_md_info size %d\n", size);
-		if (size <= NO_EXTRA_THERMAL_ATTR - 1) {
+		THRML_LOG("[mtk_thermal_get_extra_info] mtk_mdm_get_md_info size %d\n", size);
+		if (size <= NO_EXTRA_THERMAL_ATTR - 2) {
 			for (i = 0; i < size; i++) {
 				extra_attr_names[i] = p_info[i].attribute;
 				extra_attr_values[i] = p_info[i].value;
@@ -596,14 +628,24 @@ int mtk_thermal_get_extra_info(int *no_extra_attr,
 			}
 		}
 	}
+	/* Get Mobile Tx throughput */
+	{
+		extra_attr_names[Mobile_TP] = "Mobile_TP";
+		extra_attr_values[Mobile_TP] = get_sys_node("/proc/mobile_tm/tx_thro", 3);
+		THRML_LOG("[mtk_thermal_get_extra_info] /proc/mobile_tm/tx_thro = %d\n", extra_attr_values[Mobile_TP]);
+		extra_attr_values[Mobile_TP] = get_sma(extra_attr_values[Mobile_TP]);
+		THRML_LOG("[mtk_thermal_get_extra_info] /proc/mobile_tm/tx_thro SMA = %d\n",
+						extra_attr_values[Mobile_TP]);
+		extra_attr_units[Mobile_TP] = "Kbps";
+	}
 
 	/* ****************** */
 	/* Wifi Index */
 	/* ****************** */
 	/* Get Wi-Fi Tx throughput */
-	extra_attr_names[i] = "WiFi_TP";
-	extra_attr_values[i] = get_sys_wifi_throughput("/proc/driver/thermal/wifi_tx_thro", 3);
-	extra_attr_units[i] = "Kbps";
+	extra_attr_names[WiFi_TP] = "WiFi_TP";
+	extra_attr_values[WiFi_TP] = get_sys_node("/proc/driver/thermal/wifi_tx_thro", 3);
+	extra_attr_units[WiFi_TP] = "Kbps";
 
 	if (attr_names)
 		*attr_names = extra_attr_names;

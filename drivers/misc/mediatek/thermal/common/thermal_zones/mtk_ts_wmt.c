@@ -14,7 +14,7 @@
 #include <mt-plat/aee.h>
 #include "mach/mt_thermal.h"
 #include <linux/uidgid.h>
-
+#include <linux/slab.h>
 /*=============================================================
  *Weak functions
  *=============================================================*/
@@ -1401,15 +1401,24 @@ static int wmt_tm_open(struct inode *inode, struct file *file)
 static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t count, loff_t *data)
 {
 	int i = 0;
-	int len = 0, time_msec = 0;
-	int trip_temp[COOLER_NUM] = { 0 };
-	int thermal_trip[COOLER_NUM] = { 0 };
-
-	char desc[512];
-	char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
-	char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+	int len = 0;
+	struct tm_data {
+		int trip_temp[COOLER_NUM];
+		int thermal_trip[COOLER_NUM];
+		char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
+		char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+		int time_msec;
+		char desc[512];
+	};
 
 	struct linux_thermal_ctrl_if *p_linux_if = 0;
+
+	struct tm_data *ptr_tm_data = kmalloc(sizeof(*ptr_tm_data), GFP_KERNEL);
+
+	if (ptr_tm_data == NULL) {
+		/* wmt_tm_printk("[%s] kmalloc fail\n\n", __func__); */
+		return -ENOMEM;
+	}
 
 	wmt_tm_printk("[%s]\n", __func__);
 
@@ -1421,22 +1430,30 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 		return -EINVAL;
 	}
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	len = (count < (sizeof(ptr_tm_data->desc) - 1)) ? count : (sizeof(ptr_tm_data->desc) - 1);
 
-	if (copy_from_user(desc, buf, len))
+	if (copy_from_user(ptr_tm_data->desc, buf, len)) {
+		kfree(ptr_tm_data);
 		return 0;
+	}
 
-	desc[len] = '\0';
+	ptr_tm_data->desc[len] = '\0';
 
 	if (sscanf
-	    (desc,
+	    (ptr_tm_data->desc,
 	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
-	     &g_num_trip, &trip_temp[0], &thermal_trip[0], bind0, &trip_temp[1], &thermal_trip[1],
-	     bind1, &trip_temp[2], &thermal_trip[2], bind2, &trip_temp[3], &thermal_trip[3], bind3,
-	     &trip_temp[4], &thermal_trip[4], bind4, &trip_temp[5], &thermal_trip[5], bind5,
-	     &trip_temp[6], &thermal_trip[6], bind6, &trip_temp[7], &thermal_trip[7], bind7,
-	     &trip_temp[8], &thermal_trip[8], bind8, &trip_temp[9], &thermal_trip[9], bind9,
-	     &time_msec) == 32) {
+	     &g_num_trip, &ptr_tm_data->trip_temp[0], &ptr_tm_data->thermal_trip[0], ptr_tm_data->bind0,
+	     &ptr_tm_data->trip_temp[1], &ptr_tm_data->thermal_trip[1], ptr_tm_data->bind1,
+	     &ptr_tm_data->trip_temp[2], &ptr_tm_data->thermal_trip[2], ptr_tm_data->bind2,
+	     &ptr_tm_data->trip_temp[3], &ptr_tm_data->thermal_trip[3], ptr_tm_data->bind3,
+	     &ptr_tm_data->trip_temp[4], &ptr_tm_data->thermal_trip[4], ptr_tm_data->bind4,
+	     &ptr_tm_data->trip_temp[5], &ptr_tm_data->thermal_trip[5], ptr_tm_data->bind5,
+	     &ptr_tm_data->trip_temp[6], &ptr_tm_data->thermal_trip[6], ptr_tm_data->bind6,
+	     &ptr_tm_data->trip_temp[7], &ptr_tm_data->thermal_trip[7], ptr_tm_data->bind7,
+	     &ptr_tm_data->trip_temp[8], &ptr_tm_data->thermal_trip[8], ptr_tm_data->bind8,
+	     &ptr_tm_data->trip_temp[9], &ptr_tm_data->thermal_trip[9], ptr_tm_data->bind9,
+	     &ptr_tm_data->time_msec) == 32) {
+
 		/* unregister */
 		if (p_linux_if->thz_dev) {
 			mtk_thermal_zone_device_unregister(p_linux_if->thz_dev);
@@ -1444,28 +1461,28 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 		}
 
 		for (i = 0; i < g_num_trip; i++)
-			g_thermal_trip[i] = thermal_trip[i];
+			g_thermal_trip[i] = ptr_tm_data->thermal_trip[i];
 
 		g_bind0[0] = g_bind1[0] = g_bind2[0] = g_bind3[0] = g_bind4[0] = '\0';
 		g_bind5[0] = g_bind6[0] = g_bind7[0] = g_bind8[0] = g_bind9[0] = '\0';
 
 		for (i = 0; i < 20; i++) {
-			g_bind0[i] = bind0[i];
-			g_bind1[i] = bind1[i];
-			g_bind2[i] = bind2[i];
-			g_bind3[i] = bind3[i];
-			g_bind4[i] = bind4[i];
-			g_bind5[i] = bind5[i];
-			g_bind6[i] = bind6[i];
-			g_bind7[i] = bind7[i];
-			g_bind8[i] = bind8[i];
-			g_bind9[i] = bind9[i];
+			g_bind0[i] = ptr_tm_data->bind0[i];
+			g_bind1[i] = ptr_tm_data->bind1[i];
+			g_bind2[i] = ptr_tm_data->bind2[i];
+			g_bind3[i] = ptr_tm_data->bind3[i];
+			g_bind4[i] = ptr_tm_data->bind4[i];
+			g_bind5[i] = ptr_tm_data->bind5[i];
+			g_bind6[i] = ptr_tm_data->bind6[i];
+			g_bind7[i] = ptr_tm_data->bind7[i];
+			g_bind8[i] = ptr_tm_data->bind8[i];
+			g_bind9[i] = ptr_tm_data->bind9[i];
 		}
 
 		for (i = 0; i < g_num_trip; i++)
-			g_trip_temp[i] = trip_temp[i];
+			g_trip_temp[i] = ptr_tm_data->trip_temp[i];
 
-		p_linux_if->interval = time_msec;
+		p_linux_if->interval = ptr_tm_data->time_msec;
 
 		wmt_tm_dprintk
 		    ("[wmt_tm_write] g_trip_temp [0]=%d, [1]=%d, [2]=%d, [3]=%d, [4]=%d\n",
@@ -1484,12 +1501,12 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 			       g_bind5, g_bind6, g_bind7, g_bind8, g_bind9);
 
 		wmt_tm_dprintk("[wmt_tm_write] trip_temp [0]=%d, [1]=%d, [2]=%d, [3]=%d, [4]=%d\n",
-			       trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3],
-			       trip_temp[4]);
+			       ptr_tm_data->trip_temp[0], ptr_tm_data->trip_temp[1], ptr_tm_data->trip_temp[2],
+			       ptr_tm_data->trip_temp[3], ptr_tm_data->trip_temp[4]);
 
 		wmt_tm_dprintk("[wmt_tm_write] trip_temp [5]=%d, [6]=%d, [7]=%d, [8]=%d, [9]=%d\n",
-			       trip_temp[5], trip_temp[6], trip_temp[7], trip_temp[8],
-			       trip_temp[9]);
+			       ptr_tm_data->trip_temp[5], ptr_tm_data->trip_temp[6], ptr_tm_data->trip_temp[7],
+			       ptr_tm_data->trip_temp[8], ptr_tm_data->trip_temp[9]);
 
 		wmt_tm_dprintk("[wmt_tm_write] polling time=%d\n", p_linux_if->interval);
 
@@ -1504,11 +1521,13 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 
 		wmt_tm_dprintk("[wmt_tm_write] time_ms=%d\n", p_linux_if->interval);
 
+		kfree(ptr_tm_data);
+
 		return count;
 	}
 
-	wmt_tm_info("[%s] bad argument = %s\n", __func__, desc);
-
+	wmt_tm_info("[%s] bad argument = %s\n", __func__, ptr_tm_data->desc);
+	kfree(ptr_tm_data);
 	return -EINVAL;
 }
 
@@ -1524,6 +1543,8 @@ void mtkts_wmt_cancel_thermal_timer(void)
 		p_linux_if = &pg_wmt_tm->linux_if;
 	else
 		return;
+
+	del_timer(&wmt_stats_timer);
 
 	/* cancel timer */
 	/* pr_debug("mtkts_wmt_cancel_thermal_timer\n"); */
@@ -1549,6 +1570,9 @@ void mtkts_wmt_start_thermal_timer(void)
 	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
 		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
 				 round_jiffies(msecs_to_jiffies(2000)));
+
+	wmt_stats_timer.expires = jiffies + 1 * HZ;
+	add_timer(&wmt_stats_timer);
 }
 
 static const struct file_operations _wmt_tm_fops = {

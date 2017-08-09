@@ -20,6 +20,15 @@
 #include "mach/mt_thermal.h"
 #include "mt-plat/mtk_mdm_monitor.h"
 #include <linux/uidgid.h>
+#include <linux/slab.h>
+#include <mt_ts_setting.h>
+
+#if Feature_Thro_update
+/* For using net dev + */
+#include <linux/netdevice.h>
+/* For using net dev - */
+#include <linux/timer.h>
+#endif
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
@@ -64,6 +73,85 @@ do {                                    \
 		pr_debug("[Power/PA_Thermal]" fmt, ##args); \
 	}                                   \
 } while (0)
+
+
+#if Feature_Thro_update
+struct pa_stats {
+	unsigned long pre_time;
+	unsigned long pre_tx_bytes;
+};
+
+static struct pa_stats pa_stats_info;
+static struct timer_list pa_stats_timer;
+static unsigned long pre_time;
+static unsigned long tx_throughput;
+
+static unsigned long get_tx_bytes(void)
+{
+	struct net_device *dev;
+	struct net *net;
+	unsigned long tx_bytes = 0;
+
+	read_lock(&dev_base_lock);
+	for_each_net(net) {
+		for_each_netdev(net, dev) {
+			if (!strncmp(dev->name, "ccmni", 5)) {
+				struct rtnl_link_stats64 temp;
+				const struct rtnl_link_stats64 *stats = dev_get_stats(dev, &temp);
+				/* mtktspa_dprintk("%s tx_bytes: %lu\n", dev->name, (unsigned long)stats->tx_bytes); */
+				tx_bytes = tx_bytes + stats->tx_bytes;
+			}
+		}
+	}
+	read_unlock(&dev_base_lock);
+	return tx_bytes;
+}
+
+static int pa_cal_stats(unsigned long data)
+{
+	struct pa_stats *stats_info = (struct pa_stats *) data;
+	struct timeval cur_time;
+
+	mtktspa_dprintk("[%s] pre_time=%lu, pre_data=%lu\n", __func__, pre_time, stats_info->pre_tx_bytes);
+
+	do_gettimeofday(&cur_time);
+
+	if (pre_time != 0 && cur_time.tv_sec > pre_time) {
+		unsigned long tx_bytes = get_tx_bytes();
+
+		if (tx_bytes > stats_info->pre_tx_bytes) {
+
+			tx_throughput = ((tx_bytes - stats_info->pre_tx_bytes) / (cur_time.tv_sec - pre_time)) >> 7;
+
+			mtktspa_dprintk("[%s] cur_time=%lu, cur_data=%lu, tx_throughput=%luKb/s\n", __func__,
+							cur_time.tv_sec, tx_bytes, tx_throughput);
+
+			stats_info->pre_tx_bytes = tx_bytes;
+		} else if (tx_bytes < stats_info->pre_tx_bytes) {
+			/* Overflow */
+			tx_throughput = ((0xffffffff - stats_info->pre_tx_bytes + tx_bytes)
+									/ (cur_time.tv_sec - pre_time)) >> 7;
+			stats_info->pre_tx_bytes = tx_bytes;
+			mtktspa_dprintk("[%s] cur_tx(%lu) < pre_tx\n", __func__, tx_bytes);
+		} else {
+			/* No traffic */
+			tx_throughput = 0;
+			mtktspa_dprintk("[%s] cur_tx(%lu) = pre_tx\n", __func__, tx_bytes);
+		}
+	} else {
+		/* Overflow possible ??*/
+		tx_throughput = 0;
+		mtktspa_dprintk("[%s] cur_time(%lu) < pre_time\n", __func__, cur_time.tv_sec);
+	}
+
+	pre_time = cur_time.tv_sec;
+	mtktspa_dprintk("[%s] pre_time=%lu, tv_sec=%lu\n", __func__, pre_time, cur_time.tv_sec);
+
+	pa_stats_timer.expires = jiffies + 1 * HZ;
+	add_timer(&pa_stats_timer);
+	return 0;
+}
+#endif
 
 
 /*
@@ -333,48 +421,66 @@ static int mtktspa_read(struct seq_file *m, void *v)
 static ssize_t mtktspa_write(struct file *file, const char __user *buffer, size_t count,
 			     loff_t *data)
 {
-	int len = 0, time_msec = 0;
-	int trip[10] = { 0 };
-	int t_type[10] = { 0 };
+	int len = 0;
 	int i;
-	char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
-	char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
-	char desc[512];
+	struct mtktspa_data {
+		int trip[10];
+		int t_type[10];
+		char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
+		char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+		int time_msec;
+		char desc[512];
+	};
 
+	struct mtktspa_data *ptr_mtktspa_data = kmalloc(sizeof(*ptr_mtktspa_data), GFP_KERNEL);
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
+	if (ptr_mtktspa_data == NULL) {
+		/* pr_debug("[%s] kmalloc fail\n\n", __func__); */
+		return -ENOMEM;
+	}
+
+	len = (count < (sizeof(ptr_mtktspa_data->desc) - 1)) ? count : (sizeof(ptr_mtktspa_data->desc) - 1);
+	if (copy_from_user(ptr_mtktspa_data->desc, buffer, len)) {
+		kfree(ptr_mtktspa_data);
 		return 0;
+	}
 
-	desc[len] = '\0';
+	ptr_mtktspa_data->desc[len] = '\0';
 
 	if (sscanf
-	    (desc,
+	    (ptr_mtktspa_data->desc,
 	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
-	     &num_trip, &trip[0], &t_type[0], bind0, &trip[1], &t_type[1], bind1, &trip[2],
-	     &t_type[2], bind2, &trip[3], &t_type[3], bind3, &trip[4], &t_type[4], bind4, &trip[5],
-	     &t_type[5], bind5, &trip[6], &t_type[6], bind6, &trip[7], &t_type[7], bind7, &trip[8],
-	     &t_type[8], bind8, &trip[9], &t_type[9], bind9, &time_msec) == 32) {
+	     &num_trip, &ptr_mtktspa_data->trip[0], &ptr_mtktspa_data->t_type[0], ptr_mtktspa_data->bind0,
+	     &ptr_mtktspa_data->trip[1], &ptr_mtktspa_data->t_type[1], ptr_mtktspa_data->bind1,
+	     &ptr_mtktspa_data->trip[2], &ptr_mtktspa_data->t_type[2], ptr_mtktspa_data->bind2,
+	     &ptr_mtktspa_data->trip[3], &ptr_mtktspa_data->t_type[3], ptr_mtktspa_data->bind3,
+	     &ptr_mtktspa_data->trip[4], &ptr_mtktspa_data->t_type[4], ptr_mtktspa_data->bind4,
+	     &ptr_mtktspa_data->trip[5], &ptr_mtktspa_data->t_type[5], ptr_mtktspa_data->bind5,
+	     &ptr_mtktspa_data->trip[6], &ptr_mtktspa_data->t_type[6], ptr_mtktspa_data->bind6,
+	     &ptr_mtktspa_data->trip[7], &ptr_mtktspa_data->t_type[7], ptr_mtktspa_data->bind7,
+	     &ptr_mtktspa_data->trip[8], &ptr_mtktspa_data->t_type[8], ptr_mtktspa_data->bind8,
+	     &ptr_mtktspa_data->trip[9], &ptr_mtktspa_data->t_type[9], ptr_mtktspa_data->bind9,
+	     &ptr_mtktspa_data->time_msec) == 32) {
 		mtktspa_dprintk("[mtktspa_write] mtktspa_unregister_thermal\n");
 		mtktspa_unregister_thermal();
 
 		for (i = 0; i < num_trip; i++)
-			g_THERMAL_TRIP[i] = t_type[i];
+			g_THERMAL_TRIP[i] = ptr_mtktspa_data->t_type[i];
 
 		g_bind0[0] = g_bind1[0] = g_bind2[0] = g_bind3[0] = g_bind4[0] = g_bind5[0] =
 		    g_bind6[0] = g_bind7[0] = g_bind8[0] = g_bind9[0] = '\0';
 
 		for (i = 0; i < 20; i++) {
-			g_bind0[i] = bind0[i];
-			g_bind1[i] = bind1[i];
-			g_bind2[i] = bind2[i];
-			g_bind3[i] = bind3[i];
-			g_bind4[i] = bind4[i];
-			g_bind5[i] = bind5[i];
-			g_bind6[i] = bind6[i];
-			g_bind7[i] = bind7[i];
-			g_bind8[i] = bind8[i];
-			g_bind9[i] = bind9[i];
+			g_bind0[i] = ptr_mtktspa_data->bind0[i];
+			g_bind1[i] = ptr_mtktspa_data->bind1[i];
+			g_bind2[i] = ptr_mtktspa_data->bind2[i];
+			g_bind3[i] = ptr_mtktspa_data->bind3[i];
+			g_bind4[i] = ptr_mtktspa_data->bind4[i];
+			g_bind5[i] = ptr_mtktspa_data->bind5[i];
+			g_bind6[i] = ptr_mtktspa_data->bind6[i];
+			g_bind7[i] = ptr_mtktspa_data->bind7[i];
+			g_bind8[i] = ptr_mtktspa_data->bind8[i];
+			g_bind9[i] = ptr_mtktspa_data->bind9[i];
 		}
 
 		mtktspa_dprintk("[mtktspa_write] g_THERMAL_TRIP_0=%d,g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,",
@@ -390,10 +496,10 @@ static ssize_t mtktspa_write(struct file *file, const char __user *buffer, size_
 			g_bind5, g_bind6, g_bind7, g_bind8, g_bind9);
 
 		for (i = 0; i < num_trip; i++)
-			trip_temp[i] = trip[i];
+			trip_temp[i] = ptr_mtktspa_data->trip[i];
 
 
-		interval = time_msec / 1000;
+		interval = ptr_mtktspa_data->time_msec / 1000;
 
 		mtktspa_dprintk("[mtktspa_write] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,",
 			trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3]);
@@ -404,10 +510,12 @@ static ssize_t mtktspa_write(struct file *file, const char __user *buffer, size_
 		mtktspa_dprintk("[mtktspa_write] mtktspa_register_thermal\n");
 		mtktspa_register_thermal();
 
+		kfree(ptr_mtktspa_data);
 		return count;
 	}
 
 	mtktspa_dprintk("[mtktspa_write] bad argument\n");
+	kfree(ptr_mtktspa_data);
 	return -EINVAL;
 
 }
@@ -426,13 +534,37 @@ static const struct file_operations mtktspa_fops = {
 	.release = single_release,
 };
 
+#if Feature_Thro_update
+int pa_mobile_tx_thro_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%lu\n", tx_throughput);
 
+	mtktspa_dprintk("[%s] tx=%lu\n", __func__, tx_throughput);
+	return 0;
+}
 
+static int pa_mobile_tx_thro_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, pa_mobile_tx_thro_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _tx_thro_fops = {
+	.owner = THIS_MODULE,
+	.open = pa_mobile_tx_thro_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
 
 void mtkts_pa_cancel_thermal_timer(void)
 {
 	/* cancel timer */
 	/* pr_debug("mtkts_pa_cancel_thermal_timer\n"); */
+
+#if Feature_Thro_update
+	del_timer(&pa_stats_timer);
+#endif
 
 	/* stop thermal framework polling when entering deep idle */
 	if (thz_dev)
@@ -446,6 +578,11 @@ void mtkts_pa_start_thermal_timer(void)
 	/* resume thermal framework polling when leaving deep idle */
 	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
+
+#if Feature_Thro_update
+	pa_stats_timer.expires = jiffies + 1 * HZ;
+	add_timer(&pa_stats_timer);
+#endif
 }
 
 
@@ -493,6 +630,9 @@ static int __init mtktspa_init(void)
 	int err = 0;
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *mtktspa_dir = NULL;
+#if Feature_Thro_update
+	struct proc_dir_entry *mobile_thro_proc_dir = NULL;
+#endif
 
 	mtktspa_dprintk("[%s]\n", __func__);
 
@@ -504,6 +644,15 @@ static int __init mtktspa_init(void)
 	if (err)
 		goto err_unreg;
 
+#if Feature_Thro_update
+	mobile_thro_proc_dir = proc_mkdir("mobile_tm", NULL);
+
+	if (!mobile_thro_proc_dir)
+		mtktspa_dprintk("[mobile_tm_proc_register]: mkdir /proc/mobile_tm failed\n");
+	else
+		entry = proc_create("tx_thro", S_IRUGO | S_IWUSR, mobile_thro_proc_dir, &_tx_thro_fops);
+#endif
+
 	mtktspa_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
 	if (!mtktspa_dir) {
 		mtktspa_dprintk("[%s]: mkdir /proc/driver/thermal failed\n", __func__);
@@ -513,6 +662,18 @@ static int __init mtktspa_init(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 	}
+
+#if Feature_Thro_update
+	/* init a timer for stats tx bytes */
+	pa_stats_info.pre_time = 0;
+	pa_stats_info.pre_tx_bytes = 0;
+
+	init_timer(&pa_stats_timer);
+	pa_stats_timer.function = (void *)&pa_cal_stats;
+	pa_stats_timer.data = (unsigned long) &pa_stats_info;
+	pa_stats_timer.expires = jiffies + 1 * HZ;
+	add_timer(&pa_stats_timer);
+#endif
 
 	return 0;
 
@@ -526,6 +687,10 @@ static void __exit mtktspa_exit(void)
 	mtktspa_dprintk("[mtktspa_exit]\n");
 	mtktspa_unregister_thermal();
 	mtktspa_unregister_cooler();
+
+#if Feature_Thro_update
+	del_timer(&pa_stats_timer);
+#endif
 }
 module_init(mtktspa_init);
 module_exit(mtktspa_exit);
