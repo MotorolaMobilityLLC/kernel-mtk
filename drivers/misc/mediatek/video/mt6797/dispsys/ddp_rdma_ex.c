@@ -474,7 +474,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 
 	unsigned int output_is_yuv = 0;
 	unsigned int input_is_yuv = !UFMT_GET_RGB(inFormat);
-	unsigned int input_swap = UFMT_GET_SWAP(inFormat);
+	unsigned int input_swap = UFMT_GET_BYTESWAP(inFormat);
 	unsigned int input_format_reg = UFMT_GET_FORMAT(inFormat);
 	unsigned int idx = rdma_index(module);
 	unsigned int color_matrix;
@@ -727,7 +727,7 @@ void rdma_dump_analysis(DISP_MODULE_ENUM module)
 			display_fmt_reg_to_unified_fmt((DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
 								     DISP_RDMA_INDEX_OFFSET * idx) >> 4) & 0xf,
 						       (DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
-								      DISP_RDMA_INDEX_OFFSET * idx) >> 8) & 0x1)),
+								      DISP_RDMA_INDEX_OFFSET * idx) >> 8) & 0x1, 0)),
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("in_p=%d,in_l=%d,out_p=%d,out_l=%d,bg(t%d,b%d,l%d,r%d),start=%lld ns,end=%lld ns\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
@@ -766,7 +766,7 @@ void rdma_get_info(int idx, RDMA_BASIC_STRUCT *info)
 									   idx) >> 4) & 0xf,
 							     (DISP_REG_GET(DISP_REG_RDMA_MEM_CON +
 									   DISP_RDMA_INDEX_OFFSET *
-									   idx) >> 8) & 0x1)) / 8;
+									   idx) >> 8) & 0x1, 0)) / 8;
 }
 
 static inline enum RDMA_MODE rdma_config_mode(unsigned long address)
@@ -782,6 +782,7 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 	unsigned int width = pConfig->dst_dirty ? pConfig->dst_w : r_config->width;
 	unsigned int height = pConfig->dst_dirty ? pConfig->dst_h : r_config->height;
 	golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
+	enum UNIFIED_COLOR_FMT inFormat = r_config->inputFormat;
 
 	if (pConfig->fps)
 		rdma_fps[rdma_index(module)] = pConfig->fps / 100;
@@ -807,10 +808,12 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right,
 		r_config->dst_x, r_config->dst_y, r_config->dst_w,
 		r_config->dst_h, width, height);
+	/*PARGB,etc need convert ARGB,etc*/
+	ufmt_disable_P(r_config->inputFormat, &inFormat);
 	rdma_config(module,
 		    mode,
 		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->address,
-		    (mode == RDMA_MODE_DIRECT_LINK) ? UFMT_RGB888 : r_config->inputFormat,
+		    (mode == RDMA_MODE_DIRECT_LINK) ? UFMT_RGB888 : inFormat,
 		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->pitch,
 		    width,
 		    height,

@@ -21,42 +21,45 @@
 #include "ddp_ovl.h"
 #include <disp_session.h>
 
-#define _UFMT_ID_SHIFT		0
-#define _UFMT_ID_WIDTH		8
-#define _UFMT_SWAP_SHIFT	(_UFMT_ID_SHIFT+_UFMT_ID_WIDTH)
-#define _UFMT_SWAP_WIDTH	1
-#define _UFMT_FORMAT_SHIFT	(_UFMT_SWAP_SHIFT+_UFMT_SWAP_WIDTH)
-#define _UFMT_FORMAT_WIDTH	5
-#define _UFMT_VDO_SHIFT		(_UFMT_FORMAT_SHIFT+_UFMT_FORMAT_WIDTH)
-#define _UFMT_VDO_WIDTH		1
-#define _UFMT_BLOCK_SHIT	(_UFMT_VDO_SHIFT+_UFMT_VDO_WIDTH)
-#define _UFMT_BLOCK_WIDTH	1
-#define _UFMT_bpp_SHIFT		(_UFMT_BLOCK_SHIT+_UFMT_BLOCK_WIDTH)
-#define _UFMT_bpp_WIDTH		6
-#define _UFMT_RGB_SHIFT		(_UFMT_bpp_SHIFT+_UFMT_bpp_WIDTH)
-#define _UFMT_RGB_WIDTH		1
+#define _UFMT_ID_SHIFT			0
+#define _UFMT_ID_WIDTH			8
+#define _UFMT_RGBSWAP_SHIFT		(_UFMT_ID_SHIFT+_UFMT_ID_WIDTH)
+#define _UFMT_RGBSWAP_WIDTH		1
+#define _UFMT_BYTESWAP_SHIFT		(_UFMT_RGBSWAP_SHIFT+_UFMT_RGBSWAP_WIDTH)
+#define _UFMT_BYTESWAP_WIDTH		1
+#define _UFMT_FORMAT_SHIFT		(_UFMT_BYTESWAP_SHIFT+_UFMT_BYTESWAP_WIDTH)
+#define _UFMT_FORMAT_WIDTH		5
+#define _UFMT_VDO_SHIFT			(_UFMT_FORMAT_SHIFT+_UFMT_FORMAT_WIDTH)
+#define _UFMT_VDO_WIDTH			1
+#define _UFMT_BLOCK_SHIT		(_UFMT_VDO_SHIFT+_UFMT_VDO_WIDTH)
+#define _UFMT_BLOCK_WIDTH		1
+#define _UFMT_bpp_SHIFT			(_UFMT_BLOCK_SHIT+_UFMT_BLOCK_WIDTH)
+#define _UFMT_bpp_WIDTH			6
+#define _UFMT_RGB_SHIFT			(_UFMT_bpp_SHIFT+_UFMT_bpp_WIDTH)
+#define _UFMT_RGB_WIDTH			1
 
 
 #define _MASK_SHIFT(val, width, shift) (((val)>>(shift)) & ((1<<(width))-1))
 
-#define MAKE_UNIFIED_COLOR_FMT(rgb, bpp, block, vdo, format, swap, id) \
+#define MAKE_UNIFIED_COLOR_FMT(rgb, bpp, block, vdo, format, byteswap, rgbswap, id) \
 	( \
-	 ((rgb)		<< _UFMT_RGB_SHIFT)	| \
-	 ((bpp)		<< _UFMT_bpp_SHIFT)	| \
-	 ((block)	<< _UFMT_BLOCK_SHIT)	| \
-	 ((vdo)		<< _UFMT_VDO_SHIFT)	| \
-	 ((format)	<< _UFMT_FORMAT_SHIFT) | \
-	 ((swap)	<< _UFMT_SWAP_SHIFT)	| \
-	 ((id)		<< _UFMT_ID_SHIFT))
+	((rgb)			<< _UFMT_RGB_SHIFT)	| \
+	((bpp)			<< _UFMT_bpp_SHIFT)	| \
+	((block)		<< _UFMT_BLOCK_SHIT)	| \
+	((vdo)			<< _UFMT_VDO_SHIFT)	| \
+	((format)		<< _UFMT_FORMAT_SHIFT)	| \
+	((byteswap)		<< _UFMT_BYTESWAP_SHIFT)	| \
+	((rgbswap)		<< _UFMT_RGBSWAP_SHIFT)	| \
+	((id)			<< _UFMT_ID_SHIFT))
 
 #define UFMT_GET_RGB(fmt)		_MASK_SHIFT(fmt, _UFMT_RGB_WIDTH, _UFMT_RGB_SHIFT)
 #define UFMT_GET_bpp(fmt)		_MASK_SHIFT(fmt, _UFMT_bpp_WIDTH, _UFMT_bpp_SHIFT)
 #define UFMT_GET_BLOCK(fmt)		_MASK_SHIFT(fmt, _UFMT_BLOCK_WIDTH, _UFMT_BLOCK_SHIT)
 #define UFMT_GET_VDO(fmt)		_MASK_SHIFT(fmt, _UFMT_VDO_WIDTH, _UFMT_VDO_SHIFT)
 #define UFMT_GET_FORMAT(fmt)		_MASK_SHIFT(fmt, _UFMT_FORMAT_WIDTH, _UFMT_FORMAT_SHIFT)
-#define UFMT_GET_SWAP(fmt)		_MASK_SHIFT(fmt, _UFMT_SWAP_WIDTH, _UFMT_SWAP_SHIFT)
+#define UFMT_GET_BYTESWAP(fmt)		_MASK_SHIFT(fmt, _UFMT_BYTESWAP_WIDTH, _UFMT_BYTESWAP_SHIFT)
+#define UFMT_GET_RGBSWAP(fmt)		_MASK_SHIFT(fmt, _UFMT_RGBSWAP_WIDTH, _UFMT_RGBSWAP_SHIFT)
 #define UFMT_GET_ID(fmt)		_MASK_SHIFT(fmt, _UFMT_ID_WIDTH, _UFMT_ID_SHIFT)
-
 #define UFMT_GET_Bpp(fmt)		(UFMT_GET_bpp(fmt)/8)
 
 unsigned int ufmt_get_rgb(unsigned int fmt);
@@ -64,59 +67,69 @@ unsigned int ufmt_get_bpp(unsigned int fmt);
 unsigned int ufmt_get_block(unsigned int fmt);
 unsigned int ufmt_get_vdo(unsigned int fmt);
 unsigned int ufmt_get_format(unsigned int fmt);
-unsigned int ufmt_get_swap(unsigned int fmt);
+unsigned int ufmt_get_byteswap(unsigned int fmt);
+unsigned int ufmt_get_rgbswap(unsigned int fmt);
 unsigned int ufmt_get_id(unsigned int fmt);
 unsigned int ufmt_get_Bpp(unsigned int fmt);
+unsigned int ufmt_is_old_fmt(unsigned int fmt);
+
 
 enum UNIFIED_COLOR_FMT {
 	UFMT_UNKNOWN = 0,
-	UFMT_Y8 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 7, 0, 1),
-	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 2),
-	UFMT_RGBA5551 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 3),
-	UFMT_RGB565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 4),
-	UFMT_BGR565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 1, 5),
-	UFMT_RGB888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 1, 6),
-	UFMT_BGR888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 0, 7),
-	UFMT_RGBA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 1, 8),
-	UFMT_BGRA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 0, 9),
-	UFMT_ARGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 10),
-	UFMT_ABGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 11),
-	UFMT_RGBX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 12),
-	UFMT_BGRX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 13),
-	UFMT_XRGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 14),
-	UFMT_XBGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 15),
-	UFMT_AYUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 16),
-	UFMT_YUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 17),
-	UFMT_UYVY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 0, 18),
-	UFMT_VYUY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 1, 19),
-	UFMT_YUYV = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 0, 20),
-	UFMT_YVYU = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 1, 21),
-	UFMT_UYVY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 0, 22),
-	UFMT_VYUY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 1, 23),
-	UFMT_YUY2_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 0, 24),
-	UFMT_YVYU_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 1, 25),
-	UFMT_YV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 1, 26),
-	UFMT_I420 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 0, 27),
-	UFMT_YV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 1, 28),
-	UFMT_I422 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 0, 29),
-	UFMT_YV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 1, 30),
-	UFMT_I444 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 0, 31),
-	UFMT_NV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 0, 32),
-	UFMT_NV21 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 1, 33),
-	UFMT_NV12_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 0, 34),
-	UFMT_NV21_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 1, 35),
-	UFMT_NV12_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 0, 36),
-	UFMT_NV21_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 1, 37),
-	UFMT_NV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 0, 38),
-	UFMT_NV61 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 1, 39),
-	UFMT_NV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 0, 40),
-	UFMT_NV42 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 1, 41),
+	UFMT_Y8 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 7, 0, 0, 1),
+	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 2),
+	UFMT_RGBA5551 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 3),
+	UFMT_RGB565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 4),
+	UFMT_BGR565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 1, 0, 5),
+	UFMT_RGB888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 1, 0, 6),
+	UFMT_BGR888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 0, 0, 7),
+	UFMT_RGBA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 1, 0, 8),
+	UFMT_BGRA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 0, 0, 9),
+	UFMT_ARGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 0, 10),
+	UFMT_ABGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 0, 11),
+	UFMT_RGBX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 12),
+	UFMT_BGRX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 13),
+	UFMT_XRGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 14),
+	UFMT_XBGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 15),
+	UFMT_AYUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 16),
+	UFMT_YUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 17),
+	UFMT_UYVY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 0, 0, 18),
+	UFMT_VYUY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 1, 0, 19),
+	UFMT_YUYV = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 0, 0, 20),
+	UFMT_YVYU = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 1, 0, 21),
+	UFMT_UYVY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 0, 0, 22),
+	UFMT_VYUY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 1, 0, 23),
+	UFMT_YUY2_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 0, 0, 24),
+	UFMT_YVYU_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 1, 0, 25),
+	UFMT_YV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 1, 0, 26),
+	UFMT_I420 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 0, 0, 27),
+	UFMT_YV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 1, 0, 28),
+	UFMT_I422 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 0, 0, 29),
+	UFMT_YV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 1, 0, 30),
+	UFMT_I444 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 0, 0, 31),
+	UFMT_NV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 0, 0, 32),
+	UFMT_NV21 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 1, 0, 33),
+	UFMT_NV12_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 0, 0, 34),
+	UFMT_NV21_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 1, 0, 35),
+	UFMT_NV12_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 0, 0, 36),
+	UFMT_NV21_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 1, 0, 37),
+	UFMT_NV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 0, 0, 38),
+	UFMT_NV61 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 1, 0, 39),
+	UFMT_NV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 0, 0, 40),
+	UFMT_NV42 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 1, 0, 41),
+	UFMT_PARGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 0, 42),
+	UFMT_PABGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 1, 43),
+	UFMT_PRGBA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 1, 44),
+	UFMT_PBGRA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 0, 45),
 };
 char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt);
-enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int swap);
+enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int byteswap,
+		int rgbswap);
 int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt);
 enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt);
-int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt);
+int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt,
+	int *const_bld);
+int ufmt_disable_P(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt);
 
 struct disp_rect {
 	int x;
@@ -160,6 +173,7 @@ typedef struct _OVL_CONFIG_STRUCT {
 	DISP_BUFFER_TYPE security;
 	unsigned int yuv_range;
 	int is_configured;	/* is this layer configured to OVL HW, for multiply OVL sync */
+	int const_bld;
 } OVL_CONFIG_STRUCT;
 
 typedef struct _OVL_BASIC_STRUCT {
@@ -243,12 +257,13 @@ typedef struct {
 } golden_setting_context;
 
 typedef struct {
-	struct task_struct	*primary_display_idlemgr_task;
-	wait_queue_head_t	idlemgr_wait_queue;
-	unsigned long long	idlemgr_last_kick_time;
-	unsigned int		enterulps;
-	int			session_mode_before_enter_idle;
-	int			is_primary_idle;
+	struct task_struct  *primary_display_idlemgr_task;
+	wait_queue_head_t  idlemgr_wait_queue;
+	unsigned long long idlemgr_last_kick_time;
+	unsigned int enterulps;
+	int session_mode_before_enter_idle;
+	int is_primary_idle;
+
 } disp_idlemgr_context;
 
 typedef struct {

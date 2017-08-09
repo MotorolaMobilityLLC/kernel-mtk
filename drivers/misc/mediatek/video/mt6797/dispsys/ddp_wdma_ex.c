@@ -145,7 +145,7 @@ static int wdma_config(DISP_MODULE_ENUM module,
 		       unsigned char alpha, DISP_BUFFER_TYPE sec, void *handle)
 {
 	unsigned int idx = wdma_index(module);
-	unsigned int output_swap = ufmt_get_swap(out_format);
+	unsigned int output_swap = ufmt_get_byteswap(out_format);
 	unsigned int is_rgb = ufmt_get_rgb(out_format);
 	unsigned int out_fmt_reg = ufmt_get_format(out_format);
 	int color_matrix = 0x2;	/* 0010 RGB_TO_BT601 */
@@ -262,7 +262,7 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 	     DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + idx_offst),
 	     unified_color_fmt_name(display_fmt_reg_to_unified_fmt
 				    ((DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 4) & 0xf,
-				     (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 11) & 0x1))
+				     (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 11) & 0x1, 0))
 	    );
 	DDPDUMP("wdma%d:status=%s,in_req=%d(prev sent data),in_ack=%d(ask data to prev),exec=%d,in_pix=(L:%d,P:%d)\n",
 		index,

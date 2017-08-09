@@ -2361,6 +2361,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define L_CON_FLD_LARC				REG_FLD(2, 28)	/* layer source 0:mem, 1:constant color */
 #define L_CON_FLD_RGB_SWAP		REG_FLD(1, 25)
 #define L_CON_FLD_BTSW				REG_FLD(1, 24)
+#define L_CON_FLD_CLRFMT_MAN		REG_FLD(1, 23)
 #define L_CON_FLD_MTX				REG_FLD(4, 16)
 #define L_CON_FLD_CFMT				REG_FLD(4, 12)
 #define L_CON_FLD_HORI_FLIP	        REG_FLD(1, 10)
@@ -2370,6 +2371,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define L_PITCH_FLD_LSP				REG_FLD(16, 0)
 #define L_PITCH_FLD_SUR_ALFA		REG_FLD(16, 16)
+#define L_PITCH_FLD_CONST_BLD		REG_FLD(1, 28)
 
 #define ADDCON_DBG_FLD_L3_WIN_HIT		REG_FLD(1, 31)
 #define ADDCON_DBG_FLD_L2_WIN_HIT		REG_FLD(1, 30)

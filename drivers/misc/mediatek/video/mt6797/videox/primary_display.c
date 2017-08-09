@@ -2233,11 +2233,12 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 
 	tmp_fmt = disp_fmt_to_unified_fmt(src->src_fmt);
 	/* display don't support X channel, like XRGB8888
-	 * we need to disable alpha channel*/
-	ufmt_disable_X_channel(tmp_fmt, &dst->fmt);
+	 * we need to enable const_bld*/
+	ufmt_disable_X_channel(tmp_fmt, &dst->fmt, &dst->const_bld);
+#if 0
 	if (tmp_fmt != dst->fmt)
 		force_disable_alpha = 1;
-
+#endif
 	Bpp = UFMT_GET_Bpp(dst->fmt);
 
 	dst->addr = (unsigned long)(src->src_phy_addr);
