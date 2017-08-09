@@ -246,12 +246,16 @@ void md_cd_lock_modem_clock_src(int locked)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
+#if 0 /* MD no need dump because of bus hang happened */
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 #if 0
 	unsigned int reg_value;
 	void __iomem *md_addr;
 #endif
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+
+	if (md->boot_stage == MD_BOOT_STAGE_0)
+		return;
 
 	md_cd_lock_modem_clock_src(1);
 
@@ -337,15 +341,18 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	ccci_mem_dump(md->index, md_reg->md_bootup_3, MD_Bootup_DUMP_LEN3);
 #endif
 	md_cd_lock_modem_clock_src(0);
+#endif
 }
 
 void md_cd_check_md_DCM(struct ccci_modem *md)
 {
+#if 0
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	md_cd_lock_modem_clock_src(1);
 	/* CCCI_INF_MSG(md->index, TAG, "MD DCM: 0x%X\n", *(unsigned int *)(md_ctrl->md_bus_status + 0x45C)); */
 	md_cd_lock_modem_clock_src(0);
+#endif
 }
 
 void md_cd_check_emi_state(struct ccci_modem *md, int polling)
@@ -421,7 +428,7 @@ void md1_pll_on(struct ccci_modem *md)
 {
 	void __iomem *map_addr;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
+	/* struct md_pll_reg *md_pll = md_ctrl->md_pll_base; */
 
 	map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
 
@@ -483,14 +490,16 @@ void md1_pll_init(struct ccci_modem *md)
 	ROr2W(md_pll->md_L1_a0, R_L1AO_PWR_AWARE, (1<<16));
 	/* busL2 DCM div 8/normal div 1/ clkslow_en/clock from
 	   PLL /debounce enable/ debounce time 7T */
-	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x0001FDE7);
-	/* DCM div 16/normal div 1/clkslow_en/ clock
+	/* L2DCM L1BUS div 16 */
+	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x0000FDE7); /* <= 1FDE7 */
+	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x1000FDE7); /* toggle setting */
+	/* DCM div 8/normal div 1/clkslow_en/ clock
 	   from PLL / dcm enable /debounce enable /debounce time 15T */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON, 0x0000FDEF);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON, 0x0001FDE7);
 	/* DCM config toggle = 0 */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x0);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x00000000);
 	/* DCM config toggle  = 1 / */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x90000000);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x80000000);
 
 	/* Wait PSMCU PLL ready */
 	CCCI_DBG_MSG(md->index, TAG, "Wait PSMCU PLL ready\n");
@@ -696,7 +705,6 @@ int md_cd_let_md_go(struct ccci_modem *md)
 int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
-	unsigned int reg_value;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
@@ -883,8 +891,12 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		/* wait write done*/
 		wmb();
 		/* start all Tx and Rx queues */
+#ifdef NO_START_ON_SUSPEND_RESUME
+		md_ctrl->txq_started = 0;
+#else
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD);	/* dummy read */
+#endif
 		md_ctrl->txq_active |= CLDMA_BM_ALL_QUEUE;
 		/* cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD, CLDMA_BM_ALL_QUEUE); */
 		/* cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD); // dummy read */

@@ -707,6 +707,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_GET_BATTERY_INFO, bat_info, 1);
 		break;
 	case CCCI_IOC_RELOAD_MD_TYPE:
+		state = 0;
 		if (copy_from_user(&state, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_INF_MSG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: copy_from_user fail!\n");
 			ret = -EFAULT;

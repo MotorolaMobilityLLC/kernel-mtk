@@ -1928,10 +1928,13 @@ void md_status_poller_func(unsigned long data)
 	if (ret) {
 		CCCI_ERR_MSG(md->index, KERN, "fail to send modem status polling msg ret=%d\n", ret);
 		del_timer(&md->md_status_timeout);
-		if (ret == -EBUSY && md->md_state == READY) {
+		if ((ret == -EBUSY || (ret == -CCCI_ERR_ALLOCATE_MEMORY_FAIL)) && md->md_state == READY) {
+
 			if (md->md_status_poller_flag & MD_STATUS_POLL_BUSY) {
 				md->ops->dump_info(md, DUMP_FLAG_QUEUE_0, NULL, 0);
 				ccci_md_exception_notify(md, MD_NO_RESPONSE);
+			} else if (ret == -CCCI_ERR_ALLOCATE_MEMORY_FAIL) {
+				mod_timer(&md->md_status_poller, jiffies + 10 * HZ);
 			} else {
 				md->md_status_poller_flag |= MD_STATUS_POLL_BUSY;
 				mod_timer(&md->md_status_poller, jiffies + 10 * HZ);

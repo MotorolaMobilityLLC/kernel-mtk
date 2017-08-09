@@ -1285,7 +1285,7 @@ int md_capability(int md_id, int wm_id, int curr_md_type)
 	if (wm_id >= MAX_IMG_NUM)
 		return -2;
 	if (md_id == MD_SYS1) {
-		if (md1_capability_array[curr_ubin_id] & (1 << wm_id))	/* Note here, curr_md_type not used */
+		if (md1_capability_array[wm_id] & (1 << curr_ubin_id))	/* Note here, curr_md_type not used */
 			return 1;
 		return 0;
 	}

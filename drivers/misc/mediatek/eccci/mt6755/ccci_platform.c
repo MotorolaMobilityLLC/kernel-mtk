@@ -84,6 +84,9 @@ static int is_4g_memory_size_support(void)
 /* #define MPU_REGION_ID_MD1MD3_SMEM   7 */
 #define MPU_ACCESS_PERMISSON_MD1MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
 	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION)
+/* #define MPU_REGION_ID_MD1_MCURO_HWRW   11 */
+#define MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR   SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, \
+	FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R)
 
 static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_ID_TOTAL_NUM] = {
 /*===================================================================================================================*/
@@ -190,24 +193,25 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 /*=======================================*/
 /* - Clear HW-related region protection -*/
 /*---------------------------------------*/
+	if (md->index == MD_SYS1) {
+		CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRW);
-	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
-					0,                       /*END_ADDR*/
-					MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
-					MPU_ACCESS_PERMISSON_CLEAR);
+		CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRO);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRO);
-	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
-					0,                       /*END_ADDR*/
-					MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
-					MPU_ACCESS_PERMISSON_CLEAR);
-
-	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n", MPU_REGION_ID_MD1_MCURO_HWRW);
-	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
-					0,                       /*END_ADDR*/
-					MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
-					MPU_ACCESS_PERMISSON_CLEAR);
+		CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n", MPU_REGION_ID_MD1_MCURO_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
+	}
 #endif
 
 #endif
@@ -458,16 +462,15 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 		for (region_id = MD_SET_REGION_MD1_MCURW_HWRO; region_id < MPU_REGION_INFO_ID_TOTAL_NUM; region_id++) {
 			/* set 8, 10, 14 region, except 11 */
 			region_mpu_id = MPU_REGION_INFO_ID[region_id];
-			if (region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW) {
-				CCCI_INF_MSG(md->index, TAG, "BYPASS region <%d:>\n", region_mpu_id);
-				continue;
-			}
-			region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
 			region_mpu_start = (unsigned int)md_layout->md_region_phy +
 				img_info->rmpu_info.region_info[region_id].region_offset;
 			region_mpu_end =
 				((region_mpu_start + img_info->rmpu_info.region_info[region_id].region_size
 				+ 0xFFFF)&(~0xFFFF)) - 0x1;
+			if (region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW)
+				region_mpu_attr = MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR;
+			else
+				region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
 			/*if ((region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW)
 				|| (region_mpu_id == MPU_REGION_ID_MD1_MCURW_HWRW)
 				|| (region_mpu_id == MPU_REGION_ID_MD1_MCURW_HWRO)) {

@@ -1539,6 +1539,9 @@ static inline void cldma_start(struct ccci_modem *md)
 	/* start all Tx and Rx queues */
 	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);
 	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD);	/* dummy read */
+#ifdef NO_START_ON_SUSPEND_RESUME
+	md_ctrl->txq_started = 1;
+#endif
 	md_ctrl->txq_active |= CLDMA_BM_ALL_QUEUE;
 	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD, CLDMA_BM_ALL_QUEUE);
 	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD);	/* dummy read */
@@ -2208,6 +2211,7 @@ static int md_cd_start(struct ccci_modem *md)
 	cldma_reset(md);
 	md->ops->broadcast_state(md, BOOTING);
 	md->boot_stage = MD_BOOT_STAGE_0;
+	md->ex_stage = EX_NONE;
 	cldma_start(md);
 
  out:
@@ -2621,11 +2625,23 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 				ret = 0;
 			}
 #endif
-			/* resume Tx queue */
-			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
+
+#ifdef NO_START_ON_SUSPEND_RESUME
+			if (md_ctrl->txq_started) {
+#endif
+				/* resume Tx queue */
+				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
 				      CLDMA_BM_ALL_QUEUE & (1 << qno));
-			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD);
-				/* dummy read to create a non-buffable write */
+				cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD);
+					/* dummy read to create a non-buffable write */
+#ifdef NO_START_ON_SUSPEND_RESUME
+			} else {
+				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);
+				cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD);	/* dummy read */
+				md_ctrl->txq_started = 1;
+			}
+#endif
+
 #ifndef ENABLE_CLDMA_AP_SIDE
 			md_cd_ccif_send(md, AP_MD_PEER_WAKEUP);
 #endif
@@ -3177,9 +3193,6 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-#ifdef MD_UMOLY_EE_SUPPORT /* for bootup trace, umoly is in register instead of ccif */
-		struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
-#endif
 
 	if (flag & DUMP_FLAG_CCIF_REG) {
 		CCCI_INF_MSG(md->index, TAG, "Dump CCIF REG\n");
@@ -3210,15 +3223,6 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		}
 		CCCI_INF_MSG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
 		ccci_mem_dump(md->index, dest_buff, length);
-#ifdef MD_UMOLY_EE_SUPPORT /* for bootup trace, umoly is in register instead of ccif */
-		/* 10. Bootup trace Reg*/
-		CCCI_INF_MSG(md->index, TAG, "Bootup trace Reg: PSCroe && L1 Core\n");
-		ccci_mem_dump(md->index, md_reg->md_bootup_0, MD_Bootup_DUMP_LEN0);
-		ccci_mem_dump(md->index, md_reg->md_bootup_1, MD_Bootup_DUMP_LEN1);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
-		ccci_mem_dump(md->index, md_reg->md_bootup_2, MD_Bootup_DUMP_LEN2);
-		ccci_mem_dump(md->index, md_reg->md_bootup_3, MD_Bootup_DUMP_LEN3);
-#endif
 	}
 	if (flag & DUMP_FLAG_CLDMA) {
 		cldma_dump_register(md);
@@ -3701,6 +3705,10 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		CCCI_INF_MSG(md_id, TAG, "Start md_tgpd_start cmd = 0x%x\n",
 			     cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_START_CMD));
 		CCCI_INF_MSG(md_id, TAG, "Start md cldma_tgpd done\n");
+#ifdef NO_START_ON_SUSPEND_RESUME
+		md_ctrl->txq_started = 1;
+#endif
+
 	}
 #endif
 	return 0;

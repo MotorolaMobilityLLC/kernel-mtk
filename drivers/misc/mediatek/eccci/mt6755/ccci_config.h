@@ -6,14 +6,14 @@
 /*#define CCCI_STATISTIC*/
 #define FEATURE_GET_MD_GPIO_NUM
 #define FEATURE_GET_MD_GPIO_VAL
-/*#define FEATURE_GET_MD_ADC_NUM*/
-/*#define FEATURE_GET_MD_ADC_VAL*/
+#define FEATURE_GET_MD_ADC_NUM
+#define FEATURE_GET_MD_ADC_VAL
 #define FEATURE_GET_MD_EINT_ATTR
-#if defined(FEATURE_GET_MD_EINT_ATTR)
+#if defined(FEATURE_GET_MD_EINT_ATTR) && !defined(CONFIG_MTK_LEGACY)
 #define FEATURE_GET_MD_EINT_ATTR_DTS
 #endif
 
-/*#define FEATURE_GET_MD_BAT_VOL*/
+#define FEATURE_GET_MD_BAT_VOL
 #define FEATURE_PM_IPO_H
 /*#define FEATURE_DFO_EN*/
 #define FEATURE_SEQ_CHECK_EN
@@ -44,22 +44,23 @@
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
 #else
-/*#define FEATURE_RF_CLK_BUF*/
-/*#define ENABLE_32K_CLK_LESS*/
+#define FEATURE_RF_CLK_BUF
+#define ENABLE_32K_CLK_LESS
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
 #define FEATURE_DBM_SUPPORT
 
-/*#define ENABLE_EMI_PROTECTION*/
+#define ENABLE_EMI_PROTECTION
 
-#ifdef CONFIG_ARCH_MT6735M
-/*#define ENABLE_DSP_SMEM_SHARE_MPU_REGION*/
+#ifdef ENABLE_EMI_PROTECTION
+#define SET_EMI_STEP_BY_STAGE
+/* #define SET_AP_MPU_REGION */ /*no need set ap region in Jade */
 #endif
 
 #endif
 /* #define DISABLE_MD_WDT_PROCESS */ /* enable wdt after bringup */
 #define NO_POWER_OFF_ON_STARTMD
-
+#define NO_START_ON_SUSPEND_RESUME
 #define MD_CACHE_TO_NONECACHE
 #define MD_UMOLY_EE_SUPPORT
 #define TEST_MESSAGE_FOR_BRINGUP
@@ -83,7 +84,7 @@
 #define CCCI_SMEM_SLEEP_MODE_DBG_SIZE 1024 /* MD sleep mode debug info section in smem tail */
 #define CCCI_SMEM_SLEEP_MODE_DBG_DUMP 512 /* only dump first 512bytes in sleep mode info */
 #define CCCI_SMEM_MD1_DBM_OFFSET (64*1024-16*3-8)
-#define CCCI_SMEM_MD3_DBM_OFFSET (5*1024-16*3-8)
+#define CCCI_SMEM_MD3_DBM_OFFSET (CCCI_SMEM_SIZE_EXCEPTION-16*3-CCCI_SMEM_DBM_GUARD_SIZE)
 #define CCCI_SMEM_DBM_GUARD_SIZE (8)
 
 /*================================================ */

@@ -160,6 +160,9 @@ struct md_cd_ctrl {
 	struct md_cd_queue rxq[CLDMA_RXQ_NUM];
 	unsigned short txq_active;
 	unsigned short rxq_active;
+#ifdef NO_START_ON_SUSPEND_RESUME
+	unsigned short txq_started;
+#endif
 
 	atomic_t reset_on_going;
 	atomic_t wdt_enabled;
