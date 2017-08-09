@@ -227,6 +227,10 @@ static int spi_nor_ready(struct spi_nor *nor)
 	return sr && fsr;
 }
 
+/*
+ * Service routine to read status register until ready, or timeout occurs.
+ * Returns non-zero if error.
+ */
 static int spi_nor_wait_till_ready(struct spi_nor *nor)
 {
 	unsigned long deadline;
@@ -250,15 +254,6 @@ static int spi_nor_wait_till_ready(struct spi_nor *nor)
 	dev_err(nor->dev, "flash operation timed out\n");
 
 	return -ETIMEDOUT;
-}
-
-/*
- * Service routine to read status register until ready, or timeout occurs.
- * Returns non-zero if error.
- */
-static int wait_till_ready(struct spi_nor *nor)
-{
-	return nor->wait_till_ready(nor);
 }
 
 /*
@@ -750,7 +745,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 		/* write one byte. */
 		nor->write(nor, to, 1, retlen, buf);
-		ret = wait_till_ready(nor);
+		ret = spi_nor_wait_till_ready(nor);
 		if (ret)
 			goto time_out;
 	}
@@ -762,7 +757,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 		/* write two bytes. */
 		nor->write(nor, to, 2, retlen, buf + actual);
-		ret = wait_till_ready(nor);
+		ret = spi_nor_wait_till_ready(nor);
 		if (ret)
 			goto time_out;
 		to += 2;
@@ -771,7 +766,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
 	nor->sst_write_second = false;
 
 	write_disable(nor);
-	ret = wait_till_ready(nor);
+	ret = spi_nor_wait_till_ready(nor);
 	if (ret)
 		goto time_out;
 
@@ -782,7 +777,7 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
 		nor->program_opcode = SPINOR_OP_BP;
 		nor->write(nor, to, 1, retlen, buf + actual);
 
-		ret = wait_till_ready(nor);
+		ret = spi_nor_wait_till_ready(nor);
 		if (ret)
 			goto time_out;
 		write_disable(nor);
@@ -828,7 +823,7 @@ static int spi_nor_write(struct mtd_info *mtd, loff_t to, size_t len,
 			if (page_size > nor->page_size)
 				page_size = nor->page_size;
 
-			ret = wait_till_ready(nor);
+			ret = spi_nor_wait_till_ready(nor);
 			if (ret)
 				goto write_err;
 
@@ -854,7 +849,7 @@ static int macronix_quad_enable(struct spi_nor *nor)
 	nor->cmd_buf[0] = val | SR_QUAD_EN_MX;
 	nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 1, 0);
 
-	if (wait_till_ready(nor))
+	if (spi_nor_wait_till_ready(nor))
 		return 1;
 
 	ret = read_sr(nor);
@@ -933,9 +928,6 @@ static int spi_nor_check(struct spi_nor *nor)
 		pr_err("spi-nor: please fill all the necessary fields!\n");
 		return -EINVAL;
 	}
-
-	if (!nor->wait_till_ready)
-		nor->wait_till_ready = spi_nor_wait_till_ready;
 
 	return 0;
 }
