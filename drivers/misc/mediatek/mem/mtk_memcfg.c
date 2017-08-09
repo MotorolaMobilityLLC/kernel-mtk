@@ -383,9 +383,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	struct mem_desc *mem_desc;
 	struct mblock_info *mblock_info;
 	const __be32 *reg, *endp;
-#ifdef CONFIG_MTK_VIDEO
 	u64 fb_base = 0x12345678, fb_size = 0;
-#endif
 
 	/* We are scanning "memory" nodes only */
 	if (type == NULL) {
@@ -486,22 +484,10 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 		dram_sz += mem_desc->size;
 	}
 
-#ifdef CONFIG_MTK_VIDEO
 	/* frame buffer */
-	fb_size = (u64)DISP_GetVRamSizeBoot(NULL);
+	fb_size = (u64)mtkfb_get_fb_size();
 	fb_base = (u64)mtkfb_get_fb_base();
 	dram_sz += fb_size;
-
-	/* verify memory size */
-#if 0
-	if (dram_sz != phone_dram_sz) {
-		MTK_MEMCFG_LOG_AND_PRINTK(
-			"memory size not matched: dram_sz: 0x%llx, phone_dram_sz: 0x%llx\n",
-				(unsigned long long)dram_sz,
-				(unsigned long long)phone_dram_sz);
-		mtk_memcfg_late_warning(WARN_MEMSIZE_CONFLICT);
-	}
-#endif
 
 	/* print memory information */
 	MTK_MEMCFG_LOG_AND_PRINTK(
@@ -511,10 +497,6 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 			(unsigned long long)fb_base + fb_size - 1,
 			(unsigned long long)fb_size);
 
-	pr_alert("fb base: 0x%llx, size: 0x%llx\n",
-		 (unsigned long long)DISP_GetVRamSizeBoot(NULL),
-		 (unsigned long long)mtkfb_get_fb_base());
-#endif /* end of CONFIG_MTK_VIDEO */
 	return node;
 }
 

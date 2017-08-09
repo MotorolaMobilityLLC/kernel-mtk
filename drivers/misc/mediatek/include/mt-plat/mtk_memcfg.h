@@ -28,6 +28,7 @@ extern unsigned int DISP_GetVRamSizeBoot(char *cmdline);
 
 #ifdef CONFIG_OF
 extern phys_addr_t mtkfb_get_fb_base(void);
+extern phys_addr_t mtkfb_get_fb_size(void);
 #endif	/* end of CONFIG_OF */
 
 #ifdef CONFIG_HIGHMEM
