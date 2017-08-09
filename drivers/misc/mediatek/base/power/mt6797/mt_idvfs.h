@@ -227,8 +227,6 @@ struct  IDVFS_INIT_OPT {
 	unsigned short freq_min;
 	unsigned short freq_cur;
 	unsigned short i2c_speed;
-	unsigned short swavg_length;
-	unsigned short swavg_endis;
 	struct CHANNEL_STATUS *channel;
 };
 

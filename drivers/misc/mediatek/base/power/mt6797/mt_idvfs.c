@@ -63,6 +63,23 @@ static int func_lv_mask_idvfs = 100;
 #define IDVFS_INTERRUPT_ENABLE	0
 #define IDVFS_FMAX_DEFAULT		2500
 #define IDVFS_FMIN_DEFAULT		505
+#define IDVFS_FREQMz_STORE		750
+
+#if 1
+	/* set Vproc = 1000mv for 750MHz, due to PTP VBOOT */
+#define IDVFS_VPROC_STORE		100000
+	/* set Vsram = 1100mv for 750MHz */
+	/* When next iDVFS enable Freq = 750MHz(default),
+	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
+#define IDVFS_VSRAM_STORE		110000
+#else
+	/* set Vproc = 880mv for 750MHz, when next big on use */
+#define IDVFS_VPROC_STORE		88000
+	/* set Vsram = 1100mv for 750MHz */
+	/* When next iDVFS enable Freq = 750MHz(default),
+	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
+#define IDVFS_VSRAM_STORE		105000
+#endif
 
 /*
  * LOG
@@ -124,8 +141,8 @@ static int func_lv_mask_idvfs = 100;
 	#define idvfs_ver(fmt, args...)			printf(IDVFS_TAG fmt, ##args)
 #endif
 
-#define	DA9214_MV_TO_STEP(volt_mv)			((volt_mv -	300) / 10)
-#define	DA9214_STEP_TO_MV(step)				(((step	& 0x7f)	* 10) +	300)
+#define DA9214_MV_TO_STEP(volt_mv)			((volt_mv -	300) / 10)
+#define DA9214_STEP_TO_MV(step)				(((step & 0x7f) * 10) + 300)
 
 /************* for ptp1	temp *************/
 #if 1
@@ -452,8 +469,6 @@ static struct IDVFS_INIT_OPT idvfs_init_opt = {
 	.freq_min = IDVFS_FMIN_DEFAULT,
 	.freq_cur = 750,
 	.i2c_speed = 0,
-	.swavg_length = 0,
-	.swavg_endis = 0,
 	.channel = channel_status,
 	};
 
@@ -669,7 +684,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 #else /* ENABLE_IDVFS */
 
 	unsigned char ret_volt = 0;
-	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100;
+	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100, vosel;
 
 #if 1
 	/* for back legacy DVFS mode debug */
@@ -733,7 +748,28 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* get current vproc volt */
 	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
 	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
-	cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet();
+
+	/* get current vsarm volt */
+	/* cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet(); */
+	vosel = (idvfs_read(0x102222b0) & 0xf);
+	switch (vosel) {
+	case 0:
+		cur_vsram_mv_x100 = 105000;
+		break;
+
+	case 1:
+		cur_vsram_mv_x100 = 60000;
+		break;
+
+	case 2:
+		cur_vsram_mv_x100 = 70000;
+		break;
+
+	default:
+		cur_vsram_mv_x100 = (((vosel - 3) * 2500) + 90000);
+		break;
+	}
+
 	idvfs_ver("iDVFS enable cur Vproc = %d(mv_x100), Vsarm = %d(mv_x100).\n",
 			cur_vproc_mv_x100, cur_vsram_mv_x100);
 
@@ -852,36 +888,24 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	BigOTPDisable();
 #endif
 
-	/* down to 30% = 750MHz for disable */
-	/* BigIDVFSFreq(3000); */
-	idvfs_ver("iDVFS disable force setting FreqREQ = 30%%, 750MHz.\n");
-	idvfs_write(0x10222498, (30 << 12));
+	/* down to 30% = 750MHz(IDVFS_FREQMz_STORE) for disable */
+	/* BigIDVFSFreq(3000), ()IDVFS_FREQMz_STORE / 4) * 100 = 30 */
+	idvfs_ver("iDVFS disable force setting FreqREQ = 30%%, 750MHz(IDVFS_FREQMz_STORE)\n");
+	idvfs_write(0x10222498, ((IDVFS_FREQMz_STORE / 25) << 12));
 	udelay(150);
 
 	/* call smc */ /* function_id = SMC_IDVFS_BigiDVFSDisable */
 	SEC_BIGIDVFSDISABLE();
 
-#if 1
-	/* set Vproc = 1000mv for 750MHz, due to PTP VBOOT */
-	da9214_vosel_buck_b(100000);
+	/* set Vproc = 1000mv for 750MHz(IDVFS_FREQMz_STORE), due to PTP VBOOT */
+	da9214_vosel_buck_b(IDVFS_VPROC_STORE);
 
 	/* set Vsram = 1100mv for 750MHz */
 	/* When next iDVFS enable Freq = 750MHz(default),
 	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
-	BigiDVFSSRAMLDOSet(110000);
+	BigiDVFSSRAMLDOSet(IDVFS_VSRAM_STORE);
 
 	udelay(20); /* settle time Max(pmic, sarm) */
-#else
-	/* set Vproc = 880mv for 750MHz, when next big on use */
-	da9214_vosel_buck_b(88000);
-
-	/* set Vsram = 1100mv for 750MHz */
-	/* When next iDVFS enable Freq = 750MHz(default),
-	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
-	BigiDVFSSRAMLDOSet(105000);
-
-	udelay(20); /* settle time Max(pmic, sarm) */
-#endif
 
 #if IDVFS_DREQ_ENABLE
 	/* if dreq enable */
@@ -1040,8 +1064,6 @@ int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis)
 	/* rc = SEC_BIGIDVFSSWAVG(Length, EnDis); */
 	idvfs_write(0x102224cc, ((Length << 4) | (EnDis)));
 
-	idvfs_init_opt.swavg_length = Length;
-	idvfs_init_opt.swavg_endis = EnDis;
 	idvfs_ver("iDVFS SWAvg: setting SWAvg success.\n");
 	return 0;
 }
@@ -1192,7 +1214,11 @@ unsigned int BigiDVFSSRAMLDOGet(void)
 {
 	int vosel = 0, volt;
 
-	vosel =	(idvfs_read(0x102222b0) & 0xf);
+	/* if all big offline return store voltage */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return IDVFS_VSRAM_STORE;
+
+	vosel = (idvfs_read(0x102222b0) & 0xf);
 
 	switch (vosel) {
 	case 0:
@@ -1484,24 +1510,39 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	BigiDVFSSWAvgStatus();
 
 	/* print struct IDVFS_INIT_OPT */
-#if 1
-	seq_puts(m, " *** Only for debug message, for real time info pls check iDVFS log.\n");
+	seq_puts(m, "*** Only for debug message, for real time info pls check iDVFS log.\n");
 	seq_printf(m, "IDVFS_INIT_OPT\n"
 			"idvfs_status = %d\n"
 			"freq_max = %d MHz\n"
 			"freq_min = %d MHz\n"
 			"freq_cur = %d MHz\n"
-			"i2c_spd  = %d KHz\n"
-			"swavg_length = %d, enable = %d.",
+			"i2c_spd  = %d KHz\n",
 			idvfs_init_opt.idvfs_status,
 			idvfs_init_opt.freq_max,
 			idvfs_init_opt.freq_min,
-			(idvfs_init_opt.idvfs_status) ? BigiDVFSSWAvgStatus() : BigiDVFSPllGetFreq(),
-			idvfs_init_opt.i2c_speed,
-			idvfs_init_opt.swavg_length,
-			idvfs_init_opt.swavg_endis);
+			(idvfs_init_opt.idvfs_status) ? idvfs_init_opt.freq_cur : BigiDVFSPllGetFreq(),
+			idvfs_init_opt.i2c_speed);
+
+#if 0
+	/* enable all freq meter and get freq */
+	/* armplldiv_mon_en = idvfs_read(0x1001a284); */
+	/* add for enable all monitor channel */
+	/* idvfs_write(0x1001a284, 0xffffffff); */
+	seq_printf(m, "Big Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(37));	/* or 46 */
+	seq_printf(m, "LL Freq meter  = %dKHZ.\n", _mt_get_cpu_freq_idvfs(34));	/* 42 */
+	seq_printf(m, "L Freq meter   = %dKHZ.\n", _mt_get_cpu_freq_idvfs(35));	/* 43 */
+	seq_printf(m, "CCI Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(36));	/* 44 */
+	seq_printf(m, "Back Freq meter= %dKHZ.\n", _mt_get_cpu_freq_idvfs(45));
+	/* idvfs_write(0x1001a284, armplldiv_mon_en); */
+#endif
+
+	seq_puts(m, "================= 2015/11/03 Ver 3.8 ===================\n");
+
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		goto DVT_TEST_END;
 
 	/* get otp and ocp percentage */
+#if IDVFS_OCP_OTP_ENABLE
 	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status) {
 		BigOCPCapture(1, 1, 0, 15);
 		BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
@@ -1512,22 +1553,24 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 
 	/* get real SWREQ for SPM ctrl reg direct */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = GetDecInterger(idvfs_read(0x10222498));
+#endif
 
 	/* print channel status and name */
 	for (i = 0; i < IDVFS_CHANNEL_NP; i++) {
-		seq_printf(m, "\nCh[%d]-%s, Pcent_x100 = %d, EnDIS = %d.",
+		seq_printf(m, "Ch[%d]-%s, Pcent_x100 = %d, EnDIS = %d.",
 		idvfs_init_opt.channel[i].ch_number,
 		idvfs_init_opt.channel[i].name,
 		idvfs_init_opt.channel[i].percentage,
 		idvfs_init_opt.channel[i].status);
+		if (i == IDVFS_CHANNEL_SWP)
+			seq_puts(m, "\n");
+#if IDVFS_OCP_OTP_ENABLE
 		if (i == IDVFS_CHANNEL_OCP)
-			seq_printf(m, " (L_PWR = %dmW, T_TWR = %dmW)", Leakage, Total);
+			seq_printf(m, " (L_PWR = %dmW, T_TWR = %dmW)\n", Leakage, Total);
 		if (i == IDVFS_CHANNEL_OTP)
-			seq_printf(m, " (Big thermal = %d)", get_immediate_big_wrap());
-	}
+			seq_printf(m, " (Big thermal = %d)\n", get_immediate_big_wrap());
 #endif
-
-	seq_puts(m, "\n================= 2015/10/21 Ver 3.6 ===================\n");
+	}
 	seq_printf(m, "iDVFS ctrl = 0x%x.\n", idvfs_read(0x10222470));
 	seq_printf(m, "iDVFS debugout = 0x%x.\n", idvfs_read(0x102224c8));
 	seq_printf(m, "SW AVG status = %d(%%_x100), Freq = %dMHz.\n",
@@ -1548,26 +1591,16 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 		break;
 	}
 
-#if 0
-	/* enable all freq meter and get freq */
-	/* armplldiv_mon_en = idvfs_read(0x1001a284); */
-	/* add for enable all monitor channel */
-	/* idvfs_write(0x1001a284, 0xffffffff); */
-	seq_printf(m, "Big Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(37));	/* or 46 */
-	seq_printf(m, "LL Freq meter  = %dKHZ.\n", _mt_get_cpu_freq_idvfs(34));	/* 42 */
-	seq_printf(m, "L Freq meter   = %dKHZ.\n", _mt_get_cpu_freq_idvfs(35));	/* 43 */
-	seq_printf(m, "CCI Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(36));	/* 44 */
-	seq_printf(m, "Back Freq meter= %dKHZ.\n", _mt_get_cpu_freq_idvfs(45));
-	/* idvfs_write(0x1001a284, armplldiv_mon_en); */
+#if IDVFS_DREQ_ENABLE
+	seq_printf(m, "Big DREQGet = %s.\n", ((BigDREQGet() == 0) ? "Open" : "Short"));
 #endif
 
+DVT_TEST_END:
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
 	seq_printf(m, "Big Vproc = %dmv.\n", DA9214_STEP_TO_MV((ret_val & 0x7f)));
 	seq_printf(m, "Big Vsram = %dmv.\n", (BigiDVFSSRAMLDOGet()/100));
 	seq_printf(m, "Big Vsram LDO_Cal/eFuse = 0x%x.\n", BigiDVFSSRAMLDOEFUSE());
-#if IDVFS_DREQ_ENABLE
-	seq_printf(m, "Big DREQGet = %s.\n", ((BigDREQGet() == 0) ? "Open" : "Short"));
-#endif
+
 	/* switch bank 0; */
 	idvfs_write(0x1100b400, 0x003f0000);
 	seq_printf(m, "DCVALUES = 0x%x.\n", idvfs_read(0x1100b240));
@@ -1668,13 +1701,15 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 				da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
 				ret_val = DA9214_STEP_TO_MV(ret_val & 0x7f);
 				if (ret_val > ((BigiDVFSSRAMLDOGet() / 100) - 100)) {
-					BigiDVFSSRAMLDOSet(func_para[1]);
+					if ((cpu_online(8) == 1) || (cpu_online(9) == 1))
+						BigiDVFSSRAMLDOSet(func_para[1]);
 					da9214_config_interface(0xd9,
 						((DA9214_MV_TO_STEP(func_para[0] / 100)) | 0x80), 0xff, 0);
 				} else {
 					da9214_config_interface(0xd9,
 						((DA9214_MV_TO_STEP(func_para[0] / 100)) | 0x80), 0xff, 0);
-					BigiDVFSSRAMLDOSet(func_para[1]);
+					if ((cpu_online(8) == 1) || (cpu_online(9) == 1))
+						BigiDVFSSRAMLDOSet(func_para[1]);
 				}
 			}
 			rc = 0;
