@@ -4521,7 +4521,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	data_config->overlap_layer_num = hrt_level;
 
 	if (hrt_level > HRT_LEVEL_HIGH)
-		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, DISP_HW_HRT_LYAERS_FOR_HI_PERF);
+		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
 
 	if (hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
@@ -4530,16 +4530,6 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	} else {
 		dvfs_last_ovl_req = OPPI_UNREQ;
 	}
-
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	/*
-	Always request OPPI_PERF while frame update in 120HZ
-	*/
-	if (pgc->lcm_refresh_rate == 120 && dvfs_last_ovl_req == OPPI_UNREQ) {
-		_request_dvfs_perf(OPPI_PERF);
-		dvfs_last_ovl_req = OPPI_PERF;
-	}
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];

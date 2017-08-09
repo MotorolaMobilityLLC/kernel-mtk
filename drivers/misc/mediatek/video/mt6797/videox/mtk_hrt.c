@@ -14,6 +14,12 @@
 
 #include "mtk_hrt.h"
 
+static int emi_lower_bound;
+static int emi_upper_bound;
+static int larb_lower_bound;
+static int larb_upper_bound;
+static int primary_fps = 60;
+
 static int get_bpp(DISP_FORMAT format)
 {
 	int layerbpp;
@@ -73,13 +79,13 @@ static void dump_disp_info(disp_layer_info *disp_info)
 	layer_config *layer_info;
 
 	for (i = 0 ; i < 2 ; i++) {
-		DISPMSG("Disp_Id:%d, disp_mode:%d, layer_num:%d, hrt_num:%d, gles_head:%d, gles_tail:%d\n",
+		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d\n",
 			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
-			disp_info->gles_head[i], disp_info->gles_tail[i]);
+			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps);
 
 		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 			layer_info = &disp_info->input_config[i][j];
-			DISPMSG("[L->O]:%d->%d, offset(%d, %d), w/h(%d, %d), fmt:0x%x\n",
+			DISPMSG("L%d->%d/of(%d,%d)/wh(%d,%d)/fmt:0x%x\n",
 				j, layer_info->ovl_id, layer_info->dst_offset_x,
 				layer_info->dst_offset_y, layer_info->dst_width, layer_info->dst_height,
 				layer_info->src_fmt);
@@ -351,16 +357,16 @@ static int scan_y_overlap(disp_layer_info *disp_info, int disp_index, int ovl_ov
 static int get_hrt_level(int sum_overlap_w, int is_larb)
 {
 	if (is_larb) {
-		if (sum_overlap_w <= LARB_LOWER_BOUND * 240)
+		if (sum_overlap_w <= larb_lower_bound * 240)
 			return HRT_LEVEL_LOW;
-		else if (sum_overlap_w <= LARB_UPPER_BOUND * 240)
+		else if (sum_overlap_w <= larb_upper_bound * 240)
 			return HRT_LEVEL_HIGH;
 		else
 			return HRT_OVER_LIMIT;
 	} else {
-		if (sum_overlap_w <= OVERLAP_LOWER_BOUND * 240)
+		if (sum_overlap_w <= emi_lower_bound * 240)
 			return HRT_LEVEL_LOW;
-		else if (sum_overlap_w <= OVERLAP_UPPER_BOUND * 240)
+		else if (sum_overlap_w <= emi_upper_bound * 240)
 			return HRT_LEVEL_HIGH;
 		else
 			return HRT_OVER_LIMIT;
@@ -430,7 +436,7 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 	weight = get_layer_weight(disp_index);
 
 	sum_overlap_w = 0;
-	overlap_lower_bound = OVERLAP_LOWER_BOUND * 240;
+	overlap_lower_bound = emi_lower_bound * 240;
 	if (disp_info->gles_head[disp_index] != -1 &&
 		disp_info->gles_head[disp_index] >= start_layer &&
 		disp_info->gles_head[disp_index] <= end_layer)
@@ -469,9 +475,39 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 	return sum_overlap_w;
 }
 
+static int _get_larb0_idx(disp_layer_info *disp_info)
+{
+	int primary_ovl_cnt = 0, larb_idx = 0;
+
+	primary_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_PRIMARY);
+
+	if (primary_fps == 120) {
+		if (primary_ovl_cnt < 3)
+			larb_idx = primary_ovl_cnt - 1;
+		else if (primary_ovl_cnt < 5)
+			larb_idx = 1;
+		else if (primary_ovl_cnt < 7)
+			larb_idx = 2;
+		else
+			larb_idx = 3;
+	} else {
+		if (primary_ovl_cnt < 4)
+			larb_idx = primary_ovl_cnt - 1;
+		else if (primary_ovl_cnt < 7)
+			larb_idx = 2;
+		else
+			larb_idx = 3;
+	}
+	if (disp_info->gles_head[0] != -1 &&
+		larb_idx > disp_info->gles_head[0])
+		larb_idx += (disp_info->gles_tail[0] - disp_info->gles_head[0]);
+
+	return larb_idx;
+}
+
 static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 {
-	int primary_ovl_cnt = 0, larb_idx = 0, sum_overlap_w = 0;
+	int larb_idx = 0, sum_overlap_w = 0;
 	bool is_over_bound = true;
 
 	if (!has_hrt_limit(disp_info, HRT_PRIMARY)) {
@@ -479,18 +515,7 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 		return is_over_bound;
 	}
 
-	primary_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_PRIMARY);
-	if (primary_ovl_cnt < 4)
-		larb_idx = primary_ovl_cnt - 1;
-	else if (primary_ovl_cnt < 7)
-		larb_idx = 2;
-	else
-		larb_idx = 3;
-
-	if (disp_info->gles_head[0] != -1 &&
-		larb_idx > disp_info->gles_head[0])
-		larb_idx += (disp_info->gles_tail[0] - disp_info->gles_head[0]);
-
+	larb_idx = _get_larb0_idx(disp_info);
 	sum_overlap_w = _calc_hrt_num(disp_info, 0, 0, larb_idx, false);
 
 	if (get_hrt_level(sum_overlap_w, true) > HRT_LEVEL_LOW)
@@ -503,25 +528,15 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 
 static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
 {
-	int primary_ovl_cnt = 0, larb_idx = 0, sum_overlap_w = 0;
+	int primary_ovl_cnt = 0, larb5_idx = 0, sum_overlap_w = 0;
 	bool is_over_bound = true;
 
 	primary_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_PRIMARY);
 	if (primary_ovl_cnt > 3 && has_hrt_limit(disp_info, HRT_PRIMARY)) {
-		if (primary_ovl_cnt < 4)
-			larb_idx = primary_ovl_cnt;
-		else if (primary_ovl_cnt < 7)
-			larb_idx = 3;
-		else
-			larb_idx = 4;
 
-		if (disp_info->gles_head[0] != -1 &&
-			larb_idx > disp_info->gles_head[0])
-			larb_idx += (disp_info->gles_tail[0] - disp_info->gles_head[0]);
-
-		/* HRTMSG("%s larb_idx:%d\n", __func__, larb_idx); */
+		larb5_idx = _get_larb0_idx(disp_info) + 1;
 		sum_overlap_w += _calc_hrt_num(disp_info, HRT_PRIMARY,
-					larb_idx, disp_info->layer_num[0] - 1, false);
+					larb5_idx, disp_info->layer_num[0] - 1, false);
 	}
 
 	if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
@@ -615,9 +630,9 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 	return hrt_level;
 }
 
-static int dispatch_ovl_id(disp_layer_info *disp_info, int hrt_level)
+static int dispatch_ovl_id(disp_layer_info *disp_info)
 {
-	int disp_idx, i, ovl_id_offset, overlap_upper_bound;
+	int disp_idx, i, ovl_id_offset;
 	layer_config *layer_info;
 	bool has_gles, has_second_disp;
 
@@ -626,11 +641,9 @@ static int dispatch_ovl_id(disp_layer_info *disp_info, int hrt_level)
 	else
 		has_second_disp = false;
 
-	overlap_upper_bound = OVERLAP_UPPER_BOUND;
-
 	/* Dispatch gles range if necessary */
-	if (hrt_level > HRT_LEVEL_HIGH) {
-		int valid_ovl_cnt = OVERLAP_UPPER_BOUND;
+	if (disp_info->hrt_num > HRT_LEVEL_HIGH) {
+		int valid_ovl_cnt = emi_upper_bound;
 
 		/*
 		Arrange 4 ovl layers to secondary display, so no need to
@@ -664,6 +677,7 @@ static int dispatch_ovl_id(disp_layer_info *disp_info, int hrt_level)
 				}
 			}
 		}
+		disp_info->hrt_num = HRT_LEVEL_HIGH;
 	}
 
 	/* Dispatch OVL id */
@@ -671,11 +685,20 @@ static int dispatch_ovl_id(disp_layer_info *disp_info, int hrt_level)
 		int gles_count, ovl_cnt;
 
 		ovl_cnt = get_ovl_layer_cnt(disp_info, disp_idx);
-		if (ovl_cnt <= LARB_LOWER_BOUND * 2 && disp_idx == HRT_PRIMARY &&
-			PRIMARY_OVL_LAYER_NUM > 4)
-			ovl_id_offset = 1;
-		else
-			ovl_id_offset = 0;
+		if (primary_fps == 120) {
+			if (ovl_cnt <= 4 && disp_idx == HRT_PRIMARY)
+				ovl_id_offset = 2;
+			else if (ovl_cnt <= 6 && disp_idx == HRT_PRIMARY)
+				ovl_id_offset = 1;
+			else
+				ovl_id_offset = 0;
+		} else {
+			if (ovl_cnt <= larb_lower_bound * 2 && disp_idx == HRT_PRIMARY &&
+				PRIMARY_OVL_LAYER_NUM > 4)
+				ovl_id_offset = 1;
+			else
+				ovl_id_offset = 0;
+		}
 		gles_count = disp_info->gles_tail[disp_idx] - disp_info->gles_head[disp_idx] + 1;
 		has_gles = false;
 		if (disp_info->gles_head[disp_idx] != -1)
@@ -848,9 +871,33 @@ int gen_hrt_pattern(void)
 	return 0;
 }
 
+static int set_hrt_bound(void)
+{
+	if (primary_display_get_lcm_refresh_rate() == 120) {
+		emi_lower_bound = OD_EMI_LOWER_BOUND;
+		emi_upper_bound = OD_EMI_UPPER_BOUND;
+		larb_upper_bound = OD_LARB_LOWER_BOUND;
+		larb_upper_bound = OD_LARB_UPPER_BOUND;
+#ifdef HRT_DEBUG
+		DISPMSG("120hz hrt bound\n");
+#endif
+		return 120;
+	}
+
+	emi_lower_bound = EMI_LOWER_BOUND;
+	emi_upper_bound = EMI_UPPER_BOUND;
+	larb_lower_bound = LARB_LOWER_BOUND;
+	larb_upper_bound = LARB_UPPER_BOUND;
+#ifdef HRT_DEBUG
+	DISPMSG("60hz hrt bound\n");
+#endif
+	return 60;
+
+}
+
 int dispsys_hrt_calc(disp_layer_info *disp_info)
 {
-	int ret, hrt_level;
+	int ret;
 
 	if (check_disp_info(disp_info) < 0) {
 		DISPERR("check_disp_info fail\n");
@@ -861,6 +908,15 @@ int dispsys_hrt_calc(disp_layer_info *disp_info)
 	dump_disp_info(disp_info);
 #endif
 
+	/*
+	Set corresponding hrt bound for 60HZ and 120HZ.
+	*/
+	primary_fps = set_hrt_bound();
+
+	/*
+	If the number of input layr over the real layer number OVL hw can support,
+	set some of these layers as GLES layer to meet the hw capability.
+	*/
 	ret = filter_by_ovl_cnt(disp_info);
 
 	/*
@@ -868,12 +924,12 @@ int dispsys_hrt_calc(disp_layer_info *disp_info)
 	If the overlap number is out of bound, then decrease the number of available layers
 	to overlap number.
 	*/
-	hrt_level = calc_hrt_num(disp_info);
+	calc_hrt_num(disp_info);
 
 	/*
 	Fill layer id for each input layers. All the gles layer set as same layer id.
 	*/
-	ret = dispatch_ovl_id(disp_info, hrt_level);
+	ret = dispatch_ovl_id(disp_info);
 	dump_disp_info(disp_info);
 
 	return ret;
