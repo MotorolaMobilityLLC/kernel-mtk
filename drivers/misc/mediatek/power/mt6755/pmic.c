@@ -2160,13 +2160,16 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 	if (g_low_battery_stop == 1) {
 		pr_err("[exec_low_battery_callback] g_low_battery_stop=%d\n", g_low_battery_stop);
 	} else {
+		pr_debug("[exec_low_battery_callback] prio_val=%d,low_battery=%d\n", i, low_battery_level);
 		for (i = 0; i < LBCB_NUM; i++) {
 			if (lbcb_tb[i].lbcb != NULL) {
 				low_battery_callback = lbcb_tb[i].lbcb;
 				low_battery_callback(low_battery_level);
-				pr_debug
-				    ("[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
-				     i, low_battery_level);
+				/*
+					pr_debug
+					    ("[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
+					     i, low_battery_level);
+					     */
 			}
 		}
 	}
@@ -2281,7 +2284,7 @@ void exec_battery_oc_callback(BATTERY_OC_LEVEL battery_oc_level)
 			if (occb_tb[i].occb != NULL) {
 				battery_oc_callback = occb_tb[i].occb;
 				battery_oc_callback(battery_oc_level);
-				pr_debug
+				pr_err
 				    ("[exec_battery_oc_callback] prio_val=%d,battery_oc_level=%d\n",
 				     i, battery_oc_level);
 			}
@@ -2429,7 +2432,7 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 			if (bpcb_tb[i].bpcb != NULL) {
 				battery_percent_callback = bpcb_tb[i].bpcb;
 				battery_percent_callback(battery_percent_level);
-				pr_debug
+				pr_err
 				    ("[exec_battery_percent_callback] prio_val=%d,battery_percent_level=%d\n",
 				     i, battery_percent_level);
 			}
@@ -2437,7 +2440,7 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 #else
 		battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
 		battery_percent_callback(battery_percent_level);
-		pr_debug
+		pr_err
 		    ("[exec_battery_percent_callback at DLPT] prio_val=%d,battery_percent_level=%d\n",
 		     BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
 #endif
@@ -2530,7 +2533,7 @@ void bat_percent_notify_init(void)
 
 unsigned int ptim_bat_vol = 0;
 signed int ptim_R_curr = 0;
-int ptim_imix = 0;
+int ptim_imix = 0, ptim_imix_last = 0;
 int ptim_rac_val_avg = 0;
 
 signed int pmic_ptimretest = 0;
@@ -2974,7 +2977,7 @@ int get_dlpt_imix(void)
 {
 	/* int rac_val[5], rac_val_avg; */
 	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
-	int imix;
+	int imix, imix_div;
 	int i;
 
 	for (i = 0; i < 5; i++) {
@@ -2985,7 +2988,7 @@ int get_dlpt_imix(void)
 		curr[i] = ptim_R_curr;
 		volt_avg += ptim_bat_vol;
 		curr_avg += ptim_R_curr;
-
+	PMICLOG("[get_dlpt_imix:%d] %d,%d,%d,%d\n", i, volt[i], curr[i], volt_avg, curr_avg);
 	}
 
 	volt_avg = volt_avg / 5;
@@ -2994,10 +2997,15 @@ int get_dlpt_imix(void)
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg) / 10;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	PMICLOG("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
+	pr_debug("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
 		ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
 #endif
-	ptim_imix = imix;
+	imix_div = ptim_imix_last/10;
+	if (((ptim_imix_last - imix) > imix_div) && (ptim_imix_last != 0)) {
+		ptim_imix = ptim_imix_last;
+		pr_err("[get_dlpt_imix: >10 perc, ignore] %d,%d,%d,%d\n", imix_div, imix, ptim_imix, ptim_imix_last);
+	} else
+		ptim_imix_last = ptim_imix = imix;
 
 	return ptim_imix;
 
@@ -3012,7 +3020,7 @@ int get_dlpt_imix_charging(void)
 	int vsys_min_1_val = POWER_INT2_VOLT;
 	int imix_val = 0;
 #if defined(SWCHR_POWER_PATH)
-	zcv_val = PMIC_IMM_GetOneChannelValue(MT6351_AUX_ISENSE_AP, 5, 1);
+	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, 5, 1);
 #else
 	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);
 #endif
@@ -3056,7 +3064,7 @@ int dlpt_notify_handler(void *unused)
 	ktime_t ktime;
 	int pre_ui_soc = 0;
 	int cur_ui_soc = 0;
-	/*int diff_ui_soc = 1;*/
+	int diff_ui_soc = 1;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	pre_ui_soc = bat_get_ui_percentage();
@@ -3105,7 +3113,7 @@ int dlpt_notify_handler(void *unused)
 
 			PMICLOG("[DLPT] is running\n");
 			if (ptim_rac_val_avg == 0)
-				PMICLOG("[DLPT] ptim_rac_val_avg=0 , skip\n");
+				pr_err("[DLPT] ptim_rac_val_avg=0 , skip\n");
 			else {
 				if (upmu_get_rgs_chrdet()) {
 					g_imix_val = get_dlpt_imix_charging();
@@ -3139,7 +3147,7 @@ int dlpt_notify_handler(void *unused)
 
 				pre_ui_soc = cur_ui_soc;
 
-				PMICLOG("[DLPT_final] %d,%d,%d,%d,%d,%d\n",
+				pr_err("[DLPT_final] %d,%d,%d,%d,%d,%d\n",
 					g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
 					diff_ui_soc, IMAX_MAX_VALUE);
 			}
