@@ -543,7 +543,7 @@ static ssize_t mt_gpio_dump_regs(char *buf, ssize_t bufLen)
 
 	len += snprintf(buf + len, bufLen - len, "%s", tmp);
 	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		len += snprintf(buf + len, bufLen - len, "%3d:%d%d%d%d%d%d%d%d\n",
+		len += snprintf(buf + len, bufLen - len, "%3d:%x%d%d%d%d%d%d%d\n",
 				idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
 				mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
 				mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),

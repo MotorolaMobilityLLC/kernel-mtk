@@ -553,7 +553,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(2, "SCL0_2"),
 		MTK_FUNCTION(3, "PWM_B"),
 		MTK_FUNCTION(4, "UTXD3"),
-		MTK_FUNCTION(5, "PCM0_SYNC")
+		MTK_FUNCTION(5, "PCM0_SYNC"),
+		MTK_FUNCTION(13, "ANT_SEL0")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(58, "GPIO58"),
@@ -564,7 +565,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(2, "SPI0_MO"),
 		MTK_FUNCTION(3, "SDA1_2"),
 		MTK_FUNCTION(4, "URXD3"),
-		MTK_FUNCTION(5, "PCM0_CLK")
+		MTK_FUNCTION(5, "PCM0_CLK"),
+		MTK_FUNCTION(13, "ANT_SEL1")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(59, "GPIO59"),
@@ -575,7 +577,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(2, "SPI0_MI"),
 		MTK_FUNCTION(3, "PWM_C"),
 		MTK_FUNCTION(4, "URTS3"),
-		MTK_FUNCTION(5, "PCM0_DO")
+		MTK_FUNCTION(5, "PCM0_DO"),
+		MTK_FUNCTION(13, "ANT_SEL2")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(60, "GPIO60"),
@@ -646,7 +649,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "SPI5_CLK_B"),
 		MTK_FUNCTION(4, "I2S1_LRCK"),
 		MTK_FUNCTION(5, "PWM_A"),
-		MTK_FUNCTION(7, "C2K_DM_EINT2")
+		MTK_FUNCTION(7, "C2K_DM_EINT2"),
+		MTK_FUNCTION(13, "ANT_SEL0")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(66, "GPIO66"),
@@ -658,7 +662,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "SPI5_MI_B"),
 		MTK_FUNCTION(4, "I2S1_BCK"),
 		MTK_FUNCTION(5, "PWM_B"),
-		MTK_FUNCTION(7, "C2K_DM_EINT3")
+		MTK_FUNCTION(7, "C2K_DM_EINT3"),
+		MTK_FUNCTION(13, "ANT_SEL1")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(67, "GPIO67"),
@@ -670,7 +675,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "SPI5_MO_B"),
 		MTK_FUNCTION(4, "I2S1_MCK"),
 		MTK_FUNCTION(5, "PWM_C"),
-		MTK_FUNCTION(7, "DBG_MON_A0")
+		MTK_FUNCTION(7, "DBG_MON_A0"),
+		MTK_FUNCTION(13, "ANT_SEL2")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(68, "GPIO68"),
@@ -682,7 +688,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "SPI5_CS_B"),
 		MTK_FUNCTION(4, "I2S1_DO"),
 		MTK_FUNCTION(5, "PWM_D"),
-		MTK_FUNCTION(7, "DBG_MON_A1")
+		MTK_FUNCTION(7, "DBG_MON_A1"),
+		MTK_FUNCTION(13, "ANT_SEL3")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(69, "GPIO69"),
@@ -836,7 +843,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "I2S2_LRCK"),
 		MTK_FUNCTION(4, "URXD1"),
 		MTK_FUNCTION(5, "MD_URXD0"),
-		MTK_FUNCTION(7, "DBG_MON_A7")
+		MTK_FUNCTION(7, "DBG_MON_A7"),
+		MTK_FUNCTION(10, "ANT_SEL4")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(86, "GPIO86"),
@@ -848,7 +856,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "I2S2_BCK"),
 		MTK_FUNCTION(4, "UTXD1"),
 		MTK_FUNCTION(5, "MD_UTXD0"),
-		MTK_FUNCTION(7, "DBG_MON_A8")
+		MTK_FUNCTION(7, "DBG_MON_A8"),
+		MTK_FUNCTION(10, "ANT_SEL5")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(87, "GPIO87"),
@@ -860,7 +869,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "I2S2_MCK"),
 		MTK_FUNCTION(4, "URTS1"),
 		MTK_FUNCTION(5, "MD_URXD1"),
-		MTK_FUNCTION(7, "DBG_MON_A9")
+		MTK_FUNCTION(7, "DBG_MON_A9"),
+		MTK_FUNCTION(10, "ANT_SEL6")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(88, "GPIO88"),
@@ -872,7 +882,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "I2S2_DI"),
 		MTK_FUNCTION(4, "UCTS1"),
 		MTK_FUNCTION(5, "MD_UTXD1"),
-		MTK_FUNCTION(7, "DBG_MON_A10")
+		MTK_FUNCTION(7, "DBG_MON_A10"),
+		MTK_FUNCTION(10, "ANT_SEL7")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(89, "GPIO89"),
@@ -1042,7 +1053,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(2, "CMFLASH"),
 		MTK_FUNCTION(3, "CLKM4"),
 		MTK_FUNCTION(4, "TP_GPIO0_AO"),
-		MTK_FUNCTION(5, "IRTX_OUT")
+		MTK_FUNCTION(5, "IRTX_OUT"),
+		MTK_FUNCTION(13, "ANT_SEL3")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(107, "GPIO107"),
@@ -1054,7 +1066,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "CLKM5"),
 		MTK_FUNCTION(4, "TP_GPIO1_AO"),
 		MTK_FUNCTION(5, "I2S1_BCK"),
-		MTK_FUNCTION(7, "DAP_SIB1_SWD")
+		MTK_FUNCTION(7, "DAP_SIB1_SWD"),
+		MTK_FUNCTION(13, "ANT_SEL4")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(108, "GPIO108"),
@@ -1066,7 +1079,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "PWM_A"),
 		MTK_FUNCTION(4, "CMFLASH"),
 		MTK_FUNCTION(5, "I2S1_LRCK"),
-		MTK_FUNCTION(7, "DAP_SIB1_SWCK")
+		MTK_FUNCTION(7, "DAP_SIB1_SWCK"),
+		MTK_FUNCTION(13, "ANT_SEL5")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(109, "GPIO109"),
@@ -1085,7 +1099,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "PWM_B"),
 		MTK_FUNCTION(4, "CLKM0"),
 		MTK_FUNCTION(5, "I2S1_DO"),
-		MTK_FUNCTION(7, "C2K_DM_EINT3")
+		MTK_FUNCTION(7, "C2K_DM_EINT3"),
+		MTK_FUNCTION(13, "ANT_SEL6")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(111, "GPIO111"),
@@ -1097,7 +1112,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(3, "PWM_C"),
 		MTK_FUNCTION(4, "DISP_PWM"),
 		MTK_FUNCTION(5, "I2S1_MCK"),
-		MTK_FUNCTION(7, "C2K_DM_EINT2")
+		MTK_FUNCTION(7, "C2K_DM_EINT2"),
+		MTK_FUNCTION(13, "ANT_SEL7")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(112, "GPIO112"),
@@ -1865,7 +1881,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO204"),
 		MTK_FUNCTION(1, "BPI_BUS16"),
 		MTK_FUNCTION(2, "PA_VM0"),
-		MTK_FUNCTION(7, "DBG_MON_B11")
+		MTK_FUNCTION(7, "DBG_MON_B11"),
+		MTK_FUNCTION(9, "ANT_SEL0")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(205, "GPIO205"),
@@ -1874,7 +1891,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO205"),
 		MTK_FUNCTION(1, "BPI_BUS17"),
 		MTK_FUNCTION(2, "PA_VM1"),
-		MTK_FUNCTION(7, "DBG_MON_B12")
+		MTK_FUNCTION(7, "DBG_MON_B12"),
+		MTK_FUNCTION(9, "ANT_SEL1")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(206, "GPIO206"),
@@ -1901,7 +1919,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO208"),
 		MTK_FUNCTION(1, "BPI_BUS20"),
 		MTK_FUNCTION(2, "TX_SWAP2"),
-		MTK_FUNCTION(7, "DBG_MON_B15")
+		MTK_FUNCTION(7, "DBG_MON_B15"),
+		MTK_FUNCTION(9, "ANT_SEL2")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(209, "GPIO209"),
@@ -1910,7 +1929,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO209"),
 		MTK_FUNCTION(1, "BPI_BUS21"),
 		MTK_FUNCTION(2, "TX_SWAP3"),
-		MTK_FUNCTION(7, "DBG_MON_B16")
+		MTK_FUNCTION(7, "DBG_MON_B16"),
+		MTK_FUNCTION(9, "ANT_SEL3")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(210, "GPIO210"),
@@ -1919,7 +1939,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO210"),
 		MTK_FUNCTION(1, "BPI_BUS22"),
 		MTK_FUNCTION(2, "DET_BPI0"),
-		MTK_FUNCTION(7, "DBG_MON_B17")
+		MTK_FUNCTION(7, "DBG_MON_B17"),
+		MTK_FUNCTION(9, "ANT_SEL4")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(211, "GPIO211"),
@@ -1928,7 +1949,8 @@ static const struct mtk_desc_pin mtk_pins_mt6797[] = {
 		MTK_FUNCTION(0, "GPIO211"),
 		MTK_FUNCTION(1, "BPI_BUS23"),
 		MTK_FUNCTION(2, "DET_BPI1"),
-		MTK_FUNCTION(7, "DBG_MON_B18")
+		MTK_FUNCTION(7, "DBG_MON_B18"),
+		MTK_FUNCTION(9, "ANT_SEL5")
 	),
 	MTK_PIN(
 		PINCTRL_PIN(212, "GPIO212"),

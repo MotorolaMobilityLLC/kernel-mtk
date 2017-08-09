@@ -718,8 +718,14 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 
 /* #ifdef GPIO_BRINGUP */
 #if 1
+	if (MODEXT_offset[pin].offset != -1) {
+		reg = GPIO_RD32(GPIO_BASE + 0x600);
+		reg &= (~(0x1 << MODEXT_offset[pin].offset));
+		reg |= ((mode >> 0x3) << MODEXT_offset[pin].offset);
+		GPIO_WR32(GPIO_BASE + 0x600, reg);
+	}
 
-	mode = mode & mask;
+	mode = mode & 0x7;
 	/* printk("fwq pin=%d,mode=%d, offset=%d\n",pin,mode,bit); */
 
 	reg = GPIO_RD32(addr);
@@ -767,6 +773,9 @@ int mt_get_gpio_mode_base(unsigned long pin)
 	/* reg = GPIO_RD32(&obj->reg->mode[pos].val); */
 	reg = GPIO_RD32(addr);
 	/* printf("fwqread  pin=%d,moderead=%x, bit=%d\n",pin,GPIO_RD32(MODE_addr[pin].addr),bit); */
+	if (MODEXT_offset[pin].offset != -1 &&
+		(GPIO_RD32(GPIO_BASE + 0x600) >> MODEXT_offset[pin].offset) & 0x1)
+		return ((reg >> bit) & mask) | 0x8;
 	return (reg >> bit) & mask;
 }
 
