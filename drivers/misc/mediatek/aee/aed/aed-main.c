@@ -243,9 +243,9 @@ static ssize_t msg_copy_to_user(const char *prefix, char *msg, char __user *buf,
 
 	msg_show(prefix, (struct AE_Msg *) msg);
 
-	msg_tmp = kzalloc(count, GFP_KERNEL);
+	msg_tmp = kzalloc(((struct AE_Msg *)msg)->len + sizeof(struct AE_Msg), GFP_KERNEL);
 	if (msg_tmp != NULL) {
-		memcpy(msg_tmp, msg, count);
+		memcpy(msg_tmp, msg, ((struct AE_Msg *)msg)->len + sizeof(struct AE_Msg));
 	} else {
 		LOGE("%s : kzalloc() fail!\n", __func__);
 		msg_tmp = msg;
