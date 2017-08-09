@@ -1323,6 +1323,16 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "CAM_MDP";
 		};
 
+		btcvsd@18000000 {
+			compatible = "mediatek,audio_bt_cvsd";
+			offset =<0x700 0x800 0xFD0 0xFD4 0xFD8>;
+			/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/
+			reg=<0x10000000 0x1000>, /*AUDIO_INFRA_BASE_PHYSICAL*/
+			      <0x18000000 0x10000>, /*PKV_PHYSICAL_BASE*/
+			      <0x18080000 0x8000>; /*SRAM_BANK2*/
+		  interrupts = <GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		MDP_RDMA@0x14001000 {
 			compatible = "mediatek,MDP_RDMA";
 			reg = <0x14001000 0x1000>;
