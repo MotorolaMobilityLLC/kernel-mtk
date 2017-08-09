@@ -4287,7 +4287,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 			memcpy(&rtcvalue, &msg->fgd_data[0], sizeof(rtcvalue));
 			set_rtc_spare_fg_value(rtcvalue);
-			bm_debug("[fg_res] set rtc = %d\n", rtcvalue);
+			bm_notice("[fg_res] set rtc = %d\n", rtcvalue);
 		}
 		break;
 
