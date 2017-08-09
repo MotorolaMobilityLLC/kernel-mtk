@@ -972,6 +972,32 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			apxgpt2_count = <0x10004028>;
 		};
 
+		smi_larb0@14016000 {
+			compatible = "mediatek,smi_larb0";
+			reg = <0x14016000 0x1000>;
+			interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		smi_larb2@15001000 {
+			compatible = "mediatek,smi_larb2";
+			reg = <0x15001000 0x1000>;
+			interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		smi_common@14017000 {
+			compatible = "mediatek,smi_common";
+			reg = <0x14017000 0x1000>,  /* SMI_COMMON_EXT */
+				<0x14016000 0x1000>,  /* LARB 0 */
+				<0x16010000 0x1000>,  /* LARB 1 */
+				<0x15001000 0x1000>;  /* LARB 2 */
+		};
+
+		smi_larb1@16010000 {
+			compatible = "mediatek,smi_larb1";
+			reg = <0x16010000 0x10000>;
+			interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		CQDMA@0x10217c00 {
 			compatible = "mediatek,CQDMA";
 			reg = <0x10217c00 0x400>;
@@ -1598,19 +1624,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 186 0x8>;
 		};
 
-		SMI_LARB0@0x14016000 {
-			compatible = "mediatek,SMI_LARB0";
-			reg = <0x14016000 0x1000>;
-			interrupts = <0 176 0x8>;
-		};
-
-		SMI_COMMON@0x14017000 {
-			compatible = "mediatek,SMI_COMMON";
-			reg = <0x14017000 0x1000>,  /* SMI_COMMON_EXT */
-				<0x14016000 0x1000>,  /* LARB 0 */
-				<0x16010000 0x1000>,  /* LARB 1 */
-				<0x15001000 0x1000>;  /* LARB 2 */
-		};
 
 
 		met_smi: met_smi@14017000 {
@@ -1701,11 +1714,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 181 0x8>;
 		};
 
-		SMI_LARB2@0x15001000 {
-			compatible = "mediatek,SMI_LARB2";
-			reg = <0x15001000 0x1000>;
-			interrupts = <0 178 0x8>;
-		};
+
 
 		IMGSYS_CONFG@0x15000000 {
 			compatible = "mediatek,IMGSYS_CONFG";
@@ -1717,11 +1726,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x16000000 0x1000>;
 		};
 
-		SMI_LARB1@0x16010000 {
-			compatible = "mediatek,SMI_LARB1";
-			reg = <0x16010000 0x10000>;
-			interrupts = <0 177 0x8>;
-		};
+
 
 		VDEC_FULL_TOP@0x16020000 {
 			compatible = "mediatek,VDEC_FULL_TOP";

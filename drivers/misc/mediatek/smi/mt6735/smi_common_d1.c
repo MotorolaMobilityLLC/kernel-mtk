@@ -1733,7 +1733,7 @@ static int smi_resume(struct platform_device *pdev)
 }
 
 static const struct of_device_id smi_of_ids[] = {
-	{.compatible = "mediatek,SMI_COMMON",},
+	{.compatible = "mediatek,smi_common",},
 	{}
 };
 

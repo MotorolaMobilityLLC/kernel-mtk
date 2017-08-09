@@ -5,7 +5,7 @@
 unsigned int gM4UTagCount[]  = {32};
 
 const char *gM4U_SMILARB[] = {
-	"mediatek,SMI_LARB0", "mediatek,SMI_LARB1", "mediatek,SMI_LARB2", "mediatek,SMI_LARB3"};
+	"mediatek,smi_larb0", "mediatek,smi_larb1", "mediatek,smi_larb2", "mediatek,smi_larb3"};
 
 M4U_RANGE_DES_T gM4u0_seq[M4U0_SEQ_NR] = {{0} };
 M4U_RANGE_DES_T *gM4USeq[] = {gM4u0_seq};

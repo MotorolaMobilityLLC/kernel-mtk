@@ -228,11 +228,11 @@ IMP_ENABLE_HW_CLOCK(MUTEX_32K, MUTEX_32K);
 void cmdq_dev_init_module_clk(void)
 {
 #if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
-	cmdq_dev_get_module_clock_by_name("mediatek,SMI_COMMON", "smi-common",
+	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-common",
 					  &gCmdqModuleClock.clk_SMI_COMMON);
-	cmdq_dev_get_module_clock_by_name("mediatek,SMI_COMMON", "smi-larb0",
+	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-larb0",
 					  &gCmdqModuleClock.clk_SMI_LARB0);
-	cmdq_dev_get_module_clock_by_name("mediatek,SMI_COMMON", "mtcmos-dis",
+	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "mtcmos-dis",
 					  &gCmdqModuleClock.clk_MTCMOS_DIS);
 #endif
 	cmdq_mdp_get_func()->initModuleCLK();

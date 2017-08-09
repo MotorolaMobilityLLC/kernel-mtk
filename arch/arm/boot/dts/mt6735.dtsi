@@ -1116,6 +1116,53 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 						"FD-IMG_IMAGE_FD";
 		};
 
+		smi_larb0@14015000 {
+			compatible = "mediatek,smi_larb0";
+			reg = <0x14015000 0x1000>;
+		};
+
+		smi_common@14016000 {
+			compatible = "mediatek,smi_common";
+			reg = <0x14016000 0x1000>,  /* SMI_COMMON_EXT */
+				<0x14015000 0x1000>,  /* LARB 0 */
+				<0x16010000 0x1000>,  /* LARB 1 */
+				<0x15001000 0x1000>,  /* LARB 2 */
+				<0x17001000 0x1000>;  /* LARB 3 */
+
+			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
+				<&mmsys MM_DISP0_SMI_LARB0>,
+				<&imgsys IMG_IMAGE_LARB2_SMI>,
+				<&vdecsys VDEC0_VDEC>,
+				<&vdecsys VDEC1_LARB>,
+				<&vencsys VENC_LARB>,
+				<&vencsys VENC_VENC>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_DIS>;
+
+			clock-names = "smi-common", "smi-larb0", "img-larb2", "vdec0-vdec",
+			"vdec1-larb", "venc-larb", "venc-venc", "mtcmos-ven", "mtcmos-vde",
+			"mtcmos-isp", "mtcmos-dis";
+		};
+
+		smi_larb2@15001000 {
+			compatible = "mediatek,smi_larb2";
+			reg = <0x15001000 0x1000>;
+			interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		smi_larb1@16010000 {
+			compatible = "mediatek,smi_larb1";
+			reg = <0x16010000 0x1000>;
+			interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		smi_larb3@17001000 {
+			compatible = "mediatek,smi_larb3";
+			reg = <0x17001000 0x1000>;
+			interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>;
+		};
 		gce@10217000 {
 			compatible = "mediatek,gce";
 			reg = <0x10217000 0x1000>;
@@ -2667,52 +2714,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
-		SMI_LARB0@0x14015000 {
-			compatible = "mediatek,SMI_LARB0";
-			reg = <0x14015000 0x1000>;
-		};
-
-		SMI_LARB1@0x16010000 {
-			compatible = "mediatek,SMI_LARB1";
-			reg = <0x16010000 0x1000>;
-			interrupts = <0 177 0x8>;
-		};
-
-		SMI_LARB2@0x15001000 {
-			compatible = "mediatek,SMI_LARB2";
-			reg = <0x15001000 0x1000>;
-			interrupts = <0 178 0x8>;
-		};
-
-		SMI_LARB3@0x17001000 {
-			compatible = "mediatek,SMI_LARB3";
-			reg = <0x17001000 0x1000>;
-			interrupts = <0 202 0x8>;
-		};
-
-		SMI_COMMON@0x14016000 {
-			compatible = "mediatek,SMI_COMMON";
-			reg = <0x14016000 0x1000>,  /* SMI_COMMON_EXT */
-				<0x14015000 0x1000>,  /* LARB 0 */
-				<0x16010000 0x1000>,  /* LARB 1 */
-				<0x15001000 0x1000>,  /* LARB 2 */
-				<0x17001000 0x1000>;  /* LARB 3 */
-
-		clocks = <&mmsys MM_DISP0_SMI_COMMON>,
-			<&mmsys MM_DISP0_SMI_LARB0>,
-			<&imgsys IMG_IMAGE_LARB2_SMI>,
-			<&vdecsys VDEC0_VDEC>,
-			<&vdecsys VDEC1_LARB>,
-			<&vencsys VENC_LARB>,
-			<&vencsys VENC_VENC>,
-			<&scpsys SCP_SYS_VEN>,
-			<&scpsys SCP_SYS_VDE>,
-			<&scpsys SCP_SYS_ISP>,
-			<&scpsys SCP_SYS_DIS>;
-
-			clock-names = "smi-common", "smi-larb0", "img-larb2", "vdec0-vdec", "vdec1-larb", "venc-larb",
-			"venc-venc", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-dis";
-		};
 
 		jpgenc@17003000 {
 			compatible = "mediatek,jpgenc";

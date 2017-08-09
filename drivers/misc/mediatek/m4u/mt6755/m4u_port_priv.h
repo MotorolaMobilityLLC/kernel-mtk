@@ -2,7 +2,7 @@
 #define __M4U_PORT_PRIV_H__
 
 static const char * const gM4U_SMILARB[] = {
-	"mediatek,SMI_LARB0", "mediatek,SMI_LARB1", "mediatek,SMI_LARB2", "mediatek,SMI_LARB3"};
+	"mediatek,smi_larb0", "mediatek,smi_larb1", "mediatek,smi_larb2", "mediatek,smi_larb3"};
 
 
 #define M4U0_PORT_INIT(name, slave, larb, port)  {\
