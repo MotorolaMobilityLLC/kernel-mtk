@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/string.h>
 #include <linux/wait.h>
 #include <linux/of.h>
@@ -1063,3 +1064,4 @@ LCM_DRIVER lcm_common_drv = {
 	.update = lcm_common_update,
 	.parse_dts = lcm_common_parse_dts,
 };
+#endif

@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/string.h>
 #include <linux/wait.h>
 
@@ -164,3 +165,4 @@ LCM_STATUS lcm_util_set_read_cmd_v2(const LCM_UTIL_FUNCS *lcm_util, LCM_DATA_T4 
 
 	return LCM_STATUS_OK;
 }
+#endif

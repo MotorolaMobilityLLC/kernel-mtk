@@ -624,6 +624,7 @@ typedef struct {
 } LCM_PARAMS;
 
 
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 typedef struct {
 	char data;
 	char padding[131];
@@ -690,6 +691,7 @@ typedef struct {
 	LCM_DATA suspend[32];
 	LCM_DATA backlight[32];
 } LCM_DTS;
+#endif
 
 
 /* --------------------------------------------------------------------------- */
@@ -768,7 +770,9 @@ typedef struct {
 
 	void (*update)(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
 	unsigned int (*compare_id)(void);
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	void (*parse_dts)(const LCM_DTS *DTS, unsigned char force_update);
+#endif
 
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);

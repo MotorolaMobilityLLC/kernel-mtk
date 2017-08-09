@@ -1,6 +1,7 @@
 #ifndef _LCM_DEFINE_H
 #define _LCM_DEFINE_H
 
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 /* LCM_FUNC */
 #define LCM_FUNC_GPIO	1
 #define LCM_FUNC_I2C	2
@@ -46,5 +47,6 @@
 /* LCM_UTIL_RESET_DATA */
 #define LCM_UTIL_RESET_LOW	0
 #define LCM_UTIL_RESET_HIGH	1
+#endif
 
 #endif				/* _LCM_DEFINE_H */

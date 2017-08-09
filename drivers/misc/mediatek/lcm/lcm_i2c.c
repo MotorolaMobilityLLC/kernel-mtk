@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #ifndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -249,4 +250,5 @@ module_exit(_lcm_i2c_exit);
 MODULE_AUTHOR("Joey Pan");
 MODULE_DESCRIPTION("MTK LCM I2C Driver");
 MODULE_LICENSE("GPL");
+#endif
 #endif

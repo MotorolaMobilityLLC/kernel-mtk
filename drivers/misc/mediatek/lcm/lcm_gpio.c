@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/string.h>
 #include <linux/wait.h>
 #include <linux/platform_device.h>
@@ -284,4 +285,5 @@ module_exit(_lcm_gpio_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek LCM GPIO driver");
 MODULE_AUTHOR("Joey Pan<joey.pan@mediatek.com>");
+#endif
 #endif
