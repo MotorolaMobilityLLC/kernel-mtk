@@ -1,0 +1,16 @@
+
+config MTK_SMDHUB
+	bool "SMDhub for MediaTek package"
+	default n
+	help
+	  A significant motions is a device, usually portable and electronic or electromechanical, that detect each step a person takes by detecting the motion of the person's hands or hips.
+config MTK_STEP_CHUB
+	bool "SMDhub for MediaTek package"
+	default n
+	help
+      A pedometer is a device, usually portable and electronic or electromechanical, that counts each step a person takes by detecting the motion of the person's hands or hips.
+config MTK_STEP_DHUB
+	bool "SMDhub for MediaTek package"
+	default n
+	help
+	  A step detector is a device, usually portable and electronic or electromechanical, that detect each step a person takes by detecting the motion of the person's hands or hips.

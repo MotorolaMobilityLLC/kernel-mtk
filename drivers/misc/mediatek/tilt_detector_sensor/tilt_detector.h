@@ -51,7 +51,7 @@ struct tilt_control_path {
 };
 
 struct tilt_data_path {
-	int (*get_data)(u16 *value, int *status);
+	int (*get_data)(int *value, int *status);
 };
 
 struct tilt_init_info {

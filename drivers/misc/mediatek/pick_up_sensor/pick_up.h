@@ -51,7 +51,7 @@ struct pkup_control_path {
 };
 
 struct pkup_data_path {
-	int (*get_data)(u16 *value, int *status);
+	int (*get_data)(int *value, int *status);
 };
 
 struct pkup_init_info {

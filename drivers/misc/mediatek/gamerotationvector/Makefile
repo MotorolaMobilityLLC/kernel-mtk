@@ -1,3 +1,4 @@
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
+include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-y += grv.o
+obj-$(CONFIG_MTK_GAMEROTVECHUB)		+=	gamerotvechub/

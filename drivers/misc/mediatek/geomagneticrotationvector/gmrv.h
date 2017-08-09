@@ -97,7 +97,7 @@ struct gmrv_context {
 	atomic_t wake;		/*user-space request to wake-up, used with stop */
 	struct timer_list timer;	/* polling timer */
 	atomic_t trace;
-
+	atomic_t			enable;
 	struct early_suspend early_drv;
 	atomic_t early_suspend;
 	/* struct gmrv_drv_obj    drv_obj; */

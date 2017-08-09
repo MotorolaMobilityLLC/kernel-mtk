@@ -4,12 +4,7 @@
 static struct la_context *la_context_obj;
 
 
-static struct la_init_info *linearaccelerationsensor_init_list[MAX_CHOOSE_LA_NUM] = { 0 };	/* modified */
-
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void la_early_suspend(struct early_suspend *h);
-static void la_late_resume(struct early_suspend *h);
-#endif
+static struct la_init_info *linearaccelerationsensor_init_list[MAX_CHOOSE_LA_NUM] = { 0 };
 
 static void la_work_func(struct work_struct *work)
 {
@@ -87,8 +82,9 @@ static struct la_context *la_context_alloc_object(void)
 		LA_ERR("Alloc linearacceleration object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 200);	/*5Hz set work queue delay time 200ms */
+	atomic_set(&obj->delay, 200);
 	atomic_set(&obj->wake, 0);
+	atomic_set(&obj->enable, 0);
 	INIT_WORK(&obj->report, la_work_func);
 	init_timer(&obj->timer);
 	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
@@ -97,7 +93,7 @@ static struct la_context *la_context_alloc_object(void)
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->la_op_mutex);
-	obj->is_batch_enable = false;	/* for batch mode init */
+	obj->is_batch_enable = false;
 	obj->cali_sw[LA_AXIS_X] = 0;
 	obj->cali_sw[LA_AXIS_Y] = 0;
 	obj->cali_sw[LA_AXIS_Z] = 0;
@@ -149,7 +145,6 @@ static int la_enable_data(int enable)
 
 	LA_FUN();
 
-	/* int err =0; */
 	cxt = la_context_obj;
 	if (NULL == cxt->la_ctl.open_report_data) {
 		LA_ERR("no la control path\n");
@@ -196,7 +191,6 @@ int la_enable_nodata(int enable)
 {
 	struct la_context *cxt = NULL;
 
-	/* int err =0; */
 	cxt = la_context_obj;
 	if (NULL == cxt->la_ctl.enable_nodata) {
 		LA_ERR("la_enable_nodata:la ctl path is NULL\n");
@@ -208,7 +202,6 @@ int la_enable_nodata(int enable)
 
 	if (0 == enable)
 		cxt->is_active_nodata = false;
-
 	la_real_enable(enable);
 	return 0;
 }
@@ -226,7 +219,6 @@ static ssize_t la_store_enable_nodata(struct device *dev, struct device_attribut
 				      const char *buf, size_t count)
 {
 	struct la_context *cxt = NULL;
-	/* int err =0; */
 
 	LA_LOG("la_store_enable nodata buf=%s\n", buf);
 	mutex_lock(&la_context_obj->la_op_mutex);
@@ -237,15 +229,12 @@ static ssize_t la_store_enable_nodata(struct device *dev, struct device_attribut
 		mutex_unlock(&la_context_obj->la_op_mutex);
 		return count;
 	}
-	if (!strncmp(buf, "1", 1)) {
-		/* cxt->la_ctl.enable_nodata(1); */
+	if (!strncmp(buf, "1", 1))
 		la_enable_nodata(1);
-	} else if (!strncmp(buf, "0", 1)) {
-		/* cxt->la_ctl.enable_nodata(0); */
+	else if (!strncmp(buf, "0", 1))
 		la_enable_nodata(0);
-	} else {
+	else
 		LA_ERR(" la_store enable nodata cmd error !!\n");
-	}
 	mutex_unlock(&la_context_obj->la_op_mutex);
 	return count;
 }
@@ -263,17 +252,12 @@ static ssize_t la_store_active(struct device *dev, struct device_attribute *attr
 		mutex_unlock(&la_context_obj->la_op_mutex);
 		return count;
 	}
-	if (!strncmp(buf, "1", 1)) {
-		/* cxt->la_ctl.enable(1); */
+	if (!strncmp(buf, "1", 1))
 		la_enable_data(1);
-
-	} else if (!strncmp(buf, "0", 1)) {
-
-		/* cxt->la_ctl.enable(0); */
+	else if (!strncmp(buf, "0", 1))
 		la_enable_data(0);
-	} else {
+	else
 		LA_ERR(" la_store_active error !!\n");
-	}
 	mutex_unlock(&la_context_obj->la_op_mutex);
 	LA_LOG(" la_store_active done\n");
 	return count;
@@ -295,14 +279,11 @@ static ssize_t la_show_active(struct device *dev, struct device_attribute *attr,
 static ssize_t la_store_delay(struct device *dev, struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
-	/* struct la_context *devobj = (struct la_context*)dev_get_drvdata(dev); */
 	int delay = 0;
 	int mdelay = 0;
 	struct la_context *cxt = NULL;
-	int err;
 
 	mutex_lock(&la_context_obj->la_op_mutex);
-	/* int err =0; */
 	cxt = la_context_obj;
 	if (NULL == cxt->la_ctl.set_delay) {
 		LA_LOG("la_ctl set_delay NULL\n");
@@ -310,8 +291,7 @@ static ssize_t la_store_delay(struct device *dev, struct device_attribute *attr,
 		return count;
 	}
 
-	err = kstrtoint(buf, 10, &delay);
-	if (err != 0) {
+	if (1 != kstrtoint(buf, 10, &delay)) {
 		LA_ERR("invalid format!!\n");
 		mutex_unlock(&la_context_obj->la_op_mutex);
 		return count;
@@ -352,32 +332,25 @@ static ssize_t la_store_batch(struct device *dev, struct device_attribute *attr,
 
 	struct la_context *cxt = NULL;
 
-	/* int err =0; */
 	LA_LOG("la_store_batch buf=%s\n", buf);
 	mutex_lock(&la_context_obj->la_op_mutex);
 	cxt = la_context_obj;
 	if (cxt->la_ctl.is_support_batch) {
 		if (!strncmp(buf, "1", 1)) {
 			cxt->is_batch_enable = true;
-			/* MTK problem fix - start */
 			if (cxt->is_active_data && cxt->is_polling_run) {
 				cxt->is_polling_run = false;
 				del_timer_sync(&cxt->timer);
 				cancel_work_sync(&cxt->report);
 			}
-			/* MTK problem fix - end */
 		} else if (!strncmp(buf, "0", 1)) {
 			cxt->is_batch_enable = false;
-			/* MTK problem fix - start */
 			if (cxt->is_active_data)
 				la_enable_data(true);
-			/* MTK problem fix - end */
-		} else {
+		} else
 			LA_ERR(" la_store_batch error !!\n");
-		}
-	} else {
+	} else
 		LA_LOG(" la_store_batch mot supported\n");
-	}
 	mutex_unlock(&la_context_obj->la_op_mutex);
 	LA_LOG(" la_store_batch done: %d\n", cxt->is_batch_enable);
 	return count;
@@ -392,10 +365,6 @@ static ssize_t la_show_batch(struct device *dev, struct device_attribute *attr, 
 static ssize_t la_store_flush(struct device *dev, struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
-	/* mutex_lock(&la_context_obj->la_op_mutex); */
-	/* struct la_context *devobj = (struct la_context*)dev_get_drvdata(dev); */
-	/* do read FIFO data function and report data immediately */
-	/* mutex_unlock(&la_context_obj->la_op_mutex); */
 	return count;
 }
 
@@ -427,6 +396,7 @@ static struct platform_driver linearaccelerationsensor_driver = {
 	.probe = linearaccelerationsensor_probe,
 	.remove = linearaccelerationsensor_remove,
 	.driver = {
+
 		   .name = "linearaccelerationsensor",
 #ifdef CONFIG_OF
 		   .of_match_table = linearaccelerationsensor_of_match,
@@ -468,12 +438,9 @@ static int la_misc_init(struct la_context *cxt)
 
 	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = LA_MISC_DEV_NAME;
-
 	err = misc_register(&cxt->mdev);
 	if (err)
 		LA_ERR("unable to register la misc device!!\n");
-
-	/* dev_set_drvdata(cxt->mdev.this_device, cxt); */
 	return err;
 }
 
@@ -506,8 +473,7 @@ static int la_input_init(struct la_context *cxt)
 	input_set_abs_params(dev, EVENT_TYPE_LA_Z, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);
 	input_set_drvdata(dev, cxt);
 
-	input_set_events_per_packet(dev, 32);	/* test */
-
+	input_set_events_per_packet(dev, 32);
 	err = input_register_device(dev);
 	if (err < 0) {
 		input_free_device(dev);
@@ -542,7 +508,7 @@ static struct attribute_group la_attribute_group = {
 int la_register_data_path(struct la_data_path *data)
 {
 	struct la_context *cxt = NULL;
-	/* int err =0; */
+
 	cxt = la_context_obj;
 	cxt->la_data.get_data = data->get_data;
 	cxt->la_data.get_raw_data = data->get_raw_data;
@@ -573,7 +539,7 @@ int la_register_control_path(struct la_control_path *ctl)
 		LA_LOG("la register control path fail\n");
 		return -1;
 	}
-	/* add misc dev for sensor hal control cmd */
+
 	err = la_misc_init(la_context_obj);
 	if (err) {
 		LA_ERR("unable to register la misc device!!\n");
@@ -596,6 +562,7 @@ int la_data_report(int x, int y, int z, int status)
 	int err = 0;
 
 	cxt = la_context_obj;
+
 	LA_LOG("la_data_report! %d, %d, %d, %d\n", x, y, z, status);
 
 	input_report_abs(cxt->idev, EVENT_TYPE_LA_X, x);
@@ -619,33 +586,22 @@ static int la_probe(struct platform_device *pdev)
 		LA_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
-	/* init real linearaccelerationeration driver */
+
 	err = la_real_driver_init();
 	if (err) {
 		LA_ERR("la real driver init fail\n");
 		goto real_driver_init_fail;
 	}
-	/* init input dev */
+
 	err = la_input_init(la_context_obj);
 	if (err) {
 		LA_ERR("unable to register la input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(la_context_obj->early_suspend), 0);
-	la_context_obj->early_drv.level = 1;	/* EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1, */
-	la_context_obj->early_drv.suspend = la_early_suspend,
-	    la_context_obj->early_drv.resume = la_late_resume,
-	    register_early_suspend(&la_context_obj->early_drv);
-#endif
+
 
 	LA_LOG("----linearacceleration_probe OK !!\n");
 	return 0;
-
-	/* exit_hwmsen_create_attr_failed: */
-	/* exit_misc_register_failed: */
-
-	/* exit_err_sysfs: */
 
 	if (err) {
 		LA_ERR("sysfs node creation error\n");
@@ -676,29 +632,10 @@ static int la_remove(struct platform_device *pdev)
 	err = misc_deregister(&la_context_obj->mdev);
 	if (err)
 		LA_ERR("misc_deregister fail: %d\n", err);
-
 	kfree(la_context_obj);
 
 	return 0;
 }
-
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void la_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(la_context_obj->early_suspend), 1);
-	LA_LOG(" la_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-	       atomic_read(&(la_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-
-static void la_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(la_context_obj->early_suspend), 0);
-	LA_LOG(" la_late_resume ok------->hwm_obj->early_suspend=%d\n",
-	       atomic_read(&(la_context_obj->early_suspend)));
-}
-#endif
 
 static int la_suspend(struct platform_device *dev, pm_message_t state)
 {
@@ -719,11 +656,13 @@ static const struct of_device_id m_la_pl_of_match[] = {
 #endif
 
 static struct platform_driver la_driver = {
+
 	.probe = la_probe,
 	.remove = la_remove,
 	.suspend = la_suspend,
 	.resume = la_resume,
 	.driver = {
+
 		   .name = LA_PL_DEV_NAME,
 #ifdef CONFIG_OF
 		   .of_match_table = m_la_pl_of_match,
@@ -737,6 +676,7 @@ int la_driver_add(struct la_init_info *obj)
 	int i = 0;
 
 	LA_FUN();
+
 	for (i = 0; i < MAX_CHOOSE_LA_NUM; i++) {
 		if ((i == 0) && (NULL == linearaccelerationsensor_init_list[0])) {
 			LA_LOG("register gensor driver for the first time\n");
@@ -755,7 +695,7 @@ int la_driver_add(struct la_init_info *obj)
 		err = -1;
 	}
 	return err;
-} EXPORT_SYMBOL_GPL(la_driver_add);
+}
 
 static int __init la_init(void)
 {
@@ -776,8 +716,6 @@ static void __exit la_exit(void)
 }
 
 late_initcall(la_init);
-/* module_init(la_init); */
-/* module_exit(la_exit); */
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("LINEARACCEL device driver");
 MODULE_AUTHOR("Mediatek");

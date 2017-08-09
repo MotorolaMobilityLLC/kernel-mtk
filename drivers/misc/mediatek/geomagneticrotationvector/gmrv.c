@@ -98,6 +98,7 @@ static struct gmrv_context *gmrv_context_alloc_object(void)
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
+	atomic_set(&obj->enable, 0);
 	INIT_WORK(&obj->report, gmrv_work_func);
 	init_timer(&obj->timer);
 	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);

@@ -97,8 +97,8 @@ struct grv_context {
 	atomic_t wake;		/*user-space request to wake-up, used with stop */
 	struct timer_list timer;	/* polling timer */
 	atomic_t trace;
-
-	struct early_suspend early_drv;
+	atomic_t			enable;
+	struct early_suspend    early_drv;
 	atomic_t early_suspend;
 	/* struct grv_drv_obj    drv_obj; */
 	struct grv_data drv_data;

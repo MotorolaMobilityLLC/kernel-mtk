@@ -51,7 +51,7 @@ struct glg_control_path {
 };
 
 struct glg_data_path {
-	int (*get_data)(u16 *value, int *status);
+	int (*get_data)(int *value, int *status);
 };
 
 struct glg_init_info {
