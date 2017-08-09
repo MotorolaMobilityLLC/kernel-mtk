@@ -73,6 +73,7 @@ struct of_device_id accdet_of_match[] = {
 	{ .compatible = "mediatek,mt8163-accdet", },
 	{ .compatible = "mediatek,mt8127-accdet", },
 	{ .compatible = "mediatek,mt6797-accdet", },
+	{ .compatible = "mediatek,elbrus-accdet", },
 	{},
 };
 
