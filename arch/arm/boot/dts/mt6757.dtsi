@@ -491,7 +491,7 @@
 		reg = <0 0x1000d000 0 0x1000>;
 		interrupts = <GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>;
 		pmic: mt6351 {
-			compatible = "mediatek,mt6351-pmic",
+			compatible = "mediatek,mt6351-pmic";
 			interrupt-parent = <&eintc>;
 			interrupts = <150 IRQ_TYPE_LEVEL_HIGH>;
 			debounce = <150 1000>;
