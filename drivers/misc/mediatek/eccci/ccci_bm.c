@@ -12,6 +12,12 @@
 #include "ccci_bm_events.h"
 #endif
 
+#define REQ_MAGIC_HEADER 0xF111F111
+#define REQ_MAGIC_FOOTER 0xF222F222
+
+#define SKB_MAGIC_HEADER 0xF333F333
+#define SKB_MAGIC_FOOTER 0xF444F444
+
 struct ccci_req_queue req_pool;
 struct ccci_skb_queue skb_pool_4K;
 struct ccci_skb_queue skb_pool_1_5K;
@@ -21,7 +27,6 @@ struct workqueue_struct *pool_reload_work_queue;
 
 #ifdef CCCI_BM_TRACE
 struct timer_list ccci_bm_stat_timer;
-
 void ccci_bm_stat_timer_func(unsigned long data)
 {
 	trace_ccci_bm(req_pool.count, skb_pool_4K.skb_list.qlen, skb_pool_1_5K.skb_list.qlen,
@@ -30,11 +35,133 @@ void ccci_bm_stat_timer_func(unsigned long data)
 }
 #endif
 
+#ifdef CCCI_WP_DEBUG
+#include <mt-plat/hw_watchpoint.h>
+
+static struct wp_event wp_event;
+static atomic_t hwp_enable = ATOMIC_INIT(0);
+
+static int my_wp_handler(phys_addr_t addr)
+{
+
+	CCCI_INF_MSG(-1, BM, "[ccci/WP_LCH_DEBUG] access from 0x%p, call bug\n", (void *)addr);
+	dump_stack();
+	/*BUG();*/
+
+	/* re-enable the watchpoint, since the auto-disable is not working */
+	del_hw_watchpoint(&wp_event);
+#if 0
+	wp_err = add_hw_watchpoint(&wp_event);
+	if (wp_err != 0)
+		/* error */
+		CCCI_INF_MSG(-1, BM, "[mydebug]watchpoint init fail\n");
+	else
+		/* success */
+		CCCI_INF_MSG(-1, BM, "[mydebug]watchpoint init done\n");
+#endif
+	return 0;
+}
+/*
+static void disable_watchpoint(void)
+{
+	if (atomic_read(&hwp_enable)) {
+		del_hw_watchpoint(&wp_event);
+		atomic_set(&hwp_enable, 0);
+	}
+}
+*/
+static void enable_watchpoint(void *address)
+{
+	int wp_err;
+
+	if (atomic_read(&hwp_enable) == 0) {
+		init_wp_event(&wp_event, (phys_addr_t) address, (phys_addr_t) address,
+			WP_EVENT_TYPE_WRITE, my_wp_handler);
+		atomic_set(&hwp_enable, 1);
+		wp_err = add_hw_watchpoint(&wp_event);
+		if (wp_err)
+			CCCI_INF_MSG(-1, BM, "[mydebug]watchpoint init fail,addr=%p\n", address);
+	}
+}
+#endif
+
+#ifdef CCCI_MEM_BM_DEBUG
+static int ccci_skb_addr_checker(struct sk_buff *newsk)
+{
+	unsigned long skb_addr_value;
+	unsigned long queue16_addr_value;
+	unsigned long queue1_5k_addr_value;
+	unsigned long queue4k_addr_value;
+	unsigned long req_pool_addr_value;
+
+	skb_addr_value = (unsigned long)newsk;
+	queue16_addr_value = (unsigned long)&skb_pool_16;
+	queue1_5k_addr_value = (unsigned long)&skb_pool_1_5K;
+	queue4k_addr_value = (unsigned long)&skb_pool_4K;
+	req_pool_addr_value = (unsigned long)&req_pool;
+
+	if ((skb_addr_value >= queue16_addr_value
+			&& skb_addr_value < queue16_addr_value + sizeof(struct ccci_skb_queue))
+		||
+		(skb_addr_value >= queue1_5k_addr_value
+			&& skb_addr_value < queue1_5k_addr_value + sizeof(struct ccci_skb_queue))
+		||
+		(skb_addr_value >= queue4k_addr_value
+			&& skb_addr_value < queue4k_addr_value + sizeof(struct ccci_skb_queue))
+		||
+		(skb_addr_value >= req_pool_addr_value
+			&& skb_addr_value < req_pool_addr_value + sizeof(struct ccci_req_queue))
+		) {
+		CCCI_INF_MSG(-1, BM, "Free wrong skb=%lx pointer in skb poool!\n", skb_addr_value);
+		CCCI_INF_MSG(-1, BM, "skb=%lx, skb_pool_16=%lx,  skb_pool_1_5K=%lx, skb_pool_4K=%lx, req_pool=%lx!\n",
+			skb_addr_value, queue16_addr_value, queue1_5k_addr_value,
+			queue4k_addr_value,
+			req_pool_addr_value);
+
+		return 1;
+	}
+	return 0;
+}
+void ccci_magic_checker(void)
+{
+	if (req_pool.magic_header != REQ_MAGIC_HEADER || req_pool.magic_footer != REQ_MAGIC_FOOTER) {
+		CCCI_INF_MSG(-1, BM, "req_pool magic error!\n");
+		ccci_mem_dump(-1, &req_pool, sizeof(struct ccci_req_queue));
+		dump_stack();
+	}
+
+	if (skb_pool_16.magic_header != SKB_MAGIC_HEADER || skb_pool_16.magic_footer != SKB_MAGIC_FOOTER) {
+		CCCI_INF_MSG(-1, BM, "skb_pool_16 magic error!\n");
+		ccci_mem_dump(-1, &skb_pool_16, sizeof(struct ccci_skb_queue));
+		dump_stack();
+	}
+
+	if (skb_pool_1_5K.magic_header != SKB_MAGIC_HEADER || skb_pool_1_5K.magic_footer != SKB_MAGIC_FOOTER) {
+		CCCI_INF_MSG(-1, BM, "skb_pool_1_5K magic error!\n");
+		ccci_mem_dump(-1, &skb_pool_1_5K, sizeof(struct ccci_skb_queue));
+		dump_stack();
+	}
+
+	if (skb_pool_4K.magic_header != SKB_MAGIC_HEADER || skb_pool_4K.magic_footer != SKB_MAGIC_FOOTER) {
+		CCCI_INF_MSG(-1, BM, "skb_pool_4K magic error!\n");
+		ccci_mem_dump(-1, &skb_pool_4K, sizeof(struct ccci_skb_queue));
+		dump_stack();
+	}
+}
+#endif
+
 static struct ccci_request *ccci_req_dequeue(struct ccci_req_queue *queue)
 {
 	unsigned long flags;
 	struct ccci_request *result = NULL;
 
+#ifdef CCCI_MEM_BM_DEBUG
+	if (queue->magic_header != REQ_MAGIC_HEADER
+		|| queue->magic_footer != REQ_MAGIC_FOOTER) {
+		ccci_mem_dump(-1, queue, sizeof(struct ccci_req_queue));
+		dump_stack();
+	}
+#endif
 	spin_lock_irqsave(&queue->req_lock, flags);
 	if (list_empty(&queue->req_list))
 		goto out;
@@ -63,6 +190,8 @@ static void ccci_req_queue_init(struct ccci_req_queue *queue)
 {
 	int i;
 
+	queue->magic_header = REQ_MAGIC_HEADER;
+	queue->magic_footer = REQ_MAGIC_FOOTER;
 	queue->max_len = BM_POOL_SIZE;
 	INIT_LIST_HEAD(&queue->req_list);
 	for (i = 0; i < queue->max_len; i++) {
@@ -109,6 +238,18 @@ struct sk_buff *ccci_skb_dequeue(struct ccci_skb_queue *queue)
 	unsigned long flags;
 	struct sk_buff *result;
 
+#ifdef CCCI_MEM_BM_DEBUG
+	if (queue->magic_header != SKB_MAGIC_HEADER || queue->magic_footer != SKB_MAGIC_FOOTER) {
+		CCCI_ERR_MSG(-1, BM,
+			"ccci_skb_dequeue: queue=%lx, skb_pool_16=%lx,  skb_pool_1_5K=%lx, skb_pool_4K=%lx, req_pool=%lx!\n",
+			(unsigned long)queue, (unsigned long)&skb_pool_16, (unsigned long)&skb_pool_1_5K,
+			(unsigned long)&skb_pool_4K,
+			(unsigned long)&req_pool);
+		ccci_mem_dump(-1, queue, sizeof(struct ccci_skb_queue));
+		dump_stack();
+	}
+#endif
+
 	spin_lock_irqsave(&queue->skb_list.lock, flags);
 	result = __skb_dequeue(&queue->skb_list);
 	if (queue->pre_filled && queue->skb_list.qlen < queue->max_len / RELOAD_TH)
@@ -133,6 +274,14 @@ void ccci_skb_enqueue(struct ccci_skb_queue *queue, struct sk_buff *newsk)
 #else
 		if (1) {
 #endif
+
+#ifdef CCCI_MEM_BM_DEBUG
+			if (ccci_skb_addr_checker(newsk)) {
+				CCCI_INF_MSG(-1, BM, "ccci_skb_enqueue:ccci_skb_addr_checker failed!\n");
+				ccci_mem_dump(-1, queue, sizeof(struct ccci_skb_queue));
+				dump_stack();
+			}
+#endif
 			dev_kfree_skb_any(newsk);
 		} else {
 			__skb_queue_tail(&queue->skb_list, newsk);
@@ -146,6 +295,15 @@ void ccci_skb_queue_init(struct ccci_skb_queue *queue, unsigned int skb_size, un
 {
 	int i;
 
+	queue->magic_header = SKB_MAGIC_HEADER;
+	queue->magic_footer = SKB_MAGIC_FOOTER;
+#ifdef CCCI_WP_DEBUG
+	if (((unsigned long)queue) == ((unsigned long)(&skb_pool_16))) {
+		CCCI_INF_MSG(-1, BM, "ccci_skb_queue_init: add hwp skb_pool_16.magic_footer=%p!\n",
+			&queue->magic_footer);
+		enable_watchpoint(&queue->magic_footer);
+	}
+#endif
 	skb_queue_head_init(&queue->skb_list);
 	queue->max_len = max_len;
 	if (fill_now) {
@@ -167,6 +325,9 @@ struct sk_buff *ccci_alloc_skb(int size, char from_pool, char blocking)
 	int count = 0;
 	struct sk_buff *skb = NULL;
 
+#ifdef CCCI_MEM_BM_DEBUG
+	ccci_magic_checker();
+#endif
 	if (size > SKB_4K || size < 0)
 		goto err_exit;
 
@@ -216,6 +377,12 @@ void ccci_free_skb(struct sk_buff *skb, DATA_POLICY policy)
 			ccci_skb_enqueue(&skb_pool_4K, skb);
 		break;
 	case FREE:
+#ifdef CCCI_MEM_BM_DEBUG
+		if (ccci_skb_addr_checker(skb)) {
+			CCCI_INF_MSG(-1, BM, "ccci_skb_addr_checker failed\n");
+			dump_stack();
+		}
+#endif
 		dev_kfree_skb_any(skb);
 		break;
 	case NOOP:
@@ -285,6 +452,9 @@ struct ccci_request *ccci_alloc_req(DIRECTION dir, int size, char blk1, char blk
 {
 	struct ccci_request *req = NULL;
 
+#ifdef CCCI_MEM_BM_DEBUG
+	ccci_magic_checker();
+#endif
  retry:
 	req = ccci_req_dequeue(&req_pool);
 	if (req) {

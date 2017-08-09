@@ -9,6 +9,7 @@
 #include <linux/of_address.h>
 #endif
 #include <mt-plat/mt_ccci_common.h>
+#include <mt-plat/mtk_meminfo.h>
 #include "ccci_config.h"
 #include "ccci_core.h"
 #include "ccci_debug.h"
@@ -203,8 +204,8 @@ void ccci_set_ap_region_protection(struct ccci_modem *md)
 {
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int ap_mem_mpu_id, ap_mem_mpu_attr;
-	unsigned int kernel_base;
-	unsigned int dram_size;
+	phys_addr_t kernel_base;
+	phys_addr_t dram_size;
 
 	if (is_4g_memory_size_support())
 		kernel_base = 0;
@@ -219,9 +220,11 @@ void ccci_set_ap_region_protection(struct ccci_modem *md)
 	ap_mem_mpu_attr = MPU_ACCESS_PERMISSON_AP_ATTR;
 #if 1
 	CCCI_INF_MSG(md->index, TAG, "MPU Start protect AP region<%d:%08x:%08x> %x\n",
-		     ap_mem_mpu_id, kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_attr);
+		ap_mem_mpu_id, (unsigned int)kernel_base, (unsigned int)(kernel_base + dram_size - 1),
+		ap_mem_mpu_attr);
 
-	emi_mpu_set_region_protection(kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_id, ap_mem_mpu_attr);
+	emi_mpu_set_region_protection((unsigned int)kernel_base,
+		(unsigned int)(kernel_base + dram_size - 1), ap_mem_mpu_id, ap_mem_mpu_attr);
 #endif
 
 #endif
@@ -262,7 +265,7 @@ void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded)
 			     dsp_mem_mpu_id, dsp_mem_phy_start, dsp_mem_phy_end, dsp_mem_mpu_attr);
 		emi_mpu_set_region_protection(dsp_mem_phy_start, dsp_mem_phy_end, dsp_mem_mpu_id, dsp_mem_mpu_attr);
 	} else {
-		unsigned int rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_id, rom_mem_mpu_attr;
+		unsigned int rom_mem_phy_start, rom_mem_phy_end;
 		unsigned int shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_id, shr_mem_mpu_attr;
 		unsigned int rw_mem_phy_start, rw_mem_phy_end, rw_mem_mpu_id, rw_mem_mpu_attr;
 
@@ -312,8 +315,8 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 	unsigned int ap_mem_mpu_id, ap_mem_mpu_attr;
 	struct ccci_image_info *img_info;
 	struct ccci_mem_layout *md_layout;
-	unsigned int kernel_base;
-	unsigned int dram_size;
+	phys_addr_t kernel_base;
+	phys_addr_t dram_size;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -395,8 +398,9 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 /* This part need to move common part */
 #if 1
 	CCCI_INF_MSG(md->index, TAG, "MPU Start protect AP region<%d:%08x:%08x> %x\n",
-		     ap_mem_mpu_id, kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_attr);
-	emi_mpu_set_region_protection(kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_id, ap_mem_mpu_attr);
+		ap_mem_mpu_id, (unsigned int)kernel_base, (unsigned int)(kernel_base + dram_size - 1), ap_mem_mpu_attr);
+	emi_mpu_set_region_protection((unsigned int)kernel_base, (unsigned int)(kernel_base + dram_size - 1),
+		ap_mem_mpu_id, ap_mem_mpu_attr);
 #endif
 #endif
 }
@@ -412,11 +416,11 @@ void ccci_set_exp_region_protection(struct ccci_modem *md)
 	shr_mem_mpu_attr = SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION);
 
 	CCCI_INF_MSG(md->index, TAG, "After EE: MPU Start protect MD Share region<%d:%08x:%08x> %x\n",
-		     shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
+		shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
 	emi_mpu_set_region_protection(shr_mem_phy_start,	/*START_ADDR */
-				      shr_mem_phy_end,	/*END_ADDR */
-				      shr_mem_mpu_id,	/*region */
-				      shr_mem_mpu_attr);
+				shr_mem_phy_end,	/*END_ADDR */
+				shr_mem_mpu_id,	/*region */
+				shr_mem_mpu_attr);
 }
 #endif
 

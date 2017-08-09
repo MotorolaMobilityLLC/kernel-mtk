@@ -25,19 +25,23 @@
 #endif
 
 struct ccci_req_queue {
+	unsigned int magic_header;
 	struct list_head req_list;
 	unsigned int count;
 	unsigned int max_len;
 	spinlock_t req_lock;
 	wait_queue_head_t req_wq;
+	unsigned int magic_footer;
 };
 
 struct ccci_skb_queue {
+	unsigned int magic_header;
 	struct sk_buff_head skb_list;
 	unsigned int max_len;
 	struct work_struct reload_work;
 	unsigned char pre_filled;
 	unsigned int max_history;
+	unsigned int magic_footer;
 };
 
 struct sk_buff *ccci_alloc_skb(int size, char from_pool, char blocking);
