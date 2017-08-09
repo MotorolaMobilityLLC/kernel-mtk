@@ -710,13 +710,20 @@ static int disp_probe(struct platform_device *pdev)
 					case MUX_MM:
 					case MM_VENCPLL:
 					case SYSPLL2_D2:
-						break; /* no need prepare_enable here */
+						break;
+
 					case DISP0_SMI_COMMON:
 					case DISP0_SMI_LARB0:
 					case DISP0_SMI_LARB4:
-					case DISP_MTCMOS_CLK:
 						ddp_clk_prepare_enable(i);
 						break;
+
+					case DISP_MTCMOS_CLK:
+						#ifndef CONFIG_FPGA_EARLY_PORTING
+						ddp_clk_prepare_enable(i);
+						#endif
+						break;
+
 					default:
 						ddp_clk_prepare(i);
 						break;

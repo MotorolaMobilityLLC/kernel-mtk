@@ -118,7 +118,15 @@ static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 	/* dither is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
-	if (module == DISP_MODULE_DITHER) {
+	int module0;
+
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	module0 = DISP_MODULE_DITHER0;
+#else
+	module0 = DISP_MODULE_DITHER;
+#endif
+
+	if (module == module0) {
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
@@ -136,7 +144,15 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 	/* dither is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
-	if (module == DISP_MODULE_DITHER) {
+	int module0;
+
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	module0 = DISP_MODULE_DITHER0;
+#else
+	module0 = DISP_MODULE_DITHER;
+#endif
+
+	if (module == module0) {
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else

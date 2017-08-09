@@ -71,7 +71,7 @@ typedef unsigned int    UINT32;
   #define TRUE  (1)
 #endif
 
-/* #define ENABLE_CLK_MGR */
+#define ENABLE_CLK_MGR
 
 /* field definition */
 /* ------------------------------------------------------------- */
