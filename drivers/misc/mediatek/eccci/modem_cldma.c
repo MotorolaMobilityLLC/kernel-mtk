@@ -1445,6 +1445,12 @@ static inline void cldma_reset(struct ccci_modem *md)
 			      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x10);
 		break;
 	}
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG,
+			      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x40);
+	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
+			      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x40);
+#endif
 	/* disable debug ID */
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_DEBUG_ID_EN, 0);
 }

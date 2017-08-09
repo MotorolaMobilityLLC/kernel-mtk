@@ -55,6 +55,7 @@ static unsigned long apinfra_base;
 
 struct c2k_pll_t c2k_pll_reg;
 void __iomem *ccirq_base[4];
+void __iomem *c2k_cgbr1_addr;
 
 int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg *dev_cfg, struct md_hw_info *hw_info)
 {
@@ -143,13 +144,13 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		hw_info->md3_pccif_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 2);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-		hw_info->infra_ao_base = (unsigned long)of_iomap(node, 0);
+		hw_info->infra_ao_base = of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-		hw_info->sleep_base = (unsigned long)of_iomap(node, 0);
+		hw_info->sleep_base = of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
-		hw_info->toprgu_base = (unsigned long)of_iomap(node, 0);
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-toprgu");
+		hw_info->toprgu_base = of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		apmixed_base = (unsigned long)of_iomap(node, 0);
@@ -159,7 +160,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		apinfra_base = (unsigned long)of_iomap(node, 0);
 
 		CCCI_NORMAL_LOG(dev_cfg->index, TAG,
-				"infra_ao_base=0x%lx, sleep_base=0x%lx, toprgu_base=0x%lx\n",
+				"infra_ao_base=0x%p, sleep_base=0x%p, toprgu_base=0x%p\n",
 				hw_info->infra_ao_base, hw_info->sleep_base, hw_info->toprgu_base);
 
 #endif
@@ -233,6 +234,9 @@ int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 		ccirq_base[1] = ioremap_nocache(C2K_L1_CCIRQ_BASE, 0x100);
 		ccirq_base[2] = ioremap_nocache(PS_C2K_CCIRQ_BASE, 0x100);
 		ccirq_base[3] = ioremap_nocache(C2K_PS_CCIRQ_BASE, 0x100);
+
+		c2k_cgbr1_addr = ioremap_nocache(C2KSYS_BASE + C2K_CGBR1, 0x4);
+		md_ctrl->md_rgu_base = ioremap_nocache(md_ctrl->hw_info->md_rgu_base, 0x40);
 
 		break;
 	}
@@ -314,11 +318,13 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 
 		/*dump power status for debugging*/
 		CCCI_BOOTUP_LOG(md->index, TAG, "[C2K] AP_PWR_STATUS = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS));
+			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS));
 		CCCI_BOOTUP_LOG(md->index, TAG, "[C2K] AP_PWR_STATUS_2ND = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND));
+			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS_2ND));
 		CCCI_BOOTUP_LOG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON));
+		CCCI_BOOTUP_LOG(md->index, TAG, "AP_POWERON_CONFIG_EN = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_POWERON_CONFIG_EN));
 
 		/*set c2k_md1src_req_en */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
@@ -332,8 +338,9 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 
 		/*step 2: config ClkSQ resigeter */
 		/*ccif_write32(apmixed_base, AP_PLL_CON0, ccif_read32(apmixed_base, AP_PLL_CON0) | (0x1 << 1)); */
+		ccif_write32(apmixed_base, MDPLL1_CON0, ccif_read32(apmixed_base, MDPLL1_CON0) & (~(0x1 << 9)));
 		CCCI_BOOTUP_LOG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n", ccif_read32(apmixed_base, AP_PLL_CON0));
-
+		CCCI_BOOTUP_LOG(md->index, TAG, "MDPLL_CON0 = 0x%x\n", ccif_read32(apmixed_base, MDPLL1_CON0));
 		/*step 3: ap hold c2k core */
 		/*c2k may bootup fail if AP access C2K_CONFIG, so ignore */
 		/*
@@ -342,7 +349,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		*/
 
 		/*step 4: wake up C2K */
-#if 0
+#if 1
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 			     TOP_RGU_WDT_SWSYSRST,
 			     (ccif_read32
@@ -356,6 +363,10 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 
 		/*step 5: mpu already set */
 		/*step 6: wake up C2K */
+		CCCI_BOOTUP_LOG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
+			ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG));
+		CCCI_BOOTUP_LOG(md->index, TAG,
+				"[C2K] C2K_STATUS = 0x%x\n", ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     INFRA_AO_C2K_HANDSHAKE,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_HANDSHAKE) | (0x1 << 1));
@@ -377,6 +388,11 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     INFRA_TOPAXI_PROTECTEN_1,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_TOPAXI_PROTECTEN_1) & (0xFE3FFFFF));
+
+		while (ccif_read32(c2k_cgbr1_addr, 0) != 0xFE8)
+			;
+		CCCI_BOOTUP_LOG(md->index, TAG,
+			     "[C2K] C2K_CGBR1 = 0x%x\n", ccif_read32(c2k_cgbr1_addr, 0));
 
 		/*set c2k pll */
 		config_c2k_pll();
@@ -427,7 +443,7 @@ int md_ccif_power_on(struct ccci_modem *md)
 	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_power_on:ret=%d\n", ret);
 	if (ret == 0 && md->index != MD_SYS3) {
 		/*disable MD WDT */
-		ccif_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
+		ccif_write32(md_ctrl->md_rgu_base, C2K_WDT_MD_MODE, C2K_WDT_MD_MODE_KEY);
 	}
 	return ret;
 }
@@ -461,40 +477,16 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void reset_md1_md3_pccif(struct ccci_modem *md)
 {
-	unsigned int tx_channel = 0;
-	int i;
-
-	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-
-	struct md_hw_info *hw_info = md_ctrl->hw_info;
 
 	reset_ccirq_hardware();
 
-	/*clear occupied channel */
-	while (tx_channel < 16) {
-		if (ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY) & (1 << tx_channel))
-			ccif_write32(hw_info->md1_pccif_base, PCCIF_TCHNUM, tx_channel);
-
-		if (ccif_read32(hw_info->md3_pccif_base, PCCIF_BUSY) & (1 << tx_channel))
-			ccif_write32(hw_info->md3_pccif_base, PCCIF_TCHNUM, tx_channel);
-
-		tx_channel++;
-	}
-	/*clear un-ached channel */
-	ccif_write32(hw_info->md1_pccif_base, PCCIF_ACK, ccif_read32(hw_info->md3_pccif_base, PCCIF_BUSY));
-	ccif_write32(hw_info->md3_pccif_base, PCCIF_ACK, ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY));
-	/*clear SRAM */
-	for (i = 0; i < PCCIF_SRAM_SIZE / sizeof(unsigned int); i++) {
-		ccif_write32(hw_info->md1_pccif_base, PCCIF_CHDATA + i * sizeof(unsigned int), 0);
-		ccif_write32(hw_info->md3_pccif_base, PCCIF_CHDATA + i * sizeof(unsigned int), 0);
-	}
 	/*clear md1 md3 shared memory */
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 }
 
-void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg)
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_flag)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
@@ -508,7 +500,7 @@ void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg)
 	CCCI_NORMAL_LOG(md->index, TAG, "[C2K] C2K_STATUS = 0x%x\n",
 				 ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
 
-	if (dump_boot_reg == 0)
+	if (dump_flag == 0)
 		return;
 
 }

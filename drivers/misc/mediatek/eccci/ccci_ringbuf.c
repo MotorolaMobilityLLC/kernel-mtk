@@ -327,6 +327,10 @@ void ccci_ringbuf_move_rpointer(int md_id, struct ccci_ringbuf *ringbuf, int rea
 {
 	unsigned int read, length;
 
+	if (ringbuf->rx_control.read == 0 && ringbuf->rx_control.write == 0) {
+		CCCI_ERROR_LOG(md_id, TAG, "move_rpointer, rbf=%p has been reset\n", ringbuf);
+		return;
+	}
 	read = (unsigned int)(ringbuf->rx_control.read);
 	length = (unsigned int)(ringbuf->rx_control.length);
 	/* Update read pointer */

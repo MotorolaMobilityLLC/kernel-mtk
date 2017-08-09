@@ -397,17 +397,16 @@ int ccci_md_check_ee_done(struct ccci_modem *md, int timeout)
 	int count = 0;
 	bool is_ee_done = 0;
 	int time_step = 200; /*ms*/
-	int loop_max = timeout * 1000 / time_step;
+	int loop_max = 0;
 
-	loop_max = 20;
 	CCCI_BOOTUP_LOG(md->index, KERN, "checking EE status\n");
 	while (md->md_state == EXCEPTION) {
 		if (port_proxy_get_critical_user(md->port_proxy_obj, CRIT_USR_MDLOG)) {
 			CCCI_DEBUG_LOG(md->index, TAG, "mdlog running, waiting for EE dump done\n");
-			is_ee_done = mdee_flow_is_start(md->mdee_obj)
+			is_ee_done = !mdee_flow_is_start(md->mdee_obj)
 				&& port_proxy_get_mdlog_dump_done(md->port_proxy_obj);
 		} else
-			is_ee_done = mdee_flow_is_start(md->mdee_obj);
+			is_ee_done = !mdee_flow_is_start(md->mdee_obj);
 		if (!is_ee_done) {
 			msleep(time_step);
 			count++;

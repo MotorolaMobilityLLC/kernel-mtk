@@ -921,7 +921,7 @@ int port_proxy_start_md(struct port_proxy *proxy_p)
 	int ret = 0;
 
 	proxy_p->mdlog_dump_done = 0;
-	ccci_md_start_bootup_timer(proxy_p->md_obj, BOOT_TIMER_ON);
+	ccci_md_start_bootup_timer(proxy_p->md_obj, BOOT_TIMER_HS1);
 	ret = ccci_md_start(proxy_p->md_obj);
 	return ret;
 }

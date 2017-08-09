@@ -44,6 +44,10 @@
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
 
+#if defined(CONFIG_MTK_AEE_FEATURE)
+#include <mt-plat/aee.h>
+#endif
+
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 static struct clk *clk_infra_ccif_ap;
@@ -413,6 +417,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 #if 1
 	unsigned int reg_value;
 	void __iomem *md_addr;
+	int cnt = 0;
 #endif
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
@@ -443,8 +448,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 		reg_value = ccci_read32(md_addr, 0x20);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
-			;
+		cnt = 0;
+		while (!(reg_value = ccci_read32(md_addr, 0x20)&(1<<3))) {
+			udelay(20);
+			cnt++;
+			if (cnt > 100) {
+				CCCI_ERROR_LOG(md->index, TAG, "[pre-action]read 0x%p=  0x%x\n",
+					(md_addr + 0x20), ccci_read32(md_addr, 0x20));
+				break;
+			}
+		}
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
 
 		ccci_write32(md_reg->md_pc_mon1, 4, 0x80000000); /* stop MD PCMon */
@@ -518,8 +531,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 		reg_value = ccci_read32(md_addr, 0x20);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
-			;
+		cnt = 0;
+		while (!(reg_value = ccci_read32(md_addr, 0x20)&(1<<3))) {
+			udelay(20);
+			cnt++;
+			if (cnt > 100) {
+				CCCI_ERROR_LOG(md->index, TAG, "[pre-action]read 0x%p=  0x%x\n",
+					(md_addr + 0x20), ccci_read32(md_addr, 0x20));
+				break;
+			}
+		}
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
 		ccci_write32(md_reg->md_busrec, 0x4, 0x1);/* pre-action */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busrec, MD_BUSREC_DUMP_LEN);
@@ -545,8 +566,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 		reg_value = ccci_read32(md_addr, 0x20);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
-			;
+		cnt = 0;
+		while (!(reg_value = ccci_read32(md_addr, 0x20)&(1<<3))) {
+			udelay(20);
+			cnt++;
+			if (cnt > 100) {
+				CCCI_ERROR_LOG(md->index, TAG, "[pre-action]read 0x%p=  0x%x\n",
+					(md_addr + 0x20), ccci_read32(md_addr, 0x20));
+				break;
+			}
+		}
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
 		md_addr = md_reg->md_dbgsys_clk;
 		reg_value = ccci_read32(md_addr, 4);
@@ -557,8 +586,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 		reg_value = ccci_read32(md_addr, 0x20);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
-			;
+		cnt = 0;
+		while (!(reg_value = ccci_read32(md_addr, 0x20)&(1<<3))) {
+			udelay(20);
+			cnt++;
+			if (cnt > 100) {
+				CCCI_ERROR_LOG(md->index, TAG, "[pre-action]read 0x%p=  0x%x\n",
+					(md_addr + 0x20), ccci_read32(md_addr, 0x20));
+				break;
+			}
+		}
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] after 0x%x\n", reg_value);
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR1, MD_ECT_DUMP_LEN1);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_1, MD_ECT_DUMP_LEN1);
@@ -589,7 +626,7 @@ void md_cd_check_emi_state(struct ccci_modem *md, int polling)
 
 static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 {
-	int i;
+	int i, error_val = 0;
 	unsigned int val, golden_val;
 	void __iomem *base = md_sram_pd_psmcusys_base;
 
@@ -600,9 +637,10 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 		ccci_write32(base, MD_SRAM_PD_PSMCUSYS_SRAM_1, val);
 	}
 	val = ccci_read32(base, MD_SRAM_PD_PSMCUSYS_SRAM_1);
-	if (val != golden_val)
-			CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_1 = 0x%X!= 0xFFFFFFFF\n", val);
-
+	if (val != golden_val) {
+		CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_1 = 0x%X!= 0xFFFFFFFF\n", val);
+		error_val = -1;
+	}
 	/*Turn on MD pcore SRAM_2(0x200D0118)*/
 	golden_val = 0xFFFFFFFF;
 	for (i = 31; i >= 0; i--) {
@@ -610,9 +648,10 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 		ccci_write32(base, MD_SRAM_PD_PSMCUSYS_SRAM_2, val);
 	}
 	val = ccci_read32(base, MD_SRAM_PD_PSMCUSYS_SRAM_2);
-	if (val != golden_val)
-			CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_2 = 0x%X!= 0xFFFFFFFF\n", val);
-
+	if (val != golden_val) {
+		CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_2 = 0x%X!= 0xFFFFFFFF\n", val);
+		error_val = -2;
+	}
 	/*Turn on MD pcore SRAM_3(0x200D011C)*/
 	golden_val = 0xFFFFFFFF;
 	for (i = 31; i >= 0; i--) {
@@ -620,9 +659,10 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 		ccci_write32(base, MD_SRAM_PD_PSMCUSYS_SRAM_3, val);
 	}
 	val = ccci_read32(base, MD_SRAM_PD_PSMCUSYS_SRAM_3);
-	if (val != golden_val)
-			CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_3 = 0x%X!= 0xFFFFFFFF\n", val);
-
+	if (val != golden_val) {
+		CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_3 = 0x%X!= 0xFFFFFFFF\n", val);
+		error_val = -3;
+	}
 	/*Turn on MD pcore SRAM_4(0x200D0120)*/
 	golden_val = 0xFFFFFFFA;
 	for (i = 31; i >= 0; i--) {
@@ -630,8 +670,18 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 		ccci_write32(base, MD_SRAM_PD_PSMCUSYS_SRAM_4, val);
 	}
 	val = ccci_read32(base, MD_SRAM_PD_PSMCUSYS_SRAM_4);
-	if (val != golden_val)
-			CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_4 = 0x%X!= 0xFFFFFFFA\n", val);
+	if (val != golden_val) {
+		CCCI_ERR_MSG(md->index, TAG, "MD_SRAM_PD_PSMCUSYS_SRAM_4 = 0x%X!= 0xFFFFFFFA\n", val);
+		error_val = -4;
+	}
+
+	if (error_val != 0) {
+		CCCI_ERR_MSG(md->index, TAG, "%s: error_code=%d, trigger AEE db\n", __func__, error_val);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+		aed_md_exception_api(NULL, 0, NULL, 0,
+			"AP ccci turn on md1 pcore sram failed\n", DB_OPT_DEFAULT);
+#endif
+	}
 
 }
 

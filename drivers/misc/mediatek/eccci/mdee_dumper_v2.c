@@ -596,7 +596,7 @@ static void mdee_set_core_name(int md_id, DEBUG_INFO_T *debug_info, char *core_n
 static void mdee_info_prepare_v2(struct md_ee *mdee)
 {
 	EX_OVERVIEW_T *ex_overview;
-	int ee_case;
+	int ee_case = 0;
 	struct mdee_dumper_v2 *dumper = mdee->dumper_obj;
 	int md_id = mdee->md_id;
 	DEBUG_INFO_T *debug_info = NULL;

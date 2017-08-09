@@ -484,7 +484,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 	while (1) {
 		if (queue->index == 0)
 			md->latest_q0_rx_time = local_clock();
+		spin_lock_irqsave(&queue->rx_lock, flags);
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
+		spin_unlock_irqrestore(&queue->rx_lock, flags);
 		if (pkg_size < 0) {
 			CCCI_DEBUG_LOG(md->index, TAG, "Q%d Rx:rbf readable ret=%d\n", queue->index, pkg_size);
 			/*BUG_ON(pkg_size!=-CCCI_RINGBUF_EMPTY); */
@@ -504,7 +506,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 
 		data_ptr = (unsigned char *)skb_put(skb, pkg_size);
 		/*copy data into skb */
+		spin_lock_irqsave(&queue->rx_lock, flags);
 		ret = ccci_ringbuf_read(md->index, rx_buf, data_ptr, pkg_size);
+		spin_unlock_irqrestore(&queue->rx_lock, flags);
 		if (unlikely(ret < 0)) {
 			ccci_free_skb(skb);
 			goto OUT;
@@ -549,7 +553,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 				CCCI_NORMAL_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
 				queue->debug_id = 0;
 			}
+			spin_lock_irqsave(&queue->rx_lock, flags);
 			ccci_ringbuf_move_rpointer(md->index, rx_buf, pkg_size);
+			spin_unlock_irqrestore(&queue->rx_lock, flags);
 			if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
 				ccif_check_flow_ctrl(md, queue->index, rx_buf);
 
@@ -627,8 +633,8 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 #ifdef ENABLE_MD_WDT_DBG
 	unsigned int state;
 
-	state = ccif_read32(md_ctrl->md_rgu_base, WDT_MD_STA);
-	ccif_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
+	state = ccif_read32(md_ctrl->md_rgu_base, C2K_WDT_MD_STA);
+	ccif_write32(md_ctrl->md_rgu_base, C2K_WDT_MD_MODE, C2K_WDT_MD_MODE_KEY);
 	CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ disabled for debug, state=%X\n", state);
 #endif
 	CCCI_NORMAL_LOG(md->index, TAG, "MD WDT IRQ\n");

@@ -27,12 +27,12 @@
 
 /*MD peripheral register: MD bank8; AP bank2*/
 /*Modem WDT */
-#define WDT_MD_MODE     (0x00)
-#define WDT_MD_LENGTH   (0x04)
-#define WDT_MD_RESTART  (0x08)
-#define WDT_MD_STA      (0x0C)
-#define WDT_MD_SWRST    (0x1C)
-#define WDT_MD_MODE_KEY (0x0000220E)
+#define C2K_WDT_MD_MODE     (0x00)
+#define C2K_WDT_MD_LENGTH   (0x04)
+#define C2K_WDT_MD_RESTART  (0x08)
+#define C2K_WDT_MD_STA      (0x0C)
+#define C2K_WDT_MD_SWRST    (0x1C)
+#define C2K_WDT_MD_MODE_KEY (0x0000220E)
 
 /*CCIF */
 #define APCCIF_CON    (0x00)
@@ -60,7 +60,7 @@
 
 /* [3:0]:mdsrc_req_0_en */
 /* [7:4]:mdsrc_req_1_en */
-#define INFRA_MISC2				(0xF18)
+#define INFRA_MISC2				(0xF0C)
 /* mdsrc_req_0/1_en[2]: for C2K */
 #define INFRA_MISC2_C2K_BIT		(2)
 #define INFRA_MISC2_C2K_EN		(0x11 << INFRA_MISC2_C2K_BIT)
@@ -70,7 +70,10 @@
 #define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
 
-#define INFRA_TOPAXI_PROTECTEN_1 0x220	/*((UINT32P)(INFRACFG_AO_BASE+0x220))*/
+#define INFRA_TOPAXI_PROTECTEN_1 0x250	/*((UINT32P)(INFRACFG_AO_BASE+0x250))*/
+#define AP_POWERON_CONFIG_EN        0x000	/*((UINT32P)(SLEEP_BASE+0x000))*/
+#define AP_PWR_STATUS               0x180	/*((UINT32P)(SLEEP_BASE+0x180))*/
+#define AP_PWR_STATUS_2ND           0x184	/*((UINT32P)(SLEEP_BASE+0x184))*/
 #define PWR_RST_B     0
 #define PWR_ISO       1
 #define PWR_ON        2
@@ -120,10 +123,10 @@ struct md_hw_info {
 	unsigned long md_ccif_base;
 	unsigned int sram_size;
 	/* #ifdef CONFIG_MTK_ECCCI_C2K */
-	unsigned long sleep_base;
-	unsigned long infra_ao_base;
+	void __iomem *sleep_base;
+	void __iomem *infra_ao_base;
 	unsigned long c2k_misc;
-	unsigned long toprgu_base;
+	void __iomem *toprgu_base;
 	unsigned long c2k_chip_id_base;
 	unsigned long md1_pccif_base;
 	unsigned long md3_pccif_base;
@@ -161,7 +164,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
-void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg);
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_flag);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);

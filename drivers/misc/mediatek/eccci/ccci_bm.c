@@ -564,7 +564,6 @@ void ccci_dump_skb(struct sk_buff *skb)
 {
 	ccci_mem_dump(-1, skb->data, skb->len > 32 ? 32 : skb->len);
 }
-EXPORT_SYMBOL(ccci_dump_req);
 
 int ccci_subsys_bm_init(void)
 {

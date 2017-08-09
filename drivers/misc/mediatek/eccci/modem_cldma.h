@@ -202,7 +202,6 @@ struct md_cd_ctrl {
 #ifdef ENABLE_HS1_POLLING_TIMER
 	struct timer_list hs1_polling_timer;
 #endif
-	struct timer_list bus_timeout_timer;
 	spinlock_t cldma_timeout_lock;	/* this lock is using to protect CLDMA, not only for timeout checking */
 	struct work_struct cldma_irq_work;
 	struct workqueue_struct *cldma_irq_worker;

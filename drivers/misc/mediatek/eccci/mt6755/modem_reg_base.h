@@ -62,10 +62,14 @@
 /*#define L1_BASE_MADDR_MDL1_CONF	(0x260F0000)*/
 
 /*MD bootup register*/
-#define MD1_CFG_BASE (0x20000000)
-#define MD1_CFG_BOOT_STATS0 (MD1_CFG_BASE+0x70)
-#define MD1_CFG_BOOT_STATS1 (MD1_CFG_BASE+0x74)
+/* in modem view */
+/* #define MD1_CFG_BASE (0x20000000) */
+/* #define MD1_CFG_BOOT_STATS0 (MD1_CFG_BASE+0x70) */
+/* #define MD1_CFG_BOOT_STATS1 (MD1_CFG_BASE+0x74) */
 
+/* in AP infra view */
+#define MD1_CFG_BOOT_STATS0 (0x10201300)
+#define MD1_CFG_BOOT_STATS1 (0x10201304)
 /* ============================================================ */
 /* Modem 2 part */
 /* ============================================================ */

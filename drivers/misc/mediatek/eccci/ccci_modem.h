@@ -28,7 +28,6 @@
 #include "ccci_core.h"
 #include "port_proxy.h"
 
-#define BOOT_TIMER_ON 20
 #define BOOT_TIMER_HS1 10
 #define BOOT_TIMER_HS2 10
 struct ccci_modem;
@@ -278,6 +277,8 @@ static inline int ccci_md_broadcast_state(struct ccci_modem *md, MD_STATE state)
 }
 static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
 {
+	/*WDT happened at bootup, need stop timer*/
+	ccci_md_stop_bootup_timer(md);
 	return md->ops->pre_stop(md, timeout, other_ops);
 }
 
@@ -311,7 +312,7 @@ static inline int ccci_md_send_runtime_data(struct ccci_modem *md, unsigned int 
 
 	ret = md->ops->send_runtime_data(md, tx_ch, txqno, skb_from_pool);
 	if (ret == 0 && !ccci_md_is_in_debug(md))
-		ccci_md_start_bootup_timer(md, BOOT_TIMER_HS1);
+		ccci_md_start_bootup_timer(md, BOOT_TIMER_HS2);
 	return ret;
 }
 
