@@ -327,16 +327,63 @@ void mt_gpio_dump(void)
 /*----------------------------------------------------------------------------*/
 void gpio_dump_regs(void)
 {
-	int idx = 0;
+	int i = 0;
+	int *pGPIO_BASE = GPIO_BASE;
+	int *pIOCFG_L_BASE = IOCFG_L_BASE;
+	int *pIOCFG_B_BASE = IOCFG_B_BASE;
+	int *pIOCFG_R_BASE = IOCFG_R_BASE;
+	int *pIOCFG_T_BASE = IOCFG_T_BASE;
 
-	GPIOMSG("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES]\n");
-	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		GPIOMSG("idx = %3d: %d %d %d %d %d %d %d\n",
-		       idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
-		       mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
-		       mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
-		       mt_get_gpio_ies_base(idx));
+	GPIOMSG("GPIO_BASE : 0x%08x .\n", 0x10005000);
+	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "GPIO_Addr", "+0x00", "+0x10",
+			"+0x20", "+0x30");
+	for (i = 0; i < 28; i++) {
+		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			pGPIO_BASE, GPIO_RD32(pGPIO_BASE), GPIO_RD32(pGPIO_BASE + 4),
+			GPIO_RD32(pGPIO_BASE + 8), GPIO_RD32(pGPIO_BASE + 12));
+		pGPIO_BASE += 0x10;
 	}
+
+	GPIOMSG("\nIOCFG_L_BASE : 0x%08x .\n", 0x10002000);
+	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_L_Addr", "+0x00", "+0x10",
+			"+0x20", "+0x30");
+	for (i = 0; i < 8; i++) {
+		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			pIOCFG_L_BASE, GPIO_RD32(pIOCFG_L_BASE), GPIO_RD32(pIOCFG_L_BASE + 4),
+			GPIO_RD32(pIOCFG_L_BASE + 8), GPIO_RD32(pIOCFG_L_BASE + 12));
+		pIOCFG_L_BASE += 0x10;
+	}
+
+	GPIOMSG("\nIOCFG_B_BASE : 0x%08x .\n", 0x10002400);
+	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_B_Addr", "+0x00", "+0x10",
+			"+0x20", "+0x30");
+	for (i = 0; i < 8; i++) {
+		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			pIOCFG_B_BASE, GPIO_RD32(pIOCFG_B_BASE), GPIO_RD32(pIOCFG_B_BASE + 4),
+			GPIO_RD32(pIOCFG_B_BASE + 8), GPIO_RD32(pIOCFG_B_BASE + 12));
+		pIOCFG_B_BASE += 0x10;
+	}
+
+	GPIOMSG("\nIOCFG_R_BASE : 0x%08x .\n", 0x10002800);
+	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_R_Addr", "+0x00", "+0x10",
+			"+0x20", "+0x30");
+	for (i = 0; i < 8; i++) {
+		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			pIOCFG_R_BASE, GPIO_RD32(pIOCFG_R_BASE), GPIO_RD32(pIOCFG_R_BASE + 4),
+			GPIO_RD32(pIOCFG_R_BASE + 8), GPIO_RD32(pIOCFG_R_BASE + 12));
+		pIOCFG_R_BASE += 0x10;
+	}
+
+	GPIOMSG("\nIOCFG_T_BASE : 0x%08x .\n", 0x10002c00);
+	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_T_Addr", "+0x00", "+0x10",
+			"+0x20", "+0x30");
+	for (i = 0; i < 8; i++) {
+		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			pIOCFG_T_BASE, GPIO_RD32(pIOCFG_T_BASE), GPIO_RD32(pIOCFG_T_BASE + 4),
+			GPIO_RD32(pIOCFG_T_BASE + 8), GPIO_RD32(pIOCFG_T_BASE + 12));
+		pIOCFG_T_BASE += 0x10;
+	}
+
 }
 
 /* EXPORT_SYMBOL(gpio_dump_regs); */

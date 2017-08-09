@@ -5,7 +5,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 
-
+extern void gpio_dump_regs(void);
 extern ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char *buf);
 extern ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 struct device_node *get_gpio_np(void);
