@@ -152,9 +152,17 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
 	int retry = 0, timeout = 2000;
+	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta;
+#ifdef SPM_VCORE_EN_MT6755
+	u32 final_r15, final_pcm_sta;
+#endif
 
 	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
 	if (spm_read(PCM_REG1_DATA) == 0x1) {
+		save_r1  = spm_read(PCM_REG1_DATA);
+		save_r15 = spm_read(PCM_REG15_DATA);
+		save_pcm_sta = spm_read(PCM_FSM_STA);
+		save_irq_sta = spm_read(SPM_IRQ_STA);
 		con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
@@ -169,17 +177,29 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 #endif
 			while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
 				if (retry > timeout) {
+					pr_err("[VcoreFS] init state: r15=0x%x r1=0x%x pcmsta=0x%x irqsta=0x%x\n",
+						save_r15, save_r1, save_pcm_sta, save_irq_sta);
 					pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
 								spm_read(PCM_FSM_STA), timeout);
+					pr_err("[VcoreFS] curr state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
+						spm_read(PCM_REG15_DATA), spm_read(PCM_REG6_DATA),
+						spm_read(PCM_FSM_STA), spm_read(SPM_IRQ_STA));
 #ifdef SPM_VCORE_EN_MT6797
 					spm_vcorefs_dump_dvfs_regs(NULL);
 					BUG();
 #else
 					__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
-					pr_err("[VcoreFS] Next R15=0x%x\n", spm_read(PCM_REG15_DATA));
-					pr_err("[VcoreFS] Next R6=0x%x\n", spm_read(PCM_REG6_DATA));
-					pr_err("[VcoreFS] Next PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
-					pr_err("[VcoreFs] Next IRQ_STA=0x%x\n", spm_read(SPM_IRQ_STA));
+					final_r15     = spm_read(PCM_REG15_DATA);
+					final_pcm_sta = spm_read(PCM_FSM_STA);
+					pr_err("[VcoreFS] next state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
+						final_r15, spm_read(PCM_REG6_DATA),
+						final_pcm_sta, spm_read(SPM_IRQ_STA));
+
+					if (final_r15 == 0 && (final_pcm_sta & 0xFFFF) == 0x8490)
+						break;
+
+					pr_err("[VcoreFS] can not reset without idle(r15=0x%x pcm_sta=0x%x)\n",
+						final_r15, final_pcm_sta);
 #endif
 				}
 				udelay(1);
@@ -222,7 +242,10 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 	/* reset PCM */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB);
-	BUG_ON((spm_read(PCM_FSM_STA) & 0x7fffff) != PCM_FSM_STA_DEF);	/* PCM reset failed */
+	if ((spm_read(PCM_FSM_STA) & 0x7fffff) != PCM_FSM_STA_DEF) {
+		spm_crit2("reset pcm(PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
+		BUG(); /* PCM reset failed */
+	}
 
 	/* init PCM_CON0 (disable event vector) */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | EN_IM_SLEEP_DVS_LSB);
@@ -719,13 +742,15 @@ void __spm_backup_vcore_dvfs_dram_shuffle(void)
 #endif
 }
 
-#define MM_DVFS_DISP_HALT_MASK 0x3
-#define MM_DVFS_ISP_HALT_MASK  0x4
-#define MM_DVFS_GCE_HALT_MASK  0x10
+#define MM_DVFS_DISP1_HALT_MASK 0x1
+#define MM_DVFS_DISP0_HALT_MASK 0x2
+#define MM_DVFS_ISP_HALT_MASK   0x4
+#define MM_DVFS_GCE_HALT_MASK   0x10
 
 int __check_dvfs_halt_source(int enable)
 {
 	u32 val, orig_val;
+	bool is_halt = 1;
 
 	val = spm_read(SPM_SRC2_MASK);
 	orig_val = val;
@@ -735,43 +760,86 @@ int __check_dvfs_halt_source(int enable)
 		return 0;
 	}
 
+	pr_err("[VcoreFS]SRC2_MASK=0x%x\n", val);
+	if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+		is_halt = 0;
+		pr_err("[VcoreFS]dvfs_halt already clear!(%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
+		aee_kernel_warning_api(__FILE__, __LINE__,
+			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
+			 "DVFS_HALT_UNKNOWN", "DVFS_HALT_UNKNOWN");
+	}
 	pr_err("[VcoreFS]halt_status(1)=0x%x\n", spm_read(CPU_DVFS_REQ));
-	if (val & MM_DVFS_ISP_HALT_MASK) {
+	if ((val & MM_DVFS_ISP_HALT_MASK) && (is_halt)) {
 		pr_err("[VcoreFS]isp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_ISP_HALT_MASK));
 		udelay(50);
 		pr_err("[VcoreFS]isp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+			aee_kernel_warning_api(__FILE__, __LINE__,
+			 DB_OPT_DEFAULT, "DVFS_HALT_ISP", "DVFS_HALT_ISP");
+			is_halt = 0;
+			pr_err("[VcoreFS]dvfs_halt is hold by ISP (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
+		}
 	}
 
 	pr_err("[VcoreFS]halt_status(2)=0x%x\n", spm_read(CPU_DVFS_REQ));
 	val = spm_read(SPM_SRC2_MASK);
-	if (val & MM_DVFS_DISP_HALT_MASK) {
-		pr_err("[VcoreFS]disp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+	if ((val & MM_DVFS_DISP1_HALT_MASK) && (is_halt)) {
+		pr_err("[VcoreFS]disp1_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				 val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
-		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_DISP_HALT_MASK));
+		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_DISP1_HALT_MASK));
 		udelay(50);
-		pr_err("[VcoreFS]disp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+		pr_err("[VcoreFS]disp1_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
-		aee_kernel_warning_api(__FILE__, __LINE__,
-			DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
-			"DVFS_HALT_DISP", "DVFS_HALT_DISP");
-		/* primary_display_diagnose(); */ /* todo */
+		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+			aee_kernel_warning_api(__FILE__, __LINE__,
+			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
+			 "DVFS_HALT_DISP1", "DVFS_HALT_DISP1");
+			/* primary_display_diagnose(); */
+			is_halt = 0;
+			pr_err("[VcoreFS]dvfs_halt is hold by DISP1 (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
+		}
 	}
 
 	pr_err("[VcoreFS]halt_status(3)=0x%x\n", spm_read(CPU_DVFS_REQ));
 	val = spm_read(SPM_SRC2_MASK);
-	if (val & MM_DVFS_GCE_HALT_MASK) {
+	if ((val & MM_DVFS_DISP0_HALT_MASK) && (is_halt)) {
+		pr_err("[VcoreFS]disp0_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				 val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_DISP0_HALT_MASK));
+		udelay(50);
+		pr_err("[VcoreFS]disp0_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+			aee_kernel_warning_api(__FILE__, __LINE__,
+			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
+			 "DVFS_HALT_DISP0", "DVFS_HALT_DISP0");
+			/* primary_display_diagnose(); */
+			is_halt = 0;
+			pr_err("[VcoreFS]dvfs_halt is hold by DISP0 (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
+		}
+	}
+
+	pr_err("[VcoreFS]halt_status(4)=0x%x\n", spm_read(CPU_DVFS_REQ));
+	val = spm_read(SPM_SRC2_MASK);
+	if ((val & MM_DVFS_GCE_HALT_MASK) && (is_halt)) {
 		pr_err("[VcoreFS]gce_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_GCE_HALT_MASK));
 		udelay(50);
 		pr_err("[VcoreFS]gce_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
+			aee_kernel_warning_api(__FILE__, __LINE__,
+			 DB_OPT_DEFAULT, "DVFS_HALT_GCE", "DVFS_HALT_GCE");
+			is_halt = 0;
+			pr_err("[VcoreFS]dvfs_halt is hold by GCE (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
+		}
 	}
 
-	udelay(200);
+	udelay(1000); /* change to 1 ms for slow dvs slope FW */
 	spm_write(SPM_SRC2_MASK, orig_val);
 	pr_err("[VcoreFS]restore src_mask=0x%x, r6=0x%x r15=0x%x\n",
 			spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));

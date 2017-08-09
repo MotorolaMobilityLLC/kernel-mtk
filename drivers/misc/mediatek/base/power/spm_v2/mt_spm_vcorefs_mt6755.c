@@ -266,14 +266,12 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = __spm_sodi.pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 
-#if 1
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SODI].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI].desc);
-	else
+	if (!dyna_load_pcm[DYNA_LOAD_PCM_SODI].ready) {
+		spm_vcorefs_err("LOAD FIRMWARE FAIL\n");
 		BUG();
-#else
-	pcmdesc = __spm_sodi.pcmdesc;
-#endif
+	}
+	pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI].desc);
+
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	__spm_reset_and_init_pcm(pcmdesc);

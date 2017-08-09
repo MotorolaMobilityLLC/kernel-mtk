@@ -341,6 +341,10 @@ void vcorefs_drv_init(bool plat_init_done, bool plat_feature_en, int plat_init_o
 	governor_autok_manager();
 }
 
+void vcorefs_set_feature_en(bool enable)
+{
+	feature_en = enable;
+}
 /*
  * Vcorefs debug sysfs
  */

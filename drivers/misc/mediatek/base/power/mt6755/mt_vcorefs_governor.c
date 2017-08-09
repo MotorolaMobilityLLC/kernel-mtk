@@ -20,7 +20,6 @@
 #include <linux/notifier.h>
 #endif
 
-
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -980,8 +979,21 @@ int vcorefs_late_init_dvfs(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	bool plat_init_done = true;
 	int plat_init_opp;
+	int disp_w, disp_h;
 
-	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920) {
+	vcorefs_info("disp_virtual(w:%d, h:%d) disp(w:%d, h:%d)\n",
+		primary_display_get_virtual_width(), primary_display_get_virtual_height(),
+		primary_display_get_width(), primary_display_get_height());
+
+	disp_w = primary_display_get_virtual_width();
+	disp_h = primary_display_get_virtual_height();
+	if (disp_w == 0)
+		disp_w = primary_display_get_width();
+	if (disp_h == 0)
+		disp_h = primary_display_get_height();
+
+	vcorefs_info("disp_w=%d disp_h=%d\n", disp_w, disp_h);
+	if (disp_w * disp_h <= 720 * 1280) {
 		gvrctrl->is_fhd_segment = false;
 		gvrctrl->cpu_dvfs_req = 0;
 	} else {
@@ -1078,6 +1090,8 @@ static int vcorefs_governor_pm_callback(struct notifier_block *nb, unsigned long
 		break;
 	case PM_HIBERNATION_PREPARE:
 		{
+			struct kicker_config krconf;
+
 			sram_debug_info[0] = spm_read(VCOREFS_SRAM_DVS_UP_COUNT);
 			sram_debug_info[1] = spm_read(VCOREFS_SRAM_DFS_UP_COUNT);
 			sram_debug_info[2] = spm_read(VCOREFS_SRAM_DVS_DOWN_COUNT);
@@ -1090,6 +1104,13 @@ static int vcorefs_governor_pm_callback(struct notifier_block *nb, unsigned long
 			     sram_debug_info[0], sram_debug_info[1], sram_debug_info[2],
 			     sram_debug_info[3], sram_debug_info[4], sram_debug_info[5],
 			     sram_debug_info[6]);
+			if (is_vcorefs_feature_enable()) {
+				krconf.kicker = KIR_SYSFS;
+				krconf.opp = OPPI_PERF;
+				krconf.dvfs_opp = OPPI_PERF;
+				kick_dvfs_by_opp_index(&krconf);
+			}
+			vcorefs_set_feature_en(false);
 		}
 		break;
 	case PM_RESTORE_PREPARE:

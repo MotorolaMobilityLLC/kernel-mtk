@@ -168,9 +168,10 @@ extern int vcorefs_enable_perform_bw(bool enable);
 extern int vcorefs_enable_total_bw(bool enable);
 
 /* screen size */
-extern unsigned int DISP_GetScreenWidth(void);
-extern unsigned int DISP_GetScreenHeight(void);
-
+extern int primary_display_get_width(void);
+extern int primary_display_get_height(void);
+extern int primary_display_get_virtual_width(void);
+extern int primary_display_get_virtual_height(void);
 
 /* AutoK related API */
 extern void governor_autok_manager(void);
