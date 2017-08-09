@@ -475,12 +475,14 @@ void change_drp_pwr_role(struct sii_usbp_policy_engine *pUsbpd)
 		sii_update_power_role(pUsbpd->drv_context, false);
 		set_70xx_mode(pUsbpd->drv_context, TYPEC_DRP_UFP);
 		sii70xx_vbus_enable(pUsbpd->drv_context, VBUS_SNK);
+		trigger_driver(g_exttypec, HOST_TYPE, DISABLE, DONT_CARE);
 		update_pwr_role(pUsbpd->drv_context, USBPD_ROLE_SINK);
 	} else {
 		/*set power role one */
 		sii_update_power_role(pUsbpd->drv_context, true);
 		set_70xx_mode(pUsbpd->drv_context, TYPEC_DRP_DFP);
 		sii70xx_vbus_enable(pUsbpd->drv_context, VBUS_SRC);
+		trigger_driver(g_exttypec, HOST_TYPE, ENABLE, DONT_CARE);
 		update_pwr_role(pUsbpd->drv_context, USBPD_ROLE_SOURCE);
 	}
 }
