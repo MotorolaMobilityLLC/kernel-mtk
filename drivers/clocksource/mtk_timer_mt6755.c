@@ -448,7 +448,7 @@ static inline void setup_clkevt(u32 freq)
 	/* evt->cpumask = cpumask_of(0); */
 	evt->cpumask = cpu_possible_mask;
 
-	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
+	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
 		freq / HZ, clkevt_handler, GPT_ISR);
 
 	__gpt_get_cmp(dev, cmp);
@@ -472,6 +472,7 @@ static void __init mt_gpt_init(struct device_node *node)
 {
 	int i;
 	u32 freq = 0;
+	u32 freq_32k = 0;
 	unsigned long save_flags;
 	struct clk *clk;
 
@@ -495,6 +496,17 @@ static void __init mt_gpt_init(struct device_node *node)
 	if (!freq)
 		BUG();
 
+	clk = of_clk_get(node, 1);
+	if (IS_ERR(clk))
+		pr_alert("Can't get timer clock");
+
+	if (clk_prepare_enable(clk))
+		pr_alert("Can't prepare clock");
+
+	freq_32k = (u32)clk_get_rate(clk);
+	if (!freq_32k)
+		BUG();
+
 	boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
 
 	pr_alert("mt_gpt_init: tmr_regs=0x%lx, tmr_irq=%d, freq=%d\n",
@@ -506,7 +518,7 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	setup_clksrc(freq);
 	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
-	setup_clkevt(freq);
+	setup_clkevt(freq_32k);
 
 	/* use cpuxgpt as syscnt */
 	setup_syscnt();
