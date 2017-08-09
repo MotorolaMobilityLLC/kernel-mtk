@@ -326,6 +326,52 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* VDEC1: */
 	/* VENC: there is no venc */
 };
+#elif defined(CONFIG_ARCH_MT6753)
+static int idle_switch[NR_TYPES] = {
+	1,  /* dpidle switch */
+	1,  /* soidle switch */
+	1,  /* slidle switch */
+	1,  /* rgidle switch */
+};
+
+static unsigned int dpidle_condition_mask[NR_GRPS] = {
+	0x0000008A, /* INFRA: */
+	0x77FC1FFD, /* PERI0: */
+	0x002FFFFF, /* DISP0: */
+	0x0000003C, /* DISP1: */
+	0x00000FE1, /* IMAGE: */
+	0x00000001, /* MFG:   */
+	0x00000000, /* AUDIO: */
+	0x00000001, /* VDEC0: */
+	0x00000001, /* VDEC1: */
+	0x00001111, /* VENC:  */
+};
+
+static unsigned int soidle_condition_mask[NR_GRPS] = {
+	0x00000088, /* INFRA: */
+	0x77FC0FFC, /* PERI0: */
+	0x000063FC, /* DISP0: */
+	0x00000030, /* DISP1: */
+	0x00000FE1, /* IMAGE: */
+	0x00000001, /* MFG: */
+	0x00000000, /* AUDIO: */
+	0x00000001, /* VDEC0: */
+	0x00000001, /* VDEC1: */
+	0x00001111, /* VENC: */
+};
+
+static unsigned int slidle_condition_mask[NR_GRPS] = {
+	0x00000000, /* INFRA: */
+	0x07C01000, /* PERI0: */
+	0x00000000, /* DISP0: */
+	0x00000000, /* DISP1: */
+	0x00000000, /* IMAGE: */
+	0x00000000, /* MFG: */
+	0x00000000, /* AUDIO: */
+	0x00000000, /* VDEC0: */
+	0x00000000, /* VDEC1: */
+	0x00000000, /* VENC: */
+};
 #else
 #error "Does not support!"
 #endif

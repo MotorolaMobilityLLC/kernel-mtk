@@ -14,7 +14,7 @@
 #define ENABLE_CLK_MGR
 
 
-#define DDP_ENING_NUM    (12)
+#define DDP_ENING_NUM    (13)
 
 #define DDP_MOUT_NUM     4
 #define DDP_SEL_OUT_NUM  2

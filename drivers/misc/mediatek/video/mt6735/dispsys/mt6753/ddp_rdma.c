@@ -347,7 +347,7 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	unsigned int pre_ultra_low_ofs;
 	unsigned int pre_ultra_high_ofs;
 	unsigned int fifo_valid_size = 16;
-	unsigned int sodi_threshold;
+	unsigned int sodi_threshold = 0;
 
 	/* compute fifo valid size */
 
