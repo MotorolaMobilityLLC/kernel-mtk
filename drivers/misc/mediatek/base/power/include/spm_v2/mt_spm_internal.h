@@ -419,6 +419,11 @@ do {							\
 	__asm__ __volatile__("wfi" : : : "memory");	\
 } while (0)
 
+bool __attribute__((weak)) is_clk_buf_under_flightmode(void)
+{
+	return false;
+}
+
 static inline u32 base_va_to_pa(const u32 *base)
 {
 	phys_addr_t pa = virt_to_phys(base);
@@ -430,7 +435,7 @@ static inline u32 base_va_to_pa(const u32 *base)
 static inline void update_pwrctrl_pcm_flags(u32 *flags)
 {
 	/* SPM controls NFC clock buffer in RF only */
-	if (!is_clk_buf_from_pmic())
+	if (!is_clk_buf_from_pmic() && is_clk_buf_under_flightmode())
 		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
 }
 
