@@ -360,7 +360,6 @@ void end_mt_rt_mon_info(struct task_struct *p)
 	}
 	if (!find) {
 		pr_err("pid:%d can't be found in mtsched proc_info.\n", p->pid);
-		spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 	}
 
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
