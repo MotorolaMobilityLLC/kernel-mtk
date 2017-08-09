@@ -16,7 +16,7 @@ static u32 ipanic_iv = 0xaabbccdd;
 static spinlock_t ipanic_lock;
 struct ipanic_ops *ipanic_ops;
 typedef int (*fn_next) (void *data, unsigned char *buffer, size_t sz_buf);
-static bool ipanic_enable;
+static bool ipanic_enable = 1;
 
 int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf)
 {
@@ -25,6 +25,12 @@ int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf
 
 int __weak panic_dump_android_log(char *buffer, size_t sz_buf, int type)
 {
+	return 0;
+}
+
+int __weak has_mt_dump_support(void)
+{
+	pr_notice("%s: no mt_dump support!\n", __func__);
 	return 0;
 }
 
@@ -457,6 +463,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	int errno;
 	struct ipanic_header *ipanic_hdr;
 
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_START);
 	aee_rr_rec_exp_type(2);
 	bust_spinlocks(1);
@@ -617,7 +624,9 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	if (aee_rr_curr_exp_type() == 2)
 		/* No return if mrdump is enable */
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
-	emergency_restart();
+
+	if (!has_mt_dump_support())
+		emergency_restart();
 
 	smp_send_stop();
 

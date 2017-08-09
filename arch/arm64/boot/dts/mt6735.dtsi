@@ -171,16 +171,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <2>;
 		ranges;
 
-		lk-reserved-memory@41e00000{
-			compatible = "mediatek,lk";
-			reg = <0 0x41e00000 0 0x100000>;
-		};
-
-		preloader-reserved-memory@42000000{
-			compatible = "mediatek,preloader";
-			reg = <0 0x42000000 0 0x200000>;
-		};
-
 		atf-reserved-memory@43000000 {
 			compatible = "mediatek,mt6735-atf-reserved-memory",
 				     "mediatek,mt6735m-atf-reserved-memory",
