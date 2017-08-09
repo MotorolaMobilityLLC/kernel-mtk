@@ -3474,7 +3474,7 @@ int primary_display_suspend(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 2);
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		DISPCHECK("[POWER]display cmdq trigger loop stop\n");
+		DISPDBG("[POWER]display cmdq trigger loop stop\n");
 		_cmdq_stop_trigger_loop();
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 3);
@@ -3494,13 +3494,13 @@ int primary_display_suspend(void)
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 5);
 
-	DISPCHECK("[POWER]lcm suspend[begin]\n");
+	DISPDBG("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(pgc->plcm);
 	DISPCHECK("[POWER]lcm suspend[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 6);
 	DISPDBG("[POWER]primary display path Release Fence[begin]\n");
 	primary_suspend_release_fence();
-	DISPCHECK("[POWER]primary display path Release Fence[end]\n");
+	DISPDBG("[POWER]primary display path Release Fence[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 7);
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
@@ -3605,7 +3605,7 @@ int primary_display_resume(void)
 	DISPCHECK("dpmanager path power on[end]\n");
 	DISPDBG("dpmanager path reset[begin]\n");
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
-	DISPCHECK("dpmanager path reset[end]\n");
+	DISPDBG("dpmanager path reset[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
 
@@ -3690,7 +3690,7 @@ int primary_display_resume(void)
 	if (primary_display_is_decouple_mode())
 		dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
-	DISPCHECK("[POWER]dpmgr path start[end]\n");
+	DISPDBG("[POWER]dpmgr path start[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 6);
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
@@ -3705,7 +3705,7 @@ int primary_display_resume(void)
 	if (use_cmdq) {
 		DISPDBG("[POWER]build cmdq trigger loop[begin]\n");
 		_cmdq_build_trigger_loop();
-		DISPCHECK("[POWER]build cmdq trigger loop[end]\n");
+		DISPDBG("[POWER]build cmdq trigger loop[end]\n");
 	}
 
 	if (primary_display_is_video_mode()) {
