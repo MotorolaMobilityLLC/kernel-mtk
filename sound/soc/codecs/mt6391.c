@@ -1060,7 +1060,6 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 
 	mt6391_set_reg(codec_data, MT6397_AFUNC_AUD_CON2, 0x0000, 0x0080);
 
-	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 1 << 13, 1 << 13);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
 
@@ -1097,7 +1096,6 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 	/* spk output stage enabke and enable */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON11, 0x0f00, 0xffff);
 	usleep_range(4000, 5000);
-	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0 << 13, 1 << 13);
 
 	pr_debug("%s done\n", __func__);
 }
