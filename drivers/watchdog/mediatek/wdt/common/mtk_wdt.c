@@ -9,7 +9,7 @@
 #include <linux/spinlock.h>
 #include <linux/watchdog.h>
 #include <linux/platform_device.h>
-
+#include <linux/irqchip/mtk-gic-extend.h>
 #include <asm/uaccess.h>
 #include <linux/types.h>
 #include "mt_wdt.h"
@@ -34,7 +34,7 @@
 #include <linux/reset.h>
 
 void __iomem *toprgu_base = 0;
-int wdt_irq_id = 0;
+unsigned int wdt_irq_id = 0;
 #define AP_RGU_WDT_IRQ_ID    wdt_irq_id
 
 #define DRV_NAME "mtk-wdt"
@@ -498,7 +498,9 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 	get_wd_api(&wd_api);
 	wdt_mode_val = __raw_readl(MTK_WDT_STATUS);
 	writel(wdt_mode_val, MTK_WDT_NONRST_REG);
+	pr_err("wdt fiq occur, STA=0x%x\n", wdt_mode_val);
 #ifdef	CONFIG_MTK_WD_KICKER
+	pr_err("kick=0x%x,check=0x%x\n", wd_api->wd_get_kick_bit(), wd_api->wd_get_check_bit());
 	aee_wdt_printf("\n kick=0x%08x,check=0x%08x,STA=%x\n", wd_api->wd_get_kick_bit(),
 		wd_api->wd_get_check_bit(), wdt_mode_val);
 #endif
@@ -529,8 +531,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	int ret = 0;
 	unsigned int interval_val;
 
-	pr_err("******** MTK WDT driver probe!! ********\n");
-
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(dev->dev.of_node, 0);
 		if (!toprgu_base) {
@@ -549,11 +549,12 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 #ifndef __USING_DUMMY_WDT_DRV__	/* FPGA will set this flag */
 #ifndef CONFIG_FIQ_GLUE
-	pr_debug("******** MTK WDT register irq ********\n");
+	pr_err("*** MTK WDT register irq ***\n");
 	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr,
 			  IRQF_TRIGGER_NONE, DRV_NAME, NULL);
 #else
-	pr_debug("******** MTK WDT register fiq ********\n");
+	wdt_irq_id = get_hardware_irq(wdt_irq_id);
+	pr_err("*** MTK WDT register fiq: fiq number is %d ***\n", wdt_irq_id);
 	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq, IRQF_TRIGGER_FALLING, NULL);
 #endif
 
