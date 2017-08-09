@@ -26,6 +26,7 @@
 #include "stp_wmt.h"
 #include "wmt_plat.h"
 #include "wmt_idc.h"
+#include "mtk_btif_exp.h"
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -119,9 +120,12 @@ INT32 stp_btm_notify_wmt_trace_wq(MTKSTP_BTM_T *stp_btm);
 INT32 stp_notify_btm_do_fw_assert_via_emi(MTKSTP_BTM_T *stp_btm);
 INT32 stp_notify_btm_handle_wmt_lte_coex(MTKSTP_BTM_T *stp_btm);
 INT32 wcn_psm_flag_trigger_collect_ftrace(void);
-
+#if BTIF_RXD_BE_BLOCKED_DETECT
+INT32 wcn_btif_rxd_blocked_collect_ftrace(void);
+MTK_WCN_BOOL is_btif_rxd_be_blocked(void);
+#endif
 MTKSTP_BTM_T *stp_btm_init(void);
-
+extern unsigned int g_coredump_mode;
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

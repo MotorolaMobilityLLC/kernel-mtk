@@ -148,7 +148,7 @@ INT32 mtk_wcn_consys_stp_btif_tx(const UINT8 *pBuf, const UINT32 len, UINT32 *wr
 
 	*written_len = 0;
 
-	if (len < 0 || len > STP_MAX_PACKAGE_ALLOWED) {
+	if (len > STP_MAX_PACKAGE_ALLOWED) {
 		WMT_WARN_FUNC("abnormal pacage length,len(%d),pid[%d/%s]\n", len, current->pid, current->comm);
 		return -2;
 	}

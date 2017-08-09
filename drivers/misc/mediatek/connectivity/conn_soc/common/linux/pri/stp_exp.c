@@ -131,8 +131,8 @@ static INT32 mtk_wcn_sys_event_tx_resume(UINT8 winspace)
 static INT32 mtk_wcn_sys_check_function_status(UINT8 type, UINT8 op)
 {
 
-	/*op == FUNCTION_ACTIVE, to check if funciton[type] is active ? */
-	if (!(type >= 0 && type < MTKSTP_MAX_TASK_NUM))
+	/* op == FUNCTION_ACTIVE, to check if funciton[type] is active ? */
+	if (!(type < MTKSTP_MAX_TASK_NUM))
 		return STATUS_FUNCTION_INVALID;
 
 	if (op == OP_FUNCTION_ACTIVE) {
@@ -142,7 +142,7 @@ static INT32 mtk_wcn_sys_check_function_status(UINT8 type, UINT8 op)
 			return STATUS_FUNCTION_INACTIVE;
 
 	}
-	/*you can define more operation here ..., to queury function's status/information */
+	/* you can define more operation here ..., to queury function's status/information */
 
 	return STATUS_OP_INVALID;
 }

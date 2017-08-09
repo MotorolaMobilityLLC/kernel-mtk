@@ -170,13 +170,14 @@ static const WMT_CTRL_FUNC wmt_ctrl_func[] = {
 
 INT32 wmt_ctrl(P_WMT_CTRL_DATA pWmtCtrlData)
 {
-	UINT32 ctrlId = pWmtCtrlData->ctrlId;
+	UINT32 ctrlId;
 
 	if (NULL == pWmtCtrlData) {
 		osal_assert(0);
 		return -1;
 	}
 
+	ctrlId = pWmtCtrlData->ctrlId;
 	/*1sanity check, including wmtCtrlId */
 	if ((NULL == pWmtCtrlData)
 	    || (WMT_CTRL_MAX <= ctrlId))

@@ -922,6 +922,11 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 		osal_assert(0);
 		return -1;
 	}
+	if (MTK_WCN_BOOL_FALSE == g_pwr_off_flag) {
+		WMT_WARN_FUNC("CONNSYS power off be disabled, maybe need trigger core dump!\n");
+		osal_assert(0);
+		return -2;
+	}
 
 	/* wmt and stp are initialized successfully */
 	if (DRV_STS_FUNC_ON == gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT]) {
@@ -975,7 +980,8 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 		WMT_WARN_FUNC("func(%d) already on\n", drvType);
 		return 0;
 	}
-
+	/*enable power off flag, if flag=0, power off connsys will not be executed */
+	mtk_wcn_set_connsys_power_off_flag(MTK_WCN_BOOL_TRUE);
 	/* check if chip power on is needed */
 	if (DRV_STS_FUNC_ON != gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT]) {
 		iRet = opfunc_pwr_on(pWmtOp);
@@ -1136,7 +1142,7 @@ static INT32 opfunc_exit(P_WMT_OP pWmtOp)
 static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 {
 	INT32 ret = -1;
-	UINT32 u4_result;
+	UINT32 u4_result = 0;
 	UINT32 evt_len;
 	UINT8 evt_buf[16] = { 0 };
 	unsigned long ctrlPa1 = 0;
@@ -1588,7 +1594,7 @@ static INT32 opfunc_cmd_test(P_WMT_OP pWmtOp)
 		cmdNoPa = pWmtOp->au4OpData[1];
 		pRes = (PUINT8) pWmtOp->au4OpData[2];
 		resBufRoom = pWmtOp->au4OpData[3];
-		if ((cmdNoPa >= 0x0) && (cmdNoPa <= 0xf)) {
+		if (cmdNoPa <= 0xf) {
 			WMT_INFO_FUNC("Send Coexistence Debug command [0x%x]!\n", cmdNoPa);
 			tstCmdSz = osal_sizeof(WMT_COEXDBG_CMD);
 			osal_memcpy(tstCmd, WMT_COEXDBG_CMD, tstCmdSz);
@@ -1596,7 +1602,7 @@ static INT32 opfunc_cmd_test(P_WMT_OP pWmtOp)
 				tstCmd[5] = cmdNoPa;
 
 			/*setup the expected event length */
-			if (cmdNoPa >= 0x0 && cmdNoPa <= 0x4) {
+			if (cmdNoPa <= 0x4) {
 				tstEvtSz = osal_sizeof(WMT_COEXDBG_1_EVT);
 				osal_memcpy(tstEvt, WMT_COEXDBG_1_EVT, tstEvtSz);
 			} else if (cmdNoPa == 0x5) {
@@ -1693,7 +1699,8 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_STP] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] = DRV_STS_POWER_OFF;
-
+	/*enable power off flag, if flag=0, power off connsys will not be executed */
+	mtk_wcn_set_connsys_power_off_flag(MTK_WCN_BOOL_TRUE);
 	/* if wmt is poweroff, we need poweron chip first */
 	/* Zhiguo : this action also needed in BTIF interface to avoid KE */
 #if 1

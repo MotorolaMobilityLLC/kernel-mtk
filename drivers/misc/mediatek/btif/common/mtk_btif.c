@@ -172,7 +172,9 @@ static int g_max_pkg_len = G_MAX_PKG_LEN; /*DMA vFIFO is set to 8 * 1024, we set
 static int g_max_pding_data_size = BTIF_RX_BUFFER_SIZE * 3 / 4;
 
 static int mtk_btif_dbg_lvl = BTIF_LOG_INFO;
-
+#if BTIF_RXD_BE_BLOCKED_DETECT
+static struct timeval btif_rxd_time_stamp[MAX_BTIF_RXD_TIME_REC];
+#endif
 /*-----------Platform bus related structures----------------*/
 #define DRV_NAME "mtk_btif"
 
@@ -2106,9 +2108,101 @@ we record wr_idx here*/
 	return length;
 }
 
+#if BTIF_RXD_BE_BLOCKED_DETECT
+static int mtk_btif_rxd_be_blocked_by_timer(void)
+{
+	int ret = 0;
+	int counter = 0;
+	unsigned int i;
+	struct timeval now;
+	int time_gap[MAX_BTIF_RXD_TIME_REC];
 
+	do_gettimeofday(&now);
+
+	for (i = 0; i < MAX_BTIF_RXD_TIME_REC; i++) {
+		BTIF_INFO_FUNC("btif_rxd_time_stamp[%d]=%d.%d\n", i,
+			btif_rxd_time_stamp[i].tv_sec, btif_rxd_time_stamp[i].tv_usec);
+		if (now.tv_sec >= btif_rxd_time_stamp[i].tv_sec) {
+			time_gap[i] = now.tv_sec - btif_rxd_time_stamp[i].tv_sec;
+			time_gap[i] *= 1000000; /*second*/
+			if (now.tv_usec >= btif_rxd_time_stamp[i].tv_usec)
+				time_gap[i] += now.tv_usec - btif_rxd_time_stamp[i].tv_usec;
+			else
+				time_gap[i] += 1000000 - now.tv_usec + btif_rxd_time_stamp[i].tv_usec;
+
+			if (time_gap[i] > 1000000)
+				counter++;
+			BTIF_INFO_FUNC("time_gap[%d]=%d,counter:%d\n", i, time_gap[i], counter);
+		} else {
+			time_gap[i] = 0;
+			BTIF_ERR_FUNC("abnormal case now:%d < time_stamp[%d]:%d\n", now.tv_sec,
+							i, btif_rxd_time_stamp[i].tv_usec);
+		}
+	}
+	if (counter > (MAX_BTIF_RXD_TIME_REC - 2))
+		ret = 1;
+	return ret;
+}
+static int mtk_btif_rxd_be_blocked_by_data(void)
+{
+	unsigned int out_index = 0;
+	unsigned int in_index = 0;
+	unsigned int dump_size = 0;
+	unsigned int len = 0;
+	unsigned long flags;
+	unsigned int sync_pkt_n = 0;
+	P_BTIF_LOG_BUF_T p_log_buf = NULL;
+	P_BTIF_LOG_QUEUE_T p_log_que = NULL;
+	p_mtk_btif p_btif = &(g_btif[0]);
+
+	p_log_que = &p_btif->rx_log;
+	spin_lock_irqsave(&p_log_que->lock, flags);
+	in_index = p_log_que->in;
+	dump_size = p_log_que->size;
+	out_index = p_log_que->size >=
+	BTIF_LOG_ENTRY_NUM ? in_index : (BTIF_LOG_ENTRY_NUM -
+					 p_log_que->size +
+					 in_index) % BTIF_LOG_ENTRY_NUM;
+	if (0 != dump_size) {
+		while (dump_size--) {
+			p_log_buf = p_log_que->p_queue[0] + out_index;
+			len = p_log_buf->len;
+			len = len > BTIF_LOG_SZ ? BTIF_LOG_SZ : len;
+			if ((0x7f == *(p_log_buf->buffer)) && (0x7f == *(p_log_buf->buffer + 1))) {
+				sync_pkt_n++;
+				BTIF_INFO_FUNC("tx pkt_count:%d is sync pkt\n", out_index);
+			}
+			out_index++;
+			out_index %= BTIF_LOG_ENTRY_NUM;
+		}
+	}
+	if (0 == sync_pkt_n)
+		BTIF_ERR_FUNC("there is no sync pkt in BTIF buffer\n");
+	else
+		BTIF_ERR_FUNC("there are %d sync pkt in BTIF buffer\n", sync_pkt_n);
+	spin_unlock_irqrestore(&p_log_que->lock, flags);
+	return sync_pkt_n;
+}
+
+int mtk_btif_rxd_be_blocked_flag_get(void)
+{
+	int ret = 0;
+	int condition1 = 0, condition2 = 0;
+
+	condition1 = mtk_btif_rxd_be_blocked_by_timer();
+	condition2 = mtk_btif_rxd_be_blocked_by_data();
+	if (condition1 && condition2) {
+		BTIF_ERR_FUNC("btif_rxd thread be blocked too long!\n");
+		ret = 1;
+	}
+	return ret;
+}
+#endif
 static int btif_rx_thread(void *p_data)
 {
+#if BTIF_RXD_BE_BLOCKED_DETECT
+	unsigned int i = 0;
+#endif
 	p_mtk_btif p_btif = (p_mtk_btif)p_data;
 
 
@@ -2124,6 +2218,12 @@ static int btif_rx_thread(void *p_data)
 			BTIF_WARN_FUNC("btif rx thread stoping ...\n");
 			break;
 		}
+#ifdef BTIF_RXD_BE_BLOCKED_DETECT
+		do_gettimeofday(&btif_rxd_time_stamp[i]);
+		i++;
+		if (i >= MAX_BTIF_RXD_TIME_REC)
+			i = 0;
+#endif
 		btif_rx_data_consummer(p_btif);
 	}
 	return 0;

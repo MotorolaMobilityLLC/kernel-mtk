@@ -100,7 +100,7 @@ static MTK_WCN_BOOL _stp_psm_is_quick_ps_support(VOID);
 
 MTK_WCN_BOOL mtk_wcn_stp_psm_dbg_level(UINT32 dbglevel)
 {
-	if (0 <= dbglevel && dbglevel <= 4) {
+	if (dbglevel <= 4) {
 		gPsmDbgLevel = dbglevel;
 		STP_PSM_INFO_FUNC("gPsmDbgLevel = %d\n", gPsmDbgLevel);
 		return true;
@@ -536,7 +536,7 @@ static inline INT32 _stp_psm_get_state(MTKSTP_PSM_T *stp_psm)
 		return stp_psm->work_state;
 	STP_PSM_ERR_FUNC("work_state = %d, invalid\n", stp_psm->work_state);
 
-	return -STP_PSM_OPERATION_FAIL;
+			return STP_PSM_OPERATION_FAIL;
 }
 
 static inline INT32 _stp_psm_set_state(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_STATE_T state)

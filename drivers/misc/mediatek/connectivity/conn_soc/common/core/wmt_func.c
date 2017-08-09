@@ -360,7 +360,7 @@ INT32 wmt_func_gps_pre_ctrl(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf, ENUM_FUNC_S
 	UINT32 regMask = 0;
 	UINT32 regNum = 0;
 	P_CMB_PIN_CTRL_REG pReg;
-	P_CMB_PIN_CTRL pCmbPinCtrl;
+	P_CMB_PIN_CTRL pCmbPinCtrl = &gCmbPinCtrl[CMB_PIN_GSYNC_ID];
 	WMT_CTRL_DATA ctrlData;
 	WMT_IC_PIN_ID wmtIcPinId = WMT_IC_PIN_MAX;
 	/* sanity check */

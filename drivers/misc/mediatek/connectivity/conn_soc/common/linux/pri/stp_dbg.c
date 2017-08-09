@@ -466,6 +466,32 @@ INT32 wcn_psm_flag_trigger_collect_ftrace(void)
 	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
 	return 0;
 }
+#if BTIF_RXD_BE_BLOCKED_DETECT
+MTK_WCN_BOOL is_btif_rxd_be_blocked(void)
+{
+	MTK_WCN_BOOL flag = MTK_WCN_BOOL_FALSE;
+
+	if (mtk_btif_rxd_be_blocked_flag_get())
+		flag = MTK_WCN_BOOL_TRUE;
+	return flag;
+}
+/* wcn_btif_rxd_blocked_collect_ftrace - btif rxd be blocked,this func can collect SYS_FTRACE
+ *
+ * Retunr 0 if success
+ */
+#define BTIF_RXD_BLOCKED_INFO_HEAD "Btif_rxd thread be blocked too long,just collect SYS_FTRACE to DB"
+INT32 wcn_btif_rxd_blocked_collect_ftrace(void)
+{
+	PUINT8 pbuf;
+	INT32 len;
+
+	pbuf = "Btif_rxd thread be blocked too long";
+	len = osal_strlen("Btif_rxd thread be blocked too long");
+	osal_strcpy(&g_core_dump->info[0], BTIF_RXD_BLOCKED_INFO_HEAD);
+	aed_combo_exception(NULL, 0, (const int *)pbuf, len, (const char *)g_core_dump->info);
+	return 0;
+}
+#endif
 /* wcn_core_dump_timeout - wait for FW assert info timeout ,this func can collect SYS_FTRACE
  *
  * Retunr 0 if success
@@ -1160,6 +1186,8 @@ int stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg, int dbg_type,
 	if (stp_dbg->is_enable == 0) {
 		/*dbg is disable,and not to log */
 	} else {
+		hdr.no = 0;
+		hdr.chs = 0;
 		stp_dbg_fill_hdr(&hdr,
 				 (int)type, (int)ack_no, (int)seq_no, (int)crc, (int)dir, (int)len, (int)dbg_type);
 
@@ -1236,7 +1264,7 @@ static int stp_dbg_nl_reset(struct sk_buff *skb, struct genl_info *info)
 	return 0;
 }
 
-char stp_dbg_nl_send(char *aucMsg, unsigned char cmd)
+INT8 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len)
 {
 	struct sk_buff *skb = NULL;
 	void *msg_head = NULL;
@@ -1260,10 +1288,10 @@ char stp_dbg_nl_send(char *aucMsg, unsigned char cmd)
 				return -1;
 			}
 
-			rc = nla_put_string(skb, STP_DBG_ATTR_MSG, aucMsg);
+			rc = nla_put(skb, STP_DBG_ATTR_MSG, len, aucMsg);
 			if (rc != 0) {
 				nlmsg_free(skb);
-				STP_DBG_ERR_FUNC("%s(): nla_put_string fail...\n", __func__);
+				STP_DBG_ERR_FUNC("%s(): nla_put_string fail...%d\n", __func__, rc);
 				return -1;
 			}
 
@@ -1939,12 +1967,16 @@ MTKSTP_DBG_T *stp_dbg_init(void *btm_half)
 	STP_DBG_INFO_FUNC("stp-dbg init\n");
 
 	stp_dbg = kzalloc(sizeof(MTKSTP_DBG_T), GFP_KERNEL);
+	if (stp_dbg == NULL)
+		goto ERR_EXIT1;
 	if (IS_ERR(stp_dbg)) {
 		STP_DBG_ERR_FUNC("-ENOMEM\n");
 		goto ERR_EXIT1;
 	}
 
 	stp_dbg->logsys = vmalloc(sizeof(MTKSTP_LOG_SYS_T));
+	if (stp_dbg->logsys == NULL)
+		goto ERR_EXIT2;
 	if (IS_ERR(stp_dbg->logsys)) {
 		STP_DBG_ERR_FUNC("-ENOMEM stp_gdb->logsys\n");
 		goto ERR_EXIT2;
@@ -1976,6 +2008,7 @@ ERR_EXIT2:
 	return NULL;
 
 ERR_EXIT1:
+	kfree(stp_dbg);
 	return NULL;
 }
 

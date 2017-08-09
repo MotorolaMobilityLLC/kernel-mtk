@@ -637,6 +637,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	UINT32 *pAddr = NULL;
 	UINT32 cur_idx_pagedtrace;
 	static UINT32 prev_idx_pagedtrace;
+	MTK_WCN_BOOL isBreak = MTK_WCN_BOOL_TRUE;
 
 	offset = par2;
 	len = par3;
@@ -660,8 +661,8 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 				wmt_lib_get_fwinfor_from_emi(1, prev_idx_pagedtrace, &gEmiBuf[0], len);
 
 				for (i = 0; i < len; i++) {
-					if (i % 64 == 0)
-						pr_cont("\n");
+					/*if (i % 64 == 0)
+						pr_cont("\n");*/
 					pr_cont("%c", gEmiBuf[i]);
 				}
 				prev_idx_pagedtrace = cur_idx_pagedtrace;
@@ -679,8 +680,8 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 				wmt_lib_get_fwinfor_from_emi(1, prev_idx_pagedtrace, &gEmiBuf[0], len);
 				pr_debug("\n\n -- CONNSYS paged trace ascii output (cont...) --\n\n");
 				for (i = 0; i < len; i++) {
-					if (i % 64 == 0)
-						pr_cont("\n");
+					/*if (i % 64 == 0)
+						pr_cont("\n");*/
 					pr_cont("%c", gEmiBuf[i]);
 				}
 
@@ -689,8 +690,8 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 				wmt_lib_get_fwinfor_from_emi(1, 0x0, &gEmiBuf[0], len);
 				pr_debug("\n\n -- CONNSYS paged trace ascii output (end) --\n\n");
 				for (i = 0; i < len; i++) {
-					if (i % 64 == 0)
-						pr_cont("\n");
+					/*if (i % 64 == 0)
+						pr_cont("\n");*/
 					pr_cont("%c", gEmiBuf[i]);
 				}
 
@@ -698,7 +699,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 			}
 
 			msleep(100);
-		} while (1);
+		} while (isBreak);
 	}
 
 	pr_debug("\n\n -- control word --\n\n");
@@ -727,8 +728,8 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 
 	pr_debug("\n\n -- paged trace ascii output --\n\n");
 	for (i = 0; i < len; i++) {
-		if (i % 64 == 0)
-			pr_cont("\n");
+		/*if (i % 64 == 0)
+			pr_cont("\n");*/
 		pr_cont("%c", gEmiBuf[i]);
 	}
 
@@ -2147,13 +2148,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 
 	case WMT_IOCTL_WMT_COREDUMP_CTRL:
-		{
-			if (0 == arg)
-				mtk_wcn_stp_coredump_flag_ctrl(0);
-			else
-				mtk_wcn_stp_coredump_flag_ctrl(1);
-
-		}
+			mtk_wcn_stp_coredump_flag_ctrl(arg);
 		break;
 	case WMT_IOCTL_WMT_QUERY_CHIPID:
 		{
@@ -2214,6 +2209,15 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	return iRet;
 }
 
+long WMT_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
+
+	WMT_INFO_FUNC("cmd[0x%x]\n", cmd);
+	ret = WMT_unlocked_ioctl(filp, cmd, arg);
+	return ret;
+}
+
 static int WMT_open(struct inode *inode, struct file *file)
 {
 	long ret;
@@ -2248,6 +2252,7 @@ const struct file_operations gWmtFops = {
 	.read = WMT_read,
 	.write = WMT_write,
 /* .ioctl = WMT_ioctl, */
+	.compat_ioctl = WMT_compat_ioctl,
 	.unlocked_ioctl = WMT_unlocked_ioctl,
 	.poll = WMT_poll,
 };

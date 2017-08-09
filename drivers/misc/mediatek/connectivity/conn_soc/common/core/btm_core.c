@@ -119,6 +119,7 @@ static INT32 _stp_btm_put_dump_to_nl(void)
 	UINT32 buf_len;
 	STP_PACKET_T *pkt;
 	STP_DBG_HDR_T *hdr;
+	INT32 len;
 	INT32 remain = 0, index = 0;
 	INT32 retry = 0, rc = 0, nl_retry = 0;
 
@@ -132,43 +133,102 @@ static INT32 _stp_btm_put_dump_to_nl(void)
 	do {
 		index = 3;
 		remain = stp_dbg_dmp_out_ex(&buf[0], &buf_len);
-		if (buf_len <= 0) {
-			retry++;
-			msleep(100);
-			continue;
-		}
+		if (buf_len > 0) {
+			pkt = (STP_PACKET_T *) buf;
+			hdr = &pkt->hdr;
+			len = pkt->hdr.len;
+			osal_memcpy(&tmp[index], &len, 2);
+			index += 2;
+			if (hdr->dbg_type == STP_DBG_FW_DMP) {
+					osal_memcpy(&tmp[index], pkt->raw, len);
 
-		pkt = (STP_PACKET_T *) buf;
-		hdr = &pkt->hdr;
-		if (hdr->dbg_type == STP_DBG_FW_DMP) {
-			memcpy(&tmp[index], pkt->raw, pkt->hdr.len);
+				if (len <= 1500) {
+					/* pr_warn("\n%s\n+++\n", tmp); */
+					/* pr_warn("send coredump len:%d\n", len); */
+					/* pr_warn("send coredump:%s\n", tmp); */
+					rc = stp_dbg_nl_send((PINT8) & tmp, 2, len+5);
 
-			if (pkt->hdr.len <= 1500) {
-				tmp[index + pkt->hdr.len] = '\n';
-				tmp[index + pkt->hdr.len + 1] = '\0';
-
-				rc = stp_dbg_nl_send((char *)&tmp, 2);
-
-				while (rc) {
-					nl_retry++;
+					while (rc) {
+						nl_retry++;
 					if (nl_retry > 1000)
-						break;
-
-					STP_BTM_WARN_FUNC("**dump send fails, and retry again.**\n");
-					msleep(20);
-					rc = stp_dbg_nl_send((char *)&tmp, 2);
+							break;
+						STP_BTM_WARN_FUNC
+							("**dump send fails, and retry again.**\n");
+						osal_sleep_ms(3);
+						rc = stp_dbg_nl_send((PINT8) & tmp, 2, len+5);
 					if (!rc)
-						STP_BTM_WARN_FUNC("****retry again ok!**\n");
-				}
+							STP_BTM_WARN_FUNC("****retry again ok!**\n");
+						}
 					/* schedule(); */
-			} else {
-				STP_BTM_INFO_FUNC("dump entry length is over long\n");
-				BUG_ON(0);
+				} else {
+						STP_BTM_INFO_FUNC("dump entry length is over long\n");
+						BUG_ON(0);
+				}
+				retry = 0;
 			}
-			retry = 0;
+		} else {
+			retry++;
+			osal_sleep_ms(100);
 		}
-
 	} while ((remain > 0) || (retry < 2));
+
+	STP_BTM_INFO_FUNC("Exit..\n");
+	return 0;
+}
+
+#define SUB_PKT_SIZE 1024
+#define SUB_PKT_HEADER 5	/*'[M]',3Bytes; len,2Bytes*/
+
+INT32 _stp_btm_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len)
+{
+	static UINT8  tmp[SUB_PKT_SIZE + SUB_PKT_HEADER];
+
+	INT32 remain = dump_len, index = 0;
+	INT32 rc = 0, nl_retry = 0;
+	INT32 len;
+	INT32 offset = 0;
+
+	STP_BTM_INFO_FUNC("Enter..\n");
+
+	if (dump_len > 0) {
+		index = 0;
+		tmp[index++] = '[';
+		tmp[index++] = 'M';
+		tmp[index++] = ']';
+
+		do {
+			index = 3;
+			if (remain >= SUB_PKT_SIZE)
+				len = SUB_PKT_SIZE;
+			else
+				len = remain;
+			remain -= len;
+
+			osal_memcpy(&tmp[index], &len, 2);
+			index += 2;
+			osal_memcpy(&tmp[index], data_buf + offset, len);
+			offset += len;
+			STP_BTM_DBG_FUNC
+				("send %d remain %d\n", len, remain);
+
+			rc = stp_dbg_nl_send((PINT8) & tmp, 2, len + SUB_PKT_HEADER);
+			while (rc) {
+				nl_retry++;
+				if (nl_retry > 1000)
+					break;
+				STP_BTM_WARN_FUNC
+								("**dump send fails, and retry again.**\n");
+					osal_sleep_ms(3);
+					rc = stp_dbg_nl_send((PINT8) & tmp, 2, len + SUB_PKT_HEADER);
+					if (!rc) {
+						STP_BTM_WARN_FUNC
+							("****retry again ok!**\n");
+					}
+				}
+			/* schedule(); */
+		} while (remain > 0);
+	} else
+		STP_BTM_INFO_FUNC("dump entry length is 0\n");
 
 	STP_BTM_INFO_FUNC("Exit..\n");
 	return 0;
@@ -490,7 +550,15 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 			}
 
 			if (dump_len <= 32 * 1024) {
-				ret = stp_dbg_aee_send(&g_paged_dump_buffer[0], dump_len, 0);
+				pr_err("g_coredump_mode: %d!\n", g_coredump_mode);
+				if (1 == g_coredump_mode)
+					ret = stp_dbg_aee_send(&g_paged_dump_buffer[0], dump_len, 0);
+				else if	(2 == g_coredump_mode)
+					ret = _stp_btm_put_emi_dump_to_nl(&g_paged_dump_buffer[0], dump_len);
+				else{
+					STP_BTM_INFO_FUNC("coredump is disabled!\n");
+					return 0;
+				}
 				if (ret == 0)
 					STP_BTM_INFO_FUNC("aee send ok!\n");
 				else if (ret == 1)
@@ -810,10 +878,11 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 
 	P_OSAL_SIGNAL pSignal = NULL;
 
+	if (!stp_btm || !pOp) {
+		STP_BTM_ERR_FUNC("Input NULL pointer\n");
+		return bRet;
+	}
 	do {
-		if (!stp_btm || !pOp)
-			break;
-
 		pSignal = &pOp->signal;
 
 		if (pSignal->timeoutValue) {
@@ -1178,7 +1247,14 @@ INT32 stp_notify_btm_poll_cpupcr_ctrl(UINT32 en)
 
 INT32 stp_notify_btm_do_fw_assert_via_emi(MTKSTP_BTM_T *stp_btm)
 {
-	return _stp_btm_do_fw_assert_via_emi(stp_btm);
+	INT32 ret = -1;
+#if BTIF_RXD_BE_BLOCKED_DETECT
+	if (is_btif_rxd_be_blocked())
+		ret = wcn_btif_rxd_blocked_collect_ftrace();	/* trigger collect SYS_FTRACE */
+	else
+#endif
+		ret = _stp_btm_do_fw_assert_via_emi(stp_btm);
+	return ret;
 }
 
 #if CFG_WMT_LTE_COEX_HANDLING
@@ -1259,7 +1335,7 @@ ERR_EXIT1:
 INT32 stp_btm_deinit(MTKSTP_BTM_T *stp_btm)
 {
 
-	UINT32 ret = -1;
+	INT32 ret = -1;
 
 	STP_BTM_INFO_FUNC("btm deinit\n");
 

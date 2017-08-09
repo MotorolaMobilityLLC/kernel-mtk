@@ -63,6 +63,7 @@ OSAL_BIT_OP_VAR gBtWifiGpsState;
 OSAL_BIT_OP_VAR gGpsFmState;
 UINT32 gWifiProbed = 0;
 UINT32 gWmtDbgLvl = WMT_LOG_INFO;
+MTK_WCN_BOOL g_pwr_off_flag = MTK_WCN_BOOL_TRUE;
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -475,6 +476,17 @@ INT32 mtk_wcn_wmt_wlan_unreg(void)
 	return 0;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_wlan_unreg);
+
+MTK_WCN_BOOL mtk_wcn_set_connsys_power_off_flag(MTK_WCN_BOOL value)
+{
+	g_pwr_off_flag = value;
+	if (g_pwr_off_flag)
+		WMT_INFO_FUNC("enable connsys power off flag\n");
+	else
+		WMT_INFO_FUNC("disable connsys power off, maybe need trigger coredump!\n");
+	return g_pwr_off_flag;
+}
+EXPORT_SYMBOL(mtk_wcn_set_connsys_power_off_flag);
 
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 VOID mtk_wcn_wmt_exp_init(void)

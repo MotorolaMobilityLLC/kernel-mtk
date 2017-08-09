@@ -479,6 +479,16 @@ int hal_btif_hw_init(P_MTK_BTIF_INFO_STR p_btif)
 /*set Tx threshold*/
 /*set Rx threshold*/
 /*disable internal loopback test*/
+
+/*set Rx FIFO clear bit to 1*/
+	BTIF_SET_BIT(BTIF_FIFOCTRL(base), BTIF_FIFOCTRL_CLR_RX);
+/*clear Rx FIFO clear bit to 0*/
+	BTIF_CLR_BIT(BTIF_FIFOCTRL(base), BTIF_FIFOCTRL_CLR_RX);
+/*set Tx FIFO clear bit to 1*/
+	BTIF_SET_BIT(BTIF_FIFOCTRL(base), BTIF_FIFOCTRL_CLR_TX);
+/*clear Tx FIFO clear bit to 0*/
+	BTIF_CLR_BIT(BTIF_FIFOCTRL(base), BTIF_FIFOCTRL_CLR_TX);
+
 	btif_reg_sync_writel(BTIF_TRI_LVL_TX(p_btif->tx_tri_lvl)
 			     | BTIF_TRI_LVL_RX(p_btif->rx_tri_lvl)
 			     | BTIF_TRI_LOOP_DIS, BTIF_TRI_LVL(base));

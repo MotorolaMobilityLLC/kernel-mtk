@@ -38,6 +38,7 @@ void bgw_destroy_netlink_kernel(void)
 		return;
 	}
 	ERR("no socket yet\n");
+	return;
 }
 
 void send_command_to_daemon(const int command /*struct sk_buff *skb */)
@@ -80,15 +81,22 @@ void send_command_to_daemon(const int command /*struct sk_buff *skb */)
 
 /* nlh = NLMSG_PUT(nl_skb, 0, 0, 0, NLMSG_SPACE(1500)-sizeof(struct nlmsghdr)); */
 	nlh = nlmsg_put(nl_skb, 0, 0, 0, MAX_NL_MSG_LEN, 0);
+	if (nlh == NULL) {
+		MSG("nlh is NULL\n");
+		kfree_skb(nl_skb);
+		return;
+	}
 	NETLINK_CB(nl_skb).portid = 0;
 
 /* memcpy(NLMSG_DATA(nlh), ACK, 5); */
 	*(char *)NLMSG_DATA(nlh) = command;
 	res = netlink_unicast(g_nl_sk, nl_skb, pid, MSG_DONTWAIT);
-	if (res == 0)
+	if (res == 0) {
 		MSG("send to user space process error\n");
-	else
-		ERR("send to user space process done, data length = %d\n", res);
+		return;
+	}
+	ERR("send to user space process done, data length = %d\n", res);
+	return;
 }
 
 static void nl_data_handler(struct sk_buff *__skb)

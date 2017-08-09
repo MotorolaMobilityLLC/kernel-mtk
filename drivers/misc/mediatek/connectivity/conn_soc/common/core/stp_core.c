@@ -29,7 +29,7 @@
 #define STP_DEL_SIZE   2	/* STP delimiter length */
 
 UINT32 gStpDbgLvl = STP_LOG_INFO;
-
+unsigned int g_coredump_mode = 0;
 #define REMOVE_USELESS_LOG 1
 
 #define STP_POLL_CPUPCR_NUM 16
@@ -166,7 +166,7 @@ static INT32 stp_ctx_unlock(mtkstp_context_struct *pctx)
 
 MTK_WCN_BOOL mtk_wcn_stp_dbg_level(UINT32 dbglevel)
 {
-	if (0 <= dbglevel && dbglevel <= 4) {
+	if (dbglevel <= 4) {
 		gStpDbgLvl = dbglevel;
 		STP_INFO_FUNC("gStpDbgLvl = %d\n", gStpDbgLvl);
 		return MTK_WCN_BOOL_TRUE;
@@ -1461,7 +1461,8 @@ INT32 mtk_wcn_stp_dbg_log_ctrl(UINT32 on)
 INT32 mtk_wcn_stp_coredump_flag_ctrl(UINT32 on)
 {
 	STP_ENABLE_FW_COREDUMP(stp_core_ctx, on);
-	STP_INFO_FUNC("%s coredump function.\n", 0 == on ? "disable" : "enable");
+	STP_INFO_FUNC("coredump function mode: %d.\n", on);
+	g_coredump_mode = on;
 	return 0;
 }
 
@@ -3085,7 +3086,7 @@ void mtk_wcn_stp_flush_context(void)
 void mtk_wcn_stp_flush_rx_queue(UINT32 type)
 {
 	osal_lock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
-	if (type >= 0 && type < MTKSTP_MAX_TASK_NUM) {
+	if (type < MTKSTP_MAX_TASK_NUM) {
 		stp_core_ctx.ring[type].read_p = 0;
 		stp_core_ctx.ring[type].write_p = 0;
 	}
@@ -3309,8 +3310,6 @@ VOID mtk_wcn_stp_ctx_save(void)
 VOID mtk_wcn_stp_ctx_restore(void)
 {
 	STP_INFO_FUNC("start ++\n");
-	mtk_wcn_stp_coredump_start_ctrl(0);
-	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
 	stp_btm_reset_btm_wq(STP_BTM_CORE(stp_core_ctx));
 

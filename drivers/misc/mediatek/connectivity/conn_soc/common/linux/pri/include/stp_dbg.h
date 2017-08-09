@@ -293,10 +293,10 @@ extern int stp_dbg_deinit(MTKSTP_DBG_T *stp_dbg);
 extern int stp_dbg_dmp_out_ex(char *buf, int *len);
 extern int stp_dbg_dmp_out(MTKSTP_DBG_T *stp_dbg, char *buf, int *len);
 extern int stp_dbg_dmp_printk(MTKSTP_DBG_T *stp_dbg);
-extern char stp_dbg_nl_send(char *aucMsg, unsigned char cmd);
+extern char stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 
 extern INT32 stp_dbg_aee_send(unsigned char *aucMsg, INT32 len, INT32 cmd);
-
+extern INT32 _stp_btm_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len);
 extern int
 stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg,
 		int dbg_type, int type, int ack_no, int seq_no, int crc, int dir, int len, const unsigned char *body);

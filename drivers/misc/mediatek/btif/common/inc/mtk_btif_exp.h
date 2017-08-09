@@ -3,7 +3,7 @@
 
 /*--------------marco defination---------------*/
 #define BTIF_MAX_LEN_PER_PKT 2048
-
+#define BTIF_RXD_BE_BLOCKED_DETECT 1
 /*--------------Enum Defination---------------*/
 typedef enum _ENUM_BTIF_DPIDLE_ {
 	BTIF_DPIDLE_DISABLE = 0,
@@ -259,5 +259,8 @@ int mtk_btif_exp_log_debug_test(int flag);
 int mtk_btif_exp_restore_noirq_test(void);
 int btif_wakeup_consys_no_id(void);
 int mtk_btif_exp_clock_ctrl(int en);
+#if BTIF_RXD_BE_BLOCKED_DETECT
+int mtk_btif_rxd_be_blocked_flag_get(void);
+#endif
 
 #endif /*_MTK_BTIF_EXP_H_*/

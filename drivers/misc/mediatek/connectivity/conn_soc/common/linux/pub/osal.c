@@ -622,8 +622,12 @@ INT32 _osal_fifo_init(OSAL_FIFO *pFifo, UINT8 *buf, UINT32 size)
 	struct kfifo *fifo = NULL;
 	INT32 ret = -1;
 
-	if (!pFifo || pFifo->pFifoBody) {
-		pr_err("pFifo must be !NULL, pFifo->pFifoBody must be NULL\n");
+	if (!pFifo) {
+		pr_err("pFifo must be !NULL\n");
+		return -1;
+	}
+	if (pFifo->pFifoBody) {
+		pr_err("pFifo->pFifoBody must be NULL\n");
 		pr_err("pFifo(0x%p), pFifo->pFifoBody(0x%p)\n", pFifo, pFifo->pFifoBody);
 		return -1;
 	}
@@ -853,9 +857,10 @@ VOID osal_fifo_deinit(P_OSAL_FIFO pFifo)
 {
 	if (pFifo)
 		pFifo->FifoDeInit(pFifo);
-	else
+	else {
 		pr_err("%s:pFifo = NULL, error\n", __func__);
-
+		return;
+	}
 	kfree(pFifo->pFifoBody);
 }
 

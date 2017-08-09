@@ -85,6 +85,7 @@ these operation is not allowed in tasklet, may cause schedule_bug*/
 #define BTIF_TX_CTX BTIF_TX_USER_CTX	/* BTIF_TX_SINGLE_CTX */
 
 #define ENABLE_BTIF_RX_THREAD_RT_SCHED 0
+#define MAX_BTIF_RXD_TIME_REC 3
 
 /*Structure Defination*/
 
