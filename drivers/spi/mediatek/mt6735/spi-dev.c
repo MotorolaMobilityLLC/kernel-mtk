@@ -25,6 +25,7 @@
 
 #define SPIDEV_LOG(fmt, args...) pr_debug("[SPI-UT]: [%s]:[%d]" fmt, __func__, __LINE__, ##args)
 #define SPIDEV_MSG(fmt, args...) pr_debug(fmt, ##args)
+#define SPI_DBG(fmt, args...) pr_debug(fmt, ##args)
 
 #define SPI_STRESS_MAX 1
 DECLARE_COMPLETION(mt_spi_done);
