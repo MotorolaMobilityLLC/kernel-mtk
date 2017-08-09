@@ -183,6 +183,8 @@ struct mt6391_priv {
 	uint32_t sample_rate[MT6391_ADDA_MAX];
 	uint32_t speaker_channel_sel;
 	uint32_t speaker_mode;
+	uint32_t adc_warmup_time_us;
+	uint32_t dmic_warmup_time_us;
 	uint8_t hpl_trim;
 	uint8_t hpl_fine_trim;
 	uint8_t hpr_trim;
@@ -1265,6 +1267,7 @@ static void mt6391_turn_off_headset_speaker_amp(struct mt6391_priv *codec_data)
 static void mt6391_turn_on_dmic(struct mt6391_priv *codec_data)
 {
 	uint32_t rate = codec_data->sample_rate[MT6391_ADDA_ADC];
+	uint32_t warmup_time = codec_data->dmic_warmup_time_us;
 	/* pmic digital part */
 	mt6391_set_reg(codec_data, MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0002);
 	mt6391_set_reg(codec_data, MT6397_AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
@@ -1280,6 +1283,9 @@ static void mt6391_turn_on_dmic(struct mt6391_priv *codec_data)
 	/* AudioMachineDevice */
 	mt6391_set_reg(codec_data, MT6397_AUDNVREGGLB_CFG0, 0x0000, 0x0002);
 	mt6391_set_reg(codec_data, MT6397_AUDDIGMI_CON0, 0x0181, 0xffff);
+
+	if (warmup_time > 0)
+		usleep_range(warmup_time, warmup_time + 1);
 }
 
 static void mt6391_turn_off_dmic(struct mt6391_priv *codec_data)
@@ -1299,6 +1305,7 @@ static void mt6391_turn_on_adc(struct mt6391_priv *codec_data, int adc_type)
 {
 	if (!mt6391_get_adc_status(codec_data)) {
 		uint32_t rate = codec_data->sample_rate[MT6391_ADDA_ADC];
+		uint32_t warmup_time = codec_data->adc_warmup_time_us;
 		/* pmic digital part */
 		mt6391_set_reg(codec_data, MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0002);
 		mt6391_set_reg(codec_data, MT6397_AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
@@ -1325,6 +1332,9 @@ static void mt6391_turn_on_adc(struct mt6391_priv *codec_data, int adc_type)
 		mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);
 		mt6391_set_reg(codec_data, MT6397_AUDDIGMI_CON0, 0x0180, 0x0180);
 		mt6391_set_reg(codec_data, MT6397_AUDPREAMPGAIN_CON0, 0x0033, 0x0033);
+
+		if (warmup_time > 0)
+			usleep_range(warmup_time, warmup_time + 1);
 	}
 }
 
@@ -2560,17 +2570,14 @@ static int mt6391_codec_prepare(struct snd_pcm_substream *substream,
 			struct snd_soc_dai *codec_dai)
 {
 	struct mt6391_priv *codec_data = snd_soc_codec_get_drvdata(codec_dai->codec);
+	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_debug("%s set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-			 __func__, substream->runtime->rate);
-		codec_data->sample_rate[MT6391_ADDA_ADC] =
-		    substream->runtime->rate;
+		pr_debug("%s capture rate = %d\n", __func__, runtime->rate);
+		codec_data->sample_rate[MT6391_ADDA_ADC] = runtime->rate;
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("%s set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
-			 __func__, substream->runtime->rate);
-		codec_data->sample_rate[MT6391_ADDA_DAC] =
-		    substream->runtime->rate;
+		pr_debug("%s playback rate = %d\n", __func__, runtime->rate);
+		codec_data->sample_rate[MT6391_ADDA_DAC] = runtime->rate;
 	}
 	return 0;
 }
@@ -2640,6 +2647,9 @@ static void mt6391_codec_init_reg(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
 	/* sck inverse */
 	mt6391_set_reg(codec_data, MT6397_AFE_PMIC_NEWIF_CFG2, 1 << 15, 1 << 15);
+	/* default preamp mux */
+	mt6391_set_mux(codec_data, MT6391_DEV_IN_PREAMP_L, MT6391_MUX_IN_MIC1);
+	mt6391_set_mux(codec_data, MT6391_DEV_IN_PREAMP_R, MT6391_MUX_IN_MIC2);
 }
 
 static int mt6391_codec_probe(struct snd_soc_codec *codec)
@@ -2787,6 +2797,16 @@ static int mt6391_dev_probe(struct platform_device *pdev)
 		codec_data->speaker_mode != MT6391_CLASS_AB) {
 		codec_data->speaker_mode = MT6391_CLASS_D;
 	}
+
+	ret = of_property_read_u32(dev->of_node, "mediatek,adc-warmup-time-us",
+			&codec_data->adc_warmup_time_us);
+	if (ret)
+		codec_data->adc_warmup_time_us = 0;
+
+	ret = of_property_read_u32(dev->of_node, "mediatek,dmic-warmup-time-us",
+			&codec_data->dmic_warmup_time_us);
+	if (ret)
+		codec_data->dmic_warmup_time_us = 0;
 
 	dev_set_drvdata(dev, codec_data);
 
