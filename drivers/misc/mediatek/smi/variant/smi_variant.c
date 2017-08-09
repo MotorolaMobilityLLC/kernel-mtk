@@ -124,12 +124,10 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 */
 static unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id >= SMI_LARB_NR || larb_id < 0) {
-		WARN_ON(1);
+	if (larb_id >= SMI_LARB_NR || larb_id < 0 || !smi_data)
 		return SMI_ERROR_ADDR;
-	} else {
+	else
 		return smi_data->larb_base[larb_id];
-	}
 }
 
 unsigned long mtk_smi_larb_get_base(int larbid)
@@ -150,7 +148,7 @@ static unsigned int smi_get_larb_index(struct device *dev)
 
 int mtk_smi_larb_clock_on(int larbid, bool pm)
 {
-	if (larbid < 0 || larbid >= smi_data->larb_nr)
+	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return -EINVAL;
 
 	return _mtk_smi_larb_get(smi_data->larb[larbid], pm);
@@ -158,7 +156,7 @@ int mtk_smi_larb_clock_on(int larbid, bool pm)
 
 void mtk_smi_larb_clock_off(int larbid, bool pm)
 {
-	if (larbid < 0 || larbid >= smi_data->larb_nr)
+	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return;
 
 	_mtk_smi_larb_put(smi_data->larb[larbid], pm);
@@ -1045,10 +1043,8 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 
 	ret = clk_enable(larbpriv->clk_apb);
 	ret |= clk_enable(larbpriv->clk_smi);
-	if (ret) {
-		dev_warn(dev, "runtime suspend clk fail %d(larb%d)\n", ret, idx);
+	if (ret)
 		return 0;
-	}
 	larb_reg_backup(idx);
 
 	clk_disable(larbpriv->clk_apb);
@@ -1071,10 +1067,9 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 
 	ret = clk_enable(larbpriv->clk_apb);
 	ret |= clk_enable(larbpriv->clk_smi);
-	if (ret) {
-		dev_warn(dev, "runtime resume clk fail %d\n", ret);
+	if (ret)
 		return 0;
-	}
+
 	larb_reg_restore(idx);
 
 	clk_disable(larbpriv->clk_apb);
@@ -1088,8 +1083,6 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 static const struct dev_pm_ops mtk_smi_larb_ops = {
 	SET_RUNTIME_PM_OPS(mtk_smi_larb_runtime_suspend,
 			   mtk_smi_larb_runtime_resume, NULL)
-	SET_SYSTEM_SLEEP_PM_OPS(mtk_smi_larb_runtime_suspend,
-			   mtk_smi_larb_runtime_resume)
 };
 
 static int mtk_smi_larb_probe(struct platform_device *pdev)
@@ -1773,7 +1766,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 #endif
 
-fs_initcall(smi_init);
+module_init(smi_init);
 module_exit(smi_exit);
 late_initcall(smi_init_late);
 
