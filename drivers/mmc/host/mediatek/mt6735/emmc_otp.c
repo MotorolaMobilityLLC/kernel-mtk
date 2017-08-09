@@ -67,6 +67,8 @@ unsigned int emmc_get_wp_size(void)
 {
 	unsigned char l_ext_csd[512];
 	struct msdc_host *host_ctl;
+	u32 *resp = NULL;
+	unsigned int write_prot_grpsz = 0;
 
 	/* not to change ERASE_GRP_DEF after card initialized */
 	host_ctl = emmc_otp_get_host();
@@ -119,9 +121,13 @@ unsigned int emmc_get_wp_size(void)
 			(512 * 1024 * l_ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 			 l_ext_csd[EXT_CSD_HC_WP_GRP_SIZE]);
 	} else {
+		resp = host_ctl->mmc->card->raw_csd;
+		write_prot_grpsz = UNSTUFF_BITS(resp, 32, 5);
 		/* use old erase group size,write protect group size, store in CSD*/
-		sg_wp_size = (512 * host_ctl->mmc->card->erase_size);
+		sg_wp_size = (512 * host_ctl->mmc->card->erase_size)*
+					(write_prot_grpsz + 1);
 	}
+	pr_debug("write_protect_group_size = %d MByte %s:%d\n", sg_wp_size / 1048576);
 
 	return sg_wp_size;
 }
