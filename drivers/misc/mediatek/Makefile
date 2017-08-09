@@ -151,3 +151,6 @@ obj-$(CONFIG_MTK_MTD_NAND) += nand/
 obj-$(CONFIG_MTK_DUM_CHAR) += nand/
 
 obj-y	+= ppm/
+
+#widevine drm
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
