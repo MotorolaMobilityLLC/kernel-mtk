@@ -37,6 +37,7 @@
 #include <asm/stacktrace.h>
 #include <asm/exception.h>
 #include <asm/system_misc.h>
+#include <mt-plat/mt_hooks.h>
 
 static const char *handler[]= {
 	"Synchronous Abort",
@@ -285,7 +286,7 @@ static int call_undef_hook(struct pt_regs *regs)
 	struct undef_hook *hook;
 	unsigned long flags;
 	u32 instr;
-	int (*fn)(struct pt_regs *regs, u32 instr) = NULL;
+	int (*fn)(struct pt_regs *regs, unsigned int instr) = arm_undefinstr_retry;
 	void __user *pc = (void __user *)instruction_pointer(regs);
 
 	if (!user_mode(regs))

@@ -37,6 +37,7 @@
 #include <asm/tls.h>
 #include <asm/system_misc.h>
 #include <asm/opcodes.h>
+#include <mt-plat/mt_hooks.h>
 
 
 static const char *handler[]= {
@@ -391,7 +392,7 @@ static int call_undef_hook(struct pt_regs *regs, unsigned int instr)
 {
 	struct undef_hook *hook;
 	unsigned long flags;
-	int (*fn)(struct pt_regs *regs, unsigned int instr) = NULL;
+	int (*fn)(struct pt_regs *regs, unsigned int instr) = arm_undefinstr_retry;
 
 	raw_spin_lock_irqsave(&undef_lock, flags);
 	list_for_each_entry(hook, &undef_hook, node)
