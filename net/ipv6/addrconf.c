@@ -192,6 +192,9 @@ static struct ipv6_devconf ipv6_devconf __read_mostly = {
 	.accept_ra_defrtr	= 1,
 	.accept_ra_from_local	= 0,
 	.accept_ra_pinfo	= 1,
+#ifdef MTK_DHCPV6C_WIFI
+	.ra_info_flag		= 0,
+#endif
 #ifdef CONFIG_IPV6_ROUTER_PREF
 	.accept_ra_rtr_pref	= 1,
 	.rtr_probe_interval	= 60 * HZ,
@@ -230,6 +233,9 @@ static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
 	.accept_ra_defrtr	= 1,
 	.accept_ra_from_local	= 0,
 	.accept_ra_pinfo	= 1,
+#ifdef MTK_DHCPV6C_WIFI
+	.ra_info_flag		= 0,
+#endif
 #ifdef CONFIG_IPV6_ROUTER_PREF
 	.accept_ra_rtr_pref	= 1,
 	.rtr_probe_interval	= 60 * HZ,
@@ -4410,6 +4416,9 @@ static inline void ipv6_store_devconf(struct ipv6_devconf *cnf,
 	array[DEVCONF_ACCEPT_DAD] = cnf->accept_dad;
 	array[DEVCONF_FORCE_TLLAO] = cnf->force_tllao;
 	array[DEVCONF_NDISC_NOTIFY] = cnf->ndisc_notify;
+#ifdef MTK_DHCPV6C_WIFI
+	array[DEVCONF_RA_INFO_FLAG] = cnf->ra_info_flag;
+#endif
 	array[DEVCONF_SUPPRESS_FRAG_NDISC] = cnf->suppress_frag_ndisc;
 	array[DEVCONF_ACCEPT_RA_FROM_LOCAL] = cnf->accept_ra_from_local;
 }
@@ -5345,6 +5354,15 @@ static struct addrconf_sysctl_table
 			.mode		= 0644,
 			.proc_handler	= proc_dointvec,
 		},
+#ifdef	MTK_DHCPV6C_WIFI
+		{
+			.procname		= "ra_info_flag",
+			.data			= &ipv6_devconf.ra_info_flag,
+			.maxlen			= sizeof(int),
+			.mode			= 0644,
+			.proc_handler	= proc_dointvec
+		},
+#endif
 		{
 			/* sentinel */
 		}

@@ -1365,13 +1365,29 @@ skip_routeinfo:
 			rt6_mtu_change(skb->dev, mtu);
 		}
 	}
-
+#ifdef MTK_DHCPV6C_WIFI
+	if (in6_dev->if_flags & IF_RA_OTHERCONF) {
+		pr_debug("receive RA with o bit!\n");
+		in6_dev->cnf.ra_info_flag = 1;
+	}
+	if (in6_dev->if_flags & IF_RA_MANAGED) {
+		pr_debug("receive RA with m bit!\n");
+		in6_dev->cnf.ra_info_flag = 2;
+	}
+#endif
 	if (ndopts.nd_useropts) {
 		struct nd_opt_hdr *p;
 		for (p = ndopts.nd_useropts;
 		     p;
 		     p = ndisc_next_useropt(p, ndopts.nd_useropts_end)) {
 			ndisc_ra_useropt(skb, p);
+#ifdef MTK_DHCPV6C_WIFI
+			/* only clear ra_info_flag when O bit is set */
+			 if (p->nd_opt_type == ND_OPT_RDNSS && in6_dev->if_flags & IF_RA_OTHERCONF) {
+				pr_debug("RDNSS, ignore RA with o bit!\n");
+				in6_dev->cnf.ra_info_flag = 0;
+			}
+#endif
 		}
 	}
 
