@@ -41,7 +41,7 @@
 #include "ddp_mmp.h"
 #include <linux/ftrace_event.h>
 
-#if defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 unsigned int gCapturePriLayerEnable = 0;
 unsigned int gCaptureWdmaLayerEnable = 0;
 unsigned int gCapturePriLayerDownX = 20;
@@ -1121,75 +1121,61 @@ int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 }
 
 
-#define DPREC_LOGGER_BUFFER_COUNT 2
+#define LOGGER_BUFFER_SIZE (16 * 1024)
+#define ERROR_BUFFER_COUNT 2
+#define FENCE_BUFFER_COUNT 22
+#define DEBUG_BUFFER_COUNT 4
+#define DUMP_BUFFER_COUNT 2
 
-#if 0 /* defined but not used */
-static DEFINE_SPINLOCK(dprec_logger_error_spinlock);
-static unsigned int dprec_logger_error_id;
-static unsigned int dprec_logger_error_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-static char dprec_logger_error_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
+struct logger_buffer {
+	char (*buffer_ptr)[LOGGER_BUFFER_SIZE];
+	unsigned int len;
+	unsigned int id;
+	const unsigned int count;
+	const unsigned int size;
+};
 
-static DEFINE_SPINLOCK(dprec_logger_fence_spinlock);
-static unsigned int dprec_logger_fence_id;
-static unsigned int dprec_logger_fence_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-static char dprec_logger_fence_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
 
-static DEFINE_SPINLOCK(dprec_logger_hwop_spinlock);
-static unsigned int dprec_logger_hwop_id;
-static unsigned int dprec_logger_hwop_buflen[DPREC_LOGGER_BUFFER_COUNT] = { 16 * 1024, 16 * 1024 };
-static char dprec_logger_hwop_buffer[DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
+static char err_buffer[ERROR_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
+static char fence_buffer[FENCE_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
+static char dbg_buffer[DEBUG_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
+static char dump_buffer[DUMP_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
+static struct logger_buffer dprec_logger_buffer[DPREC_LOGGER_PR_NUM] = {
+	{err_buffer, 0, 0, ERROR_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{fence_buffer, 0, 0, FENCE_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{dbg_buffer, 0, 0, DEBUG_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{dump_buffer, 0, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+};
 
-static char *dprec_logger_find_buf(DPREC_LOGGER_PR_TYPE type, unsigned int *len)
+void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	char *p = NULL;
-
-	if (type == DPREC_LOGGER_ERROR) {
-		spin_lock(&dprec_logger_error_spinlock);
-		if (dprec_logger_error_buflen[dprec_logger_error_id] < 64) {
-			dprec_logger_error_id++;
-			dprec_logger_error_id = dprec_logger_error_id % DPREC_LOGGER_BUFFER_COUNT;
-		}
-		p = dprec_logger_error_buffer[dprec_logger_error_id];
-		dprec_logger_error_buflen[dprec_logger_error_id] = 16 * 1024;
-
-		spin_unlock(&dprec_logger_error_spinlock);
-
-		return p;
-	} else if (type == DPREC_LOGGER_FENCE) {
-		spin_lock(&dprec_logger_fence_spinlock);
-		if (dprec_logger_fence_buflen[dprec_logger_fence_id] < 64) {
-			dprec_logger_fence_id++;
-			dprec_logger_fence_id = dprec_logger_fence_id % DPREC_LOGGER_BUFFER_COUNT;
-			p = dprec_logger_fence_buffer[dprec_logger_fence_id];
-			dprec_logger_fence_buflen[dprec_logger_fence_id] = 16 * 1024;
-		}
-		spin_unlock(&dprec_logger_fence_spinlock);
-
-		return p;
-	} else if (type == DPREC_LOGGER_HWOP) {
-		spin_lock(&dprec_logger_hwop_spinlock);
-		if (dprec_logger_hwop_buflen[dprec_logger_hwop_id] < 64) {
-			dprec_logger_hwop_id++;
-			dprec_logger_hwop_id = dprec_logger_hwop_id % DPREC_LOGGER_BUFFER_COUNT;
-		}
-		p = dprec_logger_hwop_buffer[dprec_logger_hwop_id];
-		dprec_logger_hwop_buflen[dprec_logger_hwop_id] = 16 * 1024;
-
-		spin_unlock(&dprec_logger_hwop_spinlock);
-
-		return p;
-	}
-
-	*len = 0;
-	return NULL;
+	*addr = (unsigned long)err_buffer;
+	*size = ERROR_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
 }
-#endif
+
+void get_disp_fence_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)fence_buffer;
+	*size = FENCE_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
+void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)dbg_buffer;
+	*size = DEBUG_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
+
+void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+	*addr = (unsigned long)dump_buffer;
+	*size = DUMP_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*start = 0;
+}
 
 static DEFINE_SPINLOCK(dprec_logger_spinlock);
-static unsigned int dprec_logger_id[DPREC_LOGGER_PR_NUM] = { 0, 0, 0 };
-
-static unsigned int dprec_logger_len[DPREC_LOGGER_PR_NUM][DPREC_LOGGER_BUFFER_COUNT];
-static char dprec_logger_buffer[DPREC_LOGGER_PR_NUM][DPREC_LOGGER_BUFFER_COUNT][16 * 1024];
 
 int dprec_logger_pr(unsigned int type, char *fmt, ...)
 {
@@ -1197,7 +1183,7 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	unsigned long flags = 0;
 	uint64_t time = get_current_time_us();
 	unsigned long rem_nsec;
-
+	char (*buf_arr)[LOGGER_BUFFER_SIZE];
 	char *buf = NULL;
 	int len = 0;
 
@@ -1205,15 +1191,15 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 		return -1;
 
 	spin_lock_irqsave(&dprec_logger_spinlock, flags);
-	if (dprec_logger_len[type][dprec_logger_id[type]] < 64) {
-		dprec_logger_id[type]++;
-		dprec_logger_id[type] = dprec_logger_id[type] % DPREC_LOGGER_BUFFER_COUNT;
-		dprec_logger_len[type][dprec_logger_id[type]] = 16 * 1024;
+	if (dprec_logger_buffer[type].len < 128) {
+		dprec_logger_buffer[type].id++;
+		dprec_logger_buffer[type].id = dprec_logger_buffer[type].id % dprec_logger_buffer[type].count;
+		dprec_logger_buffer[type].len = dprec_logger_buffer[type].size;
 	}
-
-	buf = dprec_logger_buffer[type][dprec_logger_id[type]] + 16 * 1024 -
-		dprec_logger_len[type][dprec_logger_id[type]];
-	len = dprec_logger_len[type][dprec_logger_id[type]];
+	buf_arr = (char (*)[LOGGER_BUFFER_SIZE])dprec_logger_buffer[type].buffer_ptr;
+	buf = buf_arr[dprec_logger_buffer[type].id] +
+		dprec_logger_buffer[type].size - dprec_logger_buffer[type].len;
+	len = dprec_logger_buffer[type].len;
 
 	if (buf) {
 		va_list args;
@@ -1227,7 +1213,7 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 		va_end(args);
 	}
 
-	dprec_logger_len[type][dprec_logger_id[type]] -= n;
+	dprec_logger_buffer[type].len -= n;
 	spin_unlock_irqrestore(&dprec_logger_spinlock, flags);
 
 	return n;
@@ -1240,25 +1226,33 @@ static char *_logger_pr_type_spy(DPREC_LOGGER_PR_TYPE type)
 		return "error";
 	case DPREC_LOGGER_FENCE:
 		return "fence";
-	case DPREC_LOGGER_HWOP:
-		return "hwop";
+	case DPREC_LOGGER_DEBUG:
+		return "dbg";
+	case DPREC_LOGGER_DUMP:
+		return "dump";
 	default:
 		return "unknown";
 	}
 }
 
-int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int strlen)
+int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int len)
 {
 	int n = 0;
-	int i = 0;
+	int i;
+	int c = dprec_logger_buffer[type].id;
+	char (*buf_arr)[LOGGER_BUFFER_SIZE];
 
-	if (type >= DPREC_LOGGER_PR_NUM || strlen < 0)
+	if (type >= DPREC_LOGGER_PR_NUM || len < 0)
 		return 0;
+	buf_arr = (char (*)[LOGGER_BUFFER_SIZE])dprec_logger_buffer[type].buffer_ptr;
 
-	for (i = 0; i < DPREC_LOGGER_BUFFER_COUNT; i++) {
-		n += scnprintf(stringbuf + n, strlen - n, "dprec log buffer[%s][%d]\n",
-			       _logger_pr_type_spy(type), i);
-		n += scnprintf(stringbuf + n, strlen - n, "%s\n", dprec_logger_buffer[type][i]);
+	for (i = 0; i < dprec_logger_buffer[type].count; i++) {
+		c++;
+		c %= dprec_logger_buffer[type].count;
+		n += scnprintf(stringbuf + n, len - n, "dprec log buffer[%s][%d]\n",
+					   _logger_pr_type_spy(type), c);
+		n += scnprintf(stringbuf + n, len - n, "%s\n", buf_arr[c]);
+
 	}
 
 	return n;
@@ -1428,7 +1422,7 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	return 0;
 }
 
-int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int strlen)
+int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int len)
 {
 	return 0;
 }

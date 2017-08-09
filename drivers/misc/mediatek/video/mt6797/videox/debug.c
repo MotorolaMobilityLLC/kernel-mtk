@@ -41,7 +41,12 @@
 #include "disp_recovery.h"
 
 static struct dentry *mtkfb_dbgfs;
-static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
+#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+static char debug_buffer[4096 + 30 * 16 * 1024];
+#else
+static char debug_buffer[10240];
+#endif
+unsigned int g_mobilelog;
 
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -288,6 +293,12 @@ static void process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
+	} else if (0 == strncmp(opt, "mobile:", 7)) {
+		if (0 == strncmp(opt + 7, "on", 2))
+			g_mobilelog = 1;
+		else if (0 == strncmp(opt + 7, "off", 3))
+			g_mobilelog = 0;
+
 	} else if (0 == strncmp(opt, "force_fps:", 9)) {
 		unsigned int keep;
 		unsigned int skip;
@@ -582,28 +593,22 @@ int debug_get_info(unsigned char *stringbuf, int buf_len)
 	DISPFUNC();
 
 	n += mtkfb_get_debug_state(stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += primary_display_get_debug_state(stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += disp_sync_get_debug_info(stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_result_string_all(stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += disp_helper_get_option_list(stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
 
-	n += dprec_logger_get_buf(DPREC_LOGGER_HWOP, stringbuf + n, buf_len - n);
-	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+	n += dprec_logger_get_buf(DPREC_LOGGER_DUMP, stringbuf + n, buf_len - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, stringbuf + n, buf_len - n);
 
 	stringbuf[n++] = 0;
 	return n;
@@ -622,12 +627,19 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, lo
 {
 	const int debug_bufmax = sizeof(debug_buffer) - 1;
 	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
-	int n = 0;
+	static int n;
+
+	/* Debugfs read only fetch 4096 byte each time, thus whole ringbuffer need massive
+	 * iteration. We only copy ringbuffer content to debugfs buffer at first time (*ppos = 0)
+	 */
+	if (*ppos != 0)
+		goto out;
 
 	DISPFUNC();
 
 	n += debug_get_info(debug_buffer + n, debug_bufmax - n);
 	/* debug_info_dump_to_printk(); */
+out:
 	if (is_mipi_enterulps())
 		return simple_read_from_buffer(ubuf, count, ppos, str, strlen(str));
 	else
