@@ -339,6 +339,14 @@ static fm_s32 mt6631_RampDown(void)
 	}
 	WCN_DBG(FM_DBG | CHIP, "RampDown Switch SPI clock to 26MHz\n");
 
+	/* unlock 64M */
+	ret = mt6631_host_read(0x80026000, &tem);
+	if (ret)
+		WCN_DBG(FM_ERR | CHIP, "%s: unlock 64M reg 0x80026000 failed\n", __func__);
+	ret = mt6631_host_write(0x80026000, tem & (~(0x1 << 28)));
+	if (ret)
+		WCN_DBG(FM_ERR | CHIP, "%s: unlock 64M failed\n", __func__);
+
 	/* Rlease TOP2/64M sleep */
 	ret = mt6631_host_read(0x81021138, &tem);   /* Set 0x81021138[7] = 0x0 */
 	tem = tem & 0xFFFFFF7F;
@@ -808,6 +816,14 @@ static fm_s32 mt6631_PowerDown(void)
 	if (ret)
 		WCN_DBG(FM_ALT | CHIP, "PowerDown: switch SPI clock to 26M failed\n");
 
+	/* unlock 64M */
+	ret = mt6631_host_read(0x80026000, &tem);
+	if (ret)
+		WCN_DBG(FM_ERR | CHIP, "%s: unlock 64M reg 0x80026000 failed\n", __func__);
+	ret = mt6631_host_write(0x80026000, tem & (~(0x1 << 28)));
+	if (ret)
+		WCN_DBG(FM_ERR | CHIP, "%s: unlock 64M failed\n", __func__);
+
 	/*Release TOP2/64M sleep*/
 	WCN_DBG(FM_DBG | CHIP, "PowerDown: Release TOP2/64M sleep\n");
 	ret = mt6631_host_read(0x81021138, &tem);
@@ -958,6 +974,16 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 		ret = mt6631_host_write(0x81021138, reg_val);
 		if (ret)
 			WCN_DBG(FM_ERR | CHIP, "%s: disable 64M sleep failed\n", __func__);
+
+		/* lock 64M */
+		ret = mt6631_host_read(0x80026000, &reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: lock 64M reg 0x80026000 failed\n", __func__);
+		ret = mt6631_host_write(0x80026000, reg_val | (0x1 << 28));
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: lock 64M failed\n", __func__);
+
+
 		/*Turn on 64M PLL wr 0x81021110[28] 0x1	D28 */
 		ret = mt6631_host_read(0x81021110, &reg_val);
 		if (ret)
