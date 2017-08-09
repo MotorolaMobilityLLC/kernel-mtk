@@ -1492,6 +1492,7 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	default:
 	{
 		IONMSG("ion_ioctl : No such command!! 0x%x\n", cmd);
+		ion_aee_print("ion_ioctl: No such command!! 0x%x.\n", cmd);
 		return -ENOTTY;
 	}
 	}
