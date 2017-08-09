@@ -3323,7 +3323,7 @@
 			compatible = "mediatek,smi_common";
 			reg = <0x14022000 0x1000>,	/* SMI_COMMON */
 				<0x14020000 0x1000>,	/* LARB 0 */
-				<0x16010000 0x10000>,	/* LARB 1 */
+				<0x16010000 0x1000>,	/* LARB 1 */
 				<0x1a001000 0x1000>,	/* LARB 2 */
 				<0x17001000 0x1000>,	/* LARB 3 */
 				<0x12002000 0x1000>,	/* LARB 4 */
@@ -3349,7 +3349,7 @@
 				<&scpsys SCP_SYS_MJC>,
 				<&scpsys SCP_SYS_DIS>;
 			clock-names = "smi-common", "smi-larb0", "vdec-larb1", "img-larb2", "venc-larb3",
-				"mjc-larb4", "mm-larb4", "mjc_smi_larb", "mjc_top_clk_0",
+				"mm-larb4", "mjc-larb4", "mjc_smi_larb", "mjc_top_clk_0",
 				"mjc_top_clk_1", "mjc_top_clk_2", "mjc_larb4_asif",
 				"smi-larb5", "img2-larb6",
 				"mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-mjc", "mtcmos-dis";

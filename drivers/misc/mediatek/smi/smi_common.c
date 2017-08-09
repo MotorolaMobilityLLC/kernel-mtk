@@ -2209,11 +2209,7 @@ int is_force_camera_hpm(void)
 	return force_camera_hpm;
 }
 
-#if defined(SMI_J)
 subsys_initcall(smi_init);
-#else
-module_init(smi_init);
-#endif
 
 static void smi_driver_setting(void)
 {
