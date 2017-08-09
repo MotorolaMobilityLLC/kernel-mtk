@@ -405,7 +405,7 @@ static struct kobj_type ccci_md_ktype = {
 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 #include <scp_ipi.h>
-static MD_BOOT_STAGE scp_state;
+static int scp_state = SCP_CCCI_STATE_INVALID;
 static struct ccci_ipi_msg scp_ipi_tx_msg;
 static struct mutex scp_ipi_tx_mutex;
 static struct work_struct scp_ipi_rx_work;
@@ -456,7 +456,7 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 		case CCCI_OP_SCP_STATE:
 			switch (ipi_msg_ptr->data[0]) {
 			case SCP_CCCI_STATE_BOOTING:
-				if (scp_state == MD_BOOT_STAGE_2) {
+				if (scp_state == SCP_CCCI_STATE_RBREADY) {
 					CCCI_NORMAL_LOG(md->index, CORE, "SCP reset detected\n");
 					ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
 					md3 = ccci_get_modem_by_id(MD_SYS3);
@@ -526,6 +526,11 @@ static void ccci_scp_init(void)
 int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 {
 	int ret = 0;
+
+	if (scp_state == SCP_CCCI_STATE_INVALID) {
+		CCCI_ERROR_LOG(md_id, CORE, "ignore IPI %d, SCP state %d!\n", op_id, scp_state);
+		return -CCCI_ERR_MD_NOT_READY;
+	}
 
 	mutex_lock(&scp_ipi_tx_mutex);
 	memset(&scp_ipi_tx_msg, 0, sizeof(scp_ipi_tx_msg));
