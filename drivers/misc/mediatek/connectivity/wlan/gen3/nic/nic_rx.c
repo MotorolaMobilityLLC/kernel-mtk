@@ -3792,8 +3792,15 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 						nicRxProcessMgmtPacket(prAdapter, prSwRfb);
 					} else {
 						DBGLOG(RX, ERROR,
-						       "[%s]ERROR: u2PktTYpe(0x%04X) is OUT OF DEF.!!!\n", __func__,
+						       "[%s]ERROR: u2PktTYpe(0x%04X) is OUT OF DEF!!!\n",
+						       __func__,
 						       prSwRfb->prRxStatus->u2PktTYpe);
+						DBGLOG(RX, ERROR,
+						       "[%s]ERROR: prSwRfb(%p), prRxStatus:(%p), pvHeader(%p)\n",
+						       __func__,
+						       prSwRfb,
+						       prSwRfb->prRxStatus,
+						       prSwRfb->pvHeader);
 						ASSERT(0);
 					}
 					break;
