@@ -594,14 +594,18 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 #ifdef CONFIG_CL2_BUCK_CTRL
 				cpu_power_on_buck(cpu, 1);
 #endif
-				/* enable MP2 Sync DCM */
-				dcm_mcusys_mp2_sync_dcm(1);
 			}
 		}
 	}
 
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 
+	if ((cpu == 8) || (cpu == 9)) {
+		if (!g_cl2_online) {
+			/* enable MP2 Sync DCM */
+			dcm_mcusys_mp2_sync_dcm(1);
+		}
+	}
 #ifdef CONFIG_OCP_IDVFS_CTRL
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
 		if (!ocp_cl0_init) {
@@ -712,7 +716,8 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 #endif
 		}
 	} else if ((cpu == 8) || (cpu == 9)) {
-		g_cl2_online &= ~(1 << (cpu - 8));
+		/* update g_cl2_online before dcm_mcusys_mp2_sync_dcm(0) */
+		/* g_cl2_online &= ~(1 << (cpu - 8)); */
 		if (!g_cl2_online) {
 #ifdef CONFIG_CL2_BUCK_CTRL
 			ret = cpu_power_off_buck(cpu);
@@ -793,6 +798,16 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 			ocp_cl1_init = 0;
 		}
 #endif
+#endif
+
+#ifdef CONFIG_ARCH_MT6797
+		if ((cpu == 8) || (cpu == 9)) {
+			g_cl2_online &= ~(1 << (cpu - 8));
+			if (!g_cl2_online) {
+				/* disable MP2 Sync DCM */
+				dcm_mcusys_mp2_sync_dcm(0);
+			}
+		}
 #endif
 
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
