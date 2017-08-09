@@ -16,7 +16,9 @@
 #include <asm/uaccess.h>
 #include <linux/version.h>
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
 #define COLLECT_GPU_MEMINFO
+#endif
 
 #ifdef COLLECT_GPU_MEMINFO
 #include <mt-plat/mtk_gpu_utility.h>
