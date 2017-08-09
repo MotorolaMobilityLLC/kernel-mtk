@@ -120,7 +120,6 @@ static void __iomem *pwrap_base;
  * 1:0		RG_XO_EXTBUF1_HD	XO Control Signal of EXTBUF1 Output driving Strength
  */
 #define PMIC_CW13_ADDR				0x701A
-#define PMIC_CW13_SUGGEST_VAL			0x6666
 #define PMIC_CW13_DEFAULT_VAL			0xAAAA
 #define PMIC_CW13_XO_EXTBUF_HD_VAL		((0x2 << 0) | (0x2 << 4) \
 						 | (0x2 << 8) | (0x2 << 12))
@@ -150,7 +149,8 @@ static bool is_clkbuf_afcdac_updated;
 
 static unsigned int g_pmic_cw13_rg_val = PMIC_CW13_DEFAULT_VAL;
 /* FIXME: Before MP, using suggested driving current to test. */
-#define TEST_SUGGEST_DRIVING_CURR_BEFORE_MP
+/* #define TEST_SUGGEST_RF_DRIVING_CURR_BEFORE_MP */
+#define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
 
 #if !defined(CONFIG_MTK_LEGACY)
 static unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS,
@@ -159,12 +159,22 @@ static unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS,
 		    CLK_BUF6_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL,
 		    CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL,
 		    CLK_BUF8_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL;
+static unsigned int RF_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF2_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF3_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF4_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA;
 static unsigned int PMIC_CLK_BUF5_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
 		    PMIC_CLK_BUF6_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
 		    PMIC_CLK_BUF7_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
 		    PMIC_CLK_BUF8_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA;
 #else /* CONFIG_MTK_LEGACY */
 /* FIXME: can be removed after DCT tool gen is ready */
+#if !defined(RF_CLK_BUF1_DRIVING_CURR)
+#define RF_CLK_BUF1_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF2_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF3_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF4_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#endif
 #if !defined(PMIC_CLK_BUF5_DRIVING_CURR)
 #define PMIC_CLK_BUF5_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
 #define PMIC_CLK_BUF6_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
@@ -379,6 +389,31 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 	}
 }
 
+/*
+ * Let caller get driving current setting of RF clock buffer
+ * Caller: ccci & ccci will send it to modem
+ */
+void clk_buf_get_rf_drv_curr(void *rf_drv_curr)
+{
+#ifdef TEST_SUGGEST_RF_DRIVING_CURR_BEFORE_MP
+	RF_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF2_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF3_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF4_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA;
+#endif
+
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0] = RF_CLK_BUF1_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1] = RF_CLK_BUF2_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2] = RF_CLK_BUF3_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3] = RF_CLK_BUF4_DRIVING_CURR;
+
+	clk_buf_warn("%s: rf_drv_curr_vals=%d %d %d %d\n", __func__,
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3]);
+}
+
 /* Called by ccci driver to keep afcdac value sent from modem */
 void clk_buf_save_afc_val(unsigned int afcdac)
 {
@@ -489,6 +524,15 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	else
 		p += sprintf(p, "afcdac=0x%x, is_afcdac_updated=%d\n",
 			     afcdac_val, is_clkbuf_afcdac_updated);
+	p += sprintf(p, "rf_drv_curr_vals=%d %d %d %d, pmic_drv_curr_vals=%d %d %d %d\n",
+		     RF_CLK_BUF1_DRIVING_CURR,
+		     RF_CLK_BUF2_DRIVING_CURR,
+		     RF_CLK_BUF3_DRIVING_CURR,
+		     RF_CLK_BUF4_DRIVING_CURR,
+		     PMIC_CLK_BUF5_DRIVING_CURR,
+		     PMIC_CLK_BUF6_DRIVING_CURR,
+		     PMIC_CLK_BUF7_DRIVING_CURR,
+		     PMIC_CLK_BUF8_DRIVING_CURR);
 
 	len = p - buf;
 
@@ -578,15 +622,19 @@ bool is_clk_buf_from_pmic(void)
 
 static void gen_pmic_cw13_rg_val(void)
 {
+#ifdef TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
+	PMIC_CLK_BUF5_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF6_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF7_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF8_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA;
+#endif
 	g_pmic_cw13_rg_val = PMIC_CW13_XO_EXTBUF_HD_VAL |
 			     (PMIC_CLK_BUF5_DRIVING_CURR << 2) |
 			     (PMIC_CLK_BUF6_DRIVING_CURR << 6) |
 			     (PMIC_CLK_BUF7_DRIVING_CURR << 10) |
 			     (PMIC_CLK_BUF8_DRIVING_CURR << 14);
-#ifdef TEST_SUGGEST_DRIVING_CURR_BEFORE_MP
-	g_pmic_cw13_rg_val = PMIC_CW13_SUGGEST_VAL;
-#endif
-	clk_buf_warn("%s: g_pmic_cw13_rg_val=0x%x, drv_curr_vals=%d %d %d %d\n",
+
+	clk_buf_warn("%s: g_pmic_cw13_rg_val=0x%x, pmic_drv_curr_vals=%d %d %d %d\n",
 		     __func__, g_pmic_cw13_rg_val,
 		     PMIC_CLK_BUF5_DRIVING_CURR,
 		     PMIC_CLK_BUF6_DRIVING_CURR,
@@ -687,17 +735,26 @@ bool clk_buf_init(void)
 {
 	struct device_node *node;
 #if !defined(CONFIG_MTK_LEGACY)
-	u32 vals[4] = {0, 0, 0, 0};
+	u32 vals[CLKBUF_NUM] = {0, 0, 0, 0};
 	int ret = -1;
 
 #if 1 /* for kernel 3.18 */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 	if (node) {
-		of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
+		of_property_read_u32_array(node, "mediatek,clkbuf-config",
+					   vals, CLKBUF_NUM);
 		CLK_BUF1_STATUS = vals[0];
 		CLK_BUF2_STATUS = vals[1];
 		CLK_BUF3_STATUS = vals[2];
 		CLK_BUF4_STATUS = vals[3];
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			RF_CLK_BUF1_DRIVING_CURR = vals[0];
+			RF_CLK_BUF2_DRIVING_CURR = vals[1];
+			RF_CLK_BUF3_DRIVING_CURR = vals[2];
+			RF_CLK_BUF4_DRIVING_CURR = vals[3];
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for rf_clock_buffer\n", __func__);
 		BUG();
@@ -705,14 +762,16 @@ bool clk_buf_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,pmic_clock_buffer");
 	if (node) {
-		ret = of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-config",
+						 vals, CLKBUF_NUM);
 		if (!ret) {
 			CLK_BUF5_STATUS_PMIC = vals[0];
 			CLK_BUF6_STATUS_PMIC = vals[1];
 			CLK_BUF7_STATUS_PMIC = vals[2];
 			CLK_BUF8_STATUS_PMIC = vals[3];
 		}
-		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current", vals, 4);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
 		if (!ret) {
 			PMIC_CLK_BUF5_DRIVING_CURR = vals[0];
 			PMIC_CLK_BUF6_DRIVING_CURR = vals[1];
@@ -730,6 +789,14 @@ bool clk_buf_init(void)
 		of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF2_STATUS);
 		of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF3_STATUS);
 		of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF4_STATUS);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			RF_CLK_BUF1_DRIVING_CURR = vals[0];
+			RF_CLK_BUF2_DRIVING_CURR = vals[1];
+			RF_CLK_BUF3_DRIVING_CURR = vals[2];
+			RF_CLK_BUF4_DRIVING_CURR = vals[3];
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for rf_clock_buffer\n", __func__);
 		BUG_ON(1);
@@ -741,7 +808,7 @@ bool clk_buf_init(void)
 		of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF6_STATUS_PMIC);
 		of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF7_STATUS_PMIC);
 		of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF8_STATUS_PMIC);
-		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current", vals, 4);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current", vals, CLKBUF_NUM);
 		if (!ret) {
 			PMIC_CLK_BUF5_DRIVING_CURR = vals[0];
 			PMIC_CLK_BUF6_DRIVING_CURR = vals[1];
