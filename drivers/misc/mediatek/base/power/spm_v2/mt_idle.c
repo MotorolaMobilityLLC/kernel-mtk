@@ -362,6 +362,7 @@ static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 static bool             soidle_by_pass_en;
 static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
+static u32				sodi_fw = SODI_FW_LPM;
 #ifdef SPM_SODI_PROFILE_TIME
 unsigned int			soidle_profile[4];
 #endif
@@ -1821,6 +1822,7 @@ int soidle_enter(int cpu)
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
+	set_sodi_fw_mode(sodi_fw);
 	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
 
 #ifdef DEFAULT_MMP_ENABLE
@@ -2368,6 +2370,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	p += sprintf(p, "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
 	p += sprintf(p, "soidle_bypass_en=%u\n", soidle_by_pass_en);
 	p += sprintf(p, "sodi_flags=0x%x\n", sodi_flags);
+	p += sprintf(p, "sodi_fw=0x%x\n", sodi_fw);
 
 	p += sprintf(p, "\n*********** soidle command help  ************\n");
 	p += sprintf(p, "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -2417,6 +2420,10 @@ static ssize_t soidle_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "sodi_flags")) {
 			sodi_flags = param;
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
+		} else if (!strcmp(cmd, "sodi_fw")) {
+			sodi_fw = param;
+			set_sodi_fw_mode(sodi_fw);
+			idle_dbg("sodi_fw = 0x%x\n", sodi_fw);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {

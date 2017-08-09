@@ -52,6 +52,12 @@ typedef enum {
 	WR_UNKNOWN = 5,
 } wake_reason_t;
 
+enum mt_sodi_fw {
+	SODI_FW_ULTRA	= (1 << 0),
+	SODI_FW_HPM	= (1 << 1),
+	SODI_FW_LPM	= (1 << 2),
+};
+
 struct twam_sig {
 	u32 sig0;		/* signal 0: config or status */
 	u32 sig1;		/* signal 1: config or status */

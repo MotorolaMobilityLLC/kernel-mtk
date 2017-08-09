@@ -65,6 +65,7 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_MCDI]);
 
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
+static unsigned int sodi_fw_mode;
 
 /* add char device for spm */
 #include <linux/cdev.h>
@@ -1247,6 +1248,16 @@ u32 spm_get_register(void __force __iomem *offset)
 void spm_set_register(void __force __iomem *offset, u32 value)
 {
 	spm_write(offset, value);
+}
+
+void set_sodi_fw_mode(u32 sodi_fw)
+{
+	sodi_fw_mode = sodi_fw;
+}
+
+u32 get_sodi_fw_mode(void)
+{
+	return	sodi_fw_mode;
 }
 
 MODULE_DESCRIPTION("SPM Driver v0.1");
