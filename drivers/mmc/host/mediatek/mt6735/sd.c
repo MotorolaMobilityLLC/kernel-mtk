@@ -100,7 +100,7 @@
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_clkmgr.h>
 #else
-/*#include <dt-bindings/clock/mt6735-clk.h>*/
+#include <dt-bindings/clock/mt6735-clk.h>
 struct clk *g_msdc0_pll_sel = NULL;
 struct clk *g_msdc0_pll_800m = NULL;
 struct clk *g_msdc0_pll_400m = NULL;
