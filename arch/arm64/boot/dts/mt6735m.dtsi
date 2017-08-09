@@ -1401,6 +1401,10 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 
+		mt_soc_dl2_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl2";
+		};
+
 		USB1@0x11260000 {
 			compatible = "mediatek,USB1";
 			reg = <0x11260000 0x10000>;

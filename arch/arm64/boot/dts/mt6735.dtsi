@@ -1587,6 +1587,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 
+		mt_soc_dl2_pcm {
+			compatible = "mediatek,mt_soc_pcm_dl2";
+		};
+
 		touch: touch {
 			compatible = "mediatek,mt6735-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
