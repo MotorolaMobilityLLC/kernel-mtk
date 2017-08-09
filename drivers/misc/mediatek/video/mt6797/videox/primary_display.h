@@ -273,6 +273,7 @@ int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsi
 int Panel_Master_dsi_config_entry(const char *name, void *config_value);
 int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
 
+extern unsigned int gTriggerDispMode;	/* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern unsigned int islcmconnected;

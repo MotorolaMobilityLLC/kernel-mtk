@@ -82,6 +82,7 @@ static unsigned int primary_session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY,
 static disp_frm_seq_info frm_update_sequence[FRM_UPDATE_SEQ_CACHE_NUM];
 static unsigned int frm_update_cnt;
 static unsigned int gPresentFenceIndex;
+unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
 
@@ -4362,6 +4363,11 @@ int primary_display_trigger(int blocking, void *callback, int need_merge)
 		is_switched_dst_mode = false;
 	}
 
+	if (gTriggerDispMode > 0) {
+		primary_display_release_fence_fake();
+		return ret;
+	}
+
 	primary_trigger_cnt++;
 
 	_primary_path_lock(__func__);
@@ -4729,6 +4735,9 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 	unsigned int wdma_mva = 0;
 	disp_path_handle disp_handle;
 	cmdqRecHandle cmdq_handle;
+
+	if (gTriggerDispMode > 0)
+		return 0;
 
 	_primary_path_lock(__func__);
 	atomic_set(&hwc_configing, 1);

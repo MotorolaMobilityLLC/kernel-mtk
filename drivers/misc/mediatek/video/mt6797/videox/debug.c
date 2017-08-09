@@ -479,6 +479,16 @@ static void process_dbg_opt(const char *opt)
 		DDPMSG("change fps\n");
 		primary_display_set_lcm_refresh_rate(fps);
 		return;
+	} else if (0 == strncmp(opt, "disp_mode:", 10)) {
+		char *p = (char *)opt + 10;
+		unsigned long int disp_mode = 0;
+
+		ret = kstrtoul(p, 10, &disp_mode);
+		gTriggerDispMode = (int)disp_mode;
+		if (ret)
+			pr_err("DISP/%s: errno %d\n", __func__, ret);
+
+		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
 	}
 
 	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
