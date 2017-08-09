@@ -316,15 +316,15 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		eintc: eintc@10005000 {
-			compatible = "mtk,mt-eic";
+			compatible = "mediatek,mt6735-eic";
 			reg = <0x10005000 0x1000>;
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 
 			#interrupt-cells = <2>;
 			interrupt-controller;
 
-			max_eint_num = <213>;
-			mapping_table_entry = <0>;
+			mediatek,max_eint_num = <213>;
+			mediatek,mapping_table_entry = <0>;
 		};
 
 		sleep@10006000 {

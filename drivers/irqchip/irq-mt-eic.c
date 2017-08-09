@@ -1159,54 +1159,54 @@ int get_eint_attribute(char *name, unsigned int name_len, unsigned int type,
 	int ret = 0;
 	int *sim_info = (int *)result;
 
-	pr_notice("query info: name:%s, type:%d, len:%d\n", name, type, name_len);
+	pr_debug("query info: name:%s, type:%d, len:%d\n", name, type, name_len);
 	if (len == NULL || name == NULL || result == NULL)
 		return ERR_SIM_HOT_PLUG_NULL_POINTER;
 
 	for (i = 0; i < md_sim_counter; i++) {
-		pr_notice("compare string:%s\n", md_sim_info[i].name);
+		pr_debug("compare string:%s\n", md_sim_info[i].name);
 		if (!strncmp(name, md_sim_info[i].name, name_len)) {
 			switch (type) {
 			case SIM_HOT_PLUG_EINT_NUMBER:
 				*len = sizeof(md_sim_info[i].eint_num);
 				memcpy(sim_info, &md_sim_info[i].eint_num, *len);
-				pr_notice("[EINT]eint_num:%d\n", md_sim_info[i].eint_num);
+				pr_debug("[EINT]eint_num:%d\n", md_sim_info[i].eint_num);
 				break;
 
 			case SIM_HOT_PLUG_EINT_DEBOUNCETIME:
 				*len = sizeof(md_sim_info[i].eint_deb);
 				memcpy(sim_info, &md_sim_info[i].eint_deb, *len);
-				pr_notice("[EINT]eint_deb:%d\n", md_sim_info[i].eint_deb);
+				pr_debug("[EINT]eint_deb:%d\n", md_sim_info[i].eint_deb);
 				break;
 
 			case SIM_HOT_PLUG_EINT_POLARITY:
 				*len = sizeof(md_sim_info[i].eint_pol);
 				memcpy(sim_info, &md_sim_info[i].eint_pol, *len);
-				pr_notice("[EINT]eint_pol:%d\n", md_sim_info[i].eint_pol);
+				pr_debug("[EINT]eint_pol:%d\n", md_sim_info[i].eint_pol);
 				break;
 
 			case SIM_HOT_PLUG_EINT_SENSITIVITY:
 				*len = sizeof(md_sim_info[i].eint_sens);
 				memcpy(sim_info, &md_sim_info[i].eint_sens, *len);
-				pr_notice("[EINT]eint_sens:%d\n", md_sim_info[i].eint_sens);
+				pr_debug("[EINT]eint_sens:%d\n", md_sim_info[i].eint_sens);
 				break;
 
 			case SIM_HOT_PLUG_EINT_SOCKETTYPE:
 				*len = sizeof(md_sim_info[i].socket_type);
 				memcpy(sim_info, &md_sim_info[i].socket_type, *len);
-				pr_notice("[EINT]socket_type:%d\n", md_sim_info[i].socket_type);
+				pr_debug("[EINT]socket_type:%d\n", md_sim_info[i].socket_type);
 				break;
 
 			case SIM_HOT_PLUG_EINT_DEDICATEDEN:
 				*len = sizeof(md_sim_info[i].dedicatedEn);
 				memcpy(sim_info, &md_sim_info[i].dedicatedEn, *len);
-				pr_notice("[EINT]dedicatedEn:%d\n", md_sim_info[i].dedicatedEn);
+				pr_debug("[EINT]dedicatedEn:%d\n", md_sim_info[i].dedicatedEn);
 				break;
 
 			case SIM_HOT_PLUG_EINT_SRCPIN:
 				*len = sizeof(md_sim_info[i].srcPin);
 				memcpy(sim_info, &md_sim_info[i].srcPin, *len);
-				pr_notice("[EINT]srcPin:%d\n", md_sim_info[i].srcPin);
+				pr_debug("[EINT]srcPin:%d\n", md_sim_info[i].srcPin);
 				break;
 
 			default:
@@ -1279,8 +1279,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_0_DEBOUNCE_CN;
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_0_DEDICATED_EN;
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_0_SRCPIN;
-	pr_notice("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD1_1_NAME)
@@ -1292,8 +1292,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_1_DEBOUNCE_CN;
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_1_DEDICATED_EN;
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_1_SRCPIN;
-	pr_notice("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD1_2_NAME)
@@ -1305,8 +1305,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_2_DEBOUNCE_CN;
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_2_DEDICATED_EN;
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_2_SRCPIN;
-	pr_notice("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD1_3_NAME)
@@ -1318,8 +1318,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_3_DEBOUNCE_CN;
 	md_sim_info[md_sim_counter].dedicatedEn = CUST_EINT_MD1_3_DEDICATED_EN;
 	md_sim_info[md_sim_counter].srcPin = CUST_EINT_MD1_3_SRCPIN;
-	pr_notice("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD1_4_NAME)
@@ -1329,8 +1329,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD1_4_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD1_4_DEBOUNCE_CN;
-	pr_notice("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD1 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD1 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 
@@ -1341,8 +1341,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD2_0_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD2_0_DEBOUNCE_CN;
-	pr_notice("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD2_1_NAME)
@@ -1352,8 +1352,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD2_1_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD2_1_DEBOUNCE_CN;
-	pr_notice("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD2_2_NAME)
@@ -1363,8 +1363,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD2_2_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD2_2_DEBOUNCE_CN;
-	pr_notice("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD2_3_NAME)
@@ -1374,8 +1374,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD2_3_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD2_3_DEBOUNCE_CN;
-	pr_notice("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #if defined(CUST_EINT_MD2_4_NAME)
@@ -1385,8 +1385,8 @@ static void setup_MD_eint(void)
 	md_sim_info[md_sim_counter].eint_sens = CUST_EINT_MD2_4_SENSITIVE;
 	md_sim_info[md_sim_counter].socket_type = get_type(md_sim_info[md_sim_counter].name);
 	md_sim_info[md_sim_counter].eint_deb = CUST_EINT_MD2_4_DEBOUNCE_CN;
-	pr_notice("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
-	pr_notice("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
+	pr_debug("[EINT] MD2 name = %s\n", md_sim_info[md_sim_counter].name);
+	pr_debug("[EINT] MD2 type = %d\n", md_sim_info[md_sim_counter].socket_type);
 	md_sim_counter++;
 #endif
 #endif				/* end of MD_EINT */
@@ -1417,10 +1417,10 @@ static irqreturn_t mt_eint_soft_revert_isr(unsigned irq, struct irq_desc *desc)
 	int eint_num = 0;
 
 	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_notice("======EINT_SOFT_REVERT_ISR======\n");
-	pr_notice("EINT %d, in %s\n", eint_num, __func__);
+	pr_debug("======EINT_SOFT_REVERT_ISR======\n");
+	pr_debug("EINT %d, in %s\n", eint_num, __func__);
 	mt_eint_revert_polarity(eint_num);
-	pr_notice("======EINT_SOFT_REVERT_ISR_END======\n");
+	pr_debug("======EINT_SOFT_REVERT_ISR_END======\n");
 	return IRQ_HANDLED;
 }
 
@@ -1431,10 +1431,10 @@ static irqreturn_t mt_eint_soft_debounce_isr(unsigned irq, struct irq_desc *desc
 	int eint_num = 0;
 
 	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_notice("======EINT_SOFT_DEBOUNCE_ISR======\n");
-	pr_notice("EINT %d, in %s\n", eint_num, __func__);
+	pr_debug("======EINT_SOFT_DEBOUNCE_ISR======\n");
+	pr_debug("EINT %d, in %s\n", eint_num, __func__);
 	mt_eint_revert_polarity(eint_num);
-	pr_notice("======EINT_SOFT_DEBOUNCE_ISR_END======\n");
+	pr_debug("======EINT_SOFT_DEBOUNCE_ISR_END======\n");
 	sw_debounce = 1;
 	return IRQ_HANDLED;
 }
@@ -1444,11 +1444,11 @@ static irqreturn_t mt_eint_soft_nonauto_unmask_isr(unsigned irq, struct irq_desc
 	int eint_num = 0;
 
 	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_notice("======EINT_NONAUTO_SOFT_ISR======\n");
-	pr_notice("EINT %d, in %s\n", eint_num, __func__);
+	pr_debug("======EINT_NONAUTO_SOFT_ISR======\n");
+	pr_debug("EINT %d, in %s\n", eint_num, __func__);
 	mt_eint_revert_polarity(eint_num);
 	disable_irq_nosync(irq);
-	pr_notice("======EINT_NONAUTO_SOFT_ISR_END======\n");
+	pr_debug("======EINT_NONAUTO_SOFT_ISR_END======\n");
 	return IRQ_HANDLED;
 }
 
@@ -1468,32 +1468,14 @@ static irqreturn_t mt_eint_hw_debounce_isr(unsigned irq, struct irq_desc *desc)
 	eint_num = DEMUX_EINT_IRQ(irq);
 	hw_debounce_end = sched_clock();
 	EINT_waiting = 0;
-	pr_notice("======EINT_HW_DEBOUNCE_ISR======\n");
-	pr_notice("EINT %d, in %s\n", eint_num, __func__);
-	pr_notice("======EINT_HW_DEBOUNCE_ISR_END======\n");
+	pr_debug("======EINT_HW_DEBOUNCE_ISR======\n");
+	pr_debug("EINT %d, in %s\n", eint_num, __func__);
+	pr_debug("======EINT_HW_DEBOUNCE_ISR_END======\n");
 	mt_set_gpio_out(gpio_debounce[EINT_OUT], 0);
 	return IRQ_HANDLED;
 }
 
 typedef void (*EINT_FUNC_PTR) (void);
-
-static void mt_eint_test(void)
-{
-	int eint_num = 1;
-	int is_auto_umask = 0;
-	int ret = 0;
-
-	cur_eint_num = 1;
-	mt_eint_mask(eint_num);
-	mt_eint_set_polarity(eint_num, MT_LEVEL_SENSITIVE);
-	mt_eint_set_sens(eint_num, MT_EINT_POL_POS);
-	mt_eint_registration(eint_num, IRQF_TRIGGER_HIGH, mt_eint_soft_isr, is_auto_umask);
-	if (ret > 0)
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-
-	mt_eint_unmask(eint_num);
-	mt_eint_soft_set(eint_num);
-}
 
 void setup_level_trigger_env(unsigned int eint)
 {
@@ -1519,7 +1501,7 @@ static void mt_eint_autounmask_test(void)
 	int ret = 0;
 	struct irq_desc *desc;
 
-	pr_notice("%s for EINT %d\n", __func__, eint_num);
+	pr_debug("%s for EINT %d\n", __func__, eint_num);
 	setup_level_trigger_env(eint_num);
 	ret =
 	    request_irq(EINT_IRQ(eint_num),
@@ -1530,19 +1512,19 @@ static void mt_eint_autounmask_test(void)
 		return;
 	}
 	desc = irq_to_desc(EINT_IRQ(eint_num));
-	pr_notice("EINT %d request_irq done\n", eint_num);
+	pr_debug("EINT %d request_irq done\n", eint_num);
 	mt_eint_revert_polarity(eint_num);
-	pr_notice("trigger EINT %d done\n", eint_num);
-	pr_notice("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
+	pr_debug("trigger EINT %d done\n", eint_num);
+	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
 	free_irq(EINT_IRQ(eint_num), NULL);
 }
 
 static irqreturn_t mt_deint_soft_revert_isr(unsigned irq, struct irq_desc *desc)
 {
-	pr_notice("======DEINT_SOFT_REVERT_ISR======\n");
-	pr_notice("irq = %d\n", irq);
+	pr_debug("======DEINT_SOFT_REVERT_ISR======\n");
+	pr_debug("irq = %d\n", irq);
 	irq_set_irq_type(irq, IRQF_TRIGGER_HIGH);
-	pr_notice("======DEINT_SOFT_REVERT_ISR_END======\n");
+	pr_debug("======DEINT_SOFT_REVERT_ISR_END======\n");
 	return IRQ_HANDLED;
 }
 
@@ -1550,11 +1532,11 @@ static void mt_deint_test(void)
 {
 	int ret = 0;
 
-	pr_notice("%s for EINT %d\n", __func__, eint_num);
+	pr_debug("%s for EINT %d\n", __func__, eint_num);
 
 	ret = mt_eint_set_deint(eint_num, 189);
 	if (ret == 0) {
-		pr_notice("mt_eint_set_deint done\n");
+		pr_debug("mt_eint_set_deint done\n");
 	} else {
 		pr_err("mt_eint_set_deint fail\n");
 		return;
@@ -1567,11 +1549,11 @@ static void mt_deint_test(void)
 		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
 		return;
 	}
-	pr_notice("EINT %d request_irq done\n", eint_num);
+	pr_debug("EINT %d request_irq done\n", eint_num);
 	irq_set_irq_type(189, IRQF_TRIGGER_LOW);
 
-	pr_notice("trigger EINT %d done\n", eint_num);
-	pr_notice("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
+	pr_debug("trigger EINT %d done\n", eint_num);
+	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
 
 	free_irq(189, NULL);
 	mt_eint_clr_deint(eint_num);
@@ -1582,7 +1564,7 @@ static int mt_eint_non_autounmask_test(void)
 	int ret = 0;
 
 	setup_level_trigger_env(eint_num);
-	pr_notice("%s for EINT %d\n", __func__, eint_num);
+	pr_debug("%s for EINT %d\n", __func__, eint_num);
 	ret =
 	    request_irq(EINT_IRQ(eint_num),
 			(irq_handler_t) mt_eint_soft_nonauto_unmask_isr,
@@ -1591,10 +1573,10 @@ static int mt_eint_non_autounmask_test(void)
 		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
 		return -1;
 	}
-	pr_notice("EINT %d request_irq done\n", eint_num);
+	pr_debug("EINT %d request_irq done\n", eint_num);
 	mt_eint_revert_polarity(eint_num);
-	pr_notice("trigger EINT %d done\n", eint_num);
-	pr_notice("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
+	pr_debug("trigger EINT %d done\n", eint_num);
+	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
 	free_irq(EINT_IRQ(eint_num), NULL);
 	return 1;
 }
@@ -1606,23 +1588,23 @@ void mt_eint_normal_test_based_on_sw_debounce(void)
 	unsigned int debounce_time = 30;
 
 	setup_level_trigger_env(eint_num);
-	pr_notice("%s for EINT %d\n", __func__, eint_num);
+	pr_debug("%s for EINT %d\n", __func__, eint_num);
 	gpio_set_debounce(EINT_GPIO(eint_num), debounce_time);
-	pr_notice("EINT %d debounce enable %d\n", eint_num, mt_eint_is_debounce_en(eint_num));
+	pr_debug("EINT %d debounce enable %d\n", eint_num, mt_eint_is_debounce_en(eint_num));
 	ret =
 	    request_irq(EINT_IRQ(eint_num),
 			(irq_handler_t) mt_eint_soft_debounce_isr,
 			mt_eint_get_polarity(eint_num), "EINT-SWDEBOUNCE", NULL);
 	if (ret > 0)
 		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-	pr_notice("EINT %d request_irq done\n", eint_num);
+	pr_debug("EINT %d request_irq done\n", eint_num);
 	mt_eint_revert_polarity(eint_num);
-	pr_notice("trigger EINT %d done\n", eint_num);
-	pr_notice("start waiting sw_debounce\n");
+	pr_debug("trigger EINT %d done\n", eint_num);
+	pr_debug("start waiting sw_debounce\n");
 	while (!sw_debounce)
 		;
 	sw_debounce = 0;
-	pr_notice("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
+	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
 	free_irq(EINT_IRQ(eint_num), NULL);
 }
 
@@ -1632,7 +1614,7 @@ void mt_eint_normal_test_based_on_hw_debounce(void)
 	unsigned int debounce_time = 16;
 	unsigned long long delay_start;
 
-	pr_notice("%s for EINT %d\n", __func__, eint_debounce[EINT_IN]);
+	pr_debug("%s for EINT %d\n", __func__, eint_debounce[EINT_IN]);
 	gpio_set_debounce(EINT_GPIO(eint_debounce[EINT_IN]), debounce_time);
 
 	/* GPIO setting */
@@ -1643,7 +1625,7 @@ void mt_eint_normal_test_based_on_hw_debounce(void)
 	mt_set_gpio_mode(gpio_debounce[EINT_IN], GPIO_MODE_04);
 	mt_set_gpio_dir(gpio_debounce[EINT_IN], GPIO_DIR_IN);
 
-	pr_notice("before request_irq for EINT %d\n", eint_debounce[EINT_IN]);
+	pr_debug("before request_irq for EINT %d\n", eint_debounce[EINT_IN]);
 	EINT_waiting = 1;
 	ret =
 	    request_irq(EINT_IRQ(eint_debounce[EINT_IN]),
@@ -1651,29 +1633,29 @@ void mt_eint_normal_test_based_on_hw_debounce(void)
 			IRQF_TRIGGER_HIGH, "EINT-HWDEBOUNCE", NULL);
 	if (ret > 0)
 		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-	pr_notice("EINT %d request_irq done\n", eint_debounce[EINT_IN]);
+	pr_debug("EINT %d request_irq done\n", eint_debounce[EINT_IN]);
 	mt_set_gpio_out(gpio_debounce[EINT_OUT], 1);
-	pr_notice("trigger EINT %d done\n", eint_debounce[EINT_IN]);
+	pr_debug("trigger EINT %d done\n", eint_debounce[EINT_IN]);
 	hw_debounce_start = delay_start = sched_clock();
-	pr_notice("waiting for EINT %d\n", eint_debounce[EINT_IN]);
+	pr_debug("waiting for EINT %d\n", eint_debounce[EINT_IN]);
 
 	while (EINT_waiting) {
 		delay_start = sched_clock();
 		if (!EINT_waiting)
 			break;
 	}
-	pr_notice("hw_debounce time t1=%llu ,t2=%llu, %llu ns\n",
+	pr_debug("hw_debounce time t1=%llu ,t2=%llu, %llu ns\n",
 		  hw_debounce_start, hw_debounce_end, (hw_debounce_end - hw_debounce_start));
-	pr_notice("duration time t1=%llu ,t2=%llu, %llu ns\n", hw_debounce_start,
+	pr_debug("duration time t1=%llu ,t2=%llu, %llu ns\n", hw_debounce_start,
 		  delay_start, (delay_start - hw_debounce_start));
 
 	/* divide by 1m => ns to ms */
 	if (!EINT_waiting && (hw_debounce_start - hw_debounce_end) / 1000000 > debounce_time)
-		pr_notice("...pass\n");
+		pr_debug("...pass\n");
 	else
-		pr_notice("...failed\n");
+		pr_debug("...failed\n");
 
-	pr_notice("EINT %d, MASK 0x%d\n", eint_debounce[EINT_IN],
+	pr_debug("EINT %d, MASK 0x%d\n", eint_debounce[EINT_IN],
 		  mt_eint_get_mask(eint_debounce[EINT_IN]));
 	free_irq(EINT_IRQ(eint_debounce[EINT_IN]), NULL);
 }
@@ -1681,11 +1663,10 @@ void mt_eint_normal_test_based_on_hw_debounce(void)
 static ssize_t test_show(struct device_driver *driver, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "==EINT test==\n"
-			"1.EINT original registration test\n"
-			"2.EINT new design test\n"
-			"3.EINT new design hw debounce test\n"
-			"4.EINT new design sw debounce test\n"
-			"5.EINT new design without auto-unmask\n" "6.EINT new design deint test\n");
+			"1.EINT new design test\n"
+			"2.EINT new design hw debounce test\n"
+			"3.EINT new design sw debounce test\n"
+			"4.EINT new design without auto-unmask\n" "5.EINT new design deint test\n");
 }
 
 static ssize_t test_store(struct device_driver *driver, const char *buf, size_t count)
@@ -1700,21 +1681,18 @@ static ssize_t test_store(struct device_driver *driver, const char *buf, size_t 
 
 	switch (num) {
 	case 1:
-		mt_eint_test();
-		break;
-	case 2:
 		mt_eint_autounmask_test();
 		break;
-	case 3:
+	case 2:
 		mt_eint_normal_test_based_on_hw_debounce();
 		break;
-	case 4:
+	case 3:
 		mt_eint_normal_test_based_on_sw_debounce();
 		break;
-	case 5:
+	case 4:
 		mt_eint_non_autounmask_test();
 		break;
-	case 6:
+	case 5:
 		mt_deint_test();
 		break;
 	default:
@@ -1756,7 +1734,7 @@ int get_supported_irq_num(void)
 #define GIC_DIST_CTR 0x4
 	ret = readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f;
 	ret = (ret + 1) * 32;
-	pr_notice("gic supported max = %d\n", ret);
+	pr_debug("gic supported max = %d\n", ret);
 	return ret;
 }
 
@@ -1838,7 +1816,7 @@ static void pin_traverse(void)
 
 	for (r = rb_first(&root); r; r = rb_next(r)) {
 		p = rb_entry(r, struct pin_node, node);
-		pr_notice("gpio = %d, eint = %d\n", p->gpio_pin, p->eint_pin);
+		pr_debug("gpio = %d, eint = %d\n", p->gpio_pin, p->eint_pin);
 	}
 }
 #endif
@@ -2013,10 +1991,10 @@ static int __init mt_eint_init(void)
 #endif
 
 	/* DTS version */
-	node = of_find_compatible_node(NULL, NULL, "mtk,mt-eic");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-eic");
 	if (node) {
 		EINT_BASE = of_iomap(node, 0);
-		pr_notice("get EINT_BASE @ %p\n", EINT_BASE);
+		pr_debug("get EINT_BASE @ %p\n", EINT_BASE);
 	} else {
 		pr_err("can't find compatible node\n");
 		return -1;
@@ -2028,7 +2006,7 @@ static int __init mt_eint_init(void)
 		return -1;
 	}
 
-	if (of_property_read_u32(node, "max_eint_num", &EINT_MAX_CHANNEL))
+	if (of_property_read_u32(node, "mediatek,max_eint_num", &EINT_MAX_CHANNEL))
 		return -1;
 
 	pr_debug("[EIC] max_eint_num = %d\n", EINT_MAX_CHANNEL);
@@ -2043,13 +2021,13 @@ static int __init mt_eint_init(void)
 	mt_eint_chip->max_channel = EINT_MAX_CHANNEL;
 	mt_eint_chip->dual_edges = kcalloc(mt_eint_chip->max_channel, sizeof(unsigned int), GFP_KERNEL);
 
-	if (of_property_read_u32(node, "mapping_table_entry", &mapping_table_entry))
+	if (of_property_read_u32(node, "mediatek,mapping_table_entry", &mapping_table_entry))
 		return -1;
 
 	pr_debug("[EIC] mapping_table_entry = %d\n", mapping_table_entry);
 
 	if (mapping_table_entry > 0) {
-		spec = of_get_property(node, "mapping_table", &len);
+		spec = of_get_property(node, "mediatek,mapping_table", &len);
 		if (spec == NULL)
 			return -EINVAL;
 		len /= sizeof(*spec);
@@ -2068,7 +2046,7 @@ static int __init mt_eint_init(void)
 		pins[i].gpio_pin = GPIO_MAX;
 	}
 
-	if (of_property_read_u32(node, "max_deint_cnt", &MAX_DEINT_CNT)) {
+	if (of_property_read_u32(node, "mediatek,max_deint_cnt", &MAX_DEINT_CNT)) {
 		pr_warn("[EIC] no max_deint_cnt specified\n");
 	} else {
 		deint_possible_irq = kzalloc(sizeof(u32) * MAX_DEINT_CNT, GFP_KERNEL);
@@ -2082,12 +2060,12 @@ static int __init mt_eint_init(void)
 			return -1;
 
 		if (of_property_read_u32_array
-		    (node, "deint_possible_irq", deint_possible_irq, MAX_DEINT_CNT))
+		    (node, "mediatek,deint_possible_irq", deint_possible_irq, MAX_DEINT_CNT))
 			pr_warn
 			    ("[EINT] deint function would fail...since there is no <deint_possible_irq> in DTS\n");
 	}
 
-	if (of_property_read_u32(node, "builtin_entry", &builtin_entry)) {
+	if (of_property_read_u32(node, "mediatek,builtin_entry", &builtin_entry)) {
 		pr_warn("[EIC] no builtin_entry property\n");
 	} else {
 		builtin_mapping = kcalloc(builtin_entry, sizeof(struct builtin_eint), GFP_KERNEL);
@@ -2096,7 +2074,7 @@ static int __init mt_eint_init(void)
 			return -1;
 		}
 
-		spec = of_get_property(node, "builtin_mapping", &len);
+		spec = of_get_property(node, "mediatek,builtin_mapping", &len);
 		if (spec == NULL)
 			return -EINVAL;
 
@@ -2138,17 +2116,17 @@ static int __init mt_eint_init(void)
 		pin_traverse();
 		p = pin_search(31);
 		if (p)
-			pr_notice("gpio 31 = eint %d\n", p->eint_pin);
+			pr_debug("gpio 31 = eint %d\n", p->eint_pin);
 
 		p = pin_search(37);
 		if (p)
-			pr_notice("gpio 37 = eint %d\n", p->eint_pin);
+			pr_debug("gpio 37 = eint %d\n", p->eint_pin);
 
 		p = pin_search(GPIO_MAX);
 		if (p)
-			pr_notice("gpio GPIO_MAX = eint %d\n", p->eint_pin);
+			pr_debug("gpio GPIO_MAX = eint %d\n", p->eint_pin);
 		else
-			pr_notice("can't find for GPIO %d\n", GPIO_MAX);
+			pr_debug("can't find for GPIO %d\n", GPIO_MAX);
 #endif
 	}
 
@@ -2158,7 +2136,7 @@ static int __init mt_eint_init(void)
 		pr_err("get_supported_irq_num returns %d\n", EINT_IRQ_BASE);
 		return -1;
 	}
-	pr_notice("EINT_IRQ_BASE = %d\n", EINT_IRQ_BASE);
+	pr_debug("EINT_IRQ_BASE = %d\n", EINT_IRQ_BASE);
 	irq_base = irq_alloc_descs(EINT_IRQ_BASE, EINT_IRQ_BASE, EINT_MAX_CHANNEL, numa_node_id());
 	if (irq_base != EINT_IRQ_BASE) {
 		pr_err("EINT alloc desc error %d\n", irq_base);
@@ -2192,7 +2170,7 @@ static int __init mt_eint_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek, ACCDET-eint");
 	if (node) {
 		i = irq_of_parse_and_map(node, 0);
-		pr_notice("virq for ACCDET = %d\n", i);
+		pr_debug("virq for ACCDET = %d\n", i);
 	} else {
 		pr_err("can't find compatible node for ACCDET\n");
 	}
@@ -2200,7 +2178,7 @@ static int __init mt_eint_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek, TOUCH_PANEL-eint");
 	if (node) {
 		i = irq_of_parse_and_map(node, 0);
-		pr_notice("virq for TOUCH = %d\n", i);
+		pr_debug("virq for TOUCH = %d\n", i);
 	} else {
 		pr_err("can't find compatible node for TOUCH\n");
 	}
@@ -2282,12 +2260,12 @@ void mt_eint_print_status(void)
 	unsigned int status, index;
 	unsigned int offset, reg_base, status_check;
 
-	pr_debug("EINT_STA:");
+	pr_notice("EINT_STA:");
 	for (reg_base = 0; reg_base < EINT_MAX_CHANNEL; reg_base += 32) {
 		/* read status register every 32 interrupts */
 		status = mt_eint_get_status(reg_base);
 		if (status)
-			pr_debug("EINT Module - index:%d,EINT_STA = 0x%x\n", reg_base, status);
+			pr_notice("EINT Module - index:%d,EINT_STA = 0x%x\n", reg_base, status);
 		else
 			continue;
 
@@ -2298,14 +2276,14 @@ void mt_eint_print_status(void)
 
 			status_check = status & (1 << offset);
 			if (status_check) {
-				pr_debug("EINT %d is pending\n", index);
+				pr_notice("EINT %d is pending\n", index);
 #if (EINT_DEBUG == 1)
 				mt_eint_dump_status(index);
 #endif
 			}
 		}
 	}
-	pr_debug("\n");
+	pr_notice("\n");
 }
 EXPORT_SYMBOL(mt_eint_print_status);
 
