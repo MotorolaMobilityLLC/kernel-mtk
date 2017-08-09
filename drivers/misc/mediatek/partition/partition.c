@@ -24,10 +24,10 @@ struct hd_struct *get_part(char *name)
 
 	if (!name)
 		return part;
-#if defined(CONFIG_MMC_MTK)
-	devt = blk_lookup_devt("mmcblk0", 0);
-#elif defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_BOOTING)
 	devt = blk_lookup_devt("sdc", 0);
+#else
+	devt = blk_lookup_devt("mmcblk0", 0);
 #endif
 	disk = get_gendisk(devt, &partno);
 
