@@ -357,15 +357,6 @@ static phys_addr_t m4u_user_v2p(unsigned long va)
 
 	pte = pte_offset_map(pmd, va);
 	if (pte_present(*pte)) {
-
-#ifndef CONFIG_ARM_LPAE
-		if ((long long)pte_val(pte[PTE_HWTABLE_PTRS]) == (long long)0) {
-			M4UMSG("user_v2p, va=0x%lx, *ppte=%08llx\n", va,
-			       (long long)pte_val(pte[PTE_HWTABLE_PTRS]));
-			pte_unmap(pte);
-			return 0;
-		}
-#endif
 		/* pa=(pte_val(*pte) & (PAGE_MASK)) | pageOffset; */
 		pa = (pte_val(*pte) & (PHYS_MASK) & (~((phys_addr_t) 0xfff))) | pageOffset;
 		pte_unmap(pte);

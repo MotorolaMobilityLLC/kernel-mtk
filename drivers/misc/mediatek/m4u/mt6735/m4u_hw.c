@@ -399,22 +399,21 @@ int mau_dump_status(int m4u_id, int m4u_slave_id)
 	return 0;
 }
 
-int m4u_dump_reg(int m4u_index)
+int m4u_dump_reg(int m4u_index, unsigned int start)
 {
 	int i;
 
 	M4UINFO("Register Start =======\n");
-	for (i = 0; i < 368/8; i += 4) {
-		M4UINFO("+0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				8*i,
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*0),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*1),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*2),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*3),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*4),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*5),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*6),
-				M4U_ReadReg32(gM4UBaseAddr[m4u_index], 8*i + 4*7));
+	for (i = 0; i < 368 / 8; i += 4) {
+		M4UINFO("+0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", start + 8 * i,
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 0),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 1),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 2),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 3),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 4),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 5),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 6),
+			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 7));
 	}
 	M4UINFO("Register End ==========\n");
 

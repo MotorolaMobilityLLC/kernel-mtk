@@ -26,10 +26,19 @@
 /* #define M4U_FPGAPORTING */
 /* #define M4U_PROFILE */
 
+#define M4U_DVT 0
+
 #ifndef M4U_PROFILE
-/* #define MMProfileLogEx(...) */
+#define MMProfileLogEx(...)
 #define MMProfileEnable(...)
 #define MMProfileStart(...)
+#define MMP_Event unsigned int
+#else
+#include <mmprofile.h>
+
+extern void MMProfileEnable(int enable);
+extern void MMProfileStart(int start);
+
 #endif
 
 
@@ -181,6 +190,8 @@ int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 int config_mau(M4U_MAU_STRUCT mau);
 int m4u_enable_tf(int port, bool fgenable);
 
+extern int gM4U_4G_DRAM_Mode;
+
 /* ================================= */
 /* ==== define in m4u.c     ===== */
 int m4u_dump_buf_info(struct seq_file *seq);
@@ -323,7 +334,7 @@ int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
 #endif
 
-#include <mmprofile.h>
+/* #include <mmprofile.h> */
 extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
 #endif
