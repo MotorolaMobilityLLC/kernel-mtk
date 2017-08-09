@@ -273,7 +273,10 @@ static struct miscdevice audio_ipi_device = {
 static int __init audio_ipi_driver_init(void)
 {
 	int ret = 0;
-
+	if (is_scp_ready() == 0) {
+		AUD_LOG_E("[SCP] scp not ready\n");
+		return -EACCES;
+	}
 	audio_messenger_ipi_init();
 
 	/* TODO: ring buf */
