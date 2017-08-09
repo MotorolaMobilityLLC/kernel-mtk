@@ -1603,6 +1603,8 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 		battery_log(BAT_LOG_CRTI,
 				    "  bad argument, echo [enable] > current_cmd\n");
 	}
+
+	return 0;
 }
 static DEVICE_ATTR(Pump_Express, 0664, show_Pump_Express, store_Pump_Express);
 #endif
