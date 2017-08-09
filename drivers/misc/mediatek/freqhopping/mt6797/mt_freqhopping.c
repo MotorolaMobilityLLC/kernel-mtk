@@ -223,6 +223,7 @@ static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 
 static void __iomem *g_sema_base;
 static unsigned long g_reg_sema3_m0;
+static unsigned long g_reg_cspm_poweron_en;
 #define SEMA_GET_TIMEOUT	2000	/* us */
 
 static int mt6797_0x1001AXXX_get_semaphore(void)
@@ -237,12 +238,8 @@ static int mt6797_0x1001AXXX_get_semaphore(void)
 		return 0;
 	}
 
-	{
-		unsigned long g_reg_test;
-
-		g_reg_test = (unsigned long)ioremap_nocache(0x11015000, 1024);
-		hs_write32(g_reg_test, 0x0b160001); /* mt6797-dvfsp enable internal CG bit */
-	}
+	/* mt6797-dvfsp enable internal CG bit */
+	hs_write32(g_reg_cspm_poweron_en, 0x0b160001);
 
 
 	FH_MSG_DEBUG("0x1001AXXX sema get %lx\n", g_reg_sema3_m0);
@@ -286,31 +283,20 @@ void mt6797_0x1001AXXX_lock(void)
 {
 	spin_lock(&g_mt6797_0x1001AXXX_lock);
 
-#if 0
-	/* HW Semaphore -- GET */
-	if (0 != cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
-		if (0 != cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
-			FH_MSG("[ERROR] mt_pause_armpll() HW sema time out 4ms");
-			BUG_ON(1);
-		}
-	}
-#else
+
 	if (0 != mt6797_0x1001AXXX_get_semaphore()) {
 		if (0 != mt6797_0x1001AXXX_get_semaphore()) {
 			FH_MSG("[ERROR] mt_pause_armpll() HW sema time out 4ms");
 			BUG_ON(1);
 		}
 	}
-#endif
+
 }
 
 void mt6797_0x1001AXXX_unlock(void)
 {
-#if 0
-	cpuhvfs_release_dvfsp_semaphore(SEMA_FHCTL_DRV);
-#else
 	mt6797_0x1001AXXX_release_semaphore();
-#endif
+
 	spin_unlock(&g_mt6797_0x1001AXXX_lock);
 }
 
@@ -1607,13 +1593,8 @@ static int __reg_base_addr_init(void)
 		sema_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-dvfsp");
 		g_sema_base = of_iomap(sema_node, 0);
 		g_reg_sema3_m0 = (unsigned long)g_sema_base + (0x440);
-
-		{
-			unsigned long g_reg_test;
-
-			g_reg_test = (unsigned long)ioremap_nocache(0x11015000, 1024);
-			hs_write32(g_reg_test, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
-		}
+		g_reg_cspm_poweron_en = (unsigned long)g_sema_base;
+		hs_write32(g_reg_cspm_poweron_en, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
 	}
 	/******************************************************/
 
