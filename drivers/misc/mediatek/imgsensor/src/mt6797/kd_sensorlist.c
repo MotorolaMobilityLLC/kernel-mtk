@@ -143,7 +143,8 @@ struct device *sensor_device = NULL;
 #define PFX "[kd_sensorlist]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(fmt, ##arg)
-#define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+//#define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+#define PK_INF(fmt, args...)     pr_debug("[%s] " fmt, __FUNCTION__, ##args)
 
 //#undef DEBUG_CAMERA_HW_K
 /* #define DEBUG_CAMERA_HW_K */
@@ -491,7 +492,7 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
 		
 		if (i2c_msg_size != ret) {
-			PK_ERR("[iReadRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+			PK_ERR("[iReadRegI2C]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
 				ret, a_pSendData[0], a_pSendData[1],speed_timing);
 		}
 	}
@@ -532,12 +533,16 @@ int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16
 	msg[1].len = a_sizeRecvData;
 	msg[1].buf = a_pRecvData;
 	i2c_msg_size = 2;
-	ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, 0, speed_timing);
-
+	if(g_IsSearchSensor == 1)
+		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
+	else
+		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, 0, speed_timing);
+	
 	if (i2c_msg_size != ret) {
 		PK_ERR("[iReadRegI2CTiming] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
+		ret = -1;
 	}
-    return 0;
+    return ret;
 }
 
 /*******************************************************************************
@@ -686,7 +691,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 				break;
 			}
 			uDELAY(50);
-		}while ((retry--) > 0);
+		}while (( --retry) > 0); // retry 3 times
 	}
 
     return i4RetValue;
@@ -1751,7 +1756,7 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
         }
         else {
 
-            PK_INF(" Sensor found ID = 0x%x\n", sensorID);
+            PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
             snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s CAM[%d]:%s;",mtk_ccm_name,g_invokeSocketIdx[i],g_invokeSensorNameStr[i]);
             err = ERROR_NONE;
         }

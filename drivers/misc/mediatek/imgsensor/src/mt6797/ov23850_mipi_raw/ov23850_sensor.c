@@ -49,7 +49,7 @@
 
 #include "ov23850_sensor.h"
 
-#define PFX "ov23850_camera_sensor"
+#define PFX "ov23850"
 #define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
 #define MULTI_WRITE 0
@@ -215,7 +215,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x6c, 0x20, 0xff},
+	.i2c_addr_table = {0x6c, 0xff}, //0x6c or 0x20
     .i2c_speed = 400,
 };
 
@@ -3246,8 +3246,8 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
                       MSDK_SENSOR_INFO_STRUCT *sensor_info,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("scenario_id = %d\n", scenario_id);
-
+	if(scenario_id == 0)
+    	LOG_INF("scenario_id = %d\n", scenario_id);
 
     //sensor_info->SensorVideoFrameRate = imgsensor_info.normal_video.max_framerate/10; /* not use */
     //sensor_info->SensorStillCaptureFrameRate= imgsensor_info.cap.max_framerate/10; /* not use */
@@ -3609,8 +3609,9 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 
 static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
-    LOG_INF("scenario_id = %d\n", scenario_id);
-
+	if(scenario_id == 0)
+    	LOG_INF("[3058]scenario_id = %d\n", scenario_id);
+	
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
             *framerate = imgsensor_info.pre.max_framerate;
@@ -3681,8 +3682,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
     SENSOR_VC_INFO_STRUCT *pvcinfo;
 	SET_PD_BLOCK_INFO_T *PDAFinfo;
-
-	LOG_INF("feature_id = %d\n", feature_id);
+    
+	if(!((feature_id == 3040) || (feature_id == 3058)))
+		LOG_INF("feature_id = %d\n", feature_id);
+	
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;

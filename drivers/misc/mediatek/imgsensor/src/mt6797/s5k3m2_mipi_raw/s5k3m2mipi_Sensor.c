@@ -49,7 +49,7 @@
 
 #include "s5k3m2mipi_Sensor.h"
 
-#define PFX "S5K3M2_camera_sensor"
+#define PFX "S5K3M2"
 #define LOG_1 LOG_INF("S5K3M2,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2096*1552@30fps,1260Mbps/lane; video 4192*3104@30fps,1260Mbps/lane; capture 13M@30fps,1260Mbps/lane\n")
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
@@ -228,7 +228,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x5A, 0x20, 0xff},
+	.i2c_addr_table = {0x5A, 0xff}, // 0x5a & 0x20
     .i2c_speed = 300, // i2c read/write speed
 };
 
@@ -303,7 +303,8 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
-    iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
+
+	iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
 #if 0
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
@@ -2453,6 +2454,7 @@ else {
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n",currefps);
+	
 	if(currefps==300)
 		normal_capture_setting();
 	else if(currefps==240) // PIP
@@ -2804,7 +2806,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
         spin_unlock(&imgsensor_drv_lock);
         do {
-			write_cmos_sensor(0x602C,0x4000);
+			write_cmos_sensor(0x602C,0x4000);	
 			write_cmos_sensor(0x602E,0x0000);
 			*sensor_id = read_cmos_sensor(0x6F12);
 			//*sensor_id = imgsensor_info.sensor_id;
@@ -3216,8 +3218,8 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 					  MSDK_SENSOR_INFO_STRUCT *sensor_info,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("scenario_id = %d", scenario_id);
-
+	if(scenario_id == 0)
+    	LOG_INF("scenario_id = %d\n", scenario_id);
 
 	//sensor_info->SensorVideoFrameRate = imgsensor_info.normal_video.max_framerate/10; /* not use */
 	//sensor_info->SensorStillCaptureFrameRate= imgsensor_info.cap.max_framerate/10; /* not use */
@@ -3569,7 +3571,8 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 
 static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
-	LOG_INF("scenario_id = %d\n", scenario_id);
+	if(scenario_id == 0)
+		LOG_INF("[3058]scenario_id = %d\n", scenario_id);
 
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -3641,8 +3644,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
    // unsigned long long *feature_return_para=(unsigned long long *) feature_para;
-
-	LOG_INF("feature_id = %d", feature_id);
+	if((feature_id != 3058))
+		LOG_INF("feature_id = %d", feature_id);
+	
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
 			*feature_return_para_16++ = imgsensor.line_length;
