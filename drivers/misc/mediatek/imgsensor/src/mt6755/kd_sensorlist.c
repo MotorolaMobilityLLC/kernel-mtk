@@ -3412,6 +3412,8 @@ static long CAMERA_HW_Ioctl(
 
 
     if (_IOC_NONE == _IOC_DIR(a_u4Command)) {
+		i4RetValue = -EPERM;
+		goto CAMERA_HW_Ioctl_EXIT;
     }
     else {
     pBuff = kmalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL);
