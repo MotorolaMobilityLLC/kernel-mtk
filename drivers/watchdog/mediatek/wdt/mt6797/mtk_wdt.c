@@ -392,6 +392,12 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 		if (0 == set_value)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MD_LITE_RST;
 		break;
+	case MTK_WDT_SWSYS_RST_MFG_RST: /* MFG reset */
+		if (1 == set_value)
+			wdt_sys_val |= MTK_WDT_SWSYS_RST_MFG_RST;
+		if (0 == set_value)
+			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MFG_RST;
+		break;
 	}
 	mt_reg_sync_writel(wdt_sys_val, MTK_WDT_SWSYSRST);
 	spin_unlock(&rgu_reg_operation_spinlock);
