@@ -126,7 +126,7 @@ static inline bool fsg_lun_is_open(struct fsg_lun *curlun)
 #define FSG_MAX_LUNS	8
 
 
-#define INQUIRY_MAX_LEN	29
+#define INQUIRY_MAX_LEN	29	/* 8 + 16 + 4 + 1 */
 #define LUN_NAME_LEN	8
 
 enum fsg_buffer_state {

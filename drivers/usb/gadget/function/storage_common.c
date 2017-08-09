@@ -436,10 +436,12 @@ ssize_t fsg_store_file(struct fsg_lun *curlun, struct rw_semaphore *filesem,
 {
 	int		rc = 0;
 
+#if !defined(CONFIG_USB_G_ANDROID)
 	if (curlun->prevent_medium_removal && fsg_lun_is_open(curlun)) {
 		LDBG(curlun, "eject attempt prevented\n");
 		return -EBUSY;				/* "Door is locked" */
 	}
+#endif
 
 	/* Remove a trailing newline */
 	if (count > 0 && buf[count-1] == '\n')

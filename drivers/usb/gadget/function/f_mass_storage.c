@@ -375,6 +375,9 @@ static void set_bulk_out_req_length(struct fsg_common *common,
 	if (rem > 0)
 		length += common->bulk_out_maxpacket - rem;
 	bh->outreq->length = length;
+
+	/* used by usb20 */
+	bh->outreq->short_not_ok = 1;
 }
 
 
@@ -1404,7 +1407,8 @@ static int do_prevent_allow(struct fsg_common *common)
 		return -EINVAL;
 	}
 
-	if (curlun->prevent_medium_removal && !prevent)
+	/* don't flush if nofua is set */
+	if (!curlun->nofua && curlun->prevent_medium_removal && !prevent)
 		fsg_lun_fsync_sub(curlun);
 	curlun->prevent_medium_removal = prevent;
 	return 0;
@@ -3195,6 +3199,20 @@ remove_sysfs:
 	return ret;
 }
 
+ssize_t fsg_inquiry_show(struct fsg_common *common, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", common->inquiry_string);
+}
+ssize_t fsg_inquiry_store(struct fsg_common *common, const char *buf, size_t size)
+{
+	if (size >= sizeof(common->inquiry_string))
+		return -EINVAL;
+
+	if (sscanf(buf, "%28s", common->inquiry_string) != 1)
+		return -EINVAL;
+	return size;
+}
+
 
 /*-------------------------------------------------------------------------*/
 
@@ -3750,6 +3768,8 @@ void fsg_config_from_params(struct fsg_config *cfg,
 		lun->ro = !!params->ro[i];
 		lun->cdrom = !!params->cdrom[i];
 		lun->removable = !!params->removable[i];
+		/* add nofua flag support */
+		lun->nofua = !!params->nofua[i];
 		lun->filename =
 			params->file_count > i && params->file[i][0]
 			? params->file[i]
