@@ -39,7 +39,7 @@ atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 
 KBASE_EXPORT_TEST_API(kbase_report_gpu_memory_usage)
-int kbase_report_gpu_memory_usage()
+unsigned int kbase_report_gpu_memory_usage()
 {
 #if 0
 	ssize_t ret = 0;

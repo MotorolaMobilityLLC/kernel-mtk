@@ -691,7 +691,7 @@ static inline dma_addr_t kbase_dma_addr(struct page *p)
 void kbase_mmu_interrupt_process(struct kbase_device *kbdev,
 		struct kbase_context *kctx, struct kbase_as *as);
 
-int kbase_report_gpu_memory_usage(void);
+unsigned int kbase_report_gpu_memory_usage(void);
 
 int kbase_report_gpu_memory_peak(void);
 

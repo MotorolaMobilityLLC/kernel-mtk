@@ -24,16 +24,16 @@
 #include "mali_kbase_cpu_vexpress.h"
 
 /* MTK clock modified */
-#include "mach/mt_gpufreq.h"
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
-#include <mali_kbase_pm.h>
+#include "mt_gpufreq.h"
+#include "upmu_common.h"
+#include "upmu_sw.h"
+#include "upmu_hw.h"
+#include "mali_kbase_pm.h"
 
-#include <mach/mt_chip.h>
+#include "mt_chip.h"
 
 #if defined(CONFIG_MTK_LEGACY)
-#include "mach/mt_clkmgr.h"
+#include "mt_clkmgr.h"
 #endif /* defined(CONFIG_MTK_LEGACY) */
 
 #if !defined(CONFIG_MTK_LEGACY) 
@@ -98,8 +98,9 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	int touch_boost_flag, touch_boost_id;
     unsigned int current_gpu_freq_idx;
-	unsigned int boost_idx;
+#if !defined(CONFIG_MTK_LEGACY)
 	int ret;
+#endif
 
 	unsigned int code = mt_get_chip_hw_code();
 
@@ -191,7 +192,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	volatile int polling_count = 100000;
 	volatile int i = 0;
-	int ret;
+	unsigned int code;
 
 	/// 1. Delay 0.01ms before power off   
 	for (i=0; i < DELAY_LOOP_COUNT;i++);
@@ -260,7 +261,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 
 
-	unsigned int code = mt_get_chip_hw_code();
+	code = mt_get_chip_hw_code();
 
     /* MTK clock modified */
 	if (0x321 == code) {

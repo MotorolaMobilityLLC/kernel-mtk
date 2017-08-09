@@ -47,7 +47,7 @@ int g_current_sample_gl_utilization = 0;
 int g_current_sample_cl_utilization[2] = {0};
 
 /* MTK GPU DVFS */
-#include "mach/mt_gpufreq.h"
+#include "mt_gpufreq.h"
 #include "random.h"
 
 int g_dvfs_enabled = 1;
@@ -64,7 +64,7 @@ int g_touch_boost_id = 0;
 extern unsigned int g_power_status;
 
 
-#include <linux/earlysuspend.h>
+//#include <linux/earlysuspend.h>
 #include <linux/suspend.h>
 
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
@@ -673,7 +673,7 @@ static unsigned int _mtk_gpu_dvfs_index_to_frequency(int iFreq)
 				return 3000000;
         }    
 	}
-        
+	return 0;
 }
 
 ///=====================================================================================
@@ -786,7 +786,7 @@ static int kbasep_gpu_dvfs_enable_debugfs_open(struct inode *in, struct file *fi
 	return single_open(file, proc_gpu_dvfs_enabled_show , NULL);
 }
 
-static int kbasep_gpu_dvfs_enable_write(struct file *file, const char __user *buffer, 
+static ssize_t kbasep_gpu_dvfs_enable_write(struct file *file, const char __user *buffer, 
                 size_t count, loff_t *data)
 {
     char desc[32]; 
@@ -834,7 +834,7 @@ static int kbasep_gpu_input_boost_debugfs_open(struct inode *in, struct file *fi
 	return single_open(file, proc_gpu_input_boost_show , NULL);
 }
 
-static int kbasep_gpu_input_boost_write(struct file *file, const char __user *buffer, 
+static ssize_t kbasep_gpu_input_boost_write(struct file *file, const char __user *buffer, 
                 size_t count, loff_t *data)
 {
     char desc[32]; 
@@ -880,7 +880,7 @@ static int kbasep_gpu_dvfs_freq_debugfs_open(struct inode *in, struct file *file
 	return single_open(file, proc_gpu_dvfs_freq_show , NULL);
 }
 
-static int kbasep_gpu_dvfs_freq_write(struct file *file, const char __user *buffer, 
+static ssize_t kbasep_gpu_dvfs_freq_write(struct file *file, const char __user *buffer, 
                 size_t count, loff_t *data)
 {
     char desc[32]; 
@@ -928,7 +928,7 @@ static int kbasep_gpu_dvfs_threshold_debugfs_open(struct inode *in, struct file 
 	return single_open(file, proc_gpu_dvfs_threshold_show , NULL);
 }
 
-static int kbasep_gpu_dvfs_threshold_write(struct file *file, const char __user *buffer, 
+static ssize_t kbasep_gpu_dvfs_threshold_write(struct file *file, const char __user *buffer, 
                 size_t count, loff_t *data)
 {
     char desc[32]; 
@@ -978,7 +978,7 @@ static int kbasep_gpu_dvfs_deferred_count_debugfs_open(struct inode *in, struct 
 	return single_open(file, proc_gpu_dvfs_deferred_count_show , NULL);
 }
 
-static int kbasep_gpu_dvfs_deferred_count_write(struct file *file, const char __user *buffer, 
+static ssize_t kbasep_gpu_dvfs_deferred_count_write(struct file *file, const char __user *buffer, 
                 size_t count, loff_t *data)
 {
     char desc[32]; 

@@ -86,10 +86,10 @@
 
 /* MTK GPU DVFS */
 #include <mali_kbase_pm.h>
-#include "mach/mt_gpufreq.h"
+#include "mt_gpufreq.h"
 
 /* MTK chip version API */
-#include <mach/mt_chip.h>
+#include "mt_chip.h"
 
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
@@ -376,6 +376,7 @@ static int _mtk_get_gpu_boost_duration(void)
 
 void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
 {
+    int iCurrentFreqID;
     //printk("[MALI] mtk_gpu_input_boost_CB! boost to index=%d\n", ui32BoostFreqID);
 
     // check if input boost enabled
@@ -386,8 +387,6 @@ void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
 
     // set gpu boost id
     g_gpu_boost_id = ui32BoostFreqID;
-
-    int iCurrentFreqID;
 
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
     printk("[MALI] current gpu freq id=%d, touch boost to index=%d\n", iCurrentFreqID, ui32BoostFreqID);
@@ -483,11 +482,12 @@ int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
 int mtk_gpu_dvfs(void)
 {
     int iCurrentFreqID, iTargetFreqID;
-    int iCurrentVirtualFreqID, iTargetVirtualFreqID;
+	int iCurrentVirtualFreqID = 0, iTargetVirtualFreqID;
     int iCurrentGPUPlatformID;
     int iCurrentGPUBoostDurationCount;
     int i;
     enum kbase_pm_dvfs_action action;
+    int higher_boost_id;
 
     action = mtk_get_dvfs_action();
 
@@ -576,7 +576,6 @@ int mtk_gpu_dvfs(void)
 
 
     // [MTK] mtk_custom_gpu_boost.  do nothing if g_custom_gpu_boost_id is higher
-    int higher_boost_id;
 
     /* calculate higher boost frequency (e.g. lower index id) */
     if(g_custom_gpu_boost_id < g_ged_gpu_boost_id)
@@ -3132,18 +3131,19 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	int err;
 	int i;
 	struct mali_base_gpu_core_props *core_props;
+	unsigned int code;
 #ifdef CONFIG_MALI_NO_MALI
 	mali_error mali_err;
 #endif /* CONFIG_MALI_NO_MALI */
 #ifdef CONFIG_OF
 #ifdef CONFIG_MALI_PLATFORM_FAKE
 	struct kbase_platform_config *config;
+	struct device_node *node;    
 	int attribute_count;
 
 	printk(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
 
 #ifdef CONFIG_OF
-	struct device_node *node;    
 	//mfgcfg
 	node = of_find_compatible_node(NULL, NULL, "mediatek,G3D_CONFIG");
 	if (!node) {
@@ -3277,7 +3277,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 #endif /* CONFIG_DEBUG_FS */
 
-	unsigned int code = mt_get_chip_hw_code();
+	code = mt_get_chip_hw_code();
 	if (0x321 == code) {
 		// do something for Denali-1(6735)
 #if defined(CONFIG_MTK_LEGACY)

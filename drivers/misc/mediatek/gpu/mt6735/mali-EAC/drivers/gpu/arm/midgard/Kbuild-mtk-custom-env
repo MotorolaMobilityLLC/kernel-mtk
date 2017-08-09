@@ -22,7 +22,11 @@ ccflags-y += -I-I$(srctree)/include
 ccflags-y += -I$(srctree)/drivers/staging/android
 
 #include clock manager for clock use
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/mt6735/include
+#ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/mt6735/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mt6735
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6735/include/mach
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+
 
 VER:=eng
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
