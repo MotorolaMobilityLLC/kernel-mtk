@@ -97,4 +97,11 @@ config LOG_TOO_MUCH_DETECT_GAP
 	default 10
 	depends on LOG_TOO_MUCH_WARNING
 
+config MT_BOOT_TIME_CPU_BOOST
+	bool "Boost CPU performance to enhance boot speed"
+	default y
+	help
+	  MT_BOOT_TIME_CPU_BOOST is to boost CPU performance to enhance boot
+	  speed and save time cost during system booting. This mechanism
+	  will recover DVFS/hotplug after system boot up done.
 endif

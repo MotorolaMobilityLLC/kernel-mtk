@@ -374,7 +374,7 @@ static int get_toi_debug_info(const char *buffer, int count)
 	SNPRINTF("- Extra pages    : %lu used/%lu.\n",
 		 extra_pd1_pages_used, extra_pd1_pages_allowance);
 
-	for (i = 0; i < min(TOI_NUM_RESULT_STATES, ARRAY_SIZE(result_strings)); i++)
+	for (i = 0; i < min_t(int, TOI_NUM_RESULT_STATES, ARRAY_SIZE(result_strings)); i++)
 		if (test_result_state(i)) {
 #ifdef CONFIG_TOI_FIXUP
 			SNPRINTF("%s: %s.\n", first_result ?

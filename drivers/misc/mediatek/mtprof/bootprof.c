@@ -51,24 +51,17 @@ void log_boot(char *str)
 	mutex_unlock(&mt_bootprof_lock);
 }
 
+static void bootup_finish(void)
+{
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
-static void bootup_finish(void)
-{
 	mt_disable_uart();
+#endif
 	set_logtoomuch_enable(1);
 #ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
 	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
 #endif
 }
-#else
-static void bootup_finish(void)
-{
-	set_logtoomuch_enable(1);
-#ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
-	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
-#endif
-}
-#endif
+
 /* extern void (*set_intact_mode)(void); */
 static void mt_bootprof_switch(int on)
 {
