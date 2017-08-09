@@ -256,60 +256,12 @@ int gf_port_list_unreg[GF_PORT_LIST_MAX];
 static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type, struct garbage_filter_item *list,
 				  int number)
 {
-#define PORT_IPC_BUFFER_SIZE 256
-	struct file *filp = NULL;
-	static const char * const file_list[] = {
-		"/proc/net/tcp",
-		"/proc/net/tcp6",
-		"/proc/net/udp",
-		"/proc/net/udp6",
-	};
-	const char *file_name = NULL;
 	int port_number = -1;
-	char *buffer;
-
-	buffer = kmalloc(PORT_IPC_BUFFER_SIZE, GFP_KERNEL);
-	if (buffer == NULL) {
-		CCCI_INF_MSG(-1, IPC, "%s kmalloc 256 failed\n", __func__);
-		return -1;
-	}
-	if (prot_type == GF_TCP) {
-		if (ip_type == GF_IPV4)
-			file_name = file_list[0];
-		else
-			file_name = file_list[1];
-	} else {
-		if (ip_type == GF_IPV4)
-			file_name = file_list[2];
-		else
-			file_name = file_list[3];
-	}
-	filp = filp_open(file_name, O_RDONLY, 0777);
-
-	if (!IS_ERR(filp)) {
-		port_number = 0;
-		kernel_read(filp, 0, buffer, PORT_IPC_BUFFER_SIZE);
-		/* TODO: parse file */
-		if (prot_type == GF_TCP && ip_type == GF_IPV4) {
-			int i;
-
-			for (i = 0; i < GF_PORT_LIST_MAX && i < number; i++) {
-				if (gf_port_list_reg[i] != 0) {
-					port_number++;
-					(list + i)->filter_id = i;
-					(list + i)->ip_type = ip_type;
-					(list + i)->protocol = prot_type;
-					(list + i)->dst_port = gf_port_list_reg[i];
-					(list + i)->magic_code = 168;
-				} else {
-					break;
-				}
-			}
-		}
-	}
-	kfree(buffer);
-	if (filp != NULL)
-		filp_close(filp, NULL);
+	/*
+	*[Porting notes]
+	* For kernel security issue, remove filp_open file code
+	* if really need, please find suitable net interface to get opened port list
+	*/
 	CCCI_INF_MSG(-1, IPC, "IP:%d Protocol:%d port number:%d\n", ip_type, prot_type, port_number);
 	return port_number;
 }

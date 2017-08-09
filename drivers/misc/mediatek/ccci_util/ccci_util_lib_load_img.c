@@ -717,6 +717,8 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 	int img_size = 0;
 	int hdr_size = 0;
 	void *img_data_ptr = NULL;
+	char *img_str = md_img_info_str[md_id];
+
 
 	if (dev == NULL) {
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "dev == NULL\n");
@@ -763,7 +765,8 @@ TRY_LOAD_IMG:
 		} else {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 			     "Try to load all md image failed:ret=%d!\n", ret);
-			return -CCCI_ERR_INVALID_PARAM;
+			ret = -CCCI_ERR_INVALID_PARAM;
+			goto out;
 		}
 	}
 	strncpy(img->file_name, img_name, sizeof(img->file_name));
@@ -791,7 +794,8 @@ TRY_LOAD_IMG:
 		if (start == 0) {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail %d\n",
 						(unsigned int)(load_addr + read_size));
-			return -CCCI_ERR_LOAD_IMG_NOMEM;
+			ret = -CCCI_ERR_LOAD_IMG_NOMEM;
+			goto out;
 		}
 		if (read_size + size_per_read > img->size - img->tail_length)
 			size_per_read = img->size - img->tail_length - read_size;
@@ -827,6 +831,16 @@ TRY_LOAD_IMG:
 	ret = read_size;
 	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Request firmware: %s (size=0x%x) to 0x%lx\n",
 		     img->file_name, img->size - img->tail_length, load_addr);
+
+	/* Construct image information string */
+	if (img->type == IMG_MD) {
+		sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
+			img->img_info.image_type, img->img_info.platform,
+			img->img_info.build_ver, img->img_info.build_time,
+			img->img_info.product_ver, img->ap_info.image_type,
+			img->ap_info.platform, img->ap_info.mem_size, img->img_info.mem_size);
+	}
+
  out:
 	if (fw_entry != NULL) {
 		release_firmware(fw_entry);

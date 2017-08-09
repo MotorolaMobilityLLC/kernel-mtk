@@ -37,7 +37,7 @@ int ccci_log_write(const char *fmt, ...)
 	va_list args;
 	int write_len, first_half;
 	unsigned long flags;
-	char temp_log[CCCI_LOG_MAX_WRITE];
+	char *temp_log;
 	int this_cpu;
 	char state = irqs_disabled() ? '-' : ' ';
 	u64 ts_nsec = local_clock();
@@ -45,15 +45,19 @@ int ccci_log_write(const char *fmt, ...)
 
 	if (unlikely(ccci_log_buf.buffer == NULL))
 		return -ENODEV;
-
+	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
+	if (temp_log == NULL) {
+		CCCI_UTIL_INF_MSG("fail to kmalloc tmp buf\n");
+		return -ENOMEM;
+	}
 	preempt_disable();
 	this_cpu = smp_processor_id();
 	preempt_enable();
-	write_len = snprintf(temp_log, sizeof(temp_log), "[%5lu.%06lu]%c(%x)[%d:%s]",
+	write_len = snprintf(temp_log, CCCI_LOG_MAX_WRITE, "[%5lu.%06lu]%c(%x)[%d:%s]",
 			     (unsigned long)ts_nsec, rem_nsec / 1000, state, this_cpu, current->pid, current->comm);
 
 	va_start(args, fmt);
-	write_len += vsnprintf(temp_log + write_len, sizeof(temp_log) - write_len, fmt, args);
+	write_len += vsnprintf(temp_log + write_len, CCCI_LOG_MAX_WRITE - write_len, fmt, args);
 	va_end(args);
 
 	spin_lock_irqsave(&ccci_log_buf.write_lock, flags);
@@ -69,6 +73,8 @@ int ccci_log_write(const char *fmt, ...)
 	spin_unlock_irqrestore(&ccci_log_buf.write_lock, flags);
 	wake_up_all(&ccci_log_buf.log_wq);
 
+	kfree(temp_log);
+	temp_log = NULL;
 	return write_len;
 }
 EXPORT_SYMBOL(ccci_log_write);
