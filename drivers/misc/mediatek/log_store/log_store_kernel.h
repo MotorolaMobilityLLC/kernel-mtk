@@ -83,10 +83,7 @@ struct pl_lk_log {
 
 
 
-enum {
-	LOG_PL_LK = 0x0,	/* Preloader and lk log buff */
-	LOG_XXX = 0x1
-} BUFF_TYPE;
+#define	LOG_PL_LK  0x0	/* Preloader and lk log buff */
 
 
 /* total 100 char size. u32 25 */
