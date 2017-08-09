@@ -356,8 +356,8 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 		int irq_id = 0;
 		char *name;
 
-		if (id > 7 || id < 0) {
-				pr_err("%s: err idnumber id=%d should be 0~7\n", __func__, id);
+		if (id > 9 || id < 0) {
+				pr_err("%s: err idnumber id=%d should be 0~9\n", __func__, id);
 				return -1;
 		}
 		switch (id) {
@@ -415,7 +415,7 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 			return ret;
 		}
 
-		pr_debug("%s:%s register irq (%d) ok\n", __func__, name , irq_id);
+		pr_err("%s:%s register irq (%d) ok\n", __func__, name , irq_id);
 
 		return 0;
 }
