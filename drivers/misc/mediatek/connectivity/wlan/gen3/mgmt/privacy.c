@@ -945,7 +945,7 @@ VOID secPrivacyFreeForEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucEntry)
 
 	ASSERT(prAdapter);
 
-	if (ucEntry > WTBL_SIZE)
+	if (ucEntry >= WTBL_SIZE)
 		return;
 
 	DBGLOG(RSN, TRACE, "secPrivacyFreeForEntry %d", ucEntry);
