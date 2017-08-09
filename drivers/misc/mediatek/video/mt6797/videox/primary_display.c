@@ -3808,6 +3808,7 @@ int primary_display_resume(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int i;
 
 	DISPCHECK("primary_display_resume begin\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagStart, 0, 0);
@@ -3892,6 +3893,16 @@ int primary_display_resume(void)
 		data_config->ovl_partial_roi.width = primary_display_get_width();
 		data_config->ovl_partial_roi.height = primary_display_get_height();
 		data_config->dst_dirty = 1;
+
+		/* disable all ovl layers to show black screen */
+		/* note that if WFD is connected, we may miss the black setting before the last suspend */
+		for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
+			if (is_DAL_Enabled() &&
+				data_config->ovl_config[i].layer == primary_display_get_option("ASSERT_LAYER"))
+				continue;
+			data_config->ovl_config[i].layer_en = 0;
+		}
+		data_config->ovl_dirty = 1;
 
 		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
 		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 2, 2);
