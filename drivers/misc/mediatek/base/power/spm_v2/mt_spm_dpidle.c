@@ -298,21 +298,23 @@ static struct pcm_desc dpidle_pcm = {
 
 #if defined(CONFIG_ARCH_MT6757)
 static struct pwr_ctrl dpidle_ctrl = {
-	.wake_src			= WAKE_SRC_FOR_DPIDLE,
-	.wake_src_md32		= WAKE_SRC_FOR_MD32,
-	.r0_ctrl_en			= 1,
-	.r7_ctrl_en			= 1,
-	.infra_dcm_lock		= 1,
-	.wfi_op				= WFI_OP_AND,
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en	= 1,
+	.r7_ctrl_en	= 1,
+	.infra_dcm_lock	= 1,
 
 	/* SPM_AP_STANDBY_CON */
+	.wfi_op	= WFI_OP_AND,
 	.mp0_cputop_idle_mask = 0,
 	.mp1_cputop_idle_mask = 0,
 	.mcusys_idle_mask = 0,
+	.mm_mask_b = 0,
 	.md_ddr_en_dbc_en = 0,
 	.md_mask_b = 1,
 	.scp_mask_b = 0,
 	.lte_mask_b = 0,
+	.srcclkeni_mask_b = 0,
 	.md_apsrc_1_sel = 0,
 	.md_apsrc_0_sel = 0,
 	.conn_mask_b = 1,
@@ -330,6 +332,9 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.cpu_md_dvfs_sop_force_on = 0,
 
 	/* SPM_SRC_MASK */
+#if SPM_BYPASS_SYSPWREQ
+	.csyspwreq_mask = 1,
+#endif
 	.ccif0_md_event_mask_b = 1,
 	.ccif0_ap_event_mask_b = 1,
 	.ccif1_md_event_mask_b = 1,
@@ -365,7 +370,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.gce_req_mask_b = 0,
 	.cpu_md_dvfs_req_merge_mask_b = 0,
 	.md_ddr_en_dvfs_halt_mask_b = 0,
-	.dsi0_vsync_dvfs_halt_mask_b = 0,	/* 5bit */
+	.dsi0_vsync_dvfs_halt_mask_b = 0,
+	.dsi1_vsync_dvfs_halt_mask_b = 0,
+	.dpi_vsync_dvfs_halt_mask_b = 0,
+	.isp0_vsync_dvfs_halt_mask_b = 0,
+	.isp1_vsync_dvfs_halt_mask_b = 0,
 	.conn_ddr_en_mask_b = 1,
 	.disp_req_mask_b = 0,
 	.disp1_req_mask_b = 0,
@@ -377,6 +386,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
+	.dramc_spcmd_apsrc_req_mask_b = 0,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -389,10 +399,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mp0_cpu1_wfi_en	= 1,
 	.mp0_cpu2_wfi_en	= 1,
 	.mp0_cpu3_wfi_en	= 1,
-
-#if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 1,
-#endif
 };
 #else
 static struct pwr_ctrl dpidle_ctrl = {
