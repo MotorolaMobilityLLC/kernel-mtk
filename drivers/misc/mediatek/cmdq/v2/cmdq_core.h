@@ -473,8 +473,7 @@ typedef struct ThreadStruct {
 	uint64_t engineFlag;	/* keep used engine to look up while dispatch thread */
 	CmdqInterruptCB loopCallback;	/* LOOP execution */
 	unsigned long loopData;	/* LOOP execution */
-	TaskStruct *pCurTask[CMDQ_MAX_TASK_IN_THREAD];
-	struct workqueue_struct *taskThreadAutoReleaseWQ;	/* auto-release workqueue */
+	TaskStruct * pCurTask[CMDQ_MAX_TASK_IN_THREAD];
 
 	/* 1 to describe thread is available to dispatch a task. 0: not available */
 	/* .note thread's taskCount increase when attatch a task to it. */
@@ -592,6 +591,9 @@ typedef struct ContextStruct {
 	/* Basic information */
 	EngineStruct engine[CMDQ_MAX_ENGINE_COUNT];
 	ThreadStruct thread[CMDQ_MAX_THREAD_COUNT];
+
+	/* auto-release workqueue per thread */
+	struct workqueue_struct *taskThreadAutoReleaseWQ[CMDQ_MAX_THREAD_COUNT];
 
 	/* Secure path shared information */
 	cmdqSecSharedMemoryHandle hSecSharedMem;

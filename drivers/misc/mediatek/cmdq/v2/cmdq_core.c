@@ -1631,11 +1631,31 @@ void cmdq_core_reset_thread_struct(void)
 	pThread = &(gCmdqContext.thread[0]);
 	for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++)
 		pThread[index].allowDispatching = 1;
+}
+
+void cmdq_core_init_thread_work_queue(void)
+{
+	struct ThreadStruct *pThread;
+	int index;
 
 	/* Initialize work queue per thread */
+	pThread = &(gCmdqContext.thread[0]);
 	for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++) {
-		gCmdqContext.thread[index].taskThreadAutoReleaseWQ =
+		gCmdqContext.taskThreadAutoReleaseWQ[index] =
 		    create_singlethread_workqueue("cmdq_auto_release_thread");
+	}
+}
+
+void cmdq_core_destroy_thread_work_queue(void)
+{
+	struct ThreadStruct *pThread;
+	int index;
+
+	/* Initialize work queue per thread */
+	pThread = &(gCmdqContext.thread[0]);
+	for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++) {
+		destroy_workqueue(gCmdqContext.taskThreadAutoReleaseWQ[index]);
+		gCmdqContext.taskThreadAutoReleaseWQ[index] = NULL;
 	}
 }
 
@@ -7047,7 +7067,7 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 
 	/* Put auto release task to corresponded thread */
 	if (CMDQ_INVALID_THREAD != pTask->thread) {
-		queue_work(gCmdqContext.thread[pTask->thread].taskThreadAutoReleaseWQ,
+		queue_work(gCmdqContext.taskThreadAutoReleaseWQ[pTask->thread],
 			   &pTask->autoReleaseWork);
 	} else {
 		/* if task does not belong thread, use static dispatch thread at first, */
@@ -7055,7 +7075,7 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 		isSecure = pTask->secData.isSecure;
 		threadNo = cmdq_get_func()->getThreadID(pTask->scenario, isSecure);
 		if (CMDQ_INVALID_THREAD != threadNo) {
-			queue_work(gCmdqContext.thread[threadNo].taskThreadAutoReleaseWQ,
+			queue_work(gCmdqContext.taskThreadAutoReleaseWQ[threadNo],
 				   &pTask->autoReleaseWork);
 		} else {
 			queue_work(gCmdqContext.taskAutoReleaseWQ, &pTask->autoReleaseWork);
@@ -7273,9 +7293,11 @@ int32_t cmdqCoreInitialize(void)
 	/* Initialize emergency buffer */
 	cmdq_core_init_emergency_buffer();
 
+	/* Initialize work queue */
 	gCmdqContext.taskAutoReleaseWQ = create_singlethread_workqueue("cmdq_auto_release");
 	gCmdqContext.taskConsumeWQ = create_singlethread_workqueue("cmdq_task");
 	gCmdqContext.resourceCheckWQ = create_singlethread_workqueue("cmdq_resource");
+	cmdq_core_init_thread_work_queue();
 
 	/* Initialize command buffer dump */
 	memset(&gCmdqBufferDump, 0x0, sizeof(DumpCommandBufferStruct));
@@ -7361,6 +7383,8 @@ void cmdqCoreDeInitialize(void)
 
 	destroy_workqueue(gCmdqContext.resourceCheckWQ);
 	gCmdqContext.resourceCheckWQ = NULL;
+
+	cmdq_core_destroy_thread_work_queue();
 
 	/* release all tasks in both list */
 	for (index = 0; index < (sizeof(lists) / sizeof(lists[0])); ++index) {
