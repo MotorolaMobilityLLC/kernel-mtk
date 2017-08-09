@@ -77,7 +77,11 @@ do { \
 
 #endif
 
+#ifdef CONFIG_ARCH_MT6755
+#define CFG_WMT_PS_SUPPORT 0
+#else
 #define CFG_WMT_PS_SUPPORT 1	/* moved from wmt_exp.h */
+#endif
 #define CFG_WMT_DUMP_INT_STATUS 0
 #define CONSYS_ENALBE_SET_JTAG 1
 

@@ -93,9 +93,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-
 static VOID wmt_plat_bgf_eirq_cb(VOID);
-
 static INT32 wmt_plat_bgf_eint_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state);
@@ -253,7 +251,6 @@ static VOID wmt_plat_bgf_eirq_cb(VOID)
 #else
 	return;
 #endif
-
 }
 
 irqreturn_t wmt_plat_bgf_irq_isr(INT32 i, VOID *arg)

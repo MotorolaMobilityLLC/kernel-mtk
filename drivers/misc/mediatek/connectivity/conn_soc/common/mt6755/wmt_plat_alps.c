@@ -93,9 +93,9 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-
+#if CFG_WMT_PS_SUPPORT
 static VOID wmt_plat_bgf_eirq_cb(VOID);
-
+#endif
 static INT32 wmt_plat_bgf_eint_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state);
@@ -240,22 +240,20 @@ static INT32 wmt_plat_deep_idle_ctrl(UINT32 dpilde_ctrl)
 
 	return iRet;
 }
-
+#if CFG_WMT_PS_SUPPORT
 static VOID wmt_plat_bgf_eirq_cb(VOID)
 {
-#if CFG_WMT_PS_SUPPORT
+
 /* #error "need to disable EINT here" */
 	/* wmt_lib_ps_irq_cb(); */
 	if (NULL != wmt_plat_bgf_irq_cb)
 		(*(wmt_plat_bgf_irq_cb)) ();
 	else
 		WMT_PLAT_WARN_FUNC("WMT-PLAT: wmt_plat_bgf_irq_cb not registered\n");
-#else
 	return;
-#endif
 
 }
-
+#endif
 irqreturn_t wmt_plat_bgf_irq_isr(INT32 i, VOID *arg)
 {
 #if CFG_WMT_PS_SUPPORT
