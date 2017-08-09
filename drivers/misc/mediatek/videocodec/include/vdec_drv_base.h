@@ -112,6 +112,7 @@ typedef struct __VDEC_HANDLE_T {
 	VAL_INT32_T             nPerfServiceHandle;
 #ifdef DumpInput__
 	FILE *pf_out;
+	VAL_MEM_ADDR_T          rDumpBase;
 #endif
 	VAL_UINT32_T            nOmxTids;
 } VDEC_HANDLE_T;

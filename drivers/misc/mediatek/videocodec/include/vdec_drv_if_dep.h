@@ -127,6 +127,7 @@ typedef struct __VDEC_HANDLE_T {
 	VCODEC_DEC_PRIVATE_OUTPUT_EXTRA_T prExtraDecOutput;
 #ifdef DumpInput__
 	FILE *pf_out;
+	VAL_MEM_ADDR_T          rDumpBase;
 #endif
 
 	/* Morris Yang 20111101 [ */
