@@ -1033,12 +1033,6 @@ static unsigned long clk_spm_pll_recalc_rate(
 	return 208000000;
 }
 
-static void clk_spm_pll_set_rate_regs(
-		struct clk_hw *hw,
-		u32 pcw,
-		u32 postdiv_idx)
-{
-}
 
 static long clk_spm_pll_round_rate(
 		struct clk_hw *hw,
