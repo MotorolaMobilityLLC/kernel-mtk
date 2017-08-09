@@ -3329,7 +3329,9 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
     sensor_info->SensorHightSampling = 0;   // 0 is default 1x
     sensor_info->SensorPacketECCOrder = 1;
-
+	/*Dphy 1.2  Deskew support. 0: not support, 1: DPHY1.2 Deskew */	
+    sensor_info->SensorMIPIDeskew = 1;
+	
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
             sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;

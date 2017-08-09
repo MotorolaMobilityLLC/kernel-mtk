@@ -1991,6 +1991,8 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	pSensorInfo->SCAM_CRC_En                             = pInfo[IDNum]->SCAM_CRC_En;
 	pSensorInfo->SCAM_SOF_src                            = pInfo[IDNum]->SCAM_SOF_src;
 	pSensorInfo->SCAM_Timout_Cali                        = pInfo[IDNum]->SCAM_Timout_Cali;
+	/*Deskew*/
+	pSensorInfo->SensorMIPIDeskew                       = pInfo[IDNum]->SensorMIPIDeskew;
     /* TO get preview value */
     ScenarioId[0] = ScenarioId[1] = MSDK_SCENARIO_ID_CUSTOM1;
     g_pSensorFunc->SensorGetInfo(pScenarioId, pInfo, pConfig);
