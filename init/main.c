@@ -774,7 +774,7 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 	rettime = ktime_get();
 	delta = ktime_sub(rettime, calltime);
 	duration = (unsigned long long) ktime_to_ns(delta) >> 10;
-	printk(KERN_DEBUG "initcall %pF returned %d after %lld usecs\n",
+	pr_notice("initcall %pF returned %d after %lld usecs\n",
 		 fn, ret, duration);
 
 	return ret;
@@ -788,12 +788,14 @@ int __init_or_module do_one_initcall(initcall_t fn)
 
 	if (initcall_blacklisted(fn))
 		return -EPERM;
-
+#if defined(CONFIG_MT_ENG_BUILD)
+	ret = do_one_initcall_debug(fn);
+#else
 	if (initcall_debug)
 		ret = do_one_initcall_debug(fn);
 	else
 		ret = fn();
-
+#endif
 	msgbuf[0] = 0;
 
 	if (preempt_count() != count) {
