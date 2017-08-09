@@ -84,7 +84,6 @@ static int mtk_pcm_dl1Bt_stop(struct snd_pcm_substream *substream)
 	mt_afe_enable_afe(false);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	mt_afe_main_clk_off();
-	mt_afe_ana_clk_off();
 
 	return 0;
 }
@@ -200,7 +199,6 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 	afe_control_sram_unlock();
 
 	PRINTK_AUDDRV("mtk_dl1bt_pcm_open\n");
-	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 
 	/* get dl1 memconptrol and record substream */
@@ -242,7 +240,6 @@ static int mtk_Dl1Bt_close(struct snd_pcm_substream *substream)
 	mPlaybackSramState = get_sramstate();
 	afe_control_sram_unlock();
 	mt_afe_main_clk_off();
-	mt_afe_ana_clk_off();
 	return 0;
 }
 
@@ -255,7 +252,6 @@ static int mtk_pcm_dl1bt_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 	set_memif_substream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE
