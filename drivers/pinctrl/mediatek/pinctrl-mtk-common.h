@@ -325,4 +325,8 @@ int mtk_spec_get_ies_smt_range(struct regmap *regmap,
 		unsigned int pin);
 
 extern const struct dev_pm_ops mtk_eint_pm_ops;
+#ifdef CONFIG_MTK_EIC
+void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
+unsigned int mt_gpio_to_irq(unsigned gpio);
+#endif
 #endif /* __PINCTRL_MTK_COMMON_H */

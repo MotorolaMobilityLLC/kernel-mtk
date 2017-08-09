@@ -45,9 +45,6 @@
 #include "../pinconf.h"
 #include "../pinctrl-utils.h"
 #include "pinctrl-mtk-common.h"
-#ifdef CONFIG_MTK_EIC
-#include <linux/irqchip/mt-eic.h>
-#endif
 
 #define MAX_GPIO_MODE_PER_REG 5
 #define GPIO_MODE_BITS        3
@@ -986,6 +983,7 @@ static void __iomem *mtk_eint_get_offset(struct mtk_pinctrl *pctl,
 	return reg;
 }
 
+#ifndef CONFIG_MTK_EIC
 /*
  * mtk_can_en_debounce: Check the EINT number is able to enable debounce or not
  * @eint_num: the EINT number to setmtk_pinctrl
@@ -1028,6 +1026,7 @@ static unsigned int mtk_eint_get_mask(struct mtk_pinctrl *pctl,
 
 	return !!(readl(reg) & bit);
 }
+#endif
 
 static int mtk_eint_flip_edge(struct mtk_pinctrl *pctl, int hwirq)
 {
