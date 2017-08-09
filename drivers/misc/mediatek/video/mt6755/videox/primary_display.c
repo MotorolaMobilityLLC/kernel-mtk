@@ -2016,6 +2016,7 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		buf_info->mva = buffer_mva;
 		buf_info->size = mva_size;
 		buf_info->va = buffer_va;
+		buf_info->client = client;
 	} else {
 		DISPERR("Fatal error, kzalloc internal buffer info failed!!\n");
 		kfree(buf_info);
@@ -2088,7 +2089,7 @@ static int _allocate_dc_buffer(void)
 			pgc->dc_buf[i] = gmo_decouple_buffer_info->mva;
 	else {
 		DISPERR("_allocate_dc_buffer fail\n");
-		return -1;
+		return -EFAULT;
 	}
 	DISPDBG("_allocate_dc_buffer mva 0x%x\n", gmo_decouple_buffer_info->mva);
 	/*initialize rdma config */
@@ -4592,7 +4593,9 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE))
-			pd_allocate_dc_buffer();
+			ret = pd_allocate_dc_buffer();
+		if (ret)
+			goto err;
 		/* dl to dc mirror  mirror */
 		DL_switch_to_DC_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE

@@ -1345,7 +1345,7 @@ int set_session_mode(disp_session_config *config_info, int force)
 	int ret = 0;
 
 	if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
-		primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
+		ret = primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 	else
 		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
 
