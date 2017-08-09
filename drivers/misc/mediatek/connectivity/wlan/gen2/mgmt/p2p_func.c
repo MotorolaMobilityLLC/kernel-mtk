@@ -1907,11 +1907,13 @@ BOOLEAN p2pFuncValidateAssocReq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 			}
 
 			if (prAttriWfdDevInfo == NULL) {
-				/* Without WFD IE.
-				* Do nothing. Accept the connection request.
-				*/
+				/*
+				 * Without WFD IE.
+				 * Do nothing. Accept the connection request.
+				 */
+				*pu2StatusCode = STATUS_CODE_SUCCESSFUL;
 				break;
-		       }
+			}
 
 			/* prAttriWfdDevInfo = */
 			/* (P_WFD_DEVICE_INFORMATION_IE_T)p2pFuncGetSpecAttri(prAdapter, */
