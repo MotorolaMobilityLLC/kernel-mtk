@@ -1155,8 +1155,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	switch (cmd) {
 	case VCODEC_SET_THREAD_ID:
 	{
-		MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] + tid = %d\n", current->pid);
-		MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] - tid = %d\n", current->pid);
+		/* MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] + tid = %d\n", current->pid); */
+		/* MODULE_MFV_LOGE("VCODEC_SET_THREAD_ID [EMPTY] - tid = %d\n", current->pid); */
 	}
 	break;
 
