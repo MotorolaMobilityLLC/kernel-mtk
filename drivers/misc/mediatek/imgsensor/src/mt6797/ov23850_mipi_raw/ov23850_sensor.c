@@ -3446,6 +3446,7 @@ static kal_uint32 open(void)
     imgsensor.ihdr_en = 0;
     imgsensor.test_pattern = KAL_FALSE;
     imgsensor.current_fps = imgsensor_info.pre.max_framerate;
+	imgsensor.pdaf_mode= 0;
     spin_unlock(&imgsensor_drv_lock);
     return ERROR_NONE;
 }
@@ -4308,8 +4309,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			}
 			break;
 		case SENSOR_FEATURE_SET_PDAF:
-			LOG_INF("PDAF mode :%d\n", *feature_data_16);
+#if defined(ENABLE_PDAF_VC)
 			imgsensor.pdaf_mode= *feature_data_16;
+#endif
+			LOG_INF("PDAF mode :%d\n", imgsensor.pdaf_mode);
 			break;
         default:
             break;
