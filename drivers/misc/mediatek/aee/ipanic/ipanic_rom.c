@@ -47,6 +47,12 @@ int __weak has_mt_dump_support(void)
 	return 0;
 }
 
+int __weak panic_dump_disp_log(void *data, unsigned char *buffer, size_t sz_buf)
+{
+	pr_notice("%s: weak function\n", __func__);
+	return 0;
+}
+
 #if 1
 void ipanic_block_scramble(u8 *buf, int buflen)
 {
@@ -156,7 +162,7 @@ const struct ipanic_dt_op ipanic_dt_ops[] = {
 	{"SYS_RADIO_LOG_RAW", __RADIO_BUF_SIZE, ipanic_alog_buffer},
 	{"SYS_LAST_LOG", LAST_LOG_LEN, ipanic_klog_buffer},
 	{"SYS_ATF_LOG", ATF_LOG_SIZE, ipanic_atflog_buffer},
-	{"reserved", 0, NULL},	/* 16 */
+	{"SYS_DISP_LOG", DISP_LOG_SIZE, panic_dump_disp_log},	/* 16 */
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
@@ -472,6 +478,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	struct ipanic_data_header *dheader;
 	struct kmsg_dumper dumper;
 	struct ipanic_atf_log_rec atf_log = { ATF_LOG_SIZE, 0, 0 };
+	void *data = NULL;
 	int dt;
 	int errno;
 	struct ipanic_header *ipanic_hdr;
@@ -514,6 +521,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	ipanic_data_to_sd(IPANIC_DT_WQ_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_MMPROFILE, 0);
 	ipanic_data_to_sd(IPANIC_DT_ATF_LOG, &atf_log);
+	ipanic_data_to_sd(IPANIC_DT_DISP_LOG, data);
 	errno = ipanic_header_to_sd(0);
 	if (!IS_ERR(ERR_PTR(errno)))
 		mrdump_mini_ipanic_done();

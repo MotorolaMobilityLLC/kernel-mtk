@@ -140,6 +140,7 @@ enum IPANIC_DT {
 	IPANIC_DT_RADIO_LOG,
 	IPANIC_DT_LAST_LOG,
 	IPANIC_DT_ATF_LOG,
+	IPANIC_DT_DISP_LOG,
 	IPANIC_DT_RAM_DUMP = 28,
 	IPANIC_DT_SHUTDOWN_LOG = 30,
 	IPANIC_DT_RESERVED31 = 31,
@@ -215,6 +216,7 @@ struct ipanic_atf_log_rec {
 #define LAST_LOG_LEN	(AEE_LOG_LEVEL == 8 ? __LOG_BUF_LEN : 32*1024)
 
 #define ATF_LOG_SIZE	(32*1024)
+#define DISP_LOG_SIZE	(30*16*1024)
 
 char *expdb_read_size(int off, int len);
 char *ipanic_read_size(int off, int len);
@@ -227,6 +229,7 @@ void ipanic_log_temp_init(void);
 void ipanic_klog_region(struct kmsg_dumper *dumper);
 int ipanic_klog_buffer(void *data, unsigned char *buffer, size_t sz_buf);
 extern int ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf);
+extern int panic_dump_disp_log(void *data, unsigned char *buffer, size_t sz_buf);
 
 int ipanic_mem_write(void *buf, int off, int len, int encrypt);
 void *ipanic_data_from_sd(struct ipanic_data_header *dheader, int encrypt);
