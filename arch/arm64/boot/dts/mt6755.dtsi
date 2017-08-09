@@ -985,6 +985,8 @@
 			compatible = "mediatek,devapc";
 			reg = <0x10207000 0x1000>;
 			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_DEVICE_APC>;
+			clock-names = "devapc-main";
 		};
 
 		bus_dbg@10208000 {
