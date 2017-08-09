@@ -24,7 +24,8 @@
 #include "tlApirpmb.h"
 
 typedef enum {
-	WIDEVINE_ID = 0,
+	RDA_ID = 0,
+	WIDEVINE_ID,
 	MARLIN_ID,
 	HDCP_1X_TX_ID,
 	HDCP_2X_V1_TX_ID,
