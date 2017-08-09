@@ -837,7 +837,8 @@
 			compatible = "mediatek,apxgpt";
 			reg = <0x10008000 0x1000>;
 			interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>;
-			clock-frequency = <13000000>;
+			clocks = <&topckgen INFRA_CLK_13M>,
+				<&clk32k>;
 		};
 
 		rsvd@10009000 {

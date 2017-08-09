@@ -7,6 +7,7 @@
 #include <linux/jiffies.h>
 #include <linux/clockchips.h>
 #include <linux/clocksource.h>
+#include <linux/clk.h>
 
 #include <linux/io.h>
 
@@ -500,18 +501,25 @@ static void __init mt_gpt_init(struct device_node *node)
 	int i;
 	u32 freq;
 	unsigned long save_flags;
+	struct clk *clk;
 
 		gpt_update_lock(save_flags);
-
-		/* freq=SYS_CLK_RATE */
-		if (of_property_read_u32(node, "clock-frequency", &freq))
-			pr_err("clock-frequency not set in the .dts file");
 
 		/* Setup IRQ numbers */
 		xgpt_timers.tmr_irq = irq_of_parse_and_map(node, 0);
 
 		/* Setup IO addresses */
 		xgpt_timers.tmr_regs = of_iomap(node, 0);
+
+		/* freq=SYS_CLK_RATE */
+		clk = of_clk_get(node, 0);
+		if (IS_ERR(clk))
+			pr_alert("Can't get timer clock");
+
+		if (clk_prepare_enable(clk))
+			pr_alert("Can't prepare clock");
+
+		freq = (u32)clk_get_rate(clk);
 
 		boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
 
