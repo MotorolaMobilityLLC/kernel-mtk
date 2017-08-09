@@ -92,7 +92,7 @@
 #include <mach/memory.h>
 #endif
 
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
 #include <dt-bindings/clock/mt6735-clk.h>
@@ -971,7 +971,7 @@ static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 			pr_err("msdc%d host->onclock(%d)\n", host->id, host->core_clkon);
 			pr_err("msdc%d on clock failed ===> retry twice\n", host->id);
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 			disable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 			enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
@@ -2069,7 +2069,7 @@ void msdc_clk_status(int *status)
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 			g_clk_gate |= 1 << ((i) + MT_CG_PERI_MSDC30_0);
 #else
 			g_clk_gate |= 1 << ((i) + PERI_MSDC30_0);
@@ -2313,7 +2313,7 @@ static void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 {
 #ifndef FPGA_PLATFORM
 	char name[6];
-#ifndef CONFIG_MTK_LEGACY
+#ifndef CONFIG_MTK_CLKMGR
 	int ret;
 	struct clk *clk;
 #endif
@@ -2329,7 +2329,7 @@ static void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 
 #ifndef FPGA_PLATFORM
 	sprintf(name, "MSDC%d", host->id);
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	clkmux_sel(MT_MUX_MSDC30_0 - host->id, clksrc, name);
 #else
 	if (host->id != 0) {
@@ -3190,7 +3190,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 	if (on) {
 		if (0 == host->core_clkon) {
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 			if (enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD")) {
 				pr_err("msdc%d on clock failed ===> retry once\n", host->id);
 				disable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
@@ -3227,7 +3227,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 				sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 				disable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
 				clk_disable(host->clock_control);
@@ -8251,7 +8251,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 	if (0 == host->core_clkon) {
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
 		clk_enable(host->clock_control);
@@ -8623,7 +8623,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Power on */
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP);
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
 	clk_enable(host->clock_control);
@@ -9045,7 +9045,7 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 }
 #endif
 
-#ifndef CONFIG_MTK_LEGACY
+#ifndef CONFIG_MTK_CLKMGR
 static int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 				struct msdc_host *host)
 {
@@ -9434,7 +9434,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->power_mode = MMC_POWER_OFF;
 	host->power_control = NULL;
 	host->power_switch = NULL;
-#ifndef CONFIG_MTK_LEGACY
+#ifndef CONFIG_MTK_CLKMGR
 	if (msdc_get_ccf_clk_pointer(pdev, host))
 		return 1;
 #endif
@@ -9675,7 +9675,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	BUG_ON(!host);
 
 	ERR_MSG("removed !!!");
-#ifndef CONFIG_MTK_LEGACY
+#ifndef CONFIG_MTK_CLKMGR
 	/* clock unprepare */
 	if (host->clock_control)
 		clk_unprepare(host->clock_control);

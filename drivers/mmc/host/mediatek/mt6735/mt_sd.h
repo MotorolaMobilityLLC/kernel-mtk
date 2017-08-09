@@ -6,7 +6,7 @@
 #include <mt-plat/sync_write.h>
 /* weiping fix */
 #include "board.h"
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 #endif
 
@@ -1223,9 +1223,9 @@ struct msdc_host {
 #endif
 	void (*power_control)(struct msdc_host *host, u32 on);
 	void (*power_switch)(struct msdc_host *host, u32 on);
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *clock_control;
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif
 	struct work_struct			work_tune; /* new thread tune */
 	struct mmc_request			*mrq_tune; /* backup host->mrq */
 };

@@ -22,7 +22,7 @@
 #include "dbg.h"
 #include "board.h"
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #endif
@@ -2147,7 +2147,7 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 				return count;
 			}
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 			enable_clock(MT_CG_PERI_MSDC30_0 + id, "SD");
 #else
 			clk_enable(host->clock_control);
@@ -2189,7 +2189,7 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 				msdc_dump_info(host->id);
 			}
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 			disable_clock(MT_CG_PERI_MSDC30_0 + id, "SD");
 #else
 			clk_disable_unprepare(host->clock_control);
@@ -2939,7 +2939,7 @@ static int msdc_debug_proc_read_FT_show(struct seq_file *m, void *data)
 #endif
 	}
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_MSDC30_0 + msdc_id, "SD");
 #else
 	clk_enable(host->clock_control);

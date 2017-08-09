@@ -24,7 +24,7 @@
 #include "board-custom.h"
 
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #endif
@@ -650,7 +650,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
 	clk_enable(host->clock_control);
@@ -728,7 +728,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
 	clk_enable(host->clock_control);
