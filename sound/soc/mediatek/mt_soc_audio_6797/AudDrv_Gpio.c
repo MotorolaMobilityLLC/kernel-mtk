@@ -188,7 +188,14 @@ static int set_aud_clk_mosi(bool _enable)
 		if (aud_clk_mosi_counter == 1)
 			return AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_ON);
 	} else {
-		aud_clk_mosi_counter--;
+		if (aud_clk_mosi_counter > 0) {
+			aud_clk_mosi_counter--;
+		} else {
+			aud_clk_mosi_counter = 0;
+			pr_warn("%s(), counter %d <= 0\n",
+				__func__, aud_clk_mosi_counter);
+		}
+
 		if (aud_clk_mosi_counter == 0)
 			return AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_OFF);
 	}
