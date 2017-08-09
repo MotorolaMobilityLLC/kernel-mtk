@@ -1503,7 +1503,6 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 		if (ERR_NUM0 == u4ErrNum) {
 			mtd->ecc_stats.failed++;
 			ret = false;
-			/*printk(KERN_ERR"UnCorrectable at PageAddr = %d\n", u4PageAddr); */
 		} else {
 			for (i = 0; i < ((u4ErrNum + 1) >> 1); ++i) {
 				au4ErrBitLoc[i] = DRV_Reg32(ECC_DECEL0_REG32 + i);
@@ -1518,7 +1517,6 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 				} else {
 					mtd->ecc_stats.failed++;
 					uncorrect_sector |= (1 << i);
-					/*printk(KERN_ERR"UnCorrectable ErrLoc = %d\n", au4ErrBitLoc[i]); */
 				}
 				u4ErrBitLoc2nd = (au4ErrBitLoc[i] >> 16) & 0x3FFF;
 				if (0 != u4ErrBitLoc2nd) {
@@ -5263,14 +5261,13 @@ static int mtk_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len
 	/*
 	   for (i = 0; i < len; ++i) {
 	   if (*pSrc != *pDst) {
-	   printk(KERN_ERR"mtk_nand_verify_buf oob fail at page %d\n", g_kCMD.u4RowAddr);
+	   pr_err("mtk_nand_verify_buf oob fail at page %d\n", g_kCMD.u4RowAddr);
 	   return -1;
 	   }
 	   pSrc++;
 	   pDst++;
 	   }
 	 */
-	/*printk(KERN_INFO"mtk_nand_verify_buf OK at page %d\n", g_kCMD.u4RowAddr); */
 
 	return 0;
 #else
