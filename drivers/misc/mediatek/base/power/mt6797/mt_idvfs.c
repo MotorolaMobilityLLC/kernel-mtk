@@ -1251,15 +1251,16 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 
 #if 0
 	/* enable all freq meter and get freq */
-	/* armplldiv_mon_en = idvfs_read(0x1001a284); */
+	/*!! Don't read/write 0x1-0-0-1-a-2-8-4 due to need patch for this register */
+	/* armplldiv_mon_en = idvfs_read(0x1-0-0-1-a-2-8-4); */
 	/* add for enable all monitor channel */
-	/* idvfs_write(0x1001a284, 0xffffffff); */
+	/* idvfs_write(0x1-0-0-1-a-2-8-4, 0xffffffff); */
 	seq_printf(m, "Big Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(37));	/* or 46 */
 	seq_printf(m, "LL Freq meter  = %dKHZ.\n", _mt_get_cpu_freq_idvfs(34));	/* 42 */
 	seq_printf(m, "L Freq meter   = %dKHZ.\n", _mt_get_cpu_freq_idvfs(35));	/* 43 */
 	seq_printf(m, "CCI Freq meter = %dKHZ.\n", _mt_get_cpu_freq_idvfs(36));	/* 44 */
 	seq_printf(m, "Back Freq meter= %dKHZ.\n", _mt_get_cpu_freq_idvfs(45));
-	/* idvfs_write(0x1001a284, armplldiv_mon_en); */
+	/* idvfs_write(0x1-0-0-1-a-2-8-4, armplldiv_mon_en); */
 #endif
 
 	seq_puts(m, "================= 2015/11/03 Ver 3.8 ===================\n");
