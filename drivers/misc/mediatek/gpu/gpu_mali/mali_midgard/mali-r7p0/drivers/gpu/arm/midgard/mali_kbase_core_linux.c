@@ -379,8 +379,8 @@ void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eComm
 {
 	int ret;
 #ifdef MTK_MT6797_DEBUG
-	if (ui32NewFreqID >= 7) 
-		ui32NewFreqID = 6;
+	if (ui32NewFreqID >= 6)
+		ui32NewFreqID = 5;
 #endif
 	ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
 
