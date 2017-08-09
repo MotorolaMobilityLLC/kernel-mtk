@@ -212,7 +212,7 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 #endif
 
 	if (!osal_test_bit(WMT_STAT_STP_OPEN, &pDev->state)) {
-		WMT_WARN_FUNC("state(0x%x)\n", pDev->state.data);
+		WMT_WARN_FUNC("state(0x%lx)\n", pDev->state.data);
 		osal_assert(osal_test_bit(WMT_STAT_STP_OPEN, &pDev->state));
 		return -2;
 	}
@@ -278,7 +278,7 @@ wmt_ctrl_tx_ex(const PUINT8 pData,
 	/* if STP is not enabled yet, can't use this function. Use tx_raw instead */
 	if (!osal_test_bit(WMT_STAT_STP_OPEN, &pDev->state) ||
 	    !osal_test_bit(WMT_STAT_STP_EN, &pDev->state)) {
-		WMT_ERR_FUNC("wmt state(0x%x)\n", pDev->state.data);
+		WMT_ERR_FUNC("wmt state(0x%lx)\n", pDev->state.data);
 		osal_assert(osal_test_bit(WMT_STAT_STP_EN, &pDev->state));
 		osal_assert(osal_test_bit(WMT_STAT_STP_OPEN, &pDev->state));
 		return -2;

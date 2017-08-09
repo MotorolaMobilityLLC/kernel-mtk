@@ -495,7 +495,7 @@ INT32 osal_event_deinit(P_OSAL_EVENT pEvent)
 	return 0;
 }
 
-_osal_inline_ INT32 osal_wait_for_event_bit_set(P_OSAL_EVENT pEvent, PUINT32 pState,
+_osal_inline_ long osal_wait_for_event_bit_set(P_OSAL_EVENT pEvent, unsigned long *pState,
 						UINT32 bitOffset)
 {
 	UINT32 ms = 0;
@@ -504,20 +504,17 @@ _osal_inline_ INT32 osal_wait_for_event_bit_set(P_OSAL_EVENT pEvent, PUINT32 pSt
 		ms = pEvent->timeoutValue;
 		if (ms != 0)
 			return wait_event_interruptible_timeout(pEvent->waitQueue,
-								test_bit(bitOffset,
-									 ((unsigned long *)
-									  pState)),
+								test_bit(bitOffset, pState),
 								msecs_to_jiffies(ms));
 		else
 			return wait_event_interruptible(pEvent->waitQueue,
-							test_bit(bitOffset,
-								 ((unsigned long *)pState)));
+							test_bit(bitOffset, pState));
 	} else
 		return -1;
 
 }
 
-_osal_inline_ INT32 osal_wait_for_event_bit_clr(P_OSAL_EVENT pEvent, PUINT32 pState,
+_osal_inline_ long osal_wait_for_event_bit_clr(P_OSAL_EVENT pEvent, unsigned long *pState,
 						UINT32 bitOffset)
 {
 	UINT32 ms = 0;
@@ -526,14 +523,11 @@ _osal_inline_ INT32 osal_wait_for_event_bit_clr(P_OSAL_EVENT pEvent, PUINT32 pSt
 		ms = pEvent->timeoutValue;
 		if (ms != 0)
 			return wait_event_interruptible_timeout(pEvent->waitQueue,
-								!test_bit(bitOffset,
-									  ((unsigned long *)
-									   pState)),
+								!test_bit(bitOffset, pState),
 								msecs_to_jiffies(ms));
 		else
 			return wait_event_interruptible(pEvent->waitQueue,
-							!test_bit(bitOffset,
-								  ((unsigned long *)pState)));
+							!test_bit(bitOffset, pState));
 	} else
 		return -1;
 }
@@ -563,7 +557,7 @@ _osal_inline_ INT32 osal_bit_op_unlock(P_OSAL_UNSLEEPABLE_LOCK pLock)
 _osal_inline_ INT32 osal_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
 	osal_bit_op_lock(&(pData->opLock));
-	clear_bit(bitOffset, ((unsigned long *)&pData->data));
+	clear_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
 	return 0;
 }
@@ -571,7 +565,7 @@ _osal_inline_ INT32 osal_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 _osal_inline_ INT32 osal_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
 	osal_bit_op_lock(&(pData->opLock));
-	set_bit(bitOffset, ((unsigned long *)&pData->data));
+	set_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
 	return 0;
 }
@@ -581,7 +575,7 @@ _osal_inline_ INT32 osal_test_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 	UINT32 iRet = 0;
 
 	osal_bit_op_lock(&(pData->opLock));
-	iRet = test_bit(bitOffset, ((unsigned long *)&pData->data));
+	iRet = test_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
 	return iRet;
 }
@@ -591,7 +585,7 @@ _osal_inline_ INT32 osal_test_and_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR 
 	UINT32 iRet = 0;
 
 	osal_bit_op_lock(&(pData->opLock));
-	iRet = test_and_clear_bit(bitOffset, ((unsigned long *)&pData->data));
+	iRet = test_and_clear_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
 	return iRet;
 
@@ -602,7 +596,7 @@ _osal_inline_ INT32 osal_test_and_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pD
 	UINT32 iRet = 0;
 
 	osal_bit_op_lock(&(pData->opLock));
-	iRet = test_and_set_bit(bitOffset, ((unsigned long *)&pData->data));
+	iRet = test_and_set_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
 	return iRet;
 }

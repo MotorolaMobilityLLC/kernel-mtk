@@ -227,7 +227,7 @@ typedef struct _OSAL_WAKE_LOCK_ {
 } OSAL_WAKE_LOCK, *P_OSAL_WAKE_LOCK;
 #if 1
 typedef struct _OSAL_BIT_OP_VAR_ {
-	UINT32 data;
+	unsigned long data;
 	OSAL_UNSLEEPABLE_LOCK opLock;
 } OSAL_BIT_OP_VAR, *P_OSAL_BIT_OP_VAR;
 #else
