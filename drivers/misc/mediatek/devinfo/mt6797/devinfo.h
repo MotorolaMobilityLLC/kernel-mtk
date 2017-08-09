@@ -16,7 +16,7 @@
 
 #ifdef CONFIG_OF
 /*device information data*/
-#define DEVINFO_MAX_SIZE 50
+#define DEVINFO_MAX_SIZE 100
 struct devinfo_tag {
 	u32 size;
 	u32 tag;
