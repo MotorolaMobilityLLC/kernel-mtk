@@ -125,8 +125,8 @@ static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
 static AudioDigitalDAIBT *AudioDaiBt;
 
-static AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI + 1] = { NULL };
-static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_MEM_HDMI + 1] = { NULL };
+static AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
+static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
 
 static AudioIrqMcuMode *mAudioMcuMode[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE] = { NULL };
 static AudioMemIFAttribute *mAudioMEMIF[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK] = { NULL };
@@ -474,13 +474,13 @@ bool InitAfeControl(void)
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++)
 			mAudioMEMIF[i] = kzalloc(sizeof(AudioMemIFAttribute), GFP_KERNEL);
 
-		for (i = 0; i <= Soc_Aud_Digital_Block_MEM_HDMI; i++) {
+		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++) {
 			AFE_Mem_Control_context[i] = kzalloc(sizeof(AFE_MEM_CONTROL_T), GFP_KERNEL);
 			AFE_Mem_Control_context[i]->substreamL = NULL;
 			spin_lock_init(&AFE_Mem_Control_context[i]->substream_lock);
 		}
 
-		for (i = 0; i <= Soc_Aud_Digital_Block_MEM_HDMI; i++)
+		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
 			Audio_dma_buf[i] = kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
 		memset((void *)&AFE_dL_Abnormal_context, 0, sizeof(AFE_DL_ABNORMAL_CONTROL_T));
 	}
@@ -521,7 +521,7 @@ bool ResetAfeControl(void)
 	for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++)
 		memset((void *)(mAudioMEMIF[i]), 0, sizeof(AudioMemIFAttribute));
 
-	for (i = 0; i < (Soc_Aud_Digital_Block_MEM_HDMI + 1); i++)
+	for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
 		memset((void *)(AFE_Mem_Control_context[i]), 0, sizeof(AFE_MEM_CONTROL_T));
 
 	AfeControlMutexUnLock();
@@ -2747,6 +2747,8 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_HDMI:
+	case Soc_Aud_Digital_Block_MEM_BTCVSD_RX:
+	case Soc_Aud_Digital_Block_MEM_BTCVSD_TX:
 		pr_debug("%s MemBlock =%d Buffer_length = %d\n ", __func__, MemBlock, Buffer_length);
 		if (Audio_dma_buf[MemBlock] != NULL) {
 			pr_debug("AudDrv_Allocate_mem_Buffer MemBlock = %d dma_alloc_coherent\n", MemBlock);
@@ -2770,7 +2772,7 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 
 AFE_MEM_CONTROL_T *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock)
 {
-	if (MemBlock >= 0 && MemBlock <= Soc_Aud_Digital_Block_MEM_HDMI)
+	if (MemBlock >= 0 && MemBlock < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return AFE_Mem_Control_context[MemBlock];
 
 	pr_warn("%s error\n", __func__);
@@ -2815,7 +2817,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 
 bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 {
-	if (MemBlock >= 0 && MemBlock <= Soc_Aud_Digital_Block_MEM_HDMI) {
+	if (MemBlock >= 0 && MemBlock < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE) {
 		AFE_BLOCK_T *pBlock = &AFE_Mem_Control_context[MemBlock]->rBlock;
 
 		memset_io(pBlock->pucVirtBufAddr, 0, pBlock->u4BufferSize);
@@ -3341,6 +3343,10 @@ struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock)
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 		return Audio_dma_buf[MemBlock];
 	case Soc_Aud_Digital_Block_MEM_HDMI:
+		return Audio_dma_buf[MemBlock];
+	case Soc_Aud_Digital_Block_MEM_BTCVSD_RX:
+		return Audio_dma_buf[MemBlock];
+	case Soc_Aud_Digital_Block_MEM_BTCVSD_TX:
 		return Audio_dma_buf[MemBlock];
 	default:
 		break;

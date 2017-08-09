@@ -740,6 +740,24 @@
 			#clock-cells = <1>;
 		};
 
+		btcvsd@10001000 {
+			compatible = "mediatek,audio_bt_cvsd";
+			offset =<0xf00 0x800 0xfd0 0xfd4 0xfd8>;
+			/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/
+			reg=<0x10001000 0x1000>, /*AUDIO_INFRA_BASE_PHYSICAL*/
+			      <0x18000000 0x10000>, /*PKV_PHYSICAL_BASE*/
+			      <0x18080000 0x8000>; /*SRAM_BANK2*/
+			interrupts = <GIC_SPI 236 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		mt_soc_btcvsd_rx_pcm@10001000 {
+			compatible = "mediatek,mt_soc_btcvsd_rx_pcm";
+		};
+
+		mt_soc_btcvsd_tx_pcm@10001000 {
+			compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
+		};
+
 		iocfg_0@10002000 {
 			compatible = "mediatek,iocfg_0";
 			reg = <0x10002000 0x1000>;
@@ -2343,16 +2361,6 @@
 					"venc-mtcmos",
 					"venc-larb",
 					"venc-jpgdec";
-		};
-
-		btcvsd@18000000 {
-			compatible = "mediatek,audio_bt_cvsd";
-			offset =<0xF00 0x800 0xFD0 0xFD4 0xFD8>;
-			/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/
-			reg=<0x10001000 0x1000>, /*AUDIO_INFRA_BASE_PHYSICAL*/
-			      <0x18000000 0x10000>, /*PKV_PHYSICAL_BASE*/
-			      <0x18080000 0x8000>; /*SRAM_BANK2*/
-		  interrupts = <GIC_SPI 236 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		consys:consys@18070000 {

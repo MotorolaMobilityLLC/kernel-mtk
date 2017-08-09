@@ -56,6 +56,8 @@ typedef enum {
 	Soc_Aud_Digital_Block_MEM_MOD_DAI,
 	Soc_Aud_Digital_Block_MEM_VUL_DATA2,
 	Soc_Aud_Digital_Block_MEM_HDMI,
+	Soc_Aud_Digital_Block_MEM_BTCVSD_RX,
+	Soc_Aud_Digital_Block_MEM_BTCVSD_TX,
 	/* currently no use */
 	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_I2S,		/* this is not actually a mem if... */
@@ -82,7 +84,7 @@ typedef enum {
 	Soc_Aud_Digital_Block_MRG_I2S_IN,
 	Soc_Aud_Digital_Block_DAI_BT,
 	Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK,
-	Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE = Soc_Aud_Digital_Block_MEM_HDMI + 1
+	Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE = Soc_Aud_Digital_Block_MEM_BTCVSD_TX + 1
 } Soc_Aud_Digital_Block;
 
 typedef enum {

@@ -78,3 +78,8 @@ config SND_SOC_MT2701_RT5640
 	  with the RT5640 audio codec.
 	  Select Y if you have such device.
 
+config MTK_BTCVSD_ALSA
+    bool "MTK_BTCVSD_ALSA"
+	default n
+	help
+        If you say Y, enable MTK_BTCVSD_ALSA.
