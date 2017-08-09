@@ -4,8 +4,8 @@
 #include <linux/ioctl.h>
 
 #ifndef CONFIG_OF
-extern void mt_irq_set_sens(unsigned int irq, unsigned int sens); */
-extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity); */
+extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
+extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 #endif
 
 /**
@@ -236,6 +236,46 @@ typedef enum {
 	_camsv_imgo_ = 0,
 	_camsv_max_,
 } _isp_dma_enum_;
+
+/* for keep ion handle */
+typedef enum {
+	_dma_cq0i_ = 0,/* 0168 */
+	_dma_cq1i_,    /* 0180 */
+	_dma_cq2i_,    /* 018c */
+	_dma_cq3i_,    /* 0198 */
+	_dma_cq4i_,    /* 01a4 */
+	_dma_cq5i_,    /* 01b0 *//*5*/
+	_dma_cq6i_,    /* 01bc */
+	_dma_cq7i_,    /* 01c8 */
+	_dma_cq8i_,    /* 01d4 */
+	_dma_cq9i_,    /* 01e0 */
+	_dma_cq10i_,   /* 01ec *//*10*/
+	_dma_cq11i_,   /* 01f8 */
+	_dma_bpci_,    /* 0370 */
+	_dma_caci_,    /* 03a0 */
+	_dma_lsci_,    /* 03d0 */
+	_dma_imgo_,    /* 0220 *//*15*/
+	_dma_rrzo_,    /* 0250 */
+	_dma_aao_,     /* 0280 */
+	_dma_afo_,     /* 02b0 */
+	_dma_lcso_,    /* 02e0 */
+	_dma_ufeo_,    /* 0310 *//*20*/
+	_dma_pdo_,     /* 0340 */
+	_dma_imgo_fh_, /* 0c04 */
+	_dma_rrzo_fh_, /* 0c08 */
+	_dma_aao_fh_,  /* 0c0c */
+	_dma_afo_fh_,  /* 0c10 *//*25*/
+	_dma_lcso_fh_, /* 0c14 */
+	_dma_ufeo_fh_, /* 0c18 */
+	_dma_pdo_fh_,  /* 0c1c */
+	_dma_max_wr_
+} ISP_WRDMA_ENUM;
+
+typedef struct {
+	unsigned int       devNode;
+	ISP_WRDMA_ENUM     dmaPort;
+	int                memID;
+} ISP_DEV_ION_NODE_STRUCT;
 
 typedef struct {
 	unsigned int w; /* tg size */
@@ -489,6 +529,9 @@ typedef enum {
 	ISP_CMD_VF_LOG, /* dbg only, prt log on kernel when vf_en is driven */
 	ISP_CMD_GET_VSYNC_CNT,
 	ISP_CMD_RESET_VSYNC_CNT,
+	ISP_CMD_ION_IMPORT, /* get ion handle */
+	ISP_CMD_ION_FREE,  /* free ion handle */
+	ISP_CMD_ION_FREE_BY_HWMODULE  /* free all ion handle */
 } ISP_CMD_ENUM;
 
 
@@ -529,6 +572,9 @@ typedef enum {
 #define ISP_VF_LOG                  _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         unsigned char*)
 #define ISP_GET_VSYNC_CNT           _IOWR(ISP_MAGIC, ISP_CMD_GET_VSYNC_CNT,      unsigned int)
 #define ISP_RESET_VSYNC_CNT         _IOW(ISP_MAGIC, ISP_CMD_RESET_VSYNC_CNT,      unsigned int)
+#define ISP_ION_IMPORT              _IOW(ISP_MAGIC, ISP_CMD_ION_IMPORT, ISP_DEV_ION_NODE_STRUCT)
+#define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
+#define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)

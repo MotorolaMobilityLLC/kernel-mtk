@@ -106,27 +106,27 @@ typedef bool                    MBOOL;
 
 #define EVEREST_EP_CODE_MARK /* Mark codes first, should check it in later */
 /*#define EVEREST_EP_NO_CLKMGR*/ /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-/*#define _WAITIRQ_LOG_*/ /* wait irq debug logs */
+/*#define ENABLE_WAITIRQ_LOG*/ /* wait irq debug logs */
 
 /* ---------------------------------------------------------------------------- */
 
 #define MyTag "[ISP]"
 #define IRQTag "KEEPER"
 
-#define LOG_VRB(format, args...)    pr_debug(MyTag format, ##args)
+#define LOG_VRB(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 
 #define ISP_DEBUG
 #ifdef ISP_DEBUG
-#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
-#define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
-#define LOG_WRN(format, args...)    pr_warn(MyTag format,  ##args)
-#define LOG_ERR(format, args...)    pr_err(MyTag format,  ##args)
-#define LOG_AST(format, args...)    pr_alert(MyTag format, ##args)
+#define LOG_INF(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
+#define LOG_NOTICE(format, args...) pr_notice(MyTag "[%s] " format, __func__, ##args)
+#define LOG_WRN(format, args...)    pr_warn(MyTag "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)    pr_err(MyTag "[%s] " format, __func__, ##args)
+#define LOG_AST(format, args...)    pr_alert(MyTag "[%s] " format, __func__, ##args)
 
 /*******************************************************************************
 *
@@ -152,6 +152,7 @@ typedef bool                    MBOOL;
 #define ISP_DBG_INT_2               (0x00000400)
 #define ISP_DBG_INT_3               (0x00000800)
 #define ISP_DBG_HW_DON              (0x00001000)
+#define ISP_DBG_ION_CTRL            (0x00002000)
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -579,7 +580,16 @@ unsigned long g_Flash_SpinLock;
 
 static volatile unsigned int G_u4EnableClockCount;
 
+/*save ion fd*/
+#define ENABLE_KEEP_ION_HANDLE
 
+#ifdef ENABLE_KEEP_ION_HANDLE
+#include "ion_drv.h" /*g_ion_device*/
+static struct ion_client *pIon_client;
+static MINT32 G_WRDMA_IonFd[CAM_MAX][_dma_max_wr_][32] = { { {0} } };
+static struct ion_handle *G_WRDMA_IonHnd[CAM_MAX][_dma_max_wr_][32] = { { {NULL} } };
+static spinlock_t SpinLock_IonHnd[_dma_max_wr_]; /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
+#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3255,7 +3265,7 @@ static MINT32 ISP_DumpReg(void)
 {
 	MINT32 Ret = 0;
 	/*  */
-	LOG_DBG("[DumpReg]- E.");
+	LOG_DBG("- E.");
 #if 0
 	/*  */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
@@ -3556,7 +3566,7 @@ static MINT32 ISP_DumpReg(void)
 	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
 	/*  */
 #endif
-	LOG_DBG("[DumpReg]- X.");
+	LOG_DBG("- X.");
 	/*  */
 	return Ret;
 }
@@ -5312,7 +5322,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	time_getrequest.tv_usec = usec;
 	time_getrequest.tv_sec = sec;
 
-#ifdef _WAITIRQ_LOG_
+#ifdef ENABLE_WAITIRQ_LOG
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
 		if (WaitIrq->EventInfo.Status & IspInfo.IrqInfo.Mask[WaitIrq->Type][WaitIrq->EventInfo.St_type]) {
@@ -5388,7 +5398,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	irqStatus = IspInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey];
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
 
-#ifdef _WAITIRQ_LOG_
+#ifdef ENABLE_WAITIRQ_LOG
 	LOG_INF("before wait_event: WaitIrq Timeout(%d) Clear(%d), IRQType(%d), StType(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d), userKey(%d)\n",
 		WaitIrq->EventInfo.Timeout,
 		WaitIrq->EventInfo.Clear,
@@ -5434,7 +5444,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-#ifdef _WAITIRQ_LOG_
+#ifdef ENABLE_WAITIRQ_LOG
 	else {
 		/* Store irqinfo status in here to redeuce time of spin_lock_irqsave */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
@@ -5739,6 +5749,121 @@ void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT3
 
 #endif
 
+#ifdef ENABLE_KEEP_ION_HANDLE
+/*******************************************************************************
+*
+********************************************************************************/
+static void ISP_ion_init(void)
+{
+	if (!pIon_client && g_ion_device)
+		pIon_client = ion_client_create(g_ion_device, "camera_isp");
+
+	if (!pIon_client) {
+		LOG_ERR("invalid ion client!\n");
+		return;
+	}
+
+	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
+		LOG_INF("create ion client 0x%p\n", pIon_client);
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static void ISP_ion_uninit(void)
+{
+	if (!pIon_client) {
+		LOG_ERR("invalid ion client!\n");
+		return;
+	}
+
+	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
+		LOG_INF("destroy ion client 0x%p\n", pIon_client);
+	ion_client_destroy(pIon_client);
+	pIon_client = NULL;
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static struct ion_handle *ISP_ion_import_handle(struct ion_client *client, int fd)
+{
+	struct ion_handle *handle = NULL;
+
+	if (!client) {
+		LOG_ERR("invalid ion client!\n");
+		return handle;
+	}
+	if (fd == -1) {
+		LOG_ERR("invalid ion fd!\n");
+		return handle;
+	}
+
+	handle = ion_import_dma_buf(client, fd);
+	if (IS_ERR(handle)) {
+		LOG_ERR("import ion handle failed!\n");
+		return handle;
+	}
+
+	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
+		LOG_INF("[ion_import_hd] Hd(0x%p)\n", handle);
+	return handle;
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static void ISP_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
+{
+	if (!client) {
+		LOG_ERR("invalid ion client!\n");
+		return;
+	}
+	if (!handle)
+		return;
+
+	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
+		LOG_INF("[ion_free_hd] Hd(0x%p)\n", handle);
+	ion_free(client, handle);
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static void ISP_ion_free_handle_by_module(MUINT32 module)
+{
+	int i, j;
+	MINT32 nFd;
+	struct ion_handle *p_IonHnd;
+
+	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
+		LOG_INF("[ion_free_hd_by_module]%d\n", module);
+
+	for (i = 0; i < _dma_max_wr_; i++) {
+		for (j = 0; j < 32 ; j++) {
+			spin_lock(&(SpinLock_IonHnd[i]));
+			/* */
+			if (G_WRDMA_IonFd[module][i][j] == 0) {
+				spin_unlock(&(SpinLock_IonHnd[i]));
+				continue;
+			}
+			nFd = G_WRDMA_IonFd[module][i][j];
+			p_IonHnd = G_WRDMA_IonHnd[module][i][j];
+			/* */
+			G_WRDMA_IonFd[module][i][j] = 0;
+			G_WRDMA_IonHnd[module][i][j] = NULL;
+			spin_unlock(&(SpinLock_IonHnd[i]));
+			/* */
+			if (IspInfo.DebugMask & ISP_DBG_ION_CTRL) {
+				LOG_INF("ion_free: dev(%d)dma(%d)j(%d)fd(%d)Hnd(0x%p)\n",
+					module, i, j, nFd, p_IonHnd);
+			}
+			ISP_ion_free_handle(pIon_client, p_IonHnd);/*can't in spin_lock*/
+		}
+	}
+}
+
+#endif
 
 
 /*******************************************************************************
@@ -5763,7 +5888,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
 	int userKey =  -1;
 	ISP_REGISTER_USERKEY_STRUCT RegUserKey;
-
+	int i;
+	ISP_DEV_ION_NODE_STRUCT IonNode;
+	struct ion_handle *handle;
+	struct ion_handle *p_IonHnd;
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -5937,7 +6065,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				LOG_ERR("invalid userKey(%d), max(%d), force userkey = 0\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
 				IrqInfo.EventInfo.UserKey = 0;
 			}
-#ifdef _WAITIRQ_LOG_
+#ifdef ENABLE_WAITIRQ_LOG
 			LOG_INF("IRQ type(%d), userKey(%d), timeout(%d), userkey(%d), st_status(%d), status(%d)\n", IrqInfo.Type, IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.Timeout, IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.St_type, IrqInfo.EventInfo.Status);
 #endif
 			Ret = ISP_WaitIrq(&IrqInfo);
@@ -6364,6 +6492,146 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_RESET_VSYNC_CNT:
 		Vsync_cnt[0] = Vsync_cnt[1] = 0;
 		break;
+	case ISP_ION_IMPORT:
+		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
+			if (!pIon_client) {
+				LOG_ERR("invalid ion client!\n");
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.devNode < 0 || IonNode.devNode >= CAM_MAX) {
+				LOG_ERR("devNode not support(%d)!\n", IonNode.devNode);
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.dmaPort < 0 || IonNode.dmaPort >= _dma_max_wr_) {
+				LOG_ERR("dmaport error:0x%x(0~%d)\n", IonNode.dmaPort, _dma_max_wr_);
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.memID <= 0) {
+				LOG_ERR("invalid ion fd(%d)\n", IonNode.memID);
+				Ret = -EFAULT;
+				break;
+			}
+
+			p_IonHnd = NULL;
+
+			/* check if memID is exist */
+			spin_lock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			for (i = 0; i < 32; i++) {
+				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == IonNode.memID)
+					break;
+			}
+			spin_unlock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			/* */
+			if (i < 32) {
+				if (IspInfo.DebugMask & ISP_DBG_ION_CTRL) {
+					LOG_INF("ion_import: already exist: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
+						IonNode.devNode, IonNode.dmaPort, i, IonNode.memID,
+						G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i]);
+				}
+				break;
+			}
+			/* */
+			handle = ISP_ion_import_handle(pIon_client, IonNode.memID);
+			/* */
+			spin_lock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			for (i = 0; i < 32; i++) {
+				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == 0) {
+					G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] = IonNode.memID;
+					G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i] = handle;
+
+					if (IspInfo.DebugMask & ISP_DBG_ION_CTRL) {
+						LOG_INF("ion_import: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
+							IonNode.devNode, IonNode.dmaPort, i,
+							IonNode.memID, handle);
+					}
+					break;
+				}
+			}
+			spin_unlock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			/* */
+			if (i == 32) {
+				LOG_ERR("no empty space in list(%d)\n", IonNode.memID);
+				Ret = -EFAULT;
+			}
+		} else {
+			LOG_ERR("[ion import]copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
+	case ISP_ION_FREE:
+		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
+			if (!pIon_client) {
+				LOG_ERR("invalid ion client!\n");
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.devNode < 0 || IonNode.devNode >= CAM_MAX) {
+				LOG_ERR("devNode not support(%d)!\n", IonNode.devNode);
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.dmaPort < 0 || IonNode.dmaPort >= _dma_max_wr_) {
+				LOG_ERR("dmaport error:0x%x(0~%d)\n", IonNode.dmaPort, _dma_max_wr_);
+				Ret = -EFAULT;
+				break;
+			}
+			if (IonNode.memID <= 0) {
+				LOG_ERR("invalid ion fd(%d)\n", IonNode.memID);
+				Ret = -EFAULT;
+				break;
+			}
+
+			/* */
+			spin_lock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			for (i = 0; i < 32; i++) {
+				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == IonNode.memID)
+					break;
+			}
+
+			if (i == 32) {
+				spin_unlock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+				LOG_ERR("can't find ion dev(%d)dma(%d)fd(%d) in list\n",
+					IonNode.devNode, IonNode.dmaPort, IonNode.memID);
+				Ret = -EFAULT;
+
+				break;
+			}
+
+			if (IspInfo.DebugMask & ISP_DBG_ION_CTRL) {
+				LOG_INF("ion_free: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
+					IonNode.devNode, IonNode.dmaPort, i,
+					IonNode.memID,
+					G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i]);
+			}
+
+			p_IonHnd = G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i];
+			G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] = 0;
+			G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i] = NULL;
+			spin_unlock(&(SpinLock_IonHnd[IonNode.dmaPort]));
+			/* */
+			ISP_ion_free_handle(pIon_client, p_IonHnd);/*can't in spin_lock*/
+		} else {
+			LOG_ERR("[ion free]copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
+	case ISP_ION_FREE_BY_HWMODULE:
+		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) == 0) {
+			if (module < 0 || module > CAM_MAX) {
+				LOG_ERR("module error(%d)\n", module);
+				Ret = -EFAULT;
+				break;
+			}
+
+			ISP_ion_free_handle_by_module(module);
+		} else {
+			LOG_ERR("[ion free by module]copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
 	default:
 	{
 		LOG_ERR("Unknown Cmd(%d)\n", Cmd);
@@ -6752,6 +7020,9 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_DUMP_REG:
 	case ISP_GET_VSYNC_CNT:
 	case ISP_RESET_VSYNC_CNT:
+	case ISP_ION_IMPORT:
+	case ISP_ION_FREE:
+	case ISP_ION_FREE_BY_HWMODULE:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -6869,6 +7140,10 @@ static MINT32 ISP_open(
 		}
 	}
 
+#ifdef ENABLE_KEEP_ION_HANDLE
+	/* create ion client*/
+	ISP_ion_init();
+#endif
 
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (ISP_DBG_INT | ISP_DBG_BUF_CTRL | ISP_DBG_WRITE_REG); /* Jessy: In EP, Add ISP_DBG_WRITE_REG for debug. Should remove it after EP */
@@ -6902,6 +7177,10 @@ static MINT32 ISP_release(
 	ISP_USER_INFO_STRUCT *pUserInfo;
 	MUINT32 Reg;
 	MUINT32 i = 0;
+	MUINT32 regTGSt, loopCnt;
+#ifdef ENABLE_KEEP_ION_HANDLE
+	ISP_WAIT_IRQ_STRUCT waitirq;
+#endif
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -6981,8 +7260,46 @@ static MINT32 ISP_release(
 		IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	}
 	/*  */
+#ifdef ENABLE_KEEP_ION_HANDLE
+    /* wait TG1 idle*/
+	loopCnt = 3;
+	do {
+		regTGSt = (ISP_RD32(CAM_REG_TG_INTER_ST(ISP_CAM_A_IDX)) & 0x00003F00) >> 8;
+		if (regTGSt == 1)
+			break;
 
+		LOG_INF("TG1: wait 1VD (%d)\n", loopCnt);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_A_ST;
+		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
+		waitirq.EventInfo.Status = VS_INT_ST;
+		waitirq.EventInfo.St_type = SIGNAL_INT;
+		waitirq.EventInfo.Timeout = 0x100;
+		waitirq.EventInfo.UserKey = 0x0;
+		ISP_WaitIrq(&waitirq);
+	} while (--loopCnt);
+	/* wait TG2 idle*/
+	loopCnt = 3;
+	do {
+		regTGSt = (ISP_RD32(CAM_REG_TG_INTER_ST(ISP_CAM_B_IDX)) & 0x00003F00) >> 8;
+		if (regTGSt == 1)
+			break;
 
+		LOG_INF("TG2: wait 1VD (%d)\n", loopCnt);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_B_ST;
+		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
+		waitirq.EventInfo.Status = VS_INT_ST;
+		waitirq.EventInfo.St_type = SIGNAL_INT;
+		waitirq.EventInfo.Timeout = 0x100;
+		waitirq.EventInfo.UserKey = 0x0;
+		ISP_WaitIrq(&waitirq);
+	} while (--loopCnt);
+
+	/* free keep ion handles, then destroy ion client*/
+	for (i = 0; i < CAM_MAX; i++)
+		ISP_ion_free_handle_by_module(i);
+
+	ISP_ion_uninit();
+#endif
 	/*  */
 	/* LOG_DBG("Before spm_enable_sodi()."); */
 	/* Enable sodi (Multi-Core Deep Idle). */
@@ -7283,6 +7600,8 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		spin_lock_init(&(SpinLock_P2FrameList));
 		spin_lock_init(&(SpinLockRegScen));
 		spin_lock_init(&(SpinLock_UserKey));
+		for (n = 0; n < _dma_max_wr_; n++)
+			spin_lock_init(&(SpinLock_IonHnd[n]));
 
 #ifndef EVEREST_EP_NO_CLKMGR
 
