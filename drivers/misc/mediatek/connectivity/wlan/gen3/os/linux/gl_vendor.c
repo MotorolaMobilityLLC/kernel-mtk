@@ -80,23 +80,22 @@ int mtk_cfg80211_nla_put_type(struct sk_buff *skb, ENUM_NLA_PUT_DATE_TYPE type, 
 	u32 u32data = 0;
 	u64 u64data = 0;
 
-	switch (attrtype) {
+	switch (type) {
 	case NLA_PUT_DATE_U8:
 		u8data = *(u8 *)value;
 		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u8), &u8data);
 	case NLA_PUT_DATE_U16:
 		u16data = *(u16 *)value;
-		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u16), &u8data);
+		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u16), &u16data);
 	case NLA_PUT_DATE_U32:
 		u32data = *(u32 *)value;
-		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u32), &u8data);
+		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u32), &u32data);
 	case NLA_PUT_DATE_U64:
 		u64data = *(u64 *)value;
-		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u64), &u8data);
+		return mtk_cfg80211_NLA_PUT(skb, attrtype, sizeof(u64), &u64data);
 	default:
 		break;
 	}
-
 	return 0;
 }
 
