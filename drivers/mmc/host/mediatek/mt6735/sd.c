@@ -226,6 +226,7 @@ struct mmc_blk_data {
 };
 static bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
+static struct workqueue_struct *wq_tune;
 
 #if defined(FEATURE_MET_MMC_INDEX)
 static unsigned int met_mmc_bdnum;
@@ -5188,8 +5189,6 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	return host->error;
 }
 
-/* weiping fix */
-#if 0
 static int msdc_tune_rw_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -5400,7 +5399,7 @@ static int msdc_tune_rw_request(struct mmc_host *mmc, struct mmc_request *mrq)
 #endif
 	return host->error;
 }
-#endif
+
 static void msdc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
 	bool is_first_req)
 {
@@ -5798,12 +5797,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 		}
 	}
 #endif
-
-	/* if cmd send error occur, dma not start yet, just call done here,
-	 * msdc_tune_async_request() will apply
-	 */
-	if (mrq->done)
-		mrq->done(mrq);
 
 	msdc_gate_clock(host, 1);
 	spin_unlock(&host->lock);
@@ -7181,8 +7174,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	mmc_request_done(mmc, mrq);
 }
 
-/* weiping fix async-tune */
-#if 0
 static void msdc_tune_async_request(struct mmc_host *mmc,
 				struct mmc_request *mrq)
 {
@@ -7225,14 +7216,12 @@ static void msdc_tune_async_request(struct mmc_host *mmc,
 			mrq->cmd->opcode, mrq->cmd->arg,
 			is_card_present(host), host->power_mode);
 		mrq->cmd->error = (unsigned int)-ENOMEDIUM;
-		/* mrq->done(mrq); call done directly. */
-		return;
+		/* should call done for this request */
+		goto done;
 	}
 
 	cmd = mrq->cmd;
 	data = mrq->cmd->data;
-	if (msdc_async_use_pio(mrq->data->host_cookie))
-		return;
 
 	if (data)
 		stop = data->stop;
@@ -7241,23 +7230,6 @@ static void msdc_tune_async_request(struct mmc_host *mmc,
 		sbc = mrq->sbc;
 #endif
 
-#ifdef MTK_MSDC_USE_CMD23
-	if (((sbc == NULL) || (sbc && sbc->error == 0)) && (cmd->error == 0)
-	    && (data && data->error == 0) && (!stop || stop->error == 0)) {
-#else
-	if ((cmd->error == 0) && (data && data->error == 0)
-		&& (!stop || stop->error == 0)) {
-#endif
-		if (cmd->opcode == MMC_READ_SINGLE_BLOCK
-			|| cmd->opcode == MMC_READ_MULTIPLE_BLOCK)
-			host->read_time_tune = 0;
-		if (cmd->opcode == MMC_WRITE_BLOCK
-			|| cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)
-			host->write_time_tune = 0;
-		host->rwcmd_time_tune = 0;
-		host->power_cycle_enable = 1;
-		return;
-	}
 	/* start to process */
 	spin_lock(&host->lock);
 
@@ -7481,9 +7453,25 @@ static void msdc_tune_async_request(struct mmc_host *mmc,
 	host->tune = 0;
 	spin_unlock(&host->lock);
 
-	/* mmc_request_done(mmc, mrq); */
+done:
+	host->mrq_tune = NULL;
+	mmc_request_done(mmc, mrq);
 }
-#endif /* weiping fix async-tune */
+
+/* new thread tune */
+static void msdc_async_tune(struct work_struct *work)
+{
+	struct msdc_host *host = NULL;
+	struct mmc_host *mmc = NULL;
+
+	host = container_of(work, struct msdc_host, work_tune);
+	BUG_ON(!host);
+	mmc = host->mmc;
+	BUG_ON(!mmc);
+
+	msdc_tune_async_request(mmc, host->mrq_tune);
+}
+
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct mmc_data *data;
@@ -7502,10 +7490,15 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	data = mrq->data;
 	if (data)
 		host_cookie = data->host_cookie;
-	/* Asyn only support  DMA and asyc CMD flow */
-	if (msdc_async_use_dma(host_cookie))
-		msdc_do_request_async(mmc, mrq);
-	else
+	/*
+	 * Asyn only support  DMA and asyc CMD flow
+	 * if cmd send error occur, dma not start yet, return error,
+	 * msdc_tune_async_request() will call at msdc_ops_request
+	 */
+	if (msdc_async_use_dma(host_cookie)) {
+		if (msdc_do_request_async(mmc, mrq))
+			msdc_tune_async_request(mmc, mrq);
+	} else
 		msdc_ops_request_legacy(mmc, mrq);
 
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT	/* same as CONFIG_SDIOAUTOK_SUPPORT */
@@ -7868,8 +7861,6 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.post_req = msdc_post_req,
 	.pre_req = msdc_pre_req,
 	.request = msdc_ops_request,
-	/* weiping fix async-tune */
-	/* .tuning                        = msdc_tune_async_request, */
 	.set_ios = msdc_ops_set_ios,
 	.get_ro = msdc_ops_get_ro,
 	.get_cd = msdc_ops_get_cd,
@@ -7920,10 +7911,11 @@ static irqreturn_t msdc1_eint_handler(void)
 static irqreturn_t msdc_irq(int irq, void *dev_id)
 {
 	struct msdc_host *host = (struct msdc_host *)dev_id;
+	struct mmc_host *mmc = host->mmc;
 	struct mmc_data *data = host->data;
 	struct mmc_command *cmd = host->cmd;
 	struct mmc_command *stop = NULL;
-	struct mmc_request *mrq = NULL;
+	struct mmc_request *mrq = host->mrq;
 	void __iomem *base = host->base;
 	u32 cmd_arg = host->mrq->cmd->arg;
 	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY |
@@ -8026,57 +8018,12 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #endif
 		stop = data->stop;
 #if (MSDC_DATA1_INT == 1)
-		if (host->hw->flags & MSDC_SDIO_IRQ) {
-			if (intsts & MSDC_INT_XFER_COMPL) {
-				data->bytes_xfered = host->dma.xfersz;
-				if ((msdc_async_use_dma(data->host_cookie))
-					&& (host->tune == 0)) {
-					msdc_dma_stop(host);
-					mrq = host->mrq;
-					msdc_dma_clear(host);
-					if (mrq->done)
-						mrq->done(mrq);
-					msdc_gate_clock(host, 1);
-					host->error &= ~REQ_DAT_ERR;
-				} else {
-					complete(&host->xfer_done);
-				}
-
-#if defined(FEATURE_MET_MMC_INDEX)
-				if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-					met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg,
-						data->blocks, data->mrq->cmd->opcode, met_mmc_bdnum);
-				}
+	if ((host->hw->flags & MSDC_SDIO_IRQ) && (intsts & MSDC_INT_XFER_COMPL))
+		goto done;
+	else
 #endif
-			}
-		} else
-#endif
-		{
-			if (inten & MSDC_INT_XFER_COMPL) {
-				data->bytes_xfered = host->dma.xfersz;
-				if ((msdc_async_use_dma(data->host_cookie))
-					&& (host->tune == 0)) {
-					msdc_dma_stop(host);
-					mrq = host->mrq;
-					msdc_dma_clear(host);
-					if (mrq->done)
-						mrq->done(mrq);
-					msdc_gate_clock(host, 1);
-					host->error &= ~REQ_DAT_ERR;
-				} else {
-					complete(&host->xfer_done);
-				}
-
-#if defined(FEATURE_MET_MMC_INDEX)
-				if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-					met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg,
-						data->blocks, data->mrq->cmd->opcode, met_mmc_bdnum);
-				}
-#endif
-				if (host->hw->host_function == MSDC_SD)
-					host->continuous_fail_request_count = 0;
-			}
-		}
+		if (inten & MSDC_INT_XFER_COMPL)
+			goto done;
 
 		if (intsts & datsts) {
 			/* do basic reset, or stop command will sdc_busy */
@@ -8099,31 +8046,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 					host->mrq->cmd->opcode,	host->mrq->cmd->arg,
 					sdr_read32(SDC_DCRC_STS));
 			}
-
-			if (host->dma_xfer) {
-				if ((msdc_async_use_dma(data->host_cookie))
-					&& (host->tune == 0)) {
-					msdc_dma_stop(host);
-					msdc_clr_fifo(host->id);
-					msdc_clr_int();
-					mrq = host->mrq;
-					msdc_dma_clear(host);
-					if (mrq->done)
-						mrq->done(mrq);
-					msdc_gate_clock(host, 1);
-					host->error |= REQ_DAT_ERR;
-				} else {
-					/* Read CRC come fast, XFER_COMPL not enabled */
-					complete(&host->xfer_done);
-				}
-
-#if defined(FEATURE_MET_MMC_INDEX)
-				if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-					met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg,
-						data->blocks, data->mrq->cmd->opcode, met_mmc_bdnum);
-				}
-#endif
-			}	/* PIO mode can't do complete, because not init */
+			goto tune;
 		}
 		if ((stop != NULL) && (host->autocmd & MSDC_AUTOCMD12)
 			&& (intsts & cmdsts)) {
@@ -8147,33 +8070,8 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 				else
 					msdc_reset_hw(host->id);
 			}
-			if (((intsts & MSDC_INT_ACMDCRCERR) || (intsts & MSDC_INT_ACMDTMO))
-				&& (host->dma_xfer)) {
-				if ((msdc_async_use_dma(data->host_cookie))
-					&& (host->tune == 0)) {
-					msdc_dma_stop(host);
-					msdc_clr_fifo(host->id);
-					msdc_clr_int();
-					mrq = host->mrq;
-					msdc_dma_clear(host);
-					if (mrq->done)
-						mrq->done(mrq);
-					msdc_gate_clock(host, 1);
-				} else {
-					complete(&host->xfer_done);
-					/* Autocmd12 issued but error occur,
-					 * the data transfer done INT will not issue,
-					 * so cmplete is need here
-					 */
-				}
-
-#if defined(FEATURE_MET_MMC_INDEX)
-				if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
-					met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg,
-						data->blocks, data->mrq->cmd->opcode, met_mmc_bdnum);
-				}
-#endif
-			}
+			if ((intsts & MSDC_INT_ACMDCRCERR) || (intsts & MSDC_INT_ACMDTMO))
+				goto tune;
 		}
 	}
 	/* command interrupts */
@@ -8235,6 +8133,62 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		/* pr_debug("msdc[%d] MMCIRQ: SDC_CSTS=0x%.8x\r\n",
 		host->id, sdr_read32(SDC_CSTS)); */
 	latest_int_status[host->id] = 0;
+	return IRQ_HANDLED; /* only for normal cmd*/
+
+done:
+	data->bytes_xfered = host->dma.xfersz;
+	/* if sync request or tune async request use host->xfer_done */
+	if (!(msdc_async_use_dma(data->host_cookie)) || !(host->tune == 0)) {
+		complete(&host->xfer_done);
+	} else {
+		msdc_dma_stop(host);
+		msdc_dma_clear(host);
+		mmc_request_done(mmc, mrq);
+		msdc_gate_clock(host, 1);
+		host->error &= ~REQ_DAT_ERR;
+	}
+#if defined(FEATURE_MET_MMC_INDEX)
+	if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
+		met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg, data->blocks,
+			data->mrq->cmd->opcode, met_mmc_bdnum);
+	}
+#endif
+	if (host->hw->host_function == MSDC_SD)
+		host->continuous_fail_request_count = 0;
+
+	return IRQ_HANDLED;
+
+tune:
+	if (host->dma_xfer) {
+		if ((msdc_async_use_dma(data->host_cookie)) && (host->tune == 0)) {
+			msdc_dma_stop(host);
+			msdc_clr_fifo(host->id);
+			/*msdc_clr_int(); interrupt has been cleared before*/
+			/*if msdc_irq too fast to set mrq to host->areq at mmc_start_req */
+			host->mrq_tune = host->mrq;
+			msdc_dma_clear(host);
+			msdc_gate_clock(host, 1);
+			/*begin tune:dat/acmd crc/tmo for first time async request*/
+			if (!queue_work(wq_tune, &host->work_tune)) {
+				pr_err("msdc%d queue work failed BUG_ON,[%s]L:%d\n",
+					host->id, __func__, __LINE__);
+				BUG();
+			}
+		} else {
+		/* Autocmd12 issued but error, data transfer done INT will not issue,
+		 * so cmplete is need here
+		 */
+			complete(&host->xfer_done);
+		}
+
+#if defined(FEATURE_MET_MMC_INDEX)
+		if ((data->mrq != NULL) && (data->mrq->cmd != NULL)) {
+			met_mmc_dma_stop(host->mmc, data->mrq->cmd->arg, data->blocks,
+				data->mrq->cmd->opcode, met_mmc_bdnum);
+		}
+#endif
+	} /* PIO mode can't do complete, because not init */
+
 	return IRQ_HANDLED;
 }
 
@@ -9312,6 +9266,17 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		msdc_enable_cd_irq(host, 1);
 	}
 #endif
+	/*config tune at workqueue*/
+	if (!wq_tune) {
+		wq_tune = create_workqueue("msdc-tune");
+		if (!wq_tune) {
+			ret = 1;
+			goto free_irq;
+		}
+	}
+	INIT_WORK(&host->work_tune, msdc_async_tune);
+	host->mrq_tune = NULL;
+
 	ret = mmc_add_host(mmc);
 	if (ret)
 		goto free_irq;
@@ -9365,6 +9330,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	tasklet_kill(&host->card_tasklet);
 
 	mmc_free_host(mmc);
+	if (wq_tune)
+		destroy_workqueue(wq_tune);
 out:
 	return ret;
 }
@@ -9409,6 +9376,9 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		release_mem_region(mem->start, mem->end - mem->start + 1);
 
 	mmc_free_host(host->mmc);
+
+	if (wq_tune)
+		destroy_workqueue(wq_tune);
 
 	return 0;
 }

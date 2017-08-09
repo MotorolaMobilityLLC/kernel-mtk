@@ -1226,6 +1226,8 @@ struct msdc_host {
 #if !defined(CONFIG_MTK_LEGACY)
 	struct clk *clock_control;
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
+	struct work_struct			work_tune; /* new thread tune */
+	struct mmc_request			*mrq_tune; /* backup host->mrq */
 };
 
 struct tag_msdc_hw_para {
