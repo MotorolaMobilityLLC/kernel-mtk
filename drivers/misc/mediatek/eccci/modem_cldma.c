@@ -799,7 +799,6 @@ again:
 #endif
 }
 
-#ifdef CLDMA_NET_TX_BD
 /* this function may be called from both workqueue and ISR (timer) */
 static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int blocking, int *result)
 {
@@ -864,8 +863,6 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 	return count;
 }
 
-#else
-
 /* this function may be called from both workqueue and ISR (timer) */
 static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int blocking, int *result)
 {
@@ -903,7 +900,8 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 		queue->budget++;
 		/* save skb reference */
 		dma_free = req->data_buffer_ptr_saved;
-		dma_len = tgpd->data_buff_len skb_free = req->skb;
+		dma_len = tgpd->data_buff_len;
+		skb_free = req->skb;
 		skb_free_p = req->policy;
 		/* mark cldma_request as available */
 		req->skb = NULL;
@@ -939,7 +937,6 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 		wake_up_nr(&queue->req_wq, count);
 	return count;
 }
-#endif
 
 static void cldma_tx_done(struct work_struct *work)
 {
@@ -2337,7 +2334,6 @@ static int md_cd_write_room(struct ccci_modem *md, unsigned char qno)
 	return md_ctrl->txq[qno].budget;
 }
 
-#ifdef CLDMA_NET_TX_BD
 /* this is called inside queue->ring_lock */
 static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue, struct cldma_request *tx_req,
 					  struct sk_buff *skb, DATA_POLICY policy, unsigned int ioc_override)
@@ -2402,8 +2398,6 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue, struct cldm
 	return 0;
 }
 
-#else
-
 /* this is called inside queue->ring_lock */
 static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue, struct cldma_request *tx_req,
 				       struct sk_buff *skb, DATA_POLICY policy, unsigned int ioc_override)
@@ -2422,9 +2416,9 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue, struct cldma_r
 	}
 	/* update GPD */
 	tx_req->data_buffer_ptr_saved =
-	    dma_map_single(&queue->modem->plat_dev->dev, tx_req->skb->data, skb->len, DMA_TO_DEVICE);
+	    dma_map_single(&queue->modem->plat_dev->dev, skb->data, skb->len, DMA_TO_DEVICE);
 	tgpd->data_buff_bd_ptr = (u32) (tx_req->data_buffer_ptr_saved);
-	tgpd->data_buff_len = tx_req->skb->len;
+	tgpd->data_buff_len = skb->len;
 	tgpd->debug_id = queue->debug_id++;
 	tgpd->non_used = 1;
 	/* checksum of GPD */
@@ -2443,7 +2437,6 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue, struct cldma_r
 	tx_req->policy = policy;
 	return 0;
 }
-#endif
 
 static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct ccci_request *req, struct sk_buff *skb)
 {
@@ -3355,14 +3348,14 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	for (i = 0; i < NET_TXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->net_tx_ring[i].gpd_ring);
 		md_ctrl->net_tx_ring[i].length = net_tx_queue_buffer_number[net_tx_ring2queue[i]];
-#if 0
-		md_ctrl->net_tx_ring[i].type = RING_GPD;
-		md_ctrl->net_tx_ring[i].handle_tx_request = &cldma_gpd_handle_tx_request;
-		md_ctrl->net_tx_ring[i].handle_tx_done = &cldma_gpd_tx_collect;
-#else
+#ifdef CLDMA_NET_TX_BD
 		md_ctrl->net_tx_ring[i].type = RING_GPD_BD;
 		md_ctrl->net_tx_ring[i].handle_tx_request = &cldma_gpd_bd_handle_tx_request;
 		md_ctrl->net_tx_ring[i].handle_tx_done = &cldma_gpd_bd_tx_collect;
+#else
+		md_ctrl->net_tx_ring[i].type = RING_GPD;
+		md_ctrl->net_tx_ring[i].handle_tx_request = &cldma_gpd_handle_tx_request;
+		md_ctrl->net_tx_ring[i].handle_tx_done = &cldma_gpd_tx_collect;
 #endif
 		cldma_tx_ring_init(md, &md_ctrl->net_tx_ring[i]);
 		CCCI_DBG_MSG(md->index, TAG, "net_tx_ring %d: %p\n", i, &md_ctrl->net_tx_ring[i]);
@@ -3380,7 +3373,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	for (i = 0; i < NORMAL_TXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->normal_tx_ring[i].gpd_ring);
 		md_ctrl->normal_tx_ring[i].length = normal_tx_queue_buffer_number[normal_tx_ring2queue[i]];
-#ifdef CLDMA_NET_TX_BD
+#if 0
 		md_ctrl->normal_tx_ring[i].type = RING_GPD_BD;
 		md_ctrl->normal_tx_ring[i].handle_tx_request = &cldma_gpd_bd_handle_tx_request;
 		md_ctrl->normal_tx_ring[i].handle_tx_done = &cldma_gpd_bd_tx_collect;
