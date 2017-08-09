@@ -60,6 +60,194 @@
 
 #include "ubifs.h"
 
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+#include <linux/xlog.h>
+#include <asm/div64.h>
+
+#define PRT_TIME_PERIOD 500000000
+#define PRT_TIME_EXPIRE 5000000000
+#define ID_CNT 20
+
+static int ubifs_perf_init;
+struct ubifs_perf {
+	pid_t pid[ID_CNT];
+	unsigned long long tag_t1[ID_CNT];
+	unsigned long long usage[ID_CNT];
+	unsigned int count[ID_CNT];
+	unsigned int size[ID_CNT];
+};
+static struct ubifs_perf org_write, comp_write, low_write, low_read;
+
+static void g_var_clear(struct ubifs_perf *perf, unsigned int idx)
+{
+	perf->usage[idx] = 0;
+	perf->count[idx] = 0;
+	perf->size[idx] = 0;
+}
+
+static void g_var_init(void)
+{
+	int i;
+
+	for (i = 0 ; i < ID_CNT ; i++) {
+		org_write.pid[i] = 0;
+		org_write.tag_t1[i] = 0;
+		g_var_clear(&org_write, i);
+		comp_write.pid[i] = 0;
+		comp_write.tag_t1[i] = 0;
+		g_var_clear(&comp_write, i);
+		low_write.pid[i] = 0;
+		low_write.tag_t1[i] = 0;
+		g_var_clear(&low_write, i);
+		low_read.pid[i] = 0;
+		low_read.tag_t1[i] = 0;
+		g_var_clear(&low_read, i);
+	}
+}
+
+static void ubifs_pref_output(struct ubifs_perf *perf, int idx)
+{
+	do_div(perf->usage[idx], 1000000);
+	if (perf->usage[idx]) {
+		unsigned int perf_meter = 0;
+
+		perf_meter = (perf->size[idx])/((unsigned int)perf->usage[idx]); /*kb/s*/
+		if (perf == &org_write) {
+			unsigned int comp_perf_meter = 0;
+
+			comp_perf_meter = (comp_write.size[idx])/((unsigned int)perf->usage[idx]); /*kb/s*/
+		} else if (perf == &low_write) {
+			dbg_jnl("[%d] pid:%4d LWP=%5d kB/s, size: %d bytes, time:%lld ms\n",
+					idx, perf->pid[idx], perf_meter, perf->size[idx], perf->usage[idx]);
+
+		} else if (perf == &low_read) {
+			dbg_jnl("[%d] pid:%4d LRP=%5d kB/s, size: %d bytes, time:%lld ms\n",
+					idx, perf->pid[idx], perf_meter, perf->size[idx], perf->usage[idx]);
+		}
+	}
+}
+static unsigned int find_ubifs_index(struct ubifs_perf *perf)
+{
+	pid_t pid = 0;
+#if 0
+	unsigned int idx = 0;
+	unsigned char i = 0;
+	unsigned long long t_period = 0;
+	unsigned long long time1;
+#endif
+
+	pid = task_pid_nr(current);
+#if 1
+	perf->pid[0] = pid;
+	return 0;
+#else
+
+	if (ubifs_pid[0] == 0) {
+		ubifs_pid[0] = pid;
+		return 0;
+	}
+
+	for (i = 0 ; i < ID_CNT ; i++) {
+		if (pid == ubifs_pid[i]) {
+			idx = i;
+			break;
+		}
+		if (ubifs_pid[i] == 0) {
+			ubifs_pid[i] = pid;
+			idx = i;
+			break;
+		}
+
+	}
+	if (i == ID_CNT) {
+		for (i = 0 ; i < ID_CNT ; i++) {
+			t_period = time1 - ubifs_tag_t1[i];
+			if (t_period >= (unsigned long long)PRT_TIME_EXPIRE) {
+				ubifs_pref_output(i);
+				ubifs_pid[i] = 0;
+				ubifs_tag_t1[i] = 0;
+				g_var_clear(i);
+			}
+		}
+	}
+	for (i = 0 ; i < ID_CNT ; i++) {
+		if (pid == ubifs_pid[i]) {
+			idx = i;
+			break;
+		}
+		if (ubifs_pid[i] == 0) {
+			ubifs_pid[i] = pid;
+			idx = i;
+			break;
+		}
+
+	}
+	if (i == ID_CNT) {
+		ubifs_pid[i-1] = pid;
+		ubifs_tag_t1[i-1] = 0;
+		g_var_clear(i-1);
+	}
+	return idx;
+#endif
+}
+
+
+void ubifs_perf_show(struct ubifs_perf *perf)
+{
+	unsigned long long t_period = 0;
+	int idx = find_ubifs_index(perf);
+	unsigned long long time1 = sched_clock();
+
+	if (perf->tag_t1[idx] == 0)
+		perf->tag_t1[idx] = time1;
+	t_period = time1 - perf->tag_t1[idx];
+	if (t_period >= (unsigned long long)PRT_TIME_PERIOD) {
+		ubifs_pref_output(perf, idx);
+		perf->tag_t1[idx] = time1;
+		g_var_clear(perf, idx);
+		if (perf == &org_write)
+			g_var_clear(&comp_write, idx);
+	}
+}
+int ubifs_perf_count(struct ubifs_perf *perf, unsigned long long usage, unsigned int len, int group_idx)
+{
+	int idx;
+
+	if (ubifs_perf_init == 0) {
+		g_var_init();
+		ubifs_perf_init = 1;
+	}
+	if (group_idx == -1)
+		idx = find_ubifs_index(perf);
+	else
+		idx = group_idx;
+	perf->usage[idx] += usage;
+	perf->count[idx]++;
+	perf->size[idx] += len;
+	return idx;
+}
+void ubifs_perf_wcount(unsigned long long usage, unsigned int len, unsigned int comp_len)
+{
+	int idx;
+
+	idx = ubifs_perf_count(&org_write, usage, len, -1);
+	ubifs_perf_count(&comp_write, usage, comp_len, idx);
+	ubifs_perf_show(&org_write);
+
+}
+void ubifs_perf_lwcount(unsigned long long usage, unsigned int len)
+{
+	ubifs_perf_count(&low_write, usage, len, -1);
+	ubifs_perf_show(&low_write);
+}
+
+void ubifs_perf_lrcount(unsigned long long usage, unsigned int len)
+{
+	ubifs_perf_count(&low_read, usage, len, -1);
+	ubifs_perf_show(&low_read);
+}
+#endif
+
 /**
  * zero_ino_node_unused - zero out unused fields of an on-flash inode node.
  * @ino: the inode to zero out
@@ -553,6 +741,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
 
 	dbg_jnl("ino %lu, dent '%.*s', data len %d in dir ino %lu",
 		inode->i_ino, nm->len, nm->name, ui->data_len, dir->i_ino);
+	if (!xent)
+		ubifs_assert(host_ui->data_len == 0);
 	ubifs_assert(mutex_is_locked(&host_ui->ui_mutex));
 
 	dlen = UBIFS_DENT_NODE_SZ + nm->len + 1;
@@ -571,7 +761,11 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
 
 	aligned_dlen = ALIGN(dlen, 8);
 	aligned_ilen = ALIGN(ilen, 8);
-	len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
+	/* Make sure to account for dir_ui+data_len in length calculation
+	 * in case there is extended attribute.
+	 */
+	len = aligned_dlen + aligned_ilen +
+	      UBIFS_INO_NODE_SZ + host_ui->data_len;
 	dent = kmalloc(len, GFP_NOFS);
 	if (!dent)
 		return -ENOMEM;
@@ -648,7 +842,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
 
 	ino_key_init(c, &ino_key, dir->i_ino);
 	ino_offs += aligned_ilen;
-	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
+	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
+			    UBIFS_INO_NODE_SZ + host_ui->data_len);
 	if (err)
 		goto out_ro;
 
@@ -695,12 +890,19 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
 	int err, lnum, offs, compr_type, out_len;
 	int dlen = COMPRESSED_DATA_NODE_BUF_SZ, allocated = 1;
 	struct ubifs_inode *ui = ubifs_inode(inode);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	unsigned long long time1 = sched_clock();
+#endif
 
 	dbg_jnlk(key, "ino %lu, blk %u, len %d, key ",
 		(unsigned long)key_inum(c, key), key_block(c, key), len);
 	ubifs_assert(len <= UBIFS_BLOCK_SIZE);
 
+#if 0
 	data = kmalloc(dlen, GFP_NOFS | __GFP_NOWARN);
+#else
+	data = NULL;
+#endif
 	if (!data) {
 		/*
 		 * Fall-back to the write reserve buffer. Note, we might be
@@ -726,6 +928,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
 		compr_type = ui->compr_type;
 
 	out_len = dlen - UBIFS_DATA_NODE_SZ;
+	c->host_wcount += len;
 	ubifs_compress(buf, len, &data->data, &out_len, &compr_type);
 	ubifs_assert(out_len <= UBIFS_BLOCK_SIZE);
 
@@ -752,6 +955,9 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
 		mutex_unlock(&c->write_reserve_mutex);
 	else
 		kfree(data);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	ubifs_perf_wcount(sched_clock() - time1, len, dlen);
+#endif
 	return 0;
 
 out_release:

@@ -271,6 +271,12 @@ int ubifs_read_master(struct ubifs_info *c)
 			 * unmount routine will take care of this.
 			 */
 			return err;
+	} else if ((!c->ro_mount) && (c->mst_node->flags & cpu_to_le32(UBIFS_MST_DIRTY)) != 0) {
+		/* MTK force recover master node, when unclean reboot */
+		ubifs_msg("recovery needed, recovery master node");
+		err = ubifs_recover_master_node(c);
+		if (err)
+			return err;
 	}
 
 	/* Make sure that the recovery flag is clear */

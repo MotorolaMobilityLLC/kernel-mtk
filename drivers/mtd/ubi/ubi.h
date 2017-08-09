@@ -43,6 +43,13 @@
 
 #include "ubi-media.h"
 
+#ifdef CONFIG_MTK_HIBERNATION
+#define IPOH_VOLUME_NANE "ipoh"
+#endif
+#if 0
+#define MTK_TMP_DEBUG_LOG
+#endif
+
 /* Maximum number of supported UBI devices */
 #define UBI_MAX_DEVICES 32
 
@@ -515,6 +522,18 @@ struct ubi_device {
 	int max_ec;
 	/* Note, mean_ec is not updated run-time - should be fixed */
 	int mean_ec;
+/*MTK start: wl/ec status*/
+	uint64_t ec_sum;
+	int wl_count;
+	uint64_t wl_size;
+	int scrub_count;
+	uint64_t scrub_size;
+	int wl_th;
+	int torture;
+	atomic_t ec_count;
+	atomic_t move_retry;
+	atomic_t lbb;
+/*MTK end*/
 
 	/* EBA sub-system's stuff */
 	unsigned long long global_sqnum;
@@ -579,11 +598,25 @@ struct ubi_device {
 	int max_write_size;
 	struct mtd_info *mtd;
 
+/* MTK
 	void *peb_buf;
 	struct mutex buf_mutex;
+*/
 	struct mutex ckvol_mutex;
 
 	struct ubi_debug_info dbg;
+#ifdef CONFIG_BLB
+	int next_offset[2];
+	int leb_scrub[2];
+	struct mutex blb_mutex;
+	void *databuf;
+	void *oobbuf;
+	int scanning;
+#endif
+#ifdef CONFIG_MTK_HIBERNATION
+	int ipoh_ops;
+#endif
+
 };
 
 /**
@@ -659,6 +692,7 @@ struct ubi_ainf_volume {
  * @erase: list of physical eraseblocks which have to be erased
  * @alien: list of physical eraseblocks which should not be used by UBI (e.g.,
  *         those belonging to "preserve"-compatible internal volumes)
+ * @waiting: list of physical eraseblocks which mabybe fix by BACKUP_LSB
  * @corr_peb_count: count of PEBs in the @corr list
  * @empty_peb_count: count of PEBs which are presumably empty (contain only
  *                   0xFF bytes)
@@ -687,6 +721,9 @@ struct ubi_attach_info {
 	struct list_head free;
 	struct list_head erase;
 	struct list_head alien;
+#ifdef CONFIG_BLB
+	struct list_head waiting;
+#endif
 	int corr_peb_count;
 	int empty_peb_count;
 	int alien_peb_count;
@@ -740,6 +777,12 @@ extern const struct file_operations ubi_vol_cdev_operations;
 extern struct class *ubi_class;
 extern struct mutex ubi_devices_mutex;
 extern struct blocking_notifier_head ubi_notifiers;
+#ifdef CONFIG_BLB
+extern u32 mtk_nand_paired_page_transfer(u32, bool);
+#endif
+
+extern void *ubi_peb_buf;
+extern struct mutex ubi_buf_mutex;
 
 /* attach.c */
 int ubi_add_to_av(struct ubi_device *ubi, struct ubi_attach_info *ai, int pnum,
@@ -786,6 +829,12 @@ void ubi_calculate_reserved(struct ubi_device *ubi);
 int ubi_check_pattern(const void *buf, uint8_t patt, int size);
 
 /* eba.c */
+#ifdef CONFIG_BLB
+int blb_record_page1(struct ubi_device *ubi, int pnum,
+			 struct ubi_vid_hdr *vidh, int work);
+int blb_get_startpage(void);
+int ubi_get_compat(const struct ubi_device *ubi, int vol_id);
+#endif
 int ubi_eba_unmap_leb(struct ubi_device *ubi, struct ubi_volume *vol,
 		      int lnum);
 int ubi_eba_read_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
@@ -797,7 +846,7 @@ int ubi_eba_write_leb_st(struct ubi_device *ubi, struct ubi_volume *vol,
 int ubi_eba_atomic_leb_change(struct ubi_device *ubi, struct ubi_volume *vol,
 			      int lnum, const void *buf, int len);
 int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
-		     struct ubi_vid_hdr *vid_hdr);
+		     struct ubi_vid_hdr *vid_hdr, int do_wl);
 int ubi_eba_init(struct ubi_device *ubi, struct ubi_attach_info *ai);
 unsigned long long ubi_next_sqnum(struct ubi_device *ubi);
 int self_check_eba(struct ubi_device *ubi, struct ubi_attach_info *ai_fastmap,
@@ -818,6 +867,8 @@ int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *used_e,
 int ubi_is_erase_work(struct ubi_work *wrk);
 void ubi_refill_pools(struct ubi_device *ubi);
 int ubi_ensure_anchor_pebs(struct ubi_device *ubi);
+int sync_erase(struct ubi_device *ubi, struct ubi_wl_entry *e, int torture);
+void ubi_wl_move_pg_to_used(struct ubi_device *ubi, int pnum);
 
 /* io.c */
 int ubi_io_read(const struct ubi_device *ubi, void *buf, int pnum, int offset,
@@ -835,6 +886,15 @@ int ubi_io_read_vid_hdr(struct ubi_device *ubi, int pnum,
 			struct ubi_vid_hdr *vid_hdr, int verbose);
 int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr);
+#ifdef CONFIG_BLB
+int ubi_io_write_vid_hdr_blb(struct ubi_device *ubi, int pnum,
+			 struct ubi_vid_hdr *vid_hdr);
+int ubi_backup_init_scan(struct ubi_device *ubi, struct ubi_attach_info *ai);
+int ubi_io_read_oob(const struct ubi_device *ubi, void *databuf, void *oobbuf,
+		    int pnum, int offset);
+int ubi_io_write_oob(const struct ubi_device *ubi, void *databuf, void *oobbuf,
+		    int pnum, int offset);
+#endif
 
 /* build.c */
 int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
@@ -928,7 +988,7 @@ ubi_zalloc_vid_hdr(const struct ubi_device *ubi, gfp_t gfp_flags)
 {
 	void *vid_hdr;
 
-	vid_hdr = kzalloc(ubi->vid_hdr_alsize, gfp_flags);
+	vid_hdr = vzalloc(ubi->vid_hdr_alsize);
 	if (!vid_hdr)
 		return NULL;
 
@@ -952,7 +1012,7 @@ static inline void ubi_free_vid_hdr(const struct ubi_device *ubi,
 	if (!p)
 		return;
 
-	kfree(p - ubi->vid_hdr_shift);
+	vfree(p - ubi->vid_hdr_shift);
 }
 
 /*

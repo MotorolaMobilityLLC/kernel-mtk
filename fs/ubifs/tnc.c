@@ -442,15 +442,21 @@ static int try_read_node(const struct ubifs_info *c, void *buf, int type,
 	int err, node_len;
 	struct ubifs_ch *ch = buf;
 	uint32_t crc, node_crc;
-
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	unsigned long long time1 = sched_clock();
+#endif
 	dbg_io("LEB %d:%d, %s, length %d", lnum, offs, dbg_ntype(type), len);
 
 	err = ubifs_leb_read(c, lnum, buf, offs, len, 1);
 	if (err) {
 		ubifs_err("cannot read node type %d from LEB %d:%d, error %d",
 			  type, lnum, offs, err);
-		return err;
+		/*MTK: return err;*/
 	}
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	if (type == UBIFS_DATA_NODE)
+		ubifs_perf_lrcount(sched_clock() - time1, len);
+#endif
 
 	if (le32_to_cpu(ch->magic) != UBIFS_NODE_MAGIC)
 		return 0;
@@ -2669,6 +2675,7 @@ out_unlock:
 int ubifs_tnc_remove_ino(struct ubifs_info *c, ino_t inum)
 {
 	union ubifs_key key1, key2;
+#if 0   /* MTK no need anymore*/
 	struct ubifs_dent_node *xent, *pxent = NULL;
 	struct qstr nm = { .name = NULL };
 
@@ -2717,6 +2724,7 @@ int ubifs_tnc_remove_ino(struct ubifs_info *c, ino_t inum)
 	}
 
 	kfree(pxent);
+#endif
 	lowest_ino_key(c, &key1, inum);
 	highest_ino_key(c, &key2, inum);
 

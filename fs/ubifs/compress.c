@@ -53,6 +53,27 @@ static struct ubifs_compressor lzo_compr = {
 };
 #endif
 
+#if defined(CONFIG_UBIFS_FS_LZ4K)
+
+static DEFINE_MUTEX(lz4k_mutex);
+
+
+static struct ubifs_compressor lz4k_compr = {
+	.compr_type = UBIFS_COMPR_LZ4K,
+	.comp_mutex = &lz4k_mutex,
+	.name = "lz4k",
+	.capi_name = "lz4k",
+};
+
+#else
+static struct ubifs_compressor lz4k_compr = {
+	.compr_type = UBIFS_COMPR_LZ4K,
+	.name = "lz4k",
+};
+
+#endif
+
+
 #ifdef CONFIG_UBIFS_FS_ZLIB
 static DEFINE_MUTEX(deflate_mutex);
 static DEFINE_MUTEX(inflate_mutex);
@@ -232,11 +253,20 @@ int __init ubifs_compressors_init(void)
 	if (err)
 		goto out_lzo;
 
+
+	err = compr_init(&lz4k_compr);
+	if (err)
+		goto out_lzo;
+
 	ubifs_compressors[UBIFS_COMPR_NONE] = &none_compr;
 	return 0;
 
 out_lzo:
 	compr_exit(&lzo_compr);
+
+	compr_exit(&lz4k_compr);
+
+
 	return err;
 }
 

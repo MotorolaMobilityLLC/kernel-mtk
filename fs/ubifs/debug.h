@@ -127,6 +127,10 @@ struct ubifs_debug_info {
 	struct dentry *dfs_chk_fs;
 	struct dentry *dfs_tst_rcvry;
 	struct dentry *dfs_ro_error;
+	struct dentry *dfs_lca_debug;
+	struct dentry *dfs_lca_show_tnc;
+	struct dentry *dfs_wbuf_count;
+	struct dentry *dfs_host_wcount;
 };
 
 /**
@@ -146,6 +150,18 @@ struct ubifs_global_debug_info {
 	unsigned int chk_lprops:1;
 	unsigned int chk_fs:1;
 	unsigned int tst_rcvry:1;
+};
+
+/**
+ * ubifs_global_debug_tnc - global (not per-FS) UBIFS debugging tnc information.
+ *
+ */
+struct ubifs_global_debug_tnc {
+	unsigned int total_ubifs_volume;
+	uint32_t total_znode;
+	uint32_t total_tnc_leaf_lens;
+	uint32_t total_clean_znode;
+	uint32_t total_clean_tnc_leaf_lens;
 };
 
 #define ubifs_assert(expr) do {                                                \

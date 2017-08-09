@@ -219,6 +219,7 @@ static int write_rcvrd_mst_node(struct ubifs_info *c,
 	err = ubifs_leb_change(c, lnum + 1, mst, sz);
 	if (err)
 		goto out;
+	c->mst_offs = 0;  /*MTK*/
 out:
 	mst->flags = save_flags;
 	return err;

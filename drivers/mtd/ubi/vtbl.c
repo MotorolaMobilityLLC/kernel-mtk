@@ -60,6 +60,9 @@
 #include <linux/slab.h>
 #include <asm/div64.h>
 #include "ubi.h"
+#ifdef CONFIG_PWR_LOSS_MTK_SPOH
+#include <mach/power_loss_test.h>
+#endif
 
 static void self_vtbl_check(const struct ubi_device *ubi);
 
@@ -99,6 +102,12 @@ int ubi_change_vtbl_record(struct ubi_device *ubi, int idx,
 		err = ubi_eba_unmap_leb(ubi, layout_vol, i);
 		if (err)
 			return err;
+#ifdef CONFIG_PWR_LOSS_MTK_SPOH
+		if (i == 0)
+			PL_RESET_ON_CASE("NAND", "CreateVol_1");
+		else if (i == 1)
+			PL_RESET_ON_CASE("NAND", "CreateVol_2");
+#endif
 
 		err = ubi_eba_write_leb(ubi, layout_vol, i, ubi->vtbl, 0,
 					ubi->vtbl_size);
@@ -151,6 +160,12 @@ int ubi_vtbl_rename_volumes(struct ubi_device *ubi,
 		err = ubi_eba_unmap_leb(ubi, layout_vol, i);
 		if (err)
 			return err;
+#ifdef CONFIG_PWR_LOSS_MTK_SPOH
+		if (i == 0)
+			PL_RESET_ON_CASE("NAND", "ModifyVol_1");
+		else if (i == 1)
+			PL_RESET_ON_CASE("NAND", "ModifyVol_2");
+#endif
 
 		err = ubi_eba_write_leb(ubi, layout_vol, i, ubi->vtbl, 0,
 					ubi->vtbl_size);
@@ -644,6 +659,33 @@ static int init_volumes(struct ubi_device *ubi,
 	reserved_pebs += vol->reserved_pebs;
 	ubi->vol_count += 1;
 	vol->ubi = ubi;
+
+#ifdef CONFIG_BLB
+	/* And add the backup volume */
+	vol = kzalloc(sizeof(struct ubi_volume), GFP_KERNEL);
+	if (!vol)
+		return -ENOMEM;
+
+	vol->reserved_pebs = UBI_BACKUP_VOLUME_EBS;
+	vol->alignment = 1;
+	vol->vol_type = UBI_DYNAMIC_VOLUME;
+	vol->name_len = sizeof(UBI_BACKUP_VOLUME_NAME) - 1;
+	memcpy(vol->name, UBI_BACKUP_VOLUME_NAME, vol->name_len + 1);
+	vol->usable_leb_size = ubi->leb_size;
+	vol->used_ebs = vol->reserved_pebs;
+	vol->last_eb_bytes = vol->reserved_pebs;
+	vol->used_bytes =
+		(long long)vol->used_ebs * (ubi->leb_size - vol->data_pad);
+	vol->vol_id = UBI_BACKUP_VOLUME_ID;
+	vol->ref_count = 1;
+
+	ubi_assert(!ubi->volumes[vol_id2idx(ubi, vol->vol_id)]);
+	ubi->volumes[vol_id2idx(ubi, vol->vol_id)] = vol;
+	reserved_pebs += vol->reserved_pebs;
+	ubi->vol_count += 1;
+	vol->ubi = ubi;
+#endif
+
 
 	if (reserved_pebs > ubi->avail_pebs) {
 		ubi_err("not enough PEBs, required %d, available %d",

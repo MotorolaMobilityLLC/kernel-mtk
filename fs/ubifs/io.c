@@ -114,6 +114,20 @@ int ubifs_leb_read(const struct ubifs_info *c, int lnum, void *buf, int offs,
 	return err;
 }
 
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+int ubifs_leb_write_log(struct ubifs_info *c, int lnum, const void *buf, int offs,
+		int len)
+{
+	int err;
+	unsigned long long time1 = sched_clock();
+
+	err = ubifs_leb_write(c, lnum, buf, offs, len);
+	ubifs_perf_lwcount(sched_clock() - time1, len);
+
+	return err;
+}
+#endif
+
 int ubifs_leb_write(struct ubifs_info *c, int lnum, const void *buf, int offs,
 		    int len)
 {
@@ -522,9 +536,15 @@ int ubifs_wbuf_sync_nolock(struct ubifs_wbuf *wbuf)
 	dirt = sync_len - wbuf->used;
 	if (dirt)
 		ubifs_pad(c, wbuf->buf + wbuf->used, dirt);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	if (wbuf->jhead == DATAHD)
+		err = ubifs_leb_write_log(c, wbuf->lnum, wbuf->buf, wbuf->offs, sync_len);
+	else
+#endif
 	err = ubifs_leb_write(c, wbuf->lnum, wbuf->buf, wbuf->offs, sync_len);
 	if (err)
 		return err;
+	wbuf->w_count += sync_len; /*MTK*/
 
 	spin_lock(&wbuf->lock);
 	wbuf->offs += sync_len;
@@ -713,10 +733,17 @@ int ubifs_wbuf_write_nolock(struct ubifs_wbuf *wbuf, void *buf, int len)
 		if (aligned_len == wbuf->avail) {
 			dbg_io("flush jhead %s wbuf to LEB %d:%d",
 			       dbg_jhead(wbuf->jhead), wbuf->lnum, wbuf->offs);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+			if (wbuf->jhead == DATAHD)
+				err = ubifs_leb_write_log(c, wbuf->lnum, wbuf->buf,
+						wbuf->offs, wbuf->size);
+			else
+#endif
 			err = ubifs_leb_write(c, wbuf->lnum, wbuf->buf,
 					      wbuf->offs, wbuf->size);
 			if (err)
 				goto out;
+			wbuf->w_count += wbuf->size; /*MTK*/
 
 			spin_lock(&wbuf->lock);
 			wbuf->offs += wbuf->size;
@@ -749,10 +776,17 @@ int ubifs_wbuf_write_nolock(struct ubifs_wbuf *wbuf, void *buf, int len)
 		dbg_io("flush jhead %s wbuf to LEB %d:%d",
 		       dbg_jhead(wbuf->jhead), wbuf->lnum, wbuf->offs);
 		memcpy(wbuf->buf + wbuf->used, buf, wbuf->avail);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+		if (wbuf->jhead == DATAHD)
+			err = ubifs_leb_write_log(c, wbuf->lnum, wbuf->buf, wbuf->offs,
+					wbuf->size);
+		else
+#endif
 		err = ubifs_leb_write(c, wbuf->lnum, wbuf->buf, wbuf->offs,
 				      wbuf->size);
 		if (err)
 			goto out;
+		wbuf->w_count += wbuf->size; /*MTK*/
 
 		wbuf->offs += wbuf->size;
 		len -= wbuf->avail;
@@ -768,10 +802,17 @@ int ubifs_wbuf_write_nolock(struct ubifs_wbuf *wbuf, void *buf, int len)
 		 */
 		dbg_io("write %d bytes to LEB %d:%d",
 		       wbuf->size, wbuf->lnum, wbuf->offs);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+		if (wbuf->jhead == DATAHD)
+			err = ubifs_leb_write_log(c, wbuf->lnum, wbuf->buf, wbuf->offs,
+					wbuf->size);
+		else
+#endif
 		err = ubifs_leb_write(c, wbuf->lnum, buf, wbuf->offs,
 				      wbuf->size);
 		if (err)
 			goto out;
+		wbuf->w_count += wbuf->size; /*MTK*/
 
 		wbuf->offs += wbuf->size;
 		len -= wbuf->size;
@@ -790,10 +831,17 @@ int ubifs_wbuf_write_nolock(struct ubifs_wbuf *wbuf, void *buf, int len)
 		n <<= c->max_write_shift;
 		dbg_io("write %d bytes to LEB %d:%d", n, wbuf->lnum,
 		       wbuf->offs);
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+		if (wbuf->jhead == DATAHD)
+			err = ubifs_leb_write_log(c, wbuf->lnum, buf + written,
+					wbuf->offs, n);
+		else
+#endif
 		err = ubifs_leb_write(c, wbuf->lnum, buf + written,
 				      wbuf->offs, n);
 		if (err)
 			goto out;
+		wbuf->w_count += n; /*MTK*/
 		wbuf->offs += n;
 		aligned_len -= n;
 		len -= n;
@@ -900,6 +948,10 @@ int ubifs_read_node_wbuf(struct ubifs_wbuf *wbuf, void *buf, int type, int len,
 	const struct ubifs_info *c = wbuf->c;
 	int err, rlen, overlap;
 	struct ubifs_ch *ch = buf;
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	unsigned long long time1 = sched_clock();
+	int log_len = 0;
+#endif
 
 	dbg_io("LEB %d:%d, %s, length %d, jhead %s", lnum, offs,
 	       dbg_ntype(type), len, dbg_jhead(wbuf->jhead));
@@ -949,6 +1001,10 @@ int ubifs_read_node_wbuf(struct ubifs_wbuf *wbuf, void *buf, int type, int len,
 		goto out;
 	}
 
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	if (log_len > 0)
+		ubifs_perf_lrcount(sched_clock() - time1, log_len);
+#endif
 	return 0;
 
 out:
@@ -976,6 +1032,9 @@ int ubifs_read_node(const struct ubifs_info *c, void *buf, int type, int len,
 {
 	int err, l;
 	struct ubifs_ch *ch = buf;
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	unsigned long long time1 = sched_clock();
+#endif
 
 	dbg_io("LEB %d:%d, %s, length %d", lnum, offs, dbg_ntype(type), len);
 	ubifs_assert(lnum >= 0 && lnum < c->leb_cnt && offs >= 0);
@@ -1005,6 +1064,10 @@ int ubifs_read_node(const struct ubifs_info *c, void *buf, int type, int len,
 		goto out;
 	}
 
+#if defined(FEATURE_UBIFS_PERF_INDEX)
+	if (type == UBIFS_DATA_NODE)
+		ubifs_perf_lrcount(sched_clock() - time1, len);
+#endif
 	return 0;
 
 out:
@@ -1063,6 +1126,8 @@ int ubifs_wbuf_init(struct ubifs_info *c, struct ubifs_wbuf *wbuf)
 	wbuf->delta = WBUF_TIMEOUT_HARDLIMIT - WBUF_TIMEOUT_SOFTLIMIT;
 	wbuf->delta *= 1000000000ULL;
 	ubifs_assert(wbuf->delta <= ULONG_MAX);
+
+	wbuf->w_count = 0; /*MTK*/
 	return 0;
 }
 
