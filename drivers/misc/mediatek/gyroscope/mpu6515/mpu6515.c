@@ -1806,7 +1806,7 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
 	if (err) {
 		GYRO_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
+		goto exit_kfree;
 	}
 
 
