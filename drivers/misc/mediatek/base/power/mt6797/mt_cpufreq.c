@@ -142,7 +142,11 @@ static unsigned long mcumixed_base;
  * 1: get voltage from DVFSP for performance
  * 2: get voltage from PMIC through I2C
  */
-static u32 enable_cpuhvfs = 2;		/* FIXME */
+#ifdef __TRIAL_RUN__
+static u32 enable_cpuhvfs = 2;
+#else
+static u32 enable_cpuhvfs = 1;
+#endif
 #endif
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -3326,7 +3330,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
 #ifdef CONFIG_HYBRID_CPU_DVFS
-				}
+					}
 #endif
 				} else {
 #if 1
@@ -4572,7 +4576,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 			/* _mt_cpufreq_set(cpu_dvfs_is(p, MT_CPU_DVFS_LL) ? MT_CPU_DVFS_LL :
 					MT_CPU_DVFS_L, oppidx); */
 
-#ifdef __TRIAL_RUN__
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(__TRIAL_RUN__)
 			rc = cpuhvfs_set_target_opp(cpu_dvfs_to_cluster(p), oppidx, NULL);
 			BUG_ON(rc);
 #endif
