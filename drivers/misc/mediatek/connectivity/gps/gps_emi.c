@@ -103,7 +103,7 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
     #if EMI_MPU_PROTECTION_IS_READY
 		emi_mpu_set_region_protection(gGpsEmiPhyBase,
 			gGpsEmiPhyBase + SZ_1M - 1,
-			13,
+			20,
 			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
     #endif
