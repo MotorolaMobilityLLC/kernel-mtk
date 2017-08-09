@@ -614,11 +614,11 @@ static void lcm_init(void)
 #else
 #if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
+#endif
 	if (ret < 0)
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
-#endif
 #endif
 
 	cmd = 0x01;
@@ -632,11 +632,11 @@ static void lcm_init(void)
 #else
 #if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
+#endif
 	if (ret < 0)
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
-#endif
 #endif
 
 	SET_RESET_PIN(1);
