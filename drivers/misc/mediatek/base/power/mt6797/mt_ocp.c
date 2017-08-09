@@ -466,9 +466,9 @@ if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
 
 	/* TotScaler */
 	if (ocp_read_field(OCPAPBCFG24, 25:25) == 1)
-		*Leakage = *Leakage * (ocp_read_field(OCPAPBCFG24, 24:22) + 1);
+		*Leakage = *Leakage >> (ocp_read_field(OCPAPBCFG24, 24:22) + 1);
 	else
-		*Leakage = *Leakage * (ocp_read_field(OCPAPBCFG24, 24:22));
+		*Leakage = *Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
 
 	/* CapOCCGPct -> % */
 	*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
@@ -953,9 +953,9 @@ if (Cluster == OCP_LL) {
 
 		/* TotScaler */
 		if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
-			*Leakage = *Leakage * (ocp_read_field(MP0_OCP_SCAL, 2:0) + 1);
+			*Leakage = *Leakage >> (ocp_read_field(MP0_OCP_SCAL, 2:0) + 1);
 		else
-			*Leakage = *Leakage * (ocp_read_field(MP0_OCP_SCAL, 2:0));
+			*Leakage = *Leakage << (ocp_read_field(MP0_OCP_SCAL, 2:0));
 
 		/* CapOCCGPct -> % */
 		*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
@@ -982,9 +982,9 @@ return 1;
 
 		/* TotScaler */
 		if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
-			*Leakage = *Leakage * (ocp_read_field(MP1_OCP_SCAL, 2:0) + 1);
+			*Leakage = *Leakage >> (ocp_read_field(MP1_OCP_SCAL, 2:0) + 1);
 		else
-			*Leakage = *Leakage * (ocp_read_field(MP1_OCP_SCAL, 2:0));
+			*Leakage = *Leakage << (ocp_read_field(MP1_OCP_SCAL, 2:0));
 
 		/* CapOCCGPct -> % */
 		*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
