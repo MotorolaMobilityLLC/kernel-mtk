@@ -2856,9 +2856,8 @@ void BAT_thread(void)
 		mt_battery_CheckBatteryStatus();
 		mt_battery_charging_algorithm();
 	}
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+
 	mt_kpoc_power_off_check();
-#endif
 }
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
