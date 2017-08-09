@@ -16,11 +16,9 @@
 #include <linux/list.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
-#include <linux/xlog.h>
 #ifndef CONFIG_OF
 #include <mach/irqs.h>
 #endif
-#include <mach/eint.h>
 #if defined(CONFIG_MTK_LEGACY)
 #include <mt-plat/mt_gpio.h>
 #include <cust_gpio_usage.h>
@@ -35,7 +33,7 @@
 #include <linux/of_address.h>
 #endif
 
-#include <mach/mt_boot_common.h>
+#include <mt-plat/mt_boot_common.h>
 
 #ifdef CONFIG_OF
 struct device_node		*usb_node;
@@ -343,9 +341,9 @@ static void musb_id_pin_work(struct work_struct *data)
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
 	down(&mtk_musb->musb_lock);
-	DBG(0, "work start, is_host=%d, boot mode(%d)\n", mtk_musb->is_host, g_boot_mode);
+	DBG(0, "work start, is_host=%d, boot mode(%d)\n", mtk_musb->is_host, get_boot_mode());
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		DBG(0, "do nothing due to in power off charging\n");
 		goto out;
 	}
@@ -544,11 +542,8 @@ void mt_usb_otg_init(struct musb *musb)
 	if (iddig_node == NULL)
 		pr_err("USB IDDIG EINT - get IDDIG EINT node failed\n");
 	#if !defined(CONFIG_MTK_LEGACY)
-	int ret = 0;
-
 	pinctrl = devm_pinctrl_get(mtk_musb->controller);
 	if (IS_ERR(pinctrl)) {
-		ret = PTR_ERR(pinctrl);
 		dev_err(mtk_musb->controller, "Cannot find usb pinctrl!\n");
 	}
 	#endif

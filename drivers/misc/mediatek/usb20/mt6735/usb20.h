@@ -17,6 +17,7 @@ extern struct musb *mtk_musb;
 #define ID_PULL_UP 0x0101
 #define ID_PHY_RESET 0x3d11
 #endif
+extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 #endif
 
 #if defined(CONFIG_MTK_FAN5405_SUPPORT) \
