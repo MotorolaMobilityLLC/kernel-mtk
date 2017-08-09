@@ -11,50 +11,50 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 endif
 
-obj-y += mt_pm_init.o
-obj-$(CONFIG_ARCH_MT6797) += mt_sleep.o
-obj-$(CONFIG_ARCH_MT6797) += mt_spm_sleep.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_sleep.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sleep.o
-obj-$(CONFIG_ARCH_MT6753) += mt_sleep.o
-obj-$(CONFIG_ARCH_MT6753) += mt_spm_sleep.o
-obj-y += mt_clkbuf_ctl.o
-obj-y += mt_dcm.o
-ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
-obj-y += mt_clkmgr_common_legacy.o
-obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr_legacy.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_clkmgr2.o
-obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr_legacy.o
-else
-obj-y += mt_clkmgr_common.o
-obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
-endif
-obj-$(CONFIG_ARCH_MT6797) += mt_idle.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_idle.o
-obj-$(CONFIG_ARCH_MT6753) += mt_idle.o
-obj-y += mt_spm.o
-obj-$(CONFIG_ARCH_MT6797) += mt_spm_dpidle.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_spm_dpidle.o
-obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o
-obj-$(CONFIG_ARCH_MT6797) += mt_spm_fs.o
-obj-$(CONFIG_ARCH_MT6797) += mt_spm_sodi.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sodi.o
-obj-y += mt_spm_internal.o
-obj-y += mt_spm_mtcmos.o
-obj-y += mt_pbm.o
-obj-$(CONFIG_ARCH_MT6797) += mt_vcore_dvfs_1.o
-obj-$(CONFIG_ARCH_MT6797) += mt_spm_vcore_dvfs_1.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_vcore_dvfs_2.o
-obj-$(CONFIG_ARCH_MT6797M) += mt_spm_vcore_dvfs_2.o
-obj-$(CONFIG_ARCH_MT6753) += mt_vcore_dvfs_3.o
-obj-$(CONFIG_ARCH_MT6753) += mt_spm_vcore_dvfs_3.o
-obj-y += mt_ptp.o
-obj-y += mt_static_power.o
+#obj-y += mt_pm_init.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_sleep.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_spm_sleep.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_sleep.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sleep.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_sleep.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_spm_sleep.o
+#obj-y += mt_clkbuf_ctl.o
+#obj-y += mt_dcm.o
+#ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
+#obj-y += mt_clkmgr_common_legacy.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr_legacy.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_clkmgr2.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr_legacy.o
+#else
+#obj-y += mt_clkmgr_common.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
+#endif
+#obj-$(CONFIG_ARCH_MT6797) += mt_idle.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_idle.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_idle.o
+#obj-y += mt_spm.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_spm_dpidle.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_spm_dpidle.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_spm_fs.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_spm_sodi.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_spm_sodi.o
+#obj-y += mt_spm_internal.o
+#obj-y += mt_spm_mtcmos.o
+#obj-y += mt_pbm.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_vcore_dvfs_1.o
+#obj-$(CONFIG_ARCH_MT6797) += mt_spm_vcore_dvfs_1.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_vcore_dvfs_2.o
+#obj-$(CONFIG_ARCH_MT6797M) += mt_spm_vcore_dvfs_2.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_vcore_dvfs_3.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_spm_vcore_dvfs_3.o
+#obj-y += mt_ptp.o
+#obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
-obj-y += mt_gpufreq.o
-obj-y += mt_cpuidle.o
+#obj-y += mt_gpufreq.o
+#obj-y += mt_cpuidle.o
 
-obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
+#obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
 ifneq ($(CONFIG_ARM64), y)
 
