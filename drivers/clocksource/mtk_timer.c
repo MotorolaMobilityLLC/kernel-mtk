@@ -262,8 +262,11 @@ err_irq:
 	irq_dispose_mapping(evt->dev.irq);
 err_mem:
 	iounmap(evt->gpt_base);
-	of_address_to_resource(node, 0, &res);
-	release_mem_region(res.start, resource_size(&res));
 	kfree(evt);
+	if (of_address_to_resource(node, 0, &res)) {
+		pr_warn("Failed to parse resource\n");
+		return;
+	}
+	release_mem_region(res.start, resource_size(&res));
 }
 CLOCKSOURCE_OF_DECLARE(mtk_mt6577, "mediatek,mt6577-timer", mtk_timer_init);
