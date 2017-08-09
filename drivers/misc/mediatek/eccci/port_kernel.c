@@ -2776,6 +2776,12 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 				 debug_info->fatal_error.err_code1, debug_info->fatal_error.err_code2);
 		}
 		break;
+	case CC_MD1_EXCEPTION:
+		CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
+		CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
+		snprintf(ex_info, EE_BUF_LEN, "\n[%s] err_code1:%d err_code2:%d\n", debug_info->name,
+				debug_info->fatal_error.err_code1, debug_info->fatal_error.err_code2);
+		break;
 	case MD_EX_TYPE_EMI_CHECK:
 		CCCI_INF_MSG(md->index, KERN, "md_emi_check: %08X, %08X, %02d, %08X\n",
 			     debug_info->data.data0, debug_info->data.data1,
@@ -2900,6 +2906,8 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	/* update here to maintain handshake stage info during exception handling */
 	if (debug_info->type == MD_EX_TYPE_C2K_ERROR && debug_info->fatal_error.err_code1 == MD_EX_C2K_FATAL_ERROR)
 		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+	else if (debug_info->type == CC_MD1_EXCEPTION)
+		CCCI_INF_MSG(md->index, KERN, "MD1 EE, No need trigger DB\n");
 	else
 		ccci_aed(md, dump_flag, ex_info, db_opt);
 	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
@@ -2988,6 +2996,11 @@ static void ccci_md_exception(struct ccci_modem *md)
 		break;
 	case MD_EX_TYPE_C2K_ERROR:
 		debug_info->name = "Fatal error (C2K_EXP)";
+		debug_info->fatal_error.err_code1 = ex_info->content.fatalerr.error_code.code1;
+		debug_info->fatal_error.err_code2 = ex_info->content.fatalerr.error_code.code2;
+		break;
+	case CC_MD1_EXCEPTION:
+		debug_info->name = "Fatal error (LTE_EXP)";
 		debug_info->fatal_error.err_code1 = ex_info->content.fatalerr.error_code.code1;
 		debug_info->fatal_error.err_code2 = ex_info->content.fatalerr.error_code.code2;
 		break;

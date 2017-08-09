@@ -175,7 +175,7 @@ int ccci_ringbuf_writeable(int md_id, struct ccci_ringbuf *ringbuf, unsigned int
 	if (read == write) {
 		size = length - 1;
 	} else if (read < write) {
-		size = length - write;
+		size = length - write - 1;
 		size += read;
 	} else {
 		size = read - write - 1;

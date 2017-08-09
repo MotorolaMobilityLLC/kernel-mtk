@@ -114,7 +114,7 @@ static struct ccci_port md3_ccci_ports[] = {
 	{CCCI_UART1_TX, CCCI_UART1_RX, 0, 0, 0, 0, 0, &char_port_ops, 2, "ccci3_md_log_ctrl",},
 	{CCCI_FS_TX, CCCI_FS_RX, 4, 4, 4, 4, 4, &char_port_ops, 4, "ccci3_fs",},
 	{CCCI_IPC_UART_TX, CCCI_IPC_UART_RX, 6, 6, 0xFF, 0xFF, 0, &char_port_ops, 5, "ccci3_tty2",},	/*for agps */
-	{CCCI_MD_LOG_TX, CCCI_MD_LOG_RX, 3, 3, 2, 2, 0, &char_port_ops, 7, "ccci3_tty1",},
+	{CCCI_MD_LOG_TX, CCCI_MD_LOG_RX, 3, 3, 3, 3, 0, &char_port_ops, 7, "ccci3_tty1",},
 	{CCCI_DUMMY_CH, CCCI_DUMMY_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 12, "ccci3_ioctl0",},
 	{CCCI_DUMMY_CH, CCCI_DUMMY_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 13, "ccci3_ioctl1",},
 	{CCCI_DUMMY_CH, CCCI_DUMMY_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 14, "ccci3_ioctl2",},

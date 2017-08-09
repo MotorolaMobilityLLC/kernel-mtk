@@ -253,35 +253,6 @@ static int ccci_ch_to_c2k_ch(struct ccci_modem *md, int ccci_ch, int direction)
 	return -1;
 }
 
-static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct ccci_header *ccci_h, u8 qno, u8 is_tx)
-{
-	switch (ccci_h->channel) {
-	/*debug level*/
-	case CCCI_C2K_AT:
-	case CCCI_C2K_AT2:
-	case CCCI_C2K_AT3:
-		if (is_tx)
-			CCCI_DBG_MSG(md->index, TAG, "TX:OK on Q%d, seq(%d)\n", qno, ccci_h->seq_num);
-		else
-			CCCI_DBG_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
-				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
-		break;
-	/*info level*/
-	case CCCI_UART1_TX:
-	case CCCI_UART1_RX:
-	case CCCI_CONTROL_TX:
-	case CCCI_STATUS_RX:
-		if (is_tx)
-			CCCI_INF_MSG(md->index, TAG, "TX:OK on Q%d, seq(%d)\n", qno, ccci_h->seq_num);
-		else
-			CCCI_INF_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
-				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
-		break;
-	default:
-		break;
-	};
-}
-
 static void md_ccif_sram_rx_work(struct work_struct *work)
 {
 	struct md_ccif_ctrl *md_ctrl =
@@ -376,19 +347,19 @@ void c2k_mem_dump(void *start_addr, int len)
 	int i, j;
 
 	if (NULL == curr_p) {
-		pr_debug("[C2K-DUMP]NULL point to dump!\n");
+		CCCI_ERR_MSG(MD_SYS3, TAG, "[C2K-DUMP]NULL point to dump!\n");
 		return;
 	}
 	if (0 == len) {
-		pr_debug("[C2K-DUMP]Not need to dump\n");
+		CCCI_ERR_MSG(MD_SYS3, TAG, "[C2K-DUMP]Not need to dump\n");
 		return;
 	}
 
-	pr_debug("[C2K-DUMP]Base: 0x%lx, len: %d\n", (unsigned long)start_addr,
+	CCCI_DBG_MSG(MD_SYS3, TAG, "[C2K-DUMP]Base: 0x%lx, len: %d\n", (unsigned long)start_addr,
 		 len);
 	/*Fix section */
 	for (i = 0; i < _16_fix_num; i++) {
-		pr_debug("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		CCCI_INF_MSG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			 i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2),
 			 *(curr_p + 3));
 		curr_p += 4;
@@ -404,10 +375,49 @@ void c2k_mem_dump(void *start_addr, int len)
 		for (; j < 16; j++)
 			buf[j] = 0;
 		curr_p = (unsigned int *)buf;
-		pr_debug("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		CCCI_INF_MSG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			 i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2),
 			 *(curr_p + 3));
 	}
+}
+
+static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *skb, u8 qno, u8 is_tx)
+{
+	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
+	unsigned int data_len = skb->len - sizeof(struct ccci_header);
+	unsigned int dump_len = data_len > 16 ? 16 : data_len;
+
+	switch (ccci_h->channel) {
+	/*debug level*/
+	case CCCI_C2K_AT:
+	case CCCI_C2K_AT2:
+	case CCCI_C2K_AT3:
+		if (is_tx)
+			CCCI_DBG_MSG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		else
+			CCCI_DBG_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		break;
+	/*info level*/
+	case CCCI_UART1_TX:
+	case CCCI_UART1_RX:
+	case CCCI_CONTROL_TX:
+	case CCCI_CONTROL_RX:
+	case CCCI_STATUS_TX:
+	case CCCI_STATUS_RX:
+		if (is_tx)
+			CCCI_INF_MSG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		else
+			CCCI_INF_MSG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
+		if (data_len > 0)
+			c2k_mem_dump(skb->data + sizeof(struct ccci_header), dump_len);
+		break;
+	default:
+		break;
+	};
 }
 
 atomic_t lb_dl_q;
@@ -496,7 +506,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			CCCI_INF_MSG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n",
 				queue->index, *(((u32 *) ccci_h) + 2));
 
-		md_ccif_tx_rx_printk(md, ccci_h, queue->index, 0);
+		md_ccif_tx_rx_printk(md, skb, queue->index, 0);
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
@@ -1029,6 +1039,9 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 			/*c2k_mem_dump(req->skb->data, req->skb->len); */
 		}
 		ccci_inc_tx_seq_num(md, ccci_h);
+
+		md_ccif_tx_rx_printk(md, skb, qno, 1);
+
 		if (md->index == MD_SYS3) {
 			/*heart beat msg is sent from status channel in ECCCI,
 			   but from control channel in C2K, no status channel in C2K */
@@ -1060,14 +1073,6 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 				     "TX:ERR rbf write: ret(%d)!=req(%d)\n",
 				     ret, skb->len);
 		}
-		/*ccci_h = (struct ccci_header *)req->skb->data; */
-		/*if(ccci_h->channel == CCCI_CCMNI1_TX) { */
-		/*short *ipid = (short *)(req->skb->data+sizeof(struct ccci_header)+4); */
-		/*int *valid = (int *)(req->skb->data+sizeof(struct ccci_header)+36); */
-		/*CCCI_INF_MSG(md->index, TAG, "tx %p len=%d ipid=%x, valid=%x\n",
-		req->skb->data, req->skb->len, *ipid, *valid); */
-
-		md_ccif_tx_rx_printk(md, ccci_h, qno, 1);
 
 		/*free request */
 		if (IS_PASS_SKB(md, qno))
