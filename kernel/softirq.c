@@ -116,8 +116,13 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
 		trace_softirqs_off(ip);
 	raw_local_irq_restore(flags);
 
-	if (preempt_count() == cnt)
+	if (preempt_count() == cnt) {
 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+#ifdef CONFIG_MTPROF
+		MT_trace_preempt_off();
+#endif
+	}
+
 }
 EXPORT_SYMBOL(__local_bh_disable_ip);
 #endif /* CONFIG_TRACE_IRQFLAGS */

@@ -427,6 +427,21 @@ struct lock_class_key { };
 extern void lock_contended(struct lockdep_map *lock, unsigned long ip);
 extern void lock_acquired(struct lockdep_map *lock, unsigned long ip);
 
+#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_DEBUG_SPINLOCK)
+extern void MT_trace_raw_spin_lock_s(void *owner);
+extern void MT_trace_raw_spin_lock_e(void *owner);
+
+#define LOCK_CONTENDED(_lock, try, lock)			\
+do {								\
+	MT_trace_raw_spin_lock_s(_lock->owner);				\
+	if (!try(_lock)) {					\
+		lock_contended(&(_lock)->dep_map, _RET_IP_);	\
+		lock(_lock);					\
+	}							\
+	lock_acquired(&(_lock)->dep_map, _RET_IP_);			\
+	MT_trace_raw_spin_lock_e(_lock->owner);				\
+} while (0)
+#else	/*CONFIG_DEBUG_SPINLOCK &&  CONFIG_PREEMPT_MONITOR*/
 #define LOCK_CONTENDED(_lock, try, lock)			\
 do {								\
 	if (!try(_lock)) {					\
@@ -435,6 +450,7 @@ do {								\
 	}							\
 	lock_acquired(&(_lock)->dep_map, _RET_IP_);			\
 } while (0)
+#endif
 
 #else /* CONFIG_LOCK_STAT */
 

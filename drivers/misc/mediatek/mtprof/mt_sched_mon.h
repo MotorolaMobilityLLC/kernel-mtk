@@ -20,6 +20,7 @@ DECLARE_PER_CPU(struct sched_block_event, hrt_mon);
 DECLARE_PER_CPU(struct sched_block_event, sft_mon);
 
 DECLARE_PER_CPU(int, mt_timer_irq);
+#ifdef CONFIG_MT_SCHED_MONITOR
 extern void mt_trace_ISR_start(int id);
 extern void mt_trace_ISR_end(int id);
 extern void mt_trace_SoftIRQ_start(int id);
@@ -30,8 +31,21 @@ extern void mt_trace_hrt_start(void *func);
 extern void mt_trace_hrt_end(void *func);
 extern void mt_trace_sft_start(void *func);
 extern void mt_trace_sft_end(void *func);
-
 extern void mt_save_irq_counts(void);
+#else
+static inline void mt_trace_ISR_start(int id) {};
+static inline void mt_trace_ISR_end(int id) {};
+static inline void mt_trace_SoftIRQ_start(int id) {};
+static inline void mt_trace_SoftIRQ_end(int id) {};
+static inline void mt_trace_tasklet_start(void *func) {};
+static inline void mt_trace_tasklet_end(void *func) {};
+static inline void mt_trace_hrt_start(void *func) {};
+static inline void mt_trace_hrt_end(void *func) {};
+static inline void mt_trace_sft_start(void *func) {};
+static inline void mt_trace_sft_end(void *func) {};
+static inline void mt_save_irq_counts(void) {};
+#endif
+
 extern void mt_show_last_irq_counts(void);
 extern void mt_show_current_irq_counts(void);
 
@@ -41,12 +55,38 @@ struct sched_stop_event {
 	unsigned long long last_ts;
 	unsigned long long last_te;
 };
+
+struct sched_lock_event {
+	unsigned long long lock_ts;
+	unsigned long long lock_te;
+	unsigned long long lock_dur;
+	unsigned long curr_owner;
+	unsigned long last_owner;
+};
+
 DECLARE_PER_CPU(struct sched_stop_event, IRQ_disable_mon);
 DECLARE_PER_CPU(struct sched_stop_event, Preempt_disable_mon);
+DECLARE_PER_CPU(struct sched_lock_event, Raw_spin_lock_mon);
+
+#ifdef CONFIG_PREEMPT_MONITOR
 extern void MT_trace_irq_on(void);
 extern void MT_trace_irq_off(void);
 extern void MT_trace_preempt_on(void);
 extern void MT_trace_preempt_off(void);
+extern void MT_trace_check_preempt_dur(void);
+extern void MT_trace_raw_spin_lock_s(void *owner);
+extern void MT_trace_raw_spin_lock_e(void *owner);
+
+#else
+static inline void MT_trace_irq_on(void) {};
+static inline void MT_trace_irq_off(void) {};
+static inline void MT_trace_preempt_on(void) {};
+static inline void MT_trace_preempt_off(void) {};
+static inline void MT_trace_check_preempt_dur(void) {};
+static inline void MT_trace_raw_spin_lock_s(void *owner) {};
+static inline void MT_trace_raw_spin_lock_e(void *owner) {};
+#endif
+
 /* [IRQ-disable] White List
  * Flags for special scenario*/
 DECLARE_PER_CPU(int, MT_trace_in_sched);

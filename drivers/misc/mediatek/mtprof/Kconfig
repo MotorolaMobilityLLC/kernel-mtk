@@ -32,7 +32,7 @@ config MT_SCHED_MONITOR
 	bool "mt scheduler monitor"
 	default n
 	help
-	  MT_SCHED_MONITOR is used to monitor ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER/PREEPT
+	  MT_SCHED_MONITOR is used to monitor ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
 	  disable duration. Say Y here to enable ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
 	  monitor. If you are not sure about whether to enable it or not, please
 	  set n.
@@ -44,5 +44,14 @@ config MT_RT_THROTTLE_MON
 	  MT_RT_THROTTLE_MON is used to monitor rt throttle. When rt throttle activated
 	  print 5 longest execusion time rt tasks. Say Y here to enable rt throttle
 	  monitor. If you are not sure about whether to enable it or not, please set n.
+
+config PREEMPT_MONITOR
+	bool "mt preempt monitor"
+	default n
+	help
+	  PREEMPT_MONITOR is used to monitor PREEMPT disable/enalbe and
+	  local_irq_disable/enable duration. Say Y here to enable PREEMPT and
+	  local_irq_disable/enable monitor.
+	  If you are not sure about whether to enable it or not, please set n.
 
 endif

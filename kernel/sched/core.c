@@ -2704,11 +2704,8 @@ void preempt_count_add(int val)
 		current->preempt_disable_ip = ip;
 #endif
 		trace_preempt_off(CALLER_ADDR0, ip);
-#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
-		if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1)) {
-			/* current->t_add_prmpt = sched_clock(); */
-			MT_trace_preempt_off();
-		}
+#ifdef CONFIG_MTPROF
+		MT_trace_preempt_off();
 #endif
 	}
 }
@@ -2735,13 +2732,16 @@ void preempt_count_sub(int val)
 	preempt_dump_backtrace(SUB_PREEMPT);
 #endif
 
-	if (preempt_count() == val)
+	if (preempt_count() == val) {
 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-#if defined(CONFIG_PREEMPT_MONITOR) && defined(CONFIG_MTPROF)
-	if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1))
+#ifdef CONFIG_MTPROF
 		MT_trace_preempt_on();
 #endif
+	}
 	__preempt_count_sub(val);
+#ifdef CONFIG_MTPROF
+	MT_trace_check_preempt_dur();
+#endif
 }
 EXPORT_SYMBOL(preempt_count_sub);
 NOKPROBE_SYMBOL(preempt_count_sub);

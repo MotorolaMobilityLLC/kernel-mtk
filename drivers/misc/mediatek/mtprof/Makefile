@@ -1,4 +1,5 @@
 ccflags-y += -Idrivers/misc/mediatek/aee/aed/
+LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 
 obj-y := mtprof.o bootprof.o
 obj-y += sched_monitor.o monitor_debug_out.o
