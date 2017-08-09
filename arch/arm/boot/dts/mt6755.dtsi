@@ -1267,18 +1267,16 @@
 			interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		ap_dma_btif_tx@11000780 {
-			compatible = "mediatek,ap_dma_btif_tx";
+		btif_tx: btif_tx@11000780 {
+			compatible = "mediatek,btif_tx";
 			reg = <0x11000780 0x80>;
 			interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		ap_dma_btif_rx@11000800 {
-			compatible = "mediatek,ap_dma_btif_rx";
+		btif_rx: btif_rx@11000800 {
+			compatible = "mediatek,btif_rx";
 			reg = <0x11000800 0x80>;
 			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_LOW>;
-	      clocks = <&infrasys INFRA_AP_DMA>;
-	      clock-names = "btif-apdma-clock";
 		};
 
 		auxadc@11001000 {
@@ -1394,12 +1392,12 @@
 			clock-names = "therm-main";
 		};
 
-		btif@1100c000 {
-			compatible = "mediatek,BTIF";
+		btif: btif@1100c000 {
+			compatible = "mediatek,btif";
 			reg = <0x1100c000 0x1000>;
 			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
-	      clocks = <&infrasys INFRA_BTIF>,<&infrasys INFRA_AP_DMA>;
-	      clock-names = "btif-clock","btif-apdma-clock";
+			clocks = <&infrasys INFRA_BTIF>,<&infrasys INFRA_AP_DMA>;
+			clock-names = "btifc","apdmac";
 		};
 
 		apirtx:irtx@1100d000 {
