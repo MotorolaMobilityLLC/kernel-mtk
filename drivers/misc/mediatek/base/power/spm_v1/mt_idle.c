@@ -1163,7 +1163,7 @@ void spm_dpidle_before_wfi(void)
 #if !defined(CONFIG_ARCH_MT6580)
 	faudintbus_pll2sq();
 #else
-	clkmgr_faudintbus_pll2sq();
+	/*clkmgr_faudintbus_pll2sq();temporary disable for avoid clkmgr error*/
 #endif
 
 #ifdef CONFIG_SMP
@@ -1208,7 +1208,7 @@ void spm_dpidle_after_wfi(void)
 #if !defined(CONFIG_ARCH_MT6580)
 	faudintbus_sq2pll();
 #else
-	clkmgr_faudintbus_sq2pll();
+	/*clkmgr_faudintbus_sq2pll();temporary disable for avoid clkmgr error*/
 #endif
 
 	bus_dcm_disable();
