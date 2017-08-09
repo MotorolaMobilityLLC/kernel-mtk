@@ -192,7 +192,7 @@ static struct notifier_block slab_notifier;
 /*
  * Tracking user of a slab.
  */
-#define TRACK_ADDRS_COUNT 16
+#define TRACK_ADDRS_COUNT 8
 
 #ifdef MTK_COMPACT_SLUB_TRACK
 struct track {
