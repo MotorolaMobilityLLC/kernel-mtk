@@ -32,7 +32,19 @@ static int is_4g_memory_size_support(void)
 	return 0;
 #endif
 }
+int Is_MD_EMI_voilation(void)
+{
+#ifdef ENABLE_EMI_PROTECTION
+	int violation_port = MASTER_MDMCU;
 
+	violation_port = emi_mpu_get_violation_port();
+	if ((violation_port == MASTER_MDMCU) || (violation_port == MASTER_MDHW))
+		return 1;
+	return 0;
+#else
+	return 1;
+#endif
+}
 /* =================================================== */
 /* MPU Region defination */
 /* =================================================== */
@@ -285,7 +297,6 @@ inline unsigned int EXTRACT_REGION_VALUE(unsigned int domain_set, int region_num
 
 	return ret;
 }
-
 /* region_id: 0~7 0=MPU_DOMAIN_INFO_ID_MD1 ->CHEAD_MPU_DOMAIN_ID[MPU_DOMAIN_INFO_ID_MD1]-- domain 1 MD1*/
 unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned region_id)
 {

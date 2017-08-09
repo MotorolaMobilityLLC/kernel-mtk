@@ -385,6 +385,9 @@ struct ccci_modem *ccci_allocate_modem(int private_size)
 	md->config.setting |= MD_SETTING_FIRST_BOOT;
 	md->md_state = INVALID;
 	md->boot_stage = MD_BOOT_STAGE_0;
+#ifdef MD_UMOLY_EE_SUPPORT
+	md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
+#endif
 	md->ex_stage = EX_NONE;
 	atomic_set(&md->wakeup_src, 0);
 	INIT_LIST_HEAD(&md->entry);

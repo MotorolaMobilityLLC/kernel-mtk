@@ -23,7 +23,7 @@
 #endif
 
 #ifdef FEATURE_GET_MD_BAT_VOL	/* must be after ccci_config.h */
-#include <mach/battery_common.h>
+#include <mt-plat/battery_common.h>
 #else
 #define BAT_Get_Battery_Voltage(polling_mode)    ({ 0; })
 #endif
@@ -420,7 +420,8 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			return -ENOMEM;
 		}
 	}
-
+	if (count == 0)
+		return -EINVAL;
 	if (port->flags & PORT_F_USER_HEADER)
 		actual_count = count > (CCCI_MTU + header_len) ? (CCCI_MTU + header_len) : count;
 	else
@@ -580,7 +581,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
-		CCCI_INF_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
+		CCCI_NOTICE_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
 		if (md->index == MD_SYS3)
 			/* MD3 use interrupt to force assert */
 			ret = md->ops->force_assert(md, CCIF_INTERRUPT);
@@ -636,6 +637,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_INF_MSG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
+#ifdef MD_UMOLY_EE_SUPPORT
+		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
+#endif
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			md->ops->stop(md, 1000);
@@ -644,6 +648,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_INF_MSG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
+#ifdef MD_UMOLY_EE_SUPPORT
+		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
+#endif
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_LEAVE_FLIGHT_MODE, 0);
 		break;
 

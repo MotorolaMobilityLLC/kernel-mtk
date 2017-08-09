@@ -47,6 +47,6 @@ int ccci_platform_init(struct ccci_modem *md);
 extern unsigned int get_max_DRAM_size(void);
 extern unsigned int get_phys_offset(void);
 #endif
-
+int Is_MD_EMI_voilation(void);
 #define MD_IN_DEBUG(md) (0)/* ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0) */
 #endif				/* _CCCCI_PLATFORM_H_ */

@@ -37,7 +37,7 @@
 #include "modem_ccif.h"
 #include "ccif_platform.h"
 #if defined(ENABLE_32K_CLK_LESS)
-#include <mach/mtk_rtc.h>
+#include <mt-plat/mtk_rtc.h>
 #endif
 
 #define TAG "cif"

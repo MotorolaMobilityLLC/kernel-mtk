@@ -20,7 +20,7 @@ do { \
 	if (ccci_debug_enable == 1) \
 		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 2) \
-		pr_notice("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 6) \
 		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
@@ -30,7 +30,18 @@ do { \
 	if (ccci_debug_enable == 0 || ccci_debug_enable == 1) \
 		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 2) \
-		pr_notice("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
+
+/* for traffic log, print to RAM by default, print to UART when needed */
+#define CCCI_REP_MSG(idx, tag, fmt, args...) \
+do { \
+	if (ccci_debug_enable == 0 || ccci_debug_enable == 1) \
+		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 2) \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
 		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
@@ -39,6 +50,38 @@ do { \
 #define CCCI_NOTICE_MSG(idx, tag, fmt, args...) pr_notice("[ccci%d/ntc/" tag "]" fmt, (idx+1), ##args)
 /* for error log */
 #define CCCI_ERR_MSG(idx, tag, fmt, args...) pr_err("[ccci%d/err/" tag "]" fmt, (idx+1), ##args)
+/* exception log: to uart */
+#define CCCI_EXP_MSG(idx, tag, fmt, args...) pr_warn("[ccci%d/err/" tag "]" fmt, (idx+1), ##args)
+/* exception log: to kernel or ccci_dump of SYS_CCCI_DUMP in DB */
+#define CCCI_EXP_INF_MSG(idx, tag, fmt, args...) \
+do { \
+	if (ccci_debug_enable == 0 || ccci_debug_enable == 1) \
+		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 2) \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
+/* exception log: to kernel or ccci_dump of SYS_CCCI_DUMP in DB, which had time stamp as head of dump */
+#define CCCI_DUMP_MSG1(idx, tag, fmt, args...) \
+do { \
+	if (ccci_debug_enable == 0 || ccci_debug_enable == 1) \
+		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 2) \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
+/* exception log: to kernel or ccci_dump of SYS_CCCI_DUMP in DB, which had no time stamp */
+#define CCCI_DUMP_MSG2(idx, tag, fmt, args...) \
+do { \
+	if (ccci_debug_enable == 0 || ccci_debug_enable == 1) \
+		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 2) \
+		pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
 
 #define CCCI_DBG_COM_MSG(fmt, args...)		 CCCI_DBG_MSG(0, "com", fmt, ##args)
 #define CCCI_INF_COM_MSG(fmt, args...)		 CCCI_INF_MSG(0, "com", fmt, ##args)

@@ -352,10 +352,10 @@ void ccci_mem_dump(int md_id, void *start_addr, int len)
 		return;
 	}
 
-	CCCI_INF_MSG(md_id, BM, "Base: %p\n", start_addr);
+	CCCI_EXP_INF_MSG(md_id, BM, "Base: %p\n", start_addr);
 	/* Fix section */
 	for (i = 0; i < _16_fix_num; i++) {
-		CCCI_INF_MSG(md_id, BM, "%03X: %08X %08X %08X %08X\n",
+		CCCI_DUMP_MSG2(md_id, BM, "%03X: %08X %08X %08X %08X\n",
 		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 		curr_p += 4;
 	}
@@ -370,7 +370,7 @@ void ccci_mem_dump(int md_id, void *start_addr, int len)
 		for (; j < 16; j++)
 			buf[j] = 0;
 		curr_p = (unsigned int *)buf;
-		CCCI_INF_MSG(md_id, BM, "%03X: %08X %08X %08X %08X\n",
+		CCCI_DUMP_MSG2(md_id, BM, "%03X: %08X %08X %08X %08X\n",
 		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 	}
 }

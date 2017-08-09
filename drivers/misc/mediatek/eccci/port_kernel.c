@@ -48,7 +48,7 @@
 #include "port_kernel.h"
 
 #if defined(ENABLE_32K_CLK_LESS)
-#include <mach/mtk_rtc.h>
+#include <mt-plat/mtk_rtc.h>
 #endif
 
 static void ccci_ee_info_dump(struct ccci_modem *md);
@@ -503,7 +503,9 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	    && ccci_h->reserved == MD_INIT_CHK_ID && md->boot_stage == MD_BOOT_STAGE_0) {
 		del_timer(&md->bootup_timer);
 		md->boot_stage = MD_BOOT_STAGE_1;
-
+#ifdef MD_UMOLY_EE_SUPPORT
+		md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
+#endif
 		if (req->skb->len == sizeof(struct md_query_ap_feature) + sizeof(struct ccci_header))
 			prepare_runtime_data(md, req);
 		else if (req->skb->len == sizeof(struct ccci_header))
@@ -565,8 +567,8 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			/* copy exception info */
 #ifdef MD_UMOLY_EE_SUPPORT
 			if (md->index == MD_SYS1)
-				memcpy(&md->ex_pl_info, skb_pull(req->skb, sizeof(struct ccci_header)),
-				       sizeof(EX_PL_LOG_T));
+				memcpy(md->ex_pl_info, skb_pull(req->skb, sizeof(struct ccci_header)),
+							MD_HS1_FAIL_DUMP_SIZE/* sizeof(EX_PL_LOG_T) */);
 			else
 #endif
 				memcpy(&md->ex_info, skb_pull(req->skb, sizeof(struct ccci_header)), sizeof(EX_LOG_T));
@@ -1816,8 +1818,13 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	int i, data_len = 0, AlignLength, ret;
 	struct rpc_pkt pkt[RPC_MAX_ARG_NUM];
 	char *ptr, *ptr_base;
-	unsigned int tmp_data[128];	/* size of tmp_data should be >= any RPC output result */
+	/* unsigned int tmp_data[128]; */	/* size of tmp_data should be >= any RPC output result */
+	unsigned int *tmp_data = kmalloc(128*sizeof(unsigned int), GFP_ATOMIC);
 
+	if (tmp_data == NULL) {
+		CCCI_ERR_MSG(md->index, RPC, "RPC request buffer fail 128*sizeof(unsigned int)\n");
+		goto err_out;
+	}
 	/* sanity check */
 	if (rpc_buf->header.reserved < 0 || rpc_buf->header.reserved > RPC_REQ_BUFFER_NUM ||
 	    rpc_buf->para_num < 0 || rpc_buf->para_num > RPC_MAX_ARG_NUM) {
@@ -1885,6 +1892,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	return;
 
  err_out:
+	kfree(tmp_data);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
 }
@@ -2116,7 +2124,7 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 	unsigned long flags;
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
-	CCCI_INF_MSG(md->index, KERN, "MD exception logical %d->%d\n", md->ex_stage, stage);
+	CCCI_NOTICE_MSG(md->index, KERN, "MD exception logical %d->%d\n", md->ex_stage, stage);
 	md->ex_stage = stage;
 	switch (md->ex_stage) {
 	case EX_INIT:
@@ -2165,9 +2173,9 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 	char *buff;		/*[AED_STR_LEN]; */
 	char *img_inf;
 
-	buff = kmalloc(AED_STR_LEN, GFP_KERNEL);
+	buff = kmalloc(AED_STR_LEN, GFP_ATOMIC);
 	if (buff == NULL) {
-		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for buff!\n");
+		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for buff!\n");
 		goto err_exit1;
 	}
 	img_inf = ccci_get_md_info_str(md->index);
@@ -2194,8 +2202,17 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 		ex_log_len = md->smem_layout.ccci_exp_smem_mdss_debug_size;
 	}
 	if (dump_flag & CCCI_AED_DUMP_EX_PKT) {
-		ex_log_addr = (void *)&md->ex_info;
-		ex_log_len = sizeof(EX_LOG_T);
+#ifdef MD_UMOLY_EE_SUPPORT
+		if (md->index == MD_SYS1) {
+			ex_log_addr = (void *)md->ex_pl_info;
+			ex_log_len = MD_HS1_FAIL_DUMP_SIZE/*sizeof(EX_PL_LOG_T)*/;
+		} else {
+#endif
+			ex_log_addr = (void *)&md->ex_info;
+			ex_log_len = sizeof(EX_LOG_T);
+#ifdef MD_UMOLY_EE_SUPPORT
+		}
+#endif
 	}
 	if (dump_flag & CCCI_AED_DUMP_MD_IMG_MEM) {
 		md_img_addr = (void *)md->mem_layout.md_region_vir;
@@ -2204,33 +2221,38 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 #if defined(CONFIG_MTK_AEE_FEATURE)
 	aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
 #endif
+	kfree(buff);
 }
 
 #ifdef MD_UMOLY_EE_SUPPORT
 static void ccci_md_ee_info_dump(struct ccci_modem *md)
 {
 	char *ex_info;		/*[EE_BUF_LEN] = ""; */
-	char *i_bit_ex_info;	/*[EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n"; */
+	char *i_bit_ex_info = NULL;/*[EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n";*/
+	char buf_fail[] = "Fail alloc mem for exception\n";
 	int db_opt = (DB_OPT_DEFAULT | DB_OPT_FTRACE);
 	int dump_flag = 0;
 	int core_id;
-	char *ex_info_temp;	/*[EE_BUF_LEN] = ""; */
+	char *ex_info_temp = NULL;/*[EE_BUF_LEN] = "";*/
 	DEBUG_INFO_T *debug_info = &md->debug_info;
 	unsigned char c;
+	EX_PL_LOG_T *ex_pl_info = (EX_PL_LOG_T *)md->ex_pl_info;
 
 	struct rtc_time tm;
 	struct timeval tv = { 0 };
 	struct timeval tv_android = { 0 };
 	struct rtc_time tm_android;
 
-	ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+	ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info == NULL) {
-		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
+		ex_info = buf_fail;
+		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
-	ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+	ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info_temp == NULL) {
-		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
+		ex_info = buf_fail;
+		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
 		goto err_exit;
 	}
 
@@ -2239,7 +2261,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	rtc_time_to_tm(tv.tv_sec, &tm);
 	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
 	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-	CCCI_INF_MSG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
+	CCCI_EXP_INF_MSG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
 		     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		     tm.tm_hour, tm.tm_min, tm.tm_sec,
 		     (unsigned int)tv.tv_usec,
@@ -2252,14 +2274,14 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
 			debug_info = &md->debug_info1[core_id - 1];
 		}
-		CCCI_INF_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type,
+		CCCI_ERR_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type,
 			     debug_info->name ? : "Unknown");
 
 		switch (debug_info->type) {
 		case MD_EX_DUMP_ASSERT:
-			CCCI_INF_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
-			CCCI_INF_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
-			CCCI_INF_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
+			CCCI_EXP_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
+			CCCI_EXP_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
+			CCCI_EXP_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
 				     debug_info->assert.parameters[0],
 				     debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
 			snprintf(ex_info, EE_BUF_LEN_UMOLY,
@@ -2272,13 +2294,14 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 					debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
 			break;
 		case MD_EX_DUMP_3P_EX:
-			CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n",
+		case MD_EX_CC_C2K_EXCEPTION:
+			CCCI_EXP_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n",
 				     debug_info->fatal_error.err_code1);
-			CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n",
+			CCCI_EXP_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n",
 				     debug_info->fatal_error.err_code2);
-			CCCI_INF_MSG(md->index, KERN, "fatal error code 3 = 0x%08X\n",
+			CCCI_EXP_MSG(md->index, KERN, "fatal error code 3 = 0x%08X\n",
 				     debug_info->fatal_error.err_code3);
-			CCCI_INF_MSG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
+			CCCI_EXP_MSG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
 			if (debug_info->fatal_error.offender[0] != '\0') {
 				snprintf(ex_info, EE_BUF_LEN_UMOLY,
 					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s\n",
@@ -2294,9 +2317,9 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			}
 			break;
 		case MD_EX_DUMP_2P_EX:
-			CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n\n",
+			CCCI_EXP_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n\n",
 				     debug_info->fatal_error.err_code1);
-			CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n\n",
+			CCCI_EXP_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n\n",
 				     debug_info->fatal_error.err_code2);
 
 			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s] err_code1:0x%08X err_code2:0x%08X\n\n",
@@ -2304,7 +2327,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 				 debug_info->fatal_error.err_code2);
 			break;
 		case MD_EX_DUMP_EMI_CHECK:
-			CCCI_INF_MSG(md->index, KERN, "md_emi_check: 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
+			CCCI_EXP_MSG(md->index, KERN, "md_emi_check: 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
 				     debug_info->data.data0, debug_info->data.data1,
 				     debug_info->data.channel, debug_info->data.reserved);
 			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[emi_chk] 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
@@ -2318,7 +2341,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 		}
 	}
 	if (md->ex_core_num > 1) {
-		CCCI_INF_MSG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
+		CCCI_EXP_INF_MSG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
 		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
 		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s", ex_info_temp);
 
@@ -2326,7 +2349,8 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 		/*CCCI_INF_MSG(md->index, KERN, "=======***==================\n");
 		   CCCI_INF_MSG(md->index, KERN, "Core Id(%d/%lu):%s", core_id, sizeof(ex_info_temp), ex_info);
 		   CCCI_INF_MSG(md->index, KERN, "===========================\n"); */
-	}
+	} else if (md->ex_core_num == 0)
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "\n");
 	/* Add additional info */
 	switch (debug_info->more_info) {
 	case MD_EE_CASE_ONLY_SWINT:
@@ -2342,11 +2366,12 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 		strcat(ex_info, "\nOnly EX_OK case\n");
 		break;
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
-		i_bit_ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+		i_bit_ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 		if (i_bit_ex_info == NULL) {
-			CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
+			CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
 			break;
 		}
+		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, "\n[Others] May I-Bit dis too long\n");
 		strcat(i_bit_ex_info, ex_info);
 		strcpy(ex_info, i_bit_ex_info);
 		break;
@@ -2367,8 +2392,8 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	}
 
 	/* get ELM_status field from MD side */
-	c = md->ex_pl_info.envinfo.ELM_status;
-	CCCI_INF_MSG(md->index, KERN, "ELM_status: %x\n", c);
+	c = ex_pl_info->envinfo.ELM_status;
+	CCCI_EXP_INF_MSG(md->index, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
 		strcat(ex_info, "\nno ELM info\n");
@@ -2387,41 +2412,52 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	}
 
 	/* Dump MD EE info */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log, 0x%x\n", debug_info->more_info);
-	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)
-		ccci_mem_dump(md->index, &md->ex_info, sizeof(EX_LOG_T));
-	else
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
-	/* Dump MD image memory */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
-	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
-	/* Dump MD memory layout */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
-	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
-	/* Dump MD register */
-	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
-
-	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0) {
+	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD EX log, 0x%x, 0x%x\n", debug_info->more_info,
+			(unsigned int)md->boot_stage);
+	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0 &&
+		md->flight_mode == MD_FIGHT_MODE_NONE) {
+		ccci_mem_dump(md->index, md->ex_pl_info, MD_HS1_FAIL_DUMP_SIZE/*sizeof(EX_PL_LOG_T)*/);
 		/* MD will not fill in share memory before we send runtime data */
 		dump_flag = CCCI_AED_DUMP_EX_PKT;
-	} else {		/* otherwise always dump whole share memory,
+	} else {
+#if 1
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
+		ccci_mem_dump(md->index, (md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
+#else
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+#endif
+		/* otherwise always dump whole share memory,
 				   as MD will fill debug log into its 2nd 1K region after bootup */
 		dump_flag = CCCI_AED_DUMP_EX_MEM;
 		if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE)
 			dump_flag |= CCCI_AED_DUMP_CCIF_REG;
 	}
+	/* Dump MD image memory */
+	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD image memory\n");
+	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
+	/* Dump MD memory layout */
+	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
+	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+	/* Dump MD register */
+	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 err_exit:
 	md->boot_stage = MD_BOOT_STAGE_EXCEPTION;
 	/* update here to maintain handshake stage info during exception handling */
-	if (debug_info->type == MD_EX_TYPE_C2K_ERROR && debug_info->fatal_error.err_code1 == MD_EX_C2K_FATAL_ERROR)
-		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+	if (debug_info->type == MD_EX_TYPE_C2K_ERROR)
+		CCCI_EXP_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+	else if ((debug_info->type == MD_EX_DUMP_EMI_CHECK) && (Is_MD_EMI_voilation() == 0))
+		CCCI_EXP_INF_MSG(md->index, KERN, "Not MD EMI violation, No need trigger DB\n");
 	else
 		ccci_aed(md, dump_flag, ex_info, db_opt);
 	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
 		md->ops->dump_info(md, DUMP_FLAG_QUEUE_0 | DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG, NULL, 0);
+
+	kfree(ex_info);
+	kfree(ex_info_temp);
+	kfree(i_bit_ex_info);
 }
 
-static char md_ee_plstr[MD_EX_PL_FATALERR_BUF + 1][32] = {
+static char md_ee_plstr[MD_EX_PL_FATALE_TOTAL + MD_EX_OTHER_CORE_EXCEPTIN - MD_EX_CC_INVALID_EXCEPTION][32] = {
 	"INVALID",
 	"Fatal error (undefine)",
 	"Fatal error (swi)",
@@ -2429,9 +2465,16 @@ static char md_ee_plstr[MD_EX_PL_FATALERR_BUF + 1][32] = {
 	"Fatal error (data abort)",
 	"Fatal error (stack)",
 	"Fatal error (task)",
-	"Fatal error (buff)"
+	"Fatal error (buff)",
+	"Fatal error (CC invalid)",
+	"Fatal error (CC PCore)",
+	"Fatal error (CC L1Core)",
+	"Fatal error (CC CS)",
+	"Fatal error (CC MD32)",
+	"Fatal error (CC C2K)",
+	"Fatal error (CC ARM7)"
 };
-
+/*
 static char md_ee_plInvalid[MD_EX_CC_MD32_EXCEPTION - MD_EX_CC_INVALID_EXCEPTION + 1][32] = {
 	"CC Invalid Exception",
 	"CC PCore Exception",
@@ -2439,7 +2482,7 @@ static char md_ee_plInvalid[MD_EX_CC_MD32_EXCEPTION - MD_EX_CC_INVALID_EXCEPTION
 	"CC CS Exception",
 	"CC MD32 Exception"
 };
-
+*/
 void strmncopy(char *src, char *dst, int src_len, int dst_len)
 {
 	int temp_m, temp_n, temp_i;
@@ -2466,29 +2509,31 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 	int core_id;
 	unsigned char off_core_num; /* number of offender core: need parse */
 	unsigned int temp_i;
-
+	EX_PL_LOG_T *ex_pl_info = (EX_PL_LOG_T *)md->ex_pl_info;
 	EX_PL_LOG_T *ex_PLloginfo;
 	EX_CS_LOG_T *ex_csLogInfo;
 	EX_MD32_LOG_T *ex_md32LogInfo;
 
 	if (debug_info == NULL)
 		return;
-	CCCI_DBG_MSG(md->index, KERN, "ccci_md_exp_change, ee_case(0x%x)\n", debug_info->more_info);
+	CCCI_EXP_INF_MSG(md->index, KERN, "ccci_md_exp_change, ee_case(0x%x)\n", debug_info->more_info);
 
 	ee_case = debug_info->more_info;
 	memset(debug_info, 0, sizeof(DEBUG_INFO_T));
 	debug_info->more_info = ee_case;
 	off_core_num = 0;
-
-	if ((debug_info->more_info == MD_EE_CASE_NORMAL) && (md->boot_stage == MD_BOOT_STAGE_0)) {
-		ex_PLloginfo = &md->ex_pl_info;
-		core_id = MD_CORE_TOTAL_NUM;
-		off_core_num++;
-		goto PL_CORE_PROC;
-	}
 	ex_overview = (EX_OVERVIEW_T *) md->smem_layout.ccci_exp_rec_base_vir;
 
-	for (core_id = 0; core_id < MD_CORE_TOTAL_NUM; core_id++) {
+	if ((debug_info->more_info == MD_EE_CASE_NORMAL) && (md->boot_stage == MD_BOOT_STAGE_0) &&
+		(md->flight_mode != MD_FIGHT_MODE_ENTER)) {
+		ex_PLloginfo = ex_pl_info;
+		core_id = MD_CORE_NUM;
+		off_core_num++;
+		snprintf(debug_info->core_name, MD_CORE_NAME_DEBUG, "(MCU_PCORE)");
+		goto PL_CORE_PROC;
+	}
+
+	for (core_id = 0; core_id < MD_CORE_NUM; core_id++) {
 		CCCI_DBG_MSG(md->index, KERN, "core_id(%x/%x): offset=%x, if_offender=%d, %s\n", (core_id + 1),
 			     ex_overview->core_num, ex_overview->main_reson[core_id].core_offset,
 			     ex_overview->main_reson[core_id].is_offender, ex_overview->main_reson[core_id].core_name);
@@ -2504,25 +2549,37 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 			}
 			debug_info->core_name[temp_i++] = ')';
 			debug_info->core_name[temp_i] = '\0';
-			CCCI_INF_MSG(md->index, KERN, "core_id(0x%x/%d), %s\n", core_id, off_core_num,
+			CCCI_EXP_INF_MSG(md->index, KERN, "core_id(0x%x/%d), %s\n", core_id, off_core_num,
 				     debug_info->core_name);
-			md->ex_pl_info.envinfo.ELM_status = 0;
+			ex_pl_info->envinfo.ELM_status = 0;
 			switch (core_id) {
 			case MD_PCORE:
 			case MD_L1CORE:
 				ex_PLloginfo =
 				    (EX_PL_LOG_T *) ((char *)ex_overview +
 						     ex_overview->main_reson[core_id].core_offset);
-				md->ex_pl_info.envinfo.ELM_status = ex_PLloginfo->envinfo.ELM_status;
+				ex_pl_info->envinfo.ELM_status = ex_PLloginfo->envinfo.ELM_status;
 PL_CORE_PROC:
 				ee_type = ex_PLloginfo->header.ex_type;
 				debug_info->type = ee_type;
 				ee_case = ee_type;
-				CCCI_INF_MSG(md->index, KERN, "PL ex type(0x%x)\n", ee_type);
+				CCCI_EXP_INF_MSG(md->index, KERN, "PL ex type(0x%x)\n", ee_type);
 				switch (ee_type) {
 				case MD_EX_PL_INVALID:
 					debug_info->name = "INVALID";
 					break;
+				case MD_EX_CC_INVALID_EXCEPTION:
+				case MD_EX_CC_PCORE_EXCEPTION:
+				case MD_EX_CC_L1CORE_EXCEPTION:
+				case MD_EX_CC_CS_EXCEPTION:
+				case MD_EX_CC_MD32_EXCEPTION:
+				case MD_EX_CC_C2K_EXCEPTION:
+				case MD_EX_CC_ARM7_EXCEPTION:
+					/*
+					md1:(MCU_PCORE)
+					[Fatal error (CC xxx)] err_code1:0x00000xx err_code2:0x00xxx err_code3:0xxxx
+					Offender: */
+					ee_type = ee_type - MD_EX_CC_INVALID_EXCEPTION + MD_EX_PL_FATALE_TOTAL;
 				case MD_EX_PL_UNDEF:
 				case MD_EX_PL_SWI:
 				case MD_EX_PL_PREF_ABT:
@@ -2530,7 +2587,14 @@ PL_CORE_PROC:
 				case MD_EX_PL_STACKACCESS:
 				case MD_EX_PL_FATALERR_TASK:
 				case MD_EX_PL_FATALERR_BUF:
-					debug_info->type = MD_EX_DUMP_3P_EX;
+					/* all offender is zero, goto from tail of function, reparser. */
+					/* the only one case: none offender, c2k ee */
+					if ((core_id == MD_CORE_NUM) && (ee_type ==
+							(MD_EX_CC_C2K_EXCEPTION  - MD_EX_CC_INVALID_EXCEPTION +
+							MD_EX_PL_FATALE_TOTAL)))
+						debug_info->type = MD_EX_CC_C2K_EXCEPTION;
+					else
+						debug_info->type = MD_EX_DUMP_3P_EX;
 					debug_info->name = md_ee_plstr[ee_type];
 					if (ex_PLloginfo->content.fatalerr.ex_analy.owner[0] != 0xCC) {
 						strmncopy(ex_PLloginfo->content.fatalerr.ex_analy.owner,
@@ -2582,13 +2646,6 @@ PL_CORE_PROC:
 					    ex_PLloginfo->content.fatalerr.error_code.code3;
 					debug_info->fatal_error.ExStr = "EMI MPU VIOLATION\n";
 					break;
-				case MD_EX_CC_INVALID_EXCEPTION:
-				case MD_EX_CC_PCORE_EXCEPTION:
-				case MD_EX_CC_L1CORE_EXCEPTION:
-				case MD_EX_CC_CS_EXCEPTION:
-				case MD_EX_CC_MD32_EXCEPTION:
-					debug_info->name = md_ee_plInvalid[ee_type - MD_EX_CC_INVALID_EXCEPTION];
-					break;
 				default:
 					debug_info->name = "UNKNOWN Exception";
 					break;
@@ -2603,7 +2660,7 @@ PL_CORE_PROC:
 				    (EX_CS_LOG_T *) ((char *)ex_overview +
 						     ex_overview->main_reson[core_id].core_offset);
 				ee_type = ex_csLogInfo->except_type;
-				CCCI_INF_MSG(md->index, KERN, "cs ex type(0x%x)\n", ee_type);
+				CCCI_EXP_INF_MSG(md->index, KERN, "cs ex type(0x%x)\n", ee_type);
 				switch (ee_type) {
 				case CS_EXCEPTION_ASSERTION:
 					debug_info->type = MD_EX_DUMP_ASSERT;
@@ -2643,11 +2700,10 @@ PL_CORE_PROC:
 			case MD_MD32_DFE:
 			case MD_MD32_BRP:
 			case MD_MD32_RAKE:
-				ex_md32LogInfo =
-				    (EX_MD32_LOG_T *) ((char *)ex_overview +
+				ex_md32LogInfo = (EX_MD32_LOG_T *) ((char *)ex_overview +
 						       ex_overview->main_reson[core_id].core_offset);
 				ee_type = ex_md32LogInfo->except_type;
-				CCCI_INF_MSG(md->index, KERN, "md32 ex type(0x%x), name: %s\n", ee_type,
+				CCCI_EXP_INF_MSG(md->index, KERN, "md32 ex type(0x%x), name: %s\n", ee_type,
 					     ex_md32LogInfo->except_content.assert.file_name);
 				switch (ex_md32LogInfo->md32_active_mode) {
 				case 1:
@@ -2710,15 +2766,26 @@ PL_CORE_PROC:
 
 		}
 	}
+
+	if (off_core_num == 0) {
+		ex_PLloginfo = (EX_PL_LOG_T *) ((char *)ex_overview +
+				ex_overview->main_reson[MD_PCORE].core_offset);
+		ex_pl_info->envinfo.ELM_status = ex_PLloginfo->envinfo.ELM_status;
+		off_core_num++;
+		core_id = MD_CORE_NUM;
+		snprintf(debug_info->core_name, MD_CORE_NAME_DEBUG, "(MCU_PCORE)");
+		goto PL_CORE_PROC;
+	}
 	md->ex_core_num = off_core_num;
-	CCCI_DBG_MSG(md->index, KERN, "core_ex_num(%d/%d)\n", off_core_num, md->ex_core_num);
+	CCCI_EXP_INF_MSG(md->index, KERN, "core_ex_num(%d/%d)\n", off_core_num, md->ex_core_num);
 }
 #endif
 
 static void ccci_ee_info_dump(struct ccci_modem *md)
 {
-	char ex_info[EE_BUF_LEN] = "";
-	char i_bit_ex_info[EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n";
+	char *ex_info;/* [EE_BUF_LEN] = ""; */
+	char *i_bit_ex_info = NULL;/* [EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n"; */
+	char buf_fail[] = "Fail alloc mem for exception\n";
 	int db_opt = (DB_OPT_DEFAULT | DB_OPT_FTRACE);
 	int dump_flag = 0;
 	DEBUG_INFO_T *debug_info = &md->debug_info;
@@ -2740,6 +2807,12 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 		     (unsigned int)tv.tv_usec,
 		     tm_android.tm_hour, tm_android.tm_min, tm_android.tm_sec, (unsigned int)tv_android.tv_usec);
 
+	ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
+	if (ex_info == NULL) {
+		ex_info = buf_fail;
+		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
+		goto err_exit;
+	}
 	CCCI_INF_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type, debug_info->name ? : "Unknown");
 
 	switch (debug_info->type) {
@@ -2839,6 +2912,12 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 		strcat(ex_info, "\nOnly EX_OK case\n");
 		break;
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
+		i_bit_ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
+		if (i_bit_ex_info == NULL) {
+			CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
+			break;
+		}
+		snprintf(i_bit_ex_info, EE_BUF_LEN, "\n[Others] May I-Bit dis too long\n");
 		strcat(i_bit_ex_info, ex_info);
 		strcpy(ex_info, i_bit_ex_info);
 		break;
@@ -2877,7 +2956,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	default:
 		break;
 	}
-
+err_exit:
 	/* Dump MD EE info */
 	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
 	if ((md->index == MD_SYS3) || (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0))
@@ -2912,6 +2991,9 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 		ccci_aed(md, dump_flag, ex_info, db_opt);
 	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
 		md->ops->dump_info(md, DUMP_FLAG_QUEUE_0 | DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG, NULL, 0);
+
+	kfree(ex_info);
+	kfree(i_bit_ex_info);
 }
 
 /*
@@ -3068,10 +3150,10 @@ void md_ex_monitor_func(unsigned long data)
 	unsigned int ee_info_flag = 0;
 	struct ccci_modem *md = (struct ccci_modem *)data;
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	CCCI_INF_MSG(md->index, KERN, "MD exception timer 1:disable tracing\n");
+	CCCI_NOTICE_MSG(md->index, KERN, "MD exception timer 1:disable tracing\n");
 	tracing_off();
 #endif
-	CCCI_INF_MSG(md->index, KERN, "MD exception timer 1! ee=%x\n", md->ee_info_flag);
+	CCCI_EXP_MSG(md->index, KERN, "MD exception timer 1! ee=%x\n", md->ee_info_flag);
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	if ((1 << MD_EE_DUMP_ON_GOING) & md->ee_info_flag) {
 		ee_on_going = 1;
@@ -3093,20 +3175,20 @@ void md_ex_monitor_func(unsigned long data)
 	} else if (!(ee_info_flag & (1 << MD_EE_SWINT_GET))
 		   && (ee_info_flag & ((1 << MD_EE_MSG_GET) | (1 << MD_EE_OK_MSG_GET)))) {
 		ee_case = MD_EE_CASE_SWINT_MISSING;
-		CCCI_INF_MSG(md->index, KERN, "SWINT missing, ee_info_flag=%x\n", ee_info_flag);
+		CCCI_EXP_INF_MSG(md->index, KERN, "SWINT missing, ee_info_flag=%x\n", ee_info_flag);
 	} else if ((ee_info_flag & ((1 << MD_EE_MSG_GET) | (1 << MD_EE_SWINT_GET))) & (1 << MD_EE_MSG_GET)) {
 		ee_case = MD_EE_CASE_ONLY_EX;
-		CCCI_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX.\n");
+		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX.\n");
 		if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG))
 			ee_case = MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG;
 	} else if ((ee_info_flag & ((1 << MD_EE_OK_MSG_GET) | (1 << MD_EE_SWINT_GET))) & (1 << MD_EE_OK_MSG_GET)) {
 		ee_case = MD_EE_CASE_ONLY_EX_OK;
-		CCCI_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX_OK\n");
+		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX_OK\n");
 		if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG))
 			ee_case = MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG;
 	} else if (ee_info_flag & (1 << MD_EE_SWINT_GET)) {
 		ee_case = MD_EE_CASE_ONLY_SWINT;
-		CCCI_INF_MSG(md->index, KERN, "Only recv SWINT.\n");
+		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT.\n");
 		if ((ee_info_flag & (1 << MD_STATE_UPDATE)) == 0)
 			need_update_state = 1;
 	} else if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG)) {
@@ -3130,7 +3212,7 @@ void md_ex_monitor_func(unsigned long data)
 		if ((ee_info_flag & (1 << MD_STATE_UPDATE)) == 0)
 			need_update_state = 1;
 	} else {
-		CCCI_ERR_MSG(md->index, KERN, "Invalid MD_EX, ee_info=%x\n", ee_info_flag);
+		CCCI_EXP_MSG(md->index, KERN, "Invalid MD_EX, ee_info=%x\n", ee_info_flag);
 		goto _dump_done;
 	}
 
@@ -3146,8 +3228,14 @@ void md_ex_monitor_func(unsigned long data)
 	/* ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_NOTIFY, ee_case); // unsafe in timer context */
 	md->debug_info.more_info = ee_case;
 	/* Dump MD EE info */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
-	ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+#ifdef MD_UMOLY_EE_SUPPORT
+	if (md->index == MD_SYS1) {
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
+		ccci_mem_dump(md->index, (md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
+	} else
+#endif
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	mod_timer(&md->ex_monitor2, jiffies + EX_TIMER_MD_EX_REC_OK * HZ);
@@ -3164,7 +3252,7 @@ void md_ex_monitor2_func(unsigned long data)
 
 	int ee_on_going = 0;
 
-	CCCI_INF_MSG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
+	CCCI_EXP_MSG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	if ((1 << MD_EE_TIMER2_DUMP_ON_GOING) & md->ee_info_flag)
@@ -3219,7 +3307,14 @@ void md_bootup_timeout_func(unsigned long data)
 
 	if (md->boot_stage == MD_BOOT_STAGE_0) {
 		/* Handshake 1 fail */
-		ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM, ex_info, DB_OPT_DEFAULT);
+#ifdef MD_UMOLY_EE_SUPPORT
+		if (md->flight_mode) {
+			md->flight_mode = MD_FIGHT_MODE_NONE;
+			ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM | CCCI_AED_DUMP_EX_MEM,
+				ex_info, DB_OPT_DEFAULT);
+		} else
+#endif
+			ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM, ex_info, DB_OPT_DEFAULT);
 	} else if (md->boot_stage == MD_BOOT_STAGE_1) {
 		/* Handshake 2 fail */
 		CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");

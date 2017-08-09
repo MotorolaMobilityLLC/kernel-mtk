@@ -15,7 +15,7 @@
 #include "ccci_bm.h"
 #include "ccci_platform.h"
 #ifdef FEATURE_USING_4G_MEMORY_API
-#include <mach/memory.h>
+#include <mach/mt_lpae.h>
 #endif
 
 #ifdef ENABLE_EMI_PROTECTION
@@ -31,7 +31,19 @@ static int is_4g_memory_size_support(void)
 	return 0;
 #endif
 }
+int Is_MD_EMI_voilation(void)
+{
+#ifdef ENABLE_EMI_PROTECTION
+	int violation_port = MASTER_MDMCU;
 
+	violation_port = emi_mpu_get_violation_port();
+	if ((violation_port == MASTER_MDMCU) || (violation_port == MASTER_MDHW))
+		return 1;
+	return 0;
+#else
+	return 1;
+#endif
+}
 /* =================================================== */
 /* MPU Region defination */
 /* =================================================== */

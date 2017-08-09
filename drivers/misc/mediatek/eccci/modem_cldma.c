@@ -51,7 +51,7 @@
 #endif
 
 #if defined(ENABLE_32K_CLK_LESS)
-#include <mach/mtk_rtc.h>
+#include <mt-plat/mtk_rtc.h>
 #endif
 
 static unsigned int trace_sample_time = 200000000;
@@ -98,6 +98,8 @@ static const unsigned char high_priority_queue_mask = 0x00;
 #define CLDMA_ACTIVE_T 20
 
 #define BOOT_TIMER_ON 20/*10*/
+
+#define LOW_PRIORITY_QUEUE (0x4)
 
 #define TAG "mcd"
 
@@ -1151,10 +1153,18 @@ static void cldma_rx_queue_init(struct md_cd_queue *queue)
 	 * we hope work item of different CLDMA queue can work concurrently, but work items of the same
 	 * CLDMA queue must be work sequentially as wo didn't implement any lock in rx_done or tx_done.
 	 */
-	queue->worker = alloc_workqueue("md%d_rx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1,
-					md->index + 1, queue->index);
-	queue->refill_worker = alloc_workqueue("md%d_rx%d_refill_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1,
-					       md->index + 1, queue->index);
+	if ((1 << queue->index) & LOW_PRIORITY_QUEUE) {
+		/* modem logger queue: priority normal */
+		queue->worker = alloc_workqueue("md%d_rx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM, 1,
+						md->index + 1, queue->index);
+		queue->refill_worker = alloc_workqueue("md%d_rx%d_refill_worker", WQ_UNBOUND | WQ_MEM_RECLAIM, 1,
+						       md->index + 1, queue->index);
+	} else {
+		queue->worker = alloc_workqueue("md%d_rx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1,
+						md->index + 1, queue->index);
+		queue->refill_worker = alloc_workqueue("md%d_rx%d_refill_worker",
+			WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, md->index + 1, queue->index);
+	}
 	ccci_skb_queue_init(&queue->skb_list, queue->tr_ring->pkt_size, SKB_RX_QUEUE_MAX_LEN, 0);
 	init_waitqueue_head(&queue->rx_wq);
 	if (IS_NET_QUE(md, queue->index))
@@ -1596,7 +1606,7 @@ static void md_cd_clear_all_queue(struct ccci_modem *md, DIRECTION dir)
 		struct cldma_rgpd *rgpd;
 
 		for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-			spin_lock_irqsave(&md_ctrl->txq[i].ring_lock, flags);
+			spin_lock_irqsave(&md_ctrl->rxq[i].ring_lock, flags);
 			req = list_first_entry(&md_ctrl->rxq[i].tr_ring->gpd_ring, struct cldma_request, entry);
 			md_ctrl->rxq[i].tr_done = req;
 			md_ctrl->rxq[i].rx_refill = req;
@@ -1610,7 +1620,7 @@ static void md_cd_clear_all_queue(struct ccci_modem *md, DIRECTION dir)
 				req->skb->len = 0;
 				skb_reset_tail_pointer(req->skb);
 			}
-			spin_unlock_irqrestore(&md_ctrl->txq[i].ring_lock, flags);
+			spin_unlock_irqrestore(&md_ctrl->rxq[i].ring_lock, flags);
 		}
 	}
 }
@@ -1755,7 +1765,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "MD WDT IRQ\n");
+	CCCI_ERR_MSG(md->index, TAG, "MD WDT IRQ\n");
 #ifndef DISABLE_MD_WDT_PROCESS
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 	ccci_set_exp_region_protection(md);
@@ -1820,7 +1830,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 
 	volatile unsigned int SO_CFG;
 
-	CCCI_INF_MSG(md->index, TAG, "MD exception HIF %d\n", stage);
+	CCCI_ERR_MSG(md->index, TAG, "MD exception HIF %d\n", stage);
 	/* in exception mode, MD won't sleep, so we do not need to request MD resource first */
 	switch (stage) {
 	case HIF_EX_INIT:
@@ -1828,7 +1838,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		ccci_set_exp_region_protection(md);
 #endif
 		if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
-			CCCI_INF_MSG(md->index, KERN, "MD found wrong sequence number\n");
+			CCCI_ERR_MSG(md->index, KERN, "MD found wrong sequence number\n");
 			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 		}
 		wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
@@ -2024,7 +2034,7 @@ static int md_cd_init(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct ccci_port *port = NULL;
 
-	CCCI_DBG_MSG(md->index, TAG, "CLDMA modem is initializing\n");
+	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is initializing\n");
 	/* init CLMDA, must before queue init as we set start address there */
 	cldma_sw_init(md);
 	/* init queue */
@@ -2095,7 +2105,7 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 0. init security, as security depends on dummy_char, which is ready very late. */
 	ccci_init_security();
 
-	CCCI_INF_MSG(md->index, TAG, "new git code, CLDMA modem is starting\n");
+	CCCI_NOTICE_MSG(md->index, TAG, "CLDMA modem is starting\n");
 	/* 1. load modem image */
 	if (1/*md->config.setting&MD_SETTING_FIRST_BOOT || md->config.setting&MD_SETTING_RELOAD */) {
 		ccci_clear_md_region_protection(md);
@@ -2215,7 +2225,7 @@ static int md_cd_start(struct ccci_modem *md)
 	cldma_start(md);
 
  out:
-	CCCI_INF_MSG(md->index, TAG, "CLDMA modem started %d\n", ret);
+	CCCI_NOTICE_MSG(md->index, TAG, "CLDMA modem started %d\n", ret);
 	/* used for throttling feature - start */
 	ccci_modem_boot_count[md->index]++;
 	/* used for throttling feature - end */

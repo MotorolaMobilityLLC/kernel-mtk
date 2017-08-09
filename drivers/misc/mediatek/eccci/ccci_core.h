@@ -60,6 +60,15 @@ typedef enum {
 	MD_WDT,
 } MD_EX_STAGE;
 
+#ifdef MD_UMOLY_EE_SUPPORT
+#define MD_HS1_FAIL_DUMP_SIZE  (2048)
+typedef enum {
+	MD_FIGHT_MODE_NONE = 0,
+	MD_FIGHT_MODE_ENTER = 1,
+	MD_FIGHT_MODE_LEAVE = 2
+} FLIGHT_STAGE;		/* for other module */
+#endif
+
 /* MODEM MAUI Exception header (4 bytes)*/
 typedef struct _exception_record_header_t {
 	u8 ex_type;
@@ -208,6 +217,7 @@ enum {
 
 	MD_EX_PL_FATALERR_TASK = 6,
 	MD_EX_PL_FATALERR_BUF = 7,
+	MD_EX_PL_FATALE_TOTAL,
 	MD_EX_PL_ASSERT_FAIL = 16,
 	MD_EX_PL_ASSERT_DUMP = 17,
 	MD_EX_PL_ASSERT_NATIVE = 18,
@@ -216,6 +226,9 @@ enum {
 	MD_EX_CC_L1CORE_EXCEPTION = 0x22,
 	MD_EX_CC_CS_EXCEPTION = 0x23,
 	MD_EX_CC_MD32_EXCEPTION = 0x24,
+	MD_EX_CC_C2K_EXCEPTION = 0x25,
+	MD_EX_CC_ARM7_EXCEPTION = 0x26,
+	MD_EX_OTHER_CORE_EXCEPTIN,
 
 	EMI_MPU_VIOLATION = 0x30,
 	/* NUM_EXCEPTION, */
@@ -791,11 +804,13 @@ struct ccci_modem {
 #ifdef MD_UMOLY_EE_SUPPORT
 	DEBUG_INFO_T debug_info1[MD_CORE_NUM - 1];
 	unsigned char ex_core_num;
+	unsigned char flight_mode;
 #endif
 	unsigned char ex_type;
 	EX_LOG_T ex_info;
 #ifdef MD_UMOLY_EE_SUPPORT
-	EX_PL_LOG_T ex_pl_info;
+	/* EX_PL_LOG_T ex_pl_info; */
+	unsigned char ex_pl_info[MD_HS1_FAIL_DUMP_SIZE]; /* request by modem, change to 2k: include EX_PL_LOG_T*/
 #endif
 	unsigned short heart_beat_counter;
 	int dtr_state; /* only for usb bypass */
