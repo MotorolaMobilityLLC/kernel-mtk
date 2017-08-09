@@ -39,6 +39,9 @@ static struct clk *clk_scp_sys_md1_main;
 #if defined(CONFIG_PINCTRL_MT6797)
 static struct pinctrl *mdcldma_pinctrl;
 #endif
+void __attribute__((weak)) clk_buf_set_by_flightmode(bool is_flightmode_on)
+{
+}
 
 #define TAG "mcd"
 void md_cldma_hw_reset(struct ccci_modem *md)
@@ -621,7 +624,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* steip 1: power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
-
+		clk_buf_set_by_flightmode(false);
 #if defined(CONFIG_MTK_CLKMGR)
 		CCCI_INF_MSG(md->index, TAG, "Call start md_power_on()\n");
 		ret = md_power_on(SYS_MD1);
@@ -713,6 +716,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		clk_disable(clk_scp_sys_md1_main);
 		clk_unprepare(clk_scp_sys_md1_main);	/* cannot be called in mutex context */
 #endif
+		clk_buf_set_by_flightmode(true);
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_INF_MSG(md->index, TAG, "Call end kicker_pbm_by_md(0,false)\n");
