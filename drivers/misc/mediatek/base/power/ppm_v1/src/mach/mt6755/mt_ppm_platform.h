@@ -22,8 +22,8 @@ extern "C" {
 
 #define	LCMOFF_MIN_FREQ		(598000)
 #define	PTPOD_FREQ_IDX		(3)
-#define SUSPEND_FREQ_IDX_LL	(3)
-#define SUSPEND_FREQ_IDX_L	(5)
+#define SUSPEND_FREQ_LL		(689000)
+#define SUSPEND_FREQ_L		(871000)
 #define PWRTHRO_BAT_PER_MW	(610)
 #define PWRTHRO_BAT_OC_MW	(610)
 #define PWRTHRO_LOW_BAT_LV1_MW	(610)
@@ -40,8 +40,8 @@ extern "C" {
 
 #define get_cluster_lcmoff_min_freq(id)		LCMOFF_MIN_FREQ	/* the same for each cluster */
 #define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX	/* the same for each cluster */
-#define get_cluster_suspend_fix_freq_idx(id)	\
-	((id == 0) ? SUSPEND_FREQ_IDX_LL : SUSPEND_FREQ_IDX_L)
+#define get_cluster_suspend_fix_freq(id)	\
+	((id == 0) ? SUSPEND_FREQ_LL : SUSPEND_FREQ_L)
 
 /*==============================================================*/
 /* Enum								*/

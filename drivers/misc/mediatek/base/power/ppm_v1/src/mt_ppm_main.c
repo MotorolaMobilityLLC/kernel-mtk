@@ -626,7 +626,8 @@ static void ppm_main_send_request_for_suspend(void)
 	/* modify advise freq to DVFS */
 	for (i = 0; i < c_req->cluster_num; i++) {
 		c_req->cpu_limit[i].has_advise_freq = true;
-		c_req->cpu_limit[i].advise_cpufreq_idx = get_cluster_suspend_fix_freq_idx(i);
+		c_req->cpu_limit[i].advise_cpufreq_idx =
+			ppm_main_freq_to_idx(i, get_cluster_suspend_fix_freq(i), CPUFREQ_RELATION_L);
 
 		ppm_ver("Result: [%d] --> (%d)(%d)(%d)(%d) (%d)(%d)(%d)(%d)\n",
 			i,
