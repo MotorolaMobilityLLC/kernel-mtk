@@ -882,23 +882,21 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 			ASSERT(FALSE);
 			break;
 		}
-
-		DBGLOG(INIT, INFO, "[p2p] scan complete %p\n", prGlueP2pInfo->prScanRequest);
+		DBGLOG(P2P, EVENT, "scan complete, cfg80211 scan request is %p\n", prGlueInfo->prScanRequest);
 
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
 		if (prGlueP2pInfo->prScanRequest != NULL) {
 			prScanRequest = prGlueP2pInfo->prScanRequest;
 			prGlueP2pInfo->prScanRequest = NULL;
-		}
+		} else
+			DBGLOG(P2P, WARN, "[p2p] scan complete but cfg80211 scan request is NULL\n");
 		GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
 		if (prScanRequest != NULL) {
-
 			/* report all queued beacon/probe response frames  to upper layer */
 			scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_P2P_DEVICE, NULL);
 
-			DBGLOG(INIT, INFO, "DBG:p2p_cfg_scan_done\n");
 			cfg80211_scan_done(prScanRequest, fgIsAbort);
 		}
 
