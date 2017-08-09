@@ -3290,6 +3290,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+					aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F)
+						| (p->idx_opp_tbl << 4));
+#endif
 				} else {
 #if 1
 					if (action == CPU_ONLINE) {
@@ -3354,6 +3358,11 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
 					} else
 						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+					aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F)
+						| (p->idx_opp_tbl << 4));
+#endif
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
