@@ -158,9 +158,9 @@ int BigOTPSetTempUpdate (int TempTarget);
 
 /* otp_config_data */
 unsigned int t_target = 110;
-unsigned int error_sum_mode = 0x3;
+unsigned int error_sum_mode = 0x0;
 unsigned int fifo_size = 0x3;
-unsigned int adapt_mode = 0x1;
+unsigned int adapt_mode = 0x0;
 unsigned int error_sum_clamp = 0x1;
 unsigned int fifo_clean = 0x0;
 unsigned int pid_en = 0x0;
@@ -169,32 +169,24 @@ unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0x7FFFFFFF;
-unsigned int piderrmin = 0x10000000;
+unsigned int piderrmax = 0x00040000;
+unsigned int piderrmin = 0xFFFC0000;
 unsigned int kp_step = 0x0;
-unsigned int kp = 0xFFF6;
+unsigned int kp = 0xFFCE;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0xFFF8;
+unsigned int ki = 0xFFFF;
 unsigned int kd_step = 0x0;
-unsigned int kd = 0xFFFB;
+unsigned int kd = 0x0;
 
 /* otp_score_data */
-unsigned int pid_score_s = 0x200;
-unsigned int pid_score_m = 0x1500;
-unsigned int pid_freq_sht = 0x5;
+unsigned int pid_score_s = 0x1;
+unsigned int pid_score_m = 0x7FFF;
+unsigned int pid_freq_sht = 0x0;
 unsigned int pid_calc_sht = 0x0;
-unsigned int pid_score_sht = 0x6;
-unsigned int pid_freq_s = 0x0080;
-unsigned int pid_freq_m = 0x3000;
-/*
-unsigned int pid_score_s = 0x200;
-unsigned int pid_score_m = 0x1500;
-unsigned int pid_freq_sht = 0x6;
-unsigned int pid_calc_sht = 0x0;
-unsigned int pid_score_sht = 0x4;
-unsigned int pid_freq_s = 0x0050;
-unsigned int pid_freq_m = 0xFFFF;
-*/
+unsigned int pid_score_sht = 0x2;
+unsigned int pid_freq_s = 0x0013;
+unsigned int pid_freq_m = 0x0;
+
 /* otp_debug_data */
 unsigned int interrupt_clr = 0x0;
 unsigned int interrupt_en = 0x1;
@@ -796,8 +788,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	/* set_otp_ctrl_data(0x7FFFFFFF, 0x10000000, 0x0, 0xFF06, 0x0, 0xFF9C, 0x0, 0xFF9C); */
-	set_otp_ctrl_data(0x7FFFFFFF, 0x10000000, 0x0, 0xFFF6, 0x0, 0xFFF8, 0x0, 0xFFFB);
+	set_otp_ctrl_data(0x00040000, 0xFFFC0000, 0x0, 0xFFCE, 0x0, 0xFFFF, 0x0, 0x0);
 }
 
 void getTHslope(void)
@@ -958,8 +949,6 @@ TempInfo BigOTPGetTemp(void)
 	int Temp_ADC;
 	int Temp;
 
-	otp_info("[OTP] MTS = 0x%x\n", MTS);
-	otp_info("[OTP] BTS = 0x%x\n", BTS);
 	for (i = 0; i < index_len; i++) {
 		otp_set_ERR_FIFO_MUX(&otp_debug_data, i);
 		otp_ERR_FIFO_MUX_apply(&otp_debug_data);
@@ -1151,17 +1140,6 @@ static ssize_t otp_enable_proc_write(struct file *file, const char __user *buffe
 		else
 			disable_OTP();
 	}
-/*
-	if (!kstrtoint(buf, 10, &val)) {
-		if (1 == val) {
-			otp_enable = 1;
-			enable_OTP();
-		} else {
-			otp_enable = 0;
-			disable_OTP();
-		}
-	}
-*/
 	free_page((unsigned long)buf);
 
 	return count;
