@@ -1798,7 +1798,6 @@ static void protect_ap_region(void)
 	phys_addr_t dram_size;
 
 	return; /* temp to disable */
-
 	kernel_base = PHYS_OFFSET;
 	dram_size = get_max_DRAM_size();
 
@@ -1826,6 +1825,8 @@ static int __init emi_mpu_mod_init(void)
 	int ret;
 	struct device_node *node;
 	unsigned int mpu_irq;
+	void __iomem *PERICFG_BASE_ADDR;
+	void __iomem *INFRASYS_BASE_ADDR;
 
 	pr_info("Initialize EMI MPU.\n");
 
@@ -1852,6 +1853,29 @@ static int __init emi_mpu_mod_init(void)
 		return -1;
 	}
 
+	{ /* get the information for 4G mode */
+		node = of_find_compatible_node(NULL, NULL,
+		"mediatek,mt6755-perisys");
+		if (node) {
+			PERICFG_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get PERICFG_BASE_ADDR @ %p\n",
+			PERICFG_BASE_ADDR);
+		} else {
+			pr_err("PERICFG_BASE_ADDR can't find compatible node\n");
+			return -1;
+		}
+
+		node = of_find_compatible_node(NULL, NULL,
+		"mediatek,mt6755-infrasys");
+		if (node) {
+			INFRASYS_BASE_ADDR = of_iomap(node, 0);
+			pr_err("get INFRASYS_BASE_ADDR @ %p\n",
+			INFRASYS_BASE_ADDR);
+		} else {
+			pr_err("INFRASYS_BASE_ADDR can't find compatible node\n");
+			return -1;
+		}
+	}
 	spin_lock_init(&emi_mpu_lock);
 
 	pr_err("[EMI MPU] EMI_MPUP = 0x%x\n", readl(IOMEM(EMI_MPUP)));
@@ -1887,7 +1911,14 @@ static int __init emi_mpu_mod_init(void)
 		mt_devapc_emi_initial();
 	}
 
-	if (1) /* (0 == enable_4G()), we need to identify the 4G mode*/ {
+	pr_err("[EMI MPU] PERICFG_BASE_ADDR+0x208 = 0x%x\n",
+	readl(IOMEM(PERICFG_BASE_ADDR + 0x208)));
+	pr_err("[EMI MPU] INFRASYS_BASE_ADDR+0xF00 = 0x%x\n",
+	readl(IOMEM(INFRASYS_BASE_ADDR + 0xF00)));
+
+	/* if (0 == enable_4G()) */
+	if (((readl(IOMEM(PERICFG_BASE_ADDR + 0x208)) & 0x8000) == 0) ||
+		((readl(IOMEM(INFRASYS_BASE_ADDR + 0xF00)) & 0x2000) == 0)) {
 		emi_physical_offset = 0x40000000;
 		pr_err("[EMI MPU] Not 4G mode\n");
 	} else { /* enable 4G mode */
