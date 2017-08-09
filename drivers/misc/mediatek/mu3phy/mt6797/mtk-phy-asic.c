@@ -317,8 +317,8 @@ void usb_phy_switch_to_usb(void)
 	usb_enable_clock(false);
 }
 #endif
-#define RG_SSUSB_VUSB10_ON (1<<5)
-#define RG_SSUSB_VUSB10_ON_OFST (5)
+#define RG_SSUSB_VUSB10_ON (1<<29)
+#define RG_SSUSB_VUSB10_ON_OFST (29)
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 void usb_phy_sib_enable_switch(bool enable)
@@ -334,7 +334,7 @@ void usb_phy_sib_enable_switch(bool enable)
 
 	usb_enable_clock(true);
 	udelay(50);
-	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0,
+	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG1,
 					  RG_SSUSB_VUSB10_ON_OFST, RG_SSUSB_VUSB10_ON, 1);
 
 	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x700), 0x00031000);  /* SSUSB_IP_SW_RST = 0    */
@@ -368,7 +368,7 @@ bool usb_phy_sib_enable_switch_status(void)
 
 	usb_enable_clock(true);
 	udelay(50);
-	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0,
+	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG1,
 					  RG_SSUSB_VUSB10_ON_OFST, RG_SSUSB_VUSB10_ON, 1);
 
 	reg = U3PhyReadReg32((phys_addr_t) (u3_sif2_base + 0x300));
@@ -424,7 +424,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	udelay(50);
 
 	/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
-	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
+	U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
 
 	/*power domain iso disable */
@@ -732,19 +732,8 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
 			  RG_USB20_HS_100U_U3_EN, 0);
 
-	/*
-	 * D.S SD:0x11280700 %LE %LONG 0x00011001
-	 */
-	U3PhyWriteReg32((phys_addr_t) U3D_SSUSB_IP_PW_CTRL0, 0x00011001);
-
-	/* D.S SD:0x11290808  %LE %LONG 0x00040044
-	 * D.S SD:0x1129030c  %LE %LONG 0x20000000
-	 */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x808), 0x00040044);
+	/* D.S SD:0x1129030c  %LE %LONG 0x20000000 */
 	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x30c), 0x20000000);
-
-	/* 0x11290b04[bit29]=0 */
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xb04), 29, (0x01<<29), 0x0);
 
 	/* wait 800us */
 	udelay(800);
@@ -769,7 +758,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	if (clk_on) {
 		/*---CLOCK-----*/
 		/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
-		U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
+		U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
 				  RG_SSUSB_VUSB10_ON, 0);
 
 		/* Wait 10 usec. */
@@ -828,7 +817,7 @@ void usb_phy_recover(unsigned int clk_on)
 		udelay(50);
 
 		/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
-		U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
+		U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
 				  RG_SSUSB_VUSB10_ON, 1);
 	}
 
@@ -996,19 +985,8 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xc60), 22, (0x03<<22), 0x01);
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xc64), 0, (0x03<<0), 0x01);
 
-	/*
-	 * D.S SD:0x11280700 %LE %LONG 0x00011001
-	 */
-	U3PhyWriteReg32((phys_addr_t) U3D_SSUSB_IP_PW_CTRL0, 0x00011000);
-
-	/*
-	 * D.S SD:0x11290808  %LE %LONG 0x00040044
-	 */
-	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x808), 0x00000044);
-	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x30c), 0x20000000);
-
-	/* 0x11290b04[bit29]=1 */
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xb04), 29, (0x01<<29), 0x1);
+	/* D.S SD:0x1129030c  %LE %LONG 0x00000000 */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x30c), 0x00000000);
 
 	/* Wait 800 usec */
 	udelay(800);
