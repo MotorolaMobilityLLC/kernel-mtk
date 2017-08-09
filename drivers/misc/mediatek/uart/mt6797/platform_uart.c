@@ -2309,7 +2309,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		mt_set_gpio_out(GPIO_UART_UTXD0_PIN, GPIO_OUT_ONE);
 		mt_set_gpio_mode(GPIO_UART_UTXD0_PIN, GPIO_UART_UTXD0_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_UTXD0_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_UTXD0_PIN is not properly set\n");*/
 #endif
 		break;
 	case 1:
@@ -2317,7 +2317,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		mt_set_gpio_out(GPIO_UART_UTXD1_PIN, GPIO_OUT_ONE);
 		mt_set_gpio_mode(GPIO_UART_UTXD1_PIN, GPIO_UART_UTXD1_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_UTXD1_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_UTXD1_PIN is not properly set\n");*/
 #endif
 		break;
 	case 2:
@@ -2325,7 +2325,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		mt_set_gpio_out(GPIO_UART_UTXD2_PIN, GPIO_OUT_ONE);
 		mt_set_gpio_mode(GPIO_UART_UTXD2_PIN, GPIO_UART_UTXD2_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_UTXD2_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_UTXD2_PIN is not properly set\n");*/
 #endif
 		break;
 	case 3:
@@ -2333,7 +2333,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		mt_set_gpio_out(GPIO_UART_UTXD3_PIN, GPIO_OUT_ONE);
 		mt_set_gpio_mode(GPIO_UART_UTXD3_PIN, GPIO_UART_UTXD3_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_UTXD3_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_UTXD3_PIN is not properly set\n");*/
 #endif
 		break;
 	default:
@@ -2367,35 +2367,35 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 #ifdef GPIO_UART_UTXD0_PIN
 		mt_set_gpio_mode(GPIO_UART_UTXD0_PIN, GPIO_UART_UTXD0_PIN_M_UTXD);
 #else
-		pr_debug("GPIO_UART_UTXD0_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_UTXD0_PIN is not properly set p2\n");*/
 #endif
 		break;
 	case 1:
 #ifdef GPIO_UART_UTXD1_PIN
 		mt_set_gpio_mode(GPIO_UART_UTXD1_PIN, GPIO_UART_UTXD1_PIN_M_UTXD);
 #else
-		pr_debug("GPIO_UART_UTXD1_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_UTXD1_PIN is not properly set p2\n");*/
 #endif
 		break;
 	case 2:
 #ifdef GPIO_UART_UTXD2_PIN
 		mt_set_gpio_mode(GPIO_UART_UTXD2_PIN, GPIO_UART_UTXD2_PIN_M_UTXD);
 #else
-		pr_debug("GPIO_UART_UTXD2_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_UTXD2_PIN is not properly set p2\n");*/
 #endif
 		break;
 	case 3:
 #ifdef GPIO_UART_UTXD3_PIN
 		mt_set_gpio_mode(GPIO_UART_UTXD3_PIN, GPIO_UART_UTXD3_PIN_M_UTXD);
 #else
-		pr_debug("GPIO_UART_UTXD3_PIN is not properly set p3\n");
+		/*pr_debug("GPIO_UART_UTXD3_PIN is not properly set p3\n");*/
 #endif
 		break;
 	default:
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
@@ -2422,35 +2422,35 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 #ifdef GPIO_UART_URXD0_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD0_PIN, GPIO_UART_URXD0_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_URXD0_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_URXD0_PIN is not properly set\n");*/
 #endif
 		break;
 	case 1:
 #ifdef GPIO_UART_URXD1_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD1_PIN, GPIO_UART_URXD1_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_URXD1_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_URXD1_PIN is not properly set\n");*/
 #endif
 		break;
 	case 2:
 #ifdef GPIO_UART_URXD2_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD2_PIN, GPIO_UART_URXD2_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_URXD2_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_URXD2_PIN is not properly set\n");*/
 #endif
 		break;
 	case 3:
 #ifdef GPIO_UART_URXD3_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD3_PIN, GPIO_UART_URXD3_PIN_M_GPIO);
 #else
-		pr_debug("GPIO_UART_URXD3_PIN is not properly set\n");
+		/*pr_debug("GPIO_UART_URXD3_PIN is not properly set\n");*/
 #endif
 		break;
 	default:
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
@@ -2477,7 +2477,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 #ifdef GPIO_UART_URXD0_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD0_PIN, GPIO_UART_URXD0_PIN_M_URXD);
 #else				/* GPIO_UART_URXD0_PIN */
-		pr_debug("GPIO_UART_URXD0_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_URXD0_PIN is not properly set p2\n");*/
 #endif				/* GPIO_UART_URXD0_PIN */
 		break;
 
@@ -2485,7 +2485,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 #ifdef GPIO_UART_URXD1_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD1_PIN, GPIO_UART_URXD1_PIN_M_URXD);
 #else				/* GPIO_UART_URXD1_PIN */
-		pr_debug("GPIO_UART_URXD1_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_URXD1_PIN is not properly set p2\n");*/
 #endif				/* GPIO_UART_URXD1_PIN */
 		break;
 
@@ -2493,7 +2493,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 #ifdef GPIO_UART_URXD2_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD2_PIN, GPIO_UART_URXD2_PIN_M_URXD);
 #else
-		pr_debug("GPIO_UART_URXD2_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_URXD2_PIN is not properly set p2\n");*/
 #endif
 		break;
 
@@ -2501,14 +2501,14 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 #ifdef GPIO_UART_URXD3_PIN
 		mt_set_gpio_mode(GPIO_UART_URXD3_PIN, GPIO_UART_URXD3_PIN_M_URXD);
 #else
-		pr_debug("GPIO_UART_URXD3_PIN is not properly set p2\n");
+		/*pr_debug("GPIO_UART_URXD3_PIN is not properly set p2\n");*/
 #endif
 		break;
 	default:
 		break;
 	}
 #else /* defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
+	/*pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);*/
 	switch_uart_gpio(uartport, uart_gpio_op);
 #endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
