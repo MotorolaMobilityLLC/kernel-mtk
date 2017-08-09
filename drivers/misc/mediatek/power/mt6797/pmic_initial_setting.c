@@ -150,7 +150,8 @@ void PMIC_INIT_SETTING_V1(void)
 
 	chip_version = pmic_get_register_value(PMIC_SWCID);
 
-	is_battery_remove = !PMIC_check_battery();
+	/* This flag is used for fg to judge if battery even removed manually */
+	is_battery_remove = !pmic_get_register_value(PMIC_STRUP_PWROFF_SEQ_EN);
 	is_wdt_reboot_pmic = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	pmic_set_register_value(PMIC_TOP_RST_MISC_SET,  0x8);
 	is_wdt_reboot_pmic_chk = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
