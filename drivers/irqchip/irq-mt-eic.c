@@ -1797,7 +1797,11 @@ static void mt_eint_irq_ack(struct irq_data *data)
 
 static int mt_eint_get_level(unsigned int eint_num)
 {
+#if CONFIG_GPIOLIB
 	return __gpio_get_value(EINT_FUNC.gpio[eint_num]);
+#else
+	return 0;
+#endif
 }
 
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip,
