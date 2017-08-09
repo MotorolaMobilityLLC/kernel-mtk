@@ -7874,7 +7874,7 @@ void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *max
 void cmdq_core_turnon_first_dump(const TaskStruct *pTask)
 {
 #ifdef CMDQ_DUMP_FIRSTERROR
-	if (gCmdqFirstError.cmdqCount != 0)
+	if (gCmdqFirstError.cmdqCount != 0 || NULL == pTask)
 		return;
 
 	gCmdqFirstError.flag = true;
