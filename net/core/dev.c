@@ -191,7 +191,7 @@ static DEFINE_HASHTABLE(napi_hash, 8);
 
 static seqcount_t devnet_rename_seq;
 
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 #define NET_STATS_NUM  8
 #define NET_RPS_NUM    256
 #define NET_DL_MAGIC   333
@@ -2947,7 +2947,7 @@ static int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
 #endif
 
 	skb_reset_mac_header(skb);
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 	/* [5]: netif_receive_skb -> dev_queue_xmit, also IP protocol runtime */
 	netdev_stats_pre(skb, 5);
 #endif
@@ -3158,7 +3158,6 @@ static int get_rps_cpu(struct net_device *dev, struct sk_buff *skb,
 	u32 hash;
 	struct rps_dev_flow *rflow;
 	u16 next_cpu, last_cpu;
-	struct iphdr *iph;
 
 	if (skb_rx_queue_recorded(skb)) {
 		u16 index = skb_get_rx_queue(skb);
@@ -3395,7 +3394,7 @@ enqueue:
 			input_queue_tail_incr_save(sd, qtail);
 			rps_unlock(sd);
 			local_irq_restore(flags);
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 			/* [3]: netif_rx_ni -> raise NET_RX softirq */
 			int info[2];
 			struct sk_buff *tskb = NULL;
@@ -3495,7 +3494,7 @@ int netif_rx_ni(struct sk_buff *skb)
 {
 	int err;
 
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 	netif_rx_stats_pre(skb);
 #endif
 	trace_netif_rx_ni_entry(skb);
@@ -3505,7 +3504,7 @@ int netif_rx_ni(struct sk_buff *skb)
 	if (local_softirq_pending())
 		do_softirq();
 	preempt_enable();
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 	netif_rx_stats_post(skb);
 #endif
 
@@ -3863,7 +3862,7 @@ static int __netif_receive_skb(struct sk_buff *skb)
 {
 	int ret;
 
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 	/* [4]: raise NET_RX softirq -> netif_receive_skb */
 	netif_receive_stats_pre(skb, 4);
 #endif
@@ -3884,7 +3883,7 @@ static int __netif_receive_skb(struct sk_buff *skb)
 		tsk_restore_flags(current, pflags, PF_MEMALLOC);
 	} else
 		ret = __netif_receive_skb_core(skb, false);
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 	/* rps_stats[2]: netif_receive_skb runtime*/
 	netif_receive_stats_post(skb);
 #endif
@@ -7468,7 +7467,7 @@ out:
 
 subsys_initcall(net_dev_init);
 
-#if NETDEV_TRACE
+#if defined(NETDEV_TRACE)
 static inline void netif_rx_stats_pre(struct sk_buff *skb)
 {
 	int num = 0;
