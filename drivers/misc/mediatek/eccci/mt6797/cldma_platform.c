@@ -134,7 +134,7 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 			return -1;
 		}
 #endif
-		node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
 		break;
 	default:

@@ -858,7 +858,7 @@ int ccci_plat_common_init(void)
 {
 	struct device_node *node;
 	/* Get infra cfg ao base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	infra_ao_base = (unsigned long)of_iomap(node, 0);
 	CCCI_INF_MSG(-1, TAG, "infra_ao_base:0x%p\n", (void *)infra_ao_base);
 	node = of_find_compatible_node(NULL, NULL, "mediatek,dbgapb_base");
