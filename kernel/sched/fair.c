@@ -11000,6 +11000,10 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 
 	buddy = per_cpu(sd_pack_buddy, cpu);
 
+	/* No pack buddy for this CPU */
+	if (buddy == -1)
+		return false;
+
 	/* Do not pack to buddy whithin little cluster */
 	if (hmp_cpu_is_slowest(cpu)) {
 		buddy = cpu;
@@ -11010,10 +11014,6 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 		per_cpu(sd_pack_buddy, cpu) = (L_target >= num_possible_cpus()) ? buddy : L_target;
 		buddy = per_cpu(sd_pack_buddy, cpu);
 	}
-
-	/* No pack buddy for this CPU */
-	if (buddy == -1)
-		return false;
 
 check_load:
 	/*
