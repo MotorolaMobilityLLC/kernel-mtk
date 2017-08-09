@@ -467,7 +467,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.PLL_CLOCK = 450; /*this value must be in MTK suggested table */
 #else
 	/* params->dsi.PLL_CLOCK = 480; */
-	params->dsi.PLL_CLOCK = 440;
+	params->dsi.PLL_CLOCK = 423;
 #endif
 	params->dsi.ufoe_enable  = 1;
 	params->dsi.ufoe_params.lr_mode_en = 1;

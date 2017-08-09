@@ -581,7 +581,7 @@ int ovl_connect(DISP_MODULE_ENUM module, DISP_MODULE_ENUM prev,
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid)
 {
 	/*just workaround, should remove this func */
-	unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL0_2L);
+	unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL0);
 
 	if (rdma_mode)
 		return DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR);
