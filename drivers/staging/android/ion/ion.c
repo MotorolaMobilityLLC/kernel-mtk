@@ -214,13 +214,13 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 
 	if (ret) {
 		if (!(heap->flags & ION_HEAP_FLAG_DEFER_FREE))
-			goto err2;
+			goto err1;
 
 		ion_heap_freelist_drain(heap, 0);
 		ret = heap->ops->allocate(heap, buffer, len, align,
 					  flags);
 		if (ret)
-			goto err2;
+			goto err1;
 	}
 
 	buffer->dev = dev;
@@ -245,7 +245,7 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		if (!buffer->pages) {
 			IONMSG("%s vamlloc failed pages is null.\n", __func__);
 			ret = -ENOMEM;
-			goto err1;
+			goto err;
 		}
 
 		for_each_sg(table->sgl, sg, table->nents, i) {
@@ -254,9 +254,6 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 			for (j = 0; j < sg->length / PAGE_SIZE; j++)
 				buffer->pages[k++] = page++;
 		}
-
-		if (ret)
-			goto err;
 	}
 
 	buffer->dev = dev;
@@ -295,10 +292,9 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 err:
 	heap->ops->unmap_dma(heap, buffer);
 	heap->ops->free(buffer);
-err1:
 	if (buffer->pages)
 		vfree(buffer->pages);
-err2:
+err1:
 	kfree(buffer);
 	return ERR_PTR(ret);
 }
