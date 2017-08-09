@@ -1,4 +1,4 @@
-#include <sd_misc.h>
+/*#include <sd_misc.h>*/
 #include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -35,7 +35,7 @@ char *ipanic_read_size(int off, int len)
 		LOGE("%s: cannot allocate buffer(len:%d)\n", __func__, len);
 		return NULL;
 	}
-	if (card_dump_func_read(buff, size, off, DUMP_INTO_BOOT_CARD_IPANIC) != 0) {
+	if (card_dump_func_read(buff, size, off, 0 /*DUMP_INTO_BOOT_CARD_IPANIC*/) != 0) {
 		LOGE("%s: read failed(offset:%d,size:%d)\n", __func__, off, size);
 		kfree(buff);
 		return NULL;
@@ -51,7 +51,7 @@ int ipanic_write_size(void *buf, int off, int len)
 		return -2;
 	if (len > 0) {
 		if (card_dump_func_write
-		    ((unsigned char *)buf, len, off, DUMP_INTO_BOOT_CARD_IPANIC))
+		    ((unsigned char *)buf, len, off, 0 /*DUMP_INTO_BOOT_CARD_IPANIC*/))
 			return -1;
 	}
 	return len;

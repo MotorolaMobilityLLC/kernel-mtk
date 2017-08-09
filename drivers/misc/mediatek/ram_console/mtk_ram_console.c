@@ -180,7 +180,7 @@ unsigned int ram_console_size(void)
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 #ifdef CONFIG_MTK_AEE_IPANIC
-#include <mt-plat/sd_misc.h>
+/*#include <mt-plat/sd_misc.h>*/
 
 #define EMMC_ADDR 0X700000
 static char *ram_console2_log;
@@ -204,7 +204,7 @@ void last_kmsg_store_to_emmc(void)
 	/* save log to emmc */
 	buff_size = ram_console_buffer->sz_buffer;
 	card_dump_func_write((unsigned char *)ram_console_buffer, buff_size, EMMC_ADDR,
-			     DUMP_INTO_BOOT_CARD_IPANIC);
+			     0 /*DUMP_INTO_BOOT_CARD_IPANIC*/);
 
 	pr_err("ram_console: save kernel log (0x%x) to emmc!\n", buff_size);
 }
