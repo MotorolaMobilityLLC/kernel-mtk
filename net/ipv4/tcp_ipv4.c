@@ -1918,6 +1918,8 @@ restart:
 				continue;
 			if (sock_flag(sk, SOCK_DEAD))
 				continue;
+			if (sk->sk_state == TCP_TIME_WAIT)
+				continue;
 			if (sk->sk_socket) {
 				if (SOCK_INODE(sk->sk_socket)->i_uid.val != skuid)
 					continue;
