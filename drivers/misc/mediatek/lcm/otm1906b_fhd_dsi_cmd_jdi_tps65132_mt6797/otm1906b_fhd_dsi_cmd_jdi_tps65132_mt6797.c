@@ -563,6 +563,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 	/*video mode timing*/
 
+	params->dsi.ssc_disable = 1;
+
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active				= 2;
@@ -579,7 +581,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 /*command mode clock*/
 #if (LCM_DSI_CMD_MODE)
 #if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
-	params->dsi.PLL_CLOCK = 150;/*260;*/
+	params->dsi.PLL_CLOCK = 140;/*260;*/
 #else
 	params->dsi.PLL_CLOCK = 500; /*this value must be in MTK suggested table*/
 #endif
@@ -613,7 +615,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3] = MIPITX_PHY_LANE_0;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_3;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_CK;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_3;
 
 	/*params->od_table_size = 33 * 33;
 	params->od_table = (void*)&od_table_33x33;*/
@@ -933,27 +935,27 @@ static void lcm_send_60hz(void *cmdq)
 static void lcm_send_120hz(void *cmdq)
 {
 	unsigned int array[] = {
-	0x00001500,
-	0x00042902,
-	0x010619FF,
-	0x80001500,
-	0x00032902,
-	0x000619FF,
-	0x80001500,
-	0x000F2902,
-	0x007400C0,
-	0x74000602,
-	0x74000602,
-	0x00060200,
-	0x00001500,
-	0x01FB2300,
-	0x80001500,
-	0x00032902,
-	0x000000FF,
-	0x00001500,
-	0x00042902,
-	0x000000FF
-};
+		0x00001500,
+		0x00042902,
+		0x010619FF,
+		0x80001500,
+		0x00032902,
+		0x000619FF,
+		0x80001500,
+		0x000F2902,
+		0x007400C0,
+		0x74000602,
+		0x74000602,
+		0x00060200,
+		0x00001500,
+		0x01FB2300,
+		0x80001500,
+		0x00032902,
+		0x000000FF,
+		0x00001500,
+		0x00042902,
+		0x000000FF
+	};
 	dsi_set_cmdq_V11(cmdq, array, sizeof(array)/sizeof(unsigned int), 1);
 	return;
 
