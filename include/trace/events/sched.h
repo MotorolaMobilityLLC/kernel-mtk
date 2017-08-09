@@ -660,5 +660,36 @@ TRACE_EVENT(sched_wake_idle_without_ipi,
 );
 #endif /* _TRACE_SCHED_H */
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+/*
+ * Tracepoint for showing the result of task runqueue selection
+ */
+TRACE_EVENT(sched_select_task_rq,
+
+	TP_PROTO(struct task_struct *tsk, int policy, int prev_cpu, int target_cpu),
+
+	TP_ARGS(tsk, policy, prev_cpu, target_cpu),
+
+	TP_STRUCT__entry(
+		__field(pid_t, pid)
+		__field(int, policy)
+		__field(int, prev_cpu)
+		__field(int, target_cpu)
+	),
+
+	TP_fast_assign(
+		__entry->pid              = tsk->pid;
+		__entry->policy           = policy;
+		__entry->prev_cpu         = prev_cpu;
+		__entry->target_cpu       = target_cpu;
+	),
+
+	TP_printk("pid=%4d policy=0x%08x pre-cpu=%d target=%d",
+			__entry->pid,
+			__entry->policy,
+			__entry->prev_cpu,
+			__entry->target_cpu)
+);
+#endif
 /* This part must be outside protection */
 #include <trace/define_trace.h>
