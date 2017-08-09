@@ -541,8 +541,12 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			if (c2k_to_ccci_ch >= 0)
 				ccci_h->channel = (u16) c2k_to_ccci_ch;
 			else {
-				list_del(&new_req->entry);
-				ccci_free_req(new_req);
+				if (IS_PASS_SKB(md, qno)) {
+					ccci_free_skb(skb, FREE);
+				} else {
+					list_del(&new_req->entry);
+					ccci_free_req(new_req);
+				}
 				ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
 				CCCI_ERROR_LOG(md->index, TAG, "ccif_rx_collect: ret=%d\n", ret);
 				return ret;
@@ -1247,7 +1251,7 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		}
 		if (IS_PASS_SKB(md, qno))
 			return -EBUSY;
-		else if (req->blocking) {
+		else if (req && req->blocking) {
 			if (retry_count++ < 2000000) {
 				udelay(5); /*5us * 2000000 = 10s*/
 				goto retry;
