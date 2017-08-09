@@ -240,6 +240,7 @@
 #define MT_SOC_BTCVSD_TX_DAI_NAME "mt-soc-btcvsd-tx-dai-driver"
 #define MT_SOC_MOD_DAI_NAME "mt-soc-moddai-driver"
 #define MT_SOC_ANC_NAME "mt-soc-anc-driver"
+#define MT_SOC_ANC_RECORD_DAI_NAME "mt-soc-anc-record-dai-driver"
 
 /* platform name */
 #define MT_SOC_DL1_PCM   "mt-soc-dl1-pcm"
@@ -364,5 +365,6 @@
 #define MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME "BTCVSD_Playback"
 #define MT_SOC_OFFLOAD_STREAM_NAME "Offload_Playback"
 #define MT_SOC_ANC_STREAM_NAME "ANC_Playback"
+#define MT_SOC_ANC_RECORD_STREAM_NAME "ANC_Record"
 
 #endif

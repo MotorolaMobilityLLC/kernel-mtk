@@ -765,6 +765,9 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG0  = 0x%x\n",
 		       Afe_Get_Reg(FPGA_CFG0));
 #endif
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA2_TOP_CON0  = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA2_TOP_CON0));
+
 	n += scnprintf(buffer + n, size - n, "CLK_CFG_4  = 0x%x\n",
 			GetClkCfg(AUDIO_CLK_CFG_4));
 	n += scnprintf(buffer + n, size - n, "CLK_CFG_6  = 0x%x\n",
@@ -1188,6 +1191,15 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.platform_name  = MT_SOC_ANC_PCM,
 		.codec_dai_name = MT_SOC_CODEC_ANC_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
+	},
+	{
+		.name = "ANC_RECORD",
+		.stream_name = MT_SOC_ANC_RECORD_STREAM_NAME,
+		.cpu_dai_name	= MT_SOC_ANC_RECORD_DAI_NAME,
+		.platform_name	= MT_SOC_I2S2_ADC2_PCM,
+		.codec_dai_name = MT_SOC_CODEC_DUMMY_DAI_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.ops = &mt_machine_audio_ops,
 	},
 	{
 		.name = "Voice_Ultrasound",

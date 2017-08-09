@@ -171,6 +171,39 @@ static struct snd_soc_dai_ops mtk_dai_i2s2_adc2_ops = {
 };
 /* i2s2 adc2 data */
 
+/* anc record */
+static bool anc_ul_record_is_started;
+
+static int mtk_dai_anc_record_trigger(struct snd_pcm_substream *substream,
+				      int cmd,
+				      struct snd_soc_dai *dai)
+{
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		if (!anc_ul_record_is_started) {
+			anc_ul_record_is_started = true;
+			AudDrv_Emi_Clk_On();
+			Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 11, 0x1 << 11);
+		}
+		return 0;
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		if (anc_ul_record_is_started) {
+			anc_ul_record_is_started = false;
+			AudDrv_Emi_Clk_Off();
+			Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 11, 0x1 << 11);
+		}
+		return 0;
+	}
+	return -EINVAL;
+}
+
+static struct snd_soc_dai_ops mtk_dai_anc_record_ops = {
+	.trigger = mtk_dai_anc_record_trigger,
+};
+/* anc record */
+
 static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 	{
 		.playback = {
@@ -521,6 +554,19 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		},
 		.name = MT_SOC_I2S2ADC2DAI_NAME,
 		.ops = &mtk_dai_i2s2_adc2_ops,
+	},
+	{
+		.capture = {
+			.stream_name = MT_SOC_ANC_RECORD_STREAM_NAME,
+			.rates = SOC_HIGH_USE_RATE,
+			.formats = SND_SOC_ADV_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 260000,
+		},
+		.name = MT_SOC_ANC_RECORD_DAI_NAME,
+		.ops = &mtk_dai_anc_record_ops,
 	},
 	{
 		.capture = {

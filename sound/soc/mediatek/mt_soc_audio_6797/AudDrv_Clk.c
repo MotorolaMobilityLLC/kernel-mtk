@@ -1840,7 +1840,9 @@ EXIT:
 
 void AudDrv_Emi_Clk_On(void)
 {
-	mutex_lock(&auddrv_pmic_mutex);
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _MT_IDLE_HEADER
@@ -1850,12 +1852,14 @@ void AudDrv_Emi_Clk_On(void)
 #endif
 	}
 	Aud_EMI_cntr++;
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_Emi_Clk_Off(void)
 {
-	mutex_lock(&auddrv_pmic_mutex);
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1870,7 +1874,7 @@ void AudDrv_Emi_Clk_Off(void)
 		Aud_EMI_cntr = 0;
 		PRINTK_AUD_ERROR("Aud_EMI_cntr = %d\n", Aud_EMI_cntr);
 	}
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 /*****************************************************************************
