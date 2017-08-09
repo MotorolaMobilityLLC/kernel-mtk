@@ -3220,6 +3220,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes
 	    || Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained >
 	    Afe_Block->u4BufferSize) {
+#if 0  /* DL2 have false alarm about underflow, so temporarily disable */
 		if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
 			AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
 									Afe_Block->pucPhysBufAddr;
@@ -3238,6 +3239,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] = MEM_DL2;
 		}
 		AFE_dL_Abnormal_context.u4UnderflowCnt++;
+#endif
 	} else {
 		PRINTK_AUD_DL2("+DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
 			       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
