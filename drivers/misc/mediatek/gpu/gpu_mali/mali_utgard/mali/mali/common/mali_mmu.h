@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2010-2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2007-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 #ifndef __MALI_MMU_H__
@@ -79,13 +79,22 @@ mali_bool mali_mmu_zap_tlb(struct mali_mmu_core *mmu);
 void mali_mmu_zap_tlb_without_stall(struct mali_mmu_core *mmu);
 void mali_mmu_invalidate_page(struct mali_mmu_core *mmu, u32 mali_address);
 
-void mali_mmu_activate_page_directory(struct mali_mmu_core* mmu, struct mali_page_directory *pagedir);
-void mali_mmu_activate_empty_page_directory(struct mali_mmu_core* mmu);
-void mali_mmu_activate_fault_flush_page_directory(struct mali_mmu_core* mmu);
+void mali_mmu_activate_page_directory(struct mali_mmu_core *mmu, struct mali_page_directory *pagedir);
+void mali_mmu_activate_empty_page_directory(struct mali_mmu_core *mmu);
+void mali_mmu_activate_fault_flush_page_directory(struct mali_mmu_core *mmu);
 
 void mali_mmu_page_fault_done(struct mali_mmu_core *mmu);
 
-/*** Register reading/writing functions ***/
+MALI_STATIC_INLINE enum mali_interrupt_result mali_mmu_get_interrupt_result(struct mali_mmu_core *mmu)
+{
+	u32 rawstat_used = mali_hw_core_register_read(&mmu->hw_core, MALI_MMU_REGISTER_INT_RAWSTAT);
+	if (0 == rawstat_used) {
+		return MALI_INTERRUPT_RESULT_NONE;
+	}
+	return MALI_INTERRUPT_RESULT_ERROR;
+}
+
+
 MALI_STATIC_INLINE u32 mali_mmu_get_int_status(struct mali_mmu_core *mmu)
 {
 	return mali_hw_core_register_read(&mmu->hw_core, MALI_MMU_REGISTER_INT_STATUS);

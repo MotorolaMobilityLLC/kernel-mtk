@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2013-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 #ifndef __MALI_MEMORY_H__
@@ -32,7 +32,8 @@ void mali_memory_terminate(void);
  * @param table_page GPU pointer to the allocated page
  * @param mapping CPU pointer to the mapping of the allocated page
  */
-MALI_STATIC_INLINE _mali_osk_errcode_t mali_mmu_get_table_page(u32 *table_page, mali_io_address *mapping)
+MALI_STATIC_INLINE _mali_osk_errcode_t
+mali_mmu_get_table_page(mali_dma_addr *table_page, mali_io_address *mapping)
 {
 	return mali_mem_os_get_table_page(table_page, mapping);
 }
@@ -43,7 +44,8 @@ MALI_STATIC_INLINE _mali_osk_errcode_t mali_mmu_get_table_page(u32 *table_page, 
  *
  * @param pa the GPU address of the page to release
  */
-MALI_STATIC_INLINE void mali_mmu_release_table_page(u32 phys, void *virt)
+MALI_STATIC_INLINE void
+mali_mmu_release_table_page(mali_dma_addr phys, void *virt)
 {
 	mali_mem_os_release_table_page(phys, virt);
 }
@@ -55,22 +57,6 @@ MALI_STATIC_INLINE void mali_mmu_release_table_page(u32 phys, void *virt)
  * This function allocates Mali memory and maps it on CPU and Mali.
  */
 int mali_mmap(struct file *filp, struct vm_area_struct *vma);
-
-/** @brief Allocate and initialize a Mali memory descriptor
- *
- * @param session Pointer to the session allocating the descriptor
- * @param type Type of memory the descriptor will represent
- */
-mali_mem_allocation *mali_mem_descriptor_create(struct mali_session_data *session, mali_mem_type type);
-
-/** @brief Destroy a Mali memory descriptor
- *
- * This function will only free the descriptor itself, and not the memory it
- * represents.
- *
- * @param descriptor Pointer to the descriptor to destroy
- */
-void mali_mem_descriptor_destroy(mali_mem_allocation *descriptor);
 
 /** @brief Start a new memory session
  *
@@ -110,7 +96,7 @@ _mali_osk_errcode_t mali_mem_mali_map_prepare(mali_mem_allocation *descriptor);
  *
  * @param descriptor Pointer to the memory descriptor to unmap
  */
-void mali_mem_mali_map_free(mali_mem_allocation *descriptor);
+void mali_mem_mali_map_free(struct mali_session_data *session, u32 size, mali_address_t vaddr, u32 flags);
 
 /** @brief Parse resource and prepare the OS memory allocator
  *
@@ -128,7 +114,16 @@ _mali_osk_errcode_t mali_memory_core_resource_os_memory(u32 size);
 _mali_osk_errcode_t mali_memory_core_resource_dedicated_memory(u32 start, u32 size);
 
 
-void mali_mem_ump_release(mali_mem_allocation *descriptor);
-void mali_mem_external_release(mali_mem_allocation *descriptor);
+struct mali_page_node *_mali_page_node_allocate(mali_page_node_type type);
+
+void _mali_page_node_ref(struct mali_page_node *node);
+void _mali_page_node_unref(struct mali_page_node *node);
+void _mali_page_node_add_page(struct mali_page_node *node, struct page *page);
+
+void _mali_page_node_add_block_item(struct mali_page_node *node, mali_block_item *item);
+
+int _mali_page_node_get_ref_count(struct mali_page_node *node);
+dma_addr_t _mali_page_node_get_phy_addr(struct mali_page_node *node);
+unsigned long _mali_page_node_get_pfn(struct mali_page_node *node);
 
 #endif /* __MALI_MEMORY_H__ */

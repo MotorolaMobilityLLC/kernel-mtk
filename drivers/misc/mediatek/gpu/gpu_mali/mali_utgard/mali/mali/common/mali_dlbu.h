@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2012-2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2012-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 #ifndef __MALI_DLBU_H__
@@ -17,15 +17,14 @@
 
 struct mali_pp_job;
 struct mali_group;
-
-extern u32 mali_dlbu_phys_addr;
-
 struct mali_dlbu_core;
+
+extern mali_dma_addr mali_dlbu_phys_addr;
 
 _mali_osk_errcode_t mali_dlbu_initialize(void);
 void mali_dlbu_terminate(void);
 
-struct mali_dlbu_core *mali_dlbu_create(const _mali_osk_resource_t * resource);
+struct mali_dlbu_core *mali_dlbu_create(const _mali_osk_resource_t *resource);
 void mali_dlbu_delete(struct mali_dlbu_core *dlbu);
 
 _mali_osk_errcode_t mali_dlbu_reset(struct mali_dlbu_core *dlbu);

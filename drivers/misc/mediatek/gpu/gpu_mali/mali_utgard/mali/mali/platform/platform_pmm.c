@@ -35,7 +35,7 @@ extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int ui32FreqLevel);
 extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void);
 extern void (*mtk_gpu_sodi_entry_fp)(void);
 extern void (*mtk_gpu_sodi_exit_fp)(void);
-extern void mali_utilization_suspend(void);
+//extern void mali_utilization_suspend(void);
 
 #include <linux/kernel.h>
 
@@ -364,7 +364,7 @@ static unsigned int mtk_get_mali_utilization(void)
 
 void mali_set_mali_SODI_begin(void)
 {
-    mali_utilization_suspend();
+    //mali_utilization_suspend();
 }
 
 

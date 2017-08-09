@@ -58,7 +58,7 @@ static struct mali_gpu_device_data mali_gpu_data =
     .fb_start = 0x80000000,
     .fb_size  = 0x80000000,
     // DVFS
-    .utilization_interval   = 8, /* ms */
+    .control_interval   = 8, /* ms */
     .utilization_callback   = mali_pmm_utilization_handler, /*<utilization function>,*/
 };
 
@@ -192,7 +192,9 @@ int mali_platform_device_register(void)
         err = platform_device_register(&mali_gpu_device_mp2);
         core_count = 2;
     }
-            
+	
+    mali_platform_power_mode_change(MALI_POWER_MODE_ON);
+	
     if (0 == err) 
     {         
         mali_pmm_init();
@@ -272,7 +274,7 @@ static int mali_pm_suspend(struct device *device)
         ret = device->driver->pm->suspend(device);
     }
 
-    _mali_osk_pm_delete_callback_timer();
+    //_mali_osk_pm_delete_callback_timer();
 	mali_platform_power_mode_change(MALI_POWER_MODE_LIGHT_SLEEP);
 
     return ret;

@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2010-2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2010-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 #ifndef __MALI_OSK_PROFILING_H__
@@ -36,6 +36,11 @@ _mali_osk_errcode_t _mali_osk_profiling_init(mali_bool auto_start);
 void _mali_osk_profiling_term(void);
 
 /**
+ * Stop the profile sampling operation.
+ */
+void _mali_osk_profiling_stop_sampling(u32 pid);
+
+/**
  * Start recording profiling data
  *
  * The specified limit will determine how large the capture buffer is.
@@ -44,7 +49,7 @@ void _mali_osk_profiling_term(void);
  * @param limit The desired maximum number of events to record on input, the actual maximum on output.
  * @return _MALI_OSK_ERR_OK on success, otherwise failure.
  */
-_mali_osk_errcode_t _mali_osk_profiling_start(u32 * limit);
+_mali_osk_errcode_t _mali_osk_profiling_start(u32 *limit);
 
 /**
  * Add an profiling event
@@ -55,10 +60,8 @@ _mali_osk_errcode_t _mali_osk_profiling_start(u32 * limit);
  * @param data2 Third data parameter, depending on event_id specified.
  * @param data3 Fourth data parameter, depending on event_id specified.
  * @param data4 Fifth data parameter, depending on event_id specified.
- * @return _MALI_OSK_ERR_OK on success, otherwise failure.
  */
-/* Call Linux tracepoint directly */
-#define _mali_osk_profiling_add_event(event_id, data0, data1, data2, data3, data4) trace_mali_timeline_event((event_id), (data0), (data1), (data2), (data3), (data4))
+void    _mali_osk_profiling_add_event(u32 event_id, u32 data0, u32 data1, u32 data2, u32 data3, u32 data4);
 
 /**
  * Report a hardware counter event.
@@ -77,13 +80,15 @@ _mali_osk_errcode_t _mali_osk_profiling_start(u32 * limit);
  */
 void _mali_osk_profiling_report_sw_counters(u32 *counters);
 
+void _mali_osk_profiling_record_global_counters(int counter_id, u32 value);
+
 /**
  * Stop recording profiling data
  *
  * @param count Returns the number of recorded events.
  * @return _MALI_OSK_ERR_OK on success, otherwise failure.
  */
-_mali_osk_errcode_t _mali_osk_profiling_stop(u32 * count);
+_mali_osk_errcode_t _mali_osk_profiling_stop(u32 *count);
 
 /**
  * Retrieves the number of events that can be retrieved
@@ -101,7 +106,7 @@ u32 _mali_osk_profiling_get_count(void);
  * @param data The 5 data values for the retrieved event will be stored here.
  * @return _MALI_OSK_ERR_OK on success, otherwise failure.
  */
-_mali_osk_errcode_t _mali_osk_profiling_get_event(u32 index, u64* timestamp, u32* event_id, u32 data[5]);
+_mali_osk_errcode_t _mali_osk_profiling_get_event(u32 index, u64 *timestamp, u32 *event_id, u32 data[5]);
 
 /**
  * Clear the recorded buffer.

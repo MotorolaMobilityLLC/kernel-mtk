@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2010, 2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2009-2010, 2013-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 #include <linux/module.h>            /* kernel module definitions */
@@ -33,9 +33,9 @@ unsigned int ump_memory_size = ARCH_UMP_MEMORY_SIZE_DEFAULT;
 module_param(ump_memory_size, uint, S_IRUGO); /* r--r--r-- */
 MODULE_PARM_DESC(ump_memory_size, "The size of fixed memory to map in the dedicated memory backend");
 
-ump_memory_backend* ump_memory_backend_create ( void )
+ump_memory_backend *ump_memory_backend_create(void)
 {
-	ump_memory_backend * backend = NULL;
+	ump_memory_backend *backend = NULL;
 
 	/* Create the dynamic memory allocator backend */
 	if (0 == ump_backend) {
@@ -56,7 +56,7 @@ ump_memory_backend* ump_memory_backend_create ( void )
 	return backend;
 }
 
-void ump_memory_backend_destroy( void )
+void ump_memory_backend_destroy(void)
 {
 	if (0 == ump_backend) {
 		DBG_MSG(2, ("Releasing dedicated memory: 0x%08x\n", ump_memory_address));

@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2010-2013 ARM Limited. All rights reserved.
- * 
- * This program is free software and is provided to you under the terms of the GNU General Public License version 2
- * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- * 
- * A copy of the licence is included with the program, and can also be obtained from Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * This confidential and proprietary software may be used only as
+ * authorised by a licensing agreement from ARM Limited
+ * (C) COPYRIGHT 2008-2015 ARM Limited
+ * ALL RIGHTS RESERVED
+ * The entire notice above must be reproduced on all authorised
+ * copies and copies may only be made to the extent permitted
+ * by a licensing agreement from ARM Limited.
  */
 
 /**
@@ -22,8 +22,6 @@
 #include <linux/slab.h>
 
 #include "mali_osk_types.h"
-#include "mali_kernel_common.h"
-#include <linux/lockdep.h>
 
 #ifdef _cplusplus
 extern "C" {
@@ -83,7 +81,7 @@ extern "C" {
 	void _mali_osk_locks_debug_add(struct _mali_osk_lock_debug_s *checker);
 	void _mali_osk_locks_debug_remove(struct _mali_osk_lock_debug_s *checker);
 
-	/** @brief This function can return a given lock's owner when DEBUG	is enabled. */
+	/** @brief This function can return a given lock's owner when DEBUG     is enabled. */
 	static inline u32 _mali_osk_lock_get_owner(struct _mali_osk_lock_debug_s *lock)
 	{
 		return lock->owner;
@@ -103,8 +101,7 @@ extern "C" {
 		if (NULL == lock) {
 			return NULL;
 		}
-		spin_lock_init(&lock->spinlock);				  
-		
+		spin_lock_init(&lock->spinlock);
 		_mali_osk_locks_debug_init((struct _mali_osk_lock_debug_s *)lock, flags, order);
 		return lock;
 	}
@@ -151,7 +148,6 @@ extern "C" {
 
 		lock->flags = 0;
 		spin_lock_init(&lock->spinlock);
-		
 		_mali_osk_locks_debug_init((struct _mali_osk_lock_debug_s *)lock, flags, order);
 		return lock;
 	}

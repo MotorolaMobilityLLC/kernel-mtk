@@ -1,5 +1,11 @@
-
 #obj-y += ged/
 obj-y += hal/
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
+MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
+$(info *MTK_GPU_VERSION 1 = $(word 1,$(MTK_GPU_VERSION)))
+$(info *MTK_GPU_VERSION 2 = $(word 2,$(MTK_GPU_VERSION)))
+ifneq ($(word 1,$(MTK_GPU_VERSION)),)
+    obj-y += gpu_$(word 1,$(MTK_GPU_VERSION))/
+else
+    obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
