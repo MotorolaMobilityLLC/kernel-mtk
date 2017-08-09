@@ -36,7 +36,7 @@
 #include "include/mtk_uart_intf.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-
+#include <mt-plat/mt_lpae.h>
 #if !defined(CONFIG_MTK_LEGACY)
 struct pinctrl *ppinctrl_uart[UART_NR];
 /* pinctrl-names from dtsi.GPIO operations: rx set, rx clear, tx set, tx clear */

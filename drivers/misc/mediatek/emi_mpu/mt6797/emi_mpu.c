@@ -2431,6 +2431,7 @@ static void __exit emi_mpu_mod_exit(void)
 module_init(emi_mpu_mod_init);
 module_exit(emi_mpu_mod_exit);
 
+#ifdef CONFIG_MTK_LM_MODE
 unsigned int enable_4G(void)
 {
 	return enable_4gb;
@@ -2462,7 +2463,7 @@ static int __init dram_4gb_init(void)
 }
 
 early_initcall(dram_4gb_init);
-
+#endif
 
 #define MEM_DCM_CTRL                     IOMEM(INFRA_BASE_ADDR+0x78)
 

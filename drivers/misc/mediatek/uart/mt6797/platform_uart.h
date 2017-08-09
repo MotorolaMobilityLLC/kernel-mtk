@@ -426,7 +426,6 @@ typedef struct {
 #define VFF_4G_DRAM_SUPPORT(_b)	(_b+0x0054)
 #define VFF_VPORT_BASE          0xF7070000
 #define VFF_VPORT_CH(id)        (VFF_VPORT_BASE + (id) * 0x00000080)
-extern unsigned int enable_4G(void);
 /*---------------------------------------------------------------------------*/
 /*VFF_INT_FLAG */
 #define VFF_RX_INT_FLAG0_B      (1 << 0)	/*rx_vff_valid_size >= rx_vff_thre */

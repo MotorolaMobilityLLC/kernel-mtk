@@ -380,8 +380,5 @@ int m4u_sec_init(void);
 extern const char *smi_clk_name[];
 #endif
 
-#ifdef M4U_4GBDRAM
-extern unsigned int enable_4G(void);
-#endif
 
 #endif
