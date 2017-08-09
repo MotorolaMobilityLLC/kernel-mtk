@@ -4123,7 +4123,7 @@ static unsigned int msdc_command_start(struct msdc_host *host,
 		rawcmd &= ~(0x0FFF << 16);
 	}
 
-	pr_debug("%d:CMD<%d> arg<0x%.8x>", host->id, cmd->opcode, cmd->arg);
+	CMD_MSG("%d:CMD<%d> arg<0x%.8x>", host->id, cmd->opcode, cmd->arg);
 
 	tmo = jiffies + timeout;
 
