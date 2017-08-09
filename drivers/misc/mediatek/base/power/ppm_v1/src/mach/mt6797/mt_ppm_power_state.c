@@ -1091,6 +1091,8 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 #endif
 
 #ifdef PPM_POWER_TABLE_CALIBRATION
+#define DUMP_ALL_POWER_TABLE	(0)
+
 static enum ppm_power_state ppm_judge_state_for_pwr_tbl(struct ppm_power_tbl tbl_data)
 {
 	if (tbl_data.cluster_cfg[PPM_CLUSTER_LL].core_num == 0)
@@ -1180,6 +1182,7 @@ static void ppm_gen_sorted_table(void)
 			}
 		}
 
+#if DUMP_ALL_POWER_TABLE
 		/* Dump perf sorted table */
 		ppm_info("perf sorted table for %s:\n", state_info[i].name);
 		for (j = 0; j < perf_tbl->size; j++) {
@@ -1191,6 +1194,7 @@ static void ppm_gen_sorted_table(void)
 
 		}
 		ppm_info("\n");
+#endif
 
 		/* found advise idx in pwr_sorted_tbl */
 		for (j = 0; j < pwr_tbl->size; j++) {
@@ -1210,6 +1214,7 @@ static void ppm_gen_sorted_table(void)
 			}
 		}
 
+#if DUMP_ALL_POWER_TABLE
 		/* Dump pwr sorted table */
 		ppm_info("pwr sorted table for %s:\n", state_info[i].name);
 		for (j = 0; j < pwr_tbl->size; j++) {
@@ -1220,6 +1225,7 @@ static void ppm_gen_sorted_table(void)
 				);
 		}
 		ppm_info("\n");
+#endif
 	}
 }
 
@@ -1227,11 +1233,11 @@ static void ppm_main_pwr_tbl_cpy(struct ppm_power_tbl *dest, struct ppm_power_tb
 {
 	int i;
 
-	dest->index = src->index;
+	/* dest->index = src->index; */
 	dest->perf_idx = src->perf_idx;
 	dest->power_idx = src->power_idx;
-	dest->power_idx_max = src->power_idx_max;
-	dest->power_idx_min = src->power_idx_min;
+	dest->power_idx_FF = src->power_idx_FF;
+	dest->power_idx_TT = src->power_idx_TT;
 
 	for_each_ppm_clusters(i) {
 		dest->cluster_cfg[i].opp_lv = src->cluster_cfg[i].opp_lv;
@@ -1239,27 +1245,27 @@ static void ppm_main_pwr_tbl_cpy(struct ppm_power_tbl *dest, struct ppm_power_tb
 	}
 }
 
-static int __init ppm_main_pwr_tbl_calibration(void)
+void ppm_main_pwr_tbl_calibration(void)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
 	int big_lkg_efuse = mt_spower_get_efuse_lkg(MT_SPOWER_CPUBIG);
-	unsigned int lkg_ratio, diff = BIG_LKG_EFUSE_MAX - BIG_LKG_EFUSE_MIN;
-	unsigned int i, j, p_max, p_min;
+	unsigned int lkg_ratio, diff = BIG_LKG_EFUSE_FF - BIG_LKG_EFUSE_TT;
+	unsigned int i, j, p_TT, p_FF;
 	char buf[64];
 	char *ptr;
 
-	lkg_ratio = (big_lkg_efuse >= BIG_LKG_EFUSE_MAX) ? 100
-		: (big_lkg_efuse <= BIG_LKG_EFUSE_MIN) ? 0
-		: ((big_lkg_efuse - BIG_LKG_EFUSE_MIN) * 100 + (diff - 1)) / diff;
+	lkg_ratio = (abs(big_lkg_efuse - BIG_LKG_EFUSE_TT) * 100 + (diff - 1)) / diff;
 
 	ppm_info("big_lkg_efuse = %d, lkg_ratio = %d\n", big_lkg_efuse, lkg_ratio);
 
 	/* calibrate power_idx */
 	for_each_pwr_tbl_entry(i, power_table) {
-		p_max = power_table.power_tbl[i].power_idx_max;
-		p_min = power_table.power_tbl[i].power_idx_min;
-		power_table.power_tbl[i].power_idx = p_min + ((p_max - p_min) * lkg_ratio + (100 - 1)) / 100;
+		p_FF = power_table.power_tbl[i].power_idx_FF;
+		p_TT = power_table.power_tbl[i].power_idx_TT;
+		power_table.power_tbl[i].power_idx = (big_lkg_efuse >= BIG_LKG_EFUSE_TT)
+			? p_TT + (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100
+			: p_TT - (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100;
 	}
 
 	/* sort power table by power budget */
@@ -1274,6 +1280,9 @@ static int __init ppm_main_pwr_tbl_calibration(void)
 				ppm_main_pwr_tbl_cpy(&tmp, prev);
 				ppm_main_pwr_tbl_cpy(prev, cur);
 				ppm_main_pwr_tbl_cpy(cur, &tmp);
+
+				prev->index = j - 1;
+				cur->index = j;
 			}
 		}
 	}
@@ -1305,32 +1314,43 @@ static int __init ppm_main_pwr_tbl_calibration(void)
 	/* generate pwr/perf sorted table for each state */
 	ppm_gen_sorted_table();
 
+#if DUMP_ALL_POWER_TABLE
 	/* calibrate pwr_idx ref table */
 	ppm_info("PPM pwr_idx ref table:\n");
+#endif
 	for_each_ppm_clusters(i) {
 		for (j = 0; j < DVFS_OPP_NUM; j++) {
+			/* calculate actual dynamic power */
+			p_FF = ref_tbl.pwr_idx_ref_tbl[i].core_dynamic_power_FF[j];
+			p_TT = ref_tbl.pwr_idx_ref_tbl[i].core_dynamic_power_TT[j];
+			ref_tbl.pwr_idx_ref_tbl[i].core_dynamic_power[j] = (big_lkg_efuse >= BIG_LKG_EFUSE_TT)
+				? p_TT - (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100
+				: p_TT + (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100;
+
+
 			/* calculate actual total power */
-			p_max = ref_tbl.pwr_idx_ref_tbl[i].core_total_power_max[j];
-			p_min = ref_tbl.pwr_idx_ref_tbl[i].core_total_power_min[j];
-			ref_tbl.pwr_idx_ref_tbl[i].core_total_power[j] =
-				p_min + ((p_max - p_min) * lkg_ratio + (100 - 1)) / 100;
+			p_FF = ref_tbl.pwr_idx_ref_tbl[i].core_total_power_FF[j];
+			p_TT = ref_tbl.pwr_idx_ref_tbl[i].core_total_power_TT[j];
+			ref_tbl.pwr_idx_ref_tbl[i].core_total_power[j] = (big_lkg_efuse >= BIG_LKG_EFUSE_TT)
+				? p_TT + (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100
+				: p_TT - (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100;
 
 			/* calculate actual L2 power */
-			p_max = ref_tbl.pwr_idx_ref_tbl[i].l2_power_max[j];
-			p_min = ref_tbl.pwr_idx_ref_tbl[i].l2_power_min[j];
-			ref_tbl.pwr_idx_ref_tbl[i].l2_power[j] =
-				p_min + ((p_max - p_min) * lkg_ratio + (100 - 1)) / 100;
+			p_FF = ref_tbl.pwr_idx_ref_tbl[i].l2_power_FF[j];
+			p_TT = ref_tbl.pwr_idx_ref_tbl[i].l2_power_TT[j];
+			ref_tbl.pwr_idx_ref_tbl[i].l2_power[j] = (big_lkg_efuse >= BIG_LKG_EFUSE_TT)
+				? p_TT + (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100
+				: p_TT - (abs(p_FF - p_TT) * lkg_ratio + (100 - 1)) / 100;
 
-			ppm_info("cluster %d(%d): (%d, %d)\n", i, j,
+#if DUMP_ALL_POWER_TABLE
+			ppm_info("cluster %d(%d): (%d, %d, %d)\n", i, j,
+				ref_tbl.pwr_idx_ref_tbl[i].core_dynamic_power[j],
 				ref_tbl.pwr_idx_ref_tbl[i].core_total_power[j],
 				ref_tbl.pwr_idx_ref_tbl[i].l2_power[j]
 				);
+#endif
 		}
 	}
-
-	return 0;
 }
-
-late_initcall(ppm_main_pwr_tbl_calibration);
 #endif
 

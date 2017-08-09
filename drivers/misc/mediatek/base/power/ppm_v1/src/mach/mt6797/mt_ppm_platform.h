@@ -31,12 +31,12 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #define PPM_DISABLE_CLUSTER_MIGRATION	(1)
 #endif
-/* #define PPM_POWER_TABLE_CALIBRATION	(1) */
+#define PPM_POWER_TABLE_CALIBRATION	(1)
 #ifdef PPM_POWER_TABLE_CALIBRATION
 #include "mt_static_power.h"
 /* TBD */
-#define BIG_LKG_EFUSE_MIN		(100)
-#define BIG_LKG_EFUSE_MAX		(500)
+#define BIG_LKG_EFUSE_TT		(169)
+#define BIG_LKG_EFUSE_FF		(421)
 #endif
 
 #define PPM_FAST_ATM_SUPPORT		(1)
@@ -114,8 +114,8 @@ struct ppm_power_tbl {
 		unsigned int core_num;
 	} cluster_cfg[NR_PPM_CLUSTERS];
 	unsigned int perf_idx;
-	unsigned int power_idx_min;
-	unsigned int power_idx_max;
+	unsigned int power_idx_TT;
+	unsigned int power_idx_FF;
 	unsigned int power_idx;
 };
 
@@ -125,12 +125,14 @@ struct ppm_power_tbl_data {
 };
 
 struct ppm_pwr_idx_ref_tbl {
-	const unsigned int core_dynamic_power[DVFS_OPP_NUM];
-	const unsigned int core_total_power_min[DVFS_OPP_NUM];
-	const unsigned int core_total_power_max[DVFS_OPP_NUM];
+	const unsigned int core_dynamic_power_TT[DVFS_OPP_NUM];
+	const unsigned int core_dynamic_power_FF[DVFS_OPP_NUM];
+	unsigned int core_dynamic_power[DVFS_OPP_NUM];
+	const unsigned int core_total_power_TT[DVFS_OPP_NUM];
+	const unsigned int core_total_power_FF[DVFS_OPP_NUM];
 	unsigned int core_total_power[DVFS_OPP_NUM];
-	const unsigned int l2_power_min[DVFS_OPP_NUM];
-	const unsigned int l2_power_max[DVFS_OPP_NUM];
+	const unsigned int l2_power_TT[DVFS_OPP_NUM];
+	const unsigned int l2_power_FF[DVFS_OPP_NUM];
 	unsigned int l2_power[DVFS_OPP_NUM];
 };
 
@@ -177,6 +179,9 @@ extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percent
 #if PPM_DLPT_ENHANCEMENT
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
+#endif
+#ifdef PPM_POWER_TABLE_CALIBRATION
+extern void ppm_main_pwr_tbl_calibration(void);
 #endif
 
 #ifdef __cplusplus
