@@ -26,6 +26,7 @@
 #define MTK_FB_ION_SUPPORT
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
+#define M4U_PROFILE
 
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT			(8)
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4)

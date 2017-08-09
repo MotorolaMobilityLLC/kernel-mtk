@@ -11,7 +11,6 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    mtk_mira.o             \
 			    mtk_ovl.o              \
 			    disp_dts_gpio.o        \
-			    fbconfig_kdebug_k2.o   \
 			    disp_helper.o
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \

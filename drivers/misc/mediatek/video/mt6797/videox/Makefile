@@ -15,8 +15,7 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			mtk_mira.o             \
 			mtk_ovl.o              \
 			disp_helper.o          \
-			disp_dts_gpio.o        \
-			fbconfig_kdebug_x.o
+			disp_dts_gpio.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/
 #obj-y += mtkfb_dummy.o

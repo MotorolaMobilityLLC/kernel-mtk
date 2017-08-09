@@ -12,8 +12,7 @@ obj-y += mtkfb_console.o        \
 		compat_mtk_disp_mgr.o \
 		mtk_mira.o             \
 		disp_helper.o          \
-		disp_dts_gpio.o          \
-		fbconfig_kdebug_x.o
+		disp_dts_gpio.o
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/video/common/      \
