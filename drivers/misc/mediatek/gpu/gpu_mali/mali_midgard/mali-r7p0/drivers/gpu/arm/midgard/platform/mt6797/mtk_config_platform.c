@@ -186,10 +186,12 @@ int kbase_platform_early_init(void)
 void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
 {
     unsigned int freq_ub;
+    unsigned int volt_ub;
 
 	printk("[MALI] thermal CB set to freq id=%d\n", ui32LimitFreqID);
 	freq_ub = mt_gpufreq_get_freq_by_idx(ui32LimitFreqID);
-	mtk_kbase_spm_set_vol_freq_ceiling(1125, freq_ub);    
+	volt_ub = mt_gpufreq_get_volt_by_idx(ui32LimitFreqID);
+	mtk_kbase_spm_set_vol_freq_ceiling(volt_ub, freq_ub);    
 }
 
 
