@@ -22,7 +22,6 @@
 #include <linux/workqueue.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
-#include <linux/rq_stats.h>
 #include <linux/cpufreq.h>
 #include <linux/kernel_stat.h>
 #include <linux/tick.h>
@@ -31,6 +30,7 @@
 #include <asm/smp_plat.h>
 
 #include <trace/events/sched.h>
+#include "rq_stats.h"
 
 #define MAX_LONG_SIZE 24
 #define DEFAULT_RQ_POLL_JIFFIES 1
