@@ -62,6 +62,35 @@ static unsigned int wdma_index(DISP_MODULE_ENUM module)
 	return idx;
 }
 
+static inline unsigned long wdma_to_cmdq_engine(DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_WDMA0:
+		return CMDQ_ENG_DISP_WDMA0;
+	case DISP_MODULE_WDMA1:
+		return CMDQ_ENG_DISP_WDMA1;
+	default:
+		DDPERR("invalid rdma module=%d\n", module);
+		BUG();
+	}
+	return 0;
+}
+
+static inline unsigned long wdma_to_cmdq_event_nonsec_end(DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_WDMA0:
+		return CMDQ_SYNC_DISP_WDMA0_2NONSEC_END;
+	case DISP_MODULE_WDMA1:
+		return CMDQ_SYNC_DISP_WDMA1_2NONSEC_END;
+	default:
+		DDPERR("invalid rdma module=%d\n", module);
+		BUG();
+	}
+
+	return 0;
+}
+
 static int wdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
@@ -482,33 +511,46 @@ static int wdma_check_input_param(WDMA_CONFIG_STRUCT *config)
 
 static int wdma_is_sec[2];
 
-static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+static inline int wdma_switch_to_sec(DISP_MODULE_ENUM module, void *handle)
 {
-
-	WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
-	int wdma_idx = wdma_index(module);
+	unsigned int wdma_idx = wdma_index(module);
+	/*int *wdma_is_sec = svp_pgc->module_sec.wdma_sec;*/
 	CMDQ_ENG_ENUM cmdq_engine;
 	CMDQ_EVENT_ENUM cmdq_event;
-	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 
-	if (!pConfig->wdma_dirty)
-		return 0;
-
-	cmdq_engine = wdma_idx == 0 ? CMDQ_ENG_DISP_WDMA0 : CMDQ_ENG_DISP_WDMA1;
+	cmdq_engine = wdma_to_cmdq_engine(module);
 	cmdq_event  = wdma_idx == 0 ? CMDQ_EVENT_DISP_WDMA0_EOF : CMDQ_EVENT_DISP_WDMA1_EOF;
-	/*cmdq_event_nonsec_end  = wdma_idx == 0 ?
-	CMDQ_SYNC_DISP_WDMA0_2NONSEC_END : CMDQ_SYNC_DISP_WDMA1_2NONSEC_END;*/
 
-	if (config->security == DISP_SECURE_BUFFER) {
-		cmdqRecSetSecure(handle, 1);
-		/* set engine as sec */
-		cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
-		cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine));
-		if (wdma_is_sec[wdma_idx] == 0)
-			DDPMSG("[SVP] switch wdma%d to sec\n", wdma_idx);
-		wdma_is_sec[wdma_idx] = 1;
-	} else {
-		if (wdma_is_sec[wdma_idx]) {
+	cmdqRecSetSecure(handle, 1);
+	/* set engine as sec */
+	cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
+	cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine));
+	if (wdma_is_sec[wdma_idx] == 0) {
+		DDPMSG("[SVP] switch wdma%d to sec\n", wdma_idx);
+		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
+			MMProfileFlagStart, 0, 0);*/
+		/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
+			MMProfileFlagPulse, wdma_idx, 1);*/
+	}
+	wdma_is_sec[wdma_idx] = 1;
+
+	return 0;
+}
+
+static inline int wdma_switch_to_nonsec(DISP_MODULE_ENUM module, void *handle)
+{
+	unsigned int wdma_idx = wdma_index(module);
+	/*int *wdma_is_sec = svp_pgc->module_sec.wdma_sec;*/
+
+	CMDQ_ENG_ENUM cmdq_engine;
+	CMDQ_EVENT_ENUM cmdq_event;
+	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+
+	cmdq_engine = wdma_to_cmdq_engine(module);
+	cmdq_event  = wdma_idx == 0 ? CMDQ_EVENT_DISP_WDMA0_EOF : CMDQ_EVENT_DISP_WDMA1_EOF;
+	cmdq_event_nonsec_end  = wdma_to_cmdq_event_nonsec_end(module);
+
+	if (wdma_is_sec[wdma_idx] == 1) {
 			/* wdma is in sec stat, we need to switch it to nonsec */
 			cmdqRecHandle nonsec_switch_handle;
 			int ret;
@@ -540,15 +582,60 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			/*in fact, dapc/port_sec will be disabled by cmdq */
 			cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
 			cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine));
-			/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
-			/*cmdqRecFlushAsync(nonsec_switch_handle);*/
-			cmdqRecFlush(nonsec_switch_handle);
+			if (handle != NULL) {
+				/*Async Flush method*/
+				cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
+				cmdqRecFlushAsync(nonsec_switch_handle);
+				cmdqRecWait(handle, cmdq_event_nonsec_end);
+			} else {
+				/*Sync Flush method*/
+				cmdqRecFlush(nonsec_switch_handle);
+			}
 			cmdqRecDestroy(nonsec_switch_handle);
-			/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
 			DDPMSG("[SVP] switch wdma%d to nonsec\n", wdma_idx);
+			/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
+				MMProfileFlagEnd, 0, 0);*/
+			/*MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
+				MMProfileFlagPulse, wdma_idx, 0);*/
 		}
 		wdma_is_sec[wdma_idx] = 0;
+
+	return 0;
+}
+
+static int setup_wdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+{
+	int ret;
+	int is_engine_sec = 0;
+
+	if (pConfig->wdma_config.security == DISP_SECURE_BUFFER)
+		is_engine_sec = 1;
+
+	if (!handle) {
+				DDPDBG("[SVP] bypass wdma sec setting sec=%d,handle=NULL\n", is_engine_sec);
+				return 0;
 	}
+
+	if (is_engine_sec == 1)
+		ret = wdma_switch_to_sec(module, handle);
+	else
+		ret = wdma_switch_to_nonsec(module, NULL);
+	if (ret)
+		DDPAEE("[SVP]fail to setup_ovl_sec: %s ret=%d\n",
+			__func__, ret);
+
+	return is_engine_sec;
+}
+
+static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+{
+
+	WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
+
+	if (!pConfig->wdma_dirty)
+		return 0;
+
+	setup_wdma_sec(module, pConfig, handle);
 
 	if (wdma_check_input_param(config) == 0) {
 		enum dst_module_type dst_mod_type;
