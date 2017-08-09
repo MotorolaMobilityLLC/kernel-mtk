@@ -50,6 +50,7 @@ static struct notifier_block pm_notifier_block;
 static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
+static bool gtp_suspend;
 DECLARE_WAIT_QUEUE_HEAD(init_waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
@@ -126,10 +127,14 @@ static s32 i2c_dma_write_mtk(u16 addr, u8 *buffer, s32 len)
 		memcpy(&gpDMABuf_va[GTP_ADDR_LENGTH], &buffer[pos], transfer_length);
 
 		msg.len = transfer_length + GTP_ADDR_LENGTH;
-
-		ret = i2c_transfer(gt1x_i2c_client->adapter, &msg, 1);
-		if (ret != 1) {
-			GTP_INFO("I2c Transfer error! (%d)", ret);
+		if (!gtp_suspend) {/*workround log too much*/
+			ret = i2c_transfer(gt1x_i2c_client->adapter, &msg, 1);
+			if (ret != 1) {
+				GTP_INFO("I2c Transfer error! (%d)", ret);
+				ret = ERROR_IIC;
+				break;
+			}
+		} else {
 			ret = ERROR_IIC;
 			break;
 		}
@@ -1057,6 +1062,8 @@ static void tpd_suspend(struct device *h)
 		ret = gt1x_enter_sleep();
 		if (ret < 0)
 			GTP_ERROR("GTP early suspend failed.");
+		else
+			gtp_suspend = true;
 	}
 
 	mutex_unlock(&i2c_access);
@@ -1069,6 +1076,7 @@ static void tpd_resume(struct device *h)
 	s32 ret = -1;
 
 	GTP_INFO("TPD resume start...");
+	gtp_suspend = false;
 
 #ifdef CONFIG_GTP_PROXIMITY
 	if (gt1x_proximity_flag == 1) {
