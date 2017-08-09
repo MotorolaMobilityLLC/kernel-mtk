@@ -864,8 +864,6 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 * \retval FALSE         operation fail
 */
 /*----------------------------------------------------------------------------*/
-char rdTestPkt[CFG_COALESCING_BUFFER_SIZE + 512]; /* MT6797 TODO */
-
 BOOLEAN
 kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
@@ -882,9 +880,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
 
-	/* MT6797 TODO */
-	if (Size > CFG_COALESCING_BUFFER_SIZE)
-		ASSERT(0);
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -925,11 +920,16 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 	if (count >= func->cur_blksize)
 	{
-		info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block	mode */
+		info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block mode */
 		info.field.count = count/func->cur_blksize;
 		if (count % func->cur_blksize > 0)
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
+		if (count > MaxBufSize) {
+			DBGLOG(RX, ERROR, "blk mode rx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
+			DBGLOG(RX, ERROR, "blk mode orig size is 0x%x\n", Size);
+			ASSERT(0);
+		}
 	}
 	else
 	{
@@ -1002,9 +1002,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		/* DMA_FROM_DEVICE invalidated (without writeback) the cache */
 		/* TODO: if dst_off was not cacheline aligned? */
 
-		/* MT6797 TODO */
-		/* DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE); */
-		DmaConf.Dst = dma_map_single(HifInfo->Dev, rdTestPkt, count, DMA_FROM_DEVICE);
+		DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, count, DMA_FROM_DEVICE);
 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
@@ -1092,8 +1090,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			kalMemCopy(Buf, DmaVBuf, Size);
 #else
 
-		/* MT6797 TODO */
-		/* dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);  */
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
@@ -1101,10 +1097,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 		if (pfWlanDmaOps != NULL)
 			pfWlanDmaOps->DmaClockCtrl(FALSE);
-
-
-		/* MT6797 TODO */
-		kalMemCopy(Buf, rdTestPkt, Size);
 
 		HIF_DBG(("[WiFi/HIF] DMA RX OK!\n"));
 	} else
@@ -1141,8 +1133,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 * \retval FALSE 		operation fail
 */
 /*----------------------------------------------------------------------------*/
-char wrTestPkt[CFG_COALESCING_BUFFER_SIZE + 512];  /* MT6797 TODO */
-
 BOOLEAN
 kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
@@ -1158,15 +1148,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
     sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
-
-	/* MT6797 TODO */
-	if (Size > (CFG_COALESCING_BUFFER_SIZE))
-		return 0;
-
-	/* MT6797 TODO */
-	kalMemZero(wrTestPkt, CFG_COALESCING_BUFFER_SIZE + 512);
-	kalMemCopy(wrTestPkt, Buf, Size);
-	Buf = wrTestPkt;
 
 #if DBG
 	/* DBGLOG(INIT, INFO,
@@ -1207,12 +1188,18 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
     info.field.rw_flag = SDIO_GEN3_WRITE;
     info.field.func_num = func->num;
 
+	/* MT6797 TODO */
 	if (count >= func->cur_blksize) {
 		info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block  mode */
 		info.field.count = count/func->cur_blksize;
 		if (count % func->cur_blksize > 0)
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
+		if (count > MaxBufSize) {
+			DBGLOG(TX, ERROR, "blk mode tx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
+			DBGLOG(TX, ERROR, "blk mode orig size is 0x%x\n", Size);
+			ASSERT(0);
+		}
 	} else {
 		info.field.block_mode = SDIO_GEN3_BYTE_MODE; /* byte  mode */
 		info.field.count = count;
@@ -1269,8 +1256,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #else
 
 		/* DMA_TO_DEVICE writeback the cache */
-		/* MT6797 TODO */
-		/* DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE); */
 		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, count, DMA_TO_DEVICE);
 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
@@ -1355,8 +1340,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
-		/* MT6797 TODO */
-		/* dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE); */
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 

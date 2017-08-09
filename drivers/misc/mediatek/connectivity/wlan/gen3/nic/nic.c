@@ -1511,7 +1511,7 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 #if defined(MT6797)
 		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
 		HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
-		DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
+		DBGLOG(REQ, ERROR, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
 #else
 		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
 		DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);

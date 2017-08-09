@@ -241,12 +241,21 @@
 /* Max Tx page count */
 #define CFG_MAX_TX_PAGE_COUNT               968
 
+#if defined(MT6797)
+#define MY_SDIO_BLOCK_SIZE	512	/* it must be less than or eaqual to 512 */
+#if CFG_SDIO_TX_AGG || CFG_TX_BUFFER_IS_SCATTER_LIST
+#define BLK_MODE_COALESCING_SZ	(NIC_TX_PAGE_SIZE * CFG_MAX_TX_PAGE_COUNT  + MY_SDIO_BLOCK_SIZE - 1)
+#else
+#define BLK_MODE_COALESCING_SZ	(CFG_TX_MAX_PKT_SIZE + MY_SDIO_BLOCK_SIZE - 1)
+#endif /* CFG_SDIO_TX_AGG || CFG_TX_BUFFER_IS_SCATTER_LIST */
+#define CFG_COALESCING_BUFFER_SIZE	((BLK_MODE_COALESCING_SZ / MY_SDIO_BLOCK_SIZE) * MY_SDIO_BLOCK_SIZE)
+#else
 #if CFG_SDIO_TX_AGG || CFG_TX_BUFFER_IS_SCATTER_LIST
 #define CFG_COALESCING_BUFFER_SIZE          (NIC_TX_PAGE_SIZE * CFG_MAX_TX_PAGE_COUNT)
 #else
 #define CFG_COALESCING_BUFFER_SIZE          (CFG_TX_MAX_PKT_SIZE)
 #endif /* CFG_SDIO_TX_AGG || CFG_TX_BUFFER_IS_SCATTER_LIST */
-
+#endif
 /*------------------------------------------------------------------------------
  * Flags and Parameters for TX path
  *------------------------------------------------------------------------------

@@ -125,7 +125,7 @@ int ahb_sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler);
 #define sdio_claim_host(__func)
 #define sdio_release_host(__func)
 
-#define MY_SDIO_BLOCK_SIZE  512
+#define MY_SDIO_BLOCK_SIZE  512 /* it must be less than or eaqual to 512 */
 
 extern UINT_8 **g_pHifRegBaseAddr;
 

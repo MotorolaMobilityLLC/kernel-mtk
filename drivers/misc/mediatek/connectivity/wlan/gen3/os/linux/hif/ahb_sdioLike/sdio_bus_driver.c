@@ -31,6 +31,7 @@
 #include "sdio.h"
 #include <asm/io.h>
 #include "debug.h"
+#include "gl_os.h"
 /* ========================== SDIO Private Routines ============================= */
 
 /**
@@ -51,7 +52,9 @@ int sdio_open(void)
 	struct sdio_func *func = &g_sdio_func;
 	INT_32  ret = 0;
 
-	g_sdio_func.cur_blksize =MY_SDIO_BLOCK_SIZE;
+	ASSERT(MY_SDIO_BLOCK_SIZE <= 512);
+
+	g_sdio_func.cur_blksize = MY_SDIO_BLOCK_SIZE;
 	g_sdio_func.num = SDIO_GEN3_FUNCTION_WIFI;
 	g_sdio_func.irq_handler = NULL;
 	g_sdio_func.use_dma = 1;/* 1 for DMA mode, 0 for PIO mode */
