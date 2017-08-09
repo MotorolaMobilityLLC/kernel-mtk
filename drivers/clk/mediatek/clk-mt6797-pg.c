@@ -2590,13 +2590,6 @@ static void __init mt_scpsys_init(struct device_node *node)
 	if (r)
 		pr_err("[CCF] %s:could not register clock provide\n", __func__);
 
-	/*ulposc enable*/
-	spm_write(ULPOSC_CON, 0x00000001);
-	spm_write(ULPOSC_CON, 0x00000003);
-	udelay(100);
-	spm_write(ULPOSC_CON, 0x00000001);
-	spm_write(ULPOSC_CON, 0x00000005);
-
 #if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
