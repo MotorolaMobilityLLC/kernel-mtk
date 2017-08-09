@@ -28,6 +28,10 @@ ifneq ($(TARGET_BUILD_VARIANT),eng)
 ccflags-y += -D_MTK_USER_
 endif
 
+ifneq ($(TARGET_BUILD_VARIANT),user)
+ccflags-y += -D_CMDQ_TEST_PROC_
+endif
+
 # Common Clock Framework
 ifneq ($(CONFIG_MTK_CLKMGR),y)
 
