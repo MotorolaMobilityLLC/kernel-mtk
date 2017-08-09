@@ -1239,8 +1239,9 @@ static int fe_open(struct net_device *dev)
 	if (priv->phy)
 		priv->phy->start(priv);
 
-	if (priv->soc->has_carrier && priv->soc->has_carrier(priv))
-		netif_carrier_on(dev);
+	if (!IS_ENABLED(CONFIG_ARCH_MT7623))
+		if (priv->soc->has_carrier && priv->soc->has_carrier(priv))
+			netif_carrier_on(dev);
 
 	napi_enable(&priv->rx_napi);
 	fe_int_enable(priv->soc->tx_int | priv->soc->rx_int);

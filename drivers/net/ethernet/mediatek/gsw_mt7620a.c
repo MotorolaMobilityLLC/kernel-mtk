@@ -324,15 +324,19 @@ static irqreturn_t gsw_interrupt_mt7621(int irq, void *_priv)
 			if (link != priv->link[i]) {
 				priv->link[i] = link;
 				if (link)
-					netdev_info(priv->netdev,
-						    "port %d link up\n", i);
+					pr_err("port %d link up\n", i);
 				else
-					netdev_info(priv->netdev,
-						    "port %d link down\n", i);
+					pr_err("port %d link down\n", i);
+#ifdef CONFIG_ARCH_MT7623
+				if (i == 4 && link)
+					netif_carrier_on(priv->netdev);
+				else if (i == 4)
+					netif_carrier_off(priv->netdev);
+#endif
 			}
 		}
-
-	mt7620a_handle_carrier(priv);
+	if (!IS_ENABLED(CONFIG_ARCH_MT7623))
+		mt7620a_handle_carrier(priv);
 	mt7530_mdio_w32(gsw, 0x700c, 0x1f);
 
 	return IRQ_HANDLED;
