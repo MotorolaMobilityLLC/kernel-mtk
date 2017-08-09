@@ -170,11 +170,7 @@ struct spm_lp_scen __spm_sodi3 = {
 	.pwrctrl = &sodi3_ctrl,
 };
 
-#if defined(CONFIG_ARCH_MT6755)
 static bool gSpm_sodi3_en = true;
-#elif defined(CONFIG_ARCH_MT6797)
-static bool gSpm_sodi3_en;
-#endif
 
 static unsigned long int sodi3_logout_prev_time;
 static int pre_emi_refresh_cnt;

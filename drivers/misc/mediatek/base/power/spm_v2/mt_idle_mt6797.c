@@ -52,7 +52,7 @@ void __iomem  *apmixed_base_in_idle;
 /* Idle handler on/off */
 int idle_switch[NR_TYPES] = {
 	1,	/* dpidle switch */
-	0,	/* soidle3 switch */
+	1,	/* soidle3 switch */
 	1,	/* soidle switch */
 #ifdef CONFIG_CPU_ISOLATION
 	1,	/* mcidle switch */
@@ -416,10 +416,12 @@ bool is_disp_pwm_rosc(void)
 
 bool is_auxadc_released(void)
 {
+#if 0
 	if (~idle_readl(INFRA_SW_CG_0_STA) & AUXADC_CG_STA) {
 		idle_dbg("AUXADC CG does not be released\n");
 		return false;
 	}
+#endif
 	return true;
 }
 
