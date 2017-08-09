@@ -62,7 +62,6 @@
 /*
 * New hotpug strategy
 */
-#if 0
 static int hps_algo_heavytsk_det(void)
 {
 	int i, j, ret, sys_cores, hvy_cores;
@@ -112,7 +111,7 @@ static int hps_algo_heavytsk_det(void)
 #endif
 	return ret;
 }
-#endif
+
 static void hps_algo_do_cluster_action(unsigned int cluster_id)
 {
 	unsigned int cpu, target_cores, online_cores, cpu_id_min, cpu_id_max;
@@ -298,10 +297,8 @@ void hps_algo_main(void)
 			}
 		}
 	}
-#if 0
 	if (hps_algo_heavytsk_det())
 		hps_sys.action_id = 0xE1;
-#endif
 	/*
 	 * algo - end
 	 */
