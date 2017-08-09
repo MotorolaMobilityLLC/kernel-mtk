@@ -53,8 +53,8 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 /*#include <cust_eint.h>*/
 #include <linux/gpio.h>
 #include <mt-plat/mt_gpio.h>
-/* #include <cust_gpio_usage.h> */
-/*#include <mach/mt_pm_ldo.h>*/
+#include <cust_gpio_usage.h>
+#include <mach/mt_pm_ldo.h>
 #endif
 
 ///#include <pmic_drv.h>
@@ -707,6 +707,7 @@ void dump_i2c_transfer(void *context, u8 page, u8 offset, u16 count, u8 *values,
 /******************************Debug End*******************************/
 
 struct i2c_client *mClient = NULL;
+static int mhl_eint_number = 0xffff;
 
 /*
 #ifdef CONFIG_MTK_LEGACY
@@ -877,10 +878,9 @@ extern wait_queue_head_t mhl_irq_wq;
 extern atomic_t mhl_irq_event ;
 
 #ifndef CONFIG_MTK_LEGACY
-int get_mhl_irq_num()
+int get_mhl_irq_num(void)
 {
     return mhl_eint_number;
-
 }
 #endif
 
@@ -953,7 +953,7 @@ void register_mhl_eint(void)
     {
         of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		///mt_eint_set_hw_debounce(ints[0],ints[1]);
-		mt_gpio_set_debounce(ints[0],ints[1]);
+		/*mt_gpio_set_debounce(ints[0],ints[1]);*/
 		mhl_eint_number = irq_of_parse_and_map(node, 0);
 		irq_set_irq_type(mhl_eint_number,MT_LEVEL_SENSITIVE);
     	if(request_irq(mhl_eint_number, mhl_eint_irq_handler, IRQF_TRIGGER_LOW, "mediatek, MHL-eint", NULL)) ///IRQF_TRIGGER_LOW
@@ -1094,24 +1094,26 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay)
 
 }
 
-void cust_power_init()
+void cust_power_init(void)
 {
 
 }
 
 void cust_power_on(int enable)
 {
+/*
     if(enable)
         regulator_enable(reg_v12_power);
     else
         regulator_disable(reg_v12_power);
+*/
 }
 
-void mhl_platform_init()
+void mhl_platform_init(void)
 {
     int ret =0;
     struct device_node *kd_node =NULL;
-    char *name = NULL;
+    const char *name = NULL;
     
     MHL_DBG("mhl_platform_init start !!\n");
 

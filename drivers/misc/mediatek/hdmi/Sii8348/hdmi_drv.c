@@ -1,7 +1,7 @@
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 #include <linux/kernel.h>
 
-#include <linux/xlog.h>
+/*#include <linux/xlog.h>*/
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -11,7 +11,7 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 
-#include <mtk_kpd.h>        /* custom file */
+/*#include <mtk_kpd.h>*/
 #include "si_timing_defs.h"
 
 #include "hdmi_drv.h"
@@ -21,7 +21,7 @@
 /**
 * MHL TX Chip Driver User Layer Interface
 */
-extern struct mhl_dev_context *si_dev_context
+extern struct mhl_dev_context *si_dev_context;
 extern void ForceSwitchToD3( struct mhl_dev_context *dev_context);
 extern void	ForceNotSwitchToD3(void);
 extern int si_mhl_tx_post_initialize(struct mhl_dev_context *dev_context, bool bootup);
@@ -53,6 +53,8 @@ extern int32_t sii_8348_tx_init(void);    //Should  move to MHL TX Chip user lay
 */
 static size_t hdmi_log_on = true;
 static int txInitFlag = 0;
+int	chip_device_id = 0;
+bool need_reset_usb_switch = true;
 
 #define MHL_DBG(fmt, arg...)  \
 	do { \
@@ -121,6 +123,7 @@ bool MHL_3D_Support = false;
 int MHL_3D_format=0x00;
 static void hdmi_drv_get_params(struct HDMI_PARAMS *params)
 {
+	char* cable_str = "";
 	enum HDMI_VIDEO_RESOLUTION input_resolution = params->init_config.vformat;
 	memset(params, 0, sizeof(struct HDMI_PARAMS));
 
@@ -231,7 +234,8 @@ static void hdmi_drv_get_params(struct HDMI_PARAMS *params)
 
 	params->is_3d_support 				= MHL_3D_Support;
 #endif
-    MHL_DBG("type %s-%d hdcp %d-%d\n", cable_type_print(params->cabletype), MHL_Connect_type, params->HDCPSupported, HDCP_Supported_Info);
+	cable_str = cable_type_print(params->cabletype);
+    MHL_DBG("type %s-%d hdcp %d-%d\n", cable_str, MHL_Connect_type, params->HDCPSupported, HDCP_Supported_Info);
 
 }
 
@@ -351,7 +355,7 @@ bool chip_inited = false;
 static int hdmi_drv_init(void)
 {
     MHL_DBG("hdmi_drv_init, not_switch_to_d3: %d, init-%d\n", not_switch_to_d3, chip_inited);
-    if(chip_inited == TRUE)
+    if(chip_inited == true)
         return 0;
 
 	/*cust_hdmi_power_on(true);*/
@@ -499,7 +503,7 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
 
 	return ;
 }
-unsigned int si_mhl_get_av_info()
+unsigned int si_mhl_get_av_info(void)
 {
     unsigned int temp = SINK_1080P30;
     
@@ -558,8 +562,9 @@ extern uint8_t  Cap_Samplebit;
 
 int hdmi_drv_get_external_device_capablity(void)
 {
+	int capablity = 0;
 	MHL_DBG("Cap_MAX_channel: %d, Cap_Samplebit: %d, Cap_SampleRate: %d\n", Cap_MAX_channel, Cap_Samplebit, Cap_SampleRate);
-	int capablity = Cap_MAX_channel << 3 | Cap_SampleRate << 7 | Cap_Samplebit << 10;
+	capablity = Cap_MAX_channel << 3 | Cap_SampleRate << 7 | Cap_Samplebit << 10;
 
 	if(capablity == 0)
 	{
@@ -571,7 +576,7 @@ int hdmi_drv_get_external_device_capablity(void)
 
 #define HDMI_MAX_INSERT_CALLBACK   10
 static CABLE_INSERT_CALLBACK hdmi_callback_table[HDMI_MAX_INSERT_CALLBACK];
-int hdmi_register_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
+void hdmi_register_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
 {
     int i = 0;
     for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
@@ -579,7 +584,7 @@ int hdmi_register_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
             break;
     }
     if (i < HDMI_MAX_INSERT_CALLBACK)
-        return 0;
+        return;
 
     for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
         if (hdmi_callback_table[i] == NULL)
@@ -587,15 +592,14 @@ int hdmi_register_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
     }
     if (i == HDMI_MAX_INSERT_CALLBACK) {
         MHL_DBG("not enough mhl callback entries for module\n");
-        return -1;
+        return;
     }
 
     hdmi_callback_table[i] = cb;
 	MHL_DBG("callback: %p,i: %d\n", hdmi_callback_table[i], i);
-    return 0;
 }
 
-int hdmi_unregister_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
+void hdmi_unregister_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
 {
     int i;
     for (i=0; i<HDMI_MAX_INSERT_CALLBACK; i++)
@@ -610,9 +614,8 @@ int hdmi_unregister_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
     if (i == HDMI_MAX_INSERT_CALLBACK)
     {
         MHL_DBG("Try to unregister callback function 0x%lx which was not registered\n",(unsigned long int)cb);
-        return -1;
+        return;
     }
-    return 0;
 }
 
 void hdmi_invoke_cable_callbacks(enum HDMI_STATE state)
@@ -738,8 +741,10 @@ static char* MHL_TX_Event_Print(unsigned int event)
 
 void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param)
 {
+	char* event_str = "";
+	event_str = MHL_TX_Event_Print(event);
 	if(event != MHL_TX_EVENT_SMB_DATA)
-		MHL_DBG("%s, event_param: %d\n", MHL_TX_Event_Print(event), event_param);
+		MHL_DBG("%s, event_param: %d\n", event_str, event_param);
 	switch(event)
 	{
 		case MHL_TX_EVENT_CONNECTION:

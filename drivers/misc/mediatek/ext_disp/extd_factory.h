@@ -2,14 +2,7 @@
 #define _EXTERNAL_FACTORY_H_
 
 #include "hdmi_drv.h"
-
-enum HDMI_FACTORY_TEST {
-	STEP1_CHIP_INIT,
-	STEP2_JUDGE_CALLBACK,
-	STEP3_START_DPI_AND_CONFIG,
-	STEP4_DPI_STOP_AND_POWER_OFF,
-	STEP_FACTORY_MAX_NUM
-};
+#include "extd_info.h"
 
 struct DPI_PARAM_CONTEXT {
 	int hdmi_width;	/* DPI read buffer width */

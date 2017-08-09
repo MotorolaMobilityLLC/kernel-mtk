@@ -1550,12 +1550,14 @@ static void mtk_uart_rx_chars(struct mtk_uart *uart)
 	update_history_time(0, uart->nport);
 	spin_unlock_irqrestore(&port->lock, flags);
 	MSG(FUC, "%s (%2d)\n", __func__, UART_FIFO_SIZE - max_count - 1);
+/*
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 #ifdef MHL_UART_SHARE_PIN
 	if ((UART_FIFO_SIZE - max_count - 1) > 0)
 		hdmi_force_on(UART_FIFO_SIZE - max_count - 1);
 #endif
 #endif
+*/
 }
 
 /*---------------------------------------------------------------------------*/
@@ -2839,17 +2841,18 @@ int request_uart_to_sleep(void)
 	unsigned long base;
 
 	for (uart_idx = 0; uart_idx < UART_NR; uart_idx++) {
+		/*
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 #ifdef MHL_UART_SHARE_PIN
 		{
-			/* for K2 uart2 and mhl share pin,
-			* if mhl is in low power mode, uart rx is not working, so bypass it. */
+			for K2 uart2 and mhl share pin,
+			if mhl is in low power mode, uart rx is not working, so bypass it.
 			if ((is_hdmi_active() == 0) && (uart_idx == 1))
 				continue;
 		}
 #endif
 #endif
-
+		*/
 		uart = &mtk_uarts[uart_idx];
 		base = uart->base;
 		if (uart->poweron_count > 0) {

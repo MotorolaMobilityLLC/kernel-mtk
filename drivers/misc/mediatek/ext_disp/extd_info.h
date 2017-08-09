@@ -28,8 +28,17 @@ struct SWITCH_MODE_INFO_STRUCT {
 	unsigned int ext_sid;
 };
 
+enum HDMI_FACTORY_TEST {
+	STEP1_CHIP_INIT,
+	STEP2_JUDGE_CALLBACK,
+	STEP3_START_DPI_AND_CONFIG,
+	STEP4_DPI_STOP_AND_POWER_OFF,
+	STEP_FACTORY_MAX_NUM
+};
+
 struct EXTD_DRIVER {
 	int (*init)(void);
+	int (*post_init)(void);
 	int (*deinit)(void);
 	int (*enable)(int enable);
 	int (*power_enable)(int enable);
@@ -40,7 +49,7 @@ struct EXTD_DRIVER {
 	int (*get_edid)(void *info);
 	int (*wait_vsync)(void);
 	int (*fake_connect)(int connect);
-	int (*factory_mode_test)(int step, void *info);
+	int (*factory_mode_test)(enum HDMI_FACTORY_TEST test_step, void *info);
 	int (*ioctl)(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params);
 };
 

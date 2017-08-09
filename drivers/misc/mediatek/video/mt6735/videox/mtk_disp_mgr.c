@@ -1158,45 +1158,19 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 	return 0;
 }
-
 static int set_external_buffer(disp_session_input_config *input)
 {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	int i = 0;
 	int ret = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long int dst_mva = 0;
 	unsigned int session_id = 0;
-	unsigned int mva_offset = 0;
+	unsigned long int mva_offset = 0;
+	disp_session_sync_info *session_info = NULL;
 
 	session_id = input->session_id;
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
-
-	if (extd_hdmi_path_get_mode() == EXTD_RDMA_DPI_MODE) {
-		input->config_layer_num = 1;
-		if (ovl1_remove == 1) {
-#ifdef MTK_FB_RDMA1_SUPPORT
-			DISPMSG("Donglei - config M4U Port DISP_MODULE_RDMA1\n");
-			M4U_PORT_STRUCT sPort;
-
-			sPort.ePortID = M4U_PORT_DISP_RDMA1;
-			sPort.Virtuality = 1;
-			sPort.Security = 0;
-			sPort.Distance = 1;
-			sPort.Direction = 0;
-			ret = m4u_config_port(&sPort);
-			if (ret != 0)
-				DISPMSG("config M4U Port DISP_MODULE_RDMA1 FAIL\n");
-#endif
-			ovl1_remove++;
-		}
-		/* hdmi_recompute_bg(input->config[0].src_width, input->config[0].src_height); */
-	}
-
-	ext_disp_input_config extd_input[HW_OVERLAY_COUNT];
-
-	memset((void *)&extd_input, 0, sizeof(extd_input));
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
@@ -1208,79 +1182,75 @@ static int set_external_buffer(disp_session_input_config *input)
 					     input->config[i].next_buff_idx);
 				input->config[i].src_offset_x = 0;
 				input->config[i].src_offset_y = 0;
-				/* input->config[i].tgt_offset_x = 0; */
-				/* input->config[i].tgt_offset_y = 0; */
 				input->config[i].sur_aen = 0;
 				input->config[i].src_fmt = DISP_FORMAT_RGB888;
 				input->config[i].src_pitch = input->config[i].src_width;
-				input->config[i].src_phy_addr = (void *)get_dim_layer_mva_addr();
+				input->config[i].src_phy_addr = 0;
 				input->config[i].next_buff_idx = 0;
 				/* force dim layer as non-sec */
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = input->config[i].src_phy_addr;
+				dst_mva = (unsigned long int)input->config[i].src_phy_addr;
 			} else {
-				disp_sync_query_buf_info(session_id, (unsigned int)layer_id,
-							 (unsigned int)input->config[i].next_buff_idx,
-							 &dst_mva, &dst_size);
-				/* if(dst_size < input->config[i].src_pitch * input->config[i].src_height)
-					DISPERR("");
-				 */
+				disp_sync_query_buf_info(session_id, layer_id,
+							(unsigned int)input->config[i].next_buff_idx,
+							(unsigned long *)&dst_mva, &dst_size);
+				input->config[i].src_phy_addr = (void *)dst_mva;
 			}
 
 			if (dst_mva == 0)
 				input->config[i].layer_enable = 0;
 
-			DISPPR_FENCE("S+/EL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/%p/mva0x%08lx\n",
-				      input->config[i].layer_id, input->config[i].layer_enable,
-				      input->config[i].next_buff_idx, input->config[i].src_width,
-				      input->config[i].src_height, input->config[i].src_offset_x,
-				      input->config[i].src_offset_y, input->config[i].tgt_offset_x,
-				      input->config[i].tgt_offset_y,
-				      _disp_format_spy(input->config[i].src_fmt), input->config[i].src_pitch,
-				      input->config[i].src_phy_addr, dst_mva);
+
+			DISPPR_FENCE
+			    ("S+/EL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x/%08lx\n",
+			     input->config[i].layer_id, input->config[i].layer_enable,
+			     input->config[i].next_buff_idx, input->config[i].src_width,
+			     input->config[i].src_height, input->config[i].src_offset_x,
+			     input->config[i].src_offset_y, input->config[i].tgt_offset_x,
+			     input->config[i].tgt_offset_y,
+			     _disp_format_spy(input->config[i].src_fmt), input->config[i].src_pitch,
+			     input->config[i].src_phy_addr, dst_mva);
 		} else {
 			DISPPR_FENCE("S+/EL%d/e%d/id%d\n", input->config[i].layer_id,
 				     input->config[i].layer_enable, input->config[i].next_buff_idx);
 		}
 
-		/* /_sync_convert_fb_layer_to_ovl_struct(input->session_id, &(input->config[i]),
-							&external_cached_layer_config[layer_id], dst_mva); */
 		disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], dst_mva);
-		_sync_convert_fb_layer_to_disp_input(input->session_id, &(input->config[i]),
-						     &extd_input[layer_id], dst_mva);
-
-		extd_input[layer_id].dirty = 1;
 
 		if (input->config[i].layer_enable) {
-			/* OVL addr is not the start address of buffer, which is calculated by pitch and ROI. */
-			unsigned int hw_fmt, Bpp, bpp, x, y, pitch;
-
+			/*which is calculated by pitch and ROI. */
+			unsigned int Bpp, x, y, pitch, hw_fmt;
 			x = input->config[i].src_offset_x;
 			y = input->config[i].src_offset_y;
 			pitch = input->config[i].src_pitch;
-			disp_fmt_to_hw_fmt(input->config[i].src_fmt, &hw_fmt, &Bpp, &bpp);
+			disp_fmt_to_hw_fmt(input->config[i].src_fmt, &hw_fmt, &Bpp, &Bpp);
 			mva_offset = (x + y * pitch) * Bpp;
 			mtkfb_update_buf_info(input->session_id, input->config[i].layer_id,
 					      input->config[i].next_buff_idx, mva_offset,
 					      input->config[i].frm_sequence);
+#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+			mtkfb_update_buf_info_new(input->session_id, mva_offset,
+						  (disp_input_config *) input->config);
+#endif
 		}
 
-		if (session_info)
+		if (session_info) {
 			dprec_submit(&session_info->event_setinput, input->config[i].next_buff_idx,
-				     (input->config_layer_num << 28) | (input->config[i].layer_id << 24) |
-				     (input->config[i].src_fmt << 12) | input->config[i].layer_enable);
-
+				     (input->config_layer_num << 28) | (input->config[i].layer_id << 24)
+				     | (input->config[i].src_fmt << 12) | input->config[i].layer_enable);
+		}
 	}
 
-	ret = extd_hdmi_config_input_multiple(&extd_input, input->config[0].next_buff_idx);
+#if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
+	ret = external_display_config_input(input, input->config[0].next_buff_idx, session_id);
+#endif
 
 	if (ret == -2) {
 		for (i = 0; i < input->config_layer_num; i++)
 			mtkfb_release_layer_fence(input->session_id, i);
 	}
-#endif
 
 	return 0;
 }

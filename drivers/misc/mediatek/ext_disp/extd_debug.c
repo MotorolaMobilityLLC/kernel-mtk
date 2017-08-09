@@ -4,7 +4,8 @@
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
 
-#include <mach/mt_typedefs.h>
+/*#include <mach/mt_typedefs.h>*/
+#include <linux/types.h>
 /*#include <mach/mt_gpio.h>*/
 #include <mt-plat/mt_gpio.h>
 /* #include <cust_gpio_usage.h> */
@@ -66,20 +67,6 @@ static void process_dbg_opt(const char *opt)
 			mt_set_gpio_mode(GPIO_MHL_I2S_OUT_DAT_PIN, GPIO_MODE_02);
 		}
 #endif
-	} else if (0 == strncmp(opt, "DPI_IO_DRIVING:", 15)) {
-		if (0 == strncmp(opt + 15, "4", 1))
-			MASKREG32(DISPSYS_IO_DRIVING, 0x3C00, 0x0000);
-		else if (0 == strncmp(opt + 15, "8", 1))
-			MASKREG32(DISPSYS_IO_DRIVING, 0x3C00, 0x1400);
-		else if (0 == strncmp(opt + 15, "12", 2))
-			MASKREG32(DISPSYS_IO_DRIVING, 0x3C00, 0x2800);
-		else if (0 == strncmp(opt + 15, "16", 2))
-			MASKREG32(DISPSYS_IO_DRIVING, 0x3C00, 0x3C00);
-/*	} else if (0 == strncmp(opt, "DPI_DUMP:", 9)) {
-
-		if (ddp_modules_driver[DISP_MODULE_DPI]->dump_info != NULL)
-			ddp_modules_driver[DISP_MODULE_DPI]->dump_info(DISP_MODULE_DPI, 1);
-*/
 	} else if (0 == strncmp(opt, "forceon", 7))
 		hdmi_force_on(false);
 	else if (0 == strncmp(opt, "extd_vsync:", 11)) {
@@ -109,16 +96,13 @@ static void process_dbg_cmd(char *cmd)
 /* --------------------------------------------------------------------------- */
 /* Debug FileSystem Routines */
 /* --------------------------------------------------------------------------- */
-
 struct dentry *extd_dbgfs = NULL;
 
-
-static ssize_t debug_open(struct inode *inode, struct file *file)
+static int debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
 	return 0;
 }
-
 
 static char debug_buffer[2048];
 
@@ -132,7 +116,6 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
-
 
 static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {

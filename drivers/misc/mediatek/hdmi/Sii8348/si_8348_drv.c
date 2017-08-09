@@ -3257,7 +3257,7 @@ int si_mhl_tx_chip_initialize(struct drv_hw_context *hw_context)
 
 	ret_val = get_device_id(hw_context);
 	hw_context->chip_device_id = (uint16_t)ret_val;
-    /*chip_device_id = ret_val;*/
+    chip_device_id = ret_val;
 	if (ret_val > 0)
 	{
 		MHL_TX_DBG_ERR(hw_context, "Found SiI%04X rev: %01X.%01X\n",

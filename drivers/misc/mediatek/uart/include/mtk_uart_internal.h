@@ -19,13 +19,13 @@ ssize_t mtk_uart_lsr_status_show(struct kobject *kobj, char *page);
 ssize_t mtk_uart_lsr_status_store(struct kobject *kobj, const char *page, size_t size);
 ssize_t mtk_uart_history_show(struct kobject *kobj, char *page);
 ssize_t mtk_uart_history_store(struct kobject *kobj, const char *page, size_t size);
-
+/*
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 #include "hdmi_cust.h"
 extern bool is_hdmi_active(void);
 extern void hdmi_force_on(int from_uart_drv);
 #endif
-
+*/
 #ifndef CONFIG_FIQ_DEBUGGER
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 extern bool printk_disable_uart;
