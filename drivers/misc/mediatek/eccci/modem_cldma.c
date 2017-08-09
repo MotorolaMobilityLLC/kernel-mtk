@@ -1337,7 +1337,7 @@ static void cldma_irq_work(struct work_struct *work)
 static inline void cldma_stop(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	int ret, count;
+	int ret, count, i;
 	unsigned long flags;
 #ifdef ENABLE_CLDMA_TIMER
 	int qno;
@@ -1406,6 +1406,15 @@ static inline void cldma_stop(struct ccci_modem *md)
 		del_timer(&md_ctrl->txq[qno].timeout_timer);
 #endif
 	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+	/* flush work */
+	disable_irq(md_ctrl->cldma_irq_id);
+	flush_work(&md_ctrl->cldma_irq_work);
+	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
+		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
+	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
+		flush_work(&md_ctrl->rxq[i].cldma_rx_work);
+		flush_work(&md_ctrl->rxq[i].cldma_refill_work);
+	}
 }
 
 static inline void cldma_stop_for_ee(struct ccci_modem *md)
@@ -1482,7 +1491,6 @@ static inline void cldma_reset(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
-	cldma_stop(md);
 	/* enable OUT DMA & wait RGPD write transaction repsonse */
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
 		      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x5);
@@ -1528,6 +1536,7 @@ static inline void cldma_start(struct ccci_modem *md)
 	unsigned long flags;
 
 	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
+	enable_irq(md_ctrl->cldma_irq_id);
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	/* set start address */
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
@@ -1882,7 +1891,6 @@ static void md_cd_ccif_delayed_work(struct work_struct *work)
 {
 	struct md_cd_ctrl *md_ctrl = container_of(to_delayed_work(work), struct md_cd_ctrl, ccif_delayed_work);
 	struct ccci_modem *md = md_ctrl->modem;
-	int i;
 
 #if defined(CONFIG_MTK_AEE_FEATURE)
 	aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");
@@ -1890,13 +1898,6 @@ static void md_cd_ccif_delayed_work(struct work_struct *work)
 
 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
 	cldma_stop(md);
-	/* flush work */
-	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
-		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
-	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-		flush_work(&md_ctrl->rxq[i].cldma_rx_work);
-		flush_work(&md_ctrl->rxq[i].cldma_refill_work);
-	}
 #ifdef ENABLE_CLDMA_AP_SIDE
 	md_cldma_hw_reset(md);
 #endif
@@ -1968,6 +1969,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 			     ret);
 		return ret;
 	}
+	disable_irq(md_ctrl->hw_info->cldma_irq_id);
 #ifndef FEATURE_FPGA_PORTING
 	ret =
 	    request_irq(md_ctrl->hw_info->md_wdt_irq_id, md_cd_wdt_isr, md_ctrl->hw_info->md_wdt_irq_flags, "MD_WDT",
@@ -2288,13 +2290,7 @@ static void md_cldma_clear(struct ccci_modem *md)
 	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 	/* 5. update state */
 	del_timer(&md->bootup_timer);
-	/* 6. flush CLDMA work and reset ring buffer */
-	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
-		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
-	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-		flush_work(&md_ctrl->rxq[i].cldma_rx_work);
-		flush_work(&md_ctrl->rxq[i].cldma_refill_work);
-	}
+	/* 6. reset ring buffer */
 	md_cd_clear_all_queue(md, OUT);
 	/*
 	 * there is a race condition between md_power_off and CLDMA IRQ. after we get a CLDMA IRQ,
