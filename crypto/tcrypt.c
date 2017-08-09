@@ -213,7 +213,7 @@ out:
 	return ret;
 }
 
-static u32 block_sizes[] = { 16, 64, 256, 1024, 8192, 0 };
+static u32 block_sizes[] = { 16, 64, 256, 512,  1024, 8192, 14336, 0 };
 static u32 aead_sizes[] = { 16, 64, 256, 512, 1024, 2048, 4096, 8192, 0 };
 
 #define XBUFSIZE 8
@@ -2212,7 +2212,7 @@ static ssize_t tcrypt_write(struct file *file, const char __user *buffer,
 				size_t count, loff_t *ppos)
 {
 	char buf[16];
-	unsigned long len = count;
+	size_t len = count;
 	int n;
 
 	if (len >= sizeof(buf))
@@ -2223,14 +2223,14 @@ static ssize_t tcrypt_write(struct file *file, const char __user *buffer,
 
 	buf[len] = '\0';
 
-	if (kstrtol(buf, 10, &n))
+	if (kstrtol(buf, 10, (long int *)&n))
 		return -EINVAL;
 
-	pr_err("%s len %d parameter %d\n", __func__, (int)len, n);
+	pr_err("%s parameter %d\n", __func__, n);
 
 	tcrypt_select(n);
 
-	return 0;
+	return len;
 }
 
 static const struct file_operations tcrypt_proc_fops = {
