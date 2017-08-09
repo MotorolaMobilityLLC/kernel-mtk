@@ -209,7 +209,9 @@ enum SPM_WAKE_SRC_LIST {
 	WAKE_SRC_R12_APSRC_SLEEP = (1U << 31)
 };
 
-/*
+#if 1 /* Jade's string */
+extern const char *wakesrc_str[32];
+#else
 static const char *wakesrc_str[32] = {
 	[0] = " R12_PCM_TIMER",
 	[1] = " R12_MD32_WDT_EVENT_B",
@@ -244,6 +246,6 @@ static const char *wakesrc_str[32] = {
 	[30] = " R12_APSRC_WAKE",
 	[31] = " R12_APSRC_SLEEP",
 };
-*/
+#endif
 
 #endif /* __pcm_def_h__ */

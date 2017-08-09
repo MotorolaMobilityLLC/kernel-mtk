@@ -145,15 +145,6 @@ enum spm_sodi_step {
 	SPM_SODI_LEAVE,
 };
 
-void __attribute__((weak)) aee_rr_rec_sodi3_val(u32 val)
-{
-}
-
-u32 __attribute__((weak)) aee_rr_curr_sodi3_val(void)
-{
-	return 0;
-}
-
 #endif
 
 static struct pwr_ctrl sodi_ctrl = {
@@ -279,16 +270,6 @@ static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
 #endif
-
-void __attribute__((weak)) mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
-{
-}
-
-int __attribute__((weak)) mt_cpu_dormant(unsigned long flags)
-{
-	wfi_with_sync();
-	return 0;
-}
 
 #if REDUCE_SODI_LOG
 static long int idle_get_current_time_ms(void)
@@ -443,8 +424,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-	/* FIXME: fix build error for early porting*/
-	/*__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);*/
+	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
 	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
 		/* the following masks set to be 1 only for SODI CG mode */
@@ -581,8 +561,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 				}
 				for (i = 1; i < 32; i++) {
 					if (wakesta.r12 & (1U << i)) {
-						/* FIXME: fix build error for early porting*/
-						/*strcat(buf, wakesrc_str[i]);*/
+						strcat(buf, wakesrc_str[i]);
 						wr = WR_WAKE_SRC;
 					}
 				}
