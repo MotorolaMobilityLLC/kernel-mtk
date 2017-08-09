@@ -3229,6 +3229,7 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		DISPCHECK("MIPITX is not inited, will config mipitx clock now\n");
 		DISPCHECK("===>Pmaster:CLK SETTING??==> clk:%d\n",
 			  _dsi_context[0].dsi_params.PLL_CLOCK);
+		DSI_PHY_clk_switch(module, NULL, false);
 		DSI_PHY_clk_setting(module, NULL, dsi_config);
 
 #if defined(MTK_NO_DISP_IN_LK)
