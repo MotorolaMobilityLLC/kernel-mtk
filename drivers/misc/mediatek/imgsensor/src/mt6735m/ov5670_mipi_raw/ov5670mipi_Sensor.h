@@ -74,7 +74,7 @@ typedef struct imgsensor_struct {
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 typedef struct imgsensor_info_struct { 
-	kal_uint16 sensor_id;			//record sensor id defined in Kd_imgsensor.h
+    kal_uint32 sensor_id;            //record sensor id defined in Kd_imgsensor.h
 	kal_uint32 checksum_value;		//checksum value for Camera Auto Test
 	imgsensor_mode_struct pre;		//preview scenario relative information
 	imgsensor_mode_struct cap;		//capture scenario relative information
