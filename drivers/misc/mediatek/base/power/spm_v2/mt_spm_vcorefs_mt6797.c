@@ -25,9 +25,7 @@
 #endif
 
 /* TIMEOUT */
-#define SPM_DVS_TIMEOUT		2500	/* 2.5ms */
-#define SPM_DFS_TIMEOUT		2500	/* 2.5ms */
-#define SPM_SCREEN_TIMEOUT	1000	/* 1ms */
+#define SPM_DVFS_TIMEOUT	7500	/* 7.5ms */
 
 /* BW threshold for SPM_SW_RSV_4 */
 #define HPM_THRES_OFFSET	16
@@ -37,7 +35,7 @@
 #define get_vcore_sta()		(spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG)
 
 /* get Vcore DVFS is progress */
-#define is_dfs_in_progress()	(spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
+#define is_dvfs_in_progress()	(spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
 
 /* get F/W screen on/off setting status */
 #define get_screen_sta()	(spm_read(SPM_SW_RSV_1) & 0xF)
@@ -273,15 +271,19 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	unsigned long flags;
 	u8 dvfs_req;
 	u32 target_sta, req;
-	int t_dvfs = 0, t_dvs = 0, t_dfs = 0;
-	bool dvs_en, dfs_en;
+	int t_dvfs = 0, t_progress = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
-	dvs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DVS) == 0);
-	dfs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DFS) == 0);
+	/* check DVFS idle */
+	t_progress = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
+	if (t_progress < 0) {
+		spm_vcorefs_crit("WAIT DVFS IDLE TIMEOUT: %d, opp: %d\n", SPM_DVFS_TIMEOUT, opp);
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		BUG();
+	}
 
 	#if GATING_AUTO_SAVE
 	DVFS_gating_auto_save();
@@ -316,34 +318,19 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 
 	if (opp == OPPI_PERF) {
 
-		if (dvs_en) {
-			t_dvs = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVS_TIMEOUT);
-
-			/* DVS time is out of spec */
-			if (t_dvs < 0) {
-				spm_vcorefs_crit("DVS TIMEOUT: 0x%x, 0x%x\n", dvfs_req, target_sta);
-				spm_vcorefs_dump_dvfs_regs(NULL);
-				BUG();
-			}
+		/* check DVFS timer */
+		t_dvfs = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVFS_TIMEOUT);
+		if (t_dvfs < 0) {
+			spm_vcorefs_crit("DVFS TIMEOUT: %d, req: 0x%x, target: 0x%x\n",
+							SPM_DVFS_TIMEOUT, dvfs_req, target_sta);
+			spm_vcorefs_dump_dvfs_regs(NULL);
+			BUG();
 		}
 
-		if (dfs_en) {
-			t_dfs = wait_spm_complete_by_condition(!is_dfs_in_progress(), SPM_DFS_TIMEOUT);
-
-			/* DFS time is out of spec */
-			if (t_dfs < 0) {
-				spm_vcorefs_crit("DFS TIMEOUT: 0x%x, 0x%x\n", dvfs_req, target_sta);
-				spm_vcorefs_dump_dvfs_regs(NULL);
-				BUG();
-			}
-		}
-
-		t_dvfs = t_dvs + t_dfs;
-
-		spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x, t_dvfs: %d(%d)(%d)\n",
-								dvfs_req, target_sta, t_dvfs, t_dvs, t_dfs);
+		spm_vcorefs_crit("req: 0x%x, target: 0x%x, t_dvfs: %d(%d)\n",
+								dvfs_req, target_sta, t_dvfs, t_progress);
 	} else {
-		spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
+		spm_vcorefs_crit("req: 0x%x, target: 0x%x\n", dvfs_req, target_sta);
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_LEAVE);
@@ -375,7 +362,7 @@ int spm_vcorefs_screen_on_setting(void)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_DVFS_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
@@ -411,7 +398,7 @@ int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_DVFS_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
