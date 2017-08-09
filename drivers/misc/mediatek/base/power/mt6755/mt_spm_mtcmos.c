@@ -1269,7 +1269,7 @@ int spm_mtcmos_ctrl_cpusys1(int state, int chkWfiBeforePdn)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MP1_CPUTOP_PWR_CON, spm_read(MP1_CPUTOP_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
-#if 0
+#if 1
 		/* #ifndef CFG_FPGA_PLATFORM */
 
 		spm_topaxi_protect(MP1_CPUTOP_PROT_MASK, 0);
