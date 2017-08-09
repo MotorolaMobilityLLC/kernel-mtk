@@ -148,7 +148,8 @@ static int glance_gesture_open_report_data(int open)
 {
 	int ret = 0;
 
-	ret = sensor_set_delay_to_hub(ID_GLANCE_GESTURE, 20);
+	if (open == 1)
+		ret = sensor_set_delay_to_hub(ID_GLANCE_GESTURE, 20);
 	ret = sensor_enable_to_hub(ID_GLANCE_GESTURE, open);
 	return ret;
 }

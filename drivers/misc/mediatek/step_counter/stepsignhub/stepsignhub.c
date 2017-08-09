@@ -121,7 +121,8 @@ static int step_c_enable_nodata(int en)
 {
 	int ret = 0;
 
-	ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 20);
+	if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 20);
 	ret = sensor_enable_to_hub(ID_STEP_COUNTER, en);
 	return ret;
 }
@@ -130,7 +131,8 @@ static int step_d_enable_nodata(int en)
 {
 	int ret = 0;
 
-	ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 20);
+	if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 20);
 	ret = sensor_enable_to_hub(ID_STEP_DETECTOR, en);
 	return ret;
 }
@@ -139,7 +141,8 @@ static int step_s_enable_nodata(int en)
 {
 	int ret = 0;
 
-	ret = sensor_set_delay_to_hub(ID_SIGNIFICANT_MOTION, 20);
+	if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_SIGNIFICANT_MOTION, 20);
 	ret = sensor_enable_to_hub(ID_SIGNIFICANT_MOTION, en);
 	return ret;
 }

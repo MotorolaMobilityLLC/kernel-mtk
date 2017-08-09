@@ -149,7 +149,8 @@ static int wake_gesture_open_report_data(int open)
 	int ret = 0;
 
 	WAKEHUB_ERR("%s : enable=%d\n", __func__, open);
-	ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 20);
+	if (open == 1)
+		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 20);
 	ret = sensor_enable_to_hub(ID_TILT_DETECTOR, open);
 	return ret;
 }
