@@ -1,0 +1,5 @@
+config MTK_MMPROFILE_SUPPORT
+	bool "Medaitek mmprofile support, for debug"
+		default y
+	help
+	  Multimedia profiling mechanism
