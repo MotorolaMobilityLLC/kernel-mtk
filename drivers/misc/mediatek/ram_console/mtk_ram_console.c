@@ -55,6 +55,7 @@ struct last_reboot_reason {
 	uint32_t mcdi_wfi;
 	uint32_t mcdi_r15;
 	uint32_t deepidle_data;
+	uint32_t sodi3_data;
 	uint32_t sodi_data;
 	uint32_t spm_suspend_data;
 	uint64_t cpu_dormant[NR_CPUS];
@@ -867,6 +868,20 @@ void aee_rr_rec_sodi_val(u32 val)
 	LAST_RR_SET(sodi_data, val);
 }
 
+void aee_rr_rec_sodi3_val(u32 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(sodi3_data, val);
+}
+
+u32 aee_rr_curr_sodi3_val(void)
+{
+	if (!ram_console_init_done)
+		return 0;
+	return LAST_RR_VAL(sodi3_data);
+}
+
 u32 aee_rr_curr_sodi_val(void)
 {
 	return LAST_RR_VAL(sodi_data);
@@ -1239,6 +1254,11 @@ void aee_rr_show_deepidle(struct seq_file *m)
 	seq_printf(m, "deepidle: 0x%x\n", LAST_RRR_VAL(deepidle_data));
 }
 
+void aee_rr_show_sodi3(struct seq_file *m)
+{
+	seq_printf(m, "sodi3: 0x%x\n", LAST_RRR_VAL(sodi3_data));
+}
+
 void aee_rr_show_sodi(struct seq_file *m)
 {
 	seq_printf(m, "sodi: 0x%x\n", LAST_RRR_VAL(sodi_data));
@@ -1439,6 +1459,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_suspend_debug_flag,
 	aee_rr_show_suspend_debug_regs,
 	aee_rr_show_deepidle,
+	aee_rr_show_sodi3,
 	aee_rr_show_sodi,
 	aee_rr_show_spm_suspend,
 	aee_rr_show_vcore_dvfs_opp,
