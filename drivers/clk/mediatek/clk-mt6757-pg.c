@@ -28,14 +28,9 @@
 /*#define TOPAXI_PROTECT_LOCK*/
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
-#if defined(CONFIG_ARCH_MT6757)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  0
+#define MT_CCF_BRINGUP  1
 #define CONTROL_LIMIT 1
-#else
-#define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	0
-#endif
 #endif
 
 #define	CHECK_PWR_ST	1

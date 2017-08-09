@@ -24,16 +24,11 @@
 #include "clk-mt6757-pll.h"
 
 
-/* ====================EP-start======================= */
-#define temp_sel		"temp_sel"
-/* ====================EP-end======================= */
-
-
 /* ====================common-start======================= */
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	0
+#define MT_CCF_BRINGUP	1
 #endif
 
 
@@ -1152,13 +1147,13 @@ static struct mtk_gate_regs venc_gcon_vencsys_cg_regs = {
 static struct mtk_gate venc_gcon_clks[] __initdata = {
 	/* VENCSYS_CG */
 	GATE(VENC_GCON_SET0_LARB, venc_gcon_set0_larb, mm_sel ,
-	     venc_gcon_vencsys_cg_regs, 0, 1),
+	     venc_gcon_vencsys_cg_regs, 0, CLK_GATE_INVERSE),
 	GATE(VENC_GCON_SET1_VENC, venc_gcon_set1_venc, venc_sel,
-	     venc_gcon_vencsys_cg_regs, 4, 1),
+	     venc_gcon_vencsys_cg_regs, 4, CLK_GATE_INVERSE),
 	GATE(VENC_GCON_SET2_JPGENC, venc_gcon_set2_jpgenc, venc_sel,
-	     venc_gcon_vencsys_cg_regs, 8, 1),
+	     venc_gcon_vencsys_cg_regs, 8, CLK_GATE_INVERSE),
 	GATE(VENC_GCON_SET3_JPGDEC, venc_gcon_set3_jpgdec, venc_sel,
-	     venc_gcon_vencsys_cg_regs, 12, 1),
+	     venc_gcon_vencsys_cg_regs, 12, CLK_GATE_INVERSE),
 };
 
 static struct mtk_gate_regs aud_cg_regs = {
@@ -1264,7 +1259,7 @@ void __iomem *camsys_base;
 #define INFRA_PDN_SET0          (infracfg_base + 0x0080)
 #define INFRA_PDN_SET1          (infracfg_base + 0x0088)
 #define INFRA_PDN_SET2          (infracfg_base + 0x00A8)
-#define MFG_CG_SET              (mfgcfg_base + 4)
+#define MFG_CG_SET              (mfgcfg_base + 0x4)
 #define IMG_CG_SET              (img_base + 0x0004)
 #define MM_CG_SET0            (mmsys_config_base + 0x104)
 #define MM_CG_SET1            (mmsys_config_base + 0x114)
@@ -1275,6 +1270,27 @@ void __iomem *camsys_base;
 #define VENC_CG_CON             (venc_gcon_base + 0x8)
 #define AUDIO_TOP_CON0          (audio_base + 0x0000)
 #define CAMSYS_CG_SET			(camsys_base + 0x0004)
+
+#ifdef MT_CCF_BRINGUP
+#define MFG_CG_CLR              (mfgcfg_base + 0x8)
+#define IMG_CG_CLR              (img_base + 0x0008)
+#define CAMSYS_CG_CLR			(camsys_base + 0x0008)
+#define MM_CG_CLR0            (mmsys_config_base + 0x108)
+#define MM_CG_CLR1            (mmsys_config_base + 0x118)
+#define VDEC_CKEN_SET		(vdec_gcon_base + 0x0000)
+#define LARB_CKEN_SET		(vdec_gcon_base + 0x0008)
+#define VENC_CG_SET            (venc_gcon_base + 0x4)
+
+#define MFG_DISABLE_CG	0x1
+#define IMG_DISABLE_CG	0x3C43
+#define CAMSYS_DISABLE_CG	0x1FC1
+#define MM_DISABLE_CG0	0xFFFFBFFF /*bit no use: 14*/
+#define MM_DISABLE_CG1 0x00004FFF
+#define VDEC_DISABLE_CG	0x1
+#define LARB_DISABLE_CG	0x1
+#define VENC_DISABLE_CG 0x1111
+#define AUDIO_DISABLE_CG 0x800c4000
+#endif
 #endif
 
 #define INFRA0_CG  0x87BFFD00	/*0: Disable  ( with clock), 1: Enable ( without clock ) */
@@ -1626,11 +1642,12 @@ static void __init mt_mfgsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
+	mfgcfg_base = base;
+
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x1, (base + mfg_cg_regs.clr_ofs));
+	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	mfgcfg_base = base;
 	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
 
@@ -1660,11 +1677,12 @@ static void __init mt_imgsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
+	img_base = base;
+
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x00000C41, base + img_cg_regs.clr_ofs);
+	clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	img_base = base;
 	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 
@@ -1695,12 +1713,12 @@ static void __init mt_camsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
+	camsys_base = base;
 
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x00000FC1, base + cam_cg_regs.clr_ofs);
+	clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	camsys_base = base;
 	clk_writel(CAMSYS_CG_SET, CAM_CG);
 #endif
 
@@ -1732,8 +1750,13 @@ static void __init mt_mmsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
-#if CG_BOOTUP_PDN
 	mmsys_config_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(MM_CG_CLR0, MM_DISABLE_CG0);
+	clk_writel(MM_CG_CLR1, MM_DISABLE_CG1);
+#endif
+#if CG_BOOTUP_PDN
 	clk_writel(MM_CG_SET0, MM_0_CG);
 	clk_writel(MM_CG_SET1, MM_1_CG);
 	clk_writel(MM_DUMMY_CG_SET0, ~MM_DUMMY_0_CG);
@@ -1766,12 +1789,13 @@ static void __init mt_vdecsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
+	vdec_gcon_base = base;
+
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x00000111, base + vdec0_cg_regs.set_ofs);
-	mt_reg_sync_writel(0x00000001, base + vdec1_cg_regs.set_ofs);
+	clk_writel(VDEC_CKEN_SET, VDEC_DISABLE_CG);
+	clk_writel(LARB_CKEN_SET, LARB_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	vdec_gcon_base = base;
 	clk_writel(VDEC_CKEN_CLR, VDEC_CG);
 	clk_writel(LARB_CKEN_CLR, LARB_CG);
 #endif
@@ -1801,11 +1825,13 @@ static void __init mt_vencsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+
+	venc_gcon_base = base;
+
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x00001111, base + venc_cg_regs.clr_ofs);
+	clk_clrl(VENC_CG_SET, VENC_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	venc_gcon_base = base;
 	clk_clrl(VENC_CG_CON, VENC_CG);
 #endif
 
@@ -1835,11 +1861,13 @@ static void __init mt_audiosys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
+	audio_base = base;
+
 #if MT_CCF_BRINGUP
-	clk_writel(AUDIO_TOP_CON0, 0x800c4000);
+	clk_writel(AUDIO_TOP_CON0, AUDIO_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	audio_base = base;
+
 	clk_writel(AUDIO_TOP_CON0, clk_readl(AUDIO_TOP_CON0) | AUD_0_CG);
 #endif
 

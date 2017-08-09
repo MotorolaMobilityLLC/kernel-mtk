@@ -19,16 +19,11 @@
 
 #include "clk-mtk-v1.h"
 #include "clk-pll-v1.h"
-#include "clk-mt6797-pll.h"
+#include "clk-mt6757-pll.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#if defined(CONFIG_ARCH_MT6797)
-#define MT_CCF_BRINGUP  0
-#else
-#define MT_CCF_BRINGUP	0
-#endif
-
+#define MT_CCF_BRINGUP  1
 #endif
 
 #ifndef GENMASK
@@ -240,10 +235,6 @@ static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate, unsigned l
 
 static unsigned long clk_sdm_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-	pr_debug("[CCF] %s: %s: parent_rate=%lu\n", __func__, __clk_get_name(hw->clk), parent_rate);
-	return 0;
-#endif				/* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -255,6 +246,11 @@ static unsigned long clk_sdm_pll_recalc_rate(struct clk_hw *hw, unsigned long pa
 
 	u32 vco_freq;
 	unsigned long r;
+
+#if MT_CCF_BRINGUP
+		pr_debug("[CCF] %s: %s: parent_rate=%lu\n", __func__, __clk_get_name(hw->clk), parent_rate);
+		return 0;
+#endif				/* MT_CCF_BRINGUP */
 
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
@@ -572,10 +568,6 @@ static void clk_univ_pll_disable(struct clk_hw *hw)
 
 static unsigned long clk_univ_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
-	return 0;
-#endif				/* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -586,6 +578,11 @@ static unsigned long clk_univ_pll_recalc_rate(struct clk_hw *hw, unsigned long p
 
 	u32 vco_freq;
 	unsigned long r;
+
+#if MT_CCF_BRINGUP
+		pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+		return 0;
+#endif				/* MT_CCF_BRINGUP */
 
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
@@ -779,10 +776,6 @@ static void clk_aud_pll_disable(struct clk_hw *hw)
 
 static unsigned long clk_aud_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 {
-#if MT_CCF_BRINGUP
-	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
-	return 0;
-#endif				/* MT_CCF_BRINGUP */
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 
 	u32 con0 = readl_relaxed(pll->base_addr);
@@ -794,6 +787,11 @@ static unsigned long clk_aud_pll_recalc_rate(struct clk_hw *hw, unsigned long pa
 
 	u32 vco_freq;
 	unsigned long r;
+
+#if MT_CCF_BRINGUP
+		pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+		return 0;
+#endif				/* MT_CCF_BRINGUP */
 
 	parent_rate = parent_rate ? parent_rate : 26000000;
 
@@ -911,8 +909,8 @@ static int clk_spm_pll_enable(struct clk_hw *hw)
 	u32 r;
 
 #if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s\n", __clk_get_name(hw->clk));*/
 
@@ -947,8 +945,8 @@ static void clk_spm_pll_disable(struct clk_hw *hw)
 	u32 r;
 
 #if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return;*/
+	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+	return;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s: PLL_AO: %d\n",
 		__clk_get_name(hw->clk), !!(pll->flags & PLL_AO));*/
@@ -977,8 +975,8 @@ static unsigned long clk_spm_pll_recalc_rate(
 		unsigned long parent_rate)
 {
 #if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 
 	return 208000000;
@@ -992,8 +990,8 @@ static long clk_spm_pll_round_rate(
 {
 
 #if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));*/
-	/*return 0;*/
+	pr_debug("[CCF] %s: %s: S\n", __func__, __clk_get_name(hw->clk));
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 /*	pr_debug("%s, rate: %lu\n", __clk_get_name(hw->clk), rate);*/
 
@@ -1008,9 +1006,9 @@ static int clk_spm_pll_set_rate(
 
 
 #if MT_CCF_BRINGUP
-/*	pr_debug("[CCF] %s: %s: rate=%lu, parent_rate=%lu\n", __func__,
-		 __clk_get_name(hw->clk), rate, parent_rate);*/
-	/*return 0;*/
+	pr_debug("[CCF] %s: %s: rate=%lu, parent_rate=%lu\n", __func__,
+		 __clk_get_name(hw->clk), rate, parent_rate);
+	return 0;
 #endif /* MT_CCF_BRINGUP */
 
 	return 208000000;

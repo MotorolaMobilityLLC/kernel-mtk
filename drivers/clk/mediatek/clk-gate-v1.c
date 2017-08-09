@@ -31,6 +31,9 @@
 #elif defined(CONFIG_ARCH_MT6797)
 #define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP  0
+#elif defined(CONFIG_ARCH_MT6757)
+#define MT_CCF_DEBUG	0
+#define MT_CCF_BRINGUP  1
 #else
 #define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
