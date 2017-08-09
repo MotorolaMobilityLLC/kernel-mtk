@@ -59,7 +59,7 @@ static unsigned long c2k_iram_base_seg2[2] = { 0 };
 
 #define AP_PLATFORM_INFO    "MT6735E1"
 
-#define ENABLE_C2K_EMI_PROTECTION	(0)
+#define ENABLE_C2K_EMI_PROTECTION	(1)
 #if ENABLE_C2K_EMI_PROTECTION
 #include <mach/emi_mpu.h>
 #endif
@@ -140,7 +140,7 @@ int modem_sdio_reserve_mem_of_init(struct reserved_mem *rmem)
 				  __func__, rmem->name,
 				  (unsigned long long)rptr, rsize);
 
-	if (strstr(CCCI_MD3_MEM_RESERVED_KEY, rmem->name) == 0) {
+	if (strstr(CCCI_MD3_MEM_RESERVED_KEY, rmem->name)) {
 		if (rsize < MD3_MEM_RAM_ROM) {
 			MTK_MEMCFG_LOG_AND_PRINTK("%s: reserve size=0x%x != 0x%x\n",
 						  __func__, rsize,
