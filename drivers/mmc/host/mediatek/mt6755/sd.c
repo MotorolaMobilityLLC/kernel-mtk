@@ -403,6 +403,10 @@ void msdc_dump_info(u32 id)
 		return;
 	}
 
+	host->prev_cmd_cause_dump++;
+	if (host->prev_cmd_cause_dump > 1)
+		return;
+
 	base = host->base;
 
 	/* 1: dump msdc hw register */
@@ -516,6 +520,7 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 			msdc_clk_enable(host);
 
 			msdc_dump_info(host->id);
+			host->prev_cmd_cause_dump = 0;
 		}
 		retry = 3;
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, div);
@@ -1260,8 +1265,7 @@ static void msdc_pm(pm_message_t state, void *data)
 			msdc_restore_timing_setting(host);
 
 			if (emmc_sleep_failed) {
-				msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
-				msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
+				msdc_card_reset(host->mmc);
 				mdelay(200);
 				mmc_card_clr_sleep(host->mmc->card);
 				emmc_sleep_failed = 0;
@@ -1927,6 +1931,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
  out:
 	host->cmd = NULL;
 
+	if (!cmd->data && !cmd->error)
+		host->prev_cmd_cause_dump = 0;
+
 	return cmd->error;
 }
 
@@ -2090,6 +2097,10 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 out:
 	host->cmd = NULL;
 	MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN, (0));
+
+	if (!cmd->data && !cmd->error)
+		host->prev_cmd_cause_dump = 0;
+
 	return cmd->error;
 }
 
@@ -2332,6 +2343,10 @@ check_fifo_end:
 	if (data->error)
 		ERR_MSG("read pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+
+	if (!data->error)
+		host->prev_cmd_cause_dump = 0;
+
 	return data->error;
 }
 
@@ -2517,6 +2532,9 @@ check_fifo_end:
 	if (data->error)
 		ERR_MSG("write pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+
+	if (!data->error)
+		host->prev_cmd_cause_dump = 0;
 
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
 	return data->error;
@@ -3318,6 +3336,8 @@ done:
 	if (mrq->cmd->error == (unsigned int)-ETIMEDOUT) {
 		if (mrq->cmd->opcode == MMC_SLEEP_AWAKE) {
 			if (mrq->cmd->arg & 0x8000) {
+				pr_err("Sleep_Awake CMD timeout, MSDC_PS %0x\n",
+					MSDC_READ32(MSDC_PS));
 				emmc_sleep_failed = 1;
 				mrq->cmd->error = 0x0;
 				pr_err("eMMC sleep CMD5 TMO will reinit\n");
@@ -5164,6 +5184,8 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 			     (mmc->ios.timing != MMC_TIMING_MMC_HS400))) {
 				done_to_mmc_core = 0;
 			}
+		} else {
+			host->prev_cmd_cause_dump = 0;
 		}
 		if (done_to_mmc_core) {
 			if (mrq->done)
@@ -5427,6 +5449,9 @@ tune:   /* DMA DATA transfer crc error */
 
 	if (host->dma_xfer)
 		msdc_irq_data_complete(host, data, 1);
+
+	if (data && !data->error)
+		host->prev_cmd_cause_dump = 0;
 
 	return IRQ_HANDLED;
 }

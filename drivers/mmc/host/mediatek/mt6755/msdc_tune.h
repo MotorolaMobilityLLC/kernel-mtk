@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef _MSDC_TUNE_H_
 #define _MSDC_TUNE_H_
 
@@ -35,10 +48,6 @@
 #define MSDC2_CLK_TX_VALUE              0
 
 /* Declared in msdc_tune.c */
-/* FIX ME: move it to another file */
-extern int g_ett_tune;
-extern int g_reset_tune;
-
 extern u32 sdio_tune_flag; /* FIX ME: check if it can be removed since it is set
 			      but referenced */
 

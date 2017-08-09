@@ -461,6 +461,7 @@ struct msdc_host {
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
 #endif
+	int                     prev_cmd_cause_dump;
 };
 
 enum {
