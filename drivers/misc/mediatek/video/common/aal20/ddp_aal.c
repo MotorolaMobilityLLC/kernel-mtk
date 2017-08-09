@@ -58,7 +58,7 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 #ifdef MTK_DISP_IDLE_LP
 	disp_exit_idle_ex(caller);
 #endif
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	if (need_kick == 1)
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 			primary_display_idlemgr_kick(__func__, 1);
