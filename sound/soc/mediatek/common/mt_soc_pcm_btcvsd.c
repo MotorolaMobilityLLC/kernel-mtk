@@ -183,9 +183,12 @@ void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
 	spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 	if (btsco.pTX != NULL) {
 		for (i = 0; i < uBlockSize; i++) {
-			memcpy((void *)(btsco.pTX->TempPacketBuf + (SCO_TX_ENCODE_SIZE * i)),
-					(void *)(btsco.pTX->PacketBuf[btsco.pTX->iPacket_r & SCO_TX_PACKET_MASK]),
-					SCO_TX_ENCODE_SIZE);
+			memcpy(btsco.pTX->TempPacketBuf + (SCO_TX_ENCODE_SIZE * i),
+			       (btsco.pTX->PacketBuf +
+				(btsco.pTX->iPacket_r & SCO_TX_PACKET_MASK) *
+				SCO_TX_ENCODE_SIZE),
+			       SCO_TX_ENCODE_SIZE);
+
 			btsco.pTX->iPacket_r++;
 		}
 	}
@@ -678,10 +681,9 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 					LOGBT("mcmcpy PacketBuf+BTSCOTX_WriteIdx=%lx data_w_ptr=%p copy_size=%d\n",
 							(unsigned long)(btsco.pTX->PacketBuf+BTSCOTX_WriteIdx),
 							data_w_ptr, copy_size);
-					if (copy_from_user
-							((void *)((kal_uint8 *)btsco.pTX->PacketBuf + BTSCOTX_WriteIdx),
-							(const void __user *)data_w_ptr,
-							copy_size)) {
+					if (copy_from_user(btsco.pTX->PacketBuf + BTSCOTX_WriteIdx,
+							   data_w_ptr,
+							   copy_size)) {
 						pr_debug("AudDrv_btcvsd_write Fail copy_from_user\n");
 						return -1;
 					}
@@ -714,10 +716,9 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 					LOGBT("mcmcpy PacketBuf+BTSCOTX_WriteIdx=%lx data_w_ptr=%p size_1=%d\n",
 							(unsigned long)(btsco.pTX->PacketBuf+BTSCOTX_WriteIdx),
 							data_w_ptr, size_1);
-					if ((copy_from_user
-							((void *)((kal_uint8 *)btsco.pTX->PacketBuf + BTSCOTX_WriteIdx),
-							(const void __user *)data_w_ptr,
-							size_1))) {
+					if (copy_from_user(btsco.pTX->PacketBuf + BTSCOTX_WriteIdx,
+							   data_w_ptr,
+							   size_1)) {
 						pr_debug("AudDrv_write Fail 1 copy_from_user\n");
 						return -1;
 					}
@@ -736,10 +737,9 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 					LOGBT("PacketBuf+BTSCOTX_WriteIdx+size_1=%lx data_w_ptr+size_1=%p size_2=%x\n",
 						(unsigned long)(btsco.pTX->PacketBuf+BTSCOTX_WriteIdx+size_1),
 						data_w_ptr+size_1, size_2);
-					if ((copy_from_user
-							((void *)((kal_uint8 *)btsco.pTX->PacketBuf),
-							(const void __user *)(data_w_ptr + size_1),
-							size_2))) {
+					if (copy_from_user(btsco.pTX->PacketBuf,
+							   data_w_ptr + size_1,
+							   size_2)) {
 						pr_debug("AudDrv_btcvsd_write Fail 2 copy_from_user\n");
 						return -1;
 					}

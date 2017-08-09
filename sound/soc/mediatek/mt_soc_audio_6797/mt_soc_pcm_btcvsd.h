@@ -187,12 +187,12 @@ typedef struct {
 } BT_SCO_RX_T;
 
 typedef struct {
-		kal_uint8         PacketBuf[SCO_TX_PACKER_BUF_NUM][SCO_TX_ENCODE_SIZE];
-		kal_int32        iPacket_w;
-		kal_int32        iPacket_r;
-		kal_uint8         TempPacketBuf[BT_SCO_PACKET_180];
-		kal_bool          fUnderflow;
-		kal_uint32      u4BufferSize; /* TX packetbuf size */
+	kal_uint8 PacketBuf[SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE];
+	kal_int32 iPacket_w;
+	kal_int32 iPacket_r;
+	kal_uint8 TempPacketBuf[BT_SCO_PACKET_180];
+	kal_bool fUnderflow;
+	kal_uint32 u4BufferSize; /* TX packetbuf size */
 } BT_SCO_TX_T;
 
 typedef struct {

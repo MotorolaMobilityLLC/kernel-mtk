@@ -140,7 +140,6 @@ static snd_pcm_uframes_t mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream
 {
 	snd_pcm_uframes_t frame = 0;
 	kal_uint32 byte = 0;
-
 	static kal_int32 packet_diff;
 
 	unsigned long flags;
@@ -180,7 +179,6 @@ static snd_pcm_uframes_t mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream
 	spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
 	return frame;
-
 }
 
 static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
