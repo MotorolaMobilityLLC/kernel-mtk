@@ -3642,7 +3642,7 @@ UNLOCK_OL:
 					aee_record_cpu_dvfs_cb(7);
 
 #ifdef CONFIG_CPU_FREQ
-					_cpufreq_dfs_locked(p->mt_policy, p, p->nr_opp_tbl - 1, action);
+					_cpufreq_dfs_locked(NULL, p, p->nr_opp_tbl - 1, action);
 #endif
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					if (!enable_cpuhvfs) {
