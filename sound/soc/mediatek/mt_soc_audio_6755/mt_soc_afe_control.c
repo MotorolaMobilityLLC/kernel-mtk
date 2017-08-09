@@ -1415,8 +1415,8 @@ bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 			break;
 		case Soc_Aud_InterConnectionInput_I21:
 		case Soc_Aud_InterConnectionInput_I22:
-			break;
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xc46C2662, 0xffffffff);
+			break;
 		default:
 			break;
 		}
@@ -1487,6 +1487,7 @@ bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 			break;
 		case Soc_Aud_InterConnectionOutput_O25:
 			Afe_Set_Reg(AFE_SGEN_CON0, 0xec6c26c2, 0xffffffff);
+			break;
 		default:
 			break;
 		}
