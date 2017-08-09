@@ -512,6 +512,8 @@ int mmc_of_parse(struct mmc_host *host)
 		host->caps |= MMC_CAP_UHS_DDR50;
 	if (of_find_property(np, "cap-power-off-card", &len))
 		host->caps |= MMC_CAP_POWER_OFF_CARD;
+	if (of_find_property(np, "cap-mmc-hw-reset", &len))
+		host->caps |= MMC_CAP_HW_RESET;
 	if (of_find_property(np, "cap-sdio-irq", &len))
 		host->caps |= MMC_CAP_SDIO_IRQ;
 	if (of_find_property(np, "full-pwr-cycle", &len))
