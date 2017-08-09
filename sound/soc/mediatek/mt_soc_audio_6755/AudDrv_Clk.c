@@ -478,7 +478,7 @@ void AudDrv_Clk_Off(void)
 
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_err("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		PRINTK_AUD_CLK("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 #ifdef PM_MANAGER_API
 #ifdef CONFIG_MTK_CLKMGR
 		if (disable_clock(MT_CG_AUDIO_AFE, "AUDIO"))
