@@ -38,11 +38,18 @@
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #include "mobicore_driver_api.h"
 #include "drrpmb_Api.h"
+#include "drrpmb_gp_Api.h"
 
-static struct mc_uuid_t rpmb_uuid = DRV_DBG_UUID;
+static struct mc_uuid_t rpmb_uuid = RPMB_UUID;
 static struct mc_session_handle rpmb_session = {0};
 static u32 rpmb_devid = MC_DEVICE_ID_DEFAULT;
 static dciMessage_t *rpmb_dci;
+
+static struct mc_uuid_t rpmb_gp_uuid = RPMB_GP_UUID;
+static struct mc_session_handle rpmb_gp_session = {0};
+static u32 rpmb_gp_devid = MC_DEVICE_ID_DEFAULT;
+static dciMessage_t *rpmb_gp_dci;
+
 #endif
 
 #define RPMB_NAME "emmcrpmb"
@@ -76,6 +83,8 @@ static unsigned char *rpmb_buffer;
 
 struct task_struct *open_th;
 struct task_struct *rpmbDci_th;
+struct task_struct *rpmb_gp_Dci_th;
+
 
 static struct cdev rpmb_dev;
 static struct class *rpmb_class;
@@ -186,6 +195,17 @@ int emmc_rpmb_switch(struct mmc_card *card, struct emmc_rpmb_blk_data *md)
 
 	if (main_md->part_curr == md->part_type)
 		return 0;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (card->ext_csd.cmdq_mode_en) {
+		ret = mmc_blk_cmdq_switch(card, 0);
+		if (ret) {
+			MSG(ERR, "CQ disabled failed!!!(%x)\n", ret);
+			return ret;
+		}
+	}
+
+#endif
 
 	if (mmc_card_mmc(card)) {
 		u8 part_config = card->ext_csd.part_config;
@@ -1157,6 +1177,7 @@ int emmc_rpmb_listenDci(void *data)
 	return 0;
 }
 
+
 static int emmc_rpmb_open_session(void)
 {
 	int cnt = 0;
@@ -1195,9 +1216,9 @@ static int emmc_rpmb_open_session(void)
 
 		/* open session */
 		mc_ret = mc_open_session(&rpmb_session,
-								 &rpmb_uuid,
-								 (uint8_t *) rpmb_dci,
-								 sizeof(dciMessage_t));
+					 &rpmb_uuid,
+					 (uint8_t *) rpmb_dci,
+					 sizeof(dciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
@@ -1224,10 +1245,184 @@ static int emmc_rpmb_open_session(void)
 		MSG(ERR, "%s, open session failed!!!\n", __func__);
 
 
-	MSG(INFO, "%s end, mc_ret = %x\n", __func__, mc_ret);
+	MSG(ERR, "%s end, mc_ret = %x\n", __func__, mc_ret);
 
 	return mc_ret;
 }
+
+static int emmc_rpmb_gp_execute(u32 cmdId)
+{
+	int ret;
+
+	struct mmc_card *card = mtk_msdc_host[0]->mmc->card;
+	struct emmc_rpmb_req rpmb_req;
+
+	switch (cmdId) {
+
+	case DCI_RPMB_CMD_READ_DATA:
+		MSG(INFO, "%s: DCI_RPMB_CMD_READ_DATA.\n", __func__);
+
+		rpmb_req.type = RPMB_READ_DATA;
+		rpmb_req.blk_cnt = rpmb_gp_dci->request.blks;
+		rpmb_req.addr = rpmb_gp_dci->request.addr;
+		rpmb_req.data_frame = rpmb_gp_dci->request.frame;
+
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_read_data failed!!(%x)\n", __func__, ret);
+
+		break;
+
+	case DCI_RPMB_CMD_GET_WCNT:
+		MSG(INFO, "%s: DCI_RPMB_CMD_GET_WCNT.\n", __func__);
+
+		rpmb_req.type = RPMB_GET_WRITE_COUNTER;
+		rpmb_req.blk_cnt = rpmb_gp_dci->request.blks;
+		rpmb_req.addr = rpmb_gp_dci->request.addr;
+		rpmb_req.data_frame = rpmb_gp_dci->request.frame;
+
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n", __func__, ret);
+
+		break;
+
+	case DCI_RPMB_CMD_WRITE_DATA:
+		MSG(INFO, "%s: DCI_RPMB_CMD_WRITE_DATA.\n", __func__);
+
+		rpmb_req.type = RPMB_WRITE_DATA;
+		rpmb_req.blk_cnt = rpmb_gp_dci->request.blks;
+		rpmb_req.addr = rpmb_gp_dci->request.addr;
+		rpmb_req.data_frame = rpmb_gp_dci->request.frame;
+
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n", __func__, ret);
+
+		break;
+
+	default:
+		MSG(ERR, "%s: receive an unknown command id(%d).\n", __func__, cmdId);
+		break;
+
+	}
+
+	return 0;
+}
+
+int emmc_rpmb_gp_listenDci(void *data)
+{
+	enum mc_result mc_ret;
+	u32 cmdId;
+
+	MSG(INFO, "%s: DCI listener.\n", __func__);
+
+	for (;;) {
+
+		MSG(INFO, "%s: Waiting for notification\n", __func__);
+
+		/* Wait for notification from SWd */
+		mc_ret = mc_wait_notification(&rpmb_gp_session, MC_INFINITE_TIMEOUT);
+		if (mc_ret != MC_DRV_OK) {
+			MSG(ERR, "%s: mcWaitNotification failed, mc_ret=%d\n", __func__, mc_ret);
+			break;
+		}
+
+		cmdId = rpmb_gp_dci->command.header.commandId;
+
+		MSG(INFO, "%s: wait notification done!! cmdId = %x\n", __func__, cmdId);
+
+
+		/* Received exception. */
+		mc_ret = emmc_rpmb_gp_execute(cmdId);
+
+		/* Notify the STH*/
+		mc_ret = mc_notify(&rpmb_gp_session);
+		if (mc_ret != MC_DRV_OK) {
+			MSG(ERR, "%s: mcNotify returned: %d\n", __func__, mc_ret);
+			break;
+		}
+	}
+
+	return 0;
+}
+
+static int emmc_rpmb_gp_open_session(void)
+{
+	int cnt = 0;
+	enum mc_result mc_ret = MC_DRV_ERR_UNKNOWN;
+
+	MSG(INFO, "%s start\n", __func__);
+
+	do {
+		msleep(2000);
+
+		/* open device */
+		mc_ret = mc_open_device(rpmb_gp_devid);
+		if (mc_ret != MC_DRV_OK) {
+			MSG(ERR, "%s, mc_open_device failed: %d\n", __func__, mc_ret);
+			cnt++;
+			continue;
+		}
+
+		MSG(INFO, "%s, mc_open_device success.\n", __func__);
+
+
+		/* allocating WSM for DCI */
+		mc_ret = mc_malloc_wsm(rpmb_gp_devid, 0, sizeof(dciMessage_t), (uint8_t **)&rpmb_gp_dci, 0);
+		if (mc_ret != MC_DRV_OK) {
+			mc_close_device(rpmb_gp_devid);
+			MSG(ERR, "%s, mc_malloc_wsm failed: %d\n", __func__, mc_ret);
+			cnt++;
+			continue;
+		}
+
+		MSG(INFO, "%s, mc_malloc_wsm success.\n", __func__);
+		MSG(INFO, "uuid[0]=%d, uuid[1]=%d, uuid[2]=%d, uuid[3]=%d\n",
+			rpmb_gp_uuid.value[0],
+			rpmb_gp_uuid.value[1],
+			rpmb_gp_uuid.value[2],
+			rpmb_gp_uuid.value[3]
+			);
+
+		rpmb_gp_session.device_id = rpmb_gp_devid;
+
+		/* open session */
+		mc_ret = mc_open_session(&rpmb_gp_session,
+					 &rpmb_gp_uuid,
+					 (uint8_t *) rpmb_gp_dci,
+					 sizeof(dciMessage_t));
+
+		if (mc_ret != MC_DRV_OK) {
+			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
+
+			mc_ret = mc_free_wsm(rpmb_gp_devid, (uint8_t *)rpmb_gp_dci);
+			MSG(ERR, "%s, free wsm result (%d)\n", __func__, mc_ret);
+
+			mc_ret = mc_close_device(rpmb_gp_devid);
+			MSG(ERR, "%s, try free wsm and close device\n", __func__);
+			cnt++;
+			continue;
+		}
+
+		/* create a thread for listening DCI signals */
+		rpmb_gp_Dci_th = kthread_run(emmc_rpmb_gp_listenDci, NULL, "rpmb_gp_Dci");
+		if (IS_ERR(rpmb_gp_Dci_th))
+			MSG(ERR, "%s, init kthread_run failed!\n", __func__);
+		else
+			break;
+
+	} while (cnt < 30);
+
+	if (cnt >= 30)
+		MSG(ERR, "%s, open session failed!!!\n", __func__);
+
+
+	MSG(ERR, "%s end, mc_ret = %x\n", __func__, mc_ret);
+
+	return mc_ret;
+}
+
 
 static int emmc_rpmb_thread(void *context)
 {
@@ -1236,7 +1431,10 @@ static int emmc_rpmb_thread(void *context)
 	MSG(INFO, "%s start\n", __func__);
 
 	ret = emmc_rpmb_open_session();
-	MSG(INFO, "%s end, ret = %x\n", __func__, ret);
+	MSG(INFO, "%s emmc_rpmb_open_session, ret = %x\n", __func__, ret);
+
+	ret = emmc_rpmb_gp_open_session();
+	MSG(INFO, "%s emmc_rpmb_gp_open_session, ret = %x\n", __func__, ret);
 
 	return 0;
 }
