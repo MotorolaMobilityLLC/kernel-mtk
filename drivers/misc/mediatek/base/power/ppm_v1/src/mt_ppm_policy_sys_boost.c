@@ -224,7 +224,7 @@ static int ppm_sysboost_core_proc_show(struct seq_file *m, void *v)
 
 	/* update user core setting */
 	list_for_each_entry_reverse(data, &sysboost_user_list, link)
-		seq_printf(m, "%d: %d\n", data->user, data->min_core_num);
+		seq_printf(m, "[%d] %s: %d\n", data->user, data->user_name, data->min_core_num);
 
 	seq_printf(m, "target_boost_core = %d\n", target_boost_core);
 
@@ -256,7 +256,7 @@ static int ppm_sysboost_freq_proc_show(struct seq_file *m, void *v)
 
 	/* update user core setting */
 	list_for_each_entry_reverse(data, &sysboost_user_list, link)
-		seq_printf(m, "%d: %d\n", data->user, data->min_freq);
+		seq_printf(m, "[%d] %s: %d\n", data->user, data->user_name, data->min_freq);
 
 	seq_printf(m, "target_boost_freq = %d\n", target_boost_freq);
 

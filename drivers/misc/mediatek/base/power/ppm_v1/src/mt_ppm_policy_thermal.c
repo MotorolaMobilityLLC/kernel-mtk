@@ -45,6 +45,12 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 	thermal_policy.req.power_budget = limited_power;
 	thermal_policy.is_activated = (limited_power) ? true : false;
 	ppm_unlock(&thermal_policy.lock);
+
+#ifdef PPM_FAST_ATM_SUPPORT
+	if (mutex_is_locked(&ppm_main_info.lock))
+		goto end;
+#endif
+
 	ppm_task_wakeup();
 
 end:
