@@ -78,7 +78,7 @@
 #define DPI_MASKREG32(cmdq, REG, MASK, VALUE)           DISP_REG_MASK((cmdq), (REG), (VALUE), (MASK))
 
 #if !defined(CONFIG_MTK_LEGACY)
-static void __iomem *clk_apmixed_base;
+/*static void __iomem *clk_apmixed_base;*/
 #ifndef TVDPLL_CON0
 #define TVDPLL_CON0             (clk_apmixed_base + 0x260)
 #endif
