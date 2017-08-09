@@ -2,7 +2,7 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-$(CONFIG_MTK_LCM) += mt65xx_lcm_list.o lcm_drv.o
+obj-$(CONFIG_MTK_LCM) += mt65xx_lcm_list.o
 
 LCM_LISTS := $(subst ",,$(CONFIG_CUSTOM_KERNEL_LCM))
 obj-$(CONFIG_MTK_LCM) += $(foreach LCM,$(LCM_LISTS),$(LCM)/)
