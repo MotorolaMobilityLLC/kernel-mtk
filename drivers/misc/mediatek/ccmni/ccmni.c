@@ -469,10 +469,8 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			if (atomic_read(&ccmni->usage) > 0) {
 				atomic_dec(&ccmni->usage);
 
-				if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)
-					netif_tx_disable(dev);
-				else
-					netif_stop_queue(dev);
+				netif_tx_disable(dev);
+
 				/* stop queue won't stop Tx watchdog (ndo_tx_timeout) */
 				timeout = (ifr->ifr_ifru.ifru_ivalue & 0xFFFF0000) >> 16;
 				if (timeout == 0)
@@ -488,12 +486,9 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			}
 		} else {
 			if (atomic_read(&ccmni->usage) <= 0) {
-				if (netif_running(dev)) {
-					if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)
-						netif_tx_wake_all_queues(dev);
-					else
-						netif_wake_queue(dev);
-				}
+				if (netif_running(dev))
+					netif_tx_wake_all_queues(dev);
+
 				dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
 				atomic_inc(&ccmni->usage);
 
