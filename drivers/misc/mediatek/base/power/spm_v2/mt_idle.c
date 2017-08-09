@@ -490,6 +490,7 @@ static unsigned long mcidle_block_cnt[NR_CPUS][NR_REASONS] = { {0}, {0} };
 u64 mcidle_timer_before_wfi[NR_CPUS];
 static unsigned int idle_spm_lock;
 
+#ifndef USING_STD_TIMER_OPS
 /* Workaround of static analysis defect*/
 int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 {
@@ -512,6 +513,7 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 
 	return ret;
 }
+#endif
 
 long int idle_get_current_time_ms(void)
 {

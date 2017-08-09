@@ -62,17 +62,13 @@ unsigned int clkdiv, unsigned int cmp,
 void (*func)(unsigned long), unsigned int flags);
 
 extern int free_gpt(unsigned int id);
-
 extern int start_gpt(unsigned int id);
 extern int stop_gpt(unsigned int id);
 extern int restart_gpt(unsigned int id);
-
 extern int gpt_is_counting(unsigned int id);
-
 extern int gpt_set_cmp(unsigned int id, unsigned int val);
 extern int gpt_get_cmp(unsigned int id, unsigned int *ptr);
 extern int gpt_get_cnt(unsigned int id, unsigned int *ptr);
-
 extern int gpt_check_irq(unsigned int id);
 extern int gpt_check_and_ack_irq(unsigned int id);
 

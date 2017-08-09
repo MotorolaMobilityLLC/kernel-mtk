@@ -82,23 +82,9 @@ static struct gpt_device gpt_devs[NR_GPTS];
 
 static DEFINE_SPINLOCK(gpt_lock);
 
-/************************return GPT4 count(before init clear) to
-record kernel start time between LK and kernel****************************/
-#define GPT4_1MS_TICK       ((u32)(13000))        /* 1000000 / 76.92ns = 13000.520 */
-#define GPT4_BASE           (AP_XGPT_BASE + 0x0040)
-static unsigned int boot_time_value;
-
 #define mt_gpt_set_reg(val, addr)       mt_reg_sync_writel(__raw_readl(addr)|(val), addr)
 #define mt_gpt_clr_reg(val, addr)       mt_reg_sync_writel(__raw_readl(addr)&~(val), addr)
 
-static unsigned int xgpt_boot_up_time(void)
-{
-unsigned int tick;
-
-	tick = __raw_readl(GPT4_BASE + GPT_CNT);
-	return ((tick + (GPT4_1MS_TICK - 1)) / GPT4_1MS_TICK);
-}
-/*********************************************************/
 
 static struct gpt_device *id_to_dev(unsigned int id)
 {
@@ -457,17 +443,6 @@ static inline void setup_clkevt(u32 freq)
 	clockevents_register_device(evt);
 }
 
-static  void setup_syscnt(void)
-{
-	/* map cpuxgpt address */
-	mt_cpuxgpt_map_base();
-   /* set cpuxgpt free run,cpuxgpt always free run & oneshot no need to set */
-   /* set cpuxgpt 13Mhz clock */
-	set_cpuxgpt_clk(CLK_DIV2);
-   /* enable cpuxgpt */
-	enable_cpuxgpt();
-}
-
 static void __init mt_gpt_init(struct device_node *node)
 {
 	int i;
@@ -507,8 +482,6 @@ static void __init mt_gpt_init(struct device_node *node)
 	if (!freq_32k)
 		BUG();
 
-	boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
-
 	pr_alert("mt_gpt_init: tmr_regs=0x%lx, tmr_irq=%d, freq=%d\n",
 		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq, freq);
 
@@ -520,264 +493,9 @@ static void __init mt_gpt_init(struct device_node *node)
 	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
 	setup_clkevt(freq_32k);
 
-	/* use cpuxgpt as syscnt */
-	setup_syscnt();
 	pr_alert("mt_gpt_init: get_cnt_GPT2=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
 		gpt_update_unlock(save_flags);
 }
 
-static void release_gpt_dev_locked(struct gpt_device *dev)
-{
-__gpt_reset(dev);
 
-handlers[dev->id] = noop;
-dev->func = NULL;
-
-dev->flags = 0;
-}
-
-/* gpt is counting or not */
-static int __gpt_get_status(struct gpt_device *dev)
-{
-	return !!(__raw_readl(dev->base_addr + GPT_CON) & GPT_CON_ENABLE);
-}
-
-/**********************	export area *********************/
-int request_gpt(unsigned int id, unsigned int mode, unsigned int clksrc,
-		unsigned int clkdiv, unsigned int cmp,
-		void (*func)(unsigned long), unsigned int flags)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (dev->flags & GPT_IN_USE) {
-	pr_err("%s: GPT%d is in use!\n", __func__, (id + 1));
-	return -EBUSY;
-}
-
-gpt_update_lock(save_flags);
-setup_gpt_dev_locked(dev, mode, clksrc, clkdiv, cmp, func, flags);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(request_gpt);
-
-int free_gpt(unsigned int id)
-{
-unsigned long save_flags;
-
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (!(dev->flags & GPT_IN_USE))
-	return 0;
-
-gpt_update_lock(save_flags);
-release_gpt_dev_locked(dev);
-gpt_update_unlock(save_flags);
-return 0;
-}
-EXPORT_SYMBOL(free_gpt);
-
-int start_gpt(unsigned int id)
-{
-unsigned long save_flags;
-
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (!(dev->flags & GPT_IN_USE)) {
-		pr_err("%s: GPT%d is not in use!\n", __func__, id);
-	return -EBUSY;
-}
-
-gpt_update_lock(save_flags);
-__gpt_clrcnt(dev);
-__gpt_start(dev);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(start_gpt);
-
-int stop_gpt(unsigned int id)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (!(dev->flags & GPT_IN_USE)) {
-	pr_err("%s: GPT%d is not in use!\n", __func__, id);
-	return -EBUSY;
-}
-
-gpt_update_lock(save_flags);
-__gpt_stop(dev);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(stop_gpt);
-
-int restart_gpt(unsigned int id)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (!(dev->flags & GPT_IN_USE)) {
-	pr_err("%s: GPT%d is not in use!\n", __func__, id);
-	return -EBUSY;
-}
-
-gpt_update_lock(save_flags);
-__gpt_start(dev);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(restart_gpt);
-
-int gpt_is_counting(unsigned int id)
-{
-unsigned long save_flags;
-int is_counting;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (!(dev->flags & GPT_IN_USE)) {
-	pr_err("%s: GPT%d is not in use!\n", __func__, id);
-	return -EBUSY;
-}
-
-gpt_update_lock(save_flags);
-is_counting = __gpt_get_status(dev);
-gpt_update_unlock(save_flags);
-
-return is_counting;
-}
-EXPORT_SYMBOL(gpt_is_counting);
-
-int gpt_set_cmp(unsigned int id, unsigned int val)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev)
-	return -EINVAL;
-
-if (dev->mode == GPT_FREE_RUN)
-	return -EINVAL;
-
-gpt_update_lock(save_flags);
-__gpt_set_cmp(dev, val, 0);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(gpt_set_cmp);
-
-int gpt_get_cmp(unsigned int id, unsigned int *ptr)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev || !ptr)
-	return -EINVAL;
-
-gpt_update_lock(save_flags);
-__gpt_get_cmp(dev, ptr);
-gpt_update_unlock(save_flags);
-
-return 0;
-}
-EXPORT_SYMBOL(gpt_get_cmp);
-
-int gpt_get_cnt(unsigned int id, unsigned int *ptr)
-{
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
-
-if (!dev || !ptr)
-	return -EINVAL;
-
-if (!(dev->features & GPT_FEAT_64_BIT)) {
-	__gpt_get_cnt(dev, ptr);
-} else {
-	gpt_update_lock(save_flags);
-	__gpt_get_cnt(dev, ptr);
-	gpt_update_unlock(save_flags);
-}
-
-return 0;
-}
-EXPORT_SYMBOL(gpt_get_cnt);
-
-int gpt_check_irq(unsigned int id)
-{
-unsigned int mask = 0x1 << id;
-	unsigned int status = __raw_readl(GPT_IRQSTA);
-return (status & mask) ? 1 : 0;
-}
-EXPORT_SYMBOL(gpt_check_irq);
-
-
-int gpt_check_and_ack_irq(unsigned int id)
-{
-unsigned int mask = 0x1 << id;
-unsigned int status = __raw_readl(GPT_IRQSTA);
-
-if (status & mask) {
-		mt_reg_sync_writel(mask, GPT_IRQACK);
-		return 1;
-} else {
-		return 0;
-}
-}
-EXPORT_SYMBOL(gpt_check_and_ack_irq);
-
-unsigned int gpt_boot_time(void)
-{
-	return boot_time_value;
-}
-EXPORT_SYMBOL(gpt_boot_time);
-
-int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv)
-{
-	unsigned long save_flags;
-	struct gpt_device *dev = id_to_dev(id);
-
-	if (!dev)
-		return -EINVAL;
-
-	if (!(dev->flags & GPT_IN_USE)) {
-		pr_err("%s: GPT%d is not in use!\n", __func__, id);
-		return -EBUSY;
-	}
-
-	gpt_update_lock(save_flags);
-	__gpt_stop(dev);
-	__gpt_set_clk(dev, clksrc, clkdiv);
-	__gpt_start(dev);
-	gpt_update_unlock(save_flags);
-
-	return 0;
-}
-EXPORT_SYMBOL(gpt_set_clk);
-
-/************************************************************************************************/
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,apxgpt", mt_gpt_init);
