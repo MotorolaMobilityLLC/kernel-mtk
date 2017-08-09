@@ -2672,6 +2672,10 @@ out:
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 
+int thres_ll = 8;
+int thres_l = 8;
+int thres_b = 15;
+
 static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id id, int new_opp_idx)
 {
 	unsigned long flags;
@@ -2711,9 +2715,22 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	if (new_opp_idx == -1)
 		new_opp_idx = p->idx_opp_tbl;
 
-	if (do_dvfs_stress_test)
+	if (do_dvfs_stress_test) {
 		/* new_opp_idx = jiffies & 0x7; */
 		new_opp_idx = jiffies & 0xF;
+
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+			if (new_opp_idx < thres_b)
+				new_opp_idx = thres_b;
+
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
+			if (new_opp_idx < thres_l)
+				new_opp_idx = thres_l;
+
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
+			if (new_opp_idx < thres_ll)
+				new_opp_idx = thres_ll;
+	}
 	else
 		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
@@ -3120,10 +3137,10 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	target_cci_volt = _search_available_volt(p_cci, target_cci_freq);
 	}
 
-	cpufreq_ver("DVFS: MCSI: target_cci (F,V) = (%d, %d)\n", target_cci_freq, target_cci_volt);
-
 	/* Determine dominating voltage */
 	target_cci_volt = MAX(target_cci_volt, MAX(volt[MT_CPU_DVFS_LL], volt[MT_CPU_DVFS_L]));
+	cpufreq_ver("DVFS: MCSI: target_cci (F,V) = (%d, %d)\n", target_cci_freq, target_cci_volt);
+
 	new_cci_opp_idx = _search_available_freq_idx_under_v(p_cci, target_cci_volt);
 
 	cpufreq_ver("DVFS: MCSI: Final Result, target_cci_volt = %d, target_cci_freq = %d\n",
@@ -3240,7 +3257,10 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 	unsigned int new_opp_idx;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	return 0;
+
+	if (do_dvfs_stress_test != 1)
+		return 0;
+
 	if (policy->cpu >= num_possible_cpus()
 	    || cpufreq_frequency_table_target(policy, id_to_cpu_dvfs(id)->freq_tbl_for_cpufreq,
 					      target_freq, relation, &new_opp_idx)
@@ -4091,6 +4111,105 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	return count;
 }
 
+static int cpufreq_up_threshold_ll_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "thres_ll = %d\n", thres_ll);
+
+	return 0;
+}
+
+static ssize_t cpufreq_up_threshold_ll_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned long flags;
+	int mv;
+	int rc;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &mv);
+	if (rc < 0) {
+		cpufreq_err("echo 0 to 15 > /proc/cpufreq/cpufreq_volt\n");
+	} else {
+		cpufreq_lock(flags);
+		cpufreq_ver("thres_ll change to %d\n", thres_ll);
+		thres_ll = mv;
+		cpufreq_unlock(flags);
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
+static int cpufreq_up_threshold_l_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "thres_l = %d\n", thres_l);
+
+	return 0;
+}
+
+static ssize_t cpufreq_up_threshold_l_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned long flags;
+	int mv;
+	int rc;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &mv);
+	if (rc < 0) {
+		cpufreq_err("echo 0 to 15 > /proc/cpufreq/cpufreq_volt\n");
+	} else {
+		cpufreq_lock(flags);
+		cpufreq_ver("thres_l change to %d\n", thres_l);
+		thres_l = mv;
+		cpufreq_unlock(flags);
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
+static int cpufreq_up_threshold_b_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "thres_b = %d\n", thres_b);
+
+	return 0;
+}
+
+static ssize_t cpufreq_up_threshold_b_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned long flags;
+	int mv;
+	int rc;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &mv);
+	if (rc < 0) {
+		cpufreq_err("echo 0 to 15 > /proc/cpufreq/cpufreq_volt\n");
+	} else {
+		cpufreq_lock(flags);
+		cpufreq_ver("thres_b change to %d\n", thres_b);
+		thres_b = mv;
+		cpufreq_unlock(flags);
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 #define PROC_FOPS_RW(name)							\
 	static int name ## _proc_open(struct inode *inode, struct file *file)	\
 {									\
@@ -4128,6 +4247,9 @@ PROC_FOPS_RW(cpufreq_oppidx);
 PROC_FOPS_RW(cpufreq_freq);
 PROC_FOPS_RW(cpufreq_volt);
 PROC_FOPS_RW(cpufreq_turbo_mode);
+PROC_FOPS_RW(cpufreq_up_threshold_ll);
+PROC_FOPS_RW(cpufreq_up_threshold_l);
+PROC_FOPS_RW(cpufreq_up_threshold_b);
 
 static int _create_procfs(void)
 {
@@ -4145,6 +4267,9 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_debug),
 		PROC_ENTRY(cpufreq_stress_test),
 		PROC_ENTRY(cpufreq_power_mode),
+		PROC_ENTRY(cpufreq_up_threshold_ll),
+		PROC_ENTRY(cpufreq_up_threshold_l),
+		PROC_ENTRY(cpufreq_up_threshold_b),
 	};
 
 	const struct pentry cpu_entries[] = {
