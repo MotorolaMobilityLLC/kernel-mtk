@@ -1,0 +1,6 @@
+# Power Related
+config MTK_PMIC
+	bool "MediaTek PMIC driver"
+	default y
+	---help---
+	  MediaTek PMIC driver
