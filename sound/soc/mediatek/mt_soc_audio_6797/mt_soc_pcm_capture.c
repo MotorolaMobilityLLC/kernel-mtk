@@ -282,13 +282,15 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	runtime->dma_bytes = params_buffer_bytes(hw_params);
 
 	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
-		substream->runtime->dma_bytes, substream) == 0)
+		substream->runtime->dma_bytes, substream) == 0) {
 		pr_warn("AllocateAudioSram success\n");
-	else if (Capture_dma_buf->area) {
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, false);
+	} else if (Capture_dma_buf->area) {
 		pr_warn("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area, (long) Capture_dma_buf->addr);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, true);
 		mCaptureUseSram = true;
 		AudDrv_Emi_Clk_On();
 	} else {

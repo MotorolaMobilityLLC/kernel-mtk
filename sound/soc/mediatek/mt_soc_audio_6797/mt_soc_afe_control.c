@@ -97,6 +97,7 @@
 /* #include <asm/mach-types.h> */
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/mt_boot_common.h>
+#include <mt-plat/mt_lpae.h>
 #include "AudDrv_Common.h"
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
@@ -2906,7 +2907,9 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 			if (Audio_dma_buf[MemBlock]->area == NULL) {
 				pr_debug("dma_alloc_coherent\n");
 				Audio_dma_buf[MemBlock]->area =
-				    dma_alloc_coherent(pDev, Buffer_length, &Audio_dma_buf[MemBlock]->addr, GFP_KERNEL);
+				    dma_alloc_coherent(pDev, Buffer_length,
+					&Audio_dma_buf[MemBlock]->addr,
+					GFP_KERNEL | GFP_DMA);
 				if (Audio_dma_buf[MemBlock]->area)
 					Audio_dma_buf[MemBlock]->bytes = Buffer_length;
 			}
@@ -4303,5 +4306,50 @@ int freeAudioSram(void *user)
 	return 0;
 }
 
+bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram)
+{
+	bool highBitEnable = enable_4G() & usingdram;
+
+	pr_debug("%s MemBlock = %d usingdram = %d\n",
+		 __func__,
+		 MemBlock,
+		 usingdram);
+
+	switch (MemBlock) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 0, 0x1 << 0);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 1, 0x1 << 1);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 6, 0x1 << 6);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DAI:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 5, 0x1 << 5);
+		break;
+	case Soc_Aud_Digital_Block_MEM_AWB:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 3, 0x1 << 3);
+		break;
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 4, 0x1 << 4);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 2, 0x1 << 2);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 7, 0x1 << 7);
+		break;
+	case Soc_Aud_Digital_Block_MEM_HDMI:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 8, 0x1 << 8);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL3:
+		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 11, 0x1 << 11);
+		break;
+	default:
+		break;
+	}
+	return true;
+}
 
 

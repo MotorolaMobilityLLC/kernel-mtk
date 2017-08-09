@@ -239,4 +239,6 @@ int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_add
 	unsigned int mSramLength, void *user);
 int freeAudioSram(void *user);
 
+bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
+
 #endif

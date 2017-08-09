@@ -265,11 +265,13 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 		substream->runtime->dma_bytes, substream) == 0) {
 		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes,
 			substream->runtime->dma_addr, substream->runtime->dma_area);
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
 		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 		substream->runtime->dma_area = FMTX_Playback_dma_buf->area;
 		substream->runtime->dma_addr = FMTX_Playback_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true);
 		mPlaybackDramState = true;
 		AudDrv_Emi_Clk_On();
 		SetFMTXBuffer(substream, hw_params);

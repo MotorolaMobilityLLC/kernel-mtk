@@ -217,6 +217,7 @@ static int mtk_i2s2_adc2_pcm_hw_params(struct snd_pcm_substream *substream,
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Adc2_Capture_dma_buf->area;
 		runtime->dma_addr = Adc2_Capture_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 	} else {
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}

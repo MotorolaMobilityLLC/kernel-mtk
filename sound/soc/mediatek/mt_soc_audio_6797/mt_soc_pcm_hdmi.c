@@ -601,11 +601,13 @@ static int mtk_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
 		    params_buffer_bytes(hw_params);
 		runtime->dma_area = HDMI_dma_buf->area;
 		runtime->dma_addr = HDMI_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, true);
 #else
 		runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 		runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
 		HDMI_dma_buf->bytes = runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->buffer_size = runtime->dma_bytes;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, false);
 #endif
 
 	} else {
@@ -1149,17 +1151,12 @@ static int mtk_asoc_pcm_hdmi_new(struct snd_soc_pcm_runtime *rtd)
 
 static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform)
 {
-
-	HDMI_dma_buf = kmalloc(sizeof(struct snd_dma_buffer), GFP_KERNEL);
-	memset_io((void *)HDMI_dma_buf, 0, sizeof(struct snd_dma_buffer));
-	PRINTK_AUD_HDMI("mtk_afe_hdmi_probe dma_alloc_coherent HDMI_dma_buf->addr=0x%lx\n",
-			(long)HDMI_dma_buf->addr);
-
-	HDMI_dma_buf->area = dma_alloc_coherent(platform->dev,
-						HDMI_MAX_BUFFER_SIZE,
-						&HDMI_dma_buf->addr, GFP_KERNEL);
-	if (HDMI_dma_buf->area)
-		HDMI_dma_buf->bytes = HDMI_MAX_BUFFER_SIZE;
+	pr_warn("%s\n", __func__);
+	/* allocate dram */
+	AudDrv_Allocate_mem_Buffer(platform->dev,
+				   Soc_Aud_Digital_Block_MEM_HDMI,
+				   HDMI_MAX_BUFFER_SIZE);
+	HDMI_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_HDMI);
 
 	snd_soc_add_platform_controls(platform, Audio_snd_hdmi_controls,
 				      ARRAY_SIZE(Audio_snd_hdmi_controls));
