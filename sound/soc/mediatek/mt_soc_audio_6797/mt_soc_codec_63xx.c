@@ -1320,6 +1320,9 @@ static void TurnOnDacPower(void)
 		    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
 		     0x300), 0xffff);
 
+	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
+	/* pmic rxif sck inverse */
+
 	Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0xffff);
 	/* turn on dl */
 	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -4203,6 +4206,9 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_H,
 			GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12 | 0x300,
 			0xffff);
+
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
+		/* pmic rxif sck inverse */
 
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0x0001);	/* turn off mute function and turn on dl */
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0x0001);	/* set DL in normal path, not from sine gen table */
