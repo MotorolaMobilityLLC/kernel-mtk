@@ -37,7 +37,6 @@
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
-#include <mt-plat/mt_typedefs.h>
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif

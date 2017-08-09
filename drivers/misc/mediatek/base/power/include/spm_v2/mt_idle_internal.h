@@ -13,6 +13,10 @@
 #include "mt_idle_mt6797.h"
 
 #endif
+#undef DRV_Reg32
+#define IDLE_READ_REGISTER_UINT32(reg)	(*(volatile unsigned int * const)(reg))
+#define DRV_Reg32(x)	IDLE_READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
+
 
 /*
  * Common declarations of MT6755/MT6797

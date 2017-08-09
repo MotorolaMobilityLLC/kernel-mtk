@@ -1,7 +1,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include <mt-plat/mt_typedefs.h>
 #include <mt-plat/upmu_common.h>
 
 #include "mt_spm.h"

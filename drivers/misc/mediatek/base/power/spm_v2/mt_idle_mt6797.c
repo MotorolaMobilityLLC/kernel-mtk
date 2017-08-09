@@ -1,7 +1,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include <mt-plat/mt_typedefs.h>
 #include <mach/mt_spm_mtcmos_internal.h>
 
 #include "mt_idle_internal.h"
