@@ -399,7 +399,7 @@ static void _mt_eem_aee_init(void)
 	#define eem_warning(fmt, args...)   pr_warn(EEM_TAG fmt, ##args)
 	#define eem_notice(fmt, args...)    pr_notice(EEM_TAG fmt, ##args)
 	#define eem_info(fmt, args...)      pr_info(EEM_TAG fmt, ##args)
-	#define eem_debug(fmt, args...)     pr_debug(EEM_TAG fmt, ##args)
+	#define eem_debug(fmt, args...)     /* pr_debug(EEM_TAG fmt, ##args) */
 #endif
 
 	#if EN_ISR_LOG /* For Interrupt use */
