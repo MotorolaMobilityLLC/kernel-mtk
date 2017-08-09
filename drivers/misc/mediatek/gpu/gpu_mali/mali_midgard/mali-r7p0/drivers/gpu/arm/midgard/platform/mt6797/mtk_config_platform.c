@@ -523,8 +523,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	dev_err(kbdev->dev, "xxxx clk_ap_dmau:%p\n", config->clk_ap_dma);
 #endif
 
-	config->max_volt = 1125;
-	config->max_freq = mt_gpufreq_get_freq_by_idx(0);
+	config->max_volt = 1077;
+	config->max_freq = mt_gpufreq_get_freq_by_idx(1);
 	config->min_volt = 850;
 	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-2);
 

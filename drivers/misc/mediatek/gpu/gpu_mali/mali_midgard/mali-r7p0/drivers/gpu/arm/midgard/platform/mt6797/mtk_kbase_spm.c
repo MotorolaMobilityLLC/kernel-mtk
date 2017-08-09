@@ -242,7 +242,9 @@ void mtk_kbase_spm_update_table(void)
 	mtk_kbase_spm_wait();
 	for (i = 0; i < num; ++i)
 	{
+		unsigned int freq = mt_gpufreq_get_freq_by_idx(i);
 		unsigned int volt = mt_gpufreq_get_volt_by_idx(i) / 100; // to mA
+		DVFS_GPU_write32(SPM_TAB_F(num, i), freq);
 		DVFS_GPU_write32(SPM_TAB_V(num, i), volt);
 	}
 
