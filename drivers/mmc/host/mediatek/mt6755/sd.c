@@ -9239,15 +9239,15 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #ifdef FPGA_PLATFORM
 	u16 l_val;
 #endif
-	if (0 == strcmp(pdev->dev.of_node->name, "MSDC0")) {
+	if (0 == strcmp(pdev->dev.of_node->name, "msdc0")) {
 #ifndef CFG_DEV_MSDC0
 		return 1;
 #endif
-	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC1")) {
+	} else if (0 == strcmp(pdev->dev.of_node->name, "msd1")) {
 #ifndef CFG_DEV_MSDC1
 		return 1;
 #endif
-	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC2")) {
+	} else if (0 == strcmp(pdev->dev.of_node->name, "msdc2")) {
 #ifndef CFG_DEV_MSDC2
 		return 1;
 #endif
@@ -9355,7 +9355,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 #ifdef CFG_DEV_MSDC0
 	/* Get custom node in Device tree, if not set, use default */
-	if (strcmp(pdev->dev.of_node->name, "MSDC0") == 0) {
+	if (strcmp(pdev->dev.of_node->name, "msdc0") == 0) {
 		host_id = 0;
 		hw = &msdc0_hw;
 		pdev->id = 0;
@@ -9366,7 +9366,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 #endif
 #ifdef CFG_DEV_MSDC1
-	if (strcmp(pdev->dev.of_node->name, "MSDC1") == 0) {
+	if (strcmp(pdev->dev.of_node->name, "msdc1") == 0) {
 		host_id = 1;
 		hw = &msdc1_hw;
 		pdev->id = 1;
@@ -9418,14 +9418,14 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		}
 	}
 #if defined(CFG_DEV_MSDC2)
-	if (strcmp(pdev->dev.of_node->name, "MSDC2") == 0) {
+	if (strcmp(pdev->dev.of_node->name, "msdc2") == 0) {
 		hw = &msdc2_hw;
 		pdev->id = 2;
 		pr_err("platform_data hw:0x%p, is msdc2_hw\n", hw);
 	}
 #endif
 #if defined(CFG_DEV_MSDC3)
-	if (strcmp(pdev->dev.of_node->name, "MSDC3") == 0) {
+	if (strcmp(pdev->dev.of_node->name, "msdc3") == 0) {
 		hw = &msdc3_hw;
 		pdev->id = 3;
 		pr_err("platform_data hw:0x%p, is msdc3_hw\n", hw);
@@ -9920,10 +9920,10 @@ static int msdc_drv_resume(struct platform_device *pdev)
 #endif
 #ifdef CONFIG_OF
 static const struct of_device_id msdc_of_ids[] = {
-	{.compatible = "mediatek,MSDC0",},
-	{.compatible = "mediatek,MSDC1",},
-	{.compatible = "mediatek,MSDC2",},
-	{.compatible = "mediatek,MSDC3",},
+	{.compatible = "mediatek,msdc0",},
+	{.compatible = "mediatek,msdc1",},
+	{.compatible = "mediatek,msdc2",},
+	{.compatible = "mediatek,msdc3",},
 	{},
 };
 #endif
