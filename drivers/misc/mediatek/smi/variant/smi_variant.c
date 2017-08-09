@@ -978,7 +978,7 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 	larb_reg_backup(idx);
 
 	_mtk_smi_larb_put(dev, false);
-	dev_warn(dev, "runtime suspend larb%d\n", idx);
+	dev_dbg(dev, "runtime suspend larb%d\n", idx);
 	return 0;
 }
 
@@ -1001,7 +1001,7 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 	larb_reg_restore(idx);
 
 	_mtk_smi_larb_put(dev, false);
-	dev_warn(dev, "runtime resume larb%d\n", idx);
+	dev_dbg(dev, "runtime resume larb%d\n", idx);
 	return 0;
 }
 
