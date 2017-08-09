@@ -419,11 +419,13 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case FB_LAYER_GET_EN:
 	{
 		PM_LAYER_EN layers;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		OVL_BASIC_STRUCT *ovl_all;
+		int i = 0;
 
+		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
+		if (NULL == ovl_all)
+			return -ENOMEM;
 #ifdef PRIMARY_THREE_OVL_CASCADE
-		int i;
-
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
 		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
@@ -431,15 +433,15 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			layers.layer_en[i] = (ovl_all[i].layer_en ? 1 : 0);
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
-		layers.layer_en[0] = (ovl_all[0].layer_en ? 1 : 0);
-		layers.layer_en[1] = (ovl_all[1].layer_en ? 1 : 0);
-		layers.layer_en[2] = (ovl_all[2].layer_en ? 1 : 0);
-		layers.layer_en[3] = (ovl_all[3].layer_en ? 1 : 0);
+		layers.layer_en[i + 0] = (ovl_all[0].layer_en ? 1 : 0);
+		layers.layer_en[i + 1] = (ovl_all[1].layer_en ? 1 : 0);
+		layers.layer_en[i + 2] = (ovl_all[2].layer_en ? 1 : 0);
+		layers.layer_en[i + 3] = (ovl_all[3].layer_en ? 1 : 0);
 #ifdef OVL_CASCADE_SUPPORT
-		layers.layer_en[4] = (ovl_all[4].layer_en ? 1 : 0);
-		layers.layer_en[5] = (ovl_all[5].layer_en ? 1 : 0);
-		layers.layer_en[6] = (ovl_all[6].layer_en ? 1 : 0);
-		layers.layer_en[7] = (ovl_all[7].layer_en ? 1 : 0);
+		layers.layer_en[i + 4] = (ovl_all[4].layer_en ? 1 : 0);
+		layers.layer_en[i + 5] = (ovl_all[5].layer_en ? 1 : 0);
+		layers.layer_en[i + 6] = (ovl_all[6].layer_en ? 1 : 0);
+		layers.layer_en[i + 7] = (ovl_all[7].layer_en ? 1 : 0);
 #endif
 #endif
 		pr_debug("[LAYER_GET_EN]:L0:%d L1:%d L2:%d L3:%d\n", ovl_all[0].layer_en,
@@ -449,8 +451,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case FB_LAYER_GET_INFO:
 	{
 		PM_LAYER_INFO layer_info;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		OVL_BASIC_STRUCT *ovl_all;
 
+		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
+		if (NULL == ovl_all)
+			return -ENOMEM;
 		if (copy_from_user(&layer_info, (void __user *)argp, sizeof(layer_info))) {
 			pr_debug("[TE_SET_ENABLE]: copy_from_user failed! line:%d\n",
 				 __LINE__);
@@ -493,8 +498,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int mapped_size = 0;
 		unsigned int real_mva = 0;
 		unsigned int real_size = 0;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		OVL_BASIC_STRUCT *ovl_all;
 
+		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
+		if (NULL == ovl_all)
+			return -ENOMEM;
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
