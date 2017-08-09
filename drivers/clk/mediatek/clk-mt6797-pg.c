@@ -111,12 +111,14 @@ static struct subsys_ops VEN_sys_ops;
 static struct subsys_ops AUDIO_sys_ops;
 static struct subsys_ops C2K_sys_ops;
 
-static void __iomem *infracfg_base;
+static void __iomem *infracfg_base;/*infracfg_ao*/
 static void __iomem *spm_base;
+static void __iomem *infra_base;/*infracfg*/
+
 
 #define INFRACFG_REG(offset)		(infracfg_base + offset)
 #define SPM_REG(offset)			(spm_base + offset)
-
+#define INFRA_REG(offset)	(infra_base + offset)
 /**************************************
  * for non-CPU MTCMOS
  **************************************/
@@ -164,13 +166,18 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define MDSYS_INTF_INFRA_PWR_CON       SPM_REG(0x0360)
 #endif
 
-#define INFRA_TOPAXI_PROTECTEN		INFRACFG_REG(0x0220)	/* correct */
-#define INFRA_TOPAXI_PROTECTSTA1	INFRACFG_REG(0x0228)	/* correct */
+#define INFRA_TOPAXI_PROTECTEN		INFRACFG_REG(0x0220)
+#define INFRA_TOPAXI_PROTECTSTA0	INFRACFG_REG(0x0224)
+#define INFRA_TOPAXI_PROTECTSTA1	INFRACFG_REG(0x0228)
+
 #if 0
 #define INFRA_TOPAXI_PROTECTEN_1	INFRACFG_REG(0x0250)	/* correct */
 #define INFRA_TOPAXI_PROTECTSTA1_1	INFRACFG_REG(0x0258)	/* correct */
 #define C2K_SPM_CTRL			INFRACFG_REG(0x0368)	/* correct */
 #endif
+
+#define INFRA_BUS_IDLE_STA5	INFRA_REG(0x0190)
+
 
 #define  SPM_PROJECT_CODE    0xB16
 /* Define MTCMOS power control */
@@ -389,9 +396,11 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 }
 
 #ifdef TOPAXI_PROTECT_LOCK
+#define _TOPAXI_TIMEOUT_CNT_ 4000
 int spm_topaxi_protect(unsigned int mask_value, int en)
 {
 	unsigned long flags;
+	int count = 0;
 
 	spm_mtcmos_noncpu_lock(flags);
 
@@ -401,6 +410,9 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
 			#endif
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
 		}
 	} else {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~(mask_value));
@@ -408,10 +420,22 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
 			#endif
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
 		}
 	}
 
 	spm_mtcmos_noncpu_unlock(flags);
+
+	if (count > _TOPAXI_TIMEOUT_CNT_) {
+		pr_err("TOPAXI Bus Protect Timeout Error!!\n");
+		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN));
+		pr_err("INFRA_TOPAXI_PROTECTSTA0 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA0));
+		pr_err("INFRA_TOPAXI_PROTECTSTA1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
+		pr_err("INFRA_BUS_IDLE_STA5 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA5));
+		BUG();
+	}
 /*
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
@@ -2531,7 +2555,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 };
 
 static void __init init_clk_scpsys(void __iomem *infracfg_reg,
-				   void __iomem *spm_reg, struct clk_onecell_data *clk_data)
+				   void __iomem *spm_reg, void __iomem *infra_reg, struct clk_onecell_data *clk_data)
 {
 	int i;
 	struct clk *clk;
@@ -2539,6 +2563,7 @@ static void __init init_clk_scpsys(void __iomem *infracfg_reg,
 
 	infracfg_base = infracfg_reg;
 	spm_base = spm_reg;
+	infra_base = infra_reg;
 
 	syss[SYS_MD1].ctl_addr = MD1_PWR_CON;
 	syss[SYS_CONN].ctl_addr = CONN_PWR_CON;
@@ -2621,10 +2646,12 @@ static void __init mt_scpsys_init(struct device_node *node)
 	struct clk_onecell_data *clk_data;
 	void __iomem *infracfg_reg;
 	void __iomem *spm_reg;
+	void __iomem *infra_reg;
 	int r;
 
 	infracfg_reg = get_reg(node, 0);
 	spm_reg = get_reg(node, 1);
+	infra_reg = get_reg(node, 2);
 
 	if (!infracfg_reg || !spm_reg) {
 		pr_err("clk-pg-mt6755: missing reg\n");
@@ -2636,7 +2663,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 	clk_data = alloc_clk_data(SCP_NR_SYSS);
 
-	init_clk_scpsys(infracfg_reg, spm_reg, clk_data);
+	init_clk_scpsys(infracfg_reg, spm_reg, infra_reg, clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)

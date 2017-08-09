@@ -810,7 +810,7 @@
 
 		scpsys: scpsys@10001000 {
 			compatible = "mediatek,mt6797-scpsys";
-			reg = <0x10001000 0x1000>, <0x10006000 0x1000>;
+			reg = <0x10001000 0x1000>, <0x10006000 0x1000>, <0x10201000 0x1000>;
 			#clock-cells = <1>;
 		};
 
