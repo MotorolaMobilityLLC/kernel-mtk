@@ -343,6 +343,7 @@ config ARCH_MT6797
 	select MTK_POWER_GS
 	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
+	select MTK_CPU_STRESS
 	help
 	  This enables support for MediaTek MT6797
 	  Support for aarch64/aarch32 Architecture
