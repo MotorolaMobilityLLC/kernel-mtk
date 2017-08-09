@@ -2160,13 +2160,14 @@ static bool mt_afe_is_memif_enable(void)
 
 static bool mt_afe_is_ul_memif_enable(void)
 {
-	int i;
-
-	for (i = MT_AFE_DIGITAL_BLOCK_MEM_VUL; i < MT_AFE_MEM_INTERFACE_NUM; i++) {
-		if ((audio_mem_if[i]->state) == true)
-			return true;
-	}
-	return false;
+	if (audio_mem_if[MT_AFE_DIGITAL_BLOCK_MEM_VUL]->state ||
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_MEM_DAI]->state ||
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_MEM_AWB]->state ||
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_MEM_MOD_DAI]->state ||
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_MEM_VUL_DATA2]->state)
+		return true;
+	else
+		return false;
 }
 
 static uint32_t mt_afe_get_apll_by_rate(uint32_t sample_rate)
