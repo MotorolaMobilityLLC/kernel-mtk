@@ -2118,6 +2118,7 @@ UINT_32 kalReadExtCfg(IN P_GLUE_INFO_T prGlueInfo)
 * @param pucEthDestAddr Destination address
 * @param pfgIs1X            802.1x packet or not
 * @param pfgIsPAL           BT over Wi-Fi packet or not
+* @prGenUse		    General used param
 *
 * @retval TRUE      Success to extract information
 * @retval FALSE     Fail to extract correct information
@@ -2131,7 +2132,8 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				   OUT PUINT_32 pu4PacketLen,
 				   OUT PUINT_8 pucEthDestAddr,
 				   OUT PBOOLEAN pfgIs1X,
-				   OUT PBOOLEAN pfgIsPAL, OUT PUINT_8 pucNetworkType)
+				   OUT PBOOLEAN pfgIsPAL, OUT PUINT_8 pucNetworkType,
+				   OUT PVOID prGenUse)
 {
 
 	UINT_32 u4PacketLen;
@@ -2175,20 +2177,28 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 		PUINT_8 pucEapol = &aucLookAheadBuf[ETH_HLEN];
 		UINT_8 ucEapolType = pucEapol[1];
 		UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
+		/*
+		 * generate a seq number used to trace security frame TX
+		 */
+		if (prGenUse)
+			*(UINT_8 *)prGenUse = nicIncreaseCmdSeqNum(prGlueInfo->prAdapter);
 
 		switch (ucEapolType) {
 		case 0: /* eap packet */
-			DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
-					pucEapol[4], pucEapol[5], pucEapol[7]);
+			DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d, seqNo %d\n",
+					pucEapol[4], pucEapol[5], pucEapol[7],
+					prGenUse ? *(UINT_8 *)prGenUse : 0);
 			break;
 		case 1: /* eapol start */
-			DBGLOG(TX, INFO, "<TX> EAPOL: start\n");
+			DBGLOG(TX, INFO, "<TX> EAPOL: start, seqNo %d\n",
+					prGenUse ? *(UINT_8 *)prGenUse : 0);
 			break;
 		case 3: /* key */
 			DBGLOG(TX, INFO,
-				"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+				"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x... seqNo %d\n",
 				u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
-				pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+				pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24],
+				prGenUse ? *(UINT_8 *)prGenUse : 0);
 			break;
 		}
 		*pfgIs1X = TRUE;
@@ -2239,20 +2249,25 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				PUINT_8 pucEapol = &aucLookAheadBuf[ETH_SNAP_OFFSET + 5];
 				UINT_8 ucEapolType = pucEapol[1];
 				UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
+				if (prGenUse)
+					*(UINT_8 *)prGenUse = nicIncreaseCmdSeqNum(prGlueInfo->prAdapter);
 
 				switch (ucEapolType) {
 				case 0: /* eap packet */
-					DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
-							pucEapol[4], pucEapol[5], pucEapol[7]);
+					DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d, seqNo %d\n",
+							pucEapol[4], pucEapol[5], pucEapol[7],
+							prGenUse ? *(UINT_8 *)prGenUse : 0);
 					break;
 				case 1: /* eapol start */
-					DBGLOG(TX, INFO, "<TX> EAPOL: start\n");
+					DBGLOG(TX, INFO, "<TX> EAPOL: start, seqNo %d\n",
+							prGenUse ? *(UINT_8 *)prGenUse : 0);
 					break;
 				case 3: /* key */
 					DBGLOG(TX, INFO,
-						"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+						"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x seqNo %d\n",
 						u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
-						pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+						pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24],
+						prGenUse ? *(UINT_8 *)prGenUse : 0);
 					break;
 				}
 				*pfgIs1X = TRUE;

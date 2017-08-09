@@ -1907,8 +1907,14 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 
 		/* 4 <3> handling upon dequeue result */
 		if (eFrameAction == FRAME_ACTION_DROP_PKT) {
+			if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME)
+				DBGLOG(TX, WARN, "Drop Security frame seqNo=%d\n",
+					prCmdInfo->ucCmdSeqNum);
 			wlanReleaseCommand(prAdapter, prCmdInfo);
 		} else if (eFrameAction == FRAME_ACTION_QUEUE_PKT) {
+			if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME)
+				DBGLOG(TX, INFO, "Queue Security frame seqNo=%d\n",
+					prCmdInfo->ucCmdSeqNum);
 			QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
 		} else if (eFrameAction == FRAME_ACTION_TX_PKT) {
 			/* 4 <4> Send the command */
@@ -3545,6 +3551,7 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 	ULONG u4SysTime;
 	UINT_8 ucNetworkType;
 	P_CMD_INFO_T prCmdInfo;
+	UINT_8 ucCmdSeqNo = 0;
 
 	/* 1x data packets */
 	KAL_SPIN_LOCK_DECLARATION();
@@ -3560,7 +3567,8 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 						aucEthDestAddr,
 						&fgIs1x,
 						&fgIsPAL,
-						&ucNetworkType) == TRUE) {
+						&ucNetworkType,
+						&ucCmdSeqNo) == TRUE) {
 		/* almost TRUE except frame length < 14B */
 
 		if (fgIs1x == FALSE)
@@ -3584,6 +3592,7 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 			prCmdInfo->u2InfoBufLen = (UINT_16) u4PacketLen;
 			prCmdInfo->pucInfoBuffer = NULL;
 			prCmdInfo->prPacket = prPacket;
+			prCmdInfo->ucCmdSeqNum = ucCmdSeqNo;
 #if 0
 			prCmdInfo->ucStaRecIndex = qmGetStaRecIdx(prAdapter,
 								  aucEthDestAddr,
@@ -3652,6 +3661,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 
 	/* free the packet */
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
+	DBGLOG(TX, INFO, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
 }
 
 /*----------------------------------------------------------------------------*/

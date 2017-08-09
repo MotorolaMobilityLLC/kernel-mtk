@@ -1316,7 +1316,8 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				   OUT PUINT_32 pu4PacketLen,
 				   OUT PUINT_8 pucEthDestAddr,
 				   OUT PBOOLEAN pfgIs1X,
-				   OUT PBOOLEAN pfgIsPAL, OUT PUINT_8 pucNetworkType);
+				   OUT PBOOLEAN pfgIsPAL, OUT PUINT_8 pucNetworkType,
+				   OUT PVOID prGenUse);
 
 VOID
 kalOidComplete(IN P_GLUE_INFO_T prGlueInfo,

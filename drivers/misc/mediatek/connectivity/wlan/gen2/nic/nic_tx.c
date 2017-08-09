@@ -1944,7 +1944,8 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 					       &ucPriorityParam,
 					       &u4PacketLen,
 					       aucEthDestAddr,
-					       &fgIs1x, &fgIsPAL, &ucNetworkType) == FALSE) {
+					       &fgIs1x, &fgIsPAL, &ucNetworkType,
+					       NULL) == FALSE) {
 		return FALSE;
 	}
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
