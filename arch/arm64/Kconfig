@@ -223,6 +223,9 @@ config ARCH_MT6753
 	select CPU_IDLE
 	select ARM_MT6735_CPUIDLE
 	select MTK_BASE_POWER
+	select PINCTRL
+	select PINCTRL_MT6735
+	select MFD_SYSCON
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers
