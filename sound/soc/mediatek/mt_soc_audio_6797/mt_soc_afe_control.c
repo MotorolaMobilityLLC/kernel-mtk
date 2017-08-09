@@ -2636,6 +2636,7 @@ bool SetHDMIdatalength(uint32 length)
 
 	pr_debug("%s length = %d\n ", __func__, length);
 	mHDMIOutput->mI2S_WLEN = length;
+	Afe_Set_Reg(AFE_HDMI_OUT_CON0, (length << 1), 1 << 1);
 
 	return true;
 }
