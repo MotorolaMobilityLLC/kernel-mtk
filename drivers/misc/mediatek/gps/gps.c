@@ -1007,6 +1007,8 @@ error:
 	if (ret == 0)
 		unregister_chrdev_region(devobj->devno, 1);
 	kfree(devobj);
+	kfree(drvobj);
+
 	return -1;
 }
 
