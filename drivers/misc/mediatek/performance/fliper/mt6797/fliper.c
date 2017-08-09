@@ -185,8 +185,8 @@ int cg_restore_threshold(void)
 #if 0
 	pr_debug(TAG"Restore CG bdw threshold %d %d -> %d %d\n",
 		cg_lpm_bw_threshold, cg_hpm_bw_threshold, CG_DEFAULT_LPM, CG_DEFAULT_HPM);
-	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 #endif
+	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 	return 0;
 }
 
