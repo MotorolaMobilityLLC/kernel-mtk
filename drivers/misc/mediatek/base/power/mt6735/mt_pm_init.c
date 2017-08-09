@@ -481,8 +481,8 @@ static int __init mt_power_management_init(void)
 #ifndef CONFIG_ARCH_MT6753
 	spm_module_init();
 	slp_module_init();
-	mt_clkmgr_init();
 #endif
+	mt_clkmgr_init();
 
 	/* mt_pm_log_init(); // power management log init */
 
