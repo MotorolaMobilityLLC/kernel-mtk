@@ -14,4 +14,10 @@ void mt_dcm_topck_on(void);
 void mt_dcm_peri_off(void);
 void mt_dcm_peri_on(void);
 
+int sync_dcm_set_cci_freq(unsigned int cci);
+int sync_dcm_set_mp0_freq(unsigned int mp0);
+int sync_dcm_set_mp1_freq(unsigned int mp1);
+int sync_dcm_set_mp2_freq(unsigned int mp2);
+
 #endif /* #ifndef __MT_DCM_H__ */
+
