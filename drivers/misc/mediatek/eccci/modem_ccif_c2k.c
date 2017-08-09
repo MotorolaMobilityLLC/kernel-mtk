@@ -1321,7 +1321,7 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag,
 
 	CCCI_INF_MSG(md->index, TAG, "dump MD1 exception memory start\n");
 	ccci_mem_dump(md->index, md1_excp_smem_vir, md1_excp_smem__size);
-	dump_c2k_boot_status(md);
+	/*dump_c2k_boot_status(md);*/
 
 	return 0;
 }
