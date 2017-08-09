@@ -3,8 +3,8 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/ \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/ \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/mt6797/ \
              -I$(srctree)/drivers/misc/mediatek/lcm/inc
 
@@ -17,17 +17,14 @@ subdir-ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
 
 ifeq ($(CONFIG_ARCH_MT6797),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6797/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6797/
 obj-y += $(subst ",,mt6797)/
 endif
 ifeq ($(CONFIG_ARCH_MT6797M),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6797m/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6797m/
 obj-y += $(subst ",,mt6797m)/
 endif
 ifeq ($(CONFIG_ARCH_MT6753),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6753/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6753/
 obj-y += $(subst ",,mt6753)/
 endif
 

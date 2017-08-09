@@ -3,19 +3,9 @@
 #
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-ifeq ($(CONFIG_ARCH_MT6735),y)
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/$(CONFIG_MTK_PLATFORM)/
-endif
-ifeq ($(CONFIG_ARCH_MT6735M),y)
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/$(CONFIG_MTK_PLATFORM)m/
-endif
-ifeq ($(CONFIG_ARCH_MT6753),y)
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/$(CONFIG_MTK_PLATFORM)/
-endif
-
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 
 ifneq ($(CONFIG_ARM64), y)
 # For arm32
