@@ -83,7 +83,7 @@ unsigned int es_base;
 #endif
 
 static const struct of_device_id masp_of_ids[] = {
-	{.compatible = "mediatek,SEJ",},
+	{.compatible = "mediatek,hacc",},
 	{}
 };
 

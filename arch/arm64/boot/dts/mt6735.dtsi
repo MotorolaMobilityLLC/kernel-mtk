@@ -750,6 +750,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 114 0x8>;
 		};
 
+		hacc@0x10008000 {
+			compatible = "mediatek,hacc";
+			reg = <0x10008000 0x1000>;
+			interrupts = <0 174 0x8>;
+		};
+
 		i2c0:I2C0@0x11007000 {
 			compatible = "mediatek,I2C0";
 			cell-index = <0>;

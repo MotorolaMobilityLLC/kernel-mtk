@@ -345,8 +345,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10007000 0x1000>;
 		};
 
-		SEJ@0x10008000 {
-			compatible = "mediatek,SEJ";
+		hacc@0x10008000 {
+			compatible = "mediatek,hacc";
 			reg = <0x10008000 0x1000>;
 			interrupts = <0 173 0x8>;
 		};
