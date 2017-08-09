@@ -48,6 +48,7 @@ void __iomem *DRAMCNAO_CHB_BASE_ADDR;
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
 unsigned char old_IC = 0;
+unsigned char DFS_type = 0;
 #if 0 /* if0 for tmp */
 static unsigned int enter_pdp_cnt;
 #endif /* if0 for tmp */
@@ -1698,14 +1699,30 @@ int get_ddr_type(void)
 }
 int dram_steps_freq(unsigned int step)
 {
-	int freq;
+	int freq = -1;
 
 	switch (step) {
 	case 0:
-		freq = 1800;
+		if (DFS_type == 1)
+			freq = 1866;
+		else if (DFS_type == 2)
+			freq = 1600;
+		else if (DFS_type == 3)
+			freq = 1700;
 		break;
 	case 1:
-		freq = 1300;
+		if (DFS_type == 1)
+			freq = 1600;
+		else if (DFS_type == 2)
+			freq = 1270;
+		else if (DFS_type == 3)
+			freq = 1270;
+		break;
+	case 2:
+		if (DFS_type == 1)
+			freq = 1270;
+		else
+			freq = -1;
 		break;
 	default:
 		return -1;
@@ -1954,7 +1971,14 @@ static int __init dram_test_init(void)
 	}
 
 	org_dram_data_rate = get_dram_data_rate();
-	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", org_dram_data_rate);
+	if (org_dram_data_rate == 1866)
+		DFS_type = 1;
+	else if (org_dram_data_rate == 1700)
+		DFS_type = 3;
+	else if (org_dram_data_rate == 1600)
+		DFS_type = 2;
+	pr_err("[DRAMC Driver] Dram Data Rate = %d;  DFS_type = %d\n",
+	org_dram_data_rate, DFS_type);
 
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");
