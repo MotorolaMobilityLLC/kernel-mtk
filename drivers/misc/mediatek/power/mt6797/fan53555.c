@@ -387,8 +387,8 @@ int fan53555_vosel(unsigned long val)
 	if (reg_val > 63)
 		reg_val = 63;
 
-	reg_val = reg_val | 0x80;
-	ret = fan53555_write_byte(0x00, reg_val);
+	ret = fan53555_config_interface(0x00, reg_val, 0x3F, 0);
+	ret = fan53555_config_interface(0x00, 0x1, 0x1, 7);
 
 	pr_notice("[fan53555_vosel] val=%ld, reg_val=%ld\n", val, reg_val);
 
