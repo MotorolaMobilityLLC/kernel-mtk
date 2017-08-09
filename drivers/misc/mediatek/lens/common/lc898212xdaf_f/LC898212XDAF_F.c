@@ -113,7 +113,7 @@ static void LC898212XD_init(void)
 
 	if (val1 == 0xb && val2 == 0x2) { /* EEPROM Version */
 
-		/* MTK define format - Everest stereo format , PDAF:2000 , Addr = 0x0F33*/
+		/* Mt define format - Ev stereo format , PDAF:2000 , Addr = 0x0F33*/
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F33, &val2);
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F34, &val1);
 		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -129,7 +129,7 @@ static void LC898212XD_init(void)
 
 	} else { /* Undefined Version */
 
-		/* Liteon define format - Everest IMX258 PDAF - remove Koli */
+		/* Li define format - Ev IMX258 PDAF - remove Koli */
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2);
 		HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -155,10 +155,10 @@ static void LC898212XD_init(void)
 			Hall_Min = HallMinCheck;
 
 			Hall_Max = HallMaxCheck;
-			/* Liteon define format - Everest IMX258 PDAF - end */
+			/* Li define format - Ev IMX258 PDAF - end */
 		} else {
 
-			/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 */
+			/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 */
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val2);
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F64, &val1);
 			HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -180,11 +180,11 @@ static void LC898212XD_init(void)
 				Hall_Off = val1;
 				/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
 				Hall_Bias = val2;
-				/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
 
 			} else {
 
-				/* MTK define format - Everest Bayer+Mono PDAF:2000 , Addr = 0x0F33 , Error Version */
+				/* Mt define format - Ev Bayer+Mono PDAF:2000 , Addr = 0x0F33 , Error Version */
 				s4EEPROM_ReadReg_LC898212XDAF_F(0x0F33, &val2);
 				s4EEPROM_ReadReg_LC898212XDAF_F(0x0F34, &val1);
 				HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -206,9 +206,9 @@ static void LC898212XD_init(void)
 					Hall_Off = val1;
 					/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F38, &val2); */
 					Hall_Bias = val2;
-					/* MTK define format - Everest Bayer+Mono , Error Version - End*/
+					/* Mt define format - Ev Bayer+Mono , Error Version - End*/
 				} else {
-					/* Jade Stereo IMX258 - Error Version */
+					/* Ja Stereo IMX258 - Error Version */
 					s4EEPROM_ReadReg_LC898212XDAF_F(0x0016, &val1);
 					s4EEPROM_ReadReg_LC898212XDAF_F(0x0015, &val2);
 					HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
