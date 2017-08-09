@@ -33,7 +33,9 @@
 #include <linux/of_irq.h>
 #include <linux/clk.h>
 #include <mt_cpufreq_hybrid.h>
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 #include <mtk_kbase_spm.h>
+#endif
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_helper.h>
 #endif
@@ -215,12 +217,14 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 			}
 		}
 		return 0;
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	case 7:
 		if (dvfs_gpu_pm_spin_lock_for_vgpu() != 0) {
 			dev_err(i2c->dev, "sema time out.\n");
 			return -EBUSY;
 		}
 		return 0;
+#endif
 	default:
 		return 0;
 	}
@@ -238,9 +242,11 @@ static int i2c_release_semaphore(struct mt_i2c *i2c)
 	case 6:
 		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
 		return 0;
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	case 7:
 		dvfs_gpu_pm_spin_unlock_for_vgpu();
 		return 0;
+#endif
 	default:
 		return 0;
 	}
