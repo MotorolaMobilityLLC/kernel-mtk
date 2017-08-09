@@ -2052,7 +2052,9 @@ EXPORT_SYMBOL(autok_init_hs400);
 
 int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = 0;
+	unsigned int response;
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
@@ -2117,6 +2119,13 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
 	autok_tuning_parameter_init(host, p_autok_tune_res);
+	/* check device status */
+	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
+	if (ret == E_RESULT_PASS) {
+		response = MSDC_READ32(SDC_RESP0);
+		AUTOK_RAWPRINT("[AUTOK]current device status 0x%08x\r\n", response);
+	} else
+		AUTOK_RAWPRINT("[AUTOK]CMD error while check device status\r\n");
 	/* tune data pad delay , find data pad boundary */
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
@@ -2402,7 +2411,9 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 /* online tuning for eMMC4.5(hs200) */
 int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = 0;
+	unsigned int response;
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
@@ -2461,6 +2472,13 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 
 	/* Step2 Tuning Data Path (Only Rising Edge Used) */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
+	/* check device status */
+	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
+	if (ret == E_RESULT_PASS) {
+		response = MSDC_READ32(SDC_RESP0);
+		AUTOK_RAWPRINT("[AUTOK]current device status 0x%08x\r\n", response);
+	} else
+		AUTOK_RAWPRINT("[AUTOK]CMD error while check device status\r\n");
 	opcode = MMC_SEND_TUNING_BLOCK_HS200;
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
@@ -2482,13 +2500,11 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	score = autok_simple_score64(tune_result_str64, RawData64);
 	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", 0, score,
 		       tune_result_str64);
-	if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
+	if (autok_check_scan_res64(RawData64, pBdInfo) != 0)
 		return -1;
-	};
 
-	if (autok_pad_dly_sel_single_edge(pBdInfo, cycle_value, &uDatDly) == 0) {
+	if (autok_pad_dly_sel_single_edge(pBdInfo, cycle_value, &uDatDly) == 0)
 		autok_paddly_update(DAT_PAD_RDLY, uDatDly, p_autok_tune_res);
-	}
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 
@@ -2513,6 +2529,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 /* online tuning for SDIO/SD */
 int execute_online_tuning(struct msdc_host *host, u8 *res)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = 0;
 	unsigned int uCmdEdge = 0;
 	unsigned int uDatEdge = 0;
@@ -2541,7 +2558,13 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
 				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
-				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
+				if ((ret & E_RESULT_RSP_CRC) != 0) {
+					RawData64 |= (u64) (1LL << j);
+					break;
+				} else if ((ret & E_RESULT_CMD_TMO) != 0) {
+					autok_msdc_reset();
+					msdc_clear_fifo();
+					MSDC_WRITE32(MSDC_INT, 0xffffffff);
 					RawData64 |= (u64) (1LL << j);
 					break;
 				} else if (ret == E_RESULT_FATAL_ERR)

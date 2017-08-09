@@ -4329,23 +4329,7 @@ int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 	return 0;
 
 }
-int msdc_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
-{
-	void __iomem *base = host->base;
-	unsigned long polling_tmo = 0;
 
-	polling_tmo = jiffies + POLLING_BUSY;
-	pr_err("msdc%d, waiting device is not busy\n", host->id);
-	while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, device stuck in PRG!\n",
-					host->id);
-			return -1;
-		}
-	}
-	return 0;
-
-}
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4380,31 +4364,14 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		host->err_cmd != MMC_STOP_TRANSMISSION)) {
 		goto end;
 	}
-	/* 1. If RESP CRC occur in sending CMD13 in mmc_blk_err_check, device may
-	 * be in RCV, DATA, and PRG status. So, send stop first to insure
-	 * device turn to transfer status.
-	 * 2. If device is in programming status, mmc_blk_err_check can't send
-	 * stop because our driver return cmd->err when data crc,
-	 * So send stop and wait device not busy here
-	 */
 
-	if (((mrq->cmd->opcode == MMC_SEND_STATUS) &&
-			(host->err_cmd == MMC_SEND_STATUS)) ||
-		((R1_CURRENT_STATE(host->device_status) == R1_STATE_PRG) &&
-			(mrq->cmd->opcode != MMC_STOP_TRANSMISSION))) {
-		host->device_status = 0x0;
-		if (msdc_stop_and_wait_busy(host, mrq))
-			goto recovery;
-	}
-	/* If mmc_send_stop resp crc, host must wait device is not busy
-	 * Then resend CMD12, this time CMD12 will TMO, but device is in
-	 * transfer status. driver return cmd->error = 0
-	 */
-	if ((mrq->cmd->opcode == MMC_STOP_TRANSMISSION) &&
-		(host->err_cmd == MMC_STOP_TRANSMISSION)) {
-		if (msdc_wait_busy(host, mrq))
-			goto recovery;
-	}
+	pr_err("msdc%d saved device status: %x", host->id, host->device_status);
+	/* clear device status */
+	host->device_status = 0x0;
+	/* force send stop command to turn device to transfer status */
+	if (msdc_stop_and_wait_busy(host, mrq))
+		goto recovery;
+
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
 		switch (mmc->ios.timing) {
