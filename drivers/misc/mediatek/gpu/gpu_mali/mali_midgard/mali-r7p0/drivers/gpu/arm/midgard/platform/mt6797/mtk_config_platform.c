@@ -417,8 +417,6 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
 	base_write32(g_ldo_base+0xfc8, 0x0f);
 
-	fan53555_config_interface(2, 5, 7, 4);
-
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
 #endif
