@@ -883,6 +883,10 @@ int dram_fh_steps_freq(unsigned int step)
 				!(get_devinfo_with_index(47) & (1<<28))) ? 1 : 0;
 	unsigned int ddr_type = get_ddr_type();
 
+#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+	d1plus = 0;
+#endif
+
 	switch (step) {
 	case 0:
 		if (d1plus == 1)
@@ -905,6 +909,10 @@ int dram_fh_steps_freq(unsigned int step)
 #elif defined(CONFIG_ARCH_MT6735M)
 	unsigned int d2plus = ((get_devinfo_with_index(47) & (1<<31)) &&
 				(get_devinfo_with_index(47) & (1<<29))) ? 1 : 0;
+
+#if defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+	d2plus = 0;
+#endif
 
 	switch (step) {
 	case 0:
