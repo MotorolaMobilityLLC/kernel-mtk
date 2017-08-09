@@ -6,6 +6,7 @@
 #include <linux/notifier.h>
 #include <linux/reboot.h>
 #include <mt-plat/mt_reboot.h>
+#include <mt-plat/mtk_rtc.h>
 
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
@@ -481,27 +482,20 @@ void arch_reset(char mode, const char *cmd)
 	res = get_wd_api(&wd_api);
 	pr_alert("arch_reset: cmd = %s\n", cmd ? : "NULL");
 	dump_stack();
-/* disable charger/bootloader/kpoc for rtc not ready */
-#if 0
 	if (cmd && !strcmp(cmd, "charger")) {
 		/* do nothing */
 	} else if (cmd && !strcmp(cmd, "recovery")) {
- #ifndef CONFIG_MTK_FPGA
 		rtc_mark_recovery();
- #endif
 	} else if (cmd && !strcmp(cmd, "bootloader")) {
- #ifndef CONFIG_MTK_FPGA
 		rtc_mark_fast();
- #endif
-	}
+	} else if (cmd && !strcmp(cmd, "kpoc")) {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	else if (cmd && !strcmp(cmd, "kpoc"))
 		rtc_mark_kpoc();
 #endif
-
-	else
+	} else {
 		reboot = 1;
-#endif
+	}
+
 	if (res)
 		pr_notice("arch_reset, get wd api error %d\n", res);
 	else
