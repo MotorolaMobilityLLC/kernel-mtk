@@ -22,7 +22,7 @@
  * Use the current timer as a cycle counter since this is what we use for
  * the delay loop.
  */
-#define get_cycles()	arch_counter_get_cntpct() /*need used pct because VCT's OFFSET counter in bootup*/
+#define get_cycles()	arch_counter_get_cntvct()
 
 #include <asm-generic/timex.h>
 
