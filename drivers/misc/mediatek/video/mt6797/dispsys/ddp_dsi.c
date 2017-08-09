@@ -2802,6 +2802,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI0;
+		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
@@ -2809,6 +2810,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI1;
+		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 	} else if (module == DISP_MODULE_DSIDUAL) {
 		/* TODO: Ugly workaround, hope we can found better resolution */
 		LCM_PARAMS lcm_param;
@@ -2821,17 +2823,20 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 			utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
+			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 		} else if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI1) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
 			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 			utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 			utils->dsi_set_cmdq_V22	= DSI_set_cmdq_V2_DSI1;
+			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 		} else {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSIDual;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSIDual;
 			utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
 			/* utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V22_Wrapper_DSIDual; */
+			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 		}
 	}
 

@@ -4939,6 +4939,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 			cmdqRecDestroy(handle);
 		}
 	} else {
+		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
 		if (pgc->state == DISP_SLEPT && handle) {
 			cmdqRecDestroy(handle);
@@ -4966,6 +4967,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		}
 user_cmd_unlock:
 		_primary_path_unlock(__func__);
+		_primary_path_switch_dst_unlock();
 
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd, (unsigned long)handle,
@@ -5624,10 +5626,11 @@ int primary_display_setbacklight(unsigned int level)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
-
+#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 
 	_primary_path_lock(__func__);
+#endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
 	} else {
@@ -5644,9 +5647,11 @@ int primary_display_setbacklight(unsigned int level)
 			_set_backlight_by_cpu(level);
 		}
 	}
+#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 
 	_primary_path_switch_dst_unlock();
+#endif
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
