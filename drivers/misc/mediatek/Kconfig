@@ -311,4 +311,5 @@ source "drivers/misc/mediatek/rrc/Kconfig"
 source "drivers/misc/mediatek/selinux_warning/Kconfig"
 source "drivers/misc/mediatek/usb_c/Kconfig"
 source "drivers/misc/mediatek/usb2jtag/Kconfig"
+source "drivers/misc/mediatek/vow/Kconfig"
 endif

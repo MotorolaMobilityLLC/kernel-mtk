@@ -279,6 +279,26 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "AFE_VOW_MON4  = 0x%x\n", Ana_Get_Reg(AFE_VOW_MON4));
 	n += scnprintf(buffer + n, size - n, "AFE_VOW_MON5  = 0x%x\n", Ana_Get_Reg(AFE_VOW_MON5));
 
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_POSDIV_CFG0  = 0x%x\n", Ana_Get_Reg(AFE_VOW_POSDIV_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_TGEN_CFG0  = 0x%x\n", Ana_Get_Reg(AFE_VOW_TGEN_CFG0));
+
+	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON0 = 0x%x\n", Ana_Get_Reg(0x416));
+	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON1 = 0x%x\n", Ana_Get_Reg(0x418));
+	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON2 = 0x%x\n", Ana_Get_Reg(0x41A));
+	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON3 = 0x%x\n", Ana_Get_Reg(0x41C));
+	n += scnprintf(buffer + n, size - n, "TOP_CKSEL_CON2 = 0x%x\n", Ana_Get_Reg(0x26A));
+	n += scnprintf(buffer + n, size - n, "BUCK_VCORE_CON8 = 0x%x\n", Ana_Get_Reg(0x610));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON0 = 0x%x\n", Ana_Get_Reg(0x650));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON1 = 0x%x\n", Ana_Get_Reg(0x652));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON2 = 0x%x\n", Ana_Get_Reg(0x654));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON3 = 0x%x\n", Ana_Get_Reg(0x656));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON4 = 0x%x\n", Ana_Get_Reg(0x658));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON5 = 0x%x\n", Ana_Get_Reg(0x65A));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON6 = 0x%x\n", Ana_Get_Reg(0x65C));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON7 = 0x%x\n", Ana_Get_Reg(0x65E));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON8 = 0x%x\n", Ana_Get_Reg(0x660));
+	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON9 = 0x%x\n", Ana_Get_Reg(0x662));
+
 	n += scnprintf(buffer + n, size - n, "AFE_DCCLK_CFG0  = 0x%x\n",
 		       Ana_Get_Reg(AFE_DCCLK_CFG0));
 	n += scnprintf(buffer + n, size - n, "AFE_DCCLK_CFG1  = 0x%x\n",

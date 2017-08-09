@@ -66,8 +66,8 @@
 #ifdef _GIT318_PMIC_READY
 #include <mach/mt_pmic.h>
 #endif
-#ifdef _VOW_ENABLE
-#include <mt-plat/vow_api.h>
+#ifdef CONFIG_MTK_VOW_SUPPORT
+#include <mach/vow_api.h>
 #endif
 #include "mt_soc_afe_control.h"
 
@@ -390,48 +390,46 @@ bool hasHpDepopHw(void)
 	return mUseHpDepopFlow ? true : false;
 }
 
-#ifdef _VOW_ENABLE
+#ifdef CONFIG_MTK_VOW_SUPPORT
 static int VOW12MCKCount;
 #endif
 
-#ifdef _VOW_ENABLE
+#ifdef CONFIG_MTK_VOW_SUPPORT
 
 static void VOW12MCK_Enable(bool enable)
 {
-
 	pr_warn("VOW12MCK_Enable VOW12MCKCount == %d enable = %d\n", VOW12MCKCount, enable);
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW12MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x8000, 0x8000);
-		/* Enable  TOP_CKPDN_CON0 bit15 for enable VOW 12M clock */
+			Ana_Set_Reg(TOP_CKPDN_CON5_CLR, 0x0080, 0x0080);
+		/* Enable  TOP_CKPDN_CON5 bit7 for enable VOW 12M clock */
 		VOW12MCKCount++;
 	} else {
 		VOW12MCKCount--;
 		if (VOW12MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x8000, 0x8000);
-			/* disable TOP_CKPDN_CON0 bit15 for enable VOW 12M clock */
+			Ana_Set_Reg(TOP_CKPDN_CON5_SET, 0x0080, 0x0080);
+		/* disable TOP_CKPDN_CON5 bit7 for enable VOW 12M clock */
 
 		if (VOW12MCKCount < 0) {
 			pr_warn("VOW12MCKCount <0 =%d\n ", VOW12MCKCount);
 			VOW12MCKCount = 0;
 		}
 	}
-	mutex_unlock(&Ana_Clk_Mutex);
+mutex_unlock(&Ana_Clk_Mutex);
 }
 #endif
 
 
 void vow_irq_handler(void)
 {
-#ifdef _VOW_ENABLE
+#ifdef CONFIG_MTK_VOW_SUPPORT
 
 	pr_warn("vow_irq_handler,audio irq event....\n");
 	/* TurnOnVOWADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC1, false); */
 	/* TurnOnVOWDigitalHW(false); */
 #if defined(VOW_TONE_TEST)
-	EnableSineGen(Soc_Aud_InterConnectionOutput_O03, Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT,
-			true);
+	EnableSineGen(Soc_Aud_InterConnectionOutput_O03, Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT, true);
 #endif
 	/* VowDrv_ChangeStatus(); */
 #endif
@@ -3410,14 +3408,298 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 static bool TurnOnVOWDigitalHW(bool enable)
 {
-	return false;
+	pr_warn("%s enable = %d\n", __func__, enable);
+	if (enable) {
+		/*move to vow driver*/
+#ifdef VOW_STANDALONE_CONTROL
+		if (mAudio_VOW_Mic_type == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+			Ana_Set_Reg(AFE_VOW_TOP, 0x6850, 0xffff);   /*VOW enable*/
+		else
+			Ana_Set_Reg(AFE_VOW_TOP, 0x4810, 0xffff);   /*VOW enable*/
+#endif
+	} else {
+		/*disable VOW interrupt here*/
+		/*Ana_Set_Reg(INT_CON0, 0x0015, 0x0800); //disable VOW interrupt. BIT11*/
+#ifdef VOW_STANDALONE_CONTROL
+		/*move to vow driver*/
+
+		Ana_Set_Reg(AFE_VOW_TOP, 0x4010, 0xffff);   /*VOW disable*/
+		Ana_Set_Reg(AFE_VOW_TOP, 0xC010, 0xffff);   /*VOW clock power down*/
+#endif
+	}
+	return true;
 }
 
 static bool TurnOnVOWADcPowerACC(int MicType, bool enable)
 {
-	return false;
-}
+#ifdef CONFIG_MTK_VOW_SUPPORT
+	/*int ret;*/
+	pr_warn("%s MicType = %d enable = %d, mIsVOWOn=%d, mAudio_VOW_Mic_type=%d\n",
+		__func__, MicType, enable, mIsVOWOn, mAudio_VOW_Mic_type);
+	/*already on, no need to set again*/
+	if (enable == mIsVOWOn)
+		return true;
 
+	if (enable) {
+		mIsVOWOn = true;
+		SetVOWStatus(mIsVOWOn);
+#if defined(VOW_TONE_TEST)
+		OpenAfeDigitaldl1(false);
+		OpenAnalogHeadphone(false);
+		EnableSideGenHw(Soc_Aud_InterConnectionOutput_O03, Soc_Aud_InterConnectionOutput_Num_Output, false);
+		AudDrv_Clk_Off();
+#endif /* #if defined(VOW_TONE_TEST) */
+		/*uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);*/
+
+		if (GetMicbias == 0) {
+			/* save current micbias ref set by accdet */
+			MicbiasRef = Ana_Get_Reg(AUDENC_ANA_CON9) & 0x0700;
+			pr_warn("MicbiasRef=0x%x\n", MicbiasRef);
+			GetMicbias = 1;
+		}
+
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC\n", __func__);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_DMIC\n", __func__);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC\n", __func__);
+			/*analog part*/
+			/* 0x0D06 Enable Globe bias VOW LPW mode */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0400, 0x0400);
+			/* 0x0D04 Enable audio globe bias */
+			/*Ana_Set_Reg(AUDDEC_ANA_CON9,  0x0155, 0x1000);*/
+			NvregEnable(true);
+			/* 0x0D0C Enable audio uplink LPW mode, Enable Audio ADC 1st, 2nd & 3rd Stage LPW,
+			Enable Audio ADC flash Audio ADC flash */
+			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0039, 0x0039);
+			/* 0x0D26 set PLL VCOBAND */
+			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0023, 0x0038);
+			/* 0x0D24 PLL low power */
+			Ana_Set_Reg(AUDENC_ANA_CON14, 0x8180, 0x8000);
+			/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x07FC);
+			/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F9, 0x0001);
+			/* 0x0258 VOW12M_CK power on */
+			VOW12MCK_Enable(true);
+			/* 0x2070 VOW source clock power on, vow_1p6m_800k_sel=1.6m */
+			Ana_Set_Reg(AFE_VOW_TOP,      0x4000, 0x8000);
+			/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
+			PGA DCC CLK power down gating release, Enable PGA DCC CLK */
+			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0xFFEE);
+			/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
+			PGA DCC CLK power down gating release, Enable PGA DCC CLK */
+			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2065, 0x0001);
+			/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL,
+			Enable Audio ADC FBDAC 0.25FS LPW  @@@@ 0x000D */
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0009, 0x000D);
+			/* 0x0D1A MIC Bias 0 LowPower enable, MISBIAS0 = 1.9V, Enable MICBIAS0 */
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x00A1, 0x00F1);
+			/* 0x0D08 Enable audio L PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03D7, 0x07F7);
+			/* 0x0D08 Audio L ADC input sel : L PGA, Enable audio L ADC */
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x53D7, 0x7000);
+			/* delay 100us */
+			msleep(20);
+			/* 0x0D08 Audio L PGA DCC precharge off */
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x53D3, 0x0004);
+
+			/* ----- Digital ----- */
+			/* Ana_Set_Reg(TOP_CLKSQ_SET,      0x0000, 0xFFFF);*/
+			/* pr_warn("TOP_CLKSQ_SET: %x\n", Ana_Get_Reg(TOP_CLKSQ_SET));*/
+			/* Ana_Set_Reg(TOP_CKPDN_CON5_CLR, 0x01c0, 0xFFFF);*/
+			/* pr_warn("TOP_CKPDN_CON5: %x\n", Ana_Get_Reg(TOP_CKPDN_CON5));*/
+			/* Ana_Set_Reg(0x02C2,             0x0000, 0xFFFF);*/
+			/* pr_warn("INT_CON0: %x\n", Ana_Get_Reg(0x02C2));*/
+
+			/* set GPIO */
+			/* AP side */
+#ifdef CONFIG_MTK_VOW_SUPPORT
+#ifdef CONFIG_OF
+			pr_warn("GPIO SET:CONFIG_OF\n");
+			/*Enable VOW_CLK_MISO*/
+			/*Enable VOW_DAT_MISO*/
+			/*AudDrv_GPIO_VOWIF_Select(true);*/
+			AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_VOW);
+#else
+			pr_warn("GPIO SET:ELSE\n");
+			/*Enable VOW_CLK_MISO*/
+			mt_set_gpio_mode(149 | 0x80000000, GPIO_MODE_01);
+			/*Enable VOW_DAT_MISO*/
+			mt_set_gpio_mode(147 | 0x80000000, GPIO_MODE_03);
+#endif /* #ifdef CONFIG_OF */
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+
+			/*set PMIC GPIO*/
+			Ana_Set_Reg(GPIO_MODE3, 0x1252, 0x0007); /*0x60D0 GPIO Set to VOW data*/
+			pr_warn("GPIO_MODE: %x\n", Ana_Get_Reg(GPIO_MODE3));
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC\n", __func__);
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+		default:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC\n", __func__);
+			break;
+		}
+
+		/*[Todo]Enable VOW INT (has alredy done in pmic.c)*/
+		/*enable VOW INT in pmic driver*/
+
+#if 0
+		/* VOW AMPREF Setting, set by MD32 after DC calibration */
+		Ana_Set_Reg(AFE_VOW_CFG0, reg_AFE_VOW_CFG0, 0xffff);
+
+		Ana_Set_Reg(AFE_VOW_CFG1, reg_AFE_VOW_CFG1, 0xffff);   /*VOW A,B timeout initial value*/
+		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0B00, 0xffff);/* 1.6m */
+		else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0B08, 0xffff);
+
+		Ana_Set_Reg(AFE_VOW_CFG2, reg_AFE_VOW_CFG2, 0xffff);   /*VOW A,B value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0xffff);   /*gamma K value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting*/
+#endif
+		Ana_Set_Reg(AFE_VOW_CFG0, 0x082a, 0xffff); /* 0xFFFF   0x082a*/
+		pr_warn("AFE_VOW_CFG0: %x\n", Ana_Get_Reg(AFE_VOW_CFG0));
+		Ana_Set_Reg(AFE_VOW_CFG1, 0x0000, 0xffff); /* 0x0200   0x0000*/
+		pr_warn("AFE_VOW_CFG1: %x\n", Ana_Get_Reg(AFE_VOW_CFG1));
+		Ana_Set_Reg(AFE_VOW_CFG2, 0x2222, 0xffff); /* VOW A,B value setting 0x2424  0x2222 */
+		pr_warn("AFE_VOW_CFG2: %x\n", Ana_Get_Reg(AFE_VOW_CFG2));
+		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff); /* alhpa and beta K value setting    0xDBAC  0x8767 */
+		pr_warn("AFE_VOW_CFG3: %x\n", Ana_Get_Reg(AFE_VOW_CFG3));
+		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff); /* N mini value setting  0x0000  0x0001 */
+		pr_warn("AFE_VOW_CFG5: %x\n", Ana_Get_Reg(AFE_VOW_CFG5));
+		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xffff); /* gamma K value setting    16K*/
+		pr_warn("AFE_VOW_CFG4: %x\n", Ana_Get_Reg(AFE_VOW_CFG4));
+		Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff); /* 16K */
+		pr_warn("AFE_VOW_POSDIV_CFG0: %x\n", Ana_Get_Reg(AFE_VOW_POSDIV_CFG0));
+		/*Ana_Set_Reg(AFE_VOW_CFG4, 0x022E, 0xffff);   //gamma K value setting    32K*/
+		/*Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x2C0A, 0xffff); // 32K*/
+
+#ifndef VOW_STANDALONE_CONTROL
+		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC) {
+			/*digital MIC need to config bit13 and bit6, (bit7 need to check)  0x6840*/
+			/*Ana_Set_Reg(AFE_VOW_TOP, 0x2040, 0x2040);   //VOW enable*/
+#ifdef CONFIG_MTK_VOW_SUPPORT
+			VowDrv_SetDmicLowPower(false);
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
+		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K) {
+#ifdef CONFIG_MTK_VOW_SUPPORT
+			VowDrv_SetDmicLowPower(true);
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
+		} else {
+		/*others setting will do at VOW driver 0x4800*/
+#ifdef CONFIG_MTK_VOW_SUPPORT
+		VowDrv_SetDmicLowPower(false);
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+		/*Ana_Set_Reg(AFE_VOW_TOP, 0x4810, 0xffff);   //VOW enable*/
+		}
+#endif /* #ifndef VOW_STANDALONE_CONTROL */
+
+#ifdef CONFIG_MTK_VOW_SUPPORT
+		/*VOW enable, set AFE_VOW_TOP in VOW kernel driver*/
+		/*need to inform VOW driver mic type*/
+		VowDrv_EnableHW(true);
+		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
+		VowDrv_ChangeStatus();
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+
+#if defined(VOW_TONE_TEST)
+		/*test output*/
+		AudDrv_Clk_On();
+		OpenAfeDigitaldl1(true);
+		OpenAnalogHeadphone(true);
+#endif /* #if defined(VOW_TONE_TEST) */
+
+	} else { /* disable VOW */
+
+#ifdef CONFIG_MTK_VOW_SUPPORT
+		/*Set VOW driver disable, vow driver will do close all digital part setting*/
+		VowDrv_EnableHW(false);
+		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
+		VowDrv_ChangeStatus();
+		msleep(20);
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC close\n", __func__);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_DMIC close\n", __func__);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC close\n", __func__);
+			/* turn off digital first, move to vow driver*/
+			/*#ifdef VOW_STANDALONE_CONTROL*/
+#if 1
+			/*disable VOW interrupt here or when digital power off*/
+
+#ifdef CONFIG_MTK_VOW_SUPPORT
+#ifdef CONFIG_OF
+			/*Enable VOW_CLK_MISO*/
+			/*Enable VOW_DAT_MISO*/
+			AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_VOW);
+#else
+			pr_warn("GPIO SET:ELSE\n");
+			/*GPIO set to back to normal record*/
+			/*Disable VOW_CLK_MISO*/
+			mt_set_gpio_mode(149 | 0x80000000, GPIO_MODE_00);
+			/*Disable VOW_DAT_MISO*/
+			mt_set_gpio_mode(147 | 0x80000000, GPIO_MODE_00);
+#endif /* #ifdef CONFIG_OF */
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+			/*set PMIC GPIO*/
+			Ana_Set_Reg(GPIO_MODE3, 0x1249, 0x0007); /*GPIO Set to VOW data*/
+#endif /* #if 1 */
+			/*turn off analog part*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03D3, 0x7000); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x07F7); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00F1); /*0x0D1A*/
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
+			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0x0001); /*0x2090*/
+			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x0FE2, 0xFFEE); /*0x2090*/
+			Ana_Set_Reg(AFE_VOW_TOP,      0xC000, 0x8000); /*0x2070*/
+			VOW12MCK_Enable(false); /*VOW clock power down enable*/
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x0001); /*0x0D22*/
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0310, 0x07FC); /*0x0D22*/
+			Ana_Set_Reg(AUDENC_ANA_CON14, 0x0180, 0x8000); /*0x0D24*/
+			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0013, 0x0038); /*0x0D26*/
+			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0000, 0x0039); /*0x0D0C*/
+			/*Ana_Set_Reg(AUDDEC_ANA_CON9,  0x1155, 0x1000); */
+			NvregEnable(false);
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0400); /*0x0D06*/
+			break;
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC close\n", __func__);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+		default:
+			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC close\n", __func__);
+			break;
+		}
+		mIsVOWOn = false;
+		SetVOWStatus(mIsVOWOn);
+		GetMicbias = 0;
+	}
+#endif
+	return true;
+}
 
 
 /* here start uplink power function */
