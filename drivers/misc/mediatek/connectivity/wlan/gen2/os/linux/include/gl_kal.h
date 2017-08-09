@@ -683,6 +683,15 @@ BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data, U
 *                                 M A C R O S
 ********************************************************************************
 */
+
+/*----------------------------------------------------------------------------*/
+/* Macros of bit operation                                                    */
+/*----------------------------------------------------------------------------*/
+#define KAL_SET_BIT(bitOffset, value)             set_bit(bitOffset, &value)
+#define KAL_CLR_BIT(bitOffset, value)             clear_bit(bitOffset, &value)
+#define KAL_TEST_AND_CLEAR_BIT(bitOffset, value)  test_and_clear_bit(bitOffset, &value)
+#define KAL_TEST_BIT(bitOffset, value)            test_bit(bitOffset, &value)
+
 /*----------------------------------------------------------------------------*/
 /* Macros of SPIN LOCK operations for using in Driver Layer                   */
 /*----------------------------------------------------------------------------*/
@@ -1527,4 +1536,14 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
+
+INT32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
+INT32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
+INT32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
+INT32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
+INT32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
+INT32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+INT32 kalBoostCpu(UINT_32 core_num);
+
 #endif /* _GL_KAL_H */

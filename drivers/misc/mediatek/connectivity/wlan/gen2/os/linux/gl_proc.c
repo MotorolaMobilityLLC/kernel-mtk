@@ -78,6 +78,7 @@
 #define PROC_TX_STATISTICS                      "tx_statistics"
 #define PROC_DBG_LEVEL_NAME						"dbgLevel"
 #define PROC_NEED_TX_DONE						"TxDoneCfg"
+#define PROC_AUTO_PER_CFG						"autoPerCfg"
 #define PROC_ROOT_NAME			"wlan"
 #define PROC_CMD_DEBUG_NAME		"cmdDebug"
 
@@ -626,6 +627,41 @@ static const struct file_operations proc_txdone_ops = {
 	.write = procTxDoneCfgWrite,
 };
 
+static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	UINT_8 *temp = &aucProcBuf[0];
+	UINT_32 u4CopySize = 0;
+
+	/* if *f_ops>0, we should return 0 to make cat command exit */
+	if (*f_pos > 0)
+		return 0;
+
+	SPRINTF(temp, ("Auto Performance Configure:\nperiod\tL1\nL2\tL3\n"));
+
+	u4CopySize = kalStrLen(aucProcBuf);
+	if (u4CopySize > count)
+		u4CopySize = count;
+	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
+		kalPrint("copy to user failed\n");
+		return -EFAULT;
+	}
+
+	*f_pos += u4CopySize;
+	return (ssize_t)u4CopySize;
+}
+
+static ssize_t procAutoPerCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+	DBGLOG(INIT, WARN, "%s\n", __func__);
+	return 0;
+}
+
+static const struct file_operations auto_per_ops = {
+	.owner = THIS_MODULE,
+	.read = procAutoPerCfgRead,
+	.write = procAutoPerCfgWrite,
+};
+
 
 static ssize_t procCmdDebug(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
@@ -913,6 +949,14 @@ INT_32 procInitFs(VOID)
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	prEntry = proc_create(PROC_AUTO_PER_CFG, 0664, gprProcRoot, &auto_per_ops);
+	if (prEntry == NULL) {
+		kalPrint("Unable to create /proc entry autoPerCfg\n\r");
+		return -1;
+	}
+	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
 	return 0;
 }				/* end of procInitProcfs() */
 
@@ -920,6 +964,7 @@ INT_32 procUninitProcFs(VOID)
 {
 	remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
 	remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
+	remove_proc_entry(PROC_AUTO_PER_CFG, gprProcRoot);
 	return 0;
 }
 

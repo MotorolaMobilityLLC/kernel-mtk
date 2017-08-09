@@ -1846,7 +1846,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
 	/* prDev->stats.tx_packets++; */
-
+	kalPerMonStart(prGlueInfo);
 	return NETDEV_TX_OK;
 }				/* end of p2pHardStartXmit() */
 

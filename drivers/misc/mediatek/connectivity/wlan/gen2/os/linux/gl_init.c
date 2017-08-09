@@ -1975,6 +1975,7 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	DBGLOG(TX, EVENT, "\n+++++ pending frame %d len = %d +++++\n", prGlueInfo->i4TxPendingFrameNum, prSkb->len);
 	prGlueInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->rNetDevStats.tx_packets++;
+	kalPerMonStart(prGlueInfo);
 
 	/* set GLUE_FLAG_TXREQ_BIT */
 
@@ -2431,6 +2432,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	netif_carrier_off(prGlueInfo->prDevHandler);
 	netif_tx_stop_all_queues(prGlueInfo->prDevHandler);
 #endif
+
 	return prWdev;
 }				/* end of wlanNetCreate() */
 
@@ -2521,6 +2523,8 @@ void wlanHandleSystemSuspend(void)
 	fgIsUnderSuspend = true;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
+
+	kalPerMonDisable(prGlueInfo);
 
 	if (!prDev || !(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
@@ -2627,6 +2631,8 @@ void wlanHandleSystemResume(void)
 	/* <3> acquire the prGlueInfo */
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
+
+	kalPerMonEnable(prGlueInfo);
 
 	/*
 	   We will receive the event in rx, we will check if the status is the same in driver
@@ -3183,6 +3189,8 @@ bailout:
 	}
 #endif
 	if (i4Status == WLAN_STATUS_SUCCESS) {
+		/*Init performance monitor structure */
+		kalPerMonInit(prGlueInfo);
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
 	} else {
@@ -3240,6 +3248,8 @@ static VOID wlanRemove(VOID)
 		free_netdev(prDev);
 		return;
 	}
+
+	kalPerMonDestroy(prGlueInfo);
 #if CFG_ENABLE_WIFI_DIRECT
 	/* avoid remove & p2p off command simultaneously */
 	{
