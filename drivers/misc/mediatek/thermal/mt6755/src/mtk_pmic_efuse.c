@@ -96,7 +96,7 @@ void mtktspmic_cali_prepare(void)
 		g_o_slope_sign = 0;
 	}
 
-	/*SW workaround patch for Jade E2*/
+	/*SW workaround patch for mt6755 E2*/
 	if (g_degc_cali < 38 || g_degc_cali > 60)
 		g_degc_cali = 53;
 

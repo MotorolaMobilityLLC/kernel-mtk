@@ -63,7 +63,7 @@ static kgid_t gid = KGIDT_INIT(1000);
 struct clk *therm_main;		/* main clock for Thermal */
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 struct clk *therm_auxadc;
 #endif
 #endif
@@ -1816,7 +1816,7 @@ static int thermal_auxadc_get_data(int times, int channel)
 }
 #endif
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 #if 1
 static void tscpu_thermal_pause(void)
 {
@@ -2003,7 +2003,7 @@ void tscpu_cancel_thermal_timer(void)
 
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	tscpu_thermal_pause();
 #endif
 }
@@ -2017,7 +2017,7 @@ void tscpu_start_thermal_timer(void)
 
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	tscpu_thermal_release();
 #endif
 }
@@ -2193,7 +2193,7 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 #if !defined(CONFIG_MTK_CLKMGR)
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	therm_auxadc = devm_clk_get(&dev->dev, "therm-auxadc");
 
 	if (IS_ERR(therm_auxadc))
