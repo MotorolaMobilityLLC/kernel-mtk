@@ -219,9 +219,9 @@ int get_hw_ocv(void)
 
 static void dump_nter(void)
 {
-	bm_print(BM_LOG_CRTI, "[dump_nter] mt6328_upmu_get_fg_nter_29_16 = 0x%x\r\n",
+	bm_print(BM_LOG_CRTI, "[dump_nter] MT6351_upmu_get_fg_nter_29_16 = 0x%x\r\n",
 		 pmic_get_register_value(MT6351_PMIC_FG_NTER_32_17));
-	bm_print(BM_LOG_CRTI, "[dump_nter] mt6328_upmu_get_fg_nter_15_00 = 0x%x\r\n",
+	bm_print(BM_LOG_CRTI, "[dump_nter] MT6351_upmu_get_fg_nter_15_00 = 0x%x\r\n",
 		 pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03));
 }
 
@@ -535,26 +535,27 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 
 	unsigned int uvalue32_CAR = 0;
 	unsigned int uvalue32_CAR_MSB = 0;
-	signed short upperbound = 0, lowbound = 0;
-	signed short pcar = 0;
+	signed int upperbound = 0, lowbound = 0;
+
 	signed short m;
 	unsigned int car = *(unsigned int *) (data);
 	unsigned int ret = 0;
-	unsigned short *plow, *phigh, *pori;
+	signed int value32_CAR;
 
 	bm_print(BM_LOG_FULL, "fgauge_set_columb_interrupt_internal car=%d\n", car);
 
 
-	plow = (unsigned short *) &lowbound;
-	phigh = (unsigned short *) &upperbound;
-	pori = (unsigned short *) &uvalue32_CAR;
 		if (car == 0) {
 			pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_L, 0);
-		bm_print(BM_LOG_FULL,
-			 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x  high:[0xcb0]=0x%x  %d %d \r\n",
+		bm_print(BM_LOG_CRTI,
+			 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x 0x%x  high:[0xcb0]=0x%x 0x%x now:0x%x 0x%x %d %d \r\n",
 			 pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00),
+			pmic_get_register_value(MT6351_PMIC_FG_BLTR_31_16),
 			 pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00),
+			pmic_get_register_value(MT6351_PMIC_FG_BFTR_31_16),
+			pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03),
+			pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19),
 			 pmic_get_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_L),
 			 pmic_get_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H));
 		return STATUS_OK;
@@ -563,10 +564,14 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 	if (car == 0x1ffff) {
 			pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H, 1);
 			pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_L, 1);
-			bm_print(BM_LOG_FULL,
-			 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x  high:[0xcb0]=0x%x %d %d\r\n",
+			bm_print(BM_LOG_CRTI,
+			 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x 0x%x  high:[0xcb0]=0x%x 0x%x now:0x%x 0x%x %d %d \r\n",
 			 pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00),
+			pmic_get_register_value(MT6351_PMIC_FG_BLTR_31_16),
 			 pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00),
+			pmic_get_register_value(MT6351_PMIC_FG_BFTR_31_16),
+			pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03),
+			pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19),
 			 pmic_get_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_L),
 			 pmic_get_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H));
 		return STATUS_OK;
@@ -601,66 +606,50 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 //(3)    Read FG_CURRENT_OUT[28:14]
 //(4)    Read FG_CURRENT_OUT[31]
 */
-	uvalue32_CAR = (pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03)) >> 14;
-	uvalue32_CAR |= ((pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19)) & 0x7FFF) << 2;
+	value32_CAR = (pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03));
+	value32_CAR |= ((pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19)) & 0xffff) << 16;
 
 	uvalue32_CAR_MSB = (pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19) & 0x8000) >> 15;
 
-	bm_print(BM_LOG_FULL,
-		 "[fgauge_set_columb_interrupt] FG_CAR = 0x%x   uvalue32_CAR_MSB:0x%x\r\n",
-		 uvalue32_CAR, uvalue32_CAR_MSB);
-	uvalue32_CAR = uvalue32_CAR & 0x7fff;
+	bm_print(BM_LOG_CRTI,
+		"[fgauge_set_columb_interrupt] FG_CAR = 0x%x   uvalue32_CAR_MSB:0x%x 0x%x 0x%x\r\n",
+		uvalue32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03)),
+		(pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19)));
 
-	if (uvalue32_CAR_MSB == 1)
-		uvalue32_CAR = uvalue32_CAR | 0x8000;
 
-	bm_print(BM_LOG_FULL,
-		 "[fgauge_set_columb_interrupt] FG_CAR = 0x%x:%d  msb=0x%x  car=0x%x:%d FG_CAR2:0x%x:%d \r\n ",
-		 uvalue32_CAR, uvalue32_CAR, uvalue32_CAR_MSB, car, car, *pori, *pori);
 	/*restore use_chip_trim_value() */
-	car = ((car * 1000) / chip_diff_trim_value);
-	car = ((car * 100) / batt_meter_cust_data.car_tune_value);
-	car = ((car * batt_meter_cust_data.r_fg_value) / 20);
-	car = car * 8000;
-	car = car * 10;
-	car = car + 5;
-	car = car * 10;
-	car = car / 35986;
-	pcar = (signed short) car;
+	car = car * 0x4d14;
 
-	upperbound = *pori;
-	lowbound = *pori;
+	upperbound = value32_CAR;
+	lowbound = value32_CAR;
 
-/*
-if(uvalue32_CAR_MSB==1)
-{
-	upperbound=(signed short)(upperbound-upperbound*2);
-	lowbound=(signed short)(lowbound-lowbound*2);
-}
-*/
-	bm_print(BM_LOG_FULL,
+
+	bm_print(BM_LOG_CRTI,
 		 "[fgauge_set_columb_interrupt] upper = 0x%x:%d  low=0x%x:%d  car=0x%x:%d\r\n",
-		 upperbound, upperbound, lowbound, lowbound, pcar, pcar);
+		 upperbound, upperbound, lowbound, lowbound, car, car);
 
-	upperbound = upperbound + pcar;
-	lowbound = lowbound - pcar;
+	upperbound = upperbound + car;
+	lowbound = lowbound - car;
 
-	bm_print(BM_LOG_FULL,
+	bm_print(BM_LOG_CRTI,
 		 "[fgauge_set_columb_interrupt]final upper = 0x%x:%d  low=0x%x:%d  car=0x%x:%d\r\n",
-		 upperbound, upperbound, lowbound, lowbound, pcar, pcar);
+		 upperbound, upperbound, lowbound, lowbound, car, car);
 
-
-	pmic_set_register_value(MT6351_PMIC_FG_BLTR_15_00 , *plow);
-	pmic_set_register_value(MT6351_PMIC_FG_BFTR_15_00 , *phigh);
+	pmic_set_register_value(MT6351_PMIC_FG_BLTR_15_00 , lowbound & 0xffff);
+	pmic_set_register_value(MT6351_PMIC_FG_BLTR_31_16 , (lowbound & 0xffff0000) >> 16);
+	pmic_set_register_value(MT6351_PMIC_FG_BFTR_15_00 , upperbound & 0xffff);
+	pmic_set_register_value(MT6351_PMIC_FG_BFTR_31_16 , (upperbound & 0xffff0000) >> 16);
 	mdelay(1);
 	pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H, 1);
 	pmic_set_register_value(MT6351_PMIC_RG_INT_EN_FG_BAT_L, 1);
 
 
-	bm_print(BM_LOG_FULL,
-		 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x  high:[0xcb0]=0x%x\r\n",
-		 pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00),
-		 pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00));
+	bm_print(BM_LOG_CRTI,
+		 "[fgauge_set_columb_interrupt] low:[0xcae]=0x%x 0x%x   high:[0xcb0]=0x%x 0x%x\r\n",
+		pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00),
+		pmic_get_register_value(MT6351_PMIC_FG_BLTR_31_16),
+		pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00),
+		pmic_get_register_value(MT6351_PMIC_FG_BFTR_31_16));
 
 	return STATUS_OK;
 #endif
@@ -673,7 +662,7 @@ static signed int fgauge_set_columb_interrupt(void *data)
 	return fgauge_set_columb_interrupt_internal(data, 0);
 }
 
-static signed int fgauge_read_columb_internal(void *data, int reset)
+static signed int fgauge_read_columb_internal(void *data, int reset, int precise)
 {
 #if defined(CONFIG_POWER_EXT)
 	*(signed int *) (data) = 0;
@@ -773,9 +762,14 @@ static signed int fgauge_read_columb_internal(void *data, int reset)
 #if 0
 	dvalue_CAR = Temp_Value / 1000;	/*mAh */
 #else
-	/*//dvalue_CAR = (Temp_Value/8)/1000; //mAh, due to FG_OSR=0x8 */
-	do_div(Temp_Value, 8);
-	do_div(Temp_Value, 1000);
+	/*dvalue_CAR = (Temp_Value/8)/1000;     mAh, due to FG_OSR=0x8*/
+	if (precise == 0) {
+		do_div(Temp_Value, 8);
+		do_div(Temp_Value, 1000);
+	} else {
+		do_div(Temp_Value, 8);
+		do_div(Temp_Value, 100);
+	}
 
 	if (uvalue32_CAR_MSB == 0x1)
 		dvalue_CAR = (signed int) (Temp_Value - (Temp_Value * 2));	/* keep negative value */
@@ -820,8 +814,21 @@ static signed int fgauge_read_columb_internal(void *data, int reset)
 
 static signed int fgauge_read_columb(void *data)
 {
-	return fgauge_read_columb_internal(data, 0);
+	return fgauge_read_columb_internal(data, 0, 0);
 }
+
+static signed int fgauge_read_columb_accurate(void *data)
+{
+
+#if defined(SOC_BY_3RD_FG)
+	*(kal_int32 *)(data) = bq27531_get_remaincap();
+	return STATUS_OK;
+
+#else
+	return fgauge_read_columb_internal(data, 0, 1);
+#endif
+}
+
 
 static signed int fgauge_hw_reset(void *data)
 {
@@ -836,7 +843,7 @@ static signed int fgauge_hw_reset(void *data)
 
 	while (val_car != 0x0) {
 		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x7100, 0xFF00, 0x0);
-		fgauge_read_columb_internal(&val_car_temp, 1);
+		fgauge_read_columb_internal(&val_car_temp, 1, 0);
 		val_car = val_car_temp;
 		bm_print(BM_LOG_FULL, "#");
 	}
@@ -940,6 +947,14 @@ static signed int dump_register_fgadc(void *data)
 	return STATUS_OK;
 }
 
+static signed int read_battery_plug_out_status(void *data)
+{
+	*(signed int *)(data) = is_battery_remove_pmic();
+
+	return STATUS_OK;
+}
+
+
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
 signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
@@ -961,11 +976,15 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_HW_OCV] = read_hw_ocv;
 		bm_func[BATTERY_METER_CMD_DUMP_REGISTER] = dump_register_fgadc;
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT] = fgauge_set_columb_interrupt;
+		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
+		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
 		if (bm_func[cmd] != NULL)
 				status = bm_func[cmd] (data);
+		else
+			status = STATUS_UNSUPPORTED;
 	} else
 		status = STATUS_UNSUPPORTED;
 

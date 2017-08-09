@@ -6,7 +6,7 @@
 /* ============================================================*/
 /*#define SOC_BY_AUXADC*/
 #define SOC_BY_HW_FG
-#define HW_FG_FORCE_USE_SW_OCV
+/*#define HW_FG_FORCE_USE_SW_OCV*/
 /*#define SOC_BY_SW_FG*/
 
 /*#define CONFIG_DIS_CHECK_BATTERY*/
@@ -27,15 +27,15 @@
 #define FG_METER_RESISTANCE	0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50	2918
-#define Q_MAX_POS_25	2791
-#define Q_MAX_POS_0	2696
-#define Q_MAX_NEG_10	2527
+#define Q_MAX_POS_50	2743
+#define Q_MAX_POS_25 2709
+#define Q_MAX_POS_0 1168
+#define Q_MAX_NEG_10 762
 
-#define Q_MAX_POS_50_H_CURRENT	2860
-#define Q_MAX_POS_25_H_CURRENT	2746
-#define Q_MAX_POS_0_H_CURRENT	2421
-#define Q_MAX_NEG_10_H_CURRENT	1715
+#define Q_MAX_POS_50_H_CURRENT	2688
+#define Q_MAX_POS_25_H_CURRENT 2655
+#define Q_MAX_POS_0_H_CURRENT 1145
+#define Q_MAX_NEG_10_H_CURRENT 747
 
 
 /* Discharge Percentage */
@@ -49,7 +49,7 @@
 #else
 #define CUST_TRACKING_POINT	1
 #endif
-#define CUST_R_SENSE	68
+#define CUST_R_SENSE         56
 #define CUST_HW_CC	0
 #define AGING_TUNING_VALUE	103
 #define CUST_R_FG_OFFSET	0
@@ -76,12 +76,12 @@
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
 #define BATTERYPSEUDO100	95
-#define BATTERYPSEUDO1	4
+#define BATTERYPSEUDO1 6
 
 #define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
-/*#define Q_MAX_SYS_VOLTAGE		3350*/
-/*#define SHUTDOWN_GAUGE0*/
-/*#define SHUTDOWN_GAUGE1_XMINS*/
+#define Q_MAX_SYS_VOLTAGE		3350
+#define SHUTDOWN_GAUGE0
+#define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS	60
 
 #define SHUTDOWN_SYSTEM_VOLTAGE	3400
@@ -115,10 +115,18 @@
 #define CLOSE_POWEROFF_WAKEUP_PERIOD	30	/*30 s*/
 
 #define INIT_SOC_BY_SW_SOC
-/*#define SYNC_UI_SOC_IMM			3. UI SOC sync to FG SOC immediately*/
-#define MTK_ENABLE_AGING_ALGORITHM	/*6. Q_MAX aging algorithm*/
-#define MD_SLEEP_CURRENT_CHECK	/*5. Gauge Adjust by OCV 9. MD sleep current check*/
-/*#define Q_MAX_BY_CURRENT		7. Qmax variant by current loading.*/
+
+/*3. UI SOC sync to FG SOC immediately*/
+/*#define SYNC_UI_SOC_IMM*/
+
+/*6. Q_MAX aging algorithm*/
+#define MTK_ENABLE_AGING_ALGORITHM
+
+/*5. Gauge Adjust by OCV 9. MD sleep current check*/
+#define MD_SLEEP_CURRENT_CHECK
+
+/*7. Qmax variant by current loading.*/
+/*#define Q_MAX_BY_CURRENT*/
 
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC

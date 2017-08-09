@@ -7,6 +7,10 @@
 #define BATTERY_SW_INIT
 #define RBAT_PULL_UP_VOLT_BY_BIF
 
+#define FG_BAT_INT_H_NO 48
+#define FG_BAT_INT_L_NO 49
+
+
 /*==============================================================================
  * Low battery level define
  * ============================================================================== */
