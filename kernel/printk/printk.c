@@ -2506,9 +2506,8 @@ skip:
 						sprintf(aee_str, "PRINTK too much:%d, size: %d, time: %llu, %llu.\n",
 								line_count, size_count, time_count, t1);
 	/*				aee_kernel_exception(aee_str, "Need to shrink kernel log"); */
-						aee_kernel_exception_api(__FILE__, __LINE__,  DB_OPT_PRINTK_TOO_MUCH,
+						aee_kernel_warning_api(__FILE__, __LINE__,  DB_OPT_PRINTK_TOO_MUCH,
 						aee_str, "Need to shrink kernel log");
-	/*				aee_kernel_warning(aee_str, "Need to shrink kernel log");*/
 					}
 					line_count = 0;
 					size_count = 0;
