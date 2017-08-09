@@ -481,7 +481,7 @@ static void write_shutter(kal_uint16 shutter)
     //check
         kal_uint16 realtime_fps = 0;
         //kal_uint32 frame_length = 0;
-
+#if 0
         if(imgsensor.sensor_mode == IMGSENSOR_MODE_HIGH_SPEED_VIDEO)
         {
             if(shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -490,9 +490,10 @@ static void write_shutter(kal_uint16 shutter)
             write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
             write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
             write_cmos_sensor(0x3502, shutter  & 0xFF);
-			LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+						LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
             return;
         }
+#endif
         LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
         spin_lock(&imgsensor_drv_lock);
         if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
