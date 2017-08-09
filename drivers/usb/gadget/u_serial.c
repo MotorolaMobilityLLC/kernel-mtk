@@ -371,7 +371,7 @@ __acquires(&port->port_lock)
 	static unsigned int	skip = 0;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 
-	if (!virt_addr_valid(port->port_usb->in))
+	if ((port->port_usb == NULL) | !port->port_usb)
 			return 0;
 
 	while (!list_empty(pool)) {
