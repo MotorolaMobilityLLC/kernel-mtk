@@ -7383,6 +7383,10 @@ static int __init mt6311_init(void)
 	}
 #else
 	{
+		if (i2c_add_driver(&mt6311_driver) != 0)
+			PMICLOG1("[mt6311_init] failed to register mt6311 i2c driver.\n");
+		else
+			PMICLOG1("[mt6311_init] Success to register mt6311 i2c driver.\n");
 		PMICLOG1("[mt6311_init] DCT no define EXT BUCK\n");
 		g_mt6311_hw_exist = 0;
 		g_mt6311_driver_ready = 1;
