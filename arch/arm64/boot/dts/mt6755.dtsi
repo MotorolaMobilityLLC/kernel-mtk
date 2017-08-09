@@ -1436,6 +1436,14 @@
 			clock-names = "therm-main", "therm-auxadc";
 		};
 
+		ptp_fsm@1100b000 {
+			compatible = "mediatek,mt6755-ptp_fsm";
+			reg = <0x1100b000 0x1000>;
+			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mfgsys MFG_BG3D>, <&scpsys SCP_SYS_MFG>, <&infrasys INFRA_THERM>;
+			clock-names = "mfg-main", "mtcmos-mfg", "therm-eem";
+		};
+
 		btif: btif@1100c000 {
 			compatible = "mediatek,btif";
 			reg = <0x1100c000 0x1000>;
