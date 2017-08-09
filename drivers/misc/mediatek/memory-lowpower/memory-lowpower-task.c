@@ -6,6 +6,7 @@
 #include <linux/printk.h>
 #include <linux/init.h>
 #include <linux/rwlock.h>
+#include <linux/sort.h>
 
 /* Trigger method for screen on/off */
 #include <linux/fb.h>
@@ -78,36 +79,39 @@ void set_memory_lowpower_aligned(int aligned)
 	}
 
 	/* If it is page-aligned, cma_aligned_pages is not needed */
-	if (num != size)
+	if (num != size) {
 		cma_aligned_pages = kcalloc(num, sizeof(*cma_aligned_pages), GFP_KERNEL);
+		BUG_ON(!cma_aligned_pages);
+	}
 
 	MLPT_PRINT("%s: aligned[%d] size[%lu] num[%d] array[%p]\n",
 			__func__, get_cma_aligned, get_cma_size, get_cma_num, cma_aligned_pages);
 }
 
+static int inser_buffer_cmp(const void *a, const void *b)
+{
+	struct page **pa = (struct page **)a;
+	struct page **pb = (struct page **)b;
+
+	if (*pa > *pb)
+		return 1;
+	if (*pa < *pb)
+		return -1;
+	return 0;
+}
+
 /* Insert allocated buffer */
 static void insert_buffer(struct page *page, int bound)
 {
-#ifdef MLPT_INSERT_SORT
-	struct page *tmp;
-	int i;
+	/* sanity check */
+	BUG_ON(bound >= get_cma_num);
+	BUG_ON(cma_aligned_pages[bound] != NULL);
+	BUG_ON(!pfn_valid(page_to_pfn(page)));
 
-	MLPT_PRINT("%s: PFN[%lu]\n", __func__, page_to_pfn(page));
-	for (i = 0; i < bound; i++) {
-		MLPT_PRINT("[%d] ", i);
-		if (page < cma_aligned_pages[i]) {
-			tmp = cma_aligned_pages[i];
-			MLPT_PRINT("Swap (page)PFN[%lu] (tmp)PFN[%lu]\n", page_to_pfn(page), page_to_pfn(tmp));
-			cma_aligned_pages[i] = page;
-			page = tmp;
-		}
-		MLPT_PRINT("\n");
-	}
-	cma_aligned_pages[i] = page;
-#else
-	MLPT_PRINT("%s: PFN[%lu] index[%d]\n", __func__, page_to_pfn(page), bound);
 	cma_aligned_pages[bound] = page;
-#endif
+
+	sort(cma_aligned_pages, bound, sizeof(struct page *),
+			inser_buffer_cmp, NULL);
 }
 
 /* Wrapper for memory lowpower CMA allocation */
@@ -156,7 +160,8 @@ static int release_memory(void)
 		if (!ret) {
 			MLPT_PRINT("%s: PFN[%lu] released for [%d]\n", __func__, page_to_pfn(pages[i]), i);
 			pages[i] = NULL;
-		}
+		} else
+			BUG();
 	} while (++i < get_cma_num);
 
 	return 0;
@@ -168,8 +173,7 @@ static void memory_range(int which, unsigned long *spfn, unsigned long *epfn)
 	*spfn = *epfn = 0;
 
 	/* Sanity check */
-	if (which >= get_cma_num)
-		goto out;
+	BUG_ON(which >= get_cma_num);
 
 	/* Range of full allocation */
 	if (cma_aligned_pages == NULL) {
