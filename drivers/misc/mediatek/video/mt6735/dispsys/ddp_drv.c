@@ -817,7 +817,9 @@ static int __init disp_probe_1(void)
 	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
 	mipi_tx_reg = dispsys_reg[DISP_REG_MIPI];
 #ifndef DISP_NO_DPI
-	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
+	DPI_REG = (struct DPI_REGS *)dispsys_reg[DISP_REG_DPI0];
+	DPI_TVDPLL_CON0 = dispsys_reg[DISP_TVDPLL_CON0];
+	DPI_TVDPLL_CON1 = dispsys_reg[DISP_TVDPLL_CON1];
 #endif
 
 	/* //// power on MMSYS for early porting */

@@ -345,7 +345,7 @@ const struct file_operations external_display_fops = {
 };
 
 static const struct of_device_id extd_of_ids[] = {
-	{.compatible = "mediatek,HDMI",},
+	{.compatible = "mediatek,sii8348-hdmi",},
 	{}
 };
 
@@ -353,7 +353,7 @@ struct device *ext_dev_context;
 static int mtk_extd_mgr_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int i = 0;
+	/*int i = 0;*/
 	struct class_device *class_dev = NULL;
 
 	EXT_MGR_FUNC();
@@ -376,14 +376,14 @@ static int mtk_extd_mgr_probe(struct platform_device *pdev)
 	extd_class = class_create(THIS_MODULE, EXTD_DEVNAME);
 	/* mknod /dev/hdmitx */
 	class_dev = (struct class_device *)device_create(extd_class, NULL, extd_devno, NULL, EXTD_DEVNAME);
-	ext_dev_context = &(pdev->dev);
+	ext_dev_context = (struct device *)&(pdev->dev);
+/*
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
 			if (extd_driver[i]->post_init)
 				extd_driver[i]->post_init();
-		}
-
+	}
+*/
 	EXT_MGR_LOG("[%s] out\n", __func__);
-
 	return 0;
 }
 
@@ -485,12 +485,10 @@ static int __init mtk_extd_mgr_init(void)
 
 static void __exit mtk_extd_mgr_exit(void)
 {
-
 	device_destroy(extd_class, extd_devno);
 	class_destroy(extd_class);
 	cdev_del(extd_cdev);
 	unregister_chrdev_region(extd_devno, 1);
-
 }
 
 module_init(mtk_extd_mgr_init);

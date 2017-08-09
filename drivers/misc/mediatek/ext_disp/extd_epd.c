@@ -350,6 +350,7 @@ const struct EXTD_DRIVER *EXTD_EPD_Driver(void)
 	static const struct EXTD_DRIVER extd_driver_epd = {
 #if defined(CONFIG_MTK_EPD_SUPPORT)
 		.init = epd_init,
+		.post_init = NULL,
 		.deinit = NULL,
 		.enable = epd_enable,
 		.power_enable = epd_power_enable,
@@ -363,7 +364,7 @@ const struct EXTD_DRIVER *EXTD_EPD_Driver(void)
 		.factory_mode_test = NULL,
 		.ioctl = epd_ioctl
 #else
-		.init = 0
+		.init = 0,
 #endif
 	};
 

@@ -1325,7 +1325,7 @@ void mhl_event_notify(struct mhl_dev_context *dev_context, u32 event, u32 event_
 	case MHL_TX_EVENT_DEV_CAP_UPDATE:
 	case MHL_TX_EVENT_EDID_UPDATE:
 	case MHL_TX_EVENT_EDID_DONE:
-		/*Notify_AP_MHL_TX_Event(event, event_param, data);*/
+		Notify_AP_MHL_TX_Event(event, event_param, data);
 		break;
 			
 	case MHL_TX_EVENT_CONNECTION:
@@ -1347,7 +1347,7 @@ void mhl_event_notify(struct mhl_dev_context *dev_context, u32 event, u32 event_
 #else
 
 #endif
-		/*Notify_AP_MHL_TX_Event(event, event_param, data);*/
+		Notify_AP_MHL_TX_Event(event, event_param, data);
 		break;
 
 	case MHL_TX_EVENT_DISCONNECTION:
@@ -1377,7 +1377,7 @@ void mhl_event_notify(struct mhl_dev_context *dev_context, u32 event, u32 event_
 
 #endif
 
-		/*Notify_AP_MHL_TX_Event(event, event_param, data);*/
+		Notify_AP_MHL_TX_Event(event, event_param, data);
 		break;
 
 	case MHL_TX_EVENT_RCP_RECEIVED:

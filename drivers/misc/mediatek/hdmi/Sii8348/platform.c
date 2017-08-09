@@ -89,17 +89,17 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 */
 #define MHL_LOG(fmt, arg...)  \
 	do { \
-		if (hdmi_log_on) pr_debug("[HDMI_Platform]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); \
+		if (hdmi_log_on) pr_err("[HDMI_Platform]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); \
 	}while (0)
 
 #define MHL_FUNC()    \
 	do { \
-		if(hdmi_log_on) pr_debug("[HDMI_Platform] %s\n", __func__); \
+		if(hdmi_log_on) pr_err("[HDMI_Platform] %s\n", __func__); \
 	}while (0)
 
 #define MHL_DBG(fmt, arg...) \
 	do { \
-	pr_debug("[EXTD][DISP]"fmt, ##arg); \
+	pr_err("[EXTD][DISP]"fmt, ##arg); \
 	}while (0)
 
 static struct i2c_adapter	*i2c_bus_adapter = NULL;
@@ -948,7 +948,7 @@ void register_mhl_eint(void)
     struct device_node *node = NULL;
     u32 ints[2]={0, 0};
 
-    node = of_find_compatible_node(NULL, NULL, "mediatek, MHL-eint");
+    node = of_find_compatible_node(NULL, NULL, "mediatek,sii8348-hdmi");
     if(node)
     {
         of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
@@ -956,8 +956,9 @@ void register_mhl_eint(void)
 		/*mt_gpio_set_debounce(ints[0],ints[1]);*/
 		mhl_eint_number = irq_of_parse_and_map(node, 0);
 		irq_set_irq_type(mhl_eint_number,MT_LEVEL_SENSITIVE);
-    	if(request_irq(mhl_eint_number, mhl_eint_irq_handler, IRQF_TRIGGER_LOW, "mediatek, MHL-eint", NULL)) ///IRQF_TRIGGER_LOW
+    	if(request_irq(mhl_eint_number, mhl_eint_irq_handler, IRQF_TRIGGER_LOW, "mediatek,sii8348-hdmi", NULL)) ///IRQF_TRIGGER_LOW
     	{
+    		 MHL_DBG("request_irq fail\n");
     	}
     	else
         	return;
@@ -1112,8 +1113,10 @@ void cust_power_on(int enable)
 void mhl_platform_init(void)
 {
     int ret =0;
+/*
     struct device_node *kd_node =NULL;
     const char *name = NULL;
+*/
     
     MHL_DBG("mhl_platform_init start !!\n");
 
@@ -1138,11 +1141,11 @@ void mhl_platform_init(void)
     else
         pinctrl_select_state(mhl_pinctrl, pin_state);
 
-    MHL_DBG("mhl_platform_init gpio init done !!\n");
+    MHL_DBG("mhl_platform_init reset gpio init done!!\n");
 
     i2s_gpio_ctrl(0);
     dpi_gpio_ctrl(0);
-        
+/*  
     kd_node = of_find_compatible_node(NULL, NULL, "mediatek,regulator_supply");
   
     if(kd_node)
@@ -1166,7 +1169,6 @@ void mhl_platform_init(void)
 		 	    reg_v12_power = regulator_get(ext_dev_context, "mhl_12v");
 		    }
 		    MHL_DBG("mhl_platform_init regulator name !\n" );
-		    /* restore original dev.of_node */
 		    ext_dev_context->of_node = kd_node;
 		}
 	}
@@ -1187,7 +1189,7 @@ void mhl_platform_init(void)
         regulator_set_voltage(reg_v12_power, 1200000, 1200000);
         
     }
-
+*/
 plat_init_exit:
     MHL_DBG("mhl_platform_init init done !!\n");
     
@@ -1235,7 +1237,7 @@ struct i2c_device_id gMhlI2cIdTable[] =
 
 #ifdef CONFIG_OF
 static const struct of_device_id Mhl_of_match[] = {
-        {.compatible = "mediatek,EXT_DISP"},
+        {.compatible = "mediatek,ext_disp"},
         {},
 };
 #endif
@@ -1329,6 +1331,7 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
 
     MHL_DBG("%s, + \n", __func__);
 
+	mhl_mutex_init(&mhl_lock);
     mhl_platform_init();
 
     retVal = i2c_add_driver(&mhl_i2c_driver);
@@ -1344,9 +1347,6 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     	}
     }
     MHL_DBG("%s, done %d\n", __func__, retVal);
-
-    mhl_mutex_init(&mhl_lock);
-    
     return retStatus;
 }
 

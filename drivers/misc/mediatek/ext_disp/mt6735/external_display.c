@@ -630,7 +630,7 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata)
 {
 	bool reg_flush = false;
-	disp_session_vsync_config vsync_config;
+	/*disp_session_vsync_config vsync_config;*/
 
 	EXT_DISP_FUNC();
 
@@ -654,11 +654,12 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 	if (_should_flush_cmdq_config_handle()) {
 		if (reg_flush)
 			MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagPulse, Trigger, 2);
-
+/*
 		if (_should_start_path()) {
 			EXT_DISP_LOG("Wait Main Display Vsync\n");
 			primary_display_wait_for_vsync(&vsync_config);
 		}
+*/
 
 		_cmdq_flush_config_handle(blocking, callback, userdata);
 	}

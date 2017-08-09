@@ -315,7 +315,9 @@ extern void disp_m4u_tf_disable(void);
 #include "disp_drv_platform.h"
 #ifndef DISP_NO_DPI
 #include "ddp_dpi_reg.h"
-extern PDPI_REGS DPI_REG;
+extern struct DPI_REGS *DPI_REG;
+extern unsigned long DPI_TVDPLL_CON0;
+extern unsigned long DPI_TVDPLL_CON1;
 #endif
 
 extern int m4u_enable_tf(int port, bool fgenable);

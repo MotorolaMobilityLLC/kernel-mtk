@@ -191,6 +191,7 @@ struct HDMITX_AUDIO_PARA {
 	unsigned char bhdmi_RCh_status[5];
 };
 
+int hdmi_post_init(void);
 void hdmi_force_on(int from_uart_drv);
 void hdmi_cable_fake_plug_in(void);
 void hdmi_cable_fake_plug_out(void);

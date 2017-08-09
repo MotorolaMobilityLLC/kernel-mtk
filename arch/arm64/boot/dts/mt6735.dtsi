@@ -955,6 +955,17 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-div = <1>;
 		};
 
+		i2c4:i2c@11010000 {
+			compatible = "mediatek,mt6735-i2c";
+			cell-index = <4>;
+			reg = <11010000 0x1000>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C3>, <&perisys PERI_APDMA>;
+			clock-names = "i2c4-main", "i2c4-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
 		usb0:usb20@11200000 {
 			compatible = "mediatek,mt6735-usb20";
 			cell-index = <0>;
@@ -1243,7 +1254,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "DISP_MTCMOS_CLK";
 		};
 
-		hdmi:hdmi@0 {
+		mhl:mhl@0 {
 			compatible = "mediatek,sii8348-hdmi";
 		};
 
