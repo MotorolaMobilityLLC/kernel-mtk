@@ -2353,13 +2353,15 @@ int ubi_backup_init_scan(struct ubi_device *ubi, struct ubi_attach_info *ai)
 				if (old_seb != NULL && old_seb->pnum == source_pnum) {
 					ubi_msg("old seq %llu , blb seq %llu", old_seb->sqnum,
 						be64_to_cpu(p_blb_spare->sqnum));
-					if (old_seb->sqnum < be64_to_cpu(p_blb_spare->sqnum))
+					if (old_seb->sqnum < be64_to_cpu(p_blb_spare->sqnum)) {
 						corrupt = 1;
-				} else {
+						break;
+					}
+				} else if (source_page == 1) {
 					ubi_msg("old_seb NULL");
 					corrupt = 1;
+					break;
 				}
-				break;
 			}
 			ubi_msg("high pare has content");
 		}
