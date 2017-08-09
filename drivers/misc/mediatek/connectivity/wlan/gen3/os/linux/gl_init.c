@@ -1708,7 +1708,7 @@ VOID wlanDebugInit(VOID)
 		aucDebugModule[i] = DBG_CLASS_ERROR |
 		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_INFO;
 	}
-	aucDebugModule[DBG_INTR_IDX] = 0;
+	aucDebugModule[DBG_INTR_IDX] = DBG_CLASS_ERROR;
 #endif /* DBG */
 
 	LOG_FUNC("Reset ALL DBG module log level to DEFAULT!");

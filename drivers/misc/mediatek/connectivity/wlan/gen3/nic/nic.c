@@ -1261,7 +1261,7 @@ VOID nicSDIOReadIntStatus(IN P_ADAPTER_T prAdapter, OUT PUINT_32 pu4IntStatus)
 			u4CpuPcr = wmt_plat_read_cpupcr();
 			DBGLOG(INTR, ERROR, "cpupcr = 0x%x\n", u4CpuPcr);
 		}
-		/* glResetTrigger(prAdapter); */
+		glResetTrigger(prAdapter);
 		iounmap(connTopAonBaseAddr);
 		return;
 	}
