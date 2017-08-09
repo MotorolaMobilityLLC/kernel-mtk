@@ -84,8 +84,8 @@ struct mt_scp_dvfs_table_info {
 	bool limited_clk_on;
 	bool scp_dvfs_disable;
 };
-
-#ifdef CONFIG_PINCTRL_MT6797
+#if 0
+/*#ifdef CONFIG_PINCTRL_MT6797*/
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
 /* DTS state */
 typedef enum tagDTS_GPIO_STATE {
@@ -591,6 +591,8 @@ static int mt_scp_dvfs_create_procfs(void)
 	return 0;
 }
 #endif /* CONFIG_PROC_FS */
+
+#if 0
 /* pinctrl implementation */
 static long _set_state(const char *name)
 {
@@ -612,7 +614,7 @@ static long _set_state(const char *name)
 exit:
 	return ret; /* Good! */
 }
-
+#endif
 static const struct of_device_id scpdvfs_of_ids[] = {
 	{.compatible = "mediatek,mt6797-scpdvfs",},
 	{}
@@ -620,15 +622,15 @@ static const struct of_device_id scpdvfs_of_ids[] = {
 
 static int mt_scp_dvfs_suspend(struct device *dev)
 {
-	_set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_ON]);
-	scp_dvfs_dbg("set scp gpio to audio clk on\n");
+	/* _set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_ON]);
+	scp_dvfs_dbg("set scp gpio to audio clk on\n"); */
 	return 0;
 }
 
 static int mt_scp_dvfs_resume(struct device *dev)
 {
-	_set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_OFF]);
-	scp_dvfs_dbg("set scp gpio to audio clk off\n");
+	/* _set_state(scp_state_name[SCP_DTS_GPIO_STATE_AUD_OFF]);
+	scp_dvfs_dbg("set scp gpio to audio clk off\n"); */
 	return 0;
 }
 static int mt_scp_dvfs_pm_restore_early(struct device *dev)
@@ -637,23 +639,26 @@ static int mt_scp_dvfs_pm_restore_early(struct device *dev)
 }
 static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	/* int ret = 0; */
 	struct device_node *node;
 
 	node = of_find_matching_node(NULL, scpdvfs_of_ids);
 	if (!node)
 		dev_err(&pdev->dev, "@%s: find SCPDVFS node failed\n", __func__);
 	/* retrieve */
+#if 0
 	scp_pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(scp_pctrl)) {
 		dev_err(&pdev->dev, "Cannot find scp pinctrl!\n");
 		ret = PTR_ERR(scp_pctrl);
 		goto exit;
 	}
-
+#endif
 	return 0;
+#if 0
 exit:
 	return ret;
+#endif
 }
 
 /***************************************

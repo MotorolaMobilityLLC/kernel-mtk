@@ -181,6 +181,7 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 
 static int set_aud_clk_mosi(bool _enable)
 {
+#if 0
 	static int aud_clk_mosi_counter;
 
 	if (_enable) {
@@ -199,7 +200,7 @@ static int set_aud_clk_mosi(bool _enable)
 		if (aud_clk_mosi_counter == 0)
 			return AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_OFF);
 	}
-
+#endif
 	return 0;
 }
 
