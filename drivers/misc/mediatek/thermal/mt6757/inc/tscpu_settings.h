@@ -119,9 +119,9 @@ they means one reading is a avg of X samples*/
 #define TS_TURN_ON       0xFFFFFFCF /* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
 #define TS_TURN_OFF      0x00000030 /* turn off thermal*/
 /*chip dependent*/
-#define ADDRESS_INDEX_0  32  /*0x10206184*/
-#define ADDRESS_INDEX_1	 31  /*0x10206180*/
-#define ADDRESS_INDEX_2	 33  /*0x10206188*/
+#define ADDRESS_INDEX_0  46  /*0x10206184*/
+#define ADDRESS_INDEX_1	 45  /*0x10206180*/
+#define ADDRESS_INDEX_2	 47  /*0x10206188*/
 
 #define CLEAR_TEMP 26111
 
@@ -155,6 +155,7 @@ they means one reading is a avg of X samples*/
 #define TEMPADC_MCU2    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_001))
 #define TEMPADC_MCU3    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_010))
 #define TEMPADC_MCU4    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_011))
+#define TEMPADC_MCU5    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_100))
 #define TEMPADC_ABB     ((0x30&TSCON1_bit_4_5_01)|(0x07&TSCON1_bit_0_2_000))
 
 #define TS_FILL(n) {#n, n}
@@ -216,6 +217,7 @@ typedef enum thermal_sensor_enum {
 	MCU2,
 	MCU3,
 	MCU4,
+	MCU5,
 	ABB,
 	ENUM_MAX,
 } ts_e;
@@ -320,7 +322,7 @@ extern u32 thermal_irq_number;
 extern void __iomem *thermal_base;
 extern void __iomem *auxadc_ts_base;
 extern void __iomem *infracfg_ao_base;
-extern void __iomem *apmixed_base;
+extern void __iomem *th_apmixed_base;
 extern void __iomem *INFRACFG_AO_base;
 
 extern int thermal_phy_base;
@@ -393,7 +395,7 @@ extern void aee_rr_rec_thermal_temp1(u8 val);
 extern void aee_rr_rec_thermal_temp2(u8 val);
 extern void aee_rr_rec_thermal_temp3(u8 val);
 extern void aee_rr_rec_thermal_temp4(u8 val);
-extern void aee_rr_rec_thermal_temp5(u8 val);
+extern void aee_rr_rec_thermal_temp5(u8 val); /* TODO: add ts5 */
 extern void aee_rr_rec_thermal_status(u8 val);
 extern void aee_rr_rec_thermal_ATM_status(u8 val);
 extern void aee_rr_rec_thermal_ktime(u64 val);
@@ -402,7 +404,7 @@ extern u8 aee_rr_curr_thermal_temp1(void);
 extern u8 aee_rr_curr_thermal_temp2(void);
 extern u8 aee_rr_curr_thermal_temp3(void);
 extern u8 aee_rr_curr_thermal_temp4(void);
-extern u8 aee_rr_curr_thermal_temp5(void);
+extern u8 aee_rr_curr_thermal_temp5(void); /* TODO: add ts5 */
 extern u8 aee_rr_curr_thermal_status(void);
 extern u8 aee_rr_curr_thermal_ATM_status(void);
 extern u64 aee_rr_curr_thermal_ktime(void);
@@ -416,13 +418,13 @@ extern u64 aee_rr_curr_thermal_ktime(void);
 extern void __iomem *thermal_base;
 extern void __iomem *auxadc_base;
 extern void __iomem *infracfg_ao_base;
-extern void __iomem *apmixed_base;
+extern void __iomem *th_apmixed_base;
 extern void __iomem *INFRACFG_AO_base;
 
 #define THERM_CTRL_BASE_2    thermal_base
 #define AUXADC_BASE_2        auxadc_ts_base
 #define INFRACFG_AO_BASE_2   infracfg_ao_base
-#define APMIXED_BASE_2       apmixed_base
+#define APMIXED_BASE_2       th_apmixed_base
 #else
 #include <mach/mt_reg_base.h>
 #define AUXADC_BASE_2     AUXADC_BASE

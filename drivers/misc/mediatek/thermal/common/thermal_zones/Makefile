@@ -21,6 +21,7 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/auxadc/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ifeq ($(CONFIG_ARCH_MT6735),y)
@@ -151,6 +152,7 @@ obj-$(CONFIG_THERMAL) += mtk_ts_cpu.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
+obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 ifneq ($(CONFIG_MTK_PMIC_CHIP_MT6353),y)
 #obj-$(CONFIG_THERMAL) += mtk_ts_tsx.o
 endif
@@ -163,5 +165,5 @@ obj-$(CONFIG_THERMAL) += mtk_ts1.o
 obj-$(CONFIG_THERMAL) += mtk_ts2.o
 obj-$(CONFIG_THERMAL) += mtk_ts3.o
 obj-$(CONFIG_THERMAL) += mtk_ts4.o
-#obj-$(CONFIG_THERMAL) += mtk_ts5.o
+obj-$(CONFIG_THERMAL) += mtk_ts5.o
 endif

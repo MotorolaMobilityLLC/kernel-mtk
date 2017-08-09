@@ -27,19 +27,18 @@
 #include "mt_gpufreq.h"
 
 /*
-Bank0 : BIG     (TS_MCU1)
-Bank1 : GPU     (TS_MCU4)
-Bank2 : SOC     (TS_MCU2)
-Bank3 : CPU-L   (TS_MCU2)
-Bank4 : CPU-LL  (TS_MCU2)
-Bank5 : MCUCCI  (TS_MCU2)
+Bank0 : CPU-LL    (TS_MCU1)
+Bank1 : CPU-L     (TS_MCU2)
+Bank2 : CCI       (TS_MCU1 + TS_MCU2)
+Bank3 : GPU       (TS_MCU3 + TS_MCU4 + TS_MCU5)
 */
 typedef enum {
 	THERMAL_SENSOR1     = 0,/*TS_MCU1*/
 	THERMAL_SENSOR2     = 1,/*TS_MCU2*/
 	THERMAL_SENSOR3     = 2,/*TS_MCU3*/
 	THERMAL_SENSOR4     = 3,/*TS_MCU4*/
-	THERMAL_SENSOR_ABB  = 4,/*TS_ABB*/
+	THERMAL_SENSOR5		= 4,/*TS_MCU5*/
+	THERMAL_SENSOR_ABB  = 5,/*TS_ABB*/
 	THERMAL_SENSOR_NUM
 } thermal_sensor_name;
 
@@ -48,8 +47,6 @@ typedef enum {
 	THERMAL_BANK1     = 1,
 	THERMAL_BANK2     = 2,
 	THERMAL_BANK3     = 3,
-	THERMAL_BANK4     = 4,
-	THERMAL_BANK5     = 5,
 	THERMAL_BANK_NUM
 } thermal_bank_name;
 
@@ -86,6 +83,7 @@ typedef enum {
 	MTK_THERMAL_SENSOR_TS2,
 	MTK_THERMAL_SENSOR_TS3,
 	MTK_THERMAL_SENSOR_TS4,
+	MTK_THERMAL_SENSOR_TS5,
 	MTK_THERMAL_SENSOR_TSABB,
 
 	ATM_CPU_LIMIT,
@@ -136,6 +134,7 @@ extern int get_immediate_ts1_wrap(void);
 extern int get_immediate_ts2_wrap(void);
 extern int get_immediate_ts3_wrap(void);
 extern int get_immediate_ts4_wrap(void);
+extern int get_immediate_ts5_wrap(void);
 extern int get_immediate_tsabb_wrap(void);
 
 /* Get TS_ temperatures from its thermal_zone instead of raw data,
@@ -144,6 +143,7 @@ extern int mtkts_get_ts1_temp(void);
 extern int mtkts_get_ts2_temp(void);
 extern int mtkts_get_ts3_temp(void);
 extern int mtkts_get_ts4_temp(void);
+extern int mtkts_get_ts5_temp(void);
 extern int mtkts_get_tsabb_temp(void);
 
 extern int is_cpu_power_unlimit(void);	/* in mtk_ts_cpu.c */

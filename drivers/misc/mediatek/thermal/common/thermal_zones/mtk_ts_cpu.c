@@ -85,7 +85,7 @@ u32 thermal_irq_number = 0;
 void __iomem *thermal_base;
 void __iomem *auxadc_ts_base;
 void __iomem *infracfg_ao_base;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 void __iomem *th_apmixed_base;
 #else
 void __iomem *apmixed_base;
