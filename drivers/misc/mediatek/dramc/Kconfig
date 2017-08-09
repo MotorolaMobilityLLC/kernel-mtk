@@ -13,3 +13,8 @@ config MTK_DRAMC_PASR
 	  for PASR(Partial Array Self-Refresh).
 	  Caller needs to prepare bit-mask setting of DRAM
 	  segment to trigger PASR.
+
+config MTK_COMMON_EMI
+	bool "Common emi driver for 8127/2701/7623"
+	help
+	  This enable 8127/7623/2701 common emi driver.

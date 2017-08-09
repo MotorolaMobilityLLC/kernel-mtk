@@ -12,4 +12,10 @@
 #
 
 obj-y := emi_reg_rw.o
+
+ifeq ($(CONFIG_MTK_COMMON_EMI), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt8127/include/
+obj-y += mt8127/
+else
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
