@@ -56,6 +56,8 @@ static u32 wa_get_emi_sema = 1;
 #define OFFS_FW_RSV0		0x02c0
 #define OFFS_FW_RSV1		0x02c4
 #define OFFS_FW_RSV2		0x02c8
+#define OFFS_TIMER_OUT1		0x02d0
+#define OFFS_TIMER_OUT2		0x02d4
 #define OFFS_INIT_OPP		0x02e0
 #define OFFS_INIT_FREQ		0x02f0
 #define OFFS_INIT_VOLT		0x0300
@@ -630,8 +632,8 @@ static struct task_struct *dvfs_nfy_task;
 static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
 
 /* log_box[MAX_LOG_FETCH] is also used to save last log entry */
-static struct dvfs_log log_box[1 + MAX_LOG_FETCH];
-static unsigned int next_log_offs = OFFS_LOG_S;
+static struct dvfs_log log_box[1 + MAX_LOG_FETCH] __nosavedata;
+static unsigned int next_log_offs __nosavedata = OFFS_LOG_S;
 
 static dvfs_notify_t notify_dvfs_change_cb;
 static DEFINE_MUTEX(notify_mutex);
@@ -760,19 +762,21 @@ do {							\
 		;					\
 } while (0)
 
-#define wait_complete_us(condition, delay, timeout)	\
-({							\
-	int i = 0;					\
-	int n = DIV_ROUND_UP(timeout, delay);		\
-	while (!(condition)) {				\
-		if (i >= n) {				\
-			i = -EBUSY;			\
-			break;				\
-		}					\
-		udelay(delay);				\
-		i++;					\
-	}						\
-	i;						\
+#define wait_complete_us(condition, delay, timeout)		\
+({								\
+	int i = 0;						\
+	int n = DIV_ROUND_UP(timeout, delay);			\
+	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
+	while (!(condition)) {					\
+		if (i >= n) {					\
+			i = -EBUSY;				\
+			break;					\
+		}						\
+		udelay(delay);					\
+		i++;						\
+	}							\
+	csram_write(OFFS_TIMER_OUT2, cspm_get_timestamp());	\
+	i;							\
 })
 
 static inline u32 base_va_to_pa(const u32 *base)
