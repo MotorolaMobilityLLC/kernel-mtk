@@ -55,7 +55,7 @@
 #include "mt_soc_afe_control.h"
 #include "mt_soc_codec_63xx.h"
 #include "mt_soc_pcm_common.h"
-#include "mt_auddrv_devtree_parser.h"
+/*#include "mt_auddrv_devtree_parser.h"*/
 #include "auddrv_underflow_mach.h"
 #include "AudDrv_OffloadCommon.h"
 #include "AudDrv_Common_func.h"
@@ -1008,7 +1008,7 @@ static int mtk_afe_routing_platform_probe(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform, Audio_snd_routing_controls,
 				      ARRAY_SIZE(Audio_snd_routing_controls));
 	snd_soc_add_platform_controls(platform, Afe_Anc_controls, ARRAY_SIZE(Afe_Anc_controls));
-	Auddrv_Devtree_Init();
+	/*Auddrv_Devtree_Init();*/
 	return 0;
 }
 
