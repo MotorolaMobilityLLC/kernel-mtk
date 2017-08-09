@@ -112,7 +112,7 @@ static VOID stp_process_header_only_packet(VOID);
 static VOID stp_sdio_process_packet(VOID);
 static VOID stp_trace32_dump(VOID);
 static VOID stp_sdio_trace32_dump(VOID);
-
+static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type);
 
 static INT32 stp_ctx_lock_init(mtkstp_context_struct *pctx)
 {
@@ -212,29 +212,16 @@ static VOID stp_sdio_process_packet(VOID)
 		/*check type and function if active? */
 		if ((stp_core_ctx.parser.type < MTKSTP_MAX_TASK_NUM) &&
 				(is_function_active == MTK_WCN_BOOL_TRUE)) {
-#if CFG_WMT_LTE_COEX_HANDLING
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-					stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG) {
-				STP_INFO_FUNC("wmt/lte coex package!\n");
-				stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, COEX_TASK_INDX);
-				stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
-			} else {
+			if (stp_core_ctx.parser.type == WMT_TASK_INDX)
+				wmt_parser_data(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter,
+						stp_core_ctx.parser.type);
+			else {
 				stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter,
 						stp_core_ctx.parser.type);
+
 				/*notify corresponding subfunction of incoming data */
 				(*sys_event_set)(stp_core_ctx.parser.type);
 			}
-#else
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-					stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG) {
-				STP_WARN_FUNC("omit BT/WIFI & LTE coex msg handling in non-LTE projects\n");
-			} else {
-				stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter,
-						stp_core_ctx.parser.type);
-				/*notify corresponding subfunction of incoming data */
-				(*sys_event_set)(stp_core_ctx.parser.type);
-			}
-#endif
 		} else {
 			if (is_function_active == MTK_WCN_BOOL_FALSE) {
 				STP_ERR_FUNC("function type = %d is inactive, so no en-queue to rx\n",
@@ -830,6 +817,53 @@ static VOID stp_add_to_tx_queue(const PUINT8 buffer, UINT32 length)
 
 /*****************************************************************************
 * FUNCTION
+*  wmt_parser_data
+* DESCRIPTION
+*  push data to wmt parser engine
+* PARAMETERS
+*  buffer      [IN]        data buffer
+*  length      [IN]        data buffer length
+*  type        [IN]        corresponding task index
+* RETURNS
+*  INT32    0=success, others=error
+*****************************************************************************/
+static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type)
+{
+	UINT8 wmtsubtype;
+	INT32 fgRxOk = -1;
+	UINT32 parser_length = 0;
+	UINT32 packet_length = 0;
+
+	while (parser_length < length) {
+		wmtsubtype = buffer[parser_length + 1];
+		packet_length = buffer[parser_length + 3] << 8;
+		packet_length += buffer[parser_length + 2];
+		STP_DBG_FUNC("wmt sub type (%d)\n", wmtsubtype);
+		if (wmtsubtype == WMT_LTE_COEX_FLAG) {
+#if CFG_WMT_LTE_COEX_HANDLING
+			fgRxOk = stp_add_to_rx_queue(buffer + parser_length, packet_length + 4, COEX_TASK_INDX);
+			if (fgRxOk == 0) {
+				STP_DBG_FUNC("wmt/lte coex package!\n");
+				stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
+			}
+#else
+			STP_WARN_FUNC("BT/WIFI & LTE coex in non-LTE projects,drop it...\n");
+#endif
+		} else {
+			fgRxOk = stp_add_to_rx_queue(buffer + parser_length, packet_length + 4, type);
+			if (fgRxOk == 0) {
+				STP_DBG_FUNC("wmt package!\n");
+				(*sys_event_set)(type);
+			}
+		}
+		parser_length += packet_length + 4;
+	}
+
+	return fgRxOk;
+}
+
+/*****************************************************************************
+* FUNCTION
 *  stp_add_to_rx_queue
 * DESCRIPTION
 *  put data to corresponding task's rx queue and notify corresponding task
@@ -1191,28 +1225,14 @@ static VOID stp_process_packet(VOID)
 				if (!osal_strncmp(stp_core_ctx.rx_buf, (const PINT8)rst_buf, 7))
 					osal_printtimeofday("############ BT Rest end <--");
 			}
-#if CFG_WMT_LTE_COEX_HANDLING
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-			    (stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
-				fgRxOk =
-				    stp_add_to_rx_queue(stp_core_ctx.rx_buf,
-							stp_core_ctx.rx_counter, COEX_TASK_INDX);
+			if (stp_core_ctx.parser.type == WMT_TASK_INDX)
+				fgRxOk = wmt_parser_data(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter,
+						stp_core_ctx.parser.type);
 			else
 				fgRxOk =
 				    stp_add_to_rx_queue(stp_core_ctx.rx_buf,
 							stp_core_ctx.rx_counter,
 							stp_core_ctx.parser.type);
-#else
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-			    (stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
-				STP_WARN_FUNC
-				    ("BT/WIFI & LTE coex in non-LTE projects,drop it...\n");
-			else
-				fgRxOk =
-				    stp_add_to_rx_queue(stp_core_ctx.rx_buf,
-							stp_core_ctx.rx_counter,
-							stp_core_ctx.parser.type);
-#endif
 		} else {
 			if (is_function_active == MTK_WCN_BOOL_FALSE) {
 				STP_ERR_FUNC
@@ -1231,28 +1251,8 @@ static VOID stp_process_packet(VOID)
 		if (fgRxOk == 0) {
 			stp_process_packet_fail_count = 0;
 			/*notify corresponding subfunction of incoming data */
-#if CFG_WMT_LTE_COEX_HANDLING
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-			    (stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG)) {
-#if 1
-				STP_DBG_FUNC
-				    ("WMT/LTE package:[0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x]\n",
-				     stp_core_ctx.rx_buf[0], stp_core_ctx.rx_buf[1],
-				     stp_core_ctx.rx_buf[2], stp_core_ctx.rx_buf[3],
-				     stp_core_ctx.rx_buf[4], stp_core_ctx.rx_buf[5],
-				     stp_core_ctx.rx_buf[6], stp_core_ctx.rx_buf[7]);
-#endif
-				stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
-			} else
+			if (stp_core_ctx.parser.type != WMT_TASK_INDX)
 				(*sys_event_set) (stp_core_ctx.parser.type);
-#else
-			if ((stp_core_ctx.parser.type == WMT_TASK_INDX) &&
-			    (stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
-				STP_WARN_FUNC
-				    ("omit BT/WIFI & LTE coex msg handling in non-LTE projects\n");
-			else
-				(*sys_event_set) (stp_core_ctx.parser.type);
-#endif
 
 			stp_ctx_lock(&stp_core_ctx);
 

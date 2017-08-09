@@ -171,7 +171,6 @@ typedef struct {
 	UINT16 length;
 	UINT8 checksum;
 	UINT16 crc;
-	UINT8 wmtsubtype;
 } mtkstp_parser_context_struct;
 
 typedef struct {

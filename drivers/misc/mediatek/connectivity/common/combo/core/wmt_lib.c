@@ -549,7 +549,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
 #if	CFG_WMT_LTE_ENABLE_MSGID_MAPPING
 	MTK_WCN_BOOL unknown_msgid = MTK_WCN_BOOL_FALSE;
 #endif
-	WMT_INFO_FUNC("idc_infor from conn_md is 0x%p\n", idc_infor);
+	WMT_DBG_FUNC("idc_infor from conn_md is 0x%p\n", idc_infor);
 
 	ret = wmt_lib_idc_lock_aquire();
 	if (ret) {
