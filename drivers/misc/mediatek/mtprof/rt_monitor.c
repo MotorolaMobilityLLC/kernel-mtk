@@ -152,7 +152,10 @@ void stop_rt_mon_task(int cpu)
 			cost_cputime =
 			   tmp->cputime - tmp->cost_isrtime;
 			tmp->cost_cputime += cost_cputime;
-			do_div(cost_cputime, dur_ts);
+			if (dur_ts == 0)
+				cost_cputime = 0;
+			else
+				do_div(cost_cputime, dur_ts);
 			tmp->cputime_percen_6 = cost_cputime;
 		} else {
 			tmp->cost_cputime = 0;
