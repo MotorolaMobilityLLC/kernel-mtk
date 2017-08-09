@@ -580,7 +580,8 @@ static irqreturn_t iddig_eint_isr(int irq, void *otg_sx)
 
 	mu3d_dbg(K_INFO, "%s : schedule to delayed work\n", __func__);
 	disable_irq_nosync(otg_switch->iddig_eint_num);
-	schedule_delayed_work(&otg_switch->switch_dwork, OTG_IDDIG_DEBOUNCE * HZ / 1000);
+	/*disable iddig isr first as OTG function is not ready*/
+	/*schedule_delayed_work(&otg_switch->switch_dwork, OTG_IDDIG_DEBOUNCE * HZ / 1000);*/
 	return IRQ_HANDLED;
 }
 
