@@ -92,8 +92,9 @@ P_WMT_FUNC_OPS gpWmtFuncOps[WMTDRV_TYPE_MAX] = {
 static WMT_CTX gMtkWmtCtx;
 static UINT8 gLpbkBuf[WMT_LPBK_BUF_LEN] = { 0 };
 static UINT8 gAntBuf[1024] = { 0 };
+#if CFG_WMT_LTE_COEX_HANDLING
 static UINT32 g_open_wmt_lte_flag;
-
+#endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
