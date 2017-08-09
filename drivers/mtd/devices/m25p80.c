@@ -303,9 +303,10 @@ static const struct spi_device_id m25p_ids[] = {
 	{"m25px64"},	{"m25px80"},
 	{"w25x10"},	{"w25x20"},	{"w25x40"},	{"w25x80"},
 	{"w25x16"},	{"w25x32"},	{"w25q32"},	{"w25q32dw"},
-	{"w25x64"},	{"w25q64"},	{"w25q80"},	{"w25q80bl"},
-	{"w25q128"},	{"w25q256"},	{"cat25c11"},
-	{"cat25c03"},	{"cat25c09"},	{"cat25c17"},	{"cat25128"},
+	{"w25x64"},	{"w25q64"},	{"w25q64fw"},	{"w25q80"},
+	{"w25q80bl"},	{"w25q128"},	{"w25q128fw"},	{"w25q256"},
+	{"cat25c11"},	{"cat25c03"},	{"cat25c09"},	{"cat25c17"},
+	{"cat25128"},
 	{ },
 };
 MODULE_DEVICE_TABLE(spi, m25p_ids);
