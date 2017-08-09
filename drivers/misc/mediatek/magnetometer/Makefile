@@ -5,6 +5,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/magnetometer/inc
 obj-y   +=  mag.o
 obj-y   +=  mag_factory.o
 
+ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
+obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
+else
 obj-$(CONFIG_MTK_AF7133)	+=  af7133/
 obj-$(CONFIG_MTK_AKM8963)	+=  akm8963/
 obj-$(CONFIG_MTK_AKM8963_NEW)	+=  akm8963-new/
@@ -41,3 +44,4 @@ obj-$(CONFIG_MTK_YAS530)	+=  yamaha530/
 obj-$(CONFIG_MTK_YAS532)   +=  yamaha532/
 obj-$(CONFIG_MTK_YAS532_NEW)   +=  yamaha532-new/
 obj-$(CONFIG_MTK_YAS537)	+=  yamaha537/
+endif
