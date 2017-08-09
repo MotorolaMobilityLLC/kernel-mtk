@@ -867,7 +867,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	int ret = 0;
 	disp_session_vsync_config *c = (disp_session_vsync_config *) config;
 
-	EXT_DISP_FUNC();
+/*	EXT_DISP_FUNC();*/
 
 	_ext_disp_path_lock();
 	if (pgc->state == EXTD_DEINIT) {
