@@ -2044,7 +2044,7 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = primary_display_user_cmd(cmd, arg);
 		break;
 	default:
-		DISPERR("[session]ioctl not supported, 0x%08x\n", cmd);
+		DISPMSG("[session]ioctl not supported, 0x%08x\n", cmd);
 	}
 
 	return ret;
