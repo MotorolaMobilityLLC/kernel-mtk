@@ -2591,6 +2591,7 @@ static int _decouple_update_rdma_config_nolock(void)
 
 			tmpConfig.height = primary_display_get_height();
 			tmpConfig.width = primary_display_get_width();
+			tmpConfig.yuv_range = DISP_YUV_BT601;
 			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
 			_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 			cmdqRecFlushAsyncCallback(cmdq_handle, _Interface_fence_release_callback,
