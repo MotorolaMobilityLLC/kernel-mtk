@@ -14,28 +14,19 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/io.h>
-/* GIT K318 WORKAROUND */
-/* #include <linux/usb/nop-usb-xceiv.h> */
-/* #include <linux/xlog.h> */
 #include <linux/switch.h>
 #include <linux/i2c.h>
-/* GIT K318 WORKAROUND */
-/* #include <mach/irqs.h> */
-/* #include <mach/eint.h> */
 #include "musb_core.h"
 #include "mtk_musb.h"
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include "musbhsdma.h"
-/* GIT K318 WORKAROUND */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/mt_pm_ldo.h> */
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mt_boot_common.h>
 #ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
 struct clk *musb_clk;
 #endif
-/* GIT K318 WORKAROUND */
-/* #include <mach/emi_mpu.h> */
 #include "usb20.h"
 #include <linux/delay.h>
 #ifdef CONFIG_OF
@@ -45,8 +36,6 @@ struct clk *musb_clk;
 #include <linux/regulator/consumer.h>
 #endif
 #endif
-/* GIT K318 WORKAROUND */
-/* #include <mach/mt_boot_common.h> */
 static CHARGER_TYPE mt_get_charger_type(void){return STANDARD_HOST; }
 
 #ifdef MUSB_QMU_SUPPORT
@@ -665,8 +654,7 @@ bool is_switch_charger(void)
 void pmic_chrdet_int_en(int is_on)
 {
 #ifndef FPGA_PLATFORM
-	/* GIT K318 WORKAROUND */
-	/* upmu_interrupt_chrdet_int_en(is_on); */
+	upmu_interrupt_chrdet_int_en(is_on);
 #endif
 }
 
@@ -1205,7 +1193,6 @@ static int mt_usb_init(struct musb *musb)
 
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_MTK_LEGACY
-	/* GIT K318 WORKAROUND */
 	hwPowerOn(MT6328_POWER_LDO_VUSB33, VOL_3300, "VUSB_LDO");
 	DBG(0, "enable VBUS LDO\n");
 #else

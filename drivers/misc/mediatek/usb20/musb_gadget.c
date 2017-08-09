@@ -1129,9 +1129,6 @@ static void rxstate(struct musb *musb, struct musb_request *req)
 					musb_writew(epio, MUSB_RXCSR, csr | MUSB_RXCSR_DMAMODE);
 					musb_writew(epio, MUSB_RXCSR, csr);
 
-					/* GIT K318 WORKAROUND */
-					/* transfer_size = min(request->length - request->actual,
-							    channel->max_len); */
 					transfer_size = min_t(unsigned, request->length - request->actual,
 							    channel->max_len);
 					musb_ep->dma->desired_mode = 1;
@@ -1148,9 +1145,6 @@ static void rxstate(struct musb *musb, struct musb_request *req)
 					csr |= MUSB_RXCSR_DMAENAB;
 					musb_writew(epio, MUSB_RXCSR, csr);
 
-					/* GIT K318 WORKAROUND */
-					/* transfer_size = min(request->length - request->actual,
-							    (unsigned)fifo_count); */
 					transfer_size = min_t(unsigned, request->length - request->actual,
 							    fifo_count);
 					musb_ep->dma->desired_mode = 0;
