@@ -20,7 +20,9 @@
  *Local variable definition
  *=============================================================*/
 static unsigned int cl_dev_sysrst_state;
+static unsigned int cl_dev_sysrst_state_buck;
 static struct thermal_cooling_device *cl_dev_sysrst;
+static struct thermal_cooling_device *cl_dev_sysrst_buck;
 /*=============================================================*/
 
 /*
@@ -61,22 +63,64 @@ static int sysrst_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigne
 	return 0;
 }
 
+static int sysrst_buck_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	/* tscpu_dprintk("sysrst_buck_get_max_state\n"); */
+	*state = 1;
+	return 0;
+}
+
+static int sysrst_buck_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
+{
+	/* tscpu_dprintk("sysrst_buck_get_cur_state\n"); */
+	*state = cl_dev_sysrst_state_buck;
+	return 0;
+}
+
+static int sysrst_buck_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
+{
+	cl_dev_sysrst_state_buck = state;
+
+	if (cl_dev_sysrst_state_buck == 1) {
+		tscpu_printk("sysrst_buck_set_cur_state = 1\n");
+		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+		tscpu_printk("*****************************************\n");
+		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+
+#ifndef CONFIG_ARM64
+		BUG();
+#else
+		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+#endif
+
+	}
+	return 0;
+}
+
+
+
 static struct thermal_cooling_device_ops mtktscpu_cooling_sysrst_ops = {
 	.get_max_state = sysrst_cpu_get_max_state,
 	.get_cur_state = sysrst_cpu_get_cur_state,
 	.set_cur_state = sysrst_cpu_set_cur_state,
 };
 
+static struct thermal_cooling_device_ops mtktsbuck_cooling_sysrst_ops = {
+	.get_max_state = sysrst_buck_get_max_state,
+	.get_cur_state = sysrst_buck_get_cur_state,
+	.set_cur_state = sysrst_buck_set_cur_state,
+};
+
 static int __init mtk_cooler_sysrst_init(void)
 {
-	int err = 0;
 	tscpu_dprintk("mtk_cooler_sysrst_init: Start\n");
 	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktscpu-sysrst", NULL,
 							    &mtktscpu_cooling_sysrst_ops);
-	if (err) {
-		tscpu_printk("tscpu_register_DVFS_hotplug_cooler fail\n");
-		return err;
-	}
+
+	cl_dev_sysrst_buck = mtk_thermal_cooling_device_register("mtktsbuck-sysrst", NULL,
+							    &mtktsbuck_cooling_sysrst_ops);
+
+
 	tscpu_dprintk("mtk_cooler_sysrst_init: End\n");
 	return 0;
 }
