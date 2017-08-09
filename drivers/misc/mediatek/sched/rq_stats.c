@@ -337,9 +337,14 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 	arch_get_cluster_cpus(&cls_cpus, cluster_id);
 
 	for_each_cpu_mask(cpu, cls_cpus) {
+		unsigned long cur_cap;
+		unsigned long max_cap;
+		int delta = SCHED_CAPACITY_SCALE*5/100;
 		if (likely(!cpu_online(cpu)))
 			continue;
-		hmp_threshold = (topology_max_cpu_capacity(cpu) * threshold) >> SCHED_CAPACITY_SHIFT;
+		cur_cap = topology_cur_cpu_capacity(cpu);
+		max_cap = topology_max_cpu_capacity(cpu);
+		hmp_threshold = (max_cap * threshold) >> SCHED_CAPACITY_SHIFT;
 		raw_spin_lock_irqsave(&cpu_rq(cpu)->lock, flags);
 		list_for_each_entry(p, &cpu_rq(cpu)->cfs_tasks, se.group_node) {
 			is_heavy = 0;
@@ -348,7 +353,7 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 				continue;
 #endif
 			if (p->se.avg.utilization_avg_contrib >= hmp_threshold) {
-				if ((topology_cur_cpu_capacity(cpu) * 4) >= (topology_max_cpu_capacity(cpu) * 3))
+				if ((cur_cap * SCHED_CAPACITY_SCALE) >= max_cap * (threshold-delta))
 					is_heavy = 1;
 				else
 					is_heavy = 0;
