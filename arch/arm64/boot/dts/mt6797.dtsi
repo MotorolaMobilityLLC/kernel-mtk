@@ -1827,7 +1827,7 @@
 		sys_cirq@10204000 {
 			compatible = "mediatek,mt6797-sys_cirq", "mediatek,mt6735-sys_cirq";
 			reg = <0x10204000 0x1000>;
-			interrupts = <GIC_SPI 291 IRQ_TYPE_EDGE_FALLING>;
+			interrupts = <GIC_SPI 291 IRQ_TYPE_LEVEL_LOW>;
 			mediatek,cirq_num = <220>;
 			mediatek,spi_start_offset = <72>;
 		};
