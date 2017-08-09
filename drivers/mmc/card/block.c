@@ -3310,11 +3310,18 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	return ERR_PTR(ret);
 }
 
+#if  defined(CONFIG_ARCH_MT8127) && defined(CONFIG_MTK_EMMC_SUPPORT)
+#include "../host/mediatek/mt8127/sd_misc.h"
+#endif
 static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
 {
 	sector_t size;
 	struct mmc_blk_data *md;
 
+#if  defined(CONFIG_ARCH_MT8127) && defined(CONFIG_MTK_EMMC_SUPPORT)
+	unsigned int l_reserve;
+	struct storage_info s_info = {0};
+#endif
 	if (!mmc_card_sd(card) && mmc_card_blockaddr(card)) {
 		/*
 		 * The EXT_CSD sector count is in number or 512 byte
@@ -3329,6 +3336,15 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
 		size = card->csd.capacity << (card->csd.read_blkbits - 9);
 	}
 
+#if  defined(CONFIG_ARCH_MT8127) && defined(CONFIG_MTK_EMMC_SUPPORT)
+	if (!mmc_card_sd(card)) {
+		msdc_get_info(EMMC_CARD_BOOT, EMMC_RESERVE, &s_info);
+		l_reserve =  s_info.emmc_reserve;
+		pr_debug("l_reserve = 0x%x\n", l_reserve);
+		/*reserved for 64MB (emmc otp + emmc combo offset + reserved)*/
+		size -= l_reserve;
+	}
+#endif
 	md = mmc_blk_alloc_req(card, &card->dev, size, false, NULL,
 					MMC_BLK_DATA_AREA_MAIN);
 	return md;
