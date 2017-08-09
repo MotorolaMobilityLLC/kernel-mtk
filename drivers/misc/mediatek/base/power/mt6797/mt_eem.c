@@ -571,7 +571,7 @@ static void eem_restore_eem_volt(struct eem_det *det);
 #define GPU_PMIC_STEP	(1282)
 
 #define VMAX_VAL_BIG		(120000) /* 118125 for MT6313; 120000 for DA9214 */
-#define VMIN_VAL_BIG		(83000) /* 82500 for MT6313; 83000 for DA9214 */
+#define VMIN_VAL_BIG		(80000) /* 82500 for MT6313; 80000 for DA9214 */
 #define VMAX_SRAM		(120000)
 #define VMIN_SRAM               (100000)
 #define VMAX_VAL_GPU            (112900)
