@@ -1976,6 +1976,41 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 }
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6755-scpsys", mt_scpsys_init);
+void subsys_if_on(void)
+{
+		unsigned int sta = spm_read(PWR_STATUS);
+		unsigned int sta_s = spm_read(PWR_STATUS_2ND);
+
+		if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
+			pr_err("suspend warning: SYS_MD1 is on!!!\n");
+
+		if ((sta & (1U << 1)) && (sta_s & (1U << 1)))
+			pr_err("suspend warning: SYS_CONN is on!!!\n");
+
+		if ((sta & (1U << 3)) && (sta_s & (1U << 3)))
+			pr_err("suspend warning: SYS_DIS is on!!!\n");
+
+		if ((sta & (1U << 4)) && (sta_s & (1U << 4)))
+			pr_err("suspend warning: SYS_MFG is on!!!\n");
+
+		if ((sta & (1U << 5)) && (sta_s & (1U << 5)))
+			pr_err("suspend warning: SYS_ISP is on!!!\n");
+
+		if ((sta & (1U << 7)) && (sta_s & (1U << 7)))
+			pr_err("suspend warning: SYS_VDE is on!!!\n");
+
+		if ((sta & (1U << 21)) && (sta_s & (1U << 21)))
+			pr_err("suspend warning: SYS_VEN is on!!!\n");
+
+		if ((sta & (1U << 24)) && (sta_s & (1U << 24)))
+			pr_err("suspend warning: SYS_AUD is on!!!\n");
+
+		if ((sta & (1U << 23)) && (sta_s & (1U << 23)))
+			pr_err("suspend warning: SYS_MFG_ASYNC is on!!!\n");
+
+		if ((sta & (1U << 28)) && (sta_s & (1U << 28)))
+			pr_err("suspend warning: SYS_C2K is on!!!\n");
+}
 
 #if CLK_DEBUG
 

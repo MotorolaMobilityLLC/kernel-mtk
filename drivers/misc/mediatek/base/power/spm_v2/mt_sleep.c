@@ -244,7 +244,10 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	if (slp_dump_regs)
 		slp_dump_pm_regs();
 #endif
-
+#if defined(CONFIG_ARCH_MT6755)
+	pll_if_on();
+	subsys_if_on();
+#endif
 #if 0
 #ifndef CONFIG_MTK_FPGA
 	if (slp_check_mtcmos_pll)

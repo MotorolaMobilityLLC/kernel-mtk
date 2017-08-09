@@ -449,8 +449,14 @@ void __iomem  *img_base;
 void __iomem  *vdec_gcon_base;
 void __iomem  *venc_gcon_base;
 /*PLL INIT*/
+#define ARMCA15PLL_CON0					(apmixed_base + 0x200)
+#define ARMCA7PLL_CON0					(apmixed_base + 0x210)
+#define MAINPLL_CON0						(apmixed_base + 0x220)
+#define UNIVPLL_CON0						(apmixed_base + 0x230)
+#define MMPLL_CON0							(apmixed_base + 0x240)
 #define MSDCPLL_CON0            (apmixed_base + 0x250)
 #define MSDCPLL_PWR_CON0        (apmixed_base + 0x25C)
+#define VENCPLL_CON0			(apmixed_base + 0x260)
 #define TVDPLL_CON0             (apmixed_base + 0x270)
 #define TVDPLL_PWR_CON0         (apmixed_base + 0x27C)
 #define APLL1_CON0              (apmixed_base + 0x2A0)
@@ -1824,3 +1830,26 @@ static void __init mt_audiosys_init(struct device_node *node)
 #endif
 }
 CLK_OF_DECLARE(mtk_audiosys, "mediatek,mt6755-audiosys", mt_audiosys_init);
+void pll_if_on(void)
+{
+		if (clk_readl(UNIVPLL_CON0) & 0x1)
+			pr_err("suspend warning: UNIVPLL is on!!!\n");
+
+		if (clk_readl(MMPLL_CON0) & 0x1)
+			pr_err("suspend warning: MMPLL is on!!!\n");
+
+		if (clk_readl(MSDCPLL_CON0) & 0x1)
+			pr_err("suspend warning: MSDCPLL is on!!!\n");
+
+		if (clk_readl(VENCPLL_CON0) & 0x1)
+			pr_err("suspend warning: VENCPLL is on!!!\n");
+
+		if (clk_readl(TVDPLL_CON0) & 0x1)
+			pr_err("suspend warning: TVDPLL is on!!!\n");
+
+		if (clk_readl(APLL1_CON0) & 0x1)
+			pr_err("suspend warning: APLL1 is on!!!\n");
+
+		if (clk_readl(APLL2_CON0) & 0x1)
+			pr_err("suspend warning: APLL2 is on!!!\n");
+}
