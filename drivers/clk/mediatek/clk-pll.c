@@ -90,23 +90,20 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
 static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 		int postdiv)
 {
-	u32 con1, val;
+	u32 con1, pd, val;
 	int pll_en;
+
+	/* set postdiv */
+	pd = readl(pll->pd_addr);
+	pd &= ~(POSTDIV_MASK << pll->data->pd_shift);
+	pd |= (ffs(postdiv) - 1) << pll->data->pd_shift;
+	writel(pd, pll->pd_addr);
 
 	pll_en = readl(pll->base_addr + REG_CON0) & CON0_BASE_EN;
 
-	/* set postdiv */
-	val = readl(pll->pd_addr);
-	val &= ~(POSTDIV_MASK << pll->data->pd_shift);
-	val |= (ffs(postdiv) - 1) << pll->data->pd_shift;
-
-	/* postdiv and pcw need to set at the same time if on same register */
-	if (pll->pd_addr != pll->pcw_addr) {
-		writel(val, pll->pd_addr);
-		val = readl(pll->pcw_addr);
-	}
-
 	/* set pcw */
+	val = readl(pll->pcw_addr);
+
 	val &= ~GENMASK(pll->data->pcw_shift + pll->data->pcwbits - 1,
 			pll->data->pcw_shift);
 	val |= pcw << pll->data->pcw_shift;
@@ -138,26 +135,16 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		u32 freq, u32 fin)
 {
 	unsigned long fmin = 1000 * MHZ;
-	const unsigned long *div_rate = pll->data->div_rate;
 	u64 _pcw;
 	u32 val;
 
 	if (freq > pll->data->fmax)
 		freq = pll->data->fmax;
 
-	if (div_rate) {
-		for (val = 1; div_rate[val] != 0; val++) {
-			if (freq > div_rate[val])
-				break;
-		}
-		val--;
+	for (val = 0; val < 4; val++) {
 		*postdiv = 1 << val;
-	} else {
-		for (val = 0; val < 5; val++) {
-			*postdiv = 1 << val;
-			if ((u64)freq * *postdiv >= fmin)
-				break;
-		}
+		if (freq * *postdiv >= fmin)
+			break;
 	}
 
 	/* _pcw = freq * postdiv / fin * 2^pcwfbits */
@@ -281,7 +268,7 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 		void __iomem *base)
 {
 	struct mtk_clk_pll *pll;
-	struct clk_init_data init;
+	struct clk_init_data init = {};
 	struct clk *clk;
 	const char *parent_name = "clk26m";
 
