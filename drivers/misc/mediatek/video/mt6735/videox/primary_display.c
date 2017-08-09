@@ -310,6 +310,34 @@ static int _disp_primary_path_idle_clock_off(unsigned int level)
 	dpmgr_path_idle_off(pgc->dpmgr_handle, NULL, level);
 	return 0;
 }
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+static void primary_suspend_release_present_fence(void)
+{
+	int fence_increment = 0;
+	disp_sync_info *layer_info = NULL;
+
+	/* if session not created, do not release present fence*/
+	if (pgc->session_id == 0) {
+		DISPDBG("_get_sync_info fail in present_fence_release thread\n");
+		return;
+	}
+	layer_info = _get_sync_info(pgc->session_id, disp_sync_get_present_timeline_id());
+
+	if (layer_info == NULL) {
+		DISPERR("_get_sync_info fail in present_fence_release thread\n");
+		return;
+	}
+	_primary_path_lock(__func__);
+	fence_increment = gPresentFenceIndex-layer_info->timeline->value;
+	if (fence_increment > 0) {
+		timeline_inc(layer_info->timeline, fence_increment);
+		MMProfileLogEx(ddp_mmp_get_events()->present_fence_release,
+			MMProfileFlagPulse, gPresentFenceIndex, fence_increment);
+	}
+	_primary_path_unlock(__func__);
+	DISPPR_FENCE("RPF/%d/%d\n", gPresentFenceIndex, gPresentFenceIndex-layer_info->timeline->value);
+}
+#endif
 
 static DEFINE_SPINLOCK(gLockTopClockOff);
 static int _disp_primary_path_dsi_clock_on(unsigned int level)
@@ -5151,6 +5179,51 @@ unsigned int primary_display_get_ticket(void)
 {
 	return dprec_get_vsync_count();
 }
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+int primary_suspend_release_ovl_fence(disp_session_input_config *session_input)
+{
+	unsigned int session = (unsigned int)((DISP_SESSION_PRIMARY)<<16 | (0));
+	unsigned int i = 0;
+	unsigned int layer = 0;
+
+	for (i = 0; i < session_input->config_layer_num; i++) {
+		unsigned int cur_fence;
+		disp_input_config *input_cfg = &session_input->config[i];
+
+		layer = input_cfg->layer_id;
+		cur_fence = input_cfg->next_buff_idx;
+		if (cur_fence != -1)
+			mtkfb_release_fence(session, i, cur_fence);
+	}
+	return 0;
+}
+
+int primary_suspend_clr_ovl_config(void)
+{
+	disp_ddp_path_config *data_config = NULL;
+	disp_path_handle handle = NULL;
+	OVL_CONFIG_STRUCT  ovl_config[OVL_LAYER_NUM];
+	int i = 0;
+
+	DISPFUNC();
+	if (0 == g_suspend_flag)
+		return -1;
+
+	if (_is_decouple_mode(pgc->session_mode) == 0)
+		handle = pgc->dpmgr_handle;
+	else
+		handle = pgc->ovl2mem_path_handle;
+
+	data_config = dpmgr_path_get_last_config(handle);
+	memset((void *)&(data_config->ovl_config), 0, sizeof(ovl_config));
+	last_primary_config = *data_config;
+
+	for (i = 0; i < OVL_LAYER_NUM; i++)
+		ovl_layer_switch(DISP_MODULE_OVL0, i, 0, NULL);
+
+	return 0;
+}
+#endif
 
 int primary_suspend_release_fence(void)
 {
@@ -5233,6 +5306,10 @@ int primary_display_suspend(void)
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[POWER]primary display path stop[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 4);
+
+#ifdef	CONFIG_SINGLE_PANEL_OUTPUT
+	primary_suspend_clr_ovl_config();
+#endif
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 1, 4);
@@ -5347,6 +5424,11 @@ int primary_display_resume(void)
 #ifndef CONFIG_MTK_CLKMGR
 	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
+
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	dpmgr_reset_module_handle(pgc->dpmgr_handle);
+#endif
+
 	DISPCHECK("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("dpmanager path power on[end]\n");
@@ -5701,6 +5783,10 @@ int primary_display_merge_session_cmd(disp_session_config *config)
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gPresentFenceIndex = fence_idx;
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	if (pgc->state == DISP_SLEPT)
+		primary_suspend_release_present_fence();
+#endif
 }
 
 int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
@@ -6011,6 +6097,20 @@ static int config_wdma_output(disp_path_handle disp_handle,
 	return dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 }
 
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+int primary_suspend_outputbuf_fence_release(void)
+{
+	int layer = 0;
+
+	layer = disp_sync_get_output_timeline_id();
+	mtkfb_release_layer_fence(primary_session_id, layer);
+	/* release rdma buffer */
+	layer = disp_sync_get_output_interface_timeline_id();
+	mtkfb_release_layer_fence(primary_session_id, layer);
+	return 0;
+}
+#endif
+
 int primary_display_config_output(disp_mem_output_config *output, unsigned int session_id)
 {
 	int ret = 0;
@@ -6022,6 +6122,9 @@ int primary_display_config_output(disp_mem_output_config *output, unsigned int s
 
 	if (pgc->state == DISP_SLEPT && DISP_SESSION_TYPE(session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("mem out is already slept or mode wrong(%d)\n", pgc->session_mode);
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+		primary_suspend_outputbuf_fence_release();
+#endif
 		goto done;
 	}
 #if !defined(OVL_MULTIPASS_SUPPORT) && !defined(OVL_TIME_SHARING)
@@ -6334,6 +6437,9 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 
 	if (pgc->state == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+		primary_suspend_release_ovl_fence(session_input);
+#endif
 		goto done;
 	}
 #ifdef MTK_DISP_IDLE_LP

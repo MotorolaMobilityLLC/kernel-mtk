@@ -466,6 +466,10 @@ int dpmgr_path_dsi_on(disp_path_handle dp_handle, void *cmdq_handle, unsigned in
 int dpmgr_path_dsi_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned int level);
 
 int dpmgr_module_notify(DISP_MODULE_ENUM module, DISP_PATH_EVENT event);
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+/*dpmgr_reset_module_handle, reset moudle path handle for single panel*/
+int dpmgr_reset_module_handle(disp_path_handle dp_handle);
+#endif
 
 /* disp_session_input_config *captured_session_input; */
 

@@ -53,8 +53,13 @@ static unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	 -1, -1, -1, -1, -1, -1, -1},
 #ifndef CONFIG_FPGA_EARLY_PORTING
 /*SUB_RDMA1_DISP*/
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	{DISP_MODULE_RDMA0, DISP_MODULE_DPI, -1, -1, -1,
+	 -1, -1, -1, -1, -1, -1, -1},
+#else
 	{DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1,
 	 -1, -1, -1, -1, -1, -1, -1},
+#endif
 #else
 /*SUB_RDMA1_DISP*/
 	{DISP_MODULE_RDMA1, DISP_MODULE_DSI0, -1, -1, -1,

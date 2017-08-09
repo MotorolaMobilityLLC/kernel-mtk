@@ -80,6 +80,11 @@
 /* TODO: revise this later @xuecheng */
 #include "mtkfb_fence.h"
 
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+#include "extd_hdmi.h"
+#include "external_display.h"
+#endif
+
 typedef enum {
 	PREPARE_INPUT_FENCE,
 	PREPARE_OUTPUT_FENCE,
@@ -393,7 +398,11 @@ int _ioctl_create_session(unsigned long arg)
 	if (disp_create_session(&config) != 0)
 		ret = -EFAULT;
 
-	if (disp_get_session_number() > 1) {
+	if (disp_get_session_number() > 1
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+			&& (config.type == DISP_SESSION_MEMORY)
+#endif
+		) {
 		primary_display_set_secondary_display(1, config.type);
 		for (i = DISP_SESSION_EXTERNAL; i < DISP_SESSION_MEMORY; i++) {
 			captured_session_input[i].config_layer_num = DISP_HW_MAX_LAYER;
@@ -426,7 +435,11 @@ int _ioctl_destroy_session(unsigned long arg)
 	if (disp_destroy_session(&config) != 0)
 		ret = -EFAULT;
 
-	if (disp_get_session_number() == 1)
+	if (disp_get_session_number() == 1
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+			&& (config.type == DISP_SESSION_MEMORY)
+#endif
+		)
 		primary_display_set_secondary_display(0, config.type);
 
 	return ret;
@@ -1231,6 +1244,7 @@ static int set_external_buffer(disp_session_input_config *input)
 		if (input->config[i].layer_enable) {
 			/*which is calculated by pitch and ROI. */
 			unsigned int Bpp, x, y, pitch, hw_fmt;
+
 			x = input->config[i].src_offset_x;
 			y = input->config[i].src_offset_y;
 			pitch = input->config[i].src_pitch;
@@ -1751,10 +1765,21 @@ int _ioctl_wait_vsync(unsigned long arg)
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
 
-	ret = primary_display_wait_for_vsync(&vsync_config);
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	if (primary_display_is_sleepd() && is_hdmi_active()) {
+			ret = ext_disp_wait_for_vsync(&vsync_config, vsync_config.session_id);
+			if (ret <= 0)
+				DISPERR("ioctl_wait_for_vsync, ext_disp fail, ret = %d.\n", ret);
+	} else {
+			ret = primary_display_wait_for_vsync(&vsync_config);
+			if (ret != 0)
+				DISPERR("ioctl_wait_for_vsync ,primary_display fail, ret = %d.\n", ret);
+	}
+#else
+		ret = primary_display_wait_for_vsync(&vsync_config);
 	if (ret != 0)
-		DISPERR("primary_display_wait_for_vsync fail, ret=%d.\n", ret);
-
+		DISPERR("primary_display_wait_for_vsync fail, ret = %d.\n", ret);
+#endif
 	if (session_info)
 		dprec_done(&session_info->event_waitvsync, 0, 0);
 

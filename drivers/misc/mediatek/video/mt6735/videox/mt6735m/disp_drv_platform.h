@@ -190,12 +190,12 @@ typedef enum {
 	#endif
 	#define DISP_INTERNAL_BUFFER_COUNT 3
 #endif
-
+#ifndef CONFIG_SINGLE_PANEL_OUTPUT
 /**
  * DISP_NO_DPI: option for DPI
  */
 #define DISP_NO_DPI
-
+#endif
 /**
  * DISP_NO_MT_BOOT: option for mt_boot
  */

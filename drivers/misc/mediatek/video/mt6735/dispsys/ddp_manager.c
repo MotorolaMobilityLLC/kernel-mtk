@@ -262,7 +262,11 @@ static int assign_default_irqs_table(DDP_SCENARIO_ENUM scenario, DDP_IRQ_EVENT_M
 	case DDP_SCENARIO_SUB_RDMA1_DISP:
 	case DDP_SCENARIO_SUB_OVL_MEMOUT:
 	case DDP_SCENARIO_SUB_ALL:
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+		idx = 0;
+#else
 		idx = 1;
+#endif
 		break;
 	case DDP_SCENARIO_PRIMARY_OVL_MEMOUT:
 		idx = 3;
@@ -1128,6 +1132,31 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
 	}
 	return ret;
 }
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+int dpmgr_reset_module_handle(disp_path_handle dp_handle)
+{
+	ddp_path_handle path_handle = NULL;
+	int module_name = 0;
+	int i = 0;
+	int module_num = 0;
+	int *modules = NULL;
+	DDP_MANAGER_CONTEXT *content = NULL;
+
+	ASSERT(dp_handle != NULL);
+	path_handle = (ddp_path_handle)dp_handle;
+	modules = ddp_get_scenario_list(path_handle->scenario);
+	module_num = ddp_get_module_num(path_handle->scenario);
+	content = _get_context();
+
+	for (i = 0; i < module_num; i++) {
+		module_name = modules[i];
+		DISP_LOG_I(" scenario %s reset module %s  handle\n", ddp_get_scenario_name(path_handle->scenario),
+			ddp_get_module_name(module_name));
+		content->module_path_table[module_name] = path_handle;
+	}
+	return 0;
+}
+#endif
 
 int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 {

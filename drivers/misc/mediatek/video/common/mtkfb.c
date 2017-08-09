@@ -2418,6 +2418,10 @@ static void mtkfb_blank_suspend(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	is_early_suspended = true;
+#endif
+
 	pr_debug("[FB Driver] enter early_suspend\n");
 #ifdef CONFIG_MTK_LEDS
 /* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
@@ -2529,6 +2533,10 @@ static void mtkfb_blank_resume(void)
 		return;
 
 	pr_debug("[FB Driver] enter late_resume\n");
+
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	is_early_suspended = false;
+#endif
 
 	ret = primary_display_resume();
 
