@@ -30,7 +30,6 @@
 #include <linux/sched.h>
 #include <linux/mm.h>
 #include <mt-plat/aee.h>
-#include "inc/mt_typedefs.h"
 /* #include <mach/hardware.h> */
 /* #include <mach/mt6589_pll.h> */
 /* #include <mach/camera_isp.h> */
