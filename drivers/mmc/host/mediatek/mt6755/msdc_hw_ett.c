@@ -7,36 +7,37 @@
 #include "mt_sd.h"
 #include "msdc_hw_ett.h"
 
-#ifdef CONFIG_ARCH_MT6735M
 #ifdef MSDC_SUPPORT_SANDISK_COMBO_ETT
 struct msdc_ett_settings msdc0_ett_settings_for_sandisk[] = {
-	{MSDC_HS200_MODE, 0xb0, (0x7 << 7), 0},
-	{MSDC_HS200_MODE, 0xb0, (0x1f << 10), 0},
-	{MSDC_HS400_MODE, 0xb0, (0x7 << 7), 0},
-	{MSDC_HS400_MODE, 0xb0, (0x1f << 10), 0},
-	{MSDC_HS400_MODE, 0x188, (0x1f << 2), 2 /*0x0 */ },
-	{MSDC_HS400_MODE, 0x188, (0x1f << 12), 18 /*0x13 */ },
+	/* common ett settings */
+	{MSDC_HS200_MODE, 0xb0, (0x7 << 7), 0x0},
+	{MSDC_HS200_MODE, 0xb0, (0x1f << 10), 0x0},
+	{MSDC_HS400_MODE, 0xb0, (0x7 << 7), 0x0},
+	{MSDC_HS400_MODE, 0xb0, (0x1f << 10), 0x0},
+	{MSDC_HS400_MODE, 0x188, (0x1f << 2), 0x0},
+	{MSDC_HS400_MODE, 0x188, (0x1f << 12), 0x13},
 
 	/* command & resp ett settings */
-	{MSDC_HS200_MODE, 0xb4, (0x7 << 3), 1},
-	{MSDC_HS200_MODE, 0x4, (0x1 << 1), 1},
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 16), 0},
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 22), 6},
+	{MSDC_HS200_MODE, 0xb4, (0x7 << 3), 0x1},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 1), 0x0},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 16), 0xf},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 22), 0x0},
 
-	{MSDC_HS400_MODE, 0xb4, (0x7 << 3), 1},
-	{MSDC_HS400_MODE, 0x4, (0x1 << 1), 1},
-	{MSDC_HS400_MODE, 0xf0, (0x1f << 16), 0},
-	{MSDC_HS400_MODE, 0xf0, (0x1f << 22), 11 /*0x0 */ },
+	{MSDC_HS400_MODE, 0xb4, (0x7 << 3), 0x1},
+	{MSDC_HS400_MODE, 0x4, (0x1 << 1), 0x1},
+	{MSDC_HS400_MODE, 0xf0, (0x1f << 16), 0xf},
+	{MSDC_HS400_MODE, 0xf0, (0x1f << 22), 0x0},
 
 	/* write ett settings */
-	{MSDC_HS200_MODE, 0xb4, (0x7 << 0), 1},
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 0), 15},
-	{MSDC_HS200_MODE, 0x4, (0x1 << 10), 1},
-	{MSDC_HS200_MODE, 0xf8, (0x1f << 24), 5},
+	{MSDC_HS200_MODE, 0xb4, (0x7 << 0), 0x1},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 0), 0x0},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 8), 0x1},
 
 	/* read ett settings */
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 8), 18},
-	{MSDC_HS200_MODE, 0x4, (0x1 << 2), 3},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 8), 0x16},
+	{MSDC_HS200_MODE, 0xf8, 0xffffffff, 0x16161616},
+	{MSDC_HS200_MODE, 0xfc, 0xffffffff, 0x16161616},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 2), 0x1},
 };
 #endif				/* mt6735m MSDC_SUPPORT_SANDISK_COMBO_ETT */
 #ifdef MSDC_SUPPORT_SAMSUNG_COMBO_ETT
@@ -70,8 +71,6 @@ struct msdc_ett_settings msdc0_ett_settings_for_samsung[] = {
 	{MSDC_HS200_MODE, 0x4, (0x1 << 2), 4},
 };
 #endif				/* mt6735m MSDC_SUPPORT_SAMSUNG_COMBO_ETT */
-
-#endif
 
 int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para)
 {
@@ -131,35 +130,35 @@ int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para)
 #if defined(CFG_DEV_MSDC0)
 #if defined(CONFIG_MTK_EMMC_SUPPORT)
 struct msdc_ett_settings msdc0_ett_settings[] = {
-	/* common ett settings */
-	{MSDC_HS200_MODE, 0xb0, (0x7 << 7), 0x0},	/* PATCH_BIT0[MSDC_PB0_INT_DAT_LATCH_CK_SEL]*/
-	{MSDC_HS200_MODE, 0xb0, (0x1f << 10), 0x0},	/*PATCH_BIT0[MSDC_PB0_CKGEN_MSDC_DLY_SEL]*/
-	{MSDC_HS400_MODE, 0xb0, (0x7 << 7), 0x0},	/*PATCH_BIT0[MSDC_PB0_INT_DAT_LATCH_CK_SEL]*/
-	{MSDC_HS400_MODE, 0xb0, (0x1f << 10), 0x0},	/*PATCH_BIT0[MSDC_PB0_CKGEN_MSDC_DLY_SEL]*/
-	{MSDC_HS400_MODE, 0x188, (0x1f << 2), 0x2 /*0x0 */ },	/*EMMC50_PAD_DS_TUNE[MSDC_EMMC50_PAD_DS_TUNE_DLY1]*/
-	{MSDC_HS400_MODE, 0x188, (0x1f << 12), 0x10 /*0x13 */ },
-	/*EMMC50_PAD_DS_TUNE[MSDC_EMMC50_PAD_DS_TUNE_DLY3]*/
+/* common ett settings */
+	{MSDC_HS200_MODE, 0xb0, (0x7 << 7), 0x0},
+	{MSDC_HS200_MODE, 0xb0, (0x1f << 10), 0x0},
+	{MSDC_HS400_MODE, 0xb0, (0x7 << 7), 0x0},
+	{MSDC_HS400_MODE, 0xb0, (0x1f << 10), 0x0},
+	{MSDC_HS400_MODE, 0x188, (0x1f << 2), 0x0},
+	{MSDC_HS400_MODE, 0x188, (0x1f << 12), 0x13},
 
 	/* command & resp ett settings */
-	{MSDC_HS200_MODE, 0xb4, (0x7 << 3), 0x1},	/*PATCH_BIT1[MSDC_PB1_CMD_RSP_TA_CNTR]*/
-	{MSDC_HS200_MODE, 0x4, (0x1 << 1), 0x0},	/*MSDC_IOCON[MSDC_IOCON_RSPL]*/
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 16), 0x7},	/*PAD_TUNE[MSDC_PAD_TUNE_CMDRDLY]*/
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 22), 0xb},	/*PAD_TUNE[MSDC_PAD_TUNE_CMDRRDLY]*/
+	{MSDC_HS200_MODE, 0xb4, (0x7 << 3), 0x1},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 1), 0x0},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 16), 0xf},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 22), 0x0},
 
-	{MSDC_HS400_MODE, 0xb4, (0x7 << 3), 0x1},	/*PATCH_BIT1[MSDC_PB1_CMD_RSP_TA_CNTR]*/
-	{MSDC_HS400_MODE, 0x4, (0x1 << 1), 0x0},	/*MSDC_IOCON[MSDC_IOCON_RSPL]*/
-	{MSDC_HS400_MODE, 0xf0, (0x1f << 16), 0x6},	/*PAD_TUNE[MSDC_PAD_TUNE_CMDRDLY]*/
-	{MSDC_HS400_MODE, 0xf0, (0x1f << 22), 0x6 /*0x0 */ },	/*PAD_TUNE[MSDC_PAD_TUNE_CMDRRDLY]*/
+	{MSDC_HS400_MODE, 0xb4, (0x7 << 3), 0x1},
+	{MSDC_HS400_MODE, 0x4, (0x1 << 1), 0x1},
+	{MSDC_HS400_MODE, 0xf0, (0x1f << 16), 0xf},
+	{MSDC_HS400_MODE, 0xf0, (0x1f << 22), 0x0},
 
 	/* write ett settings */
-	{MSDC_HS200_MODE, 0xb4, (0x7 << 0), 0x1},	/*PATCH_BIT1[MSDC_PB1_WRDAT_CRCS_TA_CNTR]*/
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 0), 0xb},	/*PAD_TUNE[MSDC_PAD_TUNE_DATWRDLY]*/
-	{MSDC_HS200_MODE, 0x4, (0x1 << 10), 0x0},	/*MSDC_IOCON[MSDC_IOCON_W_D0SPL]*/
-	{MSDC_HS200_MODE, 0xf8, (0x1f << 24), 0x7},	/*DAT_RD_DLY0[MSDC_DAT_RDDLY0_D0]*/
+	{MSDC_HS200_MODE, 0xb4, (0x7 << 0), 0x1},
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 0), 0x0},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 8), 0x1},
 
 	/* read ett settings */
-	{MSDC_HS200_MODE, 0xf0, (0x1f << 8), 0x9},	/*PAD_TUNE[MSDC_PAD_TUNE_DATRRDLY]*/
-	{MSDC_HS200_MODE, 0x4, (0x1 << 2), 0x0},	/*MSDC_IOCON[MSDC_IOCON_R_D_SMPL]*/
+	{MSDC_HS200_MODE, 0xf0, (0x1f << 8), 0x16},
+	{MSDC_HS200_MODE, 0xf8, 0xffffffff, 0x16161616},
+	{MSDC_HS200_MODE, 0xfc, 0xffffffff, 0x16161616},
+	{MSDC_HS200_MODE, 0x4, (0x1 << 2), 0x1},
 };
 
 struct msdc_hw msdc0_hw = {
