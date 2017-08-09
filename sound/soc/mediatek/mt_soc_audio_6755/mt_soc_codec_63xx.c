@@ -363,7 +363,7 @@ static void Topck_Enable(bool enable)
 		}
 
 		if (TopCkCount <= 0) {
-			pr_warn("TopCkCount <0 =%d\n ", TopCkCount);
+			/* pr_warn("TopCkCount <0 =%d\n ", TopCkCount); */
 			TopCkCount = 0;
 		}
 	}
@@ -3634,7 +3634,7 @@ static int Audio_ADC4_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 
 static bool AudioPreAmp1_Sel(int Mul_Sel)
 {
-	pr_warn("%s Mul_Sel = %d ", __func__, Mul_Sel);
+	/* pr_warn("%s Mul_Sel = %d ", __func__, Mul_Sel); */
 	if (Mul_Sel == 0)
 		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0030);	/* pinumx open */
 	else if (Mul_Sel == 1)
@@ -3676,7 +3676,7 @@ static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static bool AudioPreAmp2_Sel(int Mul_Sel)
 {
-	pr_warn("%s Mul_Sel = %d ", __func__, Mul_Sel);
+	/* pr_warn("%s Mul_Sel = %d ", __func__, Mul_Sel); */
 
 	if (Mul_Sel == 0)
 		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0030);	/* pinumx open */
@@ -3873,7 +3873,8 @@ static int Audio_Mic1_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic1_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic1_mode = %d\n", __func__, mAudio_Analog_Mic1_mode);
+	/* pr_warn("%s() mAudio_Analog_Mic1_mode = %d\n",
+		__func__, mAudio_Analog_Mic1_mode); */
 	return 0;
 }
 
@@ -3894,7 +3895,8 @@ static int Audio_Mic2_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic2_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic2_mode = %d\n", __func__, mAudio_Analog_Mic2_mode);
+	/* pr_warn("%s() mAudio_Analog_Mic2_mode = %d\n",
+		__func__, mAudio_Analog_Mic2_mode); */
 	return 0;
 }
 

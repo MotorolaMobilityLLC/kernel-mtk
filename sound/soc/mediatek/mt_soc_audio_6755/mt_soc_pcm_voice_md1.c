@@ -153,7 +153,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_ADC_Clk_On();
 
-	pr_warn("mtk_voice_pcm_open\n");
+	/* pr_warn("mtk_voice_pcm_open\n"); */
 
 	runtime->hw = mtk_pcm_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_pcm_hardware , sizeof(struct snd_pcm_hardware));
@@ -172,10 +172,10 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n");
+		/* pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n"); */
 		runtime->rate = 16000;
 	} else {
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n");
+		/* pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n"); */
 		runtime->rate = 16000;
 	}
 
@@ -184,7 +184,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 		mtk_voice_close(substream);
 		return err;
 	}
-	pr_warn("mtk_voice_pcm_open return\n");
+	/* pr_warn("mtk_voice_pcm_open return\n"); */
 	return 0;
 }
 
@@ -203,7 +203,7 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static int mtk_voice_close(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_voice_close\n");
+	/* pr_warn("mtk_voice_close\n"); */
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
@@ -237,7 +237,7 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 
 static int mtk_voice_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_voice_trigger cmd = %d\n", cmd);
+	/* pr_warn("mtk_voice_trigger cmd = %d\n", cmd); */
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -259,7 +259,7 @@ static int mtk_voice_pcm_silence(struct snd_pcm_substream *substream,
 				 int channel, snd_pcm_uframes_t pos,
 				 snd_pcm_uframes_t count)
 {
-	pr_warn("mtk_voice_pcm_silence\n");
+	/* pr_warn("mtk_voice_pcm_silence\n"); */
 	return 0; /* do nothing */
 }
 
@@ -314,7 +314,7 @@ static int mtk_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_warn("mtk_pcm_hw_params\n");
+	/* pr_warn("mtk_pcm_hw_params\n"); */
 	return ret;
 }
 

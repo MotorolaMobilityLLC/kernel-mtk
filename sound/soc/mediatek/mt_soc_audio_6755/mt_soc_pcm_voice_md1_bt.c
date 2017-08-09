@@ -123,7 +123,7 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 
 	AudDrv_Clk_On();
 
-	pr_warn("mtk_voice_bt_pcm_open\n");
+	/* pr_warn("mtk_voice_bt_pcm_open\n"); */
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
@@ -141,7 +141,8 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_warn("mtk_voice_bt_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
+	/* pr_warn("mtk_voice_bt_pcm_open runtime rate = %d channels = %d\n",
+		runtime->rate, runtime->channels); */
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
@@ -158,7 +159,7 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 		mtk_voice_bt_close(substream);
 		return err;
 	}
-	pr_warn("mtk_voice_bt_pcm_open return\n");
+	/* pr_warn("mtk_voice_bt_pcm_open return\n"); */
 	return 0;
 }
 
@@ -205,7 +206,7 @@ static int mtk_voice_bt_close(struct snd_pcm_substream *substream)
 
 static int mtk_voice_bt_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_voice_bt_trigger cmd = %d\n", cmd);
+	/* pr_warn("mtk_voice_bt_trigger cmd = %d\n", cmd); */
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -264,8 +265,8 @@ static int mtk_voice_bt1_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtimeStream = substream->runtime;
 
-	pr_warn("mtk_voice_bt1_prepare rate = %d  channels = %d period_size = %lu\n",
-	       runtimeStream->rate, runtimeStream->channels, runtimeStream->period_size);
+	/* pr_warn("mtk_voice_bt1_prepare rate = %d  channels = %d period_size = %lu\n",
+	       runtimeStream->rate, runtimeStream->channels, runtimeStream->period_size); */
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
@@ -303,7 +304,7 @@ static int mtk_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_warn("mtk_pcm_hw_params\n");
+	/* pr_warn("mtk_pcm_hw_params\n"); */
 	return ret;
 }
 

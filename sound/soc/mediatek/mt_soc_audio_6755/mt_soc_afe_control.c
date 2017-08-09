@@ -1697,7 +1697,7 @@ bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute)
 	uint32 reg_pcm2_intf_con = 0;
 	uint32 reg_pcm_intf_con1 = 0;
 
-	pr_debug("+%s()\n", __func__);
+	/* pr_debug("+%s()\n", __func__); */
 
 	if (modem_index == MODEM_1) {
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mTxLchRepeatSel & 0x1) << 13;
