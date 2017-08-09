@@ -4640,6 +4640,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
 #else
 	/*PMIC Interrupt Service*/
+	PMIC_EINT_SETTING();
 	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
 	if (IS_ERR(pmic_thread_handle)) {
 		pmic_thread_handle = NULL;
@@ -4649,7 +4650,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 		PMICLOG("[pmic_thread_kthread_mt6325] kthread_create Done\n");
 	}
 
-	PMIC_EINT_SETTING();
 	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
 
