@@ -31,7 +31,6 @@
 #include <linux/interrupt.h>
 #include <linux/input/mt.h>
 #include <linux/time.h>
-#include <linux/rtpm_prio.h>
 #include <linux/proc_fs.h>
 #include <linux/jiffies.h>
 #include <linux/spinlock.h>
@@ -1977,7 +1976,7 @@ static int synaptics_touch_event_handler(void *unused)
 	touch_finger_info finger_info;
 	char report_enable = 0;
 
-	struct sched_param param = {.sched_priority = RTPM_PRIO_TPD };
+	struct sched_param param = {.sched_priority = 4 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 

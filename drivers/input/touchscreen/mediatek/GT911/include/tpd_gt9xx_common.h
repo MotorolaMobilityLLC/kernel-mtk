@@ -24,7 +24,6 @@
 #endif
 #include <linux/interrupt.h>
 #include <linux/time.h>
-#include <linux/rtpm_prio.h>
 
 #include <linux/proc_fs.h>
 #include <linux/uaccess.h>

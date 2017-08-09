@@ -15,7 +15,6 @@
 #include <linux/i2c.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
-#include <linux/rtpm_prio.h>
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
@@ -489,7 +488,7 @@ static int touch_event_handler(void *unused)
 {
 	int i = 0;
 	struct touch_info cinfo, pinfo, finfo;
-	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
+	struct sched_param param = { .sched_priority = 4 };
 
 	if (tpd_dts_data.use_tpd_button) {
 		memset(&finfo, 0, sizeof(struct touch_info));

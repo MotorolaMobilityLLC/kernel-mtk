@@ -1300,7 +1300,7 @@ static void tpd_calibrate_driver(int *x, int *y)
 
 static int touch_event_handler(void *unused)
 {
-	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
+	struct sched_param param = { .sched_priority = 4 };
 	u8  end_cmd[3] = {GTP_READ_COOR_ADDR >> 8, GTP_READ_COOR_ADDR & 0xFF, 0};
 	u8  point_data[2 + 1 + 8 * GTP_MAX_TOUCH + 1] = {GTP_READ_COOR_ADDR >> 8, GTP_READ_COOR_ADDR & 0xFF};
 	u8  touch_num = 0;

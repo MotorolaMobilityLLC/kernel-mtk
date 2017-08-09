@@ -22,7 +22,6 @@
 #include <linux/i2c.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
-#include <linux/rtpm_prio.h>
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
