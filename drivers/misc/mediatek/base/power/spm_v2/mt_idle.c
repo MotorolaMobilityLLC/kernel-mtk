@@ -116,6 +116,7 @@ static bool mt_dvfsp_paused_by_idle;
 #endif
 
 #define NR_CMD_BUF		128
+#define LOG_BUF_LEN		500
 
 /* FIXME: early porting */
 #if 1
@@ -349,8 +350,8 @@ int __attribute__((weak)) is_teei_ready(void)
 
 #endif
 
-static char log_buf[500];
-static char log_buf_2[500];
+static char log_buf[LOG_BUF_LEN];
+static char log_buf_2[LOG_BUF_LEN];
 
 static unsigned long long idle_block_log_prev_time;
 static unsigned int idle_block_log_time_criteria = 5000;	/* 5 sec */
@@ -751,22 +752,25 @@ out:
 			if ((cpu % 4) == 0) {
 				/* soidle3,rgidle count */
 				p = log_buf;
-				p += sprintf(p, "CNT(soidle3,rgidle): ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "CNT(soidle3,rgidle): ");
 				for (i = 0; i < nr_cpu_ids; i++)
-					p += sprintf(p, "[%d] = (%lu,%lu), ", i, soidle3_cnt[i], rgidle_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = (%lu,%lu), ",
+						      i, soidle3_cnt[i], rgidle_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				/* block category */
 				p = log_buf;
-				p += sprintf(p, "soidle3_block_cnt: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "soidle3_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
-					p += sprintf(p, "[%s] = %lu, ", reason_name[i], soidle3_block_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%s] = %lu, ",
+						      reason_name[i], soidle3_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
-				p += sprintf(p, "soidle3_block_mask: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "soidle3_block_mask: ");
 				for (i = 0; i < NR_GRPS; i++)
-					p += sprintf(p, "0x%08x, ", soidle3_block_mask[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "0x%08x, ",
+						      soidle3_block_mask[i]);
 				idle_warn("%s\n", log_buf);
 
 				memset(soidle3_block_cnt, 0, sizeof(soidle3_block_cnt));
@@ -1052,22 +1056,25 @@ out:
 			if ((cpu % 4) == 0) {
 				/* soidle,rgidle count */
 				p = log_buf;
-				p += sprintf(p, "CNT(soidle,rgidle): ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "CNT(soidle,rgidle): ");
 				for (i = 0; i < nr_cpu_ids; i++)
-					p += sprintf(p, "[%d] = (%lu,%lu), ", i, soidle_cnt[i], rgidle_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = (%lu,%lu), ",
+						      i, soidle_cnt[i], rgidle_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				/* block category */
 				p = log_buf;
-				p += sprintf(p, "soidle_block_cnt: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "soidle_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
-					p += sprintf(p, "[%s] = %lu, ", reason_name[i], soidle_block_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%s] = %lu, ",
+						      reason_name[i], soidle_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
-				p += sprintf(p, "soidle_block_mask: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "soidle_block_mask: ");
 				for (i = 0; i < NR_GRPS; i++)
-					p += sprintf(p, "0x%08x, ", soidle_block_mask[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "0x%08x, ",
+						      soidle_block_mask[i]);
 				idle_warn("%s\n", log_buf);
 
 				memset(soidle_block_cnt, 0, sizeof(soidle_block_cnt));
@@ -1429,22 +1436,25 @@ out:
 			if ((cpu % 4) == 0) {
 				/* dpidle,rgidle count */
 				p = log_buf;
-				p += sprintf(p, "CNT(dpidle,rgidle): ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "CNT(dpidle,rgidle): ");
 				for (i = 0; i < nr_cpu_ids; i++)
-					p += sprintf(p, "[%d] = (%lu,%lu), ", i, dpidle_cnt[i], rgidle_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = (%lu,%lu), ",
+						      i, dpidle_cnt[i], rgidle_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				/* block category */
 				p = log_buf;
-				p += sprintf(p, "dpidle_block_cnt: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "dpidle_block_cnt: ");
 				for (i = 0; i < NR_REASONS; i++)
-					p += sprintf(p, "[%s] = %lu, ", reason_name[i], dpidle_block_cnt[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%s] = %lu, ",
+						      reason_name[i], dpidle_block_cnt[i]);
 				idle_warn("%s\n", log_buf);
 
 				p = log_buf;
-				p += sprintf(p, "dpidle_block_mask: ");
+				p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "dpidle_block_mask: ");
 				for (i = 0; i < NR_GRPS; i++)
-					p += sprintf(p, "0x%08x, ", dpidle_block_mask[i]);
+					p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "0x%08x, ",
+						      dpidle_block_mask[i]);
 				idle_warn("%s\n", log_buf);
 
 				memset(dpidle_block_cnt, 0, sizeof(dpidle_block_cnt));
@@ -1914,7 +1924,8 @@ void dump_idle_cnt_in_interval(int cpu)
 	p = log_buf;
 	for (i = 0; i < nr_cpu_ids; i++) {
 		if ((dpidle_cnt[i] - dpidle_last_cnt[i]) != 0) {
-			p += sprintf(p, "[%d] = %lu, ", i, dpidle_cnt[i] - dpidle_last_cnt[i]);
+			p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = %lu, ",
+				     i, dpidle_cnt[i] - dpidle_last_cnt[i]);
 			have_dpidle = true;
 		}
 
@@ -1922,15 +1933,16 @@ void dump_idle_cnt_in_interval(int cpu)
 	}
 
 	if (have_dpidle)
-		p2 += sprintf(p2, "DP: %s --- ", log_buf);
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "DP: %s --- ", log_buf);
 	else
-		p2 += sprintf(p2, "DP: No enter --- ");
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "DP: No enter --- ");
 
 	/* sodi3 */
 	p = log_buf;
 	for (i = 0; i < nr_cpu_ids; i++) {
 		if ((soidle3_cnt[i] - soidle3_last_cnt[i]) != 0) {
-			p += sprintf(p, "[%d] = %lu, ", i, soidle3_cnt[i] - soidle3_last_cnt[i]);
+			p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = %lu, ",
+				      i, soidle3_cnt[i] - soidle3_last_cnt[i]);
 			have_soidle3 = true;
 		}
 
@@ -1938,15 +1950,16 @@ void dump_idle_cnt_in_interval(int cpu)
 	}
 
 	if (have_soidle3)
-		p2 += sprintf(p2, "SODI3: %s --- ", log_buf);
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "SODI3: %s --- ", log_buf);
 	else
-		p2 += sprintf(p2, "SODI3: No enter --- ");
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "SODI3: No enter --- ");
 
 	/* sodi3 */
 	p = log_buf;
 	for (i = 0; i < nr_cpu_ids; i++) {
 		if ((soidle_cnt[i] - soidle_last_cnt[i]) != 0) {
-			p += sprintf(p, "[%d] = %lu, ", i, soidle_cnt[i] - soidle_last_cnt[i]);
+			p += snprintf(p, LOG_BUF_LEN - strlen(log_buf), "[%d] = %lu, ",
+				      i, soidle_cnt[i] - soidle_last_cnt[i]);
 			have_soidle = true;
 		}
 
@@ -1954,9 +1967,9 @@ void dump_idle_cnt_in_interval(int cpu)
 	}
 
 	if (have_soidle)
-		p2 += sprintf(p2, "SODI: %s --- ", log_buf);
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "SODI: %s --- ", log_buf);
 	else
-		p2 += sprintf(p2, "SODI: No enter --- ");
+		p2 += snprintf(p2, LOG_BUF_LEN - strlen(log_buf), "SODI: No enter --- ");
 
 	/* dump log */
 	idle_warn("%s\n", log_buf_2);
