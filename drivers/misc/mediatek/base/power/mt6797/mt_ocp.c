@@ -269,11 +269,13 @@ if (!((OCPMode == OCP_ALL) || (OCPMode == OCP_FPI) || (OCPMode == OCP_OCPI))) {
 		return -1;
 }
 
-if (Units == OCP_MA)
+if (Units == OCP_MA) {
+		ocp_cluster2_enable = 1;
 		return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
-else if (Units == OCP_MW)
+} else if (Units == OCP_MW) {
+		ocp_cluster2_enable = 1;
 		return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
-else {
+} else {
 		if (HW_API_RET_DEBUG_ON)
 			ocp_err("Units != OCP_mA/mW (0/1)");
 return -1;
@@ -285,7 +287,7 @@ return -1;
 
 void BigOCPDisable(void)
 {
-
+ocp_cluster2_enable = 0;
 mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPDISABLE, 0, 0, 0);
 
 }
@@ -557,7 +559,7 @@ return 0;
 }
 
 /* Little CPU */
-int LittleOCPConfig(int VOffInmV, int VStepInuV)
+int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV)
 {
 
 if (VOffInmV < 0 || VOffInmV > 1000) {
@@ -573,7 +575,15 @@ if (VStepInuV < 1000 || VStepInuV > 100000) {
 return -1;
 }
 
-return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPCONFIG, VOffInmV, VStepInuV, 0);
+if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+
+return -1;
+}
+
+
+return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPCONFIG, Cluster, VOffInmV, VStepInuV);
 
 }
 
@@ -622,6 +632,11 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 return -1;
 }
 
+if (Cluster == OCP_LL)
+	ocp_cluster0_enable = 1;
+if (Cluster == OCP_L)
+	ocp_cluster1_enable = 1;
+
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPENABLE, Cluster, Units, ClkPctMin);
 
 }
@@ -636,6 +651,10 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 
 return -1;
 }
+if (Cluster == OCP_LL)
+	ocp_cluster0_enable = 0;
+if (Cluster == OCP_L)
+	ocp_cluster1_enable = 0;
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPDISABLE, Cluster, 0, 0);
 
 }
@@ -1748,11 +1767,11 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
+if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 	switch (function_id) {
 	case 4:
-		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = LittleOCPConfig(val[0], val[1]);
+		if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4)
+			ret = LittleOCPConfig(val[0], val[1], val[2]);
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
@@ -1817,11 +1836,11 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
+if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 		switch (function_id) {
 		case 4:
-			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-				ret = LittleOCPConfig(val[0], val[1]);
+			if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4)
+				ret = LittleOCPConfig(val[0], val[1], val[2]);
 			break;
 		case 3:
 			if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
@@ -2748,7 +2767,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 CPU0 */
 			dvt_test_on = 110;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(0, 300, 10000);
 				LittleOCPSetTarget(0, 127000);
 
 				ocp_write_field(0x10221164, 4:4, 0x1);
@@ -2765,7 +2784,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 CPU1 */
 			dvt_test_on = 111;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(0, 300, 10000);
 				LittleOCPSetTarget(0, 127000);
 
 				ocp_write_field(0x10221164, 5:5, 0x1);
@@ -2782,7 +2801,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 CPU2 */
 			dvt_test_on = 112;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(0, 300, 10000);
 				LittleOCPSetTarget(0, 127000);
 
 				ocp_write_field(0x10221164, 6:6, 0x1);
@@ -2799,7 +2818,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 CPU3 */
 			dvt_test_on = 113;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(0, 300, 10000);
 				LittleOCPSetTarget(0, 127000);
 
 				ocp_write_field(0x10221164, 7:7, 0x1);
@@ -2816,7 +2835,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 TOP */
 			dvt_test_on = 114;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(0, 300, 10000);
 				LittleOCPSetTarget(0, 127000);
 
 				ocp_write_field(0x10221160, 1:1, 0x1);
@@ -2832,7 +2851,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* L LkgMon TM1 CPU0 */
 			dvt_test_on = 120;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(1, 300, 10000);
 				LittleOCPSetTarget(1, 127000);
 
 				ocp_write_field(0x10223164, 4:4, 0x1);
@@ -2849,7 +2868,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* L LkgMon TM1 CPU1 */
 			dvt_test_on = 121;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(1, 300, 10000);
 				LittleOCPSetTarget(1, 127000);
 
 				ocp_write_field(0x10223164, 5:5, 0x1);
@@ -2866,7 +2885,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* L LkgMon TM1 CPU2 */
 			dvt_test_on = 122;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(1, 300, 10000);
 				LittleOCPSetTarget(1, 127000);
 
 				ocp_write_field(0x10223164, 6:6, 0x1);
@@ -2883,7 +2902,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* L LkgMon TM1 CPU3 */
 			dvt_test_on = 123;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(1, 300, 10000);
 				LittleOCPSetTarget(1, 127000);
 
 				ocp_write_field(0x10223164, 7:7, 0x1);
@@ -2900,7 +2919,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			/* LL LkgMon TM1 TOP */
 			dvt_test_on = 124;
 			if (val[1] == 1) {
-				LittleOCPConfig(300, 10000);
+				LittleOCPConfig(1, 300, 10000);
 				LittleOCPSetTarget(1, 127000);
 
 				ocp_write_field(0x10223160, 1:1, 0x1);
@@ -3881,20 +3900,21 @@ if (err) {
 }
 
 /*
-//here to turn on OCP
-//set Enable=1
-BigiDVFSEnable(2500, 110000, 120000); //idvfs enable 2500MHz, Vproc_x100mv, Vsram_x100mv
-BigiDVFSChannel(1, 1);				  //ocp channel enable
-BigOCPConfig(300, 10000);                 //cluster 2 Voffset=0.3v_x1000, Vstep=10mv_x1000000
-BigOCPSetTarget(3, 127000);               //cluster 2 set OCPI/FPI, Target=127 W
-BigOCPEnable(3,1,625,0);                  //cluster 2 set OCPI/FPI, Target_unit=mW, CG=6.25%_x100
-LittleOCPConfig(300, 10000);              //cluster 0/1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000
-LittleOCPSetTarget(0, 127000);            //cluster 0 Target=127W_x1000
-LittleOCPDVFSSet(0, 1000, 1000);          //cluster 0 FreqMHz, VoltInmV
-LittleOCPSetTarget(1, 127000);            //cluster 1 Target=127W_x1000
-LittleOCPDVFSSet(1, 1000, 1000);	      //cluster 0 FreqMHz, VoltInmV
-LittleOCPEnable(0, 1, 625);               //cluster 0 Target_unit=mW, CG=6.25_x100
-LittleOCPEnable(1, 1, 625);               //cluster 1 Target_unit=mW, CG=6.25_x100
+here to turn on OCP
+set Enable=1
+BigiDVFSEnable(2500, 110000, 120000);	idvfs enable 2500MHz, Vproc_x100mv, Vsram_x100mv
+BigiDVFSChannel(1, 1);					ocp channel enable
+BigOCPConfig(300, 10000);				cluster 2 Voffset=0.3v_x1000, Vstep=10mv_x1000000
+BigOCPSetTarget(3, 127000);				cluster 2 set OCPI/FPI, Target=127 W
+BigOCPEnable(3,1,625,0);				cluster 2 set OCPI/FPI, Target_unit=mW, CG=6.25%_x100
+LittleOCPConfig(0, 300, 10000);			cluster 0 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000
+LittleOCPConfig(1, 300, 10000);			cluster 1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000
+LittleOCPSetTarget(0, 127000);			cluster 0 Target=127W_x1000
+LittleOCPDVFSSet(0, 1000, 1000);		cluster 0 FreqMHz, VoltInmV
+LittleOCPSetTarget(1, 127000);			cluster 1 Target=127W_x1000
+LittleOCPDVFSSet(1, 1000, 1000);		cluster 0 FreqMHz, VoltInmV
+LittleOCPEnable(0, 1, 625);				cluster 0 Target_unit=mW, CG=6.25_x100
+LittleOCPEnable(1, 1, 625);				cluster 1 Target_unit=mW, CG=6.25_x100
 ocp_cluster0_enable = 1;
 ocp_cluster1_enable = 1;
 ocp_cluster2_enable = 1;

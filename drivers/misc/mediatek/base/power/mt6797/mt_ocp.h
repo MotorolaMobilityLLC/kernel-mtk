@@ -9,9 +9,9 @@
 
 
 #include <linux/kernel.h>
-#include <mach/mt_secure_api.h>
 
 #ifdef	__MT_OCP_C__
+#include <mach/mt_secure_api.h>
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define mt_secure_call_ocp	mt_secure_call
 #else
@@ -259,7 +259,7 @@ extern int BigOCPClkAvgStatus(unsigned int *CGAvg);
 extern int BigOCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg, int *CPU1RawLkg);
 extern int BigOCPMAFAct(unsigned int *CapMAFAct);
 
-extern int LittleOCPConfig(int VOffInmV, int VStepInuV);
+extern int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV);
 extern int LittleOCPSetTarget(int Cluster, int Target);
 extern int LittleOCPEnable(int Cluster, int Units, int ClkPctMin);
 extern int LittleOCPDisable(int Cluster);
