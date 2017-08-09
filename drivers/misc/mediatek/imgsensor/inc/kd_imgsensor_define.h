@@ -402,6 +402,7 @@ typedef struct {
 	MUINT8 SensorModeNum;
 	MUINT8 IHDR_Support;
 	MUINT16 IHDR_LE_FirstLine;
+	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	MUINT8 PDAF_Support;
 	MUINT8 DPCM_INFO;
@@ -493,6 +494,7 @@ typedef struct {
 	MUINT8 SensorModeNum;
 	MUINT8 IHDR_Support;
 	MUINT16 IHDR_LE_FirstLine;
+	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	MUINT8 PDAF_Support;
 	MUINT8 DPCM_INFO;
