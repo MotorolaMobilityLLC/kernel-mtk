@@ -671,7 +671,7 @@ static int mpu_check_violation(void)
 #endif
 
 	__clear_emi_mpu_vio(0);
-	/* mt_devapc_clear_emi_violation(); */
+	mt_devapc_clear_emi_violation();
 	vio_addr = dbg_t + emi_physical_offset;
 	return 0;
 
@@ -683,11 +683,11 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 	int res, res1;
 
 	/* Need DEVAPC owner porting */
-	/* res = mt_devapc_check_emi_violation(); */
+	res = mt_devapc_check_emi_violation();
 	if (!res)
 		pr_err("it's a mt_devapc_emi_violation.\n");
 
-	/* res1 = mt_devapc_check_emi_mpu_violation(); */
+	res1 = mt_devapc_check_emi_mpu_violation();
 	if (!res1) {
 		pr_err("EMI MPU APB violation.\n");
 			pr_err("[EMI MPU] Debug info start ----------------------------------------\n");
@@ -707,7 +707,7 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 			pr_err("[EMI MPU] Debug info end------------------------------------------\n");
 			mt_emi_reg_write(mt_emi_reg_read(EMI_MPUX)|0x80000000,
 			EMI_MPUX);
-			/* mt_devapc_clear_emi_mpu_violation(); */
+			mt_devapc_clear_emi_mpu_violation();
 			return IRQ_HANDLED;
 		}
 
@@ -1264,7 +1264,8 @@ const char *buf, size_t count)
 		ret = kstrtoul(token[3], 16, (unsigned long *)&region);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse region");
-		ret = kstrtoul(token[4], 16, (unsigned long *)&access_permission);
+		ret = kstrtoul(token[4], 16,
+		(unsigned long *)&access_permission);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse access_permission");
 		emi_mpu_set_region_protection(start_addr, end_addr,
@@ -1796,6 +1797,8 @@ static void protect_ap_region(void)
 	unsigned int kernel_base;
 	phys_addr_t dram_size;
 
+	return; /* temp to disable */
+
 	kernel_base = PHYS_OFFSET;
 	dram_size = get_max_DRAM_size();
 
@@ -1876,15 +1879,15 @@ static int __init emi_mpu_mod_init(void)
 
 	if (readl(IOMEM(EMI_MPUS))) {
 		pr_err("[EMI MPU] get MPU violation in driver init\n");
-		/* mt_devapc_emi_initial(); */
+		mt_devapc_emi_initial();
 		mpu_check_violation();
 	} else {
 		__clear_emi_mpu_vio(0);
 		/* Set Device APC initialization for EMI-MPU. */
-		/* mt_devapc_emi_initial(); */
+		mt_devapc_emi_initial();
 	}
 
-	if (1) /* (0 == enable_4G()) need to refine, we need to identify the 4G mode*/ {
+	if (1) /* (0 == enable_4G()), we need to identify the 4G mode*/ {
 		emi_physical_offset = 0x40000000;
 		pr_err("[EMI MPU] Not 4G mode\n");
 	} else { /* enable 4G mode */

@@ -235,5 +235,5 @@ extern void __iomem *EMI_BASE_ADDR;
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern int mt_emi_mpu_set_region_protection(unsigned int start,
-unsigned int end, unsigned int region_permission)
+unsigned int end, unsigned int region_permission);
 #endif  /* !__MT_EMI_MPU_H */
