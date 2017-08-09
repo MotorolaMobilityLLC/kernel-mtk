@@ -966,7 +966,7 @@ void ion_client_destroy(struct ion_client *client)
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
 		mutex_lock(&client->lock);
-		IONMSG("warning: release handle @ client destroy: handle=%p, buf=%p, ref=%d, size=%zu, kmap=%d\n",
+		pr_err_ratelimited("[ION]warning: release handle @ client destroy: handle=%p, buf=%p, ref=%d, size=%zu, kmap=%d\n",
 				handle, handle->buffer, atomic_read(&handle->buffer->ref.refcount),
 				handle->buffer->size,  handle->buffer->kmap_cnt);
 		ion_handle_destroy(&handle->ref);
