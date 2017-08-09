@@ -134,9 +134,9 @@ static struct JpegClk gJpegClk;
 /* decoder */
 #ifdef JPEG_DEC_DRIVER
 static wait_queue_head_t dec_wait_queue;
-#endif
 static spinlock_t jpeg_dec_lock;
 static int dec_status;
+#endif
 
 /* encoder */
 static wait_queue_head_t enc_wait_queue;
