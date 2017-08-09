@@ -1884,7 +1884,7 @@ static int init_framebuffer(struct fb_info *info)
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 
 	/* clean whole frame buffer as black */
-	memset(buffer, 0, info->screen_size);
+	memset_io(buffer, 0, info->screen_size);
 
 	return 0;
 }
