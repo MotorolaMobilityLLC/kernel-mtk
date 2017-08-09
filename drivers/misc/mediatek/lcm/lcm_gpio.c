@@ -22,7 +22,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
-#include <asm-generic/gpio.h>
+#include <linux/module.h>
 
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>

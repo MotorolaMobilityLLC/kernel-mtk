@@ -201,7 +201,6 @@ static void __exit _lcm_i2c_exit(void)
 	pr_debug("[LCM][I2C] _lcm_i2c_exit\n");
 	i2c_del_driver(&_lcm_i2c_driver);
 }
-#endif
 
 
 static LCM_STATUS _lcm_i2c_check_data(char type, const LCM_DATA_T2 *t2)
@@ -225,10 +224,12 @@ static LCM_STATUS _lcm_i2c_check_data(char type, const LCM_DATA_T2 *t2)
 
 	return LCM_STATUS_OK;
 }
+#endif
 
 
 LCM_STATUS lcm_i2c_set_data(char type, const LCM_DATA_T2 *t2)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int ret_code = 0;
 
 	/* check parameter is valid */
@@ -255,7 +256,7 @@ LCM_STATUS lcm_i2c_set_data(char type, const LCM_DATA_T2 *t2)
 		       (unsigned int)t2->cmd, (unsigned int)t2->data, ret_code);
 		return LCM_STATUS_ERROR;
 	}
-
+#endif
 	return LCM_STATUS_OK;
 }
 
