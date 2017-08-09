@@ -519,7 +519,7 @@ void clk_buf_save_afc_val(unsigned int afcdac)
 	afcdac_val = afcdac;
 
 	if (!is_clkbuf_afcdac_updated) {
-		/* spm_write(SPM_BSI_EN_SR, afcdac_val); */
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
 		is_clkbuf_afcdac_updated = true;
 	}
 
@@ -533,7 +533,7 @@ void clk_buf_write_afcdac(void)
 	if (is_pmic_clkbuf)
 		return;
 
-	/* spm_write(SPM_BSI_EN_SR, afcdac_val); */
+	spm_write(SPM_BSI_EN_SR, afcdac_val);
 	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
 		     __func__, afcdac_val, spm_read(SPM_BSI_EN_SR),
 		     is_clkbuf_afcdac_updated);
@@ -967,7 +967,7 @@ bool clk_buf_init(void)
 		clk_buf_pmic_wrap_init();
 		clk_buf_clear_rf_setting();
 	} else { /* VCTCXO @RF */
-		/* spm_write(SPM_BSI_EN_SR, afcdac_val); */
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
 		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
 			     afcdac_val, spm_read(SPM_BSI_EN_SR));
 	}
