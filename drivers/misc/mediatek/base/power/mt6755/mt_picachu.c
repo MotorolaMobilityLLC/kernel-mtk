@@ -137,6 +137,7 @@ static int reset_picachu_emmc(void)
 		result = PTR_ERR(write_fp);
 		picachu_err("File open return fail,result=%d,file=%p\n",
 			     result, write_fp);
+		kfree(pi_data);
 		return -ENOENT;
 	}
 
@@ -404,13 +405,19 @@ static int __init picachu_init(void)
 
 	create_procfs();
 
+	if (barrier)
+		iounmap(barrier);
+
 	return 0;
 }
 
 static void __exit picachu_exit(void)
 {
-
 	picachu_dbg("Picachu de-initialization\n");
+
+	if (picachu_data)
+		iounmap(picachu_data);
+
 }
 
 late_initcall(picachu_init);
