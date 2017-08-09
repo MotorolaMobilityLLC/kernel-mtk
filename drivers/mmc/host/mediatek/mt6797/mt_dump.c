@@ -9,26 +9,13 @@
 #include <linux/mmc/card.h>
 #include <mt-plat/sd_misc.h>
 #include <linux/types.h>
-/* #include <mt-plat/mt_pm_ldo.h> */     /* hwPowerOn */
-/*
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
-*/
-/* FIXME: There is no mt_reg_base.h */
-/* #include <mach/mt_reg_base.h> */
-#include  "board.h"
-
 #include <mt-plat/partition.h>
-
 #ifndef FPGA_PLATFORM
 #include <mach/mt_clkmgr.h>
 #endif
 
 #include "mt_sd.h"
 #include "dbg.h"
-/*#include "mt_dump.h"*/
-
 #ifdef MTK_MSDC_USE_CACHE
 unsigned int g_power_reset;
 #endif

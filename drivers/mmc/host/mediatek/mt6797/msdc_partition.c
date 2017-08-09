@@ -222,7 +222,6 @@ struct gendisk *mmc_get_disk(struct mmc_card *card)
 	return md->disk;
 }
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
 static struct proc_dir_entry *proc_emmc;
 
 static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
@@ -271,14 +270,10 @@ static const struct file_operations proc_emmc_fops = {
 	.release = single_release,
 };
 
-#endif /* CONFIG_MTK_EMMC_SUPPORT && CONFIG_PROC_FS */
-
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
 void msdc_proc_emmc_create(void)
 {
 	proc_emmc = proc_create("emmc", 0, NULL, &proc_emmc_fops);
 }
-#endif
 
 #ifdef MTK_MSDC_USE_CACHE
 late_initcall_sync(msdc_get_cache_region);

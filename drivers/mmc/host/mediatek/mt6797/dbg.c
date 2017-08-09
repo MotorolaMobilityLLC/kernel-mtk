@@ -1244,8 +1244,6 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 
 void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
 {
-	unsigned int i;
-
 	seq_printf(m, "hw->clk_src = %x\n", hw->clk_src);
 	seq_printf(m, "hw->cmd_edge = %x\n", hw->cmd_edge);
 	seq_printf(m, "hw->rdata_edge = %x\n", hw->rdata_edge);
@@ -1271,17 +1269,6 @@ void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
 	seq_printf(m, "hw->cmdrddly = %x\n", hw->cmdrddly);
 	seq_printf(m, "hw->host_function = %x\n", (u32)hw->host_function);
 	seq_printf(m, "hw->boot = %x\n", hw->boot);
-
-	for (i = 0; i < hw->ett_hs200_count; i++) {
-		seq_printf(m, "msdc0_ett_hs200_settings[%d]: %x, %x, %x\n", i,
-		hw->ett_hs200_settings[i].reg_addr,
-		hw->ett_hs200_settings[i].reg_offset, hw->ett_hs200_settings[i].value);
-	}
-	for (i = 0; i < hw->ett_hs400_count; i++) {
-		seq_printf(m, "msdc0_ett_hs400_settings[%d]: %x, %x, %x\n", i,
-		hw->ett_hs400_settings[i].reg_addr,
-		hw->ett_hs400_settings[i].reg_offset, hw->ett_hs400_settings[i].value);
-	}
 }
 
 /*
@@ -1335,6 +1322,55 @@ static int rwThread(void *data)
 	}
 	pr_err("[SD_Debug]rwThread exit\n");
 	return 0;
+}
+void msdc_dump_gpd_bd(int id)
+{
+	struct msdc_host *host;
+	int i = 0;
+	struct gpd_t *gpd;
+	struct bd_t  *bd;
+
+	if (id < 0 || id >= HOST_MAX_NUM)
+		pr_err("[%s]: invalid host id: %d\n", __func__, id);
+
+	host = mtk_msdc_host[id];
+	if (host == NULL) {
+		pr_err("[%s]: host0 or host0->dma is NULL\n", __func__);
+		return;
+	}
+	gpd = host->dma.gpd;
+	bd  = host->dma.bd;
+
+	pr_err("================MSDC GPD INFO ==================\n");
+	if (gpd == NULL) {
+		pr_err("GPD is NULL\n");
+	} else {
+		pr_err("gpd addr:0x%lx\n", (ulong)(host->dma.gpd_addr));
+		pr_err("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
+			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum,
+			gpd->intr, gpd->rsv1, (unsigned int)gpd->nexth4,
+			(unsigned int)gpd->ptrh4);
+		pr_err("next:0x%x, ptr:0x%x, buflen:0x%x, extlen:0x%x, arg:0x%x,blknum:0x%x,cmd:0x%x\n",
+			(unsigned int)gpd->next, (unsigned int)gpd->ptr,
+			gpd->buflen, gpd->extlen, gpd->arg, gpd->blknum,
+			gpd->cmd);
+	}
+	pr_err("================MSDC BD INFO ===================\n");
+	if (bd == NULL) {
+		pr_err("BD is NULL\n");
+	} else {
+		pr_err("bd addr:0x%lx\n", (ulong)(host->dma.bd_addr));
+		for (i = 0; i < host->dma.sglen; i++) {
+			pr_err("the %d BD\n", i);
+			pr_err("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
+				bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
+				bd->blkpad, bd->dwpad, bd->rsv2);
+			pr_err("        nexth4:0x%x, ptrh4:0x%x, next:0x%x, ptr:0x%x, buflen:0x%x, rsv3:0x%x\n",
+				(unsigned int)bd->nexth4,
+				(unsigned int)bd->ptrh4, (unsigned int)bd->next,
+				(unsigned int)bd->ptr, bd->buflen, bd->rsv3);
+		}
+	}
 }
 static void msdc_dump_csd(struct seq_file *m, struct msdc_host *host)
 {

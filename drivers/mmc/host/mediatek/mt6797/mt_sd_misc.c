@@ -23,7 +23,6 @@
 #include "msdc_io.h"
 #include "dbg.h"
 #include <mt-plat/sd_misc.h>
-#include "board-custom.h"
 #include <queue.h>
 
 #ifndef FPGA_PLATFORM

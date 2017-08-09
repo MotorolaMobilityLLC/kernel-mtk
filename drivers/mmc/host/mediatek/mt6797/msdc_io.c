@@ -6,21 +6,18 @@
 
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
-#include "mt_sd.h"
-#include "msdc_tune.h"
-#include "board.h"
 #include <linux/delay.h>
-
-
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-
-#ifndef CONFIG_MTK_LEGACY
 #include <linux/regulator/consumer.h>
-#endif
+
+#include "mt_sd.h"
+#include "msdc_tune.h"
+#include "dbg.h"
+
 
 /**************************************************************/
 /* Section 1: Device Tree                                     */
@@ -162,7 +159,6 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 /* Get msdc register settings
  * 1. internal data delay for tuning, FIXME: can be removed when use data tune?
  * 2. sample edge
- * 3. ett settings, FIXME: can be removed when use autok
  */
 static int msdc_get_rigister_settings(struct msdc_host *host)
 {
@@ -207,54 +203,6 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		pr_err("[msdc%d] register_setting is not found in DT.\n",
 				host->id);
 		return 1;
-	}
-	/* parse ett */
-	if (of_property_read_u32(register_setting_node, "ett-hs200-cells",
-				&host->hw->ett_hs200_count))
-		pr_err("[msdc] ett-hs200-cells is not found in DT.\n");
-	host->hw->ett_hs200_settings =
-		kzalloc(sizeof(struct msdc_ett_settings) *
-				host->hw->ett_hs200_count, GFP_KERNEL);
-
-	if (MSDC_EMMC == host->hw->host_function &&
-		!of_property_read_u32_array(register_setting_node,
-		"ett-hs200-customer", host->hw->ett_hs200_settings,
-		host->hw->ett_hs200_count * 3)) {
-		pr_err("[msdc%d] hs200 ett for customer is found in DT.\n",
-				host->id);
-	} else if (MSDC_EMMC == host->hw->host_function
-		&& !of_property_read_u32_array(register_setting_node,
-		"ett-hs200-default", host->hw->ett_hs200_settings,
-		host->hw->ett_hs200_count * 3)) {
-		pr_err("[msdc%d] hs200 ett for default is found in DT.\n",
-				host->id);
-	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[msdc%d]error: hs200 ett is not found in DT.\n",
-				host->id);
-	}
-
-	if (of_property_read_u32(register_setting_node, "ett-hs400-cells",
-				&host->hw->ett_hs400_count))
-		pr_err("[msdc] ett-hs400-cells is not found in DT.\n");
-	host->hw->ett_hs400_settings =
-		kzalloc(sizeof(struct msdc_ett_settings) *
-				host->hw->ett_hs400_count, GFP_KERNEL);
-
-	if (MSDC_EMMC == host->hw->host_function &&
-		!of_property_read_u32_array(register_setting_node,
-		"ett-hs400-customer", host->hw->ett_hs400_settings,
-		host->hw->ett_hs400_count * 3)) {
-		pr_err("[msdc%d] hs400 ett for customer is found in DT.\n",
-				host->id);
-	} else if (MSDC_EMMC == host->hw->host_function &&
-		!of_property_read_u32_array(register_setting_node,
-		"ett-hs400-default", host->hw->ett_hs400_settings,
-		host->hw->ett_hs400_count * 3)) {
-		pr_err("[msdc%d] hs400 ett for default is found in DT.\n",
-				host->id);
-	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[msdc%d]error: hs400 ett is not found in DT.\n",
-				host->id);
 	}
 	return 0;
 }
@@ -329,10 +277,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 	if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 		pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
-#ifdef SDCARD_HOTPLUG_NEW
 	/*get cd_gpio*/
 	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
-#endif
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
@@ -507,22 +453,6 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	/* restore original dev.of_node */
 	pdev->dev.of_node = msdc_backup_node;
 #endif
-#endif
-	/* Get SD card detect eint irq */
-#ifndef SDCARD_HOTPLUG_NEW
-	if ((host->hw->host_function == MSDC_SD) && (eint_node == NULL)) {
-		eint_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,mt6797-sdcard-ins");
-		if (eint_node) {
-			*cd_irq = irq_of_parse_and_map(eint_node, 0);
-			if (*cd_irq == 0)
-				pr_err("Parse map for sd detect eint fail\n");
-			else
-				pr_err("msdc1 eint get irq # %d\n", *cd_irq);
-		} else {
-			pr_err("can't find MSDC1_INS-eint compatible node\n");
-		}
-	}
 #endif
 	return 0;
 }

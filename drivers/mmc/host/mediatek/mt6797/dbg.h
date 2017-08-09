@@ -128,6 +128,7 @@ do { \
 #define IRQ_MSG(fmt, args...)
 #endif
 
+void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
 /* void msdc_set_host_mode_speed(struct msdc_host *host, int spd_mode); */

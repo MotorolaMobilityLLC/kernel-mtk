@@ -13,7 +13,6 @@
 
 #include <linux/completion.h>
 #include <linux/scatterlist.h>
-#include "board.h"
 
 #define MSDC_FIFO_THD_1K                (1024)
 #define TUNE_TX_CNT                     (100)
