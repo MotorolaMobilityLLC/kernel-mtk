@@ -2681,11 +2681,12 @@ static void mt_battery_charger_detect_check(void)
 static void mt_kpoc_power_off_check(void)
 {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	battery_log(BAT_LOG_CRTI,
-		    "[mt_kpoc_power_off_check] , chr_vol=%d, boot_mode=%d\r\n",
-		    BMT_status.charger_vol, g_platform_boot_mode);
 	if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+
+		battery_log(BAT_LOG_CRTI, "[mt_kpoc_power_off_check] chr_vol=%d, boot_mode=%d\r\n",
+		BMT_status.charger_vol, g_platform_boot_mode);
+
 		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500)) {	/* vbus < 2.5V */
 			battery_log(BAT_LOG_CRTI,
 				    "[mt_kpoc_power_off_check] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
@@ -4515,26 +4516,26 @@ static int battery_pm_event(struct notifier_block *notifier, unsigned long pm_ev
 {
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
-		pr_warn("[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
+		battery_log(BAT_LOG_FULL, "[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
 		Is_In_IPOH = TRUE;
 	case PM_RESTORE_PREPARE:	/* Going to restore a saved image */
 	case PM_SUSPEND_PREPARE:	/* Going to suspend the system */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		battery_log(BAT_LOG_FULL, "[%s] pm_event %lu\n", __func__, pm_event);
 		battery_timer_pause();
 		return NOTIFY_DONE;
 
 	case PM_POST_SUSPEND:	/* Suspend finished */
 	case PM_POST_RESTORE:	/* Restore failed */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		battery_log(BAT_LOG_FULL, "[%s] pm_event %lu\n", __func__, pm_event);
 		battery_timer_resume();
 		return NOTIFY_DONE;
 
 	case PM_POST_HIBERNATION:	/* Hibernation finished */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		battery_log(BAT_LOG_FULL, "[%s] pm_event %lu\n", __func__, pm_event);
 		fg_ipoh_reset = 1;
 		battery_timer_resume();
 		if (pending_wake_up_bat) {
-			pr_warn("[%s] PM_POST_HIBERNATION b4r wakeup bat_routine_wq\n", __func__);
+			battery_log(BAT_LOG_FULL, "[%s] PM_POST_HIBERNATION b4r wakeup bat_routine_wq\n", __func__);
 			wake_up(&bat_routine_wq);
 		}
 		pending_wake_up_bat = FALSE;
