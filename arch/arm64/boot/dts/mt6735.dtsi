@@ -587,6 +587,55 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			mediatek,spi_start_offset = <72>;
 		};
 
+		ispsys@15000000 {
+			compatible = "mediatek,mt6735-ispsys";
+			reg = <0x15004000 0x9000>,  /*ISP_ADDR      */
+				<0x1500D000 0x1000>,  /*INNER_ISP_ADDR      */
+				<0x15000000 0x10000>,  /*IMGSYS_CONFIG_ADDR      */
+				<0x10215000 0x3000>,  /*MIPI_ANA_ADDR      */
+				<0x10211000 0x1000>;  /*GPIO_ADDR      */
+
+			interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>, /* CAM0 */
+				<GIC_SPI 184 IRQ_TYPE_LEVEL_LOW>, /* CAM1 */
+				<GIC_SPI 185 IRQ_TYPE_LEVEL_LOW>, /* CAM2 */
+				<GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>, /* CAMSV0 */
+				<GIC_SPI 207 IRQ_TYPE_LEVEL_LOW>; /* CAMSV1 */
+
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_ISP>,
+				<&mmsys MM_DISP0_SMI_COMMON>,
+				<&imgsys IMG_IMAGE_CAM_SMI>,
+				<&imgsys IMG_IMAGE_CAM_CAM>,
+				<&imgsys IMG_IMAGE_SEN_TG>,
+				<&imgsys IMG_IMAGE_SEN_CAM>,
+				<&imgsys IMG_IMAGE_CAM_SV>,
+				<&imgsys IMG_IMAGE_LARB2_SMI>;
+
+			clock-names = "CG_SCP_SYS_DIS",
+				"CG_SCP_SYS_ISP",
+				"CG_DISP0_SMI_COMMON",
+				"CG_IMAGE_CAM_SMI",
+				"CG_IMAGE_CAM_CAM",
+				"CG_IMAGE_SEN_TG",
+				"CG_IMAGE_SEN_CAM",
+				"CG_IMAGE_CAM_SV",
+				"CG_IMAGE_LARB2_SMI";
+		};
+
+		fdvt@0x1500B000 {
+			compatible = "mediatek,mt6735-fdvt";
+			reg = <0x1500B000 0x1000>;
+			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&scpsys SCP_SYS_DIS>,
+					<&scpsys SCP_SYS_ISP>,
+					<&mmsys MM_DISP0_SMI_COMMON>,
+					<&imgsys IMG_IMAGE_FD>;
+			clock-names = "FD-SCP_SYS_DIS",
+						"FD-SCP_SYS_ISP",
+						"FD-MM_DISP0_SMI_COMMON",
+						"FD-IMG_IMAGE_FD";
+		};
+
 		apmixedsys: apmixedsys@0x10209000 {
 			compatible = "mediatek,mt6735-apmixedsys";
 			reg = <0x10209000 0x1000>;
