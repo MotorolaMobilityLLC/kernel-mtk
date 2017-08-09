@@ -40,8 +40,8 @@
 
 #define CLATM_INIT_CFG_CATM										(0)
 
-#define CLATM_INIT_CFG_PHPB_CPU_TT								(20)
-#define CLATM_INIT_CFG_PHPB_CPU_TP								(20)
+#define CLATM_INIT_CFG_PHPB_CPU_TT								(10)
+#define CLATM_INIT_CFG_PHPB_CPU_TP								(10)
 
 #define CLATM_INIT_CFG_PHPB_GPU_TT								(80)
 #define CLATM_INIT_CFG_PHPB_GPU_TP								(80)
