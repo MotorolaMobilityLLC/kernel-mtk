@@ -87,6 +87,20 @@ bool mtk_get_gpu_idle(unsigned int* pIdle)
 }
 EXPORT_SYMBOL(mtk_get_gpu_idle);
 
+unsigned int (*mtk_get_gpu_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_freq_fp);
+
+bool mtk_get_gpu_freq(unsigned int *pFreq)
+{
+	if (NULL != mtk_get_gpu_freq_fp) {
+		if (pFreq) {
+			*pFreq = mtk_get_gpu_freq_fp();
+			return true;
+		}
+	}
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_freq);
 
 unsigned int (*mtk_get_gpu_GP_loading_fp)(void) = NULL;
 EXPORT_SYMBOL(mtk_get_gpu_GP_loading_fp);

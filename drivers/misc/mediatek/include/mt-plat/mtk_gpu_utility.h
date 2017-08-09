@@ -18,7 +18,7 @@ bool mtk_get_gpu_page_cache(unsigned int *pPageCache);
 bool mtk_get_gpu_loading(unsigned int *pLoading);
 bool mtk_get_gpu_block(unsigned int *pBlock);
 bool mtk_get_gpu_idle(unsigned int *pIlde);
-
+bool mtk_get_gpu_freq(unsigned int *pFreq);
 
 bool mtk_get_gpu_GP_loading(unsigned int *pLoading);
 bool mtk_get_gpu_PP_loading(unsigned int *pLoading);

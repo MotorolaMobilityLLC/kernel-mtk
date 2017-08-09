@@ -32,6 +32,7 @@ extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
 extern unsigned int (*mtk_get_gpu_loading_fp)(void);
 extern unsigned int (*mtk_get_gpu_block_fp)(void);
 extern unsigned int (*mtk_get_gpu_idle_fp)(void);
+extern unsigned int (*mtk_get_gpu_freq_fp)(void);
 extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
 extern void         (*mtk_enable_gpu_dvfs_timer_fp)(bool bEnable);
 extern void         (*mtk_boost_gpu_freq_fp)(void);
