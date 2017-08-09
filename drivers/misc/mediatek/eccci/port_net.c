@@ -148,6 +148,14 @@ int ccmni_send_pkt(int md_id, int tx_ch, void *data)
 	/* if(!req) { */
 	/* return CCMNI_ERR_TX_BUSY; */
 	/* } */
+
+	if (unlikely(skb->len > CCCI_NET_MTU)) {
+		CCCI_ERROR_LOG(port->modem->index, NET, "exceeds MTU(%d) with %d\n",
+				CCCI_NET_MTU, skb->len);
+		dev_kfree_skb(skb);
+		return CCMNI_ERR_TX_OK;
+	}
+
 	if (tx_ch == CCCI_CCMNI1_DL_ACK || tx_ch == CCCI_CCMNI2_DL_ACK || tx_ch == CCCI_CCMNI8_DLACK_RX)
 		tx_queue = NET_ACK_TXQ_INDEX(port);
 	else
