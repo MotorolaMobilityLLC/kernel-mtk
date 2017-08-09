@@ -86,6 +86,15 @@ config SND_SOC_MT2701_RT5640
 	  with the RT5640 audio codec.
 	  Select Y if you have such device.
 
+config SND_SOC_MT7623_RFB
+	bool "SND_SOC_MT7623_RFB"
+	select MT_SND_SOC_2701
+	help
+	  This adds ASoC driver for Mediatek MT7623 RFB boards
+	  with WS2431 audio daughter board.
+	  The driver is based on MT_SND_SOC_2701.
+	  Select Y if you have such device.
+
 config MTK_BTCVSD_ALSA
     bool "MTK_BTCVSD_ALSA"
 	default n
