@@ -880,8 +880,12 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 			? state_info[cur_state].cluster_limit->state_limit[PPM_CLUSTER_L].max_cpufreq_idx
 			: L_freq_max;
 		/* idx -> freq */
-		LL_freq_min = ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl[LL_freq_min].frequency;
-		L_freq_max = ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl[L_freq_max].frequency;
+		LL_freq_min = (ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl)
+			? ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl[LL_freq_min].frequency
+			: get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL);
+		L_freq_max = (ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl)
+			? ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl[L_freq_max].frequency
+			: get_cluster_max_cpufreq_idx(PPM_CLUSTER_L);
 	}
 
 	/* min_core <= 0: don't care */
@@ -986,12 +990,18 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 		unsigned int sum = LL_min_core + L_min_core;
 		unsigned int LL_min_freq, L_min_freq, L_max_freq;
 
-		LL_min_freq = ppm_main_info.cluster_info[PPM_CLUSTER_LL]
-				.dvfs_tbl[req->limit[PPM_CLUSTER_LL].min_cpufreq_idx].frequency;
-		L_min_freq = ppm_main_info.cluster_info[PPM_CLUSTER_L]
-				.dvfs_tbl[req->limit[PPM_CLUSTER_L].min_cpufreq_idx].frequency;
-		L_max_freq = ppm_main_info.cluster_info[PPM_CLUSTER_L]
-				.dvfs_tbl[req->limit[PPM_CLUSTER_L].max_cpufreq_idx].frequency;
+		LL_min_freq = (ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl)
+			? ppm_main_info.cluster_info[PPM_CLUSTER_LL]
+				.dvfs_tbl[req->limit[PPM_CLUSTER_LL].min_cpufreq_idx].frequency
+			: get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL);
+		L_min_freq = (ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl)
+			? ppm_main_info.cluster_info[PPM_CLUSTER_L]
+				.dvfs_tbl[req->limit[PPM_CLUSTER_L].min_cpufreq_idx].frequency
+			: get_cluster_min_cpufreq_idx(PPM_CLUSTER_L);
+		L_max_freq = (ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl)
+			? ppm_main_info.cluster_info[PPM_CLUSTER_L]
+				.dvfs_tbl[req->limit[PPM_CLUSTER_L].max_cpufreq_idx].frequency
+			: get_cluster_max_cpufreq_idx(PPM_CLUSTER_L);
 
 		if (LL_min_core > 0 && L_max_freq >= LL_min_freq) {
 			/* user do not set L min so we just move LL core to L */

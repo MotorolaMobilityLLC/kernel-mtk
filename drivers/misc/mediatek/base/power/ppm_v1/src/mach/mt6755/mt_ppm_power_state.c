@@ -660,8 +660,12 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 			? state_info[cur_state].cluster_limit->state_limit[1].max_cpufreq_idx
 			: L_freq_max;
 		/* idx -> freq */
-		LL_freq_min = ppm_main_info.cluster_info[0].dvfs_tbl[LL_freq_min].frequency;
-		L_freq_max = ppm_main_info.cluster_info[1].dvfs_tbl[L_freq_max].frequency;
+		LL_freq_min = (ppm_main_info.cluster_info[0].dvfs_tbl)
+			? ppm_main_info.cluster_info[0].dvfs_tbl[LL_freq_min].frequency
+			: get_cluster_min_cpufreq_idx(0);
+		L_freq_max = (ppm_main_info.cluster_info[1].dvfs_tbl)
+			? ppm_main_info.cluster_info[1].dvfs_tbl[L_freq_max].frequency
+			: get_cluster_max_cpufreq_idx(1);
 	}
 
 	/* min_core <= 0: don't care */
@@ -741,9 +745,15 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 		unsigned int sum = LL_min_core + L_min_core;
 		unsigned int LL_min_freq, L_min_freq, L_max_freq;
 
-		LL_min_freq = ppm_main_info.cluster_info[0].dvfs_tbl[req->limit[0].min_cpufreq_idx].frequency;
-		L_min_freq = ppm_main_info.cluster_info[1].dvfs_tbl[req->limit[1].min_cpufreq_idx].frequency;
-		L_max_freq = ppm_main_info.cluster_info[1].dvfs_tbl[req->limit[1].max_cpufreq_idx].frequency;
+		LL_min_freq = (ppm_main_info.cluster_info[0].dvfs_tbl)
+			? ppm_main_info.cluster_info[0].dvfs_tbl[req->limit[0].min_cpufreq_idx].frequency
+			: get_cluster_min_cpufreq_idx(0);
+		L_min_freq = (ppm_main_info.cluster_info[1].dvfs_tbl)
+			? ppm_main_info.cluster_info[1].dvfs_tbl[req->limit[1].min_cpufreq_idx].frequency
+			: get_cluster_min_cpufreq_idx(1);
+		L_max_freq = (ppm_main_info.cluster_info[1].dvfs_tbl)
+			? ppm_main_info.cluster_info[1].dvfs_tbl[req->limit[1].max_cpufreq_idx].frequency
+			: get_cluster_max_cpufreq_idx(1);
 
 		if (LL_min_core > 0 && L_max_freq >= LL_min_freq) {
 			/* user do not set L min so we just move LL core to L */
