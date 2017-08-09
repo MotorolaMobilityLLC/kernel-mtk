@@ -5732,12 +5732,14 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 		}
 
 		pNextTask = NULL;
-		/* find pTask's jump destination */
-		if (0x10000001 == pTask->pCMDEnd[0]) {
-			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
-		} else {
-			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
-				 pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
+		if (pTask->pCMDEnd != NULL) {
+			/* find pTask's jump destination */
+			if (0x10000001 == pTask->pCMDEnd[0]) {
+				pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
+			} else {
+				CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
+					 pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
+			}
 		}
 
 		/* Then, we try remove pTask from the chain of pThread->pCurTask. */
@@ -5786,6 +5788,8 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 
 					if (pNextTask)
 						cmdq_core_reorder_task_array(pThread, thread, index);
+					else
+						pThread->nextCookie--;
 
 					CMDQ_VERBOSE
 					    ("WAIT: modify jump to 0x%08x (pPrev:0x%p, pTask:0x%p)\n",
