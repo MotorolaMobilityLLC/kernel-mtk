@@ -617,8 +617,10 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->align_size = 4;
 
-	for (i = 0; i < EMMC_MAX_QUEUE_DEPTH; i++)
+	for (i = 0; i < EMMC_MAX_QUEUE_DEPTH; i++) {
 		host->areq_que[i] = NULL;
+		host->task_queue_time[i] = 0;
+	}
 	atomic_set(&host->areq_cnt, 0);
 	host->areq_cur = NULL;
 	host->done_mrq = NULL;

@@ -218,6 +218,7 @@ struct mmc_context_info {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 #define EMMC_MAX_QUEUE_DEPTH		(32)
 #define EMMC_MIN_RT_CLASS_TAG_COUNT	(4)
+#define TASK_READY_TMO			(30 * HZ) /* 30s */
 #endif
 struct regulator;
 
@@ -399,7 +400,7 @@ struct mmc_host {
 	struct mmc_async_req	*areq_que[EMMC_MAX_QUEUE_DEPTH];
 	struct mmc_async_req	*areq_cur;
 	atomic_t		areq_cnt;
-
+	unsigned long		task_queue_time[EMMC_MAX_QUEUE_DEPTH];
 	spinlock_t		cmd_que_lock;
 	spinlock_t		dat_que_lock;
 	spinlock_t		que_lock;

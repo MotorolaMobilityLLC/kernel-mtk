@@ -672,8 +672,8 @@ int mmc_run_queue_thread(void *data)
 						;
 				}
 				set_bit(task_id, &host->task_id_index);
-
 				host->ops->request(host, cmd_mrq);
+				host->task_queue_time[task_id] = jiffies;
 				atomic_inc(&host->cq_wait_rdy);
 				spin_lock_irq(&host->cmd_que_lock);
 				cmd_mrq = mmc_get_cmd_que(host);
@@ -1119,10 +1119,23 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 				mmc_prep_areq_que(host, host->areq_que[i]);
 				mmc_enqueue_queue(host, host->areq_que[i]->mrq);
 				host->data_mrq_queued[i] = true;
+				host->task_queue_time[i] = 0;
 			}
 			resp >>= 1;
 			i++;
 		} while (resp && (i < host->card->ext_csd.cmdq_depth));
+		/* Check Task ready time out */
+		for (i = 0; i < host->card->ext_csd.cmdq_depth; i++) {
+			if ((host->task_id_index & (0x1 << i)) &&
+			    (host->task_queue_time[i] != 0)) {
+				if (time_after(jiffies,
+				    host->task_queue_time[i] + TASK_READY_TMO)) {
+					pr_err("[CQ] ERROR Task ready TMO ID: %d ready time is %ld ticks\n", i,
+						  (long)(jiffies) - (long)(host->task_queue_time[i]));
+			       }
+			}
+		}
+
 	}
 
 	/* cmd46 - request done */
