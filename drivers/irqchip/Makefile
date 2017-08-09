@@ -41,7 +41,8 @@ obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
 
 # Mediatek solution: GIC
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 
 obj-$(CONFIG_MTK_GIC)                   += irq-mt-gic.o
 

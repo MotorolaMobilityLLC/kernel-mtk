@@ -2,7 +2,7 @@
 #ifndef _MT_SECURE_API_H_
 #define _MT_SECURE_API_H_
 
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 /* Error Code */

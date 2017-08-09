@@ -7,10 +7,6 @@
 #include <asm/cacheflush.h>
 
 /*
-	#include <asm/system.h>
-*/
-
-/*
  * Define macros.
  */
 #define mt_reg_sync_writel(v, a) \

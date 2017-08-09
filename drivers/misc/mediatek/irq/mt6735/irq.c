@@ -24,8 +24,7 @@
 /*
 #include <mach/mt_reg_base.h>
 */
-#include <mach/irqs.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include <mach/mt_secure_api.h>
 /*
 #include <mach/mt_spm_idle.h>

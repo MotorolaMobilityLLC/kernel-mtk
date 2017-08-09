@@ -4,7 +4,7 @@
 #ifndef CONFIG_OF
 #include <mach/mt_reg_base.h>
 #endif
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include "platform_uart.h"
 
 /*---------------------------------------------------------------------------*/

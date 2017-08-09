@@ -28,7 +28,7 @@
 
 #include "irqchip.h"
 #include <mach/mt_secure_api.h>
-#include <mach/mt_io.h>
+#include <mt-plat/mt_io.h>
 
 union gic_base {
 	void __iomem *common_base;

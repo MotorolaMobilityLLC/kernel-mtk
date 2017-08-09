@@ -17,7 +17,7 @@
 
 #include <mach/mt_gpt.h>
 #include <mach/mt_cpuxgpt.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 #define GPT_CLKEVT_ID				(GPT1)
 #define GPT_CLKSRC_ID       (GPT2)

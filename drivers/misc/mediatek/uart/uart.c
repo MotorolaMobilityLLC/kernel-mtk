@@ -46,8 +46,7 @@
 #include <asm/irq.h>
 #include <linux/irq.h>
 #include <asm/scatterlist.h>
-#include <mach/dma.h>
-#include <mach/irqs.h>
+#include <mt-plat/dma.h>
 /* #include <mach/mt_clkmgr.h> */
 #include <linux/slab.h>
 #include "linux/delay.h"
