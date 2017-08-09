@@ -188,6 +188,7 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MTK_SIP_KERNEL_BIGOCPINTLIMIT       0xC2000365
 #define MTK_SIP_KERNEL_BIGOCPINTENDIS       0xC2000366
 #define MTK_SIP_KERNEL_BIGOCPINTCLR         0XC2000367
+#define MTK_SIP_KERNEL_BIGOCPAVGPWRGET      0XC2000368
 #define MTK_SIP_KERNEL_BIGOCPCAPTURE1       0XC2000369
 #define MTK_SIP_KERNEL_BIGOCPCAPTURE0       0XC200036A
 #define MTK_SIP_KERNEL_BIGOCPCLKAVG         0XC200036C
@@ -218,6 +219,7 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MTK_SIP_KERNEL_BIGOCPINTLIMIT       0x82000365
 #define MTK_SIP_KERNEL_BIGOCPINTENDIS       0x82000366
 #define MTK_SIP_KERNEL_BIGOCPINTCLR         0X82000367
+#define MTK_SIP_KERNEL_BIGOCPAVGPWRGET      0X82000368
 #define MTK_SIP_KERNEL_BIGOCPCAPTURE1       0X82000369
 #define MTK_SIP_KERNEL_BIGOCPCAPTURE0       0X8200036A
 #define MTK_SIP_KERNEL_BIGOCPCLKAVG         0X8200036C
@@ -260,7 +262,8 @@ extern int BigOCPClkAvg(int EnDis, int CGAvgSel);
 extern int BigOCPClkAvgStatus(unsigned int *CGAvg);
 extern int BigOCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg, int *CPU1RawLkg);
 extern int BigOCPMAFAct(unsigned int *CapMAFAct);
-extern int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count);
+/*extern int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count);*/
+extern unsigned int BigOCPAvgPwrGet(unsigned int Count);
 
 extern int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV);
 extern int LittleOCPSetTarget(int Cluster, int Target);
