@@ -124,5 +124,14 @@ extern void __iomem  *apmixed_base_in_idle;
 #define VEN_PWR_STA_MASK        BIT(21)
 #define AUDIO_PWR_STA_MASK      BIT(24)
 
+#define PWM_CLK_26M         0
+#define PWM_UNIVPLL2_D4     1
+#define PWM_LPOSC_D2        2
+#define PWM_LPOSC_D3        3
+#define PWM_LPOSC_D8        4
+#define PWM_LPOSC_D10       5
+#define PWM_LPOSC_D4        6
+
+
 #endif /* __MT_IDLE_MT6797__H__ */
 
