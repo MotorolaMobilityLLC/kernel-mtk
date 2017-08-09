@@ -26,6 +26,7 @@ endif
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/inc
 subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/common/lc898212xdaf/inc
+subdir-ccflags-$(CONFIG_MTK_LENS_BU63165AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/common/bu63165af/inc
 
 obj-y      += main_lens.o
 obj-y      += sub_lens.o

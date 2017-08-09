@@ -84,7 +84,7 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 
 	g_pstAF_I2Cclient->timing = 400; /* 400k */
 
-	g_pstAF_I2Cclient->ext_flag = (g_pstAF_I2Cclient->ext_flag)&(~I2C_DMA_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG;
+	g_pstAF_I2Cclient->ext_flag = ((g_pstAF_I2Cclient->ext_flag)&(~I2C_DMA_FLAG)) | I2C_WR_FLAG | I2C_RS_FLAG;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, (a_sizeRecvData << 8) | a_sizeSendData);
 
@@ -126,8 +126,6 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static inline int moveAF(unsigned long a_u4Position)
 {
-	int ret = 0;
-
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
 		return -EINVAL;

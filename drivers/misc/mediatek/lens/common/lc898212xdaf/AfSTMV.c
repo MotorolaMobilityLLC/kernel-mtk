@@ -26,7 +26,7 @@
 static 	stSmvPar StSmvPar;
 
 /* Step Move to Finish Check Function */
-static 	unsigned char	StmvEnd( unsigned char ) ;
+/* static 	unsigned char	StmvEnd( unsigned char ) ; */
 
 /*====================================================================
 	Interface functions (import)
@@ -104,7 +104,7 @@ void StmvSet( stSmvPar StSetSmv )
 //********************************************************************************
 unsigned char StmvTo( short SsSmvEnd )
 {
-	unsigned short	UsSmvTim;
+	/* unsigned short	UsSmvTim; */
 	unsigned short	UsSmvDpl;
     short 			SsParStt;	// StepMove Start Position
 	
@@ -155,7 +155,7 @@ unsigned char StmvTo( short SsSmvEnd )
 // History			: First edition 						2012.06.12 YS.Kim
 // History			: Changes								2013.07.19 Rex.Tang
 //********************************************************************************
-unsigned char StmvEnd( unsigned char UcParMod )
+/* unsigned char StmvEnd( unsigned char UcParMod )
 {
 	unsigned char	UcChtGst;
 	unsigned short  i = 0;
@@ -182,6 +182,6 @@ unsigned char StmvEnd( unsigned char UcParMod )
 	}
 	
 	return UcParMod;															// Bit0:0 Successful convergence Bit0:1 Time Over
-}
+} */
 
 

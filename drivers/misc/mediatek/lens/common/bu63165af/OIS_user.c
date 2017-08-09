@@ -119,9 +119,9 @@ OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat)
 
 	if (size == 1) {
 		dat[1] = 0;
-		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, &read_data, 2);
+		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
 	} else if (size == 2) {
-		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, &read_data, 2);
+		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
 	}
 
 	read_data_h = read_data >> 8;

@@ -265,8 +265,6 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static inline int moveAF(unsigned long a_u4Position)
 {
-	int ret = 0;
-
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
 		return -EINVAL;
@@ -274,23 +272,10 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if (*g_pAF_Opened == 1) {
 		/* Driver Init */
-		unsigned short InitPos;
 		LC898212XD_init();
 
-		if (ret == 0) {
-			LOG_INF("Init Pos %6d\n", InitPos);
-
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = (unsigned long)InitPos;
-			spin_unlock(g_pAF_SpinLock);
-
-		} else {
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = 0;
-			spin_unlock(g_pAF_SpinLock);
-		}
-
 		spin_lock(g_pAF_SpinLock);
+		g_u4CurrPosition = 0;
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}

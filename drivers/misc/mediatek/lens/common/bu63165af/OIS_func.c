@@ -189,6 +189,8 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;
+	OIS_UWORD *u16_dat_SCENE_;
+	OIS_UBYTE size_SCENE_tbl;
 
 	/* ==> RHM_HT 2013/11/25        Modified */
 	OIS_UBYTE u16_adr_target[3] = {
@@ -219,9 +221,8 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 	u16_dat_SCENE_SPORT_2[1] = ANGLE_LIMIT;
 	u16_dat_SCENE_SPORT_3[1] = ANGLE_LIMIT;
 
-	OIS_UWORD *u16_dat_SCENE_;
 
-	OIS_UBYTE size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
+	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
 
 	/* Disable OIS ( position Servo is not disable ) */
 	u16_dat = I2C_OIS_mem__read(_M_EQCTL);
@@ -347,6 +348,8 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;
+	OIS_UWORD *u16_dat_SCENE_;
+	OIS_UBYTE size_SCENE_tbl;
 
 	/* szx_2014/09/19 ---> Modified */
 	/* ==> RHM_HT 2013/11/25        Modified */
@@ -379,9 +382,8 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 	u16_dat_SCENE_SPORT_2[1] = ANGLE_LIMIT;
 	u16_dat_SCENE_SPORT_3[1] = ANGLE_LIMIT;
 
-	OIS_UWORD *u16_dat_SCENE_;
 
-	OIS_UBYTE size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
+	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
 
 	/* Disable OIS ( position Servo is not disable ) */
 	u16_dat = I2C_OIS_mem__read(_M_EQCTL);
