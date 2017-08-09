@@ -23,7 +23,7 @@ obj-$(CONFIG_MTK_COMBO_BT)	+= stp_chrdev_bt.o
 obj-$(CONFIG_MTK_COMBO_WIFI)	+= wmt_chrdev_wifi.o
 
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-	#obj-y 	+= stp_chrdev_ant.o
+	obj-y 	+= stp_chrdev_ant.o
 endif
 
 endif
