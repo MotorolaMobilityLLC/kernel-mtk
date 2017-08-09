@@ -219,20 +219,24 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 #endif
 
+#define CCI_BW_PMU_CTL          (OCP_BASE_ADDR + 0x0800)
+#define CCI_BW_PMU_CNT0to1_SEL  (OCP_BASE_ADDR + 0x0804)
+#define CCI_BW_PMU_CNT2to3_SEL  (OCP_BASE_ADDR + 0x0808)
+#define CCI_BW_PMU_REF_CNT      (OCP_BASE_ADDR + 0x081C)
+#define CCI_BW_PMU_ACC_CNT0     (OCP_BASE_ADDR + 0x0820)
+#define CCI_BW_PMU_ACC_CNT1     (OCP_BASE_ADDR + 0x0824)
+#define CCI_BW_PMU_ACC_CNT2     (OCP_BASE_ADDR + 0x0828)
+#define CCI_BW_PMU_ACC_CNT3     (OCP_BASE_ADDR + 0x082C)
+
 extern void aee_rr_rec_ocp_2_target_limit(u32 val);
 extern u32 aee_rr_curr_ocp_2_target_limit(void);
 
 /* OCP */
-extern int BigOCPConfig(int VOffInmV, int VStepInuV);
 extern int BigOCPSetTarget(int OCPMode, int Target);
-extern int BigOCPEnable(int OCPMode, int Units, int ClkPctMin, int FreqPctMin);
-extern void BigOCPDisable(void);
 extern int BigOCPCapture(int EnDis, int Edge, int Count, int Trig);
 extern int BigOCPCaptureStatus(int *Leakage, int *Total, int *ClkPct);
 extern unsigned int BigOCPAvgPwrGet(unsigned int Count);
 
-extern int LittleOCPSetTarget(int Cluster, int Target);
-extern int LittleOCPDisable(int Cluster);
 extern int LittleOCPDVFSSet(int Cluster, int FreqMHz, int VoltInmV);
 extern int LittleOCPAvgPwr(int Cluster, int EnDis, int Count);
 extern unsigned int LittleOCPAvgPwrGet(int Cluster);
@@ -248,16 +252,6 @@ extern void Cluster0_OCP_OFF(void);
 extern void Cluster1_OCP_OFF(void);
 
 extern int ocp_status_get(int cluster);
-
-/* DREQ + SRAMLDO */
-extern int BigSRAMLDOEnable(int mVolts);
-extern int BigDREQHWEn(int VthHi, int VthLo);
-extern int BigDREQSWEn(int Value);
-extern int BigDREQGet(void);
-extern int LittleDREQSWEn(int EnDis);
-extern int LittleDREQGet(void);
-
-
 
 extern unsigned int da9214_config_interface(unsigned char RegNum, unsigned char val,
 unsigned char MASK, unsigned char SHIFT);
