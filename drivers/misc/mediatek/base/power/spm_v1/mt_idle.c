@@ -37,21 +37,12 @@
 #include "mt_spm_idle.h"
 
 #define IDLE_TAG     "[Power/swap]"
-#define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
-#define spm_alert(fmt, args...)		pr_alert(IDLE_TAG fmt, ##args)
-#define spm_crit(fmt, args...)		pr_crit(IDLE_TAG fmt, ##args)
-#define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
 #define idle_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice(IDLE_TAG fmt, ##args)
-#define idle_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
-#define idle_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
 #define idle_gpt GPT4
 
-#define DRV_REG32(reg)				(*(volatile unsigned int* const)(reg))
-
-#define idle_readl(addr)			DRV_REG32(addr)
+#define idle_readl(addr)			__raw_readl(addr)
 
 #define idle_writel(addr, val)		mt65xx_reg_sync_writel(val, addr)
 
@@ -520,9 +511,7 @@ static bool             dpidle_by_pass_cg;
 
 static unsigned int		idle_spm_lock;
 
-#define idle_readl(addr)		DRV_REG32(addr)
-#define clk_readl(addr)			DRV_REG32(addr)
-
+#define clk_readl(addr)			__raw_readl(addr)
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
 #if !defined(CONFIG_ARCH_MT6580)
@@ -695,7 +684,7 @@ static int __init get_base_from_node(
 
 	node = of_find_matching_node(NULL, ids);
 	if (!node) {
-		idle_err("node '%s' not found!\n", cmp);
+		idle_warn("node '%s' not found!\n", cmp);
 #if !defined(CONFIG_ARCH_MT6580)
 		BUG();
 #endif
@@ -703,7 +692,7 @@ static int __init get_base_from_node(
 
 	*pbase = of_iomap(node, idx);
 	if (!(*pbase)) {
-		idle_err("node '%s' cannot iomap!\n", cmp);
+		idle_warn("node '%s' cannot iomap!\n", cmp);
 #if !defined(CONFIG_ARCH_MT6580)
 		BUG();
 #endif
@@ -912,17 +901,17 @@ out:
 				int i = 0;
 
 				for (i = 0; i < nr_cpu_ids; i++) {
-					idle_ver("soidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
+					idle_warn("soidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
 							i, soidle_cnt[i], i, rgidle_cnt[i]);
 				}
 
 				for (i = 0; i < NR_REASONS; i++) {
-					idle_ver("[%d]soidle_block_cnt[0][%s]=%lu\n", i, reason_name[i],
+					idle_warn("[%d]soidle_block_cnt[0][%s]=%lu\n", i, reason_name[i],
 							soidle_block_cnt[0][i]);
 				}
 
 				for (i = 0; i < NR_GRPS; i++) {
-					idle_ver("[%02d]soidle_condition_mask[%-8s]=0x%08x\t\t"
+					idle_warn("[%02d]soidle_condition_mask[%-8s]=0x%08x\t\t"
 							"soidle_block_mask[%-8s]=0x%08x\n", i,
 							cg_grp_get_name(i), soidle_condition_mask[i],
 							cg_grp_get_name(i), soidle_block_mask[i]);
@@ -972,7 +961,7 @@ void soidle_after_wfi(int cpu)
 		gpt_get_cnt(idle_gpt, &cnt);
 		gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
-			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
+			idle_warn("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
 					idle_gpt + 1, cnt, cmp);
 			BUG();
 		}
@@ -1078,17 +1067,17 @@ out:
 		if ((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_critera) {
 			if ((smp_processor_id() == 0)) {
 				for (i = 0; i < nr_cpu_ids; i++) {
-					idle_ver("dpidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
+					idle_warn("dpidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
 							i, dpidle_cnt[i], i, rgidle_cnt[i]);
 				}
 
 				for (i = 0; i < NR_REASONS; i++) {
-					idle_ver("[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
+					idle_warn("[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
 							dpidle_block_cnt[i]);
 				}
 
 				for (i = 0; i < NR_GRPS; i++) {
-					idle_ver("[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\t"
+					idle_warn("[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\t"
 							"dpidle_block_mask[%-8s]=0x%08x\n", i,
 							cg_grp_get_name(i), dpidle_condition_mask[i],
 							cg_grp_get_name(i), dpidle_block_mask[i]);
@@ -1146,7 +1135,7 @@ void spm_dpidle_after_wfi(void)
 		gpt_get_cnt(idle_gpt, &cnt);
 		gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
-			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
+			idle_warn("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
 					idle_gpt + 1, cnt, cmp);
 			BUG();
 		}
@@ -1440,10 +1429,10 @@ int dpidle_enter(int cpu)
 	dpidle_post_handler();
 
 #ifdef CONFIG_SMP
-	idle_ver("DP:timer_left=%d, timer_left2=%d, delta=%d\n",
+	idle_warn("DP:timer_left=%d, timer_left2=%d, delta=%d\n",
 				dpidle_timer_left, dpidle_timer_left2, dpidle_timer_left-dpidle_timer_left2);
 #else
-	idle_ver("DP:timer_left=%d, timer_left2=%d, delta=%d, timeout val=%d\n",
+	idle_warn("DP:timer_left=%d, timer_left2=%d, delta=%d, timeout val=%d\n",
 				dpidle_timer_left,
 				dipidle_timer_left2,
 				dpidle_timer_left2 - dpidle_timer_left,
@@ -1451,7 +1440,7 @@ int dpidle_enter(int cpu)
 #endif
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[3]);
-	idle_ver("1:%u, 2:%u, 3:%u, 4:%u\n",
+	idle_warn("1:%u, 2:%u, 3:%u, 4:%u\n",
 				dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
 #endif
 
@@ -1663,7 +1652,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_time_critera = param;
 		else if (!strcmp(cmd, "bypass")) {
 			dpidle_by_pass_cg = param;
-			idle_dbg("bypass = %d\n", dpidle_by_pass_cg);
+			idle_warn("bypass = %d\n", dpidle_by_pass_cg);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param)) {
@@ -1759,7 +1748,7 @@ static ssize_t soidle_state_write(struct file *filp,
 			soidle_time_critera = param;
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
-			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
+			idle_warn("bypass = %d\n", soidle_by_pass_cg);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param)) {
@@ -1865,7 +1854,7 @@ static int mt_cpuidle_debugfs_init(void)
 	/* Initialize debugfs */
 	root_entry = debugfs_create_dir("cpuidle", NULL);
 	if (!root_entry) {
-		idle_err("Can not create debugfs `dpidle_state`\n");
+		idle_warn("Can not create debugfs `dpidle_state`\n");
 		return 1;
 	}
 
@@ -1885,12 +1874,12 @@ void mt_cpuidle_framework_init(void)
 	int i = 0;
 #endif
 
-	idle_ver("[%s]entry!!\n", __func__);
+	idle_dbg("[%s]entry!!\n", __func__);
 
 	err = request_gpt(idle_gpt, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 				0, NULL, GPT_NOAUTOEN);
 	if (err)
-		idle_info("[%s]fail to request GPT%d\n", __func__, idle_gpt + 1);
+		idle_warn("[%s]fail to request GPT%d\n", __func__, idle_gpt + 1);
 
 	err = 0;
 
@@ -1902,7 +1891,7 @@ void mt_cpuidle_framework_init(void)
 #endif
 
 	if (err)
-		idle_info("[%s]fail to request cpuxgpt\n", __func__);
+		idle_warn("[%s]fail to request cpuxgpt\n", __func__);
 
 #if !defined(CONFIG_ARCH_MT6580)
 	iomap_init();

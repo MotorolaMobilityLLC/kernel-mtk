@@ -328,13 +328,13 @@ extern void __spm_disable_i2c4_clk(void);
 	 (!!(resume) << 5) |			\
 	 ((event) & 0x1f))
 
-#define spm_emerg(fmt, args...)		pr_emerg("[SPM] " fmt, ##args)
-#define spm_alert(fmt, args...)		pr_alert("[SPM] " fmt, ##args)
-#define spm_crit(fmt, args...)		pr_crit("[SPM] " fmt, ##args)
-#define spm_err(fmt, args...)		pr_err("[SPM] " fmt, ##args)
-#define spm_warn(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice("[SPM] " fmt, ##args)
-#define spm_info(fmt, args...)		pr_info("[SPM] " fmt, ##args)
+#define spm_emerg(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
+#define spm_alert(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
+#define spm_crit(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
+#define spm_err(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
+#define spm_warn(fmt, args...)		pr_debug("[SPM] " fmt, ##args)
+#define spm_notice(fmt, args...)	pr_debug("[SPM] " fmt, ##args)
+#define spm_info(fmt, args...)		pr_debug("[SPM] " fmt, ##args)
 #define spm_debug(fmt, args...)		pr_debug("[SPM] " fmt, ##args)
 
 /* just use in suspend flow for important log due to console suspend */
