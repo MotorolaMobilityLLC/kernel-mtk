@@ -245,7 +245,7 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 	unsigned int i;
 	ccci_tag_t *tag;
 	unsigned int cpy_size;
-	char tag_name[64];
+	char tag_name[64]; /* 1. For strcmp/strncmp should not be used on device memory, so prepare a temp buffer. */
 
 	if (buf == NULL)
 		return -1;
@@ -261,6 +261,7 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 		CCCI_UTIL_INF_MSG("tag value:%d\n", *(unsigned int *)(lk_inf_base+tag->data_offset));
 		#endif
 		cpy_size = strlen(tag->tag_name) + 1;
+		/* 2. copy string from device memory for use strcmp. */
 		memcpy_fromio(tag_name, tag->tag_name, cpy_size);
 		if (strcmp(tag_name, name) != 0) {
 			tag = (ccci_tag_t *)(lk_inf_base + tag->next_tag_offset);

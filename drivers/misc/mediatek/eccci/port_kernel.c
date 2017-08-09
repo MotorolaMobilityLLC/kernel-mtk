@@ -2547,6 +2547,7 @@ PL_CORE_PROC:
 				case MD_EX_CC_CS_EXCEPTION:
 				case MD_EX_CC_MD32_EXCEPTION:
 				case MD_EX_CC_C2K_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_ARM7_EXCEPTION:
 					/*
 					md1:(MCU_PCORE)
@@ -2583,7 +2584,7 @@ PL_CORE_PROC:
 					    ex_PLloginfo->content.fatalerr.error_code.code2;
 					debug_info->fatal_error.err_code3 =
 					    ex_PLloginfo->content.fatalerr.error_code.code3;
-					if (ex_PLloginfo->content.fatalerr.ex_analy.is_cadefa_sup)
+					if (ex_PLloginfo->content.fatalerr.ex_analy.is_cadefa_sup == 0x01)
 						debug_info->fatal_error.ExStr = "CaDeFa Supported\n";
 					else
 						debug_info->fatal_error.ExStr = "";
