@@ -277,6 +277,16 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0 0x444f0000 0 0x10000>;
 		};
 
+		preloader-reserved-memory@44800000 {
+			compatible = "mediatek,preloader";
+			reg = <0 0x44800000 0 0x200000>;
+		};
+
+		lk-reserved-memory@46000000 {
+			compatible = "mediatek,lk";
+			reg = <0 0x46000000 0 0x900000>;
+		};
+
 		ram_console-reserved-memory@44400000 {
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x44400000 0 0x10000>;
