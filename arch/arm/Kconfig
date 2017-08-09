@@ -813,6 +813,35 @@ config ARCH_MT6735
 	help
 	  This enable support for MediaTek MT6735
 
+config ARCH_MT6735M
+	bool "MediaTek MT6735M"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select VFP_OPT
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select MTK_IRQ
+	select ARM_HAS_SG_CHAIN
+	select PINCTRL
+	select PINCTRL_MT6735
+	select MFD_SYSCON
+	select CPU_IDLE
+	select ARM_MT6735_CPUIDLE
+	help
+	 This enables support for MediaTek MT6735M
+	 Support for k35mv1
+         Support for k35mv1_op01
+         Support for k35mv1_op02
+
 config ARCH_MT6580
     bool "MediaTek MT6580"
     select GENERIC_TIME

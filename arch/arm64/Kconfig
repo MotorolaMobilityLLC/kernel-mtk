@@ -212,6 +212,32 @@ config ARCH_MT8163
 	  Please note this also select ARCH_MEDIATEK, so driver depends
 	  on it can be selected.
 
+config ARCH_MT6735M
+	bool "MediaTek MT6735M"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select ARM_MT6735_CPUIDLE
+	select MTK_GIC
+	help
+	  This enable support for MediaTek MT6735M
+          Support for k35mv1_64
+          Support for k35mv1_64_op01
+          Support for k35mv1_64_op02
+
 config ARCH_XGENE
 	bool "AppliedMicro X-Gene SOC Family"
 	help
