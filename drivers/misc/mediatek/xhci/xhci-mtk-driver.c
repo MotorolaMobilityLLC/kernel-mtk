@@ -41,8 +41,8 @@
 #include <linux/usb/hcd.h>
 /*#include <mach/mt_chip.h>*/
 
-#ifdef CONFIG_MTK_TYPEC_SWITCH
-#include <linux/usb/typec.h>
+#ifdef CONFIG_USB_C_SWITCH
+#include <typec.h>
 #endif
 
 #ifdef CONFIG_MTK_FPGA
@@ -708,7 +708,7 @@ void mtk_unload_xhci_on_ipo(void)
 
 #endif
 
-#ifdef CONFIG_MTK_TYPEC_SWITCH
+#ifdef CONFIG_USB_C_SWITCH
 static void typec_otg_enable(void)
 {
 	mtk_idpin_cur_stat = IDPIN_IN_HOST;
@@ -743,7 +743,7 @@ static struct typec_switch_data typec_host_driver = {
 void mtk_xhci_wakelock_init(void)
 {
 	wake_lock_init(&mtk_xhci_wakelock, WAKE_LOCK_SUSPEND, "xhci.wakelock");
-#ifdef CONFIG_MTK_TYPEC_SWITCH
+#ifdef CONFIG_USB_C_SWITCH
 	typec_host_driver.priv_data = NULL;
 	register_typec_switch_callback(&typec_host_driver);
 #endif

@@ -817,5 +817,8 @@ static inline int mtk_is_host_mode(void)
 	return 0;
 }
 #endif
-
+#ifdef CONFIG_USB_C_SWITCH
+extern int typec_switch_usb_disconnect(void *data);
+extern int typec_switch_usb_connect(void *data);
+#endif
 #endif	/* __MUSB_CORE_H__ */

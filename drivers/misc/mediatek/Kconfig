@@ -260,5 +260,5 @@ source "drivers/misc/mediatek/scp/Kconfig"
 
 source "drivers/misc/mediatek/rrc/Kconfig"
 source "drivers/misc/mediatek/selinux_warning/Kconfig"
-
+source "drivers/misc/mediatek/usb_c/Kconfig"
 endif
