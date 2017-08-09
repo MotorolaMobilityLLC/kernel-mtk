@@ -3,7 +3,7 @@
 
 #include <linux/bitops.h>
 /* #include <mach/mt_reg_base.h> */
-
+#include "sync_write.h"
 
 /* **************************************************** */
 /* IP base address */
@@ -236,16 +236,26 @@ static inline unsigned int uffs(unsigned int x)
 /* EVEREST CHIP issue, should read two times. */
 static inline unsigned int fh_read32(unsigned long reg)
 {
-	volatile unsigned int val = readl((void __iomem *)reg);
+	volatile unsigned int val;
 
-	val = readl((void __iomem *)reg);
+	do {
+		val = readl((void __iomem *)reg);
+		val = readl((void __iomem *)reg);
+	} while (0);
+	mb();
 	return val;
 }
 
 
 #define fh_write8(reg, val)      mt_reg_sync_writeb((val), (reg))
 #define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
-#define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg))
+/* #define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg)) */
+static inline void fh_write32(unsigned long reg, unsigned int val)
+{
+	mt_reg_sync_writel(val, reg);
+	ndelay(100);
+	mb();
+}
 
 /* #define fh_set_bits(reg,bs)     ((*(volatile u32*)(reg)) |= (u32)(bs)) */
 /* #define fh_clr_bits(reg,bs)     ((*(volatile u32*)(reg)) &= ~((u32)(bs))) */

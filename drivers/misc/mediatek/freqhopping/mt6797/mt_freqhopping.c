@@ -222,15 +222,18 @@ static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 static int fh_dumpregs_read(enum FH_PLL_ID pll_id)
 {
 	/* FH_MSG("FHCTL dumpregs: %s", __func__); */
-	const unsigned int mon = fh_read32(g_reg_mon[pll_id]);
+	unsigned long flags = 0;
+	unsigned int mon;
+
+	local_irq_save(flags);
+	mon = fh_read32(g_reg_mon[pll_id]);
 
 	FH_MSG("[PLL]:%d [CFG]:%08x [UPDNLMT]:%08x [DVFS]:%08x [DDS]:%08x [MON]:%08x",
 	       pll_id, fh_read32(g_reg_cfg[pll_id]), fh_read32(g_reg_updnlmt[pll_id]),
-	       fh_read32(g_reg_dvfs[pll_id]), fh_read32(g_reg_dds[pll_id]),
-	       mon);
+	       fh_read32(g_reg_dvfs[pll_id]), fh_read32(g_reg_dds[pll_id]), mon);
 
 	FH_MSG("[CON0]:%08x [CON1]:%08x",
-		fh_read32(g_reg_pll_con0[pll_id]), fh_read32(g_reg_pll_con1[pll_id]));
+	       fh_read32(g_reg_pll_con0[pll_id]), fh_read32(g_reg_pll_con1[pll_id]));
 
 	if (isFHCTL(pll_id)) {
 		FH_MSG
@@ -244,6 +247,7 @@ static int fh_dumpregs_read(enum FH_PLL_ID pll_id)
 		     fh_read32(REG_MCU_FHCTL_HP_EN), fh_read32(REG_MCU_FHCTL_CLK_CON),
 		     fh_read32(REG_MCU_FHCTL_SLOPE0), fh_read32(REG_MCU_FHCTL_DSSC_CFG));
 	}
+	local_irq_restore(flags);
 	return 0;
 }
 
@@ -496,10 +500,14 @@ Exit:
 static void wait_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds, unsigned long reg_mon,
 			    unsigned int wait_count)
 {
+	unsigned long flags = 0;
 	unsigned int fh_dds = 0;
 	unsigned int i = 0;
 
+	local_irq_save(flags);
 	fh_dds = fh_read32(reg_mon) & MASK21b;
+	local_irq_restore(flags);
+
 	while ((target_dds != fh_dds) && (i < wait_count)) {
 		udelay(10);
 #if 0
@@ -508,7 +516,9 @@ static void wait_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds, unsi
 			break;
 		}
 #endif
+		local_irq_save(flags);
 		fh_dds = (fh_read32(reg_mon)) & MASK21b;
+		local_irq_restore(flags);
 
 		if ((i == 40) || (i == 60) || (i == 80)) {
 			/* Might have something wrong during hopping */
@@ -540,7 +550,7 @@ static void wait_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds, unsi
  */
 static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 {
-	/* unsigned long flags = 0; */
+	unsigned long flags = 0;
 
 	FH_MSG_DEBUG("%s for pll %d:", __func__, pll_id);
 
@@ -553,7 +563,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	/* local_irq_save(flags); */
 	spin_lock(&g_fh_lock2);
-
+	local_irq_save(flags);
 	/* 1. sync ncpo to DDS of FHCTL */
 	fh_sync_ncpo_to_fhctl_dds(pll_id);
 
@@ -585,9 +595,9 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 					fh_write32(reg_cfg, reg_val);
 					FH_MSG("[Warning] MCU FHCTL CFG write retry 2");
 				}
-			} /* if */
-
-		} /* if-else */
+			}
+			/* if */
+		}		/* if-else */
 	}
 
 	/* for slope setting. */
@@ -619,10 +629,13 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 			     (fh_read32(dvfs_req) & MASK21b));
 		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id, (fh_read32(dvfs_req) & MASK21b));
 	}
+	local_irq_restore(flags);
 
 	/* 4.1 ensure jump to target DDS */
 	wait_dds_stable(pll_id, dds_value, g_reg_mon[pll_id], 100);
 	/* FH_MSG("4.1 ensure jump to target DDS"); */
+
+	local_irq_save(flags);
 
 	/* 5. write back to ncpo */
 	/* FH_MSG("5. write back to ncpo"); */
@@ -645,8 +658,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	mb();
 
 	/* FH_MSG("6. switch to register control"); */
-
-	/* local_irq_restore(flags); */
+	local_irq_restore(flags);
 	spin_unlock(&g_fh_lock2);
 
 	return 0;
@@ -660,6 +672,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	/* unsigned long flags = 0; */
 	unsigned long reg_cfg = 0;
 	unsigned int pll = coreid;
+	unsigned long flags = 0;
 
 	if (g_initialize == 0) {
 		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
@@ -691,15 +704,20 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
 	spin_lock(&g_fh_lock);
 
+	/* MCU FHCTL reg should read two times, so add disable IRQ to protect. */
+	local_irq_save(flags);
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+	local_irq_restore(flags);
 
 	mt_fh_hal_hopping(pll, dds);
 
+	local_irq_save(flags);
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+	local_irq_restore(flags);
 
 	spin_unlock(&g_fh_lock);
 
@@ -1086,6 +1104,7 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 {
 	int i = 0;
+	unsigned long flags = 0;
 	static unsigned int dds_max[FH_PLL_NUM] = { 0 };
 	static unsigned int dds_min[FH_PLL_NUM] = { 0 };
 
@@ -1095,6 +1114,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	}
 
 	FH_MSG("EN: %s", __func__);
+
+	local_irq_save(flags);
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
 		const unsigned int mon = fh_read32(g_reg_mon[i]);
@@ -1132,6 +1153,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 	for (i = 0; i < FH_PLL_NUM; ++i)
 		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n", i, dds_max[i], dds_min[i]);
+
+	local_irq_restore(flags);
 
 	return 0;
 }
