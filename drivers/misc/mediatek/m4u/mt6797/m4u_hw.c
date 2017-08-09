@@ -2471,7 +2471,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	/* mau_start_monitor(0, 0, 2, 0, 0, 0, 0, 0x0, 0x1000, 0xffffffff, 0xffffffff); */
 
 	/* config MDP related port default use M4U */
-	/*
+
 	if (0 == m4u_id) {
 		M4U_PORT_STRUCT port;
 		port.Direction = 0;
@@ -2480,19 +2480,23 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		port.Security = 0;
 		port.Virtuality = 1;
 
-		port.ePortID = M4U_PORT_MDP_RDMA;
+		port.ePortID = M4U_PORT_MDP_RDMA0;
 		m4u_config_port(&port);
 
-		port.ePortID = M4U_PORT_MDP_WDMA;
+		port.ePortID = M4U_PORT_MDP_WDMA0;
 		m4u_config_port(&port);
 
-		port.ePortID = M4U_PORT_MDP_WROT;
+		port.ePortID = M4U_PORT_MDP_WROT0;
 		m4u_config_port(&port);
 
-		larb_reg_backup_buf[0][0] = 0xffffffff;
+		port.ePortID = M4U_PORT_MDP_RDMA1;
+		m4u_config_port(&port);
+
+		port.ePortID = M4U_PORT_MDP_WROT1;
+		m4u_config_port(&port);
 
 	}
-	*/
+
 	return 0;
 }
 
