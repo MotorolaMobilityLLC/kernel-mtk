@@ -79,50 +79,6 @@ static int check_dsp_header(int md_id, void *parse_addr, struct ccci_image_info 
 	return 0;
 }
 
-int scan_image_list(int md_id, char fmt[], int out_img_list[], int img_list_size)
-{
-	int i;
-	int img_num = 0;
-	char full_path[64] = { 0 };
-	char img_name[32] = { 0 };
-	int md_type;
-	struct file *filp = NULL;
-
-	md_type = get_md_type_from_lk(md_id); /* For LK load modem use */
-	if (md_type) {
-		out_img_list[img_num] = md_type;
-		img_num++;
-
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "md_type: %d, image nume:%d\n", md_type, img_num);
-		return img_num;
-	}
-
-	for (i = 0; i < (sizeof(type_str) / sizeof(char *)); i++) {
-		snprintf(img_name, 32, fmt, md_id + 1, type_str[i]);
-		/* Find at CIP first */
-		snprintf(full_path, 64, "%s%s", CONFIG_MODEM_FIRMWARE_CIP_PATH, img_name);
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find:%s\n", full_path);
-		filp = filp_open(full_path, O_RDONLY, 0644);
-		if (IS_ERR(filp)) {
-			/* Find at default */
-			snprintf(full_path, 64, "%s%s", CONFIG_MODEM_FIRMWARE_PATH, img_name);
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find:%s\n", full_path);
-			filp = filp_open(full_path, O_RDONLY, 0644);
-			if (IS_ERR(filp)) {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "%s not found(%d,%d)\n", full_path, img_num, i);
-				continue;
-			}
-		}
-		/* Run here means open image success */
-		filp_close(filp, NULL);
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Image:%s found\n", full_path);
-		if (img_num < img_list_size)
-			out_img_list[img_num] = i;
-		img_num++;
-	}
-	return img_num;
-}
-
 static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_info *image)
 {
 	int ret;
@@ -661,92 +617,6 @@ char *ccci_get_md_info_str(int md_id)
 	return md_img_info_str[md_id];
 }
 
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-static int sec_lib_version_check(void)
-{
-	int ret = 0;
-	int sec_lib_ver = masp_ccci_version_info();
-
-	if (sec_lib_ver != CURR_SEC_CCCI_SYNC_VER) {
-		CCCI_UTIL_ERR_MSG("[Error]sec lib for ccci mismatch: sec_ver:%d, ccci_ver:%d\n", sec_lib_ver,
-				  CURR_SEC_CCCI_SYNC_VER);
-		ret = -1;
-	}
-
-	return ret;
-}
-
-/*--------------------------------------------------------------------------------------------------*/
-/* New signature check version. 2012-2-2.  */
-/* Change to use masp_ccci_signfmt_verify_file	*/
-/*		(char *file_path, unsigned int *data_offset, unsigned int *data_sec_len) */
-/*  masp_ccci_signfmt_verify_file parameter description */
-/*    @ file_path: such as etc/firmware/modem.img */
-/*    @ data_offset: the offset address that bypass signature header */
-/*    @ data_sec_len: length of signature header + tail */
-/*    @ return value: 0-success; */
-/*---------------------------------------------------------------------------------------------------*/
-static int signature_check_v2(int md_id, char *file_path, unsigned int *sec_tail_length)
-{
-	unsigned int bypass_sec_header_offset = 0;
-	unsigned int sec_total_len = 0;
-
-	if (masp_ccci_signfmt_verify_file(file_path, &bypass_sec_header_offset, &sec_total_len) == 0) {
-		/*signature lib check success */
-		/*-- check return value */
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "sign check ret value 0x%x, 0x%x!\n", bypass_sec_header_offset,
-					  sec_total_len);
-		if (bypass_sec_header_offset > sec_total_len) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "sign check fail(0x%x, 0x%x!)!\n", bypass_sec_header_offset,
-						  sec_total_len);
-			return -CCCI_ERR_LOAD_IMG_SIGN_FAIL;
-		}
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "sign check success(0x%x, 0x%x)!\n", bypass_sec_header_offset,
-						 sec_total_len);
-		*sec_tail_length = sec_total_len - bypass_sec_header_offset;
-		/* Note here, offset is more than 2G is not hoped  */
-		return (int)bypass_sec_header_offset;
-	}
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "sign check fail!\n");
-	return -CCCI_ERR_LOAD_IMG_SIGN_FAIL;
-}
-
-static int load_cipher_firmware_v2(int md_id,
-				   int fp_id,
-				   struct ccci_image_info *img,
-				   unsigned int cipher_img_offset, unsigned int cipher_img_len)
-{
-	int ret;
-	void *addr = ioremap_nocache(img->address, cipher_img_len);
-	void *addr_bak = addr;
-	unsigned int data_offset;
-
-	if (addr == NULL) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "ioremap image fialed!\n");
-		ret = -CCCI_ERR_LOAD_IMG_NO_ADDR;
-		goto out;
-	}
-
-	if (SEC_OK !=
-		masp_ccci_decrypt_cipherfmt(fp_id, cipher_img_offset, (char *)addr, cipher_img_len, &data_offset)) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "cipher image decrypt fail!\n");
-		ret = -CCCI_ERR_LOAD_IMG_CIPHER_FAIL;
-		goto unmap_out;
-	}
-
-	img->size = cipher_img_len;
-	img->offset += data_offset;
-	addr += cipher_img_len;
-
-	ret = check_md_header(md_id, addr, img);
-
- unmap_out:
-	iounmap(addr_bak);
- out:
-	return ret;
-}
-#endif
-
 static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 {
 	/* name format: modem_X_YY_K_Ex.img */
@@ -827,416 +697,114 @@ static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	}
 }
 
-static struct file *open_img_file(char *name, int *sec_fp_id)
+int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[], struct device *dev)
 {
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-	int fp_id = OSAL_FILE_NULL;
-
-	fp_id = osal_filp_open_read_only(name);
-	CCCI_UTIL_DBG_MSG("sec_open fd = (%d)!\n", fp_id);
-
-	if (sec_fp_id != NULL)
-		*sec_fp_id = fp_id;
-
-	CCCI_UTIL_DBG_MSG("sec_open file ptr = (%p)!\n", osal_get_filp_struct(fp_id));
-
-	return (struct file *)osal_get_filp_struct(fp_id);
-#else
-	CCCI_UTIL_DBG_MSG("std_open!\n");
-	return filp_open(name, O_RDONLY, 0644);
-#endif
-}
-
-static void close_img_file(struct file *filp_id, int sec_fp_id)
-{
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-	CCCI_UTIL_DBG_MSG("sec_close (%d)!\n", sec_fp_id);
-	osal_filp_close(sec_fp_id);
-#else
-	CCCI_UTIL_DBG_MSG("std_close!\n");
-	filp_close(filp_id, current->files);
-#endif
-}
-
-static int find_img_to_open(int md_id, MD_IMG_TYPE img_type, char active_file_path[], char active_post_fix[])
-{
-	char img_name[3][IMG_NAME_LEN];
-	char full_path[IMG_PATH_LEN];
-	int i;
-	char post_fix[IMG_POSTFIX_LEN];
-	char post_fix_ex[IMG_POSTFIX_LEN];
-	struct file *filp = NULL;
-
-	/* Gen file name */
-	get_md_postfix(md_id, NULL, post_fix, post_fix_ex);
-
-	if (img_type == IMG_MD) {	/* Gen MD image name */
-		snprintf(img_name[0], IMG_NAME_LEN, "modem_%s.img", post_fix);
-		snprintf(img_name[1], IMG_NAME_LEN, "modem_%s.img", post_fix_ex);
-		snprintf(img_name[2], IMG_NAME_LEN, "%s", MOEDM_IMAGE_NAME);
-	} else if (img_type == IMG_DSP) {	/* Gen DSP image name */
-		snprintf(img_name[0], IMG_NAME_LEN, "dsp_%s.bin", post_fix);
-		snprintf(img_name[1], IMG_NAME_LEN, "dsp_%s.bin", post_fix_ex);
-		snprintf(img_name[2], IMG_NAME_LEN, "%s", DSP_IMAGE_NAME);
-	} else if (img_type == IMG_ARMV7) {	/* Gen ARMV7 image name */
-		snprintf(img_name[0], IMG_NAME_LEN, "armv7_%s.bin", post_fix);
-		snprintf(img_name[1], IMG_NAME_LEN, "armv7_%s.bin", post_fix_ex);
-		snprintf(img_name[2], IMG_NAME_LEN, "%s", "armv7.bin");
-	} else {
-		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Invalid img type%d\n", img_type);
-		return -CCCI_ERR_INVALID_PARAM;
-	}
-
-	CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "Find img @CIP\n");
-	for (i = 0; i < 3; i++) {
-		CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "try to open %s\n", img_name[i]);
-		snprintf(full_path, IMG_PATH_LEN, "%s%s", CONFIG_MODEM_FIRMWARE_CIP_PATH, img_name[i]);
-		filp = filp_open(full_path, O_RDONLY, 0644);
-		if (IS_ERR(filp)) {
-			continue;
-		} else {	/* Open image success */
-			snprintf(active_file_path, IMG_PATH_LEN, full_path);
-			filp_close(filp, current->files);
-			if (i == 0)
-				snprintf(active_post_fix, IMG_POSTFIX_LEN, "%s", post_fix);
-			else if (i == 1)
-				snprintf(active_post_fix, IMG_POSTFIX_LEN, "%s", post_fix_ex);
-			else
-				active_post_fix[0] = '\0';
-			return 0;
-		}
-	}
-
-	CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "Find img @default\n");
-	for (i = 0; i < 3; i++) {
-		CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "try to open %s\n", img_name[i]);
-		snprintf(full_path, IMG_PATH_LEN, "%s%s", CONFIG_MODEM_FIRMWARE_PATH, img_name[i]);
-		filp = filp_open(full_path, O_RDONLY, 0644);
-		if (IS_ERR(filp)) {
-			continue;
-		} else {	/* Open image success */
-			snprintf(active_file_path, IMG_PATH_LEN, full_path);
-			filp_close(filp, current->files);
-			if (i == 0)
-				snprintf(active_post_fix, IMG_POSTFIX_LEN, "%s", post_fix);
-			else if (i == 1)
-				snprintf(active_post_fix, IMG_POSTFIX_LEN, "%s", post_fix_ex);
-			else
-				active_post_fix[0] = '\0';
-			return 0;
-		}
-	}
-
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find ubin img @default\n");
-	for (i = modem_ultg; i <= MAX_IMG_NUM; i++) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
-		if (img_type == IMG_MD)
-			snprintf(img_name[0], IMG_NAME_LEN, "modem_%d_%s_n.img", md_id+1, type_str[i]);
-		else if (img_type == IMG_DSP)
-			snprintf(img_name[0], IMG_NAME_LEN, "dsp_%d_%s_n.bin", md_id+1, type_str[i]);
-		else if (img_type == IMG_ARMV7)
-			snprintf(img_name[0], IMG_NAME_LEN, "armv7_%d_%s_n.bin", md_id+1, type_str[i]);
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "try to open %s\n", img_name[0]);
-		snprintf(full_path, IMG_PATH_LEN, "%s%s", CONFIG_MODEM_FIRMWARE_PATH, img_name[0]);
-		filp = filp_open(full_path, O_RDONLY, 0644);
-		if (IS_ERR(filp)) {
-			continue;
-		} else {	/* Open image success */
-			snprintf(active_file_path, IMG_PATH_LEN, full_path);
-			filp_close(filp, current->files);
-			snprintf(active_post_fix, IMG_POSTFIX_LEN, "%d_%s_n", md_id + 1, type_str[i]);
-			return 0;
-		}
-	}
-
-	active_post_fix[0] = '\0';
-	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "No Image file found\n");
-	{
-		char title[100];
-		char info[100];
-
-		snprintf(title, sizeof(title), "MD%d image not exist:%s", md_id + 1, img_name[0]);
-		snprintf(info, sizeof(info), "Modem %d image name: %s,please check CUSTOM_MODME in projectconfig.mk!",
-			 md_id + 1, img_name[0]);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-		aed_md_exception_api(NULL, 0, (const int *)info, sizeof(info), (const char *)title, DB_OPT_DEFAULT);
-#endif
-	}
-	return -CCCI_ERR_LOAD_IMG_NOT_FOUND;
-}
-
-static inline void dump_md_image(int md_id, void *start_addr, u32 offset, u32 len)
-{
-	u32 i, _16_fix_num;
-	unsigned int *curr_p = (unsigned int *)(start_addr + offset);
-
-	if (NULL == start_addr || len == 0)
-		return;
-
-	CCCI_UTIL_NOTICE_MSG_WITH_ID(md_id, "dump image start at %p, offset 0x%x, len 0x%x\n",
-		start_addr, offset, len);
-
-	_16_fix_num = len / 16;
-	for (i = 0; i < _16_fix_num; i++) {
-		CCCI_UTIL_NOTICE_MSG_WITH_ID(md_id, "%03X: %08X %08X %08X %08X\n",
-		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
-		curr_p += 4;
-	}
-
-}
-
-static int check_if_bypass_header(struct file *filp, int *img_size);
-static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_info *img)
-{
-	void __iomem *start;
+#define MAX_REMAP_SIZE (1024 * 1024)
 	int ret = 0;
 	int check_ret = 0;
 	int read_size = 0;
-	mm_segment_t curr_fs;
-	phys_addr_t load_addr;
-	void *end_addr;
-	const int size_per_read = 1024 * 1024;
-	const int size = 1024;
-	int img_size = 0;
-	int hdr_size = 0;
-	int curr_read;
+	unsigned long load_addr = 0;
+	void *start = NULL;
+	unsigned long end_addr;
+	const struct firmware *fw_entry = NULL;
+	const int dsp_header_size = 1024;
+	int size_per_read = MAX_REMAP_SIZE;
+	char img_name[IMG_NAME_LEN];
+	struct ccci_image_info *img = (struct ccci_image_info *)img_inf;
 
-	curr_fs = get_fs();
-	set_fs(KERNEL_DS);
-
-	load_addr = img->address;
-	if (img->offset != 0)
-		filp->f_pos = img->offset;
-	else {
-		hdr_size = check_if_bypass_header(filp, &img_size);
-		if (hdr_size != 0) {
-			img->size = img_size;
-			filp->f_pos = hdr_size;
-		} else
-			filp->f_pos = 0; /* move offset back to 0 */
+	if (dev == NULL) {
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "dev == NULL\n");
+		ret = -CCCI_ERR_LOAD_IMG_FILE_OPEN;
+		goto out;
 	}
+	/*  Gen file name */
+	get_md_postfix(md_id, NULL, post_fix, NULL);
 
-	if (hdr_size) {
-		CCCI_UTIL_ERR_MSG("read size according to header(%d)\n", img_size);
-		while (1) {
-			/* Map 1M memory */
-			start = ioremap_nocache((load_addr + read_size), size_per_read);
-			if (start == NULL) {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
-				set_fs(curr_fs);
-				return -CCCI_ERR_LOAD_IMG_NOMEM;
-			}
-
-			if (size_per_read > (img_size-read_size))
-				curr_read = img_size-read_size;
-			else
-				curr_read = size_per_read;
-			ret = (int)filp->f_op->read(filp, start, curr_read, &filp->f_pos);
-			/*make sure image size isn't 0 */
-			if ((ret < 0) || (ret > curr_read) || ((ret == 0) && (read_size == 0))) {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read fail: size=%d+\n", ret);
-				ret = -CCCI_ERR_LOAD_IMG_FILE_READ;
-				goto error;
-			} else if (ret == curr_read) {
-				read_size += ret;
-				iounmap(start);
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read num %d\n", ret);
-				if (ret == 0)
-					break;
-			} else {
-				iounmap(start);
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read num %d--\n", ret);
-				break;
-			}
-		}
+	if (img->type == IMG_MD) {	/*  Gen MD image name */
+		snprintf(img_name, IMG_NAME_LEN, "modem_%s.img", post_fix);
+	} else if (img->type == IMG_DSP) {	/*  Gen DSP image name */
+		snprintf(img_name, IMG_NAME_LEN, "dsp_%s.bin", post_fix);
+	}  else if (img->type == IMG_ARMV7) {	/* Gen ARMV7 image name */
+		snprintf(img_name, IMG_NAME_LEN, "armv7_%s.bin", post_fix);
 	} else {
-		CCCI_UTIL_ERR_MSG("legacy load\n");
-		while (1) {
-			/* Map 1M memory */
-			start = ioremap_nocache((load_addr + read_size), size_per_read);
-			if (start == NULL) {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
-				set_fs(curr_fs);
-				return -CCCI_ERR_LOAD_IMG_NOMEM;
-			}
-
-			ret = (int)filp->f_op->read(filp, start, size_per_read, &filp->f_pos);
-			/*make sure image size isn't 0 */
-			if ((ret < 0) || (ret > size_per_read) || ((ret == 0) && (read_size == 0))) {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read fail: size=%d\n", ret);
-				ret = -CCCI_ERR_LOAD_IMG_FILE_READ;
-				goto error;
-			} else if (ret == size_per_read) {
-				read_size += ret;
-				iounmap(start);
-			} else {
-				read_size += ret;
-				/* Note here, signatured image has file tail info. */
-				img->size = read_size - img->tail_length;
-				CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "%s, image size=0x%x, read size:%d, tail:%d\n",
-						  img->file_name, img->size, read_size, img->tail_length);
-				iounmap(start);
-				break;
-			}
-		}
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Invalid img type%d\n", img->type);
+		return -CCCI_ERR_INVALID_PARAM;
 	}
 
+	strncpy(img->file_name, img_name, sizeof(img->file_name));
+	img->offset = 0;
+	img->tail_length = 0;
+
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Not cipher image: %s\n", img_name);
+	ret = request_firmware(&fw_entry, img_name, dev);
+	if (ret != 0) {
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
+			     "load_firmware failed:ret=%d!\n", ret);
+		goto out;
+	}
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Firmware:size=%d\n", fw_entry->size);
+	/*load modem img context to kernel addr*/
+	load_addr = img->address;
+	while (1) {
+		/*  Map 1M memory */
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Firmware:read_size=%d, size_per_read=%d\n", read_size, size_per_read);
+		start = ioremap_nocache((load_addr + read_size), MAX_REMAP_SIZE);
+		if (start == 0) {
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail %d\n",
+						(unsigned int)(load_addr + read_size));
+			return -CCCI_ERR_LOAD_IMG_NOMEM;
+		}
+		memcpy(start, fw_entry->data + read_size, size_per_read);
+		iounmap(start);
+		start = NULL;
+		read_size += size_per_read;
+		if (read_size + size_per_read > fw_entry->size - img->tail_length)
+			size_per_read = fw_entry->size - img->tail_length - read_size;
+		else
+			size_per_read = MAX_REMAP_SIZE;
+		if (read_size == fw_entry->size - img->tail_length)
+			break;
+	}
+	img->size = read_size;
+	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Firmware check header:load_addr=%lx, size=%d\n", load_addr, img->size);
 	if (img->type == IMG_MD) {
-		/* Make sure in one scope */
-		start = ioremap_nocache(round_down(load_addr + img->size - 0x4000, 0x4000), 0x4000 * 2);
-		end_addr = start + 0x4000 + (img->size - round_down(img->size, 0x4000));
-		check_ret = check_md_header(md_id, end_addr, img);
+		start = ioremap_nocache(round_down(load_addr + img->size - 0x4000, 0x4000),
+			round_up(img->size, 0x4000) - round_down(img->size - 0x4000, 0x4000));
+		end_addr =
+		    ((unsigned long)start + img->size - round_down(img->size - 0x4000, 0x4000));
+		check_ret = check_md_header(md_id, (void *)end_addr, img);
 		if (check_ret < 0) {
 			ret = check_ret;
-			goto error;
+			goto out;
 		}
-		iounmap(start);
 	} else if (img->type == IMG_DSP) {
-		start = ioremap_nocache(load_addr, size);
+		start = ioremap_nocache(load_addr, dsp_header_size);
 		check_ret = check_dsp_header(md_id, start, img);
 		if (check_ret < 0) {
 			ret = check_ret;
-			goto error;
-		}
-		iounmap(start);
-	}
-
-	set_fs(curr_fs);
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Load %s (size=0x%x) to 0x%pa\n", img->file_name, read_size, &load_addr);
-	return read_size;
-
- error:
-	iounmap(start);
-	set_fs(curr_fs);
-	return ret;
-}
-
-/*
- * this function should be universal to both MD image and DSP image
- */
-static int load_image(int md_id, struct ccci_image_info *img_inf, char post_fix[])
-{
-	struct file *filp = NULL;
-	int fp_id;
-	int ret = 0;
-	int offset = 0;
-	unsigned int sec_tail_length = 0;
-	struct ccci_image_info *img = NULL;
-	MD_IMG_TYPE img_type;
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-	unsigned int img_len = 0;
-#endif
-	img = img_inf;
-	img_type = img->type;
-	if (find_img_to_open(md_id, img_type, img->file_name, post_fix) < 0) {
-		ret = -CCCI_ERR_LOAD_IMG_FILE_OPEN;
-		filp = NULL;
-		goto out;
-	}
-
-	filp = open_img_file(img->file_name, &fp_id);
-	if (IS_ERR(filp)) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "open %s fail: %ld\n", img->file_name, PTR_ERR(filp));
-		ret = -CCCI_ERR_LOAD_IMG_FILE_OPEN;
-		filp = NULL;
-		goto out;
-	} else {
-		CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "open %s OK\n", img->file_name);
-	}
-
-	/*Begin to check header, only modem.img need check signature and cipher header */
-	sec_tail_length = 0;
-	if (img_type == IMG_MD) {
-		/*step1:check if need to signature */
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-		offset = signature_check_v2(md_id, img->file_name, &sec_tail_length);
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "signature_check offset:%d, tail:%d\n", offset, sec_tail_length);
-		if (offset < 0) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "signature_check failed ret=%d\n", offset);
-			ret = offset;
-			goto out;
-		}
-#endif
-		img->offset = offset;
-		img->tail_length = sec_tail_length;
-
-		/*step2:check if need to cipher */
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-		if (masp_ccci_is_cipherfmt(fp_id, offset, &img_len)) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "cipher image\n");
-			ret = load_cipher_firmware_v2(md_id, fp_id, img, offset, img_len);
-			if (ret < 0) {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_cipher_firmware failed:ret=%d!\n", ret);
-				goto out;
-			}
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_cipher_firmware done! (=%d)\n", ret);
-		} else {
-#endif
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Not cipher image\n");
-			ret = load_std_firmware(md_id, filp, img);
-			if (ret < 0) {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_firmware failed: ret=%d!\n", ret);
-				goto out;
-			}
-#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-		}
-#endif
-	} else if (img_type == IMG_DSP) {
-		/*dsp image check signature during uboot, and ccci not need check for dsp. */
-		ret = load_std_firmware(md_id, filp, img);
-		if (ret < 0) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_firmware for %s failed:ret=%d!\n", img->file_name, ret);
-			goto out;
-		}
-	} else if (img_type == IMG_ARMV7) {
-		/* load armv7 */
-		ret = load_std_firmware(md_id, filp, img);
-		if (ret < 0) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_firmware for %s failed:ret=%d!\n", img->file_name, ret);
 			goto out;
 		}
 	}
-
+	ret = read_size;
+	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Request firmware: %s (size=0x%x) to 0x%lx\n",
+		     img->file_name, img->size - img->tail_length, load_addr);
  out:
-	if (filp != NULL)
-		close_img_file(filp, fp_id);
-	return ret;
-}
-
-int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[])
-{
-	int ret = 0;
-	struct ccci_image_info *img_ptr = (struct ccci_image_info *)img_inf;
-	char *img_str;
-
-	img_str = md_img_info_str[md_id];
-
-	/*step1: clear modem protection when start to load firmware */
-	/*ccci_clear_md_region_protection(md_id); */
-
-	/*step2: load image */
-	ret = load_image(md_id, img_ptr, post_fix);
-	if (ret < 0) {
-		/* if load_image failed, md->img_info won't have valid file name */
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "fail to load firmware!\n");
+	if (fw_entry != NULL) {
+		release_firmware(fw_entry);
+		fw_entry = NULL;
 	}
-
-	/* Construct image information string */
-	if (img_ptr->type == IMG_MD) {
-		sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
-			img_ptr->img_info.image_type, img_ptr->img_info.platform,
-			img_ptr->img_info.build_ver, img_ptr->img_info.build_time,
-			img_ptr->img_info.product_ver, img_ptr->ap_info.image_type,
-			img_ptr->ap_info.platform, img_ptr->ap_info.mem_size, img_ptr->img_info.mem_size);
+	if (start != NULL) {
+		iounmap(start);
+		start = NULL;
 	}
 
 	/* Prepare error string if needed */
 	if (img_err_str != NULL) {
 		if (ret == -CCCI_ERR_LOAD_IMG_SIGN_FAIL) {
-			snprintf(img_err_str, IMG_ERR_STR_LEN, "%s Signature check fail\n", img_ptr->file_name);
+			snprintf(img_err_str, IMG_ERR_STR_LEN, "%s Signature check fail\n", img->file_name);
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "signature check fail!\n");
 		} else if (ret == -CCCI_ERR_LOAD_IMG_CIPHER_FAIL) {
-			snprintf(img_err_str, IMG_ERR_STR_LEN, "%s Cipher chekc fail\n", img_ptr->file_name);
+			snprintf(img_err_str, IMG_ERR_STR_LEN, "%s Cipher chekc fail\n", img->file_name);
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "cipher check fail!\n");
 		} else if (ret == -CCCI_ERR_LOAD_IMG_FILE_OPEN) {
 			snprintf(img_err_str, IMG_ERR_STR_LEN, "Modem image not exist\n");
@@ -1244,8 +812,7 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 			snprintf(img_err_str, IMG_ERR_STR_LEN, "Modem mismatch to AP\n");
 		}
 	}
-	if (ret < 0)
-		ret = -CCCI_ERR_LOAD_IMG_LOAD_FIRM;
+
 	return ret;
 }
 
@@ -1285,22 +852,6 @@ int ccci_init_security(void)
 {
 	int ret = 0;
 #ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-	static int security_init;	/* for multi-modem support */
-
-	if (security_init)
-		return ret;
-	security_init = 1;
-
-	ret = masp_boot_init();
-	if (ret != 0) {
-		CCCI_UTIL_ERR_MSG("masp_boot_init fail: %d\n", ret);
-		ret = -EIO;
-	}
-
-	if (sec_lib_version_check() != 0) {
-		CCCI_UTIL_ERR_MSG("sec lib version check error\n");
-		ret = -EIO;
-	}
 	CCCI_UTIL_INF_MSG("security is on!\n");
 #else
 	CCCI_UTIL_INF_MSG("security is off!\n");

@@ -560,7 +560,8 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	/* 1. load modem image */
 	if (md->config.setting & MD_SETTING_FIRST_BOOT || md->config.setting & MD_SETTING_RELOAD) {
 		ccci_clear_md_region_protection(md);
-		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str, md->post_fix);
+		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str,
+				md->post_fix, &md->plat_dev->dev);
 		if (ret < 0) {
 			CCCI_ERR_MSG(md->index, TAG, "load firmware fail, %s\n", img_err_str);
 			goto out;
@@ -857,22 +858,7 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int sbp_
 	ccif_write32(&runtime->BootChannel, 0, CCCI_CONTROL_RX);
 	ccif_write32(&runtime->DriverVersion, 0, CCCI_DRIVER_VER);
 
-	if (md->index == 0)
-		snprintf(md_logger_cfg_file, 32, "%s", MD1_LOGGER_FILE_PATH);
-	else
-		snprintf(md_logger_cfg_file, 32, "%s", MD2_LOGGER_FILE_PATH);
-	filp = filp_open(md_logger_cfg_file, O_RDONLY, 0777);
-	if (!IS_ERR(filp)) {
-		ret = kernel_read(filp, 0, (char *)&mdlog_flag, sizeof(int));
-		if (ret != sizeof(int))
-			mdlog_flag = MODE_IDLE;
-	} else {
-		CCCI_ERR_MSG(md->index, TAG, "open %s fail", md_logger_cfg_file);
-		filp = NULL;
-	}
-
-	if (filp != NULL)
-		filp_close(filp, NULL);
+	mdlog_flag = md->mdlg_mode;
 	if (is_meta_mode() || is_advanced_meta_mode())
 		ccif_write32(&runtime->BootingStartID, 0, ((char)mdlog_flag << 8 | META_BOOT_ID));
 	else

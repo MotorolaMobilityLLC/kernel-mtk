@@ -133,7 +133,7 @@ static int dev_char_close(struct inode *inode, struct file *file)
 
 static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 {
-    #if 0
+#if 0
 #define DUMP_BUF_SIZE 200
 	unsigned char *char_ptr = (unsigned char *)msg_buf;
 	char buf[DUMP_BUF_SIZE];
@@ -513,10 +513,10 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	unsigned int sim_mode, sim_switch_type, enable_sim_type, sim_id, bat_info;
 	unsigned int traffic_control = 0;
 	unsigned int sim_slot_cfg[4];
-	unsigned int tmp_md_img_list[MAX_IMG_NUM];	/* for META */
-	int scanned_num;
 	struct siginfo sig_info;
 	unsigned int sig_pid;
+	unsigned int md_boot_data[16] = { 0 };
+	int md_type = 0;
 
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
@@ -625,6 +625,24 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 #endif
 		}
 		break;
+	case CCCI_IOC_SET_BOOT_DATA:
+			CCCI_INF_MSG(md->index, CHAR, "set MD boot env data called by %s\n",
+					 current->comm);
+			if (copy_from_user
+				(&md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
+				CCCI_INF_MSG(md->index, CHAR,
+					 "CCCI_IOC_SET_BOOT_DATA: copy_from_user fail!\n");
+				ret = -EFAULT;
+			} else {
+				ret = ccci_set_md_boot_data(md, md_boot_data, ARRAY_SIZE(md_boot_data));
+				if (ret < 0) {
+					CCCI_INF_MSG(md->index, CHAR,
+					"ccci_set_md_boot_data return fail!\n");
+					ret = -EFAULT;
+				}
+			}
+			break;
+
 	case CCCI_IOC_SEND_START_MD_REQUEST:
 		CCCI_INF_MSG(md->index, CHAR, "start MD request ioctl called by %s\n", current->comm);
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_START_MD_REQUEST, 0);
@@ -723,13 +741,34 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_SET_MD_IMG_EXIST:
+		if (copy_from_user
+		    (&md->md_img_exist, (void __user *)arg, sizeof(md->md_img_exist))) {
+			CCCI_INF_MSG(md->index, CHAR,
+				     "CCCI_IOC_SET_MD_IMG_EXIST: copy_from_user fail!\n");
+			ret = -EFAULT;
+		}
+		md->md_img_type_is_set = 1;
+		CCCI_INF_MSG(md->index, CHAR,
+			"CCCI_IOC_SET_MD_IMG_EXIST: set done!\n");
 		break;
-	case CCCI_IOC_GET_MD_IMG_EXIST:
-		memset(tmp_md_img_list, 0, sizeof(tmp_md_img_list));
-		scanned_num = scan_image_list(md->index, "modem_%d_%s_n.img", tmp_md_img_list, MAX_IMG_NUM);
 
-		if (copy_to_user((void __user *)arg, &tmp_md_img_list, sizeof(tmp_md_img_list))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_MD_IMG_EXIST: copy_to_user fail\n");
+	case CCCI_IOC_GET_MD_IMG_EXIST:
+		md_type = get_md_type_from_lk(md->index); /* For LK load modem use */
+		if (md_type) {
+			memset(&md->md_img_exist, 0, sizeof(md->md_img_exist));
+			md->md_img_exist[0] = md_type;
+			CCCI_INF_MSG(md->index, CHAR, "lk md_type: %d, image num:1\n", md_type);
+		} else {
+			CCCI_INF_MSG(md->index, CHAR,
+				"CCCI_IOC_GET_MD_IMG_EXIST: waiting set\n");
+			while (md->md_img_type_is_set == 0)
+				msleep(200);
+		}
+		CCCI_INF_MSG(md->index, CHAR,
+			"CCCI_IOC_GET_MD_IMG_EXIST: waiting set done!\n");
+		if (copy_to_user((void __user *)arg, &md->md_img_exist, sizeof(md->md_img_exist))) {
+			CCCI_INF_MSG(md->index, CHAR,
+				     "CCCI_IOC_GET_MD_IMG_EXIST: copy_to_user fail!\n");
 			ret = -EFAULT;
 		}
 		break;

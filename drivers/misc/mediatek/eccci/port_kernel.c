@@ -142,29 +142,10 @@ static inline void append_runtime_feature(char **p_rt_data, struct ccci_runtime_
 
 static unsigned int get_booting_start_id(struct ccci_modem *md)
 {
-	struct file *filp = NULL;
 	LOGGING_MODE mdlog_flag = MODE_IDLE;
-	char md_logger_cfg_file[32];
 	u32 booting_start_id;
-	int ret;
 
-	if (md->index == 0)
-		snprintf(md_logger_cfg_file, 32, "%s", MD1_LOGGER_FILE_PATH);
-	else
-		snprintf(md_logger_cfg_file, 32, "%s", MD2_LOGGER_FILE_PATH);
-
-	CCCI_INF_MSG(md->index, KERN, "md_logger_cfg_file %s\n", md_logger_cfg_file);
-	filp = filp_open(md_logger_cfg_file, O_RDONLY, 0777);
-	if (!IS_ERR(filp)) {
-		ret = kernel_read(filp, 0, (char *)&mdlog_flag, sizeof(int));
-		if (ret != sizeof(int))
-			mdlog_flag = MODE_IDLE;
-	} else {
-		CCCI_ERR_MSG(md->index, KERN, "open %s fail", md_logger_cfg_file);
-		filp = NULL;
-	}
-	if (filp != NULL)
-		filp_close(filp, NULL);
+	mdlog_flag = md->mdlg_mode;
 
 	if (is_meta_mode() || is_advanced_meta_mode())
 		booting_start_id = ((char)mdlog_flag << 8 | META_BOOT_ID);

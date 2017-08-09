@@ -2136,14 +2136,16 @@ static int md_cd_start(struct ccci_modem *md)
 		CCCI_INF_MSG(md->index, TAG, "CLDMA modem is not ready, load it\n");
 		ccci_clear_md_region_protection(md);
 		ccci_clear_dsp_region_protection(md);
-		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str, md->post_fix);
+		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str,
+				md->post_fix, &md->plat_dev->dev);
 		if (ret < 0) {
 			CCCI_ERR_MSG(md->index, TAG, "load MD firmware fail, %s\n", img_err_str);
 			goto out;
 		}
 		if (md->img_info[IMG_MD].dsp_size != 0 && md->img_info[IMG_MD].dsp_offset != 0xCDCDCDAA) {
 			md->img_info[IMG_DSP].address = md->img_info[IMG_MD].address + md->img_info[IMG_MD].dsp_offset;
-			ret = ccci_load_firmware(md->index, &md->img_info[IMG_DSP], img_err_str, md->post_fix);
+			ret = ccci_load_firmware(md->index, &md->img_info[IMG_DSP], img_err_str,
+				md->post_fix, &md->plat_dev->dev);
 			if (ret < 0) {
 				CCCI_ERR_MSG(md->index, TAG, "load DSP firmware fail, %s\n", img_err_str);
 				goto out;
@@ -2161,7 +2163,8 @@ static int md_cd_start(struct ccci_modem *md)
 			md->img_info[IMG_MD].arm7_size, md->img_info[IMG_MD].arm7_offset);
 		if ((md->img_info[IMG_MD].arm7_size != 0) && (md->img_info[IMG_MD].arm7_offset != 0)) {
 			md->img_info[IMG_ARMV7].address = md->img_info[IMG_MD].address+md->img_info[IMG_MD].arm7_offset;
-			ret = ccci_load_firmware(md->index, &md->img_info[IMG_ARMV7], img_err_str, md->post_fix);
+			ret = ccci_load_firmware(md->index, &md->img_info[IMG_ARMV7], img_err_str,
+				md->post_fix, &md->plat_dev->dev);
 			if (ret < 0) {
 				CCCI_ERR_MSG(md->index, TAG, "load ARMV7 firmware fail, %s\n", img_err_str);
 				goto out;
@@ -3021,11 +3024,9 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	struct ccci_request *req = NULL;
 	struct ccci_header *ccci_h;
 	struct modem_runtime *runtime;
-	struct file *filp = NULL;
 	LOGGING_MODE mdlog_flag = MODE_IDLE;
 	int ret;
 	char str[16];
-	char md_logger_cfg_file[32];
 	unsigned int random_seed = 0;
 
 #ifdef FEATURE_MD_GET_CLIB_TIME
@@ -3058,22 +3059,7 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	runtime->BootChannel = CCCI_CONTROL_RX;
 	runtime->DriverVersion = CCCI_DRIVER_VER;
 
-	if (md->index == 0)
-		snprintf(md_logger_cfg_file, 32, "%s", MD1_LOGGER_FILE_PATH);
-	else
-		snprintf(md_logger_cfg_file, 32, "%s", MD2_LOGGER_FILE_PATH);
-	filp = filp_open(md_logger_cfg_file, O_RDONLY, 0777);
-	if (!IS_ERR(filp)) {
-		ret = kernel_read(filp, 0, (char *)&mdlog_flag, sizeof(int));
-		if (ret != sizeof(int))
-			mdlog_flag = MODE_IDLE;
-	} else {
-		CCCI_ERR_MSG(md->index, TAG, "open %s fail", md_logger_cfg_file);
-		filp = NULL;
-	}
-	if (filp != NULL)
-		filp_close(filp, NULL);
-
+	mdlog_flag = md->mdlg_mode;
 	if (is_meta_mode() || is_advanced_meta_mode())
 		runtime->BootingStartID = ((char)mdlog_flag << 8 | META_BOOT_ID);
 	else

@@ -815,8 +815,10 @@ struct ccci_modem {
 	unsigned int sim_type;
 	unsigned int sbp_code;
 	unsigned int sbp_code_default;
+	unsigned int mdlg_mode;
 	unsigned char critical_user_active[4];
 	unsigned int md_img_exist[MAX_IMG_NUM];
+	unsigned int md_img_type_is_set;
 	struct platform_device *plat_dev;
 	/*
 	 * the following members are readonly for CCCI core. they are maintained by modem and
@@ -1056,6 +1058,7 @@ extern void md_bootup_timeout_func(unsigned long data);
 extern void md_status_poller_func(unsigned long data);
 extern void md_status_timeout_func(unsigned long data);
 extern void ccci_subsys_kernel_init(void);
+extern int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len);
 
 /*
  * if recv_request returns 0 or -CCCI_ERR_DROP_PACKET, then it's port's duty to free the request, and caller should

@@ -796,6 +796,18 @@ int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 
 	return -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
 }
 
+int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len)
+{
+	int ret = 0;
+
+	if (len > 0 && data != NULL)
+		md->mdlg_mode = data[0];
+	else
+		ret = -1;
+	return ret;
+}
+
+
 /*
  * kernel inject message to user space daemon, this function may sleep
  */

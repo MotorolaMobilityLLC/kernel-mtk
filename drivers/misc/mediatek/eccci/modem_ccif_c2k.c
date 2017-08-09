@@ -926,7 +926,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 			ccci_clear_md_region_protection(md);
 			ret =
 			    ccci_load_firmware(md->index, &md->img_info[IMG_MD],
-					       img_err_str, md->post_fix);
+					       img_err_str, md->post_fix, &md->plat_dev->dev);
 			if (ret < 0) {
 				CCCI_ERR_MSG(md->index, TAG, "load firmware fail, %s\n",
 					     img_err_str);

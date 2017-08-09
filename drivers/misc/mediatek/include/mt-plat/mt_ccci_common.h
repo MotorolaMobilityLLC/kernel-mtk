@@ -2,7 +2,7 @@
 #define __MT_CCCI_COMMON_H__
 #include <asm/io.h>
 #include <asm/setup.h>
-
+#include <linux/device.h>
 /*
  * all code owned by CCCI should use modem index starts from ZERO
  */
@@ -374,6 +374,8 @@ enum{
 #define CCCI_IOC_SEND_SIGNAL_TO_USER	_IOW(CCCI_IOC_MAGIC, 43, unsigned int) /* md_init */
 #define CCCI_IOC_RESET_MD1_MD3_PCCIF	_IO(CCCI_IOC_MAGIC, 45) /* md_init */
 
+/*md_init set MD boot env data before power on MD */
+#define CCCI_IOC_SET_BOOT_DATA			_IOW(CCCI_IOC_MAGIC, 47, unsigned int[16])
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
@@ -961,7 +963,8 @@ int ccci_sysfs_add_modem(int md_id, void *kobj, void *ktype,
 int get_modem_support_cap(int md_id); /* Export by ccci util */
 int set_modem_support_cap(int md_id, int new_val); /* Export by ccci util */
 char *ccci_get_md_info_str(int md_id); /* Export by ccci util */
-int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[]); /* Export by ccci util */
+/* Export by ccci util */
+int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[], struct device *dev);
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size,
 					phys_addr_t *srw_base, unsigned int *srw_size); /* Export by ccci util */
 int get_md1_md3_resv_smem_info(int md_id, phys_addr_t *rw_base, unsigned int *rw_size);
