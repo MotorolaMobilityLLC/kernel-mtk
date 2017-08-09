@@ -31,8 +31,7 @@
 
 
 enum FH_FH_STATUS {
-	FH_FH_UNINIT = 0,
-	FH_FH_DISABLE,
+	FH_FH_DISABLE = 0,
 	FH_FH_ENABLE_SSC,
 };
 

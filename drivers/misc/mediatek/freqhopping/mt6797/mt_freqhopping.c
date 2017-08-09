@@ -461,9 +461,15 @@ static void mt_fh_hal_default_conf(void)
 
 	/* According to setting to enable PLL SSC during init FHCTL. */
 	for (id = 0; id < FH_PLL_NUM; id++) {
+
+		g_fh_pll[id].pll_status = FH_PLL_ENABLE;
+
 		if (g_pll_ssc_init_tbl[id] == FH_SSC_DEF_ENABLE_SSC) {
 			FH_MSG("[Default ENABLE SSC] PLL_ID:%d", id);
+			g_fh_pll[id].fh_status = FH_FH_ENABLE_SSC;
 			freqhopping_config(id, PLL_SETTING_IDX__DEF, true);	/* MAINPLL */
+		} else {
+			g_fh_pll[id].fh_status = FH_FH_DISABLE;
 		}
 	}
 }
@@ -527,7 +533,8 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 
 	if (!isFHCTL(pll_id)) {
 		FH_MSG("MCU FHCTL is forbidden to call __enable_ssc()");
-		BUG_ON(1);
+		g_fh_pll[pll_id].fh_status = FH_FH_ENABLE_SSC;
+		return;
 	}
 
 	mb();
@@ -569,7 +576,8 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 
 	if (!isFHCTL(pll_id)) {
 		FH_MSG("MCU FHCTL is forbidden to call __disable_ssc()");
-		BUG_ON(1);
+		g_fh_pll[pll_id].fh_status = FH_FH_DISABLE;
+		return;
 	}
 
 
@@ -623,7 +631,6 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 
 	if (!isFHCTL(fh_ctl->pll_id)) {
 		FH_MSG("MCU FHCTL is forbidden to call __freqhopping_ctrl()");
-		BUG_ON(1);
 	}
 
 
