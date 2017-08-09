@@ -2,101 +2,10 @@
 #define __MT_MSDC_DEUBG__
 #include "mt_sd.h"
 
-/* ========================== */
-extern u32 sdio_pro_enable;
+#include "msdc_tune.h"
 
-extern void __iomem *gpio_reg_base;
-extern void __iomem *infracfg_ao_reg_base;
-extern void __iomem *infracfg_reg_base;
-extern void __iomem *pericfg_reg_base;
-extern void __iomem *emi_reg_base;
-extern void __iomem *toprgu_reg_base;
-extern void __iomem *apmixed_reg_base1;
-extern void __iomem *topckgen_reg_base;
-
-#ifdef CFG_DEV_MSDC0
-extern struct msdc_hw msdc0_hw;
-#endif
-#ifdef CFG_DEV_MSDC1
-extern struct msdc_hw msdc1_hw;
-#endif
-
-extern void msdc_dump_info(u32 id);
-extern struct msdc_host *mtk_msdc_host[];
-
-#ifndef FPGA_PLATFORM
-extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
-extern void msdc_set_sr(struct msdc_host *host, int clk, int cmd, int dat, int rst, int ds);
-extern void msdc_set_smt(struct msdc_host *host, int set_smt);
-extern void msdc_set_rdtdsel_dbg(struct msdc_host *host, bool rdsel, u32 value);
-extern void msdc_get_rdtdsel_dbg(struct msdc_host *host, bool rdsel, u32 *value);
-#endif
-extern int ettagent_init(void);
-extern void ettagent_exit(void);
-
-extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
-
-extern void pmic_config_interface(unsigned int, unsigned int, unsigned int, unsigned int);
-extern void pmic_read_interface(unsigned int, unsigned int *, unsigned int, unsigned int);
-
-#ifdef MSDC_HQA
-extern void pmic_config_interface(unsigned int, unsigned int, unsigned int, unsigned int);
-#endif
-
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
-extern void msdc_get_cache_region_func(struct msdc_host *host);
-#endif
-
-#ifdef ONLINE_TUNING_DVTTEST
-extern int mt_msdc_online_tuning_test(struct msdc_host *host, u32 rawcmd, u32 rawarg, u8 rw);
-#endif
-
-/* for a type command, e.g. CMD53, 2 blocks */
-struct cmd_profile {
-	u32 max_tc;		/* Max tick count */
-	u32 min_tc;
-	u32 tot_tc;		/* total tick count */
-	u32 tot_bytes;
-	u32 count;		/* the counts of the command */
-};
-
-/* dump when total_tc and total_bytes */
-struct sdio_profile {
-	u32 total_tc;		/* total tick count of CMD52 and CMD53 */
-	u32 total_tx_bytes;	/* total bytes of CMD53 Tx */
-	u32 total_rx_bytes;	/* total bytes of CMD53 Rx */
-
-	/*CMD52 */
-	struct cmd_profile cmd52_tx;
-	struct cmd_profile cmd52_rx;
-
-	/*CMD53 in byte unit */
-	struct cmd_profile cmd53_tx_byte[512];
-	struct cmd_profile cmd53_rx_byte[512];
-
-	/*CMD53 in block unit */
-	struct cmd_profile cmd53_tx_blk[100];
-	struct cmd_profile cmd53_rx_blk[100];
-};
-
-#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
-#define MTK_MSDC_ERROR_NONE (0)
-#define MTK_MSDC_ERROR_CMD_TMO (0x1)
-#define MTK_MSDC_ERROR_CMD_CRC (0x1 << 1)
-#define MTK_MSDC_ERROR_DAT_TMO (0x1 << 2)
-#define MTK_MSDC_ERROR_DAT_CRC (0x1 << 3)
-#define MTK_MSDC_ERROR_ACMD_TMO (0x1 << 4)
-#define MTK_MSDC_ERROR_ACMD_CRC (0x1 << 5)
-
-extern unsigned int g_err_tune_dbg_host;
-extern unsigned int g_err_tune_dbg_cmd;
-extern unsigned int g_err_tune_dbg_arg;
-extern unsigned int g_err_tune_dbg_error;
-extern unsigned int g_err_tune_dbg_count;
-#endif
-
-/* ========================== */
-typedef enum {
+/* #define MTK_MSDC_ERROR_TUNE_DEBUG */
+enum {
 	SD_TOOL_ZONE = 0,
 	SD_TOOL_DMA_SIZE  = 1,
 	SD_TOOL_PM_ENABLE = 2,
@@ -119,78 +28,119 @@ typedef enum {
 	MMC_REGISTER_WRITE = 19,
 	MSDC_READ_WRITE = 20,
 	MMC_ERROR_TUNE = 21,
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
 	MMC_EDC_EMMC_CACHE = 22,
-#endif
 	MMC_DUMP_GPD = 23,
 	MMC_ETT_TUNE = 24,
 	MMC_CRC_STRESS = 25,
 	ENABLE_AXI_MODULE = 26,
-} msdc_dbg;
+	MMC_DUMP_EXT_CSD = 27,
+	MMC_DUMP_CSD = 28,
+};
+/* Debug message event */
+#define DBG_EVT_NONE	    (0)		/* No event */
+#define DBG_EVT_DMA	    (1 << 0)    /* DMA related event */
+#define DBG_EVT_CMD	    (1 << 1)    /* MSDC CMD related event */
+#define DBG_EVT_RSP	    (1 << 2)    /* MSDC CMD RSP related event */
+#define DBG_EVT_INT	    (1 << 3)    /* MSDC INT event */
+#define DBG_EVT_CFG	    (1 << 4)    /* MSDC CFG event */
+#define DBG_EVT_FUC	    (1 << 5)    /* Function event */
+#define DBG_EVT_OPS	    (1 << 6)    /* Read/Write operation event */
+#define DBG_EVT_FIO	    (1 << 7)    /* FIFO operation event */
+#define DBG_EVT_WRN	    (1 << 8)    /* Warning event */
+#define DBG_EVT_PWR	    (1 << 9)    /* Power event */
+#define DBG_EVT_CLK	    (1 << 10)   /* Trace clock gate/ungate operation */
+#define DBG_EVT_CHE	    (1 << 11)   /* eMMC cache feature operation */
+/* ==================================================== */
+#define DBG_EVT_RW	    (1 << 12)   /* Trace the Read/Write Command */
+#define DBG_EVT_NRW	    (1 << 13)   /* Trace other Command */
+#define DBG_EVT_ALL	    (0xffffffff)
 
+#define DBG_EVT_MASK        (DBG_EVT_ALL)
 
-typedef struct {
-	unsigned char clk_drv;
-	unsigned char cmd_drv;
-	unsigned char dat_drv;
-	unsigned char rst_drv;
-	unsigned char ds_drv;
-} drv_mod;
+#define TAG "msdc"
+#define N_MSG(evt, fmt, args...) \
+do {    \
+	if ((DBG_EVT_##evt) & sd_debug_zone[host->id]) { \
+		pr_err(TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+			host->id,  ##args , __func__, __LINE__, \
+			current->comm, current->pid); \
+	}   \
+} while (0)
 
-extern u32 dma_size[HOST_MAX_NUM];
-extern struct msdc_host *mtk_msdc_host[HOST_MAX_NUM];	/* for fpga early porting */
-extern unsigned char msdc_clock_src[HOST_MAX_NUM];
-extern drv_mod msdc_drv_mode[HOST_MAX_NUM];
-extern u32 msdc_host_mode[HOST_MAX_NUM];	/*SD/eMMC mode (HS/DDR/UHS) */
-extern u32 msdc_host_mode2[HOST_MAX_NUM];
-extern int g_dma_debug[HOST_MAX_NUM];
+#if 1
+#define ERR_MSG(fmt, args...) \
+	pr_err(TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+		host->id,  ##args , __func__, __LINE__, current->comm, \
+		current->pid)
 
-
-#ifdef MSDC_DMA_ADDR_DEBUG
-extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
+#else
+#define MAX_PRINT_PERIOD            (500000000)  /* 500ms */
+#define MAX_PRINT_NUMS_OVER_PERIOD  (50)
+#define ERR_MSG(fmt, args...) \
+do { \
+	if (print_nums == 0) { \
+		print_nums++; \
+		msdc_print_start_time = sched_clock(); \
+		pr_err(TAG"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
+			"PID<%s><0x%x>\n", \
+			host->id,  ##args , __func__, __LINE__, \
+			current->comm, current->pid); \
+	} else { \
+		msdc_print_end_time = sched_clock();    \
+		if ((msdc_print_end_time - msdc_print_start_time) >= \
+			MAX_PRINT_PERIOD) { \
+			pr_err(TAG"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
+				"PID<%s><0x%x>\n", \
+				host->id,  ##args , __func__, __LINE__, \
+				current->comm, current->pid); \
+			print_nums = 0; \
+		} \
+		if (print_nums <= MAX_PRINT_NUMS_OVER_PERIOD) { \
+			pr_err(TAG"MSDC", TAG"%d -> "fmt" <- %s() : " \
+				"L<%d> PID<%s><0x%x>\n", \
+				host->id,  ##args , __func__, \
+				__LINE__, current->comm, current->pid); \
+			print_nums++;   \
+		} \
+	} \
+} while (0)
 #endif
-extern struct dma_addr *msdc_get_dma_address(int host_id);
-extern int msdc_get_dma_status(int host_id);
-extern int emmc_multi_rw_compare(int host_num, uint address, int count);
-extern int msdc_tune_write(struct msdc_host *host);
-extern int msdc_tune_read(struct msdc_host *host);
-extern int msdc_tune_cmdrsp(struct msdc_host *host);
-extern int emmc_hs400_tune_rw(struct msdc_host *host);
-extern void msdc_dump_gpd_bd(int id);
-extern void msdc_dump_register(struct msdc_host *host);
 
-extern int g_ett_tune;
-extern int g_ett_hs400_tune;
-extern int g_ett_cmd_tune;
-extern int g_ett_read_tune;
-extern int g_ett_write_tune;
-extern int g_reset_tune;
+#define INIT_MSG(fmt, args...) \
+	pr_err(TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+		host->id,  ##args , __func__, __LINE__, current->comm, \
+		current->pid)
 
-extern u32 sdio_enable_tune;
-extern u32 sdio_iocon_dspl;
-extern u32 sdio_iocon_w_dspl;
-extern u32 sdio_iocon_rspl;
+#define SIMPLE_INIT_MSG(fmt, args...) \
+	pr_err("%d:"fmt"\n", id,  ##args)
 
-extern u32 sdio_pad_tune_rrdly;
-extern u32 sdio_pad_tune_rdly;
-extern u32 sdio_pad_tune_wrdly;
-extern u32 sdio_dat_rd_dly0_0;
-extern u32 sdio_dat_rd_dly0_1;
-extern u32 sdio_dat_rd_dly0_2;
-extern u32 sdio_dat_rd_dly0_3;
-extern u32 sdio_dat_rd_dly1_0;
-extern u32 sdio_dat_rd_dly1_1;
-extern u32 sdio_dat_rd_dly1_2;
-extern u32 sdio_dat_rd_dly1_3;
-extern u32 sdio_clk_drv;
-extern u32 sdio_cmd_drv;
-extern u32 sdio_data_drv;
-extern u32 sdio_tune_flag;
+#define INFO_MSG(fmt, args...) \
+	pr_info(TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+		host->id,  ##args , __func__, __LINE__, current->comm, \
+		current->pid)
+
+#if 0
+/* PID in ISR in not corrent */
+#define IRQ_MSG(fmt, args...) \
+	pr_err(TAG"%d -> "fmt" <- %s() : L<%d>\n", \
+		host->id,  ##args , __func__, __LINE__)
+#else
+#define IRQ_MSG(fmt, args...)
+#endif
 
 int msdc_debug_proc_init(void);
-
-extern void GPT_GetCounter64(u32 *cntL32, u32 *cntH32);
-u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
+/* void msdc_set_host_mode_speed(struct msdc_host *host, int spd_mode); */
+/* void msdc_set_host_mode_driver_type(int id, int driver_type); */
+u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
+
+void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
+		struct mmc_command *sbc, u32 *intsts);
+void msdc_error_tune_debug2(struct msdc_host *host,
+		struct mmc_command *stop, u32 *intsts);
+void msdc_error_tune_debug3(struct msdc_host *host,
+		struct mmc_command *cmd, u32 *intsts);
+int multi_rw_compare(struct seq_file *m, int host_num,
+		uint address, int count, uint type, int multi_thread);
 
 #endif

@@ -15,7 +15,7 @@
 #ifndef FPGA_PLATFORM
 extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
 #endif
-extern void msdc_dump_padctl(struct msdc_host *host, u32 pin);
+extern void msdc_dump_padctl(struct msdc_host *host);
 extern u32 msdc_host_mode[HOST_MAX_NUM];
 extern u32 msdc_host_mode2[HOST_MAX_NUM];
 

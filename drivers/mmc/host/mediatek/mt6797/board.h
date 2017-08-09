@@ -3,12 +3,7 @@
 
 #include <generated/autoconf.h>
 #include <linux/pm.h>
-/* weiping fix */
-#if 0
-#include <board-custom.h>
-#else
 #include "board-custom.h"
-#endif
 
 typedef void (*sdio_irq_handler_t)(void *);	/* external irq handler */
 typedef void (*pm_callback_t)(pm_message_t state, void *data);
@@ -79,7 +74,6 @@ enum {
 };
 
 struct msdc_ett_settings {
-	unsigned int speed_mode;
 #define MSDC_DEFAULT_MODE (0)
 #define MSDC_SDR50_MODE   (1)
 #define MSDC_DDR50_MODE   (2)
@@ -136,8 +130,10 @@ struct msdc_hw {
 	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
 	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
 
-	struct msdc_ett_settings *ett_settings;
-	unsigned int ett_count;
+	struct msdc_ett_settings *ett_hs200_settings;
+	unsigned int ett_hs200_count;
+	struct msdc_ett_settings *ett_hs400_settings;
+	unsigned int ett_hs400_count;
 	unsigned long host_function;	/* define host function */
 	bool boot;		/* define boot host */
 	bool cd_level;		/* card detection level */
@@ -164,8 +160,6 @@ struct msdc_hw {
 	void (*register_pm)(pm_callback_t pm_cb, void *data);
 };
 
-extern struct msdc_hw msdc0_hw;
-extern struct msdc_hw msdc1_hw;
 extern struct msdc_hw msdc2_hw;
 extern struct msdc_hw msdc3_hw;
 
@@ -176,18 +170,5 @@ struct mt3326_gps_hardware {
 	int (*ext_power_off)(int);
 };
 extern struct mt3326_gps_hardware mt3326_gps_hw;
-
-/* NAND driver */
-struct mtk_nand_host_hw {
-	unsigned int nfi_bus_width;	/* NFI_BUS_WIDTH */
-	unsigned int nfi_access_timing;	/* NFI_ACCESS_TIMING */
-	unsigned int nfi_cs_num;	/* NFI_CS_NUM */
-	unsigned int nand_sec_size;	/* NAND_SECTOR_SIZE */
-	unsigned int nand_sec_shift;	/* NAND_SECTOR_SHIFT */
-	unsigned int nand_ecc_size;
-	unsigned int nand_ecc_bytes;
-	unsigned int nand_ecc_mode;
-};
-extern struct mtk_nand_host_hw mtk_nand_hw;
 
 #endif				/* __ARCH_ARM_MACH_BOARD_H */
