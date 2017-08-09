@@ -2549,7 +2549,7 @@ static int _decouple_update_rdma_config_nolock(void)
 		static cmdqRecHandle cmdq_handle;
 		unsigned int rdma_pitch_sec;
 
-		layer = disp_sync_get_output_timeline_id();
+		layer = disp_sync_get_output_interface_timeline_id();
 		cmdqBackupReadSlot(pgc->cur_config_fence, layer, &interface_fence);
 
 		if (primary_get_state() != DISP_ALIVE) {
