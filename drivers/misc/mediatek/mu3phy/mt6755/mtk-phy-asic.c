@@ -1069,7 +1069,7 @@ void usb_phy_recover(unsigned int clk_on)
 	if (get_devinfo_with_index(9) & 0x1F) {
 		os_printk(K_INFO, "USB HW reg: index9=0x%x\n", get_devinfo_with_index(9));
 		/*PORT0 11290804[23:19]*/
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL,  RG_USB20_INTR_CAL,
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,  RG_USB20_INTR_CAL,
 			get_devinfo_with_index(9) & (0x1F));
 	}
 
