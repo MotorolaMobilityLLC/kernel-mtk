@@ -15,6 +15,13 @@
 /* Trigger method for screen on/off */
 #include <linux/fb.h>
 
+/* Receive PM event */
+#include <linux/suspend.h>
+
+#ifdef CONFIG_PM_WAKELOCKS
+#include <linux/pm_wakeup.h>
+#endif
+
 /* Memory lowpower private header file */
 #include "internal.h"
 
@@ -38,6 +45,11 @@ static unsigned long long start_ns, end_ns;
 /* List of memory lowpower features' specific operations */
 static LIST_HEAD(memory_lowpower_handlers);
 static DEFINE_MUTEX(memory_lowpower_lock);
+
+/* Wakeup source */
+#ifdef CONFIG_PM_WAKELOCKS
+static struct wakeup_source mlp_wakeup;
+#endif
 
 /* Control parameters for memory lowpower task */
 #define MLPT_CLEAR_ACTION       (0x0)
@@ -407,6 +419,22 @@ static void go_to_screenidle(void)
 	MLPT_PRINT("%s:-\n", __func__);
 }
 
+/* Acquire wakeup source */
+static void acquire_wakelock(void)
+{
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&mlp_wakeup);
+#endif
+}
+
+/* Release wakeup source */
+static void release_wakelock(void)
+{
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&mlp_wakeup);
+#endif
+}
+
 /*
  * Main entry for memory lowpower operations -
  * No set_freezable(), no try_to_freeze().
@@ -426,6 +454,9 @@ static int memory_lowpower_entry(void *p)
 		/* Is any action? */
 		while (atomic_xchg(&action_changed, MLPT_CLEAR_ACTION) == MLPT_SET_ACTION) {
 
+			/* Acquire wakelock */
+			acquire_wakelock();
+
 			/* Take proper actions */
 			current_action = memory_lowpower_action;
 			switch (current_action) {
@@ -441,6 +472,9 @@ static int memory_lowpower_entry(void *p)
 			default:
 				MLPT_PRINT("%s: Invalid action[%d]\n", __func__, current_action);
 			}
+
+			/* Release wakelock */
+			release_wakelock();
 		}
 
 		/* Schedule me */
@@ -491,11 +525,34 @@ static struct notifier_block fb_notifier_block = {
 	.priority = 0,
 };
 
+/* Check whether screenoff action is finished before suspend */
+static int memory_lowpower_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		if (!MlpsEnable(&memory_lowpower_state))
+			pr_warn("\n\n\n++++++ %s: screenoff is not finished ++++++\n\n\n", __func__);
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block pm_notifier_block = {
+	.notifier_call = memory_lowpower_pm_event,
+	.priority = 0,
+};
+
 static int __init memory_lowpower_init_pm_ops(void)
 {
 	if (fb_register_client(&fb_notifier_block) != 0)
 		return -1;
 
+	if (!register_pm_notifier(&pm_notifier_block))
+		pr_warn("%s: failed to register PM notifier!\n", __func__);
+
+#ifdef CONFIG_PM_WAKELOCKS
+	wakeup_source_init(&mlp_wakeup, "mlp_wakeup_source");
+#endif
 	return 0;
 }
 #endif
