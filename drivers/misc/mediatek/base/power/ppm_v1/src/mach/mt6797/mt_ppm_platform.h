@@ -19,10 +19,13 @@ extern "C" {
 #include "mt_ocp.h"
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
 #define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int sched_get_nr_heavy_task2(int cluster_id);
+#else
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
 #endif
+
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
