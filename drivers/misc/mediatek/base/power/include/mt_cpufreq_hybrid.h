@@ -8,7 +8,7 @@
  * [Hybrid DVFS] Config
  **************************************/
 #if defined(CONFIG_ARCH_MT6755)
-/*#define CONFIG_HYBRID_CPU_DVFS*/
+#define CONFIG_HYBRID_CPU_DVFS
 /*#define __TRIAL_RUN__*/
 
 #elif defined(CONFIG_ARCH_MT6797)
