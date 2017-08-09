@@ -144,8 +144,8 @@ static inline void n_init_t_boot_stage1(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -193,16 +193,16 @@ static inline void n_get_param_in(
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
-	"mov r0, %[fun_id]\n\t"
+	"mov x0, %[fun_id]\n\t"
 	"mov x1, #0\n\t"
 	"mov x2, #0\n\t"
 	"mov x3, #0\n\t"
 	"smc 0\n\t"
 	"nop"
 	"str x0, [%[temp]]\n\t"
-	"str x1, [%[temp], #4]\n\t"
-	"str x2, [%[temp], #8]\n\t"
-	"str x3, [%[temp], #12]\n\t"
+	"str x1, [%[temp], #8]\n\t"
+	"str x2, [%[temp], #16]\n\t"
+	"str x3, [%[temp], #24]\n\t"
 	: :
 	[fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
@@ -227,8 +227,8 @@ static inline void n_init_t_fc_buf(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -249,8 +249,8 @@ static inline void n_invoke_t_fast_call(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -288,8 +288,8 @@ static inline void n_invoke_t_sys_ctl(
 	/* ".arch_extension sec\n */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -311,8 +311,8 @@ static inline void n_invoke_t_nq(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -334,8 +334,8 @@ static inline void n_invoke_t_drv(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -357,8 +357,8 @@ static inline void n_raise_t_event(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -380,8 +380,8 @@ static inline void n_ack_t_invoke_drv(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -403,8 +403,8 @@ static inline void n_invoke_t_load_tee(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -426,8 +426,8 @@ static inline void n_ack_t_load_img(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :
@@ -449,8 +449,8 @@ static inline void nt_sched_t_fiq(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
 	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #4]\n\t"
-	"ldr x3, [%[temp], #8]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
 	"nop"
 	: :

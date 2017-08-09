@@ -23,9 +23,9 @@
 #include "teei_common.h"
 #include "../tz_vfs/VFS.h"
 #include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/cpu.h>
-
 #define MAX_BUFF_SIZE           (4096)
 #define NQ_SIZE                 (4096)
 #define CTL_BUFF_SIZE           (4096)
@@ -799,7 +799,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	}
 
 
-	handler->param_buf = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(handler->size, SZ_4K)));
+	handler->param_buf = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(handler->size, SZ_4K)));
 
 	if (handler->param_buf == NULL) {
 		printk("[%s][%d]: kmalloc vdrv_buffer failed.\n", __FILE__, __LINE__);
@@ -1059,7 +1059,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	}
 
 	/* Create the double NQ buffer. */
-	nt_t_buffer = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(size, SZ_4K)));
+	nt_t_buffer = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(size, SZ_4K)));
 
 	if (nt_t_buffer == NULL) {
 		printk("[%s][%d]: kmalloc nt_t_buffer failed.\n", __func__, __LINE__);
@@ -1067,7 +1067,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 		goto return_fn;
 	}
 
-	t_nt_buffer = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(size, SZ_4K)));
+	t_nt_buffer = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(size, SZ_4K)));
 
 	if (t_nt_buffer == NULL) {
 		printk("[%s][%d]: kmalloc t_nt_buffer failed.\n", __func__, __LINE__);
@@ -1152,7 +1152,7 @@ static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)
 	}
 
 	/* Create the ctl_buffer. */
-	sys_ctl_buffer = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(size, SZ_4K)));
+	sys_ctl_buffer = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(size, SZ_4K)));
 
 	if (sys_ctl_buffer == NULL) {
 		printk("[%s][%d]: kmalloc ctl_buffer failed.\n", __FILE__, __LINE__);
@@ -1440,15 +1440,28 @@ static irqreturn_t nt_switch_irq_handler(void)
 int register_switch_irq_handler(void)
 {
 	int retVal = 0;
-	/* retVal = request_irq(SWITCH_IRQ, nt_switch_irq_handler, 0,
-			"tz_drivers_service", (void *)register_switch_irq_handler); */
+#ifdef CONFIG_OF
+	int irq_num = 0;
+	struct device_node *node;
 
+	node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+	irq_num = irq_of_parse_and_map(node, 3);
+
+	retVal = request_irq(irq_num, nt_switch_irq_handler, 0, "tz_drivers_service", NULL);
+	if (retVal)
+		printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+	else
+		printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+	/* register 282 IRQ */
 	retVal = request_irq(SWITCH_IRQ, nt_switch_irq_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", SWITCH_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", SWITCH_IRQ);
+#endif
 
 	return 0;
 
@@ -1533,14 +1546,14 @@ long create_cmd_buff(void)
 {
 	unsigned long irq_status = 0;
 
-	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (message_buff == NULL) {
 		printk("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
 
-	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (fdrv_message_buff == NULL) {
 		printk("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
@@ -1548,7 +1561,7 @@ long create_cmd_buff(void)
 		return -ENOMEM;
 	}
 
-	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 	if (bdrv_message_buff == NULL) {
 		printk("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -1556,7 +1569,7 @@ long create_cmd_buff(void)
 		return -ENOMEM;
 	}
 
-	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 	if (tlog_message_buff == NULL) {
 		printk("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -1601,7 +1614,7 @@ unsigned long create_fp_fdrv(int buff_size)
 	}
 
 
-	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
+	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(buff_size, SZ_4K)));
 
 	if (temp_addr == NULL) {
 		printk("[%s][%d]: kmalloc fp drv buffer failed.\n", __FILE__, __LINE__);

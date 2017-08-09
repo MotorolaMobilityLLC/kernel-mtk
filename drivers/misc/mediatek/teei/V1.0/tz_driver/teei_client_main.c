@@ -40,6 +40,7 @@
 #include "tz_service.h"
 #include "nt_smc_call.h"
 #include "teei_client_main.h"
+#include "utos_version.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/completion.h>
@@ -50,6 +51,7 @@
 #include <linux/workqueue.h>
 #include <linux/cpu.h>
 #include <linux/moduleparam.h>
+
 #define MAX_BUFF_SIZE			(4096)
 #define NQ_SIZE					(4096)
 #define CTL_BUFF_SIZE			(4096)
@@ -740,7 +742,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	struct teei_context *temp_cont = NULL;
 
 #if 0
-	smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
+	smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL  | GFP_DMA);
 
 	if (!smc_cmd) {
 		TERR("tz_malloc failed for smc command");
@@ -928,7 +930,7 @@ int teei_smc_call(u32 teei_cmd_type,
 	int cpu_id = 0;
 	int retVal = 0;
 
-	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
+	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL  | GFP_DMA);
 	if (local_smc_cmd == NULL) {
 		printk("[%s][%d] tz_malloc_shared_mem failed!\n", __func__, __LINE__);
 		return -1;
@@ -1006,7 +1008,7 @@ static int teei_client_close_session_for_service(
 		void *private_data,
 		struct teei_session *temp_ses)
 {
-	struct ser_ses_id *ses_close = (struct ser_ses_id *)tz_malloc_shared_mem(sizeof(struct ser_ses_id), GFP_KERNEL);
+	struct ser_ses_id *ses_close = (struct ser_ses_id *)tz_malloc_shared_mem(sizeof(struct ser_ses_id), GFP_KERNEL  | GFP_DMA );
 	struct teei_context *curr_cont = NULL;
 	struct teei_encode *temp_encode = NULL;
 	struct teei_encode *enc_context = NULL;
@@ -1014,7 +1016,7 @@ static int teei_client_close_session_for_service(
 	struct teei_shared_mem *temp_shared = NULL;
 	unsigned long dev_file_id = (unsigned long)private_data;
 	int retVal = 0;
-	int *res = (int *)tz_malloc_shared_mem(4, GFP_KERNEL);
+	int *res = (int *)tz_malloc_shared_mem(4, GFP_KERNEL  | GFP_DMA);
 	int error_code = 0;
 
 	if (temp_ses == NULL)
@@ -1229,7 +1231,7 @@ static int teei_client_session_open(void *private_data, void *argp)
 	struct teei_session *ses_new = NULL;
 	struct teei_encode *enc_temp = NULL;
 
-	struct ser_ses_id *ses_open = (struct ser_ses_id *)tz_malloc_shared_mem(sizeof(struct ser_ses_id), GFP_KERNEL);
+	struct ser_ses_id *ses_open = (struct ser_ses_id *)tz_malloc_shared_mem(sizeof(struct ser_ses_id), GFP_KERNEL  | GFP_DMA );
 	int ctx_found = 0;
 	int sess_found = 0;
 	int enc_found = 0;
@@ -1437,7 +1439,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	}
 
 	/* Get free pages from Kernel. */
-	alloc_addr =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(length, SZ_4K)));
+	alloc_addr =  (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(length, SZ_4K)));
 	if (alloc_addr == 0) {
 		printk("[%s][%d] get free pages failed!\n", __func__, __LINE__);
 		kfree(share_mem_entry);
@@ -1582,8 +1584,8 @@ static int teei_client_context_init(void *private_data, void *argp)
 	struct ctx_data ctx;
 	int dev_found = 0;
 	int error_code = 0;
-	int *resp_flag = tz_malloc_shared_mem(4, GFP_KERNEL);
-	char *name = tz_malloc_shared_mem(sizeof(ctx.name), GFP_KERNEL);
+	int *resp_flag = tz_malloc_shared_mem(4, GFP_KERNEL  | GFP_DMA);
+	char *name = tz_malloc_shared_mem(sizeof(ctx.name), GFP_KERNEL  | GFP_DMA);
 	if (resp_flag == NULL)
 		return -ENOMEM;
 
@@ -1636,7 +1638,7 @@ static int teei_client_context_close(void *private_data, void *argp)
 	unsigned long dev_file_id = (unsigned long)private_data;
 	struct ctx_data ctx;
 	int dev_found = 0;
-	int *resp_flag = (int *) tz_malloc_shared_mem(4, GFP_KERNEL);
+	int *resp_flag = (int *) tz_malloc_shared_mem(4, GFP_KERNEL  | GFP_DMA);
 	int error_code = 0;
 	if (resp_flag == NULL)
 		return -ENOMEM;
@@ -1820,7 +1822,7 @@ static int teei_client_prepare_encode(void *private_data,
 		}
 		enc_context->meta = tz_malloc_shared_mem(sizeof(struct teei_encode_meta) *
 				(TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS),
-				GFP_KERNEL);
+				GFP_KERNEL  | GFP_DMA);
 
 		if (enc_context->meta == NULL) {
 			printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
@@ -1886,7 +1888,7 @@ static int teei_client_encode_uint32(void *private_data, void *argp)
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
 		if (enc_context->ker_req_data_addr == NULL) {
-			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (enc_context->ker_req_data_addr == NULL) {
 				printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -1916,7 +1918,7 @@ static int teei_client_encode_uint32(void *private_data, void *argp)
 		}
 	} else if (enc.param_type == TEEIC_PARAM_OUT) {
 		if (!enc_context->ker_res_data_addr) {
-			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (!enc_context->ker_res_data_addr) {
 				printk("[%s][%d] tz_malloc failed\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -1989,7 +1991,7 @@ static int teei_client_encode_array(void *private_data, void *argp)
 	if (enc.param_type == TEEIC_PARAM_IN) {
 		if (NULL == enc_context->ker_req_data_addr) {
 			/* printk("[%s][%d] allocate req data data.\n", __func__, __LINE__); */
-			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (!enc_context->ker_req_data_addr) {
 				printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -2022,7 +2024,7 @@ static int teei_client_encode_array(void *private_data, void *argp)
 		}
 	} else if (enc.param_type == TEEIC_PARAM_OUT) {
 		if (NULL == enc_context->ker_res_data_addr) {
-			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (NULL == enc_context->ker_res_data_addr) {
 				printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -2127,7 +2129,7 @@ static int teei_client_encode_mem_ref(void *private_data, void *argp)
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
 		if (NULL == enc_context->ker_req_data_addr) {
-			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (NULL == enc_context->ker_req_data_addr) {
 				printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -2160,7 +2162,7 @@ static int teei_client_encode_mem_ref(void *private_data, void *argp)
 		}
 	} else if (enc.param_type == TEEIC_PARAM_OUT) {
 		if (!enc_context->ker_res_data_addr) {
-			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
+			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL  | GFP_DMA);
 			if (!enc_context->ker_res_data_addr) {
 				printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
@@ -2940,12 +2942,30 @@ int register_sched_irq_handler(void)
 {
 
 	int retVal = 0;
+
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
+
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 5);
+
+        retVal = request_irq(irq_num, nt_sched_irq_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 284 IRQ */
 	retVal = request_irq(SCHED_IRQ, nt_sched_irq_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", SCHED_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", SCHED_IRQ);
+#endif
 
 	return 0;
 
@@ -2967,12 +2987,30 @@ static irqreturn_t nt_soter_irq_handler(void)
 int register_soter_irq_handler(void)
 {
 	int retVal = 0;
+
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
+
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 6);
+
+        retVal = request_irq(irq_num, nt_soter_irq_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 285 IRQ */
 	retVal = request_irq(SOTER_IRQ, nt_soter_irq_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", SOTER_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", SOTER_IRQ);
+#endif
 
 	return 0;
 }
@@ -2990,15 +3028,33 @@ static irqreturn_t nt_error_irq_handler(void)
 
 int register_error_irq_handler(void)
 {
-		int retVal = 0;
-		retVal = request_irq(SOTER_ERROR_IRQ, nt_error_irq_handler, 0, "tz_drivers_service", NULL);
+	int retVal = 0;
 
-		if (retVal)
-			printk("ERROR for request_irq %d error code : %d.\n", SOTER_ERROR_IRQ, retVal);
-		else
-			printk("request irq [ %d ] OK.\n", SOTER_ERROR_IRQ);
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
 
-		return 0;
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 0);
+
+        retVal = request_irq(irq_num, nt_error_irq_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 276 IRQ */
+	retVal = request_irq(SOTER_ERROR_IRQ, nt_error_irq_handler, 0, "tz_drivers_service", NULL);
+
+	if (retVal)
+		printk("ERROR for request_irq %d error code : %d.\n", SOTER_ERROR_IRQ, retVal);
+	else
+		printk("request irq [ %d ] OK.\n", SOTER_ERROR_IRQ);
+#endif
+
+	return 0;
 }
 
 
@@ -3013,12 +3069,30 @@ static irqreturn_t nt_fp_ack_handler(void)
 int register_fp_ack_handler(void)
 {
 	int retVal = 0;
+
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
+
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 7);
+
+        retVal = request_irq(irq_num, nt_fp_ack_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 287 IRQ */
 	retVal = request_irq(FP_ACK_IRQ, nt_fp_ack_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", FP_ACK_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", FP_ACK_IRQ);
+#endif
 
 	return 0;
 }
@@ -3056,12 +3130,30 @@ static irqreturn_t nt_bdrv_handler(void)
 int register_bdrv_handler(void)
 {
 	int retVal = 0;
+
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
+
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 2);
+
+        retVal = request_irq(irq_num, nt_bdrv_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 278 IRQ */
 	retVal = request_irq(BDRV_IRQ, nt_bdrv_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", BDRV_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", BDRV_IRQ);
+#endif
 
 	return 0;
 }
@@ -3139,34 +3231,70 @@ irqreturn_t tlog_handler(void)
 		INIT_WORK(&(tlog_ent[pos].work), tlog_func);
 		queue_work(secure_wq, &(tlog_ent[pos].work));
 	}
-		irq_call_flag = GLSCH_HIGH;
-		up(&smc_lock);
+	//	irq_call_flag = GLSCH_HIGH;
+	//	up(&smc_lock);
 
 		return IRQ_HANDLED;
 }
 
 int register_tlog_handler(void)
 {
-		int retVal = 0;
-		retVal = request_irq(TEEI_LOG_IRQ, tlog_handler, 0, "tz_drivers_service", NULL);
+	int retVal = 0;
 
-		if (retVal)
-			printk("ERROR for request_irq %d error code : %d.\n", TEEI_LOG_IRQ, retVal);
-		else
-			printk("request irq [ %d ] OK.\n", TEEI_LOG_IRQ);
+#ifdef CONFIG_OF
+        int irq_num = 0;
+        struct device_node *node;
 
-		return 0;
+        node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+        irq_num = irq_of_parse_and_map(node, 1);
+
+        retVal = request_irq(irq_num, tlog_handler, 0, "tz_drivers_service", NULL);
+
+        if (retVal)
+                printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+        else
+                printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+        /* register 277 IRQ */
+	retVal = request_irq(TEEI_LOG_IRQ, tlog_handler, 0, "tz_drivers_service", NULL);
+
+	if (retVal)
+		printk("ERROR for request_irq %d error code : %d.\n", TEEI_LOG_IRQ, retVal);
+	else
+		printk("request irq [ %d ] OK.\n", TEEI_LOG_IRQ);
+#endif
+
+	return 0;
 }
 
 int register_boot_irq_handler(void)
 {
 	int retVal = 0;
+
+#ifdef CONFIG_OF
+	int irq_num = 0;
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
+	irq_num = irq_of_parse_and_map(node, 4);
+
+	retVal = request_irq(irq_num, nt_boot_irq_handler, 0, "tz_drivers_service", NULL);
+
+	if (retVal)
+		printk("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
+	else
+		printk("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
+
+#else
+	/* register 283 IRQ */
 	retVal = request_irq(BOOT_IRQ, nt_boot_irq_handler, 0, "tz_drivers_service", NULL);
 
 	if (retVal)
 		printk("ERROR for request_irq %d error code : %d.\n", BOOT_IRQ, retVal);
 	else
 		printk("request irq [ %d ] OK.\n", BOOT_IRQ);
+#endif
 
 	return 0;
 }
@@ -3590,7 +3718,7 @@ static int init_teei_framework(void)
 	printk("[%s][%d] VFS_SIZE = %d, SZ_4K = %d\n", __func__, __LINE__, VFS_SIZE, SZ_4K);
 	printk("[%s][%d] ROUND_UP(VFS_SIZE, SZ_4K) = %d\n", __func__, __LINE__, ROUND_UP(VFS_SIZE, SZ_4K));
 	printk("[%s][%d] get_order(ROUND_UP(VFS_SIZE, SZ_4K)) = %d\n", __func__, __LINE__, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
-	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
+	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 	printk("[%s][%d]\n", __func__, __LINE__);
 	if (boot_vfs_addr == NULL) {
 		printk("[%s][%d]ERROR: There is no enough memory for booting Soter!\n", __func__, __LINE__);
@@ -3798,9 +3926,9 @@ static int teei_client_init(void)
 	unsigned long irq_status = 0;
 
 	/* printk("TEEI Agent Driver Module Init ...\n"); */
-	printk("=====================================\n");
-	printk("~~~~~~~uTos version V0.6~~~~~~~\n");
-	printk("=====================================\n");
+	printk("=============================================================\n\n");
+	printk("~~~~~~~uTos version [%s]~~~~~~~\n",UTOS_VERSION);
+	printk("=============================================================\n\n");
 	ret_code = alloc_chrdev_region(&teei_client_device_no, 0, 1, TEEI_CLIENT_DEV);
 	if (ret_code < 0) {
 		printk("alloc_chrdev_region failed %x\n", ret_code);
