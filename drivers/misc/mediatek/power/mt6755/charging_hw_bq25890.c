@@ -830,9 +830,7 @@ static unsigned int charging_get_charger_type(void *data)
 	}
 
 	charging_type_det_done = KAL_FALSE;
-/*  Temp comment for check in
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
-*/
 	charging_type_det_done = KAL_TRUE;
 	g_charger_type = *(CHARGER_TYPE *) (data);
 
