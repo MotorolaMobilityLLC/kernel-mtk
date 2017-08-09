@@ -3954,6 +3954,11 @@
 			compatible = "mediatek,irq_nfc-eint";
 		};
 
+		dsi_te: dsi_te {
+			compatible = "mediatek, dsi_te-eint";
+			status = "disabled";
+		};
+
 		ccci_util_cfg {
 			compatible = "mediatek,ccci_util_cfg";
 			mediatek,md1-smem-size = <0x200000>;
