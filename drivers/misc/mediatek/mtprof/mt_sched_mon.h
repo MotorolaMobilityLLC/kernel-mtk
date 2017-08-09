@@ -131,6 +131,7 @@ DECLARE_PER_CPU(unsigned long long, local_timer_te);
 #ifdef CONFIG_MT_RT_THROTTLE_MON
 extern void save_mt_rt_mon_info(struct task_struct *p, unsigned long long ts);
 extern void end_mt_rt_mon_info(struct task_struct *p);
+extern void check_mt_rt_mon_info(struct task_struct *p);
 extern void mt_rt_mon_switch(int on);
 extern void mt_rt_mon_print_task(void);
 extern int mt_rt_mon_enable(void);
@@ -138,6 +139,7 @@ extern int mt_rt_mon_enable(void);
 static inline void
 save_mt_rt_mon_info(struct task_struct *p, unsigned long long ts) {};
 static inline void end_mt_rt_mon_info(struct task_struct *p) {};
+static inline void check_mt_rt_mon_info(struct task_struct *p) {};
 static inline void mt_rt_mon_switch(int on) {};
 static inline void mt_rt_mon_print_task(void) {};
 static inline int mt_rt_mon_enable(void)
