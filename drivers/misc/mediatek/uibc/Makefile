@@ -1,5 +1,3 @@
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ifeq ($(MTK_LCM_PHYSICAL_ROTATION), 90)
 ccflags-y  += -DLCM_ROTATE
 endif
@@ -8,4 +6,4 @@ ifeq ($(MTK_LCM_PHYSICAL_ROTATION), 270)
 ccflags-y  += -DLCM_ROTATE
 endif
 
-obj-y			:= uibc.o
+obj-y := uibc.o
