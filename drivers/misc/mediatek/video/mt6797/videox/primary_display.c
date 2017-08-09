@@ -4252,6 +4252,8 @@ static int primary_display_trigger_nolock(int blocking, void *callback, int need
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_TRIGGER, 0, 0);
 
 	smart_ovl_try_switch_mode_nolock();
+
+	atomic_set(&delayed_trigger_kick, 1);
 done:
 	if ((primary_trigger_cnt > 1) && aee_kernel_Powerkey_is_press()) {
 		aee_kernel_wdt_kick_Powkey_api("primary_display_trigger", WDT_SETBY_Display);
@@ -5688,12 +5690,16 @@ int _set_backlight_by_cpu(unsigned int level)
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
+	static unsigned int last_level;
 
 	DISPFUNC();
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
 		return 0;
 	}
+
+	if (last_level == level)
+		return 0;
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 #ifndef CONFIG_MTK_AAL_SUPPORT
@@ -5713,9 +5719,11 @@ int primary_display_setbacklight(unsigned int level)
 			} else {
 				_set_backlight_by_cmdq(level);
 			}
+			atomic_set(&delayed_trigger_kick, 1);
 		} else {
 			_set_backlight_by_cpu(level);
 		}
+		last_level = level;
 	}
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
