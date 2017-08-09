@@ -51,7 +51,7 @@
 #include <linux/of_address.h>
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 static struct clk *clk_auxadc;
 #endif
@@ -61,7 +61,7 @@ void __iomem *auxadc_base = NULL;
 void __iomem *auxadc_apmix_base = NULL;
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 #else
 /*#include <cust_adc.h>*/		/* generate by DCT Tool */
@@ -200,7 +200,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 
 	mutex_lock(&mutex_get_cali_value);
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
 		ret = clk_prepare_enable(clk_auxadc);
 		if (ret) {
@@ -285,7 +285,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	data[0] = (channel[dwChannel] * 150 / AUXADC_PRECISE / 100);
 	data[1] = ((channel[dwChannel] * 150 / AUXADC_PRECISE) % 100);
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
 		clk_disable_unprepare(clk_auxadc);
 	} else {
@@ -366,7 +366,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc)
 		clk_disable_unprepare(clk_auxadc);
 #else
@@ -380,7 +380,7 @@ static void mt_auxadc_hal_suspend(void)
 static void mt_auxadc_hal_resume(void)
 {
 	pr_debug("******** MT auxadc driver resume!! ********\n");
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc)
 		clk_prepare_enable(clk_auxadc);
 #else
@@ -1667,7 +1667,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 	clk_auxadc = devm_clk_get(&dev->dev, "auxadc-main");
 	if (!clk_auxadc) {
