@@ -373,7 +373,7 @@ reget:
 		goto reget;
 	}
 	if (!t->req || got == 0) {
-		C2K_NOTE("%s\n", __func__);
+		C2K_DBG("%s\n", __func__);
 		return;
 	}
 	req = t->req;
