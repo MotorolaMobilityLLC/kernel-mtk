@@ -180,6 +180,7 @@ config ARCH_MT6735
 	select PINCTRL_MT6735
 	select MFD_SYSCON
 	select MTK_BASE_POWER
+	select MTK_GIC
 	help
 	  This enable support for MediaTek MT6735
 

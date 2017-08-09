@@ -127,7 +127,7 @@ config KEYSTONE_IRQ
 		is part of the Keystone 2 IPC mechanism
 
 config MTK_GIC
-	def_bool y if ARM64 && MEDIATEK_SOLUTION
+	bool
 	select IRQ_DOMAIN
 	select MULTI_IRQ_HANDLER
 	help
