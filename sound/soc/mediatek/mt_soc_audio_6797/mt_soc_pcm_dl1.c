@@ -659,7 +659,7 @@ u32 afe_irq_number = 0;
 int AFE_BASE_PHY;
 
 static const struct of_device_id mt_soc_pcm_dl1_of_ids[] = {
-	{.compatible = "mediatek,mt-soc-dl1-pcm",},
+	{.compatible = "mediatek,mt_soc_pcm_dl1",},
 	{}
 };
 

@@ -2706,7 +2706,7 @@
 		};
 
 		audgpio:mt_soc_dl1_pcm@11220000 {
-			compatible = "mediatek,mt-soc-dl1-pcm";
+			compatible = "mediatek,mt_soc_pcm_dl1";
 			reg = <0x11220000 0x1000>;
 			interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&audiosys AUDIO_PDN_AFE>,

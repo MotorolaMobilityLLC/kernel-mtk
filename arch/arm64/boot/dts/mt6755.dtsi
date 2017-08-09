@@ -1651,7 +1651,7 @@
 		};
 
 		mt_soc_i2s0dl1_pcm@11220000 {
-			compatible = "mediatek,mt_soc_pcm_dl1_i2s0Dl1";
+			compatible = "mediatek,mt_soc_pcm_dl1_i2s0dl1";
 		};
 
 		mt_soc_dl1_awb_pcm@11220000 {
@@ -1703,11 +1703,13 @@
 		};
 
 		mt_soc_hp_impedance_pcm@11220000 {
-			compatible = "mediatek,Mt_soc_pcm_hp_impedance";
+			compatible = "mediatek,mt_soc_pcm_hp_impedance";
 		};
 
 		mt_soc_codec_name@11220000 {
 			compatible = "mediatek,mt_soc_codec_63xx";
+			use_hp_depop_flow = <0>; /* select 1: use, 0: not use */
+			use_ul_260k = <0>; /* select 1: use, 0: not use */
 		};
 
 		mt_soc_dummy_pcm@11220000 {

@@ -673,7 +673,7 @@ static int mtk_hp_impedance_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id Mt_soc_pcm_hp_impedance_of_ids[] = {
-	{ .compatible = "mediatek,Mt_soc_pcm_hp_impedance", },
+	{ .compatible = "mediatek,mt_soc_pcm_hp_impedance", },
 	{}
 };
 #endif
