@@ -65,6 +65,7 @@ typedef enum {
 typedef enum {
 	M4U_DMA_FROM_DEVICE,
 	M4U_DMA_TO_DEVICE,
+	M4U_DMA_BIDIRECTIONAL,
 } M4U_DMA_DIR;
 
 typedef struct {

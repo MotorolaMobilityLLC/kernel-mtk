@@ -67,6 +67,7 @@ typedef enum {
 typedef enum {
 	ION_DMA_FROM_DEVICE,
 	ION_DMA_TO_DEVICE,
+	ION_DMA_BIDIRECTIONAL,
 } ION_DMA_DIR;
 
 typedef struct ion_dma_param {

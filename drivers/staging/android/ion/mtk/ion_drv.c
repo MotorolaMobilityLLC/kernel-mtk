@@ -363,6 +363,8 @@ void ion_dma_map_area_va(void *start, size_t size, ION_DMA_DIR dir)
 		dmac_map_area(start, size, DMA_FROM_DEVICE);
 	else if (dir == ION_DMA_TO_DEVICE)
 		dmac_map_area(start, size, DMA_TO_DEVICE);
+	else if (dir == ION_DMA_BIDIRECTIONAL)
+		dmac_map_area(start, size, ION_DMA_BIDIRECTIONAL);
 }
 
 void ion_dma_unmap_area_va(void *start, size_t size, ION_DMA_DIR dir)
@@ -371,6 +373,8 @@ void ion_dma_unmap_area_va(void *start, size_t size, ION_DMA_DIR dir)
 		dmac_unmap_area(start, size, DMA_FROM_DEVICE);
 	else if (dir == ION_DMA_TO_DEVICE)
 		dmac_unmap_area(start, size, DMA_TO_DEVICE);
+	else if (dir == ION_DMA_BIDIRECTIONAL)
+		dmac_unmap_area(start, size, ION_DMA_BIDIRECTIONAL);
 }
 
 void ion_cache_flush_all(void)

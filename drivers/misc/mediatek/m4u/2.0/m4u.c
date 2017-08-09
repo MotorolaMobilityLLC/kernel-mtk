@@ -1079,6 +1079,8 @@ void m4u_dma_map_area(void *start, size_t size, M4U_DMA_DIR dir)
 		dmac_map_area(start, size, DMA_FROM_DEVICE);
 	else if (dir == M4U_DMA_TO_DEVICE)
 		dmac_map_area(start, size, DMA_TO_DEVICE);
+	else if (dir == M4U_DMA_BIDIRECTIONAL)
+		dmac_map_area(start, size, DMA_BIDIRECTIONAL);
 }
 
 void m4u_dma_unmap_area(void *start, size_t size, M4U_DMA_DIR dir)
@@ -1087,6 +1089,8 @@ void m4u_dma_unmap_area(void *start, size_t size, M4U_DMA_DIR dir)
 		dmac_unmap_area(start, size, DMA_FROM_DEVICE);
 	else if (dir == M4U_DMA_TO_DEVICE)
 		dmac_unmap_area(start, size, DMA_TO_DEVICE);
+	else if (dir == M4U_DMA_BIDIRECTIONAL)
+		dmac_unmap_area(start, size, DMA_BIDIRECTIONAL);
 }
 
 long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
