@@ -214,4 +214,7 @@ void mtk_gpu_spm_reset_fix(void);
 void mtk_gpu_spm_pause(void);
 void mtk_gpu_spm_resume(void);
 
+int mtk_dvfs_gpu_lock(int sem, int user);
+int mtk_dvfs_gpu_unlock(int sem, int user);
+
 #endif

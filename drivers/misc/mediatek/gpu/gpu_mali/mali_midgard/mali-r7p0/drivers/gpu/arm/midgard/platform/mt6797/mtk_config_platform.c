@@ -67,12 +67,16 @@ static spinlock_t mtk_power_lock;
 static unsigned long mtk_power_lock_flags;
 
 static int g_is_power_on = 0;
+#ifdef MTK_GPU_SPM
+static DEFINE_MUTEX(spm_mutex_lock);
+static int g_is_spm_on = 0;
+#endif
 
-static void power_acquire(void)
+static void power_status_acquire(void)
 {
 	spin_lock_irqsave(&mtk_power_lock, mtk_power_lock_flags);
 }
-static void power_release(void)
+static void power_status_release(void)
 {
 	spin_unlock_irqrestore(&mtk_power_lock, mtk_power_lock_flags);
 }
@@ -86,6 +90,32 @@ static void mtk_pm_callback_power_off(void);
 
 #define MTKCLK_disable_unprepare(clk) \
 	if (config->clk) {  clk_disable_unprepare(config->clk); }
+
+int dvfs_gpu_pm_spin_lock_for_vgpu(void)
+{
+	int ret = 0;
+#ifdef MTK_GPU_SPM
+	mutex_lock(&spm_mutex_lock);
+	mtk_kbase_spm_acquire();
+	if (g_is_spm_on)
+		ret = mtk_dvfs_gpu_lock(0, 1);
+	mtk_kbase_spm_release();
+#endif
+	return ret;
+}
+
+int dvfs_gpu_pm_spin_unlock_for_vgpu(void)
+{
+	int ret = 0;
+#ifdef MTK_GPU_SPM
+	mtk_kbase_spm_acquire();
+	if (g_is_spm_on)
+		ret = mtk_dvfs_gpu_unlock(0, 1);
+	mtk_kbase_spm_release();
+	mutex_unlock(&spm_mutex_lock);
+#endif
+	return ret;
+}
 
 #ifdef MTK_MT6797_DEBUG
 
@@ -177,7 +207,7 @@ void mtk_debug_dump_registers(void)
 
 	if (mtklog != 0)
 	{
-		power_acquire();
+		power_status_acquire();
 
 		_dump_mfg_n_ldo_registers(mtklog, 1);
 
@@ -196,7 +226,7 @@ void mtk_debug_dump_registers(void)
 			PRINT_LOGS(mtklog, "[dump] cannot dump MFG: VGPU is off");
 		}
 
-		power_release();
+		power_status_release();
 	}
 }
 
@@ -311,6 +341,7 @@ static int mtk_pm_callback_power_on(void)
 	{
 		mtk_init_spm_dvfs_gpu();
 	}
+	mutex_lock(&spm_mutex_lock);
 	mtk_kbase_spm_acquire();
 	{
 		unsigned long long now, diff;
@@ -327,7 +358,9 @@ static int mtk_pm_callback_power_on(void)
 	}
 	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
+	g_is_spm_on = 1;
 	mtk_kbase_spm_release();
+	mutex_unlock(&spm_mutex_lock);
 #endif
 
 #ifdef MTK_GPU_OCP
@@ -369,10 +402,13 @@ static void mtk_pm_callback_power_off(void)
 #endif
 
 #ifdef MTK_GPU_SPM
+	mutex_lock(&spm_mutex_lock);
 	mtk_kbase_spm_acquire();
+	g_is_spm_on = 0;
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
+	mutex_unlock(&spm_mutex_lock);
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
 
@@ -404,17 +440,17 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 	ret = mtk_pm_callback_power_on();
 
-	power_acquire();
+	power_status_acquire();
 	g_is_power_on = 1;
-	power_release();
+	power_status_release();
 
 	return ret;
 }
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {
-	power_acquire();
+	power_status_acquire();
 	g_is_power_on = 0;
-	power_release();
+	power_status_release();
 
 	mtk_pm_callback_power_off();
 }
