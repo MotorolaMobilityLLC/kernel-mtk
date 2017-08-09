@@ -127,4 +127,28 @@
 /*enable this to change thread wakeup period to 10 secs to avoid suspend failure*/
 #define CONFIG_MTK_I2C_CHR_SUPPORT
 
+#define BATTERY_MODULE_INIT
+
+#if defined(CONFIG_MTK_BQ24196_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ24160_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ25896_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#endif
+
+#if defined(CONFIG_MTK_FAN5402_SUPPORT) \
+	|| defined(CONFIG_MTK_FAN5405_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24158_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24196_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
+	|| defined(CONFIG_MTK_NCP1851_SUPPORT) \
+	|| defined(CONFIG_MTK_NCP1854_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24160_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24157_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24250_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
+
 #endif /* _CUST_BAT_H_ */
