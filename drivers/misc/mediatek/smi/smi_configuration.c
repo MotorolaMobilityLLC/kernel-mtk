@@ -1436,7 +1436,7 @@ unsigned long *smi_larb_debug_offset[SMI_LARB_NR] = {
 	smi_larb6_debug_offset
 };
 
-#define SMI_LARB0_RESTORE_NUM 3
+#define SMI_LARB0_RESTORE_NUM 5
 #define SMI_LARB1_RESTORE_NUM 0
 #define SMI_LARB2_RESTORE_NUM 0
 #define SMI_LARB3_RESTORE_NUM 0
@@ -1449,7 +1449,7 @@ unsigned int smi_restore_num[SMI_LARB_NR] = {
 	SMI_LARB4_RESTORE_NUM, SMI_LARB5_RESTORE_NUM, SMI_LARB6_RESTORE_NUM
 };
 struct SMI_SETTING_VALUE smi_larb0_restore[SMI_LARB0_RESTORE_NUM] = {
-	{0x100, 0xb}, {0x104, 0xb}, {0x108, 0xb}
+	{0x100, 0xb}, {0x104, 0xb}, {0x108, 0xb}, {0x110, 5}, {0x118, 2}
 };
 
 struct SMI_SETTING_VALUE smi_larb5_restore[SMI_LARB5_RESTORE_NUM] = {
@@ -1468,7 +1468,7 @@ struct SMI_SETTING_VALUE *smi_larb_restore[SMI_LARB_NR] = {
 
 #define SMI_PROFILE_SETTING_COMMON_INIT_NUM 13
 
-#define SMI_INITSETTING_LARB0_NUM (SMI_LARB0_PORT_NUM + 5) /* add cmd throttle setting/dcm/cmd grouping*/
+#define SMI_INITSETTING_LARB0_NUM (SMI_LARB0_PORT_NUM + 7) /* add cmd throttle setting/dcm/cmd grouping*/
 #define SMI_INITSETTING_LARB1_NUM (SMI_LARB1_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 #define SMI_INITSETTING_LARB2_NUM (SMI_LARB2_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 #define SMI_INITSETTING_LARB3_NUM (SMI_LARB3_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
@@ -1496,6 +1496,7 @@ struct SMI_SETTING_VALUE smi_profile_setting_common_init[SMI_PROFILE_SETTING_COM
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb0_init[SMI_INITSETTING_LARB0_NUM] = {
 	{0x14, (0x7 << 8) + (0xf << 4)}, {0x24, 0x370246}, {0x100, 0xb}, {0x104, 0xb}, {0x108, 0xb},
+	{0x110, 5}, {0x118, 2},
 	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 0x1f}, {0x20c, 0xa}, {0x210, 1}, {0x214, 1}, {0x218, 1},
 	    {0x21c, 1}
 };
