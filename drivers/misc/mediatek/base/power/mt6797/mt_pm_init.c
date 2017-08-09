@@ -90,9 +90,9 @@ unsigned int ckgen_meter(int ID)
 
 	/* wait frequency meter finish */
 	while (pminit_read(CLK26CALI_0) & 0x10) {
-		mdelay(1);
+		udelay(10);
 		i++;
-		if (i > 100)
+		if (i > 10000)
 			break;
 	}
 
@@ -106,7 +106,7 @@ unsigned int ckgen_meter(int ID)
 	/*pminit_write(CLK26CALI_1, clk26cali_1);*/
 
 	pminit_write(CLK26CALI_0, 0x1010);
-	mdelay(10);
+	udelay(50);
 	pminit_write(CLK26CALI_0, 0x1000);
 	pminit_write(CLK26CALI_0, 0x0000);
 	if (i > 10)
@@ -146,9 +146,9 @@ unsigned int abist_meter(int ID)
 
 	/* wait frequency meter finish */
 	while (pminit_read(CLK26CALI_0) & 0x10) {
-		mdelay(1);
+		udelay(10);
 		i++;
-		if (i > 100)
+		if (i > 10000)
 			break;
 	}
 
@@ -164,7 +164,7 @@ unsigned int abist_meter(int ID)
 
 
 	pminit_write(CLK26CALI_0, 0x1010);
-	mdelay(10);
+	udelay(50);
 	pminit_write(CLK26CALI_0, 0x1000);
 	pminit_write(CLK26CALI_0, 0x0000);
 
