@@ -48,10 +48,6 @@ struct truly {
 	bool enabled;
 
 	int error;
-
-	bool ssc_disable;
-	int ssc_range;
-	int ssc_data;
 };
 
 #define truly_dcs_write_seq(ctx, seq...) \
@@ -841,9 +837,6 @@ static const struct panel_desc truly_panel = {
 static int truly_get_modes(struct drm_panel *panel)
 {
 	struct drm_display_mode *mode;
-	struct truly *ctx = panel_to_truly(panel);
-
-	default_mode.private = &ctx->ssc_data;
 
 	mode = drm_mode_duplicate(panel->drm, &default_mode);
 	if (!mode) {
@@ -884,16 +877,6 @@ static int truly_probe(struct mipi_dsi_device *dsi)
 	mipi_dsi_set_drvdata(dsi, ctx);
 
 	ctx->dev = dev;
-
-	/* Spread Spectrum Clock is option function for panel,
-	* some panel may not support, and need to disable it sometime,
-	* so please check panel first before you enable SSC.
-	*/
-
-	ctx->ssc_disable = false;	/* whether mipitx ssc is disable or not? */
-					/* e.g. false: enable ssc, true: disable */
-	ctx->ssc_range = 5;		/* mipitx ssc range must be 0 ~ 8 */
-	ctx->ssc_data = ctx->ssc_disable << 4 | ctx->ssc_range;
 
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
