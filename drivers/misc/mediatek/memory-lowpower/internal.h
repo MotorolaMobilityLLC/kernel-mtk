@@ -108,7 +108,7 @@ extern int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct
 extern int put_memory_lowpower_cma_aligned(int count, struct page *pages);
 extern int memory_lowpower_task_init(void);
 extern phys_addr_t memory_lowpower_cma_base(void);
-extern unsigned long memory_lowpower_cma_size(void);
+extern phys_addr_t memory_lowpower_cma_size(void);
 extern void set_memory_lowpower_aligned(int aligned);
 
 #endif /* __MEMORY_LOWPOWER_INTERNAL_H */

@@ -199,7 +199,7 @@ phys_addr_t memory_ssvp_cma_base(void)
 /*
  * memory_lowpower_cma_size - query the cma's size
  */
-unsigned long memory_ssvp_cma_size(void)
+phys_addr_t memory_ssvp_cma_size(void)
 {
 	return cma_get_size(ssvp_cma.cma);
 }
