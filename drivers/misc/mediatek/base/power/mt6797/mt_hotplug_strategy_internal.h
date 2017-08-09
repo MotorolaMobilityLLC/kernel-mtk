@@ -210,6 +210,7 @@ typedef struct hps_ctxt_struct {
 
 	/* core */
 	struct mutex lock;	/* Synchronizes accesses */
+	struct mutex break_lock;	/* Synchronizes accesses */
 	struct task_struct *tsk_struct_ptr;
 	wait_queue_head_t wait_queue;
 	struct timer_list tmr_list;
@@ -285,6 +286,7 @@ typedef struct hps_ctxt_struct {
 	/* algo action */
 	unsigned long action;
 	atomic_t is_ondemand;
+	atomic_t is_break;
 
 	/* misc */
 	unsigned int test0;
@@ -349,9 +351,11 @@ extern void hps_algo_hmp(void);
 extern void hps_algo_smp(void);
 extern void hps_algo_amp(void);
 extern void hps_algo_main(void);
-extern int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val,
-			    int base_val);
+extern int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val);
 extern unsigned int hps_get_cluster_cpus(unsigned int cluster_id);
+
+extern void hps_set_break_en(int hps_break_en);
+extern int hps_get_break_en(void);
 /*
  * mt_hotplug_strategy_procfs.c
  */

@@ -92,6 +92,7 @@ hps_ctxt_t hps_ctxt = {
 
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */
+	.break_lock = __MUTEX_INITIALIZER(hps_ctxt.break_lock),	/* Synchronizes accesses to control break of hps */
 	.tsk_struct_ptr = NULL,
 	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(hps_ctxt.wait_queue),
 	/*.periodical_by = HPS_PERIODICAL_BY_WAIT_QUEUE, */
@@ -160,6 +161,7 @@ hps_ctxt_t hps_ctxt = {
 	/* algo action */
 	.action = ACTION_NONE,
 	.is_ondemand = ATOMIC_INIT(0),
+	.is_break = ATOMIC_INIT(0),
 
 	.test0 = 0,
 	.test1 = 0,

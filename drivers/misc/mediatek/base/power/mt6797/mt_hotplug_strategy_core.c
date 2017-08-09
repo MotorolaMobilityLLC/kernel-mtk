@@ -285,7 +285,8 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			    p->cpu_limit[i].advise_cpu_core;
 		}
 	}
-
+	if (hps_get_break_en())
+		hps_set_break_en(0);
 	mutex_unlock(&hps_ctxt.lock);
 
 	algo_func_ptr = hps_algo_main;
