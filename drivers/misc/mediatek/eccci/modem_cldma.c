@@ -1169,6 +1169,32 @@ static void cldma_tx_queue_init(struct md_cd_queue *queue)
 #endif
 }
 
+void cldma_enable_irq(struct md_cd_ctrl *md_ctrl)
+{
+	if (atomic_read(&md_ctrl->cldma_irq_enabled) == 0) {
+		enable_irq(md_ctrl->cldma_irq_id);
+		atomic_inc(&md_ctrl->cldma_irq_enabled);
+	}
+}
+
+void cldma_disable_irq(struct md_cd_ctrl *md_ctrl)
+{
+	if (atomic_read(&md_ctrl->cldma_irq_enabled) == 1) {
+		disable_irq(md_ctrl->cldma_irq_id);
+		atomic_dec(&md_ctrl->cldma_irq_enabled);
+	}
+}
+
+void cldma_disable_irq_nosync(struct md_cd_ctrl *md_ctrl)
+{
+	if (atomic_read(&md_ctrl->cldma_irq_enabled) == 1) {
+		/*may be called in isr, so use disable_irq_nosync.
+		   if use disable_irq in isr, system will hang */
+		disable_irq_nosync(md_ctrl->cldma_irq_id);
+		atomic_dec(&md_ctrl->cldma_irq_enabled);
+	}
+}
+
 u64 last_q0_rx_isr = 0;
 static void cldma_irq_work_cb(struct ccci_modem *md)
 {
@@ -1287,7 +1313,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 	}
 	md_cd_lock_cldma_clock_src(0);
 #ifndef ENABLE_CLDMA_AP_SIDE
-	enable_irq(md_ctrl->cldma_irq_id);
+	cldma_enable_irq(md_ctrl);
 #endif
 }
 
@@ -1305,7 +1331,7 @@ static irqreturn_t cldma_isr(int irq, void *data)
 #ifdef ENABLE_CLDMA_AP_SIDE
 	cldma_irq_work_cb(md);
 #else
-	disable_irq_nosync(md_ctrl->cldma_irq_id);
+	cldma_disable_irq_nosync(md_ctrl)
 	queue_work(md_ctrl->cldma_irq_worker, &md_ctrl->cldma_irq_work);
 #endif
 	return IRQ_HANDLED;
@@ -1414,7 +1440,7 @@ static inline void cldma_stop(struct ccci_modem *md)
 #endif
 	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	/* flush work */
-	disable_irq(md_ctrl->cldma_irq_id);
+	cldma_disable_irq(md_ctrl);
 	flush_work(&md_ctrl->cldma_irq_work);
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
 		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
@@ -1559,7 +1585,7 @@ static inline void cldma_start(struct ccci_modem *md)
 	unsigned long flags;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
-	enable_irq(md_ctrl->cldma_irq_id);
+	cldma_enable_irq(md_ctrl);
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	/* set start address */
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
@@ -2028,7 +2054,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 			     ret);
 		return ret;
 	}
-	disable_irq(md_ctrl->hw_info->cldma_irq_id);
+	cldma_disable_irq(md_ctrl);
 #ifndef FEATURE_FPGA_PORTING
 	ret =
 	    request_irq(md_ctrl->hw_info->md_wdt_irq_id, md_cd_wdt_isr, md_ctrl->hw_info->md_wdt_irq_flags, "MD_WDT",
@@ -2038,8 +2064,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 						md_ctrl->hw_info->md_wdt_irq_id, ret);
 		return ret;
 	}
-	atomic_inc(&md_ctrl->wdt_enabled);
-		/* IRQ is enabled after requested, so call enable_irq after request_irq will get a unbalance warning */
+	/* IRQ is enabled after requested, so call enable_irq after request_irq will get a unbalance warning */
 	ret =
 	    request_irq(md_ctrl->hw_info->ap_ccif_irq_id, md_cd_ccif_isr, md_ctrl->hw_info->ap_ccif_irq_flags,
 			"CCIF0_AP", md);
@@ -3819,7 +3844,8 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	INIT_WORK(&md_ctrl->cldma_irq_work, cldma_irq_work);
 	md_ctrl->channel_id = 0;
 	atomic_set(&md_ctrl->reset_on_going, 0);
-	atomic_set(&md_ctrl->wdt_enabled, 0);
+	atomic_set(&md_ctrl->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
+	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
 	INIT_WORK(&md_ctrl->wdt_work, md_cd_wdt_work);
 #if TRAFFIC_MONITOR_INTERVAL
 	init_timer(&md_ctrl->traffic_monitor);

@@ -185,10 +185,11 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 #endif
 
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
-	ap_side_md_feature->feature_set[DHL_CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	/* notice: CCB_SHARE_MEMORY should be set to support when at least one CCB region exists */
+	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 #else
-	ap_side_md_feature->feature_set[DHL_CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 
@@ -347,7 +348,8 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 				rt_shm.size = md->smem_layout.ccci_ccism_smem_size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
-			case DHL_CCB_SHARE_MEMORY:
+			case CCB_SHARE_MEMORY:
+				/* notice: we should add up all CCB region size here */
 				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
 				rt_shm.addr = md->smem_layout.ccci_ccb_dhl_base_phy -
 					md->mem_layout.smem_offset_AP_to_MD + 4; /* for 64bit alignment */
