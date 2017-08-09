@@ -138,33 +138,20 @@ static void mtk_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 
 }
 
-
-static void mtk_pconf_set_smt(struct mtk_pinctrl *pctl, unsigned pin,
-		int value, enum pin_config_param param)
-{
-	/* unsigned int reg_addr, offset; */
-	/* unsigned int bit; */
-	int ret;
-
-	pr_debug("fwq pinctrl mtk_pconf_set_smt pin=%d,value=%d,para=%d\n", pin, value, param);
-
-	if (pctl->devdata->mt_set_gpio_smt)
-		ret = pctl->devdata->mt_set_gpio_smt(pin|0x80000000, value);
-	else
-		pr_debug("fwq pinctrl no smt function\n");
-}
 static int mtk_pconf_set_ies_smt(struct mtk_pinctrl *pctl, unsigned pin,
 		int value, enum pin_config_param arg)
 {
 	unsigned int reg_addr, offset;
 	unsigned int bit;
 
-    /* only set ies */
 	pr_debug("fwq pinctrl set ies &smt pin=%d,value=%d,arg=%d\n",
 		pin, value, arg);
 
-	if (pctl->devdata->mt_set_gpio_ies) {
-		pctl->devdata->mt_set_gpio_ies(pin|0x80000000, value);
+	if (pctl->devdata->mt_set_gpio_ies || pctl->devdata->mt_set_gpio_smt) {
+		if (arg == PIN_CONFIG_INPUT_ENABLE)
+			pctl->devdata->mt_set_gpio_ies(pin|0x80000000, value);
+		else if (arg == PIN_CONFIG_INPUT_SCHMITT_ENABLE)
+			pctl->devdata->mt_set_gpio_smt(pin|0x80000000, value);
 		return 0;
 	}
 
@@ -893,18 +880,12 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 	int value =  -1;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
-	if (pctl->devdata->mt_get_gpio_out == NULL || pctl->devdata->mt_get_gpio_in == NULL) {
-		pr_debug("fwq pinctrl mtk_gpio_get base not ready\n");
-		pr_debug("fwq pinctrl mtk_gpio_get out=%p\n", pctl->devdata->mt_get_gpio_out);
-		pr_debug("fwq pinctrl mtk_gpio_get in=%p\n", pctl->devdata->mt_get_gpio_in);
+	if (pctl->devdata->mt_get_gpio_out != NULL || pctl->devdata->mt_get_gpio_in != NULL) {
+		if (mtk_gpio_get_direction(chip, offset)) {
+			value = pctl->devdata->mt_get_gpio_out(offset|0x80000000);
+			return value;
+		}
 		return 0;
-
-	}
-
-	if (mtk_gpio_get_direction(chip, offset)) {
-
-		value = pctl->devdata->mt_get_gpio_out(offset|0x80000000);
-		return value;
 	}
 
 	if (mtk_gpio_get_direction(chip, offset))
@@ -917,8 +898,6 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
 	return !!(read_val & bit);
-
-
 }
 
 
