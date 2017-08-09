@@ -79,6 +79,31 @@ __weak struct vm_struct *find_vm_area(const void *addr)
 				(void *)(kaddr) < (void *)high_memory && \
 				pfn_valid(__pa(kaddr) >> PAGE_SHIFT))
 
+void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *high)
+{
+	unsigned long l = *low;
+	unsigned long h = *high;
+
+	while (l < addr) {
+		if (!virt_addr_valid(l)) {
+			*low += PAGE_SIZE;
+			pr_err("address(0x%lx), low is invalid(0x%lx), new low is 0x%lx\n", addr, l, *low);
+		}
+		l += PAGE_SIZE;
+	}
+	if (*low > addr)
+		*low = addr;
+	while (h > addr) {
+		if (!virt_addr_valid(h)) {
+			*high -= PAGE_SIZE;
+			pr_err("address(0x%lx), high is invalid(0x%lx), new high is 0x%lx\n", addr, l, *high);
+		}
+		h -= PAGE_SIZE;
+	}
+	if (*high < addr)
+		*high = addr;
+}
+
 /* copy from fs/binfmt_elf.c */
 static void fill_elf_header(struct elfhdr *elf, int segs)
 {
@@ -265,6 +290,7 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 		hnew = lnew + PAGE_SIZE;
 		paddr = __pfn_to_phys(vmalloc_to_pfn((void *)lnew));
 	} else {
+		check_addr_valid(addr, &lnew, &hnew);
 		lnew = max(lnew, PAGE_OFFSET);
 		hnew = min_t(unsigned long, hnew, (unsigned long)high_memory);
 		paddr = __pa(lnew);
@@ -299,7 +325,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	struct thread_info *ti = NULL;
 	unsigned long *bottom = NULL;
 	unsigned long *top = NULL;
-	/*unsigned long *p;*/
+	unsigned long *p;
 
 	if (virt_addr_valid(regs->reg_sp)) {
 		ti = (struct thread_info *)(regs->reg_sp & ~(THREAD_SIZE - 1));
@@ -330,7 +356,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	if (!virt_addr_valid(ti) || !virt_addr_valid(top) || bottom < (unsigned long *)ti
 	    || bottom > top)
 		return;
-/*
+
 	for (p = (unsigned long *)ALIGN((unsigned long)bottom, sizeof(unsigned long)); p < top; p++) {
 		if (!virt_addr_valid(*p))
 			continue;
@@ -340,7 +366,6 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 			continue;
 		mrdump_mini_add_entry(*p, MRDUMP_MINI_SECTION_SIZE);
 	}
-*/
 }
 
 static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
