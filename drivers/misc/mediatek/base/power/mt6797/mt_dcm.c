@@ -26,7 +26,7 @@ static unsigned long emi_reg_base;
 static unsigned long dramc_conf_base;
 static unsigned long dramc_conf_b_base;
 static unsigned long infracfg_ao_base;
-static unsigned long mcumixed_base;
+/*static unsigned long mcumixed_base;*/
 
 #define MCUCFG_NODE			"mediatek,mcucfg"
 #define MCUCFG2_NODE		"mediatek,mcucfg2"
@@ -48,7 +48,7 @@ static unsigned long mcumixed_base;
 #define EMI_REG_BASE	    (emi_reg_base)
 #define DRAMC_CONFIG_BASE	(dramc_conf_base)
 #define DRAMC_CONFIG_B_BASE	(dramc_conf_b_base)
-#define MCUMIXED_BASE		(mcumixed_base)
+/*#define MCUMIXED_BASE		(mcumixed_base)*/
 #else	/* !defined(CONFIG_OF) */
 #error "undefined CONFIG_OF"
 #endif	/* #if defined(CONFIG_OF) */
@@ -141,7 +141,7 @@ typedef void (*DCM_PRESET_FUNC)(void);
 /*
  *  dcm_armcore
  */
-#define ARMPLLDIV_DCMCTL	(MCUMIXED_BASE + 0x278)
+#define ARMPLLDIV_DCMCTL	(/*MCUMIXED_BASE +*/ 0x278)
 
 #define ARMPLL_DCM_ENABLE_0_MASK		(0x1<<0)
 #define ARMPLL_DCM_WFI_ENABLE_0_MASK	(0x1<<1)
@@ -193,11 +193,9 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 {
 	dcm_info("%s(%d)\n", __func__, mode);
 
-	mt6797_0x1001AXXX_lock();
-
 	if (mode == ARMCORE_DCM_OFF) {
-		reg_write(ARMPLLDIV_DCMCTL,
-			  aor(reg_read(ARMPLLDIV_DCMCTL),
+		mt6797_0x1001AXXX_reg_write(ARMPLLDIV_DCMCTL,
+			  aor(mt6797_0x1001AXXX_reg_read(ARMPLLDIV_DCMCTL),
 					~(ARMPLL_DCM_ENABLE_0_MASK |
 					ARMPLL_DCM_WFI_ENABLE_0_MASK |
 					ARMPLL_DCM_WFE_ENABLE_0_MASK |
@@ -223,8 +221,8 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 					ARMPLL_DCM_WFI_ENABLE_3_OFF |
 					ARMPLL_DCM_WFE_ENABLE_3_OFF)));
 	} else if (mode == ARMCORE_DCM_MODE1) {
-		reg_write(ARMPLLDIV_DCMCTL,
-			  aor(reg_read(ARMPLLDIV_DCMCTL),
+		mt6797_0x1001AXXX_reg_write(ARMPLLDIV_DCMCTL,
+			  aor(mt6797_0x1001AXXX_reg_read(ARMPLLDIV_DCMCTL),
 			      ~(ARMPLL_DCM_ENABLE_0_MASK |
 					ARMPLL_DCM_WFI_ENABLE_0_MASK |
 					ARMPLL_DCM_WFE_ENABLE_0_MASK |
@@ -250,8 +248,8 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 					ARMPLL_DCM_WFI_ENABLE_3_OFF |
 					ARMPLL_DCM_WFE_ENABLE_3_OFF)));
 	} else if (mode == ARMCORE_DCM_MODE2) {
-		reg_write(ARMPLLDIV_DCMCTL,
-			  aor(reg_read(ARMPLLDIV_DCMCTL),
+		mt6797_0x1001AXXX_reg_write(ARMPLLDIV_DCMCTL,
+			  aor(mt6797_0x1001AXXX_reg_read(ARMPLLDIV_DCMCTL),
 			      ~(ARMPLL_DCM_ENABLE_0_MASK |
 					ARMPLL_DCM_WFI_ENABLE_0_MASK |
 					ARMPLL_DCM_WFE_ENABLE_0_MASK |
@@ -277,9 +275,6 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 					ARMPLL_DCM_WFI_ENABLE_3_ON |
 					ARMPLL_DCM_WFE_ENABLE_3_ON)));
 	}
-
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
 
 	return 0;
 }
@@ -1571,9 +1566,8 @@ void dcm_dump_regs(void)
 	dcm_info("\n******** dcm dump register *********\n");
 
 	dcm_info("\n=== armcore DCM ===\n");
-	mt6797_0x1001AXXX_lock();
-	REG_DUMP(ARMPLLDIV_DCMCTL);
-	mt6797_0x1001AXXX_unlock();
+	dcm_info("%-30s(0x%08X): 0x%08X\n", "ARMPLLDIV_DCMCTL",
+		(unsigned int)(0x1001A000+ARMPLLDIV_DCMCTL), mt6797_0x1001AXXX_reg_read(ARMPLLDIV_DCMCTL));
 
 	dcm_info("\nmcusys DCM:\n");
 	REG_DUMP(MCUCFG_L2C_SRAM_CTRL);
@@ -1626,10 +1620,9 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 	p += sprintf(p, "\n******** dcm dump register *********\n");
 	p += sprintf(p, "\n=== armcore DCM ===\n");
-	mt6797_0x1001AXXX_lock();
-	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "ARMPLLDIV_DCMCTL",
-				ARMPLLDIV_DCMCTL, reg_read(ARMPLLDIV_DCMCTL));
-	mt6797_0x1001AXXX_unlock();
+	p += sprintf(p, "%-30s(0x%08X): 0x%08X\n", "ARMPLLDIV_DCMCTL",
+				(unsigned int)(0x1001A000+ARMPLLDIV_DCMCTL),
+				mt6797_0x1001AXXX_reg_read(ARMPLLDIV_DCMCTL));
 
 	p += sprintf(p, "\nmcusys DCM:\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_L2C_SRAM_CTRL",
@@ -1828,7 +1821,7 @@ static int mt_dcm_dts_map(void)
 	}
 
 	/* mcumixed_base */
-	node = of_find_compatible_node(NULL, NULL, MCUMIXED_REG_NODE);
+	/*node = of_find_compatible_node(NULL, NULL, MCUMIXED_REG_NODE);
 	if (!node) {
 		dcm_info("error: cannot find node " MCUMIXED_REG_NODE);
 		BUG();
@@ -1837,7 +1830,7 @@ static int mt_dcm_dts_map(void)
 	if (!mcumixed_base) {
 		dcm_info("error: cannot iomap " MCUMIXED_REG_NODE);
 		BUG();
-	}
+	}*/
 
 	return 0;
 }
