@@ -536,7 +536,7 @@ static int baro_misc_init(struct baro_context *cxt)
 
 	return err;
 }
-
+/*
 static void baro_input_destroy(struct baro_context *cxt)
 {
 	struct input_dev *dev = cxt->idev;
@@ -544,7 +544,7 @@ static void baro_input_destroy(struct baro_context *cxt)
 	input_unregister_device(dev);
 	input_free_device(dev);
 }
-
+*/
 static int baro_input_init(struct baro_context *cxt)
 {
 	struct input_dev *dev;
@@ -703,11 +703,6 @@ static int baro_probe(struct platform_device *pdev)
 	/* exit_misc_register_failed: */
 
 	/* exit_err_sysfs: */
-
-	if (err) {
-		BARO_ERR("sysfs node creation error\n");
-		baro_input_destroy(baro_context_obj);
-	}
 
 real_driver_init_fail:
 exit_alloc_input_dev_failed:
