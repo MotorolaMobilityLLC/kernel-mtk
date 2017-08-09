@@ -633,6 +633,12 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
 		};
 
+		hacc:hacc@10008000 {
+			compatible = "mediatek,hacc";
+			reg = <0x10008000 0x1000>;
+			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 	};
 
 	bus {
@@ -692,12 +698,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		DEVAPC_AO@10007000 {
 			compatible = "mediatek,DEVAPC_AO";
 			reg = <0x10007000 0x1000>;
-		};
-
-		hacc@0x10008000 {
-			compatible = "mediatek,hacc";
-			reg = <0x10008000 0x1000>;
-			interrupts = <0 173 0x8>;
 		};
 
 		RSVD@0x10009000 {

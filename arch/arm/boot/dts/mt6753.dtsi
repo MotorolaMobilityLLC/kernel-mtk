@@ -1095,6 +1095,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x14006000 0x1000>;
 			interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_LOW>;
 		};
+
+		hacc:hacc@10008000 {
+			compatible = "mediatek,hacc";
+			reg = <0x10008000 0x1000>;
+			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		};
 	};
 
 	vcorefs {
@@ -1622,12 +1628,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		G3D_CONFIG@0x13000000 {
 			compatible = "mediatek,G3D_CONFIG";
 			reg = <0x13000000 0x1000>;
-		};
-
-		hacc@0x10008000 {
-			compatible = "mediatek,hacc";
-			reg = <0x10008000 0x1000>;
-			interrupts = <0 174 0x8>;
 		};
 
 		MALI@0x13040000 {

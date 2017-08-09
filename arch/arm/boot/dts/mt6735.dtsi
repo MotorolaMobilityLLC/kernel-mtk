@@ -1351,6 +1351,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clocks = <&mmsys MM_DISP0_MDP_TDSHP>;
 			clock-names = "MDP_TDSHP";
 		};
+
+		hacc:hacc@10008000 {
+			compatible = "mediatek,hacc";
+			reg = <0x10008000 0x1000>;
+			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		};
 	};
 
 	vcorefs {
@@ -2725,11 +2731,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x13000000 0x1000>;
 		};
 
-		hacc@0x10008000 {
-			compatible = "mediatek,hacc";
-			reg = <0x10008000 0x1000>;
-			interrupts = <0 173 0x8>;
-		};
 
 		mali@13040000 {
 			compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
