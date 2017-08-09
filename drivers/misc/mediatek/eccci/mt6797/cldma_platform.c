@@ -491,14 +491,16 @@ void md1_pll_init(struct ccci_modem *md)
 	ROr2W(md_pll->md_L1_a0, R_L1AO_PWR_AWARE, (1<<16));
 	/* busL2 DCM div 8/normal div 1/ clkslow_en/clock from
 	   PLL /debounce enable/ debounce time 7T */
-	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x0001FDE7);
-	/* DCM div 16/normal div 1/clkslow_en/ clock
+	/* L2DCM L1BUS div 16 */
+	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x0000FDE7); /* <= 1FDE7 */
+	cldma_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x1000FDE7); /* toggle setting */
+	/* DCM div 8/normal div 1/clkslow_en/ clock
 	   from PLL / dcm enable /debounce enable /debounce time 15T */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON, 0x0000FDEF);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON, 0x0001FDE7);
 	/* DCM config toggle = 0 */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x0);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x00000000);
 	/* DCM config toggle  = 1 / */
-	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x90000000);
+	cldma_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x80000000);
 
 	/* Wait PSMCU PLL ready */
 	CCCI_DBG_MSG(md->index, TAG, "Wait PSMCU PLL ready\n");
