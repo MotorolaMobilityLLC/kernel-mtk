@@ -263,6 +263,7 @@ typedef enum {
 		if (tpd_em_log)						\
 			pr_debug("<<GTP-DBG>>[%s:%d]"fmt"\n", __func__, __LINE__, ##arg);\
 	} while (0)
+#ifdef CONFIG_GTP_DEBUG_ARRAY_ON
 #define GTP_DEBUG_ARRAY(array, num)			\
 	do {									\
 		s32 i;								\
@@ -276,7 +277,14 @@ typedef enum {
 		}								\
 		pr_debug("\n");					\
 	} while (0)
+#else
+#define GTP_DEBUG_ARRAY(array, num)	do {} while (0)
+#endif
+#ifdef CONFIG_GTP_DEBUG_FUNC_ON
 #define GTP_DEBUG_FUNC()	pr_debug("<<GTP-FUNC>> Func:%s@Line:%d\n", __func__, __LINE__)
+#else
+#define GTP_DEBUG_FUNC()	do {} while (0)
+#endif
 #define GTP_SWAP(x, y)		\
 	do {					\
 		typeof(x) z = x;	\
