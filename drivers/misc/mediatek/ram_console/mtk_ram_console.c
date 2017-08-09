@@ -294,8 +294,8 @@ void pstore_console_show(enum pstore_type_id type_id, struct seq_file *m, void *
 		goto out;
 
 	while ((size = psi->read(&id, &type, &count, &time, &buf, &compressed, psi)) > 0) {
-		pr_err("ram_console: id %lld, type %d, count %d, size %zx\n", id, type, count,
-		       size);
+		/*pr_err("ram_console: id %lld, type %d, count %d, size %zx\n", id, type, count,
+		       size);*/
 		if (type == type_id)
 			seq_write(m, buf, size);
 		kfree(buf);
@@ -463,9 +463,9 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 		   wdt_status, LAST_RRR_BUF_VAL(buffer, fiq_step));
 
 #ifdef CONFIG_PSTORE_CONSOLE
-	pr_err("ram_console: pstore show start\n");
+	/*pr_err("ram_console: pstore show start\n");*/
 	pstore_console_show(PSTORE_TYPE_CONSOLE, m, v);
-	pr_err("ram_console: pstore show end\n");
+	/*pr_err("ram_console: pstore show end\n");*/
 #else
 	if (buffer->off_console != 0
 	    && buffer->off_linux + ALIGN(sizeof(struct last_reboot_reason),
