@@ -157,7 +157,7 @@
 		lcm_params-dsi-edp_panel;
 
 		lcm_params-dsi-customization_esd_check_enable = <0>;
-		lcm_params-dsi-esd_check_enable = <0>;
+		lcm_params-dsi-esd_check_enable = <1>;
 
 		lcm_params-dsi-lcm_int_te_monitor;
 		lcm_params-dsi-lcm_int_te_period;
