@@ -141,7 +141,7 @@ static void mmc_set_wp_grp_size(struct mmc_card *card)
 		card->wp_grp_size = card->ext_csd.hc_erase_size *
 				    card->ext_csd.raw_hc_erase_gap_size;
 	else
-		card->wp_grp_size = card->csd.erase_size;
+		card->wp_grp_size = card->csd.erase_size * (card->csd.wp_grp_size + 1);
 }
 
 /*
@@ -194,6 +194,7 @@ static int mmc_decode_csd(struct mmc_card *card)
 		b = UNSTUFF_BITS(resp, 37, 5);
 		csd->erase_size = (a + 1) * (b + 1);
 		csd->erase_size <<= csd->write_blkbits - 9;
+		csd->wp_grp_size = UNSTUFF_BITS(resp, 32, 5);
 	}
 
 	return 0;
