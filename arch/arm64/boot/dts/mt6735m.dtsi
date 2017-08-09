@@ -639,6 +639,19 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		als: als {
+			compatible = "mediatek, als-eint";
+		};
+
+		gse_1: gse_1 {
+			compatible = "mediatek, gse_1-eint";
+			status = "disabled";
+		};
+		ext_buck_oc: ext_buck_oc {
+			compatible = "mediatek, ext_buck_oc-eint";
+			status = "disabled";
+		};
+
 	};
 
 	bus {
@@ -683,6 +696,15 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 
 			max_eint_num = <213>;
 			mapping_table_entry = <0>;
+		};
+
+		/* NFC start */
+		nfc:nfc@0 {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-ven = <4>;
+			gpio-rst = <3>;
+			gpio-eint = <1>;
+			gpio-irq = <2>;
 		};
 
 		SLEEP@0x10006000 {
@@ -1806,12 +1828,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-/* /include/ "cust_clk_buf.dtsi" */
-#include "cust_eint.dtsi"
-/include/ "cust_kpd.dtsi"
-/include/ "cust_i2c.dtsi"
-/include/ "cust_adc.dtsi"
-/* /include/ "cust_pmic.dtsi" */
+#include "cust.dtsi"
+
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";

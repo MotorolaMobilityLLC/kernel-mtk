@@ -631,7 +631,18 @@
 			reg = <0x10008000 0x1000>;
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 		};
+		als: als {
+			compatible = "mediatek, als-eint";
+		};
 
+		gse_1: gse_1 {
+			compatible = "mediatek, gse_1-eint";
+			status = "disabled";
+		};
+		ext_buck_oc: ext_buck_oc {
+			compatible = "mediatek, ext_buck_oc-eint";
+			status = "disabled";
+		};
 	};
 
 	bus {
@@ -665,6 +676,8 @@
 			reg = <0x10003000 0x1000>;
 			interrupts = <0 164 0x2>;
 		};
+
+
 
 		eintc: EINTC@0x10005000 {
 			compatible = "mtk,mt-eic";
@@ -1780,12 +1793,8 @@
 	};
 };
 
-/* /include/ "cust_clk_buf.dtsi" */
-#include "cust_eint.dtsi"
-/include/ "cust_kpd.dtsi"
-/include/ "cust_i2c.dtsi"
-/include/ "cust_adc.dtsi"
-/* /include/ "cust_pmic.dtsi" */
+#include <cust.dtsi>
+
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";

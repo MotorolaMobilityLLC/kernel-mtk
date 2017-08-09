@@ -1108,6 +1108,43 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10008000 0x1000>;
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 		};
+
+		/* NFC start */
+		nfc:NFC@0 {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-ven = <4>;
+			gpio-rst = <3>;
+			gpio-eint = <1>;
+			gpio-irq = <2>;
+		};
+
+		als: als {
+			compatible = "mediatek, als-eint";
+		};
+
+		gse_1: gse_1 {
+			compatible = "mediatek, gse_1-eint";
+			status = "disabled";
+		};
+		ext_buck_oc: ext_buck_oc {
+			compatible = "mediatek, ext_buck_oc-eint";
+			status = "disabled";
+		};
+
+		i2c4:i2c@1100f000 {
+			compatible = "mediatek,mt6735-i2c";
+			cell-index = <3>;
+			reg = <0x1100f000 0x1000>;
+			interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C3>, <&perisys PERI_APDMA>;
+			clock-names = "i2c3-main", "i2c3-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
+
 	};
 
 	vcorefs {
@@ -1716,12 +1753,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-/* /include/ "cust_clk_buf.dtsi" */
-/include/ "cust_kpd.dtsi"
-/include/ "cust_i2c.dtsi"
-/include/ "cust_adc.dtsi"
-#include "cust_eint.dtsi"
-/* /include/ "cust_pmic.dtsi" */
+#include "cust.dtsi"
+
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";

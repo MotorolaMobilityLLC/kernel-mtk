@@ -242,7 +242,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
-		ranges;
+		ranges = <0 0 0 0xffffffff>;
 
 		chipid@08000000 {
 			compatible = "mediatek,chipid";
@@ -2856,12 +2856,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-/* /include/ "cust_clk_buf.dtsi" */
-/include/ "cust_kpd.dtsi"
-/include/ "cust_i2c.dtsi"
-/include/ "cust_adc.dtsi"
-#include "cust_eint.dtsi"
-/* /include/ "cust_pmic.dtsi" */
+
+#include "cust.dtsi"
+
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";
