@@ -1,6 +1,7 @@
 #ifndef _SMI_REG_H__
 #define _SMI_REG_H__
 
+#ifndef CONFIG_MTK_SMI_VARIANT
 
 #define SMI_COMMON_EXT_BASE (smi_reg_base_common_ext)
 #define LARB0_BASE (smi_reg_base_barb0)
@@ -11,6 +12,8 @@
 #elif defined D1 || defined D3
 #define LARB2_BASE (smi_reg_base_barb2)
 #define LARB3_BASE (smi_reg_base_barb3)
+#endif
+
 #endif
 
 /* ================================================= */
@@ -281,6 +284,7 @@
 /* ================================================================ */
 
 #define SMI_ERROR_ADDR  0
+
 #if defined D2
 #define SMI_LARB_NR     3
 
@@ -306,6 +310,11 @@
 
 #define SMI_LARB0_PORT_NUM  7
 #define SMI_LARB1_PORT_NUM  11
+
+#elif defined MT73
+
+#define SMI_LARB_NR    6
+
 #endif
 
 #define SMI_LARB_STAT                   (0x0)
@@ -393,6 +402,14 @@
 #define REG_OFFSET_SMI_L1ARB2	                (0x20C)
 #define REG_OFFSET_SMI_L1ARB3	                (0x210)
 #define REG_OFFSET_SMI_L1ARB4	                (0x214)
+#elif defined MT73
+#define REG_OFFSET_SMI_L1LEN	                (0x200)
+#define REG_OFFSET_SMI_L1ARB0	                (0x204)
+#define REG_OFFSET_SMI_L1ARB1	                (0x208)
+#define REG_OFFSET_SMI_L1ARB2	                (0x20C)
+#define REG_OFFSET_SMI_L1ARB3	                (0x210)
+#define REG_OFFSET_SMI_L1ARB4	                (0x214)
+#define REG_OFFSET_SMI_L1ARB5	                (0x218)
 #else
 #define REG_OFFSET_SMI_L1LEN	                (0x100)
 #define REG_OFFSET_SMI_L1ARB0	                (0x104)
@@ -401,6 +418,7 @@
 #define REG_OFFSET_SMI_L1ARB3	                (0x110)
 #define REG_OFFSET_SMI_L1ARB4	                (0x114)
 #endif
+
 /*
 #define REG_SMI_MON_AXI_ENA             (0x1a0+SMI_COMMON_EXT_BASE)
 #define REG_SMI_MON_AXI_CLR             (0x1a4+SMI_COMMON_EXT_BASE)

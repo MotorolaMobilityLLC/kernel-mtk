@@ -19,7 +19,7 @@
 #include <asm-generic/irq_regs.h>
 /* #include <asm/mach/map.h> */
 #include <sync_write.h>
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 #include <asm/cacheflush.h>
 #include <linux/string.h>
 #include <linux/time.h>

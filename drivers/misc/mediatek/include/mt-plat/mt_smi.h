@@ -43,6 +43,8 @@ typedef enum {
 	SMI_BWC_SCEN_UI_IDLE,
 	SMI_BWC_SCEN_VSS,
 	SMI_BWC_SCEN_FORCE_MMDVFS,
+	SMI_BWC_SCEN_HDMI,
+	SMI_BWC_SCEN_HDMI4K,
 	SMI_BWC_SCEN_CNT
 } MTK_SMI_BWC_SCEN;
 
@@ -186,4 +188,34 @@ int MTK_SPC_Init(void *dev);
 extern int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
 extern int mmdvfs_is_default_step_need_perf(void);
 extern void mmdvfs_mm_clock_switch_notify(int is_before, int is_to_high);
+
+#ifdef CONFIG_MTK_SMI_VARIANT
+/* Enable the power-domain and the clocks of the larb.
+ *
+ * larb: larb id
+ * pm: if true, this function will help enable larb's power-domain.
+ *     if false, please make sure the larb's power-domain has been enabled.
+ *     some h/w may reset if the sequence is not good while
+ *     smi-larb enable power-domain.
+ *     please call them in non-atmoic context.
+ * Return : 0 is successful, Others is failed.
+ */
+int mtk_smi_larb_clock_on(int larb, bool pm);
+void mtk_smi_larb_clock_off(int larb, bool pm);
+
+/* Return 0 is failed */
+unsigned long mtk_smi_larb_get_base(int larbid);
+#else
+
+static inline int mtk_smi_larb_clock_on(int larb, bool pm)
+{
+	return 0;
+}
+static inline void mtk_smi_larb_clock_off(int larb, bool pm) {}
+static inline unsigned long mtk_smi_larb_get_base(int larbid)
+{
+	return 0;
+}
+#endif
+
 #endif

@@ -50,7 +50,8 @@
 /* Please use the function to instead gLarbBaseAddr to prevent the NULL pointer access error */
 /* when the corrosponding larb is not exist */
 /* extern unsigned int gLarbBaseAddr[SMI_LARB_NR]; */
-extern unsigned long get_larb_base_addr(int larb_id);
+/*extern unsigned long get_larb_base_addr(int larb_id);*/
+
 extern char *smi_port_name[][21];
 /* for slow motion force 30 fps */
 extern int primary_display_force_set_vsync_fps(unsigned int fps);
