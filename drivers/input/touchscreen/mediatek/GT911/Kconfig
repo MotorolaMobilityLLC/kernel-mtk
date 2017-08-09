@@ -53,6 +53,17 @@ config GTP_CHANGE_X2Y
 	To compile this dirver as a module, choose M here: the
 	module will be called.
 
+config GTP_COMPATIBLE_MODE
+	bool "GT911 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT911 touch panel GTP_COMPATIBLE_MODE.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
 config GTP_WARP_X_ON
 	bool "GT911 for Mediatek package"
 	default n
@@ -174,6 +185,17 @@ config GTP_HEADER_FW_UPDATE
 	To compile this dirver as a module, choose M here: the
 	module will be called.
 
+config GTP_FW_DOWNLOAD
+	bool "GT911 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT911 touch panel GTP_FW_DOWNLOAD.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
 config GTP_CREATE_WR_NODE
 	bool "GT911 for Mediatek package"
 	default n
@@ -190,6 +212,17 @@ config GTP_ESD_PROTECT
 	default n
 	help
 	Say Y here if you have GT911 touch panel GTP_ESD_PROTECT.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
+config GTP_CHARGER_DETECT
+	bool "GT911 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT911 touch panel GTP_CHARGER_DETECT.
 
 	If unsure, say N.
 

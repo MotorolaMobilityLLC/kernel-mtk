@@ -386,13 +386,13 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (7 == cmd_head.wr) {/* disable irq! */
 		disable_irq(touch_irq);
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
 #endif
 		return CMD_HEAD_LENGTH;
 	} else if (9 == cmd_head.wr) {/* enable irq! */
 		enable_irq(touch_irq);
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_ON);
 #endif
 		return CMD_HEAD_LENGTH;

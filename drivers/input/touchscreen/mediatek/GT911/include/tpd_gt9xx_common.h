@@ -63,32 +63,40 @@ Do not config it here
 /*#define GTP_HAVE_TOUCH_KEY    0*/ /*config in defconfig*/
 /*#define GTP_POWER_CTRL_SLEEP  1*/ /*config in defconfig*/       /* turn off power on suspend */
 /*#define GTP_AUTO_UPDATE       1*/ /*config in defconfig*/       /* update FW to TP FLASH */
-#define GTP_CHANGE_X2Y        0				/* set for se1 */
+/*#define GTP_CHANGE_X2Y        0*/ /*config in defconfig*/				/* set for se1 */
 /* auto updated fw by gtp_default_FW in gt9xx_firmware.h, function together with GTP_AUTO_UPDATE */
-#define GTP_HEADER_FW_UPDATE  0
-#define GTP_AUTO_UPDATE_CFG   0       /* auto update config by .cfg file, function together with GTP_AUTO_UPDATE */
+/*#define GTP_HEADER_FW_UPDATE  1*/ /*config in defconfig*/
+/* auto update config by .cfg file, function together with GTP_AUTO_UPDATE */
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GTP_AUTO_UPDATE_CFG   0*/
+/* if gt9xxf, better enable it if hardware platform supported */
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GTP_SUPPORT_I2C_DMA   1*/
+/*#define GTP_COMPATIBLE_MODE   1*/ /*config in defconfig*/      /* compatible with GT9XXF */
 
-#define GTP_SUPPORT_I2C_DMA   0       /* if gt9xxf, better enable it if hardware platform supported */
-#define GTP_COMPATIBLE_MODE   0       /* compatible with GT9XXF */
-
-#define GTP_ESD_PROTECT       0       /* esd protection with a cycle of 2 seconds */
-#define GTP_CREATE_WR_NODE    0
-#define GUP_USE_HEADER_FILE   0
-#define GTP_FW_DOWNLOAD       0       /* update FW to TP SRAM */
+/*#define GTP_ESD_PROTECT       0*/ /*config in defconfig*/        /* esd protection with a cycle of 2 seconds */
+/*#define GTP_CREATE_WR_NODE    1*/ /*config in defconfig*/
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GUP_USE_HEADER_FILE   0*/
+/*#define GTP_FW_DOWNLOAD       0*//*config in defconfig*/       /* update FW to TP SRAM */
 /* #define GTP_CHARGER_DETECT */
 
 #define GTP_CONFIG_MIN_LENGTH       186
 #define GTP_CONFIG_MAX_LENGTH       240
-#define GTP_CHARGER_SWITCH    0       /* charger plugin & plugout detect */
-#define GTP_WITH_PEN          0
-#define GTP_SLIDE_WAKEUP      0
-#define GTP_DBL_CLK_WAKEUP    0       /* double-click wakup, function together with GTP_SLIDE_WAKEUP */
-#define HOTKNOT_BLOCK_RW      0
+/* #define GTP_CHARGER_SWITCH    0*//*config in defconfig*/       /* charger plugin & plugout detect */
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GTP_WITH_PEN          0*/
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GTP_SLIDE_WAKEUP      0*/
+/* double-click wakup, function together with GTP_SLIDE_WAKEUP */
+/*Now GT911 do not use this option.If use please add it to Kconfig and config in defconfig*/
+/*#define GTP_DBL_CLK_WAKEUP    0*/
+/*#define HOTKNOT_BLOCK_RW      0*//*config in defconfig*/
 
-/* #define TPD_PROXIMITY */
-/* #define TPD_HAVE_BUTTON              //report key as coordinate,Vibration feedback *//*config in  dts file */
-/* #define TPD_WARP_X */
-/* #define TPD_WARP_Y */
+/* #define GTP_PROXIMITY *//*config in defconfig*/
+/* #define TPD_HAVE_BUTTON*/    /*report key as coordinate,Vibration feedback *//*config in  dts file */
+/* #define TPD_WARP_X *//*config in defconfig*/
+/* #define TPD_WARP_Y *//*config in defconfig*/
 
 #define GTP_DEBUG_ON          1
 #define GTP_DEBUG_ARRAY_ON    1
@@ -97,7 +105,7 @@ Do not config it here
 #define CFG_GROUP_LEN(p_cfg_grp)  (sizeof(p_cfg_grp) / sizeof(p_cfg_grp[0]))
 #define FLASHLESS_FLASH_WORKROUND  0
 
-#if GTP_COMPATIBLE_MODE
+#ifdef CONFIG_GTP_COMPATIBLE_MODE
 extern void force_reset_guitar(void);
 #endif
 
@@ -116,15 +124,15 @@ extern void force_reset_guitar(void);
 #define VELOCITY_CUSTOM
 #define TPD_VELOCITY_CUSTOM_X 15
 #define TPD_VELOCITY_CUSTOM_Y 15
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 extern s32 init_wr_node(struct i2c_client *);
 extern void uninit_wr_node(void);
 #endif
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 extern bool upmu_get_pchr_chrdet(void);
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 extern void gtp_esd_switch(struct i2c_client *client, s32 on);
 #endif
 
@@ -159,7 +167,7 @@ extern int tpd_v_magnify_y;
 #define SWITCH_ON                   1
 
 /* ******************** For GT9XXF Start ***********************/
-#if GTP_COMPATIBLE_MODE
+#ifdef CONFIG_GTP_COMPATIBLE_MODE
 enum CHIP_TYPE_T {
 	CHIP_TYPE_GT9  = 0,
 	CHIP_TYPE_GT9F = 1,
@@ -255,7 +263,7 @@ enum CHIP_TYPE_T {
 #define GTP_ERROR(fmt, arg...)          pr_err("<<-GTP-ERROR->> "fmt"\n", ##arg)
 #define GTP_DEBUG(fmt, arg...)	do {\
 	if (GTP_DEBUG_ON)\
-		pr_debug("<<-GTP-DEBUG->> [%d]"fmt"\n", __LINE__, ##arg);\
+		pr_warn("<<-GTP-DEBUG->> [%d]"fmt"\n", __LINE__, ##arg);\
 } while (0)
 #define GTP_DEBUG_ARRAY(array, num)	do {\
 	s32 i;\

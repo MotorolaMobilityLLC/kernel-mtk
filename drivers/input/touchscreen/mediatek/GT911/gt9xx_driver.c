@@ -6,7 +6,7 @@
 #include "gt9xx_firmware.h"
 
 #include "mt_boot_common.h"
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
@@ -62,7 +62,7 @@ static int tpd_i2c_remove(struct i2c_client *client);
 static void tpd_on(void);
 static void tpd_off(void);
 
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 #define TPD_CHARGER_CHECK_CIRCLE    50
 static struct delayed_work gtp_charger_check_work;
 static struct workqueue_struct *gtp_charger_check_workqueue;
@@ -70,14 +70,14 @@ static void gtp_charger_check_func(struct work_struct *);
 static u8 gtp_charger_mode;
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 #define TPD_ESD_CHECK_CIRCLE        2000
 static struct delayed_work gtp_esd_check_work;
 static struct workqueue_struct *gtp_esd_check_workqueue;
 static void gtp_esd_check_func(struct work_struct *);
 #endif
 
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 #define TPD_PROXIMITY_VALID_REG                   0x814E
 #define TPD_PROXIMITY_ENABLE_REG                  0x8042
 static u8 tpd_proximity_flag;
@@ -146,7 +146,7 @@ static int of_get_gt9xx_platform_data(struct device *dev)
 #endif
 static u8 config[GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH]
 	= {GTP_REG_CONFIG_DATA >> 8, GTP_REG_CONFIG_DATA & 0xff};
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 static u8 config_charger[GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH]
 	= {GTP_REG_CONFIG_DATA >> 8, GTP_REG_CONFIG_DATA & 0xff};
 #endif
@@ -243,7 +243,7 @@ static int tpd_i2c_detect(struct i2c_client *client, struct i2c_board_info *info
 	return 0;
 }
 
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 static s32 tpd_get_ps_value(void)
 {
 	return tpd_proximity_detect;
@@ -622,7 +622,7 @@ s32 gtp_send_cfg(struct i2c_client *client)
 	s32 retry = 0;
 
 	for (retry = 0; retry < 5; retry++) {
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 		if (gtp_charger_mode == 1) {
 			GTP_DEBUG("Write charger config");
 			ret = gtp_i2c_write(client, config_charger , GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH);
@@ -710,7 +710,7 @@ static s32 gtp_init_panel(struct i2c_client *client)
 	u8 cfg_info_group2[] = CTP_CFG_GROUP2;
 	u8 cfg_info_group3[] = CTP_CFG_GROUP3;
 	u8 *send_cfg_buf[3] = {cfg_info_group1, cfg_info_group2, cfg_info_group3};
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	u8 cfg_info_group1_charger[] = CTP_CFG_GROUP1_CHARGER;
 	u8 cfg_info_group2_charger[] = CTP_CFG_GROUP2_CHARGER;
 	u8 cfg_info_group3_charger[] = CTP_CFG_GROUP3_CHARGER;
@@ -748,7 +748,7 @@ static s32 gtp_init_panel(struct i2c_client *client)
 	GTP_INFO("SENSOR ID:%d", rd_cfg_buf[GTP_ADDR_LENGTH]);
 	memset(&config[GTP_ADDR_LENGTH], 0, GTP_CONFIG_MAX_LENGTH);
 	memcpy(&config[GTP_ADDR_LENGTH], send_cfg_buf[rd_cfg_buf[GTP_ADDR_LENGTH]], cfg_len);
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	memset(&config_charger[GTP_ADDR_LENGTH], 0, GTP_CONFIG_MAX_LENGTH);
 	memcpy(&config_charger[GTP_ADDR_LENGTH], send_cfg_buf_charger[rd_cfg_buf[GTP_ADDR_LENGTH]], cfg_len);
 #endif
@@ -772,7 +772,7 @@ static s32 gtp_init_panel(struct i2c_client *client)
 		check_sum += config[i];
 
 	config[cfg_len] = (~check_sum) + 1;
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	check_sum = 0;
 
 	for (i = GTP_ADDR_LENGTH; i < cfg_len; i++)
@@ -902,7 +902,7 @@ reset_proc:
 		}
 	}
 
-#if GTP_FW_DOWNLOAD
+#ifdef CONFIG_GTP_FW_DOWNLOAD
 	ret = gup_init_fw_proc(client);
 
 	if (ret < 0)
@@ -1000,7 +1000,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 #if 0 /*#ifdef CONFIG_GTP_HAVE_TOUCH_KEY */
 	s32 idx = 0;
 #endif
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 	struct hwmsen_object obj_ps;
 #endif
 
@@ -1076,7 +1076,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		goto out;
 	}
 
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 	init_wr_node(client);
 #endif
 
@@ -1100,7 +1100,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	/*enable_irq(touch_irq);*/
 
 
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 	/* obj_ps.self = cm3623_obj; */
 	obj_ps.polling = 0;         /* 0--interrupt mode;1--polling mode; */
 	obj_ps.sensor_operate = tpd_ps_operate;
@@ -1111,13 +1111,13 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	INIT_DELAYED_WORK(&gtp_esd_check_work, gtp_esd_check_func);
 	gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
 	queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
 #endif
 
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	INIT_DELAYED_WORK(&gtp_charger_check_work, gtp_charger_check_func);
 	gtp_charger_check_workqueue = create_workqueue("gtp_charger_check");
 	queue_delayed_work(gtp_charger_check_workqueue, &gtp_charger_check_work, TPD_CHARGER_CHECK_CIRCLE);
@@ -1141,22 +1141,22 @@ static irqreturn_t tpd_interrupt_handler(int irq, void *dev_id)
 }
 static int tpd_i2c_remove(struct i2c_client *client)
 {
-#if GTP_CREATE_WR_NODE
+#ifdef CONFIG_GTP_CREATE_WR_NODE
 	uninit_wr_node();
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	destroy_workqueue(gtp_esd_check_workqueue);
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	destroy_workqueue(gtp_charger_check_workqueue);
 #endif
 	gpio_free(tpd_rst_gpio_number);
 	gpio_free(tpd_int_gpio_number);
 	return 0;
 }
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 static void gtp_charger_check_func(struct work_struct *work)
 {
 	int cur_charger_state;
@@ -1178,7 +1178,7 @@ static void gtp_charger_check_func(struct work_struct *work)
 }
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 static void force_reset_guitar(void)
 {
 	s32 i;
@@ -1315,12 +1315,12 @@ static int touch_event_handler(void *unused)
 	s32 id = 0;
 	s32 i  = 0;
 	s32 ret = -1;
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 	s32 err = 0;
 	hwm_sensor_data sensor_data;
 	u8 proximity_status;
 #endif
-#if GTP_CHANGE_X2Y
+#ifdef CONFIG_GTP_CHANGE_X2Y
 	s32 temp;
 #endif
 
@@ -1363,7 +1363,7 @@ static int touch_event_handler(void *unused)
 			continue;
 		}
 
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 
 		if (tpd_proximity_flag == 1) {
 			proximity_status = point_data[GTP_ADDR_LENGTH];
@@ -1451,7 +1451,7 @@ static int touch_event_handler(void *unused)
 
 				GTP_DEBUG("Touch point after calibration: [X:%04d, Y:%04d]", input_x, input_y);
 
-#if GTP_CHANGE_X2Y
+#ifdef CONFIG_GTP_CHANGE_X2Y
 				temp  = input_x;
 				input_x = input_y;
 				input_y = temp;
@@ -1495,7 +1495,7 @@ static int tpd_local_init(void)
 	int retval;
 
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
-	retval = regulator_set_voltage(tpd->reg, 3300000, 3300000);
+	retval = regulator_set_voltage(tpd->reg, 2800000, 3300000);
 	if (retval != 0) {
 		TPD_DMESG("Failed to set reg-vgp6 voltage: %d\n", retval);
 		return -1;
@@ -1668,14 +1668,14 @@ static void tpd_suspend(struct device *h)
 	if (ret < 0)
 		GTP_ERROR("GTP early suspend failed.");
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	cancel_delayed_work_sync(&gtp_esd_check_work);
 #endif
 
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	cancel_delayed_work_sync(&gtp_charger_check_work);
 #endif
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 
 	if (tpd_proximity_flag == 1)
 		return;
@@ -1702,16 +1702,16 @@ static void tpd_resume(struct device *h)
 
 	mutex_unlock(&i2c_access);
 
-#ifdef TPD_PROXIMITY
+#ifdef GTP_PROXIMITY
 	if (tpd_proximity_flag == 1)
 		return;
 #endif
 
-#if GTP_ESD_PROTECT
+#ifdef CONFIG_GTP_ESD_PROTECT
 	queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
 #endif
 
-#ifdef GTP_CHARGER_DETECT
+#ifdef CONFIG_GTP_CHARGER_DETECT
 	queue_delayed_work(gtp_charger_check_workqueue, &gtp_charger_check_work, TPD_CHARGER_CHECK_CIRCLE);
 #endif
 
