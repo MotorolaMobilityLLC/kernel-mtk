@@ -148,6 +148,9 @@ static struct eint_func EINT_FUNC;
 static unsigned int MAX_HW_DEBOUNCE_CNT;
 static unsigned int EINT_MAX_CHANNEL;
 static unsigned int MAX_DEINT_CNT;
+static unsigned int EINT_BI_HW_DB_CNT;
+static unsigned int EINT_BI_HW_DB_START;
+static unsigned int EINT_BI_HW_DB_OFFSET;
 
 static void __iomem *EINT_BASE;
 
@@ -178,6 +181,18 @@ static unsigned long cur_debug_eint;
 #ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 static unsigned long cur_debug_deint;
 #endif
+
+static int is_bulitin_eint_hw_deb(u32 eint_num)
+{
+
+	if (eint_num >= EINT_BI_HW_DB_START &&
+	    eint_num <
+	    EINT_BI_HW_DB_START + EINT_BI_HW_DB_CNT)
+		return 1;
+
+	return 0;
+}
+
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -898,7 +913,7 @@ static unsigned int mt_can_en_debounce(unsigned int eint_num)
  */
 void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 {
-	unsigned int bit, clr_bit, rst, unmask = 0, eint_num;
+	unsigned int bit, clr_bit, rst, unmask = 0, eint_num, offset;
 	unsigned long base, clr_base;
 	unsigned int i;
 
@@ -915,8 +930,15 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 		return;
 	}
 
-	base = (eint_num / 4) * 4 + EINT_DBNC_SET_BASE;
-	clr_base = (eint_num / 4) * 4 + EINT_DBNC_CLR_BASE;
+	if (is_bulitin_eint_hw_deb(eint_num))
+		offset = ((eint_num - EINT_BI_HW_DB_START) / 4)
+			* 4 + EINT_BI_HW_DB_OFFSET;
+	else
+		offset = (eint_num / 4) * 4;
+
+	base     = EINT_DBNC_SET_BASE + offset;
+	clr_base = EINT_DBNC_CLR_BASE + offset;
+
 	EINT_FUNC.deb_time[eint_num] = us;
 
 	/*
@@ -930,12 +952,6 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 		return;
 	}
 
-	for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
-		dbnc = eint_debtime_setting.setting[i].setting;
-		if (us <= eint_debtime_setting.setting[i].deb_time)
-			break;
-		}
-
 	/* setp 1: mask the EINT */
 	if (!mt_eint_get_mask(eint_num)) {
 		mt_eint_mask(eint_num);
@@ -945,22 +961,47 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 	 * step 2: Check hw debouce number to decide
 	 * which type should be used
 	 */
-	if (eint_num >= MAX_HW_DEBOUNCE_CNT) {
+	if (eint_num >= MAX_HW_DEBOUNCE_CNT &&
+	    !is_bulitin_eint_hw_deb(eint_num)) {
 		pr_debug("eint %d not support hw deboucen\n", eint_num);
 		pr_debug("Use sw debounce\n");
 		mt_eint_en_sw_debounce(eint_num);
 	} else {
+		u32 shift_bit;
+
+		if (is_bulitin_eint_hw_deb(eint_num))
+			shift_bit =
+				((eint_num - EINT_BI_HW_DB_START) % 4) * 8;
+		else
+			shift_bit = (eint_num % 4) * 8;
+
+		for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
+			dbnc = eint_debtime_setting.setting[i].setting;
+			if (us <= eint_debtime_setting.setting[i].deb_time)
+				break;
+		}
+
+		/* correct saved debounce time info */
+		if (i == eint_debtime_setting.deb_entry)
+			i--;
+
+		EINT_FUNC.deb_time[eint_num] =
+			eint_debtime_setting.setting[i].deb_time;
+
+		pr_debug("EINT_FUNC.deb_time[eint_num] = %d\n",
+			 EINT_FUNC.deb_time[eint_num]);
+
 		/* step 2.1: set hw debounce flag */
 		EINT_FUNC.is_deb_en[eint_num] = 1;
 
 		/* step 2.2: disable hw debounce */
-		clr_bit = 0xFF << ((eint_num % 4) * 8);
+		clr_bit = 0xFF << shift_bit;
 		mt_reg_sync_writel(clr_bit, clr_base);
 
 		/* step 2.3: set new debounce value */
 		bit = ((dbnc << EINT_DBNC_SET_DBNC_BITS) |
 		       (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS))
-			<< ((eint_num % 4) * 8);
+			<< shift_bit;
 		mt_reg_sync_writel(bit, base);
 
 		/* step 2.4: Delay a while (more than 2T) to wait for
@@ -970,7 +1011,7 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 		/* step 2.5: Reset hw debounce counter to avoid
 		   unexpected interrupt */
 		rst = (EINT_DBNC_RST_BIT << EINT_DBNC_SET_RST_BITS)
-			<< ((eint_num % 4) * 8);
+			<< shift_bit;
 		mt_reg_sync_writel(rst, base);
 
 		/* step 2.6: Delay a while (more than 2T) to wait for
@@ -1910,6 +1951,7 @@ static int __init mt_eint_init(void)
 {
 	unsigned int i, irq;
 	int irq_base;
+	u32 builtin_eint_dw_deb_array[3];
 	struct irq_domain *domain;
 	struct device_node *node;
 	const __be32 *spec;
@@ -2007,6 +2049,23 @@ static int __init mt_eint_init(void)
 
 		if (of_property_read_u32_array(node, "mediatek,deint_possible_irq", deint_possible_irq, MAX_DEINT_CNT))
 			pr_warn("[EINT] deint function would fail...\n");
+	}
+
+	/* deint hw deboucen*/
+	if (of_property_read_u32_array(
+		    node,
+		    "mediatek,builtin_eint_hw_deb",
+		    &builtin_eint_dw_deb_array[0],
+		    ARRAY_SIZE(builtin_eint_dw_deb_array)))
+		pr_warn("[EIC] no built in eint hw deb property\n");
+	else {
+		EINT_BI_HW_DB_START  = builtin_eint_dw_deb_array[0];
+		EINT_BI_HW_DB_CNT    = builtin_eint_dw_deb_array[1];
+		EINT_BI_HW_DB_OFFSET = builtin_eint_dw_deb_array[2];
+		pr_warn("built in eint hw debounce: start=%d, count=%d, offset=0x%x\n",
+			 EINT_BI_HW_DB_START,
+			 EINT_BI_HW_DB_CNT,
+			 EINT_BI_HW_DB_OFFSET);
 	}
 
 	if (of_property_read_u32(node, "mediatek,builtin_entry",
@@ -2168,34 +2227,52 @@ static int __init mt_eint_init(void)
 	return 0;
 }
 
-static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num)
+static unsigned int mt_eint_get_debounce_cnt(unsigned int eint_num)
 {
 	unsigned long base;
 	unsigned int i;
 	unsigned int dbnc = 0;
 	unsigned int deb = 0;
 	unsigned int dben = 0;
+	unsigned int shift_bit;
+	unsigned int offset;
 
-	base = (cur_eint_num / 4) * 4 + EINT_DBNC_BASE;
+	if (is_bulitin_eint_hw_deb(eint_num)) {
+		offset = ((eint_num - EINT_BI_HW_DB_START) / 4)
+			* 4 + EINT_BI_HW_DB_OFFSET;
+		shift_bit = ((eint_num - EINT_BI_HW_DB_START) % 4) * 8;
+	} else {
+		offset = (eint_num / 4) * 4;
+		shift_bit = (eint_num % 4) * 8;
+	}
 
-	if (cur_eint_num >= EINT_MAX_CHANNEL)
+	base = EINT_DBNC_BASE + offset;
+
+	if (eint_num >= EINT_MAX_CHANNEL)
 		return 0;
 
-	if (cur_eint_num >= MAX_HW_DEBOUNCE_CNT)
-		deb = EINT_FUNC.deb_time[cur_eint_num];
-	else {
+	else if (eint_num < MAX_HW_DEBOUNCE_CNT ||
+		 is_bulitin_eint_hw_deb(eint_num)) {
+
 		dbnc = readl(IOMEM(base));
-		dben = (dbnc >> ((cur_eint_num % 4) * 8) & EINT_DBNC_EN_BIT);
-		dbnc = ((dbnc >> EINT_DBNC_SET_DBNC_BITS) >> ((cur_eint_num % 4) * 8) & EINT_DBNC);
+		dben = (dbnc >> shift_bit) & EINT_DBNC_EN_BIT;
+
+		pr_info("[EIC] HW debounce\n");
+
+		if (dben == 0) {
+			pr_warn("[EIC] debounce disable, return directly");
+			return 0;
+		}
+
+		dbnc = ((dbnc >> EINT_DBNC_SET_DBNC_BITS) >> shift_bit) & EINT_DBNC;
+
 		for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
-			if (dben == 0) {
-				deb = 0;
-				pr_warn("[EIC] debounce disable, return directly");
-				break;
-			}
 			if (dbnc == eint_debtime_setting.setting[i].setting)
 				deb = eint_debtime_setting.setting[i].deb_time;
-			}
+		}
+	} else {
+		pr_info("[EIC] SW debounce\n");
+		deb = EINT_FUNC.deb_time[eint_num];
 	}
 	return deb;
 }
@@ -2247,8 +2324,6 @@ void mt_eint_print_status(void)
 	}
 	pr_notice("\n");
 }
-
-
 
 EXPORT_SYMBOL(mt_eint_print_status);
 
