@@ -304,7 +304,6 @@ enum dyna_load_pcm_index {
 #endif
 	DYNA_LOAD_PCM_DEEPIDLE,
 	DYNA_LOAD_PCM_DEEPIDLE_BY_MP1,
-	DYNA_LOAD_PCM_MCDI,
 	DYNA_LOAD_PCM_MAX,
 };
 
