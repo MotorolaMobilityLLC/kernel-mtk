@@ -1,1 +1,1 @@
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-y := sysenv.o

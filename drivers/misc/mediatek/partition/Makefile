@@ -1,3 +1,1 @@
-
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-
+obj-$(CONFIG_MMC_MTK) := partition.o
