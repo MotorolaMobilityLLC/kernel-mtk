@@ -309,10 +309,15 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 			break;
 		case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
 			(bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
+			ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
 			break;
 		case GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT:
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_LOW_POWER_MODE) : (g_ui32EventStatus &= (~GED_EVENT_LOW_POWER_MODE));
 			ged_dvfs_probe_signal(GED_LOW_POWER_MODE_SIGNAL_EVENT);
+			break;
+		case GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT:
+			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_MHL4K_VID) : (g_ui32EventStatus &= (~GED_EVENT_MHL4K_VID));
+			ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
 			break;
 		default:
 			GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
@@ -864,8 +869,8 @@ void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData)
 
 void ged_dvfs_probe_signal(int signo)
 {
-	static int cache_pid=GED_NO_UM_SERVICE;
-	static struct task_struct *t=NULL;
+	int cache_pid=GED_NO_UM_SERVICE;
+	struct task_struct *t=NULL;
 	struct siginfo info;
 
 
