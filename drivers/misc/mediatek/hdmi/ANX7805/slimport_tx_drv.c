@@ -3986,7 +3986,7 @@ BYTE SP_CTRL_Check_Cable_Status(void)
 
 }
 
-
+/*
 static void sp_tx_send_message(enum SP_TX_SEND_MSG message)
 {
 	BYTE c;
@@ -4012,7 +4012,7 @@ static void sp_tx_send_message(enum SP_TX_SEND_MSG message)
 	}
 
 }
-
+*/
 static BYTE sp_tx_get_cable_type(void)
 {
 	BYTE SINK_OUI[8] = { 0 };
@@ -4109,8 +4109,10 @@ BYTE sp_tx_get_dp_connection(void)
 	SP_TX_AUX_DPCDRead_Bytes(0x00, 0x02, DPCD_SINK_COUNT, 1, &c);
 	if (c & 0x1f) {
 		SP_TX_AUX_DPCDRead_Bytes(0x00, 0x00, 0x04, 1, &c);
-		if (c & 0x20)
-			SP_TX_AUX_DPCDWrite_Bytes(0x00, 0x06, 0x00, 0x20);
+		if (c & 0x20) {
+			c = 0x20;
+			SP_TX_AUX_DPCDWrite_Bytes(0x00, 0x06, 0x00, 1, &c);
+		}
 		return 1;
 	} else
 		return 0;
@@ -4407,7 +4409,7 @@ void sp_tx_phy_auto_test(void)
 {
 
 	BYTE bSwing,bEmp;//for automated phy test
-	BYTE c1,c;
+	BYTE c1;
 	BYTE bytebuf[10];
 
 	SP_TX_AUX_DPCDRead_Bytes(0x0, 0x02, 0x19, 1, bytebuf);
@@ -4573,7 +4575,7 @@ void SP_CTRL_IRQ_ISP(void)
 
 	SP_TX_AUX_DPCDRead_Bytes(0x00,0x02,DPCD_DEVICE_SERVICE_IRQ_VECTOR,4,ByteBuf);
 	IRQ_Vector = ByteBuf[0];
-	debug_printf("IRQ_VECTOR = %.2x\n", (WORD)IRQ_Vector);
+	debug_printf("IRQ_VECTOR = %.2x\n", (unsigned int)IRQ_Vector);
 	Int_vector3 = ByteBuf[3];
 	SP_TX_AUX_DPCDWrite_Bytes(0x00, 0x02, DPCD_DEVICE_SERVICE_IRQ_VECTOR,1, ByteBuf);//write clear IRQ
 
@@ -4820,9 +4822,9 @@ void SP_CTRL_IRQ_ISP(void)
 		if(test_vector & 0x02)//test pattern
 		        {
 		            SP_TX_AUX_DPCDRead_Bytes(0x00,0x02,0x60, 1,bytebuf);
-		            //debug_printf("respone = %.2x\n", (WORD)c);
+		            //debug_printf("respone = %.2x\n", (unsigned int)c);
 		            bytebuf[0]=bytebuf[0] | 0x01;
-		            SP_TX_AUX_DPCDWrite_Bytes(0x00,0x02,0x60, bytebuf);
+		            SP_TX_AUX_DPCDWrite_Bytes(0x00,0x02,0x60,1, bytebuf);
 		            SP_TX_AUX_DPCDRead_Bytes(0x00,0x02,0x60, 1,bytebuf);
 		 
 
@@ -4831,7 +4833,7 @@ void SP_CTRL_IRQ_ISP(void)
 		            {
 		                cRetryCount++;
 				  bytebuf[0]=bytebuf[0] | 0x01;
-		            	  SP_TX_AUX_DPCDWrite_Bytes(0x00,0x02,0x60, bytebuf);
+		            	  SP_TX_AUX_DPCDWrite_Bytes(0x00,0x02,0x60,1, bytebuf);
 		            	  SP_TX_AUX_DPCDRead_Bytes(0x00,0x02,0x60, 1,bytebuf);
 		                if(cRetryCount>10)
 		                {
@@ -4840,7 +4842,7 @@ void SP_CTRL_IRQ_ISP(void)
 		                }
 		            }
 
-		            debug_printf("respone = %.2x\n", (WORD)c);
+		            debug_printf("respone = %.2x\n", (unsigned int)c);
 		        }
 
   
@@ -5253,8 +5255,8 @@ void sp_ctrl_hpd_int_handler(BYTE hpd_source)
             case 2:
                 delay_ms(2);
 
-                sp_tx_get_int_status(SP_INT_STATUS,&c);
-                //debug_printf("2c = %x\n",(WORD)c);
+               	SP_TX_Get_Int_status(SP_INT_STATUS,&c);
+                //debug_printf("2c = %x\n",(unsigned int)c);
 
                 if(c & SP_TX_INT_STATUS1_HPD)//HPD detected
                      return;
@@ -5299,7 +5301,7 @@ void SP_CTRL_Int_Process(void)
     	{
 		if (is_cable_detected() == 1)
 		{
-       		/* debug_printf("detected cable: %.2x \n",(WORD)is_cable_detected()); */
+       		/* debug_printf("detected cable: %.2x \n",(unsigned int)is_cable_detected()); */
        		if (sp_tx_pd_mode)
        		{
        			system_power_ctrl(1);
