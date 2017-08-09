@@ -751,8 +751,8 @@
 			#clock-cells = <1>;
 		};
 
-		dramc0@10004000 {
-			compatible = "mediatek,dramc0";
+		dramc@10004000 {
+			compatible = "mediatek,dramc";
 			reg = <0x10004000 0x1000>;
 			interrupts = <GIC_SPI 149 IRQ_TYPE_EDGE_FALLING>;
 		};
