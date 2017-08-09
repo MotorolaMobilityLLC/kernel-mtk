@@ -158,7 +158,7 @@ const unsigned int AudioDramPlaybackSize = 1024 * 16;	/* use 16K */
 const size_t AudioSramCaptureSize = 1024 * 16;
 const size_t AudioDramCaptureSize = 1024 * 48;
 const size_t AudioInterruptLimiter = 100;
-
+static int irqcount;
 
 static bool mExternalModemStatus;
 
@@ -198,6 +198,26 @@ static bool CheckSize(uint32 size)
 		return true;
 	}
 	return false;
+}
+
+static void AfeGlobalVarInit(void)
+{
+	AudioDaiBtStatus = false;
+	AudioAdcI2SStatus = false;
+	Audio2ndAdcI2SStatus = false;
+	AudioMrgStatus = false;
+	mAudioInit = false;
+	mVOWStatus = false;
+	AudioAdcI2S = NULL;
+	m2ndI2S = NULL;		/* input */
+	m2ndI2Sout = NULL;	/* output */
+	mFMEnable = false;
+	mOffloadEnable = false;
+	mHDMIOutput = NULL;
+	mAudioMrg = NULL;
+	AudioDaiBt = NULL;
+	mExternalModemStatus = false;
+	irqcount = 0;
 }
 
 void AfeControlMutexLock(void)
@@ -412,6 +432,7 @@ bool InitAfeControl(void)
 	/* Auddrv_Read_Efuse_HPOffset(); //Todo */
 
 	AfeControlMutexLock();
+	AfeGlobalVarInit();
 	/* allocate memory for pointers */
 	if (mAudioInit == false) {
 		mAudioInit = true;
@@ -436,10 +457,6 @@ bool InitAfeControl(void)
 			Audio_dma_buf[i] = kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
 
 	}
-	AudioDaiBtStatus = false;
-	AudioAdcI2SStatus = false;
-	Audio2ndAdcI2SStatus = false;
-	AudioMrgStatus = false;
 	memset((void *)&mAudioSramManager, 0, sizeof(AudioSramManager));
 
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100);
@@ -498,7 +515,6 @@ bool Register_Aud_Irq(void *dev, uint32 afe_irq_number)
 	return ret;
 }
 
-static int irqcount;
 /*****************************************************************************
  * FUNCTION
  *  AudDrv_IRQ_handler / AudDrv_magic_tasklet
@@ -764,8 +780,10 @@ void SetVOWStatus(bool bEnable)
  *****************************************************************************
  */
 #ifdef CONFIG_OF
+#ifdef CONFIG_MTK_LEGACY
 static unsigned int pin_audclk, pin_audmiso, pin_audmosi;
 static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso;
+#endif
 #endif
 
 void EnableAfe(bool bEnable)
@@ -774,7 +792,7 @@ void EnableAfe(bool bEnable)
 	bool MemEnable = false;
 
 #ifdef CONFIG_OF
-
+#ifdef CONFIG_MTK_LEGACY
 	int ret;
 
 	ret = GetGPIO_Info(1, &pin_audclk, &pin_mode_audclk);
@@ -795,6 +813,7 @@ void EnableAfe(bool bEnable)
 		return;
 	}
 #endif
+#endif
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	MemEnable = CheckMemIfEnable();
@@ -802,11 +821,15 @@ void EnableAfe(bool bEnable)
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_OF
+#ifdef CONFIG_MTK_LEGACY
 		mt_set_gpio_mode(pin_audclk, GPIO_MODE_00);	/* GPIO24, AUD_CLK_MOSI. */
 		if (mVOWStatus != true) {	/* this GPIO only use in record and VOW */
 			mt_set_gpio_mode(pin_audmiso, GPIO_MODE_00);	/* GPIO25, AUD_DAT_MISO */
 		}
 		mt_set_gpio_mode(pin_audmosi, GPIO_MODE_00);	/* GPIO26, AUD_DAT_MOSI */
+#else
+		AudDrv_GPIO_PMIC_Select(bEnable);
+#endif
 #else
 		mt_set_gpio_mode(GPIO_AUD_CLK_MOSI_PIN, GPIO_MODE_00);	/* GPIO24, AUD_CLK_MOSI. */
 		if (mVOWStatus != true) {	/* this GPIO only use in record and VOW */
@@ -819,11 +842,15 @@ void EnableAfe(bool bEnable)
 #ifndef CONFIG_MTK_FPGA		/* FPGA_EARLY_PORTING */
 
 #ifdef CONFIG_OF
+#ifdef CONFIG_MTK_LEGACY
 		mt_set_gpio_mode(pin_audclk, GPIO_MODE_01);	/* GPIO24, AUD_CLK_MOSI */
 		if (mVOWStatus != true) {	/* this GPIO only use in record and VOW */
 			mt_set_gpio_mode(pin_audmiso, GPIO_MODE_01);	/* GPIO25, AUD_DAT_MISO */
 		}
 		mt_set_gpio_mode(pin_audmosi, GPIO_MODE_01);	/* GPIO26, AUD_DAT_MOSI */
+#else
+		AudDrv_GPIO_PMIC_Select(bEnable);
+#endif
 #else
 		mt_set_gpio_mode(GPIO_AUD_CLK_MOSI_PIN, GPIO_MODE_01);	/* GPIO24, AUD_CLK_MOSI */
 		if (mVOWStatus != true) {	/* this GPIO only use in record and VOW */

@@ -3,9 +3,10 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
 EXTRA_CFLAGS := -I$(src)/../common
-obj-$(CONFIG_MT_SND_SOC_6580) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o
+obj-$(CONFIG_MT_SND_SOC_6580) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o
 obj-$(CONFIG_MT_SND_SOC_6580) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o
 obj-$(CONFIG_MT_SND_SOC_6580) += mt_soc_pcm_capture.o mt_soc_pcm_dl1.o mt_soc_pcm_dummy.o mt_soc_pcm_routing.o mt_soc_pcm_capture2.o
 obj-$(CONFIG_MT_SND_SOC_6580) += mt_soc_pcm_voice_md1.o mt_soc_pcm_voice_md2.o mt_soc_pcm_voice_md1_bt.o mt_soc_pcm_voice_md2_bt.o

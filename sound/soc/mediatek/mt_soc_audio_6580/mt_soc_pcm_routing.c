@@ -425,6 +425,7 @@ void Auddrv_I2S1GpioSet(void)
 #ifdef CONFIG_MTK_EXT_DAC
 	/* I2S1 */
 #ifdef CONFIG_OF
+#if defined(CONFIG_MTK_LEGACY)
 	int ret;
 
 	ret = GetGPIO_Info(6, &pin_i2s1clk, &pin_mode_i2s1clk);
@@ -465,6 +466,9 @@ void Auddrv_I2S1GpioSet(void)
 	mt_set_gpio_mode(pin_i2s1ws, GPIO_MODE_01);
 	mt_set_gpio_out(pin_i2s1ws, GPIO_OUT_ONE);
 #else
+	AudDrv_GPIO_I2S_Select(true);
+#endif
+#else
 	mt_set_gpio_mode(GPIO_I2S1_CK_PIN, GPIO_MODE_00);
 	mt_set_gpio_mode(GPIO_I2S1_DAT_PIN, GPIO_MODE_00);
 	mt_set_gpio_mode(GPIO_I2S1_MCLK_PIN, GPIO_MODE_00);
@@ -486,6 +490,7 @@ void Auddrv_I2S1GpioReset(void)
 {
 #ifdef CONFIG_MTK_EXT_DAC
 #ifdef CONFIG_OF
+#if defined(CONFIG_MTK_LEGACY)
 	int ret;
 
 	ret = GetGPIO_Info(6, &pin_i2s1clk, &pin_mode_i2s1clk);
@@ -517,6 +522,9 @@ void Auddrv_I2S1GpioReset(void)
 	mt_set_gpio_mode(pin_i2s1mclk, GPIO_MODE_02);
 	mt_set_gpio_mode(pin_i2s1ws, GPIO_MODE_02);
 	usleep_range(1*1000, 3*1000);
+#else
+	AudDrv_GPIO_I2S_Select(false);
+#endif
 #else
 	mt_set_gpio_mode(GPIO_I2S1_CK_PIN, GPIO_MODE_02);
 	mt_set_gpio_mode(GPIO_I2S1_DAT_PIN, GPIO_MODE_02);

@@ -54,6 +54,7 @@
 #include "mt_soc_afe_control.h"
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
+#include "AudDrv_Gpio.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -105,6 +106,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
+#ifdef CONFIG_MTK_LEGACY
 static unsigned int pin_extspkamp, pin_vowclk, pin_audclk, pin_audmiso,
 	pin_audmosi, pin_i2s1clk, pin_i2s1dat, pin_i2s1mclk, pin_i2s1ws;
 static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso,
@@ -112,6 +114,7 @@ static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso,
 	pin_mode_i2s1mclk, pin_mode_i2s1ws;
 static unsigned int if_config1, if_config2, if_config3, if_config4, if_config5,
 	if_config6, if_config7, if_config8, if_config9;
+#endif
 #endif
 
 static AFE_MEM_CONTROL_T *pMemControl;
@@ -658,54 +661,6 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 	.probe = mtk_asoc_dl1_probe,
 };
 
-static int mtk_soc_dl1_probe(struct platform_device *pdev)
-{
-	PRINTK_AUDDRV("%s\n", __func__);
-
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
-	if (!pdev->dev.dma_mask)
-		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-
-	if (pdev->dev.of_node)
-		dev_set_name(&pdev->dev, "%s", MT_SOC_DL1_PCM);
-
-	PRINTK_AUDDRV("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	InitAfeControl();
-#ifndef CONFIG_OF
-	ret = Register_Aud_Irq(&pdev->dev, MT6580_AFE_MCU_IRQ_LINE);
-#endif
-
-	mDev = &pdev->dev;
-
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
-}
-
-static int mtk_asoc_pcm_dl1_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUDDRV("%s\n", __func__);
-	return ret;
-}
-
-
-static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
-{
-	PRINTK_AUDDRV("mtk_asoc_dl1_probe\n");
-	/* allocate dram */
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
-				   Dl1_MAX_BUFFER_SIZE);
-	Dl1_Playback_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
-	return 0;
-}
-
-static int mtk_afe_remove(struct platform_device *pdev)
-{
-	PRINTK_AUDDRV("%s\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
-	return 0;
-}
-
 #ifdef CONFIG_OF
 /* extern void *AFE_BASE_ADDRESS; */
 u32 afe_irq_number = 0;
@@ -716,37 +671,60 @@ static const struct of_device_id mt_soc_pcm_dl1_of_ids[] = {
 	{}
 };
 
-static int Auddrv_Reg_map_new(void)
+static int Auddrv_Reg_map_new(void *dev)
 {
-	struct device_node *node = NULL;
+	struct device *pdev = dev;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt_soc_pcm_dl1");
-	if (node) {
-		/* Setup IO addresses */
-		AFE_BASE_ADDRESS = of_iomap(node, 0);
-		pr_warn("[mt_soc_pcm_dl1] AFE_BASE_ADDRESS=0x%p\n", AFE_BASE_ADDRESS);
-	} else {
-		pr_err("[mt_soc_pcm_dl1] node NULL, can't iomap AFE_BASE!!!\n");
+	if (!pdev->of_node) {
+		pr_err("%s invalid of_node\n", __func__);
+		return -ENODEV;
 	}
-	of_property_read_u32(node, "reg", &AFE_BASE_PHY);
-	pr_warn("[mt_soc_pcm_dl1] AFE_BASE_PHY=0x%x\n", AFE_BASE_PHY);
 
 	/*get afe irq num */
-	afe_irq_number = irq_of_parse_and_map(node, 0);
-	pr_warn("[mt_soc_pcm_dl1] afe_irq_number=0x%x\n", afe_irq_number);
+	afe_irq_number = irq_of_parse_and_map(pdev->of_node, 0);
+
+	pr_warn("[ge_mt_soc_pcm_dl1] afe_irq_number=%d\n", afe_irq_number);
+
 	if (!afe_irq_number) {
-		pr_err("[mt_soc_pcm_dl1] get afe_irq_number failed!!!\n");
-		return -1;
+		pr_err("[ge_mt_soc_pcm_dl1] get afe_irq_number failed!!!\n");
+		return -ENODEV;
+	}
+
+	if (pdev->of_node) {
+		/* Setup IO addresses */
+		AFE_BASE_ADDRESS = of_iomap(pdev->of_node, 0);
+		pr_warn("[ge_mt_soc_pcm_dl1] AFE_BASE_ADDRESS=0x%p\n", AFE_BASE_ADDRESS);
+	} else {
+		pr_err("[mt_soc_pcm_dl1] node NULL, can't iomap AFE_BASE!!!\n");
+		BUG();
+		return -ENODEV;
+	}
+
+	if (pdev->of_node) {
+		/* Setup IO addresses */
+		of_property_read_u32(pdev->of_node, "reg", &AFE_BASE_PHY);
+		pr_warn("[ge_mt_soc_pcm_dl1] AFE_BASE_PHY=0x%x\n", AFE_BASE_PHY);
+	} else {
+		pr_err("[mt_soc_pcm_dl1] node NULL, can't iomap AFE_BASE_PHY!!!\n");
+		BUG();
+		return -ENODEV;
 	}
 	return 0;
 }
 
-static int Auddrv_OF_ParseGPIO(void)
+#ifdef CONFIG_MTK_LEGACY
+static int Auddrv_OF_ParseGPIO(void *dev)
 {
-	struct device_node *node = NULL;
+	/* struct device_node *node = NULL; */
+	struct device *pdev = dev;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt_soc_pcm_dl1");
-	if (node) {
+	if (!pdev->of_node) {
+		pr_err("%s invalid of_node\n", __func__);
+		return -ENODEV;
+	}
+
+	/* node = of_find_compatible_node(NULL, NULL, "mediatek,mt-soc-dl1-pcm"); */
+	if (pdev->of_node) {
 		if_config1 = 1;
 		if_config2 = 1;
 		if_config3 = 1;
@@ -757,83 +735,83 @@ static int Auddrv_OF_ParseGPIO(void)
 		if_config8 = 1;
 		if_config9 = 1;
 
-		if (of_property_read_u32_index(node, "audclk-gpio", 0, &pin_audclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "audclk-gpio", 0, &pin_audclk)) {
 			if_config1 = 0;
 			pr_err("audclk-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "audclk-gpio", 1, &pin_mode_audclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "audclk-gpio", 1, &pin_mode_audclk)) {
 			if_config1 = 0;
 			pr_err("audclk-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "audmiso-gpio", 0, &pin_audmiso)) {
+		if (of_property_read_u32_index(pdev->of_node, "audmiso-gpio", 0, &pin_audmiso)) {
 			if_config2 = 0;
 			pr_err("audmiso-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "audmiso-gpio", 1, &pin_mode_audmiso)) {
+		if (of_property_read_u32_index(pdev->of_node, "audmiso-gpio", 1, &pin_mode_audmiso)) {
 			if_config2 = 0;
 			pr_err("audmiso-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "audmosi-gpio", 0, &pin_audmosi)) {
+		if (of_property_read_u32_index(pdev->of_node, "audmosi-gpio", 0, &pin_audmosi)) {
 			if_config3 = 0;
 			pr_err("audmosi-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "audmosi-gpio", 1, &pin_mode_audmosi)) {
+		if (of_property_read_u32_index(pdev->of_node, "audmosi-gpio", 1, &pin_mode_audmosi)) {
 			if_config3 = 0;
 			pr_err("audmosi-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "vowclk-gpio", 0, &pin_vowclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "vowclk-gpio", 0, &pin_vowclk)) {
 			if_config4 = 0;
 			pr_err("vowclk-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "vowclk-gpio", 1, &pin_mode_vowclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "vowclk-gpio", 1, &pin_mode_vowclk)) {
 			if_config4 = 0;
 			pr_err("vowclk-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "extspkamp-gpio", 0, &pin_extspkamp)) {
+		if (of_property_read_u32_index(pdev->of_node, "extspkamp-gpio", 0, &pin_extspkamp)) {
 			if_config5 = 0;
 			pr_err("extspkamp-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "extspkamp-gpio", 1, &pin_mode_extspkamp)) {
+		if (of_property_read_u32_index(pdev->of_node, "extspkamp-gpio", 1, &pin_mode_extspkamp)) {
 			if_config5 = 0;
 			pr_err("extspkamp-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "i2s1clk-gpio", 0, &pin_i2s1clk)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1clk-gpio", 0, &pin_i2s1clk)) {
 			if_config6 = 0;
 			pr_err("i2s1clk-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "i2s1clk-gpio", 1, &pin_mode_i2s1clk)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1clk-gpio", 1, &pin_mode_i2s1clk)) {
 			if_config6 = 0;
 			pr_err("i2s1clk-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "i2s1dat-gpio", 0, &pin_i2s1dat)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1dat-gpio", 0, &pin_i2s1dat)) {
 			if_config7 = 0;
 			pr_err("i2s1dat-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "i2s1dat-gpio", 1, &pin_mode_i2s1dat)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1dat-gpio", 1, &pin_mode_i2s1dat)) {
 			if_config7 = 0;
 			pr_err("i2s1dat-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "i2s1mclk-gpio", 0, &pin_i2s1mclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1mclk-gpio", 0, &pin_i2s1mclk)) {
 			if_config8 = 0;
 			pr_err("i2s1mclk-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "i2s1mclk-gpio", 1, &pin_mode_i2s1mclk)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1mclk-gpio", 1, &pin_mode_i2s1mclk)) {
 			if_config8 = 0;
 			pr_err("i2s1mclk-gpio get pin_mode fail!!!\n");
 		}
 
-		if (of_property_read_u32_index(node, "i2s1ws-gpio", 0, &pin_i2s1ws)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1ws-gpio", 0, &pin_i2s1ws)) {
 			if_config9 = 0;
 			pr_err("i2s1ws-gpio get pin fail!!!\n");
 		}
-		if (of_property_read_u32_index(node, "i2s1ws-gpio", 1, &pin_mode_i2s1ws)) {
+		if (of_property_read_u32_index(pdev->of_node, "i2s1ws-gpio", 1, &pin_mode_i2s1ws)) {
 			if_config9 = 0;
 			pr_err("i2s1ws-gpio get pin_mode fail!!!\n");
 		}
@@ -964,6 +942,95 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 }
 EXPORT_SYMBOL(GetGPIO_Info);
 #endif
+#endif
+
+static void DL1GlobalVarInit(void)
+{
+	pMemControl = NULL;
+	mPlaybackSramState = 0;
+	Dl1_Playback_dma_buf = NULL;
+	mDev = NULL;
+	mPrepareDone = false;
+}
+
+static int mtk_soc_dl1_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	PRINTK_AUDDRV("%s\n", __func__);
+
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+	if (!pdev->dev.dma_mask)
+		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+
+	if (pdev->dev.of_node) {
+		dev_set_name(&pdev->dev, "%s", MT_SOC_DL1_PCM);
+	} else {
+		pr_err("%s invalid of_node\n", __func__);
+		return -ENODEV;
+	}
+
+	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+
+	DL1GlobalVarInit();
+
+#ifdef CONFIG_OF
+	ret = Auddrv_Reg_map_new(&pdev->dev);
+	if (ret) {
+		BUG();
+		return -ENODEV;
+	}
+	ret = Register_Aud_Irq(NULL, afe_irq_number);
+	if (ret) {
+		BUG();
+		return -ENODEV;
+	}
+
+#ifndef CONFIG_MTK_LEGACY
+	AudDrv_GPIO_probe(&pdev->dev);
+#else
+	ret = Auddrv_OF_ParseGPIO(&pdev->dev);
+	if (ret) {
+		BUG();
+		return -ENODEV;
+	}
+#endif
+
+#else
+	ret = Register_Aud_Irq(&pdev->dev, MT6580_AFE_MCU_IRQ_LINE);
+#endif
+
+	ret = InitAfeControl();
+	mDev = &pdev->dev;
+
+	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
+}
+
+static int mtk_asoc_pcm_dl1_new(struct snd_soc_pcm_runtime *rtd)
+{
+	int ret = 0;
+
+	PRINTK_AUDDRV("%s\n", __func__);
+	return ret;
+}
+
+
+static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
+{
+	PRINTK_AUDDRV("mtk_asoc_dl1_probe\n");
+	/* allocate dram */
+	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
+				   Dl1_MAX_BUFFER_SIZE);
+	Dl1_Playback_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
+	return 0;
+}
+
+static int mtk_afe_remove(struct platform_device *pdev)
+{
+	PRINTK_AUDDRV("%s\n", __func__);
+	snd_soc_unregister_platform(&pdev->dev);
+	return 0;
+}
 
 static struct platform_driver mtk_afe_driver = {
 	.driver = {
@@ -986,11 +1053,8 @@ static int __init mtk_soc_platform_init(void)
 	int ret;
 
 	PRINTK_AUDDRV("%s\n", __func__);
-#ifdef CONFIG_OF
-	Auddrv_Reg_map_new();
-	ret = Register_Aud_Irq(NULL, afe_irq_number);
-	Auddrv_OF_ParseGPIO();
-#else
+
+#ifndef CONFIG_OF
 	soc_mtkafe_dev = platform_device_alloc(MT_SOC_DL1_PCM, -1);
 	if (!soc_mtkafe_dev)
 		return -ENOMEM;
