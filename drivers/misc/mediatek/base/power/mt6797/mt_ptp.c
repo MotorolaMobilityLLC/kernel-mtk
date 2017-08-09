@@ -110,6 +110,10 @@ unsigned int bigFreq_SB[16] = {
 	2496000, 2431000, 2366000, 2288000, 2236000, 2171000, 2093000, 1885000,
 	1677000, 1495000, 1378000, 1131000, 1001000, 845000, 676000, 507000};
 
+unsigned int bigFreq_MB[16] = {
+	1989000, 1976000, 1911000, 1859000, 1820000, 1729000, 1547000, 1456000,
+	1300000, 1196000, 1092000, 988000, 871000, 728000, 585000, 507000};
+
 /* GPU */
 unsigned int gpuFreq_FY[16] = {
 	700000, 700000, 610000, 610000, 520000, 520000, 442000, 442000,
@@ -118,6 +122,10 @@ unsigned int gpuFreq_FY[16] = {
 unsigned int gpuFreq_SB[16] = {
 	800000, 800000, 700000, 700000, 610000, 610000, 520000, 520000,
 	442000, 442000, 365000, 365000, 238000, 238000, 154000, 154000};
+
+unsigned int gpuFreq_MB[16] = {
+	600000, 600000, 522000, 522000, 445000, 445000, 379000, 379000,
+	313000, 313000, 258000, 258000, 204000, 204000, 132000, 132000};
 
 /* L */
 unsigned int L_Freq_FY[16] = {
@@ -128,6 +136,10 @@ unsigned int L_Freq_SB[16] = {
 	2197000, 2132000, 2041000, 1963000, 1885000, 1807000, 1716000, 1573000,
 	1430000, 1274000, 1144000, 1014000, 871000, 689000, 494000, 338000};
 
+unsigned int L_Freq_MB[16] = {
+	1898000, 1807000, 1729000, 1625000, 1495000, 1417000, 1274000, 1209000,
+	1079000, 962000, 832000, 741000, 650000, 559000, 468000, 325000};
+
 /* LL */
 unsigned int LL_Freq_FY[16] = {
 	1391000, 1339000, 1287000, 1222000, 1118000, 1066000, 949000, 897000,
@@ -137,6 +149,10 @@ unsigned int LL_Freq_SB[16] = {
 	1547000, 1495000, 1443000, 1391000, 1339000, 1274000, 1222000, 1118000,
 	1014000, 897000, 806000, 715000, 624000, 481000, 338000, 221000};
 
+unsigned int LL_Freq_MB[16] = {
+	1391000, 1339000, 1287000, 1222000, 1118000, 1066000, 949000, 897000,
+	806000, 715000, 624000, 559000, 481000, 416000, 338000, 221000};
+
 /* CCI */
 unsigned int cciFreq_FY[16] = {
 	975000, 936000, 897000, 858000, 793000, 754000, 689000, 624000,
@@ -145,6 +161,10 @@ unsigned int cciFreq_FY[16] = {
 unsigned int cciFreq_SB[16] = {
 	1092000, 1066000, 1014000, 975000, 936000, 897000, 858000, 793000,
 	728000, 624000, 559000, 494000, 429000, 338000, 247000, 182000};
+
+unsigned int cciFreq_MB[16] = {
+	949000, 923000, 884000, 858000, 793000, 741000, 663000, 624000,
+	559000, 507000, 429000, 390000, 338000, 299000, 247000, 182000};
 
 /*
 [25:21] dcmdiv
@@ -1906,12 +1926,20 @@ static void get_freq_table_cpu(struct eem_det *det)
 					cciFreq_FY[i]
 					,
 					det->max_freq_khz);
-		} else {
+		} else if (binLevel == 1) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_SB[i] :
 					(det_to_id(det) == EEM_DET_L) ? L_Freq_SB[i] :
 					(det_to_id(det) == EEM_DET_2L) ? LL_Freq_SB[i] :
 					cciFreq_SB[i]
+					,
+					det->max_freq_khz);
+		} else {
+				det->freq_tbl[i] =
+				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_MB[i] :
+					(det_to_id(det) == EEM_DET_L) ? L_Freq_MB[i] :
+					(det_to_id(det) == EEM_DET_2L) ? LL_Freq_MB[i] :
+					cciFreq_MB[i]
 					,
 					det->max_freq_khz);
 		}
@@ -1976,15 +2004,23 @@ static void restore_default_volt_gpu(struct eem_det *det)
 static void get_freq_table_gpu(struct eem_det *det)
 {
 	int i;
+	unsigned int binLevel;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	for (i = 0; i < NR_FREQ; i++) {
-		#if 1 /* def EARLY_PORTING */
-		det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
+		/* det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i/2), det->max_freq_khz); */
+		#ifdef __KERNEL__
+			binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
 		#else
-		det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i/2), det->max_freq_khz);
+			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 		#endif
+		if (binLevel == 0)
+			det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
+		else if (binLevel == 1)
+			det->freq_tbl[i] = PERCENT(gpuFreq_SB[i], det->max_freq_khz);
+		else
+			det->freq_tbl[i] = PERCENT(gpuFreq_MB[i], det->max_freq_khz);
 		if (0 == det->freq_tbl[i])
 			break;
 	}
