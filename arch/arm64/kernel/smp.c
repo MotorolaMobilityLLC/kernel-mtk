@@ -356,7 +356,9 @@ void __cpu_die(unsigned int cpu)
 		pr_crit("CPU%u: cpu didn't die\n", cpu);
 		return;
 	}
+#ifndef CONFIG_ARCH_MT6797
 	pr_notice("CPU%u: shutdown\n", cpu);
+#endif
 
 	/*
 	 * Now that the dying CPU is beyond the point of no return w.r.t.

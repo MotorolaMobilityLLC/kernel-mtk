@@ -850,7 +850,9 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 #endif
 
 		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
+#ifndef CONFIG_ARCH_MT6797
 			pr_info("CPU%d killed.\n", cpu);
+#endif
 #ifdef CONFIG_ARCH_MT6797
 
 #ifdef MTK_CPU_HOTPLUG_DEBUG_3
