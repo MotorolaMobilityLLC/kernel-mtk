@@ -1495,9 +1495,19 @@ void nicRestoreSpiDefMode(IN P_ADAPTER_T prAdapter)
 VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4Value = 0;
+#if defined(MT6797)
+	UINT_32 u4Value1 = 0;
+#endif
 
-	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
-	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+#if defined(MT6797)
+		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
+		HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
+		DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
+#else
+		HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
+		DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+#endif
+
 #if CFG_CHIP_RESET_SUPPORT
 	glResetTrigger(prAdapter);
 #endif

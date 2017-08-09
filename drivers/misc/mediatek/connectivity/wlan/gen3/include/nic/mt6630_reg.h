@@ -145,6 +145,11 @@
 /* 4 WLAN Snapshot Register */
 #define MCR_WSR                             0x00D8
 
+#if defined(MT6797)
+/* 4 Abnormal Status Register2 */
+#define MCR_WASR2                           0x00E0
+#endif
+
 /* 4 Clock Pad Macro IO Control Register */
 #define MCR_CLKIOCR                         0x0100
 

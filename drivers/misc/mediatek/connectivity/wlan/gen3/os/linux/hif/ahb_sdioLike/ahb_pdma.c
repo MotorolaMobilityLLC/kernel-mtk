@@ -194,7 +194,7 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	DBGLOG(HAL, TRACE, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
 
-#if defined(MT6797)
+#if 0 /* defined(MT6797), MPU TODO */
 	emi_mpu_set_region_protection(gConEmiPhyBase,
 				      gConEmiPhyBase + 512 * 1024 - 1,
 				      12,

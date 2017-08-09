@@ -1234,12 +1234,18 @@ PFN_OID_HANDLER_FUNC apfnOidWOTimeoutCheck[] = {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-
 static WLAN_STATUS
 wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
-			      IN PVOID pvFwImageMapFile, IN UINT_32 index, IN UINT_32 u4FwImageFileLength,
-			      IN BOOLEAN fgValidHead, IN UINT_32 u4FwLoadAddr);
+				  IN PVOID pvFwImageMapFile, IN UINT_32 index, IN UINT_32 u4FwImageFileLength,
+				  IN BOOLEAN fgValidHead, IN UINT_32 u4FwLoadAddr);
 
+#if CFG_ENABLE_FW_DOWNLOAD
+#if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
+static WLAN_STATUS
+wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_T prFwHead,
+			IN PVOID pvFwImageMapFile, IN UINT_32 u4FwImageFileLength, IN UINT_32 u4FwLoadAddr);
+#endif
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -1355,10 +1361,6 @@ VOID wlanAdapterDestroy(IN P_ADAPTER_T prAdapter)
 	kalMemFree(prAdapter, VIR_MEM_TYPE, sizeof(ADAPTER_T));
 }
 
-#if defined(MT6797)
-extern UINT_8 __iomem *pEmibaseaddr;
-#endif
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Initialize the adapter. The sequence is
@@ -1390,9 +1392,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	BOOLEAN fgValidHead;
 	const UINT_32 u4CRCOffset = offsetof(FIRMWARE_DIVIDED_DOWNLOAD_T, u4NumOfEntries);
 #endif
-#endif
-#if defined(MT6797)
-/*	static UINT_8 fgEmiDownloaded = FALSE; */
 #endif
 
 	ASSERT(prAdapter);
@@ -1515,34 +1514,13 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			}
 
 			/* 3b. engage divided firmware downloading */
-			if (fgValidHead == TRUE) 
-			{			
-				for (i = 0; i < prFwHead->u4NumOfEntries; i++) 
-				{						
-					if (i < 2) 
-					{ /* IDLM */				
-					u4Status = wlanImageSectionDownloadStage(prAdapter,
-										 pvFwImageMapFile, i,
-										 u4FwImageFileLength, TRUE,
-										 u4FwLoadAddr);
-					if (u4Status == WLAN_STATUS_FAILURE)
-						break;
-				}
-#if 0/* MT6797 TODO	*/
-					else /* EMI */
-					{
-					printk("i %d, pEmibaseaddr %x, gConEmiPhyBase %p, SecOfS %x, SecLen %x, fgEmiDownloaded %d\n", i, pEmibaseaddr, gConEmiPhyBase, prFwHead->arSection[i].u4Offset, prFwHead->arSection[i].u4Length, fgEmiDownloaded);
-
-						if (!fgEmiDownloaded)
-						{
-							kalMemCopy(pEmibaseaddr, pvFwImageMapFile + prFwHead->arSection[i].u4Offset,prFwHead->arSection[i].u4Length);					
-						}
-						if (i == (prFwHead->u4NumOfEntries -1))
-							fgEmiDownloaded = TRUE;	
-					}				
-#endif	
-				}
-			} 
+			if (fgValidHead == TRUE) {
+				u4Status = wlanImageDividDownload(prAdapter,
+									prFwHead, pvFwImageMapFile, u4FwImageFileLength,
+									u4FwLoadAddr);
+				if (u4Status == WLAN_STATUS_FAILURE)
+					break;
+			}
 			else
 #endif
 			{
@@ -1872,6 +1850,71 @@ wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 #endif
 #endif
 }
+
+#if CFG_ENABLE_FW_DOWNLOAD
+#if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
+static WLAN_STATUS
+wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_T prFwHead,
+			IN PVOID pvFwImageMapFile, IN UINT_32 u4FwImageFileLength, IN UINT_32 u4FwLoadAddr)
+{
+	UINT_32 i;
+	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
+#if defined(MT6797)
+	static UINT_8 fgEmiDownloaded = FALSE;
+#endif
+
+	/* engage divided firmware downloading */
+	for (i = 0; i < prFwHead->u4NumOfEntries; i++) {
+		if (i < 2) { /* IDLM */
+			u4Status = wlanImageSectionDownloadStage(prAdapter,
+								 pvFwImageMapFile, i,
+								 u4FwImageFileLength, TRUE,
+								 u4FwLoadAddr);
+			if (u4Status == WLAN_STATUS_FAILURE)
+				return u4Status;
+		}
+#if defined(MT6797)
+		else { /* EMI */
+#define WIFI_EMI_MEM_SIZE	(512*1024)
+
+			if (gConEmiPhyBase) {
+				UINT_8 __iomem *pWiFiEmibaseaddr;
+
+				pWiFiEmibaseaddr = ioremap_nocache(gConEmiPhyBase, WIFI_EMI_MEM_SIZE);
+				DBGLOG(INIT, INFO,
+					"gConEmiPhyBase %p, idx %d, pEmiWiFibaseaddr %p, Dst %p, SecOffset %x, SecLen %x, fgEmiDownloaded %d\n",
+					gConEmiPhyBase,
+					i,
+					pWiFiEmibaseaddr,
+					pWiFiEmibaseaddr + (prFwHead->arSection[i].u4DestAddr & 0xfffff),
+					prFwHead->arSection[i].u4Offset,
+					prFwHead->arSection[i].u4Length,
+					fgEmiDownloaded);
+
+					if ((prFwHead->arSection[i].u4DestAddr & 0xfffff)
+							+ prFwHead->arSection[i].u4Length <= WIFI_EMI_MEM_SIZE) {
+							/* if (!fgEmiDownloaded), TODO, EMI download only if reboot */
+						kalMemCopy(
+							pWiFiEmibaseaddr +
+								(prFwHead->arSection[i].u4DestAddr & 0xfffff),
+							pvFwImageMapFile + prFwHead->arSection[i].u4Offset,
+							prFwHead->arSection[i].u4Length);
+					}
+					if (i == (prFwHead->u4NumOfEntries - 1))
+						fgEmiDownloaded = TRUE;
+			} else {
+				DBGLOG(INIT, ERROR, "consys emi memory address gConEmiPhyBase invalid\n");
+				u4Status = WLAN_STATUS_FAILURE;
+				return u4Status;
+			}
+		}
+#endif
+	}
+	return u4Status;
+}
+#endif
+#endif
+
 
 /*----------------------------------------------------------------------------*/
 /*!
