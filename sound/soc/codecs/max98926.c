@@ -852,7 +852,7 @@ static int max98926_probe(struct snd_soc_codec *codec)
 	snd_soc_write(codec, max98926_DOUT_HIZ_CFG4, 0xCC);
 	snd_soc_write(codec, max98926_FILTERS, 0xD8);
 	snd_soc_write(codec, max98926_ALC_CONFIGURATION, 0xF8);
-	snd_soc_write(codec, max98926_GAIN, 0x1a);
+	snd_soc_write(codec, max98926_GAIN, 0x0F);
 
 	/* Disable ALC muting */
 
