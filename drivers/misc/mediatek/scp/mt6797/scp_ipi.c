@@ -96,7 +96,8 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		}
 	}
 
-	if (SCP_SLEEP_DEBUG_REG & 0xE) {
+	/* SRAM protection need to bypass ADB wake up cmd */
+	if (SCP_SLEEP_DEBUG_REG & 0xE && id != IPI_DVFS_WAKE) {
 		/* bit:
 		 * [4]IN_ACTIVE
 		 * [3]ENTERING_ACTIVE

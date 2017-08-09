@@ -54,13 +54,24 @@
 #define DVFS_STATUS_CMD_FIX		-6
 #define DVFS_STATUS_CMD_LIMITED		-7
 #define DVFS_STATUS_CMD_DISABLE		-8
-
+#if 0
+/* CLK_CTRL Registers */
+#define CLK_CTRL_BASE	0x100a4000
+#define CLK_SW_SEL          (CLK_CTRL_BASE + 0x00)  /* Clock Source Select */
+#define CLK_ENABLE          (CLK_CTRL_BASE + 0x04)  /* Clock Source Enable */
+#define CLK_DIV_SEL         (CLK_CTRL_BASE + 0x24)  /* Clock Divider Select */
+#define SLEEP_DEBUG         (CLK_CTRL_BASE + 0x28)  /* Sleep mode debug signals */
+#define CKSW_SEL_O          16
+#define CKSW_DIV_SEL_O      16
+#endif
 typedef unsigned int UINT32;
 #define READ_REGISTER_UINT32(reg) \
 	(*(volatile UINT32 * const)(reg))
 
 #define WRITE_REGISTER_UINT32(reg, val) \
 	((*(volatile UINT32 * const)(reg)) = (val))
+
+#define DRV_Reg32(x)		READ_REGISTER_UINT32(x)
 #define DRV_SetReg32(x, y)		WRITE_REGISTER_UINT32(x, READ_REGISTER_UINT32(x)|(y))
 typedef enum {
 	IN_DEBUG_IDLE = 0,
@@ -83,9 +94,11 @@ struct mt_scp_dvfs_table_info {
 	unsigned int limited_volt;
 	bool limited_clk_on;
 	bool scp_dvfs_disable;
+	bool scp_dvfs_sleep;
+	bool scp_dvfs_wake;
 };
+
 #if 0
-/*#ifdef CONFIG_PINCTRL_MT6797*/
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
 /* DTS state */
 typedef enum tagDTS_GPIO_STATE {
@@ -203,6 +216,7 @@ void scp_state_handler(int id, void *data, unsigned int len)
 
 	scp_state = *scp_data;
 }
+
 #ifdef CONFIG_PROC_FS
 /*
  * PROC
@@ -301,7 +315,7 @@ static ssize_t mt_scp_dvfs_limited_opp_on_proc_write(struct file *file,
 					const char __user *buffer, size_t count, loff_t *data)
 {
 	char desc[32];
-	int len = 0, ret_val = 0;
+	int len = 0;
 	unsigned int limited_clk_on = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -315,17 +329,14 @@ static ssize_t mt_scp_dvfs_limited_opp_on_proc_write(struct file *file,
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
 
-	return ret_val;
+	return count;
 }
-
 
 /****************************
  * show current clock frequency
  *****************************/
 static int mt_scp_dvfs_cur_opp_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "current frequency = %d\n", mt_scp_dvfs_info->cur_clk);
-
 	return 0;
 }
 
@@ -377,7 +388,7 @@ static ssize_t mt_scp_dvfs_fix_opp_on_proc_write(struct file *file,
 					const char __user *buffer, size_t count, loff_t *data)
 {
 	char desc[32];
-	int len = 0, ret_val = 0;
+	int len = 0;
 	unsigned int fix_clk_on = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -391,7 +402,7 @@ static ssize_t mt_scp_dvfs_fix_opp_on_proc_write(struct file *file,
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
 
-	return ret_val;
+	return count;
 }
 
 /****************************
@@ -435,12 +446,6 @@ static ssize_t mt_scp_dvfs_current_volt_proc_write(struct file *file,
  *****************************/
 static int mt_scp_dvfs_state_proc_show(struct seq_file *m, void *v)
 {
-	scp_ipi_send(IPI_SCP_STATE, NULL, 0, 0);
-	msleep(20);
-	seq_printf(m, "scp status is in %s\n",
-		(scp_state == IN_DEBUG_IDLE) ? "idle mode" : (scp_state == ENTERING_SLEEP) ? "enter sleep"
-		: (scp_state == IN_SLEEP) ? "sleep mode" : (scp_state == ENTERING_ACTIVE) ? "enter active"
-		: (scp_state == IN_ACTIVE) ? "active mode" : "none of state");
 	return 0;
 }
 
@@ -461,15 +466,89 @@ static int mt_scp_dvfs_info_dump_proc_show(struct seq_file *m, void *v)
 }
 #endif
 /****************************
- * show current clock frequency
+ * show scp dvfs disable
  *****************************/
-static int mt_scp_dvfs_var_dump_proc_show(struct seq_file *m, void *v)
+static int mt_scp_dvfs_sleep_proc_show(struct seq_file *m, void *v)
 {
-	scp_ipi_send(IPI_DUMP_REG, NULL, 0, 0);
-	msleep(20);
-	seq_printf(m, " scp cg = %d, irq_en = %d, irq_state = %d, awake_req = %d\n",
-		scp_cg, scp_irq_en, scp_irq_status, scp_awake_request);
+	seq_printf(m, "scp sleep state = %d\n", mt_scp_dvfs_info->scp_dvfs_sleep);
+
 	return 0;
+}
+
+/**********************************
+ * write scp dvfs disable
+ ***********************************/
+static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	unsigned int on = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (kstrtouint(desc, 0, &on) == 0) {
+		if (on == 0) {
+			mt_scp_dvfs_info->scp_dvfs_sleep = 0;
+			scp_dvfs_warn("scp_dvfs_sleep = 0\n");
+		} else if (on == 1) {
+			mt_scp_dvfs_info->scp_dvfs_sleep = 1;
+			scp_dvfs_warn("scp_dvfs_sleep = 1\n");
+		} else {
+			scp_dvfs_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
+		}
+		scp_ipi_send(IPI_DVFS_SLEEP, (void *)&(mt_scp_dvfs_info->scp_dvfs_sleep),
+				sizeof(mt_scp_dvfs_info->scp_dvfs_sleep), 0);
+	} else {
+		mt_scp_dvfs_info->scp_dvfs_sleep = 0;
+		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
+	}
+	return count;
+}
+
+/****************************
+ * show scp dvfs wake up
+ *****************************/
+static int mt_scp_dvfs_wake_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "scp sleep state = %d\n", mt_scp_dvfs_info->scp_dvfs_wake);
+
+	return 0;
+}
+
+/**********************************
+ * write scp dvfs wake up
+ ***********************************/
+static ssize_t mt_scp_dvfs_wake_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	unsigned int on = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (kstrtouint(desc, 0, &on) == 0) {
+		if (on == 0)
+			mt_scp_dvfs_info->scp_dvfs_wake = 0;
+		else if (on == 1)
+			mt_scp_dvfs_info->scp_dvfs_wake = 1;
+		else
+			scp_dvfs_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
+
+		scp_ipi_send(IPI_DVFS_WAKE, (void *)&(mt_scp_dvfs_info->scp_dvfs_wake),
+				sizeof(mt_scp_dvfs_info->scp_dvfs_wake), 0);
+	} else {
+		mt_scp_dvfs_info->scp_dvfs_wake = 0;
+		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
+	}
+	return count;
 }
 
 /****************************
@@ -477,7 +556,6 @@ static int mt_scp_dvfs_var_dump_proc_show(struct seq_file *m, void *v)
  *****************************/
 static int mt_scp_dvfs_disable_proc_show(struct seq_file *m, void *v)
 {
-	msleep(20);
 	seq_printf(m, "scp disable state = %d\n", mt_scp_dvfs_info->scp_dvfs_disable);
 
 	return 0;
@@ -550,7 +628,8 @@ PROC_FOPS_RO(scp_dvfs_state);
 PROC_FOPS_RO(scp_dvfs_cur_opp);
 PROC_FOPS_RW(scp_dvfs_fix_opp);
 PROC_FOPS_RW(scp_dvfs_fix_opp_on);
-PROC_FOPS_RO(scp_dvfs_var_dump);
+PROC_FOPS_RW(scp_dvfs_sleep);
+PROC_FOPS_RW(scp_dvfs_wake);
 PROC_FOPS_RW(scp_dvfs_disable);
 
 static int mt_scp_dvfs_create_procfs(void)
@@ -572,7 +651,8 @@ static int mt_scp_dvfs_create_procfs(void)
 		PROC_ENTRY(scp_dvfs_fix_opp),
 		PROC_ENTRY(scp_dvfs_fix_opp_on),
 		PROC_ENTRY(scp_dvfs_disable),
-		PROC_ENTRY(scp_dvfs_var_dump),
+		PROC_ENTRY(scp_dvfs_sleep),
+		PROC_ENTRY(scp_dvfs_wake),
 	};
 
 
