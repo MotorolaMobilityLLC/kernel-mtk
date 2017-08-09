@@ -2142,7 +2142,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		break;
 #endif
 	default:
-		M4UMSG("MTK M4U ioctl:No such command!!\n");
+		/* M4UMSG("MTK M4U ioctl:No such command!!\n"); */
 		ret = -EINVAL;
 		break;
 	}
