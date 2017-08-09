@@ -1075,8 +1075,15 @@ void mtkts_bts_cancel_thermal_timer(void)
 	/* pr_debug("mtkts_bts_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
+
+	/*
+	   We cannot cancel the timer during deepidle and SODI, because
+	   the battery may suddenly heat up by 3A fast charging.
+	*/
+	/*
 	if (thz_dev)
 		cancel_delayed_work(&(thz_dev->poll_queue));
+	*/
 }
 
 
@@ -1084,8 +1091,10 @@ void mtkts_bts_start_thermal_timer(void)
 {
 	/* pr_debug("mtkts_bts_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
+	/*
 	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
+	*/
 }
 
 static int mtkts_bts_register_thermal(void)

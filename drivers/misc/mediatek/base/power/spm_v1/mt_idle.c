@@ -137,11 +137,6 @@ void __attribute__((weak)) mtkts_pa_cancel_thermal_timer(void)
 
 }
 
-void __attribute__((weak)) mtkts_allts_cancel_thermal_timer(void)
-{
-
-}
-
 void __attribute__((weak)) mtkts_wmt_cancel_thermal_timer(void)
 {
 
@@ -172,12 +167,57 @@ void __attribute__((weak)) mtkts_pa_start_thermal_timer(void)
 
 }
 
-void __attribute__((weak)) mtkts_allts_start_thermal_timer(void)
+void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
 {
 
 }
 
-void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
+void __attribute__((weak)) mtkts_allts_cancel_ts1_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_cancel_ts2_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_cancel_ts3_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_cancel_ts4_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_cancel_ts5_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_start_ts1_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_start_ts2_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_start_ts3_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_start_ts4_timer(void)
+{
+
+}
+
+void __attribute__((weak)) mtkts_allts_start_ts5_timer(void)
 {
 
 }
@@ -1365,8 +1405,13 @@ static inline void soidle_pre_handler(void)
 	mtkts_pmic_cancel_thermal_timer();
 	mtkts_battery_cancel_thermal_timer();
 	mtkts_pa_cancel_thermal_timer();
-	mtkts_allts_cancel_thermal_timer();
 	mtkts_wmt_cancel_thermal_timer();
+
+	mtkts_allts_cancel_ts1_timer();
+	mtkts_allts_cancel_ts2_timer();
+	mtkts_allts_cancel_ts3_timer();
+	mtkts_allts_cancel_ts4_timer();
+	mtkts_allts_cancel_ts5_timer();
 #endif
 }
 
@@ -1382,8 +1427,13 @@ static inline void soidle_post_handler(void)
 	mtkts_pmic_start_thermal_timer();
 	mtkts_battery_start_thermal_timer();
 	mtkts_pa_start_thermal_timer();
-	mtkts_allts_start_thermal_timer();
 	mtkts_wmt_start_thermal_timer();
+
+	mtkts_allts_start_ts1_timer();
+	mtkts_allts_start_ts2_timer();
+	mtkts_allts_start_ts3_timer();
+	mtkts_allts_start_ts4_timer();
+	mtkts_allts_start_ts5_timer();
 #endif
 }
 
@@ -1411,8 +1461,13 @@ static inline void dpidle_pre_handler(void)
 	mtkts_pmic_cancel_thermal_timer();
 	mtkts_battery_cancel_thermal_timer();
 	mtkts_pa_cancel_thermal_timer();
-	mtkts_allts_cancel_thermal_timer();
 	mtkts_wmt_cancel_thermal_timer();
+
+	mtkts_allts_cancel_ts1_timer();
+	mtkts_allts_cancel_ts2_timer();
+	mtkts_allts_cancel_ts3_timer();
+	mtkts_allts_cancel_ts4_timer();
+	mtkts_allts_cancel_ts5_timer();
 #endif
 }
 static inline void dpidle_post_handler(void)
@@ -1426,8 +1481,13 @@ static inline void dpidle_post_handler(void)
 	mtkts_pmic_start_thermal_timer();
 	mtkts_battery_start_thermal_timer();
 	mtkts_pa_start_thermal_timer();
-	mtkts_allts_start_thermal_timer();
 	mtkts_wmt_start_thermal_timer();
+
+	mtkts_allts_start_ts1_timer();
+	mtkts_allts_start_ts2_timer();
+	mtkts_allts_start_ts3_timer();
+	mtkts_allts_start_ts4_timer();
+	mtkts_allts_start_ts5_timer();
 #endif
 }
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
