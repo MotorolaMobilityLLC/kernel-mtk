@@ -102,6 +102,9 @@ struct usbc_pin_ctrl {
 struct usbtypc {
 	int irqnum;
 	int en_irq;
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	bool sib_enable;
+#endif
 	struct pinctrl *pinctrl;
 	struct usbc_pin_ctrl *pin_cfg;
 	spinlock_t	fsm_lock;

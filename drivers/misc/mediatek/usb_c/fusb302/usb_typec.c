@@ -1888,6 +1888,12 @@ end:
 
 static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 {
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	if (typec->sib_enable) {
+		fusb_printk(K_INFO, "SIB enable!\n");
+		goto end;
+	}
+#endif
 	fusb_printk(K_DEBUG, "trigger_driver: type:%d, stat:%d, dir%d\n", type, stat, dir);
 
 	if (stat == ENABLE)
@@ -1945,7 +1951,9 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 	} else {
 		fusb_printk(K_DEBUG, "trigger_driver: no callback func\n");
 	}
-
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+end:
+#endif
 	return 0;
 }
 
@@ -2371,22 +2379,60 @@ static const struct file_operations usb_gpio_debugfs_fops = {
 	.release = single_release,
 };
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+static int usb_sib_get(void *data, u64 *val)
+{
+	struct usbtypc *typec = data;
+
+	*val = typec->sib_enable;
+
+	fusb_printk(K_DEBUG, "usb_sib_get %d %llu\n", typec->sib_enable, *val);
+
+	return 0;
+}
+
+static int usb_sib_set(void *data, u64 val)
+{
+	struct usbtypc *typec = data;
+
+	typec->sib_enable = !!val;
+
+	fusb_printk(K_DEBUG, "usb_sib_set %d %llu\n", typec->sib_enable, val);
+
+	if (typec->sib_enable) {
+		usb_redriver_exit_dps(typec);
+		usb3_switch_en(typec, ENABLE);
+	} else {
+		usb_redriver_enter_dps(typec);
+		usb3_switch_en(typec, DISABLE);
+	}
+
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(usb_sib_debugfs_fops, usb_sib_get, usb_sib_set, "%llu\n");
+#endif
+
 int fusb300_init_debugfs(struct usbtypc *typec)
 {
 	struct dentry *root;
 	struct dentry *file;
 	int ret;
 
-	root = debugfs_create_dir(dev_name(&typec->i2c_hd->dev), NULL);
+	root = debugfs_create_dir("usb_c", NULL);
 	if (!root) {
 		ret = -ENOMEM;
 		goto err0;
 	}
 
-	file = debugfs_create_file("i2c_rw", S_IRUGO, root, typec->i2c_hd,
+	file = debugfs_create_file("i2c_rw", S_IRUGO|S_IWUSR, root, typec->i2c_hd,
 				   &fusb300_debugfs_i2c_fops);
 
-	file = debugfs_create_file("gpio", S_IRUGO, root, typec, &usb_gpio_debugfs_fops);
+	file = debugfs_create_file("gpio", S_IRUGO|S_IWUSR, root, typec, &usb_gpio_debugfs_fops);
+
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	file = debugfs_create_file("sib", S_IRUGO|S_IWUSR, root, typec, &usb_sib_debugfs_fops);
+#endif
 
 	if (!file) {
 		ret = -ENOMEM;
