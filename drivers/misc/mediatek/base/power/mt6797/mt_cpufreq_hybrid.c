@@ -412,11 +412,13 @@
 #define SW_F_DES_MASK		(0xf << 8)
 
 #define F_CURR(val)		(((val) & 0xf) << 0)
+#define F_DES(val)		(((val) & 0xf) << 4)
 #define V_CURR(val)		(((val) & 0x7f) << 8)
 #define FW_DONE			(1U << 15)
 #define VS_CURR(val)		(((val) & 0x7f) << 16)
 
 #define F_CURR_MASK		(0xf << 0)
+#define F_DES_MASK		(0xf << 4)
 #define V_CURR_MASK		(0x7f << 8)
 #define VS_CURR_MASK		(0x7f << 16)
 
@@ -863,7 +865,10 @@ static void __cspm_init_event_vector(const struct pcm_desc *pcmdesc)
 {
 	/* init event vector register */
 	cspm_write(CSPM_PCM_EVENT_VECTOR0, pcmdesc->vec0);
+#if 0
+	/* used for FiT parameter */
 	cspm_write(CSPM_PCM_EVENT_VECTOR1, pcmdesc->vec1);
+#endif
 
 	/* disable event vector (enabled by FW) */
 	cspm_write(CSPM_PCM_EVENT_VECTOR_EN, 0);
@@ -967,6 +972,16 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_SW_RSV11, 0xa000 + OFFS_LOG_S + 0x10);
 	cspm_write(CSPM_SW_RSV12, 0xa000 + OFFS_LOG_S + 0x14);
 
+	cspm_write(CSPM_RSV_CON,  0x0);
+
+	cspm_write(CSPM_PCM_EVENT_VECTOR1,  0x3e60000);
+	cspm_write(CSPM_PCM_EVENT_VECTOR6,  0x3e60000);
+	cspm_write(CSPM_PCM_EVENT_VECTOR11, 0x3e60000);
+
+	cspm_write(CSPM_PCM_EVENT_VECTOR4,  0x0);
+	cspm_write(CSPM_PCM_EVENT_VECTOR9,  0x0);
+	cspm_write(CSPM_PCM_EVENT_VECTOR14, 0x0);
+
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(NUM_CPU_OPP - 1) |
 					  SW_F_MIN(0) |
@@ -976,6 +991,7 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		cspm_write(hwsta_reg[i], F_CURR(opp_sw_to_fw(sta->opp[i])) |
+					 F_DES(opp_sw_to_fw(sta->opp[i])) |
 					 V_CURR(sta->volt[i]) |
 					 VS_CURR(sta->vsram[i]));
 		csram_write(hwsta_offs[i], cspm_read(hwsta_reg[i]));
