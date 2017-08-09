@@ -152,6 +152,11 @@ static u32 enable_cpuhvfs = 1;
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #define MIN(a, b) ((a) >= (b) ? (b) : (a))
 
+#include <linux/time.h>
+ktime_t now[NR_SET_V_F];
+ktime_t delta[NR_SET_V_F];
+ktime_t max[NR_SET_V_F];
+
 /* used @ set_cur_volt_extBuck() */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
 #define NORMAL_DIFF_VRSAM_VPROC    10000
@@ -1004,6 +1009,7 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 
 #define cpu_dvfs_get_cur_volt(p)				(p->opp_tbl[p->idx_opp_tbl].cpufreq_volt)
 #define cpu_dvfs_get_volt_by_idx(p, idx)		(p->opp_tbl[idx].cpufreq_volt)
+#define cpu_dvfs_get_org_volt_by_idx(p, idx)	(p->opp_tbl[idx].cpufreq_volt_org)
 
 #define cpu_dvfs_is_extbuck_valid()     (is_da9214_exist() && is_da9214_sw_ready())
 
@@ -2031,8 +2037,12 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 
 	cur_khz = _cpu_freq_calc(con1, ckdiv1);
 
-	cpufreq_ver("@%s: cur_khz = %d, con1 = 0x%x, ckdiv1_val = 0x%x\n", __func__, cur_khz, con1,
-		    ckdiv1);
+	if (do_dvfs_stress_test)
+		cpufreq_dbg("@%s: cur_khz = %d, con1 = 0x%x, ckdiv1_val = 0x%x\n", __func__, cur_khz, con1,
+				ckdiv1);
+	else
+		cpufreq_ver("@%s: cur_khz = %d, con1 = 0x%x, ckdiv1_val = 0x%x\n", __func__, cur_khz, con1,
+				ckdiv1);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -2056,6 +2066,13 @@ unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id)
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
 	return freq;
+}
+
+unsigned int mt_cpufreq_get_org_volt(enum mt_cpu_dvfs_id id, int idx)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	return cpu_dvfs_get_org_volt_by_idx(p, idx);
 }
 
 static unsigned int _cpu_dds_calc(unsigned int khz)
@@ -2315,6 +2332,8 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 			p->ops->set_sync_dcm(target_khz/1000);
 	}
 #endif
+	now[SET_FREQ] = ktime_get();
+
 	if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 		/* post_div 1 -> 2 */
 		if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div < opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
@@ -2348,6 +2367,11 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 		if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div > opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
 			adjust_posdiv(p, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 	}
+
+	delta[SET_FREQ] = ktime_sub(ktime_get(), now[SET_FREQ]);
+	if (ktime_to_us(delta[SET_FREQ]) > ktime_to_us(max[SET_FREQ]))
+		max[SET_FREQ] = delta[SET_FREQ];
+
 #ifdef DCM_ENABLE
 	/* DCM (freq: low -> high)*/
 	if (cur_khz < target_khz)
@@ -2594,6 +2618,8 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 
 	aee_record_cpu_volt(p, volt);
 
+	now[SET_VOLT] = ktime_get();
+
 	cur_vsram = p->ops->get_cur_vsram(p);
 	cur_vproc = p->ops->get_cur_volt(p);
 
@@ -2641,7 +2667,11 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 			}
 
 			/* update vsram */
+			now[SET_VSRAM] = ktime_get();
 			p->ops->set_cur_vsram(p, cur_vsram);
+			delta[SET_VSRAM] = ktime_sub(ktime_get(), now[SET_VSRAM]);
+			if (ktime_to_us(delta[SET_VSRAM]) > ktime_to_us(max[SET_VSRAM]))
+				max[SET_VSRAM] = delta[SET_VSRAM];
 
 			/* update vproc */
 			if (next_vsram > MAX_VSRAM_VOLT)
@@ -2658,6 +2688,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				BUG();
 			}
 
+			now[SET_VPROC] = ktime_get();
 			if (cpu_dvfs_is_extbuck_valid()) {
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
 					da9214_vosel_buck_b(cur_vproc);
@@ -2668,6 +2699,9 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				ret = -1;
 				break;
 			}
+			delta[SET_VPROC] = ktime_sub(ktime_get(), now[SET_VPROC]);
+			if (ktime_to_us(delta[SET_VPROC]) > ktime_to_us(max[SET_VPROC]))
+				max[SET_VPROC] = delta[SET_VPROC];
 
 			delay_us =
 			    _calc_pmic_settle_time(old_vproc, old_vsram, cur_vproc, cur_vsram);
@@ -2701,6 +2735,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				BUG();
 			}
 
+			now[SET_VPROC] = ktime_get();
 			if (cpu_dvfs_is_extbuck_valid()) {
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
 					da9214_vosel_buck_b(cur_vproc);
@@ -2711,6 +2746,9 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				ret = -1;
 				break;
 			}
+			delta[SET_VPROC] = ktime_sub(ktime_get(), now[SET_VPROC]);
+			if (ktime_to_us(delta[SET_VPROC]) > ktime_to_us(max[SET_VPROC]))
+				max[SET_VPROC] = delta[SET_VPROC];
 
 			/* update vsram */
 			next_vsram = cur_vproc + NORMAL_DIFF_VRSAM_VPROC;
@@ -2726,7 +2764,11 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				BUG();
 			}
 
+			now[SET_VSRAM] = ktime_get();
 			p->ops->set_cur_vsram(p, cur_vsram);
+			delta[SET_VSRAM] = ktime_sub(ktime_get(), now[SET_VSRAM]);
+			if (ktime_to_us(delta[SET_VSRAM]) > ktime_to_us(max[SET_VSRAM]))
+				max[SET_VSRAM] = delta[SET_VSRAM];
 
 			delay_us =
 			    _calc_pmic_settle_time(old_vproc, old_vsram, cur_vproc, cur_vsram);
@@ -2737,6 +2779,10 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 			     __func__, old_vsram, cur_vsram, old_vproc, cur_vproc, delay_us);
 		} while (cur_vproc > volt);
 	}
+
+	delta[SET_VOLT] = ktime_sub(ktime_get(), now[SET_VOLT]);
+	if (ktime_to_us(delta[SET_VOLT]) > ktime_to_us(max[SET_VOLT]))
+		max[SET_VOLT] = delta[SET_VOLT];
 
 	notify_cpu_volt_sampler(p, volt);
 
@@ -3066,11 +3112,17 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	cur_freq = p->ops->get_cur_phy_freq(p);
 	target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
+	now[SET_DVFS] = ktime_get();
+
 #ifdef CONFIG_CPU_FREQ
 	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, cur_cci_freq, target_cci_freq, target_volt_vpro1);
 #else
 	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, cur_cci_freq, target_cci_freq, target_volt_vpro1);
 #endif
+
+	delta[SET_DVFS] = ktime_sub(ktime_get(), now[SET_DVFS]);
+	if (ktime_to_us(delta[SET_DVFS]) > ktime_to_us(max[SET_DVFS]))
+		max[SET_DVFS] = delta[SET_DVFS];
 
 	p->idx_opp_tbl = new_opp_idx;
 	p_cci->idx_opp_tbl = new_cci_opp_idx;
@@ -4885,6 +4937,44 @@ static ssize_t cpufreq_up_threshold_b_proc_write(struct file *file,
 	return count;
 }
 
+/* cpufreq_time_profile */
+static int cpufreq_dvfs_time_profile_proc_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	for (i = 0; i < NR_SET_V_F; i++)
+		seq_printf(m, "max[%d] = %lld us\n", i, ktime_to_us(max[i]));
+
+	return 0;
+}
+
+static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const char __user *buffer,
+	size_t count, loff_t *pos)
+{
+	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
+	unsigned int temp;
+	int rc;
+	int i;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	rc = kstrtoint(buf, 10, &temp);
+	if (rc < 0)
+		cpufreq_err("echo 0/1 > /proc/cpufreq/%s/cpufreq_dvfs_time_profile\n", p->name);
+	else {
+		if (temp == 1) {
+			for (i = 0; i < NR_SET_V_F; i++)
+				max[i].tv64 = 0;
+		}
+	}
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 #define PROC_FOPS_RW(name)							\
 	static int name ## _proc_open(struct inode *inode, struct file *file)	\
 {									\
@@ -4925,6 +5015,7 @@ PROC_FOPS_RW(cpufreq_oppidx);
 PROC_FOPS_RW(cpufreq_freq);
 PROC_FOPS_RW(cpufreq_volt);
 PROC_FOPS_RW(cpufreq_turbo_mode);
+PROC_FOPS_RW(cpufreq_dvfs_time_profile);
 PROC_FOPS_RW(cpufreq_idvfs_mode);
 PROC_FOPS_RW(cpufreq_up_threshold_ll);
 PROC_FOPS_RW(cpufreq_up_threshold_l);
@@ -4953,6 +5044,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_up_threshold_l),
 		PROC_ENTRY(cpufreq_up_threshold_b),
 		PROC_ENTRY(cpufreq_idvfs_mode),
+		PROC_ENTRY(cpufreq_dvfs_time_profile),
 	};
 
 	const struct pentry cpu_entries[] = {

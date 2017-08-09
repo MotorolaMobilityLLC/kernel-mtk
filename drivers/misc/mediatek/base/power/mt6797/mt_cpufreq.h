@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 /* #define ENABLE_IDVFS 1 */
+extern int disable_idvfs_flag;
 
 enum mt_cpu_dvfs_id {
 	MT_CPU_DVFS_LL,
@@ -28,6 +29,17 @@ enum top_ckmuxsel {
 	TOP_CKMUXSEL_UNIVPLL = 3,
 
 	NR_TOP_CKMUXSEL,
+};
+
+enum dvfs_time_profile {
+	SET_DVFS = 0,
+	SET_FREQ = 1,
+	SET_VOLT = 2,
+	SET_VPROC = 3,
+	SET_VSRAM = 4,
+	SET_DELAY = 5,
+
+	NR_SET_V_F,
 };
 
 typedef void (*cpuVoltsampler_func) (enum mt_cpu_dvfs_id, unsigned int mv);
@@ -70,6 +82,7 @@ extern int mt_cpufreq_get_ppb_state(void);
 
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
+extern unsigned int mt_cpufreq_get_org_volt(enum mt_cpu_dvfs_id id, int idx);
 
 /* Generic */
 extern int mt_cpufreq_state_set(int enabled);
