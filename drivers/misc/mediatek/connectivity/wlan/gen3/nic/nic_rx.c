@@ -4704,9 +4704,16 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 		} else {
 
 			if (u4PktLen > u4MaxRespBufferLen) {
+				UINT_32 u4MailBox0;
+				UINT_32 u4MailBox1;
+
+				nicGetMailbox(prAdapter, 0, &u4MailBox0);
+				nicGetMailbox(prAdapter, 0, &u4MailBox1);
 				DBGLOG(RX, WARN,
 			       "Not enough Event Buffer: required length = 0x%lx, available buffer length = %lu\n",
 			       u4PktLen, u4MaxRespBufferLen);
+				DBGLOG(RX, WARN, "Firmware Mailbox 0x%lx, 0x%lx\n", u4MailBox0, u4MailBox1);
+
 				return WLAN_STATUS_FAILURE;
 			}
 
