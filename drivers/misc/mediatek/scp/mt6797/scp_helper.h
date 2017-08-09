@@ -99,4 +99,7 @@ extern int reset_scp(int reset);
 extern void scp_register_notify(struct notifier_block *nb);
 extern void scp_unregister_notify(struct notifier_block *nb);
 extern void scp_aee_last_reg(void);
+extern phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id);
+extern phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id);
+extern phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id);
 #endif
