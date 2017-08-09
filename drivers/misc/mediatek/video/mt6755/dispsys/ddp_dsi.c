@@ -2306,6 +2306,8 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 
 	uint32_t d;
 
+	memset(&t2, 0, sizeof(t2));
+
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		do {
 			data_id = para_tbl[index].id;

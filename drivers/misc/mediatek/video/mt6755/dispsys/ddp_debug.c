@@ -235,6 +235,8 @@ static void process_dbg_opt(const char *opt)
 			rdma_color_pre pre = { 0 };
 			rdma_color_post post = { 255, 0, 0 };
 
+			memset(&matrix, 0, sizeof(matrix));
+
 			ret = sscanf(opt, "rdma_color:%d,%d,%d\n", &red, &green, &blue);
 			if (ret != 3) {
 				snprintf(buf, 50, "error to parse cmd %s\n", opt);
