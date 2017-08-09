@@ -7,3 +7,4 @@ config CUSTOM_KERNEL_BAROMETER
 source "drivers/misc/mediatek/barometer/BMP180/Kconfig"
 source "drivers/misc/mediatek/barometer/BMP180-new/Kconfig"
 source "drivers/misc/mediatek/barometer/bmp280/Kconfig"
+source "drivers/misc/mediatek/barometer/BMP280-new/Kconfig"

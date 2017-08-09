@@ -3217,6 +3217,11 @@
 			/* vbarometer-supply = <&mt_pmic_vio28_ldo_reg>; */
 		};
 
+		m_baro_pl@0 {
+			compatible = "mediatek,m_baro_pl";
+			/* vbarometer-supply = <&mt_pmic_vio28_ldo_reg>; */
+		};
+
 		msensor@0 {
 			compatible = "mediatek,msensor";
 			/* vmsensor-supply = <&mt_pmic_vio28_ldo_reg>; */

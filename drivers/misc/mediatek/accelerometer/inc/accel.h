@@ -19,6 +19,7 @@
 #include <linux/atomic.h>
 #include <linux/ioctl.h>
 
+#include <batch.h>
 #include <sensors_io.h>
 #include <hwmsen_helper.h>
 #include <hwmsensor.h>

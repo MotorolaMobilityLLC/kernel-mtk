@@ -18,3 +18,4 @@ config CUSTOM_KERNEL_MAGNETOMETER
 source "drivers/misc/mediatek/magnetometer/akm09911-new/Kconfig"
 source "drivers/misc/mediatek/magnetometer/akm09912/Kconfig"
 source "drivers/misc/mediatek/magnetometer/s62x/Kconfig"
+source "drivers/misc/mediatek/magnetometer/yamaha532-new/Kconfig"
