@@ -31,12 +31,6 @@
 #include "../../../power/mt6797/da9214.h"
 #include "mt_idvfs.h"
 #include "mt_otp.h"
-#else
-#include <linux/stringify.h>
-#include "typedefs.h"
-#include "da9214.h"
-#include "mt_idvfs.h"
-#endif
 
 /* IDVFS ADDR */ /*	TODO: include other	head file */
 #ifdef CONFIG_OF
@@ -47,6 +41,12 @@ static int					idvfs_irq_number1;		/* 331 */
 #include "mach/mt_reg_base.h"
 /* (0x10222000) */
 /* #define	IDVFS_BASE_ADDR		IDVFS_BASEADDR */
+#endif
+#else
+#include <linux/stringify.h>
+#include "typedefs.h"
+#include "da9214.h"
+#include "mt_idvfs.h"
 #endif
 
 static unsigned int func_lv_mask_idvfs;
@@ -631,7 +631,7 @@ int	BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned i
 	/* enable and initial idvfsapb i2c ctrl */
 
 	/* move to prob init */
-	/* iDVFSAPB_init(); */
+	iDVFSAPB_init();
 
 	/* check parameter move to this API */
 	if ((Fmax < 510) || (Fmax > 3000)) {
@@ -1539,7 +1539,7 @@ static int __init idvfs_init(void)
 #endif /* CONFIG_PROC_FS */
 
 	/* enable iDVFSAPB function */
-	iDVFSAPB_init();
+	/* iDVFSAPB_init(); */
 
 out:
 	return err;
