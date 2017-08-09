@@ -131,10 +131,10 @@ struct AFE_OFFLOAD_T {
 	kal_uint32   pcmformat;
 	kal_uint32   drain_state;
 	kal_uint32   hw_buffer_size;
-	kal_uint32   hw_buffer_addr;  /* physical address */
-	kal_int8    *hw_buffer_area;  /* virtual pointer */
+	kal_uint64   hw_buffer_addr;  /* physical address */
 	kal_uint64   transferred;
 	kal_uint64   copied_total;    /* for tstamp*/
+	kal_int8    *hw_buffer_area;  /* virtual pointer */
 	bool         write_blocked;
 	bool         wakelock;
 	DMA_BUFFER_T buf;
@@ -169,7 +169,6 @@ typedef enum {
 	MP3_SETWRITEBLOCK,
 	MP3_DRAIN,
 	MP3_VOLUME,
-	MP3_WRITEIDX,
 	MP3_TSTAMP,
 	MP3_PCMDUMP_ON,
 } IPI_MSG_ID;

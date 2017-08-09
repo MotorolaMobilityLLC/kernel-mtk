@@ -345,7 +345,7 @@ static void SetDL3Buffer(void)
 {
 	AFE_BLOCK_T *pblock = &pMemControl->rBlock;
 
-	pblock->pucPhysBufAddr =  afe_offload_block.hw_buffer_addr;
+	pblock->pucPhysBufAddr =  (kal_uint32)afe_offload_block.hw_buffer_addr;
 	pblock->pucVirtBufAddr =  afe_offload_block.hw_buffer_area;
 	pblock->u4BufferSize =    afe_offload_block.hw_buffer_size;
 	pblock->u4SampleNumMask = 0x001f;  /* 32 byte align */
@@ -551,24 +551,7 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 	struct snd_codec codec;
 
 	pr_debug("+ %s\n", __func__);
-	params = kmalloc(sizeof(*params), GFP_KERNEL);
-	if (!params)
-		retval = -1;
-	if (copy_from_user(params, (void __user *)arg, sizeof(*params))) {
-		retval = -1;
-		pr_debug("%s failed!!\n", __func__);
-		kfree(params);
-	}
-	codec = params->codec;
-	afe_offload_block.samplerate = codec.sample_rate;
-	afe_offload_block.period_size = codec.reserved[0];
-	afe_offload_block.channels = codec.ch_out;
-	afe_offload_block.data_buffer_size = codec.reserved[1] << 1; /*16K*/
-	afe_offload_block.pcmformat = codec.format;
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
-	OffloadService_IPICmd_Send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK ,
-				MP3_SETPRAM, 0, 0, NULL);
-#endif
+
 	if (AllocateAudioSram((dma_addr_t *)&afe_offload_block.hw_buffer_addr,
 		(unsigned char **)&afe_offload_block.hw_buffer_area,
 		afe_offload_block.hw_buffer_size, &afe_offload_block) == 0) {
@@ -583,7 +566,29 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, true);
 		AudDrv_Emi_Clk_On();
 	}
+
 	SetDL3Buffer();
+	params = kmalloc(sizeof(*params), GFP_KERNEL);
+	if (!params) {
+		retval = -1;
+		return retval;
+	}
+	if (copy_from_user(params, (void __user *)arg, sizeof(*params))) {
+		retval = -1;
+		pr_debug("%s copy failed!!\n", __func__);
+		kfree(params);
+		return retval;
+	}
+	codec = params->codec;
+	afe_offload_block.samplerate = codec.sample_rate;
+	afe_offload_block.period_size = codec.reserved[0];
+	afe_offload_block.channels = codec.ch_out;
+	afe_offload_block.data_buffer_size = codec.reserved[1];
+	afe_offload_block.pcmformat = codec.format;
+#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+	OffloadService_IPICmd_Send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK ,
+					MP3_SETPRAM, 0, 0, NULL);
+#endif
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				MP3_SETMEM, 0, 0, NULL);
@@ -696,7 +701,7 @@ static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 		case MP3_SETMEM:
 			test_buf[0] = afe_offload_block.buf.pucPhysBufAddr; /* dram addr */
 			test_buf[1] = afe_offload_block.buf.u4BufferSize;
-			test_buf[2] = afe_offload_block.hw_buffer_addr; /* playback buffer */
+			test_buf[2] = (unsigned int)afe_offload_block.hw_buffer_addr; /* playback buffer */
 			test_buf[3] = afe_offload_block.hw_buffer_size; /* playback size */
 			test_buf[4] = mPlaybackDramState;
 			param1 = sizeof(unsigned int) * 5;
