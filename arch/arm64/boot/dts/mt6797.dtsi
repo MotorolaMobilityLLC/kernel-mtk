@@ -65,6 +65,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		affinity_info	= <0x84000004>;
 	};
 
+	mobicore {
+		compatible = "trustonic,mobicore";
+		interrupts = <GIC_SPI 292 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
