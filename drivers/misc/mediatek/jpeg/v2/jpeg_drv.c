@@ -220,16 +220,17 @@ void jpeg_drv_dec_power_on(void)
 	enable_clock(MT_CG_VENC_JPGDEC, "JPEG");
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
+	pm_runtime_get_sync(&jenc_pdev->dev);
 	pm_runtime_get_sync(&jdec_pdev->dev);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
-#endif
-	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
-		JPEG_ERR("enable smi clk fail!");
 
 	if (clk_prepare_enable(gJpegClk.clk_venc_mtcmos))
 		JPEG_ERR("enable venc_mtcmos clk fail!");
+#endif
+	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
+		JPEG_ERR("enable smi clk fail!");
 
 	if (clk_prepare_enable(gJpegClk.clk_venc_larb))
 		JPEG_ERR("enable larb clk fail!");
@@ -248,11 +249,12 @@ void jpeg_drv_dec_power_off(void)
 #else
 	clk_disable_unprepare(gJpegClk.clk_venc_jpgDec);
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
-	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pm_runtime_put_sync(&jdec_pdev->dev);
+	pm_runtime_put_sync(&jenc_pdev->dev);
 #else
+	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
 #endif
 #endif
@@ -273,15 +275,15 @@ void jpeg_drv_enc_power_on(void)
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pm_runtime_get_sync(&jenc_pdev->dev);
+	pm_runtime_get_sync(&jdec_pdev->dev);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
+	if (clk_prepare_enable(gJpegClk.clk_venc_mtcmos))
+		JPEG_ERR("enable venc_mtcmos clk fail!");
 #endif
 	if (clk_prepare_enable(gJpegClk.clk_disp_smi))
 		JPEG_ERR("enable smi clk fail!");
-
-	if (clk_prepare_enable(gJpegClk.clk_venc_mtcmos))
-		JPEG_ERR("enable venc_mtcmos clk fail!");
 
 #ifndef CONFIG_ARCH_MT6735M
 	if (clk_prepare_enable(gJpegClk.clk_venc_larb))
@@ -307,11 +309,12 @@ void jpeg_drv_enc_power_off(void)
 #ifndef CONFIG_ARCH_MT6735M
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
 #endif
-	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pm_runtime_put_sync(&jenc_pdev->dev);
+	pm_runtime_put_sync(&jdec_pdev->dev);
 #else
+	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
 #endif
 #endif
@@ -1271,7 +1274,6 @@ static int jpeg_probe(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
 	pm_runtime_put_sync(&pdev->dev);
-#ifdef JPEG_DEC_DRIVER
 	{
 		struct device_node *node = NULL;
 
@@ -1281,18 +1283,19 @@ static int jpeg_probe(struct platform_device *pdev)
 		pm_runtime_get_sync(&jdec_pdev->dev);
 		pm_runtime_put_sync(&jdec_pdev->dev);
 	}
-#endif
 #else
+	/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
 	gJpegClk.clk_disp_mtcmos = of_clk_get_by_name(node, "disp-mtcmos");
 	if (IS_ERR(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("get dispMTCMOS clk error!");
+	/* venc-mtcmos lead to venc power scpsys SCP_SYS_VEN */
+	gJpegClk.clk_venc_mtcmos = of_clk_get_by_name(node, "venc-mtcmos");
+	if (IS_ERR(gJpegClk.clk_venc_mtcmos))
+		JPEG_ERR("get vencMTCMOS clk error!");
 #endif
 	gJpegClk.clk_disp_smi = of_clk_get_by_name(node, "disp-smi");
 	if (IS_ERR(gJpegClk.clk_disp_smi))
 		JPEG_ERR("get dispMTCMOS clk error!");
-	gJpegClk.clk_venc_mtcmos = of_clk_get_by_name(node, "venc-mtcmos");
-	if (IS_ERR(gJpegClk.clk_venc_mtcmos))
-		JPEG_ERR("get vencMTCMOS clk error!");
 	gJpegClk.clk_venc_larb = of_clk_get_by_name(node, "venc-larb");
 	if (IS_ERR(gJpegClk.clk_venc_larb))
 		JPEG_ERR("get dispMTCMOS clk error!");
@@ -1406,9 +1409,8 @@ static int jpeg_remove(struct platform_device *pdev)
 #endif
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pm_runtime_disable(&pdev->dev);
-#ifdef JPEG_DEC_DRIVER
+	/* venc power */
 	pm_runtime_disable(&jdec_pdev->dev);
-#endif
 #endif
 #endif
 	JPEG_MSG("Done\n");
