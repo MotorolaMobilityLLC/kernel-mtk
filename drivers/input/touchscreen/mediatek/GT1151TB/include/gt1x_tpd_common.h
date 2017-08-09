@@ -60,6 +60,9 @@
 #define TPD_POWER_SOURCE_CUSTOM	MT6328_POWER_LDO_VGP1
 #endif
 
+#define GTP_GPIO_AS_INT(pin) tpd_gpio_as_int(pin)
+#define GTP_GPIO_OUTPUT(pin, level) tpd_gpio_output(pin, level)
+
 #define IIC_MAX_TRANSFER_SIZE         8
 #define IIC_DMA_MAX_TRANSFER_SIZE     250
 #define I2C_MASTER_CLOCK              300
@@ -273,8 +276,6 @@ extern void tpd_off(void);
 /*          Export global variables and functions          */
 
 /* Export from gt1x_extents.c and gt1x_firmware.h */
-extern unsigned int tpd_rst_gpio_number;
-extern unsigned int tpd_int_gpio_number;
 
 #ifdef CONFIG_GTP_HOTKNOT
 extern u8 hotknot_enabled;
@@ -422,5 +423,6 @@ extern bool upmu_is_chr_det(void);
 #endif
 extern struct tpd_filter_t tpd_filter;
 extern wait_queue_head_t init_waiter;
+extern u8 is_resetting;
 
 #endif /* GT1X_TPD_COMMON_H__ */

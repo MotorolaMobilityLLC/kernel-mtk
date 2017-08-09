@@ -708,11 +708,11 @@ s32 gt1x_init_panel(void)
 
 void gt1x_select_addr(void)
 {
-	gpio_direction_output(tpd_rst_gpio_number, 0);
+	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
 	msleep(20);
-	gpio_direction_output(tpd_int_gpio_number, gt1x_i2c_client->addr == 0x14);
+	GTP_GPIO_OUTPUT(GTP_INT_PORT, gt1x_i2c_client->addr == 0x14);
 	msleep(20);
-	gpio_direction_output(tpd_rst_gpio_number, 1);
+	GTP_GPIO_OUTPUT(GTP_RST_PORT, 1);
 }
 
 s32 gt1x_reset_guitar(void)
@@ -729,9 +729,9 @@ s32 gt1x_reset_guitar(void)
 	if (CHIP_TYPE_GT2X == gt1x_chip_type) {
 		/* for GT2X */
 	} else {
-		gpio_direction_output(tpd_int_gpio_number, 0);
+		GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 		msleep(50);
-		gpio_direction_input(tpd_int_gpio_number);
+		GTP_GPIO_AS_INT(GTP_INT_PORT);
 	}
 
 #ifdef CONFIG_GTP_ESD_PROTECT
@@ -865,7 +865,7 @@ s32 gt1x_enter_sleep(void)
 		s32 retry = 0;
 
 		if (gt1x_wakeup_level == 1) {	/* high level wakeup */
-			gpio_direction_output(tpd_int_gpio_number, 0);
+			GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 		}
 		msleep(20);
 
@@ -916,16 +916,16 @@ s32 gt1x_wakeup_sleep(void)
 #endif
 		{
 			/* wake up through int port */
-			gpio_direction_output(tpd_int_gpio_number, gt1x_wakeup_level);
+			GTP_GPIO_OUTPUT(GTP_INT_PORT, gt1x_wakeup_level);
 			msleep(20);
 
 			if (CHIP_TYPE_GT2X == gt1x_chip_type) {
 				/* for GT2X */
 			} else {
 				/* Synchronize int IO */
-				gpio_direction_output(tpd_int_gpio_number, 0);
+				GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 				msleep(50);
-				gpio_direction_input(tpd_int_gpio_number);
+				GTP_GPIO_AS_INT(GTP_INT_PORT);
 			}
 
 			/* test i2c */
@@ -991,7 +991,7 @@ void gt1x_power_reset(void)
 	s32 i = 0;
 	s32 ret = 0;
 
-	if (is_resetting)
+	if (is_resetting || update_info.status)
 		return;
 	GTP_INFO("force_reset_guitar");
 	is_resetting = 1;

@@ -212,13 +212,21 @@ Output:
 static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_t len, loff_t *data)
 {
 	u64 ret = 0;
+	u8 *pre_data_p;
+	u8 *post_data_p;
 
 	GTP_DEBUG_FUNC();
 	GTP_DEBUG_ARRAY((u8 *) buff, len);
 
+	pre_data_p = cmd_head.data;
 	ret = copy_from_user(&cmd_head, buff, CMD_HEAD_LENGTH);
 	if (ret)
 		GTP_ERROR("copy_from_user failed.");
+	post_data_p = cmd_head.data;
+	if (pre_data_p != post_data_p) {
+		GTP_ERROR("pointer is overwritten! %p, %p, %p, %p, %dx\n",
+			pre_data_p, post_data_p, &cmd_head, &cmd_head.data, (int)CMD_HEAD_LENGTH);
+	}
 
 	GTP_DEBUG("wr  :0x%02x.", cmd_head.wr);
 	/*

@@ -62,9 +62,6 @@ static bool gtp_suspend;
 DECLARE_WAIT_QUEUE_HEAD(init_waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
-unsigned int tpd_rst_gpio_number = 0;
-unsigned int tpd_int_gpio_number = 0;
-
 u8 int_type = 0;
 
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
@@ -105,60 +102,6 @@ static struct i2c_driver tpd_i2c_driver = {
 	.address_list = (const unsigned short *)forces,
 };
 
-static int of_get_gt9xx_platform_data(struct device *dev)
-{
-	/*int ret, num;*/
-
-	if (dev->of_node) {
-		const struct of_device_id *match;
-
-		match = of_match_device(of_match_ptr(tpd_of_match), dev);
-		if (!match) {
-			GTP_ERROR("Error: No device match found\n");
-			return -ENODEV;
-		}
-	}
-	tpd_rst_gpio_number = of_get_named_gpio(dev->of_node, "rst-gpio", 0);
-	tpd_int_gpio_number = of_get_named_gpio(dev->of_node, "int-gpio", 0);
-	/*ret = of_property_read_u32(dev->of_node, "rst-gpio", &num);
-	if (!ret)
-		tpd_rst_gpio_number = num;
-	ret = of_property_read_u32(dev->of_node, "int-gpio", &num);
-	if (!ret)
-		tpd_int_gpio_number = num;
-  */
-	GTP_DEBUG("g_vproc_en_gpio_number %d\n", tpd_rst_gpio_number);
-	GTP_DEBUG("g_vproc_vsel_gpio_number %d\n", tpd_int_gpio_number);
-	return 0;
-}
-#ifdef TIMER_DEBUG
-#include <linux/timer.h>
-#include <linux/jiffies.h>
-#include <linux/module.h>
-#endif
-#ifdef TIMER_DEBUG
-
-static struct timer_list test_timer;
-
-static void timer_func(unsigned long data)
-{
-	tpd_flag = 1;
-	wake_up_interruptible(&waiter);
-
-	mod_timer(&test_timer, jiffies + 100*(1000/HZ));
-}
-
-static int init_test_timer(void)
-{
-	memset((void *)&test_timer, 0, sizeof(test_timer));
-	test_timer.expires  = jiffies + 100*(1000/HZ);
-	test_timer.function = timer_func;
-	test_timer.data     = 0;
-	init_timer(&test_timer);
-	add_timer(&test_timer);
-	return 0;
-}
-#endif
 #if TPD_SUPPORT_I2C_DMA
 static u8 *gpDMABuf_va;
 static dma_addr_t gpDMABuf_pa;
@@ -494,8 +437,8 @@ void gt1x_power_switch(s32 state)
 	int ret = 0;
 #endif
 
-	gpio_direction_output(tpd_rst_gpio_number, 0);
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
+	GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 	msleep(20);
 
 	switch (state) {
@@ -645,7 +588,7 @@ static int tpd_registration(void *client)
 	input_set_capability(tpd->dev, EV_KEY, KEY_GESTURE);
 #endif
 
-	gpio_direction_input(tpd_int_gpio_number);
+	GTP_GPIO_AS_INT(GTP_INT_PORT);
 
 	msleep(50);
 	/* EINT device tree, default EINT enable */
@@ -681,27 +624,10 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (RECOVERY_BOOT == get_boot_mode())
 		return 0;
 #endif
-	of_get_gt9xx_platform_data(&client->dev);
-	/* configure the gpio pins */
-	err = gpio_request_one(tpd_rst_gpio_number, GPIOF_OUT_INIT_LOW,
-				 "touchp_reset");
-	if (err < 0) {
-		GTP_ERROR("Unable to request gpio reset_pin\n");
-		return -1;
-	}
-	err = gpio_request_one(tpd_int_gpio_number, GPIOF_IN,
-				 "tpd_int");
-	if (err < 0) {
-		GTP_ERROR("Unable to request gpio int_pin\n");
-		gpio_free(tpd_rst_gpio_number);
-		return -1;
-	}
 	probe_thread = kthread_run(tpd_registration, (void *)client, "tpd_probe");
 	if (IS_ERR(probe_thread)) {
 		err = PTR_ERR(probe_thread);
 		GTP_INFO(TPD_DEVICE " failed to create probe thread: %d\n", err);
-		gpio_free(tpd_int_gpio_number);
-		gpio_free(tpd_rst_gpio_number);
 		return err;
 	}
 	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
@@ -1024,8 +950,6 @@ static u16 convert_productname(u8 *name)
 static int tpd_i2c_remove(struct i2c_client *client)
 {
 	gt1x_deinit();
-		gpio_free(tpd_int_gpio_number);
-		gpio_free(tpd_rst_gpio_number);
 
 	return 0;
 }
@@ -1107,6 +1031,8 @@ static void tpd_suspend(struct device *h)
 	u8 buf[1] = { 0 };
 #endif
 #endif
+	if (is_resetting || update_info.status)
+		return;
 	GTP_INFO("TPD suspend start...");
 
 #ifdef CONFIG_GTP_PROXIMITY
@@ -1168,6 +1094,8 @@ static void tpd_suspend(struct device *h)
 static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
+	if (is_resetting || update_info.status)
+		return;
 
 	GTP_INFO("TPD resume start...");
 	gtp_suspend = false;
