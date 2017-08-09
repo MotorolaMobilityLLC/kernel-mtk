@@ -9176,7 +9176,7 @@ int ISP_pm_suspend(struct device *device)
 	struct platform_device *pdev = to_platform_device(device);
 	BUG_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/*pr_debug("calling %s()\n", __func__);*/
 
 	return ISP_suspend(pdev, PMSG_SUSPEND);
 }
@@ -9186,7 +9186,7 @@ int ISP_pm_resume(struct device *device)
 	struct platform_device *pdev = to_platform_device(device);
 	BUG_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/*pr_debug("calling %s()\n", __func__);*/
 
 	return ISP_resume(pdev);
 }
@@ -9195,7 +9195,7 @@ int ISP_pm_resume(struct device *device)
 /* extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity); */
 int ISP_pm_restore_noirq(struct device *device)
 {
-	pr_debug("calling %s()\n", __func__);
+	/*pr_debug("calling %s()\n", __func__);*/
 #ifndef CONFIG_OF
 	mt_irq_set_sens(CAM0_IRQ_BIT_ID, MT_LEVEL_SENSITIVE);
 	mt_irq_set_polarity(CAM0_IRQ_BIT_ID, MT_POLARITY_LOW);
