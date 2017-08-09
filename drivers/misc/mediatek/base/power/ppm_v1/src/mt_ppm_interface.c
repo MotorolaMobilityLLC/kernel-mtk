@@ -144,16 +144,20 @@ static ssize_t ppm_enabled_proc_write(struct file *file, const char __user *buff
 
 static int ppm_dump_power_table_proc_show(struct seq_file *m, void *v)
 {
-	unsigned int i;
+	unsigned int i, j;
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 
 	for_each_pwr_tbl_entry(i, power_table) {
-		seq_printf(m, "[%d]\t= %d,\t%d,\t%d,\t%d,\t%d,\t%d\n",
-			power_table.power_tbl[i].index,
-			power_table.power_tbl[i].cluster_cfg[0].opp_lv,
-			power_table.power_tbl[i].cluster_cfg[0].core_num,
-			power_table.power_tbl[i].cluster_cfg[1].opp_lv,
-			power_table.power_tbl[i].cluster_cfg[1].core_num,
+		seq_printf(m, "[%d]\t= ", power_table.power_tbl[i].index);
+
+		for_each_ppm_clusters(j) {
+			seq_printf(m, "%d,\t%d,\t",
+				power_table.power_tbl[i].cluster_cfg[j].opp_lv,
+				power_table.power_tbl[i].cluster_cfg[j].core_num
+				);
+		}
+
+		seq_printf(m, "%d,\t%d\n",
 			power_table.power_tbl[i].perf_idx,
 			power_table.power_tbl[i].power_idx
 		);

@@ -13,19 +13,14 @@ extern "C" {
 /*==============================================================*/
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
-
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
+#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
+#endif
 #define PPM_HW_OCP_SUPPORT		(0)
 #if PPM_HW_OCP_SUPPORT
 #include "mt_ocp.h"
 #endif
-
-#ifdef CONFIG_MTK_SCHED_RQAVG_US
-#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
-extern unsigned int sched_get_nr_heavy_task2(int cluster_id);
-#else
-#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
-#endif
-
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
@@ -108,12 +103,13 @@ struct ppm_power_tbl_data {
 /*==============================================================*/
 /* APIs								*/
 /*==============================================================*/
+extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
+extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
+					unsigned int cluster_num);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
-
 
