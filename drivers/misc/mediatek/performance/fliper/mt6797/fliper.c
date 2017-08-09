@@ -41,8 +41,10 @@
 	} while (0)
 #undef TAG
 #define TAG "[SOC DVFS FLIPER]"
-#define X_ms 100
-#define Y_steps (2000/X_ms)
+#define X_ms 700
+#define Y_steps (4200/X_ms)
+
+#define MIN_DEFAULT_LPM 500
 /*
 #if 0
 extern void BM_Enable(const unsigned int);
@@ -51,6 +53,7 @@ extern int BM_GetLatencyCycle(const unsigned int);
 #endif
 */
 static unsigned long long emi_bw;
+static int step;
 static void mt_power_pef_transfer(void);
 static DEFINE_TIMER(mt_pp_transfer_timer, (void *)mt_power_pef_transfer, 0, 0);
 static void mt_power_pef_transfer_work(void);
@@ -84,22 +87,6 @@ static unsigned int emi_polling(unsigned int *__restrict__ emi_value)
 	return j;
 }
 #endif
-static void mt_power_pef_transfer_work(void)
-{
-	/*Get EMI*/
-	if (fliper_debug == 2) {
-		emi_bw = get_mem_bw();
-		pr_crit(TAG"EMI:Rate %6llu\n", emi_bw);
-	}
-/*
-	if (fliper_debug == 3){
-		emi_polling(emi_value);
-		pr_crit(TAG"latency %d:%d:%d:%d:%d:%d:%d:%d\n",
-		emi_value[0], emi_value[1],emi_value[2], emi_value[3],
-		emi_value[4], emi_value[5], emi_value[6], emi_value[7]);
-	}
-*/
-}
 /******* FLIPER SETTING *********/
 static void enable_fliper_polling(void)
 {
@@ -164,10 +151,10 @@ int cg_set_threshold(int bw1, int bw2)
 			return 0;
 		}
 		if (ddr_perf == ddr_curr) {
-			setCG(0x830080 | (hpm_threshold << 8));
+			setCG(0x8300b0 | (hpm_threshold << 8));
 			pr_debug(TAG"ddr high, Configure CG: 0x%08x\n", getCGConfiguration());
 		} else {
-			setCG(0x830080 | (lpm_threshold << 8));
+			setCG(0x8300b0 | (lpm_threshold << 8));
 			pr_debug(TAG"ddr low, Configure CG: 0x%08x\n", getCGConfiguration());
 		}
 		vcorefs_set_perform_bw_threshold(lpm_threshold, hpm_threshold);
@@ -348,6 +335,44 @@ fliper_pm_callback(struct notifier_block *nb,
 }
 
 
+static void mt_power_pef_transfer_work(void)
+{
+	int count;
+	int threshold_counter;
+
+	threshold_counter = getCGHistory();
+	for (count = 0; threshold_counter != 0;
+			count++, threshold_counter &= threshold_counter - 1)
+		;
+
+
+	/*Get EMI*/
+	if (fliper_debug == 2) {
+		emi_bw = get_mem_bw();
+		pr_crit(TAG"EMI:Rate %6llu\n", emi_bw);
+	}
+/*
+	if (fliper_debug == 3){
+		emi_polling(emi_value);
+		pr_crit(TAG"latency %d:%d:%d:%d:%d:%d:%d:%d\n",
+		emi_value[0], emi_value[1],emi_value[2], emi_value[3],
+		emi_value[4], emi_value[5], emi_value[6], emi_value[7]);
+	}
+	*/
+	if (count > 26 && cg_lpm_bw_threshold >= 1000) {
+		cg_lpm_bw_threshold -= 500;
+		cg_hpm_bw_threshold -= 500;
+		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
+		step = Y_steps;
+	}
+	if (count > 26 && cg_lpm_bw_threshold >= MIN_DEFAULT_LPM)
+		step = Y_steps;
+
+	if (count <= 26)
+		step--;
+	if (step <= 0)
+		cg_restore_threshold();
+}
 /*--------------------INIT------------------------*/
 #define TIME_5SEC_IN_MS 5000
 static int __init init_fliper(void)
@@ -365,6 +390,7 @@ static int __init init_fliper(void)
 	cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 	enable_cg_fliper(1);
 
+	enable_fliper_polling();
 	fliper_debug = 0;
 
 	pm_notifier(fliper_pm_callback, 0);
