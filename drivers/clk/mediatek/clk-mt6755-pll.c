@@ -57,7 +57,7 @@ static u32 calc_pll_vco_freq(
 {
 	/* vco = (fin * pcw * vcodivsel / prediv) >> pcwfbits; */
 	u64 vco = fin;
-	u8 c;
+	u8 c = 0;
 
 	vco = vco * pcw * vcodivsel;
 	do_div(vco, prediv);
