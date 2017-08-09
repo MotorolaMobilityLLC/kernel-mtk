@@ -943,7 +943,7 @@ static int io_init(struct ubi_device *ubi, int max_beb_per1024)
 #ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
 	ubi->max_write_size = COMBO_NAND_PAGE_SIZE;
 #endif
-#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+#if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_SLC_BUFFER_SUPPORT)
 	ubi->max_write_size = ubi->mtd->erasesize/4;
 #endif
 	/*
@@ -1025,10 +1025,7 @@ static int io_init(struct ubi_device *ubi, int max_beb_per1024)
 	}
 
 	ubi->leb_size = ubi->peb_size - ubi->leb_start;
-#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
-	ubi->max_write_size = ubi->leb_size;
-	/*ubi_assert(ubi->max_write_size == ubi->leb_size);*/
-#endif
+
 	if (!(ubi->mtd->flags & MTD_WRITEABLE)) {
 		dbg_gen("MTD device %d is write-protected, attach in read-only mode",
 			ubi->mtd->index);
