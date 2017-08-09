@@ -195,10 +195,8 @@ static int mt_ftl_blk_flush(struct mt_ftl_blk *dev, bool sync)
 
 static int do_mt_ftl_blk_request(struct mt_ftl_blk *dev, struct request *req)
 {
-	int len, ret, ret_read;
+	int len, ret;
 	sector_t sec;
-	unsigned char tmpbuf[4096];
-	char *buffer;
 
 	if (req->cmd_type != REQ_TYPE_FS)
 		return -EIO;
@@ -608,13 +606,13 @@ static int __init mt_ftl_blk_create_from_param(void)
 		}
 
 		ubi_get_volume_info(desc, &vi);
-		ubi_close_volume(desc);
-		ret = mt_ftl_blk_create(&vi);
+		ret = mt_ftl_blk_create(desc);
 		if (ret) {
 			ubi_err("block: can't add '%s' volume, err=%d\n",
 				vi.name, ret);
 			break;
 		}
+		ubi_close_volume(desc);
 	}
 	return ret;
 }

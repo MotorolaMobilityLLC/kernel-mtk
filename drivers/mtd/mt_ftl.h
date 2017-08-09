@@ -5,7 +5,7 @@
 #include <linux/workqueue.h>
 #include "linux/mtd/ubi.h"
 
-#define PROFILE
+/* #define PROFILE */
 #define MTK_FTL_DEBUG
 
 #define MT_FTL_SUCCESS 0
@@ -54,8 +54,8 @@
 /**** MACROS ****/
 
 /* mt_ftl error messages */
-#define mt_ftl_err(dev, fmt, ...) pr_err("[MTK FTL][%s][0x%x] " fmt "\n",      \
-				 __func__, (unsigned int)dev, ##__VA_ARGS__)
+#define mt_ftl_err(dev, fmt, ...) pr_err("[MTK FTL][%s][0x%lx] " fmt "\n",      \
+				 __func__, (unsigned long int)dev, ##__VA_ARGS__)
 /* #define mt_ftl_err(fmt, ...) */
 
 #define PMT_LEB_PAGE_INDICATOR_SET_BLOCKPAGE(p, blk, page) \

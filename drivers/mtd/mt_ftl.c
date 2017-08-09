@@ -40,7 +40,7 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 	if (!isReplay) {
 		ret = ubi_is_mapped(desc, u4DstLeb);
 		if (ret == 0) {
-			mt_ftl_err(dev, "leb%d is unmapped", u4DstLeb);
+			mt_ftl_err(dev, "leb%u is unmapped", u4DstLeb);
 			ubi_leb_map(desc, u4DstLeb);
 		}
 	}
@@ -59,7 +59,7 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 						  NAND_PAGE_SIZE);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev,
-						   "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
+						   "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
 						   u4SrcLeb, pnum_src, offset_src, ret);
 					return MT_FTL_FAIL;
 				}
@@ -71,8 +71,8 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 						   NAND_PAGE_SIZE);
 				if (ret) {
 					mt_ftl_err(dev,
-						   "ubi_io_write failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-						   u4DstLeb, pnum_dst, *offset_dst, ret);
+						   "ubi_io_write failed, leb = %u, pnum = %d, offset=0x%x ret = %d",
+						   u4DstLeb, pnum_dst, (unsigned int)*offset_dst, ret);
 					return MT_FTL_FAIL;
 				}
 				/* Copy Meta PMT */
@@ -81,7 +81,7 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 						  desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev,
-						   "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
+						   "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
 						   u4SrcLeb, pnum_src, offset_src, ret);
 					return MT_FTL_FAIL;
 				}
@@ -93,8 +93,8 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 						   desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
 				if (ret) {
 					mt_ftl_err(dev,
-						   "ubi_io_write failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-						   u4DstLeb, pnum_dst, *offset_dst + NAND_PAGE_SIZE,
+						   "ubi_io_write failed, leb = %d, pnum = %d, offset=0x%x ret = %d",
+						   u4DstLeb, pnum_dst, (unsigned int)*offset_dst + NAND_PAGE_SIZE,
 						   ret);
 					return MT_FTL_FAIL;
 				}
@@ -171,7 +171,7 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 	*offset_dst = 0;
 
 	if (u4DstLeb > NAND_TOTAL_BLOCK_NUM)
-		mt_ftl_err(dev, "u4DstLeb(%d) is larger than NAND_TOTAL_BLOCK_NUM(%d)", u4DstLeb,
+		mt_ftl_err(dev, "u4DstLeb(%u) is larger than NAND_TOTAL_BLOCK_NUM(%d)", u4DstLeb,
 			   NAND_TOTAL_BLOCK_NUM);
 
 	if (!isReplay) {
@@ -184,7 +184,7 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 				  offset_src + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
 	}
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
+		mt_ftl_err(dev, "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
 			   u4SrcLeb, pnum_src, offset_src, ret);
 		return MT_FTL_FAIL;
 	}
@@ -202,14 +202,14 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 	data_hdr_offset = NAND_PAGE_SIZE - (data_num * sizeof(struct mt_ftl_data_header) + 4);
 	if ((data_num * sizeof(struct mt_ftl_data_header)) >= NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "(data_num * sizeof(struct mt_ftl_data_header))(%d) >= NAND_PAGE_SIZE(%d)",
+			   "(data_num * sizeof(struct mt_ftl_data_header))(%lx) >= NAND_PAGE_SIZE(%d)",
 			   (data_num * sizeof(struct mt_ftl_data_header)), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "data_hdr_offset = %d, data_num = %d", data_hdr_offset, data_num);
 	}
 	header_buffer = (struct mt_ftl_data_header *)(&param->gc_page_buffer[data_hdr_offset >> 2]);
 
-	mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, header_buffer = 0x%x, gc_page_buffer = 0x%x",
-		data_num, data_hdr_offset, (unsigned int)header_buffer, (unsigned int)param->gc_page_buffer);
+	mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, header_buffer = 0x%lx, gc_page_buffer = 0x%lx",
+		data_num, data_hdr_offset, (unsigned long int)header_buffer, (unsigned long int)param->gc_page_buffer);
 
 	andSec = NAND_DEFAULT_VALUE;
 	for (i = 0; i < data_num; i++)
@@ -400,7 +400,7 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 			if ((data_hdr_offset + data_num * sizeof(struct mt_ftl_data_header)) >=
 			    NAND_PAGE_SIZE) {
 				mt_ftl_err(dev,
-					   "(data_hdr_offset + data_num * sizeof(struct mt_ftl_data_header))(%d) >= NAND_PAGE_SIZE(%d)",
+					   "(data_hdr_offset + data_num * sizeof(struct mt_ftl_data_header))(0x%lx) >= NAND_PAGE_SIZE(%d)",
 					   (data_hdr_offset +
 					    data_num * sizeof(struct mt_ftl_data_header)),
 					   NAND_PAGE_SIZE);
@@ -469,7 +469,7 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 		    NAND_PAGE_SIZE - (data_num * sizeof(struct mt_ftl_data_header) + 4);
 		if ((data_num * sizeof(struct mt_ftl_data_header)) >= NAND_PAGE_SIZE) {
 			mt_ftl_err(dev,
-				   "(data_num * sizeof(struct mt_ftl_data_header))(%d) >= NAND_PAGE_SIZE(%d)",
+				   "(data_num * sizeof(struct mt_ftl_data_header))(0x%lx) >= NAND_PAGE_SIZE(%d)",
 				   (data_num * sizeof(struct mt_ftl_data_header)), NAND_PAGE_SIZE);
 			mt_ftl_err(dev, "data_hdr_offset = %d, data_num = %d", data_hdr_offset,
 				   data_num);
@@ -553,7 +553,7 @@ int mt_ftl_gc(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, bool isRepl
 	unsigned int u4SrcInvalidLeb = MT_INVALID_BLOCKPAGE;
 	unsigned int u4ReturnLeb = 0;
 	int offset_dst = 0;
-	int isPMTBlock = 0;
+	/* int isPMTBlock = 0; */
 	bool allInvalid = false;
 
 	struct ubi_volume_desc *desc = dev->desc;
@@ -915,7 +915,7 @@ int mt_ftl_write_to_blk(struct mt_ftl_blk *dev, int dst_leb, unsigned int *page_
 	int offset = 0;
 	int pnum = 0;
 	struct ubi_volume_desc *desc = dev->desc;
-	struct mt_ftl_param *param = dev->param;
+	/* struct mt_ftl_param *param = dev->param; */
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
 
 	if (!ubi_is_mapped(desc, dst_leb))
@@ -962,7 +962,7 @@ int mt_ftl_write_page(struct mt_ftl_blk *dev)
 	int i = 0;
 	int cache_num = 0;
 	unsigned int data_hdr_offset = 0;
-	unsigned int *tmpbuffer;	/* Temporary */
+	/* unsigned int *tmpbuffer;	 Temporary */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
@@ -989,7 +989,7 @@ int mt_ftl_write_page(struct mt_ftl_blk *dev)
 	if ((data_hdr_offset + param->u4DataNum * sizeof(struct mt_ftl_data_header)) >=
 	    NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "(data_hdr_offset + param->u4DataNum * sizeof(struct mt_ftl_data_header))(%d) >= NAND_PAGE_SIZE(%d)"
+			   "(data_hdr_offset + param->u4DataNum * sizeof(struct mt_ftl_data_header))(0x%lx) >= NAND_PAGE_SIZE(%d)"
 			   , (data_hdr_offset + param->u4DataNum * sizeof(struct mt_ftl_data_header)), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "data_hdr_offset = %d, param->u4DataNum = %d", data_hdr_offset,
 			   param->u4DataNum);
@@ -1099,12 +1099,14 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 {
 	int ret = MT_FTL_SUCCESS;
 	int pmt_block = 0, pmt_page = 0;
-	int pmt = 0, meta_pmt = 0;
+	/* int pmt = 0, meta_pmt = 0; */
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
 	int i = 0;
+	int pnum_pmt = 0;
 	/* Temporary */
+	/*
 	int j = 0;
 	int k = 0;
 	int leb = 0;
@@ -1120,7 +1122,7 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 	    NAND_PAGE_SIZE - (param->u4DataNum * sizeof(struct mt_ftl_data_header) + 4);
 	int offset_in_pagebuf = 0;
 	unsigned char *page_buffer = NULL;
-	struct mt_ftl_data_header *header_buffer = NULL;
+	struct mt_ftl_data_header *header_buffer = NULL; */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
@@ -1267,7 +1269,7 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS;
 	int offset = 0;
-	int leb = 0, pnum = 0;
+	int pnum = 0;
 	int index = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
@@ -1285,7 +1287,7 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 	index = 8;
 	if (index + PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "index + PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "index + PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   index + PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, PMT_TOTAL_CLUSTER_NUM = %d", index,
 			   PMT_TOTAL_CLUSTER_NUM);
@@ -1295,7 +1297,7 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 	index += ((PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int)) >> 2);
 	if (index + NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "index + NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "index + NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   index + NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, NAND_TOTAL_BLOCK_NUM = %d", index,
 			   NAND_TOTAL_BLOCK_NUM);
@@ -1305,7 +1307,7 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 	index += ((NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int)) >> 2);
 	if (index + PMT_CACHE_NUM * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "index + PMT_CACHE_NUM * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "index + PMT_CACHE_NUM * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   index + PMT_CACHE_NUM * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, PMT_CACHE_NUM = %d", index, PMT_CACHE_NUM);
 	}
@@ -1370,14 +1372,11 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 int mt_ftl_commit(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS;
-	int pmt_block = 0, pmt_page = 0;
-	int leb = 0, page = 0;
-	int pnum = 0;
 	int i = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
-	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
-	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
+	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
+	/* const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE; */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
@@ -1441,7 +1440,6 @@ int mt_ftl_downloadPMT(struct mt_ftl_blk *dev, int cluster, int cache_num)
 	int pmt_block = 0;
 	int pmt_page = 0;
 	int pnum = 0;
-	int j = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 
@@ -1526,22 +1524,13 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 	int ret = MT_FTL_SUCCESS;
 	unsigned int *pmt = NULL;
 	unsigned int *meta_pmt = NULL;
-	int page = 0;
 	int old_leb = 0;
-	int old_page = 0;
-	int old_part = 0;
 	int old_data_size = 0;
-	int pnum = 0;
-	unsigned int data_num = 0;
-	unsigned int data_hdr_offset = 0;
-	unsigned int data_num_offset = 0;
-	unsigned int *page_buffer = NULL;
-	struct ubi_volume_desc *desc = dev->desc;
+	/* struct ubi_volume_desc *desc = dev->desc; */
 	struct mt_ftl_param *param = dev->param;
 	/* struct mt_ftl_data_header *header_buffer = NULL; */
-	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
+	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
 	int i = 0;
-	int j = 0;		/* Temporary */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
@@ -1604,17 +1593,6 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 #endif				/* PROFILE */
 
 		/* Download PMT from the block/page in param->u4PMTIndicator[cluster] */
-#if 0
-		/* Debug */
-		for (j = 0; j < (PMT_TOTAL_CLUSTER_NUM); j++) {
-			if (PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[j]) == i) {
-				mt_ftl_err(dev, "Multiple PMT indicator point to the same cache,
-					   u4PMTIndicator[%d] = 0x%x is in cache %d", j, param->u4PMTIndicator[j], i);
-				BUG_ON(1);
-			}
-		}
-		/* ===== */
-#endif
 		ret = mt_ftl_downloadPMT(dev, cluster, i);
 		if (ret)
 			return ret;
@@ -1711,8 +1689,8 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 	unsigned int cmpr_len = 0;
 	unsigned int data_offset = 0;
 	unsigned int total_consumed_size = 0;
-	unsigned int *tmpbuffer;	/* Temporary */
-	struct ubi_volume_desc *desc = dev->desc;
+	/* unsigned int *tmpbuffer;	Temporary */
+	/* struct ubi_volume_desc *desc = dev->desc; */
 	struct mt_ftl_param *param = dev->param;
 
 #ifdef PROFILE
@@ -1730,8 +1708,8 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 	ret = crypto_comp_compress(param->cc, buffer, len, param->cmpr_page_buffer, &cmpr_len);
 	if (ret) {
 		mt_ftl_err(dev, "ret = %d, cmpr_len = %d, len = 0x%x", ret, cmpr_len, len);
-		mt_ftl_err(dev, "cc = 0x%x, buffer = 0x%x", (unsigned int)param->cc, (unsigned int)buffer);
-		mt_ftl_err(dev, "cmpr_page_buffer = 0x%x", (unsigned int)param->cmpr_page_buffer);
+		mt_ftl_err(dev, "cc = 0x%lx, buffer = 0x%lx", (unsigned long int)param->cc, (unsigned long int)buffer);
+		mt_ftl_err(dev, "cmpr_page_buffer = 0x%lx", (unsigned long int)param->cmpr_page_buffer);
 		return MT_FTL_FAIL;
 	}
 #ifdef PROFILE
@@ -1886,7 +1864,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	unsigned int cluster = 0, sec_offset = 0;
 	int pmt = 0, meta_pmt = 0;
 	int offset_in_pagebuf = 0;
-	int i = 0;		/* Temporary */
 	int pmt_block = 0;
 	int pmt_page = 0;
 	int pnum_pmt = 0;
@@ -1900,7 +1877,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	unsigned int data_hdr_offset =
 	    NAND_PAGE_SIZE - (param->u4DataNum * sizeof(struct mt_ftl_data_header) + 4);
 	unsigned char *page_buffer = NULL;
-	unsigned char *page_buffer_c = NULL;
 	struct mt_ftl_data_header *header_buffer = NULL;
 
 #ifdef PROFILE
@@ -2027,7 +2003,7 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	if (pmt == NAND_DEFAULT_VALUE) {
 		/* TODO: modify this log */
 		mt_ftl_err(dev, "PMT of sector(0x%lx) is invalid", (unsigned long int)sector);
-		memset(buffer, 0x0, len);
+		memset((void *)buffer, 0x0, len);
 		return MT_FTL_SUCCESS;
 	}
 	leb = PMT_GET_BLOCK(pmt);
@@ -2188,7 +2164,7 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			mt_ftl_err(dev, "sector(0x%lx) hasn't been written",
 				   (unsigned long int)sector);
 			mt_ftl_err(dev, "leb = %d, page = %d, part = %d", leb, page, part);
-			memset(buffer, 0xFF, len);
+			memset((void *)buffer, 0xFF, len);
 			return MT_FTL_SUCCESS;
 		}
 		ret =
@@ -2374,9 +2350,9 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 						   1) + 6]);
 		mt_ftl_err(dev, "ret = %d, decmpr_len = %d, header_buffer->offset_len = 0x%x",
 			   ret, decmpr_len, header_buffer->offset_len);
-		mt_ftl_err(dev, "cc = 0x%x, page_buffer = 0x%x",
-			   (unsigned int)param->cc, (unsigned int)page_buffer);
-		mt_ftl_err(dev, "cmpr_page_buffer = 0x%x", (unsigned int)param->cmpr_page_buffer);
+		mt_ftl_err(dev, "cc = 0x%lx, page_buffer = 0x%lx",
+			   (unsigned long int)param->cc, (unsigned long int)page_buffer);
+		mt_ftl_err(dev, "cmpr_page_buffer = 0x%lx", (unsigned long int)param->cmpr_page_buffer);
 		return MT_FTL_FAIL;
 	}
 #ifdef PROFILE
@@ -2402,7 +2378,7 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		mt_ftl_err(dev, "offset_in_pagebuf(%d) + len(%d) > NAND_PAGE_SIZE(%d)",
 			   offset_in_pagebuf, len, NAND_PAGE_SIZE);
 	}
-	memcpy(buffer, &param->cmpr_page_buffer[offset_in_pagebuf], len);
+	memcpy((void *)buffer, &param->cmpr_page_buffer[offset_in_pagebuf], len);
 
 	/*for (i = 0; i < len; i++) {
 	   if (buffer[i] != 0x5a) {
@@ -2585,8 +2561,6 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 	int ret = MT_FTL_SUCCESS;
 	int leb = 0;
 	int page = 0;
-	int pmt_block = 0;
-	int pmt_page = 0;
 	int pnum = 0;
 	int offset = 0;
 	int nextleb_in_replay = MT_INVALID_BLOCKPAGE;
@@ -2595,7 +2569,7 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 	struct mt_ftl_param *param = dev->param;
 
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
-	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
+	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
 
 	param->replay_blk_index = 0;
 
@@ -2746,7 +2720,7 @@ int mt_ftl_alloc_buffers(struct mt_ftl_param *param)
 	if (ret)
 		return ret;
 
-	ret = mt_ftl_alloc_single_buffer(&param->i4CurrentPMTClusterInCache,
+	ret = mt_ftl_alloc_single_buffer((unsigned int **)&param->i4CurrentPMTClusterInCache,
 					 PMT_CACHE_NUM * sizeof(unsigned int),
 					 "param->i4CurrentPMTClusterInCache");
 	if (ret)
@@ -2770,19 +2744,19 @@ int mt_ftl_alloc_buffers(struct mt_ftl_param *param)
 	if (ret)
 		return ret;
 
-	ret = mt_ftl_alloc_single_buffer(&param->u1DataCache,
+	ret = mt_ftl_alloc_single_buffer((unsigned int **)&param->u1DataCache,
 					 NAND_PAGE_SIZE * sizeof(unsigned char),
 					 "param->u1DataCache");
 	if (ret)
 		return ret;
 
-	ret = mt_ftl_alloc_single_buffer(&param->u4Header,
+	ret = mt_ftl_alloc_single_buffer((unsigned int **)&param->u4Header,
 					 MTKFTL_MAX_DATA_NUM_PER_PAGE *
 					 sizeof(struct mt_ftl_data_header), "param->u4Header");
 	if (ret)
 		return ret;
 
-	ret = mt_ftl_alloc_single_buffer(&param->u4ReadHeader,
+	ret = mt_ftl_alloc_single_buffer((unsigned int **)&param->u4ReadHeader,
 					 MTKFTL_MAX_DATA_NUM_PER_PAGE *
 					 sizeof(struct mt_ftl_data_header), "param->u4ReadHeader");
 	if (ret)
@@ -2818,7 +2792,7 @@ int mt_ftl_alloc_buffers(struct mt_ftl_param *param)
 	if (ret)
 		return ret;
 
-	ret = mt_ftl_alloc_single_buffer(&param->cmpr_page_buffer,
+	ret = mt_ftl_alloc_single_buffer((unsigned int **)&param->cmpr_page_buffer,
 					 NAND_PAGE_SIZE * sizeof(unsigned char),
 					 "param->cmpr_page_buffer");
 	if (ret)
@@ -3071,7 +3045,6 @@ static int mt_ftl_param_default(struct mt_ftl_blk *dev)
 static int mt_ftl_param_init(struct mt_ftl_blk *dev, unsigned int *buffer)
 {
 	int ret = MT_FTL_SUCCESS;
-	int i = 0;
 	int index = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
@@ -3096,7 +3069,7 @@ static int mt_ftl_param_init(struct mt_ftl_blk *dev, unsigned int *buffer)
 	index = 8;
 	if ((index + PMT_TOTAL_CLUSTER_NUM) * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "(index + PMT_TOTAL_CLUSTER_NUM) * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "(index + PMT_TOTAL_CLUSTER_NUM) * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   (index + PMT_TOTAL_CLUSTER_NUM) * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, PMT_TOTAL_CLUSTER_NUM = %d", index,
 			   PMT_TOTAL_CLUSTER_NUM);
@@ -3107,7 +3080,7 @@ static int mt_ftl_param_init(struct mt_ftl_blk *dev, unsigned int *buffer)
 	index += ((PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int)) >> 2);
 	if ((index + NAND_TOTAL_BLOCK_NUM) * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "(index + NAND_TOTAL_BLOCK_NUM) * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "(index + NAND_TOTAL_BLOCK_NUM) * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   (index + NAND_TOTAL_BLOCK_NUM) * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, NAND_TOTAL_BLOCK_NUM = %d", index,
 			   NAND_TOTAL_BLOCK_NUM);
@@ -3118,7 +3091,7 @@ static int mt_ftl_param_init(struct mt_ftl_blk *dev, unsigned int *buffer)
 	index += ((NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int)) >> 2);
 	if ((index + PMT_CACHE_NUM) * sizeof(unsigned int) > NAND_PAGE_SIZE) {
 		mt_ftl_err(dev,
-			   "(index + PMT_CACHE_NUM) * sizeof(unsigned int)(%d) > NAND_PAGE_SIZE(%d)",
+			   "(index + PMT_CACHE_NUM) * sizeof(unsigned int)(0x%lx) > NAND_PAGE_SIZE(%d)",
 			   (index + PMT_CACHE_NUM) * sizeof(unsigned int), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "index = %d, PMT_CACHE_NUM = %d", index, PMT_CACHE_NUM);
 		return MT_FTL_FAIL;
