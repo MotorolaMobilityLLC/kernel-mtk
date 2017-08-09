@@ -8,10 +8,13 @@
 
 static void mrdump_hw_enable(bool enabled)
 {
+	int res;
 	struct wd_api *wd_api = NULL;
 
-	get_wd_api(&wd_api);
-	if (wd_api)
+	res = get_wd_api(&wd_api);
+	if (res < 0)
+		pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
+	else
 		wd_api->wd_dram_reserved_mode(enabled);
 }
 
@@ -21,7 +24,7 @@ static void mrdump_reboot(void)
 	struct wd_api *wd_api = NULL;
 
 	res = get_wd_api(&wd_api);
-	if (res) {
+	if (res < 0) {
 		pr_alert("arch_reset, get wd api error %d\n", res);
 		while (1)
 			cpu_relax();

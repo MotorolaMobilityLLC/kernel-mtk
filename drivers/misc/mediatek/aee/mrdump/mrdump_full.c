@@ -30,6 +30,7 @@
 #include <linux/kexec.h>
 #include <asm/pgtable.h>
 #include <asm/processor.h>
+#include <mach/wd_api.h>
 #if defined(CONFIG_FIQ_GLUE)
 #include <mt-plat/fiq_smp_call.h>
 #endif
@@ -463,7 +464,14 @@ static int param_get_mrdump_device(char *buffer, const struct kernel_param *kp)
 
 static int param_set_mrdump_enable(const char *val, const struct kernel_param *kp)
 {
-	int retval = 0;
+	int res, retval = 0;
+	struct wd_api *wd_api = NULL;
+
+	res = get_wd_api(&wd_api);
+	if (res < 0) {
+		return pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
+	}
+
 	/* Always disable if version not matched...cannot enable manually. */
 	if ((mrdump_plat != NULL) && (0 == memcmp(mrdump_cblock.sig, MRDUMP_GO_DUMP, 8)) && !mrdump_rsv_conflict) {
 		retval = param_set_bool(val, kp);
