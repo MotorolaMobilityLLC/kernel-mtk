@@ -359,9 +359,9 @@ void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_
 	temp0 = (10000 * 100000 / g_gain) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp1 = temp0 / (166 + g_o_slope);
+		temp1 = (temp0 * 10) / (1663 + g_o_slope * 10);
 	else
-		temp1 = temp0 / (166 - g_o_slope);
+		temp1 = (temp0 * 10) / (1663 - g_o_slope * 10);
 
 	ts_ptpod.ts_MTS = temp1;
 
@@ -369,9 +369,9 @@ void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_
 	temp1 = ((10000 * 100000 / 4096 / g_gain) * g_oe + x_roomt * 10) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp2 = temp1 * 10 / (166 + g_o_slope);
+		temp2 = temp1 * 100 / (1663 + g_o_slope * 10);
 	else
-		temp2 = temp1 * 10 / (166 - g_o_slope);
+		temp2 = temp1 * 100 / (1663 - g_o_slope * 10);
 
 	ts_ptpod.ts_BTS = (temp0 + temp2 - 250) * 4 / 10;
 
@@ -528,14 +528,14 @@ static S32 temperature_to_raw_room(U32 ret, thermal_sensor_name ts_name)
 
 	if (g_o_slope_sign == 0) {	/* O_SLOPE is Positive. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (166 + g_o_slope) * 18 / 15;
+		format_2 = format_1 * (1663 + g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
 		format_4 = (format_3 * 4096 / 10000 * g_gain) / 100000 + g_oe;
 	} else {		/* O_SLOPE is Negative. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (166 - g_o_slope) * 18 / 15;
+		format_2 = format_1 * (1663 - g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
@@ -572,9 +572,9 @@ static S32 raw_to_temperature_roomt(U32 ret, thermal_sensor_name ts_name)
 
 
 	if (g_o_slope_sign == 0)
-		format_4 = ((format_3 * 100) / (166 + g_o_slope));	/* uint = 0.1 deg */
+		format_4 = ((format_3 * 1000) / (1663 + g_o_slope * 10));	/* uint = 0.1 deg */
 	else
-		format_4 = ((format_3 * 100) / (166 - g_o_slope));	/* uint = 0.1 deg */
+		format_4 = ((format_3 * 1000) / (1663 - g_o_slope * 10));	/* uint = 0.1 deg */
 
 	format_4 = format_4 - (format_4 << 1);
 

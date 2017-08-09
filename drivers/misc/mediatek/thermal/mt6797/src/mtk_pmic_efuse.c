@@ -113,23 +113,19 @@ void mtktspmic_cali_prepare2(void)
 {
 
 	kal_int32 vbe_t;
-	g_slope1 = (100 * 1000);	/* 1000 is for 0.001 degree */
+	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
-	/*
-	   0.001598 -> 0.00160, for expression compatiable only
-	   This change is confirmed with DE Wei-Lin Chen
-	 */
 	if (g_o_slope_sign == 0)
-		g_slope2 = -(160 + g_o_slope);
+		g_slope2 = -(1598 + g_o_slope);
 	else
-		g_slope2 = -(160 - g_o_slope);
+		g_slope2 = -(1598 - g_o_slope);
 
 	vbe_t = (-1) * ((((g_o_vts) * 1800)) / 4096) * 1000;
 
 	if (g_o_slope_sign == 0)
-		g_intercept = (vbe_t * 100) / (-(160 + g_o_slope));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(1598 + g_o_slope * 10));	/*0.001 degree */
 	else
-		g_intercept = (vbe_t * 100) / (-(160 - g_o_slope));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(1598 - g_o_slope * 10));	/*0.001 degree */
 
 	g_intercept = g_intercept + (g_degc_cali * (1000 / 2));	/* 1000 is for 0.1 degree */
 
