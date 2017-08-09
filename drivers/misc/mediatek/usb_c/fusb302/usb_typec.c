@@ -1742,7 +1742,6 @@ BOOL FUSB300Read(unsigned char regAddr, unsigned char length, unsigned char *dat
 
 
 /* /////////////////////////////////////////////////////////////////////////////// */
-/* /////////////////////////////////////////////////////////////////////////////// */
 int register_typec_switch_callback(struct typec_switch_data *new_driver)
 {
 	fusb_printk(K_DEBUG, "Register driver %s %d\n", new_driver->name, new_driver->type);
@@ -1891,8 +1890,10 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 			typec->device_driver->on = DISABLE;
 
 			usb_redriver_enter_dps(typec);
+
 			usb3_switch_en(typec, DISABLE);
-			fusb_printk(K_DEBUG, "trigger_driver:[1]\n");
+
+			fusb_printk(K_DEBUG, "trigger_driver: disable dev drv\n");
 		} else if ((stat == ENABLE) && (typec->device_driver->enable)
 			   && (typec->device_driver->on == DISABLE)) {
 			typec->device_driver->enable(typec->device_driver->priv_data);
@@ -1901,7 +1902,8 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 			usb_redriver_exit_dps(typec);
 
 			usb3_switch_en(typec, ENABLE);
-			fusb_printk(K_DEBUG, "trigger_driver:[2]\n");
+
+			fusb_printk(K_DEBUG, "trigger_driver: enable dev drv\n");
 		} else {
 			fusb_printk(K_DEBUG, "%s No device driver to enable\n", __func__);
 		}
@@ -1912,8 +1914,10 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 			typec->host_driver->on = DISABLE;
 
 			usb_redriver_enter_dps(typec);
+
 			usb3_switch_en(typec, DISABLE);
-			fusb_printk(K_DEBUG, "trigger_driver:[3]\n");
+
+			fusb_printk(K_DEBUG, "trigger_driver: disable host drv\n");
 		} else if ((stat == ENABLE) &&
 			   (typec->host_driver->enable) && (typec->host_driver->on == DISABLE)) {
 			typec->host_driver->enable(typec->host_driver->priv_data);
@@ -1922,12 +1926,13 @@ static int trigger_driver(struct usbtypc *typec, int type, int stat, int dir)
 			usb_redriver_exit_dps(typec);
 
 			usb3_switch_en(typec, ENABLE);
-			fusb_printk(K_DEBUG, "trigger_driver:[4]\n");
+
+			fusb_printk(K_DEBUG, "trigger_driver: enable host drv\n");
 		} else {
 			fusb_printk(K_DEBUG, "%s No device driver to enable\n", __func__);
 		}
 	} else {
-		fusb_printk(K_DEBUG, "trigger_driver:[5]\n");
+		fusb_printk(K_DEBUG, "trigger_driver: no callback func\n");
 	}
 
 	return 0;
@@ -1955,13 +1960,7 @@ static irqreturn_t fusb300_eint_isr(int irqnum, void *data)
 	}
 
 	ret = schedule_delayed_work_on(WORK_CPU_UNBOUND, &typec->fsm_work, 0);
-/*
-	fusb_printk(K_DEBUG, "fusb300_eint_isr %d, gpio_mode(%d),"
-		    " gpio_pull_enable(%d), gpio_pull_select(%d)\n", irqnum,
-		    mt_get_gpio_mode(GPIO_USB_TYPEC_EINT_PIN),
-		    mt_get_gpio_pull_enable(GPIO_USB_TYPEC_EINT_PIN),
-		    mt_get_gpio_pull_select(GPIO_USB_TYPEC_EINT_PIN));
-*/
+
 	return IRQ_HANDLED;
 }
 
@@ -1996,14 +1995,14 @@ int usb_redriver_init(struct usbtypc *typec)
 {
 	int retval = 0;
 	int u3_eq_c1 = 197;
-	int u3_eq_c2 = 198;
+	int u3_eq_c2 = 196;
 
 	typec->u_rd = kzalloc(sizeof(struct usb_redriver), GFP_KERNEL);
 	typec->u_rd->c1_gpio = u3_eq_c1;
 	typec->u_rd->eq_c1 = U3_EQ_HIGH;
 
 	typec->u_rd->c2_gpio = u3_eq_c2;
-	typec->u_rd->eq_c2 = U3_EQ_HIGH;
+	typec->u_rd->eq_c2 = U3_EQ_LOW;
 
 	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->re_c1_init);
 	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->re_c2_init);
@@ -2035,35 +2034,40 @@ int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat)
 		pin_num = typec->u_rd->c1_gpio;
 	} else if (ctrl_pin == U3_EQ_C2) {
 		pin_num = typec->u_rd->c2_gpio;
-	} else {
-		retval = -EINVAL;
-		goto end;
 	}
 
-	/* switch(stat) { */
-	/* case U3_EQ_LOW: */
-	/* retval |= mt_set_gpio_dir( pin_num, GPIO_DIR_OUT); */
-	/* retval |= mt_set_gpio_out( pin_num, GPIO_OUT_ZERO); */
-	/* retval |= mt_set_gpio_pull_enable( pin_num, GPIO_PULL_ENABLE); */
-	/* break; */
-	/* case U3_EQ_HZ: */
-	/* retval |= mt_set_gpio_dir( pin_num, GPIO_DIR_IN); */
-	/* retval |= mt_set_gpio_pull_enable( pin_num, GPIO_PULL_DISABLE); */
-	/* break; */
-	/* case U3_EQ_HIGH: */
-	/* retval |= mt_set_gpio_dir( pin_num, GPIO_DIR_OUT); */
-	/* retval |= mt_set_gpio_out( pin_num, GPIO_OUT_ONE); */
-	/* retval |= mt_set_gpio_pull_enable( pin_num, GPIO_PULL_ENABLE); */
-	/* break; */
-	/* default: */
-	/* retval = -EINVAL; */
-	/* break; */
-	/* } */
+	switch (stat) {
+	case U3_EQ_LOW:
+		if (ctrl_pin == U3_EQ_C1)
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c1_low);
+		else
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c2_low);
+		break;
+	case U3_EQ_HZ:
+		if (ctrl_pin == U3_EQ_C1)
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c1_hiz);
+		else
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c2_hiz);
+		break;
+	case U3_EQ_HIGH:
+		if (ctrl_pin == U3_EQ_C1)
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c1_high);
+		else
+			pinctrl_select_state(typec->pinctrl,
+					typec->pin_cfg->re_c2_high);
+		break;
+	default:
+		retval = -EINVAL;
+		break;
+	}
 
 	fusb_printk(K_DEBUG, "%s gpio=%d, out=%d\n", __func__, pin_num,
 		    gpio_get_value(pin_num));
-
-end:
 
 	return retval;
 }
