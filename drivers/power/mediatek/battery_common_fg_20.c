@@ -2868,6 +2868,10 @@ int bat_routine_thread(void *x)
 	ktime_t ktime = ktime_set(3, 0);	/* 10s, 10* 1000 ms */
 
 	/* Run on a process content */
+#if defined(BATTERY_SW_INIT)
+	battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
+#endif
+
 	while (1) {
 		wake_lock(&battery_meter_lock);
 		mutex_lock(&bat_mutex);
@@ -3793,9 +3797,6 @@ static int battery_probe(struct platform_device *dev)
 	get_charging_control();
 
 	batt_init_cust_data();
-#if defined(BATTERY_SW_INIT)
-	battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
-#endif
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ", g_platform_boot_mode);

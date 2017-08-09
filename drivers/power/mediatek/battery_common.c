@@ -3104,7 +3104,9 @@ int bat_thread_kthread(void *x)
 		battery_log(BAT_LOG_CRTI, "CDP, PASS\n");
 	}
 #endif
-
+#if defined(BATTERY_SW_INIT)
+		battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
+#endif
 
 	/* Run on a process content */
 	while (1) {
@@ -4171,9 +4173,6 @@ static int battery_probe(struct platform_device *dev)
 	get_charging_control();
 
 	batt_init_cust_data();
-#if defined(BATTERY_SW_INIT)
-		battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
-#endif
 
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
