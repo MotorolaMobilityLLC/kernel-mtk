@@ -1055,3 +1055,7 @@ INT32 wmt_plat_set_dbg_mode(UINT32 flag)
 {
 	return mtk_wcn_consys_set_dbg_mode(flag);
 }
+VOID wmt_plat_set_dynamic_dumpmem(UINT32 *buf)
+{
+	mtk_wcn_consys_set_dynamic_dump(buf);
+}

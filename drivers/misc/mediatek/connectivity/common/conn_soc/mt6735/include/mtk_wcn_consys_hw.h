@@ -230,6 +230,7 @@ typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
 	EXP_APMEM_CTRL_CHIP_PAGED_DUMP_END = 0x2c,
 	EXP_APMEM_CTRL_HOST_OUTBAND_ASSERT_W1 = 0x30,
 	EXP_APMEM_CTRL_CHIP_FW_DBGLOG_MODE = 0x40,
+	EXP_APMEM_CTRL_CHIP_DYNAMIC_DUMP = 0x48,
 	EXP_APMEM_CTRL_MAX
 } ENUM_EMI_CTRL_STATE_OFFSET, *P_ENUM_EMI_CTRL_STATE_OFFSET;
 
@@ -289,4 +290,5 @@ extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
 extern INT32 mtk_wcn_consys_set_dbg_mode(UINT32 flag);
+extern INT32 mtk_wcn_consys_set_dynamic_dump(PUINT32 buf);
 #endif /* _MTK_WCN_CMB_HW_H_ */

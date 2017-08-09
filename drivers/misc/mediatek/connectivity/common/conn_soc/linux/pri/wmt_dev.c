@@ -87,12 +87,14 @@
 #define WMT_IOCTL_SEND_BGW_DS_CMD		_IOW(WMT_IOC_MAGIC, 25, char*)
 #define WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, char*)
 #define WMT_IOCTL_FW_DBGLOG_CTRL		_IOR(WMT_IOC_MAGIC, 29, int)
+#define WMT_IOCTL_DYNAMIC_DUMP_CTRL     _IOR(WMT_IOC_MAGIC, 30, char*)
 
 #define MTK_WMT_VERSION  "SOC Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
 #define WMT_DEV_MAJOR 190	/* never used number */
 #define WMT_DEV_NUM 1
 #define WMT_DEV_INIT_TO_MS (2 * 1000)
+#define DYNAMIC_DUMP_BUF 109
 
 #if CFG_WMT_DBG_SUPPORT
 #define WMT_DBG_PROCNAME "driver/wmt_dbg"
@@ -2212,6 +2214,40 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			iRet = wmt_plat_set_dbg_mode(arg);
 			if (iRet == 0)
 				wmt_dbg_fwinfor_from_emi(0, 1, 0);
+		}
+		break;
+	case WMT_IOCTL_DYNAMIC_DUMP_CTRL:
+		{
+			UINT32 i = 0, j = 0, k = 0;
+			UINT8 pBuf[DYNAMIC_DUMP_BUF + 1];
+			UINT32 int_buf[DYNAMIC_DUMP_BUF];
+			char Buffer[10][11];
+
+			if (copy_from_user(pBuf, (void *)arg, DYNAMIC_DUMP_BUF)) {
+				iRet = -EFAULT;
+				break;
+			}
+			pBuf[DYNAMIC_DUMP_BUF] = '\0';
+			WMT_INFO_FUNC("get dynamic dump data from property(%s)\n", pBuf);
+			memset(Buffer, 0, 10*11);
+			for (i = 0; i < DYNAMIC_DUMP_BUF; i++) {
+				if (pBuf[i] == '/') {
+					k = 0;
+					j++;
+				} else {
+					Buffer[j][k] = pBuf[i];
+					k++;
+				}
+			}
+			for (j = 0; j < 10; j++) {
+				iRet = kstrtou32(Buffer[j], 0, &int_buf[j]);
+				if (iRet) {
+					WMT_ERR_FUNC("string convert fail(%d)\n", iRet);
+					break;
+				}
+				WMT_INFO_FUNC("dynamic dump data buf[%d]:(0x%x)\n", j, int_buf[j]);
+			}
+			wmt_plat_set_dynamic_dumpmem(int_buf);
 		}
 		break;
 	default:

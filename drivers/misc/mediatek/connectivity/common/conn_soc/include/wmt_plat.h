@@ -283,6 +283,7 @@ INT32 wmt_plat_update_host_sync_num(VOID);
 INT32 wmt_plat_get_dump_info(UINT32 offset);
 UINT32 wmt_plat_get_soc_chipid(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
+VOID wmt_plat_set_dynamic_dumpmem(UINT32 *buf);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif
