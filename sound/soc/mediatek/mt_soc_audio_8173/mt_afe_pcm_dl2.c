@@ -201,7 +201,7 @@ static int mt_pcm_dl2_prestart(struct snd_pcm_substream *substream)
 
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
-			mt_afe_set_i2s_dac_out(runtime->rate);
+			mt_afe_set_i2s_dac_out(runtime->rate, priv->i2s1_clock_mode);
 			mt_afe_enable_i2s_dac();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);

@@ -49,27 +49,29 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 	pr_debug("%s\n", __func__);
 
-	if (priv->capture_mux == UL1_I2S2)
-		mt_afe_set_i2s_adc_in(runtime->rate);
-	else
-		mt_afe_set_mtkif_adc_in(runtime->rate);
-
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_VUL, MT_AFE_MEMIF_16_BIT);
+	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->rate);
+	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->channels);
 	mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O09);
 	mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O10);
 
-	if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC) == false) {
-		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
-		if (priv->capture_mux == UL1_I2S2)
+	if (priv->capture_mux == UL1_I2S2) {
+		mt_afe_set_i2s_adc_in(runtime->rate, priv->i2s2_clock_mode);
+		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC)) {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
 			mt_afe_enable_i2s_adc();
-		else
-			mt_afe_enable_mtkif_adc();
+		} else {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
+		}
 	} else {
-		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
+		mt_afe_set_mtkif_adc_in(runtime->rate);
+		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC)) {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
+			mt_afe_enable_mtkif_adc();
+		} else {
+			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
+		}
 	}
-
-	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->rate);
-	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->channels);
 
 	if (runtime->channels == 1) {
 		if (priv->mono_type == R_MONO)
@@ -80,7 +82,6 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 	mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_VUL);
 
-	/* here to turn off digital part */
 	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I03, INTER_CONN_O09);
 	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I04, INTER_CONN_O10);
 
@@ -111,7 +112,7 @@ static void mt_pcm_capture_stop_audio_hw(struct snd_pcm_substream *substream)
 	pr_debug("%s\n", __func__);
 
 	mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
-	if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC) == false) {
+	if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC)) {
 		if (priv->capture_mux == UL1_I2S2)
 			mt_afe_disable_i2s_adc();
 		else
@@ -256,7 +257,7 @@ static int mt_pcm_capture_prepare(struct snd_pcm_substream *substream)
 			mt_afe_set_mclk(MT_AFE_ENGEN, runtime->rate);
 			mt_afe_enable_apll_div_power(MT_AFE_I2S2, runtime->rate);
 			mt_afe_enable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
-		    priv->enable_i2s2_low_jitter = true;
+			priv->enable_i2s2_low_jitter = true;
 		}
 		priv->prepared = true;
 	}

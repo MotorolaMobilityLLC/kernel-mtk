@@ -34,7 +34,7 @@ int mt_afe_enable_memory_path(uint32_t block);
 int mt_afe_disable_memory_path(uint32_t block);
 bool mt_afe_get_memory_path_state(uint32_t block);
 
-void mt_afe_set_i2s_dac_out(uint32_t sample_rate);
+void mt_afe_set_i2s_dac_out(uint32_t sample_rate, uint32_t clock_mode);
 int mt_afe_enable_i2s_dac(void);
 int mt_afe_disable_i2s_dac(void);
 void mt_afe_enable_afe(bool enable);
@@ -42,7 +42,7 @@ void mt_afe_enable_afe(bool enable);
 void mt_afe_set_mtkif_adc_in(uint32_t sample_rate);
 void mt_afe_enable_mtkif_adc(void);
 void mt_afe_disable_mtkif_adc(void);
-void mt_afe_set_i2s_adc_in(uint32_t sample_rate);
+void mt_afe_set_i2s_adc_in(uint32_t sample_rate, uint32_t clock_mode);
 void mt_afe_enable_i2s_adc(void);
 void mt_afe_disable_i2s_adc(void);
 void mt_afe_set_i2s_adc2_in(uint32_t sample_rate);

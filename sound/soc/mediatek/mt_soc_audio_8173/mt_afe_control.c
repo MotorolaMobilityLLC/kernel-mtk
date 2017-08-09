@@ -439,7 +439,7 @@ bool mt_afe_get_memory_path_state(uint32_t block)
 	return state;
 }
 
-void mt_afe_set_i2s_dac_out(uint32_t sample_rate)
+void mt_afe_set_i2s_dac_out(uint32_t sample_rate, uint32_t clock_mode)
 {
 	uint32_t audio_i2s_dac = 0;
 
@@ -447,7 +447,7 @@ void mt_afe_set_i2s_dac_out(uint32_t sample_rate)
 	mt_afe_set_dl_src2(sample_rate);
 
 	audio_i2s_dac |= (MT_AFE_LR_SWAP_NO_SWAP << 31);
-	audio_i2s_dac |= (MT_AFE_NORMAL_CLOCK << 12);
+	audio_i2s_dac |= (clock_mode << 12);
 	audio_i2s_dac |= (mt_afe_rate_to_idx(sample_rate) << 8);
 	audio_i2s_dac |= (MT_AFE_INV_LRCK_NO_INVERSE << 5);
 	audio_i2s_dac |= (MT_AFE_I2S_FORMAT_I2S << 3);
@@ -535,33 +535,23 @@ void mt_afe_disable_mtkif_adc(void)
 	}
 }
 
-void mt_afe_set_i2s_adc_in(uint32_t sample_rate)
+void mt_afe_set_i2s_adc_in(uint32_t sample_rate, uint32_t clock_mode)
 {
 	uint32_t reg_val = 0;
-	struct mt_afe_digital_i2s i2s_settings;
-
-	i2s_settings.lr_swap = MT_AFE_LR_SWAP_NO_SWAP;
-	i2s_settings.buffer_update_word = 8;
-	i2s_settings.fpga_bit_test = 0;
-	i2s_settings.fpga_bit = 0;
-	i2s_settings.loopback = 0;
-	i2s_settings.inv_lrck = MT_AFE_INV_LRCK_NO_INVERSE;
-	i2s_settings.i2s_fmt = MT_AFE_I2S_FORMAT_I2S;
-	i2s_settings.i2s_wlen = MT_AFE_I2S_WLEN_16BITS;
-	i2s_settings.i2s_sample_rate = sample_rate;
 
 	/* I_03/I_04 source from external ADC */
 	mt_afe_set_reg(AFE_ADDA_TOP_CON0, 1, 0x1);
 
-	reg_val |= (i2s_settings.lr_swap << 31);
-	reg_val |= (i2s_settings.buffer_update_word << 24);
-	reg_val |= (i2s_settings.inv_lrck << 23);
-	reg_val |= (i2s_settings.fpga_bit_test << 22);
-	reg_val |= (i2s_settings.fpga_bit << 21);
-	reg_val |= (i2s_settings.loopback << 20);
-	reg_val |= (mt_afe_rate_to_idx(i2s_settings.i2s_sample_rate) << 8);
-	reg_val |= (i2s_settings.i2s_fmt << 3);
-	reg_val |= (i2s_settings.i2s_wlen << 1);
+	reg_val |= (MT_AFE_LR_SWAP_NO_SWAP << 31);
+	reg_val |= (8 << 24);
+	reg_val |= (MT_AFE_INV_LRCK_NO_INVERSE << 23);
+	reg_val |= (0 << 22);
+	reg_val |= (0 << 21);
+	reg_val |= (0 << 20);
+	reg_val |= (clock_mode << 12);
+	reg_val |= (mt_afe_rate_to_idx(sample_rate) << 8);
+	reg_val |= (MT_AFE_I2S_FORMAT_I2S << 3);
+	reg_val |= (MT_AFE_I2S_WLEN_16BITS << 1);
 	mt_afe_set_reg(AFE_I2S_CON2, reg_val, MASK_ALL);
 }
 

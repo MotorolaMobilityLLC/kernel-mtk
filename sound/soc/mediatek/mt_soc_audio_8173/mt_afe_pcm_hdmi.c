@@ -346,7 +346,7 @@ static int hdmi_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		mt_afe_enable_hdmi_tdm_i2s_loopback();
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
-			mt_afe_set_i2s_dac_out(priv->cached_sample_rate);
+			mt_afe_set_i2s_dac_out(priv->cached_sample_rate, MT_AFE_NORMAL_CLOCK);
 			mt_afe_enable_i2s_dac();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
