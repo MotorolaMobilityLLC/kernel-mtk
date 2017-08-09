@@ -3414,6 +3414,13 @@ int primary_display_set_lcm_refresh_rate(int fps)
 
 	DISPCHECK("set lcm fps(%d)\n", fps);
 	_primary_protect_mode_switch();
+
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	/* Switch back to cmd mode */
+	if (fps == 60 && primary_display_is_video_mode())
+		primary_display_switch_dst_mode(0);
+#endif
+
 	_primary_path_lock(__func__);
 	if (pgc->state == DISP_SLEPT) {
 		_primary_path_unlock(__func__);
@@ -3447,9 +3454,11 @@ static void _display_set_refresh_rate_post_proc(int fps)
 	if (fps == 60) {
 		/* TODO: switch path after adjusting fps */
 		od_need_start = 0;
+		spm_enable_sodi(1);
 	} else if (fps == 120) {
 		if (!od_by_pass)
 			od_need_start = 1;
+		spm_enable_sodi(0);
 	}
 }
 #endif
@@ -3734,6 +3743,11 @@ int primary_display_suspend(void)
 	if (disp_helper_get_option(DISP_OPT_SWITCH_DST_MODE))
 		primary_display_switch_dst_mode(primary_display_def_dst_mode);
 
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	/* Switch back to cmd mode */
+	if (primary_display_is_video_mode())
+		primary_display_switch_dst_mode(0);
+#endif
 	_primary_path_switch_dst_lock();
 	disp_sw_mutex_lock(&(pgc->capture_lock));
 	_primary_path_lock(__func__);
@@ -4977,15 +4991,15 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart, (unsigned long)handle, 0);
 
-	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-		cmdqRecReset(handle);
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-		cmdqsize = cmdqRecGetInstructionCount(handle);
-	}
-
 	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
 		_primary_path_lock(__func__);
+
+		if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
+			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+			cmdqRecReset(handle);
+			_cmdq_insert_wait_frame_done_token_mira(handle);
+			cmdqsize = cmdqRecGetInstructionCount(handle);
+		}
 
 		if (pgc->state == DISP_SLEPT && handle) {
 			cmdqRecDestroy(handle);
@@ -5017,6 +5031,14 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	} else {
 		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
+
+		if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
+			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+			cmdqRecReset(handle);
+			_cmdq_insert_wait_frame_done_token_mira(handle);
+			cmdqsize = cmdqRecGetInstructionCount(handle);
+		}
+
 		if (pgc->state == DISP_SLEPT && handle) {
 			cmdqRecDestroy(handle);
 			handle = NULL;
@@ -6486,6 +6508,9 @@ int primary_display_switch_dst_mode(int mode)
 	void *lcm_cmd = NULL;
 	int temp_mode = 0;
 
+	if (!disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
+		return 0;
+
 	DISPFUNC();
 	_primary_path_switch_dst_lock();
 	disp_sw_mutex_lock(&(pgc->capture_lock));
@@ -6534,9 +6559,6 @@ int primary_display_switch_dst_mode(int mode)
 		goto done;
 	}
 
-	/* disable idlemgr */
-	set_idlemgr(0, 0);
-
 	/* When switch to vdo mode, go back to DL mode if display path change to DC mode by SMART OVL */
 	if (disp_helper_get_option(DISP_OPT_SMART_OVL) && !primary_display_is_video_mode()) {
 		/* switch to the mode before idle */
@@ -6550,21 +6572,11 @@ int primary_display_switch_dst_mode(int mode)
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
 
-	/* 2. do c2v */
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 0);
 	_cmdq_reset_config_handle();
 
-	/* C2V switch control flow - cmdq */
-	if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
-		DDP_SWITCH_DSI_MODE, lcm_cmd)) {
-		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
-			MMProfileFlagPulse, 9, 0);
-		DISPERR("[C2V]switch dsi mode fail, return directly\n");
-		ret = -1;
-	}
-
-	/* 2. modify lcm mode - sw */
+	/* 1. modify lcm mode - sw */
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 1);
 	temp_mode = (int)(pgc->plcm->params->dsi.mode);
@@ -6572,10 +6584,28 @@ int primary_display_switch_dst_mode(int mode)
 	pgc->plcm->params->dsi.switch_mode = temp_mode;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
-	/* 3. rebuild trigger loop */
+	/* 2.Change PLL CLOCK parameter and build fps lcm command */
+	disp_lcm_adjust_fps(pgc->cmdq_handle_config, pgc->plcm, pgc->lcm_refresh_rate);
+	disp_handle = pgc->dpmgr_handle;
+	pconfig = dpmgr_path_get_last_config(disp_handle);
+	pconfig->dispif_config.dsi.PLL_CLOCK = pgc->plcm->params->dsi.PLL_CLOCK;
+
+	/* 3.Change PLL LCM clock parameter */
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_UPDATE_PLL_CLK_ONLY,
+		&pgc->plcm->params->dsi.PLL_CLOCK);
+
+	/* 4.Switch mode and change DSI clock */
+	if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+		DDP_SWITCH_DSI_MODE, lcm_cmd)) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMProfileFlagPulse, 9, 0);
+		/* DISPERR("[C2V]switch dsi mode fail, return directly\n"); */
+		ret = -1;
+	}
+
+	/* 5. rebuild trigger loop */
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 2);
-
 	_cmdq_build_trigger_loop();
 	_cmdq_stop_trigger_loop();
 	_cmdq_start_trigger_loop();
@@ -6583,18 +6613,7 @@ int primary_display_switch_dst_mode(int mode)
 	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
-		MMProfileFlagPulse, 4, 4);
-
-	/* 1.Change PLL CLOCK parameter and build fps lcm command */
-	disp_lcm_adjust_fps(pgc->cmdq_handle_config, pgc->plcm, pgc->lcm_refresh_rate);
-	disp_handle = pgc->dpmgr_handle;
-	pconfig = dpmgr_path_get_last_config(disp_handle);
-	pconfig->dispif_config.dsi.PLL_CLOCK = pgc->plcm->params->dsi.PLL_CLOCK;
-	/* 3.Change DSI clock */
-	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_PHY_CLK_CHANGE,
-		&pgc->plcm->params->dsi.PLL_CLOCK);
-	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_config, 1);
-
+		MMProfileFlagPulse, 4, 3);
 	primary_display_cur_dst_mode = mode;
 	DISPMSG("primary_display_cur_dst_mode %d\n", primary_display_cur_dst_mode);
 	if (primary_display_is_video_mode())
@@ -6603,11 +6622,6 @@ int primary_display_switch_dst_mode(int mode)
 	else
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 			DDP_IRQ_DSI0_EXT_TE);
-	/* 4. reinit lowpower params */
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		primary_display_sodi_rule_init();
-	/* enable idlemgr */
-	set_idlemgr(1, 0);
 
 	ret = DISP_STATUS_OK;
 done:

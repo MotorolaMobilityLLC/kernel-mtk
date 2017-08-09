@@ -3540,9 +3540,8 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_RST, 0x1, 0x1); /* reset mutex for V2C */
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_RST, 0x1, 0x0);
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x7, 0x0); /* mutex to cmd  mode */
+		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x0, 0x40); /* eof */
 
-		DISP_REG_SET(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 1);
-		ddp_dsi_trigger(DISP_MODULE_DSI0, cmdq_handle);
 		if (disp_helper_get_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE))
 				DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x1c0, 0x40); /* eof */
 
@@ -3562,7 +3561,21 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 			DSI_OUTREGBIT(cmdq_handle, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		}
 
-		/* 5. blocking flush */
+		/* 5. Adjust PLL clk */
+		DSI_DisableClk(module, cmdq_handle);
+		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
+		DSI_EnableClk(module, cmdq_handle);
+		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
+
+		/* 6.update one frame */
+		DSI_OUTREG32(cmdq_handle, &DSI_CMDQ_REG[i]->data[0], 0x002c3909);
+		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_CMDQ_SIZE, 1);
+		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		DISP_REG_SET(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 1);
+		DSI_Start(module, cmdq_handle);
+		cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+
+		/* 7. blocking flush */
 		cmdqRecFlush(cmdq_handle);
 		cmdqRecReset(cmdq_handle);
 #endif
@@ -3572,18 +3585,24 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		DISPMSG("[C2V]v2c switch finished\n");
 	} else {		/* C2V */
 		DISPMSG("[C2V]c2v switch begin\n");
-		/* 1. wait dsi not busy and TE */
+		/* 1. Adjust PLL clk */
 		cmdqRecWaitNoClear(cmdq_handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+		DSI_DisableClk(module, cmdq_handle);
+		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
+		DSI_EnableClk(module, cmdq_handle);
+		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
+
+		/* 2. wait TE */
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DSI_TE);
 		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
 
-		/* 2. disable DSI EXT TE, only BTA te could work, reason unknown */
+		/* 3. disable DSI EXT TE, only BTA te could work, reason unknown */
 		DSI_OUTREGBIT(cmdq_handle, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
 		DSI_OUTREGBIT(cmdq_handle, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 								  RG_DSI0_MPPLL_SDM_SSC_EN, 0);
 		dsi_params->ssc_disable = 1;
 
-		/* 3. set mode */
+		/* 4. change to vdo mode */
 		DSI_SetMode(module, cmdq_handle, mode);
 		/* DSI_SetSwitchMode(module, cmdq_handle, 1); */
 		/* DSI_SetBypassRack(module, cmdq_handle, 1); */
@@ -3769,6 +3788,13 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 			DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
 			DSI_EnableClk(module, cmdq_handle);
 			DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
+			break;
+		}
+	case DDP_UPDATE_PLL_CLK_ONLY:
+		{
+			LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
+
+			dsi_params->PLL_CLOCK = *params;
 			break;
 		}
 	case DDP_PARTIAL_UPDATE:

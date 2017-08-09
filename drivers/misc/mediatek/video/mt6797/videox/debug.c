@@ -419,6 +419,17 @@ static void process_dbg_opt(const char *opt)
 		}
 		primary_display_switch_dst_mode(mode % 2);
 		return;
+	} else if (0 == strncmp(opt, "cv_switch:", 10)) {
+		char *p = (char *)opt + 10;
+		UINT32 mode;
+
+		ret = kstrtouint(p, 0, &mode);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, mode % 2);
+		return;
 	} else if (0 == strncmp(opt, "cmmva_dprec", 11)) {
 		dprec_handle_option(0x7);
 	} else if (0 == strncmp(opt, "cmmpa_dprec", 11)) {

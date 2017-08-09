@@ -307,6 +307,7 @@ typedef enum {
 	DDP_RDMA_GOLDEN_SETTING = 11,
 	DDP_OVL_GOLDEN_SETTING,
 	DDP_PARTIAL_UPDATE,
+	DDP_UPDATE_PLL_CLK_ONLY,
 } DDP_IOCTL_NAME;
 
 struct ddp_io_golden_setting_arg {
