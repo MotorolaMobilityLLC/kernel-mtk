@@ -155,7 +155,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,//sensor output first pixel color
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,//SENSOR_OUTPUT_FORMAT_RAW_R,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x34, 0x20, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -195,7 +195,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
 	 { 4208, 3120,	  0,	0, 4208, 3120, 2100,  1560, 0000, 0000, 2100,  1560,	  0,	0, 2100, 1560}};// slim video
 	 //{ 4208, 2688,	  0,  432, 4208, 2256, 1400,  752 , 0000, 0000, 1400,	752,	  0,	0, 1400,  752}};// slim video
 
-/*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 8bit*/
+/*VC1 None , VC2 for PDAF(DT=0X36), unit : 8bit*/
 static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 {
 	/* Preview mode setting */
@@ -223,6 +223,7 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4SubBlkH =16,
     .i4PosL = {{27,30},{43,30},{34,49},{50,49}},
     .i4PosR = {{26,33},{42,33},{35,46},{51,46}},
+    .iMirrorFlip = 3, /* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR*/
 };
 
 /* Binning Type VC information*/
@@ -770,7 +771,6 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 	write_cmos_sensor(0x0104, 0x00);
 }
 
-#if 0
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	kal_uint8  iTemp;
@@ -796,7 +796,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
     }
 
 }
-#endif
+
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -1175,6 +1175,8 @@ static void sensor_init(void)
 	write_cmos_sensor(0x5F05,0xED);
 
 	imx258_ImageQuality_Setting();
+	/*Need Mirror/Flip*/
+	set_mirror_flip(3);
 
 	load_imx258_SPC_Data();
 	write_cmos_sensor(0x7BC8,0x01);
