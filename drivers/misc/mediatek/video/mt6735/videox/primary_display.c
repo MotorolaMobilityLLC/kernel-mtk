@@ -5441,6 +5441,10 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
 #endif
 
+#ifndef CONFIG_MTK_CLKMGR
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
+#endif
+
 	if (is_ipoh_bootup) {
 		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
 		DISPCHECK("ESD check start[begin]\n");
@@ -5455,7 +5459,6 @@ int primary_display_resume(void)
 	}
 
 #ifndef CONFIG_MTK_CLKMGR
-	ddp_clk_prepare(DISP_MTCMOS_CLK);
 
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 	dpmgr_reset_module_handle(pgc->dpmgr_handle);
