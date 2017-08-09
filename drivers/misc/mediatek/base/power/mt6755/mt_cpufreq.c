@@ -343,23 +343,17 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		if (cpu_speed == 1001) /* FY */
 			return CPU_LEVEL_0;
 		else {
-			if (func_code_0 == 0) {
+			if ((1 == func_code_0) || (3 == func_code_0))
+				return CPU_LEVEL_0;
+			else if ((2 == func_code_0) || (4 == func_code_0))
+				return CPU_LEVEL_1;
+			else {
 				if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
 					return CPU_LEVEL_0;
-				else
-					return CPU_LEVEL_1;
-			} else if (func_code_0 == 1)
-				return CPU_LEVEL_0;
-			else if (func_code_0 == 2)
 				return CPU_LEVEL_1;
-			else if (func_code_0 == 3)
-				return CPU_LEVEL_0;
-			else if (func_code_0 == 4)
-				return CPU_LEVEL_1;
-			else
-				return CPU_LEVEL_0;
-	}
+			}
 		}
+	}
 
 #endif
 
