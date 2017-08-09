@@ -3,11 +3,66 @@
 
 #include <linux/module.h>
 
+/*
+ * CONFIG
+ */
+/**************************************************
+ * Define low battery voltage support
+ ***************************************************/
+#define MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
+
+/**************************************************
+ * Define low battery volume support
+ ***************************************************/
+#define MT_GPUFREQ_LOW_BATT_VOLUME_PROTECT
+
+/**************************************************
+ * Define oc support
+ ***************************************************/
+/* #define MT_GPUFREQ_OC_PROTECT */
+
+/**************************************************
+ * VCORE DVFS option
+ ***************************************************/
+#ifdef CONFIG_MTK_VCOREFS
+#define MT_GPUFREQ_VCOREFS_ENABLED
+#endif
+
+/**************************************************
+ * GPU DVFS input boost feature
+ ***************************************************/
+#define MT_GPUFREQ_INPUT_BOOST
+
+/***************************
+ * Define for dynamic power table update
+ ****************************/
+#define MT_GPUFREQ_DYNAMIC_POWER_TABLE_UPDATE
+
+/***************************
+ * Define for random test
+ ****************************/
+/* #define MT_GPU_DVFS_RANDOM_TEST */
+
+/***************************
+ * Define for performance test
+ ****************************/
+/* #define MT_GPUFREQ_PERFORMANCE_TEST */
+
+/***************************
+ * Define for SRAM debugging
+ ****************************/
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#define MT_GPUFREQ_AEE_RR_REC
+#endif
+
 
 /******************************
  * Forward ref
  *******************************/
+/* TODO: remove it! */
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 extern int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int num);
+#endif
 extern u32 get_devinfo_with_index(u32 index);
 #ifdef MT_GPUFREQ_AEE_RR_REC
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);

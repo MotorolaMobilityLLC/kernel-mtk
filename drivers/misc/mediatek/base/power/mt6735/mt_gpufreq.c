@@ -4,6 +4,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+#define GPUDVFS_WORKAROUND_FOR_GIT	1	/* TODO: remove this! */
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -14,7 +15,6 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
@@ -33,74 +33,24 @@
 #endif
 
 #include <asm/uaccess.h>
+#include <asm/io.h>
 
-#include "mach/mt_typedefs.h"
 #include "mach/mt_clkmgr.h"
-#include "mach/mt_cpufreq.h"
-#include "mach/mt_gpufreq.h"
-#include "mach/sync_write.h"
+#include "mt_cpufreq.h"
+#include "mt_gpufreq.h"
+#include "sync_write.h"
+#include "mt_static_power.h"
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 #include "mach/mt_freqhopping.h"
-#include "mach/mt_static_power.h"
 #include "mach/mt_thermal.h"
-#include "mach/upmu_common.h"
+#endif
+#include "upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 #include "mach/mt_pbm.h"
-#include "mach/mt_vcore_dvfs.h"
-#include "mach/mt_ptp.h"
+#include "mt_vcore_dvfs.h"
+#include "mt_ptp.h"
 
-
-/*
- * CONFIG
- */
-/**************************************************
- * Define low battery voltage support
- ***************************************************/
-#define MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
-
-/**************************************************
- * Define low battery volume support
- ***************************************************/
-#define MT_GPUFREQ_LOW_BATT_VOLUME_PROTECT
-
-/**************************************************
- * Define oc support
- ***************************************************/
-/* #define MT_GPUFREQ_OC_PROTECT */
-
-/**************************************************
- * VCORE DVFS option
- ***************************************************/
-#ifdef CONFIG_MTK_VCOREFS
-#define MT_GPUFREQ_VCOREFS_ENABLED
-#endif
-
-/**************************************************
- * GPU DVFS input boost feature
- ***************************************************/
-#define MT_GPUFREQ_INPUT_BOOST
-
-/***************************
- * Define for dynamic power table update
- ****************************/
-#define MT_GPUFREQ_DYNAMIC_POWER_TABLE_UPDATE
-
-/***************************
- * Define for random test
- ****************************/
-/* #define MT_GPU_DVFS_RANDOM_TEST */
-
-/***************************
- * Define for performance test
- ****************************/
-/* #define MT_GPUFREQ_PERFORMANCE_TEST */
-
-/***************************
- * Define for SRAM debugging
- ****************************/
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define MT_GPUFREQ_AEE_RR_REC
-#endif
 
 /**************************************************
  * Define register write function
@@ -352,6 +302,7 @@ static DEFINE_MUTEX(mt_gpufreq_power_lock);
 static struct mt_gpufreq_power_table_info *mt_gpufreqs_power;
 static unsigned int mt_gpufreqs_power_num;	/* run-time decided */
 
+
 #ifdef MT_GPUFREQ_AEE_RR_REC
 enum gpu_dvfs_state {
 	GPU_DVFS_IS_DOING_DVFS = 0,
@@ -371,6 +322,9 @@ static void _mt_gpufreq_aee_init(void)
  ***************************************/
 static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 {
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	return 1;
+#else
 	unsigned int type = 0;
 	unsigned int gpu_550m_enable = is_have_550();
 
@@ -468,6 +422,7 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 	}
 
 	return type;
+#endif
 }
 
 #ifdef MT_GPUFREQ_INPUT_BOOST
@@ -654,7 +609,11 @@ static void _mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq, u
 	    ((freq * 100) / ref_freq) *
 	    ((volt * 100) / ref_volt) * ((volt * 100) / ref_volt) / (100 * 100 * 100);
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	p_leakage = mt_spower_get_leakage(MT_SPOWER_VCORE, (volt / 100), temp);
+#else
+	p_leakage = 100;
+#endif
 
 	p_total = p_dynamic + p_leakage;
 
@@ -675,12 +634,15 @@ static void _mt_update_gpufreqs_power_table(void)
 		gpufreq_warn("@%s: GPU DVFS not ready\n", __func__);
 		return;
 	}
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	temp = 40;
+#else
 #ifdef CONFIG_THERMAL
 	temp = get_immediate_gpu_wrap() / 1000;
 #else
 	temp = 40;
 #endif
-
+#endif
 	gpufreq_ver("@%s, temp = %d\n", __func__, temp);
 
 	mutex_lock(&mt_gpufreq_lock);
@@ -716,10 +678,15 @@ static void _mt_setup_gpufreqs_power_table(int num)
 		/* gpufreq_err("GPU power table memory allocation fail\n"); */
 		return;
 	}
+
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	temp = 40;
+#else
 #ifdef CONFIG_THERMAL
 	temp = get_immediate_gpu_wrap() / 1000;
 #else
 	temp = 40;
+#endif
 #endif
 
 	gpufreq_info("@%s: temp = %d\n", __func__, temp);
@@ -756,8 +723,10 @@ static void _mt_setup_gpufreqs_power_table(int num)
 			     mt_gpufreqs_power[i].gpufreq_power);
 	}
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_THERMAL
 	mtk_gpufreq_register(mt_gpufreqs_power, num);
+#endif
 #endif
 }
 
@@ -776,8 +745,10 @@ static int _mt_setup_gpufreqs_table(struct mt_gpufreq_table_info *freqs, int num
 	for (i = 0; i < num; i++) {
 		mt_gpufreqs[i].gpufreq_khz = freqs[i].gpufreq_khz;
 		/* Apply PTPOD result */
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		mt_gpufreqs[i].gpufreq_volt =
 		    _mt_gpufreq_pmic_wrap_to_volt(get_vcore_ptp_volt(freqs[i].gpufreq_volt * 10));
+#endif
 
 		mt_gpufreqs_default[i].gpufreq_khz = freqs[i].gpufreq_khz;
 		mt_gpufreqs_default[i].gpufreq_volt = freqs[i].gpufreq_volt;
@@ -862,7 +833,9 @@ static void _mt_gpufreq_set_cur_freq(unsigned int freq_new)
 {
 	unsigned int dds = _mt_gpufreq_dds_calc(freq_new);
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	mt_dfs_mmpll(dds);
+#endif
 
 	gpufreq_dbg("@%s: freq_new = %d, dds = 0x%x\n", __func__, freq_new, dds);
 
@@ -922,7 +895,7 @@ static unsigned int _mt_gpufreq_get_cur_freq(void)
 	unsigned int mmpll = 0;
 	unsigned int freq = 0;
 
-	mmpll = DRV_Reg32(MMPLL_CON1) & ~0x80000000;
+	mmpll = __raw_readl(MMPLL_CON1) & ~0x80000000;
 
 	if ((mmpll >= 0x0209A000) && (mmpll <= 0x021CC000)) {
 		freq = 0x0209A000;
@@ -1449,6 +1422,9 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 unsigned int mt_gpufreq_get_leakage_mw(void)
 {
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	return 0;
+#else
 #ifndef DISABLE_PBM_FEATURE
 	int temp = 0;
 	unsigned int cur_vcore = _mt_gpufreq_get_cur_volt() / 100;
@@ -1462,6 +1438,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 	return mt_spower_get_leakage(MT_SPOWER_VCORE, cur_vcore, temp);
 #else
 	return 0;
+#endif
 #endif
 }
 
@@ -1742,9 +1719,9 @@ int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		if (need_kick_pbm)
 			_mt_gpufreq_kick_pbm(1);
 	}
-#endif
 
 done:
+#endif
 	mt_gpufreq_volt_enable_state = enable;
 
 	mutex_unlock(&mt_gpufreq_lock);
@@ -1893,10 +1870,12 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	return 0;
 #endif
 
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	/**********************
 	* Initial leackage power usage
 	***********************/
 	mt_spower_init();
+#endif
 
 	/**********************
 	* Initial SRAM debugging ptr
@@ -1963,8 +1942,10 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_low_battery_notify(&mt_gpufreq_low_batt_volt_callback,
 					    LOW_BATTERY_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -1978,8 +1959,10 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_battery_percent_notify(&mt_gpufreq_low_batt_volume_callback,
 						BATTERY_PERCENT_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -1993,7 +1976,9 @@ static int _mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 				break;
 			}
 		}
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		register_battery_oc_notify(&mt_gpufreq_oc_callback, BATTERY_OC_PRIO_GPU);
+#endif
 	}
 #endif
 
@@ -2072,7 +2057,7 @@ static ssize_t mt_gpufreq_debug_proc_write(struct file *file, const char __user 
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &debug) == 1) {
+	if (!kstrtoint(desc, 10, &debug)) {
 		if (debug == 0)
 			mt_gpufreq_debug = 0;
 		else if (debug == 1)
@@ -2114,7 +2099,7 @@ static ssize_t mt_gpufreq_limited_oc_ignore_proc_write(struct file *file,
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &ignore) == 1) {
+	if (!kstrtouint(desc, 10, &ignore)) {
 		if (ignore == 1)
 			g_limited_oc_ignore_state = true;
 		else if (ignore == 0)
@@ -2158,7 +2143,7 @@ static ssize_t mt_gpufreq_limited_low_batt_volume_ignore_proc_write(struct file 
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &ignore) == 1) {
+	if (!kstrtouint(desc, 10, &ignore)) {
 		if (ignore == 1)
 			g_limited_low_batt_volume_ignore_state = true;
 		else if (ignore == 0)
@@ -2202,7 +2187,7 @@ static ssize_t mt_gpufreq_limited_low_batt_volt_ignore_proc_write(struct file *f
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &ignore) == 1) {
+	if (!kstrtouint(desc, 10, &ignore)) {
 		if (ignore == 1)
 			g_limited_low_batt_volt_ignore_state = true;
 		else if (ignore == 0)
@@ -2245,7 +2230,7 @@ static ssize_t mt_gpufreq_limited_thermal_ignore_proc_write(struct file *file,
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &ignore) == 1) {
+	if (!kstrtouint(desc, 10, &ignore)) {
 		if (ignore == 1)
 			g_limited_thermal_ignore_state = true;
 		else if (ignore == 0)
@@ -2288,7 +2273,7 @@ static ssize_t mt_gpufreq_limited_pbm_ignore_proc_write(struct file *file,
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &ignore) == 1) {
+	if (!kstrtouint(desc, 10, &ignore)) {
 		if (ignore == 1)
 			g_limited_pbm_ignore_state = true;
 		else if (ignore == 0)
@@ -2331,7 +2316,7 @@ static ssize_t mt_gpufreq_limited_power_proc_write(struct file *file, const char
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &power) == 1)
+	if (!kstrtouint(desc, 10, &power))
 		mt_gpufreq_thermal_protect(power);
 	else
 		gpufreq_warn("bad argument!! please provide the maximum limited power\n");
@@ -2367,7 +2352,7 @@ static ssize_t mt_gpufreq_limited_by_pbm_proc_write(struct file *file, const cha
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%u", &power) == 1)
+	if (!kstrtouint(desc, 10, &power))
 		mt_gpufreq_set_power_limit_by_pbm(power);
 	else
 		gpufreq_warn("bad argument!! please provide the maximum limited power\n");
@@ -2405,7 +2390,7 @@ static ssize_t mt_gpufreq_state_proc_write(struct file *file, const char __user 
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &enabled) == 1) {
+	if (!kstrtoint(desc, 10, &enabled)) {
 		if (enabled == 1) {
 			mt_gpufreq_keep_max_frequency_state = false;
 			_mt_gpufreq_state_set(1);
@@ -2491,7 +2476,7 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file, const char __us
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &fixed_freq) == 1) {
+	if (!kstrtoint(desc, 10, &fixed_freq)) {
 		if (fixed_freq == 0) {
 			mt_gpufreq_keep_opp_frequency_state = false;
 		} else {
@@ -2568,7 +2553,7 @@ static ssize_t mt_gpufreq_opp_max_freq_proc_write(struct file *file, const char 
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &max_freq) == 1) {
+	if (!kstrtoint(desc, 10, &max_freq)) {
 		if (max_freq == 0) {
 			mt_gpufreq_opp_max_frequency_state = false;
 		} else {
@@ -2635,7 +2620,9 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "mt_gpufreq_fixed_freq_state = %d\n", mt_gpufreq_fixed_freq_state);
 	seq_printf(m, "mt_gpufreq_dvfs_table_type = %d\n", mt_gpufreq_dvfs_table_type);
 	seq_printf(m, "mt_gpufreq_dvfs_mmpll_spd_bond = %d\n", mt_gpufreq_dvfs_mmpll_spd_bond);
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 	seq_printf(m, "is_have_550MHz = %d\n", is_have_550());
+#endif
 
 	return 0;
 }
@@ -2670,7 +2657,7 @@ static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file, const char _
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &enable) == 1) {
+	if (!kstrtoint(desc, 10, &enable)) {
 		if (enable == 0) {
 			mt_gpufreq_voltage_enable_set(0);
 			mt_gpufreq_volt_enable = false;
@@ -2716,7 +2703,7 @@ static ssize_t mt_gpufreq_fixed_freq_proc_write(struct file *file, const char __
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &fixed_freq) == 1) {
+	if (!kstrtoint(desc, 10, &fixed_freq)) {
 		mutex_lock(&mt_gpufreq_lock);
 		if (fixed_freq == 0) {
 			mt_gpufreq_fixed_freq_state = false;
@@ -2764,7 +2751,7 @@ static ssize_t mt_gpufreq_input_boost_proc_write(struct file *file, const char _
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtoint(desc, "%d", &debug) == 1) {
+	if (!kstrtoint(desc, 10, &debug)) {
 		if (debug == 0)
 			mt_gpufreq_input_boost_state = 0;
 		else if (debug == 1)
@@ -2899,6 +2886,10 @@ static int mt_gpufreq_create_procfs(void)
  ***********************************/
 static int __init _mt_gpufreq_init(void)
 {
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	mt_gpufreq_create_procfs();
+	return 0;
+#else
 	int ret = 0;
 
 	gpufreq_info("@%s\n", __func__);
@@ -2926,7 +2917,7 @@ static int __init _mt_gpufreq_init(void)
 
 out:
 	return ret;
-
+#endif
 }
 
 static void __exit _mt_gpufreq_exit(void)

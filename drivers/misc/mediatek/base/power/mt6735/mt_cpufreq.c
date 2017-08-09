@@ -6,6 +6,8 @@
 
 #define __MT_CPUFREQ_C__
 
+#define CPUDVFS_WORKAROUND_FOR_GIT	1	/* TODO: remove this! */
+
 /*=============================================================*/
 /* Include files                                               */
 /*=============================================================*/
@@ -22,7 +24,9 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#endif
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
@@ -30,24 +34,26 @@
 #include <linux/jiffies.h>
 #include <linux/bitops.h>
 #include <linux/uaccess.h>
-#include <linux/aee.h>
 #include <linux/seq_file.h>
+#include <asm/io.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
 #endif
 
+#include "aee.h"
+
 /* project includes */
-#include "mach/mt_typedefs.h"
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #include "mach/mt_thermal.h"
-#include "mach/mt_spm_idle.h"
-#include "mach/mt_clkmgr.h"
 #include "mach/mt_freqhopping.h"
-#include "mach/mt_ptp.h"
-#include "mach/mt_static_power.h"
-#include "mach/upmu_sw.h"
 #include "mach/mt_hotplug_strategy.h"
+#endif
+/*#include "mach/mt_spm_idle.h"*/
+#include "mach/mt_clkmgr.h"
+#include "mt_ptp.h"
+#include "mt_static_power.h"
 #include "mach/mt_pbm.h"
 
 #ifndef __KERNEL__
@@ -57,46 +63,89 @@
 #include "mt_pmic_wrap.h"
 #include "efuse.h"	/* for SLT efuse check */
 #else
-#include "mach/mt_spm.h"
-#include "mach/upmu_common.h"
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
+#include "mt_spm.h"
+#endif
+#include "upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
-#include "pwrap_hal.h"
+/* #include "pwrap_hal.h" */
 #endif
 
 /* local includes */
-#include "mach/mt_cpufreq.h"
+#include "mt_cpufreq.h"
 
 
 /*=============================================================*/
 /* Macro definition                                            */
 /*=============================================================*/
-
-/* configs */
-#if 0
-#define CONFIG_CPU_DVFS_PERFORMANCE_TEST     1       /* fix at max freq for perf test */
-#define CONFIG_CPU_DVFS_FFTT_TEST            1       /* FF TT SS volt test */
-#endif
-#ifdef __KERNEL__
-#if 0
-#define CONFIG_CPU_DVFS_TURBO_MODE           1       /* turbo max freq when CPU core <= 2*/
-#endif
-#define CONFIG_CPU_DVFS_POWER_THROTTLING	1	/* power throttling features */
-#endif
-
-#ifdef CONFIG_ARCH_MT6753
-#ifndef __KERNEL__
-#include "mt6311.h"
+#if defined(CONFIG_ARCH_MT6735M)
+#define PMIC_WRAP_DVFS_ADR0             ((unsigned long)(PMIC_WRAP_BASE+0xE8))
+#define PMIC_WRAP_DVFS_WDATA0           ((unsigned long)(PMIC_WRAP_BASE+0xEC))
+#define PMIC_WRAP_DVFS_ADR1             ((unsigned long)(PMIC_WRAP_BASE+0xF0))
+#define PMIC_WRAP_DVFS_WDATA1           ((unsigned long)(PMIC_WRAP_BASE+0xF4))
+#define PMIC_WRAP_DVFS_ADR2             ((unsigned long)(PMIC_WRAP_BASE+0xF8))
+#define PMIC_WRAP_DVFS_WDATA2           ((unsigned long)(PMIC_WRAP_BASE+0xFC))
+#define PMIC_WRAP_DVFS_ADR3             ((unsigned long)(PMIC_WRAP_BASE+0x100))
+#define PMIC_WRAP_DVFS_WDATA3           ((unsigned long)(PMIC_WRAP_BASE+0x104))
+#define PMIC_WRAP_DVFS_ADR4             ((unsigned long)(PMIC_WRAP_BASE+0x108))
+#define PMIC_WRAP_DVFS_WDATA4           ((unsigned long)(PMIC_WRAP_BASE+0x10C))
+#define PMIC_WRAP_DVFS_ADR5             ((unsigned long)(PMIC_WRAP_BASE+0x110))
+#define PMIC_WRAP_DVFS_WDATA5           ((unsigned long)(PMIC_WRAP_BASE+0x114))
+#define PMIC_WRAP_DVFS_ADR6             ((unsigned long)(PMIC_WRAP_BASE+0x118))
+#define PMIC_WRAP_DVFS_WDATA6           ((unsigned long)(PMIC_WRAP_BASE+0x11C))
+#define PMIC_WRAP_DVFS_ADR7             ((unsigned long)(PMIC_WRAP_BASE+0x120))
+#define PMIC_WRAP_DVFS_WDATA7           ((unsigned long)(PMIC_WRAP_BASE+0x124))
+#define PMIC_WRAP_DVFS_ADR8             ((unsigned long)(PMIC_WRAP_BASE+0x128))
+#define PMIC_WRAP_DVFS_WDATA8           ((unsigned long)(PMIC_WRAP_BASE+0x12C))
+#define PMIC_WRAP_DVFS_ADR9             ((unsigned long)(PMIC_WRAP_BASE+0x130))
+#define PMIC_WRAP_DVFS_WDATA9           ((unsigned long)(PMIC_WRAP_BASE+0x134))
+#define PMIC_WRAP_DVFS_ADR10            ((unsigned long)(PMIC_WRAP_BASE+0x138))
+#define PMIC_WRAP_DVFS_WDATA10          ((unsigned long)(PMIC_WRAP_BASE+0x13C))
+#define PMIC_WRAP_DVFS_ADR11            ((unsigned long)(PMIC_WRAP_BASE+0x140))
+#define PMIC_WRAP_DVFS_WDATA11          ((unsigned long)(PMIC_WRAP_BASE+0x144))
+#define PMIC_WRAP_DVFS_ADR12            ((unsigned long)(PMIC_WRAP_BASE+0x148))
+#define PMIC_WRAP_DVFS_WDATA12          ((unsigned long)(PMIC_WRAP_BASE+0x14C))
+#define PMIC_WRAP_DVFS_ADR13            ((unsigned long)(PMIC_WRAP_BASE+0x150))
+#define PMIC_WRAP_DVFS_WDATA13          ((unsigned long)(PMIC_WRAP_BASE+0x154))
+#define PMIC_WRAP_DVFS_ADR14            ((unsigned long)(PMIC_WRAP_BASE+0x158))
+#define PMIC_WRAP_DVFS_WDATA14          ((unsigned long)(PMIC_WRAP_BASE+0x15C))
+#define PMIC_WRAP_DVFS_ADR15            ((unsigned long)(PMIC_WRAP_BASE+0x160))
+#define PMIC_WRAP_DVFS_WDATA15          ((unsigned long)(PMIC_WRAP_BASE+0x164))
 #else
-#include "mach/mt6311.h"
+#define PMIC_WRAP_DVFS_ADR0             ((unsigned long)(PMIC_WRAP_BASE+0xFC))
+#define PMIC_WRAP_DVFS_WDATA0           ((unsigned long)(PMIC_WRAP_BASE+0x100))
+#define PMIC_WRAP_DVFS_ADR1             ((unsigned long)(PMIC_WRAP_BASE+0x104))
+#define PMIC_WRAP_DVFS_WDATA1           ((unsigned long)(PMIC_WRAP_BASE+0x108))
+#define PMIC_WRAP_DVFS_ADR2             ((unsigned long)(PMIC_WRAP_BASE+0x10C))
+#define PMIC_WRAP_DVFS_WDATA2           ((unsigned long)(PMIC_WRAP_BASE+0x110))
+#define PMIC_WRAP_DVFS_ADR3             ((unsigned long)(PMIC_WRAP_BASE+0x114))
+#define PMIC_WRAP_DVFS_WDATA3           ((unsigned long)(PMIC_WRAP_BASE+0x118))
+#define PMIC_WRAP_DVFS_ADR4             ((unsigned long)(PMIC_WRAP_BASE+0x11C))
+#define PMIC_WRAP_DVFS_WDATA4           ((unsigned long)(PMIC_WRAP_BASE+0x120))
+#define PMIC_WRAP_DVFS_ADR5             ((unsigned long)(PMIC_WRAP_BASE+0x124))
+#define PMIC_WRAP_DVFS_WDATA5           ((unsigned long)(PMIC_WRAP_BASE+0x128))
+#define PMIC_WRAP_DVFS_ADR6             ((unsigned long)(PMIC_WRAP_BASE+0x12C))
+#define PMIC_WRAP_DVFS_WDATA6           ((unsigned long)(PMIC_WRAP_BASE+0x130))
+#define PMIC_WRAP_DVFS_ADR7             ((unsigned long)(PMIC_WRAP_BASE+0x134))
+#define PMIC_WRAP_DVFS_WDATA7           ((unsigned long)(PMIC_WRAP_BASE+0x138))
+#define PMIC_WRAP_DVFS_ADR8             ((unsigned long)(PMIC_WRAP_BASE+0x13C))
+#define PMIC_WRAP_DVFS_WDATA8           ((unsigned long)(PMIC_WRAP_BASE+0x140))
+#define PMIC_WRAP_DVFS_ADR9             ((unsigned long)(PMIC_WRAP_BASE+0x144))
+#define PMIC_WRAP_DVFS_WDATA9           ((unsigned long)(PMIC_WRAP_BASE+0x148))
+#define PMIC_WRAP_DVFS_ADR10            ((unsigned long)(PMIC_WRAP_BASE+0x14C))
+#define PMIC_WRAP_DVFS_WDATA10          ((unsigned long)(PMIC_WRAP_BASE+0x150))
+#define PMIC_WRAP_DVFS_ADR11            ((unsigned long)(PMIC_WRAP_BASE+0x154))
+#define PMIC_WRAP_DVFS_WDATA11          ((unsigned long)(PMIC_WRAP_BASE+0x158))
+#define PMIC_WRAP_DVFS_ADR12            ((unsigned long)(PMIC_WRAP_BASE+0x15C))
+#define PMIC_WRAP_DVFS_WDATA12          ((unsigned long)(PMIC_WRAP_BASE+0x160))
+#define PMIC_WRAP_DVFS_ADR13            ((unsigned long)(PMIC_WRAP_BASE+0x164))
+#define PMIC_WRAP_DVFS_WDATA13          ((unsigned long)(PMIC_WRAP_BASE+0x168))
+#define PMIC_WRAP_DVFS_ADR14            ((unsigned long)(PMIC_WRAP_BASE+0x16C))
+#define PMIC_WRAP_DVFS_WDATA14          ((unsigned long)(PMIC_WRAP_BASE+0x170))
+#define PMIC_WRAP_DVFS_ADR15            ((unsigned long)(PMIC_WRAP_BASE+0x174))
+#define PMIC_WRAP_DVFS_WDATA15          ((unsigned long)(PMIC_WRAP_BASE+0x178))
 #endif
-#define CONFIG_CPU_DVFS_HAS_EXTBUCK		1	/* external PMIC related access */
-#endif
-
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define CONFIG_CPU_DVFS_AEE_RR_REC		1	/* AEE SRAM debugging */
-#endif
-
 
 /* Operations and REG Access */
 #define MAX(a, b)                           ((a) >= (b) ? (a) : (b))
@@ -108,7 +157,7 @@
 	(((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
 #define _GET_BITS_VAL_(_bits_, _val_)       (((_val_) & (_BITMASK_(_bits_))) >> ((0) ? _bits_))
 
-#define cpufreq_read(addr)                  DRV_Reg32(addr)
+#define cpufreq_read(addr)                  __raw_readl(addr)
 #define cpufreq_write(addr, val)            mt_reg_sync_writel(val, addr)
 #define cpufreq_write_mask(addr, mask, val)	\
 	cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
@@ -858,7 +907,11 @@ static enum mt_cpu_dvfs_id _get_cpu_dvfs_id(unsigned int cpu_id)
 static unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	unsigned int cpu_spd_bond = _GET_BITS_VAL_(2:0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
+#else
+	unsigned int cpu_spd_bond = 0;
+#endif
 
 	cpufreq_info("@%s: efuse cpu_spd_bond = 0x%x\n", __func__, cpu_spd_bond);
 
@@ -1016,6 +1069,7 @@ static void _mt_cpufreq_aee_init(void)
 
 static int _mt_cpufreq_set_spm_dvfs_ctrl_volt(u32 value)
 {
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #define MAX_RETRY_COUNT (100)
 
 	u32 ap_dvfs_con;
@@ -1047,7 +1101,7 @@ static int _mt_cpufreq_set_spm_dvfs_ctrl_volt(u32 value)
 	}
 
 	FUNC_EXIT(FUNC_LV_HELP);
-
+#endif
 	return 0;
 }
 
@@ -1166,10 +1220,14 @@ EXPORT_SYMBOL(mt_cpufreq_setvolt_registerCB);
 static enum turbo_mode _mt_cpufreq_get_turbo_mode(struct mt_cpu_dvfs *p, unsigned int target_khz)
 {
 	enum turbo_mode mode = TURBO_MODE_NONE;
+#ifdef CPUDVFS_WORKAROUND_FOR_GIT
+	int temp = 40;
+#else
 #ifdef CONFIG_THERMAL
 	int temp = tscpu_get_temp_by_bank(THERMAL_BANK0);	/* bank0 for CPU */
 #else
 	int temp = 40;
+#endif
 #endif
 	unsigned int online_cpus = num_online_cpus() + num_online_cpus_delta;
 	int i;
@@ -1401,7 +1459,9 @@ void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 	cpufreq_unlock(flags);
 
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	hps_set_cpu_num_limit(LIMIT_LOW_BATTERY, p->limited_max_ncpu, 0);
+#endif
 
 	/* TODO: Trigger DVFS here? */
 
@@ -1411,8 +1471,12 @@ void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 {
+#ifdef CPUDVFS_WORKAROUND_FOR_GIT
+	return 0;
+#else
 #ifndef DISABLE_PBM_FEATURE
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
 #ifdef CONFIG_THERMAL
 	int temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;	/* bank0 for CPU */
 #else
@@ -1422,6 +1486,7 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 	return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
 #else
 	return 0;
+#endif
 #endif
 }
 
@@ -1731,7 +1796,9 @@ static void _mt_cpufreq_dfs_by_set_armpll(struct mt_cpu_dvfs *p, unsigned int dd
 
 	/* set ARMPLL and CLKDIV */
 #ifdef __KERNEL__
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	freqhopping_config(FH_ARM_PLLID, 1599000, 0);	/* disable SSC */
+#endif
 #endif
 	_mt_cpufreq_set_cpu_clk_src(p, TOP_CKMUXSEL_MAINPLL);
 	cpufreq_write(ARMPLL_CON1, dds | _BIT_(31));	/* CHG */
@@ -1739,7 +1806,9 @@ static void _mt_cpufreq_dfs_by_set_armpll(struct mt_cpu_dvfs *p, unsigned int dd
 	cpufreq_write(TOP_CKDIV1, (ckdiv1_val & ~ckdiv1_mask) | ckdiv_sel);
 	_mt_cpufreq_set_cpu_clk_src(p, TOP_CKMUXSEL_ARMPLL);
 #ifdef __KERNEL__
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	freqhopping_config(FH_ARM_PLLID, 1599000, 1);	/* enable SSC */
+#endif
 #endif
 }
 #endif
@@ -1810,6 +1879,7 @@ static void _mt_cpufreq_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz
 	}
 
 #else	/* __KERNEL__ */
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	if (target_khz > cur_khz) {
 		mt_dfs_armpll(FH_ARM_PLLID, dds);
 		cpufreq_write(TOP_CKDIV1, (ckdiv1_val & ~ckdiv1_mask) | sel);
@@ -1817,6 +1887,7 @@ static void _mt_cpufreq_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz
 		cpufreq_write(TOP_CKDIV1, (ckdiv1_val & ~ckdiv1_mask) | sel);
 		mt_dfs_armpll(FH_ARM_PLLID, dds);
 	}
+#endif
 #endif
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
@@ -1911,7 +1982,9 @@ static void _mt_cpufreq_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz
 
 #else	/* __KERNEL__ */
 #if 1
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		mt_dfs_armpll(FH_ARM_PLLID, dds);
+#endif
 #else
 		_mt_cpufreq_dfs_by_set_armpll(p, dds, 8);
 #endif
@@ -2838,7 +2911,11 @@ static void _mt_cpufreq_power_calculation(struct mt_cpu_dvfs *p, int oppidx, int
 	p_dynamic = CA53_REF_POWER;
 
 	/* TODO: Use temp=65 to calculate leakage? check this! */
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	p_leakage = mt_spower_get_leakage(MT_SPOWER_CPU, p->opp_tbl[oppidx].cpufreq_volt / 100, 65);
+#else
+	p_leakage = 100;
+#endif
 
 	p_dynamic = p_dynamic *
 	    (p->opp_tbl[oppidx].cpufreq_khz / 1000) / (ref_freq / 1000) *
@@ -3124,7 +3201,9 @@ void mt_cpufreq_thermal_protect(unsigned int limited_power)
 
 		cpufreq_unlock(flags);	/* <- unlock */
 
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		hps_set_cpu_num_limit(LIMIT_THERMAL, p->limited_max_ncpu, 0);
+#endif
 
 		/* correct opp idx will be calcualted in _mt_cpufreq_power_limited_verify() */
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, -1);
@@ -3137,7 +3216,7 @@ no_policy:
 }
 EXPORT_SYMBOL(mt_cpufreq_thermal_protect);
 
-
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_CPU_DVFS_POWER_THROTTLING
 static void _mt_cpufreq_calc_power_throttle_idx(struct mt_cpu_dvfs *p)
 {
@@ -3235,6 +3314,7 @@ static void _mt_cpufreq_power_throttle_bat_per_CB(BATTERY_PERCENT_LEVEL level)
 		cpufreq_unlock(flags);
 
 #ifdef CONFIG_ARCH_MT6753
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		switch (level) {
 		case BATTERY_PERCENT_LEVEL_1:
 			/* Limit CPU core num to 4 */
@@ -3246,6 +3326,7 @@ static void _mt_cpufreq_power_throttle_bat_per_CB(BATTERY_PERCENT_LEVEL level)
 				hps_set_cpu_num_limit(LIMIT_LOW_BATTERY, num_possible_cpus(), 0);
 			break;
 		}
+#endif
 #endif
 
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, -1);
@@ -3288,6 +3369,7 @@ static void _mt_cpufreq_power_throttle_bat_oc_CB(BATTERY_OC_LEVEL level)
 		cpufreq_unlock(flags);
 
 #ifdef CONFIG_ARCH_MT6753
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		switch (level) {
 		case BATTERY_OC_LEVEL_1:
 			/* Limit CPU core num to 4 */
@@ -3299,6 +3381,7 @@ static void _mt_cpufreq_power_throttle_bat_oc_CB(BATTERY_OC_LEVEL level)
 				hps_set_cpu_num_limit(LIMIT_LOW_BATTERY, num_possible_cpus(), 0);
 			break;
 		}
+#endif
 #endif
 
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, -1);
@@ -3342,6 +3425,7 @@ void _mt_cpufreq_power_throttle_low_bat_CB(LOW_BATTERY_LEVEL level)
 		cpufreq_unlock(flags);
 
 #ifdef CONFIG_ARCH_MT6753
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		switch (level) {
 		case LOW_BATTERY_LEVEL_1:
 		case LOW_BATTERY_LEVEL_2:
@@ -3355,12 +3439,13 @@ void _mt_cpufreq_power_throttle_low_bat_CB(LOW_BATTERY_LEVEL level)
 			break;
 		}
 #endif
+#endif
 
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, -1);
 	}
 }
 #endif
-
+#endif
 
 /*
  * cpufreq driver
@@ -3526,6 +3611,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_info("@%s: limited_power_idx = %d\n", __func__, p->limited_power_idx);
 
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #ifdef CONFIG_CPU_DVFS_POWER_THROTTLING
 		register_battery_percent_notify(
 			&_mt_cpufreq_power_throttle_bat_per_CB,	BATTERY_PERCENT_PRIO_CPU_L);
@@ -3533,6 +3619,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 			&_mt_cpufreq_power_throttle_bat_oc_CB, BATTERY_OC_PRIO_CPU_L);
 		register_low_battery_notify(
 			&_mt_cpufreq_power_throttle_low_bat_CB, LOW_BATTERY_PRIO_CPU_L);
+#endif
 #endif
 	}
 
@@ -3742,8 +3829,10 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	if (pw.addr[0].cmd_addr == 0)
 		_mt_cpufreq_pmic_table_init();
 
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	/* init static power table */
 	mt_spower_init();
+#endif
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	_mt_cpufreq_aee_init();
@@ -4159,7 +4248,7 @@ static ssize_t cpufreq_debug_proc_write(struct file *file, const char __user *bu
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &dbg_lv) == 1)
+	if (!kstrtouint(buf, 10, &dbg_lv))
 		func_lv_mask = dbg_lv;
 	else
 		cpufreq_err("echo dbg_lv (dec) > /proc/cpufreq/cpufreq_debug\n");
@@ -4171,15 +4260,15 @@ static ssize_t cpufreq_debug_proc_write(struct file *file, const char __user *bu
 /* cpufreq_fftt_test */
 #include <linux/sched_clock.h>
 
-static unsigned long _delay_us;
-static unsigned long _delay_us_buf;
+static unsigned long long _delay_us;
+static unsigned long long _delay_us_buf;
 
 static int cpufreq_fftt_test_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%lu\n", _delay_us);
+	seq_printf(m, "%llu\n", _delay_us);
 
 	if (_delay_us < _delay_us_buf)
-		cpufreq_err("@%s(), %lu < %lu, loops_per_jiffy = %lu\n",
+		cpufreq_err("@%s(), %llu < %llu, loops_per_jiffy = %lu\n",
 				__func__, _delay_us, _delay_us_buf, loops_per_jiffy);
 
 	return 0;
@@ -4193,14 +4282,14 @@ static ssize_t cpufreq_fftt_test_proc_write(struct file *file, const char __user
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%lu", &_delay_us_buf) == 1) {
+	if (!kstrtoull(buf, 10, &_delay_us_buf)) {
 		unsigned long start;
 
 		start = (unsigned long)sched_clock();
 		udelay(_delay_us_buf);
 		_delay_us = ((unsigned long)sched_clock() - start) / 1000;
 
-		cpufreq_ver("@%s(%lu), _delay_us = %lu, loops_per_jiffy = %lu\n",
+		cpufreq_ver("@%s(%llu), _delay_us = %llu, loops_per_jiffy = %lu\n",
 				__func__, _delay_us_buf, _delay_us, loops_per_jiffy);
 	}
 
@@ -4226,7 +4315,7 @@ static ssize_t cpufreq_stress_test_proc_write(struct file *file, const char __us
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &do_stress) == 1)
+	if (!kstrtouint(buf, 10, &do_stress))
 		do_dvfs_stress_test = do_stress;
 	else
 		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_stress_test\n");
@@ -4252,7 +4341,7 @@ static ssize_t cpufreq_fix_freq_in_es_proc_write(struct file *file, const char _
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &fix_freq_in_ES) == 1)
+	if (!kstrtouint(buf, 10, &fix_freq_in_ES))
 		is_fix_freq_in_ES = fix_freq_in_ES;
 	else
 		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_fix_freq_in_es\n");
@@ -4282,7 +4371,7 @@ static ssize_t cpufreq_limited_by_hevc_proc_write(struct file *file, const char 
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &limited_freq_by_hevc) == 1) {
+	if (!kstrtoint(buf, 10, &limited_freq_by_hevc)) {
 		p->limited_freq_by_hevc = limited_freq_by_hevc;
 		if (cpu_dvfs_is_available(p)
 		    && (p->limited_freq_by_hevc > cpu_dvfs_get_cur_freq(p))) {
@@ -4337,7 +4426,7 @@ static ssize_t cpufreq_limited_by_pbm_proc_write(struct file *file, const char _
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &limited_power) == 1)
+	if (!kstrtoint(buf, 10, &limited_power))
 		mt_cpufreq_set_power_limit_by_pbm(limited_power);	/* TODO: specify limited_power by id??? */
 	else
 		cpufreq_err("echo limited_power (dec) > /proc/cpufreq/cpufreq_limited_by_pbm\n");
@@ -4378,7 +4467,7 @@ static ssize_t cpufreq_limited_by_thermal_proc_write(struct file *file, const ch
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &limited_power) == 1)
+	if (!kstrtoint(buf, 10, &limited_power))
 		mt_cpufreq_thermal_protect(limited_power);	/* TODO: specify limited_power by id??? */
 	else
 		cpufreq_err("echo limited_power (dec) > /proc/cpufreq/cpufreq_limited_by_thermal\n");
@@ -4409,7 +4498,7 @@ static ssize_t cpufreq_limited_max_freq_by_user_proc_write(struct file *file,
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &limited_max_freq) == 1) {
+	if (!kstrtoint(buf, 10, &limited_max_freq)) {
 
 		p->limited_max_freq_by_user = limited_max_freq;
 
@@ -4508,7 +4597,7 @@ static ssize_t cpufreq_state_proc_write(struct file *file, const char __user *bu
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &enable) == 1) {
+	if (!kstrtoint(buf, 10, &enable)) {
 		if (enable == 0)
 			p->dvfs_disable_by_procfs = true;
 		else
@@ -4549,7 +4638,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 
 	BUG_ON(NULL == p);
 
-	if (kstrtoint(buf, "%d", &oppidx) == 1 && 0 <= oppidx && oppidx < p->nr_opp_tbl) {
+	if (!kstrtoint(buf, 10, &oppidx) && 0 <= oppidx && oppidx < p->nr_opp_tbl) {
 		p->dvfs_disable_by_procfs = true;
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, oppidx);
 	} else {
@@ -4587,7 +4676,7 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 
 	BUG_ON(NULL == p);
 
-	if (kstrtoint(buf, "%d", &freq) == 1) {
+	if (!kstrtoint(buf, 10, &freq)) {
 		if (freq < CPUFREQ_LAST_FREQ_LEVEL) {
 			if (freq != 0)
 				cpufreq_err("frequency should higher than %dKHz!\n",
@@ -4674,7 +4763,7 @@ static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buf
 	if (!buf)
 		return -EINVAL;
 
-	if (kstrtoint(buf, "%d", &mv) == 1) {
+	if (!kstrtoint(buf, 10, &mv)) {
 		p->dvfs_disable_by_procfs = true;
 		cpufreq_lock(flags);
 		_mt_cpufreq_set_cur_volt_locked(p, mv * 100);
@@ -4720,12 +4809,12 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	if (!buf)
 		return -EINVAL;
 
-	if ((kstrtoint(buf, "%d %d %d %d", &turbo_mode, &temp, &freq_delta, &volt_delta) == 4)
+	if ((sscanf(buf, "%d %d %d %d", &turbo_mode, &temp, &freq_delta, &volt_delta) == 4)
 	    && turbo_mode < NR_TURBO_MODE) {
 		turbo_mode_cfg[turbo_mode].temp = temp;
 		turbo_mode_cfg[turbo_mode].freq_delta = freq_delta;
 		turbo_mode_cfg[turbo_mode].volt_delta = volt_delta;
-	} else if (kstrtoint(buf, "%d", &turbo_mode) == 1)
+	} else if (!kstrtouint(buf, 10, &turbo_mode))
 		p->turbo_mode = turbo_mode;
 	else {
 		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_turbo_mode\n");
@@ -4854,6 +4943,10 @@ static int _mt_cpufreq_create_procfs(void)
  */
 static int __init _mt_cpufreq_pdrv_init(void)
 {
+#ifdef CPUDVFS_WORKAROUND_FOR_GIT
+	_mt_cpufreq_create_procfs();
+	return 0;
+#else
 	int ret = 0;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
@@ -4881,6 +4974,7 @@ out:
 	FUNC_EXIT(FUNC_LV_MODULE);
 
 	return ret;
+#endif
 }
 
 static void __exit _mt_cpufreq_pdrv_exit(void)

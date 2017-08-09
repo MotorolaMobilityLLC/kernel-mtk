@@ -10,6 +10,32 @@
 extern "C" {
 #endif
 
+/* configs */
+#ifdef CONFIG_ARCH_MT6753
+#ifndef __KERNEL__
+#include "mt6311.h"
+#else
+#include "mach/mt6311.h"
+#endif
+#define CONFIG_CPU_DVFS_HAS_EXTBUCK		1	/* external PMIC related access */
+#endif
+
+#if 0
+#define CONFIG_CPU_DVFS_PERFORMANCE_TEST     1       /* fix at max freq for perf test */
+#define CONFIG_CPU_DVFS_FFTT_TEST            1       /* FF TT SS volt test */
+#endif
+
+#ifdef __KERNEL__
+#if 0
+#define CONFIG_CPU_DVFS_TURBO_MODE           1       /* turbo max freq when CPU core <= 2*/
+#endif
+#define CONFIG_CPU_DVFS_POWER_THROTTLING	1	/* power throttling features */
+#endif
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#define CONFIG_CPU_DVFS_AEE_RR_REC		1	/* AEE SRAM debugging */
+#endif
+
 /*=============================================================*/
 /* Include files */
 /*=============================================================*/
@@ -21,7 +47,12 @@ extern "C" {
 /* local includes */
 
 /* forward references */
+extern void __iomem *pwrap_base;
+#define PMIC_WRAP_BASE		(pwrap_base)
+
 #ifdef CONFIG_CPU_DVFS_HAS_EXTBUCK
+#include "mach/mt_typedefs.h"
+
 extern int is_ext_buck_sw_ready(void);
 extern int is_ext_buck_exist(void);
 extern void mt6311_set_vdvfs11_vosel(kal_uint8 val);

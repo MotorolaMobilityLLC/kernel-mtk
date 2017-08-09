@@ -2,7 +2,7 @@
 #define _MT_PTP_
 
 #include <linux/kernel.h>
-#include <mach/sync_write.h>
+#include <sync_write.h>
 
 #define CONFIG_PTP_AEE_RR_REC 1
 #define EN_PTP_OD (1)
