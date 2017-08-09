@@ -46,7 +46,7 @@
 #define OSAL_OP_DATA_SIZE   32
 #endif
 
-#define DBG_LOG_STR_SIZE    512
+#define DBG_LOG_STR_SIZE    256
 
 #define osal_sizeof(x) sizeof(x)
 
