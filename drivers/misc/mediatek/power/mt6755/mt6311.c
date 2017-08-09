@@ -66,8 +66,6 @@ static const struct of_device_id mt6311_of_ids[] = {
 #endif
 
 static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
-static void mt6311_driver_shutdown(struct i2c_client *client);
-static int mt6311_driver_remove(struct i2c_client *client);
 
 static struct i2c_driver mt6311_driver = {
 	.driver = {
@@ -77,8 +75,6 @@ static struct i2c_driver mt6311_driver = {
 #endif
 		   },
 	.probe = mt6311_driver_probe,
-	.shutdown = mt6311_driver_shutdown,
-	.remove = mt6311_driver_remove,
 	.id_table = mt6311_i2c_id,
 };
 
@@ -7177,13 +7173,6 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	PMICLOG1("[mt6311_driver_probe]\n");
 
-	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
-	if (new_client == NULL) {
-		err = -ENOMEM;
-		goto exit;
-	}
-	memset(new_client, 0, sizeof(struct i2c_client));
-
 	new_client = client;
 
 	/*---------------------        */
@@ -7223,28 +7212,6 @@ exit:
 	PMICLOG1("[mt6311_driver_probe] exit: return err\n");
 	PMIC_INIT_SETTING_V1();
 	return err;
-}
-
-/*
- * mt6311 shutdown
- */
-
-static void mt6311_driver_shutdown(struct i2c_client *client)
-{
-	PMICLOG1("[mt6311_driver_shutdown]\n");
-	kfree(new_client);
-}
-
-
-/*
- * mt6311 remove
- */
-
-static int mt6311_driver_remove(struct i2c_client *client)
-{
-	PMICLOG1("[mt6311_driver_remove]\n");
-	kfree(new_client);
-	return 0;
 }
 
 /*
