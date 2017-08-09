@@ -276,7 +276,7 @@ void bif_waitfor_slave(void)
 		reg_val = pmic_get_register_value(PMIC_BIF_IRQ);
 
 		if (loop_i++ > 50) {
-			battery_log(BAT_LOG_CRTI,
+			battery_log(BAT_LOG_FULL,
 				    "[BIF][waitfor_slave] failed. PMIC_BIF_IRQ=0x%x, loop=%d\n",
 				    reg_val, loop_i);
 			break;
