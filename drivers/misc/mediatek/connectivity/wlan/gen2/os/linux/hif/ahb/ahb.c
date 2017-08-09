@@ -302,7 +302,7 @@ static struct miscdevice MtkAhbDriver = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id apwifi_of_ids[] = {
-	{.compatible = "mediatek,WIFI",},
+	{.compatible = "mediatek,wifi",},
 	{}
 };
 #endif
@@ -629,7 +629,7 @@ INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 		return -1;
 	prNetDevice = (struct net_device *)pvData;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,WIFI");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,wifi");
 	if (node) {
 		irq_id = irq_of_parse_and_map(node, 0);
 		DBGLOG(INIT, INFO, "WIFI-OF: get wifi irq(%d)\n", irq_id);
@@ -670,7 +670,7 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 		return;
 	prNetDevice = (struct net_device *)pvData;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,WIFI");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,wifi");
 	if (node) {
 		irq_id = irq_of_parse_and_map(node, 0);
 		DBGLOG(INIT, INFO, "WIFI-OF: get wifi irq(%d)\n", irq_id);

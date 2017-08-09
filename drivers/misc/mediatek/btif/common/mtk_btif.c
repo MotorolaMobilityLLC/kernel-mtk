@@ -506,7 +506,7 @@ void btif_rx_notify_cb(void)
 	rx_notify_flag = 1;
 	wake_up(&btif_wq);
 	wake_up_interruptible(&btif_read_inq);
-	BTIF_DBG_FUNC("++\n");
+	BTIF_DBG_FUNC("--\n");
 }
 
 unsigned int btif_poll(struct file *filp, poll_table *wait)
@@ -746,9 +746,10 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 	char buf[256];
 	char *p_buf;
 	unsigned long len = count;
-	int x = 0;
-	int y = 0;
-	int z = 0;
+	long x = 0;
+	long y = 0;
+	long z = 0;
+	int result = 0;
 	char *p_token = NULL;
 	char *p_delimiter = " \t";
 
@@ -759,21 +760,27 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 		return -1;
 	}
 
-	p_buf = (char *)buffer;
+	memcpy(buf, buffer, sizeof(buf));
+	p_buf = buf;
 
 	p_token = strsep(&p_buf, p_delimiter);
-	x = NULL != p_token ? kstrtol(p_token, 16, NULL) : 0;
+	if (p_token != NULL) {
+		result = kstrtol(p_token, 16, &x);
+		BTIF_INFO_FUNC("x = 0x%08x\n\r", x);
+	} else
+		x = 0;
+/*	x = (NULL != p_token) ? kstrtol(p_token, 16, NULL) : 0;*/
 
 	p_token = strsep(&p_buf, "\t\n ");
 	if (p_token != NULL) {
-		y = kstrtol(p_token, 16, NULL);
+		result = kstrtol(p_token, 16, &y);
 		BTIF_INFO_FUNC("y = 0x%08x\n\r", y);
 	} else
 		y = 0;
 
 	p_token = strsep(&p_buf, "\t\n ");
 	if (p_token != NULL)
-		z = kstrtol(p_token, 16, NULL);
+		result = kstrtol(p_token, 16, &z);
 	else
 		z = 0;
 
