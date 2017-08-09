@@ -1513,7 +1513,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			gpio-controller;
 			#gpio-cells = <2>;
 		};
-
+		ptp_fsm@1100b000 {
+			compatible = "mediatek,ptp_fsm_v1";
+			reg = <0x1100B000 0x1000>;
+			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
+		};
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};

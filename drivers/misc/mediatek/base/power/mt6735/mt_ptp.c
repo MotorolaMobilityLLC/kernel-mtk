@@ -2277,7 +2277,7 @@ static int ptp_resume(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_ptpod_of_match[] = {
 	{
-	.compatible = "mediatek,PTP_FSM",}, {
+	.compatible = "mediatek,ptp_fsm_v1",}, {
 },};
 #endif
 
@@ -3025,7 +3025,7 @@ int __init ptp_init(void)
 	 FUNC_ENTER(FUNC_LV_MODULE);
 
 #if 1
-	 node = of_find_compatible_node(NULL, NULL, "mediatek,PTP_FSM");
+	 node = of_find_compatible_node(NULL, NULL, "mediatek,ptp_fsm_v1");
 
 	if (node) {
 		/* Setup IO addresses */
