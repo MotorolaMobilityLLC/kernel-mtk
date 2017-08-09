@@ -1732,8 +1732,13 @@ static int mtk_thermal_wrapper_unbind
 		/* Clear cldata->tz */
 		if (thermal == cldata->tz) {
 			/* clear the state of cooler bounded first... */
-			if (cdev->ops)
+			if (cdev->ops) {
+				int tmp_exit_pt = cldata->exit_threshold;
+
+				cldata->exit_threshold = 0;
 				cdev->ops->set_cur_state(cdev, 0);
+				cldata->exit_threshold = tmp_exit_pt;
+			}
 
 			cldata->tz = NULL;
 			cldata->trip = 0;
