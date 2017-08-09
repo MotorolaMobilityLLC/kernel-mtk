@@ -266,8 +266,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		else
 #endif
 #endif
-		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
 */
+		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
+
 LEAVE_SLEEP:
 #ifdef CONFIG_MTKPASR
     /* PASR SW operations */

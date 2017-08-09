@@ -1230,7 +1230,7 @@ static void spm_set_sysclk_settle(void)
 	spm_write(SPM_CLK_SETTLE, SPM_SYSCLK_SETTLE - md_settle);
 	settle = spm_read(SPM_CLK_SETTLE);
 
-	spm_crit2("md_settle = %u, settle = %u\n", md_settle, settle);
+	spm_warn("md_settle = %u, settle = %u\n", md_settle, settle);
 }
 
 static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
@@ -1349,11 +1349,11 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	md32_flag = spm_read(MD32_BASE + 0x2C);
 	md32_flag2 = spm_read(MD32_BASE + 0x30);
 #endif
-	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d\n",
+	spm_warn("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d\n",
 		  spm_dormant_sta, md32_flag, md32_flag2);
-	spm_crit2("log_wakesta_index = %d\n", log_wakesta_index);
+	spm_warn("log_wakesta_index = %d\n", log_wakesta_index);
 	if (0 != spm_ap_mdsrc_req_cnt)
-		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
+		spm_warn("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
 	if (wakesta->r12 & WAKE_SRC_EINT)
@@ -1374,7 +1374,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #if !defined(CONFIG_ARCH_MT6580)
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	if (wakesta->r13 & 0x18) {
-		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
+		spm_warn("dump ID_DUMP_MD_SLEEP_MODE");
 		exec_ccci_kern_func_by_md_id(0, ID_DUMP_MD_SLEEP_MODE, NULL, 0);
 	}
 #endif
@@ -1391,7 +1391,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 static u32 spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 {
 	int period = SPM_WAKE_PERIOD;
-
+#if 0
 	if (pwake_time < 0) {
 		/* use FG to get the period of 1% battery decrease */
 		period = get_dynamic_period(last_wr != WR_PCM_TIMER ? 1 : 0, SPM_WAKE_PERIOD, 1);
@@ -1406,7 +1406,7 @@ static u32 spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 
 	if (period > 36 * 3600)	/* max period is 36.4 hours */
 		period = 36 * 3600;
-
+#endif
 	return period;
 }
 #endif
@@ -1526,7 +1526,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl;
 
 #ifndef DISABLE_DLPT_FEATURE
-	get_dlpt_imix_spm();
+	/*get_dlpt_imix_spm();*/
 #endif
 
 #if SPM_AEE_RR_REC
@@ -1581,7 +1581,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		vcorefs_list_kicker_request();
 #endif
 
-	spm_crit2("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
+	spm_warn("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
 
