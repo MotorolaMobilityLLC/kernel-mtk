@@ -750,7 +750,8 @@ static void mt_gpufreq_set_initial(void)
 
 	for (i = 0; i < mt_gpufreqs_num; i++) {
 		if (cur_volt >= mt_gpufreqs[i].gpufreq_volt) {
-			mt_gpufreq_clock_switch(mt_gpufreqs[i].gpufreq_khz);
+			mt_gpufreq_set(cur_freq, mt_gpufreqs[i].gpufreq_khz,
+			       cur_volt, mt_gpufreqs[i].gpufreq_volt);
 			g_cur_gpu_OPPidx = i;
 			gpufreq_dbg("init_idx = %d\n", g_cur_gpu_OPPidx);
 			_mt_gpufreq_kick_pbm(1);
