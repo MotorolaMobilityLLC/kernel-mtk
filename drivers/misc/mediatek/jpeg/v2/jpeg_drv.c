@@ -93,11 +93,12 @@
 #include "jpeg_cmdq.h"
 
 /* #define USE_SYSRAM */
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
+#define JPEG_MSG printk /*pr_debug */
+#define JPEG_WRN printk /*pr_debug */
+#define JPEG_ERR printk /*pr_debug */
 
 #define JPEG_DEVNAME "mtk_jpeg"
+#define JDEC_DEVNAME "mtk_jdec"
 
 #define TABLE_SIZE 4096
 
@@ -112,9 +113,16 @@
 
 #ifdef JPEG_DEV
 /* device and driver */
-static dev_t jpeg_devno;
-static struct cdev *jpeg_cdev;
-static struct class *jpeg_class;
+static dev_t jenc_devno;
+static struct cdev *jenc_cdev;
+static struct class *jenc_class;
+
+#ifdef JPEG_PM_DOMAIN_ENABLE
+static dev_t jdec_devno;
+static struct cdev *jdec_cdev;
+static struct class *jdec_class;
+#endif
+
 #endif
 
 static struct JpegDeviceStruct gJpegqDev;
@@ -122,22 +130,31 @@ static struct JpegDeviceStruct gJpegqDev;
 static struct JpegDeviceStruct *gJpegqDevs;
 static int nrJpegDevs;
 
-static const struct of_device_id jpeg_of_ids[] = {
+static const struct of_device_id jenc_of_ids[] = {
 	{.compatible = "mediatek,jpgenc",},
 	{}
 };
+#ifdef JPEG_PM_DOMAIN_ENABLE
+static const struct of_device_id jdec_of_ids[] = {
+	{.compatible = "mediatek,jpgdec",},
+	{}
+};
+#endif
 #endif
 
 #ifndef CONFIG_MTK_CLKMGR
 static struct JpegClk gJpegClk;
 #endif
-struct platform_device *jenc_pdev;
 /* decoder */
 #ifdef JPEG_DEC_DRIVER
-struct platform_device *jdec_pdev;
 static wait_queue_head_t dec_wait_queue;
 static spinlock_t jpeg_dec_lock;
 static int dec_status;
+#endif
+
+#ifdef JPEG_PM_DOMAIN_ENABLE
+struct platform_device *pjdec_dev;
+struct platform_device *pjenc_dev;
 #endif
 
 /* encoder */
@@ -220,8 +237,8 @@ void jpeg_drv_dec_power_on(void)
 	enable_clock(MT_CG_VENC_JPGDEC, "JPEG");
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_get_sync(&jenc_pdev->dev);
-	pm_runtime_get_sync(&jdec_pdev->dev);
+	pm_runtime_get_sync(&pjenc_dev->dev);
+	pm_runtime_get_sync(&pjdec_dev->dev);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
@@ -251,8 +268,8 @@ void jpeg_drv_dec_power_off(void)
 	clk_disable_unprepare(gJpegClk.clk_venc_larb);
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_put_sync(&jdec_pdev->dev);
-	pm_runtime_put_sync(&jenc_pdev->dev);
+	pm_runtime_put_sync(&pjdec_dev->dev);
+	pm_runtime_put_sync(&pjenc_dev->dev);
 #else
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
@@ -274,8 +291,8 @@ void jpeg_drv_enc_power_on(void)
 #endif
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_get_sync(&jenc_pdev->dev);
-	pm_runtime_get_sync(&jdec_pdev->dev);
+	pm_runtime_get_sync(&pjenc_dev->dev);
+	pm_runtime_get_sync(&pjdec_dev->dev);
 #else
 	if (clk_prepare_enable(gJpegClk.clk_disp_mtcmos))
 		JPEG_ERR("enable disp_mtcmos clk fail!");
@@ -311,8 +328,8 @@ void jpeg_drv_enc_power_off(void)
 #endif
 	clk_disable_unprepare(gJpegClk.clk_disp_smi);
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	pm_runtime_put_sync(&jenc_pdev->dev);
-	pm_runtime_put_sync(&jdec_pdev->dev);
+	pm_runtime_put_sync(&pjenc_dev->dev);
+	pm_runtime_put_sync(&pjdec_dev->dev);
 #else
 	clk_disable_unprepare(gJpegClk.clk_venc_mtcmos);
 	clk_disable_unprepare(gJpegClk.clk_disp_mtcmos);
@@ -1270,19 +1287,10 @@ static int jpeg_probe(struct platform_device *pdev)
 #ifdef CONFIG_MTK_CLKMGR
 #else
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	jenc_pdev = pdev;
+	pjenc_dev = pdev;
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
-	pm_runtime_put_sync(&pdev->dev);
-	{
-		struct device_node *node = NULL;
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,jpgdec");
-		jdec_pdev = of_find_device_by_node(node);
-		pm_runtime_enable(&jdec_pdev->dev);
-		pm_runtime_get_sync(&jdec_pdev->dev);
-		pm_runtime_put_sync(&jdec_pdev->dev);
-	}
+	/*pm_runtime_put_sync(&pdev->dev);*/
 #else
 	/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
 	gJpegClk.clk_disp_mtcmos = of_clk_get_by_name(node, "disp-mtcmos");
@@ -1295,10 +1303,10 @@ static int jpeg_probe(struct platform_device *pdev)
 #endif
 	gJpegClk.clk_disp_smi = of_clk_get_by_name(node, "disp-smi");
 	if (IS_ERR(gJpegClk.clk_disp_smi))
-		JPEG_ERR("get dispMTCMOS clk error!");
+		JPEG_ERR("get dispMI clk error!");
 	gJpegClk.clk_venc_larb = of_clk_get_by_name(node, "venc-larb");
 	if (IS_ERR(gJpegClk.clk_venc_larb))
-		JPEG_ERR("get dispMTCMOS clk error!");
+		JPEG_ERR("get venc-larb clk error!");
 	gJpegClk.clk_venc_jpgEnc = of_clk_get_by_name(node, "venc-jpgenc");
 	if (IS_ERR(gJpegClk.clk_venc_jpgEnc))
 		JPEG_ERR("get jpgEnc clk error!");
@@ -1327,33 +1335,32 @@ static int jpeg_probe(struct platform_device *pdev)
 
 #endif
 
+{
 #ifdef JPEG_DEV
 	int ret;
 	struct class_device *class_dev = NULL;
 
 	JPEG_MSG("-------------jpeg driver probe-------\n");
-	ret = alloc_chrdev_region(&jpeg_devno, 0, 1, JPEG_DEVNAME);
+	ret = alloc_chrdev_region(&jenc_devno, 0, 1, JPEG_DEVNAME);
 
 	if (ret)
 		JPEG_ERR("Error: Can't Get Major number for JPEG Device\n");
 	else
-		JPEG_MSG("Get JPEG Device Major number (%d)\n", jpeg_devno);
+		JPEG_MSG("Get JPEG Device Major number (%d)\n", jenc_devno);
 
-	jpeg_cdev = cdev_alloc();
-	jpeg_cdev->owner = THIS_MODULE;
-	jpeg_cdev->ops = &jpeg_fops;
+	jenc_cdev = cdev_alloc();
+	jenc_cdev->owner = THIS_MODULE;
+	jenc_cdev->ops = &jpeg_fops;
 
-	ret = cdev_add(jpeg_cdev, jpeg_devno, 1);
+	ret = cdev_add(jenc_cdev, jenc_devno, 1);
 
-	jpeg_class = class_create(THIS_MODULE, JPEG_DEVNAME);
+	jenc_class = class_create(THIS_MODULE, JPEG_DEVNAME);
 	class_dev =
-	    (struct class_device *)device_create(jpeg_class, NULL, jpeg_devno, NULL, JPEG_DEVNAME);
+	    (struct class_device *)device_create(jenc_class, NULL, jenc_devno, NULL, JPEG_DEVNAME);
 #else
-
 	proc_create("mtk_jpeg", 0, NULL, &jpeg_fops);
-
 #endif
-
+}
 	spin_lock_init(&jpeg_enc_lock);
 
 	/* initial codec, register codec ISR */
@@ -1393,7 +1400,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	JPEG_MSG("JPEG Probe Done\n");
 
 #ifdef JPEG_DEV
-	NOT_REFERENCED(class_dev);
+	/* NOT_REFERENCED(class_dev); */
 #endif
 	return 0;
 }
@@ -1410,7 +1417,7 @@ static int jpeg_remove(struct platform_device *pdev)
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pm_runtime_disable(&pdev->dev);
 	/* venc power */
-	pm_runtime_disable(&jdec_pdev->dev);
+	pm_runtime_disable(&pjdec_dev->dev);
 #endif
 #endif
 	JPEG_MSG("Done\n");
@@ -1484,10 +1491,11 @@ static struct platform_driver jpeg_driver = {
 		.name = JPEG_DEVNAME,
 		.pm = &jpeg_pm_ops,
 #ifdef CONFIG_OF
-		.of_match_table = jpeg_of_ids,
+		.of_match_table = jenc_of_ids,
 #endif
 		},
 };
+
 
 static void jpeg_device_release(struct device *dev)
 {
@@ -1506,6 +1514,75 @@ static struct platform_device jpeg_device = {
 		},
 		.num_resources = 0,
 };
+
+#ifdef JPEG_PM_DOMAIN_ENABLE
+
+/* Kernel interface */
+static struct file_operations const jdec_fops = {
+	.owner = THIS_MODULE,
+	/* .ioctl          = jpeg_ioctl, */
+	.unlocked_ioctl = NULL,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = NULL,
+#endif
+	.open = NULL,
+	.release = NULL,
+	.flush = NULL,
+	.read = NULL,
+};
+
+static int jdec_probe(struct platform_device *pdev)
+{
+
+	int ret;
+#ifdef JPEG_DEV
+	struct class_device *class_dev = NULL;
+#endif
+	JPEG_MSG("+jdec_probe\n");
+	if (!pdev->dev.pm_domain) {
+		JPEG_MSG("+jdec_probe ERROR pm_domain\n");
+		return -EPROBE_DEFER;
+	}
+	pjdec_dev = pdev;
+	pm_runtime_enable(&pdev->dev);
+	ret = pm_runtime_get_sync(&pjdec_dev->dev);
+	JPEG_MSG("jdec_probe  pm return %d\n", ret);
+#ifdef JPEG_DEV
+	ret = alloc_chrdev_region(&jdec_devno, 0, 1, JDEC_DEVNAME);
+	if (ret)
+		JPEG_MSG("Error: Can't Get Major number for %s Device\n", JDEC_DEVNAME);
+	else
+		JPEG_MSG("Get %s Device Major number (%d)\n", JDEC_DEVNAME, jdec_devno);
+
+	jdec_cdev = cdev_alloc();
+	jdec_cdev->owner = THIS_MODULE;
+	jdec_cdev->ops = NULL;
+
+	ret = cdev_add(jdec_cdev, jdec_devno, 1);
+
+	jdec_class = class_create(THIS_MODULE, JDEC_DEVNAME);
+	class_dev =
+		(struct class_device *)device_create(jdec_class, NULL, jdec_devno, NULL, JDEC_DEVNAME);
+#else
+	proc_create(JDEC_DEVNAME, 0, NULL, &jdec_fops);
+#endif
+	/* venc_power_on(); */
+	return 0;
+}
+
+
+
+static struct platform_driver jdec_driver = {
+	.probe = jdec_probe,
+	/*.remove = vcodec_venc_remove, */
+	.driver = {
+		   .name = JDEC_DEVNAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = jdec_of_ids,
+		   }
+};
+
+#endif
 
 static int __init jpeg_init(void)
 {
@@ -1529,6 +1606,14 @@ static int __init jpeg_init(void)
 		ret = -ENODEV;
 		return ret;
 	}
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	if (platform_driver_register(&jdec_driver)) {
+		JPEG_ERR("failed to register jdec_driver codec driver\n");
+		platform_device_unregister(pjdec_dev);
+		ret = -ENODEV;
+		return ret;
+	}
+#endif
 	cmdqCoreRegisterCB(CMDQ_GROUP_JPEG,
 			   cmdqJpegClockOn, cmdqJpegDumpInfo, cmdqJpegResetEng, cmdqJpegClockOff);
 	return 0;
@@ -1536,11 +1621,12 @@ static int __init jpeg_init(void)
 
 static void __exit jpeg_exit(void)
 {
+	JPEG_MSG("jpeg_exit +\n");
 #ifdef JPEG_DEV
-	cdev_del(jpeg_cdev);
-	unregister_chrdev_region(jpeg_devno, 1);
-	device_destroy(jpeg_class, jpeg_devno);
-	class_destroy(jpeg_class);
+	cdev_del(jenc_cdev);
+	unregister_chrdev_region(jenc_devno, 1);
+	device_destroy(jenc_class, jenc_devno);
+	class_destroy(jenc_class);
 #else
 	remove_proc_entry("mtk_jpeg", NULL);
 #endif
@@ -1549,8 +1635,20 @@ static void __exit jpeg_exit(void)
 	/* JPEG_MSG("Unregistering driver\n"); */
 	platform_driver_unregister(&jpeg_driver);
 	platform_device_unregister(&jpeg_device);
-
-	JPEG_MSG("Done\n");
+#ifdef JPEG_PM_DOMAIN_ENABLE
+#ifdef JPEG_DEV
+	cdev_del(jdec_cdev);
+	unregister_chrdev_region(jdec_devno, 1);
+	device_destroy(jdec_class, jdec_devno);
+	class_destroy(jdec_class);
+#else
+	remove_proc_entry("mtk_jenc", NULL);
+#endif
+	platform_driver_unregister(&jdec_driver);
+	platform_device_unregister(pjenc_dev);
+	JPEG_MSG("jpeg_exit jdec remove\n");
+#endif
+	JPEG_MSG("jpeg_exit -\n");
 }
 module_init(jpeg_init);
 module_exit(jpeg_exit);
