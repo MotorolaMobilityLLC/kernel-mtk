@@ -31,6 +31,7 @@ endif
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
     obj-$(CONFIG_MTK_COMBO_GPS) += gps/
     obj-$(CONFIG_MTK_COMBO_ANT) += ant/
+    obj-$(CONFIG_MTK_COMBO_BT_HCI) += bt/
 	obj-n := dummy.o
 
 # Otherwise we were called directly from the command line;
