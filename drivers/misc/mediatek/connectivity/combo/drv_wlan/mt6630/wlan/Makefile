@@ -20,7 +20,7 @@ else
     ccflags-y += -DCFG_SUPPORT_CHNL_CONFLICT_REVISE=1
 endif
 
-ifeq ($(CONFIG_HAVE_AEE_FEATURE), y)
+ifeq ($(CONFIG_MTK_AEE_FEATURE), y)
     ccflags-y += -DCFG_SUPPORT_AEE=1
 else
     ccflags-y += -DCFG_SUPPORT_AEE=0
