@@ -467,10 +467,12 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
 #endif
+		/*
 		if (get_booting_start_id(md) | META_BOOT_ID) {
 			mod_timer(&md->md_status_poller, jiffies + 10 * HZ);
 			CCCI_NOTICE_MSG(md->index, KERN, "start md_status_poller in meta mode\n");
 		}
+		*/
 		if (req->skb->len == sizeof(struct md_query_ap_feature) + sizeof(struct ccci_header))
 			prepare_runtime_data(md, req);
 		else if (req->skb->len == sizeof(struct ccci_header))
