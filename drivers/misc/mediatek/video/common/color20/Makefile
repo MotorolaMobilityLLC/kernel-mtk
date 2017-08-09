@@ -56,3 +56,8 @@ else ifeq ($(strip $(MTK_PQ_COLOR_MODE)),DISP)
     ccflags-y += -DDISP_COLOR_ON
 endif
 
+ifeq ($(strip $(CONFIG_MTK_LCM_PHYSICAL_ROTATION)),"180")
+    ccflags-y += -DLCM_PHYSICAL_ROTATION_180
+else ifeq ($(strip $(CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW)),y)
+    ccflags-y += -DLCM_PHYSICAL_ROTATION_180
+endif

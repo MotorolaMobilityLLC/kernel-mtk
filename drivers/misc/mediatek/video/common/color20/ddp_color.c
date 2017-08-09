@@ -1655,9 +1655,14 @@ static void ddp_color_set_window(DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
 	/* save to global, can be applied on following PQ param updating. */
 	if (win_param->split_en) {
 		g_split_en = 1;
+#ifdef LCM_PHYSICAL_ROTATION_180
+		g_split_window_x = ((g_color0_dst_w - win_param->start_x) << 16) | (g_color0_dst_w - win_param->end_x);
+		g_split_window_y = ((g_color0_dst_h - win_param->start_y) << 16) | (g_color0_dst_h - win_param->end_y);
+		COLOR_DBG("ddp_color_set_window(), LCM_PHYSICAL_ROTATION_180\n");
+#else
 		g_split_window_x = (win_param->end_x << 16) | win_param->start_x;
 		g_split_window_y = (win_param->end_y << 16) | win_param->start_y;
-
+#endif
 	} else {
 		g_split_en = 0;
 		g_split_window_x = 0xFFFF0000;
