@@ -144,6 +144,13 @@ int msdc_get_cache_region(void)
 
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
+static struct delayed_work get_cache_info;
+static int __init init_get_cache_work(void)
+{
+	INIT_DELAYED_WORK(&get_cache_info, msdc_get_cache_region);
+	schedule_delayed_work(&get_cache_info, 100);
+	return 0;
+}
 #endif
 
 static u32 msdc_get_other_capacity(struct msdc_host *host)
@@ -275,5 +282,5 @@ void msdc_proc_emmc_create(void)
 }
 
 #ifdef MTK_MSDC_USE_CACHE
-late_initcall_sync(msdc_get_cache_region);
+late_initcall_sync(init_get_cache_work);
 #endif

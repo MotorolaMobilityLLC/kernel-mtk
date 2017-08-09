@@ -104,7 +104,7 @@ int src_clk_control;
 
 bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
-
+static struct workqueue_struct *wq_init;
 #define DRV_NAME                "mtk-msdc"
 
 #define MSDC_COOKIE_PIO         (1<<0)
@@ -4158,8 +4158,8 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
 
-	pr_err("msdc%d: transfer err %d timing:%d\n",
-		host->id, autok_err_type, mmc->ios.timing);
+	/* pr_err("msdc%d: transfer err %d timing:%d\n",
+		host->id, autok_err_type, mmc->ios.timing); */
 
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
@@ -4204,8 +4204,8 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 				host->err_cmd != MMC_SEND_STATUS) ||
 				(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
 				host->err_cmd != MMC_STOP_TRANSMISSION)) {
-				pr_err("msdc%d: tune smpl don't switch edge,  err cmd : %d\n",
-					host->id, host->err_cmd);
+				/* pr_err("msdc%d: tune smpl don't switch edge,  err cmd : %d\n",
+					host->id, host->err_cmd); */
 			} else {
 				pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
 					host->id, ++host->tune_smpl_times,
@@ -4373,7 +4373,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	int level = 0;
 
 	base = host->base;
-	spin_lock_irqsave(&host->lock, flags);
+	/* spin_lock_irqsave(&host->lock, flags); */
 
 	/* for sdio, depends on USER_RESUME */
 	if (is_card_sdio(host)) {
@@ -4407,7 +4407,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	sd_register_zone[host->id] = 1;
 	INIT_MSG("Card insert<%d> Block bad card<%d>",
 		host->card_inserted, host->block_bad_card);
-	spin_unlock_irqrestore(&host->lock, flags);
+	/* spin_unlock_irqrestore(&host->lock, flags); */
 	return host->card_inserted;
 }
 static void msdc_ops_card_event(struct mmc_host *mmc)
@@ -4415,6 +4415,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 
 	host->block_bad_card = 0;
+	msdc_ops_get_cd(mmc);
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
 }
@@ -4479,6 +4480,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		msdc_retry(sdc_is_busy(), retry, timeout, host->id);
 		if (timeout == 0 && retry == 0) {
 			err = (unsigned int)-ETIMEDOUT;
+			pr_err("msdc%d sdc is busy timeout 100ms\n", host->id);
 			goto out;
 		}
 
@@ -5129,7 +5131,30 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 	return 0;
 }
 #endif
+static void msdc_add_host(struct work_struct *work)
+{
+	int ret;
+	struct msdc_host *host = NULL;
+	struct mmc_host *mmc = NULL;
 
+	host = container_of(work, struct msdc_host, work_init);
+	BUG_ON(!host);
+	mmc = host->mmc;
+	BUG_ON(!mmc);
+
+	ret = mmc_add_host(mmc);
+
+	if (ret) {
+		free_irq(host->irq, host);
+		pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
+		platform_set_drvdata(host->pdev, NULL);
+		msdc_deinit_hw(host);
+		pr_err("[%s]: msdc%d init fail release!\n", __func__, host->id);
+		kfree(host->hw);
+		mmc_free_host(mmc);
+	}
+
+}
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc;
@@ -5292,6 +5317,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
+	INIT_WORK(&host->work_init, msdc_add_host);
+
 	/*INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);*/
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
@@ -5342,7 +5369,14 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		MSDC_CLR_BIT32(SDC_CFG, SDC_CFG_INSWKUP);
 	}
 
-	ret = mmc_add_host(mmc);
+	/* ret = mmc_add_host(mmc); */
+	/* Use workqueue to reduce msdc moudle init time */
+	if (!queue_work(wq_init, &host->work_init)) {
+		pr_err("msdc%d queue work failed BUG_ON,[%s]L:%d\n",
+			host->id, __func__, __LINE__);
+		BUG();
+	}
+
 	if (ret)
 		goto free_irq;
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
@@ -5512,6 +5546,13 @@ static int __init mt_msdc_init(void)
 {
 	int ret;
 
+	/*config tune at workqueue*/
+	wq_init = create_workqueue("msdc-init");
+	if (!wq_init) {
+		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
+		BUG();
+	}
+
 	ret = platform_driver_register(&mt_msdc_driver);
 	if (ret) {
 		pr_err(DRV_NAME ": Can't register driver");
@@ -5528,6 +5569,11 @@ static int __init mt_msdc_init(void)
 static void __exit mt_msdc_exit(void)
 {
 	platform_driver_unregister(&mt_msdc_driver);
+
+	if (wq_init) {
+		destroy_workqueue(wq_init);
+		wq_init = NULL;
+	}
 
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_MSDC);
