@@ -41,7 +41,7 @@
 #include <linux/cdev.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
-/*#include <linux/aee.h> TBD*/
+#include <mt-plat/aee.h>
 #include <linux/proc_fs.h>
 #include <linux/syscalls.h>
 #include <linux/sched.h>
@@ -2378,7 +2378,9 @@ void register_battery_percent_notify(void (*battery_percent_callback)(BATTERY_PE
 #ifdef BATTERY_PERCENT_PROTECT
 void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 {				/*0:no limit */
+#ifdef DISABLE_DLPT_FEATURE
 	int i = 0;
+#endif
 
 	if (g_battery_percent_stop == 1) {
 		pr_err("[exec_battery_percent_callback] g_battery_percent_stop=%d\n",
@@ -2778,7 +2780,7 @@ int get_rac_val(void)
 
 	do {
 		/*adc and fg-------------------------------------------------------- */
-		do_ptim(KAL_TRUE);
+		do_ptim(true);
 
 		pmic_spm_crit2("[1,Trigger ADC PTIM mode] volt1=%d, curr_1=%d\n", ptim_bat_vol,
 			       ptim_R_curr);
@@ -2791,7 +2793,7 @@ int get_rac_val(void)
 		/*Wait --------------------------------------------------------------*/
 
 		/*adc and fg-------------------------------------------------------- */
-		do_ptim(KAL_TRUE);
+		do_ptim(true);
 
 		pmic_spm_crit2("[3,Trigger ADC PTIM mode again] volt2=%d, curr_2=%d\n",
 			       ptim_bat_vol, ptim_R_curr);
@@ -2850,8 +2852,11 @@ int get_rac_val(void)
 int get_dlpt_imix_spm(void)
 {
 	int rac_val[5], rac_val_avg;
-	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
+#if 0
+	int volt[5], curr[5];
+	int volt_avg = 0, curr_avg = 0;
 	int imix;
+#endif
 	int i;
 	static unsigned int pre_ui_soc = 101;
 	unsigned int ui_soc;
@@ -2911,14 +2916,14 @@ int get_dlpt_imix_spm(void)
 
 int get_dlpt_imix(void)
 {
-	int rac_val[5], rac_val_avg;
+	/* int rac_val[5], rac_val_avg; */
 	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
 	int imix;
 	int i;
 
 	for (i = 0; i < 5; i++) {
 		/*adc and fg-------------------------------------------------------- */
-		do_ptim(KAL_FALSE);
+		do_ptim(false);
 
 		volt[i] = ptim_bat_vol;
 		curr[i] = ptim_R_curr;
@@ -3114,11 +3119,13 @@ int get_system_loading_ma(void)
 	if (g_dlpt_start == 0)
 		PMICLOG("get_system_loading_ma not ready\n");
 	else {
+#if defined(CONFIG_MTK_SMART_BATTERY)
 		fg_val = battery_meter_get_battery_current();
 		fg_val = fg_val / 10;
 		if (battery_meter_get_battery_current_sign() == 1)
 			fg_val = 0 - fg_val;	/* charging*/
 		PMICLOG("[get_system_loading_ma] fg_val=%d\n", fg_val);
+#endif
 	}
 
 	return fg_val;
@@ -4189,7 +4196,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
 #ifdef DLPT_FEATURE_SUPPORT
-	int *pimix;
+	const int *pimix;
 	int len = 0;
 #endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
