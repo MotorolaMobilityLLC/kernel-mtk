@@ -13,6 +13,7 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define ENALBE_SW_FILTER		(1)
 #define ATM_USES_PPM	(1)
 
 #define THERMAL_GET_AHB_BUS_CLOCK		    (0)

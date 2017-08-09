@@ -159,7 +159,7 @@ struct bigCoreTime {
 	U32 tempAhbPoll;
 	int isEnable;
 };
-struct bigCoreTime g_bigCTS = {0, 0, 0, 0};
+struct bigCoreTime g_bigCTS = {0xC, 0x0001002E, 0x30D, 1};
 thermal_bank_name g_currentBank = THERMAL_BANK0;
 
 static int tscpu_curr_max_ts_temp;
@@ -187,15 +187,18 @@ mt_ptp_unlock(unsigned long *flags)
 /*=============================================================*/
 void thermal_set_big_core_speed(U32 tempMonCtl1, U32 tempMonCtl2, U32 tempAhbPoll)
 {
+	/* Deprecated, because OTP doesn't need to control
+	   the polling time of Thermal Controller */
+/*
 	g_bigCTS.isEnable = 1;
 	g_bigCTS.tempMonCtl1 = tempMonCtl1;
 	g_bigCTS.tempMonCtl2 = tempMonCtl2;
 	g_bigCTS.tempAhbPoll = tempAhbPoll;
-
 	tscpu_switch_bank(THERMAL_BANK0);
 	THERMAL_WRAP_WR32(g_bigCTS.tempMonCtl1, TEMPMONCTL1);
 	THERMAL_WRAP_WR32(g_bigCTS.tempMonCtl2, TEMPMONCTL2);
 	THERMAL_WRAP_WR32(g_bigCTS.tempAhbPoll, TEMPAHBPOLL);
+*/
 }
 
 /* chip dependent */
@@ -787,51 +790,41 @@ static void thermal_reset_and_initial(void)
 
 	/* Calculating period unit in Module clock x 256, and the Module clock */
 	/* will be changed to 26M when Infrasys enters Sleep mode. */
-	/* THERMAL_WRAP_WR32(0x000003FF, TEMPMONCTL1);    // counting unit is 1023 * 15.15ns ~ 15.5us */
 
-
-	/* bus clock 66M counting unit is 4*15.15ns* 256 = 15513.6 ms=15.5us */
-	/* THERMAL_WRAP_WR32(0x00000004, TEMPMONCTL1);*/
-	/* bus clock 66M counting unit is 12*15.15ns* 256 = 46.540us */
 	if (g_bigCTS.isEnable == 1 && g_currentBank == THERMAL_BANK0) {
 		THERMAL_WRAP_WR32(g_bigCTS.tempMonCtl1, TEMPMONCTL1);
 		THERMAL_WRAP_WR32(g_bigCTS.tempMonCtl2, TEMPMONCTL2);
 		THERMAL_WRAP_WR32(g_bigCTS.tempAhbPoll, TEMPAHBPOLL);
+
 #if THERMAL_CONTROLLER_HW_FILTER == 2
-		THERMAL_WRAP_WR32(0x00000049, TEMPMSRCTL0);	/* temperature sampling control, 2 out of 4 samples */
+		THERMAL_WRAP_WR32(0x00000492, TEMPMSRCTL0);	/* temperature sampling control, 2 out of 4 samples */
 #elif THERMAL_CONTROLLER_HW_FILTER == 4
-		THERMAL_WRAP_WR32(0x000000DB, TEMPMSRCTL0);	/* temperature sampling control, 4 out of 6 samples */
+		THERMAL_WRAP_WR32(0x000006DB, TEMPMSRCTL0);	/* temperature sampling control, 4 out of 6 samples */
 #elif THERMAL_CONTROLLER_HW_FILTER == 8
-		THERMAL_WRAP_WR32(0x00000124, TEMPMSRCTL0);	/* temperature sampling control, 8 out of 10 samples */
+		THERMAL_WRAP_WR32(0x00000924, TEMPMSRCTL0);	/* temperature sampling control, 8 out of 10 samples */
 #elif THERMAL_CONTROLLER_HW_FILTER == 16
-		THERMAL_WRAP_WR32(0x0000016D, TEMPMSRCTL0);	/* temperature sampling control, 16 out of 18 samples */
+		THERMAL_WRAP_WR32(0x00000B6D, TEMPMSRCTL0);	/* temperature sampling control, 16 out of 18 samples */
 #else				/* default 1 */
 		THERMAL_WRAP_WR32(0x00000000, TEMPMSRCTL0);	/* temperature sampling control, 1 sample */
 #endif
 	} else {
+		/*bus clock 66M counting unit is 12 * 1/78M * 256 = 12 * 3.282us = 39.384 us */
 		THERMAL_WRAP_WR32(0x0000000C, TEMPMONCTL1);
-		/*bus clock 66M counting unit is 4*15.15ns* 256 = 15513.6 ms=15.5us */
-		/* THERMAL_WRAP_WR32(0x000001FF, TEMPMONCTL1);*/
-#if THERMAL_CONTROLLER_HW_FILTER == 2
-		THERMAL_WRAP_WR32(0x07E007E0, TEMPMONCTL2);	/* both filt and sen interval= 2016*15.5us = 31.25ms */
-		THERMAL_WRAP_WR32(0x001F7972, TEMPAHBPOLL);	/* poll is set to 31.25ms */
-		THERMAL_WRAP_WR32(0x00000049, TEMPMSRCTL0);	/* temperature sampling control, 2 out of 4 samples */
-#elif THERMAL_CONTROLLER_HW_FILTER == 4
-		THERMAL_WRAP_WR32(0x050A050A, TEMPMONCTL2);	/* both filt and sen interval is 20ms */
-		THERMAL_WRAP_WR32(0x001424C4, TEMPAHBPOLL);	/* poll is set to 20ms */
-		THERMAL_WRAP_WR32(0x000000DB, TEMPMSRCTL0);	/* temperature sampling control, 4 out of 6 samples */
-#elif THERMAL_CONTROLLER_HW_FILTER == 8
-		THERMAL_WRAP_WR32(0x03390339, TEMPMONCTL2);	/* both filt and sen interval is 12.5ms */
-		THERMAL_WRAP_WR32(0x000C96FA, TEMPAHBPOLL);	/* poll is set to 12.5ms */
-		THERMAL_WRAP_WR32(0x00000124, TEMPMSRCTL0);	/* temperature sampling control, 8 out of 10 samples */
-#elif THERMAL_CONTROLLER_HW_FILTER == 16
-		THERMAL_WRAP_WR32(0x01C001C0, TEMPMONCTL2);	/* both filt and sen interval is 6.94ms */
-		THERMAL_WRAP_WR32(0x0006FE8B, TEMPAHBPOLL);	/* poll is set to 458379*15.15= 6.94ms */
-		THERMAL_WRAP_WR32(0x0000016D, TEMPMSRCTL0);	/* temperature sampling control, 16 out of 18 samples */
-#else				/* default 1 */
-		/* filt interval is 1 * 46.540us = 46.54us, sen interval is 429 * 46.540us = 19.96ms */
+		/* filt interval is 1 * 39.384us = 39.384us,
+		sen interval is 429 * 39.384us = 18.116ms*/
 		THERMAL_WRAP_WR32(0x000101AD, TEMPMONCTL2);
-		THERMAL_WRAP_WR32(0x00000300, TEMPAHBPOLL);	/* poll is set to 10u */
+		/*AHB polling is 781* 1/78M = 10us*/
+		THERMAL_WRAP_WR32(0x0000030D, TEMPAHBPOLL);	/* poll is set to 10u */
+
+#if THERMAL_CONTROLLER_HW_FILTER == 2
+		THERMAL_WRAP_WR32(0x00000492, TEMPMSRCTL0);	/* temperature sampling control, 2 out of 4 samples */
+#elif THERMAL_CONTROLLER_HW_FILTER == 4
+		THERMAL_WRAP_WR32(0x000006DB, TEMPMSRCTL0);	/* temperature sampling control, 4 out of 6 samples */
+#elif THERMAL_CONTROLLER_HW_FILTER == 8
+		THERMAL_WRAP_WR32(0x00000924, TEMPMSRCTL0);	/* temperature sampling control, 8 out of 10 samples */
+#elif THERMAL_CONTROLLER_HW_FILTER == 16
+		THERMAL_WRAP_WR32(0x00000B6D, TEMPMSRCTL0);	/* temperature sampling control, 16 out of 18 samples */
+#else				/* default 1 */
 		THERMAL_WRAP_WR32(0x00000000, TEMPMSRCTL0);	/* temperature sampling control, 1 sample */
 #endif
 	}

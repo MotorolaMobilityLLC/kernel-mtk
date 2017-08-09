@@ -569,8 +569,10 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 {
 	int ret = 0;
 	int curr_temp;
+#if ENALBE_SW_FILTER
 	int temp_temp;
 	static int last_cpu_real_temp;
+#endif
 
 #ifdef FAST_RESPONSE_ATM
 	curr_temp = tscpu_get_curr_max_ts_temp();
@@ -584,6 +586,7 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 			apthermolmt_get_cpu_power_limit(), apthermolmt_get_gpu_power_limit(), curr_temp);
 	}
 
+#if ENALBE_SW_FILTER
 	temp_temp = curr_temp;
 	if (curr_temp != 0) {/* not resumed from suspensio... */
 		if ((curr_temp > 150000) || (curr_temp < -20000)) {	/* invalid range */
@@ -604,6 +607,7 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 
 	last_cpu_real_temp = curr_temp;
 	curr_temp = temp_temp;
+#endif
 
 	tscpu_read_curr_temp = curr_temp;
 	*t = (unsigned long)curr_temp;

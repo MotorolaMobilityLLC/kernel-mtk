@@ -20,6 +20,7 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define ENALBE_SW_FILTER		(0)
 #define ATM_USES_PPM	(1)
 
 #define THERMAL_GET_AHB_BUS_CLOCK		    (0)
@@ -36,7 +37,7 @@
 
 /* Thermal controller HW filtering function. Only 1, 2, 4, 8, 16 are valid values,
 they means one reading is a avg of X samples*/
-#define THERMAL_CONTROLLER_HW_FILTER        (1) /* 1, 2, 4, 8, 16*/
+#define THERMAL_CONTROLLER_HW_FILTER        (2) /* 1, 2, 4, 8, 16*/
 
 /* 1: turn on thermal controller HW thermal protection; 0: turn off*/
 #define THERMAL_CONTROLLER_HW_TP            (1)
