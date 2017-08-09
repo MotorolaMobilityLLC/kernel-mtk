@@ -895,9 +895,10 @@ static void _pwrap_enable(void)
  ************************************************/
 static s32 _pwrap_init_sistrobe(void)
 {
+
 	u32 arb_en_backup = 0;
 	u32 rdata = 0;
-	s32 ind = 0;
+	s32 ind = 0, sidly = 0;
 	u32 result_faulty = 0;
 	u64 result = 0, tmp1 = 0, tmp2 = 0;
 	s32 leading_one = 0;
@@ -955,7 +956,10 @@ static s32 _pwrap_init_sistrobe(void)
 	if (result_faulty == 0) {
 		ind = (leading_one + tailing_one) / 2;
 		WRAP_WR32(PMIC_WRAP_SI_CK_CON, (ind >> 2) & 0x7);
-		WRAP_WR32(PMIC_WRAP_SIDLY, 0x3 - (ind & 0x3));
+		sidly = 0x3 - (ind & 0x3);
+		if (sidly != 0)
+			sidly--;
+		WRAP_WR32(PMIC_WRAP_SIDLY , sidly);
 		/* --------------------------------------------------------------------- */
 		/* Restore */
 		/* --------------------------------------------------------------------- */
