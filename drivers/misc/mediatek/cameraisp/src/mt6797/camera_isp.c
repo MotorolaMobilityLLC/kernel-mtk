@@ -3306,32 +3306,32 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	MUINT32 flk2_sel;
 	MUINT32 hds2_sel;
 	MUINT32 dmaerr[nDMA_ERR];
+	ISP_DEV_NODE_ENUM regModule; /* for read/write register */
 
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
-		module = ISP_CAM_A_IDX;
+		regModule = ISP_CAM_A_IDX;
 		break;
 	case ISP_IRQ_TYPE_INT_CAM_B_ST:
-		module = ISP_CAM_B_IDX;
+		regModule = ISP_CAM_B_IDX;
 		break;
 	default:
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-			"unsupported module:0x%x\n", module);
+		LOG_ERR("unsupported module:0x%x\n", module);
 		return;
 		break;
 	}
 
 
-	dmaerr[0] = (MUINT32)ISP_RD32(CAM_REG_IMGO_ERR_STAT(module));
-	dmaerr[1] = (MUINT32)ISP_RD32(CAM_REG_RRZO_ERR_STAT(module));
-	dmaerr[2] = (MUINT32)ISP_RD32(CAM_REG_AAO_ERR_STAT(module));
-	dmaerr[3] = (MUINT32)ISP_RD32(CAM_REG_AFO_ERR_STAT(module));
-	dmaerr[4] = (MUINT32)ISP_RD32(CAM_REG_LCSO_ERR_STAT(module));
-	dmaerr[5] = (MUINT32)ISP_RD32(CAM_REG_UFEO_ERR_STAT(module));
-	dmaerr[6] = (MUINT32)ISP_RD32(CAM_REG_BPCI_ERR_STAT(module));
-	dmaerr[7] = (MUINT32)ISP_RD32(CAM_REG_CACI_ERR_STAT(module));
-	dmaerr[8] = (MUINT32)ISP_RD32(CAM_REG_LSCI_ERR_STAT(module));
-	dmaerr[9] = (MUINT32)ISP_RD32(CAM_REG_PDO_ERR_STAT(module));
+	dmaerr[0] = (MUINT32)ISP_RD32(CAM_REG_IMGO_ERR_STAT(regModule));
+	dmaerr[1] = (MUINT32)ISP_RD32(CAM_REG_RRZO_ERR_STAT(regModule));
+	dmaerr[2] = (MUINT32)ISP_RD32(CAM_REG_AAO_ERR_STAT(regModule));
+	dmaerr[3] = (MUINT32)ISP_RD32(CAM_REG_AFO_ERR_STAT(regModule));
+	dmaerr[4] = (MUINT32)ISP_RD32(CAM_REG_LCSO_ERR_STAT(regModule));
+	dmaerr[5] = (MUINT32)ISP_RD32(CAM_REG_UFEO_ERR_STAT(regModule));
+	dmaerr[6] = (MUINT32)ISP_RD32(CAM_REG_BPCI_ERR_STAT(regModule));
+	dmaerr[7] = (MUINT32)ISP_RD32(CAM_REG_CACI_ERR_STAT(regModule));
+	dmaerr[8] = (MUINT32)ISP_RD32(CAM_REG_LSCI_ERR_STAT(regModule));
+	dmaerr[9] = (MUINT32)ISP_RD32(CAM_REG_PDO_ERR_STAT(regModule));
 
 
 	dmaerr[10] = (MUINT32)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
@@ -3348,7 +3348,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	flk2_sel = (uni_path & 0x3);
 	hds2_sel = ((uni_path >> 8) & 0x3);
 	switch (module) {
-	case ISP_CAM_A_IDX:
+	case ISP_IRQ_TYPE_INT_CAM_A_ST:
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"CAM_A:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x,PDO=0x%x\n",
 			dmaerr[0], \
@@ -3371,7 +3371,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 				dmaerr[10], dmaerr[12], dmaerr[14]);
 		}
 		break;
-	case ISP_CAM_B_IDX:
+	case ISP_IRQ_TYPE_INT_CAM_B_ST:
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"CAM_B:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x,PDO=0x%x\n",
 			dmaerr[0], \
@@ -3395,23 +3395,10 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 		}
 		break;
 	default:
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-			"dma dbg r not supported in module:0x%x\n", module);
+		LOG_ERR("unsupported module:0x%x\n", module);
 		break;
 	}
-	switch (module) {
-	case ISP_CAM_A_IDX:
-		module = ISP_IRQ_TYPE_INT_CAM_A_ST;
-		break;
-	case ISP_CAM_B_IDX:
-		module = ISP_IRQ_TYPE_INT_CAM_B_ST;
-		break;
-	default:
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-			"unsupported module:0x%x\n", module);
-		return;
-		break;
-	}
+
 	g_DmaErr_CAM[module][0] |= dmaerr[0];
 	g_DmaErr_CAM[module][1] |= dmaerr[1];
 	g_DmaErr_CAM[module][2] |= dmaerr[2];
