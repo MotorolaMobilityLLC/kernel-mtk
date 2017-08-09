@@ -5163,7 +5163,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	void __iomem *base = NULL;
 	u32 *hclks = NULL;
 	int ret = 0;
-	u32 delay = 0;
 
 #ifdef FPGA_PLATFORM
 	msdc_fpga_pwr_init();
@@ -5371,15 +5370,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	/* ret = mmc_add_host(mmc); */
-	/* Use workqueue to reduce msdc moudle init time
-	 * device expect eMMC will delay 500ms to ensure
-	 * eMMC is started before other devices */
-	if (host->hw->host_function != MSDC_EMMC)
-		delay = 500;
-	else
-		delay = 0;
-
-	if (!queue_delayed_work(wq_init, &host->work_init, delay * HZ / 1000)) {
+	/* Use ordered workqueue to reduce msdc moudle init time */
+	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
 		pr_err("msdc%d queue delay work failed BUG_ON,[%s]L:%d\n",
 			host->id, __func__, __LINE__);
 		BUG();
