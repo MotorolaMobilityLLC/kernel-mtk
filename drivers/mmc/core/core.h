@@ -93,5 +93,8 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq);
 void mmc_run_queue_thread_cmd(void *data);
 void mmc_run_queue_thread_dat(void *data);
 #endif
+
+int mmc_execute_tuning(struct mmc_card *card);
+
 #endif
 
