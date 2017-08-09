@@ -23,14 +23,7 @@ config MT_SND_SOC_8163
 	default n
 	help
         If you say Y, enable MT_SND_SOC_8163_driver.
-config MT_SND_SOC_2701
-    bool "MT_SND_SOC_2701"
-	default n
-	help
-	  If you say Y, enable MT_SND_SOC_2701_driver for MT2701 platform.
-	  It is the audio driver implementation
-	  Audio driver for mt2701.
-	  YES to enable the audio driver supporting.
+
 config MTK_SPEAKER
 	bool "MTK_SPEAKER"
 	default n
@@ -51,11 +44,23 @@ config SND_SOC_MT8173_MT6391_MACH
     select SND_SOC_MT8173
     help
         This adds audio driver for MT8173 platform with the MT6391 audio codec.
-if MT_SND_SOC_2701
-config SND_SOC_MT2701_EVB
-	bool "MT2701 EVB"
 
+config MT_SND_SOC_2701
+    tristate
+
+config SND_SOC_MT2701_EVB
+	bool "SND_SOC_MT2701_EVB"
+	select MT_SND_SOC_2701
 	help
 	  Say Y if you want to use the MT2701 EVB
 	  Audio interfaces for MT2701.
-endif	# MT_SND_SOC_2701
+
+config SND_SOC_MT2701_RT5640
+	bool "SND_SOC_MT2701_RT5640"
+	select MT_SND_SOC_2701
+	select SND_SOC_RT5640
+	help
+	  This adds ASoC driver for Mediatek MT2701 boards
+	  with the RT5640 audio codec.
+	  Select Y if you have such device.
+
