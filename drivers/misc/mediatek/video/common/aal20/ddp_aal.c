@@ -117,6 +117,7 @@ static void disp_aal_trigger_refresh(int latency)
 #else
 		g_ddp_notify(DISP_MODULE_AAL, trigger_method);
 #endif
+		AAL_DBG("disp_aal_trigger_refresh: %d", trigger_method);
 	}
 }
 
@@ -443,9 +444,9 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	if (ret == 0)
 		ret |= disp_pwm_set_backlight_cmdq(DISP_PWM0, backlight_value, cmdq);
 
-	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
+	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency = %d backlight = %d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
-		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
+		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, backlight_value, ret);
 
 	backlight_brightness_set(backlight_value);
 

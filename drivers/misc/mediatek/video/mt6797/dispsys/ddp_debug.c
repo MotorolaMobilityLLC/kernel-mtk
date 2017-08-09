@@ -333,7 +333,7 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "pwm_test:", 9)) {
 		disp_pwm_test(opt + 9, buf);
 	} else if (0 == strncmp(opt, "dither_test:", 12)) {
-		/*dither_test(opt + 12, buf);*/
+		dither_test(opt + 12, buf);
 	} else if (0 == strncmp(opt, "ccorr_test:", 11)) {
 		/*ccorr_test(opt + 11, buf);*/
 	} else if (0 == strncmp(opt, "od_test:", 8)) {

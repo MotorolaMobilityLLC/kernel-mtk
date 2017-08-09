@@ -70,7 +70,7 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 		DITHER_DBG("High depth LCM (bpp = %d), no dither\n", dither_bpp);
 		enable = 1;
 	} else {
-		DITHER_DBG("invalid dither bpp = %d\n", dither_bpp);
+		DITHER_DBG("Invalid dither bpp = %d\n", dither_bpp);
 		/* Bypass dither */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0);
 		enable = 0;
@@ -83,6 +83,8 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
+
+	DITHER_DBG("disp_dither_init bpp = %d, width = %d height = %d", dither_bpp, width, height);
 }
 
 
@@ -236,10 +238,10 @@ void disp_dither_select(unsigned int dither_bpp, void *cmdq)
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x20202020, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
 	} else if (dither_bpp > 24) {
-		DITHER_DBG("[DITHER] High depth LCM (bpp = %d), no dither\n", dither_bpp);
+		DITHER_DBG("High depth LCM (bpp = %d), no dither\n", dither_bpp);
 		enable = 1;
 	} else {
-		DITHER_DBG("[DITHER] invalid dither bpp = %d\n", dither_bpp);
+		DITHER_DBG("Invalid dither bpp = %d\n", dither_bpp);
 		/* Bypass dither */
 		DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 1 << 4, 1 << 4);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0);
@@ -259,22 +261,26 @@ void disp_dither_dump(void)
 void dither_test(const char *cmd, char *debug_output)
 {
 	debug_output[0] = '\0';
-	DITHER_DBG("[DITHER]dither_test(%s)", cmd);
+	DITHER_DBG("dither_test(%s)", cmd);
 
-	if (strncmp(cmd, "sel:", 4) == 0) {
+	if (strncmp(cmd, "log:", 4) == 0) {
+		dither_dbg_en = (int)cmd[4];
+		DITHER_DBG("dither dbg: %d", dither_dbg_en);
+	} else if (strncmp(cmd, "sel:", 4) == 0) {
 		if (cmd[4] == '0') {
 			disp_dither_select(0, NULL);
-			DITHER_DBG("[DITHER] bbp=0");
+			DITHER_DBG("bbp=0");
 		} else if (cmd[4] == '1') {
 			disp_dither_select(16, NULL);
-			DITHER_DBG("[DITHER] bbp=16");
+			DITHER_DBG("bbp=16");
 		} else if (cmd[4] == '2') {
 			disp_dither_select(18, NULL);
-			DITHER_DBG("[DITHER] bbp=18");
+			DITHER_DBG("bbp=18");
 		} else if (cmd[4] == '3') {
 			disp_dither_select(24, NULL);
-			DITHER_DBG("[DITHER] bbp=24");
+			DITHER_DBG("bbp=24");
 		} else {
+			DITHER_DBG("Unknown bbp");
 		}
 	}
 }

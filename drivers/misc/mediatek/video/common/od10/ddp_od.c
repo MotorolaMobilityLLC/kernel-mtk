@@ -910,7 +910,7 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 		void *od_table = lcm_param->od_table;
 
 		if (od_table != NULL)
-			ODDBG(OD_LOG_ALWAYS, "od_config_od: LCD OD table");
+			ODDBG(OD_LOG_ALWAYS, "od_config_od: LCD OD table size = %u", od_table_size);
 
 	#if defined(OD_ALLOW_DEFAULT_TABLE)
 		if (od_table == NULL) {
@@ -937,10 +937,12 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 	#endif
 		} else {
 			ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
+			ODDBG(OD_LOG_ALWAYS, "od_config_od: No od table bypass");
 		}
 
 #else /* Not support OD */
 		ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
+		ODDBG(OD_LOG_ALWAYS, "od_config_od: Not support od bypass");
 #endif
 	}
 
@@ -1366,6 +1368,16 @@ void od_test(const char *cmd, char *debug_output)
 
 	debug_output[0] = '\0';
 
+	/* Following part does not need cmdq and refresh. */
+	if (strncmp(cmd, "log:", 4) == 0) {
+		int level = cmd[4] - '0';
+
+		if (OD_LOG_ALWAYS <= level && level <= OD_LOG_DEBUG)
+			od_log_level = level;
+		return;
+	}
+
+	/* Start cmdq to set registers. */
 	DISP_CMDQ_BEGIN(cmdq, CMDQ_SCENARIO_DISP_CONFIG_OD);
 
 	if (strncmp(cmd, "set:", 4) == 0) {
@@ -1449,11 +1461,6 @@ void od_test(const char *cmd, char *debug_output)
 			DISP_REG_MASK(cmdq, OD_REG02, 0, (0xf << 9));
 			break;
 		}
-	} else if (strncmp(cmd, "log:", 4) == 0) {
-		int level = cmd[4] - '0';
-
-		if (OD_LOG_ALWAYS <= level && level <= OD_LOG_DEBUG)
-			od_log_level = level;
 	}
 
 	DISP_CMDQ_CONFIG_STREAM_DIRTY(cmdq);

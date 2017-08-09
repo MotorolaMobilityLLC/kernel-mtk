@@ -276,6 +276,8 @@ static void process_dbg_opt(const char *opt)
 		aal_test(opt + 9, buf);
 	} else if (0 == strncmp(opt, "pwm_test:", 9)) {
 		disp_pwm_test(opt + 9, buf);
+	} else if (0 == strncmp(opt, "dither_test:", 12)) {
+		dither_test(opt + 12, buf);
 	} else if (0 == strncmp(opt, "corr_dbg:", 9)) {
 		int i;
 
