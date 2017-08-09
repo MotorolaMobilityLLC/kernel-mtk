@@ -109,13 +109,15 @@ out:
 	return fuse_iolog_type[type];
 }
 
+static char fuse_iolog_buf[FUSE_IOLOG_BUFLEN];
+
 int fuse_iolog_print(void)
 {
 	int i, len, n;
-	char buf[FUSE_IOLOG_BUFLEN], *ptr;
+	char *ptr;
 
 	len = FUSE_IOLOG_BUFLEN-1;
-	ptr = &buf[0];
+	ptr = &fuse_iolog_buf[0];
 
 	for (i = 0; i < FUSE_IOLOG_MAX && fuse_iolog[i].valid; i++) {
 
@@ -152,9 +154,9 @@ int fuse_iolog_print(void)
 	}
 
 	if (i > 0)
-		pr_debug("[BLOCK_TAG] FUSEIO %s\n", buf);
+		pr_debug("[BLOCK_TAG] FUSEIO %s\n", &fuse_iolog_buf[0]);
 
-	return ptr - &buf[0];
+	return ptr - &fuse_iolog_buf[0];
 
 overflow:
 	pr_debug("[BLOCK_TAG] FUSEIO log buffer overflow\n");
