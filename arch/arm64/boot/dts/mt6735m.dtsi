@@ -151,7 +151,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				};
 
 				consys-reserve-memory {
-						compatible = "consys-reserve-memory";
+						compatible = "mediatek,consys-reserve-memory";
 						no-map;
 						size = <0 0x200000>;
 						alignment = <0 0x200000>;
@@ -589,6 +589,18 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 						 <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 						 <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
 		};
+
+		consys:consys@18070000 {
+			compatible = "mediatek,mt6735m-consys",
+						 "mediatek,mt6735-consys";
+			reg = <0x18070000 0x0200>,  /*CONN_MCU_CONFIG_BASE      */
+			      <0x10212000 0x0100>,  /*AP_RGU_BASE               */
+			      <0x10000000 0x2000>,  /*TOPCKGEN_BASE             */
+			      <0x10006000 0x1000>;  /*SPM_BASE                  */
+			interrupts = <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, /* BGF_EINT */
+						 <GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>; /* WDT_EINT */
+		};
+
 	};
 
 	bus {
@@ -1089,15 +1101,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt3326-gps";
 		};
 
-		CONSYS@0x18070000 {
-			compatible = "mediatek,CONSYS";
-			reg = <0x18070000 0x0200>,  /*CONN_MCU_CONFIG_BASE      */
-				<0x10212000 0x0100>,  /*AP_RGU_BASE               */
-				<0x10000000 0x2000>,  /*TOPCKGEN_BASE             */
-				<0x10006000 0x1000>;  /*SPM_BASE                  */
-			interrupts = <0 227 0x8>, /*BGF_EINT                  */
-				<0 225 0x8>; /*WDT_EINT                  */
-		};
 		BTCVSD@0x18000000 {
 			compatible = "mediatek,audio_bt_cvsd";
 			/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/

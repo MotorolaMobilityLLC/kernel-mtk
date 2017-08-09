@@ -857,7 +857,7 @@ INT32 wcn_compressor_out(P_WCN_COMPRESSOR_T cprs, PUINT8 *pbuf, PINT32 plen)
 	*pbuf = cprs->L2_buf;
 	*plen = cprs->L2_pos;
 
-	STP_DBG_INFO_FUNC("0x%zx, len %d\n", (SIZE_T) *pbuf, *plen);
+	STP_DBG_INFO_FUNC("0x%zx, len %d\n", (SIZE_T)*pbuf, *plen);
 
 	return 0;
 }
@@ -1324,7 +1324,7 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 	long res;
 	INT32 ret;
 
-	static const char * const parser_sub_string[] = {
+	PUINT8 parser_sub_string[] = {
 		"<ASSERT> ",
 		"id=",
 		"isr=",
@@ -1596,11 +1596,21 @@ INT32 stp_dbg_poll_dmaregs(UINT32 times, UINT32 sleep)
 		return -1;
 	}
 
-	if (g_stp_dbg_dmaregs->count + times > STP_DBG_DMAREGS_NUM)
-		times = STP_DBG_DMAREGS_NUM - g_stp_dbg_dmaregs->count;
-
 	osal_lock_sleepable_lock(&g_stp_dbg_dmaregs->lock);
 
+	if (g_stp_dbg_dmaregs->count + times > STP_DBG_DMAREGS_NUM) {
+		if (g_stp_dbg_dmaregs->count > STP_DBG_DMAREGS_NUM) {
+			STP_DBG_ERR_FUNC("g_stp_dbg_dmaregs->count:%d must less than STP_DBG_DMAREGS_NUM:%d\n",
+				g_stp_dbg_dmaregs->count, STP_DBG_DMAREGS_NUM);
+			g_stp_dbg_dmaregs->count = 0;
+			STP_DBG_ERR_FUNC("g_stp_dbg_dmaregs->count be set default value 0\n");
+		}
+		times = STP_DBG_DMAREGS_NUM - g_stp_dbg_dmaregs->count;
+	}
+	if (times > STP_DBG_DMAREGS_NUM) {
+		STP_DBG_ERR_FUNC("times overflow, set default value:0\n");
+		times = 0;
+	}
 	STP_DBG_WARN_FUNC("---------Now Polling DMA relative Regs -------------\n");
 	for (i = 0; i < times; i++) {
 		INT32 k = 0;

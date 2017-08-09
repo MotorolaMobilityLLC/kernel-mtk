@@ -2013,7 +2013,7 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 	UINT32 u4ReadSize = 0;
 	UINT8 evt_buffer[12] = { 0 };
 	MTK_WCN_BOOL fgFail;
-	static const char * const set_mcu_clk_str[] = {
+	PUINT8 set_mcu_clk_str[] = {
 		"Enable MCU PLL",
 		"SET MCU CLK to 26M",
 		"SET MCU CLK to 37M",
@@ -2164,7 +2164,7 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	UINT32 u4Res;
 	UINT8 host_lte_btwf_coex_cmd[] = { 0x01, 0x10, 0x00, 0x00, 0x00 };
 	UINT8 host_lte_btwf_coex_evt[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
-	ipc_ilm_t *pTxBuf = NULL;
+	UINT8 *pTxBuf = NULL;
 	UINT8 msg_local_buffer[1300] = { 0 };
 	UINT8 evtbuf[8] = { 0 };
 	INT32 iRet = -1;
@@ -2172,13 +2172,19 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	UINT32 total_len = 0;
 	UINT32 index = 0;
 
-	pTxBuf = (ipc_ilm_t *) pWmtOp->au4OpData[0];
+	pTxBuf = (UINT8 *) pWmtOp->au4OpData[0];
 	if (NULL == pTxBuf) {
 		WMT_ERR_FUNC("idc msg buffer is NULL\n");
 		return -1;
 	}
-	msg_len = pTxBuf->local_para_ptr->msg_len - osal_sizeof(local_para_struct);
+	iRet = wmt_lib_idc_lock_aquire();
+	if (iRet) {
+		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", iRet);
+		return iRet;
+	}
+	osal_memcpy(&msg_len, &pTxBuf[0], osal_sizeof(msg_len));
 	if (msg_len > 1200) {
+		wmt_lib_idc_lock_release();
 		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
 		return -2;
 	}
@@ -2188,8 +2194,9 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	host_lte_btwf_coex_cmd[4] = (pWmtOp->au4OpData[1] & 0x00ff);
 	osal_memcpy(&msg_local_buffer[0], &host_lte_btwf_coex_cmd[0], osal_sizeof(host_lte_btwf_coex_cmd));
 	osal_memcpy(&msg_local_buffer[osal_sizeof(host_lte_btwf_coex_cmd)],
-		    &(pTxBuf->local_para_ptr->data[0]), msg_len - 1);
+		&pTxBuf[osal_sizeof(msg_len)], msg_len - 1);
 
+	wmt_lib_idc_lock_release();
 	total_len = osal_sizeof(host_lte_btwf_coex_cmd) + msg_len - 1;
 
 	WMT_DBG_FUNC("wmt_core:idc msg payload len form lte(%d),wmt msg total len(%d)\n", msg_len - 1,
