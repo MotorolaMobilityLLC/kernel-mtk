@@ -4,7 +4,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
-obj-y += base/
+obj-$(CONFIG_MTK_BASE_POWER) += base/
 
 obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
