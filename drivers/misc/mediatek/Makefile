@@ -35,6 +35,7 @@ obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_VIDEOX) += dispsys/
 obj-$(CONFIG_MTK_FB) += videox/
 obj-$(CONFIG_MTK_SYNC) += sync/
+obj-$(CONFIG_MTK_WFD_SUPPORT)  += uibc/
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
