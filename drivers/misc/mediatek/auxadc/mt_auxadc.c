@@ -66,7 +66,7 @@ void __iomem *auxadc_apmix_base = NULL;
 #else
 /*#include <cust_adc.h>*/		/* generate by DCT Tool */
 #include <mach/mt_clkmgr.h>
-#endif				/* defined(CONFIG_MTK_LEGACY) */
+#endif
 
 typedef unsigned short UINT16;
 
@@ -1478,76 +1478,24 @@ exit:
 	return 1;
 }
 
-#if defined(CONFIG_MTK_LEGACY)
-static int adc_channel_info_init(void)
-{
-	unsigned int used_channel_counter = 0;
-
-#ifdef AUXADC_TEMPERATURE_CHANNEL
-	/* ap_domain &= ~(1<<CUST_ADC_MD_CHANNEL); */
-	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_RFTMP");
-	g_adc_info[used_channel_counter].channel_number = AUXADC_TEMPERATURE_CHANNEL;
-	pr_debug("[ADC] channel_name = %s channel num=%d\n",
-		 g_adc_info[used_channel_counter].channel_name,
-		 g_adc_info[used_channel_counter].channel_number);
-	used_channel_counter++;
-#endif
-
-#ifdef AUXADC_TEMPERATURE1_CHANNEL
-	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_APTMP");
-	g_adc_info[used_channel_counter].channel_number = AUXADC_TEMPERATURE1_CHANNEL;
-	pr_debug("[ADC] channel_name = %s channel num=%d\n",
-		 g_adc_info[used_channel_counter].channel_name,
-		 g_adc_info[used_channel_counter].channel_number);
-	used_channel_counter++;
-#endif
-
-#ifdef AUXADC_ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
-	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_FDD_Rf_Params_Dynamic_Custom");
-	g_adc_info[used_channel_counter].channel_number =
-	    AUXADC_ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
-	pr_debug("[ADC] channel_name = %s channel num=%d\n",
-		 g_adc_info[used_channel_counter].channel_name,
-		 g_adc_info[used_channel_counter].channel_number);
-	used_channel_counter++;
-#endif
-
-#ifdef AUXADC_HF_MIC_CHANNEL
-	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_MIC");
-	g_adc_info[used_channel_counter].channel_number = AUXADC_HF_MIC_CHANNEL;
-	pr_debug("[ADC] channel_name = %s channel num=%d\n",
-		 g_adc_info[used_channel_counter].channel_name,
-		 g_adc_info[used_channel_counter].channel_number);
-	used_channel_counter++;
-#endif
-
-	return used_channel_counter;
-
-}
-#endif
-
 /* platform_driver API */
 static int mt_auxadc_probe(struct platform_device *dev)
 {
 	int ret = 0;
 	struct device *adc_dev = NULL;
-#if !defined(CONFIG_MTK_LEGACY)
+
 #ifdef CONFIG_OF
 	int used_channel_counter = 0;
 	int of_value = 0;
 #endif
-#endif
 
-
-#if !defined(CONFIG_MTK_LEGACY)
 #ifdef CONFIG_OF
 	struct device_node *node;
-#endif
 #endif
 
 	pr_debug("******** MT AUXADC driver probe!! ********\n");
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #else
 #ifndef CONFIG_MTK_FPGA
 	if (clock_is_on(MT_PDN_PERI_AUXADC) == 0) {
@@ -1581,10 +1529,8 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 	pr_debug("[MT AUXADC_probe2] mt_auxadc_hal_init : done !!\n");
 
-
-#if !defined(CONFIG_MTK_LEGACY)
 #ifdef CONFIG_OF
-	pr_debug("[MT AUXADC_probe3] get device tree info : start !!\n");
+	pr_warn("[MT AUXADC_probe3] get device tree info : start !!\n");
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,adc_channel");
 	if (node) {
@@ -1592,14 +1538,14 @@ static int mt_auxadc_probe(struct platform_device *dev)
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_RFTMP");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node TEMPERATURE:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node TEMPERATURE:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,temperature1", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_APTMP");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node TEMPERATURE1:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node TEMPERATURE1:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret =
@@ -1609,7 +1555,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			sprintf(g_adc_info[used_channel_counter].channel_name,
 				"ADC_FDD_Rf_Params_Dynamic_Custom");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH:%d\n",
+			pr_warn("[AUXADC_AP] find node ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH:%d\n",
 				 of_value);
 			used_channel_counter++;
 		}
@@ -1617,14 +1563,14 @@ static int mt_auxadc_probe(struct platform_device *dev)
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_MIC");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node HF_MIC:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node HF_MIC:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,lcm_voltage", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_LCM_VOLTAGE");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node LCM_VOLTAGE:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node LCM_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,battery_voltage", &of_value, 1);
@@ -1632,7 +1578,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			sprintf(g_adc_info[used_channel_counter].channel_name,
 				"ADC_BATTERY_VOLTAGE");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node BATTERY_VOLTAGE:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node BATTERY_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,charger_voltage", &of_value, 1);
@@ -1640,32 +1586,29 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			sprintf(g_adc_info[used_channel_counter].channel_name,
 				"ADC_CHARGER_VOLTAGE");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node CHARGER_VOLTAGE:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node CHARGER_VOLTAGE:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,utms", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_UTMS");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node UTMS:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node UTMS:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,ref_current", &of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_REF_CURRENT");
 			g_adc_info[used_channel_counter].channel_number = of_value;
-			pr_debug("[AUXADC_AP] find node REF_CURRENT:%d\n", of_value);
+			pr_warn("[AUXADC_AP] find node REF_CURRENT:%d\n", of_value);
 			used_channel_counter++;
 		}
 	} else {
 		pr_err("[AUXADC_AP] find node failed\n");
 	}
 #endif
-#else
-	adc_channel_info_init();
-	pr_debug("[MT AUXADC_AP] adc_channel_info_init : done !!\n");
 
-#endif
+	pr_warn("[MT AUXADC_AP] adc_channel_info_init : done !!\n");
 
 #if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
