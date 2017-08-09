@@ -1148,12 +1148,15 @@ void cmdqSecInitialize(void)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	INIT_LIST_HEAD(&gCmdqSecContextList);
 /* cmdq_sec_allocate_path_resource_unlocked(); */
-
+#if 0
+/*
+**	no need to pass virtual irq id to secure world. MTEE need hardware irq id instead of virtual irq id
+*/
 	/*	register secure IRQ handle */
 	cmdq_sec_lock_secure_path();
 	cmdq_sec_register_secure_irq();
 	cmdq_sec_unlock_secure_path();
-
+#endif
 
 	/* allocate shared memory */
 	gCmdqContext.hSecSharedMem = NULL;
