@@ -1418,7 +1418,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0300, 0x00);
 	write_cmos_sensor(0x0301, 0x64);
 	write_cmos_sensor(0x0302, 0x10);
-	write_cmos_sensor(0x0303, 0x10);
+	write_cmos_sensor(0x0303, 0x00);
 	write_cmos_sensor(0x0304, 0x47);
 	write_cmos_sensor(0x030d, 0x2d);
 	write_cmos_sensor(0x030e, 0x00);
@@ -1426,7 +1426,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0312, 0x02);
 	write_cmos_sensor(0x0313, 0x11);
 	write_cmos_sensor(0x0316, 0x1e);
-	write_cmos_sensor(0x0317, 0x02);
+	write_cmos_sensor(0x0317, 0x00);
 	write_cmos_sensor(0x0318, 0x03);
 	write_cmos_sensor(0x031c, 0x01);
 	write_cmos_sensor(0x031d, 0x02);
@@ -1449,8 +1449,12 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3031, 0x91);
 	write_cmos_sensor(0x3034, 0x41);
 	write_cmos_sensor(0x340c, 0xff);
+	
 	write_cmos_sensor(0x3501, 0x12);
 	write_cmos_sensor(0x3502, 0xa6);
+	write_cmos_sensor(0x3501, 0x12);
+	write_cmos_sensor(0x3502, 0xa6);
+
 	write_cmos_sensor(0x3503, 0x00);
 	write_cmos_sensor(0x3507, 0x00);
 	write_cmos_sensor(0x3508, 0x00);
@@ -1677,7 +1681,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x4813, 0x90);
 	write_cmos_sensor(0x4817, 0x04);
 	write_cmos_sensor(0x4833, 0x18);
-	write_cmos_sensor(0x4837, 0x11);
+	write_cmos_sensor(0x4837, 0x08);
 	write_cmos_sensor(0x484b, 0x01);
 	write_cmos_sensor(0x4850, 0x5c);
 	write_cmos_sensor(0x4852, 0x27);
@@ -1700,7 +1704,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x4e00, 0x04);
 	write_cmos_sensor(0x4e17, 0x04);
 	write_cmos_sensor(0x4e33, 0x18);
-	write_cmos_sensor(0x4e37, 0x11);
+	write_cmos_sensor(0x4e37, 0x08);
 	write_cmos_sensor(0x4e4b, 0x01);
 	write_cmos_sensor(0x4e50, 0x5c);
 	write_cmos_sensor(0x4e52, 0x27);
