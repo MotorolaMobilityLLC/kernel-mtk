@@ -32,7 +32,7 @@ typedef struct spower_raw_s {
 
 /** table order: ff,tt,ss **/
 
-int ca7l_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
+int cpul_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
 	{	600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250,
 	-20, 7, 10, 13, 18, 24, 32, 42, 56, 72, 95, 123, 159, 205, 262,
 	-15, 9, 12, 16, 22, 29, 38, 51, 66, 86, 112, 145, 187, 240, 306,
@@ -127,7 +127,7 @@ int ca7l_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
 	120, 225, 272, 325, 388, 457, 537, 628, 732, 852, 985, 1136, 1305, 1491, 1700,
 	125, 261, 313, 373, 441, 520, 610, 713, 828, 954, 1099, 1261, 1443, 1641, 1868} };
 
-int ca7ll_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
+int cpull_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
 	{	600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1150, 1200, 1250,
 	-20, 7, 10, 13, 18, 24, 32, 42, 56, 72, 95, 123, 159, 205, 262,
 	-15, 9, 12, 16, 22, 29, 38, 51, 66, 86, 112, 145, 187, 240, 306,
@@ -792,18 +792,18 @@ int vcore_sram_leakage_data[][(VSIZE*TSIZE)+VSIZE+TSIZE] = {
 	120, 287, 337, 392, 457, 532, 619, 717, 830, 959, 1105, 1274, 1470, 1697, 1955,
 	125, 346, 405, 470, 545, 629, 728, 841, 971, 1118, 1284, 1477, 1695, 1947, 2235} };
 
-spower_raw_t ca7l_spower_raw = {
+spower_raw_t cpul_spower_raw = {
 	.vsize = VSIZE,
 	.tsize = TSIZE,
 	.table_size = MAX_TABLE_SIZE,
-	.table = { (int *)&ca7l_leakage_data[0], (int *)&ca7l_leakage_data[1], (int *)&ca7l_leakage_data[2] },
+	.table = { (int *)&cpul_leakage_data[0], (int *)&cpul_leakage_data[1], (int *)&cpul_leakage_data[2] },
 };
 
-spower_raw_t ca7ll_spower_raw = {
+spower_raw_t cpull_spower_raw = {
 	.vsize = VSIZE,
 	.tsize = TSIZE,
 	.table_size = MAX_TABLE_SIZE,
-	.table = { (int *)&ca7ll_leakage_data[0], (int *)&ca7ll_leakage_data[1], (int *)&ca7ll_leakage_data[2] },
+	.table = { (int *)&cpull_leakage_data[0], (int *)&cpull_leakage_data[1], (int *)&cpull_leakage_data[2] },
 };
 
 spower_raw_t gpu_spower_raw = {
