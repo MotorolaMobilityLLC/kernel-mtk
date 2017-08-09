@@ -354,6 +354,8 @@ while (0)
 #define	audio_pdn_adc_hires "audio_pdn_adc_hires"
 
 
+#define INFRA_BUS_DCM_CTRL_OFS (0x70)
+
 
 	struct mtk_fixed_factor {
 		int id;
@@ -1033,8 +1035,7 @@ static struct mtk_gate infra_clks[] __initdata = {
 	GATE(INFRA_DRAMC_B_CONF, infra_dramc_b_conf, axi_sel, infra2_cg_regs, 31, 0),
 };
 
-static void __init init_clk_infrasys(void __iomem *infrasys_base,
-				     struct clk_onecell_data *clk_data)
+static void __init init_clk_infrasys(void __iomem *infrasys_base, struct clk_onecell_data *clk_data)
 {
 	pr_debug("[CCF] init infrasys gates:\n");
 	init_clk_gates(infrasys_base, infra_clks, ARRAY_SIZE(infra_clks), clk_data);
@@ -1321,6 +1322,12 @@ static void __init mt_topckgen_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+
+	#if MT_CCF_BRINGUP
+	mt_reg_sync_writel(0x00000FFF , (base + 0x200)); /* CLK_SCP_CFG_0 = 0x00000FFF*/
+	mt_reg_sync_writel(0x00000007 , (base + 0x204)); /* CLK_SCP_CFG_1 = 0x00000007*/
+	#endif
+
 }
 
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mt_topckgen_init);
@@ -1346,6 +1353,12 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+
+	#if MT_CCF_BRINGUP
+	mt_reg_sync_writel(0x00044440 , (base + 0x0C)); /* AP_PLL_CON3, 0x00044440*/
+	mt_reg_sync_writel(0xC , (base + 0x10)); /* AP_PLL_CON4, temp & 0xC*/
+	#endif
+
 }
 
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,apmixed", mt_apmixedsys_init);
@@ -1371,6 +1384,11 @@ static void __init mt_infrasys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+
+	#if MT_CCF_BRINGUP
+	mt_reg_sync_writel(__raw_readl(base + INFRA_BUS_DCM_CTRL_OFS)|(1<<21) , (base + INFRA_BUS_DCM_CTRL_OFS));
+	#endif
+
 }
 
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,infracfg_ao", mt_infrasys_init);

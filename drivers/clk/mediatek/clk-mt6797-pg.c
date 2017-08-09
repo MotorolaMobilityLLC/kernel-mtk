@@ -25,6 +25,8 @@
 
 #include <dt-bindings/clock/mt6797-clk.h>
 
+#define _SKIP_BUS_PROTECT_
+
 #define VLTE_SUPPORT
 #ifdef VLTE_SUPPORT
 /* #include <mach/mt_gpio.h> */
@@ -132,6 +134,7 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 
 #define MFG_ASYNC_PWR_CON			SPM_REG(0x0334)	/* correct */
 #define MFG_PWR_CON			SPM_REG(0x0338)
+#define MFG_SRAM_CON        SPM_REG(0x033C)
 #define MFG_CORE0_PWR_CON			SPM_REG(0x0340)
 #define MFG_CORE1_PWR_CON			SPM_REG(0x0344)
 #define MFG_CORE2_PWR_CON			SPM_REG(0x0348)
@@ -215,6 +218,16 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define IFR_SRAM_PDN_ACK                 (0xF << 12)
 #define VDE_SRAM_PDN                     (0x1 << 8)
 #define VDE_SRAM_PDN_ACK                 (0x1 << 12)
+#define MFG_CORE3_SRAM_PDN               (0x1 << 8)
+#define MFG_CORE3_SRAM_PDN_ACK           (0x1 << 23)
+#define MFG_CORE2_SRAM_PDN               (0x1 << 8)
+#define MFG_CORE2_SRAM_PDN_ACK           (0x1 << 22)
+#define MFG_CORE1_SRAM_PDN               (0x1 << 8)
+#define MFG_CORE1_SRAM_PDN_ACK           (0x1 << 21)
+#define MFG_CORE0_SRAM_PDN               (0x1 << 8)
+#define MFG_CORE0_SRAM_PDN_ACK           (0x1 << 20)
+#define MFG_SRAM_PDN                     (0x3 << 0)
+#define MFG_SRAM_PDN_ACK                 (0x3 << 16)
 #define MJC_SRAM_PDN                     (0x1 << 8)
 #define MJC_SRAM_PDN_ACK                 (0x1 << 12)
 #define VEN_SRAM_PDN                     (0xF << 8)
@@ -416,10 +429,11 @@ static int spm_mtcmos_ctrl_md1(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
 		/* TINFO="Set bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MD1_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MD1_PROT_MASK) != MD1_PROT_MASK)
 			;
-
+		#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | MD1_SRAM_PDN);
 		/* TINFO="Set PWR_ISO = 1" */
@@ -468,10 +482,12 @@ static int spm_mtcmos_ctrl_md1(int state)
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Release bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MD1_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MD1_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | PWR_RST_B);
 		/* TINFO="Finish to turn on MD1" */
@@ -489,10 +505,12 @@ static int spm_mtcmos_ctrl_conn(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) != CONN_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -535,10 +553,12 @@ static int spm_mtcmos_ctrl_conn(int state)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Finish to turn on CONN" */
 	}
 	return err;
@@ -609,9 +629,11 @@ static int spm_mtcmos_ctrl_dis(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
 		/* TINFO="Set bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | DIS_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK) != DIS_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(DIS_PWR_CON, spm_read(DIS_PWR_CON) | DIS_SRAM_PDN);
 		/* TINFO="Wait until DIS_SRAM_PDN_ACK = 1" */
@@ -664,10 +686,12 @@ static int spm_mtcmos_ctrl_dis(int state)
 		while (spm_read(DIS_PWR_CON) & DIS_SRAM_PDN_ACK)
 			;
 		/* TINFO="Release bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~DIS_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Finish to turn on DIS" */
 	}
 	return err;
@@ -936,6 +960,13 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE3" */
+		/* TINFO="Set SRAM_PDN = 1" */
+
+		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | MFG_CORE3_SRAM_PDN);
+		/* TINFO="Wait until MFG_CORE3_SRAM_PDN_ACK = 1" */
+		while (!(spm_read(MFG_SRAM_CON) & MFG_CORE3_SRAM_PDN_ACK))
+			;
+
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -977,6 +1008,11 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~(0x1 << 8));
+		/* TINFO="Wait until MFG_CORE3_SRAM_PDN_ACK = 0" */
+		while (spm_read(MFG_SRAM_CON) & MFG_CORE3_SRAM_PDN_ACK)
+			;
 		/* TINFO="Finish to turn on MFG_CORE3" */
 	}
 	return err;
@@ -991,6 +1027,11 @@ static int spm_mtcmos_ctrl_mfg_core2(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE2" */
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | MFG_CORE2_SRAM_PDN);
+		/* TINFO="Wait until MFG_CORE2_SRAM_PDN_ACK = 1" */
+		while (!(spm_read(MFG_SRAM_CON) & MFG_CORE2_SRAM_PDN_ACK))
+			;
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1032,6 +1073,11 @@ static int spm_mtcmos_ctrl_mfg_core2(int state)
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~(0x1 << 8));
+		/* TINFO="Wait until MFG_CORE2_SRAM_PDN_ACK = 0" */
+		while (spm_read(MFG_SRAM_CON) & MFG_CORE2_SRAM_PDN_ACK)
+			;
 		/* TINFO="Finish to turn on MFG_CORE2" */
 	}
 	return err;
@@ -1046,6 +1092,11 @@ static int spm_mtcmos_ctrl_mfg_core1(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE1" */
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | MFG_CORE1_SRAM_PDN);
+		/* TINFO="Wait until MFG_CORE1_SRAM_PDN_ACK = 1" */
+		while (!(spm_read(MFG_SRAM_CON) & MFG_CORE1_SRAM_PDN_ACK))
+			;
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1087,6 +1138,11 @@ static int spm_mtcmos_ctrl_mfg_core1(int state)
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~(0x1 << 8));
+		/* TINFO="Wait until MFG_CORE1_SRAM_PDN_ACK = 0" */
+		while (spm_read(MFG_SRAM_CON) & MFG_CORE1_SRAM_PDN_ACK)
+			;
 		/* TINFO="Finish to turn on MFG_CORE1" */
 	}
 	return err;
@@ -1101,6 +1157,11 @@ static int spm_mtcmos_ctrl_mfg_core0(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE0" */
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | MFG_CORE0_SRAM_PDN);
+		/* TINFO="Wait until MFG_CORE0_SRAM_PDN_ACK = 1" */
+		while (!(spm_read(MFG_SRAM_CON) & MFG_CORE0_SRAM_PDN_ACK))
+			;
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1142,6 +1203,11 @@ static int spm_mtcmos_ctrl_mfg_core0(int state)
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set SRAM_PDN = 0" */
+		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~(0x1 << 8));
+		/* TINFO="Wait until MFG_CORE0_SRAM_PDN_ACK = 0" */
+		while (spm_read(MFG_SRAM_CON) & MFG_CORE0_SRAM_PDN_ACK)
+			;
 		/* TINFO="Finish to turn on MFG_CORE0" */
 	}
 	return err;
@@ -1157,9 +1223,18 @@ static int spm_mtcmos_ctrl_mfg(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
 		/* TINFO="Set bus protect" */
+		#ifndef _SKIP_BUS_PROTECT_
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK)
 			;
+		#endif
+
+		/* TINFO="Set SRAM_PDN = 1" */
+		spm_write(MFG_SRAM_CON, spm_read(MFG_SRAM_CON) | MFG_SRAM_PDN);
+		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 1" */
+		while (!(spm_read(MFG_SRAM_CON) & MFG_SRAM_PDN_ACK))
+			;
+
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1201,11 +1276,22 @@ static int spm_mtcmos_ctrl_mfg(int state)
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set SRAM_PDN = 0" */
+
+
+		spm_write(MFG_SRAM_CON, spm_read(MFG_SRAM_CON) & ~(0x3 << 0));
+		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 0" */
+		while (spm_read(MFG_SRAM_CON) & MFG_SRAM_PDN_ACK)
+			;
+
+
+		#ifndef _SKIP_BUS_PROTECT_
 		/* TINFO="Release bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK)
 			;
+		#endif
 		/* TINFO="Finish to turn on MFG" */
 	}
 	return err;
