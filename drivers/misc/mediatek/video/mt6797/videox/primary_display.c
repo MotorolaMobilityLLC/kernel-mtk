@@ -127,6 +127,7 @@ static int is_fake_timer_inited;
 static struct task_struct *primary_display_switch_dst_mode_task;
 static struct task_struct *present_fence_release_worker_task;
 static struct task_struct *primary_path_aal_task;
+static struct task_struct *primary_delay_trigger_task;
 static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
@@ -159,6 +160,9 @@ static int od_need_start;
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(OPPI_UNREQ);
 static int dvfs_last_ovl_req = OPPI_UNREQ;
+
+/* delayed trigger */
+static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 
 typedef struct {
 	DISP_POWER_STATE state;
@@ -2406,28 +2410,31 @@ static unsigned int _need_lfr_check(void)
 	return ret;
 }
 
-static int _disp_primary_path_check_trigger(void *data)
+static int __primary_check_trigger(void)
 {
 	int ret = 0;
 
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger,
+		       MMProfileFlagStart, 0, 0);
+
+	_primary_path_lock(__func__);
+	if (pgc->state != DISP_ALIVE)
+		goto out;
+	if (primary_display_is_video_mode())
+		goto out;
+
+	dprec_logger_trigger(DPREC_LOGGER_PQ_TRIGGER_1SECOND, 0, 0);
+
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		cmdqRecHandle handle = NULL;
+		static cmdqRecHandle handle;
 
-		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		if (!handle)
+			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		cmdqRecReset(handle);
 
-		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
-		while (1) {
-			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
-			MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger,
-				       MMProfileFlagPulse, 0, 0);
-			dprec_logger_trigger(DPREC_LOGGER_PQ_TRIGGER_1SECOND, 0, 0);
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		_cmdq_insert_wait_frame_done_token_mira(handle);
 
-			_primary_path_lock(__func__);
-
-			if (pgc->state == DISP_ALIVE) {
-				primary_display_idlemgr_kick(__func__, 0);
-				cmdqRecReset(handle);
-				_cmdq_insert_wait_frame_done_token_mira(handle);
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 				if (od_need_start) {
 					od_need_start = 0;
@@ -2435,30 +2442,52 @@ static int _disp_primary_path_check_trigger(void *data)
 				}
 				disp_od_update_status(handle);
 #endif
-
-				_cmdq_set_config_handle_dirty_mira(handle);
-				_cmdq_flush_config_handle_mira(handle, 0);
-			}
-
-			_primary_path_unlock(__func__);
-
-			if (kthread_should_stop())
-				break;
-		}
-
-		cmdqRecDestroy(handle);
+		_cmdq_set_config_handle_dirty_mira(handle);
+		_cmdq_flush_config_handle_mira(handle, 0);
 	} else {
-		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
-		while (1) {
-			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
-			dprec_logger_trigger(DPREC_LOGGER_PQ_TRIGGER_1SECOND, 0, 0);
-			DISPMSG("Force Trigger Display Path\n");
-			primary_display_trigger(1, NULL, 0);
-
-			if (kthread_should_stop())
-				break;
-		}
+		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
+		DISPMSG("Force Trigger Display Path\n");
+		primary_display_trigger(1, NULL, 0);
 	}
+
+	atomic_set(&delayed_trigger_kick, 1);
+
+out:
+			MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger,
+				       MMProfileFlagEnd, 0, 0);
+			_primary_path_unlock(__func__);
+			return 0;
+}
+
+static int _disp_primary_path_check_trigger(void *data)
+{
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
+	while (1) {
+		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
+		__primary_check_trigger();
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
+static int _disp_primary_path_check_trigger_delay_33ms(void *data)
+{
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+	while (1) {
+		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+		atomic_set(&delayed_trigger_kick, 0);
+
+		if (disp_helper_get_option(DISP_OPT_DELAYED_TRIGGER))
+			usleep_range(32000, 33000);
+
+		if (!atomic_read(&delayed_trigger_kick))
+			__primary_check_trigger();
+		if (kthread_should_stop())
+			break;
+	}
+
 	return 0;
 }
 
@@ -3256,6 +3285,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		primary_path_aal_task = kthread_create(_disp_primary_path_check_trigger,
 						       NULL, "display_check_aal");
 		wake_up_process(primary_path_aal_task);
+	}
+
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
+		primary_delay_trigger_task =
+		    kthread_create(_disp_primary_path_check_trigger_delay_33ms, NULL, "disp_delay_trigger");
+		wake_up_process(primary_delay_trigger_task);
 	}
 
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE)) {

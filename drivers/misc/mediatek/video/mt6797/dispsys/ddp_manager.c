@@ -137,6 +137,8 @@ static char *path_event_name(DISP_PATH_EVENT event)
 		return "VSYNC";
 	case DISP_PATH_EVENT_TRIGGER:
 		return "TRIGGER";
+	case DISP_PATH_EVENT_DELAYED_TRIGGER_33ms:
+		return "DELAY_TRIG";
 	default:
 		return "unknown event";
 	}
@@ -223,9 +225,8 @@ int dpmgr_module_notify(DISP_MODULE_ENUM module, DISP_PATH_EVENT event)
 	ddp_path_handle handle = find_handle_by_module(module);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger, MMProfileFlagPulse,
-		       module, 0);
+		       module, event);
 	return dpmgr_signal_event(handle, event);
-	return 0;
 }
 
 static int assign_default_irqs_table(DDP_SCENARIO_ENUM scenario, DDP_IRQ_EVENT_MAPPING *irq_events)

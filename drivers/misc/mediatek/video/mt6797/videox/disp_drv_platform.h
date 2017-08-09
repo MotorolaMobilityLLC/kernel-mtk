@@ -68,5 +68,7 @@ typedef enum {
 #define DISP_HW_HRT_LYAERS_FOR_HI_PERF		4
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
 
+/* Other platform-dependent features */
+#define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */
