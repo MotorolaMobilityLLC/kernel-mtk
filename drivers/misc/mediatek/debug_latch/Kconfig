@@ -27,4 +27,17 @@ config MTK_LASTBUS
 	  After rebooting, these information could be dumped for
 	  debugging.
 
+config MTK_LASTBUS_V2
+	bool "MediaTek LASTBUS LATCH V2"
+	select MTK_LASTBUS
+	default n
+	help
+	  LASTBUS is a debugging feature on MCUSYS and PERISYS bus.
+	  Which latches the last bus status as debugging information
+	  after sysytem unexpectedly crash or shutdown.
+	  After rebooting, these information could be dumped for
+	  debugging.
+	  Compared to the pervious version, V2 has additional monitors
+	  for PERISYS bus.
+
 endif
