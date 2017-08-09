@@ -80,7 +80,9 @@ struct CONSYS_BASE_ADDRESS conn_reg;
 /* CCF part */
 #if !defined(CONFIG_MTK_CLKMGR)
 struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
+#if CONSYS_AHB_CLK_MAGEMENT
 struct clk *clk_infra_conn_main;	/*ctrl infra_connmcu_bus clk */
+#endif
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #ifdef CONFIG_OF
@@ -217,12 +219,14 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	}
 	WMT_PLAT_DBG_FUNC("[CCF]clk_scp_conn_main=%p\n", clk_scp_conn_main);
 
+#if CONSYS_AHB_CLK_MAGEMENT
 	clk_infra_conn_main = devm_clk_get(&pdev->dev, "bus");
 	if (IS_ERR(clk_infra_conn_main)) {
 		WMT_PLAT_ERR_FUNC("[CCF]cannot get clk_infra_conn_main clock.\n");
 		return PTR_ERR(clk_infra_conn_main);
 	}
 	WMT_PLAT_DBG_FUNC("[CCF]clk_infra_conn_main=%p\n", clk_infra_conn_main);
+#endif
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #if CONSYS_PMIC_CTRL_ENABLE
