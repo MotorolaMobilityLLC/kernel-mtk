@@ -3127,7 +3127,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_SRC0_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
 							 << 1), 0x000E);
 			/* UL sample rate and mode configure */
-			Ana_Set_Reg(AFE_UL_SRC0_CON0_H, 0x0060, 0xfff0);
+			Ana_Set_Reg(AFE_UL_SRC0_CON0_H, 0x00E0, 0xfff0);
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
 			Ana_Set_Reg(AFE_UL_SRC0_CON0_L, 0x0001, 0xffff);
 			/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
