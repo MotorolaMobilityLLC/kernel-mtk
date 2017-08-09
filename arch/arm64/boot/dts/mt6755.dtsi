@@ -3202,7 +3202,7 @@
 			/* vmsensor-supply = <&mt_pmic_vio28_ldo_reg>; */
 		};
 
-		mtkfb@0 {
+		mtkfb: mtkfb {
 			compatible = "mediatek,mtkfb";
 		};
 

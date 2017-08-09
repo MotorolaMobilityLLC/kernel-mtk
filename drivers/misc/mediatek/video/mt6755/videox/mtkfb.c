@@ -48,6 +48,7 @@
 #include "mt_boot.h"
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
+#include "disp_dts_gpio.h"
 /*#include <mt-plat/mt_typedefs.h>*/
 
 /* static variable */
@@ -2280,15 +2281,21 @@ static int mtkfb_probe(struct device *dev)
 {
 	struct mtkfb_device *fbdev = NULL;
 	struct fb_info *fbi;
-	/*struct platform_device *pdev;*/
+	struct platform_device *pdev;
 	int init_state;
 	int r = 0;
 
+	long dts_gpio_state = 0;
 	pr_debug("mtkfb_probe\n");
 
 	_parse_tag_videolfb();
 
 	init_state = 0;
+	pdev = to_platform_device(dev);
+	/* repo call DTS gpio module, if not necessary, invoke nothing */
+	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
+	if (dts_gpio_state != 0)
+		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
 
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
 	if (!fbi) {
