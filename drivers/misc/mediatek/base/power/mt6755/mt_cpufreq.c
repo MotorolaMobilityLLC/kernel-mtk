@@ -60,7 +60,7 @@
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
 #include "mt-plat/mt_devinfo.h"
-/* #include "mach/mt_cpufreq_hybrid.h" */
+#include "mt_cpufreq_hybrid.h"
 
 /*=============================================================*/
 /* Macro definition                                            */
@@ -1365,6 +1365,7 @@ enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id)
 }
 
 #define POS_SETTLE_TIME (2)
+#if 0
 static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int dds, unsigned int pos_div)
 {
 	unsigned int cur_volt;
@@ -1386,6 +1387,7 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int dds, unsigned 
 	p->ops->set_cur_volt(p, cur_volt);
 	_get_cpu_clock_switch(p);
 }
+#endif
 
 static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 {
@@ -1666,14 +1668,14 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 
 	/* actual FHCTL */
 	dds = _cpu_dds_calc(opp_tbl[TARGET_OPP_IDX].slot->vco_dds);
-	adjust_armpll_dds(p, dds, opp_tbl[TARGET_OPP_IDX].slot->pos_div);
-#if 0
+	/* adjust_armpll_dds(p, dds, opp_tbl[TARGET_OPP_IDX].slot->pos_div); */
+
 	dds &= ~(_BITMASK_(26:24));
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
 		mt_dfs_armpll(FH_ARMCA7_PLLID, dds);
 	else
 		mt_dfs_armpll(FH_ARMCA15_PLLID, dds);
-#endif
+
 	/* switch CCI */
 	_cci_clock_switch(opp_tbl[TARGET_CCI_OPP_IDX].p->armpll_clk_src);
 
