@@ -323,26 +323,6 @@ EXPORT_SYMBOL(BMA222_SCP_SetPowerMode);
 /*--------------------BMA222 power control function----------------------------------*/
 static void BMA222_power(struct acc_hw *hw, unsigned int on)
 {
-#ifdef __USE_LINUX_REGULATOR_FRAMEWORK__
-#else
-#ifndef FPGA_EARLY_PORTING
-	static unsigned int power_on;
-
-	if (hw->power_id != POWER_NONE_MACRO) {
-		GSE_LOG("power %s\n", on ? "on" : "off");
-		if (power_on == on) {
-			GSE_LOG("ignore power control: %d\n", on);
-		} else if (on) {
-			if (!hwPowerOn(hw->power_id, hw->power_vol, "BMA222"))
-				GSE_ERR("power on fails!!\n");
-		} else {
-			if (!hwPowerDown(hw->power_id, "BMA222"))
-				GSE_ERR("power off fail!!\n");
-		}
-	}
-	power_on = on;
-#endif				/* #ifndef FPGA_EARLY_PORTING */
-#endif				/* __USE_LINUX_REGULATOR_FRAMEWORK__ */
 }
 
 /*----------------------------------------------------------------------------*/
