@@ -71,3 +71,9 @@ obj-y += cpu_dormant.o
 
 endif
 
+obj-y += mt_hotplug_strategy_main.o
+obj-y += mt_hotplug_strategy_core.o
+obj-y += mt_hotplug_strategy_procfs.o
+obj-y += mt_hotplug_strategy_cpu.o
+obj-y += mt_hotplug_strategy_api.o
+obj-y += mt_hotplug_strategy_algo.o
