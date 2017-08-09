@@ -652,7 +652,7 @@ static u8 gup_check_update_file(struct i2c_client *client, struct st_fw_head *fw
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 #if defined(CONFIG_GTP_HEADER_FW_UPDATE)
 		GTP_INFO("Update by default firmware array");
-		update_msg.fw_total_len = sizeof(gtp_default_FW) - FW_HEAD_LENGTH;
+		update_msg.fw_total_len = (u32)(sizeof(gtp_default_FW) - FW_HEAD_LENGTH);
 		if (sizeof(gtp_default_FW) <
 		    (FW_HEAD_LENGTH + FW_SECTION_LENGTH * 4 + FW_DSP_ISP_LENGTH + FW_DSP_LENGTH +
 		     FW_BOOT_LENGTH)) {
