@@ -38,10 +38,11 @@ static struct freqhopping_ssc *g_fh_drv_usr_def;
 static unsigned int g_drv_pll_count;
 static int mt_freqhopping_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
-static unsigned long g_irq_flags;
 
 
 #if !defined(DISABLE_FREQ_HOPPING)
+
+static unsigned long g_irq_flags;
 
 static struct miscdevice mt_fh_device = {
 	.minor = MISC_DYNAMIC_MINOR,
