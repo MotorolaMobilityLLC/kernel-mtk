@@ -753,7 +753,7 @@ static void mlog_timer_handler(unsigned long data)
 {
 	mlog(MLOG_TRIGGER_TIMER);
 
-	mod_timer(&mlog_timer, jiffies + timer_intval);
+	mod_timer(&mlog_timer, round_jiffies(jiffies + timer_intval));
 }
 
 static void mlog_init_logger(void)
