@@ -1017,7 +1017,7 @@ static unsigned int charging_get_is_pcm_timer_trigger(void *data)
 	else
 		*(kal_bool *) (data) = KAL_FALSE;
 
-	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
+	battery_log(BAT_LOG_FULL, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
 #endif
 
 	return status;
