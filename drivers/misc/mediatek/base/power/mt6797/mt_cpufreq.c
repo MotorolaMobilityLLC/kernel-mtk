@@ -298,7 +298,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_VOLT2_VPROC2_FY    (116000)	/* 10MV */
 #define CPU_DVFS_VOLT3_VPROC2_FY    (114000)	/* 10MV */
 #define CPU_DVFS_VOLT4_VPROC2_FY    (113000)	/* 10MV */
-#define CPU_DVFS_VOLT5_VPROC2_FY    (110000)	/* 10MV */
+#define CPU_DVFS_VOLT5_VPROC2_FY    (111000)	/* 10MV */
 #define CPU_DVFS_VOLT6_VPROC2_FY    (107000)	/* 10MV */
 #define CPU_DVFS_VOLT7_VPROC2_FY    (105000)	/* 10MV */
 #define CPU_DVFS_VOLT8_VPROC2_FY    (100000)	/* 10MV */
@@ -411,7 +411,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_VOLT7_VPROC1_SB    (106000)	/* 10MV */
 #define CPU_DVFS_VOLT8_VPROC1_SB    (102000)	/* 10MV */
 #define CPU_DVFS_VOLT9_VPROC1_SB    (99000)		/* 10MV */
-#define CPU_DVFS_VOLT10_VPROC1_SB    (95000)	/* 10MV */
+#define CPU_DVFS_VOLT10_VPROC1_SB    (97000)	/* 10MV */
 #define CPU_DVFS_VOLT11_VPROC1_SB    (93000)	/* 10MV */
 #define CPU_DVFS_VOLT12_VPROC1_SB    (89000)	/* 10MV */
 #define CPU_DVFS_VOLT13_VPROC1_SB    (85000)	/* 10MV */
@@ -3084,7 +3084,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 
 	cpufreq_lock(flags);
 
-	if (p->armpll_is_available != 1) {
+	if (p->dvfs_disable_by_suspend || p->armpll_is_available != 1) {
 		cpufreq_unlock(flags);
 		return;
 	}
@@ -3615,14 +3615,12 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 		}
 	}
 
-	target_cci_freq = ((target_cci_freq / 2) / PLL_FREQ_STEP) * PLL_FREQ_STEP;
-
+	target_cci_freq = target_cci_freq / 2;
 	if (target_cci_freq > cpu_dvfs_get_freq_by_idx(p_cci, 0)) {
 		target_cci_freq = cpu_dvfs_get_freq_by_idx(p_cci, 0);
 		target_cci_volt = cpu_dvfs_get_volt_by_idx(p_cci, 0);
-	} else {
-	target_cci_volt = _search_available_volt(p_cci, target_cci_freq);
-	}
+	} else
+		target_cci_volt = _search_available_volt(p_cci, target_cci_freq);
 
 	/* Determine dominating voltage */
 	target_cci_volt = MAX(target_cci_volt, MAX(volt[MT_CPU_DVFS_LL], volt[MT_CPU_DVFS_L]));
