@@ -559,7 +559,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 unsigned int g_reg_value = 0;
 static ssize_t show_pmic_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_debug("[show_pmic_access] 0x%x\n", g_reg_value);
+	pr_err("[show_pmic_access] 0x%x\n", g_reg_value);
 	return sprintf(buf, "%u\n", g_reg_value);
 }
 
@@ -567,33 +567,36 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 				 size_t size)
 {
 	int ret = 0;
-	/*char *pvalue = NULL;*/
+	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	pr_debug("[store_pmic_access]\n");
+	pr_err("[store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_debug("[store_pmic_access] buf 6 is %s\n", buf);
+		pr_err("[store_pmic_access] buf is %s\n", buf);
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
-/*
+
 		pvalue = (char *)buf;
-		ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
-*/
+		if (size > 5) {
+			addr = strsep(&pvalue, " ");
+			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+		} else
+			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+
 		if (size > 5) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-/*
-			pvalue = (char *)buf + 1;
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_value);
-*/
-			pr_debug("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
+			/*pvalue = (char *)buf + 1;*/
+			val =  strsep(&pvalue, " ");
+			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+
+			pr_err("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			ret = pmic_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
 		} else {
 			ret = pmic_read_interface(reg_address, &g_reg_value, 0xFFFF, 0x0);
-			pr_debug("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
+			pr_err("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value);
-			pr_debug
-			    ("[store_pmic_access] Please use \"cat pmic_access\" to get value\r\n");
+			pr_err("[store_pmic_access] use \"cat pmic_access\" to get value(decimal)\r\n");
 		}
 	}
 	return size;
@@ -608,30 +611,31 @@ unsigned char g_reg_value_pmic = 0;
 
 static ssize_t show_pmic_dvt(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG("[show_pmic_dvt] 0x%x\n", g_reg_value_pmic);
+	pr_err("[show_pmic_dvt] 0x%x\n", g_reg_value_pmic);
 	return sprintf(buf, "%u\n", g_reg_value_pmic);
 }
 
 static ssize_t store_pmic_dvt(struct device *dev, struct device_attribute *attr, const char *buf,
 			      size_t size)
 {
-	/*int ret = 0;*/
-	/*char *pvalue = NULL;*/
-	/*unsigned int test_item = 0;*/
+	int ret = 0;
+	char *pvalue = NULL;
+	unsigned int test_item = 0;
 
-	PMICLOG("[store_pmic_dvt]\n");
+	pr_err("[store_pmic_dvt]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_pmic_dvt] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_pmic_dvt] buf is %s and size is %zu\n", buf, size);
 
 		/*test_item = simple_strtoul(buf, &pvalue, 10);*/
-		/*ret = kstrtoul(buf, 10, (unsigned long *)&test_item);*/
-		PMICLOG("[store_pmic_dvt] test_item=%d\n", test_item);
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&test_item);
+		pr_err("[store_pmic_dvt] test_item=%d\n", test_item);
 
 #ifdef MTK_PMIC_DVT_SUPPORT
 		pmic_dvt_entry(test_item);
 #else
-		PMICLOG("[store_pmic_dvt] no define MTK_PMIC_DVT_SUPPORT\n");
+		pr_err("[store_pmic_dvt] no define MTK_PMIC_DVT_SUPPORT\n");
 #endif
 	}
 	return size;
@@ -721,6 +725,24 @@ static int mtk_regulator_get_voltage_sel(struct regulator_dev *rdev)
 			regVal = pmic_get_register_value(mreg->vol_reg);
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
+				/*HW LDO sequence issue, we need to change it */
+				if ((strcmp(mreg->desc.name, "VA18") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
+					(strcmp(mreg->desc.name, "VCN28") == 0) |
+					(strcmp(mreg->desc.name, "VXO22") == 0) |
+					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+					PMICLOG("mtk_regulator_get_voltage_sel(name=%s selector=%d)\n",
+						mreg->desc.name, regVal);
+					if (regVal == 0)
+						regVal = 3;
+					else if  (regVal == 1)
+						regVal = 2;
+					else if  (regVal == 2)
+						regVal = 1;
+					else if  (regVal == 3)
+						regVal = 0;
+				}
 				voltage = pVoltage[regVal];
 				add = pmu_flags_table[mreg->en_reg].offset;
 				val = upmu_get_reg_value(add);
@@ -743,7 +765,24 @@ static int mtk_regulator_get_voltage_sel(struct regulator_dev *rdev)
 			     rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg);
 		}
 	}
-
+	/*HW LDO sequence issue, we need to change it */
+	if ((strcmp(mreg->desc.name, "VA18") == 0) |
+		(strcmp(mreg->desc.name, "VTCXO24") == 0) |
+		(strcmp(mreg->desc.name, "VTCXO28") == 0) |
+		(strcmp(mreg->desc.name, "VCN28") == 0) |
+		(strcmp(mreg->desc.name, "VXO22") == 0) |
+		(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+		PMICLOG("mtk_regulator_get_voltage_sel_restore(name=%s selector=%d)\n",
+			mreg->desc.name, regVal);
+			if (regVal == 0)
+				regVal = 3;
+			else if  (regVal == 1)
+				regVal = 2;
+			else if  (regVal == 2)
+				regVal = 1;
+			else if  (regVal == 3)
+				regVal = 0;
+	}
 	PMICLOG
 	    ("regulator_get_voltage_sel(name=%s id=%d en_reg=%x vol_reg=%x reg/sel:%d voltage:%d [0x%x]=0x%x)\n",
 	     rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, regVal, voltage, add, val);
@@ -810,6 +849,24 @@ static int mtk_regulator_list_voltage(struct regulator_dev *rdev, unsigned selec
 		if (mreg->vol_reg != 0) {
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
+				/*HW LDO sequence issue, we need to change it */
+				if ((strcmp(mreg->desc.name, "VA18") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
+					(strcmp(mreg->desc.name, "VCN28") == 0) |
+					(strcmp(mreg->desc.name, "VXO22") == 0) |
+					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+					PMICLOG("mtk_regulator_list_voltage(name=%s selector=%d)\n",
+						mreg->desc.name, selector);
+					if (selector == 0)
+						selector = 3;
+					else if  (selector == 1)
+						selector = 2;
+					else if  (selector == 2)
+						selector = 1;
+					else if  (selector == 3)
+						selector = 0;
+				}
 				voltage = pVoltage[selector];
 			} else {
 				voltage = mreg->desc.min_uV + mreg->desc.uV_step * selector;
@@ -873,12 +930,30 @@ static ssize_t show_LDO_VOLTAGE(struct device *dev, struct device_attribute *att
 			regVal = pmic_get_register_value(mreg->vol_reg);
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
+				/*HW LDO sequence issue, we need to change it */
+				if ((strcmp(mreg->desc.name, "VA18") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
+					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
+					(strcmp(mreg->desc.name, "VCN28") == 0) |
+					(strcmp(mreg->desc.name, "VXO22") == 0) |
+					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+					PMICLOG("show_LDO_VOLTAGE(name=%s selector=%d)\n",
+						mreg->desc.name, regVal);
+					if (regVal == 0)
+						regVal = 3;
+					else if  (regVal == 1)
+						regVal = 2;
+					else if  (regVal == 2)
+						regVal = 1;
+					else if  (regVal == 3)
+						regVal = 0;
+				}
 				ret_value = pVoltage[regVal];
 			} else {
 				ret_value = mreg->desc.min_uV + mreg->desc.uV_step * regVal;
 			}
 		} else {
-			pr_debug("[EM][ERROR] LDO_%s_VOLTAGE : voltage=0 vol_reg=0\n",
+			PMICLOG("[EM][ERROR] LDO_%s_VOLTAGE : voltage=0 vol_reg=0\n",
 				mreg->desc.name);
 		}
 	} else {
@@ -887,7 +962,7 @@ static ssize_t show_LDO_VOLTAGE(struct device *dev, struct device_attribute *att
 	}
 
 	ret_value = ret_value / 1000;
-	pr_debug("[EM] LDO_%s_VOLTAGE : %d\n", mreg->desc.name, ret_value);
+	pr_err("[EM] LDO_%s_VOLTAGE : %d\n", mreg->desc.name, ret_value);
 	return sprintf(buf, "%u\n", ret_value);
 
 }
@@ -2123,15 +2198,15 @@ void battery_oc_protect_reinit(void)
 	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD_RE);
 	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD_RE); */
 
-	pr_warn("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		MT6351_PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(MT6351_PMIC_FG_CUR_HTH_ADDR),
 		MT6351_PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(MT6351_PMIC_FG_CUR_LTH_ADDR),
 		MT6351_PMIC_RG_INT_EN_FG_BAT_H_ADDR, upmu_get_reg_value(MT6351_PMIC_RG_INT_EN_FG_BAT_H_ADDR)
 	    );
 
-	pr_warn("[battery_oc_protect_reinit] %d mA, %d mA\n",
+	pr_err("[battery_oc_protect_reinit] %d mA, %d mA\n",
 		POWER_BAT_OC_CURRENT_H_RE, POWER_BAT_OC_CURRENT_L_RE);
-	pr_warn("[battery_oc_protect_reinit] Done\n");
+	pr_err("[battery_oc_protect_reinit] Done\n");
 #else
 	pr_warn("[battery_oc_protect_reinit] no define BATTERY_OC_PROTECT\n");
 #endif
@@ -3830,7 +3905,7 @@ void dump_ldo_status_read_debug(void)
 			voltage_reg = -1;
 			voltage = -1;
 		}
-		PMICLOG("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
+		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			mtk_bucks[i].desc.name, en, voltage, voltage_reg);
 	}
 
@@ -3845,6 +3920,24 @@ void dump_ldo_status_read_debug(void)
 				voltage_reg = pmic_get_register_value(mtk_ldos[i].vol_reg);
 				if (mtk_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mtk_ldos[i].pvoltages;
+				/*HW LDO sequence issue, we need to change it */
+				if ((strcmp(mtk_ldos[i].desc.name, "VA18") == 0) |
+					(strcmp(mtk_ldos[i].desc.name, "VTCXO24") == 0) |
+					(strcmp(mtk_ldos[i].desc.name, "VTCXO28") == 0) |
+					(strcmp(mtk_ldos[i].desc.name, "VCN28") == 0) |
+					(strcmp(mtk_ldos[i].desc.name, "VXO22") == 0) |
+					(strcmp(mtk_ldos[i].desc.name, "VBIF28") == 0)) {
+					pr_err("dump_ldo_status_read_debug(name=%s selector=%d)\n",
+						mtk_ldos[i].desc.name, voltage_reg);
+					if (voltage_reg == 0)
+						voltage_reg = 3;
+					else if  (voltage_reg == 1)
+						voltage_reg = 2;
+					else if  (voltage_reg == 2)
+						voltage_reg = 1;
+					else if  (voltage_reg == 3)
+						voltage_reg = 0;
+				}
 					voltage = pVoltage[voltage_reg];
 				} else {
 					voltage =
@@ -3860,7 +3953,7 @@ void dump_ldo_status_read_debug(void)
 			voltage = pVoltage[0];
 		}
 
-		PMICLOG("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
+		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
@@ -3918,6 +4011,24 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 				voltage_reg = pmic_get_register_value(mtk_ldos[i].vol_reg);
 				if (mtk_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mtk_ldos[i].pvoltages;
+					/*HW LDO sequence issue, we need to change it */
+					if ((strcmp(mtk_ldos[i].desc.name, "VA18") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "VTCXO24") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "VTCXO28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "VCN28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "VXO22") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "VBIF28") == 0)) {
+						pr_err("dump_ldo_status_read_debug(name=%s selector=%d)\n",
+							mtk_ldos[i].desc.name, voltage_reg);
+					if (voltage_reg == 0)
+						voltage_reg = 3;
+					else if  (voltage_reg == 1)
+						voltage_reg = 2;
+					else if  (voltage_reg == 2)
+						voltage_reg = 1;
+					else if  (voltage_reg == 3)
+						voltage_reg = 0;
+					}
 					voltage = pVoltage[voltage_reg];
 				} else {
 					voltage =
@@ -4087,21 +4198,22 @@ static ssize_t show_low_battery_protect_ut(struct device *dev, struct device_att
 static ssize_t store_low_battery_protect_ut(struct device *dev, struct device_attribute *attr,
 					    const char *buf, size_t size)
 {
-	/*int ret = 0;*/
-	/*char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 
-	PMICLOG("[store_low_battery_protect_ut]\n");
+	pr_err("[store_low_battery_protect_ut]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_low_battery_protect_ut] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_low_battery_protect_ut] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 2) {
-			PMICLOG("[store_low_battery_protect_ut] your input is %d\n", val);
+			pr_err("[store_low_battery_protect_ut] your input is %d\n", val);
 			exec_low_battery_callback(val);
 		} else {
-			PMICLOG("[store_low_battery_protect_ut] wrong number (%d)\n", val);
+			pr_err("[store_low_battery_protect_ut] wrong number (%d)\n", val);
 		}
 	}
 	return size;
@@ -4122,20 +4234,21 @@ static ssize_t show_low_battery_protect_stop(struct device *dev, struct device_a
 static ssize_t store_low_battery_protect_stop(struct device *dev, struct device_attribute *attr,
 					      const char *buf, size_t size)
 {
-	/*int ret = 0;
-	char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 
-	PMICLOG("[store_low_battery_protect_stop]\n");
+	pr_err("[store_low_battery_protect_stop]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_low_battery_protect_stop] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_low_battery_protect_stop] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_low_battery_stop = val;
-		PMICLOG("[store_low_battery_protect_stop] g_low_battery_stop=%d\n",
+		pr_err("[store_low_battery_protect_stop] g_low_battery_stop=%d\n",
 			g_low_battery_stop);
 	}
 	return size;
@@ -4180,21 +4293,22 @@ static ssize_t show_battery_oc_protect_ut(struct device *dev, struct device_attr
 static ssize_t store_battery_oc_protect_ut(struct device *dev, struct device_attribute *attr,
 					   const char *buf, size_t size)
 {
-	/*int ret = 0;
-	char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 
-	PMICLOG("[store_battery_oc_protect_ut]\n");
+	pr_err("[store_battery_oc_protect_ut]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_battery_oc_protect_ut] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_battery_oc_protect_ut] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 1) {
-			PMICLOG("[store_battery_oc_protect_ut] your input is %d\n", val);
+			pr_err("[store_battery_oc_protect_ut] your input is %d\n", val);
 			exec_battery_oc_callback(val);
 		} else {
-			PMICLOG("[store_battery_oc_protect_ut] wrong number (%d)\n", val);
+			pr_err("[store_battery_oc_protect_ut] wrong number (%d)\n", val);
 		}
 	}
 	return size;
@@ -4216,20 +4330,21 @@ static ssize_t show_battery_oc_protect_stop(struct device *dev, struct device_at
 static ssize_t store_battery_oc_protect_stop(struct device *dev, struct device_attribute *attr,
 					     const char *buf, size_t size)
 {
-	/*int ret = 0;
-	char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 
-	PMICLOG("[store_battery_oc_protect_stop]\n");
+	pr_err("[store_battery_oc_protect_stop]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_battery_oc_protect_stop] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_battery_oc_protect_stop] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_battery_oc_stop = val;
-		PMICLOG("[store_battery_oc_protect_stop] g_battery_oc_stop=%d\n",
+		pr_err("[store_battery_oc_protect_stop] g_battery_oc_stop=%d\n",
 			g_battery_oc_stop);
 	}
 	return size;
@@ -4276,22 +4391,23 @@ static ssize_t show_battery_percent_ut(struct device *dev, struct device_attribu
 static ssize_t store_battery_percent_ut(struct device *dev, struct device_attribute *attr,
 						const char *buf, size_t size)
 {
-	/*int ret = 0;
-	char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 	/*store_battery_percent_protect_ut*/
-	PMICLOG("[store_battery_percent_protect_ut]\n");
+	pr_err("[store_battery_percent_protect_ut]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_battery_percent_protect_ut] buf is %s and size is %zu\n", buf,
+		pr_err("[store_battery_percent_protect_ut] buf is %s and size is %zu\n", buf,
 			size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 1) {
-			PMICLOG("[store_battery_percent_protect_ut] your input is %d\n", val);
+			pr_err("[store_battery_percent_protect_ut] your input is %d\n", val);
 			exec_battery_percent_callback(val);
 		} else {
-			PMICLOG("[store_battery_percent_protect_ut] wrong number (%d)\n", val);
+			pr_err("[store_battery_percent_protect_ut] wrong number (%d)\n", val);
 		}
 	}
 	return size;
@@ -4315,21 +4431,22 @@ static ssize_t show_battery_percent_stop(struct device *dev, struct device_attri
 static ssize_t store_battery_percent_stop(struct device *dev, struct device_attribute *attr,
 						  const char *buf, size_t size)
 {
-	/*int ret = 0;
-	char *pvalue = NULL;*/
+	int ret = 0;
+	char *pvalue = NULL;
 	unsigned int val = 0;
 	/*store_battery_percent_protect_stop*/
-	PMICLOG("[store_battery_percent_protect_stop]\n");
+	pr_err("[store_battery_percent_protect_stop]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_battery_percent_protect_stop] buf is %s and size is %zu\n", buf,
+		pr_err("[store_battery_percent_protect_stop] buf is %s and size is %zu\n", buf,
 			size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_battery_percent_stop = val;
-		PMICLOG("[store_battery_percent_protect_stop] g_battery_percent_stop=%d\n",
+		pr_err("[store_battery_percent_protect_stop] g_battery_percent_stop=%d\n",
 			g_battery_percent_stop);
 	}
 	return size;
@@ -4382,14 +4499,15 @@ static ssize_t store_dlpt_ut(struct device *dev, struct device_attribute *attr, 
 	unsigned int val = 0;
 	int ret = 0;
 
-	PMICLOG("[store_dlpt_ut]\n");
+	pr_err("[store_dlpt_ut]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_dlpt_ut] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_dlpt_ut] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 10);*/
-		/*ret = kstrtoul(buf, 10, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 10, (unsigned int *)&val);
 
-		PMICLOG("[store_dlpt_ut] your input is %d\n", val);
+		pr_err("[store_dlpt_ut] your input is %d\n", val);
 		exec_dlpt_callback(val);
 	}
 	return size;
@@ -4413,16 +4531,17 @@ static ssize_t store_dlpt_stop(struct device *dev, struct device_attribute *attr
 	unsigned int val = 0;
 	int ret = 0;
 
-	PMICLOG("[store_dlpt_stop]\n");
+	pr_err("[store_dlpt_stop]\n");
 
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_dlpt_stop] buf is %s and size is %zu\n", buf, size);
+		pr_err("[store_dlpt_stop] buf is %s and size is %zu\n", buf, size);
 		/*val = simple_strtoul(buf, &pvalue, 16);*/
-		/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_dlpt_stop = val;
-		PMICLOG("[store_dlpt_stop] g_dlpt_stop=%d\n", g_dlpt_stop);
+		pr_err("[store_dlpt_stop] g_dlpt_stop=%d\n", g_dlpt_stop);
 	}
 	return size;
 }

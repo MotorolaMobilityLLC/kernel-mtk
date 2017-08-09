@@ -7238,34 +7238,39 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 				   const char *buf, size_t size)
 {
 	int ret;
-	/*char *pvalue = NULL;*/
+	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	PMICLOG1("[store_mt6311_access]\n");
+	pr_err("[store_mt6311_access]\n");
 
 	if (buf != NULL && size != 0) {
 		/*PMICLOG1("[store_mt6311_access] buf is %s and size is %d\n",buf,size);*/
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
+
+		pvalue = (char *)buf;
+		if (size > 4) {
+			addr = strsep(&pvalue, " ");
+			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+		} else
+			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
 		/*ret = kstrtoul(buf, 16, (unsigned long *)&reg_address);*/
 
 		if (size > 4) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-/*
-			buf = buf + 1;
-			ret = kstrtoul(buf, 16, (unsigned long *)&reg_value);
-*/
-			PMICLOG1("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
+			val =  strsep(&pvalue, " ");
+			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+			pr_err("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 
 			ret = mt6311_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = mt6311_read_interface(reg_address, &g_reg_value_mt6311, 0xFF, 0x0);
 
-			PMICLOG1("[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
+			pr_err("[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_mt6311);
-			PMICLOG1
-			    ("[store_mt6311_access] Please use \"cat mt6311_access\" to get value\r\n");
+			pr_err
+			    ("[store_mt6311_access] use \"cat mt6311_access\" to get value(decimal)\r\n");
 		}
 	}
 	return size;
@@ -7279,24 +7284,25 @@ static DEVICE_ATTR(mt6311_access, 0664, show_mt6311_access, store_mt6311_access)
 int g_mt6311_vosel_pin = 0;
 static ssize_t show_mt6311_vosel_pin(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG1("[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
+	pr_err("[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
 	return sprintf(buf, "%u\n", g_mt6311_vosel_pin);
 }
 
 static ssize_t store_mt6311_vosel_pin(struct device *dev, struct device_attribute *attr,
 				      const char *buf, size_t size)
 {
-	int val = 0;
-	/*char *pvalue = NULL;*/
+	int val = 0, ret;
+	char *pvalue = NULL;
 
-	PMICLOG1("[store_mt6311_vosel_pin]\n");
+	pr_err("[store_mt6311_vosel_pin]\n");
 
 	/*val = simple_strtoul(buf, &pvalue, 16);*/
-	/*ret = kstrtoul(buf, 16, (unsigned long *)&val);*/
+	pvalue = (char *)buf;
+	ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 
 	g_mt6311_vosel_pin = val;
 
-	PMICLOG1("[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
+	pr_err("[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
 
 	return size;
 }
