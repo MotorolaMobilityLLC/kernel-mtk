@@ -352,38 +352,39 @@ static inline unsigned int __m4u_get_pte_attr_4K(unsigned int prot)
 int m4u_clean_pte(m4u_domain_t *domain, unsigned int mva, unsigned int size)
 {
 	imu_pgd_t *pgd;
-	unsigned int end_plus_1 = mva + size;
+	unsigned long long tmp_mva = (unsigned long long)mva;
+	unsigned long long end_plus_1 = tmp_mva + (unsigned long long)size;
 
-	while (mva < end_plus_1) {
-		pgd = imu_pgd_offset(domain, mva);
+	while (tmp_mva < end_plus_1) {
+		pgd = imu_pgd_offset(domain, tmp_mva);
 
 		if (F_PGD_TYPE_IS_PAGE(*pgd)) {
 			imu_pte_t *pte, *pte_end;
-			unsigned int next_mva, sync_entry_nr;
+			unsigned long long next_mva, sync_entry_nr;
 
-			pte = imu_pte_offset_map(pgd, mva);
+			pte = imu_pte_offset_map(pgd, tmp_mva);
 			if (!pte) {
 				/* invalid pte: goto next pgd entry */
-				mva = m4u_calc_next_mva(mva, end_plus_1, MMU_SECTION_SIZE);
+				tmp_mva = m4u_calc_next_mva(tmp_mva, end_plus_1, MMU_SECTION_SIZE);
 				continue;
 			}
 
-			next_mva = m4u_calc_next_mva(mva, end_plus_1, MMU_SECTION_SIZE);
-			sync_entry_nr = (next_mva - mva) / MMU_SMALL_PAGE_SIZE;
+			next_mva = m4u_calc_next_mva(tmp_mva, end_plus_1, MMU_SECTION_SIZE);
+			sync_entry_nr = (next_mva - tmp_mva) >> 12; /*(next_mva - tmp_mva) / MMU_SMALL_PAGE_SIZE*/
 			pte_end = pte + sync_entry_nr;
 			/* do cache sync for [pte, pte_end) */
 			dmac_flush_range((void *)pte, (void *)pte_end);
-			/* M4UMSG("dmac_flush_range: 0x%x ~ 0x%x\n", pte, pte_end); */
+			/* M4UMSG("dmac_flush_range: 0x%p ~ 0x%p\n", pte, pte_end); */
 
 			imu_pte_unmap(pte);
-			mva = next_mva;
+			tmp_mva = next_mva;
 
 		} else if (F_PGD_TYPE_IS_SUPERSECTION(*pgd)) {
 			/* for superseciton: don't need to sync. */
-			mva = m4u_calc_next_mva(mva, end_plus_1, MMU_SUPERSECTION_SIZE);
+			tmp_mva = m4u_calc_next_mva(tmp_mva, end_plus_1, MMU_SUPERSECTION_SIZE);
 		} else {
 			/* for section/invalid: don't need to sync */
-			mva = m4u_calc_next_mva(mva, end_plus_1, MMU_SECTION_SIZE);
+			tmp_mva = m4u_calc_next_mva(tmp_mva, end_plus_1, MMU_SECTION_SIZE);
 		}
 	}
 
