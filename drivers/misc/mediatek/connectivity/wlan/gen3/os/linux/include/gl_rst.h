@@ -47,6 +47,7 @@ typedef struct _MTK_WCN_WMT_WLAN_CB_INFO {
 
 extern INT_32 mtk_wcn_wmt_wlan_reg(P_MTK_WCN_WMT_WLAN_CB_INFO pWmtWlanCbInfo);
 extern INT_32 mtk_wcn_wmt_wlan_unreg(VOID);
+extern UINT_32 wmt_plat_read_cpupcr(VOID);
 #endif
 
 typedef enum _ENUM_RESET_STATUS_T {
