@@ -24,6 +24,32 @@ struct pcm_desc {
 #endif
 };
 
+struct mtk_config {
+	//struct clk *clk_smi_common;
+	//struct clk *clk_display;
+
+	struct clk *clk_mfg_async;
+	struct clk *clk_mfg;
+#ifndef MTK_MALI_APM
+	struct clk *clk_mfg_core0;
+	struct clk *clk_mfg_core1;
+	struct clk *clk_mfg_core2;
+	struct clk *clk_mfg_core3;
+#endif
+	struct clk *clk_mfg_main;
+#ifdef MTK_GPU_SPM
+	struct clk *clk_dvfs_gpu;
+	struct clk *clk_gpupm;
+	struct clk *clk_ap_dma;
+#endif
+
+	unsigned int max_vol;
+	unsigned int max_freq;
+	unsigned int min_vol;
+	unsigned int min_freq;
+	unsigned int slope;
+};
+
 #define MFG_OCP_DCM_CON             0x460
 
 #define DFP_ID                      0x0
@@ -45,6 +71,46 @@ struct pcm_desc {
 #define DVFS_GPU_PCM_IM_LEN         0x24
 #define DVFS_GPU_PCM_REG_DATA_INI   0x28
 #define DVFS_GPU_PCM_PWR_IO_EN      0x2c
+
+#define M0_REC0          0x300
+#define M1_REC0          0x350
+#define M2_REC0          0x3A0
+
+#define SPM_SW_FLAG      0x600
+#define SPM_SW_DEBUG     0x604
+#define SPM_SW_RSV_0     0x608
+#define SPM_SW_RSV_1     0x60C
+#define SPM_SW_RSV_2     0x610
+#define SPM_SW_RSV_3     0x614
+#define SPM_SW_RSV_4     0x618
+#define SPM_SW_RSV_5     0x61C
+#define SPM_SW_RSV_6     0x620
+#define SPM_SW_RSV_7     0x624
+#define SPM_SW_RSV_8     0x628
+#define SPM_SW_RSV_9     0x62C
+#define SPM_SW_RSV_10    0x630
+#define SPM_SW_RSV_11    0x634
+#define SPM_SW_RSV_12    0x638
+#define SPM_SW_RSV_13    0x63C
+#define SPM_SW_RSV_14    0x640
+#define SPM_SW_RSV_15    0x644
+
+#define SPM_SW_CUR_V     0x608 // CURRENT V_REG
+#define SPM_SW_CUR_F     0x60C // CURRENT F_REG
+#define SPM_SW_TMP_V     0x610 // TARGET V_REG
+#define SPM_SW_TMP_F     0x614 // TARGET F_REG
+#define SPM_SW_CEIL_V    0x618 // CEILING V_VALUE -> Auto to V_REG @ EN=1
+#define SPM_SW_CEIL_F    0x61C // CEILING F_VALUE -> Auto to F_REG @ EN=1
+#define SPM_SW_FLOOR_V   0x620 // FLOOR V_VALUE -> Auto to V_REG @ EN=1
+#define SPM_SW_FLOOR_F   0x624 // FLOOR F_VALUE -> Auto to F_REG @ EN=1
+
+#define SPM_RSV_CON      0x648
+//#define SPM_RSV_STA      0x64C // read-only ..
+#define SPM_RSV_STA      0x644 // use RSV_15 instead
+#define SPM_RSV_BIT_EN           (1<<0)
+#define SPM_RSV_BIT_DVFS_EN      (1<<1)
+
+#define M3_REC0          0x800
 
 #define SPM_PROJECT_CODE            (0xB16<<16)
 #define CON0_PCM_KICK_L             (1<<0)
@@ -72,10 +138,12 @@ struct pcm_desc {
 
 #define CLK_MISC_CFG_0              0x104
 
-extern volatile void * g_MFG_base;
-extern volatile void * g_DVFS_GPU_base;
-extern volatile void * g_DFP_base;
-extern volatile void * g_TOPCK_base;
+extern volatile void *g_MFG_base;
+extern volatile void *g_DVFS_GPU_base;
+extern volatile void *g_DFP_base;
+extern volatile void *g_TOPCK_base;
+extern struct pcm_desc dvfs_gpu_pcm;
+extern struct mtk_config *g_config;
 
 #define base_write32(addr, value)     *(volatile uint32_t*)(addr) = (uint32_t)(value)
 #define base_read32(addr)             (*(volatile uint32_t*)(addr))
@@ -91,5 +159,23 @@ extern volatile void * g_TOPCK_base;
 void mtk_kbase_dpm_setup(int *dfp_weights);
 
 void mtk_kbase_spm_kick(struct pcm_desc *pd);
+
+void mtk_kbase_spm_acquire(void);
+void mtk_kbase_spm_release(void);
+
+void mtk_kbase_spm_con(unsigned int val);
+void mtk_kbase_spm_wait(void);
+
+unsigned int mtk_kbase_spm_get_vol(unsigned int addr); /* unit uV, 1e6 = 1 V */
+unsigned int mtk_kbase_spm_get_freq(unsigned int addr); /* unit MHz, 600 = 600 MHz */
+
+void mtk_kbase_spm_set_dvfs_en(unsigned int en);
+unsigned int mtk_kbase_spm_get_dvfs_en(void);
+
+void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f);
+void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f);
+/* special case, ceiling = floor */
+void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f);
+
 
 #endif

@@ -3,74 +3,206 @@
 
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
-#if 0
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/spinlock.h>
-#include <linux/atomic.h>
-#include <linux/string.h>
-#endif
 #include <linux/io.h>
-
-void mtk_kbase_spm_kick(struct pcm_desc *pd)
-{
-    uint32_t tmp;
-
-    /* setup dvfs_gpu */
-    DVFS_GPU_write32(DVFS_GPU_POWERON_CONFIG_EN, SPM_PROJECT_CODE | 0x1);
-
-    DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, 0x1);
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0);
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_PCM_SW_RESET);
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS );
-
-    /* init PCM r0 and r7 */
-    tmp = DVFS_GPU_read32(DVFS_GPU_SPM_POWER_ON_VAL0);
-    DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, tmp);
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x010000);
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x000000);
-
-    tmp = DVFS_GPU_read32(DVFS_GPU_SPM_POWER_ON_VAL1);
-    DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, tmp | 0x200);
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x800000);
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x000000);
-
-    /* IM base */
-    DVFS_GPU_write32(DVFS_GPU_PCM_IM_PTR, (uint32_t)virt_to_phys(pd->base));
-    DVFS_GPU_write32(DVFS_GPU_PCM_IM_LEN, pd->size);
-    printk(KERN_ERR "xxxx pcm.base = 0x%0llx\n", virt_to_phys(pd->base));
-    printk(KERN_ERR "xxxx pcm.base (uint32_t) = 0x%08x\n", (uint32_t)virt_to_phys(pd->base));
-    printk(KERN_ERR "xxxx pcm.size = %u\n", pd->size - 1);
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_RF_SYNC);
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_MIF_APBEN);
-
-    DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
-
-    /* Kick */
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_IM_KICK_L | CON0_PCM_KICK_L);
-    DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS);
-}
+#include <linux/mutex.h>
+#include <linux/delay.h>
 
 void mtk_kbase_dpm_setup(int *dfp_weights)
 {
-    int i;
+	int i;
 
 	DFP_write32(DFP_CTRL, 0x2);
 
-    DFP_write32(DFP_ID, 0x55aa3344);
-    DFP_write32(DFP_VOLT_FACTOR, 1);
-    DFP_write32(DFP_PM_PERIOD, 1);
+	DFP_write32(DFP_ID, 0x55aa3344);
+	DFP_write32(DFP_VOLT_FACTOR, 1);
+	DFP_write32(DFP_PM_PERIOD, 1);
 
-    DFP_write32(DFP_COUNTER_EN_0, 0xffffffff);
-    DFP_write32(DFP_COUNTER_EN_1, 0xffffffff);
+	DFP_write32(DFP_COUNTER_EN_0, 0xffffffff);
+	DFP_write32(DFP_COUNTER_EN_1, 0xffffffff);
 
-    DFP_write32(DFP_SCALING_FACTOR, 16);
+	DFP_write32(DFP_SCALING_FACTOR, 16);
 
-    for (i = 0; i < 110; ++i)
-    {
-        DFP_write32(DFP_WEIGHT_(i), dfp_weights[i]);
-    }
+	for (i = 0; i < 110; ++i)
+	{
+		DFP_write32(DFP_WEIGHT_(i), dfp_weights[i]);
+	}
 
 	DFP_write32(DFP_CTRL, 0x3);
+}
+
+static DEFINE_MUTEX(spm_lock);
+
+static void spm_acquire(void)
+{
+	mutex_lock(&spm_lock);
+}
+static void spm_release(void)
+{
+	mutex_unlock(&spm_lock);
+}
+
+void mtk_kbase_spm_acquire(void)
+{
+	spm_acquire();
+}
+void mtk_kbase_spm_release(void)
+{
+	spm_release();
+}
+
+void mtk_kbase_spm_kick(struct pcm_desc *pd)
+{
+	uint32_t tmp;
+
+	spm_acquire();
+
+	/* setup dvfs_gpu */
+	DVFS_GPU_write32(DVFS_GPU_POWERON_CONFIG_EN, SPM_PROJECT_CODE | 0x1);
+
+	DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, 0x1);
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_PCM_SW_RESET);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS );
+
+	/* init PCM r0 and r7 */
+	tmp = DVFS_GPU_read32(DVFS_GPU_SPM_POWER_ON_VAL0);
+	DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, tmp);
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x010000);
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x000000);
+
+	tmp = DVFS_GPU_read32(DVFS_GPU_SPM_POWER_ON_VAL1);
+	DVFS_GPU_write32(DVFS_GPU_PCM_REG_DATA_INI, tmp | 0x200);
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x800000);
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x000000);
+
+	/* IM base */
+	DVFS_GPU_write32(DVFS_GPU_PCM_IM_PTR, (uint32_t)virt_to_phys(pd->base));
+	DVFS_GPU_write32(DVFS_GPU_PCM_IM_LEN, pd->size);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_RF_SYNC);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_MIF_APBEN);
+
+	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
+
+	/* Kick */
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_IM_KICK_L | CON0_PCM_KICK_L);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS);
+
+	spm_release();
+}
+
+void mtk_kbase_spm_con(unsigned int val)
+{
+	DVFS_GPU_write32(SPM_RSV_CON, val);
+}
+
+void mtk_kbase_spm_wait(void)
+{
+	int retry = 0xffff;
+	while (DVFS_GPU_read32(SPM_RSV_STA) != DVFS_GPU_read32(SPM_RSV_CON) && --retry)
+	{
+		udelay(1);
+	}
+}
+
+unsigned int mtk_kbase_spm_get_vol(unsigned int addr)
+{
+	unsigned int volreg = DVFS_GPU_read32(addr);
+
+	if (volreg < 0xaa)
+		return 603000 + (0x3f & volreg) * 12826;
+	else
+		return volreg;
+}
+
+unsigned int mtk_kbase_spm_get_freq(unsigned int addr)
+{
+	unsigned int freqreg = DVFS_GPU_read32(addr);
+
+	if (freqreg & 0x80000000)
+		return ((0xffffff & freqreg) * 26) >> (14 + ((0xf000000 & freqreg) >> 24));
+	else
+		return freqreg;
+}
+
+static unsigned int g_dvfs_en = 1;
+void mtk_kbase_spm_set_dvfs_en(unsigned int en)
+{
+	g_dvfs_en = en;
+}
+unsigned int mtk_kbase_spm_get_dvfs_en(void)
+{
+	return g_dvfs_en;
+}
+
+static void spm_vf_adjust(unsigned int* pv, unsigned int* pf)
+{
+	if (pv && *pv > g_config->max_vol) *pv = g_config->max_vol;
+	if (pv && *pv < g_config->min_vol) *pv = g_config->min_vol;
+	if (pf && *pf > g_config->max_freq) *pf = g_config->max_freq;
+	if (pf && *pf < g_config->min_freq) *pf = g_config->min_freq;
+}
+
+unsigned int mtk_kbase_get_voltage_by_freq(unsigned int f)
+{
+	unsigned int vol = 800000;
+	spm_vf_adjust(NULL, &f);
+	vol += (f-154) * g_config->slope / 1000000;
+	spm_vf_adjust(&vol, NULL);
+	return vol;
+}
+
+/* Flow to set ceiling / floor
+ * 1. pause spm (SPM_RSV_BIT_EN = 0)
+ * 2. set ceiling, floor
+ * 3. resume spm (SPM_RSV_BIT_EN = 1)
+ */
+void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f)
+{
+	int en;
+	spm_vf_adjust(&v, &f);
+	spm_acquire();
+	en = DVFS_GPU_read32(SPM_RSV_CON);
+	DVFS_GPU_write32(SPM_RSV_CON, 0);
+	mtk_kbase_spm_wait();
+	DVFS_GPU_write32(SPM_SW_CEIL_V, v);
+	DVFS_GPU_write32(SPM_SW_CEIL_F, f);
+	DVFS_GPU_write32(SPM_RSV_CON, en);
+	spm_release();
+
+	mdelay(1);
+}
+void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f)
+{
+	int en;
+	spm_vf_adjust(&v, &f);
+	spm_acquire();
+	en = DVFS_GPU_read32(SPM_RSV_CON);
+	DVFS_GPU_write32(SPM_RSV_CON, 0);
+	mtk_kbase_spm_wait();
+	DVFS_GPU_write32(SPM_SW_FLOOR_V, v);
+	DVFS_GPU_write32(SPM_SW_FLOOR_F, f);
+	DVFS_GPU_write32(SPM_RSV_CON, en);
+	mtk_kbase_spm_wait();
+	spm_release();
+
+	mdelay(1);
+}
+void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f)
+{
+	int en;
+	spm_vf_adjust(&v, &f);
+	spm_acquire();
+	en = DVFS_GPU_read32(SPM_RSV_CON);
+	DVFS_GPU_write32(SPM_RSV_CON, 0);
+	mtk_kbase_spm_wait();
+	/* special case, ceiling = floor */
+	DVFS_GPU_write32(SPM_SW_CEIL_V, v);
+	DVFS_GPU_write32(SPM_SW_CEIL_F, f);
+	DVFS_GPU_write32(SPM_SW_FLOOR_V, v);
+	DVFS_GPU_write32(SPM_SW_FLOOR_F, f);
+	DVFS_GPU_write32(SPM_RSV_CON, en);
+	spm_release();
+
+	mdelay(1);
 }
 

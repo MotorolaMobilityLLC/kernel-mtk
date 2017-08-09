@@ -1,22 +1,26 @@
 #include <linux/device.h>
 #include <linux/ioport.h>
+#include <linux/delay.h>
+
 #include <mali_kbase.h>
 #include <mali_kbase_defs.h>
 #include <mali_kbase_config.h>
+#include <platform/mtk_platform_common.h>
+
 #include "mali_kbase_config_platform.h"
 #include "mtk_kbase_spm.h"
 
-#include <platform/mtk_platform_common.h>
+#ifdef ENABLE_COMMON_DVFS
+#include <ged_dvfs.h>
+#endif
 
+#ifndef MTK_GPU_SPM
 #include <mt_gpufreq.h>
+#endif
+
 #include <fan53555.h>
 
-#include "ged_dvfs.h"
-
-//#define MTK_GPU_DPM
-//#define MTK_GPU_SPM
-#define MTK_GPU_APM
-//#define MTK_GPU_OCP
+struct mtk_config *g_config;
 
 #ifdef MTK_GPU_DPM
 static int dfp_weights[] = {
@@ -34,57 +38,6 @@ static int dfp_weights[] = {
 };
 #endif
 
-#ifdef MTK_GPU_SPM
-static const u32 dvfs_gpu_binary[] = {
-        0xe8230000, 0x11016300, 0x00aae600, 0x009bf1e0, 0x006f1580, 0x004f0a60,
-        0x00334500, 0x00222e00, 0xe8230000, 0x11016328, 0x00000006, 0x00000005,
-        0x00000004, 0x00000003, 0x00000002, 0x00000001, 0xe82a0000, 0x11016350,
-        0x00000005, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0xe8208000, 0x13020004, 0x00000003, 0xe8208000,
-        0x13020008, 0x00000001, 0xe8208000, 0x1302000c, 0x00000001, 0x1890001f,
-        0x13020230, 0x08d00002, 0x11016354, 0x1900001f, 0x1101635c, 0x09100004,
-        0x11016358, 0x19700004, 0x17c07c1f, 0x01601403, 0x18c0001f, 0x11016354,
-        0xe0c00005, 0xe1000002, 0x1890001f, 0x11016358, 0x08800002, 0x00000004,
-        0x49200002, 0x00000044, 0xd8000904, 0x17c07c1f, 0x1880001f, 0x00000000,
-        0x18c0001f, 0x11016358, 0xe0c00002, 0x1880001f, 0x00000000, 0x18d0001f,
-        0x11016354, 0x1980001f, 0x11016300, 0x1151081f, 0x01401406, 0x19300005,
-        0x17c07c1f, 0x31201003, 0xd8000bc4, 0x17c07c1f, 0x08800002, 0x00000001,
-        0x49300002, 0x11016350, 0xd8000a24, 0x17c07c1f, 0x1091081f, 0x09000002,
-        0x11016328, 0x18f00004, 0x17c07c1f, 0x79200003, 0x00000000, 0xc8c00ec4,
-        0x17c07c1f, 0x1890001f, 0x11016350, 0x18d0001f, 0x11016354, 0x1910001f,
-        0x11016358, 0x1950001f, 0x13020230, 0x1990001f, 0x11016328, 0x1b80001f,
-        0x20006590, 0xd0000580, 0x17c07c1f, 0xf0000000, 0xf0000000, 0x17c07c1f
-};
-static struct pcm_desc dvfs_gpu_pcm = {
-        .version        = "SPM_PCMASM_JADE_20150421",
-        .base           = dvfs_gpu_binary,
-        .size           = 120,
-        .sess           = 1,
-        .replace        = 1,
-};
-#endif
-
-struct mtk_config {
-	struct clk *clk_mfg_async;
-	struct clk *clk_mfg;
-#ifndef MTK_MALI_APM
-	struct clk *clk_mfg_core0;
-	struct clk *clk_mfg_core1;
-	struct clk *clk_mfg_core2;
-	struct clk *clk_mfg_core3;
-#endif
-	struct clk *clk_mfg_main;
-#ifdef MTK_GPU_SPM
-	struct clk *clk_dvfs_gpu;
-	struct clk *clk_gpupm;
-	struct clk *clk_ap_dma;
-#endif
-};
-
-struct mtk_config *g_config;
-
 static volatile void *g_ldo_base = NULL;
 
 volatile void *g_MFG_base;
@@ -97,17 +50,25 @@ static void mt6797_gpu_set_power(int on)
 	if (on)
 	{
 		/* LDO: VSRAM_GPU */
-		base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
-		base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
-		base_write32(g_ldo_base+0xfbc, 0xff);
+		base_write32(g_ldo_base+0xfbc, 0x1ff);
 
+#ifdef MTK_GPU_SPM
 		/* FAN53555: VGPU */
-		fan53555_config_interface(0x0, on, 1, 7);
+		fan53555_config_interface(0x0, 0x1, 0x1, 0x7);
+#else
+		mt_gpufreq_voltage_enable_set(1);
+#endif
+
+		udelay(263);
 	}
 	else
 	{
+#ifdef MTK_GPU_SPM
 		/* FAN53555: VGPU */
-		fan53555_config_interface(0x0, on, 1, 7);
+		fan53555_config_interface(0x0, 0x0, 0x1, 0x7);
+#else
+		mt_gpufreq_voltage_enable_set(0);
+#endif
 
 		/* LDO: VSRAM_GPU */
 		base_write32(g_ldo_base+0xfbc, 0x0);
@@ -119,23 +80,7 @@ static void mt6797_gpu_set_power(int on)
 		pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
 
 #define MTKCLK_disable_unprepare(clk) \
-	if (config->clk) { clk_disable_unprepare(config->clk); }
-
-static void mtk_init_registers_once(void)
-{
-	static int init = 0;
-
-	if (init == 1) return;
-	init = 1;
-
-#ifdef MTK_GPU_DPM
-	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
-#endif
-
-#ifdef MTK_GPU_SPM
-	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
-#endif
-}
+	if (config->clk) {  clk_disable_unprepare(config->clk); }
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
@@ -153,12 +98,6 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 #endif
 	MTKCLK_prepare_enable(clk_mfg_main);
 
-#ifdef MTK_GPU_SPM
-	MTKCLK_prepare_enable(clk_dvfs_gpu);
-	MTKCLK_prepare_enable(clk_gpupm);
-	MTKCLK_prepare_enable(clk_ap_dma);
-#endif
-
 #ifdef MTK_GPU_APM
 	/* enable GPU hot-plug */
 	MFG_write32(0x400, MFG_read32(0x400) | 0x1);
@@ -174,7 +113,15 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x3ec, 0xffffffff);
 	MFG_write32(0x3f0, 0xffffffff);
 
-	mtk_init_registers_once();
+#ifdef MTK_GPU_SPM
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
+	mtk_kbase_spm_acquire();
+	mtk_kbase_spm_con(SPM_RSV_BIT_EN |
+		(mtk_kbase_spm_get_dvfs_en() ? SPM_RSV_BIT_DVFS_EN : 0)
+		);
+	mtk_kbase_spm_wait();
+	mtk_kbase_spm_release();
+#endif
 
 #ifdef MTK_GPU_OCP
 	mtk_kbase_dpm_setup(dfp_weights);
@@ -182,9 +129,8 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 #endif
 
 #ifdef ENABLE_COMMON_DVFS
-    ged_dvfs_gpu_clock_switch_notify(1);
+	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
-
 	return 1;
 }
 
@@ -192,13 +138,19 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 {
 	struct mtk_config *config = kbdev->mtk_config;
 
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(0);
+#endif
+
 #ifdef MTK_GPU_OCP
 	MFG_write32(MFG_OCP_DCM_CON, 0x0);
 #endif
 
 #ifdef MTK_GPU_SPM
-	MTKCLK_disable_unprepare(clk_ap_dma);
-	MTKCLK_disable_unprepare(clk_gpupm);
+	mtk_kbase_spm_acquire();
+	mtk_kbase_spm_con(0);
+	mtk_kbase_spm_wait();
+	mtk_kbase_spm_release();
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 #endif
 
@@ -213,11 +165,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	MTKCLK_disable_unprepare(clk_mfg_async);
 
 	mt6797_gpu_set_power(0);
-
-#ifdef ENABLE_COMMON_DVFS
-    ged_dvfs_gpu_clock_switch_notify(0);
-#endif
-
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -238,7 +185,6 @@ struct kbase_platform_config *kbase_get_platform_config(void)
 	return &versatile_platform_config;
 }
 
-
 int kbase_platform_early_init(void)
 {
     /* Make sure the power control is ready */
@@ -247,33 +193,32 @@ int kbase_platform_early_init(void)
         return -EPROBE_DEFER;
     }
 
-    /* MTK: TODO, using device_treee */
-    g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
-    g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
-    g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
-    g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
-    g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
-
     return 0;
 }
 
 #ifdef MTK_GPU_SPM
+
 ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *attr, char *const buf)
 {
-	int i, j, k;
-	ssize_t ret = 0;
-
 	struct mtk_config *config = g_config;
+	ssize_t ret = 0;
+	int i, j, k;
 	uint32_t dvfs_gpu_bases[] = {0x0, 0x300, 0x350, 0x3A0, 0x600, 0x800};
 
-	{
-		unsigned char x = 0;
-		fan53555_read_interface(0x0, &x, 0xff, 0x0);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x0 = 0x%x\n", x);
-		fan53555_read_interface(0x1, &x, 0xff, 0x0);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x1 = 0x%x\n", x);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
-	}
+	/* dump LDO */
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc0 = 0x%08x\n", base_read32(g_ldo_base+0xfc0));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc4 = 0x%08x\n", base_read32(g_ldo_base+0xfc4));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc8 = 0x%08x\n\n", base_read32(g_ldo_base+0xfc8));
+
+	/* dump VGPU */
+	//{
+	//	unsigned char x = 0;
+	//	fan53555_read_interface(0x0, &x, 0xff, 0x0);
+	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x0 = 0x%x\n", x);
+	//	fan53555_read_interface(0x1, &x, 0xff, 0x0);
+	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x1 = 0x%x\n", x);
+	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
+	//}
 
 	/* dump DFP registers */
 	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_ctrl = %u\n", DFP_read32(DFP_CTRL));
@@ -281,8 +226,19 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 
 	/* dump DVFS_GPU registers */
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
-	MTKCLK_prepare_enable(clk_gpupm);
-	MTKCLK_prepare_enable(clk_ap_dma);
+
+	i = mtk_kbase_spm_get_vol(SPM_SW_CUR_V);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current voltage: %u.%06uV\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CUR_F));
+
+	i = mtk_kbase_spm_get_vol(SPM_SW_CEIL_V);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling voltage: %u.%06uV\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "cceiling freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
+
+	i = mtk_kbase_spm_get_vol(SPM_SW_FLOOR_V);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor voltage: %u.%06uV\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_FLOOR_F));
+
 	for (k = 0; k < ARRAY_SIZE(dvfs_gpu_bases); ++k)
 	{
 		for (i = 0; i < 5; ++i)
@@ -298,9 +254,17 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 		}
 		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
 	}
-	MTKCLK_disable_unprepare(clk_ap_dma);
-	MTKCLK_disable_unprepare(clk_gpupm);
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret,
+		"command list\n"
+		"  reset : reset to default\n"
+		"  enable : enable DVFS\n"
+		"  dsiable : disable DVFS\n"
+		"  ceiling_fv <freq> <vol> : ex. ceiling_fv 700000 1125\n"
+		"  floor_fv <freq> <vol> : ex. floor_fv 154000 800\n"
+		"  fix_fv <freq> <vol> : ex. fix_fv 700000 1125\n"
+		);
 
 	if (ret < PAGE_SIZE - 1)
 	{
@@ -317,24 +281,57 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 
 ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-#if 0
+	struct mtk_config *config = g_config;
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
+
 	if (strncmp(buf, "reset",  MIN(5, count)) == 0)
 	{
+		mtk_kbase_spm_set_dvfs_en(1);
+		mtk_kbase_spm_kick(&dvfs_gpu_pcm);
 	}
-	else if (!strncmp("thd=", buf, MIN(4, count)))
+	else if (strncmp(buf, "enable",  MIN(6, count)) == 0)
 	{
-		int thd;
-		int items = sscanf(buf, "thd=%u", &thd);
-
-		if (items == 1 && thd > 0)
+		mtk_kbase_spm_set_dvfs_en(1);
+	}
+	else if (strncmp(buf, "disable",  MIN(7, count)) == 0)
+	{
+		mtk_kbase_spm_set_dvfs_en(0);
+	}
+	else if (strncmp("ceiling_fv", buf, MIN(10, count)) == 0)
+	{
+		unsigned int v, f;
+		int items = sscanf(buf, "ceiling_fv %u %u", &f, &v);
+		if (items == 2 && v > 0 && f > 0)
 		{
+			mtk_kbase_spm_set_vol_freq_ceiling(v*1000, f/1000);
 		}
 	}
-#endif
+	else if (strncmp("floor_fv", buf, MIN(8, count)) == 0)
+	{
+		unsigned int v, f;
+		int items = sscanf(buf, "floor_fv %u %u", &f, &v);
+		if (items == 2 && v > 0 && f > 0)
+		{
+			mtk_kbase_spm_set_vol_freq_floor(v*1000, f/1000);
+		}
+	}
+	else if (strncmp("fix_fv", buf, MIN(6, count)) == 0)
+	{
+		unsigned int v, f;
+		int items = sscanf(buf, "fix_fv %u %u", &f, &v);
+		if (items == 2 && v > 0 && f > 0)
+		{
+			mtk_kbase_spm_fix_vol_freq(v*1000, f/1000);
+		}
+	}
+
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 
     return count;
 }
+
 static DEVICE_ATTR(dvfs_gpu_dump, S_IRUGO | S_IWUSR, mtk_kbase_dvfs_gpu_show, mtk_kbase_dvfs_gpu_set);
+
 #endif
 
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
@@ -345,6 +342,14 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	{
 		return -1;
 	}
+	memset(config, 0, sizeof(struct mtk_config));
+
+	/* MTK: TODO, using device_treee */
+	g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
+	g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
+	g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
+	g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
+	g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
 
 	config->clk_mfg_async = devm_clk_get(&pdev->dev, "mtcmos-mfg-async");
 	config->clk_mfg = devm_clk_get(&pdev->dev, "mtcmos-mfg");
@@ -376,6 +381,12 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	dev_err(kbdev->dev, "xxxx clk_ap_dmau:%p\n", config->clk_ap_dma);
 #endif
 
+	config->max_vol = 1125000;
+	config->max_freq = 700;
+	config->min_vol = 800000;
+	config->min_freq = 154;
+	config->slope = 595;
+
 	g_config = kbdev->mtk_config = config;
 
 #ifdef MTK_GPU_SPM
@@ -385,7 +396,24 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	}
 #endif
 
-        fan53555_config_interface(2, 5, 7, 4); 
+#ifdef MTK_GPU_SPM
+	MTKCLK_prepare_enable(clk_gpupm);
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
+
+	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
+
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+#endif
+
+	base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
+	base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
+	base_write32(g_ldo_base+0xfc8, 0x0f);
+
+	fan53555_config_interface(2, 5, 7, 4);
+
+#ifdef MTK_GPU_DPM
+	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
+#endif
 
 	return 0;
 }

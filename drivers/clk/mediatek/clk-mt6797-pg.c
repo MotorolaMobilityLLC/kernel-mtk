@@ -25,7 +25,7 @@
 
 #include <dt-bindings/clock/mt6797-clk.h>
 
-#define _SKIP_BUS_PROTECT_
+/* #define _SKIP_BUS_PROTECT_ */
 
 #define VLTE_SUPPORT
 #ifdef VLTE_SUPPORT
@@ -186,7 +186,7 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define MD1_PROT_MASK                    ((0x1 << 3)|(0x1 << 4)|(0x1 << 5)|(0x1 << 7)|(0x1 << 10)|(0x1 << 16))
 #define CONN_PROT_MASK                   ((0x1 << 17)|(0x1 << 18))
 #define DIS_PROT_MASK                    ((0x1 << 1)|(0x1 << 2))
-#define MFG_PROT_MASK                    ((0x1 << 21)|(0x1 << 22)|(0x1 << 23))
+#define MFG_PROT_MASK                    (0x1 << 21)
 /* Define MTCMOS Power Status Mask */
 #define MD1_PWR_STA_MASK                 (0x1 << 0)
 #define CONN_PWR_STA_MASK                (0x1 << 1)
