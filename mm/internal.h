@@ -416,4 +416,11 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
 #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
 #define ALLOC_FAIR		0x100 /* fair zone allocation */
 
+#ifdef CONFIG_MTK_ION
+extern void ion_mm_heap_memory_detail(void);
+#endif
+
+#ifdef CONFIG_MTK_GPU_SUPPORT
+extern bool mtk_dump_gpu_memory_usage(void);
+#endif
 #endif	/* __MM_INTERNAL_H */
