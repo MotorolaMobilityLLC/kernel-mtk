@@ -190,7 +190,7 @@ static u8 comfirm(void)
 			break;
 		}
 
-		msleep(cmd_head.circle);
+		mdelay(cmd_head.circle);
 	}
 
 	if (i >= cmd_head.times) {
@@ -274,7 +274,7 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 		}
 
 		if (cmd_head.delay)
-			msleep(cmd_head.delay);
+			mdelay(cmd_head.delay);
 
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (3 == cmd_head.wr) {	/*gt1x unused*/
@@ -387,7 +387,7 @@ static ssize_t gt1x_tool_read(struct file *filp, char __user *buffer, size_t cou
 		GTP_DEBUG("[READ] Length: %d", data_len);
 
 		if (cmd_head.delay)
-			msleep(cmd_head.delay);
+			mdelay(cmd_head.delay);
 
 		while (data_len > 0) {
 			len = data_len > DATA_LENGTH ? DATA_LENGTH : data_len;

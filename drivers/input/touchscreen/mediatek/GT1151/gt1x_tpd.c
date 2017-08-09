@@ -346,7 +346,7 @@ static int tpd_power_on(void)
 	gt1x_power_switch(SWITCH_ON);
 
 	gt1x_select_addr();
-	msleep(20);
+	mdelay(20);
 
 	if (gt1x_get_chip_type() != 0)
 		return -1;
@@ -388,7 +388,7 @@ void gt1x_power_switch(s32 state)
 
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
 	GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
-	msleep(20);
+	mdelay(20);
 
 	switch (state) {
 	case SWITCH_ON:
@@ -514,7 +514,7 @@ static int tpd_registration(void *client)
 
 	GTP_GPIO_AS_INT(GTP_INT_PORT);
 
-	msleep(50);
+	mdelay(50);
 	/* EINT device tree, default EINT enable */
 	tpd_irq_registration();
 
@@ -553,7 +553,9 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 
 	do {
-		msleep(20);
+		GTP_INFO("ZH tpd_i2c_probe A count = %d", count);
+		mdelay(20);
+		GTP_INFO("ZH tpd_i2c_probe B count = %d", count);
 		count++;
 		if (check_flag == true)
 			break;
@@ -691,7 +693,7 @@ static int tpd_event_handler(void *unused)
 			tpd_flag = 0;
 		} else {
 			GTP_DEBUG("Polling coordinate mode!");
-			msleep(tpd_polling_time);
+			mdelay(tpd_polling_time);
 		}
 
 		set_current_state(TASK_RUNNING);
@@ -968,7 +970,7 @@ static void tpd_suspend(struct device *h)
 	}
 
 	mutex_unlock(&i2c_access);
-	msleep(58);
+	mdelay(58);
 }
 
 /* Function to manage power-on resume */

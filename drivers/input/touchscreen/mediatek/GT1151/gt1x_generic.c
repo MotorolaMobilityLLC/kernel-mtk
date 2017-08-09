@@ -446,7 +446,7 @@ s32 gt1x_i2c_test(void)
 			return ret;
 		}
 
-		msleep(20);
+		mdelay(20);
 		GTP_ERROR("GTP_REG_HW_INFO : %08X", hw_info);
 		GTP_ERROR("GTP i2c test failed time %d.", retry);
 	}
@@ -467,7 +467,7 @@ s32 gt1x_i2c_read_dbl_check(u16 addr, u8 *buffer, s32 len)
 	memset(buf, 0xAA, 16);
 	gt1x_i2c_read(addr, buf, len);
 
-	msleep(20);
+	mdelay(20);
 
 	memset(confirm_buf, 0, 16);
 	gt1x_i2c_read(addr, confirm_buf, len);
@@ -537,7 +537,7 @@ s32 gt1x_send_cfg(u8 *config, int cfg_len)
 	while (retry++ < 5) {
 		ret = gt1x_i2c_write(GTP_REG_CONFIG_DATA, config, cfg_len);
 		if (!ret) {
-			msleep(200);	/* must 200ms, wait for storing config into flash. */
+			mdelay(200);	/* must 200ms, wait for storing config into flash. */
 			GTP_DEBUG("Send config successfully!");
 			return 0;
 		}
@@ -709,9 +709,9 @@ s32 gt1x_init_panel(void)
 void gt1x_select_addr(void)
 {
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
-	msleep(20);
+	mdelay(20);
 	GTP_GPIO_OUTPUT(GTP_INT_PORT, gt1x_i2c_client->addr == 0x14);
-	msleep(20);
+	mdelay(20);
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 1);
 }
 
@@ -723,14 +723,14 @@ s32 gt1x_reset_guitar(void)
 
 	/* select i2c address */
 	gt1x_select_addr();
-	msleep(20);		/*must >= 6ms*/
+	mdelay(20);		/*must >= 6ms*/
 
 	/* int synchronization */
 	if (CHIP_TYPE_GT2X == gt1x_chip_type) {
 		/* for GT2X */
 	} else {
 		GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
-		msleep(50);
+		mdelay(50);
 		GTP_GPIO_AS_INT(GTP_INT_PORT);
 	}
 
@@ -779,7 +779,7 @@ s32 gt1x_read_version(struct gt1x_version_info *ver_info)
 			GTP_ERROR("GTP read version failed!");
 		}
 		GTP_DEBUG("GTP reread version : %d", retry);
-		msleep(100);
+		mdelay(100);
 	}
 
 	if (retry <= 0)
@@ -867,14 +867,14 @@ s32 gt1x_enter_sleep(void)
 		if (gt1x_wakeup_level == 1) {	/* high level wakeup */
 			GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
 		}
-		msleep(20);
+		mdelay(20);
 
 		while (retry++ < 5) {
 			if (!gt1x_send_cmd(GTP_CMD_SLEEP, 0)) {
 				GTP_INFO("GTP enter sleep!");
 				return 0;
 			}
-			msleep(20);
+			mdelay(20);
 		}
 
 		GTP_ERROR("GTP send sleep cmd failed.");
@@ -917,14 +917,14 @@ s32 gt1x_wakeup_sleep(void)
 		{
 			/* wake up through int port */
 			GTP_GPIO_OUTPUT(GTP_INT_PORT, gt1x_wakeup_level);
-			msleep(20);
+			mdelay(20);
 
 			if (CHIP_TYPE_GT2X == gt1x_chip_type) {
 				/* for GT2X */
 			} else {
 				/* Synchronize int IO */
 				GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
-				msleep(50);
+				mdelay(50);
 				GTP_GPIO_AS_INT(GTP_INT_PORT);
 			}
 
@@ -980,7 +980,7 @@ s32 gt1x_send_cmd(u8 cmd, u8 data)
 	buffer[2] = (u8) ((0 - cmd - data) & 0xFF);
 	ret = gt1x_i2c_write(GTP_REG_CMD + 1, &buffer[1], 2);
 	ret |= gt1x_i2c_write(GTP_REG_CMD, &buffer[0], 1);
-	msleep(50);
+	mdelay(50);
 	mutex_unlock(&cmd_mutex);
 
 	return ret;
@@ -997,9 +997,9 @@ void gt1x_power_reset(void)
 	is_resetting = 1;
 	gt1x_irq_disable();
 	gt1x_power_switch(SWITCH_OFF);
-	msleep(30);
+	mdelay(30);
 	gt1x_power_switch(SWITCH_ON);
-	msleep(30);
+	mdelay(30);
 
 	for (i = 0; i < 5; i++) {
 		ret = gt1x_reset_guitar();
@@ -1007,7 +1007,7 @@ void gt1x_power_reset(void)
 			continue;
 		ret = gt1x_send_cfg(gt1x_config, gt1x_cfg_length);
 		if (ret < 0) {
-			msleep(500);
+			mdelay(500);
 			continue;
 		}
 		break;
@@ -1535,7 +1535,7 @@ static void gt1x_esd_check_func(struct work_struct *work)
 		GTP_DEBUG("[Esd]0x8040 = 0x%02X, 0x8043 = 0x%02X", esd_buf[0], esd_buf[3]);
 		if (!ret && esd_buf[0] != 0xAA && esd_buf[3] == 0xAA)
 			break;
-		msleep(50);
+		mdelay(50);
 	}
 
 	if (i < 3) {
@@ -1546,7 +1546,7 @@ static void gt1x_esd_check_func(struct work_struct *work)
 			GTP_INFO("IC works abnormally! Process reset guitar.");
 			memset(esd_buf, 0x01, sizeof(esd_buf));
 			gt1x_i2c_write(0x4226, esd_buf, sizeof(esd_buf));
-			msleep(50);
+			mdelay(50);
 
 			gt1x_power_reset();
 		} else {
@@ -1671,7 +1671,7 @@ s32 gt1x_init(void)
 
 	/* select i2c address */
 	gt1x_select_addr();
-	msleep(20);
+	mdelay(20);
 
 	while (retry++ < 5) {
 		gt1x_init_failed = 0;
