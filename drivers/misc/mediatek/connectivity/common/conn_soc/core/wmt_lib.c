@@ -986,13 +986,10 @@ P_OSAL_OP wmt_lib_get_free_op(VOID)
 
 	osal_assert(pDevWmt);
 
-	if (NULL != pDevWmt) {
-		pOp = wmt_lib_get_op(&pDevWmt->rFreeOpQ);
-		if (pOp)
-			osal_memset(&pOp->op, 0, osal_sizeof(pOp->op));
-		return pOp;
-	} else
-		return NULL;
+	pOp = wmt_lib_get_op(&pDevWmt->rFreeOpQ);
+	if (pOp)
+		osal_memset(&pOp->op, 0, osal_sizeof(pOp->op));
+	return pOp;
 }
 
 MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
