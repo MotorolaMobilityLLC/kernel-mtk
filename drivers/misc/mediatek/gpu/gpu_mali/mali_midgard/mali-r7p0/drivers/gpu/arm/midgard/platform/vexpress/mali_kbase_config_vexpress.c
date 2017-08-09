@@ -24,6 +24,8 @@
 #include "mali_kbase_cpu_vexpress.h"
 #include "mali_kbase_config_platform.h"
 
+#include "ged_dvfs.h"
+
 #define HARD_RESET_AT_POWER_OFF 0
 
 #ifndef CONFIG_OF
@@ -40,6 +42,9 @@ static struct kbase_io_resources io_resources = {
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
+#ifdef ENABLE_COMMON_DVFS
+    ged_dvfs_gpu_clock_switch_notify(1);
+#endif
 	/* Nothing is needed on VExpress, but we may have destroyed GPU state (if the below HARD_RESET code is active) */
 	return 1;
 }
@@ -56,6 +61,9 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	 */
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
+#endif
+#ifdef ENABLE_COMMON_DVFS
+    ged_dvfs_gpu_clock_switch_notify(0);
 #endif
 }
 

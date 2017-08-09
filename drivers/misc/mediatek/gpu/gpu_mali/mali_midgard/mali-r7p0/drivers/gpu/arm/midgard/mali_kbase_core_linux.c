@@ -98,6 +98,16 @@
 /* MTK */
 #include <platform/mtk_platform_common.h>
 
+/* MTK GPU DVFS */
+#include <mali_kbase_pm.h>
+#include "mt_gpufreq.h"
+#include <mali_kbase_pm_defs.h>
+#include <mali_kbase_pm_internal.h>
+#include "ged_dvfs.h"
+
+/* MTK chip version API */
+#include "mt_chip.h"
+
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
 #define MMU_IRQ_TAG	1
@@ -113,6 +123,12 @@ EXPORT_SYMBOL(shared_kernel_test_data);
 static const char kbase_drv_name[] = KBASE_DRV_NAME;
 
 static int kbase_dev_nr;
+
+/* MTK GPU DVFS freq */
+
+/// MTK_GED {
+static struct kbase_device *gpsMaliData = NULL;
+///}
 
 static DEFINE_MUTEX(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
@@ -349,6 +365,20 @@ out:
 }
 #endif /* CONFIG_KDS */
 
+/// MTK_GED {
+struct kbase_device *MaliGetMaliData(void)
+{
+	return gpsMaliData;
+}
+/// }
+
+/// MTK_GED {
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
+{
+        mt_gpufreq_target(ui32NewFreqID);
+        *pbCommited = true;
+}
+///
 #ifdef CONFIG_MALI_MIPE_ENABLED
 static void kbase_create_timeline_objects(struct kbase_context *kctx)
 {
@@ -3581,6 +3611,12 @@ static const struct attribute_group kbase_attr_group = {
 
 static int kbase_common_device_remove(struct kbase_device *kbdev);
 
+/// MTK{
+extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited);
+extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
+/// }
+
 static int kbase_platform_device_probe(struct platform_device *pdev)
 {
 	struct kbase_device *kbdev;
@@ -3724,6 +3760,15 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	bl_core_set_threshold(kbdev->buslogger, 1024*1024*1024);
 #endif
+
+    gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS      
+/// MTK_GED {	
+   ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+   ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+///}
+#endif  
+
 	return 0;
 
 #ifdef CONFIG_MALI_FPGA_BUS_LOGGER

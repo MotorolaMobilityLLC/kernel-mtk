@@ -512,5 +512,9 @@ void kbase_pm_power_changed(struct kbase_device *kbdev);
 void kbase_pm_metrics_update(struct kbase_device *kbdev,
 				ktime_t *now);
 
+struct kbase_device *MaliGetMaliData(void);
 
+void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+unsigned int MTKCalPowerIndex(void);
+int mtk_get_vgpu_power_on_flag(void);
 #endif /* _KBASE_BACKEND_PM_INTERNAL_H_ */
