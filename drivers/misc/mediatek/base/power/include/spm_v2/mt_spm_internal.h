@@ -179,6 +179,7 @@ struct pwr_ctrl {
 	u8 r7_ctrl_en;
 	u8 infra_dcm_lock;
 	u8 wdt_disable;
+	u8 dvfs_halt_src_chk;
 
 	/* SPM_AP_STANDBY_CON */
 	u8 wfi_op;

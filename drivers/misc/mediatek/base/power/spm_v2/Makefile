@@ -65,6 +65,7 @@ ifeq ($(CONFIG_ARCH_MT6757), y)
 obj-y += mt_sleep.o
 obj-y += mt_spm.o
 obj-y += mt_spm_internal.o
+obj-y += mt_spm_pmic_wrap.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_spm_fs.o
 obj-y += mt_idle.o
@@ -74,6 +75,7 @@ obj-y += mt_spm_dpidle_mt6757.o
 obj-y += mt_spm_sodi.o
 obj-y += mt_spm_sodi3p0.o
 obj-y += mt_spm_sodi_cmdq.o
+obj-y += mt_spm_vcorefs_mt6757.o
 endif
 
 ifeq ($(CONFIG_ARCH_MT6797), y)

@@ -43,12 +43,12 @@ struct kicker_config {
 	int dvfs_opp;
 };
 
-#define VCORE_1_P_00_UV		1000000
-#define VCORE_0_P_90_UV		900000
+#define VCORE_0_P_80_UV		800000
+#define VCORE_0_P_70_UV		700000
 
-#define FDDR_S0_KHZ		1600000
-#define FDDR_S1_KHZ		1270000
-#define FDDR_S2_KHZ		800000
+#define FDDR_S0_KHZ		3200000
+#define FDDR_S1_KHZ		2667000
+#define FDDR_S2_KHZ		1600000
 
 #define FAXI_S0_KHZ		156000
 #define FAXI_S1_KHZ		136500
@@ -66,10 +66,8 @@ enum vcore_trans {
 
 enum dvfs_kicker {
 	KIR_MM = 0,
+	KIR_AUDIO,
 	KIR_PERF,
-	KIR_REESPI,	/* From KERNEL */
-	KIR_TEESPI,	/* From SPI1 */
-	KIR_SCP,	/* For debug */
 	KIR_SYSFS,
 	NUM_KICKER,
 
@@ -82,13 +80,11 @@ enum dvfs_kicker {
 	LAST_KICKER,
 };
 
-#define KIR_AUTOK KIR_AUTOK_SDIO
-
 enum dvfs_opp {
 	OPP_OFF = -1,
-	OPP_0 = 0,	/* 1.0/1600/1700 or 1.05/1866 */
-	OPP_1,		/* 0.9/1270 */
-	OPP_2,		/* 0.9/800 */
+	OPP_0 = 0,	/* HPM */
+	OPP_1,		/* LPM */
+	OPP_2,		/* ULPM */
 	NUM_OPP,
 };
 
@@ -118,7 +114,6 @@ extern int kicker_table[LAST_KICKER];
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
-extern bool is_vcorefs_dvfs_enable(void);
 extern bool vcorefs_get_screen_on_state(void);
 extern int vcorefs_get_num_opp(void);
 extern int vcorefs_get_curr_opp(void);

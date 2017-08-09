@@ -32,7 +32,7 @@
 #include "mt_vcorefs_manager.h"
 #include "mt_spm_vcore_dvfs.h"
 #include "mt_dramc.h"
-#include "mt_ptp.h"
+#include "mt_eem.h"
 
 /*
  * AutoK options
@@ -146,7 +146,7 @@ static struct governor_profile governor_ctrl = {
 	.md_dvfs_req = 0x1,
 	.dvfs_timer = 0,
 
-	.curr_vcore_uv = VCORE_1_P_00_UV,
+	.curr_vcore_uv = VCORE_0_P_80_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
 	.curr_axi_khz = FAXI_S0_KHZ,
 
@@ -156,26 +156,22 @@ static struct governor_profile governor_ctrl = {
 };
 
 int kicker_table[LAST_KICKER] __nosavedata;
-static unsigned int trans[NUM_TRANS] __nosavedata;
 
 static struct opp_profile opp_table[] __nosavedata = {
 	/* performance mode */
 	[OPP_0] = {
-		.vcore_uv	= VCORE_1_P_00_UV,
+		.vcore_uv	= VCORE_0_P_80_UV,
 		.ddr_khz	= FDDR_S0_KHZ,
-		.axi_khz	= FAXI_S0_KHZ,
 	},
 	/* low power mode */
 	[OPP_1] = {
-		.vcore_uv	= VCORE_0_P_90_UV,
+		.vcore_uv	= VCORE_0_P_70_UV,
 		.ddr_khz	= FDDR_S1_KHZ,
-		.axi_khz	= FAXI_S1_KHZ,
 	},
 	/* ultra low power mode */
 	[OPP_2] = {
-		.vcore_uv	= VCORE_0_P_90_UV,
+		.vcore_uv	= VCORE_0_P_70_UV,
 		.ddr_khz	= FDDR_S2_KHZ,
-		.axi_khz	= FAXI_S1_KHZ,
 	}
 };
 
@@ -201,71 +197,29 @@ static char *kicker_name[] = {
  */
 static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 {
-	u32 diff;
 	u32 hpm, lpm, ulpm;
-	u32 trans1, trans2, trans3, trans4, trans5, trans6, trans7;
-
-	diff = opp_ctrl_table[OPP_0].vcore_uv - opp_ctrl_table[OPP_1].vcore_uv;
-	trans[TRANS1] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 5;
-	trans[TRANS2] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 4;
-	trans[TRANS3] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 3;
-	trans[TRANS4] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 2;
-	trans[TRANS5] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 1;
-
-	diff = opp_ctrl_table[OPP_1].vcore_uv - opp_ctrl_table[OPP_2].vcore_uv;
-	trans[TRANS6] = opp_ctrl_table[OPP_2].vcore_uv + (diff / 3) * 2;
-	trans[TRANS7] = opp_ctrl_table[OPP_2].vcore_uv + (diff / 3) * 1;
 
 	hpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_0].vcore_uv);
-	trans1		= vcore_uv_to_pmic(trans[TRANS1]);
-	trans2		= vcore_uv_to_pmic(trans[TRANS2]);
-	trans3		= vcore_uv_to_pmic(trans[TRANS3]);
-	trans4		= vcore_uv_to_pmic(trans[TRANS4]);
-	trans5		= vcore_uv_to_pmic(trans[TRANS5]);
 	lpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_1].vcore_uv);
-	trans6		= vcore_uv_to_pmic(trans[TRANS6]);
-	trans7		= vcore_uv_to_pmic(trans[TRANS7]);
 	ulpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_2].vcore_uv);
 
 	/* PMIC_WRAP_PHASE_NORMAL */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS2, trans2);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS5, trans5);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_LPM, lpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS6, trans6);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS7, trans7);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_ULPM, ulpm);
 
 	/* PMIC_WRAP_PHASE_SUSPEND */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS2, trans2);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS5, trans5);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_LPM, lpm);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_ULPM, ulpm);
 
 	/* PMIC_WRAP_PHASE_DEEPIDLE */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS2, trans2);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS5, trans5);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_LPM, lpm);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_ULPM, ulpm);
 
 	vcorefs_crit("HPM   : %u (0x%x)\n", opp_ctrl_table[OPP_0].vcore_uv, hpm);
-	vcorefs_crit("TRANS1: %u (0x%x)\n", trans[TRANS1], trans1);
-	vcorefs_crit("TRANS2: %u (0x%x)\n", trans[TRANS2], trans2);
-	vcorefs_crit("TRANS3: %u (0x%x)\n", trans[TRANS3], trans3);
-	vcorefs_crit("TRANS4: %u (0x%x)\n", trans[TRANS4], trans4);
-	vcorefs_crit("TRANS5: %u (0x%x)\n", trans[TRANS5], trans5);
 	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPP_1].vcore_uv, lpm);
-	vcorefs_crit("TRANS6: %u (0x%x)\n", trans[TRANS6], trans6);
-	vcorefs_crit("TRANS7: %u (0x%x)\n", trans[TRANS7], trans7);
 	vcorefs_crit("ULPM  : %u (0x%x)\n", opp_ctrl_table[OPP_2].vcore_uv, ulpm);
 }
 
@@ -305,13 +259,6 @@ bool is_vcorefs_feature_enable(void)
 	}
 
 	return gvrctrl->plat_feature_en;
-}
-
-bool is_vcorefs_dvfs_enable(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	return gvrctrl->vcore_dvs && gvrctrl->ddr_dfs;
 }
 
 bool vcorefs_get_screen_on_state(void)
@@ -410,14 +357,7 @@ char *vcorefs_get_opp_table_info(char *p)
 	}
 
 	p += sprintf(p, "HPM   : %u\n", opp_ctrl_table[OPP_0].vcore_uv);
-	p += sprintf(p, "TRANS1: %u\n", trans[TRANS1]);
-	p += sprintf(p, "TRANS2: %u\n", trans[TRANS2]);
-	p += sprintf(p, "TRANS3: %u\n", trans[TRANS3]);
-	p += sprintf(p, "TRANS4: %u\n", trans[TRANS4]);
-	p += sprintf(p, "TRANS5: %u\n", trans[TRANS5]);
 	p += sprintf(p, "LPM   : %u\n", opp_ctrl_table[OPP_1].vcore_uv);
-	p += sprintf(p, "TRANS6: %u\n", trans[TRANS6]);
-	p += sprintf(p, "TRANS7: %u\n", trans[TRANS7]);
 	p += sprintf(p, "ULPM  : %u\n", opp_ctrl_table[OPP_2].vcore_uv);
 
 	return p;
@@ -718,7 +658,9 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req);
+#endif
 
 	if (timer < 0) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");
@@ -1182,7 +1124,6 @@ static int init_vcorefs_cmd_table(void)
 							gvrctrl->curr_axi_khz);
 
 	update_vcore_pwrap_cmd(opp_ctrl_table);
-	spm_vcorefs_init_dvfs_con();
 	mutex_unlock(&governor_mutex);
 
 	return 0;

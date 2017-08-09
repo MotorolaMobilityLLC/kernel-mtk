@@ -22,6 +22,10 @@
 
 #include "mt_spm_pmic_wrap_mt6755.h"
 
+#elif defined(CONFIG_ARCH_MT6757)
+
+#include "mt_spm_pmic_wrap_mt6757.h"
+
 #elif defined(CONFIG_ARCH_MT6797)
 
 #include "mt_spm_pmic_wrap_mt6797.h"

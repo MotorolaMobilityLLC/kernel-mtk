@@ -18,6 +18,10 @@
 
 #include "spm_v2/mt_spm_vcore_dvfs_mt6755.h"
 
+#elif defined(CONFIG_ARCH_MT6757)
+
+#include "spm_v2/mt_spm_vcore_dvfs_mt6757.h"
+
 #elif defined(CONFIG_ARCH_MT6797)
 
 #include "spm_v2/mt_spm_vcore_dvfs_mt6797.h"
