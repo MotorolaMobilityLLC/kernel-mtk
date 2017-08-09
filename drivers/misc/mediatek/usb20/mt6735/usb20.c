@@ -62,7 +62,6 @@ kal_bool is_usb_rdy(void)
 		return KAL_FALSE;
 }
 
-static DEFINE_SEMAPHORE(power_clock_lock);
 /* static bool platform_init_first = true; */
 static u32 cable_mode = CABLE_MODE_NORMAL;
 #ifndef CONFIG_MTK_LEGACY
@@ -307,8 +306,6 @@ static void mt_usb_enable(struct musb *musb)
 	   } */
 
 	if (!mtk_usb_power) {
-		if (down_interruptible(&power_clock_lock))
-			DBG(0, "USB20: %s: busy, Couldn't get power_clock_lock\n", __func__);
 
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_ARCH_MT6735
@@ -330,7 +327,6 @@ static void mt_usb_enable(struct musb *musb)
 		}
 		DBG(0, "<%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
 
-		up(&power_clock_lock);
 	}
 	musb->power = true;
 
@@ -354,8 +350,6 @@ static void mt_usb_disable(struct musb *musb)
 	   } */
 
 	if (mtk_usb_power) {
-		if (down_interruptible(&power_clock_lock))
-			DBG(0, "USB20: %s: busy, Couldn't get power_clock_lock\n", __func__);
 
 		usb_phy_savecurrent();
 
@@ -374,7 +368,6 @@ static void mt_usb_disable(struct musb *musb)
 #endif
 #endif
 
-		up(&power_clock_lock);
 	}
 
 	musb->power = false;
