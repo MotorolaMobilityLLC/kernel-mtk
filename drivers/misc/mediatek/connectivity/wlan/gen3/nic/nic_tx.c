@@ -2710,6 +2710,9 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ICMP) && prAdapter->rWifiVar.ucIcmpTxDone) {
 			prMsduInfo->pfTxDoneHandler = wlanIcmpTxDone;
 			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
+		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_TDLS)) {
+			prMsduInfo->pfTxDoneHandler = wlanTdlsTxDone;
+			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 		}
 
 		if (fgIsUseFixRate == TRUE) {

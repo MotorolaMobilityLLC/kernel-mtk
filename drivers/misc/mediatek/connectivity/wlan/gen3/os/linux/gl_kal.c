@@ -2448,6 +2448,25 @@ kalArpFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 	return TRUE;
 }
 
+BOOLEAN
+kalTdlsFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
+		       IN P_NATIVE_PACKET prPacket, IN PUINT_8 pucIpHdr, OUT P_TX_PACKET_INFO prTxPktInfo)
+{
+	UINT_8 ucSeqNo;
+	UINT_8 ucActionCode;
+
+	ucActionCode = pucIpHdr[TDLS_ACTION_CODE_OFFSET];
+
+	DBGLOG(TX, INFO, "TDLS action code: %d\n", ucActionCode);
+
+	ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
+
+	GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
+
+	prTxPktInfo->u2Flag |= BIT(ENUM_PKT_TDLS);
+
+	return TRUE;
+}
 
 BOOLEAN
 kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
@@ -2586,6 +2605,9 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			u2EtherType, prTxPktInfo);
 		break;
 
+	case ETH_PRO_TDLS:
+		kalTdlsFrameClassifier(prGlueInfo, prPacket, pucNextProtocol, prTxPktInfo);
+		break;
 	default:
 		/* 4 <4> Handle 802.3 format if LEN <= 1500 */
 		if (u2EtherType <= ETH_802_3_MAX_LEN)

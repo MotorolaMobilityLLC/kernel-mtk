@@ -1373,3 +1373,6 @@ WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter,
 
 WLAN_STATUS wlanIcmpTxDone(IN P_ADAPTER_T prAdapter,
 			  IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
+
+WLAN_STATUS wlanTdlsTxDone(IN P_ADAPTER_T prAdapter,
+			  IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
