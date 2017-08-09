@@ -1754,6 +1754,9 @@ u32 slp_spm_deepidle_flags = {
 	#endif
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
+	#if defined(CONFIG_ARCH_MT6797)
+	SPM_FLAG_DIS_SYSRAM_SLEEP |
+	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN
 	#else
