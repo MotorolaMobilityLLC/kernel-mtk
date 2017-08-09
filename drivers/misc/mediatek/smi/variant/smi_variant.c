@@ -874,64 +874,15 @@ static int smi_dev_register(void)
 	return 0;
 }
 
-static int mtk_smi_disp_clk_prepare(struct mtk_smi_data *smi_data)
-{
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	int ret;
-
-	ret = clk_prepare(larbpriv->clk_apb);
-	if (ret)
-		return ret;
-	ret = clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		clk_unprepare(larbpriv->clk_apb);
-		return ret;
-	}
-
-	larbpriv = dev_get_drvdata(smi_data->larb[4]);
-	ret = clk_prepare(larbpriv->clk_apb);
-	if (ret)
-		goto err_larb0_unparepare;
-	ret = clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		clk_unprepare(larbpriv->clk_apb);
-		goto err_larb0_unparepare;
-	}
-
-	return 0;
-
-err_larb0_unparepare:
-	larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-	return ret;
-}
-
-static void mtk_smi_disp_clk_unprepare(struct mtk_smi_data *smi_data)
-{
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[4]);
-
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-
-	larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-}
-
 static int mtk_smi_common_get(struct device *smidev, bool pm)
 {
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 	int ret;
 
-	ret = mtk_smi_disp_clk_prepare(smi_data);
-	if (ret)
-		return ret;
-
 	if (pm) {
 		ret = pm_runtime_get_sync(smidev);
 		if (ret < 0)
-			goto err_unprepare_disp;
+			return ret;
 	}
 
 	ret = clk_prepare_enable(smipriv->clk_apb);
@@ -950,9 +901,7 @@ err_disable_apb:
 	clk_disable_unprepare(smipriv->clk_apb);
 err_put_pm:
 	if (pm)
-		pm_runtime_put(smidev);
-err_unprepare_disp:
-	mtk_smi_disp_clk_unprepare(smi_data);
+		pm_runtime_put_sync(smidev);
 	return ret;
 }
 
@@ -961,10 +910,9 @@ static void mtk_smi_common_put(struct device *smidev, bool pm)
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 
 	if (pm)
-		pm_runtime_put(smidev);
+		pm_runtime_put_sync(smidev);
 	clk_disable_unprepare(smipriv->clk_smi);
 	clk_disable_unprepare(smipriv->clk_apb);
-	mtk_smi_disp_clk_unprepare(smi_data);
 }
 
 static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
@@ -976,26 +924,19 @@ static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
 	if (ret)
 		return ret;
 
-	ret = clk_prepare(larbpriv->clk_apb);
-	ret |= clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		dev_err(larbdev, "Failed to prepare the apb clock\n");
-		goto err_put_smicommon;
-	}
-
 	if (pm) {
 		ret = pm_runtime_get_sync(larbdev);
 		if (ret < 0)
 			goto err_put_smicommon;
 	}
 
-	ret = clk_enable(larbpriv->clk_apb);
+	ret = clk_prepare_enable(larbpriv->clk_apb);
 	if (ret) {
 		dev_err(larbdev, "Failed to enable the apb clock\n");
 		goto err_put_pm;
 	}
 
-	ret = clk_enable(larbpriv->clk_smi);
+	ret = clk_prepare_enable(larbpriv->clk_smi);
 	if (ret) {
 		dev_err(larbdev, "Failed to enable the smi clock\n");
 		goto err_disable_apb;
@@ -1007,7 +948,7 @@ err_disable_apb:
 	clk_disable_unprepare(larbpriv->clk_apb);
 err_put_pm:
 	if (pm)
-		pm_runtime_put(larbdev);
+		pm_runtime_put_sync(larbdev);
 err_put_smicommon:
 	mtk_smi_common_put(larbpriv->smi, pm);
 	return ret;
@@ -1017,23 +958,17 @@ static void _mtk_smi_larb_put(struct device *larbdev, bool pm)
 {
 	struct mtk_smi_larb *larbpriv = dev_get_drvdata(larbdev);
 
-	clk_disable(larbpriv->clk_smi);
-	clk_disable(larbpriv->clk_apb);
+	clk_disable_unprepare(larbpriv->clk_smi);
+	clk_disable_unprepare(larbpriv->clk_apb);
 	if (pm)
-		pm_runtime_put(larbdev);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
+		pm_runtime_put_sync(larbdev);
 	mtk_smi_common_put(larbpriv->smi, pm);
 }
 
-/* The power is alway on during power-domain callback.
- * This callback is run in atmoic context.
- * So clk_prepare is before pm_runtime_get.
- */
+/* The power is alway on during power-domain callback.*/
 static int mtk_smi_larb_runtime_suspend(struct device *dev)
 {
 	unsigned int idx = smi_get_larb_index(dev);
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(dev);
 	int ret;
 
 	if (!fglarbcallback)
@@ -1041,15 +976,15 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 	if (idx >= SMI_LARB_NR)
 		return 0;
 
-	ret = clk_enable(larbpriv->clk_apb);
-	ret |= clk_enable(larbpriv->clk_smi);
-	if (ret)
+	ret = _mtk_smi_larb_get(dev, false);
+	if (ret) {
+		dev_warn(dev, "runtime suspend clk-warn larb%d\n", idx);
 		return 0;
+	}
+
 	larb_reg_backup(idx);
 
-	clk_disable(larbpriv->clk_apb);
-	clk_disable(larbpriv->clk_smi);
-
+	_mtk_smi_larb_put(dev, false);
 	dev_warn(dev, "runtime suspend larb%d\n", idx);
 	return 0;
 }
@@ -1057,7 +992,6 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 static int mtk_smi_larb_runtime_resume(struct device *dev)
 {
 	unsigned int idx = smi_get_larb_index(dev);
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(dev);
 	int ret;
 
 	if (!fglarbcallback)
@@ -1065,18 +999,16 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 	if (idx >= SMI_LARB_NR)
 		return 0;
 
-	ret = clk_enable(larbpriv->clk_apb);
-	ret |= clk_enable(larbpriv->clk_smi);
-	if (ret)
+	ret = _mtk_smi_larb_get(dev, false);
+	if (ret) {
+		dev_warn(dev, "runtime resume clk-warn larb%d\n", idx);
 		return 0;
+	}
 
 	larb_reg_restore(idx);
 
-	clk_disable(larbpriv->clk_apb);
-	clk_disable(larbpriv->clk_smi);
-
+	_mtk_smi_larb_put(dev, false);
 	dev_warn(dev, "runtime resume larb%d\n", idx);
-
 	return 0;
 }
 
