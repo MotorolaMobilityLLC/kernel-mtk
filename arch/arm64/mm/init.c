@@ -33,6 +33,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/dma-contiguous.h>
 #include <linux/efi.h>
+#include <mt-plat/mtk_meminfo.h>
 
 #include <asm/fixmap.h>
 #include <asm/sections.h>
@@ -80,15 +81,25 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 	struct memblock_region *reg;
 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
 	unsigned long max_dma = min;
-
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	unsigned long cma_base_pfn = get_zone_movable_cma_base() >> PAGE_SHIFT;
+#endif
 	memset(zone_size, 0, sizeof(zone_size));
 
 	/* 4GB maximum for 32-bit only capable devices */
 	if (IS_ENABLED(CONFIG_ZONE_DMA)) {
 		max_dma = PFN_DOWN(max_zone_dma_phys());
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+		max_dma = min(max_dma, cma_base_pfn);
+#endif
 		zone_size[ZONE_DMA] = max_dma - min;
 	}
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	zone_size[ZONE_NORMAL] = cma_base_pfn - max_dma;
+	zone_size[ZONE_MOVABLE] = max - cma_base_pfn;
+#else
 	zone_size[ZONE_NORMAL] = max - max_dma;
+#endif
 
 	memcpy(zhole_size, zone_size, sizeof(zhole_size));
 
@@ -104,11 +115,27 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 			zhole_size[ZONE_DMA] -= dma_end - start;
 		}
 
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+		if (end > max_dma && end < cma_base_pfn) {
+			unsigned long normal_end = min(end, cma_base_pfn);
+			unsigned long normal_start = max(start, max_dma);
+
+			zhole_size[ZONE_NORMAL] -= normal_end - normal_start;
+		}
+
+		if (end > cma_base_pfn) {
+			unsigned long movable_end = min(end, max);
+			unsigned long movable_start = max(start, cma_base_pfn);
+
+			zhole_size[ZONE_MOVABLE] -= movable_end - movable_start;
+		}
+#else
 		if (end > max_dma) {
 			unsigned long normal_end = min(end, max);
 			unsigned long normal_start = max(start, max_dma);
 			zhole_size[ZONE_NORMAL] -= normal_end - normal_start;
 		}
+#endif
 	}
 
 	free_area_init_node(0, zone_size, min, zhole_size);

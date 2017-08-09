@@ -110,3 +110,19 @@ phys_addr_t get_phys_offset(void)
 	return PHYS_OFFSET;
 }
 EXPORT_SYMBOL(get_phys_offset);
+
+phys_addr_t get_zone_movable_cma_base(void)
+{
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER
+	return memory_lowpower_cma_base();
+#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+	return 0;
+}
+
+phys_addr_t get_zone_movable_cma_size(void)
+{
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER
+	return (phys_addr_t)memory_lowpower_cma_size();
+#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+	return 0;
+}
