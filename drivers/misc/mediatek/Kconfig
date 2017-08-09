@@ -11,6 +11,12 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
+config MTK_LEGACY
+	bool "MTK LEGACY driver API support"
+	help
+	  This is an option for MTK legacy driver that using old API
+	  It will be deprecated after all drivers changed to new structure
+
 endif
 
 source "drivers/misc/mediatek/uart/Kconfig"
