@@ -310,11 +310,13 @@ static int spm_irq_register(void)
 	irqdesc[7].irq = SPM_IRQ7_ID;
 #endif
 	for (i = 0; i < ARRAY_SIZE(irqdesc); i++) {
-		err = request_irq(irqdesc[i].irq, irqdesc[i].handler,
-				  IRQF_TRIGGER_LOW | IRQF_NO_SUSPEND | IRQF_PERCPU, "SPM", NULL);
-		if (err) {
-			spm_err("FAILED TO REQUEST IRQ%d (%d)\n", i, err);
-			r = -EPERM;
+		if (cpu_present(i)) {
+			err = request_irq(irqdesc[i].irq, irqdesc[i].handler,
+					IRQF_TRIGGER_LOW | IRQF_NO_SUSPEND | IRQF_PERCPU, "SPM", NULL);
+			if (err) {
+				spm_err("FAILED TO REQUEST IRQ%d (%d)\n", i, err);
+				r = -EPERM;
+			}
 		}
 	}
 	return r;
