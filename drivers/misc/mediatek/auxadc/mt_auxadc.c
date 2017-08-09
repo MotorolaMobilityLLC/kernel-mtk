@@ -157,7 +157,9 @@ static int auxadc_out_data[2] = { 1, 1 };
 static DEFINE_MUTEX(auxadc_mutex);
 static DEFINE_MUTEX(mutex_get_cali_value);
 static int adc_auto_set;
+#if !defined(CONFIG_AUXADC_NOT_CONTROL_APMIXED_BASE)
 static int adc_rtp_set = 1;
+#endif
 
 static dev_t auxadc_cali_devno;
 static int auxadc_cali_major;
@@ -229,6 +231,11 @@ static void mt_auxadc_get_cali_data(unsigned int rawdata, int data[4], bool enab
 }
 
 
+#if defined(CONFIG_AUXADC_NOT_CONTROL_APMIXED_BASE)
+static void mt_auxadc_disable_penirq(void)
+{
+}
+#else
 static u16 mt_tpd_read_adc(u16 pos)
 {
 	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_TP_ADDR, pos);
@@ -249,6 +256,7 @@ static void mt_auxadc_disable_penirq(void)
 		mt_tpd_read_adc(TP_CMD_ADDR_X);
 	}
 }
+#endif
 
 /* HAL API */
 static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
