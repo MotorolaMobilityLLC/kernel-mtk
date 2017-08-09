@@ -93,6 +93,7 @@ struct governor_profile {
 	bool screen_on;
 	int init_opp_perf;
 	int late_init_opp;
+	bool plat_init_done;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
@@ -118,6 +119,7 @@ static struct governor_profile governor_ctrl = {
 	.screen_on = 1,
 	.init_opp_perf = 0,
 	.late_init_opp = OPPI_LOW_PWR,
+	.plat_init_done = 0,
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
@@ -170,6 +172,9 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct fb_event *evdata = data;
 	int blank;
+
+	if (!is_vcorefs_feature_enable()  || !gvrctrl->plat_init_done)
+		return 0;
 
 	if (event != FB_EVENT_BLANK)
 		return 0;
@@ -957,7 +962,6 @@ int vcorefs_late_init_dvfs(void)
 {
 	struct kicker_config krconf;
 	struct governor_profile *gvrctrl = &governor_ctrl;
-	bool plat_init_done = true;
 
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
@@ -979,13 +983,14 @@ int vcorefs_late_init_dvfs(void)
 
 	vcorefs_curr_opp = gvrctrl->late_init_opp;
 	vcorefs_prev_opp = gvrctrl->late_init_opp;
+	gvrctrl->plat_init_done = 1;
 	mutex_unlock(&governor_mutex);
 
 	vcorefs_crit("[%s] plat_init_done: %d, plat_feature_en: %d, late_init_opp: %d(%d)(%d)\n", __func__,
-				plat_init_done, is_vcorefs_feature_enable(),
+				gvrctrl->plat_init_done, is_vcorefs_feature_enable(),
 				gvrctrl->late_init_opp, vcorefs_curr_opp, vcorefs_prev_opp);
 
-	vcorefs_drv_init(plat_init_done, is_vcorefs_feature_enable(), gvrctrl->late_init_opp);
+	vcorefs_drv_init(gvrctrl->plat_init_done, is_vcorefs_feature_enable(), gvrctrl->late_init_opp);
 
 	return 0;
 }
