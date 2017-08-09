@@ -72,7 +72,11 @@ bool fbconfig_start_LCM_config;
 #define LCM_TEST_DSI_CLK    FBCONFIG_IOR(78, unsigned int)
 #define FB_GET_MISC FBCONFIG_IOR(80, unsigned int)
 
+#ifdef UFMT_GET_bpp
+#define DP_COLOR_BITS_PER_PIXEL(color)    UFMT_GET_bpp(color)
+#else
 #define DP_COLOR_BITS_PER_PIXEL(color)    ((0x0003FF00 & color) >>  8)
+#endif
 static int global_layer_id = -1;
 
 struct dentry *ConfigPara_dbgfs = NULL;
