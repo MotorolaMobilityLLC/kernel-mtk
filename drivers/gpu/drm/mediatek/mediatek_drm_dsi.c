@@ -780,8 +780,6 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 	mtk_dsi_start(dsi);
 
 	dsi->enabled = true;
-	DRM_INFO("dsi_reg_base = 0x%x, dsi_tx_reg_base = 0x%x\n",
-		(unsigned int *)dsi->dsi_reg_base, (unsigned int *)dsi->dsi_tx_reg_base);
 }
 
 static void mtk_output_dsi_disable(struct mtk_dsi *dsi)
