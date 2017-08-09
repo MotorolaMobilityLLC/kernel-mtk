@@ -2067,8 +2067,10 @@ static int search_table_idx_by_freq(struct mt_cpu_dvfs *p, unsigned int freq)
 static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
 {
 	int idx;
+	unsigned int dds = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
+
 	cpufreq_ver("%s: cur_khz = %d, target_khz = %d\n",
 		__func__, cur_khz, target_khz);
 
@@ -2107,7 +2109,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	if (opp_tbl_m[CUR_OPP_IDX].slot->clk_div < opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
 		adjust_clkdiv(p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
-#if 1
+#if 0
 	adjust_armpll_dds(p, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #else
 	if (p->hopping_id != -1) {
@@ -2117,7 +2119,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 		dds &= ~(_BITMASK_(26:24));
 #endif
 		dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds));
-		fhdrv_dvt_dvfs_enable(p->hopping_id, dds);
+		mt_dfs_armpll(p->hopping_id, dds);
 	} else /* No hopping for B */
 		adjust_armpll_dds(p, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #endif
