@@ -27,6 +27,24 @@
 #define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
 #endif
+#ifdef CONFIG_ARM64
+#define IOMEM(a)	((void __force __iomem *)((a)))
+#endif
+#define mt_reg_sync_writel(v, a) \
+	do {	\
+		__raw_writel((v), IOMEM((a)));   \
+		mb();  /* for mt_reg_sync_writel() */ \
+	} while (0)
+#define clk_readl(addr)			__raw_readl(IOMEM(addr))
+
+#define clk_writel(addr, val)   \
+	mt_reg_sync_writel(val, addr)
+
+#define clk_setl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) | (val), addr)
+
+#define clk_clrl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
 
 /*
  * platform clocks
@@ -418,6 +436,53 @@
 #define audio_tml		"audio_tml"
 #define	audio_apll1div0	"audio_apll1div0"
 #define	audio_apll2div0	"audio_apll2div0"
+
+
+#ifdef CONFIG_OF
+void __iomem  *apmixed_base;
+void __iomem  *cksys_base;
+void __iomem  *infracfg_base;
+void __iomem  *audio_base;
+void __iomem  *mfgcfg_base;
+void __iomem  *mmsys_config_base;
+void __iomem  *img_base;
+void __iomem  *vdec_gcon_base;
+void __iomem  *venc_gcon_base;
+/*PLL INIT*/
+#define MSDCPLL_CON0            (apmixed_base + 0x250)
+#define MSDCPLL_PWR_CON0        (apmixed_base + 0x25C)
+#define TVDPLL_CON0             (apmixed_base + 0x270)
+#define TVDPLL_PWR_CON0         (apmixed_base + 0x27C)
+#define APLL1_CON0              (apmixed_base + 0x2A0)
+#define APLL1_PWR_CON0          (apmixed_base + 0x2B0)
+#define APLL2_CON0              (apmixed_base + 0x2B4)
+#define APLL2_PWR_CON0          (apmixed_base + 0x2C4)
+#define INFRA_PDN_SET0          (infracfg_base + 0x0080)
+#define INFRA_PDN_SET1          (infracfg_base + 0x0088)
+#define INFRA_PDN_SET2          (infracfg_base + 0x00A4)
+#define MFG_CG_SET              (mfgcfg_base + 4)
+#define IMG_CG_SET              (img_base + 0x0004)
+#define DISP_CG_SET0            (mmsys_config_base + 0x104)
+#define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
+#define LARB_CKEN_CLR           (vdec_gcon_base + 0x000C)
+#define VENC_CG_CON             (venc_gcon_base + 0x0)
+#define AUDIO_TOP_CON0          (audio_base + 0x0000)
+#endif
+
+#define INFRA0_CG  0x832ff910/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define INFRA1_CG  0x6f0802/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define INFRA2_CG  0xc1/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define AUD_CG    0x0F0C0344/*same as denali*/
+#define MFG_CG    0x00000001/*set*/
+#define DISP0_CG  0xfffffffc
+#define DISP1_CG  0x0000003F
+#define IMG_CG    0x00000FE1/*no bit10	SUFOD_CKPDN*/
+#define VDEC_CG   0x00000001/*set*/
+#define LARB_CG   0x00000001
+#define VENC_CG   0x00001111/*set*/
+
+#define CG_BOOTUP_PDN			1
+
 
 struct mtk_fixed_factor {
 	int id;
@@ -1482,6 +1547,8 @@ static void __init mt_topckgen_init(struct device_node *node)
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt6755-topckgen", mt_topckgen_init);
 
+#define PLL_PWR_ON  (0x1 << 0)
+#define PLL_ISO_EN  (0x1 << 1)
 static void __init mt_apmixedsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1503,6 +1570,27 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	apmixed_base = base;
+	/*msdcpll*/
+		clk_clrl(MSDCPLL_CON0, 0x1);
+		clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+		clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+
+/*tvdpll*/
+		clk_clrl(TVDPLL_CON0, 0x1);
+		clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
+		clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
+
+/*apll1*/
+		clk_clrl(APLL1_CON0, 0x1);
+		clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
+		clk_clrl(APLL1_PWR_CON0, PLL_PWR_ON);
+/*apll2*/
+		clk_clrl(APLL2_CON0, 0x1);
+		clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
+		clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
+#endif
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6755-apmixedsys",
 		mt_apmixedsys_init);
@@ -1528,6 +1616,13 @@ static void __init mt_infrasys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*INFRA CG*/
+	infracfg_base = base;
+	clk_writel(INFRA_PDN_SET0, INFRA0_CG);
+	clk_writel(INFRA_PDN_SET1, INFRA1_CG);
+	clk_writel(INFRA_PDN_SET2, INFRA2_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt6755-infrasys", mt_infrasys_init);
 #if 0
@@ -1576,6 +1671,11 @@ static void __init mt_mfgsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if 0/*CG_BOOTUP_PDN*/
+	/*MFG*/
+	mfgcfg_base = base;
+	clk_writel(MFG_CG_SET, MFG_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_mfgsys, "mediatek,mt6755-mfgsys", mt_mfgsys_init);
 
@@ -1600,6 +1700,11 @@ static void __init mt_imgsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*ISP*/
+	img_base = base;
+	clk_writel(IMG_CG_SET, IMG_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_imgsys, "mediatek,mt6755-imgsys", mt_imgsys_init);
 
@@ -1624,6 +1729,11 @@ static void __init mt_mmsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*DISP*/
+	mmsys_config_base = base;
+	clk_writel(DISP_CG_SET0, DISP0_CG); /*DCM enable*/
+#endif
 }
 CLK_OF_DECLARE(mtk_mmsys, "mediatek,mt6755-mmsys", mt_mmsys_init);
 
@@ -1648,6 +1758,12 @@ static void __init mt_vdecsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*VDE*/
+	vdec_gcon_base = base;
+	clk_writel(VDEC_CKEN_CLR, VDEC_CG);
+	clk_writel(LARB_CKEN_CLR, LARB_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_vdecsys, "mediatek,mt6755-vdecsys", mt_vdecsys_init);
 
@@ -1672,6 +1788,11 @@ static void __init mt_vencsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*VENC*/
+	venc_gcon_base = base;
+	clk_clrl(VENC_CG_CON, VENC_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_vencsys, "mediatek,mt6755-vencsys", mt_vencsys_init);
 
@@ -1696,5 +1817,10 @@ static void __init mt_audiosys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+#if CG_BOOTUP_PDN
+	/*AUDIO*/
+	audio_base = base;
+	clk_writel(AUDIO_TOP_CON0, AUD_CG);
+#endif
 }
 CLK_OF_DECLARE(mtk_audiosys, "mediatek,mt6755-audiosys", mt_audiosys_init);

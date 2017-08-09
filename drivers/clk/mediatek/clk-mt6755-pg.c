@@ -1476,14 +1476,14 @@ static int CONN_sys_disable_op(struct subsys *sys)
 }
 static int MFG_sys_disable_op(struct subsys *sys)
 {
-	/*spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
-	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);*/
-	return 0;
+	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
+	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	/*return 0;*/
 }
 static int DIS_sys_disable_op(struct subsys *sys)
 {
-	/*return spm_mtcmos_ctrl_dis(STA_POWER_DOWN);*/
-	return 0;
+	return spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
+	/*return 0;*/
 }
 static int ISP_sys_disable_op(struct subsys *sys)
 {

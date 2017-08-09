@@ -26,7 +26,7 @@
 #define MT_CCF_BRINGUP	0
 #endif*/
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	1
+#define MT_CCF_BRINGUP	0
 #ifndef GENMASK
 #define GENMASK(h, l)	(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
 #endif
