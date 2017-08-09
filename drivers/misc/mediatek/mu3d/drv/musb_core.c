@@ -119,7 +119,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#define AP_UART0_COMPATIBLE_NAME "mediatek,AP_UART0"
+#define AP_UART0_COMPATIBLE_NAME "mediatek,gpio"
 #endif
 
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)

@@ -67,31 +67,31 @@ static bool usb_enable_clock(bool enable)
 	if (enable && count == 0) {
 
 		if (clk_enable(ssusb_ref_clk) == 0)
-			os_printk(K_DEBUG, "ssusb_ref_clk enable done\n");
+			pr_debug("ssusb_ref_clk enable done\n");
 		else
-			os_printk(K_ERR, "ssusb_ref_clk enable fail\n");
+			pr_err("ssusb_ref_clk enable fail\n");
 
 		if (clk_enable(ssusb_bus_clk) == 0)
-			os_printk(K_DEBUG, "ssusb_bus_clk enable done\n");
+			pr_debug("ssusb_bus_clk enable done\n");
 		else
-			os_printk(K_ERR, "ssusb_bus_clk enable fail\n");
+			pr_err("ssusb_bus_clk enable fail\n");
 
 
 		if (clk_enable(ssusb_sys_clk) == 0)
-			os_printk(K_DEBUG, "ssusb_sys_clk enable done\n");
+			pr_debug("ssusb_sys_clk enable done\n");
 		else
-			os_printk(K_ERR, "ssusb_sys_clk enable fail\n");
+			pr_err("ssusb_sys_clk enable fail\n");
 
 	} else if (!enable && count == 1) {
 
 		clk_disable(ssusb_sys_clk);
-		os_printk(K_DEBUG, "ssusb_sys_clk disable done\n");
+		pr_debug("ssusb_sys_clk disable done\n");
 
 		clk_disable(ssusb_bus_clk);
-		os_printk(K_DEBUG, "ssusb_bus_clk disable done\n");
+		pr_debug("ssusb_bus_clk disable done\n");
 
 		clk_disable(ssusb_ref_clk);
-		os_printk(K_DEBUG, "ssusb_ref_clk disable done\n");
+		pr_debug("ssusb_ref_clk disable done\n");
 	}
 
 	if (enable)
@@ -199,25 +199,25 @@ void uart_usb_switch_dump_register(void)
 	pr_debug("[MUSB]addr: 0x1A, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYACR6 + 0x2));
 #else
 #if 0
-	os_printk(K_INFO, "[MUSB]addr: 0x6B, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x3));
-	os_printk(K_INFO, "[MUSB]addr: 0x6E, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM1 + 0x2));
-	os_printk(K_INFO, "[MUSB]addr: 0x22, value: %x\n", U3PhyReadReg8(U3D_U2PHYACR4 + 0x2));
-	os_printk(K_INFO, "[MUSB]addr: 0x68, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0));
-	os_printk(K_INFO, "[MUSB]addr: 0x6A, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x2));
-	os_printk(K_INFO, "[MUSB]addr: 0x1A, value: %x\n", U3PhyReadReg8(U3D_USBPHYACR6 + 0x2));
+	pr_debug("[MUSB]addr: 0x6B, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x3));
+	pr_debug("[MUSB]addr: 0x6E, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM1 + 0x2));
+	pr_debug("[MUSB]addr: 0x22, value: %x\n", U3PhyReadReg8(U3D_U2PHYACR4 + 0x2));
+	pr_debug("[MUSB]addr: 0x68, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0));
+	pr_debug("[MUSB]addr: 0x6A, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x2));
+	pr_debug("[MUSB]addr: 0x1A, value: %x\n", U3PhyReadReg8(U3D_USBPHYACR6 + 0x2));
 #else
-	os_printk(K_INFO, "[MUSB]addr: 0x18, value: 0x%x\n", U3PhyReadReg32(U3D_USBPHYACR6));
-	os_printk(K_INFO, "[MUSB]addr: 0x20, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYACR4));
-	os_printk(K_INFO, "[MUSB]addr: 0x68, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYDTM0));
-	os_printk(K_INFO, "[MUSB]addr: 0x6C, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYDTM1));
+	pr_debug("[MUSB]addr: 0x18, value: 0x%x\n", U3PhyReadReg32((phys_addr_t) U3D_USBPHYACR6));
+	pr_debug("[MUSB]addr: 0x20, value: 0x%x\n", U3PhyReadReg32((phys_addr_t) U3D_U2PHYACR4));
+	pr_debug("[MUSB]addr: 0x68, value: 0x%x\n", U3PhyReadReg32((phys_addr_t) U3D_U2PHYDTM0));
+	pr_debug("[MUSB]addr: 0x6C, value: 0x%x\n", U3PhyReadReg32((phys_addr_t) U3D_U2PHYDTM1));
 #endif
 #endif
 
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
-	os_printk(K_INFO, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n",
-		  DRV_Reg8(ap_uart0_base + 0xB0));
+	pr_debug("[MUSB]addr: 0x10005600 (GPIO MISC), value: %x\n\n",
+		  DRV_Reg32(ap_uart0_base + 0x600));
 }
 
 bool usb_phy_check_in_uart_mode(void)
@@ -233,7 +233,7 @@ bool usb_phy_check_in_uart_mode(void)
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
-	os_printk(K_INFO, "%s+ usb_port_mode = %d\n", __func__, usb_port_mode);
+	pr_debug("%s+ usb_port_mode = %d\n", __func__, usb_port_mode);
 
 	if (usb_port_mode == 0x1)
 		return true;
@@ -246,11 +246,11 @@ void usb_phy_switch_to_uart(void)
 	PHY_INT32 ret;
 
 	if (usb_phy_check_in_uart_mode()) {
-		os_printk(K_INFO, "%s+ UART_MODE\n", __func__);
+		pr_debug("%s+ UART_MODE\n", __func__);
 		return;
 	}
 
-	os_printk(K_INFO, "%s+ USB_MODE\n", __func__);
+	pr_debug("%s+ USB_MODE\n", __func__);
 
 	/*---POWER-----*/
 	/*AVDD18_USB_P0 is always turned on. The driver does _NOT_ need to control it. */
@@ -310,7 +310,7 @@ void usb_phy_switch_to_uart(void)
 	usb_enable_clock(false);
 
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
+	DRV_WriteReg32(ap_uart0_base + 0x600, 0x80);
 
 	in_uart_mode = true;
 }
@@ -320,7 +320,8 @@ void usb_phy_switch_to_usb(void)
 {
 	in_uart_mode = false;
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x0);	/* set */
+	DRV_WriteReg32(ap_uart0_base + 0x600, 0x00);
+
 
 	/* clear force_uart_en */
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
@@ -508,7 +509,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 {
 	PHY_INT32 ret;
 
-	os_printk(K_INFO, "%s+\n", __func__);
+	pr_debug("%s+\n", __func__);
 
 	/*This power on sequence refers to Sheet .1 of "6593_USB_PORT0_PWR Sequence 20130729.xls" */
 
@@ -578,7 +579,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 			  RG_USB20_DP_100K_MODE, 1);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYACR4, USB20_DP_100K_EN_OFST, USB20_DP_100K_EN, 0);
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(MTK_USB_MODE1)
-	os_printk(K_INFO, "%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
+	pr_debug("%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
 			  RG_USB20_HS_100U_U3_EN, 0);
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
@@ -637,7 +638,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, FORCE_AVALID_OFST, FORCE_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, FORCE_SESSEND_OFST, FORCE_SESSEND, 1);
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 
 	return PHY_TRUE;
 }
@@ -649,7 +650,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	PHY_INT32 u4FmOut = 0;
 	PHY_INT32 u4Tmp = 0;
 
-	os_printk(K_INFO, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	/* => RG_USB20_HSTX_SRCAL_EN = 1 */
 	/* enable USB ring oscillator */
@@ -674,7 +675,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0x1);
 
-	os_printk(K_INFO, "Freq_Valid=(0x%08X)\n",
+	pr_debug("Freq_Valid=(0x%08X)\n",
 		  U3PhyReadReg32((phys_addr_t) (u3_sif_base + 0x110)));
 
 	mdelay(1);
@@ -684,12 +685,12 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
 		u4FmOut = U3PhyReadReg32((phys_addr_t) (u3_sif_base + 0x10C));
-		os_printk(K_INFO, "FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
+		pr_debug("FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
 
 		/* check if FM detection done */
 		if (u4FmOut != 0) {
 			fgRet = 0;
-			os_printk(K_INFO, "FM detection done! loop = %d\n", i);
+			pr_debug("FM detection done! loop = %d\n", i);
 			break;
 		}
 		fgRet = 1;
@@ -714,7 +715,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 		/* set reg = (1024/FM_OUT) * REF_CK * U2_SR_COEF_E60802 / 1000 (round to the nearest digits) */
 		/* u4Tmp = (((1024 * REF_CK * U2_SR_COEF_E60802) / u4FmOut) + 500) / 1000; */
 		u4Tmp = (1024 * REF_CK * U2_SR_COEF_E60802) / (u4FmOut * 1000);
-		os_printk(K_INFO, "SR calibration value u1SrCalVal = %d\n", (PHY_UINT8) u4Tmp);
+		pr_debug("SR calibration value u1SrCalVal = %d\n", (PHY_UINT8) u4Tmp);
 		U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HSTX_SRCTRL_OFST,
 				  RG_USB20_HSTX_SRCTRL, u4Tmp);
 	}
@@ -732,7 +733,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 {
 	PHY_INT32 ret;
 
-	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
+	pr_debug("%s clk_on=%d+\n", __func__, clk_on);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -894,7 +895,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x00);
 	}
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 }
 
 /*This "recovery" sequence refers to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
@@ -903,7 +904,7 @@ void usb_phy_recover(unsigned int clk_on)
 	PHY_INT32 ret;
 	PHY_INT32 evalue;
 
-	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
+	pr_debug("%s clk_on=%d+\n", __func__, clk_on);
 
 	if (!clk_on) {
 		/*---POWER-----*/
@@ -957,7 +958,7 @@ void usb_phy_recover(unsigned int clk_on)
 				  0);
 		/* RG_UART_EN         1'b0 */
 		/* U3D_U2PHYDTM1 RG_UART_EN */
-		U3PhyWriteField32(U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
+		U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
 
 		/*Release force suspendm. (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 		/*force_suspendm        1'b0 */
@@ -1050,7 +1051,7 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(MTK_USB_MODE1)
-	os_printk(K_INFO, "%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
+	pr_debug("%s- USB PHY Driving Tuning Mode 1 Settings.\n", __func__);
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
 			  RG_USB20_HS_100U_U3_EN, 0);
 #else
@@ -1147,14 +1148,13 @@ void usb_phy_recover(unsigned int clk_on)
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
-		os_printk(K_INFO,
-			  "%s- Switch to UART mode when UART cable in inserted before boot.\n",
+		pr_debug("%s- Switch to UART mode when UART cable in inserted before boot.\n",
 			  __func__);
 		usb_phy_switch_to_uart();
 	}
 #endif
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 }
 
 /*
@@ -1174,7 +1174,7 @@ void usb_fake_powerdown(unsigned int clk_on)
 {
 	PHY_INT32 ret;
 
-	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
+	pr_debug("%s clk_on=%d+\n", __func__, clk_on);
 
 	if (clk_on) {
 		/*---CLOCK-----*/
@@ -1187,7 +1187,7 @@ void usb_fake_powerdown(unsigned int clk_on)
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x00);
 	}
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 }
 
 #ifdef CONFIG_USBIF_COMPLIANCE
@@ -1203,7 +1203,7 @@ void Charger_Detect_En(bool enable)
 /* BC1.2 */
 void Charger_Detect_Init(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
+	pr_debug("%s+\n", __func__);
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
@@ -1225,17 +1225,17 @@ void Charger_Detect_Init(void)
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	} else {
-		os_printk(K_INFO, "%s do not init detection as charger_det_en is false\n",
+		pr_debug("%s do not init detection as charger_det_en is false\n",
 			  __func__);
 	}
 #endif
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 }
 
 void Charger_Detect_Release(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
+	pr_debug("%s+\n", __func__);
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	if (charger_det_en == true) {
@@ -1257,12 +1257,12 @@ void Charger_Detect_Release(void)
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 	} else {
-		os_printk(K_INFO, "%s do not release detection as charger_det_en is false\n",
+		pr_debug("%s do not release detection as charger_det_en is false\n",
 			  __func__);
 	}
 #endif
 
-	os_printk(K_INFO, "%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 }
 
 
@@ -1273,7 +1273,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 	ssusb_bus_clk = devm_clk_get(&pdev->dev, "ssusb_bus_clk");
 	if (IS_ERR(ssusb_bus_clk)) {
-		os_printk(K_ERR, "SSUSB cannot get ssusb_bus_clk clock\n");
+		pr_err("SSUSB cannot get ssusb_bus_clk clock\n");
 		return PTR_ERR(ssusb_bus_clk);
 	}
 
@@ -1291,41 +1291,41 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 	ssusb_top_sys_sel_clk = devm_clk_get(&pdev->dev, "ssusb_top_sys_sel_clk");
 	if (IS_ERR(ssusb_top_sys_sel_clk)) {
-		os_printk(K_ERR, "SSUSB cannot get ssusb_top_sys_sel_clk clock\n");
+		pr_err("SSUSB cannot get ssusb_top_sys_sel_clk clock\n");
 		return PTR_ERR(ssusb_top_sys_sel_clk);
 	}
 
 	ssusb_univpll3_d2_clk =
 		devm_clk_get(&pdev->dev, "ssusb_univpll3_d2_clk");
 	if (IS_ERR(ssusb_univpll3_d2_clk)) {
-		os_printk(K_ERR,
+		pr_err(
 				  "SSUSB cannot get ssusb_univpll3_d2_clk clock\n");
 		return PTR_ERR(ssusb_univpll3_d2_clk);
 	}
 
 	retval = clk_prepare(ssusb_bus_clk);
 	if (retval == 0)
-		os_printk(K_DEBUG, "ssusb_bus_clk prepare done\n");
+		pr_debug("ssusb_bus_clk prepare done\n");
 	else
-		os_printk(K_ERR, "ssusb_bus_clk prepare fail\n");
+		pr_err("ssusb_bus_clk prepare fail\n");
 
 	retval = clk_prepare(ssusb_sys_clk);
 	if (retval == 0)
-		os_printk(K_DEBUG, "ssusb_sys_clk prepare done\n");
+		pr_debug("ssusb_sys_clk prepare done\n");
 	else
-		os_printk(K_ERR, "ssusb_sys_clk prepare fail\n");
+		pr_err("ssusb_sys_clk prepare fail\n");
 
 	retval = clk_prepare(ssusb_ref_clk);
 	if (retval == 0)
-		os_printk(K_DEBUG, "ssusb_ref_clk prepare done\n");
+		pr_debug("ssusb_ref_clk prepare done\n");
 	else
-		os_printk(K_ERR, "ssusb_ref_clk prepare fail\n");
+		pr_err("ssusb_ref_clk prepare fail\n");
 
 	retval = clk_prepare(ssusb_top_sys_sel_clk);
 	if (retval == 0)
-		os_printk(K_DEBUG, "ssusb_top_sys_sel_clk prepare done\n");
+		pr_debug("ssusb_top_sys_sel_clk prepare done\n");
 	else
-		os_printk(K_ERR, "ssusb_top_sys_sel_clk prepare fail\n");
+		pr_err("ssusb_top_sys_sel_clk prepare fail\n");
 
 	return retval;
 }

@@ -602,7 +602,6 @@ ssize_t musb_rx_show(struct device *dev, struct device_attribute *attr, char *bu
 
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var2);
 }
-
 ssize_t musb_uart_path_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	u8 var = 0;
@@ -612,8 +611,8 @@ ssize_t musb_uart_path_show(struct device *dev, struct device_attribute *attr, c
 		return 0;
 	}
 
-	var = DRV_Reg8(ap_uart0_base + 0xB0);
-	pr_debug("[MUSB]addr: (UART0) 0xB0, value: %x\n\n", DRV_Reg8(ap_uart0_base + 0xB0));
+	var = DRV_Reg32(ap_uart0_base + 0x600);
+	pr_debug("[MUSB]addr: (GPIO Misc) 0x600, value: %x\n\n", DRV_Reg32(ap_uart0_base + 0x600));
 	sw_uart_path = var;
 
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var);
