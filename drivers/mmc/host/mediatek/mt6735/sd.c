@@ -734,34 +734,7 @@ static void dump_axi_bus_info(void)
 
 static void dump_emi_info(void)
 {
-	unsigned int i = 0;
-	unsigned int addr = 0;
 
-#if 0
-	if (emi_reg_base) {
-		pr_err("=============== EMI INFO =============");
-		pr_err("before, reg[0x102034e8]=0x%x",
-			sdr_read32(emi_reg_base + 0x4e8));
-		pr_err("before, reg[0x10203400]=0x%x",
-			sdr_read32(emi_reg_base + 0x400));
-		sdr_write32(emi_reg_base + 0x4e8, 0x2000000);
-		sdr_write32(emi_reg_base + 0x400, 0xff0001);
-		pr_err("after, reg[0x102034e8]=0x%x", sdr_read32(emi_reg_base + 0x4e8));
-		pr_err("after, reg[0x10203400]=0x%x", sdr_read32(emi_reg_base + 0x400));
-
-		for (i = 0; i < 5; i++) {
-			for (addr = 0; addr < 0x78; addr += 4) {
-				pr_err("reg[0x%x]=0x%x", (0x10203500 + addr),
-				       sdr_read32((emi_reg_base + 0x500 + addr)));
-				if (addr % 0x10 == 0)
-					mdelay(1);
-			}
-		}
-	} else
-		pr_err("emi_reg_base = %p\n", emi_reg_base);
-#endif
-
-	return;
 }
 
 void msdc_dump_info(u32 id)
@@ -1170,8 +1143,9 @@ enum MSDC_LDO_POWER {
 	POWER_LDO_VMC,
 	POWER_LDO_VEMC_3V3,
 };
-bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
+int msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
+	int ret = -1;
 	struct regulator *reg = NULL;
 
 	if (powerId == POWER_LDO_VMCH)
@@ -1180,14 +1154,20 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 		reg = reg_vmc;
 	else if (powerId == POWER_LDO_VEMC_3V3)
 		reg = reg_vemc_3v3;
-	if (reg == NULL)
-		return false;
+	if (reg == NULL) {
+		pr_err("power on failed, regulator is NULL\n");
+		goto out;
+	}
 	powerVolt = powerVolt * 1000;
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
-	regulator_enable(reg);
-	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
-	return true;
+	ret = regulator_enable(reg);
+	if (!ret)
+		pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
+	else
+		pr_err("power on failed, %s: %d\n", __func__, __LINE__);
+out:
+	return ret;
 }
 EXPORT_SYMBOL(msdc_hwPowerOn);
 
@@ -2934,6 +2914,7 @@ static void msdc_pin_reset(struct msdc_host *host, int mode)
 	}
 }
 
+#if 0 /* need fix */
 static void msdc_pin_reset_force(struct msdc_host *host, int mode)
 {
 	struct msdc_hw *hw = (struct msdc_hw *)host->hw;
@@ -2949,7 +2930,7 @@ static void msdc_pin_reset_force(struct msdc_host *host, int mode)
 	else
 		sdr_set_bits(EMMC_IOCON, EMMC_IOCON_BOOTRST);
 }
-
+#endif
 static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 {
 	N_MSG(CFG, "Set power mode(%d)", mode);
@@ -3450,14 +3431,13 @@ int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	return err;
 }
 
-int get_emmc_cache_info(struct delayed_work *work)
+void get_emmc_cache_info(struct work_struct *work)
 {
 #ifdef MTK_MSDC_USE_CACHE
 	struct msdc_host *host;
+	struct hd_struct *lp_hd_struct;
 
 	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
-
-	struct hd_struct *lp_hd_struct;
 
 	lp_hd_struct = get_part("cache");
 	if (likely(lp_hd_struct)) {
@@ -3486,7 +3466,6 @@ int get_emmc_cache_info(struct delayed_work *work)
 		g_cache_part_start, g_cache_part_end,
 		g_usrdata_part_start, g_usrdata_part_end);
 #endif
-		return 0;
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
 #endif
@@ -4369,7 +4348,8 @@ static void msdc_dma_start(struct msdc_host *host)
 	N_MSG(DMA, "DMA start");
 
 	if (host->data && host->data->flags & MMC_DATA_WRITE) {
-		host->write_timeout_ms = min(max(host->data->blocks * 500,
+		host->write_timeout_ms = min_t(u32, max_t(u32,
+			host->data->blocks * 500,
 			host->data->timeout_ns / 1000000), 270 * 1000);
 		schedule_delayed_work(&host->write_timeout, msecs_to_jiffies(host->write_timeout_ms));
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work", host->write_timeout_ms);
@@ -4696,13 +4676,14 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	/* u32 intsts = 0; */
 	int dma = 0, read = 1, dir = DMA_FROM_DEVICE, send_type = 0;
 	u32 map_sg = 0;
+
+	unsigned long pio_tmo;
+	unsigned int left = 0;
 #ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
 
 	g_bypass_flush = 0;
 #endif
-	unsigned long pio_tmo;
-	unsigned int left = 0;
 
 #define SND_DAT 0
 #define SND_CMD 1
@@ -7612,7 +7593,6 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base;
-	unsigned long flags;
 	int level = 0;
 	/* int present = 1; */
 
@@ -8606,11 +8586,11 @@ static void msdc_get_rigister_settings(struct msdc_host *host)
 
 	if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-customer",
-		host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
+		(u32 *)host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
 		pr_err("[MSDC%d] hs200 ett setting for customer is found in DT.\n", host->id);
 	} else if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-default",
-		host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
+		(u32 *)host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
 		pr_err("[MSDC%d] hs200 ett setting for default is found in DT.\n", host->id);
 	} else if (MSDC_EMMC == host->hw->host_function) {
 		pr_err("[MSDC%d]error: hs200 ett setting is not found in DT.\n", host->id);
@@ -8623,11 +8603,11 @@ static void msdc_get_rigister_settings(struct msdc_host *host)
 
 	if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-customer",
-		host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
+		(u32 *)host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
 		pr_err("[MSDC%d] hs400 ett setting for customer is found in DT.\n", host->id);
 	} else if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-default",
-		host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
+		(u32 *)host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
 		pr_err("[MSDC%d] hs400 ett setting for default is found in DT.\n", host->id);
 	} else if (MSDC_EMMC == host->hw->host_function) {
 		pr_err("[MSDC%d]error: hs400 ett setting is not found in DT.\n", host->id);
@@ -8643,7 +8623,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 {
 	struct device_node *np;
 	struct msdc_host *host = mmc_priv(mmc);
-	int ret, len, debug = 0;
+	int len;
 
 	if (!mmc->parent || !mmc->parent->of_node)
 		return 1;
@@ -8699,7 +8679,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->hw->boot = 1;
 
 	/*get cd_level*/
-	of_property_read_u8(np, "cd_level", &host->hw->cd_level);
+	of_property_read_u8(np, "cd_level", (u8 *)&host->hw->cd_level);
 
 	/*get cd_gpio*/
 	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
@@ -8708,9 +8688,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 	msdc_get_pinctl_settings(host);
 
 	return 0;
-
-out:
-	return ret;
 }
 
 static int msdc_drv_probe(struct platform_device *pdev)
@@ -8723,9 +8700,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	void __iomem *base;
 	int ret;
 	struct irq_data l_irq_data;
-	unsigned int msdc_hw_parameter[sizeof(struct tag_msdc_hw_para) / 4];
-	unsigned int msdc_custom[1];
-	struct device_node *msdc_cust_node = NULL;
 
 #ifdef FPGA_PLATFORM
 	u16 l_val;
@@ -9231,8 +9205,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	tasklet_kill(&host->card_tasklet);
 
 	mmc_free_host(mmc);
-
-out:
 	return ret;
 }
 

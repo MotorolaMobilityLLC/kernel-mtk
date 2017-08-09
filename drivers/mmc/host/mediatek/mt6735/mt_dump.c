@@ -2593,7 +2593,7 @@ int get_emmc_dump_status(void)
 }
 
 
-static void get_emmc_dump_info(struct delayed_work *work)
+void get_emmc_dump_info(struct work_struct *work)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 

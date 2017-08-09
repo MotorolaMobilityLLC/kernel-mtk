@@ -858,7 +858,6 @@ struct __mmc_blk_data {
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 static int simple_mmc_get_disk_info(struct mbr_part_info *mpi, unsigned char *name)
 {
-	char *no_partition_name = "n/a";
 	struct disk_part_iter piter;
 	struct hd_struct *part;
 	struct msdc_host *host;
