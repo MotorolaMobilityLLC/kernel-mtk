@@ -96,6 +96,11 @@ static int hps_algo_heavytsk_det(void)
 	int i, j, ret, sys_cores, hvy_cores, target_cores_limit;
 
 	i = j = ret = sys_cores = hvy_cores = target_cores_limit = 0;
+	for (i = 0; i < hps_sys.cluster_num; i++)
+		if (hps_sys.cluster_info[i].hvyTsk_value)
+			ret = 1;
+	if (!ret)
+		return 0;
 	/*Calculate system cores */
 	mutex_lock(&hps_ctxt.para_lock);
 	target_cores_limit = hps_current_core();
@@ -293,7 +298,7 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 			if (core_val <= 0)
 				goto out;
 			else {
-				hps_sys->cluster_info[root_cluster].target_core_num++;
+				hps_sys->cluster_info[i].target_core_num++;
 				core_val--;
 			}
 		}
@@ -407,7 +412,7 @@ void hps_algo_main(void)
 			}
 		}
 	}
-	if ((get_efuse_status() != 0) || (hps_ctxt.heavy_task_enabled)) {
+	if ((get_efuse_status() != 0) && (hps_ctxt.heavy_task_enabled)) {
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
 	}
