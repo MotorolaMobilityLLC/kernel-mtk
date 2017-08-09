@@ -72,7 +72,7 @@ void tpd_get_dts_info(void)
 	if (node1) {
 		of_property_read_u32(node1, "tpd-key-dim-local", &tpd_dts_data.touch_max_num);
 		of_property_read_u32(node1, "use-tpd-button", &tpd_dts_data.use_tpd_button);
-		pr_info("[tpd]use-tpd-button = %d\n", tpd_dts_data.use_tpd_button);
+		pr_debug("[tpd]use-tpd-button = %d\n", tpd_dts_data.use_tpd_button);
 		of_property_read_u32_array(node1, "tpd-resolution",
 			tpd_dts_data.tpd_resolution, ARRAY_SIZE(tpd_dts_data.tpd_resolution));
 		if (tpd_dts_data.use_tpd_button) {
@@ -83,10 +83,10 @@ void tpd_get_dts_info(void)
 				key_dim_local, ARRAY_SIZE(key_dim_local));
 			memcpy(tpd_dts_data.tpd_key_dim_local, key_dim_local, sizeof(key_dim_local));
 			for (i = 0; i < 4; i++) {
-				pr_info("[tpd]key[%d].key_x = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_x);
-				pr_info("[tpd]key[%d].key_y = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_y);
-				pr_info("[tpd]key[%d].key_W = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_width);
-				pr_info("[tpd]key[%d].key_H = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_height);
+				pr_debug("[tpd]key[%d].key_x = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_x);
+				pr_debug("[tpd]key[%d].key_y = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_y);
+				pr_debug("[tpd]key[%d].key_W = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_width);
+				pr_debug("[tpd]key[%d].key_H = %d\n", i, tpd_dts_data.tpd_key_dim_local[i].key_height);
 			}
 		}
 		of_property_read_u32(node1, "tpd-filter-enable", &tpd_dts_data.touch_filter.enable);
@@ -100,7 +100,7 @@ void tpd_get_dts_info(void)
 				ARRAY_SIZE(tpd_dts_data.touch_filter.VECLOCITY_THRESHOLD));
 		}
 		memcpy(&tpd_filter, &tpd_dts_data.touch_filter, sizeof(tpd_filter));
-		pr_info("[tpd]tpd-filter-enable = %d, pixel_density = %d\n",
+		pr_debug("[tpd]tpd-filter-enable = %d, pixel_density = %d\n",
 					tpd_filter.enable, tpd_filter.pixel_density);
 	} else {
 		pr_err("[tpd]%s can't find touch compatible custom node\n", __func__);
@@ -539,7 +539,7 @@ static int tpd_probe(struct platform_device *pdev)
 		TPD_RES_X = 2048;
 	if (1600 == TPD_RES_Y)
 		TPD_RES_Y = 1536;
-	pr_info("mtk_tpd: TPD_RES_X = %lu, TPD_RES_Y = %lu\n", TPD_RES_X, TPD_RES_Y);
+	pr_debug("mtk_tpd: TPD_RES_X = %lu, TPD_RES_Y = %lu\n", TPD_RES_X, TPD_RES_Y);
 
 	tpd_mode = TPD_MODE_NORMAL;
 	tpd_mode_axis = 0;
