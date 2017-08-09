@@ -1174,10 +1174,6 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 
 	}
 	AUTOK_RAWPRINT("[AUTOK]Analysis Result: 1T = %d\r\n ", cycle_cnt);
-	AUTOK_RAWPRINT("[AUTOK]Analysis Result: Rising Dly Sel: %d, MgLost: %d\r\n", uDlySel_R,
-		       uMgLost_R);
-	AUTOK_RAWPRINT("[AUTOK]Analysis Result: Falling Dly Sel: %d, MgLost: %d\r\n", uDlySel_F,
-		       uMgLost_F);
 	return ret;
 }
 
@@ -1280,7 +1276,6 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 		uMgLost = 0xFF;
 	}
 	*pDlySel = uDlySel;
-	AUTOK_RAWPRINT("[AUTOK]Result: Dly Sel:%d, MgLost:%d\r\n", uDlySel, uMgLost);
 	if (uDlySel > 31) {
 		AUTOK_RAWPRINT
 		    ("[AUTOK]Warning Dly Sel %d > 31 easily effected by Voltage Swing\r\n",
@@ -1722,12 +1717,14 @@ static int autok_param_apply(struct msdc_host *host, u8 *autok_tune_res)
 
 static int autok_result_dump(struct msdc_host *host, u8 *autok_tune_res)
 {
-	unsigned int i = 0;
-
-	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
-		AUTOK_RAWPRINT("[AUTOK]param %s:%d\r\n", autok_param_info[i].param_name,
-			       autok_tune_res[i]);
-	}
+	AUTOK_RAWPRINT("[AUTOK]CMD [EDGE:%d DLY1:%d DLY2:%d ]\r\n",
+		autok_tune_res[0], autok_tune_res[4], autok_tune_res[6]);
+	AUTOK_RAWPRINT("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+		autok_tune_res[1], autok_tune_res[2], autok_tune_res[3]);
+	AUTOK_RAWPRINT("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d ]\r\n",
+		autok_tune_res[12], autok_tune_res[8], autok_tune_res[10]);
+	AUTOK_RAWPRINT("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+		autok_tune_res[13], autok_tune_res[15], autok_tune_res[17]);
 
 	return 0;
 }
@@ -1970,8 +1967,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step1.Optimised CMD Pad Data Delay Sel\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD_EDGE \t CMD_RD_R_DLY1~2 \r\n");
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 
 	uCmdEdge = 0;
@@ -1990,11 +1985,12 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uCmdEdge, score,
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0)
 			return -1;
 
+		#if 0
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n",
 			       uCmdEdge, pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2005,6 +2001,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 				       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 				       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 		}
+		#endif
 
 		uCmdEdge ^= 0x1;
 	} while (uCmdEdge);
@@ -2012,10 +2009,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
 		autok_param_update(CMD_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
 		autok_paddly_update(CMD_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[HS400]================\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Edge Sel: %d, Delay Cnt Sel:%d\r\n",
-			       uCmdDatInfo.opt_edge_sel, uCmdDatInfo.opt_dly_cnt);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
@@ -2030,8 +2023,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step2.Scan DS Clk Pad Delay\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DS_ZDLY_DLY DS_ZCLK_DLY1~2 \r\n");
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
 	RawData64 = 0LL;
@@ -2051,11 +2042,12 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	}
 	RawData64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	if (autok_check_scan_res64(RawData64, pBdInfo) != 0)
 		return -1;
 
+	#if 0
 	AUTOK_DBGPRINT(AUTOK_DBG_RES,
 		       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n", uCmdEdge,
 		       pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2066,12 +2058,10 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 			       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 	}
+	#endif
 
 	if (autok_ds_dly_sel(pBdInfo, cycle_value, &uDatDly) == 0) {
 		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[HS400]================\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Delay Cnt Sel:%d\r\n", uDatDly);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
@@ -2137,7 +2127,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
 	}
-	AUTOK_RAWPRINT("[AUTOK]Online Tune Alg Complete\r\n");
 
 	return 0;
 }
@@ -2238,7 +2227,6 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 	unsigned int j, k;
 	void __iomem *base = host->base;
 	unsigned int tune_time;
-	unsigned int latch = 0;
 
 	MSDC_WRITE32(MSDC_INT, 0xffffffff);
 	switch (host->hw->host_function) {
@@ -2259,8 +2247,6 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 		host->tune_latch_ck_cnt = 0;
 		msdc_clear_fifo();
 		MSDC_SET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL, j);
-		MSDC_GET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL, latch);
-		AUTOK_RAWPRINT("[AUTOK]LATCH CK = %d\r\n", latch);
 		for (k = 0; k < tune_time; k++) {
 			if (opcode == MMC_SEND_TUNING_BLOCK_HS200) {
 				switch (k) {
@@ -2286,7 +2272,6 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 					host->tune_latch_ck_cnt = k + 1;
 			} else
 				host->tune_latch_ck_cnt++;
-			AUTOK_RAWPRINT("[AUTOK]send cmd%d read data\n", opcode);
 			ret = autok_send_tune_cmd(host, opcode, TUNE_LATCH_CK);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT("[AUTOK]Error Autok CMD Failed while tune LATCH CK\r\n");
@@ -2326,8 +2311,6 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step1.Optimised CMD Pad Data Delay Sel\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD_EDGE \t CMD_RD_R_DLY1~2 \r\n");
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 
 	uCmdEdge = 0;
@@ -2346,13 +2329,14 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uCmdEdge, score,
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
 			host->autok_error = -1;
 			return -1;
 		}
 
+		#if 0
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n",
 			       uCmdEdge, pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2363,6 +2347,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 				       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 				       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 		}
+		#endif
 
 		uCmdEdge ^= 0x1;
 	} while (uCmdEdge);
@@ -2370,10 +2355,6 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
 		autok_param_update(CMD_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
 		autok_paddly_update(CMD_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[HS200]================\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Edge Sel: %d, Delay Cnt Sel:%d\r\n",
-			       uCmdDatInfo.opt_edge_sel, uCmdDatInfo.opt_dly_cnt);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
@@ -2382,8 +2363,6 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 
 	/* Step2 Tuning Data Path (Only Rising Edge Used) */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step2.Optimised Dat Pad Data Delay Sel\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT_EDGE \t DAT_RD_R_DLY1~2 \r\n");
 	opcode = MMC_SEND_TUNING_BLOCK_HS200;
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
@@ -2402,11 +2381,12 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		}
 	}
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", 0, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", 0, score,
 		       tune_result_str64);
 	if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
 		return -1;
 	};
+	#if 0
 	AUTOK_DBGPRINT(AUTOK_DBG_RES,
 		       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n", 0,
 		       pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2417,14 +2397,10 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 			       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 			       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 	}
+	#endif
 
-	if (autok_pad_dly_sel_single_edge(pBdInfo, cycle_value, &uDatDly) == 0) {
+	if (autok_pad_dly_sel_single_edge(pBdInfo, cycle_value, &uDatDly) == 0)
 		autok_paddly_update(DAT_PAD_RDLY, uDatDly, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[HS200]================\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Edge Sel: 0, Delay Cnt Sel:%d\r\n",
-			       uDatDly);
-	}
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 
@@ -2442,7 +2418,6 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
 	}
-	AUTOK_RAWPRINT("[AUTOK]Online Tune Alg Complete\r\n");
 
 	return 0;
 }
@@ -2467,8 +2442,6 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step1.Optimised CMD Pad Data Delay Sel\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD_EDGE \t CMD_RD_R_DLY1~2 \r\n");
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 
 	uCmdEdge = 0;
@@ -2478,7 +2451,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		RawData64 = 0LL;
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
-			for (k = 0; k < AUTOK_CMD_TIMES/2; k++) {
+			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
 				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64) (1LL << j);
@@ -2487,12 +2460,13 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uCmdEdge, score,
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
 			host->autok_error = -1;
 			return -1;
 		}
+		#if 0
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n",
 			       uCmdEdge, pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2503,6 +2477,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 				       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 				       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 		}
+		#endif
 
 		uCmdEdge ^= 0x1;
 	} while (uCmdEdge);
@@ -2510,10 +2485,6 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
 		autok_param_update(CMD_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
 		autok_paddly_update(CMD_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[SD(IO)]===============\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Edge Sel: %d, Delay Cnt Sel:%d\r\n",
-			       uCmdDatInfo.opt_edge_sel, uCmdDatInfo.opt_dly_cnt);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
@@ -2521,8 +2492,6 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 
 	/* Step2 : Tuning Data Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
-	AUTOK_RAWPRINT("[AUTOK]Step2.Optimised Dat Pad Data Delay Sel\r\n");
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT_EDGE \t DAT_RD_R_DLY1~2 \r\n");
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 
 	uDatEdge = 0;
@@ -2532,7 +2501,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		RawData64 = 0LL;
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
-			for (k = 0; k < AUTOK_CMD_TIMES/2; k++) {
+			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
 				ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					AUTOK_RAWPRINT
@@ -2546,12 +2515,13 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 			}
 		}
 		score = autok_simple_score64(tune_result_str64, RawData64);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] %d \t %d \t %s\r\n", uDatEdge, score,
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", uDatEdge, score,
 			       tune_result_str64);
 		if (autok_check_scan_res64(RawData64, pBdInfo) != 0) {
 			host->autok_error = -1;
 			return -1;
 		}
+		#if 0
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]Edge:%d \t BoundaryCnt:%d \t FullBoundaryCnt:%d \t\r\n",
 			       uDatEdge, pBdInfo->bd_cnt, pBdInfo->fbd_cnt);
@@ -2562,6 +2532,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 				       pBdInfo->bd_info[i].Bound_Start, pBdInfo->bd_info[i].Bound_End,
 				       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 		}
+		#endif
 
 		uDatEdge ^= 0x1;
 	} while (uDatEdge);
@@ -2570,10 +2541,6 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		autok_param_update(RD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
 		autok_paddly_update(DAT_PAD_RDLY, uCmdDatInfo.opt_dly_cnt, p_autok_tune_res);
 		autok_param_update(WD_FIFO_EDGE, uCmdDatInfo.opt_edge_sel, p_autok_tune_res);
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK]================Analysis Result[SD(IO)]===============\r\n");
-		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Sample Edge Sel: %d, Delay Cnt Sel:%d\r\n",
-			       uCmdDatInfo.opt_edge_sel, uCmdDatInfo.opt_dly_cnt);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
@@ -2593,7 +2560,6 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
 	}
-	AUTOK_RAWPRINT("[AUTOK]Online Tune Alg Complete\r\n");
 	host->autok_error = 0;
 
 	return 0;
@@ -3454,8 +3420,6 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 
-	AUTOK_RAWPRINT("[AUTOK] Time Start: [%d.%d]\r\n", (int)tm_s.tv_sec,
-		(int)(tm_s.tv_usec/1000));
 #if AUTOK_OFFLINE_TUNE_ENABLE
 	if (execute_offline_tuning(host) != 0)
 		AUTOK_RAWPRINT("[AUTOK] ========Error: Autok OFFLINE Failed========");
@@ -3470,8 +3434,6 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
 	do_gettimeofday(&tm_e);
-	AUTOK_RAWPRINT("[AUTOK] Time End: [%d.%d]\r\n", (int)tm_e.tv_sec,
-		       (int)(tm_e.tv_usec / 1000));
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
 	AUTOK_RAWPRINT("[AUTOK]=========Time Cost:%d ms========\r\n", tm_val);
 
@@ -3489,8 +3451,6 @@ int hs400_execute_tuning(struct msdc_host *host, u8 *res)
 	void __iomem *base = host->base;
 
 	do_gettimeofday(&tm_s);
-	AUTOK_RAWPRINT("[AUTOK][HS400]Time Start: [%d.%d]\r\n", (int)tm_s.tv_sec,
-		       (int)(tm_s.tv_usec / 1000));
 	int_en = MSDC_READ32(MSDC_INTEN);
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
@@ -3514,8 +3474,6 @@ int hs400_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
 	do_gettimeofday(&tm_e);
-	AUTOK_RAWPRINT("[AUTOK][HS400] Time End: [%d.%d]\r\n", (int)tm_e.tv_sec,
-		       (int)(tm_e.tv_usec / 1000));
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
 	AUTOK_RAWPRINT("[AUTOK][HS400]=========Time Cost:%d ms========\r\n", tm_val);
 
@@ -3533,8 +3491,6 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	void __iomem *base = host->base;
 
 	do_gettimeofday(&tm_s);
-	AUTOK_RAWPRINT("[AUTOK][HS400 only for cmd]Time Start: [%d.%d]\r\n", (int)tm_s.tv_sec,
-			(int)(tm_s.tv_usec / 1000));
 	int_en = MSDC_READ32(MSDC_INTEN);
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
@@ -3551,8 +3507,6 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
 	do_gettimeofday(&tm_e);
-	AUTOK_RAWPRINT("[AUTOK][HS400 only for cmd] Time End: [%d.%d]\r\n", (int)tm_e.tv_sec,
-			(int)(tm_e.tv_usec / 1000));
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
 	AUTOK_RAWPRINT("[AUTOK][HS400 only for cmd]=========Time Cost:%d ms========\r\n", tm_val);
 
@@ -3570,8 +3524,6 @@ int hs200_execute_tuning(struct msdc_host *host, u8 *res)
 	void __iomem *base = host->base;
 
 	do_gettimeofday(&tm_s);
-	AUTOK_RAWPRINT("[AUTOK][HS200]Time Start: [%d.%d]\r\n", (int)tm_s.tv_sec,
-		       (int)(tm_s.tv_usec / 1000));
 	int_en = MSDC_READ32(MSDC_INTEN);
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
@@ -3592,8 +3544,6 @@ int hs200_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
 	do_gettimeofday(&tm_e);
-	AUTOK_RAWPRINT("[AUTOK][HS200] Time End: [%d.%d]\r\n", (int)tm_e.tv_sec,
-		       (int)(tm_e.tv_usec / 1000));
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
 	AUTOK_RAWPRINT("[AUTOK][HS200]=========Time Cost:%d ms========\r\n", tm_val);
 
@@ -3611,8 +3561,6 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	void __iomem *base = host->base;
 
 	do_gettimeofday(&tm_s);
-	AUTOK_RAWPRINT("[AUTOK][HS200 only for cmd]Time Start: [%d.%d]\r\n", (int)tm_s.tv_sec,
-			(int)(tm_s.tv_usec / 1000));
 	int_en = MSDC_READ32(MSDC_INTEN);
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
@@ -3629,8 +3577,6 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
 	do_gettimeofday(&tm_e);
-	AUTOK_RAWPRINT("[AUTOK][HS200 only for cmd] Time End: [%d.%d]\r\n", (int)tm_e.tv_sec,
-			(int)(tm_e.tv_usec / 1000));
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
 	AUTOK_RAWPRINT("[AUTOK][HS200 only for cmd]=========Time Cost:%d ms========\r\n", tm_val);
 
