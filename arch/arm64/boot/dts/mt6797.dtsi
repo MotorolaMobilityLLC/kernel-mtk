@@ -8,7 +8,7 @@
 
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
-#include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <dt-bindings/mmc/mt6797-msdc.h>
 
 /{
 	model = "MT6797";

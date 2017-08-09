@@ -11,9 +11,7 @@
 #include "board.h"
 #include <linux/delay.h>
 
-/**************************************************************/
-/* Section 1: Device Tree                                     */
-/**************************************************************/
+
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
@@ -23,6 +21,10 @@
 #ifndef CONFIG_MTK_LEGACY
 #include <linux/regulator/consumer.h>
 #endif
+
+/**************************************************************/
+/* Section 1: Device Tree                                     */
+/**************************************************************/
 
 const struct of_device_id msdc_of_ids[] = {
 	{   .compatible = "mediatek,mt6797-mmc", },
@@ -34,6 +36,7 @@ const struct of_device_id msdc_of_ids[] = {
 unsigned int msdc_host_enable[HOST_MAX_NUM] = {
 	1,
 	1,
+/* FIXME: if msdc2 msdc3 modify device tree standard, msdc_host_enable can be removed */
 #if defined(CFG_DEV_MSDC2)
 	1,
 #else
@@ -46,20 +49,12 @@ unsigned int msdc_host_enable[HOST_MAX_NUM] = {
 #endif
 };
 
+/* GPIO node */
 struct device_node *gpio_node;
 struct device_node *msdc0_io_cfg_node;
 struct device_node *msdc1_io_cfg_node;
 struct device_node *msdc2_io_cfg_node;
 struct device_node *msdc3_io_cfg_node;
-
-struct device_node *infracfg_ao_node;
-struct device_node *infracfg_node;
-struct device_node *pericfg_node;
-struct device_node *emi_node;
-struct device_node *toprgu_node;
-struct device_node *apmixed_node;
-struct device_node *topckgen_node;
-struct device_node *eint_node;
 
 struct device_node **msdc_io_cfg_nodes[HOST_MAX_NUM] = {
 	&msdc0_io_cfg_node,
@@ -68,11 +63,30 @@ struct device_node **msdc_io_cfg_nodes[HOST_MAX_NUM] = {
 	&msdc3_io_cfg_node
 };
 
+/* debug node */
+struct device_node *infracfg_ao_node;
+struct device_node *infracfg_node;
+struct device_node *pericfg_node;
+struct device_node *emi_node;
+struct device_node *toprgu_node;
+struct device_node *apmixed_node;
+struct device_node *topckgen_node;
+
+/* eint node */
+struct device_node *eint_node;
+
 void __iomem *gpio_base;
 void __iomem *msdc0_io_cfg_base;
 void __iomem *msdc1_io_cfg_base;
 void __iomem *msdc2_io_cfg_base;
 void __iomem *msdc3_io_cfg_base;
+
+void __iomem **msdc_io_cfg_bases[HOST_MAX_NUM] = {
+	&msdc0_io_cfg_base,
+	&msdc1_io_cfg_base,
+	&msdc2_io_cfg_base,
+	&msdc3_io_cfg_base
+};
 
 void __iomem *infracfg_ao_reg_base;
 void __iomem *infracfg_reg_base;
@@ -82,19 +96,10 @@ void __iomem *toprgu_reg_base;
 void __iomem *apmixed_reg_base;
 void __iomem *topckgen_reg_base;
 
-void __iomem **msdc_io_cfg_bases[HOST_MAX_NUM] = {
-	&msdc0_io_cfg_base,
-	&msdc1_io_cfg_base,
-	&msdc2_io_cfg_base,
-	&msdc3_io_cfg_base
-};
-
-#if !defined(FPGA_PLATFORM) && !defined(CONFIG_MTK_LEGACY)
-struct regulator *reg_VEMC;
-struct regulator *reg_VMC;
-struct regulator *reg_VMCH;
-#endif
-
+/*
+ * parse pinctl settings
+ * Driver strength
+ */
 static int msdc_get_pinctl_settings(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
@@ -109,7 +114,6 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	struct device_node *pinctl_sdr50_node;
 	struct device_node *pinctl_ddr50_node;
 
-	/*parse pinctl settings*/
 	pinctl_node = of_parse_phandle(np, "pinctl", 0);
 	pins_cmd_node = of_get_child_by_name(pinctl_node, "pins_cmd");
 	of_property_read_u8(pins_cmd_node, "drive-strength",
@@ -130,7 +134,7 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	pins_ds_node = of_get_child_by_name(pinctl_node, "pins_ds");
 	of_property_read_u8(pins_ds_node, "drive-strength", &host->hw->ds_drv);
 
-/*****************************************************************************/
+	/* SDR104 for SDcard */
 	pinctl_sdr104_node = of_parse_phandle(np, "pinctl_sdr104", 0);
 	pins_cmd_node = of_get_child_by_name(pinctl_sdr104_node, "pins_cmd");
 	of_property_read_u8(pins_cmd_node, "drive-strength",
@@ -143,8 +147,7 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	pins_clk_node = of_get_child_by_name(pinctl_sdr104_node, "pins_clk");
 	of_property_read_u8(pins_clk_node, "drive-strength",
 			&host->hw->clk_drv_sd_18);
-
-/*****************************************************************************/
+	/* SDR50 for SDcard */
 	pinctl_sdr50_node = of_parse_phandle(np, "pinctl_sdr50", 0);
 	pins_cmd_node = of_get_child_by_name(pinctl_sdr50_node, "pins_cmd");
 	of_property_read_u8(pins_cmd_node, "drive-strength",
@@ -158,7 +161,7 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	of_property_read_u8(pins_clk_node, "drive-strength",
 			&host->hw->clk_drv_sd_18_sdr50);
 
-/*****************************************************************************/
+	/* DDR50 for SDcard */
 	pinctl_ddr50_node = of_parse_phandle(np, "pinctl_ddr50", 0);
 	pins_cmd_node = of_get_child_by_name(pinctl_ddr50_node, "pins_cmd");
 	of_property_read_u8(pins_cmd_node, "drive-strength",
@@ -174,7 +177,11 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 
 	return 0;
 }
-
+/* Get msdc register settings
+ * 1. internal data delay for tuning, FIXME: can be removed when use data tune?
+ * 2. sample edge
+ * 3. ett settings, FIXME: can be removed when use autok
+ */
 static int msdc_get_rigister_settings(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
@@ -215,14 +222,14 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		of_property_read_u8(register_setting_node, "wdata_edge",
 				&host->hw->wdata_edge);
 	} else {
-		pr_err("[MSDC%d] register_setting is not found in DT.\n",
+		pr_err("[msdc%d] register_setting is not found in DT.\n",
 				host->id);
 		return 1;
 	}
 	/* parse ett */
 	if (of_property_read_u32(register_setting_node, "ett-hs200-cells",
 				&host->hw->ett_hs200_count))
-		pr_err("[MSDC] ett-hs200-cells is not found in DT.\n");
+		pr_err("[msdc] ett-hs200-cells is not found in DT.\n");
 	host->hw->ett_hs200_settings =
 		kzalloc(sizeof(struct msdc_ett_settings) *
 				host->hw->ett_hs200_count, GFP_KERNEL);
@@ -231,22 +238,22 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		!of_property_read_u32_array(register_setting_node,
 		"ett-hs200-customer", host->hw->ett_hs200_settings,
 		host->hw->ett_hs200_count * 3)) {
-		pr_err("[MSDC%d] hs200 ett for customer is found in DT.\n",
+		pr_err("[msdc%d] hs200 ett for customer is found in DT.\n",
 				host->id);
 	} else if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32_array(register_setting_node,
 		"ett-hs200-default", host->hw->ett_hs200_settings,
 		host->hw->ett_hs200_count * 3)) {
-		pr_err("[MSDC%d] hs200 ett for default is found in DT.\n",
+		pr_err("[msdc%d] hs200 ett for default is found in DT.\n",
 				host->id);
 	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[MSDC%d]error: hs200 ett is not found in DT.\n",
+		pr_err("[msdc%d]error: hs200 ett is not found in DT.\n",
 				host->id);
 	}
 
 	if (of_property_read_u32(register_setting_node, "ett-hs400-cells",
 				&host->hw->ett_hs400_count))
-		pr_err("[MSDC] ett-hs400-cells is not found in DT.\n");
+		pr_err("[msdc] ett-hs400-cells is not found in DT.\n");
 	host->hw->ett_hs400_settings =
 		kzalloc(sizeof(struct msdc_ett_settings) *
 				host->hw->ett_hs400_count, GFP_KERNEL);
@@ -255,21 +262,20 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		!of_property_read_u32_array(register_setting_node,
 		"ett-hs400-customer", host->hw->ett_hs400_settings,
 		host->hw->ett_hs400_count * 3)) {
-		pr_err("[MSDC%d] hs400 ett for customer is found in DT.\n",
+		pr_err("[msdc%d] hs400 ett for customer is found in DT.\n",
 				host->id);
 	} else if (MSDC_EMMC == host->hw->host_function &&
 		!of_property_read_u32_array(register_setting_node,
 		"ett-hs400-default", host->hw->ett_hs400_settings,
 		host->hw->ett_hs400_count * 3)) {
-		pr_err("[MSDC%d] hs400 ett for default is found in DT.\n",
+		pr_err("[msdc%d] hs400 ett for default is found in DT.\n",
 				host->id);
 	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[MSDC%d]error: hs400 ett is not found in DT.\n",
+		pr_err("[msdc%d]error: hs400 ett is not found in DT.\n",
 				host->id);
 	}
 }
-
-/**
+/*
  *	msdc_of_parse() - parse host's device-tree node
  *	@host: host whose node should be parsed.
  *
@@ -292,7 +298,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->id = 0;
 	else if (0 == strcmp(np->name, "msdc1"))
 		host->id = 1;
-	else if (0 == strcmp(np->name, "MSDC2"))
+	else if (0 == strcmp(np->name, "msdc2"))
 		host->id = 2;
 	else
 		host->id = 3;
@@ -300,19 +306,23 @@ int msdc_of_parse(struct mmc_host *mmc)
 	/* iomap register */
 	host->base = of_iomap(np, 0);
 	if (!host->base) {
-		pr_err("can't of_iomap for msdc!!\n");
+		pr_err("[msdc%d] of_iomap failed\n", host->id);
 		return -ENOMEM;
 	}
-	pr_err("of_iomap for msdc @ 0x%p\n", host->base);
+	pr_err("[msdc%d] host->base is %x\n", host->id, host->base);
 
 	/* get irq #  */
 	host->irq = irq_of_parse_and_map(np, 0);
-	pr_err("msdc%d get irq # %d\n", host->id, host->irq);
-	BUG_ON(host->irq < 0);
+	if (host->irq < 0) {
+		pr_err("[msdc%d]  get irq failed, host->irq = %d\n",
+			host->id, host->irq);
+		BUG_ON(1);
+	}
+	pr_err("[msdc%d] get irq # %d\n", host->id, host->irq);
 
 	/* get clk_src */
 	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src)) {
-		pr_err("[msdc%d] error: clk_src isn't found in DT.\n",
+		pr_err("[msdc%d] error: clk_src isn't found in device tree.\n",
 				host->id);
 		BUG_ON(1);
 	}
@@ -326,20 +336,21 @@ int msdc_of_parse(struct mmc_host *mmc)
 	* property data isn't large enough.*/
 
 	if (of_property_read_u8(np, "host_function", &host->hw->host_function))
-		pr_err("[msdc%d] host_function isn't found in DT\n", host->id);
+		pr_err("[msdc%d] host_function isn't found in device tree\n",
+				host->id);
 
 	if (of_find_property(np, "bootable", &len))
 		host->hw->boot = 1;
 
 	/*get cd_level*/
 	if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
-		pr_err("[msdc%d] cd_level isn't found in DT\n", host->id);
+		pr_err("[msdc%d] cd_level isn't found in device tree\n",
+				host->id);
 
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
 	return 0;
-
 out:
 	return ret;
 }
@@ -347,13 +358,14 @@ out:
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		unsigned int *cd_irq)
 {
+	/* regulator node */
 #if !defined(FPGA_PLATFORM) && !defined(CONFIG_MTK_LEGACY)
 	struct device_node *msdc_backup_node;
 #endif
 	unsigned int host_id = 0;
 	int i, ret;
 	struct msdc_host *host = mmc_priv(mmc);
-	static const char const *msdc_names[] = {"msdc0", "msdc1", "MSDC2", "MSDC3"};
+	static const char const *msdc_names[] = {"msdc0", "msdc1", "msdc2", "msdc3"};
 	static const char const *ioconfig_names[] = {
 		"mediatek,IOCFG_5", "mediatek,IOCFG_0",
 		"mediatek,IOCFG_1", "mediatek,IOCFG_2"
@@ -370,12 +382,6 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 #ifdef CFG_DEV_MSDC2
 				host->hw = &msdc2_hw;
 				pr_err("platform_data hw:0x%p, is msdc2_hw\n",
-					host->hw);
-#endif
-			} else if (i == 3) {
-#ifdef CFG_DEV_MSDC3
-				host->hw = &msdc3_hw;
-				pr_err("platform_data hw:0x%p, is msdc3_hw\n",
 					host->hw);
 #endif
 			}
@@ -415,12 +421,12 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 			NULL, NULL, ioconfig_names[host_id]);
 		*msdc_io_cfg_bases[host_id] =
 			of_iomap(*msdc_io_cfg_nodes[host_id], 0);
-		pr_debug("of_iomap for MSDC%d IOCFG base @ 0x%p\n",
+		pr_debug("of_iomap for msdc%d IOCFG base @ 0x%p\n",
 			host_id, *msdc_io_cfg_bases[host_id]);
 	}
 
 #ifndef FPGA_PLATFORM
-	/*FIX ME, correct node match string */
+	/*FIXME, correct node match string */
 	if (infracfg_ao_node == NULL) {
 		infracfg_ao_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,INFRACFG_AO");
@@ -506,19 +512,16 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	return 0;
 }
 
-u32 g_msdc0_io     = 0;
-u32 g_msdc0_flash  = 0;
-u32 g_msdc1_io     = 0;
-u32 g_msdc1_flash  = 0;
-u32 g_msdc2_io     = 0;
-u32 g_msdc2_flash  = 0;
-u32 g_msdc3_io     = 0;
-u32 g_msdc3_flash  = 0;
-/*
-u32 g_msdc4_io     = 0;
-u32 g_msdc4_flash  = 0;
-*/
-#if !defined(FPGA_PLATFORM)
+u32 g_msdc0_io;
+u32 g_msdc0_flash;
+u32 g_msdc1_io;
+u32 g_msdc1_flash;
+u32 g_msdc2_io;
+u32 g_msdc2_flash;
+u32 g_msdc3_io;
+u32 g_msdc3_flash;
+
+#ifndef FPGA_PLATFORM
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
@@ -526,15 +529,10 @@ u32 g_msdc4_flash  = 0;
 #include <mach/mt_pm_ldo.h>
 #endif
 #include <mach/upmu_common.h>
-/* FIXME: change upmu_set_rg_vmc_184() to generic API and remove extern */
-/* extern void upmu_set_rg_vmc_184(kal_uint8 x); */
-/*workaround for VMC 1.8v -> 1.84v*/
-/* extern bool hwPowerSetVoltage(unsigned int powerId,
-	int powerVOlt, char *mode_name); */
 #ifndef CONFIG_MTK_LEGACY
-struct regulator *reg_VEMC;
-struct regulator *reg_VMC;
-struct regulator *reg_VMCH;
+struct regulator *reg_vemc;
+struct regulator *reg_vmc;
+struct regulator *reg_vmch;
 
 enum MSDC_LDO_POWER {
 	POWER_LDO_VMCH,
@@ -544,27 +542,36 @@ enum MSDC_LDO_POWER {
 
 void msdc_get_regulators(struct device *dev)
 {
-	if (reg_VEMC == NULL)
-		reg_VEMC = regulator_get(dev, "VEMC");
-	if (reg_VMC == NULL)
-		reg_VMC = regulator_get(dev, "VMC");
-	if (reg_VMCH == NULL)
-		reg_VMCH = regulator_get(dev, "VMCH");
+	if (reg_vemc == NULL)
+		reg_vemc = regulator_get(dev, "vemc");
+	if (reg_vmc == NULL)
+		reg_vmc = regulator_get(dev, "vmc");
+	if (reg_vmch == NULL)
+		reg_vmch = regulator_get(dev, "vmch");
 }
 
 bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
 	struct regulator *reg = NULL;
 
-	if (powerId == POWER_LDO_VMCH)
-		reg = reg_VMCH;
-	else if (powerId == POWER_LDO_VMC)
-		reg = reg_VMC;
-	else if (powerId == POWER_LDO_VEMC)
-		reg = reg_VEMC;
-	if (reg == NULL)
+	switch (powerId) {
+	case POWER_LDO_VMCH:
+		reg = reg_vmch;
+		break;
+	case POWER_LDO_VMC:
+		reg = reg_vmc;
+		break;
+	case POWER_LDO_VEMC:
+		reg = reg_vemc;
+		break;
+	default:
+		pr_err("[MSDC] Invalid power id\n");
 		return FALSE;
-
+	}
+	if (reg == NULL) {
+		pr_err("[MSDC] regulator pointer is NULL\n");
+		return FALSE;
+	}
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
 	regulator_enable(reg);
@@ -576,16 +583,24 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 {
 	struct regulator *reg = NULL;
 
-	if (powerId == POWER_LDO_VMCH)
-		reg = reg_VMCH;
-	else if (powerId == POWER_LDO_VMC)
-		reg = reg_VMC;
-	else if (powerId == POWER_LDO_VEMC)
-		reg = reg_VEMC;
-
-	if (reg == NULL)
+	switch (powerId) {
+	case POWER_LDO_VMCH:
+		reg = reg_vmch;
+		break;
+	case POWER_LDO_VMC:
+		reg = reg_vmc;
+		break;
+	case POWER_LDO_VEMC:
+		reg = reg_vemc;
+		break;
+	default:
+		pr_err("[MSDC] Invalid power id\n");
 		return FALSE;
-
+	}
+	if (reg == NULL) {
+		pr_err("[MSDC] regulator pointer is NULL\n");
+		return FALSE;
+	}
 	/* New API voltage use micro V */
 	regulator_disable(reg);
 	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
@@ -606,16 +621,18 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 #endif
 
 #ifndef CONFIG_MTK_LEGACY
-u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_uv,
+u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_mv,
 	u32 *status)
 #else
-u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
+u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_mv,
 	u32 *status)
 #endif
 {
+	int voltage_uv = voltage_mv * 1000;
+
 	if (on) { /* want to power on */
 		if (*status == 0) {  /* can power on */
-			pr_warn("msdc LDO<%d> power on<%d>\n", powerId,
+			pr_err("msdc LDO<%d> power on<%d>\n", powerId,
 				voltage_uv);
 			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
 			*status = voltage_uv;
@@ -623,7 +640,7 @@ u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
 			pr_err("msdc LDO<%d><%d> power on again!\n", powerId,
 				voltage_uv);
 		} else { /* for sd3.0 later */
-			pr_warn("msdc LDO<%d> change<%d> to <%d>\n", powerId,
+			pr_err("msdc LDO<%d> change<%d> to <%d>\n", powerId,
 				*status, voltage_uv);
 			msdc_hwPowerDown(powerId, "msdc");
 			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
@@ -632,7 +649,7 @@ u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
 		}
 	} else {  /* want to power off */
 		if (*status != 0) {  /* has been powerred on */
-			pr_warn("msdc LDO<%d> power off\n", powerId);
+			pr_err("msdc LDO<%d> power off\n", powerId);
 			msdc_hwPowerDown(powerId, "msdc");
 			*status = 0;
 		} else {
@@ -651,46 +668,27 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 
 	switch (id) {
 	case 0:
-		pmic_read_interface(REG_VEMC_EN, &ldo_en, MASK_VEMC_EN,
+		pmic_read_interface_nolock(REG_VEMC_EN, &ldo_en, MASK_VEMC_EN,
 			SHIFT_VEMC_EN);
-		pmic_read_interface(REG_VEMC_VOSEL, &ldo_vol, MASK_VEMC_VOSEL,
-			SHIFT_VEMC_VOSEL);
-		pr_err(" VEMC_EN=0x%x, should:bit1=1, VEMC_VOL=0x%x, should:1b'0(3.0V),1b'1(3.3V)\n",
+		pmic_read_interface_nolock(REG_VEMC_VOSEL, &ldo_vol,
+			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
+		pr_err("VEMC_EN=0x%x, be:1b'1,VEMC_VOL=0x%x, be:1b'0(3.0V),1b'1(3.3V)\n",
 			ldo_en, ldo_vol);
-		/*
-		pwrap_read(REG_VEMC_EN, &ldo_en);
-		pwrap_read(REG_VEMC_VOSEL, &ldo_vol);
-		SIMPLE_INIT_MSG(" VEMC_EN[0x%x]=0x%x, should:bit1=1, VEMC_VOL[0x%x]=0x%x,",
-			REG_VEMC_EN, ldo_en, REG_VEMC_VOSEL, ldo_vol);
-		SIMPLE_INIT_MSG(" should:bit[8:8]=1b'0(3.0V),1b'1(3.3V)\n");
-		*/
 		break;
 	case 1:
-		pmic_read_interface(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
+		pmic_read_interface_nolock(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
 			SHIFT_VMC_EN);
-		pmic_read_interface(REG_VMC_VOSEL, &ldo_vol, MASK_VMC_VOSEL,
-			SHIFT_VMC_VOSEL);
-		pr_err(" VMC_EN=0x%x, should:bit1=1, VMC_VOL=0x%x, should:3b'110(3.3V),3b'011(1.8V)\n",
+		pmic_read_interface_nolock(REG_VMC_VOSEL, &ldo_vol,
+			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
+		pr_err("VMC_EN=0x%x, be:bit1=1,VMC_VOL=0x%x, be:3b'101(2.8V),3b'011(1.8V)\n",
 			ldo_en, ldo_vol);
-		pmic_read_interface(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
-			SHIFT_VEMC_EN);
-		pmic_read_interface(REG_VMCH_VOSEL, &ldo_vol, MASK_VMCH_VOSEL,
-			SHIFT_VMCH_VOSEL);
-		pr_err(" VMCH_EN=0x%x, should:bit1=1, VMCH_VOL=0x%x, should:1b'0(3.0V),1b'1(3.3V)\n",
+
+		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
+			SHIFT_VMCH_EN);
+		pmic_read_interface_nolock(REG_VMCH_VOSEL, &ldo_vol,
+			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
+		pr_err("VMCH_EN=0x%x, be:bit1=1, VMCH_VOL=0x%x, be:1b'0(3V),1b'1(3.3V)\n",
 			ldo_en, ldo_vol);
-		/*
-		pwrap_read(REG_VMC_EN, &ldo_en);
-		pwrap_read(REG_VMC_VOSEL, &ldo_vol);
-		SIMPLE_INIT_MSG(" VMC_EN[0x%x]=0x%x,  should:bit1=1, VMC_VOL[0x%x]=0x%x,",
-			REG_VMC_EN, ldo_en, REG_VMC_VOSEL, ldo_vol);
-		SIMPLE_INIT_MSG(" should:bit[10:8]=3b'110(3.3V),3b'011(1.8V)\n");
-		pwrap_read(REG_VMCH_EN, &ldo_en);
-		pwrap_read(REG_VMCH_VOSEL, &ldo_vol);
-		SIMPLE_INIT_MSG(" VMCH_EN[0x%x]==0x%x,should:bit1=1, "
-			"VMCH_VOL[0x%x]=0x%x, should:bit[8:8]=1b'0(3.0V),"
-			"1b'1(3.3V)\n",
-			REG_VMCH_EN, ldo_en, REG_VMCH_VOSEL, ldo_vol);
-		*/
 		break;
 	default:
 		break;
@@ -700,12 +698,27 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
+	unsigned int reg_val;
 	switch (host->id) {
 	case 1:
 		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc1_io);
-		/*
-		if (on)
-			upmu_set_rg_vmc_184(1);*/
+		/* MT6351 have no 2.9v setting, So calibration 100mv here */
+		if (on) {
+			/* VMC calibration. */
+			pmic_read_interface(REG_VMC_VOSEL_CAL,
+				&reg_val,
+				MASK_VMC_VOSEL_CAL,
+				SHIFT_VMC_VOSEL_CAL);
+
+			/* -100mv. since 2.9V is 2.8V + 100mV. */
+			reg_val = reg_val + 5;
+
+			pmic_config_interface(REG_VMC_VOSEL_CAL,
+				reg_val,
+				MASK_VMC_VOSEL_CAL,
+				SHIFT_VMC_VOSEL_CAL);
+		}
+
 		msdc_set_tdsel(host, 0, 1);
 		msdc_set_rdsel(host, 0, 1);
 		msdc_set_driving(host, host->hw, 1);
@@ -729,12 +742,6 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 		g_msdc2_flash = g_msdc2_io;
 		break;
 #endif
-
-#if defined(CFG_DEV_MSDC3)
-	case 3:
-		break;
-#endif
-
 	default:
 		/* if host_id is 3, it uses default 1.8v setting,
 		which always turns on */
@@ -780,6 +787,13 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	 * 4'b0101: -100 mV
 	*/
 	msdc_ldo_power(on, POWER_LDO_VEMC, VOL_3000, &g_msdc0_flash);
+	/* cal 3.0V - 100mv */
+	if (on && CARD_VOL_ACTUAL != VOL_3000) {
+		pmic_config_interface(REG_VEMC_VOSEL_CAL,
+			VEMC_VOSEL_CAL_mV(CARD_VOL_ACTUAL - VOL_3000),
+			MASK_VEMC_VOSEL_CAL,
+			SHIFT_VEMC_VOSEL_CAL);
+	}
 
 	msdc_dump_ldo_sts(host);
 }
@@ -787,7 +801,6 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 void msdc_sd_power(struct msdc_host *host, u32 on)
 {
 	u32 card_on = on;
-
 	switch (host->id) {
 	case 1:
 		msdc_set_driving(host, host->hw, 0);
@@ -795,18 +808,10 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		msdc_set_rdsel(host, 0, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
-		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_3000,
-			 &g_msdc1_flash);
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
-/* FIXME: Does MT6351 pmic have 1.8v drop problem ? */
-#if 0
-		if (on)
-			/*upmu_set_rg_vmc_184(0);*/
-			pmic_config_interface(REG_VEMC_VOSEL,
-				VEMC_VOSEL_MINUS_100mV,
-				MASK_VEMC_VOSEL_CAL,
-				0);
-#endif
+		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_2900,
+			&g_msdc1_flash);
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_2900, &g_msdc1_io);
+
 		break;
 	case 2:
 		msdc_set_driving(host, host->hw, 0);
@@ -825,33 +830,42 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 /**************************************************************/
 /* Section 3: Clock                                           */
 /**************************************************************/
-/* clock source for host: global */
-u32 hclks_msdc50[] = {26000000 , 400000000, 200000000, 156000000,
-		      182000000, 156000000, 100000000, 624000000,
-		      312000000};
+/*  msdc clock source
+ *  Clock manager will set a reference value in CCF
+ *  Normal code doesn't change clock source
+ *  Lower frequence will change clock source
+ */
+/* msdc50_0_hclk reference value is 273M */
+u32 hclks_msdc50_0_hclk[] = {PLLCLK_50M, PLLCLK_273M, PLLCLK_182M, PLLCLK_78M};
+/* msdc0 clock source reference value is 400M */
+u32 hclks_msdc50_0[] = {PLLCLK_50M, PLLCLK_400M, PLLCLK_364M, PLLCLK_156M,
+			PLLCLK_182M, PLLCLK_156M, PLLCLK_200M, PLLCLK_312M,
+			PLLCLK_416M};
+/* msdc1 clock source reference value is 200M */
+u32 hclks_msdc30_1[] = {PLLCLK_50M, PLLCLK_208M, PLLCLK_200M, PLLCLK_156M,
+		      PLLCKL_182M, PLLCLK_156M, PLLCLK_178M};
+/* FIXME: msdc2 is not be portted */
+u32 hclks_msdc30_2[] = {PLLCLK_50M};
+u32 *hclks_msdc = NULL;
 
-u32 hclks_msdc30[] = {26000000 , 208000000, 100000000, 156000000,
-		      182000000, 156000000, 178000000, 200000000};
-
-u32 hclks_msdc30_3[] = {26000000 , 50000000, 100000000, 156000000,
-		      48000000, 156000000, 178000000, 54000000,
-		      25000000};
-
-u32 *hclks_msdc = hclks_msdc30;
-
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 enum cg_clk_id msdc_cg_clk_id[HOST_MAX_NUM] = {
+	MT_CG_PERI_MSDC50_0,
 	MT_CG_PERI_MSDC30_0,
 	MT_CG_PERI_MSDC30_1,
-	MT_CG_PERI_MSDC30_2,
-	MT_CG_PERI_MSDC30_3
+	MT_CG_PERI_MSDC30_2
 };
-#endif
-
-#ifndef CONFIG_MTK_LEGACY
-/* FIX ME: check if mt6735-clk.h shall be renamed */
-#include <dt-bindings/clock/mt6735-clk.h>
+#else
+#include <dt-bindings/clock/mt6797-clk.h>
+#include <mach/mt_clk_id.h>
+#include <mach/mt_idle.h>
+int msdc_cg_clk_id[HOST_MAX_NUM] = {
+	MT_CG_INFRA0_MSDC0_CG_STA,
+	MT_CG_INFRA0_MSDC1_CG_STA,
+	MT_CG_INFRA0_MSDC2_CG_STA,
+	MT_CG_INFRA0_MSDC3_CG_STA
+};
 struct clk *g_msdc0_pll_sel;
 struct clk *g_msdc0_pll_400m;
 struct clk *g_msdc0_pll_200m;
@@ -874,12 +888,11 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 			"MSDC3-CLOCK");*/
 	}
 	if (IS_ERR(host->clock_control)) {
-		pr_err("can not get msdc%d clock control\n", pdev->id);
+		pr_err("[msdc%d] can not get clock control\n", pdev->id);
 		return 1;
 	}
 	if (clk_prepare(host->clock_control)) {
-		pr_err("can not prepare msdc%d clock control\n",
-			pdev->id);
+		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
 		return 1;
 	}
 	if (host->id == 0) {
@@ -904,7 +917,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 {
 	u32 *hclks;
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	char name[6];
 #endif
 
@@ -913,13 +926,13 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 	pr_err("[%s]: msdc%d change clk_src from %dKHz to %d:%dKHz\n", __func__,
 		host->id, (host->hclk/1000), clksrc, (hclks[clksrc]/1000));
 
-#ifdef CONFIG_MTK_LEGACY
+#ifdef CONFIG_MTK_CLKMGR
 	sprintf(name, "MSDC%d", host->id);
 	clkmux_sel(MT_MUX_MSDC30_0 - host->id, clksrc, name);
 #else
 	if (host->id != 0) {
-		pr_err("NOT Support msdc%d switch pll souce[%s]%d\n", host->id,
-			__func__, __LINE__);
+		pr_err("[msdc%d] NOT Support switch pll souce[%s]%d\n",
+			host->id, __func__, __LINE__);
 		return;
 	}
 
@@ -928,15 +941,15 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 	} else if (clksrc == MSDC50_CLKSRC_200MHZ) {
 		clk = g_msdc0_pll_200m;
 	} else {
-		pr_err("NOT Support msdc%d switch pll souce[%s]%d\n", host->id,
-			__func__, __LINE__);
+		pr_err("[msdc%d] NOT Support switch pll souce[%s]%d\n",
+			host->id, __func__, __LINE__);
 		return;
 	}
 
 	clk_enable(g_msdc0_pll_sel);
 	ret = clk_set_parent(g_msdc0_pll_sel, clk);
 	if (ret)
-		pr_err("XXX MSDC%d switch clk source ERROR...[%s]%d\n",
+		pr_err("[msdc%d] switch clk source ERROR...[%s]%d\n",
 			host->id, __func__, __LINE__);
 	clk_disable(g_msdc0_pll_sel);
 #endif
@@ -948,30 +961,46 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 void msdc_dump_clock_sts(struct msdc_host *host)
 {
 #ifdef MTK_MSDC_BRINGUP_DEBUG
-	if (apmixed_reg_base && topckgen_reg_base && pericfg_reg_base) {
-		pr_err(" MSDCPLL_PWR_CON0[0x%p][bit0~1 should be 2b'01]=0x%x\n",
-			(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET),
-			MSDC_READ32(
-				apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
-		pr_err(" MSDCPLL_CON0    [0x%p][bit0 should be 1b'1]=0x%x\n",
-			(apmixed_reg_base + MSDCPLL_CON0_OFFSET),
-			MSDC_READ32(
-				apmixed_reg_base + MSDCPLL_CON0_OFFSET));
-		pr_err(" CLK_CFG_2       [0x%p][bit[31:24]should be 0x01]=0x%x\n",
-			(topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET),
-			MSDC_READ32(
-				topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET));
-		pr_err(" CLK_CFG_3       [0x%p][bit[15:0]should be 0x0202]=0x%x\n",
-			(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET),
-			MSDC_READ32(
-				topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+	if (topckgen_reg_base) {
+		/* CLK_CFG_3 control msdc clock source PLL */
+		pr_err(" CLK_CFG_3 register address is 0x%p\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
+		pr_err(" bit[9~8]=01b,     bit[15]=0b\n");
+		pr_err(" bit[19~16]=0001b, bit[23]=0b\n");
+		pr_err(" bit[26~24]=0010b, bit[31]=0b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+	}
+	if (apmixed_reg_base) {
+		/* bit0 is enables PLL, 0: disable 1: enable */
+		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
+		pr_err(" bit[2~0]=111b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
+
+		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
+		pr_err(" bit[31]=1b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
+
+		pr_err(" MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
+
+		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_PWR_CON0);
+		pr_err(" bit[31]=0b, bit[1]=0b, bit[0]=1b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0));
+	}
+	if (pericfg_reg_base) {
 		pr_err(" PERI_PDN_STA0   [0x%p][bit13=msdc0, bit14=msdc1,0:on,1:off]=0x%x\n",
 			(pericfg_reg_base + MSDC_PERI_PDN_STA0_OFFSET),
 			MSDC_READ32(
 				pericfg_reg_base + MSDC_PERI_PDN_STA0_OFFSET));
-	} else {
-		pr_err(" apmixed_reg_base = %p, topckgen_reg_base = %p, clk_pericfg_base = %p\n",
-			apmixed_reg_base, topckgen_reg_base, pericfg_reg_base);
 	}
 #endif
 }

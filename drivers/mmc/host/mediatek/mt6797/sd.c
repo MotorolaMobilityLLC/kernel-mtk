@@ -792,7 +792,6 @@ void msdc_gate_clock(struct msdc_host *host, int delay)
 void msdc_ungate_clock(struct msdc_host *host)
 {
 	unsigned long flags;
-
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
 	host->clk_gate_count++;
 	N_MSG(CLK, "[%s]: msdc%d, clk_gate_count=%d", __func__, host->id,
@@ -995,7 +994,6 @@ static void sdio_unreq_vcore(struct work_struct *work)
 {
 	/*6630 in msdc2*/
 	struct msdc_host *host = mtk_msdc_host[2];
-
 	pr_warn("** sdio_unreq_vcore() irqs_disabled():%d in_atomic():%d\n",
 		irqs_disabled(), might_sleep());
 
@@ -1095,11 +1093,11 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 
 	if (timing ==  MMC_TIMING_MMC_HS400) {
 		mode = 0x3; /* HS400 mode */
-		if (clksrc == MSDC50_CLKSRC_400MHZ) {
+		if (PLLCLK_400M == hclk) {
 			hs400_src = 1;
 			div = 0;
 			sclk = hclk/2;
-		} else {
+		} else { /* 800M clock source ? is not supported */
 			hs400_src = 0;
 			if (hz >= (hclk >> 2)) {
 				div  = 0;         /* mean div = 1/4 */
@@ -4391,9 +4389,10 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 	/* reserve for FFU */
 #ifdef CONFIG_MMC_FFU
-	if ((ios->timing != MMC_TIMING_MMC_HS400) &&
+	/* if ((ios->timing != MMC_TIMING_MMC_HS400) &&
 		(host->hw->host_function == MSDC_EMMC))
-		msdc_clock_src[host->id] = MSDC50_CLKSRC_200MHZ;
+		msdc_clock_src[host->id] = MSDC0_CLKSRC_200MHZ;
+	*/
 #endif
 	if (msdc_clock_src[host->id] != host->hw->clk_src) {
 		host->hw->clk_src = msdc_clock_src[host->id];
@@ -5439,7 +5438,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->power_mode	= MMC_POWER_OFF;
 	host->power_control	= NULL;
 	host->power_switch	= NULL;
-#ifndef CONFIG_MTK_LEGACY
+#ifndef CONFIG_MTK_CLKMGR
 #ifndef FPGA_PLATFORM
 	if (msdc_get_ccf_clk_pointer(pdev, host))
 		return 1;

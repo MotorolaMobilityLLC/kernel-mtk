@@ -9,7 +9,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-
 extern const struct of_device_id msdc_of_ids[];
 extern struct msdc_hw *p_msdc_hw[];
 
@@ -49,6 +48,7 @@ void msdc_fpga_pwr_init(void);
 #define REG_VEMC_VOSEL_CAL              MT6351_PMIC_RG_VEMC_CAL_ADDR
 #define REG_VEMC_VOSEL                  MT6351_PMIC_RG_VEMC_VOSEL_ADDR
 #define REG_VEMC_EN                     MT6351_PMIC_RG_VEMC_EN_ADDR
+#define REG_VMC_VOSEL_CAL		MT6351_PMIC_RG_VMC_CAL_ADDR
 #define REG_VMC_VOSEL                   MT6351_PMIC_RG_VMC_VOSEL_ADDR
 #define REG_VMC_EN                      MT6351_PMIC_RG_VMC_EN_ADDR
 #define REG_VMCH_VOSEL_CAL              MT6351_PMIC_RG_VMCH_CAL_ADDR
@@ -57,14 +57,16 @@ void msdc_fpga_pwr_init(void);
 
 #define MASK_VEMC_VOSEL_CAL             MT6351_PMIC_RG_VEMC_CAL_MASK
 #define SHIFT_VEMC_VOSEL_CAL            MT6351_PMIC_RG_VEMC_CAL_SHIFT
-#define FIELD_VEMC_VOSEL_CAL            (MASK_VEMC_VOSEL_CAL << \
-						SHIFT_VEMC_VOSEL_CAL)
+#define FIELD_VEMC_VOSEL_CAL            (MASK_VEMC_VOSEL_CAL \
+						<< SHIFT_VEMC_VOSEL_CAL)
 #define MASK_VEMC_VOSEL                 MT6351_PMIC_RG_VEMC_VOSEL_MASK
 #define SHIFT_VEMC_VOSEL                MT6351_PMIC_RG_VEMC_VOSEL_SHIFT
 #define FIELD_VEMC_VOSEL                (MASK_VEMC_VOSEL << SHIFT_VEMC_VOSEL)
 #define MASK_VEMC_EN                    MT6351_PMIC_RG_VEMC_EN_MASK
 #define SHIFT_VEMC_EN                   MT6351_PMIC_RG_VEMC_EN_SHIFT
 #define FIELD_VEMC_EN                   (MASK_VEMC_EN << SHIFT_VEMC_EN)
+#define MASK_VMC_VOSEL_CAL		MT6351_PMIC_RG_VMC_CAL_MASK
+#define SHIFT_VMC_VOSEL_CAL		MT6351_PMIC_RG_VMC_CAL_SHIFT
 #define MASK_VMC_VOSEL                  MT6351_PMIC_RG_VMC_VOSEL_MASK
 #define SHIFT_VMC_VOSEL                 MT6351_PMIC_RG_VMC_VOSEL_SHIFT
 #define FIELD_VMC_VOSEL                 (MASK_VMC_VOSEL << SHIFT_VMC_VOSEL)
@@ -73,8 +75,8 @@ void msdc_fpga_pwr_init(void);
 #define FIELD_VMC_EN                    (MASK_VMC_EN << SHIFT_VMC_EN)
 #define MASK_VMCH_VOSEL_CAL             MT6351_PMIC_RG_VMCH_CAL_MASK
 #define SHIFT_VMCH_VOSEL_CAL            MT6351_PMIC_RG_VMCH_CAL_SHIFT
-#define FIELD_VMCH_VOSEL_CAL            (MASK_VMCH_VOSEL_CAL << \
-						SHIFT_VMCH_VOSEL_CAL)
+#define FIELD_VMCH_VOSEL_CAL            (MASK_VMCH_VOSEL_CAL \
+						<< SHIFT_VMCH_VOSEL_CAL)
 #define MASK_VMCH_VOSEL                 MT6351_PMIC_RG_VMCH_VOSEL_MASK
 #define SHIFT_VMCH_VOSEL                MT6351_PMIC_RG_VMCH_VOSEL_SHIFT
 #define FIELD_VMCH_VOSEL                (MASK_VMCH_VOSEL << SHIFT_VMCH_VOSEL)
@@ -82,13 +84,17 @@ void msdc_fpga_pwr_init(void);
 #define SHIFT_VMCH_EN                   MT6351_PMIC_RG_VMCH_EN_SHIFT
 #define FIELD_VMCH_EN                   (MASK_VMCH_EN << SHIFT_VMCH_EN)
 
-#define VEMC_VOSEL_CAL_mV(cal)          ((cal <= 0) ? ((0-cal)/20) : (32-cal/20))
+#define VEMC_VOSEL_CAL_mV(cal)          ((cal <= 0) ? \
+						((0-(cal))/20) : (32-(cal)/20))
 #define VEMC_VOSEL_3V                   (0)
 #define VEMC_VOSEL_3V3                  (1)
 #define VMC_VOSEL_1V8                   (3)
 #define VMC_VOSEL_2V8                   (5)
 #define VMC_VOSEL_3V                    (6)
-#define VMCH_VOSEL_CAL_mV(cal)          ((cal <= 0) ? ((0-cal)/20) : (32-cal/20))
+#define VMC_VOSEL_CAL_mV(cal)          ((cal <= 0) ? \
+						((0-(cal))/20) : (32-(cal)/20))
+#define VMCH_VOSEL_CAL_mV(cal)          ((cal <= 0) ? \
+						((0-(cal))/20) : (32-(cal)/20))
 #define VMCH_VOSEL_3V                   (0)
 #define VMCH_VOSEL_3V3                  (1)
 
@@ -136,47 +142,61 @@ extern u32 g_msdc3_flash;
 /**************************************************************/
 /* Section 3: Clock                                           */
 /**************************************************************/
-#if defined(FPGA_PLATFORM)
+
+#define PLLCLK_50M  50000000
+#define PLLCLK_400M 400000000
+#define PLLCLK_200M 200000000
+#define PLLCLK_208M 208000000
+#define PLLCLK_364M 364000000
+#define PLLCLK_156M 156000000
+#define PLLCLK_182M 182000000
+#define PLLCLK_312M 312000000
+#define PLLCLK_273M 273000000
+#define PLLCLK_178M 178290000
+#define PLLCLK_78M  78000000
+
+#ifdef FPGA_PLATFORM
+
+extern  u32 hclks_msdc[];
 #define msdc_dump_clock_sts(host)
-extern u32 hclks_msdc[];
 #define msdc_get_hclks(host)		hclks_msdc
 #define msdc_clk_enable(host)
 #define msdc_clk_disable(host)
-#endif
 
-#if !defined(FPGA_PLATFORM)
+#else /* FPGA_PLATFORM */
+
 void msdc_dump_clock_sts(struct msdc_host *host);
-/* define clock related register macro */
-#define MSDCPLL_CON0_OFFSET             (0x240)
-#define MSDCPLL_CON1_OFFSET             (0x244)
-#define MSDCPLL_PWR_CON0_OFFSET         (0x24C)
-#define MSDC_CLK_CFG_2_OFFSET           (0x060)
+/* MSDCPLL register offset */
+#define MSDCPLL_CON0_OFFSET             (0x250)
+#define MSDCPLL_CON1_OFFSET             (0x254)
+#define MSDCPLL_CON1_OFFSET             (0x258)
+#define MSDCPLL_PWR_CON0_OFFSET         (0x25c)
+/* Clock config register offset */
 #define MSDC_CLK_CFG_3_OFFSET           (0x070)
 
 #define MSDC_PERI_PDN_SET0_OFFSET       (0x0008)
 #define MSDC_PERI_PDN_CLR0_OFFSET       (0x0010)
 #define MSDC_PERI_PDN_STA0_OFFSET       (0x0018)
 
-extern u32 hclks_msdc50[];
-extern u32 hclks_msdc30[];
-extern u32 hclks_msdc30_3[];
+extern u32 hclks_msdc50_0[];
+extern u32 hclks_msdc30_1[];
+extern u32 hclks_msdc30_2[];
+
 #define msdc_get_hclks(id) \
-	((id == 0) ? hclks_msdc50 : ((id == 3) ? hclks_msdc30_3 : hclks_msdc30))
+	((id == 0) ? hclks_msdc50_0 : \
+	((id == 1) ? hclks_msdc30_1 : hclks_msdc30_2))
 
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 extern enum cg_clk_id msdc_cg_clk_id[];
-#define msdc_clk_enable(host) \
-	enable_clock(msdc_cg_clk_id[host->id], "SD")
-#define msdc_clk_disable(host)	\
-	disable_clock(msdc_cg_clk_id[host->id], "SD")
+#define msdc_clk_enable(host) enable_clock(msdc_cg_clk_id[host->id], "SD")
+#define msdc_clk_disable(host) disable_clock(msdc_cg_clk_id[host->id], "SD")
+#else
+#define msdc_clk_enable(host) clk_enable(host->clock_control)
+#define msdc_clk_disable(host) clk_disable(host->clock_control)
+int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
+		struct msdc_host *host);
 #endif
-
-#if !defined(CONFIG_MTK_LEGACY)
-#define msdc_clk_enable(host) clk_disable(host->clock_control)
-#define msdc_clk_disable(host) clk_enable(host->clock_control)
-#endif
-
-#endif
+#endif /* FPGA_PLATFORM */
 
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
