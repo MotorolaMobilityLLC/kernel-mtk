@@ -1740,19 +1740,6 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	DBGLOG(RX, EVENT, "prEvent->ucEID = 0x%02x\n", prEvent->ucEID);
 	/* Event Handling */
 	switch (prEvent->ucEID) {
-	case EVENT_ID_WARNING_TO_DRIVER:
-		{
-			P_EVENT_LOG_TO_DRIVER_T prEventLog;
-			UINT_32 UpTimeSec, UpTimeMicroSec;
-
-			prEventLog = (P_EVENT_LOG_TO_DRIVER_T) (prEvent->aucBuffer);
-			UpTimeSec = prEventLog->WifiUpTime / 1000000;
-			UpTimeMicroSec = prEventLog->WifiUpTime % 1000000;
-			LOG_FUNC("[%d.%d] FW Warning!! %s: %d, %s\n", UpTimeSec, UpTimeMicroSec, prEventLog->fileName,
-				 prEventLog->lineNo, prEventLog->log);
-
-			break;
-		}
 	case EVENT_ID_CMD_RESULT:
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
@@ -2464,6 +2451,15 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				 (UINT8 *) prEvent->aucBuffer, (UINT32) (prEvent->u2PacketLen - 8));
 		break;
 #endif /* CFG_SUPPORT_STATISTICS */
+
+	case EVENT_ID_FW_LOG_ENV:
+		{
+			P_EVENT_FW_LOG_T prEventLog;
+
+			prEventLog = (P_EVENT_FW_LOG_T) (prEvent->aucBuffer);
+			DBGLOG(RX, EVENT, "[F-L]%s\n", prEventLog->log);
+		}
+		break;
 
 	default:
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);

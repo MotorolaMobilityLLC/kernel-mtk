@@ -865,7 +865,7 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_DEBUG_CODE = 0xFB,
 	EVENT_ID_RFTEST_READY = 0xFC,	/* 0xFC */
 	EVENT_ID_TX_DONE_STATUS = 0xFD,
-	EVENT_ID_WARNING_TO_DRIVER = 0xFE,	/* 0xFE, FW warning Log send to driver */
+	EVENT_ID_FW_LOG_ENV = 0xFE,	/* 0xFE, FW real time debug log */
 } ENUM_EVENT_ID_T, *P_ENUM_EVENT_ID_T;
 
 /*******************************************************************************
@@ -1991,12 +1991,12 @@ typedef struct _CMD_WFD_DEBUG_MODE_INFO_T {
 	UINT_8 Reserved;
 } CMD_WFD_DEBUG_MODE_INFO_T, *P_CMD_WFD_DEBUG_MODE_INFO_T;
 
-typedef struct _EVENT_LOG_TO_DRIVER_T {
-	UCHAR fileName[64];
+typedef struct _EVENT_FW_LOG_T {
+	UINT_8 fileName[64];
 	UINT_32 lineNo;
 	UINT_32 WifiUpTime;
-	UCHAR log[896];		/* total size is aucBuffer in WIFI_EVENT_T */
-} EVENT_LOG_TO_DRIVER_T, *P_EVENT_LOG_TO_DRIVER_T;
+	UINT_8 log[896];	/* total size is aucBuffer in WIFI_EVENT_T */
+} EVENT_FW_LOG_T, *P_EVENT_FW_LOG_T;
 
 typedef enum _ENUM_NLO_CIPHER_ALGORITHM {
 	NLO_CIPHER_ALGO_NONE = 0x00,
