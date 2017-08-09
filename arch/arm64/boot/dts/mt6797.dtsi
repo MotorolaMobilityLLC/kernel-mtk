@@ -4060,12 +4060,6 @@
 			compatible = "mediatek,goodix-fp";
 		};
 
-		ccci_off {
-			compatible = "mediatek,mt6797-ccci_off";
-			clocks = <&scpsys SCP_SYS_MD1>;
-			clock-names = "scp-sys-md1-main";
-		};
-
 		ccci_util_cfg {
 			compatible = "mediatek,ccci_util_cfg";
 			mediatek,md1-smem-size = <0x200000>;
