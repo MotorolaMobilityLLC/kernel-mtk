@@ -333,6 +333,7 @@ long atf_log_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 static const struct file_operations atf_log_fops = {
 	.owner      = THIS_MODULE,
 	.unlocked_ioctl = atf_log_ioctl,
+	.compat_ioctl = atf_log_ioctl,
 	.poll       = atf_log_poll,
 	.read       = atf_log_read,
 	.open       = atf_log_open,
@@ -492,6 +493,7 @@ static const struct file_operations proc_atf_log_file_operations = {
 	.open   = atf_log_open,
 	.read   = atf_log_read,
 	.unlocked_ioctl = atf_log_ioctl,
+	.compat_ioctl = atf_log_ioctl,
 	.release = atf_log_release,
 	.poll   = atf_log_poll,
 };
