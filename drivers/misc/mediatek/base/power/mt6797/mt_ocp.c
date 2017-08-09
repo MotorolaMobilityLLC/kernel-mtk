@@ -258,6 +258,10 @@ return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPSETTARGET, OCPMode, Target, 0);
 
 int BigOCPEnable(int OCPMode, int Units, int ClkPctMin, int FreqPctMin)
 {
+int ret;
+
+if (ocp_cluster2_enable == 1)
+	return 0;
 
 if ((ClkPctMin < 625) || (ClkPctMin > 10000)) {
 	if (HW_API_RET_DEBUG_ON)
@@ -280,23 +284,27 @@ if (!((OCPMode == OCP_ALL) || (OCPMode == OCP_FPI) || (OCPMode == OCP_OCPI))) {
 }
 
 if (Units == OCP_MA) {
-	ocp_cluster2_enable = 1;
-	if (HW_API_DEBUG_ON)
-		ocp_info("Cluster 2 enable.\n");
-
-	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
+	if (ret == 0) {
+		ocp_cluster2_enable = 1;
+		if (HW_API_DEBUG_ON)
+			ocp_info("Cluster 2 enable.\n");
+	return 0;
+	}
 } else if (Units == OCP_MW) {
-	ocp_cluster2_enable = 1;
-	if (HW_API_DEBUG_ON)
-		ocp_info("Cluster 2 enable.\n");
-
-	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
+	if (ret == 0) {
+		ocp_cluster2_enable = 1;
+		if (HW_API_DEBUG_ON)
+			ocp_info("Cluster 2 enable.\n");
+	return 0;
+	}
 } else {
 		if (HW_API_RET_DEBUG_ON)
 			ocp_err("Units != OCP_mA/mW (0/1)");
-return -1;
 }
 
+return -1;
 
 }
 
@@ -638,6 +646,7 @@ return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPSETTARGET, Cluster, Target, 0)
 
 int LittleOCPEnable(int Cluster, int Units, int ClkPctMin)
 {
+int ret;
 
 if (!((Units == OCP_MA) || (Units == OCP_MW))) {
 	if (HW_API_RET_DEBUG_ON)
@@ -661,16 +670,31 @@ return -1;
 }
 
 if (Cluster == OCP_LL) {
-	ocp_cluster0_enable = 1;
-	if (HW_API_DEBUG_ON)
-		ocp_info("Cluster 0 enable.\n");
+	if (ocp_cluster0_enable == 1)
+		return 0;
+
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPENABLE, Cluster, Units, ClkPctMin);
+	if (ret == 0) {
+		ocp_cluster0_enable = 1;
+		if (HW_API_DEBUG_ON)
+			ocp_info("Cluster 0 enable.\n");
+	return 0;
+	}
 }
 if (Cluster == OCP_L) {
-	ocp_cluster1_enable = 1;
-	if (HW_API_DEBUG_ON)
-		ocp_info("Cluster 1 enable.\n");
+	if (ocp_cluster1_enable == 1)
+		return 0;
+
+	ret = mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPENABLE, Cluster, Units, ClkPctMin);
+	if (ret == 0) {
+		ocp_cluster1_enable = 1;
+		if (HW_API_DEBUG_ON)
+			ocp_info("Cluster 1 enable.\n");
+	return 0;
+	}
 }
-return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPENABLE, Cluster, Units, ClkPctMin);
+
+return -1;
 
 }
 
@@ -1176,26 +1200,32 @@ return 0;
 /* Big OCP init API */
 void Cluster2_OCP_ON(void)
 {
+if (ocp_cluster2_enable == 0) {
 	BigOCPConfig(300, 10000);
 	BigOCPSetTarget(3, 127000);
 	BigOCPEnable(3, 1, 625, 0);
+	}
 }
 
 /* Little OCP init API */
 void Cluster0_OCP_ON(void)
 {
-LittleOCPConfig(0, 300, 10000);
-LittleOCPSetTarget(0, 127000);
-LittleOCPDVFSSet(0, 897, 1000);
-LittleOCPEnable(0, 1, 625);
+if (ocp_cluster0_enable == 0) {
+	LittleOCPConfig(0, 300, 10000);
+	LittleOCPSetTarget(0, 127000);
+	LittleOCPDVFSSet(0, 897, 1000);
+	LittleOCPEnable(0, 1, 625);
+	}
 }
 
 void Cluster1_OCP_ON(void)
 {
-LittleOCPConfig(1, 300, 10000);
-LittleOCPSetTarget(1, 127000);
-LittleOCPDVFSSet(1, 1274, 1000);
-LittleOCPEnable(1, 1, 625);
+if (ocp_cluster1_enable == 0) {
+	LittleOCPConfig(1, 300, 10000);
+	LittleOCPSetTarget(1, 127000);
+	LittleOCPDVFSSet(1, 1274, 1000);
+	LittleOCPEnable(1, 1, 625);
+	}
 }
 
 
@@ -1778,7 +1808,7 @@ return 0;
 
 static ssize_t ocp_cluster2_enable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-int function_id, val[5], ret = 0;
+int function_id, val[5];
 char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
@@ -1788,19 +1818,15 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 	switch (function_id) {
 	case 3:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = BigOCPConfig(val[0], val[1]);
+			BigOCPConfig(val[0], val[1]);
 		break;
 	case 2:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = BigOCPSetTarget(val[0], val[1]);
+			BigOCPSetTarget(val[0], val[1]);
 		break;
 	case 1:
 		if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5)
-			ret = BigOCPEnable(val[0], val[1], val[2], val[3]);
-
-		if (ret == 0)
-			ocp_cluster2_enable = 1;
-
+			BigOCPEnable(val[0], val[1], val[2], val[3]);
 		break;
 	case 0:
 		BigOCPDisable();
@@ -1822,8 +1848,6 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		ocp_status[2].CPU3RawLkg = 0;
 		ocp_info("Cluster 2 Big OCP Disable\n");
 
-		if (ret == 0)
-			ocp_cluster2_enable = 0;
 
 		break;
 
@@ -1844,7 +1868,7 @@ return 0;
 
 static ssize_t ocp_cluster0_enable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-int function_id, val[3], ret = 0;
+int function_id, val[3];
 char *buf = _copy_from_user_for_proc(buffer, count);
 
 if (!buf)
@@ -1854,25 +1878,22 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 4:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = LittleOCPConfig(0, val[0], val[1]);
+			LittleOCPConfig(0, val[0], val[1]);
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
-			ret = LittleOCPSetTarget(0, val[0]);
+			LittleOCPSetTarget(0, val[0]);
 		break;
 	case 2:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = LittleOCPDVFSSet(0, val[0], val[1]);
+			LittleOCPDVFSSet(0, val[0], val[1]);
 		break;
 	case 1:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			ret = LittleOCPEnable(0, val[0], val[1]);
-
-		if (ret == 0)
-			ocp_cluster0_enable = 1;
+			LittleOCPEnable(0, val[0], val[1]);
 		break;
 	case 0:
-		ret = LittleOCPDisable(0);
+		LittleOCPDisable(0);
 		ocp_status[0].IntEnDis = 0;
 		ocp_status[0].IRQ1 = 0;
 		ocp_status[0].IRQ0 = 0;
@@ -1890,10 +1911,6 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		ocp_status[0].CPU2RawLkg = 0;
 		ocp_status[0].CPU3RawLkg = 0;
 		ocp_info("Cluster 0 Little OCP Disable\n");
-
-		if (ret == 0)
-			ocp_cluster0_enable = 0;
-
 		break;
 
 	default:
@@ -1913,7 +1930,7 @@ return 0;
 
 static ssize_t ocp_cluster1_enable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-int function_id, val[3], ret = 0;
+int function_id, val[3];
 char *buf = _copy_from_user_for_proc(buffer, count);
 
 if (!buf)
@@ -1923,26 +1940,22 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 4:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-				ret = LittleOCPConfig(1, val[0], val[1]);
+				LittleOCPConfig(1, val[0], val[1]);
 			break;
 		case 3:
 			if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
-				ret = LittleOCPSetTarget(1, val[0]);
+				LittleOCPSetTarget(1, val[0]);
 			break;
 		case 2:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-				ret = LittleOCPDVFSSet(1, val[0], val[1]);
+				LittleOCPDVFSSet(1, val[0], val[1]);
 			break;
 		case 1:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-				ret = LittleOCPEnable(1, val[0], val[1]);
-
-				if (ret == 0)
-					ocp_cluster1_enable = 1;
-
+				LittleOCPEnable(1, val[0], val[1]);
 			break;
 		case 0:
-			ret = LittleOCPDisable(1);
+			LittleOCPDisable(1);
 			ocp_status[1].IntEnDis = 0;
 			ocp_status[1].IRQ1 = 0;
 			ocp_status[1].IRQ0 = 0;
@@ -1959,12 +1972,7 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 			ocp_status[1].CPU1RawLkg = 0;
 			ocp_status[1].CPU2RawLkg = 0;
 			ocp_status[1].CPU3RawLkg = 0;
-
 			ocp_info("Cluster 1 Little OCP Disable\n");
-
-			if (ret == 0)
-				ocp_cluster1_enable = 0;
-
 			break;
 
 		default:
