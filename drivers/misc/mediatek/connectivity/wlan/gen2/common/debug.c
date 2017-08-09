@@ -20,6 +20,7 @@ struct MGMT_FRAME {
 
 struct TC_RES_RELEASE_ENTRY {
 	UINT_64 u8RelaseTime;
+	UINT_32 u4RelCID;
 	UINT_8	ucTc4RelCnt;
 	UINT_8	ucAvailableTc4;
 };
@@ -87,11 +88,12 @@ VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
 		u2CurEntry = 0;
 }
 
-VOID wlanTraceReleaseTcRes(PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable)
+VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable)
 {
 	static UINT_16 u2CurEntry;
 	struct TC_RES_RELEASE_ENTRY *prCurBuf = &gprTcReleaseTraceBuffer[u2CurEntry];
 
+	HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurBuf->u4RelCID);
 	prCurBuf->u8RelaseTime = sched_clock();
 	prCurBuf->ucTc4RelCnt = aucTxRlsCnt[TC4_INDEX];
 	prCurBuf->ucAvailableTc4 = ucAvailable;
@@ -112,9 +114,9 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 		for (; i < TXED_CMD_TRACE_BUF_MAX_NUM/2; i++) {
 			bufLen = snprintf(pucBuf, maxLen,
 				"%d: Time %llu, Type %d, Content %08x; %d: Time %llu, Type %d, Content %08x\n",
-				i*2, prCmd[i*2].u8TxTime, prCmd[i*2].eCmdType, (UINT_32)(prCmd[i*2].u.rCmd.ucCID),
+				i*2, prCmd[i*2].u8TxTime, prCmd[i*2].eCmdType, *(PUINT_32)(&prCmd[i*2].u.rCmd.ucCID),
 				i*2+1, prCmd[i*2+1].u8TxTime, prCmd[i*2+1].eCmdType,
-				(UINT_32)(prCmd[i*2+1].u.rCmd.ucCID));
+				*(PUINT_32)(&prCmd[i*2+1].u.rCmd.ucCID));
 			if (bufLen <= 0)
 				break;
 			pucBuf += bufLen;
@@ -122,39 +124,42 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 		}
 		for (i = 0; i < TC_RELEASE_TRACE_BUF_MAX_NUM/2; i++) {
 			bufLen = snprintf(pucBuf, maxLen,
-				"%d: Time %llu, Tc4Cnt %d, Free %d; %d: Time %llu, Tc4Cnt %d, Free %d;\n",
+				"%d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d CID %08x\n",
 				i*2, prTcRel[i*2].u8RelaseTime, prTcRel[i*2].ucTc4RelCnt, prTcRel[i*2].ucAvailableTc4,
+				prTcRel[i*2].u4RelCID,
 				i*2+1, prTcRel[i*2+1].u8RelaseTime, prTcRel[i*2+1].ucTc4RelCnt,
-				prTcRel[i*2+1].ucAvailableTc4);
+				prTcRel[i*2+1].ucAvailableTc4, prTcRel[i*2+1].u4RelCID);
 			if (bufLen <= 0)
 				break;
 			pucBuf += bufLen;
 			maxLen -= bufLen;
 		}
-	} else {
-		for (; i < TXED_CMD_TRACE_BUF_MAX_NUM/4; i++) {
-			LOG_FUNC("[wlan] %d: Time %llu, Type %d, Content %08x; %d: Time %llu, Type %d, Content %08x; ",
-				i*4, prCmd[i*4].u8TxTime, prCmd[i*4].eCmdType,
-				(UINT_32)(prCmd[i*4].u.rCmd.ucCID),
-				i*4+1, prCmd[i*4+1].u8TxTime, prCmd[i*4+1].eCmdType,
-				(UINT_32)(prCmd[i*4+1].u.rCmd.ucCID));
-			LOG_FUNC("%d: Time %llu, Type %d, Content %08x; %d: Time %llu, Type %d, Content %08x\n",
-				i*4+2, prCmd[i*4+2].u8TxTime, prCmd[i*4+2].eCmdType,
-				(UINT_32)(prCmd[i*4+2].u.rCmd.ucCID),
-				i*4+3, prCmd[i*4+3].u8TxTime, prCmd[i*4+3].eCmdType,
-				(UINT_32)(prCmd[i*4+3].u.rCmd.ucCID));
-		}
-		for (i = 0; i < TC_RELEASE_TRACE_BUF_MAX_NUM/4; i++) {
-			LOG_FUNC("[wlan] %d: Time %llu, Tc4Cnt %d, Free %d; %d: Time %llu, Tc4Cnt %d, Free %d; ",
-				i*4, prTcRel[i*4].u8RelaseTime, prTcRel[i*4].ucTc4RelCnt,
-				prTcRel[i*4].ucAvailableTc4,
-				i*4+1, prTcRel[i*4+1].u8RelaseTime, prTcRel[i*4+1].ucTc4RelCnt,
-				prTcRel[i*4+1].ucAvailableTc4);
-			LOG_FUNC("%d: Time %llu, Tc4Cnt %d, Free %d; %d: Time %llu, Tc4Cnt %d, Free %d\n",
-				i*4+2, prTcRel[i*4+2].u8RelaseTime, prTcRel[i*4+2].ucTc4RelCnt,
-				prTcRel[i*4+2].ucAvailableTc4,
-				i*4+3, prTcRel[i*4+3].u8RelaseTime, prTcRel[i*4+3].ucTc4RelCnt,
-				prTcRel[i*4+3].ucAvailableTc4);
-		}
+		return;
+	}
+	for (; i < TXED_CMD_TRACE_BUF_MAX_NUM/4; i++) {
+		LOG_FUNC("%d: Time %llu, Type %d, Content %08x; %d: Time %llu, Type %d, Content %08x; ",
+			i*4, prCmd[i*4].u8TxTime, prCmd[i*4].eCmdType,
+			*(PUINT_32)(&prCmd[i*4].u.rCmd.ucCID),
+			i*4+1, prCmd[i*4+1].u8TxTime, prCmd[i*4+1].eCmdType,
+			*(PUINT_32)(&prCmd[i*4+1].u.rCmd.ucCID));
+		LOG_FUNC("%d: Time %llu, Type %d, Content %08x; %d: Time %llu, Type %d, Content %08x\n",
+			i*4+2, prCmd[i*4+2].u8TxTime, prCmd[i*4+2].eCmdType,
+			*(PUINT_32)(&prCmd[i*4+2].u.rCmd.ucCID),
+			i*4+3, prCmd[i*4+3].u8TxTime, prCmd[i*4+3].eCmdType,
+			*(PUINT_32)(&prCmd[i*4+3].u.rCmd.ucCID));
+	}
+	for (i = 0; i < TC_RELEASE_TRACE_BUF_MAX_NUM/4; i++) {
+		LOG_FUNC(
+			"%d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x;",
+			i*4, prTcRel[i*4].u8RelaseTime, prTcRel[i*4].ucTc4RelCnt,
+			prTcRel[i*4].ucAvailableTc4, prTcRel[i*4].u4RelCID,
+			i*4+1, prTcRel[i*4+1].u8RelaseTime, prTcRel[i*4+1].ucTc4RelCnt,
+			prTcRel[i*4+1].ucAvailableTc4, prTcRel[i*4+1].u4RelCID);
+		LOG_FUNC(
+			" %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x\n",
+			i*4+2, prTcRel[i*4+2].u8RelaseTime, prTcRel[i*4+2].ucTc4RelCnt,
+			prTcRel[i*4+2].ucAvailableTc4, prTcRel[i*4+2].u4RelCID,
+			i*4+3, prTcRel[i*4+3].u8RelaseTime, prTcRel[i*4+3].ucTc4RelCnt,
+			prTcRel[i*4+3].ucAvailableTc4, prTcRel[i*4+3].u4RelCID);
 	}
 }

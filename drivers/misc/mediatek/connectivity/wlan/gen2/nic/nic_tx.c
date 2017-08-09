@@ -545,7 +545,6 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
-	BOOLEAN fgTimeout;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -574,15 +573,12 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	if (ucTC == TC4_INDEX) {
 		if (u4CurrTick == 0)
 			u4CurrTick = kalGetTimeTick();
-		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > TC4_NO_RESOURCE_DELAY_MS) ? TRUE : FALSE;
-		if (fgTimeout) {
-			UINT_32 u4RegValue = 0;
-
-			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
-			HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
-			DBGLOG(TX, INFO, "last three freed cmd id %06x", ((u4RegValue >> 8) & 0xffffff));
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
+				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_MS))) {
 			wlanDumpTcResAndTxedCmd(NULL, 0);
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+			glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
 			glDoChipReset();
 		}
 	}
@@ -686,7 +682,7 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRl
 		for (i = 0; i < TC_NUM; i++)
 			prTxCtrl->rTc.aucFreeBufferCount[i] += aucTxRlsCnt[i];
 		if (aucTxRlsCnt[TC4_INDEX] != 0)
-			wlanTraceReleaseTcRes(aucTxRlsCnt, prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX]);
+			wlanTraceReleaseTcRes(prAdapter, aucTxRlsCnt, prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX]);
 
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 #if 0
