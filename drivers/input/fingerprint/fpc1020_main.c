@@ -25,6 +25,7 @@
 #include <linux/types.h>
 /*MTK header*/
 #include <mt_spi.h>
+#include <mt_spi_hal.h>
 #include <mt-plat/mt_gpio.h>
 
 #ifndef CONFIG_OF
@@ -551,6 +552,8 @@ static int fpc1020_probe(struct spi_device *spi)
 	dev_info(&fpc1020->spi->dev,
 			"Req. SPI frequency : %d kHz.\n",
 			fpc1020->spi_freq_khz);
+
+	spi_clr_pinctrl(1);
 #if 0
 	buffer_size = fpc1020_calc_huge_buffer_minsize(fpc1020);
 	error = fpc1020_manage_huge_buffer(fpc1020, buffer_size);
