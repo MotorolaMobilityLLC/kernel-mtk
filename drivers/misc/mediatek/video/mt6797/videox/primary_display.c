@@ -3655,6 +3655,36 @@ int primary_suspend_release_fence(void)
 	return 0;
 }
 
+/* Need rull roi when suspend*/
+int suspend_to_full_roi(void)
+{
+	int ret = 0;
+	cmdqRecHandle handle = NULL;
+	disp_ddp_path_config *data_config = NULL;
+
+	if (!disp_partial_is_support())
+		return -1;
+
+	if (!primary_display_is_directlink_mode())
+		return -1;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return -1;
+	}
+	cmdqRecReset(handle);
+	_cmdq_insert_wait_frame_done_token_mira(handle);
+
+	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+
+	primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
+
+	cmdqRecFlush(handle);
+	cmdqRecDestroy(handle);
+	return ret;
+}
+
 int primary_display_suspend(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -3692,6 +3722,9 @@ int primary_display_suspend(void)
 
 	/* restore to 60 fps */
 	_display_set_lcm_refresh_rate(60);
+
+	/* restore to full roi */
+	suspend_to_full_roi();
 
 	/* need leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
