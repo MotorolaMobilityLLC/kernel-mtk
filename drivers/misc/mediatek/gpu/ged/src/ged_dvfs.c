@@ -802,7 +802,7 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 	if(g_dvfs_skip_round>0)
 	{
 		g_dvfs_skip_round--;
-		goto EXIT_ged_dvfs_run;			
+		//goto EXIT_ged_dvfs_run;			
 	}		
 
 	if (g_iSkipCount > 0)
