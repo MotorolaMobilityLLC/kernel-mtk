@@ -7,6 +7,9 @@ ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20
 ccflags-$(CONFIG_MTK_MUSB_QMU_SUPPORT) += -DMUSB_QMU_SUPPORT
 ##ccflags-$(CONFIG_MTK_MUSB_QMU_SUPPORT) += -DQMU_TASKLET
 
+# for DVFS control usage
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
+
 obj-$(CONFIG_USB_MTK_HDRC)	:= usb20.o usb20_phy.o
 obj-$(CONFIG_USB_MTK_HDRC)  += usb20_host.o
 obj-$(CONFIG_USBIF_COMPLIANCE)   += usb20_otg_if.o

@@ -146,10 +146,8 @@ static struct platform_device mt_usb_device = {
 MODULE_DEVICE_TABLE(of, apusb_of_ids);
 
 #ifndef FPGA_PLATFORM
-/* GIT K318 WORKAROUND */
-#undef CONFIG_ARCH_MT6735
 #ifdef CONFIG_ARCH_MT6735
-#include <mach/mt_vcore_dvfs.h>
+#include "mt_vcore_dvfs.h"
 static int vcore_releasing;
 static struct workqueue_struct *vcore_wq;
 static struct work_struct vcore_work;
