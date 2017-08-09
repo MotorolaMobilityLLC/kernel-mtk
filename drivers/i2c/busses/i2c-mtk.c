@@ -544,6 +544,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	if (~control_reg & I2C_CONTROL_RS)
 		i2c_writew(I2C_DELAY_LEN, i2c, OFFSET_DELAY_LEN);
 
+	/* Set ioconfig */
+	if (i2c->use_push_pull)
+		i2c_writew(I2C_IO_CONFIG_PUSH_PULL, i2c, OFFSET_IO_CONFIG);
+	else
+		i2c_writew(I2C_IO_CONFIG_OPEN_DRAIN, i2c, OFFSET_IO_CONFIG);
+
+	i2c_writew(i2c->timing_reg, i2c, OFFSET_TIMING);
+	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
+
 	addr_reg = i2c->addr << 1;
 	if (i2c->op == I2C_MASTER_RD)
 		addr_reg |= 0x1;
