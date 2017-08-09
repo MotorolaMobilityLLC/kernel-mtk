@@ -73,6 +73,7 @@ endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797"))
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
+ccflags-y += -DCMDQ_DVFS_SPECIAL
 endif
 
 ccflags-y += -D_CMDQ_DISABLE_MARKER_

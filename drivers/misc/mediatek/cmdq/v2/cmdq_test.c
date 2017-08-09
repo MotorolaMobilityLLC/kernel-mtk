@@ -3298,6 +3298,11 @@ typedef enum CMDQ_TESTCASE_ENUM {
 static void testcase_general_handling(int32_t testID)
 {
 	switch (testID) {
+#ifdef CMDQ_DVFS_SPECIAL
+	case 999:
+		cmdq_dump_special_thread("");
+		break;
+#endif
 	case 121:
 		testcase_prefetch_from_DTS();
 		break;

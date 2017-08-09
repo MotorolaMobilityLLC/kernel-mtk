@@ -142,6 +142,102 @@ static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
 
 static cmdqDTSDataStruct gCmdqDtsData;
 
+#ifdef CMDQ_DVFS_SPECIAL
+static const uint32_t g_special_shuffle[] = {
+		0xfffdffff, 0x02000000, 0x00020000, 0x04084029,
+		0xfffdffff, 0x02000000, 0x00020000, 0x04093029,
+		0xfffffffe, 0x02000000, 0x00000001, 0x0808416d,
+		0xfffdffff, 0x02000000, 0x00000000, 0x04084029,
+		0xfffdffff, 0x02000000, 0x00000000, 0x04093029,
+		0x00000001, 0x0408663c, 0x00000000, 0x40000000,
+		0x00000008, 0x10000000
+		};
+
+typedef struct CmdqSpecialCMDStruct {
+	void *pVABase;			/* VA: denote CMD virtual address space */
+	dma_addr_t MVABase;		/* PA: denote the PA for CMD */
+	uint32_t bufferSize;	/* size of allocated command buffer */
+} CmdqSpecialCMDStruct;
+
+static CmdqSpecialCMDStruct g_special_cmd;
+
+void cmdq_special_init(void)
+{
+	cmdqRecHandle handle;
+	uint32_t buffer_size = sizeof(g_special_shuffle);
+	void *pVA = NULL;
+	dma_addr_t PA = 0;
+
+	pVA = dma_alloc_coherent(cmdq_dev_get(), buffer_size, &PA, GFP_KERNEL);
+
+	memcpy(pVA, g_special_shuffle, buffer_size);
+
+	CMDQ_LOG("Set special CMD START:%x, size: %d\n", (uint32_t)PA, buffer_size);
+
+	g_special_cmd.MVABase = PA;
+	g_special_cmd.pVABase = pVA;
+	g_special_cmd.bufferSize = buffer_size;
+
+	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdqRecReset(handle);
+	cmdqRecSetSecure(handle, 0);
+
+	cmdqRecWrite(handle, 0x10006414, (uint32_t)PA, ~0);
+	cmdqRecWrite(handle, 0x10006418, (uint32_t)PA+buffer_size, ~0);
+
+	cmdqRecFlushAsync(handle);
+
+	/* clear up */
+	cmdqRecDestroy(handle);
+}
+
+void cmdq_special_deinit(void)
+{
+	dma_free_coherent(cmdq_dev_get(), g_special_cmd.bufferSize, g_special_cmd.pVABase, g_special_cmd.MVABase);
+}
+
+void cmdq_dump_special_thread(const char *tag)
+{
+	const uint32_t thread = 1;
+	long currPC = 0L;
+	uint8_t *pInst = NULL;
+	uint32_t value[7] = { 0 };
+	char parsedInstruction[128] = { 0 };
+	uint32_t cmd_size = sizeof(g_special_shuffle) / sizeof(g_special_shuffle[0]);
+	uint32_t *pCMDEnd = (uint32_t *)g_special_cmd.pVABase + cmd_size;
+
+	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
+	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
+	value[2] = CMDQ_GET_COOKIE_CNT(thread);
+	value[3] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
+	value[4] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
+	value[5] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
+	value[6] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
+
+	CMDQ_LOG("[%s]Special Thread(%d) information:\n", tag, thread);
+	CMDQ_LOG("[%s]Special CMD START:%x, size: %d\n",
+			tag, (uint32_t)g_special_cmd.MVABase, g_special_cmd.bufferSize);
+	CMDQ_LOG("[%s]Enabled: %d, Thread PC: 0x%08x, End: 0x%08x, Curr Cookie: %d\n",
+			tag, value[6], value[0], value[1], value[2]);
+	CMDQ_LOG("[%s]Timeout Cycle:%d, Status:0x%08x, IRQ_EN: 0x%08x\n",
+			tag, value[3], value[4], value[5]);
+
+	currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+	pInst = (uint8_t *) g_special_cmd.pVABase + (currPC - g_special_cmd.MVABase);
+
+	if (((uint8_t *) g_special_cmd.pVABase <= pInst) &&
+		(pInst <= (uint8_t *) pCMDEnd) && (pInst != (uint8_t *) pCMDEnd)) {
+		cmdq_core_parse_instruction((uint32_t *)pInst, parsedInstruction, sizeof(parsedInstruction));
+		CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
+			 tag, thread, pInst, CMDQ_REG_GET32(pInst + 0), CMDQ_REG_GET32(pInst + 4),
+			 parsedInstruction);
+	} else {
+		/* invalid PC address */
+		CMDQ_LOG("[%s]Thread %d PC(VA): Not available\n", tag, thread);
+	}
+}
+#endif
+
 uint32_t cmdq_core_max_task_in_thread(int32_t thread)
 {
 	int32_t maxTaskNUM = CMDQ_MAX_TASK_IN_THREAD;
@@ -2863,7 +2959,9 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
+#ifndef CMDQ_DVFS_SPECIAL
 			cmdq_get_func()->enableGCEClockLocked(enable);
+#endif
 			cmdq_core_reset_hw_events();
 			cmdq_core_config_prefetch_gsize();
 #ifdef CMDQ_ENABLE_BUS_ULTRA
@@ -2894,7 +2992,9 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
+#ifndef CMDQ_DVFS_SPECIAL
 			cmdq_get_func()->enableGCEClockLocked(enable);
+#endif
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
@@ -4936,7 +5036,10 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 
 		printEngineFlag |= pTask->engineFlag;
 	}
-
+#ifdef CMDQ_DVFS_SPECIAL
+	CMDQ_ERR("=============== [CMDQ] Special Thread Info ===============\n");
+	cmdq_dump_special_thread("ERR");
+#endif
 	/* dump tasks in error thread */
 	cmdq_core_dump_task_in_thread(thread, false, false, false);
 	cmdq_core_dump_task_with_engine_flag(printEngineFlag);
@@ -5686,6 +5789,11 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(TaskStruct *pTask, int
 		/* HACK: check trigger thread status */
 		cmdq_core_dump_disp_trigger_loop("INFO");
 		/* end of HACK */
+#ifdef CMDQ_DVFS_SPECIAL
+		CMDQ_LOG("=== [CMDQ] Special Thread Info ===\n");
+		cmdq_dump_special_thread("INFO");
+		CMDQ_LOG("=== [CMDQ] Special Thread Info END ===\n");
+#endif
 
 		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
@@ -6662,9 +6770,17 @@ int32_t cmdqCoreSuspend(void)
 			 refCount);
 		killTasks = true;
 	} else if ((refCount > 0) || (0x80000000 & execThreads)) {
+#ifdef CMDQ_DVFS_SPECIAL
+		if ((0x7FFFFFFF & execThreads) != 1) {
+			CMDQ_ERR("[SUSPEND] other running, kill tasks. threads:0x%08x, ref:%d\n",
+				execThreads, refCount);
+			killTasks = true;
+		}
+#else
 		CMDQ_ERR("[SUSPEND] other running, kill tasks. threads:0x%08x, ref:%d\n",
-			 execThreads, refCount);
+			execThreads, refCount);
 		killTasks = true;
+#endif
 	}
 
 	/*  */
@@ -6704,8 +6820,14 @@ int32_t cmdqCoreSuspend(void)
 		/* TODO: skip secure path thread... */
 		/* disable all HW thread */
 		CMDQ_ERR("[SUSPEND] disable all HW threads\n");
-		for (i = 0; i < CMDQ_MAX_THREAD_COUNT; ++i)
+		for (i = 0; i < CMDQ_MAX_THREAD_COUNT; ++i) {
+#ifdef CMDQ_DVFS_SPECIAL
+			if (i != 1)
+				cmdq_core_disable_HW_thread(i);
+#else
 			cmdq_core_disable_HW_thread(i);
+#endif
+		}
 
 		/* reset all threadStruct */
 		memset(&gCmdqContext.thread[0], 0, sizeof(gCmdqContext.thread));
@@ -7517,6 +7639,10 @@ int32_t cmdqCoreInitialize(void)
 	/* MDP initialization setting */
 	cmdq_mdp_get_func()->mdpInitialSet();
 
+#ifdef CMDQ_DVFS_SPECIAL
+	/* Special initialization*/
+	cmdq_special_init();
+#endif
 	return 0;
 }
 
@@ -7587,6 +7713,10 @@ void cmdqCoreDeInitialize(void)
 
 	/* Deinitialize secure path context */
 	cmdqSecDeInitialize();
+#ifdef CMDQ_DVFS_SPECIAL
+	/* Special deinitialization*/
+	cmdq_special_deinit();
+#endif
 }
 
 int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)

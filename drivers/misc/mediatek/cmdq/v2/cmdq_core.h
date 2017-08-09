@@ -975,7 +975,9 @@ extern "C" {
 	void cmdq_core_set_feature(CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
 	uint32_t cmdq_core_get_feature(CMDQ_FEATURE_TYPE_ENUM featureOption);
 	bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption);
-
+#ifdef CMDQ_DVFS_SPECIAL
+	void cmdq_dump_special_thread(const char *tag);
+#endif
 #ifdef __cplusplus
 }
 #endif
