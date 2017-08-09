@@ -4,8 +4,12 @@
 #include <linux/interrupt.h>
 #include <linux/cpu.h>
 #include <linux/notifier.h>
+#if defined(CONFIG_MTK_AEE_FEATURE)
+#if CONFIG_MTK_AEE_FEATURE
 #include <linux/aee.h>
 #include <linux/mtk_ram_console.h>
+#endif
+#endif
 /*
 #include <asm/mach/irq.h>
 #include <asm/hardware/gic.h>
@@ -937,9 +941,12 @@ static void fiq_isr(struct fiq_glue_handler *h, void *regs, void *svc_sp)
 	if (irq == FIQ_SMP_CALL_SGI)
 		fiq_isr_logs[cpu].smp_call_cnt++;
 
+#if defined(CONFIG_MTK_AEE_FEATURE)
+#if CONFIG_MTK_AEE_FEATURE
 	if (irq == WDT_IRQ_BIT_ID)
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_FIQ_ISR_BASE);
-
+#endif
+#endif
 	for (i = 0; i < ARRAY_SIZE(irqs_to_fiq); i++) {
 		if (irqs_to_fiq[i].irq == irq) {
 			if (irqs_to_fiq[i].handler)
