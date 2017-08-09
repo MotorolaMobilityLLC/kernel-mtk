@@ -197,7 +197,7 @@ bool _hwPowerOnCnt(KD_REGULATOR_TYPE_T powerId, int powerVolt, char *mode_name)
 			cntVCAMA += 1;
 		else if (powerId == VCAMIO)
 			cntVCAMIO += 1;
-		else if (powerId == VCAMIO)
+		else if (powerId == VCAMAF)
 			cntVCAMAF += 1;
 		else if (powerId == SUB_VCAMD)
 			cntVCAMD_SUB += 1;
