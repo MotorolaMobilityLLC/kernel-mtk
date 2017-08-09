@@ -1968,40 +1968,6 @@ static int mmprofile_probe(void)
 		    debugfs_create_file("reset", S_IWUSR, g_pDebugFSDir, NULL,
 					&mmprofile_dbgfs_reset_fops);
 	}
-	/* // Read NVRAM configuration */
-	/* { */
-	/* struct file *filp; */
-	/* unsigned int enable; */
-	/* unsigned int start; */
-	/* mm_segment_t old_fs; */
-	/* old_fs = get_fs(); */
-	/* set_fs(KERNEL_DS); */
-	/* filp = filp_open(CONFIG_MMPROFILE_PATH, O_RDONLY, 0777); */
-	/* if (IS_ERR(filp)) */
-	/* { */
-	/* pr_debug("[mmprofile] NVM: Cannot open configuration file %s\n", CONFIG_MMPROFILE_PATH); */
-	/* MMProfileEnable(0); */
-	/* } */
-	/* else */
-	/* { */
-	/* filp->f_op->llseek(filp, 0, SEEK_SET); */
-	/* filp->f_op->read(filp, (char*)(&enable), 4, &filp->f_pos); */
-	/* filp->f_op->read(filp, (char*)(&start), 4, &filp->f_pos); */
-	/* filp_close(filp, NULL); */
-	/* pr_debug("[mmprofile] NVM: enable=%d start=%d.\n", enable, start); */
-	/* if (enable == 1) */
-	/* { */
-	/* MMProfileEnable(1); */
-	/* if (start == 1) */
-	/* MMProfileStart(1); */
-	/* else */
-	/* MMProfileStart(0); */
-	/* } */
-	/* else */
-	/* MMProfileEnable(0); */
-	/* } */
-	/* set_fs(old_fs); */
-	/* } */
 	return 0;
 }
 
