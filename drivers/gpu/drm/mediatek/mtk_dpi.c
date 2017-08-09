@@ -304,8 +304,15 @@ static void mtk_dpi_config_color_format(struct mtk_dpi *dpi,
 
 static int mtk_dpi_power_off(struct mtk_dpi *dpi)
 {
+	if (WARN_ON(dpi->refcount == 0))
+		return -EINVAL;
+
+	if (--dpi->refcount != 0)
+		return 0;
+
 	mtk_dpi_disable(dpi);
 	clk_disable_unprepare(dpi->pixel_clk);
+	clk_disable_unprepare(dpi->engine_clk);
 
 	return 0;
 }
@@ -314,14 +321,30 @@ static int mtk_dpi_power_on(struct mtk_dpi *dpi)
 {
 	int ret;
 
+	if (dpi->refcount++ != 1)
+		return 0;
+
+	ret = clk_prepare_enable(dpi->engine_clk);
+	if (ret) {
+		dev_err(dpi->dev, "Failed to enable engine clock: %d\n", ret);
+		goto err_dec;
+	}
+
 	ret = clk_prepare_enable(dpi->pixel_clk);
 	if (ret) {
 		dev_err(dpi->dev, "Failed to enable pixel clock: %d\n", ret);
-		return ret;
+		goto err_clk;
 	}
+
 	mtk_dpi_enable(dpi);
 
 	return 0;
+
+err_clk:
+	clk_disable_unprepare(dpi->engine_clk);
+err_dec:
+	dpi->refcount--;
+	return ret;
 }
 
 int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
@@ -482,17 +505,43 @@ static const struct drm_encoder_helper_funcs mtk_dpi_encoder_helper_funcs = {
 	.atomic_check = mtk_dpi_atomic_check,
 };
 
+static void mtk_dpi_start(struct mtk_ddp_comp *comp)
+{
+	struct mtk_dpi *dpi = container_of(comp, struct mtk_dpi, ddp_comp);
+
+	mtk_dpi_power_on(dpi);
+}
+
+static void mtk_dpi_stop(struct mtk_ddp_comp *comp)
+{
+	struct mtk_dpi *dpi = container_of(comp, struct mtk_dpi, ddp_comp);
+
+	mtk_dpi_power_off(dpi);
+}
+
+static const struct mtk_ddp_comp_funcs mtk_dpi_funcs = {
+	.start = mtk_dpi_start,
+	.stop = mtk_dpi_stop,
+};
+
 static int mtk_dpi_bind(struct device *dev, struct device *master, void *data)
 {
 	struct mtk_dpi *dpi = dev_get_drvdata(dev);
 	struct drm_device *drm_dev = data;
 	int ret;
 
+	ret = mtk_ddp_comp_register(drm_dev, &dpi->ddp_comp);
+	if (ret < 0) {
+		dev_err(dev, "Failed to register component %s: %d\n",
+			dev->of_node->full_name, ret);
+		return ret;
+	}
+
 	ret = drm_encoder_init(drm_dev, &dpi->encoder, &mtk_dpi_encoder_funcs,
 			       DRM_MODE_ENCODER_TMDS);
 	if (ret) {
 		dev_err(dev, "Failed to initialize decoder: %d\n", ret);
-		return ret;
+		goto err_unregister;
 	}
 	drm_encoder_helper_add(&dpi->encoder, &mtk_dpi_encoder_helper_funcs);
 
@@ -515,6 +564,8 @@ static int mtk_dpi_bind(struct device *dev, struct device *master, void *data)
 
 err_cleanup:
 	drm_encoder_cleanup(&dpi->encoder);
+err_unregister:
+	mtk_ddp_comp_unregister(drm_dev, &dpi->ddp_comp);
 	return ret;
 }
 
@@ -522,8 +573,10 @@ static void mtk_dpi_unbind(struct device *dev, struct device *master,
 			   void *data)
 {
 	struct mtk_dpi *dpi = dev_get_drvdata(dev);
+	struct drm_device *drm_dev = data;
 
 	drm_encoder_cleanup(&dpi->encoder);
+	mtk_ddp_comp_unregister(drm_dev, &dpi->ddp_comp);
 }
 
 static const struct component_ops mtk_dpi_component_ops = {
@@ -537,6 +590,7 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 	struct mtk_dpi *dpi;
 	struct resource *mem;
 	struct device_node *ep, *bridge_node = NULL;
+	int comp_id;
 	int ret;
 
 	dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
@@ -598,9 +652,20 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 	if (!dpi->encoder.bridge)
 		return -EPROBE_DEFER;
 
-	platform_set_drvdata(pdev, dpi);
+	comp_id = mtk_ddp_comp_get_id(dev->of_node, MTK_DPI);
+	if (comp_id < 0) {
+		dev_err(dev, "Failed to identify by alias: %d\n", comp_id);
+		return comp_id;
+	}
 
-	clk_prepare_enable(dpi->engine_clk);
+	ret = mtk_ddp_comp_init(dev, dev->of_node, &dpi->ddp_comp, comp_id,
+				&mtk_dpi_funcs);
+	if (ret) {
+		dev_err(dev, "Failed to initialize component: %d\n", ret);
+		return ret;
+	}
+
+	platform_set_drvdata(pdev, dpi);
 
 	ret = component_add(dev, &mtk_dpi_component_ops);
 	if (ret) {
@@ -613,10 +678,6 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 
 static int mtk_dpi_remove(struct platform_device *pdev)
 {
-	struct mtk_dpi *dpi = platform_get_drvdata(pdev);
-
-	clk_disable_unprepare(dpi->engine_clk);
-
 	component_del(&pdev->dev, &mtk_dpi_component_ops);
 
 	return 0;

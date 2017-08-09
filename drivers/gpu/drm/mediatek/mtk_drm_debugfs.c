@@ -268,7 +268,7 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 	struct resource res;
 	int i;
 
-	DRM_INFO("mtk_drm_debugfs_init\n");
+	DRM_DEBUG_DRIVER("%s\n", __func__);
 	mtkdrm_dbgfs = debugfs_create_file("mtkdrm", S_IFREG | S_IRUGO |
 			S_IWUSR | S_IWGRP, NULL, (void *)0, &debug_fops);
 
@@ -295,7 +295,7 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 	gdrm_hdmi_base[i] = mutex_regs;
 	gdrm_disp_table[i].reg_base = mutex_phys;
 
-	DRM_INFO("mtk_drm_debugfs_init..done\n");
+	DRM_DEBUG_DRIVER("%s..done\n", __func__);
 }
 
 void mtk_drm_debugfs_deinit(void)

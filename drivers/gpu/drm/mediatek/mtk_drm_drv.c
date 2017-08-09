@@ -38,7 +38,7 @@
 #define DRIVER_MAJOR 1
 #define DRIVER_MINOR 0
 
-static enum mtk_ddp_comp_id mtk_ddp_main_8173[] = {
+static const enum mtk_ddp_comp_id mtk_ddp_main_8173[] = {
 	DDP_COMPONENT_OVL0,
 	DDP_COMPONENT_COLOR0,
 	DDP_COMPONENT_AAL,
@@ -49,7 +49,7 @@ static enum mtk_ddp_comp_id mtk_ddp_main_8173[] = {
 	DDP_COMPONENT_PWM0,
 };
 
-static enum mtk_ddp_comp_id mtk_ddp_main_2701[] = {
+static const enum mtk_ddp_comp_id mtk_ddp_main_2701[] = {
 	DDP_COMPONENT_OVL0,
 	DDP_COMPONENT_RDMA0,
 	DDP_COMPONENT_COLOR0,
@@ -57,23 +57,31 @@ static enum mtk_ddp_comp_id mtk_ddp_main_2701[] = {
 	DDP_COMPONENT_DSI0,
 };
 
-static struct mtk_mmsys_driver_data mt8173_mmsys_driver_data = {
-	.mtk_ddp_main = mtk_ddp_main_8173,
-	.path_len = ARRAY_SIZE(mtk_ddp_main_8173),
-};
-
-static struct mtk_mmsys_driver_data mt2701_mmsys_driver_data = {
-	.mtk_ddp_main = mtk_ddp_main_2701,
-	.path_len = ARRAY_SIZE(mtk_ddp_main_2701),
-};
-
-
-static const enum mtk_ddp_comp_id mtk_ddp_ext[] = {
+static const enum mtk_ddp_comp_id mtk_ddp_ext_8173[] = {
 	DDP_COMPONENT_OVL1,
 	DDP_COMPONENT_COLOR1,
 	DDP_COMPONENT_GAMMA,
 	DDP_COMPONENT_RDMA1,
 	DDP_COMPONENT_DPI0,
+};
+
+static const enum mtk_ddp_comp_id mtk_ddp_ext_2701[] = {
+	DDP_COMPONENT_OVL0,
+	DDP_COMPONENT_DSI0,
+};
+
+static struct mtk_mmsys_driver_data mt8173_mmsys_driver_data = {
+	.mtk_ddp_main = mtk_ddp_main_8173,
+	.main_path_len = ARRAY_SIZE(mtk_ddp_main_8173),
+	.mtk_ddp_ext = mtk_ddp_ext_8173,
+	.ext_path_len = ARRAY_SIZE(mtk_ddp_ext_8173),
+};
+
+static struct mtk_mmsys_driver_data mt2701_mmsys_driver_data = {
+	.mtk_ddp_main = mtk_ddp_main_2701,
+	.main_path_len = ARRAY_SIZE(mtk_ddp_main_2701),
+	.mtk_ddp_ext = mtk_ddp_ext_2701,
+	.ext_path_len = ARRAY_SIZE(mtk_ddp_ext_2701),
 };
 
 static const struct of_device_id mtk_drm_of_ids[] = {
@@ -108,7 +116,7 @@ static void mtk_atomic_complete(struct mtk_drm_private *private,
 	drm_atomic_helper_commit_modeset_disables(drm, state);
 	drm_atomic_helper_commit_planes(drm, state, false);
 	drm_atomic_helper_commit_modeset_enables(drm, state);
-	drm_atomic_helper_wait_for_vblanks(drm, state);
+
 	drm_atomic_helper_cleanup_planes(drm, state);
 	drm_atomic_state_free(state);
 }
@@ -185,19 +193,25 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 	drm->mode_config.max_height = 4096;
 	drm->mode_config.funcs = &mtk_drm_mode_config_funcs;
 
-	/*
-	 * We currently support two fixed data streams,
-	 * OVL0 -> COLOR0 -> AAL -> OD -> RDMA0 -> UFOE -> DSI0
-	 * and OVL1 -> COLOR1 -> GAMMA -> RDMA1 -> DPI0.
-	 */
-	private->path_len[0] = private->mmsys_driver_data->path_len;
-	private->path[0] = private->mmsys_driver_data->mtk_ddp_main;
-	private->path_len[1] = ARRAY_SIZE(mtk_ddp_ext);
-	private->path[1] = mtk_ddp_ext;
-
 	ret = component_bind_all(drm->dev, drm);
 	if (ret)
 		goto err_config_cleanup;
+
+	/*
+	 * We currently support two fixed data streams, each statically
+	 * assigned to a crtc:
+	 * OVL0 -> COLOR0 -> AAL -> OD -> RDMA0 -> UFOE -> DSI0 ...
+	 */
+	ret = mtk_drm_crtc_create(drm,
+			private->mmsys_driver_data->mtk_ddp_main,
+			private->mmsys_driver_data->main_path_len);
+	if (ret < 0)
+		goto err_component_unbind;
+	/* ... and OVL1 -> COLOR1 -> GAMMA -> RDMA1 -> DPI0. */
+	ret = mtk_drm_crtc_create(drm, private->mmsys_driver_data->mtk_ddp_ext,
+				private->mmsys_driver_data->ext_path_len);
+	if (ret < 0)
+		goto err_component_unbind;
 
 	/*
 	 * We don't use the drm_irq_install() helpers provided by the DRM
@@ -502,9 +516,12 @@ static int mtk_drm_probe(struct platform_device *pdev)
 			continue;
 		}
 
+		private->comp_node[comp_id] = of_node_get(node);
+
 		/*
 		 * Currently only the OVL, DSI, and DPI blocks have separate
-		 * component platform drivers.
+		 * component platform drivers and initialize their own DDP
+		 * component structure. The others are initialized here.
 		 */
 		if (comp_type == MTK_DISP_OVL ||
 		    comp_type == MTK_DSI ||
@@ -512,15 +529,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 			dev_info(dev, "Adding component match for %s\n",
 				 node->full_name);
 			component_match_add(dev, &match, compare_of, node);
-		}
-
-		private->comp_node[comp_id] = of_node_get(node);
-
-		/*
-		 * Currently only the OVL driver initializes its own DDP
-		 * component structure. The others are initialized here.
-		 */
-		if (comp_type != MTK_DISP_OVL) {
+		} else {
 			struct mtk_ddp_comp *comp;
 
 			comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
@@ -530,7 +539,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 			}
 
 			comp->ddp_comp_driver_data = ddp_comp_driver_data;
-			ret = mtk_ddp_comp_init(dev, node, comp, comp_id);
+			ret = mtk_ddp_comp_init(dev, node, comp, comp_id, NULL);
 			if (ret)
 				goto err;
 
@@ -596,7 +605,7 @@ static int mtk_drm_sys_suspend(struct device *dev)
 	}
 	drm_modeset_unlock_all(drm);
 
-	DRM_INFO("mtk_drm_sys_suspend\n");
+	DRM_DEBUG_DRIVER("mtk_drm_sys_suspend\n");
 	return 0;
 }
 
@@ -629,7 +638,7 @@ static int mtk_drm_sys_resume(struct device *dev)
 
 	drm_kms_helper_poll_enable(drm);
 
-	DRM_INFO("mtk_drm_sys_resume\n");
+	DRM_DEBUG_DRIVER("mtk_drm_sys_resume\n");
 	return 0;
 }
 

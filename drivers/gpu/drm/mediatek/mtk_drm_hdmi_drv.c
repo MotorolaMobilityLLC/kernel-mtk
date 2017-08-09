@@ -452,10 +452,8 @@ static int mtk_drm_hdmi_probe(struct platform_device *pdev)
 	hdmi->dev = dev;
 
 	ret = mtk_hdmi_dt_parse_pdata(hdmi, pdev);
-	if (ret) {
-		dev_err(dev, "mtk_hdmi_dt_parse_pdata failed!!\n");
+	if (ret)
 		return ret;
-	}
 
 	hdmi->flt_n_5v_irq = gpio_to_irq(hdmi->flt_n_5v_gpio);
 	if (hdmi->flt_n_5v_irq < 0) {

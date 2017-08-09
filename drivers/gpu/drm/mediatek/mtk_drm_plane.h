@@ -22,19 +22,22 @@ struct mtk_drm_plane {
 	unsigned int			idx;
 };
 
+struct mtk_plane_pending_state {
+	bool				config;
+	bool				enable;
+	unsigned int			addr;
+	unsigned int			pitch;
+	unsigned int			format;
+	unsigned int			x;
+	unsigned int			y;
+	unsigned int			width;
+	unsigned int			height;
+	bool				dirty;
+};
+
 struct mtk_plane_state {
 	struct drm_plane_state		base;
-
-	bool				pending_config;
-	bool				pending_enable;
-	unsigned int			pending_addr;
-	unsigned int			pending_pitch;
-	unsigned int			pending_format;
-	unsigned int			pending_x;
-	unsigned int			pending_y;
-	unsigned int			pending_width;
-	unsigned int			pending_height;
-	bool				pending_dirty;
+	struct mtk_plane_pending_state	pending;
 };
 
 static inline struct mtk_drm_plane *to_mtk_plane(struct drm_plane *plane)

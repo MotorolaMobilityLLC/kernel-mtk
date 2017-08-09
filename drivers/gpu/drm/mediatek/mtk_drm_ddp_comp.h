@@ -61,14 +61,15 @@ enum mtk_ddp_comp_id {
 	DDP_COMPONENT_ID_MAX,
 };
 
+struct mtk_ddp_comp;
+
 struct mtk_ddp_comp_funcs {
 	void (*config)(void __iomem *base, unsigned int w, unsigned int h,
 		       unsigned int vrefresh, unsigned int fifo_pseudo_size);
-	void (*power_on)(void __iomem *base);
-	void (*power_off)(void __iomem *base);
+	void (*start)(struct mtk_ddp_comp *comp);
+	void (*stop)(struct mtk_ddp_comp *comp);
 	void (*enable_vblank)(void __iomem *base);
 	void (*disable_vblank)(void __iomem *base);
-	void (*clear_vblank)(void __iomem *base);
 	void (*layer_on)(void __iomem *base, unsigned int idx);
 	void (*layer_off)(void __iomem *base, unsigned int idx);
 	void (*layer_config)(void __iomem *base, unsigned int ovl_addr,
@@ -90,6 +91,7 @@ struct mtk_ddp_comp {
 	int irq;
 	struct device *larb_dev;
 	enum mtk_ddp_comp_id id;
+	bool do_shadow_reg;
 	const struct mtk_ddp_comp_funcs *funcs;
 	struct mtk_ddp_comp_driver_data *ddp_comp_driver_data;
 };
@@ -98,52 +100,46 @@ static inline void mtk_ddp_comp_config(struct mtk_ddp_comp *comp,
 				       unsigned int w, unsigned int h,
 				       unsigned int vrefresh)
 {
-	if (comp->funcs->config)
+	if (comp->funcs && comp->funcs->config)
 		comp->funcs->config(comp->regs, w, h, vrefresh,
 		comp->ddp_comp_driver_data->rdma_fifo_pseudo_size);
 }
 
-static inline void mtk_ddp_comp_power_on(struct mtk_ddp_comp *comp)
+static inline void mtk_ddp_comp_start(struct mtk_ddp_comp *comp)
 {
-	if (comp->funcs->power_on)
-		comp->funcs->power_on(comp->regs);
+	if (comp->funcs && comp->funcs->start)
+		comp->funcs->start(comp);
 }
 
-static inline void mtk_ddp_comp_power_off(struct mtk_ddp_comp *comp)
+static inline void mtk_ddp_comp_stop(struct mtk_ddp_comp *comp)
 {
-	if (comp->funcs->power_off)
-		comp->funcs->power_off(comp->regs);
+	if (comp->funcs && comp->funcs->stop)
+		comp->funcs->stop(comp);
 }
 
 static inline void mtk_ddp_comp_enable_vblank(struct mtk_ddp_comp *comp)
 {
-	if (comp->funcs->enable_vblank)
+	if (comp->funcs && comp->funcs->enable_vblank)
 		comp->funcs->enable_vblank(comp->regs);
 }
 
 static inline void mtk_ddp_comp_disable_vblank(struct mtk_ddp_comp *comp)
 {
-	if (comp->funcs->disable_vblank)
+	if (comp->funcs && comp->funcs->disable_vblank)
 		comp->funcs->disable_vblank(comp->regs);
-}
-
-static inline void mtk_ddp_comp_clear_vblank(struct mtk_ddp_comp *comp)
-{
-	if (comp->funcs->clear_vblank)
-		comp->funcs->clear_vblank(comp->regs);
 }
 
 static inline void mtk_ddp_comp_layer_on(struct mtk_ddp_comp *comp,
 					 unsigned int idx)
 {
-	if (comp->funcs->layer_on)
+	if (comp->funcs && comp->funcs->layer_on)
 		comp->funcs->layer_on(comp->regs, idx);
 }
 
 static inline void mtk_ddp_comp_layer_off(struct mtk_ddp_comp *comp,
 					  unsigned int idx)
 {
-	if (comp->funcs->layer_off)
+	if (comp->funcs && comp->funcs->layer_off)
 		comp->funcs->layer_off(comp->regs, idx);
 }
 
@@ -151,7 +147,7 @@ static inline void mtk_ddp_comp_layer_config(struct mtk_ddp_comp *comp,
 					     unsigned int idx,
 					     struct mtk_plane_state *state)
 {
-	if (comp->funcs->layer_config)
+	if (comp->funcs && comp->funcs->layer_config)
 		comp->funcs->layer_config(comp->regs,
 			comp->ddp_comp_driver_data->reg_ovl_addr, idx, state,
 			comp->ddp_comp_driver_data->ovl_infmt_rgb888,
@@ -161,7 +157,8 @@ static inline void mtk_ddp_comp_layer_config(struct mtk_ddp_comp *comp,
 int mtk_ddp_comp_get_id(struct device_node *node,
 			enum mtk_ddp_comp_type comp_type);
 int mtk_ddp_comp_init(struct device *dev, struct device_node *comp_node,
-		      struct mtk_ddp_comp *comp, enum mtk_ddp_comp_id comp_id);
+		      struct mtk_ddp_comp *comp, enum mtk_ddp_comp_id comp_id,
+		      const struct mtk_ddp_comp_funcs *funcs);
 int mtk_ddp_comp_register(struct drm_device *drm, struct mtk_ddp_comp *comp);
 void mtk_ddp_comp_unregister(struct drm_device *drm, struct mtk_ddp_comp *comp);
 

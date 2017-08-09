@@ -19,6 +19,8 @@
 struct phy;
 
 struct mtk_dsi {
+	struct mtk_ddp_comp ddp_comp;
+	struct device *dev;
 	struct drm_device *drm_dev;
 	struct drm_encoder encoder;
 	struct drm_connector conn;

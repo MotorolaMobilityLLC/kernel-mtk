@@ -143,9 +143,9 @@ static inline struct mtk_ddp_driver_data *mtk_ddp_get_driver_data(
 
 static unsigned int mtk_ddp_mout_en(
 			    struct mtk_ddp_driver_data *ddp_driver_data,
-			    enum mtk_ddp_comp_id cur,
-			    enum mtk_ddp_comp_id next,
-			    unsigned int *addr)
+enum mtk_ddp_comp_id cur,
+				    enum mtk_ddp_comp_id next,
+				    unsigned int *addr)
 {
 	unsigned int value;
 
@@ -263,7 +263,6 @@ void mtk_ddp_remove_comp_from_path(struct mtk_disp_mutex *mutex,
 struct mtk_disp_mutex *mtk_disp_mutex_get(struct device *dev, unsigned int id)
 {
 	struct mtk_ddp *ddp = dev_get_drvdata(dev);
-	int ret;
 
 	if (id >= 10)
 		return ERR_PTR(-EINVAL);
@@ -271,12 +270,6 @@ struct mtk_disp_mutex *mtk_disp_mutex_get(struct device *dev, unsigned int id)
 		return ERR_PTR(-EBUSY);
 
 	ddp->mutex[id].claimed = true;
-
-	ret = clk_prepare_enable(ddp->clk);
-	if (ret) {
-		dev_err(dev, "Failed to enable clock: %d\n", ret);
-		return ERR_PTR(ret);
-	}
 
 	return &ddp->mutex[id];
 }

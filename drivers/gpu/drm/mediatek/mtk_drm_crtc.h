@@ -15,36 +15,20 @@
 #define MTK_DRM_CRTC_H
 
 #include <drm/drm_crtc.h>
+#include "mtk_drm_ddp_comp.h"
 #include "mtk_drm_plane.h"
 
 #define OVL_LAYER_NR	4
-
-struct mtk_crtc_state {
-	struct drm_crtc_state		base;
-	struct drm_pending_vblank_event	*event;
-
-	bool				pending_needs_vblank;
-
-	bool				pending_config;
-	unsigned int			pending_width;
-	unsigned int			pending_height;
-	unsigned int			pending_vrefresh;
-};
-
-static inline struct mtk_crtc_state *to_mtk_crtc_state(struct drm_crtc_state *s)
-{
-	return container_of(s, struct mtk_crtc_state, base);
-}
 
 int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_check_flush(struct drm_crtc *crtc);
 void mtk_drm_crtc_commit(struct drm_crtc *crtc);
-void mtk_crtc_layer_config(unsigned int idx, struct mtk_plane_state *state,
-				struct drm_crtc *crtc);
-void mtk_crtc_layer_on(unsigned int idx, struct mtk_plane_state *state,
-				struct drm_crtc *crtc);
-void mtk_crtc_layer_off(unsigned int idx, struct mtk_plane_state *state,
-				struct drm_crtc *crtc);
+void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl);
+int mtk_drm_crtc_create(struct drm_device *drm_dev,
+			const enum mtk_ddp_comp_id *path,
+			unsigned int path_len);
 
+void mtk_crtc_plane_config(struct mtk_drm_plane *plane,
+			   struct mtk_plane_state *state);
 #endif /* MTK_DRM_CRTC_H */

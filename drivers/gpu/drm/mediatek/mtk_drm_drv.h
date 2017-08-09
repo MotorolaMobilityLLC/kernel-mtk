@@ -29,8 +29,10 @@ struct drm_property;
 struct regmap;
 
 struct mtk_mmsys_driver_data {
-	enum mtk_ddp_comp_id *mtk_ddp_main;
-	unsigned int path_len;
+	const enum mtk_ddp_comp_id *mtk_ddp_main;
+	unsigned int main_path_len;
+	const enum mtk_ddp_comp_id *mtk_ddp_ext;
+	unsigned int ext_path_len;
 };
 
 struct mtk_drm_private {
@@ -44,8 +46,6 @@ struct mtk_drm_private {
 	struct device_node *mutex_node;
 	struct device *mutex_dev;
 	void __iomem *config_regs;
-	unsigned int path_len[MAX_CRTC];
-	const enum mtk_ddp_comp_id *path[MAX_CRTC];
 	struct device_node *comp_node[DDP_COMPONENT_ID_MAX];
 	struct mtk_ddp_comp *ddp_comp[DDP_COMPONENT_ID_MAX];
 	struct mtk_mmsys_driver_data *mmsys_driver_data;

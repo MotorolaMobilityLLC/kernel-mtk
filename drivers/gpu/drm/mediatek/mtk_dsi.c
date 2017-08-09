@@ -1143,6 +1143,25 @@ static const struct mipi_dsi_host_ops mtk_dsi_ops = {
 	.transfer = mtk_dsi_host_transfer,
 };
 
+static void mtk_dsi_ddp_start(struct mtk_ddp_comp *comp)
+{
+	struct mtk_dsi *dsi = container_of(comp, struct mtk_dsi, ddp_comp);
+
+	mtk_dsi_poweron(dsi);
+}
+
+static void mtk_dsi_ddp_stop(struct mtk_ddp_comp *comp)
+{
+	struct mtk_dsi *dsi = container_of(comp, struct mtk_dsi, ddp_comp);
+
+	mtk_dsi_poweroff(dsi);
+}
+
+static const struct mtk_ddp_comp_funcs mtk_dsi_funcs = {
+	.start = mtk_dsi_ddp_start,
+	.stop = mtk_dsi_ddp_stop,
+};
+
 static int mtk_dsi_bind(struct device *dev, struct device *master, void *data)
 {
 	int ret;
@@ -1157,6 +1176,13 @@ static int mtk_dsi_bind(struct device *dev, struct device *master, void *data)
 	}
 
 	dsi->drm_dev = data;
+
+	ret = mtk_ddp_comp_register(dsi->drm_dev, &dsi->ddp_comp);
+	if (ret < 0) {
+		dev_err(dev, "Failed to register component %s: %d\n",
+			dev->of_node->full_name, ret);
+		return ret;
+	}
 
 	ret = mtk_dsi_create_conn_enc(dsi);
 	if (ret) {
@@ -1180,6 +1206,7 @@ static void mtk_dsi_unbind(
 	dsi = platform_get_drvdata(to_platform_device(dev));
 	mtk_dsi_destroy_conn_enc(dsi);
 	mipi_dsi_host_unregister(&dsi->host);
+	mtk_ddp_comp_unregister(dsi->drm_dev, &dsi->ddp_comp);
 
 	dsi->drm_dev = NULL;
 }
@@ -1305,6 +1332,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct device_node *port, *ep, *node = dev->of_node;
 	struct resource *regs;
+	int comp_id;
 	int ret;
 
 	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
@@ -1356,6 +1384,19 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	dsi->host.ops = &mtk_dsi_ops;
 	dsi->host.dev = dev;
 	mipi_dsi_host_register(&dsi->host);
+
+	comp_id = mtk_ddp_comp_get_id(dev->of_node, MTK_DSI);
+	if (comp_id < 0) {
+		dev_err(dev, "Failed to identify by alias: %d\n", comp_id);
+		return comp_id;
+	}
+
+	ret = mtk_ddp_comp_init(dev, dev->of_node, &dsi->ddp_comp, comp_id,
+				NULL);
+	if (ret) {
+		dev_err(dev, "Failed to initialize component: %d\n", ret);
+		return ret;
+	}
 
 	#ifdef INTERRUPT_MODE
 	dsi->irq = platform_get_irq(pdev, 0);
