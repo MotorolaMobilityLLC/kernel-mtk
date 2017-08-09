@@ -33,7 +33,7 @@
 #include <linux/spinlock.h>
 #include <mt_hotplug_strategy.h>
 #include <mt_hotplug_strategy_internal.h>
-#include <linux/cpufreq_interactive_boost.h>
+#include "mt_cpufreq.h"
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include "dynamic_boost.h"
