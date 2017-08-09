@@ -3953,19 +3953,19 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		VOW_GPIO_Enable(true);
 
 		/* VOW AMPREF Setting, set by MD32 after DC calibration */
-		Ana_Set_Reg(AFE_VOW_CFG0, 0xffff, 0xffff);
+		Ana_Set_Reg(AFE_VOW_CFG0, reg_AFE_VOW_CFG0, 0xffff);   /* 0xffff */
 
-		Ana_Set_Reg(AFE_VOW_CFG1, 0x0200, 0xffff);   /*VOW A,B timeout initial value*/
+		Ana_Set_Reg(AFE_VOW_CFG1, reg_AFE_VOW_CFG1, 0xffff);   /*VOW A,B timeout initial value 0x0200*/
 #if 0
 		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
 			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff);/* 1.6m */
 		else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
 			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C08, 0xffff);
 #endif
-		Ana_Set_Reg(AFE_VOW_CFG2, 0x2424, 0xffff);   /*VOW A,B value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff);   /*alhpa and beta K value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0x000f);   /*gamma K value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff);   /*N mini value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG2, reg_AFE_VOW_CFG2, 0xffff);   /*VOW A,B value setting 0x2424*/
+		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting 0xDBAC*/
+		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0x000f);   /*gamma K value setting 0x029E*/
+		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting 0x0000*/
 
 		/* 16K */
 		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xfff0); /* 16k */
