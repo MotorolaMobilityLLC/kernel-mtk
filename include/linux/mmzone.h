@@ -35,7 +35,6 @@
  */
 #define PAGE_ALLOC_COSTLY_ORDER 3
 
-#ifndef CONFIG_ZONE_MOVABLE_CMA
 enum {
 	MIGRATE_UNMOVABLE,
 	MIGRATE_RECLAIMABLE,
@@ -63,20 +62,6 @@ enum {
 #endif
 	MIGRATE_TYPES
 };
-#else /* CONFIG_ZONE_MOVABLE_CMA */
-enum {
-	MIGRATE_UNMOVABLE,
-	MIGRATE_RECLAIMABLE,
-	MIGRATE_MOVABLE,
-	MIGRATE_CMA,
-	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
-	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-#ifdef CONFIG_MEMORY_ISOLATION
-	MIGRATE_ISOLATE,	/* can't allocate from here */
-#endif
-	MIGRATE_TYPES
-};
-#endif
 
 #ifdef CONFIG_CMA
 #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
