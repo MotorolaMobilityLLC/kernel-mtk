@@ -66,6 +66,10 @@
 #define RAISE_PERCENTAGE    90
 #define MONITOR_DURATION_MS 4000
 
+/* dvfs patch */
+#define MMDVFS_VOLTAGE_LOW 0
+#define MMDVFS_VOLTAGE_HIGH 1
+
 #define DVFS_LOW     MMDVFS_VOLTAGE_LOW
 #define DVFS_HIGH    MMDVFS_VOLTAGE_HIGH
 #define DVFS_DEFAULT MMDVFS_VOLTAGE_HIGH
@@ -90,6 +94,11 @@ VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 }
 
 /* raise/drop voltage */
+#if 1 /* dvfs patch */
+void SendDvfsRequest(int level)
+{
+}
+#else
 void SendDvfsRequest(int level)
 {
 	int ret = 0;
@@ -109,7 +118,7 @@ void SendDvfsRequest(int level)
 	if (0 != ret)
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] @@ OOPS: mmdvfs_set_step error!\n");
 }
-
+#endif
 void VdecDvfsBegin(void)
 {
 	gMMDFVFSMonitorStarts = VAL_TRUE;
@@ -2159,6 +2168,14 @@ typedef struct COMPAT_VAL_VCODEC_OAL_MEM_STAUTS {
 	compat_uint_t u4ReadData;	/* / [OUT] memory data */
 } COMPAT_VAL_VCODEC_OAL_MEM_STAUTS_T;
 
+static int get_uptr_to_32(compat_uptr_t *p, void __user **uptr)
+{
+	void __user *p2p;
+	int err = get_user(p2p, uptr);
+	*p = ptr_to_compat(p2p);
+	return err;
+}
+
 static int compat_copy_struct(STRUCT_TYPE eType,
 			      COPY_DIRECTION eDirection, void __user *data32, void __user *data)
 {
@@ -2177,15 +2194,15 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				VAL_HW_LOCK_T __user *to = (VAL_HW_LOCK_T *) data;
 
 				err = get_user(p, &(from32->pvHandle));
-				err |= put_user(p, &(to->pvHandle));
+				err |= put_user(compat_ptr(p), &(to->pvHandle));
 				err |= get_user(u, &(from32->u4HandleSize));
 				err |= put_user(u, &(to->u4HandleSize));
 				err |= get_user(p, &(from32->pvLock));
-				err |= put_user(p, &(to->pvLock));
+				err |= put_user(compat_ptr(p), &(to->pvLock));
 				err |= get_user(u, &(from32->u4TimeoutMs));
 				err |= put_user(u, &(to->u4TimeoutMs));
 				err |= get_user(p, &(from32->pvReserved));
-				err |= put_user(p, &(to->pvReserved));
+				err |= put_user(compat_ptr(p), &(to->pvReserved));
 				err |= get_user(u, &(from32->u4ReservedSize));
 				err |= put_user(u, &(to->u4ReservedSize));
 				err |= get_user(u, &(from32->eDriverType));
@@ -2195,16 +2212,15 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 			} else {
 				COMPAT_VAL_HW_LOCK_T __user *to32 = (COMPAT_VAL_HW_LOCK_T *) data32;
 				VAL_HW_LOCK_T __user *from = (VAL_HW_LOCK_T *) data;
-
-				err = get_user(p, &(from->pvHandle));
+				err = get_uptr_to_32(&p, &(from->pvHandle));
 				err |= put_user(p, &(to32->pvHandle));
 				err |= get_user(u, &(from->u4HandleSize));
 				err |= put_user(u, &(to32->u4HandleSize));
-				err |= get_user(p, &(from->pvLock));
+				err |= get_uptr_to_32(&p, &(from->pvLock));
 				err |= put_user(p, &(to32->pvLock));
 				err |= get_user(u, &(from->u4TimeoutMs));
 				err |= put_user(u, &(to32->u4TimeoutMs));
-				err |= get_user(p, &(from->pvReserved));
+				err |= get_uptr_to_32(&p, &(from->pvReserved));
 				err |= put_user(p, &(to32->pvReserved));
 				err |= get_user(u, &(from->u4ReservedSize));
 				err |= put_user(u, &(to32->u4ReservedSize));
@@ -2222,7 +2238,7 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				VAL_POWER_T __user *to = (VAL_POWER_T *) data;
 
 				err = get_user(p, &(from32->pvHandle));
-				err |= put_user(p, &(to->pvHandle));
+				err |= put_user(compat_ptr(p), &(to->pvHandle));
 				err |= get_user(u, &(from32->u4HandleSize));
 				err |= put_user(u, &(to->u4HandleSize));
 				err |= get_user(u, &(from32->eDriverType));
@@ -2230,14 +2246,14 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= get_user(c, &(from32->fgEnable));
 				err |= put_user(c, &(to->fgEnable));
 				err |= get_user(p, &(from32->pvReserved));
-				err |= put_user(p, &(to->pvReserved));
+				err |= put_user(compat_ptr(p), &(to->pvReserved));
 				err |= get_user(u, &(from32->u4ReservedSize));
 				err |= put_user(u, &(to->u4ReservedSize));
 			} else {
 				COMPAT_VAL_POWER_T __user *to32 = (COMPAT_VAL_POWER_T *) data32;
 				VAL_POWER_T __user *from = (VAL_POWER_T *) data;
 
-				err = get_user(p, &(from->pvHandle));
+				err = get_uptr_to_32(&p, &(from->pvHandle));
 				err |= put_user(p, &(to32->pvHandle));
 				err |= get_user(u, &(from->u4HandleSize));
 				err |= put_user(u, &(to32->u4HandleSize));
@@ -2245,7 +2261,7 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= put_user(u, &(to32->eDriverType));
 				err |= get_user(c, &(from->fgEnable));
 				err |= put_user(c, &(to32->fgEnable));
-				err |= get_user(p, &(from->pvReserved));
+				err |= get_uptr_to_32(&p, &(from->pvReserved));
 				err |= put_user(p, &(to32->pvReserved));
 				err |= get_user(u, &(from->u4ReservedSize));
 				err |= put_user(u, &(to32->u4ReservedSize));
@@ -2261,15 +2277,15 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				VAL_ISR_T __user *to = (VAL_ISR_T *) data;
 
 				err = get_user(p, &(from32->pvHandle));
-				err |= put_user(p, &(to->pvHandle));
+				err |= put_user(compat_ptr(p), &(to->pvHandle));
 				err |= get_user(u, &(from32->u4HandleSize));
 				err |= put_user(u, &(to->u4HandleSize));
 				err |= get_user(u, &(from32->eDriverType));
 				err |= put_user(u, &(to->eDriverType));
 				err |= get_user(p, &(from32->pvIsrFunction));
-				err |= put_user(p, &(to->pvIsrFunction));
+				err |= put_user(compat_ptr(p), &(to->pvIsrFunction));
 				err |= get_user(p, &(from32->pvReserved));
-				err |= put_user(p, &(to->pvReserved));
+				err |= put_user(compat_ptr(p), &(to->pvReserved));
 				err |= get_user(u, &(from32->u4ReservedSize));
 				err |= put_user(u, &(to->u4ReservedSize));
 				err |= get_user(u, &(from32->u4TimeoutMs));
@@ -2284,15 +2300,15 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				COMPAT_VAL_ISR_T __user *to32 = (COMPAT_VAL_ISR_T *) data32;
 				VAL_ISR_T __user *from = (VAL_ISR_T *) data;
 
-				err = get_user(p, &(from->pvHandle));
+				err = get_uptr_to_32(&p, &(from->pvHandle));
 				err |= put_user(p, &(to32->pvHandle));
 				err |= get_user(u, &(from->u4HandleSize));
 				err |= put_user(u, &(to32->u4HandleSize));
 				err |= get_user(u, &(from->eDriverType));
 				err |= put_user(u, &(to32->eDriverType));
-				err |= get_user(p, &(from->pvIsrFunction));
+				err |= get_uptr_to_32(&p, &(from->pvIsrFunction));
 				err |= put_user(p, &(to32->pvIsrFunction));
-				err |= get_user(p, &(from->pvReserved));
+				err |= get_uptr_to_32(&p, &(from->pvReserved));
 				err |= put_user(p, &(to32->pvReserved));
 				err |= get_user(u, &(from->u4ReservedSize));
 				err |= put_user(u, &(to32->u4ReservedSize));
@@ -2318,23 +2334,23 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= get_user(l, &(from32->u4MemSize));
 				err |= put_user(l, &(to->u4MemSize));
 				err |= get_user(p, &(from32->pvMemVa));
-				err |= put_user(p, &(to->pvMemVa));
+				err |= put_user(compat_ptr(p), &(to->pvMemVa));
 				err |= get_user(p, &(from32->pvMemPa));
-				err |= put_user(p, &(to->pvMemPa));
+				err |= put_user(compat_ptr(p), &(to->pvMemPa));
 				err |= get_user(u, &(from32->eAlignment));
 				err |= put_user(u, &(to->eAlignment));
 				err |= get_user(p, &(from32->pvAlignMemVa));
-				err |= put_user(p, &(to->pvAlignMemVa));
+				err |= put_user(compat_ptr(p), &(to->pvAlignMemVa));
 				err |= get_user(p, &(from32->pvAlignMemPa));
-				err |= put_user(p, &(to->pvAlignMemPa));
+				err |= put_user(compat_ptr(p), &(to->pvAlignMemPa));
 				err |= get_user(u, &(from32->eMemCodec));
 				err |= put_user(u, &(to->eMemCodec));
 				err |= get_user(u, &(from32->i4IonShareFd));
 				err |= put_user(u, &(to->i4IonShareFd));
 				err |= get_user(p, &(from32->pIonBufhandle));
-				err |= put_user(p, &(to->pIonBufhandle));
+				err |= put_user(compat_ptr(p), &(to->pIonBufhandle));
 				err |= get_user(p, &(from32->pvReserved));
-				err |= put_user(p, &(to->pvReserved));
+				err |= put_user(compat_ptr(p), &(to->pvReserved));
 				err |= get_user(l, &(from32->u4ReservedSize));
 				err |= put_user(l, &(to->u4ReservedSize));
 			} else {
@@ -2345,23 +2361,23 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= put_user(u, &(to32->eMemType));
 				err |= get_user(l, &(from->u4MemSize));
 				err |= put_user(l, &(to32->u4MemSize));
-				err |= get_user(p, &(from->pvMemVa));
+				err |= get_uptr_to_32(&p, &(from->pvMemVa));
 				err |= put_user(p, &(to32->pvMemVa));
-				err |= get_user(p, &(from->pvMemPa));
+				err |= get_uptr_to_32(&p, &(from->pvMemPa));
 				err |= put_user(p, &(to32->pvMemPa));
 				err |= get_user(u, &(from->eAlignment));
 				err |= put_user(u, &(to32->eAlignment));
-				err |= get_user(p, &(from->pvAlignMemVa));
+				err |= get_uptr_to_32(&p, &(from->pvAlignMemVa));
 				err |= put_user(p, &(to32->pvAlignMemVa));
-				err |= get_user(p, &(from->pvAlignMemPa));
+				err |= get_uptr_to_32(&p, &(from->pvAlignMemPa));
 				err |= put_user(p, &(to32->pvAlignMemPa));
 				err |= get_user(u, &(from->eMemCodec));
 				err |= put_user(u, &(to32->eMemCodec));
 				err |= get_user(u, &(from->i4IonShareFd));
 				err |= put_user(u, &(to32->i4IonShareFd));
-				err |= get_user(p, &(from->pIonBufhandle));
+				err |= get_uptr_to_32(&p, (void __user **)&(from->pIonBufhandle));
 				err |= put_user(p, &(to32->pIonBufhandle));
-				err |= get_user(p, &(from->pvReserved));
+				err |= get_uptr_to_32(&p, &(from->pvReserved));
 				err |= put_user(p, &(to32->pvReserved));
 				err |= get_user(l, &(from->u4ReservedSize));
 				err |= put_user(l, &(to32->u4ReservedSize));
@@ -2383,7 +2399,7 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= get_user(u, &(from32->u4NumOfRegister));
 				err |= put_user(u, &(to->u4NumOfRegister));
 				err |= get_user(p, &(from32->pHWStatus));
-				err |= put_user(p, &(to->pHWStatus));
+				err |= put_user(compat_ptr(p), &(to->pHWStatus));
 			} else {
 				COMPAT_VAL_VCODEC_OAL_HW_REGISTER_T __user *to32 =
 				    (COMPAT_VAL_VCODEC_OAL_HW_REGISTER_T *) data32;
@@ -2396,7 +2412,7 @@ static int compat_copy_struct(STRUCT_TYPE eType,
 				err |= put_user(u, &(to32->u4HWIsTimeout));
 				err |= get_user(u, &(from->u4NumOfRegister));
 				err |= put_user(u, &(to32->u4NumOfRegister));
-				err |= get_user(p, &(from->pHWStatus));
+				err |= get_uptr_to_32(&p, (void __user **)&(from->pHWStatus));
 				err |= put_user(p, &(to32->pHWStatus));
 			}
 		}
@@ -2584,7 +2600,7 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, un
 			ret =
 			    file->f_op->unlocked_ioctl(file, VCODEC_INITHWLOCK,
 						       (unsigned long)data);
-			data->pHWStatus = pHWStatus32;
+			data->pHWStatus = (VAL_VCODEC_OAL_MEM_STAUTS_T __user *)pHWStatus32;
 			ori_user_data_addr = 0;
 			ori_pHWStatus = 0;
 			mutex_unlock(&InitHWLock);
