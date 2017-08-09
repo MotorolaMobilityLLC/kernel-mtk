@@ -24,6 +24,20 @@ static int compat_get_disp_caps_info(compat_disp_caps_info __user *data32, disp_
 	err |= get_user(u, &(data32->max_layer_num));
 	err |= put_user(u, &(data->max_layer_num));
 
+#ifdef CONFIG_FOR_SOURCE_PQ
+	err |= get_user(u, &(data32->max_pq_num));
+	err |= put_user(u, &(data->max_pq_num));
+#endif
+
+	err |= get_user(u, &(data32->disp_feature));
+	err |= put_user(u, &(data->disp_feature));
+
+	err |= get_user(u, &(data32->is_support_frame_cfg_ioctl));
+	err |= put_user(u, &(data->is_support_frame_cfg_ioctl));
+
+	err |= get_user(u, &(data32->is_output_rotated));
+	err |= put_user(u, &(data->is_output_rotated));
+
 	return err;
 }
 
@@ -40,6 +54,20 @@ static int compat_put_disp_caps_info(compat_disp_caps_info __user *data32, disp_
 
 	err |= get_user(u, &(data->max_layer_num));
 	err |= put_user(u, &(data32->max_layer_num));
+
+#ifdef CONFIG_FOR_SOURCE_PQ
+	err |= get_user(u, &(data->max_pq_num));
+	err |= put_user(u, &(data32->max_pq_num));
+#endif
+
+	err |= get_user(u, &(data->disp_feature));
+	err |= put_user(u, &(data32->disp_feature));
+
+	err |= get_user(u, &(data->is_support_frame_cfg_ioctl));
+	err |= put_user(u, &(data32->is_support_frame_cfg_ioctl));
+
+	err |= get_user(u, &(data->is_output_rotated));
+	err |= put_user(u, &(data32->is_output_rotated));
 
 	return err;
 }

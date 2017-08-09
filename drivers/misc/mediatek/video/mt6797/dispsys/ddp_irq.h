@@ -18,5 +18,8 @@ int disp_init_irq(void);
 irqreturn_t disp_irq_handler(int irq, void *dev_id);
 
 extern atomic_t ESDCheck_byCPU;
+
+int disp_irq_esd_cust_get(void);
+void disp_irq_esd_cust_bycmdq(int enable);
 #endif
 

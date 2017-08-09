@@ -13,7 +13,7 @@
 
 #define DISP_LOG_E(fmt, args...) \
 do { \
-	pr_notice("[DDP/"LOG_TAG"]error:"fmt, ##args); \
+	pr_err("[DDP/"LOG_TAG"]error:"fmt, ##args); \
 	dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args); \
 } while (0)
 
@@ -37,15 +37,12 @@ do { \
 
 #define DDPMSG(fmt, args...) DISP_LOG_I(fmt, ##args)
 #define DDPERR(fmt, args...) DISP_LOG_E(fmt, ##args)
-#define DDPDUMP(fmt, ...) \
+#define DDPDUMP(fmt, args...) \
 do { \
-	if (ddp_debug_analysis_to_buffer()) { \
-		char log[512] = {'\0'}; \
-		scnprintf(log, 511, fmt, ##__VA_ARGS__); \
-		dprec_logger_dump(log); \
-	} else { \
-		pr_notice("[DDP/"LOG_TAG"]"fmt, ##__VA_ARGS__); \
-	} \
+	if (ddp_debug_analysis_to_buffer()) \
+			dprec_logger_vdump(fmt, ##args); \
+	else \
+			pr_warn("[DDP/"LOG_TAG"]"fmt, ##args);\
 } while (0)
 
 #ifndef ASSERT

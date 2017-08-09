@@ -357,7 +357,7 @@ static void mutex_dump_analysis(void)
 			      i,
 			      ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF, val)),
 			      ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF, val)),
-			      REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF_WAIT, val));
+				REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF_WAIT, val));
 
 		p += len;
 		for (j = 0; j < 32; j++) {
@@ -398,6 +398,7 @@ static void mmsys_config_dump_reg(void)
 	DDPMSG("(0x100)MM_CG_CON0      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	DDPMSG("(0x110)MM_CG_CON1      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	DDPMSG("(0x120)MM_HW_DCM_DIS0  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0));
+	DDPMSG("(0x130)MM_HW_DCM_DIS1  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS1));
 	DDPMSG("(0x140)MM_SW0_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B));
 	DDPMSG("(0x144)MM_SW1_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW1_RST_B));
 	DDPMSG("(0x150)MM_LCM_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_LCM_RST_B));
@@ -523,18 +524,18 @@ static void mmsys_config_dump_analysis(void)
 
 	/* greq: 1 means SMI dose not grant, maybe SMI hang */
 	if (greq)
-		DDPMSG("smi greq not grant module: ");
-	else
-		return;
+		DDPMSG("smi greq not grant module: (greq: 1 means SMI dose not grant, maybe SMI hang)");
 
 	clock_on[0] = '\0';
 	for (i = 0; i < 32; i++) {
-		name = ddp_greq_name(i);
-		if (!name)
-			continue;
-		strncat(clock_on, name, sizeof(clock_on));
-		DDPDUMP("%s\n", clock_on);
+		if (greq & (1 << i)) {
+			name = ddp_greq_name(i);
+			if (!name)
+				continue;
+			strncat(clock_on, name, sizeof(clock_on));
+		}
 	}
+	DDPDUMP("%s\n", clock_on);
 }
 
 static void gamma_dump_reg(void)
@@ -609,6 +610,7 @@ static void color_dump_reg(DISP_MODULE_ENUM module)
 	DDPDUMP("(0x404)COLOR_PXL_CNT_MAIN   =0x%x\n", DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN));
 	DDPDUMP("(0x408)COLOR_LINE_CNT_MAIN   =0x%x\n", DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN));
 	DDPDUMP("(0xc00)COLOR_START      =0x%x\n", DISP_REG_GET(DISP_COLOR_START));
+	DDPDUMP("(0xc28)DISP_COLOR_CK_ON      =0x%x\n", DISP_REG_GET(DISP_COLOR_CK_ON));
 	DDPDUMP("(0xc50)COLOR_INTER_IP_W =0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH));
 	DDPDUMP("(0xc54)COLOR_INTER_IP_H =0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT));
 	return;
@@ -770,7 +772,7 @@ static void dither_dump_reg(void)
 	DDPDUMP("(00)EN   =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_EN));
 	DDPDUMP("(20)CFG  =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_CFG));
 	DDPDUMP("(24)IN_CNT =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT));
-	DDPDUMP("(28)OUT_CNT =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_IN_CNT));
+	DDPDUMP("(28)OUT_CNT =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_OUT_CNT));
 	DDPDUMP("(30)SIZE =0x%x\n", DISP_REG_GET(DISP_REG_DITHER_SIZE));
 }
 

@@ -1254,18 +1254,11 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_CMDQ_REG_SET(__cmdq, reg32, val, mask) DISP_REG_MASK(__cmdq, reg32, val, mask)
 
-#define DISP_CMDQ_END(__cmdq) \
-	do {					\
-		cmdqRecFlush(__cmdq); \
-		cmdqRecDestroy(__cmdq); \
-	} while (0)
+#define DISP_CMDQ_CONFIG_STREAM_DIRTY(__cmdq) ddp_insert_config_dirty_rec(__cmdq)
 
-#define DISP_CMDQ_CONFIG_STREAM_DIRTY(__cmdq) \
-	ddp_insert_config_dirty_rec(__cmdq)
-
-#define DISP_CMDQ_END(__cmdq) \
-	do { \
-		cmdqRecFlush(__cmdq); \
+#define DISP_CMDQ_END(__cmdq)		\
+	do {				\
+		cmdqRecFlush(__cmdq);	\
 		cmdqRecDestroy(__cmdq); \
 	} while (0)
 
@@ -2412,6 +2405,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_RDMA_THRESHOLD_FOR_DVFS			(DISPSYS_RDMA0_BASE+0x0ac)
 #define DISP_REG_RDMA_SRAM_SEL					(DISPSYS_RDMA0_BASE+0x0b0)
 #define DISP_REG_RDMA_STALL_CG_CON				(DISPSYS_RDMA0_BASE+0x0b4)
+#define DISP_REG_RDMA_DBG_OUT					(DISPSYS_RDMA0_BASE+0x100)
 
 #define DISP_REG_RDMA_IN_P_CNT                                  (DISPSYS_RDMA0_BASE+0x0f0)
 #define DISP_REG_RDMA_IN_LINE_CNT                               (DISPSYS_RDMA0_BASE+0x0f4)

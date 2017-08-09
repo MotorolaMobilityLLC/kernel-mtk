@@ -93,6 +93,7 @@ void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned 
 extern unsigned int mtkfb_fm_auto_test(void);
 extern int pan_display_test(int frame_num, int bpp);
 extern int mtkfb_get_debug_state(char *stringbuf, int buf_len);
+
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 extern void primary_display_od_bypass(int bypass);
 #endif

@@ -176,7 +176,7 @@ static unsigned char dprec_string_buffer[dprec_string_max_length] = { 0 };
 dprec_logger logger[DPREC_LOGGER_NUM] = { { 0 } };
 dprec_logger old_logger[DPREC_LOGGER_NUM] = { { 0 } };
 
-#define dprec_dump_max_length (1024*16*4)
+#define dprec_dump_max_length (1024*8*4)
 static unsigned char dprec_string_buffer_analysize[dprec_dump_max_length] = { 0 };
 
 static unsigned int analysize_length;
@@ -466,7 +466,7 @@ void dprec_logger_event_init(dprec_logger_event *p, char *name, uint32_t level,
 		p->level = level;
 
 		memset((void *)&p->logger, 0, sizeof(p->logger));
-		DISPMSG("dprec logger event init, name=%s, level=0x%08x\n", name, level);
+		DISPDBG("dprec logger event init, name=%s, level=0x%08x\n", name, level);
 	}
 }
 
@@ -573,7 +573,7 @@ void dprec_start(dprec_logger_event *event, unsigned int val1, unsigned int val2
 			pr_debug("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
@@ -624,7 +624,7 @@ void dprec_done(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 			pr_debug("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
@@ -676,7 +676,7 @@ void dprec_trigger(dprec_logger_event *event, unsigned int val1, unsigned int va
 			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_info("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
@@ -704,7 +704,7 @@ void dprec_submit(dprec_logger_event *event, unsigned int val1, unsigned int val
 			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 	}
 }
@@ -1011,10 +1011,29 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 	return;
 }
 
+void dprec_logger_vdump(const char *fmt, ...)
+{
+	va_list vargs;
+	int tmp;
+
+	va_start(vargs, fmt);
+
+	if (analysize_length >= dprec_dump_max_length - 10)
+		return;
+
+	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
+		      dprec_dump_max_length - analysize_length, fmt, vargs);
+
+	analysize_length += tmp;
+	if (analysize_length > dprec_dump_max_length)
+		analysize_length = dprec_dump_max_length;
+
+	va_end(vargs);
+}
+
 void dprec_logger_dump(char *string)
 {
-	analysize_length += scnprintf(dprec_string_buffer_analysize + analysize_length,
-				      dprec_dump_max_length - analysize_length, string);
+	dprec_logger_vdump(string);
 }
 
 void dprec_logger_dump_reset(void)

@@ -44,7 +44,7 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.primary_switch_mode =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "switch_session_mode");
 		DDP_MMP_Events.primary_switch_fps =
-		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "switch_fps");
+			    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "switch_fps");
 		DDP_MMP_Events.primary_mode[DISP_SESSION_DIRECT_LINK_MODE] =
 			MMProfileRegisterEvent(DDP_MMP_Events.primary_switch_mode, "directlink");
 		DDP_MMP_Events.primary_mode[DISP_SESSION_DECOUPLE_MODE] =
@@ -91,6 +91,7 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.idlemgr =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.sec = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "sec");
+		DDP_MMP_Events.tui =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "tui");
 		DDP_MMP_Events.fps_set =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_set");
 		DDP_MMP_Events.fps_get =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_get");
 
@@ -303,6 +304,8 @@ void init_ddp_mmp_events(void)
 		MMProfileEnableEventRecursive(DDP_MMP_Events.DDP_IRQ, 1);
 
 		MMProfileEnableEvent(DDP_MMP_Events.primary_sw_mutex, 0);
+		MMProfileEnableEvent(DDP_MMP_Events.fps_get, 0);
+		MMProfileEnableEvent(DDP_MMP_Events.fps_set, 0);
 		MMProfileEnableEventRecursive(DDP_MMP_Events.primary_seq_info, 0);
 	}
 }
