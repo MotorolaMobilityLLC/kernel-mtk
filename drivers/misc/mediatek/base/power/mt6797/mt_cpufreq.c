@@ -462,12 +462,12 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ5_L_M	(1417000)	/* KHz */
 #define CPU_DVFS_FREQ6_L_M	(1274000)	/* KHz */
 #define CPU_DVFS_FREQ7_L_M	(1209000)	/* KHz */
-#define CPU_DVFS_FREQ8_L_M	(1079000)	/* KHz */
-#define CPU_DVFS_FREQ9_L_M	(962000)	/* KHz */
+#define CPU_DVFS_FREQ8_L_M	(832000)	/* KHz */
+#define CPU_DVFS_FREQ9_L_M	(832000)	/* KHz */
 #define CPU_DVFS_FREQ10_L_M    (832000)	/* KHz */
 #define CPU_DVFS_FREQ11_L_M    (741000)	/* KHz */
 #define CPU_DVFS_FREQ12_L_M    (650000)	/* KHz */
-#define CPU_DVFS_FREQ13_L_M    (559000)	/* KHz */
+#define CPU_DVFS_FREQ13_L_M    (468000)	/* KHz */
 #define CPU_DVFS_FREQ14_L_M    (468000)	/* KHz */
 #define CPU_DVFS_FREQ15_L_M    (325000)	/* KHz */
 
