@@ -223,13 +223,19 @@ void uart_usb_switch_dump_register(void)
 	usb_enable_clock(true);
 	udelay(50);
 
-#ifdef CONFIG_MTK_FPGA
-	pr_debug("[MUSB]addr: 0x6B, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYDTM0 + 0x3));
-	pr_debug("[MUSB]addr: 0x6E, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYDTM1 + 0x2));
-	pr_debug("[MUSB]addr: 0x22, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYACR4 + 0x2));
-	pr_debug("[MUSB]addr: 0x68, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYDTM0));
-	pr_debug("[MUSB]addr: 0x6A, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYDTM0 + 0x2));
-	pr_debug("[MUSB]addr: 0x1A, value: %x\n", USB_PHY_Read_Register8(U3D_U2PHYACR6 + 0x2));
+# ifdef CONFIG_MTK_FPGA
+	pr_debug("[MUSB]addr: 0x6B, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYDTM0 + 0x3));
+	pr_debug("[MUSB]addr: 0x6E, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYDTM1 + 0x2));
+	pr_debug("[MUSB]addr: 0x22, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYACR4 + 0x2));
+	pr_debug("[MUSB]addr: 0x68, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYDTM0));
+	pr_debug("[MUSB]addr: 0x6A, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYDTM0 + 0x2));
+	pr_debug("[MUSB]addr: 0x1A, value: %x\n",
+		USB_PHY_Read_Register8((phys_addr_t) (uintptr_t)U3D_U2PHYACR6 + 0x2));
 #else
 #if 0
 	os_printk(K_INFO, "[MUSB]addr: 0x6B, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x3));
@@ -239,10 +245,14 @@ void uart_usb_switch_dump_register(void)
 	os_printk(K_INFO, "[MUSB]addr: 0x6A, value: %x\n", U3PhyReadReg8(U3D_U2PHYDTM0 + 0x2));
 	os_printk(K_INFO, "[MUSB]addr: 0x1A, value: %x\n", U3PhyReadReg8(U3D_USBPHYACR6 + 0x2));
 #else
-	os_printk(K_INFO, "[MUSB]addr: 0x18, value: 0x%x\n", U3PhyReadReg32(U3D_USBPHYACR6));
-	os_printk(K_INFO, "[MUSB]addr: 0x20, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYACR4));
-	os_printk(K_INFO, "[MUSB]addr: 0x68, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYDTM0));
-	os_printk(K_INFO, "[MUSB]addr: 0x6C, value: 0x%x\n", U3PhyReadReg32(U3D_U2PHYDTM1));
+	os_printk(K_INFO, "[MUSB]addr: 0x18, value: 0x%x\n",
+		U3PhyReadReg32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6));
+	os_printk(K_INFO, "[MUSB]addr: 0x20, value: 0x%x\n",
+		U3PhyReadReg32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4));
+	os_printk(K_INFO, "[MUSB]addr: 0x68, value: 0x%x\n",
+		U3PhyReadReg32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0));
+	os_printk(K_INFO, "[MUSB]addr: 0x6C, value: 0x%x\n",
+		U3PhyReadReg32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1));
 #endif
 #endif
 
@@ -252,8 +262,9 @@ void uart_usb_switch_dump_register(void)
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
-	os_printk(K_INFO, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n",
+	/*os_printk(K_INFO, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n",
 		  DRV_Reg8(ap_uart0_base + 0xB0));
+	*/
 }
 
 bool usb_phy_check_in_uart_mode(void)
@@ -917,9 +928,7 @@ void usb_phy_recover(unsigned int clk_on)
 				  0);
 		/* RG_UART_EN         1'b0 */
 		/* U3D_U2PHYDTM1 RG_UART_EN */
-		U3PhyWriteField32(U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
-
-		/*Release force suspendm. (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
 		/*force_suspendm        1'b0 */
 		/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM,
