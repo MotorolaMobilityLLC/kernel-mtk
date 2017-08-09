@@ -64,8 +64,8 @@
 #define CCMNI_AP_LOOPBACK_CH	(15)
 #endif
 
-#define HEART_BEAT_TIMEOUT		(5000)	/*ms */
-#define POLLING_INTERVAL		(10000)	/*ms */
+#define HEART_BEAT_TIMEOUT		(10000)	/*ms */
+#define POLLING_INTERVAL		(15000)	/*ms */
 #define FORCE_ASSERT_TIMEOUT	(5000)	/*ms */
 
 /*
