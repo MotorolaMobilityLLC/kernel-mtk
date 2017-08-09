@@ -21,8 +21,6 @@
 #include "mt_dramc.h"
 #include "mt_ptp.h"
 
-/* #define BUILD_ERROR */
-
 /*
  * AutoK options
  */
@@ -325,7 +323,6 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 
 int vcorefs_get_ddr_by_steps(u32 steps)
 {
-#ifdef BUILD_ERROR
 	int ddr_khz;
 
 	ddr_khz = dram_steps_freq(steps) * 1000;
@@ -333,11 +330,6 @@ int vcorefs_get_ddr_by_steps(u32 steps)
 	BUG_ON(ddr_khz < 0);
 
 	return ddr_khz;
-#endif
-	if (steps == 0)
-		return FDDR_S0_KHZ;
-	else
-		return FDDR_S1_KHZ;
 }
 
 char *governor_get_kicker_name(int id)
