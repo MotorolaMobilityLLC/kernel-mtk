@@ -38,6 +38,9 @@
 #include <mt-plat/mt_usb2jtag.h>
 #endif
 
+#if defined(CONFIG_ARCH_MT6797)
+#include "mt_vcorefs_governor.h"
+#endif
 
 /**************************************
  * only for internal debug
@@ -124,7 +127,8 @@ struct wake_status spm_wakesta; /* record last wakesta */
 
 #else
 #define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_R12_KP_IRQ_B | \
+	(WAKE_SRC_R12_PCM_TIMER | \
+	WAKE_SRC_R12_KP_IRQ_B | \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
@@ -264,24 +268,15 @@ static struct pwr_ctrl suspend_ctrl = {
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
 #if defined(CONFIG_ARCH_MT6797)
 	.disp_od_req_mask_b = 0,
-
-	.spm_apsrc_req = 1,
-	.spm_f26m_req = 1,
-	.spm_lte_req = 1,
-	.spm_infra_req = 1,
-	.spm_vrf18_req = 1,
-	.spm_ddren_req = 1,
-#else
+#endif
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
-	.spm_ddren_req = 0,
-#endif
 	.spm_dvfs_req = 0,
 	.spm_dvfs_force_down = 1,
-	/*.spm_ddren_req = 0, */
+	.spm_ddren_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
 	/* SPM_CLK_CON */
@@ -736,9 +731,15 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
+#if defined(CONFIG_ARCH_MT6755)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+#endif
 
 	vcore_status = vcorefs_get_curr_ddr();
+
+#if defined(CONFIG_ARCH_MT6797)
+	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
+#endif
 
 	__spm_set_power_control(pwrctrl);
 
@@ -789,6 +790,25 @@ RESTORE_IRQ:
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(0);
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+	/* Re-kick VCORE DVFS */
+	if (is_vcorefs_feature_enable()) {
+		pr_err("DP-- re-kick VCORE\n");
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+		__spm_kick_im_to_fetch(pcmdesc);
+		__spm_init_pcm_register();
+		__spm_init_event_vector(pcmdesc);
+		pwrctrl->timer_val = 0;
+		__spm_check_md_pdn_power_control(pwrctrl);
+		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
+		__spm_set_power_control(pwrctrl);
+		__spm_set_wakeup_event(pwrctrl);
+		pr_err("spm_kick_pcm_to_run VCORE\n");
+		__spm_kick_pcm_to_run(pwrctrl);
+	}
 #endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT

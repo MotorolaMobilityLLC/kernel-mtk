@@ -84,6 +84,11 @@ static u32 slp_spm_flags = {
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
+	#if defined(CONFIG_ARCH_MT6797)
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	#endif
 	SPM_FLAG_DIS_DPD
 #endif
 };
