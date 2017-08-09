@@ -143,6 +143,9 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_
 			Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O00);
 		SetConnection(Soc_Aud_InterCon_DisConnect,
 			Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O01);
+	} else {
+		samplerate = 48000;
+		pr_err("Wrong sidegen_control input\n");
 	}
 
 	if (mi2s0_extcodec_echoref_control == true) {
