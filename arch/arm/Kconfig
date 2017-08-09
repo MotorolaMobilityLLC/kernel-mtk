@@ -844,6 +844,7 @@ config ARCH_MT6735M
 	select MTK_BASE_POWER
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
+	select ARM_ERRATA_836870
 	help
 	  This enables support for MediaTek MT6735M
 	  Support for k35mv1
@@ -876,6 +877,7 @@ config ARCH_MT6753
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
 	select MTK_BASE_POWER
+	select ARM_ERRATA_836870
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers

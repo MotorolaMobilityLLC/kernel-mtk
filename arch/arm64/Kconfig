@@ -272,6 +272,8 @@ config ARCH_MT6753
 	select PINCTRL
 	select PINCTRL_MT6735
 	select MFD_SYSCON
+	select ARM64_ERRATUM_845719
+	select ARM64_ERRATUM_836870
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers
@@ -300,6 +302,8 @@ config ARCH_MT6755
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC
+	select ARM64_ERRATUM_845719
+	select ARM64_ERRATUM_836870
 	help
 	  This enables support for MediaTek MT6755
 	  Support for aarch64/aarch32 Architecture
