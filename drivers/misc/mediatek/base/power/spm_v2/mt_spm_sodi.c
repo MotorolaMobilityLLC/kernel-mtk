@@ -343,7 +343,9 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				by_ccif1_count++;
 			}
 #elif defined(CONFIG_ARCH_MT6797)
-			need_log_out = 1;
+			/* ignore SCP IRQ temporarily*/
+			if (!(wakesta->r12 & (0x1 << 10)))
+				need_log_out = 1;
 #endif
 		} else if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
