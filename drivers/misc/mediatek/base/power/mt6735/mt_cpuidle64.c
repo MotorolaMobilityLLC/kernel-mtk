@@ -68,7 +68,7 @@ static unsigned int c2k_wdt_bit;
 #define GIC_NODE		"mtk,mt-gic"
 #define KP_NODE			"mediatek,KP"
 #define CONSYS_NODE		"mediatek,CONSYS"
-#define AUXADC_NODE		"mediatek,AUXADC"
+#define AUXADC_NODE		"mediatek,mt6735-auxadc"
 #define MDCLDMA_NODE		"mediatek,MDCLDMA"
 #ifdef CONFIG_MTK_C2K_SUPPORT
 #define MDC2K_NODE		"mediatek,MDC2K"
