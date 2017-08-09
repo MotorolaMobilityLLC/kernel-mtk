@@ -53,7 +53,7 @@ static int					idvfs_irq_number1;		/* 331 */
 
 static unsigned int func_lv_mask_idvfs;
 #define IDVFS_DREQ_ENABLE		0
-#define IDVFS_OCP_OTP_ENABLE	0
+#define IDVFS_OCP_OTP_ENABLE	1
 
 /*
  * LOG
@@ -633,7 +633,7 @@ int	BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned i
 	/* manual ctrl freq first */
 	/* temp:: before need enable ptp1 function */
 	/* enable and initial idvfsapb i2c ctrl */
-
+#if 1
 	/* sync when ptp1 enable then enable iDVFS */
 	if (infoIdvfs == 0x55) {
 		/* empty eFuse, and init Big only for temp */
@@ -646,6 +646,7 @@ int	BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned i
 		idvfs_ver("iDVFS enable wait ptp1 enable!\n");
 		return -6;
 	}
+#endif
 
 	/* move to prob init */
 	iDVFSAPB_init();
@@ -721,8 +722,9 @@ int BigiDVFSEnable_hp(void)
 	int ret = -1;
 
 	/* if ptp1 enable must be mark this temp function */
-	eem_init_det_tmp();
+	/* eem_init_det_tmp(); */
 
+#if 1
 	/* sync when ptp1 enable then enable iDVFS */
 	if (infoIdvfs == 0x55) {
 		/* empty eFuse, and init Big only for temp */
@@ -735,6 +737,7 @@ int BigiDVFSEnable_hp(void)
 		idvfs_ver("iDVFS enable wait ptp1 enable!\n");
 		return -6;
 	}
+#endif
 
 	/* get current vproc volt */
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
@@ -792,6 +795,7 @@ int	BigiDVFSDisable(void)
 	BigOCPDisable();
 
 	/* disable OTP channel */
+	BigOTPDisable();
 	BigiDVFSChannel(2, 0);
 #endif
 
@@ -1408,6 +1412,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "Big Vproc = %dmv.\n", DA9214_STEP_TO_MV((ret_val & 0x7f)));
 	seq_printf(m, "Big Vsram = %dmv.\n", (BigiDVFSSRAMLDOGet()/100));
 	seq_printf(m, "Big Vsram LDO_Cal:eFuse = 0x%x.\n", BigiDVFSSRAMLDOEFUSE());
+	seq_printf(m, "Big DREQGet = %s.\n", ((BigDREQGet() == 0) ? "Open" : "Short"));
 	/* switch bank 0; */
 	eem_write(0x1100b400, 0x003f0000);
 	seq_printf(m, "DCVALUES = 0x%x.\n", eem_read(0x1100b240));
