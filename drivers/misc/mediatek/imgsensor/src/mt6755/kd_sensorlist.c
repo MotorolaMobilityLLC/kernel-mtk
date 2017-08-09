@@ -2221,6 +2221,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			if (pValue0 == NULL || pValue1 == NULL) {
 				PK_ERR(" ioctl allocate mem failed\n");
+				kfree(pValue0);
+				kfree(pValue1);
+				kfree(pFeaturePara);
 				return -ENOMEM;
 			}
 			memset(pValue1, 0x0, sizeof(MUINT32));
