@@ -9,14 +9,13 @@
 #define IS_MT_LARGE_MEMORY_MODE  (readl(IOMEM(INFRA_LARGE_MEMORY_SETTING)) >> 13 & 0x1)
 #define MT_OVERFLOW_ADDR_START 0x100000000ULL
 
-static unsigned int enable_4G(void)
+#define INFRA_BASE_ADDR		10001000
+#define PERISYS_BASE_ADDR	10003000
+
+unsigned int enable_4G(void)
 {
 	unsigned int infra_4g_sp, perisis_4g_sp;
 
-	if (INFRA_BASE_ADDR == NULL || PERISYS_BASE_ADDR == NULL) {
-		pr_err("%s: Got the NULL pointer\n", __func__);
-		return 0;
-	}
 	infra_4g_sp = readl(IOMEM(INFRA_BASE_ADDR + 0xf00)) & (1 << 13);
 	perisis_4g_sp = readl(IOMEM(PERISYS_BASE_ADDR + 0x208)) & (1 << 15);
 
