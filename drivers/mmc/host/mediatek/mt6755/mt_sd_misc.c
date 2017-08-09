@@ -614,14 +614,6 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	unsigned int l_value;
 #endif
 
-	if (!msdc_ctl)
-		return -EINVAL;
-
-	if ((msdc_ctl->host_num < 0) || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
-		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
-		return -EINVAL;
-	}
-
 	host = mtk_msdc_host[msdc_ctl->host_num];
 	if (host == NULL) {
 		pr_err("host%d is not config\n", msdc_ctl->host_num);
@@ -662,13 +654,6 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 	void __iomem *base;
 	struct msdc_host *host;
 
-	if (!msdc_ctl)
-		return -EINVAL;
-
-	if ((msdc_ctl->host_num < 0) || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
-		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
-		return -EINVAL;
-	}
 	host = mtk_msdc_host[msdc_ctl->host_num];
 	if (host == NULL) {
 		pr_err("host%d is not config\n", msdc_ctl->host_num);
@@ -737,15 +722,11 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 	};
 	unsigned int timing;
 
-	if (!msdc_ctl || (msdc_ctl->sd30_mode < 0) || (msdc_ctl->sd30_mode > 6))
+	if ((msdc_ctl->sd30_mode < 0) || (msdc_ctl->sd30_mode > 6))
 		return -EINVAL;
 
 	id = msdc_ctl->host_num;
 
-	if ((id < 0) || (id >= HOST_MAX_NUM)) {
-		pr_err("invalid host num: %d\n", id);
-		return -EINVAL;
-	}
 	if (mtk_msdc_host[id] == NULL) {
 		pr_err("host%d is not config\n", id);
 		return -EINVAL;
@@ -1078,6 +1059,14 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	if (copy_from_user(&msdc_ctl, (struct msdc_ioctl *)arg,
 		sizeof(struct msdc_ioctl))) {
 		return -EFAULT;
+	}
+
+	if (msdc_ctl.opcode != MSDC_ERASE_PARTITION) {
+		if ((msdc_ctl.host_num < 0)
+		 || (msdc_ctl.host_num >= HOST_MAX_NUM)) {
+			pr_err("invalid host num: %d\n", msdc_ctl.host_num);
+			return -EINVAL;
+		}
 	}
 
 	switch (msdc_ctl.opcode) {
