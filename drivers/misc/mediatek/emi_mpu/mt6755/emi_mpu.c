@@ -972,6 +972,16 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
 	ptr += sprintf(ptr, "R17 --> 0x%x to 0x%x\n", start, end);
 
+	reg_value = mt_emi_reg_read(EMI_MPUC3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R18 --> 0x%x to 0x%x\n", start, end);
+
+	reg_value = mt_emi_reg_read(EMI_MPUD3);
+	start = ((reg_value >> 16) << 16) + emi_physical_offset;
+	end = ((reg_value & 0xFFFF) << 16) + emi_physical_offset + 0xFFFF;
+	ptr += sprintf(ptr, "R19 --> 0x%x to 0x%x\n", start, end);
+
 	ptr += sprintf(ptr, "\n");
 
 	reg_value = mt_emi_reg_read(EMI_MPUI);
@@ -1228,6 +1238,34 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "R17 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
 	permission[d0],  permission[d1],  permission[d2], permission[d3]);
 	ptr += sprintf(ptr, "R17 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUK3);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R18 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R18 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
+	permission[d4],  permission[d5],  permission[d6], permission[d7]);
+
+	reg_value = mt_emi_reg_read(EMI_MPUL3);
+	d0 = (reg_value & 0x7);
+	d1 = (reg_value >> 3) & 0x7;
+	d2 = (reg_value >> 6) & 0x7;
+	d3 = (reg_value >> 9) & 0x7;
+	d4 = (reg_value >> 12) & 0x7;
+	d5 = (reg_value >> 15) & 0x7;
+	d6 = (reg_value >> 18) & 0x7;
+	d7 = (reg_value >> 21) & 0x7;
+	ptr += sprintf(ptr, "R19 --> d0 = %s, d1 = %s, d2 = %s, d3 = %s\n",
+	permission[d0],  permission[d1],  permission[d2], permission[d3]);
+	ptr += sprintf(ptr, "R19 --> d4 = %s, d5 = %s, d6 = %s, d7 = %s\n",
 	permission[d4],  permission[d5],  permission[d6], permission[d7]);
 
 	return strlen(buf);
@@ -1810,7 +1848,7 @@ out:
 DRIVER_ATTR(emi_wp_vio, 0644, emi_wp_vio_show, emi_wp_vio_store);
 #endif /* #ifdef ENABLE_EMI_WATCH_POINT */
 
-#define AP_REGION_ID   17
+#define AP_REGION_ID   19
 static void protect_ap_region(void)
 {
 
