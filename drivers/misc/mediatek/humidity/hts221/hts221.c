@@ -268,13 +268,13 @@ static int hts221_get_calibration_data(struct i2c_client *client)
 	u8 humidity_calibration[2], temperature_calibration[2];
 
 	HTS_FUN();
-	err = hts221_i2c_read_block(client, REG_0RH_CAL_X_H, humidity_calibration, 2);
+	err = hts221_i2c_read_block(client, REG_0RH_CAL_X_H + 0x80, humidity_calibration, 2);
 	if (err < 0)
 		return err;
 	obj_i2c_data->hts221_cali.calibX0 = ((s32) ((s16) ((humidity_calibration[1] << 8) |
 							   (humidity_calibration[0]))));
 
-	err = hts221_i2c_read_block(client, REG_1RH_CAL_X_H, humidity_calibration, 2);
+	err = hts221_i2c_read_block(client, REG_1RH_CAL_X_H + 0x80, humidity_calibration, 2);
 	if (err < 0)
 		return err;
 	obj_i2c_data->hts221_cali.calibX1 = ((s32) ((s16) ((humidity_calibration[1] << 8) |
@@ -300,13 +300,13 @@ static int hts221_get_calibration_data(struct i2c_client *client)
 	    (obj_i2c_data->hts221_cali.calibX1 - obj_i2c_data->hts221_cali.calibX0);
 	obj_i2c_data->hts221_cali.h_b = obj_i2c_data->hts221_cali.h_b * 8;
 
-	err = hts221_i2c_read_block(client, REG_0T_CAL_X_L, temperature_calibration, 2);
+	err = hts221_i2c_read_block(client, REG_0T_CAL_X_L + 0x80, temperature_calibration, 2);
 	if (err < 0)
 		return err;
 	obj_i2c_data->hts221_cali.calibW0 = ((s32) ((s16) ((temperature_calibration[1] << 8) |
 							   (temperature_calibration[0]))));
 
-	err = hts221_i2c_read_block(client, REG_1T_CAL_X_L, temperature_calibration, 2);
+	err = hts221_i2c_read_block(client, REG_1T_CAL_X_L + 0x80, temperature_calibration, 2);
 	if (err < 0)
 		return err;
 	obj_i2c_data->hts221_cali.calibW1 = ((s32) ((s16) ((temperature_calibration[1] << 8) |
@@ -497,10 +497,7 @@ static int hts221_get_temperature(struct i2c_client *client, char *buf, int bufs
 	int data_t = 0;
 
 	HTS_FUN();
-	err = hts221_i2c_read_block(client, REG_T_OUT_L, &temperature_data[0], 1);
-	if (err < 0)
-		return err;
-	err = hts221_i2c_read_block(client, REG_T_OUT_H, &temperature_data[1], 1);
+	err = hts221_i2c_read_block(client, REG_T_OUT_L + 0x80, temperature_data, 2);
 	if (err < 0)
 		return err;
 	data_t = ((s32) ((s16) ((temperature_data[1] << 8) | (temperature_data[0]))));
@@ -529,10 +526,7 @@ static int hts221_get_humidity(struct i2c_client *client, char *buf, int bufsize
 		HTS_ERR("ERROR\n");
 		return err;
 	}
-	err = hts221_i2c_read_block(client, REG_H_OUT_L, &humidity_data[0], 1);
-	if (err < 0)
-		return err;
-	err = hts221_i2c_read_block(client, REG_H_OUT_H, &humidity_data[1], 1);
+	err = hts221_i2c_read_block(client, REG_H_OUT_L + 0x80, humidity_data, 2);
 	if (err < 0)
 		return err;
 	data_h = ((s32) ((s16) ((humidity_data[1] << 8) | (humidity_data[0]))));

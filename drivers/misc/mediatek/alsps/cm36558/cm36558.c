@@ -966,7 +966,6 @@ int CM36558_setup_eint(struct i2c_client *client)
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
 		APS_ERR("Cannot find alsps pinctrl default!\n");
-		return ret;
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
@@ -1307,6 +1306,16 @@ static int CM36558_init_client(struct i2c_client *client)
 	}
 	APS_LOG("CM36558 ps CM36558_REG_PS_CONF1_2 command!\n");
 
+	databuf[0] = CM36558_REG_PS_CONF3_MS;
+	databuf[1] = 0b00110000;
+	databuf[2] = 0b00000010;
+	res = CM36558_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+	if(res <= 0)
+	{
+		APS_ERR("i2c_master_send function err\n");
+		goto EXIT_ERR;
+	}
+	APS_LOG("CM36558 ps CM36558_REG_PS_CONF3_MS command!\n");
 	databuf[0] = CM36558_REG_PS_CANC;
 	databuf[1] = 0x00;
 	databuf[2] = 0x00;
