@@ -34,7 +34,7 @@ int	wdt_irq_id = 0;
 int ext_debugkey_io = -1;
 
 static const struct of_device_id rgu_of_match[] = {
-	{ .compatible = "mediatek,mt6797-rgu", },
+	{ .compatible = "mediatek,mt6797-toprgu", },
 	{},
 };
 #endif
