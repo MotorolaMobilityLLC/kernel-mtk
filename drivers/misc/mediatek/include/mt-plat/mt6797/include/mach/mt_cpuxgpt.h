@@ -61,5 +61,6 @@ u64 localtimer_get_phy_count(void);
 unsigned int cpu_xgpt_irq_dis(int cpuxgpt_num);
 void restore_cpuxgpt(void);
 void save_cpuxgpt(void);
+void mt_cpuxgpt_map_base(void);
 
 #endif

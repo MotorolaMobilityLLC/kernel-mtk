@@ -463,6 +463,8 @@ static inline void setup_clkevt(u32 freq)
 
 static  void setup_syscnt(void)
 {
+	/* map cpuxgpt address */
+	mt_cpuxgpt_map_base();
    /* set cpuxgpt free run,cpuxgpt always free run & oneshot no need to set */
    /* set cpuxgpt 13Mhz clock */
 	set_cpuxgpt_clk(CLK_DIV2);
