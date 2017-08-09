@@ -1071,7 +1071,7 @@ void vcorefs_go_to_vcore_dvfs(void)
 	gvrctrl->sodi_rekick_lock = 1;
 
 	if (is_vcorefs_feature_enable())
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 
 	gvrctrl->sodi_rekick_lock = 0;
 }
