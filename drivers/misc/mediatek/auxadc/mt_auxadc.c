@@ -379,6 +379,17 @@ static void mt_auxadc_cal_prepare(void)
 	/* no voltage calibration */
 }
 
+#if defined(CONFIG_ARCH_MT8163_AUXADC)
+static void mt_auxadc_power_on(void)
+{
+	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_MISC, 1 << 14);	/* power on ADC */
+}
+#else
+static void mt_auxadc_power_on(void)
+{
+}
+#endif
+
 void mt_auxadc_hal_init(struct platform_device *dev)
 {
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
@@ -425,6 +436,8 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	}
 #endif
 	mt_auxadc_cal_prepare();
+	mt_auxadc_power_on();
+
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
 
