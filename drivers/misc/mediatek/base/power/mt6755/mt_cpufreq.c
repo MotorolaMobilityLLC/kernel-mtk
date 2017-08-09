@@ -3984,7 +3984,7 @@ static int _create_procfs(void)
 		if (!proc_create_data
 		    (cpu_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, cpu_entries[i].fops, p))
 			cpufreq_err("%s(), create /proc/cpufreq/%s failed\n", __func__,
-				    entries[i].name);
+				    cpu_entries[i].name);
 	}
 
 	for_each_cpu_dvfs(j, p) {
@@ -4000,7 +4000,7 @@ static int _create_procfs(void)
 			    (cpu_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, cpu_dir,
 			     cpu_entries[i].fops, p))
 				cpufreq_err("%s(), create /proc/cpufreq/%s/%s failed\n", __func__,
-					    p->name, entries[i].name);
+					    p->name, cpu_entries[i].name);
 		}
 	}
 
