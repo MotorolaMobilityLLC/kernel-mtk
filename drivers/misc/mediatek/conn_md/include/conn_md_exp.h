@@ -1,7 +1,6 @@
 #ifndef __CONN_MD_EXP_H_
 #define __CONN_MD_EXP_H_
 
-#if defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_ECCCI_DRIVER_MODULE)
 #include "port_ipc.h"		/*data structure is defined here, mediatek/kernel/drivers/eccci */
 #include "ccci_ipc_task_ID.h"	/*IPC task id is defined here, mediatek/kernel/drivers/eccci */
 typedef unsigned int uint32;
@@ -10,15 +9,7 @@ typedef unsigned short uint16;
 #ifdef CHAR
 #undef CHAR
 #endif
-#define IPC_HEADER_FILE_INCLUDED 1
-#endif
 
-#ifndef IPC_HEADER_FILE_INCLUDED
-/* #if defined(CONFIG_MTK_EEMCS_DEVICES) || defined(CONFIG_MTK_EEMCS_DEVICES_MODULE) */
-#include "eemcs_ipc.h"		/*data structure is defined here, mediatek/kernel/drivers/eemcs */
-#include "eemcs_ipc_task_ID.h"	/*IPC task id is defined here, mediatek/kernel/drivers/eemcs */
-/* #endif */
-#endif
 typedef enum {
 	CONN_MD_ERR_NO_ERR = 0,
 	CONN_MD_ERR_DEF_ERR = -1,

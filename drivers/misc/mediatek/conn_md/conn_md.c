@@ -528,9 +528,12 @@ static void conn_md_exit(void)
 
 /*---------------------------------------------------------------------------*/
 
+/*
 module_init(conn_md_init);
 module_exit(conn_md_exit);
-
+*/
+subsys_initcall(conn_md_init);
+module_exit(conn_md_exit);
 /*---------------------------------------------------------------------------*/
 
 MODULE_AUTHOR("MBJ/WCN/SE/SS1/Chaozhong.Liang");

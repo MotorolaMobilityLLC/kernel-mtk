@@ -64,9 +64,10 @@ static int conn_md_dbg_write(struct file *file, const char *buffer, unsigned lon
 	char buf[256];
 	char *pBuf;
 	unsigned long len = count;
-	int x = 0;
-	int y = 0;
-	int z = 0;
+	long x = 0;
+	long y = 0;
+	long z = 0;
+	long i;
 	char *pToken = NULL;
 	char *pDelimiter = " \t";
 
@@ -84,17 +85,22 @@ static int conn_md_dbg_write(struct file *file, const char *buffer, unsigned lon
 
 	pBuf = buf;
 	pToken = strsep(&pBuf, pDelimiter);
-	x = NULL != pToken ? kstrtol(pToken, NULL, 16) : 0;
+	if (NULL != pToken)
+		i = kstrtol(pToken, 16, &x);
+	else
+		x = 0;
 
 	pToken = strsep(&pBuf, "\t\n ");
-	if (pToken != NULL) {
-		y = kstrtol(pToken, NULL, 16);
-		CONN_MD_INFO_FUNC("y = 0x%08x\n\r", y);
-	}
+	if (NULL != pToken)
+		i = kstrtol(pToken, 16, &y);
+	else
+		y = 0;
 
 	pToken = strsep(&pBuf, "\t\n ");
-	if (pToken != NULL)
-		z = kstrtol(pToken, NULL, 16);
+	if (NULL != pToken)
+		i = kstrtol(pToken, 16, &z);
+	else
+		z = 0;
 
 	CONN_MD_INFO_FUNC("x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
 
