@@ -1588,7 +1588,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		usbphy0:usbphy@0 {
-			 compatible = "usb-nop-xceiv";
+			compatible = "usb-nop-xceiv";
 		};
 
 		audiosys: audio@11220000 {
@@ -1772,6 +1772,16 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>, <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "musb-hdrc", "xhci";
+		};
+
+		usb3_phy {
+			compatible = "mediatek,usb3_phy";
+			clocks = <&infrasys INFRA_SSUSB_REF>,
+				<&topckgen TOP_MUX_SSUSB_TOP_SYS>,
+				<&topckgen TOP_UNIVPLL3_D2>;
+			clock-names = "sssub_ref_clk",
+				"ssusb_top_sys_sel_clk",
+				"ssusb_univpll3_d2_clk";
 		};
 
 		usb3_sif@11280000 {
