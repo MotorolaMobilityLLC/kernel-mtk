@@ -55,7 +55,7 @@
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
 
 /* vcore dvfs request */
-extern int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req);
+extern int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req, int kicker);
 
 /* bw monitor threshold setting to spm */
 extern int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);

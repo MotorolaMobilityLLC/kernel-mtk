@@ -718,7 +718,7 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
-	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req);
+	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req, krconf->kicker);
 
 	if (timer < 0) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");

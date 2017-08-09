@@ -318,7 +318,7 @@ void spm_vcorefs_screen_on_setting(int dvfs_mode, u32 md_dvfs_req)
 /*
  * SPM DVFS Function
  */
-int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req)
+int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req, int kicker)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	unsigned long flags;
@@ -364,6 +364,9 @@ int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req)
 	spm_write(SPM_SRC_REQ, req | (dvfs_req << 5));
 	pwrctrl->spm_dvfs_req = dvfs_req;
 
+	if (kicker == KIR_REESPI || kicker == KIR_TEESPI)
+		udelay(410);
+
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_END);
 
 	if (opp == OPPI_PERF) {
@@ -390,8 +393,21 @@ int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req)
 	return t_dvfs;
 }
 
+static void _spm_vcorefs_init_reg(void)
+{
+	u32 mask;
+
+	/* set en_spm2cksys_mem_ck_mux_update for SPM control */
+	/* spm_write((spm_cksys_base + 0x40), (spm_read(spm_cksys_base + 0x40) | (0x1 << 13))); */
+
+	/* SPM_EMI_BW_MODE[0]&[1] set to 0 */
+	mask = (EMI_BW_MODE_LSB | EMI_BOOST_MODE_LSB);
+	spm_write(SPM_EMI_BW_MODE, spm_read(SPM_EMI_BW_MODE) & ~(mask));
+}
+
 static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 {
+	unsigned long flags;
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
 
@@ -410,9 +426,15 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	pwrctrl = __spm_vcore_dvfs.pwrctrl;
 #endif
 
-	__spm_clean_after_wakeup();
-
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	_spm_vcorefs_init_reg();
+
+	__spm_clean_after_wakeup();
 
 	__spm_reset_and_init_pcm(pcmdesc);
 
@@ -427,6 +449,8 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	__spm_set_wakeup_event(pwrctrl);
 
 	__spm_kick_pcm_to_run(pwrctrl);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SODI);
@@ -447,31 +471,10 @@ void spm_vcorefs_init_dvfs_con(void)
 	}
 }
 
-static void _spm_vcorefs_init_reg(void)
-{
-	u32 mask;
-
-	/* set en_spm2cksys_mem_ck_mux_update for SPM control */
-	/* spm_write((spm_cksys_base + 0x40), (spm_read(spm_cksys_base + 0x40) | (0x1 << 13))); */
-
-	/* SPM_EMI_BW_MODE[0]&[1] set to 0 */
-	mask = (EMI_BW_MODE_LSB | EMI_BOOST_MODE_LSB);
-	spm_write(SPM_EMI_BW_MODE, spm_read(SPM_EMI_BW_MODE) & ~(mask));
-}
-
 void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	_spm_vcorefs_init_reg();
-
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
-
 	__go_to_vcore_dvfs(spm_flags, 0);
 
-	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
 MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.1");
