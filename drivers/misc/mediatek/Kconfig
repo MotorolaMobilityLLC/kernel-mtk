@@ -59,6 +59,16 @@ config MTK_MEMCFG
 	  fragmentation test tools. The features
 	  cost additional memory.
 
+config MTK_MEMORY_LOWPOWER
+	bool "Support Mediatek memory lowpower technology"
+	default n
+	help
+	  Mediatek DRAM low power technology.
+	  It tries to safe DRAM power by switching
+	  different DRAM mode dynamically. It's a
+	  platform-dependent feature.
+
+
 config MTK_BASE_POWER
 	bool
 

@@ -167,12 +167,14 @@ static int __init __reserved_mem_alloc_size(unsigned long node,
 
 	*res_base = base;
 	*res_size = size;
-	MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
-		"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
-		uname,
-		(unsigned long long)base,
-		(unsigned long long)base + size - 1,
-		(unsigned long long)size);
+
+	if (nomap)
+		MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+			"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
+			uname,
+			(unsigned long long)base,
+			(unsigned long long)base + size - 1,
+			(unsigned long long)size);
 
 	return 0;
 }
