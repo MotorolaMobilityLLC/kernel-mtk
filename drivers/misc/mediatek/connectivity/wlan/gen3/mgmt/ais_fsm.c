@@ -2319,15 +2319,16 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			prMsgChReq->ucTokenID = ++prAisFsmInfo->ucSeqNumOfChReq;
 			prMsgChReq->eReqType = CH_REQ_TYPE_JOIN;
 			prMsgChReq->u4MaxInterval = AIS_JOIN_CH_REQUEST_INTERVAL;
-			prMsgChReq->ucPrimaryChannel = prAisFsmInfo->prTargetBssDesc->ucChannelNum;
-			prMsgChReq->eRfSco = prAisFsmInfo->prTargetBssDesc->eSco;
-			prMsgChReq->eRfBand = prAisFsmInfo->prTargetBssDesc->eBand;
+			if (prAisFsmInfo->prTargetBssDesc != NULL) {
+				prMsgChReq->ucPrimaryChannel = prAisFsmInfo->prTargetBssDesc->ucChannelNum;
+				prMsgChReq->eRfSco = prAisFsmInfo->prTargetBssDesc->eSco;
+				prMsgChReq->eRfBand = prAisFsmInfo->prTargetBssDesc->eBand;
 
-			/* To do: check if 80/160MHz bandwidth is needed here */
-			prMsgChReq->eRfChannelWidth = prAisFsmInfo->prTargetBssDesc->eChannelWidth;
-			prMsgChReq->ucRfCenterFreqSeg1 = prAisFsmInfo->prTargetBssDesc->ucCenterFreqS1;
-			prMsgChReq->ucRfCenterFreqSeg2 = prAisFsmInfo->prTargetBssDesc->ucCenterFreqS2;
-
+				/* To do: check if 80/160MHz bandwidth is needed here */
+				prMsgChReq->eRfChannelWidth = prAisFsmInfo->prTargetBssDesc->eChannelWidth;
+				prMsgChReq->ucRfCenterFreqSeg1 = prAisFsmInfo->prTargetBssDesc->ucCenterFreqS1;
+				prMsgChReq->ucRfCenterFreqSeg2 = prAisFsmInfo->prTargetBssDesc->ucCenterFreqS2;
+			}
 			mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgChReq, MSG_SEND_METHOD_BUF);
 
 			prAisFsmInfo->fgIsChannelRequested = TRUE;
