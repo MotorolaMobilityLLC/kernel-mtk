@@ -23,6 +23,15 @@ unsigned long raw_range;
 unsigned long raw_setway;
 #endif
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+unsigned long long cache_flush_all_counter;
+unsigned long long get_cache_flush_all_count(void)
+{
+	return cache_flush_all_counter;
+}
+EXPORT_SYMBOL(get_cache_flush_all_count);
+#endif
+
 /*
  * inner_dcache_flush_all: Flush (clean + invalidate) the entire L1 data cache.
  *
@@ -86,6 +95,9 @@ void smp_inner_dcache_flush_all(void)
 	struct cpumask mask;
 #ifdef PERF_MEASURE
 	struct timespec time_stamp0, time_stamp1;
+#endif
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	cache_flush_all_counter++;
 #endif
 
 	if (in_interrupt()) {
