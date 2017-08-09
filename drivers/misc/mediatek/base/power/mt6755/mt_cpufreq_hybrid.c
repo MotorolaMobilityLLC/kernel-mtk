@@ -11,7 +11,7 @@
 #include <linux/wait.h>
 
 #include <mt-plat/sync_write.h>
-#include <mach/mt_lpae.h>
+#include <mt-plat/mt_lpae.h>
 #include "mt_cpufreq_hybrid.h"
 
 

@@ -7,8 +7,6 @@
 #define INTERAL_MAPPING_OFFSET (0x40000000)
 #define INTERAL_MAPPING_LIMIT (INTERAL_MAPPING_OFFSET + 0x80000000)
 
-#define INFRA_LARGE_MEMORY_SETTING (CKSYS_BASE + 0x1F00)
-#define IS_MT_LARGE_MEMORY_MODE  (readl(IOMEM(INFRA_LARGE_MEMORY_SETTING)) >> 13 & 0x1)
 #define MT_OVERFLOW_ADDR_START 0x100000000ULL
 
 
@@ -26,7 +24,6 @@ extern unsigned int enable_4G(void);
 		} \
 	}  while (0) \
 
-
 /* For SPM and MD32 only in ROME */
 #define MAPPING_DRAM_ACCESS_ADDR(phy_addr) \
 	do { \
@@ -38,10 +35,14 @@ extern unsigned int enable_4G(void);
 
 #else /* !CONFIG_ARM_LPAE */
 
-#define IS_MT_LARGE_MEMORY_MODE 0
 #define CROSS_OVERFLOW_ADDR_TRANSFER(phy_addr, size, ret)
 #define MAPPING_DRAM_ACCESS_ADDR(phy_addr)
 #define MT_OVERFLOW_ADDR_START 0
+
+static inline unsigned int enalbe_4G(void)
+{
+	return 0;
+}
 
 #endif
 #endif  /*!__MT_LPAE_H__ */

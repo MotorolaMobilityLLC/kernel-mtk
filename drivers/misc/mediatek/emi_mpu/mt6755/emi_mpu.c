@@ -25,7 +25,7 @@
 #include <linux/of_irq.h>
 #include <mt-plat/mt_io.h>
 #include "mach/emi_mpu.h"
-#include "mach/mt_lpae.h"
+#include <mt-plat/mt_lpae.h>
 #include <mt-plat/mt_ccci_common.h>
 
 static int Violation_PortID = MASTER_ALL;
