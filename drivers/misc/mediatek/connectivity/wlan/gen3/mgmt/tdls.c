@@ -197,8 +197,7 @@ UINT_32 TdlsexLinkMgt(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBuf
 	case TDLS_FRM_ACTION_TEARDOWN:
 
 		prStaRec = cnmGetTdlsPeerByAddress(prAdapter, prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeer);
-		if (prCmd->u2StatusCode == TDLS_REASON_CODE_UNREACHABLE)
-			g_arTdlsLink[prStaRec->ucTdlsIndex] = 0;
+		g_arTdlsLink[prStaRec->ucTdlsIndex] = 0;
 
 		if (TdlsDataFrameSend_TearDown(prAdapter,
 					       prStaRec,
