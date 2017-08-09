@@ -6,6 +6,7 @@ else
 obj-y += mt_clkmgr_common.o
 obj-y += mt_clkmgr.o
 endif
+obj-y += mt_idle.o
 obj-y += mt_spm_mtcmos.o
 obj-y += mt_pbm.o
 obj-y += mt_vcore_dvfs_1.o
