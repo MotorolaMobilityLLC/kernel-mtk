@@ -348,10 +348,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	u16 control_reg;
 	int tmo = i2c->adap.timeout;
 	unsigned int speed_hz;
+	bool isDMA = false;
+	int data_size;
+	u8 *ptr;
 	int ret;
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
+	if (i2c->msg_len > 8 || i2c->msg_aux_len > 8)
+		isDMA = true;
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
 		speed_hz = i2c->ext_data.timing;
 	else
@@ -364,8 +369,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	/* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
 	if (i2c->have_pmic)
 		i2c_writew(I2C_CONTROL_WRAPPER, i2c, OFFSET_PATH_DIR);
-	control_reg = I2C_CONTROL_ACKERR_DET_EN |
-		I2C_CONTROL_CLK_EXT_EN | I2C_CONTROL_DMA_EN;
+	control_reg = I2C_CONTROL_ACKERR_DET_EN | I2C_CONTROL_CLK_EXT_EN;
+	if (isDMA == true) /* DMA */
+		control_reg |= I2C_CONTROL_DMA_EN;
 	if (speed_hz > 400000)
 		control_reg |= I2C_CONTROL_RS;
 	if (i2c->op == I2C_MASTER_WRRD)
@@ -394,8 +400,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c, OFFSET_INTR_MASK);
 	/* Set transfer and transaction len */
 	if (i2c->op == I2C_MASTER_WRRD) {
-		i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
-		i2c_writew(i2c->msg_aux_len, i2c, OFFSET_TRANSFER_LEN_AUX);
+		if (i2c->id != 6) {
+			i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
+			i2c_writew(i2c->msg_aux_len, i2c, OFFSET_TRANSFER_LEN_AUX);
+		} else {
+			i2c_writew(i2c->msg_len & 0xFF | (i2c->msg_aux_len<<8) & 0x1F00,
+				i2c, OFFSET_TRANSFER_LEN);
+		}
 		i2c_writew(0x02, i2c, OFFSET_TRANSAC_LEN);
 	} else {
 		i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
@@ -403,34 +414,48 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 
 	/* Prepare buffer data to start transfer */
-	if (i2c->op == I2C_MASTER_RD) {
-		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
-		i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
-		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
-		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
-	} else if (i2c->op == I2C_MASTER_WR) {
-		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
-		i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
-		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+	if (isDMA == true) {
+		if (i2c->op == I2C_MASTER_RD) {
+			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
+			i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
+			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
+			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
+		} else if (i2c->op == I2C_MASTER_WR) {
+			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
+			i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
+			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+		} else {
+			i2c_writel_dma(0x0000, i2c, OFFSET_INT_FLAG);
+			i2c_writel_dma(0x0000, i2c, OFFSET_CON);
+			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c,
+				OFFSET_RX_MEM_ADDR);
+			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+			i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
+		}
+		/* flush before sending DMA start */
+		mb();
+		i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
 	} else {
-		i2c_writel_dma(0x0000, i2c, OFFSET_INT_FLAG);
-		i2c_writel_dma(0x0000, i2c, OFFSET_CON);
-		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c,
-			OFFSET_RX_MEM_ADDR);
-		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
-		i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
+		if (i2c->op != I2C_MASTER_RD) {
+			data_size = i2c->msg_len;
+			ptr = i2c->dma_buf.vaddr;
+			while (data_size--) {
+				i2c_writew(*ptr, i2c, OFFSET_DATA_PORT);
+				ptr++;
+			}
+		}
 	}
 	/* flush before sending start */
 	mb();
-	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
 	if (!i2c->ext_data.isEnable || !i2c->ext_data.is_hw_trig)
 		i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
 	else
 		dev_err(i2c->dev, "I2C hw trig.\n");
 
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
+
 	if (tmo == 0) {
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
 		i2c_dump_info(i2c);
@@ -442,6 +467,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		mt_i2c_init_hw(i2c);
 		i2c_dump_info(i2c);
 		return -EREMOTEIO;
+	}
+	if (i2c->op != I2C_MASTER_WR && isDMA == false) {
+		data_size = (i2c_readw(i2c, OFFSET_FIFO_STAT) >> 4) & 0x000F;
+		ptr = i2c->dma_buf.vaddr;
+		while (data_size--) {
+			*ptr = i2c_readw(i2c, OFFSET_DATA_PORT);
+			/* I2CLOG("addr %x read byte = 0x%x\n", i2c->addr, *ptr); */
+			ptr++;
+		}
 	}
 	dev_dbg(i2c->dev, "i2c transfer done.\n");
 	return 0;
@@ -517,6 +551,7 @@ static int __mt_i2c_transfer(struct mt_i2c *i2c,
 		i2c->addr = msgs->addr;
 		i2c->msg_len = msgs->len;
 		i2c->msg_buf = msgs->buf;
+		i2c->msg_aux_len = 0;
 		if (msgs->flags & I2C_M_RD)
 			i2c->op = I2C_MASTER_RD;
 		else
