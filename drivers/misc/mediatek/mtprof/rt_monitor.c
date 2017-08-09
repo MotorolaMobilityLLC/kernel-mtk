@@ -97,6 +97,7 @@ static void store_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 	mtmon->pid = p->pid;
 	mtmon->prio = p->prio;
 	strncpy(mtmon->comm, p->comm, sizeof(mtmon->comm));
+	mtmon->comm[sizeof(mtmon->comm) - 1] = 0;
 	mtmon->cputime = delta_exec;
 	mtmon->isr_time = p->se.mtk_isr_time;
 	mtmon->isr_time_init = p->se.mtk_isr_time;
