@@ -3313,6 +3313,8 @@ int _display_set_lcm_refresh_rate(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	static cmdqRecHandle cmdq_handle, cmdq_pre_handle;
+	disp_path_handle disp_handle;
+	disp_ddp_path_config *pconfig = NULL;
 	int ret = 0;
 
 	if (pgc->state == DISP_SLEPT) {
@@ -3362,8 +3364,14 @@ int _display_set_lcm_refresh_rate(int fps)
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 	ret = cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DSI_TE);
 	ret = cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
-	/* Change PLL CLOCK parameter and build fps lcm command */
+	/* 1.Change PLL CLOCK parameter and build fps lcm command */
 	disp_lcm_adjust_fps(cmdq_handle, pgc->plcm, fps);
+	/* 2.Change RDMA golden setting */
+	disp_handle = pgc->dpmgr_handle;
+	pconfig = dpmgr_path_get_last_config(disp_handle);
+	pconfig->p_golden_setting_context->fps = fps;
+	dpmgr_path_ioctl(primary_get_dpmgr_handle(), cmdq_handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
+	/* 3.Change DSI clock */
 	dpmgr_path_ioctl(pgc->dpmgr_handle, cmdq_handle, DDP_PHY_CLK_CHANGE, &pgc->plcm->params->dsi.PLL_CLOCK);
 	/* OD Enable */
 	if (!od_by_pass) {
