@@ -666,6 +666,9 @@ static void mdee_info_prepare_v2(struct md_ee *mdee)
 					       ex_overview->main_reson[core_id].core_offset);
 			ee_case = mdee_md32_core_parse(md_id, debug_info, ex_md32LogInfo);
 			break;
+		default:
+			ee_case = 0;
+			break;
 		}
 		if (off_core_num == 1) {
 			mdee->ex_type = ee_case;
