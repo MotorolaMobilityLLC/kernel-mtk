@@ -25,6 +25,7 @@ extern s32 battery_meter_get_VSense(void);
 extern int get_rtc_spare_fg_value(void);
 
 extern s32 battery_meter_get_battery_voltage_cached(void);
+extern s32 battery_meter_get_average_battery_voltage(void);
 extern s32 battery_meter_get_battery_soc(void);
 
 #endif				/* #ifndef _BATTERY_METER_H */

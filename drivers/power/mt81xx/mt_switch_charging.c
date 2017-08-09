@@ -81,17 +81,17 @@ static int select_jeita_cv(void)
 	int cv_voltage;
 
 	if (g_temp_status == TEMP_ABOVE_POS_60)
-		cv_voltage = JEITA_TEMP_ABOVE_POS_60_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_above_pos_60_cv_voltage;
 	else if (g_temp_status == TEMP_POS_45_TO_POS_60)
-		cv_voltage = JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_pos_45_to_pos_60_cv_voltage;
 	else if (g_temp_status == TEMP_POS_10_TO_POS_45)
-		cv_voltage = JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_pos_10_to_pos_45_cv_voltage;
 	else if (g_temp_status == TEMP_POS_0_TO_POS_10)
-		cv_voltage = JEITA_TEMP_POS_0_TO_POS_10_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_pos_0_to_pos_10_cv_voltage;
 	else if (g_temp_status == TEMP_NEG_10_TO_POS_0)
-		cv_voltage = JEITA_TEMP_NEG_10_TO_POS_0_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_neg_10_to_pos_0_cv_voltage;
 	else if (g_temp_status == TEMP_BELOW_NEG_10)
-		cv_voltage = JEITA_TEMP_BELOW_NEG_10_CV_VOLTAGE;
+		cv_voltage = p_bat_charging_data->jeita_temp_below_neg_10_cv_voltage;
 	else
 		cv_voltage = BATTERY_VOLT_04_200000_V;
 
@@ -109,71 +109,76 @@ int do_jeita_state_machine(void)
 	/* JEITA battery temp Standard */
 	previous_g_temp_status = g_temp_status;
 
-	if (BMT_status.temperature >= TEMP_POS_60_THRESHOLD) {
+	if (BMT_status.temperature >= p_bat_charging_data->temp_pos_60_threshold) {
 		battery_log(BAT_LOG_CRTI,
 			    "[BATTERY] Battery Over high Temperature(%d) !!\n\r",
-			    TEMP_POS_60_THRESHOLD);
+			    p_bat_charging_data->temp_pos_60_threshold);
 
 		g_temp_status = TEMP_ABOVE_POS_60;
 
 		return PMU_STATUS_FAIL;
-	} else if (BMT_status.temperature > TEMP_POS_45_THRESHOLD) {	/* control 45c to normal behavior */
+	} else if (BMT_status.temperature > p_bat_charging_data->temp_pos_45_threshold) {
 		if ((g_temp_status == TEMP_ABOVE_POS_60)
-		    && (BMT_status.temperature >= TEMP_POS_60_THRES_MINUS_X_DEGREE)) {
+		    && (BMT_status.temperature >= p_bat_charging_data->temp_pos_60_thres_minus_x_degree)) {
 			battery_log(BAT_LOG_CRTI,
-				    "[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-				    TEMP_POS_60_THRES_MINUS_X_DEGREE, TEMP_POS_60_THRESHOLD);
+				"[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
+				p_bat_charging_data->temp_pos_60_thres_minus_x_degree,
+				p_bat_charging_data->temp_pos_60_threshold);
 
 			return PMU_STATUS_FAIL;
 		}
 		battery_log(BAT_LOG_CRTI,
-			    "[BATTERY] Battery Temperature between %d and %d !!\n\r",
-			    TEMP_POS_45_THRESHOLD, TEMP_POS_60_THRESHOLD);
+			"[BATTERY] Battery Temperature between %d and %d !!\n\r",
+			p_bat_charging_data->temp_pos_45_threshold, p_bat_charging_data->temp_pos_60_threshold);
 
 		g_temp_status = TEMP_POS_45_TO_POS_60;
 
-	} else if (BMT_status.temperature >= TEMP_POS_10_THRESHOLD) {
+	} else if (BMT_status.temperature >= p_bat_charging_data->temp_pos_10_threshold) {
 		if (((g_temp_status == TEMP_POS_45_TO_POS_60)
-		     && (BMT_status.temperature >= TEMP_POS_45_THRES_MINUS_X_DEGREE))
+		     && (BMT_status.temperature >= p_bat_charging_data->temp_pos_45_thres_minus_x_degree))
 		    || ((g_temp_status == TEMP_POS_0_TO_POS_10)
-			&& (BMT_status.temperature <= TEMP_POS_10_THRES_PLUS_X_DEGREE))) {
+			&& (BMT_status.temperature <= p_bat_charging_data->temp_pos_10_thres_plus_x_degree))) {
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] Battery Temperature not recovery to normal temperature charging mode yet!!\n\r");
 		} else {
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] Battery Normal Temperature between %d and %d !!\n\r",
-				    TEMP_POS_10_THRESHOLD, TEMP_POS_45_THRESHOLD);
+				    p_bat_charging_data->temp_pos_10_threshold,
+				    p_bat_charging_data->temp_pos_45_threshold);
 			g_temp_status = TEMP_POS_10_TO_POS_45;
 		}
-	} else if (BMT_status.temperature >= TEMP_POS_0_THRESHOLD) {
+	} else if (BMT_status.temperature >= p_bat_charging_data->temp_pos_0_threshold) {
 		if ((g_temp_status == TEMP_NEG_10_TO_POS_0 || g_temp_status == TEMP_BELOW_NEG_10)
-		    && (BMT_status.temperature <= TEMP_POS_0_THRES_PLUS_X_DEGREE)) {
+		    && (BMT_status.temperature <= p_bat_charging_data->temp_pos_0_thres_plus_x_degree)) {
 			if (g_temp_status == TEMP_BELOW_NEG_10
 			    || g_temp_status == TEMP_NEG_10_TO_POS_0) {
 				battery_log(BAT_LOG_CRTI,
-					    "[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-					    TEMP_POS_0_THRESHOLD, TEMP_POS_0_THRES_PLUS_X_DEGREE);
+					"[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
+					p_bat_charging_data->temp_pos_0_threshold,
+					p_bat_charging_data->temp_pos_0_thres_plus_x_degree);
 				return PMU_STATUS_FAIL;
 			}
 		} else {
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] Battery Temperature between %d and %d !!\n\r",
-				    TEMP_POS_0_THRESHOLD, TEMP_POS_10_THRESHOLD);
+				    p_bat_charging_data->temp_pos_0_threshold,
+				    p_bat_charging_data->temp_pos_10_threshold);
 
 			g_temp_status = TEMP_POS_0_TO_POS_10;
 		}
-	} else if (BMT_status.temperature >= TEMP_NEG_10_THRESHOLD) {
+	} else if (BMT_status.temperature >= p_bat_charging_data->temp_neg_10_threshold) {
 		if ((g_temp_status == TEMP_BELOW_NEG_10)
-		    && (BMT_status.temperature <= TEMP_NEG_10_THRES_PLUS_X_DEGREE)) {
+		    && (BMT_status.temperature <= p_bat_charging_data->temp_neg_10_thres_plus_x_degree)) {
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-				    TEMP_NEG_10_THRESHOLD, TEMP_NEG_10_THRES_PLUS_X_DEGREE);
+				    p_bat_charging_data->temp_neg_10_threshold,
+				    p_bat_charging_data->temp_neg_10_thres_plus_x_degree);
 
 			return PMU_STATUS_FAIL;
 		}
 		battery_log(BAT_LOG_CRTI,
 			    "[BATTERY] Battery Temperature between %d and %d,not allow charging yet!!\n\r",
-			    TEMP_NEG_10_THRESHOLD, TEMP_POS_0_THRESHOLD);
+			    p_bat_charging_data->temp_neg_10_threshold, p_bat_charging_data->temp_pos_0_threshold);
 
 		g_temp_status = TEMP_NEG_10_TO_POS_0;
 		return PMU_STATUS_FAIL;
@@ -181,7 +186,7 @@ int do_jeita_state_machine(void)
 	} else {
 		battery_log(BAT_LOG_CRTI,
 			    "[BATTERY] Battery below low Temperature(%d) !!\n\r",
-			    TEMP_NEG_10_THRESHOLD);
+			    p_bat_charging_data->temp_neg_10_threshold);
 		g_temp_status = TEMP_BELOW_NEG_10;
 
 		return PMU_STATUS_FAIL;

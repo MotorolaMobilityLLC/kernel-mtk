@@ -1949,6 +1949,11 @@ s32 battery_meter_get_battery_voltage_cached(void)
 	return gFG_voltage_init;
 }
 
+s32 battery_meter_get_average_battery_voltage(void)
+{
+	return get_bat_average_voltage();
+}
+
 s32 battery_meter_get_charging_current(void)
 {
 #if defined(CONFIG_SWCHR_POWER_PATH)

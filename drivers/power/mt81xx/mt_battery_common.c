@@ -3075,7 +3075,8 @@ static void battery_shutdown(struct platform_device *pdev)
 #endif
 	/* turn down interrupt thread and wakeup ability */
 
-	irq_set_irq_wake(g_bat.irq, false);
+	if (g_bat.init_done)
+		irq_set_irq_wake(g_bat.irq, false);
 	free_irq(g_bat.irq, pdev);
 
 	mutex_unlock(&bat_mutex);
