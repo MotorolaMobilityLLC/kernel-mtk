@@ -56,7 +56,7 @@ config MTK_SCPSYS_MT2701
 	  The System Control Processor System (SCPSYS) has several power
 	  management related tasks in the system.
 
-config MTK_PMIC_WRAP
+config MTK_PMIC_WRAP_COMMON
 	tristate "MediaTek PMIC Wrapper Support"
 	depends on ARCH_MEDIATEK
 	select REGMAP
