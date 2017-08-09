@@ -174,8 +174,10 @@ void last_kmsg_store_to_emmc(void)
 /* if(num_online_cpus() > 1){ */
 	if (wd_api->wd_get_check_bit() > 1) {
 		pr_err("ram_console: online cpu %d!\n", wd_api->wd_get_check_bit());
+#ifdef CONFIG_MTPROF
 		if (boot_finish == 0)
 			return;
+#endif
 	}
 
 	/* save log to emmc */
