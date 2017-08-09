@@ -198,7 +198,7 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 
 	pr_debug("mt_soc_ana_debug_read count = %zu\n", count);
 	AudDrv_Clk_On();
-	audckbufEnable(true);
+	/* audckbufEnable(true); */
 
 	n += scnprintf(buffer + n, size - n, "AFE_UL_DL_CON0  = 0x%x\n",
 		       Ana_Get_Reg(AFE_UL_DL_CON0));
@@ -467,6 +467,14 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 		       Ana_Get_Reg(AUDNCP_CLKDIV_CON3));
 	n += scnprintf(buffer + n, size - n, "AUDNCP_CLKDIV_CON4  = 0x%x\n",
 		       Ana_Get_Reg(AUDNCP_CLKDIV_CON4));
+	n += scnprintf(buffer + n, size - n, "DCXO_CW00  = 0x%x\n",
+		       Ana_Get_Reg(DCXO_CW00));
+	n += scnprintf(buffer + n, size - n, "DCXO_CW01  = 0x%x\n",
+		       Ana_Get_Reg(DCXO_CW01));
+	n += scnprintf(buffer + n, size - n, "DCXO_CW02  = 0x%x\n",
+		       Ana_Get_Reg(DCXO_CW02));
+	n += scnprintf(buffer + n, size - n, "DCXO_CW03  = 0x%x\n",
+		       Ana_Get_Reg(DCXO_CW03));
 
 	n += scnprintf(buffer + n, size - n, "TOP_CKPDN_CON0  = 0x%x\n",
 		       Ana_Get_Reg(TOP_CKPDN_CON0));
@@ -475,7 +483,7 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "GPIO_MODE3  = 0x%x\n", Ana_Get_Reg(GPIO_MODE3));
 	pr_debug("mt_soc_ana_debug_read len = %d\n", n);
 
-	audckbufEnable(false);
+	/* audckbufEnable(false); */
 	AudDrv_Clk_Off();
 
 	ret = simple_read_from_buffer(buf, count, pos, buffer, n);
@@ -887,11 +895,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		ret = kstrtoul(token3, 16, &regaddr);
 		ret = kstrtoul(token5, 16, &regvalue);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
-		/* clk_buf_ctrl(CLK_BUF_AUDIO, true); //6752 need? */
-		audckbufEnable(true);
+		/* audckbufEnable(true); */
 		Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
 		regvalue = Ana_Get_Reg(regaddr);
-		audckbufEnable(false);
+		/* audckbufEnable(false); */
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
 	}
 	if (strcmp(token1, ParSetkeyCfg) == 0) {
@@ -911,10 +918,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	}
 	if (strcmp(token1, PareGetkeyAna) == 0) {
 		pr_debug("strcmp (token1,PareGetkeyAna)\n");
-		audckbufEnable(true);
+		/* audckbufEnable(true); */
 		ret = kstrtoul(token3, 16, &regaddr);
 		regvalue = Ana_Get_Reg(regaddr);
-		audckbufEnable(false);
+		/* audckbufEnable(false); */
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr, regvalue);
 	}
 

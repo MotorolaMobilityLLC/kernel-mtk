@@ -154,6 +154,7 @@ static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
+static bool mClkBufferfromPMIC;
 static uint32 MicbiasRef, GetMicbias;
 
 static int reg_AFE_VOW_CFG0 = 0x0000;	/* VOW AMPREF Setting */
@@ -279,9 +280,14 @@ void audckbufEnable(bool enable)
 		if (audck_buf_Count == 0) {
 			/* pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,true)\n"); */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			clk_buf_ctrl(CLK_BUF_AUDIO, true);
+			if (mClkBufferfromPMIC) {
+				Ana_Set_Reg(DCXO_CW01, 0x8000, 0x8000);
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable\n");
+			} else {
+				clk_buf_ctrl(CLK_BUF_AUDIO, true);
+				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+			}
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 		}
 		audck_buf_Count++;
 	} else {
@@ -289,9 +295,14 @@ void audckbufEnable(bool enable)
 		if (audck_buf_Count == 0) {
 			/*pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,false)\n"); */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			clk_buf_ctrl(CLK_BUF_AUDIO, false);
+			if (mClkBufferfromPMIC) {
+				Ana_Set_Reg(DCXO_CW01, 0x0000, 0x8000);
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable\n");
+			} else {
+				clk_buf_ctrl(CLK_BUF_AUDIO, false);
+				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+			}
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 		}
 		if (audck_buf_Count < 0) {
 			pr_warn("audck_buf_Count count <0\n");
@@ -1349,7 +1360,7 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 
 static void TurnOnDacPower(void)
 {
-	/* pr_warn("TurnOnDacPower\n"); */
+	pr_warn("TurnOnDacPower\n");
 	audckbufEnable(true);
 	NvregEnable(true);	/* Enable AUDGLB */
 	ClsqEnable(true);	/* Turn on 26MHz source clock */
@@ -4572,6 +4583,12 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	mt6331_codec_init_reg(codec);
 	InitCodecDefault();
 	mInitCodec = true;
+
+	/* Clock buffer source is from RF or PMIC
+	 *   false: RF clock buffer
+	 *   true : PMIC clock buffer */
+	mClkBufferfromPMIC = is_clk_buf_from_pmic();
+	pr_debug("Clk_buf_from_pmic is %d\n", mClkBufferfromPMIC);
 
 #ifdef MT6755_AW8736_REWORK
 	/* Get PCB ID : Channel 12 */
