@@ -28,25 +28,20 @@
 #include <linux/proc_fs.h>
 #include <linux/time.h>
 #include <linux/mm.h>
-#include <linux/xlog.h>
 #include <asm/io.h>
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
 #include <linux/miscdevice.h>
 #include <mach/dma.h>
-#include <mach/mt_typedefs.h>
 #include <mach/mt_clkmgr.h>
 #include <mach/mtk_nand.h>
 #include <mtk_nand_util.h>
 #include "bmt.h"
-#include <mach/mt_irq.h>
-#include <asm/system.h>
-#include <mach/mt_boot.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/rtc.h>
-
+#include <mt_typedefs.h>
 #ifdef CONFIG_PWR_LOSS_MTK_SPOH
 #include <mach/power_loss_test.h>
 #endif
@@ -55,7 +50,7 @@
 #define PROCNAME	"driver/nand"
 #define PMT							1
 /*#define _MTK_NAND_DUMMY_DRIVER_*/
-#define __INTERNAL_USE_AHB_MODE__	(1)
+#define __INTERNAL_USE_AHB_MODE__	1
 
 /*
  * Access Pattern Logger
@@ -490,6 +485,7 @@ u32 sandisk_pairpage_mapping(u32 page, bool high_to_low)
 				return page + 2;
 		return page + 3;
 	}
+	return page + 3;
 }
 
 u32 hynix_pairpage_mapping(u32 page, bool high_to_low)
@@ -519,6 +515,7 @@ u32 hynix_pairpage_mapping(u32 page, bool high_to_low)
 			return page;
 		return page + 6;
 	}
+	return page + 6;
 }
 
 u32 micron_pairpage_mapping(u32 page, bool high_to_low)
@@ -611,6 +608,7 @@ struct nand_ecclayout nand_oob_128 = {
 
 static bool use_randomizer = FALSE;
 
+#ifdef DUMP_PEF
 static suseconds_t Cal_timediff(struct timeval *end_time, struct timeval *start_time)
 {
 	struct timeval difference;
@@ -629,7 +627,6 @@ static suseconds_t Cal_timediff(struct timeval *end_time, struct timeval *start_
 
 }				/* timeval_diff() */
 
-#ifdef DUMP_PEF
 void dump_nand_rwcount(void)
 {
 #if 0
@@ -1946,7 +1943,7 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 	int retry = 10;
 	int sretry = 10;
 	struct gFeatureSet *feature_set = &(gn_devinfo.feature_set.FeatureSet);
-	cg_clk_id id = MT_CG_SYS_26M;
+	enum cg_clk_id id = MT_CG_SYS_26M;
 
 	if (gn_devinfo.iowidth == IO_ONFI || gn_devinfo.iowidth == IO_TOGGLEDDR
 	    || gn_devinfo.iowidth == IO_TOGGLESDR) {
@@ -2739,7 +2736,7 @@ static void mtk_nand_stop_write(void)
 #define STATUS_READY			(0x40)
 #define STATUS_FAIL				(0x01)
 #define STATUS_WR_ALLOW			(0x80)
-
+#if 0
 static bool mtk_nand_read_status(void)
 {
 	int status = 0;
@@ -2781,7 +2778,7 @@ static bool mtk_nand_read_status(void)
 		return FALSE;
 	return TRUE;
 }
-
+#endif
 bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 bytes)
 {
 	u16 reg_val = 0;
@@ -2903,8 +2900,6 @@ static void mtk_nand_rren_rrtry(bool needB3)
 static void mtk_nand_sprmset_rrtry(u32 addr, u32 data)
 {
 	u16 reg_val = 0;
-	u8 write_count = 0;
-	u32 reg = 0;
 	u32 timeout = TIMEOUT_3;	/*0xffff; */
 
 	mtk_nand_reset();
@@ -3035,7 +3030,6 @@ static void sandisk_19nm_rr_init(void)
 	u32 reg_val = 0;
 	u32 count = 0;
 	u32 timeout = 0xffff;
-	u32 u4RandomSetting;
 	u32 acccon;
 
 	acccon = DRV_Reg32(NFI_ACCCON_REG32);
@@ -3279,7 +3273,6 @@ static void HYNIX_RR_TABLE_READ(flashdev_info *deviceinfo)
 
 static void HYNIX_Set_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 {
-	u32 reg_val = 0;
 	u32 timeout = 0xffff;
 	u8 count, max_count = 8;
 	u8 add_reg[9] = { 0xCC, 0xBF, 0xAA, 0xAB, 0xCD, 0xAD, 0xAE, 0xAF };
@@ -3313,7 +3306,7 @@ static void HYNIX_Set_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 	}
 	mtk_nand_set_command(0x16);
 }
-
+#if 0
 static void HYNIX_Get_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 {
 	u32 reg_val = 0;
@@ -3350,7 +3343,7 @@ static void HYNIX_Get_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 		mtk_nand_reset();
 	}
 }
-
+#endif
 
 static void mtk_nand_hynix_rrtry(struct mtd_info *mtd, flashdev_info deviceinfo, u32 retryCount,
 				 bool defValue)
@@ -3378,7 +3371,7 @@ static void mtk_nand_hynix_16nm_rrtry(struct mtd_info *mtd, flashdev_info device
 	}
 }
 
-u32 special_rrtry_setting[36] = {
+u32 special_rrtry_setting[37] = {
 	0x00000000, 0x7C00007C, 0x787C0004, 0x74780078,
 	0x7C007C08, 0x787C7C00, 0x74787C7C, 0x70747C00,
 	0x7C007800, 0x787C7800, 0x74787800, 0x70747800,
@@ -3405,7 +3398,7 @@ static u32 mtk_nand_rrtry_setting(flashdev_info deviceinfo, enum readRetryType t
 	return value;
 }
 
-typedef u32(*rrtryFunctionType) (struct mtd_info *mtd, flashdev_info deviceinfo, u32 feature,
+typedef void(*rrtryFunctionType) (struct mtd_info *mtd, flashdev_info deviceinfo, u32 feature,
 				 bool defValue);
 
 static rrtryFunctionType rtyFuncArray[] = {
@@ -3553,8 +3546,10 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 		}
 #endif
 		if (bRet == ERR_RTN_BCH_FAIL) {
+			u32 feature;
+
 			tempBitMap = 0;
-			u32 feature =
+			feature =
 			    mtk_nand_rrtry_setting(gn_devinfo,
 						   gn_devinfo.feature_set.FeatureSet.rtype,
 						   gn_devinfo.feature_set.FeatureSet.readRetryStart,
@@ -3812,13 +3807,13 @@ int mtk_nand_exec_write_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize
 {
 	struct nand_chip *chip = mtd->priv;
 	u32 u4SecNum = u4PageSize >> host->hw->nand_sec_shift;
-	u32 time;
 	u8 *buf;
 	u8 status;
-	u32 val;
+#ifdef PWR_LOSS_SPOH
 	struct timeval pl_time_write;
-
+	u32 time;
 	suseconds_t duration;
+#endif
 	/*MSG(INIT, "mtk_nand_exec_write_page, page: 0x%x\n", u4RowAddr); */
 	mtk_nand_interface_switch(mtd);
 	if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
@@ -3905,7 +3900,6 @@ static int mtk_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	u32 block;
 	u32 page_in_block;
 	u32 mapped_block;
-	int i = 0;
 #ifdef DUMP_PEF
 	struct timeval stimer, etimer;
 
@@ -4464,11 +4458,12 @@ static void mtk_nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len
  *   None
  *
  ******************************************************************************/
-static void mtk_nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
-				      const uint8_t *buf)
+static int mtk_nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
+				      const uint8_t *buf, int oob_required)
 {
 	mtk_nand_write_buf(mtd, buf, mtd->writesize);
 	mtk_nand_write_buf(mtd, chip->oob_poi, mtd->oobsize);
+	return 0;
 }
 
 /******************************************************************************
@@ -5446,13 +5441,13 @@ int mtk_nand_proc_read(struct file *file, char *buffer, size_t count, loff_t *pp
  *   None
  *
  ******************************************************************************/
-int mtk_nand_proc_write(struct file *file, const char *buffer, unsigned long count, void *data)
+ssize_t  mtk_nand_proc_write(struct file *file, const char *buffer, size_t  count, loff_t *data)
 {
 	struct mtd_info *mtd = &host->mtd;
 	char buf[16];
 	char cmd;
 	int value;
-	int len = count;
+	int len = (int)count;
 	int ret;
 
 	if (len >= sizeof(buf))
@@ -5640,12 +5635,10 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	struct mtk_nand_host_hw *hw;
 	struct mtd_info *mtd;
 	struct nand_chip *nand_chip;
-	struct resource *res = pdev->resource;
 	int err = 0;
 	u8 id[NAND_MAX_ID];
 	int i;
 	u32 sector_size = NAND_SECTOR_SIZE;
-	u32 timeout;
 #ifdef MTK_NAND_CMD_DUMP
 	dbg_inf[0].cmd.cmd_array[0] = 0xFF;
 	dbg_inf[0].cmd.cmd_array[1] = 0xFF;
@@ -5786,7 +5779,6 @@ static int mtk_nand_probe(struct platform_device *pdev)
 
 
 	*NFI_CNRNB_REG16 = 0xF1;
-	timeout == 0xFFF;
 	while (!(DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY_RETURN))
 		;
 	mtk_nand_reset();

@@ -26,12 +26,11 @@
 #include <linux/proc_fs.h>
 #include <linux/time.h>
 #include <linux/miscdevice.h>
-
+#include <mt_typedefs.h>
 #include <asm/io.h>
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
 
-#include <mach/mt_typedefs.h>
 #include <mach/mt_clkmgr.h>
 #include "pmt.h"
 
@@ -72,34 +71,8 @@ char *page_readbuf;
 #define PMT_WRITE		_IOW(PMT_MAGIC, 2, int)
 #define PMT_VERSION	_IOW(PMT_MAGIC, 3, int)
 
-enum partition_type { TYPE_RAW, TYPE_UBIFS, TYPE_YAFFS, };
-static enum partition_type partition_type_array[] = {
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_YAFFS,
-#if !defined(CONFIG_RAWFS_FS)
-	TYPE_YAFFS,
-#endif
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_RAW,
-	TYPE_RAW,
-#if defined(CONFIG_MTK_FACTORY_RESET_PROTECTION_SUPPORT)
-	TYPE_RAW,
-#endif
-	TYPE_RAW,
-	TYPE_RAW,
-#if defined(CONFIG_MTK_FAT_ON_NAND)
-	TYPE_UBIFS,
-#endif
-	TYPE_UBIFS,
-	TYPE_UBIFS,
-	TYPE_UBIFS,
-	TYPE_RAW,
-};
+enum partition_type { TYPE_RAW, TYPE_UBIFS, };
+static enum partition_type partition_type_array[PART_MAX_COUNT];
 
 #if defined(CONFIG_MTK_MLC_NAND_SUPPORT)
 static bool MLC_DEVICE = TRUE;
@@ -110,8 +83,6 @@ static bool MLC_DEVICE = FALSE;
 bool init_pmt_done = FALSE;
 void get_part_tab_from_complier(void)
 {
-	int index = 0;
-
 	pr_debug("get_pt_from_complier\n");
 
 	memcpy(&g_exist_Partition, &g_pasStatic_Partition,
@@ -124,7 +95,7 @@ u64 part_get_startaddress(u64 byte_address, u32 *idx)
 
 	if (TRUE == init_pmt_done) {
 		while (index < part_num) {
-			/* MSG(INIT, "g_exist_Partition[%d].offset %x\n",index, g_exist_Partition[index].offset); */
+			/* pr_info("g_exist_Partition[%d]\n",index); */
 			if (g_exist_Partition[index].offset > byte_address) {
 				*idx = index - 1;
 				return g_exist_Partition[index - 1].offset;
@@ -138,7 +109,7 @@ u64 part_get_startaddress(u64 byte_address, u32 *idx)
 
 bool raw_partition(u32 index)
 {
-	if (partition_type_array[index] == TYPE_RAW || partition_type_array[index] == TYPE_YAFFS)
+	if (partition_type_array[index] == TYPE_RAW)
 		return TRUE;
 	return FALSE;
 }
@@ -406,7 +377,7 @@ static long pmt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		break;
 	case PMT_VERSION:
-		if (copy_to_user(arg, &version, PT_SIG_SIZE))
+		if (copy_to_user((void __user *)arg, &version, PT_SIG_SIZE))
 			ret = -EFAULT;
 		else
 			ret = 0;
@@ -479,6 +450,11 @@ void construct_mtd_partition(struct mtd_info *mtd)
 		g_exist_Partition[i].size = (u_int32_t) lastest_part[i].size;	/* mtd partition */
 		g_exist_Partition[i].offset = (u_int32_t) lastest_part[i].offset;
 		g_exist_Partition[i].mask_flags = lastest_part[i].mask_flags;
+
+		if (lastest_part[i].offset + lastest_part[i].size == lastest_part[i+1].offset)
+			partition_type_array[i] = TYPE_UBIFS;
+		if (lastest_part[i+1].size == 0) /*the last partition */
+			partition_type_array[i] = TYPE_UBIFS;
 #if 1
 		if (MLC_DEVICE == TRUE) {
 			mtd->eraseregions[i].offset = lastest_part[i].offset;
@@ -494,8 +470,8 @@ void construct_mtd_partition(struct mtd_info *mtd)
 		PartInfo[i].type = NAND;
 		PartInfo[i].start_address = lastest_part[i].offset;
 		PartInfo[i].size = lastest_part[i].size;
-		pr_err("partition %s %s size %llx\n", lastest_part[i].name, PartInfo[i].name,
-		       g_exist_Partition[i].offset);
+		pr_err("partition %s %s offset %llx size %llx type %d\n", lastest_part[i].name, PartInfo[i].name,
+			g_exist_Partition[i].offset, g_exist_Partition[i].offset, partition_type_array[i]);
 	}
 	part_num = i;
 	g_exist_Partition[i - 1].size = MTDPART_SIZ_FULL;
@@ -503,8 +479,6 @@ void construct_mtd_partition(struct mtd_info *mtd)
 
 void part_init_pmt(struct mtd_info *mtd, u8 *buf)
 {
-	struct mtd_partition *part;
-	u64 lastblk;
 	int retval = 0;
 	int i = 0;
 	int err = 0;
@@ -543,10 +517,9 @@ void part_init_pmt(struct mtd_info *mtd, u8 *buf)
 			if (MLC_DEVICE == TRUE) {
 				mtd->eraseregions[i].offset = lastest_part[i].offset;
 				mtd->eraseregions[i].erasesize = mtd->erasesize;
-				if (partition_type_array[i] == TYPE_RAW
-				    || partition_type_array[i] == TYPE_YAFFS) {
+				if (partition_type_array[i] == TYPE_RAW)
 					mtd->eraseregions[i].erasesize = mtd->erasesize / 2;
-				}
+
 				mtd->numeraseregions++;
 			}
 #endif
