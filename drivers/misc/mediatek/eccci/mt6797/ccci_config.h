@@ -59,7 +59,7 @@
 #endif
 /* #define DISABLE_MD_WDT_PROCESS */ /* enable wdt after bringup */
 #define NO_POWER_OFF_ON_STARTMD
-
+#define NO_START_ON_SUSPEND_RESUME
 #define MD_CACHE_TO_NONECACHE
 #define MD_UMOLY_EE_SUPPORT
 /*#define TEST_MESSAGE_FOR_BRINGUP*/

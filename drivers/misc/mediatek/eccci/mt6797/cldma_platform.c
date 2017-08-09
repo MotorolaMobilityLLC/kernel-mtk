@@ -884,8 +884,12 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		/* wait write done*/
 		wmb();
 		/* start all Tx and Rx queues */
+#ifdef NO_START_ON_SUSPEND_RESUME
+		md_ctrl->txq_started = 0;
+#else
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD);	/* dummy read */
+#endif
 		md_ctrl->txq_active |= CLDMA_BM_ALL_QUEUE;
 		/* cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD, CLDMA_BM_ALL_QUEUE); */
 		/* cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD); // dummy read */
