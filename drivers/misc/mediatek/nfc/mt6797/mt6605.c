@@ -388,7 +388,9 @@ static int mt6605_probe(struct i2c_client *client,
 
 	if (I2CDMAWriteBuf == NULL) {
 		pr_err("%s : failed to allocate dma buffer\n", __func__);
-		goto err_request_irq_failed;
+		mutex_destroy(&_gmt6605_dev.read_mutex);
+		gpio_free(platform_data->sysrstb_gpio);
+		return ret;
 	}
 #ifdef CONFIG_64BIT
 	I2CDMAReadBuf =
@@ -404,7 +406,9 @@ static int mt6605_probe(struct i2c_client *client,
 
 	if (I2CDMAReadBuf == NULL) {
 		pr_err("%s : failed to allocate dma buffer\n", __func__);
-		goto err_request_irq_failed;
+		mutex_destroy(&_gmt6605_dev.read_mutex);
+		gpio_free(platform_data->sysrstb_gpio);
+		return ret;
 	}
 	pr_debug("%s :I2CDMAWriteBuf_pa %d, I2CDMAReadBuf_pa,%d\n", __func__,
 		 I2CDMAWriteBuf_pa, I2CDMAReadBuf_pa);
@@ -464,16 +468,6 @@ static int mt6605_probe(struct i2c_client *client,
 	forceExitBlockingRead = 0;
 
 	return 0;
-
-err_request_irq_failed:
-
-	/* misc_deregister(&_gmt6605_dev.mt6605_device);        */
-	/* err_misc_register: */
-	mutex_destroy(&_gmt6605_dev.read_mutex);
-	/* kfree(mt6605_dev); */
-	/* err_exit: */
-	gpio_free(platform_data->sysrstb_gpio);
-	return ret;
 }
 
 static int mt6605_remove(struct i2c_client *client)
