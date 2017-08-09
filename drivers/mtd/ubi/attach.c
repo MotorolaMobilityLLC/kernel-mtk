@@ -397,13 +397,17 @@ int ubi_compare_lebs(struct ubi_device *ubi, const struct ubi_ainf_peb *aeb,
 
 	len = be32_to_cpu(vid_hdr->data_size);
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_lock(&ubi_buf_mutex);
-	err = ubi_io_read_data(ubi, ubi_peb_buf, pnum, 0, len);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
+	err = ubi_io_read_data(ubi, ubi->peb_buf, pnum, 0, len);
 	if (err && err != UBI_IO_BITFLIPS && !mtd_is_eccerr(err))
 		goto out_unlock;
 
 	data_crc = be32_to_cpu(vid_hdr->data_crc);
-	crc = crc32(UBI_CRC32_INIT, ubi_peb_buf, len);
+	crc = crc32(UBI_CRC32_INIT, ubi->peb_buf, len);
 	if (crc != data_crc) {
 		dbg_bld("PEB %d CRC error: calculated %#08x, must be %#08x",
 			pnum, crc, data_crc);
@@ -414,7 +418,11 @@ int ubi_compare_lebs(struct ubi_device *ubi, const struct ubi_ainf_peb *aeb,
 		dbg_bld("PEB %d CRC is OK", pnum);
 		bitflips |= !!err;
 	}
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 
 	ubi_free_vid_hdr(ubi, vh);
 
@@ -426,7 +434,11 @@ int ubi_compare_lebs(struct ubi_device *ubi, const struct ubi_ainf_peb *aeb,
 	return second_is_newer | (bitflips << 1) | (corrupted << 2);
 
 out_unlock:
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 out_free_vidh:
 	ubi_free_vid_hdr(ubi, vh);
 	return err;
@@ -764,10 +776,14 @@ static int check_corruption(struct ubi_device *ubi, struct ubi_vid_hdr *vid_hdr,
 {
 	int err;
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_lock(&ubi_buf_mutex);
-	memset(ubi_peb_buf, 0x00, ubi->leb_size);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
+	memset(ubi->peb_buf, 0x00, ubi->leb_size);
 
-	err = ubi_io_read(ubi, ubi_peb_buf, pnum, ubi->leb_start, ubi->leb_size);
+	err = ubi_io_read(ubi, ubi->peb_buf, pnum, ubi->leb_start, ubi->leb_size);
 	if (err == UBI_IO_BITFLIPS || mtd_is_eccerr(err)) {
 		/*
 		 * Bit-flips or integrity errors while reading the data area.
@@ -783,7 +799,7 @@ static int check_corruption(struct ubi_device *ubi, struct ubi_vid_hdr *vid_hdr,
 	if (err)
 		goto out_unlock;
 
-	if (ubi_check_pattern(ubi_peb_buf, 0xFF, ubi->leb_size))
+	if (ubi_check_pattern(ubi->peb_buf, 0xFF, ubi->leb_size))
 		goto out_unlock;
 
 	ubi_err("PEB %d contains corrupted VID header, and the data does not contain all 0xFF",
@@ -793,11 +809,15 @@ static int check_corruption(struct ubi_device *ubi, struct ubi_vid_hdr *vid_hdr,
 	pr_err("hexdump of PEB %d offset %d, length %d",
 	       pnum, ubi->leb_start, ubi->leb_size);
 	ubi_dbg_print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 32, 1,
-			       ubi_peb_buf, ubi->leb_size, 1);
+			       ubi->peb_buf, ubi->leb_size, 1);
 	err = 1;
 
 out_unlock:
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 	return err;
 }
 
@@ -1924,7 +1944,7 @@ recovery:
 	data_size = ubi->leb_size - be32_to_cpu(av->data_pad);
 	for (offset = 0; offset < data_size; offset += ubi->mtd->writesize) {
 		/* ubi_msg("read source(%d) from %d, %d bytes", old_seb->pnum, offset, ubi->mtd->writesize); */
-		err = ubi_io_read_data(ubi, (void *)(((char *)ubi_peb_buf) + offset),
+		err = ubi_io_read_data(ubi, (void *)(((char *)ubi->peb_buf) + offset),
 				       old_seb->pnum, offset, ubi->mtd->writesize);
 		if (err < 0)
 			ubi_warn("error %d while reading data from PEB %d:0x%x", err, old_seb->pnum,
@@ -1941,15 +1961,15 @@ recovery:
 		if (source_page >= ubi->leb_start / ubi->mtd->writesize) {
 			ubi_msg("copy backup page %d to offset 0x%x", source_page,
 				(source_page * ubi->mtd->writesize) - ubi->leb_start);
-			memcpy((void *)(((char *)ubi_peb_buf) +
+			memcpy((void *)(((char *)ubi->peb_buf) +
 					(source_page * ubi->mtd->writesize) - ubi->leb_start),
 			       (const void *)ubi->databuf, ubi->mtd->writesize);
 		}
 	}
 
-	data_size = ubi_calc_data_len(ubi, (char *)ubi_peb_buf, data_size);
+	data_size = ubi_calc_data_len(ubi, (char *)ubi->peb_buf, data_size);
 	ubi_msg("calc CRC data size %d", data_size);
-	crc = crc32(UBI_CRC32_INIT, (char *)ubi_peb_buf, data_size);
+	crc = crc32(UBI_CRC32_INIT, (char *)ubi->peb_buf, data_size);
 
 	vid_hdr = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
 	if (!vid_hdr) {
@@ -2018,7 +2038,7 @@ retry:
 		goto write_error;
 
 	if (data_size > 0) {
-		err = ubi_io_write_data(ubi, ubi_peb_buf, new_seb->pnum, 0, data_size);
+		err = ubi_io_write_data(ubi, ubi->peb_buf, new_seb->pnum, 0, data_size);
 		if (err)
 			goto write_error;
 	}

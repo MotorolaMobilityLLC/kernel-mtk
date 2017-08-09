@@ -68,8 +68,10 @@
 #define ubi_is_module() 0
 #endif
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
 void *ubi_peb_buf = NULL;
 DEFINE_MUTEX(ubi_buf_mutex);
+#endif
 
 /**
  * struct mtd_dev_param - MTD device parameter description data structure.
@@ -1131,6 +1133,9 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
 #else
 	ubi->fm_disabled = 1;
 #endif
+#ifndef CONFIG_UBI_SHARE_BUFFER
+	mutex_init(&ubi->buf_mutex);
+#endif
 	mutex_init(&ubi->ckvol_mutex);
 	mutex_init(&ubi->device_mutex);
 	spin_lock_init(&ubi->volumes_lock);
@@ -1144,12 +1149,17 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
 		goto out_free;
 
 	err = -ENOMEM;
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	if (ubi_peb_buf == NULL) {
 		ubi_peb_buf = vmalloc(ubi->peb_size);
 		mutex_init(&ubi_buf_mutex);
-		if (!ubi_peb_buf)
-			goto out_free;
 	}
+	ubi->peb_buf = ubi_peb_buf;
+#else
+	ubi->peb_buf = vmalloc(ubi->peb_size);
+#endif
+	if (!ubi->peb_buf)
+		goto out_free;
 
 #ifdef CONFIG_MTD_UBI_FASTMAP
 	ubi->fm_size = ubi_calc_fm_size(ubi);
@@ -1231,7 +1241,9 @@ out_detach:
 	ubi_free_internal_volumes(ubi);
 	vfree(ubi->vtbl);
 out_free:
-	/*vfree(ubi_peb_buf);*/
+#ifndef CONFIG_UBI_SHARE_BUFFER
+	vfree(ubi->peb_buf);
+#endif
 	vfree(ubi->fm_buf);
 	if (ref)
 		put_device(&ubi->dev);
@@ -1311,7 +1323,9 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 	vfree(ubi->databuf);
 	vfree(ubi->oobbuf);
 #endif
-	/*vfree(ubi_peb_buf);*/
+#ifndef CONFIG_UBI_SHARE_BUFFER
+	vfree(ubi->peb_buf);
+#endif
 	vfree(ubi->fm_buf);
 	ubi_msg("mtd%d is detached from ubi%d", ubi->mtd->index, ubi->ubi_num);
 	put_device(&ubi->dev);
@@ -1525,7 +1539,9 @@ static void __exit ubi_exit(void)
 	misc_deregister(&ubi_ctrl_cdev);
 	class_remove_file(ubi_class, &ubi_version);
 	class_destroy(ubi_class);
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	vfree(ubi_peb_buf);
+#endif
 }
 module_exit(ubi_exit);
 

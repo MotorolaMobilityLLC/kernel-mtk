@@ -419,18 +419,22 @@ static int torture_peb(struct ubi_device *ubi, int pnum)
 	patt_count = ARRAY_SIZE(patterns);
 	ubi_assert(patt_count > 0);
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_lock(&ubi_buf_mutex);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
 	for (i = 0; i < patt_count; i++) {
 		err = do_sync_erase(ubi, pnum);
 		if (err)
 			goto out;
 
 		/* Make sure the PEB contains only 0xFF bytes */
-		err = ubi_io_read(ubi, ubi_peb_buf, pnum, 0, ubi->peb_size);
+		err = ubi_io_read(ubi, ubi->peb_buf, pnum, 0, ubi->peb_size);
 		if (err)
 			goto out;
 
-		err = ubi_check_pattern(ubi_peb_buf, 0xFF, ubi->peb_size);
+		err = ubi_check_pattern(ubi->peb_buf, 0xFF, ubi->peb_size);
 		if (err == 0) {
 			ubi_err("erased PEB %d, but a non-0xFF byte found",
 				pnum);
@@ -439,17 +443,17 @@ static int torture_peb(struct ubi_device *ubi, int pnum)
 		}
 
 		/* Write a pattern and check it */
-		memset(ubi_peb_buf, patterns[i], ubi->peb_size);
-		err = ubi_io_write(ubi, ubi_peb_buf, pnum, 0, ubi->peb_size);
+		memset(ubi->peb_buf, patterns[i], ubi->peb_size);
+		err = ubi_io_write(ubi, ubi->peb_buf, pnum, 0, ubi->peb_size);
 		if (err)
 			goto out;
 
-		memset(ubi_peb_buf, ~patterns[i], ubi->peb_size);
-		err = ubi_io_read(ubi, ubi_peb_buf, pnum, 0, ubi->peb_size);
+		memset(ubi->peb_buf, ~patterns[i], ubi->peb_size);
+		err = ubi_io_read(ubi, ubi->peb_buf, pnum, 0, ubi->peb_size);
 		if (err)
 			goto out;
 
-		err = ubi_check_pattern(ubi_peb_buf, patterns[i],
+		err = ubi_check_pattern(ubi->peb_buf, patterns[i],
 					ubi->peb_size);
 		if (err == 0) {
 			ubi_err("pattern %x checking failed for PEB %d",
@@ -463,7 +467,11 @@ static int torture_peb(struct ubi_device *ubi, int pnum)
 	ubi_msg("PEB %d passed torture test, do not mark it as bad", pnum);
 
 out:
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 	if (err == UBI_IO_BITFLIPS || mtd_is_eccerr(err)) {
 		/*
 		 * If a bit-flip or data integrity error was detected, the test

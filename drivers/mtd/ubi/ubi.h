@@ -598,10 +598,10 @@ struct ubi_device {
 	int max_write_size;
 	struct mtd_info *mtd;
 
-/* MTK
 	void *peb_buf;
+#ifndef CONFIG_UBI_SHARE_BUFFER
 	struct mutex buf_mutex;
-*/
+#endif
 	struct mutex ckvol_mutex;
 
 	struct ubi_debug_info dbg;
@@ -781,8 +781,9 @@ extern struct blocking_notifier_head ubi_notifiers;
 extern u32 mtk_nand_paired_page_transfer(u32, bool);
 #endif
 
-extern void *ubi_peb_buf;
+#ifdef CONFIG_UBI_SHARE_BUFFER
 extern struct mutex ubi_buf_mutex;
+#endif
 
 /* attach.c */
 int ubi_add_to_av(struct ubi_device *ubi, struct ubi_attach_info *ai, int pnum,

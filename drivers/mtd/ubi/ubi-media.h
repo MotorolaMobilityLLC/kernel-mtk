@@ -33,6 +33,7 @@
 #ifdef CONFIG_MTK_MLC_NAND_SUPPORT
 #define CONFIG_BLB 1
 #endif
+#define CONFIG_UBI_SHARE_BUFFER
 
 #include <asm/byteorder.h>
 

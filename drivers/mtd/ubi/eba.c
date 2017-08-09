@@ -575,25 +575,37 @@ retry:
 		goto write_error;
 
 	data_size = offset + len;
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_lock(&ubi_buf_mutex);
-	memset(ubi_peb_buf + offset, 0xFF, len);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
+	memset(ubi->peb_buf + offset, 0xFF, len);
 
 	/* Read everything before the area where the write failure happened */
 	if (offset > 0) {
-		err = ubi_io_read_data(ubi, ubi_peb_buf, pnum, 0, offset);
+		err = ubi_io_read_data(ubi, ubi->peb_buf, pnum, 0, offset);
 		if (err && err != UBI_IO_BITFLIPS)
 			goto out_unlock;
 	}
 
-	memcpy(ubi_peb_buf + offset, buf, len);
+	memcpy(ubi->peb_buf + offset, buf, len);
 
-	err = ubi_io_write_data(ubi, ubi_peb_buf, new_pnum, 0, data_size);
+	err = ubi_io_write_data(ubi, ubi->peb_buf, new_pnum, 0, data_size);
 	if (err) {
+#ifdef CONFIG_UBI_SHARE_BUFFER
 		mutex_unlock(&ubi_buf_mutex);
+#else
+		mutex_unlock(&ubi->buf_mutex);
+#endif
 		goto write_error;
 	}
 
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 	ubi_free_vid_hdr(ubi, vid_hdr);
 
 	down_read(&ubi->fm_sem);
@@ -605,7 +617,11 @@ retry:
 	return 0;
 
 out_unlock:
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 out_put:
 	ubi_wl_put_peb(ubi, vol_id, lnum, new_pnum, 1);
 	ubi_free_vid_hdr(ubi, vid_hdr);
@@ -1488,13 +1504,17 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 
 	/*
 	 * OK, now the LEB is locked and we can safely start moving it. Since
-	 * this function utilizes the @ubi_peb_buf buffer which is shared
+	 * this function utilizes the @ubi->peb_buf buffer which is shared
 	 * with some other functions - we lock the buffer by taking the
 	 * @ubi_buf_mutex.
 	 */
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_lock(&ubi_buf_mutex);
+#else
+	mutex_lock(&ubi->buf_mutex);
+#endif
 	dbg_wl("read %d bytes of data", aldata_size);
-	err = ubi_io_read_data(ubi, ubi_peb_buf, from, 0, aldata_size);
+	err = ubi_io_read_data(ubi, ubi->peb_buf, from, 0, aldata_size);
 	if (err && err != UBI_IO_BITFLIPS) {
 		ubi_warn("error %d while reading data from PEB %d",
 			 err, from);
@@ -1514,13 +1534,13 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 	 */
 	if (vid_hdr->vol_type == UBI_VID_DYNAMIC)
 		aldata_size = data_size =
-			ubi_calc_data_len(ubi, ubi_peb_buf, data_size);
+			ubi_calc_data_len(ubi, ubi->peb_buf, data_size);
 
 #ifdef MTK_TMP_DEBUG_LOG
 	ubi_msg("copy LEB %d:%d, PEB %d to PEB %d, size %d", vol_id, lnum, from, to, data_size);
 #endif
 	cond_resched();
-	crc = crc32(UBI_CRC32_INIT, ubi_peb_buf, data_size);
+	crc = crc32(UBI_CRC32_INIT, ubi->peb_buf, data_size);
 	cond_resched();
 
 	/*
@@ -1563,7 +1583,7 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 	}
 
 	if (data_size > 0) {
-		err = ubi_io_write_data(ubi, ubi_peb_buf, to, 0, aldata_size);
+		err = ubi_io_write_data(ubi, ubi->peb_buf, to, 0, aldata_size);
 		if (err) {
 			if (err == -EIO)
 				err = MOVE_TARGET_WR_ERR;
@@ -1585,8 +1605,8 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 		 * We've written the data and are going to read it back to make
 		 * sure it was written correctly.
 		 */
-		memset(ubi_peb_buf, 0xFF, aldata_size);
-		err = ubi_io_read_data(ubi, ubi_peb_buf, to, 0, aldata_size);
+		memset(ubi->peb_buf, 0xFF, aldata_size);
+		err = ubi_io_read_data(ubi, ubi->peb_buf, to, 0, aldata_size);
 		if (err) {
 			if (err != UBI_IO_BITFLIPS) {
 				ubi_warn("error %d while reading data back from PEB %d",
@@ -1600,7 +1620,7 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 
 		cond_resched();
 
-		if (crc != crc32(UBI_CRC32_INIT, ubi_peb_buf, data_size)) {
+		if (crc != crc32(UBI_CRC32_INIT, ubi->peb_buf, data_size)) {
 			ubi_warn("read data back from PEB %d and it is different",
 				 to);
 			err = -EINVAL;
@@ -1614,7 +1634,11 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
 	up_read(&ubi->fm_sem);
 
 out_unlock_buf:
+#ifdef CONFIG_UBI_SHARE_BUFFER
 	mutex_unlock(&ubi_buf_mutex);
+#else
+	mutex_unlock(&ubi->buf_mutex);
+#endif
 out_unlock_leb:
 	leb_write_unlock(ubi, vol_id, lnum);
 	return err;
