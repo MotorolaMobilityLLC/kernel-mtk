@@ -470,7 +470,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	}
 	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
 
-
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
 	if (gSpm_SODI_mempll_pwr_mode == 1)

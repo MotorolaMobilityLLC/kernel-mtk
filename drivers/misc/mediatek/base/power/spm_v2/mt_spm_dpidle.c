@@ -646,6 +646,7 @@ RESTORE_IRQ:
 #if defined(CONFIG_ARCH_MT6797)
 	/* Re-kick VCORE DVFS */
 	if (is_vcorefs_feature_enable()) {
+		__spm_backup_vcore_dvfs_dram_shuffle();
 		__spm_kick_im_to_fetch(pcmdesc);
 		__spm_init_pcm_register();
 		__spm_init_event_vector(pcmdesc);

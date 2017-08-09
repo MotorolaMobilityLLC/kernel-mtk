@@ -164,6 +164,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 #ifdef SPM_VCORE_EN_MT6797
 		if (is_vcorefs_feature_enable()) {
+			__spm_backup_vcore_dvfs_dram_shuffle();
 #endif
 			while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
 				if (retry > timeout) {
@@ -692,6 +693,13 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 		if ((src_pwr_ctrl->pcm_flags & SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS) != 0)
 			dest_pwr_ctrl->pcm_flags |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
 	}
+}
+
+void __spm_backup_vcore_dvfs_dram_shuffle(void)
+{
+#ifdef SPM_VCORE_EN_MT6797
+	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5)&~(3<<23)) | ((spm_read(PCM_REG6_DATA)&(3<<23))?:(1<<23)));
+#endif
 }
 
 #if defined(SPM_VCORE_EN_MT6755)

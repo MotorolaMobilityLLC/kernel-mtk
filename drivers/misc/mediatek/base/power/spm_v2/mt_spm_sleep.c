@@ -796,6 +796,7 @@ RESTORE_IRQ:
 	/* Re-kick VCORE DVFS */
 	if (is_vcorefs_feature_enable()) {
 		pr_err("DP-- re-kick VCORE\n");
+		__spm_backup_vcore_dvfs_dram_shuffle();
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 		__spm_kick_im_to_fetch(pcmdesc);
 		__spm_init_pcm_register();
