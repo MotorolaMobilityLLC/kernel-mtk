@@ -740,5 +740,29 @@ unsigned int gpt_boot_time(void)
 }
 EXPORT_SYMBOL(gpt_boot_time);
 
+int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv)
+{
+	unsigned long save_flags;
+	struct gpt_device *dev = id_to_dev(id);
+
+	if (!dev)
+		return -EINVAL;
+
+	if (!(dev->flags & GPT_IN_USE)) {
+		pr_err("%s: GPT%d is not in use!\n", __func__, id);
+		return -EBUSY;
+	}
+
+	gpt_update_lock(save_flags);
+	__gpt_stop(dev);
+	__gpt_set_clk(dev, clksrc, clkdiv);
+	__gpt_start(dev);
+	gpt_update_unlock(save_flags);
+
+	return 0;
+}
+EXPORT_SYMBOL(gpt_set_clk);
+
+
 /************************************************************************************************/
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,mt6797-apxgpt", mt_gpt_init);
