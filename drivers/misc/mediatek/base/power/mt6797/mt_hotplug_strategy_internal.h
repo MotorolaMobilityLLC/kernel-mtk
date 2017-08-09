@@ -62,9 +62,8 @@
 
 #define EN_HPS_LOG                          (1)
 #define EN_ISR_LOG                          (0)
-#define HPS_HRT_BT_DBG						(75)
 #define HPS_HRT_BT_EN						(1)
-
+#define HPS_HRT_DBG_MS			(5000)
 #define HPS_BIG_CLUSTER_ID					(2)
 /*
  * LOG
@@ -186,7 +185,8 @@ typedef struct hps_ctxt_struct {
 	unsigned int init_state;
 	unsigned int state;
 	unsigned int is_interrupt;
-
+	ktime_t hps_regular_ktime;
+	ktime_t hps_hrt_ktime;
 	/* enabled */
 	unsigned int enabled;
 	unsigned int early_suspend_enabled;

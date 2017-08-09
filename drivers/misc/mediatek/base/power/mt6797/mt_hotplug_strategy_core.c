@@ -173,11 +173,17 @@ static int _hps_task_main(void *data)
 		/*Get sys status */
 		hps_get_sysinfo();
 
-		if (!hps_ctxt.is_interrupt) {
+		if (!hps_ctxt.is_interrupt || ((u64)
+					       ktime_to_ms(ktime_sub
+							   (ktime_get(),
+							    hps_ctxt.hps_regular_ktime))) >=
+		    HPS_TIMER_INTERVAL_MS) {
 			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
-
 			/*Execute PPM main function */
 			mt_ppm_main();
+			if (hps_ctxt.is_interrupt)
+				hps_ctxt.is_interrupt = 0;
+			hps_ctxt.hps_regular_ktime = ktime_get();
 		} else
 			hps_ctxt.is_interrupt = 0;
 

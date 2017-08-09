@@ -355,9 +355,13 @@ void hps_algo_main(void)
 	 * algo - begin
 	 */
 	mutex_lock(&hps_ctxt.lock);
+	if ((u64) ktime_to_ms(ktime_sub(ktime_get(), hps_ctxt.hps_hrt_ktime)) >= HPS_HRT_DBG_MS)
+		hrtbt_dbg = 1;
+	else
+		hrtbt_dbg = 0;
+
 	hps_ctxt.action = ACTION_NONE;
 	atomic_set(&hps_ctxt.is_ondemand, 0);
-	hrtbt_dbg++;
 	/* Initial value */
 	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
 	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
@@ -475,7 +479,7 @@ void hps_algo_main(void)
 		}
 	}
 #endif
-	if (action_print || hrtbt_dbg >= HPS_HRT_BT_DBG) {
+	if (action_print || hrtbt_dbg) {
 		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk;
 
 		mutex_lock(&hps_ctxt.para_lock);
@@ -550,12 +554,13 @@ void hps_algo_main(void)
 		}
 	}
 #if HPS_HRT_BT_EN
-	if (hrtbt_dbg >= HPS_HRT_BT_DBG) {
+	if (hrtbt_dbg) {
 		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
 			 hps_sys.action_id, str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
 			 hps_ctxt.cur_iowait, str_hvytsk, str_criteria_limit,
 			 str_criteria_base, hps_sys.up_load_avg, hps_sys.down_load_avg,
 			 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
+		hps_ctxt.hps_hrt_ktime = ktime_get();
 		hrtbt_dbg = 0;
 	}
 #endif

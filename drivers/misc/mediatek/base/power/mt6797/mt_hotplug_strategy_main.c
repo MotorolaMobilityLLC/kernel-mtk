@@ -84,6 +84,8 @@ hps_ctxt_t hps_ctxt = {
 	.init_state = INIT_STATE_NOT_READY,
 	.state = STATE_LATE_RESUME,
 	.is_interrupt = 0,
+	.hps_regular_ktime = {0},
+	.hps_hrt_ktime = {0},
 	/* enabled */
 	.enabled = 1,
 	.suspend_enabled = 1,
