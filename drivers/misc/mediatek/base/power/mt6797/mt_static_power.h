@@ -25,6 +25,8 @@ extern u32 get_devinfo_with_index(u32 index);
  *  other value: the mW of leakage value.
  **/
 extern int mt_spower_get_leakage(int dev, int voltage, int degree);
+extern int mt_spower_get_efuse_lkg(int dev);
+
 extern int mt_spower_init(void);
 
 

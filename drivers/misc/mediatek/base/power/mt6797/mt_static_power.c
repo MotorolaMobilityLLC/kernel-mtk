@@ -26,8 +26,20 @@
 #define SPOWER_INFO(fmt, args...)	 pr_err(SP_TAG fmt, ##args)
 #endif
 
-#define V_OF_FUSE						1100
-#define T_OF_FUSE							30
+#define V_OF_FUSE			1100
+#define T_OF_FUSE			30
+#define DEVINFO_IDX0		(51)
+#define DEVINFO_IDX1		(53)
+#define DEVINFO_IDX2		(55)
+#define DEVINFO_IDX3		(57)
+#define DEVINFO_IDX4		(68)
+#define DEF_BIG_LEAKAGE		(190 * V_OF_FUSE/1000)
+#define DEF_GPU_LEAKAGE		(55 * V_OF_FUSE/1000)
+#define DEF_VCORE_LEAKAGE	(181 * V_OF_FUSE/1000)
+#define DEF_CPUL_LEAKAGE	(46 * V_OF_FUSE/1000)
+#define DEF_CPULL_LEAKAGE	(30 * V_OF_FUSE/1000)
+#define DEF_MODEM_LEAKAGE	(45 * V_OF_FUSE/1000)
+#define DEF_VMD1_LEAKAGE	(55 * V_OF_FUSE/1000)
 
 
 static sptbl_t sptab[MT_SPOWER_MAX]; /* CPU, GPU, CPUL, CPULL, VCORE, MODEM, VMD1  */
@@ -406,24 +418,31 @@ void mt_spower_ut(void)
 		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
 		switch (i) {
 		case  MT_SPOWER_CPUBIG:
+			SPOWER_INFO("[SPOWER] -  CPUBIG efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_CPUBIG));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_CPUBIG Done\n");
 			break;
 		case  MT_SPOWER_GPU:
+			SPOWER_INFO("[SPOWER] -  GPU efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_GPU));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_GPU Done\n");
 			break;
 		case  MT_SPOWER_VCORE:
+			SPOWER_INFO("[SPOWER] -  VCORE efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_VCORE));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_VCORE Done\n");
 			break;
 		case  MT_SPOWER_CPUL:
+			SPOWER_INFO("[SPOWER] -  CPUL efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_CPUL));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_CPUL Done\n");
 			break;
 		case  MT_SPOWER_CPULL:
+			SPOWER_INFO("[SPOWER] -  CPULL efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_CPULL));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_CPULL Done\n");
 			break;
 		case  MT_SPOWER_MODEM:
+			SPOWER_INFO("[SPOWER] -  MODEM efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_MODEM));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_MODEM Done\n");
 			break;
 		case  MT_SPOWER_VMD1:
+			SPOWER_INFO("[SPOWER] -  VMD1 efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_VMD1));
 			SPOWER_INFO("[SPOWER] -  MT_SPOWER_VMD1 Done\n");
 			break;
 		default:
@@ -435,14 +454,6 @@ void mt_spower_ut(void)
 static unsigned int mtSpowerInited;
 int mt_spower_init(void)
 {
-	#define DEVINFO_IDX0 (51)
-	#define DEVINFO_IDX1 (53)
-	#define DEVINFO_IDX2 (55)
-	#define DEVINFO_IDX3 (57)
-	#define DEVINFO_IDX4 (68)
-
-
-
 	int devinfo = 0, devinfo_1 = 0, devinfo_2 = 0, devinfo_3 = 0, devinfo_4 = 0;
 	int cpubig, gpu, vcore, cpul, cpull, modem, vmd1;
 
@@ -456,7 +467,7 @@ int mt_spower_init(void)
 	devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0); /* P_OD1 */
 	cpubig	= (devinfo >> 8) & 0xff;
 	devinfo_1 = (int)get_devinfo_with_index(DEVINFO_IDX1); /* P_OD3 */
-	gpu	= (devinfo_1 >> 8) & 0xff;
+	gpu = (devinfo_1 >> 8) & 0xff;
 	devinfo_2 = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
 	vcore	= (devinfo_2 >> 8) & 0xff;
 	devinfo_3 = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
@@ -469,32 +480,45 @@ int mt_spower_init(void)
 	SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => 0x%x/0x%x/0x%x/0x%x/0x%x/0x%x/0x%x\n",
 		cpubig, gpu, vcore, cpul, cpull, modem, vmd1);
 
-	if ((devinfo != 0) && (devinfo_1 != 0)) {
+	if (devinfo != 0) {
 		cpubig	= (int)devinfo_table[cpubig];
+		cpubig	= (int)(cpubig*V_OF_FUSE/1000);
+	} else {
+		cpubig = DEF_BIG_LEAKAGE;
+	}
+
+	if (devinfo_1 != 0) {
 		gpu	= (int)devinfo_table[gpu];
+		gpu	= (int)(gpu*V_OF_FUSE/1000);
+	} else {
+		gpu = DEF_GPU_LEAKAGE;
+	}
+
+	if (devinfo_2 != 0) {
 		vcore	= (int)devinfo_table[vcore];
+		vcore	= (int)(vcore*V_OF_FUSE/1000);
+	} else {
+		vcore = DEF_VCORE_LEAKAGE;
+	}
+
+	if (devinfo_3 != 0) {
 		cpul	= (int)devinfo_table[cpul];
 		cpull	= (int)devinfo_table[cpull];
-		modem	= (int)devinfo_table[modem];
-		vmd1	= (int)devinfo_table[vmd1];
-		SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => 0x%x/0x%x/0x%x/0x%x/0x%x/0x%x/0x%x\n",
-		cpubig, gpu, vcore, cpul, cpull, modem, vmd1);
-
-		cpubig	= (int)(cpubig*V_OF_FUSE/1000);
-		gpu	= (int)(gpu*V_OF_FUSE/1000);
-		vcore	= (int)(vcore*V_OF_FUSE/1000);
 		cpul	= (int)(cpul*V_OF_FUSE/1000);
 		cpull	= (int)(cpull*V_OF_FUSE/1000);
+	} else {
+		cpul = DEF_CPUL_LEAKAGE;
+		cpull = DEF_CPULL_LEAKAGE;
+	}
+
+	if (devinfo_4 != 0) {
+		modem	= (int)devinfo_table[modem];
+		vmd1	= (int)devinfo_table[vmd1];
 		modem	= (int)(modem*V_OF_FUSE/1000);
 		vmd1	= (int)(vmd1*V_OF_FUSE/1000);
 	} else {
-		cpubig = 190 * V_OF_FUSE/1000;
-		gpu = 55 * V_OF_FUSE/1000;
-		vcore = 181 * V_OF_FUSE/1000;
-		cpul = 46 * V_OF_FUSE/1000;
-		cpull = 30 * V_OF_FUSE/1000;
-		modem = 45 * V_OF_FUSE/1000;
-		vmd1 = 55 * V_OF_FUSE/1000;
+		modem = DEF_MODEM_LEAKAGE;
+		vmd1 = DEF_VMD1_LEAKAGE;
 	}
 
 	SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => %d/%d/%d/%d/%d/%d/%d\n",
@@ -513,8 +537,6 @@ int mt_spower_init(void)
 	mt_spower_make_table(&sptab[MT_SPOWER_MODEM], &modem_spower_raw, modem, V_OF_FUSE, T_OF_FUSE);
 	SPOWER_INFO("[SPOWER] - MT_SPOWER_VMD1\n");
 	mt_spower_make_table(&sptab[MT_SPOWER_VMD1], &vmd1_spower_raw, vmd1, V_OF_FUSE, T_OF_FUSE);
-
-
 
 
 	SPOWER_INFO("[SPOWER] - Start SPOWER UT!\n");
@@ -541,3 +563,53 @@ int mt_spower_get_leakage(int dev, int vol, int deg)
 	return sptab_lookup(&sptab[dev], vol, deg);
 }
 EXPORT_SYMBOL(mt_spower_get_leakage);
+
+int mt_spower_get_efuse_lkg(int dev)
+{
+	int devinfo = 0, efuse_leakage = 0, efuse_leakage_mw = 0;
+
+	BUG_ON(!(dev < MT_SPOWER_MAX));
+	switch (dev) {
+	case  MT_SPOWER_CPUBIG:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0); /* P_OD1 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_BIG_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_GPU:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX1); /* P_OD3 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_GPU_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_VCORE:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_VCORE_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_CPUL:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPUL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_CPULL:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPULL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_MODEM:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
+		efuse_leakage = (devinfo >> 8) & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_MODEM_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	case  MT_SPOWER_VMD1:
+		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
+		efuse_leakage = devinfo & 0xff;
+		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_VMD1_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		break;
+	default:
+		break;
+	}
+
+	return efuse_leakage_mw;
+}
+EXPORT_SYMBOL(mt_spower_get_efuse_lkg);
+
