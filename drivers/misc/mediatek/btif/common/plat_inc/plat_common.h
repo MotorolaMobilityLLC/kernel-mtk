@@ -39,7 +39,7 @@ typedef irq_handler_t mtk_btif_irq_handler;
 #define MTK_BTIF_ENABLE_CLK_CTL 1
 #define MTK_BTIF_ENABLE_CLK_REF_COUNTER 1
 
-#define DBG_LOG_STR_SIZE 512
+#define DBG_LOG_STR_SIZE 384
 
 /*Log defination*/
 static int hal_log_print(const char *str, ...)

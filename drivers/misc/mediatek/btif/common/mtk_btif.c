@@ -11,6 +11,9 @@
 
 /*#include <mach/eint.h>*/
 /*-----------driver own header files----------------*/
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 #ifdef DFT_TAG
 #undef DFT_TAG
 #endif
@@ -427,7 +430,9 @@ static ssize_t btif_file_write(struct file *filp,
 			const char __user *buf, size_t count, loff_t *f_pos);
 static long btif_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			 unsigned long arg);
-
+#ifdef CONFIG_COMPAT
+static long btif_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+#endif
 static struct cdev btif_dev_c;
 static wait_queue_head_t btif_read_inq;	/* read queues */
 
@@ -438,6 +443,9 @@ const struct file_operations mtk_btif_fops = {
 	.read = btif_file_read,
 	.write = btif_file_write,
 	.unlocked_ioctl = btif_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = btif_compat_ioctl,
+#endif
 	.poll = btif_poll,
 };
 
@@ -640,7 +648,16 @@ ssize_t btif_file_write(struct file *filp,
 
 	return i_ret;
 }
+#ifdef CONFIG_COMPAT
+long btif_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
 
+	BTIF_INFO_FUNC("cmd[0x%x]\n", cmd);
+	ret = btif_unlocked_ioctl(filp, cmd, arg);
+	return ret;
+}
+#endif
 long btif_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 #define BTIF_IOC_MAGIC        0xb0
@@ -2251,7 +2268,7 @@ static void btif_tx_worker(struct work_struct *p_work)
 	int leng_sent = 0;
 /*tx fifo out*/
 	int how_much_get = 0;
-	unsigned char local_buf[512];
+	unsigned char local_buf[384];
 
 /*get mtk_btif's pointer*/
 	p_mtk_btif p_btif = container_of(p_work, mtk_btif, tx_work);
@@ -2822,7 +2839,7 @@ int btif_dump_reg(p_mtk_btif p_btif)
 		goto dmp_reg_err;
 	}
 
-	if (B_S_ON != ori_state) {
+	if ((B_S_ON != ori_state) && (B_S_MAX > ori_state)) {
 		BTIF_ERR_FUNC("BTIF's original state is %s, not B_S_ON\n", g_state[ori_state]);
 		BTIF_ERR_FUNC("!!!!---<<<This should never happen in normal mode>>>---!!!");
 		i_ret = _btif_exit_dpidle(p_btif);
