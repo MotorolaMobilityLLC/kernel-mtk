@@ -191,6 +191,10 @@ int mt_req_gdma(DMA_CHAN chan)
 		mt_reset_gdma_conf(i);
 		return i;
 	} else {
+		/* disable cqdma clock */
+		if (clk_cqdma)
+			clk_disable_unprepare(clk_cqdma);
+
 		return -DMA_ERR_NO_FREE_CH;
 	}
 }
