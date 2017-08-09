@@ -96,6 +96,9 @@ all_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     all_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -154,6 +157,9 @@ L1_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L1_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -211,6 +217,9 @@ L2_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L2_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -259,6 +268,9 @@ all_cl_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     all_cl_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -308,6 +320,9 @@ L1_cl_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L1_cl_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -373,6 +388,9 @@ L2_cl_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L2_cl_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -420,6 +438,9 @@ all_inv_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     all_inv_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -469,6 +490,9 @@ L1_inv_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L1_inv_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -517,6 +541,9 @@ L2_inv_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     L2_inv_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -589,6 +616,9 @@ DF1_L1_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DF1_L1_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -670,6 +700,9 @@ DF1F2_L1_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DF1F2_L1_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -725,6 +758,9 @@ DF1F2_L2_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DF1F2_L2_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -799,6 +835,9 @@ DF1C2_L1_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DF1C2_L1_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -854,6 +893,9 @@ DF1C2_L2_cl_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DF1C2_L2_cl_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -930,6 +972,9 @@ DIF1F2_L1_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DIF1F2_L1_skip                   @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
@@ -985,6 +1030,9 @@ DIF1F2_L2_loop1:
         and     r1, r1, #7                      @ mask of the bits for current cache only
         cmp     r1, #2                          @ see what cache we have at this level
         blt     DIF1F2_L2_skip                            @ skip if no cache, or just i-cache
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
         mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
         isb                                     @ isb to sych the new cssr&csidr
         mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr

@@ -132,6 +132,9 @@ flush_levels:
 #ifdef CONFIG_PREEMPT
 	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
 #endif
+#ifdef CONFIG_ARM_ERRATA_814220
+	dsb
+#endif
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	isb					@ isb to sych the new cssr&csidr
 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
