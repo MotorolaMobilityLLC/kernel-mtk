@@ -262,7 +262,7 @@ static void mtk_ta_detector(void)
 	int real_v_chrB;
 	kal_bool retransmit = KAL_TRUE;
 	unsigned int retransmit_count = 0;
-	U32 charging_enable = true;
+	unsigned int charging_enable = true;
 
 	battery_log(BAT_LOG_CRTI, "mtk_ta_detector() start\n");
 
