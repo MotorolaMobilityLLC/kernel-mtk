@@ -160,7 +160,6 @@ static void rawbulk_auto_reconnect(int transfer_id)
 						fn->ndowns, fn->upsz, fn->downsz);
 		if (rc < 0) {
 			rawbulk_disable_function(fn);
-			rawbulk_tty_start_io(fn);
 		}
 	}
 }
@@ -286,12 +285,6 @@ static void do_activate(struct work_struct *data)
 				       __func__, fn->transfer_id);
 		}
 
-		/* start tty io */
-		rc = rawbulk_tty_alloc_request(fn);
-		if (rc < 0)
-			return;
-		if (!rawbulk_check_enable(fn))
-			rawbulk_tty_start_io(fn);
 	} else {		/* disconnect */
 		if (rawbulk_check_enable(fn)) {
 			if (fn->transfer_id == RAWBULK_TID_MODEM) {
@@ -307,10 +300,7 @@ static void do_activate(struct work_struct *data)
 			/* keep the enable state, so we can enable again in next time */
 			/* set_enable_state(fn, 0); */
 			wake_unlock(&fn->keep_awake);
-		} else
-			rawbulk_tty_stop_io(fn);
-
-		rawbulk_tty_free_request(fn);
+		}
 
 		usb_ep_disable(fn->bulk_out);
 		usb_ep_disable(fn->bulk_in);
