@@ -840,6 +840,47 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			*/
 			 };
 
+		MMSYS_CONFIG@0x14000000 {
+			compatible = "mediatek,MMSYS_CONFIG";
+			reg = <0x14000000 0x1000>;
+			interrupts = <0 205 0x8>;
+		};
+
+		MDP_RDMA@0x14001000 {
+			compatible = "mediatek,MDP_RDMA";
+			reg = <0x14001000 0x1000>;
+			interrupts = <0 187 0x8>;
+		};
+
+		MDP_RSZ0@0x14002000 {
+			compatible = "mediatek,MDP_RSZ0";
+			reg = <0x14002000 0x1000>;
+			interrupts = <0 188 0x8>;
+		};
+
+		MDP_RSZ1@0x14003000 {
+			compatible = "mediatek,MDP_RSZ1";
+			reg = <0x14003000 0x1000>;
+			interrupts = <0 189 0x8>;
+		};
+
+		MDP_WDMA@0x14004000 {
+			compatible = "mediatek,MDP_WDMA";
+			reg = <0x14004000 0x1000>;
+			interrupts = <0 191 0x8>;
+		};
+
+		MDP_WROT@0x14005000 {
+			compatible = "mediatek,MDP_WROT";
+			reg = <0x14005000 0x1000>;
+			interrupts = <0 192 0x8>;
+		};
+
+		MDP_TDSHP@0x14006000 {
+			compatible = "mediatek,MDP_TDSHP";
+			reg = <0x14006000 0x1000>;
+			interrupts = <0 190 0x8>;
+		};
 	};
 
 	vcorefs {
