@@ -345,15 +345,7 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			ret = ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
 			break;
 		case GED_DVFS_BOOST_HOST_EVENT:
-			if(bSwitch)
-			{
-				g_ui32EventStatus|=GED_EVENT_BOOST_HOST;
-				ret = ged_dvfs_probe_signal(GED_SIGNAL_BOOST_HOST_EVENT);
-			}
-			else
-			{
-				g_ui32EventStatus&= (~GED_EVENT_BOOST_HOST);
-			}
+			ret = ged_dvfs_probe_signal(GED_SIGNAL_BOOST_HOST_EVENT);
 			goto CHECK_OUT;
 		default:
 			GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
