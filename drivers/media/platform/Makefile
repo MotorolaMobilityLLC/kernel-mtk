@@ -49,4 +49,6 @@ obj-$(CONFIG_VIDEO_RENESAS_VSP1)	+= vsp1/
 
 obj-y	+= omap/
 
+obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC)	+= mediatek/
+
 ccflags-y += -I$(srctree)/drivers/media/i2c

@@ -152,6 +152,20 @@ config VIDEO_CODA
 	   Coda is a range of video codec IPs that supports
 	   H.264, MPEG-4, and other video formats.
 
+config VIDEO_MEDIATEK_VCODEC
+	bool "Mediatek Video Codec driver"
+	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MEDIATEK
+	select VIDEOBUF2_DMA_CONTIG
+	select V4L2_MEM2MEM_DEV
+	select MEDIATEK_VPU
+	---help---
+	   Mediatek video codec driver for V4L2
+	   Default is disable
+	   Set when v4l2 codec is needed
+	   When it is enable, related mediatek codec will be included
+
+source "drivers/media/platform/mediatek/Kconfig"
+
 config VIDEO_MEM2MEM_DEINTERLACE
 	tristate "Deinterlace support"
 	depends on VIDEO_DEV && VIDEO_V4L2 && DMA_ENGINE

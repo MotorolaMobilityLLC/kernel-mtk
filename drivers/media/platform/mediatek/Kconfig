@@ -1,0 +1,5 @@
+config MEDIATEK_VPU
+	bool
+	---help---
+	  This driver provides downloading firmware vpu (video processor unit) and
+	  communicating with vpu.
