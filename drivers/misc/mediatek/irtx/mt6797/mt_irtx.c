@@ -27,7 +27,7 @@
 #include <linux/of_address.h>
 #endif
 
-#include <mach/mt_pwm.h>
+#include <mt-plat/mt_pwm.h>
 #include <mach/mt_pwm_hal.h>
 
 #if !defined(CONFIG_PINCTRL_MT6797)
