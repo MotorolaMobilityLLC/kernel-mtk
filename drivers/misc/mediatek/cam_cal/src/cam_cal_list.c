@@ -24,54 +24,37 @@
 #endif
 
 
-#define MTK_MAX_CID_NUM 1
+#define MTK_MAX_CID_NUM 3
 unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
-	0x010b00ff
+	0x010b00ff,/*Single MTK Format*/
+	0x020b00ff,/*Double MTK Format in One OTP/EEPRom - Legacy*/
+	0x030b00ff /*Double MTK Format in One OTP/EEPRom*/
 };
 
-enum {
-	AUTO_SEARCH = 0,
-	/* #if defined(BRCB032GWZ_3) */
-	BRCB032GWZ_3,
-	/* #endif */
-	/* #if defined(cat24c16) */
-	CAT24C16,
-	/* #endif */
-	/* #if defined(GT24c32a) */
-	GT24C32A,
-	/* #endif */
-	NUM_COUNT,
-} CAM_CAL_CMD_TYPE;
-
-
 stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
-	/*#if defined(BRCB032GWZ_3)*/
-	{BRCB032GWZ_3, brcb032gwz_selective_read_region},
-	/*#endif*/
-	/*#if defined(cat24c16)*/
-	{CAT24C16, cat24c16_selective_read_region},
-	/*#endif*/
-	/*#if defined(GT24c32a)*/
-	{GT24C32A, gt24c32a_selective_read_region},
-	/*#endif*/
+	{CMD_BRCB032GWZ, brcb032gwz_selective_read_region},
+	{CMD_CAT24C16, cat24c16_selective_read_region},
+	{CMD_GT24C32A, gt24c32a_selective_read_region},
 
 	/*      ADD before this line */
 	{0, 0} /*end of list*/
 };
 
 stCAM_CAL_LIST_STRUCT g_camCalList[] = {
-	{OV23850_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{OV23850_SENSOR_ID, 0xA8, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{S5K3M2_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{IMX214_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{S5K2X8_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{IMX258_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
-	{IMX377_SENSOR_ID, 0xA0, AUTO_SEARCH, cam_cal_check_mtk_cid},
+	{OV23850_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{OV23850_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K3M2_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{IMX214_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K2X8_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{IMX258_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{IMX377_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+
+	{IMX214_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K5E2YA_SENSOR_ID, 0x00, CMD_DEV1, cam_cal_check_double_eeprom},
 
 	/*  ADD before this line */
-	{0, 0, 0, 0} /*end of list*/
+	{0, 0, CMD_NONE, 0} /*end of list*/
 };
-
 
 unsigned int cam_cal_get_sensor_list(stCAM_CAL_LIST_STRUCT **ppCamcalList)
 
@@ -93,27 +76,47 @@ unsigned int cam_cal_get_func_list(stCAM_CAL_FUNC_STRUCT **ppCamcalFuncList)
 	return 0;
 }
 
-unsigned int cam_cal_check_mtk_cid(struct i2c_client *client, unsigned int cmdIndx)
+unsigned int cam_cal_check_mtk_cid(struct i2c_client *client, cam_cal_cmd_func readCamCalData)
 {
 	unsigned int calibrationID = 0, ret = 0;
 	int j = 0;
 
-	CAM_CALDB("start cmdIndx=%d!\n", cmdIndx);
-	if (g_camCalCMDFunc[cmdIndx].readCamCalData != NULL) {
-		CAM_CALDB("cam_cal_cmd_func[%d].readCamCalData != NULL !\n", cmdIndx);
-		g_camCalCMDFunc[cmdIndx].readCamCalData(client, 1, (unsigned char *)&calibrationID, 4);
-		CAM_CALDB("calibrationID=%x\n", calibrationID);
+	if (readCamCalData != NULL) {
+		readCamCalData(client, 1, (unsigned char *)&calibrationID, 4);
+		CAM_CALDB("calibrationID = %x\n", calibrationID);
 	}
 
 	if (calibrationID != 0)
-		for (j = 0; j < MTK_MAX_CID_NUM; j++)
+		for (j = 0; j < MTK_MAX_CID_NUM; j++) {
+			CAM_CALDB("mtkCidList[%d] == %x\n", j, calibrationID);
 			if (mtkCidList[j] == calibrationID) {
 				ret = 1;
 				break;
 			}
+		}
 
 	CAM_CALDB("ret=%d\n", ret);
 	return ret;
 }
+
+unsigned int cam_cal_check_double_eeprom(struct i2c_client *client, cam_cal_cmd_func readCamCalData)
+{
+	unsigned int calibrationID = 0, ret = 0;
+
+	CAM_CALDB("start cam_cal_check_double_eeprom !\n");
+	if (readCamCalData != NULL) {
+		CAM_CALDB("readCamCalData != NULL !\n");
+		readCamCalData(client, 1, (unsigned char *)&calibrationID, 4);
+		CAM_CALDB("calibrationID = %x\n", calibrationID);
+	}
+
+	if (calibrationID == 0x020b00ff || calibrationID == 0x030b00ff)
+		ret = 1;
+
+
+	CAM_CALDB("ret=%d\n", ret);
+	return ret;
+}
+
 
 
