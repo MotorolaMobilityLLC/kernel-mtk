@@ -401,7 +401,7 @@ bool mt_usb_is_device(void)
 
 	/* from K2, FIXME */
 #ifdef MTK_KERNEL_POWER_OFF_CHARGING
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
 		/* prevent MHL chip initial and cable related issue. */
 		/* power off charging mode. No need OTG function */
 		return true;
@@ -437,8 +437,8 @@ void mt_usb_connect(void)
 
 	DBG(0, "cable_mode=%d\n", cable_mode);
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-	    || g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		int chgr_type;
 
 		chgr_type = mt_get_charger_type();

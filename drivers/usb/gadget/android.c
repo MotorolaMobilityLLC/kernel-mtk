@@ -76,11 +76,10 @@ static const char longname[] = "Gadget Android";
 #define PRODUCT_ID		0x0001
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-#include <mach/mt_boot_common.h>
+#include <mt-plat/mt_boot_common.h>
 #define KPOC_USB_FUNC "mtp"
 #define KPOC_USB_VENDOR_ID 0x0E8D
 #define KPOC_USB_PRODUCT_ID 0x2008
-extern BOOTMODE g_boot_mode;
 #endif
 
 /* f_midi configuration */
@@ -2100,7 +2099,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 	INIT_LIST_HEAD(&dev->enabled_functions);
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		pr_notice("[USB]KPOC, func%s\n", KPOC_USB_FUNC);
 		err = android_enable_function(dev, KPOC_USB_FUNC);
 		if (err)
@@ -2207,7 +2206,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		cdev->desc.idVendor = device_desc.idVendor;
 		cdev->desc.idProduct = device_desc.idProduct;
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_notice("[USB]KPOC, vid:%d, pid:%d\n", KPOC_USB_VENDOR_ID, KPOC_USB_PRODUCT_ID);
 			cdev->desc.idVendor = __constant_cpu_to_le16(KPOC_USB_VENDOR_ID);
 			cdev->desc.idProduct = __constant_cpu_to_le16(KPOC_USB_PRODUCT_ID);
