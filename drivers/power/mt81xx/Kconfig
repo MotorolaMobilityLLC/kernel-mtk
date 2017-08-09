@@ -247,3 +247,12 @@ config HIGH_BATTERY_VOLTAGE_SUPPORT
 	  to be supported.
 	  Set No to config if 4.2V battery is
 	  used.
+
+config MTK_PUMP_EXPRESS_PLUS_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS"
+	default n
+	help
+	  fast charging, by using switch charger to achive better charging ability
+	  enable this config to support high voltage charging
+	  available vbus input includes 7V/9V/12V
+	  the feature applies to standard charger with pump express plus support

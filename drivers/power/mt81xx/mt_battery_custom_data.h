@@ -184,6 +184,14 @@ struct mt_battery_charging_custom_data {
 	/* For charger IC GPIO config */
 	int charger_enable_pin;
 	int charger_otg_pin;
+
+	/* for Pump Expresss Plus */
+	int ta_start_battery_soc;
+	int ta_stop_battery_soc;
+	int ta_ac_9v_input_current;
+	int ta_ac_7v_input_current;
+	int ta_ac_charging_current;
+	int ta_9v_support;
 };
 
 extern int mt_bm_of_probe(struct device *dev, struct mt_battery_meter_custom_data **p_meter_data);

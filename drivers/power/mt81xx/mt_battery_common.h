@@ -134,6 +134,15 @@ extern int g_temp_status;
 #endif
 extern bool g_bat_init_flag;
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+extern struct wake_lock TA_charger_suspend_lock;
+extern bool ta_check_chr_type;
+extern bool ta_cable_out_occur;
+extern bool is_ta_connect;
+extern bool ta_vchr_tuning;
+extern int ta_v_chr_org;
+#endif
+
 static inline int get_bat_average_voltage(void)
 {
 	return BMT_status.bat_vol;
@@ -298,6 +307,14 @@ static inline void bat_charger_boost_enable(bool enable)
 
 	if (g_bat.charger)
 		g_bat.charger(CHARGING_CMD_BOOST_ENABLE, &boost_enable);
+}
+
+static inline void bat_charger_set_ta_pattern(bool enable)
+{
+	u32 ta_enable = enable;
+
+	if (g_bat.charger)
+		g_bat.charger(CHARGING_CMD_SET_TA_CURRENT_PATTERN, &ta_enable);
 }
 
 /*****************************************************************************
