@@ -564,45 +564,49 @@ INT32 wmt_plat_gpio_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 
 INT32 wmt_plat_ldo_ctrl(ENUM_PIN_STATE state)
 {
-	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num) {
-		switch (state) {
-		case PIN_STA_INIT:
-			/*set to gpio output low, disable pull */
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					0);
-			WMT_DBG_FUNC("WMT-PLAT:LDO init (out 0)\n");
-			break;
-		case PIN_STA_OUT_H:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					1);
-			WMT_DBG_FUNC("WMT-PLAT:LDO (out 1)\n");
-			break;
-		case PIN_STA_OUT_L:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					0);
-			WMT_DBG_FUNC("WMT-PLAT:LDO (out 0)\n");
-			break;
-		case PIN_STA_IN_L:
-		case PIN_STA_DEINIT:
-			/*set to gpio input low, pull down enable */
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_state[GPIO_IN_PULLDOWN]);
-			WMT_DBG_FUNC("WMT-PLAT:LDO deinit (in pd)\n");
-			break;
-		default:
-			WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on LDO\n", state);
-			break;
-		}
-	} else
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num) {
 		WMT_INFO_FUNC("WMT-PLAT:LDO is not used\n");
+		return 0;
+	}
+
+	switch (state) {
+	case PIN_STA_INIT:
+		/*set to gpio output low, disable pull */
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_state[GPIO_PULL_DIS]);
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 0);
+		WMT_DBG_FUNC("WMT-PLAT:LDO init (out 0)\n");
+		break;
+	case PIN_STA_OUT_H:
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 1);
+		WMT_DBG_FUNC("WMT-PLAT:LDO (out 1)\n");
+		break;
+	case PIN_STA_OUT_L:
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 0);
+		WMT_DBG_FUNC("WMT-PLAT:LDO (out 0)\n");
+		break;
+	case PIN_STA_IN_L:
+	case PIN_STA_DEINIT:
+		/*set to gpio input low, pull down enable */
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_state[GPIO_IN_PULLDOWN]);
+		WMT_DBG_FUNC("WMT-PLAT:LDO deinit (in pd)\n");
+		break;
+	default:
+		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on LDO\n", state);
+		break;
+	}
 
 	return 0;
 }
 
 INT32 wmt_plat_pmu_ctrl(ENUM_PIN_STATE state)
 {
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num) {
+		WMT_ERR_FUNC("WMT-PLAT:PMU not define\n");
+		return -1;
+	}
+
 	switch (state) {
 	case PIN_STA_INIT:
 		/*set to gpio output low, disable pull */
@@ -688,6 +692,11 @@ INT32 wmt_plat_rtc_ctrl(ENUM_PIN_STATE state)
 
 INT32 wmt_plat_rst_ctrl(ENUM_PIN_STATE state)
 {
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num) {
+		WMT_ERR_FUNC("WMT-PLAT:RST not define\n");
+		return -1;
+	}
+
 	switch (state) {
 	case PIN_STA_INIT:
 		/*set to gpio output low, disable pull */
@@ -733,32 +742,34 @@ INT32 wmt_plat_rst_ctrl(ENUM_PIN_STATE state)
 
 INT32 wmt_plat_bgf_eint_ctrl(ENUM_PIN_STATE state)
 {
-	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num) {
-		switch (state) {
-		case PIN_STA_INIT:
-			/*set to gpio input low, pull down enable */
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
-			WMT_DBG_FUNC("WMT-PLAT:BGFInt init(in pd)\n");
-			break;
-		case PIN_STA_MUX:
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
-			WMT_DBG_FUNC("WMT-PLAT:BGFInt mux (eint)\n");
-			break;
-		case PIN_STA_IN_L:
-		case PIN_STA_DEINIT:
-			/*set to gpio input low, pull down enable */
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
-			WMT_DBG_FUNC("WMT-PLAT:BGFInt deinit(in pd)\n");
-			break;
-		default:
-			WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on BGF EINT\n", state);
-			break;
-		}
-	} else
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num) {
 		WMT_INFO_FUNC("WMT-PLAT:BGF EINT not defined\n");
+		return 0;
+	}
+
+	switch (state) {
+	case PIN_STA_INIT:
+		/*set to gpio input low, pull down enable */
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
+		WMT_DBG_FUNC("WMT-PLAT:BGFInt init(in pd)\n");
+		break;
+	case PIN_STA_MUX:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
+		WMT_DBG_FUNC("WMT-PLAT:BGFInt mux (eint)\n");
+		break;
+	case PIN_STA_IN_L:
+	case PIN_STA_DEINIT:
+		/*set to gpio input low, pull down enable */
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
+		WMT_DBG_FUNC("WMT-PLAT:BGFInt deinit(in pd)\n");
+		break;
+	default:
+		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on BGF EINT\n", state);
+		break;
+	}
 
 	return 0;
 }
@@ -808,37 +819,47 @@ INT32 wmt_plat_wifi_eint_ctrl(ENUM_PIN_STATE state)
 
 INT32 wmt_plat_all_eint_ctrl(ENUM_PIN_STATE state)
 {
-	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_num) {
-		switch (state) {
-		case PIN_STA_INIT:
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
-			WMT_DBG_FUNC("WMT-PLAT:ALLInt init(in pd)\n");
-			break;
-		case PIN_STA_MUX:
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
-			break;
-		case PIN_STA_IN_L:
-		case PIN_STA_DEINIT:
-			/*set to gpio input low, pull down enable */
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
-			break;
-		default:
-			WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on ALL EINT\n", state);
-			break;
-		}
-	} else
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_num) {
 		WMT_INFO_FUNC("WMT-PLAT:ALL EINT not defined\n");
+		return 0;
+	}
+
+	switch (state) {
+	case PIN_STA_INIT:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
+		WMT_DBG_FUNC("WMT-PLAT:ALLInt init(in pd)\n");
+		break;
+	case PIN_STA_MUX:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
+		break;
+	case PIN_STA_IN_L:
+	case PIN_STA_DEINIT:
+		/*set to gpio input low, pull down enable */
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
+				gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_state[GPIO_IN_PULLDOWN]);
+		break;
+	default:
+		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on ALL EINT\n", state);
+		break;
+	}
 
 	return 0;
 }
 
 INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 {
-#ifdef GPIO_COMBO_URXD_PIN
-#ifdef GPIO_COMBO_UTXD_PIN
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:UART TX not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:UART RX not defined\n");
+		return 0;
+	}
+
 	switch (state) {
 	case PIN_STA_MUX:
 	case PIN_STA_INIT:
@@ -861,12 +882,6 @@ INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on UART Group\n", state);
 		break;
 	}
-#else
-	WMT_WARN_FUNC("WMT-PLAT:Warnning, GPIO_COMBO_UTXD_PIN is not define\n");
-#endif
-#else
-	WMT_WARN_FUNC("WMT-PLAT:Warnning, GPIO_COMBO_URXD_PIN is not define\n");
-#endif
 
 	return 0;
 }
@@ -876,6 +891,25 @@ INT32 wmt_plat_pcm_ctrl(ENUM_PIN_STATE state)
 {
 	UINT32 normalPCMFlag = 0;
 
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAICLK_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:PCM DAICLK not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMOUT_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:PCM DAIPCMOUT not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMIN_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:PCM DAIPCMIN not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAISYNC_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:PCM DAISYNC not defined\n");
+		return 0;
+	}
 	/*check if combo chip support merge if or not */
 	if (0 != wmt_plat_merge_if_flag_get()) {
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
@@ -974,6 +1008,20 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 
 	UINT32 normalI2SFlag = 0;
 
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:I2S CK not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:I2S WS not defined\n");
+		return 0;
+	}
+
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:DAT CK not defined\n");
+		return 0;
+	}
 	/*check if combo chip support merge if or not */
 	if (0 != wmt_plat_merge_if_flag_get()) {
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
@@ -988,9 +1036,10 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 				pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
 						gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_state[GPIO_PULL_DIS]);
 				pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_DAT_CK_PIN].gpio_state[GPIO_PULL_DIS]);
+						gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_state[GPIO_PULL_DIS]);
 				pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_state[GPIO_PULL_DIS]);
+						gpio_ctrl_state[GPIO_COMBO_PCM_DAIPMCOUT_PIN].
+							gpio_state[GPIO_PULL_DIS]);
 				WMT_DBG_FUNC("WMT-PLAT:<Merge IF>I2S init (I2S0 system)\n");
 				break;
 			case PIN_STA_IN_L:
@@ -1032,7 +1081,7 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 				pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
 						gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_state[GPIO_PULL_DIS]);
 				pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_DAT_CK_PIN].gpio_state[GPIO_PULL_DIS]);
+						gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_state[GPIO_PULL_DIS]);
 				WMT_DBG_FUNC("WMT-PLAT:<I2S IF>I2S init (I2S0 system)\n");
 				break;
 			case PIN_STA_IN_L:
@@ -1135,21 +1184,24 @@ INT32 wmt_plat_sdio_pin_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state)
 {
-	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num) {
-		switch (state) {
-		case PIN_STA_INIT:
-		case PIN_STA_DEINIT:
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
-					gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num, 0);
-			break;
-		case PIN_STA_MUX:
-			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
-					gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_state[GPIO_PULL_DIS]);
-			break;
-		default:
-			break;
-		}
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:GPS SYNC not defined\n");
+		return 0;
+	}
+
+	switch (state) {
+	case PIN_STA_INIT:
+	case PIN_STA_DEINIT:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+				gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_state[GPIO_PULL_DIS]);
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num, 0);
+		break;
+	case PIN_STA_MUX:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+				gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_state[GPIO_PULL_DIS]);
+		break;
+	default:
+		break;
 	}
 
 	return 0;
@@ -1213,6 +1265,11 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 {
+	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num) {
+		WMT_INFO_FUNC("WMT-PLAT:UART RX not defined\n");
+		return 0;
+	}
+
 	switch (state) {
 	case PIN_STA_MUX:
 	case PIN_STA_INIT:
