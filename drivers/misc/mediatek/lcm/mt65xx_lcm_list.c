@@ -925,6 +925,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35595_truly_fhd_dsi_vdo_lcm_drv,
 #endif
 
+#if defined(NT36850_WQHD_DSI_2K_CMD)
+	&nt36850_wqhd_dsi_2k_cmd_lcm_drv,
+#endif
+
 #endif
 };
 
