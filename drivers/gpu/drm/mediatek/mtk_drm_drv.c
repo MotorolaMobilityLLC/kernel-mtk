@@ -12,6 +12,9 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_ARM
+#include <asm/dma-iommu.h>
+#endif
 #include <drm/drmP.h>
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
@@ -169,6 +172,23 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 	struct mtk_drm_private *private = drm->dev_private;
 	struct platform_device *pdev;
 	int ret;
+
+#ifdef CONFIG_ARM
+	struct device_node *np;
+	struct dma_iommu_mapping *dma_mapping;
+
+	np = of_parse_phandle(drm->dev->of_node, "iommus", 0);
+	if (!np)
+		return 0;
+
+	pdev = of_find_device_by_node(np);
+	of_node_put(np);
+	if (WARN_ON(!pdev))
+		return -EINVAL;
+
+	dma_mapping = pdev->dev.archdata.iommu;
+	arm_iommu_attach_device(drm->dev, dma_mapping);
+#endif
 
 	pdev = of_find_device_by_node(private->mutex_node);
 	if (!pdev) {
