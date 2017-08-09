@@ -59,11 +59,11 @@ u32 get_devinfo_with_index(u32 index)
 	int size = devinfo_get_size();
 	u32 ret = 0;
 
-	if ((index >= 0) && (index < size))
+	if (((index >= 0) && (index < size)) && (g_devinfo_data != NULL))
 		ret = g_devinfo_data[index];
 	else {
-		pr_warn("devinfo data index out of range:%d\n", index);
-		pr_warn("devinfo data size:%d\n", size);
+		pr_err("devinfo data index out of range:%d\n", index);
+		pr_err("devinfo data size:%d\n", size);
 		ret = 0xFFFFFFFF;
 	}
 
@@ -112,6 +112,7 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	int err   = 0;
 	int ret   = 0;
 	u32 data_read = 0;
+	int size = devinfo_get_size();
 
 	/* ---------------------------------- */
 	/* IOCTL							  */
@@ -134,12 +135,12 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	case READ_DEV_DATA:
 		if (copy_from_user((void *)&index, (void __user *)arg, sizeof(u32)))
 			return -1;
-		if (index < g_devinfo_size) {
+		if (index < size) {
 			data_read = get_devinfo_with_index(index);
 			ret = copy_to_user((void __user *)arg, (void *)&(data_read), sizeof(u32));
 		} else {
 			pr_warn("%s Error! Data index larger than data size. index:%d, size:%d\n", MODULE_NAME,
-				index, g_devinfo_size);
+				index, size);
 			return -2;
 		}
 		break;
@@ -213,8 +214,6 @@ static int __init devinfo_init(void)
 	if (!debugfs_create_file("segcode", 0444, devinfo_segment_root, NULL, &devinfo_segment_fops))
 		return -ENOMEM;
 
-	pr_err("[devinfo][SegCode] Segment Code=0x%x\n", g_devinfo_data[DEVINFO_SEGCODE_INDEX]);
-
 	return 0;
 }
 
@@ -242,7 +241,11 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 		pr_debug("tag_devinfo_data size:%d\n", size);
 
 		sprintf(devinfo_segment_buff, "segment code=0x%x\n", g_devinfo_data[DEVINFO_SEGCODE_INDEX]);
-	}
+
+		pr_err("[devinfo][SegCode] Segment Code=0x%x\n", g_devinfo_data[DEVINFO_SEGCODE_INDEX]);
+
+	} else
+		sprintf(devinfo_segment_buff, "segment code=[Fail in parsing DT]\n");
 
 	return 1;
 }
