@@ -17,6 +17,8 @@
 
 obj-y += nt35695_fhd_dsi_cmd_truly_nt50358.o
 
-
+ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES), "k97v1_64_om_lwctg_fhd_lswap")
+ccflags-$(CONFIG_MTK_LCM) += -DCONFIG_NT35695_LANESWAP
+endif
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
