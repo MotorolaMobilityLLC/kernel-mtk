@@ -101,9 +101,20 @@ typedef struct {imu_pteval_t imu_pgd; } imu_pgd_t;
 #define imu_pte_index(addr)		(((addr)>>IMU_PAGE_SHIFT)&(IMU_PTRS_PER_PTE - 1))
 #define imu_pte_offset_map(pgd, addr) (imu_pte_map(pgd) + imu_pte_index(addr))
 
+extern int gM4U_4G_DRAM_Mode;
+
 static inline imu_pte_t *imu_pte_map(imu_pgd_t *pgd)
 {
-	return (imu_pte_t *) __va(imu_pgd_val(*pgd) & F_PGD_PA_PAGETABLE_MSK);
+	imu_pteval_t pte_pa = imu_pgd_val(*pgd);
+
+	if (gM4U_4G_DRAM_Mode) {
+		if (pte_pa < 0x40000000)
+			return (imu_pte_t *)(__va((pte_pa & F_PGD_PA_PAGETABLE_MSK) + 0x100000000L));
+		else
+			return (imu_pte_t *)(__va(pte_pa & F_PGD_PA_PAGETABLE_MSK));
+	} else
+		return (imu_pte_t *)(__va(pte_pa & F_PGD_PA_PAGETABLE_MSK));
+
 }
 
 static inline int imu_pte_unmap(imu_pte_t *pte)
