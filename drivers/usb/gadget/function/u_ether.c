@@ -23,6 +23,7 @@
 #include <linux/if_vlan.h>
 
 #include "u_ether.h"
+#include "usb_boost.h"
 
 
 /*
@@ -817,6 +818,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		}
 	}
 	if (__ratelimit(&ratelimit1)) {
+		usb_boost();
 		U_ETHER_DBG("spd %d,ms %d,rin %lu,rout %lu,rxmem %lu,rxerr %lu\n"
 				"tin %lu,tout %lu,tb %lu,ts %lu,tx_com %lu,lmsg: 0x%x,lrsp:0x%x,rst:%lu\n",
 				dev->gadget->speed, max_size, rndis_test_rx_usb_in, rndis_test_rx_net_out,

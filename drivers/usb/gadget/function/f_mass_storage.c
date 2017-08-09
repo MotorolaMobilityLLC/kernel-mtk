@@ -221,6 +221,7 @@
 
 #include "gadget_chips.h"
 #include "configfs.h"
+#include "usb_boost.h"
 
 /*------------------------------------------------------------------------*/
 
@@ -739,6 +740,7 @@ static int do_read(struct fsg_common *common)
 		}
 
 		/* Perform the read */
+		usb_boost();
 		file_offset_tmp = file_offset;
 		nread = vfs_read(curlun->filp,
 				 (char __user *)bh->buf,
@@ -934,6 +936,7 @@ static int do_write(struct fsg_common *common)
 				goto empty_write;
 
 			/* Perform the write */
+			usb_boost();
 			file_offset_tmp = file_offset;
 			nwritten = vfs_write(curlun->filp,
 					     (char __user *)bh->buf,
