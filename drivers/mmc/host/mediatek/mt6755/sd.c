@@ -1199,7 +1199,7 @@ static void msdc_pm(pm_message_t state, void *data)
 		host->suspend = 1;
 		host->pm_state = state;
 
-		pr_err("msdc%d -> %s Suspend", host->id,
+		N_MSG(PWR, "msdc%d -> %s Suspend", host->id,
 			evt == PM_EVENT_SUSPEND ? "PM" : "USR");
 		if (host->hw->flags & MSDC_SYS_SUSPEND) {
 			if (host->hw->host_function == MSDC_EMMC) {
@@ -1228,7 +1228,7 @@ static void msdc_pm(pm_message_t state, void *data)
 		host->suspend = 0;
 		host->pm_state = state;
 
-		pr_err("msdc%d -> %s Resume", host->id,
+		N_MSG(PWR, "msdc%d -> %s Resume", host->id,
 			evt == PM_EVENT_RESUME ? "PM" : "USR");
 
 		if (!(host->hw->flags & MSDC_SYS_SUSPEND)) {
@@ -1570,7 +1570,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	case MMC_SELECT_CARD:
 		resp = (cmd->arg != 0) ? RESP_R1 : RESP_NONE;
 		host->app_cmd_arg = cmd->arg;
-		pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg);
+		N_MSG(PWR, "msdc%d select card<0x%.8x>", host->id, cmd->arg);
 		break;
 	case SD_IO_RW_DIRECT:
 	case SD_IO_RW_EXTENDED:
