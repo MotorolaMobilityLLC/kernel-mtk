@@ -678,8 +678,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
-	/* FIXME */
-	/* pwrctrl->wake_src = spm_get_sleep_wakesrc(); */
+	pwrctrl->wake_src = spm_get_sleep_wakesrc();
 
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
