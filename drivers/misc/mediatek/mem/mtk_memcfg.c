@@ -485,10 +485,9 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	}
 
 	/* frame buffer */
-#if 0
 	fb_size = (u64)mtkfb_get_fb_size();
 	fb_base = (u64)mtkfb_get_fb_base();
-#endif
+
 	dram_sz += fb_size;
 
 	/* print memory information */
