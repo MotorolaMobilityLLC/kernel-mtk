@@ -261,6 +261,10 @@ static int xhci_plat_remove(struct platform_device *dev)
 	if (!IS_ERR(clk))
 		clk_disable_unprepare(clk);
 	usb_put_hcd(hcd);
+#ifdef CONFIG_SSUSB_MTK_XHCI
+	if (xhci->quirks & XHCI_MTK_HOST)
+		xhci_mtk_exit_quirk(xhci);
+#endif
 	kfree(xhci);
 
 	return 0;
