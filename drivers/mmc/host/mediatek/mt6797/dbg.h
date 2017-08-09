@@ -4,7 +4,8 @@
 
 #include "msdc_tune.h"
 
-/* #define MTK_MSDC_ERROR_TUNE_DEBUG */
+#define MTK_MSDC_ERROR_TUNE_DEBUG
+
 enum {
 	SD_TOOL_ZONE = 0,
 	SD_TOOL_DMA_SIZE  = 1,
@@ -35,6 +36,7 @@ enum {
 	ENABLE_AXI_MODULE = 26,
 	MMC_DUMP_EXT_CSD = 27,
 	MMC_DUMP_CSD = 28,
+	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 };
 /* Debug message event */
 #define DBG_EVT_NONE	    (0)		/* No event */

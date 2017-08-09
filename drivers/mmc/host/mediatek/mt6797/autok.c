@@ -3567,7 +3567,6 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 }
 EXPORT_SYMBOL(autok_low_speed_switch_edge);
 
-#if AUTOK_OFFLINE_TUNE_TX_ENABLE
 int autok_offline_tuning_TX(struct msdc_host *host)
 {
 	int ret = 0;
@@ -3712,7 +3711,7 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========end========\r\n");
 	goto end;
 
-adtc_cmd_err:
+/*adtc_cmd_err:*/
 	AUTOK_RAWPRINT("[AUTOK]------MSDC host reset------\r\n");
 	autok_msdc_reset();
 	msdc_clear_fifo();
@@ -3728,7 +3727,7 @@ adtc_cmd_err:
 end:
 	return ret;
 }
-#endif
+
 
 int autok_execute_tuning(struct msdc_host *host, u8 *res)
 {

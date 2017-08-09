@@ -195,6 +195,7 @@ extern int autok_path_sel(struct msdc_host *host);
 extern int autok_init_sdr104(struct msdc_host *host);
 extern int autok_init_hs200(struct msdc_host *host);
 extern int autok_init_hs400(struct msdc_host *host);
+extern int autok_offline_tuning_TX(struct msdc_host *host);
 extern void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios);
 extern void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, enum ERROR_TYPE error_type);
 extern void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);

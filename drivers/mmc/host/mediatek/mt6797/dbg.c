@@ -28,6 +28,7 @@
 /* end for fpga early porting */
 #include "mt_sd.h"
 #include "dbg.h"
+#include "autok.h"
 #ifndef FPGA_PLATFORM
 #include <mt-plat/upmu_common.h>
 #endif
@@ -543,35 +544,35 @@ skip_reinit2:
 	return ret;
 }
 
-static void msdc_set_field(void __iomem *address, unsigned int start_bit,
-	unsigned int len, unsigned int value)
+static void msdc_set_field(struct seq_file *m, void __iomem *address,
+	unsigned int start_bit, unsigned int len, unsigned int value)
 {
 	unsigned long field;
 
 	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
-		pr_err("[SD_Debug]invalid reg field range or length\n");
+		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
 		value &= (1 << len) - 1;
-		pr_err("[SD_Debug]Original:0x%p (0x%x)\n",
+		seq_printf(m, "[SD_Debug]Original:0x%p (0x%x)\n",
 			address, MSDC_READ32(address));
 		MSDC_SET_FIELD(address, field, value);
-		pr_err("[SD_Debug]Modified:0x%p (0x%x)\n",
+		seq_printf(m, "[SD_Debug]Modified:0x%p (0x%x)\n",
 			address, MSDC_READ32(address));
 	}
 }
 
-static void msdc_get_field(void __iomem *address, unsigned int start_bit,
-	unsigned int len, unsigned int value)
+static void msdc_get_field(struct seq_file *m, void __iomem *address,
+	unsigned int start_bit, unsigned int len, unsigned int value)
 {
 	unsigned long field;
 
 	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
-		pr_err("[SD_Debug]invalid reg field range or length\n");
+		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
 		MSDC_GET_FIELD(address, field, value);
-		pr_err("[SD_Debug]Reg:0x%p start_bit(%d)len(%d)(0x%x)\n",
+		seq_printf(m, "[SD_Debug]Reg:0x%p start_bit(%d)len(%d)(0x%x)\n",
 			address, start_bit, len, value);
 	}
 }
@@ -1985,9 +1986,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 					base, offset,
 					MSDC_READ32(base + offset));
 		} else if (p1 == 2) {
-			msdc_set_field(base + offset, p4, p5, p6);
+			msdc_set_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 3) {
-			msdc_get_field(base + offset, p4, p5, p6);
+			msdc_get_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 4) {
 			msdc_dump_register_debug(m, host->id, base);
 		} else if (p1 == 5) {
@@ -2435,8 +2436,21 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		host = mtk_msdc_host[id];
 		msdc_dump_csd(m, host);
 		break;
+	case DO_AUTOK_OFFLINE_TUNE_TX:
+		host = mtk_msdc_host[p1]; /*p1 = id */
+		mmc_claim_host(host->mmc);
+		#if 0
+		do_autok_offline_tune_tx = 1;
+		host->mmc->ops->execute_tuning(host->mmc,
+			MMC_SEND_TUNING_BLOCK_HS200);
+		do_autok_offline_tune_tx = 0;
+		#else
+		autok_offline_tuning_TX(host);
+		#endif
+		mmc_release_host(host->mmc);
+		break;
 	default:
-		seq_puts(m, "[SD_Debug]:¡¡Invalid Command\n");
+		seq_puts(m, "[SD_Debug]: Invalid Command\n");
 		break;
 	}
 	return 0;
