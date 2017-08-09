@@ -42,8 +42,6 @@
 #include <mt_ocp.h>
 #include <mt6797/mt_wdt.h>
 #include <ext_wd_drv.h>
-
-#include <mach/mt_secure_api.h>
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -511,15 +509,9 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
 
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-		BUG_ON(1);
-
 	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);	/* 0x102224a0 */
 	temp = readl(reg_base + 0x4a0); /* dummy read */
 	iounmap(reg_base);
-
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-		BUG_ON(1);
 
 	/* latch RESET */
 	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 1);
@@ -544,16 +536,10 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	reset_flags = 0;
 	spin_unlock(&reset_lock);
 
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-		BUG_ON(1);
-
 	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
 	udelay(240);
 	BigiDVFSSRAMLDOSet(110000);
 	udelay(240);
-
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-		BUG_ON(1);
 
 	return ret;
 }
@@ -632,13 +618,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-		BUG_ON(1);
-
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
-
-	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-		BUG_ON(1);
 
 #ifdef MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
@@ -646,14 +626,8 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 
 	if ((cpu == 8) || (cpu == 9)) {
 		if (!g_cl2_online) {
-			if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-				BUG_ON(1);
-
 			/* enable MP2 Sync DCM */
 			dcm_mcusys_mp2_sync_dcm(1);
-
-			if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-				BUG_ON(1);
 		}
 	}
 #ifdef CONFIG_OCP_IDVFS_CTRL
@@ -859,14 +833,8 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		if ((cpu == 8) || (cpu == 9)) {
 			g_cl2_online &= ~(1 << (cpu - 8));
 			if (!g_cl2_online) {
-				if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-					BUG_ON(1);
-
 				/* disable MP2 Sync DCM */
 				dcm_mcusys_mp2_sync_dcm(0);
-
-				if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-					BUG_ON(1);
 			}
 		}
 #endif
@@ -875,17 +843,8 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
-#ifdef CONFIG_ARCH_MT6797
-		if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
-			BUG_ON(1);
-#endif
-
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
 
-#ifdef CONFIG_ARCH_MT6797
-		if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
-			BUG_ON(1);
-#endif
 #ifdef MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
