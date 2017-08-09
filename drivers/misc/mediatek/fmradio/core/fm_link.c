@@ -444,9 +444,8 @@ fm_s32 fm_force_active_event(fm_u32 mask)
 extern fm_s32 fm_print_cmd_fifo(void)
 {
 #ifdef FM_TRACE_ENABLE
-	struct fm_trace_t trace;
+	struct fm_trace_t trace = { .type = 0, .opcode = 0, .len = 0, .time = 0, .tid = 0};
 	fm_s32 i = 0;
-	trace.time = 0;
 
 	while (fm_false == FM_TRACE_EMPTY(cmd_fifo)) {
 		fm_memset(trace.pkt, 0, FM_TRACE_PKT_SIZE);
