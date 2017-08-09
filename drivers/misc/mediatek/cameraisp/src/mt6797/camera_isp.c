@@ -10701,6 +10701,7 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
 	MBOOL bQueMode = MFALSE;
 	MUINT32 product = 1;
+	MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1;
 	UINT32 i;
 
 	if ((module != ISP_CAM_A_IDX) && (module != ISP_CAM_B_IDX)) {
@@ -10776,8 +10777,8 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 					if (fbc_ctrl2[dma_arry_map[i]].Bits.DROP_CNT !=
 						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt) {
 						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt =
-							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt + 1)
-							& 0xFF);
+							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt +
+							frmPeriod) & 0xFF);
 						product = 0;
 					}
 					/* Prevent *0 for SOF ISR delayed after P1_DON */
@@ -10801,8 +10802,8 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 					if (fbc_ctrl2[dma_arry_map[i]].Bits.DROP_CNT !=
 						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt) {
 						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt =
-							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt + 1)
-							& 0xFF);
+							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt +
+							frmPeriod) & 0xFF);
 						product = 0;
 					}
 					if (0 == (fbc_ctrl1[dma_arry_map[i]].Bits.FBC_NUM -
@@ -10853,6 +10854,7 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 	MUINT32     flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
 	MBOOL       bQueMode = MFALSE;
 	MUINT32     product = 1;
+	MUINT32     frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1;
 
 	switch (module) {
 	case ISP_CAM_A_IDX:
@@ -10916,8 +10918,8 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 			if (fbc_ctrl2.Bits.DROP_CNT !=
 				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt) {
 				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt =
-							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt + 1)
-							& 0xFF);
+							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt +
+							frmPeriod) & 0xFF);
 				product = 0;
 			}
 			/* Prevent *0 for SOF ISR delayed after P1_DON */
@@ -10939,8 +10941,8 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 			if (fbc_ctrl2.Bits.DROP_CNT !=
 				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt) {
 				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt =
-							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt + 1)
-							& 0xFF);
+							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt +
+							frmPeriod) & 0xFF);
 				product = 0;
 			}
 			/* Prevent *0 for SOF ISR delayed after P1_DON */
