@@ -93,7 +93,7 @@
 #endif				/* CONFIG_DENALI_2 */
 #endif
 /*------ PDN Section -----------------------*/
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 #define PDN_FOR_UART1	MT_CG_PERI_UART0
 #define PDN_FOR_UART2	MT_CG_PERI_UART1
 #define PDN_FOR_UART3	MT_CG_PERI_UART2
@@ -101,7 +101,7 @@
 #ifndef CONFIG_VERSION_D2
 #define PDN_FOR_UART5	MT_CG_PERI_UART4
 #endif				/* CONFIG_DENALI_2 */
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 #define PDN_FOR_DMA     MT_CG_PERI_APDMA
 
@@ -126,7 +126,11 @@
 /*---------------------------------------------------------------------------*/
 /* FIXME: MT6593 FPGA porting*/
 #ifdef CONFIG_MTK_FPGA
+#ifdef FIX_TO_26M
+#define UART_SYSCLK                 MTK_SYSCLK_26
+#else
 #define UART_SYSCLK                 12000000
+#endif
 #else
 #define UART_SYSCLK                 MTK_SYSCLK_26
 #endif

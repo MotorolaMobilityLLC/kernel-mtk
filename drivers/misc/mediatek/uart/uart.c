@@ -1696,7 +1696,7 @@ static irqreturn_t mtk_uart_irq(int irq, void *dev_id)
 	if (intrs == UART_IIR_NO_INT_PENDING)
 		return IRQ_HANDLED;
 
-	pr_debug("[UART%d] intrs:0x%x\n", uart->nport, intrs);
+	/* pr_debug("[UART%d] intrs:0x%x\n", uart->nport, intrs); */
 	if (intrs == UART_IIR_CTI)
 		timeout = 1;
 	else if (intrs == UART_IIR_THRE)
@@ -2279,7 +2279,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	struct mtk_uart *uart;
 	int err;
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	static const char * const clk_uart_name[] = {
 		"uart0-main",
 		"uart1-main",
@@ -2287,15 +2287,12 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		"uart3-main",
 		"uart4-main",
 	};
-
 	int idx = -1;
 	struct mtk_uart_setting *uart_setting = NULL;
-#endif				/*!defined(CONFIG_MTK_LEGACY) */
 
 	/* for GPIO pinctrl */
-#if !defined(CONFIG_MTK_LEGACY)
 	struct pinctrl *ppinctrl = NULL;
-#endif				/*!defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
@@ -2311,7 +2308,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 
 	MSG_FUNC_ENTRY();
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	idx = pdev->id;
 	uart_setting = get_uart_default_settings(idx);
 	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[idx]);
@@ -2332,12 +2329,12 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		set_uart_dma_clk(idx, clk_uart0_dma);
 		pr_debug("[UART][CCF]clk_uart0_dma:%p\n", clk_uart0_dma);
 	}
-#else				/*!defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART][CCF]mtk_platform_uart_probe CONFIG_MTK_LEGACY is not defined!\n");
-#endif				/*!defined(CONFIG_MTK_LEGACY) */
+#else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+	pr_debug("[UART][CCF]mtk_platform_uart_probe CONFIG_MTK_LEGACY and CONFIG_MTK_FPGA not defined!\n");
+#endif /*!defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 /* For GPIO setting */
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	ppinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(ppinctrl)) {
 		err = PTR_ERR(ppinctrl);
@@ -2346,10 +2343,9 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	}
 	set_uart_pinctrl(idx, ppinctrl);
 	pr_debug("[UART%d][PinC]set idx:%d, ppinctrl:%p\n", idx, idx, ppinctrl);
-
-#else				/*!defined(CONFIG_MTK_LEGACY) */
-	pr_debug("[UART][PinC]mtk_platform_uart_probe CONFIG_MTK_LEGACY is not defined!\n");
-#endif				/*!defined(CONFIG_MTK_LEGACY) */
+#else /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+	pr_debug("[UART][PinC]mtk_platform_uart_probe CONFIG_MTK_LEGACY and CONFIG_MTK_FPGA not defined!\n");
+#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 	if (mtk_uart_plat_info_query("ADD_DMA_BIT_MASK_32"))
 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);

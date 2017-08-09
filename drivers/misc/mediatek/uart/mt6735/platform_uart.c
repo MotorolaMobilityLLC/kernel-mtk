@@ -22,10 +22,12 @@
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
 #include <mach/mt_idle.h>
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#include "mach/mt_gpio.h"
+#include <cust_gpio_usage.h>
+#endif /* defined(CONFIG_MTK_LEGACY) && !defined (CONFIG_MTK_FPGA)*/
 
 #include <linux/delay.h>
 #include "include/mtk_uart.h"
@@ -42,7 +44,7 @@ char *uart_gpio_cmds[UART_NR][4] = {
 #if !defined(CONFIG_MTK_FPGA)
 	{"uart2_rx_set", "uart2_rx_clear", "uart2_tx_set", "uart2_tx_clear"},
 	{"uart3_rx_set", "uart3_rx_clear", "uart3_tx_set", "uart3_tx_clear"},
-#endif				/* defined (CONFIG_MTK_FPGA) */
+#endif				/* !defined (CONFIG_MTK_FPGA) */
 };
 
 void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
@@ -52,10 +54,6 @@ void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
 		return;
 	ppinctrl_uart[idx] = ppinctrl;
 }
-
-#else				/* !defined(CONFIG_MTK_LEGACY) */
-#include "mach/mt_gpio.h"
-#include <cust_gpio_usage.h>
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
 #if !defined(CONFIG_MTK_LEGACY)
@@ -95,7 +93,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART1, .clr_bit = PDN_FOR_UART1, .pll_id = PDN_FOR_UART1,
 #endif
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
@@ -105,7 +103,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART2, .clr_bit = PDN_FOR_UART2, .pll_id = PDN_FOR_UART2,
 #endif
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
@@ -115,7 +113,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART3, .clr_bit = PDN_FOR_UART3, .pll_id = PDN_FOR_UART3,
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = TRUE,	/* UART3 */
@@ -125,7 +123,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART4, .clr_bit = PDN_FOR_UART4, .pll_id = PDN_FOR_UART4,
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART4 */
@@ -136,7 +134,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART5, .clr_bit = PDN_FOR_UART5, .pll_id = PDN_FOR_UART5,
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART5 */
@@ -1534,7 +1532,7 @@ void mtk_uart_baud_setting(struct mtk_uart *uart, int baudrate)
 	else
 		mtk_uart_cal_baud(uart, baudrate, 3);
 #endif				/* End of UART_DCM_CONFIG */
-#endif
+#endif              /* defined (CONFIG_MTK_FPGA) */
 }
 
 /*---------------------------------------------------------------------------*/
@@ -2296,7 +2294,7 @@ void mtk_uart_restore(void)
 #endif
 }
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 void switch_uart_gpio(int uartport, int gpioopid)
 {
 	struct pinctrl *ppinctrl = NULL;
@@ -2330,11 +2328,13 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 	pr_debug("[UART%d][PinC]%s(%d, %d)- Succeeded!\n", uartport, __func__, uartport, gpioopid);
 }
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 {
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
+#endif
 	int uartport = uart->nport;
 
 	pr_warn("[UART]%s port:0x%x\n", __func__, uartport);
@@ -2343,8 +2343,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#ifdef CONFIG_PM
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2382,23 +2381,19 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 	default:
 		break;
 	}
-
-#else				/* defined(CONFIG_MTK_LEGACY) */
+#else /* defined(CONFIG_MTK_LEGACY)*/
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif				/* defined(CONFIG_MTK_LEGACY) */
-
-	return;
-#endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
 }
 
 /*---------------------------------------------------------------------------*/
 void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif
 	int uartport = uart->nport;
 
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
@@ -2407,8 +2402,7 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#ifdef CONFIG_PM
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2442,21 +2436,19 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 	default:
 		break;
 	}
-
-#else				/* defined(CONFIG_MTK_LEGACY) */
+#else /* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif				/* defined(CONFIG_MTK_LEGACY) */
-#endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
 }
 
 /*---------------------------------------------------------------------------*/
 void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 1;	/* URAT RX Clear */
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif
 	int uartport = uart->nport;
 
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
@@ -2465,8 +2457,7 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#ifdef CONFIG_PM
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2500,23 +2491,19 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 	default:
 		break;
 	}
-
-#else				/* defined(CONFIG_MTK_LEGACY) */
+#else /* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif				/* defined(CONFIG_MTK_LEGACY) */
-
-	return;
-#endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
 }
 
 /*---------------------------------------------------------------------------*/
 void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
-#endif  /* !defined(CONFIG_MTK_LEGACY) */
+#endif
 	int uartport = uart->nport;
 
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
@@ -2525,8 +2512,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#ifdef CONFIG_PM
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uartport) {
 	case 0:
@@ -2563,13 +2549,10 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 	default:
 		break;
 	}
-
-#else				/* defined(CONFIG_MTK_LEGACY) */
+#else /* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif				/* defined(CONFIG_MTK_LEGACY) */
-	return;
-#endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 #endif
 }
 
@@ -2577,11 +2560,9 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	enable_dpidle_by_bit(uart->setting->pll_id);
 	enable_soidle_by_bit(uart->setting->pll_id);
-#endif
 #endif
 }
 
@@ -2589,11 +2570,9 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	disable_dpidle_by_bit(uart->setting->pll_id);
 	disable_soidle_by_bit(uart->setting->pll_id);
-#endif
 #endif
 }
 
