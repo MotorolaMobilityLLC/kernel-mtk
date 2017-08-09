@@ -98,7 +98,7 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_SHIFT				0
 
 #define PMIC_CW00_ADDR				0x7000
-#define PMIC_CW00_INIT_VAL			0x4FFD
+#define PMIC_CW00_INIT_VAL			0x4DFD
 #define PMIC_CW00_XO_EXTBUF2_MODE_MASK		0x3
 #define PMIC_CW00_XO_EXTBUF2_MODE_SHIFT		3
 #define PMIC_CW00_XO_EXTBUF2_EN_M_MASK		0x1
