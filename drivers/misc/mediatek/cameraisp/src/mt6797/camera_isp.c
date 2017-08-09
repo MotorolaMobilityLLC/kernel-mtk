@@ -8263,7 +8263,10 @@ static MINT32 ISP_suspend(
     pm_message_t            Mesg
 )
 {
-
+#if 1 /* TODO */
+	(void)bPass1_On_In_Resume_TG1;
+	(void)bPass1_On_In_Resume_TG2;
+#else
     MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
     MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
     ISP_WAIT_IRQ_STRUCT waitirq;
@@ -8338,6 +8341,7 @@ static MINT32 ISP_suspend(
         ISP_EnableClock(MFALSE);
     }
 #endif
+#endif
 
     return 0;
 }
@@ -8347,7 +8351,7 @@ static MINT32 ISP_suspend(
 ********************************************************************************/
 static MINT32 ISP_resume(struct platform_device *pDev)
 {
-
+#if 0
    // TG_VF_CON[0] (0x15004414[0]): VFDATA_EN. TG1 Take Picture Request.
    MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
    // TG2_VF_CON[0] (0x150044B4[0]): VFDATA_EN. TG2 Take Picture Request.
@@ -8566,6 +8570,7 @@ static MINT32 ISP_resume(struct platform_device *pDev)
     }
     //force the bResumeSignal to zero, because the sensor may not have output.
     bResumeSignal = 0;
+#endif
 #endif
     return 0;
 }
