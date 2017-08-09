@@ -240,12 +240,21 @@ bool cmdq_mdp_clock_is_on(CMDQ_ENG_ENUM engine)
 
 void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 {
+	unsigned long register_address;
+	uint32_t register_value;
+
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
+		/* Set MDP_RDMA0 DCM enable */
+		register_address = MDP_RDMA_BASE + 0x0;
+		register_value = CMDQ_REG_GET32(register_address);
+		/* DCM_EN is bit 4 */
+		register_value |= (0x1 << 4);
+		CMDQ_REG_SET32(register_address, register_value);
 		break;
 	case CMDQ_ENG_MDP_RSZ0:
 		cmdq_mdp_enable_clock_MDP_RSZ0(enable);
@@ -255,9 +264,21 @@ void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 		break;
 	case CMDQ_ENG_MDP_WDMA:
 		cmdq_mdp_enable_clock_MDP_WDMA(enable);
+		/* Set MDP_WDMA DCM enable */
+		register_address = MDP_WDMA_BASE + 0x8;
+		register_value = CMDQ_REG_GET32(register_address);
+		/* DCM_EN is bit 31 */
+		register_value |= (0x1 << 31);
+		CMDQ_REG_SET32(register_address, register_value);
 		break;
 	case CMDQ_ENG_MDP_WROT0:
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
+		/* Set MDP_WROT0 DCM enable */
+		register_address = MDP_WROT_BASE + 0x7C;
+		register_value = CMDQ_REG_GET32(register_address);
+		/* DCM_EN is bit 16 */
+		register_value |= (0x1 << 16);
+		CMDQ_REG_SET32(register_address, register_value);
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
