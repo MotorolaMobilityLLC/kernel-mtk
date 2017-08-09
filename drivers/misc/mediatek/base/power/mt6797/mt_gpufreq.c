@@ -2527,7 +2527,7 @@ void mt_gpufreq_update_volt_registerCB(gpufreq_ptpod_update_notify pCB)
 {
 	g_pGpufreq_ptpod_update_notify = pCB;
 }
-EXPORT_SYMBOL(mt_gpufreq_setvolt_registerCB);
+EXPORT_SYMBOL(mt_gpufreq_update_volt_registerCB);
 
 /************************************************
  * register / unregister set GPU freq CB
