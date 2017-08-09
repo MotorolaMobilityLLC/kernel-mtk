@@ -503,11 +503,10 @@ static ssize_t mt_scp_dvfs_disable_proc_write(struct file *file, const char __us
 			mt_scp_dvfs_info->scp_dvfs_disable = 0;
 		else if (on == 1) {
 			mt_scp_dvfs_info->scp_dvfs_disable = 1;
-			WRITE_REGISTER_UINT32(0x400a4000, 0x1);
-			WRITE_REGISTER_UINT32(0x400a4004, 0);
-			WRITE_REGISTER_UINT32(0x400a402c, 0xffff);
 		} else
 			scp_dvfs_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
+		scp_ipi_send(IPI_DVFS_DISABLE, (void *)&(mt_scp_dvfs_info->scp_dvfs_disable),
+				sizeof(mt_scp_dvfs_info->scp_dvfs_disable), 0);
 	} else {
 		mt_scp_dvfs_info->scp_dvfs_disable = 0;
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
