@@ -963,12 +963,22 @@ static int md_ccif_op_init(struct ccci_modem *md)
 	return 0;
 }
 
+static int md_ccif_ring_buf_init(struct ccci_modem *md);
 /*used for throttling feature - end*/
 static int md_ccif_op_start(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	char img_err_str[IMG_ERR_STR_LEN];
 	int ret = 0;
+
+	/*something do once*/
+	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
+		CCCI_BOOTUP_LOG(md->index, TAG, "CCIF modem is first boot\n");
+		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
+		md_ccif_ring_buf_init(md);
+	}
+
 	/*0. init security, as security depends on dummy_char, which is ready very late. */
 	ccci_init_security();
 	md_ccif_sram_reset(md);
@@ -994,7 +1004,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 			md->config.setting &= ~MD_SETTING_RELOAD;
 		}
 	} else {
-		CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem image ready, bypass load\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "C2K modem image ready, bypass load\n");
 		ret = ccci_get_md_check_hdr_inf(md->index, &md->img_info[IMG_MD], md->post_fix);
 		if (ret < 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "partition read fail(%d)\n", ret);
@@ -1002,6 +1012,8 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		} else
 			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
+	md->config.setting &= ~MD_SETTING_FIRST_BOOT;
+
 	/*2. enable MPU */
 	ccci_set_mem_access_protection(md);
 	/*3. power on modem, do NOT touch MD register before this */
@@ -1681,7 +1693,6 @@ static int md_ccif_probe(struct platform_device *dev)
 
 	md_ccif_hw_init(md);
 
-	md_ccif_ring_buf_init(md);
 	/*hoop up to device */
 	dev->dev.platform_data = md;
 
@@ -1744,7 +1755,6 @@ int md_ccif_pm_restore_noirq(struct device *device)
 #endif
 	/*set flag for next md_start */
 	md->config.setting |= MD_SETTING_RELOAD;
-	md->config.setting |= MD_SETTING_FIRST_BOOT;
 	return ret;
 }
 

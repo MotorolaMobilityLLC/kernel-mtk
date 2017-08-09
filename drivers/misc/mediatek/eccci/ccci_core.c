@@ -254,7 +254,6 @@ void ccci_config_modem(struct ccci_modem *md)
 	md->mem_layout.smem_region_size = md_resv_smem_size;
 	md->mem_layout.smem_region_vir =
 	    ioremap_nocache(md->mem_layout.smem_region_phy, md->mem_layout.smem_region_size);
-	memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 
 	/* exception region */
 	md->smem_layout.ccci_exp_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_EXCEPTION;
@@ -335,7 +334,6 @@ void ccci_config_modem(struct ccci_modem *md)
 		&md->mem_layout.md1_md3_smem_size);
 	md->mem_layout.md1_md3_smem_vir =
 	    ioremap_nocache(md->mem_layout.md1_md3_smem_phy, md->mem_layout.md1_md3_smem_size);
-	memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 	/* updae image info */
 	md->img_info[IMG_MD].type = IMG_MD;
