@@ -301,4 +301,5 @@ extern int get_eint_attribute(char *name, unsigned int name_len, unsigned int ty
 #endif
 #endif
 extern void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded);
+extern bool is_clk_buf_from_pmic(void);
 #endif				/* __PORT_KERNEL_H__ */

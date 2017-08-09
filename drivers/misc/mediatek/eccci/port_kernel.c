@@ -1577,10 +1577,14 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					     CLKBUF_MAX_COUNT);
 				clkbuf->CLKBuf_Count = 0xFF;
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
+			} else if (is_clk_buf_from_pmic()) {
+				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
+				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
+				memset(&clkbuf->CLKBuf_SWCtrl_Status, 0, sizeof(clkbuf->CLKBuf_SWCtrl_Status));
 			} else {
+				u32 vals[4] = {0, 0, 0, 0};
 #if !defined(CONFIG_MTK_LEGACY)
 				struct device_node *node;
-				u32 vals[4] = {0, 0, 0, 0};
 
 				node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 				if (node) {
@@ -1588,6 +1592,11 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				} else {
 					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
+#else
+				vals[0] = CLK_BUF1_STATUS;
+				vals[1] = CLK_BUF2_STATUS;
+				vals[2] = CLK_BUF3_STATUS;
+				vals[3] = CLK_BUF4_STATUS;
 #endif
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
 				clkbuf->CLKBuf_Status[0] = vals[0];

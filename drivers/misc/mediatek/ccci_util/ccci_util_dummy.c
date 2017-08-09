@@ -71,3 +71,8 @@ char * __weak ccci_get_ap_platform(void)
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return "MTxxxxE1";
 }
+
+bool __weak is_clk_buf_from_pmic(void)
+{
+	return false;
+}
