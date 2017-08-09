@@ -87,6 +87,7 @@ struct last_reboot_reason {
 	uint8_t thermal_temp5;
 	uint8_t thermal_status;
 
+	uint8_t isr_el1;
 
 	void *kparams;
 };
@@ -1076,6 +1077,12 @@ void aee_rr_rec_thermal_status(u8 val)
 	LAST_RR_SET(thermal_status, val);
 }
 
+void aee_rr_rec_isr_el1(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(isr_el1, val);
+}
 
 u64 aee_rr_curr_ptp_cpu_big_volt(void)
 {
@@ -1130,6 +1137,11 @@ u8 aee_rr_curr_thermal_temp5(void)
 u8 aee_rr_curr_thermal_status(void)
 {
 	return LAST_RR_VAL(thermal_status);
+}
+
+u8 aee_rr_curr_isr_el1(void)
+{
+	return LAST_RR_VAL(isr_el1);
 }
 
 void aee_rr_rec_suspend_debug_flag(u32 val)
@@ -1349,6 +1361,11 @@ void aee_rr_show_thermal_status(struct seq_file *m)
 	seq_printf(m, "thermal_status: %d\n", LAST_RRR_VAL(thermal_status));
 }
 
+void aee_rr_show_isr_el1(struct seq_file *m)
+{
+	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
+}
+
 __weak uint32_t get_suspend_debug_flag(void)
 {
 	return LAST_RR_VAL(suspend_debug_flag);
@@ -1440,7 +1457,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,
 	aee_rr_show_thermal_temp,
-	aee_rr_show_thermal_status
+	aee_rr_show_thermal_status,
+	aee_rr_show_isr_el1
 };
 
 last_rr_show_cpu_t aee_rr_show_cpu[] = {
