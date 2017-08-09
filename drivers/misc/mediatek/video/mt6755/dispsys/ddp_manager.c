@@ -302,6 +302,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
+
 	handle->mode = is_vdo_mode ? DDP_VIDEO_MODE : DDP_CMD_MODE;
 	DDPDBG("set scenario %s mode: %s\n", ddp_get_scenario_name(handle->scenario),
 		   is_vdo_mode ? "Video_Mode" : "Cmd_Mode");
@@ -431,7 +432,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 			cmdqRecHandle cmdq_handle, DDP_MODE mode, int sw_only)
 {
 	ddp_path_handle handle;
-	DDP_SCENARIO_ENUM old_scenario = handle->scenario;
+	DDP_SCENARIO_ENUM old_scenario;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
