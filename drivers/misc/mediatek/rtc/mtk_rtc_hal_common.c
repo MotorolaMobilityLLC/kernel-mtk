@@ -121,7 +121,7 @@ void hal_rtc_set_spare_register(rtc_spare_enum cmd, u16 val)
 {
 	u16 tmp_val;
 
-	if (cmd > 0 && cmd < RTC_SPAR_NUM) {
+	if (cmd >= 0 && cmd < RTC_SPAR_NUM) {
 		tmp_val =
 		    rtc_read(rtc_spare_reg[cmd][RTC_REG]) & ~(rtc_spare_reg[cmd][RTC_MASK] <<
 							      rtc_spare_reg[cmd][RTC_SHIFT]);
@@ -139,12 +139,12 @@ u16 hal_rtc_get_spare_register(rtc_spare_enum cmd)
 {
 	u16 tmp_val;
 
-	if (cmd > 0 && cmd < RTC_SPAR_NUM) {
+	if (cmd >= 0 && cmd < RTC_SPAR_NUM) {
 		hal_rtc_xinfo("rtc_spare_reg[%d] = {%d, %d, %d}\n", cmd,
 			      rtc_spare_reg[cmd][RTC_REG], rtc_spare_reg[cmd][RTC_MASK],
 			      rtc_spare_reg[cmd][RTC_SHIFT]);
 		tmp_val = rtc_read(rtc_spare_reg[cmd][RTC_REG]);
-		tmp_val = (tmp_val & rtc_spare_reg[cmd][RTC_MASK]) >> rtc_spare_reg[cmd][RTC_SHIFT];
+		tmp_val = (tmp_val >> rtc_spare_reg[cmd][RTC_SHIFT]) & rtc_spare_reg[cmd][RTC_MASK];
 		return tmp_val;
 	}
 	return 0;
