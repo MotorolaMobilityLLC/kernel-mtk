@@ -14,12 +14,11 @@
 #define M4UMSG(string, args...)	pr_err("[M4U] "string, ##args)
 #define M4UINFO(string, args...) pr_debug("[M4U] "string, ##args)
 
-
-#include "m4u_hw.h"
-
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
 #endif
+
+#include "m4u_hw.h"
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define M4U_FPGAPORTING
