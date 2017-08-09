@@ -274,7 +274,7 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_NONRST_REG2:0x%x\n", __raw_readl(MTK_WDT_NONRST_REG2));
 	pr_alert("MTK_WDT_REQ_MODE:0x%x\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_alert("MTK_WDT_REQ_IRQ_EN:0x%x\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
-	pr_alert("MTK_WDT_DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL));
+	pr_alert("MTK_WDT_DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_2_REG));
 	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	pr_alert("****************dump wdt reg end*************\n");
 
@@ -294,7 +294,7 @@ void aee_wdt_dump_reg(void)
 	aee_wdt_printf("NONRST_REG2:0x%x\n", __raw_readl(MTK_WDT_NONRST_REG2));
 	aee_wdt_printf("REQ_MODE:0x%x\n", __raw_readl(MTK_WDT_REQ_MODE));
 	aee_wdt_printf("REQ_IRQ_EN:0x%x\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
-	aee_wdt_printf("DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL));
+	aee_wdt_printf("DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_2_REG));
 	aee_wdt_printf("LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	aee_wdt_printf("***dump wdt reg end***\n");
 */
