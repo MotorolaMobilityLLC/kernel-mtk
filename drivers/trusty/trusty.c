@@ -12,11 +12,16 @@
  *
  */
 
+#define MT_SMC_ADD_API
+
 #include <asm/compiler.h>
 #include <linux/delay.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
+#ifdef MT_SMC_ADD_API
+#include <linux/random.h>
+#endif
 #include <linux/slab.h>
 #include <linux/stat.h>
 #include <linux/string.h>
@@ -38,8 +43,8 @@ struct trusty_state {
 #define SMC_ARG2		"x2"
 #define SMC_ARG3		"x3"
 #define SMC_ARCH_EXTENSION	""
-#define SMC_REGISTERS_TRASHED	"x4","x5","x6","x7","x8","x9","x10","x11", \
-				"x12","x13","x14","x15","x16","x17"
+#define SMC_REGISTERS_TRASHED	"x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", \
+				"x12", "x13", "x14", "x15", "x16", "x17"
 #else
 #define SMC_ARG0		"r0"
 #define SMC_ARG1		"r1"
@@ -243,6 +248,23 @@ ssize_t trusty_version_show(struct device *dev, struct device_attribute *attr,
 
 DEVICE_ATTR(trusty_version, S_IRUSR, trusty_version_show, NULL);
 
+#ifdef MT_SMC_ADD_API
+ssize_t trusty_smc_sc_add(struct device *dev, struct device_attribute *attr,
+			    char *buf)
+{
+	s32 a, b, ret;
+
+	get_random_bytes(&a, sizeof(s32));
+	a %= 100;
+	get_random_bytes(&b, sizeof(s32));
+	b %= 100;
+	ret = trusty_std_call32(dev, SMC_SC_ADD, a, b, 0);
+	return scnprintf(buf, PAGE_SIZE, "%d + %d = %d\n", a, b, ret);
+}
+
+DEVICE_ATTR(trusty_smc_sc_add, S_IRUSR, trusty_smc_sc_add, NULL);
+#endif /* MT_SMC_ADD_API */
+
 const char *trusty_version_str_get(struct device *dev)
 {
 	struct trusty_state *s = platform_get_drvdata(to_platform_device(dev));
@@ -277,6 +299,13 @@ static void trusty_init_version(struct trusty_state *s, struct device *dev)
 	ret = device_create_file(dev, &dev_attr_trusty_version);
 	if (ret)
 		goto err_create_file;
+
+#ifdef MT_SMC_ADD_API
+	ret = device_create_file(dev, &dev_attr_trusty_smc_sc_add);
+	if (ret)
+		goto err_create_file;
+#endif /* MT_SMC_ADD_API */
+
 	return;
 
 err_create_file:
@@ -298,6 +327,7 @@ EXPORT_SYMBOL(trusty_get_api_version);
 static int trusty_init_api_version(struct trusty_state *s, struct device *dev)
 {
 	u32 api_version;
+
 	api_version = trusty_fast_call32(dev, SMC_FC_API_VERSION,
 					 TRUSTY_API_VERSION_CURRENT, 0, 0);
 	if (api_version == SM_ERR_UNDEFINED_SMC)
