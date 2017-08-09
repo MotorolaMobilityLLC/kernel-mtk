@@ -3373,8 +3373,8 @@ int _display_set_lcm_refresh_rate(int fps)
 
 	cmdqRecReset(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-	ret = cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_MDP_DSI0_TE_SOF);
-	ret = cmdqRecWait(cmdq_handle, CMDQ_EVENT_MDP_DSI0_TE_SOF);
+	ret = cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DSI_TE);
+	ret = cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
 	/* Change PLL CLOCK parameter and build fps lcm command */
 	disp_lcm_adjust_fps(cmdq_handle, pgc->plcm, fps);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, cmdq_handle, DDP_PHY_CLK_CHANGE, &pgc->plcm->params->dsi.PLL_CLOCK);

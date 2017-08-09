@@ -902,6 +902,8 @@ static void *lcm_switch_mode(int mode)
 #endif
 }
 
+#if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
+
 static void lcm_send_60hz(void *cmdq)
 {
 	unsigned int array[] = {
@@ -961,7 +963,6 @@ static void lcm_send_120hz(void *cmdq)
 
 }
 
-#if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
 static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 {
 
@@ -975,7 +976,7 @@ static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 		/*push_table(cmdq, lcm_60fps_setting,
 		sizeof(lcm_60fps_setting) / sizeof(struct LCM_setting_table), 1);*/
 		lcm_send_60hz(cmdq);
-		params->dsi.PLL_CLOCK = 150;
+		params->dsi.PLL_CLOCK = 140;
 	} else if (fps == 120) {
 		/*push_table(cmdq, lcm_120fps_setting,
 		sizeof(lcm_120fps_setting) / sizeof(struct LCM_setting_table), 1);*/
