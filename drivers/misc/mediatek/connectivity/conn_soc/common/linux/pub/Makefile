@@ -7,6 +7,7 @@ ccflags-y += -I$(src)/../../linux/include \
 						 -I$(src)/../ \
 						 -I$(srctree)/drivers/misc/mediatek/connectivity/common_detect \
                          -I$(src)/../include
+ccflags-y +=	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
 
 ccflags-y += -DWMT_CREATE_NODE_DYNAMIC=1
 
@@ -21,7 +22,7 @@ obj-y += osal.o \
          bgw_desense.o \
          wmt_idc.o \
          stp_chrdev_gps.o \
-         wmt_chrdev_wifi.o \
-         stp_chrdev_bt.o
+         stp_chrdev_bt.o \
+         wmt_chrdev_wifi.o
 
 endif

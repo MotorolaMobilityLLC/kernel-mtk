@@ -41,13 +41,7 @@
 
 /*tag start:new platform need to make sure these define */
 #if defined(CONFIG_ARCH_MT6797)
-#define PLATFORM_SOC_CHIP 0x0321
-#elif defined(CONFIG_ARCH_MT6797M)
-#define PLATFORM_SOC_CHIP 0x0335
-#elif defined(CONFIG_ARCH_MT6753)
-#define PLATFORM_SOC_CHIP 0x0337
-#else
-#define PLATFORM_SOC_CHIP 0x6735
+#define PLATFORM_SOC_CHIP 0x6797
 #endif
 /*tag end*/
 

@@ -24,7 +24,7 @@ int do_fm_drv_init(int chip_id)
 {
 	WMT_DETECT_INFO_FUNC("start to do fm module init\n");
 
-#ifdef CONFIG_MTK_FM_SUPPORT
+#ifdef CONFIG_MTK_FMRADIO
 	mtk_wcn_fm_init();
 #endif
 
