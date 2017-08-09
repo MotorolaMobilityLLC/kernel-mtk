@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.1" buid_sn="151104" dws_modification_time="11.06.2015.10:43:18"-->
+<!--dct_version="2.1" buid_sn="151107" dws_modification_time="11.09.2015.15:17:47"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>Everest</proj>
@@ -4199,7 +4199,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin ref_gpio="">PAD_INT_SIM1</srcPin>
+                <srcPin ref_gpio="GPIO112">PAD_INT_SIM1</srcPin>
                 <socketType>0</socketType>
             </eint0>
             <eint1>
@@ -4209,7 +4209,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin ref_gpio="">PAD_INT_SIM2</srcPin>
+                <srcPin ref_gpio="GPIO113">PAD_INT_SIM2</srcPin>
                 <socketType>0</socketType>
             </eint1>
         </module>
