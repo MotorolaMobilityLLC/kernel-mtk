@@ -910,7 +910,7 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 		}
 
 		if (settings->beacon.tail_len != 0) {
-			UINT_8 ucLen = settings->beacon.tail_len;
+			UINT_32 ucLen = settings->beacon.tail_len;
 
 			prP2pBcnUpdateMsg->pucBcnBody = pucBuffer;
 
@@ -1072,7 +1072,7 @@ int mtk_p2p_cfg80211_change_beacon(struct wiphy *wiphy, struct net_device *dev, 
 			}
 
 			if (info->tail_len != 0) {
-				UINT_8 ucLen = info->tail_len;
+				UINT_32 ucLen = info->tail_len;
 
 				prP2pBcnUpdateMsg->pucBcnBody = pucBuffer;
 
