@@ -105,7 +105,7 @@ config GENERIC_HWEIGHT
 	def_bool y
 
 config GENERIC_CSUM
-        def_bool y
+	def_bool y
 
 config GENERIC_CALIBRATE_DELAY
 	def_bool y
@@ -202,6 +202,32 @@ config ARCH_MT6735
 	help
 	  This enable support for MediaTek MT6735
 
+config ARCH_MT6753
+	bool "MediaTek MT6753"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select ARM_MT6735_CPUIDLE
+	select MTK_BASE_POWER
+	help
+	  This enable support for MediaTek MT6753
+	  To enable related drivers
+	  support for k53v1_64 related project
+	  support for k53v1_64_op02 project
+
 config ARCH_MT8163
 	bool "MediaTek MT8163"
 	select ARCH_MEDIATEK
@@ -248,9 +274,9 @@ config ARCH_MT6735M
 	select MTK_BASE_POWER
 	help
 	  This enable support for MediaTek MT6735M
-          Support for k35mv1_64
-          Support for k35mv1_64_op01
-          Support for k35mv1_64_op02
+	  Support for k35mv1_64
+	  Support for k35mv1_64_op01
+	  Support for k35mv1_64_op02
 
 config ARCH_XGENE
 	bool "AppliedMicro X-Gene SOC Family"
@@ -348,9 +374,9 @@ config ARM64_PGTABLE_LEVELS
 	default 4 if ARM64_4K_PAGES && ARM64_VA_BITS_48
 
 config CPU_BIG_ENDIAN
-       bool "Build big-endian kernel"
-       help
-         Say Y if you plan on running a kernel in big-endian mode.
+	bool "Build big-endian kernel"
+	help
+	  Say Y if you plan on running a kernel in big-endian mode.
 
 config SMP
 	bool "Symmetric Multi-Processing"
@@ -593,7 +619,7 @@ config EFI
 	help
 	  This option provides support for runtime services provided
 	  by UEFI firmware (such as non-volatile variables, realtime
-          clock, and platform reset). A UEFI stub is also provided to
+	  clock, and platform reset). A UEFI stub is also provided to
 	  allow the kernel to be booted as an EFI application. This
 	  is only useful on systems that have UEFI firmware.
 

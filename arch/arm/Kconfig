@@ -197,7 +197,7 @@ config ZONE_DMA
 	bool
 
 config NEED_DMA_MAP_STATE
-       def_bool y
+	def_bool y
 
 config ARCH_SUPPORTS_UPROBES
 	def_bool y
@@ -838,40 +838,72 @@ config ARCH_MT6735M
 	select ARM_MT6735_CPUIDLE
 	select MTK_BASE_POWER
 	help
-	 This enables support for MediaTek MT6735M
-	 Support for k35mv1
-         Support for k35mv1_op01
-         Support for k35mv1_op02
+	  This enables support for MediaTek MT6735M
+	  Support for k35mv1
+	  Support for k35mv1_op01
+	  Support for k35mv1_op02
+
+config ARCH_MT6753
+	bool "MediaTek MT6753"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select VFP_OPT
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select MTK_IRQ
+	select ARM_HAS_SG_CHAIN
+	select PINCTRL
+	select PINCTRL_MT6735
+	select MFD_SYSCON
+	select CPU_IDLE
+	select ARM_MT6735_CPUIDLE
+	select KERNEL_MODE_NEON
+	select CRYPTO_AES_ARM32_CE
+	help
+	  This enable support for MediaTek MT6753
+	  To enable related drivers
+	  Support for k53v1 related projects
+	  Support for k53v1_op02_1g
+
 
 config ARCH_MT6580
-    bool "MediaTek MT6580"
-    select GENERIC_TIME
-    select GENERIC_CLOCKEVENTS
-    select ARCH_HAS_CPUFREQ
-    select ARM_AMBA
-    select CPU_V7
-    select FIQ_GLUE if !TRUSTONIC_TEE_SUPPORT
-    select HAVE_SMP
-    select NEED_MACH_MEMORY_H
-    select IRQ_DOMAIN
-    select IRQ_DOMAIN_DEBUG
-    select GENERIC_SCHED_CLOCK
-    select VFP_OPT
-    select ARCH_REQUIRE_GPIOLIB
-    select MTK_CPU_STRESS
-    select MTK_LASTPC
-    select KERNEL_MODE_NEON
-    select CRYPTO_AES_ARM_BS
-    select MTK_SYS_CIRQ
-    select MTK_SYSTRACKER_V2
-    select ARM_HAS_SG_CHAIN
-    select MTK_BASE_POWER
-    select MTK_EIC
-    select PINCTRL
-    select PINCTRL_MT6580
-    select MFD_SYSCON
-    help
-      This enable support for MediaTek MT6580
+	bool "MediaTek MT6580"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select FIQ_GLUE if !TRUSTONIC_TEE_SUPPORT
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select VFP_OPT
+	select ARCH_REQUIRE_GPIOLIB
+	select MTK_CPU_STRESS
+	select MTK_LASTPC
+	select KERNEL_MODE_NEON
+	select CRYPTO_AES_ARM_BS
+	select MTK_SYS_CIRQ
+	select MTK_SYSTRACKER_V2
+	select ARM_HAS_SG_CHAIN
+	select MTK_BASE_POWER
+	select MTK_EIC
+	select PINCTRL
+	select PINCTRL_MT6580
+	select MFD_SYSCON
+	help
+	  This enable support for MediaTek MT6580
 endchoice
 
 menu "Multiple platform selection"
@@ -1313,9 +1345,9 @@ config ARM_ERRATA_764369
 	  in the diagnostic control register of the SCU.
 
 config ARM_ERRATA_775420
-       bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
-       depends on CPU_V7
-       help
+	bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
+	depends on CPU_V7
+	help
 	 This option enables the workaround for the 775420 Cortex-A9 (r2p2,
 	 r2p6,r2p8,r2p10,r3p0) erratum. In case a date cache maintenance
 	 operation aborts with MMU exception, it might cause the processor
@@ -1783,12 +1815,12 @@ config HW_PERF_EVENTS
 	  disabled, perf events will use software events only.
 
 config SYS_SUPPORTS_HUGETLBFS
-       def_bool y
-       depends on ARM_LPAE
+	def_bool y
+	depends on ARM_LPAE
 
 config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-       def_bool y
-       depends on ARM_LPAE
+	def_bool y
+	depends on ARM_LPAE
 
 config ARCH_WANT_GENERAL_HUGETLB
 	def_bool y

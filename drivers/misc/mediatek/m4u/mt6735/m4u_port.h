@@ -9,7 +9,7 @@
 #include "mt6735m/m4u_port.h"
 #endif
 
-#if defined(CONFIG_ARCH_MT67535)
+#if defined(CONFIG_ARCH_MT6753)
 #include "mt6753/m4u_port.h"
 #endif
 

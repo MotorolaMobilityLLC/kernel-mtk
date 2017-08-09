@@ -22,7 +22,7 @@
 #endif
 #include <mach/eint.h>
 #if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
+#include <mt-plat/mt_gpio.h>
 #include <cust_gpio_usage.h>
 #endif
 #include "musb_core.h"

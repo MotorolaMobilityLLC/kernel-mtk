@@ -12,7 +12,6 @@ void fuse_request_send_ex(struct fuse_conn *fc, struct fuse_req *req,
 
 #ifdef FUSEIO_TRACE
 #include <linux/sched.h>
-#include <linux/xlog.h>
 #include <linux/kthread.h>
 
 void fuse_time_diff(struct timespec *start,

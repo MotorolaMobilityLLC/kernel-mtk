@@ -3,7 +3,7 @@
 
 #include <linux/dma-mapping.h>
 #include <linux/types.h>
-#include <mach/mt_gpio.h>
+#include <mt-plat/mt_gpio.h>
 #include "m4u.h"
 #include <mach/mt_reg_base.h>
 #include <mach/mt_clkmgr.h>
@@ -16,7 +16,7 @@
 #include "ddp_rdma.h"
 #include "ddp_ovl.h"
 
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))

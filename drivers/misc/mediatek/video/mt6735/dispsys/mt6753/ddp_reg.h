@@ -1,6 +1,6 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include <mach/mt_reg_base.h>
 #include <linux/types.h>
 #include "display_recorder.h"

@@ -15,7 +15,7 @@ extern "C" {
 #ifndef __KERNEL__
 #include "mt6311.h"
 #else
-#include "mach/mt6311.h"
+#include "../../../power/mt6735/mt6311.h"
 #endif
 #define CONFIG_CPU_DVFS_HAS_EXTBUCK		1	/* external PMIC related access */
 #endif
@@ -51,16 +51,16 @@ extern void __iomem *pwrap_base;
 #define PMIC_WRAP_BASE		(pwrap_base)
 
 #ifdef CONFIG_CPU_DVFS_HAS_EXTBUCK
-#include "mach/mt_typedefs.h"
+/* #include "mach/mt_typedefs.h" */
 
 extern int is_ext_buck_sw_ready(void);
 extern int is_ext_buck_exist(void);
-extern void mt6311_set_vdvfs11_vosel(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_on(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_ctrl(kal_uint8 val);
-extern kal_uint32 mt6311_read_byte(kal_uint8 cmd, kal_uint8 *returnData);
-extern void mt6311_set_buck_test_mode(kal_uint8 val);
-extern kal_uint32 mt6311_get_chip_id(void);
+extern void mt6311_set_vdvfs11_vosel(unsigned char val);
+extern void mt6311_set_vdvfs11_vosel_on(unsigned char val);
+extern void mt6311_set_vdvfs11_vosel_ctrl(unsigned char val);
+extern unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData);
+extern void mt6311_set_buck_test_mode(unsigned char val);
+extern unsigned int mt6311_get_chip_id(void);
 #endif
 
 extern u32 get_devinfo_with_index(u32 index);

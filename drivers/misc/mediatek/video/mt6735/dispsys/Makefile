@@ -78,7 +78,9 @@ obj-y += ddp_color_format.o
 obj-y += ddp_mmp.o
 obj-y += ddp_met.o
 
+ifneq ($(CONFIG_ARCH_MT6753),y)
 obj-y += display_recorder.o
+endif
 
 ifeq ($(CONFIG_MMPROFILE),y)
 ccflags-y += -DDEFAULT_MMP_ENABLE

@@ -37,9 +37,10 @@
 
 #define pminit_write(addr, val)         mt_reg_sync_writel((val), ((void *)(addr)))
 #define pminit_read(addr)               __raw_readl(IOMEM(addr))
+#ifndef DRV_WriteReg32
 #define DRV_WriteReg32(addr, val)   \
 	mt_reg_sync_writel(val, addr)
-
+#endif
 
 #define TOPCK_LDVT
 #ifdef TOPCK_LDVT
@@ -64,7 +65,7 @@ static unsigned int ckgen_meter(int val)
 	temp = readl(CLK26CALI_0);
 	DRV_WriteReg32(CLK26CALI_0, temp | 0x10); /* start fmeter */
 
-    /* wait frequency meter finish */
+	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x10) {
 		mdelay(10);
 		i++;
@@ -481,7 +482,9 @@ slp_module_init();
 	}
 */
 
+#ifndef CONFIG_ARCH_MT6753
 	mt_clkmgr_init();
+#endif
 
 	/* mt_pm_log_init(); // power management log init */
 
