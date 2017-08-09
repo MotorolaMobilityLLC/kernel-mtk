@@ -910,7 +910,7 @@ static struct mtk_mux_upd top_muxes[] __initdata = {
 	MUX_UPD(TOP_MUX_SSUSB_TOP_SYS, ssusb_top_sys_sel, ssusb_top_sys_parents, 0x00B0, 8, 1,
 		INVALID_MUX_GATE, _UPDATE_REG, 28),
 	MUX_UPD(TOP_MUX_SPM, spm_sel, spm_parents, 0x00C0, 0, 1, INVALID_MUX_GATE, _UPDATE_REG, 30),/*7*/
-	MUX_UPD(TOP_MUX_BSI_SPI, bsi_spi_sel, bsi_spi_parents, 0x00C0, 8, 2, 15, _UPDATE_REG, 31),
+	MUX_UPD(TOP_MUX_BSI_SPI, bsi_spi_sel, bsi_spi_parents, 0x00C0, 8, 2, INVALID_MUX_GATE, _UPDATE_REG, 31),
 	MUX_UPD(TOP_MUX_AUDIO_H, audio_h_sel, audio_h_parents, 0x00C0, 16, 2, 23, _UPDATE_REG, 27),
 	MUX_UPD(TOP_MUX_ANC_MD32, anc_md32_sel, anc_md32_parents, 0x00C0, 24, 2, 31, _UPDATE_REG,
 		29),
