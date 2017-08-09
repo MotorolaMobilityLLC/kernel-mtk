@@ -8,6 +8,9 @@
 #include <mach/mt_clkmgr.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <cust_gpio_usage.h> */
+#else
+#include <linux/clk.h>
+#include "ddp_clkmgr.h"
 #endif
 #include "ddp_reg.h"
 #include "ddp_pwm.h"
@@ -309,7 +312,7 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_DISP_PWM, "PWM");
 #else
-		disp_clk_enable(DISP_PWM);
+		ddp_clk_enable(DISP_PWM);
 #endif
 	}
 #endif
@@ -325,7 +328,7 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_DISP_PWM, "PWM");
 #else
-		disp_clk_disable(DISP_PWM);
+		ddp_clk_disable(DISP_PWM);
 #endif
 	}
 #endif
@@ -427,11 +430,12 @@ static void disp_pwm_test_pin_mux(void)
 
 #ifdef CONFIG_MTK_CLKMGR
 #else
-	disp_clk_enable(DISP_PWM);
+	ddp_clk_enable(DISP_PWM);
+	/*
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_PWM_TEST_PINMUX_55);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_PWM_TEST_PINMUX_69);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_PWM_TEST_PINMUX_129);
-
+	*/
 #endif
 
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_CON_1_OFF, 512 << 16, 0x1fff << 16);
