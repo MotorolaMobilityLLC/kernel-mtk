@@ -1,7 +1,7 @@
 #ifndef __MT_LPAE_H__
 #define __MT_LPAE_H__
 
-#ifdef CONFIG_ARM_LPAE
+#ifdef CONFIG_MTK_LM_MODE
 
 #define INTERAL_MAPPING_OFFSET (0x40000000)
 #define INTERAL_MAPPING_LIMIT (INTERAL_MAPPING_OFFSET + 0x80000000)
@@ -27,7 +27,7 @@
 			phy_addr += INTERAL_MAPPING_OFFSET; \
 	} while (0)
 
-#else /* !CONFIG_ARM_LPAE */
+#else /* !CONFIG_MTK_LM_MODE */
 
 #define IS_MT_LARGE_MEMORY_MODE 0
 #define CROSS_OVERFLOW_ADDR_TRANSFER(phy_addr, size, ret)
