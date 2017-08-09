@@ -129,9 +129,22 @@ static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 }
 
 
+#ifdef CONFIG_COMPAT
+static long mtkfb_vsync_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	long ret = 0;
+
+	ret = mtkfb_vsync_unlocked_ioctl(file, cmd, arg);
+	return ret;
+}
+#endif
+
 static const struct file_operations mtkfb_vsync_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = mtkfb_vsync_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = mtkfb_vsync_compat_ioctl,
+#endif
 	.open = mtkfb_vsync_open,
 	.release = mtkfb_vsync_release,
 	.flush = mtkfb_vsync_flush,

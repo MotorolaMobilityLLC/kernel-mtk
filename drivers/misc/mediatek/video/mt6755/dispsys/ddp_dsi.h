@@ -6,7 +6,7 @@
 
 #include "lcm_drv.h"
 #include "ddp_hal.h"
-#include "fbconfig_kdebug_x.h"
+#include "fbconfig_kdebug.h"
 
 #ifdef __cplusplus
 extern "C" {

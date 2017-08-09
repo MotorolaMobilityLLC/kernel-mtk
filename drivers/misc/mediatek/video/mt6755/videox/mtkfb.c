@@ -43,7 +43,7 @@
 #include "primary_display.h"
 #include "ddp_dump.h"
 #include "display_recorder.h"
-#include "fbconfig_kdebug_x.h"
+#include "fbconfig_kdebug.h"
 #include "mtk_ovl.h"
 #include "mt_boot.h"
 #include "disp_helper.h"
