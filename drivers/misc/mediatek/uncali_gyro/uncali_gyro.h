@@ -11,19 +11,31 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
 
-/* #define DEBUG */
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/atomic.h>
+#include <linux/ioctl.h>
+
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsen_helper.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
+
+
+#define DEBUG
 
 #ifdef DEBUG
-#define UNCALI_GYRO_TAG					"<UNCALI_GYRO> "
-#define UNCALI_GYRO_FUN(f)				pr_debug(UNCALI_GYRO_TAG"%s\n", __func__)
+#define UNCALI_GYRO_TAG						"<UNCALI_GYRO> "
+#define UNCALI_GYRO_FUN(f)					pr_debug(UNCALI_GYRO_TAG"%s\n", __func__)
 #define UNCALI_GYRO_ERR(fmt, args...)		pr_err(UNCALI_GYRO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define UNCALI_GYRO_LOG(fmt, args...)		pr_debug(UNCALI_GYRO_TAG fmt, ##args)
-#define UNCALI_GYRO_VER(fmt, args...)	pr_debug(UNCALI_GYRO_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
-#define UNCALI_GYRO_DBGMSG pr_debug("%s, %d\n", __func__, __LINE__)
+#define UNCALI_GYRO_VER(fmt, args...)		pr_debug(UNCALI_GYRO_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
+#define UNCALI_GYRO_DBGMSG					pr_debug("%s, %d\n", __func__, __LINE__)
 #else
 #define UNCALI_GYRO_TAG					"<UNCALI_GYRO> "
 #define UNCALI_GYRO_FUN(f)
@@ -44,7 +56,8 @@
 #define EVENT_TYPE_UNCALI_GYRO_X_BIAS			ABS_RX
 #define EVENT_TYPE_UNCALI_GYRO_Y_BIAS			ABS_RY
 #define EVENT_TYPE_UNCALI_GYRO_Z_BIAS			ABS_RZ
-#define EVENT_TYPE_UNCALI_GYRO_STATUS			REL_X
+#define EVENT_TYPE_UNCALI_GYRO_UPDATE           REL_X
+
 
 #define UNCALI_GYRO_VALUE_MAX (32767)
 #define UNCALI_GYRO_VALUE_MIN (-32768)
@@ -79,7 +92,7 @@ struct uncali_gyro_init_info {
 };
 
 struct uncali_gyro_data {
-	hwm_sensor_data uncali_gyro_data;
+	struct hwm_sensor_data uncali_gyro_data;
 	int data_updata;
 };
 

@@ -11,41 +11,17 @@
  *
  */
 
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/earlysuspend.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
+#include <hwmsensor.h>
 #include "uncali_maghub.h"
 #include <uncali_mag.h>
-#include <linux/hwmsen_helper.h>
-
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#include <linux/batch.h>
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"
 
-
 #define UNMAGHUB_TAG                  "[uncali_maghub] "
-#define UNMAGHUB_FUN(f)               printk(UNMAGHUB_TAG"%s\n", __func__)
-#define UNMAGHUB_ERR(fmt, args...)    printk(UNMAGHUB_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define UNMAGHUB_LOG(fmt, args...)    printk(UNMAGHUB_TAG fmt, ##args)
+#define UNMAGHUB_FUN(f)               pr_err(UNMAGHUB_TAG"%s\n", __func__)
+#define UNMAGHUB_ERR(fmt, args...)    pr_err(UNMAGHUB_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define UNMAGHUB_LOG(fmt, args...)    pr_err(UNMAGHUB_TAG fmt, ##args)
 
 typedef enum {
 	UNMAGHUB_TRC_INFO = 0X10,
@@ -131,19 +107,20 @@ static int uncali_mag_get_data(int *dat, int *offset, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	err = sensor_get_data_from_hub(ID_MAGNETIC_UNCALIBRATED, &data);
+	err = sensor_get_data_from_hub(ID_MAGNETIC, &data);
 	if (err < 0) {
 		UNMAGHUB_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
 	}
 	time_stamp = data.time_stamp;
 	time_stamp_gpt = data.time_stamp_gpt;
-	dat[0] = data.uncalibrated_mag_t.x_uncali;
-	dat[1] = data.uncalibrated_mag_t.y_uncali;
-	dat[2] = data.uncalibrated_mag_t.z_uncali;
+	dat[0] = data.uncalibrated_mag_t.x - data.uncalibrated_mag_t.x_bias;
+	dat[1] = data.uncalibrated_mag_t.y - data.uncalibrated_mag_t.z_bias;
+	dat[2] = data.uncalibrated_mag_t.z - data.uncalibrated_mag_t.z_bias;
 	offset[0] = data.uncalibrated_mag_t.x_bias;
 	offset[1] = data.uncalibrated_mag_t.y_bias;
 	offset[2] = data.uncalibrated_mag_t.z_bias;
+	*status = data.uncalibrated_mag_t.status;
 	return 0;
 }
 static int uncali_mag_open_report_data(int open)
@@ -152,14 +129,14 @@ static int uncali_mag_open_report_data(int open)
 }
 static int uncali_mag_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_MAGNETIC_UNCALIBRATED, en);
+	return sensor_enable_to_hub(ID_MAGNETIC, en);
 }
 static int uncali_mag_set_delay(u64 delay)
 {
 	unsigned int delayms = 0;
 
 	delayms = delay / 1000 / 1000;
-	return sensor_set_delay_to_hub(ID_MAGNETIC_UNCALIBRATED, delayms);
+	return sensor_set_delay_to_hub(ID_MAGNETIC, delayms);
 }
 static int uncali_maghub_local_init(void)
 {

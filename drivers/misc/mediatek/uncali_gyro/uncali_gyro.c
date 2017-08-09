@@ -300,7 +300,7 @@ static ssize_t uncali_gyro_store_delay(struct device *dev, struct device_attribu
 		return count;
 	}
 
-	if (1 != kstrtoint(buf, 10, &delay)) {
+	if (0 != kstrtoint(buf, 10, &delay)) {
 		UNCALI_GYRO_ERR("invalid format!!\n");
 		mutex_unlock(&uncali_gyro_context_obj->uncali_gyro_op_mutex);
 		return count;
@@ -407,7 +407,7 @@ static int uncali_gyrosensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id uncali_gyrosensor_of_match[] = {
-	{.compatible = "mediatek,uncali_gyrosensor",},
+	{.compatible = "mediatek,uncali_gyro",},
 	{},
 };
 #endif
@@ -417,7 +417,7 @@ static struct platform_driver uncali_gyrosensor_driver = {
 	.remove = uncali_gyrosensor_remove,
 	.driver = {
 
-		   .name = "uncali_gyrosensor",
+		   .name = "uncali_gyro",
 #ifdef CONFIG_OF
 		   .of_match_table = uncali_gyrosensor_of_match,
 #endif
@@ -490,7 +490,6 @@ static int uncali_gyro_input_init(struct uncali_gyro_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_X_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_Y_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_Z_BIAS);
-	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_GYRO_STATUS);
 
 	input_set_abs_params(dev, EVENT_TYPE_UNCALI_GYRO_X, UNCALI_GYRO_VALUE_MIN,
 			     UNCALI_GYRO_VALUE_MAX, 0, 0);
@@ -604,12 +603,12 @@ int uncali_gyro_data_report(int *data, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_GYRO_X_BIAS, data[3]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_GYRO_Y_BIAS, data[4]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_GYRO_Z_BIAS, data[5]);
-	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_GYRO_STATUS, status);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_GYRO_UPDATE, 1);
 	input_sync(cxt->idev);
 	return 0;
 }
 
-static int uncali_gyro_probe(struct platform_device *pdev)
+static int uncali_gyro_probe(void)
 {
 
 	int err;
@@ -664,7 +663,7 @@ exit_alloc_data_failed:
 
 
 
-static int uncali_gyro_remove(struct platform_device *pdev)
+static int uncali_gyro_remove(void)
 {
 	int err = 0;
 
@@ -679,39 +678,6 @@ static int uncali_gyro_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static int uncali_gyro_suspend(struct platform_device *dev, pm_message_t msg)
-{
-	return 0;
-}
-
-static int uncali_gyro_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_unacc_pl_of_match[] = {
-	{.compatible = "mediatek,m_uncali_gyro_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver uncali_gyro_driver = {
-
-	.probe = uncali_gyro_probe,
-	.remove = uncali_gyro_remove,
-	.suspend = uncali_gyro_suspend,
-	.resume = uncali_gyro_resume,
-	.driver = {
-
-		   .name = UNCALI_GYRO_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_unacc_pl_of_match,
-#endif
-		   }
-};
-
 int uncali_gyro_driver_add(struct uncali_gyro_init_info *obj)
 {
 	int err = 0;
@@ -743,7 +709,7 @@ static int __init uncali_gyro_init(void)
 {
 	UNCALI_GYRO_FUN();
 
-	if (platform_driver_register(&uncali_gyro_driver)) {
+	if (uncali_gyro_probe()) {
 		UNCALI_GYRO_ERR("failed to register rv driver\n");
 		return -ENODEV;
 	}
@@ -753,7 +719,7 @@ static int __init uncali_gyro_init(void)
 
 static void __exit uncali_gyro_exit(void)
 {
-	platform_driver_unregister(&uncali_gyro_driver);
+	uncali_gyro_remove();
 	platform_driver_unregister(&uncali_gyrosensor_driver);
 }
 

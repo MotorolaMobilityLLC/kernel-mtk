@@ -491,6 +491,7 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 	char strbuf[GYROHUB_BUFSIZE] = { 0 };
 	void __user *data;
 	long err = 0;
+	int use_in_factory_mode = USE_IN_FACTORY_MODE;
 	struct SENSOR_DATA sensor_data;
 	int cali[3];
 	int smtRes = 0;
@@ -529,7 +530,12 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			err = -EINVAL;
 			break;
 		}
-
+		err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
+		if (err < 0) {
+			GYROS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
+				ID_GYROSCOPE, CUST_ACTION_SET_TRACE);
+			return 0;
+		}
 		err = gyrohub_ReadGyroData(strbuf, GYROHUB_BUFSIZE);
 		if (err) {
 			GYROS_ERR("gyrohub_ReadGyroData failed!\n");

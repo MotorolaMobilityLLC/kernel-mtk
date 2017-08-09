@@ -300,7 +300,7 @@ static ssize_t uncali_mag_store_delay(struct device *dev, struct device_attribut
 		return count;
 	}
 
-	if (1 != kstrtoint(buf, 10, &delay)) {
+	if (0 != kstrtoint(buf, 10, &delay)) {
 		UNCALI_MAG_ERR("invalid format!!\n");
 		mutex_unlock(&uncali_mag_context_obj->uncali_mag_op_mutex);
 		return count;
@@ -408,7 +408,7 @@ static int uncali_magsensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id uncali_magsensor_of_match[] = {
-	{.compatible = "mediatek,uncali_magsensor",},
+	{.compatible = "mediatek,uncali_mag",},
 	{},
 };
 #endif
@@ -418,7 +418,7 @@ static struct platform_driver uncali_magsensor_driver = {
 	.remove = uncali_magsensor_remove,
 	.driver = {
 
-		   .name = "uncali_magsensor",
+		   .name = "uncali_mag",
 #ifdef CONFIG_OF
 		   .of_match_table = uncali_magsensor_of_match,
 #endif
@@ -492,7 +492,6 @@ static int uncali_mag_input_init(struct uncali_mag_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_X_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_Y_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_Z_BIAS);
-	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_MAG_STATUS);
 
 	input_set_abs_params(dev, EVENT_TYPE_UNCALI_MAG_X, UNCALI_MAG_VALUE_MIN,
 			     UNCALI_MAG_VALUE_MAX, 0, 0);
@@ -606,12 +605,12 @@ int uncali_mag_data_report(int *data, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_MAG_X_BIAS, data[3]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_MAG_Y_BIAS, data[4]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_MAG_Z_BIAS, data[5]);
-	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_MAG_STATUS, status);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_MAG_UPDATE, 1);
 	input_sync(cxt->idev);
 	return 0;
 }
 
-static int uncali_mag_probe(struct platform_device *pdev)
+static int uncali_mag_probe(void)
 {
 
 	int err;
@@ -666,7 +665,7 @@ exit_alloc_data_failed:
 
 
 
-static int uncali_mag_remove(struct platform_device *pdev)
+static int uncali_mag_remove(void)
 {
 	int err = 0;
 
@@ -681,38 +680,6 @@ static int uncali_mag_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static int uncali_mag_suspend(struct platform_device *dev, pm_message_t msg)
-{
-	return 0;
-}
-
-static int uncali_mag_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_unacc_pl_of_match[] = {
-	{.compatible = "mediatek,m_uncali_mag_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver uncali_mag_driver = {
-
-	.probe = uncali_mag_probe,
-	.remove = uncali_mag_remove,
-	.suspend = uncali_mag_suspend,
-	.resume = uncali_mag_resume,
-	.driver = {
-
-		   .name = UNCALI_MAG_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_unacc_pl_of_match,
-#endif
-		   }
-};
 
 int uncali_mag_driver_add(struct uncali_mag_init_info *obj)
 {
@@ -745,7 +712,7 @@ static int __init uncali_mag_init(void)
 {
 	UNCALI_MAG_FUN();
 
-	if (platform_driver_register(&uncali_mag_driver)) {
+	if (uncali_mag_probe()) {
 		UNCALI_MAG_ERR("failed to register rv driver\n");
 		return -ENODEV;
 	}
@@ -755,7 +722,7 @@ static int __init uncali_mag_init(void)
 
 static void __exit uncali_mag_exit(void)
 {
-	platform_driver_unregister(&uncali_mag_driver);
+	uncali_mag_remove();
 	platform_driver_unregister(&uncali_magsensor_driver);
 }
 

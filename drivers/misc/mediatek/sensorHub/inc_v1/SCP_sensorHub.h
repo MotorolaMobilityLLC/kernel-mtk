@@ -62,7 +62,15 @@ typedef struct {
 			int32_t roll;
 		};
 	};
-	uint32_t status;
+	union {
+		int16_t bias[3];
+		struct {
+			int16_t x_bias;
+			int16_t y_bias;
+			int16_t z_bias;
+		};
+	};
+	uint16_t status;
 } sensor_vec_t;
 
 typedef struct {
@@ -205,9 +213,9 @@ struct data_unit_t {
 		pressure_vec_t pressure_t;
 		relative_humidity_vec_t relative_humidity_t;
 
-		uncalibrated_event_t uncalibrated_acc_t;
-		uncalibrated_event_t uncalibrated_mag_t;
-		uncalibrated_event_t uncalibrated_gyro_t;
+		sensor_vec_t uncalibrated_acc_t;
+		sensor_vec_t uncalibrated_mag_t;
+		sensor_vec_t uncalibrated_gyro_t;
 
 		pedometer_event_t pedometer_t;
 
@@ -322,6 +330,7 @@ typedef enum {
 	CUST_ACTION_SET_PS_THRESHOLD,
 	CUST_ACTION_SHOW_ALSLV,
 	CUST_ACTION_SHOW_ALSVAL,
+	CUST_ACTION_SET_FACTORY,
 } CUST_ACTION;
 
 typedef struct {
@@ -342,6 +351,11 @@ typedef struct {
 	CUST_ACTION action;
 	int direction;
 } SCP_SENSOR_HUB_SET_DIRECTION;
+
+typedef struct {
+	CUST_ACTION		action;
+	unsigned int	factory;
+} SCP_SENSOR_HUB_SET_FACTORY;
 
 typedef struct {
 	CUST_ACTION action;
@@ -377,6 +391,11 @@ typedef struct {
 	};
 } SCP_SENSOR_HUB_GET_RAW_DATA;
 
+enum {
+	USE_OUT_FACTORY_MODE = 0,
+	USE_IN_FACTORY_MODE
+};
+
 typedef struct {
 	uint8_t sensorType;
 	uint8_t action;
@@ -394,6 +413,7 @@ typedef struct {
 		SCP_SENSOR_HUB_SETPS_THRESHOLD setPSThreshold;
 		SCP_SENSOR_HUB_SHOW_ALSLV showAlslv;
 		SCP_SENSOR_HUB_SHOW_ALSVAL showAlsval;
+		SCP_SENSOR_HUB_SET_FACTORY	setFactory;
 	};
 } SCP_SENSOR_HUB_SET_CUST_REQ;
 

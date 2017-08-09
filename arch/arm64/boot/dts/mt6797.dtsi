@@ -3967,7 +3967,9 @@
 	gyro:gyroscope@0 {
 			compatible = "mediatek,gyroscope";
 	};
-
+	uncali_gyro@0 {
+			compatible = "mediatek,uncali_gyro";
+	};
 	m_gyro_pl@0 {
 			compatible = "mediatek,m_gyro_pl";
 	};
@@ -3991,7 +3993,9 @@
 	mse:msensor@0 {
 			compatible = "mediatek,msensor";
 	};
-
+	uncali_mag@0 {
+			compatible = "mediatek,uncali_mag";
+	};
 	m_mag_pl@0 {
 			compatible = "mediatek,m_mag_pl";
 	};

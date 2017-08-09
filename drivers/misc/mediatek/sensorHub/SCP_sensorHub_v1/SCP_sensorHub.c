@@ -897,6 +897,9 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
+		data->accelerometer_t.x_bias = data_t->accelerometer_t.x_bias;
+		data->accelerometer_t.y_bias = data_t->accelerometer_t.y_bias;
+		data->accelerometer_t.z_bias = data_t->accelerometer_t.z_bias;
 		data->accelerometer_t.status = data_t->accelerometer_t.status;
 		break;
 	case ID_GRAVITY:
@@ -938,13 +941,16 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->gyroscope_t.x = data_t->gyroscope_t.x;
 		data->gyroscope_t.y = data_t->gyroscope_t.y;
 		data->gyroscope_t.z = data_t->gyroscope_t.z;
+		data->gyroscope_t.x_bias = data_t->gyroscope_t.x_bias;
+		data->gyroscope_t.y_bias  = data_t->gyroscope_t.y_bias;
+		data->gyroscope_t.z_bias  = data_t->gyroscope_t.z_bias;
 		data->gyroscope_t.status = data_t->gyroscope_t.status;
 		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->time_stamp = data_t->time_stamp;
 		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->relative_humidity_t.relative_humidity =
-		    data_t->relative_humidity_t.relative_humidity;
+		data_t->relative_humidity_t.relative_humidity;
 		data->relative_humidity_t.status = data_t->relative_humidity_t.status;
 		break;
 	case ID_MAGNETIC:
@@ -953,6 +959,9 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->magnetic_t.x = data_t->magnetic_t.x;
 		data->magnetic_t.y = data_t->magnetic_t.y;
 		data->magnetic_t.z = data_t->magnetic_t.z;
+		data->magnetic_t.x_bias = data_t->magnetic_t.x_bias;
+		data->magnetic_t.y_bias = data_t->magnetic_t.y_bias;
+		data->magnetic_t.z_bias = data_t->magnetic_t.z_bias;
 		data->magnetic_t.status = data_t->magnetic_t.status;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
@@ -1128,6 +1137,12 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.setDirection);
 			break;
+		case CUST_ACTION_SET_FACTORY:
+			req.set_cust_req.setFactory.action = CUST_ACTION_SET_FACTORY;
+			req.set_cust_req.setFactory.factory = *((int32_t *) data);
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+			    + sizeof(req.set_cust_req.setFactory);
+			break;
 		case CUST_ACTION_SHOW_REG:
 			req.set_cust_req.showReg.action = CUST_ACTION_SHOW_REG;
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
@@ -1284,6 +1299,12 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 			req.set_cust_req.setDirection.direction = *((int32_t *) data);
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.setDirection);
+			break;
+		case CUST_ACTION_SET_FACTORY:
+			req.set_cust_req.setFactory.action = CUST_ACTION_SET_FACTORY;
+			req.set_cust_req.setFactory.factory = *((int32_t *) data);
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+			    + sizeof(req.set_cust_req.setFactory);
 			break;
 		case CUST_ACTION_SHOW_REG:
 			req.set_cust_req.showReg.action = CUST_ACTION_SHOW_REG;

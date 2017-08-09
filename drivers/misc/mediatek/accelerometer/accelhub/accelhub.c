@@ -461,6 +461,7 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 	char strbuf[ACCELHUB_BUFSIZE];
 	void __user *data;
+	int use_in_factory_mode = USE_IN_FACTORY_MODE;
 	struct SENSOR_DATA sensor_data;
 	long err = 0;
 	int cali[3];
@@ -502,7 +503,12 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			err = -EINVAL;
 			break;
 		}
-
+		err = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
+		if (err < 0) {
+			GSE_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n", ID_ACCELEROMETER,
+				CUST_ACTION_SET_TRACE);
+			return 0;
+		}		
 		err = accelhub_SetPowerMode(true);
 		if (err < 0) {
 			GSE_ERR("accelhub_SetPowerMode fail\n");
