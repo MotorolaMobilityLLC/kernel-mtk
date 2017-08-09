@@ -268,7 +268,7 @@ struct u2phy_reg_e {
 
 /* U3D_U2PHYDMON0 */
 #define E60802_RG_USB20_PRBS7_BERTH        (0xff<<0)    /* 0:7 */
-#define E60802_RG_USB20_EOP_CTL            (0xf<<0)     /* 19:16 */
+#define E60802_RG_USB20_EOP_CTL            (0xf<<16)     /* 19:16 */
 
 /* U3D_U2PHYDMON1 */
 #define USB20_UART_O                       (0x1<<31)	/* 31:31 */

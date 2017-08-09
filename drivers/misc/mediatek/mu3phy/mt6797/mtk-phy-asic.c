@@ -34,10 +34,16 @@ static struct clk *ssusb_univpll3_d2_clk;
 
 static bool usb_enable_clock(bool enable)
 {
+	static int init;
+
 	if (!sssub_ref_clk || !ssusb_top_sys_sel_clk || !ssusb_univpll3_d2_clk) {
 		pr_err("clock not ready");
 		return -1;
 	}
+
+	/* need fix - workaround to prvent clock on/off hang */
+	if (init == 1)
+		return 1;
 
 	if (enable) {
 		/* enable ssusb clock 125m*/
@@ -45,6 +51,7 @@ static bool usb_enable_clock(bool enable)
 		clk_set_parent(ssusb_top_sys_sel_clk, ssusb_univpll3_d2_clk);
 		/* enable reference clock 26m*/
 		clk_enable(sssub_ref_clk);
+		init = 1;
 	} else {
 		clk_disable(ssusb_top_sys_sel_clk);
 		clk_disable(sssub_ref_clk);
