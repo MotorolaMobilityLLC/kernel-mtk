@@ -1406,10 +1406,8 @@ static void __init mt_topckgen_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
-#if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x00000FFF, (base + 0x200));	/* CLK_SCP_CFG_0 = 0x00000FFF */
 	mt_reg_sync_writel(0x00000007, (base + 0x204));	/* CLK_SCP_CFG_1 = 0x00000007 */
-#endif
 
 }
 
