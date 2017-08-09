@@ -9432,6 +9432,13 @@ static int __init mt_msdc_init(void)
 {
 	int ret;
 
+	/*config tune at workqueue*/
+	wq_tune = create_workqueue("msdc-tune");
+	if (!wq_tune) {
+		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
+		BUG();
+	}
+
 	ret = platform_driver_register(&mt_msdc_driver);
 	if (ret) {
 		pr_err(DRV_NAME ": Can't register driver");
@@ -9444,12 +9451,6 @@ static int __init mt_msdc_init(void)
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif
-	/*config tune at workqueue*/
-	wq_tune = create_workqueue("msdc-tune");
-	if (!wq_tune) {
-		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
-		BUG();
-	}
 
 	return 0;
 }
