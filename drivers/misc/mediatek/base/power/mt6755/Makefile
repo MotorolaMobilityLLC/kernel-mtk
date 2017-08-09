@@ -38,6 +38,7 @@ obj-$(CONFIG_ARCH_MT6735M) += mt_vcore_dvfs_2.o
 obj-$(CONFIG_ARCH_MT6735M) += mt_spm_vcore_dvfs_2.o
 obj-$(CONFIG_ARCH_MT6753) += mt_vcore_dvfs_3.o
 obj-$(CONFIG_ARCH_MT6753) += mt_spm_vcore_dvfs_3.o
+obj-y += mt_picachu.o
 obj-y += mt_ptp.o
 obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
