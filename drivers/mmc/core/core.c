@@ -542,126 +542,38 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 	return ret;
 }
 
-int mmc_run_queue_thread_cmd(void *data)
+int mmc_run_queue_thread(void *data)
 {
 	struct mmc_host *host = data;
-	struct mmc_request *mrq = NULL;
-	bool is_owner = false;
-	unsigned int task_id;
-
-	pr_err("[CQ] start cmdq cmd run queue thread\n");
-	while (1) {
-cmd_start:
-		set_current_state(TASK_RUNNING);
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (!mrq
-#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
-			&& !atomic_read(&host->cq_rw)
-#endif
-			&& !atomic_read(&host->cq_tuning_now)
-			) {
-			spin_lock_irq(&host->cmd_que_lock);
-			mrq = mmc_get_cmd_que(host);
-			if (mrq) {
-				task_id = ((mrq->sbc->arg >> 16) & 0x1f);
-				if (host->task_id_index & (1 << task_id)) {
-					pr_err("[%s] BUG!!! task_id %d used, task_id_index 0x%08lx, areq_cnt = %d, cq_wait_rdy = %d\n",
-						__func__, task_id, host->task_id_index,
-						atomic_read(&host->areq_cnt),
-						atomic_read(&host->cq_wait_rdy));
-					/* mmc_cmd_dump(host); */
-					while (1)
-						;
-				}
-				set_bit(task_id, &host->task_id_index);
-			}
-			spin_unlock_irq(&host->cmd_que_lock);
-		} else
-			schedule();
-
-		set_current_state(TASK_RUNNING);
-		if (mrq) {
-			is_owner = false;
-			while (!is_owner) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				spin_lock_irq(&host->thread_lock);
-				if (atomic_read(&host->cq_cmd) == MMC_CMDQ_TH_IDLE) {
-					if (atomic_read(&host->cq_tuning_now)) {
-						spin_unlock_irq(&host->thread_lock);
-						mrq = NULL;
-						goto cmd_start;
-					}
-					atomic_set(&host->cq_cmd, MMC_CMDQ_TH_CMD45);
-					is_owner = true;
-				}
-				spin_unlock_irq(&host->thread_lock);
-				if (!is_owner)
-					schedule();
-				set_current_state(TASK_RUNNING);
-			}
-			host->ops->request(host, mrq);
-			spin_lock_irq(&host->thread_lock);
-			atomic_set(&host->cq_cmd, MMC_CMDQ_TH_IDLE);
-			spin_unlock_irq(&host->thread_lock);
-			atomic_inc(&host->cq_wait_rdy);
-			wake_up_process(host->cmdq_thread_dat);
-			mrq = NULL;
-		}
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (atomic_read(&host->areq_cnt) == 0)
-			schedule();
-		set_current_state(TASK_RUNNING);
-	}
-	return 0;
-}
-
-int mmc_run_queue_thread_dat(void *data)
-{
-	struct mmc_host *host = data;
-	struct mmc_request *mrq = NULL;
-	struct mmc_request *mrq2 = NULL;
-	struct mmc_request *mrq_cmd = NULL;
-	bool is_owner = false;
+	struct mmc_request *cmd_mrq = NULL;
+	struct mmc_request *dat_mrq = NULL;
+	struct mmc_request *done_mrq = NULL;
 	unsigned int task_id;
 	bool is_err = false;
+	bool is_done = false;
+	int err;
 
-	pr_err("[CQ] start cmdq dat run queue thread\n");
+	pr_err("[CQ] start cmdq thread\n");
+
 	while (1) {
-#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (host->cq_write) {
-			if (!host->cq_write_status) {
-				schedule();
-				set_current_state(TASK_RUNNING);
-			}
-			if (host->cq_write_status) {
-				mrq = &host->chk_mrq;
-				host->cq_write_status = false;
-			}
-		}
-#endif
 		set_current_state(TASK_RUNNING);
-		mrq2 = NULL;
+
+		/* End request stage 1/2 */
 		if (atomic_read(&host->cq_rw) || (atomic_read(&host->areq_cnt) <= 1)) {
 			if (host->done_mrq) {
-				mrq2 = host->done_mrq;
+				done_mrq = host->done_mrq;
 				host->done_mrq = NULL;
 			}
 		}
-
-		if (mrq2) {
-			struct mmc_command *cmd = NULL;
-			int err;
-
-			if (mrq2->data->error || mrq2->cmd->error) {
+		if (done_mrq) {
+			if (done_mrq->data->error || done_mrq->cmd->error) {
 				mmc_wait_tran(host);
 				if (!is_err) {
 					is_err = true;
-					while (atomic_read(&host->cq_cmd) == MMC_CMDQ_TH_CMD45)
-						pr_debug("bus occupied, wait command done\n");
 					mmc_discard_cmdq(host);
 					mmc_wait_tran(host);
 					mmc_clr_dat_list(host);
+					atomic_set(&host->cq_rdy_cnt, 0);
 				}
 
 #if 0 /*"clk tune" or "data fine tune"*/
@@ -678,110 +590,103 @@ int mmc_run_queue_thread_dat(void *data)
 				} else
 					pr_err("[CQ] no execute tuning function call\n");
 #endif
-
 				host->cur_rw_task = 99;
-
-				cmd = mrq2->cmd;
-				task_id = (cmd->arg >> 16) & 0x1f;
-				mrq_cmd = host->areq_que[task_id]->mrq_que;
-				host->ops->request(host, mrq_cmd);
-
+				task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
+				host->ops->request(host, host->areq_que[task_id]->mrq_que);
 				atomic_set(&host->cq_wait_rdy, 1);
+				done_mrq = NULL;
 			}
 
 			atomic_set(&host->cq_rw, false);
-#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
-			spin_lock_irq(&host->thread_lock);
-			if (atomic_read(&host->cq_cmd) == MMC_CMDQ_TH_DAT) {
-				atomic_set(&host->cq_cmd, MMC_CMDQ_TH_IDLE);
-				wake_up_process(host->cmdq_thread_cmd);
-			}
-			spin_unlock_irq(&host->thread_lock);
-#endif
-			if (!mrq2->data->error && !mrq2->cmd->error) {
-				cmd = mrq2->cmd;
-				task_id = (cmd->arg >> 16) & 0x1f;
 
-				mmc_check_write(host, mrq2);
-				err = mrq2->areq->err_check(host->card, mrq2->areq);
-				mmc_post_req(host, mrq2, 0);
-
+			if (done_mrq && !done_mrq->data->error && !done_mrq->cmd->error) {
+				mmc_check_write(host, done_mrq);
 				host->cur_rw_task = 99;
-				mmc_blk_end_queued_req(host, mrq2->areq, task_id, err);
+				is_done = true;
 
 				if (atomic_read(&host->cq_tuning_now) == 1) {
 					mmc_restore_tasks(host);
-
 					is_err = false;
 					atomic_set(&host->cq_tuning_now, 0);
-					wake_up_process(host->cmdq_thread_cmd);
 				}
-				mmc_host_clk_release(host);
 			}
-			wake_up_interruptible(&host->cmp_que);
-			mrq2 = NULL;
 		}
-		if (!mrq && !atomic_read(&host->cq_rw)) {
-			spin_lock_irq(&host->dat_que_lock);
-			/* send next command */
-			mrq = mmc_get_dat_que(host);
-			spin_unlock_irq(&host->dat_que_lock);
-		}
-		if (mrq) {
-			if (mrq->cmd->opcode == MMC_WRITE_REQUESTED_QUEUE
-				|| mrq->cmd->opcode == MMC_READ_REQUESTED_QUEUE) {
-				is_owner = false;
-				while (!is_owner) {
-					spin_lock_irq(&host->thread_lock);
-					if (atomic_read(&host->cq_cmd) == MMC_CMDQ_TH_IDLE) {
-						atomic_set(&host->cq_cmd, MMC_CMDQ_TH_DAT);
-						is_owner = true;
-					}
-					spin_unlock_irq(&host->thread_lock);
-				}
 
-				if (mrq->cmd->opcode == MMC_WRITE_REQUESTED_QUEUE) {
+		/* Send Command 46/47 (DMA) */
+		if (!atomic_read(&host->cq_rw)) {
+			spin_lock_irq(&host->dat_que_lock);
+			dat_mrq = mmc_get_dat_que(host);
+			spin_unlock_irq(&host->dat_que_lock);
+
+			if (dat_mrq) {
+				BUG_ON(dat_mrq->cmd->opcode != MMC_WRITE_REQUESTED_QUEUE
+					&& dat_mrq->cmd->opcode != MMC_READ_REQUESTED_QUEUE);
+
+				if (dat_mrq->cmd->opcode == MMC_WRITE_REQUESTED_QUEUE)
 					atomic_set(&host->cq_w, true);
-					host->cq_write = true;
-				}
 
 				atomic_set(&host->cq_rw, true);
-				task_id = ((mrq->cmd->arg >> 16) & 0x1f);
+				task_id = ((dat_mrq->cmd->arg >> 16) & 0x1f);
 				host->cur_rw_task = task_id;
+
+				host->ops->request(host, dat_mrq);
+				atomic_dec(&host->cq_rdy_cnt);
+				dat_mrq = NULL;
 			}
-			host->ops->request(host, mrq);
-			mrq = NULL;
 		}
-		/* completion for previous request */
-		if (atomic_read(&host->cq_wait_rdy) > 0
-#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
-		&& !atomic_read(&host->cq_rw)
-#endif
-		) {
-			is_owner = false;
-			while (!is_owner) {
-				set_current_state(TASK_INTERRUPTIBLE);
-				spin_lock_irq(&host->thread_lock);
-				if (atomic_read(&host->cq_cmd) == MMC_CMDQ_TH_IDLE) {
-					atomic_set(&host->cq_cmd, MMC_CMDQ_TH_CMD13);
-					is_owner = true;
+
+		/* End request stage 2/2 */
+		if (is_done) {
+			task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
+			err = done_mrq->areq->err_check(host->card, done_mrq->areq);
+			mmc_post_req(host, done_mrq, 0);
+			mmc_blk_end_queued_req(host, done_mrq->areq, task_id, err);
+
+			mmc_host_clk_release(host);
+			wake_up_interruptible(&host->cmp_que);
+			done_mrq = NULL;
+			is_done = false;
+		}
+
+		/* Send Command 44/45 */
+		if (atomic_read(&host->cq_tuning_now) == 0) {
+			spin_lock_irq(&host->cmd_que_lock);
+			cmd_mrq = mmc_get_cmd_que(host);
+			spin_unlock_irq(&host->cmd_que_lock);
+
+			while (cmd_mrq) {
+				task_id = ((cmd_mrq->sbc->arg >> 16) & 0x1f);
+				if (host->task_id_index & (1 << task_id)) {
+					pr_err("[%s] BUG!!! task_id %d used, task_id_index 0x%08lx, areq_cnt = %d, cq_wait_rdy = %d\n",
+						__func__, task_id, host->task_id_index,
+						atomic_read(&host->areq_cnt),
+						atomic_read(&host->cq_wait_rdy));
+					/* mmc_cmd_dump(host); */
+					while (1)
+						;
 				}
-				spin_unlock_irq(&host->thread_lock);
-				if (!is_owner)
-					schedule();
-				set_current_state(TASK_RUNNING);
+				set_bit(task_id, &host->task_id_index);
+
+				host->ops->request(host, cmd_mrq);
+				atomic_inc(&host->cq_wait_rdy);
+				spin_lock_irq(&host->cmd_que_lock);
+				cmd_mrq = mmc_get_cmd_que(host);
+				spin_unlock_irq(&host->cmd_que_lock);
 			}
-			mmc_do_check(host);
-			spin_lock_irq(&host->thread_lock);
-			atomic_set(&host->cq_cmd, MMC_CMDQ_TH_IDLE);
-			wake_up_process(host->cmdq_thread_cmd);
-			spin_unlock_irq(&host->thread_lock);
 		}
+
+		/* Send Command 13' */
+		if (atomic_read(&host->cq_wait_rdy) > 0
+			&& atomic_read(&host->cq_rdy_cnt) == 0)
+			mmc_do_check(host);
+
+		/* Sleep when nothing to do */
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (atomic_read(&host->areq_cnt) == 0)
 			schedule();
 		set_current_state(TASK_RUNNING);
 	}
+
 	return 0;
 }
 #endif
@@ -869,7 +774,7 @@ static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	if (host->card && host->card->ext_csd.cmdq_mode_en &&
 			mrq->done == mmc_wait_cmdq_done) {
 		mmc_enqueue_queue(host, mrq);
-		wake_up_process(host->cmdq_thread_cmd);
+		wake_up_process(host->cmdq_thread);
 		mmc_host_clk_hold(host);
 		led_trigger_event(host->led, LED_FULL);
 	} else {
@@ -1166,13 +1071,6 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 			(cmd->opcode == MMC_WRITE_REQUESTED_QUEUE)) {
 			atomic_set(&host->cq_tuning_now, 1);
 			goto clear_end;
-		} else {
-			mrq = host->busy_mrq;
-			if (mrq) {
-				done = 1;
-				cmd = mrq->cmd;
-				host->busy_mrq = NULL;
-			}
 		}
 		goto request_end;
 	}
@@ -1189,36 +1087,6 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 		if (atomic_read(&host->cq_w)) {
 			if (cmd->resp[0] & R1_WP_VIOLATION)
 				host->wp_error = 1;
-		}
-	}
-
-#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
-	/* cmd47 - enqueue cmd13 for waiting busy */
-	if (cmd->opcode == MMC_WRITE_REQUESTED_QUEUE) {
-		BUG_ON(host->busy_mrq);
-		task_id = ((cmd->arg >> 16) & 0x1f);
-		host->data_mrq_queued[task_id] = false;
-		host->busy_mrq = mrq;
-		mmc_prep_chk_mrq(host);
-		host->cq_write_status = true;
-		wake_up_process(host->cmdq_thread_dat);
-	}
-#endif
-
-	/* cmd13 - request done when response is not program */
-	if ((cmd->opcode == MMC_SEND_STATUS) && !(cmd->arg & (1 << 15))) {
-		if (R1_CURRENT_STATE(cmd->resp[0]) != R1_STATE_TRAN) {
-			mmc_prep_chk_mrq(host);
-			host->cq_write_status = true;
-		} else {
-			mrq = host->busy_mrq;
-			if (mrq) {
-				host->busy_mrq = NULL;
-				host->cq_write = false;
-				wake_up_process(host->cmdq_thread_cmd);
-				cmd = mrq->cmd;
-				goto clear_end;
-			}
 		}
 	}
 
@@ -1240,21 +1108,19 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 				}
 				BUG_ON(!host->areq_que[i]);
 				atomic_dec(&host->cq_wait_rdy);
+				atomic_inc(&host->cq_rdy_cnt);
 				mmc_prep_areq_que(host, host->areq_que[i]);
 				mmc_enqueue_queue(host, host->areq_que[i]->mrq);
 				host->data_mrq_queued[i] = true;
 			}
 			resp >>= 1;
 			i++;
-		} while (i < host->card->ext_csd.cmdq_depth);
+		} while (resp && (i < host->card->ext_csd.cmdq_depth));
 	}
 
 	/* cmd46 - request done */
 	if (cmd->opcode == MMC_READ_REQUESTED_QUEUE
-#ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
-		|| cmd->opcode == MMC_WRITE_REQUESTED_QUEUE
-#endif
-	)
+		|| cmd->opcode == MMC_WRITE_REQUESTED_QUEUE)
 		goto clear_end;
 
 	goto request_end;

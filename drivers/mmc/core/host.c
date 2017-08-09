@@ -629,9 +629,6 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 	spin_lock_init(&host->cmd_que_lock);
 	spin_lock_init(&host->dat_que_lock);
 	spin_lock_init(&host->que_lock);
-	spin_lock_init(&host->thread_lock);
-	spin_lock_init(&host->cmd_dump_lock);
-	spin_lock_init(&host->host_claim_lock);
 
 	init_waitqueue_head(&host->cmp_que);
 #endif

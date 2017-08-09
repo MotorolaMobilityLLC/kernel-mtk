@@ -2082,13 +2082,9 @@ int mmc_attach_mmc(struct mmc_host *host)
 	atomic_set(&host->cq_rw, false);
 	atomic_set(&host->cq_w, false);
 	atomic_set(&host->cq_wait_rdy, 0);
+	atomic_set(&host->cq_rdy_cnt, 0);
 	host->wp_error = 0;
-	host->cq_write = false;
-	host->cq_write_status = false;
 	host->task_id_index = 0;
-	host->dbg_host_cnt = 0;
-	host->dbg_host_claim_cnt = 0;
-	host->polling_times = 0;
 	host->is_data_dma = 0;
 	host->cur_rw_task = 99;
 	host->cmdq_support_changed = 1;
@@ -2100,8 +2096,7 @@ int mmc_attach_mmc(struct mmc_host *host)
 	for (i = 0; i < 32; i++)
 		host->data_mrq_queued[i] = false;
 
-	host->cmdq_thread_cmd = kthread_run(mmc_run_queue_thread_cmd, host, "exe_cq_cmd");
-	host->cmdq_thread_dat = kthread_run(mmc_run_queue_thread_dat, host, "exe_cq_dat");
+	host->cmdq_thread = kthread_run(mmc_run_queue_thread, host, "exe_cq");
 #endif
 	err = mmc_add_card(host->card);
 	mmc_claim_host(host);

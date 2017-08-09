@@ -90,8 +90,7 @@ void mmc_do_check(struct mmc_host *host);
 void mmc_do_stop(struct mmc_host *host);
 void mmc_do_status(struct mmc_host *host);
 void mmc_wait_cmdq_done(struct mmc_request *mrq);
-int mmc_run_queue_thread_cmd(void *data);
-int mmc_run_queue_thread_dat(void *data);
+int mmc_run_queue_thread(void *data);
 #endif
 
 int mmc_execute_tuning(struct mmc_card *card);

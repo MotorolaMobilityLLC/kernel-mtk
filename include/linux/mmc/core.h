@@ -11,10 +11,6 @@
 #include <linux/interrupt.h>
 #include <linux/completion.h>
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#define CONFIG_CMDQ_CMD_DAT_PARALLEL
-#endif
-
 struct request;
 struct mmc_data;
 struct mmc_request;

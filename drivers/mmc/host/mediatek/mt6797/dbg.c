@@ -49,6 +49,10 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 
+#ifdef CONFIG_MT_ENG_BUILD
+#define MTK_EMMC_CQ_DEBUG
+#endif
+
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 unsigned int g_mtk_mmc_perf_dbg = 0;
 unsigned int g_mtk_mmc_dbg_range = 0;
@@ -369,9 +373,30 @@ skip_emmc50_reg:
 }
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#ifdef MTK_EMMC_CQ_DEBUG
+#define dbg_max_cnt (500)
+struct dbg_run_host_log {
+	unsigned long long time_sec;
+	unsigned long long time_usec;
+	int type;
+	int cmd;
+	int arg;
+};
+static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
+static int dbg_host_cnt;
+static int is_lock_init;
+static spinlock_t cmd_dump_lock;
+
 static unsigned int printk_cpu_test = UINT_MAX;
 struct timeval cur_tv;
-struct timeval prev_tv, curr_tv;
+
+static void init_lock(void)
+{
+	if (!is_lock_init) {
+		spin_lock_init(&cmd_dump_lock);
+		is_lock_init = 1;
+	}
+}
 
 void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
 {
@@ -379,19 +404,21 @@ void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
 	unsigned long long nanosec_rem;
 	unsigned long flags;
 
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
+	init_lock();
+
+	spin_lock_irqsave(&cmd_dump_lock, flags);
 	t = cpu_clock(printk_cpu_test);
 	nanosec_rem = do_div(t, 1000000000)/1000;
 	do_gettimeofday(&cur_tv);
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_sec = t;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_usec = nanosec_rem;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].type = type;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].cmd = cmd;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].arg = arg;
-	host->dbg_host_cnt++;
-	if (host->dbg_host_cnt >= dbg_max_cnt)
-		host->dbg_host_cnt = 0;
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+	dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
+	dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
+	dbg_run_host_log_dat[dbg_host_cnt].type = type;
+	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
+	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
+	dbg_host_cnt++;
+	if (dbg_host_cnt >= dbg_max_cnt)
+		dbg_host_cnt = 0;
+	spin_unlock_irqrestore(&cmd_dump_lock, flags);
 }
 
 void mmc_cmd_dump(struct mmc_host *host)
@@ -400,79 +427,90 @@ void mmc_cmd_dump(struct mmc_host *host)
 	int tag = -1;
 	unsigned long flags;
 
+	init_lock();
+
 	pr_err("-------------------------------------------------------------------------------\n");
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
-	for (i = host->dbg_host_cnt; i < dbg_max_cnt; i++) {
-		if (host->dbg_run_host_log_dat[i].cmd == 44
-			&& (host->dbg_run_host_log_dat[i].type == 0)) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+	spin_lock_irqsave(&cmd_dump_lock, flags);
+	for (i = dbg_host_cnt; i < dbg_max_cnt; i++) {
+		if (dbg_run_host_log_dat[i].cmd == 44
+			&& (dbg_run_host_log_dat[i].type == 0)) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg, tag,
-				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((host->dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((host->dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag,
+				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
 				);
-		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
-			|| host->dbg_run_host_log_dat[i].cmd == 47)
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+		} else if ((dbg_run_host_log_dat[i].cmd == 46
+			|| dbg_run_host_log_dat[i].cmd == 47)
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg, tag);
+				dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag);
 		} else
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			host->dbg_run_host_log_dat[i].time_sec,
-			host->dbg_run_host_log_dat[i].time_usec,
-			host->dbg_run_host_log_dat[i].type,
-			host->dbg_run_host_log_dat[i].cmd,
-			host->dbg_run_host_log_dat[i].arg);
+			dbg_run_host_log_dat[i].time_sec,
+			dbg_run_host_log_dat[i].time_usec,
+			dbg_run_host_log_dat[i].type,
+			dbg_run_host_log_dat[i].cmd,
+			dbg_run_host_log_dat[i].arg);
 	}
 
-	for (i = 0; i < host->dbg_host_cnt; i++) {
-		if (host->dbg_run_host_log_dat[i].cmd == 44
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+	for (i = 0; i < dbg_host_cnt; i++) {
+		if (dbg_run_host_log_dat[i].cmd == 44
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg, tag,
-				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((host->dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((host->dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag,
+				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
 				);
-		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
-			|| host->dbg_run_host_log_dat[i].cmd == 47)
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+		} else if ((dbg_run_host_log_dat[i].cmd == 46
+			|| dbg_run_host_log_dat[i].cmd == 47)
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg, tag);
+				dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag);
 		} else
 			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			host->dbg_run_host_log_dat[i].time_sec,
-			host->dbg_run_host_log_dat[i].time_usec,
-			host->dbg_run_host_log_dat[i].type,
-			host->dbg_run_host_log_dat[i].cmd,
-			host->dbg_run_host_log_dat[i].arg);
+			dbg_run_host_log_dat[i].time_sec,
+			dbg_run_host_log_dat[i].time_usec,
+			dbg_run_host_log_dat[i].type,
+			dbg_run_host_log_dat[i].cmd,
+			dbg_run_host_log_dat[i].arg);
 	}
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+	spin_unlock_irqrestore(&cmd_dump_lock, flags);
 }
+
+#else
+
+void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg) { }
+
+void mmc_cmd_dump(struct mmc_host *host) { }
+
+#endif
+
 #endif
 
 void msdc_cmdq_status_print(struct msdc_host *host)
@@ -493,8 +531,6 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 	pr_err("===============================\n");
 	pr_err("task_id_index: %08lx\n",
 		mmc->task_id_index);
-	pr_err("cq_cmd       : %d\n",
-		atomic_read(&mmc->cq_cmd));
 	pr_err("cq_wait_rdy  : %d\n",
 		atomic_read(&mmc->cq_wait_rdy));
 	pr_err("cq_tuning_now: %d\n",
@@ -507,6 +543,11 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 
 void msdc_cmdq_func(struct msdc_host *host, const int num)
 {
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	void __iomem *base = host->base;
+	int a, b;
+#endif
+
 	if (!host || !host->mmc || !host->mmc->card)
 		return;
 
@@ -522,6 +563,30 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 		break;
 	case 2:
 		mmc_cmd_dump(host->mmc);
+		break;
+	case 3:
+		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
+		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
+		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
+		pr_err("force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
+		break;
+	case 4:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
+		break;
+	case 5:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
+		break;
+	case 6:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
 		break;
 #endif
 	default:
