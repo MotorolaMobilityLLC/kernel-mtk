@@ -79,7 +79,7 @@ struct mmc_blk_ioc_data {
  * to the non-volatile storage.
  * This function should be called with host claimed
  */
-int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+int mmc_ffu_cache_ctrl(struct mmc_host *host, u8 enable)
 {
 	struct mmc_card *card = host->card;
 	unsigned int timeout;
@@ -573,14 +573,14 @@ static int mmc_ffu_reduce_speed(struct mmc_card *card)
 		  so switch to 4bit mode
 	*/
 	if (card->host->ios.timing == MMC_TIMING_MMC_HS400) {
-		card->host->ios.timing = MMC_TIMING_UHS_DDR50;
+		card->host->ios.timing = MMC_TIMING_MMC_DDR52;
 		bus_width = EXT_CSD_DDR_BUS_WIDTH_4;
 		hs_timing = 1;
 	} else  if (card->host->ios.timing == MMC_TIMING_MMC_HS200) {
 		card->host->ios.timing = MMC_TIMING_MMC_HS;
 		bus_width = EXT_CSD_BUS_WIDTH_4;
 		hs_timing = 1;
-	} else if (card->host->ios.timing == MMC_TIMING_UHS_DDR50) {
+	} else if (card->host->ios.timing == MMC_TIMING_MMC_DDR52) {
 		bus_width = EXT_CSD_DDR_BUS_WIDTH_4;
 		hs_timing = 1;
 	} else if (card->host->ios.timing == MMC_TIMING_MMC_HS) {
@@ -858,7 +858,7 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 		((card->ext_csd.cache_ctrl) ? "turn off" : "keep"));
 	if (card->ext_csd.cache_ctrl) {
 		mmc_flush_cache(card);
-		mmc_cache_ctrl(card->host, 0);
+		mmc_ffu_cache_ctrl(card->host, 0);
 	}
 
 	mmc_ffu_reduce_speed(card);
