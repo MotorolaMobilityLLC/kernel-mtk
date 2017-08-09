@@ -1328,6 +1328,12 @@ end:
 	} else {
 		msdc_gate_clock(host, 1);
 	}
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
+
 	if (host->hw->host_function == MSDC_EMMC)
 		emmc_do_sleep_awake = 0;
 }
@@ -5738,6 +5744,12 @@ static int msdc_drv_resume(struct platform_device *pdev)
 		/* will set for card;
 		   WIFI not controller by PM */
 		msdc_pm(state, (void *)host);
+	}
+
+	/* This mean WIFI not controller by PM */
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
 	}
 
 	return 0;

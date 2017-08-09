@@ -624,6 +624,9 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.ckgen_msdc_dly_sel);
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
+
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
 	}
 
 	if (emmc) {

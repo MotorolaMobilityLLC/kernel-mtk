@@ -1347,6 +1347,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 
 #if defined(CFG_DEV_MSDC2)
 	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
 		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
 		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
