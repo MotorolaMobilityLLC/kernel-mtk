@@ -16,3 +16,4 @@ obj-$(CONFIG_MTK_I2C)  += i2c/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
+obj-$(CONFIG_USB_MTK_HDRC) += usb20/

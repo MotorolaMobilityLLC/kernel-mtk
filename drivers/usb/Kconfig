@@ -147,7 +147,8 @@ endif # USB
 
 source "drivers/usb/phy/Kconfig"
 
-source "drivers/usb/gadget/Kconfig"
+# mark this coz 3.18 not ready currently, replace gadget with 3.10 to keep USB function ready later
+#source "drivers/usb/gadget/Kconfig
 
 config USB_LED_TRIG
 	bool "USB LED Triggers"
