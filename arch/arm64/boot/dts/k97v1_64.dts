@@ -287,7 +287,7 @@
 	alsps_intpin_cfg: alspspincfg {
 
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO88__FUNC_GPIO88>;
+			pins = <PINMUX_GPIO88__FUNC_EINT11>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
