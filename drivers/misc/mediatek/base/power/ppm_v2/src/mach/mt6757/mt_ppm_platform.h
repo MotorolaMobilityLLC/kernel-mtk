@@ -57,7 +57,7 @@ extern "C" {
 
 /* other policy settings */
 #define	LCMOFF_MIN_FREQ		(598000)
-#define	PTPOD_FREQ_IDX		(3)
+#define	PTPOD_FREQ_IDX		(8)
 #define SUSPEND_FREQ_LL		(689000)
 #define SUSPEND_FREQ_L		(871000)
 #define PWRTHRO_BAT_PER_MW	(1896)
