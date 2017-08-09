@@ -151,20 +151,11 @@ void msdc_reset_tmo_tune_counter(struct msdc_host *host,
 void msdc_reset_crc_tune_counter(struct msdc_host *host,
 	unsigned int index)
 {
-	void __iomem *base = host->base;
 	struct tune_counter *t_counter = &host->t_counter;
 
 	switch (index) {
 	case all_counter:
 		if (t_counter->time_hs400 != 0) {
-#ifndef MSDC_NEW_TUNE
-			if (g_reset_tune) {
-				MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-					MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
-				MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
-					MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
-			}
-#endif
 			ERR_MSG("TUNE HS400 Times(%d)", t_counter->time_hs400);
 			if (g_ett_tune)
 				g_ett_hs400_tune = t_counter->time_hs400;
@@ -439,7 +430,6 @@ static int msdc_lower_freq(struct msdc_host *host)
 	void __iomem *base = host->base;
 	u32 *hclks;
 
-	ERR_MSG("need to lower freq");
 	msdc_reset_crc_tune_counter(host, all_counter);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, div);
@@ -880,8 +870,7 @@ int msdc_tune_cmdrsp_smpl(struct msdc_host *host)
 int msdc_tune_read_smpl(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
-	u32 ddr = 0, hs400 = 0;
-	u32 dcrc;
+	u32 hs400 = 0;
 	u32 clkmode = 0;
 	u32 cur_dsmpl = 0, orig_dsmpl;
 	int result = 0;
@@ -925,7 +914,6 @@ int msdc_tune_write_smpl(struct msdc_host *host)
 	u32 cur_dsmpl = 0, orig_dsmpl;
 	int result = 0;
 
-	int sel = 0;
 	int clkmode = 0;
 	int hs400 = 0;
 	/* auotk covers larger than and equal to 100M case,others by tuning sampling edge */
@@ -1070,7 +1058,7 @@ static u32 msdc_status_verify_case1(struct msdc_host *host,
 		msdc_reset_hw(host->id);
 		while ((err = msdc_get_card_status(mmc, host, &status))) {
 			ERR_MSG("CMD13 ERR<%d>", err);
-			if (err != (unsigned int)-EIO) {
+			if (err != (unsigned int)-EILSEQ) {
 				return msdc_power_tuning(host);
 			} else if (msdc_tune_cmdrsp(host)) {
 				ERR_MSG("update cmd para failed");
@@ -1122,7 +1110,7 @@ static u32 msdc_status_verify_case2(struct msdc_host *host,
 		err = msdc_get_card_status(mmc, host, &status);
 		if (!err) {
 			break;
-		} else if (err != (unsigned int)-EIO) {
+		} else if (err != (unsigned int)-EILSEQ) {
 			ERR_MSG("CMD13 ERR<%d>", err);
 			return msdc_power_tuning(host);
 		} else if (msdc_tune_cmdrsp(host)) {
@@ -1157,7 +1145,7 @@ static u32 msdc_status_verify_case3(struct msdc_host *host,
 		err = msdc_get_card_status(mmc, host, &status);
 		if (!err) {
 			break;
-		} else if (err != (unsigned int)-EIO) {
+		} else if (err != (unsigned int)-EILSEQ) {
 			ERR_MSG("CMD13 ERR<%d>", err);
 			return msdc_power_tuning(host);
 		} else if (msdc_tune_cmdrsp(host)) {
@@ -1187,7 +1175,7 @@ static u32 msdc_status_verify_case4(struct msdc_host *host,
 		err = msdc_get_card_status(mmc, host, &status);
 		if (!err) {
 			break;
-		} else if (err != (unsigned int)-EIO) {
+		} else if (err != (unsigned int)-EILSEQ) {
 			ERR_MSG("CMD13 ERR<%d>", err);
 			break;
 		} else if (msdc_tune_cmdrsp(host)) {
@@ -1215,7 +1203,7 @@ static u32 msdc_status_verify_case5(struct msdc_host *host,
 
 	while ((err = msdc_get_card_status(mmc, host, &status))) {
 		ERR_MSG("CMD13 ERR<%d>", err);
-		if (err != (unsigned int)-EIO) {
+		if (err != (unsigned int)-EILSEQ) {
 			return msdc_power_tuning(host);
 		} else if (msdc_tune_cmdrsp(host)) {
 			ERR_MSG("update cmd para failed");
@@ -1295,12 +1283,12 @@ int msdc_crc_tune(struct msdc_host *host, struct mmc_command *cmd,
 
 #ifdef MTK_MSDC_USE_CMD23
 	/* cmd->error also set when autocmd23 crc error */
-	if ((cmd->error == (unsigned int)-EIO)
-	 || (stop && (stop->error == (unsigned int)-EIO))
-	 || (sbc && (sbc->error == (unsigned int)-EIO))) {
+	if ((cmd->error == (unsigned int)-EILSEQ)
+	 || (stop && (stop->error == (unsigned int)-EILSEQ))
+	 || (sbc && (sbc->error == (unsigned int)-EILSEQ))) {
 #else
-	if ((cmd->error == (unsigned int)-EIO)
-	 || (stop && (stop->error == (unsigned int)-EIO))) {
+	if ((cmd->error == (unsigned int)-EILSEQ)
+	 || (stop && (stop->error == (unsigned int)-EILSEQ))) {
 #endif
 		if (msdc_tune_cmdrsp(host)) {
 			ERR_MSG("failed to updata cmd para");
@@ -1308,7 +1296,7 @@ int msdc_crc_tune(struct msdc_host *host, struct mmc_command *cmd,
 		}
 	}
 
-	if (data && (data->error == (unsigned int)-EIO)) {
+	if (data && (data->error == (unsigned int)-EILSEQ)) {
 		if ((host->id == 0) &&
 		    (host->timing == MMC_TIMING_MMC_HS400)) {
 			if (emmc_hs400_tune_rw(host)) {

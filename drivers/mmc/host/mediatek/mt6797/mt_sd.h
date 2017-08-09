@@ -15,12 +15,6 @@
 
 
 #define MSDC_NEW_TUNE
-#ifdef MSDC_NEW_TUNE
-#define EIO	EILSEQ
-#define MSDC_NEW_TUNE_DBG
-/*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
-#endif
-
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
 
@@ -237,9 +231,9 @@ struct msdc_hw {
 	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
 	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
 
-	unsigned long host_function;	/* define host function */
+	u8 host_function;	/* define host function */
 	bool boot;		/* define boot host */
-	bool cd_level;		/* card detection level */
+	u8 cd_level;		/* card detection level */
 
 	/* config gpio pull mode */
 	void (*config_gpio_pin)(int type, int pull);

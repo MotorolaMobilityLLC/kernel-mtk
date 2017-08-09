@@ -64,7 +64,9 @@
 #define MSDC_MAX_FLUSH_COUNT    (3)
 #define CACHE_UN_FLUSHED        (0)
 #define CACHE_FLUSHED           (1)
+#ifdef MTK_MSDC_USE_CACHE
 static unsigned int g_cache_status = CACHE_UN_FLUSHED;
+#endif
 static unsigned long long g_flush_data_size;
 static unsigned int g_flush_error_count;
 static int g_flush_error_happend;
@@ -904,7 +906,7 @@ static void msdc_eirq_sdio(void *data)
 
 	N_MSG(INT, "SDIO EINT");
 #ifdef SDIO_ERROR_BYPASS
-	if (host->sdio_error != -EIO) {
+	if (host->sdio_error != -EILSEQ) {
 #endif
 		mmc_signal_sdio_irq(host->mmc);
 #ifdef SDIO_ERROR_BYPASS
@@ -914,7 +916,6 @@ static void msdc_eirq_sdio(void *data)
 int sdio_autok_processed = 0;
 void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 {
-	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base;
 	u32 mode;
 	u32 flags;
@@ -922,7 +923,6 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	u32 sclk;
 	u32 hclk = host->hclk;
 	u32 hs400_src = 0;
-	u8  clksrc = hw->clk_src;
 
 	if (!hz) { /* set mmc system clock to 0*/
 		pr_err("msdc%d -> !!! set<0 HZ>", host->id);
@@ -1040,7 +1040,7 @@ void msdc_send_stop(struct msdc_host *host)
 
 	err = msdc_do_command(host, &stop, 0, CMD_TIMEOUT);
 }
-
+#if 0
 static int msdc_app_cmd(struct mmc_host *mmc, struct msdc_host *host)
 {
 	struct mmc_command cmd = { 0 };
@@ -1058,7 +1058,7 @@ static int msdc_app_cmd(struct mmc_host *mmc, struct msdc_host *host)
 	err = msdc_do_command(host, &cmd, 0, CMD_TIMEOUT);
 	return err;
 }
-
+#endif
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	u32 *status)
 {
@@ -1163,7 +1163,7 @@ int msdc_reinit(struct msdc_host *host)
 		while ((err = msdc_get_card_status(mmc, host, &status))) {
 			ERR_MSG("SD card Re-Init in get card status!err(%d)",
 				err);
-			if (err == (unsigned int)-EIO) {
+			if (err == (unsigned int)-EILSEQ) {
 				if (msdc_tune_cmdrsp(host)) {
 					ERR_MSG("update cmd para failed");
 					break;
@@ -1223,7 +1223,7 @@ skip_reinit1:
 skip_reinit2:
 	return ret;
 }
-
+#if 0
 static u32 msdc_polling_idle(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
@@ -1235,7 +1235,7 @@ static u32 msdc_polling_idle(struct msdc_host *host)
 	while (state != 4) {    /* until status to "tran" */
 		while ((err = msdc_get_card_status(mmc, host, &status))) {
 			ERR_MSG("CMD13 ERR<%d>", err);
-			if (err != (unsigned int)-EIO) {
+			if (err != (unsigned int)-EILSEQ) {
 				return msdc_power_tuning(host);
 			} else if (msdc_tune_cmdrsp(host)) {
 				ERR_MSG("update cmd para failed");
@@ -1265,7 +1265,7 @@ static u32 msdc_polling_idle(struct msdc_host *host)
 	}
 	return 0;
 }
-
+#endif
 static void msdc_pin_reset(struct msdc_host *host, int mode, int force_reset)
 {
 	struct msdc_hw *hw = (struct msdc_hw *)host->hw;
@@ -1459,8 +1459,11 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 static int msdc_cache_onoff(struct mmc_data *data)
 {
 	u8 *ptr;
-	int i;
+
+#ifdef MTK_MSDC_USE_CACHE
 	enum boot_mode_t mode;
+	int i;
+#endif
 	struct scatterlist *sg;
 
 	sg = data->sg;
@@ -1503,6 +1506,7 @@ static int msdc_cache_onoff(struct mmc_data *data)
 	return 0;
 #endif
 }
+#ifdef MTK_MSDC_USE_CACHE
 static void msdc_set_cache_quirk(struct msdc_host *host)
 {
 	int i;
@@ -1525,6 +1529,7 @@ static void msdc_set_cache_quirk(struct msdc_host *host)
 			host->id, i, g_emmc_cache_quirk[i]);
 	 }
 }
+#endif
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status)
 {
@@ -1558,7 +1563,7 @@ int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 
 	return err;
 }
-
+#ifdef MTK_MSDC_USE_CACHE
 static void msdc_update_cache_flush_status(struct msdc_host *host,
 	struct mmc_request *mrq, struct mmc_data *data,
 	u32 l_bypass_flush)
@@ -1610,7 +1615,7 @@ static void msdc_update_cache_flush_status(struct msdc_host *host,
 		}
 	}
 }
-
+#endif
 void msdc_check_cache_flush_error(struct msdc_host *host,
 	struct mmc_command *cmd)
 {
@@ -1938,7 +1943,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
-		cmd->error = (unsigned int)-EIO;
+		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
 			pr_err("[%s]: msdc%d CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
@@ -1979,9 +1984,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		} else if (intsts & MSDC_INT_ACMDCRCERR) {
 			pr_err("[%s]: msdc%d, autocmd23 crc error\n",
 				__func__, host->id);
-			sbc->error = (unsigned int)-EIO;
+			sbc->error = (unsigned int)-EILSEQ;
 			/* record the error info in current cmd struct */
-			cmd->error = (unsigned int)-EIO;
+			cmd->error = (unsigned int)-EILSEQ;
 			/* host->error |= REQ_CMD23_EIO; */
 			msdc_reset_hw(host->id);
 		} else if (intsts & MSDC_INT_ACMDTMO) {
@@ -2089,7 +2094,7 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 			msdc_reset_hw(host->id);
 			break;
 		} else if (ints & MSDC_INT_DATCRCERR) {
-			data->error = (unsigned int)-EIO;
+			data->error = (unsigned int)-EILSEQ;
 			/* msdc_dump_info(host->id); */
 			msdc_reset_hw(host->id);
 			/* left = msdc_sg_len(sg, host->dma_xfer); */
@@ -2210,7 +2215,7 @@ check_fifo1:
 				if (ints & MSDC_INT_DATCRCERR) {
 					ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
 						host->id, ints, left);
-					data->error = (unsigned int)-EIO;
+					data->error = (unsigned int)-EILSEQ;
 				} else if (ints & MSDC_INT_DATTMO) {
 					ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
 						host->id, ints, left);
@@ -2296,7 +2301,7 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 			msdc_reset_hw(host->id);
 			break;
 		} else if (ints & MSDC_INT_DATCRCERR) {
-			data->error = (unsigned int)-EIO;
+			data->error = (unsigned int)-EILSEQ;
 			/* msdc_dump_info(host->id); */
 			msdc_reset_hw(host->id);
 			break;
@@ -2408,7 +2413,7 @@ check_fifo1:
 				if (ints & MSDC_INT_DATCRCERR) {
 					ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
 						host->id, ints, left);
-					data->error = (unsigned int)-EIO;
+					data->error = (unsigned int)-EILSEQ;
 				} else if (ints & MSDC_INT_DATTMO) {
 					ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
 						host->id, ints, left);
@@ -2779,7 +2784,7 @@ int msdc_if_send_stop(struct msdc_host *host,
 void msdc_if_set_err(struct msdc_host *host, struct mmc_request *mrq,
 	struct mmc_command *cmd)
 {
-	if (mrq->cmd->error == (unsigned int)-EIO) {
+	if (mrq->cmd->error == (unsigned int)-EILSEQ) {
 		if (((cmd->opcode == MMC_SELECT_CARD) ||
 		     (cmd->opcode == MMC_SLEEP_AWAKE))
 		 && ((host->hw->host_function == MSDC_EMMC) ||
@@ -2795,7 +2800,7 @@ void msdc_if_set_err(struct msdc_host *host, struct mmc_request *mrq,
 		host->error |= REQ_CMD_TMO;
 	if (mrq->data && (mrq->data->error))
 		host->error |= REQ_DAT_ERR;
-	if (mrq->stop && (mrq->stop->error == (unsigned int)-EIO))
+	if (mrq->stop && (mrq->stop->error == (unsigned int)-EILSEQ))
 		host->error |= REQ_STOP_EIO;
 	if (mrq->stop && (mrq->stop->error == (unsigned int)-ETIMEDOUT))
 		host->error |= REQ_STOP_TMO;
@@ -3215,7 +3220,7 @@ done:
 	}
 	msdc_log_cmd(host, cmd, data);
 
-	if (mrq->cmd->error == (unsigned int)-EIO) {
+	if (mrq->cmd->error == (unsigned int)-EILSEQ) {
 		if (((cmd->opcode == MMC_SELECT_CARD) ||
 		     (cmd->opcode == MMC_SLEEP_AWAKE))
 		 && ((host->hw->host_function == MSDC_EMMC) ||
@@ -3257,7 +3262,7 @@ done:
 	}
 
 #ifdef MTK_MSDC_USE_CMD23
-	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-EIO))
+	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-EILSEQ))
 		host->error |= REQ_CMD_EIO;
 	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-ETIMEDOUT)) {
 #ifdef CONFIG_MTK_AEE_FEATURE
@@ -3269,7 +3274,7 @@ done:
 	}
 #endif
 
-	if (mrq->stop && (mrq->stop->error == (unsigned int)-EIO))
+	if (mrq->stop && (mrq->stop->error == (unsigned int)-EILSEQ))
 		host->error |= REQ_STOP_EIO;
 	if (mrq->stop && (mrq->stop->error == (unsigned int)-ETIMEDOUT))
 		host->error |= REQ_STOP_TMO;
@@ -3286,7 +3291,7 @@ done:
 	return host->error;
 }
 
-
+#if 0
 static int msdc_tune_rw_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -3347,7 +3352,7 @@ done:
 #endif
 	return host->error;
 }
-
+#endif
 static void msdc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
 	bool is_first_req)
 {
@@ -3581,7 +3586,7 @@ done:
 	msdc_log_cmd(host, cmd, data);
 
 #ifdef MTK_MSDC_USE_CMD23
-	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-EIO))
+	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-EILSEQ))
 		host->error |= REQ_CMD_EIO;
 	if (mrq->sbc && (mrq->sbc->error == (unsigned int)-ETIMEDOUT)) {
 #ifdef CONFIG_MTK_AEE_FEATURE
@@ -3607,7 +3612,7 @@ end2:
 				host->err_mrq_dir |= MMC_DATA_READ;
 			host->async_tuning_done = false;
 		}
-		if (cmd && (cmd->error == (unsigned int)-EIO))
+		if (cmd && (cmd->error == (unsigned int)-EILSEQ))
 			host->async_tuning_done = false;
 	}
 	if (mrq->done)
@@ -3711,15 +3716,15 @@ static void msdc_dump_trans_error(struct msdc_host   *host,
 	}
 #ifdef SDIO_ERROR_BYPASS
 	if (is_card_sdio(host) &&
-	    (host->sdio_error != -EIO) &&
+	    (host->sdio_error != -EILSEQ) &&
 	    (cmd->opcode == 53) &&
 	    (msdc_sg_len(data->sg, host->dma_xfer) > 4)) {
-		host->sdio_error = -EIO;
+		host->sdio_error = -EILSEQ;
 		ERR_MSG("XXX SDIO Error ByPass");
 	}
 #endif
 }
-
+#if 0
 static void msdc_do_request_with_retry(struct msdc_host *host,
 	struct mmc_request *mrq,
 	struct mmc_command *cmd,
@@ -3833,7 +3838,7 @@ static void msdc_do_request_with_retry(struct msdc_host *host,
 		host->power_cycle_enable = 1;
 	host->sw_timeout = 0;
 }
-
+#endif
 /* ops.request */
 static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	struct mmc_request *mrq)
@@ -3900,7 +3905,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 				host->err_mrq_dir |= MMC_DATA_READ;
 			host->legacy_tuning_done = false;
 		}
-		if (cmd && (cmd->error == (unsigned int)-EIO))
+		if (cmd && (cmd->error == (unsigned int)-EILSEQ))
 			host->legacy_tuning_done = false;
 	}
 #else
@@ -4379,7 +4384,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 	if (ios->signal_voltage != MMC_SIGNAL_VOLTAGE_330) {
 		/* make sure SDC is not busy (TBC) */
 		/* WAIT_COND(!SDC_IS_BUSY(), timeout, timeout); */
-		err = (unsigned int)-EIO;
+		err = (unsigned int)-EILSEQ;
 		msdc_retry(sdc_is_busy(), retry, timeout, host->id);
 		if (timeout == 0 && retry == 0) {
 			err = (unsigned int)-ETIMEDOUT;
@@ -4594,7 +4599,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATTMO",
 				host->mrq->cmd->opcode, host->mrq->cmd->arg);
 		} else if (intsts & MSDC_INT_DATCRCERR) {
-			data->error = (unsigned int)-EIO;
+			data->error = (unsigned int)-EILSEQ;
 			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR, SDC_DCRC_STS<0x%x>",
 				host->mrq->cmd->opcode, host->mrq->cmd->arg,
 				MSDC_READ32(SDC_DCRC_STS));
@@ -4608,7 +4613,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 			u32 *arsp = &stop->resp[0];
 			*arsp = MSDC_READ32(SDC_ACMD_RESP);
 		} else if (intsts & MSDC_INT_ACMDCRCERR) {
-			stop->error = (unsigned int)-EIO;
+			stop->error = (unsigned int)-EILSEQ;
 			host->error |= REQ_STOP_EIO;
 			if (host->dma_xfer)
 				msdc_reset(host->id);
@@ -4656,7 +4661,7 @@ skip_data_interrupts:
 			break;
 		}
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
-		cmd->error = (unsigned int)-EIO;
+		cmd->error = (unsigned int)-EILSEQ;
 		ERR_MSG("XXX CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
 			cmd->opcode, cmd->arg);
 		msdc_reset_hw(host->id);
@@ -4676,7 +4681,7 @@ skip_cmd_interrupts:
 			host->id, MSDC_READ32(SDC_CSTS)); */
 	}
 	if (!host->async_tuning_in_progress)
-		if (cmd && (cmd->error == (unsigned int)-EIO))
+		if (cmd && (cmd->error == (unsigned int)-EILSEQ))
 			host->async_tuning_done = false;
 	latest_int_status[host->id] = 0;
 	return IRQ_HANDLED; /* only for normal cmd*/

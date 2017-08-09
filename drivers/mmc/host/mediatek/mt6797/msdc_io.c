@@ -215,7 +215,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 {
 	struct device_node *np;
 	struct msdc_host *host = mmc_priv(mmc);
-	int ret, len, debug = 0;
+	int ret = 0;
+	int len = 0;
 
 	if (!mmc->parent || !mmc->parent->of_node)
 		return 1;
@@ -240,7 +241,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 		pr_err("[msdc%d] of_iomap failed\n", host->id);
 		return -ENOMEM;
 	}
-	pr_err("[msdc%d] host->base is %x\n", host->id, host->base);
 
 	/* get irq #  */
 	host->irq = irq_of_parse_and_map(np, 0);
@@ -282,8 +282,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
-	return 0;
-out:
 	return ret;
 }
 
@@ -296,23 +294,12 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 #endif
 	unsigned int host_id = 0;
 	int i, ret;
-	struct msdc_host *host = mmc_priv(mmc);
 	static const char const *msdc_names[] = {"msdc0", "msdc1", "msdc2", "msdc3"};
 
 	for (i = 0; i < HOST_MAX_NUM; i++) {
 		if (0 == strcmp(pdev->dev.of_node->name, msdc_names[i])) {
 			if (msdc_host_enable[i] == 0)
 				return 1;
-			/* FIXME: msdc0 msdc1 prase parameter from device tree
-			 * msdc2 msdc3 should be modified later
-			 */
-			if (i == 2) {
-#ifdef CFG_DEV_MSDC2
-				host->hw = &msdc2_hw;
-				pr_err("platform_data hw:0x%p, is msdc2_hw\n",
-					host->hw);
-#endif
-			}
 			pdev->id = i;
 			host_id = i;
 			break;
@@ -454,6 +441,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	pdev->dev.of_node = msdc_backup_node;
 #endif
 #endif
+
 	return 0;
 }
 
@@ -498,6 +486,7 @@ void msdc_get_regulators(struct device *dev)
 bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
 	struct regulator *reg = NULL;
+	int ret = 0;
 
 	switch (powerId) {
 	case POWER_LDO_VMCH:
@@ -519,7 +508,11 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 	}
 	/* New API voltage use micro V */
 	regulator_set_voltage(reg, powerVolt, powerVolt);
-	regulator_enable(reg);
+	ret = regulator_enable(reg);
+	if (ret) {
+		pr_err("msdc regulator_enable failed: %d\n", ret);
+		return false;
+	}
 	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
 	return true;
 }
@@ -846,8 +839,6 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 {
 	u32 *hclks;
-	struct clk *clk;
-	unsigned int ret;
 
 	hclks = msdc_get_hclks(host->id);
 
@@ -859,24 +850,6 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 			host->id, __func__, __LINE__);
 		return;
 	}
-#if 0
-	if (hclks[clksrc] == PLLCLK_400M) {
-		clk = g_msdc0_pll_400m;
-	} else if (hclks[clksrc] == PLLCLK_200M) {
-		clk = g_msdc0_pll_200m;
-	} else {
-		pr_err("[msdc%d] NOT Support switch pll souce[%s]%d\n",
-			host->id, __func__, __LINE__);
-		return;
-	}
-
-	clk_enable(g_msdc0_pll_sel);
-	ret = clk_set_parent(g_msdc0_pll_sel, clk);
-	if (ret)
-		pr_err("[msdc%d] switch clk source ERROR...[%s]%d\n",
-			host->id, __func__, __LINE__);
-	clk_disable(g_msdc0_pll_sel);
-#endif
 	host->hclk = hclks[clksrc];
 	host->hw->clk_src = clksrc;
 }
