@@ -4430,6 +4430,8 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 			load += mt_rt_load(i);
 #endif
 			avg_load += load;
+			mt_sched_printf(sched_log, "find_idlest_group cpu=%d avg=%lu",
+				i, avg_load);
 		}
 
 		/* Adjust by relative CPU capacity of the group */
@@ -4437,14 +4439,21 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 
 		if (local_group) {
 			this_load = avg_load;
+			mt_sched_printf(sched_log, "find_idlest_group this_load=%lu",
+				this_load);
 		} else if (avg_load < min_load) {
 			min_load = avg_load;
 			idlest = group;
+			mt_sched_printf(sched_log, "find_idlest_group min_load=%lu",
+				min_load);
 		}
 	} while (group = group->next, group != sd->groups);
 
-	if (!idlest || 100*this_load < imbalance*min_load)
+	if (!idlest || 100 * this_load < imbalance * min_load) {
+		mt_sched_printf(sched_log, "find_idlest_group fail this_load=%lu min_load=%lu, imbalance=%d",
+				this_load, min_load, imbalance);
 		return NULL;
+	}
 	return idlest;
 }
 
@@ -4612,6 +4621,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 #endif
 	rcu_read_lock();
 	for_each_domain(cpu, tmp) {
+		mt_sched_printf(sched_log, "wakeup %d %s tmp->flags=%x, cpu=%d, prev_cpu=%d, new_cpu=%d",
+				p->pid, p->comm, tmp->flags, cpu, prev_cpu, new_cpu);
+
 		if (!(tmp->flags & SD_LOAD_BALANCE))
 			continue;
 
@@ -4636,19 +4648,26 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		new_cpu = select_idle_sibling(p, prev_cpu);
 		goto unlock;
 	}
+	mt_sched_printf(sched_log, "wakeup %d %s sd=%p", p->pid, p->comm, sd);
 
 	while (sd) {
 		struct sched_group *group;
 		int weight;
 
+		mt_sched_printf(sched_log, "wakeup %d %s find_idlest_group cpu=%d sd->flags=%x sd_flag=%x",
+				p->pid, p->comm, cpu, sd->flags, sd_flag);
 		if (!(sd->flags & sd_flag)) {
 			sd = sd->child;
 			continue;
 		}
 
+		mt_sched_printf(sched_log, "wakeup %d %s find_idlest_group cpu=%d",
+				p->pid, p->comm, cpu);
 		group = find_idlest_group(sd, p, cpu, sd_flag);
 		if (!group) {
 			sd = sd->child;
+			mt_sched_printf(sched_log, "wakeup %d %s find_idlest_group child",
+					p->pid, p->comm);
 			continue;
 		}
 
@@ -4656,10 +4675,14 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		if (new_cpu == -1 || new_cpu == cpu) {
 			/* Now try balancing at a lower domain level of cpu */
 			sd = sd->child;
+			mt_sched_printf(sched_log, "wakeup %d %s find_idlest_cpu sd->child=%p",
+					p->pid, p->comm, sd);
 			continue;
 		}
 
 		/* Now try balancing at a lower domain level of new_cpu */
+		mt_sched_printf(sched_log, "wakeup %d %s find_idlest_cpu cpu=%d sd=%p",
+				p->pid, p->comm, new_cpu, sd);
 		cpu = new_cpu;
 		weight = sd->span_weight;
 		sd = NULL;
@@ -4668,15 +4691,18 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 				break;
 			if (tmp->flags & sd_flag)
 				sd = tmp;
+			mt_sched_printf(sched_log, "wakeup %d %s sd=%p weight=%d, tmp->span_weight=%d",
+				p->pid, p->comm, sd, weight, tmp->span_weight);
 		}
 		/* while loop will break here if sd == NULL */
 	}
 unlock:
 	rcu_read_unlock();
+	mt_sched_printf(sched_log, "wakeup %d %s new_cpu=%x", p->pid, p->comm, new_cpu);
+
 #if defined(CONFIG_MT_SCHED_INTEROP)
 mt_found:
 #endif
-
 	return new_cpu;
 }
 
