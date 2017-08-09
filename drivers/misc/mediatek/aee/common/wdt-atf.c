@@ -310,7 +310,7 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 	cur_frame.fp = regs->reg_fp;
 	cur_frame.pc = regs->reg_pc;
 	cur_frame.sp = regs->reg_sp;
-	wdt_percpu_stackframe[cpu][0] = regs->reg_lr;
+	wdt_percpu_stackframe[cpu][0] = regs->reg_pc;
 	for (i = 1; i < MAX_EXCEPTION_FRAME; i++) {
 		fp = cur_frame.fp;
 		if ((fp < bottom) || (fp >= (high + THREAD_SIZE))) {
