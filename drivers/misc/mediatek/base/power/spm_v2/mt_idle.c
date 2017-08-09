@@ -690,6 +690,23 @@ bool soidle3_can_enter(int cpu)
 	}
 #endif
 
+	if (sodi3_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+			sodi3_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_warn("SODI3: blocking by uptime, count = %d\n", sodi3_by_uptime_count);
+			sodi3_by_uptime_count = -1;
+		}
+	}
+
+	/* Notice that, do not add any check condition after cpuhvfs_pause_dvfsp_running */
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	/* Try to pause DVFSP, xxidle will be blocked if DVFSP can NOT be paused */
 	if (cpuhvfs_pause_dvfsp_running(PAUSE_IDLE) != 0) {
@@ -710,22 +727,6 @@ bool soidle3_can_enter(int cpu)
 
 			reason = BY_CLK;
 			goto out;
-		}
-	}
-
-	if (sodi3_by_uptime_count != -1) {
-		struct timespec uptime;
-		unsigned long val;
-
-		get_monotonic_boottime(&uptime);
-		val = (unsigned long)uptime.tv_sec;
-		if (val <= 20) {
-			sodi3_by_uptime_count++;
-			reason = BY_OTH;
-			goto out;
-		} else {
-			idle_warn("SODI3: blocking by uptime, count = %d\n", sodi3_by_uptime_count);
-			sodi3_by_uptime_count = -1;
 		}
 	}
 
@@ -994,6 +995,23 @@ bool soidle_can_enter(int cpu)
 	}
 #endif
 
+	if (sodi_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+			sodi_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_warn("SODI: blocking by uptime, count = %d\n", sodi_by_uptime_count);
+			sodi_by_uptime_count = -1;
+		}
+	}
+
+	/* Notice that, do not add any check condition after cpuhvfs_pause_dvfsp_running */
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	/* Try to pause DVFSP, xxidle will be blocked if DVFSP can NOT be paused */
 	if (cpuhvfs_pause_dvfsp_running(PAUSE_IDLE) != 0) {
@@ -1014,22 +1032,6 @@ bool soidle_can_enter(int cpu)
 
 			reason = BY_CLK;
 			goto out;
-		}
-	}
-
-	if (sodi_by_uptime_count != -1) {
-		struct timespec uptime;
-		unsigned long val;
-
-		get_monotonic_boottime(&uptime);
-		val = (unsigned long)uptime.tv_sec;
-		if (val <= 20) {
-			sodi_by_uptime_count++;
-			reason = BY_OTH;
-			goto out;
-		} else {
-			idle_warn("SODI: blocking by uptime, count = %d\n", sodi_by_uptime_count);
-			sodi_by_uptime_count = -1;
 		}
 	}
 
