@@ -168,10 +168,8 @@ static unsigned int charging_hw_init(void *data)
 	pr_notice("[BATTERY:ncp1854] ChargerHwInit_ncp1854\n");
 
 	ncp1854_status = ncp1854_get_chip_status();
-#ifdef DISABLE_NCP1854_FACTORY_MODE
 	/* if you want disable factory mode,the FTRY pin and FCTRY_MOD_REG need differ */
 	ncp1854_set_fctry_mode(0x0);
-#endif
 	ncp1854_set_otg_en(0x0);
 	ncp1854_set_trans_en(0);
 	ncp1854_set_tj_warn_opt(0x0);	/* set at disabled, by MT6325 BATON */
