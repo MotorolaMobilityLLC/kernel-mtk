@@ -3712,13 +3712,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->cpuinfo.max_freq = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
-		if (MT_CPU_DVFS_LL == id)
-			p->armpll_addr = (unsigned int *)ARMCAXPLL0_CON1;
-		else if (MT_CPU_DVFS_L == id)
-			p->armpll_addr = (unsigned int *)ARMCAXPLL1_CON1;
-		else
-			p->armpll_addr = 0;
-
 		policy->cur = mt_cpufreq_get_cur_phy_freq(id);	/* use cur phy freq is better */
 		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
@@ -3754,7 +3747,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		cpufreq_unlock(flags);
 
 		if (init_cci_status == 0) {
-			p_cci->armpll_addr = (unsigned int *)ARMCAXPLL2_CON1;
 			/* init cci freq idx */
 			if (_mt_cpufreq_sync_opp_tbl_idx(p_cci) >= 0)
 				if (p_cci->idx_normal_max_opp == -1)
@@ -3978,6 +3970,10 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	/* Prepare OPP table for PPM in probe to avoid nested lock */
 	for_each_cpu_dvfs(j, p) {
+		p->armpll_addr = (cpu_dvfs_is(p, MT_CPU_DVFS_LL) ? (unsigned int *)ARMCAXPLL0_CON1 :
+				  cpu_dvfs_is(p, MT_CPU_DVFS_L) ? (unsigned int *)ARMCAXPLL1_CON1 :
+				  cpu_dvfs_is(p, MT_CPU_DVFS_B) ? NULL : (unsigned int *)ARMCAXPLL2_CON1);
+
 		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
 
 		if (NULL == p->freq_tbl_for_cpufreq) {
