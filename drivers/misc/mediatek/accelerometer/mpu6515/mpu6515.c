@@ -315,13 +315,24 @@ EXPORT_SYMBOL(MPU6515_SCP_SetPowerMode);
 static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 {
 	int err;
+	struct i2c_adapter *adap = client->adapter;
+	struct i2c_msg msg;
 
 	data[0] = addr;
-	client->addr &= I2C_MASK_FLAG;
-	client->addr |= I2C_WR_FLAG;
-	client->addr |= I2C_RS_FLAG;
-	err = i2c_master_send(client, data, (len << 8) | 0x1);
-	client->addr &= I2C_MASK_FLAG;
+
+	msg.addr = client->addr;
+	msg.addr &= I2C_MASK_FLAG;
+	msg.addr |= (I2C_WR_FLAG | I2C_RS_FLAG);
+	msg.flags = client->flags & I2C_M_TEN;
+	msg.len = ((len << 8) | 0x1);
+	msg.buf = (char *)data;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+	/* msg.ext_flag = I2C_WR_FLAG | I2C_RS_FLAG; */
+	msg.timing = client->timing;
+	msg.ext_flag = client->ext_flag;
+#endif
+
+	err = i2c_transfer(adap, &msg, 1);
 
 	if (err < 0)
 		GSE_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
