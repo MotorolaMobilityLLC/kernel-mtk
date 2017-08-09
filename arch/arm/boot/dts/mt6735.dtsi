@@ -96,6 +96,15 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 	};
 
+	psci {
+		compatible	= "arm,psci";
+		method		= "smc";
+		cpu_suspend	= <0x84000001>;
+		cpu_off		= <0x84000002>;
+		cpu_on		= <0x84000003>;
+		affinity_info	= <0x84000004>;
+	};
+
 	cpus {	#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -134,44 +143,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1300000000>;
 		};
-/*
-		cpu4: cpu@4 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x100>;
-			enable-method = "spin-table";
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
-		};
-
-		cpu5: cpu@5 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x101>;
-			enable-method = "spin-table";
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
-		};
-
-		cpu6: cpu@6 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x102>;
-			enable-method = "spin-table";
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
-		};
-
-		cpu7: cpu@7 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x103>;
-			enable-method = "spin-table";
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
-
-		};
-*/
 	};
 
 	memory@00000000 {
