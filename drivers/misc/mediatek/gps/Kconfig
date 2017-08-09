@@ -1,0 +1,7 @@
+config MTK_GPS_SUPPORT
+	tristate "MediaTek GPS driver"
+	select MTK_GPS
+	help
+	  to switch GPS feature on the platform. Set "yes" to turn
+	  on and set "no"(with MTK_AGPS_APP=no at the same time) to turn
+	  off.
