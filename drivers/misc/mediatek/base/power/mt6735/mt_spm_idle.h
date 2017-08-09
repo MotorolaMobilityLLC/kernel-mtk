@@ -33,6 +33,8 @@ extern unsigned int dpidle_profile[4];
 /*
  * for Screen On Deep Idle
  */
+void soidle_before_wfi(int cpu);
+void soidle_after_wfi(int cpu);
 void spm_go_to_sodi(u32 spm_flags, u32 spm_data);
 void spm_sodi_lcm_video_mode(bool IsLcmVideoMode);
 void spm_sodi_mempll_pwr_mode(bool pwr_mode);
