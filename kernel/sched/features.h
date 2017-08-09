@@ -83,3 +83,9 @@ SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
  */
 SCHED_FEAT(NUMA_RESIST_LOWER, false)
 #endif
+
+/*
+ * HMP scheduling. Use dynamic threshold depends on system load and
+ * CPU capacity to make schedule decisions.
+ */
+SCHED_FEAT(SCHED_HMP, false)
