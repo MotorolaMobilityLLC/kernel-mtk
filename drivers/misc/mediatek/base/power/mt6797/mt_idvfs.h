@@ -250,4 +250,8 @@ extern int iDVFSAPB_init(void); /* it's only for DA9214 PMIC, return 0: 400K, 1:
 /* temp for PTP1 */
 extern void eem_init_det_tmp(void);
 
+/* add for hot plug */
+extern int BigiDVFSEnable_hp(void);
+#define BigiDVFSDisable_hp()	BigiDVFSDisable()
+
 #endif /* _MT_IDVFS_H  */
