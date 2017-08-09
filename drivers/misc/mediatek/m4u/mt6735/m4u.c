@@ -16,7 +16,7 @@
 #include <linux/timer.h>
 /* #include <asm/mach/map.h> */
 #include <mt-plat/sync_write.h>
-/* #include <mach/mt_clkmgr.h> */
+#include <mach/mt_clkmgr.h>
 #include <irq.h>
 #include <asm/cacheflush.h>
 /* #include <asm/system.h> */
@@ -2171,7 +2171,9 @@ const char *smi_clk_name[] = { "smi_common", "m4u_disp0_smi_larb0",
 
 static int m4u_probe(struct platform_device *pdev)
 {
+#if !defined(CONFIG_MTK_LEGACY)
 	int i;
+#endif
 	struct device_node *node = pdev->dev.of_node;
 
 	M4UINFO("m4u_probe 0\n");

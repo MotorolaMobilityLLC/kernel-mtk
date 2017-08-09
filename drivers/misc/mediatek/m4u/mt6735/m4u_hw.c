@@ -1,6 +1,6 @@
 #include <linux/slab.h>
 #include <linux/interrupt.h>
-/* #include <mach/mt_clkmgr.h> */
+#include <mach/mt_clkmgr.h>
 
 #include "m4u_priv.h"
 #include "m4u_hw.h"
