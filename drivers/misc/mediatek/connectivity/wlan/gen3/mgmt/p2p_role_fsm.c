@@ -622,7 +622,13 @@ VOID p2pRoleFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECOR
 			break;
 		case OP_MODE_P2P_DEVICE:
 		default:
-			ASSERT(FALSE);
+			DBGLOG(P2P, INFO, "RX Disassoc unexpectedly. Current role: %d\n",
+				prP2pBssInfo->eCurrentOPMode);
+			/*
+			 * Can not expect peer not send disassoc to us when we
+			 * are not ready to process disassoc
+			 * ASSERT(FALSE);
+			 */
 			break;
 		}
 
