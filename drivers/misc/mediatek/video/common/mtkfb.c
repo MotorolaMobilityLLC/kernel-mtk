@@ -55,7 +55,9 @@
 #include "mtk_ovl.h"
 #include "ion_drv.h"
 
+#ifdef DISP_GPIO_DTS
 #include "disp_dts_gpio.h" /* set gpio via DTS */
+#endif
 #include "disp_helper.h"
 
 #define ALIGN_TO(x, n)	(((x) + ((n) - 1)) & ~((n) - 1))
@@ -2099,8 +2101,9 @@ static int mtkfb_probe(struct device *dev)
 	struct fb_info *fbi;
 	int init_state;
 	int r = 0;
+#ifdef DISP_GPIO_DTS
 	long dts_gpio_state = 0;
-
+#endif
 	/* DISPFUNC(); */
 	DISPPRINT("%s\n", __func__);
 
@@ -2130,11 +2133,12 @@ static int mtkfb_probe(struct device *dev)
 
 	pdev = to_platform_device(dev);
 
+#ifdef DISP_GPIO_DTS
 	/* repo call DTS gpio module, if not necessary, invoke nothing */
 	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
 	if (dts_gpio_state != 0)
 		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
-
+#endif
 
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
 	if (!fbi) {
@@ -2442,6 +2446,7 @@ static void mtkfb_blank_suspend(void)
 	pr_debug("[FB Driver] leave early_suspend\n");
 }
 
+#ifdef DISP_IPOH_BOOT
 /* IPO-H workaround helper functions */
 struct ipoh_wkarnd {
 	bool is_ipoh_booting;
@@ -2515,6 +2520,7 @@ static struct ipoh_wkarnd ipoh_workaround_rdma_underflow = {
 #define IPOH_WORKAROUND_RDMA_UNDERFLOW      0
 #endif
 /*****************************************************************************/
+#endif
 
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
@@ -2544,8 +2550,10 @@ static void mtkfb_blank_resume(void)
 		return;
 	}
 
+#ifdef DISP_IPOH_BOOT
 	/* workaround (2015/5/18) */
 	ipoh_wkarnd_on_late_resume_done(IPOH_WORKAROUND_RDMA_UNDERFLOW);
+#endif
 
 	pr_debug("[FB Driver] leave late_resume\n");
 }
@@ -2584,8 +2592,10 @@ int mtkfb_pm_restore_noirq(struct device *device)
 	/* disphal_pm_restore_noirq(device); */
 	is_ipoh_bootup = true;
 
+#ifdef DISP_IPOH_BOOT
 	/* workaround (2015/5/18) */
 	ipoh_wkarnd_on_restore_noirq(IPOH_WORKAROUND_RDMA_UNDERFLOW, device);
+#endif
 
 	return 0;
 

@@ -5,6 +5,6 @@
 ################################################################################
 
 ######################################
-obj-$(CONFIG_MTK_FB) += common/
-
 obj-$(CONFIG_MTK_FB) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+obj-$(CONFIG_MTK_FB) += common/

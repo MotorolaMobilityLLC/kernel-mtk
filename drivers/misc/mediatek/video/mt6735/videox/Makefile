@@ -3,7 +3,6 @@
 
 obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    disp_assert_layer.o    \
-			    mtkfb.o                \
 			    debug.o                \
 			    primary_display.o      \
 			    disp_lcm.o             \
@@ -15,10 +14,6 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    disp_dts_gpio.o        \
 			    fbconfig_kdebug_k2.o   \
 			    disp_helper.o
-
-ifneq ($(CONFIG_MTK_FB), y)
-obj-y += mtkfb_dummy.o
-endif
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
                     -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6735
