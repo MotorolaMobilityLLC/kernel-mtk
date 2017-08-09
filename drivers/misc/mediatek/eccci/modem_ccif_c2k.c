@@ -979,7 +979,6 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 		CCCI_BOOTUP_LOG(md->index, TAG, "CCIF modem is first boot\n");
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
-		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 		md_ccif_ring_buf_init(md);
 	}
 

@@ -334,6 +334,8 @@ void ccci_config_modem(struct ccci_modem *md)
 		&md->mem_layout.md1_md3_smem_size);
 	md->mem_layout.md1_md3_smem_vir =
 	    ioremap_nocache(md->mem_layout.md1_md3_smem_phy, md->mem_layout.md1_md3_smem_size);
+	if (md->index == MD_SYS3)
+		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 	/* updae image info */
 	md->img_info[IMG_MD].type = IMG_MD;
