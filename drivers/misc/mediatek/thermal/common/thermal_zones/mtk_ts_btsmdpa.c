@@ -808,10 +808,8 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 
 	struct btsmdpa_data *ptr_btsmdpa_data = kmalloc(sizeof(*ptr_btsmdpa_data), GFP_KERNEL);
 
-	if (ptr_btsmdpa_data == NULL) {
-		/* pr_debug("[%s] kmalloc fail\n\n", __func__); */
+	if (ptr_btsmdpa_data == NULL)
 		return -ENOMEM;
-	}
 
 	len = (count < (sizeof(ptr_btsmdpa_data->desc) - 1)) ? count : (sizeof(ptr_btsmdpa_data->desc) - 1);
 	if (copy_from_user(ptr_btsmdpa_data->desc, buffer, len)) {
@@ -992,10 +990,8 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 
 	struct param_data *ptr_param_data = kmalloc(sizeof(*ptr_param_data), GFP_KERNEL);
 
-	if (ptr_param_data == NULL) {
-		/* pr_debug("[%s] kmalloc fail\n\n", __func__); */
+	if (ptr_param_data == NULL)
 		return -ENOMEM;
-	}
 
 	len = (count < (sizeof(ptr_param_data->desc) - 1)) ? count : (sizeof(ptr_param_data->desc) - 1);
 	if (copy_from_user(ptr_param_data->desc, buffer, len)) {

@@ -20,6 +20,7 @@
 #include "mt-plat/mtk_mdm_monitor.h"
 #include <mt-plat/mt_boot_common.h>
 #include <linux/uidgid.h>
+#include <linux/slab.h>
 
 #if defined(CONFIG_MTK_THERMAL_PA_VIA_ATCMD)
 #define MTK_TS_PA_THPUT_VIA_CCCI    (0)
@@ -371,22 +372,32 @@ static int mtk_mdm_sw_read(struct seq_file *m, void *v)
 static ssize_t mtk_mdm_sw_write(struct file *file, const char __user *buf, size_t len,
 				loff_t *data)
 {
-	char desc[MAX_LEN] = { 0 };
-	char temp[MAX_LEN] = { 0 };
+	struct mtktsmdm_data {
+		char desc[MAX_LEN];
+		char temp[MAX_LEN];
+	};
 
-	len = (len < (sizeof(desc) - 1)) ? len : (sizeof(desc) - 1);
+	struct mtktsmdm_data *ptr_mtktsmdm_data = kmalloc(sizeof(*ptr_mtktsmdm_data), GFP_KERNEL);
+
+	if (ptr_mtktsmdm_data == NULL)
+		return -ENOMEM;
+
+	len = (len < (sizeof(ptr_mtktsmdm_data->desc) - 1)) ? len : (sizeof(ptr_mtktsmdm_data->desc) - 1);
 
 	/* write data to the buffer */
-	if (copy_from_user(desc, buf, len))
+	if (copy_from_user(ptr_mtktsmdm_data->desc, buf, len)) {
+		kfree(ptr_mtktsmdm_data);
 		return -EFAULT;
+	}
 
-	if (sscanf(desc, "%s", temp) == 1) {
-		if (strncmp(temp, "on", 2) == 0 || strncmp(temp, "1", 1) == 0)
+	if (sscanf(ptr_mtktsmdm_data->desc, "%s", ptr_mtktsmdm_data->temp) == 1) {
+		if (strncmp(ptr_mtktsmdm_data->temp, "on", 2) == 0 || strncmp(ptr_mtktsmdm_data->temp, "1", 1) == 0)
 			mdm_sw = true;
-		else if (strncmp(temp, "off", 3) == 0 || strncmp(temp, "0", 1) == 0)
+		else if (strncmp(ptr_mtktsmdm_data->temp, "off", 3) == 0 ||
+			strncmp(ptr_mtktsmdm_data->temp, "0", 1) == 0)
 			mdm_sw = false;
 		else
-			mtk_mdm_dprintk("[%s] bad argument:%s\n", __func__, temp);
+			mtk_mdm_dprintk("[%s] bad argument:%s\n", __func__, ptr_mtktsmdm_data->temp);
 
 		if (mdm_sw)
 			mtk_mdm_enable();
@@ -394,10 +405,12 @@ static ssize_t mtk_mdm_sw_write(struct file *file, const char __user *buf, size_
 			mtk_mdm_disable();
 
 
+		kfree(ptr_mtktsmdm_data);
 		return len;
 	}
 
 	mtk_mdm_dprintk("[%s] bad argument\n", __func__);
+	kfree(ptr_mtktsmdm_data);
 	return -EINVAL;
 }
 

@@ -166,7 +166,7 @@ int tscpu_thermal_clock_on(void)
 {
 	/*Use CCF instead*/
 	int ret = -1;
-	/*tscpu_dprintk("tscpu_thermal_clock_on\n");*/
+	tscpu_dprintk("tscpu_thermal_clock_on\n");
 
 #if defined(CONFIG_MTK_CLKMGR)
 	/*ret = enable_clock(MT_CG_PERI_THERM, "THERMAL"); */
@@ -184,7 +184,7 @@ int tscpu_thermal_clock_off(void)
 {
 /*Use CCF instead*/
 	int ret = -1;
-	/*tscpu_dprintk("tscpu_thermal_clock_off\n");*/
+	tscpu_dprintk("tscpu_thermal_clock_off\n");
 
 #if defined(CONFIG_MTK_CLKMGR)
 	/*ret = disable_clock(MT_CG_PERI_THERM, "THERMAL"); */

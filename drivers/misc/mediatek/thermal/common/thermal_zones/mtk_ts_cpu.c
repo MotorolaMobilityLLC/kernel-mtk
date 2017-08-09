@@ -1059,10 +1059,10 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	};
 
 	struct mtktscpu_data *ptr_mtktscpu_data = kmalloc(sizeof(*ptr_mtktscpu_data), GFP_KERNEL);
-
-	if (ptr_mtktscpu_data == NULL)
+	if (ptr_mtktscpu_data == NULL) {
+		pr_warn("[%s] kmalloc fail\n\n", __func__);
 		return -ENOMEM;
-
+	}
 
 	len = (count < (sizeof(ptr_mtktscpu_data->desc) - 1)) ? count : (sizeof(ptr_mtktscpu_data->desc) - 1);
 	if (copy_from_user(ptr_mtktscpu_data->desc, buffer, len)) {

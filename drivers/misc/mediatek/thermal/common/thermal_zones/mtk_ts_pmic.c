@@ -16,6 +16,8 @@
 #include <mt-plat/upmu_common.h>
 #include <tspmic_settings.h>
 #include <linux/uidgid.h>
+#include <linux/slab.h>
+
 /*=============================================================
  *Local variable definition
  *=============================================================*/
@@ -273,48 +275,69 @@ static void mtktspmic_unregister_thermal(void);
 static ssize_t mtktspmic_write(struct file *file, const char __user *buffer, size_t count,
 			       loff_t *data)
 {
-	int len = 0, time_msec = 0;
-	int trip[10] = { 0 };
-	int t_type[10] = { 0 };
+	int len = 0;
 	int i;
+
+	struct mtktspmic_data {
+		int trip[10];
+		int t_type[10];
 	char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
 	char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+		int time_msec;
 	char desc[512];
+	};
 
+	struct mtktspmic_data *ptr_mtktspmic_data;
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
+	ptr_mtktspmic_data = kmalloc(sizeof(*ptr_mtktspmic_data), GFP_KERNEL);
+
+	if (ptr_mtktspmic_data == NULL)
+		return -ENOMEM;
+
+	len = (count < (sizeof(ptr_mtktspmic_data->desc) - 1)) ? count : (sizeof(ptr_mtktspmic_data->desc) - 1);
+	if (copy_from_user(ptr_mtktspmic_data->desc, buffer, len)) {
+		kfree(ptr_mtktspmic_data);
 		return 0;
+	}
 
-	desc[len] = '\0';
+	ptr_mtktspmic_data->desc[len] = '\0';
 
 	if (sscanf
-	    (desc,
+	    (ptr_mtktspmic_data->desc,
 	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
-	     &num_trip, &trip[0], &t_type[0], bind0, &trip[1], &t_type[1], bind1, &trip[2],
-	     &t_type[2], bind2, &trip[3], &t_type[3], bind3, &trip[4], &t_type[4], bind4, &trip[5],
-	     &t_type[5], bind5, &trip[6], &t_type[6], bind6, &trip[7], &t_type[7], bind7, &trip[8],
-	     &t_type[8], bind8, &trip[9], &t_type[9], bind9, &time_msec) == 32) {
+		&num_trip,
+		&ptr_mtktspmic_data->trip[0], &ptr_mtktspmic_data->t_type[0], ptr_mtktspmic_data->bind0,
+		&ptr_mtktspmic_data->trip[1], &ptr_mtktspmic_data->t_type[1], ptr_mtktspmic_data->bind1,
+		&ptr_mtktspmic_data->trip[2], &ptr_mtktspmic_data->t_type[2], ptr_mtktspmic_data->bind2,
+		&ptr_mtktspmic_data->trip[3], &ptr_mtktspmic_data->t_type[3], ptr_mtktspmic_data->bind3,
+		&ptr_mtktspmic_data->trip[4], &ptr_mtktspmic_data->t_type[4], ptr_mtktspmic_data->bind4,
+		&ptr_mtktspmic_data->trip[5], &ptr_mtktspmic_data->t_type[5], ptr_mtktspmic_data->bind5,
+		&ptr_mtktspmic_data->trip[6], &ptr_mtktspmic_data->t_type[6], ptr_mtktspmic_data->bind6,
+		&ptr_mtktspmic_data->trip[7], &ptr_mtktspmic_data->t_type[7], ptr_mtktspmic_data->bind7,
+		&ptr_mtktspmic_data->trip[8], &ptr_mtktspmic_data->t_type[8], ptr_mtktspmic_data->bind8,
+		&ptr_mtktspmic_data->trip[9], &ptr_mtktspmic_data->t_type[9], ptr_mtktspmic_data->bind9,
+		&ptr_mtktspmic_data->time_msec) == 32) {
+
 		mtktspmic_dprintk("[mtktspmic_write] mtktspmic_unregister_thermal\n");
 		mtktspmic_unregister_thermal();
 
 		for (i = 0; i < num_trip; i++)
-			g_THERMAL_TRIP[i] = t_type[i];
+			g_THERMAL_TRIP[i] = ptr_mtktspmic_data->t_type[i];
 
 		g_bind0[0] = g_bind1[0] = g_bind2[0] = g_bind3[0] = g_bind4[0] = g_bind5[0] =
 		    g_bind6[0] = g_bind7[0] = g_bind8[0] = g_bind9[0] = '\0';
 
 		for (i = 0; i < 20; i++) {
-			g_bind0[i] = bind0[i];
-			g_bind1[i] = bind1[i];
-			g_bind2[i] = bind2[i];
-			g_bind3[i] = bind3[i];
-			g_bind4[i] = bind4[i];
-			g_bind5[i] = bind5[i];
-			g_bind6[i] = bind6[i];
-			g_bind7[i] = bind7[i];
-			g_bind8[i] = bind8[i];
-			g_bind9[i] = bind9[i];
+			g_bind0[i] = ptr_mtktspmic_data->bind0[i];
+			g_bind1[i] = ptr_mtktspmic_data->bind1[i];
+			g_bind2[i] = ptr_mtktspmic_data->bind2[i];
+			g_bind3[i] = ptr_mtktspmic_data->bind3[i];
+			g_bind4[i] = ptr_mtktspmic_data->bind4[i];
+			g_bind5[i] = ptr_mtktspmic_data->bind5[i];
+			g_bind6[i] = ptr_mtktspmic_data->bind6[i];
+			g_bind7[i] = ptr_mtktspmic_data->bind7[i];
+			g_bind8[i] = ptr_mtktspmic_data->bind8[i];
+			g_bind9[i] = ptr_mtktspmic_data->bind9[i];
 		}
 
 		mtktspmic_dprintk("[mtktspmic_write] g_THERMAL_TRIP_0=%d,g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,",
@@ -330,9 +353,9 @@ static ssize_t mtktspmic_write(struct file *file, const char __user *buffer, siz
 			g_bind5, g_bind6, g_bind7, g_bind8, g_bind9);
 
 		for (i = 0; i < num_trip; i++)
-			trip_temp[i] = trip[i];
+			trip_temp[i] = ptr_mtktspmic_data->trip[i];
 
-		interval = time_msec / 1000;
+		interval = ptr_mtktspmic_data->time_msec / 1000;
 
 		mtktspmic_dprintk("[mtktspmic_write] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,",
 			trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3]);
@@ -342,11 +365,12 @@ static ssize_t mtktspmic_write(struct file *file, const char __user *buffer, siz
 
 		mtktspmic_dprintk("[mtktspmic_write] mtktspmic_register_thermal\n");
 		mtktspmic_register_thermal();
-
+		kfree(ptr_mtktspmic_data);
 		return count;
 	}
 
 	mtktspmic_dprintk("[mtktspmic_write] bad argument\n");
+	kfree(ptr_mtktspmic_data);
 	return -EINVAL;
 }
 

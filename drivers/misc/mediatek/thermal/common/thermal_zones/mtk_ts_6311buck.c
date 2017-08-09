@@ -20,6 +20,7 @@
 #include "mt_cpufreq.h"
 #include <tmp_6311buck.h>
 #include <linux/uidgid.h>
+#include <linux/slab.h>
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
@@ -371,48 +372,64 @@ static void mtkts6311_unregister_thermal(void);
 static ssize_t mtkts6311_write(struct file *file, const char __user *buffer, size_t count,
 			       loff_t *data)
 {
-	int len = 0, time_msec = 0;
-	int trip[10] = { 0 };
-	int t_type[10] = { 0 };
-	int i;
+	int len = 0, i;
+	struct mtkts6311_data {
+		int trip[10];
+		int t_type[10];
 	char bind0[20], bind1[20], bind2[20], bind3[20], bind4[20];
 	char bind5[20], bind6[20], bind7[20], bind8[20], bind9[20];
+		int time_msec;
 	char desc[512];
+	};
 
+	struct mtkts6311_data *ptr_mtkts6311_data = kmalloc(sizeof(*ptr_mtkts6311_data), GFP_KERNEL);
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
+	if (ptr_mtkts6311_data == NULL)
+		return -ENOMEM;
+
+	len = (count < (sizeof(ptr_mtkts6311_data->desc) - 1)) ? count : (sizeof(ptr_mtkts6311_data->desc) - 1);
+	if (copy_from_user(ptr_mtkts6311_data->desc, buffer, len)) {
+		kfree(ptr_mtkts6311_data);
 		return 0;
+	}
 
-	desc[len] = '\0';
+	ptr_mtkts6311_data->desc[len] = '\0';
 
 	if (sscanf
-	    (desc,
+	    (ptr_mtkts6311_data->desc,
 	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
-	     &num_trip, &trip[0], &t_type[0], bind0, &trip[1], &t_type[1], bind1, &trip[2],
-	     &t_type[2], bind2, &trip[3], &t_type[3], bind3, &trip[4], &t_type[4], bind4, &trip[5],
-	     &t_type[5], bind5, &trip[6], &t_type[6], bind6, &trip[7], &t_type[7], bind7, &trip[8],
-	     &t_type[8], bind8, &trip[9], &t_type[9], bind9, &time_msec) == 32) {
+		&num_trip,
+		&ptr_mtkts6311_data->trip[0], &ptr_mtkts6311_data->t_type[0], ptr_mtkts6311_data->bind0,
+		&ptr_mtkts6311_data->trip[1], &ptr_mtkts6311_data->t_type[1], ptr_mtkts6311_data->bind1,
+		&ptr_mtkts6311_data->trip[2], &ptr_mtkts6311_data->t_type[2], ptr_mtkts6311_data->bind2,
+		&ptr_mtkts6311_data->trip[3], &ptr_mtkts6311_data->t_type[3], ptr_mtkts6311_data->bind3,
+		&ptr_mtkts6311_data->trip[4], &ptr_mtkts6311_data->t_type[4], ptr_mtkts6311_data->bind4,
+		&ptr_mtkts6311_data->trip[5], &ptr_mtkts6311_data->t_type[5], ptr_mtkts6311_data->bind5,
+		&ptr_mtkts6311_data->trip[6], &ptr_mtkts6311_data->t_type[6], ptr_mtkts6311_data->bind6,
+		&ptr_mtkts6311_data->trip[7], &ptr_mtkts6311_data->t_type[7], ptr_mtkts6311_data->bind7,
+		&ptr_mtkts6311_data->trip[8], &ptr_mtkts6311_data->t_type[8], ptr_mtkts6311_data->bind8,
+		&ptr_mtkts6311_data->trip[9], &ptr_mtkts6311_data->t_type[9], ptr_mtkts6311_data->bind9,
+		&ptr_mtkts6311_data->time_msec) == 32) {
 		mtkts6311_dprintk("[mtkts6311_write] mtkts6311_unregister_thermal\n");
 		mtkts6311_unregister_thermal();
 
 		for (i = 0; i < num_trip; i++)
-			g_THERMAL_TRIP[i] = t_type[i];
+			g_THERMAL_TRIP[i] = ptr_mtkts6311_data->t_type[i];
 
 		g_bind0[0] = g_bind1[0] = g_bind2[0] = g_bind3[0] = g_bind4[0] = g_bind5[0] =
 		    g_bind6[0] = g_bind7[0] = g_bind8[0] = g_bind9[0] = '\0';
 
 		for (i = 0; i < 20; i++) {
-			g_bind0[i] = bind0[i];
-			g_bind1[i] = bind1[i];
-			g_bind2[i] = bind2[i];
-			g_bind3[i] = bind3[i];
-			g_bind4[i] = bind4[i];
-			g_bind5[i] = bind5[i];
-			g_bind6[i] = bind6[i];
-			g_bind7[i] = bind7[i];
-			g_bind8[i] = bind8[i];
-			g_bind9[i] = bind9[i];
+			g_bind0[i] = ptr_mtkts6311_data->bind0[i];
+			g_bind1[i] = ptr_mtkts6311_data->bind1[i];
+			g_bind2[i] = ptr_mtkts6311_data->bind2[i];
+			g_bind3[i] = ptr_mtkts6311_data->bind3[i];
+			g_bind4[i] = ptr_mtkts6311_data->bind4[i];
+			g_bind5[i] = ptr_mtkts6311_data->bind5[i];
+			g_bind6[i] = ptr_mtkts6311_data->bind6[i];
+			g_bind7[i] = ptr_mtkts6311_data->bind7[i];
+			g_bind8[i] = ptr_mtkts6311_data->bind8[i];
+			g_bind9[i] = ptr_mtkts6311_data->bind9[i];
 		}
 
 		mtkts6311_dprintk("[mtkts6311_write] g_THERMAL_TRIP_0=%d,g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,",
@@ -427,9 +444,9 @@ static ssize_t mtkts6311_write(struct file *file, const char __user *buffer, siz
 			g_bind5, g_bind6, g_bind7, g_bind8, g_bind9);
 
 		for (i = 0; i < num_trip; i++)
-			trip_temp[i] = trip[i];
+			trip_temp[i] = ptr_mtkts6311_data->trip[i];
 
-		interval = time_msec / 1000;
+		interval = ptr_mtkts6311_data->time_msec / 1000;
 
 		mtkts6311_dprintk("[mtkts6311_write] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,",
 			trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3]);
@@ -440,10 +457,12 @@ static ssize_t mtkts6311_write(struct file *file, const char __user *buffer, siz
 		mtkts6311_dprintk("[mtkts6311_write] mtkts6311_register_thermal\n");
 		mtkts6311_register_thermal();
 
+		kfree(ptr_mtkts6311_data);
 		return count;
 	}
 
 	mtkts6311_dprintk("[mtkts6311_write] bad argument\n");
+	kfree(ptr_mtkts6311_data);
 	return -EINVAL;
 }
 

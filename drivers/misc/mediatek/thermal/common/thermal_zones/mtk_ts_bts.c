@@ -790,7 +790,6 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 	struct mtktsbts_data *ptr_mtktsbts_data = kmalloc(sizeof(*ptr_mtktsbts_data), GFP_KERNEL);
 
 	if (ptr_mtktsbts_data == NULL) {
-		/* pr_warn("[%s] kmalloc fail\n\n", __func__); */
 		return -ENOMEM;
 	}
 
@@ -970,10 +969,9 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 
 	ptr_mtktsbts_parm_data = kmalloc(sizeof(*ptr_mtktsbts_parm_data), GFP_KERNEL);
 
-	if (ptr_mtktsbts_parm_data == NULL) {
-		/* pr_warn("[%s] kmalloc fail\n\n", __func__); */
+	if (ptr_mtktsbts_parm_data == NULL)
 		return -ENOMEM;
-	}
+
 	/* external pin: 0/1/12/13/14/15, can't use pin:2/3/4/5/6/7/8/9/10/11,
 	choose "adc_channel=11" to check if there is any param input */
 	ptr_mtktsbts_parm_data->adc_channel = 11;
