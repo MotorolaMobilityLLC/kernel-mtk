@@ -1569,6 +1569,9 @@ int32_t cmdqCoreInitialize(void)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	cmdqSecInitialize();
 #endif
+
+	gCmdqPrint.CmdqPrintWQ = create_singlethread_workqueue("cmdq_print_count_of_submitted_task");
+	INIT_WORK(&gCmdqPrint.CmdqPrintWork, cmdq_core_run_print_log);
 	return 0;
 }
 
