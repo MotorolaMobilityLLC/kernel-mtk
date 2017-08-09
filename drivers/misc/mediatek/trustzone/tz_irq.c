@@ -19,18 +19,39 @@ static struct device_node *sysirq_node;
 /*************************************************************
  *           REE Service
  *************************************************************/
-static irqreturn_t KREE_IrqHandler(int irq, void *dev)
+static irqreturn_t KREE_IrqHandler(int virq, void *dev)
 {
+	struct irq_data *data = irq_get_irq_data(virq);
 	uint32_t paramTypes;
 	MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
-	param[0].value.a = (uint32_t) irq;
+	if (!data)
+		return IRQ_NONE;
+
+	/* +32, support SPI only */
+	param[0].value.a = (uint32_t) irqd_to_hwirq(data) + 32;
 	paramTypes = TZ_ParamTypes1(TZPT_VALUE_INPUT);
 	ret = KREE_TeeServiceCall(
 			(KREE_SESSION_HANDLE) MTEE_SESSION_HANDLE_SYSTEM,
 			TZCMD_SYS_IRQ, paramTypes, param);
 	return (ret == TZ_RESULT_SUCCESS) ? IRQ_HANDLED : IRQ_NONE;
+}
+
+static unsigned int tz_hwirq_to_virq(unsigned int hwirq, unsigned long flags)
+{
+	struct of_phandle_args oirq;
+
+	if (sysirq_node) {
+		oirq.np = sysirq_node;
+		oirq.args_count = 3;
+		oirq.args[0] = GIC_SPI;
+		oirq.args[1] = hwirq - 32;
+		oirq.args[2] = flags;
+		return irq_create_of_mapping(&oirq);
+	}
+
+	return hwirq;
 }
 
 TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
@@ -41,7 +62,6 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	unsigned int *token;
 	unsigned int virq;
-	struct of_phandle_args oirq;
 
 	if (param->enable) {
 		flags = 0;
@@ -67,16 +87,7 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 			param->token = (void *)token;
 		}
 
-		if (sysirq_node) {
-			oirq.np = sysirq_node;
-			oirq.args_count = 3;
-			oirq.args[0] = GIC_SPI; /* SPI */
-			oirq.args[1] = param->irq - 32;
-			oirq.args[2] = flags;
-			virq = irq_create_of_mapping(&oirq);
-		} else
-			virq = param->irq;
-
+		virq = tz_hwirq_to_virq(param->irq, flags);
 		pr_debug("%s: [irq] of_map got virq:%u, hwirq:%u(gic#)\n"
 			 , __func__, virq, param->irq);
 
@@ -113,12 +124,19 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 TZ_RESULT KREE_ServEnableIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 {
 	struct ree_service_irq *param = (struct ree_service_irq *)uparam;
+	unsigned int virq;
 
-	if (param->enable)
-		enable_irq(param->irq);
-	else
-		disable_irq(param->irq);
-	return TZ_RESULT_SUCCESS;
+	virq = tz_hwirq_to_virq(param->irq, 0);
+	if (virq > 0) {
+		if (param->enable)
+			enable_irq(virq);
+		else
+			disable_irq(virq);
+
+		return TZ_RESULT_SUCCESS;
+	}
+
+	return TZ_RESULT_ERROR_BAD_PARAMETERS;
 }
 
 
