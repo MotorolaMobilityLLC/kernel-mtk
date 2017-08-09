@@ -43,6 +43,7 @@ obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
 obj-$(CONFIG_USB_MU3D_DRV)	+= mu3d/
 obj-$(CONFIG_MU3_PHY)	+= mu3phy/
+obj-$(CONFIG_SSUSB_DRV) += ssusb/
 obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
 obj-$(CONFIG_MTK_MEM) += mem/

@@ -320,7 +320,7 @@ extern int set_rtc_spare_fg_value(int val);
 extern int get_rtc_spare_fg_value(void);
 
 extern bool mt_usb_is_device(void);
-#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
+#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_SSUSB_DRV)
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
 #else
