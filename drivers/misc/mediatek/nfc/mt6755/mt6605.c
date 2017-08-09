@@ -662,6 +662,10 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 	if (ret < 0) {
 		pr_debug("%s: i2c_master_recv returned %d, irq status=%d\n", __func__,
 			 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));
+		pr_debug("%s, enable clock buffer\n", __func__);
+		clk_buf_ctrl(CLK_BUF_NFC, 0);
+		usleep_range(900, 1000);
+		clk_buf_ctrl(CLK_BUF_NFC, 1);
 		return ret;
 	}
 
