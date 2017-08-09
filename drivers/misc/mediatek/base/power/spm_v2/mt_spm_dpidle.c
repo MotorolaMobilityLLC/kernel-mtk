@@ -41,6 +41,7 @@
 
 #include "mt_spm_dpidle.h"
 #include "mt_spm_internal.h"
+#include "mt_idle_profile.h"
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mt_spm_pmic_wrap.h"

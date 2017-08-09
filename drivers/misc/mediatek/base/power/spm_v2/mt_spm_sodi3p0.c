@@ -33,6 +33,7 @@
 
 #include <mt_clkbuf_ctl.h>
 #include <mt_spm_sodi3.h>
+#include <mt_idle_profile.h>
 
 
 /**************************************
@@ -45,6 +46,13 @@
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
 #define SPM_BYPASS_SYSPWREQ         0
+
+unsigned int __attribute__((weak)) pmic_read_interface_nolock(unsigned int RegNum,
+					unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+{
+	return -1;
+}
+
 
 #if defined(CONFIG_ARCH_MT6757)
 static struct pwr_ctrl sodi3_ctrl = {
@@ -127,7 +135,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
+	.dramc_spcmd_apsrc_req_mask_b = 1,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -315,11 +323,9 @@ static void spm_sodi3_pre_process(void)
 
 static void spm_sodi3_post_process(void)
 {
-#if defined(CONFIG_ARCH_MT6755) /* TODO: || defined(CONFIG_ARCH_MT6757) */
-	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	__spm_pmic_low_iq_mode(0);
 #endif
 

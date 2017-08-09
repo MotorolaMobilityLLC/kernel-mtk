@@ -36,6 +36,7 @@
 #include <mt-plat/mt_io.h>
 
 #include <mt_spm_sodi.h>
+#include <mt_idle_profile.h>
 
 
 /**************************************
@@ -92,6 +93,13 @@ static unsigned long m4u_phys_base;
 #define MMU_SMI_ASYNC_CFG	(M4U_BASE + 0xB80)
 #define MMU_SMI_ASYNC_CFG_PHYS	(m4u_phys_base + 0xB80)
 #define SMI_COMMON_ASYNC_DCM	(0x3 << 14)
+
+unsigned int __attribute__((weak)) pmic_read_interface_nolock(unsigned int RegNum,
+					unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+{
+	return -1;
+}
+
 
 #if defined(CONFIG_ARCH_MT6757)
 static struct pwr_ctrl sodi_ctrl = {
@@ -174,7 +182,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
+	.dramc_spcmd_apsrc_req_mask_b = 1,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
