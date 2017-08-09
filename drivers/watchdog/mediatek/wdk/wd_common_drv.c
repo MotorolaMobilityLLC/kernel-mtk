@@ -544,9 +544,15 @@ static int __cpuinit wk_cpu_callback(struct notifier_block *nfb, unsigned long a
 #ifdef CONFIG_LOCAL_WDT
 		/* must kick local wdt in per cpu */
 	case CPU_DYING:
+		/* fall-through */
 #endif
-	case CPU_UP_CANCELED || CPU_UP_CANCELED_FROZEN
-		 || CPU_DEAD || CPU_DEAD_FROZEN:
+	case CPU_UP_CANCELED:
+		/* fall-through */
+	case CPU_UP_CANCELED_FROZEN:
+		/* fall-through */
+	case CPU_DEAD:
+		/* fall-through */
+	case CPU_DEAD_FROZEN:
 		mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
 #ifdef CONFIG_LOCAL_WDT
 		pr_debug("[WDK]cpu %d plug off kick local wdt\n", hotcpu);
