@@ -1247,6 +1247,8 @@ unsigned int get_dram_data_rate(void)
 		MEMPLL_FOUT = 1270;
 	else if (MEMPLL_FOUT == 1040)
 		MEMPLL_FOUT = 1066;
+	else if (MEMPLL_FOUT == 792)
+		MEMPLL_FOUT = 800;
 	else if (MEMPLL_FOUT == 3120) {
 		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
 		old_IC_No_DummyRead = 1;
@@ -1308,9 +1310,11 @@ int dram_steps_freq(unsigned int step)
 		break;
 	case 2:
 		if (DFS_type == 1)
-			freq = 1270;
-		else
-			freq = -1;
+			freq = 800;
+		else if (DFS_type == 2)
+			freq = 800;
+		else if (DFS_type == 3)
+			freq = 800;
 		break;
 	default:
 		return -1;
