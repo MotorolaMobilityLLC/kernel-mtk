@@ -38,7 +38,6 @@
 #include <linux/byteorder/generic.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
-#include <linux/rtpm_prio.h>
 #include <linux/dma-mapping.h>
 #include <linux/syscalls.h>
 #include <linux/reboot.h>
@@ -1081,7 +1080,7 @@ void mt8193_nlh_impl(void)
 
 static int hdmi_timer_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_CAMERA_PREVIEW };
+	struct sched_param param = {.sched_priority = 91};
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -1098,7 +1097,7 @@ static int hdmi_timer_kthread(void *data)
 
 static int cec_timer_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_CAMERA_PREVIEW };
+	struct sched_param param = {.sched_priority = 91};
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -1115,7 +1114,7 @@ static int cec_timer_kthread(void *data)
 
 static int mt8193_nlh_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 94};
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
