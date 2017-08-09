@@ -3662,8 +3662,37 @@ UNLOCK_OL:
 					}
 #endif
 				} else {
+					aee_record_cpu_dvfs_cb(8);
+
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+					if (enable_cpuhvfs && enable_hw_gov)
+						goto UNLOCK_DD;
+#endif
+					if (p_ll->armpll_is_available && (action == CPU_DOWN_PREPARE)) {
+						cur_volt = p_cci->ops->get_cur_volt(p_cci);
+						freq_idx = _search_available_freq_idx_under_v(p_ll, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p_ll, freq_idx));
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p_ll->mt_policy, p_ll, freq_idx, action);
+#endif
+					}
+
+					if (p_l->armpll_is_available && (action == CPU_DOWN_PREPARE)) {
+						cur_volt = (cur_volt == 0) ? p_cci->ops->get_cur_volt(p_cci) :
+							cur_volt;
+						freq_idx = _search_available_freq_idx_under_v(p_l, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p_l, freq_idx));
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p_l->mt_policy, p_l, freq_idx, action);
+#endif
+					}
+
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+UNLOCK_DD:
+#endif
+					aee_record_cpu_dvfs_cb(9);
+
 					if (disable_idvfs_flag) {
-						aee_record_cpu_dvfs_cb(8);
 
 						new_opp_idx = DEFAULT_B_FREQ_IDX;
 						/* Get cci opp idx */
@@ -3686,8 +3715,6 @@ UNLOCK_OL:
 						aee_record_freq_idx(p, p->idx_opp_tbl);
 						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 					} else {
-						aee_record_cpu_dvfs_cb(9);
-
 						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
 						aee_record_freq_idx(p, p->idx_opp_tbl);
 					}
@@ -3755,7 +3782,7 @@ UNLOCK_DF:
 				cpufreq_unlock(flags);
 			}
 			break;
-#if 1
+#if 0
 		case CPU_DEAD:
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_DEAD -> cpus = %d\n", cpus);
