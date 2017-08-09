@@ -73,11 +73,8 @@ static bool usb_enable_clock(bool enable)
 		clk_disable(ssusb_bus_clk);
 		os_printk(K_DEBUG, "ssusb_bus_clk disable done\n");
 
-		/* need to enable later */
-		#if 0
 		clk_disable(ssusb_ref_clk);
 		os_printk(K_DEBUG, "ssusb_ref_clk disable done\n");
-		#endif
 	}
 
 	if (enable)
