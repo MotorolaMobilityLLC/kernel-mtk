@@ -39,6 +39,20 @@
 
 #include "internal.h"
 
+#ifdef __aarch64__
+static void *_memcpy(void *dest, const void *src, size_t count)
+{
+	char *tmp = dest;
+	const char *s = src;
+
+	while (count--)
+		*tmp++ = *s++;
+	return dest;
+}
+
+#define memcpy _memcpy
+#endif
+
 /*
  * We defer making "oops" entries appear in pstore - see
  * whether the system is actually still running well enough
@@ -379,9 +393,26 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
 	}
 }
 
+static void pstore_simp_console_write(struct console *con, const char *s, unsigned c)
+{
+	u64 id;
+	bool compressed = false;
+
+	psinfo->write_buf(PSTORE_TYPE_CONSOLE, 0, &id, 0, s, compressed, c, psinfo);
+}
+
+void pstore_bconsole_write(struct console *con, const char *s, unsigned c)
+{
+	u64 id;
+	bool compressed = false;
+
+	if (psinfo)
+		psinfo->write_buf(PSTORE_TYPE_CONSOLE, 1, &id, 0, s, compressed, c, psinfo);
+}
+
 static struct console pstore_console = {
 	.name	= "pstore",
-	.write	= pstore_console_write,
+	.write	= pstore_simp_console_write,
 	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
 	.index	= -1,
 };

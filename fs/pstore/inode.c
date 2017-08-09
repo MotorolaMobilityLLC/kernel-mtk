@@ -206,6 +206,7 @@ static const struct inode_operations pstore_dir_inode_operations = {
 static struct inode *pstore_get_inode(struct super_block *sb)
 {
 	struct inode *inode = new_inode(sb);
+
 	if (inode) {
 		inode->i_ino = get_next_ino();
 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
@@ -306,7 +307,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
 		goto fail;
 	inode->i_mode = S_IFREG | 0444;
 	inode->i_fop = &pstore_file_operations;
-	private = kmalloc(sizeof *private + size, GFP_KERNEL);
+	private = kmalloc(sizeof(*private) + size, GFP_KERNEL);
 	if (!private)
 		goto fail_alloc;
 	private->type = type;
@@ -320,7 +321,10 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
 			  psname, id, compressed ? ".enc.z" : "");
 		break;
 	case PSTORE_TYPE_CONSOLE:
-		scnprintf(name, sizeof(name), "console-%s", psname);
+		if (id)
+			scnprintf(name, sizeof(name), "console-%s-%lld", psname, id);
+		else
+			scnprintf(name, sizeof(name), "console-%s", psname);
 		break;
 	case PSTORE_TYPE_FTRACE:
 		scnprintf(name, sizeof(name), "ftrace-%s", psname);
