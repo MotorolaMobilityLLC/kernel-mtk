@@ -28,16 +28,9 @@ struct mtk_smi_priv {
 	void (*hdmi_setting)(struct mtk_smi_data *);
 	void (*hdmi_4k_setting)(struct mtk_smi_data *);
 };
-extern struct mtk_smi_data *smi_data;
 
-#define SMI_COMMON_EXT_BASE	smi_data->smi_common_base
-#define LARB0_BASE		smi_data->larb_base[0]
-#define LARB1_BASE		smi_data->larb_base[1]
-#define LARB2_BASE		smi_data->larb_base[2]
-#define LARB3_BASE		smi_data->larb_base[3]
-#define LARB4_BASE		smi_data->larb_base[4]
-#define LARB5_BASE		smi_data->larb_base[5]
 
 extern const struct mtk_smi_priv smi_mt8173_priv;
+extern const struct mtk_smi_priv smi_mt8127_priv;
 
 #endif

@@ -14,6 +14,18 @@
 #define LARB3_BASE (smi_reg_base_barb3)
 #endif
 
+#else
+extern struct mtk_smi_data *smi_data;
+
+#define LARB0_BASE		smi_data->larb_base[0]
+#define LARB1_BASE		smi_data->larb_base[1]
+#define LARB2_BASE		smi_data->larb_base[2]
+#define LARB3_BASE		smi_data->larb_base[3]
+#define LARB4_BASE		smi_data->larb_base[4]
+#define LARB5_BASE		smi_data->larb_base[5]
+
+#define SMI_COMMON_EXT_BASE	smi_data->smi_common_base
+
 #endif
 
 /* ================================================= */
@@ -315,6 +327,10 @@
 
 #define SMI_LARB_NR    6
 
+#elif defined MT27
+
+#define SMI_LARB_NR	3
+
 #endif
 
 #define SMI_LARB_STAT                   (0x0)
@@ -459,6 +475,15 @@
 #define REG_SMI_DUMMY                   (0x418+SMI_COMMON_EXT_BASE)
 
 */
+
+#define REG_SMI_M4U_TH	(0x234 + SMI_COMMON_EXT_BASE)
+#define REG_SMI_L1LEN	(0x200 + SMI_COMMON_EXT_BASE)
+#define REG_SMI_L1ARB0	(0x204 + SMI_COMMON_EXT_BASE)
+#define REG_SMI_L1ARB1	(0x208 + SMI_COMMON_EXT_BASE)
+#define REG_SMI_L1ARB2	(0x20C + SMI_COMMON_EXT_BASE)
+#define REG_SMI_WRR_REG0	(0x228 + SMI_COMMON_EXT_BASE)
+#define REG_SMI_READ_FIFO_TH	(0x230 + SMI_COMMON_EXT_BASE)
+
 
 /* ========================================================================= */
 /* peripheral system */

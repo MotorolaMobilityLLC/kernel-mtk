@@ -8,3 +8,8 @@ ifeq ($(CONFIG_ARCH_MT8173),y)
 obj-y += smi_variant_config_8173.o
 ccflags-y += -DMT73
 endif
+
+ifeq ($(CONFIG_ARCH_MT8127),y)
+ccflags-y += -DMT27
+obj-y += smi_variant_config_8127.o
+endif

@@ -39,7 +39,26 @@
 #define SMI_LOG_TAG "SMI"
 
 #define LARB_BACKUP_REG_SIZE 128
+#ifdef MT73
 #define SMI_COMMON_BACKUP_REG_NUM   10
+
+/* SMI COMMON register list to be backuped */
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
+	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
+};
+
+#elif defined MT27
+/*
+ * MT8127 do not have the following register, offset(0x220, 0x238),
+ * which are SMI_BUS_SEL and SMI_FIFO2_TH, so do not backup them.
+ */
+#define SMI_COMMON_BACKUP_REG_NUM   8
+
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
+	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x230, 0x234
+};
+
+#endif
 
 #define SF_HWC_PIXEL_MAX_NORMAL  (2560 * 1600 * 7)
 #define SF_HWC_PIXEL_MAX_VR   (2560 * 1600 * 7)
@@ -66,11 +85,6 @@ static bool fglarbcallback;	/*larb backuprestore */
 struct mtk_smi_data *smi_data;
 
 static struct cdev *pSmiDev;
-
-/* SMI COMMON register list to be backuped */
-static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
-	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
-};
 
 static unsigned int g_smi_common_backup[SMI_COMMON_BACKUP_REG_NUM];
 
@@ -184,7 +198,6 @@ static void restore_smi_common(void)
 	}
 }
 
-
 static void backup_larb_smi(int index)
 {
 	int port_index = 0;
@@ -216,6 +229,7 @@ static void backup_larb_smi(int index)
 		backup_smi_common();
 
 }
+
 
 static void restore_larb_smi(int index)
 {
@@ -249,14 +263,14 @@ static void restore_larb_smi(int index)
 		larb_offset += 4;
 	}
 
+#ifndef MT27
 	/* we do not backup 0x20 because it is a fixed setting */
 	M4U_WriteReg32(larb_base, 0x20, smi_data->smi_priv->larb_vc_setting[index]);
-
+#endif
 	/* turn off EMI empty OSTD dobule, fixed setting */
 	M4U_WriteReg32(larb_base, 0x2c, 4);
 
 }
-
 
 static int larb_reg_backup(int larb)
 {
@@ -272,9 +286,9 @@ static int larb_reg_backup(int larb)
 
 	if (0 == larb)
 		g_bInited = 0;
-
+#ifndef MT27
 	m4u_larb_backup_sec(larb);
-
+#endif
 	return 0;
 }
 
@@ -341,9 +355,9 @@ int larb_reg_restore(int larb)
 	/*M4U_WriteReg32(larb_base, SMI_ROUTE_SEL, *(pReg++) ); */
 
 	smi_larb_init(larb);
-
+#ifndef MT27
 	m4u_larb_restore_sec(larb);
-
+#endif
 	return 0;
 }
 
@@ -579,7 +593,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 
 	/* Since send uevent may trigger sleeping, we must send the event after releasing spin lock */
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
-
+#ifndef MT27
 	/* force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
 	 * call these APIs only when necessary */
 	{
@@ -597,7 +611,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 			SMIMSG("[SMI_PROFILE] back to %u fps\n", current_fps);
 		}
 	}
-
+#endif
 	SMIMSG("SMI_PROFILE to:%d %s,cur:%d,%d,%d,%d\n", p_conf->scenario,
 	       (p_conf->b_on_off ? "on" : "off"), eFinalScen,
 	       g_SMIInfo.pu4ConcurrencyTable[SMI_BWC_SCEN_NORMAL],
@@ -1012,9 +1026,10 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 	return 0;
 }
 
+/* modify this to avoid build error when runtime_pm not configured */
 static const struct dev_pm_ops mtk_smi_larb_ops = {
-	SET_RUNTIME_PM_OPS(mtk_smi_larb_runtime_suspend,
-			   mtk_smi_larb_runtime_resume, NULL)
+	.runtime_suspend = mtk_smi_larb_runtime_suspend,
+	.runtime_resume = mtk_smi_larb_runtime_resume,
 };
 
 static int mtk_smi_larb_probe(struct platform_device *pdev)
@@ -1081,7 +1096,8 @@ static int mtk_smi_larb_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id mtk_smi_larb_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-smi-larb",},
+	{ .compatible = "mediatek,mt8173-smi-larb", },
+	{ .compatible = "mediatek,mt8127-smi-larb", },
 	{}
 };
 
@@ -1139,6 +1155,7 @@ static int mtk_smi_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_smi_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi",},
+	{ .compatible = "mediatek,mt8127-smi",},
 	{}
 };
 
@@ -1186,6 +1203,8 @@ static int __init smi_init(void)
 
 	#if defined MT73
 	smi_data->smi_priv = &smi_mt8173_priv;
+	#elif defined MT27
+	smi_data->smi_priv = &smi_mt8127_priv;
 	#endif
 
 	SMIMSG("smi_init done\n");
@@ -1221,13 +1240,24 @@ static void smi_dumpCommonDebugMsg(void)
 	       M4U_ReadReg32(u4Base, 0x204), M4U_ReadReg32(u4Base, 0x208));
 	SMIMSG("[0x20C,0x210,0x214]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x20C),
 	       M4U_ReadReg32(u4Base, 0x210), M4U_ReadReg32(u4Base, 0x214));
+	#ifdef MT73
 	SMIMSG("[0x220,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x220),
 	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
 											 0x238));
 	SMIMSG("[0x400,0x404,0x408]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
 	       M4U_ReadReg32(u4Base, 0x404), M4U_ReadReg32(u4Base, 0x408));
 
-	/* TBD: M4U should dump these */
+	#elif defined MT27
+
+	SMIMSG("[0x218,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x218),
+	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
+											 0x238));
+	SMIMSG("[0x400,0x404,]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
+	       M4U_ReadReg32(u4Base, 0x404));
+
+	#endif
+
+	/* TBD: M4U should dump these, the offset of MT27 have been checked and same with the followings. */
 /*
 	For VA and PA check:
 	0x1000C5C0 , 0x1000C5C4, 0x1000C5C8, 0x1000C5CC, 0x1000C5D0
@@ -1252,6 +1282,7 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 	} else {
 		SMIMSG("===SMI LARB%d reg dump===\n", u4Index);
 
+		#ifdef MT73
 		SMIMSG("[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
 		       M4U_ReadReg32(u4Base, 0x8), M4U_ReadReg32(u4Base, 0x10));
 		SMIMSG("[0x24,0x50,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x24),
@@ -1264,6 +1295,23 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 		       M4U_ReadReg32(u4Base, 0xbc), M4U_ReadReg32(u4Base, 0xc0));
 		SMIMSG("[0xc8,0xcc]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xc8),
 		       M4U_ReadReg32(u4Base, 0xcc));
+		#elif defined MT27
+		{
+			unsigned int u4Offset = 0;
+
+			SMIMSG("[0x0,0x10,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
+			       M4U_ReadReg32(u4Base, 0x10), M4U_ReadReg32(u4Base, 0x60));
+			SMIMSG("[0x64,0x8c,0x450]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x64),
+			       M4U_ReadReg32(u4Base, 0x8c), M4U_ReadReg32(u4Base, 0x450));
+			SMIMSG("[0x454,0x600,0x604]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x454),
+			       M4U_ReadReg32(u4Base, 0x600), M4U_ReadReg32(u4Base, 0x604));
+			SMIMSG("[0x610,0x614]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x610),
+			       M4U_ReadReg32(u4Base, 0x614));
+
+			for (u4Offset = 0x200; u4Offset < 0x200 + SMI_LARB_NR * 4; u4Offset += 4)
+				SMIMSG("[0x%x = 0x%x ]\n", u4Offset, M4U_ReadReg32(u4Base , u4Offset));
+		}
+		#endif
 	}
 }
 
