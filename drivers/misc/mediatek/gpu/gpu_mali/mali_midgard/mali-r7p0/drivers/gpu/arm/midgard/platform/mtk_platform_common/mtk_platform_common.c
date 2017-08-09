@@ -321,9 +321,9 @@ static void aee_Handle(struct work_struct *_psWork)
         void mtk_debug_dump_registers(void);
         mtk_debug_dump_registers();
     }
+    aee_kernel_exception("gpulog", "aee dump gpulog");
 #endif
 
-    aee_kernel_exception("gpulog", "aee dump gpulog");
 }
 void mtk_trigger_aee(unsigned int mtk_log, const char *msg)
 {
