@@ -31,6 +31,7 @@
 #define DISP_REG_OVL_ROI_BGCLR			0x0028
 #define DISP_REG_OVL_SRC_CON			0x002c
 #define DISP_REG_OVL_CON(n)			(0x0030 + 0x20 * (n))
+#define DISP_REG_OVL_SRC_KEY(n)			(0x0034 + 0x20 * (n))
 #define DISP_REG_OVL_SRC_SIZE(n)		(0x0038 + 0x20 * (n))
 #define DISP_REG_OVL_OFFSET(n)			(0x003c + 0x20 * (n))
 #define DISP_REG_OVL_PITCH(n)			(0x0044 + 0x20 * (n))
@@ -40,6 +41,7 @@
 
 #define	OVL_RDMA_MEM_GMC	0x40402020
 
+#define OVL_CON_SKEN		BIT(30)
 #define OVL_CON_BYTE_SWAP	BIT(24)
 #define OVL_CON_CLRFMT_RGBA8888	(2 << 12)
 #define OVL_CON_CLRFMT_ARGB8888	(3 << 12)
@@ -142,7 +144,7 @@ static void mtk_ovl_layer_off(struct mtk_ddp_comp *comp, unsigned int idx)
 static unsigned int ovl_fmt_convert(struct mtk_ddp_comp *comp, unsigned int fmt)
 {
 	switch (fmt) {
-	default:
+	default: return 0x7; /* not support */
 	case DRM_FORMAT_RGB565:
 		return comp->data->ovl.fmt_rgb565;
 	case DRM_FORMAT_BGR565:
@@ -184,10 +186,15 @@ static void mtk_ovl_layer_config(struct mtk_ddp_comp *comp, unsigned int idx,
 
 	con = ovl_fmt_convert(comp, fmt);
 	if (force_alpha())
-		pitch |= OVL_SURFL_EN | OVL_DST_BLENDING;
+		pitch |= OVL_SURFL_EN | OVL_DST_BLENDING; /* pre-multiplied */
 	else
 		pitch |= OVL_SURFL_EN | OVL_DST_BLENDING | OVL_SRC_BLENDING;
 
+	con = (con & 0xffffff00) | (pending->alpha & 0xff);
+	if (pending->colorkey & BIT(24)) /* default is disable */
+		con |= OVL_CON_SKEN;
+
+	writel_relaxed(pending->colorkey & 0xffffff, comp->regs + DISP_REG_OVL_SRC_KEY(idx));
 	writel_relaxed(con, comp->regs + DISP_REG_OVL_CON(idx));
 	writel_relaxed(pitch, comp->regs + DISP_REG_OVL_PITCH(idx));
 	writel_relaxed(src_size, comp->regs + DISP_REG_OVL_SRC_SIZE(idx));

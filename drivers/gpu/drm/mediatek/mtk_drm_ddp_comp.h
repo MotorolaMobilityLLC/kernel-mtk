@@ -83,8 +83,8 @@ struct mtk_ddp_comp_driver_data {
 	union {
 		struct ovl {
 			unsigned int addr_offset;
-			unsigned int fmt_rgb888;
 			unsigned int fmt_rgb565;
+			unsigned int fmt_rgb888;
 		} ovl;
 		unsigned int rdma_fifo_pseudo_size;
 		unsigned int color_offset;

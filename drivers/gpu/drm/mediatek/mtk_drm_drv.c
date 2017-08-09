@@ -162,6 +162,38 @@ static struct mtk_mmsys_driver_data mt8173_mmsys_driver_data = {
 	.ext_len = ARRAY_SIZE(mtk_ddp_ext_8173),
 };
 
+static int mtk_drm_create_properties(struct drm_device *dev)
+{
+	struct mtk_drm_private *priv = dev->dev_private;
+
+	dev->mode_config.rotation_property =
+			drm_mode_create_rotation_property(dev,
+			BIT(DRM_ROTATE_0) | BIT(DRM_ROTATE_90) |
+			BIT(DRM_ROTATE_180) | BIT(DRM_ROTATE_270) |
+			BIT(DRM_REFLECT_X) | BIT(DRM_REFLECT_Y));
+	if (!dev->mode_config.rotation_property)
+		return -ENOMEM;
+
+	priv->alpha = drm_property_create_range(dev, 0, "alpha", 0, 255);
+	if (priv->alpha == NULL)
+		return -ENOMEM;
+
+	/* The color key is expressed as an RGB888 triplet stored in a 32-bit
+	 * integer in XRGB8888 format. Bit 24 is used as a flag to disable (0)
+	 * or enable source color keying (1).
+	 */
+	priv->colorkey = drm_property_create_range(dev, 0, "colorkey",
+						   0, 0x01ffffff);
+	if (priv->colorkey == NULL)
+		return -ENOMEM;
+
+	priv->zpos = drm_property_create_range(dev, 0, "zpos", 0, 3);
+	if (priv->zpos == NULL)
+		return -ENOMEM;
+
+	return 0;
+}
+
 static int mtk_drm_kms_init(struct drm_device *drm)
 {
 	struct mtk_drm_private *private = drm->dev_private;
@@ -210,6 +242,12 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 	drm->mode_config.max_width = 4096;
 	drm->mode_config.max_height = 4096;
 	drm->mode_config.funcs = &mtk_drm_mode_config_funcs;
+
+	ret = mtk_drm_create_properties(drm);
+	if (ret) {
+		DRM_ERROR("failed to create properties\n");
+		goto err_config_cleanup;
+	}
 
 	ret = component_bind_all(drm->dev, drm);
 	if (ret)

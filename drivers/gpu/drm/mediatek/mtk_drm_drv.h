@@ -49,6 +49,10 @@ struct mtk_drm_private {
 	struct mtk_ddp_comp *ddp_comp[DDP_COMPONENT_ID_MAX];
 	struct mtk_mmsys_driver_data *data;
 
+	struct drm_property *alpha;
+	struct drm_property *colorkey;
+	struct drm_property *zpos;
+
 	struct {
 		struct drm_atomic_state *state;
 		struct work_struct work;

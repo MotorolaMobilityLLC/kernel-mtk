@@ -126,11 +126,55 @@ static void mtk_drm_plane_destroy_state(struct drm_plane *plane,
 	kfree(to_mtk_plane_state(state));
 }
 
+static int mtk_plane_atomic_set_property(struct drm_plane *plane,
+					 struct drm_plane_state *state,
+					 struct drm_property *property,
+					 uint64_t val)
+{
+	struct mtk_plane_state *mstate = to_mtk_plane_state(state);
+	struct mtk_drm_private *priv = plane->dev->dev_private;
+
+	if (property == priv->alpha)
+		mstate->pending.alpha = val;
+	else if (property == priv->colorkey)
+		mstate->pending.colorkey = val;
+	else if (property == priv->zpos)
+		mstate->pending.zpos = val;
+	else
+		return -EINVAL;
+
+	return 0;
+}
+
+static int mtk_plane_atomic_get_property(struct drm_plane *plane,
+					 const struct drm_plane_state *state,
+					 struct drm_property *property,
+					 uint64_t *val)
+{
+	const struct mtk_plane_state *mstate =
+		container_of(state, const struct mtk_plane_state, base);
+	struct mtk_drm_private *priv = plane->dev->dev_private;
+
+	if (property == priv->alpha)
+		*val = mstate->pending.alpha;
+	else if (property == priv->colorkey)
+		*val = mstate->pending.colorkey;
+	else if (property == priv->zpos)
+		*val = mstate->pending.zpos;
+	else
+		return -EINVAL;
+
+	return 0;
+}
+
 static const struct drm_plane_funcs mtk_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
 	.destroy = drm_plane_cleanup,
 	.reset = mtk_plane_reset,
+	.set_property = drm_atomic_helper_plane_set_property,
+	.atomic_set_property = mtk_plane_atomic_set_property,
+	.atomic_get_property = mtk_plane_atomic_get_property,
 	.atomic_duplicate_state = mtk_plane_duplicate_state,
 	.atomic_destroy_state = mtk_drm_plane_destroy_state,
 };
@@ -348,6 +392,7 @@ int mtk_plane_init(struct drm_device *dev, struct mtk_drm_plane *mtk_plane,
 		   unsigned long possible_crtcs, enum drm_plane_type type,
 		   unsigned int zpos)
 {
+	struct mtk_drm_private *priv = dev->dev_private;
 	int err, i;
 
 	err = drm_universal_plane_init(dev, &mtk_plane->base, possible_crtcs,
@@ -364,6 +409,12 @@ int mtk_plane_init(struct drm_device *dev, struct mtk_drm_plane *mtk_plane,
 	mtk_drm_gem_create(dev, 4096, true);
 	for (i = 0; i < 2; i++)
 		mtk_plane->gem[i] = mtk_drm_gem_create(dev, PRIV_BUF, false);
+
+	drm_object_attach_property(&mtk_plane->base.base,
+				   dev->mode_config.rotation_property, 0);
+	drm_object_attach_property(&mtk_plane->base.base, priv->alpha, 255);
+	drm_object_attach_property(&mtk_plane->base.base, priv->colorkey, 0);
+	drm_object_attach_property(&mtk_plane->base.base, priv->zpos, 1);
 
 	return 0;
 }
