@@ -12,7 +12,6 @@ obj-$(CONFIG_MMC_MTK) += sd.o
 
 obj-$(CONFIG_MMC_MTK) += dbg.o
 obj-$(CONFIG_MMC_MTK) += mt_sd_misc.o
-#obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o ettagent.o
 
 # kdump/kpainc interface move to lk
 ifeq ($(CONFIG_MTK_AEE_IPANIC),y)
@@ -21,6 +20,10 @@ endif
 
 ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
 obj-$(CONFIG_MMC_MTK) += emmc_otp.o
+endif
+
+ifeq ($(CONFIG_MTK_COMBO_COMM),y)
+obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o
 endif
 
 #ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
