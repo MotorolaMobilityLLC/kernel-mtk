@@ -1190,32 +1190,39 @@ int _ioctl_frame_config(unsigned long arg)
 	return 0;
 }
 
+int disp_mgr_get_session_info(disp_session_info *info)
+{
+	unsigned int session_id = 0;
+
+	session_id = info->session_id;
+
+	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
+		primary_display_get_info(info);
+	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
+		external_display_get_info(info, session_id);
+	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
+		ovl2mem_get_info(info);
+	} else {
+		DISPERR("session type is wrong:0x%08x\n", session_id);
+		return -1;
+	}
+
+	return 0;
+}
+
 
 int _ioctl_get_info(unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_info info;
-	unsigned int session_id = 0;
 
 	if (copy_from_user(&info, argp, sizeof(info))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
-	session_id = info.session_id;
-
-	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		primary_display_get_info(&info);
-	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
-		external_display_get_info(&info, session_id);
-	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
-		ovl2mem_get_info(&info);
-	} else {
-		DISPERR("session type is wrong:0x%08x\n", session_id);
-		return -1;
-	}
-
+	ret = disp_mgr_get_session_info(&info);
 
 	if (copy_to_user(argp, &info, sizeof(info))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
