@@ -208,7 +208,7 @@ static unsigned int get_constant_voltage(void)
 #endif
 	return cv;
 }
-
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 static void switch_charger_set_vindpm(unsigned int chr_v)
 {
 	/*unsigned int delta_v = 0; */
@@ -231,6 +231,7 @@ static void switch_charger_set_vindpm(unsigned int chr_v)
 		    "[PE+] switch charger set VINDPM=%dmV with charger volatge=%dmV\n",
 		    vindpm * 100 + 2600, chr_v);
 }
+#endif
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
