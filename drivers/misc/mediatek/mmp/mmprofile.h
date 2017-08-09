@@ -70,7 +70,7 @@ typedef struct {
 	void *pData;                /* image buffer address */
 } MMP_MetaDataBitmap_t;
 
-#ifdef CUSTOM_KERNEL_MMPROFILE
+#ifdef CONFIG_MMPROFILE
 MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name);
 MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name);
 void MMProfileEnableEvent(MMP_Event event, long enable);
@@ -104,7 +104,7 @@ long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitma
  * obj-$(CONFIG_MMPROFILE) += mmp/
  * , the mmp/ driver is compiled but not built-in. Put dummy API implementation here.
  */
-#ifndef CUSTOM_KERNEL_MMPROFILE
+#ifndef CONFIG_MMPROFILE
 static inline MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
 {
 	return 0;
