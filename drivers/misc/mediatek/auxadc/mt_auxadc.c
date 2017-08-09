@@ -245,7 +245,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 #endif
 #if defined(EFUSE_CALI)
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
-	cali_reg = 0x60180400;
 	if (((cali_reg & 0x40000000) >> 30) != 0) {
 		cali_oe_a = (cali_reg & 0x3ff00000) >> 20;
 		cali_ge_a = ((cali_reg & 0xffc00) >> 10);
@@ -253,7 +252,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
 	}
-		pr_err("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
+		pr_debug("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
 	     cali_reg, cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
 #endif
 
