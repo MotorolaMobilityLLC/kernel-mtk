@@ -23,3 +23,9 @@ config PINCTRL_MT2701
 	depends on OF
 	default MACH_MT2701
 	select PINCTRL_MTK_COMMON
+
+config PINCTRL_MT8173
+	bool "Mediatek MT8173 pin control" if COMPILE_TEST && !ARCH_MT8173
+	depends on OF
+	default ARCH_MT8173
+	select PINCTRL_MTK_COMMON
