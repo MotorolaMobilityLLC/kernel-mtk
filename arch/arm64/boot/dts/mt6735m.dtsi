@@ -1836,6 +1836,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 #include "cust_eint.dtsi"
 /include/ "cust_kpd.dtsi"
 /include/ "cust_i2c.dtsi"
+/include/ "cust_adc.dtsi"
 /* /include/ "cust_pmic.dtsi" */
 &eintc {
 	pmic@206 {
