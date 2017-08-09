@@ -4361,13 +4361,14 @@ static inline void hrtick_update(struct rq *rq)
 #endif
 
 #if defined(CONFIG_MTK_SCHED_CMP) || defined(CONFIG_SCHED_HMP)
+#define HMP_LB (0x4000)
 struct clb_env {
 	struct clb_stats bstats;
 	struct clb_stats lstats;
 	int btarget, ltarget;
 
-	struct cpumask *bcpus;
-	struct cpumask *lcpus;
+	struct cpumask bcpus;
+	struct cpumask lcpus;
 
 	unsigned int flags;
 	struct mcheck {
@@ -4558,8 +4559,8 @@ static void adj_threshold(struct clb_env *clbenv)
 
 static void sched_update_clbstats(struct clb_env *clbenv)
 {
-	collect_cluster_stats(&clbenv->bstats, clbenv->bcpus, clbenv->btarget);
-	collect_cluster_stats(&clbenv->lstats, clbenv->lcpus, clbenv->ltarget);
+	collect_cluster_stats(&clbenv->bstats, &clbenv->bcpus, clbenv->btarget);
+	collect_cluster_stats(&clbenv->lstats, &clbenv->lcpus, clbenv->ltarget);
 	adj_threshold(clbenv);
 }
 
@@ -4770,6 +4771,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 static void hmp_online_cpu(int cpu) {}
 static void hmp_offline_cpu(int cpu) {}
 #endif /* CONFIG_SCHED_HMP */
+
 
 /*
  * The enqueue_task method is called before nr_running is
@@ -6593,10 +6595,13 @@ static int need_migrate_task_immediately(struct task_struct *p,
 					 struct lb_env *env, struct clb_env *clbenv)
 {
 	struct sched_domain *sd = env->sd;
+#ifdef CONFIG_SCHED_HMP
 	unsigned long src_cap, dst_cap;
+#endif
 
 	BUG_ON(sd == NULL);
 
+#ifdef CONFIG_SCHED_HMP
 	src_cap = arch_get_max_cpu_capacity(env->src_cpu);
 	dst_cap = arch_get_max_cpu_capacity(env->dst_cpu);
 	if (src_cap != dst_cap) {
@@ -6621,6 +6626,7 @@ static int need_migrate_task_immediately(struct task_struct *p,
 		}
 		return 0;
 	}
+#endif
 
 	if (arch_is_multi_cluster() && (sd->flags & SD_BALANCE_TG)) {
 		int src_clid, dst_clid;
@@ -6813,14 +6819,14 @@ static int tgs_detach_tasks(struct lb_env *env)
 	long tg_load_move, other_load_move;
 	struct list_head tg_tasks, other_tasks;
 	int src_clid, dst_clid;
-#ifdef CONFIG_MTK_SCHED_CMP_TGS_WAKEUP
-	struct cpumask tmp, *cpus = &tmp;
-#endif
 #ifdef MTK_QUICK
 	int flag = 0;
 #endif
 	struct clb_env clbenv;
 	struct sched_domain *sd = env->sd;
+#ifdef CONFIG_SCHED_HMP
+	unsigned long src_cap, dst_cap;
+#endif
 
 	lockdep_assert_held(&env->src_rq->lock);
 
@@ -6836,9 +6842,6 @@ static int tgs_detach_tasks(struct lb_env *env)
 	dst_clid = arch_get_cluster_id(env->dst_cpu);
 	BUG_ON(dst_clid == -1 || src_clid == -1);
 
-#ifdef CONFIG_MTK_SCHED_CMP_TGS_WAKEUP
-	get_cluster_cpus(cpus, src_clid, true);
-#endif
 	mt_sched_printf(sched_cmp,
 		"[%s] start: src:cpu=%d clid=%d runnable_load=%lu dst:cpu=%d clid=%d" "runnable_load=%lu",
 		__func__,
@@ -6849,19 +6852,30 @@ static int tgs_detach_tasks(struct lb_env *env)
 			env->imbalance, env->dst_rq->curr->on_rq, sd->flags, env->loop_max,
 			cpu_rq(env->src_cpu)->nr_running);
 
-/*
-	if (arch_is_big_little()) {
-		get_cluster_cpus(&srcmask, src_clid, true);
-		get_cluster_cpus(&dstmask, dst_clid, true);
-		memset(&clbenv, 0, sizeof(clbenv));
+#ifdef CONFIG_SCHED_HMP
+	src_cap = arch_get_max_cpu_capacity(env->src_cpu);
+	dst_cap = arch_get_max_cpu_capacity(env->dst_cpu);
+
+	memset(&clbenv, 0, sizeof(clbenv));
+	clbenv.ltarget = (int) src_cap;
+	clbenv.btarget = (int) dst_cap;
+
+	if (src_cap != dst_cap) {
 		clbenv.flags |= HMP_LB;
-		clbenv.ltarget = arch_cpu_is_little(env->src_cpu) ? env->src_cpu : env->dst_cpu;
-		clbenv.btarget = arch_cpu_is_big(env->src_cpu) ? env->src_cpu : env->dst_cpu;
-		clbenv.lcpus = arch_cpu_is_little(env->src_cpu) ? &srcmask : &dstmask;
-		clbenv.bcpus = arch_cpu_is_big(env->src_cpu) ? &srcmask : &dstmask;
+		if (src_cap < dst_cap) {
+			clbenv.ltarget = env->src_cpu;
+			clbenv.btarget = env->dst_cpu;
+			get_cluster_cpus(&clbenv.lcpus, src_clid, true);
+			get_cluster_cpus(&clbenv.bcpus, dst_clid, true);
+		} else {
+			clbenv.ltarget = env->dst_cpu;
+			clbenv.btarget = env->src_cpu;
+			get_cluster_cpus(&clbenv.lcpus, dst_clid, true);
+			get_cluster_cpus(&clbenv.bcpus, src_clid, true);
+		}
 		sched_update_clbstats(&clbenv);
 	}
-*/
+#endif
 
 	while (!list_empty(tasks)) {
 		struct thread_group_info_t *src_tginfo, *dst_tginfo;
@@ -9379,8 +9393,8 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	}
 	memset(&clbenv, 0, sizeof(clbenv));
 	clbenv.flags |= HMP_SELECT_RQ;
-	clbenv.lcpus = &hmp_slow_cpu_mask;
-	clbenv.bcpus = &hmp_fast_cpu_mask;
+	cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
+	cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
 	clbenv.ltarget = L_target;
 	clbenv.btarget = B_target;
 	sched_update_clbstats(&clbenv);
@@ -9493,8 +9507,8 @@ static unsigned int hmp_up_migration(int cpu, int *target_cpu, struct sched_enti
 	 * 3) It violates task affinity
 	 */
 	if (!L->ncpu || !B->ncpu
-		|| cpumask_test_cpu(curr_cpu, clbenv->bcpus)
-		|| !cpumask_intersects(clbenv->bcpus, tsk_cpus_allowed(p)))
+		|| cpumask_test_cpu(curr_cpu, &clbenv->bcpus)
+		|| !cpumask_intersects(&clbenv->bcpus, tsk_cpus_allowed(p)))
 		goto out;
 
 	/*
@@ -9584,8 +9598,8 @@ static unsigned int hmp_down_migration(int cpu, int *target_cpu, struct sched_en
 	 * 3) It violates task affinity
 	 */
 	if (!L->ncpu || !B->ncpu
-		|| cpumask_test_cpu(curr_cpu, clbenv->lcpus)
-	    || !cpumask_intersects(clbenv->lcpus, tsk_cpus_allowed(p)))
+		|| cpumask_test_cpu(curr_cpu, &clbenv->lcpus)
+	    || !cpumask_intersects(&clbenv->lcpus, tsk_cpus_allowed(p)))
 		goto out;
 
 	/*
@@ -9875,8 +9889,8 @@ static void hmp_force_down_migration(int this_cpu)
 		clbenv.flags |= HMP_GB;
 		clbenv.btarget = curr_cpu;
 		clbenv.ltarget = target_cpu;
-		clbenv.lcpus = &hmp_slow_cpu_mask;
-		clbenv.bcpus = &hmp_fast_cpu_mask;
+		cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
+		cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
 		sched_update_clbstats(&clbenv);
 
 #ifdef CONFIG_SCHED_HMP_PLUS
@@ -9971,8 +9985,8 @@ static void hmp_force_up_migration(int this_cpu)
 		clbenv.flags |= HMP_GB;
 		clbenv.ltarget = curr_cpu;
 		clbenv.btarget = target_cpu;
-		clbenv.lcpus = &hmp_slow_cpu_mask;
-		clbenv.bcpus = &hmp_fast_cpu_mask;
+		cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
+		cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
 		sched_update_clbstats(&clbenv);
 
 #ifdef CONFIG_HMP_PACK_SMALL_TASK
@@ -10039,8 +10053,8 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	memset(&clbenv, 0, sizeof(clbenv));
 	clbenv.flags |= HMP_GB;
 	clbenv.btarget = this_cpu;
-	clbenv.lcpus = &hmp_slow_cpu_mask;
-	clbenv.bcpus = &hmp_fast_cpu_mask;
+	cpumask_copy(&clbenv.lcpus, &hmp_slow_cpu_mask);
+	cpumask_copy(&clbenv.bcpus, &hmp_fast_cpu_mask);
 
 	/* first select a task */
 	for_each_cpu(cpu, &hmp_domain->cpus) {
