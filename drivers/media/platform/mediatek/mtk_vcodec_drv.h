@@ -216,14 +216,12 @@ struct mtk_enc_params {
  * struct mtk_vcodec_pm - Power management data structure
  */
 struct mtk_vcodec_pm {
-	struct clk	*syspll_d3;
 	struct clk	*vdecpll;
 	struct clk	*vdec_sel;
+	struct clk	*venc;
+	struct clk	*venclt;
 	struct device	*larbvdec;
 	struct device	*larbvenc;
-	struct device	*larbvenclt;
-	struct device	*pmvenc;
-	struct device	*pmvenclt;
 	struct device	*dev;
 	struct mtk_vcodec_dev *mtkdev;
 };

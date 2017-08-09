@@ -56,17 +56,6 @@
 #define VPU_PMEM0_ATTRS(vpu)	(vpu->mem.bank0.p_attrs)
 #define VPU_DMEM0_ATTRS(vpu)	(vpu->mem.bank0.d_attrs)
 
-
-#define MAP_VDEC_BASE		0x16000000
-#define MAP_VDEC_RANGE		0x00030000
-#define MAP_VDEC_END		(MAP_VDEC_BASE + MAP_VDEC_RANGE)
-#define MAP_VENC_BASE		0x15009000
-#define MAP_VENC_RANGE		0x00001000
-#define MAP_VENC_END		(MAP_VENC_BASE + MAP_VENC_RANGE)
-#define MAP_VENC_LT_BASE	0x19002000
-#define MAP_VENC_LT_RANGE	0x00001000
-#define MAP_VENC_LT_END		(MAP_VENC_LT_BASE + MAP_VENC_LT_RANGE)
-
 #define MAP_SHMEM_ALLOC_BASE	0x80000000
 #define MAP_SHMEM_ALLOC_RANGE	0x08000000
 #define MAP_SHMEM_ALLOC_END	(MAP_SHMEM_ALLOC_BASE + MAP_SHMEM_ALLOC_RANGE)
@@ -77,6 +66,19 @@
 #define MAP_SHMEM_MM_BASE	0x90000000
 #define MAP_SHMEM_MM_RANGE	0x40000000
 #define MAP_SHMEM_MM_END	(MAP_SHMEM_MM_BASE + MAP_SHMEM_MM_RANGE)
+
+enum vpu_map_hw_reg_id {
+	VDEC,
+	VENC,
+	VENC_LT,
+	VPU_MAP_HW_REG_NUM
+};
+
+static const unsigned long vpu_map_hw_type[VPU_MAP_HW_REG_NUM] = {
+	0x70000000,	/* VDEC */
+	0x71000000,	/* VENC */
+	0x72000000	/* VENC_LT */
+};
 
 static dev_t vpu_devno;
 static struct cdev *vpu_cdev;
@@ -152,6 +154,11 @@ struct share_obj {
 	unsigned char share_buf[SHARE_BUF_SIZE];
 };
 
+struct map_hw_reg {
+	unsigned long base;
+	unsigned long len;
+};
+
 /**
  * struct mtk_vpu_dev - vpu driver data
  *
@@ -169,6 +176,7 @@ struct mtk_vpu_dev {
 	struct file *file;
 	struct task_struct *handle_task;
 	struct dma_iommu_mapping *dma_mapping;
+	struct map_hw_reg map_base[VPU_MAP_HW_REG_NUM];
 	bool   is_open;
 	bool   is_alloc;
 };
@@ -476,18 +484,17 @@ static int mtk_vpu_mmap(struct file *file, struct vm_area_struct *vma)
 	unsigned long length = vma->vm_end - vma->vm_start;
 	unsigned long pa_start = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long pa_end = pa_start + length;
+	int i;
 
 	pr_debug("[VPU] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
 		 vma->vm_start, vma->vm_end, vma->vm_pgoff);
 
-	if (pa_start >= MAP_VDEC_BASE && pa_end <= MAP_VDEC_END)
-		goto valid_map;
-
-	if (pa_start >= MAP_VENC_BASE && pa_end <= MAP_VENC_END)
-		goto valid_map;
-
-	if (pa_start >= MAP_VENC_LT_BASE && pa_end <= MAP_VENC_LT_END)
-		goto valid_map;
+	for (i = 0; i < VPU_MAP_HW_REG_NUM; i++) {
+		if (pa_start == vpu_map_hw_type[i] && length <= vpu_mtkdev->map_base[i].len) {
+			vma->vm_pgoff = vpu_mtkdev->map_base[i].base >> PAGE_SHIFT;
+			goto valid_map;
+		}
+	}
 
 	if (pa_start >= MAP_SHMEM_ALLOC_BASE && pa_end <= MAP_SHMEM_ALLOC_END) {
 		vpu_free_d_ext_mem(vpu_mtkdev);
@@ -589,7 +596,8 @@ static int mtk_vpu_probe(struct platform_device *pdev)
 {
 	struct mtk_vpu_dev *vpu_dev;
 	struct device *dev;
-	int ret = 0;
+	struct resource *res;
+	int i, ret = 0;
 
 	pr_debug("[VPU] initialization\n");
 
@@ -602,6 +610,18 @@ static int mtk_vpu_probe(struct platform_device *pdev)
 	vpu_dev->plat_dev = pdev;
 	platform_set_drvdata(pdev, vpu_dev);
 	vpu_mtkdev = vpu_dev;
+
+	for (i = 0; i < VPU_MAP_HW_REG_NUM; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+		if (!res) {
+			pr_err("Get memory resource failed.\n");
+			ret = -ENXIO;
+			goto err_ipi_init;
+		}
+		vpu_dev->map_base[i].base = res->start;
+		vpu_dev->map_base[i].len = resource_size(res);
+		pr_debug("[VPU] base[%d]: 0x%x 0x%x", i, res->start, resource_size(res));
+	}
 
 	pr_debug("[VPU] vpu ipi init\n");
 	ret = vpu_ipi_init(vpu_dev);

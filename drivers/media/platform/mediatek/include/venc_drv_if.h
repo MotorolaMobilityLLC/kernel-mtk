@@ -62,10 +62,12 @@ enum venc_start_opt {
  * enum venc_drv_msg - The type of encode frame status used in venc_if_encode()
  * @VENC_MESSAGE_OK: encode ok
  * @VENC_MESSAGE_ERR: encode error
+ * @VENC_MESSAGE_PARTIAL: encode partial frame (ok means EOF)
  */
 enum venc_drv_msg {
 	VENC_MESSAGE_OK,
 	VENC_MESSAGE_ERR,
+	VENC_MESSAGE_PARTIAL,
 };
 
 /*

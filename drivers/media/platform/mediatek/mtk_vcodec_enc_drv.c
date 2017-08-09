@@ -551,38 +551,5 @@ static struct platform_driver mtk_vcodec_driver = {
 
 module_platform_driver(mtk_vcodec_driver);
 
-
-static int venc_pm_probe(struct platform_device *pdev)
-{
-	mtk_v4l2_debug(0, "%s\n", dev_name(&pdev->dev));
-	pm_runtime_enable(&pdev->dev);
-	return 0;
-}
-
-static int venc_pm_remove(struct platform_device *pdev)
-{
-	mtk_v4l2_debug(0, "%s\n", dev_name(&pdev->dev));
-	pm_runtime_disable(&pdev->dev);
-	return 0;
-}
-
-static struct of_device_id mtk_vcodec_venc_pm_match[] = {
-	{ .compatible = "mediatek,mt2701-vcodec-enc-pm",},
-	{ .compatible = "mediatek,mt2701-vcodec-enclt-pm",},
-	{ },
-};
-
-struct platform_driver venc_pm_driver = {
-	.probe		= venc_pm_probe,
-	.remove		= venc_pm_remove,
-	.driver		= {
-		.name	= "venc_pm",
-		.owner	= THIS_MODULE,
-		.of_match_table = mtk_vcodec_venc_pm_match,
-	},
-};
-
-module_platform_driver(venc_pm_driver);
-
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Mediatek video codec V4L2 driver");

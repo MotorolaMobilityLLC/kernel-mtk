@@ -623,7 +623,6 @@ static int vidioc_try_fmt(struct file *file, void *priv, struct v4l2_format *f)
 			mtk_v4l2_err("failed to try output format %d %d %s\n",
 				       fmt->num_planes, pix_fmt_mp->num_planes,
 				       str);
-			return -EINVAL;
 		}
 
 		v4l_bound_align_image(&pix_fmt_mp->width, 8, 1920, 1,
