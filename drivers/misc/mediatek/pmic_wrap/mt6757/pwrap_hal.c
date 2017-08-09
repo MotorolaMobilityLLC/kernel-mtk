@@ -903,6 +903,13 @@ static s32 _pwrap_init_sistrobe(void)
 	u64 result = 0, tmp1 = 0, tmp2 = 0;
 	s32 leading_one = 0;
 	s32 tailing_one = 0;
+	s32 i = 0, fail_cnt = 0, ret = 0;
+	u32 test_data[30] = {0x6996, 0x9669, 0x6996, 0x9669, 0x6996,
+						 0x9669, 0x6996, 0x9669, 0x6996, 0x9669,
+						 0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5,
+						 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A,
+						 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27,
+						 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27};
 
 	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
 	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, WACS2);	/* only WACS2 */
@@ -914,13 +921,20 @@ static s32 _pwrap_init_sistrobe(void)
 		WRAP_WR32(PMIC_WRAP_SI_CK_CON, (ind >> 2) & 0x7);
 		WRAP_WR32(PMIC_WRAP_SIDLY, 0x3 - (ind & 0x3));
 #ifdef SLV_6351
-		_pwrap_wacs2_nochk(0, MT6351_DEW_READ_TEST, 0, &rdata);
-		if (rdata == MT6351_DEFAULT_VALUE_READ_TEST) {
-			PWRAPERR("_pwrap_init_sistrobe [Read Test of MT6351] pass,index=%d rdata=%x\n", ind, rdata);
-			result |= (0x1 << ind);
-		} else {
-			PWRAPERR("_pwrap_init_sistrobe [Read Test of MT6351] tuning,index=%d rdata=%x\n", ind, rdata);
+		fail_cnt = 0;
+		for (i = 0; i < 30; i++) {
+			_pwrap_wacs2_nochk(1, MT6351_DEW_WRITE_TEST, test_data[i], &rdata);
+			_pwrap_wacs2_nochk(0, MT6351_DEW_WRITE_TEST, 0, &rdata);
+
+			if (rdata != test_data[i]) {
+				fail_cnt++;
+				PWRAPERR("_pwrap_init_sistrobe tuning, index=%d rdata =%x\n", ind, rdata);
+			} else {
+				PWRAPLOG("_pwrap_init_sistrobe pass,index=%d rdata=%x\n", ind, rdata);
+			}
 		}
+		if (fail_cnt == 0)
+			result |= (0x1 << ind);
 #endif
 	}
 
@@ -964,11 +978,11 @@ static s32 _pwrap_init_sistrobe(void)
 		/* Restore */
 		/* --------------------------------------------------------------------- */
 		WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
-		return 0;
 	} else {
 		PWRAPERR("_pwrap_init_sistrobe Fail,result_faulty=%x\n", result_faulty);
-		return result_faulty;
+		ret = result_faulty;
 	}
+	return ret;
 }
 
 /******************************************************
