@@ -1715,6 +1715,7 @@ static int md_ccif_probe(struct platform_device *dev)
 	md_ctrl->traffic_monitor.data = (unsigned long)md;
 
 	md_ctrl->channel_id = 0;
+	atomic_set(&md_ctrl->reset_on_going, 1);
 
 	/*register modem */
 	ccci_register_modem(md);

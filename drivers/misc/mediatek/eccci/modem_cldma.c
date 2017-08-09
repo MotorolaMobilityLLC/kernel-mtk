@@ -3958,7 +3958,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	    alloc_workqueue("md%d_cldma_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, md->index + 1);
 	INIT_WORK(&md_ctrl->cldma_irq_work, cldma_irq_work);
 	md_ctrl->channel_id = 0;
-	atomic_set(&md_ctrl->reset_on_going, 0);
+	atomic_set(&md_ctrl->reset_on_going, 1);
 	atomic_set(&md_ctrl->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
 	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
 	atomic_set(&md_ctrl->ccif_irq_enabled, 0);
