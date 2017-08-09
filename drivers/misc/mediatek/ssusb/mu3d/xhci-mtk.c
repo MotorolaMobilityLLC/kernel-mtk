@@ -28,7 +28,7 @@
 #define USB2_PORT 2
 #define USB3_PORT 3
 
-#define OTG_IDDIG_DEBOUNCE 50
+#define OTG_IDDIG_DEBOUNCE 500
 
 #define U3_UX_EXIT_LFPS_TIMING_PAR	0xa0
 #define U3_REF_CK_PAR	0xb0
