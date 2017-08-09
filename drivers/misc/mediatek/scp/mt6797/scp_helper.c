@@ -34,9 +34,11 @@
 #include <linux/of_irq.h>
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
+#include <linux/wakelock.h>
 #include <asm/io.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
+#include <linux/delay.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
@@ -56,6 +58,9 @@
 #define IS_CLK_DMA_EN 0x40000
 #define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
 
+#define EXPECTED_FREQ_REG SCP_GENERAL_REG3
+#define CURRENT_FREQ_REG  SCP_GENERAL_REG4
+
 phys_addr_t scp_mem_base_phys = 0x0;
 phys_addr_t scp_mem_base_virt = 0x0;
 phys_addr_t scp_mem_size = 0x0;
@@ -67,11 +72,14 @@ static unsigned int scp_ready;
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_notify_work;
 static struct mutex scp_notify_mutex;
+static struct mutex scp_feature_mutex;
 unsigned char **scp_swap_buf;
+static struct wake_lock scp_suspend_lock;
 typedef struct {
 	u64 start;
 	u64 size;
 } mem_desc_t;
+
 static scp_reserve_mblock_t scp_reserve_mblock[] = {
 	{
 		.num = VOW_MEM_ID,
@@ -110,6 +118,42 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.size = 0x200000,/*2MB*/
 	},
 };
+
+static scp_feature_table_t feature_table[] = {
+	{
+		.feature    = VOW_FEATURE_ID,
+		.freq       = 80,
+		.enable     = 0,
+	},
+	{
+		.feature    = OPEN_DSP_FEATURE_ID,
+		.freq       = 270,
+		.enable     = 0,
+	},
+	{
+		.feature    = SENS_FEATURE_ID,
+		.freq       = 84,
+		.enable     = 1,
+	},
+	{
+		.feature    = MP3_FEATURE_ID,
+		.freq       = 20,
+		.enable     = 0,
+	},
+	{
+		.feature    = FLP_FEATURE_ID,
+		.freq       = 26,
+		.enable     = 0,
+	},
+	{
+		.feature    = RTOS_FEATURE_ID,
+		.freq       = 0,
+		.enable     = 0,
+	},
+
+};
+
+
 void memcpy_to_scp(void __iomem *trg, const void *src, int size)
 {
 	int i;
@@ -649,6 +693,99 @@ void set_scp_mpu(void)
 
 }
 #endif
+uint32_t get_freq(void)
+{
+	uint32_t i;
+	uint32_t sum = 0;
+	uint32_t return_freq = 0;
+
+	mutex_lock(&scp_feature_mutex);
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].enable == 1)
+			sum += feature_table[i].freq;
+	}
+	mutex_unlock(&scp_feature_mutex);
+	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
+	if (sum > FREQ_224MHZ)
+		return_freq = FREQ_354MHZ;
+	else if (sum > FREQ_112MHZ)
+		return_freq = FREQ_224MHZ;
+	else
+		return_freq = FREQ_112MHZ;
+	return return_freq;
+}
+void register_feature(feature_id_t id)
+{
+	uint32_t i;
+	/* because feature_table is a global variable, use mutex lock to protect it from
+	 * accessing in the same time*/
+	mutex_lock(&scp_feature_mutex);
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].feature == id)
+			feature_table[i].enable = 1;
+	}
+	mutex_unlock(&scp_feature_mutex);
+	EXPECTED_FREQ_REG = get_freq();
+}
+
+void deregister_feature(feature_id_t id)
+{
+	uint32_t i;
+
+	mutex_lock(&scp_feature_mutex);
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].feature == id)
+			feature_table[i].enable = 0;
+	}
+	mutex_unlock(&scp_feature_mutex);
+	EXPECTED_FREQ_REG = get_freq();
+}
+int check_scp_resource(void)
+{
+	/* called by lowpower related function
+	 * main purpose is to ensure main_pll is not disabled
+	 * because scp needs main_pll to run at vcore 1.0 and 354Mhz
+	 * return value:
+	 * 1: main_pll shall be enabled, 26M shall be enabled, infra shall be enabled
+	 * 0: main_pll may disable, 26M may disable, infra may disable
+	 * */
+	int scp_resource_status = 0;
+
+	if (EXPECTED_FREQ_REG == FREQ_354MHZ || CURRENT_FREQ_REG == FREQ_354MHZ)
+		scp_resource_status = 0;
+	else
+		scp_resource_status = 1;
+
+	return scp_resource_status;
+}
+int request_freq(void)
+{
+	int value = 0;
+	int timeout = 10;
+
+	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
+	 * use wake lock to prevent AP from entering suspend state
+	 * */
+	wake_lock(&scp_suspend_lock);
+
+	while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+		scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0);
+		mdelay(2);
+		timeout -= 1; /*try 10 times, total about 20ms*/
+		if (timeout <= 0)
+			goto fail_to_set_freq;
+	}
+	wake_unlock(&scp_suspend_lock);
+	pr_err("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	return 0;
+
+fail_to_set_freq:
+	scp_dump_regs();
+	wake_unlock(&scp_suspend_lock);
+	pr_err("[SCP] set freq fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	return -1;
+}
+
 /*
  * driver initialization entry point
  */
@@ -661,6 +798,8 @@ static int __init scp_init(void)
 	scp_ready = 0;
 
 	mutex_init(&scp_notify_mutex);
+	mutex_init(&scp_feature_mutex);
+	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
 
 	scp_workqueue = create_workqueue("SCP_WQ");
 	scp_excep_init();

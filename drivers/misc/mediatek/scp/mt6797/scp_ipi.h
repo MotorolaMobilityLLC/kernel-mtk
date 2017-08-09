@@ -12,6 +12,11 @@
 #define SCP_WDT_REG            (*(volatile unsigned int *)(scpreg.cfg + 0x0084))
 #define SCP_TO_SPM_REG         (*(volatile unsigned int *)(scpreg.cfg + 0x0020))
 #define SCP_GENERAL_REG0       (*(volatile unsigned int *)(scpreg.cfg + 0x0050))
+#define SCP_GENERAL_REG1       (*(volatile unsigned int *)(scpreg.cfg + 0x0054))
+#define SCP_GENERAL_REG2       (*(volatile unsigned int *)(scpreg.cfg + 0x0058))
+#define SCP_GENERAL_REG3       (*(volatile unsigned int *)(scpreg.cfg + 0x005C))
+#define SCP_GENERAL_REG4       (*(volatile unsigned int *)(scpreg.cfg + 0x0060))
+#define SCP_GENERAL_REG5       (*(volatile unsigned int *)(scpreg.cfg + 0x0064))
 #define SCP_SLEEP_DEBUG_REG    (*(volatile unsigned int *)(scpreg.clkctrl + 0x0028))
 
 #define SCP_IRQ_MD2HOST     (1 << 0)
@@ -54,6 +59,7 @@ typedef enum ipi_id {
 	IPI_DVFS_INFO_DUMP,
 	IPI_DUMP_REG,
 	IPI_SCP_STATE,
+	IPI_DVFS_SET_FREQ,
 	SCP_NR_IPI,
 } ipi_id;
 

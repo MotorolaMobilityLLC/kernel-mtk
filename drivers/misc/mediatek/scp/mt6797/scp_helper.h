@@ -92,6 +92,26 @@ typedef struct {
 	u64 size;
 } scp_reserve_mblock_t;
 
+#define FREQ_354MHZ (354)
+#define FREQ_224MHZ (224)
+#define FREQ_112MHZ (112)
+/* feature ID list */
+typedef enum {
+	VOW_FEATURE_ID		= 0,
+	OPEN_DSP_FEATURE_ID	= 1,
+	SENS_FEATURE_ID		= 2,
+	MP3_FEATURE_ID		= 3,
+	FLP_FEATURE_ID		= 4,
+	RTOS_FEATURE_ID		= 5,
+	NUM_FEATURE_ID		= 6,
+} feature_id_t;
+
+typedef struct {
+	uint32_t feature;
+	uint32_t freq;
+	uint32_t enable;
+} scp_feature_table_t;
+
 /* @group_id: the group want to swap in tcm and run. */
 extern int get_scp_semaphore(int flag);
 extern int release_scp_semaphore(int flag);
@@ -105,4 +125,10 @@ extern void scp_aee_last_reg(void);
 extern phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id);
+extern void register_feature(feature_id_t id);
+extern void deregister_feature(feature_id_t id);
+extern uint32_t get_freq(void);
+extern int request_freq(void);
+extern int check_scp_resource(void);
+
 #endif

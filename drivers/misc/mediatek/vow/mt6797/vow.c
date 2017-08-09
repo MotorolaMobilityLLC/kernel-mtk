@@ -781,6 +781,7 @@ static bool vow_service_Disable(void)
 	bool ret;
 
 	PRINTK_VOWDRV("vow_service_Disable\n");
+	deregister_feature(VOW_FEATURE_ID);
 	vowserv.ipimsgwait = true;
 	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 0))
 		;
@@ -932,6 +933,9 @@ int VowDrv_EnableHW(int status)
 		ret = -1;
 	} else {
 		pwr_status = (status == 0)?VOW_PWR_OFF : VOW_PWR_ON;
+		if (pwr_status == VOW_PWR_ON)
+			register_feature(VOW_FEATURE_ID);
+
 		VowDrv_SetHWStatus(pwr_status);
 	}
 	return ret;
