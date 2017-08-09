@@ -109,8 +109,6 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
 
-	pr_crit("Boot slave CPU\n");
-
 	atomic_inc(&hotplug_cpu_count);
 
 	/*
