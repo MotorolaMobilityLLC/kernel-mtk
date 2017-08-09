@@ -1767,11 +1767,11 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 4:
-		if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4)
-			ret = LittleOCPConfig(val[0], val[1], val[2]);
+		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+			ret = LittleOCPConfig(0, val[0], val[1]);
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
@@ -1836,11 +1836,11 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 4:
-			if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4)
-				ret = LittleOCPConfig(val[0], val[1], val[2]);
+			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
+				ret = LittleOCPConfig(1, val[0], val[1]);
 			break;
 		case 3:
 			if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2)
