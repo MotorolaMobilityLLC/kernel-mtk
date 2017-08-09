@@ -53,6 +53,9 @@
 #include "mt_sched_mon.h"
 #endif
 #include <mt-plat/mtk_ram_console.h>
+#ifdef CONFIG_ARCH_MT6580
+#include "hotplug.h"
+#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
@@ -271,6 +274,10 @@ void __ref cpu_die(void)
 	idle_task_exit();
 
 	aee_rr_rec_hoplug(cpu, 52, 0);
+
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	gic_set_primask();
+#endif
 
 	local_irq_disable();
 
