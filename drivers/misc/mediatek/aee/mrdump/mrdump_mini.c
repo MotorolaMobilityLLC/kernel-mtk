@@ -87,7 +87,7 @@ void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *hig
 	while (l < addr) {
 		if (!virt_addr_valid(l)) {
 			*low += PAGE_SIZE;
-			pr_err("address(0x%lx), low is invalid(0x%lx), new low is 0x%lx\n", addr, l, *low);
+			LOGE("address(0x%lx), low is invalid(0x%lx), new low is 0x%lx\n", addr, l, *low);
 		}
 		l += PAGE_SIZE;
 	}
@@ -96,7 +96,7 @@ void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *hig
 	while (h > addr) {
 		if (!virt_addr_valid(h)) {
 			*high -= PAGE_SIZE;
-			pr_err("address(0x%lx), high is invalid(0x%lx), new high is 0x%lx\n", addr, l, *high);
+			LOGE("address(0x%lx), high is invalid(0x%lx), new high is 0x%lx\n", addr, l, *high);
 		}
 		h -= PAGE_SIZE;
 	}
