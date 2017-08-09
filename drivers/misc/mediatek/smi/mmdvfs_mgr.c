@@ -522,7 +522,6 @@ int mmdvfs_get_mmdvfs_profile(void)
 	mmdvfs_profile_id = MMDVFS_PROFILE_E1;
 #endif
 
-	MMDVFSMSG("segment code=0x%x, profile=%d\n", segment_code, mmdvfs_profile_id);
 	return mmdvfs_profile_id;
 
 }
