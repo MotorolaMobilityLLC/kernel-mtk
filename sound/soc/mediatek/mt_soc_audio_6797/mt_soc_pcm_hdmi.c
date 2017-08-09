@@ -369,7 +369,12 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		EnableI2SDivPower(AUDIO_APLL12_DIVB, true);
 
 		MclkDiv = SetCLkMclk(Soc_Aud_I2S4, samplerate);
-		SetCLkBclk(MclkDiv, samplerate, Channels, Soc_Aud_I2S_WLEN_WLEN_16BITS);
+		if (mHdmi_display_control == 1) {
+			SetCLkBclk(MclkDiv, samplerate, _ANX7805_SLIMPORT_CHANNEL,
+					   Soc_Aud_I2S_WLEN_WLEN_32BITS);
+		} else {
+			SetCLkBclk(MclkDiv, samplerate, Channels, Soc_Aud_I2S_WLEN_WLEN_16BITS);
+		}
 
 		SetHDMIsamplerate(samplerate);
 		SetHDMIChannels(HDMIchaanel);
