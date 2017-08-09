@@ -4313,6 +4313,9 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ARP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ICMP))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ICMP);
 		}
 #else
 		if (rTxPacketInfo.fgIs1X) {
