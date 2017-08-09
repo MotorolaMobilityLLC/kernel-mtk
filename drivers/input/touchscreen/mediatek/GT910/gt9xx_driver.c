@@ -2311,7 +2311,7 @@ static void tpd_suspend(struct device *h)
 {
 	s32 ret = -1;
 
-	return;
+	/* return; */
 	mutex_lock(&i2c_access);
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
 	disable_irq(touch_irq);
@@ -2340,7 +2340,7 @@ static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
 
-	return;
+	/*return; */
 	ret = gtp_wakeup_sleep(i2c_client_point);
 
 	if (ret < 0)
