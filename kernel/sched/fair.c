@@ -4428,7 +4428,6 @@ static void sched_tg_dequeue_fair(struct rq *rq, struct task_struct *p)
 #define HMP_LB (0x4000)
 #define HMP_MAX_LOAD (NICE_0_LOAD - 1)
 
-#ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
 /*
  * Returns the current capacity of cpu after applying both
  * cpu and freq scaling.
@@ -4439,7 +4438,6 @@ unsigned long capacity_curr_of(int cpu)
 	       arch_scale_freq_capacity(NULL, cpu)
 	       >> SCHED_CAPACITY_SHIFT;
 }
-#endif
 
 static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluster_cpus, int target)
 {
@@ -4467,10 +4465,8 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	clbs->cpu_power = (int)arch_scale_cpu_capacity(NULL, target);
 
 	/* Scale current CPU compute capacity in accordance with frequency */
-	clbs->cpu_capacity = HMP_MAX_LOAD;
-#ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
 	clbs->cpu_capacity = capacity_curr_of(target);
-#endif
+
 	/*
 	 * Calculate available CPU capacity
 	 * Calculate available task space
