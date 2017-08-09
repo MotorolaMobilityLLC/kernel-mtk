@@ -36,6 +36,7 @@ obj-$(CONFIG_ARCH_MT8127) += hps/v1/
 obj-$(CONFIG_ARCH_MT8160) += hps/v1/
 obj-$(CONFIG_ARCH_MT8163) += hps/v1/
 obj-$(CONFIG_ARCH_MT8173) += hps/v1/
+obj-$(CONFIG_ARCH_MT6757) += hps/v2/
 obj-$(CONFIG_ARCH_MT6735) += spm_v1/
 obj-$(CONFIG_ARCH_MT6735M) += spm_v1/
 obj-$(CONFIG_ARCH_MT6753) += spm_v1/
