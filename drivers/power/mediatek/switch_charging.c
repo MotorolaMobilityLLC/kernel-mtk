@@ -244,15 +244,15 @@ static void set_ta_charging_current(void)
 #if defined(TA_AC_12V_INPUT_CURRENT)
 	if ((real_v_chrA - ta_v_chr_org) > 6000) {
 		g_temp_input_CC_value = TA_AC_12V_INPUT_CURRENT;	/* CHARGE_CURRENT_2000_00_MA */
-		g_temp_CC_value = TA_AC_CHARGING_CURRENT;
+		g_temp_CC_value = batt_cust_data.ta_ac_charging_current;
 	} else
 #endif
 	if ((real_v_chrA - ta_v_chr_org) > 3000) {
-		g_temp_input_CC_value = TA_AC_9V_INPUT_CURRENT;	/* TA = 9V */
-		g_temp_CC_value = TA_AC_CHARGING_CURRENT;
+		g_temp_input_CC_value = batt_cust_data.ta_ac_9v_input_current;	/* TA = 9V */
+		g_temp_CC_value = batt_cust_data.ta_ac_charging_current;
 	} else if ((real_v_chrA - ta_v_chr_org) > 1000) {
-		g_temp_input_CC_value = TA_AC_7V_INPUT_CURRENT;	/* TA = 7V */
-		g_temp_CC_value = TA_AC_CHARGING_CURRENT;
+		g_temp_input_CC_value = batt_cust_data.ta_ac_7v_input_current;	/* TA = 7V */
+		g_temp_CC_value = batt_cust_data.ta_ac_charging_current;
 	}
 	battery_log(BAT_LOG_CRTI, "[PE+]set Ichg=%dmA with Iinlim=%dmA, chrA=%d, chrB=%d\n",
 		    g_temp_CC_value / 100, g_temp_input_CC_value / 100, ta_v_chr_org, real_v_chrA);
@@ -364,9 +364,8 @@ static void mtk_ta_init(void)
 	is_ta_connect = KAL_FALSE;
 	ta_cable_out_occur = KAL_FALSE;
 
-#if defined(TA_9V_SUPPORT) || defined(TA_12V_SUPPORT)
-	ta_vchr_tuning = KAL_FALSE;
-#endif
+	if (batt_cust_data.ta_9v_support || batt_cust_data.ta_12v_support)
+		ta_vchr_tuning = KAL_FALSE;
 
 	battery_charging_control(CHARGING_CMD_INIT, NULL);
 }
@@ -375,7 +374,8 @@ static void battery_pump_express_charger_check(void)
 {
 	if (KAL_TRUE == ta_check_chr_type &&
 	    STANDARD_CHARGER == BMT_status.charger_type &&
-	    BMT_status.SOC >= TA_START_BATTERY_SOC && BMT_status.SOC < TA_STOP_BATTERY_SOC) {
+	    BMT_status.SOC >= batt_cust_data.ta_start_battery_soc &&
+	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc) {
 		battery_log(BAT_LOG_CRTI, "[PE+]Starting PE Adaptor detection\n");
 
 		mutex_lock(&ta_mutex);
@@ -488,7 +488,7 @@ static void battery_pump_express_algorithm_start(void)
 #endif
 
 			ta_vchr_tuning = KAL_TRUE;
-		} else if (BMT_status.SOC > TA_STOP_BATTERY_SOC) {
+		} else if (BMT_status.SOC > batt_cust_data.ta_stop_battery_soc) {
 			/* disable charging, avoid Iterm issue */
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 			mtk_ta_reset_vchr();	/* decrease TA voltage to 5V */
@@ -498,7 +498,7 @@ static void battery_pump_express_algorithm_start(void)
 
 			battery_log(BAT_LOG_CRTI,
 				    "[PE+]Stop battery_pump_express_algorithm, SOC=%d is_ta_connect =%d, TA_STOP_BATTERY_SOC: %d\n",
-				    BMT_status.SOC, is_ta_connect, TA_STOP_BATTERY_SOC);
+				    BMT_status.SOC, is_ta_connect, batt_cust_data.ta_stop_battery_soc);
 		}
 #if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
 /*For BQ25896, voltage is used to check if PE+ should be tuned off.*/

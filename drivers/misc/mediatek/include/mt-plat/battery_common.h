@@ -293,9 +293,11 @@ struct battery_custom_data {
 	int mtk_pump_express_plus_support;
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
+	int ta_ac_12v_input_current;
 	int ta_ac_9v_input_current;
 	int ta_ac_7v_input_current;
 	int ta_ac_charging_current;
+	int ta_12v_support;
 	int ta_9v_support;
 };
 

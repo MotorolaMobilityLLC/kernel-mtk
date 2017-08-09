@@ -1566,7 +1566,8 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 	if (KAL_TRUE == ta_check_chr_type &&
 	    STANDARD_CHARGER == BMT_status.charger_type &&
-	    BMT_status.SOC >= TA_START_BATTERY_SOC && BMT_status.SOC < TA_STOP_BATTERY_SOC) {
+	    BMT_status.SOC >= batt_cust_data.ta_start_battery_soc &&
+	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc) {
 		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
 		do {
 			icount--;
@@ -3861,6 +3862,35 @@ int __batt_init_cust_data_from_cust_header(void)
 	batt_cust_data.high_battery_voltage_support = 0;
 #endif				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
 
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	batt_cust_data.mtk_pump_express_plus_support = 1;
+
+	#if defined(TA_START_BATTERY_SOC)
+	batt_cust_data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	#endif
+	#if defined(TA_STOP_BATTERY_SOC)
+	batt_cust_data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+	#endif
+	#if defined(TA_AC_12V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_9V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_7V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_CHARGING_CURRENT)
+	batt_cust_data.ta_ac_charging_current = TA_AC_CHARGING_CURRENT;
+	#endif
+	#if defined(TA_9V_SUPPORT)
+	batt_cust_data.ta_9v_support = 1;
+	#endif
+	#if defined(TA_12V_SUPPORT)
+	batt_cust_data.ta_12v_support = 1;
+	#endif
+#endif
+
 	return 0;
 }
 
@@ -4044,6 +4074,7 @@ static int __batt_init_cust_data_from_dt(void)
 	__batt_parse_node(np, "jeita_temp_neg_10_to_pos_0_cc2topoff_threshold",
 		&batt_cust_data.jeita_temp_neg_10_to_pos_0_cc2topoff_threshold);
 
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	__batt_parse_node(np, "mtk_pump_express_plus_support",
 		&batt_cust_data.mtk_pump_express_plus_support);
 
@@ -4052,6 +4083,9 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "ta_stop_battery_soc",
 		&batt_cust_data.ta_stop_battery_soc);
+
+	__batt_parse_node(np, "ta_ac_12v_input_current",
+		&batt_cust_data.ta_ac_12v_input_current);
 
 	__batt_parse_node(np, "ta_ac_9v_input_current",
 		&batt_cust_data.ta_ac_9v_input_current);
@@ -4064,6 +4098,10 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "ta_9v_support",
 		&batt_cust_data.ta_9v_support);
+
+	__batt_parse_node(np, "ta_12v_support",
+		&batt_cust_data.ta_12v_support);
+#endif
 
 	of_node_put(np);
 	return 0;
