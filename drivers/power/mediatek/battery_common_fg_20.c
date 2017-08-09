@@ -2193,10 +2193,11 @@ void mt_battery_GetBatteryData(void)
 		batteryIndex = 0;
 
 	battery_log(BAT_LOG_CRTI,
-		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d\n",
+		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d, bcct %d:%d, Ichg %d\n",
 		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
 		    BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
-		    BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2);
+		    BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2,
+			g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level());
 }
 
 
