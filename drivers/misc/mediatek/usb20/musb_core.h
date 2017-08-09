@@ -58,6 +58,7 @@ typedef enum {
   #define TRUE  true
 #endif
 typedef unsigned int    kal_uint32;
+typedef  uint8_t kal_uint8;
 
 /* data type and MACRO used from mt_typdefs.h for UART USB SWITCH */
 typedef unsigned char   UINT8;
