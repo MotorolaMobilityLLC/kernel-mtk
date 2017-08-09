@@ -20,7 +20,7 @@
 
 #include "ion.h"
 #include "compat_ion.h"
-#include <linux/ion_drv.h>
+#include "mtk/ion_drv.h"
 
 /* See drivers/staging/android/uapi/ion.h for the definition of these structs */
 struct compat_ion_allocation_data {

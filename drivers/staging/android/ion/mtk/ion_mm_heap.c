@@ -7,17 +7,17 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include "ion_priv.h"
 #include <linux/slab.h>
-#include <linux/ion_drv.h>
 #include <linux/mutex.h>
 #include <mmprofile.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
+#include "mtk/mtk_ion.h"
 #include "ion_profile.h"
 #include "ion_drv_priv.h"
-#include <linux/mtk_ion.h>
 #include "ion_fb_heap.h"
+#include "ion_priv.h"
+#include "mtk/ion_drv.h"
 #include <m4u.h>
 
 typedef struct {

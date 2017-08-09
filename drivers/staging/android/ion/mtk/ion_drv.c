@@ -18,8 +18,6 @@
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include "ion_priv.h"
-#include <linux/ion_drv.h>
 #include <asm/cacheflush.h>
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
@@ -29,8 +27,10 @@
 #include <linux/vmalloc.h>
 #include "ion_profile.h"
 #include <linux/debugfs.h>
+#include "ion_priv.h"
 #include "ion_drv_priv.h"
-#include <linux/mtk_ion.h>
+#include "mtk/mtk_ion.h"
+#include "mtk/ion_drv.h"
 
 #define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
 #define ION_FUNC_LEAVE  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagEnd, __func__); */

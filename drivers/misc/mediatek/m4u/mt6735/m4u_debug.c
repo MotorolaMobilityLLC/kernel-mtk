@@ -6,7 +6,7 @@
 
 #include "m4u_debug.h"
 #include "m4u_priv.h"
-#include <linux/mtk_ion.h>
+#include <mtk/mtk_ion.h>
 
 /* global variables */
 int gM4U_log_to_uart = 2;
@@ -281,7 +281,7 @@ int m4u_test_tf(unsigned int prot)
 }
 
 #if 1
-#include <linux/ion_drv.h>
+#include <mtk/ion_drv.h>
 
 void m4u_test_ion(void)
 {

@@ -28,7 +28,7 @@
 #include <linux/types.h>
 #include <linux/miscdevice.h>
 #include <linux/idr.h>
-#include <linux/ion_drv.h>
+#include "mtk/ion_drv.h"
 #include "ion.h"
 
 struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);

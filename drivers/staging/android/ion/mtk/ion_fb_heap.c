@@ -19,8 +19,6 @@
 #include <linux/err.h>
 #include <linux/genalloc.h>
 #include <linux/io.h>
-#include <linux/ion_drv.h>
-#include <linux/mtk_ion.h>
 #include <linux/mm.h>
 #include <m4u.h>
 #include <linux/scatterlist.h>
@@ -30,6 +28,8 @@
 #include "ion_priv.h"
 #include "ion_fb_heap.h"
 #include "ion_drv_priv.h"
+#include "mtk/ion_drv.h"
+#include "mtk/mtk_ion.h"
 
 /*fb heap base and size denamic access*/
 struct ion_fb_heap {

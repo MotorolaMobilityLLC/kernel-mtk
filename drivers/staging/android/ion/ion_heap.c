@@ -22,7 +22,7 @@
 #include <linux/sched.h>
 #include <linux/scatterlist.h>
 #include <linux/vmalloc.h>
-#include <linux/mtk_ion.h>
+#include "mtk/mtk_ion.h"
 #include "ion.h"
 #include "ion_priv.h"
 

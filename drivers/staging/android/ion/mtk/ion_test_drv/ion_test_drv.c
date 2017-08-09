@@ -9,10 +9,10 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/ion_drv.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
 #include <linux/aee.h>
+#include "mtk/ion_drv.h"
 
 #define ION_TEST_DEVNAME "ion_test"
 

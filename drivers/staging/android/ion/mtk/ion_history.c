@@ -10,14 +10,14 @@
 #include "ion_priv.h"
 #include <linux/slab.h>
 #include <linux/xlog.h>
-#include <mach/m4u.h>
-#include <linux/ion_drv.h>
+#include <m4u.h>
 #include <linux/mutex.h>
 #include <mmprofile.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "ion_profile.h"
 #include "ion_drv_priv.h"
+#include "mtk/ion_drv.h"
 
 /* ============================================== */
 /* history record */

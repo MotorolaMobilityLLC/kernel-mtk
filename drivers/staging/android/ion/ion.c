@@ -36,12 +36,12 @@
 #include <linux/debugfs.h>
 #include <linux/dma-buf.h>
 #include <linux/idr.h>
-#include <linux/mtk_ion.h>
 
 #include "ion.h"
 #include "ion_priv.h"
 #include "compat_ion.h"
 #include "ion_profile.h"
+#include "mtk/mtk_ion.h"
 
 #define DEBUG_HEAP_SHRINKER
 #if 0 /* we move it to ion_priv.h. so we can dump every buffer info in ion_mm_heap.c */
@@ -1677,10 +1677,10 @@ static int debug_shrink_set(void *data, u64 val)
 		return 0;
 	}
 
-	objs = heap->ops->shrink(&heap->shrinker, sc.gfp_mask, &sc);
+	objs = heap->ops->shrink(heap, sc.gfp_mask, sc.nr_to_scan);
 	sc.nr_to_scan = objs;
 
-	heap->ops->shrink(&heap->shrinker, sc.gfp_mask, &sc);
+	heap->ops->shrink(heap, sc.gfp_mask, sc.nr_to_scan);
 	return 0;
 }
 
@@ -1693,7 +1693,7 @@ static int debug_shrink_get(void *data, u64 *val)
 	sc.gfp_mask = -1;
 	sc.nr_to_scan = 0;
 
-	objs = heap->ops->shrink(&heap->shrinker, sc.gfp_mask, &sc);
+	objs = heap->ops->shrink(heap, sc.gfp_mask, sc.nr_to_scan);
 	*val = objs;
 	return 0;
 }

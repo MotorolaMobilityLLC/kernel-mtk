@@ -3,7 +3,9 @@
 #include <linux/version.h>
 
 #include <ion.h>
-#include <linux/ion_debugger.h>
+
+#define BACKTRACE_SIZE 10
+
 /* Structure definitions */
 
 typedef enum {
@@ -23,7 +25,6 @@ typedef enum {
 	ION_SYS_CACHE_SYNC,
 	ION_SYS_GET_PHYS,
 	ION_SYS_GET_CLIENT,
-	ION_SYS_RECORD,
 	ION_SYS_SET_HANDLE_BACKTRACE,
 	ION_SYS_SET_CLIENT_NAME,
 } ION_SYS_CMDS;
@@ -73,6 +74,22 @@ typedef struct __ion_sys_client_name {
 typedef struct ion_sys_get_client_param {
 	unsigned int client;
 } ion_sys_get_client_param_t;
+
+typedef struct ion_sys_record_param {
+	pid_t group_id;
+	pid_t pid;
+	unsigned int action;
+	unsigned int address_type;
+	unsigned int address;
+	unsigned int length;
+	unsigned int backtrace[BACKTRACE_SIZE];
+	unsigned int backtrace_num;
+	struct ion_handle *handle;
+	struct ion_client *client;
+	struct ion_buffer *buffer;
+	struct file *file;
+	int fd;
+} ion_sys_record_t;
 
 typedef struct ion_sys_data {
 	ION_SYS_CMDS sys_cmd;
