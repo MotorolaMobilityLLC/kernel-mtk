@@ -1266,8 +1266,10 @@ static unsigned int charging_get_bif_vbat(void *data)
 	if (bif_checked != 1 || bif_exist == 1) {
 		bif_ADC_enable();
 		vbat = bif_read16(MW3790_VBAT);
-		*(unsigned int *) (data) = vbat;
 	}
+
+	*(unsigned int *) (data) = vbat;
+
 	/*turn off LDO and change SW control back to HW control */
 	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 0);
 	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);*/
