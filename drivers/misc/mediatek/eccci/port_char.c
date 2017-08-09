@@ -187,6 +187,7 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 	int ret = 0, read_len = 0, full_req_done = 0;
 	unsigned long flags = 0;
 
+READ_START:
 	/* 1. get incoming request */
 	if (list_empty(&port->rx_req_list)) {
 		if (!(file->f_flags & O_NONBLOCK)) {
@@ -202,6 +203,15 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 	}
 	CCCI_DEBUG_LOG(port->modem->index, CHAR, "read on %s for %zu\n", port->name, count);
 	spin_lock_irqsave(&port->rx_req_lock, flags);
+	if (list_empty(&port->rx_req_list)) {
+		spin_unlock_irqrestore(&port->rx_req_lock, flags);
+		if (!(file->f_flags & O_NONBLOCK)) {
+			goto READ_START;
+		} else {
+			ret = -EAGAIN;
+			goto exit;
+		}
+	}
 	req = list_first_entry(&port->rx_req_list, struct ccci_request, entry);
 	/* 2. caculate available data */
 	if (req->state != PARTIAL_READ) {
