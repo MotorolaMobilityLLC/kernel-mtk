@@ -432,7 +432,6 @@ static u64 arch_counter_get_cntvct_mem(void)
  */
 u64 (*arch_timer_read_counter)(void) = arch_counter_get_cntpct; /*need used pct because VCT's OFFSET counter in bootup*/
 
-#if 0
 static cycle_t arch_counter_read(struct clocksource *cs)
 {
 	return arch_timer_read_counter();
@@ -455,7 +454,6 @@ static struct cyclecounter cyclecounter = {
 	.read	= arch_counter_read_cc,
 	.mask	= CLOCKSOURCE_MASK(56),
 };
-#endif
 
 static struct timecounter timecounter;
 
@@ -466,7 +464,7 @@ struct timecounter *arch_timer_get_timecounter(void)
 
 static void __init arch_counter_register(unsigned type)
 {
-	/*u64 start_count*/;
+	u64 start_count;
 
 	/* Register the CP15 based counter if we have one */
 	if (type & ARCH_CP15_TIMER) {
@@ -479,17 +477,17 @@ static void __init arch_counter_register(unsigned type)
 		 * Ensure this does not happen when CP15-based
 		 * counter is not available.
 		 */
-		/*clocksource_counter.name = "arch_mem_counter";*/ /*used APXGPT as clocksource, no need this*/
+		clocksource_counter.name = "arch_mem_counter"; /*used APXGPT as clocksource, no need this*/
 	}
-#if 0
+
 	start_count = arch_timer_read_counter();
 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
 	cyclecounter.mult = clocksource_counter.mult;
 	cyclecounter.shift = clocksource_counter.shift;
 	timecounter_init(&timecounter, &cyclecounter, start_count);
-#endif
+
 	/* 56 bits minimum, so we assume worst case rollover */
-	/*sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate); *//*used MTK APXGPT as clocksource*/
+	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
 }
 
 static void arch_timer_stop(struct clock_event_device *clk)

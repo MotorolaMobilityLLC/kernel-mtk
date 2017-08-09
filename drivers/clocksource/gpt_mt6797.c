@@ -136,7 +136,7 @@ static void mt_gpt_set_mode(enum clock_event_mode mode, struct clock_event_devic
 
 static struct clocksource gpt_clocksource = {
 	.name	= "mt6797-gpt",
-	.rating	= 450,
+	.rating	= 300,
 	.read	= mt_gpt_read,
 	.mask	= CLOCKSOURCE_MASK(32),
 	.shift  = 25,
@@ -417,11 +417,6 @@ static u64 notrace mt_read_sched_clock(void)
 	return mt_gpt_read(NULL);
 }
 
-static cycle_t mt_read_sched_clock_cc(const struct cyclecounter *cc)
-{
-	return mt_gpt_read(NULL);
-}
-
 static void clkevt_handler(unsigned long data)
 {
 	struct clock_event_device *evt = (struct clock_event_device *)data;
@@ -429,17 +424,10 @@ static void clkevt_handler(unsigned long data)
 	evt->event_handler(evt);
 }
 
-static struct cyclecounter mt_cyclecounter = {
-	.read	= mt_read_sched_clock_cc,
-	.mask	= CLOCKSOURCE_MASK(32),
-};
-
 static inline void setup_clksrc(u32 freq)
 {
 	struct clocksource *cs = &gpt_clocksource;
 	struct gpt_device *dev = id_to_dev(GPT_CLKSRC_ID);
-	struct timecounter *mt_timecounter;
-	u64 start_count;
 
 	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
@@ -451,13 +439,6 @@ static inline void setup_clksrc(u32 freq)
 
 	clocksource_register(cs);
 
-	start_count = mt_read_sched_clock();
-	mt_cyclecounter.mult = cs->mult;
-	mt_cyclecounter.shift = cs->shift;
-	mt_timecounter = arch_timer_get_timecounter();
-	timecounter_init(mt_timecounter, &mt_cyclecounter, start_count);
-	pr_alert("setup_clksrc1: mt_cyclecounter.mult=0x%x mt_cyclecounter.shift=0x%x\n",
-		mt_cyclecounter.mult, mt_cyclecounter.shift);
 	pr_alert("setup_clksrc2: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 }
@@ -518,7 +499,8 @@ static void __init mt_gpt_init(struct device_node *node)
 		for (i = 0; i < NR_GPTS; i++)
 			__gpt_reset(&gpt_devs[i]);
 
-		setup_clksrc(freq);
+		/* don't use GPT as clocksource */
+		/*setup_clksrc(freq);*/
 		setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
 		setup_clkevt(freq);
 
