@@ -95,7 +95,7 @@ struct subsys {
 	struct subsys_ops *ops;
 };
 
-static struct subsys_ops general_sys_ops;
+/*static struct subsys_ops general_sys_ops;*/
 static struct subsys_ops MD1_sys_ops;
 static struct subsys_ops CONN_sys_ops;
 static struct subsys_ops DIS_sys_ops;
@@ -121,11 +121,13 @@ static void __iomem *spm_base;
 /**************************************
  * for non-CPU MTCMOS
  **************************************/
+ #if 0
 static DEFINE_SPINLOCK(spm_noncpu_lock);
 
 #define spm_mtcmos_noncpu_lock(flags)   spin_lock_irqsave(&spm_noncpu_lock, flags)
 
 #define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
+#endif
 
 /* FIXME: set correct value: S */
 #define POWERON_CONFIG_EN			SPM_REG(0x0000)
@@ -1759,11 +1761,12 @@ static int sys_get_state_op(struct subsys *sys)
 }
 
 /* ops */
+/*
 static struct subsys_ops general_sys_ops = {
 	.enable = general_sys_enable_op,
 	.disable = general_sys_disable_op,
 	.get_state = sys_get_state_op,
-};
+};*/
 
 static struct subsys_ops MD1_sys_ops = {
 	.enable = MD1_sys_enable_op,
@@ -1888,7 +1891,6 @@ int allow[NR_SYSS] = {
 1,	/*SYS_VEN = 12,*/
 1,	/*SYS_AUDIO = 13,*/
 1,	/*SYS_C2K = 14,*/
-0,	/*NR_SYSS = 15,*/
 };
 #endif
 static int enable_subsys(enum subsys_id id)
