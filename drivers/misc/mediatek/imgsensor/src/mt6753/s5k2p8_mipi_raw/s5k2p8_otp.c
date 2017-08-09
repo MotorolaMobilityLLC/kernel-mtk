@@ -11,6 +11,7 @@
 #include <linux/slab.h>
 
 
+#include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -98,7 +99,7 @@ bool selective_read_eeprom(kal_uint16 addr, BYTE* data)
 
 bool sequential_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size)
 {
-	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+	//char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
         return false;
 	kdSetI2CSpeed(I2C_SPEED);
