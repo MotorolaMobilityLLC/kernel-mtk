@@ -1,3 +1,14 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #ifndef __GESTURE_H__
 #define __GESTURE_H__
 
@@ -68,6 +79,9 @@ struct ges_drv_obj {
 struct ges_data_control_context {
 	struct ges_control_path ges_ctl;
 	struct ges_data_path ges_data;
+	bool is_active_data;
+	bool is_active_nodata;
+	bool is_batch_enable;
 };
 
 struct ges_context {
@@ -85,9 +99,6 @@ struct ges_context {
 	struct ges_data drv_data;
 	struct ges_data_control_context ctl_context[GESTURE_MAX_SUPPORT];
 
-	bool is_active_nodata;	/* Active, but HAL don't need data sensor. such as orientation need */
-	bool is_active_data;	/* Active and HAL need data . */
-	bool is_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
 };
 
 typedef enum {

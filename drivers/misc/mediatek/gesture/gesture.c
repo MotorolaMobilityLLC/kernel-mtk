@@ -1,3 +1,14 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include "gesture.h"
 
 static struct ges_context *ges_context_obj;
@@ -68,7 +79,7 @@ static int ges_real_enable(int enable, int handle)
 	index = HandleToIndex(handle);
 
 	if (1 == enable) {
-		if (false == cxt->is_active_data) {
+		if (false == cxt->ctl_context[index].is_active_data) {
 			err = cxt->ctl_context[index].ges_ctl.open_report_data(1);
 			if (err) {
 				err = cxt->ctl_context[index].ges_ctl.open_report_data(1);
@@ -82,16 +93,16 @@ static int ges_real_enable(int enable, int handle)
 					}
 				}
 			}
-			cxt->is_active_data = true;
+			cxt->ctl_context[index].is_active_data = true;
 			GESTURE_LOG("enable_gesture real enable\n");
 		}
 	} else if (0 == enable) {
-		if (true == cxt->is_active_data) {
+		if (true == cxt->ctl_context[index].is_active_data) {
 			err = cxt->ctl_context[index].ges_ctl.open_report_data(0);
 			if (err)
 				GESTURE_ERR("enable_gestureenable(%d) err = %d\n", enable, err);
 
-			cxt->is_active_data = false;
+			cxt->ctl_context[index].is_active_data = false;
 			GESTURE_LOG("enable_gesture real disable\n");
 		}
 	}
@@ -111,11 +122,10 @@ int ges_enable_nodata(int enable, int handle)
 	}
 
 	if (1 == enable)
-		cxt->is_active_nodata = true;
+		cxt->ctl_context[index].is_active_nodata = true;
 
 	if (0 == enable)
-		cxt->is_active_nodata = false;
-
+		cxt->ctl_context[index].is_active_nodata = false;
 	ges_real_enable(enable, handle);
 	return 0;
 }
@@ -123,10 +133,15 @@ int ges_enable_nodata(int enable, int handle)
 static ssize_t ges_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct ges_context *cxt = NULL;
+	int i;
+	int s_len = 0;
 
 	cxt = ges_context_obj;
-	GESTURE_LOG("ges active: %d\n", cxt->is_active_nodata);
-	return snprintf(buf, PAGE_SIZE, "%d\n", cxt->is_active_nodata);
+	for (i = 0; i < GESTURE_MAX_SUPPORT; i++) {
+		GESTURE_LOG("ges handle:%d active: %d\n", i, cxt->ctl_context[i].is_active_nodata);
+		s_len += snprintf(buf + s_len, PAGE_SIZE, "id:%d, en:%d\n", i, cxt->ctl_context[i].is_active_nodata);
+	}
+	return s_len;
 }
 
 static ssize_t ges_store_enable_nodata(struct device *dev, struct device_attribute *attr,
@@ -199,10 +214,15 @@ static ssize_t ges_store_active(struct device *dev, struct device_attribute *att
 static ssize_t ges_show_active(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct ges_context *cxt = NULL;
+	int i;
+	int s_len = 0;
 
 	cxt = ges_context_obj;
-	GESTURE_LOG("ges active: %d\n", cxt->is_active_data);
-	return snprintf(buf, PAGE_SIZE, "%d\n", cxt->is_active_data);
+	for (i = 0; i < GESTURE_MAX_SUPPORT; i++) {
+		GESTURE_LOG("ges handle:%d active: %d\n", i, cxt->ctl_context[i].is_active_data);
+		s_len += snprintf(buf + s_len, PAGE_SIZE, "id:%d, en:%d\n", i, cxt->ctl_context[i].is_active_data);
+	}
+	return s_len;
 }
 
 static ssize_t ges_store_delay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
@@ -320,9 +340,7 @@ EXPORT_SYMBOL_GPL(ges_driver_add);
 static int ges_misc_init(struct ges_context *cxt)
 {
 	int err = 0;
-	/* kernel-3.10\include\linux\Miscdevice.h */
-	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
+	cxt->mdev.minor = 252;/*MISC_DYNAMIC_MINOR;*/
 	cxt->mdev.name = GES_MISC_DEV_NAME;
 
 	err = misc_register(&cxt->mdev);
