@@ -831,7 +831,6 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
@@ -854,10 +853,10 @@ static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_err("%s error, close it\n", __func__);
 		mtk_routing_pcm_close(substream);
-		return err;
+		return ret;
 	}
 	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;
