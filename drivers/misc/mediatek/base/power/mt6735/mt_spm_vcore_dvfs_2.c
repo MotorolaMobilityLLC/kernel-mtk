@@ -7,7 +7,7 @@
 #include "mt_cpufreq.h"
 #include "mt_spm_internal.h"
 
-#define PER_OPP_DVS_US		(100 + 50)
+#define PER_OPP_DVS_US		600
 
 #define VCORE_STA_UHPM		(VCORE_STA_1 | VCORE_STA_0)
 #define VCORE_STA_HPM		VCORE_STA_1

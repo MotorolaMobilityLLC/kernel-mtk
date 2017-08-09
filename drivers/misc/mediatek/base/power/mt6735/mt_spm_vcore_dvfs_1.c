@@ -8,7 +8,7 @@
 
 #include "mt_spm_internal.h"
 
-#define PER_OPP_DVS_US		(100 + 50)
+#define PER_OPP_DVS_US		600
 
 #define VCORE_STA_HPM		(VCORE_STA_1)
 
@@ -147,7 +147,7 @@ int spm_set_vcore_dvs_voltage(unsigned int opp)
 	case OPP_0:
 		spm_write(SPM_PCM_SRC_REQ, spm_read(SPM_PCM_SRC_REQ) | SR_PCM_F26M_REQ);
 		r = wait_pcm_complete_dvs(get_vcore_sta() == VCORE_STA_HPM,
-				10 * PER_OPP_DVS_US /* 1.15->1.05->1.15 */);
+				3 * PER_OPP_DVS_US /* 1.15->1.05->1.15 */);
 		break;
 	case OPP_1:
 		spm_write(SPM_PCM_SRC_REQ, spm_read(SPM_PCM_SRC_REQ) & ~SR_PCM_F26M_REQ);
