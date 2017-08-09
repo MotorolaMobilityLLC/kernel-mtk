@@ -1088,32 +1088,53 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
-	cspm_err("%s\n", msg);
-	cspm_err("FW_VER     : %s\n", dvfsp->pcmdesc->version);
-	cspm_err("PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("SW_RSV0    : 0x%x\n", cspm_read(CSPM_SW_RSV0));
-	cspm_err("SW_RSV1    : 0x%x\n", cspm_read(CSPM_SW_RSV1));
-	cspm_err("SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
-	cspm_err("SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
-	cspm_err("SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
-	cspm_err("SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
-	cspm_err("SW_RSV6    : 0x%x\n", cspm_read(CSPM_SW_RSV6));
-	cspm_err("PCM_REG0   : 0x%x\n", cspm_read(CSPM_PCM_REG0_DATA));
-	cspm_err("PCM_REG1   : 0x%x\n", cspm_read(CSPM_PCM_REG1_DATA));
-	cspm_err("PCM_REG2   : 0x%x\n", cspm_read(CSPM_PCM_REG2_DATA));
-	cspm_err("PCM_REG3   : 0x%x\n", cspm_read(CSPM_PCM_REG3_DATA));
-	cspm_err("PCM_REG4   : 0x%x\n", cspm_read(CSPM_PCM_REG4_DATA));
-	cspm_err("PCM_REG5   : 0x%x\n", cspm_read(CSPM_PCM_REG5_DATA));
-	cspm_err("PCM_REG6   : 0x%x\n", cspm_read(CSPM_PCM_REG6_DATA));
-	cspm_err("PCM_REG7   : 0x%x\n", cspm_read(CSPM_PCM_REG7_DATA));
-	cspm_err("PCM_REG8   : 0x%x\n", cspm_read(CSPM_PCM_REG8_DATA));
-	cspm_err("PCM_REG9   : 0x%x\n", cspm_read(CSPM_PCM_REG9_DATA));
-	cspm_err("PCM_REG10  : 0x%x\n", cspm_read(CSPM_PCM_REG10_DATA));
-	cspm_err("PCM_REG11  : 0x%x\n", cspm_read(CSPM_PCM_REG11_DATA));
-	cspm_err("PCM_REG12  : 0x%x\n", cspm_read(CSPM_PCM_REG12_DATA));
-	cspm_err("PCM_REG13  : 0x%x\n", cspm_read(CSPM_PCM_REG13_DATA));
-	cspm_err("PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
-	cspm_err("PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	cspm_err("(%u) %s\n"   , dvfsp->hw_gov_en, msg);
+	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
+
+	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
+	cspm_err("PCM_REG15: %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+
+	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
+	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
+	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
+	cspm_err("SW_RSV3: 0x%x\n", cspm_read(CSPM_SW_RSV3));
+	cspm_err("SW_RSV4: 0x%x\n", cspm_read(CSPM_SW_RSV4));
+	cspm_err("SW_RSV5: 0x%x\n", cspm_read(CSPM_SW_RSV5));
+	cspm_err("SW_RSV6: 0x%x\n", cspm_read(CSPM_SW_RSV6));
+
+	cspm_err("M3_RECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x)\n",
+			      cspm_read(CSPM_M3_REC1),
+			      cspm_read(CSPM_M3_REC2),
+			      cspm_read(CSPM_M3_REC3),
+			      cspm_read(CSPM_M3_REC4),
+			      cspm_read(CSPM_M3_REC5),
+			      cspm_read(CSPM_M3_REC6),
+			      cspm_read(CSPM_M3_REC7),
+			      cspm_read(CSPM_M3_REC8),
+			      cspm_read(CSPM_M3_REC9),
+			      cspm_read(CSPM_M3_REC10),
+			      cspm_read(CSPM_M3_REC11),
+			      cspm_read(CSPM_M3_REC12),
+			      cspm_read(CSPM_M3_REC13),
+			      cspm_read(CSPM_M3_REC14),
+			      cspm_read(CSPM_M3_REC15),
+			      cspm_read(CSPM_M3_REC16),
+			      cspm_read(CSPM_M3_REC17),
+			      cspm_read(CSPM_M3_REC18),
+			      cspm_read(CSPM_M3_REC19));
+	cspm_err("SW_DEBUG: 0x%x\n", cspm_read(CSPM_SW_DEBUG));
+
+	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x,%x)\n",
+			       cspm_read(CSPM_PCM_EVENT_VECTOR2),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR3),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR5),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR7),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR8),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR10),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR12),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR13),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR15));
+
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 }
 
@@ -1667,19 +1688,22 @@ static int dvfsp_fw_show(struct seq_file *m, void *v)
 	struct pcm_desc *pcmdesc = dvfsp->pcmdesc;
 
 	seq_printf(m, "version = %s\n"  , pcmdesc->version);
-	seq_printf(m, "base    = 0x%p\n", pcmdesc->base);
+	seq_printf(m, "base    = 0x%p -> 0x%x\n", pcmdesc->base, base_va_to_pa(pcmdesc->base));
 	seq_printf(m, "size    = %u\n"  , pcmdesc->size);
 	seq_printf(m, "sess    = %u\n"  , pcmdesc->sess);
 	seq_printf(m, "replace = %u\n"  , pcmdesc->replace);
 	seq_printf(m, "vec0    = 0x%x\n", pcmdesc->vec0);
-	seq_printf(m, "vec1    = 0x%x\n", pcmdesc->vec1);
 
 	return 0;
 }
 
 static int dvfsp_reg_show(struct seq_file *m, void *v)
 {
+	struct cpuhvfs_dvfsp *dvfsp = m->private;
+
 	seq_printf(m, "PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
+	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "SW_RSV0    : 0x%x\n", cspm_read(CSPM_SW_RSV0));
 	seq_printf(m, "SW_RSV1    : 0x%x\n", cspm_read(CSPM_SW_RSV1));
 	seq_printf(m, "SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
@@ -1687,23 +1711,40 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_printf(m, "SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
 	seq_printf(m, "SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
 	seq_printf(m, "SW_RSV6    : 0x%x\n", cspm_read(CSPM_SW_RSV6));
-	seq_printf(m, "PCM_REG0   : 0x%x\n", cspm_read(CSPM_PCM_REG0_DATA));
-	seq_printf(m, "PCM_REG1   : 0x%x\n", cspm_read(CSPM_PCM_REG1_DATA));
-	seq_printf(m, "PCM_REG2   : 0x%x\n", cspm_read(CSPM_PCM_REG2_DATA));
-	seq_printf(m, "PCM_REG3   : 0x%x\n", cspm_read(CSPM_PCM_REG3_DATA));
-	seq_printf(m, "PCM_REG4   : 0x%x\n", cspm_read(CSPM_PCM_REG4_DATA));
-	seq_printf(m, "PCM_REG5   : 0x%x\n", cspm_read(CSPM_PCM_REG5_DATA));
-	seq_printf(m, "PCM_REG6   : 0x%x\n", cspm_read(CSPM_PCM_REG6_DATA));
-	seq_printf(m, "PCM_REG7   : 0x%x\n", cspm_read(CSPM_PCM_REG7_DATA));
-	seq_printf(m, "PCM_REG8   : 0x%x\n", cspm_read(CSPM_PCM_REG8_DATA));
-	seq_printf(m, "PCM_REG9   : 0x%x\n", cspm_read(CSPM_PCM_REG9_DATA));
-	seq_printf(m, "PCM_REG10  : 0x%x\n", cspm_read(CSPM_PCM_REG10_DATA));
-	seq_printf(m, "PCM_REG11  : 0x%x\n", cspm_read(CSPM_PCM_REG11_DATA));
-	seq_printf(m, "PCM_REG12  : 0x%x\n", cspm_read(CSPM_PCM_REG12_DATA));
-	seq_printf(m, "PCM_REG13  : 0x%x\n", cspm_read(CSPM_PCM_REG13_DATA));
-	seq_printf(m, "PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
-	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	seq_puts(m,   "============\n");
+	seq_printf(m, "M3_REC1    : 0x%x\n", cspm_read(CSPM_M3_REC1));
+	seq_printf(m, "M3_REC2    : 0x%x\n", cspm_read(CSPM_M3_REC2));
+	seq_printf(m, "M3_REC3    : 0x%x\n", cspm_read(CSPM_M3_REC3));
+	seq_printf(m, "M3_REC4    : 0x%x\n", cspm_read(CSPM_M3_REC4));
+	seq_printf(m, "M3_REC5    : 0x%x\n", cspm_read(CSPM_M3_REC5));
+	seq_printf(m, "M3_REC6    : 0x%x\n", cspm_read(CSPM_M3_REC6));
+	seq_printf(m, "M3_REC7    : 0x%x\n", cspm_read(CSPM_M3_REC7));
+	seq_printf(m, "M3_REC8    : 0x%x\n", cspm_read(CSPM_M3_REC8));
+	seq_printf(m, "M3_REC9    : 0x%x\n", cspm_read(CSPM_M3_REC9));
+	seq_printf(m, "M3_REC10   : 0x%x\n", cspm_read(CSPM_M3_REC10));
+	seq_printf(m, "M3_REC11   : 0x%x\n", cspm_read(CSPM_M3_REC11));
+	seq_printf(m, "M3_REC12   : 0x%x\n", cspm_read(CSPM_M3_REC12));
+	seq_printf(m, "M3_REC13   : 0x%x\n", cspm_read(CSPM_M3_REC13));
+	seq_printf(m, "M3_REC14   : 0x%x\n", cspm_read(CSPM_M3_REC14));
+	seq_printf(m, "M3_REC15   : 0x%x\n", cspm_read(CSPM_M3_REC15));
+	seq_printf(m, "M3_REC16   : 0x%x\n", cspm_read(CSPM_M3_REC16));
+	seq_printf(m, "M3_REC17   : 0x%x\n", cspm_read(CSPM_M3_REC17));
+	seq_printf(m, "M3_REC18   : 0x%x\n", cspm_read(CSPM_M3_REC18));
+	seq_printf(m, "M3_REC19   : 0x%x\n", cspm_read(CSPM_M3_REC19));
+	seq_printf(m, "SW_DEBUG   : 0x%x\n", cspm_read(CSPM_SW_DEBUG));
+	seq_puts(m,   "============\n");
+	seq_printf(m, "EVT_VEC2   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
+	seq_printf(m, "EVT_VEC3   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
+	seq_printf(m, "EVT_VEC5   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
+	seq_printf(m, "EVT_VEC7   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
+	seq_printf(m, "EVT_VEC8   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
+	seq_printf(m, "EVT_VEC10  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
+	seq_printf(m, "EVT_VEC12  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR12));
+	seq_printf(m, "EVT_VEC13  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR13));
+	seq_printf(m, "EVT_VEC15  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR15));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
+	seq_printf(m, "HW_GOV*    : %u\n"  , dvfsp->hw_gov_en);
 
 	return 0;
 }
