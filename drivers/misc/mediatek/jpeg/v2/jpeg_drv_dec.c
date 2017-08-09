@@ -75,13 +75,12 @@ int jpeg_isr_dec_lisr(void)
 void jpeg_drv_dec_start(void)
 {
 #ifndef JPEG_DEC_IRQ_ENHANCE
-	JPEG_MSG("JPGDC jpeg_drv_dec_start:  unmask jpeg irq!\n");
+	/*JPEG_MSG("JPGDC jpeg_drv_dec_start:  unmask jpeg irq!\n");*/
 	/* unmask jpeg irq */
 	IMG_REG_WRITE(0x37, REG_ADDR_JPGDEC_IRQ_EN);
 #else
 	unsigned int reg_value;
-
-	JPEG_MSG("JPGDC jpeg_drv_dec_start: JPEG_DEC_IRQ_ENHANCE!\n");
+	/*JPEG_MSG("JPGDC jpeg_drv_dec_start: JPEG_DEC_IRQ_ENHANCE!\n");*/
 	IMG_REG_READ(reg_value, REG_ADDR_JPGDEC_IRQ_EN);
 	reg_value |= BIT_DEC_IRQ_EN_DEBUG_BRP_FLAG;
 
@@ -649,8 +648,8 @@ int jpeg_drv_dec_wait(JPEG_DEC_DRV_IN *config)
 kal_uint32 jpeg_drv_dec_get_result(void)
 {
 
-	JPEG_MSG("[JPEGDRV] get_result mode %x, irq_sts %x!!\n", _jpeg_dec_mode,
-	       _jpeg_dec_int_status);
+	/* JPEG_MSG("[JPEGDRV] get_result mode %x, irq_sts %x!!\n", _jpeg_dec_mode,
+	       _jpeg_dec_int_status); */
 	/* if(_jpeg_dec_mode == 1){ */
 	/* if(_jpeg_dec_int_status & BIT_INQST_MASK_END ) */
 	/* REG_JPGDEC_INTERRUPT_STATUS = _jpeg_dec_int_status ; */

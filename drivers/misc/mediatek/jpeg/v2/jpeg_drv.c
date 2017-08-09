@@ -167,7 +167,7 @@ static int enc_status;
 
 /* static cmdqRecStruct jpegCMDQ_handle; */
 #ifdef JPEG_DEC_DRIVER
-static cmdqRecHandle jpegCMDQ_handle;
+/* static cmdqRecHandle jpegCMDQ_handle; */
 #endif
 
 /* -------------------------------------------------------------------------- */
@@ -443,10 +443,9 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	long timeout_jiff;
 	JPEG_DEC_DRV_IN dec_params;
 	JPEG_DEC_CONFIG_ROW dec_row_params;
-	JPEG_DEC_CONFIG_CMDQ cfg_cmdq_params;
+	/* JPEG_DEC_CONFIG_CMDQ cfg_cmdq_params; */
 
 	unsigned int irq_st = 0;
-	unsigned int i = 0;
 	/* unsigned int timeout = 0x1FFFFF; */
 
 	JPEG_DEC_DRV_OUT outParams;
@@ -500,6 +499,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 	case JPEG_DEC_IOCTL_FLUSH_CMDQ:
 
+#if 0 /* currently no use */
 		JPEG_MSG("[JPEGDRV]enter JPEG BUILD CMDQ !!\n");
 		if (*pStatus != JPEG_DEC_PROCESS) {
 			JPEG_MSG
@@ -554,7 +554,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		cmdqRecDestroy(jpegCMDQ_handle);
 		JPEG_MSG("[JPEGDRV]JPEG destroy CMDQ end!!\n");
-
+#endif
 		break;
 
 	case JPEG_DEC_IOCTL_RESUME:
