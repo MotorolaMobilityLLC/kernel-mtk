@@ -17,7 +17,8 @@
 /* **** */
 /* #include <mach/mt_typedefs.h> */
 #include <mt-plat/sync_write.h>
-#include <mach/mt_clkmgr.h>
+/* FIXME: change to mt_clkmgr.h after CCF is ready */
+#include <mach/mt_clkmgr1_legacy.h>
 /* #include <mach/mt_dcm.h> */
 #include <mach/mt_spm.h>
 #include <mach/mt_spm_mtcmos.h>
@@ -57,10 +58,16 @@ void __iomem *clk_venc_gcon_base;
 /* #define PLL_LOG_TOP */
 #define PLL_LOG
 
-/* **** */
+#if !defined(CONFIG_MTK_LEGACY)
+#define MT_CCF_DEBUG	1
+#define MT_CCF_BRINGUP	0
 #define Bring_Up
+#else
+/* #define Bring_Up */
+#endif /* !defined(CONFIG_MTK_LEGACY) */
 
 #define VLTE_SUPPORT
+#define SPM_BRINGUP
 
 /************************************************
  **********         log debug          **********
@@ -958,9 +965,11 @@ int pll_dump_regs(int id, unsigned int *ptr)
 {
 	struct pll *pll = id_to_pll(id);
 
+#if defined(CONFIG_MTK_LEGACY)
 #ifdef Bring_Up
 	return 0;
 #endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	BUG_ON(!initialized);
 	BUG_ON(!pll);
@@ -1633,9 +1642,11 @@ int subsys_dump_regs(int id, unsigned int *ptr)
 
 	struct subsys *sys = id_to_sys(id);
 
+#if defined(CONFIG_MTK_LEGACY)
 #ifdef Bring_Up
 	return 0;
 #endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	BUG_ON(!initialized);
 	BUG_ON(!sys);
@@ -1769,6 +1780,9 @@ int conn_power_on(void)
 	struct subsys *sys = id_to_sys(SYS_CONN);
 
 #ifdef Bring_Up
+#if !defined(CONFIG_MTK_LEGACY)
+	return 0;
+#endif /* !defined(CONFIG_MTK_LEGACY) */
 #if !defined(CONFIG_MTK_FPGA)
 	spm_mtcmos_ctrl_connsys(STA_POWER_ON);
 #endif
@@ -1799,6 +1813,9 @@ int conn_power_off(void)
 	struct subsys *sys = id_to_sys(SYS_CONN);
 
 #ifdef Bring_Up
+#if !defined(CONFIG_MTK_LEGACY)
+	return 0;
+#endif /* !defined(CONFIG_MTK_LEGACY) */
 #if !defined(CONFIG_MTK_FPGA)
 	spm_mtcmos_ctrl_connsys(STA_POWER_DOWN);
 #endif
@@ -2460,6 +2477,7 @@ int clkmux_sel(int id, unsigned int clksrc, char *name)
 	struct clkmux *mux = id_to_mux(id);
 
 #ifdef Bring_Up
+#if MT_CCF_BRINGUP
 	unsigned int reg;
 
 	if (id == MT_MUX_CAMTG) {
@@ -2473,6 +2491,7 @@ int clkmux_sel(int id, unsigned int clksrc, char *name)
 		reg |= (clksrc << 8) & 0x00000700;
 		clk_writel(CLK_CFG_5, reg);
 	}
+#endif /* MT_CCF_BRINGUP */
 	return 0;
 #endif
 
@@ -3357,9 +3376,11 @@ int grp_dump_regs(int id, unsigned int *ptr)
 {
 	struct cg_grp *grp = id_to_grp(id);
 
+#if defined(CONFIG_MTK_LEGACY)
 #ifdef Bring_Up
 	return 0;
 #endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	/* BUG_ON(!initialized); */
 	BUG_ON(!grp);
@@ -3372,9 +3393,11 @@ const char *grp_get_name(int id)
 {
 	struct cg_grp *grp = id_to_grp(id);
 
+#if defined(CONFIG_MTK_LEGACY)
 #ifdef Bring_Up
 	return 0;
 #endif
+#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	/* BUG_ON(!initialized); */
 	BUG_ON(!grp);
@@ -3384,27 +3407,65 @@ const char *grp_get_name(int id)
 
 void print_grp_regs(void)
 {
-	int i;
-	int cnt;
-	unsigned int value[3] = {
-	0, 0, 0};
+	int i, j, cnt;
+	unsigned int value[3] = {0, 0, 0};
 	const char *name;
+	struct pll *pll;
+#ifndef SPM_BRINGUP
+	int state;
+	unsigned int val_subsys = 0, sta, sta_s;
+#endif
 
+	clk_info("********** cg register dump *********\n");
 	for (i = 0; i < NR_GRPS; i++) {
 		name = grp_get_name(i);
 		cnt = grp_dump_regs(i, value);
 		if (cnt == 1) {
 			clk_info("[%02d][%-8s]=[0x%08x]\n", i, name, value[0]);
 		} else if (cnt == 2) {
-			clk_info("[%02d][%-8s]=[0x%08x][0x%08x]\n", i, name, value[0], value[1]);
+			clk_info("[%02d][%-8s]=[0x%08x][0x%08x]\n", i, name, value[0],
+			value[1]);
 		} else {
-			clk_info("[%02d][%-8s]=[0x%08x][0x%08x][0x%08x]\n", i, name, value[0],
-				 value[1], value[2]);
+			clk_info("[%02d][%-8s]=[0x%08x][0x%08x][0x%08x]\n", i, name,
+			value[0], value[1], value[2]);
 		}
 	}
+
+	clk_info("********** mux register dump *********\n");
+	clk_info("[CLK_CFG_0]=0x%08x\n", clk_readl(CLK_CFG_0));
+	clk_info("[CLK_CFG_1]=0x%08x\n", clk_readl(CLK_CFG_1));
+	clk_info("[CLK_CFG_2]=0x%08x\n", clk_readl(CLK_CFG_2));
+	clk_info("[CLK_CFG_3]=0x%08x\n", clk_readl(CLK_CFG_3));
+	clk_info("[CLK_CFG_4]=0x%08x\n", clk_readl(CLK_CFG_4));
+	clk_info("[CLK_CFG_5]=0x%08x\n", clk_readl(CLK_CFG_5));
+	clk_info("[CLK_CFG_6]=0x%08x\n", clk_readl(CLK_CFG_6));
+	clk_info("[CLK_CFG_7]=0x%08x\n", clk_readl(CLK_CFG_7));
+
+	clk_info("********** pll register dump **********\n");
+	for (i = 0; i < NR_PLLS; i++) {
+		name = pll_get_name(i);
+		cnt = pll_dump_regs(i, value);
+		pll = &plls[i];
+		pll->state = pll->ops->get_state(pll);
+		clk_info("pll->name=%s, pll->state=%d\n", pll->name, pll->state);
+		for (j = 0; j < cnt; j++)
+			clk_info("[%d][%-7s reg%d]=[0x%08x]\n", i, name, j, value[j]);
+	}
+
+#ifndef SPM_BRINGUP
+	clk_info("********** subsys register dump **********\n");
+	sta = clk_readl(SPM_PWR_STATUS);
+	sta_s = clk_readl(SPM_PWR_STATUS_2ND);
+	for (i = 0; i < NR_SYSS; i++) {
+		name = subsys_get_name(i);
+		state = subsys_is_on(i);
+		subsys_dump_regs(i, &val_subsys);
+		clk_info("[%d][%-7s]=[0x%08x], state(%u)\n", i, name, val_subsys, state);
+	}
+	clk_info("SPM_PWR_STATUS=0x%08x, SPM_PWR_STATUS_2ND=0x%08x\n", sta, sta_s);
+#endif
 }
-
-
+EXPORT_SYMBOL(print_grp_regs);
 
 /************************************************
  **********       initialization       **********
@@ -3423,7 +3484,6 @@ static void subsys_all_force_on(void)
 }
 #endif
 
-
 #define INFRA_CG  0xFFFFFFFF
 #define PERI_CG   0xFFFFFFFF
 #define AUD_CG    0x0F0C0344
@@ -3435,7 +3495,7 @@ static void subsys_all_force_on(void)
 #define LARB_CG   0x00000001
 #define VENC_CG   0x00001111
 
-
+#if MT_CCF_BRINGUP
 static void cg_all_force_on(void)
 {
 	/* INFRA CG */
@@ -3458,7 +3518,7 @@ static void cg_all_force_on(void)
 	/* VENC */
 	clk_writel(VENC_CG_SET, VENC_CG);
 }
-
+#endif /* MT_CCF_BRINGUP */
 
 static void cg_bootup_pdn(void)
 {
@@ -3507,6 +3567,7 @@ static void mt_subsys_init(void)
 		sys = &syss[i];
 		sys->state = sys->ops->get_state(sys);
 
+#if MT_CCF_BRINGUP
 		if (sys->state != sys->default_sta) {
 			clk_info("[%s]%s, change state: (%u->%u)\n", __func__,
 				 sys->name, sys->state, sys->default_sta);
@@ -3515,6 +3576,7 @@ static void mt_subsys_init(void)
 			else
 				sys_enable_locked(sys);
 		}
+#endif /* MT_CCF_BRINGUP */
 #ifdef CONFIG_CLKMGR_STAT
 		INIT_LIST_HEAD(&sys->head);
 #endif
@@ -3727,10 +3789,11 @@ static void mt_clks_init(void)
 
 	clks[MT_CG_DISP1_DPI_PIXEL].mux = &muxs[MT_MUX_DPI0];
 
+#if MT_CCF_BRINGUP
 	/* Don't disable these clock until it's clk_clr_force_on() is called */
 	clk_set_force_on_locked(&clks[MT_CG_DISP0_SMI_LARB0]);
 	clk_set_force_on_locked(&clks[MT_CG_DISP0_SMI_COMMON]);
-
+#endif /* MT_CCF_BRINGUP */
 }
 
 /* #endif //#ifndef Bring_Up */
@@ -3819,10 +3882,10 @@ int mt_clkmgr_init(void)
 	BUG_ON(initialized);
 
 /*
-    spm_mtcmos_ctrl_vdec(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vdec(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 */
 	spm_mtcmos_ctrl_vdec(STA_POWER_ON);
 	spm_mtcmos_ctrl_venc(STA_POWER_ON);
@@ -3831,9 +3894,13 @@ int mt_clkmgr_init(void)
 /* spm_mtcmos_ctrl_connsys(STA_POWER_ON); */
 
 
+#if MT_CCF_BRINGUP
 	cg_all_force_on();
+#endif /* MT_CCF_BRINGUP */
 
+#if !MT_CCF_BRINGUP
 	cg_bootup_pdn();
+#endif /* !MT_CCF_BRINGUP */
 
 	mt_plls_init();
 	mt_subsys_init();
@@ -4359,6 +4426,10 @@ static void clk_stat_bug(void)
 void slp_check_pm_mtcmos_pll(void)
 {
 	int i;
+#if !defined(CONFIG_MTK_LEGACY)
+	print_grp_regs();
+	return;
+#endif /* !defined(CONFIG_MTK_LEGACY) */
 
 	slp_chk_mtcmos_pll_stat = 1;
 	clk_info("[%s]\n", __func__);
@@ -4752,24 +4823,25 @@ static int mt_clkmgr_debug_module_init(void)
 
 static int __init mt_clkmgr_late_init(void)
 {
-/* **** */
-/*
-    mt_enable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
-    mt_disable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
+#ifdef Bring_Up
+	return 0;
+#endif
+	mt_enable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
+	mt_disable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
 
-    mt_enable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
-    mt_disable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
-    mt_enable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
-    mt_disable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
-    mt_enable_clock(MT_CG_VENC_LARB, "clkmgr");
-    mt_disable_clock(MT_CG_VENC_LARB, "clkmgr");
+	mt_enable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
+	mt_disable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
+	mt_enable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
+	mt_disable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
+	mt_enable_clock(MT_CG_VENC_LARB, "clkmgr");
+	mt_disable_clock(MT_CG_VENC_LARB, "clkmgr");
 
-    enable_mux(MT_MUX_AUD1, "clkmgr");
-    disable_mux(MT_MUX_AUD1, "clkmgr");
-    enable_mux(MT_MUX_AUD2, "clkmgr");
-    disable_mux(MT_MUX_AUD2, "clkmgr");
-    print_grp_regs();
-*/
+	enable_mux(MT_MUX_AUD1, "clkmgr");
+	disable_mux(MT_MUX_AUD1, "clkmgr");
+	enable_mux(MT_MUX_AUD2, "clkmgr");
+	disable_mux(MT_MUX_AUD2, "clkmgr");
+	print_grp_regs();
+
 	return 0;
 }
 module_init(mt_clkmgr_debug_module_init);
