@@ -1119,7 +1119,7 @@ static int md_ccif_op_write_room(struct ccci_modem *md, unsigned char qno)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	if (qno == 0xFF)
+	if (qno >= QUEUE_NUM)
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
 	return ccci_ringbuf_writeable(md->index, md_ctrl->txq[qno].ringbuf, 0);
 }
