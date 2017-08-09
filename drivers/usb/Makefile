@@ -57,8 +57,7 @@ obj-$(CONFIG_USB_SPEEDTOUCH)	+= atm/
 obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
 obj-$(CONFIG_USB_CHIPIDEA)	+= chipidea/
 obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
-# mark this coz 3.18 not ready currently, replace gadget with 3.10 to keep USB function ready later
-#obj-$(CONFIG_USB_GADGET)	+= gadget/
+obj-$(CONFIG_USB_GADGET)	+= gadget/
 
 obj-$(CONFIG_USB_COMMON)	+= common/
 
