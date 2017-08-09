@@ -42,3 +42,4 @@ obj-$(CONFIG_MTK_MET) += met/
 endif
 
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
