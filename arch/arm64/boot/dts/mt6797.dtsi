@@ -909,6 +909,8 @@
 			#interrupt-cells = <2>;
 			interrupt-controller;
 			mediatek,max_eint_num = <192>;
+			mediatek,max_deint_cnt = <4>;
+			mediatek,deint_possible_irq = <206 207 208 209>;
 			mediatek,mapping_table_entry = <0>;
 			mediatek,debtime_setting_entry = <10>;
 			mediatek,debtime_setting_array	= <0 128>,

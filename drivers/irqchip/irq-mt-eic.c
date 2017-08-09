@@ -21,6 +21,7 @@
 #include <mt-plat/mt_io.h>
 #include <mt-plat/mt_gpio.h>
 #include <linux/printk.h>
+#include <mach/mt_secure_api.h>
 #define EINT_DEBUG 0
 #if (EINT_DEBUG == 1)
 #define dbgmsg printk
@@ -219,6 +220,22 @@ int mt_eint_clr_deint(u32 eint_num)
 }
 EXPORT_SYMBOL(mt_eint_clr_deint);
 
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
+unsigned int
+mt_eint_get_deint_sec_en(unsigned int deint_mapped)
+{
+	unsigned long base;
+	unsigned int st;
+	unsigned int bit = 1 << (deint_mapped % 16);
+
+	base = SECURE_DIR_EINT_EN;
+	st = readl(IOMEM(base));
+	pr_debug("[EINT] %s :%lx,value: 0x%x,bit: %x\n", __func__, base, st, bit);
+	return ((st & bit)?1:0);
+}
+#endif
+
+
 int mt_eint_set_deint(u32 eint_num, u32 irq_num)
 {
 	u32 deint_mapped = 0;
@@ -237,6 +254,11 @@ int mt_eint_set_deint(u32 eint_num, u32 irq_num)
 
 	deint_mapped = irq_num - deint_possible_irq[0];
 
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
+	if (mt_eint_get_deint_sec_en(deint_mapped) == 1) {
+		pr_err("%s: irq_num(%u) can't use secure deint(%u)\n", __func__, irq_num, deint_mapped);
+	}
+#endif
 	if (deint_mapped >= MAX_DEINT_CNT) {
 		pr_err("%s: irq_num(%u) out of range\n", __func__, irq_num);
 		return -1;
@@ -1803,7 +1825,6 @@ static int __init mt_eint_init(void)
 	const __be32 *spec;
 	u32 len;
 	int ret;
-
 	/* DTS version */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt-eic");
 	if (node) {
@@ -1894,9 +1915,7 @@ static int __init mt_eint_init(void)
 		if (!deint_descriptors)
 			return -1;
 
-		if (of_property_read_u32_array
-		    (node, "mediatek,deint_possible_irq",
-			deint_possible_irq, MAX_DEINT_CNT))
+		if (of_property_read_u32_array(node, "mediatek,deint_possible_irq", deint_possible_irq, MAX_DEINT_CNT))
 			pr_warn("[EINT] deint function would fail...\n");
 	}
 

@@ -31,6 +31,7 @@
 #define EINT_EEVT_BASE	      (((unsigned long)EINT_BASE + 0x900))
 #define EINT_RAW_STA_BASE     (((unsigned long)EINT_BASE + 0xA00))
 #define EINT_EMUL_BASE        (((unsigned long)EINT_BASE + 0xF00))
+#define SECURE_DIR_EINT_EN    (((unsigned long)EINT_BASE + 0xB10))
 #define EINT_DBNC_SET_DBNC_BITS    (4)
 #define EINT_DBNC_CLR_DBNC_BITS    (4)
 #define EINT_DBNC_SET_EN_BITS      (0)

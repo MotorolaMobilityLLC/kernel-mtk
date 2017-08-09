@@ -355,6 +355,7 @@ config ARCH_MT6797
 	select MTK_USB2JTAG_SUPPORT
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_SEC_DEINT_SUPPORT
 	help
 	  This enables support for MediaTek MT6797
 	  Support for aarch64/aarch32 Architecture
