@@ -361,6 +361,7 @@ static void __init gic_dist_init(void)
 	writel_relaxed(GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A |
 			GICD_CTLR_ENABLE_G1, base + GICD_CTLR);
 
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	/*
 	 * Set all global interrupts to the boot CPU only. ARE must be
 	 * enabled.
@@ -368,6 +369,12 @@ static void __init gic_dist_init(void)
 	affinity = gic_mpidr_to_affinity(cpu_logical_map(smp_processor_id()));
 	for (i = 32; i < gic_data.irq_nr; i++)
 		writeq_relaxed(affinity, base + GICD_IROUTER + i * 8);
+#else
+	/* default set target all for all SPI */
+	for (i = 32; i < gic_data.irq_nr; i++)
+		writeq_relaxed(GICD_IROUTER_SPI_MODE_ANY,
+				base + GICD_IROUTER + i * 8);
+#endif
 }
 
 static int gic_populate_rdist(void)
@@ -570,6 +577,7 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	int enabled;
 	u64 val;
 
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	if (gic_irq_in_rdist(d))
 		return -EINVAL;
 
@@ -593,6 +601,51 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 		gic_dist_wait_for_rwp();
 
 	return IRQ_SET_MASK_OK;
+#else
+	/*
+	 * no need to update when:
+	 * input mask is equal to the current setting
+	 */
+	if (cpumask_equal(d->affinity, mask_val))
+		return IRQ_SET_MASK_OK_NOCOPY;
+
+	/*
+	 * cpumask_first_and() returns >= nr_cpu_ids when the intersection
+	 * of inputs is an empty set -> return error when this is not a "forced" update
+	 */
+	if (!force && (cpumask_first_and(mask_val, cpu_online_mask) >= nr_cpu_ids))
+		return -EINVAL;
+
+	if (gic_irq_in_rdist(d))
+		return -EINVAL;
+
+	/* If interrupt was enabled, disable it first */
+	enabled = gic_peek_irq(d, GICD_ISENABLER);
+	if (enabled)
+		gic_mask_irq(d);
+
+
+	reg = gic_dist_base(d) + GICD_IROUTER + (gic_irq(d) * 8);
+
+	/* GICv3 supports target is 1 or all */
+	if (cpumask_weight(mask_val) > 1)
+		val = GICD_IROUTER_SPI_MODE_ANY;
+	else
+		val = gic_mpidr_to_affinity(cpu_logical_map(cpu));
+
+	writeq_relaxed(val, reg);
+
+	/*
+	 * If the interrupt was enabled, enabled it again. Otherwise,
+	 * just wait for the distributor to have digested our changes.
+	 */
+	if (enabled)
+		gic_unmask_irq(d);
+	else
+		gic_dist_wait_for_rwp();
+
+	return IRQ_SET_MASK_OK;
+#endif
 }
 #else
 #define gic_set_affinity	NULL

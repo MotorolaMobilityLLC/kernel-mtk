@@ -28,6 +28,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/sizes.h>
+#include <linux/irqchip/arm-gic-v3.h>
 #include <linux/irqchip/mtk-gic-extend.h>
 
 /* for cirq use */
@@ -35,6 +36,12 @@ void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
 void __iomem *INT_POL_CTL1;
 static void __iomem *GIC_REDIST_BASE;
+static u32 wdt_irq;
+
+static inline unsigned int gic_irq(struct irq_data *d)
+{
+	return d->hwirq;
+}
 
 static int gic_populate_rdist(void __iomem **rdist_base)
 {
@@ -43,6 +50,63 @@ static int gic_populate_rdist(void __iomem **rdist_base)
 	*rdist_base = GIC_REDIST_BASE + cpu*SZ_64K*2;
 
 	return 0;
+}
+
+bool mt_is_secure_irq(struct irq_data *d)
+{
+	if (gic_irq(d) == wdt_irq)
+		return true;
+	else
+		return false;
+}
+
+bool mt_get_irq_gic_targets(struct irq_data *d, cpumask_t *mask)
+{
+	void __iomem *dist_base;
+	void __iomem *routing_reg;
+	u32 cpu;
+	u32 cluster;
+	u64 routing_val;
+	u32 target_mask;
+
+	/* for SPI/PPI, target to current cpu */
+	if (gic_irq(d) < 32) {
+		target_mask = 1<<smp_processor_id();
+		goto build_mask;
+	}
+
+	/* for SPI, we read routing info to build current mask */
+	dist_base = GIC_DIST_BASE;
+	routing_reg = dist_base + GICD_IROUTER + (gic_irq(d)*8);
+	routing_val = readq(routing_reg);
+
+	/* if target all, target_mask should indicate all CPU */
+	if (routing_val & GICD_IROUTER_SPI_MODE_ANY) {
+		target_mask = (1<<num_possible_cpus())-1;
+		pr_debug("%s:%d: irq(%d) targets all\n",
+				__func__, __LINE__, gic_irq(d));
+	} else {
+		/* if not target all,
+		 * it should be targted to specific cpu only */
+		cluster = (routing_val&0xff00)>>8;
+		cpu = routing_val&0xff;
+
+		/* assume 1 cluster contain 4 cpu in little,
+		 * and only the last cluster can contain less than 4 cpu */
+		target_mask = 1<<(cluster*4 + cpu);
+
+		pr_debug("%s:%d: irq(%d) target_mask(0x%x)\n",
+				__func__, __LINE__, gic_irq(d), target_mask);
+	}
+
+build_mask:
+	cpumask_clear(mask);
+	for_each_cpu(cpu, cpu_possible_mask) {
+		if (target_mask & (1<<cpu))
+			cpumask_set_cpu(cpu, mask);
+	}
+
+	return true;
 }
 
 u32 mt_irq_get_pol(u32 irq)
@@ -234,6 +298,9 @@ void mt_irq_mask_for_sleep(unsigned int irq)
 static int __init mt_gic_ext_init(void)
 {
 	struct device_node *node;
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	int i;
+#endif
 
 	node = of_find_compatible_node(NULL, NULL, "arm,gic-v3");
 	if (!node) {
@@ -258,11 +325,21 @@ static int __init mt_gic_ext_init(void)
 	 * INT_POL_CTL0 is enough */
 	INT_POL_CTL1 = of_iomap(node, 3);
 
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
+		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
+		spin_lock_init(&(irq_need_migrate_list[i].lock));
+	}
+
+	if (of_property_read_u32(node, "mediatek,wdt_irq", &wdt_irq))
+		wdt_irq = 0;
+#endif
+
 	pr_warn("### gic-v3 init done. ###\n");
 
 	return 0;
 }
-module_init(mt_gic_ext_init);
+core_initcall(mt_gic_ext_init);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek gicv3 extend Driver");

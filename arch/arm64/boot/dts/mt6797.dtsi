@@ -352,6 +352,7 @@
 			<0 0x19200000 0 0x200000>, // redistributor
 			<0 0x10220620 0 0x001000>; // INTPOL
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
+		mediatek,wdt_irq = <169>;
 	};
 
 	clocks {

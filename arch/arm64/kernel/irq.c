@@ -303,7 +303,7 @@ void update_affinity_settings(struct irq_desc *desc, const struct cpumask *new_a
 
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN_DEBUG
 	/* verify the consistency of IRQ setting after updating */
-	BUG_ON(!check_consistency_of_irq_settings(desc));
+	WARN_ON(!check_consistency_of_irq_settings(desc));
 #endif
 }
 #endif
