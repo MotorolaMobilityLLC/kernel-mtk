@@ -39,6 +39,23 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #define SP_TX_ANX7418_SLAVE_ADDR 0x50
 #define SP_TX_ANX7418_OFFSET     0x36
 
+
+/****************************************************************/
+#define SLIMPORT_TX_EDID_READ(context,fmt,arg...) 					\
+	pr_debug(fmt, ## arg);
+
+#define SLIMPORT_TX_EDID_INFO(context,fmt,arg...) 					\
+	pr_info(fmt, ## arg);
+
+#define SLIMPORT_TX_DBG_INFO(driver_context, fmt, arg...)				\
+	pr_warn(fmt, ## arg);
+
+#define SLIMPORT_TX_DBG_WARN(driver_context, fmt, arg...) 				\
+	pr_warn(fmt, ## arg);
+
+#define SLIMPORT_TX_DBG_ERR(driver_context, fmt, arg...)				\
+	pr_err(fmt, ## arg);
+
 typedef enum {
 	RESET_PIN,
 	PD_PIN,

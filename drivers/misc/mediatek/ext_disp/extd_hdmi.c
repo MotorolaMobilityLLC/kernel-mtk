@@ -1134,6 +1134,8 @@ int hdmi_get_dev_info(int is_sf, void *info)
 				dispif_info->displayType = DISP_IF_MHL;
 		} else if (hdmi_params->cabletype == MHL_CABLE)
 			dispif_info->displayType = DISP_IF_MHL;
+		else if (hdmi_params->cabletype == SLIMPORT_CABLE)
+			dispif_info->displayType = DISP_IF_SLIMPORT;
 		else
 			dispif_info->displayType = DISP_IF_HDMI;
 
@@ -1211,6 +1213,8 @@ int hdmi_get_device_type(void)
 			device_type = DISP_IF_HDMI_SMARTBOOK;
 		else if (hdmi_params->cabletype == MHL_CABLE)
 			device_type = DISP_IF_MHL;
+		else if (hdmi_params->cabletype == SLIMPORT_CABLE)
+			device_type = DISP_IF_SLIMPORT;
 	}
 
 	return device_type;
@@ -1285,12 +1289,7 @@ int hdmi_post_init(void)
 		.state_callback = hdmi_state_callback,
 	};
 
-#ifdef ANX7805_SUPPORT
-		hdmi_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
-#else
-		hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
-#endif
-
+	hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
 	if (NULL == hdmi_drv) {
 		HDMI_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
 		return -1;

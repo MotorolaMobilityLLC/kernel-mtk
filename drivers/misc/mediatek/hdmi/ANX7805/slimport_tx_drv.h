@@ -31,8 +31,8 @@ typedef unsigned int uint;
 //typedef bit bool;
 //typedef unsigned long ulong;
 //typedef unsigned int WORD;
-
-
+#define Display_NoHDCP
+#define Redo_HDCP
 
 #define MAX_BUF_CNT 6
 
@@ -564,6 +564,7 @@ _SP_TX_DRV_EX_C_ BYTE bMIPIFormatIndex;
 
 _SP_TX_DRV_EX_C_ BYTE bEDID_extblock[128];
 _SP_TX_DRV_EX_C_ BYTE bEDID_firstblock[128];
+_SP_TX_DRV_EX_C_ BYTE bEDID_fourblock[256];
 
 _SP_TX_DRV_EX_C_ bool audio_format_change;
 

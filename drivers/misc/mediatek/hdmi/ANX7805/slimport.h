@@ -141,8 +141,9 @@ void sp_tx_hardware_poweron(void);
 void sp_tx_hardware_powerdown(void);
 int slimport_read_edid_block(int block, uint8_t *edid_buf);
 int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num);
-
-
+int slimport_read_edid_All(uint8_t *edid_buf);
+int slimport_read_edid_break(uint8_t *edid_break);
+extern 	void *slimport_edid_p;
 
 #ifdef CONFIG_SLIMPORT_DYNAMIC_HPD
 void slimport_set_hdmi_hpd(int on);

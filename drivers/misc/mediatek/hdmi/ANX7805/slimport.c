@@ -36,6 +36,8 @@
 
 
 #include "slimport_tx_drv.h"
+#include "slimport_edid.h"
+#include "slimport_edid_3d_api.h"
 
 /*#include "mach/eint.h"*/
 #include "mach/irqs.h"
@@ -86,6 +88,7 @@ struct completion init_aux_ch_completion;
 static wait_queue_head_t mhl_irq_wq;
 static struct task_struct *mhl_irq_task = NULL;
 static atomic_t mhl_irq_event = ATOMIC_INIT(0);
+void *slimport_edid_p = NULL;
 
 static int anx7805_avdd_3p3_power(struct anx7805_data *chip, int on)
 {
@@ -435,7 +438,34 @@ static void sp_tx_power_down_and_init(void)
 
 */
 
+int slimport_read_edid_break(uint8_t *edid_break)
+{
+ 	edid_break= (uint8_t *)&bEDIDBreak;
 
+	return 0;
+}
+EXPORT_SYMBOL(slimport_read_edid_break);
+
+int slimport_read_edid_All(uint8_t *edid_buf)
+{
+	int block;
+	block = bEDID_firstblock[0x7e];
+	if (block  == 0) {
+		memcpy(edid_buf, bEDID_firstblock, sizeof(bEDID_firstblock));
+	} else if (block == 1) {
+		memcpy(edid_buf, bEDID_firstblock, sizeof(bEDID_firstblock));
+		memcpy((edid_buf+128), bEDID_extblock, sizeof(bEDID_extblock));
+	} else if (block == 3) {
+		memcpy(edid_buf, bEDID_firstblock, sizeof(bEDID_firstblock));
+		memcpy((edid_buf+128), bEDID_extblock, sizeof(bEDID_extblock));
+		memcpy((edid_buf+256), bEDID_fourblock, sizeof(bEDID_fourblock));
+	} else {
+		pr_err("%s: block number %d is invalid\n", __func__, block);
+		return -EINVAL;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(slimport_read_edid_All);
 
 int slimport_read_edid_block(int block, uint8_t *edid_buf)
 {
@@ -626,6 +656,7 @@ static int anx7805_irq_kthread(void *data)
 {
     int status = 0;
     int cable_status = 0;
+
 	struct sched_param param = { .sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -643,12 +674,17 @@ static int anx7805_irq_kthread(void *data)
 
 		pr_err("444444444444444444444\n");
 		if (cable_status == 0x01) {
-			pr_err("cable plug-in\n");
+			pr_err("cable plug-in, and create context\n");
+			slimport_edid_p = si_edid_create_context(NULL, NULL);
+
 			wake_lock(&the_chip->slimport_lock);
 			queue_delayed_work(the_chip->workqueue, &the_chip->work, 0);
 		} else {
-			pr_err("cable plug-out\n");
+			pr_err("cable plug-out, and destory context\n");
+			si_edid_destroy_context(slimport_edid_p);
+			slimport_edid_p = NULL;
 			Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_HPD_CLEAR, 0, NULL);
+
 			status = cancel_delayed_work_sync(&the_chip->work);
 			pr_err("true: %d\n", true);
 			if (status == true)
@@ -788,7 +824,7 @@ static int anx7805_i2c_probe(struct i2c_client *client,
 		anx7805->gpio_int = pdata->gpio_int;
 		anx7805->gpio_cbl_det = pdata->gpio_cbl_det;
 		anx7805->vdd10_name = pdata->vdd10_name;
-		anx7805->vdd10_name = pdata->avdd33_name;
+		anx7805->avdd33_name = pdata->avdd33_name;		
 	}
 #endif
 	/* initialize hdmi_sp_ops */

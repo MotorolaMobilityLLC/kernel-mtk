@@ -21,7 +21,13 @@
 #include "slimport_tx_drv.h"
 #include "slimport_tx_reg.h"
 
- 
+#include "slimport_edid.h"
+#include "slimport_edid_3d_api.h"
+
+BYTE bEDID_extblock[128];
+BYTE bEDID_firstblock[128];
+BYTE bEDID_fourblock[256];
+
 struct MIPI_Video_Format mipi_video_timing_table[] = {
 //////////////////////pixel_clk--Htotal---H active--Vtotal--V active-HFP---HSW--HBP--VFP--VSW--VBP-----////////
 
@@ -1458,7 +1464,7 @@ void SP_TX_HW_HDCP_Enable(void)
 	pr_err("SP_TX_HDCP_CTRL0_REG = %.2x\n", (unsigned int)c);
 
 	/*SP_TX_WAIT_R0_TIME*/
-	sp_write_reg(SP_TX_PORT0_ADDR, 0x40, 0xb0);
+	sp_write_reg(SP_TX_PORT0_ADDR, 0x40, 0xb6);
 	/*SP_TX_WAIT_KSVR_TIME*/
 	sp_write_reg(SP_TX_PORT0_ADDR, 0x42, 0xc8);
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK2, 0xfc);//unmask auth change&done int
@@ -2359,21 +2365,22 @@ BYTE SP_TX_Wait_AUX_Finished(void)
 	BYTE cCnt;
 	cCnt = 0;
 
-	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_STATUS, &c);
-	while(c & 0x10) {
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
+	while(c & 0x01) {
 		cCnt++;
-
-		sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_STATUS, &c);
+		 delay_ms(1);
+		sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
 
 		if(cCnt>100) {
 #ifdef AUX_DBG
 			pr_err("AUX Operaton does not finished, and tome out.");
 #endif
-			break;
+			return 0;
 		}
 
 	}
 
+    sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_STATUS, &c);
 	if(c&0x0F) {
 #ifdef AUX_DBG
 		pr_err("aux operation failed %.2x\n",(unsigned int)c);
@@ -2664,7 +2671,7 @@ BYTE SP_TX_AUX_EDIDRead_Byte(BYTE offset)
 
 	}
 
-#if 1
+//#if 0
 	if(offset < 0x80) {
 		for(i=0; i<16; i++) //record all 128 data in extsion block.
 			bEDID_firstblock[offset+i]=edid[i];
@@ -2673,7 +2680,7 @@ BYTE SP_TX_AUX_EDIDRead_Byte(BYTE offset)
 			bEDID_extblock[offset-0x80+i]=edid[i];
 	}
 
-#else
+//#else
 
 	if(offset == 0x00) {
 		if((edid[0] == 0) && (edid[7] == 0) && (edid[1] == 0xff) && (edid[2] == 0xff) && (edid[3] == 0xff)
@@ -2704,6 +2711,7 @@ BYTE SP_TX_AUX_EDIDRead_Byte(BYTE offset)
 			pr_err("Bad EDID check sum1!");
 			sp_tx_edid_err_code = 0x02;
 			checksum = edid[15];
+			bEDIDBreak=1;
 		} else
 			pr_err("Good EDID check sum1!");
 	}
@@ -2813,7 +2821,7 @@ BYTE SP_TX_AUX_EDIDRead_Byte(BYTE offset)
 		}
 
 	}
-#endif
+//#endif
 	return bReturn;
 }
 
@@ -2823,6 +2831,7 @@ void SP_TX_Parse_Segments_EDID(BYTE segment, BYTE offset)
 {
 	BYTE c,cnt;
 	int i;
+	BYTE edid[16];
 
 	//set I2C write com 0x04 mot = 1
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG, 0x04);
@@ -2830,6 +2839,7 @@ void SP_TX_Parse_Segments_EDID(BYTE segment, BYTE offset)
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_ADDR_7_0_REG, 0x30);
 
 	// adress_only
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only
 
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
@@ -2844,7 +2854,8 @@ void SP_TX_Parse_Segments_EDID(BYTE segment, BYTE offset)
 	//set I2C write com 0x04 mot = 1
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG, 0x04);
 	//enable aux
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x01);
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, (c&(~0x02))|(0x01));
 	cnt = 0;
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
 
@@ -2865,11 +2876,11 @@ void SP_TX_Parse_Segments_EDID(BYTE segment, BYTE offset)
 
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_ADDR_7_0_REG, 0x50);//set EDID addr 0xa0
 	// adress_only
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only
+	//sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only
 
 	SP_TX_AUX_WR(offset);//offset
 	//adress_only
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only
+	//sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only
 
 	SP_TX_AUX_RD(0xf5);//set I2C read com 0x05 mot = 1 and read 16 bytes
 	cnt = 0;
@@ -2888,14 +2899,21 @@ void SP_TX_Parse_Segments_EDID(BYTE segment, BYTE offset)
 		}
 
 
-		sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_BUF_DATA_0_REG+i, &c);
+		sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_BUF_DATA_0_REG+i, &edid[i]);
 		//pr_err("edid[0x%.2x] = 0x%.2x\n",(unsigned int)(offset+i),(unsigned int)c);
 	}
+	for(i=0; i<16; i++) //record all 256data in extsion block.
+		bEDID_fourblock[offset+i]=edid[i];
+
 
 	///*
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG, 0x01);
 	//enable aux
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, 0x03);//set address only to stop EDID reading
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, c|0x03);//set address only to stop EDID reading
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, c&(~0x02));//set address only to stop EDID reading
+	
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
 	while(c & 0x01)
 		sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
@@ -2918,6 +2936,23 @@ BYTE SP_TX_Get_EDID_Block(void)
 	SP_TX_AUX_RD(0x01);
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_BUF_DATA_0_REG, &c);
 
+	if(c == 0)
+	{
+	debug_puts("EDID Block = 1");
+	}
+	else if(c == 1)
+	{
+	debug_puts("EDID Block = 2");
+	}
+	else if(c == 3)
+	{
+	debug_puts("EDID Block = 4");
+	}
+	else
+	{
+		c=1;// default 2 block
+		bEDIDBreak=1;
+	}
 	pr_err("EDID Block = %d\n",(int)(c+1));
 	return c;
 }
@@ -4720,6 +4755,9 @@ void SP_CTRL_HDCP_Process(void)
 {
 	BYTE c;
 	static BYTE ds_vid_stb_cntr = 0;
+	#ifdef Redo_HDCP
+	static BYTE HDCP_fail_count = 0;
+	#endif
 	dump_count = 0;
 	//pr_err("HDCP Process state: %x \r\n", (unsigned int)hdcp_process_state);
 	switch(hdcp_process_state) {
@@ -4774,17 +4812,38 @@ void SP_CTRL_HDCP_Process(void)
 		SP_TX_Show_Infomation();
 		break;
 	case HDCP_FAILE:
+		#ifdef Redo_HDCP
+		SP_CTRL_Clean_HDCP();
+		HDCP_fail_count++;
+		hdcp_process_state = HDCP_WAITTING_VID_STB;
+		pr_info("***************************hdcp_auth_failed*********************************\n");
+		
+		if(HDCP_fail_count >= 5) {
+			system_power_ctrl(0);
+			hdcp_process_state = HDCP_PROCESS_INIT;
+			HDCP_fail_count = 0;
+			pr_info("***************************hdcp_auth_failed more than 5 times*******************************\n");
+
+		}
+		#else
 		hdcp_encryption_enable(0);
 		SP_TX_Video_Mute(1);
 		pr_err("***************************hdcp_auth_failed*********************************\n");
 		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
 		SP_TX_Show_Infomation();
+		#endif
 		break;
 	default:
 	case HDCP_NOT_SUPPORT:
 		pr_err("Sink is not capable HDCP");
+		#ifdef Display_NoHDCP
+		SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);
+		SP_TX_Video_Mute(0);
+		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		#else
 		SP_TX_Video_Mute(1);//when Rx does not support HDCP, force to send blue screen
 		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		#endif
 		break;
 	}
 }
@@ -5041,6 +5100,13 @@ void SP_CTRL_TimerProcess (void)
 		break;
 	case SP_TX_PARSE_EDID:
 		SP_CTRL_EDID_Process();
+		pr_err("slimport_edid_p: %p\n", slimport_edid_p);
+		if (slimport_edid_p != NULL) {
+			edid_3d_data_p p_edid = (edid_3d_data_p)slimport_edid_p;
+			slimport_read_edid_All((uint8_t *)p_edid->EDID_block_data);
+			si_mhl_tx_handle_atomic_hw_edid_read_complete((edid_3d_data_p)slimport_edid_p);
+		}
+
 		Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_DONE, 0, NULL);
 		break;
 	case SP_TX_CONFIG_VIDEO_INPUT:

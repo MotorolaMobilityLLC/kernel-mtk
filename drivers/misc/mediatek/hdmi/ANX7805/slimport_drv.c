@@ -89,7 +89,7 @@ static char* cable_type_print(unsigned short type)
 	}	
 }
 
-enum HDMI_CABLE_TYPE MHL_Connect_type = SLIMPORT_CABLE;
+enum HDMI_CABLE_TYPE Connect_cable_type = SLIMPORT_CABLE;
 static unsigned int HDCP_Supported_Info = 0;
 static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 {
@@ -117,11 +117,11 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 	params->io_driving_current 			= IO_DRIVING_CURRENT_2MA;
 	params->intermediat_buffer_num 		= 4;
 	params->scaling_factor 				= 0;
-	params->cabletype 					= MHL_Connect_type;
+	params->cabletype 					= Connect_cable_type;
 	params->HDCPSupported 				= HDCP_Supported_Info;
 
 	str = cable_type_print(params->cabletype);
-    SLIMPORT_LOG("type %s-%d hdcp %d-%d\n", str, MHL_Connect_type, params->HDCPSupported, HDCP_Supported_Info);
+    SLIMPORT_LOG("type %s-%d hdcp %d-%d\n", str, Connect_cable_type, params->HDCPSupported, HDCP_Supported_Info);
 	return ;
 }
 
@@ -563,7 +563,7 @@ void slimport_invoke_cable_callbacks(enum HDMI_STATE state)
 }
 
 /************************** ****************************************************/
-const struct HDMI_DRIVER *SlimPort_GetDriver(void)
+const struct HDMI_DRIVER *HDMI_GetDriver(void)
 {
 	static const struct HDMI_DRIVER HDMI_DRV =
 	{
@@ -633,7 +633,7 @@ void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *
 			sii_mhl_connected = SLIMPORT_TX_EVENT_DISCONNECTION;
 			slimport_invoke_cable_callbacks(HDMI_STATE_NO_DEVICE);
 			reset_av_info();
-			MHL_Connect_type = MHL_CABLE;
+			Connect_cable_type = MHL_CABLE;
 		}
 			break;
 		case SLIMPORT_TX_EVENT_HPD_CLEAR:
@@ -646,7 +646,7 @@ void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *
 			break;
 		case SLIMPORT_TX_EVENT_DEV_CAP_UPDATE:
 		{
-    			MHL_Connect_type = MHL_SMB_CABLE;			
+    			Connect_cable_type = MHL_SMB_CABLE;			
 		}
 			break;
 		case SLIMPORT_TX_EVENT_EDID_UPDATE:

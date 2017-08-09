@@ -210,8 +210,9 @@ struct HDMI_UTIL_FUNCS {
 #define SINK_576I_2880 (1 << 18)
 #define SINK_1080P25   (1 << 19)
 #define SINK_1080P24   (1 << 20)
-#define SINK_1080P23976   (1 << 21)
+#define SINK_1080P23976  (1 << 21)
 #define SINK_1080P2997   (1 << 22)
+#define SINK_4KP30       (1 << 23)
 
 #if !defined(HDMI_MT8193_SUPPORT)
 struct HDMI_EDID_INFO_T {
@@ -330,7 +331,6 @@ struct HDMI_DRIVER {
 /* --------------------------------------------------------------------------- */
 
 const struct HDMI_DRIVER *HDMI_GetDriver(void);
-const struct HDMI_DRIVER *SlimPort_GetDriver(void);
 void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);
 extern int	chip_device_id;
 extern bool need_reset_usb_switch;

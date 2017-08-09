@@ -28,7 +28,8 @@ typedef enum {
 	DISP_IF_HDMI = 7,
 	DISP_IF_HDMI_SMARTBOOK,
 	DISP_IF_MHL,
-	DISP_IF_EPD
+	DISP_IF_EPD,
+	DISP_IF_SLIMPORT
 } DISP_IF_TYPE;
 
 typedef enum {
