@@ -73,6 +73,8 @@ void cmdq_dev_init_module_base_VA(void)
 	gMMSYS_CONFIG_Base_VA = 0;
 	gMMSYS_CONFIG_Base_VA =
 	    cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-mmsys");
+	if (0 == gMMSYS_CONFIG_Base_VA)
+		cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8163-mmsys");
 #endif
 
 	cmdq_mdp_init_module_base_VA();
