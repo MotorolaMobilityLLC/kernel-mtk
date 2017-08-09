@@ -217,8 +217,7 @@ OS_OBJS += gl_proc.o
 endif
 
 ifeq ($(CONFIG_ARCH_MT7623), y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt8127/include/mach
-HIF_AHB_PDMA = $(HIF_DIR)/mt8127/
+HIF_AHB_PDMA = $(HIF_DIR)mt8127/
 endif
 HIF_OBJS :=  $(HIF_DIR)arm.o \
              $(HIF_DIR)ahb.o \
