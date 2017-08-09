@@ -287,9 +287,9 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucRXVirtBufAddr = NULL;
 			BT_CVSD_Mem.pucRXPhysBufAddr = 0;
 		} else {
-			pr_warn("%s cannot dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucRXVirtBufAddr,
-					(kal_uint8 *)(BT_CVSD_Mem.pucRXPhysBufAddr));
+			LOGBT("%s cannot dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = 0x%p",
+					__func__, BT_CVSD_Mem.pucRXVirtBufAddr, (void *)(BT_CVSD_Mem.pucRXPhysBufAddr));
+			pr_warn("%s annot dma_free_coherent RX", __func__);
 			return -1;
 		}
 	} else {
@@ -305,9 +305,9 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucTXPhysBufAddr = 0;
 
 		} else {
-			pr_warn("%s cannot dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucTXVirtBufAddr,
-					(kal_uint8 *)(BT_CVSD_Mem.pucTXPhysBufAddr));
+			LOGBT("%s cannot dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = 0x%p",
+					__func__, BT_CVSD_Mem.pucTXVirtBufAddr, (void *)(BT_CVSD_Mem.pucTXPhysBufAddr));
+			pr_warn("%s annot dma_free_coherent TX", __func__);
 			return -1;
 		}
 	}
