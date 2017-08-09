@@ -91,6 +91,7 @@
 /* #include <mt6311.h> */
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
+#include <mach/mt_charging.h>
 
 #if defined(EXTERNAL_BUCK_FAN49101)
 #include <fan49101.h>

@@ -91,6 +91,7 @@
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
+#include <mach/mt_charging.h>
 
 /*****************************************************************************
  * PMIC extern variable
