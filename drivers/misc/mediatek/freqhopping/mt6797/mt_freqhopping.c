@@ -321,17 +321,20 @@ static void mt6797_0x1001AXXX_release_semaphore(void)
 void mt6797_0x1001AXXX_reg_write(unsigned long reg_offset, unsigned int value)
 {
 	volatile unsigned long reg;
+	unsigned long flags = 0;
 
 	BUG_ON(reg_offset > 0xfff);
 
 	reg = (unsigned long)g_mcumixed_base + reg_offset;
 
+	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
 
 	mt_reg_sync_writel(value, reg);
 	ndelay(200);		/* DE workaround, for first read after sequential write. */
 
 	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+	local_irq_restore(flags);
 }
 
 /* 0x1001AXXX register read API
@@ -341,18 +344,21 @@ unsigned int mt6797_0x1001AXXX_reg_read(unsigned long reg_offset)
 {
 	volatile unsigned int value;
 	volatile unsigned long reg;
+	unsigned long flags = 0;
 
 	BUG_ON(reg_offset > 0xfff);
 
 	/* g_mcumixed_base value from VA protect mechanism */
 	reg = (unsigned long)g_mcumixed_base + reg_offset;
 
+	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
 
 	ndelay(200);		/* DE workaround, for first read after sequential write. */
 	value = readl((void __iomem *)reg);
 
 	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+	local_irq_restore(flags);
 
 	return value;
 }
@@ -361,11 +367,13 @@ void mt6797_0x1001AXXX_reg_set(unsigned long reg_offset, unsigned int field, uns
 {
 	volatile unsigned long reg;
 	volatile unsigned int temp_val;
+	unsigned long flags = 0;
 
 	BUG_ON(reg_offset > 0xfff);
 
 	reg = (unsigned long)g_mcumixed_base + reg_offset;
 
+	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
 
 	ndelay(200);		/* DE workaround, for first read after sequential write. */
@@ -376,6 +384,7 @@ void mt6797_0x1001AXXX_reg_set(unsigned long reg_offset, unsigned int field, uns
 	ndelay(200);		/* DE workaround, for first read after sequential write. */
 
 	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+	local_irq_restore(flags);
 }
 
 /* 0x1001AXX bus access should use the API to protect
@@ -388,7 +397,7 @@ void mt6797_0x1001AXXX_lock(void)
 
 	if (0 != mt6797_0x1001AXXX_get_semaphore()) {
 		if (0 != mt6797_0x1001AXXX_get_semaphore()) {
-			FH_MSG("[ERROR] mt_pause_armpll() HW sema time out 4ms");
+			FH_MSG("[ERROR] HW sema time out 4ms");
 			BUG_ON(1);
 		}
 	}
@@ -2028,6 +2037,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 {
 	/* unsigned long flags = 0; */
 	unsigned long reg_cfg = 0;
+	unsigned long flags = 0;
 
 	if (g_initialize == 0) {
 		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
@@ -2048,6 +2058,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	};
 
 	/********************************************************/
+	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();
 
 
@@ -2058,6 +2069,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 		mcu_fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 0);	/* no pause  */
 
 	mt6797_0x1001AXXX_unlock();
+	local_irq_restore(flags);
     /********************************************************/
 
 	return 0;
