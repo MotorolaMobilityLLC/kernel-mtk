@@ -1,8 +1,5 @@
-#include -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/m4u.mk
-
 obj-$(CONFIG_MTK_ION) += ion_drv.o ion_mm_heap.o ion_fb_heap.o
 ccflags-$(CONFIG_MTK_ION)  += -I$(srctree)/drivers/staging/android/ion #fro kernel-3.10 ion
-ccflags-$(CONFIG_MTK_ION)  += -I$(srctree)/drivers/gpu/ion  #for kernrl-3.4 ion
 ccflags-$(CONFIG_MTK_M4U) += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
@@ -24,6 +21,3 @@ endif
 ifeq ($(CONFIG_ARCH_MT6753),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6753/
 endif
-
-#obj-y   +=  ion_test_drv/
-
