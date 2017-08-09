@@ -376,6 +376,64 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				     <0 168 0x8>;
 		};
 
+		AP_DMA@0x11000000 {
+			compatible = "mediatek,AP_DMA";
+			reg = <0x11000000 0x1000>;
+			interrupts = <0 114 0x8>;
+		};
+
+		i2c0:I2C0@0x11007000 {
+			compatible = "mediatek,I2C0";
+			cell-index = <0>;
+			reg = <0x11007000 0x1000>;
+			interrupts = <0 84 0x8>,
+						<0 99 0x8>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C0>, <&perisys PERI_APDMA>;
+			clock-names = "i2c0-main", "i2c0-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
+		i2c1:I2C1@0x11008000 {
+			compatible = "mediatek,I2C1";
+			cell-index = <1>;
+			reg = <0x11008000 0x1000>;
+			interrupts = <0 85 0x8>,
+						<0 100 0x8>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C1>, <&perisys PERI_APDMA>;
+			clock-names = "i2c1-main", "i2c1-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
+		i2c2:I2C2@0x11009000 {
+			compatible = "mediatek,I2C2";
+			cell-index = <2>;
+			reg = <0x11009000 0x1000>;
+			interrupts = <0 86 0x8>,
+						<0 101 0x8>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C2>, <&perisys PERI_APDMA>;
+			clock-names = "i2c2-main", "i2c2-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
+		i2c3:I2C3@0x1100F000 {
+			compatible = "mediatek,I2C3";
+			cell-index = <3>;
+			reg = <0x1100F000 0x1000>;
+			interrupts = <0 87 0x8>,
+						<0 102 0x8>;
+			def_speed = <100>;
+			clocks = <&perisys PERI_I2C3>, <&perisys PERI_APDMA>;
+			clock-names = "i2c3-main", "i2c3-dma";
+			clock-frequency = <13600>;
+			clock-div = <1>;
+		};
+
 		MCUCFG@0x10200000 {
 			compatible = "mediatek,MCUCFG";
 			reg = <0x10200000 0x200>;
