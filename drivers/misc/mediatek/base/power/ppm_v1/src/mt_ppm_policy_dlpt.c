@@ -78,7 +78,14 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 		max_volt = MAX(max_volt, cluster_status[i].volt);
 	}
 #if PPM_DLPT_ENHANCEMENT
+
+#if PPM_HW_OCP_SUPPORT
+	budget = ppm_calc_total_power_by_ocp(cluster_status, cluster_num);
+	if (!budget)
+		budget = ppm_calc_total_power(cluster_status, cluster_num, DYNAMIC_TABLE2REAL_PERCENTAGE);
+#else
 	budget = ppm_calc_total_power(cluster_status, cluster_num, DYNAMIC_TABLE2REAL_PERCENTAGE);
+#endif
 	if (!budget)
 		goto end;
 

@@ -1130,71 +1130,113 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 #endif
 
 #if PPM_DLPT_ENHANCEMENT
+#if PPM_HW_OCP_SUPPORT
+static bool ppm_is_ocp_available(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
+{
+	int i;
+
+	for (i = 0; i < cluster_num; i++) {
+		/* OCP may disabled by user */
+		if (cluster_status[i].core_num && !ocp_status_get(i))
+			return false;
+	}
+
+	return true;
+}
+
+unsigned int ppm_calc_total_power_by_ocp(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
+{
+	int i;
+	unsigned int budget = 0;
+	unsigned long long total[NR_PPM_CLUSTERS];
+	unsigned int freq[NR_PPM_CLUSTERS];
+	unsigned int count[NR_PPM_CLUSTERS];
+	ktime_t now, delta;
+
+#if !PPM_USE_OCP_DPM
+	return 0;
+#endif
+
+	if (!ppm_is_ocp_available(cluster_status, cluster_num))
+		return 0;
+
+	now = ktime_get();
+	for (i = 0; i < cluster_num; i++) {
+		if (!cluster_status[i].core_num)
+			continue;
+
+		freq[i] = ppm_main_info.cluster_info[i].dvfs_tbl[cluster_status[i].freq_idx].frequency / 1000;
+		count[i] = (i == PPM_CLUSTER_B) ? 300 : get_cluster_min_cpufreq(i) * 7 / 10;
+	}
+
+	/* set LL/L Avg power first */
+	for (i = 0; i < 2; i++) {
+		if (!cluster_status[i].core_num)
+			continue;
+
+		LittleOCPDVFSSet(i, freq[i], cluster_status[i].volt);
+		LittleOCPAvgPwr(i, 1, get_cluster_min_cpufreq(i) * 7 / 10);
+	}
+
+	/* get Big pwr if needed */
+	if (cluster_status[PPM_CLUSTER_B].core_num) {
+		total[PPM_CLUSTER_B] = BigOCPAvgPwrGet(count[PPM_CLUSTER_B]);
+		if (!total[PPM_CLUSTER_B]) {
+			ppm_warn("Big OCP capture failed!\n");
+			return 0; /* error */
+		}
+	}
+
+	/* get LL/L pwr */
+	for (i = 0; i < 2; i++) {
+		int retry = 50;
+
+		if (!cluster_status[i].core_num)
+			continue;
+
+		do {
+			total[i] = (unsigned long long)LittleOCPAvgPwrGet(i);
+			if (total[i]) /* success */
+				break;
+			retry--;
+			udelay(20);
+		} while (retry > 0);
+		if (!retry) {
+			ppm_warn("%s OCP capture failed, total = %llu\n",
+				(i == PPM_CLUSTER_LL) ? "LL" : "L", total[i]);
+			return 0; /* error */
+		}
+	}
+	delta = ktime_sub(ktime_get(), now);
+
+	/* calculate total budget */
+	for (i = 0; i < cluster_num; i++) {
+		if (!cluster_status[i].core_num)
+			continue;
+
+		if (i == PPM_CLUSTER_B)
+			budget += total[i];
+		else
+			budget += (total[i] * cluster_status[i].volt + (1000 - 1)) / 1000;
+
+		ppm_dbg(DLPT, "ocp(%d):F/V/core/cnt/total = %d/%d/%d/%d/%llu\n", i, freq[i],
+			cluster_status[i].volt, cluster_status[i].core_num, count[i], total[i]);
+	}
+
+	/* add MCUSYS power, use LL volt since it is shared buck */
+	budget += (OCPMcusysPwrGet() * cluster_status[0].volt + (1000 - 1)) / 1000;
+
+	ppm_dbg(DLPT, "ocp: total budget = %d, time = %lldus\n", budget, ktime_to_us(delta));
+
+	return budget;
+}
+#endif
+
 unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 				unsigned int cluster_num, unsigned int percentage)
 {
-	unsigned int budget = 0;
-
-#if 0/* PPM_HW_OCP_SUPPORT */
-	int i, ret;
-
-	for (i = 0; i < cluster_num; i++) {
-		/* read power meter for total power calculation */
-		if (cluster_status[i].core_num) {
-			unsigned int freq =
-				ppm_main_info.cluster_info[i].dvfs_tbl[cluster_status[i].freq_idx].frequency;
-			unsigned int count = (i == PPM_CLUSTER_B)
-				? 30000 : get_cluster_min_cpufreq(i);
-			unsigned long long leakage = 0, total = 0;
-			ktime_t now, delta;
-
-			if (i == PPM_CLUSTER_B) {
-				now = ktime_get();
-				total = BigOCPAvgPwrGet(count);
-				if (!total) {
-					ppm_warn("cluster %d OCP capture failed!\n", i);
-					return 0; /* error */
-				}
-				budget += total;
-				delta = ktime_sub(ktime_get(), now);
-			} else {
-				int retry = 20;
-
-				now = ktime_get();
-				LittleOCPDVFSSet(i, freq / 1000, cluster_status[i].volt);
-				LittleOCPAvgPwr(i, 1, count);
-				do {
-					ret = LittleOCPAvgPwrGet(i, &leakage, &total);
-					if (!ret && total) /* success */
-						break;
-					retry--;
-					udelay(100);
-				} while (retry > 0);
-				if (!retry) {
-					ppm_warn("cluster %d OCP capture failed, ret = %d, total = %llu\n",
-						i, ret, total);
-					return 0; /* error */
-				}
-
-#if 0	/* wait for mcusys power calculation formula */
-				budget += (i == PPM_CLUSTER_LL)
-					? ((207 + total) * cluster_status[i].volt + (1000 - 1)) / 1000
-					: (total * cluster_status[i].volt + (1000 - 1)) / 1000;
-#else
-				total = (total * cluster_status[i].volt + (1000 - 1)) / 1000;
-				budget += total;
-#endif
-				delta = ktime_sub(ktime_get(), now);
-			}
-
-			ppm_dbg(DLPT, "ocp(%d):F/V/core/cnt/Lkg/total = %d/%d/%d/%d/%llu/%llu(time = %lldus)\n",
-				i, freq, cluster_status[i].volt, cluster_status[i].core_num, count,
-				leakage, total, ktime_to_us(delta));
-		}
-	}
-#else
 	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
-	unsigned int dynamic, lkg, total;
+	unsigned int dynamic, lkg, total, budget = 0;
 	int i;
 	ktime_t now, delta;
 
@@ -1220,9 +1262,8 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 	if (!budget) {
 		ppm_warn("@%s: pwr_idx is 0!\n", __func__);
 		return -1; /* not found */
-	}
-#endif
-	ppm_dbg(DLPT, "@%s: total budget = %d\n", __func__, budget);
+	} else
+		ppm_dbg(DLPT, "@%s: total budget = %d\n", __func__, budget);
 
 	return budget;
 }
