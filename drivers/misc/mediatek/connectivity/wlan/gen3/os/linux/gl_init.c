@@ -2570,6 +2570,9 @@ static INT_32 wlanProbe(PVOID pvData)
 		/* 4 <4> Setup IRQ */
 		prWlandevInfo = &arWlanDevInfo[i4DevIdx];
 
+		/* Init wakelock */
+		wlanWakeLockInit(prGlueInfo);
+
 		i4Status = glBusSetIrq(prWdev->netdev, NULL, prGlueInfo);
 
 		if (i4Status != WLAN_STATUS_SUCCESS) {
@@ -2671,8 +2674,6 @@ bailout:
 			break;
 		}
 #endif
-		/* Init wakelock */
-		wlanWakeLockInit(prGlueInfo);
 
 		prGlueInfo->main_thread = kthread_run(tx_thread, prGlueInfo->prDevHandler, "tx_thread");
 #if CFG_SUPPORT_MULTITHREAD
@@ -2820,10 +2821,10 @@ bailout:
 			/* wait main thread stops */
 			wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
 			wlanAdapterStop(prAdapter);
-			wlanWakeLockUninit(prGlueInfo);
 		case ADAPTER_START_FAIL:
 			glBusFreeIrq(prWdev->netdev, *((P_GLUE_INFO_T *) netdev_priv(prWdev->netdev)));
 		case BUS_SET_IRQ_FAIL:
+			wlanWakeLockUninit(prGlueInfo);
 			wlanNetDestroy(prWdev);
 			break;
 		case NET_CREATE_FAIL:
