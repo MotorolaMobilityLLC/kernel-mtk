@@ -261,90 +261,142 @@ int msdc_rsp[] = {
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_status()       ((MSDC_READ32(MSDC_CFG) & MSDC_CFG_PIO) >> 3)
 
-#define pr_reg(OFFSET, REG)     \
-	pr_err("R[%x]=0x%.8x ", OFFSET, MSDC_READ32(REG))
+#define MSDC_REGISTER_MAX_SIZE  0x228
 
+#define save_register(i, OFFSET, REG)     \
+	do { \
+		value[i] = MSDC_READ32(REG); \
+		offset[i] = OFFSET; \
+		i++; \
+	} while (0)
+
+#define PRINTF_REGISTER_BUFFER_SIZE 512
+#define ONE_REGISTER_STRING_SIZE    15
+
+inline void int_to_string(u32 count, char *buffer_s, u32 *offset, u32 *value)
+{
+	u32 i;
+	u32 max_size = PRINTF_REGISTER_BUFFER_SIZE;
+	char str[ONE_REGISTER_STRING_SIZE + 1];
+	/* printf register address */
+	memset(buffer_s, 0, PRINTF_REGISTER_BUFFER_SIZE);
+	for (i = 0; i < count; i++) {
+		if (i * ONE_REGISTER_STRING_SIZE >=
+				max_size) {
+			pr_err("%s", buffer_s);
+			memset(buffer_s, 0, PRINTF_REGISTER_BUFFER_SIZE);
+			max_size += PRINTF_REGISTER_BUFFER_SIZE;
+		}
+		/* the size of one register string is 15 */
+		snprintf(str, ONE_REGISTER_STRING_SIZE, "[%.3x:%.8x]",
+				offset[i], value[i]);
+		strncat(buffer_s, str, strlen(str));
+	}
+	pr_err("%s\n", buffer_s);
+}
+void print_register(u32 count, u32 *offset, u32 *value)
+{
+	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
+
+	/* printf register address */
+	pr_err("MSDC register [offset:value]\n");
+	int_to_string(count, buffer, offset, value);
+}
 void msdc_dump_register_core(u32 id, void __iomem *base)
 {
-	pr_reg(OFFSET_MSDC_CFG,                 MSDC_CFG);
-	pr_reg(OFFSET_MSDC_IOCON,               MSDC_IOCON);
-	pr_reg(OFFSET_MSDC_PS,                  MSDC_PS);
-	pr_reg(OFFSET_MSDC_INT,                 MSDC_INT);
-	pr_reg(OFFSET_MSDC_INTEN,               MSDC_INTEN);
-	pr_reg(OFFSET_MSDC_FIFOCS,              MSDC_FIFOCS);
-	pr_err("R[%x]=not read", OFFSET_MSDC_TXDATA);
-	pr_err("R[%x]=not read", OFFSET_MSDC_RXDATA);
-	pr_reg(OFFSET_SDC_CFG,                  SDC_CFG);
-	pr_reg(OFFSET_SDC_CMD,                  SDC_CMD);
-	pr_reg(OFFSET_SDC_ARG,                  SDC_ARG);
-	pr_reg(OFFSET_SDC_STS,                  SDC_STS);
-	pr_reg(OFFSET_SDC_RESP0,                SDC_RESP0);
-	pr_reg(OFFSET_SDC_RESP1,                SDC_RESP1);
-	pr_reg(OFFSET_SDC_RESP2,                SDC_RESP2);
-	pr_reg(OFFSET_SDC_RESP3,                SDC_RESP3);
-	pr_reg(OFFSET_SDC_BLK_NUM,              SDC_BLK_NUM);
-	pr_reg(OFFSET_SDC_VOL_CHG,              SDC_VOL_CHG);
-	pr_reg(OFFSET_SDC_CSTS,                 SDC_CSTS);
-	pr_reg(OFFSET_SDC_CSTS_EN,              SDC_CSTS_EN);
-	pr_reg(OFFSET_SDC_DCRC_STS,             SDC_DCRC_STS);
-	pr_reg(OFFSET_EMMC_CFG0,                EMMC_CFG0);
-	pr_reg(OFFSET_EMMC_CFG1,                EMMC_CFG1);
-	pr_reg(OFFSET_EMMC_STS,                 EMMC_STS);
-	pr_reg(OFFSET_EMMC_IOCON,               EMMC_IOCON);
-	pr_reg(OFFSET_SDC_ACMD_RESP,            SDC_ACMD_RESP);
-	pr_reg(OFFSET_SDC_ACMD19_TRG,           SDC_ACMD19_TRG);
-	pr_reg(OFFSET_SDC_ACMD19_STS,           SDC_ACMD19_STS);
-	pr_reg(OFFSET_MSDC_DMA_SA_HIGH,         MSDC_DMA_SA_HIGH);
-	pr_reg(OFFSET_MSDC_DMA_SA,              MSDC_DMA_SA);
-	pr_reg(OFFSET_MSDC_DMA_CA,              MSDC_DMA_CA);
-	pr_reg(OFFSET_MSDC_DMA_CTRL,            MSDC_DMA_CTRL);
-	pr_reg(OFFSET_MSDC_DMA_CFG,             MSDC_DMA_CFG);
-	pr_reg(OFFSET_MSDC_DMA_LEN,             MSDC_DMA_LEN);
-	pr_reg(OFFSET_MSDC_DBG_SEL,             MSDC_DBG_SEL);
-	pr_reg(OFFSET_MSDC_DBG_OUT,             MSDC_DBG_OUT);
-	pr_reg(OFFSET_MSDC_PATCH_BIT0,          MSDC_PATCH_BIT0);
-	pr_reg(OFFSET_MSDC_PATCH_BIT1,          MSDC_PATCH_BIT1);
-	pr_reg(OFFSET_MSDC_PATCH_BIT2,          MSDC_PATCH_BIT2);
+	u32 i = 0;
+	u32 value[MSDC_REGISTER_MAX_SIZE / 4 + 1];
+	u32 offset[MSDC_REGISTER_MAX_SIZE / 4 + 1];
+
+	/* 10 register */
+	save_register(i, OFFSET_MSDC_CFG,                 MSDC_CFG);
+	save_register(i, OFFSET_MSDC_IOCON,               MSDC_IOCON);
+	save_register(i, OFFSET_MSDC_PS,                  MSDC_PS);
+	save_register(i, OFFSET_MSDC_INT,                 MSDC_INT);
+	save_register(i, OFFSET_MSDC_INTEN,               MSDC_INTEN);
+	save_register(i, OFFSET_MSDC_FIFOCS,              MSDC_FIFOCS);
+	/* rb[OFFSET_MSDC_TXDATA / 4] = 0xffffffff; */
+	/* rb[OFFSET_MSDC_RXDATA / 4] = 0xffffffff; */
+	save_register(i, OFFSET_SDC_CFG,                  SDC_CFG);
+	save_register(i, OFFSET_SDC_CMD,                  SDC_CMD);
+
+	/* 10 register  */
+	save_register(i, OFFSET_SDC_ARG,                  SDC_ARG);
+	save_register(i, OFFSET_SDC_STS,                  SDC_STS);
+	save_register(i, OFFSET_SDC_RESP0,                SDC_RESP0);
+	save_register(i, OFFSET_SDC_RESP1,                SDC_RESP1);
+	save_register(i, OFFSET_SDC_RESP2,                SDC_RESP2);
+	save_register(i, OFFSET_SDC_RESP3,                SDC_RESP3);
+	save_register(i, OFFSET_SDC_BLK_NUM,              SDC_BLK_NUM);
+	save_register(i, OFFSET_SDC_VOL_CHG,              SDC_VOL_CHG);
+	save_register(i, OFFSET_SDC_CSTS,                 SDC_CSTS);
+	save_register(i, OFFSET_SDC_CSTS_EN,              SDC_CSTS_EN);
+
+	/* 10 register  */
+	save_register(i, OFFSET_SDC_DCRC_STS,             SDC_DCRC_STS);
+	save_register(i, OFFSET_EMMC_CFG0,                EMMC_CFG0);
+	save_register(i, OFFSET_EMMC_CFG1,                EMMC_CFG1);
+	save_register(i, OFFSET_EMMC_STS,                 EMMC_STS);
+	save_register(i, OFFSET_EMMC_IOCON,               EMMC_IOCON);
+	save_register(i, OFFSET_SDC_ACMD_RESP,            SDC_ACMD_RESP);
+	save_register(i, OFFSET_SDC_ACMD19_TRG,           SDC_ACMD19_TRG);
+	save_register(i, OFFSET_SDC_ACMD19_STS,           SDC_ACMD19_STS);
+	save_register(i, OFFSET_MSDC_DMA_SA_HIGH,         MSDC_DMA_SA_HIGH);
+	save_register(i, OFFSET_MSDC_DMA_SA,              MSDC_DMA_SA);
+
+	/* 9 register */
+	save_register(i, OFFSET_MSDC_DMA_CA,              MSDC_DMA_CA);
+	save_register(i, OFFSET_MSDC_DMA_CTRL,            MSDC_DMA_CTRL);
+	save_register(i, OFFSET_MSDC_DMA_CFG,             MSDC_DMA_CFG);
+	save_register(i, OFFSET_MSDC_DMA_LEN,             MSDC_DMA_LEN);
+	save_register(i, OFFSET_MSDC_DBG_SEL,             MSDC_DBG_SEL);
+	save_register(i, OFFSET_MSDC_DBG_OUT,             MSDC_DBG_OUT);
+	save_register(i, OFFSET_MSDC_PATCH_BIT0,          MSDC_PATCH_BIT0);
+	save_register(i, OFFSET_MSDC_PATCH_BIT1,          MSDC_PATCH_BIT1);
+	save_register(i, OFFSET_MSDC_PATCH_BIT2,          MSDC_PATCH_BIT2);
 
 	if ((id != 2) && (id != 3))
 		goto skip_sdio_tune_reg;
-
-	pr_reg(OFFSET_DAT0_TUNE_CRC,            DAT0_TUNE_CRC);
-	pr_reg(OFFSET_DAT0_TUNE_CRC,            DAT1_TUNE_CRC);
-	pr_reg(OFFSET_DAT0_TUNE_CRC,            DAT2_TUNE_CRC);
-	pr_reg(OFFSET_DAT0_TUNE_CRC,            DAT3_TUNE_CRC);
-	pr_reg(OFFSET_CMD_TUNE_CRC,             CMD_TUNE_CRC);
-	pr_reg(OFFSET_SDIO_TUNE_WIND,           SDIO_TUNE_WIND);
+	/* 6 */
+	save_register(i, OFFSET_DAT0_TUNE_CRC,            DAT0_TUNE_CRC);
+	save_register(i, OFFSET_DAT1_TUNE_CRC,            DAT1_TUNE_CRC);
+	save_register(i, OFFSET_DAT2_TUNE_CRC,            DAT2_TUNE_CRC);
+	save_register(i, OFFSET_DAT3_TUNE_CRC,            DAT3_TUNE_CRC);
+	save_register(i, OFFSET_CMD_TUNE_CRC,             CMD_TUNE_CRC);
+	save_register(i, OFFSET_SDIO_TUNE_WIND,           SDIO_TUNE_WIND);
 
 skip_sdio_tune_reg:
-	pr_reg(OFFSET_MSDC_PAD_TUNE0,           MSDC_PAD_TUNE0);
-	pr_reg(OFFSET_MSDC_PAD_TUNE1,           MSDC_PAD_TUNE1);
-	pr_reg(OFFSET_MSDC_DAT_RDDLY0,          MSDC_DAT_RDDLY0);
-	pr_reg(OFFSET_MSDC_DAT_RDDLY1,          MSDC_DAT_RDDLY1);
-	pr_reg(OFFSET_MSDC_DAT_RDDLY2,          MSDC_DAT_RDDLY2);
-	pr_reg(OFFSET_MSDC_DAT_RDDLY3,          MSDC_DAT_RDDLY3);
-	pr_reg(OFFSET_MSDC_HW_DBG,              MSDC_HW_DBG);
-	pr_reg(OFFSET_MSDC_VERSION,             MSDC_VERSION);
+	/* 8 */
+	save_register(i, OFFSET_MSDC_PAD_TUNE0,           MSDC_PAD_TUNE0);
+	save_register(i, OFFSET_MSDC_PAD_TUNE1,           MSDC_PAD_TUNE1);
+	save_register(i, OFFSET_MSDC_DAT_RDDLY0,          MSDC_DAT_RDDLY0);
+	save_register(i, OFFSET_MSDC_DAT_RDDLY1,          MSDC_DAT_RDDLY1);
+	save_register(i, OFFSET_MSDC_DAT_RDDLY2,          MSDC_DAT_RDDLY2);
+	save_register(i, OFFSET_MSDC_DAT_RDDLY3,          MSDC_DAT_RDDLY3);
+	save_register(i, OFFSET_MSDC_HW_DBG,              MSDC_HW_DBG);
+	save_register(i, OFFSET_MSDC_VERSION,             MSDC_VERSION);
 
 	if (id != 0)
 		goto skip_emmc50_reg;
-
-	pr_reg(OFFSET_EMMC50_PAD_DS_TUNE,       EMMC50_PAD_DS_TUNE);
-	pr_reg(OFFSET_EMMC50_PAD_CMD_TUNE,      EMMC50_PAD_CMD_TUNE);
-	pr_reg(OFFSET_EMMC50_PAD_DAT01_TUNE,    EMMC50_PAD_DAT01_TUNE);
-	pr_reg(OFFSET_EMMC50_PAD_DAT23_TUNE,    EMMC50_PAD_DAT23_TUNE);
-	pr_reg(OFFSET_EMMC50_PAD_DAT45_TUNE,    EMMC50_PAD_DAT45_TUNE);
-	pr_reg(OFFSET_EMMC50_PAD_DAT67_TUNE,    EMMC50_PAD_DAT67_TUNE);
-	pr_reg(OFFSET_EMMC51_CFG0,              EMMC51_CFG0);
-	pr_reg(OFFSET_EMMC50_CFG0,              EMMC50_CFG0);
-	pr_reg(OFFSET_EMMC50_CFG1,              EMMC50_CFG1);
-	pr_reg(OFFSET_EMMC50_CFG2,              EMMC50_CFG2);
-	pr_reg(OFFSET_EMMC50_CFG3,              EMMC50_CFG3);
-	pr_reg(OFFSET_EMMC50_CFG4,              EMMC50_CFG4);
+	/* 12 */
+	save_register(i, OFFSET_EMMC50_PAD_DS_TUNE,       EMMC50_PAD_DS_TUNE);
+	save_register(i, OFFSET_EMMC50_PAD_CMD_TUNE,      EMMC50_PAD_CMD_TUNE);
+	save_register(i, OFFSET_EMMC50_PAD_DAT01_TUNE,    EMMC50_PAD_DAT01_TUNE);
+	save_register(i, OFFSET_EMMC50_PAD_DAT23_TUNE,    EMMC50_PAD_DAT23_TUNE);
+	save_register(i, OFFSET_EMMC50_PAD_DAT45_TUNE,    EMMC50_PAD_DAT45_TUNE);
+	save_register(i, OFFSET_EMMC50_PAD_DAT67_TUNE,    EMMC50_PAD_DAT67_TUNE);
+	save_register(i, OFFSET_EMMC51_CFG0,              EMMC51_CFG0);
+	save_register(i, OFFSET_EMMC50_CFG0,              EMMC50_CFG0);
+	save_register(i, OFFSET_EMMC50_CFG1,              EMMC50_CFG1);
+	save_register(i, OFFSET_EMMC50_CFG2,              EMMC50_CFG2);
+	save_register(i, OFFSET_EMMC50_CFG3,              EMMC50_CFG3);
+	save_register(i, OFFSET_EMMC50_CFG4,              EMMC50_CFG4);
 
 skip_emmc50_reg:
+	print_register(i, offset, value);
 	return;
 }
+
 
 void msdc_dump_register(struct msdc_host *host)
 {
@@ -354,19 +406,24 @@ void msdc_dump_register(struct msdc_host *host)
 	pr_err("\n");
 }
 
+#define MSDC_DEBUG_REGISTER_COUNT (0x27 + 1)
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base)
 {
 	u32 i;
+	unsigned int value[MSDC_DEBUG_REGISTER_COUNT + 1];
+	unsigned int set[MSDC_DEBUG_REGISTER_COUNT + 1];
+	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 
-	for (i = 0; i <= 0x27; i++) {
+	for (i = 0; i < MSDC_DEBUG_REGISTER_COUNT; i++) {
 		MSDC_WRITE32(MSDC_DBG_SEL, i);
-		pr_err("SEL:r[%x]=0x%.8x", OFFSET_MSDC_DBG_SEL, i);
-		pr_err("OUT:r[%x]=0x%.8x", OFFSET_MSDC_DBG_OUT,
-			 MSDC_READ32(MSDC_DBG_OUT));
+		value[i] = MSDC_READ32(MSDC_DBG_OUT);
+		set[i] = i;
 	}
-	pr_err("\n");
-
 	MSDC_WRITE32(MSDC_DBG_SEL, 0);
+
+	/* print set value */
+	pr_err("MSDC debug register [set:out]\n");
+	int_to_string(i, buffer, set, value);
 }
 
 static void msdc_dump_dbg_register(struct msdc_host *host)
