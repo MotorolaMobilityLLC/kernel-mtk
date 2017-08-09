@@ -1189,6 +1189,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	int vcore_status;
 #endif
 	u32 cpu = smp_processor_id();
+	int pcm_index;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_PMIC
@@ -1203,8 +1204,12 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_spm_suspend_val(SPM_SUSPEND_ENTER);
 #endif
 
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND + cpu / 4].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND + cpu / 4].desc);
+	/* TODO: lpddr support */
+	/* pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4 + !!is_lpddr4() * 2; */
+	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4;
+
+	if (dyna_load_pcm[pcm_index].ready)
+		pcmdesc = &(dyna_load_pcm[pcm_index].desc);
 	else
 		BUG();
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
