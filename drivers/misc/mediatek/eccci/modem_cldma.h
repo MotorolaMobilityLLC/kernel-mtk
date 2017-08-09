@@ -21,7 +21,7 @@
 #define NET_RXQ_NUM 3
 #define NORMAL_TXQ_NUM 6
 #define NORMAL_RXQ_NUM 6
-#define MAX_BD_NUM 64
+#define MAX_BD_NUM (MAX_SKB_FRAGS + 1)
 #define TRAFFIC_MONITOR_INTERVAL 10	/* seconds */
 #define SKB_RX_QUEUE_MAX_LEN 200000
 

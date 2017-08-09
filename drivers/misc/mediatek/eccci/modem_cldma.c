@@ -70,7 +70,7 @@ static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K
 static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 #else
-static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 512, 512, 128, 0, 0 };
+static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 0 };
 static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 0 };
 #endif
 static int normal_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 2 };
@@ -3460,6 +3460,9 @@ static ssize_t md_cd_parameter_show(struct ccci_modem *md, char *buf)
 
 	count += snprintf(buf + count, 128, "CHECKSUM_SIZE=%d\n", CHECKSUM_SIZE);
 	count += snprintf(buf + count, 128, "PACKET_HISTORY_DEPTH=%d\n", PACKET_HISTORY_DEPTH);
+	count += snprintf(buf + count, 128, "BD_NUM=%ld\n", MAX_BD_NUM);
+	count += snprintf(buf + count, 128, "NET_buffer_number=(%d, %d)\n",
+				net_tx_queue_buffer_number[3], net_rx_queue_buffer_number[3]);
 	return count;
 }
 
