@@ -33,8 +33,7 @@ const struct file_operations *accdet_get_fops(void)
 
 static int accdet_probe(struct platform_device *dev)
 {
-	mt_accdet_probe(dev);
-	return 0;
+	return mt_accdet_probe(dev);
 }
 
 static int accdet_remove(struct platform_device *dev)

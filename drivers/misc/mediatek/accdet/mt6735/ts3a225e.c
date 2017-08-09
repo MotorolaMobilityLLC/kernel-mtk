@@ -41,7 +41,7 @@
 *******************************************************************************/
 #define TS3A225E_DEV_NAME     "TS3A225E"
 
-static struct i2c_client *ts3a225e_i2c_client;
+struct i2c_client *ts3a225e_i2c_client;
 static const struct i2c_device_id ts3a225e_i2c_id[] = { {"TS3A225E", 0}, {} };
 /*static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO("TS3A225E", (0X76 >> 1)) };*/
 

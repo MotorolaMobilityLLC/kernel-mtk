@@ -1463,6 +1463,13 @@ int mt_accdet_probe(struct platform_device *dev)
 	struct platform_driver accdet_driver_hal = accdet_driver_func();
 #endif
 
+#if defined(CONFIG_TS3A225E_ACCDET)
+	if (ts3a225e_i2c_client == NULL) {
+		ACCDET_DEBUG("[Accdet]ts3a225e_i2c_client is NULL!\n");
+		return -EPROBE_DEFER;
+	}
+#endif
+
 	ACCDET_INFO("[Accdet]accdet_probe begin!\n");
 
 	/*--------------------------------------------------------------------
