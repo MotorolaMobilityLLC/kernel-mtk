@@ -13,6 +13,7 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
@@ -53,8 +54,6 @@ obj-y += mt_cpufreq.o
 obj-y += mt_cpufreq_hybrid.o
 obj-y += mt_udi.o
 obj-y += mt_gpufreq.o
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
 ifneq ($(CONFIG_ARM64), y)

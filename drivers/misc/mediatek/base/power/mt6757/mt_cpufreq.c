@@ -42,15 +42,13 @@
 #endif
 
 /* project includes */
-#include <mach/mt_freqhopping.h>
-#include <mach/mt_thermal.h>
-#include "mt_static_power.h"
-#include "../../../power/mt6757/mt6311.h"
 #include <mt-plat/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
+#include <mt6311.h>
+#include <mach/mt_freqhopping.h>
 #include <mach/mt_ppm_api.h>
 #include <mach/mt_pbm.h>
+#include <mach/mt_thermal.h>
+#include "mt_static_power.h"
 
 /* local includes */
 #include "mt_cpufreq.h"
@@ -2037,6 +2035,7 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 		    __func__,
 		    (p_cci->ops->get_cur_volt(p_cci)) / 100,
 		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->ops->get_cur_phy_freq(p_cci));
+
 out:
 	aee_record_cci_dvfs_step(0);
 
@@ -2046,6 +2045,7 @@ out:
 #endif
 	return ret;
 }
+
 static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz,
 			       struct cpufreq_policy *policy, unsigned int cur_cci_khz, unsigned int target_cci_khz,
 				   unsigned int target_volt_vproc1, int log)
