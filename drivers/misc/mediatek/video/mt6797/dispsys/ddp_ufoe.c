@@ -15,11 +15,11 @@ static void ufoe_dump(void)
 {
 	DDPDUMP("==DISP UFOE REGS==\n");
 	DDPDUMP("(0x000)UFOE_START =0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
-	DDPDUMP("(0x000)UFOE_CFG0 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
-	DDPDUMP("(0x000)UFOE_CFG1 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
-	DDPDUMP("(0x000)UFOE_WIDTH =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH));
-	DDPDUMP("(0x000)UFOE_HEIGHT =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
-	DDPDUMP("(0x000)UFOE_PAD  =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CR0P6_PAD));
+	DDPDUMP("(0x020)UFOE_PAD  =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CR0P6_PAD));
+	DDPDUMP("(0x050)UFOE_WIDTH =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_WIDTH));
+	DDPDUMP("(0x054)UFOE_HEIGHT =0x%x\n", DISP_REG_GET(DISP_REG_UFO_FRAME_HEIGHT));
+	DDPDUMP("(0x100)UFOE_CFG0 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_0B));
+	DDPDUMP("(0x104)UFOE_CFG1 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
 }
 
 static int ufoe_init(DISP_MODULE_ENUM module, void *handle)
@@ -62,9 +62,9 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 	LCM_PARAMS *disp_if_config = &(pConfig->dispif_config);
 	LCM_DSI_PARAMS *lcm_config = &(disp_if_config->dsi);
 
-	if (lcm_config->ufoe_enable) {
+	if (lcm_config->ufoe_enable == 1 && pConfig->dst_dirty) {
 		ufoe_enable = true;
-		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);
+		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);/* disable BYPASS ufoe */
 		/* DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1); */
 		if (lcm_config->ufoe_params.lr_mode_en == 1) {
 			DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 1);
@@ -79,8 +79,7 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 					DISP_REG_SET_FIELD(handle,
 							   CR0P6_PAD_FLD_DISP_UFO_STR_PAD_NUM,
 							   DISP_REG_UFO_CR0P6_PAD,
-							   (internal_width / 6 + 1) * 6 -
-							   internal_width);
+							   (((internal_width / 6 + 1) * 6) - internal_width));
 				}
 			} else
 				DISP_REG_SET_FIELD(handle, CFG_0B_FLD_DISP_UFO_CFG_COM_RATIO,
@@ -98,8 +97,9 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 					      0) ? 5 : lcm_config->ufoe_params.vlc_config);
 			}
 		}
-		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, disp_if_config->width);
-		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, disp_if_config->height);
+		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, pConfig->dst_w);
+		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, pConfig->dst_h);
+		ufoe_dump();
 	}
 /* ufoe_dump(); */
 	return 0;
@@ -137,7 +137,7 @@ DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.init = ufoe_init,
 	.deinit = ufoe_deinit,
 	.config = ufoe_config,
-	.start = ufoe_start,
+	.start = (int (*)(DISP_MODULE_ENUM, void *))ufoe_start,
 	.trigger = NULL,
 	.stop = ufoe_stop,
 	.reset = ufoe_reset,
@@ -145,7 +145,7 @@ DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.power_off = ufoe_clock_off,
 	.is_idle = NULL,
 	.is_busy = NULL,
-	.dump_info = ufoe_dump,
+	.dump_info = (int (*)(DISP_MODULE_ENUM, int))ufoe_dump,
 	.bypass = NULL,
 	.build_cmdq = NULL,
 	.set_lcm_utils = NULL,

@@ -89,28 +89,32 @@ volatile unsigned long mipi_tx_reg = 0;
 volatile unsigned long dsi_reg_va = 0;
 /* from DTS, for debug */
 unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
-	0x14000000,	/*CONFIG*/
-	0x1400b000,	/*OVL0 */
-	0x1400c000,	/*OVL1 */
-	0x1400f000,	/*RDMA0 */
-	0x14010000,	/*RDMA1 */
-	0x14011000,	/*WDMA0 */
-	0x14013000,	/*COLOR*/
-	0x14014000,	/*CCORR*/
-	0x14015000,	/*AAL*/
-	0x14016000,	/*GAMMA*/
-	0x14018000,	/*DITHER*/
-	0x1401c000,	/*DSI0 */
-	0x1401e000,	/*DPI0 */
-	0x1100f000,	/*PWM*/
-	0x1401f000,	/*MUTEX*/
-	0x14020000,	/*SMI_LARB0 */
-	0x14021000,	/*SMI_LARB5 */
-	0x14022000,	/*SMI_COMMON */
-	0x14012000,	/*WDMA1 */
-	0x1400d000,	/*OVL0_2L */
-	0x1400e000,	/*OVL1_2L */
-	0x10215000,	/*MIPITX0*/
+	0x14000000,	/* CONFIG*/
+	0x1400b000,	/* OVL0 */
+	0x1400c000,	/* OVL1 */
+	0x1400f000,	/* RDMA0 */
+	0x14010000,	/* RDMA1 */
+	0x14011000,	/* WDMA0 */
+	0x14013000,	/* COLOR*/
+	0x14014000,	/* CCORR*/
+	0x14015000,	/* AAL*/
+	0x14016000,	/* GAMMA*/
+	0x14018000,	/* DITHER*/
+	0x14019000,	/* UFOE */
+/*	0x1401a000,	// DSC */
+	0x1401b000,	/* SPLIT0 */
+	0x1401c000,	/* DSI0 */
+	0x1401d000,	/* DSI1 */
+	0x1401e000,	/* DPI0 */
+	0x1100f000,	/* PWM*/
+	0x1401f000,	/* MUTEX*/
+	0x14020000,	/* SMI_LARB0 */
+	0x14021000,	/* SMI_LARB5 */
+	0x14022000,	/* SMI_COMMON */
+	0x14012000,	/* WDMA1 */
+	0x1400d000,	/* OVL0_2L */
+	0x1400e000,	/* OVL1_2L */
+	0x10215000,	/* MIPITX0*/
 /*	0x1021e000	//MIPITX1*/
 };
 
@@ -769,7 +773,7 @@ static int disp_resume(struct platform_device *pdev)
 }
 
 static const struct of_device_id dispsys_of_ids[] = {
-	{.compatible = "mediatek,DISPSYS",},
+	{.compatible = "mediatek,mt6797-dispsys",},
 	{}
 };
 

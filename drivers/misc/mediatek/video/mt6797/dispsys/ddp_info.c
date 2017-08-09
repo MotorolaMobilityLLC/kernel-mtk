@@ -76,6 +76,10 @@ char *ddp_get_module_name(DISP_MODULE_ENUM module)
 		return "ovl0_virtual";
 	case DISP_MODULE_MIPI:
 		return "mipi";
+	case DISP_MODULE_DSC:
+		return "dsc";
+	case DISP_PATH0:
+		return "path0";
 
 	default:
 		DDPMSG("invalid module id=%d", module);
@@ -108,8 +112,14 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 		return DISP_MODULE_GAMMA;
 	case DISP_REG_DITHER:
 		return DISP_MODULE_DITHER;
+	case DISP_REG_UFOE:
+		return DISP_MODULE_UFOE;
+	case DISP_REG_SPLIT0:
+		return DISP_MODULE_SPLIT0;
 	case DISP_REG_DSI0:
 		return DISP_MODULE_DSI0;
+	case DISP_REG_DSI1:
+		return DISP_MODULE_DSI1;
 	case DISP_REG_DPI0:
 		return DISP_MODULE_DPI;
 	case DISP_REG_PWM:
@@ -131,7 +141,7 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 	case DISP_REG_MIPI:
 		return DISP_MODULE_MIPI;
 	default:
-		DDPERR("%s: invalid reg module id=%d", __func__, reg_module);
+		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		BUG();
 	}
 }
@@ -261,32 +271,40 @@ DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_wdma,	/* DISP_MODULE_WDMA0 , */
 	&ddp_driver_color,	/* DISP_MODULE_COLOR0, */
 	&ddp_driver_ccorr,	/* DISP_MODULE_CCORR , */
+
 	&ddp_driver_aal,	/* DISP_MODULE_AAL   , */
 	&ddp_driver_gamma,	/* DISP_MODULE_GAMMA , */
 	&ddp_driver_dither,	/* DISP_MODULE_DITHER, */
-	0,			/* DISP_MODULE_UFOE  , //10 */
+	0,			/* DISP_PATH0 */
+	&ddp_driver_ufoe,	/* DISP_MODULE_UFOE  , //10 */
+
+	0,			/* DISP_MODULE_DSC */
 	&ddp_driver_pwm,	/* DISP_MODULE_PWM0   , */
 	&ddp_driver_wdma,	/* DISP_MODULE_WDMA1 , */
-	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
 #ifndef DISP_NO_DPI
 	&ddp_driver_dpi,	/* DISP_MODULE_DPI   , */
+#else
+	0,
 #endif
 	0,			/* DISP_MODULE_SMI, */
+
 	0,			/* DISP_MODULE_CONFIG, */
 	0,			/* DISP_MODULE_CMDQ, */
 	0,			/* DISP_MODULE_MUTEX, */
-
 	0,			/* DISP_MODULE_COLOR1, */
 	0,			/* DISP_MODULE_RDMA2, */
+
 	0,			/* DISP_MODULE_PWM1, */
 	0,			/* DISP_MODULE_OD, */
 	0,			/* DISP_MODULE_MERGE, */
-	0,			/* DISP_MODULE_SPLIT0, */
+	&ddp_driver_split,	/* DISP_MODULE_SPLIT0, */
 	0,			/* DISP_MODULE_SPLIT1, */
-	0,			/* DISP_MODULE_DSI1, */
-	0,			/* DISP_MODULE_DSIDUAL, */
 
+	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
+	&ddp_driver_dsi0,	/* DISP_MODULE_DSI1  , */
+	0,			/* DISP_MODULE_DSIDUAL, */
 	0,			/* DISP_MODULE_SMI_LARB0 , */
 	0,			/* DISP_MODULE_SMI_COMMON, */
+	0,			/* DISP_MODULE_MIPI */
 	0,			/* DISP_MODULE_UNKNOWN, //20 */
 };

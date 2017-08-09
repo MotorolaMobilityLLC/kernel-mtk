@@ -178,9 +178,9 @@ typedef struct {
 
 t_dsi_context _dsi_context[DSI_INTERFACE_NUM];
 
-#define DSI_MODULE_BEGIN(x)		0	/* (x == DISP_MODULE_DSIDUAL?0:DSI_MODULE_to_ID(x)) */
-#define DSI_MODULE_END(x)		0	/* (x == DISP_MODULE_DSIDUAL?1:DSI_MODULE_to_ID(x)) */
-#define DSI_MODULE_to_ID(x)		0	/* (x == DISP_MODULE_DSI0?0:1) */
+#define DSI_MODULE_BEGIN(x)		(x == DISP_MODULE_DSIDUAL ? 0 : DSI_MODULE_to_ID(x))
+#define DSI_MODULE_END(x)		(x == DISP_MODULE_DSIDUAL ? 1 : DSI_MODULE_to_ID(x))
+#define DSI_MODULE_to_ID(x)		(x == DISP_MODULE_DSI0 ? 0 : 1)
 #define DIFF_CLK_LANE_LP (0x10)
 
 PDSI_REGS DSI_REG[2];
@@ -1889,7 +1889,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT
 {
 	int d = 0;
 	UINT32 max_try_count = 5;
-	UINT32 recv_data_cnt;
+	UINT32 recv_data_cnt = 0;
 	unsigned char packet_type;
 	DSI_RX_DATA_REG read_data0;
 	DSI_RX_DATA_REG read_data1;
@@ -2799,7 +2799,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 	DSI_REG[0] = (PDSI_REGS)DISPSYS_DSI0_BASE;
 	DSI_PHY_REG[0] = (PDSI_PHY_REGS)MIPITX_BASE;
 	DSI_CMDQ_REG[0] = (PDSI_CMDQ_REGS)(DISPSYS_DSI0_BASE + 0x200);
-	DSI_REG[1] = (PDSI_REGS)DISPSYS_DSI0_BASE;
+	DSI_REG[1] = (PDSI_REGS)DISPSYS_DSI1_BASE;
 	DSI_PHY_REG[1] = (PDSI_PHY_REGS)MIPITX_BASE;
 	DSI_CMDQ_REG[1] = (PDSI_CMDQ_REGS)(DISPSYS_DSI0_BASE + 0x200);
 	DSI_VM_CMD_REG[0] = (PDSI_VM_CMDQ_REGS)(DISPSYS_DSI0_BASE + 0x134);

@@ -1737,8 +1737,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mtkfb";
 		};
 
-		dispsys@14000000 {
-			compatible = "mediatek,dispsys";
+		dispsys: dispsys@14000000 {
+			compatible = "mediatek,mt6797-dispsys";
 			reg = <0x14000000 0x1000>,  /*disp_sys		*/
 			      <0x1400b000 0x1000>,  /*disp_ovl0		*/
 			      <0x1400c000 0x1000>,  /*disp_ovl1		*/
@@ -1751,11 +1751,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			      <0x14016000 0x1000>,  /*disp_gamma	*/
 			   /*   <0x14017000 0x1000>,  //disp_od		*/
 			      <0x14018000 0x1000>,  /*disp_dither	*/
-			   /*   <0x14019000 0x1000>,  //disp_dsi_ufoe	*/
+			      <0x14019000 0x1000>,  /*disp_dsi_ufoe	*/
 			   /*   <0x1401a000 0x1000>,  //disp_dsi_dsc	*/
-			   /*   <0x1401b000 0x1000>,  //disp_dsi_split	*/
+			      <0x1401b000 0x1000>,  /*disp_dsi_split	*/
 			      <0x1401c000 0x1000>,  /*disp_dsi0		*/
-			   /*   <0x1401d000 0x1000>,  //disp_dsi1		*/
+			      <0x1401d000 0x1000>,  /*disp_dsi1		*/
 			      <0x1401e000 0x1000>,  /*disp_dpi0		*/
 			      <0x1100f000 0x1000>,  /*disp_pwm		*/
 			      <0x1401f000 0x1000>,  /*disp_mm_mutex	*/
@@ -1781,10 +1781,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<GIC_SPI 224 IRQ_TYPE_LEVEL_LOW>, /*disp_gamma */
 			/*	<GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>, //disp_od */
 				<GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>, /*disp_dither */
-			/*	<GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, //disp_ufoe */
-			/*	<GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>, //disp_dsc */
+				<GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, /*disp_ufoe */
+			/*	<GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>, //disp_dsi_dsc */
+				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /* disp_split */
 				<GIC_SPI 229 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi0 */
-			/*	<GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>, //disp_dsi1 */
+				<GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi1 */
 				<GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>, /*disp_dpi0 */
 				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_pwm */
 				<GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>, /*disp_mutex */

@@ -74,6 +74,9 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 	case LCM_INTERFACE_DSI1:
 		DISPCHECK("[LCM] interface: DSI1\n");
 		break;
+	case LCM_INTERFACE_DSI_DUAL:
+		DISPCHECK("[LCM] interface: DSI_DUAL\n");
+		break;
 	case LCM_INTERFACE_DPI0:
 		DISPCHECK("[LCM] interface: DPI0\n");
 		break;

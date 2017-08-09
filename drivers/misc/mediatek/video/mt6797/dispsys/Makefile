@@ -33,8 +33,8 @@ obj-y += ddp_rdma_ex.o
 obj-y += ddp_wdma.o
 obj-y += ddp_dsi.o
 #obj-y += ddp_dpi.o
-#obj-y += ddp_split.o
-#obj-y += ddp_ufoe.o
+obj-y += ddp_split.o
+obj-y += ddp_ufoe.o
 obj-y += ddp_clkmgr.o
 #common
 obj-y += ddp_drv.o

@@ -321,12 +321,12 @@ extern DDP_MODULE_DRIVER ddp_driver_dither;
 /* ccorr */
 extern DDP_MODULE_DRIVER ddp_driver_ccorr;
 /* split */
-/* extern DDP_MODULE_DRIVER ddp_driver_split; */
+extern DDP_MODULE_DRIVER ddp_driver_split;
 
 /* pwm */
 extern DDP_MODULE_DRIVER ddp_driver_pwm;
 /* ufoe */
-/* extern DDP_MODULE_DRIVER ddp_driver_ufoe; */
+extern DDP_MODULE_DRIVER ddp_driver_ufoe;
 
 extern DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
 
