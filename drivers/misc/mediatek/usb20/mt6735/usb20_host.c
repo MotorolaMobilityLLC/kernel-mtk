@@ -8,6 +8,8 @@
  * Licensed under the GPL-2 or later.
  */
 
+/* FIXME, temporialy marked to avoid host to affect charging & usb device mode */
+#undef CONFIG_USB_MTK_OTG
 #ifdef CONFIG_USB_MTK_OTG
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -37,7 +39,6 @@
 
 #ifdef CONFIG_OF
 struct device_node		*usb_node;
-struct device_node		*iddig_node;
 static unsigned int iddig_pin;
 static unsigned int iddig_pin_mode;
 static unsigned int iddig_if_config = 1;
@@ -494,7 +495,6 @@ static void otg_int_init(void)
 	#else
 	gpio_request(iddig_pin, "USB_IDDIG");
 	gpio_set_debounce(iddig_pin, 64000);
-	/* usb_iddig_number = irq_of_parse_and_map(iddig_node, 0); */
 	usb_iddig_number = mt_gpio_to_irq(0);
 	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
 	#endif
@@ -516,7 +516,7 @@ static void otg_int_init(void)
 void mt_usb_otg_init(struct musb *musb)
 {
 #ifdef CONFIG_OF
-	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,USB0");
+	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-usb20");
 	if (usb_node == NULL) {
 		pr_err("USB OTG - get USB0 node failed\n");
 	} else {
@@ -538,9 +538,6 @@ void mt_usb_otg_init(struct musb *musb)
 		#endif
 	}
 
-	iddig_node = of_find_compatible_node(NULL, NULL, "IDDIG-eint");
-	if (iddig_node == NULL)
-		pr_err("USB IDDIG EINT - get IDDIG EINT node failed\n");
 	#if !defined(CONFIG_MTK_LEGACY)
 	pinctrl = devm_pinctrl_get(mtk_musb->controller);
 	if (IS_ERR(pinctrl)) {
