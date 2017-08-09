@@ -73,6 +73,8 @@ static short lowmem_debug_adj = CONVERT_ADJ(0);
 static short lowmem_kernel_warn_adj = CONVERT_ADJ(0);
 #define output_expect(x) likely(x)
 static uint32_t enable_candidate_log = 1;
+#define LMK_LOG_BUF_SIZE 500
+static uint8_t lmk_log_buf[LMK_LOG_BUF_SIZE];
 #else
 #define output_expect(x) unlikely(x)
 static uint32_t enable_candidate_log;
@@ -164,6 +166,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int max_mem = 0;
 	static int pid_flm_warn = -1;
 	static unsigned long flm_warn_timeout;
+	int log_offset = 0, log_ret;
 #endif /* CONFIG_MT_ENG_BUILD*/
 	/*
 	* If we already have a death outstanding, then
@@ -279,8 +282,19 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			}
 		}
 
-		if (print_extra_info)
+		if (print_extra_info) {
 			lowmem_print(1, "Free memory other_free: %d, other_file:%d pages\n", other_free, other_file);
+#ifdef CONFIG_MT_ENG_BUILD
+			log_offset = snprintf(lmk_log_buf, LMK_LOG_BUF_SIZE, "%s",
+#else
+			lowmem_print(1,
+#endif
+#ifdef CONFIG_ZRAM
+					"<lmk>  pid  adj  score_adj     rss   rswap name\n");
+#else
+					"<lmk>  pid  adj  score_adj     rss name\n");
+#endif
+		}
 	}
 
 	rcu_read_lock();
@@ -313,6 +327,39 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		}
 		oom_score_adj = p->signal->oom_score_adj;
 
+		if (output_expect(enable_candidate_log)) {
+			if (print_extra_info) {
+#ifdef CONFIG_MT_ENG_BUILD
+log_again:
+				log_ret = snprintf(lmk_log_buf+log_offset, LMK_LOG_BUF_SIZE-log_offset,
+#else
+				lowmem_print(1,
+#endif
+#ifdef CONFIG_ZRAM
+						"<lmk>%5d%5d%11d%8lu%8lu %s\n", p->pid,
+						REVERT_ADJ(oom_score_adj), oom_score_adj,
+						get_mm_rss(p->mm),
+						get_mm_counter(p->mm, MM_SWAPENTS), p->comm);
+#else /* CONFIG_ZRAM */
+						"<lmk>%5d%5d%11d%8lu %s\n", p->pid,
+						REVERT_ADJ(oom_score_adj), oom_score_adj,
+						get_mm_rss(p->mm), p->comm);
+#endif
+
+#ifdef CONFIG_MT_ENG_BUILD
+				if ((log_offset + log_ret) >= LMK_LOG_BUF_SIZE || log_ret < 0) {
+					*(lmk_log_buf + log_offset) = '\0';
+					lowmem_print(1, "\n%s", lmk_log_buf);
+					/* pr_err("lmk log overflow log_offset:%d\n", log_offset); */
+					log_offset = 0;
+					memset(lmk_log_buf, 0x0, LMK_LOG_BUF_SIZE);
+					goto log_again;
+				} else
+					log_offset += log_ret;
+#endif
+			}
+		}
+
 #ifdef CONFIG_MT_ENG_BUILD
 		tasksize = get_mm_rss(p->mm);
 #ifdef CONFIG_ZRAM
@@ -326,46 +373,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			max_mem = tasksize;
 			/* pid_sec_mem = pid_dump; */
 			pid_dump = p->pid;
-
-			if (output_expect(enable_candidate_log)) {
-				if (print_extra_info) {
-#ifdef CONFIG_ZRAM
-					pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, rswap %lu, to kill\n",
-								p->pid, p->comm,
-								REVERT_ADJ(oom_score_adj), oom_score_adj,
-								get_mm_rss(p->mm),
-								get_mm_counter(p->mm, MM_SWAPENTS));
-#else /* CONFIG_ZRAM */
-					pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, to kill\n",
-								p->pid, p->comm,
-								REVERT_ADJ(oom_score_adj), oom_score_adj,
-								get_mm_rss(p->mm));
-#endif
-				}
-			}
 		}
 
 		if (p->pid == pid_flm_warn &&
 			time_before_eq(jiffies, flm_warn_timeout)) {
 			task_unlock(p);
 			continue;
-		}
-#else
-		if (output_expect(enable_candidate_log)) {
-			if (print_extra_info) {
-#ifdef CONFIG_ZRAM
-				pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, rswap %lu, to kill\n",
-								p->pid, p->comm,
-								REVERT_ADJ(oom_score_adj), oom_score_adj,
-								get_mm_rss(p->mm),
-								get_mm_counter(p->mm, MM_SWAPENTS));
-#else /* CONFIG_ZRAM */
-				pr_info("Candidate %d (%s), adj %d, score_adj %d, rss %lu, to kill\n",
-								p->pid, p->comm,
-								REVERT_ADJ(oom_score_adj), oom_score_adj,
-								get_mm_rss(p->mm));
-#endif
-			}
 		}
 #endif
 
@@ -411,6 +424,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(2, "select '%s' (%d), adj %d, score_adj %hd, size %d, to kill\n",
 			     p->comm, p->pid, REVERT_ADJ(oom_score_adj), oom_score_adj, tasksize);
 	}
+
+#ifdef CONFIG_MT_ENG_BUILD
+	if (log_offset > 0)
+		lowmem_print(1, "\n%s", lmk_log_buf);
+#endif
 
 	if (selected) {
 		lowmem_print(1, "Killing '%s' (%d), adj %d, score_adj %hd,\n"
