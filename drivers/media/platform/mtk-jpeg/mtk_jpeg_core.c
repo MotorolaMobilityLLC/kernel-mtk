@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015 MediaTek Inc.
  * Author: Ming Hsiu Tsai <minghsiu.tsai@mediatek.com>
+ *         Rick Chang <rick.chang@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,6 +30,7 @@
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-dma-contig.h>
 #include <soc/mediatek/smi.h>
+#include <asm/dma-iommu.h>
 
 #include "mtk_jpeg_core.h"
 #include "mtk_jpeg_parse.h"
@@ -69,6 +71,44 @@ static struct mtk_jpeg_fmt mtk_jpeg_formats[] = {
 };
 #define MTK_JPEG_NUM_FORMATS ARRAY_SIZE(mtk_jpeg_formats)
 
+#ifdef CONFIG_MTK_IOMMU
+static int mtk_jpeg_iommu_init(struct device *dev)
+{
+	struct device_node *np;
+	struct platform_device *pdev;
+	int err;
+
+	np = of_parse_phandle(dev->of_node, "iommus", 0);
+	if (!np) {
+		pr_debug("can't find iommus node\n");
+		return 0;
+	}
+
+	pdev = of_find_device_by_node(np);
+	if (!pdev) {
+		of_node_put(np);
+		pr_debug("can't find iommu device by node\n");
+		return -1;
+	}
+
+	pr_debug("%s() %s\n", __func__, dev_name(&pdev->dev));
+
+	err = arm_iommu_attach_device(dev, pdev->dev.archdata.iommu);
+
+	if (err) {
+		of_node_put(np);
+		pr_err("iommu_dma_attach_device fail %d\n", err);
+		return -1;
+	}
+
+	return 0;
+}
+
+static void mtk_jpeg_iommu_deinit(struct device *dev)
+{
+	arm_iommu_detach_device(dev);
+}
+#endif
 
 static inline struct mtk_jpeg_ctx *mtk_jpeg_fh_to_ctx(struct v4l2_fh *fh)
 {
@@ -992,6 +1032,14 @@ static int mtk_jpeg_probe(struct platform_device *pdev)
 		goto err_dec_vdev_register;
 	}
 
+#ifdef CONFIG_MTK_IOMMU
+	ret = mtk_jpeg_iommu_init(&pdev->dev);
+	if (ret) {
+		v4l2_err(&jpeg->v4l2_dev, "Failed to attach iommu device err = %d\n", ret);
+		goto err_dec_vdev_register;
+	}
+#endif
+
 	video_set_drvdata(jpeg->dec_vdev, jpeg);
 	v4l2_info(&jpeg->v4l2_dev,
 		  "decoder device registered as /dev/video%d\n",
@@ -1032,6 +1080,9 @@ static int mtk_jpeg_remove(struct platform_device *pdev)
 	struct mtk_jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
 	pm_runtime_disable(&pdev->dev);
+#ifdef CONFIG_MTK_IOMMU
+	mtk_jpeg_iommu_deinit(&pdev->dev);
+#endif
 	video_unregister_device(jpeg->dec_vdev);
 	video_device_release(jpeg->dec_vdev);
 	vb2_dma_contig_cleanup_ctx(jpeg->alloc_ctx);
