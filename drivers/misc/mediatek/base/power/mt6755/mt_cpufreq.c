@@ -76,9 +76,9 @@ static unsigned long infracfg_ao_base;
 static unsigned long topckgen_base;
 static unsigned long apmixed_base;
 
-#define INFRACFG_AO_NODE "mediatek,INFRACFG_AO"
-#define TOPCKGEN_NODE "mediatek,CKSYS"
-#define APMIXED_NODE "mediatek,APMIXED"
+#define INFRACFG_AO_NODE "mediatek,mt6755-infrasys"
+#define TOPCKGEN_NODE "mediatek,topckgen"
+#define APMIXED_NODE "mediatek,apmixed"
 
 #undef INFRACFG_AO_BASE
 #undef TOPCKGEN_BASE
@@ -4004,6 +4004,7 @@ static int mt_cpufreq_dts_map(void)
 		cpufreq_info("error: cannot iomap " APMIXED_NODE);
 		BUG();
 	}
+	return 0;
 }
 #else
 static int mt_cpufreq_dts_map(void)
