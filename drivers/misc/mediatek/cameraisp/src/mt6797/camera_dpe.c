@@ -48,7 +48,7 @@
 #include <cmdq_record.h>
 
 
-/* Measure the kernel performance 
+/* Measure the kernel performance
 #define __DPE_KERNEL_PERFORMANCE_MEASURE__ */
 #ifdef __DPE_KERNEL_PERFORMANCE_MEASURE__
 #include <linux/met_drv.h>
@@ -98,18 +98,16 @@ typedef signed char MINT8;
 /* #include "../../cmdq/mt6797/cmdq_core.h" */
 
 /* CCF */
-/* #define __DPE_USE_CommonClockFrameWork_API__ */
+#define __DPE_USE_CommonClockFrameWork_API__
 #ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
-	typedef struct {
-	struct clk *CG_SCP_SYS_DIS;
-	struct clk *CG_DISP0_SMI_COMMON;
-	struct clk *CG_SCP_SYS_ISP;
-	struct clk *CG_IMAGE_CAM_SMI;
-	struct clk *CG_IMAGE_CAM_DPE;
-	struct clk *CG_IMAGE_LARB2_SMI;
-
+typedef struct{
+		struct clk *CG_SCP_SYS_DIS;
+		struct clk *CG_MM_SMI_COMMON;
+		struct clk *CG_SCP_SYS_ISP;
+		struct clk *CG_IMGSYS_LAB6;
+		struct clk *CG_IMGSYS_DPE;
 } DPE_CLK_STRUCT;
 DPE_CLK_STRUCT dpe_clk;
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
@@ -2198,121 +2196,108 @@ static MINT32 DPE_DumpReg(void)
 static inline void DPE_Prepare_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE clk */
 	ret = clk_prepare(dpe_clk.CG_SCP_SYS_DIS);
 	if (ret)
 		LOG_ERR("cannot prepare CG_SCP_SYS_DIS clock\n");
 
-	ret = clk_prepare(dpe_clk.CG_DISP0_SMI_COMMON);
+	ret = clk_prepare(dpe_clk.CG_MM_SMI_COMMON);
 	if (ret)
-		LOG_ERR("cannot prepare CG_DISP0_SMI_COMMON clock\n");
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
 
 	ret = clk_prepare(dpe_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot prepare CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_prepare(dpe_clk.CG_IMAGE_CAM_SMI);
+	ret = clk_prepare(dpe_clk.CG_IMGSYS_LAB6);
 	if (ret)
-		LOG_ERR("cannot prepare CG_IMAGE_CAM_SMI clock\n");
+		LOG_ERR("cannot prepare CG_IMGSYS_LAB6 clock\n");
 
-	ret = clk_prepare(dpe_clk.CG_IMAGE_CAM_DPE);
+	ret = clk_prepare(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
-		LOG_ERR("cannot prepare CG_IMAGE_CAM_DPE clock\n");
+		LOG_ERR("cannot prepare CG_IMGSYS_DPE clock\n");
 
-	ret = clk_prepare(dpe_clk.CG_IMAGE_LARB2_SMI);
-	if (ret)
-		LOG_ERR("cannot prepare CG_IMAGE_LARB2_SMI clock\n");
 }
 
 static inline void DPE_Enable_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE  clk */
 	ret = clk_enable(dpe_clk.CG_SCP_SYS_DIS);
 	if (ret)
 		LOG_ERR("cannot enable CG_SCP_SYS_DIS clock\n");
 
-	ret = clk_enable(dpe_clk.CG_DISP0_SMI_COMMON);
+	ret = clk_enable(dpe_clk.CG_MM_SMI_COMMON);
 	if (ret)
-		LOG_ERR("cannot enable CG_DISP0_SMI_COMMON clock\n");
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON clock\n");
 
 	ret = clk_enable(dpe_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot enable CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_enable(dpe_clk.CG_IMAGE_CAM_SMI);
+	ret = clk_enable(dpe_clk.CG_IMGSYS_LAB6);
 	if (ret)
-		LOG_ERR("cannot enable CG_IMAGE_CAM_SMI clock\n");
+		LOG_ERR("cannot enable CG_IMGSYS_LAB6 clock\n");
 
-	ret = clk_enable(dpe_clk.CG_IMAGE_CAM_DPE);
+	ret = clk_enable(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
-		LOG_ERR("cannot enable CG_IMAGE_CAM_DPE clock\n");
+		LOG_ERR("cannot enable CG_IMGSYS_DPE clock\n");
 
-	ret = clk_enable(dpe_clk.CG_IMAGE_LARB2_SMI);
-	if (ret)
-		LOG_ERR("cannot enable CG_IMAGE_LARB2_SMI clock\n");
 }
 
 static inline void DPE_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
-	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> DPE clk */
 	ret = clk_prepare_enable(dpe_clk.CG_SCP_SYS_DIS);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_SCP_SYS_DIS clock\n");
 
-	ret = clk_prepare_enable(dpe_clk.CG_DISP0_SMI_COMMON);
+	ret = clk_prepare_enable(dpe_clk.CG_MM_SMI_COMMON);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_DISP0_SMI_COMMON clock\n");
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
 
 	ret = clk_prepare_enable(dpe_clk.CG_SCP_SYS_ISP);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
 
-	ret = clk_prepare_enable(dpe_clk.CG_IMAGE_CAM_SMI);
+	ret = clk_prepare_enable(dpe_clk.CG_IMGSYS_LAB6);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMAGE_CAM_SMI clock\n");
+		LOG_ERR("cannot prepare and enable CG_IMGSYS_LAB6 clock\n");
 
-	ret = clk_prepare_enable(dpe_clk.CG_IMAGE_CAM_DPE);
+	ret = clk_prepare_enable(dpe_clk.CG_IMGSYS_DPE);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMAGE_CAM_DPE clock\n");
-
-	ret = clk_prepare_enable(dpe_clk.CG_IMAGE_LARB2_SMI);
-	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMAGE_LARB2_SMI clock\n");
+		LOG_ERR("cannot prepare and enable CG_IMGSYS_DPE clock\n");
 
 }
 
 static inline void DPE_Unprepare_ccf_clock(void)
 {
-	/* must keep this clk close order: ISP clk -> CG_SCP_SYS_ISP -> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_DIS */
-	clk_unprepare(dpe_clk.CG_IMAGE_CAM_SMI);
-	clk_unprepare(dpe_clk.CG_IMAGE_CAM_DPE);
-	clk_unprepare(dpe_clk.CG_IMAGE_LARB2_SMI);
+	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_unprepare(dpe_clk.CG_IMGSYS_DPE);
+	clk_unprepare(dpe_clk.CG_IMGSYS_LAB6);
 	clk_unprepare(dpe_clk.CG_SCP_SYS_ISP);
-	clk_unprepare(dpe_clk.CG_DISP0_SMI_COMMON);
+	clk_unprepare(dpe_clk.CG_MM_SMI_COMMON);
 	clk_unprepare(dpe_clk.CG_SCP_SYS_DIS);
 }
 
 static inline void DPE_Disable_ccf_clock(void)
 {
-	/* must keep this clk close order: ISP clk -> CG_SCP_SYS_ISP -> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_DIS */
-	clk_disable(dpe_clk.CG_IMAGE_CAM_SMI);
-	clk_disable(dpe_clk.CG_IMAGE_CAM_DPE);
-	clk_disable(dpe_clk.CG_IMAGE_LARB2_SMI);
+	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_disable(dpe_clk.CG_IMGSYS_DPE);
+	clk_disable(dpe_clk.CG_IMGSYS_LAB6);
 	clk_disable(dpe_clk.CG_SCP_SYS_ISP);
-	clk_disable(dpe_clk.CG_DISP0_SMI_COMMON);
+	clk_disable(dpe_clk.CG_MM_SMI_COMMON);
 	clk_disable(dpe_clk.CG_SCP_SYS_DIS);
 }
 
 static inline void DPE_Disable_Unprepare_ccf_clock(void)
 {
-	/* must keep this clk close order: ISP clk -> CG_SCP_SYS_ISP -> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_DIS */
-	clk_disable_unprepare(dpe_clk.CG_IMAGE_CAM_SMI);
-	clk_disable_unprepare(dpe_clk.CG_IMAGE_CAM_DPE);
-	clk_disable_unprepare(dpe_clk.CG_IMAGE_LARB2_SMI);
+	/* must keep this clk close order: DPE clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_disable_unprepare(dpe_clk.CG_IMGSYS_DPE);
+	clk_disable_unprepare(dpe_clk.CG_IMGSYS_LAB6);
 	clk_disable_unprepare(dpe_clk.CG_SCP_SYS_ISP);
-	clk_disable_unprepare(dpe_clk.CG_DISP0_SMI_COMMON);
+	clk_disable_unprepare(dpe_clk.CG_MM_SMI_COMMON);
 	clk_disable_unprepare(dpe_clk.CG_SCP_SYS_DIS);
 }
 #endif
@@ -4366,36 +4351,31 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 #ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
-		    dpe_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "CG_SCP_SYS_DIS");
-		dpe_clk.CG_DISP0_SMI_COMMON = devm_clk_get(&pDev->dev, "CG_DISP0_SMI_COMMON");
+		dpe_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "CG_SCP_SYS_DIS");
+		dpe_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "CG_MM_SMI_COMMON");
 		dpe_clk.CG_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "CG_SCP_SYS_ISP");
-		dpe_clk.CG_IMAGE_CAM_SMI = devm_clk_get(&pDev->dev, "CG_IMAGE_CAM_SMI");
-		dpe_clk.CG_IMAGE_CAM_DPE = devm_clk_get(&pDev->dev, "CG_IMAGE_CAM_DPE");
-		dpe_clk.CG_IMAGE_LARB2_SMI = devm_clk_get(&pDev->dev, "CG_IMAGE_LARB2_SMI");
+		dpe_clk.CG_IMGSYS_LAB6 = devm_clk_get(&pDev->dev, "CG_IMG_LARB6");
+		dpe_clk.CG_IMGSYS_DPE = devm_clk_get(&pDev->dev, "CG_IMG_DPE");
 
 		if (IS_ERR(dpe_clk.CG_SCP_SYS_DIS)) {
 			LOG_ERR("cannot get CG_SCP_SYS_DIS clock\n");
 			return PTR_ERR(dpe_clk.CG_SCP_SYS_DIS);
 		}
-		if (IS_ERR(dpe_clk.CG_DISP0_SMI_COMMON)) {
-			LOG_ERR("cannot get CG_DISP0_SMI_COMMON clock\n");
-			return PTR_ERR(dpe_clk.CG_DISP0_SMI_COMMON);
+		if (IS_ERR(dpe_clk.CG_MM_SMI_COMMON)) {
+			LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
+			return PTR_ERR(dpe_clk.CG_MM_SMI_COMMON);
 		}
 		if (IS_ERR(dpe_clk.CG_SCP_SYS_ISP)) {
 			LOG_ERR("cannot get CG_SCP_SYS_ISP clock\n");
 			return PTR_ERR(dpe_clk.CG_SCP_SYS_ISP);
 		}
-		if (IS_ERR(dpe_clk.CG_IMAGE_CAM_SMI)) {
-			LOG_ERR("cannot get CG_IMAGE_CAM_SMI clock\n");
-			return PTR_ERR(dpe_clk.CG_IMAGE_CAM_SMI);
+		if (IS_ERR(dpe_clk.CG_IMGSYS_LAB6)) {
+			LOG_ERR("cannot get CG_IMGSYS_LAB6 clock\n");
+			return PTR_ERR(dpe_clk.CG_IMGSYS_LAB6);
 		}
-		if (IS_ERR(dpe_clk.CG_IMAGE_CAM_DPE)) {
-			LOG_ERR("cannot get CG_IMAGE_CAM_DPE clock\n");
-			return PTR_ERR(dpe_clk.CG_IMAGE_CAM_DPE);
-		}
-		if (IS_ERR(dpe_clk.CG_IMAGE_LARB2_SMI)) {
-			LOG_ERR("cannot get CG_IMAGE_LARB2_SMI clock\n");
-			return PTR_ERR(dpe_clk.CG_IMAGE_LARB2_SMI);
+	if (IS_ERR(dpe_clk.CG_IMGSYS_DPE)) {
+			LOG_ERR("cannot get CG_IMGSYS_DPE clock\n");
+			return PTR_ERR(dpe_clk.CG_IMGSYS_DPE);
 		}
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
 #endif				/* __DPE_USE_CommonClockFrameWork_API__ */
@@ -4768,7 +4748,7 @@ static int dpe_reg_read(struct seq_file *m, void *v)
 	return 0;
 }
 
-//static int dpe_reg_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+/*static int dpe_reg_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)*/
 
 static ssize_t dpe_reg_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {

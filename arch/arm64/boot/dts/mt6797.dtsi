@@ -2139,6 +2139,17 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		dpe@15028000 {
 			compatible = "mediatek,dpe";
 			reg = <0x15028000 0x1000>;
+			/* Camera CCF */
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_SMI_COMMON>,
+				<&scpsys SCP_SYS_ISP>,
+				<&imgsys IMG_LARB6>,
+				<&imgsys IMG_DPE>;
+			clock-names = "CG_SCP_SYS_DIS",
+				"CG_MM_SMI_COMMON",
+				"CG_SCP_SYS_ISP",
+				"CG_IMG_LARB6",
+				"CG_IMG_DPE";
 			interrupts = <GIC_SPI 261 IRQ_TYPE_LEVEL_LOW>;
 		};
 
