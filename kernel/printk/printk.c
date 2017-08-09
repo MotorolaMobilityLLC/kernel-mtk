@@ -1278,12 +1278,15 @@ static int syslog_print(char __user *buf, int size)
 	char *text;
 	struct printk_log *msg;
 	int len = 0;
+	/* detect kernel log overflow for user-layer */
+	unsigned long long over_gap = 0;
 	char addinfo_buf[150];
 	char *addinfo = addinfo_buf;
 	int add_len = 0;
+	int override_len = 0;
+	/* detect multi-thread invoking do_syslog(SYSLOG_ACTION_READ,...) */
 	static int pre_pid = -1;
 	int current_pid = current->pid;
-	unsigned long long over_gap = 0;
 
 	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
 	if (!text)
@@ -1307,7 +1310,7 @@ static int syslog_print(char __user *buf, int size)
 			syslog_idx = log_first_idx;
 			syslog_prev = 0;
 			syslog_partial = 0;
-			if (add_len >= 0 && add_len < 150)
+			if (add_len < 150)
 				add_len += scnprintf(addinfo + add_len, 150 - add_len, "< %s gap: %llu > ", KERNEL_LOG_OVERFLOW, over_gap);
 
 		}
@@ -1352,22 +1355,30 @@ static int syslog_print(char __user *buf, int size)
 			if (-1 == pre_pid) {
 				pre_pid = current_pid;
 			} else if (current_pid != pre_pid) {
-				if (add_len >= 0 && add_len < 150)
+				if (add_len < 150)
 					add_len += scnprintf(addinfo + add_len, 150 - add_len, "<%d -> %d> ", pre_pid, current_pid);
 				pre_pid = current_pid;
 			}
-			/*  add the trailing '\n'' */
-			if (add_len >= 0 && add_len < 150)
+			/* override the trailing */
+			if (*(text + skip + n - 1) == '\n' || *(text + skip + n - 1) == '\r') {
+				override_len = 1;
+				if (*(text + skip + n - 2) == '\r')
+					override_len++;
+				/*  add the trailing '\n' */
+				if (add_len < 150)
 					add_len += scnprintf(addinfo + add_len, 150 - add_len, "\n");
-			if (add_len > 0 && (size + 1 - add_len) >= 0) {
-				if (copy_to_user(buf - 1, addinfo_buf, add_len)) {
+			} else
+				override_len = 0;
+
+			if (add_len > 0 && (size + override_len - add_len) >= 0) {
+				if (copy_to_user(buf - override_len, addinfo_buf, add_len)) {
 					if (!len)
 						len = -EFAULT;
 					break;
 				}
-				len += add_len - 1;
-				size -= add_len - 1;
-				buf += add_len - 1;
+				len += add_len - override_len;
+				size -= add_len - override_len;
+				buf += add_len - override_len;
 			}
 		}
 	}
