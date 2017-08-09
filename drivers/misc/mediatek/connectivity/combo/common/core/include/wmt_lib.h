@@ -306,6 +306,7 @@ extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor);
 extern UINT32 wmt_lib_get_drv_status(UINT32 type);
 #endif
 extern INT32 wmt_lib_tm_temp_query(VOID);
+extern INT32 wmt_lib_trigger_reset(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

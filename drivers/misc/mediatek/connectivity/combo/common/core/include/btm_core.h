@@ -108,6 +108,7 @@ INT32 stp_notify_btm_handle_wmt_lte_coex(MTKSTP_BTM_T *stp_btm);
 #if WMT_PLAT_ALPS
 extern void dump_uart_history(void);
 #endif
+INT32 wmt_btm_trigger_reset(VOID);
 
 
 MTKSTP_BTM_T *stp_btm_init(VOID);

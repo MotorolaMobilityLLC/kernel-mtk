@@ -590,3 +590,12 @@ ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, P
 
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_ant_ram_ctrl);
+MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
+{
+	INT32 iRet = -1;
+
+	WMT_INFO_FUNC("reset source:%d\n", type);
+	iRet = wmt_lib_trigger_reset();
+	return 0 == iRet ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_do_reset);

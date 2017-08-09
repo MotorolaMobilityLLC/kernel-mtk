@@ -734,3 +734,7 @@ INT32 stp_notify_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 {
 	return _stp_btm_do_fw_assert(stp_btm);
 }
+INT32 wmt_btm_trigger_reset(VOID)
+{
+	return stp_btm_notify_wmt_rst_wq(stp_btm);
+}
