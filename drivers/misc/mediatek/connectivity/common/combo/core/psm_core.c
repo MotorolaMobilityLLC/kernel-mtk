@@ -1161,7 +1161,8 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 	while (_stp_psm_get_state(stp_psm) != state && i < limit) {
 		osal_sleep_ms(POLL_WAIT);
 		i++;
-		if (i >= (limit / 3))
+		if (i >= 3)
+			continue;
 			STP_PSM_INFO_FUNC("STP is waiting state for %s, i=%d, state = %d\n",
 					  g_psm_state[state], i, _stp_psm_get_state(stp_psm));
 	}
@@ -1169,7 +1170,7 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 		STP_PSM_WARN_FUNC("-Wait for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
 		return STP_PSM_OPERATION_FAIL;
 	}
-	STP_PSM_DBG_FUNC("+Total waits for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
+	STP_PSM_INFO_FUNC("+Total waits for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
 	return STP_PSM_OPERATION_SUCCESS;
 }
 
@@ -1203,7 +1204,7 @@ static inline INT32 _stp_psm_do_wakeup(MTKSTP_PSM_T *stp_psm)
 			if (ret == STP_PSM_OPERATION_SUCCESS)
 				break;
 		} else
-			STP_PSM_ERR_FUNC("_stp_psm_notify_wmt_wakeup_wq fail!!\n");
+			STP_PSM_ERR_FUNC("_stp_psm_notify_wmt_wakeup_wq fail, retry = %d !!\n", retry);
 		/* STP_PSM_INFO_FUNC("retry = %d\n", retry); */
 		retry--;
 		if (retry == 0)
