@@ -135,11 +135,19 @@ void c2k_reset_modem(void)
 
 	pr_debug("[C2K] %s: set md reset.\n", __func__);
 	spin_lock_irqsave(&cmdata->modem->status_lock, flags);
+	if (cmdata->modem->status == MD_OFF) {
+		pr_debug("[C2K] %s: md already off\n", __func__);
+		spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
+		atomic_set(&reset_on_going, 0);
+		return;
+	}
 	cmdata->modem->status = MD_OFF;
 	spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
 
 	atomic_set(&cmdata->modem->tx_fifo_cnt, TX_FIFO_SZ);
-	wake_up(&cmdata->modem->wait_tx_done_q);
+	wake_up_all(&cmdata->modem->wait_tx_done_q);
+
+	modem_pre_stop();
 
 	c2k_wake_host(0);
 
@@ -203,11 +211,19 @@ void c2k_power_off_modem(void)
 
 	pr_debug("[C2K] %s: set md off.\n", __func__);
 	spin_lock_irqsave(&cmdata->modem->status_lock, flags);
+	if (cmdata->modem->status == MD_OFF) {
+		pr_debug("[C2K] %s: md already off\n", __func__);
+		spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
+		atomic_set(&reset_on_going, 0);
+		return;
+	}
 	cmdata->modem->status = MD_OFF;
 	spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
 
 	atomic_set(&cmdata->modem->tx_fifo_cnt, TX_FIFO_SZ);
-	wake_up(&cmdata->modem->wait_tx_done_q);
+	wake_up_all(&cmdata->modem->wait_tx_done_q);
+
+	modem_pre_stop();
 
 	c2k_wake_host(0);
 	c2k_modem_power_off_platform();
@@ -600,7 +616,7 @@ static struct attribute_group g_attr_group = {
 
 static void modem_shutdown(struct platform_device *dev)
 {
-	c2k_power_off_modem();
+	/*c2k_power_off_modem();*/
 }
 
 /*

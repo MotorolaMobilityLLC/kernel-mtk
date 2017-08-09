@@ -3679,6 +3679,8 @@ static int func_enable_irq(struct sdio_func *func, int enable)
 	u8 cccr = 0;
 	int ret = 0;
 
+	if (!func->card)
+		return -1;
 	/*Hack to access Function-0 */
 	func_num = func->num;
 	func->num = 0;
@@ -3856,7 +3858,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		/* sdio_tx_rx_printk(buf, 1); */
 		goto terminate;
 	}
-	if (func == modem->func) {
+	if (func == modem->func && func && func->card) {
 		sdio_claim_host(func);
 	} else {
 		LOGPRT(LOG_ERR,
@@ -5350,6 +5352,34 @@ void modem_reset_handler(void)
 	sdio_release_host(func);
  out:
 	LOGPRT(LOG_INFO, "%s %d: Leave.\n", __func__, __LINE__);
+}
+
+void modem_pre_stop(void)
+{
+	struct sdio_modem *modem = c2k_modem;
+	/*struct sdio_func *func = modem->func; */
+	struct sdio_func *func = NULL;
+	int ret = 0;
+
+	func = modem->func;
+
+	if (!func || !func->card) {
+		LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
+		return;
+	}
+	LOGPRT(LOG_INFO, "%s %d: Enter.\n", __func__, __LINE__);
+	sdio_claim_host(func);
+	ret = sdio_disable_func(func);
+	if (ret < 0)
+		LOGPRT(LOG_ERR, "%s: sdio_disable_func failed.\n", __func__);
+
+	ret = sdio_release_irq(func);
+	if (ret < 0)
+		LOGPRT(LOG_ERR, "%s: sdio_release_irq failed.\n", __func__);
+
+	sdio_release_host(func);
+
+	LOGPRT(LOG_INFO, "%s %d: Enter.\n", __func__, __LINE__);
 }
 
 static void modem_sdio_remove(struct sdio_func *func)

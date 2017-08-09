@@ -194,7 +194,7 @@ extern struct clk *clk_scp_sys_md2_main;
 #endif
 
 extern struct sdio_modem *c2k_modem;
-
+extern void modem_pre_stop(void);
 extern void modem_reset_handler(void);
 
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
