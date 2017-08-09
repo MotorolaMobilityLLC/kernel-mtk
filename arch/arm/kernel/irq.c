@@ -428,7 +428,9 @@ static bool migrate_one_irq(struct irq_desc *desc)
  */
 void migrate_irqs(void)
 {
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	unsigned int i;
+#endif
 	struct irq_desc *desc;
 	unsigned long flags;
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
