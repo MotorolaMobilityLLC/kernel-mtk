@@ -1221,6 +1221,8 @@ char *mt_irq_dump_status_buf(int irq, char *buf, int len)
 		goto overflow;
 	ptr += strlen;
 
+	return ptr;
+
 overflow:
 	pr_err("%s, input buffer overflow\n", __func__);
 	/* Because the buffer has useful string, return it for dump */
