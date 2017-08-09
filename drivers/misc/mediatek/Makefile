@@ -59,6 +59,7 @@ endif
 obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
 obj-$(CONFIG_MTK_ACCDET)	+= accdet/
+obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
 obj-$(CONFIG_MTK_IRTX_SUPPORT) += irtx/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
