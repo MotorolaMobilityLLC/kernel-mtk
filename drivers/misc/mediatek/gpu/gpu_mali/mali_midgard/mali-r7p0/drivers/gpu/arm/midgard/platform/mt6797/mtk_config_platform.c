@@ -42,20 +42,6 @@ volatile void *g_DVFS_GPU_base;
 volatile void *g_DFP_base;
 volatile void *g_TOPCK_base;
 
-static void mt6797_gpu_set_power(int on)
-{
-	if (on)
-	{
-		base_write32(g_ldo_base+0xfbc, 0x1ff);
-		mt_gpufreq_voltage_enable_set(1);
-	}
-	else
-	{
-		mt_gpufreq_voltage_enable_set(0);
-		base_write32(g_ldo_base+0xfbc, 0x0);
-	}
-}
-
 #define MTKCLK_prepare_enable(clk) \
 	if (config->clk) { if (clk_prepare_enable(config->clk)) \
 		pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
@@ -67,7 +53,8 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	struct mtk_config *config = kbdev->mtk_config;
 
-	mt6797_gpu_set_power(1);
+	base_write32(g_ldo_base+0xfbc, 0x1ff);
+	mt_gpufreq_voltage_enable_set(1);
 
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
@@ -108,6 +95,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(MFG_OCP_DCM_CON, 0x1);
 #endif
 
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
@@ -122,6 +110,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
 #ifdef MTK_GPU_OCP
 	MFG_write32(MFG_OCP_DCM_CON, 0x0);
@@ -146,7 +135,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	MTKCLK_disable_unprepare(clk_mfg);
 	MTKCLK_disable_unprepare(clk_mfg_async);
 
-	mt6797_gpu_set_power(0);
+	mt_gpufreq_voltage_enable_set(0);
+	base_write32(g_ldo_base+0xfbc, 0x0);
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
