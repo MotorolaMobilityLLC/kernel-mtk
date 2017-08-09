@@ -2448,8 +2448,12 @@ static void do_chrdet_int_task(void)
 #endif
 		} else {
 			pr_info("[do_chrdet_int_task] charger NOT exist!\n");
-			if (BMT_status.charger_exist)
-				wake_lock_timeout(&battery_suspend_lock, HZ / 2);
+			if (BMT_status.charger_exist) {
+				if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
+					wake_lock(&battery_suspend_lock);
+				else
+					wake_lock_timeout(&battery_suspend_lock, HZ/2);
+			}
 			BMT_status.charger_exist = false;
 			BMT_status.charger_type = CHARGER_UNKNOWN;
 
