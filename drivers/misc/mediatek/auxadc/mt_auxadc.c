@@ -595,6 +595,30 @@ static long auxadc_cali_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 	return 0;
 }
 
+#ifdef CONFIG_COMPAT
+static long compat_auxadc_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		pr_err("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+
+	switch (cmd) {
+	case TEST_ADC_CALI_PRINT:
+	case SET_ADC_CALI_Slop:
+	case SET_ADC_CALI_Offset:
+	case SET_ADC_CALI_Cal:
+	case ADC_CHANNEL_READ:
+		return filp->f_op->unlocked_ioctl(filp, cmd,
+			(unsigned long)compat_ptr(arg));
+	default:
+		pr_err("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		return -ENOIOCTLCMD;
+	}
+}
+#endif
+
 static int auxadc_cali_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -610,6 +634,9 @@ static const struct file_operations auxadc_cali_fops = {
 	.unlocked_ioctl = auxadc_cali_unlocked_ioctl,
 	.open = auxadc_cali_open,
 	.release = auxadc_cali_release,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_auxadc_unlocked_ioctl,
+#endif
 };
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
