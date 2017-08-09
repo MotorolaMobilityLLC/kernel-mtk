@@ -299,7 +299,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	struct thread_info *ti = NULL;
 	unsigned long *bottom = NULL;
 	unsigned long *top = NULL;
-	unsigned long *p;
+	/*unsigned long *p;*/
 
 	if (virt_addr_valid(regs->reg_sp)) {
 		ti = (struct thread_info *)(regs->reg_sp & ~(THREAD_SIZE - 1));
@@ -330,7 +330,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	if (!virt_addr_valid(ti) || !virt_addr_valid(top) || bottom < (unsigned long *)ti
 	    || bottom > top)
 		return;
-
+/*
 	for (p = (unsigned long *)ALIGN((unsigned long)bottom, sizeof(unsigned long)); p < top; p++) {
 		if (!virt_addr_valid(*p))
 			continue;
@@ -340,6 +340,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 			continue;
 		mrdump_mini_add_entry(*p, MRDUMP_MINI_SECTION_SIZE);
 	}
+*/
 }
 
 static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
