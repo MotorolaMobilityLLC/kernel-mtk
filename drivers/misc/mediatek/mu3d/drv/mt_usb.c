@@ -267,6 +267,9 @@ bool usb_cable_connected(void)
 			return true;
 	}
 #endif
+	/* bypass charger detection result */
+	return true;
+
 	os_printk(K_INFO, "%s no USB Host detect!\n", __func__);
 	return false;
 #else
