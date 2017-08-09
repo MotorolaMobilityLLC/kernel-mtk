@@ -983,6 +983,7 @@ error:
 		cdev_del(&devobj->chdev);
 	if (ret == 0)
 		unregister_chrdev_region(devobj->devno, 1);
+	kfree(devobj);
 	return -1;
 }
 
@@ -999,7 +1000,6 @@ static int mt3326_gps_remove(struct platform_device *dev)
 	}
 
 	GPS_DBG("Unregistering chardev\n");
-	kfree(devobj);
 
 	cdev_del(&devobj->chdev);
 	unregister_chrdev_region(devobj->devno, 1);
@@ -1010,6 +1010,8 @@ static int mt3326_gps_remove(struct platform_device *dev)
 		GPS_ERR("delete attr fails: %d\n", err);
 	device_destroy(devobj->cls, devobj->devno);
 	class_destroy(devobj->cls);
+
+	kfree(devobj);
 	GPS_DBG("Done\n");
 	return 0;
 }
