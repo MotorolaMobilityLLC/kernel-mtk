@@ -571,7 +571,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 	CCCI_DBG_MSG(md->index, TAG, "Q%d rx %d pkg,ret=%d\n", queue->index,
 		     count, ret);
 	spin_lock_irqsave(&queue->rx_lock, flags);
-	if (queue->index != C2K_MD_LOG_RX_Q && ret != -CCCI_ERR_PORT_RX_FULL && ret != -EAGAIN) {
+	if (ret != -CCCI_ERR_PORT_RX_FULL && ret != -EAGAIN) {
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		if (pkg_size > 0)
 			ret = -EAGAIN;
