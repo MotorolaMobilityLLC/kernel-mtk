@@ -70,8 +70,10 @@ typedef enum _MTK_WCN_HIF_PDMA_BURST_LEN {
 #define AP_DMA_HIF_0_LEN            (0x0024)
 #define AP_DMA_HIF_0_INT_BUF_SIZE   (0x0038)
 #define AP_DMA_HIF_0_DEBUG_STATUS   (0x0050)
+#define AP_DMA_HIF_0_SRC_ADDR2		(0x0054)
+#define AP_DMA_HIF_0_DST_ADDR2		(0x0058)
 
-#define AP_DMA_HIF_0_LENGTH         0x0054
+#define AP_DMA_HIF_0_LENGTH         0x0080
 
 /* AP_DMA_HIF_0_INT_FLAG */
 #define ADH_CR_FLAG_0               BIT(0)
@@ -104,6 +106,11 @@ typedef enum _MTK_WCN_HIF_PDMA_BURST_LEN {
 
 /* AP_DMA_HIF_0_LEN */
 #define ADH_CR_LEN                  BITS(0, 19)
+
+/* AP_DMA_HIF_0_SRC_ADDR2 */
+#define ADH_CR_SRC_ADDR2		BIT(0)
+/* AP_DMA_HIF_0_DST_ADDR2 */
+#define ADH_CR_DST_ADDR2		BIT(0)
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
