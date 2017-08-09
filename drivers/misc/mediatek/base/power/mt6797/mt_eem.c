@@ -2087,7 +2087,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 			#if defined(__MTK_SLT_)
 				recordTbl = &fyTbl[0][0];
 			#endif
-		} else if (binLevel == 1) {
+		} else if ((binLevel == 1) || (binLevel == 6)) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_SB[i] :
 					(det_to_id(det) == EEM_DET_L) ? L_Freq_SB[i] :
@@ -2196,7 +2196,7 @@ static void get_freq_table_gpu(struct eem_det *det)
 			#if defined(__MTK_SLT_)
 				gpuTbl = &gpuFy[0];
 			#endif
-		} else if (binLevel == 1) {
+		} else if ((binLevel == 1) || (binLevel == 6)) {
 			det->freq_tbl[i] = PERCENT(gpuFreq_SB[i], det->max_freq_khz);
 			#if defined(__MTK_SLT_)
 				gpuTbl = &gpuSb[0];
@@ -2608,7 +2608,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	#endif
 	if ((binLevel == 0) || (binLevel == 3))
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
-	else if (binLevel == 1)
+	else if ((binLevel == 1) || (binLevel == 6))
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE_SB);
 	else if ((binLevel == 2) || (binLevel == 7))
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
@@ -5429,7 +5429,7 @@ static int __init eem_conf(void)
 		gpuTbl = &gpuFy[0];
 		recordTbl = &fyTbl[0][0];
 		eem_error("@The table ----->(fyTbl)\n");
-	} else if (binLevel == 1) {
+	} else if ((binLevel == 1) || (binLevel == 6)) {
 		gpuTbl = &gpuSb[0];
 		recordTbl = &sbTbl[0][0];
 		eem_error("@The table ----->(sbTbl)\n");
