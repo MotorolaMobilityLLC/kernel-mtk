@@ -9,7 +9,6 @@
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/smp_scu.h>
 #include <asm/page.h>
-#include <mach/irqs.h>
 #include <linux/irqchip.h>
 #include <linux/of_platform.h>
 
