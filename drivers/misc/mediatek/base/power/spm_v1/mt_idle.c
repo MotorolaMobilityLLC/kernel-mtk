@@ -955,6 +955,17 @@ void disable_soidle_by_bit(int id)
 }
 EXPORT_SYMBOL(disable_soidle_by_bit);
 
+#if !defined(CONFIG_ARCH_MT6580)
+void defeature_soidle_by_display(void)
+{
+    if (idle_switch[IDLE_TYPE_SO] != 0)
+    {
+        idle_switch[IDLE_TYPE_SO] = 0;
+    }
+}
+EXPORT_SYMBOL(defeature_soidle_by_display);
+#endif
+
 static bool soidle_can_enter(int cpu)
 {
 	int reason = NR_REASONS;
