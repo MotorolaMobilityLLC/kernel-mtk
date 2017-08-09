@@ -1650,6 +1650,10 @@
 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		usbphy0:usbphy@0 {
+			 compatible = "usb-nop-xceiv";
+		};
+
 		usb3@11270000 {
 			compatible = "mediatek,usb3";
 			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
