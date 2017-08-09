@@ -41,6 +41,18 @@ extern void __iomem *pwm_base;
 
 /******************************************/
 
+enum PWN_NO {
+	PWM_MIN,
+	PWM1 = PWM_MIN,
+	PWM2,
+	PWM3,
+	PWM4,
+	PWM5,
+	PWM_NUM,
+	PWM_MAX = PWM_NUM
+};
+
+
 enum TEST_SEL_BIT {
 	TEST_SEL_FALSE,
 	TEST_SEL_TRUE

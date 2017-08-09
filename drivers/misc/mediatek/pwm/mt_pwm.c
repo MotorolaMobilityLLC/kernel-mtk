@@ -46,8 +46,6 @@
 #include <linux/clk.h>
 #endif
 
-#define PWM_MAX	7
-#define PWM_MIN	0
 
 #ifdef CONFIG_OF
 void __iomem *pwm_base;

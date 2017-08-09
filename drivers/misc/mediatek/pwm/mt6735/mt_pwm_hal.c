@@ -46,16 +46,6 @@ enum {
 	PWM_VALID
 } PWM_REG_OFF;
 
-enum PWN_NO {
-	PWM_MIN,
-	PWM1 = PWM_MIN,
-	PWM2,
-	PWM3,
-	PWM4,
-	PWM5,
-	PWM_NUM,
-	PWM_MAX = PWM_NUM
-};
 
 #if defined(CONFIG_MTK_CLKMGR)
 int pwm_power_id[] = {
@@ -453,7 +443,7 @@ void mt_pwm_dump_regs_hal(void)
 	PWMMSG("\r\n[PWM_26M_SEL is:%lx]\n\r ", reg_val);
 	/*PWMDBG("peri pdn0 clock: 0x%x\n", INREG32(INFRA_PDN_STA0));*/
 
-	for (i = PWM1; i < PWM_MAX; i++) {
+	for (i = PWM1; i < PWM_NUM; i++) {
 		reg_val = INREG32(PWM_register[i] + 4 * PWM_CON);
 		PWMMSG("\r\n[PWM%d_CON is:%lx]\r\n", i + 1, reg_val);
 		reg_val = INREG32(PWM_register[i] + 4 * PWM_HDURATION);
