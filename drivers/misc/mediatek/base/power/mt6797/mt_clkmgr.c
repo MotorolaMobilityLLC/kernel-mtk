@@ -476,13 +476,7 @@ void clk_dump(void)
 	       clk_readl(PWR_STATUS), clk_readl(PWR_STATUS_2ND));
 
 	pr_err("********** mux register dump *********\n");
-#if 0
-	pr_err("[TOP_CKMUXSEL]=0x%08x\n", clk_readl(TOP_CKMUXSEL));
-	pr_err("[TOP_CKDIV1]=0x%08x\n", clk_readl(TOP_CKDIV1));
-	pr_err("[INFRA_TOPCKGEN_CKDIV1_BIG]=0x%08x\n", clk_readl(INFRA_TOPCKGEN_CKDIV1_BIG));
-	pr_err("[INFRA_TOPCKGEN_CKDIV1_SML]=0x%08x\n", clk_readl(INFRA_TOPCKGEN_CKDIV1_SML));
-	pr_err("[INFRA_TOPCKGEN_CKDIV1_BUS]=0x%08x\n", clk_readl(INFRA_TOPCKGEN_CKDIV1_BUS));
-#endif
+
 	pr_err("[CLK_CFG_0]=0x%08x\n", clk_readl(CLK_CFG_0));
 	pr_err("[CLK_CFG_1]=0x%08x\n", clk_readl(CLK_CFG_1));
 	pr_err("[CLK_CFG_2]=0x%08x\n", clk_readl(CLK_CFG_2));
@@ -501,30 +495,34 @@ void clk_dump(void)
 	pr_err("[INFRA_PDN_STA2]=0x%08x\n", clk_readl(INFRA_SW_CG2_STA));
 
 	pr_err("[INFRA_TOPAXI_PROTECTSTA1]=0x%08x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
-/*pr_err("[INFRA_TOPAXI_PROTECTSTA1_1]=0x%08x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1_1));*/
 
-	pr_err("[MMSYS_SUBSYS][%p]\n", clk_mmsys_config_base);	/* 0x14000000 */
+	pr_err("[MMSYS_SUBSYS][%p]\n", clk_mmsys_config_base);
 	pr_err("[DISP_CG_CON0]=0x%08x\n", clk_readl(DISP_CG_CON0));
 	pr_err("[DISP_CG_CON1]=0x%08x\n", clk_readl(DISP_CG_CON1));
-	pr_err("[DISP_CG_CLR0]=0x%08x\n", clk_readl(DISP_CG_CLR0));
-	pr_err("[DISP_CG_CLR1]=0x%08x\n", clk_readl(DISP_CG_CLR1));
 
-	pr_err("[MFG_SUBSYS][%p]\n", clk_mfgcfg_base);	/* 0x13000000 */
+	/**/
+	pr_err("[MFG_SUBSYS][%p]\n", clk_mfgcfg_base);
 	pr_err("[MFG_CG_CON]=0x%08x\n", clk_readl(MFG_CG_CON));
 
-	pr_err("[AUDIO_SUBSYS][%p]\n", clk_audio_base);	/* 0x1122_0000 */
+	pr_err("[AUDIO_SUBSYS][%p]\n", clk_audio_base);
 	pr_err("[AUDIO_TOP_CON0]=0x%08x\n", clk_readl(AUDIO_TOP_CON0));
-	pr_err("[AUDIO_TOP_CON1]=0x%08x\n", clk_readl(AUDIO_TOP_CON0 + 0x5a0));
+	pr_err("[AUDIO_TOP_CON1]=0x%08x\n", clk_readl(AUDIO_TOP_CON1));
 
-	pr_err("[IMG_SUBSYS][%p]\n", clk_imgsys_base);	/* 0x15000000 */
+	pr_err("[IMG_SUBSYS][%p]\n", clk_imgsys_base);
 	pr_err("[IMG_CG_CON]=0x%08x\n", clk_readl(IMG_CG_CON));
 
-	pr_err("[VDEC_SUBSYS][%p]\n", clk_vdec_gcon_base);	/* 0x16000000 */
+	pr_err("[VDEC_SUBSYS][%p]\n", clk_vdec_gcon_base);
 	pr_err("[VDEC_CKEN_SET]=0x%08x\n", clk_readl(VDEC_CKEN_SET));
 	pr_err("[LARB_CKEN_SET]=0x%08x\n", clk_readl(LARB_CKEN_SET));
 
-	pr_err("[VENC_SUBSYS][%p]\n", clk_venc_gcon_base);	/* 0x17000000 */
-	pr_err("[VENC_CG_SET]=0x%08x\n", clk_readl(VENC_CG_SET));
+	pr_err("[VENC_SUBSYS][%p]\n", clk_venc_gcon_base);
+	pr_err("[VENC_CG_CON]=0x%08x\n", clk_readl(VENC_CG_CON));
+
+	pr_err("[CAM_SUBSYS][%p]\n", clk_camsys_base);
+	pr_err("[CAM_CG_CON]=0x%08x\n", clk_readl(CAM_CG_CON));
+
+	pr_err("[MJC_SUBSYS][%p]\n", clk_mjc_config_base);
+	pr_err("[MJC_CG_CON]=0x%08x\n", clk_readl(MJC_CG_CON));
 }
 
 void clk_misc_cfg_ops(bool flag)
@@ -691,6 +689,13 @@ static int mfgpll_fsel_read(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int clk_debugf_read(struct seq_file *m, void *v)
+{
+	slp_check_pm_mtcmos_pll();
+	clk_dump();
+	return 0;
+}
+
 static ssize_t armbpll_fsel_write(struct file *file, const char __user *buffer,
 				  size_t count, loff_t *data)
 {
@@ -851,6 +856,32 @@ static ssize_t mfgpll_fsel_write(struct file *file, const char __user *buffer,
 
 }
 
+static int gAllowClkDump;
+
+static ssize_t clk_fsel_write(struct file *file, const char __user *buffer,
+			  size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	unsigned int con0, clkDump;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d", &con0, &clkDump) == 2) {
+		if (clkDump)
+			gAllowClkDump = 1;
+		else
+			gAllowClkDump = 0;
+	}
+
+	return count;
+
+}
+
+
  /*MMPLL*/
 #if 0
 static int sdmpll_fsel_write(struct file *file, const char __user *buffer,
@@ -868,26 +899,26 @@ void slp_check_pm_mtcmos_pll(void)
 	slp_chk_mtcmos_pll_stat = 1;
 
 	for (i = 2; i < NR_PLLS; i++) {
-		if (i == 7)
+		if (i == 6)/*skip mpll*/
 			continue;
 		if (pll_is_on(i)) {
 			slp_chk_mtcmos_pll_stat = -1;
 			pr_err("%s: on\n", plls[i].name);
 			pr_err("suspend warning: %s is on!!!\n", plls[i].name);
-			pr_err("warning! warning! warning! it may cause resume fail\n");
+			/*pr_err("warning! warning! warning! it may cause resume fail\n");*/
 		}
 	}
 	for (i = 0; i < NR_SYSS; i++) {
 		if (subsys_is_on(i)) {
 			pr_err("%s: on\n", syss[i].name);
-			if (i > SYS_CONN) {
+			if ((i != SYS_MD1) && (i != SYS_C2K)) {
 				slp_chk_mtcmos_pll_stat = -1;
 				pr_err("suspend warning: %s is on!!!\n", syss[i].name);
-				pr_err("warning! warning! warning! it may cause resume fail\n");
+				/*pr_err("warning! warning! warning! it may cause resume fail\n");*/
 			}
 		}
 	}
-	if (slp_chk_mtcmos_pll_stat != 1)
+	if (slp_chk_mtcmos_pll_stat != 1 && gAllowClkDump)
 		clk_dump();
 }
 EXPORT_SYMBOL(slp_check_pm_mtcmos_pll);
@@ -973,6 +1004,20 @@ static const struct file_operations mfgpll_fsel_proc_fops = {
 	.release = single_release,
 };
 
+static int proc_clk_debugf_open(struct inode *inode, struct file *file)
+{
+	clk_err("%s", __func__);
+	return single_open(file, clk_debugf_read, NULL);
+}
+
+static const struct file_operations clk_fsel_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_clk_debugf_open,
+	.read = seq_read,
+	.write = clk_fsel_write,
+	.release = single_release,
+};
+
 static int proc_slp_chk_mtcmos_pll_stat_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, slp_chk_mtcmos_pll_stat_read, NULL);
@@ -1010,6 +1055,9 @@ void mt_clkmgr_debug_init(void)
 	entry =
 	    proc_create("mfgpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&mfgpll_fsel_proc_fops);
+	entry =
+	    proc_create("pll_mtcmos_clk", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
+			&clk_fsel_proc_fops);
 
 	/*entry = proc_create("slp_chk_mtcmos_pll_stat", S_IRUGO, clkmgr_dir, &slp_chk_mtcmos_pll_stat_proc_fops);*/
 }
@@ -1090,6 +1138,23 @@ void iomap(void)
 	clk_mcumixed_base = of_iomap(node, 0);
 	if (!clk_mcumixed_base)
 		clk_dbg("[CLK_MCUMIXED] base failed\n");
+
+/*cam*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys_config");
+	if (!node)
+		clk_dbg("[CLK_CAM] find node failed\n");
+	clk_camsys_base = of_iomap(node, 0);
+	if (!clk_camsys_base)
+		clk_dbg("[CLK_CAM] base failed\n");
+
+/*mjc*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mjc_config-v1");
+	if (!node)
+		clk_dbg("[CLK_MJC] find node failed\n");
+	clk_mjc_config_base = of_iomap(node, 0);
+	if (!clk_mjc_config_base)
+		clk_dbg("[CLK_MJC] base failed\n");
+
 }
 #endif
 
