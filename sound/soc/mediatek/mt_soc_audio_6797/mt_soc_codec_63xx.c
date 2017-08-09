@@ -269,7 +269,7 @@ static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
 	pr_aud("audckbufEnable(), audck_buf_Count = %d, enable = %d\n",
-		audck_buf_Count, enable);
+	       audck_buf_Count, enable);
 
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
@@ -810,7 +810,7 @@ static void HP_Switch_to_Release(void)
 
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
-	pr_warn("%s benable = %d\n", __func__, bEnable);
+	pr_aud("%s benable = %d\n", __func__, bEnable);
 	if (GetDLStatus() == true)
 		return false;
 
@@ -934,16 +934,16 @@ static void EnableDcCompensation(bool bEnable)
 static void SetHprOffsetTrim(void)
 {
 	int OffsetTrimming = mHprTrimOffset - TrimOffset;
-	pr_warn("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-		OffsetTrimming, mHprTrimOffset, TrimOffset);
+	pr_aud("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+	       OffsetTrimming, mHprTrimOffset, TrimOffset);
 	SetHprOffset(OffsetTrimming);
 }
 
 static void SetHpLOffsetTrim(void)
 {
 	int OffsetTrimming = mHplTrimOffset - TrimOffset;
-	pr_warn("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-		OffsetTrimming, mHplTrimOffset, TrimOffset);
+	pr_aud("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+	       OffsetTrimming, mHplTrimOffset, TrimOffset);
 	SetHplOffset(OffsetTrimming);
 }
 
@@ -1062,13 +1062,13 @@ static int mt63xx_codec_startup(struct snd_pcm_substream *substream, struct snd_
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-			substream->runtime->rate);
+		pr_aud("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
+		       substream->runtime->rate);
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = substream->runtime->rate;
 
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
-			substream->runtime->rate);
+		pr_aud("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+		       substream->runtime->rate);
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = substream->runtime->rate;
 	}
 	return 0;
@@ -1443,7 +1443,7 @@ static void HeadsetVoloumeRestore(void)
 	index = 8;
 	oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	if (index > oldindex) {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
@@ -1453,7 +1453,7 @@ static void HeadsetVoloumeRestore(void)
 			udelay(100);
 		}
 	} else {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
@@ -1473,7 +1473,7 @@ static void HeadsetVoloumeSet(void)
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	oldindex = 8;
 	if (index > oldindex) {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
@@ -1483,7 +1483,7 @@ static void HeadsetVoloumeSet(void)
 			udelay(200);
 		}
 	} else {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
@@ -1642,8 +1642,8 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 static int Audio_AmpL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_AmpL_Get = %d\n",
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL]);
+	pr_aud("Audio_AmpL_Get = %d\n",
+	       mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL];
 	return 0;
@@ -1653,7 +1653,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_aud("%s() enable = %ld\n ", __func__, ucontrol->value.integer.value[0]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -1672,8 +1672,8 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 
 static int Audio_AmpR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_AmpR_Get = %d\n",
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
+	pr_aud("Audio_AmpR_Get = %d\n",
+	       mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR];
 	return 0;
@@ -1683,7 +1683,7 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s()\n", __func__);
+	pr_aud("%s()\n", __func__);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
@@ -2594,8 +2594,8 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Handset_PGA_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Handset_PGA_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
+	pr_aud("Handset_PGA_Get = %d\n",
+	       mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL];
 	return 0;
@@ -2626,8 +2626,8 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAL_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
+	pr_aud("Headset_PGAL_Get = %d\n",
+	       mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
 	return 0;
@@ -2659,8 +2659,8 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAR_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
+	pr_aud("Headset_PGAR_Get = %d\n",
+	       mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	return 0;
@@ -2672,7 +2672,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
@@ -2694,7 +2694,7 @@ static uint32 mHp_Impedance = 32;
 static int Audio_Hp_Impedance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_Hp_Impedance_Get = %d\n", mHp_Impedance);
+	pr_aud("Audio_Hp_Impedance_Get = %d\n", mHp_Impedance);
 	ucontrol->value.integer.value[0] = mHp_Impedance;
 	return 0;
 
@@ -2704,20 +2704,20 @@ static int Audio_Hp_Impedance_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	mHp_Impedance = ucontrol->value.integer.value[0];
-	pr_warn("%s Audio_Hp_Impedance_Set = 0x%x\n", __func__, mHp_Impedance);
+	pr_aud("%s Audio_Hp_Impedance_Set = 0x%x\n", __func__, mHp_Impedance);
 	return 0;
 }
 
 static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("\%s n", __func__);
+	pr_aud("\%s n", __func__);
 	ucontrol->value.integer.value[0] = audck_buf_Count;
 	return 0;
 }
 
 static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s(), value = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), value = %d\n", __func__, ucontrol->value.enumerated.item[0]);
 
 	if (ucontrol->value.integer.value[0])
 		audckbufEnable(true);

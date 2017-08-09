@@ -2232,7 +2232,7 @@ bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 
 static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 {
-	pr_warn("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
+	pr_aud("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
@@ -2268,7 +2268,7 @@ static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 {
 	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
 
-	pr_warn("%s(), Irqmode %d, SampleRate %d\n",
+	pr_aud("%s(), Irqmode %d, SampleRate %d\n",
 		__func__, Irqmode, SampleRate);
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
@@ -2298,7 +2298,7 @@ static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 
 static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
 {
-	pr_warn("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
+	pr_aud("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 		Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
@@ -2874,7 +2874,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 	substreamList *temp = NULL;
 	unsigned long flags;
 
-	pr_debug("+%s MemBlock = %d substream = %p\n", __func__, MemBlock, substream);
+	pr_aud("+%s MemBlock = %d substream = %p\n", __func__, MemBlock, substream);
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
@@ -2936,7 +2936,7 @@ bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substre
 		AFE_Mem_Control_context[MemBlock]->MemIfNum--;
 
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
-	pr_debug("+ %s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
+	pr_aud("+ %s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
 
 	if (head == NULL) {	/* no object */
 		/* do nothing */
@@ -2973,7 +2973,7 @@ bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substre
 		pr_debug("%s substreram is not NULL MemBlock = %d\n", __func__, MemBlock);
 
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	pr_debug("- %s MemBlock = %d\n ", __func__, MemBlock);
+	pr_aud("- %s MemBlock = %d\n ", __func__, MemBlock);
 
 	return true;
 }
@@ -4369,8 +4369,8 @@ int irq_add_user(const void *_user,
 	struct irq_user *ptr;
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
-		 __func__, _user, _irq, _rate, _count);
+	/*pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
+		 __func__, _user, _irq, _rate, _count);*/
 	/* check if user already exist */
 	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
 		if (ptr->user == _user) {
@@ -4424,8 +4424,8 @@ int irq_remove_user(const void *_user,
 	struct irq_user *corr_user = NULL;
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	pr_debug("%s(), user %p, irq %d\n",
-		 __func__, _user, _irq);
+	/*pr_debug("%s(), user %p, irq %d\n",
+		 __func__, _user, _irq);*/
 	/* get _user's irq_user ptr */
 	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
 		if (ptr->user == _user) {
@@ -4467,8 +4467,8 @@ int irq_update_user(const void *_user,
 	struct irq_user *corr_user = NULL;
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
-		 __func__, _user, _irq, _rate, _count);
+	/*pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
+		 __func__, _user, _irq, _rate, _count);*/
 	/* get _user's irq_user ptr */
 	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
 		if (ptr->user == _user) {

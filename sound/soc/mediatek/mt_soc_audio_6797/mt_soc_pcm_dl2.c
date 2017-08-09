@@ -103,7 +103,7 @@ static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
 
 static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -242,7 +242,7 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
 	AudDrv_Emi_Clk_On();
 
-	pr_warn("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
+	PRINTK_AUDDRV("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
 	       mtk_pcm_dl2_hardware.buffer_bytes_max);
 	runtime->hw = mtk_pcm_dl2_hardware;
 
@@ -351,7 +351,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* here start digital part */
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,

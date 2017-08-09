@@ -172,7 +172,7 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Afe_Block = &(pI2S0dl1MemControl->rBlock); */
 
-	pr_warn("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 
 	irq_user_id = NULL;
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -491,7 +491,7 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("%s\n", __func__);
+	PRINTK_AUDDRV("%s\n", __func__);
 	/* here start digital part */
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
