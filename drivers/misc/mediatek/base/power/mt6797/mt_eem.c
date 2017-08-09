@@ -4414,9 +4414,9 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t eem_cur_volt_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
-	int ret, i;
+	int ret;
 	char *buf = (char *) __get_free_page(GFP_USER);
-	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0;
+	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0, index = 0;
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -4438,7 +4438,8 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 
 	buf[count] = '\0';
 
-	if (!kstrtoint(buf, 10, &voltValue)) {
+	/* if (!kstrtoint(buf, 10, &voltValue)) { */
+	if (2 == sscanf(buf, "%u %u", &voltValue, &index)) {
 		if ((EEM_CTRL_GPU != det->ctrl_id) && (EEM_CTRL_SOC != det->ctrl_id)) {
 			ret = 0;
 			det->recordRef[NR_FREQ * 2] = 0x00000000;
@@ -4461,15 +4462,15 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				(unsigned int)(det->ops->volt_2_pmic(det, VMIN_SRAM)),
 				(unsigned int)(det->ops->volt_2_pmic(det, VMAX_SRAM)));
 
-			for (i = 0; i < NR_FREQ; i++)
-				det->recordRef[i*2] = ((PMIC_2_RMIC(det, voltSram) & 0x7F) << 7) | (voltProc & 0x7F);
+			/* for (i = 0; i < NR_FREQ; i++) */
+			det->recordRef[index*2] = ((PMIC_2_RMIC(det, voltSram) & 0x7F) << 7) | (voltProc & 0x7F);
 
 			det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 			mb(); /* SRAM writing */
 		}
 	} else {
 		ret = -EINVAL;
-		eem_debug("bad argument_1!! argument should be 80000 ~ 115500\n");
+		eem_debug("bad argument_1!! voltage = (80000 ~ 115500), index = (0 ~ 15)\n");
 	}
 
 out:
