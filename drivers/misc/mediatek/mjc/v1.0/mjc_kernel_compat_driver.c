@@ -310,6 +310,7 @@ long compat_mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 	case MJC_WRITE_REG_TBL:
 	case MJC_CLEAR_REG_TBL:
 	case MJC_SOURCE_CLK:
+	case MJC_EFUSE_INFO:
 		{
 			ret =
 			    pfile->f_op->unlocked_ioctl(pfile, u4cmd,

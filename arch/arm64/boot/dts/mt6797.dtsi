@@ -3746,7 +3746,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<&mjcsys MJC_TOP_CLK_0>,
 				<&mjcsys MJC_TOP_CLK_1>,
 				<&mjcsys MJC_TOP_CLK_2>,
-				<&mjcsys MJC_LARB4_ASIF>;
+				<&mjcsys MJC_LARB4_ASIF>,
+				<&scpsys SCP_SYS_MJC>,
+				<&topckgen TOP_MUX_MJC>,
+				<&topckgen TOP_IMGPLL_CK>,
+				<&topckgen TOP_UNIVPLL_D5>;
 			clock-names =
 				"smi-common",
 				"larb4-axi-asif-mm",
@@ -3755,7 +3759,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				"top-clk-0",
 				"top-clk-1",
 				"top-clk-2",
-				"larb4-asif";
+				"larb4-asif",
+				"mtcmos-mjc",
+				"mux_mjc",
+				"imgpll_ck",
+				"univpll_d5";
 		};
 
 		gps {

@@ -53,7 +53,7 @@ typedef struct {
 
 typedef struct{
 	unsigned int u4StructSize;
-	unsigned char u1EFuseIndex;
+	unsigned int u1EFuseIndex;
 	unsigned int u4EFuseBit;
 } MJC_IOCTL_EFUSE_INFO_T;
 
