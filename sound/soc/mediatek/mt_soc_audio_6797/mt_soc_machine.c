@@ -753,6 +753,26 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(CLK_AUDDIV_0));
 	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_1  = 0x%x\n",
 			Afe_Get_Reg(CLK_AUDDIV_1));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_2  = 0x%x\n",
+			Afe_Get_Reg(CLK_AUDDIV_2));
+	n += scnprintf(buffer + n, size - n, "AFE_TDM_CON1  = 0x%x\n",
+			Afe_Get_Reg(AFE_TDM_CON1));
+	n += scnprintf(buffer + n, size - n, "AFE_TDM_CON1  = 0x%x\n",
+			Afe_Get_Reg(AFE_TDM_CON2));
+	n += scnprintf(buffer + n, size - n, "AFE_HDMI_OUT_CON0  = 0x%x\n",
+			Afe_Get_Reg(AFE_HDMI_OUT_CON0));
+	n += scnprintf(buffer + n, size - n, "AFE_HDMI_BASE  = 0x%x\n",
+			Afe_Get_Reg(AFE_HDMI_BASE));
+	n += scnprintf(buffer + n, size - n, "AFE_HDMI_CUR  = 0x%x\n",
+			Afe_Get_Reg(AFE_HDMI_CUR));
+	n += scnprintf(buffer + n, size - n, "AFE_HDMI_END  = 0x%x\n",
+			Afe_Get_Reg(AFE_HDMI_END));
+	n += scnprintf(buffer + n, size - n, "AFE_HDMI_CONN0  = 0x%x\n",
+			Afe_Get_Reg(AFE_HDMI_CONN0));
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_HD_MODE  = 0x%x\n",
+			Afe_Get_Reg(AFE_MEMIF_HD_MODE));
+	n += scnprintf(buffer + n, size - n, "AFE_MEMIF_HDALIGN  = 0x%x\n",
+			Afe_Get_Reg(AFE_MEMIF_HDALIGN));
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG0  = 0x%x\n",
 		       Afe_Get_Reg(FPGA_CFG0));
