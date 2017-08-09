@@ -3481,6 +3481,7 @@ static const struct soc_enum Audio_UL_Enum[] = {
 			    Audio_VOW_Digital_Function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_MIC_Type),
 			    Audio_VOW_MIC_Type),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
 };
 
 static int Audio_ADC1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -4215,6 +4216,21 @@ static int Audio_Vow_State_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 	return 0;
 }
 
+static bool ul_lr_swap_enable;
+
+static int Audio_UL_LR_Swap_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = ul_lr_swap_enable;
+	return 0;
+}
+
+static int Audio_UL_LR_Swap_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	ul_lr_swap_enable = ucontrol->value.integer.value[0];
+	Ana_Set_Reg(AFE_UL_DL_CON0, ul_lr_swap_enable << 15, 0x1 << 15);
+	return 0;
+}
+
 static bool SineTable_DAC_HP_flag;
 static bool SineTable_UL2_flag;
 
@@ -4499,6 +4515,9 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 	SOC_SINGLE_EXT("Audio_VOW_State", SND_SOC_NOPM, 0, 0x80000, 0,
 		       Audio_Vow_State_Get,
 		       Audio_Vow_State_Set),
+	SOC_ENUM_EXT("Audio_UL_LR_Swap", Audio_UL_Enum[26],
+		     Audio_UL_LR_Swap_Get,
+		     Audio_UL_LR_Swap_Set),
 };
 
 static const struct snd_soc_dapm_widget mt6331_dapm_widgets[] = {
