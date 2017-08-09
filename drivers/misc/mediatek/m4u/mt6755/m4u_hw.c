@@ -860,6 +860,9 @@ static int smi_larb_clock_prepare(void)
 	ret = clk_prepare(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
 	if (ret)
 		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC1_LARB_CLK]);
+	ret = clk_prepare(gM4uDev->smi_clk[LARB2_SMI_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[LARB2_SMI_CLK]);
 	ret = clk_prepare(gM4uDev->smi_clk[VENC_VENC_CLK]);
 	if (ret)
 		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_VENC_CLK]);
@@ -877,6 +880,7 @@ static int smi_larb_clock_unprepare(void)
 	clk_unprepare(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
 	clk_unprepare(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
 	clk_unprepare(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+	clk_unprepare(gM4uDev->smi_clk[LARB2_SMI_CLK]);
 	clk_unprepare(gM4uDev->smi_clk[VENC_VENC_CLK]);
 	clk_unprepare(gM4uDev->smi_clk[VENC_LARB_CLK]);
 
