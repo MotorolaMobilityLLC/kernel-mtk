@@ -34,6 +34,7 @@
 #include "external_display.h"
 
 #include "disp_session.h"
+#include "disp_lowpower.h"
 #include "display_recorder.h"
 #include "extd_info.h"
 
@@ -85,7 +86,7 @@ enum EXT_DISP_PATH_MODE ext_disp_path_get_mode(unsigned int session)
 
 void ext_disp_path_set_mode(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 {
-	ext_disp_mode = mode;
+	ext_disp_mode = EXTD_RDMA_DPI_MODE; /*mode;*/
 	init_roi = (mode == EXTD_DIRECT_LINK_MODE ? 1 : 0);
 }
 
@@ -738,7 +739,7 @@ void ext_disp_probe(void)
 
 	ext_disp_use_cmdq = CMDQ_ENABLE;
 	ext_disp_use_m4u = 1;
-	ext_disp_mode = EXTD_DIRECT_LINK_MODE;
+	ext_disp_mode = EXTD_RDMA_DPI_MODE;
 }
 
 int ext_disp_init(char *lcm_name, unsigned int session)
@@ -803,11 +804,12 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 		data_config->dst_w = extd_lcm_params.dpi.width;
 		data_config->dst_h = extd_lcm_params.dpi.height;
+		if (extd_lcm_params.dpi.dsc_enable == 1)
+			data_config->dst_w = extd_lcm_params.dpi.width * 3;
 		data_config->dst_dirty = 1;
-		/*data_config->p_golden_setting_context = get_golden_setting_pgc();
+		data_config->p_golden_setting_context = get_golden_setting_pgc();
 		data_config->p_golden_setting_context->ext_dst_width = data_config->dst_w;
 		data_config->p_golden_setting_context->ext_dst_height = data_config->dst_h;
-		*/
 
 		init_roi = 0;
 		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, CMDQ_DISABLE);
@@ -867,7 +869,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	int ret = 0;
 	disp_session_vsync_config *c = (disp_session_vsync_config *) config;
 
-	EXT_DISP_FUNC();
+	/*EXT_DISP_FUNC();*/
 
 	_ext_disp_path_lock();
 	if (pgc->state == EXTD_DEINIT) {
@@ -973,7 +975,7 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 {
 	int ret = 0;
 
-	EXT_DISP_FUNC();
+	/*EXT_DISP_FUNC();*/
 
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || pgc->need_trigger_overlay < 1) {
 		EXT_DISP_LOG("trigger ext display is already slept\n");
@@ -1104,6 +1106,10 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	data_config->dst_w = extd_lcm_params.dpi.width;
+	data_config->dst_h = extd_lcm_params.dpi.height;
+	if (extd_lcm_params.dpi.dsc_enable == 1)
+		data_config->dst_w = extd_lcm_params.dpi.width * 3;
 
 	/* hope we can use only 1 input struct for input config, just set layer number */
 	if (_should_config_ovl_input()) {
@@ -1118,8 +1124,7 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 
 				EXT_DISP_LOG("set dest w:%d, h:%d\n",
 						extd_lcm_params.dpi.width, extd_lcm_params.dpi.height);
-				data_config->dst_w = extd_lcm_params.dpi.width;
-				data_config->dst_h = extd_lcm_params.dpi.height;
+
 				data_config->dst_dirty = 1;
 				data_config->rdma_config.address = 0;
 			}
@@ -1132,7 +1137,7 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 		dprec_mmp_dump_ovl_layer(&ovl_config, input->config[0].layer_id, 2);
 
 		ret = _convert_disp_input_to_rdma(&(data_config->rdma_config), &(input->config[0]),
-						extd_lcm_params.dpi.width, extd_lcm_params.dpi.height);
+						data_config->dst_w, data_config->dst_h);
 		if (data_config->rdma_config.address) {
 			data_config->rdma_dirty = 1;
 			pgc->need_trigger_overlay = 1;
@@ -1312,11 +1317,12 @@ int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 /*			pgc->ovl_req_state = EXTD_OVL_SUB_REQ;*/
 			break;
 		case EXTD_OVL_REMOVE_REQ:
-			if (ext_disp_mode != EXTD_RDMA_DPI_MODE) {
+/*			if (ext_disp_mode != EXTD_RDMA_DPI_MODE) {
 				dpmgr_remove_ovl1_sub(pgc->dpmgr_handle, pgc->cmdq_handle_config);
 				ext_disp_path_set_mode(EXTD_RDMA_DPI_MODE, session);
 				pgc->ovl_req_state = EXTD_OVL_REMOVE_REQ;
 			}
+*/
 			break;
 		case EXTD_OVL_REMOVING:
 			pgc->ovl_req_state = EXTD_OVL_REMOVING;
@@ -1325,11 +1331,12 @@ int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 			pgc->ovl_req_state = EXTD_OVL_REMOVED;
 			break;
 		case EXTD_OVL_INSERT_REQ:
-			if (ext_disp_mode != EXTD_DIRECT_LINK_MODE) {
+/*			if (ext_disp_mode != EXTD_DIRECT_LINK_MODE) {
 				dpmgr_insert_ovl1_sub(pgc->dpmgr_handle, pgc->cmdq_handle_config);
 				ext_disp_path_set_mode(EXTD_DIRECT_LINK_MODE, session);
 				pgc->ovl_req_state = EXTD_OVL_INSERT_REQ;
 			}
+*/
 			break;
 		case EXTD_OVL_INSERTED:
 			pgc->ovl_req_state = EXTD_OVL_INSERTED;

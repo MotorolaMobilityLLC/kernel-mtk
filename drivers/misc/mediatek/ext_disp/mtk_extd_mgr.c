@@ -286,15 +286,6 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			/* /r = hdmi_factory_mode_test(STEP4_DPI_STOP_AND_POWER_OFF, NULL); */
 			break;
 		}
-	case MTK_HDMI_FAKE_PLUG_IN:
-		{
-			int connect = arg & 0x0FF;
-
-			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->fake_connect)
-				extd_driver[DEV_MHL]->fake_connect(connect);
-
-			break;
-		}
 	default:
 		{
 			EXT_MGR_ERR("[EXTD]ioctl(%d) arguments is not support\n", cmd & 0x0ff);

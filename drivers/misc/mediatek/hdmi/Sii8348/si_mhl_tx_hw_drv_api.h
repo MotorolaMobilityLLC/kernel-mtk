@@ -77,10 +77,8 @@ void si_mhl_tx_drv_video_update(struct drv_hw_context *hw_context, int video, in
 void si_mhl_tx_drv_video_3d_update(struct drv_hw_context *hw_context, int video, int video_3d);
 void si_mhl_tx_drv_video_all_update(struct drv_hw_context *hw_context, int video, int video_3d);
 */
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 void si_mhl_tx_drv_video_3d_update(struct mhl_dev_context *dev_context, int video_3d);
 void si_mhl_tx_drv_video_3d(struct mhl_dev_context *dev_context, int video_3d);
-#endif
 
 #ifdef	NEVER
 typedef enum

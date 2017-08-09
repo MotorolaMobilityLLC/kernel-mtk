@@ -358,6 +358,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 				preultra_low_us = ultra_high_us;
 				preultra_high_us = 7;
 			}
+		}  else if (rdma_golden_setting->ext_dst_width == 3840 && rdma_golden_setting->ext_dst_height == 2160) {
+			DDPDUMP("[disp_lowpower]p_golden_setting is 2160p\n");
+			ultra_low_us = 4;
+			ultra_high_us = 6;
+			preultra_low_us = ultra_high_us;
+			preultra_high_us = 7;
+
 		} else {
 				ultra_low_us = 8;
 				ultra_high_us = 12;

@@ -53,24 +53,21 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 
 #include <mach/irqs.h>
 #ifdef CONFIG_MTK_LEGACY
-/*#include "mach/eint.h"*/
-/*#include <cust_eint.h>*/
-#include <mt-plat/mt_gpio.h>
-/* #include <cust_gpio_usage.h> */
+#include "mach/eint.h"
+#include <mach/gpio_const.h>
+#include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
 #endif
 
 /*#include <mach/mt_gpio.h>*/
 #include "hdmi_drv.h"
 #include "mhl_supp.h"
+#ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 #include "smartbook.h"
-
+#endif
 //#define PRINT_ALL_INTR
 //#define HDCP_ENABLE		// TODO: FD, TBI, to disble this later
 
-extern int debug_msgs;
-extern struct mhl_dev_context *si_dev_context;
-extern enum HDMI_CABLE_TYPE MHL_Connect_type;
-extern bool HDCP_Supported_Info;
 
 /* external functions */
 int si_mhl_tx_chip_initialize(struct drv_hw_context *hw_context);
@@ -105,6 +102,81 @@ static	void	unmute_video(struct drv_hw_context *hw_context);
 static	int	set_hdmi_params(struct mhl_dev_context *dev_context);
 static	int	start_video(struct drv_hw_context *hw_context, void *edid_parser_context);
 /*static	int	get_cbus_connection_status(struct drv_hw_context *hw_context);*/
+
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+static void	mhl2_em_query(struct drv_hw_context *hw_context);
+static void	mhl2_em_request(struct drv_hw_context *hw_context, bool em);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
+/* Local data */
+#ifdef ENABLE_GEN2
+#define GEN2_WRITE_BURST_LENGTH		MHL_SCRATCHPAD_SIZE
+#define GEN2_BUFFER_LENGTH		(GEN2_WRITE_BURST_LENGTH + 1)
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+static uint8_t gen2_packet[GEN2_BUFFER_LENGTH];
+#endif
+#endif // ENABLE_GEN2
+
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+#define MHL2_ENHANCED_MODE_RESERVED_VIC 93
+
+enum mhl2_enhanced_mode_sm {
+	MHL2_EM_SM_INIT = 0,
+	MHL2_EM_SM_QUERY_CAP,
+	MHL2_EM_SM_CAP_QUERIED,
+	MHL2_EM_SM_REQ_MODE_EM,
+	MHL2_EM_SM_MODE_EM,
+	MHL2_EM_SM_REQ_MODE_NORMAL,
+	MHL2_EM_SM_MODE_NORMAL,
+	MHL2_EM_SM_SEND_PPS,
+	MHL2_EM_SM_PPS_SENT,
+};
+
+enum mhl2_enhanced_mode_command {
+	MHL2_EM_CMD_QUERY_CAP = 0x00,
+	MHL2_EM_CMD_REQ_MODE = 0x02,
+	MHL2_EM_CMD_SEND_PPS_FULL = 0x04,
+	MHL2_EM_CMD_SEND_PPS_PART = 0x06,
+	MHL2_EM_RPL_QUERY_CAP = 0x01,
+	MHL2_EM_RPL_REQ_MODE = 0x03,
+	MHL2_EM_RPL_SEND_PPS_FULL = 0x05,
+	MHL2_EM_RPL_SEND_PPS_PART = 0x07
+};
+
+#define MHL2_EM_PACKET_LEN		GEN2_WRITE_BURST_LENGTH
+#define MHL2_EM_PACKET_FRAME_LEN	0x05
+#define MHL2_EM_PACKET_PAYLOAD_LEN_MAX	(MHL2_EM_PACKET_LEN - MHL2_EM_PACKET_FRAME_LEN)	// max payload length in a packet is 11
+
+#define MHL2_EM_PACKET_ADOPTER_ID_HIGH	0x01	// 0x0142 = 0322, SIMG ID
+#define MHL2_EM_PACKET_ADOPTER_ID_LOW	0x42
+
+#define MHL2_EM_MESSAGE_FRAME_LEN	0x03
+
+#define MHL2_EM_MODE_NORMAL	0x00
+#define MHL2_EM_MODE_ONE	0x01
+
+#define MHL2_EM_CMD_QUERY_CAP_MSG_LEN	(MHL2_EM_MESSAGE_FRAME_LEN + 0x00)
+#define MHL2_EM_CMD_REQ_MODE_MSG_LEN	(MHL2_EM_MESSAGE_FRAME_LEN + 0x01)
+#define MHL2_EM_CMD_REQ_MODE_NORMAL	MHL2_EM_MODE_NORMAL
+#define MHL2_EM_CMD_REQ_MODE_ONE	MHL2_EM_MODE_ONE
+
+#define MHL2_EM_CAP_NONE	0x00
+#define MHL2_EM_CAP_4K24	0x01
+#define MHL2_EM_CAP_4K30	0x02
+#define MHL2_EM_CAP_4K60	0x04
+#define MHL2_EM_CAP_5K		0x08
+
+#define MHL2_EM_RPL_NACK	0x00
+#define MHL2_EM_RPL_SUCCESS	0x01
+#define MHL2_EM_RPL_FAILURE	0x02
+#define MHL2_EM_RPL_FPPS_UNKNOWN	0x03
+#define MHL2_EM_RPL_PPPS_UNKNOWN_MODE	0x03
+#define MHL2_EM_RPL_PPPS_UNKNOWN_PPPS	0x04
+
+#define MHL2_EM_VIC_4K24	93
+#define MHL2_EM_VIC_4K30	95
+
+#endif // MHL2_ENHANCED_MODE_SUPPORT
 
 // Video Mode Constants
 //====================================================
@@ -219,9 +291,13 @@ static	void	enable_gen2_write_burst(struct drv_hw_context *hw_context)
 {
 	/*  enable Gen2 Write Burst interrupt, MSC and EDID interrupts. */
 
-	if(hw_context->ready_for_mdt) {
+
+	{
+		MHL_TX_DBG_INFO(hw_context, "called.\n");
 		mhl_tx_write_reg(hw_context, REG_CBUS_MDT_RCV_TIMEOUT, 100);	/* 2 second timeout */
+		mhl_tx_write_reg(hw_context, REG_CBUS_MDT_XMIT_TIMEOUT, 100);	/* 2 second timeout */
 		mhl_tx_write_reg(hw_context, REG_CBUS_MDT_RCV_CONTROL, BIT_CBUS_MDT_RCV_CONTROL_RCV_EN_ENABLE);
+		mhl_tx_write_reg(hw_context, REG_CBUS_MDT_XMIT_CONTROL, BIT_CBUS_MDT_XMIT_CONTROL_XMIT_EN_ENABLE);
 		enable_intr(hw_context, INTR_G2WB, BIT_MDT_RXFIFO_DATA_RDY);
 
 		hw_context->gen2_write_burst = true;
@@ -230,8 +306,11 @@ static	void	enable_gen2_write_burst(struct drv_hw_context *hw_context)
 
 static void disable_gen2_write_burst(struct drv_hw_context *hw_context)
 {
+	MHL_TX_DBG_INFO(hw_context, "called.\n");
+
 	/*  disable Gen2 Write Burst engine to perform it using legacy WRITE_BURST */
 	mhl_tx_write_reg(hw_context, REG_CBUS_MDT_RCV_CONTROL, BIT_CBUS_MDT_RCV_CONTROL_RCV_EN_DISABLE);
+	mhl_tx_write_reg(hw_context, REG_CBUS_MDT_XMIT_CONTROL, BIT_CBUS_MDT_XMIT_CONTROL_XMIT_EN_DISABLE);
 	enable_intr(hw_context, INTR_G2WB, 0);
 	hw_context->gen2_write_burst = false;
 }
@@ -307,6 +386,24 @@ static void si_mhl_tx_drv_issue_edid_block_batch_read(struct drv_hw_context *hw_
 	// Cannot enter HW TPI mode during EDID read
 }
 
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+static void mhl2_em_init(struct drv_hw_context *hw_context)
+{
+		hw_context->mhl2_em_enabled = false;
+		//hw_context->mhl2_em_input = false;
+		hw_context->mhl2_em_sm = MHL2_EM_SM_INIT;
+		hw_context->mhl2_em_request_mode = 0;
+		hw_context->mhl2_em_current_mode = 0;
+		hw_context->mhl2_em_capability = 0;
+}
+
+void si_mhl_tx_em_init(struct mhl_dev_context *dev_context)
+{
+	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
+	mhl2_em_init(hw_context);
+}
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
 bool si_mhl_tx_drv_issue_edid_read_request(struct drv_hw_context *hw_context, uint8_t block_number, uint8_t batch_number)
 {
 	uint8_t reg_val;
@@ -325,6 +422,10 @@ bool si_mhl_tx_drv_issue_edid_read_request(struct drv_hw_context *hw_context, ui
 				hw_context->current_edid_request_block_batch,
 				hw_context->edid_fifo_block_number);
         
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+		mhl2_em_init(hw_context);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
     	si_mhl_tx_drv_reset_ddc_fifo(hw_context);
 		si_mhl_tx_drv_issue_edid_block_batch_read(hw_context, block_number, batch_number);
 
@@ -574,6 +675,17 @@ bool packed_pixel_available(struct mhl_dev_context *dev_context)
 	return false;
 }
 
+int dongle_dsc_dec_available(struct mhl_dev_context *dev_context)
+{
+	/// bit 0: 4k@24  bit 1: 4k@30
+#ifdef MHL2_ENHANCED_MODE_SUPPORT	
+	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
+	return ((int)hw_context->mhl2_em_capability);
+#else
+	return 0;
+#endif
+}
+
 #define SIZE_AVI_INFOFRAME				14
 static uint8_t calculate_avi_info_frame_checksum(hw_avi_payload_t *payload)
 {
@@ -670,7 +782,7 @@ static int is_valid_vsif(struct mhl_dev_context *dev_context, vendor_specific_in
 	}
 }
 #endif
-/*
+
 static	void	print_vic_modes(struct drv_hw_context *hw_context,uint8_t vic)
 {
 	int	i;
@@ -691,17 +803,18 @@ static	void	print_vic_modes(struct drv_hw_context *hw_context,uint8_t vic)
 				 ,{32,"1080P24"}
 				 ,{33,"1080P25"}
 				 ,{34,"1080P30"}
-				 ,{0,""} 
+				 ,{0,""} /* to handle the case where the VIC is not found in the table */
 	};
 #define	NUM_VIC_NAMES	(sizeof(vic_name_table)/sizeof(vic_name_table[0]) )
+	/* stop before the terminator */
 	for(i = 0; i < (NUM_VIC_NAMES - 1); i++) {
 		if(vic == vic_name_table[i].vic) {
 			break;
 		}
 	}
-	MHL_TX_DBG_ERR(hw_context, "VIC = %d (%s)\n", vic, vic_name_table[i].name);
+	MHL_TX_DBG_ERR(hw_context, "VIC = %d (%s)@@!!\n", vic, vic_name_table[i].name);
 }
-*/
+
 
 // TODO: FD, TBU, zone control should be reconfigured after tapeout if auto-zone is not deployed
 static void set_mhl_zone_settings(struct mhl_dev_context *dev_context , uint32_t pixel_clock_frequency)
@@ -769,10 +882,9 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 	threeDPixelClockRatio = 1;
 	si_mhl_tx_drv_get_incoming_horizontal_total(hw_context);
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	if (hw_context->valid_vsif && hw_context->valid_3d)
 	{
-		MHL_TX_DBG_WARN(, "valid HDMI VSIF\n");
+		MHL_TX_DBG_WARN(hw_context, "valid HDMI VSIF\n");
 		print_vic_modes(hw_context, (uint8_t) input_video_code.VIC);
 
 		if (0 == input_video_code.VIC) {
@@ -785,27 +897,41 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 			threeDPixelClockRatio = 2;
 		}
 	}
-#endif
-	#if 0
 	else
-	{ 	/* no VSIF */
-		if (0 == input_video_code.VIC) {
-			/* 
-			   This routine will not be called until we positively know (from the downstream EDID) 
-			   that the sink is HDMI.
-			   We do not support DVI only sources.  The upstream source is expected to choose between
-			   HDMI and DVI based upon the EDID that we present upstream.
-			   The other information in the infoframe, even if it is non-zero, is not helpful for
-			   determining the pixel clock frequency.
-			   So we try as best we can to infer the pixel clock from the HTOTAL and VTOTAL registers.
-			 */
-			timing_info_basis = use_hardware_totals;
-			MHL_TX_DBG_WARN(,"no VSIF and AVI VIC is zero!!! trying HTOTAL/VTOTAL\n");
-		}else{
-			print_vic_modes(hw_context, (uint8_t) input_video_code.VIC);
+		{
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+			/* no VSIF or EM Mode */
+			if (0 == input_video_code.VIC || MHL2_EM_VIC_4K24 == input_video_code.VIC || MHL2_EM_VIC_4K30 == input_video_code.VIC)
+#else
+			/* no VSIF */
+			if (0 == input_video_code.VIC) 
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+				{
+
+				/* 
+				   This routine will not be called until we positively know (from the downstream EDID) 
+				   that the sink is HDMI.
+				   We do not support DVI only sources.	The upstream source is expected to choose between
+				   HDMI and DVI based upon the EDID that we present upstream.
+				   The other information in the infoframe, even if it is non-zero, is not helpful for
+				   determining the pixel clock frequency.
+				   So we try as best we can to infer the pixel clock from the HTOTAL and VTOTAL registers.
+				 */
+				timing_info_basis = use_hardware_totals;
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+				MHL_TX_DBG_WARN(hw_context,"no VSIF and AVI VIC is zero!!! Or EM Mode. trying HTOTAL/VTOTAL\n");
+#else
+				MHL_TX_DBG_WARN(hw_context,"no VSIF and AVI VIC is zero!!! trying HTOTAL/VTOTAL\n");
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+			}else{
+				print_vic_modes(hw_context, (uint8_t) input_video_code.VIC);
+				
+				mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_SET);
+				mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_CLR);
+				msleep(5);
+			}
 		}
-	}
-	#endif
+
 	/* make a copy of avif */
 //	hw_context->outgoingAviPayLoad  = hw_context->current_avi_info_frame.payLoad.hwPayLoad;	// TODO: FD, TBC, should be ok?
 	//memcpy( &(hw_context->outgoingAviPayLoad), &(hw_context->current_avi_info_frame.payLoad.hwPayLoad), sizeof(hw_avi_payload_t) );
@@ -917,9 +1043,26 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 				BIT_MHLTX_CTL4_MHL_CLK_RATIO_MASK,
 				BIT_MHLTX_CTL4_MHL_CLK_RATIO_3X);
 
-		mhl_tx_modify_reg(hw_context, REG_MHLTX_CTL6,
-				BIT_MHLTX_CTL6_CLK_MASK,
-				BIT_MHLTX_CTL6_CLK_NPP);
+		
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+				if (true == hw_context->mhl2_em_enabled)
+				{
+					mhl_tx_modify_reg(hw_context, REG_MHLTX_CTL6,
+							BIT_MHLTX_CTL6_CLK_MASK,
+							BIT_MHLTX_CTL6_CLK_PP);
+				}
+				else
+				{
+					mhl_tx_modify_reg(hw_context, REG_MHLTX_CTL6,
+							BIT_MHLTX_CTL6_CLK_MASK,
+							BIT_MHLTX_CTL6_CLK_NPP);
+				}
+#else
+				mhl_tx_modify_reg(hw_context, REG_MHLTX_CTL6,
+						BIT_MHLTX_CTL6_CLK_MASK,
+						BIT_MHLTX_CTL6_CLK_NPP);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+		
 	}
 
 	/* Set input color space */
@@ -951,7 +1094,9 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 		TX_DEBUG_PRINT(("VIDEO_CAPABILITY_D_BLOCK_found= false. defult range\n"));
 	}
 	hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[3] = video_data.inputVideoCode; 
-	TX_DEBUG_PRINT(("video_data.inputVideoCode:0x%02x\n",(int)video_data.inputVideoCode));
+	if(video_data.inputVideoCode == 93)
+		hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[3] = 23;
+	MHL_TX_DBG_WARN(hw_context,"video_data.inputVideoCode:0x%02x\n",(int)video_data.inputVideoCode);
 
 	hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[4] = 0x00;
 	hw_context->outgoingAviPayLoad.namedIfData.ifData_u.infoFrameData[5] = 0x00;
@@ -1264,6 +1409,10 @@ void si_mhl_tx_drv_disable_video_path(struct drv_hw_context *hw_context)
 
 void si_mhl_tx_drv_enable_video_path(struct drv_hw_context *hw_context)
 {
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+	struct mhl_dev_context	*dev_context;
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
 	MHL_TX_DBG_INFO(dev_context, "called\n");
 
 	/* if a path_en = 0 had stopped the video, restart it unless done already. */
@@ -1271,11 +1420,25 @@ void si_mhl_tx_drv_enable_video_path(struct drv_hw_context *hw_context)
 	{
 		/* remember ds has enabled our path */
 		hw_context->video_path = 1;
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+		// To avoid conflict with DEVCAP read
+		dev_context = get_mhl_device_context(hw_context);
+		if (true == dev_context->misc_flags.flags.have_complete_devcap)
+		{
+			// Init Enhanced Mode process after both EDID and DEVCAP are processed
+			mhl2_em_query(hw_context);
 
-		//reg  = mhl_tx_read_reg(hw_context, TPI_SYSTEM_CONTROL_DATA_REG);
-		//if(mask == (mask & reg)) {
-			///start_video(hw_context,hw_context->intr_info->edid_parser_context);
-		//}
+			/*reg  = mhl_tx_read_reg(hw_context, TPI_SYSTEM_CONTROL_DATA_REG);
+			if(mask == (mask & reg)) {
+				start_video(hw_context,hw_context->intr_info->edid_parser_context);
+			}*/
+		}
+/*#else
+		reg  = mhl_tx_read_reg(hw_context, TPI_SYSTEM_CONTROL_DATA_REG);
+		if(mask == (mask & reg)) {
+			start_video(hw_context,hw_context->intr_info->edid_parser_context);
+		}*/
+#endif // MHL2_ENHANCED_MODE_SUPPORT
 	}
 }
 
@@ -1742,9 +1905,7 @@ static void unmute_video(struct drv_hw_context *hw_context)
 		/*
 		 * Send VSIF out
 		 */
-#ifndef CONFIG_MTK_HDMI_3D_SUPPORT		 
 		if ( 1 == hw_context->valid_vsif && 1 == hw_context->valid_3d )
-#endif		
 		{
 			MHL_TX_DBG_INFO(hw_context, "Send VSIF out...\n");
 			mhl_tx_write_reg(hw_context, REG_TPI_INFO_FSEL, BIT_TPI_INFO_EN | BIT_TPI_INFO_RPT | BIT_TPI_INFO_SEL_3D_VSIF);	// Send 3D VSIF repeatly
@@ -1773,7 +1934,8 @@ static void unmute_video(struct drv_hw_context *hw_context)
 		mhl_tx_modify_reg(hw_context, REG_SRST, BIT_AUDIO_FIFO_RST_MASK, BIT_AUDIO_FIFO_RST_SET);
 		mhl_tx_modify_reg(hw_context, REG_SRST, BIT_AUDIO_FIFO_RST_MASK, BIT_AUDIO_FIFO_RST_CLR);
 		// SWWA for Bug 29055, end
-		
+		mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_SET);
+		mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_CLR);
 	}
 	#if 0
        	/*
@@ -2185,6 +2347,10 @@ static int int_3_isr(struct drv_hw_context *hw_context, uint8_t int_3_status)
 						hw_context->intr_info->msc_done_data =1;
 					}
 				} else {
+					struct mhl_dev_context	*dev_context;
+					struct cbus_req 		*req;
+
+					dev_context = get_mhl_device_context(hw_context);
 				    mhl_tx_write_reg(hw_context, g_intr_tbl[INTR_EDID].stat_page, g_intr_tbl[INTR_EDID].stat_offset, 0x0F);
                     enable_intr(hw_context, INTR_EDID, 0);
 					MHL_TX_EDID_READ(hw_context, "All 0+ block(s) is/are read.\n");
@@ -2194,12 +2360,9 @@ static int int_3_isr(struct drv_hw_context *hw_context, uint8_t int_3_status)
 					hw_context->intr_info->flags |= DRV_INTR_FLAG_MSC_DONE;
 					hw_context->intr_info->msc_done_data =0;
 					hw_context->ready_for_mdt = true;
-
+					
 					{
-						struct mhl_dev_context	*dev_context;
-						struct cbus_req 		*req;
-
-						dev_context = get_mhl_device_context(hw_context);
+						
 	                    req = dev_context->current_cbus_req;
 						si_mhl_tx_handle_atomic_hw_edid_read_complete(dev_context->edid_parser_context, req);
 						dev_context->edid_parse_done = true;		// TODO: FD, TBC, check carefully
@@ -2207,6 +2370,15 @@ static int int_3_isr(struct drv_hw_context *hw_context, uint8_t int_3_status)
 						mhl_event_notify(dev_context, MHL_TX_EVENT_EDID_DONE, 0, NULL);
 					    int3Number = 0;
 					    mhl_tx_stop_timer(dev_context, dev_context->cbus_dpi_timer);
+					}
+					
+					//if (true == dev_context->misc_flags.flags.have_complete_devcap)
+					{
+						#ifdef MHL2_ENHANCED_MODE_SUPPORT
+						// Init Enhanced Mode process after both EDID and DEVCAP are processed
+						mhl2_em_query(hw_context);
+						#endif
+
 					}
 				}
 			} // end of "else if ( 7 == hw_current_edid_request_block_batch )"
@@ -3080,57 +3252,65 @@ void SiiMhlTxDrvGetScratchPad(struct drv_hw_context *hw_context,uint8_t startReg
 
 static	int	g2wb_isr(struct drv_hw_context *hw_context, uint8_t intr_stat)
 {
-	uint8_t	ret_val = 0,i;
-	uint8_t	mdt_buffer[20];
-
-	MHL_TX_DBG_INFO(hw_context, "interrupt handling...\n");
-
+	//uint8_t ret_val = 0;
+	uint8_t gen2_buffer[GEN2_BUFFER_LENGTH];
+	
+	MHL_TX_DBG_INFO(hw_context, "interrupt handling...,g2wb_isr()\n");
+	//msleep(5);
 	/* Read error register if there was any problem */
-	ret_val  = mhl_tx_read_reg(hw_context, REG_CBUS_MDT_INT_1);
+	/*ret_val  = mhl_tx_read_reg(hw_context, REG_CBUS_MDT_INT_1);
 
-	if(ret_val) {
+	if(ret_val)
+	{
 		mhl_tx_write_reg(hw_context, REG_CBUS_MDT_INT_1, ret_val);
 		MHL_TX_DBG_INFO(hw_context, "\n\ngot MDT Error = %02X\n", ret_val);
-	} else {
-		uint8_t	length;
-
-		/* Read all bytes */
-		/*mhl_tx_read_reg_block(hw_context,
-				REG_CBUS_MDT_RCV_READ_PORT,
-				16,
-				mdt_buffer);*/
-         for (i = 0; i < 16; i++)
-			{
-				mdt_buffer[i] = mhl_tx_read_reg(hw_context, REG_CBUS_MDT_RCV_READ_PORT);
-			}
-		/* first byte contains the length of data */
-		length = mdt_buffer[0];
-		/*
-		 * There isn't any way to know how much of the scratch pad
-		 * was written so we have to read it all.  The app. will have
-		 * to parse the data to know how much of it is valid.
-		 */
-/*		mhl_tx_read_reg_block(hw_context, REG_CBUS_MDT_RCV_READ_PORT,
-				ARRAY_SIZE(hw_context->write_burst_data),
-				hw_context->write_burst_data);
-*/
-		memcpy(hw_context->write_burst_data, &mdt_buffer[1], 16);
-
-		/* Signal upper layer of this arrival */
-		hw_context->intr_info->flags |= DRV_INTR_FLAG_WRITE_BURST;
-
-		/*
-		 * Clear current level in the FIFO.
-		 * Moves pointer to the next keep RSM enabled
-		 */
-		mhl_tx_write_reg(hw_context,
-				  REG_CBUS_MDT_RCV_CONTROL,
-				  BIT_CBUS_MDT_RCV_CONTROL_RFIFO_CLR_CUR_CLEAR
-				| BIT_CBUS_MDT_RCV_CONTROL_RCV_EN_ENABLE
-				);
 	}
+	else
+	{*/
+		if (BIT_MDT_RXFIFO_DATA_RDY & intr_stat)
+		{
+			uint8_t length, i;
+			//MHL_TX_DBG_INFO(hw_context, "got HAWB data in FIFO\n");
+			/* Read all bytes */
+			mhl_tx_read_reg_block(hw_context,
+					REG_CBUS_MDT_RCV_READ_PORT,
+					GEN2_BUFFER_LENGTH,
+					gen2_buffer);
+			/*
+			 * Clear current level in the FIFO.
+			 * Moves pointer to the next keep RSM enabled
+			 */
+			mhl_tx_write_reg(hw_context,
+					REG_CBUS_MDT_RCV_CONTROL,
+					BIT_CBUS_MDT_RCV_CONTROL_RFIFO_CLR_CUR_CLEAR
+					| BIT_CBUS_MDT_RCV_CONTROL_RCV_EN_ENABLE
+					);
+
+			/* first byte contains the length of data */
+			length = gen2_buffer[0];
+
+			memset(hw_context->write_burst_data, 0, sizeof(hw_context->write_burst_data));
+			memcpy(hw_context->write_burst_data, &gen2_buffer[1], GEN2_WRITE_BURST_LENGTH);
+			for(i = 0; i <= length; i++) {
+				printk("0x%x @@",gen2_buffer[i+1]);
+				if(i==length)
+					printk("\n");
+			}
+			MHL_TX_DBG_INFO(hw_context, "got HAWB data in FIFO end \n");
+			/* Signal upper layer of this arrival */
+			hw_context->intr_info->flags |= DRV_INTR_FLAG_WRITE_BURST;
+
+			
+		}
+		//else
+		//{
+			// FD: TBI, check interrupt bits in this register ONE BY ONE
+			//MHL_TX_DBG_INFO(hw_context, "got HAWB INTs other than data arrival, may need to check.\n");
+		//}
+	//}
 	return 0;
 }
+
 
 static void enable_intr(struct drv_hw_context *hw_context, uint8_t intr_num, uint8_t intr_mask)
 {
@@ -3176,27 +3356,28 @@ void si_mhl_tx_drv_device_isr(struct drv_hw_context *hw_context, struct interrup
 							g_intr_tbl[intr_num].stat_offset,
 							intr_stat);
 					//}
-			}
+			
             //MHL_TX_DBG_INFO(hw_context, "got INTR,intr_stat1111111=0x%x,intr_num=%d\n",intr_stat,intr_num);
 			/* Process only specific interrupts we have enabled. Ignore others*/
 			//intr_stat = intr_stat & g_intr_tbl[intr_num].mask;
 			//MHL_TX_DBG_INFO(hw_context, "got INTR,intr_stat2222222222222=0x%x\n",intr_stat);
 			//if(intr_stat) 
-			{
-				int already_cleared;
+				{
+					int already_cleared;
 
 #ifdef	PRINT_ALL_INTR
-				MHL_TX_DBG_ERR(hw_context, "INTR-%s = %02X\n", g_intr_tbl[intr_num].name, intr_stat);
+					MHL_TX_DBG_ERR(hw_context, "INTR-%s = %02X\n", g_intr_tbl[intr_num].name, intr_stat);
 #else	// PRINT_ALL_INTR
-				MHL_TX_DBG_INFO(hw_context, "INTR-%s = %02X\n", g_intr_tbl[intr_num].name, intr_stat);
+					MHL_TX_DBG_INFO(hw_context, "INTR-%s = %02X\n", g_intr_tbl[intr_num].name, intr_stat);
 #endif	// PRINT_ALL_INTR
 
-				already_cleared = g_intr_tbl[intr_num].isr(hw_context, intr_stat);
-				//if (already_cleared >=0){
-					/*
-					 * only clear the interrupts that were not cleared by the specific ISR.
-					 */
-					//intr_stat &= ~already_cleared;
+					already_cleared = g_intr_tbl[intr_num].isr(hw_context, intr_stat);
+					//if (already_cleared >=0){
+						/*
+						 * only clear the interrupts that were not cleared by the specific ISR.
+						 */
+						//intr_stat &= ~already_cleared;
+				}
 			}
 
 		} // end of "if(g_intr_tbl[intr_num].mask)"
@@ -3277,9 +3458,11 @@ int si_mhl_tx_chip_initialize(struct drv_hw_context *hw_context)
 		hw_context->valid_vsif = 0;
 		//hw_context->valid_avif = 0;
 		hw_context->valid_3d = 0;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT		
 		hw_context->valid_3d_fs = 0;
-#endif
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+		mhl2_em_init(hw_context);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
 		//hw_context->current_audio_configure = 0;
 		//memset( hw_context->current_audio_info_frame, 0, AUDIO_IF_SIZE );
 		memset(&hw_context->current_vs_info_frame, 0, sizeof(hw_context->current_vs_info_frame));
@@ -3358,6 +3541,9 @@ void siHdmiTx_VideoSel (int vmode)
 		case HDMI_1080P30:	
 		case HDMI_1080P50:
 		case HDMI_1080P60:
+		case HDMI_4k30_DSC:
+		case HDMI_4k24_DSC:
+		case 23:
 			AspectRatio  	= VMD_ASPECT_RATIO_16x9;
 			break;
 				
@@ -3382,7 +3568,6 @@ void siHdmiTx_AudioSel (int AduioMode)
 	*/
 }
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 #define SIZE_VSIF					8
 static uint8_t calculate_vsif_checksum(uint8_t *vsif)
 {
@@ -3564,13 +3749,347 @@ static void fill_vsif(struct drv_hw_context *hw_context, uint8_t *p_vsif, int vi
 	// Per HDMI, end
 }
 
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+
+bool si_mhl_tx_em_process_packet(struct mhl_dev_context *dev_context,void *pkt)
+{
+	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
+
+	bool process_status = false;
+
+	uint8_t *packet = (uint8_t *)pkt;
+
+	uint8_t adopter_id_high = 0;
+	uint8_t adopter_id_low = 0;
+	uint8_t packet_sequence = 0;
+	uint8_t packet_count = 0;
+	uint8_t packet_length = 0;
+	uint8_t packet_checksum = 0;
+	uint8_t packet_payload[MHL2_EM_PACKET_PAYLOAD_LEN_MAX] = {0};
+
+	uint8_t msg_id = 0;
+	uint8_t msg_len = 0;
+	uint8_t msg_cks = 0;
+
+	uint8_t mhl2_em_rpl = 0;
+
+	// Verify Packet Checksum first
+	packet_checksum = calculate_generic_checksum(packet, 0, GEN2_WRITE_BURST_LENGTH);
+	if (0 != packet_checksum)
+	{
+		MHL_TX_DBG_INFO(hw_context, "Checksum is wrong in received EM packet.\n");
+		goto exit;
+	}
+
+	// Extrack Packet Fields
+	adopter_id_high = packet[0];
+	adopter_id_low = packet[1];
+	packet_sequence = packet[2] >> 4;
+	packet_count = packet[2] & 0x0F;
+	packet_length = packet[3];
+
+	if (0x42 != adopter_id_low || 0x01 != adopter_id_high)
+	{
+		MHL_TX_DBG_INFO(hw_context, "Adopter ID is not SIMG ID.\n");
+		goto exit;
+	}
+
+	if (0x00 != packet_sequence || 0x01 != packet_count)
+	{
+		// FD: TODO, to handle multi-packet Message
+		MHL_TX_DBG_INFO(hw_context, "Need to handle multi-packet Message.\n");
+		goto exit;
+	}
+
+	// Extract Message from Packet
+	memcpy(packet_payload, packet + MHL2_EM_PACKET_FRAME_LEN, MHL2_EM_PACKET_PAYLOAD_LEN_MAX);
+
+	// Extract Message Fields
+	msg_id = packet_payload[0];
+	msg_len = packet_payload[1];
+
+	// Verify Message Checksum
+	msg_cks = calculate_generic_checksum(packet_payload, 0, msg_len);
+	if (0 != msg_cks)
+	{
+		MHL_TX_DBG_INFO(hw_context, "Checksum is wrong in received EM Message.msg_id:0x%x\n",msg_id);
+		goto exit;
+	}
+
+	switch (msg_id)
+	{
+	case MHL2_EM_CMD_QUERY_CAP:
+	case MHL2_EM_CMD_REQ_MODE:
+	case MHL2_EM_CMD_SEND_PPS_FULL:
+	case MHL2_EM_CMD_SEND_PPS_PART:
+		MHL_TX_DBG_INFO(hw_context, "Slave side packet, should not be here.\n");
+		break;
+
+	case MHL2_EM_RPL_QUERY_CAP:
+
+		// Get Enhanced Mode Capability
+		hw_context->mhl2_em_capability = packet_payload[MHL2_EM_MESSAGE_FRAME_LEN];
+		MHL_TX_DBG_INFO(hw_context, "MHL2 EM Message MHL2_EM_RPL_QUERY_CAP received.-0x%x\n",hw_context->mhl2_em_capability);
+
+		// Move the state machine forward
+		hw_context->mhl2_em_sm = MHL2_EM_SM_CAP_QUERIED;
+		//if(video_data.inputVideoCode > 90)
+		//	hw_context->mhl2_em_input = true;
+		// In case source is already there before this connection
+		/*if (video_data.inputVideoCode > 90)
+		{
+			MHL_TX_DBG_INFO(hw_context, "Source is waiting, call mhl2_em_request after RPL_QUERY_CAP received.\n");
+			mhl2_em_request(hw_context, true);
+		}
+		else
+			mhl2_em_request(hw_context, false);*/
+
+		process_status = true;
+		break;
+
+	case MHL2_EM_RPL_REQ_MODE:
+		MHL_TX_DBG_INFO(hw_context, "MHL2 EM Message MHL2_EM_RPL_REQ_MODE received.\n");
+
+		// Get Request Mode Reply
+		mhl2_em_rpl = packet_payload[MHL2_EM_MESSAGE_FRAME_LEN];
+
+		switch(mhl2_em_rpl)
+		{
+		case MHL2_EM_RPL_NACK:
+			MHL_TX_DBG_INFO(hw_context, "MHL2 EM reply: NACK\n");
+			goto exit;
+			break;
+
+		case MHL2_EM_RPL_SUCCESS:
+			MHL_TX_DBG_INFO(hw_context, "MHL2 EM reply: SUCCESS\n");
+			break;
+
+		case MHL2_EM_RPL_FAILURE:
+			MHL_TX_DBG_INFO(hw_context, "MHL2 EM reply: FAILURE\n");
+			goto exit;
+			break;
+
+		default:
+			MHL_TX_DBG_INFO(hw_context, "WRONG: unknown MHL2 EM reply!\n");
+			goto exit;
+			break;
+		}
+
+		// Update current Mode
+		hw_context->mhl2_em_current_mode = hw_context->mhl2_em_request_mode;
+
+		MHL_TX_DBG_INFO(hw_context, "Current EM Mode is : %d\n", hw_context->mhl2_em_sm);	// FD: TBD, debug
+
+		if (MHL2_EM_SM_REQ_MODE_EM == hw_context->mhl2_em_sm)
+		{
+			hw_context->mhl2_em_sm = MHL2_EM_SM_MODE_EM;
+			hw_context->mhl2_em_enabled = true;
+
+			// FD: TODO, need to send PPS if necessary
+			// b. send PPS when request is completed successfully
+
+			// Add for better stability per System
+			mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_SET);
+			mhl_tx_modify_reg(hw_context, REG_SRST, BIT_MHL_FIFO_RST_MASK, BIT_MHL_FIFO_RST_CLR);
+
+			// Process both AVI infoframe and VSIF
+			// FD: TBC, use process_info_frame_change after tests
+//			hw_context->valid_avif = 1;
+//			hw_context->valid_vsif = 0;
+			start_video(hw_context,dev_context->edid_parser_context);
+//			process_info_frame_change(hw_context, NULL, &(hw_context->current_avi_info_frame));
+
+			process_status = true;
+		}
+		else if (MHL2_EM_SM_REQ_MODE_NORMAL == hw_context->mhl2_em_sm)
+		{
+			hw_context->mhl2_em_sm = MHL2_EM_SM_MODE_NORMAL;
+			hw_context->mhl2_em_enabled = false;
+
+			// Process both AVI infoframe and VSIF
+			//process_info_frame_change(hw_context, &(hw_context->current_vs_info_frame), &(hw_context->current_avi_info_frame));
+
+			process_status = true;
+		}
+		else
+		{
+			MHL_TX_DBG_INFO(hw_context, "Some error happens, should not be here.\n");
+		}
+
+		break;
+
+	case MHL2_EM_RPL_SEND_PPS_FULL:
+		MHL_TX_DBG_INFO(hw_context, "MHL2 EM Message MHL2_EM_RPL_SEND_PPS_FULL received.\n");
+
+		// FD: TODO, verify the ACK & move the state machine forward
+		hw_context->mhl2_em_sm = MHL2_EM_SM_PPS_SENT;
+
+		process_status = true;
+		break;
+
+	case MHL2_EM_RPL_SEND_PPS_PART:
+		MHL_TX_DBG_INFO(hw_context, "MHL2 EM Message MHL2_EM_RPL_SEND_PPS_PART received.\n");
+
+		// FD: TODO, verify the ACK & move the state machine forward
+		hw_context->mhl2_em_sm = MHL2_EM_SM_PPS_SENT;
+
+		process_status = true;
+		break;
+
+	default:
+		MHL_TX_DBG_INFO(hw_context, "Known Enhanced Mode Packet.\n");
+		break;
+	}
+
+exit:
+	return process_status;
+}
+
+// FD: TBI, may need re-try mechanism
+static bool gen2_send(struct drv_hw_context *hw_context, uint8_t *packet, uint8_t len)
+{
+	bool status = false;
+	uint8_t xfifo_stat = 0;
+	struct mhl_dev_context	*dev_context;
+	extern void init_cbus_queue(struct mhl_dev_context *dev_context);
+	dev_context = container_of((void *)hw_context, struct mhl_dev_context, drv_context);
+
+	MHL_TX_DBG_INFO(hw_context, "called.\n");
+	// Send packet through HAWB
+	init_cbus_queue(dev_context);
+	enable_gen2_write_burst(hw_context);
+	xfifo_stat = mhl_tx_read_reg(hw_context, REG_CBUS_MDT_XFIFO_STAT);
+	if (0 != (xfifo_stat & BIT_CBUS_MDT_XFIFO_STAT_LEVEL_AVAIL_MASK))
+	{
+		// Reset the packet buffer
+		memset(gen2_packet, 0, sizeof(gen2_packet) );
+
+		// Fill the packet buffer
+		gen2_packet[0] = len;
+		memcpy(gen2_packet+1, packet, len);
+
+		// Send through HAWB
+		mhl_tx_write_reg_block(hw_context, REG_CBUS_MDT_XMIT_WRITE_PORT, GEN2_BUFFER_LENGTH, gen2_packet);
+
+		// Successfully send the packet
+		status = true;
+
+		MHL_TX_DBG_INFO(hw_context, "HAWB packet is sent.\n");
+	}
+	else
+	{
+		MHL_TX_DBG_INFO(hw_context, "HAWB sending is not successful!\n");
+	}
+
+	return status;
+}
+
+static void mhl2_em_query(struct drv_hw_context *hw_context)
+{
+	uint8_t query_msg[MHL2_EM_CMD_QUERY_CAP_MSG_LEN] = {0};
+	uint8_t query_pkt[MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_QUERY_CAP_MSG_LEN] = {0};
+	bool send_status = false;
+
+	MHL_TX_DBG_INFO(hw_context, "called.\n");
+
+	hw_context->mhl2_em_sm = MHL2_EM_SM_QUERY_CAP;
+
+	// Prepare the Message
+	query_msg[0] = MHL2_EM_CMD_QUERY_CAP;
+	query_msg[1] = MHL2_EM_CMD_QUERY_CAP_MSG_LEN;	// ID, Length, Checksum, no Data
+	query_msg[2] = calculate_generic_checksum(query_msg, 0, MHL2_EM_CMD_QUERY_CAP_MSG_LEN);
+
+	// Prepare the Packet
+	query_pkt[0] = MHL2_EM_PACKET_ADOPTER_ID_HIGH;
+	query_pkt[1] = MHL2_EM_PACKET_ADOPTER_ID_LOW;
+	query_pkt[2] = 0x01;				// sequence: 0, count: 1
+	query_pkt[3] = MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_QUERY_CAP_MSG_LEN;
+	memcpy(query_pkt + MHL2_EM_PACKET_FRAME_LEN, query_msg, MHL2_EM_CMD_QUERY_CAP_MSG_LEN);
+	query_pkt[4] = calculate_generic_checksum(query_pkt, 0, MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_QUERY_CAP_MSG_LEN);
+
+	// The Packet is small enough to be put in one single HAWB slot
+	send_status = gen2_send(hw_context, query_pkt, MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_QUERY_CAP_MSG_LEN);
+	if (true != send_status)
+	{
+		MHL_TX_DBG_INFO(hw_context, "MHL2EM Query Message is not sent successfully!\n");
+	}
+}
+
+void si_mhl_tx_em_query(struct mhl_dev_context *dev_context)
+{
+	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
+	mhl2_em_query(hw_context);
+}
+
+static void mhl2_em_request(struct drv_hw_context *hw_context, bool em)
+{
+	uint8_t i=0;
+	uint8_t req_msg[MHL2_EM_CMD_REQ_MODE_MSG_LEN] = {0};
+	uint8_t req_pkt[MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN] = {0};
+	bool send_status = false;
+
+	MHL_TX_DBG_INFO(hw_context, "called: %s\n", em ? "true":"false");
+
+	// Prepare the Message - Specific Data
+	if (true == em)
+	{
+		// Request to go to MHL2 Enhanced Mode
+		hw_context->mhl2_em_sm = MHL2_EM_SM_REQ_MODE_EM;
+		hw_context->mhl2_em_request_mode = MHL2_EM_MODE_ONE;
+		req_msg[3] = MHL2_EM_CMD_REQ_MODE_ONE;
+	}
+	else
+	{
+		// Request to go back to Normal Mode from MHL2 Enhanced Mode
+		hw_context->mhl2_em_sm = MHL2_EM_SM_REQ_MODE_NORMAL;
+		hw_context->mhl2_em_request_mode = MHL2_EM_MODE_NORMAL;
+		req_msg[3] = MHL2_EM_CMD_REQ_MODE_NORMAL;
+	}
+
+	// Prepare the Message - General Data
+	req_msg[0] = MHL2_EM_CMD_REQ_MODE;
+	req_msg[1] = MHL2_EM_CMD_REQ_MODE_MSG_LEN;	// ID, Length, Checksum, no Data
+	req_msg[2] = calculate_generic_checksum(req_msg, 0, MHL2_EM_CMD_REQ_MODE_MSG_LEN);
+
+	// Prepare the Packet
+	req_pkt[0] = MHL2_EM_PACKET_ADOPTER_ID_HIGH;
+	req_pkt[1] = MHL2_EM_PACKET_ADOPTER_ID_LOW;
+	req_pkt[2] = 0x01;				// sequence: 0, count: 1
+	req_pkt[3] = MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN;
+	memcpy(req_pkt + MHL2_EM_PACKET_FRAME_LEN, req_msg, MHL2_EM_CMD_REQ_MODE_MSG_LEN);
+	req_pkt[4] = calculate_generic_checksum(req_pkt, 0, MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN);
+	for(i = 0; i <= 8; i++) {
+		printk("0x%x @@", req_pkt[i]);
+		if(i==8)
+			printk("\n");
+		}
+
+	// The Packet is small enough to be put in one single HAWB slot
+	send_status = gen2_send(hw_context, req_pkt, MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN);
+	if (true != send_status)
+	{
+		MHL_TX_DBG_INFO(hw_context, "MHL2EM Request Message is not sent successfully!\n");
+	}
+}
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
 //void si_mhl_tx_drv_video_3d_update(struct drv_hw_context *hw_context, int video, int video_3d)
 void si_mhl_tx_drv_video_3d(struct mhl_dev_context *dev_context, int video_3d)
 {
 	vendor_specific_info_frame_t vsif;
+	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
 
-    MHL_TX_DBG_INFO((struct drv_hw_context *) (&dev_context->drv_context), "Input Timing Update: video 3D configuration changed %d\n", video_3d);
-
+    	MHL_TX_DBG_INFO((struct drv_hw_context *) (&dev_context->drv_context), "Input Timing Update: video 3D configuration changed %d\n", video_3d);
+		
+	//hw_context->mhl2_em_input = false;
+#ifdef MHL2_ENHANCED_MODE_SUPPORT	
+	if ((MHL2_EM_SM_CAP_QUERIED <= hw_context->mhl2_em_sm)&&(video_data.inputVideoCode > 90))
+	{
+		mhl2_em_request(hw_context, true);
+	}
+	else
+		mhl2_em_request(hw_context, false);
+#endif
 	memset( &vsif, 0, sizeof(vendor_specific_info_frame_t) );
 
 	fill_vsif( (struct drv_hw_context *) (&dev_context->drv_context), (uint8_t *)(&vsif), video_3d );	// Fill VISF
@@ -3642,5 +4161,4 @@ void si_mhl_tx_drv_video_3d_update(struct mhl_dev_context *dev_context, int vide
     MHL_TX_DBG_INFO((struct drv_hw_context *) (&dev_context->drv_context), "Input Timing Update to: video 3D configuration changed done\n");
 #endif
 }
-#endif
 

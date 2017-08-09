@@ -693,6 +693,7 @@ static void hdmi_resolution_setting(int arg)
 {
 	HDMI_FUNC();
 
+	extd_dpi_params.dispif_config.dpi.dsc_enable = 0;
 	if (hdmi_drv && hdmi_drv->get_params) {
 		hdmi_params->init_config.vformat = arg;
 		hdmi_drv->get_params(hdmi_params);
@@ -721,6 +722,32 @@ static void hdmi_resolution_setting(int arg)
 
 		extd_dpi_params.dispif_config.dpi.width = p->hdmi_width;
 		extd_dpi_params.dispif_config.dpi.height = p->hdmi_height;
+		if (arg == HDMI_VIDEO_2160p_DSC_24Hz) {
+			memset(&(extd_dpi_params.dispif_config.dpi.dsc_params), 0, sizeof(LCM_DSC_CONFIG_PARAMS));
+			extd_dpi_params.dispif_config.dpi.dsc_enable = 1;
+			extd_dpi_params.dispif_config.dpi.width = p->hdmi_width/3;
+			/* width/(slice_mode's slice)*/
+			extd_dpi_params.dispif_config.dpi.dsc_params.slice_width = 1920;
+			extd_dpi_params.dispif_config.dpi.dsc_params.slice_hight = 8;	/*32  8 */
+			/* 128: 1/3 compress; 192: 1/2 compress*/
+			extd_dpi_params.dispif_config.dpi.dsc_params.bit_per_pixel = 128;
+			/* 0: 1 slice; 1: 2 slice; 2: 3 slice */
+			extd_dpi_params.dispif_config.dpi.dsc_params.slice_mode = 1;
+			extd_dpi_params.dispif_config.dpi.dsc_params.rgb_swap = 0;
+			extd_dpi_params.dispif_config.dpi.dsc_params.xmit_delay = 0x200;
+			extd_dpi_params.dispif_config.dpi.dsc_params.dec_delay = 0x4c0;
+			extd_dpi_params.dispif_config.dpi.dsc_params.scale_value = 0x20;
+			extd_dpi_params.dispif_config.dpi.dsc_params.increment_interval = 0x11e;
+			extd_dpi_params.dispif_config.dpi.dsc_params.decrement_interval = 0x1a;
+			extd_dpi_params.dispif_config.dpi.dsc_params.nfl_bpg_offset = 0xdb7;	/*0x667*/
+			extd_dpi_params.dispif_config.dpi.dsc_params.slice_bpg_offset = 0x394;	/*0x1ca*/
+			extd_dpi_params.dispif_config.dpi.dsc_params.final_offset = 0x10f0;
+			extd_dpi_params.dispif_config.dpi.dsc_params.line_bpg_offset = 0xc;
+			extd_dpi_params.dispif_config.dpi.dsc_params.bp_enable = 0x0;
+			extd_dpi_params.dispif_config.dpi.dsc_params.rct_on = 0x0;
+
+		}
+
 		extd_dpi_params.dispif_config.dpi.bg_width = p->bg_width;
 		extd_dpi_params.dispif_config.dpi.bg_height = p->bg_height;
 
@@ -1058,6 +1085,10 @@ int hdmi_set_resolution(int res)
 	p->is_clock_on = true;
 	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagEnd, ResChange, hdmi_reschange + 1);
 
+/*
+	hdmi_factory_mode_test(STEP3_START_DPI_AND_CONFIG,NULL);
+	hdmi_drv->video_config(HDMI_VIDEO_1280x720p_60Hz, HDMI_VIN_FORMAT_RGB888, HDMI_VOUT_FORMAT_RGB888);
+*/
 	return 0;
 }
 

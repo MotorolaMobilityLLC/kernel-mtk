@@ -38,6 +38,7 @@
 #include "ddp_dpi.h"
 #include "ddp_reg.h"
 #include "ddp_log.h"
+#include "ddp_path.h"
 
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -222,25 +223,13 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	case DPI_CLK_720p:
 		{
 #if defined(CONFIG_MTK_LEGACY)
-			clksrc = 2;	        /*148M*/
+			clksrc = 2;	        /*148.5M*/
 #else
 			clksrc = TVDPLL_D4;
 #endif
 			break;
 		}
-/*
-	case DPI_CLK_1080p:
-		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;
-#else
-			DDPERR("[DPI] DPI_CLK_1080p, TVDPLL_D2\n");
-			clksrc = TVDPLL_D2;
-#endif
-			break;
-		}
-*/
-		case DPI_CLK_1080p:
+		case DPI_CLK_1080p:		/*297M*/
 		{
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 1;
@@ -248,6 +237,28 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 			clksrc = TVDPLL_D4;
 			prediv = 0x800B6C4E;
 			con0 =  0xC0000101;
+#endif
+			break;
+		}
+		case DPI_CLK_2160pDSC_24:		/*178.2M*/
+		{
+#if defined(CONFIG_MTK_LEGACY)
+			clksrc = 1;
+#else
+			clksrc = TVDPLL_D4;
+			prediv = 0x800DB52B;
+			con0 =  0xC0000111;
+#endif
+			break;
+		}
+		case DPI_CLK_2160pDSC_30:		/*199M*/
+		{
+#if defined(CONFIG_MTK_LEGACY)
+			clksrc = 1;
+#else
+			clksrc = TVDPLL_D4;
+			prediv = 0x800F4EC4;
+			con0 =  0xC0000111;
 #endif
 			break;
 		}
@@ -435,6 +446,7 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	pr_warn("DISP/DPI,ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (!s_isDpiPowerOn) {
+		ddp_path_top_clock_on();
 #ifndef DISABLE_CLOCK_API
 #if defined(CONFIG_MTK_LEGACY)
 		ret += enable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
@@ -468,6 +480,7 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	pr_warn("DISP/DPI,ddp_dpi_power_off, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (s_isDpiPowerOn) {
+		ddp_path_top_clock_off();
 #ifndef DISABLE_CLOCK_API
 		/*_BackupDPIRegisters();*/
 #if defined(CONFIG_MTK_LEGACY)

@@ -339,6 +339,36 @@ typedef struct {
 /* --------------------------------------------------------------------------- */
 
 typedef struct {
+	unsigned int slice_width;
+	unsigned int slice_hight;
+	unsigned int bit_per_pixel;
+	unsigned int slice_mode;
+	unsigned int rgb_swap;
+	unsigned int dsc_cfg;
+	unsigned int dsc_line_buf_depth;
+	unsigned int bit_per_channel;
+	unsigned int rct_on;
+	unsigned int bp_enable;
+
+	unsigned int dec_delay;
+	unsigned int xmit_delay;
+	unsigned int scale_value;
+
+	unsigned int increment_interval;
+	unsigned int line_bpg_offset;
+	unsigned int decrement_interval;
+	unsigned int nfl_bpg_offset;
+	unsigned int slice_bpg_offset;
+	unsigned int initial_offset;
+	unsigned int final_offset;
+
+	unsigned int flatness_minqp;
+	unsigned int flatness_maxqp;
+	unsigned int rc_mode1_size;
+} LCM_DSC_CONFIG_PARAMS;
+
+
+typedef struct {
 	/* common parameters for serial & parallel interface */
 	unsigned int port;
 	LCM_DBI_CLOCK_FREQ clock_freq;
@@ -411,6 +441,9 @@ typedef struct {
 	/* intermediate buffers parameters */
 	unsigned int intermediat_buffer_num;	/* 2..3 */
 
+	unsigned int dsc_enable;
+	LCM_DSC_CONFIG_PARAMS dsc_params;
+
 	/* iopad parameters */
 	LCM_DRIVING_CURRENT io_driving_current;
 	LCM_DRIVING_CURRENT msb_io_driving_current;
@@ -446,35 +479,6 @@ typedef enum {
 	MIPITX_PHY_PORT_1,
 	MIPITX_PHY_PORT_NUM
 } MIPITX_PHY_PORT;
-
-typedef struct {
-	unsigned int slice_width;
-	unsigned int slice_hight;
-	unsigned int bit_per_pixel;
-	unsigned int slice_mode;
-	unsigned int rgb_swap;
-	unsigned int dsc_cfg;
-	unsigned int dsc_line_buf_depth;
-	unsigned int bit_per_channel;
-	unsigned int rct_on;
-	unsigned int bp_enable;
-
-	unsigned int dec_delay;
-	unsigned int xmit_delay;
-	unsigned int scale_value;
-
-	unsigned int increment_interval;
-	unsigned int line_bpg_offset;
-	unsigned int decrement_interval;
-	unsigned int nfl_bpg_offset;
-	unsigned int slice_bpg_offset;
-	unsigned int initial_offset;
-	unsigned int final_offset;
-
-	unsigned int flatness_minqp;
-	unsigned int flatness_maxqp;
-	unsigned int rc_mode1_size;
-} LCM_DSC_CONFIG_PARAMS;
 
 
 typedef struct {

@@ -34,6 +34,7 @@ extern void siHdmiTx_AudioSel (int AduioMode);
 extern void set_platform_bitwidth(int bitWidth);
 extern bool si_mhl_tx_set_path_en_I(struct mhl_dev_context *dev_context);
 extern bool packed_pixel_available(struct mhl_dev_context *dev_context);
+extern int dongle_dsc_dec_available(struct mhl_dev_context *dev_context);
 extern void configure_and_send_audio_info(struct mhl_dev_context *dev_context, int audio_format);
 
 //Should align to mhl_linux_tx.h
@@ -121,7 +122,7 @@ static char* cable_type_print(unsigned short type)
 	}	
 }
 
-static enum HDMI_CABLE_TYPE MHL_Connect_type = MHL_CABLE;
+enum HDMI_CABLE_TYPE MHL_Connect_type = MHL_CABLE;
 static unsigned int HDCP_Supported_Info = 0;
 bool MHL_3D_Support = false;
 int MHL_3D_format=0x00;
@@ -220,24 +221,62 @@ static void hdmi_drv_get_params(struct HDMI_PARAMS *params)
 
 			params->init_config.vformat = HDMI_VIDEO_1920x1080p_60Hz;
 			break;
+		case HDMI_VIDEO_2160p_DSC_24Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;;
+			
+			params->hsync_pulse_width = 30;
+			params->hsync_back_porch  = 98;
+			params->hsync_front_porch = 242;
+			
+			params->vsync_pulse_width = 10;
+			params->vsync_back_porch  = 72;
+			params->vsync_front_porch = 8;
+			
+			params->width       = 3840;  ///1280
+			params->height      = 2160;
+			params->input_clock = 89100;
+
+			params->init_config.vformat = HDMI_VIDEO_2160p_DSC_24Hz;
+			break;
+		case HDMI_VIDEO_2160p_DSC_30Hz:
+			params->clk_pol   = HDMI_POLARITY_FALLING;
+			params->de_pol    = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;;
+			
+			params->hsync_pulse_width = 30;
+			params->hsync_back_porch  = 98;
+			params->hsync_front_porch = 66;
+			
+			params->vsync_pulse_width = 10;
+			params->vsync_back_porch  = 72;
+			params->vsync_front_porch = 8;
+			
+			params->width       = 3840;  ///1280
+			params->height      = 2160;
+			params->input_clock = 99500;
+
+			params->init_config.vformat = HDMI_VIDEO_2160p_DSC_30Hz;
+			break;
 		default:
 			MHL_DBG("Unknow support resolution\n");
 			break;
 	}
 
-    params->init_config.aformat         = HDMI_AUDIO_44K_2CH;
-		params->rgb_order         			= HDMI_COLOR_ORDER_RGB;
-		params->io_driving_current 			= IO_DRIVING_CURRENT_2MA;
-		params->intermediat_buffer_num 		= 4;
-    params->scaling_factor 				= 0;
-    params->cabletype 					= MHL_Connect_type;
+	params->init_config.aformat         = HDMI_AUDIO_44K_2CH;
+	params->rgb_order         			= HDMI_COLOR_ORDER_RGB;
+	params->io_driving_current 			= IO_DRIVING_CURRENT_2MA;
+	params->intermediat_buffer_num 		= 4;
+	params->scaling_factor 				= 0;
+	params->cabletype 					= MHL_Connect_type;
 	params->HDCPSupported 				= HDCP_Supported_Info;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT	
-    if(MHL_Connect_type== MHL_3D_GLASSES)    
-        params->cabletype 				= MHL_CABLE;
+	if(MHL_Connect_type== MHL_3D_GLASSES)    
+		params->cabletype 				= MHL_CABLE;
 
 	params->is_3d_support 				= MHL_3D_Support;
-#endif
 	cable_str = cable_type_print(params->cabletype);
     MHL_DBG("type %s-%d hdcp %d-%d\n", cable_str, MHL_Connect_type, params->HDCPSupported, HDCP_Supported_Info);
 
@@ -281,13 +320,9 @@ static int hdmi_drv_audio_enable(bool enable)
 static int hdmi_drv_enter(void)  {return 0;}
 static int hdmi_drv_exit(void)  {return 0;}
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 extern void si_mhl_tx_drv_video_3d_update(struct mhl_dev_context *dev_context, int video_3d);
 extern void si_mhl_tx_drv_video_3d(struct mhl_dev_context *dev_context, int video_3d);
 static int hdmi_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, int vout)
-#else
-static int hdmi_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, enum HDMI_VIDEO_OUTPUT_FORMAT vout)
-#endif
 {
 	if(vformat == HDMI_VIDEO_720x480p_60Hz)
 	{
@@ -309,35 +344,41 @@ static int hdmi_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_V
 		MHL_DBG("[hdmi_drv]1080p_60 %p\n", si_dev_context);
 		siHdmiTx_VideoSel(HDMI_1080P60);
 	}
+	else if(vformat == HDMI_VIDEO_2160p_DSC_24Hz)
+	{
+		MHL_DBG("[hdmi_drv]2160p_24 %p\n", si_dev_context);
+		siHdmiTx_VideoSel(HDMI_4k24_DSC);
+	}
+	else if(vformat == HDMI_VIDEO_2160p_DSC_30Hz)
+	{
+		MHL_DBG("[hdmi_drv]2160p_30 %p\n", si_dev_context);
+		siHdmiTx_VideoSel(HDMI_4k30_DSC);
+	}
 	else
 	{
 		MHL_DBG("%s, video format not support now\n", __func__);
 	}
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	if(vout & HDMI_VOUT_FORMAT_3D_SBS)
         MHL_3D_format=VIDEO_3D_SS;
 	else if(vout & HDMI_VOUT_FORMAT_3D_TAB)
 	    MHL_3D_format=VIDEO_3D_TB;
-    else
+    	else
 	    MHL_3D_format = VIDEO_3D_NONE;
 	    
 	if(si_dev_context)
 	{	    
-        MHL_DBG("video format  -- %d, 0x%x, %d\n", MHL_3D_Support, vout, MHL_3D_format);
+        	MHL_DBG("video format  -- %d, 0x%x, %d\n", MHL_3D_Support, vout, MHL_3D_format);
 		if(vformat < HDMI_VIDEO_RESOLUTION_NUM)
 		{
-		    ///if(MHL_3D_Support && (MHL_3D_format > 0))
-		    si_mhl_tx_drv_video_3d(si_dev_context, MHL_3D_format);			
-            si_mhl_tx_set_path_en_I(si_dev_context);
+		    	///if(MHL_3D_Support && (MHL_3D_format > 0))
+		    	si_mhl_tx_drv_video_3d(si_dev_context, MHL_3D_format);	
+		    	if(vformat < HDMI_VIDEO_2160p_DSC_24Hz)
+            			si_mhl_tx_set_path_en_I(si_dev_context);
 		}
 		else
-		    si_mhl_tx_drv_video_3d_update(si_dev_context, MHL_3D_format);
+		    	si_mhl_tx_drv_video_3d_update(si_dev_context, MHL_3D_format);
  	}
- #else
-    if(si_dev_context)
-    	si_mhl_tx_set_path_en_I(si_dev_context);
- #endif
     return 0;
 }
 
@@ -775,11 +816,9 @@ void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *
 			break;
 		case MHL_TX_EVENT_DEV_CAP_UPDATE:
 		{
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT		
 		    if(event_param == 0xBA)
-                MHL_Connect_type = MHL_3D_GLASSES;	
+                	MHL_Connect_type = MHL_3D_GLASSES;	
 		    else		    
-#endif		    
     			MHL_Connect_type = MHL_SMB_CABLE;			
 		}
 			break;

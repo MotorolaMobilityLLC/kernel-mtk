@@ -185,6 +185,18 @@ char *_extd_ioctl_spy(unsigned int cmd)
 	case MTK_HDMI_SCREEN_CAPTURE:
 		return "MTK_HDMI_SCREEN_CAPTURE";
 
+	case MTK_HDMI_FACTORY_CHIP_INIT:
+		return "MTK_HDMI_FACTORY_CHIP_INIT";
+
+	case MTK_HDMI_FACTORY_JUDGE_CALLBACK:
+		return "MTK_HDMI_FACTORY_JUDGE_CALLBACK";
+
+	case MTK_HDMI_FACTORY_START_DPI_AND_CONFIG:
+			return "MTK_HDMI_FACTORY_START_DPI_AND_CONFIG";
+
+	case MTK_HDMI_FACTORY_DPI_STOP_AND_POWER_OFF:
+			return "MTK_HDMI_FACTORY_DPI_STOP_AND_POWER_OFF";
+
 	default:
 		return "unknown ioctl command";
 	}

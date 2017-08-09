@@ -1002,11 +1002,7 @@ void si_mhl_tx_msc_command_done(struct mhl_dev_context *dev_context, uint8_t dat
 		 */           
         if(0x0F == req->reg)
         {
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT        
             if((data1 == 0xB9) || (data1 == 0xBA))
-#else
-            if(data1 == 0xB9) 
-#endif
             {
             	//SMB
             	mhl_event_notify(dev_context, MHL_TX_EVENT_DEV_CAP_UPDATE, data1, NULL);
@@ -1070,6 +1066,16 @@ void si_mhl_tx_msc_command_done(struct mhl_dev_context *dev_context, uint8_t dat
 			 * Check to see if any other bits besides POW_BIT have changed
 			 */
 			devcap_changes.mdc.deviceCategory &= ~MHL_DEV_CATEGORY_POW_BIT;
+#if 0//def MHL2_ENHANCED_MODE_SUPPORT
+			// Init Enhanced Mode process after both EDID and DEVCAP are processed
+			//else
+			{
+				struct drv_hw_context *hw_context = (struct drv_hw_context *)(&dev_context->drv_context);
+				MHL_TX_DBG_INFO(dev_context, "@@@@@@@@@Init Enhanced Mode process after both EDID and DEVCAP are processed, si_mhl_tx_em_query() called.\n");
+				hw_context->ready_for_mdt = true;
+				si_mhl_tx_em_query(dev_context);
+			}
+#endif // MHL2_ENHANCED_MODE_SUPPORT
 
 			temp = 0;
 			for (i = 0; i < sizeof(devcap_changes);++i){
@@ -1226,6 +1232,8 @@ void si_mhl_tx_msc_command_done(struct mhl_dev_context *dev_context, uint8_t dat
 	}
 }
 
+extern bool si_mhl_tx_set_path_en_I(struct mhl_dev_context *dev_context);
+extern void siHdmiTx_VideoSel (int vmode);
 void si_mhl_tx_process_write_burst_data(struct mhl_dev_context *dev_context)
 {
 	int	ret_val = 0;
@@ -1246,23 +1254,21 @@ void si_mhl_tx_process_write_burst_data(struct mhl_dev_context *dev_context)
 
 		switch(burst_id) {
 		case burst_id_3D_VIC:
-#ifndef CONFIG_MTK_HDMI_3D_SUPPORT
 			si_mhl_tx_process_3d_vic_burst(
 					dev_context->edid_parser_context,
 					&dev_context->incoming_scratch_pad.videoFormatData);
-#endif					
 			break;
 
 		case burst_id_3D_DTD:
-#ifndef CONFIG_MTK_HDMI_3D_SUPPORT
 			si_mhl_tx_process_3d_dtd_burst(
 					dev_context->edid_parser_context,
 					&dev_context->incoming_scratch_pad.videoFormatData);
-#endif					
 			break;
 
 		case LOCAL_ADOPTER_ID:
-#ifdef MEDIA_DATA_TUNNEL_SUPPORT //(
+#if defined(MHL2_ENHANCED_MODE_SUPPORT)
+			si_mhl_tx_em_process_packet(dev_context,(void *)&dev_context->incoming_scratch_pad.asBytes);
+#elif defined(MEDIA_DATA_TUNNEL_SUPPORT) //(
 		case MHL_TEST_ADOPTER_ID:
 			si_mhl_tx_mdt_process_packet(dev_context,(void *)&dev_context->incoming_scratch_pad.asBytes);
 #else //)(
@@ -1302,7 +1308,7 @@ void si_mhl_tx_set_pp_link(struct mhl_dev_context *dev_context, uint8_t value)
 static bool si_mhl_tx_set_path_en(struct mhl_dev_context *dev_context)
 {
 	MHL_TX_DBG_INFO(dev_context, "called\n");
-	si_mhl_tx_drv_enable_video_path((struct drv_hw_context *) (&dev_context->drv_context));	// TODO: FD, TBI, check references of this function for details
+	/*si_mhl_tx_drv_enable_video_path((struct drv_hw_context *) (&dev_context->drv_context));	// TODO: FD, TBI, check references of this function for details */
 	dev_context->link_mode |= MHL_STATUS_PATH_ENABLED;
 	return si_mhl_tx_set_status(dev_context, MHL_STATUS_REG_LINK_MODE, dev_context->link_mode, 1);
 }
@@ -1339,6 +1345,9 @@ static void si_mhl_tx_refresh_peer_devcap_entries(
 					dev_context->current_cbus_req->status.flags.cancel = true;
 				}
 			}
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+		si_mhl_tx_em_init(dev_context);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
 
 			// TODO: FD, TBC, to read_devcap
 			dev_context->dev_cap_cache_index = 0;
@@ -1673,13 +1682,12 @@ void si_mhl_tx_notify_downstream_hpd_change( struct mhl_dev_context *dev_context
 		si_edid_reset(dev_context->edid_parser_context);
 	} else {
 		dev_context->misc_flags.flags.mhl_hpd = true;
-        process_dpi(dev_context);
-
-		/*
+       		/*
 		 *  possible EDID read is complete here
 		 *  see MHL spec section 5.9.1
 		 */
 		if (dev_context->misc_flags.flags.have_complete_devcap) {
+			 process_dpi(dev_context);
 			/* Devcap refresh is complete */
 			MHL_TX_DBG_INFO(dev_context, "tag:\n");
 			si_mhl_tx_initiate_edid_sequence(dev_context->edid_parser_context);

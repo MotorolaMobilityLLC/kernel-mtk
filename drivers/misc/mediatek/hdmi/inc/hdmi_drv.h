@@ -55,6 +55,8 @@ enum HDMI_VIDEO_RESOLUTION {
 	HDMI_VIDEO_1920x1080p_30Hz = 6,
 	HDMI_VIDEO_720x480i_60Hz = 0xD,
 	HDMI_VIDEO_1920x1080p_60Hz = 0x0b,
+	HDMI_VIDEO_2160p_DSC_24Hz = 0xf,
+	HDMI_VIDEO_2160p_DSC_30Hz = 0x10,
 	HDMI_VIDEO_RESOLUTION_NUM
 };
 #endif
@@ -163,9 +165,7 @@ struct HDMI_PARAMS {
 	/* 0 means no scaling, 5 means scaling to 95%, 10 means 90% */
 	enum HDMI_CABLE_TYPE cabletype;
 	unsigned int HDCPSupported;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	int is_3d_support;
-#endif
 	unsigned int input_clock;
 };
 
@@ -212,7 +212,10 @@ struct HDMI_UTIL_FUNCS {
 #define SINK_1080P24   (1 << 20)
 #define SINK_1080P23976  (1 << 21)
 #define SINK_1080P2997   (1 << 22)
-#define SINK_4KP30       (1 << 23)
+#define SINK_2160p30   (1 << 23)
+#define SINK_2160p24   (1 << 24)
+
+
 
 #if !defined(HDMI_MT8193_SUPPORT)
 struct HDMI_EDID_INFO_T {
@@ -273,12 +276,7 @@ struct HDMI_DRIVER {
 	void (*suspend)(void);
 	void (*resume)(void);
 	int  (*audio_config)(enum HDMI_AUDIO_FORMAT aformat, int bitWidth);
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	int  (*video_config)(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, int vou);
-#else
-	int  (*video_config)(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin,
-	enum HDMI_VIDEO_OUTPUT_FORMAT vou);
-#endif
 	int (*video_enable)(bool enable);
 	int (*audio_enable)(bool enable);
 	int (*irq_enable)(bool enable);

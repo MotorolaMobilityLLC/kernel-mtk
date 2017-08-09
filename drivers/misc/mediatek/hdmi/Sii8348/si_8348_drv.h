@@ -42,9 +42,16 @@ struct drv_hw_context {
 	uint8_t		valid_vsif;
 	//uint8_t		valid_avif;
 	uint8_t		valid_3d;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT	
 	uint8_t		valid_3d_fs;
-#endif
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+	bool		mhl2_em_enabled;
+	bool		mhl2_em_input;
+	uint8_t 	mhl2_em_sm;
+	uint8_t 	mhl2_em_request_mode;
+	uint8_t 	mhl2_em_current_mode;
+	uint8_t 	mhl2_em_capability;
+#endif // MHL2_ENHANCED_MODE_SUPPORT
+
 	struct workqueue_struct 	*demo_loop_wq;
 	struct delayed_work 		demo_loop_work;
 
@@ -54,9 +61,15 @@ struct drv_hw_context {
 	vendor_specific_info_frame_t	current_vs_info_frame;
 	hw_avi_payload_t       		outgoingAviPayLoad;
 	uint8_t				write_burst_data[MHL_SCRATCHPAD_SIZE];
+	uint8_t				ready_for_hawb;
 };
 
 void si_mhl_tx_set_pp_link(struct mhl_dev_context *dev_context, uint8_t value);
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+void si_mhl_tx_em_init(struct mhl_dev_context *dev_context);
+bool si_mhl_tx_em_process_packet(struct mhl_dev_context *dev_context,void *packet);
+void si_mhl_tx_em_query(struct mhl_dev_context *dev_context);
+#endif // MHL2_ENHANCED_MODE_SUPPORT
 
 
 #endif /* if !defined(SI_8348_DRV_H) */

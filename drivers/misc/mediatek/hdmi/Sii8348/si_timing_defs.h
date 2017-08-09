@@ -94,6 +94,9 @@ enum
 #define HDMI_1080P30		34
 #define HDMI_1080P60		16 //MHL doesn't supported
 #define HDMI_1080P50		31 //MHL doesn't supported
+#define HDMI_4k30_DSC		95 //MHL doesn't supported
+#define HDMI_4k25_DSC		94 //MHL doesn't supported
+#define HDMI_4k24_DSC		93 //MHL doesn't supported
 
 
 #endif /* if !defined(SI_TIMING_DEFS_H) */

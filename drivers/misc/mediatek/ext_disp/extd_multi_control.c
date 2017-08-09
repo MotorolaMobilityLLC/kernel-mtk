@@ -19,7 +19,7 @@ static int extd_create_path(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 {
 	int ret = 0;
 
-	MULTI_COTRL_LOG("extd_create_path session:%08x, mode:%d", session, mode);
+	MULTI_COTRL_LOG("extd_create_path session:%08x, mode:%d\n", session, mode);
 
 	ext_disp_path_set_mode(mode, session);
 	ret = ext_disp_init(NULL, session);
