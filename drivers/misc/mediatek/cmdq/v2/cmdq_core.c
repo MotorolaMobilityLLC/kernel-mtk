@@ -856,7 +856,8 @@ void cmdq_core_dump_tasks_info(void)
 	struct list_head *p = NULL;
 	int32_t index = 0;
 
-	mutex_lock(&gCmdqTaskMutex);
+	/* Remove Mutex, since this will be called in ISR */
+	/* mutex_lock(&gCmdqTaskMutex); */
 
 	CMDQ_ERR("========= Active List Task Dump =========\n");
 	index = 0;
@@ -869,7 +870,7 @@ void cmdq_core_dump_tasks_info(void)
 	}
 	CMDQ_ERR("====== Total %d in Active Task =======\n", index);
 
-	mutex_unlock(&gCmdqTaskMutex);
+	/* mutex_unlock(&gCmdqTaskMutex); */
 }
 
 int cmdq_core_print_profile_marker(const RecordStruct *pRecord, char *_buf, int bufLen)
