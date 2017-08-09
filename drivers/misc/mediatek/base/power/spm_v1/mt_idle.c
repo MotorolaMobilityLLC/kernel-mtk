@@ -341,7 +341,7 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 };
 #elif defined(CONFIG_ARCH_MT6753)
 static int idle_switch[NR_TYPES] = {
-	0,  /* dpidle switch */
+	1,  /* dpidle switch */
 	0,  /* soidle switch */
 	1,  /* slidle switch */
 	1,  /* rgidle switch */
@@ -508,6 +508,7 @@ static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_CPUS][NR_REASONS] = { {0} };
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
+static bool             soidle_by_pass_pg;
 
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
@@ -523,6 +524,7 @@ static unsigned long    dpidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
+static bool             dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 
 static unsigned int		idle_spm_lock;
@@ -664,18 +666,22 @@ bool cg_check_idle_can_enter(
 	/* MTCMOS status */
 	sta = idle_readl(SPM_PWR_STATUS);
 	if (mode == MT_DPIDLE) {
-		if (sta & (MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK |
-					DIS_PWR_STA_MASK))
-			return false;
+		if (!dpidle_by_pass_pg) {
+			if (sta & (MFG_PWR_STA_MASK |
+						ISP_PWR_STA_MASK |
+						VDE_PWR_STA_MASK |
+						VEN_PWR_STA_MASK |
+						DIS_PWR_STA_MASK))
+				return false;
+		}
 	} else if (mode == MT_SOIDLE) {
-		if (sta & (MFG_PWR_STA_MASK |
-					ISP_PWR_STA_MASK |
-					VDE_PWR_STA_MASK |
-					VEN_PWR_STA_MASK))
-			return false;
+		if (!soidle_by_pass_pg) {
+			if (sta & (MFG_PWR_STA_MASK |
+						ISP_PWR_STA_MASK |
+						VDE_PWR_STA_MASK |
+						VEN_PWR_STA_MASK))
+				return false;
+		}
 	}
 
 	return true;
@@ -1727,6 +1733,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	p += sprintf(p, "dpidle_bypass_cg=%u\n", dpidle_by_pass_cg);
+	p += sprintf(p, "dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	p += sprintf(p, "dpidle_dump_log = %u\n", dpidle_dump_log);
 	p += sprintf(p, "(0: None, 1: Reduced, 2: Full\n");
 
@@ -1771,6 +1778,9 @@ static ssize_t dpidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			dpidle_by_pass_cg = param;
 			idle_warn("bypass = %d\n", dpidle_by_pass_cg);
+		} else if (!strcmp(cmd, "bypass_pg")) {
+			dpidle_by_pass_pg = param;
+			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);
 		} else if (!strcmp(cmd, "log"))
 			dpidle_dump_log = param;
 		return count;
@@ -1826,6 +1836,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	p += sprintf(p, "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
+	p += sprintf(p, "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
 
 	p += sprintf(p, "\n*********** soidle command help  ************\n");
 	p += sprintf(p, "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -1868,6 +1879,9 @@ static ssize_t soidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_warn("bypass = %d\n", soidle_by_pass_cg);
+		} else if (!strcmp(cmd, "bypass_pg")) {
+			soidle_by_pass_pg = param;
+			idle_warn("bypass_pg = %d\n", soidle_by_pass_pg);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param)) {
