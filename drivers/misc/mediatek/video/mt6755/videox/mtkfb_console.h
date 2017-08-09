@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 #include <linux/types.h>
-/*#include <mt-plat/mt_typedefs.h>*/
 
 #define MFC_CHECK_RET(expr)             \
 do {                                \

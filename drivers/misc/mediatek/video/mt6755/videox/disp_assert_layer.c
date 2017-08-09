@@ -8,7 +8,7 @@
 #include "ddp_mmp.h"
 #include "disp_drv_platform.h"
 #include "disp_session.h"
-
+#include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/semaphore.h>
 #include <asm/cacheflush.h>
@@ -36,7 +36,6 @@
 #define MAKE_TWO_RGB565_COLOR(high, low)  (((low) << 16) | (high))
 
 DEFINE_SEMAPHORE(dal_sem);
-
 inline DAL_STATUS DAL_LOCK(void)
 {
 	if (down_interruptible(&dal_sem)) {
@@ -62,6 +61,7 @@ inline MFC_STATUS DAL_CHECK_MFC_RET(MFC_STATUS expr)
 	}
 	return MFC_STATUS_OK;
 }
+
 
 inline DISP_STATUS DAL_CHECK_DISP_RET(DISP_STATUS expr)
 {
@@ -120,7 +120,6 @@ DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 	MFC_CONTEXT *ctxt = NULL;
 	uint32_t offset;
 	unsigned int *addr;
-
 	color = RGB888_To_RGB565(color);
 	BG_COLOR = MAKE_TWO_RGB565_COLOR(color, color);
 
@@ -174,58 +173,69 @@ DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
 {
 	return DAL_STATUS_OK;
 }
+static int show_dal_layer(int enable)
+{
+	disp_session_input_config *session_input;
+	disp_input_config *input;
+	int ret;
+
+	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
+	if (!session_input)
+		return -ENOMEM;
+
+	session_input->setter = SESSION_USER_AEE;
+	session_input->config_layer_num = 1;
+	input = &session_input->config[0];
+
+	input->src_phy_addr = (void *)dal_fb_pa;
+	input->layer_id = primary_display_get_option("ASSERT_LAYER");
+	input->layer_enable = enable;
+	input->src_offset_x = 0;
+	input->src_offset_y = 0;
+	input->src_width = DAL_WIDTH;
+	input->src_height = DAL_HEIGHT;
+	input->tgt_offset_x = 0;
+	input->tgt_offset_y = 0;
+	input->tgt_width = DAL_WIDTH;
+	input->tgt_height = DAL_HEIGHT;
+	input->alpha = 0x80;
+	input->alpha_enable = 1;
+	input->next_buff_idx = -1;
+	input->src_pitch = DAL_WIDTH;
+	input->src_fmt = DAL_FORMAT;
+	input->next_buff_idx = -1;
+
+	ret = primary_display_config_input_multiple(session_input);
+	kfree(session_input);
+	return ret;
+}
+
 
 DAL_STATUS DAL_Clean(void)
 {
+	/* const uint32_t BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR); */
 	DAL_STATUS ret = DAL_STATUS_OK;
 
 	static int dal_clean_cnt;
-
 	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) mfc_handle;
-
-	DISPMSG("[MTKFB_DAL] DAL_Clean\n");
+	pr_err("[MTKFB_DAL] DAL_Clean\n");
 	if (NULL == mfc_handle)
 		return DAL_STATUS_NOT_READY;
 
 
 	MMProfileLogEx(ddp_mmp_get_events()->dal_clean, MMProfileFlagStart, 0, 0);
 	DAL_LOCK();
-	DAL_CHECK_MFC_RET(MFC_ResetCursor(mfc_handle));
+	if (MFC_STATUS_OK != MFC_ResetCursor(mfc_handle)) {
+		pr_err("mfc_handle = %p\n", mfc_handle);
+		goto End;
+	}
 	ctxt->screen_color = 0;
 	DAL_SetScreenColor(DAL_COLOR_RED);
 
 
 	/* TODO: if dal_shown=false, and 3D enabled, mtkfb may disable UI layer, please modify 3D driver */
 	if (isAEEEnabled == 1) {
-		disp_session_input_config session_input;
-		disp_input_config *input;
-
-		memset((void *)&session_input, 0, sizeof(session_input));
-
-		session_input.setter = SESSION_USER_AEE;
-		session_input.config_layer_num = 1;
-		input = &session_input.config[0];
-
-		input->src_phy_addr = (void *)dal_fb_pa;
-		input->layer_id = primary_display_get_option("ASSERT_LAYER");
-		input->layer_enable = 0;
-		input->src_offset_x = 0;
-		input->src_offset_y = 0;
-		input->src_width = DAL_WIDTH;
-		input->src_height = DAL_HEIGHT;
-		input->tgt_offset_x = 0;
-		input->tgt_offset_y = 0;
-		input->tgt_width = DAL_WIDTH;
-		input->tgt_height = DAL_HEIGHT;
-		input->alpha = 0x80;
-		input->alpha_enable = 1;
-		input->next_buff_idx = -1;
-		input->src_pitch = DAL_WIDTH;
-		input->src_fmt = DAL_FORMAT;
-		input->next_buff_idx = -1;
-
-		ret = primary_display_config_input_multiple(&session_input);
-
+		show_dal_layer(0);
 		/* DAL disable, switch UI layer to default layer 3 */
 		pr_err("[DDP]* isAEEEnabled from 1 to 0, %d\n", dal_clean_cnt++);
 		isAEEEnabled = 0;
@@ -238,6 +248,7 @@ DAL_STATUS DAL_Clean(void)
 	primary_display_trigger(0, NULL, 0);
 
 
+End:
 	DAL_UNLOCK();
 	MMProfileLogEx(ddp_mmp_get_events()->dal_clean, MMProfileFlagEnd, 0, 0);
 	return ret;
@@ -247,10 +258,7 @@ EXPORT_SYMBOL(DAL_Clean);
 int is_DAL_Enabled(void)
 {
 	int ret = 0;
-
-	DAL_LOCK();
 	ret = isAEEEnabled;
-	DAL_UNLOCK();
 	return ret;
 }
 
@@ -259,8 +267,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	va_list args;
 	uint i;
 	DAL_STATUS ret = DAL_STATUS_OK;
-	disp_session_input_config session_input;
-	disp_input_config *input;
+
 
 	/* printk("[MTKFB_DAL] DAL_Printf mfc_handle=0x%08X, fmt=0x%08X\n", mfc_handle, fmt); */
 
@@ -284,32 +291,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 		DAL_CHECK_MFC_RET(MFC_Open(&mfc_handle, dal_fb_addr,
 					   DAL_WIDTH, DAL_HEIGHT, DAL_BPP,
 					   DAL_FG_COLOR, DAL_BG_COLOR));
-		/* DAL_Clean(); */
-		memset((void *)&session_input, 0, sizeof(session_input));
-
-		session_input.setter = SESSION_USER_AEE;
-		session_input.config_layer_num = 1;
-		input = &session_input.config[0];
-
-		input->src_phy_addr = (void *)dal_fb_pa;
-		input->layer_id = primary_display_get_option("ASSERT_LAYER");
-		input->layer_enable = 1;
-		input->src_offset_x = 0;
-		input->src_offset_y = 0;
-		input->src_width = DAL_WIDTH;
-		input->src_height = DAL_HEIGHT;
-		input->tgt_offset_x = 0;
-		input->tgt_offset_y = 0;
-		input->tgt_width = DAL_WIDTH;
-		input->tgt_height = DAL_HEIGHT;
-		input->alpha = 0x80;
-		input->alpha_enable = 1;
-		input->next_buff_idx = -1;
-		input->src_pitch = DAL_WIDTH;
-		input->src_fmt = DAL_FORMAT;
-		input->next_buff_idx = -1;
-
-		ret = primary_display_config_input_multiple(&session_input);
+		show_dal_layer(1);
 	}
 	va_start(args, fmt);
 	i = vsprintf(dal_print_buffer, fmt, args);
@@ -348,7 +330,7 @@ unsigned int isAEEEnabled = 0;
 
 uint32_t DAL_GetLayerSize(void)
 {
-	/*  avoid lcdc read buffersize+1 issue */
+	/* xuecheng, avoid lcdc read buffersize+1 issue */
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
 

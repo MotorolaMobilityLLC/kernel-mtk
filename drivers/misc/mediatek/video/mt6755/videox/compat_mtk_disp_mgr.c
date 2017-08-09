@@ -16,7 +16,6 @@ static int compat_get_disp_caps_info(
 {
 	compat_uint_t u;
 	int err = 0;
-
 	err = get_user(u, &(data32->output_mode));
 	err |= put_user(u, &(data->output_mode));
 
@@ -26,16 +25,29 @@ static int compat_get_disp_caps_info(
 	err |= get_user(u, &(data32->max_layer_num));
 	err |= put_user(u, &(data->max_layer_num));
 
+#ifdef CONFIG_FOR_SOURCE_PQ
+	err |= get_user(u, &(data32->max_pq_num));
+	err |= put_user(u, &(data->max_pq_num));
+#endif
+
+	err |= get_user(u, &(data32->disp_feature));
+	err |= put_user(u, &(data->disp_feature));
+
+	err |= get_user(u, &(data32->is_support_frame_cfg_ioctl));
+	err |= put_user(u, &(data->is_support_frame_cfg_ioctl));
+
+	err |= get_user(u, &(data32->is_output_rotated));
+	err |= put_user(u, &(data->is_output_rotated));
+
 	return err;
 }
 
 static int compat_put_disp_caps_info(
 		struct compat_disp_caps_info __user *data32,
-		disp_caps_info __user *data __user)
+		disp_caps_info __user *data)
 {
 	compat_uint_t u;
 	int err = 0;
-
 	err = get_user(u, &(data->output_mode));
 	err |= put_user(u, &(data32->output_mode));
 
@@ -44,6 +56,20 @@ static int compat_put_disp_caps_info(
 
 	err |= get_user(u, &(data->max_layer_num));
 	err |= put_user(u, &(data32->max_layer_num));
+
+#ifdef CONFIG_FOR_SOURCE_PQ
+	err |= get_user(u, &(data->max_pq_num));
+	err |= put_user(u, &(data32->max_pq_num));
+#endif
+
+	err |= get_user(u, &(data->disp_feature));
+	err |= put_user(u, &(data32->disp_feature));
+
+	err |= get_user(u, &(data->is_support_frame_cfg_ioctl));
+	err |= put_user(u, &(data32->is_support_frame_cfg_ioctl));
+
+	err |= get_user(u, &(data->is_output_rotated));
+	err |= put_user(u, &(data32->is_output_rotated));
 
 	return err;
 }
@@ -81,119 +107,249 @@ static int compat_put_disp_session_layer_num_config(
 	return err;
 }
 */
+static int compat_get_disp_output_config(struct compat_disp_output_config __user *data32,
+					disp_output_config __user *data)
+{
+	compat_uint_t u;
+	compat_uptr_t p;
+	unsigned long ptr;
+	int err = 0;
+
+	err |= get_user(p, &(data32->va));
+	ptr = p;
+	err |= put_user((void *)ptr, &(data->va));
+
+	err |= get_user(p, &(data32->pa));
+	ptr = p;
+	err |= put_user((void *)ptr, &(data->pa));
+
+	err |= get_user(u, &(data32->fmt));
+	err |= put_user(u, &(data->fmt));
+
+	err |= get_user(u, &(data32->x));
+	err |= put_user(u, &(data->x));
+
+	err |= get_user(u, &(data32->y));
+	err |= put_user(u, &(data->y));
+
+	err |= get_user(u, &(data32->width));
+	err |= put_user(u, &(data->width));
+
+	err |= get_user(u, &(data32->height));
+	err |= put_user(u, &(data->height));
+
+	err |= get_user(u, &(data32->pitch));
+	err |= put_user(u, &(data->pitch));
+
+	err |= get_user(u, &(data32->pitchUV));
+	err |= put_user(u, &(data->pitchUV));
+
+	err |= get_user(u, &(data32->security));
+	err |= put_user(u, &(data->security));
+
+	err |= get_user(u, &(data32->buff_idx));
+	err |= put_user(u, &(data->buff_idx));
+
+	err |= get_user(u, &(data32->interface_idx));
+	err |= put_user(u, &(data->interface_idx));
+
+	err |= get_user(u, &(data32->frm_sequence));
+	err |= put_user(u, &(data->frm_sequence));
+
+	return err;
+}
+#if 0
+static int compat_put_disp_output_config(struct compat_disp_output_config __user *data32,
+					disp_output_config __user *data)
+{
+	compat_uint_t u;
+	compat_uptr_t p;
+	int err = 0;
+
+	err |= get_user(p, &(data->va));
+	err |= put_user(p, &(data32->va));
+
+	err |= get_user(p, &(data->pa));
+	err |= put_user(p, &(data32->pa));
+
+	err |= get_user(u, &(data->fmt));
+	err |= put_user(u, &(data32->fmt));
+
+	err |= get_user(u, &(data->x));
+	err |= put_user(u, &(data32->x));
+
+	err |= get_user(u, &(data->y));
+	err |= put_user(u, &(data32->y));
+
+	err |= get_user(u, &(data->width));
+	err |= put_user(u, &(data32->width));
+
+	err |= get_user(u, &(data->height));
+	err |= put_user(u, &(data32->height));
+
+	err |= get_user(u, &(data->pitch));
+	err |= put_user(u, &(data32->pitch));
+
+	err |= get_user(u, &(data->pitchUV));
+	err |= put_user(u, &(data32->pitchUV));
+
+	err |= get_user(u, &(data->security));
+	err |= put_user(u, &(data32->security));
+
+	err |= get_user(u, &(data->buff_idx));
+	err |= put_user(u, &(data32->buff_idx));
+
+	err |= get_user(u, &(data->interface_idx));
+	err |= put_user(u, &(data32->interface_idx));
+
+	err |= get_user(u, &(data->frm_sequence));
+	err |= put_user(u, &(data32->frm_sequence));
+
+	return err;
+}
+#endif
 static int compat_get_disp_session_output_config(struct compat_disp_session_output_config  __user *data32,
 					disp_session_output_config __user *data)
 {
 	compat_uint_t u;
-	compat_uptr_t p;
 	int err = 0;
 
 	err = get_user(u, &(data32->session_id));
 	err |= put_user(u, &(data->session_id));
-	data->config.va = NULL;
-	err |= get_user(p, &(data32->config.va));
-	err |= put_user(p, (compat_uptr_t *)&(data->config.va));
-	data->config.pa = NULL;
-	err |= get_user(p, &(data32->config.pa));
-	err |= put_user(p, (compat_uptr_t *)&(data->config.pa));
-
-	err |= get_user(u, &(data32->config.fmt));
-	err |= put_user(u, &(data->config.fmt));
-
-	err |= get_user(u, &(data32->config.x));
-	err |= put_user(u, &(data->config.x));
-
-	err |= get_user(u, &(data32->config.y));
-	err |= put_user(u, &(data->config.y));
-
-	err |= get_user(u, &(data32->config.width));
-	err |= put_user(u, &(data->config.width));
-
-	err |= get_user(u, &(data32->config.height));
-	err |= put_user(u, &(data->config.height));
-
-	err |= get_user(u, &(data32->config.pitch));
-	err |= put_user(u, &(data->config.pitch));
-
-	err |= get_user(u, &(data32->config.pitchUV));
-	err |= put_user(u, &(data->config.pitchUV));
-
-	err |= get_user(u, &(data32->config.security));
-	err |= put_user(u, &(data->config.security));
-
-	err |= get_user(u, &(data32->config.buff_idx));
-	err |= put_user(u, &(data->config.buff_idx));
-
-	err |= get_user(u, &(data32->config.interface_idx));
-	err |= put_user(u, &(data->config.interface_idx));
-
-	err |= get_user(u, &(data32->config.frm_sequence));
-	err |= put_user(u, &(data->config.frm_sequence));
+	err |= compat_get_disp_output_config(&data32->config, &data->config);
 
 	return err;
 }
-/*
-static int compat_put_disp_session_output_config(
-		struct compat_disp_session_output_config __user *data32,
-		disp_session_output_config __user *data)
+#if 0
+static int compat_put_disp_session_output_config(struct compat_disp_session_output_config __user *data32,
+							disp_session_output_config __user *data)
 {
 	compat_uint_t u;
-	compat_uptr_t p;
 	int err = 0;
 
 	err = get_user(u, &(data->session_id));
 	err |= put_user(u, &(data32->session_id));
-
-	err |= get_user(p, &(data->config.va));
-	err |= put_user(p, &(data32->config.va));
-
-	err |= get_user(p, &(data->config.pa));
-	err |= put_user(p, &(data32->config.pa));
-
-	err |= get_user(u, &(data->config.fmt));
-	err |= put_user(u, &(data32->config.fmt));
-
-	err |= get_user(u, &(data->config.x));
-	err |= put_user(u, &(data32->config.x));
-
-	err |= get_user(u, &(data->config.y));
-	err |= put_user(u, &(data32->config.y));
-
-	err |= get_user(u, &(data->config.width));
-	err |= put_user(u, &(data32->config.width));
-
-	err |= get_user(u, &(data->config.height));
-	err |= put_user(u, &(data32->config.height));
-
-	err |= get_user(u, &(data->config.pitch));
-	err |= put_user(u, &(data32->config.pitch));
-
-	err |= get_user(u, &(data->config.pitchUV));
-	err |= put_user(u, &(data32->config.pitchUV));
-
-	err |= get_user(u, &(data->config.security));
-	err |= put_user(u, &(data32->config.security));
-
-	err |= get_user(u, &(data->config.buff_idx));
-	err |= put_user(u, &(data32->config.buff_idx));
-
-	err |= get_user(u, &(data->config.interface_idx));
-	err |= put_user(u, &(data32->config.interface_idx));
-
-	err |= get_user(u, &(data->config.frm_sequence));
-	err |= put_user(u, &(data32->config.frm_sequence));
+	err |= compat_put_disp_output_config(&data32->config, &data->config);
 
 	return err;
 }
-*/
+#endif
+static int compat_get_disp_input_config(struct compat_disp_input_config __user *data32,
+					disp_input_config __user *data)
+{
+	compat_uint_t u;
+	compat_int_t i;
+	compat_uptr_t p;
+	unsigned long ptr;
+	int err = 0;
+
+	err |= get_user(u, &(data32->layer_id));
+	err |= put_user(u, &(data->layer_id));
+
+	err |= get_user(u, &(data32->layer_enable));
+	err |= put_user(u, &(data->layer_enable));
+
+	err |= get_user(u, &(data32->buffer_source));
+	err |= put_user(u, &(data->buffer_source));
+
+	err |= get_user(p, &(data32->src_base_addr));
+	ptr = p;
+	err |= put_user((void *)ptr, &(data->src_base_addr));
+
+	err |= get_user(p, &(data32->src_phy_addr));
+	ptr = p;
+	err |= put_user((void *)ptr, &(data->src_phy_addr));
+
+	err |= get_user(u, &(data32->src_direct_link));
+	err |= put_user(u, &(data->src_direct_link));
+
+	err |= get_user(u, &(data32->src_fmt));
+	err |= put_user(u, &(data->src_fmt));
+
+	err |= get_user(u, &(data32->src_use_color_key));
+	err |= put_user(u, &(data->src_use_color_key));
+
+	err |= get_user(u, &(data32->src_pitch));
+	err |= put_user(u, &(data->src_pitch));
+
+	err |= get_user(u, &(data32->src_offset_x));
+	err |= put_user(u, &(data->src_offset_x));
+
+	err |= get_user(u, &(data32->src_offset_y));
+	err |= put_user(u, &(data->src_offset_y));
+
+	err |= get_user(u, &(data32->src_width));
+	err |= put_user(u, &(data->src_width));
+
+	err |= get_user(u, &(data32->src_height));
+	err |= put_user(u, &(data->src_height));
+
+	err |= get_user(u, &(data32->tgt_offset_x));
+	err |= put_user(u, &(data->tgt_offset_x));
+
+	err |= get_user(u, &(data32->tgt_offset_y));
+	err |= put_user(u, &(data->tgt_offset_y));
+
+	err |= get_user(u, &(data32->tgt_width));
+	err |= put_user(u, &(data->tgt_width));
+
+	err |= get_user(u, &(data32->tgt_height));
+	err |= put_user(u, &(data->tgt_height));
+
+	err |= get_user(u, &(data32->layer_rotation));
+	err |= put_user(u, &(data->layer_rotation));
+
+	err |= get_user(u, &(data32->layer_type));
+	err |= put_user(u, &(data->layer_type));
+
+	err |= get_user(u, &(data32->video_rotation));
+	err |= put_user(u, &(data->video_rotation));
+
+	err |= get_user(u, &(data32->isTdshp));
+	err |= put_user(u, &(data->isTdshp));
+
+	err |= get_user(u, &(data32->next_buff_idx));
+	err |= put_user(u, &(data->next_buff_idx));
+
+	err |= get_user(i, &(data32->identity));
+	err |= put_user(i, &(data->identity));
+
+	err |= get_user(i, &(data32->connected_type));
+	err |= put_user(i, &(data->connected_type));
+
+	err |= get_user(u, &(data32->security));
+	err |= put_user(u, &(data->security));
+
+	err |= get_user(u, &(data32->alpha_enable));
+	err |= put_user(u, &(data->alpha_enable));
+
+	err |= get_user(u, &(data32->alpha));
+	err |= put_user(u, &(data->alpha));
+
+	err |= get_user(u, &(data32->sur_aen));
+	err |= put_user(u, &(data->sur_aen));
+
+	err |= get_user(u, &(data32->src_alpha));
+	err |= put_user(u, &(data->src_alpha));
+
+	err |= get_user(u, &(data32->dst_alpha));
+	err |= put_user(u, &(data->dst_alpha));
+
+	err |= get_user(i, &(data32->frm_sequence));
+	err |= put_user(i, &(data->frm_sequence));
+
+	err |= get_user(u, &(data32->yuv_range));
+	err |= put_user(u, &(data->yuv_range));
+
+	return err;
+}
+
 static int compat_get_disp_session_input_config(
 		struct compat_disp_session_input_config __user *data32,
 		disp_session_input_config __user *data)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	compat_long_t l;
-	compat_uptr_t p;
 	int err;
 	int j;
 
@@ -206,114 +362,125 @@ static int compat_get_disp_session_input_config(
 	err |= get_user(l, &(data32->config_layer_num));
 	err |= put_user(l, &(data->config_layer_num));
 
-	for (j = 0; j < ARRAY_SIZE(data32->config); j++) {
-		err |= get_user(u, &(data32->config[j].layer_id));
-		err |= put_user(u, &(data->config[j].layer_id));
+	for (j = 0; j < ARRAY_SIZE(data32->config); j++)
+		err |= compat_get_disp_input_config(&data32->config[j], &data->config[j]);
 
-		err |= get_user(u, &(data32->config[j].layer_enable));
-		err |= put_user(u, &(data->config[j].layer_enable));
-
-		err |= get_user(u, &(data32->config[j].buffer_source));
-		err |= put_user(u, &(data->config[j].buffer_source));
-		data->config[j].src_base_addr = NULL;
-		err |= get_user(p, &(data32->config[j].src_base_addr));
-		err |= put_user(p, (compat_uptr_t *)&(data->config[j].src_base_addr));
-		data->config[j].src_phy_addr = NULL;
-		err |= get_user(p, &(data32->config[j].src_phy_addr));
-		err |= put_user(p, (compat_uptr_t *)&(data->config[j].src_phy_addr));
-
-		err |= get_user(u, &(data32->config[j].src_direct_link));
-		err |= put_user(u, &(data->config[j].src_direct_link));
-
-		err |= get_user(u, &(data32->config[j].src_fmt));
-		err |= put_user(u, &(data->config[j].src_fmt));
-
-		err |= get_user(u, &(data32->config[j].src_use_color_key));
-		err |= put_user(u, &(data->config[j].src_use_color_key));
-
-		err |= get_user(u, &(data32->config[j].src_pitch));
-		err |= put_user(u, &(data->config[j].src_pitch));
-
-		err |= get_user(u, &(data32->config[j].src_offset_x));
-		err |= put_user(u, &(data->config[j].src_offset_x));
-
-		err |= get_user(u, &(data32->config[j].src_offset_y));
-		err |= put_user(u, &(data->config[j].src_offset_y));
-
-		err |= get_user(u, &(data32->config[j].src_width));
-		err |= put_user(u, &(data->config[j].src_width));
-
-		err |= get_user(u, &(data32->config[j].src_height));
-		err |= put_user(u, &(data->config[j].src_height));
-
-		err |= get_user(u, &(data32->config[j].tgt_offset_x));
-		err |= put_user(u, &(data->config[j].tgt_offset_x));
-
-		err |= get_user(u, &(data32->config[j].tgt_offset_y));
-		err |= put_user(u, &(data->config[j].tgt_offset_y));
-
-		err |= get_user(u, &(data32->config[j].tgt_width));
-		err |= put_user(u, &(data->config[j].tgt_width));
-
-		err |= get_user(u, &(data32->config[j].tgt_height));
-		err |= put_user(u, &(data->config[j].tgt_height));
-
-		err |= get_user(u, &(data32->config[j].layer_rotation));
-		err |= put_user(u, &(data->config[j].layer_rotation));
-
-		err |= get_user(u, &(data32->config[j].layer_type));
-		err |= put_user(u, &(data->config[j].layer_type));
-
-		err |= get_user(u, &(data32->config[j].video_rotation));
-		err |= put_user(u, &(data->config[j].video_rotation));
-
-		err |= get_user(u, &(data32->config[j].isTdshp));
-		err |= put_user(u, &(data->config[j].isTdshp));
-
-		err |= get_user(u, &(data32->config[j].next_buff_idx));
-		err |= put_user(u, &(data->config[j].next_buff_idx));
-
-		err |= get_user(i, &(data32->config[j].identity));
-		err |= put_user(i, &(data->config[j].identity));
-
-		err |= get_user(i, &(data32->config[j].connected_type));
-		err |= put_user(i, &(data->config[j].connected_type));
-
-		err |= get_user(u, &(data32->config[j].security));
-		err |= put_user(u, &(data->config[j].security));
-
-		err |= get_user(u, &(data32->config[j].alpha_enable));
-		err |= put_user(u, &(data->config[j].alpha_enable));
-
-		err |= get_user(u, &(data32->config[j].alpha));
-		err |= put_user(u, &(data->config[j].alpha));
-
-		err |= get_user(u, &(data32->config[j].sur_aen));
-		err |= put_user(u, &(data->config[j].sur_aen));
-
-		err |= get_user(u, &(data32->config[j].src_alpha));
-		err |= put_user(u, &(data->config[j].src_alpha));
-
-		err |= get_user(u, &(data32->config[j].dst_alpha));
-		err |= put_user(u, &(data->config[j].dst_alpha));
-
-		err |= get_user(i, &(data32->config[j].frm_sequence));
-		err |= put_user(i, &(data->config[j].frm_sequence));
-
-		err |= get_user(u, &(data32->config[j].yuv_range));
-		err |= put_user(u, &(data->config[j].yuv_range));
-	}
 	return err;
 }
-/*
+#if 0
+static int compat_put_disp_input_config(struct compat_disp_input_config __user *data32,
+					disp_input_config __user *data)
+{
+	compat_uint_t u;
+	compat_int_t i;
+	compat_uptr_t p;
+	int err = 0;
+
+	err |= get_user(u, &(data->layer_id));
+	err |= put_user(u, &(data32->layer_id));
+
+	err |= get_user(u, &(data->layer_enable));
+	err |= put_user(u, &(data32->layer_enable));
+
+	err |= get_user(u, &(data->buffer_source));
+	err |= put_user(u, &(data32->buffer_source));
+
+	err |= get_user(p, &(data->src_base_addr));
+	err |= put_user(p, &(data32->src_base_addr));
+
+	err |= get_user(p, &(data->src_phy_addr));
+	err |= put_user(p, &(data32->src_phy_addr));
+
+	err |= get_user(u, &(data->src_direct_link));
+	err |= put_user(u, &(data32->src_direct_link));
+
+	err |= get_user(u, &(data->src_fmt));
+	err |= put_user(u, &(data32->src_fmt));
+
+	err |= get_user(u, &(data->src_use_color_key));
+	err |= put_user(u, &(data32->src_use_color_key));
+
+	err |= get_user(u, &(data->src_pitch));
+	err |= put_user(u, &(data32->src_pitch));
+
+	err |= get_user(u, &(data->src_offset_x));
+	err |= put_user(u, &(data32->src_offset_x));
+
+	err |= get_user(u, &(data->src_offset_y));
+	err |= put_user(u, &(data32->src_offset_y));
+
+	err |= get_user(u, &(data->src_width));
+	err |= put_user(u, &(data32->src_width));
+
+	err |= get_user(u, &(data->src_height));
+	err |= put_user(u, &(data32->src_height));
+
+	err |= get_user(u, &(data->tgt_offset_x));
+	err |= put_user(u, &(data32->tgt_offset_x));
+
+	err |= get_user(u, &(data->tgt_offset_y));
+	err |= put_user(u, &(data32->tgt_offset_y));
+
+	err |= get_user(u, &(data->tgt_width));
+	err |= put_user(u, &(data32->tgt_width));
+
+	err |= get_user(u, &(data->tgt_height));
+	err |= put_user(u, &(data32->tgt_height));
+
+	err |= get_user(u, &(data->layer_rotation));
+	err |= put_user(u, &(data32->layer_rotation));
+
+	err |= get_user(u, &(data->layer_type));
+	err |= put_user(u, &(data32->layer_type));
+
+	err |= get_user(u, &(data->video_rotation));
+	err |= put_user(u, &(data32->video_rotation));
+
+	err |= get_user(u, &(data->isTdshp));
+	err |= put_user(u, &(data32->isTdshp));
+
+	err |= get_user(u, &(data->next_buff_idx));
+	err |= put_user(u, &(data32->next_buff_idx));
+
+	err |= get_user(i, &(data->identity));
+	err |= put_user(i, &(data32->identity));
+
+	err |= get_user(i, &(data->connected_type));
+	err |= put_user(i, &(data32->connected_type));
+
+	err |= get_user(u, &(data->security));
+	err |= put_user(u, &(data32->security));
+
+	err |= get_user(u, &(data->alpha_enable));
+	err |= put_user(u, &(data32->alpha_enable));
+
+	err |= get_user(u, &(data->alpha));
+	err |= put_user(u, &(data32->alpha));
+
+	err |= get_user(u, &(data->sur_aen));
+	err |= put_user(u, &(data32->sur_aen));
+
+	err |= get_user(u, &(data->src_alpha));
+	err |= put_user(u, &(data32->src_alpha));
+
+	err |= get_user(u, &(data->dst_alpha));
+	err |= put_user(u, &(data32->dst_alpha));
+
+	err |= get_user(i, &(data->frm_sequence));
+	err |= put_user(i, &(data32->frm_sequence));
+
+	err |= get_user(u, &(data->yuv_range));
+	err |= put_user(u, &(data32->yuv_range));
+
+	return err;
+}
+
 static int compat_put_disp_session_input_config(
 		struct compat_disp_session_input_config __user *data32,
 		disp_session_input_config __user *data)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	compat_long_t l;
-	compat_uptr_t p;
 	int err;
 	int j;
 
@@ -326,112 +493,18 @@ static int compat_put_disp_session_input_config(
 	err |= get_user(l, &(data->config_layer_num));
 	err |= put_user(l, &(data32->config_layer_num));
 
-	for (j = 0; j < 8; j++) {
-		err |= get_user(u, &(data->config[j].layer_id));
-		err |= put_user(u, &(data32->config[j].layer_id));
+	for (j = 0; j < ARRAY_SIZE(data32->config); j++)
+		err |= compat_put_disp_input_config(&data32->config[j], &data->config[j]);
 
-		err |= get_user(u, &(data->config[j].layer_enable));
-		err |= put_user(u, &(data32->config[j].layer_enable));
-
-		err |= get_user(u, &(data->config[j].buffer_source));
-		err |= put_user(u, &(data32->config[j].buffer_source));
-
-		err |= get_user(p, &(data->config[j].src_base_addr));
-		err |= put_user(p, &(data32->config[j].src_base_addr));
-
-		err |= get_user(p, &(data->config[j].src_phy_addr));
-		err |= put_user(p, &(data32->config[j].src_phy_addr));
-
-		err |= get_user(u, &(data->config[j].src_direct_link));
-		err |= put_user(u, &(data32->config[j].src_direct_link));
-
-		err |= get_user(u, &(data->config[j].src_fmt));
-		err |= put_user(u, &(data32->config[j].src_fmt));
-
-		err |= get_user(u, &(data->config[j].src_use_color_key));
-		err |= put_user(u, &(data32->config[j].src_use_color_key));
-
-		err |= get_user(u, &(data->config[j].src_pitch));
-		err |= put_user(u, &(data32->config[j].src_pitch));
-
-		err |= get_user(u, &(data->config[j].src_offset_x));
-		err |= put_user(u, &(data32->config[j].src_offset_x));
-
-		err |= get_user(u, &(data->config[j].src_offset_y));
-		err |= put_user(u, &(data32->config[j].src_offset_y));
-
-		err |= get_user(u, &(data->config[j].src_width));
-		err |= put_user(u, &(data32->config[j].src_width));
-
-		err |= get_user(u, &(data->config[j].src_height));
-		err |= put_user(u, &(data32->config[j].src_height));
-
-		err |= get_user(u, &(data->config[j].tgt_offset_x));
-		err |= put_user(u, &(data32->config[j].tgt_offset_x));
-
-		err |= get_user(u, &(data->config[j].tgt_offset_y));
-		err |= put_user(u, &(data32->config[j].tgt_offset_y));
-
-		err |= get_user(u, &(data->config[j].tgt_width));
-		err |= put_user(u, &(data32->config[j].tgt_width));
-
-		err |= get_user(u, &(data->config[j].tgt_height));
-		err |= put_user(u, &(data32->config[j].tgt_height));
-
-		err |= get_user(u, &(data->config[j].layer_rotation));
-		err |= put_user(u, &(data32->config[j].layer_rotation));
-
-		err |= get_user(u, &(data->config[j].layer_type));
-		err |= put_user(u, &(data32->config[j].layer_type));
-
-		err |= get_user(u, &(data->config[j].video_rotation));
-		err |= put_user(u, &(data32->config[j].video_rotation));
-
-		err |= get_user(u, &(data->config[j].isTdshp));
-		err |= put_user(u, &(data32->config[j].isTdshp));
-
-		err |= get_user(u, &(data->config[j].next_buff_idx));
-		err |= put_user(u, &(data32->config[j].next_buff_idx));
-
-		err |= get_user(i, &(data->config[j].identity));
-		err |= put_user(i, &(data32->config[j].identity));
-
-		err |= get_user(i, &(data->config[j].connected_type));
-		err |= put_user(i, &(data32->config[j].connected_type));
-
-		err |= get_user(u, &(data->config[j].security));
-		err |= put_user(u, &(data32->config[j].security));
-
-		err |= get_user(u, &(data->config[j].alpha_enable));
-		err |= put_user(u, &(data32->config[j].alpha_enable));
-
-		err |= get_user(u, &(data->config[j].alpha));
-		err |= put_user(u, &(data32->config[j].alpha));
-
-		err |= get_user(u, &(data->config[j].sur_aen));
-		err |= put_user(u, &(data32->config[j].sur_aen));
-
-		err |= get_user(u, &(data->config[j].src_alpha));
-		err |= put_user(u, &(data32->config[j].src_alpha));
-
-		err |= get_user(u, &(data->config[j].dst_alpha));
-		err |= put_user(u, &(data32->config[j].dst_alpha));
-
-		err |= get_user(i, &(data->config[j].frm_sequence));
-		err |= put_user(i, &(data32->config[j].frm_sequence));
-
-		err |= get_user(u, &(data->config[j].yuv_range));
-		err |= put_user(u, &(data32->config[j].yuv_range));
-	}
 	return err;
 }
-*/
+#endif
 static int compat_get_disp_session_vsync_config(
 			struct compat_disp_session_vsync_config __user *data32,
 			disp_session_vsync_config __user *data)
 {
 	compat_uint_t u;
-	compat_long_t l;
+	compat_u64 u64;
 	int err;
 
 	err = get_user(u, &(data32->session_id));
@@ -440,18 +513,21 @@ static int compat_get_disp_session_vsync_config(
 	err |= get_user(u, &(data32->vsync_cnt));
 	err |= put_user(u, &(data->vsync_cnt));
 
-	err |= get_user(l, &(data32->vsync_ts));
-	err |= put_user(l, &(data->vsync_ts));
+	err |= get_user(u64, &(data32->vsync_ts));
+	err |= put_user(u64, &(data->vsync_ts));
+
+	err |= get_user(u, &(data32->lcm_fps));
+	err |= put_user(u, &(data->lcm_fps));
 
 	return err;
 }
-/*
+
 static int compat_put_disp_session_vsync_config(
 		struct compat_disp_session_vsync_config __user *data32,
 					disp_session_vsync_config __user *data)
 {
 	compat_uint_t u;
-	compat_long_t l;
+	compat_u64 u64;
 	int err;
 
 	err = get_user(u, &(data->session_id));
@@ -460,12 +536,15 @@ static int compat_put_disp_session_vsync_config(
 	err |= get_user(u, &(data->vsync_cnt));
 	err |= put_user(u, &(data32->vsync_cnt));
 
-	err |= get_user(l, &(data->vsync_ts));
-	err |= put_user(l, &(data32->vsync_ts));
+	err |= get_user(u64, &(data->vsync_ts));
+	err |= put_user(u64, &(data32->vsync_ts));
+
+	err |= get_user(u, &(data->lcm_fps));
+	err |= put_user(u, &(data32->lcm_fps));
 
 	return err;
 }
-*/
+
 
 static int compat_get_disp_session_info(
 		struct compat_disp_session_info __user *data32,
@@ -684,7 +763,7 @@ static int compat_get_disp_present_fence(struct compat_disp_present_fence __user
 
 static int compat_put_disp_present_fence(
 		struct compat_disp_present_fence __user *data32,
-		disp_present_fence __user *data)
+							disp_present_fence __user *data)
 {
 	compat_uint_t u;
 	int err;
@@ -706,6 +785,7 @@ static int compat_get_disp_session_config(
 			struct compat_disp_session_config __user *data32,
 			disp_session_config __user *data)
 {
+
 	compat_uint_t u;
 	compat_int_t i;
 	int err;
@@ -735,6 +815,7 @@ static int compat_get_disp_session_config(
 	err |= put_user(i, &(data->need_merge));
 
 	return err;
+
 }
 
 static int compat_put_disp_session_config(
@@ -773,74 +854,64 @@ static int compat_put_disp_session_config(
 	return err;
 }
 
-#if 0
-static void compat_convert_get_disp_session_config(
-	struct compat_disp_session_config *data32,
-	disp_session_config *data){
-	data->type = data32->type;
-	data->device_id = data32->device_id;
-	data->mode = data32->mode;
-	data->session_id = data32->session_id;
-	data->user = data32->user;
-	data->present_fence_idx = data32->present_fence_idx;
-	data->dc_type = data32->dc_type;
-	data->need_merge = data32->need_merge;
+static int compat_get_disp_frame_cfg(struct compat_disp_frame_cfg_t __user *data32,
+					struct disp_frame_cfg_t __user *data)
+{
+	compat_uint_t u;
+	int err;
+	int j;
+
+	err = get_user(u, &(data32->setter));
+	err |= put_user(u, &(data->setter));
+
+	err |= get_user(u, &(data32->session_id));
+	err |= put_user(u, &(data->session_id));
+
+	err |= get_user(u, &(data32->input_layer_num));
+	err |= put_user(u, &(data->input_layer_num));
+
+	for (j = 0; j < ARRAY_SIZE(data32->input_cfg); j++)
+		err |= compat_get_disp_input_config(&data32->input_cfg[j], &data->input_cfg[j]);
+
+	err |= get_user(u, &(data32->overlap_layer_num));
+	err |= put_user(u, &(data->overlap_layer_num));
+
+	err |= get_user(u, &(data32->const_layer_num));
+	err |= put_user(u, &(data->const_layer_num));
+
+	for (j = 0; j < ARRAY_SIZE(data32->const_layer); j++)
+		err |= compat_get_disp_input_config(&data32->const_layer[j], &data->const_layer[j]);
+
+	err |= get_user(u, &(data32->output_en));
+	err |= put_user(u, &(data->output_en));
+
+	err |= compat_get_disp_output_config(&data32->output_cfg, &data->output_cfg);
+
+	err |= get_user(u, &(data32->mode));
+	err |= put_user(u, &(data->mode));
+
+	err |= get_user(u, &(data32->present_fence_idx));
+	err |= put_user(u, &(data->present_fence_idx));
+
+	err |= get_user(u, &(data32->tigger_mode));
+	err |= put_user(u, &(data->tigger_mode));
+
+	err |= get_user(u, &(data32->user));
+	err |= put_user(u, &(data->user));
+
+	return err;
 }
 
-static void compat_convert_put_disp_session_config(
-		struct compat_disp_session_config *data32,
-		disp_session_config *data)
-{
-	data32->type = data->type;
-	data32->device_id = data->device_id;
-	data32->mode = data->mode;
-	data32->session_id = data->session_id;
-	data32->user = data->user;
-	data32->present_fence_idx = data->present_fence_idx;
-	data32->dc_type = data->dc_type;
-	data32->need_merge = data->need_merge;
-}
-#endif
 
 int _compat_ioctl_create_session(struct file *file, unsigned long arg)
 {
 	int ret = 0;
 	int err = 0;
 
-#if 0
-	unsigned long argd;
-	struct compat_disp_session_config compat_session_config;
-	disp_session_config data;
-
-	argd = (unsigned long)compat_ptr(arg);
-
-	if (copy_from_user(&compat_session_config, (void __user *)argd, sizeof(compat_session_config))) {
-		DISPERR("[DISPMGR]: copy_from_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
-	} else {
-		compat_convert_get_disp_session_config(&compat_session_config, &data);
-		if ((data.type == DISP_SESSION_MEMORY) && (get_ovl1_to_mem_on() == false)) {
-			DISPMSG("[DISPMGR]: _ioctl_create_session! line:%d  %d\n", __LINE__, get_ovl1_to_mem_on());
-			return -EFAULT;
-		}
-
-		if (disp_create_session(&data) != 0)
-			ret = -EFAULT;
-
-		compat_convert_put_disp_session_config(&compat_session_config, &data);
-		if (copy_to_user((void *)argd __user, &compat_session_config, sizeof(compat_session_config))) {
-			DISPERR("[DISPMGR]: copy_to_user failed! line:%d\n", __LINE__);
-			return -EFAULT;
-		}
-	}
-	return ret;
-
-#else
-
 	struct compat_disp_session_config __user *data32;
 	disp_session_config __user *data;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_CREATE_SESSION\n");
+	DISPDBG("COMPAT_DISP_IOCTL_CREATE_SESSION\n");
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
 
@@ -863,7 +934,6 @@ int _compat_ioctl_create_session(struct file *file, unsigned long arg)
 		DISPERR("compat_put_disp_session_config fail!\n");
 		return err;
 	}
-#endif
 	return ret;
 }
 
@@ -875,7 +945,7 @@ int _compat_ioctl_destroy_session(struct file *file, unsigned long arg)
 	struct compat_disp_session_config *data32 __user;
 	disp_session_config *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_DESTROY_SESSION\n");
+	DISPDBG("COMPAT_DISP_IOCTL_DESTROY_SESSION\n");
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
 
@@ -905,7 +975,7 @@ int _compat_ioctl_trigger_session(struct file *file, unsigned long arg)
 
 	disp_session_config *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
+	DISPDBG("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
 
@@ -934,7 +1004,7 @@ int _compat_ioctl_prepare_present_fence(struct file *file, unsigned long arg)
 
 	disp_present_fence *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
+	DISPDBG("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
 
 	data32 = compat_ptr(arg);
 
@@ -972,7 +1042,7 @@ int _compat_ioctl_get_info(struct file *file, unsigned long arg)
 
 	disp_session_info *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_GET_INFO\n");
+	DISPDBG("COMPAT_DISP_IOCTL_GET_INFO\n");
 	data32 = compat_ptr(arg);
 
 	data = compat_alloc_user_space(sizeof(disp_session_info));
@@ -1010,7 +1080,7 @@ int _compat_ioctl_prepare_buffer(struct file *file, unsigned long arg, ePREPARE_
 
 	disp_buffer_info *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_PREPARE_BUFFER\n");
+	DISPDBG("COMPAT_DISP_IOCTL_PREPARE_BUFFER\n");
 	data32 = compat_ptr(arg);
 
 	data = compat_alloc_user_space(sizeof(disp_buffer_info));
@@ -1039,6 +1109,7 @@ int _compat_ioctl_prepare_buffer(struct file *file, unsigned long arg, ePREPARE_
 	}
 
 	return ret;
+
 }
 
 
@@ -1051,7 +1122,7 @@ int _compat_ioctl_wait_vsync(struct file *file, unsigned long arg)
 
 	disp_session_vsync_config *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_WAIT_VSYNC\n");
+	DISPDBG("COMPAT_DISP_IOCTL_WAIT_VSYNC\n");
 
 	data32 = (struct compat_disp_session_vsync_config *)compat_ptr(arg);
 
@@ -1070,6 +1141,12 @@ int _compat_ioctl_wait_vsync(struct file *file, unsigned long arg)
 
 	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_WAIT_FOR_VSYNC, (unsigned long)data);
 
+	err = compat_put_disp_session_vsync_config(data32, data);
+	if (err) {
+		DISPERR("%s put fail!\n", __func__);
+		return err;
+	}
+
 	return ret;
 }
 
@@ -1081,8 +1158,7 @@ int _compat_ioctl_set_input_buffer(struct file *file, unsigned long arg)
 	struct compat_disp_session_input_config *data32 __user;
 
 	disp_session_input_config *data __user;
-
-	DISPCHECK("COMPAT_DISP_IOCTL_SET_INPUT_BUFFER\n");
+	DISPDBG("COMPAT_DISP_IOCTL_SET_INPUT_BUFFER\n");
 	data32 = (struct compat_disp_session_input_config *)compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_input_config));
 
@@ -1190,7 +1266,7 @@ int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg)
 	struct compat_disp_session_output_config *data32 __user;
 	disp_session_output_config *data __user;
 
-	DISPCHECK("COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER\n");
+	DISPDBG("COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER\n");
 
 	data32 = (struct compat_disp_session_output_config *)compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_output_config));
@@ -1208,6 +1284,32 @@ int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg)
 
 	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_OUTPUT_BUFFER, (unsigned long)data);
 
+	return ret;
+}
+
+int _compat_ioctl_frame_config(struct file *file, unsigned long arg)
+{
+	int ret = 0;
+	int err = 0;
+	struct compat_disp_frame_cfg_t __user *data32;
+	struct disp_frame_cfg_t __user *data;
+
+	DISPDBG("%s\n", __func__);
+	data32 = compat_ptr(arg);
+	data = compat_alloc_user_space(sizeof(struct disp_frame_cfg_t));
+
+	if (data == NULL) {
+		DISPERR("compat_alloc_user_space fail!\n");
+		return -EFAULT;
+	}
+
+	err = compat_get_disp_frame_cfg(data32, data);
+	if (err) {
+		DISPERR("compat_get_disp_frame_cfg fail!\n");
+		return err;
+	}
+
+	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_FRAME_CONFIG, (unsigned long)data);
 	return ret;
 }
 

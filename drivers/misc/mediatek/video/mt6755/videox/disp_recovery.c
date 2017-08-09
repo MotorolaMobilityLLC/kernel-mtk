@@ -11,20 +11,16 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
-#include <linux/ion_drv.h>
-#include <linux/mtk_ion.h>
+#include "mtk_ion.h"
+#include "ion_drv.h"
 #include <linux/interrupt.h>
-#include <mach/mt_idle.h>
-#include <mach/mt_spm_reg.h>
-#include <mach/pcm_def.h>
-#include <mach/mt_spm_idle.h>
-#include <mach/mt_smi.h>
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include "mt_idle.h"
+#include "mt_spm_reg.h"
+/* #include "pcm_def.h" */
+#include "mt_spm_idle.h"
+#include "mt_smi.h"
+#include "m4u.h"
 
-#include <mach/mt_spm_reg.h>
-#include <mach/pcm_def.h>
-#include <mach/mt_spm_idle.h>
 #include "disp_drv_platform.h"
 #include "debug.h"
 #include "ddp_debug.h"
@@ -42,7 +38,7 @@
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
 #include "mt_smi.h"
-#include "mmdvfs_mgr.h"
+/* #include "mmdvfs_mgr.h" */
 #include "disp_drv_log.h"
 #include "ddp_log.h"
 #include "disp_lowpower.h"
@@ -51,7 +47,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
-#include "mach/eint.h"
+/*#include "mach/eint.h"*/
 #if defined(CONFIG_MTK_LEGACY)
 #include <mach/mt_gpio.h>
 #include <cust_gpio_usage.h>
@@ -141,7 +137,7 @@ int _esd_check_config_handle_cmd(cmdqRecHandle handle)
 
 	DISPCHECK("[ESD]_esd_check_config_handle_cmd ret=%d\n", ret);
 
-done:
+
 	if (ret)
 		ret = 1;
 	return ret;
@@ -185,7 +181,7 @@ int _esd_check_config_handle_vdo(cmdqRecHandle handle)
 
 	DISPCHECK("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
 
-done:
+
 	if (ret)
 		ret = 1;
 	return ret;
@@ -273,7 +269,7 @@ int primary_display_switch_esd_mode(int mode)
 int primary_display_switch_esd_mode(int mode)
 {
 	int ret = 0;
-	int gpio_mode = 0;
+	/* int gpio_mode = 0; */
 	struct device_node *node;
 	int irq;
 	u32 ints[2] = { 0, 0 };
@@ -290,7 +286,7 @@ int primary_display_switch_esd_mode(int mode)
 						   "debounce",
 						   ints,
 						   ARRAY_SIZE(ints));
-			mt_gpio_set_debounce(ints[0], ints[1]);
+			/* mt_gpio_set_debounce(ints[0], ints[1]); */
 			irq = irq_of_parse_and_map(node, 0);
 			if (request_irq(irq, _esd_check_ext_te_irq_handler,
 					IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
@@ -444,7 +440,7 @@ int primary_display_esd_check(void)
 			} else {
 				/* need kick idle in case of cmd mode idle disable mtcmos */
 				if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
-					primary_display_idlemgr_kick(__func__, 1);
+					primary_display_idlemgr_kick((char *)__func__, 1);
 				ret = do_esd_check_dsi_te();
 			}
 		}
@@ -475,7 +471,7 @@ int primary_display_esd_check(void)
 
 	/* only cmd mode read & with disable mmsys clk will kick */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
-		primary_display_idlemgr_kick(__func__, 1);
+		primary_display_idlemgr_kick((char *)__func__, 1);
 	ret = do_esd_check_read();
 
 
@@ -493,15 +489,13 @@ done:
 static int primary_display_check_recovery_worker_kthread(void *data)
 {
 	struct sched_param param = {.sched_priority = RTPM_PRIO_FB_THREAD };
-
-	sched_setscheduler(current, SCHED_RR, &param);
-
 	int ret = 0;
 	int i = 0;
 	int esd_try_cnt = 5;	/* 20; */
 	int recovery_done = 0;
 
 	DISPFUNC();
+	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
 		msleep(2000);/*2s*/
@@ -554,6 +548,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 int primary_display_esd_recovery(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
+	LCM_PARAMS *lcm_param = NULL;
 
 	DISPFUNC();
 	dprec_logger_start(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
@@ -563,14 +558,13 @@ int primary_display_esd_recovery(void)
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse,
 		       primary_display_is_video_mode(), 1);
 
-	LCM_PARAMS *lcm_param = NULL;
 
 	lcm_param = disp_lcm_get_params(primary_get_lcm());
 	if (primary_get_state() == DISP_SLEPT) {
 		DISPCHECK("[ESD]esd recovery but primary display path is slept??\n");
 		goto done;
 	}
-	primary_display_idlemgr_kick(__func__, 0);
+	primary_display_idlemgr_kick((char *)__func__, 0);
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 2);
 
 	/* blocking flush before stop trigger loop */

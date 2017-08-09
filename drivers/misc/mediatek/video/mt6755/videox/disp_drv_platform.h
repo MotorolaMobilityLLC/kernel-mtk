@@ -15,6 +15,7 @@
 #include "ddp_hal.h"
 #include "ddp_drv.h"
 #include "ddp_path.h"
+#include "ddp_rdma.h"
 
 /* #include <mach/mt6585_pwm.h> */
 /* #include <mach/boot.h> */
@@ -26,7 +27,6 @@
 #define MTK_FB_ION_SUPPORT
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
-#define M4U_PROFILE
 
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT			(8)
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4)
@@ -46,5 +46,10 @@ typedef enum {
 } DISP_SESSION_ENUM;
 
 #define MAX_SESSION_COUNT					5
+
+/* macros for display path hardware */
+#define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	4
+#define DISP_HW_HRT_LYAERS_FOR_HI_PERF		6
+
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */

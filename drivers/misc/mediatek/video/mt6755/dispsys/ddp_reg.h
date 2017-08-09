@@ -1057,7 +1057,6 @@ extern volatile unsigned long dsi_reg_va;
 #define OUTREG32(x, y)	WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
 #define AS_UINT32(x)	(*(uint32_t *)((void *)x))
 
-
 #define REG_FLD(width, shift) \
 	((unsigned int)((((width) & 0xFF) << 16) | ((shift) & 0xFF)))
 
@@ -1117,12 +1116,12 @@ extern volatile unsigned long dsi_reg_va;
 static inline unsigned long disp_addr_convert(unsigned long va)
 {
 	unsigned int i = 0;
-
 	for (i = 0; i < DISP_REG_NUM; i++) {
 		if (dispsys_reg[i] == (va & (~0xfffl)))
 			return ddp_reg_pa_base[i] + (va & 0xfffl);
 	}
 	pr_err("DDP/can not find reg addr for va=0x%lx!\n", va);
+	BUG();
 	return 0;
 }
 
@@ -1146,6 +1145,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			cmdqRecWrite((cmdqRecHandle)handle, disp_addr_convert((unsigned long)reg32), val, ~0); \
 		}  \
 	} while (0)
+
 
 #define DISP_REG_SET_FIELD(handle, field, reg32, val)  \
 	do {  \
@@ -1556,16 +1556,16 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_DPI_TGEN_VPORCH_RODD				(DISPSYS_DPI_BASE + 0x074)
 #define DISP_REG_DPI_TGEN_VWIDTH_REVEN				(DISPSYS_DPI_BASE + 0x078)
 #define DISP_REG_DPI_TGEN_VPORCH_REVEN				(DISPSYS_DPI_BASE + 0x07c)
-#define DISP_REG_DPI_ESAV_VTIM_LODD					(DISPSYS_DPI_BASE + 0x080)
-#define DISP_REG_DPI_ESAV_VTIM_LEVEN				(DISPSYS_DPI_BASE + 0x084)
-#define DISP_REG_DPI_ESAV_VTIM_RODD					(DISPSYS_DPI_BASE + 0x088)
+#define DISP_REG_DPI_ESAV_VTIM_L					(DISPSYS_DPI_BASE + 0x080)
+#define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x084)
+/* #define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x088) */
 #define DISP_REG_DPI_CLPF_SETTING					(DISPSYS_DPI_BASE + 0x08c)
 #define DISP_REG_DPI_Y_LIMIT						(DISPSYS_DPI_BASE + 0x090)
 #define DISP_REG_DPI_C_LIMIT						(DISPSYS_DPI_BASE + 0x094)
 #define DISP_REG_DPI_YUV422_SETTING					(DISPSYS_DPI_BASE + 0x098)
 #define DISP_REG_DPI_EMBSYNC_SETTING				(DISPSYS_DPI_BASE + 0x09c)
-#define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a8)
-#define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0ac)
+#define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a0)
+#define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0a4)
 #define DISP_REG_DPI_BLANK_CODE_SET					(DISPSYS_DPI_BASE + 0x0b0)
 #define DISP_REG_DPI_MATRIX_SET						(DISPSYS_DPI_BASE + 0x0b4)
 
@@ -2113,6 +2113,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OVL_LC_SRC_SIZE					(0x288UL)
 #define DISP_REG_OVL_LC_OFFSET						(0x28CUL)
 #define DISP_REG_OVL_LC_SRC_SEL                                     (0x290UL)
+#define DISP_REG_OVL_FUNC_DCM0					(0x2A0UL)
 #define DISP_REG_OVL_FUNC_DCM1					(0x2A4UL)
 #define DISP_REG_OVL_SECURE                                         (0x2C0UL)
 
@@ -2225,8 +2226,9 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_RDMA_MEM_CON                                   (DISPSYS_RDMA0_BASE+0x024)
 #define DISP_REG_RDMA_MEM_SRC_PITCH					(DISPSYS_RDMA0_BASE+0x02C)
 #define DISP_REG_RDMA_MEM_GMC_SETTING_0			    (DISPSYS_RDMA0_BASE+0x030)
-#define DISP_REG_RDMA_MEM_SLOW_CON				(DISPSYS_RDMA0_BASE+0x034)
-#define DISP_REG_RDMA_MEM_GMC_SETTING_1			    (DISPSYS_RDMA0_BASE+0x038)
+#define DISP_REG_RDMA_MEM_GMC_SETTING_1			    (DISPSYS_RDMA0_BASE+0x034)
+#define DISP_REG_RDMA_MEM_SLOW_CON				(DISPSYS_RDMA0_BASE+0x038)
+#define DISP_REG_RDMA_MEM_GMC_SETTING_2			    (DISPSYS_RDMA0_BASE+0x03c)
 #define DISP_REG_RDMA_FIFO_CON                                  (DISPSYS_RDMA0_BASE+0x040)
 #define DISP_REG_RDMA_FIFO_LOG                                  (DISPSYS_RDMA0_BASE+0x044)
 #define DISP_REG_RDMA_C00                                       (DISPSYS_RDMA0_BASE+0x054)
@@ -2249,6 +2251,9 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_RDMA_BG_CON_0                                  (DISPSYS_RDMA0_BASE+0x0a0)
 #define DISP_REG_RDMA_BG_CON_1                                  (DISPSYS_RDMA0_BASE+0x0a4)
 #define DISP_REG_RDMA_THRESHOLD_FOR_SODI                        (DISPSYS_RDMA0_BASE+0x0a8)
+#define DISP_REG_RDMA_THRESHOLD_FOR_DVFS                       (DISPSYS_RDMA0_BASE+0x0ac)
+#define DISP_REG_RDMA_SRAM_SEL                                 (DISPSYS_RDMA0_BASE + 0xb0)
+#define DISP_RDMA_STALL_CG_CON                                 (DISPSYS_RDMA0_BASE + 0xb4)
 #define DISP_REG_RDMA_IN_P_CNT                                  (DISPSYS_RDMA0_BASE+0x0f0)
 #define DISP_REG_RDMA_IN_LINE_CNT                               (DISPSYS_RDMA0_BASE+0x0f4)
 #define DISP_REG_RDMA_OUT_P_CNT                                 (DISPSYS_RDMA0_BASE+0x0f8)
@@ -2288,13 +2293,13 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define MEM_CON_FLD_MEM_MODE_TILE_INTERLACE		        REG_FLD(1, 1)
 #define MEM_CON_FLD_MEM_MODE_TILE_EN                            REG_FLD(1, 0)
 #define MEM_SRC_PITCH_FLD_MEM_MODE_SRC_PITCH		        REG_FLD(16, 0)
-#define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_HIGH_OFS	    REG_FLD(8, 24)
+/* #define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_HIGH_OFS	    REG_FLD(8, 24)
 #define MEM_GMC_SETTING_0_FLD_ULTRA_THRESHOLD_HIGH_OFS		REG_FLD(8, 16)
 #define MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_LOW_OFS	    REG_FLD(8, 8)
-#define MEM_GMC_SETTING_0_FLD_ULTRA_THRESHOLD_LOW               REG_FLD(8, 0)
+#define MEM_GMC_SETTING_0_FLD_ULTRA_THRESHOLD_LOW               REG_FLD(8, 0) */
 #define MEM_SLOW_CON_FLD_MEM_MODE_SLOW_COUNT			REG_FLD(16, 16)
 #define MEM_SLOW_CON_FLD_MEM_MODE_SLOW_EN			REG_FLD(1, 0)
-#define MEM_GMC_SETTING_1_FLD_ISSUE_REQ_THRESHOLD		REG_FLD(8, 0)
+/* #define MEM_GMC_SETTING_1_FLD_ISSUE_REQ_THRESHOLD		REG_FLD(8, 0) */
 #define FIFO_CON_FLD_FIFO_UNDERFLOW_EN				REG_FLD(1, 31)
 #define FIFO_CON_FLD_FIFO_PSEUDO_SIZE				REG_FLD(12, 16)
 #define FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD		REG_FLD(12, 0)

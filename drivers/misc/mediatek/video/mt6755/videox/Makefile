@@ -6,6 +6,8 @@ obj-y += mtkfb_console.o        \
 		mtkfb.o                \
 		debug.o                \
 		primary_display.o      \
+		disp_lowpower.o        \
+		disp_recovery.o        \
 		disp_lcm.o             \
 		disp_utils.o           \
 		mtk_disp_mgr.o         \

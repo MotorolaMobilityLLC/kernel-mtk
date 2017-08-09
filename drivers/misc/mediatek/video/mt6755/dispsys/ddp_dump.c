@@ -1,14 +1,12 @@
 #define LOG_TAG "dump"
-
 #include "ddp_reg.h"
 #include "ddp_log.h"
 #include "ddp_dump.h"
 #include "ddp_ovl.h"
 #include "ddp_wdma.h"
-#include "ddp_wdma_ex.h"
 #include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
+#include <linux/slab.h>
 
 static char *ddp_signal_0(int bit)
 {
@@ -333,11 +331,17 @@ static void mutex_dump_analysis(void)
 {
 	int i = 0;
 	int j = 0;
-	char mutex_module[512] = { '\0' };
+	char *mutex_module;
 	char *p = NULL;
 	int len = 0;
 	unsigned int val;
 	unsigned int regval;
+
+	mutex_module = kzalloc(512, GFP_KERNEL);
+	if (!mutex_module) {
+		DDPDUMP("%s fail because of no memory\n", __func__);
+		return;
+	}
 
 	DDPDUMP("==DISP Mutex Analysis==\n");
 	for (i = 0; i < 5; i++) {
@@ -363,6 +367,7 @@ static void mutex_dump_analysis(void)
 		}
 		DDPDUMP("%s)\n", mutex_module);
 	}
+	kfree(mutex_module);
 }
 
 static void mmsys_config_dump_reg(void)
@@ -390,6 +395,7 @@ static void mmsys_config_dump_reg(void)
 	DDPMSG("(0x100)MM_CG_CON0      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	DDPMSG("(0x110)MM_CG_CON1      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	DDPMSG("(0x120)MM_HW_DCM_DIS0  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0));
+	DDPMSG("(0x130)MM_HW_DCM_DIS1  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS1));
 	DDPMSG("(0x140)MM_SW0_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B));
 	DDPMSG("(0x144)MM_SW1_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW1_RST_B));
 	DDPMSG("(0x150)MM_LCM_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_LCM_RST_B));
@@ -428,7 +434,7 @@ static void mmsys_config_dump_analysis(void)
 {
 	unsigned int i = 0;
 	unsigned int reg = 0;
-	char clock_on[512] = { '\0' };
+	char *clock_on;
 	char *pos = NULL;
 	char *name;
 
@@ -446,12 +452,17 @@ static void mmsys_config_dump_analysis(void)
 	if ((DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK) >> 31) & 0x1)
 		DDPERR("mmsys clock abnormal!!\n");
 
+#define CLOCK_ON_SIZE 512
+	clock_on = kzalloc(CLOCK_ON_SIZE, GFP_KERNEL);
+	if (!clock_on)
+		return;
+
 	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
 	for (i = 0; i < 32; i++) {
 		if ((reg & (1 << i)) == 0) {
 			name = ddp_clock_0(i);
 			if (name)
-				strncat(clock_on, name, sizeof(clock_on));
+				strncat(clock_on, name, CLOCK_ON_SIZE);
 		}
 	}
 
@@ -460,12 +471,12 @@ static void mmsys_config_dump_analysis(void)
 		if ((reg & (1 << i)) == 0) {
 			name = ddp_clock_1(i);
 			if (name)
-				strncat(clock_on, name, sizeof(clock_on));
+				strncat(clock_on, name, CLOCK_ON_SIZE);
 		}
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
 
-	DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x, greq=0%x\n",
+	DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x, greq=0x%x\n",
 		valid0, valid1, ready0, ready1, greq);
 	for (i = 0; i < 32; i++) {
 		name = ddp_signal_0(i);
@@ -511,19 +522,20 @@ static void mmsys_config_dump_analysis(void)
 
 	/* greq: 1 means SMI dose not grant, maybe SMI hang */
 	if (greq)
-		DDPMSG("smi greq not grant module: ");
-	else
-		return;
+		DDPMSG("smi greq not grant module: (greq: 1 means SMI dose not grant, maybe SMI hang)");
 
 	clock_on[0] = '\0';
 	for (i = 0; i < 32; i++) {
-		name = ddp_greq_name(i);
-		if (!name)
-			continue;
-		strncat(clock_on, name, sizeof(clock_on));
-		DDPDUMP("%s\n", clock_on);
+		if (greq & (1 << i)) {
+			name = ddp_greq_name(i);
+			if (!name)
+				continue;
+			strncat(clock_on, name, CLOCK_ON_SIZE);
+		}
 	}
+	DDPDUMP("%s\n", clock_on);
 
+	kfree(clock_on);
 	return;
 }
 
@@ -597,6 +609,7 @@ static void color_dump_reg(DISP_MODULE_ENUM module)
 	DDPDUMP("(0x404)COLOR_PXL_CNT_MAIN   =0x%x\n", DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN));
 	DDPDUMP("(0x408)COLOR_LINE_CNT_MAIN   =0x%x\n", DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN));
 	DDPDUMP("(0xc00)COLOR_START      =0x%x\n", DISP_REG_GET(DISP_COLOR_START));
+	DDPDUMP("(0xc28)DISP_COLOR_CK_ON      =0x%x\n", DISP_REG_GET(DISP_COLOR_CK_ON));
 	DDPDUMP("(0xc50)COLOR_INTER_IP_W =0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_WIDTH));
 	DDPDUMP("(0xc54)COLOR_INTER_IP_H =0x%x\n", DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT));
 }
@@ -604,7 +617,6 @@ static void color_dump_reg(DISP_MODULE_ENUM module)
 static void color_dump_analysis(DISP_MODULE_ENUM module)
 {
 	int index = 0;
-
 	if (DISP_MODULE_COLOR0 == module) {
 		index = 0;
 	} else if (DISP_MODULE_COLOR1 == module) {
@@ -619,6 +631,7 @@ static void color_dump_analysis(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_COLOR_INTERNAL_IP_HEIGHT),
 		DISP_REG_GET(DISP_COLOR_PXL_CNT_MAIN) & 0xffff,
 		(DISP_REG_GET(DISP_COLOR_LINE_CNT_MAIN) >> 16) & 0x1fff);
+
 }
 
 static void aal_dump_reg(void)
@@ -659,7 +672,6 @@ static void pwm_dump_reg(DISP_MODULE_ENUM module)
 {
 	int index = 0;
 	unsigned long reg_base = 0;
-
 	if (module == DISP_MODULE_PWM0) {
 		index = 0;
 		reg_base = DISPSYS_PWM0_BASE;
@@ -678,7 +690,6 @@ static void pwm_dump_analysis(DISP_MODULE_ENUM module)
 {
 	int index = 0;
 	unsigned int reg_base = 0;
-
 	if (module == DISP_MODULE_PWM0) {
 		index = 0;
 		reg_base = DISPSYS_PWM0_BASE;
@@ -688,6 +699,7 @@ static void pwm_dump_analysis(DISP_MODULE_ENUM module)
 	}
 	DDPDUMP("==DISP PWM%d ANALYSIS==\n", index);
 	DDPDUMP("pwm clock=%d\n", (DISP_REG_GET(DISP_REG_CLK_CFG_1_CLR) >> 7) & 0x1);
+
 }
 
 static void od_dump_reg(void)
@@ -715,6 +727,7 @@ static void od_dump_analysis(void)
 	DDPDUMP("od: w=%d, h=%d, bypass=%d\n",
 		(DISP_REG_GET(DISP_REG_OD_SIZE) >> 16) & 0xffff,
 		DISP_REG_GET(DISP_REG_OD_SIZE) & 0xffff, DISP_REG_GET(DISP_REG_OD_CFG) & 0x1);
+
 }
 
 static void ccorr_dump_reg(void)
@@ -762,21 +775,9 @@ static void dither_dump_analyze(void)
 	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) & 0x1fff,
 	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
 }
-/*
-static void ufoe_dump_reg(void)
-{
-	DDPDUMP("==DISP UFOE REGS==\n");
-}
-
-static void ufoe_dump_analysis(void)
-{
-	DDPDUMP("==DISP UFOE ANALYSIS==\n");
-}
-*/
 static void dsi_dump_reg(DISP_MODULE_ENUM module)
 {
 	int i = 0;
-
 	if (DISP_MODULE_DSI0) {
 		DDPDUMP("==DISP DSI0 REGS==\n");
 		for (i = 0; i < 25 * 16; i += 16) {

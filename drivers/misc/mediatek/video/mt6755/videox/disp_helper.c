@@ -12,6 +12,7 @@
 #include "mt-plat/mt_chip.h"
 #include "disp_drv_log.h"
 #include "primary_display.h"
+
 #include "mt-plat/mt_boot.h"
 #include "disp_helper.h"
 #include "disp_drv_platform.h"
@@ -84,18 +85,26 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_FAKE_LCM_HEIGHT",
 	"DISP_OPT_OVL_WARM_RESET",
 	"DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN",
+	/* Begin: lowpower option*/
+	"DISP_OPT_SODI_SUPPORT",
+	"DISP_OPT_IDLE_MGR",
 	"DISP_OPT_IDLEMGR_SWTCH_DECOUPLE",
+	"DISP_OPT_IDLEMGR_ENTER_ULPS",
+	"DISP_OPT_SHARE_SRAM",
+	"DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK",
+	"DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING",
 	"DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ",
+	"DISP_OPT_MET_LOG", /* for met */
+	/* End: lowpower option */
 	"DISP_OPT_DECOUPLE_MODE_USE_RGB565",
 	"DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT",
 	"DISP_OPT_NO_LK",
 	"DISP_OPT_BYPASS_PQ",
 	"DISP_OPT_ESD_CHECK_RECOVERY",
+	"DISP_OPT_ESD_CHECK_SWITCH",
 	"DISP_OPT_PRESENT_FENCE",
-	"DISP_OPT_IDLE_MGR",
 	"DISP_OPT_PERFORMANCE_DEBUG",
 	"DISP_OPT_SWITCH_DST_MODE",
-	"DISP_OPT_SODI_SUPPORT",
 	"DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE",
 	"DISP_OPT_SCREEN_CAP_FROM_DITHER",
 	"DISP_OPT_BYPASS_OVL",
@@ -103,6 +112,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_SMART_OVL",
 	"DISP_OPT_DYNAMIC_DEBUG",
 	"DISP_OPT_SHOW_VISUAL_DEBUG_INFO",
+	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 };
 
 
@@ -116,10 +126,8 @@ const char *disp_helper_option_spy(DISP_HELPER_OPT option)
 DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 {
 	int i;
-
 	for (i = 0; i < DISP_OPT_NUM; i++) {
 		const char *opt_name = disp_helper_option_spy(i);
-
 		if (strcmp(name, opt_name) == 0)
 			return i;
 	}
@@ -130,9 +138,7 @@ DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 {
 	int ret = 0;
-
 	if (option == DISP_OPT_FPS_CALC_WND) {
-		DISPMSG("DISP_OPT_FPS_CALC_WND\n");
 		/*ret = primary_fps_ctx_set_wnd_sz(value);*/
 		if (ret) {
 			DISPERR("%s error to set fps_wnd_sz to %d\n", __func__, value);
@@ -141,10 +147,10 @@ int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 	}
 
 	if (option < DISP_OPT_NUM) {
-		DISPCHECK("Set Option %d(%s) from (%d) to (%d)\n", option,
+		DISPMSG("Set Option %d(%s) from (%d) to (%d)\n", option,
 			  disp_helper_option_spy(option), disp_helper_get_option(option), value);
 		_disp_helper_option_value[option] = value;
-		DISPCHECK("After set (%s) is (%d)\n", disp_helper_option_spy(option),
+		DISPMSG("After set (%s) is (%d)\n", disp_helper_option_spy(option),
 			  disp_helper_get_option(option));
 	} else {
 		DISPERR("Wrong option: %d\n", option);
@@ -155,7 +161,6 @@ int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 int disp_helper_set_option_by_name(const char *name, int value)
 {
 	DISP_HELPER_OPT opt;
-
 	opt = disp_helper_name_to_opt(name);
 	if (opt >= DISP_OPT_NUM)
 		return -1;
@@ -166,7 +171,6 @@ int disp_helper_set_option_by_name(const char *name, int value)
 int disp_helper_get_option(DISP_HELPER_OPT option)
 {
 	int ret = 0;
-
 	if (option >= DISP_OPT_NUM) {
 		DISPERR("%s: option invalid %d\n", __func__, option);
 		BUG();
@@ -190,6 +194,8 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 				return 1;
 			else if (_is_early_porting_stage())
 				return 0;
+			else
+				BUG_ON(1);
 		}
 	case DISP_OPT_FAKE_LCM_X:
 		{
@@ -219,7 +225,6 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 	case DISP_OPT_FAKE_LCM_WIDTH:
 		{
 			int w = primary_display_get_virtual_width();
-
 			if (0 == w)
 				w = DISP_GetScreenWidth();
 			return w;
@@ -227,7 +232,6 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 	case DISP_OPT_FAKE_LCM_HEIGHT:
 		{
 			int h = primary_display_get_virtual_height();
-
 			if (0 == h)
 				h = DISP_GetScreenHeight();
 			return h;
@@ -250,15 +254,6 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 				return 0;
 		}
 	case DISP_OPT_SWITCH_DST_MODE:
-		{
-			if (_is_normal_stage())
-				return 0;
-			else if (_is_bringup_stage())
-				return 0;
-			else if (_is_early_porting_stage())
-				return 0;
-		}
-	case DISP_OPT_SODI_SUPPORT:
 		{
 			if (_is_normal_stage())
 				return 0;
@@ -303,13 +298,27 @@ void disp_helper_option_init(void)
 	/* warm reset ovl before each trigger for cmd mode */
 	disp_helper_set_option(DISP_OPT_OVL_WARM_RESET, 0);
 
-	/* switch to decouple mode for screen idle, only for video mode */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 1);
+	/* ===================Begin: lowpower option setting==================== */
+	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 1);
 	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
+	/* 1. vdo mode + screen idle(need idlemgr) */
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 1);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
+
+	/* 2. cmd mode + screen idle(need idlemgr) */
+	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 1);
+
+	/* 3. cmd mode + vdo mode */
+	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 1);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
+
+
+	disp_helper_set_option(DISP_OPT_MET_LOG, 1);
+	/* ===================End: lowpower option setting==================== */
+
 	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);
-	/* disable routine irq for screen idle */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0);
 
 	/* use fake vsync timer for low power measurement */
 	disp_helper_set_option(DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0);
@@ -317,13 +326,14 @@ void disp_helper_option_init(void)
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 1);
+	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
 	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 1);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
-	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
+	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 }
 
@@ -331,7 +341,6 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 {
 	int len = 0;
 	int i = 0;
-
 	for (i = 0; i < DISP_OPT_NUM; i++) {
 		DISPMSG("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i),
 			disp_helper_get_option(i));

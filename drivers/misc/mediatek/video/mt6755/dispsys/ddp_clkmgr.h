@@ -31,12 +31,14 @@ typedef enum disp_clk_id {
 	DISP_PWM,
 	DISP_MTCMOS_CLK,
 	MUX_DPI0,
-	TVDPLL_CK,
 	TVDPLL_D2,
 	TVDPLL_D4,
 	TVDPLL_D8,
 	TVDPLL_D16,
 	DPI_CK,
+	MUX_MM,
+	MM_VENCPLL,
+	SYSPLL2_D2,
 	MAX_DISP_CLK_CNT
 } eDDP_CLK_ID;
 
@@ -47,7 +49,7 @@ int ddp_clk_unprepare(eDDP_CLK_ID id);
 int ddp_clk_enable(eDDP_CLK_ID id);
 int ddp_clk_disable(eDDP_CLK_ID id);
 int ddp_clk_prepare_enable(eDDP_CLK_ID id);
-int ddp_clk_unprepare_disable(eDDP_CLK_ID id);
+int ddp_clk_disable_unprepare(eDDP_CLK_ID id);
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent);
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
 int ddp_parse_apmixed_base(void);

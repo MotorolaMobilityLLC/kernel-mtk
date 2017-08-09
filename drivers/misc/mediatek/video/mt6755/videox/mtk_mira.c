@@ -71,7 +71,6 @@ static const struct file_operations disp_fops = {
 static int __init disp_init(void)
 {
 	int ret = 0;
-
 	DISPMSG("Register the disp driver\n");
 	proc_entry = proc_create(DISP_DEVNAME, 0644, NULL, &disp_fops);
 	if (proc_entry == NULL)

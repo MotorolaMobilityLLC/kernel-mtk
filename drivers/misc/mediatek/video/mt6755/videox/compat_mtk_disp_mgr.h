@@ -20,6 +20,7 @@ struct compat_disp_session_config {
 	compat_uint_t present_fence_idx;
 	compat_uint_t dc_type;
 	compat_int_t need_merge;
+	compat_int_t tigger_mode;
 };
 
 
@@ -91,13 +92,15 @@ struct compat_disp_present_fence {
 struct compat_disp_session_vsync_config {
 	compat_uint_t session_id;
 	compat_uint_t vsync_cnt;
-	compat_uint_t vsync_ts;
+	compat_u64 vsync_ts;
+	compat_uint_t lcm_fps;
 };
 
 struct compat_disp_session_layer_num_config {
 	compat_uint_t session_id;
 	compat_uint_t max_layer_num;
 };
+
 
 struct compat_disp_caps_info {
 	compat_uint_t output_mode;
@@ -106,11 +109,15 @@ struct compat_disp_caps_info {
 #ifdef CONFIG_FOR_SOURCE_PQ
 	compat_uint_t max_pq_num;
 #endif
+	compat_uint_t disp_feature;
+	compat_uint_t is_support_frame_cfg_ioctl;
+	compat_uint_t is_output_rotated;
 };
 
 struct compat_disp_buffer_info {
 
 	compat_uint_t session_id;
+
 	compat_uint_t layer_id;
 	compat_uint_t layer_en;
 	compat_int_t ion_fd;
@@ -120,10 +127,33 @@ struct compat_disp_buffer_info {
 	compat_uint_t interface_index;
 	compat_int_t interface_fence_fd;
 };
-
 struct compat_disp_session_output_config {
 	compat_uint_t session_id;
 	struct compat_disp_output_config config;
+};
+
+struct compat_disp_frame_cfg_t {
+	compat_uint_t setter;
+	compat_uint_t session_id;
+
+	/* input config */
+	compat_uint_t input_layer_num;
+	struct compat_disp_input_config input_cfg[8];
+	compat_uint_t overlap_layer_num;
+
+	/* constant layer */
+	compat_uint_t const_layer_num;
+	struct compat_disp_input_config const_layer[1];
+
+	/* output config */
+	compat_int_t output_en;
+	struct compat_disp_output_config output_cfg;
+
+	/* trigger config */
+	compat_uint_t mode;
+	compat_uint_t present_fence_idx;
+	compat_uint_t tigger_mode;
+	compat_uint_t user;
 };
 
 struct compat_disp_session_info {
@@ -143,6 +173,10 @@ struct compat_disp_session_info {
 	compat_uint_t isOVLDisabled;
 	compat_uint_t is3DSupport;
 	compat_uint_t const_layer_num;
+	/* updateFPS: fps of HWC trigger display */
+	/* notes: for better Accuracy, updateFPS = real_fps*100 */
+	compat_uint_t updateFPS;
+	compat_uint_t is_updateFPS_stable;
 };
 
 int _compat_ioctl_prepare_present_fence(struct file *file, unsigned long arg);
@@ -157,6 +191,7 @@ int _compat_ioctl_get_display_caps(struct file *file, unsigned long arg);
 int _compat_ioctl_set_vsync(struct file *file, unsigned long arg);
 int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg);
 int _compat_ioctl_set_session_mode(struct file *file, unsigned long arg);
+int _compat_ioctl_frame_config(struct file *file, unsigned long arg);
 
 #define	COMPAT_DISP_IOCTL_CREATE_SESSION				DISP_IOW(201, struct compat_disp_session_config)
 #define	COMPAT_DISP_IOCTL_DESTROY_SESSION				DISP_IOW(202, struct compat_disp_session_config)
@@ -176,5 +211,7 @@ int _compat_ioctl_set_session_mode(struct file *file, unsigned long arg);
 #define	COMPAT_DISP_IOCTL_GET_PRESENT_FENCE				DISP_IOW(216, struct compat_disp_present_fence)
 #define COMPAT_DISP_IOCTL_GET_IS_DRIVER_SUSPEND			DISP_IOW(217, compat_uint_t)
 #define COMPAT_DISP_IOCTL_GET_DISPLAY_CAPS			DISP_IOW(218, struct compat_disp_caps_info)
+#define	COMPAT_DISP_IOCTL_FRAME_CONFIG				DISP_IOW(220, struct compat_disp_session_output_config)
+
 #endif
 #endif /*_COMPAT_MTK_DISP_MGR_H_*/

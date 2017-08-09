@@ -61,7 +61,6 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 {
 	LCM_PARAMS *disp_if_config = &(pConfig->dispif_config);
 	LCM_DSI_PARAMS *lcm_config = &(disp_if_config->dsi);
-
 	if (lcm_config->ufoe_enable) {
 		ufoe_enable = true;
 		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);

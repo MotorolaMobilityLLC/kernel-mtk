@@ -1931,7 +1931,10 @@
 					<&topckgen TOP_TVDPLL_D4>,
 					<&topckgen TOP_TVDPLL_D8>,
 					<&topckgen TOP_TVDPLL_D16>,
-					<&topckgen TOP_DPI_CK>;
+					<&topckgen TOP_DPI_CK>,
+					<&topckgen TOP_MUX_MM>,
+					<&topckgen TOP_VENCPLL_CK>,
+					<&topckgen TOP_SYSPLL2_D2>;
 
 		clock-names = "DISP0_SMI_COMMON",
 					"DISP0_SMI_LARB0",
@@ -1961,7 +1964,10 @@
 					"TVDPLL_D4",
 					"TVDPLL_D8",
 					"TVDPLL_D16",
-					"DPI_CK";
+					"DPI_CK",
+					"MUX_MM",
+					"MM_VENCPLL",
+					"SYSPLL2_D2";
 		};
 
 		disp_ovl0@14008000 {

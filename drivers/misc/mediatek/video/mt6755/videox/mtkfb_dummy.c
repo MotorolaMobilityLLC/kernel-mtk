@@ -213,7 +213,6 @@ static int mtkfb_set_par(struct fb_info *fbi)
 {
 	struct fb_var_screeninfo *var = &fbi->var;
 	struct mtkfb_device *fbdev = (struct mtkfb_device *)fbi->par;
-
 	set_fb_fix(fbdev);
 	return 0;
 }
@@ -772,7 +771,6 @@ static int mtkfb_probe(struct device *dev)
 	int init_state;
 	int r = 0;
 	char *p = NULL;
-
 	pr_error("mtkfb_probe begin\n");
 
 #ifdef CONFIG_OF
@@ -809,7 +807,6 @@ static int mtkfb_probe(struct device *dev)
 		fbdev->fb_pa_base = fb_base;
 #else
 		struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
 		disp_hal_allocate_framebuffer(res->start, res->end,
 					      (unsigned int *)&fbdev->fb_va_base, &fb_pa);
 		fbdev->fb_pa_base = res->start;
@@ -873,7 +870,6 @@ static int mtkfb_remove(struct device *dev)
 {
 	struct mtkfb_device *fbdev = dev_get_drvdata(dev);
 	enum mtkfb_state saved_state = fbdev->state;
-
 	fbdev->state = MTKFB_DISABLED;
 	mtkfb_free_resources(fbdev, saved_state);
 	return 0;

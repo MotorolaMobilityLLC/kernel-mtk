@@ -89,6 +89,7 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.idlemgr =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.sec = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "sec");
+		DDP_MMP_Events.tui =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "tui");
 		DDP_MMP_Events.fps_set =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_set");
 		DDP_MMP_Events.fps_get =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_get");
 
@@ -301,6 +302,8 @@ void init_ddp_mmp_events(void)
 		MMProfileEnableEventRecursive(DDP_MMP_Events.DDP_IRQ, 1);
 
 		MMProfileEnableEvent(DDP_MMP_Events.primary_sw_mutex, 0);
+		MMProfileEnableEvent(DDP_MMP_Events.fps_get, 0);
+		MMProfileEnableEvent(DDP_MMP_Events.fps_set, 0);
 		MMProfileEnableEventRecursive(DDP_MMP_Events.primary_seq_info, 0);
 	}
 }
@@ -404,6 +407,7 @@ void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 	else if (session == 2)
 		MMProfileLogEx(DDP_MMP_Events.Extd_layer_dump_parent, MMProfileFlagEnd, pLayer->fmt,
 			       pLayer->addr);
+
 }
 
 void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
@@ -483,6 +487,8 @@ void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			       wdma_layer->outputFormat);
 		}
 	}
+
+
 }
 
 void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
@@ -563,6 +569,7 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			       rdma_layer->inputFormat);
 		}
 	}
+
 }
 
 

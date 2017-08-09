@@ -28,7 +28,6 @@ int _is_lcm_inited(disp_lcm_handle *plcm)
 	DISPERR("WARNING, invalid lcm handle: %p\n", plcm);
 	return 0;
 }
-
 LCM_PARAMS *_get_lcm_params_by_handle(disp_lcm_handle *plcm)
 {
 	if (plcm)
@@ -368,6 +367,8 @@ int disp_lcm_esd_check(disp_lcm_handle *plcm)
 	}
 	return ret;
 }
+
+
 
 int disp_lcm_esd_recover(disp_lcm_handle *plcm)
 {

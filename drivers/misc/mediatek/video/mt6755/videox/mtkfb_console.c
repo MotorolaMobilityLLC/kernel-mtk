@@ -425,7 +425,6 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 	int add_new = 1;
 	char *tmp1, *tmp2;
 	unsigned int len = 0;
-
 	screen_logger_init();
 	list_for_each_entry(p, &logger_head.list, list) {
 		if (strcmp(p->obj, obj) == 0) {
@@ -453,7 +452,6 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 	}
 	if (1 == add_new) {
 		screen_logger *logger = kmalloc(sizeof(screen_logger), GFP_KERNEL);
-
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
 		list_add_tail(&logger->list, &logger_head.list);
@@ -463,7 +461,6 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 void screen_logger_remove_message(char *obj)
 {
 	screen_logger *p;
-
 	list_for_each_entry(p, &logger_head.list, list) {
 		if (0 == strcmp(p->obj, obj)) {
 			kfree(p->obj);
@@ -480,7 +477,6 @@ void screen_logger_remove_message(char *obj)
 void screen_logger_print(MFC_HANDLE handle)
 {
 	screen_logger *p;
-
 	list_for_each_entry(p, &logger_head.list, list) {
 		MFC_Print(handle, p->message);
 	}
@@ -489,7 +485,6 @@ void screen_logger_print(MFC_HANDLE handle)
 void screen_logger_empty(void)
 {
 	screen_logger *p = list_entry(logger_head.list.prev, typeof(*p), list);
-
 	while (p != &logger_head) {
 		screen_logger_remove_message(p->obj);
 		p = list_entry(logger_head.list.prev, typeof(*p), list);

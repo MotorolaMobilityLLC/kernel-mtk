@@ -4,11 +4,16 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
+             -I$(srctree)/drivers/misc/mediatek/sync/      \
+             -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)       \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
-             -I$(srctree)/drivers/misc/mediatek/base/power/mt6755/ \
-             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
+             -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
+             -I$(srctree)/drivers/staging/android/ion/ \
+             -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include/ \
              -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/include/mt-plat \
              -I$(srctree)/drivers/misc/mediatek/mmp/
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
@@ -25,8 +30,8 @@ endif
 
 #driver
 obj-y += ddp_ovl.o
-obj-y += ddp_rdma_ex.o
-obj-y += ddp_wdma_ex.o
+obj-y += ddp_rdma.o
+obj-y += ddp_wdma.o
 obj-y += ddp_dsi.o
 #obj-y += ddp_dpi.o
 #obj-y += ddp_split.o

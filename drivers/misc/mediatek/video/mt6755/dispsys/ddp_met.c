@@ -6,9 +6,9 @@
 #include "ddp_irq.h"
 #include "ddp_reg.h"
 #include "ddp_met.h"
+#include "ddp_path.h"
 #include "ddp_ovl.h"
 #include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
 #include "DpDataType.h"
 
 #define DDP_IRQ_EER_ID				(0xFFFF0000)
@@ -24,7 +24,7 @@
 
 
 unsigned int met_tag_on = 0;
-/*
+#if 0
 static const char *const parse_color_format(DpColorFormat fmt)
 {
 	switch (fmt) {
@@ -53,10 +53,29 @@ static const char *const parse_color_format(DpColorFormat fmt)
 	case eYUY2:
 		return "eYUY2";
 	default:
-		return "";
+		return "DEFAULT";
 	}
 }
-*/
+#endif
+
+/**
+ * check if it's decouple mode
+ *
+ * mutex_id  |  decouple  |  direct-link
+ * -------------------------------------
+ * OVL_Path  |      1     |       0
+ * RDMA_Path |      0     |       X
+ *
+ */
+int dpp_disp_is_decouple(void)
+{
+	if (ddp_is_moudule_in_mutex(0, DISP_MODULE_OVL0) ||
+	    ddp_is_moudule_in_mutex(0, DISP_MODULE_OVL0_2L))
+		return 0;
+	else
+		return 1;
+}
+
 /**
  * Represent to LCM display refresh rate
  * Primary Display:  map to RDMA0 sof/eof ISR, for all display mode
@@ -67,22 +86,63 @@ static const char *const parse_color_format(DpColorFormat fmt)
 static void ddp_disp_refresh_tag_start(unsigned int index)
 {
 	static unsigned long sBufAddr[RDMA_NUM];
-
 	static RDMA_BASIC_STRUCT rdmaInfo;
 	char tag_name[30] = { '\0' };
 
-	rdma_get_info(index, &rdmaInfo);
-	if (rdmaInfo.addr == 0 || (rdmaInfo.addr != 0 && sBufAddr[index] != rdmaInfo.addr)) {
-		sBufAddr[index] = rdmaInfo.addr;
-		sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
-		met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+	if (dpp_disp_is_decouple() == 1) {
+
+		rdma_get_info(index, &rdmaInfo);
+		if (rdmaInfo.addr == 0 || (rdmaInfo.addr != 0 && sBufAddr[index] != rdmaInfo.addr)) {
+			sBufAddr[index] = rdmaInfo.addr;
+			sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
+			met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+		}
+
+	} else {
+		static OVL_BASIC_STRUCT old_ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+		static OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+		int ovl_index;
+		int b_layer_changed;
+		int i, j;
+
+		b_layer_changed = 0;
+
+		/*Traversal layers and get layer info*/
+		memset(ovlInfo, 0, sizeof(ovlInfo));/*essential for structure comparision*/
+
+		for (i = 0; i < OVL_NUM; i++) {
+
+			ovl_get_info(i, &(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]));
+
+			for (j = 0; j < OVL_LAYER_NUM_PER_OVL; j++) {
+				ovl_index = (i * OVL_LAYER_NUM_PER_OVL) + j;
+
+				if (memcmp(&(ovlInfo[ovl_index]), &(old_ovlInfo[ovl_index]),
+						sizeof(OVL_BASIC_STRUCT)) == 0)
+					continue;
+
+				if (ovlInfo[ovl_index].layer_en)
+					b_layer_changed = 1;
+			}
+
+			/*store old value*/
+			memcpy(&(old_ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
+				&(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
+				OVL_LAYER_NUM_PER_OVL*sizeof(OVL_BASIC_STRUCT));
+
+		}
+
+		if (b_layer_changed) {
+			sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
+			met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+		}
+
 	}
 }
 
 static void ddp_disp_refresh_tag_end(unsigned int index)
 {
 	char tag_name[30] = { '\0' };
-
 	sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
 	met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 0);
 }
@@ -189,7 +249,10 @@ static void ddp_inout_info_tag(unsigned int index)
 			}
 		}
 	}
+
+
 #endif
+
 }
 
 static void ddp_err_irq_met_tag(const char *name)
@@ -207,11 +270,11 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 	case DISP_MODULE_RDMA0:
 	case DISP_MODULE_RDMA1:
 		index = module - DISP_MODULE_RDMA0;
+		if (reg_val & (1 << 2))
+			ddp_disp_refresh_tag_end(index);/*Always process eof prior to sof*/
+
 		if (reg_val & (1 << 1))
 			ddp_disp_refresh_tag_start(index);
-
-		if (reg_val & (1 << 2))
-			ddp_disp_refresh_tag_end(index);
 
 		if (reg_val & (1 << 4)) {
 			sprintf(tag_name, "rdma%d_underflow", index);
@@ -226,10 +289,11 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 	case DISP_MODULE_OVL0:
 	case DISP_MODULE_OVL1:
 		index = module - DISP_MODULE_OVL0;
-		if (reg_val & (1 << 1))
+		if (reg_val & (1 << 1)) {/*EOF*/
 			ddp_inout_info_tag(index);
 			/*if (met_mmsys_event_disp_ovl_eof)
 				met_mmsys_event_disp_ovl_eof(index);*/
+		}
 
 		break;
 
@@ -262,3 +326,4 @@ void ddp_init_met_tag(int state, int rdma0_mode, int rdma1_mode)
 		disp_unregister_irq_callback(met_irq_handler);
 	}
 }
+EXPORT_SYMBOL(ddp_init_met_tag);

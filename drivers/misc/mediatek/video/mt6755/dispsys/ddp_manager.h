@@ -317,6 +317,7 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
  * timeout :(ms).
 */
 int dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event);
+int dpmgr_wait_event_ts(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigned long long *event_ts);
 
 
 /* power on, turn on each modules clk.
@@ -325,6 +326,7 @@ int dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event);
 * encmdq: 1 use command queue, 0 not.
 */
 int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq);
+int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmdq);
 
 /* power 0ff,  turn off each modules clk, if all hande are closed. top clock will be off.
  * return 0.
@@ -332,6 +334,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq);
 * encmdq: 1 use command queue, 0 not.
 */
 int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq);
+int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmdq);
 
 /* set lcm utils. now only dis/dpi used.
  * return 0.
@@ -390,6 +393,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
  * dp_handle: disp path handle.
 */
 disp_ddp_path_config *dpmgr_path_get_last_config(disp_path_handle dp_handle);
+disp_ddp_path_config *dpmgr_path_get_last_config_notclear(disp_path_handle dp_handle);
 
 void dpmgr_get_input_buffer(disp_path_handle dp_handle, unsigned long *addr);
 int dpmgr_module_notify(DISP_MODULE_ENUM module, DISP_PATH_EVENT event);

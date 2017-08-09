@@ -88,7 +88,6 @@ static int mtkfb_vsync_flush(struct file *a_pstFile, fl_owner_t a_id)
 static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-
 	MTKFB_VSYNC_FUNC();
 	switch (cmd) {
 	case MTKFB_VSYNC_IOCTL:

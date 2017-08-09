@@ -113,12 +113,12 @@ typedef struct {
 } dprec_logger;
 
 typedef struct _fpsEx {
-		unsigned long long fps;
-		unsigned long long fps_low;
-		unsigned long long count;
-		unsigned long long avg;
-		unsigned long long max_period;
-		unsigned long long min_period;
+	unsigned long long fps;
+	unsigned long long fps_low;
+	unsigned long long count;
+	unsigned long long avg;
+	unsigned long long max_period;
+	unsigned long long min_period;
 } fpsEx;
 
 typedef struct {
@@ -167,6 +167,7 @@ void dprec_logger_submit(DPREC_LOGGER_ENUM source, unsigned long long period,
 			 unsigned int fence_idx);
 
 void dprec_logger_dump(char *string);
+void dprec_logger_vdump(const char *fmt, ...);
 void dprec_logger_dump_reset(void);
 char *dprec_logger_get_dump_addr(void);
 unsigned int dprec_logger_get_dump_len(void);

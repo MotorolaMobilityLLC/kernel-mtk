@@ -9,6 +9,7 @@
 
 #define TOTAL_OVL_LAYER_NUM		(12)
 #define OVL_NUM					(4)
+#define PRIMARY_THREE_OVL_CASCADE
 
 /* start overlay module */
 int ovl_start(DISP_MODULE_ENUM module, void *handle);
@@ -20,8 +21,9 @@ int ovl_stop(DISP_MODULE_ENUM module, void *handle);
 int ovl_reset(DISP_MODULE_ENUM module, void *handle);
 
 /* set region of interest */
-int ovl_roi(DISP_MODULE_ENUM module, unsigned int bgW, unsigned int bgH,	/* region size */
-	    unsigned int bgColor,	/* border color */void *handle);
+int ovl_roi(DISP_MODULE_ENUM module, unsigned int bgW, unsigned int bgH,
+		unsigned int bgColor,
+		void *handle);
 
 /* switch layer on/off */
 int ovl_layer_switch(DISP_MODULE_ENUM module, unsigned layer, unsigned int en, void *handle);

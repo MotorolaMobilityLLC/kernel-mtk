@@ -1,5 +1,4 @@
 #define LOG_TAG "color_fmt"
-
 #include <linux/kernel.h>
 #include <asm-generic/bug.h>
 #include "ddp_info.h"
@@ -113,7 +112,6 @@ static enum UNIFIED_COLOR_FMT display_engine_supported_color[] = {
 int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt)
 {
 	int i;
-
 	for (i = 0; i < ARRAY_SIZE(display_engine_supported_color); i++) {
 		if (ufmt == display_engine_supported_color[i])
 			return 1;
@@ -125,7 +123,6 @@ enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int swap)
 {
 	int i;
 	enum UNIFIED_COLOR_FMT ufmt;
-
 	for (i = 0; i < ARRAY_SIZE(display_engine_supported_color); i++) {
 		ufmt = display_engine_supported_color[i];
 		if (UFMT_GET_FORMAT(ufmt) == fmt_reg_val && UFMT_GET_SWAP(ufmt) == swap)
@@ -178,7 +175,6 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt)
 {
 	int ret = 1;
-
 	switch (src_fmt) {
 	case UFMT_XRGB8888:
 		*dst_fmt = UFMT_ARGB8888;
@@ -199,3 +195,37 @@ int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FM
 	}
 	return ret;
 }
+
+unsigned int ufmt_get_rgb(unsigned int fmt)
+{
+	return UFMT_GET_RGB(fmt);
+}
+unsigned int ufmt_get_bpp(unsigned int fmt)
+{
+	return UFMT_GET_bpp(fmt);
+}
+unsigned int ufmt_get_block(unsigned int fmt)
+{
+	return UFMT_GET_BLOCK(fmt);
+}
+unsigned int ufmt_get_vdo(unsigned int fmt)
+{
+	return UFMT_GET_VDO(fmt);
+}
+unsigned int ufmt_get_format(unsigned int fmt)
+{
+	return UFMT_GET_FORMAT(fmt);
+}
+unsigned int ufmt_get_swap(unsigned int fmt)
+{
+	return UFMT_GET_SWAP(fmt);
+}
+unsigned int ufmt_get_id(unsigned int fmt)
+{
+	return UFMT_GET_ID(fmt);
+}
+unsigned int ufmt_get_Bpp(unsigned int fmt)
+{
+	return UFMT_GET_Bpp(fmt);
+}
+

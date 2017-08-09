@@ -46,11 +46,15 @@ obj-y += od10/
 endif
 
 # Todo: newer chip
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6795) $(CONFIG_ARCH_MT6595)))
-obj-y += color20/
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6795) $(CONFIG_ARCH_MT6595)))
 obj-y += rdma10/
 obj-y += wdma10/
 obj-y += fbconfig_kdebug.o
+endif
+# Todo: newer chip
+
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6795) $(CONFIG_ARCH_MT6595)))
+obj-y += color20/
 endif
 
 ccflags-y += \

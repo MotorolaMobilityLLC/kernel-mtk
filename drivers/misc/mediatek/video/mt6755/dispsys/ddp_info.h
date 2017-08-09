@@ -1,6 +1,7 @@
 #ifndef _H_DDP_INFO
 #define _H_DDP_INFO
 #include <linux/types.h>
+#include <linux/wait.h>
 #include "ddp_hal.h"
 #include "lcm_drv.h"
 #include "disp_event.h"
@@ -45,6 +46,14 @@
 
 #define UFMT_GET_Bpp(fmt)		(UFMT_GET_bpp(fmt)/8)
 
+unsigned int ufmt_get_rgb(unsigned int fmt);
+unsigned int ufmt_get_bpp(unsigned int fmt);
+unsigned int ufmt_get_block(unsigned int fmt);
+unsigned int ufmt_get_vdo(unsigned int fmt);
+unsigned int ufmt_get_format(unsigned int fmt);
+unsigned int ufmt_get_swap(unsigned int fmt);
+unsigned int ufmt_get_id(unsigned int fmt);
+unsigned int ufmt_get_Bpp(unsigned int fmt);
 
 enum UNIFIED_COLOR_FMT {
 	UFMT_UNKNOWN = 0,
@@ -194,6 +203,36 @@ typedef struct _WDMA_CONFIG_STRUCT {
 } WDMA_CONFIG_STRUCT;
 
 typedef struct {
+	unsigned int fifo_mode;
+	unsigned int is_wrot_sram;
+	unsigned int mmsys_clk;
+	unsigned int hrt_num;
+	unsigned int ext_hrt_num;
+	unsigned int is_display_idle;
+	unsigned int is_dc;
+	unsigned int hrt_magicnum; /* by resolution */
+	unsigned int ext_hrt_magicnum; /* by resolution */
+	unsigned int dst_width;
+	unsigned int dst_height;
+	unsigned int ext_dst_width;
+	unsigned int ext_dst_height;
+	unsigned int fps;
+	unsigned int is_one_layer;
+	unsigned int rdma_width;
+	unsigned int rdma_height;
+} golden_setting_context;
+
+typedef struct {
+	struct task_struct  *primary_display_idlemgr_task;
+	wait_queue_head_t  idlemgr_wait_queue;
+	unsigned long long idlemgr_last_kick_time;
+	unsigned int enterulps;
+	int session_mode_before_enter_idle;
+	int is_primary_idle;
+
+} disp_idlemgr_context;
+
+typedef struct {
 	/* for ovl */
 	bool ovl_dirty;
 	bool rdma_dirty;
@@ -201,6 +240,7 @@ typedef struct {
 	bool dst_dirty;
 	int ovl_layer_dirty;	/*each bit represent one layer */
 	int ovl_layer_scanned;	/*each bit reprsent one layer, used for ovl engines */
+	int overlap_layer_num;
 	OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
 	RDMA_CONFIG_STRUCT rdma_config;
 	WDMA_CONFIG_STRUCT wdma_config;
@@ -209,6 +249,7 @@ typedef struct {
 	unsigned int dst_w;
 	unsigned int dst_h;
 	unsigned int fps;
+	golden_setting_context *p_golden_setting_context;
 	void *path_handle;
 } disp_ddp_path_config;
 
@@ -224,6 +265,9 @@ typedef enum {
 	DDP_DSI_IDLE_CLK_OPEN = 6,
 	DDP_DSI_PORCH_CHANGE = 7,
 	DDP_PHY_CLK_CHANGE = 8,
+	DDP_ENTER_ULPS = 9,
+	DDP_EXIT_ULPS = 10,
+	DDP_RDMA_GOLDEN_SETTING = 11,
 	DDP_OVL_GOLDEN_SETTING,
 } DDP_IOCTL_NAME;
 

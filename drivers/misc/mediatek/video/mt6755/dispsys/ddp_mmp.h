@@ -3,7 +3,7 @@
 
 #include "mmprofile.h"
 #include "ddp_info.h"
-#include "ddp_ovl.h"
+#include "disp_session.h"
 typedef struct {
 	MMP_Event DDP;
 	MMP_Event layerParent;
@@ -55,6 +55,7 @@ typedef struct {
 	MMP_Event present_fence_set;
 	MMP_Event idlemgr;
 	MMP_Event sec;
+	MMP_Event tui;
 	MMP_Event fps_set;
 	MMP_Event fps_get;
 	MMP_Event primary_error;

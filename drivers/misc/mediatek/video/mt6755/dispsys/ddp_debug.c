@@ -10,14 +10,16 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
+
 #include <linux/types.h>
 #include "m4u.h"
+
 #include "disp_drv_ddp.h"
+
 #include "ddp_debug.h"
 #include "ddp_reg.h"
 #include "ddp_drv.h"
 #include "ddp_wdma.h"
-#include "ddp_wdma_ex.h"
 #include "ddp_hal.h"
 #include "ddp_path.h"
 #include "ddp_aal.h"
@@ -26,13 +28,12 @@
 #include "ddp_info.h"
 #include "ddp_dsi.h"
 #include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
 #include "ddp_manager.h"
 #include "ddp_log.h"
 #include "ddp_met.h"
 #include "display_recorder.h"
 #include "disp_session.h"
-
+#include "disp_lowpower.h"
 #pragma GCC optimize("O0")
 
 static struct dentry *debugfs;
@@ -71,6 +72,20 @@ static char STR_HELP[] =
 /* --------------------------------------------------------------------------- */
 /* Command Processor */
 /* --------------------------------------------------------------------------- */
+static int low_power_cust_mode = LP_CUST_DISABLE;
+static unsigned int vfp_backup;
+int get_lp_cust_mode(void)
+{
+	return low_power_cust_mode;
+}
+void backup_vfp_for_lp_cust(unsigned int vfp)
+{
+	vfp_backup = vfp;
+}
+unsigned int get_backup_vfp(void)
+{
+	return vfp_backup;
+}
 static char dbg_buf[2048];
 static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 {
@@ -88,9 +103,11 @@ static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 		DDPMSG("addr valid, isVa=0x%x, addr=0x%lx, module=%s!\n", isVa, addr,
 		       ddp_get_reg_module_name(i));
 		return 1;
+	} else {
+		DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
+		return 0;
 	}
-	DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
-	return 0;
+
 }
 
 
@@ -102,7 +119,6 @@ static void process_dbg_opt(const char *opt)
 	if (0 == strncmp(opt, "regr:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned long addr;
-
 		ret = kstrtoul(p, 16, &addr);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -111,7 +127,6 @@ static void process_dbg_opt(const char *opt)
 
 		if (is_reg_addr_valid(1, addr) == 1) {
 			unsigned int regVal = DISP_REG_GET(addr);
-
 			DDPMSG("regr: 0x%lx = 0x%08X\n", addr, regVal);
 			sprintf(buf, "regr: 0x%lx = 0x%08X\n", addr, regVal);
 		} else {
@@ -123,7 +138,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "regw:", 5)) {
 		unsigned long addr;
 		unsigned int val;
-
 		ret = sscanf(opt, "regw:0x%lx,0x%x\n", &addr, &val);
 		if (ret != 2) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -132,7 +146,6 @@ static void process_dbg_opt(const char *opt)
 
 		if (is_reg_addr_valid(1, addr) == 1) {
 			unsigned int regVal;
-
 			DISP_CPU_REG_SET(addr, val);
 			regVal = DISP_REG_GET(addr);
 			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
@@ -144,7 +157,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "dbg_log:", 8)) {
 		char *p = (char *)opt + 8;
 		unsigned int enable;
-
 		ret = kstrtouint(p, 0, &enable);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -160,7 +172,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "irq_log:", 8)) {
 		char *p = (char *)opt + 8;
 		unsigned int enable;
-
 		ret = kstrtouint(p, 0, &enable);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -174,7 +185,6 @@ static void process_dbg_opt(const char *opt)
 		sprintf(buf, "irq_log: %d\n", irq_log_level);
 	} else if (0 == strncmp(opt, "met_on:", 7)) {
 		int met_on, rdma0_mode, rdma1_mode;
-
 		ret = sscanf(opt, "met_on:%d,%d,%d\n", &met_on, &rdma0_mode, &rdma1_mode);
 		if (ret != 3) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -188,7 +198,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "backlight:", 10)) {
 		char *p = (char *)opt + 10;
 		unsigned int level;
-
 		ret = kstrtouint(p, 0, &level);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -204,7 +213,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "pwm0:", 5) || 0 == strncmp(opt, "pwm1:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned int level;
-
 		ret = kstrtouint(p, 0, &level);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -213,7 +221,6 @@ static void process_dbg_opt(const char *opt)
 
 		if (level) {
 			disp_pwm_id_t pwm_id = DISP_PWM0;
-
 			if (opt[3] == '1')
 				pwm_id = DISP_PWM1;
 
@@ -263,7 +270,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "dump_reg:", 9)) {
 		char *p = (char *)opt + 9;
 		unsigned int module;
-
 		ret = kstrtouint(p, 0, &module);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -281,7 +287,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "dump_path:", 10)) {
 		char *p = (char *)opt + 10;
 		unsigned int mutex_idx;
-
 		ret = kstrtouint(p, 0, &mutex_idx);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -310,7 +315,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "debug:", 6)) {
 		char *p = (char *)opt + 6;
 		unsigned int enable;
-
 		ret = kstrtouint(p, 0, &enable);
 		if (ret) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -335,6 +339,19 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (0 == strncmp(opt, "mmp", 3)) {
 		init_ddp_mmp_events();
+	} else if (0 == strncmp(opt, "low_power_mode:", 15)) {
+		char *p = (char *)opt + 15;
+		unsigned int mode;
+
+		ret = kstrtouint(p, 0, &mode);
+
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+
+		low_power_cust_mode = mode;
+
 	} else {
 		dbg_buf[0] = '\0';
 		goto Error;
@@ -408,15 +425,45 @@ static const struct file_operations debug_fops = {
 	.open = debug_open,
 };
 
+static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	char *mode0 = "low power mode(1)\n";
+	char *mode1 = "just make mode(2)\n";
+	char *mode2 = "performance mode(3)\n";
+	char *mode4 = "unknown mode(n)\n";
+
+	switch (low_power_cust_mode) {
+	case LOW_POWER_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode0, strlen(mode0));
+	case JUST_MAKE_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode1, strlen(mode1));
+	case PERFORMANC_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode2, strlen(mode2));
+	default:
+		return simple_read_from_buffer(ubuf, count, ppos, mode4, strlen(mode4));
+
+
+	}
+
+}
+
+static const struct file_operations low_power_cust_fops = {
+	.read = lp_cust_read,
+};
+
 static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
+	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 
 	dprec_logger_dump_reset();
 	dump_to_buffer = 1;
 	/* dump all */
 	dpmgr_debug_path_status(-1);
 	dump_to_buffer = 0;
-	return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
+	if (is_mipi_enterulps())
+		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
+	else
+		return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
 				       dprec_logger_get_dump_len());
 }
 
@@ -427,6 +474,7 @@ static const struct file_operations debug_fops_dump = {
 
 void ddp_debug_init(void)
 {
+	struct dentry *d;
 	if (!debug_init) {
 		debug_init = 1;
 		debugfs = debugfs_create_file("dispsys",
@@ -439,6 +487,10 @@ void ddp_debug_init(void)
 			debugfs_dump = debugfs_create_file("dump",
 							   S_IFREG | S_IRUGO, debugDir, NULL,
 							   &debug_fops_dump);
+			d = debugfs_create_file("lowpowermode", S_IFREG | S_IRUGO, debugDir, NULL,
+					&low_power_cust_fops);
+			if (!d)
+				return;
 		}
 	}
 }

@@ -156,6 +156,8 @@ int ddp_get_module_max_irq_bit(DISP_MODULE_ENUM module)
 		return 1;
 	case DISP_MODULE_OVL0:
 		return 3;
+	case DISP_MODULE_OVL1:
+		return 3;
 	case DISP_MODULE_WDMA1:
 		return 1;
 	case DISP_MODULE_OVL0_2L:
@@ -205,7 +207,6 @@ int ddp_get_module_max_irq_bit(DISP_MODULE_ENUM module)
 unsigned int ddp_module_to_idx(int module)
 {
 	unsigned int id = 0;
-
 	switch (module) {
 	case DISP_MODULE_AAL:
 	case DISP_MODULE_COLOR0:

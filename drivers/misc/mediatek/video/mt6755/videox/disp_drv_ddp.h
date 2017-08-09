@@ -1,5 +1,5 @@
 
-/*Only for DDP driver.*/
+/* Only for DDP driver. */
 #ifndef __DISP_DRV_DDP_H__
 #define __DISP_DRV_DDP_H__
 /*#include <mt-plat/mt_typedefs.h>*/

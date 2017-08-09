@@ -34,7 +34,6 @@ typedef struct {
 typedef struct mout_s {
 	int id;
 	m_to_b out_id_bit_map[5];
-
 	volatile unsigned long *reg;
 	unsigned int reg_val;
 } mout_t;
@@ -42,9 +41,7 @@ typedef struct mout_s {
 typedef struct selection_s {
 	int id;
 	int id_bit_map[5];
-
 	volatile unsigned long *reg;
-
 	unsigned int reg_val;
 } sel_t;
 
@@ -317,7 +314,6 @@ char *ddp_get_scenario_name(DDP_SCENARIO_ENUM scenario)
 int ddp_is_scenario_on_primary(DDP_SCENARIO_ENUM scenario)
 {
 	int on_primary = 0;
-
 	switch (scenario) {
 	case DDP_SCENARIO_PRIMARY_DISP:
 	case DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP:
@@ -373,7 +369,6 @@ char *ddp_get_mode_name(DDP_MODE ddp_mode)
 static int ddp_get_module_num_l(int *module_list)
 {
 	unsigned int num = 0;
-
 	while (*(module_list + num) != -1) {
 		num++;
 
@@ -392,7 +387,6 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 	unsigned int reg_mout = 0;
 	unsigned int mout_idx = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
-
 	DDPDBG("connect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
 	       ddp_get_module_name(module_list[module_num - 1]));
 	/* connect mout */
@@ -463,7 +457,6 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 		for (j = 0; j < DDP_SEL_IN_NUM; j++) {
 			if (module_list[i] == sel_in_map[j].id) {
 				int found = 0;
-
 				step = i - 1;
 				/* find next module which can be connected */
 				while (module_can_connect[module_list[step]].bit == 0 && step > 0)
@@ -499,7 +492,6 @@ static void ddp_check_path_l(int *module_list)
 	unsigned int mout;
 	unsigned int path_error = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
-
 	DDPDUMP("check_path: %s to %s\n", ddp_get_module_name(module_list[0])
 		, ddp_get_module_name(module_list[module_num - 1]));
 	/* check mout */
@@ -699,7 +691,6 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 	unsigned int sof_val;
 	unsigned int sof_src, eof_src;
 	int module_num = ddp_get_module_num_l(module_list);
-
 	ddp_get_mutex_src(module_list[module_num - 1], ddp_mode, &sof_src, &eof_src);
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPERR("exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
@@ -734,7 +725,6 @@ static void ddp_check_mutex_l(int mutex_id, int *module_list, DDP_MODE ddp_mode)
 	unsigned int real_sof, real_eof, val;
 	unsigned int expect_sof, expect_eof;
 	int module_num = ddp_get_module_num_l(module_list);
-
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPDUMP("error:check mutex fail:exceed mutex max (0 ~ %d)\n", DISP_MUTEX_DDP_LAST);
 		return;
@@ -776,18 +766,16 @@ int ddp_get_module_num(DDP_SCENARIO_ENUM scenario)
 static void ddp_print_scenario(DDP_SCENARIO_ENUM scenario)
 {
 	int i = 0;
-	char path[512] = { '\0' };
+	char path[256] = { '\0' };
 	int num = ddp_get_module_num(scenario);
-
 	for (i = 0; i < num; i++)
-		strcat(path, ddp_get_module_name(module_list_scenario[scenario][i]));
+		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]), sizeof(path));
 	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
 }
 
 static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 {
 	int i = 0;
-
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return i;
@@ -802,7 +790,6 @@ static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENU
 int ddp_set_dst_module(DDP_SCENARIO_ENUM scenario, DISP_MODULE_ENUM dst_module)
 {
 	int i = 0;
-
 	DDPMSG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(scenario), ddp_get_module_name(dst_module));
 	if (ddp_find_module_index(scenario, dst_module) > 0) {
@@ -846,7 +833,6 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 {
 	DISP_MODULE_ENUM module_name = DISP_MODULE_UNKNOWN;
 	int module_num = ddp_get_module_num_l(module_list_scenario[ddp_scenario]) - 1;
-
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
 
@@ -864,7 +850,6 @@ int *ddp_get_scenario_list(DDP_SCENARIO_ENUM ddp_scenario)
 int ddp_is_module_in_scenario(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 {
 	int i = 0;
-
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return 1;
@@ -878,7 +863,6 @@ int ddp_insert_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM place,
 {
 	int i = DDP_ENING_NUM - 1;
 	int idx = ddp_find_module_index(ddp_scenario, place);
-
 	if (idx < 0) {
 		DDPERR("error: ddp_insert_module , place=%s is not in scenario %s!\n",
 		       ddp_get_module_name(place), ddp_get_scenario_name(ddp_scenario));
@@ -903,7 +887,6 @@ int ddp_insert_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM place,
 	{
 		int *modules = ddp_get_scenario_list(ddp_scenario);
 		int module_num = ddp_get_module_num(ddp_scenario);
-
 		DDPMSG("after insert module, module list is:\n");
 		for (i = 0; i < module_num; i++)
 			DDPMSG("%s-", ddp_get_module_name(modules[i]));
@@ -916,7 +899,6 @@ int ddp_remove_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	int idx = ddp_find_module_index(ddp_scenario, module);
-
 	if (idx < 0) {
 		DDPERR("ddp_remove_module, can not find module %s in scenario %s\n",
 		       ddp_get_module_name(module), ddp_get_scenario_name(ddp_scenario));
@@ -930,7 +912,6 @@ int ddp_remove_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 	{
 		int *modules = ddp_get_scenario_list(ddp_scenario);
 		int module_num = ddp_get_module_num(ddp_scenario);
-
 		DDPMSG("after remove module, module list is:\n");
 		for (i = 0; i < module_num; i++)
 			DDPMSG("%s-", ddp_get_module_name(modules[i]));
@@ -1063,7 +1044,6 @@ int ddp_is_moudule_in_mutex(int mutex_id, DISP_MODULE_ENUM module)
 int ddp_mutex_add_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 {
 	int value = 0;
-
 	if (module < DISP_MODULE_UNKNOWN) {
 		if (module_mutex_map[module].bit != -1) {
 			DDPDBG("module %s added to mutex %d\n", ddp_get_module_name(module),
@@ -1078,7 +1058,6 @@ int ddp_mutex_add_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 int ddp_mutex_remove_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 {
 	int value = 0;
-
 	if (module < DISP_MODULE_UNKNOWN) {
 		if (module_mutex_map[module].bit != -1) {
 			DDPDBG("module %s added to mutex %d\n", ddp_get_module_name(module),
@@ -1136,15 +1115,24 @@ int ddp_check_engine_status(int mutexID)
 
 int ddp_path_top_clock_on(void)
 {
+	static int need_enable;
 #ifdef ENABLE_CLK_MGR
-	DDPMSG("ddp path top clock on\n");
+	DDPMSG("ddp path top clock on %d\n", need_enable);
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 #else
-	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
-	ddp_clk_enable(DISP0_SMI_COMMON);
-	ddp_clk_enable(DISP0_SMI_LARB0);
+	if (need_enable) {
+		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+			ddp_clk_prepare_enable(MM_VENCPLL);
+		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+	} else {
+		need_enable = 1;
+		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+			ddp_clk_prepare_enable(MM_VENCPLL);
+	}
 #endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
 	DDPMSG("ddp CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -1166,9 +1154,12 @@ int ddp_path_top_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 #else
-	ddp_clk_disable(DISP0_SMI_LARB0);
-	ddp_clk_disable(DISP0_SMI_COMMON);
-	ddp_clk_unprepare_disable(DISP_MTCMOS_CLK);
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
+	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
+	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+		ddp_clk_disable_unprepare(MM_VENCPLL);
+
 #endif
 #endif
 	return 0;

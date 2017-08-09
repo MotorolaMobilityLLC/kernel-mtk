@@ -127,7 +127,6 @@ static void dprec_to_mmp(unsigned int type_logsrc, MMP_LogType mmp_log, unsigned
 			 unsigned data2)
 {
 	int MMP_Event = dprec_mmp_event_spy(type_logsrc);
-
 	if (MMP_Event < 0xffff)
 		MMProfileLogEx(MMP_Event, mmp_log, data1, data2);
 
@@ -138,7 +137,6 @@ static const char *_find_module_by_reg_addr(unsigned int reg)
 	int i = 0;
 	unsigned int module_offset = 0x1000;
 	unsigned int base = (reg & (~(module_offset - 1)));
-
 	for (i = 0; i < sizeof(reg_map) / sizeof(reg_base_map); i++) {
 		if (base == reg_map[i].module_reg_base)
 			return reg_map[i].module_name;
@@ -181,6 +179,7 @@ static dprec_logger logger[DPREC_LOGGER_NUM];
 static dprec_logger old_logger[DPREC_LOGGER_NUM];
 static unsigned char dprec_string_buffer_analysize[dprec_dump_max_length];
 static unsigned int analysize_length;
+
 char dprec_error_log_buffer[DPREC_ERROR_LOG_BUFFER_LENGTH];
 static dprec_logger_event dprec_vsync_irq_event;
 static met_log_map dprec_met_info[DISP_SESSION_MEMORY + 2] = {
@@ -233,7 +232,6 @@ static long long nsec_high(unsigned long long nsec)
 static unsigned long nsec_low(unsigned long long nsec)
 {
 	unsigned long ret = 0;
-
 	if ((long long)nsec < 0)
 		nsec = -nsec;
 
@@ -256,7 +254,6 @@ static long long msec_high(unsigned long long nsec)
 static unsigned long msec_low(unsigned long long nsec)
 {
 	unsigned long ret = 0;
-
 	if ((long long)nsec < 0)
 		nsec = -nsec;
 
@@ -408,7 +405,6 @@ void dprec_logger_start(unsigned int type_logsrc, unsigned int val1, unsigned in
 
 	if (source == DPREC_LOGGER_RDMA0_TRANSFER_1SECOND) {
 		unsigned long long rec_period = l->ts_trigger - l->ts_start;
-
 		if (rec_period > 1000 * 1000 * 1000) {
 			old_logger[DPREC_LOGGER_RDMA0_TRANSFER_1SECOND] = *l;
 			memset(l, 0, sizeof(logger[0]));
@@ -467,7 +463,7 @@ void dprec_logger_event_init(dprec_logger_event *p, char *name, uint32_t level,
 		p->level = level;
 
 		memset((void *)&p->logger, 0, sizeof(p->logger));
-		DISPMSG("dprec logger event init, name=%s, level=0x%08x\n", name, level);
+		DISPDBG("dprec logger event init, name=%s, level=0x%08x\n", name, level);
 	}
 }
 
@@ -502,7 +498,6 @@ static inline void mmp_kernel_trace_end(void)
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence)
 {
 	unsigned device_type = DISP_SESSION_TYPE(session_id);
-
 	if (frm_sequence <= 0 || session_id <= 0)
 		return;
 	if (device_type > DISP_SESSION_MEMORY) {
@@ -521,7 +516,6 @@ void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence
 void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence)
 {
 	unsigned device_type = DISP_SESSION_TYPE(session_id);
-
 	if (frm_sequence <= 0 || session_id <= 0)
 		return;
 	if (device_type > DISP_SESSION_MEMORY) {
@@ -578,12 +572,11 @@ void dprec_start(dprec_logger_event *event, unsigned int val1, unsigned int val2
 			pr_debug("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s start,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
 			char name[256];
-
 			scnprintf(name, sizeof(name) / sizeof(name[0]), "K_%s_0x%x_0x%x",
 				  event->name, val1, val2);
 
@@ -631,7 +624,7 @@ void dprec_done(dprec_logger_event *event, unsigned int val1, unsigned int val2)
 			pr_debug("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s done,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
@@ -685,12 +678,11 @@ void dprec_trigger(dprec_logger_event *event, unsigned int val1, unsigned int va
 			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_info("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 #ifdef CONFIG_TRACING
 		if (event->level & DPREC_LOGGER_LEVEL_SYSTRACE && _control.systrace) {
 			char name[256];
-
 			scnprintf(name, sizeof(name) / sizeof(name[0]), "K_%s_0x%x_0x%x",
 				  event->name, val1, val2);
 			mmp_kernel_trace_begin(name);
@@ -714,7 +706,7 @@ void dprec_submit(dprec_logger_event *event, unsigned int val1, unsigned int val
 			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 		if (event->level & DPREC_LOGGER_LEVEL_UART_LOG)
-			pr_notice("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
+			pr_debug("DISP/%s trigger,0x%08x,0x%08x\n", event->name, val1, val2);
 
 	}
 }
@@ -910,6 +902,8 @@ int dprec_logger_get_result_value(DPREC_LOGGER_ENUM source, fpsEx *fps)
 	return len;
 }
 
+
+
 typedef enum {
 	DPREC_REG_OP = 1,
 	DPREC_CMDQ_EVENT,
@@ -978,7 +972,6 @@ unsigned int dprec_get_vsync_count(void)
 void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int mask)
 {
 	int len = 0;
-
 	if (!cmdq)
 		MMProfileLogEx(ddp_mmp_get_events()->dprec_cpu_write_reg, MMProfileFlagPulse, reg, val);
 
@@ -1031,13 +1024,32 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 		 * (_control.cmm_dump_use_va)?reg:(reg&0x1fffffff),
 		 * mask?(val|mask):val,_find_module_by_reg_addr(reg)); */
 	}
+
+}
+
+void dprec_logger_vdump(const char *fmt, ...)
+{
+	va_list vargs;
+	int tmp;
+
+	va_start(vargs, fmt);
+
+	if (analysize_length >= dprec_dump_max_length - 10)
+		return;
+
+	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
+		      dprec_dump_max_length - analysize_length, fmt, vargs);
+
+	analysize_length += tmp;
+	if (analysize_length > dprec_dump_max_length)
+		analysize_length = dprec_dump_max_length;
+
+	va_end(vargs);
 }
 
 void dprec_logger_dump(char *string)
 {
-	analysize_length +=
-	    scnprintf(dprec_string_buffer_analysize + analysize_length,
-		      dprec_dump_max_length - analysize_length, string);
+	dprec_logger_vdump(string);
 }
 
 void dprec_logger_dump_reset(void)
@@ -1193,6 +1205,7 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	unsigned long flags = 0;
 	uint64_t time = get_current_time_us();
 	unsigned long rem_nsec;
+
 	char *buf = NULL;
 	int len = 0;
 
@@ -1213,7 +1226,6 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 
 	if (buf) {
 		va_list args;
-
 		rem_nsec = do_div(time, 1000000000);
 		n += snprintf(buf + n, len - n, "[%5lu.%06lu]", (unsigned long)time,
 			      rem_nsec / 1000);

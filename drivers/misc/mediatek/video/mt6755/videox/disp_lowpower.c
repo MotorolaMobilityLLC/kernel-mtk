@@ -11,19 +11,15 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
-#include <linux/ion_drv.h>
-#include <linux/mtk_ion.h>
-#include <mach/mt_idle.h>
-#include <mach/mt_spm_reg.h>
-#include <mach/pcm_def.h>
-#include <mach/mt_spm_idle.h>
-#include <mach/mt_smi.h>
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include "mtk_ion.h"
+#include "ion_drv.h"
+#include "mt_idle.h"
+#include "mt_spm_reg.h"
+/* #include "pcm_def.h" */
+#include "mt_spm_idle.h"
+#include "mt_smi.h"
+#include "m4u.h"
 
-#include <mach/mt_spm_reg.h>
-#include <mach/pcm_def.h>
-#include <mach/mt_spm_idle.h>
 #include "disp_drv_platform.h"
 #include "debug.h"
 #include "ddp_debug.h"
@@ -41,7 +37,7 @@
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
 #include "mt_smi.h"
-#include "mmdvfs_mgr.h"
+/* #include "mmdvfs_mgr.h" */
 #include "disp_drv_log.h"
 #include "ddp_log.h"
 #include "disp_lowpower.h"
@@ -56,6 +52,10 @@
 static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
+
+#define MMSYS_CLK_LOW (0)
+#define MMSYS_CLK_HIGH (1)
+#define MMSYS_CLK_MEDIUM (2)
 
 /* Local API */
 /*********************************************************************************************************************/
@@ -158,20 +158,20 @@ static void set_is_display_idle(unsigned int is_displayidle)
 		/* notify to mmsys mgr */
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK)) {
 			if (is_displayidle)
-				mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_ENTER);
+				;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_ENTER);*/
 			else
-				mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_EXIT);
+				;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_EXIT);*/
 		}
 	}
 
 }
 
-
+#if 0
 static unsigned int get_hrtnum(void)
 {
 	return golden_setting_pgc->hrt_num;
 }
-
+#endif
 
 static void set_share_sram(unsigned int is_share_sram)
 {
@@ -273,7 +273,7 @@ void _idle_set_golden_setting(void)
 	cmdqRecFlushAsync(handle);
 	cmdqRecDestroy(handle);
 
-	return 0;
+
 }
 
 /* Share wrot sram for vdo mode increase enter sodi ratio */
@@ -307,7 +307,7 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 		DISPERR("acquire resource fail\n");
 
 		cmdqRecDestroy(handle);
-		return 0;
+		return;
 
 	} else {
 		/* acquire resource success */
@@ -326,7 +326,7 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	cmdqRecFlushAsync(handle);
 	cmdqRecDestroy(handle);
 
-	return 0;
+
 }
 
 static int32_t _acquire_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
@@ -370,7 +370,7 @@ void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	cmdqRecFlushAsync(handle);
 	cmdqRecDestroy(handle);
 
-	return 0;
+
 }
 
 static int32_t _release_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
@@ -395,7 +395,7 @@ int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 		ddp_clk_disable_unprepare(MUX_MM);
 		ddp_clk_disable_unprepare(SYSPLL2_D2);
 	}
-
+	return 0;
 }
 int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
@@ -486,6 +486,7 @@ int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	primary_display_manual_lock();
 	_switch_mmsys_clk(mmsys_clk_old, mmsys_clk_new);
 	primary_display_manual_unlock();
+	return 0;
 }
 void _primary_display_disable_mmsys_clk(void)
 {
@@ -539,6 +540,8 @@ void _primary_display_disable_mmsys_clk(void)
 
 void _primary_display_enable_mmsys_clk(void)
 {
+	disp_ddp_path_config *data_config;
+
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
 	/* do something */
@@ -573,7 +576,7 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
 
-	disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
 
 	data_config->dst_dirty = 1;
 	data_config->ovl_dirty = 1;
@@ -769,7 +772,7 @@ void _cmd_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
 		/* switch to vencpll before disable mmsys clk */
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-			mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);
+			;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);*/
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
 	}
@@ -927,11 +930,12 @@ int primary_display_lowpower_init(void)
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		/* callback with lock or without lock ??? */
-		register_mmclk_switch_cb(primary_display_switch_mmsys_clk, _switch_mmsys_clk);
+		;/*register_mmclk_switch_cb(primary_display_switch_mmsys_clk, _switch_mmsys_clk);*/
 
 	/* cmd mode always enable share sram */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+	return 0;
 
 }
 
@@ -1056,8 +1060,9 @@ void enable_idlemgr(unsigned int flag)
 		DISPCHECK("[disp_lowpower]enabel idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 1);
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
-	} else
+	} else {
 		DISPCHECK("[disp_lowpower]disable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 0);
-		primary_display_idlemgr_kick(__func__, 1);
+		primary_display_idlemgr_kick((char *)__func__, 1);
+	}
 }

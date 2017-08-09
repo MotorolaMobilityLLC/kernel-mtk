@@ -4,7 +4,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
-/*#include <mt-plat/mt_typedefs.h>*/
 #include <mt-plat/sync_write.h>
 #include "ddp_reg.h"
 
@@ -27,7 +26,6 @@ unsigned int parsed_apmixed = 0;
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 {
 	int ret = 0;
-
 	if (n >= MAX_DISP_CLK_CNT) {
 		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", n);
 		return -1;
@@ -40,7 +38,6 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 int ddp_clk_prepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -55,7 +52,6 @@ int ddp_clk_prepare(eDDP_CLK_ID id)
 int ddp_clk_unprepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -67,7 +63,6 @@ int ddp_clk_unprepare(eDDP_CLK_ID id)
 int ddp_clk_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -83,7 +78,6 @@ int ddp_clk_enable(eDDP_CLK_ID id)
 int ddp_clk_disable(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -95,7 +89,6 @@ int ddp_clk_disable(eDDP_CLK_ID id)
 int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -107,10 +100,9 @@ int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 	return ret;
 }
 
-int ddp_clk_unprepare_disable(eDDP_CLK_ID id)
+int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
-
 	if (NULL == ddp_clk[id]) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
@@ -130,7 +122,6 @@ int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 int ddp_set_mipi26m(int en)
 {
 	int ret = 0;
-
 	ret = ddp_parse_apmixed_base();
 	if (ret)
 		return -1;

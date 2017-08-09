@@ -10,11 +10,11 @@
 #include <linux/kthread.h>
 #include <linux/timer.h>
 
-/* #include <mach/mt_irq.h> */
 #include "ddp_reg.h"
 #include "ddp_irq.h"
 #include "ddp_aal.h"
 #include "ddp_drv.h"
+#include "disp_helper.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -35,12 +35,24 @@ unsigned long long rdma_end_time[2] = { 0 };
 
 static DDP_IRQ_CALLBACK irq_module_callback_table[DISP_MODULE_NUM][DISP_MAX_IRQ_CALLBACK];
 static DDP_IRQ_CALLBACK irq_callback_table[DISP_MAX_IRQ_CALLBACK];
-atomic_t ESDCheck_byCPU = ATOMIC_INIT(0);
+
+/* dsi read by cpu should keep esd_check_bycmdq = 0.  */
+/* dsi read by cmdq should keep esd_check_bycmdq = 1. */
+static atomic_t esd_check_bycmdq = ATOMIC_INIT(1);
+
+void disp_irq_esd_cust_bycmdq(int enable)
+{
+	atomic_set(&esd_check_bycmdq, enable);
+}
+
+int disp_irq_esd_cust_get(void)
+{
+	return atomic_read(&esd_check_bycmdq);
+}
 
 int disp_register_irq_callback(DDP_IRQ_CALLBACK cb)
 {
 	int i = 0;
-
 	for (i = 0; i < DISP_MAX_IRQ_CALLBACK; i++) {
 		if (irq_callback_table[i] == cb)
 			break;
@@ -64,7 +76,6 @@ int disp_register_irq_callback(DDP_IRQ_CALLBACK cb)
 int disp_unregister_irq_callback(DDP_IRQ_CALLBACK cb)
 {
 	int i;
-
 	for (i = 0; i < DISP_MAX_IRQ_CALLBACK; i++) {
 		if (irq_callback_table[i] == cb) {
 			irq_callback_table[i] = NULL;
@@ -81,7 +92,6 @@ int disp_unregister_irq_callback(DDP_IRQ_CALLBACK cb)
 int disp_register_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
 {
 	int i;
-
 	if (module >= DISP_MODULE_NUM) {
 		DDPERR("Register IRQ with invalid module ID. module=%d\n", module);
 		return -1;
@@ -112,7 +122,6 @@ int disp_register_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK 
 int disp_unregister_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBACK cb)
 {
 	int i;
-
 	for (i = 0; i < DISP_MAX_IRQ_CALLBACK; i++) {
 		if (irq_module_callback_table[module][i] == cb) {
 			irq_module_callback_table[module][i] = NULL;
@@ -131,7 +140,6 @@ int disp_unregister_module_irq_callback(DISP_MODULE_ENUM module, DDP_IRQ_CALLBAC
 void disp_invoke_irq_callbacks(DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i;
-
 	for (i = 0; i < DISP_MAX_IRQ_CALLBACK; i++) {
 
 		if (irq_callback_table[i]) {
@@ -149,13 +157,13 @@ void disp_invoke_irq_callbacks(DISP_MODULE_ENUM module, unsigned int param)
 static DISP_MODULE_ENUM disp_irq_module(unsigned int irq)
 {
 	DISP_REG_ENUM reg_module;
-
 	for (reg_module = 0; reg_module < DISP_REG_NUM; reg_module++) {
 		if (irq == dispsys_irq[reg_module])
 			return ddp_get_reg_module(reg_module);
 	}
 	DDPERR("cannot find module for irq %d\n", irq);
 	BUG();
+	return DISP_MODULE_UNKNOWN;
 }
 
 /* /TODO:  move each irq to module driver */
@@ -167,17 +175,21 @@ unsigned int rdma_targetline_irq_cnt[2] = { 0, 0 };
 irqreturn_t disp_irq_handler(int irq, void *dev_id)
 {
 	DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
-	unsigned long reg_val = 0;
+	unsigned int reg_val = 0;
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
-
+	unsigned int reg_temp_val = 0;
 	DDPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
 
 	if (irq == dispsys_irq[DISP_REG_DSI0]) {
 		module = DISP_MODULE_DSI0;
 		reg_val = (DISP_REG_GET(dsi_reg_va + 0xC) & 0xff);
-		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_val);
+		reg_temp_val = reg_val;
+		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
+		if (disp_irq_esd_cust_get() == 1)
+			reg_temp_val = reg_val&0xfffe;
+		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_temp_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]
@@ -199,7 +211,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: %s sw reset done\n", ddp_get_module_name(module));
 
 		if (reg_val & (1 << 4))
-			DDPIRQ("IRQ: %s hw reset done\n", ddp_get_module_name(module));
+			DDPERR("IRQ: %s hw reset done\n", ddp_get_module_name(module));
 
 		if (reg_val & (1 << 5))
 			DDPERR("IRQ: %s-L0 not complete until EOF!\n",
@@ -230,10 +242,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (reg_val & (1 << 12))
 			DDPERR("IRQ: %s-L3 fifo underflow!\n", ddp_get_module_name(module));
-
+#endif
 		if (reg_val & (1 << 13))
 			DDPERR("IRQ: %s abnormal SOF!\n", ddp_get_module_name(module));
-#endif
 
 		DISP_CPU_REG_SET(DISP_REG_OVL_INTSTA + ovl_base_addr(module), ~reg_val);
 		MMProfileLogEx(ddp_mmp_get_events()->OVL_IRQ[index], MMProfileFlagPulse, reg_val,
@@ -314,8 +325,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    DISP_RDMA_INDEX_OFFSET * index));
-			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
-			       cnt_rdma_underflow[index]++);
+			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index, cnt_rdma_underflow[index]++);
+			DDPERR("(0x030)R_M_GMC_SET0  =0x%x\n",
+				DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_INDEX_OFFSET * index));
+			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
+				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 		}
@@ -389,7 +403,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 static int disp_irq_log_kthread_func(void *data)
 {
 	unsigned int i = 0;
-
 	while (1) {
 		wait_event_interruptible(disp_irq_log_wq, disp_irq_log_module);
 		DDPMSG("disp_irq_log_kthread_func dump intr register: disp_irq_log_module=%d\n",
@@ -409,6 +422,7 @@ void disp_register_dev_irq(unsigned int irq_num, char *device_name)
 	if (request_irq(irq_num, (irq_handler_t) disp_irq_handler,
 			IRQF_TRIGGER_LOW, device_name, NULL))
 		DDPERR("ddp register irq %u failed on device %s\n", irq_num, device_name);
+
 }
 
 int disp_init_irq(void)
