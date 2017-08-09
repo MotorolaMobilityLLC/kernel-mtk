@@ -179,7 +179,8 @@ static void timeline_print_obj(struct seq_file *s, struct sync_timeline *sync_tl
 		seq_printf(s, "next (%u)", mali_tl->point_next);
 		seq_printf(s, "\n");
 
-#if defined(MALI_TIMELINE_DEBUG_FUNCTIONS)
+//#if defined(MALI_TIMELINE_DEBUG_FUNCTIONS)
+#if 0
 		{
 			u32 tid = _mali_osk_get_tid();
 			struct mali_timeline_system *system = mali_tl->system;
@@ -235,7 +236,8 @@ static void timeline_value_str(struct sync_timeline *timeline, char *str, int si
 		_mali_osk_snprintf(str, size, "next (%u)", mali_tl->point_next);
 		_mali_osk_snprintf(str, size, "\n");
 
-#if defined(MALI_TIMELINE_DEBUG_FUNCTIONS)
+//#if defined(MALI_TIMELINE_DEBUG_FUNCTIONS)
+#if 0
 		{
 			u32 tid = _mali_osk_get_tid();
 			struct mali_timeline_system *system = mali_tl->system;
