@@ -4377,6 +4377,58 @@ static ssize_t cpufreq_stress_test_proc_write(struct file *file, const char __us
 }
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+static int __switch_cpuhvfs_on_off(unsigned int state)
+{
+	int i, r;
+	struct init_sta sta;
+	struct mt_cpu_dvfs *p;
+
+	if (state) {
+		if (enable_cpuhvfs)
+			return 0;
+		if (disable_idvfs_flag)
+			return -EPERM;
+
+		__set_cpuhvfs_init_sta(&sta);
+
+		r = cpuhvfs_restart_dvfsp_running(&sta);
+		if (r)
+			return r;
+
+		for_each_cpu_dvfs(i, p) {
+			p->ops->set_cur_freq = set_cur_freq_hybrid;
+			p->ops->set_cur_volt = set_cur_volt_hybrid;
+			if (state == 1)
+				p->ops->get_cur_volt = get_cur_volt_hybrid;
+		}
+		enable_cpuhvfs = (state == 1 ? state : 2);
+	} else {
+		if (!enable_cpuhvfs)
+			return 0;
+
+		r = cpuhvfs_stop_dvfsp_running();
+		if (r)
+			return r;
+
+		for_each_cpu_dvfs(i, p) {
+#ifdef ENABLE_IDVFS
+			if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && !disable_idvfs_flag) {
+				p->ops->set_cur_freq = idvfs_set_cur_freq;
+				p->ops->set_cur_volt = idvfs_set_cur_volt_extbuck;
+				p->ops->get_cur_volt = get_cur_volt_extbuck;
+				continue;
+			}
+#endif
+			p->ops->set_cur_freq = set_cur_freq;
+			p->ops->set_cur_volt = set_cur_volt_extbuck;
+			p->ops->get_cur_volt = get_cur_volt_extbuck;
+		}
+		enable_cpuhvfs = 0;
+	}
+
+	return 0;
+}
+
 static int enable_cpuhvfs_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%u\n", enable_cpuhvfs);
@@ -4387,49 +4439,16 @@ static int enable_cpuhvfs_proc_show(struct seq_file *m, void *v)
 static ssize_t enable_cpuhvfs_proc_write(struct file *file, const char __user *ubuf, size_t count,
 					 loff_t *ppos)
 {
-	int r, i;
+	int r;
 	unsigned int val;
 	unsigned long flags;
-	struct init_sta sta;
-	struct mt_cpu_dvfs *p;
 
 	r = kstrtouint_from_user(ubuf, count, 0, &val);
 	if (r)
 		return -EINVAL;
 
 	cpufreq_lock(flags);
-	if (!val && enable_cpuhvfs) {
-		r = cpuhvfs_stop_dvfsp_running();
-		if (!r) {
-			for_each_cpu_dvfs(i, p) {
-#ifdef ENABLE_IDVFS
-				if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-					p->ops->set_cur_freq = idvfs_set_cur_freq;
-					p->ops->set_cur_volt = idvfs_set_cur_volt_extbuck;
-					p->ops->get_cur_volt = get_cur_volt_extbuck;
-					continue;
-				}
-#endif
-				p->ops->set_cur_freq = set_cur_freq;
-				p->ops->set_cur_volt = set_cur_volt_extbuck;
-				p->ops->get_cur_volt = get_cur_volt_extbuck;
-			}
-			enable_cpuhvfs = 0;
-		}
-	} else if (val && !enable_cpuhvfs) {
-		__set_cpuhvfs_init_sta(&sta);
-
-		r = cpuhvfs_restart_dvfsp_running(&sta);
-		if (!r) {
-			for_each_cpu_dvfs(i, p) {
-				p->ops->set_cur_freq = set_cur_freq_hybrid;
-				p->ops->set_cur_volt = set_cur_volt_hybrid;
-				if (val == 1)
-					p->ops->get_cur_volt = get_cur_volt_hybrid;
-			}
-			enable_cpuhvfs = (val == 1 ? val : 2);
-		}
-	}
+	__switch_cpuhvfs_on_off(val);
 	cpufreq_unlock(flags);
 
 	return count;
@@ -4655,19 +4674,15 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 /* cpufreq_idvfs_mode */
 static int cpufreq_idvfs_mode_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "idvfs_mode = %d\n", (disable_idvfs_flag == 1) ? 0 : 1);
+	seq_printf(m, "idvfs_mode = %d\n", disable_idvfs_flag ? 0 : 1);
 
 	return 0;
 }
 
 static ssize_t cpufreq_idvfs_mode_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-#ifdef ENABLE_IDVFS
-	struct mt_cpu_dvfs *p;
-#endif
 	unsigned int idvfs_mode;
 	int rc;
-	unsigned long flags;
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
@@ -4676,21 +4691,26 @@ static ssize_t cpufreq_idvfs_mode_proc_write(struct file *file, const char __use
 	rc = kstrtoint(buf, 10, &idvfs_mode);
 
 	if (rc < 0)
-		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_idvfs_mode\n");
+		cpufreq_err("echo 0 > /proc/cpufreq/cpufreq_idvfs_mode\n");
 	else {
 #ifdef ENABLE_IDVFS
-		p = id_to_cpu_dvfs(MT_CPU_DVFS_B);
+		unsigned long flags;
+		struct mt_cpu_dvfs *p = id_to_cpu_dvfs(MT_CPU_DVFS_B);
+
 		cpufreq_lock(flags);
-		disable_idvfs_flag = (idvfs_mode == 0) ? 1 : 0;
-		if (disable_idvfs_flag) {
-			BigiDVFSDisable();
-			p->ops = &dvfs_ops_B;
+		if (!idvfs_mode) {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+			rc = __switch_cpuhvfs_on_off(0);
+#else
+			rc = 0;
+#endif
+			if (!rc) {
+				BigiDVFSDisable();
+				p->ops = &dvfs_ops_B;
+				disable_idvfs_flag = 1;
+			}
 		}
 		cpufreq_unlock(flags);
-#else
-	cpufreq_lock(flags);
-	disable_idvfs_flag = (idvfs_mode == 1) ? 0 : 1;
-	cpufreq_unlock(flags);
 #endif
 	}
 
@@ -4769,19 +4789,6 @@ static ssize_t cpufreq_up_threshold_l_proc_write(struct file *file,
 
 static int cpufreq_up_threshold_b_proc_show(struct seq_file *m, void *v)
 {
-#if 0
-	struct mt_cpu_dvfs *p;
-	unsigned long flags;
-
-	p = id_to_cpu_dvfs(MT_CPU_DVFS_B);
-	cpufreq_lock(flags);
-	disable_idvfs_flag = 1;
-	if (disable_idvfs_flag) {
-		BigiDVFSDisable();
-		p->ops = &dvfs_ops_B;
-	}
-	cpufreq_unlock(flags);
-#endif
 	seq_printf(m, "thres_b = %d\n", thres_b);
 
 	return 0;
@@ -5013,7 +5020,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
 	ret = cpuhvfs_module_init();
-	if (ret)
+	if (ret || disable_idvfs_flag)
 		enable_cpuhvfs = 0;
 #endif
 
