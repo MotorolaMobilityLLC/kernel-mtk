@@ -4144,11 +4144,11 @@ static int setup_disp_sec(disp_ddp_path_config *data_config, cmdqRecHandle cmdq_
 	}
 
 	if ((has_sec_layer == primary_is_sec()) && (primary_is_sec() == 0)) {
-		if (svp_state == SVP_2_NOMAL)
+		if (svp_state == SVP_2_NOMAL) {
 			svp_state = SVP_EXIT_POINT;
-		else
+			disp_leave_svp(svp_state);
+		} else
 			svp_state = SVP_NOMAL;
-		disp_leave_svp(svp_state);
 
 	}
 
