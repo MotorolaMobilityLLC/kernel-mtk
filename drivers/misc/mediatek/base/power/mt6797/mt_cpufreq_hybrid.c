@@ -268,12 +268,12 @@
 #define CSPM_SEMA1_M0			(CSPM_BASE + 0x420)
 #define CSPM_SEMA1_M1			(CSPM_BASE + 0x424)
 #define CSPM_SEMA1_M2			(CSPM_BASE + 0x428)
-#define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)
-#define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)
-#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)
-#define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)
-#define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)
-#define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)
+#define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)	/* Vcore DVFS workaround */
+#define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)	/* Vcore DVFS workaround */
+#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* Vcore DVFS workaround */
+#define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)	/* MCUMIXEDSYS workaround */
+#define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)	/* MCUMIXEDSYS workaround */
+#define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)	/* MCUMIXEDSYS workaround */
 #define CSPM_MP0_CPU0_WFI_EN		(CSPM_BASE + 0x530)
 #define CSPM_MP0_CPU1_WFI_EN		(CSPM_BASE + 0x534)
 #define CSPM_MP0_CPU2_WFI_EN		(CSPM_BASE + 0x538)
@@ -407,9 +407,12 @@
 #define IRQC_PCM_RETURN		IRQS_PCM_RETURN
 #define IRQC_ALL		(IRQC_PCM_RETURN | IRQC_TWAM)
 
-#define FSM_PC_STA_IDLE		(1U << 4)
-#define FSM_PC_STA_INC		(1U << 5)
-#define FSM_PC_STA_STALL	(1U << 6)
+#define FSM_PC_IDLE		(1U << 4)
+#define FSM_PC_INCR		(1U << 5)
+#define FSM_PC_STAL		(1U << 6)
+#define FSM_IM_EMPT		(1U << 7)
+#define FSM_IM_FILL		(1U << 8)
+#define FSM_IM_REDY		(1U << 9)
 #define FSM_PCM_KICK		(1U << 21)
 
 #define SW_F_MIN(val)		(((val) & 0xf) << 0)
@@ -839,7 +842,7 @@ static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	/* do basic init because of Infra power-on reset */
 #if 0
-	/* SEMA3 is used for MCUMIXEDSYS workaround, so FH driver/ATF will write POWERON_CONFIG_EN */
+	/* SEMA2/3 are used for workaround, so others will write POWERON_CONFIG_EN */
 	if (!(cspm_read(CSPM_POWERON_CONFIG_EN) & REGWR_EN))
 #else
 	if (!(cspm_read(CSPM_PCM_CON1) & CON1_MIF_APBEN))
@@ -1467,7 +1470,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 
 	BUG_ON(!(swctrl & CLUSTER_EN));		/* already off */
 
-	cspm_write(swctrl_reg[cluster], swctrl & ~(CLUSTER_EN | SW_PAUSE));
+	cspm_write(swctrl_reg[cluster], swctrl & ~(CLUSTER_EN | SW_PAUSE | SW_F_ASSIGN));
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
 
 	/* FW will set SW_PAUSE when done */
@@ -1480,12 +1483,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		csram_write_fw_sta();
 	}
 
-	if (r >= 0) {
-		/* sync SW_F_DES with F_CURR to avoid DVFS at cluster on */
-		swctrl = cspm_read(swctrl_reg[cluster]) & ~SW_F_DES_MASK;
-		cspm_write(swctrl_reg[cluster], swctrl | SW_F_DES(cspm_curr_freq(hwsta_reg[cluster])));
-		csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
-	} else {
+	if (r < 0) {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
 		BUG();
 	}
@@ -2106,4 +2104,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.2");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.3");
