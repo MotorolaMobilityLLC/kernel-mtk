@@ -227,9 +227,10 @@ void ohio_hardware_poweron(void)
 	anx_printk(K_INFO, "ohio_hardware_poweron\n");
 
 	retry_count = 3;
-	atomic_set(&ohio_sys_is_ready, 0);
 	while (retry_count) {
 		ohio_hardware_powerdown();
+
+		atomic_set(&power_status, 1);
 
 		/* power enable */
 		/*gpio_set_value(pdata->gpio_p_on, 1);*/
@@ -283,6 +284,9 @@ void ohio_hardware_powerdown(void)
 #endif /* NEVER */
 
 	anx_printk(K_INFO, "ohio_hardware_powerdown\n");
+
+	atomic_set(&power_status, 0);
+	atomic_set(&ohio_sys_is_ready, 0);
 
 	/*pull down reset chip*/
 	/*gpio_set_value(pdata->gpio_reset, 0);*/
@@ -413,9 +417,7 @@ void cable_disconnect(void *data)
 
 	cancel_delayed_work_sync(&ohio->work);
 	flush_workqueue(ohio->workqueue);
-	atomic_set(&power_status, 0);
 	ohio_hardware_powerdown();
-	/*power_status = 0;*/
 	/*ohio_clean_state_machine();*/
 	wake_unlock(&ohio->ohio_lock);
 	wake_lock_timeout(&ohio->ohio_lock, 2 * HZ);
@@ -494,7 +496,6 @@ void ohio_main_process(struct ohio_data *ohio)
 			int anlg_sts = 0;
 
 			ohio_hardware_poweron();
-			atomic_set(&power_status, 1);
 			OhioWriteReg(IRQ_EXT_SOURCE_2, 0xff);
 
 			if (!ohio->intp_irq_en) {
@@ -514,7 +515,6 @@ void ohio_main_process(struct ohio_data *ohio)
 		if (atomic_read(&power_status) == 1) {
 			ohio_power_standby();
 			/*ohio_sys_is_ready = 0;*/
-			atomic_set(&power_status, 0);
 		}
 	}
 }
@@ -621,10 +621,10 @@ static irqreturn_t ohio_intr_comm_isr(int irq, void *data)
 		return IRQ_NONE;
 	}
 
-	/*if (atomic_read(&power_status) == 0) {
+	if (atomic_read(&power_status) == 0) {
 		pr_err("%s power off\n", __func__);
-		return IRQ_HANDLED;
-	:}*/
+		return IRQ_NONE;
+	}
 
 	anx_printk(K_INFO, "%s %02x\n", __func__,
 			OhioReadReg(IRQ_EXT_SOURCE_2));
@@ -1018,7 +1018,7 @@ static int ohio_i2c_probe(struct i2c_client *client,
 	anx_printk(K_INFO, "%s cbl_det_irq=%d\n", __func__, cbl_det_irq);
 
 	ret = request_threaded_irq(cbl_det_irq, NULL, ohio_cbl_det_isr,
-				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
 				   "ohio-cbl-det", ohio);
 	if (ret < 0) {
 		pr_err("%s : failed to request irq\n", __func__);
