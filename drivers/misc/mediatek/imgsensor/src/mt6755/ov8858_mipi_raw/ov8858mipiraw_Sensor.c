@@ -360,7 +360,6 @@ static void set_shutter(kal_uint16 shutter)
 
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		LOG_INF("realtime_fps=%d\n", realtime_fps);
 		if(realtime_fps >= 297 && realtime_fps <= 305)
 			set_max_framerate(296,0);
 		else if(realtime_fps >= 147 && realtime_fps <= 150)
@@ -380,7 +379,7 @@ static void set_shutter(kal_uint16 shutter)
 	write_cmos_sensor(0x3502, (shutter << 4) & 0xF0);
 	write_cmos_sensor(0x3501, (shutter >> 4) & 0xFF);
 	write_cmos_sensor(0x3500, (shutter >> 12) & 0x0F);
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+	LOG_INF("Exit! shutter =%d, framelength =%d, for flicker realtime_fps=%d\n", shutter,imgsensor.frame_length,realtime_fps);
 
 }
 #if 0
@@ -412,7 +411,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-	LOG_INF("set_gain %d \n", gain);
+//	LOG_INF("set_gain %d \n", gain);
 	if (gain < BASEGAIN || gain > 10 * BASEGAIN) {
 		SENSORDB("Error gain setting");
 
@@ -2293,7 +2292,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+   // LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;
