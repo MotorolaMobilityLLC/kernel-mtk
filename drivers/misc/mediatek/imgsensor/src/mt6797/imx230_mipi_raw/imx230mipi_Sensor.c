@@ -400,7 +400,7 @@ static void imx230_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 		cur_startpos = startpos;
 		cur_size = size;
 	}
-	
+
 	start_x_pos = (startpos >> 16) & 0xFFFF;
 	start_y_pos = startpos & 0xFFFF;
 	focus_width = (size >> 16) & 0xFFFF;
@@ -422,23 +422,23 @@ static void imx230_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 		write_cmos_sensor(0x3123,0x01);
 
 		/*Fixed area mode*/
-		
+
 		write_cmos_sensor(0x3158,(start_x_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x3159,start_x_pos & 0xFF);// X start
 		write_cmos_sensor(0x315a,(start_y_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x315b,start_y_pos & 0xFF);// Y start
 		write_cmos_sensor(0x315c,(end_x_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x315d,end_x_pos & 0xFF);//X end 
+		write_cmos_sensor(0x315d,end_x_pos & 0xFF);//X end
 		write_cmos_sensor(0x315e,(end_y_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x315f,end_y_pos & 0xFF);// Y end
 
-		
+
 	}
 
 
 	LOG_INF("start_x_pos:%d, start_y_pos:%d, focus_width:%d, focus_height:%d, end_x_pos:%d, end_y_pos:%d\n", \
 			start_x_pos, start_y_pos, focus_width, focus_height, end_x_pos, end_y_pos);
-	
+
 	return;
 }
 
@@ -2042,7 +2042,7 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 
     /*Fixed area mode*/
 	/*Fixed area mode*/
-	
+
 	write_cmos_sensor(0x3158,0x06);
 	write_cmos_sensor(0x3159,0x45);// X start = 1605
 	write_cmos_sensor(0x315a,0x04);
@@ -2050,7 +2050,7 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 	write_cmos_sensor(0x315c,0x0E);
 	write_cmos_sensor(0x315d,0x9B);//X end = 3739
 	write_cmos_sensor(0x315e,0x0A);
-	write_cmos_sensor(0x315f,0xFB);// Y end = 2811	
+	write_cmos_sensor(0x315f,0xFB);// Y end = 2811
 
 	write_cmos_sensor(0x0100,0x01);
 }
@@ -3017,7 +3017,7 @@ static kal_uint32 imx230_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 {
     UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
 	  LOG_INF("imx230_awb_gain\n");
-    
+
     grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
     rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
     bgain_32 = (pSetSensorAWB->ABS_GAIN_B << 8) >> 9;
@@ -3183,7 +3183,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
@@ -3195,7 +3195,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				default:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
