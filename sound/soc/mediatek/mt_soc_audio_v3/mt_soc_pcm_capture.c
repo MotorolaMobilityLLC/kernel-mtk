@@ -64,6 +64,8 @@ AFE_MEM_CONTROL_T  *VUL_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
+static bool mCapturePrepare;
+
 static DEFINE_SPINLOCK(auddrv_ULInCtl_lock);
 
 /*
@@ -196,6 +198,10 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
+	if (mCapturePrepare == false)
+		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+
+	mCapturePrepare = true;
 	return 0;
 }
 
@@ -204,7 +210,6 @@ static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 	/* AFE_BLOCK_T *Vul_Block = &(VUL_Control_context->rBlock); */
 	pr_warn("mtk_capture_alsa_stop\n");
 	StopAudioCaptureHardware(substream);
-	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	return 0;
 }
 
@@ -413,13 +418,14 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 	}
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
+	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+	mCapturePrepare = false;
 	return 0;
 }
 
 static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_capture_alsa_start\n");
-	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	StartAudioCaptureHardware(substream);
 #ifdef DENALI_FPGA_EARLYPORTING /* ccc early porting, copy from TurnOnDacPower() and ADC_LOOP_DAC_Func() */
 	/* Afe_Set_Reg(AFE_SGEN_CON0, 0x24862862, 0xffffffff); */
@@ -700,6 +706,7 @@ static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("mtk_afe_capture_probe\n");
+	mCapturePrepare = false;
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL, UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
 	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
