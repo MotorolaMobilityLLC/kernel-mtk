@@ -321,6 +321,9 @@ static int drm_getcap(struct drm_device *dev, void *data, struct drm_file *file_
 		else
 			req->value = 64;
 		break;
+	case DRM_CAP_ADDFB2_MODIFIERS:
+		req->value = dev->mode_config.allow_fb_modifiers;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -697,10 +700,10 @@ long drm_ioctl(struct file *filp,
 	} else
 		goto err_i1;
 
-	/*DRM_INFO("pid=%d, dev=0x%lx, auth=%d, %s\n",
+	DRM_DEBUG("pid=%d, dev=0x%lx, auth=%d, %s\n",
 		  task_pid_nr(current),
 		  (long)old_encode_dev(file_priv->minor->kdev->devt),
-		  file_priv->authenticated, ioctl->name);*/
+		  file_priv->authenticated, ioctl->name);
 
 	flags = ioctl->flags;
 	if (drm_master_relax) {
@@ -772,7 +775,7 @@ long drm_ioctl(struct file *filp,
 	if (kdata != stack_kdata)
 		kfree(kdata);
 	if (retcode)
-		DRM_INFO("ret = %d\n", retcode);
+		DRM_DEBUG("ret = %d\n", retcode);
 	return retcode;
 }
 EXPORT_SYMBOL(drm_ioctl);

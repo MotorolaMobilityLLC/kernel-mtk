@@ -98,7 +98,7 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 {
 	struct drm_device *dev = connector->dev;
 	struct drm_display_mode *mode;
-	struct drm_connector_helper_funcs *connector_funcs =
+	const struct drm_connector_helper_funcs *connector_funcs =
 		connector->helper_private;
 	int count = 0;
 	int mode_flags = 0;
@@ -106,8 +106,8 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 
 	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
 
-	//DRM_INFO("[CONNECTOR:%d:%s]\n", connector->base.id,
-			//connector->name);
+	DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n", connector->base.id,
+			connector->name);
 	/* set all modes to the unverified state */
 	list_for_each_entry(mode, &connector->modes, head)
 		mode->status = MODE_UNVERIFIED;
@@ -190,8 +190,8 @@ prune:
 
 	drm_mode_sort(&connector->modes);
 
-	//DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
-	//		connector->name);
+	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
+			connector->name);
 	list_for_each_entry(mode, &connector->modes, head) {
 		drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
 		drm_mode_debug_printmodeline(mode);
@@ -279,7 +279,7 @@ static void output_poll_execute(struct work_struct *work)
 		return;
 
 	mutex_lock(&dev->mode_config.mutex);
-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+	drm_for_each_connector(connector, dev) {
 
 		/* Ignore forced connectors. */
 		if (connector->force)
@@ -290,14 +290,14 @@ static void output_poll_execute(struct work_struct *work)
 		if (!connector->polled || connector->polled == DRM_CONNECTOR_POLL_HPD)
 			continue;
 
-		repoll = true;
-
 		old_status = connector->status;
 		/* if we are connected and don't want to poll for disconnect
 		   skip it */
 		if (old_status == connector_status_connected &&
 		    !(connector->polled & DRM_CONNECTOR_POLL_DISCONNECT))
 			continue;
+
+		repoll = true;
 
 		connector->status = connector->funcs->detect(connector, false);
 		if (old_status != connector->status) {
@@ -361,7 +361,7 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
 	if (!dev->mode_config.poll_enabled || !drm_kms_helper_poll)
 		return;
 
-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+	drm_for_each_connector(connector, dev) {
 		if (connector->polled & (DRM_CONNECTOR_POLL_CONNECT |
 					 DRM_CONNECTOR_POLL_DISCONNECT))
 			poll = true;
@@ -443,7 +443,7 @@ bool drm_helper_hpd_irq_event(struct drm_device *dev)
 		return false;
 
 	mutex_lock(&dev->mode_config.mutex);
-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+	drm_for_each_connector(connector, dev) {
 
 		/* Only handle HPD capable connectors. */
 		if (!(connector->polled & DRM_CONNECTOR_POLL_HPD))

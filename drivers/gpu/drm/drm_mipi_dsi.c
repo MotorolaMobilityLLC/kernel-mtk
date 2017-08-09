@@ -312,6 +312,53 @@ bool mipi_dsi_packet_format_is_long(u8 type)
 }
 EXPORT_SYMBOL(mipi_dsi_packet_format_is_long);
 
+#define BIT_VAL(x, nr) ((x & BIT(nr)) >> nr)
+#define XOR13(x, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13) \
+	(BIT_VAL(x, b1) ^ BIT_VAL(x, b2) ^ BIT_VAL(x, b3) ^ BIT_VAL(x, b4) ^ \
+	 BIT_VAL(x, b5) ^ BIT_VAL(x, b6) ^ BIT_VAL(x, b7) ^ BIT_VAL(x, b8) ^ \
+	 BIT_VAL(x, b9) ^ BIT_VAL(x, b10) ^ BIT_VAL(x, b11) ^ \
+	 BIT_VAL(x, b12) ^ BIT_VAL(x, b13))
+#define XOR14(x, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14) \
+	(XOR13(x, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13) ^ \
+	 BIT_VAL(x, b14))
+
+static u8 mipi_dsi_calculate_ecc(const u8 *header)
+{
+	u8 ecc;
+	u32 v = header[2] << 16 | header[1] << 8 | header[0];
+
+	ecc = XOR14(v, 0, 1, 2, 4, 5, 7, 10, 11, 13, 16, 20, 21, 22, 23) |
+	      XOR14(v, 0, 1, 3, 4, 6, 8, 10, 12, 14, 17, 20, 21, 22, 23) << 1 |
+	      XOR13(v, 0, 2, 3, 5, 6, 9, 11, 12, 15, 18, 20, 21, 22) << 2 |
+	      XOR13(v, 1, 2, 3, 7, 8, 9, 13, 14, 15, 19, 20, 21, 23) << 3 |
+	      XOR13(v, 4, 5, 6, 7, 8, 9, 16, 17, 18, 19, 20, 22, 23) << 4 |
+	      XOR13(v, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23) << 5;
+	return ecc;
+}
+
+static u16 mipi_dsi_calculate_crc(struct mipi_dsi_packet *packet)
+{
+	static const u16 gen_code = 0x8408;
+	size_t i, j;
+	u16 ret = 0xFFFF;
+
+	/* If the packet is zero-length, return 0xFFFF as the checksum */
+	if (packet->payload_length == 0)
+		return 0xFFFF;
+
+	for (i = 0; i < packet->payload_length; i++) {
+		u8 d = packet->payload[i];
+		for (j = 0; j < 8; j++) {
+			if (((ret & 1) ^ (d & 1)) > 0)
+				ret = ((ret >> 1) & 0x7FFF) ^ gen_code;
+			else
+				ret = (ret >> 1) & 0x7FFF;
+			d = (d >> 1) & 0x7F;
+		}
+	}
+	return ret;
+}
+
 /**
  * mipi_dsi_create_packet - create a packet from a message according to the
  *     DSI protocol
@@ -339,8 +386,6 @@ int mipi_dsi_create_packet(struct mipi_dsi_packet *packet,
 	memset(packet, 0, sizeof(*packet));
 	packet->header[0] = ((msg->channel & 0x3) << 6) | (msg->type & 0x3f);
 
-	/* TODO: compute ECC if hardware support is not available */
-
 	/*
 	 * Long write packets contain the word count in header bytes 1 and 2.
 	 * The payload follows the header and is word count bytes long.
@@ -359,7 +404,13 @@ int mipi_dsi_create_packet(struct mipi_dsi_packet *packet,
 		packet->header[2] = (msg->tx_len > 1) ? tx[1] : 0;
 	}
 
+	if (msg->flags & MIPI_DSI_MSG_SW_ECC)
+		packet->header[3] = mipi_dsi_calculate_ecc(packet->header);
+
 	packet->size = sizeof(packet->header) + packet->payload_length;
+
+	if (msg->flags & MIPI_DSI_MSG_SW_CRC)
+		packet->checksum = mipi_dsi_calculate_crc(packet);
 
 	return 0;
 }
@@ -840,6 +891,29 @@ int mipi_dsi_dcs_set_tear_on(struct mipi_dsi_device *dsi,
 	return 0;
 }
 EXPORT_SYMBOL(mipi_dsi_dcs_set_tear_on);
+
+/**
+ * mipi_dsi_dcs_set_tear_scanline() - turn on the display module's Tearing
+ *    Effect output signal on the TE signal line when the display module reaches
+ *    line N.
+ * @dsi: DSI peripheral device
+ * @line: the line to trigger TE signal on
+ *
+ * Return: 0 on success or a negative error code on failure
+ */
+int mipi_dsi_dcs_set_tear_scanline(struct mipi_dsi_device *dsi, u16 line)
+{
+	u8 value[] = { (line >> 8) & 0xff, (line >> 0) & 0xff };
+	ssize_t err;
+
+	err = mipi_dsi_dcs_write(dsi, MIPI_DCS_SET_TEAR_SCANLINE, value,
+				 sizeof(value));
+	if (err < 0)
+		return err;
+
+	return 0;
+}
+EXPORT_SYMBOL(mipi_dsi_dcs_set_tear_scanline);
 
 /**
  * mipi_dsi_dcs_set_pixel_format() - sets the pixel format for the RGB image

@@ -80,8 +80,10 @@ int __drm_modeset_lock_all(struct drm_device *dev,
 		return -ENOMEM;
 
 	if (trylock) {
-		if (!mutex_trylock(&config->mutex))
-			return -EBUSY;
+		if (!mutex_trylock(&config->mutex)) {
+			ret = -EBUSY;
+			goto out;
+		}
 	} else {
 		mutex_lock(&config->mutex);
 	}
@@ -114,6 +116,8 @@ fail:
 		goto retry;
 	}
 
+out:
+	kfree(ctx);
 	return ret;
 }
 EXPORT_SYMBOL(__drm_modeset_lock_all);
@@ -272,7 +276,7 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
 	if (oops_in_progress)
 		return;
 
-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+	drm_for_each_crtc(crtc, dev)
 		WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
 
 	WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
@@ -460,18 +464,17 @@ EXPORT_SYMBOL(drm_modeset_unlock);
 int drm_modeset_lock_all_crtcs(struct drm_device *dev,
 		struct drm_modeset_acquire_ctx *ctx)
 {
-	struct drm_mode_config *config = &dev->mode_config;
 	struct drm_crtc *crtc;
 	struct drm_plane *plane;
 	int ret = 0;
 
-	list_for_each_entry(crtc, &config->crtc_list, head) {
+	drm_for_each_crtc(crtc, dev) {
 		ret = drm_modeset_lock(&crtc->mutex, ctx);
 		if (ret)
 			return ret;
 	}
 
-	list_for_each_entry(plane, &config->plane_list, head) {
+	drm_for_each_plane(plane, dev) {
 		ret = drm_modeset_lock(&plane->mutex, ctx);
 		if (ret)
 			return ret;

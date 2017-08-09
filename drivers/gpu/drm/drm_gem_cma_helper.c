@@ -381,10 +381,7 @@ void drm_gem_cma_describe(struct drm_gem_cma_object *cma_obj,
 			  struct seq_file *m)
 {
 	struct drm_gem_object *obj = &cma_obj->base;
-	struct drm_device *dev = obj->dev;
 	uint64_t off;
-
-	WARN_ON(!mutex_is_locked(&dev->struct_mutex));
 
 	off = drm_vma_node_start(&obj->vma_node);
 
@@ -492,9 +489,7 @@ int drm_gem_cma_prime_mmap(struct drm_gem_object *obj,
 	struct drm_device *dev = obj->dev;
 	int ret;
 
-	mutex_lock(&dev->struct_mutex);
 	ret = drm_gem_mmap_obj(obj, obj->size, vma);
-	mutex_unlock(&dev->struct_mutex);
 	if (ret < 0)
 		return ret;
 

@@ -72,8 +72,8 @@ struct mtk_drm_crtc *mtk_drm_crtc_create(
 	struct drm_device *drm_dev, struct drm_plane *primary, int pipe,
 	const struct mediatek_drm_crtc_ops *ops,
 	void *ctx);
-int mtk_drm_crtc_enable_vblank(struct drm_device *drm, int pipe);
-void mtk_drm_crtc_disable_vblank(struct drm_device *drm, int pipe);
+int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe);
+void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe);
 
 #endif /* MEDIATEL_DRM_CRTC_H */
 

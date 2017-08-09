@@ -21,6 +21,10 @@ struct mipi_dsi_device;
 #define MIPI_DSI_MSG_REQ_ACK	BIT(0)
 /* use Low Power Mode to transmit message */
 #define MIPI_DSI_MSG_USE_LPM	BIT(1)
+/* calculate ECC in software */
+#define MIPI_DSI_MSG_SW_ECC	BIT(2)
+/* calculate checksum in software */
+#define MIPI_DSI_MSG_SW_CRC	BIT(3)
 
 /**
  * struct mipi_dsi_msg - read/write DSI buffer
@@ -54,12 +58,14 @@ bool mipi_dsi_packet_format_is_long(u8 type);
  *     Packet Data, and ECC)
  * @payload_length: number of bytes in the payload
  * @payload: a pointer to a buffer containing the payload, if any
+ * @checksum: the CRC of the payload (only applies to long packets)
  */
 struct mipi_dsi_packet {
 	size_t size;
 	u8 header[4];
 	size_t payload_length;
 	const u8 *payload;
+	u16 checksum;
 };
 
 int mipi_dsi_create_packet(struct mipi_dsi_packet *packet,
@@ -222,6 +228,7 @@ int mipi_dsi_dcs_set_address_mode(struct mipi_dsi_device *dsi,
 int mipi_dsi_dcs_set_tear_off(struct mipi_dsi_device *dsi);
 int mipi_dsi_dcs_set_tear_on(struct mipi_dsi_device *dsi,
 			     enum mipi_dsi_dcs_tear_mode mode);
+int mipi_dsi_dcs_set_tear_scanline(struct mipi_dsi_device *dsi, u16 line);
 int mipi_dsi_dcs_set_pixel_format(struct mipi_dsi_device *dsi, u8 format);
 
 /**

@@ -590,7 +590,7 @@ static u32 drm_dp_i2c_functionality(struct i2c_adapter *adapter)
  */
 static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 {
-	unsigned int retry;
+	unsigned int retry, defer_i2c;
 	int err;
 
 	/*
@@ -598,7 +598,7 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 	 * is required to retry at least seven times upon receiving AUX_DEFER
 	 * before giving up the AUX transaction.
 	 */
-	for (retry = 0; retry < 7; retry++) {
+	for (retry = 0, defer_i2c = 0; retry < (7 + defer_i2c); retry++) {
 		mutex_lock(&aux->hw_mutex);
 		err = aux->transfer(aux, msg);
 		mutex_unlock(&aux->hw_mutex);
@@ -624,7 +624,7 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			return -EREMOTEIO;
 
 		case DP_AUX_NATIVE_REPLY_DEFER:
-			DRM_DEBUG_KMS("native defer");
+			DRM_DEBUG_KMS("native defer\n");
 			/*
 			 * We could check for I2C bit rate capabilities and if
 			 * available adjust this interval. We could also be
@@ -659,7 +659,13 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 
 		case DP_AUX_I2C_REPLY_DEFER:
 			DRM_DEBUG_KMS("I2C defer\n");
+			/* DP Compliance Test 4.2.2.5 Requirement:
+			 * Must have at least 7 retries for I2C defers on the
+			 * transaction to pass this test
+			 */
 			aux->i2c_defer_count++;
+			if (defer_i2c < 7)
+				defer_i2c++;
 			usleep_range(400, 500);
 			continue;
 

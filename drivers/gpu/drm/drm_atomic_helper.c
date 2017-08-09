@@ -89,7 +89,7 @@ get_current_crtc_for_encoder(struct drm_device *dev,
 
 	WARN_ON(!drm_modeset_is_locked(&config->connection_mutex));
 
-	list_for_each_entry(connector, &config->connector_list, head) {
+	drm_for_each_connector(connector, dev) {
 		if (connector->state->best_encoder != encoder)
 			continue;
 
@@ -280,6 +280,8 @@ mode_fixup(struct drm_atomic_state *state)
 		 */
 		encoder = conn_state->best_encoder;
 		funcs = encoder->helper_private;
+		if (!funcs)
+			continue;
 
 		ret = drm_bridge_mode_fixup(encoder->bridge, &crtc_state->mode,
 				&crtc_state->adjusted_mode);
@@ -314,6 +316,9 @@ mode_fixup(struct drm_atomic_state *state)
 			continue;
 
 		funcs = crtc->helper_private;
+		if (!funcs->mode_fixup)
+			continue;
+
 		ret = funcs->mode_fixup(crtc, &crtc_state->mode,
 					&crtc_state->adjusted_mode);
 		if (!ret) {
@@ -418,6 +423,10 @@ drm_atomic_helper_check_modeset(struct drm_device *dev,
 			      crtc_state->active ? 'y' : 'n');
 
 		ret = drm_atomic_add_affected_connectors(state, crtc);
+		if (ret != 0)
+			return ret;
+
+		ret = drm_atomic_add_affected_planes(state, crtc);
 		if (ret != 0)
 			return ret;
 
@@ -613,8 +622,22 @@ disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 	}
 }
 
-static void
-set_routing_links(struct drm_device *dev, struct drm_atomic_state *old_state)
+/**
+ * drm_atomic_helper_update_legacy_modeset_state - update legacy modeset state
+ * @dev: DRM device
+ * @old_state: atomic state object with old state structures
+ *
+ * This function updates all the various legacy modeset state pointers in
+ * connectors, encoders and crtcs. It also updates the timestamping constants
+ * used for precise vblank timestamps by calling
+ * drm_calc_timestamping_constants().
+ *
+ * Drivers can use this for building their own atomic commit if they don't have
+ * a pure helper-based modeset implementation.
+ */
+void
+drm_atomic_helper_update_legacy_modeset_state(struct drm_device *dev,
+					      struct drm_atomic_state *old_state)
 {
 	struct drm_connector *connector;
 	struct drm_connector_state *old_conn_state;
@@ -653,6 +676,7 @@ set_routing_links(struct drm_device *dev, struct drm_atomic_state *old_state)
 		crtc->y = crtc->primary->state->src_y >> 16;
 	}
 }
+EXPORT_SYMBOL(drm_atomic_helper_update_legacy_modeset_state);
 
 static void
 crtc_set_mode(struct drm_device *dev, struct drm_atomic_state *old_state)
@@ -729,7 +753,9 @@ void drm_atomic_helper_commit_modeset_disables(struct drm_device *dev,
 					       struct drm_atomic_state *old_state)
 {
 	disable_outputs(dev, old_state);
-	set_routing_links(dev, old_state);
+
+	drm_atomic_helper_update_legacy_modeset_state(dev, old_state);
+
 	crtc_set_mode(dev, old_state);
 }
 EXPORT_SYMBOL(drm_atomic_helper_commit_modeset_disables);
@@ -812,8 +838,8 @@ void drm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_atomic_helper_commit_modeset_enables);
 
-static void wait_for_fences(struct drm_device *dev,
-			    struct drm_atomic_state *state)
+void drm_atomic_helper_wait_for_fences(struct drm_device *dev,
+				       struct drm_atomic_state *state)
 {
 	struct drm_plane *plane;
 	struct drm_plane_state *plane_state;
@@ -830,6 +856,7 @@ static void wait_for_fences(struct drm_device *dev,
 		plane->state->fence = NULL;
 	}
 }
+EXPORT_SYMBOL(drm_atomic_helper_wait_for_fences);
 
 static bool framebuffer_changed(struct drm_device *dev,
 				struct drm_atomic_state *old_state,
@@ -959,11 +986,11 @@ int drm_atomic_helper_commit(struct drm_device *dev,
 	 * current layout.
 	 */
 
-	wait_for_fences(dev, state);
+	drm_atomic_helper_wait_for_fences(dev, state);
 
 	drm_atomic_helper_commit_modeset_disables(dev, state);
 
-	drm_atomic_helper_commit_planes(dev, state);
+	drm_atomic_helper_commit_planes(dev, state, false);
 
 	drm_atomic_helper_commit_modeset_enables(dev, state);
 
@@ -1036,6 +1063,7 @@ int drm_atomic_helper_prepare_planes(struct drm_device *dev,
 	for (i = 0; i < nplanes; i++) {
 		const struct drm_plane_helper_funcs *funcs;
 		struct drm_plane *plane = state->planes[i];
+		struct drm_plane_state *plane_state = state->plane_states[i];
 		struct drm_framebuffer *fb;
 
 		if (!plane)
@@ -1043,10 +1071,10 @@ int drm_atomic_helper_prepare_planes(struct drm_device *dev,
 
 		funcs = plane->helper_private;
 
-		fb = state->plane_states[i]->fb;
+		fb = plane_state->fb;
 
 		if (fb && funcs->prepare_fb) {
-			ret = funcs->prepare_fb(plane, fb);
+			ret = funcs->prepare_fb(plane, fb, plane_state);
 			if (ret)
 				goto fail;
 		}
@@ -1058,6 +1086,7 @@ fail:
 	for (i--; i >= 0; i--) {
 		const struct drm_plane_helper_funcs *funcs;
 		struct drm_plane *plane = state->planes[i];
+		struct drm_plane_state *plane_state = state->plane_states[i];
 		struct drm_framebuffer *fb;
 
 		if (!plane)
@@ -1068,7 +1097,7 @@ fail:
 		fb = state->plane_states[i]->fb;
 
 		if (fb && funcs->cleanup_fb)
-			funcs->cleanup_fb(plane, fb);
+			funcs->cleanup_fb(plane, fb, plane_state);
 
 	}
 
@@ -1076,10 +1105,16 @@ fail:
 }
 EXPORT_SYMBOL(drm_atomic_helper_prepare_planes);
 
+bool plane_crtc_active(struct drm_plane_state *state)
+{
+	return state->crtc && state->crtc->state->active;
+}
+
 /**
  * drm_atomic_helper_commit_planes - commit plane state
  * @dev: DRM device
  * @old_state: atomic state object with old state structures
+ * @active_only: Only commit on active CRTC if set
  *
  * This function commits the new plane state using the plane and atomic helper
  * functions for planes and crtcs. It assumes that the atomic state has already
@@ -1088,9 +1123,14 @@ EXPORT_SYMBOL(drm_atomic_helper_prepare_planes);
  *
  * It still requires the global state object @old_state to know which planes and
  * crtcs need to be updated though.
+ *
+ * Note that this function does all plane updates across all CRTCs in one step.
+ * If the hardware can't support this approach look at
+ * drm_atomic_helper_commit_planes_on_crtc() instead.
  */
 void drm_atomic_helper_commit_planes(struct drm_device *dev,
-				     struct drm_atomic_state *old_state)
+				     struct drm_atomic_state *old_state,
+				     bool active_only)
 {
 	struct drm_crtc *crtc;
 	struct drm_crtc_state *old_crtc_state;
@@ -1106,26 +1146,43 @@ void drm_atomic_helper_commit_planes(struct drm_device *dev,
 		if (!funcs || !funcs->atomic_begin)
 			continue;
 
-		funcs->atomic_begin(crtc);
+		if (active_only && !crtc->state->active)
+			continue;
+
+		funcs->atomic_begin(crtc, old_crtc_state);
 	}
 
 	for_each_plane_in_state(old_state, plane, old_plane_state, i) {
 		const struct drm_plane_helper_funcs *funcs;
+		bool disabling;
 
 		funcs = plane->helper_private;
 
 		if (!funcs)
 			continue;
 
-		old_plane_state = old_state->plane_states[i];
+		disabling = drm_atomic_plane_disabling(plane, old_plane_state);
+
+		if (active_only) {
+			/*
+			 * Skip planes related to inactive CRTCs. If the plane
+			 * is enabled use the state of the current CRTC. If the
+			 * plane is being disabled use the state of the old
+			 * CRTC to avoid skipping planes being disabled on an
+			 * active CRTC.
+			 */
+			if (!disabling && !plane_crtc_active(plane->state))
+				continue;
+			if (disabling && !plane_crtc_active(old_plane_state))
+				continue;
+		}
 
 		/*
 		 * Special-case disabling the plane if drivers support it.
 		 */
-		if (drm_atomic_plane_disabling(plane, old_plane_state) &&
-		    funcs->atomic_disable)
+		if (disabling && funcs->atomic_disable)
 			funcs->atomic_disable(plane, old_plane_state);
-		else
+		else if (plane->state->crtc || disabling)
 			funcs->atomic_update(plane, old_plane_state);
 	}
 
@@ -1137,10 +1194,71 @@ void drm_atomic_helper_commit_planes(struct drm_device *dev,
 		if (!funcs || !funcs->atomic_flush)
 			continue;
 
-		funcs->atomic_flush(crtc);
+		if (active_only && !crtc->state->active)
+			continue;
+
+		funcs->atomic_flush(crtc, old_crtc_state);
 	}
 }
 EXPORT_SYMBOL(drm_atomic_helper_commit_planes);
+
+/**
+ * drm_atomic_helper_commit_planes_on_crtc - commit plane state for a crtc
+ * @old_crtc_state: atomic state object with the old crtc state
+ *
+ * This function commits the new plane state using the plane and atomic helper
+ * functions for planes on the specific crtc. It assumes that the atomic state
+ * has already been pushed into the relevant object state pointers, since this
+ * step can no longer fail.
+ *
+ * This function is useful when plane updates should be done crtc-by-crtc
+ * instead of one global step like drm_atomic_helper_commit_planes() does.
+ *
+ * This function can only be savely used when planes are not allowed to move
+ * between different CRTCs because this function doesn't handle inter-CRTC
+ * depencies. Callers need to ensure that either no such depencies exist,
+ * resolve them through ordering of commit calls or through some other means.
+ */
+void
+drm_atomic_helper_commit_planes_on_crtc(struct drm_crtc_state *old_crtc_state)
+{
+	const struct drm_crtc_helper_funcs *crtc_funcs;
+	struct drm_crtc *crtc = old_crtc_state->crtc;
+	struct drm_atomic_state *old_state = old_crtc_state->state;
+	struct drm_plane *plane;
+	unsigned plane_mask;
+
+	plane_mask = old_crtc_state->plane_mask;
+	plane_mask |= crtc->state->plane_mask;
+
+	crtc_funcs = crtc->helper_private;
+	if (crtc_funcs && crtc_funcs->atomic_begin)
+		crtc_funcs->atomic_begin(crtc, old_crtc_state);
+
+	drm_for_each_plane_mask(plane, crtc->dev, plane_mask) {
+		struct drm_plane_state *old_plane_state =
+			drm_atomic_get_existing_plane_state(old_state, plane);
+		const struct drm_plane_helper_funcs *plane_funcs;
+
+		plane_funcs = plane->helper_private;
+
+		if (!old_plane_state || !plane_funcs)
+			continue;
+
+		WARN_ON(plane->state->crtc && plane->state->crtc != crtc);
+
+		if (drm_atomic_plane_disabling(plane, old_plane_state) &&
+		    plane_funcs->atomic_disable)
+			plane_funcs->atomic_disable(plane, old_plane_state);
+		else if (plane->state->crtc ||
+			 drm_atomic_plane_disabling(plane, old_plane_state))
+			plane_funcs->atomic_update(plane, old_plane_state);
+	}
+
+	if (crtc_funcs && crtc_funcs->atomic_flush)
+		crtc_funcs->atomic_flush(crtc, old_crtc_state);
+}
+EXPORT_SYMBOL(drm_atomic_helper_commit_planes_on_crtc);
 
 /**
  * drm_atomic_helper_cleanup_planes - cleanup plane resources after commit
@@ -1167,10 +1285,10 @@ void drm_atomic_helper_cleanup_planes(struct drm_device *dev,
 
 		funcs = plane->helper_private;
 
-		old_fb = old_state->plane_states[i]->fb;
+		old_fb = plane_state->fb;
 
 		if (old_fb && funcs->cleanup_fb)
-			funcs->cleanup_fb(plane, old_fb);
+			funcs->cleanup_fb(plane, old_fb, plane_state);
 	}
 }
 EXPORT_SYMBOL(drm_atomic_helper_cleanup_planes);
@@ -1888,11 +2006,11 @@ retry:
 
 	WARN_ON(!drm_modeset_is_locked(&config->connection_mutex));
 
-	list_for_each_entry(tmp_connector, &config->connector_list, head) {
-		if (connector->state->crtc != crtc)
+	drm_for_each_connector(tmp_connector, connector->dev) {
+		if (tmp_connector->state->crtc != crtc)
 			continue;
 
-		if (connector->dpms == DRM_MODE_DPMS_ON) {
+		if (tmp_connector->dpms == DRM_MODE_DPMS_ON) {
 			active = true;
 			break;
 		}

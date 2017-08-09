@@ -49,7 +49,7 @@
  */
 void drm_mode_debug_printmodeline(const struct drm_display_mode *mode)
 {
-	DRM_INFO("Modeline %d:\"%s\" %d %d %d %d %d %d %d %d %d %d "
+	DRM_DEBUG_KMS("Modeline %d:\"%s\" %d %d %d %d %d %d %d %d %d %d "
 			"0x%x 0x%x\n",
 		mode->base.id, mode->name, mode->vrefresh, mode->clock,
 		mode->hdisplay, mode->hsync_start,

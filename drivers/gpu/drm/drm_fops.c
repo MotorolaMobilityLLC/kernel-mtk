@@ -148,7 +148,7 @@ static int drm_open_helper(struct file *filp, struct drm_minor *minor)
 	if (dev->switch_power_state != DRM_SWITCH_POWER_ON && dev->switch_power_state != DRM_SWITCH_POWER_DYNAMIC_OFF)
 		return -EINVAL;
 
-	//DRM_DEBUG("pid = %d, minor = %d\n", task_pid_nr(current), minor->index);
+	DRM_DEBUG("pid = %d, minor = %d\n", task_pid_nr(current), minor->index);
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -331,11 +331,11 @@ static void drm_legacy_dev_reinit(struct drm_device *dev)
  */
 int drm_lastclose(struct drm_device * dev)
 {
-	//DRM_INFO("\n");
+	DRM_DEBUG("\n");
 
 	if (dev->driver->lastclose)
 		dev->driver->lastclose(dev);
-	//DRM_INFO("driver lastclose completed\n");
+	DRM_DEBUG("driver lastclose completed\n");
 
 	if (dev->irq_enabled && !drm_core_check_feature(dev, DRIVER_MODESET))
 		drm_irq_uninstall(dev);
@@ -352,7 +352,7 @@ int drm_lastclose(struct drm_device * dev)
 
 	drm_legacy_dev_reinit(dev);
 
-	//DRM_INFO("lastclose completed\n");
+	DRM_DEBUG("lastclose completed\n");
 	return 0;
 }
 
@@ -377,7 +377,7 @@ int drm_release(struct inode *inode, struct file *filp)
 
 	mutex_lock(&drm_global_mutex);
 
-	//DRM_INFO("open_count = %d\n", dev->open_count);
+	DRM_DEBUG("open_count = %d\n", dev->open_count);
 
 	mutex_lock(&dev->struct_mutex);
 	list_del(&file_priv->lhead);
@@ -390,10 +390,10 @@ int drm_release(struct inode *inode, struct file *filp)
 	 * Begin inline drm_release
 	 */
 
-	/*DRM_INFO("pid = %d, device = 0x%lx, open_count = %d\n",
+	DRM_DEBUG("pid = %d, device = 0x%lx, open_count = %d\n",
 		  task_pid_nr(current),
 		  (long)old_encode_dev(file_priv->minor->kdev->devt),
-		  dev->open_count);*/
+		  dev->open_count);
 
 	/* Release any auth tokens that might point to this file_priv,
 	   (do that under the drm_global_mutex) */
