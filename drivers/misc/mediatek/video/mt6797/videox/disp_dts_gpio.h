@@ -35,10 +35,8 @@ long disp_dts_gpio_init(struct platform_device *pdev);
 long disp_dts_gpio_select_state(DTS_GPIO_STATE s);
 
 /* repo of initialization */
-#ifdef CONFIG_MTK_LEGACY
+
 #define disp_dts_gpio_init_repo(x)  (0)
-#else
-#define disp_dts_gpio_init_repo(x)  (disp_dts_gpio_init(x))
-#endif
+
 
 #endif/*__DISP_DTS_GPIO_H__ */

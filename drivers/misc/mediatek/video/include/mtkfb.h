@@ -360,6 +360,10 @@ struct mtkfb_device {
 
 extern long hdmi_handle_cmd(unsigned int cmd, unsigned long arg);
 
+#if defined(CONFIG_ARCH_MT6797)
+extern unsigned int vramsize;
+#endif
+
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 #if !defined(CONFIG_MTK_LEGACY)
 extern unsigned int lcm_driver_id;

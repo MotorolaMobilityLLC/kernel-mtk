@@ -2337,6 +2337,7 @@ static int mtkfb_probe(struct device *dev)
 	init_state++;		/* 4 */
 	DISPMSG("\nmtkfb_fbinfo_init done\n");
 
+#if 0 /* FIXME */
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		/* dal_init should after mtkfb_fbinfo_init, otherwise layer 3 will show dal background color */
 		DAL_STATUS ret;
@@ -2348,8 +2349,9 @@ static int mtkfb_probe(struct device *dev)
 		fbPA += DISP_GetFBRamSize();
 		ret = DAL_Init(fbVA, fbPA);
 	}
+#endif
 
-	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
+/*	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) */
 		_mtkfb_internal_test((unsigned long)(fbdev->fb_va_base), MTK_FB_XRES, MTK_FB_YRES);
 
 
@@ -2370,7 +2372,7 @@ static int mtkfb_probe(struct device *dev)
 	wake_up_process(test_task);
 #endif
 
-	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
+/*	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) */
 		primary_display_diagnose();
 
 

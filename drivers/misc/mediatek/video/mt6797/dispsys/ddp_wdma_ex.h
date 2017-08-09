@@ -13,4 +13,7 @@ enum WDMA_INPUT_FORMAT {
 	WDMA_INPUT_FORMAT_YUV444 = 0x01,	/* from direct link */
 };
 
+void wdma_dump_analysis(DISP_MODULE_ENUM module);
+void wdma_dump_reg(DISP_MODULE_ENUM module);
+
 #endif

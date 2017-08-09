@@ -607,15 +607,17 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 	return 0;
 }
 
+#define MTK_NO_DISP_IN_LK
+
 static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 	int i = 0;
 #if defined(MTK_NO_DISP_IN_LK)
 	unsigned int count = 0;
 	unsigned int tmp = 0;
-#endif
+#else
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
-	int ret = 0;
+#endif
 
 	if (cmdq) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
@@ -1305,6 +1307,15 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_COM_CTRL, 0x0);
 #endif
 #else
+	int i = 0;
+	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
+	unsigned int txdiv = 0;
+	unsigned int txdiv0 = 0;
+	unsigned int txdiv1 = 0;
+	unsigned int pcw = 0;
+/* unsigned int fmod = 30;//Fmod = 30KHz by default */
+	unsigned int delta1 = 5;	/* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int pdelta1 = 0;
 #if 0
 	MIPITX_OUTREG32(0x10215044, 0x88492483);
 	MIPITX_OUTREG32(0x10215040, 0x00000002);
@@ -1333,17 +1344,39 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 
 	MIPITX_OUTREG32(0x10215064, 0x00000020);
 	return 0;
+#else
+	MIPITX_OUTREG32(MIPITX_BASE+0x044, 0x01249241);
+	mdelay(1);
+	MIPITX_OUTREG32(MIPITX_BASE+0x068, 0x00000003);
+	MIPITX_OUTREG32(MIPITX_BASE+0x068, 0x00000103);
+	MIPITX_OUTREG32(MIPITX_BASE+0x000, 0x00001042);
+
+	MIPITX_OUTREG32(MIPITX_BASE+0x004, 0x00000803);
+	MIPITX_OUTREG32(MIPITX_BASE+0x008, 0x00000801);
+	MIPITX_OUTREG32(MIPITX_BASE+0x00c, 0x00000801);
+	MIPITX_OUTREG32(MIPITX_BASE+0x010, 0x00000801);
+	MIPITX_OUTREG32(MIPITX_BASE+0x014, 0x00000801);
+
+	MIPITX_OUTREG32(MIPITX_BASE+0x000, 0x00001043);
+	MIPITX_OUTREG32(MIPITX_BASE+0x068, 0x00000101);
+
+	MIPITX_OUTREG32(MIPITX_BASE+0x050, 0xf0000000);
+	mdelay(1);
+	MIPITX_OUTREG32(MIPITX_BASE+0x050, 0xf0002000);
+	mdelay(1);
+	MIPITX_OUTREG32(MIPITX_BASE+0x050, 0xf0002001);
+	mdelay(1);
+
+	MIPITX_OUTREG32(MIPITX_BASE+0x058, 0x4c000000);
+	MIPITX_OUTREG32(MIPITX_BASE+0x060, 0x00000000);
+	MIPITX_OUTREG32(MIPITX_BASE+0x060, 0x00000001);
+	mdelay(1);
+
+	MIPITX_OUTREG32(MIPITX_BASE+0x040, 0x00000000);
+	return;
 #endif
 
-	int i = 0;
-	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
-	unsigned int txdiv = 0;
-	unsigned int txdiv0 = 0;
-	unsigned int txdiv1 = 0;
-	unsigned int pcw = 0;
-/* unsigned int fmod = 30;//Fmod = 30KHz by default */
-	unsigned int delta1 = 5;	/* Delta1 is SSC range, default is 0%~-5% */
-	unsigned int pdelta1 = 0;
+
 #if 0
 	u32 m_hw_res3 = 0;
 	u32 temp1 = 0;
@@ -2713,7 +2746,9 @@ unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL(UINT8 cmd, UINT8 *buffer, U
 long lcd_enp_bias_setting(unsigned int value)
 {
 	long ret = 0;
-#if !defined(CONFIG_MTK_LEGACY)
+#if 0
+/* bypass gpio setting in EVB */
+/*#if !defined(CONFIG_MTK_LEGACY)*/
 	if (value)
 		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP);
 	else

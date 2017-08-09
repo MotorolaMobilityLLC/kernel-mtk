@@ -27,6 +27,23 @@
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 static golden_setting_context *rdma_golden_setting;
+unsigned int rdma_index(DISP_MODULE_ENUM module)
+{
+	int idx = 0;
+
+	switch (module) {
+	case DISP_MODULE_RDMA0:
+		idx = 0;
+		break;
+	case DISP_MODULE_RDMA1:
+		idx = 1;
+		break;
+	default:
+		DDPERR("invalid rdma module=%d\n", module);	/* invalid module */
+		ASSERT(0);
+	}
+	return idx;
+}
 
 int rdma_enable_irq(DISP_MODULE_ENUM module, void *handle, DDP_IRQ_LEVEL irq_level)
 {
@@ -508,6 +525,13 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	return 0;
 }
 
+void rdma_set_target_line(DISP_MODULE_ENUM module, unsigned int line, void *handle)
+{
+	unsigned int idx = rdma_index(module);
+
+	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_TARGET_LINE, line);
+}
+
 int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
@@ -548,6 +572,16 @@ int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
+}
+
+int rdma_init(DISP_MODULE_ENUM module, void *handle)
+{
+	return rdma_clock_on(module, handle);
+}
+
+int rdma_deinit(DISP_MODULE_ENUM module, void *handle)
+{
+	return rdma_clock_off(module, handle);
 }
 
 void rdma_dump_golden_setting_context(DISP_MODULE_ENUM module)
@@ -680,6 +714,13 @@ static int rdma_dump(DISP_MODULE_ENUM module, int level)
 	rdma_dump_golden_setting_context(module);
 
 	return 0;
+}
+
+void rdma_get_address(DISP_MODULE_ENUM module, unsigned long *addr)
+{
+	unsigned int idx = rdma_index(module);
+
+	*addr = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx);
 }
 
 void rdma_get_info(int idx, RDMA_BASIC_STRUCT *info)

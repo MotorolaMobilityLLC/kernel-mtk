@@ -1,3 +1,4 @@
+#ifdef CONFIG_PINCTRL_MT6797
 #include "disp_dts_gpio.h"
 #include "disp_helper.h"
 #include <linux/kernel.h> /* printk */
@@ -60,4 +61,4 @@ long disp_dts_gpio_select_state(DTS_GPIO_STATE s)
 	BUG_ON(!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)));
 	return _set_state(this_state_name[s]);
 }
-
+#endif

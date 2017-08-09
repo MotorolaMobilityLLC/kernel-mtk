@@ -49,6 +49,7 @@
 #define idlemgr_pgc		_get_idlemgr_context()
 #define golden_setting_pgc	_get_golden_setting_context()
 
+#define NO_SPM /* FIXME: tmp define for bring up */
 
 /* Local API */
 /*********************************************************************************************************************/
@@ -579,11 +580,13 @@ void _vdo_mode_enter_idle(void)
 
 	/* Enable sodi - need wait golden setting done ??? */
 #ifndef CONFIG_MTK_FPGA
+#ifndef NO_SPM
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
 		/* set power down mode forbidden */
 		spm_sodi_mempll_pwr_mode(1);
 		spm_enable_sodi(1);
 	}
+#endif
 #endif
 }
 
@@ -593,8 +596,10 @@ void _vdo_mode_leave_idle(void)
 
 	/* Disable sodi */
 #ifndef CONFIG_MTK_FPGA
+#ifndef NO_SPM
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_enable_sodi(0);
+#endif
 #endif
 
 	/* set golden setting */
@@ -746,10 +751,12 @@ void primary_display_sodi_rule_init(void)
 {
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_MTK_FPGA
+#ifndef NO_SPM
 	if (primary_display_is_video_mode())
 		;/* spm_enable_sodi(1); */
 	else
 		spm_enable_sodi(1);
+#endif
 #endif
 }
 

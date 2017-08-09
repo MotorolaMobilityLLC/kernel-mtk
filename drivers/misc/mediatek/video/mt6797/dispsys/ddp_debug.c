@@ -51,7 +51,7 @@ unsigned char pq_debug_flag = 0;
 unsigned char aal_debug_flag = 0;
 
 static unsigned int dbg_log_level = 2;
-static unsigned int irq_log_level = 1;
+static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
 
 unsigned int gUltraEnable = 1;

@@ -1617,9 +1617,11 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
 					dprec_stub_event(j);
 					handle->wq_list[j].data = sched_clock();
+#if 0
 					DDPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,
 					       ddp_get_scenario_name(handle->scenario));
+#endif
 					wake_up_interruptible(&(handle->wq_list[j].wq));
 				}
 			}
