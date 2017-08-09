@@ -24,10 +24,19 @@
 #include <linux/mutex.h>
 #include <linux/i2c.h>
 #include <linux/leds.h>
-/*
-#include <cust_gpio_usage.h>
-#include <mach/mt_gpio.h>
-*/
+
+/*#include <cust_gpio_usage.h>*/
+#include <mt_gpio.h>
+#include <gpio_const.h>
+/******************************************************************************
+ * GPIO configuration
+******************************************************************************/
+#define GPIO_CAMERA_FLASH_EN_PIN			(GPIO90 | 0x80000000)
+#define GPIO_CAMERA_FLASH_EN_PIN_M_CLK		GPIO_MODE_03
+#define GPIO_CAMERA_FLASH_EN_PIN_M_EINT		GPIO_MODE_01
+#define GPIO_CAMERA_FLASH_EN_PIN_M_GPIO		GPIO_MODE_00
+#define GPIO_CAMERA_FLASH_EN_PIN_CLK		CLK_OUT1
+#define GPIO_CAMERA_FLASH_EN_PIN_FREQ		GPIO_CLKSRC_NONE
 
 /******************************************************************************
  * Debug configuration
@@ -377,14 +386,14 @@ int init_lm3643(void)
 {
 	int ret;
 	char buf[2];
-/*
+
 	if(mt_set_gpio_mode(FLASH_GPIO_EN,GPIO_MODE_00))
 		PK_DBG("[constant_flashlight] set gpio mode failed!!\n");
 	if(mt_set_gpio_dir(FLASH_GPIO_EN,GPIO_DIR_OUT))
 		PK_DBG("[constant_flashlight] set gpio dir failed!!\n");
 	if(mt_set_gpio_out(FLASH_GPIO_EN,GPIO_OUT_ONE))
 		PK_DBG("[constant_flashlight] set gpio failed!!\n");
-*/
+
 	buf[0] = 0x01; /* Enable Register */
 	buf[1] = 0x00;
 	g_EnableReg = buf[1];
@@ -433,9 +442,7 @@ int FL_Init(void)
 int FL_Uninit(void)
 {
 	FL_Disable();
-/*
 	mt_set_gpio_out(FLASH_GPIO_EN,GPIO_OUT_ZERO);
-*/
 	return 0;
 }
 
