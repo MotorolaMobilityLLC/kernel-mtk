@@ -280,7 +280,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	params->dsi.PLL_CLOCK = 350;
+	params->dsi.PLL_CLOCK = 475;
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
