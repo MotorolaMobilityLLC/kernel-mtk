@@ -1476,8 +1476,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735-accdet";
 		};
 
-		G3D_CONFIG@0x13000000 {
-			compatible = "mediatek,G3D_CONFIG";
+		g3d_config@13000000 {
+			compatible = "mediatek,g3d_config";
 			reg = <0x13000000 0x1000>;
 		};
 
@@ -1487,10 +1487,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 173 0x8>;
 		};
 
-		MALI@0x13040000 {
+		mali@13040000 {
 			compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
 			reg = <0x13040000 0x4000>;
-			interrupts = <0 212 0x8>, <0 211 0x8>, <0 210 0x8>;
+			interrupts = <GIC_SPI 212 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 210 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "JOB", "MMU", "GPU";
 			clock-frequency = <450000000>;
 			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON>,
