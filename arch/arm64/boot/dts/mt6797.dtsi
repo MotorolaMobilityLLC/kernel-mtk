@@ -875,6 +875,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt6797-touch";
 		};
 
+		sm100: sm100 {
+			compatible = "mediatek,sm100";
+		};
+
 		accdet: accdet@ {
 			compatible = "mediatek,mt6797-accdet";
 		};
