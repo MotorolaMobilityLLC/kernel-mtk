@@ -745,7 +745,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x1000f000 0x1000>;
 		};
 
-		keypad@10010000 {
+		keypad: keypad@10010000 {
 			compatible = "mediatek,mt6797-keypad";
 			reg = <0x10010000 0x1000>;
 			interrupts = <GIC_SPI 179 IRQ_TYPE_EDGE_FALLING>;
@@ -783,11 +783,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 		kd_camera_hw1: kd_camera_hw1@ {
 			compatible = "mediatek,mt6797-kd_camera_hw1";
-			status = "disabled";
-		};
-
-		keypad: keypad@ {
-			compatible = "mediatek,mt6797-keypad";
 			status = "disabled";
 		};
 
