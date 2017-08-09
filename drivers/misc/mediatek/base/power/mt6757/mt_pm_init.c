@@ -61,6 +61,8 @@
 	mt_reg_sync_writel(val, addr)
 #endif
 
+int __attribute__ ((weak)) mt_cpu_dormant_init(void) { return MT_CPU_DORMANT_BYPASS; }
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #define TOPCK_LDVT
 #ifdef TOPCK_LDVT
