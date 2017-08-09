@@ -27,19 +27,16 @@
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/jiffies.h>
+#include <linux/random.h>
 #include <linux/uaccess.h>
 #include <linux/seq_file.h>
 #include <linux/suspend.h>
 #include <linux/topology.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
 #include <mt-plat/aee.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_address.h>
-#endif
 
 /* project includes */
 #include <mt-plat/upmu_common.h>
@@ -375,7 +372,6 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_0;
 
 	/* get CPU clock-frequency from DT */
-#ifdef CONFIG_OF
 	{
 		struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a72");
 		unsigned int cpu_speed = 0;
@@ -395,7 +391,6 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			return CPU_LEVEL_2;
 
 	}
-#endif
 
 	return lv;
 }
@@ -2175,7 +2170,6 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 
 	enum mt_cpu_dvfs_id id_cci;
 	struct mt_cpu_dvfs *p_cci;
-	struct mt_cpu_dvfs *p_ll, *p_l;
 	int ret = -1;
 	unsigned int target_volt_vpro1 = 0;
 	int log = 1;
@@ -2213,18 +2207,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	}
 
 	if (do_dvfs_stress_test) {
-		new_opp_idx = jiffies & 0xF;
+		new_opp_idx = prandom_u32() % p->nr_opp_tbl;
 
-		p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
-		p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
-
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-			if (new_opp_idx < p_ll->idx_opp_ppm_limit)
-				new_opp_idx = p_ll->idx_opp_ppm_limit;
-
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-			if (new_opp_idx < p_l->idx_opp_ppm_limit)
-				new_opp_idx = p_l->idx_opp_ppm_limit;
+		if (new_opp_idx < p->idx_opp_ppm_limit)
+			new_opp_idx = p->idx_opp_ppm_limit;
 	} else
 		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
@@ -2337,7 +2323,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 
 	enum mt_cpu_dvfs_id cluster_id;
 	struct mt_cpu_dvfs *p;
-	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
+	struct mt_cpu_dvfs *p_cci;
 	int new_cci_opp_idx;
 	unsigned int target_volt_vpro1 = 0;
 
@@ -2353,8 +2339,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 		return NOTIFY_OK;
 
 	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
-	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
-	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
 
 	aee_record_cpu_dvfs_cb(1);
 
@@ -2411,15 +2395,15 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				if (enable_cpuhvfs && enable_hw_gov)
 					goto UNLOCK_OL;		/* bypass specific adjustment */
 #endif
-					if (action == CPU_ONLINE) {
-						aee_record_cpu_dvfs_cb(5);
+				if (action == CPU_ONLINE) {
+					aee_record_cpu_dvfs_cb(5);
 
-						cur_volt = p->ops->get_cur_volt(p);
-						cpufreq_ver("CB - adjust the freq to V:%d  due to L/LL on\n", cur_volt);
-						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
-						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
-						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
-					}
+					cur_volt = p->ops->get_cur_volt(p);
+					cpufreq_ver("CB - adjust the freq to V:%d  due to L/LL on\n", cur_volt);
+					freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
+					freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
+					_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
+				}
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 UNLOCK_OL:
 #endif
@@ -2435,22 +2419,22 @@ UNLOCK_OL:
 				cpufreq_ver("CPU_DOWN_PREPARE last CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock();
-					aee_record_cpu_dvfs_cb(7);
+				aee_record_cpu_dvfs_cb(7);
 
-					_cpufreq_dfs_locked(NULL, p, p->nr_opp_tbl - 1, action);
+				_cpufreq_dfs_locked(NULL, p, p->nr_opp_tbl - 1, action);
 #ifdef CONFIG_HYBRID_CPU_DVFS
-					if (!enable_cpuhvfs) {
+				if (!enable_cpuhvfs) {
 #endif
-						new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl,
-							&target_volt_vpro1);
-						/* set cci freq/volt */
-						_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
-							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
-							target_volt_vpro1);
-						p_cci->idx_opp_tbl = new_cci_opp_idx;
-						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
+					new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl,
+						&target_volt_vpro1);
+					/* set cci freq/volt */
+					_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
+						cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
+						target_volt_vpro1);
+					p_cci->idx_opp_tbl = new_cci_opp_idx;
+					aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 #ifdef CONFIG_HYBRID_CPU_DVFS
-					}
+				}
 #endif
 				p->armpll_is_available = 0;
 				cpufreq_unlock();
@@ -2468,12 +2452,12 @@ UNLOCK_OL:
 				if (enable_cpuhvfs && enable_hw_gov)
 					goto UNLOCK_DF;		/* bypass specific adjustment */
 #endif
-					if (action == CPU_DOWN_FAILED) {
-						cur_volt = p->ops->get_cur_volt(p);
-						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
-						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
-						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
-					}
+				if (action == CPU_DOWN_FAILED) {
+					cur_volt = p->ops->get_cur_volt(p);
+					freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
+					freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
+					_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
+				}
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 UNLOCK_DF:
 #endif
@@ -4005,7 +3989,6 @@ static int _create_procfs(void)
 
 static void mt_cpufreq_dts_map(void)
 {
-#ifdef CONFIG_OF
 	struct device_node *node;
 
 	/* apmixed */
@@ -4043,7 +4026,6 @@ static void mt_cpufreq_dts_map(void)
 		cpufreq_err("cannot iomap " TOPCKGEN_NODE);
 		BUG();
 	}
-#endif
 }
 
 /*
