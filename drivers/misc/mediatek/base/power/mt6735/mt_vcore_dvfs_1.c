@@ -28,6 +28,7 @@
 #include <mach/mt_freqhopping.h>
 #include <primary_display.h>
 #include <mt_dramc.h>
+#include <mmdvfs_mgr.h>
 
 #include "mt_vcore_dvfs.h"
 #include "mt_cpufreq.h"
@@ -764,11 +765,6 @@ bool vcorefs_sdio_need_multi_autok(void)
 	return false;
 }
 
-static bool is_fhd_segment(void)
-{
-	return DISP_GetScreenWidth() * DISP_GetScreenHeight() > SCREEN_RES_720P;
-}
-
 /*
  * init boot-up OPP from late init
  */
@@ -787,19 +783,28 @@ static void set_init_opp_index(struct vcorefs_profile *pwrctrl)
 static int late_init_to_lowpwr_opp(void)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+	struct kicker_profile *kicker_ctrl_table = kicker_table;
 
 	mutex_lock(&vcorefs_mutex);
 	if (!dram_can_support_fh()) {
 		feature_en = 0;
 		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT DRAM FH ***\n");
 	}
-	if (is_fhd_segment()) {
+	if (!is_mmdvfs_supported()) {
 		feature_en = 0;
-		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT FHD ***\n");
+		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT MMDVFS: D1 & FHD ***\n");
 	}
 
 	set_init_opp_index(pwrctrl);
-	kick_dvfs_by_opp_index(KIR_LATE_INIT, pwrctrl->late_init_opp);
+
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1) {
+		vcorefs_crit("MMDVFS_PROFILE_D1\n");
+		kick_dvfs_by_opp_index(KIR_LATE_INIT, pwrctrl->late_init_opp);
+	} else {
+		vcorefs_crit("MMDVFS_PROFILE_D1_PLUS: Default MM HPM\n");
+		kicker_ctrl_table[KIR_MM].opp = OPPI_PERF;
+		kick_dvfs_by_opp_index(KIR_LATE_INIT, OPPI_PERF);
+	}
 
 	pwrctrl->late_init_opp_done = 1;
 
@@ -959,7 +964,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		mutex_lock(&vcorefs_mutex);
 		feature_en = val;
 
-		if (dram_can_support_fh() && !is_fhd_segment() && feature_en) {
+		if (dram_can_support_fh() && is_mmdvfs_supported() && feature_en) {
 			set_init_opp_index(pwrctrl);
 		} else if (!feature_en) {
 			int r = kick_dvfs_by_opp_index(KIR_SYSFS, OPPI_PERF);

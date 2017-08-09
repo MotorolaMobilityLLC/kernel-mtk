@@ -37,7 +37,6 @@
 #define FQTRHALF_S0_KHZ         54500           /* Faxi/4 */
 #define FQTRHALF_S1_KHZ         68000           /* Faxi/2 */
 
-#define SCREEN_RES_720P		(1280 * 832)
 #define PMIC_VCORE_PDN_VOSEL_ON 0x618
 
 /* Vcore 1.05 <=> trans1 <=> trans2 <=> Vcore 1.15 (SPM control) */
