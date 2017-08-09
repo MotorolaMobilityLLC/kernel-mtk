@@ -265,7 +265,8 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 	struct ccci_header ccci_hdr;
 	struct ccci_request *new_req = NULL;
 	int pkg_size, ret = 0, retry_cnt = 0;
-	/*md_ccif_dump("md_ccif_sram_rx_work",md); */
+	int c2k_to_ccci_ch = 0;
+
 #ifdef AP_MD_HS_V2
 	u32 i = 0;
 	u8 *md_feature = (u8 *) (((u8 *) dl_pkg) + sizeof(struct ccci_header));
@@ -289,9 +290,18 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 	ccci_h->data[1] = ccif_read32(&dl_pkg->data[1], 0);
 	/*ccci_h->channel = ccif_read32(&dl_pkg->channel,0); */
 	*(((u32 *) ccci_h) + 2) = ccif_read32((((u32 *) dl_pkg) + 2), 0);
-	if (md->index == MD_SYS3)
-		ccci_h->channel = c2k_ch_to_ccci_ch(md, ccci_h->channel, IN);
-
+	if (md->index == MD_SYS3) {
+		c2k_to_ccci_ch = c2k_ch_to_ccci_ch(md, ccci_h->channel, IN);
+		if (c2k_to_ccci_ch >= 0)
+			ccci_h->channel = (u16) c2k_to_ccci_ch;
+		else {
+			list_del(&new_req->entry);
+			ccci_free_req(new_req);
+			ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
+			CCCI_ERROR_LOG(md->index, TAG, "md_ccif_sram_rx_work: ret=%d\n", ret);
+			return;
+		}
+	}
 	ccci_h->reserved = ccif_read32(&dl_pkg->reserved, 0);
 
 #ifdef AP_MD_HS_V2
@@ -487,7 +497,13 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			    c2k_ch_to_ccci_ch(md, ccci_h->channel, IN);
 			if (c2k_to_ccci_ch >= 0)
 				ccci_h->channel = (u16) c2k_to_ccci_ch;
-
+			else {
+				list_del(&new_req->entry);
+				ccci_free_req(new_req);
+				ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
+				CCCI_ERROR_LOG(md->index, TAG, "ccif_rx_collect: ret=%d\n", ret);
+				return ret;
+			}
 			/*heart beat msg from c2k control channel, but handled by ECCCI status channel handler,
 			   we hack the channel ID here. */
 			/*if((ccci_h->channel == CCCI_CONTROL_RX) && (ccci_h->data[1] == C2K_HB_MSG))
@@ -589,7 +605,7 @@ static void ccif_rx_work(struct work_struct *work)
 
 static void md_ccif_wdt_work(struct work_struct *work)
 {
-	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	struct md_ccif_ctrl *md_ctrl = container_of(work, struct md_ccif_ctrl, wdt_work);
 	struct ccci_modem *md = md_ctrl->rxq[0].modem;
 	int ret = 0;
 
@@ -1080,7 +1096,15 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 			    ccci_ch_to_c2k_ch(md, ccci_h->channel, OUT);
 			if (ccci_to_c2k_ch >= 0)
 				ccci_h->channel = (u16) ccci_to_c2k_ch;
-
+			else {
+				if (IS_PASS_SKB(md, qno))
+					dev_kfree_skb_any(skb);
+				else
+					ccci_free_req(req);
+				ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
+				CCCI_ERROR_LOG(md->index, TAG, "channel num error (%d)\n", ccci_to_c2k_ch);
+				return ret;
+			}
 			if (ccci_h->data[1] == C2K_HB_MSG)
 				CCCI_NORMAL_LOG(md->index, TAG, "hb: 0x%x\n",
 					     ccci_h->channel);
@@ -1344,12 +1368,13 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag,
 {
 	if (flag & DUMP_FLAG_CCIF) {
 		md_ccif_dump("Dump CCIF SRAM\n", md);
+		md_ccif_queue_dump(md);
 		CCCI_NORMAL_LOG(md->index, TAG, "dump MD1 exception memory start\n");
 		ccci_mem_dump(md->index, md1_excp_smem_vir, md1_excp_smem__size);
 	}
 
 	if (flag & DUMP_FLAG_REG) {
-		ccci_dump_req_user_list();
+		/* ccci_dump_req_user_list(); */
 		if (md->ee_info_flag & (1 << MD_EE_WDT_GET))
 			dump_c2k_register(md, 0);
 	}
