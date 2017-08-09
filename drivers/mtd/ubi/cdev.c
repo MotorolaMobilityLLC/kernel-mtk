@@ -397,7 +397,7 @@ static long vol_cdev_ioctl(struct file *file, unsigned int cmd,
 	case UBI_IOCVOLUP:
 	{
 		int64_t bytes, rsvd_bytes;
-#if CONFIG_BLB
+#ifdef CONFIG_BLB
 		struct ubi_volume *backup_vol = ubi->volumes[vol_id2idx(ubi, UBI_BACKUP_VOLUME_ID)];
 #endif
 		if (!capable(CAP_SYS_RESOURCE)) {
@@ -432,7 +432,7 @@ static long vol_cdev_ioctl(struct file *file, unsigned int cmd,
 			ubi_volume_notify(ubi, vol, UBI_VOLUME_UPDATED);
 			revoke_exclusive(desc, UBI_READWRITE);
 		}
-#if CONFIG_BLB
+#ifdef CONFIG_BLB
 		ubi_eba_unmap_leb(ubi, backup_vol, 0);
 		ubi_eba_unmap_leb(ubi, backup_vol, 1);
 #endif
