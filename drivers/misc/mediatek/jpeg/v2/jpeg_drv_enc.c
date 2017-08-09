@@ -23,9 +23,7 @@
 
 #define JPEG_ENC_DEBUG_INFO0_GMC_IDLE_MASK      (1 << 13)
 
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
+
 
 kal_uint32 _jpeg_enc_int_status = 0;
 

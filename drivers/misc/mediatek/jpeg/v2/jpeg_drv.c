@@ -96,9 +96,6 @@
 #include "jpeg_cmdq.h"
 
 /* #define USE_SYSRAM */
-#define JPEG_MSG printk /*pr_debug */
-#define JPEG_WRN printk /*pr_debug */
-#define JPEG_ERR printk /*pr_debug */
 
 #define JPEG_DEVNAME "mtk_jpeg"
 #define JDEC_DEVNAME "mtk_jdec"

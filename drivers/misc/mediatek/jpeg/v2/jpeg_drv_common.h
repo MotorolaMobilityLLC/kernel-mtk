@@ -77,6 +77,10 @@ typedef struct {
 #define JPEG_DRV_ENC_NV12                     (0x02 << 3)
 #define JPEG_DRV_ENC_NV21                     (0x03 << 3)
 
+#define JPEG_MSG pr_debug
+#define JPEG_WRN pr_warn
+#define JPEG_ERR pr_err
+#define JPEG_VEB pr_err
 
 /* /////// JPEG Driver Decoder /////// */
 /*  */

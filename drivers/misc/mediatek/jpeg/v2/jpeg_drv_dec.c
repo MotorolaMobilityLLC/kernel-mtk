@@ -3,10 +3,7 @@
 #include <linux/kernel.h>
 /* #include <linux/xlog.h> */
 
-#define JPEG_MSG pr_debug
-#define JPEG_WRN pr_debug
-#define JPEG_ERR pr_debug
-#define JPEG_VEB pr_debug
+
 
 #include "jpeg_drv_common.h"
 #include "jpeg_drv_reg.h"
