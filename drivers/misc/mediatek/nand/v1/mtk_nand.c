@@ -41,7 +41,6 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/rtc.h>
-#include <mt_typedefs.h>
 #ifdef CONFIG_PWR_LOSS_MTK_SPOH
 #include <mach/power_loss_test.h>
 #endif
@@ -154,7 +153,7 @@ do {	\
 #define WAIT_NFI_PIO_READY(timeout) \
 	do {	\
 		--timeout;\
-		while ((!FIFO_PIO_READY(DRV_Reg(NFI_PIO_DIRDY_REG16))) && \
+		while ((!FIFO_PIO_READY(DRV_Reg16(NFI_PIO_DIRDY_REG16))) && \
 		(timeout)) \
 			; \
 	} while (0)
@@ -352,12 +351,12 @@ do { \
 
 #define NFI_ISSUE_COMMAND(cmd, col_addr, row_addr, col_num, row_num) \
 do { \
-	DRV_WriteReg(NFI_CMD_REG16, cmd);\
+	DRV_WriteReg16(NFI_CMD_REG16, cmd);\
 	while (DRV_Reg32(NFI_STA_REG32) & STA_CMD_STATE)\
 		;\
 	DRV_WriteReg32(NFI_COLADDR_REG32, col_addr);\
 	DRV_WriteReg32(NFI_ROWADDR_REG32, row_addr);\
-	DRV_WriteReg(NFI_ADDRNOB_REG16, col_num | (row_num<<ADDR_ROW_NOB_SHIFT));\
+	DRV_WriteReg16(NFI_ADDRNOB_REG16, col_num | (row_num<<ADDR_ROW_NOB_SHIFT));\
 	while (DRV_Reg32(NFI_STA_REG32) & STA_ADDR_STATE)\
 		;\
 } while (0)
@@ -1054,16 +1053,16 @@ u16 randomizer_seed[128] = {
 	0x746B, 0x6EF6, 0x44BE, 0x6DB7
 };
 
-static int mtk_nand_randomizer_config(struct gRandConfig *conf, kal_uint16 seed)
+static int mtk_nand_randomizer_config(struct gRandConfig *conf, u16 seed)
 {
 	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
 	    || gn_devinfo.vendor == VEND_HYNIX) {
-		kal_uint16 nfi_cnfg = 0;
-		kal_uint32 nfi_ran_cnfg = 0;
-		kal_uint8 i;
+		u16 nfi_cnfg = 0;
+		u32 nfi_ran_cnfg = 0;
+		u8 i;
 
 		/* set up NFI_CNFG */
-		nfi_cnfg = DRV_Reg(NFI_CNFG_REG16);
+		nfi_cnfg = DRV_Reg16(NFI_CNFG_REG16);
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
 		if (conf->type == RAND_TYPE_SAMSUNG) {
 			nfi_ran_cnfg = 0;
@@ -1088,7 +1087,7 @@ static int mtk_nand_randomizer_config(struct gRandConfig *conf, kal_uint16 seed)
 			return 0;
 		}
 
-		DRV_WriteReg(NFI_CNFG_REG16, nfi_cnfg);
+		DRV_WriteReg16(NFI_CNFG_REG16, nfi_cnfg);
 		DRV_WriteReg32(NFI_RANDOM_CNFG_REG32, nfi_ran_cnfg);
 	}
 	return 0;
@@ -1098,7 +1097,7 @@ static bool mtk_nand_israndomizeron(void)
 {
 	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
 	    || gn_devinfo.vendor == VEND_HYNIX) {
-		kal_uint32 nfi_ran_cnfg = 0;
+		u32 nfi_ran_cnfg = 0;
 
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
 		if (nfi_ran_cnfg & 0x00010001)
@@ -1125,15 +1124,15 @@ static void mtk_nand_interface_switch(struct mtd_info *mtd)
 
 
 static void mtk_nand_turn_on_randomizer(struct mtd_info *mtd, struct nand_chip *chip,
-					kal_uint32 page)
+					u32 page)
 {
 	/*struct gRandConfig *conf = &gn_devinfo.feature_set.randConfig; */
 	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
 	    || gn_devinfo.vendor == VEND_HYNIX) {
-		kal_uint32 nfi_ran_cnfg = 0;
-		kal_uint16 seed;
-		kal_uint32 page_size = (1 << chip->page_shift);
-		kal_uint32 page_per_blk = (mtd->erasesize / page_size);
+		u32 nfi_ran_cnfg = 0;
+		u16 seed;
+		u32 page_size = (1 << chip->page_shift);
+		u32 page_per_blk = (mtd->erasesize / page_size);
 
 		if (page_per_blk == 256)
 			seed = randomizer_seed[page % 128];
@@ -1151,7 +1150,7 @@ static void mtk_nand_turn_off_randomizer(void)
 {
 	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
 	    || gn_devinfo.vendor == VEND_HYNIX) {
-		kal_uint32 nfi_ran_cnfg = 0;
+		u32 nfi_ran_cnfg = 0;
 
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
 		nfi_ran_cnfg &= ~0x00010001;
@@ -1860,7 +1859,7 @@ static bool mtk_nand_device_reset(void)
 
 	mtk_nand_reset();
 
-	DRV_WriteReg(NFI_CNFG_REG16, CNFG_OP_RESET);
+	DRV_WriteReg16(NFI_CNFG_REG16, CNFG_OP_RESET);
 
 	mtk_nand_set_command(NAND_CMD_RESET);
 
@@ -2257,15 +2256,15 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 	}
 
 	dec_mask = (1 << (u4SecNum - 1));
-	while (dec_mask != (DRV_Reg(ECC_DECDONE_REG16) & dec_mask)) {
+	while (dec_mask != (DRV_Reg16(ECC_DECDONE_REG16) & dec_mask)) {
 		do_gettimeofday(&timer_cur);
 		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
 			MSG(INIT, "ECC_DECDONE: timeout 0x%x %d time sec %d, usec %d\n",
-			    DRV_Reg(ECC_DECDONE_REG16), u4SecNum,
+			    DRV_Reg16(ECC_DECDONE_REG16), u4SecNum,
 			    (int)(timer_cur.tv_sec - timer_timeout.tv_sec),
 			    (int)(timer_cur.tv_usec - timer_timeout.tv_usec));
 			dump_nfi();
-			if (dec_mask == (DRV_Reg(ECC_DECDONE_REG16) & dec_mask)) {
+			if (dec_mask == (DRV_Reg16(ECC_DECDONE_REG16) & dec_mask)) {
 				MSG(INIT, "ECC_DECDONE: timeout but finish job\n");
 				break;
 			}
@@ -2277,7 +2276,7 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
 			MSG(INIT,
 			    "ECC_DECDONE: timeout ECC_DECFSM_REG32 0x%x 0x%x %d  time sec %d, usec %d\n",
-			    DRV_Reg(ECC_DECFSM_REG32), DRV_Reg(ECC_DECDONE_REG16), u4SecNum,
+			    DRV_Reg16(ECC_DECFSM_REG32), DRV_Reg16(ECC_DECDONE_REG16), u4SecNum,
 			    (int)(timer_cur.tv_sec - timer_timeout.tv_sec),
 			    (int)(timer_cur.tv_usec - timer_timeout.tv_usec));
 			dump_nfi();
@@ -2786,14 +2785,14 @@ bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 
 	mtk_nand_reset();
 
 	reg_val |= (CNFG_OP_CUST | CNFG_BYTE_RW);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 
 	mtk_nand_set_command(cmd);
 	mtk_nand_set_address(addr, 0, 1, 0);
 	mtk_nand_status_ready(STA_NFI_OP_MASK);
 	DRV_WriteReg32(NFI_CON_REG16, 1 << CON_NFI_SEC_SHIFT);
 	NFI_SET_REG32(NFI_CON_REG16, CON_NFI_BWR);
-	DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+	DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 	while ((write_count < bytes) && timeout) {
 		WAIT_NFI_PIO_READY(timeout);
 		    if (timeout == 0)
@@ -2820,7 +2819,7 @@ bool mtk_nand_GetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 
 	mtk_nand_reset();
 
 	reg_val |= (CNFG_OP_CUST | CNFG_BYTE_RW | CNFG_READ_EN);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 
 	mtk_nand_set_command(cmd);
 	mtk_nand_set_address(addr, 0, 1, 0);
@@ -2833,7 +2832,7 @@ bool mtk_nand_GetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 
 	reg_val &= ~CON_NFI_NOB_MASK;
 	reg_val |= ((4 << CON_NFI_NOB_SHIFT) | CON_NFI_SRD);
 	DRV_WriteReg32(NFI_CON_REG16, reg_val);
-	DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+	DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 	while ((read_count < bytes) && timeout) {
 		WAIT_NFI_PIO_READY(timeout);
 		    if (timeout == 0)
@@ -2903,13 +2902,13 @@ static void mtk_nand_sprmset_rrtry(u32 addr, u32 data)
 	mtk_nand_reset();
 
 	reg_val |= (CNFG_OP_CUST | CNFG_BYTE_RW);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 	mtk_nand_set_command(0x55);
 	mtk_nand_set_address(addr, 0, 1, 0);
 	mtk_nand_status_ready(STA_NFI_OP_MASK);
 	DRV_WriteReg32(NFI_CON_REG16, 1 << CON_NFI_SEC_SHIFT);
 	NFI_SET_REG32(NFI_CON_REG16, CON_NFI_BWR);
-	DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+	DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 	WAIT_NFI_PIO_READY(timeout);
 	timeout = TIMEOUT_3;
 	DRV_WriteReg8(NFI_DATAW_REG32, data);
@@ -2975,7 +2974,7 @@ static void mtk_nand_sandisk_rrtry(struct mtd_info *mtd, flashdev_info deviceinf
 				u32 timeout = TIMEOUT_3;
 
 				mtk_nand_reset();
-				DRV_WriteReg(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
+				DRV_WriteReg16(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
 				mtk_nand_set_command(0x5C);
 				mtk_nand_set_command(0xC5);
 				mtk_nand_set_command(0x55);
@@ -2983,7 +2982,7 @@ static void mtk_nand_sandisk_rrtry(struct mtd_info *mtd, flashdev_info deviceinf
 				mtk_nand_status_ready(STA_NFI_OP_MASK);
 				DRV_WriteReg32(NFI_CON_REG16, 1 << CON_NFI_SEC_SHIFT);
 				NFI_SET_REG32(NFI_CON_REG16, CON_NFI_BWR);
-				DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+				DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 				WAIT_NFI_PIO_READY(timeout);
 				DRV_WriteReg8(NFI_DATAW_REG32, 0x01);
 				while (!(DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY_RETURN)
@@ -2997,7 +2996,7 @@ static void mtk_nand_sandisk_rrtry(struct mtd_info *mtd, flashdev_info deviceinf
 				mtk_nand_status_ready(STA_NFI_OP_MASK);
 				DRV_WriteReg32(NFI_CON_REG16, 1 << CON_NFI_SEC_SHIFT);
 				NFI_SET_REG32(NFI_CON_REG16, CON_NFI_BWR);
-				DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+				DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 				WAIT_NFI_PIO_READY(timeout);
 				DRV_WriteReg8(NFI_DATAW_REG32, 0xC0);
 				while (!(DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY_RETURN)
@@ -3035,15 +3034,15 @@ static void sandisk_19nm_rr_init(void)
 	mtk_nand_reset();
 
 	reg_val = (CNFG_OP_CUST | CNFG_BYTE_RW);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 	mtk_nand_set_command(0x3B);
 	mtk_nand_set_command(0xB9);
 
 	for (count = 0; count < 9; count++) {
 		mtk_nand_set_command(0x53);
 		mtk_nand_set_address((0x04 + count), 0, 1, 0);
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 		timeout = 0xffff;
 		WAIT_NFI_PIO_READY(timeout);
 		DRV_WriteReg32(NFI_DATAW_REG32, 0x00);
@@ -3065,7 +3064,7 @@ static void sandisk_19nm_rr_loading(u32 retryCount, bool defValue)
 	mtk_nand_reset();
 
 	reg_val = (CNFG_OP_CUST | CNFG_BYTE_RW);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 
 	if ((0 != retryCount) || defValue)
 		mtk_nand_set_command(0xD6);
@@ -3075,8 +3074,8 @@ static void sandisk_19nm_rr_loading(u32 retryCount, bool defValue)
 	for (count = 0; count < 3; count++) {
 		mtk_nand_set_command(0x53);
 		mtk_nand_set_address(cmd_reg[count], 0, 1, 0);
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 		timeout = 0xffff;
 		WAIT_NFI_PIO_READY(timeout);
 		if (count == 0)
@@ -3178,14 +3177,14 @@ static void HYNIX_RR_TABLE_READ(flashdev_info *deviceinfo)
 
 	mtk_nand_reset();
 
-	DRV_WriteReg(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
+	DRV_WriteReg16(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
 
 	mtk_nand_set_command(0x36);
 
 	for (; read_count < 2; read_count++) {
 		mtk_nand_set_address(add_reg1[read_count], 0, 1, 0);
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 		timeout = 0xffff;
 		WAIT_NFI_PIO_READY(timeout);
 		DRV_WriteReg32(NFI_DATAW_REG32, data_reg1[read_count]);
@@ -3199,20 +3198,20 @@ static void HYNIX_RR_TABLE_READ(flashdev_info *deviceinfo)
 		mtk_nand_set_address(add_reg2[read_count], 0, 1, 0);
 
 	mtk_nand_set_command(0x30);
-	DRV_WriteReg(NFI_CNRNB_REG16, 0xF1);
+	DRV_WriteReg16(NFI_CNRNB_REG16, 0xF1);
 	timeout = 0xffff;
 	while (!(DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY_RETURN) && (timeout--))
 		;
 
 	reg_val = (CNFG_OP_CUST | CNFG_BYTE_RW | CNFG_READ_EN);
-	DRV_WriteReg(NFI_CNFG_REG16, reg_val);
-	DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BRD | (2 << CON_NFI_SEC_SHIFT)));
-	DRV_WriteReg(NFI_STRDATA_REG16, 0x1);
+	DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+	DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BRD | (2 << CON_NFI_SEC_SHIFT)));
+	DRV_WriteReg16(NFI_STRDATA_REG16, 0x1);
 	timeout = 0xffff;
 	read_count = 0;
 	while ((read_count < max_count) && timeout) {
 		WAIT_NFI_PIO_READY(timeout);
-		*rr_table++ = (U8) DRV_Reg32(NFI_DATAR_REG32);
+		*rr_table++ = (u8) DRV_Reg32(NFI_DATAR_REG32);
 		read_count++;
 		timeout = 0xFFFF;
 	}
@@ -3221,11 +3220,11 @@ static void HYNIX_RR_TABLE_READ(flashdev_info *deviceinfo)
 
 	reg_val = (CNFG_OP_CUST | CNFG_BYTE_RW);
 	if (deviceinfo->feature_set.FeatureSet.rtype == RTYPE_HYNIX_16NM) {
-		DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+		DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 		mtk_nand_set_command(0x36);
 		mtk_nand_set_address(0x38, 0, 1, 0);
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 		WAIT_NFI_PIO_READY(timeout);
 		DRV_WriteReg32(NFI_DATAW_REG32, 0x00);
 		mtk_nand_reset();
@@ -3234,7 +3233,7 @@ static void HYNIX_RR_TABLE_READ(flashdev_info *deviceinfo)
 		mtk_nand_set_address(0x00, 0, 1, 0);
 		mtk_nand_set_command(0x30);
 	} else {
-		DRV_WriteReg(NFI_CNFG_REG16, reg_val);
+		DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
 		mtk_nand_set_command(0x38);
 	}
 	timeout = 0xffff;
@@ -3286,13 +3285,13 @@ static void HYNIX_Set_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 	}
 	mtk_nand_reset();
 
-	DRV_WriteReg(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
+	DRV_WriteReg16(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
 
 	for (count = 0; count < max_count; count++) {
 		mtk_nand_set_command(0x36);
 		mtk_nand_set_address(add_reg[count], 0, 1, 0);
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 		timeout = 0xffff;
 		WAIT_NFI_PIO_READY(timeout);
 		if (timeout == 0) {
@@ -3323,14 +3322,14 @@ static void HYNIX_Get_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 	}
 	mtk_nand_reset();
 
-	DRV_WriteReg(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW | CNFG_READ_EN));
+	DRV_WriteReg16(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW | CNFG_READ_EN));
 
 	for (count = 0; count < max_count; count++) {
 		mtk_nand_set_command(0x37);
 		mtk_nand_set_address(add_reg[count], 0, 1, 0);
 
-		DRV_WriteReg(NFI_CON_REG16, (CON_NFI_SRD | (1 << CON_NFI_NOB_SHIFT)));
-		DRV_WriteReg(NFI_STRDATA_REG16, 1);
+		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_SRD | (1 << CON_NFI_NOB_SHIFT)));
+		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
 
 		timeout = 0xffff;
 		WAIT_NFI_PIO_READY(timeout);
@@ -5771,7 +5770,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	DDR_INTERFACE = FALSE;
 	mtk_nand_reset();
 
-	DRV_WriteReg(NFI_CNFG_REG16, CNFG_OP_RESET);
+	DRV_WriteReg16(NFI_CNFG_REG16, CNFG_OP_RESET);
 	mtk_nand_set_command(NAND_CMD_RESET);
 
 

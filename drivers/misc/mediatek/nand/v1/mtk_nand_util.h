@@ -7,6 +7,34 @@
 #include <nand_device_list.h>
 #include "partition_define.h"
 
+#ifndef FALSE
+  #define FALSE (0)
+#endif
+
+#ifndef TRUE
+  #define TRUE  (1)
+#endif
+
+#ifndef NULL
+  #define NULL  (0)
+#endif
+
+#ifndef ASSERT
+    #define ASSERT(expr)        BUG_ON(!(expr))
+#endif
+
+#ifndef BOOL
+typedef unsigned char  BOOL;
+#endif
+
+#define DRV_Reg8(x) __raw_readb(x)
+#define DRV_Reg16(x) __raw_readw(x)
+#define DRV_Reg32(x) __raw_readl(x)
+
+#define DRV_WriteReg8(x, y) __raw_writeb(y, x)
+#define DRV_WriteReg16(x, y) __raw_writew(y, x)
+#define DRV_WriteReg32(x, y) __raw_writel(y, x)
+
 extern bool init_pmt_done;
 /*******************************************************************************
  * Data Structure Definition

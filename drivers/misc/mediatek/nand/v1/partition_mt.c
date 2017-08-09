@@ -26,7 +26,6 @@
 #include <linux/proc_fs.h>
 #include <linux/time.h>
 #include <linux/miscdevice.h>
-#include <mt_typedefs.h>
 #include <asm/io.h>
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
@@ -36,6 +35,18 @@
 
 #define PMT 1
 #ifdef PMT
+
+#ifndef FALSE
+  #define FALSE (0)
+#endif
+
+#ifndef TRUE
+  #define TRUE  (1)
+#endif
+
+#ifndef NULL
+  #define NULL  (0)
+#endif
 
 pt_resident new_part[PART_MAX_COUNT];
 pt_resident lastest_part[PART_MAX_COUNT];
