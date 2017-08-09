@@ -105,6 +105,7 @@ void init_ddp_mmp_events(void)
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.sec = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "sec");
 		DDP_MMP_Events.tui =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "tui");
+		DDP_MMP_Events.self_refresh = MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "self_refresh");
 		DDP_MMP_Events.fps_set =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_set");
 		DDP_MMP_Events.fps_get =  MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "fps_get");
 

@@ -1400,6 +1400,28 @@ int _ioctl_query_valid_layer(unsigned long arg)
 	return ret;
 }
 
+int _ioctl_set_scenario(unsigned long arg)
+{
+	int ret = -1;
+	struct disp_scenario_config_t scenario_cfg;
+	void __user *argp = (void __user *)arg;
+
+	if (copy_from_user(&scenario_cfg, argp, sizeof(scenario_cfg))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+
+	if (DISP_SESSION_TYPE(scenario_cfg.session_id) == DISP_SESSION_PRIMARY)
+		ret = primary_display_set_scenario(scenario_cfg.scenario);
+
+	if (ret) {
+		DISPERR("session(0x%x) set scenario (%d) fail, ret=%d\n",
+			scenario_cfg.session_id, scenario_cfg.scenario, ret);
+	}
+
+	return ret;
+}
+
 int set_session_mode(disp_session_config *config_info, int force)
 {
 	int ret = 0;
@@ -1572,6 +1594,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		{
 			return _ioctl_query_valid_layer(arg);
 		}
+	case DISP_IOCTL_SET_SCENARIO:
+	{
+		return _ioctl_set_scenario(arg);
+	}
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
@@ -1673,6 +1699,8 @@ const char *_session_compat_ioctl_spy(unsigned int cmd)
 static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsigned long arg)
 {
 	long ret = -ENOIOCTLCMD;
+	void __user *data32 = compat_ptr(arg);
+
 	/*DISPMSG("mtk_disp_mgr_compat_ioctl, cmd=%s, arg=0x%08lx\n", _session_compat_ioctl_spy(cmd), arg);*/
 	switch (cmd) {
 	case COMPAT_DISP_IOCTL_CREATE_SESSION:
@@ -1731,6 +1759,12 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 		{
 		    return _compat_ioctl_set_output_buffer(file, arg);
 		}
+	case DISP_IOCTL_SET_SCENARIO:
+	{
+		/* arg of this ioctl is all unsigned int, don't need special compat ioctl */
+		return file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
+	}
+
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:

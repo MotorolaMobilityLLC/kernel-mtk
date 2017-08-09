@@ -405,6 +405,15 @@ typedef struct disp_layer_info_t {
 	int hrt_num;
 } disp_layer_info;
 
+enum DISP_SCENARIO {
+	DISP_SCENARIO_NORMAL,
+	DISP_SCENARIO_SELF_REFRESH,
+};
+struct disp_scenario_config_t {
+	unsigned int session_id;
+	unsigned int scenario;
+};
+
 /* IOCTL commands. */
 #define DISP_IOW(num, dtype)     _IOW('O', num, dtype)
 #define DISP_IOR(num, dtype)     _IOR('O', num, dtype)
@@ -435,8 +444,9 @@ typedef struct disp_layer_info_t {
 #define DISP_IOCTL_GET_IS_DRIVER_SUSPEND		DISP_IOW(217, unsigned int)
 #define DISP_IOCTL_GET_DISPLAY_CAPS			DISP_IOW(218, disp_caps_info)
 #define DISP_IOCTL_INSERT_SESSION_BUFFERS			DISP_IOW(219, disp_session_buf_info)
-#define	DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, disp_session_output_config)
+#define	DISP_IOCTL_FRAME_CONFIG				DISP_IOW(220, disp_session_output_config)
 #define DISP_IOCTL_QUERY_VALID_LAYER			DISP_IOW(221, disp_layer_info)
+#define	DISP_IOCTL_SET_SCENARIO				DISP_IOW(222, struct disp_scenario_config_t)
 
 #ifdef __KERNEL__
 

@@ -621,6 +621,17 @@ static void process_dbg_opt(const char *opt)
 		pan_display_test(frame_num, bpp);
 	}
 
+	if (0 == strncmp(opt, "scenario:", 8)) {
+		int scen;
+
+		ret = sscanf(opt, "scenario:%d\n", &scen);
+		if (ret != 1) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		primary_display_set_scenario(scen);
+	}
+
 }
 
 

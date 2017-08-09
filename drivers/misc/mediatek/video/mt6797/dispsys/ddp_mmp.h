@@ -71,6 +71,7 @@ typedef struct {
 	MMP_Event idlemgr;
 	MMP_Event sec;
 	MMP_Event tui;
+	MMP_Event self_refresh;
 	MMP_Event fps_set;
 	MMP_Event fps_get;
 	MMP_Event primary_error;

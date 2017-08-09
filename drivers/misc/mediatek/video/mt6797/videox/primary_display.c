@@ -205,6 +205,7 @@ typedef struct {
 	cmdqBackupSlotHandle dither_status_info;
 
 	int is_primary_sec;
+	int primary_display_scenario;
 } display_primary_path_context;
 
 #define pgc	_get_context()
@@ -4417,7 +4418,7 @@ static DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 };
 
 static int opt_backup_value[OPT_BACKUP_NUM];
-unsigned int idlemgr_flag_backup;
+static unsigned int idlemgr_flag_backup;
 
 static int disp_enter_svp(SVP_STATE state)
 {
@@ -6888,7 +6889,7 @@ void restart_smart_ovl_nolock(void)
 {
 	int i;
 
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++)
 		disp_helper_set_option(tui_opt_backup[i].option, tui_opt_backup[i].value);
 
 }
@@ -6964,3 +6965,92 @@ int display_exit_tui(void)
 	return 0;
 
 }
+
+
+void ddp_irq_callback(DISP_MODULE_ENUM module, unsigned int reg_value)
+{
+	/* set config dirty, it will keep trigger loop busy refresh */
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+}
+
+
+static int self_refresh_idlemgr_status_backup;
+static int primary_display_enter_self_refresh(void)
+{
+	_primary_path_lock(__func__);
+
+	MMProfileLogEx(ddp_mmp_get_events()->self_refresh, MMProfileFlagStart, 0, 0);
+
+	if (primary_display_is_mirror_mode()) {
+		/* we only accept non-mirror mode */
+		disp_aee_print("enter self-refresh mode fail\n");
+		goto out;
+	}
+
+	/* disable idle manager */
+	self_refresh_idlemgr_status_backup = set_idlemgr(0, 0);
+
+	/* stop smart ovl / bypass ovl */
+	stop_smart_ovl_nolock();
+	/* switch to directlink mode */
+	do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 1);
+
+	if (!primary_display_is_video_mode())
+		disp_register_irq_callback(ddp_irq_callback);
+
+	pgc->primary_display_scenario = DISP_SCENARIO_SELF_REFRESH;
+out:
+	_primary_path_unlock(__func__);
+	return 0;
+}
+
+static int primary_display_exit_self_refresh(void)
+{
+	_primary_path_lock(__func__);
+
+	if (primary_display_is_mirror_mode()) {
+		/* we only accept non-mirror mode */
+		disp_aee_print("enter self-refresh mode fail\n");
+		goto out;
+	}
+
+	/* disable idle manager */
+	set_idlemgr(self_refresh_idlemgr_status_backup, 0);
+
+	/* restart smart ovl */
+	restart_smart_ovl_nolock();
+
+	if (!primary_display_is_video_mode())
+		disp_unregister_irq_callback(ddp_irq_callback);
+
+	pgc->primary_display_scenario = DISP_SCENARIO_NORMAL;
+out:
+	_primary_path_unlock(__func__);
+	MMProfileLogEx(ddp_mmp_get_events()->self_refresh, MMProfileFlagEnd, 0, 0);
+	return 0;
+}
+
+int primary_display_set_scenario(int scenario)
+{
+	int ret = 0;
+
+	if (scenario != DISP_SCENARIO_NORMAL &&
+		pgc->primary_display_scenario != DISP_SCENARIO_NORMAL) {
+		/* every scenario should start from NORMAL !! */
+		pr_err("%s set scenario %d fail ! current scenario is %d\n",
+			__func__, scenario, pgc->primary_display_scenario);
+		return -EINVAL;
+	}
+
+	if (scenario == DISP_SCENARIO_SELF_REFRESH)
+		ret = primary_display_enter_self_refresh();
+
+	if (scenario == DISP_SCENARIO_NORMAL) {
+		if (pgc->primary_display_scenario == DISP_SCENARIO_SELF_REFRESH)
+			ret = primary_display_exit_self_refresh();
+	}
+
+	return ret;
+}
+
+
