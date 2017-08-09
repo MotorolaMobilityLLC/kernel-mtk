@@ -152,9 +152,29 @@ static char selftestRes[8] = { 0 };
 
 /*----------------------------------------------------------------------------*/
 #define GSE_TAG						"[Gsensor] "
-#define GSE_FUN(f)					pr_debug(GSE_TAG"%s\n", __func__)
 #define GSE_ERR(fmt, args...)		pr_err(GSE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+
+#define GSE_LOGLEVEL 0
+
+#if ((GSE_LOGLEVEL) >= 0)
+#define GSE_DBG(fmt, args...)		pr_debug(GSE_TAG fmt, ##args)
+#else
+#define GSE_DBG(fmt, args...)
+#endif
+
+#if ((GSE_LOGLEVEL) >= 1)
+#define GSE_FUN(f)					pr_debug(GSE_TAG"%s\n", __func__)
+#else
+#define GSE_FUN(f)
+#endif
+
+
+#if ((GSE_LOGLEVEL) >= 2)
 #define GSE_LOG(fmt, args...)		pr_debug(GSE_TAG fmt, ##args)
+#else
+#define GSE_LOG(fmt, args...)
+#endif
+
 /*----------------------------------------------------------------------------*/
 static struct data_resolution icm20645_data_resolution[] = {
 	/*8 combination by {FULL_RES,RANGE} */
@@ -278,7 +298,7 @@ static int icm20645_set_bank(struct i2c_client *client, u8 bank)
 	databuf[0] = bank;
 	res = mpu_i2c_write_block(client, REG_BANK_SEL, databuf, 0x1);
 	if (res < 0) {
-		GSE_LOG("icm20645_set_bank fail at %x", bank);
+		GSE_ERR("icm20645_set_bank fail at %x", bank);
 		return ICM20645_ERR_I2C;
 	}
 
@@ -291,25 +311,25 @@ static int icm20645_turn_on(struct i2c_client *client, u8 status, bool on)
 	u8 databuf[2];
 
 	memset(databuf, 0, sizeof(databuf));
-	GSE_FUN(f);
+	GSE_DBG("%s: ENTER\n", __func__);
 	icm20645_set_bank(client, BANK_SEL_0);
 	res = mpu_i2c_read_block(client, ICM20645_REG_POWER_CTL2, databuf, 0x1);
 	if (res < 0) {
-		GSE_LOG("icm20645_turn_on fail at %x", on);
+		GSE_ERR("icm20645_turn_on fail at %x", on);
 		return ICM20645_ERR_I2C;
 	}
 	if (on == true) {
 		databuf[0] &= ~status;
 		res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL2, databuf, 0x1);
 		if (res < 0) {
-			GSE_LOG("icm20645_turn_on fail at %x", on);
+			GSE_ERR("icm20645_turn_on fail at %x", on);
 			return ICM20645_ERR_I2C;
 		}
 	} else {
 		databuf[0] |= status;
 		res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL2, databuf, 0x1);
 		if (res < 0) {
-			GSE_LOG("icm20645_turn_on fail at %x", on);
+			GSE_ERR("icm20645_turn_on fail at %x", on);
 			return ICM20645_ERR_I2C;
 		}
 	}
@@ -455,7 +475,7 @@ static int ICM20645_SetPowerMode(struct i2c_client *client, bool enable)
 	icm20645_set_bank(client, BANK_SEL_0);
 
 	if (enable == sensor_power) {
-		GSE_LOG("Sensor power status is newest!\n");
+		GSE_DBG("Sensor power status is newest!\n");
 		return ICM20645_SUCCESS;
 	}
 
@@ -479,10 +499,10 @@ static int ICM20645_SetPowerMode(struct i2c_client *client, bool enable)
 
 	res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
 	if (res < 0) {
-		GSE_LOG("set power mode failed!\n");
+		GSE_ERR("set power mode failed!\n");
 		return ICM20645_ERR_I2C;
 	} else if (atomic_read(&obj->trace) & ICM20645_TRC_INFO)
-		GSE_LOG("set power mode ok %d!\n", databuf[0]);
+		GSE_DBG("set power mode ok %d!\n", databuf[0]);
 	sensor_power = enable;
 	return ICM20645_SUCCESS;
 }
@@ -774,7 +794,7 @@ static int ICM20645_Dev_Reset(struct i2c_client *client)
 	res = mpu_i2c_write_block(client, ICM20645_REG_POWER_CTL, databuf, 0x1);
 
 	if (res < 0) {
-		GSE_LOG("ICM20645_Dev_Reset fail\n");
+		GSE_ERR("ICM20645_Dev_Reset fail\n");
 		return ICM20645_ERR_I2C;
 	}
 
@@ -1525,7 +1545,7 @@ static ssize_t show_chip_orientation(struct device_driver *ddri, char *buf)
 	ssize_t _tLength = 0;
 	struct acc_hw *_ptAccelHw = hw;
 
-	GSE_LOG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
+	GSE_DBG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
 
 	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n", _ptAccelHw->direction);
 
@@ -1860,7 +1880,7 @@ static int icm20645_suspend(struct i2c_client *client, pm_message_t msg)
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	if (msg.event == PM_EVENT_SUSPEND) {
 		if (obj == NULL) {
 			GSE_ERR("null pointer!!\n");
@@ -1878,7 +1898,7 @@ static int icm20645_suspend(struct i2c_client *client, pm_message_t msg)
 			return err;
 		}
 		ICM20645_power(obj->hw, 0);
-		GSE_LOG("icm20645_suspend ok\n");
+		GSE_DBG("icm20645_suspend ok\n");
 	}
 	return err;
 }
@@ -1889,7 +1909,7 @@ static int icm20645_resume(struct i2c_client *client)
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
@@ -1902,7 +1922,7 @@ static int icm20645_resume(struct i2c_client *client)
 		return err;
 	}
 	atomic_set(&obj->suspend, 0);
-	GSE_LOG("icm20645_resume ok\n");
+	GSE_DBG("icm20645_resume ok\n");
 
 	return 0;
 }
@@ -1915,7 +1935,7 @@ static void icm20645_early_suspend(struct early_suspend *h)
 	struct icm20645_i2c_data *obj = container_of(h, struct icm20645_i2c_data, early_drv);
 	int err = 0;
 
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");
 		return;
@@ -1943,7 +1963,7 @@ static void icm20645_late_resume(struct early_suspend *h)
 	struct icm20645_i2c_data *obj = container_of(h, struct icm20645_i2c_data, early_drv);
 	int err = 0;
 
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");
 		return;
@@ -1989,7 +2009,7 @@ static int icm20645_enable_nodata(int en)
 				GSE_LOG("ICM20645_SetPowerMode done\n");
 				break;
 			}
-			GSE_LOG("ICM20645_SetPowerMode fail\n");
+			GSE_ERR("ICM20645_SetPowerMode fail\n");
 		}
 		res = icm20645_turn_on(obj_i2c_data->client, BIT_PWR_ACCEL_STBY, true);
 		if (res != ICM20645_SUCCESS) {
@@ -2018,10 +2038,10 @@ static int icm20645_enable_nodata(int en)
 		
 	}
 	if (res != ICM20645_SUCCESS) {
-		GSE_LOG("ICM20645_SetPowerMode fail!\n");
+		GSE_ERR("ICM20645_SetPowerMode fail!\n");
 		return -1;
 	}
-	GSE_LOG("icm20645_enable_nodata OK!\n");
+	GSE_DBG("icm20645_enable_nodata OK!\n");
 	return 0;
 }
 
@@ -2071,8 +2091,7 @@ static int icm20645_i2c_probe(struct i2c_client *client, const struct i2c_device
 	int retry = 0;
 	struct acc_control_path ctl = { 0 };
 	struct acc_data_path data = { 0 };
-
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
@@ -2202,7 +2221,7 @@ static int icm20645_i2c_remove(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int icm20645_remove(void)
 {
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 	ICM20645_power(hw, 0);
 	i2c_del_driver(&icm20645_i2c_driver);
 	return 0;
@@ -2239,7 +2258,7 @@ static int __init icm20645gse_init(void)
 /*----------------------------------------------------------------------------*/
 static void __exit icm20645gse_exit(void)
 {
-	GSE_FUN();
+	GSE_DBG("%s: ENTER\n", __func__);
 }
 
 /*----------------------------------------------------------------------------*/

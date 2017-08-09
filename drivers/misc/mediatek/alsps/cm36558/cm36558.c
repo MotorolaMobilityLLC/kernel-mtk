@@ -30,8 +30,16 @@
 #define APS_TAG                  "[ALS/PS] "
 #define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+
+#define APS_LOGLEVEL 0
+
+#if ((APS_LOGLEVEL) >= 1)
 #define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#else
+#define APS_LOG(fmt, args...)
+#define APS_DBG(fmt, args...)
+#endif
 
 #define I2C_FLAG_WRITE	0
 #define I2C_FLAG_READ	1

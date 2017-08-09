@@ -133,7 +133,15 @@ struct bmp_i2c_data {
 #define BAR_FUN(f)               pr_err(BAR_TAG"%s\n", __func__)
 #define BAR_ERR(fmt, args...) \
 	pr_err(BAR_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+
+#define BAR_LOGLEVEL 0
+
+#if ((BAR_LOGLEVEL) >= 1)
 #define BAR_LOG(fmt, args...)    pr_debug(BAR_TAG fmt, ##args)
+#else
+#define BAR_LOG(fmt, args...)
+#endif
+
 
 static struct i2c_driver bmp_i2c_driver;
 static struct bmp_i2c_data *obj_i2c_data;
