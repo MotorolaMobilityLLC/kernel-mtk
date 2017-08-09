@@ -3817,6 +3817,7 @@ static void VOW_MIC_DCC_Enable(int MicType, bool enable)
 	if (enable == true) {
 		/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL, Enable Audio ADC FBDAC 0.25FS LPW */
 		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x000D);
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x0030, 0xFFFF); /* for little signal be broken issue */
 
 		switch (MicType) {
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
@@ -3872,6 +3873,7 @@ static void VOW_MIC_DCC_Enable(int MicType, bool enable)
 			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
 			break;
 		}
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x1515, 0xFFFF); /* for little signal be broken issue */
 	}
 }
 
@@ -3880,6 +3882,7 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 	if (enable == true) {
 		/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL, Enable Audio ADC FBDAC 0.25FS LPW */
 		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x000D);
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x0030, 0xFFFF); /* for little signal be broken issue */
 
 		switch (MicType) {
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
@@ -3917,6 +3920,7 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
 			break;
 		}
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x1515, 0xFFFF); /* for little signal be broken issue */
 	}
 }
 #endif
