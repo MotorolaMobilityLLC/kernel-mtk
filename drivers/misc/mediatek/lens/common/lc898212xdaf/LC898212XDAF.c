@@ -282,8 +282,24 @@ static void LC898212XD_init(void)
 				Hall_Min = HallMinCheck;
 
 				Hall_Max = HallMaxCheck;
+				/* Li define format - Ev IMX258 PDAF - end */
+			} else {
+				/* Li define format - Ev MVHDR */
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F33, &val1);
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F34, &val2);
+				Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F35, &val1);
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F36, &val2);
+				Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F37, &val1);
+				Hall_Off = val1;
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2);
+				Hall_Bias = val2;
+				g_LC898212_SearchDir = 0;
+				/* Li define format - Ev MVHDR end */
 			}
-			/* Li define format - Ev IMX258 PDAF - end */
 
 		} else {
 
