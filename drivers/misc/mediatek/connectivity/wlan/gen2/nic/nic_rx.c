@@ -2598,6 +2598,19 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 				pvHeader[ETH_HLEN + 12], pvHeader[ETH_HLEN + 13],
 				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15], u2Temp);
 			break;
+		case ETH_P_ARP:
+		{
+			PUINT_8 pucEthBody = &pvHeader[ETH_HLEN];
+			UINT_16 u2OpCode = (pucEthBody[6] << 8) | pucEthBody[7];
+
+			if (u2OpCode == ARP_PRO_REQ)
+				DBGLOG(RX, INFO, "Arp Req From IP: %d.%d.%d.%d wakeup host\n",
+					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
+			else if (u2OpCode == ARP_PRO_RSP)
+				DBGLOG(RX, INFO, "Arp Rsp from IP: %d.%d.%d.%d wakeup host\n",
+					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
+			break;
+		}
 		case ETH_P_1X:
 		case ETH_P_PRE_1X:
 #if CFG_SUPPORT_WAPI

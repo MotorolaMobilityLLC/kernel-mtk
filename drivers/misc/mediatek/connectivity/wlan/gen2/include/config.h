@@ -1227,8 +1227,12 @@
  */
 #define CFG_ENABLE_FULL_PM                      1
 #define CFG_ENABLE_WAKEUP_ON_LAN                0
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6580)
+#define CFG_SUPPORT_WAKEUP_REASON_DEBUG			1	/* debug which packet wake up host */
+#else
 #define CFG_SUPPORT_WAKEUP_REASON_DEBUG			0	/* debug which packet wake up host */
-
+#endif
 #define CFG_INIT_POWER_SAVE_PROF                    ENUM_PSP_FAST_SWITCH
 
 #define CFG_INIT_ENABLE_PATTERN_FILTER_ARP                    0
