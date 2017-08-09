@@ -971,22 +971,6 @@ void musb_start(struct musb *musb)
 	mu3d_hal_u3dev_dis();
 #endif
 
-#ifndef CONFIG_MTK_FPGA
-	/*if (mt_get_chip_hw_code() == 0x6595) */
-	{
-		os_printk(K_INFO, "%s Set Clock to 62.4MHz+\n", __func__);
-		/* sys_ck = OSC 124.8MHz/2 = 62.4MHz */
-		os_setmsk(U3D_SSUSB_SYS_CK_CTRL, SSUSB_SYS_CK_DIV2_EN);
-		/* U2 MAC sys_ck = ceil(62.4) = 63 */
-		os_writelmsk(U3D_USB20_TIMING_PARAMETER, 63, TIME_VALUE_1US);
-#ifdef SUPPORT_U3
-		/* U3 MAC sys_ck = ceil(62.4) = 63 */
-		os_writelmsk(U3D_TIMING_PULSE_CTRL, 63, CNT_1US_VALUE);
-#endif
-		os_printk(K_INFO, "%s Set Clock to 62.4MHz-\n", __func__);
-	}
-#endif
-
 	os_writel(U3D_LINK_RESET_INFO, os_readl(U3D_LINK_RESET_INFO) & ~WTCHRP);
 
 	/* U2/U3 detected by HW */

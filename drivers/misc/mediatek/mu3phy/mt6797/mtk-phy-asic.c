@@ -970,9 +970,9 @@ void usb_phy_recover(unsigned int clk_on)
 	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x1f<<16)|0x13<<16);rg_ssusb_idem_3p5db[5:0]
 	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x01<<22)|0x01<<22);rg_ssusb_force_idem_3p5db
 	 */
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 8, (0x1f<<8), 0x2d);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 8, (0x1f<<8), 0x2c);
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 14, (0x01<<14), 0x01);
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 16, (0x1f<<16), 0x13);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 16, (0x1f<<16), 0x16);
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 22, (0x01<<22), 0x01);
 
 	/* MWriteS32 0x1129095c (MREAD("S32", asd:0x1129095c)&~(0x1f<<24)|0x02<<24) ;rg_ssusb_cdr_bir_ltd1[4:0]
