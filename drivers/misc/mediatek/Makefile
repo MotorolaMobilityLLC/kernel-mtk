@@ -31,3 +31,7 @@ obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVINFO_DRIVER) += devinfo/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
+obj-$(CONFIG_MTK_LCM) += lcm/
+obj-$(CONFIG_MTK_VIDEOX) += dispsys/
+obj-$(CONFIG_MTK_FB) += videox/
+obj-$(CONFIG_MTK_SYNC) += sync/

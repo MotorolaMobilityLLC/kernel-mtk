@@ -832,6 +832,115 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "uart4-main";
 		};
 
+		dispsys@14007000 {
+			compatible = "mediatek,dispsys";
+
+			reg = <0x14007000 0x1000>,  /*DISP_OVL0      */
+			      <0 0>,		    /*DISP_OVL1      */
+			      <0x14008000 0x1000>,  /*DISP_RDMA0     */
+			      <0x14009000 0x1000>,  /*DISP_RDMA1     */
+			      <0x1400A000 0x1000>,  /*DISP_WDMA0     */
+			      <0x1400B000 0x1000>,  /*DISP_COLOR     */
+			      <0x1400C000 0x1000>,  /*DISP_CCORR     */
+			      <0x1400D000 0x1000>,  /*DISP_AAL       */
+			      <0x1400E000 0x1000>,  /*DISP_GAMMA     */
+			      <0x1400F000 0x1000>,  /*DISP_DITHER    */
+			      <0 0>,		    /*DISP_UFOE      */
+			      <0x1100E000 0x1000>,  /*DISP_PWM       */
+			      <0 0>,		    /*DISP_WDMA1     */
+			      <0x14014000 0x1000>,  /*DISP_MUTEX     */
+			      <0x14011000 0x1000>,  /*DISP_DSI0      */
+			      <0x14012000 0x1000>,  /*DISP_DPI0      */
+			      <0x14000000 0x1000>,  /*DISP_CONFIG    */
+			      <0x14015000 0x1000>,  /*DISP_SMI_LARB0 */
+			      <0x14016000 0x1000>,  /*DISP_SMI_COMMOM*/
+			      <0x14017000 0x1000>,  /*MIPITX0,real chip would use this:<0x14017000 0x1000>;*/
+			      <0x10206000 0x1000>,  /*DISP_CONFIG2*/
+			      <0x10210000 0x1000>,  /*DISP_CONFIG3*/
+			      <0x10211A70 0x000C>,  /*DISP_DPI_IO_DRIVING1 */
+			      <0x10211974 0x000C>,  /*DISP_DPI_IO_DRIVING2 */
+			      <0x10211B70 0x000C>,  /*DISP_DPI_IO_DRIVING3 */
+			      <0x10206044 0x000C>,  /*DISP_DPI_EFUSE */
+			      <0x10206514 0x000C>,  /*DISP_DPI_EFUSE_PERMISSION */
+			      <0x10206558 0x000C>,  /*DISP_DPI_EFUSE_KEY */
+			      <0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
+			      <0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
+			      <0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
+			      <0 0>;		    /*DISP_OD      */
+
+			interrupts = <0 193 8>, /*DISP_OVL0 */
+				     <0 0 8>,   /*DISP_OVL1 */
+				     <0 194 8>, /*DISP_RDMA0 */
+				     <0 195 8>, /*DISP_RDMA1 */
+				     <0 196 8>, /*DISP_WDMA0 */
+				     <0 197 8>, /*DISP_COLOR */
+				     <0 198 8>, /*DISP_CCORR */
+				     <0 199 8>, /*DISP_AAL */
+				     <0 200 8>, /*DISP_GAMMA */
+				     <0 201 8>, /*DISP_DITHER */
+				     <0 0 8>,   /*DISP_UFOE */
+				     <0 117 8>, /*DISP_PWM */
+				     <0 0 8>,   /*DISP_WDMA1 */
+				     <0 186 8>, /*DISP_MUTEX */
+				     <0 203 8>, /*DISP_DSI0 */
+				     <0 204 8>, /*DISP_DPI0 */
+				     <0 205 8>, /*DISP_CONFIG, 0 means no IRQ*/
+				     <0 176 8>, /*DISP_SMI_LARB0 */
+				     <0 0 8>,   /*DISP_SMI_COMMOM*/
+				     <0 0 8>,   /*MIPITX0,real chip would use this:<0x14017000 0x1000>;*/
+				     <0 0 8>,   /*DISP_CONFIG2*/
+				     <0 0 8>,   /*DISP_CONFIG3*/
+				     <0 0 8>,   /*DISP_DPI_IO_DRIVING */
+				     <0 0 8>,   /*DISP_TVDPLL_CFG6 */
+				     <0 0 8>,   /*DISP_TVDPLL_CON0 */
+				     <0 0 8>,   /*DISP_TVDPLL_CON1 */
+				     <0 0 8>;   /*DISP_OD      */
+
+			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
+				 <&mmsys MM_DISP0_SMI_LARB0>,
+				 <&mmsys MM_DISP0_DISP_OVL0>,
+				 <&mmsys MM_DISP0_DISP_RDMA0>,
+				 <&mmsys MM_DISP0_DISP_RDMA1>,
+				 <&mmsys MM_DISP0_DISP_WDMA0>,
+				 <&mmsys MM_DISP0_DISP_COLOR>,
+				 <&mmsys MM_DISP0_DISP_CCORR>,
+				 <&mmsys MM_DISP0_DISP_AAL>,
+				 <&mmsys MM_DISP0_DISP_GAMMA>,
+				 <&mmsys MM_DISP0_DISP_DITHER>,
+				 <&mmsys MM_DISP1_DSI_ENGINE>,
+				 <&mmsys MM_DISP1_DSI_DIGITAL>,
+				 <&mmsys MM_DISP1_DPI_ENGINE>,
+				 <&mmsys MM_DISP1_DPI_PIXEL>,
+				 <&perisys PERI_DISP_PWM>,
+				 <&topckgen TOP_MUX_DPI0>,
+				 <&topckgen TOP_TVDPLL_CK>,
+				 <&topckgen TOP_TVDPLL_D2>,
+				 <&topckgen TOP_DPI_CK>,
+				 <&scpsys SCP_SYS_DIS>;
+
+			clock-names = "DISP0_SMI_COMMON",
+				      "DISP0_SMI_LARB0",
+				      "DISP0_DISP_OVL0",
+				      "DISP0_DISP_RDMA0",
+				      "DISP0_DISP_RDMA1",
+				      "DISP0_DISP_WDMA0",
+				      "DISP0_DISP_COLOR",
+				      "DISP0_DISP_CCORR",
+				      "DISP0_DISP_AAL",
+				      "DISP0_DISP_GAMMA",
+				      "DISP0_DISP_DITHER",
+				      "DISP1_DSI_ENGINE",
+				      "DISP1_DSI_DIGITAL",
+				      "DISP1_DPI_ENGINE",
+				      "DISP1_DPI_PIXEL",
+				      "DISP_PWM",
+				      "MUX_DPI0",
+				      "TVDPLL_CK",
+				      "TVDPLL_D2",
+				      "DPI_CK",
+				      "DISP_MTCMOS_CLK";
+		};
+
 		gpio {
 			compatible = "mediatek,GPIO";
 			reg = <0x10211000 0x1000>;
