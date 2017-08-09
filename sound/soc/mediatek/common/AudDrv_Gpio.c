@@ -60,6 +60,8 @@
 #if 1
 struct pinctrl *pinctrlaud;
 
+#define MT6755_PIN 1
+
 enum audio_system_gpio_type {
 	GPIO_AUD_CLK_MOSI_OFF,
 	GPIO_AUD_CLK_MOSI_ON,
@@ -78,15 +80,20 @@ enum audio_system_gpio_type {
 	GPIO_SMARTPA_MODE3,
 	GPIO_TDM_MODE0,
 	GPIO_TDM_MODE1,
-/*	GPIO_I2S_MODE0,
+#if MT6755_PIN
+	GPIO_DEFAULT,
+	GPIO_PMIC_MODE0,
+	GPIO_PMIC_MODE1,
+	GPIO_I2S_MODE0,
 	GPIO_I2S_MODE1,
 	GPIO_EXTAMP_HIGH,
 	GPIO_EXTAMP_LOW,
 	GPIO_EXTAMP2_HIGH,
 	GPIO_EXTAMP2_LOW,
 	GPIO_RCVSPK_HIGH,
-	GPIO_RCVSPK_LOW,*/
+	GPIO_RCVSPK_LOW,
 	GPIO_HPDEPOP_HIGH,
+#endif
 	GPIO_HPDEPOP_LOW,
 	GPIO_NUM
 };
@@ -111,13 +118,25 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_ANC_DAT_MOSI_OFF] = {"anc_dat_mosi_off", false, NULL},
 	[GPIO_ANC_DAT_MOSI_ON] = {"anc_dat_mosi_on", false, NULL},
 
-
 	[GPIO_SMARTPA_MODE0] = {"aud_smartpa_mode0", false, NULL},
 	[GPIO_SMARTPA_MODE1] = {"aud_smartpa_mode1", false, NULL},
 	[GPIO_SMARTPA_MODE3] = {"aud_smartpa_mode3", false, NULL},
 	[GPIO_TDM_MODE0] = {"aud_tdm_mode0", false, NULL},
 	[GPIO_TDM_MODE1] = {"aud_tdm_mode1", false, NULL},
 
+#if MT6755_PIN
+	[GPIO_DEFAULT] = {"default", false, NULL},
+	[GPIO_PMIC_MODE0] = {"audpmicclk-mode0", false, NULL},
+	[GPIO_PMIC_MODE1] = {"audpmicclk-mode1", false, NULL},
+	[GPIO_I2S_MODE0] = {"audi2s1-mode0", false, NULL},
+	[GPIO_I2S_MODE1] = {"audi2s1-mode1", false, NULL},
+	[GPIO_EXTAMP_HIGH] = {"extamp-pullhigh", false, NULL},
+	[GPIO_EXTAMP_LOW] = {"extamp-pulllow", false, NULL},
+	[GPIO_EXTAMP2_HIGH] = {"extamp2-pullhigh", false, NULL},
+	[GPIO_EXTAMP2_LOW] = {"extamp2-pulllow", false, NULL},
+	[GPIO_RCVSPK_HIGH] = {"rcvspk-pullhigh", false, NULL},
+	[GPIO_RCVSPK_LOW] = {"rcvspk-pulllow", false, NULL},
+#endif
 /*	[GPIO_I2S_MODE0] = {"audi2s1_mode0", false, NULL},
 	[GPIO_I2S_MODE1] = {"audi2s1_mode1", false, NULL},
 	[GPIO_EXTAMP_HIGH] = {"audextamp_high", false, NULL},
@@ -126,6 +145,7 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_EXTAMP2_LOW] = {"audextamp2_low", false, NULL},
 	[GPIO_RCVSPK_HIGH] = {"audcvspk_high", false, NULL},
 	[GPIO_RCVSPK_LOW] = {"audcvspk_low", false, NULL},*/
+
 	[GPIO_HPDEPOP_HIGH] = {"hpdepop-pullhigh", false, NULL},
 	[GPIO_HPDEPOP_LOW] = {"hpdepop-pulllow", false, NULL},
 };
@@ -396,12 +416,35 @@ int AudDrv_GPIO_TDM_Select(int mode)
 	return retval;
 }
 
+int AudDrv_GPIO_PMIC_Select(int bEnable)
+{
+	int retval = 0;
+#if MT6755_PIN
+	if (bEnable == 1) {
+		if (aud_gpios[GPIO_PMIC_MODE1].gpio_prepare) {
+			retval =
+			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_PMIC_MODE1].gpioctrl);
+			if (retval)
+				pr_err("could not set aud_gpios[GPIO_PMIC_MODE1] pins\n");
+		}
+	} else {
+		if (aud_gpios[GPIO_PMIC_MODE0].gpio_prepare) {
+			retval =
+			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_PMIC_MODE0].gpioctrl);
+			if (retval)
+				pr_err("could not set aud_gpios[GPIO_PMIC_MODE0] pins\n");
+		}
+
+	}
+#endif
+	return retval;
+}
 
 int AudDrv_GPIO_I2S_Select(int bEnable)
 {
 	int retval = 0;
 
-#if 0
+#if MT6755_PIN
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_I2S_MODE1].gpio_prepare) {
 			retval =
@@ -426,7 +469,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 {
 	int retval = 0;
 
-#if 0
+#if MT6755_PIN
 	int extamp_mode;
 	int i;
 
@@ -444,12 +487,16 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP_LOW] pins\n");
+#ifdef MT6757_READY
 				udelay(2);
+#endif
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP_HIGH] pins\n");
+#ifdef MT6757_READY
 				udelay(2);
+#endif
 			}
 		}
 	} else {
@@ -469,7 +516,7 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 {
 	int retval = 0;
 
-#if 0
+#if MT6755_PIN
 	int extamp_mode;
 	int i;
 
@@ -487,12 +534,16 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP2_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_LOW] pins\n");
+#ifdef MT6757_READY
 				udelay(2);
+#endif
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP2_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_HIGH] pins\n");
+#ifdef MT6757_READY
 				udelay(2);
+#endif
 			}
 		}
 	} else {
@@ -512,7 +563,7 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable)
 {
 	int retval = 0;
 
-#if 0
+#if MT6755_PIN
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_RCVSPK_HIGH].gpio_prepare) {
 			retval =

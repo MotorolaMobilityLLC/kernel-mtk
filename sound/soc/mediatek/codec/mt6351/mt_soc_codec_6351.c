@@ -1359,6 +1359,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 	 .name = MT_SOC_CODEC_VOICE_ULTRADAI_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
@@ -1377,6 +1378,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
+#endif
 	{
 	 .name = MT_SOC_CODEC_FMI2S2RXDAI_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
@@ -1503,6 +1505,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
 	 },
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 	 .name = MT_SOC_CODEC_OFFLOAD_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
@@ -1514,6 +1517,8 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
 	},
+#endif
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = MT_SOC_CODEC_ANC_NAME,
 		.ops = &mt6323_aif1_dai_ops,
@@ -1525,6 +1530,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 			.formats = SND_SOC_ADV_MT_FMTS,
 			},
 	}
+#endif
 };
 
 uint32 GetDLNewIFFrequency(unsigned int frequency)
@@ -3487,8 +3493,8 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x00e0, 0xfff0);
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
 
-			/* use 260k/130/65k@18bit mt6797:LP uplink */
 			if (useUl260k()) {
+				/* use 260k/130/65k@18bit mt6797:LP uplink */
 				if (SampleRate_VUL1 <= 48000) {
 					/* use cic out */
 					Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);

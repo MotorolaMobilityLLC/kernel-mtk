@@ -370,6 +370,7 @@ enum Soc_Aud_I2S {
 	Soc_Aud_I2S2,
 	Soc_Aud_I2S3,
 	Soc_Aud_I2S4,
+	Soc_Aud_I2SConnSys
 };
 
 enum Soc_Aud_I2S_CLKDIV {

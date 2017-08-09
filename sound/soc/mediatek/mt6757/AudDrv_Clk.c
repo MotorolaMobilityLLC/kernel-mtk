@@ -21,7 +21,7 @@
  *
  * Project:
  * --------
- *   MT6797  Audio Driver clock control implement
+ *   MT6757  Audio Driver clock control implement
  *
  * Description:
  * ------------
@@ -93,19 +93,18 @@ static unsigned int MCLKFS_HDMI = 256;
 int Aud_Core_Clk_cntr = 0;
 int Aud_AFE_Clk_cntr = 0;
 int Aud_I2S_Clk_cntr = 0;
-int Aud_TDM_Clk_cntr = 0;
 int Aud_ADC_Clk_cntr = 0;
 int Aud_ADC2_Clk_cntr = 0;
 int Aud_ADC3_Clk_cntr = 0;
-int Aud_ADC_HIRES_Clk_cntr = 0;
 int Aud_ANA_Clk_cntr = 0;
+#ifdef MT6757_READY
 int Aud_HDMI_Clk_cntr = 0;
+#endif
 int Aud_APLL22M_Clk_cntr = 0;
 int Aud_APLL24M_Clk_cntr = 0;
 int Aud_APLL1_Tuner_cntr = 0;
 int Aud_APLL2_Tuner_cntr = 0;
 static int Aud_EMI_cntr;
-int Aud_ANC_Clk_cntr = 0;
 
 static DEFINE_SPINLOCK(auddrv_Clk_lock);
 
@@ -115,14 +114,13 @@ static DEFINE_MUTEX(audEMI_Clk_mutex);
 
 /* AUDIO_APLL_DIVIDER_GROUP may vary by chip!!! */
 typedef enum {
-	AUDIO_APLL1_DIV0 = 0,
-	AUDIO_APLL2_DIV0 = 1,
-	AUDIO_APLL12_DIV0 = 2,
-	AUDIO_APLL12_DIV1 = 3,
-	AUDIO_APLL12_DIV2 = 4,
-	AUDIO_APLL12_DIV3 = 5,
-	AUDIO_APLL12_DIV4 = 6,
-	AUDIO_APLL12_DIVB = 7,
+	AUDIO_APLL1_DIV0,
+	AUDIO_APLL2_DIV0,
+	AUDIO_APLL12_DIV1,
+	AUDIO_APLL12_DIV2,
+	AUDIO_APLL12_DIV3,
+	AUDIO_APLL12_DIV4,
+	AUDIO_APLL12_DIVB,
 	AUDIO_APLL_DIV_NUM
 } AUDIO_APLL_DIVIDER_GROUP;
 
@@ -130,7 +128,6 @@ typedef enum {
 static const uint32 mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {
 	AUDIO_APLL1_DIV0,
 	AUDIO_APLL2_DIV0,
-	AUDIO_APLL12_DIV0,
 	AUDIO_APLL12_DIV1,
 	AUDIO_APLL12_DIV2,
 	AUDIO_APLL12_DIV3,
@@ -140,7 +137,7 @@ static const uint32 mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {
 
 enum audio_system_clock_type {
 	CLOCK_AFE = 0,
-/*	CLOCK_I2S,*/
+	CLOCK_I2S,
 	CLOCK_DAC,
 	CLOCK_DAC_PREDIS,
 	CLOCK_ADC,
@@ -149,25 +146,17 @@ enum audio_system_clock_type {
 	CLOCK_APLL24M,
 	CLOCK_APLL1_TUNER,
 	CLOCK_APLL2_TUNER,
-/*	CLOCK_TDM,*/
-	CLOCK_ADC_HIRES,
-	CLOCK_ADC_HIRES_TML,
+	CLOCK_APLL1_DIV0,
+	CLOCK_APLL2_DIV0,
 	CLOCK_SCP_SYS_AUD,
 	CLOCK_INFRA_SYS_AUDIO,
-	CLOCK_INFRA_SYS_AUDIO_26M,
-	CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP,
-	CLOCK_INFRA_ANC_MD32,
-	CLOCK_INFRA_ANC_MD32_32K,
+	CLOCK_PERI_AUDIO26M,
 	CLOCK_TOP_AUD_MUX1,
 	CLOCK_TOP_AUD_MUX2,
 	CLOCK_TOP_AD_APLL1_CK,
 	CLOCK_TOP_AD_APLL2_CK,
-	CLOCK_MUX_AUDIO,
-	CLOCK_TOP_SYSPLL3_D4,
 	CLOCK_MUX_AUDIOINTBUS,
 	CLOCK_TOP_SYSPLL1_D4,
-	CLOCK_TOP_MUX_ANC_MD32,
-	CLOCK_TOP_SYSPLL1_D2,
 	CLOCK_APMIXED_APLL1_CK,
 	CLOCK_APMIXED_APLL2_CK,
 	CLOCK_CLK26M,
@@ -183,36 +172,28 @@ struct audio_clock_attr {
 
 static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_AFE] = {"aud_afe_clk", false, false, NULL},
-/*	[CLOCK_I2S] = {"aud_i2s_clk", false, false, NULL},*/		/* AudDrv_I2S_Clk_On, suspend */
-	[CLOCK_DAC] = {"aud_dac_clk", false, false, NULL},			/* AudDrv_Clk_On only */
-	[CLOCK_DAC_PREDIS] = {"aud_dac_predis_clk", false, false, NULL},	/* AudDrv_Clk_On only */
-	[CLOCK_ADC] = {"aud_adc_clk", false, false, NULL},			/* AudDrv_ADC_Clk_On only */
-	[CLOCK_TML] = {"aud_tml_clk", false, false, NULL},			/* NOT USED */
+	[CLOCK_I2S] = {"aud_i2s_clk", false, false, NULL},
+	[CLOCK_DAC] = {"aud_dac_clk", false, false, NULL},
+	[CLOCK_DAC_PREDIS] = {"aud_dac_predis_clk", false, false, NULL},
+	[CLOCK_ADC] = {"aud_adc_clk", false, false, NULL},
+	[CLOCK_TML] = {"aud_tml_clk", false, false, NULL},
 	[CLOCK_APLL22M] = {"aud_apll22m_clk", false, false, NULL},
 	[CLOCK_APLL24M] = {"aud_apll24m_clk", false, false, NULL},
 	[CLOCK_APLL1_TUNER] = {"aud_apll1_tuner_clk", false, false, NULL},
 	[CLOCK_APLL2_TUNER] = {"aud_apll2_tuner_clk", false, false, NULL},
-/*	[CLOCK_TDM] = {"aud_tdm_clk", false, false, NULL},*/
-	[CLOCK_ADC_HIRES] = {"aud_adc_hires_clk", false, false, NULL}, /* use this clock when HIRES */
-	[CLOCK_ADC_HIRES_TML] = {"aud_adc_hires_tml_clk", false, false, NULL}, /* use this clock when HIRES */
-	[CLOCK_SCP_SYS_AUD] = {"scp_sys_audio", false, false, NULL},
+	[CLOCK_APLL1_DIV0] = {"aud_apll1_div0_clk", false, false, NULL},
+	[CLOCK_APLL2_DIV0] = {"aud_apll2_div0_clk", false, false, NULL},
+	[CLOCK_SCP_SYS_AUD] = {"scp_sys_aud", false, false, NULL},
 	[CLOCK_INFRA_SYS_AUDIO] = {"aud_infra_clk", false, false, NULL},
-	[CLOCK_INFRA_SYS_AUDIO_26M] = {"aud_infra_26m", false, false, NULL},
-	[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP] = {"aud_infra_26m_pad_top", false, false, NULL},
-	[CLOCK_INFRA_ANC_MD32] = {"aud_infra_anc_md32", false, false, NULL},
-	[CLOCK_INFRA_ANC_MD32_32K] = {"aud_infra_anc_md32_32k", false, false, NULL},
-	[CLOCK_TOP_AUD_MUX1] = {"aud_mux1_clk", false, false, NULL},		/* select from 26 or apll1 */
-	[CLOCK_TOP_AUD_MUX2] = {"aud_mux2_clk", false, false, NULL},		/* select from 26 or apll2 */
-	[CLOCK_TOP_AD_APLL1_CK] = {"top_ad_apll1_clk", false, false, NULL},	/* parent of TOP_AUD_MUX1 */
+	[CLOCK_PERI_AUDIO26M] = {"aud_peri_26m_clk", false, false, NULL},
+	[CLOCK_TOP_AUD_MUX1] = {"aud_mux1_clk", false, false, NULL},
+	[CLOCK_TOP_AUD_MUX2] = {"aud_mux2_clk", false, false, NULL},
+	[CLOCK_TOP_AD_APLL1_CK] = {"top_ad_apll1_clk", false, false, NULL},
 	[CLOCK_TOP_AD_APLL2_CK] = {"top_ad_apll2_clk", false, false, NULL},
-	[CLOCK_MUX_AUDIO] = {"top_mux_audio", false, false, NULL},
-	[CLOCK_TOP_SYSPLL3_D4] = {"top_sys_pll3_d4", false, false, NULL},
-	[CLOCK_MUX_AUDIOINTBUS] = {"top_mux_audio_int", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
-	[CLOCK_TOP_SYSPLL1_D4] = {"top_sys_pll1_d4", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
-	[CLOCK_TOP_MUX_ANC_MD32] = {"top_mux_anc_md32", false, false, NULL},
-	[CLOCK_TOP_SYSPLL1_D2] = {"top_sys_pll1_d2", false, false, NULL},
-	[CLOCK_APMIXED_APLL1_CK] = {"apmixed_apll1_clk", false, false, NULL},	/* APLL rate */
-	[CLOCK_APMIXED_APLL2_CK] = {"apmixed_apll2_clk", false, false, NULL},	/* APLL rate */
+	[CLOCK_MUX_AUDIOINTBUS] = {"top_mux_audio_int", false, false, NULL},
+	[CLOCK_TOP_SYSPLL1_D4] = {"top_sys_pll1_d4", false, false, NULL},
+	[CLOCK_APMIXED_APLL1_CK] = {"apmixed_apll1_clk", false, false, NULL},
+	[CLOCK_APMIXED_APLL2_CK] = {"apmixed_apll2_clk", false, false, NULL},
 	[CLOCK_CLK26M] = {"top_clk26m_clk", false, false, NULL}
 };
 
@@ -310,7 +291,10 @@ void AudDrv_Clk_Power_On(void)
 	volatile uint32 val_tmp;
 
 	pr_debug("%s", __func__);
+#ifdef MT6757_READY
 	val_tmp = 0x3330000d;
+#endif
+	val_tmp = 0xd;
 	/*mt_reg_sync_writel(val_tmp, AFE_Register);*/
 }
 
@@ -402,63 +386,7 @@ EXIT:
 
 void AudDrv_AUD_Sel(int parentidx)
 {
-	int ret = 0;
-
-	if (parentidx == 1) {
-		if (aud_clks[CLOCK_MUX_AUDIO].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIO].clock);
-			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIO fail",
-				 __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIO fail",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIO].clock,
-				     aud_clks[CLOCK_TOP_SYSPLL3_D4].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
-			       aud_clks[CLOCK_TOP_SYSPLL3_D4].name, ret);
-			BUG();
-			goto EXIT;
-		}
-	} else if (parentidx == 0) {
-		if (aud_clks[CLOCK_MUX_AUDIO].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIO].clock);
-			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIO fail",
-				 __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIO fail",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIO].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
-			BUG();
-			goto EXIT;
-		}
-	}
-EXIT:
-	pr_debug("-%s()\n", __func__);
+	/* Keep for extension */
 }
 
 void AudDrv_Clk_On(void)
@@ -485,32 +413,26 @@ void AudDrv_Clk_On(void)
 			BUG();
 			goto EXIT;
 		}
-
+/* MT6755 CLOCK_PERI_AUDIO26M
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare) {
+*/
+		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare) {
+
+			/* MT6755 CLOCK_PERI_AUDIO26M
 			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clock);
+			*/
+			ret = clk_enable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
+					/* MT6755 CLOCK_PERI_AUDIO26M
 				       aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].name);
+					*/
+				       aud_clks[CLOCK_PERI_AUDIO26M].name);
 				BUG();
 				goto EXIT;
 			}
 		} else {
 			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_INFRA_SYS_AUDIO_26M fail\n",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP].name);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP fail\n",
 			       __func__);
 			BUG();
 			goto EXIT;
@@ -609,13 +531,10 @@ void AudDrv_Clk_Off(void)
 
 		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
-
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M_PAD_TOP].clock);
-
+		/* Disable 26M here?
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clock);
-
+		*/
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
@@ -623,6 +542,10 @@ void AudDrv_Clk_Off(void)
 		/* CLOCK_SCP_SYS_AUD is MTCMOS */
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
 			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+
+		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare)
+			clk_disable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
+
 		goto EXIT_SKIP_UNLOCK;
 #else
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
@@ -844,77 +767,12 @@ void AudDrv_ADC3_Clk_Off(void)
 
 void AudDrv_ADC_Hires_Clk_On(void)
 {
-	unsigned long flags;
-	int ret = 0;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-
-	if (Aud_ADC_HIRES_Clk_cntr == 0) {
-		PRINTK_AUDDRV("+AudDrv_ADC_Hires_Clk_On enable_clock ADC clk(%x)\n",
-			      Aud_ADC_HIRES_Clk_cntr);
-#ifdef PM_MANAGER_API
-		if (aud_clks[CLOCK_ADC_HIRES].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_ADC_HIRES].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock ADC_HIRES fail", __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error ADC_HIRES fail", __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		if (aud_clks[CLOCK_ADC_HIRES_TML].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_ADC_HIRES_TML].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock ADC_HIRES_TML fail", __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error ADC_HIRES_TML fail", __func__);
-			BUG();
-			goto EXIT;
-		}
-#else
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 16, 1 << 16);
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 17, 1 << 17);
-#endif
-	}
-	Aud_ADC_HIRES_Clk_cntr++;
-EXIT:
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	/* No Hires Clk in mt6757 */
 }
 
 void AudDrv_ADC_Hires_Clk_Off(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	Aud_ADC_HIRES_Clk_cntr--;
-	if (Aud_ADC_HIRES_Clk_cntr == 0) {
-		PRINTK_AUDDRV("+AudDrv_ADC_Hires_Clk_Off disable_clock ADC_HIRES clk(%x)\n",
-			      Aud_ADC_HIRES_Clk_cntr);
-		/* Afe_Set_Reg(AUDIO_TOP_CON0, 1 << 24 , 1 << 24); */
-#ifdef PM_MANAGER_API
-		if (aud_clks[CLOCK_ADC_HIRES_TML].clk_prepare)
-			clk_disable(aud_clks[CLOCK_ADC_HIRES_TML].clock);
-
-		if (aud_clks[CLOCK_ADC_HIRES].clk_prepare)
-			clk_disable(aud_clks[CLOCK_ADC_HIRES].clock);
-#else
-		Afe_Set_Reg(AUDIO_TOP_CON1, 1 << 17, 1 << 17);
-		Afe_Set_Reg(AUDIO_TOP_CON1, 1 << 16, 1 << 16);
-#endif
-	}
-	if (Aud_ADC_HIRES_Clk_cntr < 0) {
-		PRINTK_AUDDRV("!! AudDrv_ADC_Hires_Clk_Off, Aud_ADC_Clk_cntr<0 (%d)\n",
-			      Aud_ADC_HIRES_Clk_cntr);
-		Aud_ADC_HIRES_Clk_cntr = 0;
-	}
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	/* No Hires Clk in mt6757 */
 }
 
 
@@ -1335,40 +1193,18 @@ EXPORT_SYMBOL(AudDrv_I2S_Clk_Off);
   *****************************************************************************/
 void aud_top_con_pdn_tdm_ck(bool _pdn)
 {
-	if (_pdn)
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 20, 0x1 << 20); /* power off I2S clock */
-	else
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x0 << 20, 0x1 << 20); /* power on I2S clock */
+	/* mt6757 no TDM */
 }
 
 void AudDrv_TDM_Clk_On(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	if (Aud_TDM_Clk_cntr == 0)
-		aud_top_con_pdn_tdm_ck(false); /* enable HDMI CK */
-
-	Aud_TDM_Clk_cntr++;
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	/* mt6757 no TDM */
 }
 EXPORT_SYMBOL(AudDrv_TDM_Clk_On);
 
 void AudDrv_TDM_Clk_Off(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	Aud_TDM_Clk_cntr--;
-	if (Aud_TDM_Clk_cntr == 0) {
-		aud_top_con_pdn_tdm_ck(true); /* disable HDMI CK */
-	} else if (Aud_TDM_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("!! %s(), Aud_TDM_Clk_cntr<0 (%d)\n",
-				 __func__, Aud_TDM_Clk_cntr);
-		AUDIO_ASSERT(true);
-		Aud_TDM_Clk_cntr = 0;
-	}
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	/* mt6757 no TDM */
 }
 EXPORT_SYMBOL(AudDrv_TDM_Clk_Off);
 
@@ -1564,16 +1400,19 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 
 void AudDrv_HDMI_Clk_On(void)
 {
+#ifdef _NON_COMMON_FEATURE_READY
 	PRINTK_AUD_CLK("+AudDrv_HDMI_Clk_On, Aud_I2S_Clk_cntr:%d\n", Aud_HDMI_Clk_cntr);
 	if (Aud_HDMI_Clk_cntr == 0) {
 		AudDrv_ANA_Clk_On();
 		AudDrv_Clk_On();
 	}
 	Aud_HDMI_Clk_cntr++;
+#endif
 }
 
 void AudDrv_HDMI_Clk_Off(void)
 {
+#ifdef _NON_COMMON_FEATURE_READY
 	PRINTK_AUD_CLK("+AudDrv_HDMI_Clk_Off, Aud_I2S_Clk_cntr:%d\n",
 		       Aud_HDMI_Clk_cntr);
 	Aud_HDMI_Clk_cntr--;
@@ -1587,6 +1426,7 @@ void AudDrv_HDMI_Clk_Off(void)
 		Aud_HDMI_Clk_cntr = 0;
 	}
 	PRINTK_AUD_CLK("-AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr:%d\n", Aud_HDMI_Clk_cntr);
+#endif
 }
 
 /*****************************************************************************
@@ -1608,9 +1448,6 @@ void AudDrv_Suspend_Clk_Off(void)
 	if (Aud_Core_Clk_cntr > 0) {
 		if (Aud_I2S_Clk_cntr > 0)
 			aud_top_con_pdn_i2s(true);
-
-		if (Aud_TDM_Clk_cntr > 0)
-			aud_top_con_pdn_tdm_ck(true);
 
 		if (Aud_ADC_Clk_cntr > 0) {
 			if (aud_clks[CLOCK_ADC].clk_prepare)
@@ -1646,6 +1483,19 @@ void AudDrv_Suspend_Clk_Off(void)
 				BUG();
 				goto EXIT;
 			}
+			/* Follow MT6755 */
+			if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
+				clk_disable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
+				pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL1_CK fail",
+				__func__);
+
+			} else {
+				pr_err
+				("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL1_CK fail",
+				     __func__);
+				BUG();
+				goto EXIT;
+			}
 		}
 		if (Aud_APLL24M_Clk_cntr > 0) {
 			if (aud_clks[CLOCK_APLL24M].clk_prepare)
@@ -1676,12 +1526,25 @@ void AudDrv_Suspend_Clk_Off(void)
 				BUG();
 				goto EXIT;
 			}
+			/* Follow MT6755 */
+			if (aud_clks[CLOCK_TOP_AD_APLL2_CK].clk_prepare) {
+				clk_disable(aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
+				pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL2_CK fail",
+					 __func__);
+			} else {
+				pr_err
+				("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL2_CK fail",
+				 __func__);
+				BUG();
+				goto EXIT;
+			}
 		}
-
+		/* Follow MT6755
 		if (Aud_AFE_Clk_cntr > 0) {
 			if (aud_clks[CLOCK_AFE].clk_prepare)
 				clk_disable(aud_clks[CLOCK_AFE].clock);
 		}
+		*/
 	}
 EXIT:
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1708,8 +1571,61 @@ void AudDrv_Suspend_Clk_On(void)
 			BUG();
 			goto EXIT;
 		}
+		/* Follow MT6755 */
+		if (Aud_I2S_Clk_cntr > 0) {
+			if (aud_clks[CLOCK_I2S].clk_prepare) {
+				ret = clk_enable(aud_clks[CLOCK_I2S].clock);
+				if (ret) {
+					pr_err
+					    ("%s [CCF]Aud enable_clock enable_clock aud_i2s_clk fail",
+					     __func__);
+					BUG();
+					goto EXIT;
+				}
+			} else {
+				pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_i2s_clk fail",
+				       __func__);
+				BUG();
+				goto EXIT;
+			}
+		}
+		/* Follow MT6755 */
+		if (Aud_ADC_Clk_cntr > 0) {
+			if (aud_clks[CLOCK_ADC].clk_prepare) {
+				ret = clk_enable(aud_clks[CLOCK_ADC].clock);
+				if (ret) {
+					pr_err
+					    ("%s [CCF]Aud enable_clock aud_adc_clk fail",
+					     __func__);
+					BUG();
+					goto EXIT;
+				}
+			} else {
+				pr_err("%s [CCF]clk_prepare error aud_adc_clk fail",
+				       __func__);
+				BUG();
+				goto EXIT;
+			}
+		}
 
 		if (Aud_APLL22M_Clk_cntr > 0) {
+			/* Follow MT6755 */
+			if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
+				ret = clk_enable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
+				if (ret) {
+					pr_err
+					("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL1_CK fail",
+					 __func__);
+					BUG();
+					goto EXIT;
+				}
+			} else {
+				pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL1_CK fail",
+				       __func__);
+				BUG();
+				goto EXIT;
+			}
+
 			if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 				if (ret) {
@@ -1735,7 +1651,7 @@ void AudDrv_Suspend_Clk_On(void)
 				BUG();
 				goto EXIT;
 			}
-/*
+			/* Follow MT6755 */
 			if (aud_clks[CLOCK_APMIXED_APLL1_CK].clk_prepare) {
 
 				ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 180633600);
@@ -1746,7 +1662,6 @@ void AudDrv_Suspend_Clk_On(void)
 					goto EXIT;
 				}
 			}
-*/
 
 			if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
@@ -1784,6 +1699,23 @@ void AudDrv_Suspend_Clk_On(void)
 		}
 
 		if (Aud_APLL24M_Clk_cntr > 0) {
+			/* Follow MT6755 */
+			if (aud_clks[CLOCK_TOP_AD_APLL2_CK].clk_prepare) {
+				ret = clk_enable(aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
+				if (ret) {
+					pr_err
+					("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL2_CK fail",
+					 __func__);
+					BUG();
+					goto EXIT;
+				}
+			} else {
+				pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL2_CK fail",
+				       __func__);
+				BUG();
+				goto EXIT;
+			}
+
 			if (aud_clks[CLOCK_TOP_AUD_MUX2].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX2].clock);
 				if (ret) {
@@ -1809,7 +1741,7 @@ void AudDrv_Suspend_Clk_On(void)
 				BUG();
 				goto EXIT;
 			}
-/*
+			/* Follow MT6755 */
 			if (aud_clks[CLOCK_APMIXED_APLL2_CK].clk_prepare) {
 
 				ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL2_CK].clock, 196607998);
@@ -1820,7 +1752,7 @@ void AudDrv_Suspend_Clk_On(void)
 					goto EXIT;
 				}
 			}
-*/
+
 			if (aud_clks[CLOCK_APLL24M].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL24M].clock);
 				if (ret) {
@@ -1856,12 +1788,9 @@ void AudDrv_Suspend_Clk_On(void)
 				goto EXIT;
 			}
 		}
-
+		/* Follow MT6755
 		if (Aud_I2S_Clk_cntr > 0)
 			aud_top_con_pdn_i2s(false);
-
-		if (Aud_TDM_Clk_cntr > 0)
-			aud_top_con_pdn_tdm_ck(false);
 
 		if (Aud_ADC_Clk_cntr > 0) {
 			if (aud_clks[CLOCK_ADC].clk_prepare) {
@@ -1877,6 +1806,7 @@ void AudDrv_Suspend_Clk_On(void)
 				goto EXIT;
 			}
 		}
+		*/
 	}
 EXIT:
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1930,129 +1860,12 @@ void AudDrv_Emi_Clk_Off(void)
 
 void AudDrv_ANC_Clk_On(void)
 {
-	int ret = 0;
-
-	mutex_lock(&auddrv_pmic_mutex);
-
-	if (Aud_ANC_Clk_cntr == 0) {
-		PRINTK_AUDDRV("+%s() Aud_ANC_Clk_cntr(%x)\n",
-			      __func__,
-			      Aud_ANC_Clk_cntr);
-		if (aud_clks[CLOCK_INFRA_ANC_MD32].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_ANC_MD32].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock %s fail",
-					__func__,
-					aud_clks[CLOCK_INFRA_ANC_MD32].name);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error enable_clock %s fail",
-				__func__,
-				aud_clks[CLOCK_INFRA_ANC_MD32].name);
-			BUG();
-			goto EXIT;
-		}
-		if (aud_clks[CLOCK_INFRA_ANC_MD32_32K].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_ANC_MD32_32K].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock %s fail",
-					__func__,
-					aud_clks[CLOCK_INFRA_ANC_MD32_32K].name);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error enable_clock %s fail",
-				__func__,
-				aud_clks[CLOCK_INFRA_ANC_MD32_32K].name);
-			BUG();
-			goto EXIT;
-		}
-
-		/* ANC_MD32 TOP CLOCK MUX SELECT SYSPLL1_D2*/
-		if (aud_clks[CLOCK_TOP_MUX_ANC_MD32].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_TOP_MUX_ANC_MD32].clock);
-			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_MUX_ANC_MD32 fail",
-				 __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_MUX_ANC_MD32 fail",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_ANC_MD32].clock,
-				     aud_clks[CLOCK_TOP_SYSPLL1_D2].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_MUX_ANC_MD32].name,
-			       aud_clks[CLOCK_TOP_SYSPLL1_D2].name, ret);
-			BUG();
-			goto EXIT;
-		}
-	}
-	Aud_ANC_Clk_cntr++;
-EXIT:
-	mutex_unlock(&auddrv_pmic_mutex);
+	/* MT6755 ANC? */
 }
 
 void AudDrv_ANC_Clk_Off(void)
 {
-	int ret = 0;
-
-	mutex_lock(&auddrv_pmic_mutex);
-	Aud_ANC_Clk_cntr--;
-	if (Aud_ANC_Clk_cntr == 0) {
-		PRINTK_AUDDRV("+%s(), Aud_ANC_Clk_cntr(%x)\n",
-			      __func__,
-			      Aud_ANC_Clk_cntr);
-		if (aud_clks[CLOCK_INFRA_ANC_MD32_32K].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_ANC_MD32_32K].clock);
-		if (aud_clks[CLOCK_INFRA_ANC_MD32].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_ANC_MD32].clock);
-
-		/* ANC_MD32 TOP CLOCK MUX SELECT 26M*/
-		if (aud_clks[CLOCK_TOP_MUX_ANC_MD32].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_TOP_MUX_ANC_MD32].clock);
-			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_MUX_ANC_MD32 fail",
-				 __func__);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_MUX_ANC_MD32 fail",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
-
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_ANC_MD32].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_MUX_ANC_MD32].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
-			BUG();
-			goto EXIT;
-		}
-	}
-	if (Aud_ANC_Clk_cntr < 0) {
-		PRINTK_AUDDRV("!! %s(), Aud_ADC_Clk_cntr (%d) < 0\n",
-			      __func__,
-			      Aud_ANC_Clk_cntr);
-		Aud_ANC_Clk_cntr = 0;
-	}
-EXIT:
-	mutex_unlock(&auddrv_pmic_mutex);
+	/* MT6755 ANC? */
 }
 
 uint32 GetApllbySampleRate(uint32 SampleRate)
@@ -2087,8 +1900,8 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 	case Soc_Aud_I2S3:
 		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 11, 1 << 11);
 		break;
-	case Soc_Aud_I2S4:
-		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 12, 1 << 12);
+	case Soc_Aud_I2SConnSys:
+		/* TODO: It may need to be implemented */
 		break;
 	}
 	pr_debug("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
@@ -2284,9 +2097,12 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
 		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 24, 0xff << 24);
 		break;
-	case Soc_Aud_I2S4:
-		I2s_ck_div = (I2S_APll / MCLKFS_HDMI / SampleRate) - 1;
-		Afe_Set_Reg(CLK_AUDDIV_2, I2s_ck_div << 0, 0xff << 0);
+	case Soc_Aud_I2SConnSys:
+		/* TODO: It may need to be implemented */
+		break;
+	default:
+		pr_warn("[AudioWarn] SetCLkMclk: I2snum = %d not recognized",
+				I2snum);
 		break;
 	}
 

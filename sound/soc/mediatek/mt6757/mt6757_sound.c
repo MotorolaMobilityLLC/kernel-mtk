@@ -745,59 +745,48 @@ bool CleanPreDistortion(void)
 	return true;
 }
 
+/* Follow 6755 */
 bool SetDLSrc2(uint32 SampleRate)
 {
-	uint32 AfeAddaDLSrc2Con0 = 0;
-	uint32 AfeAddaDLSrc2Con1 = 0;
+	uint32 AfeAddaDLSrc2Con0, AfeAddaDLSrc2Con1;
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
-	if (SampleRate >= 48000) {
-		pr_warn("%s(), enable fpga clock divide by 4", __func__);
-		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
-	}
-#endif
+	if (SampleRate == 8000)
+		AfeAddaDLSrc2Con0 = 0;
+	else if (SampleRate == 11025)
+		AfeAddaDLSrc2Con0 = 1;
+	else if (SampleRate == 12000)
+		AfeAddaDLSrc2Con0 = 2;
+	else if (SampleRate == 16000)
+		AfeAddaDLSrc2Con0 = 3;
+	else if (SampleRate == 22050)
+		AfeAddaDLSrc2Con0 = 4;
+	else if (SampleRate == 24000)
+		AfeAddaDLSrc2Con0 = 5;
+	else if (SampleRate == 32000)
+		AfeAddaDLSrc2Con0 = 6;
+	else if (SampleRate == 44100)
+		AfeAddaDLSrc2Con0 = 7;
+	else if (SampleRate == 48000)
+		AfeAddaDLSrc2Con0 = 8;
+	else
+		AfeAddaDLSrc2Con0 = 7;	/* Default 44100 */
 
-	if (SampleRate >= 96000)
-		AudDrv_AUD_Sel(1);
-
-	/* set input sampling rate */
-	AfeAddaDLSrc2Con0 = SampleRateTransform(SampleRate, Soc_Aud_Digital_Block_ADDA_DL) << 28;
-
-	/* set output mode */
-	if (SampleRate == 96000) {
-		AfeAddaDLSrc2Con0 |= (0x2 << 24);	/* UP_SAMPLING_RATE_X4 */
-		AfeAddaDLSrc2Con0 |= 1 << 14;
-	} else if (SampleRate == 192000) {
-		AfeAddaDLSrc2Con0 |= (0x1 << 24);	/* UP_SAMPLING_RATE_X2 */
-		AfeAddaDLSrc2Con0 |= 1 << 14;
+	/* ASSERT(0); */
+	if (AfeAddaDLSrc2Con0 == 0 || AfeAddaDLSrc2Con0 == 3) {
+		/* 8k or 16k voice mode */
+		AfeAddaDLSrc2Con0 =
+		    (AfeAddaDLSrc2Con0 << 28) | (0x03 << 24) | (0x03 << 11) | (0x01 << 5);
 	} else {
-		AfeAddaDLSrc2Con0 |= (0x3 << 24);	/* UP_SAMPLING_RATE_X8 */
+		AfeAddaDLSrc2Con0 = (AfeAddaDLSrc2Con0 << 28) | (0x03 << 24) | (0x03 << 11);
 	}
 
-	/* turn of mute function */
-	AfeAddaDLSrc2Con0 |= (0x03 << 11);
-
-	/* set voice input data if input sample rate is 8k or 16k */
-	if (SampleRate == 8000 || SampleRate == 16000)
-		AfeAddaDLSrc2Con0 |= 0x01 << 5;
-
-	if (SampleRate < 96000) {
-		AfeAddaDLSrc2Con1 = 0xf74f0000;	/* SA suggest apply -0.3db to audio/speech path */
-	} else {	/* SW workaround for HW issue */
 		/* SA suggest apply -0.3db to audio/speech path */
-		/* with */
-		/* DL gain set to half, 0xFFFF = 0dB -> 0x8000 = 0dB when 96k, 192k*/
-		AfeAddaDLSrc2Con1 = 0x7ba70000;
-	}
-
-	/* turn on down-link gain */
-	AfeAddaDLSrc2Con0 = AfeAddaDLSrc2Con0 | (0x01 << 1);
-
+	AfeAddaDLSrc2Con0 = AfeAddaDLSrc2Con0 | (0x01 << 1);	/* 2013.02.22 for voice mode degrade 0.3 db */
+	AfeAddaDLSrc2Con1 = 0xf74f0000;
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, AfeAddaDLSrc2Con0, MASK_ALL);
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, AfeAddaDLSrc2Con1, MASK_ALL);
 
 	return true;
-
 }
 
 bool SetIrqMcuCounterReg(uint32 Irqmode, uint32 Counter)

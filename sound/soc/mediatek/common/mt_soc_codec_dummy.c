@@ -276,6 +276,7 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 				 SNDRV_PCM_FMTBIT_U32_BE | SNDRV_PCM_FMTBIT_S32_BE),
 		     },
 	 },
+ #ifdef _NON_COMMON_FEATURE_READY
 	{
 	 .name = MT_SOC_CODEC_HDMI_DUMMY_DAI_NAME,
 	 .playback = {
@@ -294,6 +295,7 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
+#endif
 	{
 	 .name = MT_SOC_CODEC_I2S0_DUMMY_DAI_NAME,
 	 .playback = {

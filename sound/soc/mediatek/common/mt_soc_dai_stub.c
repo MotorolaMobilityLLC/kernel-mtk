@@ -231,6 +231,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_TDMRX_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.playback = {
 			.stream_name = MT_SOC_HDMI_STREAM_NAME,
@@ -253,6 +254,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_HDMI_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
+#endif
 	{
 		.playback = {
 			.stream_name = MT_SOC_VOICE_MD1_BT_STREAM_NAME,
@@ -691,6 +693,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_BTCVSD_RX_DAI_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.playback = {
 			.stream_name = MT_SOC_ANC_STREAM_NAME,
@@ -704,6 +707,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_ANC_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
+#endif
 	{
 		.playback = {
 			.stream_name = MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME,
