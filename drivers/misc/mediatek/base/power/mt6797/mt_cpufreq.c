@@ -162,9 +162,14 @@ static u32 enable_cpuhvfs = 2;
 static u32 enable_cpuhvfs = 1;
 #endif
 
-#ifdef CPUHVFS_HW_GOVERNOR
-static u32 enable_hw_gov = 1;
-#endif
+#define HWGOV_EN_FORCE		(1U << 0)
+#define HWGOV_EN_GAME		(1U << 1)	/* 0x2 */
+#define HWGOV_DIS_FORCE		(1U << 16)
+#define HWGOV_DIS_GAME		(1U << 17)	/* 0x20000 */
+#define HWGOV_EN_MASK		(0xffff << 0)
+
+static u32 hwgov_en_map;
+static u32 enable_hw_gov;
 #endif
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -174,6 +179,10 @@ static u32 enable_hw_gov = 1;
 ktime_t now[NR_SET_V_F];
 ktime_t delta[NR_SET_V_F];
 ktime_t max[NR_SET_V_F];
+ktime_t start_ktime_dvfs;
+ktime_t start_ktime_dvfs_cb;
+ktime_t dvfs_step_delta[16];
+ktime_t dvfs_cb_step_delta[16];
 
 /* used @ set_cur_volt_extBuck() */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
@@ -954,6 +963,7 @@ static void _mt_cpufreq_aee_init(void)
 	aee_rr_rec_cpu_dvfs_oppidx(0xFF);
 	aee_rr_rec_cpu_dvfs_status(0xF0);
 	aee_rr_rec_cpu_dvfs_step(0x0);
+	aee_rr_rec_cpu_dvfs_pbm_step(0x0);
 	aee_rr_rec_cpu_dvfs_cb(0x0);
 }
 #endif
@@ -1307,12 +1317,51 @@ static void aee_record_cpu_dvfs_out(enum mt_cpu_dvfs_id id)
 static void aee_record_cpu_dvfs_step(unsigned int step)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (step == 0)
+	int i;
+
+	if (step == 0) {
 		aee_rr_rec_cpu_dvfs_step(aee_rr_curr_cpu_dvfs_step() & 0xF0);
-	else
+		dvfs_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs);
+		start_ktime_dvfs.tv64 = 0;
+	} else if (step == 1) {
 		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | (step));
+		/* Clean dvfs_step_delta[16] to 0 */
+		for (i = 0; i < 16; i++)
+			dvfs_step_delta[i].tv64 = 0;
+		start_ktime_dvfs = ktime_get();
+		dvfs_step_delta[step] = ktime_get();
+	} else {
+		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | (step));
+		dvfs_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs);
+	}
 #endif
 }
+
+#define LOG_BUF_SIZE	256
+static void aee_record_cpu_dvfs_step_dump(void)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	int i;
+	char buf[LOG_BUF_SIZE];
+	char *ptr = buf;
+
+	for (i = 0; i < 16; i++)
+		ptr += snprintf(ptr, LOG_BUF_SIZE, "[%d]:%lld->", i, ktime_to_us(dvfs_step_delta[i]));
+	cpufreq_err("dvfs_step = %s\n", buf);
+#endif
+}
+
+#ifndef DISABLE_PBM_FEATURE
+static void aee_record_cpu_dvfs_pbm_step(unsigned int step)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (step == 0)
+		aee_rr_rec_cpu_dvfs_pbm_step(aee_rr_curr_cpu_dvfs_pbm_step() & 0xF0);
+	else
+		aee_rr_rec_cpu_dvfs_pbm_step((aee_rr_curr_cpu_dvfs_pbm_step() & 0xF0) | (step));
+#endif
+}
+#endif
 
 static void aee_record_cci_dvfs_step(unsigned int step)
 {
@@ -1327,10 +1376,35 @@ static void aee_record_cci_dvfs_step(unsigned int step)
 static void aee_record_cpu_dvfs_cb(unsigned int step)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (step == 0)
+	int i;
+
+	if (step == 0) {
 		aee_rr_rec_cpu_dvfs_cb(aee_rr_curr_cpu_dvfs_cb() & 0x0);
-	else
+		dvfs_cb_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs_cb);
+		start_ktime_dvfs_cb.tv64 = 0;
+	} else if (step == 1) {
 		aee_rr_rec_cpu_dvfs_cb((aee_rr_curr_cpu_dvfs_cb() & 0x0) | (step));
+		for (i = 0; i < 16; i++)
+			dvfs_cb_step_delta[i].tv64 = 0;
+		start_ktime_dvfs_cb = ktime_get();
+		dvfs_cb_step_delta[step] = ktime_get();
+	} else {
+		aee_rr_rec_cpu_dvfs_cb((aee_rr_curr_cpu_dvfs_cb() & 0x0) | (step));
+		dvfs_cb_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs_cb);
+	}
+#endif
+}
+
+static void aee_record_cpu_dvfs_cb_dump(void)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	int i;
+	char buf[LOG_BUF_SIZE];
+	char *ptr = buf;
+
+	for (i = 0; i < 16; i++)
+		ptr += snprintf(ptr, LOG_BUF_SIZE, "[%d]:%lld->", i, ktime_to_us(dvfs_cb_step_delta[i]));
+	cpufreq_err("cb_step = %s\n", buf);
 #endif
 }
 
@@ -2346,6 +2420,8 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 	unsigned int idvfs_avg = 0;
 #endif
 
+	aee_record_cpu_dvfs_pbm_step(1);
+
 	for_each_cpu_dvfs_only(i, p) {
 		arch_get_cluster_cpus(&dvfs_cpumask[i], i);
 		cpumask_and(&cpu_online_cpumask[i], &dvfs_cpumask[i], cpu_online_mask);
@@ -2355,11 +2431,16 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 
 #ifdef ENABLE_IDVFS
 		if (!disable_idvfs_flag && cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
-			aee_record_cpu_dvfs_cb(14);
+			aee_record_cpu_dvfs_pbm_step(2);
 			idvfs_avg = (BigiDVFSSWAvgStatus() / (10000 / IDVFS_FMAX));
+
+			if (idvfs_avg == 0)
+				ppm_data[i].freq_idx = -1;
+			else {
 			ppm_data[i].freq_idx = _search_available_freq_idx(p, idvfs_avg * 1000, CPUFREQ_RELATION_L);
 			cpufreq_ver("iDVFS average freq = %d, idx map to %d\n",
 				idvfs_avg, _search_available_freq_idx(p, idvfs_avg * 1000, CPUFREQ_RELATION_L));
+			}
 		} else
 		ppm_data[i].freq_idx = p_dvfs[i]->idx_opp_tbl;
 #else
@@ -2371,11 +2452,11 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 			i, ppm_data[i].core_num, ppm_data[i].freq_idx, ppm_data[i].volt);
 	}
 
-	aee_record_cpu_dvfs_cb(15);
+	aee_record_cpu_dvfs_pbm_step(3);
 
 	mt_ppm_dlpt_kick_PBM(ppm_data, (unsigned int)arch_get_nr_clusters());
 
-	aee_record_cpu_dvfs_cb(0);
+	aee_record_cpu_dvfs_pbm_step(0);
 #endif
 }
 #endif
@@ -2964,11 +3045,12 @@ static void set_cur_freq_hybrid(struct mt_cpu_dvfs *p, unsigned int cur_khz, uns
 	cluster = cpu_dvfs_to_cluster(p);
 	index = search_table_idx_by_freq(p, target_khz);
 
-	cpufreq_ver("cluster%u: target_khz = %u (%u), index = %d\n",
-		    cluster, target_khz, cur_khz, index);
-
 	r = cpuhvfs_set_target_opp(cluster, index, &volt_val);
-	BUG_ON(r);
+	if (r) {
+		cpufreq_err("cluster%u dvfs failed (%d): opp = %d, freq = %u (%u)\n",
+			    cluster, r, index, target_khz, cur_khz);
+		BUG();
+	}
 
 	volt = EXTBUCK_VAL_TO_VOLT(volt_val);
 	aee_record_cpu_volt(p, volt);
@@ -3681,7 +3763,7 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx,
 	unsigned int *target_cci_volt);
 
-static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id id, int new_opp_idx)
+static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id id, int new_opp_idx, int lock)
 {
 	unsigned long flags;
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
@@ -3713,10 +3795,15 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	id_cci = MT_CPU_DVFS_CCI;
 	p_cci = id_to_cpu_dvfs(id_cci);
 
-	cpufreq_lock(flags);
-
-	if (p->dvfs_disable_by_suspend || p->armpll_is_available != 1) {
-		cpufreq_unlock(flags);
+	if (lock)
+		cpufreq_lock(flags);
+	if (p->dvfs_disable_by_suspend || p->armpll_is_available != 1
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+	    || (enable_cpuhvfs && enable_hw_gov)
+#endif
+	) {
+		if (lock)
+			cpufreq_unlock(flags);
 		return;
 	}
 
@@ -3786,12 +3873,13 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 #endif
 
+	if (lock)
+		cpufreq_unlock(flags);
+
 #ifndef DISABLE_PBM_FEATURE
-	if (!ret && !p->dvfs_disable_by_suspend)
+	if (!ret && !p->dvfs_disable_by_suspend && lock)
 		_kick_PBM_by_cpu(p);
 #endif
-
-	cpufreq_unlock(flags);
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 }
@@ -3957,7 +4045,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				p->armpll_is_available = 1;
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 				if (enable_cpuhvfs && enable_hw_gov)
-					goto UNLOCK_OL;
+					goto UNLOCK_OL;		/* bypass specific adjustment */
 #endif
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_ONLINE)) {
 					aee_record_cpu_dvfs_cb(4);
@@ -4036,7 +4124,7 @@ UNLOCK_OL:
 
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 					if (enable_cpuhvfs && enable_hw_gov)
-						goto NEXT_DP;
+						goto NEXT_DP;	/* bypass specific adjustment */
 #endif
 					if (p_ll->armpll_is_available && (action == CPU_DOWN_PREPARE)) {
 						cur_volt = p_cci->ops->get_cur_volt(p_cci);
@@ -4114,7 +4202,7 @@ NEXT_DP:
 				p->armpll_is_available = 1;
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 				if (enable_cpuhvfs && enable_hw_gov)
-					goto UNLOCK_DF;
+					goto UNLOCK_DF;		/* bypass specific adjustment */
 #endif
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DOWN_FAILED)) {
 					new_opp_idx = BOOST_B_FREQ_IDX;
@@ -4160,7 +4248,7 @@ UNLOCK_DF:
 				cpufreq_lock(flags);
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 				if (enable_cpuhvfs && enable_hw_gov)
-					goto UNLOCK_DD;
+					goto UNLOCK_DD;		/* bypass specific adjustment */
 #endif
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DEAD)) {
 					if (p_ll->armpll_is_available) {
@@ -4197,14 +4285,11 @@ UNLOCK_DD:
 		if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN
 			|| action == CPU_DEAD || action == CPU_DEAD_FROZEN) {
 
-			cpufreq_lock(flags);
-
 			aee_record_cpu_dvfs_cb(13);
 
 			if (!p->dvfs_disable_by_suspend)
 				_kick_PBM_by_cpu(p);
 
-			cpufreq_unlock(flags);
 		}
 #endif
 	}
@@ -4431,6 +4516,41 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 
 	return new_cci_opp_idx;
 }
+#define PPM_DVFS_LATENCY_DEBUG 1
+
+#ifdef PPM_DVFS_LATENCY_DEBUG
+#include <linux/time.h>
+#include <linux/hrtimer.h>
+
+#define DVFS_LATENCY_TIMEOUT	(500)
+#define MS_TO_NS(x)	(x * 1E6L)
+
+static struct hrtimer ppm_hrtimer;
+
+static void ppm_main_start_hrtimer(void)
+{
+	ktime_t ktime = ktime_set(0, MS_TO_NS(DVFS_LATENCY_TIMEOUT));
+
+	hrtimer_start(&ppm_hrtimer, ktime, HRTIMER_MODE_REL);
+}
+
+static void ppm_main_cancel_hrtimer(void)
+{
+	hrtimer_cancel(&ppm_hrtimer);
+}
+
+static enum hrtimer_restart ppm_hrtimer_cb(struct hrtimer *timer)
+{
+	cpufreq_dbg("PPM callback over %d ms(cur:%lld), cpu_dvfs_step = 0x%x, cpu_dvfs_cb = 0x%x, pbm step = 0x%x\n",
+		DVFS_LATENCY_TIMEOUT, ktime_to_us(ktime_get()), aee_rr_curr_cpu_dvfs_step(),
+		aee_rr_curr_cpu_dvfs_cb(), aee_rr_curr_cpu_dvfs_pbm_step());
+	aee_record_cpu_dvfs_step_dump();
+	aee_record_cpu_dvfs_cb_dump();
+	/* BUG(); */
+
+	return HRTIMER_NORESTART;
+}
+#endif
 
 #if 1
 static void ppm_limit_callback(struct ppm_client_req req)
@@ -4441,11 +4561,14 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	struct mt_cpu_dvfs *p;
 	int ignore_ppm[NR_MT_CPU_DVFS] = {0};
 	unsigned int i;
+	int kick = 0;
 
 	if (dvfs_disable_flag)
 		return;
 
 	cpufreq_ver("get feedback from PPM module\n");
+
+	ppm_main_start_hrtimer();
 
 	cpufreq_lock(flags);
 	for (i = 0; i < ppm->cluster_num; i++) {
@@ -4480,7 +4603,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			cpuhvfs_set_opp_limit(cpu_dvfs_to_cluster(p),
 					      opp_limit_to_ceiling(p->idx_opp_ppm_limit),
 					      opp_limit_to_floor(p->idx_opp_ppm_base));
-			ignore_ppm[i] = 1;
+			ignore_ppm[i] = 1;	/* no SW DVFS request */
 		}
 #endif
 	}
@@ -4498,12 +4621,20 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		}
 	}
 
+	for_each_cpu_dvfs_only(i, p)
+		if (!ignore_ppm[i]) {
+			_mt_cpufreq_set(p->mt_policy, i, -1, 0);
+			kick = 1;
+		}
+
 	cpufreq_unlock(flags);
 
-	for_each_cpu_dvfs_only(i, p)
-		if (!ignore_ppm[i])
-			_mt_cpufreq_set(p->mt_policy, i, -1);
+	ppm_main_cancel_hrtimer();
 
+#ifndef DISABLE_PBM_FEATURE
+	if (!p->dvfs_disable_by_suspend && kick)
+		_kick_PBM_by_cpu(p);
+#endif
 }
 #endif
 
@@ -4552,7 +4683,7 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 	    )
 		return -EINVAL;
 
-	_mt_cpufreq_set(policy, id, new_opp_idx);
+	_mt_cpufreq_set(policy, id, new_opp_idx, 1);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
@@ -4753,7 +4884,7 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 {
 	int i, j;
-	unsigned int tf_sum, t_diff, avg_f, volt;
+	unsigned int tf_sum, t_diff, avg_f, volt = 0;
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
 	struct cpufreq_freqs freqs;
@@ -4811,8 +4942,12 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 
 		cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
 	}
-
 	cpufreq_unlock(flags);
+
+#ifndef DISABLE_PBM_FEATURE
+	if (!p->dvfs_disable_by_suspend && volt != 0 /* OPP changed */)
+		_kick_PBM_by_cpu(p);
+#endif
 }
 #endif
 
@@ -4986,6 +5121,12 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	_mt_cpufreq_aee_init();
+	start_ktime_dvfs.tv64 = 0;
+	start_ktime_dvfs_cb.tv64 = 0;
+	for (i = 0; i < 16; i++) {
+		dvfs_step_delta[i].tv64 = 0;
+		dvfs_cb_step_delta[i].tv64 = 0;
+	}
 #endif
 
 	/* Prepare OPP table for PPM in probe to avoid nested lock */
@@ -5047,6 +5188,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 		} else {
 			enable_cpuhvfs = 0;
+			enable_hw_gov = 0;
 		}
 	}
 #endif
@@ -5056,6 +5198,12 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 	mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback);
+
+#ifdef PPM_DVFS_LATENCY_DEBUG
+	hrtimer_init(&ppm_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	ppm_hrtimer.function = ppm_hrtimer_cb;
+#endif
+
 	pm_notifier(_mt_cpufreq_pm_callback, 0);
 	FUNC_EXIT(FUNC_LV_MODULE);
 
@@ -5066,7 +5214,12 @@ static int _mt_cpufreq_pdrv_remove(struct platform_device *pdev)
 {
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+#ifdef PPM_DVFS_LATENCY_DEBUG
+	hrtimer_cancel(&ppm_hrtimer);
+#endif
+
 	unregister_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
+
 #ifdef CONFIG_CPU_FREQ
 	cpufreq_unregister_driver(&_mt_cpufreq_driver);
 #endif
@@ -5411,6 +5564,51 @@ static ssize_t cpufreq_stress_test_proc_write(struct file *file, const char __us
 }
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+static int __switch_hwgov_on_off(unsigned int state)
+{
+#ifdef CPUHVFS_HW_GOVERNOR
+	int i, r;
+	struct init_sta sta;
+	struct mt_cpu_dvfs *p;
+
+	if (state) {
+		if (enable_hw_gov)
+			return 0;
+		if (!enable_cpuhvfs)
+			return -EPERM;
+
+		for (i = 0; i < NUM_CPU_CLUSTER; i++) {
+			p = cluster_to_cpu_dvfs(i);
+			sta.ceiling[i] = opp_limit_to_ceiling(p->idx_opp_ppm_limit);
+			sta.floor[i] = opp_limit_to_floor(p->idx_opp_ppm_base);
+		}
+
+		r = cpuhvfs_enable_hw_governor(&sta);
+		if (r)
+			return r;
+
+		enable_hw_gov = 1;
+	} else {
+		if (!enable_hw_gov)
+			return 0;
+
+		r = cpuhvfs_disable_hw_governor(&sta);
+		if (r)
+			return r;
+
+		for (i = 0; i < NUM_CPU_CLUSTER; i++) {
+			p = cluster_to_cpu_dvfs(i);
+			p->idx_opp_tbl = sta.opp[i];	/* sync OPP back */
+		}
+		enable_hw_gov = 0;
+	}
+
+	return 0;
+#else
+	return state ? -EPERM : 0;
+#endif
+}
+
 static int __switch_cpuhvfs_on_off(unsigned int state)
 {
 	int i, r;
@@ -5435,10 +5633,14 @@ static int __switch_cpuhvfs_on_off(unsigned int state)
 			if (state == 1)
 				p->ops->get_cur_volt = get_cur_volt_hybrid;
 		}
-		enable_cpuhvfs = (state == 1 ? state : 2);
+		enable_cpuhvfs = (state == 1 ? 1 : 2);
 	} else {
 		if (!enable_cpuhvfs)
 			return 0;
+
+		r = __switch_hwgov_on_off(0);
+		if (r)
+			return r;
 
 		r = cpuhvfs_stop_dvfsp_running();
 		if (r)
@@ -5484,6 +5686,57 @@ static ssize_t enable_cpuhvfs_proc_write(struct file *file, const char __user *u
 	cpufreq_lock(flags);
 	__switch_cpuhvfs_on_off(val);
 	cpufreq_unlock(flags);
+
+	return count;
+}
+
+static int enable_hw_gov_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%u (en_map 0x%x)\n", enable_hw_gov, hwgov_en_map);
+
+	return 0;
+}
+
+static ssize_t enable_hw_gov_proc_write(struct file *file, const char __user *ubuf, size_t count,
+					loff_t *ppos)
+{
+	int r;
+	unsigned int val;
+	unsigned long flags;
+
+	r = kstrtouint_from_user(ubuf, count, 0, &val);
+	if (r)
+		return -EINVAL;
+
+	switch (val) {
+	case HWGOV_EN_GAME:
+		cpufreq_lock(flags);
+		hwgov_en_map |= val;
+		if (!(hwgov_en_map & HWGOV_DIS_FORCE))
+			__switch_hwgov_on_off(1);
+		cpufreq_unlock(flags);
+		break;
+	case 1:		/* force on */
+		cpufreq_lock(flags);
+		hwgov_en_map = (hwgov_en_map & ~HWGOV_DIS_FORCE) | HWGOV_EN_FORCE;
+		__switch_hwgov_on_off(1);
+		cpufreq_unlock(flags);
+		break;
+
+	case HWGOV_DIS_GAME:
+		cpufreq_lock(flags);
+		hwgov_en_map &= ~(val >> 16);
+		if (!(hwgov_en_map & HWGOV_EN_MASK))
+			__switch_hwgov_on_off(0);
+		cpufreq_unlock(flags);
+		break;
+	case 0:		/* force off */
+		cpufreq_lock(flags);
+		hwgov_en_map = (hwgov_en_map & ~HWGOV_EN_FORCE) | HWGOV_DIS_FORCE;
+		__switch_hwgov_on_off(0);
+		cpufreq_unlock(flags);
+		break;
+	}
 
 	return count;
 }
@@ -5932,8 +6185,10 @@ static const struct file_operations name ## _proc_fops = {		\
 PROC_FOPS_RW(cpufreq_debug);
 PROC_FOPS_RW(cpufreq_stress_test);
 PROC_FOPS_RW(cpufreq_power_mode);
+
 #ifdef CONFIG_HYBRID_CPU_DVFS
 PROC_FOPS_RW(enable_cpuhvfs);
+PROC_FOPS_RW(enable_hw_gov);
 #endif
 PROC_FOPS_RO(cpufreq_ptpod_freq_volt);
 PROC_FOPS_RW(cpufreq_oppidx);
@@ -5964,6 +6219,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_power_mode),
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		PROC_ENTRY(enable_cpuhvfs),
+		PROC_ENTRY(enable_hw_gov),
 #endif
 		PROC_ENTRY(cpufreq_up_threshold_ll),
 		PROC_ENTRY(cpufreq_up_threshold_l),
@@ -6104,8 +6360,10 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
 	ret = cpuhvfs_module_init();
-	if (ret || disable_idvfs_flag || dvfs_disable_flag)
+	if (ret || disable_idvfs_flag || dvfs_disable_flag) {
 		enable_cpuhvfs = 0;
+		enable_hw_gov = 0;
+	}
 #endif
 
 #ifdef CONFIG_PROC_FS
