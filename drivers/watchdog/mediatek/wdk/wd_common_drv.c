@@ -11,6 +11,7 @@
 #include <linux/spinlock.h>
 #include <linux/rtc.h>
 #include <linux/cpu.h>
+#include <linux/jiffies.h>
 #include <mt-plat/aee.h>
 #include <ext_wd_drv.h>
 
@@ -60,7 +61,7 @@ static DEFINE_SPINLOCK(lock);
 struct task_struct *wk_tsk[16] = { 0 };	/* max cpu 16 */
 
 static unsigned long kick_bit;
-
+static unsigned long rtc_update;
 
 enum ext_wdt_mode g_wk_wdt_mode = WDT_DUAL_MODE;
 static struct wd_api *g_wd_api;
@@ -274,6 +275,8 @@ static int start_kicker_thread_with_default_setting(void)
 	g_need_config = 0;	/* Note, we DO NOT want to call configure function */
 
 	wdt_start = 1;		/* Start once only */
+	rtc_update = jiffies;	/* update rtc_update time base*/
+
 	spin_unlock(&lock);
 	start_kicker();
 
@@ -377,15 +380,33 @@ void wk_proc_exit(void)
 
 }
 
-static int kwdt_thread(void *arg)
+void kwdt_print_utc(void)
 {
-
-	struct sched_param param = {.sched_priority = 99 };
 	struct rtc_time tm;
 	struct timeval tv = { 0 };
 	/* android time */
 	struct rtc_time tm_android;
 	struct timeval tv_android = { 0 };
+
+	do_gettimeofday(&tv);
+	tv_android = tv;
+	rtc_time_to_tm(tv.tv_sec, &tm);
+	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
+	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
+	pr_debug
+	    ("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
+	     "android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
+	     current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
+	     tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+	     (unsigned int)tv.tv_usec, tm_android.tm_year + 1900,
+	     tm_android.tm_mon + 1, tm_android.tm_mday, tm_android.tm_hour,
+	     tm_android.tm_min, tm_android.tm_sec,
+	     (unsigned int)tv_android.tv_usec);
+}
+
+static int kwdt_thread(void *arg)
+{
+	struct sched_param param = {.sched_priority = 99 };
 	int cpu = 0;
 	int local_bit = 0, loc_need_config = 0, loc_timeout = 0;
 	struct wd_api *loc_wk_wdt = NULL;
@@ -461,20 +482,13 @@ static int kwdt_thread(void *arg)
 				msleep_interruptible(debug_sleep * 1000);
 				pr_debug("WD kicker woke up %d\n", debug_sleep);
 #endif
-				do_gettimeofday(&tv);
-				tv_android = tv;
-				rtc_time_to_tm(tv.tv_sec, &tm);
-				tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
-				rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-				pr_debug
-				    ("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
-				     "android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
-				     current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
-				     tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-				     (unsigned int)tv.tv_usec, tm_android.tm_year + 1900,
-				     tm_android.tm_mon + 1, tm_android.tm_mday, tm_android.tm_hour,
-				     tm_android.tm_min, tm_android.tm_sec,
-				     (unsigned int)tv_android.tv_usec);
+				/*limit the rtc time update frequency*/
+				spin_lock(&lock);
+				if (time_after(jiffies, rtc_update)) {
+					rtc_update = jiffies + (1 * HZ);
+					kwdt_print_utc();
+				}
+				spin_unlock(&lock);
 			}
 		}
 
