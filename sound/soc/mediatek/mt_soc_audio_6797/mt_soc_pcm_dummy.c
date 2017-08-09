@@ -66,50 +66,35 @@ static int mtk_afe_dummy_probe(struct snd_soc_platform *platform);
 
 static struct snd_soc_pcm_runtime *pruntimepcm;
 
+static struct snd_pcm_hardware mtk_dummy_hardware = {
+	.info = (SNDRV_PCM_INFO_MMAP |
+	SNDRV_PCM_INFO_INTERLEAVED |
+	SNDRV_PCM_INFO_RESUME |
+	SNDRV_PCM_INFO_MMAP_VALID),
+	.formats =   SND_SOC_ADV_MT_FMTS,
+	.rates =        SOC_HIGH_USE_RATE,
+	.rate_min =     SOC_HIGH_USE_RATE_MIN,
+	.rate_max =     SOC_HIGH_USE_RATE_MAX,
+	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
+	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
+	.buffer_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
+	.period_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
+	.periods_min =      SOC_NORMAL_USE_PERIODS_MIN,
+	.periods_max =     SOC_NORMAL_USE_PERIODS_MAX,
+	.fifo_size =        0,
+};
+/*
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
 	.list = soc_high_supported_sample_rates,
 	.mask = 0,
 };
-
+*/
 static int mtk_pcm_open(struct snd_pcm_substream *substream)
 {
-
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	int err = 0;
-	int ret = 0;
-
-	pr_warn("mtk_pcm_open\n");
-
-	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
-					 &constraints_sample_rates);
-	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
-
-
-	if (ret < 0)
-		pr_warn("snd_pcm_hw_constraint_integer failed\n");
-
-	/* print for hw pcm information */
-	pr_warn("mtk_pcm_open runtime rate = %d channels = %d\n", runtime->rate,
-	       runtime->channels);
-	if (substream->pcm->device & 1) {
-		runtime->hw.info &= ~SNDRV_PCM_INFO_INTERLEAVED;
-		runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
-	}
-	if (substream->pcm->device & 2)
-		runtime->hw.info &= ~(SNDRV_PCM_INFO_MMAP |
-				      SNDRV_PCM_INFO_MMAP_VALID);
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
-
-	if (err < 0) {
-		pr_err("mtk_dummypcm_close\n");
-		mtk_dummypcm_close(substream);
-		return err;
-	}
-	pr_warn("mtk_pcm_open return\n");
+	runtime->hw = mtk_dummy_hardware;
 	return 0;
 }
 

@@ -1720,6 +1720,9 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 {
 	uint32 Audio_I2S_Dac = 0;
 
+	/* force use 32bit for speaker codec */
+	I2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+
 	pr_warn("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
 		I2SWLen);
 	CleanPreDistortion();
