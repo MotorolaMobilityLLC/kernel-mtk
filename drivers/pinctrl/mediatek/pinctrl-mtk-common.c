@@ -1352,17 +1352,12 @@ static int mtk_pctrl_build_state(struct platform_device *pdev)
 	return 0;
 }
 
-static struct pinctrl_desc mtk_pctrl_desc = {
-	.confops	= &mtk_pconf_ops,
-	.pctlops	= &mtk_pctrl_ops,
-	.pmxops		= &mtk_pmx_ops,
-};
-
 int mtk_pctrl_init(struct platform_device *pdev,
 		const struct mtk_pinctrl_devdata *data,
 		struct regmap *regmap)
 {
 	struct pinctrl_pin_desc *pins;
+	struct pinctrl_desc *mtk_pctrl_desc;
 	struct mtk_pinctrl *pctl;
 	struct device_node *np = pdev->dev.of_node, *node;
 	struct property *prop;
@@ -1416,12 +1411,22 @@ int mtk_pctrl_init(struct platform_device *pdev,
 
 	for (i = 0; i < pctl->devdata->npins; i++)
 		pins[i] = pctl->devdata->pins[i].pin;
-	mtk_pctrl_desc.name = dev_name(&pdev->dev);
-	mtk_pctrl_desc.owner = THIS_MODULE;
-	mtk_pctrl_desc.pins = pins;
-	mtk_pctrl_desc.npins = pctl->devdata->npins;
+
+	mtk_pctrl_desc = devm_kzalloc(&pdev->dev, sizeof(*mtk_pctrl_desc),
+				GFP_KERNEL);
+	if (!mtk_pctrl_desc)
+		return -ENOMEM;
+
+	mtk_pctrl_desc->name = dev_name(&pdev->dev);
+	mtk_pctrl_desc->owner = THIS_MODULE;
+	mtk_pctrl_desc->pins = pins;
+	mtk_pctrl_desc->npins = pctl->devdata->npins;
+	mtk_pctrl_desc->confops = &mtk_pconf_ops;
+	mtk_pctrl_desc->pctlops = &mtk_pctrl_ops;
+	mtk_pctrl_desc->pmxops = &mtk_pmx_ops;
 	pctl->dev = &pdev->dev;
-	pctl->pctl_dev = pinctrl_register(&mtk_pctrl_desc, &pdev->dev, pctl);
+
+	pctl->pctl_dev = pinctrl_register(mtk_pctrl_desc, &pdev->dev, pctl);
 	if (!pctl->pctl_dev) {
 		dev_err(&pdev->dev, "couldn't register pinctrl driver\n");
 		return -EINVAL;
