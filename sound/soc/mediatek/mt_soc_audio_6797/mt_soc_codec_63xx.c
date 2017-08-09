@@ -648,7 +648,7 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 		/* Disable AUD_ZCD */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-ckt protection */
+		/* Disable headphone, voice and short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0700, 0xffff);
@@ -716,7 +716,7 @@ void OpenAnalogTrimHardware(bool enable)
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 		/* Disable AUD_ZCD */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-ckt protection */
+		/* Disable headphone, voice and short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 		/* Enable IBIST */
 		Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff);
@@ -839,7 +839,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 		/* Disable AUD_ZCD */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-ckt protection */
+		/* Disable headphone, voice and short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0001);
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x2000);
 		/* De_OSC of HP and output STBENH disable(470Ohm disconnect) */
@@ -1533,7 +1533,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Hp_Zcd_Enable(false);
 			/* Disable AUD_ZCD */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-			/* Disable headphone, voice and short-ckt protection */
+			/* Disable headphone, voice and short-circuit protection */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 			/* Enable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0700, 0xffff);
@@ -1749,7 +1749,7 @@ static void Voice_Amp_Change(bool enable)
 			Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 			/* Disable AUD_ZCD */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-			/* Disable HS and short-ckt protection. HS MUX is opened */
+			/* Disable HS and short-circuit protection. HS MUX is opened */
 
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 			/* Enable IBIST */
@@ -1839,7 +1839,7 @@ static void Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 		/* Disable AUD_ZCD */
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4028, 0xffff);
-		/* Disable line-out and short-ckt protection. LO MUX is opened */
+		/* Disable line-out and short-circuit protection. LO MUX is opened */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0800, 0xffff);
@@ -2192,9 +2192,9 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
 		/* Disable AUD_ZCD */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-ckt protection */
+		/* Disable headphone, voice and short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4028, 0xffff);
-		/* Disable line-out and short-ckt protection. LO MUX is opened */
+		/* Disable line-out and short-circuit protection. LO MUX is opened */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0F00, 0xffff);
@@ -3141,7 +3141,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x00e0, 0xfff0);
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
 
-			/* use 260k/130/65k@18bit Everest:LP uplink */
+			/* use 260k/130/65k@18bit mt6797:LP uplink */
 			if (SampleRate_VUL1 <= 48000) {
 				/* use cic out */
 				Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
