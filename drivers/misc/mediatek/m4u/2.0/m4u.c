@@ -2179,13 +2179,6 @@ static const struct file_operations m4u_fops = {
 	/* .mmap = NULL; */
 };
 
-#if !defined(CONFIG_MTK_CLKMGR)
-const char *smi_clk_name[] = {
-	"smi_common", "m4u_disp0_smi_larb0", "m4u_vdec0_vdec", "m4u_vdec1_larb",
-	"m4u_img_image_larb2_smi", "m4u_venc_venc", "m4u_venc_larb"
-};
-#endif
-
 static int m4u_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;

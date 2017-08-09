@@ -337,4 +337,8 @@ int m4u_sec_init(void);
 /* #include <mmprofile.h> */
 extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
+#if !defined(CONFIG_MTK_CLKMGR)
+extern const char *smi_clk_name[];
+#endif
+
 #endif

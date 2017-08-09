@@ -822,6 +822,13 @@ static int m4u_clock_off(void)
 }
 */
 
+#if !defined(CONFIG_MTK_CLKMGR)
+const char *smi_clk_name[] = {
+	"smi_common", "m4u_disp0_smi_larb0", "m4u_vdec0_vdec", "m4u_vdec1_larb",
+	"m4u_img_image_larb2_smi", "m4u_venc_venc", "m4u_venc_larb"
+};
+#endif
+
 static int larb_clock_on(int larb)
 {
 #if defined(CONFIG_MTK_CLKMGR)
