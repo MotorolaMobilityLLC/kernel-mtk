@@ -302,12 +302,12 @@
 
 		preloader-reserved-memory@44800000 {
 			compatible = "mediatek,preloader";
-			reg = <0 0x44800000 0 0x200000>;
+			reg = <0 0x44800000 0 0x100000>;
 		};
 
 		lk-reserved-memory@46000000 {
 			compatible = "mediatek,lk";
-			reg = <0 0x46000000 0 0x900000>;
+			reg = <0 0x46000000 0 0x400000>;
 		};
 
 		ram_console-reserved-memory@44400000 {
