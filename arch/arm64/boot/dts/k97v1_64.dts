@@ -1,0 +1,232 @@
+/dts-v1/;
+
+#include "mt6797.dtsi"
+
+/ {
+	memory@00000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x1e605000>;
+	};
+
+	/* chosen */
+	chosen {
+		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,0x4B434E loglevel=8";
+		/* fpga may has no lk, we need to specify display info here */
+		/* fb buffer is reserved using this dts by memory node above */
+		atag,videolfb-fb_base_h = <0x0>;
+		atag,videolfb-fb_base_l = <0x5e605000>;
+		atag,videolfb-islcmfound = <1>;
+		/* because no lk, so lcm is not inited */
+		atag,videolfb-islcm_inited = <0>;
+		atag,videolfb-fps= <6000>;
+		atag,videolfb-vramSize= <0x017bb000>;
+		atag,videolfb-lcmname= "nt35595_fhd_dsi_cmd_truly_nt50358_drv";
+	};
+
+	TOUCH@0 {
+	compatible = "mediatek,TPD";
+		eint-gpio = <139 1>;
+		rst-gpio = <144 1>;
+		interrupts = <139 2>;
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0 0 0xffffffff>;
+
+		i2c0@11007000 {
+			bq24261@6b {
+				compatible = "bq24261";
+				reg = <0x6b>;
+			};
+
+			mt6306@64 {
+				compatible = "mediatek,mt6306";
+				reg = <0x64>;
+			};
+		};
+		mmc0_pins_default: mmc0@default {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_rst {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_ds {
+				drive-strength = /bits/ 8 <2>;
+			};
+		};
+
+		mmc0_register_setting_default: mmc0@register_default {
+			dat0rddly      = /bits/ 8 <0>;
+			dat1rddly      = /bits/ 8 <0>;
+			dat2rddly      = /bits/ 8 <0>;
+			dat3rddly      = /bits/ 8 <0>;
+			dat4rddly      = /bits/ 8 <0>;
+			dat5rddly      = /bits/ 8 <0>;
+			dat6rddly      = /bits/ 8 <0>;
+			dat7rddly      = /bits/ 8 <0>;
+			datwrddly      = /bits/ 8 <0>;
+			cmdrrddly      = /bits/ 8 <0>;
+			cmdrddly       = /bits/ 8 <0>;
+			cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+			rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+			wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+
+			ett-hs200-cells = <12>;
+			ett-hs200-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL 0x0
+				OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_CKGEN_MSDC_DLY_SEL   0x0
+				OFFSET_MSDC_PATCH_BIT1	MSDC_PB1_CMD_RSP_TA_CNTR      0x1
+				OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL               0x0
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRDLY        0x7
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRRDLY       0xb
+				OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_WRDAT_CRCS_TA_CNTR   0x1
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATWRDLY       0xb
+				OFFSET_MSDC_IOCON			MSDC_IOCON_W_D0SPL            0x0
+				OFFSET_MSDC_DAT_RDDLY0		MSDC_DAT_RDDLY0_D0            0x7
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATRRDLY       0x9
+				OFFSET_MSDC_IOCON		MSDC_IOCON_R_D_SMPL           0x0>;
+
+			ett-hs400-cells = <8>;
+			ett-hs400-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL	0x0
+				OFFSET_MSDC_PATCH_BIT0		MSDC_PB0_CKGEN_MSDC_DLY_SEL		0x0
+				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY1	0x2
+				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY3	0x10
+				OFFSET_MSDC_PATCH_BIT1			MSDC_PB1_CMD_RSP_TA_CNTR	0x1
+				OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL				0x0
+				OFFSET_MSDC_PAD_TUNE0			MSDC_PAD_TUNE0_CMDRDLY		0x6
+				OFFSET_MSDC_PAD_TUNE0		MSDC_PAD_TUNE0_CMDRRDLY		0x6>;
+		};
+
+		mmc1_pins_default: mmc1@default {
+			   pins_cmd {
+				   drive-strength = /bits/ 8 <3>;
+			   };
+			   pins_dat {
+				   drive-strength = /bits/ 8 <3>;
+			   };
+			   pins_clk {
+				   drive-strength = /bits/ 8 <3>;
+			   };
+		};
+
+		mmc1_pins_sdr104: mmc1@sdr104 {
+			  pins_cmd {
+				  drive-strength = /bits/ 8 <2>;
+			  };
+			  pins_dat {
+				  drive-strength = /bits/ 8 <2>;
+			  };
+			  pins_clk {
+				  drive-strength = /bits/ 8 <3>;
+			  };
+		};
+
+		mmc1_pins_sdr50: mmc1@sdr50 {
+			 pins_cmd {
+				 drive-strength = /bits/ 8 <2>;
+			 };
+			 pins_dat {
+				 drive-strength = /bits/ 8 <2>;
+			 };
+			 pins_clk {
+				 drive-strength = /bits/ 8 <3>;
+			 };
+		};
+
+		mmc1_pins_ddr50: mmc1@ddr50 {
+			 pins_cmd {
+				 drive-strength = /bits/ 8 <2>;
+			 };
+			 pins_dat {
+				 drive-strength = /bits/ 8 <2>;
+			 };
+			 pins_clk {
+				 drive-strength = /bits/ 8 <3>;
+			 };
+		 };
+
+		mmc1_register_setting_default: mmc1@register_default {
+				       dat0rddly      = /bits/ 8 <0>;
+				       dat1rddly      = /bits/ 8 <0>;
+				       dat2rddly      = /bits/ 8 <0>;
+				       dat3rddly      = /bits/ 8 <0>;
+				       datwrddly      = /bits/ 8 <0>;
+				       cmdrrddly      = /bits/ 8 <0>;
+				       cmdrddly       = /bits/ 8 <0>;
+				       cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				       rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				       wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		};
+
+	};
+
+
+};
+
+&spi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	fpc1145@0 {
+		compatible = "fpc,fpc1020";
+		reg = <0>;
+		spi-max-frequency = <16000000>;
+		/* fpc,gpio_irq = <0>; */
+		fpc,gpio_reset = <1>;
+		/* fpc,gpio_cs = <85>; */
+		/* fpc,vddtx_mv = <3300>;  */
+		/* fpc,txout_boost_enable; */
+		/* fpc,force_hwid = <0x1234> */
+		/* vcc_spi-supply = <&pm8941_s3>; */
+		/* vdd_ana-supply = <&pm8941_lvs1>; */
+		/* vdd_io-supply = <&pm8941_lvs1>; */
+	};
+};
+
+/* mmc start */
+&mmc0 {
+		clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
+		bus-width = <8>;
+		max-frequency = <200000000>;
+		cap-mmc-highspeed;
+		msdc-sys-suspend;
+		/* mmc-ddr-1_8v; */
+		/* mmc-hs200-1_8v; */
+		/* mmc-hs400-1_8v; */
+		non-removable;
+		pinctl = <&mmc0_pins_default>;
+		register_setting = <&mmc0_register_setting_default>;
+		host_function = /bits/ 8 <MSDC_EMMC>;
+		bootable;
+		status = "okay";
+};
+
+&mmc1 {
+		clk_src = /bits/ 8 <MSDC1_CLKSRC_200MHZ>;
+		bus-width = <4>;
+		max-frequency = <200000000>;
+		msdc-sys-suspend;
+		cap-sd-highspeed;
+		sd-uhs-sdr12;
+		sd-uhs-sdr25;
+		sd-uhs-sdr50;
+		sd-uhs-sdr104;
+		sd-uhs-ddr50;
+		pinctl = <&mmc1_pins_default>;
+		pinctl_sdr104 = <&mmc1_pins_sdr104>;
+		pinctl_sdr50 = <&mmc1_pins_sdr50>;
+		pinctl_ddr50 = <&mmc1_pins_ddr50>;
+		register_setting = <&mmc1_register_setting_default>;
+		host_function = /bits/ 8 <MSDC_SD>;
+		cd_level = /bits/ 8 <MSDC_CD_LOW>;
+		status = "disabled";
+};
