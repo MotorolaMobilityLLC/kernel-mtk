@@ -160,7 +160,7 @@ static int mt_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_dl2_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_debug("%s rate= %u channels= %u period_size= %lu\n",
+	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
 		 __func__, runtime->rate, runtime->channels, runtime->period_size);
 
 	/* HW sequence: */
@@ -269,7 +269,7 @@ static int mt_pcm_dl2_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *const runtime = substream->runtime;
 	struct timespec curr_tstamp;
 
-	pr_debug("%s period = %lu,runtime->rate= %u, runtime->channels=%u\n",
+	pr_debug("%s period = %lu runtime->rate = %u runtime->channels = %u\n",
 		 __func__, runtime->period_size, runtime->rate, runtime->channels);
 
 	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_DL2, runtime->rate);

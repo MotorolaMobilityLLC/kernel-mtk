@@ -208,7 +208,7 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct mt_afe_irq_status irq_status;
 
-	pr_debug("%s stream = %d period = %lu runtime->rate= %u runtime->channels=%u\n",
+	pr_debug("%s stream = %d period = %lu rate = %u channels = %u\n",
 		 __func__, substream->stream, runtime->period_size, runtime->rate,
 		 runtime->channels);
 
