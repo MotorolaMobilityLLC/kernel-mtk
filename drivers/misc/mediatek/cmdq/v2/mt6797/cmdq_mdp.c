@@ -90,57 +90,57 @@ IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_COLOR);
 #undef IMP_ENABLE_MDP_HW_CLOCK
 #undef IMP_MDP_HW_CLOCK_IS_ENABLE
 
-const long cmdq_mdp_get_module_base_VA_MDP_RDMA0(void)
+long cmdq_mdp_get_module_base_VA_MDP_RDMA0(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RDMA0;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_RDMA1(void)
+long cmdq_mdp_get_module_base_VA_MDP_RDMA1(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RDMA1;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_RSZ0(void)
+long cmdq_mdp_get_module_base_VA_MDP_RSZ0(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RSZ0;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_RSZ1(void)
+long cmdq_mdp_get_module_base_VA_MDP_RSZ1(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RSZ1;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_RSZ2(void)
+long cmdq_mdp_get_module_base_VA_MDP_RSZ2(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RSZ2;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_TDSHP(void)
+long cmdq_mdp_get_module_base_VA_MDP_TDSHP(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_TDSHP;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_COLOR(void)
+long cmdq_mdp_get_module_base_VA_MDP_COLOR(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_COLOR;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_WROT0(void)
+long cmdq_mdp_get_module_base_VA_MDP_WROT0(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_WROT0;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_WROT1(void)
+long cmdq_mdp_get_module_base_VA_MDP_WROT1(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_WROT1;
 }
 
-const long cmdq_mdp_get_module_base_VA_MDP_WDMA(void)
+long cmdq_mdp_get_module_base_VA_MDP_WDMA(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_WDMA;
 }
 
-const long cmdq_mdp_get_module_base_VA_VENC(void)
+long cmdq_mdp_get_module_base_VA_VENC(void)
 {
 	return gCmdqMdpModuleBaseVA.VENC;
 }
@@ -779,17 +779,17 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 	return 0;
 }
 
-const uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void)
+uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void)
 {
 	return 0xF00;
 }
 
-const uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr(void)
+uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr(void)
 {
 	return 0xF00;
 }
 
-const uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
+uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 {
 	return 0xF00;
 }

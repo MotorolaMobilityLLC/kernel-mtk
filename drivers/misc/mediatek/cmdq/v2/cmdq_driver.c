@@ -459,7 +459,7 @@ static long cmdq_driver_process_command_request(cmdqCommandStruct *pCommand)
 	return 0;
 }
 
-const bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
+bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 {
 #ifdef CMDQ_USE_LEGACY
 	const unsigned int code = mt_get_chip_hw_code();

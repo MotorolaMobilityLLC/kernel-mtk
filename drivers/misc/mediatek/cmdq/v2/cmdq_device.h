@@ -39,21 +39,21 @@ bool cmdq_dev_device_clock_is_enable(struct clk *clk_module);
 
 struct device *cmdq_dev_get(void);
 /* interrupt index */
-const uint32_t cmdq_dev_get_irq_id(void);
-const uint32_t cmdq_dev_get_irq_secure_id(void);
+uint32_t cmdq_dev_get_irq_id(void);
+uint32_t cmdq_dev_get_irq_secure_id(void);
 /* GCE clock */
 void cmdq_dev_enable_gce_clock(bool enable);
 bool cmdq_dev_gce_clock_is_enable(void);
 /* virtual address */
-const long cmdq_dev_get_module_base_VA_GCE(void);
-const long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
-const long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
+long cmdq_dev_get_module_base_VA_GCE(void);
+long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
+long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
 /* Other modules information */
 void cmdq_dev_free_module_base_VA(const long VA);
-const long cmdq_dev_get_APXGPT2_count(void);
+long cmdq_dev_get_APXGPT2_count(void);
 /* physical address */
 void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *endPA);
-const long cmdq_dev_get_module_base_PA_GCE(void);
+long cmdq_dev_get_module_base_PA_GCE(void);
 /* GCE event */
 void cmdq_dev_init_event_table(struct device_node *node);
 void cmdq_dev_test_dts_correctness(void);

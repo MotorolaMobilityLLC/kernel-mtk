@@ -789,7 +789,7 @@ extern "C" {
  * Get and set HW event form device tree
  */
 	void cmdq_core_set_event_table(CMDQ_EVENT_ENUM event, const int32_t value);
-	const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event);
+	int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event);
 	const char *cmdq_core_get_event_name_ENUM(CMDQ_EVENT_ENUM event);
 	const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event);
 

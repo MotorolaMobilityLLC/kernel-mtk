@@ -115,8 +115,9 @@ static void testcase_scenario(void)
 		cmdqRecReset(hRec);
 		cmdqRecSetSecure(hRec, false);
 		ret = cmdqRecFlush(hRec);
-		cmdqRecDestroy(hRec);
 	}
+
+	cmdqRecDestroy(hRec);
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -151,8 +152,9 @@ static void testcase_sync_token(void)
 
 	CMDQ_MSG("%s\n", __func__);
 
+	cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &hRec);
+
 	do {
-		cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &hRec);
 		cmdqRecReset(hRec);
 		cmdqRecSetSecure(hRec, gCmdqTestSecure);
 
@@ -178,7 +180,6 @@ static void testcase_sync_token(void)
 	/* test for timeout */
 	/*  */
 	do {
-		cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &hRec);
 		cmdqRecReset(hRec);
 		cmdqRecSetSecure(hRec, gCmdqTestSecure);
 
@@ -187,7 +188,6 @@ static void testcase_sync_token(void)
 
 		CMDQ_MSG("start waiting\n");
 		ret = cmdqRecFlush(hRec);
-		cmdqRecDestroy(hRec);
 		CMDQ_MSG("waiting done\n");
 
 		/* clear token */
@@ -195,6 +195,8 @@ static void testcase_sync_token(void)
 
 		BUG_ON(ret >= 0);
 	} while (0);
+
+	cmdqRecDestroy(hRec);
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -468,7 +470,7 @@ static void testcase_multiple_async_request(void)
 		/* higher priority for later tasks */
 		hReq[i]->priority = i;
 
-		ret = _test_submit_async(hReq[i], &pTask[i]);
+		_test_submit_async(hReq[i], &pTask[i]);
 
 		CMDQ_MSG("======== create task[%2d]=0x%p done ========\n", i, pTask[i]);
 	}
@@ -530,9 +532,9 @@ static void testcase_async_request_partial_engine(void)
 
 		CMDQ_MSG("TEST: SUBMIT scneario %d\n", scn[i]);
 		ret = _test_submit_async(hReq, &pTasks[i]);
-		cmdqRecDestroy(hReq);
 	}
 
+	cmdqRecDestroy(hReq);
 
 	/* wait for task completion */
 	for (i = 0; i < (sizeof(scn) / sizeof(scn[0])); ++i)
@@ -819,8 +821,9 @@ static void testcase_prefetch_scenarios(void)
 
 		ret = cmdqRecFlush(hConfig);
 		BUG_ON(ret < 0);
-		cmdqRecDestroy(hConfig);
 	}
+
+	cmdqRecDestroy(hConfig);
 	CMDQ_MSG("%s END\n", __func__);
 }
 
@@ -1596,7 +1599,6 @@ static void testcase_prefetch(void)
 	cmdqRecFlushAsync(handle);
 	cmdqRecFlushAsync(handle);
 	msleep_interruptible(1000);
-	cmdqRecDestroy(handle);
 
 	/* use prefetch */
 	cmdqRecCreate(CMDQ_SCENARIO_DEBUG_PREFETCH, &handle);
@@ -1609,6 +1611,7 @@ static void testcase_prefetch(void)
 	cmdqRecFlushAsync(handle);
 	cmdqRecFlushAsync(handle);
 	msleep_interruptible(1000);
+
 	cmdqRecDestroy(handle);
 
 	/* value check */

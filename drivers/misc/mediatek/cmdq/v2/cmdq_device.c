@@ -31,32 +31,32 @@ struct device *cmdq_dev_get(void)
 	return gCmdqDev.pDev;
 }
 
-const uint32_t cmdq_dev_get_irq_id(void)
+uint32_t cmdq_dev_get_irq_id(void)
 {
 	return gCmdqDev.irqId;
 }
 
-const uint32_t cmdq_dev_get_irq_secure_id(void)
+uint32_t cmdq_dev_get_irq_secure_id(void)
 {
 	return gCmdqDev.irqSecId;
 }
 
-const long cmdq_dev_get_module_base_VA_GCE(void)
+long cmdq_dev_get_module_base_VA_GCE(void)
 {
 	return gCmdqDev.regBaseVA;
 }
 
-const long cmdq_dev_get_module_base_PA_GCE(void)
+long cmdq_dev_get_module_base_PA_GCE(void)
 {
 	return gCmdqDev.regBasePA;
 }
 
-const long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
+long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 {
 	return gMMSYS_CONFIG_Base_VA;
 }
 
-const long cmdq_dev_get_APXGPT2_count(void)
+long cmdq_dev_get_APXGPT2_count(void)
 {
 	return gAPXGPT2Count;
 }
@@ -86,7 +86,7 @@ void cmdq_dev_deinit_module_base_VA(void)
 	cmdq_mdp_get_func()->deinitModuleBaseVA();
 }
 
-const long cmdq_dev_alloc_module_base_VA_by_name(const char *name)
+long cmdq_dev_alloc_module_base_VA_by_name(const char *name)
 {
 	unsigned long VA;
 	struct device_node *node = NULL;
@@ -105,10 +105,16 @@ void cmdq_dev_free_module_base_VA(const long VA)
 long cmdq_dev_get_gce_node_PA(struct device_node *node, int index)
 {
 	struct resource res;
+	int status;
 	long regBasePA = 0L;
 
-	of_address_to_resource(node, index, &res);
-	regBasePA = (0L | res.start);
+	do {
+		status = of_address_to_resource(node, index, &res);
+		if (status < 0)
+			break;
+
+		regBasePA = (0L | res.start);
+	} while (0);
 
 	return regBasePA;
 }
@@ -186,7 +192,7 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 	int result = 0;
 
 	if (IS_ERR(clk_module))
-		return -EFAULT;
+		return result;
 
 	if (enable) {
 		result = clk_prepare_enable(clk_module);

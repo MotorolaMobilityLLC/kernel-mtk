@@ -177,17 +177,17 @@ int32_t cmdqMdpClockOff_virtual(uint64_t engineFlag)
 }
 
 /* test MDP clock function */
-const uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr_virtual(void)
+uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr_virtual(void)
 {
 	return 0;
 }
 
-const uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr_virtual(void)
+uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr_virtual(void)
 {
 	return 0;
 }
 
-const uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr_virtual(void)
+uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr_virtual(void)
 {
 	return 0;
 }

@@ -40,11 +40,11 @@ typedef void (*CmdqMdpDumpRSZ) (const unsigned long base, const char *label);
 typedef void (*CmdqMdpDumpTDSHP) (const unsigned long base, const char *label);
 
 /* test MDP clock function */
-typedef const uint32_t(*CmdqMdpRdmaGetRegOffsetSrcAddr) (void);
+typedef uint32_t(*CmdqMdpRdmaGetRegOffsetSrcAddr) (void);
 
-typedef const uint32_t(*CmdqMdpWrotGetRegOffsetDstAddr) (void);
+typedef uint32_t(*CmdqMdpWrotGetRegOffsetDstAddr) (void);
 
-typedef const uint32_t(*CmdqMdpWdmaGetRegOffsetDstAddr) (void);
+typedef uint32_t(*CmdqMdpWdmaGetRegOffsetDstAddr) (void);
 
 typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
@@ -110,9 +110,9 @@ extern "C" {
 
 	int32_t cmdqMdpClockOff(uint64_t engineFlag);
 
-	const uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void);
-	const uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr(void);
-	const uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void);
+	uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void);
+	uint32_t cmdq_mdp_wrot_get_reg_offset_dst_addr(void);
+	uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void);
 
 	void testcase_clkmgr_mdp(void);
 

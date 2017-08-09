@@ -217,13 +217,13 @@ uint64_t cmdq_virtual_flag_from_scenario_legacy(CMDQ_SCENARIO_ENUM scn)
 /*
  * GCE capability
  */
-const uint32_t cmdq_virtual_get_subsys_LSB_in_argA(void)
+uint32_t cmdq_virtual_get_subsys_LSB_in_argA(void)
 {
 	return 16;
 }
 
 /* HW thread related */
-const bool cmdq_virtual_is_a_secure_thread(const int32_t thread)
+bool cmdq_virtual_is_a_secure_thread(const int32_t thread)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	if ((CMDQ_MIN_SECURE_THREAD_ID <= thread) &&
@@ -234,7 +234,7 @@ const bool cmdq_virtual_is_a_secure_thread(const int32_t thread)
 	return false;
 }
 
-const bool cmdq_virtual_is_valid_notify_thread_for_secure_path(const int32_t thread)
+bool cmdq_virtual_is_valid_notify_thread_for_secure_path(const int32_t thread)
 {
 #if defined(CMDQ_SECURE_PATH_SUPPORT) && !defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
 	return (15 == thread) ? (true) : (false);
@@ -700,7 +700,7 @@ const char *cmdq_virtual_parse_module_from_reg_addr(uint32_t reg_addr)
 #endif
 }
 
-const int32_t cmdq_virtual_can_module_entry_suspend(EngineStruct *engineList)
+int32_t cmdq_virtual_can_module_entry_suspend(EngineStruct *engineList)
 {
 	int32_t status = 0;
 	int i;

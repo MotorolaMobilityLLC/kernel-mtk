@@ -4,13 +4,13 @@
 #include "cmdq_def.h"
 
 /* get subsys LSB in argA */
-typedef const uint32_t(*CmdqGetSubsysLSBArgA) (void);
+typedef uint32_t(*CmdqGetSubsysLSBArgA) (void);
 
 /* is a secure thread */
-typedef const bool(*CmdqIsSecureThread) (const int32_t thread);
+typedef bool(*CmdqIsSecureThread) (const int32_t thread);
 
 /* is valid notify thread for secure path */
-typedef const bool(*CmdqIsValidNotifyThread) (const int32_t thread);
+typedef bool(*CmdqIsValidNotifyThread) (const int32_t thread);
 
 /* is display scenario */
 typedef bool(*CmdqIsDispScenario) (const CMDQ_SCENARIO_ENUM scenario);
@@ -48,7 +48,7 @@ typedef const char *(*CmdqModuleFromEvent) (const int32_t event);
 typedef const char *(*CmdqParseModule) (uint32_t reg_addr);
 
 /* can module entry suspend */
-typedef const int32_t(*CmdqModuleEntrySuspend) (EngineStruct *engineList);
+typedef int32_t(*CmdqModuleEntrySuspend) (EngineStruct *engineList);
 
 /* print status clock */
 typedef ssize_t(*CmdqPrintStatusClock) (char *buf);
