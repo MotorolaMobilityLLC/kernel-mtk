@@ -12,12 +12,11 @@
 #include <linux/of_gpio.h>
 #include <linux/regulator/consumer.h>
 
-#include "bq24297.h"
+#include "bq24196.h"
 #include "mt_charging.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_reboot.h>
 #include <mt-plat/mt_boot.h>
-
 
 /**********************************************************
  *
@@ -28,9 +27,9 @@
 #define STATUS_OK	0
 #define STATUS_UNSUPPORTED	-1
 #define GETARRAYNUM(array) (sizeof(array)/sizeof(array[0]))
-#define bq24297_REG_NUM 11
-#define bq24297_SLAVE_ADDR_WRITE   0xD6
-#define bq24297_SLAVE_ADDR_READ    0xD7
+#define bq24196_REG_NUM 11
+#define bq24196_SLAVE_ADDR_WRITE   0xD6
+#define bq24196_SLAVE_ADDR_READ    0xD7
 
 
 /**********************************************************
@@ -40,12 +39,10 @@
   *********************************************************/
 
 static struct i2c_client *new_client;
-static struct switch_dev bq24297_reg09;
-static bool charging_type_det_done = true;
-static u8 bq24297_reg[bq24297_REG_NUM] = { 0 };
+static struct switch_dev bq24196_reg09;
+static u8 bq24196_reg[bq24196_REG_NUM] = { 0 };
 
-static u32 part_num;
-static u8 g_reg_value_bq24297;
+static u8 g_reg_value_bq24196;
 
 static const u32 VBAT_CV_VTH[] = {
 	3504000, 3520000, 3536000, 3552000,
@@ -59,7 +56,8 @@ static const u32 VBAT_CV_VTH[] = {
 	4016000, 4032000, 4048000, 4064000,
 	4080000, 4096000, 4112000, 4128000,
 	4144000, 4160000, 4176000, 4192000,
-	4208000, 4224000, 4240000, 4256000
+	4208000, 4224000, 4240000, 4256000,
+	4272000, 4288000, 4304000
 };
 
 static const u32 CS_VTH[] = {
@@ -75,8 +73,8 @@ static const u32 CS_VTH[] = {
 static const u32 INPUT_CS_VTH[] = {
 	CHARGE_CURRENT_100_00_MA, CHARGE_CURRENT_150_00_MA, CHARGE_CURRENT_500_00_MA,
 	CHARGE_CURRENT_900_00_MA,
-	CHARGE_CURRENT_1000_00_MA, CHARGE_CURRENT_1500_00_MA, CHARGE_CURRENT_1800_00_MA,
-	CHARGE_CURRENT_1800_00_MA
+	CHARGE_CURRENT_1000_00_MA, CHARGE_CURRENT_1500_00_MA, CHARGE_CURRENT_2000_00_MA,
+	CHARGE_CURRENT_2000_00_MA
 };
 
 /* for MT6391 */
@@ -91,31 +89,19 @@ static const u32 VCDT_HV_VTH[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-__attribute__ ((weak))
-void Charger_Detect_Init(void)
-{
-	pr_debug("need usb porting!\n");
-}
-
-__attribute__ ((weak))
-void Charger_Detect_Release(void)
-{
-	pr_debug("need usb porting!\n");
-}
-
 /**********************************************************
   *
-  *   [I2C Function For Read/Write bq24297]
+  *   [I2C Function For Read/Write bq24196]
   *
   *********************************************************/
-int bq24297_read_byte(u8 cmd, u8 *data)
+int bq24196_read_byte(u8 cmd, u8 *data)
 {
 	int ret;
 
 	struct i2c_msg msg[2];
 
 	if (!new_client) {
-		pr_err("error: access bq24297 before driver ready\n");
+		pr_err("error: access bq24196 before driver ready\n");
 		return 0;
 	}
 
@@ -136,13 +122,13 @@ int bq24297_read_byte(u8 cmd, u8 *data)
 	return ret == 2 ? 1 : 0;
 }
 
-int bq24297_write_byte(u8 cmd, u8 data)
+int bq24196_write_byte(u8 cmd, u8 data)
 {
 	char buf[2];
 	int ret;
 
 	if (!new_client) {
-		pr_err("error: access bq24297 before driver ready\n");
+		pr_err("error: access bq24196 before driver ready\n");
 		return 0;
 	}
 
@@ -157,30 +143,30 @@ int bq24297_write_byte(u8 cmd, u8 data)
 	return ret == 2 ? 1 : 0;
 }
 
-u32 bq24297_read_interface(u8 RegNum, u8 *val, u8 MASK, u8 SHIFT)
+u32 bq24196_read_interface(u8 RegNum, u8 *val, u8 MASK, u8 SHIFT)
 {
-	u8 bq24297_reg = 0;
+	u8 bq24196_reg = 0;
 	int ret = 0;
 
-	ret = bq24297_read_byte(RegNum, &bq24297_reg);
+	ret = bq24196_read_byte(RegNum, &bq24196_reg);
 
-	bq24297_reg &= (MASK << SHIFT);
-	*val = (bq24297_reg >> SHIFT);
+	bq24196_reg &= (MASK << SHIFT);
+	*val = (bq24196_reg >> SHIFT);
 
 	return ret;
 }
 
-u32 bq24297_config_interface(u8 RegNum, u8 val, u8 MASK, u8 SHIFT)
+u32 bq24196_config_interface(u8 RegNum, u8 val, u8 MASK, u8 SHIFT)
 {
-	u8 bq24297_reg = 0;
+	u8 bq24196_reg = 0;
 	int ret = 0;
 
-	ret = bq24297_read_byte(RegNum, &bq24297_reg);
+	ret = bq24196_read_byte(RegNum, &bq24196_reg);
 
-	bq24297_reg &= ~(MASK << SHIFT);
-	bq24297_reg |= (val << SHIFT);
+	bq24196_reg &= ~(MASK << SHIFT);
+	bq24196_reg |= (val << SHIFT);
 
-	ret = bq24297_write_byte(RegNum, bq24297_reg);
+	ret = bq24196_write_byte(RegNum, bq24196_reg);
 	return ret;
 }
 
@@ -191,39 +177,39 @@ u32 bq24297_config_interface(u8 RegNum, u8 val, u8 MASK, u8 SHIFT)
   *********************************************************/
 /* CON0---------------------------------------------------- */
 
-void bq24297_set_en_hiz(u32 val)
+void bq24196_set_en_hiz(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON0),
+	ret = bq24196_config_interface((u8) (bq24196_CON0),
 				       (u8) (val), (u8) (CON0_EN_HIZ_MASK), (u8) (CON0_EN_HIZ_SHIFT)
 	    );
 }
 
-void bq24297_set_vindpm(u32 val)
+void bq24196_set_vindpm(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON0),
+	ret = bq24196_config_interface((u8) (bq24196_CON0),
 				       (u8) (val), (u8) (CON0_VINDPM_MASK), (u8) (CON0_VINDPM_SHIFT)
 	    );
 }
 
-void bq24297_set_iinlim(u32 val)
+void bq24196_set_iinlim(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON0),
+	ret = bq24196_config_interface((u8) (bq24196_CON0),
 				       (u8) (val), (u8) (CON0_IINLIM_MASK), (u8) (CON0_IINLIM_SHIFT)
 	    );
 }
 
-u32 bq24297_get_iinlim(void)
+u32 bq24196_get_iinlim(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON0),
+	ret = bq24196_read_interface((u8) (bq24196_CON0),
 				     (&val), (u8) (CON0_IINLIM_MASK), (u8) (CON0_IINLIM_SHIFT)
 	    );
 	return val;
@@ -231,61 +217,61 @@ u32 bq24297_get_iinlim(void)
 
 /* CON1---------------------------------------------------- */
 
-void bq24297_set_reg_rst(u32 val)
+void bq24196_set_reg_rst(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_REG_RST_MASK), (u8) (CON1_REG_RST_SHIFT)
 	    );
 }
 
-void bq24297_set_wdt_rst(u32 val)
+void bq24196_set_wdt_rst(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_WDT_RST_MASK), (u8) (CON1_WDT_RST_SHIFT)
 	    );
 }
 
-void bq24297_set_otg_config(u32 val)
+void bq24196_set_otg_config(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_OTG_CONFIG_MASK), (u8) (CON1_OTG_CONFIG_SHIFT)
 	    );
 }
 
-void bq24297_set_chg_config(u32 val)
+void bq24196_set_chg_config(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_CHG_CONFIG_MASK), (u8) (CON1_CHG_CONFIG_SHIFT)
 	    );
 }
 
-void bq24297_set_sys_min(u32 val)
+void bq24196_set_sys_min(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_SYS_MIN_MASK), (u8) (CON1_SYS_MIN_SHIFT)
 	    );
 }
 
-void bq24297_set_boost_lim(u32 val)
+void bq24196_set_boost_lim(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON1),
+	ret = bq24196_config_interface((u8) (bq24196_CON1),
 				       (u8) (val),
 				       (u8) (CON1_BOOST_LIM_MASK), (u8) (CON1_BOOST_LIM_SHIFT)
 	    );
@@ -293,20 +279,20 @@ void bq24297_set_boost_lim(u32 val)
 
 /* CON2---------------------------------------------------- */
 
-void bq24297_set_ichg(u32 val)
+void bq24196_set_ichg(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON2),
+	ret = bq24196_config_interface((u8) (bq24196_CON2),
 				       (u8) (val), (u8) (CON2_ICHG_MASK), (u8) (CON2_ICHG_SHIFT)
 	    );
 }
 
-void bq24297_set_force_20pct(u32 val)
+void bq24196_set_force_20pct(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON2),
+	ret = bq24196_config_interface((u8) (bq24196_CON2),
 				       (u8) (val),
 				       (u8) (CON2_FORCE_20PCT_MASK), (u8) (CON2_FORCE_20PCT_SHIFT)
 	    );
@@ -314,102 +300,102 @@ void bq24297_set_force_20pct(u32 val)
 
 /* CON3---------------------------------------------------- */
 
-void bq24297_set_iprechg(u32 val)
+void bq24196_set_iprechg(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON3),
+	ret = bq24196_config_interface((u8) (bq24196_CON3),
 				       (u8) (val),
 				       (u8) (CON3_IPRECHG_MASK), (u8) (CON3_IPRECHG_SHIFT)
 	    );
 }
 
-void bq24297_set_iterm(u32 val)
+void bq24196_set_iterm(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON3),
+	ret = bq24196_config_interface((u8) (bq24196_CON3),
 				       (u8) (val), (u8) (CON3_ITERM_MASK), (u8) (CON3_ITERM_SHIFT)
 	    );
 }
 
 /* CON4---------------------------------------------------- */
 
-void bq24297_set_vreg(u32 val)
+void bq24196_set_vreg(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON4),
+	ret = bq24196_config_interface((u8) (bq24196_CON4),
 				       (u8) (val), (u8) (CON4_VREG_MASK), (u8) (CON4_VREG_SHIFT)
 	    );
 }
 
-void bq24297_set_batlowv(u32 val)
+void bq24196_set_batlowv(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON4),
+	ret = bq24196_config_interface((u8) (bq24196_CON4),
 				       (u8) (val),
 				       (u8) (CON4_BATLOWV_MASK), (u8) (CON4_BATLOWV_SHIFT)
 	    );
 }
 
-void bq24297_set_vrechg(u32 val)
+void bq24196_set_vrechg(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON4),
+	ret = bq24196_config_interface((u8) (bq24196_CON4),
 				       (u8) (val), (u8) (CON4_VRECHG_MASK), (u8) (CON4_VRECHG_SHIFT)
 	    );
 }
 
 /* CON5---------------------------------------------------- */
 
-void bq24297_set_en_term(u32 val)
+void bq24196_set_en_term(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON5),
+	ret = bq24196_config_interface((u8) (bq24196_CON5),
 				       (u8) (val),
 				       (u8) (CON5_EN_TERM_MASK), (u8) (CON5_EN_TERM_SHIFT)
 	    );
 }
 
-void bq24297_set_term_stat(u32 val)
+void bq24196_set_term_stat(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON5),
+	ret = bq24196_config_interface((u8) (bq24196_CON5),
 				       (u8) (val),
 				       (u8) (CON5_TERM_STAT_MASK), (u8) (CON5_TERM_STAT_SHIFT)
 	    );
 }
 
-void bq24297_set_watchdog(u32 val)
+void bq24196_set_watchdog(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON5),
+	ret = bq24196_config_interface((u8) (bq24196_CON5),
 				       (u8) (val),
 				       (u8) (CON5_WATCHDOG_MASK), (u8) (CON5_WATCHDOG_SHIFT)
 	    );
 }
 
-void bq24297_set_en_timer(u32 val)
+void bq24196_set_en_timer(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON5),
+	ret = bq24196_config_interface((u8) (bq24196_CON5),
 				       (u8) (val),
 				       (u8) (CON5_EN_TIMER_MASK), (u8) (CON5_EN_TIMER_SHIFT)
 	    );
 }
 
-void bq24297_set_chg_timer(u32 val)
+void bq24196_set_chg_timer(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON5),
+	ret = bq24196_config_interface((u8) (bq24196_CON5),
 				       (u8) (val),
 				       (u8) (CON5_CHG_TIMER_MASK), (u8) (CON5_CHG_TIMER_SHIFT)
 	    );
@@ -417,63 +403,63 @@ void bq24297_set_chg_timer(u32 val)
 
 /* CON6---------------------------------------------------- */
 
-void bq24297_set_treg(u32 val)
+void bq24196_set_treg(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON6),
+	ret = bq24196_config_interface((u8) (bq24196_CON6),
 				       (u8) (val), (u8) (CON6_TREG_MASK), (u8) (CON6_TREG_SHIFT)
 	    );
 }
 
 /* CON7---------------------------------------------------- */
-u32 bq24297_get_dpdm_status(void)
+u32 bq24196_get_dpdm_status(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON7),
+	ret = bq24196_read_interface((u8) (bq24196_CON7),
 				     (&val), (u8) (CON7_DPDM_EN_MASK), (u8) (CON7_DPDM_EN_SHIFT)
 	    );
 	return val;
 }
 
-void bq24297_set_dpdm_en(u32 val)
+void bq24196_set_dpdm_en(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON7),
+	ret = bq24196_config_interface((u8) (bq24196_CON7),
 				       (u8) (val),
 				       (u8) (CON7_DPDM_EN_MASK), (u8) (CON7_DPDM_EN_SHIFT)
 	    );
 }
 
-void bq24297_set_tmr2x_en(u32 val)
+void bq24196_set_tmr2x_en(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON7),
+	ret = bq24196_config_interface((u8) (bq24196_CON7),
 				       (u8) (val),
 				       (u8) (CON7_TMR2X_EN_MASK), (u8) (CON7_TMR2X_EN_SHIFT)
 	    );
 }
 
-void bq24297_set_batfet_disable(u32 val)
+void bq24196_set_batfet_disable(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON7),
+	ret = bq24196_config_interface((u8) (bq24196_CON7),
 				       (u8) (val),
 				       (u8) (CON7_BATFET_Disable_MASK),
 				       (u8) (CON7_BATFET_Disable_SHIFT)
 	    );
 }
 
-void bq24297_set_int_mask(u32 val)
+void bq24196_set_int_mask(u32 val)
 {
 	u32 ret = 0;
 
-	ret = bq24297_config_interface((u8) (bq24297_CON7),
+	ret = bq24196_config_interface((u8) (bq24196_CON7),
 				       (u8) (val),
 				       (u8) (CON7_INT_MASK_MASK), (u8) (CON7_INT_MASK_SHIFT)
 	    );
@@ -481,55 +467,55 @@ void bq24297_set_int_mask(u32 val)
 
 /* CON8---------------------------------------------------- */
 
-u32 bq24297_get_system_status(void)
+u32 bq24196_get_system_status(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON8), (&val), (u8) (0xFF), (u8) (0x0)
+	ret = bq24196_read_interface((u8) (bq24196_CON8), (&val), (u8) (0xFF), (u8) (0x0)
 	    );
 	return val;
 }
 
-u32 bq24297_get_vbus_stat(void)
+u32 bq24196_get_vbus_stat(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON8),
+	ret = bq24196_read_interface((u8) (bq24196_CON8),
 				     (&val), (u8) (CON8_VBUS_STAT_MASK), (u8) (CON8_VBUS_STAT_SHIFT)
 	    );
 	return val;
 }
 
-u32 bq24297_get_chrg_stat(void)
+u32 bq24196_get_chrg_stat(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON8),
+	ret = bq24196_read_interface((u8) (bq24196_CON8),
 				     (&val), (u8) (CON8_CHRG_STAT_MASK), (u8) (CON8_CHRG_STAT_SHIFT)
 	    );
 	return val;
 }
 
-u32 bq24297_get_pg_stat(void)
+u32 bq24196_get_pg_stat(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON8),
+	ret = bq24196_read_interface((u8) (bq24196_CON8),
 				     (&val), (u8) (CON8_PG_STAT_MASK), (u8) (CON8_PG_STAT_SHIFT)
 	    );
 	return val;
 }
 
-u32 bq24297_get_vsys_stat(void)
+u32 bq24196_get_vsys_stat(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON8),
+	ret = bq24196_read_interface((u8) (bq24196_CON8),
 				     (&val), (u8) (CON8_VSYS_STAT_MASK), (u8) (CON8_VSYS_STAT_SHIFT)
 	    );
 	return val;
@@ -537,12 +523,12 @@ u32 bq24297_get_vsys_stat(void)
 
 /* CON10---------------------------------------------------- */
 
-u32 bq24297_get_pn(void)
+u32 bq24196_get_pn(void)
 {
 	u32 ret = 0;
 	u8 val = 0;
 
-	ret = bq24297_read_interface((u8) (bq24297_CON10),
+	ret = bq24196_read_interface((u8) (bq24196_CON10),
 				     (&val), (u8) (CON10_PN_MASK), (u8) (CON10_PN_SHIFT)
 	    );
 	return val;
@@ -554,16 +540,7 @@ u32 bq24297_get_pn(void)
   *
   *********************************************************/
 
-u32 charging_value_to_parameter(const u32 *parameter, const u32 array_size, const u32 val)
-{
-	if (val < array_size)
-		return parameter[val];
-
-	battery_log(BAT_LOG_CRTI, "Can't find the parameter \r\n");
-	return parameter[0];
-}
-
-u32 charging_parameter_to_value(const u32 *parameter, const u32 array_size, const u32 val)
+static u32 charging_parameter_to_value(const u32 *parameter, const u32 array_size, const u32 val)
 {
 	u32 i;
 
@@ -604,7 +581,6 @@ static u32 bmt_find_closest_level(const u32 *pList, u32 number, u32 level)
 
 	battery_log(BAT_LOG_CRTI, "Can't find closest level, large value first \r\n");
 	return pList[number - 1];
-
 }
 
 static u32 charging_hw_init(void *data)
@@ -614,30 +590,30 @@ static u32 charging_hw_init(void *data)
 	upmu_set_rg_bc11_bb_ctrl(1);	/* BC11_BB_CTRL */
 	upmu_set_rg_bc11_rst(1);	/* BC11_RST */
 
-	bq24297_set_en_hiz(0x0);
-	bq24297_set_vindpm(0x9);	/* VIN DPM check 4.60V */
-	bq24297_set_reg_rst(0x0);
-	bq24297_set_wdt_rst(0x1);	/* Kick watchdog */
-	bq24297_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
+	bq24196_set_en_hiz(0x0);
+	bq24196_set_vindpm(0x9);	/* VIN DPM check 4.60V */
+	bq24196_set_reg_rst(0x0);
+	bq24196_set_wdt_rst(0x1);	/* Kick watchdog */
+	bq24196_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	bq24297_set_iprechg(0x1);	/* Precharge current 256mA */
+	bq24196_set_iprechg(0x1);	/* Precharge current 256mA */
 #else
-	bq24297_set_iprechg(0x3);	/* Precharge current 512mA */
+	bq24196_set_iprechg(0x3);	/* Precharge current 512mA */
 #endif
-	bq24297_set_iterm(0x0);	/* Termination current 128mA */
+	bq24196_set_iterm(0x0);	/* Termination current 128mA */
 
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	bq24297_set_vreg(0x2C);	/* VREG 4.208V */
+	bq24196_set_vreg(0x2C);	/* VREG 4.208V */
 #endif
-	bq24297_set_batlowv(0x1);	/* BATLOWV 3.0V */
-	bq24297_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
-	bq24297_set_en_term(0x1);	/* Enable termination */
-	bq24297_set_term_stat(0x0);	/* Match ITERM */
-	bq24297_set_watchdog(0x1);	/* WDT 40s */
+	bq24196_set_batlowv(0x1);	/* BATLOWV 3.0V */
+	bq24196_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
+	bq24196_set_en_term(0x1);	/* Enable termination */
+	bq24196_set_term_stat(0x0);	/* Match ITERM */
+	bq24196_set_watchdog(0x1);	/* WDT 40s */
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	bq24297_set_en_timer(0x0);	/* Disable charge timer */
+	bq24196_set_en_timer(0x0);	/* Disable charge timer */
 #endif
-	bq24297_set_int_mask(0x1);	/* Disable CHRG fault interrupt */
+	bq24196_set_int_mask(0x1);	/* Disable CHRG fault interrupt */
 
 	return status;
 }
@@ -648,7 +624,7 @@ static u32 charging_dump_register(void *data)
 
 	battery_log(BAT_LOG_CRTI, "charging_dump_register\r\n");
 
-	bq24297_dump_register();
+	bq24196_dump_register();
 
 	return status;
 }
@@ -659,10 +635,10 @@ static u32 charging_enable(void *data)
 	u32 enable = *(u32 *) (data);
 
 	if (true == enable) {
-		bq24297_set_en_hiz(0x0);
-		bq24297_set_chg_config(0x1);
+		bq24196_set_en_hiz(0x0);
+		bq24196_set_chg_config(0x1);
 	} else
-		bq24297_set_chg_config(0x0);
+		bq24196_set_chg_config(0x0);
 
 	return status;
 }
@@ -679,7 +655,7 @@ static u32 charging_set_cv_voltage(void *data)
 	}
 	register_value =
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH), cv_value);
-	bq24297_set_vreg(register_value);
+	bq24196_set_vreg(register_value);
 
 	return status;
 }
@@ -691,8 +667,8 @@ static u32 charging_get_current(void *data)
 	u8 ret_val = 0;
 	u8 ret_force_20pct = 0;
 
-	bq24297_read_interface(bq24297_CON2, &ret_val, CON2_ICHG_MASK, CON2_ICHG_SHIFT);
-	bq24297_read_interface(bq24297_CON2, &ret_force_20pct, CON2_FORCE_20PCT_MASK,
+	bq24196_read_interface(bq24196_CON2, &ret_val, CON2_ICHG_MASK, CON2_ICHG_SHIFT);
+	bq24196_read_interface(bq24196_CON2, &ret_force_20pct, CON2_FORCE_20PCT_MASK,
 			       CON2_FORCE_20PCT_SHIFT);
 
 	data_val = (ret_val * 64) + 512;
@@ -716,16 +692,16 @@ static u32 charging_set_current(void *data)
 	u32 current_value = *(u32 *) data;
 
 	if (current_value == 25600) {
-		bq24297_set_force_20pct(0x1);
-		bq24297_set_ichg(0xC);
+		bq24196_set_force_20pct(0x1);
+		bq24196_set_ichg(0xC);
 		return status;
 	}
-	bq24297_set_force_20pct(0x0);
+	bq24196_set_force_20pct(0x0);
 
 	array_size = GETARRAYNUM(CS_VTH);
 	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, current_value);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
-	bq24297_set_ichg(register_value);
+	bq24196_set_ichg(register_value);
 
 	return status;
 }
@@ -742,7 +718,7 @@ static u32 charging_set_input_current(void *data)
 	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, *(u32 *) data);
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_chr_current);
 
-	bq24297_set_iinlim(register_value);
+	bq24196_set_iinlim(register_value);
 	return status;
 }
 
@@ -750,7 +726,7 @@ static u32 charging_get_input_current(void *data)
 {
 	u32 register_value;
 
-	register_value = bq24297_get_iinlim();
+	register_value = bq24196_get_iinlim();
 	*(u32 *) data = INPUT_CS_VTH[register_value];
 	return STATUS_OK;
 }
@@ -760,7 +736,7 @@ static u32 charging_get_charging_status(void *data)
 	u32 status = STATUS_OK;
 	u32 ret_val;
 
-	ret_val = bq24297_get_chrg_stat();
+	ret_val = bq24196_get_chrg_stat();
 
 	if (ret_val == 0x3)
 		*(u32 *) data = true;
@@ -775,7 +751,7 @@ static u32 charging_reset_watch_dog_timer(void *data)
 	u32 status = STATUS_OK;
 
 	battery_log(BAT_LOG_FULL, "charging_reset_watch_dog_timer\r\n");
-	bq24297_set_wdt_rst(0x1);	/* Kick watchdog */
+	bq24196_set_wdt_rst(0x1);	/* Kick watchdog */
 	return status;
 }
 
@@ -829,116 +805,11 @@ static u32 charging_get_charger_det_status(void *data)
 static u32 charging_get_charger_type(void *data)
 {
 	u32 status = STATUS_OK;
-	int charger_type = CHARGER_UNKNOWN;
-	u32 ret_val;
-	u32 vbus_state;
-	u8 reg_val = 0;
-	u32 count = 0;
 
 #if 0				/*defined(CONFIG_POWER_EXT) */
-	*(int *)(data) = STANDARD_HOST;
+	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 #else
-
-	charging_type_det_done = false;
-
-	/* for BQ24296 */
-	if (part_num == 0x1) {
-		*(int *)(data) = hw_charger_type_detection();
-		charging_type_det_done = true;
-		return status;
-	}
-
-	battery_log(BAT_LOG_CRTI, "use BQ24297 charger detection\r\n");
-
-	Charger_Detect_Init();
-
-	while (bq24297_get_pg_stat() == 0) {
-		battery_log(BAT_LOG_CRTI, "wait pg_state ready.\n");
-		count++;
-		msleep(20);
-		if (count > 500) {
-			pr_warn("wait BQ24297 pg_state ready timeout!\n");
-			break;
-		}
-
-		if (!upmu_get_rgs_chrdet())
-			break;
-	}
-
-	ret_val = bq24297_get_vbus_stat();
-
-	/* if detection is not finished or non-standard charger detected. */
-	if (ret_val == 0x0) {
-		count = 0;
-		bq24297_set_dpdm_en(1);
-		while (bq24297_get_dpdm_status() == 1) {
-			count++;
-			mdelay(1);
-			battery_log(BAT_LOG_CRTI, "polling BQ24297 charger detection\r\n");
-			if (count > 1000)
-				break;
-			if (!upmu_get_rgs_chrdet())
-				break;
-		}
-	}
-
-	vbus_state = bq24297_get_vbus_stat();
-
-	/* We might not be able to switch on RG_USB20_BC11_SW_EN in time. */
-	/* We detect again to confirm its type */
-	if (upmu_get_rgs_chrdet()) {
-		count = 0;
-		bq24297_set_dpdm_en(1);
-		while (bq24297_get_dpdm_status() == 1) {
-			count++;
-			mdelay(1);
-			battery_log(BAT_LOG_CRTI, "polling again BQ24297 charger detection\r\n");
-			if (count > 1000)
-				break;
-			if (!upmu_get_rgs_chrdet())
-				break;
-		}
-	}
-
-	ret_val = bq24297_get_vbus_stat();
-
-	if (ret_val != vbus_state)
-		pr_warn("Update VBUS state from %d to %d!\n", vbus_state, ret_val);
-
-	switch (ret_val) {
-	case 0x1:
-		charger_type = STANDARD_HOST;
-		break;
-	case 0x2:
-		charger_type = STANDARD_CHARGER;
-		break;
-	default:
-		charger_type = NONSTANDARD_CHARGER;
-		break;
-	}
-
-	if (charger_type == STANDARD_CHARGER) {
-		bq24297_read_interface(bq24297_CON0, &reg_val, CON0_IINLIM_MASK, CON0_IINLIM_SHIFT);
-		if (reg_val < 0x4) {
-			battery_log(BAT_LOG_CRTI,
-				    "Set to Non-standard charger due to 1A input limit.\r\n");
-			charger_type = NONSTANDARD_CHARGER;
-		} else if (reg_val == 0x4) {	/* APPLE_1_0A_CHARGER - 1A apple charger */
-			battery_log(BAT_LOG_CRTI, "Set to APPLE_1_0A_CHARGER.\r\n");
-			charger_type = APPLE_1_0A_CHARGER;
-		} else if (reg_val == 0x6) {	/* APPLE_2_1A_CHARGER,  2.1A apple charger */
-			battery_log(BAT_LOG_CRTI, "Set to APPLE_2_1A_CHARGER.\r\n");
-			charger_type = APPLE_2_1A_CHARGER;
-		}
-	}
-
-	Charger_Detect_Release();
-
-	pr_warn("charging_get_charger_type = %d\n", charger_type);
-
-	*(int *)(data) = charger_type;
-
-	charging_type_det_done = true;
+	*(int *)(data) = hw_charger_type_detection();
 #endif
 	return status;
 }
@@ -954,7 +825,6 @@ static u32 charging_get_is_pcm_timer_trigger(void *data)
 
 	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
 
-	*(bool *) (data) = false;
 	return status;
 }
 
@@ -992,9 +862,9 @@ static u32 charging_enable_powerpath(void *data)
 	u32 enable = *(u32 *) (data);
 
 	if (true == enable)
-		bq24297_set_en_hiz(0x0);
+		bq24196_set_en_hiz(0x0);
 	else
-		bq24297_set_en_hiz(0x1);
+		bq24196_set_en_hiz(0x1);
 
 	return status;
 }
@@ -1005,29 +875,162 @@ static u32 charging_boost_enable(void *data)
 	u32 enable = *(u32 *) (data);
 
 	if (true == enable) {
-		bq24297_set_boost_lim(0x1);	/* 1.5A on VBUS */
-		bq24297_set_en_hiz(0x0);
-		bq24297_set_chg_config(0);	/* Charge disabled */
-		bq24297_set_otg_config(0x1);	/* OTG */
+		bq24196_set_boost_lim(0x1);	/* 1.5A on VBUS */
+		bq24196_set_en_hiz(0x0);
+		bq24196_set_chg_config(0);	/* Charge disabled */
+		bq24196_set_otg_config(0x1);	/* OTG */
 #ifdef CONFIG_POWER_EXT
-		bq24297_set_watchdog(0);
+		bq24196_set_watchdog(0);
 #endif
 	} else {
-		bq24297_set_otg_config(0x0);	/* OTG & Charge disabled */
+		bq24196_set_otg_config(0x0);	/* OTG & Charge disabled */
 #ifdef CONFIG_POWER_EXT
-		bq24297_set_watchdog(1);
+		bq24196_set_watchdog(1);
 #endif
 	}
 
 	return status;
 }
 
+static u32 charging_set_ta_current_pattern(void *data)
+{
+	u32 increase = *(u32 *) (data);
+	u32 charging_status = false;
+
+#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+	u32 cv_voltage = BATTERY_VOLT_04_340000_V;
+#else
+	u32 cv_voltage = BATTERY_VOLT_04_200000_V;
+#endif
+
+	charging_get_charging_status(&charging_status);
+	if (false == charging_status) {
+		charging_set_cv_voltage(&cv_voltage);	/* Set CV */
+		bq24196_set_ichg(0x0);	/* Set charging current 500ma */
+		bq24196_set_chg_config(0x1);	/* Enable Charging */
+	}
+
+	if (increase == true) {
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 1");
+		msleep(85);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 1");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 2");
+		msleep(85);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 2");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 3");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 3");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 4");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 4");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 5");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 5");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_increase() on 6");
+		msleep(485);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_increase() off 6");
+		msleep(50);
+
+		pr_notice("mtk_ta_increase() end\n");
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		msleep(200);
+	} else {
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 1");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 1");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 2");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 2");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 3");
+		msleep(281);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 3");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 4");
+		msleep(85);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 4");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 5");
+		msleep(85);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 5");
+		msleep(85);
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+		pr_info("mtk_ta_decrease() on 6");
+		msleep(485);
+
+		bq24196_set_iinlim(0x0);	/* 100mA */
+		pr_info("mtk_ta_decrease() off 6");
+		msleep(50);
+
+		pr_notice("mtk_ta_decrease() end\n");
+
+		bq24196_set_iinlim(0x2);	/* 500mA */
+	}
+
+	return STATUS_OK;
+}
+
 static u32(*charging_func[CHARGING_CMD_NUMBER]) (void *data);
 
-s32 bq24297_control_interface(int cmd, void *data)
+int bq24196_control_interface(int cmd, void *data)
 {
-	s32 status;
-
+	int status;
 	static bool is_init;
 
 	if (is_init == false) {
@@ -1054,6 +1057,8 @@ s32 bq24297_control_interface(int cmd, void *data)
 		    charging_get_platform_boot_mode;
 		charging_func[CHARGING_CMD_ENABLE_POWERPATH] = charging_enable_powerpath;
 		charging_func[CHARGING_CMD_BOOST_ENABLE] = charging_boost_enable;
+		charging_func[CHARGING_CMD_SET_TA_CURRENT_PATTERN] =
+		    charging_set_ta_current_pattern;
 		is_init = true;
 	}
 
@@ -1067,18 +1072,18 @@ s32 bq24297_control_interface(int cmd, void *data)
 	return status;
 }
 
-void bq24297_dump_register(void)
+void bq24196_dump_register(void)
 {
 	int i = 0;
 
-	for (i = 0; i < bq24297_REG_NUM; i++) {
-		bq24297_read_byte(i, &bq24297_reg[i]);
+	for (i = 0; i < bq24196_REG_NUM; i++) {
+		bq24196_read_byte(i, &bq24196_reg[i]);
 		battery_log(BAT_LOG_FULL,
-			    "[bq24297_dump_register] Reg[0x%X]=0x%X\n", i, bq24297_reg[i]);
+			    "[bq24196_dump_register] Reg[0x%X]=0x%X\n", i, bq24196_reg[i]);
 	}
 }
 
-u8 bq24297_get_reg9_fault_type(u8 reg9_fault)
+u8 bq24196_get_reg9_fault_type(u8 reg9_fault)
 {
 	u8 ret = 0;
 /*	if((reg9_fault & (CON9_WATCHDOG_FAULT_MASK << CON9_WATCHDOG_FAULT_SHIFT)) !=0){
@@ -1107,72 +1112,72 @@ u8 bq24297_get_reg9_fault_type(u8 reg9_fault)
 	return ret;
 }
 
-void bq24297_polling_reg09(void)
+void bq24196_polling_reg09(void)
 {
 	int i, i2;
 	u8 reg1;
 
 	for (i2 = i = 0; i < 4 && i2 < 10; i++, i2++) {
-		bq24297_read_byte((u8) (bq24297_CON9), &bq24297_reg[bq24297_CON9]);
-		if ((bq24297_reg[bq24297_CON9] & 0x40) != 0) {	/* OTG_FAULT bit */
+		bq24196_read_byte((u8) (bq24196_CON9), &bq24196_reg[bq24196_CON9]);
+		if ((bq24196_reg[bq24196_CON9] & 0x40) != 0) {	/* OTG_FAULT bit */
 			/* Disable OTG */
-			bq24297_read_byte(1, &reg1);
+			bq24196_read_byte(1, &reg1);
 			reg1 &= ~0x20;	/* 0 = OTG Disable */
-			bq24297_write_byte(1, reg1);
+			bq24196_write_byte(1, reg1);
 			msleep(20);
 			/* Enable OTG */
 			reg1 |= 0x20;	/* 1 = OTG Enable */
-			bq24297_write_byte(1, reg1);
+			bq24196_write_byte(1, reg1);
 		}
-		if (bq24297_reg[bq24297_CON9] != 0) {
+		if (bq24196_reg[bq24196_CON9] != 0) {
 			i = 0;	/* keep on polling if reg9 is not 0. This is to filter noises */
 			/* need filter fault type here */
-			switch_set_state(&bq24297_reg09,
-					 bq24297_get_reg9_fault_type(bq24297_reg[bq24297_CON9]));
+			switch_set_state(&bq24196_reg09,
+					 bq24196_get_reg9_fault_type(bq24196_reg[bq24196_CON9]));
 		}
 		msleep(20);
 	}
 	/* send normal fault state to UI */
-	switch_set_state(&bq24297_reg09, BQ_NORMAL_FAULT);
+	switch_set_state(&bq24196_reg09, BQ_NORMAL_FAULT);
 }
 
-static irqreturn_t ops_bq24297_int_handler(int irq, void *dev_id)
+static irqreturn_t ops_bq24196_int_handler(int irq, void *dev_id)
 {
-	bq24297_polling_reg09();
+	bq24196_polling_reg09();
 	return IRQ_HANDLED;
 }
 
-static int bq24297_driver_suspend(struct i2c_client *client, pm_message_t mesg)
+static int bq24196_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	pr_info("[bq24297_driver_suspend] client->irq(%d)\n", client->irq);
+	pr_info("[bq24196_driver_suspend] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 
 	return 0;
 }
 
-static int bq24297_driver_resume(struct i2c_client *client)
+static int bq24196_driver_resume(struct i2c_client *client)
 {
-	pr_info("[bq24297_driver_resume] client->irq(%d)\n", client->irq);
+	pr_info("[bq24196_driver_resume] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		enable_irq(client->irq);
 
 	return 0;
 }
 
-static void bq24297_driver_shutdown(struct i2c_client *client)
+static void bq24196_driver_shutdown(struct i2c_client *client)
 {
-	pr_info("[bq24297_driver_shutdown] client->irq(%d)\n", client->irq);
+	pr_info("[bq24196_driver_shutdown] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 }
 
-static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
+static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret = 0;
 	struct regulator *i2c_reg = devm_regulator_get(&client->dev, "reg-i2c");
 
-	pr_info("[bq24297_driver_probe]\n");
+	pr_info("[bq24196_driver_probe]\n");
 
 	new_client = client;
 
@@ -1183,90 +1188,85 @@ static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_devi
 			dev_err(&client->dev, "Fail to set 1.8V to reg-i2c: %d\n", ret);
 
 		ret = regulator_get_voltage(i2c_reg);
-		pr_info("bq24297 i2c voltage: %d\n", ret);
+		pr_info("bq24196 i2c voltage: %d\n", ret);
 
 		ret = regulator_enable(i2c_reg);
 		if (ret != 0)
 			dev_err(&client->dev, "Fail to enable reg-i2c: %d\n", ret);
 	}
 
-	part_num = bq24297_get_pn();
-
-	if (part_num == 0x3) {
-		pr_notice("BQ24297 device is found. register charger control.\n");
-		bat_charger_register(bq24297_control_interface);
-	} else if (part_num == 0x1) {
-		pr_notice("BQ24296 device is found. register charger control.\n");
-		bat_charger_register(bq24297_control_interface);
+	if (bq24196_get_pn() == 0x5) {
+		pr_notice("bq24196 device is found. register charger control.\n");
+		bat_charger_register(bq24196_control_interface);
 	} else {
-		pr_notice("No BQ24297 device part number is found.\n");
+		pr_notice("No bq24196 device part number is found.\n");
 		return 0;
 	}
 
-	bq24297_dump_register();
+	bq24196_dump_register();
 
-	bq24297_reg09.name = "bq24297_reg09";
-	bq24297_reg09.index = 0;
-	bq24297_reg09.state = 0;
-	ret = switch_dev_register(&bq24297_reg09);
+	bq24196_reg09.name = "bq24196_reg09";
+	bq24196_reg09.index = 0;
+	bq24196_reg09.state = 0;
+	ret = switch_dev_register(&bq24196_reg09);
 
 	if (ret < 0)
-		pr_err("[bq24297_driver_probe] switch_dev_register() error(%d)\n", ret);
+		pr_err("[bq24196_driver_probe] switch_dev_register() error(%d)\n", ret);
+
 
 	if (client->irq > 0) {
 
-		pr_notice("[bq24297_driver_probe] enable interrupt: %d\n", client->irq);
+		pr_notice("[bq24196_driver_probe] enable interrupt: %d\n", client->irq);
 		/* make sure we clean REG9 before enable fault interrupt */
-		bq24297_read_byte((u8) (bq24297_CON9), &bq24297_reg[9]);
-		if (bq24297_reg[9] != 0)
-			bq24297_polling_reg09();
+		bq24196_read_byte((u8) (bq24196_CON9), &bq24196_reg[9]);
+		if (bq24196_reg[9] != 0)
+			bq24196_polling_reg09();
 
-		bq24297_set_int_mask(0x1);	/* Disable CHRG fault interrupt */
-		ret = request_threaded_irq(client->irq, NULL, ops_bq24297_int_handler,
+		bq24196_set_int_mask(0x1);	/* Disable CHRG fault interrupt */
+		ret = request_threaded_irq(client->irq, NULL, ops_bq24196_int_handler,
 					   IRQF_TRIGGER_FALLING |
-					   IRQF_ONESHOT, "ops_bq24297_int_handler", NULL);
+					   IRQF_ONESHOT, "ops_bq24196_int_handler", NULL);
 		if (ret)
 			pr_err
-			    ("[bq24297_driver_probe] fault interrupt registration failed err = %d\n",
+			    ("[bq24196_driver_probe] fault interrupt registration failed err = %d\n",
 			     ret);
 	}
 
 	return 0;
 }
 
-static const struct i2c_device_id bq24297_i2c_id[] = { {"bq24297", 0}, {} };
+static const struct i2c_device_id bq24196_i2c_id[] = { {"bq24196", 0}, {} };
 
 #ifdef CONFIG_OF
-static const struct of_device_id bq24297_id[] = {
-	{.compatible = "ti,bq24297"},
-	{.compatible = "ti,bq24296"},
+static const struct of_device_id bq24196_id[] = {
+	{.compatible = "ti,bq24196"},
 	{},
 };
 
-MODULE_DEVICE_TABLE(of, bq24297_id);
+MODULE_DEVICE_TABLE(of, bq24196_id);
 #endif
 
-static struct i2c_driver bq24297_driver = {
+static struct i2c_driver bq24196_driver = {
 	.driver = {
-		   .name = "bq24297",
+		   .name = "bq24196",
 #ifdef CONFIG_OF
-		   .of_match_table = of_match_ptr(bq24297_id),
+		   .of_match_table = of_match_ptr(bq24196_id),
 #endif
 		   },
-	.probe = bq24297_driver_probe,
-	.shutdown = bq24297_driver_shutdown,
-	.suspend = bq24297_driver_suspend,
-	.resume = bq24297_driver_resume,
-	.id_table = bq24297_i2c_id,
+	.probe = bq24196_driver_probe,
+	.shutdown = bq24196_driver_shutdown,
+	.suspend = bq24196_driver_suspend,
+	.resume = bq24196_driver_resume,
+	.id_table = bq24196_i2c_id,
 };
 
-static ssize_t show_bq24297_access(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t show_bq24196_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_info("[show_bq24297_access] 0x%x\n", g_reg_value_bq24297);
-	return sprintf(buf, "0x%x\n", g_reg_value_bq24297);
+	pr_info("[show_bq24196_access] 0x%x\n", g_reg_value_bq24196);
+	return sprintf(buf, "0x%x\n", g_reg_value_bq24196);
 }
 
-static ssize_t store_bq24297_access(struct device *dev, struct device_attribute *attr,
+static ssize_t store_bq24196_access(struct device *dev, struct device_attribute *attr,
 				    const char *buf, size_t size)
 {
 	int ret = 0;
@@ -1289,81 +1289,82 @@ static ssize_t store_bq24297_access(struct device *dev, struct device_attribute 
 				pr_err("wrong format!\n");
 				return size;
 			}
-			pr_info("[store_bq24297_access] write bq24297 reg 0x%x with value 0x%x !\n",
+			pr_info("[store_bq24196_access] write bq24196 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
-			bq24297_config_interface(reg_address, reg_value, 0xFF, 0x0);
+			bq24196_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = kstrtouint(pvalue, 0, &reg_address);
 			if (ret) {
 				pr_err("wrong format!\n");
 				return size;
 			}
-			bq24297_read_interface(reg_address, &g_reg_value_bq24297, 0xFF, 0x0);
-			pr_info("[store_bq24297_access] read bq24297 reg 0x%x with value 0x%x !\n",
-				reg_address, g_reg_value_bq24297);
+			bq24196_read_interface(reg_address, &g_reg_value_bq24196, 0xFF, 0x0);
+			pr_info("[store_bq24196_access] read bq24196 reg 0x%x with value 0x%x !\n",
+				reg_address, g_reg_value_bq24196);
 			pr_info
-			    ("[store_bq24297_access] Please use \"cat bq24297_access\" to get value\r\n");
+			    ("[store_bq24196_access] Please use \"cat bq24196_access\" to get value\r\n");
 		}
 	}
 	return size;
+
 }
 
-static DEVICE_ATTR(bq24297_access, S_IWUSR | S_IRUGO, show_bq24297_access, store_bq24297_access);
+static DEVICE_ATTR(bq24196_access, S_IWUSR | S_IRUGO, show_bq24196_access, store_bq24196_access);
 
-static int bq24297_user_space_probe(struct platform_device *dev)
+static int bq24196_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	pr_info("bq24297_user_space_probe!\n");
-	ret_device_file = device_create_file(&(dev->dev), &dev_attr_bq24297_access);
+	pr_info("bq24196_user_space_probe!\n");
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_bq24196_access);
 
 	return 0;
 }
 
-struct platform_device bq24297_user_space_device = {
-	.name = "bq24297-user",
+struct platform_device bq24196_user_space_device = {
+	.name = "bq24196-user",
 	.id = -1,
 };
 
-static struct platform_driver bq24297_user_space_driver = {
-	.probe = bq24297_user_space_probe,
+static struct platform_driver bq24196_user_space_driver = {
+	.probe = bq24196_user_space_probe,
 	.driver = {
-		   .name = "bq24297-user",
+		   .name = "bq24196-user",
 		   },
 };
 
-static int __init bq24297_init(void)
+static int __init bq24196_init(void)
 {
 	int ret = 0;
 
-	if (i2c_add_driver(&bq24297_driver) != 0)
-		pr_err("[bq24297_init] failed to register bq24297 i2c driver.\n");
+	if (i2c_add_driver(&bq24196_driver) != 0)
+		pr_err("[bq24196_init] failed to register bq24196 i2c driver.\n");
 	else
-		pr_info("[bq24297_init] Success to register bq24297 i2c driver.\n");
+		pr_info("[bq24196_init] Success to register bq24196 i2c driver.\n");
 
-	/* bq24297 user space access interface */
-	ret = platform_device_register(&bq24297_user_space_device);
+	/* bq24196 user space access interface */
+	ret = platform_device_register(&bq24196_user_space_device);
 	if (ret) {
-		pr_err("[bq24297_init] Unable to device register(%d)\n", ret);
+		pr_err("[bq24196_init] Unable to device register(%d)\n", ret);
 		return ret;
 	}
-	ret = platform_driver_register(&bq24297_user_space_driver);
+	ret = platform_driver_register(&bq24196_user_space_driver);
 	if (ret) {
-		pr_err("[bq24297_init] Unable to register driver (%d)\n", ret);
+		pr_err("[bq24196_init] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
 
 	return 0;
 }
 
-static void __exit bq24297_exit(void)
+static void __exit bq24196_exit(void)
 {
-	i2c_del_driver(&bq24297_driver);
+	i2c_del_driver(&bq24196_driver);
 }
-module_init(bq24297_init);
-module_exit(bq24297_exit);
+module_init(bq24196_init);
+module_exit(bq24196_exit);
 
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("I2C bq24297 Driver");
+MODULE_DESCRIPTION("I2C bq24196 Driver");
 MODULE_AUTHOR("Tank Hung<tank.hung@mediatek.com>");

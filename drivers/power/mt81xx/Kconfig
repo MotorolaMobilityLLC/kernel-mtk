@@ -76,6 +76,15 @@ config MTK_BQ24297_SUPPORT
           Set to Yes if BQ24297 is used.
 	default n
 
+config MTK_BQ24261_SUPPORT
+        bool "MTK_BQ24261_SUPPORT"
+        help
+          This is to enable MediaTek supports to BQ24261.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ24261 is used.
+        default n
+
 config MTK_BQ25890_SUPPORT
         bool "MTK_BQ25890_SUPPORT"
         help
