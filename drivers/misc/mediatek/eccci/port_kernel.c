@@ -526,8 +526,8 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	} else if (ccci_h->data[1] == MD_NORMAL_BOOT && md->boot_stage == MD_BOOT_STAGE_1) {
 		del_timer(&md->bootup_timer);
 		wake_lock_timeout(&md->md_wake_lock, 10 * HZ); /* service of uplayer sync with modem need maybe 10s */
+		md->ops->broadcast_state(md, READY); /* update this first, otherwise send message on HS2 may fail */
 		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_2);
-		md->ops->broadcast_state(md, READY);
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_READY, 0);
 	} else if (ccci_h->data[1] == MD_EX) {
 		if (unlikely(ccci_h->reserved != MD_EX_CHK_ID)) {

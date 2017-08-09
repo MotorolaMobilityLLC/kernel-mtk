@@ -420,16 +420,20 @@ static struct ccci_skb_queue scp_ipi_rx_skb_list;
 static void scp_md_state_sync_work(struct work_struct *work)
 {
 	struct ccci_modem *md = container_of(work, struct ccci_modem, scp_md_state_sync_work);
-	int data;
+	int data, ret;
 
 	switch (md->boot_stage) {
 	case MD_BOOT_STAGE_2:
 		switch (md->index) {
 		case MD_SYS1:
-			ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+			ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+			if (ret < 0)
+				CCCI_ERROR_LOG(md->index, CORE, "fail to send CCISM_SHM_INIT %d\n", ret);
 			break;
 		case MD_SYS3:
-			ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_CCISM_SHM_INIT, 0, 1);
+			ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_CCISM_SHM_INIT, 0, 1);
+			if (ret < 0)
+				CCCI_ERROR_LOG(md->index, CORE, "fail to send CCISM_SHM_INIT %d\n", ret);
 			break;
 		};
 		break;
