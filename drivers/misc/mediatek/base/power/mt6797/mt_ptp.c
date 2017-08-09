@@ -303,11 +303,6 @@ unsigned int gpuFy[16] = {0x2A, 0x2A, 0x24, 0x24, 0x20, 0x20, 0x1E, 0x1E,
 unsigned int gpuSb[16] = {0x2A, 0x2A, 0x26, 0x26, 0x20, 0x20, 0x1E, 0x1E,
 			0x18, 0x18, 0x18, 0x18, 0x14, 0x14, 0x10, 0x10};
 
-#ifdef ENABLE_IDVFS
-static unsigned int ctrl_EEM_Enable = 1;
-#else
-static unsigned int ctrl_EEM_Enable;
-#endif
 static unsigned int *recordTbl;
 
 /**
@@ -390,6 +385,11 @@ static unsigned int *recordTbl;
 	#endif
 #endif
 
+#ifdef ENABLE_IDVFS
+static unsigned int ctrl_EEM_Enable = 1;
+#else
+static unsigned int ctrl_EEM_Enable;
+#endif
 
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
