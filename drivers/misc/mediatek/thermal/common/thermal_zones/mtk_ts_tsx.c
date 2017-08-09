@@ -56,8 +56,6 @@ static char g_bind8[20] = { 0 };
 static char g_bind9[20] = { 0 };
 
 static long int mtktstsx_cur_temp;
-static long int mtktstsx_start_temp;
-static long int mtktstsx_end_temp;
 /*=============================================================*/
 
 static int mtktstsx_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
@@ -471,7 +469,7 @@ static ssize_t mtktstsx_write_log(struct file *file, const char __user *buffer, 
 	char desc[32];
 	int log_switch;
 	int len = 0;
-	int rc;
+
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -479,14 +477,11 @@ static ssize_t mtktstsx_write_log(struct file *file, const char __user *buffer, 
 
 	desc[len] = '\0';
 
-	rc = kstrtoint(desc, 0, &log_switch);
-	if (rc != 0)
-		return -EINVAL;
+	if (kstrtoint(desc, 10, &log_switch) == 0) {
+		mtktstsx_debug_log = log_switch;
 
-
-	mtktstsx_debug_log = log_switch;
-
-	return count;
+		return count;
+	}
 
 	mtktstsx_info("mtktstsx_write_log bad argument\n");
 
@@ -509,67 +504,6 @@ static const struct file_operations mtktstsx_log_fops = {
 	.release = single_release,
 };
 
-static int mtktstsx_read_ate(struct seq_file *m, void *v)
-{
-
-	seq_printf(m, "s_temp= %ld, e_temp= %ld, d_temp= %ld\n", mtktstsx_start_temp, mtktstsx_end_temp,
-		   (mtktstsx_end_temp - mtktstsx_start_temp));
-
-	if ((mtktstsx_end_temp - mtktstsx_start_temp) > 2000)
-		seq_puts(m, "Thermal ate test: PASS\n");
-	else
-		seq_puts(m, "Thermal ate test: FAIL\n");
-
-	return 0;
-}
-
-static int mtktstsx_open_ate(struct inode *inode, struct file *file)
-{
-	return single_open(file, mtktstsx_read_ate, NULL);
-}
-
-static ssize_t mtktstsx_write_ate(struct file *file, const char __user *buffer, size_t count,
-				   loff_t *data)
-{
-	char desc[32];
-	int isTesting = 0;
-	int len = 0;
-	int rc;
-
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-
-	desc[len] = '\0';
-
-	rc = kstrtoint(desc, 0, &isTesting);
-
-	if (rc != 0)
-		return -EINVAL;
-
-	if (isTesting)
-		mtktstsx_start_temp = mtktstsx_cur_temp;
-	else
-		mtktstsx_end_temp = mtktstsx_cur_temp;
-
-
-	return count;
-
-	mtktstsx_info("mtktstsx_write_log bad argument\n");
-
-
-	return -EINVAL;
-}
-
-static const struct file_operations mtktstsx_ate_fops = {
-	.owner = THIS_MODULE,
-	.open = mtktstsx_open_ate,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = mtktstsx_write_ate,
-	.release = single_release,
-};
-
 static int __init mtktstsx_init(void)
 {
 	int err = 0;
@@ -580,11 +514,6 @@ static int __init mtktstsx_init(void)
 	mtktstsx_info("[mtktstsx_init]\n");
 
 
-/*
-	err = mtktstsx_register_cooler();
-	if (err)
-		return err;
-*/
 	err = mtktstsx_register_thermal();
 	if (err)
 		goto err_unreg;
@@ -602,9 +531,6 @@ static int __init mtktstsx_init(void)
 		entry =
 		    proc_create("tztsx_log", S_IRUGO | S_IWUSR, mtktstsx_dir,
 				&mtktstsx_log_fops);
-		entry =
-		    proc_create("tztsx_ate", S_IRUGO | S_IWUSR, mtktstsx_dir,
-				&mtktstsx_ate_fops);
 	}
 
 	return 0;
