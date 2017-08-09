@@ -1,0 +1,7 @@
+config MTK_LASTPC
+	bool CONFIG_MTK_LASTPC
+	default n
+	help
+	  LASTPC is a debugging feature on MCUCFG bus.
+	  Which latches the last pc value on each CPUs as debugging
+	  information after sysytem unexpectedly crash or shutdown.

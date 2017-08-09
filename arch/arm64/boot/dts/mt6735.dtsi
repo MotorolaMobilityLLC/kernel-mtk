@@ -808,6 +808,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 71 0x4>;
 		};
 
+		mcucfg: mcucfg@10200000 {
+			compatible = "mediatek,mt6735-mcucfg";
+			reg = <0x10200000 0x200>;
+			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		INFRACFG_AO@0x10000000 {
 			compatible = "mediatek,INFRACFG_AO";
 			reg = <0x10000000 0x1000>;
