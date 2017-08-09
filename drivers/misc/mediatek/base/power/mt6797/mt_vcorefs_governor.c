@@ -80,6 +80,7 @@ struct clk *clk_mux_ulposc_axi_ck_mux;
  * struct define
  */
 static DEFINE_MUTEX(governor_mutex);
+static DEFINE_SPINLOCK(governor_spinlock);
 
 struct governor_profile {
 	bool plat_feature_en;
@@ -89,6 +90,9 @@ struct governor_profile {
 
 	bool isr_debug;
 	bool screen_on;
+	bool dpidle_lock;
+	bool suspend_lock;
+	bool sodi_lock;
 	int init_opp_perf;
 	int late_init_opp;
 	bool plat_init_done;
@@ -117,6 +121,9 @@ static struct governor_profile governor_ctrl = {
 
 	.isr_debug = 0,
 	.screen_on = 1,
+	.dpidle_lock = 1,
+	.suspend_lock = 1,
+	.sodi_lock = 0,
 	.init_opp_perf = 0,
 	.late_init_opp = OPPI_LOW_PWR,
 	.plat_init_done = 0,
@@ -137,7 +144,7 @@ static struct governor_profile governor_ctrl = {
 	.perform_bw_hpm_threshold = 0,
 };
 
-int kicker_table[NUM_KICKER] __nosavedata;
+int kicker_table[LAST_KICKER] __nosavedata;
 static unsigned int trans[NUM_TRANS] __nosavedata;
 
 static struct opp_profile opp_table[] __nosavedata = {
@@ -594,7 +601,10 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
 	p += sprintf(p, "[freq_dfs    ]: %d\n", gvrctrl->freq_dfs);
 	p += sprintf(p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
-	p += sprintf(p, "[screen_on   ]: %d\n", gvrctrl->screen_on);
+	p += sprintf(p, "[screen_on   ]: %d\n", vcorefs_get_screen_on_state());
+	p += sprintf(p, "[dpidle_lock ]: %d\n", vcorefs_screen_on_lock_dpidle());
+	p += sprintf(p, "[susp_lock   ]: %d\n", vcorefs_screen_on_lock_suspend());
+	p += sprintf(p, "[sodi_lock   ]: %d\n", vcorefs_screen_on_lock_sodi());
 	p += sprintf(p, "[md_dvfs_req ]: 0x%x\n", gvrctrl->md_dvfs_req);
 	p += sprintf(p, "\n");
 
@@ -797,12 +807,55 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 	return r;
 }
 
+/* it can not enter dpidle when screen on state */
+bool vcorefs_screen_on_lock_dpidle(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	unsigned long flags;
+	int r;
+
+	spin_lock_irqsave(&governor_spinlock, flags);
+	r = gvrctrl->dpidle_lock;
+	spin_unlock_irqrestore(&governor_spinlock, flags);
+
+	return r;
+}
+
+/* it can not enter suspend when screen on state */
+bool vcorefs_screen_on_lock_suspend(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	unsigned long flags;
+	int r;
+
+	spin_lock_irqsave(&governor_spinlock, flags);
+	r = gvrctrl->suspend_lock;
+	spin_unlock_irqrestore(&governor_spinlock, flags);
+
+	return r;
+}
+
+/* it can not enter sodi when doing screen on process */
+bool vcorefs_screen_on_lock_sodi(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	unsigned long flags;
+	int r;
+
+	spin_lock_irqsave(&governor_spinlock, flags);
+	r = gvrctrl->sodi_lock;
+	spin_unlock_irqrestore(&governor_spinlock, flags);
+
+	return r;
+}
+
 static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct kicker_config krconf;
 	struct fb_event *evdata = data;
 	int blank;
+	unsigned long flags;
 
 	if (!is_vcorefs_feature_enable() || !gvrctrl->plat_init_done)
 		return 0;
@@ -815,24 +868,43 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
 		mutex_lock(&governor_mutex);
-		spm_vcorefs_screen_on_setting();
+
+		vcorefs_crit("SCREEN ON\n");
+		spin_lock_irqsave(&governor_spinlock, flags);
+		gvrctrl->dpidle_lock = 1;
+		gvrctrl->suspend_lock = 1;
+		gvrctrl->sodi_lock = 1;
+		spin_unlock_irqrestore(&governor_spinlock, flags);
+
 		gvrctrl->screen_on = 1;
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 
 		if (vcorefs_get_curr_opp() == OPPI_PERF) {
 			krconf.dvfs_opp = OPP_0;
 			set_freq_with_opp(&krconf);
 		}
 
+		spin_lock_irqsave(&governor_spinlock, flags);
+		gvrctrl->sodi_lock = 0;
+		spin_unlock_irqrestore(&governor_spinlock, flags);
+
 		mutex_unlock(&governor_mutex);
 		break;
 	case FB_BLANK_POWERDOWN:
 		mutex_lock(&governor_mutex);
+
+		vcorefs_crit("SCREEN OFF\n");
 		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
 
 		if (vcorefs_get_curr_opp() == OPPI_PERF) {
 			krconf.dvfs_opp = OPP_1;
 			set_freq_with_opp(&krconf);
 		}
+
+		spin_lock_irqsave(&governor_spinlock, flags);
+		gvrctrl->dpidle_lock = 0;
+		gvrctrl->suspend_lock = 0;
+		spin_unlock_irqrestore(&governor_spinlock, flags);
 
 		gvrctrl->screen_on = 0;
 		mutex_unlock(&governor_mutex);
@@ -966,6 +1038,14 @@ static int vcorefs_probe(struct platform_device *pdev)
 static int vcorefs_remove(struct platform_device *pdev)
 {
 	return 0;
+}
+
+void vcorefs_go_to_vcore_dvfs(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	if (is_vcorefs_feature_enable())
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 }
 
 /*

@@ -102,7 +102,7 @@ struct opp_profile {
 	int axi_khz;
 };
 
-extern int kicker_table[NUM_KICKER];
+extern int kicker_table[LAST_KICKER];
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
@@ -122,6 +122,10 @@ extern int governor_debug_store(const char *);
 extern int vcorefs_late_init_dvfs(void);
 extern int kick_dvfs_by_opp_index(struct kicker_config *krconf);
 extern char *governor_get_dvfs_info(char *p);
+bool vcorefs_screen_on_lock_dpidle(void);
+bool vcorefs_screen_on_lock_suspend(void);
+bool vcorefs_screen_on_lock_sodi(void);
+void vcorefs_go_to_vcore_dvfs(void);
 
 /* AXI API */
 extern unsigned int ckgen_meter(int ID);
