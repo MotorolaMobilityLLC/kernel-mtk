@@ -30,7 +30,6 @@
 #include <linux/mempolicy.h>
 #include <linux/migrate.h>
 #include <linux/task_work.h>
-#include <linux/stop_machine.h>
 
 #include <trace/events/sched.h>
 #ifdef CONFIG_HMP_FREQUENCY_INVARIANT_SCALE
@@ -8571,13 +8570,9 @@ more_balance:
 			raw_spin_unlock_irqrestore(&busiest->lock, flags);
 
 			if (active_balance) {
-				if (stop_one_cpu_dispatch(cpu_of(busiest),
+				stop_one_cpu_nowait(cpu_of(busiest),
 					active_load_balance_cpu_stop, busiest,
-					&busiest->active_balance_work)) {
-					raw_spin_lock_irqsave(&busiest->lock, flags);
-					busiest->active_balance = 0;
-					raw_spin_unlock_irqrestore(&busiest->lock, flags);
-				}
+					&busiest->active_balance_work);
 			}
 
 			/*
@@ -9967,7 +9962,7 @@ static void hmp_force_down_migration(int this_cpu)
 	/* Check migration threshold */
 	if (!target->active_balance &&
 		hmp_down_migration(this_cpu, &target_cpu, se, &clbenv)) {
-		get_task_struct(p); /* hold pi-lock of task */
+		get_task_struct(p);
 		target->active_balance = 1;
 		target->push_cpu = target_cpu;
 		target->migrate_task = p;
@@ -9977,14 +9972,9 @@ static void hmp_force_down_migration(int this_cpu)
 	}
 	raw_spin_unlock_irqrestore(&target->lock, flags);
 	if (force) {
-		if (stop_one_cpu_dispatch(cpu_of(target),
+		stop_one_cpu_nowait(cpu_of(target),
 			hmp_active_task_migration_cpu_stop,
-			target, &target->active_balance_work)) {
-			raw_spin_lock_irqsave(&target->lock, flags);
-			target->active_balance = 0;
-			put_task_struct(target->migrate_task); /* release pi-lock of task */
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-		}
+			target, &target->active_balance_work);
 	}
 }
 
@@ -10099,7 +10089,7 @@ static void hmp_force_up_migration(int this_cpu)
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
-			get_task_struct(p); /* hold pi-lock of task */
+			get_task_struct(p);
 			target->active_balance = 1; /* force up */
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
@@ -10114,14 +10104,9 @@ out_force_up:
 
 		raw_spin_unlock_irqrestore(&target->lock, flags);
 		if (force) {
-			if (stop_one_cpu_dispatch(cpu_of(target),
+			stop_one_cpu_nowait(cpu_of(target),
 				hmp_active_task_migration_cpu_stop,
-				target, &target->active_balance_work)) {
-				raw_spin_lock_irqsave(&target->lock, flags);
-				target->active_balance = 0;
-				put_task_struct(target->migrate_task); /* release pi-lock of task */
-				raw_spin_unlock_irqrestore(&target->lock, flags);
-			}
+				target, &target->active_balance_work);
 		} else
 				hmp_force_down_migration(this_cpu);
 	}
@@ -10210,7 +10195,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance && task_rq(p) == target) {
-		get_task_struct(p); /* hold pi-lock of task */
+		get_task_struct(p);
 		target->push_cpu = this_cpu;
 		target->migrate_task = p;
 		trace_sched_hmp_migrate(p, target->push_cpu, 3);
@@ -10220,14 +10205,9 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	}
 	raw_spin_unlock_irqrestore(&target->lock, flags);
 	if (force) {
-		if (stop_one_cpu_dispatch(cpu_of(target),
+		stop_one_cpu_nowait(cpu_of(target),
 			hmp_active_task_migration_cpu_stop,
-			target, &target->active_balance_work)) {
-			raw_spin_lock_irqsave(&target->lock, flags);
-			target->active_balance = 0;
-			put_task_struct(target->migrate_task); /* release pi-lock of task */
-			raw_spin_unlock_irqrestore(&target->lock, flags);
-		}
+			target, &target->active_balance_work);
 	}
 
 done:
