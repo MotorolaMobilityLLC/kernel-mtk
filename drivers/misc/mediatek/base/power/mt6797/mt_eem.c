@@ -402,6 +402,7 @@ unsigned int gpuMb[16] = {0x29, 0x29, 0x26, 0x26, 0x21, 0x21, 0x1E, 0x1E,
 unsigned int gpuOutput[8];
 static unsigned int record_tbl_locked[16];
 static unsigned int *recordTbl, *gpuTbl;
+static unsigned int cpu_speed;
 
 /**
  * @file    mt_ptp.c
@@ -2002,6 +2003,8 @@ static void get_freq_table_cpu(struct eem_det *det)
 		/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
 		#ifdef __KERNEL__
 			binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
+			if (cpu_speed == 1989) /* M */
+				binLevel = 2;
 		#else
 			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 		#endif
@@ -4959,6 +4962,9 @@ static int __init eem_conf(void)
 {
 	int i;
 	unsigned int binLevel;
+	struct device_node *node = of_find_compatible_node(NULL, "cpu", "arm,cortex-a72");
+
+	cpu_speed = 0;
 
 	recordRef = ioremap_nocache(EEMCONF_S, EEMCONF_SIZE);
 	eem_debug("@(Record)%s----->(%p)\n", __func__, recordRef);
@@ -4968,6 +4974,18 @@ static int __init eem_conf(void)
 
 	/* read E-fuse for segment selection */
 	binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
+
+	/* get CPU clock-frequency from DT */
+	if (!of_property_read_u32(node, "clock-frequency", &cpu_speed)) {
+		cpu_speed = cpu_speed / 1000 / 1000; /* MHz */
+		eem_error("CPU clock-frequency from DT = %d MHz\n", cpu_speed);
+		if (cpu_speed == 1989) /* M */
+			binLevel = 2;
+	} else {
+		eem_error("@%s: missing clock-frequency property, use default CPU level\n", __func__);
+		binLevel = 0;
+	}
+
 	if (binLevel == 0) {
 		gpuTbl = &gpuFy[0];
 		recordTbl = &fyTbl[0][0];
