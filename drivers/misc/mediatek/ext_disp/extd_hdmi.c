@@ -995,7 +995,11 @@ void hdmi_state_callback(enum HDMI_STATE state)
 void hdmi_set_layer_num(int layer_num)
 {
 	if (layer_num >= 0)
+#ifdef FIX_EXTD_TO_OVL_PATH
+		hdmi_layer_num = FIX_EXTD_TO_OVL_PATH;
+#else
 		hdmi_layer_num = layer_num;
+#endif
 }
 
 int hdmi_enable(int enable)
