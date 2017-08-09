@@ -55,13 +55,13 @@ eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 		clkid = UNIVPLL2_D4; /* PLL 104M */
 		break;
 	case 3:
-		clkid = ULPOSC_D3; /* ULPOSC 78M */
+		clkid = -1; /* FIXME: ULPOSC_D3; */ /* ULPOSC 78M */
 		break;
 	case 4:
 		clkid = -1; /* Bypass config:default 26M */
 		break;
 	case 5:
-		clkid = ULPOSC_D10; /* ULPOSC 23M */
+		clkid = -1; /* FIXME: ULPOSC_D10;*/ /* ULPOSC 23M */
 		break;
 	case 6:
 		clkid = ULPOSC_D4; /* ULPOSC 58M */
@@ -302,7 +302,7 @@ int disp_pwm_clksource_enable(int clk_req)
 	case ULPOSC_D2:
 	case ULPOSC_D4:
 	case ULPOSC_D8:
-	case ULPOSC_D10:
+	/* FIXME: case ULPOSC_D10:*/
 		ulposc_enable(clkid);
 		break;
 	default:
@@ -323,7 +323,7 @@ int disp_pwm_clksource_disable(int clk_req)
 	case ULPOSC_D2:
 	case ULPOSC_D4:
 	case ULPOSC_D8:
-	case ULPOSC_D10:
+	/* FIXME: case ULPOSC_D10: */
 		ulposc_disable(clkid);
 		break;
 	default:
