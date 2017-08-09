@@ -400,6 +400,8 @@ int buck_set_mode(BUCK_TYPE type, unsigned char pmode)
 
 	/*---Make sure BUCK <NAME> ON before setting---*/
 	pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
+	udelay(220);
+
 	if (pmic_get_register_value(mtk_bucks_class[type].mode) == pmode)
 		pr_debug("[PMIC] Set %s Mode to %d pass\n", mtk_bucks_class[type].name, pmode);
 	else
@@ -434,6 +436,7 @@ int buck_set_voltage(BUCK_TYPE type, unsigned int voltage)
 		/*---Make sure BUCK <NAME> ON before setting---*/
 		if (pmic_get_register_value(mtk_bucks_class[type].da_qi_en)) {
 			pmic_set_register_value(mtk_bucks_class[type].vosel, value);
+			udelay(220);
 			if (pmic_get_register_value(mtk_bucks_class[type].da_ni_vosel) == value)
 				pr_debug("[PMIC] Set %s Voltage to %d pass\n",
 						mtk_bucks_class[type].name, value);
