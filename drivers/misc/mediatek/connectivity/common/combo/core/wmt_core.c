@@ -2414,7 +2414,7 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 			wmtCmdLen = u4PatchSize + 1;
 			wmtPktLen = u4PatchSize + sizeof(WMT_FLASH_PATCH_DWN_CMD);
 			gFlashBuf[2] = wmtCmdLen & 0xFF;
-			gFlashBuf[3] = (wmtCmdLen & 0xFF00) >> 16;
+			gFlashBuf[3] = (wmtCmdLen & 0xFF00) >> 8;
 			/*copy ram code content to global buffer */
 			osal_memcpy(&gFlashBuf[osal_sizeof(WMT_FLASH_PATCH_DWN_CMD)], u4pbuf, u4PatchSize);
 			break;
