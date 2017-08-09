@@ -290,7 +290,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 
 	clk_buf_swctrl[id] = onoff;
 
-	/*if (g_is_flightmode_on)*/
+	if (g_is_flightmode_on)
 		spm_clk_buf_ctrl(clk_buf_swctrl);
 
 	mutex_unlock(&clk_buf_ctrl_lock);
@@ -336,7 +336,7 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 		for (i = 0; i < CLKBUF_NUM; i++)
 			clk_buf_swctrl[i] = clk_buf_en[i];
 
-		/*if (g_is_flightmode_on)*/
+		if (g_is_flightmode_on)
 			spm_clk_buf_ctrl(clk_buf_swctrl);
 
 		mutex_unlock(&clk_buf_ctrl_lock);
