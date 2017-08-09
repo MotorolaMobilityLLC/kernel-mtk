@@ -47,6 +47,7 @@
  *****************************************************************************/
 
 #include "AudDrv_Common.h"
+#include "AudDrv_Common_func.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
 #include "AudDrv_Ana.h"
@@ -75,6 +76,7 @@ static const int HpImpedancePhase0AdcValue = 200;
 static const int HpImpedancePhase1AdcValue = 2000;
 static const int HpImpedancePhase2AdcValue = 8800;
 static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
+static int EfuseCurrentCalibration;
 
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
@@ -460,6 +462,15 @@ static unsigned short Calculate_HP_Impedance(unsigned short dcinit,
 		R_tmp = (dcvalue * 879 + 4096) >> 13;		/* 8800(S32.0) */
 	}
 
+	/* Efuse calibration */
+	if ((EfuseCurrentCalibration != 0) && (R_tmp != 0)) {
+		/* pr_debug("%s Before Calibration from EFUSE: %d, R: %d\n",
+			__func__, EfuseCurrentCalibration, R_tmp); */
+		R_tmp = R_tmp * 128 / (128 + EfuseCurrentCalibration);
+		pr_debug("%s After Calibration from EFUSE: %d, R: %d\n",
+			__func__, EfuseCurrentCalibration, R_tmp);
+	}
+
 	R_hp = (unsigned short)R_tmp;
 	pr_debug("%s pcmoffset %d dcoffset %d detected resistor is %d\n",
 		__func__, pcmoffset, dcvalue, R_hp);
@@ -654,6 +665,10 @@ static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
 	Dl1_Hp_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
+
+	/* Read calibration from Efuse */
+	EfuseCurrentCalibration = Audio_Read_Efuse_HP_Impedance_Current_Calibration();
+
 	return 0;
 }
 

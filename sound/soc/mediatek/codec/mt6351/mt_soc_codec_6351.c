@@ -82,6 +82,9 @@
 #include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
 #endif
 
+/* HP IMPEDANCE Current Calibration from EFUSE */
+/* #define EFUSE_HP_IMPEDANCE */
+
 /* static function declaration */
 static bool AudioPreAmp1_Sel(int Mul_Sel);
 static bool GetAdcStatus(void);
@@ -5418,6 +5421,65 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 		     Audio_UL_LR_Swap_Get,
 		     Audio_UL_LR_Swap_Set),
 };
+
+/* Verify in muse6753 phone for LGE HP impedance requirement (2016/02) */
+int Audio_Read_Efuse_HP_Impedance_Current_Calibration(void)
+{
+	int ret;
+
+	/* Initialize to zero*/
+	ret = 0;
+
+#ifdef EFUSE_HP_IMPEDANCE
+	pr_warn("+%s\n", __func__);
+
+	/* 1. enable efuse ctrl engine clock */
+	Ana_Set_Reg(TOP_CKHWEN_CON0_CLR, 0x0040, 0x0040);
+	Ana_Set_Reg(TOP_CKPDN_CON3_CLR, 0x0004, 0x0004);
+
+	/* 2. set RG_OTP_RD_SW */
+	Ana_Set_Reg(0x0C16, 0x0001, 0x0001);
+
+	/* 3. Select which row to read in MACRO_1 */
+	/* set RG_OTP_PA for bit#786 ~ #793*/
+	Ana_Set_Reg(0x0C00, 0x0022, 0x003F);
+
+	/* 4. Toggle RG_OTP_RD_TRIG */
+	ret = Ana_Get_Reg(0x0C10);
+	if (ret == 0)
+		Ana_Set_Reg(0x0C10, 0x0001, 0x0001);
+	else
+		Ana_Set_Reg(0x0C10, 0x0000, 0x0001);
+
+	/* 5. Polling RG_OTP_RD_BUSY */
+	ret = 1;
+	while (ret == 1) {
+		usleep_range(100, 200);
+		ret = Ana_Get_Reg(0x0C1A);
+		ret = ret & 0x0001;
+		pr_warn("%s polling 0xC1A=0x%x\n", __func__, ret);
+	}
+
+	/* Need to delay at least 1ms for 0xC1A and than can read */
+	usleep_range(500, 1000);
+
+	/* 6. Read RG_OTP_DOUT_SW */
+	/* BIT#786 ~ #793 */
+	ret = Ana_Get_Reg(0x0C18);
+	pr_warn("%s HPoffset : efuse=0x%x\n", __func__, ret);
+	ret = (ret >> 2) & 0x00FF;
+	if (ret >= 64)
+		ret = ret - 128;
+
+	/* 7. Disables efuse_ctrl egine clock */
+	Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0004, 0x0004);
+	Ana_Set_Reg(TOP_CKHWEN_CON0_SET, 0x0040, 0x0040);
+#endif
+
+	pr_warn("-%s EFUSE: %d\n", __func__, ret);
+	return ret;
+}
+EXPORT_SYMBOL(Audio_Read_Efuse_HP_Impedance_Current_Calibration);
 
 static const struct snd_soc_dapm_widget mt6331_dapm_widgets[] = {
 	/* Outputs */
