@@ -2028,6 +2028,8 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 	unsigned int con1;
 	unsigned int ckdiv1;
 	unsigned int cur_khz;
+	unsigned int retry_cnt = 5;
+	unsigned int con1_result = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
@@ -2039,7 +2041,21 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 		(cpu_dvfs_is(p, MT_CPU_DVFS_L)) ? _GET_BITS_VAL_(14:10, ckdiv1) :
 		(cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) ? _GET_BITS_VAL_(19:15, ckdiv1) : _GET_BITS_VAL_(9:5, ckdiv1);
 
-	cur_khz = _cpu_freq_calc(con1, ckdiv1);
+	if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+		do {
+			cur_khz = _cpu_freq_calc(con1, ckdiv1);
+			/* Read con1 fail */
+			if (cur_khz > cpu_dvfs_get_max_freq(p) || cur_khz < cpu_dvfs_get_min_freq(p)) {
+				con1 = cpufreq_read(p->armpll_addr);
+				cur_khz = _cpu_freq_calc(con1, ckdiv1);
+				con1_result = 0;
+				cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x, retry = %d\n",
+					__func__, cur_khz, p->armpll_addr, con1, ckdiv1, (6 - retry_cnt));
+			} else
+				con1_result = 1;
+		} while (con1_result == 0 && retry_cnt--);
+	} else
+		cur_khz = _cpu_freq_calc(con1, ckdiv1);
 
 	if (do_dvfs_stress_test)
 		cpufreq_dbg("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
@@ -2047,16 +2063,6 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 	else
 		cpufreq_ver("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
 			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
-
-	if (cur_khz == 0) {
-		cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
-			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
-		/* Retry again */
-		con1 = cpufreq_read(p->armpll_addr);
-		cur_khz = _cpu_freq_calc(con1, ckdiv1);
-		cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
-			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
-	}
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -3570,9 +3576,6 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 
 	if ((p->idx_opp_ppm_base == p->idx_opp_ppm_limit) && p->idx_opp_ppm_base != -1)
 		new_opp_idx = p->idx_opp_ppm_base;
-
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && new_opp_idx < 8 && !release_dvfs)
-		new_opp_idx = 8;
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
