@@ -50,7 +50,6 @@
 #include "mu3d_hal_hw.h"
 #include "ssusb_qmu.h"
 #include "musb_gadget.h"
-
 /* MUSB PERIPHERAL status 3-mar-2006:
  *
  * - EP0 seems solid.  It passes both USBCV and usbtest control cases.

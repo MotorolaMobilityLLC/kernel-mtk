@@ -92,6 +92,11 @@ typedef enum {
 	CHARGING_CMD_SET_ERROR_STATE,
 	CHARGING_CMD_DISO_INIT,
 	CHARGING_CMD_GET_DISO_STATE,
+	CHARGING_CMD_SET_VINDPM,
+	CHARGING_CMD_SET_VBUS_OVP_EN,
+	CHARGING_CMD_GET_BIF_VBAT,
+	CHARGING_CMD_SET_CHRIND_CK_PDN,
+	CHARGING_CMD_SW_INIT,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -328,7 +333,10 @@ typedef enum {
 	BATTERY_VOLT_04_480000_V = 4480000,
 	BATTERY_VOLT_04_487500_V = 4487500,
 	BATTERY_VOLT_04_500000_V = 4500000,
+	BATTERY_VOLT_04_512500_V = 4512500,
 	BATTERY_VOLT_04_520000_V = 4520000,
+	BATTERY_VOLT_04_525000_V = 4525000,
+	BATTERY_VOLT_04_537500_V = 4537500,
 	BATTERY_VOLT_04_540000_V = 4540000,
 	BATTERY_VOLT_04_550000_V = 4550000,
 	BATTERY_VOLT_04_560000_V = 4560000,
@@ -462,6 +470,7 @@ typedef enum {
 	CHARGE_CURRENT_2900_00_MA = 290000,
 	CHARGE_CURRENT_3000_00_MA = 300000,
 	CHARGE_CURRENT_3100_00_MA = 310000,
+	CHARGE_CURRENT_3200_00_MA = 320000,
 	CHARGE_CURRENT_MAX
 } CHR_CURRENT_ENUM;
 
@@ -499,8 +508,12 @@ extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 extern int hw_charging_get_charger_type(void);
+extern void mt_power_off(void);
 extern unsigned int mt6311_get_chip_id(void);
 extern int is_mt6311_exist(void);
 extern int is_mt6311_sw_ready(void);
+
+extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);
+extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);
 
 #endif				/* #ifndef _CHARGING_H */

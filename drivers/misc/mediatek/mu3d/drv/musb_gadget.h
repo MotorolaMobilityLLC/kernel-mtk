@@ -39,7 +39,7 @@
 
 extern u32 is_prof;
 extern unsigned int ep_prof[8][2];
-
+extern void wake_up_bat(void);
 
 enum buffer_map_state {
 	UN_MAPPED = 0,

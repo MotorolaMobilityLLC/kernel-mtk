@@ -1,7 +1,7 @@
 #ifndef _CUST_BATTERY_METER_TABLE_H
 #define _CUST_BATTERY_METER_TABLE_H
 
-#include <mach/mt_typedefs.h>
+#include <mt-plat/mt_typedefs.h>
 
 /* ============================================================
 // define

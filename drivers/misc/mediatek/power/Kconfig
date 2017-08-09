@@ -4,3 +4,21 @@ config MTK_PMIC
 	default y
 	---help---
 	  MediaTek PMIC driver
+
+config MTK_BQ25896_SUPPORT
+	bool "MTK_BQ25896_SUPPORT"
+	default n
+	---help---
+	Mediatek TI BQ25896 driver.
+	Set y to support this driver.
+	Set n and choose other chargers.
+	This driver uses I2c bus.
+
+config MTK_BIF_SUPPORT
+	bool "MTK_BIF_SUPPORT"
+	default n
+	---help---
+	Mediatek smart battery BIF feature.
+	BIF feature provides battery information
+	to AP and no need to use AuxADC
+	to get battery information.

@@ -4,7 +4,7 @@
 #include <linux/ioctl.h>
 #include <mt-plat/charging.h>
 #include <linux/time.h>
-
+#include <mt-plat/mt_typedefs.h>
 /*****************************************************************************
  *  BATTERY VOLTAGE
  ****************************************************************************/

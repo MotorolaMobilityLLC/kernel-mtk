@@ -4,8 +4,9 @@
 #include <linux/platform_device.h>
 #include <mach/mt_battery_meter.h>
 #include <mt-plat/charging.h>
-
-
+#if 0
+#include <mt-plat/mt_typedefs.h>
+#endif
 /* ============================================================ */
 /* define */
 /* ============================================================ */

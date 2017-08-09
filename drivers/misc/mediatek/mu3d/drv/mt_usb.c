@@ -20,7 +20,6 @@
 #include "mtk-phy-asic.h"
 /*#include <mach/mt_typedefs.h>*/
 #endif
-
 #if defined(FOR_BRING_UP) || !defined(CONFIG_MTK_SMART_BATTERY)
 static inline void BATTERY_SetUSBState(int usb_state)
 {

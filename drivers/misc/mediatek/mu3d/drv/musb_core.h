@@ -64,8 +64,10 @@ struct musb_ep;
 extern u32 fake_CDP;
 
 extern struct musb *_mu3d_musb;
-
-
+#if defined(CONFIG_MTK_SMART_BATTERY)
+extern void BATTERY_SetUSBState(int usb_state_value);
+extern CHARGER_TYPE mt_get_charger_type(void);
+#endif
 /* Helper defines for struct musb->hwvers */
 #define MUSB_HWVERS_MAJOR(x)	((x >> 10) & 0x1f)
 #define MUSB_HWVERS_MINOR(x)	(x & 0x3ff)

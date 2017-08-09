@@ -440,10 +440,10 @@ signed int fgauge_read_IM_current(void *data)
 #else
 		unsigned short uvalue16 = 0;
 		signed int dvalue = 0;
-		int m = 0;
+		/*int m = 0;*/
 		long long Temp_Value = 0;
 		signed int Current_Compensate_Value = 0;
-		unsigned int ret = 0;
+		/*unsigned int ret = 0;*/
 
 		uvalue16 = pmic_get_register_value(MT6351_PMIC_FG_R_CURR);
 		bm_print(BM_LOG_FULL, "[fgauge_read_IM_current] : FG_CURRENT = %x\r\n",
@@ -537,7 +537,7 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 	unsigned int uvalue32_CAR_MSB = 0;
 	signed short upperbound = 0, lowbound = 0;
 	signed short pcar = 0;
-	signed short m, i;
+	signed short m;
 	unsigned int car = *(unsigned int *) (data);
 	unsigned int ret = 0;
 	unsigned short *plow, *phigh, *pori;
@@ -966,8 +966,10 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
 		if (bm_func[cmd] != NULL)
 				status = bm_func[cmd] (data);
+		else
+			status = STATUS_UNSUPPORTED;
 	} else
-		return STATUS_UNSUPPORTED;
+		status = STATUS_UNSUPPORTED;
 
 	return status;
 }

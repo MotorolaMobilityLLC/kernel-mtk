@@ -77,7 +77,7 @@
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-#include "mt_pe.h"
+#include <mach/mt_pe.h>
 #endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Battery Logging Entry */
@@ -2785,6 +2785,14 @@ CHARGER_TYPE mt_get_charger_type(void)
 
 static void mt_battery_charger_detect_check(void)
 {
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+/*New low power feature of MT6531: disable charger CLK without CHARIN.
+* MT6351 API abstracted in charging_hw_bw25896.c. Any charger with MT6351 needs to set this.
+* Compile option is not limited to CONFIG_MTK_BQ25896_SUPPORT.
+* PowerDown = 0
+*/
+		kal_uint32 pwr;
+#endif
 	if (upmu_is_chr_det() == KAL_TRUE) {
 		wake_lock(&battery_suspend_lock);
 
@@ -2815,8 +2823,25 @@ static void mt_battery_charger_detect_check(void)
 		}
 #endif
 
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+/*New low power feature of MT6531: disable charger CLK without CHARIN.
+* MT6351 API abstracted in charging_hw_bw25896.c. Any charger with MT6351 needs to set this.
+* Compile option is not limited to CONFIG_MTK_BQ25896_SUPPORT.
+* PowerDown = 0
+*/
+		pwr = 0;
+		battery_charging_control(CHARGING_CMD_SET_CHRIND_CK_PDN, &pwr);
+#endif
+
 		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
 			    BMT_status.charger_type);
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+		/* is_ta_connect = KAL_FALSE; */
+		/* ta_check_chr_type = KAL_TRUE; */
+		ta_cable_out_occur = KAL_FALSE;
+		battery_log(BAT_LOG_CRTI, "[PE+] Cable In\n");
+#endif
 
 	} else {
 		wake_unlock(&battery_suspend_lock);
@@ -2835,6 +2860,23 @@ static void mt_battery_charger_detect_check(void)
 		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable out \r\n");
 
 		mt_usb_disconnect();
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+		is_ta_connect = KAL_FALSE;
+		ta_check_chr_type = KAL_TRUE;
+		ta_cable_out_occur = KAL_TRUE;
+		battery_log(BAT_LOG_CRTI, "[PE+] Cable OUT\n");
+#endif
+
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+/*New low power feature of MT6531: disable charger CLK without CHARIN.
+* MT6351 API abstracted in charging_hw_bw25896.c. Any charger with MT6351 needs to set this.
+* Compile option is not limited to CONFIG_MTK_BQ25896_SUPPORT.
+* PowerDown = 1
+*/
+		pwr = 1;
+		battery_charging_control(CHARGING_CMD_SET_CHRIND_CK_PDN, &pwr);
+#endif
 	}
 }
 
@@ -3493,8 +3535,12 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 #endif
 
 	do {
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+		/*this annoying SW workaround wakes up bat_thread. 10 secs is set instead of 1 sec*/
+		ktime = ktime_set(10, 0);
+#else
 		ktime = ktime_set(0, BAT_MS_TO_NS(1000));
-
+#endif
 		if (chargin_hw_init_done)
 			battery_charging_control(CHARGING_CMD_SET_HV_THRESHOLD, &hv_voltage);
 
@@ -3579,8 +3625,12 @@ enum hrtimer_restart battery_kthread_hrtimer_func(struct hrtimer *timer)
 void battery_kthread_hrtimer_init(void)
 {
 	ktime_t ktime;
-
-	ktime = ktime_set(1, 0);	/* 3s, 10* 1000 ms */
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+/*watchdog timer before 40 secs*/
+	ktime = ktime_set(10, 0);	/* 3s, 10* 1000 ms */
+#else
+	ktime = ktime_set(1, 0);
+#endif
 	hrtimer_init(&battery_kthread_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	battery_kthread_timer.function = battery_kthread_hrtimer_func;
 	hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
@@ -4000,7 +4050,7 @@ static int __batt_init_cust_data_from_dt(void)
 }
 #endif
 
-static void batt_init_cust_data(void)
+int batt_init_cust_data(void)
 {
 	__batt_init_cust_data_from_cust_header();
 
@@ -4008,6 +4058,7 @@ static void batt_init_cust_data(void)
 	battery_log(BAT_LOG_CRTI, "battery custom init by DTS\n");
 	__batt_init_cust_data_from_dt();
 #endif
+	return 0;
 }
 
 static int battery_probe(struct platform_device *dev)
