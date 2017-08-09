@@ -436,7 +436,20 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				regulator-enable-ramp-delay = <44>;
 				regulator-boot-on;
 			};
+			mt_pmic_vldo28_0_ldo_reg: ldo_vldo28_0 {
+				regulator-name = "vldo28_0";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-enable-ramp-delay = <264>;
+			};
+			mt_pmic_vldo28_1_ldo_reg: ldo_vldo28_1 {
+				regulator-name = "vldo28_1";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-enable-ramp-delay = <264>;
+			};
 		};/* End of ldo_regulators */
+
 		regulators_supply {
 			compatible = "mediatek,mt_pmic_regulator_supply";
 			va18-supply = <&mt_pmic_va18_ldo_reg>;
@@ -464,6 +477,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
 		};/* End of regulators_supply */
 	};/* End of mt_pmic_regulator */
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;
@@ -603,6 +617,13 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,pwrap";
 			reg = <0x1000d000 0x1000>;
 			interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>;
+			pmic: mt6351 {
+				compatible = "mediatek,mt6351-pmic";
+				interrupt-parent = <&eintc>;
+				interrupts = <262 4>;
+				debounce = <262 1000>;
+				interrupt-controller;
+			};
 		};
 
 		devapc_ao@1000e000 {
