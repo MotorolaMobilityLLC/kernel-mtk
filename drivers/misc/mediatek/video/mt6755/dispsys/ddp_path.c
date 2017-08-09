@@ -945,8 +945,7 @@ void ddp_disconnect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT],
-				      handle);
+		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
