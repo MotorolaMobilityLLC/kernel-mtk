@@ -14,6 +14,8 @@
 #include "sys_ipc.h"
 #include "kree/tz_trusty.h"
 
+#include <linux/trusty/trusty_ipc.h>
+
 #ifdef CONFIG_ARM64
 #define ARM_SMC_CALLING_CONVENTION
 #endif
@@ -72,17 +74,71 @@ struct smc_args_s {
 	uint32_t paramTypes;
 };
 
+struct mtee_ipc_data {
+	u32 smcnr;
+	u32 smc_args_l;
+	u32 smc_args_h;
+	u32 param;
+};
+
 #define SMC_MTEE_SERVICE_CALL (0x34000008)
+#define MTEE_SERVICE_PORT_NAME "com.mediatek.trusty.mteesrv"
 static u32 tz_service_call(struct smc_args_s *smc_arg)
 {
 	s32 ret;
 	u64 param[REE_SERVICE_BUFFER_SIZE / sizeof(u64)];
+	tipc_k_handle h;
+	struct mtee_ipc_data data;
+	ssize_t c;
+	TZ_RESULT tz_ret;
 
 	smc_arg->reebuf = param;
-	ret = trusty_mtee_std_call32(SMC_MTEE_SERVICE_CALL,
-					(u32)(u64)smc_arg,
-					(u32)((u64)smc_arg >> 32),
-					(u32)(u64)param);
+
+	ret = tipc_k_connect(&h, MTEE_SERVICE_PORT_NAME);
+	if (ret != 0)
+		return ret;
+
+	data.smcnr = REE_SERV_NONE;
+	data.smc_args_l = (u32)(u64)smc_arg;
+	data.smc_args_h = (u32)((u64)smc_arg >> 32);
+	data.param = (u32)(u64)param;
+	c = tipc_k_write(h, &data, sizeof(data), 0);
+	if (c < 0) {
+		tipc_k_disconnect(h);
+		return c;
+	}
+
+	while (1) {
+		c = tipc_k_read(h, &data, sizeof(data), 0);
+		if (c < 0) {
+			tipc_k_disconnect(h);
+			return c;
+		}
+
+		if (data.smcnr == REE_SERV_NONE) {
+			ret = (u32)param[0];
+			break;
+		}
+
+		if (data.smcnr == REE_SERV_REQUEST_IRQ) {
+			tz_ret = KREE_ServRequestIrq(REE_SERV_REQUEST_IRQ, (u8 *)param);
+
+			data.smcnr = REE_SERV_REQUEST_IRQ;
+			data.param = tz_ret;
+			c = tipc_k_write(h, &data, sizeof(data), 0);
+			if (c < 0) {
+				tipc_k_disconnect(h);
+				return c;
+			}
+
+			if (tz_ret != TZ_RESULT_SUCCESS) {
+				tipc_k_disconnect(h);
+				return tz_ret;
+			}
+		}
+	}
+
+	tipc_k_disconnect(h);
 
 	return ret;
 }
