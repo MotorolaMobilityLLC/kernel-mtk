@@ -1374,7 +1374,7 @@ DRIVER_ATTR(gic_dvt, 0666, gic_dvt_show, gic_dvt_store);
  * Define Data Structure
  */
 struct mt_gic_driver {
-	struct device_driver driver;
+	struct platform_driver platform;
 	const struct platform_device_id *id_table;
 };
 
@@ -1383,7 +1383,7 @@ struct mt_gic_driver {
  * Define Global Variable
  */
 static struct mt_gic_driver mt_gic_drv = {
-	.driver = {
+	.platform.driver = {
 		   .name = "gic",
 		   .bus = &platform_bus_type,
 		   .owner = THIS_MODULE,
@@ -1473,11 +1473,11 @@ static int __init mt_gic_init(void)
 {
 	int ret;
 
-	ret = driver_register(&mt_gic_drv.driver);
+	ret = driver_register(&mt_gic_drv.platform.driver);
 	if (ret == 0)
 		pr_err("GIC init done...\n");
 
-	ret = driver_create_file(&mt_gic_drv.driver, &driver_attr_gic_dvt);
+	ret = driver_create_file(&mt_gic_drv.platform.driver, &driver_attr_gic_dvt);
 	if (ret == 0)
 		pr_err("GIC create sysfs file done...\n");
 
