@@ -1337,8 +1337,11 @@ static int mt_spi_setup(struct spi_device *spidev)
 
 	struct mt_chip_conf *chip_config = NULL;
 
-	if (!spidev)
-		dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev));
+	if (!spidev) {
+		pr_err("spidev is null. error\n");
+		/* dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev)); */
+		return -EINVAL;
+	}
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
