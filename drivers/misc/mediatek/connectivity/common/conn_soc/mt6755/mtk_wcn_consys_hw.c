@@ -371,7 +371,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			/*2.1.switch VCN28 to HW control mode (with PMIC_WRAP API) */
 			/*2.2.turn on VCN28 LDO (with PMIC_WRAP API)" */
 			/*fix vcn28 not balance warning */
-			pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
+			pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 1);
 #if defined(CONFIG_MTK_LEGACY)
 				       hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800 * 1000, "wcn_drv");
 #else
