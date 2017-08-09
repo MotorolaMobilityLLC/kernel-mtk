@@ -175,12 +175,16 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 			mmc->caps |= MMC_CAP_HW_RESET;
 		}
 		mmc->ios.timing = MMC_TIMING_LEGACY;
+		mmc->ios.clock = 26000;
 		msdc_ops_set_ios(mmc, &mmc->ios);
-		mmc_hw_reset(mmc);
+		if (mmc_hw_reset(mmc))
+			pr_err("msdc%d switch HS200 failed\n", host->id);
+		/* recovery MMC_CAP_HW_RESET */
 		if (!caps_hw_reset)
 			mmc->caps &= ~MMC_CAP_HW_RESET;
 		goto done;
 	}
+	/* lower frequence */
 	if (mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS200) {
 		mmc->card->mmc_avail_type &= ~EXT_CSD_CARD_TYPE_HS200;
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, div);
@@ -231,12 +235,15 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	}
 
 power_reinit:
-	pr_err("msdc%d reinit card %d times\n",
-		host->id, host->reautok_times);
+	pr_err("msdc%d reinit card\n",
+		host->id);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 26000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
-	/* ret = mmc->bus_ops->reset(mmc); */
+	ret = mmc_hw_reset(mmc);
+	if (ret)
+		pr_err("msdc%d power reset failed\n", host->id);
 	return ret;
 }
 /*

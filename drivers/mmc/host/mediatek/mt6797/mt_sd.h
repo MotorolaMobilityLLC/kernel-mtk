@@ -26,6 +26,7 @@
 #include <linux/clk.h>
 #include <mt-plat/sync_write.h>
 
+/* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
 #define TUNE_ASYNC_DATA_WRITE    (0x1 << 1) /* async transfer data crc */
@@ -475,6 +476,7 @@ struct msdc_host {
 	u32	                    need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
 	struct msdc_saved_para  saved_para;

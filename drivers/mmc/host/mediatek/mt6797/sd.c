@@ -1927,6 +1927,8 @@ unsigned int msdc_do_command(struct msdc_host   *host,
 	if (msdc_command_resp_polling(host, cmd, tune, timeout))
 		goto end;
  end:
+	if (cmd->opcode == MMC_SEND_STATUS && cmd->error == 0)
+		host->device_status = cmd->resp[0];
 
 	N_MSG(CMD, "        return<%d> resp<0x%.8x>", cmd->error, cmd->resp[0]);
 	return cmd->error;
@@ -4051,7 +4053,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	}
 #endif
 
-out:
 #ifdef MTK_MSDC_USE_CACHE
 	msdc_check_cache_flush_error(host, cmd);
 #endif
@@ -4153,7 +4154,25 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	host->tuning_in_progress = false;
 	return 0;
 }
+int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
 
+	msdc_send_stop(host);
+	polling_tmo = jiffies + POLLING_BUSY;
+	pr_err("msdc%d, waiting device is not busy\n", host->id);
+	do {
+		msleep(100);
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, device stuck in PRG!\n",
+					host->id);
+			return -1;
+		}
+	} while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000);
+	return 0;
+
+}
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4163,6 +4182,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 
 	host->tuning_in_progress = true;
 
+	/* autok_err_type is used for switch edge tune and CMDQ tune */
 	if ((host->need_tune & TUNE_ASYNC_CMD) ||
 		(host->need_tune & TUNE_LEGACY_CMD))
 		autok_err_type = CMD_ERROR;
@@ -4172,11 +4192,13 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	else if ((host->need_tune & TUNE_ASYNC_DATA_WRITE) ||
 		(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
+
 	/* 1. mmc_blk_err_check will send CMD13 to check device status
-	 * Don't autok/switch edge here, because it will cause CMD19 send when
+	 * Don't autok/switch edge here, or it will cause CMD19 send when
 	 * device is not in transfer status
-	 * 2. mmc_blk_err_check will send CMD12 to stop transition.
-	 * Don't autok/switch edge here also. it will cause switch edge failed
+	 * 2. mmc_blk_err_check will send CMD12 to stop transition if device is
+	 * in RCV and DATA status.
+	 * Don't autok/switch edge here, or it will cause switch edge failed
 	 */
 	if ((mrq->cmd->opcode == MMC_SEND_STATUS &&
 		host->err_cmd != MMC_SEND_STATUS) ||
@@ -4184,14 +4206,24 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		host->err_cmd != MMC_STOP_TRANSMISSION)) {
 		goto end;
 	}
-	/* If RESP CRC occur in sending CMD13 in mmc_blk_err_check, send stop
-	 * first to insure device is in transfer state
+	/* If RESP CRC occur in sending CMD13 in mmc_blk_err_check, device may
+	 * be in RCV, DATA, and PRG status. So, send stop first to insure
+	 * device turn to transfer status.
 	 */
 	if ((mrq->cmd->opcode == MMC_SEND_STATUS) &&
 			(host->err_cmd == MMC_SEND_STATUS))
-		msdc_send_stop(host);
-	/* pr_err("msdc%d: transfer err %d timing:%d\n",
-		host->id, autok_err_type, mmc->ios.timing); */
+		if (msdc_stop_and_wait_busy(host, mrq))
+			goto recovery;
+	/* If device is in programming status, mmc_blk_err_check can't send
+	 * stop because our driver return cmd->err when data crc,
+	 * So send stop and wait device not busy here
+	 */
+	if (R1_CURRENT_STATE(host->device_status) == R1_STATE_PRG &&
+			mrq->cmd->opcode != MMC_STOP_TRANSMISSION) {
+		host->device_status = 0;
+		if (msdc_stop_and_wait_busy(host, mrq))
+			goto recovery;
+	}
 
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
@@ -4236,11 +4268,16 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			break;
 		}
 		/* autok failed three times will try reinit tuning */
-		if (ret && (host->reautok_times >= 3)) {
+		if (host->reautok_times >= 4) {
+recovery:
 			pr_err("msdc%d autok error\n", host->id);
 			/* eMMC will chang to HS200 and lower frequence */
-			if (host->hw->host_function == MSDC_EMMC)
+			if (host->hw->host_function == MSDC_EMMC) {
+				msdc_dump_register(host);
+#ifdef MSDC_SWITCH_MODE_WHEN_ERROR
 				ret = emmc_reinit_tuning(mmc);
+#endif
+			}
 			/* SDcard will change speed mode and power reset sdcard*/
 			if (host->hw->host_function == MSDC_SD)
 				ret = sdcard_reset_tuning(mmc);
@@ -4391,7 +4428,6 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base;
-	unsigned long flags;
 	int level = 0;
 
 	base = host->base;
@@ -5160,7 +5196,7 @@ static void msdc_add_host(struct work_struct *work)
 	struct msdc_host *host = NULL;
 	struct mmc_host *mmc = NULL;
 
-	host = container_of(work, struct msdc_host, work_init);
+	host = container_of(work, struct msdc_host, work_init.work);
 	BUG_ON(!host);
 	mmc = host->mmc;
 	BUG_ON(!mmc);
@@ -5333,6 +5369,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->reautok_times = 0;
 	host->tune_smpl_times = 0;
 	host->timing = 0;
+	host->device_status = 0;
 	host->err_cmd = -1;
 	host->sd_cd_insert_work = 0;
 	host->block_bad_card = 0;
