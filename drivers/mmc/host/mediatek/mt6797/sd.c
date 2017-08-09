@@ -1960,7 +1960,11 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		if ((cmd->opcode != 52) && (cmd->opcode != 8) &&
 		    (cmd->opcode != 5) && (cmd->opcode != 55) &&
 		    (cmd->opcode != 19) && (cmd->opcode != 21) &&
-		    (cmd->opcode != 1)) {
+		    (cmd->opcode != 1)
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		    && (cmd->opcode != 12)
+#endif
+		    ) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 			mmc_cmd_dump(host->mmc);
 #endif
