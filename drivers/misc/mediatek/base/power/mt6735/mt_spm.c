@@ -21,6 +21,11 @@
 #include <linux/of_address.h>
 #endif
 
+void __weak aee_kernel_warning_api(const char *file, const int line, const int db_opt,
+				   const char *module, const char *msg, ...)
+{
+}
+
 #ifdef CONFIG_OF
 void __iomem *spm_base;
 void __iomem *scp_i2c0_base;
@@ -361,7 +366,7 @@ int spm_module_init(void)
 
 	if (spm_golden_setting_cmp(1) != 0) {
 		/* r = -EPERM; */
-/*		aee_kernel_warning("SPM Warring", "dram golden setting mismach"); */
+		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
 	}
 
 	spm_set_pcm_init_flag();
