@@ -902,7 +902,7 @@ static VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len)
 	INT32 k = 0;
 
 	pr_warn(" %s-len:%d\n", title, len);
-	/* pr_info("    ", title, len); */
+	/* pr_warn("    ", title, len); */
 	for (k = 0; k < len; k++) {
 		if (k % 16 == 0 && k != 0)
 			pr_warn("\n    ");

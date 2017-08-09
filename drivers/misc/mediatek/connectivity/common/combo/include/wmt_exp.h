@@ -42,12 +42,12 @@ extern UINT32 gWmtDbgLvl;
 
 #define WMT_LOUD_FUNC(fmt, arg...) do { \
 	if (gWmtDbgLvl >= WMT_LOG_LOUD) \
-		pr_info(DFT_TAG "%s: " fmt, __func__ , ##arg); \
+		pr_warn(DFT_TAG "%s: " fmt, __func__ , ##arg); \
 } while (0)
 
 #define WMT_INFO_FUNC(fmt, arg...) do { \
 	if (gWmtDbgLvl >= WMT_LOG_INFO) \
-		pr_info(DFT_TAG "%s: " fmt, __func__ , ##arg); \
+		pr_warn(DFT_TAG "%s: " fmt, __func__ , ##arg); \
 } while (0)
 
 #define WMT_WARN_FUNC(fmt, arg...) do { \
@@ -67,7 +67,7 @@ extern UINT32 gWmtDbgLvl;
 
 #define WMT_TRC_FUNC(fmt) do { \
 	if (gWmtDbgLvl >= WMT_LOG_TRC) \
-		pr_info(DFT_TAG "%s: " fmt, __func__ , ##arg); \
+		pr_warn(DFT_TAG "%s: " fmt, __func__ , ##arg); \
 } while (0)
 
 

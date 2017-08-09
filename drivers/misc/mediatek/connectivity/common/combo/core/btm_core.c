@@ -399,7 +399,7 @@ static INT32 _stp_btm_proc(PVOID pvData)
 		}
 
 		if (gDumplogflag) {
-			/* pr_info("enter place1\n"); */
+			/* pr_warn("enter place1\n"); */
 #if 0
 			if (mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_uart_fullset_mode())
 				dump_uart_history();
@@ -685,7 +685,7 @@ INT32 stp_btm_reset_btm_wq(MTKSTP_BTM_T *stp_btm)
 
 INT32 stp_notify_btm_dump(MTKSTP_BTM_T *stp_btm)
 {
-	/* pr_info("%s:enter++\n",__func__); */
+	/* pr_warn("%s:enter++\n",__func__); */
 	if (NULL == stp_btm) {
 		osal_dbg_print("%s: NULL POINTER\n", __func__);
 		return -1;

@@ -2764,7 +2764,7 @@ INT32 stp_sdio_rxdbg_setup(VOID)
 	gStpSdioRxDbgEntry->read_proc = stp_sdio_rxdbg_read;
 	gStpSdioRxDbgEntry->write_proc = stp_sdio_rxdbg_write;
 
-	pr_info(DFT_TAG "Create /proc entry succeed\n\r");
+	pr_warn(DFT_TAG "Create /proc entry succeed\n\r");
 #endif
 
 	return 0;
@@ -2906,7 +2906,7 @@ static VOID stp_sdio_txdbg_dump(VOID)
 #endif
 
 #endif
-		pr_info(DFT_TAG "pkt_buf.tx_buf idx(%x) ts(%d) len(%d)\n", idx,
+		pr_warn(DFT_TAG "pkt_buf.tx_buf idx(%x) ts(%d) len(%d)\n", idx,
 			gp_info->pkt_buf.tx_buf_ts[idx], len);
 		if (0 == len) {
 			pr_err(DFT_TAG "idx(%x) 0 == len dump skip\n", idx);

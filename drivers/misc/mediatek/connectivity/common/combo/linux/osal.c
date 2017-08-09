@@ -193,7 +193,7 @@ INT32 osal_print(const PINT8 str, ...)
 	vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
 	va_end(args);
 
-	pr_info("%s", tempString);
+	pr_warn("%s", tempString);
 
 	return 0;
 }
