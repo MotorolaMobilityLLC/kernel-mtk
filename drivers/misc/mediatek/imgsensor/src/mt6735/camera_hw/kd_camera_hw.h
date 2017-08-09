@@ -4,7 +4,7 @@
 #include <linux/types.h>
 
 
-#if 0//defined CONFIG_MTK_LEGACY
+#if defined CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
 #include "pmic_drv.h"

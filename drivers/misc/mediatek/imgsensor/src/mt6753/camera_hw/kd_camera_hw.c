@@ -6,13 +6,12 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-//#include <linux/xlog.h>
 
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
 #include "kd_camera_hw.h"
-
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
@@ -29,13 +28,6 @@
 #define PK_DBG(a, ...)
 #define PK_ERR(a, ...)
 #define PK_XLOG_INFO(fmt, args...)
-#endif
-#ifndef FALSE
-  #define FALSE (0)
-#endif
-
-#ifndef TRUE
-  #define TRUE  (1)
 #endif
 
 #if !defined(CONFIG_MTK_LEGACY)
@@ -72,7 +64,7 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 	cam0_pnd_l = pinctrl_lookup_state(camctrl, "cam0_pnd0");
 	if (IS_ERR(cam0_pnd_l)) {
 		ret = PTR_ERR(cam0_pnd_l);
-		pr_debug("%s : pinctrl err, cam0_pnd_h\n", __func__);
+		pr_debug("%s : pinctrl err, cam0_pnd_l\n", __func__);
 	}
 
 
@@ -85,49 +77,49 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 	cam0_rst_l = pinctrl_lookup_state(camctrl, "cam0_rst0");
 	if (IS_ERR(cam0_rst_l)) {
 		ret = PTR_ERR(cam0_rst_l);
-		pr_debug("%s : pinctrl err, cam0_rst1\n", __func__);
+		pr_debug("%s : pinctrl err, cam0_rst_l\n", __func__);
 	}
 
     /*Cam1 Power/Rst Ping initialization*/
 	cam1_pnd_h = pinctrl_lookup_state(camctrl, "cam1_pnd1");
-	if (IS_ERR(cam0_pnd_h)) {
-		ret = PTR_ERR(cam0_pnd_h);
-		pr_debug("%s : pinctrl err, cam0_pnd_h\n", __func__);
+	if (IS_ERR(cam1_pnd_h)) {
+		ret = PTR_ERR(cam1_pnd_h);
+		pr_debug("%s : pinctrl err, cam1_pnd_h\n", __func__);
 	}
 
 	cam1_pnd_l = pinctrl_lookup_state(camctrl, "cam1_pnd0");
-	if (IS_ERR(cam0_pnd_l)) {
-		ret = PTR_ERR(cam0_pnd_l);
-		pr_debug("%s : pinctrl err, cam0_pnd_h\n", __func__);
+	if (IS_ERR(cam1_pnd_l )) {
+		ret = PTR_ERR(cam1_pnd_l );
+		pr_debug("%s : pinctrl err, cam1_pnd_l\n", __func__);
 	}
 
 
 	cam1_rst_h = pinctrl_lookup_state(camctrl, "cam1_rst1");
-	if (IS_ERR(cam0_rst_h)) {
-		ret = PTR_ERR(cam0_rst_h);
-		pr_debug("%s : pinctrl err, cam0_rst_h\n", __func__);
+	if (IS_ERR(cam1_rst_h)) {
+		ret = PTR_ERR(cam1_rst_h);
+		pr_debug("%s : pinctrl err, cam1_rst_h\n", __func__);
 	}
 
 
 	cam1_rst_l = pinctrl_lookup_state(camctrl, "cam1_rst0");
-	if (IS_ERR(cam0_rst_l)) {
-		ret = PTR_ERR(cam0_rst_l);
-		pr_debug("%s : pinctrl err, cam0_rst1\n", __func__);
+	if (IS_ERR(cam1_rst_l)) {
+		ret = PTR_ERR(cam1_rst_l);
+		pr_debug("%s : pinctrl err, cam1_rst_l\n", __func__);
 	}
 	/*externel LDO enable */
-	cam_ldo0_h = pinctrl_lookup_state(camctrl, "cam_ldo0_h");
+	cam_ldo0_h = pinctrl_lookup_state(camctrl, "cam_ldo0_1");
 	if (IS_ERR(cam_ldo0_h)) {
 		ret = PTR_ERR(cam_ldo0_h);
-		pr_debug("%s : pinctrl err, cam0_rst_h\n", __func__);
+		pr_debug("%s : pinctrl err, cam_ldo0_h\n", __func__);
 	}
 
 
-	cam_ldo0_l = pinctrl_lookup_state(camctrl, "cam_ldo0_l");
+	cam_ldo0_l = pinctrl_lookup_state(camctrl, "cam_ldo0_0");
 	if (IS_ERR(cam_ldo0_l)) {
 		ret = PTR_ERR(cam_ldo0_l);
-		pr_debug("%s : pinctrl err, cam0_rst1\n", __func__);
+		pr_debug("%s : pinctrl err, cam_ldo0_l\n", __func__);
 	}
-return 0;
+	return ret;
 }
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)

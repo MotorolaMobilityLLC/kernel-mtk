@@ -293,14 +293,14 @@ memory@00000000 {
 			output-high;
 		};
 	};
-	camera_pins_cam_ldo0_l: cam@0 {
+	camera_pins_cam_ldo0_0: cam@0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam_ldo1_h: cam@1 {
+	camera_pins_cam_ldo0_1: cam@1 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
 			slew-rate = <1>;
@@ -315,7 +315,7 @@ memory@00000000 {
 &kd_camera_hw1 {
 	pinctrl-names = "default", "cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
 	"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
-	"cam_ldo0_l", "cam_ldo0_h";
+	"cam_ldo0_0", "cam_ldo0_1";
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst0>;
 	pinctrl-2 = <&camera_pins_cam0_rst1>;
@@ -325,8 +325,8 @@ memory@00000000 {
 	pinctrl-6 = <&camera_pins_cam1_rst1>;
 	pinctrl-7 = <&camera_pins_cam1_pnd0>;
 	pinctrl-8 = <&camera_pins_cam1_pnd1>;
-	pinctrl-9 = <&camera_pins_cam_ldo0_l>;
-	pinctrl-10 = <&camera_pins_cam_ldo1_h>;
+	pinctrl-9 = <&camera_pins_cam_ldo0_0>;
+	pinctrl-10 = <&camera_pins_cam_ldo0_1>;
 	status = "okay";
 
 };

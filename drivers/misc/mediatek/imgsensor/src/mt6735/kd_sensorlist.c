@@ -3298,6 +3298,9 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 
 #if !defined(CONFIG_MTK_CLKMGR)
 	Get_ccf_clk(pdev);
+#endif
+
+#if !defined(CONFIG_MTK_LEGACY)/*GPIO Pin control*/
 	mtkcam_gpio_init(pdev);
 #endif
 
