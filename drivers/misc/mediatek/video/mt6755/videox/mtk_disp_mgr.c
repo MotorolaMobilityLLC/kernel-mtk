@@ -214,7 +214,8 @@ int disp_destroy_session(disp_session_config *config)
 
 	DISPMSG("disp_destroy_session, 0x%x", config->session_id);
 
-	release_session_buffer(config->session_id);
+	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
+		release_session_buffer(config->session_id);
 
 	/* 1.To check if this session exists already, and remove it */
 	mutex_lock(&disp_session_lock);
