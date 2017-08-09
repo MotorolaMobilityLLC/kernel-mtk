@@ -196,9 +196,8 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {  4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 26,   12, 2000, 1500}};// slim video
 
 
-
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
-extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
+extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
 	kal_uint16 get_byte=0;
@@ -209,8 +208,11 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	return get_byte;
 }
 
-
-#define write_cmos_sensor(addr, para) iWriteReg((u16) addr , (u32) para , 1,  imgsensor.i2c_write_id)
+static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
+{
+	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
 
 static void set_dummy(void)
 {

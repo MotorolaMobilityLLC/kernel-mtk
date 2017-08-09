@@ -641,15 +641,17 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 		i4RetValue = i2c_master_send(pClient, a_pSendData, a_sizeSendData);
 		if (i4RetValue != a_sizeSendData) {
 			PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
+			i4RetValue = -1;
 		}
 		else {
+			i4RetValue = 0;
 			break;
 		}
 		uDELAY(50);
 	} while ((retry--) > 0);
 	/* KD_IMGSENSOR_PROFILE("iWriteRegI2C"); */
 
-    return 0;
+    return i4RetValue;
 }
 
 /*******************************************************************************
