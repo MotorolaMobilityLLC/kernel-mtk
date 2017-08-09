@@ -26,6 +26,7 @@
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
 #define BATTERY_DTS_SUPPORT
 #define RBAT_PULL_UP_VOLT_BY_BIF
+/* #define INIT_BAT_CUR_FROM_PTIM */
 
 #define FG_BAT_INT_H_NO 48
 #define FG_BAT_INT_L_NO 49
@@ -216,6 +217,7 @@ extern void pmu_drv_tool_customization_init(void);
 extern int batt_init_cust_data(void);
 extern void PMIC_INIT_SETTING_V1(void);
 
+extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
 #endif
 
 #endif /* _MT_PMIC_UPMU_SW_H_ */
