@@ -222,6 +222,14 @@
 			reg = <0 0x44410000 0 0xe0000>;
 		};
 
+		consys-reserve-memory {
+			compatible = "mediatek,consys-reserve-memory";
+			no-map;
+			size = <0 0x200000>;
+			alignment = <0 0x200000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
+
 		spm-reserve-memory {
 			compatible = "mediatek,spm-reserve-memory";
 			no-map;
@@ -2106,6 +2114,18 @@
 				"venc-mtcmos",
 				"venc-larb",
 				"venc-jpgdec";
+	};
+
+	consys: consys@18070000 {
+		compatible = "mediatek,mt6757-consys";
+		reg = <0x18070000 0x0200>,  /*CONN_MCU_CONFIG_BASE */
+			<0x10007000 0x0100>,  /*AP_RGU_BASE */
+			<0x10000000 0x2000>,  /*TOPCKGEN_BASE */
+			<0x10006000 0x1000>;  /*SPM_BASE */
+		interrupts = <GIC_SPI 266 IRQ_TYPE_LEVEL_LOW>, /*BGF_EINT */
+			<GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>; /*WDT_EINT */
+		clocks = <&scpsys SCP_SYS_CONN>;
+		clock-names = "conn";
 	};
 
 	camsys: camsys_config@1a000000  {
