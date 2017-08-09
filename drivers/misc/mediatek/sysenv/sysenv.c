@@ -123,7 +123,7 @@ env_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *p
 		pr_err("[%s]write fail\n", MODULE_NAME);
 		goto end;
 	} else {
-		pr_notice("[%s]name :%s,value: %s\n", MODULE_NAME, buffer, buffer + v_index);
+		pr_debug("[%s]name :%s,value: %s\n", MODULE_NAME, buffer, buffer + v_index);
 	}
 	ret = set_env(buffer, buffer + v_index);
 end:
@@ -176,7 +176,7 @@ static long env_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 		value_r = get_env(name_buf);
 		if (value_r == NULL) {
 			ret = -EPERM;
-			pr_notice("[%s]cann't find name=%s\n", MODULE_NAME, name_buf);
+			pr_warn("[%s]cann't find name=%s\n", MODULE_NAME, name_buf);
 			goto end;
 		}
 		if ((strlen(value_r) + 1) > en_ctl.value_len) {
@@ -196,7 +196,7 @@ static long env_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 		ret = set_env(name_buf, value_buf);
 		break;
 	default:
-		pr_notice("[%s]Undefined command\n", MODULE_NAME);
+		pr_debug("[%s]Undefined command\n", MODULE_NAME);
 		ret = -EINVAL;
 		goto end;
 	}
@@ -235,7 +235,7 @@ static void env_init(void)
 	if (env_init_done)
 		return;
 
-	pr_notice("[%s]ENV initialize\n", MODULE_NAME);
+	pr_debug("[%s]ENV initialize\n", MODULE_NAME);
 
 	ret = get_env_path();
 	if (ret < 0) {
@@ -266,7 +266,7 @@ static void env_init(void)
 			env_valid = 0;
 			goto end;
 		} else {
-			pr_notice("[%s]ENV initialize success\n", MODULE_NAME);
+			pr_debug("[%s]ENV initialize success\n", MODULE_NAME);
 			env_valid = 1;
 		}
 	} else {
@@ -303,7 +303,7 @@ static char *findenv(const char *name)
 
 char *get_env(const char *name)
 {
-	pr_notice("[%s]get env name=%s\n", MODULE_NAME, name);
+	pr_debug("[%s]get env name=%s\n", MODULE_NAME, name);
 
 	env_init();
 
@@ -343,7 +343,7 @@ int set_env(char *name, char *value)
 	int ret = 0;
 	char *env_data = NULL;
 
-	pr_notice("[%s]set env, name=%s,value=%s\n", MODULE_NAME, name, value);
+	pr_debug("[%s]set env, name=%s,value=%s\n", MODULE_NAME, name, value);
 
 	env_init();
 
@@ -385,7 +385,7 @@ int set_env(char *name, char *value)
 		++env;
 add:
 	if (*value == '\0') {
-		pr_notice("[%s]clear env name=%s\n", MODULE_NAME, name);
+		pr_debug("[%s]clear env name=%s\n", MODULE_NAME, name);
 		goto write_env;
 	}
 
