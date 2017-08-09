@@ -67,6 +67,9 @@ void cmdq_dev_init_module_base_VA(void)
 
 #ifdef CMDQ_OF_SUPPORT
 	gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mmsys_config");
+
+	if (0 == gMMSYS_CONFIG_Base_VA)
+		gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MMSYS_CONFIG");
 #endif
 
 	cmdq_mdp_get_func()->initModuleBaseVA();
@@ -274,6 +277,24 @@ void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *en
 	} while (0);
 }
 
+/* Get MDP base address to user space */
+void cmdq_dev_init_MDP_PA(struct device_node *node)
+{
+#ifdef CMDQ_OF_SUPPORT
+	int status;
+	uint32_t gceDispMutex[2] = {0, 0};
+	uint32_t *pMDPBaseAddress = cmdq_core_get_whole_DTS_Data()->MDPBaseAddress;
+
+	do {
+		status = of_property_read_u32_array(node, "disp_mutex_reg", gceDispMutex, ARRAY_SIZE(gceDispMutex));
+		if (status < 0)
+			break;
+
+		pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = gceDispMutex[0];
+	} while (0);
+#endif
+}
+
 #ifdef CMDQ_OF_SUPPORT
 void cmdq_dev_get_subsys_by_name(struct device_node *node, CMDQ_SUBSYS_ENUM subsys,
 				  const char *grp_name, const char *dts_name)
@@ -286,7 +307,7 @@ void cmdq_dev_get_subsys_by_name(struct device_node *node, CMDQ_SUBSYS_ENUM subs
 		if (subsys < 0 || subsys >= CMDQ_SUBSYS_MAX_COUNT)
 			break;
 
-		gceSubsysStruct = cmdq_core_get_whole_subsys_table();
+		gceSubsysStruct = cmdq_core_get_whole_DTS_Data()->subsys;
 
 		status = of_property_read_u32_array(node, dts_name, gceSubsys, ARRAY_SIZE(gceSubsys));
 		if (status < 0) {
@@ -297,7 +318,7 @@ void cmdq_dev_get_subsys_by_name(struct device_node *node, CMDQ_SUBSYS_ENUM subs
 		gceSubsysStruct[subsys].msb = gceSubsys[0];
 		gceSubsysStruct[subsys].subsysID = gceSubsys[1];
 		gceSubsysStruct[subsys].mask = gceSubsys[2];
-		gceSubsysStruct[subsys].grpName = grp_name;
+		strncpy(gceSubsysStruct[subsys].grpName, grp_name, CMDQ_SUBSYS_GRPNAME_MAX);
 	} while (0);
 }
 
@@ -306,7 +327,7 @@ void cmdq_dev_test_subsys_correctness_impl(CMDQ_SUBSYS_ENUM subsys)
 	SubsysStruct *gceSubsysStruct = NULL;
 
 	if (subsys >= 0 && subsys < CMDQ_SUBSYS_MAX_COUNT) {
-		gceSubsysStruct = cmdq_core_get_whole_subsys_table();
+		gceSubsysStruct = cmdq_core_get_whole_DTS_Data()->subsys;
 
 		if (gceSubsysStruct[subsys].subsysID != -1) {
 			/* print subsys information from device tree */
@@ -321,14 +342,12 @@ void cmdq_dev_test_subsys_correctness_impl(CMDQ_SUBSYS_ENUM subsys)
 void cmdq_dev_init_subsys(struct device_node *node)
 {
 #ifdef CMDQ_OF_SUPPORT
-	cmdq_core_init_subsys();
-
 #undef DECLARE_CMDQ_SUBSYS
 #define DECLARE_CMDQ_SUBSYS(name, val, grp, dts_name) \
 {	\
 	cmdq_dev_get_subsys_by_name(node, val, #grp, #dts_name);	\
 }
-#include "cmdq_subsys.h"
+#include "cmdq_subsys_common.h"
 #undef DECLARE_CMDQ_SUBSYS
 #endif
 }
@@ -365,8 +384,6 @@ void cmdq_dev_test_event_correctness_impl(CMDQ_EVENT_ENUM event, const char *eve
 void cmdq_dev_init_event_table(struct device_node *node)
 {
 #ifdef CMDQ_OF_SUPPORT
-	cmdq_core_init_event_table();
-
 #undef DECLARE_CMDQ_EVENT
 #define DECLARE_CMDQ_EVENT(name, val, dts_name) \
 {	\
@@ -393,7 +410,7 @@ void cmdq_dev_test_dts_correctness(void)
 {	\
 		cmdq_dev_test_subsys_correctness_impl(val);	\
 }
-#include "cmdq_subsys.h"
+#include "cmdq_subsys_common.h"
 #undef DECLARE_CMDQ_SUBSYS
 
 	CMDQ_LOG("APXGPT2_Count = 0x%08lx\n", gAPXGPT2Count);
@@ -406,11 +423,14 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	uint32_t apxgpt2_count_value = 0;
 
 	gAPXGPT2Count = 0;
+	cmdq_core_init_DTS_data();
 #ifdef CMDQ_OF_SUPPORT
 	/* init GCE subsys */
 	cmdq_dev_init_subsys(node);
 	/* init event table */
 	cmdq_dev_init_event_table(node);
+	/* init MDP PA address */
+	cmdq_dev_init_MDP_PA(node);
 	do {
 		status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
 		if (status < 0)

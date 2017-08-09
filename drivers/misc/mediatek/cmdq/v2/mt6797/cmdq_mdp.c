@@ -25,6 +25,7 @@ typedef struct CmdqMdpModuleBaseVA {
 } CmdqMdpModuleBaseVA;
 static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
+#ifndef CMDQ_USE_CCF
 #define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
 uint32_t cmdq_mdp_enable_clock_##FN_NAME(bool enable)	\
 {		\
@@ -35,6 +36,30 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 {		\
 	return cmdq_dev_mtk_clock_is_enable(MT_CG_DISP0_##HW_NAME);	\
 }
+#else
+typedef struct CmdqMdpModuleClock {
+	struct clk *clk_CAM_MDP;
+	struct clk *clk_MDP_RDMA;
+	struct clk *clk_MDP_RSZ0;
+	struct clk *clk_MDP_RSZ1;
+	struct clk *clk_MDP_WDMA;
+	struct clk *clk_MDP_WROT;
+	struct clk *clk_MDP_TDSHP;
+} CmdqMdpModuleClock;
+
+static CmdqMdpModuleClock gCmdqMdpModuleClock;
+
+#define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
+uint32_t cmdq_mdp_enable_clock_##FN_NAME(bool enable)	\
+{		\
+	return cmdq_dev_enable_device_clock(enable, gCmdqMdpModuleClock.clk_##HW_NAME, #HW_NAME "-clk");	\
+}
+#define IMP_MDP_HW_CLOCK_IS_ENABLE(FN_NAME, HW_NAME)	\
+bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
+{		\
+	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
+}
+#endif				/* !defined(CMDQ_USE_CCF) */
 
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA);
@@ -348,6 +373,27 @@ void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 		CMDQ_ERR("try to enable unknown mdp clock");
 		break;
 	}
+}
+
+/* Common Clock Framework */
+void cmdq_mdp_init_module_clk(void)
+{
+#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
+	cmdq_dev_get_module_clock_by_name("mediatek,MMSYS_CONFIG", "CAM_MDP",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma", "MDP_RDMA",
+					  &gCmdqMdpModuleClock.clk_MDP_RDMA);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz0", "MDP_RSZ0",
+					  &gCmdqMdpModuleClock.clk_MDP_RSZ0);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz1", "MDP_RSZ1",
+					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wdma", "MDP_WDMA",
+					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wrot", "MDP_WROT",
+					  &gCmdqMdpModuleClock.clk_MDP_WROT);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_tdshp", "MDP_TDSHP",
+					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
+#endif
 }
 
 /* MDP engine dump */

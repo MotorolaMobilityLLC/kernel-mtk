@@ -125,17 +125,17 @@ static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
 	CMDQ_ENG_DPE_GROUP_BITS
 };
 
-static SubsysStruct gCmdqSubsys[CMDQ_SUBSYS_MAX_COUNT];
-static int32_t gCmdqEventTable[CMDQ_SYNC_TOKEN_MAX];
+static cmdqDTSDataStruct gCmdqDtsData;
 
-void cmdq_core_init_subsys(void)
+const uint32_t cmdq_core_max_task_in_thread(int32_t thread)
 {
-	memset(&(gCmdqSubsys), 0x0, sizeof(gCmdqSubsys));
-}
+	int32_t maxTaskNUM = CMDQ_MAX_TASK_IN_THREAD;
 
-SubsysStruct *cmdq_core_get_whole_subsys_table(void)
-{
-	return gCmdqSubsys;
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (true == cmdq_get_func()->isSecureThread(thread))
+		maxTaskNUM = CMDQ_MAX_TASK_IN_SECURE_THREAD;
+#endif
+	return maxTaskNUM;
 }
 
 /* Use CMDQ as Resource Manager */
@@ -229,17 +229,24 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 	}
 }
 
-void cmdq_core_init_event_table(void)
+cmdqDTSDataStruct *cmdq_core_get_whole_DTS_Data(void)
+{
+	return &gCmdqDtsData;
+}
+
+void cmdq_core_init_DTS_data(void)
 {
 	uint32_t i;
+
+	memset(&(gCmdqDtsData), 0x0, sizeof(gCmdqDtsData));
 
 	for (i = 0; i < CMDQ_SYNC_TOKEN_MAX; i++) {
 		if (i <= CMDQ_MAX_HW_EVENT_COUNT) {
 			/* GCE HW evevt */
-			gCmdqEventTable[i] = CMDQ_SYNC_TOKEN_INVALID - 1 - i;
+			gCmdqDtsData.eventTable[i] = CMDQ_SYNC_TOKEN_INVALID - 1 - i;
 		} else {
 			/* GCE SW evevt */
-			gCmdqEventTable[i] = i;
+			gCmdqDtsData.eventTable[i] = i;
 		}
 	}
 }
@@ -247,14 +254,7 @@ void cmdq_core_init_event_table(void)
 void cmdq_core_set_event_table(CMDQ_EVENT_ENUM event, const int32_t value)
 {
 	if (event >= 0 && event < CMDQ_SYNC_TOKEN_MAX)
-		gCmdqEventTable[event] = value;
-}
-
-int32_t *cmdq_core_get_whole_event_table(uint32_t *tableSize)
-{
-	*tableSize = sizeof(gCmdqEventTable);
-
-	return gCmdqEventTable;
+		gCmdqDtsData.eventTable[event] = value;
 }
 
 const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event)
@@ -262,7 +262,7 @@ const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event)
 	if (event < 0 || event >= CMDQ_SYNC_TOKEN_MAX)
 		return -EINVAL;
 
-	return gCmdqEventTable[event];
+	return gCmdqDtsData.eventTable[event];
 }
 
 const int32_t cmdq_core_reverse_event_ENUM(const uint32_t value)
@@ -271,7 +271,7 @@ const int32_t cmdq_core_reverse_event_ENUM(const uint32_t value)
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SYNC_TOKEN_MAX; i++) {
-		if (value == gCmdqEventTable[i]) {
+		if (value == gCmdqDtsData.eventTable[i]) {
 			eventENUM = i;
 			break;
 		}
@@ -515,7 +515,7 @@ int32_t cmdq_core_get_secure_thread_exec_counter(const int32_t thread)
 
 	pVA = (uint32_t *) (gCmdqContext.hSecSharedMem->pVABase + offset);
 	value = *pVA;
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+#if defined(CMDQ_SECURE_PATH_NORMAL_IRQ) || defined(CMDQ_SECURE_PATH_HW_LOCK)
 	value = value + 1;
 #endif
 	CMDQ_VERBOSE("[shared_cookie] get thread %d CNT(%p) value is %d\n", thread, pVA, value);
@@ -597,6 +597,9 @@ int32_t cmdq_core_start_secure_path_notify_thread(void)
 		cmdqRecCreate(CMDQ_SCENARIO_SECURE_NOTIFY_LOOP, &handle);
 		cmdqRecReset(handle);
 		cmdqRecWait(handle, CMDQ_SYNC_SECURE_THR_EOF);
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+		cmdqRecWait(handle, CMDQ_SYNC_SECURE_WSM_LOCK);
+#endif
 		status = cmdqRecStartLoop(handle);
 
 		if (0 > status) {
@@ -1056,7 +1059,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 
 			spin_lock_irqsave(&gCmdqThreadLock, flags);
 
-			for (inner = 0; inner < CMDQ_MAX_TASK_IN_THREAD; inner++) {
+			for (inner = 0; inner < cmdq_core_max_task_in_thread(index); inner++) {
 				pTask = pThread->pCurTask[inner];
 				if (NULL != pTask) {
 					/* dump task basic info */
@@ -1267,7 +1270,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 
 			spin_lock_irqsave(&gCmdqThreadLock, flags);
 
-			for (inner = 0; inner < CMDQ_MAX_TASK_IN_THREAD; inner++) {
+			for (inner = 0; inner < cmdq_core_max_task_in_thread(index); inner++) {
 				pTask = pThread->pCurTask[inner];
 				if (NULL != pTask) {
 					/* dump task basic info */
@@ -1509,6 +1512,9 @@ void cmdq_core_reset_hw_events(void)
 	/* However, CMDQ_SYNC_RESOURCE are resource flags, */
 	/* by default they should be 1. */
 	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT0);
+	/* However, CMDQ_SYNC_RESOURCE are WSM lock flags, */
+	/* by default they should be 1. */
+	cmdqCoreSetEvent(CMDQ_SYNC_SECURE_WSM_LOCK);
 
 	/* However, APPEND_THR are resource flags, */
 	/* by default they should be 1. */
@@ -1950,14 +1956,14 @@ static void cmdq_core_insert_backup_instr(TaskStruct *pTask,
 }
 
 /**
- * Insert instruction to cookie count to normal wworld
+ * Insert instruction to back secure threads' cookie count to normal world
  * Return:
  *     < 0, return the error code
  *     >=0, okay case, return number of bytes for inserting instruction
  */
+#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
 static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t thread)
 {
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
 	if (0 > cmdq_get_func()->isSecureThread(thread)) {
 		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
 		return -EFAULT;
@@ -1973,8 +1979,8 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const uint32_t regAddr = CMDQ_THR_EXEC_CNT_PA(thread);
-	uint64_t addrOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
-	uint64_t WSMAddr = gCmdqContext.hSecSharedMem->MVABase + addrOffset;
+	uint64_t addrCookieOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
+	uint64_t WSMCookieAddr = gCmdqContext.hSecSharedMem->MVABase + addrCookieOffset;
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	int32_t offset;
@@ -1986,6 +1992,7 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	pTask->pCMDEnd[7] = pTask->pCMDEnd[-3];
 
 	pTask->pCMDEnd -= 4;
+
 	/* use SYNC TOKEN to make sure only 1 thread access at a time */
 	/* bit 0-11: wait_value */
 	/* bit 15: to_wait, true */
@@ -2004,17 +2011,18 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
 	cmdq_core_append_command(pTask,
-				 (CMDQ_CODE_MOVE << 24) | ((WSMAddr >> 32) & 0xffff) |
-				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMAddr);
+				 (CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
+				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
 
 	/* write to memory */
 	cmdq_core_append_command(pTask,
-				 (CMDQ_CODE_WRITE << 24) | (0 & 0xffff) |
-				 ((destRegId & 0x1f) << subsysBit) | (6 << 21), valueRegId);
+				 (CMDQ_CODE_WRITE << 24) |
+				 ((destRegId & 0x1f) << 16) | (6 << 21), valueRegId);
 
 	/* set directly */
 	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
 				 ((1 << 31) | (1 << 16)));
+
 	pTask->pCMDEnd += 4;
 
 	/* calculate added command length */
@@ -2023,28 +2031,146 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	CMDQ_VERBOSE("insert_backup_cookie, offset:%d\n", offset);
 
 	return offset;
+}
+#endif
+
+/**
+ * Insert instruction to backup secure threads' cookie and IRQ to normal world
+ * Return:
+ *     < 0, return the error code
+ *     >=0, okay case, return number of bytes for inserting instruction
+ */
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+static int32_t cmdq_core_insert_secure_IRQ_instr(TaskStruct *pTask, int32_t thread)
+{
+	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
+		return -EFAULT;
+	}
+
+	if (NULL == gCmdqContext.hSecSharedMem) {
+		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		return -EFAULT;
+	}
+
+	const uint32_t originalSize = pTask->commandSize;
+	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
+	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
+	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
+	const uint32_t regAddr = CMDQ_THR_EXEC_CNT_PA(thread);
+	uint64_t addrCookieOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
+	uint64_t WSMCookieAddr = gCmdqContext.hSecSharedMem->MVABase + addrCookieOffset;
+	uint64_t WSMIRQAddr = gCmdqContext.hSecSharedMem->MVABase + CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET;
+	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
+	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
+	int32_t offset;
+
+	/* Shift JUMP and EOC */
+	pTask->pCMDEnd[22] = pTask->pCMDEnd[0];
+	pTask->pCMDEnd[21] = pTask->pCMDEnd[-1];
+	pTask->pCMDEnd[20] = pTask->pCMDEnd[-2];
+	pTask->pCMDEnd[19] = pTask->pCMDEnd[-3];
+
+	pTask->pCMDEnd -= 4;
+
+	/* use SYNC TOKEN to make sure only 1 thread access at a time */
+	/* bit 0-11: wait_value */
+	/* bit 15: to_wait, true */
+	/* bit 31: to_update, true */
+	/* bit 16-27: update_value */
+	/* wait and clear */
+	/* set unlock WSM resource directly */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_SECURE_WSM_LOCK,
+				 ((1 << 31) | (1 << 15) | 1));
+
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
+				 ((1 << 31) | (1 << 15) | 1));
+
+	/* Load into 32-bit GPR (R0-R15) */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
+				 ((subsysCode & 0x1f) << subsysBit) | (2 << 21), valueRegId);
+
+	/* Note that <MOVE> argB is 48-bit */
+	/* so writeAddress is split into 2 parts */
+	/* and we store address in 64-bit GPR (P0-P7) */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
+				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
+
+	/* write to memory */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_WRITE << 24) |
+				 ((destRegId & 0x1f) << 16) | (6 << 21), valueRegId);
+
+	/* Write GCE secure thread's IRQ to WSM */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_MOVE << 24), ~(1 << thread));
+
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_MOVE << 24) |
+				 ((destRegId & 0x1f) << 16) | (4 << 21), WSMIRQAddr);
+
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_WRITE << 24) |
+				 ((destRegId & 0x1f) << 16) | (4 << 21) | 1, (1 << thread));
+
+	/* set directly */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
+				 ((1 << 31) | (1 << 16)));
+
+	/* set unlock WSM resource directly */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_SECURE_WSM_LOCK,
+				 ((1 << 31) | (1 << 16)));
+
+	/* set notify thread token directly */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_SECURE_THR_EOF,
+				 ((1 << 31) | (1 << 16)));
+
+	pTask->pCMDEnd += 4;
+
+	/* secure thread doesn't raise IRQ */
+	pTask->pCMDEnd[-3] = pTask->pCMDEnd[-3] & 0xFFFFFFFE;
+
+	/* calculate added command length */
+	offset = pTask->commandSize - originalSize;
+
+	CMDQ_VERBOSE("insert_backup_cookie, offset:%d\n", offset);
+
+	return offset;
+}
+#endif
+
+static int32_t cmdq_core_insert_secure_handle_instr(TaskStruct *pTask, int32_t thread)
+{
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+	return cmdq_core_insert_secure_IRQ_instr(pTask, thread);
+#else
+#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+	return cmdq_core_insert_backup_cookie_instr(pTask, thread);
 #else
 	return 0;
 #endif
+#endif
 }
 
-static void cmdq_core_reorder_task_array(ThreadStruct *pThread, int32_t prevID)
+static void cmdq_core_reorder_task_array(ThreadStruct *pThread, int32_t thread, int32_t prevID)
 {
 	int loop, nextID, searchLoop, searchID;
 	int reorderCount = 0;
 
 	nextID = prevID + 1;
-	for (loop = 1; loop < (CMDQ_MAX_TASK_IN_THREAD - 1); loop++, nextID++) {
-		if (nextID >= CMDQ_MAX_TASK_IN_THREAD)
+	for (loop = 1; loop < (cmdq_core_max_task_in_thread(thread) - 1); loop++, nextID++) {
+		if (nextID >= cmdq_core_max_task_in_thread(thread))
 			nextID = 0;
 
 		if (NULL != pThread->pCurTask[nextID])
 			break;
 
 		searchID = nextID + 1;
-		for (searchLoop = (loop + 1); searchLoop < CMDQ_MAX_TASK_IN_THREAD;
+		for (searchLoop = (loop + 1); searchLoop < cmdq_core_max_task_in_thread(thread);
 		     searchLoop++, searchID++) {
-			if (searchID >= CMDQ_MAX_TASK_IN_THREAD)
+			if (searchID >= cmdq_core_max_task_in_thread(thread))
 				searchID = 0;
 
 			if (NULL != pThread->pCurTask[searchID]) {
@@ -2139,12 +2265,21 @@ bool cmdq_core_verfiy_command_desc_end(cmdqCommandStruct *pCommandDesc)
 bool cmdq_core_verfiy_command_end(const TaskStruct *pTask)
 {
 	bool valid = true;
+	bool noIRQ = false;
 	/* make sure we have sufficient command to parse */
 	if (!pTask->pVABase || pTask->commandSize < (2 * CMDQ_INST_SIZE))
 		return false;
 
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+	if ((pTask->pCMDEnd[-3] & 0x1) != 1 && false == pTask->secData.isSecure)
+		noIRQ = true;
+#else
+	if ((pTask->pCMDEnd[-3] & 0x1) != 1)
+		noIRQ = true;
+#endif
+
 	/* make sure the command is ended by EOC + JUMP */
-	if ((pTask->pCMDEnd[-3] & 0x1) != 1) {
+	if (true == noIRQ) {
 		if (cmdq_get_func()->isLoopScenario(pTask->scenario, true)) {
 			/* Allow display only loop not  throw IRQ */
 			CMDQ_MSG("[CMD] DISP Loop pTask 0x%p does not throw IRQ (%08x:%08x)\n",
@@ -2228,23 +2363,27 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	reservedAppendBlockInstrSize = 1 * CMDQ_INST_SIZE;
 #endif
 
-	uint32_t reservedBackCookieInstrSize = 0;
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
-	/* HACK: Insert BACKUP COOKIE here, due to we need to make sure transparent for user space request
-	 * TODO: Insert BACKUP COOKIE when make command */
-	if (true == pTask->secData.isSecure) {
-		/* we need to consider {READ, MOVE, WRITE} for each register */
-		/* and the SYNC in the begin and end */
-		reservedBackCookieInstrSize = (3 + 2) * CMDQ_INST_SIZE;
-	}
-#endif
-
 #ifdef CMDQ_PROFILE_COMMAND
 	bool profileCommand = false;
 #endif
 	uint32_t copiedBeforeProfile = 0;
 	int32_t subsysCode;
 	uint32_t physAddr;
+
+	uint32_t reservedBackCookieInstrSize = 0;
+
+	/* HACK: Insert BACKUP secure threads' COOKIE and IRQ here */
+	if (true == pTask->secData.isSecure) {
+		/* we need to consider {READ, MOVE, WRITE} for each register */
+		/* and the SYNC in the begin and end */
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+		reservedBackCookieInstrSize = (3 + 3 + 2 + 2 + 1) * CMDQ_INST_SIZE;
+#else
+#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+		reservedBackCookieInstrSize = (3 + 2) * CMDQ_INST_SIZE;
+#endif
+#endif
+	}
 
 	/* calculate required buffer size */
 	/* we need to consider {READ, MOVE, WRITE} for each register */
@@ -2981,7 +3120,7 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 
 		/* Make sure the found thread has enough space for the task; */
 		/* ThreadStruct->pCurTask has size limitation. */
-		if (CMDQ_MAX_TASK_IN_THREAD <= pThread[thread].taskCount) {
+		if (cmdq_core_max_task_in_thread(thread) <= pThread[thread].taskCount) {
 			if (forceLog) {
 				CMDQ_LOG("THREAD: thread %d task count = %d full\n",
 					 thread, pThread[thread].taskCount);
@@ -2993,7 +3132,7 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			thread = CMDQ_INVALID_THREAD;
 		}
 
-		insertCookie = pThread[thread].nextCookie % CMDQ_MAX_THREAD_COUNT;
+		insertCookie = pThread[thread].nextCookie % cmdq_core_max_task_in_thread(thread);
 		if (NULL != pThread[thread].pCurTask[insertCookie]) {
 			if (forceLog) {
 				CMDQ_LOG("THREAD: thread %d nextCookie = %d already has task\n",
@@ -3037,9 +3176,8 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 
 		spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 
-		/* enable clock */
 		if (CMDQ_INVALID_THREAD != thread) {
-			cmdqCoreLockResource(engineFlag, false);
+			/* enable clock */
 			cmdq_core_enable_clock(engineFlag, thread, engineMustEnableClock, scenario);
 		}
 
@@ -3307,18 +3445,19 @@ uint32_t cmdq_core_subsys_to_reg_addr(uint32_t argA)
 {
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	const int32_t subsys_id = (argA & CMDQ_ARG_A_SUBSYS_MASK) >> subsysBit;
-	const uint32_t offset = (argA & 0xFFFF);
+	uint32_t offset = 0;
 	uint32_t base_addr = 0;
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
-		if (gCmdqSubsys[i].subsysID == subsys_id) {
-			base_addr = gCmdqSubsys[i].msb;
+		if (gCmdqDtsData.subsys[i].subsysID == subsys_id) {
+			base_addr = gCmdqDtsData.subsys[i].msb;
+			offset = (argA & ~gCmdqDtsData.subsys[i].mask);
 			break;
 		}
 	}
 
-	return (base_addr << subsysBit) | offset;
+	return base_addr | offset;
 }
 
 const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr)
@@ -3328,12 +3467,12 @@ const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr)
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
-		if (-1 == gCmdqSubsys[i].subsysID)
+		if (-1 == gCmdqDtsData.subsys[i].subsysID)
 			continue;
 
-		addr_base_shifted = (reg_addr & gCmdqSubsys[i].mask);
-		if (gCmdqSubsys[i].msb == addr_base_shifted) {
-			module = gCmdqSubsys[i].grpName;
+		addr_base_shifted = (reg_addr & gCmdqDtsData.subsys[i].mask);
+		if (gCmdqDtsData.subsys[i].msb == addr_base_shifted) {
+			module = gCmdqDtsData.subsys[i].grpName;
 			break;
 		}
 	}
@@ -3348,12 +3487,12 @@ int32_t cmdq_core_subsys_from_phys_addr(uint32_t physAddr)
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
-		if (-1 == gCmdqSubsys[i].subsysID)
+		if (-1 == gCmdqDtsData.subsys[i].subsysID)
 			continue;
 
-		msb = (physAddr & gCmdqSubsys[i].mask);
-		if (msb == gCmdqSubsys[i].msb) {
-			subsysID = gCmdqSubsys[i].subsysID;
+		msb = (physAddr & gCmdqDtsData.subsys[i].mask);
+		if (msb == gCmdqDtsData.subsys[i].msb) {
+			subsysID = gCmdqDtsData.subsys[i].subsysID;
 			break;
 		}
 	}
@@ -3551,7 +3690,7 @@ static void cmdq_core_dump_thread_pc(const int32_t thread)
 	pThread = &(gCmdqContext.thread[thread]);
 	pcVA = NULL;
 
-	for (i = 0; i < CMDQ_MAX_TASK_IN_THREAD; i++) {
+	for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
 		pTask = pThread->pCurTask[i];
 
 		if (NULL != pTask) {
@@ -3646,7 +3785,7 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 		     pThread->engineFlag);
 	}
 
-	for (index = 0; index < CMDQ_MAX_TASK_IN_THREAD; index++) {
+	for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
 		pDumpTask = pThread->pCurTask[index];
 		if (NULL == pDumpTask)
 			continue;
@@ -3930,7 +4069,7 @@ static void cmdq_core_dump_summary(const TaskStruct *pTask, int thread,
 	pcVA = cmdq_core_get_pc(pTask, thread, insts);
 	if (NULL == pcVA) {
 		/* Find all task to get correct PC */
-		for (index = 0; index < CMDQ_MAX_TASK_IN_THREAD; index++) {
+		for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
 			pNGTask = pThread->pCurTask[index];
 			if (NULL == pNGTask)
 				continue;
@@ -4820,7 +4959,7 @@ static int32_t cmdq_core_insert_task_from_thread_array_by_cookie(TaskStruct *pTa
 	}
 
 	/* genernal part */
-	pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD] = pTask;
+	pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(pTask->thread)] = pTask;
 	pThread->allowDispatching = 1;
 
 	/* secure path */
@@ -4838,7 +4977,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 {
 	TaskStruct *pTask = NULL;
 
-	if ((NULL == pThread) || (CMDQ_MAX_TASK_IN_THREAD <= index) || (0 > index)) {
+	if ((NULL == pThread) || (0 > index)) {
 		CMDQ_ERR
 		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d], newTaskState[%d]\n",
 		     pThread, index, newTaskState);
@@ -4846,6 +4985,13 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 	}
 
 	pTask = pThread->pCurTask[index];
+	if (cmdq_core_max_task_in_thread(pTask->thread) <= index) {
+		CMDQ_ERR
+		    ("remove task from thread array, invalid index. THR[0x%p], task_slot[%d], newTaskState[%d]\n",
+		     pThread, index, newTaskState);
+		return -EINVAL;
+	}
+
 	if (NULL == pTask) {
 		CMDQ_ERR("remove fail, task_slot[%d] on thread[%p] is NULL\n", index, pThread);
 		return -EINVAL;
@@ -4890,7 +5036,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 	/* The cookie of the task currently being processed */
 	cookie = CMDQ_GET_COOKIE_CNT(thread) + 1;
 
-	pExecTask = pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD];
+	pExecTask = pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)];
 	if (NULL != pExecTask && (pExecTask == pTask)) {
 		/* The task is executed now, set the PC to EOC for bypass */
 		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
@@ -4898,12 +5044,12 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 
 		cmdq_core_reset_hw_engine(pTask->engineFlag);
 
-		pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD] = NULL;
+		pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = NULL;
 		pTask->taskState = TASK_STATE_KILLED;
 	} else {
 		loop = pThread->taskCount;
-		for (index = (cookie % CMDQ_MAX_TASK_IN_THREAD); loop > 0; loop--, index++) {
-			if (index >= CMDQ_MAX_TASK_IN_THREAD)
+		for (index = (cookie % cmdq_core_max_task_in_thread(thread)); loop > 0; loop--, index++) {
+			if (index >= cmdq_core_max_task_in_thread(thread))
 				index = 0;
 
 			pExecTask = pThread->pCurTask[index];
@@ -4924,7 +5070,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 				pExecTask->pCMDEnd[2] = pTask->pCMDEnd[0];
 
 				index += 1;
-				if (index >= CMDQ_MAX_TASK_IN_THREAD)
+				if (index >= cmdq_core_max_task_in_thread(thread))
 					index = 0;
 
 				pThread->pCurTask[index] = NULL;
@@ -4948,6 +5094,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 	ThreadStruct *pThread;
 	int32_t count;
 	int32_t inner;
+	int32_t maxTaskNUM = cmdq_core_max_task_in_thread(thread);
 
 	pThread = &(gCmdqContext.thread[thread]);
 
@@ -4972,8 +5119,8 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 			pThread->waitCookie, cookie, count);
 	}
 
-	for (inner = (pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD); count > 0; count--, inner++) {
-		if (inner >= CMDQ_MAX_TASK_IN_THREAD)
+	for (inner = (pThread->waitCookie % maxTaskNUM); count > 0; count--, inner++) {
+		if (inner >= maxTaskNUM)
 			inner = 0;
 
 		if (NULL != pThread->pCurTask[inner]) {
@@ -5000,8 +5147,8 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 	/* MET MMSYS: GCE should trigger next waiting task */
 	if ((0 < pThread->taskCount) && met_mmsys_event_gce_thread_begin) {
 		count = pThread->nextCookie - pThread->waitCookie;
-		for (inner = (pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD); count > 0; count--, inner++) {
-			if (inner >= CMDQ_MAX_TASK_IN_THREAD)
+		for (inner = (pThread->waitCookie % maxTaskNUM); count > 0; count--, inner++) {
+			if (inner >= maxTaskNUM)
 				inner = 0;
 
 			if (NULL != pThread->pCurTask[inner]) {
@@ -5081,6 +5228,10 @@ static void cmdq_core_handle_secure_paths_exec_done_notify(const int32_t notifyT
 	}
 
 	cmdq_core_set_secure_IRQ_status(0x0);
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+	cmdqCoreSetEvent(CMDQ_SYNC_SECURE_WSM_LOCK);
+#endif
+
 }
 
 
@@ -5120,13 +5271,13 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 		CMDQ_ERR("IRQ: suspend HW thread failed!");
 	}
 	CMDQ_ERR("Error IRQ: always suspend thread (%d) to prevent contiuous error IRQ\n", thread);
-	if (NULL != pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD]) {
-		pTask = pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD];
+	if (NULL != pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)]) {
+		pTask = pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)];
 		pTask->gotIRQ = *pGotIRQ;
 		pTask->irqFlag = value;
 		cmdq_core_attach_error_task(pTask, thread, NULL);
 		cmdq_core_remove_task_from_thread_array_by_cookie(pThread,
-								  cookie % CMDQ_MAX_TASK_IN_THREAD,
+								  cookie % cmdq_core_max_task_in_thread(thread),
 								  TASK_STATE_ERR_IRQ);
 	} else {
 		CMDQ_ERR
@@ -5154,8 +5305,8 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 			pThread->waitCookie, cookie, count);
 	}
 
-	for (inner = (pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD); count > 0; count--, inner++) {
-		if (inner >= CMDQ_MAX_TASK_IN_THREAD)
+	for (inner = (pThread->waitCookie % cmdq_core_max_task_in_thread(thread)); count > 0; count--, inner++) {
+		if (inner >= cmdq_core_max_task_in_thread(thread))
 			inner = 0;
 
 		if (NULL != pThread->pCurTask[inner]) {
@@ -5285,12 +5436,12 @@ void cmdqCoreHandleIRQ(int32_t thread)
 	spin_unlock_irqrestore(&gCmdqExecLock, flags);
 }
 
-static TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC, const ThreadStruct *pThread)
+static TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC, const ThreadStruct *pThread, int32_t thread)
 {
 	TaskStruct *pTask = NULL;
 	int i = 0;
 
-	for (i = 0; i < CMDQ_MAX_TASK_IN_THREAD; ++i) {
+	for (i = 0; i < cmdq_core_max_task_in_thread(thread); ++i) {
 		pTask = pThread->pCurTask[i];
 		if (pTask &&
 		    threadPC >= pTask->MVABase &&
@@ -5379,7 +5530,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 
 	do {
 		/* check if this task has finished */
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+#if defined(CMDQ_SECURE_PATH_NORMAL_IRQ) || defined(CMDQ_SECURE_PATH_HW_LOCK)
 		if (TASK_STATE_DONE == pTask->taskState)
 			break;
 #else
@@ -5440,7 +5591,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		cmdq_core_reset_hw_engine(pTask->engineFlag);
 
 		/* remove all tasks in tread since we have reset HW thread in SWd */
-		for (i = 0; i < CMDQ_MAX_TASK_IN_THREAD; i++) {
+		for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
 			pTask = pThread->pCurTask[i];
 			if (pTask) {
 				cmdq_core_remove_task_from_thread_array_by_cookie(pThread, i,
@@ -5588,7 +5739,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			/* and pTask should become TASK_STATE_ERROR */
 
 			/* we find our place in pThread->pCurTask[]. */
-			for (index = 0; index < CMDQ_MAX_TASK_IN_THREAD; ++index) {
+			for (index = 0; index < cmdq_core_max_task_in_thread(thread); ++index) {
 				if (pThread->pCurTask[index] == pTask) {
 					/* update taskCount and pCurTask[] */
 					cmdq_core_remove_task_from_thread_array_by_cookie(pThread,
@@ -5606,7 +5757,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 		pNextTask = NULL;
 		/* find pTask's jump destination */
 		if (0x10000001 == pTask->pCMDEnd[0]) {
-			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread);
+			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
 		} else {
 			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
 				 pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
@@ -5645,7 +5796,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			}
 		} else {
 			pPrevTask = NULL;
-			for (index = 0; index < CMDQ_MAX_TASK_IN_THREAD; ++index) {
+			for (index = 0; index < cmdq_core_max_task_in_thread(thread); ++index) {
 				pPrevTask = pThread->pCurTask[index];
 
 				/* find which task JUMP into pTask */
@@ -5657,7 +5808,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 					pPrevTask->pCMDEnd[0] = pTask->pCMDEnd[0];
 
 					if (pNextTask)
-						cmdq_core_reorder_task_array(pThread, index);
+						cmdq_core_reorder_task_array(pThread, thread, index);
 
 					CMDQ_VERBOSE
 					    ("WAIT: modify jump to 0x%08x (pPrev:0x%p, pTask:0x%p)\n",
@@ -5908,14 +6059,14 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct *pLast, TaskStruc
 	cookie = pThread->nextCookie;
 
 	/* Traverse forward to adjust tasks' order according to their priorities */
-	for (prev = (cookie % CMDQ_MAX_TASK_IN_THREAD); loop > 0; loop--) {
+	for (prev = (cookie % cmdq_core_max_task_in_thread(thread)); loop > 0; loop--) {
 		index = prev;
 		if (index < 0)
-			index = CMDQ_MAX_TASK_IN_THREAD - 1;
+			index = cmdq_core_max_task_in_thread(thread) - 1;
 
 		prev = index - 1;
 		if (prev < 0)
-			prev = CMDQ_MAX_TASK_IN_THREAD - 1;
+			prev = cmdq_core_max_task_in_thread(thread) - 1;
 
 		pPrev = pThread->pCurTask[prev];
 
@@ -5924,7 +6075,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct *pLast, TaskStruc
 			CMDQ_LOG("pPrev is NULL, prev:%d, loop:%d, index:%d\n", prev, loop, index);
 			prev = prev - 1;
 			if (prev < 0)
-				prev = CMDQ_MAX_TASK_IN_THREAD - 1;
+				prev = cmdq_core_max_task_in_thread(thread) - 1;
 
 			pPrev = pThread->pCurTask[prev];
 			loop--;
@@ -6163,7 +6314,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 			EndAddr = CMDQ_PHYS_TO_AREG(pTask->MVABase + pTask->commandSize - shiftEnd);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
-			pThread->pCurTask[cookie % CMDQ_MAX_TASK_IN_THREAD] = pTask;
+			pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = pTask;
 			pThread->taskCount++;
 			pThread->allowDispatching = 1;
 		} else {
@@ -6218,9 +6369,9 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 				return -EFAULT;
 			}
 
-			if (loop > CMDQ_MAX_TASK_IN_THREAD) {
+			if (loop > cmdq_core_max_task_in_thread(thread)) {
 				CMDQ_LOG("loop = %d, execeed max task in thread", loop);
-				loop = loop % CMDQ_MAX_TASK_IN_THREAD;
+				loop = loop % cmdq_core_max_task_in_thread(thread);
 			}
 			CMDQ_MSG("Reorder %d tasks for performance begin\n", loop);
 			/* By default, pTask is the last task, and insert [cookie % CMDQ_MAX_TASK_IN_THREAD] */
@@ -6427,18 +6578,17 @@ int32_t cmdqCoreResumedNotifier(void)
 
 static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t thread)
 {
-	int32_t retry;
-	int32_t status;
+	int32_t retry = 0;
+	int32_t status = 0;
 	ThreadStruct *pThread;
 
-	status = 0;
 	pThread = &(gCmdqContext.thread[thread]);
 	if (pThread->loopCallback) {
 		/* Do not insert Wait for loop due to loop no need append */
 		CMDQ_MSG("Ignore insert wait for loop task\n");
 	} else {
 		if (true == pTask->secData.isSecure)
-			status = cmdq_core_insert_backup_cookie_instr(pTask, thread);
+			status = cmdq_core_insert_secure_handle_instr(pTask, thread);
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 		/* Shift JUMP and EOC */
 		pTask->pCMDEnd += 2;
@@ -6462,33 +6612,36 @@ static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t t
 #endif
 	}
 
-	if (status >= 0) {
-		retry = 0;
-		status = -EFAULT;
-		do {
-			cmdq_core_verfiy_command_end(pTask);
+	if (status < 0)
+		return status;
 
-			/* Save command buffer dump */
+	do {
+		if (false == cmdq_core_verfiy_command_end(pTask)) {
+			status = -EFAULT;
+			break;
+		}
+
+		/* Save command buffer dump */
+		if (0 == retry)
 			cmdq_core_save_command_buffer_dump(pTask);
 
-			status = (false == pTask->secData.isSecure) ?
-			    (cmdq_core_exec_task_async_impl(pTask, thread)) :
-			    (cmdq_core_exec_task_async_secure_impl(pTask, thread));
+		status = (false == pTask->secData.isSecure) ?
+		    (cmdq_core_exec_task_async_impl(pTask, thread)) :
+		    (cmdq_core_exec_task_async_secure_impl(pTask, thread));
 
-			if (status >= 0)
-				break;
+		if (status >= 0)
+			break;
 
-			if ((TASK_STATE_KILLED == pTask->taskState) ||
-			    (TASK_STATE_ERROR == pTask->taskState) ||
-			    (TASK_STATE_ERR_IRQ == pTask->taskState)) {
-				CMDQ_ERR("cmdq_core_exec_task_async_impl fail\n");
-				status = -EFAULT;
-				break;
-			}
+		if ((TASK_STATE_KILLED == pTask->taskState) ||
+		    (TASK_STATE_ERROR == pTask->taskState) ||
+		    (TASK_STATE_ERR_IRQ == pTask->taskState)) {
+			CMDQ_ERR("cmdq_core_exec_task_async_impl fail\n");
+			status = -EFAULT;
+			break;
+		}
 
-			++retry;
-		} while (retry < CMDQ_MAX_RETRY_COUNT);
-	}
+		++retry;
+	} while (retry < CMDQ_MAX_RETRY_COUNT);
 
 	return status;
 }
@@ -6664,6 +6817,9 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(cmdqCommandStruct *pCommandDesc,
 
 	if (NULL != ppTaskOut)
 		*ppTaskOut = pTask;
+
+	/* Try to lock resource base on engine flag */
+	cmdqCoreLockResource(pTask->engineFlag, false);
 
 	/* consume the waiting list. */
 	/* this may or may not execute the task, */

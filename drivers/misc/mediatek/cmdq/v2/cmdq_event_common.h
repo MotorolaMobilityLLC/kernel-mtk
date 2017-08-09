@@ -218,6 +218,8 @@ DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_VENC_EOF, 407, sw_token)
 
 /* Notify normal CMDQ there are some secure task done */
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_SECURE_THR_EOF, 408, sw_token)
+/* Lock WSM resource */
+DECLARE_CMDQ_EVENT(CMDQ_SYNC_SECURE_WSM_LOCK, 409, sw_token)
 
 /* SW Sync Tokens (User-defined) */
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_USER_0, 410, sw_token)

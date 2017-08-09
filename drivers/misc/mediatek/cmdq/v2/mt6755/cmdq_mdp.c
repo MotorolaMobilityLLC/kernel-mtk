@@ -17,6 +17,7 @@ typedef struct CmdqMdpModuleBaseVA {
 	long MDP_WDMA;
 	long MDP_WROT;
 	long MDP_TDSHP;
+	long MDP_COLOR;
 	long VENC;
 } CmdqMdpModuleBaseVA;
 static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
@@ -112,6 +113,11 @@ const long cmdq_mdp_get_module_base_VA_VENC(void)
 	return gCmdqMdpModuleBaseVA.VENC;
 }
 
+const long cmdq_mdp_get_module_base_VA_MDP_COLOR(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_COLOR;
+}
+
 #ifdef CMDQ_OF_SUPPORT
 #define MDP_RDMA_BASE     cmdq_mdp_get_module_base_VA_MDP_RDMA()
 #define MDP_RSZ0_BASE     cmdq_mdp_get_module_base_VA_MDP_RSZ0()
@@ -119,6 +125,7 @@ const long cmdq_mdp_get_module_base_VA_VENC(void)
 #define MDP_TDSHP_BASE    cmdq_mdp_get_module_base_VA_MDP_TDSHP()
 #define MDP_WROT_BASE     cmdq_mdp_get_module_base_VA_MDP_WROT()
 #define MDP_WDMA_BASE     cmdq_mdp_get_module_base_VA_MDP_WDMA()
+#define MDP_COLOR_BASE    cmdq_mdp_get_module_base_VA_MDP_COLOR()
 #define VENC_BASE         cmdq_mdp_get_module_base_VA_VENC()
 #else
 #include <mach/mt_reg_base.h>
@@ -183,6 +190,7 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_wdma");
 	gCmdqMdpModuleBaseVA.MDP_WROT = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_wrot");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_tdshp");
+	gCmdqMdpModuleBaseVA.MDP_COLOR = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_color");
 	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,VENC");
 #endif
 }
@@ -196,6 +204,7 @@ void cmdq_mdp_deinit_module_base_VA(void)
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WDMA());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_COLOR());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
 
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
@@ -340,6 +349,9 @@ int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WDMA))
 		cmdq_mdp_dump_wdma(MDP_WDMA_BASE, "WDMA");
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0))
+		cmdq_mdp_dump_color(MDP_COLOR_BASE, "COLOR0");
+
 	/* verbose case, dump entire 1KB HW register region */
 	/* for each enabled HW module. */
 	if (logLevel >= 1) {
@@ -352,7 +364,7 @@ int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 			DEFINE_MODULE(CMDQ_ENG_MDP_RSZ1, MDP_RSZ1_BASE),
 
 			DEFINE_MODULE(CMDQ_ENG_MDP_TDSHP0, MDP_TDSHP_BASE),
-
+			DEFINE_MODULE(CMDQ_ENG_MDP_COLOR0, MDP_COLOR_BASE),
 			DEFINE_MODULE(CMDQ_ENG_MDP_WROT0, MDP_WROT_BASE),
 
 			DEFINE_MODULE(CMDQ_ENG_MDP_WDMA, MDP_WDMA_BASE),
@@ -564,6 +576,12 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 		}
 	}
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_COLOR0)) {
+			CMDQ_MSG("Disable MDP_COLOR0 clock\n");
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_COLOR0);
+		}
+	}
 
 	CMDQ_MSG("Disable MDP(0x%llx) clock end\n", engineFlag);
 #endif				/* #ifdef CMDQ_PWR_AWARE */

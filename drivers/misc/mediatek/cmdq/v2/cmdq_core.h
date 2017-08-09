@@ -780,19 +780,17 @@ extern "C" {
 	void cmdq_core_reset_hw_events(void);
 
 /**
- * Get and set HW event form device tree
+ * Get and HW information from device tree
  */
-	void cmdq_core_init_event_table(void);
-	void cmdq_core_set_event_table(CMDQ_EVENT_ENUM event, const int32_t value);
-	int32_t *cmdq_core_get_whole_event_table(uint32_t *tableSize);
-	const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event);
-	const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event);
+	void cmdq_core_init_DTS_data(void);
+	cmdqDTSDataStruct *cmdq_core_get_whole_DTS_Data(void);
 
 /**
- * GCE subsys
+ * Get and set HW event form device tree
  */
-	SubsysStruct *cmdq_core_get_whole_subsys_table(void);
-	void cmdq_core_init_subsys(void);
+	void cmdq_core_set_event_table(CMDQ_EVENT_ENUM event, const int32_t value);
+	const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event);
+	const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event);
 
 /**
  * Utilities

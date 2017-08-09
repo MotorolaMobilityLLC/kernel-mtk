@@ -34,7 +34,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/tru
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/cmdq/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6755"))
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
 endif
 endif

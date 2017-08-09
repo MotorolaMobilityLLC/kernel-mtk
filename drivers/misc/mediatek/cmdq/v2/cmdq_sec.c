@@ -373,7 +373,7 @@ int32_t cmdq_sec_fill_iwc_resource_msg_unlocked(int32_t iwcCommand, void *_pTask
 	pIwc->cmd = iwcCommand;
 	pIwc->pathResource.shareMemoyPA = 0LL | (pSharedMem->MVABase);
 	pIwc->pathResource.size = pSharedMem->size;
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+#if defined(CMDQ_SECURE_PATH_NORMAL_IRQ) || defined(CMDQ_SECURE_PATH_HW_LOCK)
 	pIwc->pathResource.useNormalIRQ = 1;
 #else
 	pIwc->pathResource.useNormalIRQ = 0;

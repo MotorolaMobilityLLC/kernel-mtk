@@ -52,6 +52,8 @@
 #define CMDQ_MIN_AGE_VALUE              (5)
 #define CMDQ_MAX_ERROR_SIZE             (8 * 1024)
 
+#define CMDQ_MAX_TASK_IN_SECURE_THREAD	(10)
+
 /* max value of CMDQ_THR_EXEC_CMD_CNT (value starts from 0) */
 #ifdef CMDQ_USE_LEGACY
 #define CMDQ_MAX_COOKIE_VALUE           (0xFFFF)
@@ -80,6 +82,10 @@
 #define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
 #else
 #undef CMDQ_PWR_AWARE
+#endif
+
+#ifdef CMDQ_SECURE_PATH_HW_LOCK
+#undef CMDQ_SECURE_PATH_NORMAL_IRQ
 #endif
 
 /* #define CMDQ_DUMP_GIC (0) */
@@ -197,6 +203,11 @@ typedef enum CMDQ_DATA_REGISTER_ENUM {
 	CMDQ_DATA_REG_INVALID = -1,
 } CMDQ_DATA_REGISTER_ENUM;
 
+typedef enum CMDQ_MDP_PA_BASE_ENUM {
+	CMDQ_MDP_PA_BASE_MM_MUTEX,
+	CMDQ_MAX_MDP_PA_BASE_COUNT,		/* ALWAYS keep at the end */
+} CMDQ_MDP_PA_BASE_ENUM;
+
 /* CMDQ Events */
 #undef DECLARE_CMDQ_EVENT
 #define DECLARE_CMDQ_EVENT(name_struct, val, dts_name) name_struct = val,
@@ -209,20 +220,30 @@ typedef enum CMDQ_EVENT_ENUM {
 #undef DECLARE_CMDQ_SUBSYS
 #define DECLARE_CMDQ_SUBSYS(name_struct, val, grp, dts_name) name_struct = val,
 typedef enum CMDQ_SUBSYS_ENUM {
-#include "cmdq_subsys.h"
+#include "cmdq_subsys_common.h"
 
 	/* ALWAYS keep at the end */
 	CMDQ_SUBSYS_MAX_COUNT
 } CMDQ_SUBSYS_ENUM;
 #undef DECLARE_CMDQ_SUBSYS
 
+#define CMDQ_SUBSYS_GRPNAME_MAX		(30)
 /* GCE subsys information */
 typedef struct SubsysStruct {
 	uint32_t msb;
 	int32_t subsysID;
 	uint32_t mask;
-	const char *grpName;
+	char grpName[CMDQ_SUBSYS_GRPNAME_MAX];
 } SubsysStruct;
+
+typedef struct cmdqDTSDataStruct {
+	/* [Out] GCE event table */
+	int32_t eventTable[CMDQ_SYNC_TOKEN_MAX];
+	/* [Out] GCE subsys ID table */
+	SubsysStruct subsys[CMDQ_SUBSYS_MAX_COUNT];
+	/* [Out] MDP Base address */
+	uint32_t MDPBaseAddress[CMDQ_MAX_MDP_PA_BASE_COUNT];
+} cmdqDTSDataStruct;
 
 /* Custom "wide" pointer type for 64-bit job handle (pointer to VA) */
 typedef unsigned long long cmdqJobHandle_t;

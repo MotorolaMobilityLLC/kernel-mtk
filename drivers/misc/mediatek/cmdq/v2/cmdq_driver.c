@@ -738,17 +738,14 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			}
 		} while (0);
 		break;
-	case CMDQ_IOCTL_QUERY_EVENT_TABLE:
+	case CMDQ_IOCTL_QUERY_DTS:
 		do {
-			uint32_t tableSize;
-			int32_t *eventTable = cmdq_core_get_whole_event_table(&tableSize);
+			cmdqDTSDataStruct *pDtsData;
 
-			if (NULL == eventTable) {
-				CMDQ_ERR("Do not support HW event table from DTS\n");
-				return -EFAULT;
-			}
-			if (copy_to_user((void *)param, eventTable, tableSize)) {
-				CMDQ_ERR("Copy HW event table to user space failed\n");
+			pDtsData = cmdq_core_get_whole_DTS_Data();
+
+			if (copy_to_user((void *)param, pDtsData, sizeof(cmdqDTSDataStruct))) {
+				CMDQ_ERR("Copy device tree information to user space failed\n");
 				return -EFAULT;
 			}
 		} while (0);
@@ -784,7 +781,7 @@ static long cmdq_ioctl_compat(struct file *pFile, unsigned int code, unsigned lo
 	case CMDQ_IOCTL_FREE_WRITE_ADDRESS:
 	case CMDQ_IOCTL_READ_ADDRESS_VALUE:
 	case CMDQ_IOCTL_QUERY_CAP_BITS:
-	case CMDQ_IOCTL_QUERY_EVENT_TABLE:
+	case CMDQ_IOCTL_QUERY_DTS:
 	case CMDQ_IOCTL_NOTIFY_ENGINE:
 		/* All ioctl structures should be the same size in 32-bit and 64-bit linux. */
 		return cmdq_ioctl(pFile, code, param);

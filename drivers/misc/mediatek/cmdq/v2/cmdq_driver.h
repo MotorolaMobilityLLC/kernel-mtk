@@ -4,10 +4,6 @@
 #include <linux/kernel.h>
 #include "cmdq_def.h"
 
-typedef struct cmdqEventTableStruct {
-	uint32_t GCEeventTable[CMDQ_SYNC_TOKEN_MAX];	/* [OUT] HW event table */
-} cmdqEventTableStruct;
-
 typedef struct cmdqUsageInfoStruct {
 	uint32_t count[CMDQ_MAX_ENGINE_COUNT];	/* [OUT] current engine ref count */
 } cmdqUsageInfoStruct;
@@ -71,9 +67,9 @@ typedef struct cmdqWriteAddressStruct {
 #define CMDQ_IOCTL_QUERY_CAP_BITS _IOW(CMDQ_IOCTL_MAGIC_NUMBER, 10, int)
 
 /*  */
-/* HW event table from DTS */
+/* HW info. from DTS */
 /*  */
-#define CMDQ_IOCTL_QUERY_EVENT_TABLE _IOW(CMDQ_IOCTL_MAGIC_NUMBER, 11, cmdqEventTableStruct)
+#define CMDQ_IOCTL_QUERY_DTS _IOW(CMDQ_IOCTL_MAGIC_NUMBER, 11, cmdqDTSDataStruct)
 
 /*  */
 /* Notify MDP will use specified engine before really use. */
