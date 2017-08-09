@@ -20,6 +20,9 @@
 #define TBASE_SMC_AEE_DUMP                  (0xB200AEED)
 #define MTK_SIP_KERNEL_GIC_DUMP         0x82000205
 #define MTK_SIP_KERNEL_DAPC_INIT        0x82000206
+#define MTK_SIP_KERNEL_EMIMPU_WRITE         0x82000207
+#define MTK_SIP_KERNEL_EMIMPU_READ          0x82000208
+#define MTK_SIP_KERNEL_EMIMPU_SET           0x82000209
 
 #define MTK_SIP_KERNEL_MSG                  0x820002ff
 
@@ -64,6 +67,14 @@ static noinline int mt_secure_call(u32 function_id,
 #define tbase_trigger_aee_dump() \
 	mt_secure_call(TBASE_SMC_AEE_DUMP, 0, 0, 0)
 #endif
+#define emi_mpu_smc_write(offset, val) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_WRITE, offset, val, 0)
+
+#define emi_mpu_smc_read(offset) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_READ, offset, 0, 0)
+
+#define emi_mpu_smc_set(start, end, region_permission) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission)
 
 #define CONFIG_MCUSYS_WRITE_PROTECT
 
