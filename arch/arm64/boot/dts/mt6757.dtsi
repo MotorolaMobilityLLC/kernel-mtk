@@ -81,7 +81,34 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1391000000>;
 		};
+/*
+		cpu1: cpu@001 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x001>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1391000000>;
+		};
 
+		cpu2: cpu@002 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x002>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1391000000>;
+		};
+
+		cpu3: cpu@003 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x003>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1391000000>;
+		};
+*/
 /*
 		cpu4: cpu@100 {
 			device_type = "cpu";
@@ -91,6 +118,35 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
+*/
+/*
+		cpu5: cpu@101 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x101>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1950000000>;
+		};
+
+		cpu6: cpu@102 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x102>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1950000000>;
+		};
+
+		cpu7: cpu@103 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x103>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1950000000>;
+		};
+
 */
 		cpu-map {
 			cluster0 {
