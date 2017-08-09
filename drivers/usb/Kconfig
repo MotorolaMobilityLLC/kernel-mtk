@@ -137,6 +137,15 @@ config USB_USS720
 	  To compile this driver as a module, choose M here: the
 	  module will be called uss720.
 
+config USB_XHCI_MTK_UPS
+	tristate "xHCI support for Mediatek SoCs with USB3.0"
+	select MFD_SYSCON
+	depends on ARCH_MEDIATEK || COMPILE_TEST
+	---help---
+	  Say 'Y' to enable the support for the xHCI host controller
+	  found in Mediatek SoCs with USB3.0.
+	  If unsure, say N.
+
 source "drivers/usb/serial/Kconfig"
 
 source "drivers/usb/misc/Kconfig"
