@@ -899,7 +899,21 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
+	/* set PMIC WRAP table for suspend power control */
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_PWR_ON,
+			temp | (1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_SHUTDOWN,
+			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
+
+	/* fpr dpd */
+	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
+		spm_dpd_init();
+
+#elif defined(CONFIG_ARCH_MT6757)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
@@ -910,9 +924,6 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 			IDX_SP_VSRAM_SHUTDOWN,
 			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
 #endif
-	/* fpr dpd */
-	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
-		spm_dpd_init();
 
 #elif defined(CONFIG_ARCH_MT6797)
 	/* set PMIC WRAP table for suspend power control */
@@ -956,7 +967,7 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_dram_init();
