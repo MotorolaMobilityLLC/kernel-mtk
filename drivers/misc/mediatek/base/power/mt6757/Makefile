@@ -29,6 +29,9 @@ endif
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 obj-y += mt_pm_init.o
+
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
+
 obj-y += mt_clkbuf_ctl.o
 #obj-y += mt_dcm.o
 obj-y += mt_clkmgr_common.o
@@ -77,3 +80,5 @@ obj-y += mt_hotplug_strategy_cpu.o
 obj-y += mt_hotplug_strategy_api.o
 obj-y += mt_hotplug_strategy_algo.o
 obj-y += mt_hotplug_strategy_ops_mt6757.o
+
+endif

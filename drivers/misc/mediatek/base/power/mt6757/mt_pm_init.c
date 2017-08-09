@@ -61,6 +61,7 @@
 	mt_reg_sync_writel(val, addr)
 #endif
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #define TOPCK_LDVT
 #ifdef TOPCK_LDVT
 /***************************
@@ -609,17 +610,18 @@ static const struct file_operations mfgclk_fops = {
 	.read = seq_read,
 };
 #endif
+#endif
 
 
 static int __init mt_power_management_init(void)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *pm_init_dir = NULL;
 	/* unsigned int code = mt_get_chip_hw_code(); */
 
 	pm_power_off = mt_power_off;
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cpu dormant driver init */
 	mt_cpu_dormant_init();
 
