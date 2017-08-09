@@ -17,6 +17,12 @@
 #include <mach/wd_api.h>
 #include <linux/seq_file.h>
 
+/*add by debug for register restart notify*/
+#include <linux/notifier.h>
+#include <linux/reboot.h>
+#include <mt-plat/mt_reboot.h>
+/*#include <mach/mtk_rtc.h>*/
+
 /*************************************************************************
  * Feature configure region
  *************************************************************************/
@@ -628,6 +634,81 @@ static int __init init_wk_check_bit(void)
 	pr_debug("[WDK]arch init check_bit=0x%x-----\n", cpus_kick_bit);
 	return 0;
 }
+
+
+/*register restart notify and own by debug start-------
+*
+*/
+void arch_reset(char mode, const char *cmd)
+{
+	char reboot = 1;
+	int res = 0;
+	struct wd_api *wd_api = NULL;
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	return;
+#else
+	res = get_wd_api(&wd_api);
+	pr_alert("arch_reset: cmd = %s\n", cmd ? : "NULL");
+	dump_stack();
+/* disable charger/bootloader/kpoc for rtc not ready */
+#if 0
+	if (cmd && !strcmp(cmd, "charger")) {
+		/* do nothing */
+	} else if (cmd && !strcmp(cmd, "recovery")) {
+ #ifndef CONFIG_MTK_FPGA
+		rtc_mark_recovery();
+ #endif
+	} else if (cmd && !strcmp(cmd, "bootloader")) {
+ #ifndef CONFIG_MTK_FPGA
+		rtc_mark_fast();
+ #endif
+	}
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	else if (cmd && !strcmp(cmd, "kpoc"))
+		rtc_mark_kpoc();
+#endif
+
+	else
+		reboot = 1;
+#endif
+	if (res)
+		pr_notice("arch_reset, get wd api error %d\n", res);
+	else
+		wd_api->wd_sw_reset(reboot);
+ #endif
+}
+static struct notifier_block mtk_restart_handler;
+static int mtk_arch_reset_handle(struct notifier_block *this, unsigned long mode, void *cmd)
+{
+	pr_alert("ARCH_RESET happen!!!\n");
+	arch_reset(mode, cmd);
+	pr_alert("ARCH_RESET end!!!!\n");
+	return NOTIFY_DONE;
+}
+
+static int __init mtk_arch_reset_init(void)
+{
+	int ret;
+
+	mtk_restart_handler.notifier_call = mtk_arch_reset_handle;
+	mtk_restart_handler.priority = 128;
+	pr_alert("\n register_restart_handler- 0x%p, Notify call: - 0x%p\n",
+		 &mtk_restart_handler, mtk_restart_handler.notifier_call);
+	ret = register_restart_handler(&mtk_restart_handler);
+	if (ret)
+		pr_err("ARCH_RESET cannot register mtk_restart_handler!!!!\n");
+	pr_alert("ARCH_RESET register mtk_restart_handler  ok!!!!\n");
+	return ret;
+}
+
+pure_initcall(mtk_arch_reset_init);
+/*register restart notify and own by debug end+++++
+*
+*/
+
+
+/*********************************************************************************/
 late_initcall(init_wk);
 arch_initcall(init_wk_check_bit);
 
