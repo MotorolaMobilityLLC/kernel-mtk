@@ -465,6 +465,8 @@ void MIPI_Format_Index_Set(BYTE bFormatIndex);
 BYTE MIPI_Format_Index_Get(void);
 BYTE MIPI_CheckSum_Status_OK(void);
 void system_power_ctrl(BYTE ON);
+void slimport_config_video_output(void);
+
 
 #define	EmbededSync     1
 #define	SeparateSync     0
@@ -485,8 +487,8 @@ typedef enum {
 	SP_TX_CONFIG_VIDEO_INPUT,
 	SP_TX_LINK_TRAINING,
 	SP_TX_CONFIG_VIDEO_OUTPUT,
-	SP_TX_CONFIG_AUDIO,
 	SP_TX_HDCP_AUTHENTICATION,
+	SP_TX_CONFIG_AUDIO,
 	SP_TX_PLAY_BACK
 } SP_TX_System_State;
 
@@ -576,7 +578,9 @@ _SP_TX_DRV_EX_C_ BYTE bEDID_firstblock[128];
 _SP_TX_DRV_EX_C_ BYTE bEDID_fourblock[256];
 
 _SP_TX_DRV_EX_C_ bool audio_format_change;
+_SP_TX_DRV_EX_C_ bool video_format_change;
 _SP_TX_DRV_EX_C_ int three_3d_format;
+
 
 #if(REDUCE_REPEAT_PRINT_INFO)
 #define LOOP_PRINT_MSG_MAX 16

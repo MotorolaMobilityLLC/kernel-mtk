@@ -712,12 +712,15 @@ void SP_TX_Config_BIST_Video (BYTE cBistIndex,struct VideoFormat* pInputFormat)
 	//if(Force_AUD)//force to configure audio regadless of EDID info.
 	//sp_tx_ds_edid_hdmi = 1;
 
+	SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
+	/*
 	if(sp_tx_ds_edid_hdmi) {
 		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 	} else {
 		SP_TX_Power_Enable(SP_TX_PWR_AUDIO, SP_TX_POWER_DOWN);//power down audio when DVI
 		SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
 	}
+	*/
 
 }
 void SP_CTRL_BIST_Clk_MN_Gen(unsigned int sp_tx_bist_select_number)
@@ -2095,7 +2098,31 @@ void SP_TX_Disable_Audio_Input(void)
 
 void SP_TX_AudioInfoFrameSetup(struct AudioFormat *bAudioFormat)
 {
+	BYTE freq = 0, bitWidth = 0, temp = 0;
 
+	if (bAudioFormat->bAudio_word_len == 16)
+		bitWidth = 1;
+	else if (bAudioFormat->bAudio_word_len == 20)
+		bitWidth = 2;
+	else if (bAudioFormat->bAudio_word_len == 24)
+		bitWidth = 3;
+
+	if (bAudioFormat->bAudio_Fs == AUDIO_FS_441K)
+		freq = 2;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_48K)
+		freq = 3;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_32K)
+		freq = 1;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_882K)
+		freq = 4;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_96K)
+		freq = 5;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_1764K)
+		freq = 6;
+	else if (bAudioFormat->bAudio_Fs == AUDIO_FS_192K)
+		freq = 7;
+
+	temp = freq << 2 | bitWidth;
 	SP_TX_AudioInfoFrmae.type = 0x84;
 	SP_TX_AudioInfoFrmae.version = 0x01;
 	SP_TX_AudioInfoFrmae.length = 0x0A;
@@ -2103,7 +2130,7 @@ void SP_TX_AudioInfoFrameSetup(struct AudioFormat *bAudioFormat)
 	if(bAudioFormat ->bAudioType ==AUDIO_I2S) {
 		switch(bAudioFormat->bI2S_FORMAT.Channel_Num) {
 		case I2S_CH_2:
-			SP_TX_AudioInfoFrmae.pb_byte[0]=0x00;//coding type ,refer to stream header, audio channel count,two channel
+			SP_TX_AudioInfoFrmae.pb_byte[0]=0x01;//coding type ,refer to stream header, audio channel count,two channel
 			SP_TX_AudioInfoFrmae.pb_byte[3]=0x00;//for multi channel LPCM
 			break;
 		case I2S_CH_4:
@@ -2130,7 +2157,7 @@ void SP_TX_AudioInfoFrameSetup(struct AudioFormat *bAudioFormat)
 
 
 	//SP_TX_AudioInfoFrmae.pb_byte[0]=0x00;//coding type ,refer to stream header, audio channel count,two channel
-	SP_TX_AudioInfoFrmae.pb_byte[1]=0x00;//refer to stream header
+	SP_TX_AudioInfoFrmae.pb_byte[1]=temp;//refer to stream header
 	SP_TX_AudioInfoFrmae.pb_byte[2]=0x00;
 	//SP_TX_AudioInfoFrmae.pb_byte[3]=0x00;//for multi channel LPCM
 	SP_TX_AudioInfoFrmae.pb_byte[4]=0x00;//for multi channel LPCM
@@ -2226,7 +2253,8 @@ void SP_TX_Config_Audio(struct AudioFormat *bAudio)
 
 	sp_read_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK1, &c);
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK1, c|0x04);//Unmask audio clock change int
-	SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
+	/*SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);*/
+	SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
 
 }
 
@@ -2261,8 +2289,8 @@ void SP_TX_Update_Audio(struct AudioFormat *bAudio)
 
 	sp_read_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK1, &c);
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK1, c|0x04);//Unmask audio clock change int
-	SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
-
+	//SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
+	SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
 }
 
 
@@ -3058,18 +3086,23 @@ void sp_tx_send_3d_vsi_packet_to_7730(BYTE video_format)
 	for(i = 0; i < MPEG_PACKET_SIZE; i++) {
 		SP_TX_Packet_MPEG.MPEG_data[i] = 0;
 	}
-	SP_TX_Packet_MPEG.MPEG_data[0] = 0x03;
-	SP_TX_Packet_MPEG.MPEG_data[1] = 0x0C;
-	SP_TX_Packet_MPEG.MPEG_data[2] = 0x00;
-	SP_TX_Packet_MPEG.MPEG_data[3] = 0x40;
-	SP_TX_Packet_MPEG.MPEG_data[4] =(BYTE) (video_format << 4 );
+	if (video_format != 0xFF) {
+		SP_TX_Packet_MPEG.MPEG_data[0] = 0x03;
+		SP_TX_Packet_MPEG.MPEG_data[1] = 0x0C;
+		SP_TX_Packet_MPEG.MPEG_data[2] = 0x00;
+		SP_TX_Packet_MPEG.MPEG_data[3] = 0x40;
+		SP_TX_Packet_MPEG.MPEG_data[4] =(BYTE) (video_format << 4 );
+	}
 
 	SP_TX_Config_Packets(VSI_PACKETS);
 
-
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_VSC_DB1, 0x04);
-
-	sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_3D_VSC_CTRL, 0xFF, INFO_FRAME_VSC_EN);
+	if (video_format != 0xFF) {
+		sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_VSC_DB1, 0x04);
+		sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_3D_VSC_CTRL, 0xFF, INFO_FRAME_VSC_EN);
+	} else {
+		sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_VSC_DB1, 0x0);
+		sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_3D_VSC_CTRL, 0xFE, 0x0);
+	}
 	sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, ~0x01, 0x00);
 	sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, 0xFF, 0x10);
 	sp_write_reg_mask(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, 0xFF, 0x01);
@@ -3426,7 +3459,7 @@ BYTE SP_TX_HW_Link_Training (void)
 #endif
 			break;
 		}
-		pr_err("Hardware link training");
+		pr_err("Hardware link training\n");
 		SP_TX_EnhaceMode_Set();
 		SP_TX_AUX_DPCDRead_Bytes(0x00, 0x06, 0x00, 0x01, &c);
 		c |= 0x01;
@@ -4845,7 +4878,8 @@ void SP_CTRL_HDCP_Process(void)
 		SP_TX_Video_Mute(0);
 		HDCP_fail_count = 0;
 		pr_err("@@@@@@@@@@@@@@@@@@@@@@@hdcp_auth_pass@@@@@@@@@@@@@@@@@@@@\n");
-		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 		SP_TX_Show_Infomation();
 		break;
 	case HDCP_FAILE:
@@ -4866,7 +4900,8 @@ void SP_CTRL_HDCP_Process(void)
 		hdcp_encryption_enable(0);
 		SP_TX_Video_Mute(1);
 		pr_err("***************************hdcp_auth_failed*********************************\n");
-		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 		SP_TX_Show_Infomation();
 		#endif
 		break;
@@ -4876,10 +4911,12 @@ void SP_CTRL_HDCP_Process(void)
 		#ifdef Display_NoHDCP
 		SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);
 		SP_TX_Video_Mute(0);
-		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 		#else
 		SP_TX_Video_Mute(1);//when Rx does not support HDCP, force to send blue screen
-		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 		#endif
 		break;
 	}
@@ -4887,8 +4924,9 @@ void SP_CTRL_HDCP_Process(void)
 
 void SP_CTRL_Dump_Reg(void)
 {
-	unsigned int BEGIN=0x0, END=0xFF, i=0;
-	uint8_t temp=0;
+	unsigned int BEGIN=0x70, END=0xFF, i=0;
+	uint8_t temp=0, D3=0, D4=0, D5=0, D6=0, D7=0, D8=0, c=0;
+	unsigned int Maud=0, Naud=0;
 
 	//for ANX7418 Debug
 	sp_read_reg(0x50, 0x36, &temp);
@@ -4906,6 +4944,44 @@ void SP_CTRL_Dump_Reg(void)
 		sp_read_reg(SP_TX_PORT2_ADDR, i, &temp);
 		pr_err("reg:%x,offset:%x, temp:%d\n", SP_TX_PORT2_ADDR, i, temp);
 	}
+
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD3, &D3);
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD4, &D4);
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD5, &D5);
+	Maud = D5 << 16 | D4 << 8 | D3;
+
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD6, &D6);
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD7, &D7);
+	sp_read_reg(SP_TX_PORT0_ADDR, 0xD8, &D8);
+	Naud = D8 << 16 | D7 << 8 | D6;
+
+	sp_read_reg(MIPI_RX_PORT1_ADDR, MIPI_ANALOG_PWD_CTRL1, &c);
+	if(c&0x10) {
+		sp_read_reg(SP_TX_PORT0_ADDR,SP_TX_LINK_BW_SET_REG, &c);
+		if(c==0x06) {
+			pr_err("   BW = 1.62G");
+			SP_TX_PCLK_Calc(BW_162G);//str_clk = 162;
+		} else if(c==0x0a) {
+			pr_err("   BW = 2.7G");
+			SP_TX_PCLK_Calc(BW_27G);//str_clk = 270;
+		} else if(c==0x14) {
+			pr_err("   BW = 5.4G");
+			SP_TX_PCLK_Calc(BW_54G);//str_clk = 540;
+		}
+
+	} else {
+		sp_read_reg(SP_TX_PORT0_ADDR,SP_TX_LINK_BW_SET_REG, &c);
+		if(c==0x06) {
+			pr_err("   BW = 1.62G");
+		} else if(c==0x0a) {
+			pr_err("   BW = 2.7G");
+		} else if(c==0x14) {
+			pr_err("   BW = 5.4G");
+		}
+	}
+
+	/*freqency = (Maud / Naud) * (540000 / 512);*/
+	pr_err("Maud:%d, Naud:%d, (Maud / Naud * 540 000 / 512) KHz\n", Maud, Naud);
 }
 
 void SP_CTRL_PlayBack_Process(void)
@@ -4937,6 +5013,11 @@ if(audio_format_change)
 	SP_TX_Update_Audio(&SP_TX_Audio_Input);
 	audio_format_change=0;
 
+}
+if(video_format_change)
+{
+	slimport_config_video_output();
+	video_format_change=0;
 }
 }
 void SP_CTRL_Int_Process(void)
@@ -5104,19 +5185,20 @@ void slimport_config_video_output(void)
 	SP_TX_AVI_Setup();//initial AVI infoframe packet
 	SP_TX_Config_Packets(AVI_PACKETS);
 	// 3d packed config
-	if(EN_3D) {
+	/*if(EN_3D) {*/
+	if (video_format_change !=0) {
 #if(ENABLE_3D)
 		if (three_3d_format == VIDEO_3D_TOP_AND_BOTTOM)
 			three_video_type = 0x06;
 		else if (three_3d_format == VIDEO_3D_SIDE_BY_SIDE)
-			three_video_type = 0x08;
+			three_video_type = 0x03;
 
 		pr_err("send 3D packet, format:%d, three_video_type:%x\r\n", three_3d_format, (unsigned int)three_video_type);
-		if (three_3d_format != 0xFF)
-			sp_tx_send_3d_vsi_packet_to_7730(three_3d_format);
+		sp_tx_send_3d_vsi_packet_to_7730(three_video_type);
 #endif
 	}
-	SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+	//SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+	SP_CTRL_Set_System_State(SP_TX_HDCP_AUTHENTICATION);
 }
 
 void slimport_hdcp_authentication(BYTE enable)
@@ -5127,7 +5209,8 @@ void slimport_hdcp_authentication(BYTE enable)
 		SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);// Poer down HDCP link clock domain logic for B0 version-20110913-ANX.Fei
 		SP_TX_Show_Infomation();
 		SP_TX_Video_Mute(0);
-		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
 	}
 }
 

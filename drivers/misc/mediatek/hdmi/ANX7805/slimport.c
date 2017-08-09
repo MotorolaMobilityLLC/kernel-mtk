@@ -35,7 +35,6 @@
 #include <linux/kthread.h>
 
 #include "hdmi_drv.h"
-#include "slimport_tx_drv.h"
 #include "slimport_edid.h"
 #include "slimport_edid_3d_api.h"
 
@@ -483,10 +482,10 @@ int slimport_read_edid_block(int block, uint8_t *edid_buf)
 EXPORT_SYMBOL(slimport_read_edid_block);
 
 
-int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num)
+int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num, I2SLayOut layout)
 {
 	SP_CTRL_AUDIO_FORMAT_Set(AUDIO_I2S,bAudio_Fs ,bAudio_word_len);
-	SP_CTRL_I2S_CONFIG_Set(Channel_Num , I2S_LAYOUT_0);
+	SP_CTRL_I2S_CONFIG_Set(Channel_Num , layout);
 	audio_format_change=1;
 	
 	return 0;
@@ -495,6 +494,9 @@ EXPORT_SYMBOL(update_audio_format_setting);
 
 int update_video_format_setting(int video_format)
 {
+	pr_err("video_format:%d, three_3d_format:%d\n", video_format, three_3d_format);
+	if (video_format != three_3d_format)
+		video_format_change=1;
 	three_3d_format = video_format;
 	return 0;
 }
@@ -613,10 +615,12 @@ static int irq_count_for_cable_plugout = 0;
 irqreturn_t anx7805_cbl_det_isr(int irq, void *data)
 {
 	irq_count++;
+	/*
 	if (irq_count < 2) {
 		pr_err("anx7805_cbl_det_isr, irq_count: %d\n", irq_count);
 		return IRQ_HANDLED;
 	}
+	*/
 
 	if (gpio_get_value(mhl_eint_gpio_number)) {
 		pr_err("slimport detect cable insertion\n");

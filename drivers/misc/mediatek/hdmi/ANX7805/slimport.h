@@ -14,7 +14,7 @@
 
 #ifndef _SLIMPORT_H
 #define _SLIMPORT_H
-
+#include "slimport_tx_drv.h"
 
 struct anx7805_platform_data
 {
@@ -90,7 +90,7 @@ const char *avdd33_name;
 #define delay_ms(time) mdelay(time)
 
 #define MIPI_EN  0
-#define EN_3D    0
+#define EN_3D    1 
 #define MIPI_LANE_SEL_0  1
 #define MIPI_LANE_SEL_1  0
 /*Audio interface select*/
@@ -140,7 +140,7 @@ int sp_write_reg(uint8_t slave_addr, uint8_t offset, uint8_t value);
 void sp_tx_hardware_poweron(void);
 void sp_tx_hardware_powerdown(void);
 int slimport_read_edid_block(int block, uint8_t *edid_buf);
-int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num);
+int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num, I2SLayOut layout);
 int update_video_format_setting(int video_format);
 int slimport_read_edid_All(uint8_t *edid_buf);
 int slimport_read_edid_break(uint8_t *edid_break);

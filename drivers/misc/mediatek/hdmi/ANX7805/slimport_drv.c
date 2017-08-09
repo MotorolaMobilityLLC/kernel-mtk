@@ -255,9 +255,6 @@ static int slimport_drv_audio_config(enum HDMI_AUDIO_FORMAT aformat, int bitWidt
 	if(bitWidth == 24)
 		Audio_format.bAudio_word_len = AUDIO_W_LEN_24_24MAX;
 
-	Audio_format.bI2S_FORMAT.AUDIO_LAYOUT = I2S_LAYOUT_0;
-	Audio_format.bAudioType = AUDIO_I2S;
-
 	switch(aformat)
 	{
 		case HDMI_AUDIO_32K_2CH:
@@ -327,7 +324,13 @@ static int slimport_drv_audio_config(enum HDMI_AUDIO_FORMAT aformat, int bitWidt
 		}
 	}
 	
-	update_audio_format_setting(Audio_format.bAudio_Fs, Audio_format.bAudio_word_len, Audio_format.bI2S_FORMAT.Channel_Num);
+	if(Audio_format.bI2S_FORMAT.Channel_Num == I2S_CH_2)
+		Audio_format.bI2S_FORMAT.AUDIO_LAYOUT = I2S_LAYOUT_0;
+	else
+		Audio_format.bI2S_FORMAT.AUDIO_LAYOUT = I2S_LAYOUT_1;
+	Audio_format.bAudioType = AUDIO_I2S;
+
+	update_audio_format_setting(Audio_format.bAudio_Fs, Audio_format.bAudio_word_len, Audio_format.bI2S_FORMAT.Channel_Num, Audio_format.bI2S_FORMAT.AUDIO_LAYOUT);
 	return 0;
 }
 
@@ -597,6 +600,8 @@ enum
 int slimport_drv_get_external_device_capablity(void)
 {
 	int capablity = 0;
+	/*capablity = HDMI_CHANNEL_8 << 3 | HDMI_SAMPLERATE_192 << 7 | HDMI_BITWIDTH_24 << 10;
+	return capablity;*/
 	/*
 	* bit3-bit6: channal count; bit7-bit9: sample rate; bit10-bit11: bitwidth
 	*/
