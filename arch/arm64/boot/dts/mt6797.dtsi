@@ -813,7 +813,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			mediatek,md_id = <0>;
 			mediatek,cldma_capability = <6>;
 			mediatek,md_smem_size = <0x100000>; /* md share memory size */
-			/*clocks = <&scpsys SCP_SYS_MD1>;*/
+			clocks = <&scpsys SCP_SYS_MD1>;
 			clock-names = "scp-sys-md1-main";
 		};
 
@@ -976,7 +976,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			ccif,minor_base = <0>;
 			ccif,capability = <0>;
 			mediatek,md_smem_size = <0x400000>; //md share memory size
-			/*clocks = <&scpsys SCP_SYS_C2K>;*/
+			clocks = <&scpsys SCP_SYS_C2K>;
 			clock-names = "scp-sys-c2k-main";
 		};
 
