@@ -721,7 +721,7 @@ static void display_stats(int always, int sub_extra_pd1_allow)
 	if (always)
 		pr_warn("%s", buffer);
 	else
-		toi_message(TOI_EAT_MEMORY, TOI_MEDIUM, 1, buffer);
+		toi_message(TOI_EAT_MEMORY, TOI_MEDIUM, 1, "%s", buffer);
 }
 
 /* generate_free_page_map

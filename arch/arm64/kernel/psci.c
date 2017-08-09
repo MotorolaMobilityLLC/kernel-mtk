@@ -31,6 +31,7 @@
 #include <asm/smp_plat.h>
 #include <asm/suspend.h>
 #include <asm/system_misc.h>
+#include <mtk_hibernate_core.h>
 
 #define PSCI_POWER_STATE_TYPE_STANDBY		0
 #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
@@ -513,6 +514,17 @@ static int psci_suspend_finisher(unsigned long index)
 {
 	struct psci_power_state *state = __get_cpu_var(psci_power_state);
 
+#ifdef CONFIG_MTK_HIBERNATION
+	if (index == POWERMODE_HIBERNATE) {
+		int ret;
+
+		pr_warn("%s: hibernating\n", __func__);
+		ret = swsusp_arch_save_image(0);
+		if (ret)
+			pr_err("%s: swsusp_arch_save_image fail: %d", __func__, ret);
+		return ret;
+	}
+#endif
 	return psci_ops.cpu_suspend(state[index - 1],
 				    virt_to_phys(cpu_resume));
 }
@@ -528,6 +540,10 @@ static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
 	if (WARN_ON_ONCE(!index))
 		return -EINVAL;
 
+#ifdef CONFIG_MTK_HIBERNATION
+	if (index == POWERMODE_HIBERNATE)
+		return __cpu_suspend(index, psci_suspend_finisher);
+#endif
 	if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
 		ret = psci_ops.cpu_suspend(state[index - 1], 0);
 	else

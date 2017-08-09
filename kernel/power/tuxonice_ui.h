@@ -85,14 +85,16 @@ extern struct ui_ops *toi_current_ui;
 		if (toi_current_ui) \
 			(toi_current_ui->prepare_status)(clear, fmt, ##args); \
 		else \
-			pr_warn(fmt "%s", ##args, "\n"); \
+			pr_warn(fmt, ##args); \
 	} while (0)
 
 #define toi_message(sn, lev, log, fmt, a...) \
-do { \
-	if (toi_current_ui && (!sn || test_debug_state(sn))) \
-		toi_current_ui->message(sn, lev, log, fmt, ##a); \
-} while (0)
+	do { \
+		if (toi_current_ui && (!sn || test_debug_state(sn))) \
+			toi_current_ui->message(sn, lev, log, fmt, ##a); \
+		else \
+			pr_debug(fmt, ##a); \
+	} while (0)
 
 __exit void toi_ui_cleanup(void);
 extern int toi_ui_init(void);

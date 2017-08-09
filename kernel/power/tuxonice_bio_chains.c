@@ -683,8 +683,7 @@ int toi_load_extent_chains(void)
 	toi_message(TOI_BIO, TOI_VERBOSE, 0, "Save chain numbers.");
 	result = toiActiveAllocator->rw_header_chunk_noreadahead(READ,
 								 &toi_blockwriter_ops,
-								 (char *)&toi_writer_posn.
-								 saved_chain_number[0],
+								 (char *)&toi_writer_posn.saved_chain_number[0],
 								 4 * sizeof(int));
 
 	return result;

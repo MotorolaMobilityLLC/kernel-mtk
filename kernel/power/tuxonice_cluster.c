@@ -969,8 +969,8 @@ static int toi_cluster_init(void)
 
 		/* Set up sysfs entry */
 		node_array[i].sysfs_data.attr.name = toi_kzalloc(8,
-								 sizeof(node_array[i].sysfs_data.
-									attr.name), GFP_KERNEL);
+								 sizeof(node_array[i].sysfs_data.attr.name),
+								 GFP_KERNEL);
 		sprintf((char *)node_array[i].sysfs_data.attr.name, "node_%d", i);
 		node_array[i].sysfs_data.attr.mode = SYSFS_RW;
 		node_array[i].sysfs_data.type = TOI_SYSFS_DATA_INTEGER;

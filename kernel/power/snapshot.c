@@ -836,8 +836,14 @@ unsigned long memory_bm_next_pfn(struct memory_bitmap *bm, int index)
 {
 	unsigned long bits, pfn, pages;
 	int bit;
+	static int nrcpu = 1;
 
-	index += num_possible_cpus();	/* Iteration state is separated from get/set/test */
+	index += nr_cpumask_bits;	/* Iteration state is separated from get/set/test */
+	if (nrcpu) {
+		pr_warn("%s: num_possible_cpus=%d, nr_cpumask_bits=%d",
+			__func__, num_possible_cpus(), nr_cpumask_bits);
+		nrcpu = 0;
+	}
 
 	do {
 		pages = bm->cur[index].zone->end_pfn - bm->cur[index].zone->start_pfn;

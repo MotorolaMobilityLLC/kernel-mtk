@@ -1,5 +1,5 @@
 #ifndef __MT_HIBERNATE_H__
-#define __MT_HIBErNATE_H__
+#define __MT_HIBERNATE_H__
 
 #include <linux/suspend.h>
 

@@ -17,7 +17,6 @@
 #include <asm/cpu_ops.h>
 #include <asm/psci.h>
 #include <mach/mt_spm_mtcmos.h>
-#include <mtk_hibernate_core.h>
 #include "mt_cpu_psci_ops.h"
 
 #ifdef CONFIG_SMP
@@ -77,12 +76,6 @@ static int mt_psci_cpu_init_idle(struct device_node *cpu_node,
 
 static int mt_psci_cpu_suspend(unsigned long index)
 {
-#ifdef CONFIG_MTK_HIBERNATION
-	if (index == POWERMODE_HIBERNATE) {
-		pr_warn("[%s] hibernating\n", __func__);
-		return swsusp_arch_save_image(0);
-	}
-#endif
 	return cpu_psci_ops.cpu_suspend(index);
 }
 #endif
