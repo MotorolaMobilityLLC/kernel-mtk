@@ -84,8 +84,8 @@ static int alarmtimer_rtc_add_device(struct device *dev,
 
 	if (!rtc->ops->set_alarm)
 		return -1;
-	if (!device_may_wakeup(rtc->dev.parent))
-		return -1;
+	/*if (!device_may_wakeup(rtc->dev.parent))
+		return -1;*/
 
 	spin_lock_irqsave(&rtcdev_lock, flags);
 	if (!rtcdev) {
