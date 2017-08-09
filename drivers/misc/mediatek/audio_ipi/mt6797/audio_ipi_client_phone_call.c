@@ -22,7 +22,6 @@
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
 #include <linux/kthread.h>
-#include <linux/rtpm_prio.h>
 #include <linux/wakelock.h>
 
 
@@ -383,7 +382,7 @@ static int dump_kthread(void *data)
 	pcm_dump_ul_t *pcm_dump_ul = NULL;
 	pcm_dump_dl_t *pcm_dump_dl = NULL;
 
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 85 }; /* RTPM_PRIO_AUDIO_PLAYBACK */
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
