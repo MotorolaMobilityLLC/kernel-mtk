@@ -202,12 +202,12 @@ unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0x00000FA0;
+unsigned int piderrmax = 0x00020000;
 unsigned int piderrmin = 0xFFFFF060;
 unsigned int kp_step = 0x0;
 unsigned int kp = 0xFF9C;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0xFFFD;
+unsigned int ki = 0xFFFF;
 unsigned int kd_step = 0x0;
 unsigned int kd = 0x0;
 
@@ -824,7 +824,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	set_otp_ctrl_data(0x00000FA0, 0xFFFFF060, 0x0, 0xFF9C, 0x0, 0xFFFD, 0x0, 0x0);
+	set_otp_ctrl_data(0x00020000, 0xFFFFF060, 0x0, 0xFF9C, 0x0, 0xFFFF, 0x0, 0x0);
 }
 
 void getTHslope(void)
@@ -929,6 +929,7 @@ static int otp_thread_handler(void *arg)
 					}
 					BigiDVFSChannel(2, 1);
 					otp_info_data.channel_status = 1;
+
 				}
 			} else {
 				if ((otp_info_data.score > UPPER_BOUND) && (score_status == 0x0)) {
@@ -940,6 +941,7 @@ static int otp_thread_handler(void *arg)
 					}
 					BigiDVFSChannel(2, 0);
 					otp_info_data.channel_status = 0;
+
 				}
 			}
 		}
@@ -1018,9 +1020,14 @@ static void enable_OTP(void)
 
 	/* otp_info_data_reset(&otp_info_data); */
 
+	if (get_immediate_big_wrap() < 70000)
+		sw_channel_status = 0;
+	else
+		sw_channel_status = 1;
+
 	if (dump_debug_log)
-		otp_info(" Configuration finished, sw_channel_status = %d, pid_en = %d\n",
-		sw_channel_status, pid_en);
+		otp_info(" Configuration finished, temp = %d, sw_channel_status = %d, pid_en = %d\n",
+		get_immediate_big_wrap(), sw_channel_status, pid_en);
 
 	mutex_lock(&timer_mutex);
 	if (sw_channel_status == 1)
@@ -1040,10 +1047,12 @@ static void disable_OTP(void)
 	disable_otp_hrtimer();
 	mutex_unlock(&timer_mutex);
 
+	/*
 	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_debug_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
+	*/
 
 	pid_en = 0x0;
 	otp_set_PID_EN(&otp_config_data, pid_en);
@@ -1052,6 +1061,9 @@ static void disable_OTP(void)
 
 int BigOTPThermIRQ(int status)
 {
+	if (0 == otp_enable)
+		return 0;
+
 	if (otp_workqueue) {
 		if (dump_debug_log)
 			otp_info("Thermal IRQ, schedule queue\n");
