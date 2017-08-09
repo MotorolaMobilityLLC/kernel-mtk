@@ -97,7 +97,7 @@ unsigned int emmc_get_wp_size(void)
 	unsigned char l_ext_csd[512];
 	struct msdc_host *host_ctl;
 	u32 *csd = NULL;
-	u32 write_prot_grpsz = 0
+	u32 write_prot_grpsz = 0;
 
 	if (0 == sg_wp_size) {
 		/* not to change ERASE_GRP_DEF after card initialized */
