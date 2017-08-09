@@ -956,7 +956,7 @@ static void ccmni_md_state_callback(int md_id, int rx_ch, MD_STATE state)
 	case TX_IRQ:
 		if (netif_running(ccmni->dev) && atomic_read(&ccmni->usage) > 0) {
 			if (likely(ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)) {
-				if ((ch_num >= CCCI_CCMNI1_DL_ACK) && (ch_num <= CCCI_CCMNI3_DL_ACK))
+				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK))
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_FAST);
 				else
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);
@@ -966,23 +966,24 @@ static void ccmni_md_state_callback(int md_id, int rx_ch, MD_STATE state)
 				if (netif_queue_stopped(ccmni->dev))
 					netif_wake_queue(ccmni->dev);
 			}
+			CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_IRQ, ch=0x%x, usage=%d\n",
+				ccmni->dev->name, rx_ch, atomic_read(&ccmni->usage));
 		}
-		CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_IRQ, ch=0x%x, usage=%d\n",
-			ccmni->dev->name, rx_ch, atomic_read(&ccmni->usage));
 		break;
 
 	case TX_FULL:
-		if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ) {
-			if ((ch_num >= CCCI_CCMNI1_DL_ACK) && (ch_num <= CCCI_CCMNI3_DL_ACK))
-				net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_FAST);
-			else
-				net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);
-			netif_tx_stop_queue(net_queue);
-		} else
-			netif_stop_queue(ccmni->dev);
-
-		CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_FULL, ch=0x%x, usage=%d\n",
-			ccmni->dev->name, rx_ch, atomic_read(&ccmni->usage));
+		if (atomic_read(&ccmni->usage) > 0) {
+			if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ) {
+				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK))
+					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_FAST);
+				else
+					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);
+				netif_tx_stop_queue(net_queue);
+			} else
+				netif_stop_queue(ccmni->dev);
+			CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_FULL, ch=0x%x, usage=%d\n",
+				ccmni->dev->name, rx_ch, atomic_read(&ccmni->usage));
+		}
 		break;
 	default:
 		break;
@@ -1020,7 +1021,7 @@ static void ccmni_dump(int md_id, int rx_ch, unsigned int flag)
 	dev_queue = netdev_get_tx_queue(dev, 0);
 	CCMNI_INF_MSG(md_id,
 		"%s(%d,%d), irat_md=MD%d, rx=(%ld,%ld), tx=(%ld,%ld), txq_len=%d, tx_busy=%ld, dev_sta=(0x%lx,0x%lx,0x%x)\n",
-		dev->name, atomic_read(&ccmni->usage), atomic_read(&ccmni_tmp->usage), ccmni->md_id,
+		dev->name, atomic_read(&ccmni->usage), atomic_read(&ccmni_tmp->usage), (ccmni->md_id+1),
 		dev->stats.rx_packets, dev->stats.rx_bytes, dev->stats.tx_packets, dev->stats.tx_bytes,
 		dev->qdisc->q.qlen, ccmni->tx_busy_cnt, dev->state, dev_queue->state, dev->flags);
 }
