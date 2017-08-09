@@ -339,7 +339,7 @@ static int kwdt_thread(void *arg)
 
 		if (wk_tsk[cpu]->pid == current->pid) {
 #if (DEBUG_WDK == 1)
-			msleep(debug_sleep * 1000);
+			msleep_interruptible(debug_sleep * 1000);
 			pr_debug("WD kicker woke up %d\n", debug_sleep);
 #endif
 			do_gettimeofday(&tv);
@@ -356,7 +356,7 @@ static int kwdt_thread(void *arg)
 				(unsigned int)tv_android.tv_usec);
 		}
 
-		msleep((g_kinterval) * 1000);
+		msleep_interruptible((g_kinterval) * 1000);
 
 #ifdef CONFIG_MTK_AEE_POWERKEY_HANG_DETECT
 		if ((cpu == 0) && (wk_tsk[cpu]->pid == current->pid)) {	/* only effect at cpu0 */
