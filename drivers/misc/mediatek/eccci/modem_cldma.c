@@ -3118,7 +3118,7 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
 				| (1 << 3)
 #endif
-#ifdef CONFIG_MTK_CT6M_SUPPORT
+#ifdef CONFIG_CT6M_SUPPORT
 				| (1 << 4)
 #endif
 	    );
