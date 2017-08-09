@@ -40,7 +40,6 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/irq.h>
-#include <mach/mt_gpt.h>
 #include <mt-plat/sync_write.h>
 
 #include "mt_auxadc.h"
