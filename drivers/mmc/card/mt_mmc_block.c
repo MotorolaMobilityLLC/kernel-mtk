@@ -27,6 +27,7 @@
 #include <linux/blk_types.h>
 #include <linux/mmc/core.h>
 #include <linux/mmc/host.h>
+#include <linux/mmc/card.h>
 
 #ifdef CONFIG_MTK_EXTMEM
 #include <linux/exm_driver.h>
@@ -54,6 +55,8 @@ struct mt_bio_context *mt_ctx_map[MMC_BIOLOG_CONTEXTS] = { 0 };
 enum {
 	CTX_MMCQD0 = 0,
 	CTX_MMCQD1 = 1,
+	CTX_MMCQD0_BOOT0 = 2,
+	CTX_MMCQD0_BOOT1 = 3,
 	CTX_EXECQ  = 9
 };
 
@@ -100,6 +103,8 @@ unsigned int mt_bio_used_mem = 0;
 
 #define REQ_EXECQ  "exe_cq"
 #define REQ_MMCQD0 "mmcqd/0"
+#define REQ_MMCQD0_BOOT0 "mmcqd/0boot0"
+#define REQ_MMCQD0_BOOT1 "mmcqd/0boot1"
 #define REQ_MMCQD1 "mmcqd/1"
 
 /*
@@ -109,11 +114,11 @@ unsigned int mt_bio_used_mem = 0;
 */
 static int get_qid_by_name(const char *str)
 {
-	if (strncmp(str, REQ_EXECQ, 6) == 0)
+	if (strncmp(str, REQ_EXECQ, strlen(REQ_EXECQ)) == 0)
 		return 0;
-	if (strncmp(str, REQ_MMCQD0, 7) == 0)
-		return 0;
-	if (strncmp(str, REQ_MMCQD1, 7) == 0)
+	if (strncmp(str, REQ_MMCQD0, strlen(REQ_MMCQD0)) == 0)
+		return 0;  /* this includes boot0, boot1 */
+	if (strncmp(str, REQ_MMCQD1, strlen(REQ_MMCQD1)) == 0)
 		return 1;
 	return 99;
 }
@@ -121,11 +126,15 @@ static int get_qid_by_name(const char *str)
 /* get context id to mt_ctx_map[] by name */
 static int get_ctxid_by_name(const char *str)
 {
-	if (strncmp(str, REQ_EXECQ, 6) == 0)
+	if (strncmp(str, REQ_EXECQ, strlen(REQ_EXECQ)) == 0)
 		return CTX_EXECQ;
-	if (strncmp(str, REQ_MMCQD0, 7) == 0)
+	if (strncmp(str, REQ_MMCQD0_BOOT0, strlen(REQ_MMCQD0_BOOT0)) == 0)
+		return CTX_MMCQD0_BOOT0;
+	if (strncmp(str, REQ_MMCQD0_BOOT1, strlen(REQ_MMCQD0_BOOT1)) == 0)
+		return CTX_MMCQD0_BOOT1;
+	if (strncmp(str, REQ_MMCQD0, strlen(REQ_MMCQD0)) == 0)
 		return CTX_MMCQD0;
-	if (strncmp(str, REQ_MMCQD1, 7) == 0)
+	if (strncmp(str, REQ_MMCQD1, strlen(REQ_MMCQD1)) == 0)
 		return CTX_MMCQD1;
 	return -1;
 }
@@ -355,7 +364,7 @@ static void mt_bio_pidlog_eval(struct mt_bio_pidlogger *pl)
 
 	spin_lock_irqsave(&ctx->lock, flags);
 
-	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES ; i++) {
+	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES; i++) {
 		if (ctx->pidlog.info[i].pid == 0)
 			break;
 	}
@@ -547,7 +556,7 @@ static void mt_bio_print_klog(struct mt_bio_trace *tr)
 	if (len < 0)
 		goto overflow;
 
-	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES ; i++) {
+	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES; i++) {
 		struct mt_bio_pidlogger_entry *pe;
 
 		pe = &tr->pidlog.info[i];
@@ -1031,7 +1040,7 @@ static void mt_bio_seq_trace(struct seq_file *seq, unsigned int idx)
 		tr->cpu.softirq,
 		tr->pid);
 
-	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES ; i++) {
+	for (i = 0; i < MMC_BIOLOG_PIDLOG_ENTRIES; i++) {
 		struct mt_bio_pidlogger_entry *pe;
 
 		pe = &tr->pidlog.info[i];
@@ -1110,7 +1119,7 @@ static void mt_bio_seq_debug_show_ringbuf(struct seq_file *seq)
 
 	mutex_lock(&mt_bio_ringbuf_lock);
 	end = (mt_bio_ringbuf_index > 0) ? mt_bio_ringbuf_index-1 : MMC_BIOLOG_RINGBUF_MAX-1;
-	for (i = mt_bio_ringbuf_index; ;) {
+	for (i = mt_bio_ringbuf_index;;) {
 		mt_bio_seq_trace(seq, i);
 		if (i == end)
 			break;
@@ -1167,7 +1176,7 @@ static int __init mt_bio_early_memory_info(void)
 	start = memblock_start_of_DRAM();
 	end = memblock_end_of_DRAM();
 	mt_bio_system_dram_size = (unsigned long long)(end - start);
-	pr_debug("DRAM: %pa - %pa, size: 0x%llx\n", &start,
+	pr_debug("[BLOCK_TAG] DRAM: %pa - %pa, size: 0x%llx\n", &start,
 		&end, (unsigned long long)(end - start));
 	return 0;
 }
