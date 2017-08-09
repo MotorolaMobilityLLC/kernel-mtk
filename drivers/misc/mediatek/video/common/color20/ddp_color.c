@@ -5,7 +5,7 @@
 #include <linux/of_address.h>
 #if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #include <mach/mt_clkmgr.h>
-#elif defined(CONFIG_ARCH_MT6755)
+#elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 #include "ddp_clkmgr.h"
 #endif
 
