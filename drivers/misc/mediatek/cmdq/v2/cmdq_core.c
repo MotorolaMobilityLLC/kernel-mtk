@@ -841,7 +841,7 @@ static uint32_t *cmdq_core_get_pc(const TaskStruct *pTask, uint32_t thread, uint
 	return (uint32_t *) pInst;
 }
 
-static int cmdq_core_print_profile_marker(const RecordStruct *pRecord, char *_buf, int bufLen)
+int cmdq_core_print_profile_marker(const RecordStruct *pRecord, char *_buf, int bufLen)
 {
 	int length = 0;
 
@@ -961,7 +961,7 @@ int cmdqCorePrintRecordSeq(struct seq_file *m, void *v)
 	int32_t index;
 	int32_t numRec;
 	RecordStruct record;
-	char msg[180] = { 0 };
+	char msg[160] = { 0 };
 
 	/* we try to minimize time spent in spin lock */
 	/* since record is an array so it is okay to */

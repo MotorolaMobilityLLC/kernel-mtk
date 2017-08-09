@@ -717,6 +717,11 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 				  MDP_WDMA_BASE + 0x00C, MDP_WDMA_BASE + 0X0A0, 0x3FF, 0x1, false);
 	}
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_WROT1)) {
+		cmdq_mdp_loop_off(CMDQ_ENG_MDP_WROT1,
+				  MDP_WROT1_BASE + 0X010, MDP_WROT1_BASE + 0X014, 0x1, 0x1, true);
+	}
+
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WROT0)) {
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_WROT0,
 				  MDP_WROT0_BASE + 0X010, MDP_WROT0_BASE + 0X014, 0x1, 0x1, true);
@@ -729,6 +734,18 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x0);
 			CMDQ_MSG("Disable MDP_TDSHP0 clock\n");
 			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_TDSHP0);
+		}
+	}
+
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ2)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ2)) {
+			CMDQ_REG_SET32(MDP_RSZ2_BASE, 0x0);
+			CMDQ_REG_SET32(MDP_RSZ2_BASE, 0x10000);
+			CMDQ_REG_SET32(MDP_RSZ2_BASE, 0x0);
+
+			CMDQ_MSG("Disable MDP_RSZ2 clock\n");
+
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_RSZ2);
 		}
 	}
 
@@ -756,12 +773,17 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 		}
 	}
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA1)) {
+		cmdq_mdp_loop_off(CMDQ_ENG_MDP_RDMA1,
+				  MDP_RDMA1_BASE + 0x008,
+				  MDP_RDMA1_BASE + 0x408, 0x7FF00, 0x100, false);
+	}
+
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0)) {
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_RDMA0,
 				  MDP_RDMA0_BASE + 0x008,
 				  MDP_RDMA0_BASE + 0x408, 0x7FF00, 0x100, false);
 	}
-
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN)) {
 		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_CAMIN)) {
@@ -772,6 +794,12 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 		}
 	}
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_COLOR0)) {
+			CMDQ_MSG("Disable MDP_COLOR0 clock\n");
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_COLOR0);
+		}
+	}
 
 	CMDQ_MSG("Disable MDP(0x%llx) clock end\n", engineFlag);
 #endif				/* #ifdef CMDQ_PWR_AWARE */
@@ -796,42 +824,63 @@ uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 
 void testcase_clkmgr_mdp(void)
 {
-#if defined(CMDQ_PWR_AWARE) && !defined(CMDQ_USE_CCF)
+#if defined(CMDQ_PWR_AWARE) && defined(CMDQ_USE_CCF)
 	/* RDMA clk test with src buffer addr */
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_RDMA0,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_RDMA0,
 			     "CMDQ_TEST_MDP_RDMA0",
 			     MDP_RDMA0_BASE + cmdq_mdp_rdma_get_reg_offset_src_addr(),
 			     0xAACCBBDD,
 			     MDP_RDMA0_BASE + cmdq_mdp_rdma_get_reg_offset_src_addr(), true);
 
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_RDMA1,
+				 "CMDQ_TEST_MDP_RDMA1",
+				 MDP_RDMA1_BASE + cmdq_mdp_rdma_get_reg_offset_src_addr(),
+				 0xAACCBBDD,
+				 MDP_RDMA1_BASE + cmdq_mdp_rdma_get_reg_offset_src_addr(), true);
+
 	/* WDMA clk test with dst buffer addr */
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_WDMA,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_WDMA,
 			     "CMDQ_TEST_MDP_WDMA",
 			     MDP_WDMA_BASE + cmdq_mdp_wdma_get_reg_offset_dst_addr(),
 			     0xAACCBBDD,
 			     MDP_WDMA_BASE + cmdq_mdp_wdma_get_reg_offset_dst_addr(), true);
 
 	/* WROT clk test with dst buffer addr */
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_WROT0,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_WROT0,
 			     "CMDQ_TEST_MDP_WROT0",
 			     MDP_WROT0_BASE + cmdq_mdp_wrot_get_reg_offset_dst_addr(),
 			     0xAACCBBDD,
 			     MDP_WROT0_BASE + cmdq_mdp_wrot_get_reg_offset_dst_addr(), true);
 
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_WROT1,
+			     "CMDQ_TEST_MDP_WROT1",
+			     MDP_WROT1_BASE + cmdq_mdp_wrot_get_reg_offset_dst_addr(),
+			     0xAACCBBDD,
+			     MDP_WROT1_BASE + cmdq_mdp_wrot_get_reg_offset_dst_addr(), true);
+
 	/* TDSHP clk test with input size */
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_TDSHP,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_TDSHP0,
 			     "CMDQ_TEST_MDP_TDSHP",
 			     MDP_TDSHP_BASE + 0x244, 0xAACCBBDD, MDP_TDSHP_BASE + 0x244, true);
 
 	/* RSZ clk test with debug port */
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_RSZ0,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_RSZ0,
 			     "CMDQ_TEST_MDP_RSZ0",
 			     MDP_RSZ0_BASE + 0x040, 0x00000001, MDP_RSZ0_BASE + 0x044, false);
 
-	testcase_clkmgr_impl(MT_CG_DISP0_MDP_RSZ1,
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_RSZ1,
 			     "CMDQ_TEST_MDP_RSZ1",
 			     MDP_RSZ1_BASE + 0x040, 0x00000001, MDP_RSZ1_BASE + 0x044, false);
-#endif				/* !defined(CMDQ_USE_CCF) */
+
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_RSZ2,
+			     "CMDQ_TEST_MDP_RSZ2",
+			     MDP_RSZ2_BASE + 0x040, 0x00000001, MDP_RSZ2_BASE + 0x044, false);
+
+	/* COLOR clk test with debug port */
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_COLOR0,
+				 "CMDQ_TEST_MDP_COLOR",
+				 MDP_COLOR_BASE + 0x438, 0x000001AB, MDP_COLOR_BASE + 0x438, true);
+#endif				/* defined(CMDQ_USE_CCF) */
 }
 
 void cmdq_mdp_platform_function_setting(void)

@@ -8,6 +8,7 @@
 #include <linux/uaccess.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
+#include <linux/slab.h>
 
 #include "cmdq_record_private.h"
 #include "cmdq_reg.h"
@@ -510,10 +511,13 @@ static void testcase_async_request_partial_engine(void)
 		CMDQ_SCENARIO_DEBUG,
 	};
 
-	struct timer_list timers[sizeof(scn) / sizeof(scn[0])];
-
 	cmdqRecHandle hReq;
 	TaskStruct *pTasks[(sizeof(scn) / sizeof(scn[0]))] = { 0 };
+	struct timer_list *timers;
+
+	timers = kmalloc(sizeof(scn) / sizeof(scn[0]) * sizeof(struct timer_list), GFP_ATOMIC);
+	if (NULL == timers)
+		return;
 
 	CMDQ_MSG("%s\n", __func__);
 
@@ -544,6 +548,11 @@ static void testcase_async_request_partial_engine(void)
 	for (i = 0; i < (sizeof(scn) / sizeof(scn[0])); ++i) {
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0 + i);
 		del_timer(&timers[i]);
+	}
+
+	if (timers != NULL) {
+		kfree(timers);
+		timers = NULL;
 	}
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -866,19 +875,77 @@ void testcase_clkmgr_impl(cgCLKID gateId,
 	}
 #endif
 }
+#else
+void testcase_clkmgr_impl(CMDQ_ENG_ENUM engine,
+			  char *name,
+			  const unsigned long testWriteReg,
+			  const uint32_t testWriteValue,
+			  const unsigned long testReadReg, const bool verifyWriteResult)
+{
+/* clkmgr is not available on FPGA */
+#ifndef CONFIG_MTK_FPGA
+	uint32_t value = 0;
+
+	CMDQ_MSG("====== %s:%s ======\n", __func__, name);
+	CMDQ_VERBOSE("clk engine:%d, name:%s\n", engine, name);
+	CMDQ_VERBOSE("write reg(0x%lx) to 0x%08x, read reg(0x%lx), verify write result:%d\n",
+		     testWriteReg, testWriteValue, testReadReg, verifyWriteResult);
+
+	/* turn on CLK, function should work */
+	CMDQ_MSG("enable_clock\n");
+	if (engine == CMDQ_ENG_CMDQ) {
+		/* Turn on CMDQ engine */
+		cmdq_dev_enable_gce_clock(true);
+	} else {
+		/* Turn on MDP engines */
+		cmdq_mdp_get_func()->enableMdpClock(true, engine);
+	}
+
+	CMDQ_REG_SET32(testWriteReg, testWriteValue);
+	value = CMDQ_REG_GET32(testReadReg);
+	if ((true == verifyWriteResult) && (testWriteValue != value)) {
+		CMDQ_ERR("when enable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
+		/* BUG(); */
+	}
+
+	/* turn off CLK, function should not work and access register should not cause hang */
+	CMDQ_MSG("disable_clock\n");
+	if (engine == CMDQ_ENG_CMDQ) {
+		/* Turn on CMDQ engine */
+		cmdq_dev_enable_gce_clock(false);
+	} else {
+		/* Turn on MDP engines */
+		cmdq_mdp_get_func()->enableMdpClock(false, engine);
+	}
+
+
+	CMDQ_REG_SET32(testWriteReg, testWriteValue);
+	value = CMDQ_REG_GET32(testReadReg);
+	if (0 != value) {
+		CMDQ_ERR("when disable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
+		/* BUG(); */
+	}
+#endif
+}
 #endif				/* !defined(CMDQ_USE_CCF) */
 
 static void testcase_clkmgr(void)
 {
 	CMDQ_MSG("%s\n", __func__);
-#if defined(CMDQ_PWR_AWARE) && !defined(CMDQ_USE_CCF)
+#ifdef CMDQ_PWR_AWARE
+#ifndef CMDQ_USE_CCF
 	testcase_clkmgr_impl(MT_CG_INFRA_GCE,
 			     "CMDQ_TEST",
 			     CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
 			     0xFFFFDEAD, CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG), true);
-
-	cmdq_mdp_get_func()->testcaseClkmgrMdp();
+#else
+	testcase_clkmgr_impl(CMDQ_ENG_CMDQ,
+				 "CMDQ_TEST",
+				 CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
+				 0xFFFFDEAD, CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG), true);
 #endif				/* !defined(CMDQ_USE_CCF) */
+	cmdq_mdp_get_func()->testcaseClkmgrMdp();
+#endif				/* defined(CMDQ_PWR_AWARE) */
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -2970,7 +3037,7 @@ static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, 
 	CMDQ_MSG("%s\n", __func__);
 }
 
-static void testcase_acquire_resource(bool acquireExpected)
+static void testcase_acquire_resource(CMDQ_EVENT_ENUM resourceEvent, bool acquireExpected)
 {
 	cmdqRecHandle handle;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
@@ -2986,7 +3053,7 @@ static void testcase_acquire_resource(bool acquireExpected)
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
 	cmdqRecSetSecure(handle, gCmdqTestSecure);
-	acquireResult = cmdqRecWriteForResource(handle, CMDQ_SYNC_RESOURCE_WROT0,
+	acquireResult = cmdqRecWriteForResource(handle, resourceEvent,
 		CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
 	if (acquireResult < 0) {
 		/* Do error handle for acquire resource fail */
@@ -3051,7 +3118,7 @@ static int32_t testcase_res_release_cb(CMDQ_EVENT_ENUM resourceEvent)
 static int32_t testcase_res_available_cb(CMDQ_EVENT_ENUM resourceEvent)
 {
 	CMDQ_MSG("%s\n", __func__);
-	testcase_acquire_resource(true);
+	testcase_acquire_resource(resourceEvent, true);
 	CMDQ_MSG("%s END\n", __func__);
 	return 0;
 }
@@ -3062,6 +3129,7 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 	const uint64_t engineFlag = (1LL << CMDQ_ENG_MDP_WROT0);
+	const CMDQ_EVENT_ENUM resourceEvent = CMDQ_SYNC_RESOURCE_WROT0;
 	uint32_t contDelay;
 
 	CMDQ_MSG("%s\n", __func__);
@@ -3069,10 +3137,10 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
+	cmdqCoreSetResourceCallback(resourceEvent,
 		testcase_res_available_cb, testcase_res_release_cb);
 
-	testcase_acquire_resource(true);
+	testcase_acquire_resource(resourceEvent, true);
 
 	/* notify and delay time*/
 	if (delayTimeMS > 0) {
@@ -3092,7 +3160,7 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	cmdqRecReset(handle);
 	cmdqRecSetSecure(handle, gCmdqTestSecure);
 	handle->engineFlag = engineFlag;
-	cmdqRecWaitNoClear(handle, CMDQ_SYNC_RESOURCE_WROT0);
+	cmdqRecWaitNoClear(handle, resourceEvent);
 	cmdqRecWrite(handle, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN, ~0);
 	cmdqRecFlushAsync(handle);
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
@@ -3108,7 +3176,7 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	}
 	/* Simulate DISP acquire fail case, acquire immediate after flush MDP */
 	cmdqRecFlushAsync(handle);
-	testcase_acquire_resource(false);
+	testcase_acquire_resource(resourceEvent, false);
 
 	cmdqRecFlushAsync(handle);
 	cmdqRecDestroy(handle);

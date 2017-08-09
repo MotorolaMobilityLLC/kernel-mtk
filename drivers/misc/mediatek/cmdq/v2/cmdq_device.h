@@ -35,6 +35,12 @@ void cmdq_dev_get_module_clock_by_name(const char *name, const char *clkName,
 				       struct clk **clk_module);
 uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const char *clkName);
 bool cmdq_dev_device_clock_is_enable(struct clk *clk_module);
+/* For test case used */
+void testcase_clkmgr_impl(CMDQ_ENG_ENUM engine,
+			  char *name,
+			  const unsigned long testWriteReg,
+			  const uint32_t testWriteValue,
+			  const unsigned long testReadReg, const bool verifyWriteResult);
 #endif				/* !defined(CMDQ_USE_CCF) */
 
 struct device *cmdq_dev_get(void);
