@@ -10947,6 +10947,10 @@ static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 
 	/*LOG_DBG("ISP_Irq_DIP_A:%d\n", Irq);*/
 
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
 	spin_lock(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_DIP_A_ST]));
 	IrqINTStatus = ISP_RD32(ISP_DIP_A_BASE + 0x030); /* DIP_A_REG_CTL_INT_STATUS */
 	IrqCQStatus = ISP_RD32(ISP_DIP_A_BASE + 0x034); /* DIP_A_REG_CTL_CQ_INT_STATUS */
@@ -10983,6 +10987,10 @@ static irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
+
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
 
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
@@ -11154,6 +11162,10 @@ static irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 	unsigned long       usec = 0;
 	ktime_t             time;
 
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
 	sec = cpu_clock(0);     /* ns */
@@ -11321,6 +11333,10 @@ static irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
+
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
 
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
@@ -11490,6 +11506,10 @@ static irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 	unsigned long       usec = 0;
 	ktime_t             time;
 
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
 	sec = cpu_clock(0);     /* ns */
@@ -11656,6 +11676,10 @@ static irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
+
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
 
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
@@ -11825,6 +11849,10 @@ static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 	unsigned long       usec = 0;
 	ktime_t             time;
 
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
 	sec = cpu_clock(0);     /* ns */
@@ -11981,7 +12009,6 @@ static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 {
-	/* LOG_DBG("ISP_IRQ_CAM_A:0x%x\n",Irq); */
 	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
 	MUINT32 reg_module = ISP_CAM_A_IDX;
 	MUINT32 i;
@@ -11996,9 +12023,13 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	ktime_t             time;
 	MUINT32 IrqEnableOrig, IrqEnableNew;
 
-	/*  */
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
+	/*	*/
 	/* do_gettimeofday(&time_frmb); */
-	sec = cpu_clock(0);     /* ns */
+	sec = cpu_clock(0);  /* ns */
 	do_div(sec, 1000);    /* usec */
 	usec = do_div(sec, 1000000);    /* sec and usec */
 	time_frmb.tv_usec = usec;
@@ -12250,7 +12281,6 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 
 static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 {
-	/* LOG_DBG("ISP_IRQ_CAM_B:0x%x\n",Irq); */
 	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_B_ST;
 	MUINT32 reg_module = ISP_CAM_B_IDX;
 	MUINT32 i;
@@ -12265,7 +12295,12 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	ktime_t             time;
 	MUINT32 IrqEnableOrig, IrqEnableNew;
 
-	/*  */
+	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
+	if (0 == G_u4EnableClockCount)
+		return IRQ_HANDLED;
+
+
+	/*	*/
 	/* do_gettimeofday(&time_frmb); */
 	sec = cpu_clock(0);     /* ns */
 	do_div(sec, 1000);    /* usec */
