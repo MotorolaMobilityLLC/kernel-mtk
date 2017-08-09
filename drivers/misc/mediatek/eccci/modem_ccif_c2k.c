@@ -1425,9 +1425,7 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 	md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	md_ctrl->total_smem_size = 0;
 	/*CCIF_MD_SMEM_RESERVE; */
-	buf =
-	    ((unsigned char *)md->mem_layout.smem_region_vir) +
-	    CCCI_SMEM_SIZE_EXCEPTION + md->smem_layout.ccci_rt_smem_size;
+	buf = (unsigned char *)md->md->smem_layout.ccci_ccif_smem_base_vir;
 	for (i = 0; i < QUEUE_NUM; i++) {
 		bufsize =
 		    CCCI_RINGBUF_CTL_LEN + rx_queue_buffer_size[i] +

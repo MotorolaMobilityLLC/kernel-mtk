@@ -9,6 +9,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/masp/asf/asf_export_inc

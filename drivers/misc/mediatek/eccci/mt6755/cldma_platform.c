@@ -159,7 +159,7 @@ static void __iomem *eccci_smem_sub_region_addr(void *md_blk, int *size_o)
 	if (size_o)
 		*size_o = 40;
 
-	return md->mem_layout.smem_region_vir+CCCI_SMEM_MD1_DBM_OFFSET+CCCI_SMEM_DBM_GUARD_SIZE;
+	return md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD1_DBM+CCCI_SMEM_DBM_GUARD_SIZE;
 }
 
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)

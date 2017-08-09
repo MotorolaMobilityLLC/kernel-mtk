@@ -2222,7 +2222,7 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 	cldma_reset(md);
 	md->ops->broadcast_state(md, BOOTING);
-	md->boot_stage = MD_BOOT_STAGE_0;
+	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
 	md->ex_stage = EX_NONE;
 	cldma_start(md);
 
@@ -2321,7 +2321,7 @@ static int md_cd_reset(struct ccci_modem *md)
 	/* 3, stop CLDMA */
 	md->ops->broadcast_state(md, RESET);	/* to block port's write operation */
 
-	md->boot_stage = MD_BOOT_STAGE_0;
+	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
 
 	return 0;
 }
@@ -2904,7 +2904,7 @@ static void eccci_smem_sub_region_init(struct ccci_modem *md)
 	int i;
 
 	/* Region 0, dbm */
-	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_MD1_DBM_OFFSET);
+	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD1_DBM);
 	addr[0] = 0x44444444; /* Guard pattern 1 header */
 	addr[1] = 0x44444444; /* Guard pattern 2 header */
 	#ifdef DISABLE_PBM_FEATURE
@@ -3246,10 +3246,17 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	}
 	if (flag & DUMP_FLAG_REG)
 		md_cd_dump_debug_register(md);
-	if (flag & DUMP_FLAG_SMEM) {
-		CCCI_INF_MSG(md->index, TAG, "Dump share memory\n");
+	if (flag & DUMP_FLAG_SMEM_EXP) {
+		CCCI_INF_MSG(md->index, TAG, "Dump exception share memory\n");
 		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	}
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	if (flag & DUMP_FLAG_SMEM_CCISM) {
+		CCCI_INF_MSG(md->index, TAG, "Dump CCISM share memory\n");
+		ccci_mem_dump(md->index, md->smem_layout.ccci_ccism_smem_base_vir,
+								md->smem_layout.ccci_ccism_dump_size);
+	}
+#endif
 	if (flag & DUMP_FLAG_IMAGE) {
 		CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
 		ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
@@ -3339,8 +3346,10 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 	if (strncmp(buf, "register", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
-	if (strncmp(buf, "smem", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM, NULL, 0);
+	if (strncmp(buf, "smem_exp", count-1) == 0)
+		md->ops->dump_info(md, DUMP_FLAG_SMEM_EXP, NULL, 0);
+	if (strncmp(buf, "smem_ccism", count-1) == 0)
+		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCISM, NULL, 0);
 	if (strncmp(buf, "image", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_IMAGE, NULL, 0);
 	if (strncmp(buf, "layout", count - 1) == 0)
@@ -3398,7 +3407,38 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		trace_sample_time = (buf[size] - '0') * 100000000;
 		CCCI_INF_MSG(md->index, TAG, "trace_sample_time %u\n", trace_sample_time);
 	}
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	size = strlen("scp_smem");
+	if (strncmp(buf, "scp_smem", size) == 0) {
+		int data = md->smem_layout.ccci_ccism_smem_base_phy;
 
+		unsigned int *magic_test = (unsigned int *)(md->smem_layout.ccci_ccism_smem_base_vir);
+		*magic_test = 0x20150921;
+		ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, &data);
+		CCCI_INF_MSG(md->index, TAG, "IPI test smem address %x\n", data);
+	}
+	size = strlen("scp_log");
+	if (strncmp(buf, "scp_log", size) == 0) {
+		int data = 1;
+
+		ccci_scp_ipi_send(md->index, CCCI_OP_LOG_LEVEL, &data);
+		CCCI_INF_MSG(md->index, TAG, "IPI log level=1\n");
+	}
+	size = strlen("scp_msgsnd");
+	if (strncmp(buf, "scp_msgsnd", size) == 0) {
+		int data = 0;
+
+		ccci_scp_ipi_send(md->index, CCCI_OP_MSGSND_TEST, &data);
+		CCCI_INF_MSG(md->index, TAG, "IPI send test msg\n");
+	}
+	size = strlen("scp_assert");
+	if (strncmp(buf, "scp_assert", size) == 0) {
+		int data = 1;
+
+		ccci_scp_ipi_send(md->index, CCCI_OP_ASSERT_TEST, &data);
+		CCCI_INF_MSG(md->index, TAG, "IPI SCP force assert\n");
+	}
+#endif
 	return count;
 }
 

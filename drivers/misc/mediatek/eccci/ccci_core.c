@@ -52,6 +52,7 @@ int boot_md_show(int md_id, char *buf, int size)
 int boot_md_store(int md_id)
 {
 	struct ccci_modem *md;
+
 	list_for_each_entry(md, &modem_list, entry) {
 		CCCI_INF_MSG(md_id, CORE, "ccci core boot md%d, md_state=%d\n", md_id + 1, md->md_state);
 		if (md->index == md_id && md->md_state == GATED) {
@@ -246,8 +247,8 @@ void ccci_config_modem(struct ccci_modem *md)
 	memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 
 	/* exception region */
-	md->smem_layout.ccci_exp_smem_base_phy = md->mem_layout.smem_region_phy;
-	md->smem_layout.ccci_exp_smem_base_vir = md->mem_layout.smem_region_vir;
+	md->smem_layout.ccci_exp_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_EXCEPTION;
+	md->smem_layout.ccci_exp_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EXCEPTION;
 	md->smem_layout.ccci_exp_smem_size = CCCI_SMEM_SIZE_EXCEPTION;
 	md->smem_layout.ccci_exp_dump_size = CCCI_SMEM_DUMP_SIZE;
 	if (md->index == MD_SYS1) {
@@ -255,30 +256,40 @@ void ccci_config_modem(struct ccci_modem *md)
 		md1_excp_smem__size = md->smem_layout.ccci_exp_dump_size;
 	}
 	/* dump region */
-	md->smem_layout.ccci_exp_smem_ccci_debug_vir =
-	    md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_CCCI_DEBUG;
-	md->smem_layout.ccci_exp_smem_ccci_debug_size = CCCI_SMEM_CCCI_DEBUG_SIZE;
-	md->smem_layout.ccci_exp_smem_mdss_debug_vir =
-	    md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_MDSS_DEBUG;
+	md->smem_layout.ccci_exp_smem_ccci_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCCI_DEBUG;
+	md->smem_layout.ccci_exp_smem_ccci_debug_size = CCCI_SMEM_SIZE_CCCI_DEBUG;
+	md->smem_layout.ccci_exp_smem_mdss_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_MDSS_DEBUG;
 #ifdef MD_UMOLY_EE_SUPPORT
 	if (md->index == MD_SYS1)
-		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_MDSS_DEBUG_SIZE_UMOLY;
+		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_SIZE_MDSS_DEBUG_UMOLY;
 	else
 #endif
-		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_MDSS_DEBUG_SIZE;
-	md->smem_layout.ccci_exp_smem_sleep_debug_vir = md->smem_layout.ccci_exp_smem_base_vir +
-		md->smem_layout.ccci_exp_smem_size - CCCI_SMEM_SLEEP_MODE_DBG_SIZE;
+		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_SIZE_MDSS_DEBUG;
+	md->smem_layout.ccci_exp_smem_sleep_debug_vir =
+		md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SLEEP_MODE_DBG;
 	md->smem_layout.ccci_exp_smem_sleep_debug_size = CCCI_SMEM_SLEEP_MODE_DBG_DUMP;
 
-	/* exception record start address */
-	md->smem_layout.ccci_exp_rec_base_vir = md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_EXREC;
-
 	/*runtime region */
-	md->smem_layout.ccci_rt_smem_base_phy = md->smem_layout.ccci_exp_smem_base_phy +
-	    md->smem_layout.ccci_exp_smem_size;
-	md->smem_layout.ccci_rt_smem_base_vir = md->smem_layout.ccci_exp_smem_base_vir +
-	    md->smem_layout.ccci_exp_smem_size;
+	md->smem_layout.ccci_rt_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RUNTIME;
+	md->smem_layout.ccci_rt_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RUNTIME;
 	md->smem_layout.ccci_rt_smem_size = CCCI_SMEM_SIZE_RUNTIME;
+
+	/* CCISM region */
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	md->smem_layout.ccci_ccism_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCISM;
+	md->smem_layout.ccci_ccism_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCISM;
+	md->smem_layout.ccci_ccism_smem_size = CCCI_SMEM_SIZE_CCISM;
+	md->smem_layout.ccci_ccism_dump_size = CCCI_SMEM_CCISM_DUMP_SIZE;
+#endif
+
+	/* AP<->MD CCIF share memory region */
+#ifdef CCCI_SMEM_OFFSET_CCIF_SMEM
+	if (md->index == MD_SYS3) {
+		md->smem_layout.ccci_ccif_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCIF_SMEM;
+		md->smem_layout.ccci_ccif_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCIF_SMEM;
+		md->smem_layout.ccci_ccif_smem_size = CCCI_SMEM_SIZE_CCIF_SMEM;
+	}
+#endif
 
 	/*md1 md3 shared memory region and remap*/
 	get_md1_md3_resv_smem_info(md->index, &md->mem_layout.md1_md3_smem_phy,
@@ -355,6 +366,129 @@ static struct kobj_type ccci_md_ktype = {
 	.default_attrs = ccci_md_default_attrs
 };
 
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+#include <scp_ipi.h>
+static struct ccci_ipi_msg scp_ipi_tx_msg;
+static struct ccci_ipi_msg scp_ipi_rx_msg;
+static struct mutex scp_ipi_tx_mutex;
+static MD_BOOT_STAGE scp_state;
+static struct work_struct scp_ipi_work;
+
+static void scp_md_state_sync_work(struct work_struct *work)
+{
+	struct ccci_modem *md = container_of(work, struct ccci_modem, scp_md_state_sync_work);
+	int data;
+
+	switch (md->boot_stage) {
+	case MD_BOOT_STAGE_2:
+		ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+		break;
+	case MD_BOOT_STAGE_EXCEPTION:
+		data = md->boot_stage;
+		ccci_scp_ipi_send(md->index, CCCI_OP_MD_STATE, &data);
+		break;
+	default:
+		break;
+	};
+}
+
+static void ccci_scp_ipi_work(struct work_struct *work)
+{
+	struct ccci_ipi_msg *ipi_msg_ptr = &scp_ipi_rx_msg;
+	struct ccci_modem *md = ccci_get_modem_by_id(ipi_msg_ptr->md_id);
+	int data;
+
+	switch (ipi_msg_ptr->op_id) {
+	case CCCI_OP_SCP_STATE:
+		switch (ipi_msg_ptr->data[0]) {
+		case SCP_CCCI_STATE_BOOTING:
+			if (scp_state == MD_BOOT_STAGE_2) {
+				CCCI_INF_MSG(md->index, CORE, "SCP reset detected\n");
+				ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+			}
+			/* too early to init share memory here, EMI MPU may not be ready yet */
+			break;
+		case SCP_CCCI_STATE_RBREADY:
+			ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT_DONE, 0, 1);
+			data = md->boot_stage;
+			ccci_scp_ipi_send(md->index, CCCI_OP_MD_STATE, &data);
+			break;
+		default:
+			break;
+		};
+		scp_state = ipi_msg_ptr->data[0];
+		break;
+	};
+}
+
+static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
+{
+	struct ccci_ipi_msg *ipi_msg_ptr = (struct ccci_ipi_msg *)data;
+
+	if (len != sizeof(struct ccci_ipi_msg)) {
+		CCCI_ERR_MSG(-1, CORE, "IPI handler, data length wrong %d vs. %ld\n", len, sizeof(struct ccci_ipi_msg));
+		return;
+	}
+	CCCI_INF_MSG(ipi_msg_ptr->md_id, CORE, "IPI handler %d/0x%x, %d\n",
+				ipi_msg_ptr->op_id, ipi_msg_ptr->data[0], len);
+	/* TODO: skb queue */
+	memcpy(&scp_ipi_rx_msg, data, len);
+	schedule_work(&scp_ipi_work); /* ipi_send use mutex, can not be called from ISR context */
+}
+
+static void ccci_scp_init(void)
+{
+	int ret;
+
+	mutex_init(&scp_ipi_tx_mutex);
+	ret = scp_ipi_registration(IPI_APCCCI, ccci_scp_ipi_handler, "AP CCCI");
+	CCCI_INF_MSG(-1, CORE, "register IPI %d %d\n", IPI_APCCCI, ret);
+	INIT_WORK(&scp_ipi_work, ccci_scp_ipi_work);
+}
+
+int ccci_scp_ipi_send(int md_id, int op_id, void *data)
+{
+	mutex_lock(&scp_ipi_tx_mutex);
+	memset(&scp_ipi_tx_msg, 0, sizeof(scp_ipi_tx_msg));
+	scp_ipi_tx_msg.md_id = md_id;
+	scp_ipi_tx_msg.op_id = op_id;
+	scp_ipi_tx_msg.data[0] = *((u32 *)data);
+	CCCI_INF_MSG(scp_ipi_tx_msg.md_id, CORE, "IPI send %d/0x%x, %ld\n",
+				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], sizeof(struct ccci_ipi_msg));
+	while (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1) != DONE)
+		;
+	mutex_unlock(&scp_ipi_tx_mutex);
+	return 0;
+}
+#endif
+
+void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage)
+{
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	int data;
+#endif
+
+	switch (stage) {
+	case MD_BOOT_STAGE_0:
+	case MD_BOOT_STAGE_1:
+	case MD_BOOT_STAGE_2:
+	case MD_BOOT_STAGE_EXCEPTION:
+		md->boot_stage = stage;
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+		schedule_work(&md->scp_md_state_sync_work);
+#endif
+		break;
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	case MD_ACK_SCP_INIT: /* in port kernel thread context, safe to send IPI */
+		data = md->smem_layout.ccci_ccism_smem_base_phy;
+		ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, &data);
+		break;
+#endif
+	default:
+		break;
+	};
+}
+
 /* ------------------------------------------------------------------------- */
 static int __init ccci_init(void)
 {
@@ -365,7 +499,9 @@ static int __init ccci_init(void)
 	ccci_subsys_bm_init();
 	ccci_plat_common_init();
 	ccci_subsys_kernel_init();
-
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	ccci_scp_init();
+#endif
 	return 0;
 }
 
@@ -412,6 +548,9 @@ struct ccci_modem *ccci_allocate_modem(int private_size)
 	spin_lock_init(&md->ctrl_lock);
 	for (i = 0; i < ARRAY_SIZE(md->rx_ch_ports); i++)
 		INIT_LIST_HEAD(&md->rx_ch_ports[i]);
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	INIT_WORK(&md->scp_md_state_sync_work, scp_md_state_sync_work);
+#endif
  out:
 	return md;
 }
@@ -540,6 +679,9 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 	case ID_DUMP_MD_SLEEP_MODE:
 		md->ops->dump_info(md, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
+		break;
+	case ID_PMIC_INTR:
+		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, PMIC_INTR_MODEM_BUCK_OC, *((int *)buf), 1);
 		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;

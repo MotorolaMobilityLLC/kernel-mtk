@@ -185,6 +185,12 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	else
 		ap_side_md_feature->feature_set[CCIF_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	ap_side_md_feature->feature_set[CCISM_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[CCISM_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+
 #ifdef FEATURE_DHL_LOG_EN
 	/*to do: enable DHL */
 	ap_side_md_feature->feature_set[DHL_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
@@ -319,10 +325,16 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 				break;
 			case CCIF_SHARE_MEMORY:
 				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
-				rt_shm.addr = md->smem_layout.ccci_exp_smem_base_phy +
-				    md->smem_layout.ccci_exp_smem_size +
-				    md->smem_layout.ccci_rt_smem_size - md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.addr = md->smem_layout.ccci_ccif_smem_base_phy -
+					md->mem_layout.smem_offset_AP_to_MD;
 				rt_shm.size = md->smem_layout.ccci_ccif_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case CCISM_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->smem_layout.ccci_ccism_smem_base_phy -
+					md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->smem_layout.ccci_ccism_smem_size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
 			case DHL_SHARE_MEMORY:
@@ -444,7 +456,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	if (ccci_h->data[1] == MD_INIT_START_BOOT
 	    && ccci_h->reserved == MD_INIT_CHK_ID && md->boot_stage == MD_BOOT_STAGE_0) {
 		del_timer(&md->bootup_timer);
-		md->boot_stage = MD_BOOT_STAGE_1;
+		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_1);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
 #endif
@@ -461,7 +473,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_UP, 0);
 	} else if (ccci_h->data[1] == MD_NORMAL_BOOT && md->boot_stage == MD_BOOT_STAGE_1) {
 		del_timer(&md->bootup_timer);
-		md->boot_stage = MD_BOOT_STAGE_2;
+		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_2);
 		md->ops->broadcast_state(md, READY);
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_READY, 0);
 	} else if (ccci_h->data[1] == MD_EX) {
@@ -522,7 +534,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		mod_timer(&md->ex_monitor2, jiffies);
 	} else if (ccci_h->data[1] == MD_INIT_START_BOOT
 		   && ccci_h->reserved == MD_INIT_CHK_ID && !(md->config.setting & MD_SETTING_FIRST_BOOT)) {
-		md->boot_stage = MD_BOOT_STAGE_0;
+		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
 		CCCI_ERR_MSG(md->index, KERN, "MD second bootup detected!\n");
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 	} else if (ccci_h->data[1] == MD_EX_RESUME) {
@@ -660,7 +672,7 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	struct ccci_modem *md = port->modem;
 	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
 
-	CCCI_DBG_MSG(md->index, KERN, "system message (%x %x %x %x)\n", ccci_h->data[0], ccci_h->data[1],
+	CCCI_INF_MSG(md->index, KERN, "system message (%x %x %x %x)\n", ccci_h->data[0], ccci_h->data[1],
 		     ccci_h->channel, ccci_h->reserved);
 	switch (ccci_h->data[1]) {
 	case MD_GET_BATTERY_INFO:
@@ -691,6 +703,9 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	case TEST_MSG_ID_L1CORE_AP2MD:
 #endif
 		exec_ccci_sys_call_back(md->index, ccci_h->data[1], ccci_h->reserved);
+		break;
+	case CCISM_SHM_INIT_ACK:
+		ccci_update_md_boot_stage(md, MD_ACK_SCP_INIT);
 		break;
 	};
 	req->policy = RECYCLE;
@@ -2392,7 +2407,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 err_exit:
-	md->boot_stage = MD_BOOT_STAGE_EXCEPTION;
+	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
 	/* update here to maintain handshake stage info during exception handling */
 	if (debug_info->type == MD_EX_TYPE_C2K_ERROR)
 		CCCI_EXP_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
@@ -2475,7 +2490,7 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 	memset(debug_info, 0, sizeof(DEBUG_INFO_T));
 	debug_info->more_info = ee_case;
 	off_core_num = 0;
-	ex_overview = (EX_OVERVIEW_T *) md->smem_layout.ccci_exp_rec_base_vir;
+	ex_overview = (EX_OVERVIEW_T *) md->smem_layout.ccci_exp_smem_mdss_debug_vir;
 
 	if ((debug_info->more_info == MD_EE_CASE_NORMAL) && (md->boot_stage == MD_BOOT_STAGE_0) &&
 		(md->flight_mode != MD_FIGHT_MODE_ENTER)) {
@@ -2967,7 +2982,7 @@ static void ccci_md_exception(struct ccci_modem *md)
 		ex_info = &md->ex_info;
 		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from ccci packages\n");
 	} else {
-		ex_info = (EX_LOG_T *) md->smem_layout.ccci_exp_rec_base_vir;
+		ex_info = (EX_LOG_T *) md->smem_layout.ccci_exp_smem_mdss_debug_vir;
 		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from shared memory\n");
 	}
 	ee_case = debug_info->more_info;

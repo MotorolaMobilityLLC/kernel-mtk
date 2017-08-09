@@ -667,6 +667,7 @@ enum {
 	ID_RESET_MD = 14,			/* for SVLTE MD3 reset MD1 */
 	ID_DUMP_MD_REG = 15,
 	ID_DUMP_MD_SLEEP_MODE = 16, /* for dump MD debug info from SMEM when AP sleep */
+	ID_PMIC_INTR = 17, /* for PMIC to notify MD buck over current, called from kernel thread context */
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 
@@ -710,26 +711,29 @@ enum {
 	MD_RF_TEMPERATURE = 0x103,
 	MD_RF_TEMPERATURE_3G = 0x104,
 	MD_GET_BATTERY_INFO = 0x105,
+
 	MD_SIM_TYPE = 0x107,
 	MD_ICUSB_NOTIFY = 0x108,
 	/* 0x109 for md legacy use to crystal_thermal_change */
 	MD_LOW_BATTERY_LEVEL = 0x10A,
 	/* 0x10B-0x10C occupied by EEMCS */
 	MD_PAUSE_LTE = 0x10D,
-	/* used for throttling feature - start */
-	MD_THROTTLING = 0x112, /* SW throughput throttling */
-	/* used for throttling feature - end */
-/* TEST_MESSAGE_FOR_BRINGUP */
-	TEST_MSG_ID_MD2AP = 0x114,  /* for IT only */
-	TEST_MSG_ID_AP2MD = 0x115,  /* for IT only */
-	TEST_MSG_ID_L1CORE_MD2AP = 0x116,  /* for IT only */
-	TEST_MSG_ID_L1CORE_AP2MD = 0x117,  /* for IT only */
-
 	/* swtp */
 	MD_SW_MD1_TX_POWER = 0x10E,
 	MD_SW_MD2_TX_POWER = 0x10F,
 	MD_SW_MD1_TX_POWER_REQ = 0x110,
 	MD_SW_MD2_TX_POWER_REQ = 0x111,
+	MD_THROTTLING = 0x112, /* SW throughput throttling */
+	/* TEST_MESSAGE for IT only */
+	TEST_MSG_ID_MD2AP = 0x114,
+	TEST_MSG_ID_AP2MD = 0x115,
+	TEST_MSG_ID_L1CORE_MD2AP = 0x116,
+	TEST_MSG_ID_L1CORE_AP2MD = 0x117,
+
+	CCISM_SHM_INIT = 0x119,
+	CCISM_SHM_INIT_ACK = 0x11A,
+	CCISM_SHM_INIT_DONE = 0x11B,
+	PMIC_INTR_MODEM_BUCK_OC = 0x11C,
 
 	/*c2k ctrl msg start from 0x200*/
 	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */

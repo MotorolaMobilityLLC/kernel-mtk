@@ -41,13 +41,39 @@ static struct ccci_md_attribute ccci_md_attr_##_name = {	\
 	.store = _store,					\
 }
 
+enum ccci_ipi_op_id {
+	CCCI_OP_SCP_STATE,
+	CCCI_OP_MD_STATE,
+	CCCI_OP_SHM_INIT,
+	CCCI_OP_SHM_RESET,
+
+	CCCI_OP_LOG_LEVEL,
+	CCCI_OP_GPIO_TEST,
+	CCCI_OP_EINT_TEST,
+	CCCI_OP_MSGSND_TEST,
+	CCCI_OP_ASSERT_TEST,
+};
+
+enum {
+	SCP_CCCI_STATE_INVALID = 0,
+	SCP_CCCI_STATE_BOOTING = 1,
+	SCP_CCCI_STATE_RBREADY = 2,
+};
+
+struct ccci_ipi_msg {
+	u16 md_id;
+	u16 op_id;
+	u32 data[1];
+} __packed;
+
 /* enumerations and marcos */
 
 typedef enum {
 	MD_BOOT_STAGE_0 = 0,
 	MD_BOOT_STAGE_1 = 1,
 	MD_BOOT_STAGE_2 = 2,
-	MD_BOOT_STAGE_EXCEPTION = 3
+	MD_BOOT_STAGE_EXCEPTION = 3,
+	MD_ACK_SCP_INIT = 4, /* for SCP sync convinince, not legal for md->boot_stage */
 } MD_BOOT_STAGE;		/* for other module */
 
 typedef enum {
@@ -425,7 +451,6 @@ typedef enum {
 	IDLE = 0,		/* update by buffer manager */
 	FLYING,			/* update by buffer manager */
 	PARTIAL_READ,		/* update by port_char */
-	ERROR,			/* not using */
 } REQ_STATE;
 
 typedef enum {
@@ -587,6 +612,15 @@ struct ccci_smem_layout {
 	phys_addr_t ccci_rt_smem_base_phy;
 	unsigned int ccci_rt_smem_size;
 
+	/* CCISM region */
+	void __iomem *ccci_ccism_smem_base_vir;
+	phys_addr_t ccci_ccism_smem_base_phy;
+	unsigned int ccci_ccism_smem_size;
+	unsigned int ccci_ccism_dump_size;
+
+	/* CCIF share memory region */
+	void __iomem *ccci_ccif_smem_base_vir;
+	phys_addr_t ccci_ccif_smem_base_phy;
 	unsigned int ccci_ccif_smem_size;
 
 	/* how we dump exception region */
@@ -597,15 +631,13 @@ struct ccci_smem_layout {
 	void __iomem *ccci_exp_smem_sleep_debug_vir;
 	unsigned int ccci_exp_smem_sleep_debug_size;
 
-	/* the address we parse MD exception record */
-	void __iomem *ccci_exp_rec_base_vir;
 };
 
 typedef enum {
 	DUMP_FLAG_CCIF = (1 << 0),
 	DUMP_FLAG_CLDMA = (1 << 1),	/* tricky part, use argument length as queue index */
 	DUMP_FLAG_REG = (1 << 2),
-	DUMP_FLAG_SMEM = (1 << 3),
+	DUMP_FLAG_SMEM_EXP = (1 << 3),
 	DUMP_FLAG_IMAGE = (1 << 4),
 	DUMP_FLAG_LAYOUT = (1 << 5),
 	DUMP_FLAG_QUEUE_0 = (1 << 6),
@@ -613,6 +645,7 @@ typedef enum {
 	DUMP_FLAG_CCIF_REG = (1 << 8),
 	DUMP_FLAG_SMEM_MDSLP = (1 << 9),
 	DUMP_FLAG_MD_WDT = (1 << 10),
+	DUMP_FLAG_SMEM_CCISM = (1<<11),
 } MODEM_DUMP_FLAG;
 
 typedef enum {
@@ -685,6 +718,7 @@ typedef enum{
 	MISC_INFO_CCCI,
 	MISC_INFO_CLIB_TIME,
 	MISC_INFO_C2K,
+	CCISM_SHARE_MEMORY = 14,
 	RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
@@ -827,7 +861,9 @@ struct ccci_modem {
 #endif
 	int data_usb_bypass;
 	int runtime_version;
-
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	struct work_struct scp_md_state_sync_work;
+#endif
 	smem_sub_region_cb_t sub_region_cb_tbl[SMEM_SUB_REGION_MAX];
 	/* unsigned char private_data[0];
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
@@ -1024,5 +1060,7 @@ extern void ccci_subsys_kernel_init(void);
 extern int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, struct sk_buff *skb);
 
 int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int region_id);
+int ccci_scp_ipi_send(int md_id, int op_id, void *data);
+void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage);
 
 #endif	/* __CCCI_CORE_H__ */
