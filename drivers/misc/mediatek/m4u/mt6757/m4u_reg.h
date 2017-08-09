@@ -16,13 +16,6 @@
 
 /* #include "mach/mt_reg_base.h" */
 
-#define M4U_BASE0		0xf0205000
-
-#define LARB0_BASE      0xf4015000
-#define LARB1_BASE      0xf6010000
-#define LARB2_BASE      0xf5001000
-#define LARB3_BASE      0xf7001000
-
 /* ================================================= */
 /* common macro definitions */
 #define F_VAL(val, msb, lsb) (((val)&((1<<(msb-lsb+1))-1))<<lsb)
@@ -337,39 +330,18 @@
 /* SMI larb */
 /* ================================================================ */
 
-#define SMI_LARB_MMU_EN		 (0xfc0)
-#define F_SMI_MMU_EN(port, en)       ((en)<<((port)))
-#define SMI_LARB_SEC_EN		(0xfc4)
-#define F_SMI_SEC_EN(port, en)       ((en)<<((port)))
-#define SMI_LARB_DOMN_0		 (0xfd0)
-#define SMI_LARB_DOMN_1		 (0xfd4)
-#define SMI_LARB_DOMN_2		 (0xfd8)
-#define SMI_LARB_DOMN_3		 (0xfdc)
+#define SMI_LARB_NON_SEC_CONx(larb_port)	(0x380 + ((larb_port)<<2))
+	#define F_SMI_NON_SEC_MMU_EN(en)	F_BIT_VAL(en, 0)
 
-#define REG_SMI_LARB_DOMN_OF_PORT(port)     (SMI_LARB_DOMN_0+(((port)>>3)<<2))
-#define F_SMI_DOMN(port, domain)	((domain&0xf)<<(((port)&0x7)<<2))
-
+#define SMI_LARB_SEC_CONx(larb_port)	(0xf80 + ((larb_port)<<2))
+	#define F_SMI_SEC_MMU_EN(en)	F_BIT_VAL(en, 0)
+	#define F_SMI_SEC_EN(sec)	F_BIT_VAL(sec, 1)
+	#define F_SMI_DOMN(domain)	F_VAL(domain, 6, 4)
 /* ========================================================================= */
 /* peripheral system */
 /* ========================================================================= */
 #define REG_PERIAXI_BUS_CTL3   (0x208)
 #define F_PERI_MMU_EN(port, en)       ((en)<<((port)))
-
-
-/* ========================================================================= */
-/* Display fake engine */
-/* ========================================================================= */
-#define MMSYS_CG_CLR0		     0x108
-#define DISP_FAKE_ENG_TEST_LEN	7
-#define DISP_FAKE_ENG_EN		 0x200
-#define DISP_FAKE_ENG_RST	       0x204
-#define DISP_FAKE_ENG_CON0	    0x208
-#define DISP_FAKE_ENG_CON1	      0x20C
-#define DISP_FAKE_ENG_RD_ADDR       0x210
-#define DISP_FAKE_ENG_WR_ADDR       0x214
-#define DISP_FAKE_ENG_STATE	     0x218
-
-
 
 #include <sync_write.h>
 
