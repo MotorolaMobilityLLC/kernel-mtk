@@ -984,7 +984,7 @@ void rdma_set_color_matrix(DISP_MODULE_ENUM module,
 
 static int _rdma_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle)
 {
-	struct disp_rect *roi = (struct disp_rect *) arg;
+	struct disp_rect *roi = (struct disp_rect *)arg;
 	int width = roi->width;
 	int height = roi->height;
 	unsigned int idx = rdma_index(module);
@@ -999,16 +999,18 @@ static int _rdma_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle
 int rdma_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd, unsigned long *params)
 {
 	int ret = 0;
-	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
+	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME)ioctl_cmd;
 	unsigned int idx = rdma_index(module);
-
-	disp_ddp_path_config *pConfig = (disp_ddp_path_config *)params;
-	golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 
 	switch (ioctl) {
 	case DDP_RDMA_GOLDEN_SETTING:
+	{
+		disp_ddp_path_config *pConfig = (disp_ddp_path_config *)params;
+		golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
+
 		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
 		break;
+	}
 	case DDP_PARTIAL_UPDATE:
 		_rdma_partial_update(module, params, cmdq_handle);
 		break;
