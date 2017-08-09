@@ -1170,11 +1170,13 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
 	prDeauthFrame = (P_WLAN_DEAUTH_FRAME_T) prSwRfb->pvHeader;
 
-	DBGLOG(SAA, INFO, "Rx Deauth frame ,DA[" MACSTR "] SA[" MACSTR "] BSSID[" MACSTR "] ReasonCode[0x%x]\n",
-			   MAC2STR(prDeauthFrame->aucDestAddr),
-			   MAC2STR(prDeauthFrame->aucSrcAddr),
-			   MAC2STR(prDeauthFrame->aucBSSID),
-			   prDeauthFrame->u2ReasonCode);
+	DBGLOG(SAA, INFO,
+	"Rx Deauth frame ,DA[" MACSTR "] SA[" MACSTR "] BSSID[" MACSTR "] ReasonCode[0x%x] StaRecIdx[0x%x]\n",
+	MAC2STR(prDeauthFrame->aucDestAddr),
+	MAC2STR(prDeauthFrame->aucSrcAddr),
+	MAC2STR(prDeauthFrame->aucBSSID),
+	prDeauthFrame->u2ReasonCode,
+	prSwRfb->ucStaRecIdx);
 
 	do {
 

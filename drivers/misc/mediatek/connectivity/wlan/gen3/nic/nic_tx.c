@@ -2638,6 +2638,7 @@ VOID nicTxReturnMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoLi
 BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN P_NATIVE_PACKET prPacket)
 {
 	P_GLUE_INFO_T prGlueInfo;
+	BOOLEAN fgIsUseFixRate = FALSE;
 
 	ASSERT(prAdapter);
 
@@ -2660,10 +2661,21 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		prMsduInfo->fgIs802_3 = GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_802_3);
 		prMsduInfo->fgIsVlanExists = GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_VLAN_EXIST);
 
-		if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DHCP) && prAdapter->rWifiVar.ucDhcpTxDone)
+		if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DHCP) && prAdapter->rWifiVar.ucDhcpTxDone) {
 			prMsduInfo->pfTxDoneHandler = wlanDhcpTxDone;
-		else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ARP) && prAdapter->rWifiVar.ucArpTxDone)
+			fgIsUseFixRate = TRUE;
+		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ARP) && prAdapter->rWifiVar.ucArpTxDone) {
 			prMsduInfo->pfTxDoneHandler = wlanArpTxDone;
+			fgIsUseFixRate = TRUE;
+		}
+		if (fgIsUseFixRate == TRUE) {
+			if (prMsduInfo->ucBssIndex <= MAX_BSS_INDEX) {
+				P_BSS_INFO_T prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prMsduInfo->ucBssIndex);
+
+				prMsduInfo->u4FixedRateOption |= HAL_MAC_TX_DESC_SET_FIX_RATE(prBssInfo);
+				prMsduInfo->ucRateMode = MSDU_RATE_MODE_MANUAL_DESC;
+			}
+		}
 	}
 
 	/* Reset to default value by memory zero */

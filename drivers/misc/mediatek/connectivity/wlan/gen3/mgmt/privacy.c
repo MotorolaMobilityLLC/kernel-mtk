@@ -980,7 +980,8 @@ VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 	/* the hotspot mode would be assert after connect-disconnect field try WTBL_SIZE times */
 	if (TRUE) {
 		for (entry = 0; entry < WTBL_SIZE; entry++) {
-			if (prWtbl[entry].ucUsed && EQUAL_MAC_ADDR(prStaRec->aucMacAddr, prWtbl[entry].aucMacAddr)) {
+			if (prWtbl[entry].ucUsed &&
+				(prStaRec->ucIndex == prWtbl[entry].ucStaIndex)) {
 				secPrivacyFreeForEntry(prAdapter, entry);
 #if 1				/* DBG */
 				DBGLOG(RSN, INFO, "Free the STA entry (%lu)!\n", entry);
@@ -1017,10 +1018,10 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 {
 	UINT_8 ucEntry = WTBL_ALLOC_FAIL;
 	UINT_8 ucStartIDX = 0, ucMaxIDX = 0;
-	UINT_8 i;
+	UINT_8 i = 0;
 	BOOLEAN fgCheckKeyId = TRUE;
 	P_WLAN_TABLE_T prWtbl;
-	/* P_BSS_INFO_T            prBSSInfo = GET_BSS_INFO_BY_INDEX(prAdapter,ucBssIndex); */
+	P_BSS_INFO_T prBSSInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 
 	prWtbl = prAdapter->rWifiVar.arWtbl;
 
@@ -1065,19 +1066,14 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 				prWtbl[i].ucKeyId);
 		}
 #endif
-		if (prWtbl[i].ucUsed && !prWtbl[i].ucPairwise && prWtbl[i].ucBssIndex == ucBssIndex && 1
-		    /* (EQUAL_MAC_ADDR(prWtbl[i].aucMacAddr, pucAddr) ||
-		     * (prBSSInfo && EQUAL_MAC_ADDR(prWtbl[i].aucMacAddr, prBSSInfo->aucOwnMacAddr))) */
+		if (prWtbl[i].ucUsed && !prWtbl[i].ucPairwise && prWtbl[i].ucBssIndex == ucBssIndex &&
+			(EQUAL_MAC_ADDR(prWtbl[i].aucMacAddr, pucAddr) ||
+			(prBSSInfo && (prBSSInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)))
 		    ) {
 			if (!fgCheckKeyId || prWtbl[i].ucKeyId == 0xff
 			    || (fgCheckKeyId && prWtbl[i].ucKeyId == ucKeyId)) {
 				ucEntry = i;
 				DBGLOG(RSN, TRACE, "[Wlan index]: Reuse entry #%d\n", i);
-				break;
-			}
-			if (fgCheckKeyId && (prWtbl[i].ucKeyId != ucCurrentKeyId)) {
-				ucEntry = i;
-				DBGLOG(RSN, TRACE, "[Wlan index]: Replace the not current keyid entry #%d\n", i);
 				break;
 			}
 		}

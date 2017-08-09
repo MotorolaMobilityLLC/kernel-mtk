@@ -3801,11 +3801,13 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	P_AIS_SPECIFIC_BSS_INFO_T prAisSpecBssInfo;
 	P_WLAN_TABLE_T prWlanTable;
 	P_STA_RECORD_T prStaRec;
+	P_BSS_INFO_T prAisBssInfo;
 
 	DEBUGFUNC("wlanoidSetRemoveKey");
 
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
+	prAisBssInfo = prAdapter->prAisBssInfo;
 
 	*pu4SetInfoLen = sizeof(PARAM_REMOVE_KEY_T);
 
@@ -3929,8 +3931,8 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 		/* ; Clear key material only */
 	} else {
 		DBGLOG(RSN, TRACE, "wlanoidSetRemoveKey\n");
-
-		secPrivacyFreeForEntry(prAdapter, prCmdKey->ucWlanIndex);
+		if (prAisBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED)
+			secPrivacyFreeForEntry(prAdapter, prCmdKey->ucWlanIndex);
 	}
 
 	if (prCmdKey->ucKeyId < 4) {	/* BIP */

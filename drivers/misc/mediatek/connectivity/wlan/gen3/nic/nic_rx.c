@@ -1990,6 +1990,9 @@ VOID nicRxProcessGOBroadcastPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* 2. Modify eDst */
 			prSwRfbDuplicated->eDst = RX_PKT_DESTINATION_FORWARD;
 
+			GLUE_SET_PKT_BSS_IDX(prSwRfbDuplicated->pvPacket,
+				     secGetBssIdxByWlanIdx(prAdapter, prSwRfbDuplicated->ucWlanIdx));
+
 			/* 4. Forward */
 			nicRxProcessForwardPkt(prAdapter, prSwRfbDuplicated);
 		}
@@ -2300,6 +2303,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_SW_RFB_T prRetSwRfb, prNextSwRfb;
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	BOOLEAN fgDrop;
+	P_STA_RECORD_T prStaRec;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -2337,8 +2341,6 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		fgDrop = TRUE;
 		if (!HAL_RX_STATUS_IS_ICV_ERROR(prRxStatus)
 		    && HAL_RX_STATUS_IS_TKIP_MIC_ERROR(prRxStatus)) {
-			P_STA_RECORD_T prStaRec;
-
 			prStaRec = cnmGetStaRecByAddress(prAdapter,
 							 prAdapter->prAisBssInfo->ucBssIndex,
 							 prAdapter->rWlanInfo.rCurrBssId.arMacAddress);
@@ -2398,6 +2400,11 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 				switch (prRetSwRfb->eDst) {
 				case RX_PKT_DESTINATION_HOST:
+#if ARP_MONITER_ENABLE
+					prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+					if (IS_STA_IN_AIS(prStaRec))
+						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+#endif
 					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
 					break;
 

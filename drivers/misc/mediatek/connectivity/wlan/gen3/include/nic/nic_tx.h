@@ -1544,6 +1544,9 @@ typedef struct _TX_TC_TRAFFIC_SETTING_T {
 #define HAL_MAC_TX_DESC_SET_FR_NORMAL_GI(_prHwMacTxDesc) \
 	((_prHwMacTxDesc)->u2FixedRate &= ~TX_DESC_GUARD_INTERVAL)
 
+#define HAL_MAC_TX_DESC_SET_FIX_RATE(_BssInfo) \
+	(((_BssInfo->u2HwDefaultFixedRateCode << 2) & TX_DESC_FIXDE_RATE_MASK) << 16)
+
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************

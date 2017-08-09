@@ -269,6 +269,9 @@
 #define ARP_OPERATION_REQUEST                   0x0001
 #define ARP_OPERATION_RESPONSE                  0x0002
 
+#define ARP_PRO_REQ				1
+#define ARP_PRO_RSP				2
+
 #define LLC_LEN                                 8	/* LLC(3) + SNAP(3) + EtherType(2) */
 
 #define NULL_MAC_ADDR                           {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
