@@ -2030,7 +2030,7 @@ static int md_cd_start(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	char img_err_str[IMG_ERR_STR_LEN];
-	int i, ret = 0;
+	int ret = 0;
 #ifndef ENABLE_CLDMA_AP_SIDE
 	int retry, cldma_on = 0;
 #endif
@@ -2123,11 +2123,8 @@ static int md_cd_start(struct ccci_modem *md)
 	md_cd_set_dsp_mpu(md, 0);
 	/* 4. power on modem, do NOT touch MD register before this */
 	/* clear all ccif irq before enable it.*/
-	cldma_write32(md_ctrl->md_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
-	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
+	ccci_reset_ccif_hw(md, AP_MD1_CCIF, md_ctrl->ap_ccif_base, md_ctrl->md_ccif_base);
 
-	for (i = 0; i < md_ctrl->hw_info->sram_size / sizeof(u32); i++)
-		cldma_write32(md_ctrl->ap_ccif_base, APCCIF_CHDATA + i * sizeof(u32), 0);
 #if TRAFFIC_MONITOR_INTERVAL
 	md_cd_clear_traffic_data(md);
 #endif
@@ -2418,8 +2415,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #endif
 
 	/* ACK CCIF for MD. while entering flight mode, we may send something after MD slept */
-	cldma_write32(md_ctrl->md_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
-	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
+	ccci_reset_ccif_hw(md, AP_MD1_CCIF, md_ctrl->ap_ccif_base, md_ctrl->md_ccif_base);
 
 	md_cd_check_emi_state(md, 0);	/* Check EMI after */
 	return 0;
@@ -3134,6 +3130,7 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	int idx;
 
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_CON(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_CON,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_CON));
@@ -3159,6 +3156,20 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_ACK(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_ACK,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_ACK));
+
+	for (idx = 0; idx < md_ctrl->hw_info->sram_size / sizeof(u32); idx += 4) {
+		CCCI_MEM_LOG_TAG(md->index, TAG,
+				 "CHDATA(%p): %08X %08X %08X %08X\n",
+				 md_ctrl->ap_ccif_base + APCCIF_CHDATA +
+				 idx * sizeof(u32),
+				 cldma_read32(md_ctrl->ap_ccif_base + APCCIF_CHDATA,
+					     (idx + 0) * sizeof(u32)),
+				 cldma_read32(md_ctrl->ap_ccif_base + APCCIF_CHDATA,
+					     (idx + 1) * sizeof(u32)),
+				 cldma_read32(md_ctrl->ap_ccif_base + APCCIF_CHDATA,
+					     (idx + 2) * sizeof(u32)),
+				 cldma_read32(md_ctrl->ap_ccif_base + APCCIF_CHDATA, (idx + 3) * sizeof(u32)));
+	}
 }
 
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
@@ -3380,6 +3391,12 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 	if (strncmp(buf, "ccif_assert", count - 1) == 0) {
 		CCCI_NORMAL_LOG(md->index, TAG, "use CCIF to force MD assert\n");
 		md->ops->force_assert(md, CCIF_INTERRUPT);
+	}
+	if (strncmp(buf, "ccif_reset", count - 1) == 0) {
+		struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+		CCCI_NORMAL_LOG(md->index, TAG, "reset AP MD1 CCIF\n");
+		ccci_reset_ccif_hw(md, AP_MD1_CCIF, md_ctrl->ap_ccif_base, md_ctrl->md_ccif_base);
 	}
 	if (strncmp(buf, "ccci_trm", count - 1) == 0) {
 		CCCI_NORMAL_LOG(md->index, TAG, "TRM triggered\n");

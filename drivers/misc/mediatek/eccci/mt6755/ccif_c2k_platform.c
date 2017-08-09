@@ -593,33 +593,14 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void reset_md1_md3_pccif(struct ccci_modem *md)
 {
-	unsigned int tx_channel = 0;
-	int i;
-
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-
 	struct md_hw_info *hw_info = md_ctrl->hw_info;
 
 	reset_ccirq_hardware();
 
-	/* clear occupied channel */
-	while (tx_channel < 16) {
-		if (ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY) & (1<<tx_channel))
-			ccif_write32(hw_info->md1_pccif_base, PCCIF_TCHNUM, tx_channel);
+	ccci_reset_ccif_hw(md, MD1_MD3_CCIF, (void __iomem *)hw_info->md1_pccif_base,
+					(void __iomem *)hw_info->md3_pccif_base);
 
-		if (ccif_read32(hw_info->md3_pccif_base, PCCIF_BUSY) & (1<<tx_channel))
-			ccif_write32(hw_info->md3_pccif_base, PCCIF_TCHNUM, tx_channel);
-
-		tx_channel++;
-	}
-	/* clear un-ached channel */
-	ccif_write32(hw_info->md1_pccif_base, PCCIF_ACK, ccif_read32(hw_info->md3_pccif_base, PCCIF_BUSY));
-	ccif_write32(hw_info->md3_pccif_base, PCCIF_ACK, ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY));
-	/* clear SRAM */
-	for (i = 0; i < PCCIF_SRAM_SIZE/sizeof(unsigned int); i++) {
-		ccif_write32(hw_info->md1_pccif_base, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
-		ccif_write32(hw_info->md3_pccif_base, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
-	}
 	/*clear md1 md3 shared memory*/
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);

@@ -892,6 +892,73 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 }
 #endif
 
+#define PCCIF_BUSY (0x4)
+#define PCCIF_TCHNUM (0xC)
+#define PCCIF_ACK (0x14)
+#define PCCIF_CHDATA (0x100)
+#define PCCIF_SRAM_SIZE (512)
+
+void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
+{
+	int i;
+#if 0
+	{
+		unsigned int tx_channel = 16;
+
+		/* clear occupied channel */
+		while (tx_channel < 16) {
+			if (ccci_read32(baseA, PCCIF_BUSY) & (1<<tx_channel))
+				ccci_write32(baseA, PCCIF_TCHNUM, tx_channel);
+
+			if (ccci_read32(baseB, PCCIF_BUSY) & (1<<tx_channel))
+				ccci_write32(baseB, PCCIF_TCHNUM, tx_channel);
+
+			tx_channel++;
+		}
+		/* clear un-ached channel */
+		ccci_write32(baseA, PCCIF_ACK, ccci_read32(baseB, PCCIF_BUSY));
+		ccci_write32(baseB, PCCIF_ACK, ccci_read32(baseA, PCCIF_BUSY));
+	}
+#else
+	{
+		int reset_bit = -1;
+		unsigned int reg_value;
+
+		switch (ccif_id) {
+		case AP_MD1_CCIF:
+			reset_bit = 8;
+			break;
+		case AP_MD3_CCIF:
+			reset_bit = 7;
+			break;
+		case MD1_MD3_CCIF:
+			reset_bit = 6;
+			break;
+		}
+
+		if (reset_bit == -1)
+			return;
+
+		/* this reset bit will clear CCIF's busy/wch/irq, but not SRAM */
+
+		reg_value = ccci_read32(infra_ao_base, 0x150);
+		reg_value &= ~(1 << reset_bit);
+		reg_value |= (1 << reset_bit);
+		ccci_write32(infra_ao_base, 0x150, reg_value);
+
+		reg_value = ccci_read32(infra_ao_base, 0x154);
+		reg_value &= ~(1 << reset_bit);
+		reg_value |= (1 << reset_bit);
+		ccci_write32(infra_ao_base, 0x154, reg_value);
+	}
+#endif
+	/* clear SRAM */
+	for (i = 0; i < PCCIF_SRAM_SIZE/sizeof(unsigned int); i++) {
+		ccci_write32(baseA, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
+		ccci_write32(baseB, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
+	}
+}
+
 int ccci_platform_init(struct ccci_modem *md)
 {
 	return 0;

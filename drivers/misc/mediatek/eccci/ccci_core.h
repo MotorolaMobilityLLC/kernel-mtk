@@ -428,6 +428,13 @@ enum {
 	MD_DBG_DUMP_ALL = 0x7FFFFFFF,
 };
 
+enum {
+	ALL_CCIF = 0,
+	AP_MD1_CCIF,
+	AP_MD3_CCIF,
+	MD1_MD3_CCIF,
+};
+
 #ifdef FEATURE_MD_GET_CLIB_TIME
 extern volatile int current_time_zone;
 #endif

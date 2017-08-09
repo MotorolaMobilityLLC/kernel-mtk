@@ -929,6 +929,38 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 }
 #endif
 
+#define PCCIF_BUSY (0x4)
+#define PCCIF_TCHNUM (0xC)
+#define PCCIF_ACK (0x14)
+#define PCCIF_CHDATA (0x100)
+#define PCCIF_SRAM_SIZE (512)
+
+void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
+{
+	int i;
+	unsigned int tx_channel = 16;
+
+	/* clear occupied channel */
+	while (tx_channel < 16) {
+		if (ccci_read32(baseA, PCCIF_BUSY) & (1<<tx_channel))
+			ccci_write32(baseA, PCCIF_TCHNUM, tx_channel);
+
+		if (ccci_read32(baseB, PCCIF_BUSY) & (1<<tx_channel))
+			ccci_write32(baseB, PCCIF_TCHNUM, tx_channel);
+
+		tx_channel++;
+	}
+	/* clear un-ached channel */
+	ccci_write32(baseA, PCCIF_ACK, ccci_read32(baseB, PCCIF_BUSY));
+	ccci_write32(baseB, PCCIF_ACK, ccci_read32(baseA, PCCIF_BUSY));
+
+	/* clear SRAM */
+	for (i = 0; i < PCCIF_SRAM_SIZE/sizeof(unsigned int); i++) {
+		ccci_write32(baseA, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
+		ccci_write32(baseB, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
+	}
+}
+
 int ccci_platform_init(struct ccci_modem *md)
 {
 	return 0;
