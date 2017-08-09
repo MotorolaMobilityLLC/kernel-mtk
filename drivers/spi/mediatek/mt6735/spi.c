@@ -94,11 +94,15 @@ struct mt_spi_t {
 u32 pad_macro;
 static void enable_clk(struct mt_spi_t *ms)
 {
+	int ret;
+
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
 #if defined(CONFIG_MTK_CLKMGR)
 	enable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	clk_prepare_enable(ms->clk_main);
+	ret = clk_prepare_enable(ms->clk_main);
+	if (ret)
+		dev_alert(&ms->pdev->dev, "ClK can't be disabled, ret = %d\n", ret);
 #endif
 #endif
 }
@@ -110,6 +114,7 @@ void mt_spi_enable_clk(struct mt_spi_t *ms)
 
 static void disable_clk(struct mt_spi_t *ms)
 {
+
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
 #if defined(CONFIG_MTK_CLKMGR)
 	disable_clock(MT_CG_PERI_SPI0, "spi");
@@ -124,8 +129,6 @@ void mt_spi_disable_clk(struct mt_spi_t *ms)
 {
 	disable_clk(ms);
 }
-
-
 #ifdef SPI_DEBUG
 	/*#define SPI_DBG(fmt, args...)  printk(KERN_ALERT "mt-spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args )*/
 	#define SPI_DBG(fmt, args...)  pr_debug("mt-spi.c:%5d: <%s>" fmt,  __LINE__, __func__, ##args)
@@ -187,7 +190,7 @@ static unsigned long long rec_time;
 unsigned long long spi_rec_t0;	/* record interrupt act */
 
 DEFINE_SPINLOCK(msg_rec_lock);
-/*      static unsigned long long t_rec[4]; */
+/*static unsigned long long t_rec[4]; */
 
 /*
 	the function invoke time averrage 2us.
@@ -1189,11 +1192,7 @@ static int mt_spi_setup(struct spi_device *spidev)
 {
 	struct spi_master *master;
 	struct mt_spi_t *ms;
-
 	struct mt_chip_conf *chip_config = NULL;
-
-	master = spidev->master;
-	ms = spi_master_get_devdata(master);
 
 	if (!spidev)
 		dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev));
@@ -1201,6 +1200,8 @@ static int mt_spi_setup(struct spi_device *spidev)
 		dev_err(&spidev->dev, "spi device chip select excesses the number of master's chipselect number.\n");
 		return -EINVAL;
 	}
+	master = spidev->master;
+	ms = spi_master_get_devdata(master);
 
 	chip_config = (struct mt_chip_conf *)spidev->controller_data;
 	if (!chip_config) {
@@ -1285,6 +1286,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t));
+	if (!master) {
+		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
+		goto out;
+	}
 	ms = spi_master_get_devdata(master);
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -1371,11 +1376,11 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 #endif
-	/*master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t)); */
+	/*master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t));
 	if (!master) {
 		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
 		goto out;
-	}
+	}*/
 	/*hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
 
