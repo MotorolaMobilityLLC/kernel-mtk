@@ -170,6 +170,7 @@
 #if defined(MT6797)
 #include "mt6630_reg.h"
 #include "sdio.h"
+#define NIC_TX_PAGE_SIZE                        128	/* in unit of bytes */
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -862,6 +863,8 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 * \retval FALSE         operation fail
 */
 /*----------------------------------------------------------------------------*/
+char rdTestPkt[CFG_COALESCING_BUFFER_SIZE + 512]; /* MT6797 TODO */
+
 BOOLEAN
 kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
@@ -877,6 +880,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
     sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
+
+	/* MT6797 TODO */
+	if (Size > CFG_COALESCING_BUFFER_SIZE)
+		ASSERT(0);
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -955,7 +962,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* config DMA, Port = MCR_WRDR0 or MCR_WRDR1 */
-		DmaConf.Count = Size;
+		DmaConf.Count = count;
 		DmaConf.Dir = HIF_DMA_DIR_RX;
 		DmaConf.Src = HIF_DRV_BASE  + SDIO_GEN3_CMD53_DATA;	/* must be physical addr */
 
@@ -989,7 +996,11 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		 */
 		/* DMA_FROM_DEVICE invalidated (without writeback) the cache */
 		/* TODO: if dst_off was not cacheline aligned? */
-		DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE);
+
+		/* MT6797 TODO */
+		/* DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE); */
+		DmaConf.Dst = dma_map_single(HifInfo->Dev, rdTestPkt, count, DMA_FROM_DEVICE);
+
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to read data */
@@ -1086,20 +1097,23 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		if (DmaVBuf != NULL)
 			kalMemCopy(Buf, DmaVBuf, Size);
 #else
-		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);
+
+		/* MT6797 TODO */
+		/* dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);  */
+		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		__enable_irq();
+
+		/* MT6797 TODO */
+		kalMemCopy(Buf, rdTestPkt, Size);
 
 		HIF_DBG(("[WiFi/HIF] DMA RX OK!\n"));
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
-
 		/* default PIO mode */
-		MaxLoop = Size >> 2;
-		if (Size & 0x3)
-			MaxLoop++;
+		MaxLoop = count >> 2;
 		LoopBuf = (UINT_32 *) Buf;
 
 		for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
@@ -1129,7 +1143,9 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 * \retval TRUE			operation success
 * \retval FALSE 		operation fail
 */
-/*----------------------------------------------------------------------------*/	
+/*----------------------------------------------------------------------------*/
+char wrTestPkt[CFG_COALESCING_BUFFER_SIZE + 512];  /* MT6797 TODO */
+
 BOOLEAN
 kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
@@ -1146,6 +1162,14 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
 
+	/* MT6797 TODO */
+	if (Size > (CFG_COALESCING_BUFFER_SIZE))
+		return 0;
+
+	/* MT6797 TODO */
+	kalMemZero(wrTestPkt, CFG_COALESCING_BUFFER_SIZE + 512);
+	kalMemCopy(wrTestPkt, Buf, Size);
+	Buf = wrTestPkt;
 
 #if DBG
 	/* DBGLOG(INIT, INFO,
@@ -1248,7 +1272,10 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #else
 
 		/* DMA_TO_DEVICE writeback the cache */
-		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE);
+		/* MT6797 TODO */
+		/* DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE); */
+		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, count, DMA_TO_DEVICE);
+
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to write */
@@ -1337,7 +1364,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
-		dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE);
+		/* MT6797 TODO */
+		/* dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE); */
+		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		__enable_irq();
@@ -1350,14 +1379,12 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		UINT_32 *LoopBuf;
 
 		/* PIO mode */
-		MaxLoop = Size >> 2;
+		MaxLoop = count >> 2;
 		LoopBuf = (UINT_32 *) Buf;
 
 		HIF_DBG_TX(("[WiFi/HIF/PIO] Prepare to send data (%d 0x%p-0x%p)...\n",
 			    Size, LoopBuf, (((UINT8 *) LoopBuf) + (Size & (~0x03)))));
 
-		if (Size & 0x3)
-			MaxLoop++;
 
 		for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
 			writel(*LoopBuf, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));			
@@ -1413,7 +1440,7 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	HIF_REG_WRITEL(HifInfo, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 
 	/* lock 100ms to avoid suspend */
-    /* Sarah */
+    /* MT6797 TODO */
 	/* kalHifAhbKalWakeLockTimeout(GlueInfo); */
 
 	/* Wake up main thread */
@@ -1778,7 +1805,7 @@ static VOID HifAhbLoopbkAuto(IN unsigned long arg)
 
 VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo)
 {
-/* Sarah */
+/* MT6797 TODO */
 /*	GL_HIF_INFO_T *prHifInfo = &prGlueInfo->rHifInfo; */
 	unsigned short j;
 

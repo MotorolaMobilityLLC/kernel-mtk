@@ -55,7 +55,7 @@ int sdio_open(void)
 	g_sdio_func.cur_blksize =MY_SDIO_BLOCK_SIZE;
 	g_sdio_func.num = SDIO_GEN3_FUNCTION_WIFI;
 	g_sdio_func.irq_handler = NULL;
-	g_sdio_func.use_dma = 1;/* 1 for DMA mode, 0 for PIO mode */
+	g_sdio_func.use_dma = 0;/* 1 for DMA mode, 0 for PIO mode */
 
 
 	/* DBGLOG(INIT, INFO, "g_sdio_func=%p\n", &g_sdio_func); */
