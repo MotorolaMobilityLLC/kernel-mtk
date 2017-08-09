@@ -359,7 +359,9 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->mp0top_idle_mask << 1) |
 			(!!pwrctrl->wfi_op << 0));
 #if defined(CONFIG_ARCH_MT6797)
+#if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
 	spm_write(SPM_AP_STANDBY_CON, spm_read(SPM_AP_STANDBY_CON) & ~SCP_MASK_B_LSB);
+#endif
 #endif
 
 	spm_write(SPM_SRC_REQ, (!!pwrctrl->cpu_md_dvfs_sop_force_on << 16) |
