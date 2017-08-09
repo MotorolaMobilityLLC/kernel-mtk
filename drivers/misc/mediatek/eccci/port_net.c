@@ -23,7 +23,7 @@
 #define NET_DAT_TXQ_INDEX(p) ((p)->modem->md_state == EXCEPTION?(p)->txq_exp_index:(p)->txq_index)
 #define NET_ACK_TXQ_INDEX(p) ((p)->modem->md_state == EXCEPTION?(p)->txq_exp_index:((p)->txq_exp_index&0x0F))
 
-static atomic_t mbim_ccmni_index[MAX_MD_NUM];
+static atomic_t mbim_ccmni_index[MAX_MD_NUM]; /* now we only support MBIM Tx/Rx in CCMNI_U context */
 
 #ifdef CCMNI_U
 int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
@@ -347,8 +347,11 @@ int ccmni_send_mbim_skb(int md_id, struct sk_buff *skb)
 		CCCI_ERR_MSG(-1, NET, "wrong CCMNI ID %d\n", mbim_interface_current);
 		return -EPERM;
 	};
-
+#ifdef CCMNI_U
 	return ccmni_send_pkt(md_id, tx_ch, skb);
+#else
+	return -EFAULT;
+#endif
 }
 
 static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
@@ -572,6 +575,7 @@ static int port_net_init(struct ccci_port *port)
 	struct netdev_entity *nent = NULL;
 
 	CCCI_DEBUG_LOG(port->modem->index, NET, "network port is initializing\n");
+	atomic_set(&mbim_ccmni_index[port->modem->index], -1);
 	dev = alloc_etherdev(sizeof(struct ccci_port *));
 	dev->header_ops = NULL;
 	dev->mtu = CCCI_NET_MTU;
