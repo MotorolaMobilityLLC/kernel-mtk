@@ -11,7 +11,7 @@
 #include <asm/uaccess.h>
 
 #include "mt-plat/sync_write.h"
-#include "mach/mt_typedefs.h"
+#include "mtk_thermal_typedefs.h"
 #include "mt-plat/mtk_mdm_monitor.h"
 #include "mt_gpufreq.h"
 /* #include "mach/mt6575_auxadc_hw.h" */

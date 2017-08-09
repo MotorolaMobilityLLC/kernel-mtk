@@ -1,4 +1,4 @@
-#include <mach/charging.h>
+#include <charging.h>
 /* Extern two API functions from battery driver to limit max charging current. */
 /**
  *  return value means charging current in mA

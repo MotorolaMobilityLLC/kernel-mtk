@@ -6,7 +6,7 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_typedefs.h"
+#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include "mt_gpufreq.h"
 #include <mach/mt_clkmgr.h>

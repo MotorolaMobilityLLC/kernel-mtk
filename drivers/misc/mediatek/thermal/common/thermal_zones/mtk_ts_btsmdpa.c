@@ -14,7 +14,7 @@
 #include <linux/writeback.h>
 #include <asm/uaccess.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_typedefs.h"
+#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include <linux/uidgid.h>
 

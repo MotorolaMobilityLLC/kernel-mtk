@@ -15,7 +15,7 @@
 #include <linux/mutex.h>
 #include <linux/bug.h>
 #include <linux/workqueue.h>
-#include <mach/mt_typedefs.h>
+#include <mtk_thermal_typedefs.h>
 #include "mt-plat/mtk_mdm_monitor.h"
 #include <mach/mt_thermal.h>
 #include <mt-plat/aee.h>

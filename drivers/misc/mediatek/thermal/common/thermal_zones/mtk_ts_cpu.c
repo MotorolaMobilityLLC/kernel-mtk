@@ -14,7 +14,7 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>
-#include "mach/mt_typedefs.h"
+#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include "mt_gpufreq.h"
 
@@ -1895,7 +1895,7 @@ static void init_thermal(void)
 
 	BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
-	/*BUG_ON(IMM_IsAdcInitReady() != 1); Mark for build pass*/
+	BUG_ON(IMM_IsAdcInitReady() != 1);
 
 	/*add this function to read all temp first to avoid
 	   write TEMPPROTTC first will issue an fake signal to RGU */

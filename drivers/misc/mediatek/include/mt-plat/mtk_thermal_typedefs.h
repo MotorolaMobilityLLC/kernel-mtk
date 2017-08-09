@@ -88,11 +88,13 @@ enum { RX, TX, NONE };
 typedef unsigned char BOOL;
 #endif
 
+#ifndef BATTERY_BOOL
+#define BATTERY_BOOL
 typedef enum {
 	KAL_FALSE = 0,
 	KAL_TRUE = 1,
 } kal_bool;
-
+#endif
 
 /* --------------------------------------------------------------------------- */
 /* Type Casting */
