@@ -636,9 +636,9 @@ static void msdc_dump_dbg_register(struct msdc_host *host)
 
 	for (i = 0; i <= 0x27; i++) {
 		sdr_write32(MSDC_DBG_SEL, i);
-		pr_err("sd%d SEL:r[%x]=0x%x\n", host->id, OFFSET_MSDC_DBG_SEL, i);
-		pr_err("sd%d OUT:r[%x]=0x%x\n", host->id, OFFSET_MSDC_DBG_OUT,
-			sdr_read32(MSDC_DBG_OUT));
+		pr_err("sd%d SEL:r[%x]=0x%x | OUT:r[%x]=0x%x\n", host->id, OFFSET_MSDC_DBG_SEL, i,
+			OFFSET_MSDC_DBG_OUT, sdr_read32(MSDC_DBG_OUT));
+
 	}
 
 	sdr_write32(MSDC_DBG_SEL, 0);
