@@ -4,6 +4,7 @@
 /* #include <linux/smp.h> */
 #include <linux/types.h>
 #include <linux/device.h>
+#include <mach/upmu_hw.h>
 struct mt_pmic_wrap_driver {
 
 	struct device_driver driver;
