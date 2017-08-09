@@ -468,7 +468,7 @@ int ccci_reserve_mem_of_init(struct reserved_mem *rmem)
 		md_id = MD_SYS3;
 	else {
 		if (strstr(CCCI_MD1MD3_SMEM_RESERVED_KEY, rmem->name)) {
-			CCCI_UTIL_INF_MSG("reserve_mem_of_init, rptr=0x%p, rsize=0x%x\n", &rptr, rsize);
+			CCCI_UTIL_INF_MSG("reserve_mem_of_init, rptr=0x%pa, rsize=0x%x\n", &rptr, rsize);
 			resv_smem_addr = rptr;
 			resv_smem_size = rsize;
 		} else
