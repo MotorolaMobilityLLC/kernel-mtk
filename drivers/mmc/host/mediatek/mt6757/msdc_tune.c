@@ -16,11 +16,16 @@
 #endif
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
+
+#include <linux/gpio.h>
 #include <linux/delay.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
+#include <linux/mmc/core.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#include <core.h>
+
 #include "mt_sd.h"
 #include "dbg.h"
 #include "autok.h"
@@ -175,7 +180,7 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
-#if !defined(FPGA_PLATFORM)
+#if 0
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
 			/* do nothing */

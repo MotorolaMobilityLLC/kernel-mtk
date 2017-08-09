@@ -4007,7 +4007,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 		host->card_inserted = 1;
 		goto end;
 	} else {
-#if !defined(FPGA_PLATFORM)
+#if 0
 		level = __gpio_get_value(cd_gpio);
 #endif
 		host->card_inserted = (host->hw->cd_level == level) ? 1 : 0;
