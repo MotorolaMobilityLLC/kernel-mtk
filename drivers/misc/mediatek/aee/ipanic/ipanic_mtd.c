@@ -37,7 +37,7 @@ static int ipanic_mtd_block_read_single(struct ipanic_mtd_data *ctx, loff_t offs
 		rc = 0;
 	}
 	if ((rc == 0) && (len != ctx->mtd->writesize)) {
-		LOGE("aee-ipanic: read size mismatch %ld\n", len);
+		LOGE("aee-ipanic: read size mismatch %zu\n", len);
 		return -EINVAL;
 	}
 	return rc;
