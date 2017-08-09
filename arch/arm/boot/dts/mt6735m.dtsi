@@ -47,20 +47,6 @@
 						status = "disabled";
 				};
 
-				MSDC2@0x11250000 {
-						compatible = "mediatek,MSDC2";
-						reg = <0x11250000 0x10000  /* MSDC2_BASE   */
-							0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
-						interrupts = <0 81 0x8>;
-				};
-
-				MSDC3@0x11260000 {
-						compatible = "mediatek,MSDC3";
-						reg = <0x11260000 0x10000  /* MSDC3_BASE   */
-							0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
-						interrupts = <0 82 0x8>;
-				};
-
 	/* only used for old way of DCT, can be removed in new platform */
 	msdc1_ins: default {
 		compatible = "mediatek, msdc1_ins-eint";
