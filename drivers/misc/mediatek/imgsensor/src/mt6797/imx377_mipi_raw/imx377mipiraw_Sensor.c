@@ -340,6 +340,106 @@ static void set_shutter(kal_uint16 shutter)
 }	/*	set_shutter */
 
 
+#define imx377_MIPI_table_write_cmos_sensor imx377_MIPI_table_write_cmos_sensor_multi
+#define I2C_BUFFER_LEN 240
+ static kal_uint16 imx377_MIPI_table_write_cmos_sensor_multi(kal_uint16* para, kal_uint32 len, bool HW_trig)
+ {
+	char puSendCmd[I2C_BUFFER_LEN];
+	kal_uint32 tosend, IDX;
+	kal_uint16 addr = 0, addr_last = 0, data;
+
+	tosend = 0;
+	IDX = 0;
+	//LOG_INF("enter imx377_MIPI_table_write_cmos_sensor_multi len  %d\n",len);
+
+	while(IDX < len)
+	{
+	   addr = para[IDX];
+
+		{
+
+			puSendCmd[tosend++] = (char)(addr >> 8);
+			puSendCmd[tosend++] = (char)(addr & 0xFF);
+			data = para[IDX+1];
+			puSendCmd[tosend++] = (char)(data & 0xFF);
+			//LOG_INF("addr 0x%x, data 0x%x\n",addr,data);
+			LOG_INF("puSendCmd[0] 0%x, puSendCmd[1] 0%x, puSendCmd[2] 0%x\n",puSendCmd[tosend-3],puSendCmd[tosend-2],puSendCmd[tosend-1]);
+
+			IDX += 2;
+			addr_last = addr;
+
+		}
+
+		if (tosend >= I2C_BUFFER_LEN || IDX == len || addr != addr_last)
+		{
+			//LOG_INF("IDX %d,tosend %d addr_last 0x%x,addr 0x%x\n",IDX, tosend, addr_last, addr);
+			if(HW_trig)
+				iBurstWriteReg_HW(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
+			else
+				iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
+			tosend = 0;
+		}
+	}
+	//LOG_INF("exit imx377_MIPI_table_write_cmos_sensor_multi\n");
+
+	return 0;
+ }
+static void write_shutter_buf_mode(kal_uint16 shutter)
+{
+	kal_uint16 SHR;
+	static kal_uint16 addr_data_pair_shutter[] =
+	{
+		0x30F8,0x00,
+		0x30F7,0x00,
+		0x300C,0x00,
+		0x300B,0x00,
+	};
+
+	spin_lock(&imgsensor_drv_lock);
+	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+	else
+		imgsensor.frame_length = imgsensor.min_frame_length;
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	spin_unlock(&imgsensor_drv_lock);
+	if (shutter < imgsensor_info.min_shutter)
+		shutter = imgsensor_info.min_shutter;
+	// Extend frame length
+	addr_data_pair_shutter[1] = imgsensor.frame_length >> 8;
+	addr_data_pair_shutter[3] = imgsensor.frame_length & 0xFF;
+
+	SHR=imgsensor.frame_length-shutter;
+
+	if(SHR<8)
+		SHR=8;
+	else if(SHR>(imgsensor.frame_length-6))
+		SHR=imgsensor.frame_length-6;
+
+	addr_data_pair_shutter[5] =  (SHR >> 8) & 0xFF;
+	addr_data_pair_shutter[7] =  SHR  & 0xFF;
+	imx377_MIPI_table_write_cmos_sensor(addr_data_pair_shutter, sizeof(addr_data_pair_shutter)/sizeof(kal_uint16),true);
+#if 0
+	for(i=0;i<(sizeof(addr_data_pair_shutter)/sizeof(kal_uint16));i+=2){
+	//	LOG_INF("read_cmos_sensor(0x%x) 	0x%x\n",addr_data_pair_shutter[i],read_cmos_sensor(addr_data_pair_shutter[i]));
+	}
+#endif
+
+	LOG_INF("exit buf mode SHR =%d,shutter =%d, framelength =%d\n", SHR, shutter, imgsensor.frame_length);
+
+}	/*	write_shutter  */
+
+static void set_shutter_buf_mode(kal_uint16 shutter)
+{
+	unsigned long flags;
+	spin_lock_irqsave(&imgsensor_drv_lock, flags);
+	imgsensor.shutter = shutter;
+	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+
+	write_shutter_buf_mode(shutter);
+}	/*	set_shutter */
+
+
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -386,6 +486,41 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
     write_cmos_sensor(0x300A, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x3009, reg_gain & 0xFF);
+
+    return gain;
+}	/*	set_gain  */
+static kal_uint16 set_gain_buf_mode(kal_uint16 gain)
+{
+    kal_uint16 reg_gain;
+	static kal_uint16 addr_data_pair_gain[] =
+	{
+		0x300A,0x00,
+		0x3009,0x00,
+	};
+
+    if (gain < BASEGAIN || gain > 32 * BASEGAIN) {
+        LOG_INF("Error gain setting");
+
+        if (gain < BASEGAIN)
+            gain = BASEGAIN;
+        else if (gain > 32 * BASEGAIN)
+            gain = 32 * BASEGAIN;
+    }
+
+    reg_gain = gain2reg(gain);
+    spin_lock(&imgsensor_drv_lock);
+    imgsensor.gain = reg_gain;
+    spin_unlock(&imgsensor_drv_lock);
+    LOG_INF("buf mode gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+
+    addr_data_pair_gain[1]= (reg_gain>>8)& 0xFF;
+    addr_data_pair_gain[3]= reg_gain & 0xFF;
+	imx377_MIPI_table_write_cmos_sensor(addr_data_pair_gain, sizeof(addr_data_pair_gain)/sizeof(kal_uint16),true);
+#if 0
+	for(i=0;i<(sizeof(addr_data_pair_gain)/sizeof(kal_uint16));i+=2){
+		LOG_INF("read_cmos_sensor(0x%x) 	0x%x\n",addr_data_pair_gain[i],read_cmos_sensor(addr_data_pair_gain[i]));
+	}
+#endif
 
     return gain;
 }	/*	set_gain  */
@@ -1666,6 +1801,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_SET_GAIN:
                      set_gain((UINT16) *feature_data);
+			break;
+		case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
+			set_shutter_buf_mode(*feature_data);
+			break;
+		case SENSOR_FEATURE_SET_GAIN_BUF_MODE:
+			set_gain_buf_mode((UINT16) *feature_data);
 			break;
 		case SENSOR_FEATURE_SET_FLASHLIGHT:
 			break;

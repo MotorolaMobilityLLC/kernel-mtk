@@ -61,6 +61,7 @@ struct clk *g_camclk_univpll2_d2;
 #define PROC_CAMERA_INFO "driver/camera_info"
 #define camera_info_size 128
 #define PDAF_DATA_SIZE 4096
+#define MAX_I2C_CMD_LEN          255
 char mtk_ccm_name[camera_info_size] = {0};
 static unsigned int gDrvIndex = 0;
 #ifdef CONFIG_MTK_SMI_EXT
@@ -570,100 +571,62 @@ int kdReleaseI2CTriggerLock(void)
 /*******************************************************************************
 * iBurstWriteReg
 ********************************************************************************/
-#define MAX_CMD_LEN          255
+struct i2c_msg msg[MAX_I2C_CMD_LEN];
 
 #if HW_TRIGGER_I2C_SUPPORT
 int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
 
-#if 0
-	u32 old_addr = 0;
 	int ret = 0;
-	int retry = 0;
+	int i = 0 ;
+	struct i2c_client *pClient = NULL;
+	int trans_num = 0;
+	trans_num =	bytes/transfer_length;
+	memset(msg, 0, MAX_I2C_CMD_LEN*sizeof(struct i2c_msg));
 
-	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
-		if (bytes > MAX_CMD_LEN) {
-			PK_ERR("[iBurstWriteReg_HW] exceed the max write length\n");
-			return 1;
-		}
-		struct i2c_msg msg_w[1] = {
-			{
-				.addr = i2cId >> 1,
-				.flags = 0,
-				.len = bytes,
-				.buf = pData,
-			}
-		};
-		spin_lock(&kdsensor_drv_lock);
-		g_pstI2Cclient->addr = (i2cId >> 1);
-
-		spin_unlock(&kdsensor_drv_lock);
-
-		ret = 0;
-		retry = 3;
-		do {
-			ret = i2c_master_send(g_pstI2Cclient, (u8 *)phyAddr,
-			bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
-			retry--;
-			if ((ret&0xffff) != transfer_length) {
-				PK_ERR("Error sent I2C ret = %d\n", ret);
-			}
-		} while (((ret&0xffff) != transfer_length) && (retry > 0));
-
-		dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
-		spin_lock(&kdsensor_drv_lock);
-		g_pstI2Cclient->addr = old_addr;
-		spin_unlock(&kdsensor_drv_lock);
-	}	else {
-		if (bytes > MAX_CMD_LEN) {
-			PK_DBG("[iBurstWriteReg] exceed the max write length\n");
-			return 1;
-		}
-		phyAddr = 0;
-		buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
-
-		if (NULL == buf) {
-			PK_ERR("[iBurstWriteReg] Not enough memory\n");
-			return -1;
-		}
-		memset(buf, 0, bytes);
-		memcpy(buf, pData, bytes);
-		/* PK_DBG("[iBurstWriteReg] bytes = %d, phy addr = 0x%x\n", bytes, phyAddr ); */
-
-		old_addr = g_pstI2Cclient2->addr;
-		spin_lock(&kdsensor_drv_lock);
-		g_pstI2Cclient2->addr = (i2cId >> 1);
-#ifdef CONFIG_MTK_I2C_EXTENSION
-		g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
-		g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_POLLING_FLAG);
-#endif
-		spin_unlock(&kdsensor_drv_lock);
-		ret = 0;
-		retry = 3;
-		do {
-			ret = i2c_master_send(g_pstI2Cclient2, (u8 *)phyAddr,
-			bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
-			retry--;
-			if ((ret&0xffff) != transfer_length) {
-				PK_ERR("Error sent I2C ret = %d\n", ret);
-			}
-		} while (((ret&0xffff) != transfer_length) && (retry > 0));
-
-
-		dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
-		spin_lock(&kdsensor_drv_lock);
-		g_pstI2Cclient2->addr = old_addr;
-		spin_unlock(&kdsensor_drv_lock);
+	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+		pClient = g_pstI2Cclient3;
+	else {
+		PK_ERR("iBurstWriteReg_HW only support main cam for now\n");
+		return -1;
 	}
-#endif
-	return 0;
 
+	for(i = 0 ; i<trans_num ; i++){
+		msg[i].addr = i2cId >> 1;
+		msg[i].flags = 0;
+		msg[i].len = transfer_length;
+		msg[i].buf = pData+(i*transfer_length);
+	}
+	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, I2C_HWTRIG_FLAG, 0);
+		//ret = i2c_transfer(pClient->adapter, msg, trans_num);
+	return ret;
 }
-
 #endif
+
 
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 {
+#if 1//ndef CONFIG_MTK_LEGACY
+	int ret = 0;
+	int i = 0 ;
+	struct i2c_client *pClient = NULL;
+	int trans_num = 0;
+	trans_num =	bytes/transfer_length;
+	memset(msg, 0, MAX_I2C_CMD_LEN*sizeof(struct i2c_msg));
 
+	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+		pClient = g_pstI2Cclient;
+	else
+		pClient = g_pstI2Cclient2;
+
+	for(i = 0 ; i<trans_num ; i++){
+		msg[i].addr = i2cId >> 1;
+		msg[i].flags = 0;
+		msg[i].len = transfer_length;
+		msg[i].buf = pData+(i*transfer_length);
+	}
+	ret = i2c_transfer(pClient->adapter, msg, trans_num);
+	return ret;
+#else
     uintptr_t phyAddr;
     u8 *buf = NULL;
     u32 old_addr = 0;
@@ -671,7 +634,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     int retry = 0;
 
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
-    if (bytes > MAX_CMD_LEN) {
+    if (bytes > MAX_I2C_CMD_LEN) {
         PK_ERR("[iBurstWriteReg] exceed the max write length\n");
         return 1;
     }
@@ -716,7 +679,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     }
     else
     {
-    if (bytes > MAX_CMD_LEN) {
+    if (bytes > MAX_I2C_CMD_LEN) {
         PK_DBG("[iBurstWriteReg] exceed the max write length\n");
         return 1;
     }
@@ -757,6 +720,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     spin_unlock(&kdsensor_drv_lock);
     }
     return 0;
+#endif
 }
 
 int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId) {
@@ -2141,6 +2105,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         g_NewSensorExpGain.uSensorGainDelayFrame = 0xFF;
         g_NewSensorExpGain.uISPGainDelayFrame = 0xFF;
         spin_unlock(&kdsensor_drv_lock);
+	case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
+	case SENSOR_FEATURE_SET_GAIN_BUF_MODE:
     case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
     case SENSOR_FEATURE_SET_REGISTER:
     case SENSOR_FEATURE_GET_REGISTER:
@@ -2762,6 +2728,8 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     {
     case SENSOR_FEATURE_SET_ESHUTTER:
     case SENSOR_FEATURE_SET_GAIN:
+	case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
+	case SENSOR_FEATURE_SET_GAIN_BUF_MODE:
     case SENSOR_FEATURE_SET_GAIN_AND_ESHUTTER:
     case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
     case SENSOR_FEATURE_SET_REGISTER:
