@@ -143,6 +143,14 @@ static void hps_get_sysinfo(void)
 struct hrtimer cpuhp_timer;
 static int cpuhp_timer_func(unsigned long data)
 {
+	if (hps_ctxt.tsk_struct_ptr) {
+		pr_err("HPS task info (run on CPU %d)\n", task_cpu(hps_ctxt.tsk_struct_ptr));
+		if (hps_ctxt.tsk_struct_ptr->on_cpu == 0)
+			show_stack(hps_ctxt.tsk_struct_ptr, NULL);
+	} else {
+		pr_err("%s: no hps_main task\n", __func__);
+	}
+
 	BUG_ON(1);
 
 	return HRTIMER_NORESTART;
