@@ -100,6 +100,10 @@ static u32 slp_spm_flags = {
 	#if defined(CONFIG_ARCH_MT6797)
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
+	SPM_FLAG_DIS_SYSRAM_SLEEP |
+	#if !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
+	SPM_FLAG_EN_HPM_SODI |
+	#endif
 	#endif
 	SPM_FLAG_DIS_DPD
 #endif

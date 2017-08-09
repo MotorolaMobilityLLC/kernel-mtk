@@ -635,6 +635,16 @@ int spm_module_init(void)
 							spm_read(SPM_SW_RSV_5),
 							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
 							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
+#if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
+	/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
+	pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
+	/* BUCK_VSRAM_PROC_VOSEL_SLEEP=0.7v */
+	pmic_config_interface(0x6ac, 0x10, 0xffff, 0);
+	/* BUCK_VSRAM_PROC_VSLEEP_EN=HW control */
+	pmic_config_interface(0x6b2, 0x113, 0xffff, 0);
+	/* BUCK_VSRAM_PROC_VOSEL_CTRL=HW control */
+	pmic_config_interface(0x6a0, 0x2, 0xffff, 0);
+#endif
 #endif
 
 	return r;
