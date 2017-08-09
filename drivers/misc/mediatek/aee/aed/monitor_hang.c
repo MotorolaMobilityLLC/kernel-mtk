@@ -598,8 +598,10 @@ void aee_kernel_wdt_kick_Powkey_api(const
 	spin_lock(&pwk_hang_lock);
 	wdt_kick_status |= msg;
 	spin_unlock(&pwk_hang_lock);
+	/*  //reduce kernel log
 	if (pwk_start_monitor)
 		LOGE("powerkey_kick:%s:%x,%x\r", module, msg, wdt_kick_status);
+	*/
 
 }
 EXPORT_SYMBOL
