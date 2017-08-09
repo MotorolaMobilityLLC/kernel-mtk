@@ -90,7 +90,6 @@ static int s4AF_WriteReg(u8 length, u8 addr, u16 data)
 	LOG_INF("s4AF_WriteReg 0x%x, 0x%x, 0x%x\n", length, addr, data);
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
-	g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
 	if (length == 0) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2) < 0) {
 			LOG_INF("s4AF_WriteReg failed!!\n");

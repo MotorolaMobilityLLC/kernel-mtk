@@ -66,7 +66,6 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
-	g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
 	if (i4RetValue < 0) {
