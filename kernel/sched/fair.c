@@ -4471,11 +4471,6 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	if (!clbs->ncpu || target >= num_possible_cpus() || !cpumask_test_cpu(target, cluster_cpus))
 		return;
 
-	clbs->cpu_power = (int)arch_scale_cpu_capacity(NULL, target);
-
-	/* Scale current CPU compute capacity in accordance with frequency */
-	clbs->cpu_capacity = capacity_curr_of(target);
-
 	/*
 	 * Calculate available CPU capacity
 	 * Calculate available task space
@@ -4522,25 +4517,12 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
  */
 static void adj_threshold(struct clb_env *clbenv)
 {
-#define TSKLD_SHIFT (2)
 #define POSITIVE(x) ((int)(x) < 0 ? 0 : (x))
 
-	int bcpu, lcpu;
 	unsigned long b_cap = 0, l_cap = 0;
 	unsigned long b_load = 0, l_load = 0;
 	unsigned long b_task = 0, l_task = 0;
 	int b_nacap, l_nacap, b_natask, l_natask;
-
-	bcpu = clbenv->btarget;
-	lcpu = clbenv->ltarget;
-	if (bcpu < nr_cpu_ids) {
-		b_load = cpu_rq(bcpu)->cfs.avg.utilization_avg_contrib;
-		b_task = cpu_rq(bcpu)->cfs.h_nr_running;
-	}
-	if (lcpu < nr_cpu_ids) {
-		l_load = cpu_rq(lcpu)->cfs.avg.utilization_avg_contrib;
-		l_task = cpu_rq(lcpu)->cfs.h_nr_running;
-	}
 
 	b_cap = clbenv->bstats.cpu_power;
 	l_cap = clbenv->lstats.cpu_power;
@@ -4549,7 +4531,7 @@ static void adj_threshold(struct clb_env *clbenv)
 	b_natask = POSITIVE(clbenv->bstats.scaled_atask *
 						clbenv->bstats.cpu_power / (clbenv->lstats.cpu_power+1));
 	l_nacap = POSITIVE(clbenv->lstats.scaled_acap);
-	l_natask = POSITIVE(clbenv->bstats.scaled_atask);
+	l_natask = POSITIVE(clbenv->lstats.scaled_atask);
 
 	clbenv->bstats.threshold = HMP_MAX_LOAD - HMP_MAX_LOAD * b_nacap * b_natask /
 	    ((b_nacap + l_nacap) * (b_natask + l_natask) + 1);
@@ -4558,12 +4540,18 @@ static void adj_threshold(struct clb_env *clbenv)
 
 	mt_sched_printf(sched_log, "[%s]\tup/dl:%4d/%4d L(%d:%4lu,%4lu/%4lu) b(%d:%4lu,%4lu/%4lu)\n", __func__,
 					clbenv->bstats.threshold, clbenv->lstats.threshold,
-					lcpu, l_load, l_task, l_cap,
-					bcpu, b_load, b_task, b_cap);
+					clbenv->ltarget, l_load, l_task, l_cap,
+					clbenv->btarget, b_load, b_task, b_cap);
 }
 
 static void sched_update_clbstats(struct clb_env *clbenv)
 {
+	/* init cpu power and capacity */
+	clbenv->bstats.cpu_power = (int) arch_scale_cpu_capacity(NULL, clbenv->btarget);
+	clbenv->lstats.cpu_power = (int) arch_scale_cpu_capacity(NULL, clbenv->ltarget);
+	clbenv->lstats.cpu_capacity = SCHED_CAPACITY_SCALE;
+	clbenv->bstats.cpu_capacity = SCHED_CAPACITY_SCALE * clbenv->bstats.cpu_power / (clbenv->lstats.cpu_power+1);
+
 	collect_cluster_stats(&clbenv->bstats, &clbenv->bcpus, clbenv->btarget);
 	collect_cluster_stats(&clbenv->lstats, &clbenv->lcpus, clbenv->ltarget);
 	adj_threshold(clbenv);
@@ -9433,9 +9421,8 @@ out:
 	return new_cpu;
 }
 
-#define HMP_RATIO(v) ((v)*17/10)
 #define hmp_fast_cpu_has_spare_cycles(B, cpu_load) (cpu_load < \
-			(HMP_RATIO(B->cpu_capacity) - (B->cpu_capacity >> 2)))
+			(B->cpu_capacity - (B->cpu_capacity >> 2)))
 
 #define hmp_task_fast_cpu_afford(B, se, cpu) (B->acap > 0 \
 			&& hmp_fast_cpu_has_spare_cycles(B, se_load(se) + cfs_load(cpu)))
