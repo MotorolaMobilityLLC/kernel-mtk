@@ -841,26 +841,38 @@ static int devapc_resume(struct platform_device *dev)
 	return 0;
 }
 
+static int check_debug_input_type(const char *str)
+{
+	if (sysfs_streq(str, "1"))
+		return DAPC_INPUT_TYPE_DEBUG_ON;
+	else if (sysfs_streq(str, "0"))
+		return DAPC_INPUT_TYPE_DEBUG_OFF;
+	else
+		return 0;
+}
+
 static ssize_t devapc_dbg_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
 	char desc[32];
 	int len = 0;
-	char cmd[10];
+	int input_type;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
-		return 0;
+		return -EFAULT;
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%s", cmd) == 1) {
-		if (!strcmp(cmd, "1")) {
-			enable_dynamic_one_core_violation_debug = 1;
-			pr_err("[DEVAPC] One-Core Debugging: Enabled\n");
-		} else if (!strcmp(cmd, "0")) {
-			enable_dynamic_one_core_violation_debug = 0;
-			pr_err("[DEVAPC] One-Core Debugging: Disabled\n");
-		}
+	input_type = check_debug_input_type(desc);
+	if (!input_type)
+		return -EFAULT;
+
+	if (input_type == DAPC_INPUT_TYPE_DEBUG_ON) {
+		enable_dynamic_one_core_violation_debug = 1;
+		pr_err("[DEVAPC] One-Core Debugging: Enabled\n");
+	} else if (input_type == DAPC_INPUT_TYPE_DEBUG_OFF) {
+		enable_dynamic_one_core_violation_debug = 0;
+		pr_err("[DEVAPC] One-Core Debugging: Disabled\n");
 	}
 
 	return count;

@@ -52,6 +52,9 @@
 #define ABORT_EMI_MPU            0x00000001
 #define INDEX_EMI_MPU            224
 
+#define DAPC_INPUT_TYPE_DEBUG_ON	200
+#define DAPC_INPUT_TYPE_DEBUG_OFF	100
+
 /*Define constants*/
 
 #define VIO_DBG_MSTID 0x00001FFF
