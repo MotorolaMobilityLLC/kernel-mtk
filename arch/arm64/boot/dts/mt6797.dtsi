@@ -1875,6 +1875,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x10211000 0x1000>;
 		};
 
+		lastpc: lastpc@10220000 {
+			compatible = "mediatek,mt6797-mcucfg", "mediatek,mt6735-mcucfg";
+			reg = <0x10220000 0x1000>;
+		};
+
 		gce@10212000 {
 			compatible = "mediatek,gce";
 			reg = <0x10212000 0x1000>;

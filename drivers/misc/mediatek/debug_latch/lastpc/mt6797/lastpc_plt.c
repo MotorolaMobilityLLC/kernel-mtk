@@ -32,7 +32,8 @@ static int lastpc_plt_start(struct lastpc_plt *plt)
 static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 {
 	void __iomem *mcu_base = plt->common->base + 0x410;
-	int ret = -1, cnt = num_possible_cpus();
+	/* we only deal with L & LL cluster so that # of core is 8 at max */
+	int ret = -1, cnt = 8;
 	char *ptr = buf;
 	unsigned long pc_value;
 	unsigned long fp_value;
