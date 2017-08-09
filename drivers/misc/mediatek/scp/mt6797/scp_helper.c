@@ -468,6 +468,7 @@ static int __init scp_init(void)
 
 	mutex_init(&scp_notify_mutex);
 
+	scp_workqueue = create_workqueue("SCP_WQ");
 	scp_excep_init();
 	ret = scp_dt_init();
 	if (ret) {
@@ -483,7 +484,6 @@ static int __init scp_init(void)
 	if (!scp_recv_buff)
 		return -1;
 
-	scp_workqueue = create_workqueue("SCP_WQ");
 	INIT_WORK(&scp_notify_work.work, scp_notify_ws);
 
 	scp_irq_init();

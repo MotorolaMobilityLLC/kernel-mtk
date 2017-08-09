@@ -408,7 +408,7 @@ static inline ssize_t scp_log_len_show(struct device *kobj, struct device_attrib
 
 static ssize_t scp_log_len_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
-	scp_get_log(1);
+	/* do nothing */
 	return n;
 }
 
@@ -443,7 +443,7 @@ DEVICE_ATTR(scp_mobile_log, 0644, scp_mobile_log_show, scp_mobile_log_store);
 
 static ssize_t scp_log_flush_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
-	/* do nothing */
+	scp_get_log(1);
 	return n;
 }
 
