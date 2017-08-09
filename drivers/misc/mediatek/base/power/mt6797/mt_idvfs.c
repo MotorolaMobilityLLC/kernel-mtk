@@ -14,7 +14,7 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
-#include <linux/spinlock.h>
+#include <linux/spinlock.h>	/* spin lock */
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #include <linux/platform_device.h>
@@ -118,9 +118,9 @@ static int func_lv_mask_idvfs = 100;
 #define IDVFS_OTP_ENABLE		1
 #define IDVFS_CCF_I2C6			1
 #define IDVFS_INTERRUPT_ENABLE	0
-#define IDVFS_FMAX_DEFAULT		2500
-#define IDVFS_FMIN_DEFAULT		300 /* or 505Mhz */
-#define IDVFS_FREQMz_STORE		750
+#define IDVFS_FMAX_DEFAULT		2900 /* org = 2500Mhz, now = 2900MHz(116%) */
+#define IDVFS_FMIN_DEFAULT		300  /* org = 505Mhz, now = 300MHz(12%) */
+#define IDVFS_FREQMz_STORE		750  /* org = 750Mhz, or 1100Mhz workaround by OCP issue */
 #define IDVFS_CTRL_REG_DEFAULT	0x0010a203
 
 /* for ram console print flag */
@@ -745,7 +745,8 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* down to 30% = 750MHz(IDVFS_FREQMz_STORE) for disable */
 	/* BigIDVFSFreq(3000), ()IDVFS_FREQMz_STORE / 4) * 100 = 30 */
 	idvfs_ver("iDVFS disable force setting FreqREQ = 30%%, 750MHz(IDVFS_FREQMz_STORE)\n");
-	SEC_BIGIDVFS_WRITE(0x10222498, ((IDVFS_FREQMz_STORE / 25) << 12));
+	/* SEC_BIGIDVFS_WRITE(0x10222498, ((IDVFS_FREQMz_STORE / 25) << 12)); */
+	SEC_BIGIDVFS_SWREQ(((IDVFS_FREQMz_STORE / 25) << 12));
 	idvfs_init_opt.freq_cur = 750;
 
 	/* force disable otp/ocp channel first */
@@ -952,7 +953,10 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* rc = SEC_BIGIDVFSFREQ(temp_pct_x100); */
 	/* Frepct_x100 = 100(1%) ~ 10000(100%) */
 	/* swreq = cur/max */
-	SEC_BIGIDVFS_WRITE(0x10222498, freq_swreq);
+
+	/* into ATF for new setting */
+	/* SEC_BIGIDVFS_WRITE(0x10222498, freq_swreq); */
+	SEC_BIGIDVFS_SWREQ(freq_swreq);
 
 	/* into lower 505MHz */
 	if ((Freqpct_x100 < 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage > 2000)) {
@@ -1005,8 +1009,8 @@ int BigIDVFSFreqMaxMin(unsigned int maxpct_x100, unsigned int minpct_x100)
 					((maxpct_x100 >= 11600) ? 11600 : maxpct_x100));
 	minpct_x100 = (minpct_x100 > maxpct_x100) ? maxpct_x100 : minpct_x100;
 
-	idvfs_init_opt.freq_max = (maxpct_x100 / (10000 / IDVFS_FMAX_DEFAULT));
-	idvfs_init_opt.freq_min = (minpct_x100 / (10000 / IDVFS_FMAX_DEFAULT));
+	idvfs_init_opt.freq_max = (maxpct_x100 / 4);
+	idvfs_init_opt.freq_min = (minpct_x100 / 4);
 	return 0;
 }
 
@@ -1053,7 +1057,7 @@ int BigiDVFSSWAvgStatus(void)
 		idvfs_init_opt.freq_cur = 0;
 		idvfs_ver("iDVFS or SW AVG not enable, SWAVG = 0.\n");
 	} else {
-		idvfs_init_opt.freq_cur = (freqpct_x100 / (10000 / IDVFS_FMAX_DEFAULT));
+		idvfs_init_opt.freq_cur = (freqpct_x100 / 4);
 		idvfs_ver("Get Freq: SWP_cur_pct_x100 = %u, Phy_get_pct_x100 = %u, sw_avgfreq = 0x%x.\n",
 				idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage, freqpct_x100, sw_avgfreq);
 		/* may be add prt OTP/OCP infor */
@@ -1071,7 +1075,7 @@ int BigiDVFSPllSetFreq(unsigned int Freq)
 
 	/* if iDVFS enable change to iDVFS mode setting Freq */
 	if (idvfs_init_opt.idvfs_status == 1)
-		return BigIDVFSFreq(Freq * (10000 / IDVFS_FMAX_DEFAULT));
+		return BigIDVFSFreq(Freq * 4);
 
 	/* if big cluster offline then return */
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
@@ -1582,7 +1586,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "iDVFS ctrl = 0x%x.\n", SEC_BIGIDVFS_READ(0x10222470));
 	seq_printf(m, "iDVFS debugout = 0x%x.\n", SEC_BIGIDVFS_READ(0x102224c8));
 	seq_printf(m, "SW AVG status = %u(%%_x100), Freq = %uMHz.\n",
-				(idvfs_init_opt.freq_cur * (10000 / IDVFS_FMAX_DEFAULT)), idvfs_init_opt.freq_cur);
+				(idvfs_init_opt.freq_cur * 4), idvfs_init_opt.freq_cur);
 	ret_val = ((SEC_BIGIDVFS_READ(0x10222470) & 0xf000) >> 12);
 	switch (ret_val) {
 	case 7:

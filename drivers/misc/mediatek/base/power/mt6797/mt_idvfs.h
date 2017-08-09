@@ -62,6 +62,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW			0xC20003BE
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET			0xC20003BF
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET			0xC20003C0
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWREQ			0xC20003C1
 
 #define MTK_SIP_KERNEL_IDVFS_READ						0xC200035F
 #define MTK_SIP_KERNEL_IDVFS_WRITE						0xC200035E
@@ -85,6 +86,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW			0x820003BE
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET			0x820003BF
 #define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET			0x820003C0
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWREQ			0x820003C1
 
 #define MTK_SIP_KERNEL_IDVFS_READ						0x8200035F
 #define MTK_SIP_KERNEL_IDVFS_WRITE						0x8200035E
@@ -104,6 +106,8 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_READ, addr, 0, 0)
 #define SEC_BIGIDVFS_WRITE(addr, val) \
 			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_WRITE, addr, val, 0)
+#define SEC_BIGIDVFS_SWREQ(swreq_reg) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWREQ, swreq_reg, 0, 0)
 #else
 #define SEC_BIGIDVFSENABLE(idvfs_ctrl, Vproc_x100, Vsram_x100) \
 			API_BIGIDVFSENABLE(idvfs_ctrl, Vproc_x100, Vsram_x100)
@@ -117,6 +121,8 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 			ptp3_reg_read(addr)
 #define SEC_BIGIDVFS_WRITE(addr, val) \
 			ptp3_reg_write(addr, val)
+#define SEC_BIGIDVFS_SWREQ(swreq_reg) \
+			API_BIGIDVFSSWREQ(swreq_reg)
 #endif
 
 /* Channel type*/
