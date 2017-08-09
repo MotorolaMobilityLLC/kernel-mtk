@@ -7858,32 +7858,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             *feature_return_para_32 = imgsensor_info.checksum_value;
             *feature_para_len=4;
             break;
-        case SENSOR_FEATURE_SET_FRAMERATE:
-            LOG_INF("current fps :%lld\n", *feature_data);
-            spin_lock(&imgsensor_drv_lock);
-            imgsensor.current_fps = *feature_data;
-            spin_unlock(&imgsensor_drv_lock);
-            break;
-     /*   case SENSOR_FEATURE_SET_SENSOR_OTP_AWB_CMD:
-            LOG_INF("Update sensor awb from otp :%d\n", (BOOL)*feature_data);
-            spin_lock(&imgsensor_drv_lock);
-            imgsensor.update_sensor_otp_awb = (BOOL)*feature_data;
-            spin_unlock(&imgsensor_drv_lock);
-            if(0 != imgsensor.update_sensor_otp_awb || 0 != imgsensor.update_sensor_otp_lsc) {
-                otp_update(imgsensor.update_sensor_otp_awb, imgsensor.update_sensor_otp_lsc);
-            }
-            break;
-
-        case SENSOR_FEATURE_SET_SENSOR_OTP_LSC_CMD:
-            LOG_INF("Update sensor lsc from otp :%d\n", (BOOL)*feature_data);
-            spin_lock(&imgsensor_drv_lock);
-            imgsensor.update_sensor_otp_lsc = (BOOL)*feature_data;
-            spin_unlock(&imgsensor_drv_lock);
-            if(0 != imgsensor.update_sensor_otp_awb || 0 != imgsensor.update_sensor_otp_lsc) {
-                otp_update(imgsensor.update_sensor_otp_awb, imgsensor.update_sensor_otp_lsc);
-            }
-            break;
-*/
+		case SENSOR_FEATURE_SET_FRAMERATE:
+			spin_lock(&imgsensor_drv_lock);
+			imgsensor.current_fps = *feature_data_32;
+			spin_unlock(&imgsensor_drv_lock);
+			LOG_INF("current fps :%d\n", imgsensor.current_fps);
+			break;
         case SENSOR_FEATURE_SET_HDR:
             LOG_INF("hdr mode :%d\n", (BOOL)*feature_data);
             spin_lock(&imgsensor_drv_lock);
