@@ -1184,7 +1184,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = vcodec_alloc_non_cache_buffer(arg);
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER failed! %lu\n", ret);
-			return -EFAULT;
+			return ret;
 		}
 	}
 	break;
@@ -1194,7 +1194,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = vcodec_free_non_cache_buffer(arg);
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER failed! %lu\n", ret);
-			return -EFAULT;
+			return ret;
 		}
 	}
 	break;
@@ -1284,7 +1284,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = vcodec_lockhw(arg);
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_LOCKHW failed! %lu\n", ret);
-			return -EFAULT;
+			return ret;
 		}
 	}
 	break;
@@ -1294,7 +1294,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = vcodec_unlockhw(arg);
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_UNLOCKHW failed! %lu\n", ret);
-			return -EFAULT;
+			return ret;
 		}
 	}
 	break;
@@ -1370,7 +1370,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = vcodec_waitisr(arg);
 		if (ret) {
 			MODULE_MFV_LOGE("[ERROR] VCODEC_WAITISR failed! %lu\n", ret);
-			return -EFAULT;
+			return ret;
 		}
 	}
 	break;
