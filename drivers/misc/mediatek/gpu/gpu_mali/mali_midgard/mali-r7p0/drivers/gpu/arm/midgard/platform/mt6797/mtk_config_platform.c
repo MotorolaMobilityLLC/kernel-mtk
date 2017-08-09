@@ -58,7 +58,6 @@ static int dfp_weights[] = {
 static volatile void *g_ldo_base = NULL;
 
 volatile void *g_MFG_base;
-volatile void *g_DVFS_CPU_base;
 volatile void *g_DVFS_GPU_base;
 volatile void *g_DFP_base;
 volatile void *g_TOPCK_base;
@@ -350,6 +349,7 @@ static int mtk_pm_callback_power_on(void)
 		DVFS_GPU_write32(SPM_SW_RECOVER_CNT, diff);
 	}
 	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 	mtk_kbase_spm_wait();
 	g_is_spm_on = 1;
 	mtk_kbase_spm_release();
@@ -398,6 +398,7 @@ static void mtk_pm_callback_power_off(void)
 	mutex_lock(&spm_mutex_lock);
 	mtk_kbase_spm_acquire();
 	g_is_spm_on = 0;
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
@@ -535,30 +536,19 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc4 = 0x%08x\n", base_read32(g_ldo_base+0xfc4));
 	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc8 = 0x%08x\n\n", base_read32(g_ldo_base+0xfc8));
 
-	/* dump VGPU */
-	{
-		unsigned char x = 0;
-		fan53555_read_interface(0x0, &x, 0xff, 0x0);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x0 = 0x%x\n", x);
-		fan53555_read_interface(0x1, &x, 0xff, 0x0);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x1 = 0x%x\n", x);
-		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
-	}
-
 	/* dump DVFS_GPU registers */
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_CUR_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current voltage: %u.%06u V\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CUR_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current: %u.%06u V, %u kHz\n", i / 1000000, i % 1000000, mtk_kbase_spm_get_freq(SPM_SW_CUR_F));
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_CEIL_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling voltage: %u.%06u V\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling: %u.%06u V, %u kHz\n", i / 1000000, i % 1000000, mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_FLOOR_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor voltage: %u.%06u V\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_FLOOR_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor: %u.%06u V, %u kHz\n", i / 1000000, i % 1000000, mtk_kbase_spm_get_freq(SPM_SW_FLOOR_F));
+
+	ret += mtk_kbase_spm_hal_status(buf + ret, PAGE_SIZE - ret);
 
 	for (k = 0; k < ARRAY_SIZE(dvfs_gpu_bases); ++k)
 	{
@@ -676,7 +666,6 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	g_ldo_base =        _mtk_of_ioremap("mediatek,infracfg_ao");
 	g_MFG_base = 	    _mtk_of_ioremap("mediatek,g3d_config");
 	g_DFP_base =        _mtk_of_ioremap("mediatek,g3d_dfp_config");
-	g_DVFS_CPU_base =   _mtk_of_ioremap("mediatek,mt6797-dvfsp");
 	g_DVFS_GPU_base =   _mtk_of_ioremap("mediatek,dvfs_proc2");
 	g_TOPCK_base =      _mtk_of_ioremap("mediatek,topckgen");
 

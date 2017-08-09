@@ -57,20 +57,11 @@ void mtk_kbase_spm_release(void)
 
 static void _mtk_kbase_spm_kick_lock(void)
 {
-	int retry = 0;
-	DVFS_CPU_write32(0x0, 0x0b160001);
-	while(DVFS_CPU_read32(0x428) != 0x1)
-	{
-		DVFS_CPU_write32(0x428, 0x1);
-		if (((++retry) % 10000) == 0)
-		{
-			pr_MTK_err("request sem @ dvfs_cpu:0x428 fail, retry=%d, continue...\n", retry);
-		}
-	}
+	mtk_dvfs_gpu_lock(3, 1);
 }
 static void _mtk_kbase_spm_kick_unlock(void)
 {
-	DVFS_CPU_write32(0x428, 0x1);
+	mtk_dvfs_gpu_unlock(3, 1);
 }
 
 void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock)

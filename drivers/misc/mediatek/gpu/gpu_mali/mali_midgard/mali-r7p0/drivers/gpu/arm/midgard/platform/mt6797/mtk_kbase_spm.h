@@ -159,7 +159,6 @@ struct mtk_config {
 #define CLK_MISC_CFG_0              0x104
 
 extern volatile void *g_MFG_base;
-extern volatile void *g_DVFS_CPU_base;
 extern volatile void *g_DVFS_GPU_base;
 extern volatile void *g_DFP_base;
 extern volatile void *g_TOPCK_base;
@@ -170,8 +169,6 @@ extern struct mtk_config *g_config;
 #define base_read32(addr)             (*(volatile uint32_t*)(addr))
 #define MFG_write32(addr, value)      base_write32(g_MFG_base+addr, value)
 #define MFG_read32(addr)              base_read32(g_MFG_base+addr)
-#define DVFS_CPU_write32(addr, value) base_write32(g_DVFS_CPU_base+addr, value)
-#define DVFS_CPU_read32(addr)         base_read32(g_DVFS_CPU_base+addr)
 #define DVFS_GPU_write32(addr, value) base_write32(g_DVFS_GPU_base+addr, value)
 #define DVFS_GPU_read32(addr)         base_read32(g_DVFS_GPU_base+addr)
 #define DFP_write32(addr, value)      base_write32(g_DFP_base+addr, value)
@@ -206,6 +203,7 @@ void mtk_kbase_spm_boost(unsigned int idx, unsigned int cnt);
 void mtk_kbase_spm_update_table(void);
 
 void mtk_kbase_spm_hal_init(void);
+ssize_t mtk_kbase_spm_hal_status(char *buf, ssize_t size);
 
 void mtk_gpu_spm_resume_hal(void);
 void mtk_gpu_spm_fix_by_idx(unsigned int idx);
@@ -219,5 +217,6 @@ int mtk_dvfs_gpu_unlock(int sem, int user);
 
 extern int dvfs_gpu_pm_spin_lock_for_vgpu(void);
 extern int dvfs_gpu_pm_spin_unlock_for_vgpu(void);
+
 
 #endif

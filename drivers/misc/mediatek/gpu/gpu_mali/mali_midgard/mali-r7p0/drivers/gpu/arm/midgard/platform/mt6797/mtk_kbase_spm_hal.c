@@ -83,29 +83,34 @@ static void spm_update_fc(void)
 	}
 }
 
+ssize_t mtk_kbase_spm_hal_status(char *buf, ssize_t size)
+{
+	ssize_t ret = 0;
 
-static int spm_vsync_hint( bool bMode) 
+	ret += scnprintf(buf + ret, size - ret, "\nhal_status:\n");
+	ret += scnprintf(buf + ret, size - ret, "  thermal_ceiling: %d\n", glo.idx_ceiling_thermal);
+	ret += scnprintf(buf + ret, size - ret, "  cust_ceiling: %d\n", glo.idx_ceiling);
+	ret += scnprintf(buf + ret, size - ret, "  cust_floor: %d\n", glo.idx_floor_cust);
+	ret += scnprintf(buf + ret, size - ret, "  fix_freq: %d (floor: %d)\n\n", glo.idx_fix, glo.idx_floor);
+
+	return ret;
+}
+
+static int spm_vsync_hint(bool bMode)
 {
 	struct mtk_config *config = g_config;
-	if( bMode == true )
+	if (bMode == true)
 	{
-			#if 1
-			MTKCLK_prepare_enable(clk_dvfs_gpu);
-			mtk_kbase_spm_boost(0, 0);
-			MTKCLK_disable_unprepare(clk_dvfs_gpu);
-			#endif
-			//printk("VSync_ON\n");
+		MTKCLK_prepare_enable(clk_dvfs_gpu);
+		mtk_kbase_spm_boost(0, 0);
+		MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	}
 	else
 	{
-		#if 1
 		MTKCLK_prepare_enable(clk_dvfs_gpu);
 		mtk_kbase_spm_boost(0, 300000);
 		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-		#endif
-		//printk("VSync_OFF\n");
 	}
-	
 	return 0;
 }
 
