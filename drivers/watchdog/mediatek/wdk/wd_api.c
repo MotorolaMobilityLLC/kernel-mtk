@@ -577,7 +577,7 @@ void arch_reset(char mode, const char *cmd)
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	return;
 #else
-	char reboot = 1;
+	char reboot = 0;
 	int res = 0;
 	struct wd_api *wd_api = NULL;
 
