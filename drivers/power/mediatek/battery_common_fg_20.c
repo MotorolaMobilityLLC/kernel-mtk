@@ -4166,7 +4166,6 @@ static void battery_shutdown(struct platform_device *dev)
 	battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
 	battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
 #endif
-	battery_log(BAT_LOG_CRTI, "******** battery driver shutdown!! ********\n");
 
 }
 
