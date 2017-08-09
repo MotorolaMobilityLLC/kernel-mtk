@@ -241,9 +241,6 @@ void od_debug_reg(void)
 void _disp_od_core_enabled(void *cmdq, int enabled)
 {
 #if defined(CONFIG_MTK_OD_SUPPORT)
-	unsigned int value = 0;
-	int i;
-
 	od_debug_reg();
 
 	/* dram and bypass setting */
@@ -800,7 +797,7 @@ void disp_od_set_enabled(void *cmdq, int enabled)
 	else
 		g_od_is_enabled = 0;
 
-	ODDBG(OD_DBG_ALWAYS, "disp_od_set_enabled=%d (in:%d)(force_disabled:0x%x)\n",
+	ODDBG(OD_DBG_ALWAYS, "disp_od_set_enabled=%d (in:%d)(force_disabled:0x%lx)\n",
 		g_od_is_enabled, enabled, g_od_force_disabled);
 #endif
 }
@@ -955,9 +952,6 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 		m4u_port.ePortID = M4U_PORT_DISP_OD_W;
 		m4u_config_port(&m4u_port);
 
-		unsigned int od_table_size = lcm_param->od_table_size;
-		void *od_table = lcm_param->od_table;
-
 		if (od_table != NULL)
 			ODDBG(OD_DBG_ALWAYS, "od_config_od: LCD OD table\n");
 
@@ -1099,7 +1093,7 @@ static unsigned long od_simple_strtoul(char *next, char **new_next, int base)
 		char ch = *next;
 
 		if ((ch == 'x') || ('0' <= ch && ch <= '9') ||
-			('a' <= ch && ch <= 'f') || ('A' <= ch || ch <= 'F')) {
+			('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F')) {
 			buffer[i] = ch;
 		} else {
 			buffer[i] = '\0';
@@ -1344,6 +1338,8 @@ void od_test(const char *cmd, char *debug_output)
 		ODDBG(OD_DBG_ALWAYS, "OD demo %d\n", enabled);
 		/* save demo mode flag for suspend/resume */
 		g_od_is_demo_mode = enabled;
+	} else if (strncmp(cmd, "base", 4) == 0) {
+		OD_TLOG("OD reg base = %lx", (unsigned long)(OD_BASE));
 	}
 
 	DISP_CMDQ_CONFIG_STREAM_DIRTY(cmdq);
