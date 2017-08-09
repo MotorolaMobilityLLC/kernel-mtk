@@ -437,7 +437,9 @@ static unsigned int cpu_speed;
 #include <linux/file.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#ifdef __KERNEL__
 #include <linux/topology.h>
+#endif
 
 /* project includes */
 #include "mach/irqs.h"
@@ -485,7 +487,7 @@ static unsigned int cpu_speed;
 	#include "upmu_common.h"
 	/* #include "mt6311.h" */
 	#ifndef EARLY_PORTING
-		/* #include "gpu_dvfs.h" */
+		#include "gpu_dvfs.h"
 		#include "thermal.h"
 		/* #include "gpio_const.h" */
 	#endif
@@ -1231,7 +1233,11 @@ static struct eem_det eem_detectors[NR_EEM_DET] = {
 		.name		= __stringify(EEM_DET_BIG),
 		.ops		= &big_det_ops,
 		.ctrl_id	= EEM_CTRL_BIG,
+#ifdef CONFIG_BIG_OFF
+		.features	= 0,
+#else
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+#endif
 		.max_freq_khz	= 2496000,/* 2496Mhz */
 		.VBOOT		= 100000, /* 10uV */
 		.volt_offset	= 0,
@@ -1694,7 +1700,7 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	}
 
 	#if defined(__MTK_SLT_)
-		mdelay(5);
+		mdelay(200);
 	#endif
 	/* mt_ptp_unlock(&flags); */
 
@@ -1721,8 +1727,10 @@ static int base_ops_get_temp(struct eem_det *det)
 	#ifdef __KERNEL__
 		return tscpu_get_temp_by_bank(ts_bank);
 	#else
+		/*
 		thermal_init();
 		udelay(1000);
+		*/
 		return mtktscpu_get_hw_temp();
 	#endif
 #else
@@ -1967,7 +1975,9 @@ static int set_volt_cpu(struct eem_det *det)
 	#ifdef EARLY_PORTING
 		return value;
 	#else
+		#ifdef __KERNEL__
 		mutex_lock(&record_mutex);
+		#endif
 		for (value = 0; value < NR_FREQ; value++)
 			record_tbl_locked[value] = det->volt_tbl_pmic[value];
 
@@ -1992,7 +2002,9 @@ static int set_volt_cpu(struct eem_det *det)
 			value = 0;
 			break;
 		}
+		#ifdef __KERNEL__
 		mutex_unlock(&record_mutex);
+		#endif
 		return value;
 	#endif
 }
@@ -2057,6 +2069,9 @@ static void get_freq_table_cpu(struct eem_det *det)
 					cciFreq_FY[i]
 					,
 					det->max_freq_khz);
+			#if defined(__MTK_SLT_)
+				recordTbl = &fyTbl[0][0];
+			#endif
 		} else if (binLevel == 1) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_SB[i] :
@@ -2065,6 +2080,9 @@ static void get_freq_table_cpu(struct eem_det *det)
 					cciFreq_SB[i]
 					,
 					det->max_freq_khz);
+			#if defined(__MTK_SLT_)
+				recordTbl = &sbTbl[0][0];
+			#endif
 		} else if ((binLevel == 2) || (binLevel == 7)) {
 				det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_MB[i] :
@@ -2073,6 +2091,9 @@ static void get_freq_table_cpu(struct eem_det *det)
 					cciFreq_MB[i]
 					,
 					det->max_freq_khz);
+			#if defined(__MTK_SLT_)
+				recordTbl = &mbTbl[0][0];
+			#endif
 		} else {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
@@ -2155,14 +2176,28 @@ static void get_freq_table_gpu(struct eem_det *det)
 		#else
 			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 		#endif
-		if ((binLevel == 0) || (binLevel == 3))
+		if ((binLevel == 0) || (binLevel == 3)) {
 			det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
-		else if (binLevel == 1)
+			#if defined(__MTK_SLT_)
+				gpuTbl = &gpuFy[0];
+			#endif
+		} else if (binLevel == 1) {
 			det->freq_tbl[i] = PERCENT(gpuFreq_SB[i], det->max_freq_khz);
-		else if ((binLevel == 2) || (binLevel == 7))
+			#if defined(__MTK_SLT_)
+				gpuTbl = &gpuSb[0];
+			#endif
+		} else if ((binLevel == 2) || (binLevel == 7)) {
 			det->freq_tbl[i] = PERCENT(gpuFreq_MB[i], det->max_freq_khz);
-		else
+			#if defined(__MTK_SLT_)
+				gpuTbl = &gpuMb[0];
+			#endif
+		} else {
 			det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
+			#if defined(__MTK_SLT_)
+				gpuTbl = &gpuFy[0];
+			#endif
+		}
+
 		if (0 == det->freq_tbl[i])
 			break;
 	}
@@ -2531,11 +2566,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	det->AGEM = AGEM_VAL;
 	det->DVTFIXED = DVTFIXED_VAL;
 
-	#ifdef __KERNEL__
-		ateVer = GET_BITS_VAL(7:4, get_devinfo_with_index(61));
-	#else
-		ateVer = GET_BITS_VAL(7:4, eem_read(0x1020698C));
-	#endif
 	if (ateVer > 5)
 		det->VCO = VCO_VAL_AFTER_5;
 	else
@@ -3200,7 +3230,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 		*/
 	}
 	#if defined(__MTK_SLT_)
-	if (det->ctrl_id <= EEM_CTRL_BIG)
+	if (det->ctrl_id <= EEM_CTRL_CCI)
 		cpu_in_mon = 0;
 	#endif
 	eem_set_eem_volt(det);
@@ -3494,7 +3524,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			break;
 		}
 		#endif
-
+		/*
 		eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
@@ -3502,15 +3532,16 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i+1, det->volt_tbl[i+1], det->ops->pmic_2_volt(det, det->volt_tbl[i+1]));
 		}
+		*/
 	}
 	eem_isr_info("ISR : EEM_TEMPSPARE1 = 0x%08X\n", eem_read(EEM_TEMPSPARE1));
 
 	#if defined(__MTK_SLT_)
-		if ((cpu_in_mon == 1) && (det->ctrl_id <= EEM_CTRL_BIG))
-			eem_isr_info("Won't do CPU eem_set_eem_volt\n");
-		else{
-			if (det->ctrl_id <= EEM_CTRL_BIG) {
-				eem_isr_info("Do CPU eem_set_eem_volt\n");
+		if ((cpu_in_mon == 1) && (det->ctrl_id <= EEM_CTRL_CCI))
+			eem_isr_info("[%s] Won't do CPU eem_set_eem_volt\n", ((char *)(det->name) + 8));
+		else {
+			if (det->ctrl_id <= EEM_CTRL_CCI) {
+				eem_isr_info("[%s] Do CPU eem_set_eem_volt\n", ((char *)(det->name) + 8));
 				cpu_in_mon = 1;
 			}
 			eem_set_eem_volt(det);
@@ -3532,6 +3563,10 @@ out:
 
 static inline void handle_mon_err_isr(struct eem_det *det)
 {
+	#if DUMP_DATA_TO_DE
+		unsigned int i;
+	#endif
+
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
 	/* EEM Monitor mode error handler */
@@ -3565,9 +3600,7 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 		     EEM_TEMPMSRCTL1, eem_read(EEM_TEMPMSRCTL1));
 	eem_error("====================================================\n");
 
-	{
-		unsigned int i;
-
+	#if DUMP_DATA_TO_DE
 		for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
 			det->reg_dump_data[i][EEM_PHASE_MON] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
 			eem_error("0x%lx = 0x%08x\n",
@@ -3575,7 +3608,8 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 				det->reg_dump_data[i][EEM_PHASE_MON]
 				);
 		}
-	}
+	#endif
+
 	eem_error("====================================================\n");
 	eem_error("EEM mon err: EEMCORESEL(%p) = 0x%08X, EEM_THERMINTST(%p) = 0x%08X, EEMODINTST(%p) = 0x%08X",
 		     EEMCORESEL, eem_read(EEMCORESEL),
@@ -3689,6 +3723,7 @@ int ptp_isr(void)
 #endif
 }
 
+#ifdef __KERNEL__
 #define ITURBO_CPU_NUM 2
 static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					unsigned long action, void *hcpu)
@@ -3771,6 +3806,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	}
 	return NOTIFY_OK;
 }
+#endif
 
 void eem_init02(void)
 {
@@ -3865,8 +3901,10 @@ void eem_init01(void)
 			#endif
 			mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
 			mt_ppm_ptpod_policy_deactivate();
+#ifndef CONFIG_BIG_OFF
 			if (cpu_online(8))
 				cpu_down(8);
+#endif
 			/* enable frequency hopping (main PLL) */
 			/* mt_fh_popod_restore(); */
 		#endif
@@ -4121,9 +4159,11 @@ static int eem_probe(struct platform_device *pdev)
 			/* disable frequency hopping (main PLL) */
 			/* mt_fh_popod_save(); */
 
+#ifndef CONFIG_BIG_OFF
 			set_cpu_present(8, true); /* enable big cluster */
 			if (!cpu_online(8))
 				cpu_up(8);
+#endif
 			/* disable DVFS and set vproc = 1v (LITTLE = 689 MHz)(BIG = 1196 MHz) */
 			mt_ppm_ptpod_policy_activate();
 			mt_gpufreq_disable_by_ptpod();
@@ -4208,7 +4248,9 @@ static int eem_resume(struct platform_device *pdev)
 	}
 	*/
 	FUNC_ENTER(FUNC_LV_MODULE);
+	#ifdef __KERNEL__
 	mt_cpufreq_eem_resume();
+	#endif
 	eem_init02();
 	FUNC_EXIT(FUNC_LV_MODULE);
 
@@ -4302,9 +4344,10 @@ void eem_init01_ctp(unsigned int id)
 		udelay(100);
 		timeout++;
 	}
-
+	/*
 	thermal_init();
 	udelay(500);
+	*/
 	eem_init02();
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
@@ -5522,6 +5565,11 @@ int __init eem_init(void)
 #endif
 
 	get_devinfo(&eem_devinfo);
+	#ifdef __KERNEL__
+		ateVer = GET_BITS_VAL(7:4, get_devinfo_with_index(61));
+	#else
+		ateVer = GET_BITS_VAL(7:4, eem_read(0x1020698C));
+	#endif
 	if (ateVer <= 5)
 		eem_efuse_calibration(&eem_devinfo);
 #if 0 /* def __KERNEL__ */
