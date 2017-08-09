@@ -125,16 +125,14 @@ int conn_md_dmp_out(P_CONN_MD_DMP_MSG_LOG p_msg_log, uint32 src_id, uint32 dst_i
 	int out = 0;
 	P_CONN_MD_DMP_MSG_STR p_msg = NULL;
 
-	mutex_lock(&p_msg_log->lock);
-
-	size = p_msg_log->size;
 
 	if (NULL == p_msg_log) {
-		mutex_unlock(&p_msg_log->lock);
-
 		CONN_MD_WARN_FUNC("invalid parameter, p_msg_log:0x%08x\n", p_msg_log);
 		return CONN_MD_ERR_INVALID_PARAM;
 	}
+	mutex_lock(&p_msg_log->lock);
+	size = p_msg_log->size;
+	mutex_unlock(&p_msg_log->lock);
 	CONN_MD_INFO_FUNC("dump msg for <src_id:0x%08x, dst_id:0x%08x> start\n", src_id, dst_id);
 	if (NUMBER_OF_MSG_LOGGED == size)
 		out = in;

@@ -46,7 +46,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x800009;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -54,7 +54,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x800009;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -62,7 +62,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x800009;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -70,7 +70,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x80000a;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -78,7 +78,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x800001;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -86,7 +86,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x800005;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
@@ -94,7 +94,7 @@ int conn_md_test(void)
 	ilm.src_mod_id = 0x80000a;
 	ilm.msg_id++;
 	msg_len += 10;
-	msg_len = msg_len >= PACKAGE_SIZE ? PACKAGE_SIZE : msg_len;
+	msg_len = ((msg_len >= PACKAGE_SIZE) ? PACKAGE_SIZE : msg_len);
 	ilm.local_para_ptr->msg_len = msg_len;
 	mtk_conn_md_bridge_send_msg(&ilm);
 
