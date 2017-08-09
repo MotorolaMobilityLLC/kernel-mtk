@@ -261,9 +261,6 @@ MTK_MMDVFS_CMD *cmd)
 	switch (scenario) {
 
 	case SMI_BWC_SCEN_VR:
-		if (is_force_camera_hpm())
-			step = MMDVFS_VOLTAGE_HIGH;
-		else
 			step = query_vr_step(cmd);
 		break;
 	case SMI_BWC_SCEN_VR_SLOW:
@@ -569,6 +566,10 @@ static int get_vr_step(int sensor_size, int camera_mode)
 	if (camera_mode & hpm_cam_mode)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
 
+	/* forced hpm camera mode */
+	if (is_force_camera_hpm())
+		vr_step = MMDVFS_VOLTAGE_HIGH;
+
 	return vr_step;
 }
 
@@ -576,7 +577,10 @@ static int get_vr_step(int sensor_size, int camera_mode)
 static int query_vr_step(MTK_MMDVFS_CMD *query_cmd)
 {
 	if (query_cmd == NULL)
-		return MMDVFS_VOLTAGE_LOW;
+		if (is_force_camera_hpm())
+			return MMDVFS_VOLTAGE_HIGH;
+		else
+			return MMDVFS_VOLTAGE_LOW;
 	else
 		return get_vr_step(query_cmd->sensor_size, query_cmd->camera_mode);
 
@@ -844,18 +848,6 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 #if !MMDVFS_ENABLE
 	return;
 #endif
-
-	if (scen == SMI_BWC_SCEN_VR && is_force_camera_hpm()) {
-		/* currently we set mmsys clk medium in default
-		when force_camera_hpm is enabled */
-		int mmsys_clk_request = MMSYS_CLK_MEDIUM;
-
-		if (is_force_max_mmsys_clk())
-			mmsys_clk_request = MMSYS_CLK_HIGH;
-
-		mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH, mmsys_clk_request);
-		return;
-	}
 
 	/* Leave display idle mode before set scenario */
 	if (current_mmsys_clk == MMSYS_CLK_LOW && scen != SMI_BWC_SCEN_NORMAL)
