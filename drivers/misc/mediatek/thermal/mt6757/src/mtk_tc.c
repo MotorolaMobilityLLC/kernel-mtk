@@ -36,7 +36,7 @@
 #include <linux/clk.h>
 #endif
 
-#include <mt_ptp.h>
+#include <mt_eem.h>
 
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>

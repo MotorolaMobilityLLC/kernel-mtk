@@ -21,6 +21,7 @@
 
 #include "tzcpu_initcfg.h"
 #include "clatm_initcfg.h"
+#include <mt_eem.h>
 
 /*=============================================================
  * Genernal
@@ -102,7 +103,7 @@ they means one reading is a avg of X samples*/
 /*	Define this in tscpu_settings.h enables this feature. It polls CPU TS in hrtimer and
 	run ATM in RT 98 kthread. This is for Everest only.
  */
-#define FAST_RESPONSE_ATM					(1)
+/*#define FAST_RESPONSE_ATM					(0)*/
 /*=============================================================
  * Chip related
  *=============================================================*/
