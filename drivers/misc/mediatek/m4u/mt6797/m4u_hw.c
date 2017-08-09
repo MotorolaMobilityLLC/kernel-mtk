@@ -1516,7 +1516,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			}
 		}
 	}
-	M4ULOG_HIGH("m4u_config_port_array 1: [0x%x, 0x%x, 0x%x, 0x%x, 0x%x] %d\n", config_larb[0],
+	M4ULOG_MID("m4u_config_port_array 1: [0x%x, 0x%x, 0x%x, 0x%x, 0x%x] %d\n", config_larb[0],
 		    config_larb[1], config_larb[2], config_larb[3], config_larb[4], change);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
