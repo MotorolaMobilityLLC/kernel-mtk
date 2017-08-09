@@ -1079,11 +1079,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_ven_h);
 		pr_debug("%s : pinctrl err, ven_high\n", __func__);
 	}
+	if (NULL == st_ven_h) {
+		pr_err("%s : st_ven_h is NULL\n", __func__);
+		goto end;
+	}
 
 	st_ven_l = pinctrl_lookup_state(gpctrl, "ven_low");
 	if (IS_ERR(st_ven_l)) {
 		ret = PTR_ERR(st_ven_l);
 		pr_debug("%s : pinctrl err, ven_low\n", __func__);
+	}
+	if (NULL == st_ven_l) {
+		pr_err("%s : st_ven_l is NULL\n", __func__);
+		goto end;
 	}
 
 	st_rst_h = pinctrl_lookup_state(gpctrl, "rst_high");
@@ -1091,11 +1099,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_rst_h);
 		pr_debug("%s : pinctrl err, rst_high\n", __func__);
 	}
+	if (NULL == st_rst_h) {
+		pr_err("%s : st_rst_h is NULL\n", __func__);
+		goto end;
+	}
 
 	st_rst_l = pinctrl_lookup_state(gpctrl, "rst_low");
 	if (IS_ERR(st_rst_l)) {
 		ret = PTR_ERR(st_rst_l);
 		pr_debug("%s : pinctrl err, rst_low\n", __func__);
+	}
+	if (NULL == st_rst_l) {
+		pr_err("%s : st_rst_l is NULL\n", __func__);
+		goto end;
 	}
 
 	st_eint_h = pinctrl_lookup_state(gpctrl, "eint_high");
@@ -1103,11 +1119,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_eint_h);
 		pr_debug("%s : pinctrl err, eint_high\n", __func__);
 	}
+	if (NULL == st_eint_h) {
+		pr_err("%s : st_eint_h is NULL\n", __func__);
+		goto end;
+	}
 
 	st_eint_l = pinctrl_lookup_state(gpctrl, "eint_low");
 	if (IS_ERR(st_eint_l)) {
 		ret = PTR_ERR(st_eint_l);
 		pr_debug("%s : pinctrl err, eint_low\n", __func__);
+	}
+	if (NULL == st_eint_l) {
+		pr_err("%s : st_eint_l is NULL\n", __func__);
+		goto end;
 	}
 
 	st_irq_init = pinctrl_lookup_state(gpctrl, "irq_init");
@@ -1115,11 +1139,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_irq_init);
 		pr_debug("%s : pinctrl err, irq_init\n", __func__);
 	}
+	if (NULL == st_irq_init) {
+		pr_err("%s : st_irq_init is NULL\n", __func__);
+		goto end;
+	}
 
 	st_osc_init = pinctrl_lookup_state(gpctrl, "osc_init");
 	if (IS_ERR(st_osc_init)) {
 		ret = PTR_ERR(st_osc_init);
 		pr_debug("%s : pinctrl err, osc_init\n", __func__);
+	}
+	if (NULL == st_osc_init) {
+		pr_err("%s : st_osc_init is NULL\n", __func__);
+		goto end;
 	}
 
 	st_cs_low = pinctrl_lookup_state(gpctrl, "cs_low");
@@ -1127,11 +1159,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_cs_low);
 		pr_debug("%s : pinctrl err, st_cs_low\n", __func__);
 	}
+	if (NULL == st_cs_low) {
+		pr_err("%s : st_cs_low is NULL\n", __func__);
+		goto end;
+	}
 
 	st_mo_low = pinctrl_lookup_state(gpctrl, "mo_low");
 	if (IS_ERR(st_mo_low)) {
 		ret = PTR_ERR(st_mo_low);
 		pr_debug("%s : pinctrl err, st_mo_low\n", __func__);
+	}
+	if (NULL == st_mo_low) {
+		pr_err("%s : st_mo_low is NULL\n", __func__);
+		goto end;
 	}
 
 	st_mi_low = pinctrl_lookup_state(gpctrl, "mi_low");
@@ -1139,11 +1179,19 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_mi_low);
 		pr_debug("%s : pinctrl err, st_mi_low\n", __func__);
 	}
+	if (NULL == st_mi_low) {
+		pr_err("%s : st_mi_low is NULL\n", __func__);
+		goto end;
+	}
 
 	st_sck_low = pinctrl_lookup_state(gpctrl, "sck_low");
 	if (IS_ERR(st_sck_low)) {
 		ret = PTR_ERR(st_sck_low);
 		pr_debug("%s : pinctrl err, st_sck_low\n", __func__);
+	}
+	if (NULL == st_sck_low) {
+		pr_err("%s : st_sck_low is NULL\n", __func__);
+		goto end;
 	}
 
 	/* select state */
