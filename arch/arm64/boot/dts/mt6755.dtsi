@@ -1735,6 +1735,12 @@
 			reg = <0x11280000 0x10000>;
 		};
 
+		usb3_phy {
+			compatible = "mediatek,usb3_phy";
+			clocks = <&infrasys INFRA_SSUSB_TOP>;
+			clock-names = "sssub_clk";
+		};
+
 		usb3_sif@11280000 {
 			compatible = "mediatek,usb3_sif";
 			reg = <0x11280000 0x10000>;
