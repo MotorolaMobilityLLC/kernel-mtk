@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--dct_version="2.1" buid_sn="151103" dws_modification_time="11.04.2015.14:23:12"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>Everest</proj>
         <module name="adc">
-            <count>6</count>
+            <count>5</count>
             <adc0>
                 <varName>TEMPERATURE</varName>
             </adc0>
             <adc1>
                 <varName>TEMPERATURE1</varName>
             </adc1>
-            <adc12>
+            <adc2>
                 <varName>ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH</varName>
-            </adc12>
+            </adc2>
         </module>
         <module name="clk">
             <count>4</count>
             <rf_clk1>
                 <varName>HW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk1>
             <rf_clk3>
                 <varName>SW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk3>
             <rf_clk4>
                 <varName>SW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk4>
         </module>
         <module name="eint">
@@ -4188,7 +4192,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin>PAD_INT_SIM1</srcPin>
+                <srcPin ref_gpio="GPIO112">PAD_INT_SIM1</srcPin>
                 <socketType>0</socketType>
             </eint0>
             <eint1>
@@ -4198,7 +4202,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin>PAD_INT_SIM2</srcPin>
+                <srcPin ref_gpio="GPIO113">PAD_INT_SIM2</srcPin>
                 <socketType>0</socketType>
             </eint1>
         </module>
