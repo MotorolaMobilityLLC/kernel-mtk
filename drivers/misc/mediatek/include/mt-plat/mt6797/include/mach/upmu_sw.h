@@ -97,6 +97,7 @@ typedef enum {
 	PMIC_AUX_CH14,
 	PMIC_AUX_CH15,
 	PMIC_AUX_CH16,
+	PMIC_AUX_CH4_DCXO = 0x10000004,
 } pmic_adc_ch_list_enum;
 
 typedef enum MT_POWER_TAG {

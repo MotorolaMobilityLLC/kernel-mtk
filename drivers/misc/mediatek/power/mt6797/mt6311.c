@@ -6765,6 +6765,7 @@ void mt6311_hw_init(void)
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 0); /*  [0:0]: VDVFS11_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 1); /*  [1:1]: VDVFS12_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 2); /*  [2:2]: VBIASN_PG_H2L_EN; Ricky*/
+	ret = mt6311_config_interface(0x6A, 0x2, 0x7, 0);
 	ret = mt6311_config_interface(0x6D, 0x3, 0x3, 5);
 	/* [6:5]: RG_UVLO_VTHL; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
 	ret = mt6311_config_interface(0x6E, 0x3, 0x3, 0);
@@ -6777,10 +6778,12 @@ void mt6311_hw_init(void)
 	/* [1:0]: VDVFS11_TRANS_TD; Johnson, for DVFS sof change, falling 50us,,20150305 */
 	ret = mt6311_config_interface(0x94, 0x1, 0x3, 4);
 	ret = mt6311_config_interface(0xCF, 0x0, 0x1, 0);
-	ret = mt6311_config_interface(0x8F, 0x20, 0x7F, 0);
+	ret = mt6311_config_interface(0x8E, 0x40, 0x7F, 0);
+	ret = mt6311_config_interface(0x8F, 0x10, 0x7F, 0);
 	ret = mt6311_config_interface(0x88, 0x0, 0x1, 0);
 	ret = mt6311_config_interface(0x88, 0x1, 0x1, 1);
-	ret = mt6311_config_interface(0x8D, 0x20, 0x7F, 0);
+	ret = mt6311_config_interface(0x93, 0x1, 0x1, 0);
+	ret = mt6311_config_interface(0x8D, 0x10, 0x7F, 0);
 
 #if 1
 	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x04, mt6311_get_reg_value(0x04));

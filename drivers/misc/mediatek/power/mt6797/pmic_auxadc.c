@@ -93,8 +93,42 @@ void pmic_auxadc_lock(void)
 
 void pmic_auxadc_unlock(void)
 {
-	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
+	wake_unlock(&pmicAuxadc_irq_lock);
+}
+
+void pmic_auxadc_debug(int index)
+{
+	int ret_val = 0, val, val1, val2, val3, val4, val5, val6, val7;
+
+	ret_val = pmic_read_interface((unsigned int)(0x0240), (&val), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0282), (&val1), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x025e), (&val2), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x023a), (&val3), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0ea2), (&val4), (0xffff), 0);
+	pr_err("[pmic_auxadc_debug]%d 0x0240:0x%x, 0x0282:0x%x, 0x025e:0x%x , 0x023a:0x%x , 0x0ea2:0x%x\n",
+		index, val, val1, val2, val3, val4);
+	ret_val = pmic_read_interface(MT6351_TOP_CKPDN_CON2, &val,
+		MT6351_PMIC_TOP_CKPDN_CON2_CLR_MASK, MT6351_PMIC_TOP_CKPDN_CON2_CLR_SHIFT);
+	ret_val = pmic_read_interface(MT6351_PMIC_RG_BATON_HT_EN_ADDR, &val1, 0xFFFF, 0x0);
+	ret_val = pmic_read_interface(MT6351_LDO_VBIF28_CON0, &val2, 0xFFFF, 0x0);
+	ret_val = pmic_read_interface(MT6351_TOP_CKHWEN_CON0, &val3, 0xFFFF, 0x0);
+	ret_val = pmic_read_interface(MT6351_TOP_RST_MISC, &val4, 0xFFFF, 0x0);
+	pr_err("[pmic_auxadc_debug] _TOP_CKPDN_CON2:0x%x BIF_BAT_CON0:0x%x LDO_VBIF28:0x%x 0x282:0x%x 0x2b6:0x%x\n",
+		val, val1, val2, val3, val4);
+	/* bATON debug register */
+	ret_val = pmic_read_interface((unsigned int)(0x0f86), (&val), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x024a), (&val1), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0b74), (&val2), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0a86), (&val3), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0eb2), (&val4), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x025e), (&val5), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0e98), (&val6), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(0x0eaa), (&val7), (0xffff), 0);
+	pr_err("[pmic_auxadc_debug]%d 0x0f86:0x%x, 0x024a:0x%x, 0x0b74:0x%x , 0x0a86:0x%x , 0x0eb2:0x%x\n",
+		index, val, val1, val2, val3, val4);
+	pr_err("[pmic_auxadc_debug] 0x025e:0x%x, 0x0e98:0x%x, 0x0eaa:0x%x\n",
+		val5, val6, val7);
 }
 
 signed int PMIC_IMM_GetCurrent(void)
@@ -105,35 +139,47 @@ signed int PMIC_IMM_GetCurrent(void)
 	signed int ADC_I_SENSE = 1;	/* 1 measure time*/
 	signed int ADC_BAT_SENSE = 1;	/* 1 measure time*/
 	signed int ICharging = 0;
-
+	/*pmic_auxadc_debug(1);*/
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
-	pmic_set_register_value(PMIC_AUXADC_VBUF_EN, 1);
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);
-
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0);
+/* maybe used for debug
+	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN, 0);
+*/
 	wake_lock(&pmicAuxadc_irq_lock);
 	mutex_lock(&pmic_adc_mutex);
 	ret = pmic_config_interface(MT6351_AUXADC_RQST0_SET, 0x3, 0xffff, 0);
 
 	while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH0_BY_AP) != 1) {
 		/*msleep(1);*/
-		usleep_range(1000, 2000);
+		usleep_range(1300, 1500);
 		if ((count++) > count_time_out) {
 			PMICLOG2("[PMIC_IMM_GetCurrent] batsns Time out!\n");
 			break;
 		}
 	}
 	batsns = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH0_BY_AP);
-
+	if (batsns == 0) {
+		pr_err("[AUXADC]impedence-B(%x, %x)\n",
+			pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
+			pmic_get_register_value(PMIC_RG_VBIF28_EN));
+		pmic_auxadc_debug(0x20);
+	}
 	while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH1_BY_AP) != 1) {
 		/*msleep(1);*/
-		usleep_range(1000, 2000);
+		usleep_range(1300, 1500);
 		if ((count++) > count_time_out) {
 			PMICLOG2("[PMIC_IMM_GetCurrent] isense Time out!\n");
 			break;
 		}
 	}
 	isense = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH1_BY_AP);
-
+	if (isense == 0) {
+		pr_err("[AUXADC]impedence-I(%x, %x)\n",
+			pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
+			pmic_get_register_value(PMIC_RG_VBIF28_EN));
+		pmic_auxadc_debug(0x21);
+	}
 
 	ADC_BAT_SENSE = (batsns * 3 * VOLTAGE_FULL_RANGE) / 32768;
 	ADC_I_SENSE = (isense * 3 * VOLTAGE_FULL_RANGE) / 32768;
@@ -144,8 +190,11 @@ signed int PMIC_IMM_GetCurrent(void)
 	     g_I_SENSE_offset) * 1000 / batt_meter_cust_data.cust_r_sense;
 #endif
 
-	wake_unlock(&pmicAuxadc_irq_lock);
 	mutex_unlock(&pmic_adc_mutex);
+	wake_unlock(&pmicAuxadc_irq_lock);
+	/*
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0x1);
+	*/
 
 	return ICharging;
 
@@ -189,15 +238,20 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	   GPS    1.8v
 
 	 */
-
-	/*upmu_set_reg_value(0x28c,0x0002); */
-
+	/*pmic_auxadc_debug(2);*/
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 1);
-	/* mt6351 change to hw control, but reserve sw control register */
-	/* pmic_set_register_value(PMIC_AUXADC_VBUF_EN,1); //use ch4 only, pmic temp or dcxo temp */
-	pmic_set_register_value(PMIC_RG_CLKSQ_EN_AUX_AP_MODE, 0);	/* enable 26MHz */
-
-	/*upmu_set_reg_value(0x0a44,0x010a); */
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0);
+/* maybe used for debug
+	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN, 0);
+*/
+	if (dwChannel == PMIC_AUX_CH4_DCXO) {
+		PMICLOG2("[AUXADC] ch:PMIC_AUX_CH4_DCXO\n");
+		ret = pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0x1);
+		dwChannel = 4;
+	} else if (dwChannel == PMIC_AUX_CH4) {
+		ret = pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
+	}
 #if defined PMIC_DVT_TC_EN
 	/* only used for PMIC_DVT */
 	pmic_set_register_value(PMIC_STRUP_AUXADC_START_SEL, 1);
@@ -218,7 +272,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 0:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH0_BY_AP) != 1) {
 			/*msleep(1);*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -230,7 +284,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 1:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH1_BY_AP) != 1) {
 			/*msleep(1);*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -242,7 +296,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 2:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH2) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -254,7 +308,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 3:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH3) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -262,11 +316,17 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 			}
 		}
 		ret_data = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_CH3);
+		if (ret_data < 0x100) {
+			pr_err("[AUXADC]VBIF28_ON_CTL, EN(%x, %x)\n",
+				pmic_get_register_value(PMIC_RG_VBIF28_ON_CTRL),
+				pmic_get_register_value(PMIC_RG_VBIF28_EN));
+				pmic_auxadc_debug(0x22);
+		}
 		break;
 	case 4:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH4) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -278,7 +338,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 5:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH5) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -290,7 +350,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 6:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH6) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -302,7 +362,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 7:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_AP) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -314,7 +374,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 8:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH8) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -326,7 +386,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 9:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH9) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -338,7 +398,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 10:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH10) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -352,7 +412,6 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		if (g_pmic_pad_vbif28_vol == 0x1) {
 			ret = pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
 			ret = pmic_set_register_value(PMIC_TOP_CKPDN_CON2_CLR, 0x70);
-			ret = pmic_config_interface(MT6351_LDO_VBIF28_CON0, 0xda6a, 0xffff, 0);
 			/* mt6351 sw workaround, PAD_VBIF28 SWITCH TURN ON */
 			pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 1);
 			mdelay(3); /* delay 1~3ms */
@@ -374,7 +433,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 15:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH12_15) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n",
 					dwChannel);
@@ -387,8 +446,8 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 
 	default:
 		PMICLOG2("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
-		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
+		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
 		break;
 	}
@@ -409,6 +468,11 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 3:
 		r_val_temp = 2;
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
+		if (adc_result < 0x200) {
+			pr_err("[AUXADC] ch3 high bat temp(%x, %x, %x)\n", adc_result,
+				ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
+			pmic_auxadc_debug(0x23);
+		}
 		break;
 	case 4:
 		r_val_temp = 1;
@@ -431,8 +495,13 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
 		break;
 	case 9:
+#if 0
 		r_val_temp = 1;
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
+#endif
+		/* jade requester allen lin/tai-chun, ch9 return raw data for audio */
+		r_val_temp = 1;
+		adc_result = (ret_data * r_val_temp);
 		break;
 	case 10:
 		r_val_temp = 1;
@@ -441,17 +510,19 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 	case 11:
 		r_val_temp = 2;
 		g_pmic_pad_vbif28_vol = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
+		if ((g_pmic_pad_vbif28_vol < 2700) || (g_pmic_pad_vbif28_vol >= 2912)) {
+			pr_err("[AUXADC] VBIF28_def_volt(%x, %x, %x)\n", g_pmic_pad_vbif28_vol,
+				ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
+			g_pmic_pad_vbif28_vol = 2770;
+		}
 		/* mt6351 sw workaround, PAD_VBIF28 SWITCH TURN ON */
 		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 0);
-		ret = pmic_set_register_value(PMIC_RG_VBIF28_MODE_CTRL, 0);
+		ret = pmic_set_register_value(PMIC_RG_VBIF28_ON_CTRL, 1);
+		ret = pmic_set_register_value(PMIC_RG_VBIF28_MODE_CTRL, 1);
 		ret = pmic_set_register_value(PMIC_RG_VBIF28_EN, 0);
-/*		ret = pmic_config_interface(MT6351_LDO_VBIF28_CON0,0xda6a,0xffff,0); */
 		ret = pmic_set_register_value(PMIC_TOP_CKPDN_CON2_SET, 0x70);
 		mdelay(3); /* delay 1~3ms */
 		ret = pmic_set_register_value(PMIC_BATON_TDET_EN, 0x1);
-		PMICLOG2("[AUXADC] VBIF28_def_volt(%x, %x, %x)\n", g_pmic_pad_vbif28_vol,
-			ret_data, pmic_get_register_value(PMIC_BATON_TDET_EN));
 		break;
 	case 12:
 		r_val_temp = 1;
@@ -475,15 +546,18 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		break;
 	default:
 		PMICLOG2("[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
-		wake_unlock(&pmicAuxadc_irq_lock);
 		mutex_unlock(&pmic_adc_mutex);
+		wake_unlock(&pmicAuxadc_irq_lock);
 		return -1;
 		break;
 	}
-
-	wake_unlock(&pmicAuxadc_irq_lock);
+	PMICLOG2("[AUXADC] ch:%d(%x, %x, %x, %x)\n", dwChannel, adc_result,
+		ret_data, g_pmic_pad_vbif28_vol, pmic_get_register_value(PMIC_BATON_TDET_EN));
 	mutex_unlock(&pmic_adc_mutex);
-
+	wake_unlock(&pmicAuxadc_irq_lock);
+	/*
+	pmic_set_register_value(PMIC_RG_AUXADC_SMPS_CK_PDN, 0x1);
+	*/
 	/*PMICLOG2("[AUXADC] ch=%d raw=%d data=%d\n", dwChannel, ret_data,adc_result);*/
 
 	/*return ret_data;*/
@@ -512,19 +586,18 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 
 
 	wake_lock(&pmicAuxadc_irq_lock);
-
 	mutex_lock(&pmic_adc_mutex);
 	ret = pmic_config_interface(MT6351_TOP_CLKSQ_SET, (1 << 3), 0xffff, 0);
 	ret = pmic_config_interface(MT6351_AUXADC_RQST1_SET, (1 << dwChannel), 0xffff, 0);
 	mutex_unlock(&pmic_adc_mutex);
-
+	wake_unlock(&pmicAuxadc_irq_lock);
 	udelay(10);
 
 	switch (dwChannel) {
 	case 0:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH0_BY_MD) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[PMIC_IMM_GetOneChannelValueMD] (%d) Time out!\n",
 					dwChannel);
@@ -536,7 +609,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 	case 1:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH1_BY_MD) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[PMIC_IMM_GetOneChannelValueMD] (%d) Time out!\n",
 					dwChannel);
@@ -548,7 +621,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 	case 4:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH4_BY_MD) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[PMIC_IMM_GetOneChannelValueMD] (%d) Time out!\n",
 					dwChannel);
@@ -560,7 +633,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 	case 7:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_MD) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[PMIC_IMM_GetOneChannelValueMD] (%d) Time out!\n",
 					dwChannel);
@@ -572,7 +645,7 @@ unsigned int PMIC_IMM_GetOneChannelValueMD(unsigned char dwChannel, int deCount,
 	case 8:
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_GPS) != 1) {
 			/*msleep(1)*/
-			usleep_range(1000, 2000);
+			usleep_range(1300, 1500);
 			if ((count++) > count_time_out) {
 				PMICLOG2("[PMIC_IMM_GetOneChannelValueMD] (%d) Time out!\n",
 					dwChannel);

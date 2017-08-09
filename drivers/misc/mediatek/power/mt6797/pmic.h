@@ -31,6 +31,8 @@ do {					\
 } while (0)
 
 
+/*#define PMIC_DEBUG_PR_DBG*/
+
 #define PMICTAG                "[PMIC] "
 #ifdef PMIC_DEBUG
 #define PMICDEB(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)

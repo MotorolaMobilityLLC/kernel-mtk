@@ -322,6 +322,14 @@ void ldo_oc_int_handler(void)
 		msdc_sd_power_off();
 	#endif
 }
+void pmic_ldo_oc_int_register(void)
+{
+#if 0
+	pmic_register_interrupt_callback(31, ldo_oc_int_handler);
+	pmic_enable_interrupt(31, 1, "PMIC");
+#endif
+}
+EXPORT_SYMBOL(pmic_ldo_oc_int_register);
 
 /*****************************************************************************
  * Low battery call back function
@@ -580,7 +588,6 @@ void PMIC_EINT_SETTING(void)
 	pmic_register_interrupt_callback(6, bat_h_int_handler);
 	pmic_register_interrupt_callback(7, bat_l_int_handler);
 
-	pmic_register_interrupt_callback(31, ldo_oc_int_handler);
 	pmic_register_interrupt_callback(46, chrdet_int_handler);
 
 	pmic_register_interrupt_callback(50, fg_cur_h_int_handler);
@@ -596,7 +603,6 @@ void PMIC_EINT_SETTING(void)
 	/* pmic_enable_interrupt(6, 1, "PMIC"); */
 	/* pmic_enable_interrupt(7, 1, "PMIC"); */
 #endif
-	pmic_enable_interrupt(31, 1, "PMIC");
 	pmic_enable_interrupt(46, 1, "PMIC");
 #ifdef BATTERY_OC_PROTECT
 	/* move to bat_oc_x_en_setting */

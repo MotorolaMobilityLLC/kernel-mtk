@@ -27,7 +27,7 @@
 #include <linux/regulator/consumer.h>
 #endif
 #define PMIC_32K_LESS_DETECT_V1      1
-#define PMIC_CO_TSX_V1               1
+#define PMIC_CO_TSX_V1               0
 
 #define PMIC_READ_REGISTER_UINT32(reg)	(*(volatile uint32_t *const)(reg))
 #define PMIC_INREG32(x)	PMIC_READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
@@ -91,6 +91,58 @@ int PMIC_MD_INIT_SETTING_V1(void)
 #endif
 	return ret;
 }
+
+void PMIC_upmu_set_rg_baton_en(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = pmic_config_interface((unsigned int)(MT6351_PMIC_RG_BATON_EN_ADDR),
+		(unsigned int)(val),
+		(unsigned int)(MT6351_PMIC_RG_BATON_EN_MASK),
+		(unsigned int)(MT6351_PMIC_RG_BATON_EN_SHIFT)
+		);
+}
+
+void PMIC_upmu_set_baton_tdet_en(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = pmic_config_interface((unsigned int)(MT6351_PMIC_BATON_TDET_EN_ADDR),
+		(unsigned int)(val),
+		(unsigned int)(MT6351_PMIC_BATON_TDET_EN_MASK),
+		(unsigned int)(MT6351_PMIC_BATON_TDET_EN_SHIFT)
+	);
+}
+
+unsigned int PMIC_upmu_get_rgs_baton_undet(void)
+{
+	unsigned int ret = 0;
+	unsigned int val = 0;
+
+	ret = pmic_read_interface((unsigned int)(MT6351_PMIC_RGS_BATON_UNDET_ADDR),
+		(&val),
+		(unsigned int)(MT6351_PMIC_RGS_BATON_UNDET_MASK),
+		(unsigned int)(MT6351_PMIC_RGS_BATON_UNDET_SHIFT)
+	);
+	return val;
+}
+
+int PMIC_check_battery(void)
+{
+	unsigned int val = 0;
+
+	/* ask shin-shyu programming guide */
+	PMIC_upmu_set_rg_baton_en(1);
+	PMIC_upmu_set_baton_tdet_en(1);
+	val = PMIC_upmu_get_rgs_baton_undet();
+	if (val == 0) {
+		pr_debug("bat is exist.\n");
+		return 1;
+	}
+	pr_debug("bat NOT exist.\n");
+	return 0;
+}
+
 void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
@@ -98,7 +150,7 @@ void PMIC_INIT_SETTING_V1(void)
 
 	chip_version = pmic_get_register_value(PMIC_SWCID);
 
-	is_battery_remove = !pmic_get_register_value(PMIC_STRUP_PWROFF_SEQ_EN);
+	is_battery_remove = !PMIC_check_battery();
 	is_wdt_reboot_pmic = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	pmic_set_register_value(PMIC_TOP_RST_MISC_SET,  0x8);
 	is_wdt_reboot_pmic_chk = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
@@ -343,8 +395,6 @@ ret = pmic_config_interface(0xFA4, 0x0, 0x7, 4);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 6);
 ret = pmic_config_interface(0xFAA, 0x1, 0x1, 7);
-
-ret = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH11, 5, 0);
 
 /*****************************************************
  * below programming is used for MD setting
