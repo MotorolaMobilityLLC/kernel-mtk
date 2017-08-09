@@ -1289,7 +1289,9 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 				goto retry;
 			} else {
 				CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: TX busy on Q%d\n", queue->index);
+				spin_lock(&md->ctrl_lock);
 				ccci_broadcast_queue_state(md, TX_FULL, OUT, queue->index);
+				spin_unlock(&md->ctrl_lock);
 			}
 		} else
 			CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl is invalid, cap = %d, md_flow_ctrl = %d\n",

@@ -633,7 +633,9 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP && (ccci_h->reserved < QUEUE_NUM))) {
 			ccif_wake_up_tx_queue(md, ccci_h->reserved);
 			/*special for net queue*/
+			spin_lock_irqsave(&md->ctrl_lock, flags);
 			ccci_broadcast_queue_state(md, TX_IRQ, OUT, ccci_h->reserved);
+			spin_unlock_irqrestore(&md->ctrl_lock, flags);
 		}
 	} else {
 		CCCI_ERROR_LOG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
