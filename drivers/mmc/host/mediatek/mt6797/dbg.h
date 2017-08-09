@@ -4,7 +4,7 @@
 
 #include "msdc_tune.h"
 
-#define MTK_MSDC_ERROR_TUNE_DEBUG
+/* #define MTK_MSDC_ERROR_TUNE_DEBUG */
 
 enum {
 	SD_TOOL_ZONE = 0,

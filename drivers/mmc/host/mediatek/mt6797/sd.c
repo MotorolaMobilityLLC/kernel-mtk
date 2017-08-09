@@ -450,16 +450,12 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 	int cnt = 1000;
 	int retry_cnt = 1;
 
-#if defined(CFG_DEV_MSDC3)
-	/*FIXME: check function instead of host->id*/
-	/*MSDC3 is dedicated for C2K, need special clock setting*/
-	if (host->id == 3) {
+	if (host->hw->host_function == MSDC_SDIO) {
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 0);
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, 1);
 		MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_SDR104CKS, 1);
 		return 0;
 	}
-#endif
 
 	do {
 		retry = 3;
@@ -546,7 +542,6 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type, u8 *edge)
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_CRC_STS_SEL, 0);
 		}
-#ifdef MSDC_NEW_TUNE
 		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
 			if (HS400) {
 				MSDC_SET_FIELD(EMMC50_CFG0,
@@ -563,28 +558,6 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type, u8 *edge)
 		} else {
 			ERR_MSG("invalid crc parameter: HS400=%d, type=%d, mode=%d\n", HS400, type, mode);
 		}
-#else
-		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
-			if (HS400) {
-				MSDC_SET_FIELD(EMMC50_CFG0,
-					MSDC_EMMC50_CFG_CRC_STS_EDGE, mode);
-			} else {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_W_D_SMPL_SEL, 0);
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_W_D_SMPL, mode);
-			}
-		} else if ((mode == MSDC_SMPL_SEPARATE) &&
-			   !HS400 &&
-			   (edge != NULL)) {
-			/*only dat0 is for write crc status.*/
-			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_W_D0SPL,
-				edge[0]);
-		} else {
-			ERR_MSG("invalid crc parameter: HS400=%d, type=%d, mode=%d\n",
-				HS400, type, mode);
-		}
-#endif
 		break;
 	case TYPE_READ_DATA_EDGE:
 		if (HS400) {
@@ -596,7 +569,6 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type, u8 *edge)
 			 if error casued by pad delay*/
 			msdc_set_startbit(host, START_AT_RISING);
 		}
-#ifdef MSDC_NEW_TUNE
 		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
 			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL, 0);
 			MSDC_SET_FIELD(MSDC_PATCH_BIT0,
@@ -608,23 +580,6 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type, u8 *edge)
 		} else {
 			ERR_MSG("invalid read parameter: HS400=%d, type=%d, mode=%d\n", HS400, type, mode);
 		}
-#else
-		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
-			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL, 0);
-			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL, mode);
-		} else if ((mode == MSDC_SMPL_SEPARATE) &&
-			   (edge != NULL) &&
-			   (sizeof(edge) == 8)) {
-			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL, 1);
-			for (i = 0; i < 8; i++) {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					(MSDC_IOCON_R_D0SPL << i), edge[i]);
-			}
-		} else {
-			ERR_MSG("invalid read parameter: HS400=%d, type=%d, mode=%d\n",
-				HS400, type, mode);
-		}
-#endif
 		break;
 	case TYPE_WRITE_DATA_EDGE:
 		/*latch write crc status at CLK pin*/
@@ -3017,7 +2972,7 @@ stop:
 		   need send cmd12 manual */
 		/* if PIO mode and autocmd23 enable, cmd12 need send,
 		   because autocmd23 is disable under PIO */
-		if (!check_mmc_cmd2425(cmd->opcode))
+		if (!check_mmc_cmd1825(cmd->opcode))
 			goto done;
 		if (((mrq->sbc == NULL) &&
 		     !(host->autocmd & MSDC_AUTOCMD12))
@@ -3116,6 +3071,8 @@ done:
 			host->error |= REQ_CRC_STATUS_ERR;
 		else
 			host->error |= REQ_DAT_ERR;
+		/* FIXME: return cmd error for retry if data CRC error */
+		mrq->cmd->error = (unsigned int)-EILSEQ;
 		sdio_tune_flag |= 0x10;
 
 		if (mrq->data->flags & MMC_DATA_READ)
@@ -3142,11 +3099,16 @@ done:
 	if (mrq->stop && (mrq->stop->error == (unsigned int)-ETIMEDOUT))
 		host->error |= REQ_STOP_TMO;
 
-	/* re-autok or try smpl except TMO */
+	/* mmc_blk_err_check will also do legacy request
+	 * So, use '|=' instead '=' if command error occur
+	 * to avoid clearing data error flag
+	 */
 	if (host->error & REQ_CMD_EIO)
 		host->need_tune |= TUNE_LEGACY_CMD;
-	else if ((host->error & REQ_DAT_ERR) || (host->error & REQ_CRC_STATUS_ERR))
-		host->need_tune |= TUNE_LEGACY_DATA;
+	else if (host->error & REQ_DAT_ERR)
+		host->need_tune = TUNE_LEGACY_DATA_READ;
+	else if (host->error & REQ_CRC_STATUS_ERR)
+		host->need_tune = TUNE_LEGACY_DATA_WRITE;
 
 #ifdef SDIO_ERROR_BYPASS
 	if (is_card_sdio(host) && !host->error)
@@ -3537,9 +3499,29 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	if (msdc_do_request(host->mmc, mrq)) {
 		msdc_dump_trans_error(host, cmd, data, stop, sbc);
 	} else {
-		if (host->need_tune == TUNE_LEGACY_CMD ||
-			host->need_tune == TUNE_LEGACY_DATA) {
+		/* mmc_blk_err_check will do legacy request without data */
+		if (host->need_tune & TUNE_LEGACY_CMD)
+			host->need_tune &= ~TUNE_LEGACY_CMD;
+		/* Retry legacy data read pass, clear autok pass flag */
+		if ((host->need_tune & TUNE_LEGACY_DATA_READ) &&
+			mrq->cmd->data) {
+			host->need_tune &= ~TUNE_LEGACY_DATA_READ;
+			host->need_tune &= ~TUNE_AUTOK_PASS;
 			host->reautok_times = 0;
+			host->tune_smpl_times = 0;
+		}
+		/* Retry legacy data write pass, clear autok pass flag */
+		if ((host->need_tune & TUNE_LEGACY_DATA_WRITE) &&
+			mrq->cmd->data) {
+			host->need_tune &= ~TUNE_LEGACY_DATA_WRITE;
+			host->need_tune &= ~TUNE_AUTOK_PASS;
+			host->reautok_times = 0;
+			host->tune_smpl_times = 0;
+		}
+		/* legacy command err, tune pass, clear autok pass flag */
+		if (host->need_tune == TUNE_AUTOK_PASS) {
+			host->reautok_times = 0;
+			host->tune_smpl_times = 0;
 			host->need_tune = TUNE_NONE;
 		}
 	}
@@ -3631,40 +3613,52 @@ int msdc_error_tuning(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 	int autok_err_type = -1;
+	unsigned int tune_smpl = 0;
 
 	host->tuning_in_progress = true;
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
 		switch (mmc->ios.timing) {
 		case MMC_TIMING_UHS_SDR104:
-			pr_err("[AUTOK]SD UHS_SDR104 re-autok %d times\n",
-				++host->reautok_times);
+			pr_err("msdc%d: SD UHS_SDR104 re-autok %d times\n",
+				host->id, ++host->reautok_times);
 			ret = autok_execute_tuning(host, NULL);
 			break;
 		case MMC_TIMING_UHS_SDR50:
-			pr_err("[AUTOK]SD UHS_SDR50 re-autok %d times\n",
-				++host->reautok_times);
+			pr_err("msdc%d: SD UHS_SDR50 re-autok %d times\n",
+				host->id, ++host->reautok_times);
 			ret = autok_execute_tuning(host, NULL);
 			break;
 		case MMC_TIMING_MMC_HS200:
-			pr_err("[AUTOK]eMMC HS200 re-autok %d times\n",
-				++host->reautok_times);
+			pr_err("msdc%d: eMMC HS200 re-autok %d times\n",
+				host->id, ++host->reautok_times);
 			ret = hs200_execute_tuning(host, NULL);
 			break;
 		case MMC_TIMING_MMC_HS400:
-			pr_err("[AUTOK]eMMC HS400 re-autok %d times\n",
-				++host->reautok_times);
+			pr_err("msdc%d: eMMC HS400 re-autok %d times\n",
+				host->id, ++host->reautok_times);
 			ret = hs400_execute_tuning(host, NULL);
 			break;
 		/* Other speed mode will tune smpl */
 		default:
-			if (host->error | REQ_CMD_EIO)
+			tune_smpl = 1;
+			if ((host->need_tune & TUNE_ASYNC_CMD) ||
+				(host->need_tune & TUNE_LEGACY_CMD))
 				autok_err_type = CMD_ERROR;
-			if (host->error | REQ_DAT_ERR)
+			else if ((host->need_tune & TUNE_ASYNC_DATA_READ) ||
+				(host->need_tune & TUNE_LEGACY_DATA_READ))
 				autok_err_type = DATA_ERROR;
-			if (host->error | REQ_CRC_STATUS_ERR)
+			else if ((host->need_tune & TUNE_ASYNC_DATA_WRITE) ||
+				(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 				autok_err_type = CRC_STATUS_ERROR;
-			pr_err("[AUTOK]Tune smpl, timing is %d, error is %d\n",
+			else {
+				pr_err("msdc%d: tune smpl %d times timing:%d unknown err\n",
+					host->id, ++host->tune_smpl_times,
+					mmc->ios.timing);
+			}
+
+			pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
+				host->id, ++host->tune_smpl_times,
 				mmc->ios.timing, autok_err_type);
 			autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
 			break;
@@ -3678,7 +3672,7 @@ int msdc_error_tuning(struct mmc_host *mmc)
 			/* SDcard will change speed mode and power reset sdcard*/
 			if (host->hw->host_function == MSDC_SD)
 				ret = sdcard_reset_tuning(mmc);
-		} else {
+		} else if (!tune_smpl) {
 			pr_err("msdc%d autok pass\n", host->id);
 			host->need_tune |= TUNE_AUTOK_PASS;
 		}
@@ -3703,14 +3697,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (data)
 		host_cookie = data->host_cookie;
 
-	if (!(host->tuning_in_progress) && host->need_tune != TUNE_NONE) {
-		if (host->need_tune & TUNE_AUTOK_PASS) {
-			pr_err("msdc%d: autok pass, no need error tuning\n", host->id);
-		} else {
-			if (msdc_error_tuning(mmc))
-				pr_err("msdc%d tuning failed\n", host->id);
-		}
-	}
+	if (!(host->tuning_in_progress) && host->need_tune &&
+		!(host->need_tune & TUNE_AUTOK_PASS))
+		msdc_error_tuning(mmc);
+
 	/* Async only support  DMA and asyc CMD flow */
 	if (msdc_use_async_dma(host_cookie))
 		msdc_do_request_async(mmc, mrq);
@@ -3795,6 +3785,8 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	if (host->mclk != ios->clock) {
 		msdc_set_mclk(host, ios->timing, ios->clock);
 		host->mclk = ios->clock;
+		if (ios->timing == MMC_TIMING_MMC_HS400)
+			msdc_execute_tuning(host->mmc, MMC_SEND_TUNING_BLOCK_HS200);
 	}
 
 	msdc_gate_clock(host, 1);
@@ -4043,15 +4035,20 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		mrq = host->mrq;
 		msdc_dma_clear(host);
 		if (error) {
-			if (mrq->data->flags & MMC_DATA_WRITE)
+			if (mrq->data->flags & MMC_DATA_WRITE) {
 				host->error |= REQ_CRC_STATUS_ERR;
-			else
+				host->need_tune = TUNE_ASYNC_DATA_WRITE;
+			} else {
 				host->error |= REQ_DAT_ERR;
-			host->need_tune = TUNE_ASYNC_DATA;
+				host->need_tune = TUNE_ASYNC_DATA_READ;
+			}
+			/* FIXME: return cmd error for retry if data CRC error */
+			mrq->cmd->error = (unsigned int)-EILSEQ;
 		} else {
 			host->error &= ~REQ_DAT_ERR;
 			host->need_tune = TUNE_NONE;
 			host->reautok_times = 0;
+			host->tune_smpl_times = 0;
 		}
 		if (mrq->done)
 			mrq->done(mrq);
@@ -4254,17 +4251,87 @@ tune:   /* DMA DATA transfer crc error */
  * It may occur when write crc revice, but busy over data->timeout_ns   */
 static void msdc_check_write_timeout(struct work_struct *work)
 {
-	struct msdc_host *host = container_of(work, struct msdc_host, write_timeout.work);
+	struct msdc_host *host =
+		container_of(work, struct msdc_host, write_timeout.work);
+	void __iomem *base = host->base;
+	struct mmc_data  *data = host->data;
 	struct mmc_request *mrq = host->mrq;
+	struct mmc_host *mmc = host->mmc;
+	u32 status = 0;
+	u32 state = 0;
+	u32 err = 0;
+	unsigned long tmo;
+	u32 intsts;
 
-
-	if (!mrq)
+	if (!data || !mrq || !mmc)
 		return;
-
 	pr_err("[%s]: XXX DMA Data Write Busy Timeout: %u ms, CMD<%d>",
 		__func__, host->write_timeout_ms, mrq->cmd->opcode);
-	msdc_dump_info(host->id);
 
+	intsts = MSDC_READ32(MSDC_INT);
+	/* MSDC have received int,but delay by system. Just print warning */
+	if (intsts) {
+		pr_err("[%s]: Warning msdc%d ints are delayed by system, ints: %x\n",
+			__func__, host->id, intsts);
+		msdc_dump_info(host->id);
+		return;
+	}
+
+	if (msdc_use_async_dma(data->host_cookie) && (host->need_tune == TUNE_NONE)) {
+		msdc_dump_info(host->id);
+
+		msdc_dma_stop(host);
+		msdc_dma_clear(host);
+		msdc_reset_hw(host->id);
+
+		tmo = jiffies + POLLING_BUSY;
+
+		/* check the card state, try to bring back to trans state */
+		spin_lock(&host->lock);
+		do {
+			/* if anything wrong, let block driver do error
+			   handling. */
+			err = msdc_get_card_status(mmc, host, &status);
+			if (err) {
+				ERR_MSG("CMD13 ERR<%d>", err);
+				break;
+			}
+
+			state = R1_CURRENT_STATE(status);
+			ERR_MSG("check card state<%d>", state);
+			if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
+				ERR_MSG("state<%d> need cmd12 to stop", state);
+				msdc_send_stop(host);
+			} else if (state == R1_STATE_PRG) {
+				ERR_MSG("state<%d> card is busy", state);
+				spin_unlock(&host->lock);
+				msleep(100);
+				spin_lock(&host->lock);
+			}
+
+			if (time_after(jiffies, tmo)) {
+				ERR_MSG("card stuck in %d state, remove such bad card!" , state);
+				spin_unlock(&host->lock);
+				msdc_set_bad_card_and_remove(host);
+				spin_lock(&host->lock);
+				break;
+			}
+		} while (state != R1_STATE_TRAN);
+		spin_unlock(&host->lock);
+
+		data->error = (unsigned int)-ETIMEDOUT;
+		host->sw_timeout++;
+
+		if (mrq->done)
+			mrq->done(mrq);
+
+		msdc_gate_clock(host, 1);
+		host->error |= REQ_DAT_ERR;
+	} else {
+		/* do nothing, since legacy mode or async tuning
+		   have it own timeout. */
+		/* complete(&host->xfer_done); */
+	}
 }
 /* called by msdc_ops_set_ios */
 static void msdc_init_hw(struct msdc_host *host)
@@ -4317,6 +4384,9 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	msdc_set_buswidth(host, MMC_BUS_WIDTH_1);
 
+	host->need_tune = TUNE_NONE;
+	host->tune_smpl_times = 0;
+	host->reautok_times = 0;
 	N_MSG(FUC, "init hardware done!");
 }
 
@@ -4628,6 +4698,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->tuning_in_progress = false;
 	host->need_tune	= TUNE_NONE;
 	host->reautok_times = 0;
+	host->tune_smpl_times = 0;
 	host->timing = 0;
 
 	host->sd_cd_insert_work = 0;

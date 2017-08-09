@@ -4,7 +4,7 @@
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #else
-#define MTK_MSDC_BRINGUP_DEBUG
+/* #define MTK_MSDC_BRINGUP_DEBUG */
 #endif
 
 #include <linux/bitops.h>
@@ -13,14 +13,14 @@
 #include <linux/clk.h>
 #include <mt-plat/sync_write.h>
 
-#define MSDC_NEW_TUNE
-
-#define TUNE_NONE            (0)        /* No need tune */
-#define TUNE_ASYNC_CMD       (0x1 << 0) /* async transfer cmd crc */
-#define TUNE_ASYNC_DATA      (0x1 << 1) /* async transfer data crc */
-#define TUNE_LEGACY_CMD      (0x1 << 2) /* legacy transfer cmd crc */
-#define TUNE_LEGACY_DATA     (0x1 << 3) /* legacy transfer data crc */
-#define TUNE_AUTOK_PASS      (0x1 << 4) /* autok pass flag */
+#define TUNE_NONE                (0)        /* No need tune */
+#define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
+#define TUNE_ASYNC_DATA_WRITE    (0x1 << 1) /* async transfer data crc */
+#define TUNE_ASYNC_DATA_READ     (0x1 << 2) /* async transfer data crc */
+#define TUNE_LEGACY_CMD          (0x1 << 3) /* legacy transfer cmd crc */
+#define TUNE_LEGACY_DATA_WRITE   (0x1 << 4) /* legacy transfer data crc */
+#define TUNE_LEGACY_DATA_READ    (0x1 << 5) /* legacy transfer data crc */
+#define TUNE_AUTOK_PASS          (0x1 << 6) /* autok pass flag */
 
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
@@ -456,9 +456,10 @@ struct msdc_host {
 	u32                     sw_timeout;
 	/* msdc autok */
 	bool                    tuning_in_progress;
-	u32			need_tune;
+	u32	                    need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
 	struct msdc_saved_para  saved_para;
 
@@ -692,7 +693,6 @@ extern u8 g_emmc_id;
 #define check_mmc_cmd1718(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_READ_SINGLE_BLOCK))
-
 #define check_mmc_cmd1825(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
