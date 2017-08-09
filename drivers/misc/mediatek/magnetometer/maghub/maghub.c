@@ -451,6 +451,11 @@ static long maghub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		ret = maghub_m_setPowerMode(enable);
 		if (ret < 0)
 			MAGN_ERR("maghub_m_enable fail!\r\n");
+		if (enable == 1) {
+			sensor_set_delay_to_hub(ID_MAGNETIC, 100);
+			if (ret < 0)
+				MAGN_ERR("sensor_set_delay_to_hub fail!\r\n");
+		}
 		break;
 
 	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
@@ -458,12 +463,6 @@ static long maghub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			MAGN_ERR("IO parameter pointer is NULL!\r\n");
 			break;
 		}
-		ret = maghub_GetOData(buff, MAGHUB_BUFSIZE);
-		if (ret < 0) {
-			MAGN_ERR("maghub_GetOData fail!\r\n");
-			break;
-		}
-
 		if (copy_to_user(argp, buff, strlen(buff) + 1))
 			return -EFAULT;
 

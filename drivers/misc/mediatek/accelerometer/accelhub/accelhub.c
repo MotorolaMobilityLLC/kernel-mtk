@@ -465,7 +465,8 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	struct SENSOR_DATA sensor_data;
 	long err = 0;
 	int cali[3];
-
+	static int first_time_enable = 0;
+	
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
@@ -503,16 +504,25 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			err = -EINVAL;
 			break;
 		}
-		err = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
-		if (err < 0) {
-			GSE_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n", ID_ACCELEROMETER,
-				CUST_ACTION_SET_TRACE);
-			return 0;
-		}		
-		err = accelhub_SetPowerMode(true);
-		if (err < 0) {
-			GSE_ERR("accelhub_SetPowerMode fail\n");
-			break;
+		if (first_time_enable == 0) {
+			err = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
+			if (err < 0) {
+				GSE_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n", ID_ACCELEROMETER,
+					CUST_ACTION_SET_TRACE);
+				return 0;
+			}		
+			err = accelhub_SetPowerMode(true);
+			if (err < 0) {
+				GSE_ERR("accelhub_SetPowerMode fail\n");
+				break;
+			}
+			err = sensor_set_delay_to_hub(ID_ACCELEROMETER, 20);
+			if (err < 0) {
+				GSE_ERR("sensor_set_delay_to_hub fail, (ID: %d),(action: %d)\n", ID_ACCELEROMETER,
+					CUST_ACTION_SET_TRACE);
+				return 0;
+			}
+			first_time_enable = 1;
 		}
 		err = accelhub_ReadSensorData(strbuf, ACCELHUB_BUFSIZE);
 		if (err < 0) {

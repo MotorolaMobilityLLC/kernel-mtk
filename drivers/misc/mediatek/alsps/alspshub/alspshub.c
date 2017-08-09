@@ -84,20 +84,19 @@ enum {
 long alspshub_read_ps(u8 *ps)
 {
 	long res;
-	u8 databuf[2];
 	struct alspshub_ipi_data *obj = obj_ipi_data;
-
-	memset(databuf, 0, sizeof(databuf));
-	res = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_GET_RAW_DATA, databuf);
+	struct data_unit_t data_t;
+	
+	res = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
 	if (res < 0) {
 		*ps = -1;
-		APS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n", ID_PROXIMITY, CUST_ACTION_GET_RAW_DATA);
+		APS_ERR("sensor_get_data_from_hub fail, (ID: %d)\n", ID_PROXIMITY);
 		return -1;
 	}
-	if (databuf[0] < obj->ps_cali)
+	if (data_t.proximity_t.steps < obj->ps_cali)
 		*ps = 0;
 	else
-		*ps = databuf[0] - obj->ps_cali;
+		*ps = data_t.proximity_t.steps - obj->ps_cali;
 	return 0;
 }
 
@@ -376,7 +375,6 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	int ps_result = 0;
 	int ps_cali = 0;
 	int threshold[2];
-
 	struct data_unit_t data;
 
 	switch (cmd) {
@@ -395,6 +393,13 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		if (err < 0) {
 			APS_ERR("ALSPS_SET_PS_MODE fail\n");
 			goto err_out;
+		}
+		if (enable == 1) {
+			err = sensor_set_delay_to_hub(ID_PROXIMITY, 200);
+			if (err < 0) {
+				APS_ERR("sensor_set_delay_to_hub fail\n");
+				goto err_out;
+			}
 		}
 		mutex_lock(&alspshub_mutex);
 		if (enable)
@@ -432,7 +437,21 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_RAW_DATA:
-
+		if (atomic_read(&obj_ipi_data->scp_init_done)) {
+			err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
+			if (err < 0) {
+				err = -1;
+				goto err_out;
+			}
+			dat = data.proximity_t.steps;
+		} else {
+			APS_ERR("sensor hub has not been ready!!\n");
+			err = -1;
+		}
+		if (copy_to_user(ptr, &dat, sizeof(dat))) {
+			err = -EFAULT;
+			goto err_out;
+		}
 		break;
 
 	case ALSPS_SET_ALS_MODE:
@@ -455,6 +474,13 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		if (err < 0) {
 			APS_ERR("ALSPS_SET_ALS_MODE fail\n");
 			goto err_out;
+		}
+		if (enable == 1) {
+			err = sensor_set_delay_to_hub(ID_LIGHT, 200);
+			if (err < 0) {
+				APS_ERR("sensor_set_delay_to_hub fail\n");
+				goto err_out;
+			}
 		}
 		mutex_lock(&alspshub_mutex);
 		if (enable)
@@ -495,6 +521,25 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_ALS_RAW_DATA:
+		if (atomic_read(&obj_ipi_data->scp_init_done)) {
+			err = sensor_get_data_from_hub(ID_LIGHT, &data);
+			if (err < 0) {
+				err = -1;
+				goto err_out;
+			}
+			dat = data.light;
+			if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_ALS_DATA)
+				APS_LOG("value = %d\n", dat);
+		} else {
+			APS_ERR("sensor hub has not been ready!!\n");
+			err = -1;
+			goto err_out;
+		}
+
+		if (copy_to_user(ptr, &dat, sizeof(dat))) {
+			err = -EFAULT;
+			goto err_out;
+		}
 
 		break;
 
@@ -580,6 +625,7 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_HIGH:
+		atomic_set(&obj->ps_thd_val_low, (21 + obj->ps_cali));
 		threshold[0] = atomic_read(&obj->ps_thd_val_high) - obj->ps_cali;
 		APS_ERR("%s get threshold high: 0x%x\n", __func__, threshold[0]);
 		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {
@@ -589,6 +635,7 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_LOW:
+		atomic_set(&obj->ps_thd_val_high, (28 + obj->ps_cali));
 		threshold[0] = atomic_read(&obj->ps_thd_val_low) - obj->ps_cali;
 		APS_ERR("%s get threshold low: 0x%x\n", __func__, threshold[0]);
 		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {

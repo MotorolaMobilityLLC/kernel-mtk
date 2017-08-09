@@ -49,7 +49,6 @@ struct gyrohub_ipi_data {
 };
 static struct gyrohub_ipi_data *obj_ipi_data;
 
-
 static int gyrohub_write_rel_calibration(struct gyrohub_ipi_data *obj, int dat[GYROHUB_AXES_NUM])
 {
 	obj->cali_sw[GYROHUB_AXIS_X] = dat[GYROHUB_AXIS_X];
@@ -496,7 +495,8 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 	int cali[3];
 	int smtRes = 0;
 	int copy_cnt = 0;
-
+	static int first_time_enable = 0;
+	
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
@@ -530,13 +530,26 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			err = -EINVAL;
 			break;
 		}
-		err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
-		if (err < 0) {
-			GYROS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
-				ID_GYROSCOPE, CUST_ACTION_SET_TRACE);
-			return 0;
+		if (first_time_enable == 0) {
+			err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_FACTORY, &use_in_factory_mode);
+			if (err < 0) {
+				GYROS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
+					ID_GYROSCOPE, CUST_ACTION_SET_TRACE);
+				return 0;
+			}
+			err = sensor_enable_to_hub(ID_GYROSCOPE, 1);
+			if (err) {
+				GYROS_ERR("gyrohub_ReadGyroData failed!\n");
+				break;
+			}
+			err = sensor_set_delay_to_hub(ID_GYROSCOPE, 20);
+			if (err) {
+				GYROS_ERR("sensor_set_delay_to_hub failed!\n");
+				break;
+			}
+			first_time_enable = 1;
 		}
-		err = gyrohub_ReadGyroData(strbuf, GYROHUB_BUFSIZE);
+		err = gyrohub_ReadGyroData(strbuf, GYROHUB_BUFSIZE);	
 		if (err) {
 			GYROS_ERR("gyrohub_ReadGyroData failed!\n");
 			break;

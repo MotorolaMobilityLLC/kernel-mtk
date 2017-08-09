@@ -254,6 +254,11 @@ static long hmdyhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			err = -EFAULT;
 			break;
 		}
+		err = sensor_set_delay_to_hub(ID_RELATIVE_HUMIDITY, 200);
+		if (err) {
+			HMDYHUB_ERR("sensor_set_delay_to_hub failed!\n");
+			break;
+		}
 		break;
 
 	case HUMIDITY_IOCTL_READ_CHIPINFO:
@@ -301,12 +306,10 @@ static long hmdyhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			HMDYHUB_ERR("hmdyhub_get_temperature fail\n");
 			break;
 		}
-		err = kstrtoint(strbuf, 16, &dat);
-		if (err == 0) {
-			if (copy_to_user(data, &dat, sizeof(dat))) {
-				err = -EFAULT;
-				break;
-			}
+		dat = 0;
+		if (copy_to_user(data, &dat, sizeof(dat))) {
+			err = -EFAULT;
+			break;
 		}
 		break;
 

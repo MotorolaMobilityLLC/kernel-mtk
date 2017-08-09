@@ -261,6 +261,11 @@ static long barohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			err = -EFAULT;
 			break;
 		}
+		err = sensor_set_delay_to_hub(ID_PRESSURE, 200);
+		if (err) {
+			BAR_ERR("sensor_set_delay_to_hub failed!\n");
+			break;
+		}
 		break;
 
 	case BAROMETER_IOCTL_READ_CHIPINFO:
@@ -308,12 +313,10 @@ static long barohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			BAR_ERR("barohub_get_temperature fail\n");
 			break;
 		}
-		err = kstrtoint(strbuf, 16, &dat);
-		if (err == 0) {
-			if (copy_to_user(data, &dat, sizeof(dat))) {
-				err = -EFAULT;
-				break;
-			}
+		dat = 0;
+		if (copy_to_user(data, &dat, sizeof(dat))) {
+			err = -EFAULT;
+			break;
 		}
 		break;
 
