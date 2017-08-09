@@ -4104,6 +4104,22 @@ static inline void Disable_Unprepare_cg_clock(void)
 }
 
 #endif
+
+/*******************************************************************************
+*
+********************************************************************************/
+
+void ISP_Halt_Mask(MUINT32 isphaltMask)
+{
+	MUINT32 setReg;
+
+	setReg = ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120) & ~((MUINT32)(1 << (isphaltMask)));
+
+	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, setReg);
+
+	LOG_INF("ISP halt_en for dvfs:0x%x\n", ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120));
+}
+
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -4198,6 +4214,8 @@ static void ISP_EnableClock(MBOOL En)
 #endif
 	}
 }
+
+
 
 /*******************************************************************************
 *
@@ -13197,5 +13215,6 @@ MODULE_LICENSE("GPL");
 EXPORT_SYMBOL(ISP_MCLK1_EN);
 EXPORT_SYMBOL(ISP_MCLK2_EN);
 EXPORT_SYMBOL(ISP_MCLK3_EN);
+EXPORT_SYMBOL(ISP_Halt_Mask);
 
 
