@@ -22,11 +22,13 @@
 #include <mt-plat/mt_io.h>
 #include <mt-plat/sync_write.h>
 #include "mt_dcm.h"
+#if 0
 #include <mach/mt_secure_api.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mt_dramc.h>
 #include "mt_freqhopping_drv.h"
+
 
 /* #define DCM_DEFAULT_ALL_OFF */
 /* #define NON_AO_MP2_DCM_CONFIG */
@@ -1922,11 +1924,11 @@ unsigned int sync_dcm_convert_freq2div(unsigned int freq)
 {
 	unsigned int div = 0;
 
-	if (freq < 70)
+	if (freq < 65)
 		return 0;
 
-	/* max divided ratio = Floor (CPU Frequency / 4* system timer Frequency) */
-	div = freq / 70;
+	/* max divided ratio = Floor (CPU Frequency / 5  * system timer Frequency) */
+	div = freq / 65;
 	if (div > 31)
 		return 31;
 
@@ -2095,3 +2097,35 @@ int sync_dcm_set_mp2_freq(unsigned int mp2)
 
 	return 0;
 }
+
+#else /* Bring Up dummy code */
+
+void mt_dcm_disable(void)
+{
+}
+
+void mt_dcm_restore(void)
+{
+}
+
+int sync_dcm_set_cci_freq(unsigned int cci)
+{
+	return -1;
+}
+
+int sync_dcm_set_mp0_freq(unsigned int mp0)
+{
+	return -1;
+}
+
+int sync_dcm_set_mp1_freq(unsigned int mp1)
+{
+	return -1;
+}
+
+int sync_dcm_set_mcsi_a_freq(unsigned int mcsi_a)
+{
+	return -1;
+}
+
+#endif
