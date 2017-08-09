@@ -51,6 +51,23 @@ int setVCMPos(unsigned short DAC_Val)
 	return 0;
 }
 
+void OIS_Standby(void)
+{
+	I2C_OIS_F0123_wr_(0x90, 0x00, 0x0200);
+	I2C_OIS_mem_write(0x7F, 0x0080);
+
+	I2C_OIS_per_write(0x72, 0x0000);
+	I2C_OIS_per_write(0x73, 0x0000);
+
+	I2C_OIS_per_write(0x18, 0x000F);
+	I2C_OIS_per_write(0x1B, 0x0B02);
+	I2C_OIS_per_write(0x1C, 0x0B02);
+
+	I2C_OIS_per_write(0x3D, 0x0000);
+	I2C_OIS_per_write(0x22, 0x0300);
+	I2C_OIS_per_write(0x59, 0x0000);
+}
+
 
 /* MAIN OIS */
 /* ////////////////////////////////////////////////////////////////////////////// */

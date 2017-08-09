@@ -33,6 +33,7 @@ static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
+static unsigned int g_u4CheckDrvStatus;
 
 int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data)
 {
@@ -61,11 +62,17 @@ int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 {
 	int i4RetValue = 0;
 
+	if (g_u4CheckDrvStatus > 0)
+		return -1;
+
+	spin_lock(g_pAF_SpinLock);
 	g_pstAF_I2Cclient->addr = i2c_id >> 1;
+	spin_unlock(g_pAF_SpinLock);
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
 	if (i4RetValue != a_sizeSendData) {
+		g_u4CheckDrvStatus++;
 		LOG_INF("I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
 		return -1;
 	}
@@ -78,7 +85,12 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 	int i4RetValue;
 	struct i2c_msg msg[2];
 
+	if (g_u4CheckDrvStatus > 0)
+		return -1;
+
+	spin_lock(g_pAF_SpinLock);
 	g_pstAF_I2Cclient->addr = i2c_id >> 1;
+	spin_unlock(g_pAF_SpinLock);
 
 	msg[0].addr = g_pstAF_I2Cclient->addr;
 	msg[0].flags = 0;
@@ -93,6 +105,7 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 	i4RetValue = i2c_transfer(g_pstAF_I2Cclient->adapter, msg, sizeof(msg)/sizeof(msg[0]));
 
 	if (i4RetValue != 2) {
+		g_u4CheckDrvStatus++;
 		LOG_INF("I2C Read failed!!\n");
 		return -1;
 	}
@@ -231,8 +244,11 @@ int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
+		OIS_Standby();
 		msleep(20);
 	}
+
+	g_u4CheckDrvStatus = 0;
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");

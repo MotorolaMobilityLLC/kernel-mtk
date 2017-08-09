@@ -189,6 +189,8 @@ void Wait_usec(OIS_ULONG time);
 
 extern void Main_OIS(void);
 
+extern void OIS_Standby(void);
+
 extern int setVCMPos(unsigned short DAC_Val);
 
 #define u16 unsigned short
