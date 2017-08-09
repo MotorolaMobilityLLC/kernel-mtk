@@ -3952,13 +3952,13 @@ WLAN_STATUS wlanQueryPermanentAddress(IN P_ADAPTER_T prAdapter)
 *         WLAN_STATUS_FAILURE
 */
 /*----------------------------------------------------------------------------*/
-UINT_32 g_u2FwIDVersion = 0;
 WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 {
 	UINT_8 ucCmdSeqNum;
 	P_CMD_INFO_T prCmdInfo;
 	P_WIFI_CMD_T prWifiCmd;
 	UINT_32 u4RxPktLength;
+	UINT_32 u4FwIDVersion = 0;
 	UINT_8 aucBuffer[sizeof(WIFI_EVENT_T) + sizeof(EVENT_NIC_CAPABILITY)];
 	P_HIF_RX_HEADER_T prHifRxHdr;
 	P_WIFI_EVENT_T prEvent;
@@ -4026,7 +4026,8 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->fgIsEfuseValid = (BOOLEAN) prEventNicCapability->ucEfuseValid;
 	prAdapter->fgIsEmbbededMacAddrValid = (BOOLEAN) prEventNicCapability->ucMacAddrValid;
 
-	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
+	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
+	mtk_wcn_set_wifi_ver(u4FwIDVersion);
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
 		prAdapter->fgTdlsIsSup = TRUE;
@@ -4045,15 +4046,6 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	return WLAN_STATUS_SUCCESS;
 }
 
-UINT_32 wlanGetFwIDVersion(void)
-{
-	UINT_32 u4FwIDVersion = 0;
-
-	u4FwIDVersion = g_u2FwIDVersion;
-
-	return u4FwIDVersion;
-}
-EXPORT_SYMBOL(wlanGetFwIDVersion);
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to retrieve NIC capability from firmware
