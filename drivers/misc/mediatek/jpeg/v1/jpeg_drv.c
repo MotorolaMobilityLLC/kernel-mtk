@@ -87,6 +87,7 @@
 #ifndef JPEG_DEV
 #include <linux/proc_fs.h>
 #endif
+
 #ifdef CONFIG_OF
 /* device tree */
 #include <linux/of.h>
@@ -171,10 +172,8 @@ static irqreturn_t jpeg_drv_enc_isr(int irq, void *dev_id)
 	/* JPEG_MSG("JPEG Encoder Interrupt\n"); */
 
 	if (irq == gJpegqDev.encIrqId) {
-		/* mt65xx_irq_mask(MT6575_JPEG_CODEC_IRQ_ID); */
 		if (jpeg_isr_enc_lisr() == 0)
 			wake_up_interruptible(&enc_wait_queue);
-		/* mt65xx_irq_unmask(MT6575_JPEG_CODEC_IRQ_ID); */
 	}
 
 	return IRQ_HANDLED;
@@ -183,29 +182,28 @@ static irqreturn_t jpeg_drv_enc_isr(int irq, void *dev_id)
 #ifdef JPEG_DEC_DRIVER
 static irqreturn_t jpeg_drv_dec_isr(int irq, void *dev_id)
 {
-	/* JPEG_MSG("JPEG Decoder Interrupt\n"); */
-	/* jpeg_reg_dump(); */
+	 JPEG_MSG("JPEG Decoder Interrupt\n");
 
-	if (irq == gJpegqDev.decIrqId /*MT6589_JPEG_DEC_IRQ_ID*/) {
+	if (irq == gJpegqDev.decIrqId) {
 		/* mt65xx_irq_mask(MT6575_JPEG_CODEC_IRQ_ID); */
-
 
 		if (jpeg_isr_dec_lisr() == 0)
 			wake_up_interruptible(&dec_wait_queue);
-#if 0
-		if (jpeg_isr_enc_lisr() == 0)
-			wake_up_interruptible(&enc_wait_queue);
-#endif
-		/* mt65xx_irq_unmask(MT6575_JPEG_CODEC_IRQ_ID); */
 	}
 
 	return IRQ_HANDLED;
 }
 
-
 void jpeg_drv_dec_power_on(void)
 {
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	mtk_smi_larb_clock_on(2, true);
+	if (clk_prepare_enable(gJpegClk.clk_venc_jpgDec))
+		JPEG_ERR("enable jpgDec clk fail!");
 
+	if (clk_prepare_enable(gJpegClk.clk_venc_jpgDec_Smi))
+		JPEG_ERR("enable jpgDec Smi clk fail!");
+#else
 	/* REG_JPEG_MM_REG_MASK = 0; */
 #ifndef FPGA_VERSION
 	/* enable_clock(MT_CG_IMAGE_JPGD_SMI,"JPEG"); */
@@ -218,10 +216,16 @@ void jpeg_drv_dec_power_on(void)
 	ret = enable_clock(MT65XX_PDN_MM_JPEG_DEC, "JPEG");
 	NOT_REFERENCED(ret);
 #endif
+#endif
 }
 
 void jpeg_drv_dec_power_off(void)
 {
+#ifdef JPEG_PM_DOMAIN_ENABLE
+	clk_disable_unprepare(gJpegClk.clk_venc_jpgDec);
+	clk_disable_unprepare(gJpegClk.clk_venc_jpgDec_Smi);
+	mtk_smi_larb_clock_off(2, true);
+#else
 #ifndef FPGA_VERSION
 	/* disable_clock(MT_CG_IMAGE_JPGD_SMI,"JPEG"); */
 	/* disable_clock(MT_CG_IMAGE_JPGD_JPG,"JPEG"); */
@@ -232,6 +236,7 @@ void jpeg_drv_dec_power_off(void)
 
 	ret = disable_clock(MT65XX_PDN_MM_JPEG_DEC, "JPEG");
 	NOT_REFERENCED(ret);
+#endif
 #endif
 }
 #endif
@@ -294,11 +299,11 @@ void jpeg_drv_enc_power_off(void)
 #ifdef JPEG_DEC_DRIVER
 static int jpeg_drv_dec_init(void)
 {
-
-
 	int retValue;
 
+	JPEG_WRN(" jpeg_drv_dec_init dec_status %d\n", dec_status);
 	spin_lock(&jpeg_dec_lock);
+
 	if (dec_status != 0) {
 		JPEG_WRN("JPEG Decoder is busy\n");
 		retValue = -EBUSY;
@@ -475,11 +480,11 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		jpeg_drv_dec_set_pause_mcu_idx(dec_row_params.pauseMCU - 1);
 
+		/* lock CPU to ensure irq is enabled after trigger HW */
+		spin_lock(&jpeg_dec_lock);
 		jpeg_drv_dec_resume(BIT_INQST_MASK_PAUSE);
-
+		spin_unlock(&jpeg_dec_lock);
 		break;
-
-
 
 	case JPEG_DEC_IOCTL_START:	/* OT:OK */
 		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Start!!\n");
@@ -488,9 +493,6 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_DEC_IOCTL_WAIT:
-
-
-
 		if (*pStatus != JPEG_DEC_PROCESS) {
 			JPEG_WRN("Permission Denied! This process can not access decoder");
 			return -EFAULT;
@@ -504,11 +506,11 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			JPEG_WRN("JPEG Decoder : Copy from user error\n");
 			return -EFAULT;
 		}
+
 		/* set timeout */
 		timeout_jiff = outParams.timeout * HZ / 1000;
 		/* JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Wait Resume Time Jiffies : %ld\n", timeout_jiff); */
 #ifdef FPGA_VERSION
-/* #if 1 */
 
 		JPEG_MSG("[JPEGDRV]Polling JPEG Status");
 
@@ -551,13 +553,18 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		irq_st = _jpeg_dec_int_status;
 		decResult = decResult | (irq_st << 8);
 		_jpeg_dec_int_status = 0;
+		JPEG_MSG("[JPEGDRV]Decode Result : %d, status %x!\n", decResult,
+				 _jpeg_dec_int_status);
+#if 1
 		if (copy_to_user(outParams.result, &decResult, sizeof(unsigned int))) {
 			JPEG_WRN("JPEG Decoder : Copy to user error (result)\n");
+
+			JPEG_MSG("[JPEGDRV]Decode Result2 : %d, status %x!\n", decResult,
+				 _jpeg_dec_int_status);
 			return -EFAULT;
 		}
-
+#endif
 		break;
-
 
 	case JPEG_DEC_IOCTL_BREAK:
 		if (jpeg_drv_dec_break() < 0)
@@ -568,7 +575,6 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder DUMP REGISTER !!\n");
 		jpeg_drv_dec_dump_reg();
 		break;
-
 
 	case JPEG_DEC_IOCTL_DEINIT:
 		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Deinit !!\n");
@@ -603,7 +609,6 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file)
 {
-
 	int retValue;
 	/* unsigned int decResult; */
 
@@ -750,7 +755,6 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		/* if (0 == jpeg_drv_enc_dst_buff(dst_cfg)) */
 		/* return -EFAULT; */
 
-
 		/* 4 .set ctrl config */
 		JPEG_MSG("[JPEGDRV]ENC_CFG: exif:%d, q:%d, DRI:%d !!\n", cfgEnc.enableEXIF,
 			 cfgEnc.encQuality, cfgEnc.restartInterval);
@@ -763,9 +767,6 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		/* ctrl_cfg.gmc_disable = cfgEnc.disableGMC; */
 		/* ctrl_cfg.restart_interval = cfgEnc.restartInterval; */
 		/*  */
-
-
-
 		break;
 
 	case JPEG_ENC_IOCTL_START:
@@ -817,13 +818,12 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		if (_jpeg_enc_int_status != 1)
 			jpeg_drv_enc_dump_reg();
-
 #else
-
 
 		/* set timeout */
 		timeout_jiff = enc_result.timeout * HZ / 1000;
 		JPEG_MSG("[JPEGDRV]JPEG Encoder Time Jiffies : %ld\n", timeout_jiff);
+
 		if (jpeg_isr_enc_lisr() < 0) {
 			wait_event_interruptible_timeout(enc_wait_queue, _jpeg_enc_int_status,
 							 timeout_jiff);
@@ -1028,9 +1028,15 @@ static int jpeg_probe(struct platform_device *pdev)
 		JPEG_ERR("get jpgEnc clk error!");
 
 #ifdef JPEG_DEC_DRIVER
+	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgdec");
+	gJpegqDev.decRegBaseVA = (unsigned long)of_iomap(node, 0);
+	gJpegqDev.decIrqId = irq_of_parse_and_map(node, 0);
 	gJpegClk.clk_venc_jpgDec = of_clk_get_by_name(node, "venc-jpgdec");
 	if (IS_ERR(gJpegClk.clk_venc_jpgDec))
 		JPEG_ERR("get jpgDec clk error!");
+	gJpegClk.clk_venc_jpgDec_Smi = of_clk_get_by_name(node, "venc-jpgdec-smi");
+	if (IS_ERR(gJpegClk.clk_venc_jpgDec_Smi))
+		JPEG_ERR("get jpgDec Smi clk error!");
 #endif
 
 #endif

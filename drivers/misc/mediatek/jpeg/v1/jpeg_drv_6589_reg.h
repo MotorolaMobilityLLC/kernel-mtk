@@ -14,41 +14,20 @@
 #ifndef __JPEG_DRV_6589_REG_H__
 #define __JPEG_DRV_6589_REG_H__
 
-
 /*#include <mach/mt_reg_base.h>*/
 /*#include <mach/sync_write.h>*/
 #include <mt-plat/sync_write.h>
 #include "jpeg_drv.h"
-#if 1
 
-#define JPEG_EARLY_MM_BASE    0xF5000000
-
-#define EARLY_JPEG_DEC_BASE    0xF5009000
-#define EARLY_JPEG_ENC_BASE    0xF500A000
-/* #define JPEG_DEC_BASE   //EARLY_JPEG_DEC_BASE */
-/* #define JPEG_ENC_BASE   //EARLY_JPEG_ENC_BASE */
-/* #define JPEG_DEC_BASE   (JPG_CODEC_BASE)    //EARLY_JPEG_DEC_BASE */
-/* #define JPEG_ENC_BASE   (JPG_CODEC_BASE + 0x1000)   //EARLY_JPEG_ENC_BASE */
-/*#define JPEG_DEC_BASE   EARLY_JPEG_DEC_BASE*/
-/*#define JPEG_ENC_BASE   EARLY_JPEG_ENC_BASE*/
 #define JPEG_ENC_BASE   jpeg_dev_get_encoder_base_VA()
 #define JPEG_DEC_BASE   jpeg_dev_get_decoder_base_VA()
-#else
-/* 0xF5003000 */
 
-#define FPGA_JPEG_ENC_BASE    0xF500A000	/* 0xF5002000 */
-#define FPGA_JPEG_DEC_BASE    0xF5009000	/* 0xF5003000 */
-#define JPEG_ENC_BASE         FPGA_JPEG_ENC_BASE	/* (JPG_CODEC_BASE) */
-#define JPEG_DEC_BASE         FPGA_JPEG_DEC_BASE	/* (JPG_CODEC_BASE + 0x1000) */
-
-#endif
-
-
-/*
-#define IMG_REG_WRITE(v, a) mt65xx_reg_sync_writel(v, a)
-#define IMG_REG_READ(v, a) ((v) = *(volatile kal_uint32*)(a))
-*/
+#if 1
 #define IMG_REG_WRITE(v, a) mt_reg_sync_writel(v, a)
+#else
+/*#define IMG_REG_WRITE(v, a) { (*(volatile kal_uint32*)(a)) = v; \
+	    printk("Adrr 0x%lx, 0x%x,R:0x%x\n", a, v, (*(volatile kal_uint32*)(a))); }*/
+#endif
 #define IMG_REG_READ(v, a) ((v) = ioread32((void __iomem *)a))
 
 /********************************************************************/
@@ -73,12 +52,10 @@
 #define REG_JPEG_ENC_IMG_SIZE                       (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x154))
 #define REG_JPEG_ENC_GULTRA_TRESH                   (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x158))
 
-
 #define REG_JPEG_ENC_DEBUG_INFO0                    (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x160))
 #define REG_JPEG_ENC_DEBUG_INFO1                    (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x164))
 #define REG_JPEG_ENC_TOTAL_CYCLE                    (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x168))
 #define REG_JPEG_ENC_BYTE_OFFSET_MASK               (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x16C))
-
 
 #define REG_JPEG_ENC_SRC_LUMA_ADDR                  (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x170))
 #define REG_JPEG_ENC_SRC_CHROMA_ADDR                (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x174))
@@ -86,25 +63,19 @@
 #define REG_JPEG_ENC_IMG_STRIDE                     (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x17C))
 #define REG_JPEG_ENC_MEM_CYCLE                      (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x208))
 
-
 #define REG_JPEG_ENC_SMI_DEBUG0                     (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x304))
 #define REG_JPEG_ENC_SMI_DEBUG1                     (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x308))
 #define REG_JPEG_ENC_SMI_DEBUG2                     (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x30C))
 #define REG_JPEG_ENC_SMI_DEBUG3                     (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x310))
 #define REG_JPEG_ENC_CODEC_SEL                      (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x314))
-
+#define REG_JPEG_ENC_ULTRA_THRES                    (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x318))
 
 #define JPEG_ENC_REG_COUNT                          0x314
-
-
-
 
 
 /********************************************************************/
 /* define JPEG Encoder Registers register field*/
 /********************************************************************/
-
-
 
 /* #define REG_JPEG_ENC_RSTB                           *(volatile kal_uint32 *)(JPEG_ENC_BASE + 0x100)  */
 /* #define REG_JPEG_ENC_CTRL                           *(volatile kal_uint32 *)(JPEG_ENC_BASE + 0x104)  */
@@ -191,8 +162,9 @@
 #define REG_ADDR_JPEG_ENC_SMI_DEBUG2                     (JPEG_ENC_BASE + 0x30C)
 #define REG_ADDR_JPEG_ENC_SMI_DEBUG3                     (JPEG_ENC_BASE + 0x310)
 #define REG_ADDR_JPEG_ENC_CODEC_SEL                      (JPEG_ENC_BASE + 0x314)
+#define REG_ADDR_JPEG_ENC_ULTRA_THRES                    (JPEG_ENC_BASE + 0x318)
 
-
+#define REG_ADDR_JPEG_ENC_PASS2_RSTB                     (JPEG_ENC_BASE + 0x800)
 
 
 
@@ -222,6 +194,7 @@
 #define REG_JPGDEC_PAUSE_MCU_NUM                (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0170))
 #define REG_JPGDEC_OPERATION_MODE               (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x017C))
 #define REG_JPGDEC_DEBUG0                       (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0180))
+#define REG_JPGDEC_DEBUG1                       (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0184))
 #define REG_JPGDEC_FILE_ADDR                    (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0200))
 #define REG_JPGDEC_COMP_ID                      (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x020C))
 #define REG_JPGDEC_TOTAL_MCU_NUM                (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0210))
@@ -235,8 +208,13 @@
 #define REG_JPGDEC_STATUS                       (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0278))
 #define REG_JPGDEC_MCU_CNT                      (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0294))
 
-
-
+#define REG_JPGDEC_DCM_CTL                      (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0300))
+#define REG_JPGDEC_SMI_DEBUG0                   (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0304))
+#define REG_JPGDEC_SMI_DEBUG1                   (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0308))
+#define REG_JPGDEC_SMI_DEBUG2                   (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x030C))
+#define REG_JPGDEC_SMI_DEBUG3                   (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0310))
+#define REG_JPGDEC_ULTRA_THRES                  (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x0318))
+#define REG_JPGDEC_IRQ_EN                       (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x031C))
 
 #define REG_JPGDEC_DEBUG_MODE                   (*(volatile kal_uint32*) (JPEG_DEC_BASE + 0x00C8))
 
@@ -298,6 +276,8 @@
 #define BIT_INQST_MASK_END         0x27
 #define BIT_INQST_MASK_ALLIRQ      0x37
 
+#define BIT_DEC_IRQ_EN_DEBUG_BRP_FLAG 0x80
+
 
 /* REG_JPGDEC_STATUS               ( JPEG_DEC_BASE + 0x0278 ) */
 #define BIT_DEC_ST_STATE_MASK   0x07000000
@@ -350,11 +330,14 @@
 #define REG_ADDR_JPGDEC_STATUS                       (JPEG_DEC_BASE + 0x0278)
 #define REG_ADDR_JPGDEC_MCU_CNT                      (JPEG_DEC_BASE + 0x0294)
 
-
-
-
+#define REG_ADDR_JPGDEC_DCM_CTL                      (JPEG_DEC_BASE + 0x0300)
+#define REG_ADDR_JPGDEC_SMI_DEBUG0                   (JPEG_DEC_BASE + 0x0304)
+#define REG_ADDR_JPGDEC_SMI_DEBUG1                   (JPEG_DEC_BASE + 0x0308)
+#define REG_ADDR_JPGDEC_SMI_DEBUG2                   (JPEG_DEC_BASE + 0x030C)
+#define REG_ADDR_JPGDEC_SMI_DEBUG3                   (JPEG_DEC_BASE + 0x0310)
+#define REG_ADDR_JPGDEC_ULTRA_THRES                  (JPEG_DEC_BASE + 0x0318)
+#define REG_ADDR_JPGDEC_IRQ_EN                       (JPEG_DEC_BASE + 0x031C)
 
 #define REG_ADDR_JPGDEC_DEBUG_MODE                   (JPEG_DEC_BASE + 0x00C8)
-
 
 #endif				/* / __MT6589_JPEG_REG_H__ */
