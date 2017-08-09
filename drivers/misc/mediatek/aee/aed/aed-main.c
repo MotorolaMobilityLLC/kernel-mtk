@@ -1440,11 +1440,6 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					goto EXIT;
 				}
 				user_ret = task_pt_regs(task);
-				if (NULL == user_ret) {
-					kfree(tmp);
-					ret = -EINVAL;
-					goto EXIT;
-				}
 				memcpy(&(tmp->regs), user_ret, sizeof(struct pt_regs));
 				if (copy_to_user
 				    ((struct aee_thread_reg __user *)arg, tmp,
@@ -1782,11 +1777,13 @@ static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const 
 			oops->userthread_stack.Userthread_Stack = vzalloc(MaxStackSize);
 			if (oops->userthread_stack.Userthread_Stack == NULL) {
 				LOGE("%s: oops->userthread_stack.Userthread_Stack Vmalloc fail", __func__);
+				kfree(oops);
 				return;
 			}
 			oops->userthread_maps.Userthread_maps = vzalloc(MaxMapsSize);
 			if (oops->userthread_maps.Userthread_maps == NULL) {
 				LOGE("%s: oops->userthread_maps.Userthread_maps Vmalloc fail", __func__);
+				kfree(oops);
 				return;
 			}
 			LOGE("%s: oops->userthread_stack.Userthread_Stack :0x%08lx,maps:0x%08lx",
@@ -1907,7 +1904,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 		/* kernel vamlloc cannot be used in interrupt context */
 		LOGD("External exception occur in interrupt context, no coredump");
 		phy_size = 0;
-	} else if ((phy < 0) || (phy_size > MAX_EE_COREDUMP)) {
+	} else if ((phy == NULL) || (phy_size > MAX_EE_COREDUMP)) {
 		LOGD("EE Physical memory size(%d) too large or invalid", phy_size);
 		phy_size = 0;
 	}
