@@ -1877,13 +1877,16 @@ static void tscpu_thermal_pause(void)
 static void tscpu_thermal_release(void)
 {
 	int temp = 0;
-	int cnt = 0;
+	int cnt = 0, ret;
 
 	aee_rr_rec_thermal_status(TSCPU_RELEASE);
 
 #if !defined(CONFIG_MTK_CLKMGR)
-	if (therm_auxadc)
-		clk_prepare_enable(therm_auxadc);
+	if (therm_auxadc) {
+		ret = clk_prepare_enable(therm_auxadc);
+		if (ret)
+			tscpu_printk("Cannot enable auxadc clock.\n");
+	}
 #endif
 
 	/*thermal_auxadc_get_data(2, 11);*/

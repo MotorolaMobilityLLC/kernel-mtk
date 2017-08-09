@@ -1564,11 +1564,11 @@ static void phpb_params_init(void)
 {
 	phpb_params[PHPB_PARAM_CPU].tt = 40;
 	phpb_params[PHPB_PARAM_CPU].tp = 40;
-	strncpy(phpb_params[PHPB_PARAM_CPU].type, "cpu", strlen("cpu"));
+	strcpy(phpb_params[PHPB_PARAM_CPU].type, "cpu");
 
 	phpb_params[PHPB_PARAM_GPU].tt = 80;
 	phpb_params[PHPB_PARAM_GPU].tp = 80;
-	strncpy(phpb_params[PHPB_PARAM_GPU].type, "gpu", strlen("gpu"));
+	strcpy(phpb_params[PHPB_PARAM_GPU].type, "gpu");
 }
 #endif
 

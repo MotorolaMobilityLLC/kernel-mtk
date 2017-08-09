@@ -413,6 +413,14 @@ static ssize_t mtkts6311_write(struct file *file, const char __user *buffer, siz
 		mtkts6311_dprintk("[mtkts6311_write] mtkts6311_unregister_thermal\n");
 		mtkts6311_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtkts6311_write",
+					"Bad argument");
+			mtkts6311_dprintk("[mtkts6311_write] bad argument\n");
+			kfree(ptr_mtkts6311_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtkts6311_data->t_type[i];
 

@@ -109,10 +109,7 @@ static int chrlmt_register(struct chrlmt_handle *handle)
 			return 0;
 		}
 
-	if (i < 0)
-		return -1;
-
-	return 0;
+	return -1;
 }
 
 static int chrlmt_unregister(struct chrlmt_handle *handle)

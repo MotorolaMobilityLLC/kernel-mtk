@@ -651,7 +651,7 @@ static int __init mtktspa_init(void)
 	if (!mobile_thro_proc_dir)
 		mtktspa_dprintk("[mobile_tm_proc_register]: mkdir /proc/mobile_tm failed\n");
 	else
-		entry = proc_create("tx_thro", S_IRUGO | S_IWUSR, mobile_thro_proc_dir, &_tx_thro_fops);
+		proc_create("tx_thro", S_IRUGO | S_IWUSR, mobile_thro_proc_dir, &_tx_thro_fops);
 #endif
 
 	mtktspa_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
