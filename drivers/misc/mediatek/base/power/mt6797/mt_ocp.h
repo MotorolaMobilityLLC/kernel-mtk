@@ -68,9 +68,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 #define OCPAPBSTATUS05         (OCP_BASE_ADDR + 0x2514)
 #define OCPAPBSTATUS06         (OCP_BASE_ADDR + 0x2518)
 #define OCPAPBSTATUS07         (OCP_BASE_ADDR + 0x251C)
-#define OCPAPBCFG00            (OCP_BASE_ADDR + 0x2520)
 #define OCPAPBCFG24            (OCP_BASE_ADDR + 0x2580)
-#define OCPAPBCFG28            (OCP_BASE_ADDR + 0x2590)
 
 /* LL */
 #define MP0_OCP_IRQSTATE       (OCP_BASE_ADDR + 0x1000)
@@ -256,4 +254,5 @@ extern int ocp_status_get(int cluster);
 extern unsigned int da9214_config_interface(unsigned char RegNum, unsigned char val,
 unsigned char MASK, unsigned char SHIFT);
 extern int da9214_vosel(unsigned long val);
+
 /* __MT_OCP_H__ */

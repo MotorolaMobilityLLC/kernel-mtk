@@ -97,6 +97,8 @@ echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 	#define CONFIG_OCP_AEE_RR_REC 1
 #endif
 
+
+
 static unsigned int OCP_DEBUG_FLAG;
 static unsigned int BIG_OCP_ON;
 static unsigned int LITTLE_OCP_ON;
@@ -152,6 +154,7 @@ typedef struct OCP_OPT {
 	unsigned short ocp_cluster0_enable;
 	unsigned short ocp_cluster1_enable;
 	unsigned short ocp_cluster2_enable;
+	unsigned int ocp_cluster2_OCPAPBCFG24;
 } OCP_OPT;
 
 static struct OCP_OPT ocp_opt = {
@@ -161,6 +164,7 @@ static struct OCP_OPT ocp_opt = {
 	.ocp_cluster0_enable = 0,
 	.ocp_cluster1_enable = 0,
 	.ocp_cluster2_enable = 0,
+	.ocp_cluster2_OCPAPBCFG24 = 0,
 };
 
 typedef struct DVFS_STAT {
@@ -534,33 +538,30 @@ if (ocp_opt.ocp_cluster2_enable == 0)
 if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 	goto Label;
 
-if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
-	if (ocp_opt.ocp_cluster2_enable == 0)
-		goto Label;
 	Temp = ocp_read(OCPAPBSTATUS01);
-	/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA) */
-	*Leakage = (((Temp & 0x07FFFF00) >> 8) * 1000) >> 12;
-
-	if (ocp_opt.ocp_cluster2_enable == 0)
-		goto Label;
-	/* TotScaler */
-	if (ocp_read_field(OCPAPBCFG24, 25:25) == 1) {
-			if (ocp_opt.ocp_cluster2_enable == 0)
-				goto Label;
-		*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(OCPAPBCFG24, 24:22)) + 1);
-	} else {
-		if (ocp_opt.ocp_cluster2_enable == 0)
-			goto Label;
-		*Leakage = *Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
-	}
-	if (*Leakage > 127999)
-		*Leakage = 127999;
+if (GET_BITS_VAL_OCP(0:0, Temp) == 1) {
 
 	/* CapOCCGPct -> 100.00% */
 	*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 
-	if (ocp_opt.ocp_cluster2_enable == 0)
-		goto Label;
+	/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA) */
+	*Leakage = (((Temp & 0x07FFFF00) >> 8) * 1000) >> 12;
+
+	/* TotScaler */
+	Temp = ocp_opt.ocp_cluster2_OCPAPBCFG24;
+	if (GET_BITS_VAL_OCP(25:25, Temp) == 1)
+		*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~GET_BITS_VAL_OCP(24:22, Temp)) + 1);
+	else
+		*Leakage = *Leakage << (GET_BITS_VAL_OCP(24:22, Temp));
+
+	if (*Leakage > 127999)
+		*Leakage = 127999;
+
+
+if (ocp_opt.ocp_cluster2_enable == 0)
+	goto Label;
+if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+	goto Label;
 	/* CapTotAct:  Q8.12 -> integer  */
 	Temp = ocp_read(OCPAPBSTATUS02);
 	*Total = ((Temp & 0x0007FFFF) * 1000) >> 12;
@@ -602,9 +603,6 @@ if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
 	return -1;
 
 ret = mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCLKAVG, EnDis, CGAvgSel, 0);
-
-	if (HW_API_DEBUG_ON)
-		ocp_info("ocp: En=%x CGASel=%x CFG01=%x\n", EnDis, CGAvgSel, ocp_read(OCPAPBCFG00));
 
 return ret;
 
@@ -1500,6 +1498,7 @@ if (BIG_OCP_ON) {
 	BigOCPEnable(3, 1, 625, 0);
 	ocp_opt.ocp_cluster2_flag = 1;
 	ocp_opt.ocp_cluster2_enable = 1;
+	ocp_opt.ocp_cluster2_OCPAPBCFG24 = ocp_read(OCPAPBCFG24);
 	BigiDVFSChannel(1, 1);
 	}
 }
@@ -4821,15 +4820,16 @@ static const struct file_operations name ## _proc_fops = {      \
 
 #define PROC_ENTRY(name)    {__stringify(name), &name ## _proc_fops}
 
-PROC_FOPS_RW(ocp_cluster2_enable);
 PROC_FOPS_RW(ocp_cluster0_enable);
 PROC_FOPS_RW(ocp_cluster1_enable);
-PROC_FOPS_RW(ocp_cluster2_interrupt);
 PROC_FOPS_RW(ocp_cluster0_interrupt);
 PROC_FOPS_RW(ocp_cluster1_interrupt);
-PROC_FOPS_RW(ocp_cluster2_capture);
 PROC_FOPS_RW(ocp_cluster0_capture);
 PROC_FOPS_RW(ocp_cluster1_capture);
+
+PROC_FOPS_RW(ocp_cluster2_enable);
+PROC_FOPS_RW(ocp_cluster2_interrupt);
+PROC_FOPS_RW(ocp_cluster2_capture);
 PROC_FOPS_RW(ocp_debug);
 PROC_FOPS_RW(dreq_function_test);
 PROC_FOPS_RW(dvt_test);
@@ -4847,15 +4847,15 @@ const struct file_operations *fops;
 };
 
 const struct pentry entries[] = {
-PROC_ENTRY(ocp_cluster2_enable),
 PROC_ENTRY(ocp_cluster0_enable),
 PROC_ENTRY(ocp_cluster1_enable),
-PROC_ENTRY(ocp_cluster2_interrupt),
 PROC_ENTRY(ocp_cluster0_interrupt),
 PROC_ENTRY(ocp_cluster1_interrupt),
-PROC_ENTRY(ocp_cluster2_capture),
 PROC_ENTRY(ocp_cluster0_capture),
 PROC_ENTRY(ocp_cluster1_capture),
+PROC_ENTRY(ocp_cluster2_enable),
+PROC_ENTRY(ocp_cluster2_interrupt),
+PROC_ENTRY(ocp_cluster2_capture),
 PROC_ENTRY(ocp_debug),
 PROC_ENTRY(dreq_function_test),
 PROC_ENTRY(dvt_test),
