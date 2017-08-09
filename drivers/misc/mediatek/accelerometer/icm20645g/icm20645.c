@@ -1983,6 +1983,7 @@ static int icm20645_i2c_probe(struct i2c_client *client, const struct i2c_device
 	struct i2c_client *new_client;
 	struct icm20645_i2c_data *obj;
 	int err = 0;
+	int retry = 0;
 	struct acc_control_path ctl = { 0 };
 	struct acc_data_path data = { 0 };
 
@@ -2025,7 +2026,14 @@ static int icm20645_i2c_probe(struct i2c_client *client, const struct i2c_device
 
 	icm20645_i2c_client = new_client;
 
-	ICM20645_Dev_Reset(new_client);
+	for (retry = 0; retry < 10; retry++) {
+		if (!ICM20645_Dev_Reset(new_client)) {
+			break;
+		} else {
+			GSE_ERR("icm20645_i2c_probe, ICM20645_Dev_Reset failed\n");
+		}
+	}
+
 	err = icm20645_init_client(new_client, 1);
 	if (err)
 		goto exit_init_failed;
