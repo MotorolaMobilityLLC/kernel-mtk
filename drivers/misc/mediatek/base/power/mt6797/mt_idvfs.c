@@ -584,32 +584,10 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
 	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
 
-#if 0
-	/* get current vsarm volt */
-	/* cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet(); */
-	vosel = (SEC_BIGIDVFS_READ(0x102222b0) & 0xf);
-	switch (vosel) {
-	case 0:
-		cur_vsram_mv_x100 = 105000;
-		break;
-
-	case 1:
-		cur_vsram_mv_x100 = 60000;
-		break;
-
-	case 2:
-		cur_vsram_mv_x100 = 70000;
-		break;
-
-	default:
-		cur_vsram_mv_x100 = (((vosel - 3) * 2500) + 90000);
-		break;
-	}
-#else
+	/* fix sarm = 1180mv */
 	BigiDVFSSRAMLDOSet(118000);
 	cur_vsram_mv_x100 = 118000;
 	udelay(20); /* wait LDO set stable */
-#endif
 
 	idvfs_ver("iDVFS enable cur Vproc = %u(mv_x100), Vsarm = %u(mv_x100).\n",
 			cur_vproc_mv_x100, cur_vsram_mv_x100);
@@ -653,7 +631,8 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* cfg or init OTP then enable OTP channel */
 	if (idvfs_init_opt.otp_endis) {
 		BigOTPEnable();
-		BigiDVFSChannel(2, 1);
+		/* mark channel enable, otp will chk itself */
+		/* BigiDVFSChannel(2, 1); */
 	}
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
@@ -738,6 +717,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 
 	/* disable OTP channel */
 	if (idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status) {
+		/* wait otp move to itself disable channel */
 		BigiDVFSChannel(2, 0);
 		BigOTPDisable();
 	}
@@ -966,8 +946,8 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 /* To fix FreqSWREQ */
 int BigIDVFSFreqMaxMin(unsigned int maxpct_x100, unsigned int minpct_x100)
 {
-	/* Clamp min 20.54% ~ Turbo max 116% */
-	maxpct_x100 =  ((maxpct_x100 <= 2000) ? 2000 :
+	/* Clamp min 12.17% ~ Turbo max 116% */
+	maxpct_x100 =  ((maxpct_x100 <= 1200) ? 1200 :
 					((maxpct_x100 >= 11600) ? 11600 : maxpct_x100));
 	minpct_x100 = (minpct_x100 > maxpct_x100) ? maxpct_x100 : minpct_x100;
 
@@ -1578,15 +1558,16 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 {
 	char *buf = (char *)_copy_from_user_for_proc(buffer, count);
 	int rc = 0xff, err = 0;
-	unsigned int func_code, func_para[3];
+	unsigned int func_code, func_para[4];
 	unsigned char ret_val = 0;
 
 	if (!buf)
 		return -EINVAL;
 
 	/* get scanf length and parameter */
-	err = sscanf(buf, "%u %u %u %u", &func_code, &func_para[0], &func_para[1], &func_para[2]);
+	err = sscanf(buf, "%u %u %u %u %u", &func_code, &func_para[0], &func_para[1], &func_para[2], &func_para[3]);
 	if (err > 0) {
+#if 0
 		/* print input information */
 		switch (err) {
 		case 2:
@@ -1599,6 +1580,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			idvfs_info("Input = %u, Para = %u, %u, %u.\n", err, func_para[0], func_para[1], func_para[2]);
 			break;
 		}
+#endif
 
 		/* switch function code */
 		switch (func_code) {
@@ -1620,8 +1602,14 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			break;
 		case 3:
 			/* Channel = 0(SW), 1(OCP), 2(OTP), EnDis = 0/1 */
-			if (err == 3)
-				rc = BigiDVFSChannel(func_para[0], func_para[1]);
+			if (err == 3) {
+				if ((cpu_online(8) == 1) || (cpu_online(9) == 1))
+					rc = BigiDVFSChannel(func_para[0], func_para[1]);
+				if (func_para[0] == 1)
+					idvfs_init_opt.ocp_endis = func_para[1];
+				if (func_para[0] == 2)
+					idvfs_init_opt.otp_endis = func_para[1];
+			}
 			break;
 		case 4:
 			/* Length = 0~7, EnDis = 0/1 */
@@ -1690,11 +1678,12 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			break;
 		case 11:
 			/* send i2c6 PMIC command */
-			err = sscanf(buf, "%u %x %x %x", &func_code, &func_para[0], &func_para[1], &func_para[2]);
-			if (err == 3) {
+			err = sscanf(buf, "%u %x %x %x %x", &func_code,
+					&func_para[0], &func_para[1], &func_para[2], &func_para[3]);
+			if (err == 5) {
 				/* da9214_config_interface(reg, val, filter, shift) */
-				da9214_config_interface(func_para[0], func_para[1], 0xFF, 0);
-				idvfs_i2c_debug = func_para[0];
+				da9214_config_interface(func_para[0], func_para[1], func_para[2], func_para[3]);
+				idvfs_i2c_debug = (unsigned char)func_para[0];
 			}
 			break;
 		case 12:
@@ -1702,16 +1691,6 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			if (err == 2)
 				if (func_para[0] == 11072)
 					BUG_ON(1);
-			break;
-		case 13:
-			/* Channel = 0(SW), 1(OCP), 2(OTP), EnDis = 0/1 */
-			if (err == 3) {
-				if (func_para[0] == 1)
-					idvfs_init_opt.ocp_endis = func_para[1];
-				if (func_para[0] == 2)
-					idvfs_init_opt.otp_endis = func_para[1];
-			}
-			rc = 0;
 			break;
 		case 15:
 			/* iDVFSAPB stress test command */
