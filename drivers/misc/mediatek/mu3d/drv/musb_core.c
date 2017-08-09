@@ -1942,10 +1942,10 @@ static ssize_t
 musb_srp_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t n)
 {
 	struct musb *musb = dev_to_musb(dev);
-	unsigned short srp;
+	unsigned long srp;
 
 	/*if (sscanf(buf, "%hu", &srp) != 1 || (srp != 1)) {*/
-	if (kstrtol(buf, 10, (long *)&srp) != 1 || (srp != 1)) {
+	if (kstrtol(buf, 10, &srp) != 1 || (srp != 1)) {
 		dev_err(dev, "SRP: Value must be 1\n");
 		return -EINVAL;
 	}
