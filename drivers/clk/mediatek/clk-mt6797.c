@@ -361,6 +361,13 @@ static DEFINE_SPINLOCK(mt6797_clk_lock);
 
 #define INFRA_BUS_DCM_CTRL_OFS (0x70)
 
+#define TVDPLL_CON0_OFS (0x270)
+#define TVDPLL_PWR_CON0_OFS (0x27c)
+#define APLL1_CON0_OFS (0x2A0)
+#define APLL1_PWR_CON0_OFS (0x2B0)
+#define APLL2_CON0_OFS (0x2B4)
+#define APLL2_PWR_CON0_OFS (0x2C4)
+
 
 struct mtk_fixed_factor {
 	int id;
@@ -1413,6 +1420,8 @@ static void __init mt_topckgen_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mt_topckgen_init);
 
+#define ISO_EN_BIT 0x2
+#define ON_BIT 0x1
 static void __init mt_apmixedsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1438,6 +1447,28 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	mt_reg_sync_writel(0x00044440, (base + 0x0C));	/* AP_PLL_CON3, 0x00044440 */
 	mt_reg_sync_writel(0xC, (base + 0x10));	/* AP_PLL_CON4, temp & 0xC */
 
+	/*disable*/
+/*TVDPLL*/
+	mt_reg_sync_writel(__raw_readl(base + TVDPLL_CON0_OFS) & ~ON_BIT,
+			   (base + TVDPLL_CON0_OFS)); /*CON0[0]=0*/
+	mt_reg_sync_writel(__raw_readl(base + TVDPLL_PWR_CON0_OFS) | ISO_EN_BIT,
+			   (base + TVDPLL_PWR_CON0_OFS)); /*PWR_CON0[1]=1*/
+	mt_reg_sync_writel(__raw_readl(base + TVDPLL_PWR_CON0_OFS) & ~ON_BIT,
+			   (base + TVDPLL_PWR_CON0_OFS)); /*PWR_CON0[0]=0*/
+/*APLL 1,2 */
+	mt_reg_sync_writel(__raw_readl(base + APLL1_CON0_OFS) & ~ON_BIT,
+			   (base + APLL1_CON0_OFS)); /*CON0[0]=0*/
+	mt_reg_sync_writel(__raw_readl(base + APLL1_PWR_CON0_OFS) | ISO_EN_BIT,
+			   (base + APLL1_PWR_CON0_OFS)); /*PWR_CON0[1]=1*/
+	mt_reg_sync_writel(__raw_readl(base + APLL1_PWR_CON0_OFS) & ~ON_BIT,
+			   (base + APLL1_PWR_CON0_OFS)); /*PWR_CON0[0]=0*/
+
+	mt_reg_sync_writel(__raw_readl(base + APLL2_CON0_OFS) & ~ON_BIT,
+			   (base + APLL2_CON0_OFS)); /*CON0[0]=0*/
+	mt_reg_sync_writel(__raw_readl(base + APLL2_PWR_CON0_OFS) | ISO_EN_BIT,
+			   (base + APLL2_PWR_CON0_OFS)); /*PWR_CON0[1]=1*/
+	mt_reg_sync_writel(__raw_readl(base + APLL2_PWR_CON0_OFS) & ~ON_BIT,
+			   (base + APLL2_PWR_CON0_OFS)); /*PWR_CON0[0]=0*/
 }
 
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,apmixed", mt_apmixedsys_init);
