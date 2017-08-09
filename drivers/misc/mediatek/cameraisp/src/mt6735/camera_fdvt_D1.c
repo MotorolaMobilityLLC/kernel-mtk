@@ -1049,7 +1049,7 @@ static int FDVT_resume(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id fdvt_of_ids[] = {
-	{ .compatible = "mediatek,mt6735-fdvt", },
+	{ .compatible = "mediatek,fdvt", },
 	{}
 };
 #endif

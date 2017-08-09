@@ -1279,9 +1279,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
 		};
 
-		fdvt@1500B000 {
-			compatible = "mediatek,mt6735-fdvt";
-			reg = <0x1500B000 0x1000>;
+		fdvt@1500b000 {
+			compatible = "mediatek,fdvt";
+			reg = <0x1500b000 0x1000>;
 			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
 				 <&scpsys SCP_SYS_ISP>,
