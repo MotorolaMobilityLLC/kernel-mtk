@@ -1221,6 +1221,7 @@ static void base_ops_disable_locked(struct eem_det *det, int reason)
 
 		/* Clear EEM interrupt EEMINTSTS */
 		eem_write(EEMINTSTS, 0x00ffffff);
+		/* fall through */
 
 	case BY_PROCFS_INIT2:
 		/* set init2 value to DVFS table (PMIC) */
@@ -1235,6 +1236,7 @@ static void base_ops_disable_locked(struct eem_det *det, int reason)
 
 		/* Clear EEM interrupt EEMINTSTS */
 		eem_write(EEMINTSTS, 0x00ffffff);
+		/* fall through */
 
 	case BY_PROCFS:
 		det->disabled |= reason;
