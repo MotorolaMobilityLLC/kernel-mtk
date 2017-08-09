@@ -322,6 +322,9 @@ void preset(void)
 	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 3, 0x1 << 3); /* afe adda2_dl_src_on */
 	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 7, 0x1 << 7); /* ul_dn25_sel */
 
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 1, 0x1 << 1); /* use md32, not sgen */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 2, 0x1 << 2); /* use md32, not sgen */
+
     /* anc_up8x_rxif_adc_voice_mode:8: time slot1 = 78, time slot2 = 24 @ 260K interval */
 	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x8 << 28, 0xf << 28);
 
@@ -341,9 +344,6 @@ void enable_uplink_path(void)
 	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 0x8 << 28, 0xf << 28);
 
 	SetULSrcEnable(true); /* UL SRC on which will enable mtk if rx */
-
-	/* anc_tx on */
-	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 1, 0x1 << 1);
 
 	AudDrv_ADC_Clk_On();
 }
