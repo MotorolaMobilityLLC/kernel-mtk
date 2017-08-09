@@ -3,6 +3,9 @@
 
 #include <lcm_drv.h>
 
+#if defined(MTK_LCM_KS_SUPPORT)
+extern LCM_DRIVER lcm_common_drv;
+#else
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
 extern LCM_DRIVER vvx10f008b00_wuxga_dsi_vdo_lcm_drv;
@@ -229,6 +232,7 @@ extern LCM_DRIVER cm_n070ice_dsi_vdo_mt8173_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv;
 extern LCM_DRIVER r69429_wqxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
+#endif
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);

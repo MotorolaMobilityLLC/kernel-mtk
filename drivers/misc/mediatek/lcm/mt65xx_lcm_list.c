@@ -20,6 +20,9 @@
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+#if defined(MTK_LCM_KS_SUPPORT)
+	&lcm_common_drv,
+#else
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
@@ -905,7 +908,16 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(HX8394C_WXGA_DSI_VDO)
 	&hx8394c_wxga_dsi_vdo_lcm_drv,
 #endif
+#endif
 };
+
+#if defined(MTK_LCM_KS_SUPPORT)
+unsigned char lcm_name_list[][128] = {
+#if defined(OTM9608_QHD_DSI_CMD)
+	"otm9608_qhd_dsi_cmd",
+#endif
+};
+#endif
 
 #define LCM_COMPILE_ASSERT(condition) LCM_COMPILE_ASSERT_X(condition, __LINE__)
 #define LCM_COMPILE_ASSERT_X(condition, line) LCM_COMPILE_ASSERT_XX(condition, line)

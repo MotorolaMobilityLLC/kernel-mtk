@@ -9,4 +9,12 @@ DEFINES += MTK_LCM_PHYSICAL_ROTATION=\"$(MTK_LCM_PHYSICAL_ROTATION)\"
 
 LCM_LISTS := $(subst ",,$(CONFIG_CUSTOM_LK_LCM))
 OBJS += $(foreach LCM,$(LCM_LISTS),$(LOCAL_DIR)/$(LCM)/$(addsuffix .o, $(LCM)))
-OBJS += $(LOCAL_DIR)/mt65xx_lcm_list.o
+OBJS += $(LOCAL_DIR)/mt65xx_lcm_list.o \
+		$(LOCAL_DIR)/lcm_common.o \
+		$(LOCAL_DIR)/lcm_gpio.o \
+		$(LOCAL_DIR)/lcm_i2c.o \
+		$(LOCAL_DIR)/lcm_pmic.o \
+		$(LOCAL_DIR)/lcm_util.o
+
+INCLUDES += -I$(LOCAL_DIR)/inc
+

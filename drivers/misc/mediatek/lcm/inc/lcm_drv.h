@@ -575,7 +575,7 @@ typedef struct {
 	MIPITX_PHY_LANE_SWAP lane_swap[MIPITX_PHY_PORT_NUM][MIPITX_PHY_LANE_NUM];
 
 	unsigned int vertical_vfp_lp;
-	unsigned int		PLL_CLOCK_lp;
+	unsigned int PLL_CLOCK_lp;
 	unsigned int ulps_sw_enable;
 	unsigned int null_packet_en;
 	unsigned int mixmode_enable;
@@ -617,6 +617,74 @@ typedef struct {
 	unsigned int od_table_size;
 	void *od_table;
 } LCM_PARAMS;
+
+
+typedef struct {
+	char data;
+	char padding[131];
+} LCM_DATA_T1;
+
+
+typedef struct {
+	char cmd;
+	char data;
+	char padding[130];
+} LCM_DATA_T2;
+
+
+typedef struct {
+	char cmd;
+	char size;
+	char data[128];
+	char padding[2];
+} LCM_DATA_T3;
+
+
+typedef struct {
+	char cmd;
+	char location;
+	char data;
+	char padding[129];
+} LCM_DATA_T4;
+
+
+typedef struct {
+	char size;
+	char cmd[128];
+	char padding[3];
+} LCM_DATA_T5;
+
+
+typedef struct {
+	char func;
+	char type;
+	char size;
+	char padding;
+
+	union {
+		LCM_DATA_T1 data_t1;
+		LCM_DATA_T2 data_t2;
+		LCM_DATA_T3 data_t3;
+		LCM_DATA_T4 data_t4;
+		LCM_DATA_T5 data_t5;
+	};
+} LCM_DATA;
+
+
+typedef struct {
+	unsigned int parsing;
+	unsigned int id;
+	unsigned int init_size;
+	unsigned int compare_id_size;
+	unsigned int suspend_size;
+	unsigned int backlight_size;
+
+	LCM_PARAMS params;
+	LCM_DATA init[256];
+	LCM_DATA compare_id[8];
+	LCM_DATA suspend[8];
+	LCM_DATA backlight[8];
+} LCM_DTS;
 
 
 /* --------------------------------------------------------------------------- */
@@ -679,19 +747,10 @@ typedef enum {
 	LCM_DRV_IOCTL_ENABLE_CMD_MODE = 0x100,
 } LCM_DRV_IOCTL_CMD;
 
-#if !defined(CONFIG_MTK_LEGACY)
-struct LCM_setting_table;
-#endif
-
 typedef struct {
 	const char *name;
 	void (*set_util_funcs)(const LCM_UTIL_FUNCS *util);
 	void (*get_params)(LCM_PARAMS *params);
-#if !defined(CONFIG_MTK_LEGACY)
-	void (*set_params)(struct LCM_setting_table *init_table,
-			    unsigned int init_size, LCM_PARAMS *params);
-	void (*get_id)(unsigned int *driver_id, unsigned int *module_id);
-#endif
 
 	void (*init)(void);
 	void (*suspend)(void);
@@ -704,6 +763,7 @@ typedef struct {
 
 	void (*update)(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
 	unsigned int (*compare_id)(void);
+	void (*parse_dts)(const LCM_DTS *DTS, unsigned char force_update);
 
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);

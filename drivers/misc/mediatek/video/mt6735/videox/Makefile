@@ -65,3 +65,8 @@ endif
 ifeq ($(MTK_MIRAVISION_SUPPORT), yes)
     ccflags-y += -DCONFIG_FOR_SOURCE_PQ
 endif
+
+ifeq ($(CONFIG_MTK_LCM_KS_SUPPORT), y)
+bbb
+ccflags-y += -DMTK_LCM_KS_SUPPORT
+endif

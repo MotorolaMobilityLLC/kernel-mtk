@@ -10,16 +10,6 @@
 #include "lcm_drv.h"
 #include "ddp_irq.h"
 
-#if !defined(CONFIG_MTK_LEGACY)
-#include <linux/of.h>
-#define LCM_DRIVER_ID_NT35523 0x00
-static struct LCM_setting_table *g_init_cmd;
-static unsigned int g_init_cmd_size;
-static LCM_PARAMS *g_lcm_params;
-static unsigned int g_driver_id;
-static unsigned int g_module_id;
-#endif
-
 static unsigned int GPIO_LCD_PWR_EN;
 static unsigned int GPIO_LCD_BL_EN;
 /**
@@ -158,22 +148,6 @@ static void push_table(struct LCM_setting_table *table, unsigned int count,
 /**
  * LCM Driver Implementations
  */
-#if !defined(CONFIG_MTK_LEGACY)
-static void lcm_set_params(struct LCM_setting_table *init_table,
-			  unsigned int init_size, LCM_PARAMS *params)
-{
-	g_init_cmd = init_table;
-	g_init_cmd_size = init_size;
-	g_lcm_params = params;
-}
-
-void lcm_get_id(unsigned int *driver_id, unsigned int *module_id)
-{
-	*driver_id = g_driver_id;
-	*module_id = g_module_id;
-}
-#endif
-
 void lcm_get_gpio_infor(void)
 {
 	static struct device_node *node;
@@ -200,57 +174,49 @@ static void lcm_get_params(LCM_PARAMS *params)
 {
 	memset(params, 0, sizeof(LCM_PARAMS));
 
-#if !defined(CONFIG_MTK_LEGACY)
-	if (g_lcm_params != NULL) {
-		memcpy(params, g_lcm_params, sizeof(LCM_PARAMS));
-	} else {
-#endif
-		params->type = LCM_TYPE_DSI;
-		params->width = FRAME_WIDTH;
-		params->height = FRAME_HEIGHT;
+	params->type = LCM_TYPE_DSI;
+	params->width = FRAME_WIDTH;
+	params->height = FRAME_HEIGHT;
 
 #if (LCM_DSI_CMD_MODE)
-		params->dsi.mode = CMD_MODE;
-		params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
+	params->dsi.mode = CMD_MODE;
+	params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
 #else
-		params->dsi.mode = SYNC_PULSE_VDO_MODE;
+	params->dsi.mode = SYNC_PULSE_VDO_MODE;
 #endif
 
-		/* DSI */
-		/* Command mode setting */
-		params->dsi.LANE_NUM = LCM_FOUR_LANE;
-		/* The following defined the fomat for data coming from LCD engine. */
-		params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
-		params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
-		params->dsi.data_format.padding = LCM_DSI_PADDING_ON_LSB;
-		params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
+	/* DSI */
+	/* Command mode setting */
+	params->dsi.LANE_NUM = LCM_FOUR_LANE;
+	/* The following defined the fomat for data coming from LCD engine. */
+	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
+	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
+	params->dsi.data_format.padding = LCM_DSI_PADDING_ON_LSB;
+	params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
 
-		/* Highly depends on LCD driver capability. */
-		/* Not support in MT6573 */
-		params->dsi.packet_size = 256;
-		params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
-		params->dsi.vertical_backporch = 4;
-		params->dsi.vertical_frontporch = 8;
-		params->dsi.vertical_active_line = FRAME_HEIGHT;
+	/* Highly depends on LCD driver capability. */
+	/* Not support in MT6573 */
+	params->dsi.packet_size = 256;
+	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
+	params->dsi.vertical_backporch = 4;
+	params->dsi.vertical_frontporch = 8;
+	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-		params->dsi.horizontal_sync_active = 16;
-		params->dsi.horizontal_backporch = 48;
-		params->dsi.horizontal_frontporch = 16;
-		params->dsi.horizontal_active_pixel = FRAME_WIDTH;
+	params->dsi.horizontal_sync_active = 16;
+	params->dsi.horizontal_backporch = 48;
+	params->dsi.horizontal_frontporch = 16;
+	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-		params->dsi.ssc_disable = 1;
-		params->dsi.cont_clock	= 0;
-		params->dsi.PLL_CLOCK = 230;
-		params->dsi.clk_lp_per_line_enable = 1;
+	params->dsi.ssc_disable = 1;
+	params->dsi.cont_clock	= 0;
+	params->dsi.PLL_CLOCK = 230;
+	params->dsi.clk_lp_per_line_enable = 1;
 
-		params->dsi.esd_check_enable = 0;
-		params->dsi.customization_esd_check_enable = 0;
-		params->dsi.lcm_esd_check_table[0].cmd = 0x53;
-		params->dsi.lcm_esd_check_table[0].count = 1;
-		params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
-#if !defined(CONFIG_MTK_LEGACY)
-	}
-#endif
+	params->dsi.esd_check_enable = 0;
+	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x53;
+	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 }
 
 
@@ -264,13 +230,8 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 
-#if !defined(CONFIG_MTK_LEGACY)
-	if (NULL != g_init_cmd)
-		push_table(g_init_cmd, g_init_cmd_size, 1);
-	else
-#endif
-		push_table(lcm_initialization_setting,
-			   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table(lcm_initialization_setting,
+		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 	lcm_set_gpio_output(GPIO_LCD_BL_EN, 1);
 
 }
@@ -308,35 +269,13 @@ static unsigned int lcm_getpwm(unsigned int divider)
 }
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
-unsigned int lcm_compare_id(void)
-{
-	g_driver_id = 0x00;
-
-	/* TODO: Get module_id */
-	g_module_id = 0x00;
-
-	if (g_driver_id == LCM_DRIVER_ID_NT35523)
-		return 1;
-	else
-		return 0;
-}
-#endif
-
 LCM_DRIVER nt35523_wsvga_dsi_vdo_boe_lcm_drv = {
 	.name		= "nt35523_wsvga_dsi_vdo_boe",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params     = lcm_get_params,
-#if !defined(CONFIG_MTK_LEGACY)
-	.set_params	= lcm_set_params,
-	.get_id		= lcm_get_id,
-#endif
 	.init           = lcm_init,
 	.suspend        = lcm_suspend,
 	.resume         = lcm_resume,
-#if !defined(CONFIG_MTK_LEGACY)
-	.compare_id	= lcm_compare_id,
-#endif
 #if (LCM_DSI_CMD_MODE)
 	/*.set_backlight	= lcm_setbacklight,*/
 	/* .set_pwm        = lcm_setpwm, */
