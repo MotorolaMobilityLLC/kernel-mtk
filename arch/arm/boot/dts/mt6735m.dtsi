@@ -1170,7 +1170,7 @@
 			interrupts = <0 90 0x8>;
 		};
 
-		mt3326-gps@0xffffffff {
+		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
 

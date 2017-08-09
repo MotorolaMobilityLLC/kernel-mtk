@@ -39,9 +39,6 @@
 #include <linux/semaphore.h>
 #include <linux/version.h>
 
-#include <mach/devs.h>
-#include <mach/mt_typedefs.h>
-
 #ifdef pr_fmt
 #undef pr_fmt
 #endif
@@ -157,6 +154,18 @@ struct gps_dev_obj {
 	struct mt3326_gps_hardware *hw;
 };
 /******************************************************************************
+ * GPS driver
+******************************************************************************/
+struct mt3326_gps_hardware {
+	int (*ext_power_on)(int);
+	int (*ext_power_off)(int);
+};
+
+struct mt3326_gps_hardware mt3326_gps_hw = {
+	.ext_power_on =  NULL,
+	.ext_power_off = NULL,
+};
+/******************************************************************************
  * local variables
 ******************************************************************************/
 static struct gps_data gps_private = { 0 };
@@ -244,11 +253,11 @@ static inline void mt3326_gps_power(struct mt3326_gps_hardware *hw, unsigned int
 /*****************************************************************************/
 static inline void mt3326_gps_reset(struct mt3326_gps_hardware *hw, int delay, int force)
 {
-	mt3326_gps_power(hw, 1, FALSE);
+	mt3326_gps_power(hw, 1, 0);
 	mdelay(delay);
 	mt3326_gps_power(hw, 0, force);
 	mdelay(delay);
-	mt3326_gps_power(hw, 1, FALSE);
+	mt3326_gps_power(hw, 1, 0);
 }
 
 /******************************************************************************/
@@ -277,15 +286,15 @@ static inline int mt3326_gps_set_pwrctl(struct gps_drv_obj *obj, unsigned char p
 
 	if ((pwrctl == GPS_PWRCTL_ON) || (pwrctl == GPS_PWRCTL_OFF)) {
 		obj->pwrctl = pwrctl;
-		mt3326_gps_power(obj->hw, pwrctl, FALSE);
+		mt3326_gps_power(obj->hw, pwrctl, 0);
 	} else if (pwrctl == GPS_PWRCTL_OFF_FORCE) {
 		obj->pwrctl = pwrctl;
-		mt3326_gps_power(obj->hw, pwrctl, TRUE);
+		mt3326_gps_power(obj->hw, pwrctl, 1);
 	} else if (pwrctl == GPS_PWRCTL_RST) {
-		mt3326_gps_reset(obj->hw, obj->rdelay, FALSE);
+		mt3326_gps_reset(obj->hw, obj->rdelay, 0);
 		obj->pwrctl = GPS_PWRCTL_ON;
 	} else if (pwrctl == GPS_PWRCTL_RST_FORCE) {
-		mt3326_gps_reset(obj->hw, obj->rdelay, TRUE);
+		mt3326_gps_reset(obj->hw, obj->rdelay, 1);
 		obj->pwrctl = GPS_PWRCTL_ON;
 	} else {
 		err = -1;
@@ -886,13 +895,13 @@ static const struct file_operations mt3326_gps_fops = {
 /*****************************************************************************/
 static void mt3326_gps_hw_init(struct mt3326_gps_hardware *hw)
 {
-	mt3326_gps_power(hw, 1, FALSE);
+	mt3326_gps_power(hw, 1, 0);
 }
 
 /*****************************************************************************/
 static void mt3326_gps_hw_exit(struct mt3326_gps_hardware *hw)
 {
-	mt3326_gps_power(hw, 0, FALSE);
+	mt3326_gps_power(hw, 0, 0);
 }
 
 /*****************************************************************************/
@@ -900,7 +909,8 @@ static int mt3326_gps_probe(struct platform_device *dev)
 {
 	int ret = 0, err = 0;
 	struct gps_drv_obj *drvobj = NULL;
-	struct mt3326_gps_hardware *hw = (struct mt3326_gps_hardware *)dev->dev.platform_data;
+	/* struct mt3326_gps_hardware *hw = (struct mt3326_gps_hardware *)dev->dev.platform_data; */
+	struct mt3326_gps_hardware *hw = &mt3326_gps_hw;
 	struct gps_dev_obj *devobj = NULL;
 
 	devobj = kzalloc(sizeof(*devobj), GFP_KERNEL);

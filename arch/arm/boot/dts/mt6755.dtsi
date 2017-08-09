@@ -1473,7 +1473,7 @@ clocks {
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 
-		mt3326-gps@ffffffff {
+		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
 		MFGCFG@0x13000000 {
