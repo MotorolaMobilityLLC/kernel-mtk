@@ -268,13 +268,13 @@ static void __trace_out(int heavy, int cpu, struct task_struct *p)
 #ifdef CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY
 		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
 				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.load_avg_ratio,
+				 cpu, p->se.avg.load_avg_contrib,
 				 topology_cpu_capacity(cpu), topology_max_cpu_capacity(cpu),
 				 p->pid, p->comm);
 #else
 		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu pid=%4d name=%s",
 				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.load_avg_ratio,
+				 cpu, p->se.avg.load_avg_contrib,
 				 p->pid, p->comm);
 #endif
 		trace_sched_heavy_task(tracebuf);
@@ -316,7 +316,7 @@ unsigned int sched_get_nr_heavy_task_by_threshold(unsigned int threshold)
 			if (task_low_priority(p->prio))
 				continue;
 #endif
-			if (p->se.avg.load_avg_ratio >= hmp_threshold)
+			if (p->se.avg.load_avg_contrib >= hmp_threshold)
 				is_heavy = (!bigcore && OVER_L_TH(cpu)) || (bigcore && OVER_B_TH(cpu));
 			count += is_heavy ? 1 : 0;
 			__trace_out(is_heavy, cpu, p);

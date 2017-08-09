@@ -585,3 +585,62 @@ void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
 			cpumask_set_cpu(cpu, cpus);
 	}
 }
+
+#ifdef CONFIG_SCHED_HMP
+void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
+			struct cpumask *slow)
+{
+	struct device_node *cn = NULL;
+	int cpu;
+
+	cpumask_clear(fast);
+	cpumask_clear(slow);
+
+	for_each_possible_cpu(cpu) {
+		if (arch_cpu_is_little(cpu))
+			cpumask_set_cpu(cpu, slow);
+		else
+			cpumask_set_cpu(cpu, fast);
+	}
+	if (!cpumask_empty(fast) && !cpumask_empty(slow))
+		return;
+
+	/*
+	 * We didn't find both big and little cores so let's call all cores
+	 * fast as this will keep the system running, with all cores being
+	 * treated equal.
+	 */
+	cpumask_setall(fast);
+	cpumask_clear(slow);
+}
+
+struct cpumask hmp_fast_cpu_mask;
+struct cpumask hmp_slow_cpu_mask;
+
+void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
+{
+	struct hmp_domain *domain;
+
+	arch_get_fast_and_slow_cpus(&hmp_fast_cpu_mask, &hmp_slow_cpu_mask);
+
+	/*
+	 * Initialize hmp_domains
+	 * Must be ordered with respect to compute capacity.
+	 * Fastest domain at head of list.
+	 */
+	if (!cpumask_empty(&hmp_slow_cpu_mask)) {
+		domain = (struct hmp_domain *)
+			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
+		cpumask_copy(&domain->possible_cpus, &hmp_slow_cpu_mask);
+		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+		list_add(&domain->hmp_domains, hmp_domains_list);
+	}
+	domain = (struct hmp_domain *)
+		kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
+	cpumask_copy(&domain->possible_cpus, &hmp_fast_cpu_mask);
+	cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+	list_add(&domain->hmp_domains, hmp_domains_list);
+}
+#else
+void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
+#endif /* CONFIG_SCHED_HMP */

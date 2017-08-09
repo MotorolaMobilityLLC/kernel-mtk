@@ -1016,7 +1016,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
 
 bool cpus_share_cache(int this_cpu, int that_cpu);
 
-#ifdef CONFIG_MTK_SCHED_CMP
+#if defined(CONFIG_MTK_SCHED_CMP) || defined(CONFIG_SCHED_HMP)
 struct clb_stats {
 	int ncpu;                     /* The number of CPU */
 	int ntask;                    /* The number of tasks */
@@ -1027,8 +1027,12 @@ struct clb_stats {
 	int scaled_acap;              /* Scaled available CPU capacity */
 	int scaled_atask;             /* Scaled available task */
 	int threshold;                /* Dynamic threshold */
-};
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	int nr_normal_prio_task;      /* The number of normal-prio tasks */
+	int nr_dequeuing_low_prio;    /* The number of dequeuing low-prio tasks */
 #endif
+};
+#endif /* defined(CONFIG_MTK_SCHED_CMP) || defined(CONFIG_SCHED_HMP) */
 
 typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
 typedef int (*sched_domain_flags_f)(void);
@@ -1063,6 +1067,20 @@ extern void wake_up_if_idle(int cpu);
 # define SD_INIT_NAME(type)
 #endif
 
+#ifdef CONFIG_SCHED_HMP
+struct hmp_domain {
+	struct cpumask cpus;
+	struct cpumask possible_cpus;
+	struct list_head hmp_domains;
+};
+
+#ifdef CONFIG_HMP_TRACER
+struct hmp_statisic {
+	unsigned int nr_force_up;   /* The number of task force up-migration */
+	unsigned int nr_force_down; /* The number of task force down-migration */
+};
+#endif /* CONFIG_HMP_TRACER */
+#endif /* CONFIG_SCHED_HMP */
 #else /* CONFIG_SMP */
 
 struct sched_domain_attr;
@@ -1123,6 +1141,16 @@ struct sched_avg {
 	 * running_avg_sum.
 	 */
 	u32 runnable_avg_sum, avg_period, running_avg_sum;
+#ifdef CONFIG_SCHED_HMP
+	unsigned long pending_load;
+	u32 nr_pending;
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	u32 nr_dequeuing_low_prio;
+	u32 nr_normal_prio;
+#endif
+	u64 hmp_last_up_migration;
+	u64 hmp_last_down_migration;
+#endif /* CONFIG_SCHED_HMP */
 };
 
 #ifdef CONFIG_SCHEDSTATS
