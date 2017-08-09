@@ -596,7 +596,7 @@ static struct init_sta suspend_sta = {
 /* keep PAUSE_INIT set until cluster-on notification */
 static u32 pause_src_map = PSF_PAUSE_INIT;
 
-static u32 pause_log_en = /*PSF_PAUSE_HWGOV*/
+static u32 pause_log_en = /*PSF_PAUSE_HWGOV |*/
 			  /*PSF_PAUSE_SUSPEND |*/
 			  /*PSF_PAUSE_IDLE |*/
 			  /*PSF_PAUSE_I2CDRV |*/
@@ -1325,6 +1325,10 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 				if (!(swctrl & CLUSTER_EN))
 					continue;
 
+#ifdef CPUHVFS_HW_GOVERNOR
+				if (dvfsp->hw_gov_en && psf == PSF_PAUSE_SUSPEND)
+					swctrl &= ~SW_F_ASSIGN;		/* set in PCM re-kick */
+#endif
 				cspm_write(swctrl_reg[i], swctrl & ~SW_PAUSE);
 				csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 				all_pause = 0;
