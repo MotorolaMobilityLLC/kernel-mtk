@@ -519,6 +519,25 @@ static UINT8 WMT_SET_MCU_CLK_DIS_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0
 #endif
 
 #if CFG_WMT_FILTER_MODE_SETTING
+static UINT8 WMT_COEX_EXT_COMPONENT_CMD[] = {0x01, 0x10, 0x03, 0x00, 0x0d, 0x00, 0x00};
+static UINT8 WMT_COEX_FILTER_SPEC_CMD_TEST[] = {
+		0x01, 0x10, 0x45, 0x00, 0x11, 0x00, 0x00, 0x01,
+		0x00, 0x11, 0x11, 0x16, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x63, 0x63, 0x63, 0x00, 0x39, 0x43, 0x63,
+		0x63, 0x02, 0x02, 0x03, 0x00, 0x01, 0x01, 0x01,
+		0x01, 0x0e, 0x0e, 0x0e, 0x00, 0x0a, 0x0c, 0x0e,
+		0x0e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static UINT8 WMT_COEX_LTE_FREQ_IDX_TABLE_CMD[] = {
+		0x01, 0x10, 0x21, 0x00, 0x12, 0xfc, 0x08, 0x15,
+		0x09, 0x2e, 0x09, 0x47, 0x09, 0xc4, 0x09, 0xd4,
+		0x09, 0xe3, 0x09, 0x5a, 0x0a, 0x14, 0x09, 0x2d,
+		0x09, 0x46, 0x09, 0x60, 0x09, 0xd3, 0x09, 0xe2,
+		0x09, 0x59, 0x0a, 0x8B, 0x0a};
+static UINT8 WMT_COEX_LTE_CHAN_UNSAFE_CMD[] = { 0x01, 0x10, 0x02, 0x00, 0x13, 0x00 };
+static UINT8 WMT_COEX_IS_LTE_L_CMD[] = { 0x01, 0x10, 0x02, 0x00, 0x21, 0x01 };
 
 #if 0
 static UINT8 WMT_COEX_SPLIT_FILTER_CMD_TEST[] = {
@@ -702,9 +721,18 @@ static struct init_script set_mcuclk_table_2[] = {
 #endif
 
 #if CFG_WMT_FILTER_MODE_SETTING
-static struct init_script set_wifi_lte_coex_table_6752[] = {
+static struct init_script set_wifi_lte_coex_table_1[] = {
 	INIT_CMD(WMT_COEX_FILTER_SPEC_CMD_6752, WMT_COEX_SPLIT_MODE_EVT, "wifi lte coex filter spec"),
 	INIT_CMD(WMT_COEX_LTE_FREQ_IDX_TABLE_CMD_6752, WMT_COEX_SPLIT_MODE_EVT, "wifi lte freq idx"),
+	INIT_CMD(WMT_COEX_IS_LTE_PROJ_CMD, WMT_COEX_SPLIT_MODE_EVT, "set LTE project"),
+};
+
+static struct init_script set_wifi_lte_coex_table_2[] = {
+	INIT_CMD(WMT_COEX_EXT_COMPONENT_CMD, WMT_COEX_SPLIT_MODE_EVT, "wifi lte ext component"),
+	INIT_CMD(WMT_COEX_FILTER_SPEC_CMD_TEST, WMT_COEX_SPLIT_MODE_EVT, "wifi lte coex filter"),
+	INIT_CMD(WMT_COEX_LTE_FREQ_IDX_TABLE_CMD, WMT_COEX_SPLIT_MODE_EVT, "wifi lte freq id table"),
+	INIT_CMD(WMT_COEX_LTE_CHAN_UNSAFE_CMD, WMT_COEX_SPLIT_MODE_EVT, "wifi lte unsafe channel"),
+	INIT_CMD(WMT_COEX_IS_LTE_L_CMD, WMT_COEX_SPLIT_MODE_EVT, "wifi coex is L branch"),
 };
 
 static struct init_script set_wifi_lte_coex_table_0[] = {
@@ -717,10 +745,6 @@ static struct init_script set_wifi_lte_coex_table_0[] = {
 #endif
 	INIT_CMD(WMT_COEX_FILTER_SPEC_CMD_0, WMT_COEX_SPLIT_MODE_EVT, "def wifi lte coex filter spec"),
 	INIT_CMD(WMT_COEX_LTE_FREQ_IDX_TABLE_CMD_0, WMT_COEX_SPLIT_MODE_EVT, "def wifi lte freq idx"),
-};
-
-static struct init_script is_lte_project_table[] = {
-	INIT_CMD(WMT_COEX_IS_LTE_PROJ_CMD, WMT_COEX_SPLIT_MODE_EVT, "is LTE project or not"),
 };
 
 static struct init_script get_tdm_req_antsel_num_table[] = {
@@ -1607,26 +1631,28 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 	if (pWmtGenConf->coex_wmt_filter_mode == 0) {
 		if ((0x6752 == wmt_ic_ops_soc.icId) ||
 		    (0x6580 == wmt_ic_ops_soc.icId) ||
-		    (0x0279 == wmt_ic_ops_soc.icId) ||
 		    (0x8163 == wmt_ic_ops_soc.icId) ||
 		    (0x0326 == wmt_ic_ops_soc.icId) ||
 		    (0x0321 == wmt_ic_ops_soc.icId) ||
 		    (0x0335 == wmt_ic_ops_soc.icId) || (0x0337 == wmt_ic_ops_soc.icId)) {
 			iRet =
-			    wmt_core_init_script(set_wifi_lte_coex_table_6752,
-						 osal_array_size(set_wifi_lte_coex_table_6752));
-			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_6752 %s(%d)\n", iRet ? "fail" : "ok", iRet);
+			    wmt_core_init_script(set_wifi_lte_coex_table_1, osal_array_size(set_wifi_lte_coex_table_1));
+			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_1 %s(%d)\n", iRet ? "fail" : "ok", iRet);
+		} else if (0x0279 == wmt_ic_ops_soc.icId) {
+			/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
+			if (pWmtGenConf->coex_wmt_ext_component) {
+				WMT_INFO_FUNC("coex_wmt_ext_component:0x%x\n", pWmtGenConf->coex_wmt_ext_component);
+				set_wifi_lte_coex_table_1[0].cmd[5] = pWmtGenConf->coex_wmt_ext_component;
+			}
+			iRet =
+			    wmt_core_init_script(set_wifi_lte_coex_table_2, osal_array_size(set_wifi_lte_coex_table_2));
+			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_2 %s(%d)\n", iRet ? "fail" : "ok", iRet);
 		} else {
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_0, osal_array_size(set_wifi_lte_coex_table_0));
 			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_0 %s(%d)\n", iRet ? "fail" : "ok", iRet);
 		}
 	}
-
-	iRet = wmt_core_init_script(is_lte_project_table, osal_array_size(is_lte_project_table));
-	if (iRet)
-		WMT_ERR_FUNC("wmt_core:is_lte_project_table fail(%d)\n", iRet);
-	WMT_INFO_FUNC("wmt_core:is_lte_project_table ok\n");
 
 	return iRet;
 }

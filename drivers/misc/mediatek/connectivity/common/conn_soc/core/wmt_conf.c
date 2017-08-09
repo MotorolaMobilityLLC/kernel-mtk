@@ -116,6 +116,7 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
 
 static const struct parse_data wmtcfg_fields[] = {
 	CHAR(coex_wmt_ant_mode),
+	CHAR(coex_wmt_ext_component),
 	CHAR(coex_wmt_wifi_time_ctl),
 	CHAR(coex_wmt_ext_pta_dev_on),
 	CHAR(coex_wmt_filter_mode),
