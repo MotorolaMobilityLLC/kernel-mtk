@@ -2265,9 +2265,9 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
 }
 
 
-void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+void DSI_set_cmdq_subV3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 		     LCM_setting_table_V3 *para_tbl, unsigned int size,
-		     unsigned char force_update)
+		     unsigned char force_update, int d)
 {
 #if 1
 	uint32_t i;
@@ -2279,9 +2279,10 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	DSI_T2_INS t2;
 
 	uint32_t index = 0;
-
 	unsigned char data_id, cmd, count;
 	unsigned char *para_list;
+
+
 
 	do {
 		data_id = para_tbl[index].id;
@@ -2296,119 +2297,168 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 
 			continue;
 		}
-#if 0
-		if (0 != DSI_REG->DSI_MODE_CTRL.MODE) {	/* not in cmd mode */
+
+		if (0 != DSI_REG[d]->DSI_MODE_CTRL.MODE) {
 			struct DSI_VM_CMD_CON_REG vm_cmdq;
 
-			OUTREG32(&vm_cmdq, AS_UINT32(&DSI_REG->DSI_VM_CMD_CON));
-			pr_debug("set cmdq in VDO mode\n");
-			if (count > 1) {
-				vm_cmdq.LONG_PKT = 1;
-				vm_cmdq.CM_DATA_ID = data_id;
-				vm_cmdq.CM_DATA_0 = count + 1;
-				OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-
-				goto_addr = (uint32_t) (&DSI_VM_CMD_REG->data[0].byte0);
-				mask_para = (0xFF << ((goto_addr & 0x3) * 8));
-				set_para = (cmd << ((goto_addr & 0x3) * 8));
-				MASKREG32(goto_addr & (~0x3), mask_para, set_para);
-
-				for (i = 0; i < count; i++) {
-					goto_addr =
-					    (uint32_t) (&DSI_VM_CMD_REG->data[0].byte1) + i;
-					mask_para = (0xFF << ((goto_addr & 0x3) * 8));
-					set_para =
-					    (para_list[i] << ((goto_addr & 0x3) * 8));
-					MASKREG32(goto_addr & (~0x3), mask_para, set_para);
-				}
-			} else {
-				vm_cmdq.LONG_PKT = 0;
-				vm_cmdq.CM_DATA_0 = cmd;
-				if (count) {
-					vm_cmdq.CM_DATA_ID = data_id;
-					vm_cmdq.CM_DATA_1 = para_list[0];
-				} else {
-					vm_cmdq.CM_DATA_ID = data_id;
-					vm_cmdq.CM_DATA_1 = 0;
-				}
-				OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-			}
-			/* start DSI VM CMDQ */
-			if (force_update) {
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[0]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[1]));
-				DSI_EnableVM_CMD();
-
-				/* must wait VM CMD done? */
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[2]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[3]));
-			}
-		} else
-#endif
-		{
-			DSI_WaitForNotBusy(module, cmdq);
-			{
-				/* for(i = 0; i < sizeof(DSI_CMDQ_REG->data0) / sizeof(struct DSI_CMDQ); i++) */
-				/* OUTREG32(&DSI_CMDQ_REG->data0[i], 0); */
-				/* memset(&DSI_CMDQ_REG->data[0], 0, sizeof(DSI_CMDQ_REG->data[0])); */
-				OUTREG32(&DSI_CMDQ_REG[0]->data[0], 0);
-
+			memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+			DSI_READREG32((struct DSI_VM_CMD_CON_REG *), &vm_cmdq,
+				      &DSI_REG[d]->DSI_VM_CMD_CON);
+			if (cmd < 0xB0) {
 				if (count > 1) {
-					t2.CONFG = 2;
-					t2.Data_ID = data_id;
-					t2.WC16 = count + 1;
-
-					DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[0].byte0,
-						     AS_UINT32(&t2));
+					vm_cmdq.LONG_PKT = 1;
+					vm_cmdq.CM_DATA_ID = data_id;
+					vm_cmdq.CM_DATA_0 = count + 1;
+					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON,
+					     AS_UINT32(&vm_cmdq));
 
 					goto_addr =
-					    (unsigned long)(&DSI_CMDQ_REG[0]->data[1].
-							    byte0);
-					mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
-					set_para = (cmd << ((goto_addr & 0x3u) * 8));
-					DSI_MASKREG32(cmdq,
-						      goto_addr & (~((unsigned long)0x3u)),
-						      mask_para, set_para);
+					    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].
+						    byte0);
+					mask_para = (0xFF << ((goto_addr & 0x3) * 8));
+					set_para = (cmd << ((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para,
+						      set_para);
 
 					for (i = 0; i < count; i++) {
 						goto_addr =
-						    (unsigned long)(&DSI_CMDQ_REG[0]->data[1].byte1) + i;
+						    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].byte1) + i;
 						mask_para =
-						    (0xFFu << ((goto_addr & 0x3u) * 8));
+						    (0xFF << ((goto_addr & 0x3) * 8));
 						set_para =
-						    (para_list[i] << ((goto_addr & 0x3u) * 8));
-						DSI_MASKREG32(cmdq,
-							goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+						    (para_list[i] << ((goto_addr & 0x3) * 8));
+						DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
 					}
-
-					DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_CMDQ_SIZE, 2 + (count) / 4);
 				} else {
-					t0.CONFG = 0;
-					t0.Data0 = cmd;
+					vm_cmdq.LONG_PKT = 0;
+					vm_cmdq.CM_DATA_0 = cmd;
 					if (count) {
-						t0.Data_ID = data_id;
-						t0.Data1 = para_list[0];
+						vm_cmdq.CM_DATA_ID =
+						    data_id;
+						vm_cmdq.CM_DATA_1 = para_list[0];
 					} else {
-						t0.Data_ID = data_id;
-						t0.Data1 = 0;
+						vm_cmdq.CM_DATA_ID =
+						    data_id;
+						vm_cmdq.CM_DATA_1 = 0;
 					}
-					DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[0], AS_UINT32(&t0));
-					DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_CMDQ_SIZE, 1);
+					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 				}
+			} else {
+				if (count > 1) {
+					vm_cmdq.LONG_PKT = 1;
+					vm_cmdq.CM_DATA_ID = data_id;
+					vm_cmdq.CM_DATA_0 = count + 1;
+					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 
-				if (force_update) {
-					MMProfileLog(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart);
-					DSI_Start(module, cmdq);
-					DSI_WaitForNotBusy(module, cmdq);
-					MMProfileLog(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd);
+					goto_addr =
+					    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].
+							    byte0);
+					mask_para = (0xFF << ((goto_addr & 0x3) * 8));
+					set_para = (cmd << ((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
+
+					for (i = 0; i < count; i++) {
+						goto_addr =
+						    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].byte1) + i;
+						mask_para =
+						    (0xFF << ((goto_addr & 0x3) * 8));
+						set_para =
+						    (para_list[i] << ((goto_addr & 0x3) * 8));
+						DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
+					}
+				} else {
+					vm_cmdq.LONG_PKT = 0;
+					vm_cmdq.CM_DATA_0 = cmd;
+					if (count) {
+						vm_cmdq.CM_DATA_ID =
+						    data_id;
+						vm_cmdq.CM_DATA_1 = para_list[0];
+					} else {
+						vm_cmdq.CM_DATA_ID =
+						    data_id;
+						vm_cmdq.CM_DATA_1 = 0;
+					}
+					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 				}
+			}
+			/* start DSI VM CMDQ */
+			if (force_update)
+				DSI_EnableVM_CMD(module, cmdq);
+
+		} else {
+			DSI_WaitForNotBusy(module, cmdq);
+			/* for(i = 0; i < sizeof(DSI_CMDQ_REG->data0) / sizeof(struct DSI_CMDQ); i++) */
+			/* OUTREG32(&DSI_CMDQ_REG->data0[i], 0); */
+			/* memset(&DSI_CMDQ_REG->data[0], 0, sizeof(DSI_CMDQ_REG->data[0])); */
+			OUTREG32(&DSI_CMDQ_REG[d]->data[0], 0);
+			if (count > 1) {
+				t2.CONFG = 2;
+				t2.Data_ID = data_id;
+				t2.WC16 = count + 1;
+
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0].byte0,
+					     AS_UINT32(&t2));
+
+				goto_addr =
+				    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].
+						    byte0);
+				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para = (cmd << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+					      goto_addr & (~((unsigned long)0x3u)),
+					      mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+					    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte1) + i;
+					mask_para =
+					    (0xFFu << ((goto_addr & 0x3u) * 8));
+					set_para =
+					    (para_list[i] << ((goto_addr & 0x3u) * 8));
+					DSI_MASKREG32(cmdq,
+						goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
+				}
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 2 + (count) / 4);
+			} else {
+				t0.CONFG = 0;
+				t0.Data0 = cmd;
+				if (count) {
+					t0.Data_ID = data_id;
+					t0.Data1 = para_list[0];
+				} else {
+					t0.Data_ID = data_id;
+					t0.Data1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0], AS_UINT32(&t0));
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+
+			if (force_update) {
+				MMProfileLog(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart);
+				DSI_Start(module, cmdq);
+				DSI_WaitForNotBusy(module, cmdq);
+				MMProfileLog(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd);
 			}
 		}
 	} while (++index < size);
+
 #endif
 }
+
+void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+		     LCM_setting_table_V3 *para_tbl, unsigned int size,
+		     unsigned char force_update)
+{
+#if 1
+	int d = 0;
+
+	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++)
+		DSI_set_cmdq_subV3(module, cmdq, para_tbl, size, force_update, d);
+#endif
+}
+
+
+
 
 
 
@@ -2416,66 +2466,68 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 		  unsigned int queue_size, unsigned char force_update)
 {
 	/* DISPFUNC(); */
-/* _WaitForEngineNotBusy(); */
+	/* _WaitForEngineNotBusy(); */
 	int j = 0;
 	int i = 0;
-
+	int regData = 0;
+	struct DSI_VM_CMD_CON_REG vm_cmdq;
 	/* DISPCHECK("DSI_set_cmdq, module=%s, cmdq=0x%08x\n", ddp_get_module_name(module), cmdq); */
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (0 != DSI_REG[i]->DSI_MODE_CTRL.MODE) {
-#if 0
-			/* not in cmd mode */
-			struct DSI_VM_CMD_CON_REG vm_cmdq;
+			memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+			DSI_READREG32((struct DSI_VM_CMD_CON_REG *), &vm_cmdq,
+				    &DSI_REG[i]->DSI_VM_CMD_CON);
 
-			OUTREG32(&vm_cmdq, AS_UINT32(&DSI_REG[i]->DSI_VM_CMD_CON));
-			pr_debug("set cmdq in VDO mode\n");
-			if (queue_size > 1) {	/* long packet */
-				vm_cmdq.LONG_PKT = 1;
-				vm_cmdq.CM_DATA_ID = ((pdata[0] >> 8) & 0xFF);
-				vm_cmdq.CM_DATA_0 = ((pdata[0] >> 16) & 0xFF);
-				vm_cmdq.CM_DATA_1 = 0;
-				OUTREG32(&DSI_REG[i]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-				for (j = 0; j < queue_size - 1; j++) {
-					OUTREG32(&DSI_VM_CMD_REG->data[j],
-						 AS_UINT32((pdata + j + 1)));
-				}
-			} else {
+			if (queue_size <= 1) {
 				vm_cmdq.LONG_PKT = 0;
 				vm_cmdq.CM_DATA_ID = ((pdata[0] >> 8) & 0xFF);
 				vm_cmdq.CM_DATA_0 = ((pdata[0] >> 16) & 0xFF);
 				vm_cmdq.CM_DATA_1 = ((pdata[0] >> 24) & 0xFF);
-				OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-			}
-			/* start DSI VM CMDQ */
-			if (force_update) {
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[0]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[1]));
-				DSI_EnableVM_CMD();
+				DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 
-				/* must wait VM CMD done? */
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[2]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[3]));
+			} else {
+				vm_cmdq.LONG_PKT = 1;
+				vm_cmdq.CM_DATA_ID = ((pdata[0] >> 8) & 0xFF);
+				vm_cmdq.CM_DATA_0 = ((pdata[0] >> 16) & 0xFF);
+				vm_cmdq.CM_DATA_1 = 0;
+				DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
+
+				for (j = 0; j < queue_size - 1; j++) {
+					regData = j % 4;
+					if (regData == 0)
+						DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_DATA0
+							 , AS_UINT32((pdata + j + 1)));
+					else  if (regData == 1)
+						DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_DATA4
+							 , AS_UINT32((pdata + j + 1)));
+					else  if (regData == 2)
+						DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_DATA8
+							 , AS_UINT32((pdata + j + 1)));
+					else  if (regData == 3)
+						DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_DATAC
+							 , AS_UINT32((pdata + j + 1)));
+				}
 			}
-#endif
-		} else {
-			ASSERT(queue_size <= 32);
-			DSI_WaitForNotBusy(module, cmdq);
+
+			if (force_update)
+				DSI_EnableVM_CMD(module, cmdq);
+
+		 } else {
+			 ASSERT(queue_size <= 32);
+			 DSI_WaitForNotBusy(module, cmdq);
 #ifdef ENABLE_DSI_ERROR_REPORT
-			if ((pdata[0] & 1)) {
+			 if ((pdata[0] & 1)) {
 				memcpy(_dsi_cmd_queue, pdata, queue_size * 4);
 				_dsi_cmd_queue[queue_size++] = 0x4;
 				pdata = (unsigned int *)_dsi_cmd_queue;
-			} else {
+			 } else {
 				pdata[0] |= 4;
-			}
+			 }
 #endif
 
 			for (j = 0; j < queue_size; j++) {
-				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[i]->data[j],
-					     AS_UINT32((pdata + j)));
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[i]->data[j], AS_UINT32((pdata + j)));
 			}
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_CMDQ_SIZE, queue_size);
@@ -2483,11 +2535,10 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 			if (force_update) {
 				DSI_Start(module, cmdq);
 				DSI_WaitForNotBusy(module, cmdq);
-			}
+			 }
 		}
 	}
 }
-
 
 
 void DSI_set_rar(DISP_MODULE_ENUM module, void *cmdq)
@@ -2699,12 +2750,14 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	if (module == DISP_MODULE_DSI0) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
+		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 		utils->dsi_set_null = DSI_set_null_Wrapper_DSI0;
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
+		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 		utils->dsi_set_null = DSI_set_null_Wrapper_DSI1;
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
@@ -2716,23 +2769,26 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI0) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
+			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI0;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSI0;
 			utils->dsi_dcs_read_lcm_reg_v2 =
-			    DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
+				DSI_dcs_read_lcm_reg_v2_wrapper_DSI0;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI0;
 		} else if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI1) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
+			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSI1;
 			utils->dsi_dcs_read_lcm_reg_v2 =
-			    DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
+				DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSI1;
 		} else {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSIDual;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSIDual;
+			utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSIDual;
 			utils->dsi_set_null = DSI_set_null_Wrapper_DSIDual;
 			utils->dsi_dcs_read_lcm_reg_v2 =
-			    DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
+				DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
 			utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSIDual;
 		}
 	}
