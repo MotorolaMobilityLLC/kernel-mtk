@@ -1083,6 +1083,20 @@ static void aee_record_cpu_volt(struct mt_cpu_dvfs *p, unsigned int volt)
 #endif
 }
 
+static void aee_record_freq_idx(struct mt_cpu_dvfs *p, int idx)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
+		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | idx);
+	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
+		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0x0F) | (idx << 4));
+	else if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+		aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F) | (idx << 4));
+	else
+		aee_rr_rec_cpu_dvfs_cci_oppidx((aee_rr_curr_cpu_dvfs_cci_oppidx() & 0xF0) | idx);
+#endif
+}
+
 static void notify_cpu_volt_sampler(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	unsigned int mv = volt / 100;
@@ -2440,9 +2454,11 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	ori_idx = search_table_idx_by_freq(opp_tbl_m[CUR_OPP_IDX].p,
 		cur_khz);
 
-	if (ori_idx != p->idx_opp_tbl)
+	if (ori_idx != p->idx_opp_tbl) {
+		cpufreq_err("%s: ori_freq = %d(%d) != p->idx_opp_tbl(%d), target = %d\n"
+			, cpu_dvfs_get_name(p), cur_khz, ori_idx, p->idx_opp_tbl, target_khz);
 		p->idx_opp_tbl = ori_idx;
-
+	}
 	opp_tbl_m[CUR_OPP_IDX].slot = &p->freq_tbl[p->idx_opp_tbl];
 	cpufreq_ver("[CUR_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		cpu_dvfs_get_name(p), p->idx_opp_tbl, cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl));
@@ -3324,6 +3340,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	if (p->idx_opp_tbl != new_opp_idx) {
 		p->idx_opp_tbl = new_opp_idx;
 		p_cci->idx_opp_tbl = new_cci_opp_idx;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+		aee_record_freq_idx(p, p->idx_opp_tbl);
+		aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
+#endif
 	}
 
 #ifndef DISABLE_PBM_FEATURE
@@ -3403,14 +3423,8 @@ DFS_DONE:
 	p->idx_opp_tbl = freq_idx;
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | p->idx_opp_tbl);
-	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0x0F) | (p->idx_opp_tbl << 4));
-	else
-		aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F) | (p->idx_opp_tbl << 4));
+	aee_record_freq_idx(p, p->idx_opp_tbl);
 #endif
-
 	return ret;
 }
 
@@ -3518,8 +3532,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-					aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F)
-						| (p->idx_opp_tbl << 4));
+					aee_record_freq_idx(p, p->idx_opp_tbl);
+					aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 #endif
 				} else {
 #if 1
@@ -3559,6 +3573,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
 							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
+#endif
+
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					}
 #endif
@@ -3583,13 +3601,16 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
-					} else
-						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
-
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-					aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F)
-						| (p->idx_opp_tbl << 4));
+						aee_record_freq_idx(p, p->idx_opp_tbl);
+						aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
 #endif
+					} else {
+						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+						aee_record_freq_idx(p, p->idx_opp_tbl);
+#endif
+					}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
@@ -3631,6 +3652,11 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+					aee_record_freq_idx(p, p->idx_opp_tbl);
+					aee_record_freq_idx(p_cci, p_cci->idx_opp_tbl);
+#endif
 				} else {
 #if 1
 					if (action == CPU_DOWN_FAILED) {
@@ -3690,6 +3716,9 @@ static int _sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
 	for (i = p->nr_opp_tbl - 1; i >= 0; i--) {
 		if (freq <= cpu_dvfs_get_freq_by_idx(p, i)) {
 			p->idx_opp_tbl = i;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+			aee_record_freq_idx(p, p->idx_opp_tbl);
+#endif
 			break;
 		}
 	}
@@ -3796,14 +3825,6 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	if ((p->idx_opp_ppm_base == p->idx_opp_ppm_limit) && p->idx_opp_ppm_base != -1)
 		new_opp_idx = p->idx_opp_ppm_base;
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
-		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | new_opp_idx);
-	else if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0x0F) | (new_opp_idx << 4));
-	else
-		aee_rr_rec_cpu_dvfs_status((aee_rr_curr_cpu_dvfs_status() & 0x0F) | (new_opp_idx << 4));
-#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return new_opp_idx;
@@ -3861,9 +3882,6 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	cpufreq_ver("DVFS: MCSI: Final Result, target_cci_volt = %d, target_cci_freq = %d\n",
 		target_cci_volt, cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx));
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_cci_oppidx((aee_rr_curr_cpu_dvfs_cci_oppidx() & 0xF0) | new_cci_opp_idx);
-#endif
 	return new_cci_opp_idx;
 }
 
@@ -4950,6 +4968,9 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 				if (freq != cur_freq) {
 					p->ops->set_cur_freq(p, cur_freq, freq);
 					p->idx_opp_tbl = i;
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+					aee_record_freq_idx(p, p->idx_opp_tbl);
+#endif
 				}
 #ifndef DISABLE_PBM_FEATURE
 				if (!p->dvfs_disable_by_suspend)
