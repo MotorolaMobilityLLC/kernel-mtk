@@ -180,6 +180,8 @@ static struct opp_profile opp_table[] __nosavedata = {
 static char *kicker_name[] = {
 	"KIR_MM",
 	"KIR_PERF",
+	"KIR_REESPI",
+	"KIR_TEESPI",
 	"KIR_SYSFS",
 	"NUM_KICKER",
 
