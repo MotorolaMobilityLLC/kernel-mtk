@@ -149,7 +149,17 @@ struct ccci_rpc_clkbuf_result {
 	u16 CLKBuf_Count;
 	u8 CLKBuf_Status[CLKBUF_MAX_COUNT];
 	u8 CLKBuf_SWCtrl_Status[CLKBUF_MAX_COUNT];
+#ifdef MD_UMOLY_EE_SUPPORT
+	u16 ClkBuf_Driving[CLKBUF_MAX_COUNT];
+#endif
 } __packed;	/* the total size should sync with tmp_data[] using in ccci_rpc_work_helper() */
+#ifdef MD_UMOLY_EE_SUPPORT
+
+struct ccci_rpc_clkbuf_input {
+	u16 CLKBuf_Num;
+	u32 AfcCwData;
+} __packed;
+#endif
 
 #ifdef CONFIG_MTK_TC1_FEATURE
 /* hardcode, becarefull with data size, should not exceed tmp_data[] in ccci_rpc_work_helper() */
@@ -302,4 +312,6 @@ extern int get_eint_attribute(char *name, unsigned int name_len, unsigned int ty
 #endif
 extern void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded);
 extern bool is_clk_buf_from_pmic(void);
+extern void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
+extern void clk_buf_save_afc_val(unsigned int afcdac);
 #endif				/* __PORT_KERNEL_H__ */

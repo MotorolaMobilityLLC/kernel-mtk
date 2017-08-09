@@ -1536,6 +1536,10 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			u16 count = 0;
 			struct ccci_rpc_clkbuf_result *clkbuf;
 			CLK_BUF_SWCTRL_STATUS_T swctrl_status[CLKBUF_MAX_COUNT];
+#ifdef MD_UMOLY_EE_SUPPORT
+			struct ccci_rpc_clkbuf_input *clkinput;
+			u32 AfcDac;
+#endif
 
 			if (pkt_num != 1) {
 				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
@@ -1548,7 +1552,13 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				pkt[pkt_num++].buf = (void *)&tmp_data[0];
 				break;
 			}
+#ifdef MD_UMOLY_EE_SUPPORT
+			clkinput = (struct ccci_rpc_clkbuf_input *)pkt[0].buf;
+			AfcDac = clkinput->AfcCwData;
+			count = clkinput->CLKBuf_Num;
+#else
 			count = *(u16 *) (pkt[0].buf);
+#endif
 			pkt_num = 0;
 			tmp_data[0] = 0;
 			pkt[pkt_num].len = sizeof(unsigned int);
@@ -1565,22 +1575,26 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
 				memset(&clkbuf->CLKBuf_SWCtrl_Status, 0, sizeof(clkbuf->CLKBuf_SWCtrl_Status));
+#ifdef MD_UMOLY_EE_SUPPORT
+				memset(&clkbuf->ClkBuf_Driving, 0, sizeof(clkbuf->ClkBuf_Driving));
+#endif
 			} else {
-				u32 vals[4] = {0, 0, 0, 0};
+#ifdef MD_UMOLY_EE_SUPPORT
+				unsigned int vals_drv[CLKBUF_MAX_COUNT] = {2, 2, 2, 2};
+#endif
 #if !defined(CONFIG_MTK_LEGACY)
+				u32 vals[CLKBUF_MAX_COUNT] = {0, 0, 0, 0};
 				struct device_node *node;
 
 				node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 				if (node) {
-					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
+					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals,
+						CLKBUF_MAX_COUNT);
 				} else {
 					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
 #else
-				vals[0] = CLK_BUF1_STATUS;
-				vals[1] = CLK_BUF2_STATUS;
-				vals[2] = CLK_BUF3_STATUS;
-				vals[3] = CLK_BUF4_STATUS;
+				u32 vals[4] = {CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS};
 #endif
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
 				clkbuf->CLKBuf_Status[0] = vals[0];
@@ -1588,10 +1602,22 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				clkbuf->CLKBuf_Status[2] = vals[2];
 				clkbuf->CLKBuf_Status[3] = vals[3];
 				clk_buf_get_swctrl_status(swctrl_status);
+#ifdef MD_UMOLY_EE_SUPPORT
+				clk_buf_get_rf_drv_curr(vals_drv);
+				clk_buf_save_afc_val(AfcDac);
+#endif
 				clkbuf->CLKBuf_SWCtrl_Status[0] = swctrl_status[0];
 				clkbuf->CLKBuf_SWCtrl_Status[1] = swctrl_status[1];
 				clkbuf->CLKBuf_SWCtrl_Status[2] = swctrl_status[2];
 				clkbuf->CLKBuf_SWCtrl_Status[3] = swctrl_status[3];
+#ifdef MD_UMOLY_EE_SUPPORT
+				clkbuf->ClkBuf_Driving[0] = vals_drv[0];
+				clkbuf->ClkBuf_Driving[1] = vals_drv[1];
+				clkbuf->ClkBuf_Driving[2] = vals_drv[2];
+				clkbuf->ClkBuf_Driving[3] = vals_drv[3];
+				CCCI_INF_MSG(md->index, RPC, "RF_CLK_BUF*_DRIVING_CURR %d, %d, %d, %d, AfcDac: %d\n",
+					vals_drv[0], vals_drv[1], vals_drv[2], vals_drv[3], AfcDac);
+#endif
 			}
 			CCCI_DBG_MSG(md->index, RPC, "IPC_RPC_GET_RF_CLK_BUF count=%x\n", clkbuf->CLKBuf_Count);
 			break;

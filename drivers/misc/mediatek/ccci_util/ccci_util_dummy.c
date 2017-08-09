@@ -74,5 +74,16 @@ char * __weak ccci_get_ap_platform(void)
 
 bool __weak is_clk_buf_from_pmic(void)
 {
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return false;
+}
+
+void __weak clk_buf_get_rf_drv_curr(void *rf_drv_curr)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+}
+
+void __weak clk_buf_save_afc_val(unsigned int afcdac)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 }
