@@ -34,6 +34,10 @@
 
 #include <linux/regulator/consumer.h>
 
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/wait.h>
+
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_panel.h>
 
@@ -52,6 +56,7 @@
 #define DSI_HOST_FIFO_DEPTH	64
 
 #define DSI_START	0x00
+#define DSI_INTEN	0x08
 #define DSI_INTSTA	0x0c
 
 #define DSI_CON_CTRL	0x10
@@ -732,6 +737,11 @@ static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
 	dsi_ps_control(dsi);
 }
 
+static void dsi_set_interrupt_enable(struct mtk_dsi *dsi)
+{
+	writel(0x0000003f, dsi->dsi_reg_base + DSI_INTEN);
+}
+
 static void mtk_dsi_start(struct mtk_dsi *dsi)
 {
 	writel(0, dsi->dsi_reg_base + DSI_START);
@@ -760,6 +770,7 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 	}
 
 	/* need set to cmd mode for send panel init code */
+	dsi_set_interrupt_enable(dsi);
 	dsi_set_cmd_mode(dsi);
 	dsi_rxtx_control(dsi);
 	dsi_clk_ulp_mode_leave(dsi);
@@ -879,12 +890,12 @@ mtk_dsi_connector_detect(struct drm_connector *connector, bool force)
 {
 	struct mtk_dsi *dsi = connector_to_dsi(connector);
 
-	DRM_INFO("mtk_dsi_connector_detect panel = 0x%p, panel node = 0x%p\n",
+	DRM_INFO("dsi connector detect panel = 0x%p, panel node = 0x%p\n",
 		dsi->panel, dsi->panel_node);
 
 	if (!dsi->panel) {
 		dsi->panel = of_drm_find_panel(dsi->panel_node);
-		DRM_INFO("mtk_dsi_connector_detect panel = 0x%p\n", dsi->panel);
+		DRM_INFO("dsi connector detect panel 0x%p\n", dsi->panel);
 		if (dsi->panel)
 			drm_panel_attach(dsi->panel, &dsi->conn);
 	} else if (!dsi->panel_node) {
@@ -1081,6 +1092,7 @@ static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
 		i = readl(dsi->dsi_reg_base + DSI_INTSTA);
 		if (!(i & BIT(31)))
 			break;
+
 		usleep_range(1, 2);
 	}
 	#endif
@@ -1226,7 +1238,7 @@ enum {
 	DSI_PORT_OUT
 };
 
-/* #define INTERRUPT_MODE */
+#define INTERRUPT_MODE
 
 #ifdef INTERRUPT_MODE
 static wait_queue_head_t _dsi_cmd_done_wait_queue;
@@ -1241,7 +1253,6 @@ static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
 	struct mtk_dsi *dsi = dev_id;
 	u32 status, tmp;
 
-	/* status = DSI_REG[i]->DSI_INTSTA; */
 	status = readl(dsi->dsi_reg_base + DSI_INTSTA);
 
 	if (status & BIT(0)) {
@@ -1250,29 +1261,39 @@ static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
 		/* because CMD_DONE will raise after DSI_RACK, */
 		/* so write clear RD_RDY after that will clear CMD_DONE too */
 		do {
-			/* /send read ACK */
-			/* DSI_REG->DSI_RACK.DSI_RACK = 1; */
-			mtk_dsi_mask(dsi, DSI_RACK,	(1 << 0), (1 << 0));
+			/* send read ACK */
+			mtk_dsi_mask(dsi, DSI_RACK,	BIT(0), BIT(0));
 			tmp = readl(dsi->dsi_reg_base + DSI_INTSTA);
 		} while (tmp & BIT(31));
 
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
 		wake_up_interruptible(&_dsi_dcs_read_wait_queue);
 	}
 
-	if (status & BIT(1))
+	if (status & BIT(1)) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(1), ~(BIT(1)));
 		wake_up_interruptible(&_dsi_cmd_done_wait_queue);
+	}
 
-	if (status & BIT(2))
+	if (status & BIT(2)) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(2), ~(BIT(2)));
 		wake_up_interruptible(&_dsi_wait_bta_te);
+	}
 
-	if (status & BIT(4))
+	if (status & BIT(4)) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(4), ~(BIT(4)));
 		wake_up_interruptible(&_dsi_wait_ext_te);
+	}
 
-	if (status & BIT(3))
+	if (status & BIT(3)) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(3), ~(BIT(3)));
 		wake_up_interruptible(&_dsi_wait_vm_done_queue);
+	}
 
-	if (status & BIT(5))
+	if (status & BIT(5)) {
+		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(5), ~(BIT(5)));
 		wake_up_interruptible(&_dsi_wait_vm_cmd_done_queue);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -1341,16 +1362,18 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	if (dsi->irq < 0) {
 		dev_err(&pdev->dev, "failed to request dsi irq resource\n");
 		ret = dsi->irq;
-			return -EPROBE_DEFER;
+		return -EPROBE_DEFER;
 	}
 
-	irq_set_status_flags(dsi->irq, IRQ_NOAUTOEN);
-	ret = devm_request_threaded_irq(&pdev->dev, dsi->irq, NULL,
-					mediatek_dsi_irq, IRQF_ONESHOT,
+	irq_set_status_flags(dsi->irq, IRQ_TYPE_LEVEL_LOW);
+	ret = devm_request_irq(&pdev->dev, dsi->irq,
+					mediatek_dsi_irq, IRQF_TRIGGER_LOW,
 					dev_name(&pdev->dev), dsi);
 	if (ret) {
-		dev_err(&pdev->dev, "failed to request dsi irq\n");
+		dev_err(&pdev->dev, "failed to request mediatek dsi irq\n");
 		return -EPROBE_DEFER;
+	} else {
+		DRM_INFO("dsi irq num is 0x%x\n", dsi->irq);
 	}
 
 	init_waitqueue_head(&_dsi_cmd_done_wait_queue);
@@ -1368,6 +1391,9 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		dev_err(dev, "cannot get dsi->dsi_tx_reg_base\n");
 		return -EPROBE_DEFER;
 	}
+
+	DRM_INFO("dsi_reg_base = 0x%x, dsi_tx_reg_base = 0x%x\n",
+		(unsigned int)dsi->dsi_reg_base, (unsigned int)dsi->dsi_tx_reg_base);
 
 	return 0;
 }

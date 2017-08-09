@@ -91,8 +91,6 @@ static void truly_dcs_write(struct truly *ctx, const void *data, size_t len)
 
 static void truly_panel_init(struct truly *ctx)
 {
-	DRM_INFO("truly set cmd start\n");
-
 	truly_dcs_write_seq_static(ctx, 0xFF, 0x10);
 	mdelay(2);
 
@@ -379,6 +377,7 @@ static void truly_panel_init(struct truly *ctx)
 
 	truly_dcs_write_seq_static(ctx, 0xFF, 0x21);
 	mdelay(20);
+
 	truly_dcs_write_seq_static(ctx, 0x00, 0x00);
 	truly_dcs_write_seq_static(ctx, 0x01, 0xA6);
 	truly_dcs_write_seq_static(ctx, 0x02, 0x00);
@@ -631,8 +630,7 @@ static void truly_panel_init(struct truly *ctx)
 
 	truly_dcs_write_seq_static(ctx, 0x35, 0x00);
 	truly_dcs_write_seq_static(ctx, 0x29);
-
-	DRM_INFO("truly set cmd end\n");
+	mdelay(20);
 }
 
 static void truly_set_sequence(struct truly *ctx)
@@ -657,6 +655,7 @@ static int truly_power_on(struct truly *ctx)
 static int truly_power_off(struct truly *ctx)
 {
 	gpiod_set_value(ctx->reset_gpio, 0);
+
 	return 0;
 }
 
