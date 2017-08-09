@@ -461,8 +461,8 @@
 };
 /* AUDIO GPIO standardization */
 &audgpio {
-	pinctrl-names = "audpmicclk-mode0",
-			"audpmicclk-mode1",
+	pinctrl-names = "audpmic_mode0",
+			"audpmic_mode1",
 			"aud_smartpa-mode0",
 			"aud_smartpa-mode1",
 			"aud_smartpa-mode3",
