@@ -4018,6 +4018,22 @@
 			compatible = "mediatek,pedometer";
 	};
 
+	wag@0 {
+			compatible = "mediatek,m_wag_pl";
+	};
+
+	pkup@0 {
+			compatible = "mediatek,m_pkup_pl";
+	};
+
+	glg@0 {
+			compatible = "mediatek,m_glg_pl";
+	};
+
+	tilt@0 {
+			compatible = "mediatek,m_tilt_pl";
+	};
+
 	activity@0 {
 			compatible = "mediatek,activity";
 	};

@@ -21,22 +21,17 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
 
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
+#include <sensors_io.h>
 #include "glghub.h"
 #include <glance_gesture.h>
-#include <linux/hwmsen_helper.h>
+#include <hwmsen_helper.h>
 
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#include <linux/batch.h>
+#include <batch.h>
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"

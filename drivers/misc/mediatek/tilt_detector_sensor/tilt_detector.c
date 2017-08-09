@@ -4,8 +4,7 @@ static struct tilt_context *tilt_context_obj;
 
 static struct tilt_init_info *tilt_detector_init = { 0 };	/* modified */
 
-static void tilt_early_suspend(struct early_suspend *h);
-static void tilt_late_resume(struct early_suspend *h);
+
 
 static int resume_enable_status;
 
@@ -178,7 +177,7 @@ static ssize_t tilt_show_active(struct device *dev, struct device_attribute *att
 	return snprintf(buf, PAGE_SIZE, "%d\n", cxt->is_active_data);
 }
 
-static ssize_t tilt_store_delay(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t tilt_store_delay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int len = 0;
 
@@ -232,7 +231,7 @@ static ssize_t tilt_show_flush(struct device *dev, struct device_attribute *attr
 
 static ssize_t tilt_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char *devname = NULL;
+	const char *devname = NULL;
 
 	devname = dev_name(&tilt_context_obj->idev->dev);
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);	/* TODO: why +5? */
@@ -309,7 +308,7 @@ static int tilt_misc_init(struct tilt_context *cxt)
 	int err = 0;
 	/* kernel-3.10\include\linux\Miscdevice.h */
 	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	cxt->mdev.minor = M_TILT_MISC_MINOR;
+	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = TILT_MISC_DEV_NAME;
 
 	err = misc_register(&cxt->mdev);
@@ -351,12 +350,13 @@ static int tilt_input_init(struct tilt_context *cxt)
 	return 0;
 }
 
-DEVICE_ATTR(tiltenablenodata, S_IWUSR | S_IRUGO, tilt_show_enable_nodata, tilt_store_enable_nodata);
-DEVICE_ATTR(tiltactive, S_IWUSR | S_IRUGO, tilt_show_active, tilt_store_active);
-DEVICE_ATTR(tiltdelay, S_IWUSR | S_IRUGO, tilt_show_delay, tilt_store_delay);
-DEVICE_ATTR(tiltbatch, S_IWUSR | S_IRUGO, tilt_show_batch, tilt_store_batch);
-DEVICE_ATTR(tiltflush, S_IWUSR | S_IRUGO, tilt_show_flush, tilt_store_flush);
-DEVICE_ATTR(tiltdevnum, S_IWUSR | S_IRUGO, tilt_show_devnum, NULL);
+static DEVICE_ATTR(tiltenablenodata, S_IWUSR | S_IRUGO, tilt_show_enable_nodata, tilt_store_enable_nodata);
+static DEVICE_ATTR(tiltactive, S_IWUSR | S_IRUGO, tilt_show_active, tilt_store_active);
+static DEVICE_ATTR(tiltdelay, S_IWUSR | S_IRUGO, tilt_show_delay, tilt_store_delay);
+static DEVICE_ATTR(tiltbatch, S_IWUSR | S_IRUGO, tilt_show_batch, tilt_store_batch);
+static DEVICE_ATTR(tiltflush, S_IWUSR | S_IRUGO, tilt_show_flush, tilt_store_flush);
+static DEVICE_ATTR(tiltdevnum, S_IWUSR | S_IRUGO, tilt_show_devnum, NULL);
+
 
 
 static struct attribute *tilt_attributes[] = {
@@ -478,26 +478,6 @@ static int tilt_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void tilt_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(tilt_context_obj->early_suspend), 1);
-	if (!atomic_read(&tilt_context_obj->wake))	/* not wake up, disable in early suspend */
-		tilt_real_enable(TILT_SUSPEND);
-
-	TILT_LOG(" tilt_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(tilt_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-static void tilt_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(tilt_context_obj->early_suspend), 0);
-	if (!atomic_read(&tilt_context_obj->wake) && resume_enable_status)
-		tilt_real_enable(TILT_RESUME);
-
-	TILT_LOG(" tilt_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(tilt_context_obj->early_suspend)));
-}
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 static int tilt_suspend(struct platform_device *dev, pm_message_t state)

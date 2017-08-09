@@ -4,8 +4,7 @@ static struct glg_context *glg_context_obj;
 
 static struct glg_init_info *glance_gesture_init = { 0 };	/* modified */
 
-static void glg_early_suspend(struct early_suspend *h);
-static void glg_late_resume(struct early_suspend *h);
+
 
 static int resume_enable_status;
 static struct wake_lock glg_lock;
@@ -190,7 +189,7 @@ static ssize_t glg_show_active(struct device *dev, struct device_attribute *attr
 	return snprintf(buf, PAGE_SIZE, "%d\n", cxt->is_active_data);
 }
 
-static ssize_t glg_store_delay(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t glg_store_delay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int len = 0;
 
@@ -244,7 +243,7 @@ static ssize_t glg_show_flush(struct device *dev, struct device_attribute *attr,
 
 static ssize_t glg_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char *devname = NULL;
+	const char *devname = NULL;
 
 	devname = dev_name(&glg_context_obj->idev->dev);
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);	/* TODO: why +5? */
@@ -327,7 +326,7 @@ static int glg_misc_init(struct glg_context *cxt)
 	int err = 0;
 	/* kernel-3.10\include\linux\Miscdevice.h */
 	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	cxt->mdev.minor = M_GLG_MISC_MINOR;
+	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = GLG_MISC_DEV_NAME;
 
 	err = misc_register(&cxt->mdev);
@@ -494,27 +493,6 @@ static int glg_remove(struct platform_device *pdev)
 
 	kfree(glg_context_obj);
 	return 0;
-}
-
-static void glg_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(glg_context_obj->early_suspend), 1);
-	if (!atomic_read(&glg_context_obj->wake))	/* not wake up, disable in early suspend */
-		glg_real_enable(GLG_SUSPEND);
-
-	GLG_LOG(" glg_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		atomic_read(&(glg_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-static void glg_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(glg_context_obj->early_suspend), 0);
-	if (!atomic_read(&glg_context_obj->wake) && resume_enable_status)
-		glg_real_enable(GLG_RESUME);
-
-	GLG_LOG(" glg_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		atomic_read(&(glg_context_obj->early_suspend)));
 }
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)

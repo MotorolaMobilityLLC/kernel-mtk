@@ -10,10 +10,19 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
 
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/atomic.h>
+#include <linux/ioctl.h>
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsen_helper.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
 
 #define TILT_TAG		"<TILT_DETECTOR> "
 #define TILT_FUN(f)		pr_debug(TILT_TAG"%s\n", __func__)
@@ -62,7 +71,7 @@ struct tilt_init_info {
 };
 
 struct tilt_data {
-	hwm_sensor_data tilt_data;
+	struct hwm_sensor_data tilt_data;
 	int data_updata;
 	/* struct mutex lock; */
 };
@@ -82,7 +91,6 @@ struct tilt_context {
 	atomic_t wake;		/*user-space request to wake-up, used with stop */
 	atomic_t trace;
 
-	struct early_suspend early_drv;
 	atomic_t early_suspend;
 	atomic_t suspend;
 

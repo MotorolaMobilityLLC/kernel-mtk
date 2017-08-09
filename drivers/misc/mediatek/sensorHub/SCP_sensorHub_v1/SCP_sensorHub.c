@@ -663,6 +663,8 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 	} else if (true == do_registed_handler) {
 		if (NULL != sensor_handler[rsp->rsp.sensorType])
 				sensor_handler[rsp->rsp.sensorType] (data, len);
+				if (rsp->rsp.sensorType == ID_TILT_DETECTOR)
+					sensor_handler[ID_WAKE_GESTURE] (data, len);
 	}
 
 	t3 = SCP_sensorHub_GetCurNS();

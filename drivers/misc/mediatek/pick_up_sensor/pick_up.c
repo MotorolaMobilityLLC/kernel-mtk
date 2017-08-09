@@ -4,8 +4,7 @@ static struct pkup_context *pkup_context_obj;
 
 static struct pkup_init_info *pick_up_init = { 0 };	/* modified */
 
-static void pkup_early_suspend(struct early_suspend *h);
-static void pkup_late_resume(struct early_suspend *h);
+
 
 static int resume_enable_status;
 
@@ -181,7 +180,7 @@ static ssize_t pkup_show_active(struct device *dev, struct device_attribute *att
 	return snprintf(buf, PAGE_SIZE, "%d\n", cxt->is_active_data);
 }
 
-static ssize_t pkup_store_delay(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t pkup_store_delay(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int len = 0;
 
@@ -235,7 +234,7 @@ static ssize_t pkup_show_flush(struct device *dev, struct device_attribute *attr
 
 static ssize_t pkup_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char *devname = NULL;
+	const char *devname = NULL;
 
 	devname = dev_name(&pkup_context_obj->idev->dev);
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);	/* TODO: why +5? */
@@ -313,7 +312,7 @@ static int pkup_misc_init(struct pkup_context *cxt)
 
 	/* kernel-3.10\include\linux\Miscdevice.h */
 	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	cxt->mdev.minor = M_PKUP_MISC_MINOR;
+	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = PKUP_MISC_DEV_NAME;
 
 	err = misc_register(&cxt->mdev);
@@ -483,26 +482,7 @@ static int pkup_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void pkup_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(pkup_context_obj->early_suspend), 1);
-	if (!atomic_read(&pkup_context_obj->wake))	/* not wake up, disable in early suspend */
-		pkup_real_enable(PKUP_SUSPEND);
 
-	PKUP_LOG(" pkup_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(pkup_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-static void pkup_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(pkup_context_obj->early_suspend), 0);
-	if (!atomic_read(&pkup_context_obj->wake) && resume_enable_status)
-		pkup_real_enable(PKUP_RESUME);
-
-	PKUP_LOG(" pkup_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(pkup_context_obj->early_suspend)));
-}
 
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 static int pkup_suspend(struct platform_device *dev, pm_message_t state)

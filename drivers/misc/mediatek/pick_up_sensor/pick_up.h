@@ -10,9 +10,8 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
 
 
 #define PKUP_TAG		"<PICK_UP> "
@@ -62,7 +61,7 @@ struct pkup_init_info {
 };
 
 struct pkup_data {
-	hwm_sensor_data pkup_data;
+	struct hwm_sensor_data pkup_data;
 	int data_updata;
 	/* struct mutex lock; */
 };
@@ -82,7 +81,6 @@ struct pkup_context {
 	atomic_t wake;		/*user-space request to wake-up, used with stop */
 	atomic_t trace;
 
-	struct early_suspend early_drv;
 	atomic_t early_suspend;
 	atomic_t suspend;
 

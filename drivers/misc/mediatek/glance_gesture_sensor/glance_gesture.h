@@ -10,9 +10,8 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
 
 
 #define GLG_TAG		"<GLANCE_GESTURE> "
@@ -36,7 +35,7 @@
 #define GLG_DIV_MAX (32767)
 #define GLG_DIV_MIN (1)
 
-typedef enum {
+enum {
 	GLG_DEACTIVATE,
 	GLG_ACTIVATE,
 	GLG_SUSPEND,
@@ -62,7 +61,7 @@ struct glg_init_info {
 };
 
 struct glg_data {
-	hwm_sensor_data glg_data;
+	struct hwm_sensor_data glg_data;
 	int data_updata;
 	/* struct mutex lock; */
 };
@@ -83,7 +82,6 @@ struct glg_context {
 	atomic_t trace;
 	struct timer_list notify_timer;
 
-	struct early_suspend early_drv;
 	atomic_t early_suspend;
 	atomic_t suspend;
 
