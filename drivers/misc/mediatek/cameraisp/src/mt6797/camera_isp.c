@@ -48,6 +48,8 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 
+/*for SMI BW debug log*/
+#include<../../../smi/smi_debug.h>
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -252,7 +254,9 @@ typedef bool                    MBOOL;
 				 AFO_ERR_ST |\
 				 IMGO_ERR_ST |\
 				 AAO_ERR_ST |\
-				 LCSO_ERR_ST)
+				 LCSO_ERR_ST |\
+				 BNR_ERR_ST |\
+				 LSC_ERR_ST)
 
 /**
     IRQ Error Mask
@@ -9989,6 +9993,7 @@ static MINT32 DMAErrHandler(void)
 void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_ENUM module)
 {
 	/* ERR print */
+	MUINT32 i = 0;
 	if (ErrStatus) {
 		switch (module) {
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
@@ -10038,6 +10043,11 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 			break;
 		default:
 			break;
+		}
+		/*SMI monitor*/
+		if (WarnStatus & (RRZO_ERR_ST|AFO_ERR_ST|IMGO_ERR_ST|AAO_ERR_ST|LCSO_ERR_ST|BNR_ERR_ST|LSC_ERR_ST)) {
+			for (i = 0 ; i < 5 ; i++)
+				smi_dumpDebugMsg();
 		}
 	}
 }
