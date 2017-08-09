@@ -266,16 +266,14 @@ typedef void (*emi_mpu_notifier)(u32 addr, int wr_vio);
 (((d7) << 21) | ((d6) << 18) | ((d5) << 15) | \
 ((d4) << 12) | ((d3) << 9) | ((d2) << 6) | ((d1) << 3) | (d0))
 
-extern int emi_mpu_set_region_protection(unsigned int start_addr,
-unsigned int end_addr, int region, unsigned int access_permission);
+extern int emi_mpu_set_region_protection(unsigned long long start_addr,
+unsigned long long end_addr, int region, unsigned int access_permission);
 #if defined(CONFIG_MTKPASR)
 extern void acquire_dram_setting(struct basic_dram_setting *pasrdpd);
 #endif
 extern void emi_wp_get_status(void);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern unsigned int mt_emi_reg_read(unsigned int offset);
-extern int mt_emi_mpu_set_region_protection(unsigned int start_addr,
-unsigned int end_addr, unsigned int region_permission);
 extern void mt_emi_reg_base_set(void *base);
 extern void *mt_emi_reg_base_get(void);
 extern int emi_mpu_get_violation_port(void);
@@ -283,6 +281,6 @@ extern phys_addr_t get_max_DRAM_size(void);
 extern void __iomem *EMI_BASE_ADDR;
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
-extern int mt_emi_mpu_set_region_protection(unsigned int start,
-unsigned int end, unsigned int region_permission);
+extern int mt_emi_mpu_set_region_protection(unsigned long long start,
+unsigned long long end, unsigned int region_permission);
 #endif  /* !__MT_EMI_MPU_H */

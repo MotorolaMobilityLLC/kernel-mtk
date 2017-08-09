@@ -225,8 +225,6 @@ extern void acquire_dram_setting(struct basic_dram_setting *pasrdpd);
 extern void emi_wp_get_status(void);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
 extern unsigned int mt_emi_reg_read(unsigned int offset);
-extern int mt_emi_mpu_set_region_protection(unsigned int start_addr,
-unsigned int end_addr, unsigned int region_permission);
 extern void mt_emi_reg_base_set(void *base);
 extern void *mt_emi_reg_base_get(void);
 extern int emi_mpu_get_violation_port(void);
@@ -234,6 +232,6 @@ extern phys_addr_t get_max_DRAM_size(void);
 extern void __iomem *EMI_BASE_ADDR;
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
-extern int mt_emi_mpu_set_region_protection(unsigned int start,
-unsigned int end, unsigned int region_permission);
+extern int mt_emi_mpu_set_region_protection(unsigned long long start,
+unsigned long long end, unsigned int region_permission);
 #endif  /* !__MT_EMI_MPU_H */

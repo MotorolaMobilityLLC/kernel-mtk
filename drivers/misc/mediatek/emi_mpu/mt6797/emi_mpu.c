@@ -1151,8 +1151,8 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
  * @access_permission: EMI MPU access permission
  * Return 0 for success, otherwise negative status code.
  */
-int emi_mpu_set_region_protection(unsigned int start,
-unsigned int end, int region, unsigned int access_permission)
+int emi_mpu_set_region_protection(unsigned long long start,
+unsigned long long end, int region, unsigned int access_permission)
 {
 	int ret = 0;
 	unsigned long flags;
@@ -2227,11 +2227,11 @@ static void protect_ap_region(void)
 {
 
 	unsigned int ap_mem_mpu_id, ap_mem_mpu_attr;
-	unsigned int kernel_base;
+	unsigned long long kernel_base;
 	phys_addr_t dram_size;
 
 	return; /* temp to disable */
-	kernel_base = PHYS_OFFSET;
+	kernel_base = emi_physical_offset;
 	dram_size = get_max_DRAM_size();
 
 	ap_mem_mpu_id = AP_REGION_ID;

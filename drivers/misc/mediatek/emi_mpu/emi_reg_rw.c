@@ -58,8 +58,8 @@ unsigned int mt_emi_reg_read(unsigned int offset)
 	return 0;
 }
 
-int mt_emi_mpu_set_region_protection(unsigned int start,
-				     unsigned int end,
+int mt_emi_mpu_set_region_protection(unsigned long long start,
+				     unsigned long long end,
 				     unsigned int region_permission)
 {
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
