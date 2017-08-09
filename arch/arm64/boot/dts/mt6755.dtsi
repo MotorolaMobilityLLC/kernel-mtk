@@ -2302,5 +2302,75 @@
 		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	/* Add dummy nodes for cust.dtsi */
+	als: als {
+		compatible = "mediatek, als-eint";
+		status = "disabled";
+	};
+
+	gse_1: gse_1 {
+		compatible = "mediatek, gse_1-eint";
+		status = "disabled";
+	};
+
+	ext_buck_oc: ext_buck_oc {
+		compatible = "mediatek, ext_buck_oc-eint";
+		status = "disabled";
+	};
+
+	touch_panel: touch_panel {
+		compatible = "mediatek, touch_panel-eint";
+		status = "disabled";
+	};
+
+	msdc1_ins: msdc1_ins {
+		compatible = "mediatek, msdc1_ins-eint";
+		status = "disabled";
+	};
+
+	gyro: gyro {
+		compatible = "mediatek, gyro-eint";
+		status = "disabled";
+	};
+
+	mse: mse {
+		compatible = "mediatek, mse-eint";
+		status = "disabled";
+	};
+
+	mrdump_ext_rst: mrdump_ext_rst {
+		compatible = "mediatek, mrdump_ext_rst-eint";
+		status = "disabled";
+	};
+
+	irq_nfc: irq_nfc {
+		compatible = "mediatek, irq_nfc-eint";
+		status = "disabled";
+	};
+
+	dsi_te: dsi_te {
+		compatible = "mediatek, dsi_te-eint";
+		status = "disabled";
+	};
+
+	kd_camera_hw1: kd_camera_hw1 {
+		compatible = "mediatek, kd_camera_hw1";
+		status = "disabled";
+	};
+
+	auxadc: auxadc {
+		compatible = "mediatek, auxadc";
+		status = "disabled";
+	};
+
+	rf_clock_buffer_ctrl: rf_clock_buffer_ctrl {
+		compatible = "mediatek, rf_clock_buffer_ctrl";
+		status = "disabled";
+	};
+
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+		compatible = "mediatek, pmic_clock_buffer_ctrl";
+		status = "disabled";
+	};
 };
 /*/include/ "cust_pmic.dtsi"*/
