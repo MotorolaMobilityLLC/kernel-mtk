@@ -24,6 +24,7 @@ struct view_rank {
 
 #define RANK_START_CHANNEL	(0x10000)
 #define RANK_SEGMENTS(rank)	(((struct view_rank *)rank)->channel_segments & 0xFFFF)
+#define SEGMENTS_PER_RANK	(8)
 
 static struct view_rank rank_info[MAX_RANKS];
 
@@ -33,7 +34,7 @@ static struct basic_dram_setting pasrdpd;
 /* MTKPASR control variables */
 static unsigned int channel_count;
 static unsigned int rank_count;
-static unsigned long mtkpasr_segment_bits;
+static unsigned long mtkpasr_segment_bits;	/* 0x0000AABB. BB for rank0, AA for rank1. */
 
 /* Virtual <-> Kernel PFN helpers */
 #define MAX_RANK_PFN	(0x1FFFFF)
@@ -224,8 +225,8 @@ static void __init find_mtkpasr_valid_segment(unsigned long *start, unsigned lon
 			}
 		}
 
-		/* Update offset for mtkpasr_segment_bits */
-		num_segment += RANK_SEGMENTS(&rank_info[rank]);
+		/* Next rank: update offset for mtkpasr_segment_bits */
+		num_segment += SEGMENTS_PER_RANK;
 	}
 
 	*start = max_start;
@@ -325,8 +326,9 @@ int __init query_bank_rank_information(int bank, unsigned long *spfn, unsigned l
 				*epfn = *spfn + rank_info[rank].bank_pfn_size;
 				break;
 			}
-			seg_num -= num_segment;
-			vseg >>= num_segment;
+			/* Next rank */
+			seg_num -= SEGMENTS_PER_RANK;
+			vseg >>= SEGMENTS_PER_RANK;
 		}
 	}
 
