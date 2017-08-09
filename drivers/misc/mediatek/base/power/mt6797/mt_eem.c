@@ -2316,7 +2316,6 @@ EXPORT_SYMBOL(mt_ptp_idle_can_enter);
  */
 static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 {
-	int i;
 	struct eem_det *det;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -2325,14 +2324,32 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 		if (EEM_CTRL_SOC ==  det->ctrl_id)
 			continue;
 
-		eem_error("Timer Bank = %d (%d) - (", det->ctrl_id, det->ops->get_temp(det));
-		for (i = 0; i < det->num_freq_tbl - 1; i++)
-			eem_error("%d, ", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
-		eem_error("%d) - (0x%x), sts(%d), It(%d)\n",
-			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]),
-			det->t250,
+		eem_error("Timer Bk=%d (%d)(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)(0x%x)\n",
+			det->ctrl_id,
+			det->ops->get_temp(det),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[0]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[1]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[2]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[3]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[4]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[5]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[6]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[7]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[8]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[9]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[10]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[11]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[12]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[13]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[14]),
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[15]),
+			det->t250);
+
+		eem_error("sts(%d), It(%d)\n",
 			det->ops->get_status(det),
-			ITurboRun);
+			ITurboRun
+			);
+
 		/*
 		det->freq_tbl[0],
 		det->freq_tbl[1],
@@ -3464,6 +3481,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		eem_set_eem_volt(det);
 		if (EEM_CTRL_BIG == det->ctrl_id)
 			infoIdvfs = 0xff;
+		if (EEM_CTRL_L == det->ctrl_id)
+			ctrl_ITurbo = (0 == ctrl_ITurbo) ? 0 : 2;
 	#endif
 
 out:
@@ -3636,9 +3655,11 @@ int ptp_isr(void)
 static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					unsigned long action, void *hcpu)
 {
+	unsigned long flags;
 	unsigned int cpu = (unsigned long)hcpu;
 	unsigned int online_cpus = num_online_cpus();
 	struct device *dev;
+	struct eem_det *det;
 	enum mt_eem_cpu_id cluster_id;
 
 	/* CPU mask - Get on-line cpus per-cluster */
@@ -3646,10 +3667,11 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	struct cpumask cpu_online_cpumask;
 	unsigned int cpus;
 
-	if (0 == ctrl_ITurbo) {
-		eem_debug("Default I-Turbo off !!");
+	if (ctrl_ITurbo < 2) {
+		eem_debug("Default I-Turbo off (%d) !!", ctrl_ITurbo);
 		return NOTIFY_OK;
 	}
+	eem_debug("I-Turbo start to run (%d) !!", ctrl_ITurbo);
 
 	/* Current active CPU is belong which cluster */
 	cluster_id = arch_get_cluster_id(cpu);
@@ -3670,6 +3692,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	dev = get_cpu_device(cpu);
 
 	if (dev) {
+		det = id_to_eem_det(EEM_DET_L);
 		switch (action) {
 		case CPU_POST_DEAD:
 			if (SINGLE_CPU_NUM == online_cpus) { /* Online cpu is single */
@@ -3680,8 +3703,11 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					eem_error("L_cluster_cpus = (%d)\n", cpus);
 				if (SINGLE_CPU_NUM == cpus) { /* The single cpu located at L cluster */
 					if (0 == ITurboRun) {
-						ITurboRun = 1;
 						eem_error("ITurbo(1) L_cc(%d)\n", cpus);
+						ITurboRun = 1;
+						mt_ptp_lock(&flags);
+						/* eem_set_eem_volt(det); */
+						mt_ptp_unlock(&flags);
 					} else {
 						eem_debug("ITurbo(1)ed L_cc(%d)\n", cpus);
 					}
@@ -3690,9 +3716,12 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 		break;
 		case CPU_UP_PREPARE:
 			if (1 == ITurboRun) {
-				ITurboRun = 0;
 				if (eem_log_en)
 					eem_error("ITurbo(0) ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
+				ITurboRun = 0;
+				mt_ptp_lock(&flags);
+				/* eem_set_eem_volt(det); */
+				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
 					eem_error("ITurbo(0)ed ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
