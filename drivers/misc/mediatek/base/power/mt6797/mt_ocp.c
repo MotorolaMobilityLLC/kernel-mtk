@@ -482,20 +482,23 @@ int BigOCPCaptureStatus(int *Leakage, int *Total, int *ClkPct)
 int Temp;
 if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
 	Temp = ocp_read(OCPAPBSTATUS01);
-	/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA/mW) */
-	*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
+	/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA) */
+	*Leakage = (((Temp & 0x07FFFF00) >> 8) * 1000) >> 12;
 	/* TotScaler */
 	if (ocp_read_field(OCPAPBCFG24, 25:25) == 1)
 		*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(OCPAPBCFG24, 24:22)) + 1);
 	else
 		*Leakage = *Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
 
+	if (*Leakage > 127999)
+		*Leakage = 127999;
+
 	/* CapOCCGPct -> 100.00% */
 	*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 
 	/* CapTotAct:  Q8.12 -> integer  */
 	Temp = ocp_read(OCPAPBSTATUS02);
-	*Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
+	*Total = ((Temp & 0x0007FFFF) * 1000) >> 12;
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: big total_pwr=%d Lk_pwr=%d CG=%d\n", *Total, *Leakage, *ClkPct);
 
@@ -594,7 +597,7 @@ return 0;
 int BigOCPMAFAct(unsigned int *CapMAFAct)
 {
 if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1)
-	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 19:0) * 1000) >> 12; /* mA*/
+	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 18:0) * 1000) >> 12; /* mA*/
 else
 	*CapMAFAct = 0x0;
 
@@ -1048,8 +1051,8 @@ int Temp;
 if (Cluster == OCP_LL) {
 	if (ocp_read_field((MP0_OCP_CAP_STATUS00), 0:0) == 1) {
 		Temp = ocp_read((MP0_OCP_CAP_STATUS00));
-		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA, mW) */
-		*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
+		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA) */
+		*Leakage = (((Temp & 0x07FFFF00) >> 8) * 1000) >> 12;
 
 		/* TotScaler */
 		if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
@@ -1057,11 +1060,14 @@ if (Cluster == OCP_LL) {
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP0_OCP_SCAL, 2:0));
 
+		if (*Leakage > 127999)
+			*Leakage = 127999;
+
 		/* CapOCCGPct -> 100.00% */
 		*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 		Temp = ocp_read((MP0_OCP_CAP_STATUS01));
-		/* CapTotAct:  Q8.12 -> integer (mA, mW) */
-		*Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
+		/* CapTotAct:  Q8.12 -> integer (mA) */
+		*Total = ((Temp & 0x0007FFFF) * 1000) >> 12;
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL0 total_pwr=%d Lk_pwr=%d CG=%d\n", *Total, *Leakage, *ClkPct);
@@ -1077,8 +1083,8 @@ return 1;
 } else if (Cluster == OCP_L) {
 	if (ocp_read_field((MP1_OCP_CAP_STATUS00), 0:0) == 1) {
 		Temp = ocp_read((MP1_OCP_CAP_STATUS00));
-		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA, mW) */
-		*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
+		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA) */
+		*Leakage = (((Temp & 0x07FFFF00) >> 8) * 1000) >> 12;
 
 		/* TotScaler */
 		if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
@@ -1086,11 +1092,14 @@ return 1;
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP1_OCP_SCAL, 2:0));
 
-		/* CapOCCGPct -> 100.00% */
+		if (*Leakage > 127999)
+			*Leakage = 127999;
+
+	/* CapOCCGPct -> 100.00% */
 		*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 		Temp = ocp_read((MP1_OCP_CAP_STATUS01));
 		/* CapTotAct:  Q8.12 -> integer (mA, mW) */
-		*Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
+		*Total = ((Temp & 0x0007FFFF) * 1000) >> 12;
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL1 total_pwr=%d Lk_pwr=%d CG=%d\n", *Total, *Leakage, *ClkPct);
@@ -1276,11 +1285,12 @@ if (Cluster == OCP_LL) {
 				(unsigned long long)ocp_read(MP0_OCP_DBG_ACT_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
 
+				LittleLowerPowerOn(0, 0);
 	} else {
 		*AvgLkg = 0;
 		*AvgAct = 0;
 	}
-	LittleLowerPowerOn(0, 0);
+
 
 } else if (Cluster == OCP_L) {
 	if (ocp_read_field(MP1_OCP_DBG_STAT, 31:31) == 1) {
@@ -1299,12 +1309,12 @@ if (Cluster == OCP_LL) {
 				(unsigned long long)ocp_read(MP1_OCP_DBG_ACT_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
 
+				LittleLowerPowerOn(1, 0);
 	} else {
 		*AvgLkg = 0;
 		*AvgAct = 0;
 	}
 
-	LittleLowerPowerOn(1, 0);
 }
 
 return 0;
@@ -1415,7 +1425,7 @@ int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct)
 {
 if (Cluster == OCP_LL) {
 	if (ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0) == 1) {
-		*CapMAFAct = (ocp_read_field(MP0_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA*/
+		*CapMAFAct = (ocp_read_field(MP0_OCP_CAP_STATUS02, 18:0) * 1000) >> 12; /* mA*/
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL0 MAFAct=%d\n", *CapMAFAct);
@@ -1427,7 +1437,7 @@ if (Cluster == OCP_LL) {
 
 } else if (Cluster == OCP_L) {
 	if (ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0) == 1) {
-		*CapMAFAct = (ocp_read_field(MP1_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA*/
+		*CapMAFAct = (ocp_read_field(MP1_OCP_CAP_STATUS02, 18:0) * 1000) >> 12; /* mA*/
 
 	if (HW_API_DEBUG_ON)
 		ocp_info("ocp: CL1 MAFAct=%d\n", *CapMAFAct);
