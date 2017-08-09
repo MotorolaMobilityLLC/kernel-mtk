@@ -384,10 +384,10 @@ static ssize_t gt91xx_config_write_proc(struct file *file, const char *buffer, s
 	unsigned int mode;
 	u8 buf[1];
 
-	GTP_DEBUG("write count %ld", count);
+	GTP_DEBUG("write count %ld", (unsigned long int)count);
 
 	if (count > GTP_CONFIG_MAX_LENGTH) {
-		GTP_ERROR("size not match [%d:%ld]", GTP_CONFIG_MAX_LENGTH, count);
+		GTP_ERROR("size not match [%d:%ld]", GTP_CONFIG_MAX_LENGTH, (unsigned long int)count);
 		return -EFAULT;
 	}
 
