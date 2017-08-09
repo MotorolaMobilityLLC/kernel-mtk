@@ -344,20 +344,10 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 						if ((*pcValue) == '1'|| (*pcValue) == '0')
 						{
 							if ((*pcValue) -'0' == 0)
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, false);
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, false);
 							else
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, true);
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, true);
 						}
-					}
-					else if (strcmp(pcCMD, "low-power-mode") == 0)
-                                        {
-                                                if ((*pcValue) == '1'|| (*pcValue) == '0')
-                                                {
-                                                        if ((*pcValue) -'0' == 0)
-                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, false);
-                                                        else
-                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, true);
-                                                }
 					}
 					else
 					{
@@ -418,8 +408,6 @@ static int ged_vsync_offset_enable_seq_show(struct seq_file *psSeqFile, void *pv
 			seq_printf(psSeqFile, "MHL: %d\n",  g_ui32EventStatus&GED_EVENT_MHL?1:0 );
 			seq_printf(psSeqFile, "GAS: %d\n",  g_ui32EventStatus&GED_EVENT_GAS?1:0 );
 			seq_printf(psSeqFile, "Thermal: %d\n", g_ui32EventStatus&GED_EVENT_THERMAL?1:0 );
-			seq_printf(psSeqFile, "Low power mode: %d\n", g_ui32EventStatus & GED_EVENT_LOW_POWER_MODE ? 1 : 0);
-			seq_printf(psSeqFile, "MHL4K Video: %d\n", g_ui32EventStatus & GED_EVENT_MHL4K_VID ? 1 : 0);
 		}
 	}
 
