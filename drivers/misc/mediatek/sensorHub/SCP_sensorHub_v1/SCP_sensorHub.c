@@ -563,9 +563,10 @@ int SCP_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int w
 				(atomic_read(&(obj_data->wait_rsp)) == 0));
 	del_timer_sync(&obj_data->timer);
 	err = userData->rsp.errCode;
-
+/*
 	if (t6 - t1 > 3000000LL)
 		SCP_ERR("%llu, %llu, %llu, %llu, %llu, %llu\n", t1, t2, t3, t4, t5, t6);
+	*/
 	mutex_unlock(&SCP_sensorHub_req_mutex);
 
 	if (SCP_TRC_IPI & atomic_read(&(obj_data->trace)))
