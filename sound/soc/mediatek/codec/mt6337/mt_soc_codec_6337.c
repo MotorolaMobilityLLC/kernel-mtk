@@ -5528,6 +5528,7 @@ static int Audio_HyBridDRE_TurnOff_Get(struct snd_kcontrol *kcontrol, struct snd
 
 static int Audio_HyBridDRE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
+#if 0
 	unsigned char rg_dre_delay_ana = ucontrol->value.bytes.data[0];
 	int32 para_temp_value;
 	uint32 rg_dre_gain_ana_tar_idx;
@@ -5702,7 +5703,177 @@ static int Audio_HyBridDRE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 		} else
 			break;
 	} while (1);
+#else
+	unsigned char rg_dre_delay_ana = ucontrol->value.bytes.data[0];
+	int32 para_temp_value;
+	uint32 rg_dre_gain_ana_tar_idx;
+	uint32 rg_temp_value;
+	uint32 rg_dre_r_gain_dig_tar, rg_dre_r_gain_ana_tar;
+	uint32 dre_r_gain_dig_cur, dre_r_gain_ana_cur;
+	uint32 dre_r_dig_gain_targeted, dre_r_ana_gain_targeted;
+	uint32 rg_dre_l_gain_dig_tar, rg_dre_l_gain_ana_tar;
+	uint32 dre_l_gain_dig_cur, dre_l_gain_ana_cur;
+	uint32 dre_l_dig_gain_targeted, dre_l_ana_gain_targeted;
+	bool bLNoZCEEnable = false;
+	bool bRNoZCEEnable = false;
+	bool bSleepFlg = false;
+	uint32 dCount = 0;
+	uint32 rg_dre_delay_ana_idx;
+	bool bLTargeted = false;
+	bool bRTargeted = false;
 
+	if (ucontrol->value.bytes.data[1] == 1)
+		para_temp_value = ((int32) ucontrol->value.bytes.data[2]) * (-1);
+	else
+		para_temp_value = (int32) ucontrol->value.bytes.data[2];
+
+	if (rg_dre_delay_ana == 0 || para_temp_value > 12 || (para_temp_value < -32 && para_temp_value != -40)) {
+		pr_err("%s Parameter invalid -10\n", __func__);
+		pr_err("ana_delay [%d] ana_db [%d]\n", rg_dre_delay_ana, para_temp_value);
+		return -10;
+	}
+	rg_dre_delay_ana_idx = ((uint32)rg_dre_delay_ana) - 1;
+
+	if (Audio_HyBridDRE_getAnalogIdx(para_temp_value, &rg_dre_gain_ana_tar_idx) < 0) {
+		pr_err("%s -1\n", __func__);
+		return -1;
+	}
+
+	pr_warn("%s %d %d enter\n", __func__, rg_dre_delay_ana_idx, rg_dre_gain_ana_tar_idx);
+
+	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
+	if ((rg_temp_value & 0x00C0) != 0x0080) {
+		pr_warn("%s R Warn Off rg_temp_value 0x%x\n", __func__, rg_temp_value);
+		Audio_DRE_RegDump();
+		return 0;
+	}
+
+	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG3);
+	if ((rg_temp_value & 0x0080) != 0x0080) {
+		pr_warn("%s L Warn Off rg_temp_value 0x%x\n", __func__, rg_temp_value);
+		Audio_DRE_RegDump();
+		return 0;
+	}
+
+	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+	rg_dre_r_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
+	rg_dre_r_gain_ana_tar = rg_temp_value & 0x003f;
+
+	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+	rg_dre_l_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
+	rg_dre_l_gain_ana_tar = rg_temp_value & 0x003f;
+
+	do {
+		if (bRTargeted == false) {
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG0);
+			dre_r_gain_dig_cur = (rg_temp_value & 0x3f00) >> 8;
+			dre_r_gain_ana_cur = rg_temp_value & 0x003f;
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG3);
+			dre_r_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
+			dre_r_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
+			if (rg_dre_r_gain_dig_tar != 0 || rg_dre_r_gain_ana_tar != rg_dre_gain_ana_tar_idx) {
+				if (bRNoZCEEnable == false) {
+					/* Send NonZeroEvent*/
+					Ana_Set_Reg(AFE_DL_DRE_R_CFG0, rg_dre_gain_ana_tar_idx << 8, 0x3f3f);
+					Ana_Set_Reg(AFE_DL_DRE_R_CFG1, 0x8000, 0xB700);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG2) & 0x01;
+					Ana_Set_Reg(AFE_DL_DRE_R_CFG2, rg_temp_value?0:1, 0x0001);
+					bRNoZCEEnable = true;
+					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+					rg_dre_r_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
+					rg_dre_r_gain_ana_tar = rg_temp_value & 0x003f;
+					bSleepFlg = true;
+					pr_warn("%s R Do NoZCE [%d]->[%d], [%d]->[%d]\n", __func__,
+						dre_r_gain_dig_cur, 0, dre_r_gain_ana_cur, rg_dre_gain_ana_tar_idx);
+				} else {
+					pr_warn("%s R Err bRNoZCEEnable %d\n", __func__, bRNoZCEEnable);
+					Audio_DRE_RegDump();
+				}
+			} else if (dre_r_gain_dig_cur != rg_dre_r_gain_dig_tar ||
+					dre_r_gain_ana_cur != rg_dre_r_gain_ana_tar) {
+				if (dre_r_dig_gain_targeted && dre_r_ana_gain_targeted) {
+					pr_warn("%s R Err dre_r_dig_gain_targeted %d dre_r_ana_gain_targeted %d\n",
+						__func__, dre_r_dig_gain_targeted, dre_r_ana_gain_targeted);
+					Audio_DRE_RegDump();
+					/* break; */
+				} else {
+					pr_warn("%s R Wait [%d]->[%d], [%d]->[%d]\n", __func__, dre_r_gain_dig_cur,
+						rg_dre_r_gain_dig_tar, dre_r_gain_ana_cur, rg_dre_r_gain_ana_tar);
+					bSleepFlg = true;
+				}
+			} else if (dre_r_dig_gain_targeted && dre_r_ana_gain_targeted) {
+				pr_warn("%s R successfully\n", __func__);
+				bRTargeted = true;
+				/* break; */
+			} else {
+				pr_warn("%s R Err Unknown status\n", __func__);
+				Audio_DRE_RegDump();
+				bSleepFlg = true;
+			}
+		}
+
+		if (bLTargeted == false) {
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG0);
+			dre_l_gain_dig_cur = (rg_temp_value & 0x3f00) >> 8;
+			dre_l_gain_ana_cur = rg_temp_value & 0x003f;
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG3);
+			dre_l_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
+			dre_l_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
+			if (rg_dre_l_gain_dig_tar != 0 || rg_dre_l_gain_ana_tar != rg_dre_gain_ana_tar_idx) {
+				if (bLNoZCEEnable == false) {
+					/* Send NonZeroEvent*/
+					Ana_Set_Reg(AFE_DL_DRE_L_CFG0, rg_dre_gain_ana_tar_idx << 8, 0x3f3f);
+					Ana_Set_Reg(AFE_DL_DRE_L_CFG1, 0x8000, 0xB700);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG2) & 0x01;
+					Ana_Set_Reg(AFE_DL_DRE_L_CFG2, rg_temp_value?0:1, 0x0001);
+					bLNoZCEEnable = true;
+					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+					rg_dre_l_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
+					rg_dre_l_gain_ana_tar = rg_temp_value & 0x3f;
+					bSleepFlg = true;
+					pr_warn("%s L Do NoZCE [%d]->[%d], [%d]->[%d]\n", __func__,
+						dre_l_gain_dig_cur, 0, dre_l_gain_ana_cur, rg_dre_gain_ana_tar_idx);
+				} else {
+					pr_warn("%s L Err bLNoZCEEnable %d\n", __func__, bLNoZCEEnable);
+					Audio_DRE_RegDump();
+				}
+			} else if (dre_l_gain_dig_cur != rg_dre_l_gain_dig_tar ||
+					dre_l_gain_ana_cur != rg_dre_l_gain_ana_tar) {
+				if (dre_r_dig_gain_targeted && dre_r_ana_gain_targeted) {
+					pr_warn("%s L Err dre_l_dig_gain_targeted %d dre_l_ana_gain_targeted %d\n",
+						__func__, dre_l_dig_gain_targeted, dre_l_ana_gain_targeted);
+					Audio_DRE_RegDump();
+					/* break; */
+				} else {
+					pr_warn("%s L Wait [%d]->[%d], [%d]->[%d]\n", __func__, dre_l_gain_dig_cur,
+						rg_dre_l_gain_dig_tar, dre_l_gain_ana_cur, rg_dre_l_gain_ana_tar);
+					bSleepFlg = true;
+				}
+			} else if (dre_l_dig_gain_targeted && dre_l_ana_gain_targeted) {
+				pr_warn("%s L successfully\n", __func__);
+				bLTargeted = true;
+				/* break; */
+			} else {
+				pr_warn("%s L Err Unknown status\n", __func__);
+				Audio_DRE_RegDump();
+				bSleepFlg = true;
+			}
+		}
+
+		if (bSleepFlg) {
+			dCount++;
+			if (dCount > WAIT_DRE_TARGET_COUNT) {
+				pr_warn("%s Err TimeOut R Ready ? %d, L Ready ? %d\n", __func__, bRTargeted,
+					bLTargeted);
+				Audio_DRE_RegDump();
+				break;
+			}
+			udelay(1000);
+			bSleepFlg = false;
+		} else
+			break;
+	} while (1);
+#endif
 	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, 0, 0x0080);
 	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (1 << 6), 0x00C0);  /* pdn last trigger on+pdn*/
 
