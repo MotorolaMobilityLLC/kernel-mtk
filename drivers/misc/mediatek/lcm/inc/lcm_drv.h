@@ -735,5 +735,7 @@ extern unsigned int lcm_count;
 
 const LCM_DRIVER *LCM_GetDriver(void);
 unsigned char which_lcd_module_triple(void);
+int lcm_vgp_supply_enable(void);
+int lcm_vgp_supply_disable(void);
 
 #endif /* __LCM_DRV_H__ */
