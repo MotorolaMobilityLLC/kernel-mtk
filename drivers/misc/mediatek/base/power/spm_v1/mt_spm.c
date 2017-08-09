@@ -322,13 +322,6 @@ static void spm_register_init(void)
 	if (!scp_i2c2_base)
 		spm_err("base scp_i2c2_base failed\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,I2C4");
-	if (!node)
-		spm_err("find I2C4 node failed\n");
-	i2c4_base = of_iomap(node, 0);
-	if (!i2c4_base)
-		spm_err("base i2c4_base failed\n");
-
 	spm_err
 	    ("spm_base = %p, scp_i2c0_base = %p, scp_i2c1_base = %p, scp_i2c2_base = %p\n",
 	     spm_base, scp_i2c0_base, scp_i2c1_base, scp_i2c2_base);
