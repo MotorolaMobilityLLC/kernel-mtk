@@ -182,7 +182,11 @@ static struct usb_configuration android_config_driver = {
 	.label		= "android",
 	.unbind		= android_unbind_config,
 	.bConfigurationValue = 1,
+#ifdef CONFIG_USBIF_COMPLIANCE
+	.bmAttributes	= USB_CONFIG_ATT_ONE,
+#else
 	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
+#endif
 	.MaxPower	= 500, /* 500ma */
 };
 
@@ -1725,7 +1729,11 @@ static int android_init_functions(struct android_usb_function **functions,
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
 	int err;
+#ifdef CONFIG_USBIF_COMPLIANCE
+	int index = 1;
+#else
 	int index = 0;
+#endif
 
 	for (; (f = *functions++); index++) {
 		f->dev_name = kasprintf(GFP_KERNEL, "f_%s", f->name);
@@ -2162,7 +2170,11 @@ static int android_bind(struct usb_composite_dev *cdev)
 	strings_dev[STRING_SERIAL_IDX].id = id;
 	device_desc.iSerialNumber = id;
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+	usb_gadget_clear_selfpowered(gadget);
+#else
 	usb_gadget_set_selfpowered(gadget);
+#endif
 	dev->cdev = cdev;
 
 	return 0;
@@ -2276,6 +2288,162 @@ static int android_create_device(struct android_dev *dev)
 }
 
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+
+#include <linux/proc_fs.h>
+#include <asm/uaccess.h>
+#include <linux/seq_file.h>
+
+
+static int andoid_usbif_driver_on;
+
+static int android_start(void)
+{
+	int err;
+
+	pr_notice("android_start ===>\n");
+
+	err = usb_composite_probe(&android_usb_driver);
+	if (err)
+		pr_err("%s: failed to probe driver %d", __func__, err);
+
+	/* HACK: exchange composite's setup with ours */
+	composite_setup_func = android_usb_driver.gadget_driver.setup;
+	android_usb_driver.gadget_driver.setup = android_setup;
+
+	pr_notice("android_start <===\n");
+
+	return err;
+}
+
+static int android_stop(void)
+{
+	pr_notice("android_stop ===>\n");
+
+	usb_composite_unregister(&android_usb_driver);
+
+	pr_notice("android_stop <===\n");
+	return 0;
+}
+
+static int andoid_usbif_proc_show(struct seq_file *seq, void *v)
+{
+	seq_printf(seq, "andoid_usbif_proc_show, andoid_usbif_driver_on is %d (on:1, off:0)\n", andoid_usbif_driver_on);
+	return 0;
+}
+
+static int andoid_usbif_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, andoid_usbif_proc_show, inode->i_private);
+}
+
+static ssize_t andoid_usbif_proc_write(struct file *file, const char __user *buf, size_t length, loff_t *ppos)
+{
+	char msg[32];
+
+	if (length >= sizeof(msg)) {
+		pr_notice("andoid_usbif_proc_write length error, the error len is %d\n", (unsigned int)length);
+		return -EINVAL;
+	}
+	if (copy_from_user(msg, buf, length))
+		return -EFAULT;
+
+	msg[length] = 0;
+
+	pr_notice("andoid_usbif_proc_write: %s, current driver on/off: %d\n", msg, andoid_usbif_driver_on);
+
+	if ((msg[0] == '1') && (andoid_usbif_driver_on == 0)) {
+		pr_notice("start usb android driver ===>\n");
+		pr_warn("start usb android driver ===>\n");
+		android_start();
+		andoid_usbif_driver_on = 1;
+		pr_notice("start usb android driver <===\n");
+	} else if ((msg[0] == '0') && (andoid_usbif_driver_on == 1)) {
+		pr_notice("stop usb android driver ===>\n");
+		pr_warn("stop usb android driver ===>\n");
+		andoid_usbif_driver_on = 0;
+		android_stop();
+
+		pr_notice("stop usb android driver <===\n");
+	}
+
+	return length;
+}
+
+static const struct file_operations andoid_usbif_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = andoid_usbif_proc_open,
+	.write = andoid_usbif_proc_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+
+};
+
+static int __init init(void)
+{
+	struct android_dev *dev;
+	int err;
+	struct proc_dir_entry *prEntry;
+
+	android_class = class_create(THIS_MODULE, "android_usb");
+	if (IS_ERR(android_class))
+		return PTR_ERR(android_class);
+
+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+	if (!dev) {
+		err = -ENOMEM;
+		goto err_dev;
+	}
+
+	dev->disable_depth = 1;
+	dev->functions = supported_functions;
+	INIT_LIST_HEAD(&dev->enabled_functions);
+	INIT_WORK(&dev->work, android_work);
+	mutex_init(&dev->mutex);
+
+	err = android_create_device(dev);
+	if (err) {
+		pr_err("%s: failed to create android device %d", __func__, err);
+		goto err_create;
+	}
+
+	_android_dev = dev;
+
+	prEntry = proc_create("android_usbif_init", 0666, NULL, &andoid_usbif_proc_fops);
+
+	if (prEntry)
+		pr_warn("create the android_usbif_init proc OK!\n");
+	else
+		pr_warn("[ERROR] create the android_usbif_init proc FAIL\n");
+
+	/* set android up at boot up */
+	android_start();
+	andoid_usbif_driver_on = 1;
+
+	return 0;
+
+err_create:
+	kfree(dev);
+err_dev:
+	class_destroy(android_class);
+	return err;
+}
+
+late_initcall(init);
+
+
+
+static void __exit cleanup(void)
+{
+	pr_warn("[U3D] android cleanup ===>\n");
+	class_destroy(android_class);
+	kfree(_android_dev);
+	_android_dev = NULL;
+	pr_warn("[U3D] android cleanup <===\n");
+}
+module_exit(cleanup);
+
+#else
 static int __init init(void)
 {
 	struct android_dev *dev;
@@ -2335,3 +2503,4 @@ static void __exit cleanup(void)
 	_android_dev = NULL;
 }
 module_exit(cleanup);
+#endif

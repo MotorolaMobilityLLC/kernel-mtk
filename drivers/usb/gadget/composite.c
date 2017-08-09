@@ -560,9 +560,14 @@ static int bos_desc(struct usb_composite_dev *cdev)
 	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
 	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
 	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
+#ifdef CONFIG_USBIF_COMPLIANCE
+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT) |
+					cpu_to_le32(USB_BESL_SUPPORT);
+#else
 	/* align MTK K310 */
 	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT);
 	/* usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT | USB_BESL_SUPPORT); */
+#endif
 
 	/*
 	 * The Superspeed USB Capability descriptor shall be implemented by all
@@ -1434,6 +1439,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	u16				w_length = le16_to_cpu(ctrl->wLength);
 	struct usb_function		*f = NULL;
 	u8				endp;
+#ifdef CONFIG_USBIF_COMPLIANCE
+	struct usb_otg_descriptor *otg_desc = req->buf;
+#endif
 
 	/* partial re-init of the response message; the function or the
 	 * gadget might need to intercept e.g. a control-OUT completion
@@ -1451,7 +1459,15 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		if (ctrl->bRequestType != USB_DIR_IN)
 			goto unknown;
 		switch (w_value >> 8) {
-
+#ifdef CONFIG_USBIF_COMPLIANCE
+		case USB_DT_OTG:
+			otg_desc->bLength = sizeof(*otg_desc);
+			otg_desc->bDescriptorType = USB_DT_OTG;
+			otg_desc->bmAttributes = USB_OTG_SRP | USB_OTG_HNP;
+			otg_desc->bcdOTG = cpu_to_le16(0x0200);
+			value = min_t(int, w_length, sizeof(struct usb_otg_descriptor));
+			break;
+#endif
 		case USB_DT_DEVICE:
 			cdev->desc.bNumConfigurations =
 				count_configs(cdev, USB_DT_DEVICE);
