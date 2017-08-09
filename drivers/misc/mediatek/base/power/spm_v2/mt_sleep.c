@@ -207,6 +207,13 @@ bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 	return true;
 }
 
+#ifdef CONFIG_MTK_SYSTRACKER
+void __attribute__ ((weak)) systracker_enable(void)
+{
+
+}
+#endif
+
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
