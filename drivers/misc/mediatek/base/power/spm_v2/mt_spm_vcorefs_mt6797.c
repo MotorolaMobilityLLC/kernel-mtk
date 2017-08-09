@@ -12,8 +12,10 @@
 #include "mt_spm_pmic_wrap.h"
 #include "mt_spm_internal.h"
 #include "mt_spm_misc.h"
+#include "mt_dramc.h"
 
 #define DYNAMIC_LOAD 1
+#define GATING_AUTO_SAVE 1
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define VCOREFS_AEE_RR_REC 1
@@ -273,6 +275,10 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	dvs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DVS) == 0);
 	dfs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DFS) == 0);
 
+	#if GATING_AUTO_SAVE
+	DVFS_gating_auto_save();
+	#endif
+
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
 
 	switch (opp) {
@@ -350,6 +356,10 @@ int spm_vcorefs_screen_on_setting(void)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	#if GATING_AUTO_SAVE
+	DVFS_gating_auto_save();
+	#endif
+
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_ON);
 
 	pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 0;
@@ -381,6 +391,10 @@ int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
 	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
+
+	#if GATING_AUTO_SAVE
+	DVFS_gating_auto_save();
+	#endif
 
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_OFF);
 

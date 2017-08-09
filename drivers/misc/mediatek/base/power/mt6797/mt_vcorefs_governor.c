@@ -30,7 +30,6 @@
 #define AUTOK_EMMC	1
 #define	AUTOK_SDIO	0
 
-#define GATING_AUTO_SAVE 0
 /*
  * __nosavedata will not be restored after IPO-H boot
  */
@@ -291,14 +290,10 @@ bool is_vcorefs_feature_enable(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
-/* FIXME: not support frequency hopping
 	if (!dram_can_support_fh()) {
 		gvrctrl->plat_feature_en = 0;
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 	}
-
-	vcorefs_crit("plat_feature_en: %s\n", (gvrctrl->plat_feature_en) ? "ENABLE" : "DISABLE");
-*/
 
 	return gvrctrl->plat_feature_en;
 }
@@ -729,11 +724,6 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
-
-#if GATING_AUTO_SAVE
-	DVFS_gating_auto_save();
-	vcorefs_crit("DVFS_gating_auto_save end...\n");
-#endif
 
 	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 
