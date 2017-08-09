@@ -220,10 +220,11 @@ static void record_i2c_info(struct mt_i2c *i2c, int tmo)
 
 	i2c->rec_info[idx].slave_addr = i2c_readw(i2c, OFFSET_SLAVE_ADDR);
 	i2c->rec_info[idx].intr_stat = i2c->irq_stat;
+	i2c->rec_info[idx].control = i2c_readw(i2c, OFFSET_CONTROL);
 	i2c->rec_info[idx].fifo_stat = i2c_readw(i2c, OFFSET_FIFO_STAT);
 	i2c->rec_info[idx].debug_stat = i2c_readw(i2c, OFFSET_DEBUGSTAT);
 	i2c->rec_info[idx].tmo = tmo;
-	get_monotonic_boottime(&i2c->rec_info[idx].endtime);
+	i2c->rec_info[idx].end_time = sched_clock();
 
 	i2c->rec_idx++;
 	if (i2c->rec_idx == I2C_RECORD_LEN)
@@ -234,6 +235,8 @@ static void dump_i2c_info(struct mt_i2c *i2c)
 {
 	int i;
 	int idx = i2c->rec_idx;
+	long long endtime;
+	unsigned long ns;
 
 	if (i2c->buffermode) /* no i2c history @ buffermode */
 		return;
@@ -244,13 +247,16 @@ static void dump_i2c_info(struct mt_i2c *i2c)
 		if (idx == 0)
 			idx = I2C_RECORD_LEN;
 		idx--;
+		endtime = i2c->rec_info[idx].end_time;
+		ns = do_div(endtime, 1000000000);
 		dev_err(i2c->dev,
-			"[%02d] [%5d.%06lu] SLAVE_ADDR=%x,INTR_STAT=%x,FIFO_STAT=%x,DEBUGSTAT=%x, tmo=%d\n",
+			"[%02d] [%5lu.%06lu] SLAVE_ADDR=%x,INTR_STAT=%x,CONTROL=%x,FIFO_STAT=%x,DEBUGSTAT=%x, tmo=%d\n",
 			i,
-			(int)i2c->rec_info[idx].endtime.tv_sec,
-			i2c->rec_info[idx].endtime.tv_nsec/1000,
+			(unsigned long)endtime,
+			ns/1000,
 			i2c->rec_info[idx].slave_addr,
 			i2c->rec_info[idx].intr_stat,
+			i2c->rec_info[idx].control,
 			i2c->rec_info[idx].fifo_stat,
 			i2c->rec_info[idx].debug_stat,
 			i2c->rec_info[idx].tmo
@@ -261,7 +267,7 @@ static void dump_i2c_info(struct mt_i2c *i2c)
 static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 {
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
-	int ret;
+	int ret = 0;
 
 	ret = clk_prepare_enable(i2c->clk_dma);
 	if (ret)
@@ -282,13 +288,26 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 			goto err_pmic;
 	}
 	spin_lock(&i2c->cg_lock);
-	i2c->cg_cnt++;
+	if (i2c->suspended)
+		ret = -EIO;
+	else
+		i2c->cg_cnt++;
 	spin_unlock(&i2c->cg_lock);
+	if (ret) {
+		dev_err(i2c->dev, "err, access at suspend no irq stage\n");
+		goto err_cg;
+	}
+
 	return 0;
 
+err_cg:
+	if (i2c->have_pmic)
+		clk_disable_unprepare(i2c->clk_pmic);
 err_pmic:
 	clk_disable_unprepare(i2c->clk_main);
 err_main:
+	if (i2c->clk_arb)
+		clk_disable_unprepare(i2c->clk_arb);
 	clk_disable_unprepare(i2c->clk_dma);
 	return ret;
 #else
@@ -1206,8 +1225,14 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
 		i2c, OFFSET_INTR_STAT);
 	i2c->trans_stop = true;
-	if (!i2c->is_hw_trig)
+	if (!i2c->is_hw_trig) {
 		wake_up(&i2c->wait);
+		if (!i2c->irq_stat) {
+			dev_err(i2c->dev, "addr: %x, irq stat 0\n", i2c->addr);
+			i2c_dump_info(i2c);
+			mt_irq_dump_status(i2c->irqnr);
+		}
+	}
 	else {	/* dump regs info for hw trig i2c if ACK err */
 		if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 			dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
@@ -1437,12 +1462,51 @@ static int mt_i2c_remove(struct platform_device *pdev)
 
 MODULE_DEVICE_TABLE(of, mt_i2c_match);
 
+#ifdef CONFIG_PM_SLEEP
+static int mt_i2c_suspend_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mt_i2c *i2c = platform_get_drvdata(pdev);
+	int ret = 0;
+
+	spin_lock(&i2c->cg_lock);
+	if (i2c->cg_cnt > 0) {
+		ret = -EBUSY;
+		dev_err(i2c->dev, "%s(%d) busy\n", __func__, i2c->cg_cnt);
+	} else
+		i2c->suspended = true;
+	spin_unlock(&i2c->cg_lock);
+
+	return ret;
+}
+
+static int mt_i2c_resume_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mt_i2c *i2c = platform_get_drvdata(pdev);
+
+	spin_lock(&i2c->cg_lock);
+	i2c->suspended = false;
+	spin_unlock(&i2c->cg_lock);
+
+	return 0;
+}
+#endif
+
+static const struct dev_pm_ops mt_i2c_dev_pm_ops = {
+#ifdef CONFIG_PM_SLEEP
+	.suspend_noirq = mt_i2c_suspend_noirq,
+	.resume_noirq = mt_i2c_resume_noirq,
+#endif
+};
+
 static struct platform_driver mt_i2c_driver = {
 	.probe = mt_i2c_probe,
 	.remove = mt_i2c_remove,
 	.driver = {
 		.name = I2C_DRV_NAME,
 		.owner = THIS_MODULE,
+		.pm = &mt_i2c_dev_pm_ops,
 		.of_match_table = of_match_ptr(mtk_i2c_of_match),
 	},
 };

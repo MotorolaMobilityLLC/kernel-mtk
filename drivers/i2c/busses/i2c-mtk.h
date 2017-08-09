@@ -171,10 +171,11 @@ enum I2C_REGS_OFFSET {
 struct i2c_info {
 	unsigned int slave_addr;
 	unsigned int intr_stat;
+	unsigned int control;
 	unsigned int fifo_stat;
 	unsigned int debug_stat;
 	unsigned int tmo;
-	struct timespec endtime;
+	long long end_time;
 };
 
 enum PERICFG_OFFSET {
@@ -247,6 +248,7 @@ struct mt_i2c {
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
+	bool suspended;
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
