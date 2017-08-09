@@ -236,6 +236,12 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 			policy->req.limit[i].max_cpu_core = get_cluster_max_cpu_core(i);
 			policy->req.limit[i].min_cpufreq_idx = get_cluster_min_cpufreq_idx(i);
 			policy->req.limit[i].max_cpufreq_idx = get_cluster_max_cpufreq_idx(i);
+
+#ifdef DISABLE_CLUSTER_MIGRATION
+			/* keep at least 1 LL */
+			if (i == 0)
+				policy->req.limit[i].min_cpu_core = 1;
+#endif
 		} else {
 			policy->req.limit[i].min_cpu_core =
 				state_info[state].cluster_limit->state_limit[i].min_cpu_core;
