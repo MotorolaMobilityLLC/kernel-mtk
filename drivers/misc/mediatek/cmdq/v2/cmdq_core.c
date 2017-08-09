@@ -620,13 +620,12 @@ int32_t cmdq_core_start_secure_path_notify_thread(void)
 #endif
 }
 
-const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event)
+const char *cmdq_core_get_event_name_ENUM(CMDQ_EVENT_ENUM event)
 {
 	const char *eventName = "CMDQ_EVENT_UNKNOWN";
-	const int32_t eventENUM = cmdq_core_reverse_event_ENUM(event);
 
 #undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name, val, dts_name)	{ if (val == eventENUM) { eventName = #name; break; }  }
+#define DECLARE_CMDQ_EVENT(name, val, dts_name)	{ if (val == event) { eventName = #name; break; }  }
 	do {
 #include "cmdq_event_common.h"
 	} while (0);
@@ -635,22 +634,34 @@ const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event)
 	return eventName;
 }
 
+const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event)
+{
+	const int32_t eventENUM = cmdq_core_reverse_event_ENUM(event);
+
+	return cmdq_core_get_event_name_ENUM(eventENUM);
+}
+
 void cmdqCoreClearEvent(CMDQ_EVENT_ENUM event)
 {
-	CMDQ_MSG("clear event %d\n", event);
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, event);
+	int32_t eventValue = cmdq_core_get_event_value(event);
+
+	CMDQ_MSG("clear event %d\n", eventValue);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, eventValue);
 }
 
 void cmdqCoreSetEvent(CMDQ_EVENT_ENUM event)
 {
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | event);
+	int32_t eventValue = cmdq_core_get_event_value(event);
+
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | eventValue);
 }
 
 uint32_t cmdqCoreGetEvent(CMDQ_EVENT_ENUM event)
 {
 	uint32_t regValue = 0;
+	int32_t eventValue = cmdq_core_get_event_value(event);
 
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF && event));
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF && eventValue));
 	regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 	return regValue;
 }
@@ -906,8 +917,10 @@ int cmdqCorePrintRecordSeq(struct seq_file *m, void *v)
 	int32_t index;
 	int32_t numRec;
 	RecordStruct record;
-	char msg[512] = { 0 };
+	const uint32_t msg_bufLen = 512;
+	char *msg;
 
+	msg = vmalloc(msg_bufLen);
 
 	/* we try to minimize time spent in spin lock */
 	/* since record is an array so it is okay to */
@@ -931,10 +944,12 @@ int cmdqCorePrintRecordSeq(struct seq_file *m, void *v)
 		record = gCmdqContext.record[index];
 		spin_unlock_irqrestore(&gCmdqRecordLock, flags);
 
-		cmdq_core_print_record(&record, index, msg, sizeof(msg));
+		cmdq_core_print_record(&record, index, msg, msg_bufLen);
 
 		seq_printf(m, "%s", msg);
 	}
+
+	vfree(msg);
 
 	return 0;
 }
@@ -1520,15 +1535,6 @@ void cmdq_core_reset_hw_events(void)
 	/* by default they should be 1. */
 	for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++)
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(index));
-#if 0
-	do {
-		uint32_t value = 0;
-
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, 0x1FF & CMDQ_EVENT_MDP_WDMA_EOF);
-		value = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-		CMDQ_ERR("[DEBUG] CMDQ_EVENT_MDP_WDMA_EOF after reset is %d\n", value);
-	} while (0);
-#endif
 }
 
 #if 0
@@ -2909,9 +2915,7 @@ static const int32_t cmdq_core_can_start_to_acquire_HW_thread_unlocked(const uin
 
 		if (preferSecurePath == isSecure) {
 			/* same security path as first waiting task, go to start to thread dispatch */
-			longMsg[0] = '\0';
-			msgOffset = 0;
-			msgMAXSize = CMDQ_LONGSTRING_MAX;
+			cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 			cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 					   "THREAD: is sec(%d, eng:0x%llx) as first waiting task",
 					   isSecure, engineFlag);
@@ -2981,9 +2985,7 @@ static bool cmdq_core_check_engine_conflict_unlocked(const uint64_t engineFlag,
 				/* Partial HW occupied by different threads, */
 				/* we need to wait. */
 				if (forceLog) {
-					longMsg[0] = '\0';
-					msgOffset = 0;
-					msgMAXSize = CMDQ_LONGSTRING_MAX;
+					cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 					cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
 							   "THREAD: try locate on thread %d but engine %d",
 							   thread, index);
@@ -2995,9 +2997,7 @@ static bool cmdq_core_check_engine_conflict_unlocked(const uint64_t engineFlag,
 						CMDQ_LOG("%s", longMsg);
 					}
 				} else {
-					longMsg[0] = '\0';
-					msgOffset = 0;
-					msgMAXSize = CMDQ_LONGSTRING_MAX;
+					cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 					cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 							   "THREAD: try locate on thread %d but engine %d",
 							   thread, index);
@@ -3667,10 +3667,9 @@ void cmdq_core_dump_disp_trigger_loop(const char *tag)
 
 		cmdq_core_dump_pc(pTask, CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT, tag);
 
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, CMDQ_EVENT_DISP_RDMA0_EOF);
-		regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
+		regValue = cmdqCoreGetEvent(CMDQ_EVENT_DISP_RDMA0_EOF);
 		CMDQ_LOG("[%s]CMDQ_SYNC_TOKEN_VAL of %s is %d\n",
-			 tag, cmdq_core_get_event_name(CMDQ_EVENT_DISP_RDMA0_EOF), regValue);
+			 tag, cmdq_core_get_event_name_ENUM(CMDQ_EVENT_DISP_RDMA0_EOF), regValue);
 	}
 }
 
@@ -3724,9 +3723,6 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 {
 	struct TaskStruct *pDumpTask = NULL;
 	struct list_head *p = NULL;
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset = 0;
-	int32_t msgMAXSize;
 
 	CMDQ_ERR
 	    ("=============== [CMDQ] All active tasks sharing same engine flag 0x%08llx===============\n",
@@ -3735,23 +3731,14 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		pDumpTask = list_entry(p, struct TaskStruct, listEntry);
 		if (NULL != pDumpTask && (engineFlag & pDumpTask->engineFlag)) {
-			longMsg[0] = '\0';
-			msgOffset = 0;
-			msgMAXSize = CMDQ_LONGSTRING_MAX;
-			cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-					   "Thr %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d,",
+			CMDQ_ERR("Thr %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d\n",
 					   (pDumpTask->thread), (pDumpTask),
 					   (pDumpTask->pVABase), &(pDumpTask->MVABase),
 					   pDumpTask->commandSize);
-			cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-					   " Flag: 0x%08llx, Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x\n",
+			CMDQ_ERR("  cont'd: Flag: 0x%08llx, Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x\n",
 					   pDumpTask->engineFlag, pDumpTask->pCMDEnd[-3],
 					   pDumpTask->pCMDEnd[-2], pDumpTask->pCMDEnd[-1],
 					   pDumpTask->pCMDEnd[0]);
-			if (msgOffset > 0) {
-				/* print message */
-				CMDQ_ERR("%s", longMsg);
-			}
 		}
 	}
 }
@@ -3765,9 +3752,6 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 	int32_t index;
 	uint32_t value[4] = { 0 };
 	uint32_t cookie;
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset;
-	int32_t msgMAXSize;
 
 	if (CMDQ_INVALID_THREAD == thread)
 		return;
@@ -3813,21 +3797,11 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 			value[2] = pDumpTask->pCMDEnd[-1];
 			value[3] = pDumpTask->pCMDEnd[0];
 		}
-
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
-		cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-				   "Slot %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d,",
+		CMDQ_ERR("Slot %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d\n",
 				   index, (pDumpTask), (pDumpTask->pVABase),
 				   &(pDumpTask->MVABase), pDumpTask->commandSize);
-		cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-				   " Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x, priority:%d\n",
+		CMDQ_ERR("  cont'd: Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x, priority:%d\n",
 				   value[0], value[1], value[2], value[3], pDumpTask->priority);
-		if (msgOffset > 0) {
-			/* print message */
-			CMDQ_ERR("%s", longMsg);
-		}
 
 		if (true == dumpCmd) {
 			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
@@ -5984,9 +5958,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 	uint32_t msgOffset;
 	int32_t msgMAXSize;
 
-	longMsg[0] = '\0';
-	msgOffset = 0;
-	msgMAXSize = CMDQ_LONGSTRING_MAX;
+	cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 	cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 			   "-->EXEC: task 0x%p on thread %d begin, VABase: 0x%p,",
 			   pTask, thread, pTask->pVABase);
@@ -6044,7 +6016,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 	return status;
 }
 
-static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct *pLast, TaskStruct *pTask,
+static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStruct *pTask,
 						    int32_t thread, int32_t loop)
 {
 	int32_t status = 0;
@@ -6131,9 +6103,9 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct *pLast, TaskStruc
 			/* re-fetch command buffer again. */
 			cmdq_core_invalidate_hw_fetched_buffer(thread);
 #endif
-			if (pLast == pTask) {
+			if (*pLast == pTask) {
 				CMDQ_LOG("update pLast from 0x%p to 0x%p\n", pTask, pPrev);
-				pLast = pPrev;
+				*pLast = pPrev;
 			}
 		} else {
 			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
@@ -6157,7 +6129,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct *pLast, TaskStruc
 		}
 	}
 
-	CMDQ_MSG("Reorder %d tasks for performance end, pLast:0x%p\n", loop, pLast);
+	CMDQ_MSG("Reorder %d tasks for performance end, pLast:0x%p\n", loop, *pLast);
 
 	return status;
 }
@@ -6180,9 +6152,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 	/* for no suspend thread, we shift END before JUMP */
 	int32_t shiftEnd = 0;
 
-	longMsg[0] = '\0';
-	msgOffset = 0;
-	msgMAXSize = CMDQ_LONGSTRING_MAX;
+	cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 	cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 			   "-->EXEC: task 0x%p on thread %d begin, VABase: 0x%p, MVABase: %pa,",
 			   pTask, thread, pTask->pVABase, &(pTask->MVABase));
@@ -6290,9 +6260,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 		     (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 8)) ||
 		    (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
 		     (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 0))) {
-			longMsg[0] = '\0';
-			msgOffset = 0;
-			msgMAXSize = CMDQ_LONGSTRING_MAX;
+			cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 			cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
 					   "EXEC: Set HW thread(%d) pc from 0x%08x(end:0x%08x) to %pa,",
 					   thread,
@@ -6348,9 +6316,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 			if (loop < 0) {
 				cmdq_core_dump_task_in_thread(thread, true, true, false);
 
-				longMsg[0] = '\0';
-				msgOffset = 0;
-				msgMAXSize = CMDQ_LONGSTRING_MAX;
+				cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 				cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
 						   "Invalid task count(%d) in thread %d for reorder,",
 						   loop, thread);
@@ -6376,7 +6342,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 			/* By default, pTask is the last task, and insert [cookie % CMDQ_MAX_TASK_IN_THREAD] */
 			pLast = pTask;
 
-			status = cmdq_core_exec_find_task_slot(pLast, pTask, thread, loop);
+			status = cmdq_core_exec_find_task_slot(&pLast, pTask, thread, loop);
 			if (status < 0) {
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
@@ -6658,9 +6624,6 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 	int32_t waitingTimeMS;
 	bool needLog = false;
 	bool dumpTriggerLoop = false;
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset;
-	int32_t msgMAXSize;
 
 	/* when we're suspending, do not execute any tasks. delay & hold them. */
 	if (gCmdqSuspended)
@@ -6680,19 +6643,10 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 
 		thread_prio = cmdq_get_func()->priority(pTask->scenario);
 
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-				   "-->THREAD: try acquire thread for task: 0x%p, thread_prio: %d,",
+		CMDQ_MSG("-->THREAD: try acquire thread for task: 0x%p, thread_prio: %d\n",
 				   pTask, thread_prio);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-				   " task_prio: %d, flag: 0x%llx, scenario:%d begin\n",
+		CMDQ_MSG("-->THREAD: task_prio: %d, flag: 0x%llx, scenario:%d begin\n",
 				   pTask->priority, pTask->engineFlag, pTask->scenario);
-		if (msgOffset > 0) {
-			/* print message */
-			CMDQ_MSG("%s", longMsg);
-		}
 
 		CMDQ_GET_TIME_IN_MS(pTask->submit, consumeTime, waitingTimeMS);
 		needLog = waitingTimeMS >= CMDQ_PREDUMP_TIMEOUT_MS;
@@ -6707,19 +6661,10 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 			CMDQ_MSG("<--THREAD: acquire thread fail, need to wait\n");
 			if (needLog) {
 				/* task wait too long */
-				longMsg[0] = '\0';
-				msgOffset = 0;
-				msgMAXSize = CMDQ_LONGSTRING_MAX;
-				cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-						   "acquire thread pre-dump for task: 0x%p,",
+				CMDQ_ERR("acquire thread pre-dump for task: 0x%p\n",
 						   pTask);
-				cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-						   " thread_prio: %d, task_prio: %d, flag: 0x%llx\n",
+				CMDQ_ERR(" thread_prio: %d, task_prio: %d, flag: 0x%llx\n",
 						   thread_prio, pTask->priority, pTask->engineFlag);
-				if (msgOffset > 0) {
-					/* print message */
-					CMDQ_ERR("%s", longMsg);
-				}
 
 				dumpTriggerLoop =
 				    (CMDQ_SCENARIO_PRIMARY_DISP == pTask->scenario) ?
@@ -7501,9 +7446,7 @@ uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value)
 		/* note it is 64 bit length for uint32_t variable in 64 bit kernel */
 		/* use sizeof(u_log) to check valid offset range */
 		if (offset >= 0 && (offset / sizeof(unsigned long)) < pWriteAddr->count) {
-			longMsg[0] = '\0';
-			msgOffset = 0;
-			msgMAXSize = CMDQ_LONGSTRING_MAX;
+			cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 			cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 					   "cmdqCoreWriteWriteAddress() input:0x%pa,", &pa);
 			cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
@@ -7628,6 +7571,13 @@ int32_t cmdq_core_enable_emergency_buffer_test(const bool enable)
 #endif
 }
 
+void cmdq_core_longstring_init(char *buf, uint32_t *offset, int32_t *maxSize)
+{
+	buf[0] = '\0';
+	*offset = 0;
+	*maxSize = CMDQ_LONGSTRING_MAX - 1;
+}
+
 void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *maxSize,
 			const char *string, ...)
 {
@@ -7635,13 +7585,15 @@ void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *max
 	va_list argptr;
 	char *pBuffer;
 
-	if ((false == forceLog) && (false == cmdq_core_should_print_msg()))
+	if ((false == forceLog) && (false == cmdq_core_should_print_msg()) && (*maxSize <= 0))
 		return;
 
 	va_start(argptr, string);
 	pBuffer = buf + (*offset);
 	msgLen = vsnprintf(pBuffer, *maxSize, string, argptr);
 	*maxSize -= msgLen;
+	if (*maxSize < 0)
+		*maxSize = 0;
 	*offset += msgLen;
 	va_end(argptr);
 }

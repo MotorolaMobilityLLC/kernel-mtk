@@ -27,7 +27,7 @@
 #define CMDQ_PHYS_TO_AREG(addr) ((addr) & 0xFFFFFFFF)	/* truncate directly */
 #define CMDQ_AREG_TO_PHYS(addr) ((addr) | 0L)
 
-#define CMDQ_LONGSTRING_MAX (512)
+#define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
 
 #define CMDQ_ENG_ISP_GROUP_BITS                 ((1LL << CMDQ_ENG_ISP_IMGI) |       \
@@ -610,7 +610,7 @@ typedef struct ContextStruct {
 /* Command dump information */
 typedef struct DumpCommandBufferStruct {
 	uint64_t scenario;
-	int32_t bufferSize;
+	uint32_t bufferSize;
 	uint32_t count;
 	char *cmdqString;
 } DumpCommandBufferStruct;
@@ -790,6 +790,7 @@ extern "C" {
  */
 	void cmdq_core_set_event_table(CMDQ_EVENT_ENUM event, const int32_t value);
 	const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event);
+	const char *cmdq_core_get_event_name_ENUM(CMDQ_EVENT_ENUM event);
 	const char *cmdq_core_get_event_name(CMDQ_EVENT_ENUM event);
 
 /**
@@ -849,6 +850,7 @@ extern "C" {
 /* created when opening the device file. */
 	void cmdq_core_release_task_by_file_node(void *file_node);
 
+	void cmdq_core_longstring_init(char *buf, uint32_t *offset, int32_t *maxSize);
 	void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *maxSize,
 				const char *string, ...);
 

@@ -1181,9 +1181,6 @@ int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopC
 {
 	int32_t status = 0;
 	cmdqCommandStruct desc = { 0 };
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset;
-	int32_t msgMAXSize;
 
 	if (NULL == handle)
 		return -EFAULT;
@@ -1195,19 +1192,10 @@ int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopC
 	if (status < 0)
 		return status;
 
-	longMsg[0] = '\0';
-	msgOffset = 0;
-	msgMAXSize = CMDQ_LONGSTRING_MAX;
-	cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			   "Submit task loop: scenario: %d, priority: %d, engine: 0x%llx,",
+	CMDQ_MSG("Submit task loop: scenario: %d, priority: %d, engine: 0x%llx,",
 			   handle->scenario, handle->priority, handle->engineFlag);
-	cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			   " buffer: 0x%p, size: %d, callback: 0x%p, data: %ld\n",
+	CMDQ_MSG("Submit task loop: buffer: 0x%p, size: %d, callback: 0x%p, data: %ld\n",
 			   handle->pBuffer, handle->blockSize, loopCB, loopData);
-	if (msgOffset > 0) {
-		/* print message */
-		CMDQ_MSG("%s", longMsg);
-	}
 
 	desc.scenario = handle->scenario;
 	desc.priority = handle->priority;

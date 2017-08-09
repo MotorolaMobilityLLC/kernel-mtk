@@ -274,9 +274,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	iwcCmdqMessage_t *pIwc;
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset;
-	int32_t msgMAXSize;
 
 	status = 0;
 	pIwc = (iwcCmdqMessage_t *) _pIwc;
@@ -312,19 +309,8 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
 		pIwc->command.resetExecCnt = pTask->secData.resetExecCnt;
 
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-				   "[SEC]SESSION_MSG: task 0x%p, thread: %d, size: %d, bufferSize: %d, scenario:%d,",
-				   pTask, thread, pTask->commandSize, pTask->bufferSize, pTask->scenario);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-				   " flag:0x%08llx ,hNormalTask:0x%llx\n",
-				   pTask->engineFlag, pIwc->command.hNormalTask);
-		if (msgOffset > 0) {
-			/* print message */
-			CMDQ_MSG("%s", longMsg);
-		}
+		CMDQ_MSG("[SEC]SESSION_MSG: task 0x%p, thread: %d, size: %d, scenario:%d, flag:0x%08llx\n",
+				   pTask, thread, pTask->commandSize, pTask->scenario, pTask->engineFlag);
 
 		CMDQ_VERBOSE("[SEC]SESSION_MSG: addrList[%d][0x%p]\n",
 			     pTask->secData.addrMetadataCount,
@@ -746,9 +732,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	if (-ETIMEDOUT == status) {
 		/* t-base strange issue, mc_wait_notification false timeout when secure world has done */
 		/* because retry may failed, give up retry method */
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
+		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   "[SEC]<--SEC_SUBMIT: err[%d][mc_wait_notification timeout], pTask[0x%p], THR[%d],",
 				   status, pTask, thread);
@@ -773,9 +757,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		if (pTask)
 			cmdq_core_dump_secure_metadata(&(pTask->secData));
 
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
+		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   "[SEC]<--SEC_SUBMIT: err[%d], pTask[0x%p], THR[%d], tgid[%d:%d],",
 				   status, pTask, thread, tgid, pid);
@@ -796,9 +778,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 			}
 		}
 	} else {
-		longMsg[0] = '\0';
-		msgOffset = 0;
-		msgMAXSize = CMDQ_LONGSTRING_MAX;
+		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   "[SEC]<--SEC_SUBMIT: err[%d], pTask[0x%p], THR[%d], tgid[%d:%d],",
 				   status, pTask, thread, tgid, pid);

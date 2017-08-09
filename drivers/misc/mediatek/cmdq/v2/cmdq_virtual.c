@@ -1021,8 +1021,7 @@ void cmdq_virtual_event_backup(void)
 		if (-1 == gCmdqBackupEvent.EventID[i])
 			continue;
 
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, gCmdqBackupEvent.EventID[i]);
-		gCmdqBackupEvent.BackupValue[i] = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
+		cmdqCoreGetEvent(gCmdqBackupEvent.EventID[i]);
 	}
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
 }
@@ -1036,8 +1035,7 @@ void cmdq_virtual_event_restore(void)
 		if (-1 == gCmdqBackupEvent.EventID[i])
 			continue;
 
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD,
-			       (gCmdqBackupEvent.BackupValue[i] << 16) | gCmdqBackupEvent.EventID[i]);
+		cmdqCoreSetEvent(gCmdqBackupEvent.EventID[i]);
 	}
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
 }

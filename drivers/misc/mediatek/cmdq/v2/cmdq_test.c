@@ -269,7 +269,7 @@ static void testcase_errors(void)
 
 		CMDQ_MSG("=============== INIFINITE Wait ===================\n");
 
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_EVENT_MDP_RSZ0_EOF);
+		cmdqCoreClearEvent(CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &hReq);
 
 		/* turn on ALL engine flag to test dump */
@@ -285,7 +285,7 @@ static void testcase_errors(void)
 
 		/* HW timeout */
 		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
-		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_EVENT_MDP_RSZ0_EOF);
+		cmdqCoreClearEvent(CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdqRecReset(hReq);
 		cmdqRecSetSecure(hReq, gCmdqTestSecure);
 		cmdqRecWait(hReq, CMDQ_EVENT_MDP_RSZ0_EOF);
@@ -434,7 +434,7 @@ static void testcase_async_request(void)
 
 static void testcase_multiple_async_request(void)
 {
-#define TEST_REQ_COUNT 30
+#define TEST_REQ_COUNT 24
 	cmdqRecHandle hReq[TEST_REQ_COUNT] = { 0 };
 	TaskStruct *pTask[TEST_REQ_COUNT] = { 0 };
 	int32_t ret = 0;
@@ -510,7 +510,7 @@ static void testcase_async_request_partial_engine(void)
 
 	struct timer_list timers[sizeof(scn) / sizeof(scn[0])];
 
-	cmdqRecHandle hReq[(sizeof(scn) / sizeof(scn[0]))] = { 0 };
+	cmdqRecHandle hReq;
 	TaskStruct *pTasks[(sizeof(scn) / sizeof(scn[0]))] = { 0 };
 
 	CMDQ_MSG("%s\n", __func__);
@@ -522,14 +522,15 @@ static void testcase_async_request_partial_engine(void)
 		mod_timer(&timers[i], jiffies + msecs_to_jiffies(400 * (1 + i)));
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0 + i);
 
-		cmdqRecCreate(scn[i], &hReq[i]);
-		cmdqRecReset(hReq[i]);
-		cmdqRecSetSecure(hReq[i], false);
-		cmdqRecWait(hReq[i], CMDQ_SYNC_TOKEN_USER_0 + i);
-		cmdq_rec_finalize_command(hReq[i], false);
+		cmdqRecCreate(scn[i], &hReq);
+		cmdqRecReset(hReq);
+		cmdqRecSetSecure(hReq, false);
+		cmdqRecWait(hReq, CMDQ_SYNC_TOKEN_USER_0 + i);
+		cmdq_rec_finalize_command(hReq, false);
 
 		CMDQ_MSG("TEST: SUBMIT scneario %d\n", scn[i]);
-		ret = _test_submit_async(hReq[i], &pTasks[i]);
+		ret = _test_submit_async(hReq, &pTasks[i]);
+		cmdqRecDestroy(hReq);
 	}
 
 
@@ -540,7 +541,6 @@ static void testcase_async_request_partial_engine(void)
 	/* clear token */
 	for (i = 0; i < (sizeof(scn) / sizeof(scn[0])); ++i) {
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0 + i);
-		cmdqRecDestroy(hReq[i]);
 		del_timer(&timers[i]);
 	}
 
@@ -1710,10 +1710,10 @@ static void testcase_get_result(void)
 	CMDQ_REG_SET32(MMSYS_DUMMY_REG, 0xdeaddead);
 
 	/* manually raise the dirty flag */
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_EVENT_MUTEX1_STREAM_EOF);
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_EVENT_MUTEX2_STREAM_EOF);
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_EVENT_MUTEX3_STREAM_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX1_STREAM_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX2_STREAM_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX3_STREAM_EOF);
 
 	for (i = 0; i < 1; ++i) {
 		ret = cmdqCoreSubmitTask(&desc);
@@ -2765,7 +2765,6 @@ static int32_t testcase_monitor_callback(unsigned long data)
 	uint32_t i;
 	uint32_t monitorValue[CMDQ_MONITOR_EVENT_MAX];
 	uint32_t durationTime[CMDQ_MONITOR_EVENT_MAX];
-	int32_t eventVlaue;
 
 	if (false == gEventMonitor.status)
 		return 0;
@@ -2777,16 +2776,14 @@ static int32_t testcase_monitor_callback(unsigned long data)
 		switch (gEventMonitor.waitType[i]) {
 		case CMDQ_MOITOR_TYPE_WFE:
 			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
-			eventVlaue = cmdq_core_get_event_value(gEventMonitor.monitorEvent[i]);
 			CMDQ_LOG("[MONITOR][WFE] event: %s, duration: (%u ns)\n",
-				cmdq_core_get_event_name(eventVlaue), durationTime[i]);
+				cmdq_core_get_event_name_ENUM(gEventMonitor.monitorEvent[i]), durationTime[i]);
 			CMDQ_MSG("[MONITOR][WFE] time:(%u ns)\n", monitorValue[i]);
 			break;
 		case CMDQ_MOITOR_TYPE_WAIT_NO_CLEAR:
 			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
-			eventVlaue = cmdq_core_get_event_value(gEventMonitor.monitorEvent[i]);
 			CMDQ_LOG("[MONITOR][Wait] event: %s, duration: (%u ns)\n",
-				cmdq_core_get_event_name(eventVlaue), durationTime[i]);
+				cmdq_core_get_event_name_ENUM(gEventMonitor.monitorEvent[i]), durationTime[i]);
 			CMDQ_MSG("[MONITOR] time:(%u ns)\n", monitorValue[i]);
 			break;
 		case CMDQ_MOITOR_TYPE_QUERYREGISTER:
