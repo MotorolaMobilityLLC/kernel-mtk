@@ -31,8 +31,22 @@
 #define OD_LARB_LOWER_BOUND 2
 #define OD_LARB_UPPER_BOUND 3
 
-#define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
-#define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
+/**
+ * OVL HW capabilities
+ * May be different with different platform
+ */
+#define DISP_HW_OVL_EXT_LAYER_NUM			(3)
+#define PRIMARY_HW_OVL_LAYER_NUM			(4)
+#define PRIMARY_HW_OVL_2L_LAYER_NUM			(2)
+#define EXTERNAL_HW_OVL_LAYER_NUM			(2)
+#define EXTERNAL_HW_OVL_2L_LAYER_NUM		(2)
+
+/**
+ *  All bandwidth limitations are simulated with 60fps, buffer format ARGB(bpp=4)
+ *  with full-screen size layer
+ *  So, total bandwidth limiter = max layer number * (4*60)
+ */
+#define BYTES_PER_SECOND_FULLSCREEN (4*60)
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 #define HRT_LEVEL(id) ((id)&0xff)

@@ -133,6 +133,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_DELAYED_TRIGGER",
 	"DISP_OPT_SHADOW_REGISTER",
 	"DISP_OPT_SHADOW_MODE",
+	"DISP_OPT_OVL_EXT_LAYER",
 };
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
@@ -364,6 +365,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 	disp_helper_set_option(DISP_OPT_HRT, 0);
+
 	/* display partial update */
 #ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
@@ -372,6 +374,10 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 1);
+
+	/* smart layer OVL*/
+	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 0);
+
 
 }
 

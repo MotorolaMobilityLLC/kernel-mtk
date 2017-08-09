@@ -310,8 +310,12 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	int is_rgb;
 	int color_matrix = 0x4;
 	int rotate = 0;
+	int is_ext_layer = layer > ovl_layer_num(module);
 	unsigned long ovl_base = ovl_base_addr(module);
-	unsigned long layer_offset = ovl_base + layer * OVL_LAYER_OFFSET;
+	unsigned long ext_layer_offset = is_ext_layer ? (DISP_REG_OVL_EL0_CON - DISP_REG_OVL_L0_CON) : 0;
+	unsigned long ext_layer_offset_clr = is_ext_layer ? (DISP_REG_OVL_EL0_CLEAR - DISP_REG_OVL_L0_CLR) : 0;
+	unsigned long layer_offset = ovl_base + ext_layer_offset + (layer % ovl_layer_num(module)) * OVL_LAYER_OFFSET;
+	unsigned long layer_offset_clr = ovl_base + ext_layer_offset_clr + (layer % ovl_layer_num(module)) * 4;
 	unsigned int offset = 0;
 	enum UNIFIED_COLOR_FMT format = cfg->fmt;
 	unsigned int src_x = cfg->src_x;
@@ -320,6 +324,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
 	unsigned int dst_h = cfg->dst_h;
+
+	layer = layer % ovl_layer_num(module);
 
 	if (ovl_partial_roi != NULL) {
 		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
@@ -337,8 +343,6 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	if (dst_w > OVL_MAX_WIDTH)
 		BUG();
 	if (dst_h > OVL_MAX_HEIGHT)
-		BUG();
-	if (layer > 3)
 		BUG();
 
 	if (!cfg->addr && cfg->source == OVL_LAYER_SOURCE_MEM) {
@@ -397,6 +401,13 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_RDMA0_CTRL + layer_offset, 0x1);
 
+	/* ext layer control */
+	if (is_ext_layer)
+		value = 0x1 << layer | cfg->ext_sel_layer<<(16+layer*4);
+	else
+		value = 0;
+	DISP_REG_SET(handle, DISP_REG_OVL_DATAPATH_EXT_CON, value);
+
 	value = (REG_FLD_VAL((L_CON_FLD_LARC), (cfg->source)) |
 		 REG_FLD_VAL((L_CON_FLD_CFMT), (input_fmt)) |
 		 REG_FLD_VAL((L_CON_FLD_AEN), (cfg->aen)) |
@@ -419,7 +430,7 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_CON + layer_offset, value);
 
-	DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + ovl_base + layer * 4, 0xff000000);
+	DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr, 0xff000000);
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
@@ -740,6 +751,7 @@ static int ovl_is_sec[OVL_NUM];
 static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_sec)
 {
 	int i = 0;
+
 	int ovl_idx = ovl_to_index(module);
 	CMDQ_ENG_ENUM cmdq_engine;
 	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
@@ -809,6 +821,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 	int enabled_layers = 0;
 	int has_sec_layer = 0;
 	int local_layer, global_layer, layer_id;
+	int hw_layer = -1, phy_layer = 0, ext_layer = 0;
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
@@ -835,8 +848,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 
 	setup_ovl_sec(module, handle, has_sec_layer);
 
-	for (local_layer = 0; local_layer < ovl_layer_num(module); local_layer++, global_layer++) {
-
+	for (local_layer = 0; local_layer < TOTAL_OVL_LAYER_NUM; local_layer++, global_layer++) {
 		OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
 		pConfig->ovl_layer_scanned |= (1 << global_layer);
 
@@ -844,6 +856,22 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			continue;
 		if (ovl_check_input_param(ovl_cfg))
 			continue;
+
+		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
+			if (ovl_cfg->ext_sel_layer != -1) {
+				/* the real hw layer id on current OVL module */
+				hw_layer = ovl_cfg->ext_sel_layer;
+				phy_layer = ovl_layer_num(module) + (ext_layer++);
+			} else {
+				/* all phy layers are layerout continuously */
+				if (hw_layer != -1 && ++hw_layer < local_layer)
+					phy_layer = hw_layer;
+				else
+					phy_layer = local_layer;
+			}
+		} else {
+			phy_layer = local_layer;
+		}
 
 		if (pConfig->ovl_partial_dirty) {
 			struct disp_rect layer_roi = {0, 0, 0, 0};
@@ -855,18 +883,21 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			layer_roi.height = ovl_cfg->dst_h;
 			if (rect_intersect(&layer_roi, &pConfig->ovl_partial_roi, &layer_partial_roi)) {
 				print_layer_config_args(module, local_layer, ovl_cfg);
-				ovl_layer_config(module, local_layer, has_sec_layer, ovl_cfg,
+				ovl_layer_config(module, phy_layer, has_sec_layer, ovl_cfg,
 						&pConfig->ovl_partial_roi, &layer_partial_roi, handle);
 
 				enabled_layers |= 1 << local_layer;
 			}
 		} else {
 			print_layer_config_args(module, local_layer, ovl_cfg);
-			ovl_layer_config(module, local_layer, has_sec_layer, ovl_cfg,
+			ovl_layer_config(module, phy_layer, has_sec_layer, ovl_cfg,
 					NULL, NULL, handle);
 			enabled_layers |= 1 << local_layer;
 		}
-
+		/* if OVL is full, break */
+		if ((hw_layer != -1 && hw_layer+1 >= ovl_layer_num(module)) ||
+				(hw_layer == -1 && phy_layer+1 >= ovl_layer_num(module)))
+			break;
 	}
 
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, enabled_layers);

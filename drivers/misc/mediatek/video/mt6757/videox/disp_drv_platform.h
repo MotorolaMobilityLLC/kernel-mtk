@@ -44,9 +44,9 @@
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(6)
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4)
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4)
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(6+6)
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4+6)
+#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4+6)
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
 
 /* Display HW Capabilities */

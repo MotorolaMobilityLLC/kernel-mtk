@@ -174,6 +174,7 @@ typedef struct _OVL_CONFIG_STRUCT {
 	unsigned int yuv_range;
 	int is_configured;	/* is this layer configured to OVL HW, for multiply OVL sync */
 	int const_bld;
+	int ext_sel_layer;
 } OVL_CONFIG_STRUCT;
 
 typedef struct _OVL_BASIC_STRUCT {

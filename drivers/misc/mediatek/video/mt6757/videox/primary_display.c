@@ -2383,7 +2383,7 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 		DISPERR("unknown source = %d", src->buffer_source);
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
-
+	dst->ext_sel_layer = src->ext_sel_layer;
 	return ret;
 }
 

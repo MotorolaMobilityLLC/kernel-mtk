@@ -61,6 +61,7 @@ typedef enum {
 	DISP_OPT_SHADOW_REGISTER,	/* is chip has shadow register? */
 	DISP_OPT_SHADOW_MODE,		/* 0:full; 1:force_commit; 2:bypass shadow */
 	/* @} */
+	DISP_OPT_OVL_EXT_LAYER,		/* is ovl has ext layer support? */
 	DISP_OPT_NUM
 } DISP_HELPER_OPT;
 
