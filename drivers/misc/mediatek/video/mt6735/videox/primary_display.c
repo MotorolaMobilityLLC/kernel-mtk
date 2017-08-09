@@ -3508,7 +3508,7 @@ int primary_display_switch_esd_mode(int mode)
 					mt_eint_set_hw_debounce(ints[0], ints[1]);
 
 					irq = irq_of_parse_and_map(node, 0);
-					if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_NONE,
+					if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_RISING,
 							"DSI_TE_1-eint", NULL))
 						DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
 				} else {
@@ -5259,7 +5259,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 			/* mt_gpio_set_debounce(ints[0], ints[1]); */
 			mt_eint_set_hw_debounce(ints[0], ints[1]);
 			irq = irq_of_parse_and_map(node, 0);
-			if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_NONE, "DSI_TE_1-eint", NULL))
+			if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_RISING, "DSI_TE_1-eint", NULL))
 				DISPCHECK("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
 			else
 				eint_flag++;
