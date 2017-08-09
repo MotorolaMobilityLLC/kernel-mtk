@@ -1742,7 +1742,7 @@ static int __init mt_auxadc_init(void)
 {
 	int ret;
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #else
 #ifndef CONFIG_MTK_FPGA
 	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
