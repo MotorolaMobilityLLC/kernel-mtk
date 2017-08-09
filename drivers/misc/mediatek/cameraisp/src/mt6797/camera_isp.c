@@ -3434,6 +3434,10 @@ static MINT32 ISP_DumpSeninfReg(void)
 	MINT32 Ret = 0;
 	/* IMGPLL frequency */
 	LOG_INF("- E. IMGPLL(0x%x)[HPM:0x114EC5,LPM:0xC8000]\n", ISP_RD32(CLOCK_CELL_BASE + 0x0264));
+	/*Sensor interface N3D CNT*/
+	ISP_WR32(ISP_SENINF0_BASE + 0x0100, 0x146);
+	LOG_INF("seninf:0110(0x%x)-0114(0x%x)\n",
+		ISP_RD32(ISP_SENINF0_BASE + 0x0110), ISP_RD32(ISP_SENINF0_BASE + 0x0114));
 	/*Sensor interface Top mux and Package counter*/
 	LOG_INF("seninf:0008(0x%x)-0010(0x%x)-0a10(0x%x)-1a10(0x%x) 0a1c(0x%x)-1a1c(0x%x)-0a1c(0x%x)-1a1c(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0008), ISP_RD32(ISP_SENINF0_BASE + 0x0010), \
@@ -5822,7 +5826,8 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 
 		if (WaitIrq->bDumpReg &&
 			((WaitIrq->EventInfo.Status == SOF_INT_ST) ||
-			 (WaitIrq->EventInfo.Status == SW_PASS1_DON_ST))) {
+			 (WaitIrq->EventInfo.Status == SW_PASS1_DON_ST) ||
+			 (WaitIrq->EventInfo.Status == VS_INT_ST))) {
 			ISP_DumpSeninfReg();
 		}
 		Ret = -EFAULT;
