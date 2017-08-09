@@ -119,9 +119,16 @@ int resize_ring_buffer_for_hibernation(int enable)
 #endif
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
+static bool boot_trace;
+static __init int boot_trace_cmdline(char *str)
+{
+	boot_trace = true;
+	return 0;
+}
+__setup("boot_trace", boot_trace_cmdline);
+
 void print_enabled_events(struct seq_file *m)
 {
-
 	struct ftrace_event_call *call;
 	struct ftrace_event_file *file;
 	struct trace_array *tr;
@@ -141,7 +148,7 @@ void print_enabled_events(struct seq_file *m)
 }
 
 /* ftrace's switch function for MTK solution */
-void mt_ftrace_enable_disable(int enable)
+static void ftrace_events_enable(int enable)
 {
 	if (enable) {
 		trace_set_clr_event(NULL, "sched_switch", 1);
@@ -177,6 +184,38 @@ void mt_ftrace_enable_disable(int enable)
 		trace_set_clr_event(NULL, NULL, 0);
 	}
 }
+
+static __init int boot_ftrace(void)
+{
+	struct trace_array *tr;
+
+	if (boot_trace) {
+		tr = top_trace_array();
+		tracing_update_buffers();
+		ftrace_events_enable(1);
+		set_tracer_flag(tr, TRACE_ITER_OVERWRITE, 0);
+		pr_debug("[ftrace]boot-time profiling...\n");
+	}
+	return 0;
+}
+core_initcall(boot_ftrace);
+
+#ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
+static __init int enable_ftrace(void)
+{
+	if (!boot_trace) {
+		/* enable ftrace facilities */
+		ftrace_events_enable(1);
+
+		/* only update buffer eariler if we want to collect boot-time ftrace
+		to avoid the boot time impacted by early-expanded ring buffer */
+		tracing_update_buffers();
+		pr_debug("[ftrace]ftrace ready...\n");
+	}
+	return 0;
+}
+late_initcall(enable_ftrace);
+#endif
 #endif
 
 #if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_HOTPLUG_CPU)

@@ -25,11 +25,8 @@ ssize_t tracing_resize_ring_buffer(struct trace_array *tr,
 				   unsigned long size, int cpu_id);
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-/* ftrace's switch function for MTK solution */
-void mt_ftrace_enable_disable(int enable);
 void print_enabled_events(struct seq_file *m);
 #else
-#define mt_ftrace_enable_disable(on)
 #define print_enabled_events(m)
 #endif/* CONFIG_TRACING && CONFIG_MTK_SCHED_TRACERS */
 #endif
