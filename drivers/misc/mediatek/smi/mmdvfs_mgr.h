@@ -28,6 +28,12 @@
 			aee_kernel_warning(MMDVFS_LOG_TAG, "error: "string, ##args);  \
 		} while (0)
 
+#define _BIT_(_bit_) (unsigned)(1 << (_bit_))
+#define _BITS_(_bits_, _val_) ((((unsigned) -1 >> (31 - ((1) ? _bits_))) \
+				& ~((1U << ((0) ? _bits_)) - 1)) & ((_val_)<<((0) ? _bits_)))
+#define _BITMASK_(_bits_) (((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
+#define _GET_BITS_VAL_(_bits_, _val_) (((_val_) & (_BITMASK_(_bits_))) >> ((0) ? _bits_))
+
 /* MMDVFS extern APIs */
 extern void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info);
 extern void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd);
@@ -53,6 +59,7 @@ extern unsigned int DISP_GetScreenHeight(void);
 #define MMDVFS_CLIENT_ID_ISP 0
 
 typedef int (*clk_switch_cb)(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
+typedef int (*vdec_ctrl_cb)(void);
 
 /* MMDVFS V2 only APIs */
 extern int mmdvfs_notify_mmclk_switch_request(int event);
@@ -96,10 +103,28 @@ extern int is_mmdvfs_disabled(void);
 extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int session, int blocking);
 #endif
 
+/* D2 plus only */
+/* extern void mt_set_vencpll_con1(int val); */
+/* extern int clkmux_sel(int id, unsigned int clksrc, char *name); */
+
+/* D1 plus implementation only */
+/* extern u32 get_devinfo_with_index(u32 index); */
+
+#define MMDVFS_PROFILE_UNKNOWN (0)
+#define MMDVFS_PROFILE_R1 (1)
+#define MMDVFS_PROFILE_J1 (2)
+#define MMDVFS_PROFILE_D1 (3)
+#define MMDVFS_PROFILE_D1_PLUS (4)
+#define MMDVFS_PROFILE_D2 (5)
+#define MMDVFS_PROFILE_D2_M_PLUS (6)
+#define MMDVFS_PROFILE_D2_P_PLUS (7)
+#define MMDVFS_PROFILE_D3 (8)
+#define MMDVFS_PROFILE_E1 (9)
+
 
 enum {
 	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
-	MMDVFS_SCEN_VP_HIGH_RESOLUTION , MMDVFS_SCEN_COUNT
+	MMDVFS_SCEN_ISP,	MMDVFS_SCEN_VP_HIGH_RESOLUTION , MMDVFS_SCEN_COUNT
 };
 
 /* Backward compatible */
@@ -111,5 +136,9 @@ enum {
 #else
 int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
 #endif /* CONFIG_MTK_SMI_EXT */
+
+extern int mmdvfs_get_mmdvfs_profile(void);
+extern int is_mmdvfs_supported(void);
+extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 
 #endif /* __MMDVFS_MGR_H__ */
