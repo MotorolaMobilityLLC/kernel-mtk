@@ -1409,7 +1409,7 @@ BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM pr
 	j = 0;
 
 	ASSERT(prAdapter);
-	prCmdPscnParam->u4BasePeriod = prCmdPscnParam->u4BasePeriod;
+	/*prCmdPscnParam->u4BasePeriod = prCmdPscnParam->u4BasePeriod;*/
 #if 0
 	DBGLOG(SCN, TRACE,
 		"rCmdPscnParam: Period[%u],NumCache[%u],Threshold[%u],NumBkts[%u],fgGSCN[%d] fgNLO[%d] fgBatch[%d]\n",
@@ -1579,11 +1579,11 @@ BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARA
 
 	ASSERT(prAdapter);
 	rCmdGscnParamp = kalMemAlloc(sizeof(CMD_GSCN_REQ_T), VIR_MEM_TYPE);
-	if (prCmdGscnParam == NULL) {
+	if (rCmdGscnParamp == NULL) {
 		DBGLOG(SCN, INFO, "alloc CmdGscnParam fail\n");
 		return TRUE;
 	}
-	kalMemZero(prCmdGscnParam, sizeof(CMD_GSCN_REQ_T));
+	kalMemZero(rCmdGscnParamp, sizeof(CMD_GSCN_REQ_T));
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	rCmdGscnParamp->u4NumBuckets = prCmdGscnParam->num_buckets;
 	rCmdGscnParamp->u4BasePeriod = prCmdGscnParam->base_period;
@@ -1878,7 +1878,7 @@ scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
 	}
 
 	memcpy(prScanInfo->prPscnParam, prCmdPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
-
+	kalMemFree(prCmdPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
 	return TRUE;
 }
 
@@ -1944,7 +1944,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 
 }
 
-ENUM_PSCAN_STATE_T
+VOID
 scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 	   ENUM_PSCAN_STATE_T eNextPSCNState,
 	   IN P_CMD_NLO_REQ prCmdNloReq,
@@ -2071,6 +2071,5 @@ scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 		prScanInfo->eCurrentPSCNState = eNextPSCNState;
 	} while (fgTransitionState);
 
-	return prScanInfo->eCurrentState;
 }
 #endif

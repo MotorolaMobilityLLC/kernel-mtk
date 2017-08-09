@@ -729,6 +729,8 @@ WLAN_STATUS bowCmdSetupConnection(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND pr
 
 	prBowFsmInfo->prTargetBssDesc = NULL;
 
+	kalMemZero(&rBowTable, sizeof(BOW_TABLE_T));
+
 	COPY_MAC_ADDR(rBowTable.aucPeerAddress, prBowSetupConnection->aucPeerAddress);
 	/* owTable.eState = BOW_DEVICE_STATE_ACQUIRING_CHANNEL; */
 	rBowTable.fgIsValid = TRUE;

@@ -199,8 +199,10 @@ VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length)
 				pucStartAddr[8], pucStartAddr[9], pucStartAddr[10], pucStartAddr[11],
 				pucStartAddr[12], pucStartAddr[13], pucStartAddr[14]);
 				break;
+			/*
 			default:
 				break;
+			*/
 			}
 			u4Length = 0;
 		}
@@ -331,8 +333,10 @@ VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length)
 					 pu4StartAddr[0], pu4StartAddr[1], pu4StartAddr[2],
 					 pucAddr[2], pucAddr[1], pucAddr[0]);
 				break;
+			/*
 			default:
 				break;
+			*/
 			}
 			u4Length = 0;
 		}

@@ -1974,12 +1974,12 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 		DBGLOG(QM, ERROR, "mtk_cfg80211_testmode_get_sta_statistics, data is NULL\n");
 		return -EINVAL;
 	}
-
+/*
 	if (!prParams->aucMacAddr) {
 		DBGLOG(QM, INFO, "%s MAC Address is NULL\n", __func__);
 		return -EINVAL;
 	}
-
+*/
 	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
 
 	if (!skb) {
@@ -2318,8 +2318,11 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 
 
 	i4Status = cfg80211_testmode_reply(skb);
+	skb = NULL;
 
 nla_put_failure:
+	if (skb != NULL)
+		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
 	return i4Status;
 }
 
@@ -2369,10 +2372,11 @@ int mtk_cfg80211_testmode_hs20_cmd(IN struct wiphy *wiphy, IN void *data, IN int
 
 	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
-	if (data && len)
+	if (data && len) {
 		prParams = (struct wpa_driver_hs20_data_s *)data;
 
-	DBGLOG(REQ, TRACE, "[%s] Cmd Type (%d)\n", __func__, prParams->CmdType);
+		DBGLOG(REQ, TRACE, "[%s] Cmd Type (%d)\n", __func__, prParams->CmdType);
+	}
 
 	if (prParams) {
 		int i;
@@ -2558,8 +2562,11 @@ int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, I
 
 
 	i4Status = cfg80211_testmode_reply(skb);
+	skb = NULL;
 
 nla_put_failure:
+	if (skb != NULL)
+		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
 	return i4Status;
 }
 
@@ -2613,6 +2620,7 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 	prQueryLTEChn = kalMemAlloc(sizeof(PARAM_GET_CHN_LOAD), VIR_MEM_TYPE);
 	if (prQueryLTEChn == NULL) {
 		DBGLOG(QM, TRACE, "alloc QueryLTEChn fail\n");
+		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
 		return -ENOMEM;
 	}
 	kalMemZero(prQueryLTEChn, sizeof(PARAM_GET_CHN_LOAD));
@@ -2862,9 +2870,14 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 		AcsChnReport[3]);
 
 	i4Status = cfg80211_testmode_reply(skb);
-	kalMemFree(prQueryLTEChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_LOAD));
+	/*need confirm cfg80211_testmode_reply will free skb*/
+	skb = NULL;
+	/*kalMemFree(prQueryLTEChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_LOAD));*/
 
 nla_put_failure:
+	kalMemFree(prQueryLTEChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_LOAD));
+	if (skb != NULL)
+		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
 	return i4Status;
 
 }

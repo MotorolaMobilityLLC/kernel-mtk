@@ -2214,10 +2214,13 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			prMsgChReq->ucTokenID = ++prAisFsmInfo->ucSeqNumOfChReq;
 			prMsgChReq->eReqType = CH_REQ_TYPE_JOIN;
 			prMsgChReq->u4MaxInterval = AIS_JOIN_CH_REQUEST_INTERVAL;
-			prMsgChReq->ucPrimaryChannel = prAisFsmInfo->prTargetBssDesc->ucChannelNum;
-			prMsgChReq->eRfSco = prAisFsmInfo->prTargetBssDesc->eSco;
-			prMsgChReq->eRfBand = prAisFsmInfo->prTargetBssDesc->eBand;
-			COPY_MAC_ADDR(prMsgChReq->aucBSSID, prAisFsmInfo->prTargetBssDesc->aucBSSID);
+
+			if (prAisFsmInfo->prTargetBssDesc != NULL) {
+				prMsgChReq->ucPrimaryChannel = prAisFsmInfo->prTargetBssDesc->ucChannelNum;
+				prMsgChReq->eRfSco = prAisFsmInfo->prTargetBssDesc->eSco;
+				prMsgChReq->eRfBand = prAisFsmInfo->prTargetBssDesc->eBand;
+				COPY_MAC_ADDR(prMsgChReq->aucBSSID, prAisFsmInfo->prTargetBssDesc->aucBSSID);
+			}
 
 			mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgChReq, MSG_SEND_METHOD_BUF);
 

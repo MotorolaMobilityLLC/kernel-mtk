@@ -361,12 +361,13 @@ BOOLEAN hs20IsUnsolicitedNeighborAdv(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prC
 #if CFG_ENABLE_GTK_FRAME_FILTER
 BOOLEAN hs20IsForgedGTKFrame(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_SW_RFB_T prCurrSwRfb)
 {
+	/*
 	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 	PUINT_8 pucEthDestAddr = prCurrSwRfb->pvHeader;
-
+	*/
 	/* 3 TODO: Need to verify this function before enable it */
 	return FALSE;
-
+	/*
 	if ((prConnSettings->eEncStatus != ENUM_ENCRYPTION_DISABLED) && IS_BMCAST_MAC_ADDR(pucEthDestAddr)) {
 		UINT_8 ucIdx = 0;
 		PUINT_32 prIpAddr, prPacketDA;
@@ -407,6 +408,7 @@ BOOLEAN hs20IsForgedGTKFrame(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo
 	}
 
 	return FALSE;
+	*/
 }
 #endif
 

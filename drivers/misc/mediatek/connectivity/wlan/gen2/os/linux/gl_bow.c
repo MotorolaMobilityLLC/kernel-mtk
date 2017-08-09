@@ -423,8 +423,10 @@ static ssize_t mt6620_ampc_read(IN struct file *filp, IN char __user *buf, IN si
 
 /* kfifo_get(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
 /* kfifo_out(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
-	if (!(kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval)))
+	if (!(kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval))) {
 		retval = -EIO;
+		return retval;
+	}
 
 	if (copy_to_user(buf, aucBuffer, retval))
 		retval = -EIO;

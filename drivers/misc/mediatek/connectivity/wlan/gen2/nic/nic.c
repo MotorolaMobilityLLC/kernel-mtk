@@ -1496,16 +1496,16 @@ P_MSDU_INFO_T nicGetPendingStaMMPDU(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRec
 	P_QUE_T prTempQue = &rTempQue;
 	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
 	P_MSDU_INFO_T prMsduInfo = (P_MSDU_INFO_T) NULL;
-
 	GLUE_SPIN_LOCK_DECLARATION();
+
+	if (prAdapter == NULL) {
+		ASSERT(FALSE);
+		return NULL;
+	}
+
 
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 	do {
-		if (prAdapter == NULL) {
-
-			ASSERT(FALSE);
-			break;
-		}
 
 		prTxingQue = &(prAdapter->rTxCtrl.rTxMgmtTxingQueue);
 		QUEUE_MOVE_ALL(prTempQue, prTxingQue);

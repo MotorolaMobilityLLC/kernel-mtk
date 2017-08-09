@@ -2288,6 +2288,8 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	}
 
 	prJoinInfo = &(prP2pFsmInfo->rJoinInfo);
+	if (prMsgHdr == NULL)
+		return;
 	prJoinCompMsg = (P_MSG_JOIN_COMP_T) prMsgHdr;
 	prAssocRspSwRfb = prJoinCompMsg->prSwRfb;
 	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);

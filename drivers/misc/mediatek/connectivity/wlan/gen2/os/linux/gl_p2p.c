@@ -2781,13 +2781,15 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 	do {
 		if (wrqu->encoding.pointer) {
 			u4ExtraSize = wrqu->encoding.length;
+			/*need confirm u4ExtraSize > 0 but is not very large*/
 			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 
 			if (!prExtraBuf) {
 				ret = -ENOMEM;
 				break;
 			}
-
+			/* here should set prExtraBuf default value */
+			memset(prExtraBuf, 0, u4ExtraSize);
 			if (copy_from_user(prExtraBuf, wrqu->encoding.pointer, wrqu->encoding.length)) {
 				ret = -EFAULT;
 				break;
@@ -2798,6 +2800,7 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 		}
 
 		prEnc = &wrqu->encoding;
+		/* here, need confirm (struct iw_encode_ext) < u4ExtraSize */
 		prIWEncExt = (struct iw_encode_ext *)prExtraBuf;
 
 		if (GLUE_CHK_PR3(prDev, prEnc, prExtraBuf) != TRUE) {
@@ -4143,6 +4146,11 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 				if (NumOfChannel > 50)
 					NumOfChannel = 50;
 				prP2PReq->outBufferLength = NumOfChannel;
+				/*here must confirm NumOfChannel < 16, for prP2PReq->aucBuffer 16 byte*/
+				if (NumOfChannel >= 15) {
+					/*DBGLOG(P2P, ERROR, "channel num > 15\n", __func__);*/
+					ASSERT(FALSE);
+				}
 
 				for (i = 0; i < NumOfChannel; i++) {
 #if 0

@@ -3599,6 +3599,10 @@ wlanoidSetTest(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetB
 		pvTestData = (PVOID) &prTest->u.AuthenticationEvent;
 		pvStatusBuffer = (PVOID) prAdapter->aucIndicationEventBuffer;
 		u4StatusBufferSize = prTest->u4Length - 8;
+		if (u4StatusBufferSize > sizeof(PARAM_AUTH_EVENT_T)) {
+			DBGLOG(OID, TRACE, "prTest->u4Length error %u\n", u4StatusBufferSize);
+			ASSERT(FALSE);
+		}
 		break;
 
 	case 2:		/* Type 2: generate an RSSI status indication */
@@ -9898,7 +9902,7 @@ wlanoidQueryBSSInfo(IN P_ADAPTER_T prAdapter,
 	if (u4QueryBufferLen < sizeof(EVENT_AIS_BSS_INFO_T))
 		return WLAN_STATUS_INVALID_LENGTH;
 	kalMemZero(&rCmdBSSInfo, sizeof(EVENT_AIS_BSS_INFO_T));
-
+	/*
 	rStatus = wlanSendSetQueryCmd(prAdapter,
 				      CMD_ID_GET_BSS_INFO,
 				      FALSE,
@@ -9908,6 +9912,16 @@ wlanoidQueryBSSInfo(IN P_ADAPTER_T prAdapter,
 				      nicOidCmdTimeoutCommon,
 				      sizeof(P_EVENT_AIS_BSS_INFO_T),
 				      (PUINT_8) &rCmdBSSInfo, pvQueryBuffer, u4QueryBufferLen);
+	*/
+	rStatus = wlanSendSetQueryCmd(prAdapter,
+				      CMD_ID_GET_BSS_INFO,
+				      FALSE,
+				      TRUE,
+				      TRUE,
+				      nicCmdEventGetBSSInfo,
+				      nicOidCmdTimeoutCommon,
+				      sizeof(EVENT_AIS_BSS_INFO_T),
+				      (PUINT_8) & rCmdBSSInfo, pvQueryBuffer, u4QueryBufferLen);
 
 	return rStatus;
 }				/* wlanoidSetWiFiWmmPsTest */
