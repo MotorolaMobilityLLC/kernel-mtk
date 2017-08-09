@@ -127,9 +127,11 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef EFUSE_HP_TRIM
 static unsigned int RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINETRIM_VAUDP15,
 	RG_AUDHPRFINETRIM_VAUDP15, RG_AUDHPLTRIM_VAUDP15_SPKHP, RG_AUDHPRTRIM_VAUDP15_SPKHP,
 	RG_AUDHPLFINETRIM_VAUDP15_SPKHP, RG_AUDHPRFINETRIM_VAUDP15_SPKHP;
+#endif
 #endif
 
 static unsigned int pin_extspkamp, pin_extspkamp_2, pin_vowclk, pin_audmiso, pin_rcvspkswitch;
@@ -1846,8 +1848,6 @@ static void Ext_Speaker_Amp_Change(bool enable)
 {
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	int ret;
-
 	if (enable) {
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
 #ifndef CONFIG_MTK_SPEAKER
