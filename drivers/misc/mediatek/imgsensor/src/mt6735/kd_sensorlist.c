@@ -79,11 +79,9 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #define CAMERA_HW_DRVNAME1  "kd_camera_hw"
 #define CAMERA_HW_DRVNAME2  "kd_camera_hw_bus2"
 
-#if 0
 #if defined(CONFIG_MTK_LEGACY)
 static struct i2c_board_info i2c_devs1 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DRVNAME1, 0xfe>>1)};
 static struct i2c_board_info i2c_devs2 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DRVNAME2, 0xfe>>1)};
-#endif
 #endif
 
 #if !defined(CONFIG_MTK_LEGACY)
@@ -100,14 +98,6 @@ static struct i2c_board_info i2c_devs2 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DR
 #endif
 
 struct device *sensor_device = NULL;
-
-#ifndef FALSE
-  #define FALSE (0)
-#endif
-
-#ifndef TRUE
-  #define TRUE  (1)
-#endif
 
 #define SENSOR_WR32(addr, data)    mt65xx_reg_sync_writel(data, addr)    /* For 89 Only.   // NEED_TUNING_BY_PROJECT */
 /* #define SENSOR_WR32(addr, data)    iowrite32(data, addr)    // For 89 Only.   // NEED_TUNING_BY_PROJECT */
@@ -177,7 +167,7 @@ static inline void KD_IMGSENSOR_PROFILE(char *tag) {}
 ********************************************************************************/
 /*LukeHu--150703=For Kernel Build Pass*/
 extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char *mode_name);
-extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution 
+extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -2205,12 +2195,12 @@ static inline int kdSetSensorGpio(int *pBuf)
     #define GPIO_CMPCLK_M_CMCSK   GPIO_MODE_02
 #endif
     int ret = 0;
-    /*LukeHu++150701=Mark for build error */
-    /*
+    #if defined CONFIG_MTK_LEGACY
     IMGSENSOR_GPIO_STRUCT *pSensorgpio = (IMGSENSOR_GPIO_STRUCT *)pBuf;
+    #endif
+
     PK_DBG("[CAMERA SENSOR] kdSetSensorGpio enable=%d, type=%d\n",
     pSensorgpio->GpioEnable, pSensorgpio->SensroInterfaceType);
-    */
 
 #if defined CONFIG_MTK_LEGACY
 #ifndef CONFIG_MTK_FPGA
@@ -2279,7 +2269,6 @@ static inline int kdSetSensorGpio(int *pBuf)
 
 
 /* PMIC */
-/*#if 0 Luke++150701=For 3.18 build pass */
 #if !defined(CONFIG_MTK_LEGACY)
 bool Get_Cam_Regulator(void)
 {
@@ -2412,8 +2401,6 @@ bool _hwPowerDown(KD_REGULATOR_TYPE_T type)
 
 
 #endif
-
-/*#endif Luke++150701=For 3.18 build pass */
 
 #ifdef CONFIG_COMPAT
 
@@ -2596,7 +2583,7 @@ static int compat_get_acdk_sensor_resolution_info_struct(
 
 static int compat_put_acdk_sensor_resolution_info_struct(
 	COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT __user *data32,
-	ACDK_SENSOR_PRESOLUTION_STRUCT __user *data)/* LukeHu++150326=For Build Warning */
+	ACDK_SENSOR_PRESOLUTION_STRUCT __user *data) /* LukeHu++150326=For Build Warning */
 	/* ACDK_SENSOR_RESOLUTION_INFO_STRUCT __user *data) //LukeHu-- */
 {
 	int err = 0;
@@ -3311,7 +3298,7 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 
 #if !defined(CONFIG_MTK_CLKMGR)
 	Get_ccf_clk(pdev);
-//	mtkcam_gpio_init(pdev);
+	mtkcam_gpio_init(pdev);
 #endif
 
     return i2c_add_driver(&CAMERA_HW_i2c_driver);
@@ -3853,6 +3840,7 @@ static void __exit CAMERA_HW_i2C_exit(void)
 	platform_driver_unregister(&g_stCAMERA_HW_Driver);
 	platform_driver_unregister(&g_stCAMERA_HW_Driver2);
 }
+
 
 EXPORT_SYMBOL(kdSetSensorSyncFlag);
 EXPORT_SYMBOL(kdSensorSyncFunctionPtr);

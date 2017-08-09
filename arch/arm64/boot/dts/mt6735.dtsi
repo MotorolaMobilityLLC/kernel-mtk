@@ -789,6 +789,25 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				"CG_IMAGE_LARB2_SMI";
 		};
 
+		kd_camera_hw1:kd_camera_hw1@15008000 {
+			compatible = "mediatek,camera_hw";
+			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
+			vcama-supply = <&mt_pmic_vcama_ldo_reg>;
+			vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
+			vcamaf-supply = <&mt_pmic_vcam_af_ldo_reg>;
+			vcamio-supply = <&mt_pmic_vcam_io_ldo_reg>;
+			/* Camera Common Clock Framework (CCF) */
+			clocks = <&topckgen TOP_MUX_CAMTG>,
+			<&topckgen TOP_UNIVPLL_D26>,
+			<&topckgen TOP_UNIVPLL2_D2>;
+			clock-names = "TOP_CAMTG_SEL","TOP_UNIVPLL_D26","TOP_UNIVPLL2_D2";
+		};
+
+		kd_camera_hw2:kd_camera_hw2@15008000 {
+			compatible = "mediatek,camera_hw2";
+			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
+		};
+
 		fdvt@0x1500B000 {
 			compatible = "mediatek,mt6735-fdvt";
 			reg = <0x1500B000 0x1000>;

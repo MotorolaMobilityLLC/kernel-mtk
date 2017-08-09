@@ -1,15 +1,6 @@
 //s_add new sensor driver here
 //export funtions
 /*IMX*/
-/*Luke++150701=For 3.18 build pass */
-
-#ifndef UINT32
-typedef unsigned int    UINT32;
-#endif
-#ifndef UINT16
-typedef unsigned short  UINT16;
-#endif
-
 UINT32 IMX220_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 IMX219_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 IMX214_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
