@@ -480,6 +480,8 @@ struct cpuhvfs_dvfsp {
 
 	u32 init_done;		/* for dvfsp and log_repo */
 
+	u32 hw_gov_en;
+
 	int (*init_dvfsp)(struct cpuhvfs_dvfsp *dvfsp);
 	int (*kick_dvfsp)(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta);
 	bool (*is_kicked)(struct cpuhvfs_dvfsp *dvfsp);
@@ -539,9 +541,11 @@ static struct clk *i2c_clk;
 static u32 cspm_probe_done;
 
 static struct init_sta suspend_sta = {
-	.opp	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
-	.volt	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
-	.vsram	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.opp		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.volt		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.vsram		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.ceiling	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.floor		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 };
 
 /**
@@ -983,8 +987,8 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_PCM_EVENT_VECTOR14, 0x0);
 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
-		cspm_write(swctrl_reg[i], SW_F_MAX(NUM_CPU_OPP - 1) |
-					  SW_F_MIN(0) |
+		cspm_write(swctrl_reg[i], SW_F_MAX(opp_sw_to_fw(sta->ceiling[i])) |
+					  SW_F_MIN(opp_sw_to_fw(sta->floor[i])) |
 					  SW_PAUSE);
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
@@ -1021,6 +1025,14 @@ static void __cspm_save_curr_sta(struct init_sta *sta)
 		sta->opp[i] = opp_fw_to_sw(cspm_curr_freq(hwsta_reg[i]));
 		sta->volt[i] = cspm_curr_volt(hwsta_reg[i]);
 		sta->vsram[i] = cspm_curr_vsram(hwsta_reg[i]);
+
+		if (i < NUM_PHY_CLUSTER) {
+			sta->ceiling[i] = opp_fw_to_sw(cspm_max_freq(swctrl_reg[i]));
+			sta->floor[i] = opp_fw_to_sw(cspm_min_freq(swctrl_reg[i]));
+		} else {
+			sta->ceiling[i] = 0;
+			sta->floor[i] = NUM_CPU_OPP - 1;
+		}
 	}
 }
 
@@ -1416,11 +1428,16 @@ static bool cspm_is_pcm_kicked(struct cpuhvfs_dvfsp *dvfsp)
 	return !!(cspm_read(CSPM_PCM_FSM_STA) & FSM_PCM_KICK);
 }
 
-static void __cspm_check_and_update_sta(struct init_sta *sta)
+static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 {
 	int i;
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
+		if (!dvfsp->hw_gov_en) {
+			sta->ceiling[i] = 0;
+			sta->floor[i] = NUM_CPU_OPP - 1;
+		}
+
 		if (sta->opp[i] == OPP_AT_SUSPEND) {
 			BUG_ON(suspend_sta.opp[i] == UINT_MAX);		/* without suspend */
 
@@ -1439,14 +1456,27 @@ static void __cspm_check_and_update_sta(struct init_sta *sta)
 			sta->vsram[i] = suspend_sta.vsram[i];
 			suspend_sta.vsram[i] = UINT_MAX;
 		}
+		if (sta->ceiling[i] == CEILING_AT_SUSPEND) {
+			BUG_ON(suspend_sta.ceiling[i] == UINT_MAX);	/* without suspend */
+
+			sta->ceiling[i] = suspend_sta.ceiling[i];
+			suspend_sta.ceiling[i] = UINT_MAX;
+		}
+		if (sta->floor[i] == FLOOR_AT_SUSPEND) {
+			BUG_ON(suspend_sta.floor[i] == UINT_MAX);	/* without suspend */
+
+			sta->floor[i] = suspend_sta.floor[i];
+			suspend_sta.floor[i] = UINT_MAX;
+		}
 
 		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
 		csram_write(OFFS_INIT_FREQ + i * sizeof(u32), sta->freq[i]);
 		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
 		csram_write(OFFS_INIT_VSRAM + i * sizeof(u32), sta->vsram[i]);
 
-		cspm_dbgx(KICK, "cluster%d: opp = %u, freq = %u, volt = 0x%x, vsram = 0x%x\n",
-				i, sta->opp[i], sta->freq[i], sta->volt[i], sta->vsram[i]);
+		cspm_dbgx(KICK, "cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
+				i, sta->opp[i], sta->ceiling[i], sta->floor[i],
+				sta->freq[i], sta->volt[i], sta->vsram[i]);
 	}
 }
 
@@ -1457,7 +1487,7 @@ static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 	struct pwr_ctrl *pwrctrl = dvfsp->pwrctrl;
 
 	spin_lock(&dvfs_lock);
-	__cspm_check_and_update_sta(sta);
+	__cspm_check_and_update_sta(dvfsp, sta);
 
 	spin_lock_irqsave(&cspm_lock, flags);
 
