@@ -722,8 +722,6 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		pdesc->base = (u32 *) dyna_load_pcm[i].buf;
 		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
 
-		release_firmware(fw);
-
 		dyna_load_pcm[i].ready = 1;
 		dyna_load_pcm_done = 1;
 	}
