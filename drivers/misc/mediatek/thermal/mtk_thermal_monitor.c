@@ -186,7 +186,7 @@ do { \
 /* ************************************ */
 #if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
 #include <mach/mt_gpt.h>
-#include <mach/mt_sleep.h>
+#include <mt_sleep.h>
 #include <linux/wakelock.h>
 
 /* extern int force_get_tbat(void); */
