@@ -23,12 +23,7 @@ unsigned int g_meta_com_type = META_UNKNOWN_COM;
 unsigned int g_meta_com_id = 0;
 unsigned int g_meta_uart_port = 0;
 
-struct meta_driver {
-	struct device_driver driver;
-	const struct platform_device_id *id_table;
-};
-
-static struct meta_driver meta_com_type_info = {
+static struct platform_driver meta_com_type_info = {
 	.driver = {
 		   .name = "meta_com_type_info",
 		   .bus = &platform_bus_type,
@@ -37,7 +32,7 @@ static struct meta_driver meta_com_type_info = {
 	.id_table = NULL,
 };
 
-static struct meta_driver meta_com_id_info = {
+static struct platform_driver meta_com_id_info = {
 	.driver = {
 		   .name = "meta_com_id_info",
 		   .bus = &platform_bus_type,
@@ -46,7 +41,7 @@ static struct meta_driver meta_com_id_info = {
 	.id_table = NULL,
 };
 
-static struct meta_driver meta_uart_port_info = {
+static struct platform_driver meta_uart_port_info = {
 	.driver = {
 		   .name = "meta_uart_port_info",
 		   .bus = &platform_bus_type,
