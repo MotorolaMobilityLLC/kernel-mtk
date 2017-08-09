@@ -2253,12 +2253,15 @@ int mt_cpufreq_update_volt_b(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int
 
 	BUG_ON(NULL == p);
 
-	if (!cpu_dvfs_is_available(p)) {
+	if (!cpu_dvfs_is_available(p) || p->nr_opp_tbl == 0) {
 		FUNC_EXIT(FUNC_LV_API);
 		return 0;
 	}
 
-	BUG_ON(nr_volt_tbl > p->nr_opp_tbl);
+	if (nr_volt_tbl > p->nr_opp_tbl) {
+		cpufreq_err("nr_volt_tbl = %d, nr_opp_tbl = %d\n", nr_volt_tbl, p->nr_opp_tbl);
+		BUG();
+	}
 
 	cpufreq_lock(flags);
 
@@ -2305,12 +2308,16 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
 	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 
-	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci)) {
+	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci) ||
+	    p->nr_opp_tbl == 0) {
 		FUNC_EXIT(FUNC_LV_HELP);
 		return 0;
 	}
 
-	BUG_ON(nr_volt_tbl > p->nr_opp_tbl);
+	if (nr_volt_tbl > p->nr_opp_tbl) {
+		cpufreq_err("nr_volt_tbl = %d, nr_opp_tbl = %d\n", nr_volt_tbl, p->nr_opp_tbl);
+		BUG();
+	}
 
 	cpufreq_lock(flags);
 
