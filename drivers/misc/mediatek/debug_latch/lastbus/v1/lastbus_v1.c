@@ -1,5 +1,6 @@
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <mt-plat/mt_io.h>
 #include <asm/io.h>
 
 #include "../lastbus.h"
@@ -22,48 +23,53 @@ static int dump(struct lastbus_plt *plt, char *buf, int len)
 	char *ptr = buf;
 	int i;
 
-	if (!mcu_base || !peri_base)
+	if (!mcu_base && !peri_base)
 		return -1;
 
-	for (i = 0; i <= NUM_MASTER_PORT-1; ++i) {
-		debug_raw = readl(IOMEM(mcu_base + BUS_MCU_M0 + 4 * i));
-		meter = readl(IOMEM(mcu_base + BUS_MCU_M0_M + 4 * i));
-		w_counter = meter & 0x3f;
-		r_counter = (meter >> 8) & 0x3f;
+	if (mcu_base) {
+		for (i = 0; i <= NUM_MASTER_PORT-1; ++i) {
+			debug_raw = readl(IOMEM(mcu_base + BUS_MCU_M0 + 4 * i));
+			meter = readl(IOMEM(mcu_base + BUS_MCU_M0_M + 4 * i));
+			w_counter = meter & 0x3f;
+			r_counter = (meter >> 8) & 0x3f;
 
-		if ((w_counter != 0) || (r_counter != 0)) {
-			ptr += sprintf(ptr, "[LAST BUS] Master %d: ", i);
-			ptr += sprintf(ptr, "aw_pending_counter = 0x%02lx, ar_pending_counter = 0x%02lx\n",
-					w_counter, r_counter);
-			ptr += sprintf(ptr, "STATUS = %03lx\n", debug_raw & 0x3ff);
+			if ((w_counter != 0) || (r_counter != 0)) {
+				ptr += sprintf(ptr, "[LAST BUS] Master %d: ", i);
+				ptr += sprintf(ptr, "aw_pending_counter = 0x%02lx, ar_pending_counter = 0x%02lx\n",
+						w_counter, r_counter);
+				ptr += sprintf(ptr, "STATUS = %03lx\n", debug_raw & 0x3ff);
+			}
 		}
+
+		for (i = 1; i <= NUM_SLAVE_PORT; ++i) {
+			debug_raw = readl(IOMEM(mcu_base + BUS_MCU_S1 + 4 * (i-1)));
+			meter = readl(IOMEM(mcu_base + BUS_MCU_S1_M + 4 * (i-1)));
+
+			w_counter = meter & 0x3f;
+			r_counter = (meter >> 8) & 0x3f;
+			c_counter = (meter >> 16) & 0x3f;
+
+			if ((w_counter != 0) || (r_counter != 0) || (c_counter != 0)) {
+				ptr += sprintf(ptr, "[LAST BUS] Slave %d: ", i);
+
+				ptr += sprintf(ptr,
+						"aw_pending_counter = 0x%02lx, ar_pending_counter = 0x%02lx, ac_pending_counter = 0x%02lx\n",
+						w_counter, r_counter, c_counter);
+				if (i <= 2)
+					ptr += sprintf(ptr, "STATUS = %04lx\n", debug_raw & 0x3fff);
+				else
+					ptr += sprintf(ptr, "STATUS = %04lx\n", debug_raw & 0xffff);
+			}
+		}
+
 	}
 
-	for (i = 1; i <= NUM_SLAVE_PORT; ++i) {
-		debug_raw = readl(IOMEM(mcu_base + BUS_MCU_S1 + 4 * (i-1)));
-		meter = readl(IOMEM(mcu_base + BUS_MCU_S1_M + 4 * (i-1)));
-
-		w_counter = meter & 0x3f;
-		r_counter = (meter >> 8) & 0x3f;
-		c_counter = (meter >> 16) & 0x3f;
-
-		if ((w_counter != 0) || (r_counter != 0) || (c_counter != 0)) {
-			ptr += sprintf(ptr, "[LAST BUS] Slave %d: ", i);
-
-			ptr += sprintf(ptr,
-				"aw_pending_counter = 0x%02lx, ar_pending_counter = 0x%02lx, ac_pending_counter = 0x%02lx\n",
-					w_counter, r_counter, c_counter);
-			if (i <= 2)
-				ptr += sprintf(ptr, "STATUS = %04lx\n", debug_raw & 0x3fff);
-			else
-				ptr += sprintf(ptr, "STATUS = %04lx\n", debug_raw & 0xffff);
+	if (peri_base) {
+		if (readl(IOMEM(peri_base+BUS_PERI_R1)) & 0x1) {
+			ptr += sprintf(ptr, "[LAST BUS] PERISYS TIMEOUT:\n");
+			for (i = 0; i <= NUM_MON-1; ++i)
+				ptr += sprintf(ptr, "PERI MON%d = %04x\n", i, readl(IOMEM(peri_base+BUS_PERI_MON+4*i)));
 		}
-	}
-
-	if (readl(IOMEM(peri_base+BUS_PERI_R1)) & 0x1) {
-		ptr += sprintf(ptr, "[LAST BUS] PERISYS TIMEOUT:\n");
-		for (i = 0; i <= NUM_MON-1; ++i)
-			ptr += sprintf(ptr, "PERI MON%d = %04x\n", i, readl(IOMEM(peri_base+BUS_PERI_MON+4*i)));
 	}
 
 	return 0;
@@ -73,8 +79,11 @@ static int enable(struct lastbus_plt *plt)
 {
 	void __iomem *peri_base = plt->common->peri_base;
 
+	if (!peri_base)
+		return -1;
+
 	/* timeout set to around 130 ms */
-	writel(0x1fff, IOMEM(peri_base+BUS_PERI_R0));
+	writel(0x3fff, IOMEM(peri_base+BUS_PERI_R0));
 	/* enable the perisys debugging funcationality */
 	writel(0xc, IOMEM(peri_base+BUS_PERI_R1));
 
@@ -114,7 +123,7 @@ static int mcusys_hang_test(unsigned long addr_to_set, unsigned int flag)
 
 	/* Access any DRAM address (snooping) or invalidate TLB (DVM) */
 	data_on_dram = 1;
-	dsb();
+	mb();
 
 	pr_err("[LAST BUS] MCUSYS hang test failed\n");
 	return 1;
@@ -167,7 +176,6 @@ static int __init lastbus_init(void)
 		return -ENOMEM;
 
 	drv->plt.ops = &lastbus_ops;
-	drv->plt.chip_code = 0x6755;
 	drv->plt.min_buf_len = 2048;	/* TODO: can calculate the len by how many levels of bt we want */
 
 	ret = lastbus_register(&drv->plt);
@@ -183,4 +191,4 @@ register_lastbus_err:
 	return ret;
 }
 
-arch_initcall(lastbus_init);
+core_initcall(lastbus_init);

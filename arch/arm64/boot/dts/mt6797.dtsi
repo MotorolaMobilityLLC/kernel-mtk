@@ -1221,6 +1221,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x1021f000 0x1000>;
 		};
 
+		lastbus@10220000 {
+			compatible = "mediatek,lastbus";
+			reg = <0x10220000 0x1000>;
+		};
+
 		mcucfg@10220000 {
 			compatible = "mediatek,mcucfg";
 			reg = <0x10220000 0x1000>;

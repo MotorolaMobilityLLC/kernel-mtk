@@ -29,7 +29,6 @@ struct lastbus_plt_operations {
 };
 
 struct lastbus_plt {
-	unsigned int chip_code;
 	unsigned int min_buf_len;
 	struct lastbus_plt_operations *ops;
 	struct lastbus *common;

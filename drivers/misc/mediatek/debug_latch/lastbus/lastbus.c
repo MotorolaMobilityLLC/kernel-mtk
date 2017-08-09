@@ -14,7 +14,6 @@
 #include "lastbus.h"
 
 static const struct of_device_id lastbus_of_ids[] = {
-	{ .compatible = "mediatek,lastbus", },
 	{}
 };
 
@@ -127,15 +126,14 @@ int lastbus_dump(char *buf, int len)
 		return -ENODEV;
 	}
 
-	if (!plt->common->mcu_base) {
+	if (!plt->common->mcu_base)
 		pr_warn("%s:%d: plt->common->mcu_base is NULL\n", __func__, __LINE__);
-		return -ENODEV;
-	}
 
-	if (!plt->common->peri_base) {
+	if (!plt->common->peri_base)
 		pr_warn("%s:%d: plt->common->peri_base is NULL\n", __func__, __LINE__);
+
+	if (!plt->common->mcu_base && !plt->common->peri_base)
 		return -ENODEV;
-	}
 
 	if (plt->ops && plt->ops->dump)
 		return plt->ops->dump(plt, buf, len);
@@ -159,16 +157,14 @@ int lastbus_enable(void)
 		return -ENODEV;
 	}
 
-	if (!plt->common->mcu_base) {
+	if (!plt->common->mcu_base)
 		pr_warn("%s:%d: plt->common->mcu_base is NULL\n", __func__, __LINE__);
-		return -ENODEV;
-	}
 
-	if (!plt->common->peri_base) {
+	if (!plt->common->peri_base)
 		pr_warn("%s:%d: plt->common->peri_base is NULL\n", __func__, __LINE__);
-		return -ENODEV;
-	}
 
+	if (!plt->common->mcu_base && !plt->common->peri_base)
+		return -ENODEV;
 
 	if (plt->ops && plt->ops->enable)
 		return plt->ops->enable(plt);
@@ -251,6 +247,9 @@ static int lastbus_start(void)
 {
 	struct lastbus_plt *plt = lastbus_drv.cur_plt;
 
+	if (!plt)
+		return -ENODEV;
+
 	if (!plt->ops) {
 		pr_err("%s:%d: ops not installed\n", __func__, __LINE__);
 		return -ENODEV;
@@ -264,7 +263,17 @@ static int lastbus_start(void)
 
 static int __init lastbus_init(void)
 {
+	struct device_node *node;
 	int ret = 0;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,lastbus");
+	if (node) {
+		lastbus_drv.mcu_base = of_iomap(node, 0);
+		lastbus_drv.peri_base = of_iomap(node, 1);
+	} else {
+		pr_err("can't find compatible node for lastbus\n");
+		return -1;
+	}
 
 	ret = lastbus_start();
 	if (ret) {
@@ -300,9 +309,4 @@ static int __init lastbus_init(void)
 	return 0;
 }
 
-static void __exit lastbus_exit(void)
-{
-}
-
-module_init(lastbus_init);
-module_exit(lastbus_exit);
+postcore_initcall(lastbus_init);
