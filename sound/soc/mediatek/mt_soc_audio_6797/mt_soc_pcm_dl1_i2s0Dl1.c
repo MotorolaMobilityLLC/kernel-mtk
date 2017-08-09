@@ -127,7 +127,8 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 {
 	irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s(), irq_user_id = %p, irq1_cnt = %d\n",
+		__func__, irq_user_id, irq1_cnt);
 	AudDrv_Clk_On();
 	if (irq_user_id && irq1_cnt)
 		irq_update_user(irq_user_id,
@@ -386,6 +387,8 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 		}
 		mPrepareDone = false;
 	}
+
+	irq1_cnt = 0;	/* reset irq1_cnt */
 
 	AudDrv_Clk_Off();
 	return 0;
