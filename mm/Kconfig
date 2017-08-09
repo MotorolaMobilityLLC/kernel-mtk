@@ -509,7 +509,7 @@ config CMA
 
 config ZONE_MOVABLE_CMA
 	bool "Contiguous Memory Allocator by ZONE_MOVABLE"
-	depends on HAVE_MEMBLOCK && MMU && CMA
+	depends on HAVE_MEMBLOCK && MMU && CMA && MTK_MEM
 	default n
 	help
 	  This enable the support of ZONE MOVALBE Contiguous Memory Allocator.

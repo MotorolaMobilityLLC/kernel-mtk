@@ -129,7 +129,7 @@ phys_addr_t get_zone_movable_cma_base(void)
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
 	return memory_lowpower_cma_base();
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
-	return 0;
+	return (~(phys_addr_t)0);
 }
 
 phys_addr_t get_zone_movable_cma_size(void)
