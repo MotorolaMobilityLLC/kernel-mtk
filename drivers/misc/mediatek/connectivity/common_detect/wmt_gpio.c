@@ -266,6 +266,12 @@ INT32 wmt_gpio_init(struct platform_device *pdev)
 				}
 			}
 		}
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_state[GPIO_IN_PULLUP]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
+			pr_err("wmt_gpio:set GPIO_WIFI_EINT_PIN to GPIO_IN_PULLUP done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_WIFI_EINT_PIN to GPIO_IN_PULLUP fail, is NULL!\n");
 	} else {
 		pr_err("wmt_gpio:can't find pinctrl dev!\n");
 		iret = -1;

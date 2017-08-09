@@ -85,9 +85,10 @@ static int wmt_detect_dump_pin_conf(void)
 int _wmt_detect_output_low(unsigned int id)
 {
 	if (INVALID_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[id].gpio_num) {
-		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 0);
-		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output 0\n",
-				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num);
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 0);
+		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
+				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num,
+				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num));
 	}
 
 	return 0;
@@ -96,9 +97,10 @@ int _wmt_detect_output_low(unsigned int id)
 int _wmt_detect_output_high(unsigned int id)
 {
 	if (INVALID_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[id].gpio_num) {
-		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 1);
-		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output 1\n",
-				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num);
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 1);
+		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
+				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num,
+				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num));
 	}
 
 	return 0;

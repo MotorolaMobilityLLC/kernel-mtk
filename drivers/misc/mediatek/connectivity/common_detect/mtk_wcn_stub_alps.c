@@ -500,9 +500,11 @@ static void mtk_wcn_cmb_sdio_request_eirq(msdc_sdio_irq_handler_t irq_handler, v
 #else
 		wifi_irq = irq_of_parse_and_map(node, 0);/* get wifi eint num */
 #endif
+#if 1
 		ret = request_irq(wifi_irq, mtk_wcn_cmb_sdio_eirq_handler_stub, IRQF_TRIGGER_LOW,
 				"WIFI-eint", NULL);
 		CMB_STUB_LOG_DBG("WIFI EINT irq %d !!\n", wifi_irq);
+#endif
 
 		if (ret)
 			CMB_STUB_LOG_WARN("WIFI EINT IRQ LINE NOT AVAILABLE!!\n");
@@ -526,7 +528,7 @@ static void mtk_wcn_cmb_sdio_on(int sdio_port_num)
 {
 	pm_message_t state = {.event = PM_EVENT_USER_RESUME };
 
-	CMB_STUB_LOG_DBG("mtk_wcn_cmb_sdio_on (%d)\n", sdio_port_num);
+	CMB_STUB_LOG_INFO("mtk_wcn_cmb_sdio_on (%d)\n", sdio_port_num);
 
 	/* 1. disable sdio eirq */
 	mtk_wcn_cmb_sdio_disable_eirq();
