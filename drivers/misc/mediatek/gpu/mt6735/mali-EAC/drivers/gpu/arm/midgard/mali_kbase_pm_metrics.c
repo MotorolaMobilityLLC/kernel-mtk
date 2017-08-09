@@ -63,8 +63,9 @@ int g_touch_boost_id = 0;
 
 extern unsigned int g_power_status;
 
-
-//#include <linux/earlysuspend.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif /* CONFIG_HAS_EARLYSUSPEND */
 #include <linux/suspend.h>
 
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
