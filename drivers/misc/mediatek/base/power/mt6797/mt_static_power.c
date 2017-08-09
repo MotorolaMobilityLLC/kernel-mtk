@@ -689,50 +689,50 @@ EXPORT_SYMBOL(mt_spower_get_leakage);
 
 int mt_spower_get_efuse_lkg(int dev)
 {
-	int devinfo = 0, efuse_leakage = 0, efuse_leakage_mw = 0;
+	int devinfo = 0, efuse_lkg = 0, efuse_lkg_mw = 0;
 
 	BUG_ON(!(dev < MT_SPOWER_MAX));
 	switch (dev) {
 	case  MT_SPOWER_CPUBIG:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0); /* P_OD1 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_BIG_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 8) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_BIG_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_GPU:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX1); /* P_OD3 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_GPU_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 8) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_GPU_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_VCORE:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_VCORE_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 8) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_VCORE_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_CPUL:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPUL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 8) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_CPUL_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_CPULL:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
-		efuse_leakage = (devinfo >> 24) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_CPULL_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 24) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_CPULL_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_MODEM:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
-		efuse_leakage = (devinfo >> 8) & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_MODEM_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = (devinfo >> 8) & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_MODEM_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	case  MT_SPOWER_VMD1:
 		devinfo = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
-		efuse_leakage = devinfo & 0xff;
-		efuse_leakage_mw = (efuse_leakage == 0) ? DEF_VMD1_LEAKAGE : (int)(efuse_leakage*V_OF_FUSE/1000);
+		efuse_lkg = devinfo & 0xff;
+		efuse_lkg_mw = (efuse_lkg == 0) ? DEF_VMD1_LEAKAGE : (int)(devinfo_table[efuse_lkg]*V_OF_FUSE/1000);
 		break;
 	default:
 		break;
 	}
 
-	return efuse_leakage_mw;
+	return efuse_lkg_mw;
 }
 EXPORT_SYMBOL(mt_spower_get_efuse_lkg);
 
