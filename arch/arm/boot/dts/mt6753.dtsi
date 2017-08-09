@@ -919,10 +919,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		gcpu@10216000 {
 			compatible = "mediatek,mt6735-gcpu";
 			reg = <0x10216000 0x1000>;
-<<<<<<< HEAD
 			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
-=======
-			interrupts = <0 150 0x8>;
 		};
 
 		GCE@0x10217000 {
@@ -995,7 +992,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			jpgdec_done = <131>;
 			venc_mb_done = <132>;
 			venc_128byte_cnt_done = <133>;
->>>>>>> 12a9ed7... [ALPS02161257] CMDQ: mediatek: IP base common code
 		};
 
 		CQDMA@0x10217C00 {
