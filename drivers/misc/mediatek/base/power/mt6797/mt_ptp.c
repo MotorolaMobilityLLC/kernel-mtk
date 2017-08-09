@@ -366,7 +366,7 @@ static unsigned int *recordTbl;
 	#include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
-	/* #include "../../../power/mt6797/mt6311.h" */
+	#include "../../../power/mt6797/da9214.h"
 #else
 	#include "mach/mt_ptpslt.h"
 	#include "kernel2ctp.h"
@@ -3429,8 +3429,11 @@ static int eem_probe(struct platform_device *pdev)
 			__func__, ckgen_meter(1), ckgen_meter(2));
 		*/
 	#endif
-	/* pmic_config_interface(0x44E, 0x1, 0x1, 1); */ /* set PWM mode for MT6351 */
-	/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
+	/* set PWM mode for DA9214 */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD1, 0x2, 0x3, 0); /* Enable Buck A PWM Mode */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD2, 0x2, 0x3, 0); /* Enable Buck B PWM Mode */
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
 
@@ -3452,8 +3455,11 @@ static int eem_probe(struct platform_device *pdev)
 			ckgen_meter(2));
 		*/
 	#endif
-	/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
-	/* pmic_config_interface(0x44E, 0x0, 0x1, 1); */ /* set non-PWM mode for MT6351 */
+	 /* set non-PWM mode for DA9214 */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD1, 0x0, 0x3, 0); /* Disable Buck A PWM Mode */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD2, 0x0, 0x3, 0); /* Disable Buck B PWM Mode */
 	#ifdef __KERNEL__
 		#ifndef EARLY_PORTING
 			#if !defined(CONFIG_MTK_CLKMGR)
