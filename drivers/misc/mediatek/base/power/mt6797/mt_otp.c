@@ -963,7 +963,7 @@ static void otp_monitor_ctrl(void)
 
 static void enable_OTP(void)
 {
-	otp_info(" Enabled\n");
+	/* otp_info(" Enabled\n"); */
 
 	getTHslope();
 
@@ -986,7 +986,7 @@ static void enable_OTP(void)
 
 	/* otp_info_data_reset(&otp_info_data); */
 
-	otp_info(" Configuration finished\n");
+	/* otp_info(" Configuration finished\n"); */
 
 
 	if (timer_enabled == 0) {
@@ -997,7 +997,7 @@ static void enable_OTP(void)
 
 static void disable_OTP(void)
 {
-	otp_info(" Disabled\n");
+	/* otp_info(" Disabled\n"); */
 
 	BigiDVFSChannel(2, 0);
 	otp_info_data_reset(&otp_info_data);
