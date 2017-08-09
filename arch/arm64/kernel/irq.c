@@ -259,9 +259,6 @@ bool update_irq_need_migrate_list(struct irq_desc *desc, const struct cpumask *n
 	if (cpumask_empty(&need_update_affinity))
 		return true;
 
-	pr_err("[scy] cpumask_eq %d", cpumask_equal(d->affinity, cpu_possible_mask));
-	pr_err("[scy] mt_cpumask_eq %d", mt_cpumask_equal(d->affinity, cpu_possible_mask));
-
 	/* special cases */
 	if (mt_cpumask_equal(new_affinity, cpu_possible_mask)) {
 		/*

@@ -353,7 +353,12 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
 		if (cpumask_intersects(mask, nodemask))
 			cpumask_and(mask, mask, nodemask);
 	}
+
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	irq_do_set_affinity(&desc->irq_data, mask, false);
+#else
+	irq_do_set_affinity(&desc->irq_data, cpu_possible_mask, true);
+#endif
 	return 0;
 }
 #else
@@ -1192,7 +1197,6 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 
 		/* Set default affinity mask once everything is setup */
 		setup_affinity(irq, desc, mask);
-
 	} else if (new->flags & IRQF_TRIGGER_MASK) {
 		unsigned int nmsk = new->flags & IRQF_TRIGGER_MASK;
 		unsigned int omsk = irq_settings_get_trigger_mask(desc);
