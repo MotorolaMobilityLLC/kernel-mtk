@@ -109,8 +109,8 @@ struct bmp_i2c_data {
 	u8 hw_filter;
 	u8 oversampling_p;
 	u8 oversampling_t;
-	u32 last_temp_measurement;
-	u32 temp_measurement_period;
+	unsigned long last_temp_measurement;
+	unsigned long temp_measurement_period;
 	struct bmp280_calibration_data bmp280_cali;
 
 	/* calculated temperature correction coefficient */

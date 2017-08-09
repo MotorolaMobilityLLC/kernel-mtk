@@ -599,12 +599,6 @@ static int hmdy_probe(struct platform_device *pdev)
 		HMDY_ERR("unable to register hmdy input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-	atomic_set(&(hmdy_context_obj->early_suspend), 0);
-	hmdy_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    hmdy_context_obj->early_drv.suspend = hmdy_early_suspend,
-	    hmdy_context_obj->early_drv.resume = hmdy_late_resume, register_early_suspend(&hmdy_context_obj->early_drv);
-#endif
 
 	HMDY_LOG("----hmdy_probe OK !!\n");
 	return 0;
