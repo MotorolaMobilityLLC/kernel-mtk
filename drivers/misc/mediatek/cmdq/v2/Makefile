@@ -51,7 +51,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6755"))
+ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
 endif
 
