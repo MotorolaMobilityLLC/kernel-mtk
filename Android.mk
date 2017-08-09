@@ -115,13 +115,16 @@ ifneq ($(KERNEL_CONFIG_MODULES),)
 $(BUILT_SYSTEMIMAGE): $(KERNEL_MODULES_DEPS)
 endif
 
-.PHONY: kernel install-kernel savedefconfig-kernel %config-kernel clean-kernel
+.PHONY: kernel save-kernel kernel-savedefconfig %config-kernel clean-kernel
 kernel: $(INSTALLED_KERNEL_TARGET)
-all_modules: $(INSTALLED_KERNEL_TARGET)
 save-kernel: $(TARGET_PREBUILT_KERNEL)
 
-#TODO
-savedefconfig-kernel:
+kernel-savedefconfig: $(TARGET_KERNEL_CONFIG)
+	cp $(TARGET_KERNEL_CONFIG) $(KERNEL_CONFIG_FILE)
+
+kernel-menuconfig:
+	$(hide) mkdir -p $(KERNEL_OUT)
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) menuconfig
 
 %config-kernel:
 	$(hide) mkdir -p $(KERNEL_OUT)
