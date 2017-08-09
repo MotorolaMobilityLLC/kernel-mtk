@@ -85,7 +85,7 @@
 #include "hif_pdma.h"
 #include "gl_os.h"
 
-/* #include <mach/emi_mpu.h> */
+#include <mach/emi_mpu.h>
 
 /* #if (CONF_MTK_AHB_DMA == 1) */
 
@@ -187,23 +187,17 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	/* enable PDMA mode */
 	HifInfo->fgDmaEnable = TRUE;
 
-#if 0				/* MPU Setting: ENABLE_EMI_PROTECTION */
 	/* WIFI using TOP 512KB */
-	DBGLOG(INIT, TRACE, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
+	DBGLOG(HAL, TRACE, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
 	/* for denali 1 & denali 3 */
+	/* for denali 2, we share region with wmt due to not enough region to use */
 	emi_mpu_set_region_protection(gConEmiPhyBase,
 				      gConEmiPhyBase + 512 * 1024 - 1,
 				      12,
-				      SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				      SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 							   NO_PROTECTION, FORBIDDEN, FORBIDDEN));
-/* #else */
-/* emi_mpu_set_region_protection(gConEmiPhyBase, */
-/* gConEmiPhyBase + 512*1024 - 1, */
-/* 6, */
-/* SET_ACCESS_PERMISSON(FORBIDDEN,NO_PROTECTION,FORBIDDEN,FORBIDDEN)); */
-#endif
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
