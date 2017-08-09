@@ -470,6 +470,29 @@ int ubi_leb_write(struct ubi_volume_desc *desc, int lnum, const void *buf,
 	if (len == 0)
 		return 0;
 
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+#ifdef CONFIG_MTK_HIBERNATION
+	if (strcmp(vol->name, IPOH_VOLUME_NANE) == 0)
+		return ubi_eba_write_tlc_leb(ubi, vol, lnum, buf, offset, len);
+#endif
+	/* archive data */
+	if (lnum >= 10) {
+		if ((offset == 0) && (len == vol->usable_leb_size)) {
+			if (vol->eba_tbl[lnum] >= 0) { /* leb is mapped, unmapped */
+				ubi_err("leb %d is mapped, unmap", lnum);
+				ubi_leb_unmap(desc, lnum);
+			}
+			return ubi_eba_write_tlc_leb(ubi, vol, lnum, buf, offset, len);
+		} else if ((offset + len) > (vol->usable_leb_size - ubi->min_io_size)) {
+			if (ubi_eba_write_leb(ubi, vol, lnum, buf, offset, len))
+				return -EINVAL;
+
+			return ubi_wl_archive_leb(ubi, vol, lnum);
+		}
+		ubi_trigger_archive_by_slc(ubi);
+	}
+#endif
+
 	return ubi_eba_write_leb(ubi, vol, lnum, buf, offset, len);
 }
 EXPORT_SYMBOL_GPL(ubi_leb_write);
@@ -513,7 +536,17 @@ int ubi_leb_change(struct ubi_volume_desc *desc, int lnum, const void *buf,
 
 	if (len == 0)
 		return 0;
-
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	/* archive data, leb atomical <== > leb full? */
+	if (lnum >= 10) {
+		if (len > (vol->usable_leb_size - ubi->min_io_size)) {
+			if (ubi_eba_atomic_leb_change(ubi, vol, lnum, buf, len))
+				return -EINVAL;
+			return ubi_wl_archive_leb(ubi, vol, lnum);
+		}
+		ubi_trigger_archive_by_slc(ubi);
+	}
+#endif
 	return ubi_eba_atomic_leb_change(ubi, vol, lnum, buf, len);
 }
 EXPORT_SYMBOL_GPL(ubi_leb_change);

@@ -314,8 +314,13 @@ static ssize_t vol_cdev_direct_write(struct file *file, const char __user *buf,
 			err = -EFAULT;
 			break;
 		}
-
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+		if (lnum >= 10)
+			err = ubi_eba_write_tlc_leb(ubi, vol, lnum, tbuf, off, len);
+		else
+#endif
 		err = ubi_eba_write_leb(ubi, vol, lnum, tbuf, off, len);
+
 		if (err)
 			break;
 
