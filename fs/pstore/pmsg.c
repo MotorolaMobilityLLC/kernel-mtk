@@ -38,7 +38,7 @@ static ssize_t write_pmsg(struct file *file, const char __user *buf,
 		buffer_size = PMSG_MAX_BOUNCE_BUFFER_SIZE;
 	buffer = vmalloc(buffer_size);
 	if (!buffer)
-		return -EFAULT;
+		return -ENOMEM;
 
 	mutex_lock(&pmsg_lock);
 	for (i = 0; i < count; ) {

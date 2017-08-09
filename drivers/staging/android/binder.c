@@ -5073,26 +5073,24 @@ static int binder_transactions_show(struct seq_file *m, void *unused)
 
 static int binder_proc_show(struct seq_file *m, void *unused)
 {
+	struct binder_proc *itr;
 	struct binder_proc *proc = m->private;
 	int do_lock = !binder_debug_no_lock;
-#ifdef MTK_BINDER_DEBUG
-	struct binder_proc *tmp_proc;
-	bool find = false;
-#endif
+	bool valid_proc = false;
 
 	if (do_lock)
 		binder_lock(__func__);
-	seq_puts(m, "binder proc state:\n");
-#ifdef MTK_BINDER_DEBUG
-	hlist_for_each_entry(tmp_proc, &binder_procs, proc_node) {
-		if (proc == tmp_proc) {
-			find = true;
+
+	hlist_for_each_entry(itr, &binder_procs, proc_node) {
+		if (itr == proc) {
+			valid_proc = true;
 			break;
 		}
 	}
-	if (find == true)
-#endif
+	if (valid_proc) {
+		seq_puts(m, "binder proc state:\n");
 		print_binder_proc(m, proc, 1);
+	}
 #ifdef MTK_BINDER_DEBUG
 	else
 		pr_debug("show proc addr 0x%p exit\n", proc);

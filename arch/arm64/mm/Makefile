@@ -9,3 +9,5 @@ KBUILD_CPPFLAGS += -Werror -I$(srctree)/drivers/misc/mediatek/include
 
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mt_cache_v8.o
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mt_innercache.o
+
+obj-$(CONFIG_ARM64_PTDUMP)	+= dump.o
