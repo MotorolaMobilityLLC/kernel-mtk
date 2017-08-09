@@ -2826,6 +2826,7 @@ static int _cpufreq_dfs_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 #ifdef CONFIG_CPU_FREQ
 	if (policy)
 		cpufreq_freq_transition_end(policy, &freqs, 0);
+	cpufreq_ver("CB - notify %d to governor\n", freqs.new);
 #endif
 
 	p->idx_opp_tbl = freq_idx;
@@ -2866,8 +2867,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	unsigned int cpus;
 	unsigned long flags;
 
-	return NOTIFY_OK;
-
 	/* This is for cci */
 	id_cci = MT_CPU_DVFS_CCI;
 	p_cci = id_to_cpu_dvfs(id_cci);
@@ -2892,7 +2891,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				p->armpll_is_available = 1;
-				if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_ONLINE)) {
+					cpufreq_ver("CB - re-adjust cci due to big on\n");
 					new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
 					/* set cci freq/volt */
 					_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
@@ -2902,9 +2902,12 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #if 1
 					if (action == CPU_ONLINE) {
 						cur_volt = p->ops->get_cur_volt(p);
+						cpufreq_ver("CB - adjust the freq to V:%d  due to L/LL on\n", cur_volt);
 						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
 						policy = cpufreq_cpu_get(cpu);
 						_cpufreq_dfs_locked(policy, p, freq_idx);
+						cpufreq_cpu_put(policy);
 					}
 #endif
 				}
@@ -2922,6 +2925,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 					policy = cpufreq_cpu_get(cpu);
 					_cpufreq_dfs_locked(policy, p, p->nr_opp_tbl - 1);
+					cpufreq_cpu_put(policy);
 				}
 				new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
 				/* set cci freq/volt */
@@ -2945,8 +2949,10 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				if (action == CPU_DOWN_FAILED) {
 					cur_volt = p->ops->get_cur_volt(p);
 					freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
+					freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
 					policy = cpufreq_cpu_get(cpu);
 					_cpufreq_dfs_locked(policy, p, freq_idx);
+					cpufreq_cpu_put(policy);
 				}
 #endif
 			}
