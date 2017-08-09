@@ -16,6 +16,7 @@
 #define _MTK_DRM_PLANE_H_
 
 #include <drm/drm_crtc.h>
+#include <linux/types.h>
 
 struct mtk_drm_plane {
 	struct drm_plane		base;
@@ -25,7 +26,7 @@ struct mtk_drm_plane {
 struct mtk_plane_pending_state {
 	bool				config;
 	bool				enable;
-	unsigned int			addr;
+	dma_addr_t			addr;
 	unsigned int			pitch;
 	unsigned int			format;
 	unsigned int			x;

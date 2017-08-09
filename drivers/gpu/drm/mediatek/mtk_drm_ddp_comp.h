@@ -64,15 +64,15 @@ enum mtk_ddp_comp_id {
 struct mtk_ddp_comp;
 
 struct mtk_ddp_comp_funcs {
-	void (*config)(void __iomem *base, unsigned int w, unsigned int h,
+	void (*config)(struct mtk_ddp_comp *comp, unsigned int w, unsigned int h,
 		       unsigned int vrefresh, unsigned int fifo_pseudo_size);
 	void (*start)(struct mtk_ddp_comp *comp);
 	void (*stop)(struct mtk_ddp_comp *comp);
-	void (*enable_vblank)(void __iomem *base);
-	void (*disable_vblank)(void __iomem *base);
-	void (*layer_on)(void __iomem *base, unsigned int idx);
-	void (*layer_off)(void __iomem *base, unsigned int idx);
-	void (*layer_config)(void __iomem *base, unsigned int ovl_addr,
+	void (*enable_vblank)(struct mtk_ddp_comp *comp);
+	void (*disable_vblank)(struct mtk_ddp_comp *comp);
+	void (*layer_on)(struct mtk_ddp_comp *comp, unsigned int idx);
+	void (*layer_off)(struct mtk_ddp_comp *comp, unsigned int idx);
+	void (*layer_config)(struct mtk_ddp_comp *comp, unsigned int ovl_addr,
 			    unsigned int idx, struct mtk_plane_state *state,
 			    unsigned int rgb888, unsigned int rgb565);
 };
@@ -101,7 +101,7 @@ static inline void mtk_ddp_comp_config(struct mtk_ddp_comp *comp,
 				       unsigned int vrefresh)
 {
 	if (comp->funcs && comp->funcs->config)
-		comp->funcs->config(comp->regs, w, h, vrefresh,
+		comp->funcs->config(comp, w, h, vrefresh,
 		comp->ddp_comp_driver_data->rdma_fifo_pseudo_size);
 }
 
@@ -120,27 +120,27 @@ static inline void mtk_ddp_comp_stop(struct mtk_ddp_comp *comp)
 static inline void mtk_ddp_comp_enable_vblank(struct mtk_ddp_comp *comp)
 {
 	if (comp->funcs && comp->funcs->enable_vblank)
-		comp->funcs->enable_vblank(comp->regs);
+		comp->funcs->enable_vblank(comp);
 }
 
 static inline void mtk_ddp_comp_disable_vblank(struct mtk_ddp_comp *comp)
 {
 	if (comp->funcs && comp->funcs->disable_vblank)
-		comp->funcs->disable_vblank(comp->regs);
+		comp->funcs->disable_vblank(comp);
 }
 
 static inline void mtk_ddp_comp_layer_on(struct mtk_ddp_comp *comp,
 					 unsigned int idx)
 {
 	if (comp->funcs && comp->funcs->layer_on)
-		comp->funcs->layer_on(comp->regs, idx);
+		comp->funcs->layer_on(comp, idx);
 }
 
 static inline void mtk_ddp_comp_layer_off(struct mtk_ddp_comp *comp,
 					  unsigned int idx)
 {
 	if (comp->funcs && comp->funcs->layer_off)
-		comp->funcs->layer_off(comp->regs, idx);
+		comp->funcs->layer_off(comp, idx);
 }
 
 static inline void mtk_ddp_comp_layer_config(struct mtk_ddp_comp *comp,
@@ -148,7 +148,7 @@ static inline void mtk_ddp_comp_layer_config(struct mtk_ddp_comp *comp,
 					     struct mtk_plane_state *state)
 {
 	if (comp->funcs && comp->funcs->layer_config)
-		comp->funcs->layer_config(comp->regs,
+		comp->funcs->layer_config(comp,
 			comp->ddp_comp_driver_data->reg_ovl_addr, idx, state,
 			comp->ddp_comp_driver_data->ovl_infmt_rgb888,
 			comp->ddp_comp_driver_data->ovl_infmt_rgb565);

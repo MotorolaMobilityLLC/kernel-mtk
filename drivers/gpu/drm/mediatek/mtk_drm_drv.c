@@ -21,6 +21,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_gem.h>
 #include <linux/component.h>
+#include <linux/iommu.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/pm_runtime.h>
@@ -109,17 +110,27 @@ static void mtk_atomic_schedule(struct mtk_drm_private *private,
 	schedule_work(&private->commit.work);
 }
 
+static void mtk_atomic_wait_for_fences(struct drm_atomic_state *state)
+{
+	struct drm_plane *plane;
+	struct drm_plane_state *plane_state;
+	int i;
+
+	for_each_plane_in_state(state, plane, plane_state, i)
+		mtk_fb_wait(plane->state->fb);
+}
+
 static void mtk_atomic_complete(struct mtk_drm_private *private,
 				struct drm_atomic_state *state)
 {
 	struct drm_device *drm = private->drm;
 
-	drm_atomic_helper_wait_for_fences(drm, state);
+	mtk_atomic_wait_for_fences(state);
 
 	drm_atomic_helper_commit_modeset_disables(drm, state);
 	drm_atomic_helper_commit_planes(drm, state, false);
 	drm_atomic_helper_commit_modeset_enables(drm, state);
-
+	drm_atomic_helper_wait_for_vblanks(drm, state);
 	drm_atomic_helper_cleanup_planes(drm, state);
 	drm_atomic_state_free(state);
 }
@@ -560,13 +571,13 @@ static int mtk_drm_probe(struct platform_device *pdev)
 			comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
 			if (!comp) {
 				ret = -ENOMEM;
-				goto err;
+				goto err_node;
 			}
 
 			comp->ddp_comp_driver_data = ddp_comp_driver_data;
 			ret = mtk_ddp_comp_init(dev, node, comp, comp_id, NULL);
 			if (ret)
-				goto err;
+				goto err_node;
 
 			private->ddp_comp[comp_id] = comp;
 		}
@@ -575,7 +586,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 	if (!private->mutex_node) {
 		dev_err(dev, "Failed to find disp-mutex node\n");
 		ret = -ENODEV;
-		goto err;
+		goto err_node;
 	}
 
 	pm_runtime_enable(dev);
@@ -584,11 +595,13 @@ static int mtk_drm_probe(struct platform_device *pdev)
 
 	ret = component_master_add_with_match(dev, &mtk_drm_ops, match);
 	if (ret)
-		goto err;
+		goto err_pm;
 
 	return 0;
 
-err:
+err_pm:
+	pm_runtime_disable(dev);
+err_node:
 	of_node_put(private->mutex_node);
 	for (i = 0; i < DDP_COMPONENT_ID_MAX; i++)
 		of_node_put(private->comp_node[i]);
@@ -666,10 +679,10 @@ static int mtk_drm_sys_resume(struct device *dev)
 	DRM_DEBUG_DRIVER("mtk_drm_sys_resume\n");
 	return 0;
 }
+#endif
 
 static SIMPLE_DEV_PM_OPS(mtk_drm_pm_ops, mtk_drm_sys_suspend,
 			 mtk_drm_sys_resume);
-#endif
 
 static struct platform_driver mtk_drm_platform_driver = {
 	.probe	= mtk_drm_probe,
@@ -677,9 +690,7 @@ static struct platform_driver mtk_drm_platform_driver = {
 	.driver	= {
 		.name	= "mediatek-drm",
 		.of_match_table = mtk_drm_of_ids,
-#ifdef CONFIG_PM_SLEEP
 		.pm     = &mtk_drm_pm_ops,
-#endif
 	},
 };
 

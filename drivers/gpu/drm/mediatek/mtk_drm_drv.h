@@ -40,7 +40,6 @@ struct mtk_drm_private {
 	struct drm_device *drm;
 
 	struct drm_crtc *crtc[MAX_CRTC];
-	struct drm_property *plane_zpos_property;
 	unsigned int num_pipes;
 
 	struct device_node *mutex_node;

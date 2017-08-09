@@ -30,13 +30,13 @@
 #define DISP_REG_OVL_ROI_SIZE			0x0020
 #define DISP_REG_OVL_ROI_BGCLR			0x0028
 #define DISP_REG_OVL_SRC_CON			0x002c
-#define DISP_REG_OVL_CON(n)			(0x0030 + 0x20 * n)
-#define DISP_REG_OVL_SRC_SIZE(n)		(0x0038 + 0x20 * n)
-#define DISP_REG_OVL_OFFSET(n)			(0x003c + 0x20 * n)
-#define DISP_REG_OVL_PITCH(n)			(0x0044 + 0x20 * n)
-#define DISP_REG_OVL_RDMA_CTRL(n)		(0x00c0 + 0x20 * n)
-#define DISP_REG_OVL_RDMA_GMC(n)		(0x00c8 + 0x20 * n)
-#define DISP_REG_OVL_ADDR(n)			(0x0f40 + 0x20 * n)
+#define DISP_REG_OVL_CON(n)			(0x0030 + 0x20 * (n))
+#define DISP_REG_OVL_SRC_SIZE(n)		(0x0038 + 0x20 * (n))
+#define DISP_REG_OVL_OFFSET(n)			(0x003c + 0x20 * (n))
+#define DISP_REG_OVL_PITCH(n)			(0x0044 + 0x20 * (n))
+#define DISP_REG_OVL_RDMA_CTRL(n)		(0x00c0 + 0x20 * (n))
+#define DISP_REG_OVL_RDMA_GMC(n)		(0x00c8 + 0x20 * (n))
+#define DISP_REG_OVL_ADDR(n)			(0x0f40 + 0x20 * (n))
 
 enum OVL_INPUT_FORMAT {
 	OVL_INFMT_RGB565 = 0,
@@ -76,36 +76,36 @@ static irqreturn_t mtk_disp_ovl_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static void mtk_ovl_enable_vblank(void __iomem *disp_base)
+static void mtk_ovl_enable_vblank(struct mtk_ddp_comp *comp)
 {
-	writel(OVL_FME_CPL_INT, disp_base + DISP_REG_OVL_INTEN);
+	writel_relaxed(OVL_FME_CPL_INT, comp->regs + DISP_REG_OVL_INTEN);
 }
 
-static void mtk_ovl_disable_vblank(void __iomem *disp_base)
+static void mtk_ovl_disable_vblank(struct mtk_ddp_comp *comp)
 {
-	writel(0x0, disp_base + DISP_REG_OVL_INTEN);
+	writel_relaxed(0x0, comp->regs + DISP_REG_OVL_INTEN);
 }
 
 static void mtk_ovl_start(struct mtk_ddp_comp *comp)
 {
-	writel(0x1, comp->regs + DISP_REG_OVL_EN);
+	writel_relaxed(0x1, comp->regs + DISP_REG_OVL_EN);
 }
 
 static void mtk_ovl_stop(struct mtk_ddp_comp *comp)
 {
-	writel(0x0, comp->regs + DISP_REG_OVL_EN);
+	writel_relaxed(0x0, comp->regs + DISP_REG_OVL_EN);
 }
 
-static void mtk_ovl_config(void __iomem *ovl_base,
+static void mtk_ovl_config(struct mtk_ddp_comp *comp,
 		unsigned int w, unsigned int h, unsigned int vrefresh,
 		unsigned int fifo_pseudo_size)
 {
 	if (w != 0 && h != 0)
-		writel(h << 16 | w, ovl_base + DISP_REG_OVL_ROI_SIZE);
-	writel(0x0, ovl_base + DISP_REG_OVL_ROI_BGCLR);
+		writel_relaxed(h << 16 | w, comp->regs + DISP_REG_OVL_ROI_SIZE);
+	writel_relaxed(0x0, comp->regs + DISP_REG_OVL_ROI_BGCLR);
 
-	writel(0x1, ovl_base + DISP_REG_OVL_RST);
-	writel(0x0, ovl_base + DISP_REG_OVL_RST);
+	writel(0x1, comp->regs + DISP_REG_OVL_RST);
+	writel(0x0, comp->regs + DISP_REG_OVL_RST);
 }
 
 static bool has_rb_swapped(unsigned int fmt)
@@ -150,30 +150,30 @@ static unsigned int ovl_fmt_convert(unsigned int fmt,
 	}
 }
 
-static void mtk_ovl_layer_on(void __iomem *ovl_base, unsigned int idx)
+static void mtk_ovl_layer_on(struct mtk_ddp_comp *comp, unsigned int idx)
 {
 	unsigned int reg;
 
-	writel(0x1, ovl_base + DISP_REG_OVL_RDMA_CTRL(idx));
-	writel(OVL_RDMA_MEM_GMC, ovl_base + DISP_REG_OVL_RDMA_GMC(idx));
+	writel(0x1, comp->regs + DISP_REG_OVL_RDMA_CTRL(idx));
+	writel(OVL_RDMA_MEM_GMC, comp->regs + DISP_REG_OVL_RDMA_GMC(idx));
 
-	reg = readl(ovl_base + DISP_REG_OVL_SRC_CON);
-	reg = reg | (1 << idx);
-	writel(reg, ovl_base + DISP_REG_OVL_SRC_CON);
+	reg = readl(comp->regs + DISP_REG_OVL_SRC_CON);
+	reg = reg | BIT(idx);
+	writel(reg, comp->regs + DISP_REG_OVL_SRC_CON);
 }
 
-static void mtk_ovl_layer_off(void __iomem *ovl_base, unsigned int idx)
+static void mtk_ovl_layer_off(struct mtk_ddp_comp *comp, unsigned int idx)
 {
 	unsigned int reg;
 
-	reg = readl(ovl_base + DISP_REG_OVL_SRC_CON);
-	reg = reg & ~(1 << idx);
-	writel(reg, ovl_base + DISP_REG_OVL_SRC_CON);
+	reg = readl(comp->regs + DISP_REG_OVL_SRC_CON);
+	reg = reg & ~BIT(idx);
+	writel(reg, comp->regs + DISP_REG_OVL_SRC_CON);
 
-	writel(0x0, ovl_base + DISP_REG_OVL_RDMA_CTRL(idx));
+	writel(0x0, comp->regs + DISP_REG_OVL_RDMA_CTRL(idx));
 }
 
-static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int ovl_addr,
+static void mtk_ovl_layer_config(struct mtk_ddp_comp *comp, unsigned int ovl_addr,
 		unsigned int idx, struct mtk_plane_state *state,
 		unsigned int rgb888, unsigned int rgb565)
 {
@@ -195,11 +195,11 @@ static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int ovl_addr,
 			pitch |= OVL_SURFL_EN | OVL_DST_BLENDING | OVL_SRC_BLENDING;
 	}
 
-	writel(con, ovl_base + DISP_REG_OVL_CON(idx));
-	writel(pitch, ovl_base + DISP_REG_OVL_PITCH(idx));
-	writel(src_size, ovl_base + DISP_REG_OVL_SRC_SIZE(idx));
-	writel(offset, ovl_base + DISP_REG_OVL_OFFSET(idx));
-	writel(addr, ovl_base + (ovl_addr+idx*0x20));
+	writel(con, comp->regs + DISP_REG_OVL_CON(idx));
+	writel(pitch, comp->regs + DISP_REG_OVL_PITCH(idx));
+	writel(src_size, comp->regs + DISP_REG_OVL_SRC_SIZE(idx));
+	writel(offset, comp->regs + DISP_REG_OVL_OFFSET(idx));
+	writel(addr, comp->regs + (ovl_addr+idx*0x20));
 }
 
 static const struct mtk_ddp_comp_funcs mtk_disp_ovl_funcs = {
@@ -221,7 +221,6 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 	int ret;
 	int i;
 
-
 	priv->drm_dev = drm_dev;
 
 	ret = mtk_ddp_comp_register(drm_dev, &priv->ddp_comp);
@@ -231,7 +230,7 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 		return ret;
 	}
 
-	for (i = 0; i < OVL_LAYER_NR; i++)
+	for (i = 0 ; i < OVL_LAYER_NR; i++)
 		mtk_ddp_comp_layer_off(&priv->ddp_comp, i);
 
 	return 0;
@@ -271,6 +270,7 @@ static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {
 	  .data = &mt8173_ovl_driver_data},
 	{},
 };
+MODULE_DEVICE_TABLE(of, mtk_disp_ovl_driver_dt_match);
 
 static inline struct mtk_ddp_comp_driver_data *mtk_ovl_get_driver_data(
 	struct platform_device *pdev)
@@ -336,8 +336,6 @@ static int mtk_disp_ovl_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-MODULE_DEVICE_TABLE(of, mtk_disp_ovl_driver_dt_match);
 
 struct platform_driver mtk_disp_ovl_driver = {
 	.probe		= mtk_disp_ovl_probe,

@@ -63,22 +63,22 @@
 #define BLS_PWM_CLKDIV		BIT(16)
 #define BLS_PWM_EN		BIT(16)
 
-static void mtk_bls_config(void __iomem *bls_base, unsigned int w,
+static void mtk_bls_config(struct mtk_ddp_comp *comp, unsigned int w,
 		unsigned int h, unsigned int vrefresh,
 		unsigned int fifo_pseudo_size)
 {
-	writel(h << 16 | w, bls_base + DISP_REG_BLS_SRC_SIZE);
-	writel(0, bls_base + DISP_REG_BLS_PWM_DUTY);
-	writel(BLS_PWM_CLKDIV, bls_base + DISP_REG_BLS_PWM_CON);
-	writel(BLS_PWM_EN, bls_base + DISP_REG_BLS_EN);
+	writel(h << 16 | w, comp->regs + DISP_REG_BLS_SRC_SIZE);
+	writel(0, comp->regs + DISP_REG_BLS_PWM_DUTY);
+	writel(BLS_PWM_CLKDIV, comp->regs + DISP_REG_BLS_PWM_CON);
+	writel(BLS_PWM_EN, comp->regs + DISP_REG_BLS_EN);
 }
 
-static void mtk_color_config(void __iomem *color_base, unsigned int w,
+static void mtk_color_config(struct mtk_ddp_comp *comp, unsigned int w,
 		unsigned int h, unsigned int vrefresh,
 		unsigned int fifo_pseudo_size)
 {
-	writel(w, color_base + DISP_COLOR_WIDTH);
-	writel(h, color_base + DISP_COLOR_HEIGHT);
+	writel(w, comp->regs + DISP_COLOR_WIDTH);
+	writel(h, comp->regs + DISP_COLOR_HEIGHT);
 }
 
 static void mtk_color_start(struct mtk_ddp_comp *comp)
@@ -88,10 +88,10 @@ static void mtk_color_start(struct mtk_ddp_comp *comp)
 	writel(0x1, comp->regs + DISP_COLOR_START);
 }
 
-static void mtk_od_config(void __iomem *od_base, unsigned int w, unsigned int h,
+static void mtk_od_config(struct mtk_ddp_comp *comp, unsigned int w, unsigned int h,
 		unsigned int vrefresh, unsigned int fifo_pseudo_size)
 {
-	writel(w << 16 | h, od_base + DISP_OD_SIZE);
+	writel(w << 16 | h, comp->regs + DISP_OD_SIZE);
 }
 
 static void mtk_od_start(struct mtk_ddp_comp *comp)
@@ -110,20 +110,20 @@ static void mtk_rdma_start(struct mtk_ddp_comp *comp)
 	writel(reg, comp->regs + DISP_REG_RDMA_GLOBAL_CON);
 }
 
-static void mtk_rdma_config(void __iomem *rdma_base,
+static void mtk_rdma_config(struct mtk_ddp_comp *comp,
 		unsigned width, unsigned height, unsigned int vrefresh,
 		unsigned int fifo_pseudo_size)
 {
 	unsigned int threshold;
 	unsigned int reg;
 
-	reg = readl(rdma_base + DISP_REG_RDMA_SIZE_CON_0);
+	reg = readl(comp->regs + DISP_REG_RDMA_SIZE_CON_0);
 	reg = (reg & ~(0xfff)) | (width & 0xfff);
-	writel(reg, rdma_base + DISP_REG_RDMA_SIZE_CON_0);
+	writel(reg, comp->regs + DISP_REG_RDMA_SIZE_CON_0);
 
-	reg = readl(rdma_base + DISP_REG_RDMA_SIZE_CON_1);
+	reg = readl(comp->regs + DISP_REG_RDMA_SIZE_CON_1);
 	reg = (reg & ~(0xfffff)) | (height & 0xfffff);
-	writel(reg, rdma_base + DISP_REG_RDMA_SIZE_CON_1);
+	writel(reg, comp->regs + DISP_REG_RDMA_SIZE_CON_1);
 
 	/*
 	 * Enable FIFO underflow since DSI and DPI can't be blocked.
@@ -135,7 +135,7 @@ static void mtk_rdma_config(void __iomem *rdma_base,
 	reg = RDMA_FIFO_UNDERFLOW_EN |
 	      RDMA_FIFO_PSEUDO_SIZE(fifo_pseudo_size) |
 	      RDMA_OUTPUT_VALID_FIFO_THRESHOLD(threshold);
-	writel(reg, rdma_base + DISP_REG_RDMA_FIFO_CON);
+	writel(reg, comp->regs + DISP_REG_RDMA_FIFO_CON);
 }
 
 static void mtk_ufoe_start(struct mtk_ddp_comp *comp)
@@ -197,7 +197,7 @@ static struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_DSI0]	= { MTK_DSI,		0, NULL },
 	[DDP_COMPONENT_DSI1]	= { MTK_DSI,		1, NULL },
 	[DDP_COMPONENT_GAMMA]	= { MTK_DISP_GAMMA,	0, NULL },
-	[DDP_COMPONENT_OD]	= { MTK_DISP_OD,	0, NULL },
+	[DDP_COMPONENT_OD]	= { MTK_DISP_OD,	0, &ddp_od },
 	[DDP_COMPONENT_OVL0]	= { MTK_DISP_OVL,	0, NULL },
 	[DDP_COMPONENT_OVL1]	= { MTK_DISP_OVL,	1, NULL },
 	[DDP_COMPONENT_PWM0]	= { MTK_DISP_PWM,	0, NULL },

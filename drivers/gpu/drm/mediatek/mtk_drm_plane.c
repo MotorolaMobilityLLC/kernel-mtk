@@ -16,8 +16,6 @@
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_plane_helper.h>
-#include <linux/dma-buf.h>
-#include <linux/reservation.h>
 
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_ddp_comp.h"
@@ -32,7 +30,7 @@ static const uint32_t formats[] = {
 	DRM_FORMAT_RGB565,
 };
 
-static void mtk_plane_config(struct mtk_drm_plane *mtk_plane, bool enable,
+static void mtk_plane_enable(struct mtk_drm_plane *mtk_plane, bool enable,
 			     dma_addr_t addr, struct drm_rect *dest)
 {
 	struct drm_plane *plane = &mtk_plane->base;
@@ -81,16 +79,20 @@ static void mtk_plane_reset(struct drm_plane *plane)
 {
 	struct mtk_plane_state *state;
 
-	if (plane->state && plane->state->fb)
-		drm_framebuffer_unreference(plane->state->fb);
+	if (plane->state) {
+		if (plane->state->fb)
+			drm_framebuffer_unreference(plane->state->fb);
 
-	kfree(plane->state);
-	state = kzalloc(sizeof(*state), GFP_KERNEL);
-	plane->state = &state->base;
-	if (!state)
-		return;
+		state = to_mtk_plane_state(plane->state);
+		memset(state, 0, sizeof(*state));
+	} else {
+		state = kzalloc(sizeof(*state), GFP_KERNEL);
+		if (!state)
+			return;
+		plane->state = &state->base;
+	}
 
-	plane->state->plane = plane;
+	state->base.plane = plane;
 	state->pending.format = DRM_FORMAT_RGB565;
 }
 
@@ -112,24 +114,29 @@ static struct drm_plane_state *mtk_plane_duplicate_state(struct drm_plane *plane
 	return &state->base;
 }
 
+static void mtk_drm_plane_destroy_state(struct drm_plane *plane,
+					struct drm_plane_state *state)
+{
+	__drm_atomic_helper_plane_destroy_state(plane, state);
+	kfree(to_mtk_plane_state(state));
+}
+
+
 static const struct drm_plane_funcs mtk_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
 	.destroy = drm_plane_cleanup,
 	.reset = mtk_plane_reset,
 	.atomic_duplicate_state = mtk_plane_duplicate_state,
-	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
+	.atomic_destroy_state = mtk_drm_plane_destroy_state,
 };
 
 static int mtk_plane_atomic_check(struct drm_plane *plane,
 				  struct drm_plane_state *state)
 {
 	struct drm_framebuffer *fb = state->fb;
-	struct drm_gem_object *gem;
-	struct reservation_object *resv;
 	struct drm_crtc_state *crtc_state;
 	bool visible;
-	int ret;
 	struct drm_rect dest = {
 		.x1 = state->crtc_x,
 		.y1 = state->crtc_y,
@@ -163,25 +170,11 @@ static int mtk_plane_atomic_check(struct drm_plane *plane,
 	clip.x2 = crtc_state->mode.hdisplay;
 	clip.y2 = crtc_state->mode.vdisplay;
 
-	ret = drm_plane_helper_check_update(plane, state->crtc, fb,
+	return drm_plane_helper_check_update(plane, state->crtc, fb,
 					    &src, &dest, &clip,
 					    DRM_PLANE_HELPER_NO_SCALING,
 					    DRM_PLANE_HELPER_NO_SCALING,
 					    true, true, &visible);
-	if (ret)
-		return ret;
-
-	/* Find pending fence from incoming FB, if any, and stash in state */
-	gem = mtk_fb_get_gem_obj(fb);
-	if (!gem->dma_buf || !gem->dma_buf->resv)
-		return 0;
-
-	resv = gem->dma_buf->resv;
-	ww_mutex_lock(&resv->lock, NULL);
-	state->fence = fence_get(reservation_object_get_excl(resv));
-	ww_mutex_unlock(&resv->lock);
-
-	return 0;
 }
 
 static void mtk_plane_atomic_update(struct drm_plane *plane,
@@ -209,7 +202,7 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 
 	gem = mtk_fb_get_gem_obj(state->base.fb);
 	mtk_gem = to_mtk_gem_obj(gem);
-	mtk_plane_config(mtk_plane, true, mtk_gem->dma_addr, &dest);
+	mtk_plane_enable(mtk_plane, true, mtk_gem->dma_addr, &dest);
 
 	mtk_drm_crtc_check_flush(crtc);
 }
@@ -217,16 +210,11 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 static void mtk_plane_atomic_disable(struct drm_plane *plane,
 				     struct drm_plane_state *old_state)
 {
-	struct mtk_drm_plane *mtk_plane = to_mtk_plane(plane);
-	struct drm_crtc *crtc = old_state->crtc;
-	struct drm_rect dest = { 0, };
+	struct mtk_plane_state *state = to_mtk_plane_state(plane->state);
 
-	if (!crtc)
-		return;
-
-	mtk_plane_config(mtk_plane, false, 0, &dest);
-
-	mtk_drm_crtc_check_flush(crtc);
+	state->pending.enable = false;
+	wmb();
+	state->pending.dirty = true;
 }
 
 static const struct drm_plane_helper_funcs mtk_plane_helper_funcs = {

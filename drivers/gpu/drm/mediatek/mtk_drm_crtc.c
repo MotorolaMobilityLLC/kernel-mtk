@@ -30,17 +30,11 @@
 /**
  * struct mtk_drm_crtc - MediaTek specific crtc structure.
  * @base: crtc object.
- * @pipe: a crtc index created at load() with a new crtc object creation
- *	and the crtc object would be set to private->crtc array
- *	to get a crtc object corresponding to this pipe from private->crtc
- *	array when irq interrupt occurred. the reason of using this pipe is that
- *	drm framework doesn't support multiple irq yet.
- *	we can refer to the crtc to current hardware interrupt occurred through
- *	this pipe value.
  * @enabled: records whether crtc_enable succeeded
  * @do_flush: enabled by atomic_flush, causes plane atomic_update to commit
  *            changed state immediately.
  * @planes: array of 4 mtk_drm_plane structures, one for each overlay plane
+ * @pending_planes: whether any plane has pending changes to be applied
  * @config_regs: memory mapped mmsys configuration register space
  * @mutex: handle to one of the ten disp_mutex streams
  * @ddp_comp_nr: number of components in ddp_comp
@@ -48,10 +42,11 @@
  */
 struct mtk_drm_crtc {
 	struct drm_crtc			base;
-	unsigned int			pipe;
 	bool				enabled;
 
 	bool				do_flush;
+	bool				pending_needs_vblank;
+	struct drm_pending_vblank_event	*event;
 
 	struct mtk_drm_plane		planes[OVL_LAYER_NR];
 
@@ -63,9 +58,6 @@ struct mtk_drm_crtc {
 
 struct mtk_crtc_state {
 	struct drm_crtc_state		base;
-	struct drm_pending_vblank_event	*event;
-
-	bool				pending_needs_vblank;
 
 	bool				pending_config;
 	unsigned int			pending_width;
@@ -83,8 +75,13 @@ static inline struct mtk_crtc_state *to_mtk_crtc_state(struct drm_crtc_state *s)
 	return container_of(s, struct mtk_crtc_state, base);
 }
 
-static struct mtk_drm_crtc *mtk_crtc_by_comp(struct mtk_drm_private *priv,
-					     struct mtk_ddp_comp *ddp_comp)
+/*
+ * Given a DDP source component (OVL or RDMA), find the crtc that has this
+ * component as first element of its ddp_comp array. This allows to deliver
+ * the source component's end of frame interrupt to the corresponding crtc.
+ */
+static struct mtk_drm_crtc *mtk_crtc_by_src_comp(struct mtk_drm_private *priv,
+						 struct mtk_ddp_comp *ddp_comp)
 {
 	struct mtk_drm_crtc *mtk_crtc;
 	int i;
@@ -101,24 +98,21 @@ static struct mtk_drm_crtc *mtk_crtc_by_comp(struct mtk_drm_private *priv,
 static void mtk_drm_crtc_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
 {
 	struct drm_crtc *crtc = &mtk_crtc->base;
-	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
 	unsigned long flags;
 
 	spin_lock_irqsave(&crtc->dev->event_lock, flags);
-	drm_send_vblank_event(crtc->dev, state->event->pipe, state->event);
+	drm_send_vblank_event(crtc->dev, mtk_crtc->event->pipe, mtk_crtc->event);
 	drm_crtc_vblank_put(crtc);
-	state->event = NULL;
+	mtk_crtc->event = NULL;
 	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
 }
 
 static void mtk_drm_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
 {
-	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
-
-	drm_handle_vblank(mtk_crtc->base.dev, mtk_crtc->pipe);
-	if (state->pending_needs_vblank) {
+	drm_crtc_handle_vblank(&mtk_crtc->base);
+	if (mtk_crtc->pending_needs_vblank) {
 		mtk_drm_crtc_finish_page_flip(mtk_crtc);
-		state->pending_needs_vblank = false;
+		mtk_crtc->pending_needs_vblank = false;
 	}
 }
 
@@ -139,15 +133,20 @@ static void mtk_drm_crtc_reset(struct drm_crtc *crtc)
 {
 	struct mtk_crtc_state *state;
 
-	if (crtc->state && crtc->state->mode_blob)
-		drm_property_unreference_blob(crtc->state->mode_blob);
+	if (crtc->state) {
+		if (crtc->state->mode_blob)
+			drm_property_unreference_blob(crtc->state->mode_blob);
 
-	kfree(crtc->state);
-	state = kzalloc(sizeof(*state), GFP_KERNEL);
-	crtc->state = &state->base;
+		state = to_mtk_crtc_state(crtc->state);
+		memset(state, 0, sizeof(*state));
+	} else {
+		state = kzalloc(sizeof(*state), GFP_KERNEL);
+		if (!state)
+			return;
+		crtc->state = &state->base;
+	}
 
-	if (state)
-		crtc->state->crtc = crtc;
+	state->base.crtc = crtc;
 }
 
 static struct drm_crtc_state *mtk_drm_crtc_duplicate_state(struct drm_crtc *crtc)
@@ -164,6 +163,13 @@ static struct drm_crtc_state *mtk_drm_crtc_duplicate_state(struct drm_crtc *crtc
 	state->base.crtc = crtc;
 
 	return &state->base;
+}
+
+static void mtk_drm_crtc_destroy_state(struct drm_crtc *crtc,
+				       struct drm_crtc_state *state)
+{
+	__drm_atomic_helper_crtc_destroy_state(crtc, state);
+	kfree(to_mtk_crtc_state(state));
 }
 
 static bool mtk_drm_crtc_mode_fixup(struct drm_crtc *crtc,
@@ -183,7 +189,7 @@ static void mtk_drm_crtc_mode_set_nofb(struct drm_crtc *crtc)
 	state->pending_width = crtc->mode.hdisplay;
 	state->pending_height = crtc->mode.vdisplay;
 	state->pending_vrefresh = crtc->mode.vrefresh;
-	wmb();
+	wmb();	/* Make sure the above parameters are set before update */
 	state->pending_config = true;
 
 	if (ovl->do_shadow_reg)
@@ -212,7 +218,7 @@ void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe)
 	mtk_ddp_comp_disable_vblank(ovl);
 }
 
-static int mtk_crtc_ddp_power_on(struct mtk_drm_crtc *mtk_crtc)
+static int mtk_crtc_ddp_clk_enable(struct mtk_drm_crtc *mtk_crtc)
 {
 	int ret;
 	int i;
@@ -233,7 +239,7 @@ err:
 	return ret;
 }
 
-static void mtk_crtc_ddp_power_off(struct mtk_drm_crtc *mtk_crtc)
+static void mtk_crtc_ddp_clk_disable(struct mtk_drm_crtc *mtk_crtc)
 {
 	int i;
 
@@ -269,7 +275,7 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 		goto err_pm_runtime_put;
 	}
 
-	ret = mtk_crtc_ddp_power_on(mtk_crtc);
+	ret = mtk_crtc_ddp_clk_enable(mtk_crtc);
 	if (ret < 0) {
 		DRM_ERROR("Failed to enable component clocks: %d\n", ret);
 		goto err_mutex_unprepare;
@@ -325,7 +331,7 @@ static void mtk_crtc_ddp_hw_fini(struct mtk_drm_crtc *mtk_crtc)
 					   mtk_crtc->ddp_comp[i]->id);
 	}
 	mtk_disp_mutex_remove_comp(mtk_crtc->mutex, mtk_crtc->ddp_comp[i]->id);
-	mtk_crtc_ddp_power_off(mtk_crtc);
+	mtk_crtc_ddp_clk_disable(mtk_crtc);
 	mtk_disp_mutex_unprepare(mtk_crtc->mutex);
 
 	pm_runtime_put(drm->dev);
@@ -417,11 +423,15 @@ static void mtk_drm_crtc_atomic_begin(struct drm_crtc *crtc,
 				      struct drm_crtc_state *old_crtc_state)
 {
 	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (mtk_crtc->event && state->base.event)
+		DRM_ERROR("new event while there is still a pending event\n");
 
 	if (state->base.event) {
 		state->base.event->pipe = drm_crtc_index(crtc);
 		WARN_ON(drm_crtc_vblank_get(crtc) != 0);
-		state->event = state->base.event;
+		mtk_crtc->event = state->base.event;
 		state->base.event = NULL;
 	}
 }
@@ -430,7 +440,7 @@ void mtk_drm_crtc_commit(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
-	unsigned int i;
+	int i;
 
 	for (i = 0; i < OVL_LAYER_NR; i++) {
 		struct drm_plane *plane = &mtk_crtc->planes[i].base;
@@ -451,12 +461,11 @@ void mtk_drm_crtc_commit(struct drm_crtc *crtc)
 
 void mtk_drm_crtc_check_flush(struct drm_crtc *crtc)
 {
-	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 
 	if (mtk_crtc->do_flush) {
-		if (state->event)
-			state->pending_needs_vblank = true;
+		if (mtk_crtc->event)
+			mtk_crtc->pending_needs_vblank = true;
 		mtk_drm_crtc_commit(crtc);
 		mtk_crtc->do_flush = false;
 	}
@@ -477,7 +486,7 @@ static const struct drm_crtc_funcs mtk_crtc_funcs = {
 	.destroy		= mtk_drm_crtc_destroy,
 	.reset			= mtk_drm_crtc_reset,
 	.atomic_duplicate_state	= mtk_drm_crtc_duplicate_state,
-	.atomic_destroy_state	= drm_atomic_helper_crtc_destroy_state,
+	.atomic_destroy_state	= mtk_drm_crtc_destroy_state,
 };
 
 static const struct drm_crtc_helper_funcs mtk_crtc_helper_funcs = {
@@ -502,8 +511,6 @@ static int mtk_drm_crtc_init(struct drm_device *drm,
 
 	drm_crtc_helper_add(&mtk_crtc->base, &mtk_crtc_helper_funcs);
 
-	mtk_crtc->pipe = pipe;
-
 	return 0;
 
 err_cleanup_crtc:
@@ -518,7 +525,7 @@ void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl)
 	struct mtk_crtc_state *state;
 	unsigned int i;
 
-	mtk_crtc = mtk_crtc_by_comp(priv, ovl);
+	mtk_crtc = mtk_crtc_by_src_comp(priv, ovl);
 	if (WARN_ON(!mtk_crtc))
 		return;
 

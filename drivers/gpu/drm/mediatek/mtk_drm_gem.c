@@ -70,8 +70,8 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 	if (alloc_kmap)
 		mtk_gem->kvaddr = mtk_gem->cookie;
 
-	DRM_INFO("cookie = %p dma_addr = %pad\n",
-			mtk_gem->cookie, &mtk_gem->dma_addr);
+	DRM_DEBUG_DRIVER("cookie = %p dma_addr = %pad\n",
+			 mtk_gem->cookie, &mtk_gem->dma_addr);
 
 	return mtk_gem;
 
@@ -165,7 +165,7 @@ static int mtk_drm_gem_object_mmap(struct drm_gem_object *obj,
 	struct drm_device *drm = obj->dev;
 
 	/*
-	 * dma_alloc_attrs() allocated a struct page table for rk_obj, so clear
+	 * dma_alloc_attrs() allocated a struct page table for mtk_gem, so clear
 	 * VM_PFNMAP flag that was set by drm_gem_mmap_obj()/drm_gem_mmap().
 	 */
 	vma->vm_flags &= ~VM_PFNMAP;
