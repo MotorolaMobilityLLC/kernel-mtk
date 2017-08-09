@@ -781,10 +781,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			status = "disabled";
 		};
 
-		kd_camera_hw1: kd_camera_hw1@ {
-			compatible = "mediatek,mt6797-kd_camera_hw1";
-			status = "disabled";
-		};
 
 		touch: touch@ {
 			compatible = "mediatek,mt6797-touch";
@@ -2568,7 +2564,25 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				"syspll_d7",
 				"mux_ulposc_axi_ck_mux";
 		};
-	};
+		kd_camera_hw1:kd_camera_hw1@1a040000 {
+			compatible = "mediatek,camera_hw";
+			reg = <0x1a040000 0x1000>;  /* SENINF_ADDR */
+			vcama-supply = <&mt_pmic_vcama_ldo_reg>;
+			vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
+			vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
+			vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
+			/* Camera Common Clock Framework (CCF) */
+			clocks = <&topckgen TOP_MUX_CAMTG>,
+			<&topckgen TOP_UNIVPLL_D26>,
+			<&topckgen TOP_UNIVPLL2_D2>;
+			clock-names = "TOP_CAMTG_SEL","TOP_UNIVPLL_D26","TOP_UNIVPLL2_D2";
+		};
+
+		kd_camera_hw2:kd_camera_hw2@1a040000 {
+			compatible = "mediatek,camera_hw2";
+			reg = <0x1a040000 0x1000>;  /* SENINF_ADDR */
+		};
+	};/*End of SOC*/
 /* sensor part */
 	hwmsensor@0 {
 			compatible = "mediatek,hwmsensor";
