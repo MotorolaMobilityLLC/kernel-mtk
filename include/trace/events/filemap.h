@@ -52,6 +52,33 @@ DEFINE_EVENT(mm_filemap_op_page_cache, mm_filemap_add_to_page_cache,
 	TP_ARGS(page)
 	);
 
+DECLARE_EVENT_CLASS(mm_fmflt_op,
+	TP_PROTO(int x),
+	TP_ARGS(x),
+	TP_STRUCT__entry(__array(char, x, 0)),
+	TP_fast_assign((void)x),
+	TP_printk("%s", "")
+);
+
+DEFINE_EVENT(mm_fmflt_op, mm_fmflt_op_read,
+	TP_PROTO(int x),
+	TP_ARGS(x)
+	);
+
+DEFINE_EVENT(mm_fmflt_op, mm_fmflt_op_read_done,
+	TP_PROTO(int x),
+	TP_ARGS(x)
+	);
+
+DEFINE_EVENT(mm_fmflt_op, mm_fmflt_op_wait,
+	TP_PROTO(int x),
+	TP_ARGS(x)
+	);
+
+DEFINE_EVENT(mm_fmflt_op, mm_fmflt_op_wait_done,
+	TP_PROTO(int x),
+	TP_ARGS(x)
+	);
 #endif /* _TRACE_FILEMAP_H */
 
 /* This part must be outside protection */
