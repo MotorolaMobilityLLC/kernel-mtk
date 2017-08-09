@@ -70,11 +70,11 @@ config PREEMPT_MONITOR
 	  local_irq_disable/enable monitor.
 	  If you are not sure about whether to enable it or not, please set n.
 
-config PRINTK_PROCESS_INFO
-	bool "Prefix pid/process_name to each kernel log"
+config PRINTK_MT_PREFIX
+	bool "Prefix cpu_id/status/pid/process_name to each kernel log"
 	default y
 	help
-	  PRINTK_PROCESS_INFO which is used to control whether to show
+	  PRINTK_MT_PREFIX which is used to control whether to show
 	  process information about this log.
 	  the information about which cpu about this
 	  process in, and whether in isr.
@@ -91,6 +91,7 @@ config MT_PRINTK_UART_CONSOLE
 config LOG_TOO_MUCH_WARNING
 	bool "printk too much warning"
 	default y
+	depends on PRINTK_MT_PREFIX
 	help
 	  LOG_TOO_MUCH_WARNING which is used to control whether to
 	  detect printk too much issue. kernel log too much will detect and
@@ -114,6 +115,7 @@ config MT_BOOT_TIME_CPU_BOOST
 	  MT_BOOT_TIME_CPU_BOOST is to boost CPU performance to enhance boot
 	  speed and save time cost during system booting. This mechanism
 	  will recover DVFS/hotplug after system boot up done.
+
 config MT_RCU_MONITOR
 	bool "mt rcu callback list monitor"
 	default n
