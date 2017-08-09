@@ -2410,6 +2410,12 @@
 		mediatek,clkbuf-config = <2 0 1 1>;
 		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
+
+	irtx_pwm:irtx_pwm {
+		compatible = "mediatek,irtx-pwm";
+		pwm_ch = <2>;
+		pwm_data_invert = <0>;
+	};
 };
 
 #include "cust_mt6757_msdc.dtsi"
