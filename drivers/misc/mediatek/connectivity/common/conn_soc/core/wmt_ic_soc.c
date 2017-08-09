@@ -1976,15 +1976,19 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 
 	cDataTime[15] = '\0';
 	if (index == 0) {
-		WMT_INFO_FUNC("===========================================\n");
-		WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
-		WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
+		WMT_DBG_FUNC("===========================================\n");
+		WMT_INFO_FUNC("[Patch]BuiltTime = %s, HVer = 0x%x, SVer = 0x%x, PhVer = 0x%04x,Platform = %c%c%c%c\n",
+		cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+		((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+		((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
+		patchHdr->ucPLat[0], patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
+		WMT_DBG_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
+		WMT_DBG_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
+		WMT_DBG_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-		WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+		WMT_DBG_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 			      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-		WMT_INFO_FUNC("===========================================\n");
+		WMT_DBG_FUNC("===========================================\n");
 	}
 
 	/* remove patch header:
@@ -2232,15 +2236,19 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID)
 	/*cPlat = &patchHdr->ucPLat[0]; */
 
 	cDataTime[15] = '\0';
-	WMT_INFO_FUNC("===========================================\n");
-	WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
-	WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
-	WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
-	WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
+	WMT_DBG_FUNC("===========================================\n");
+	WMT_INFO_FUNC("[ConsysPatch]BuiltTime = %s, HVer = 0x%x, SVer = 0x%x, PhVer = 0x%04x,Platform = %c%c%c%c\n",
+	cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+	((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+	((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
+	patchHdr->ucPLat[0], patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
+	WMT_DBG_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
+	WMT_DBG_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
+	WMT_DBG_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 		      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-	WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+	WMT_DBG_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 		      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-	WMT_INFO_FUNC("===========================================\n");
+	WMT_DBG_FUNC("===========================================\n");
 
 	/* remove patch header:
 	 * |<-patch body: X Bytes (X=patchSize)--->|

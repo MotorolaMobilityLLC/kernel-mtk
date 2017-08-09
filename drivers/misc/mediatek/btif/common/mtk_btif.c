@@ -1297,7 +1297,7 @@ int _btif_rx_dma_setup(p_mtk_btif p_btif)
 /*Enable DMA Rx IRQ*/
 		_btif_irq_ctrl(p_btif_irq, true);
 #endif
-		BTIF_INFO_FUNC("succeed\n");
+		BTIF_DBG_FUNC("succeed\n");
 	}
 	return i_ret;
 }
@@ -1354,7 +1354,7 @@ int _btif_tx_dma_setup(p_mtk_btif p_btif)
 		_btif_irq_ctrl(p_btif_irq, false);
 #endif
 
-		BTIF_INFO_FUNC("succeed\n");
+		BTIF_DBG_FUNC("succeed\n");
 	}
 	return i_ret;
 }
@@ -1467,7 +1467,7 @@ int _btif_controller_setup(p_mtk_btif p_btif)
 /*disable IRQ*/
 	_btif_irq_ctrl(p_btif_irq, false);
 	i_ret = 0;
-	BTIF_INFO_FUNC("succeed\n");
+	BTIF_DBG_FUNC("succeed\n");
 	return i_ret;
 }
 
@@ -1541,7 +1541,7 @@ int btif_open(p_mtk_btif p_btif)
 
 	BTIF_STATE_RELEASE(p_btif);
 
-	BTIF_INFO_FUNC("BTIF's Tx Mode:%d, Rx Mode(%d)\n",
+	BTIF_DBG_FUNC("BTIF's Tx Mode:%d, Rx Mode(%d)\n",
 		       p_btif->tx_mode, p_btif->rx_mode);
 	return i_ret;
 }
