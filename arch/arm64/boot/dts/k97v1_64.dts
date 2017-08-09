@@ -1223,3 +1223,32 @@
 };
 /* USB TYPEC GPIO end */
 
+/* irtx GPIO standardization */
+&irtx {
+	pinctrl-names = "irtx_gpio_default",
+			"irtx_gpio_led_set";
+	pinctrl-0 = <&irtx_gpio_default>;
+	pinctrl-1 = <&irtx_gpio_led_set>;
+	status = "okay";
+};
+
+&pio {
+	/* IRTX GPIO Settings -Start */
+	/* default: GPIO0, output, high */
+	irtx_gpio_default:irtx_gpio_led_def@gpio137 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO137__FUNC_GPIO137>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+	irtx_gpio_led_set:irtx_gpio_led_set@gpio137 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO137__FUNC_IRTX_OUT>;
+		};
+	};
+	/* IRTX GPIO Settings -End */
+};
+
