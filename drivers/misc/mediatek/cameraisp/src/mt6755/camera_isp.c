@@ -5465,8 +5465,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								      1) ==
 								     p1_fbc[rt_dma].Bits.FBC_CNT)) {
 									/* write to     phy     register */
-									/* LOG_INF("[rtbc_%d][ENQUE] write2Phy directly(%d,%d)",rt_dma,p1_fbc[rt_dma].Bits.FB_NUM,p1_fbc[rt_dma].Bits.FBC_CNT); */
-									IRQ_LOG_KEEPER(irqT, 0,
+					/**/				LOG_DBG(
+					/**/				 "[rtbc_%d][ENQUE] write2Phy directly(%d,%d)",
+					/**/				 rt_dma,
+					/**/				 p1_fbc[rt_dma].Bits.FB_NUM,
+					/**/				 p1_fbc[rt_dma].Bits.FBC_CNT);
+									/*IRQ_LOG_KEEPER(irqT, 0,
 										       _LOG_DBG,
 										       "[rtbc_%d][ENQUE] write2Phy directly(%d,%d) ",
 										       rt_dma,
@@ -5476,7 +5480,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										       p1_fbc
 										       [rt_dma].
 										       Bits.
-										       FBC_CNT);
+										       FBC_CNT);*/
 									ISP_WR32(p1_dma_addr_reg
 										 [rt_dma],
 										 pstRTBuf->
@@ -8379,13 +8383,13 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			/*      */
 			/* v : kernel receive mark request */
 			/* o : kernel receive wait request */
-			/* ¡ô: return to user */
+			/* Â¡Ã´: return to user */
 			/*      */
 			/* case: freeze is true, and passby     signal count = 0 */
 			/*      */
 			/* |                                                                            |     */
 			/* |                                                              (wait)        | */
-			/* |       v-------------o++++++ |¡ô */
+			/* |       v-------------o++++++ |Â¡Ã´ */
 			/* |                                                                            |     */
 			/* Sig                                                                            Sig */
 			/*      */
@@ -8393,7 +8397,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			/*      */
 			/* |                                                                             |     */
 			/* |                                                                             |     */
-			/* |       v---------------------- |-o  ¡ô(return) */
+			/* |       v---------------------- |-o  Â¡Ã´(return) */
 			/* |                                                                             |     */
 			/* Sig                                                                             Sig */
 			/*      */
