@@ -69,6 +69,8 @@
 #define OFFS_FUNC_ENTER		0x0338
 #define OFFS_NXLOG_OFFS		0x033c
 #define OFFS_HWGOV_EN		0x0340
+#define OFFS_HWGOV_STIME	0x0344
+#define OFFS_HWGOV_ETIME	0x0348
 #define OFFS_LOG_S		0x03d0
 #define OFFS_LOG_E		0x2ff8
 
@@ -782,7 +784,7 @@ do {							\
 	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
 	while (!(condition)) {					\
 		if (i >= n) {					\
-			i = -EBUSY;				\
+			i = -i;					\
 			break;					\
 		}						\
 		udelay(delay);					\
@@ -1467,9 +1469,12 @@ static int cspm_enable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta 
 		cspm_write(swctrl_reg[i], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
+	csram_write(OFFS_HWGOV_STIME, cspm_get_timestamp());
 
 	dvfsp->hw_gov_en = 1;
 	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+
+	start_notify_trigger_timer(DVFS_NOTIFY_INTV);
 
 UNLOCK:
 	spin_unlock(&dvfs_lock);
@@ -1496,10 +1501,13 @@ static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta
 		}
 
 		for (i = 0; i < NUM_PHY_CLUSTER; i++) {
-			swctrl = cspm_read(swctrl_reg[i]) & ~SW_F_DES_MASK;
+			swctrl = cspm_read(swctrl_reg[i]);
+			swctrl &= ~(SW_F_DES_MASK | SW_F_MAX_MASK | SW_F_MIN_MASK);
+			swctrl |= SW_F_MAX(NUM_CPU_OPP - 1) | SW_F_MIN(0);	/* no limit */
 			cspm_write(swctrl_reg[i], swctrl | SW_F_ASSIGN | SW_F_DES(f_curr[i]));
 			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 		}
+		csram_write(OFFS_HWGOV_ETIME, cspm_get_timestamp());
 
 		dvfsp->hw_gov_en = 0;	/* before unpause to avoid starting nfy_trig_timer */
 		csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
