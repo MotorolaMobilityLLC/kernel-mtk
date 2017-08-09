@@ -458,8 +458,12 @@ static int tpd_probe(struct platform_device *pdev)
 {
 	int touch_type = 1;	/* 0:R-touch, 1: Cap-touch */
 	int i = 0;
+#ifndef CONFIG_CUSTOM_LCM_X
+#ifdef CONFIG_LCM_WIDTH
 	unsigned long tpd_res_x = 0, tpd_res_y = 0;
 	int ret = 0;
+#endif
+#endif
 
 	TPD_DMESG("enter %s, %d\n", __func__, __LINE__);
 	/* Select R-Touch */
@@ -509,22 +513,20 @@ static int tpd_probe(struct platform_device *pdev)
 		TPD_RES_Y = DISP_GetScreenHeight();
 #endif
 #else
-/*ZH CHEN*/
-/*		ret = kstrtoul(CONFIG_LCM_WIDTH, 0, &tpd_res_x);*/
+#ifdef CONFIG_LCM_WIDTH
+		ret = kstrtoul(CONFIG_LCM_WIDTH, 0, &tpd_res_x);
 		if (ret < 0) {
 			pr_err("Touch down get lcm_x failed");
 			return ret;
 		}
 		TPD_RES_X = tpd_res_x;
-		TPD_RES_X = 720;/*ZH CHEN*/
-/*ZH CHEN*/
-/*		ret = kstrtoul(CONFIG_LCM_HEIGHT, 0, &tpd_res_x);*/
+		ret = kstrtoul(CONFIG_LCM_HEIGHT, 0, &tpd_res_x);*/
 		if (ret < 0) {
 			pr_err("Touch down get lcm_y failed");
 			return ret;
 		}
 		TPD_RES_Y = tpd_res_y;
-		TPD_RES_Y = 1280;/*ZH CHEN*/
+#endif
 #endif
 	}
 
