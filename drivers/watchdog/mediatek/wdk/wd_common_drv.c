@@ -69,8 +69,8 @@ static int g_timeout = -1;
 static int g_need_config;
 static int wdt_start;
 static int g_enable = 1;
-
-
+static struct work_struct wdk_work;
+static struct workqueue_struct *wdk_workqueue;
 
 static char cmd_buf[256];
 
@@ -690,8 +690,7 @@ static struct notifier_block cpu_nfb __cpuinitdata = {
 	.priority = 6
 };
 
-
-static int __init init_wk(void)
+static void wdk_work_callback(struct work_struct *work)
 {
 	int res = 0;
 	int i = 0;
@@ -729,6 +728,20 @@ static int __init init_wk(void)
 	mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
 	cpu_hotplug_enable();
 	pr_alert("[WDK]init_wk done late_initcall cpus_kick_bit=0x%x -----\n", cpus_kick_bit);
+
+}
+
+static int __init init_wk(void)
+{
+	int res = 0;
+
+	wdk_workqueue = create_singlethread_workqueue("mt-wdk");
+	INIT_WORK(&wdk_work, wdk_work_callback);
+
+	res = queue_work(wdk_workqueue, &wdk_work);
+
+	if (!res)
+		pr_err("[WDK]wdk_work start return:%d!\n", res);
 
 	return 0;
 }
