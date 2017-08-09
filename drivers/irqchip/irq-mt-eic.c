@@ -30,22 +30,12 @@
 
 static unsigned int EINT_IRQ_BASE;
 
-#if 0
-#define EINT_TEST_V2
-#endif
-
 #ifdef CONFIG_MTK_LEGACY
 #if 0	/* disable MD_EINT temporarily, since modem module is not ready yet */
 #define MD_EINT
 #endif
 #endif
 
-#if 0
-#define EINT_TEST
-#endif
-#if 0
-#define EINT_TEST_SOFT
-#endif
 #if 0
 #define DEINT_SUPPORT
 #endif
@@ -105,9 +95,6 @@ static unsigned int builtin_entry;
 static struct builtin_eint *builtin_mapping;
 
 struct wake_lock EINT_suspend_lock;
-#if defined(EINT_TEST_V2)
-static unsigned int cur_eint_num;
-#endif
 
 struct deint_des {
 	int eint_num;
@@ -394,55 +381,6 @@ inline void mt_eint_send_pulse(unsigned int eint_num)
 	writel(bit, IOMEM(base_clr));
 }
 #endif
-
-#ifdef EINT_TEST_V2
-/*
- * mt_eint_soft_set: Trigger the specified EINT number.
- * @eint_num: EINT number to set
- */
-static void mt_eint_soft_set(unsigned int eint_num)
-{
-
-	unsigned long base;
-	unsigned int bit = 1 << (eint_num % 32);
-
-	if (eint_num < EINT_MAX_CHANNEL) {
-		base = (eint_num / 32) * 4 + EINT_SOFT_SET_BASE;
-	} else {
-		dbgmsg
-		    ("Error in %s [EINT] num:%d is larger than EINT_MAX_CHANNEL\n",
-		     __func__, eint_num);
-		return;
-	}
-	writel(bit, IOMEM(base));
-
-	dbgmsg("[EINT] soft set addr:%x = %x\n", base, bit);
-
-}
-
-/*
- * mt_eint_soft_clr: Unmask the specified EINT number.
- * @eint_num: EINT number to clear
- */
-static void mt_eint_soft_clr(unsigned int eint_num)
-{
-	unsigned long base;
-	unsigned int bit = 1 << (eint_num % 32);
-
-	if (eint_num < EINT_MAX_CHANNEL) {
-		base = (eint_num / 32) * 4 + EINT_SOFT_CLR_BASE;
-	} else {
-		dbgmsg
-		    ("Error in %s [EINT] num:%d is larger than EINT_MAX_CHANNEL\n",
-		     __func__, eint_num);
-		return;
-	}
-	writel(bit, IOMEM(base));
-
-	dbgmsg("[EINT] soft clr addr:%x = %x\n", base, bit);
-
-}
-#endif				/* end of EINT_TEST_V2 */
 
 /*
  * mt_eint_mask: Mask the specified EINT number.
@@ -741,22 +679,6 @@ static int mt_eint_get_status(unsigned int eint_num)
 	st = readl(IOMEM(base));
 	return st;
 }
-
-#ifdef EINT_TEST_V2
-/*
- * mt_eint_en_hw_debounce: To enable hw debounce
- * @eint_num: the EINT number to set
- */
-static void mt_eint_en_hw_debounce(unsigned int eint_num)
-{
-	unsigned long base, bit;
-
-	base = (eint_num / 4) * 4 + EINT_DBNC_SET_BASE;
-	bit = (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS) << ((eint_num % 4) * 8);
-	writel(bit, IOMEM(base));
-	EINT_FUNC.is_deb_en[eint_num] = 1;
-}
-#endif				/* end of EINT_TEST_V2 */
 
 /*
  * mt_eint_dis_hw_debounce: To disable hw debounce
@@ -1069,54 +991,6 @@ void mt_eint_dis_debounce(unsigned int eint_num)
 		mt_eint_dis_sw_debounce(eint_num);
 }
 
-
-#ifdef EINT_TEST_V2
-static int mt_eint_is_debounce_en(unsigned int cur_eint_num)
-{
-	unsigned long base, val, en;
-
-	if (cur_eint_num < MAX_HW_DEBOUNCE_CNT) {
-		base = (cur_eint_num / 4) * 4 + EINT_DBNC_BASE;
-		val = readl(IOMEM(base));
-		val = val >> ((cur_eint_num % 4) * 8);
-		if (val & EINT_DBNC_EN_BIT)
-			en = 1;
-		else
-			en = 0;
-	} else {
-		en = EINT_FUNC.is_deb_en[cur_eint_num];
-	}
-
-	return en;
-}
-
-static void mt_eint_enable_debounce(unsigned int cur_eint_num)
-{
-	mt_eint_mask(cur_eint_num);
-	if (cur_eint_num < MAX_HW_DEBOUNCE_CNT) {
-		/* HW debounce */
-		mt_eint_en_hw_debounce(cur_eint_num);
-	} else {
-		/* SW debounce */
-		mt_eint_en_sw_debounce(cur_eint_num);
-	}
-	mt_eint_unmask(cur_eint_num);
-}
-
-static void mt_eint_disable_debounce(unsigned int cur_eint_num)
-{
-	mt_eint_mask(cur_eint_num);
-	if (cur_eint_num < MAX_HW_DEBOUNCE_CNT) {
-		/* HW debounce */
-		mt_eint_dis_hw_debounce(cur_eint_num);
-	} else {
-		/* SW debounce */
-		mt_eint_dis_sw_debounce(cur_eint_num);
-	}
-	mt_eint_unmask(cur_eint_num);
-}
-#endif				/* end of EINT_TEST_V2 */
-
 /*
  * mt_eint_setdomain0: set all eint_num to domain 0.
  */
@@ -1392,327 +1266,6 @@ static void setup_MD_eint(void)
 #endif				/* end of MD_EINT */
 }
 
-#ifdef EINT_TEST_V2
-unsigned long long hw_debounce_start;
-unsigned long long hw_debounce_end;
-volatile int EINT_waiting;
-static struct platform_driver eint_driver = {
-	.driver = {
-		   .name = "eint_test",
-		   .bus = &platform_bus_type,
-		   .owner = THIS_MODULE,
-		   }
-};
-
-static void gpio_set_debounce(unsigned gpio, unsigned debounce);
-
-static void mt_eint_soft_isr(void)
-{
-	dbgmsg("in mt_eint_soft_isr\n");
-	mt_eint_soft_clr(cur_eint_num);
-}
-
-static irqreturn_t mt_eint_soft_revert_isr(unsigned irq, struct irq_desc *desc)
-{
-	int eint_num = 0;
-
-	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_debug("======EINT_SOFT_REVERT_ISR======\n");
-	pr_debug("EINT %d, in %s\n", eint_num, __func__);
-	mt_eint_revert_polarity(eint_num);
-	pr_debug("======EINT_SOFT_REVERT_ISR_END======\n");
-	return IRQ_HANDLED;
-}
-
-volatile unsigned int sw_debounce = 0;
-
-static irqreturn_t mt_eint_soft_debounce_isr(unsigned irq, struct irq_desc *desc)
-{
-	int eint_num = 0;
-
-	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_debug("======EINT_SOFT_DEBOUNCE_ISR======\n");
-	pr_debug("EINT %d, in %s\n", eint_num, __func__);
-	mt_eint_revert_polarity(eint_num);
-	pr_debug("======EINT_SOFT_DEBOUNCE_ISR_END======\n");
-	sw_debounce = 1;
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t mt_eint_soft_nonauto_unmask_isr(unsigned irq, struct irq_desc *desc)
-{
-	int eint_num = 0;
-
-	eint_num = DEMUX_EINT_IRQ(irq);
-	pr_debug("======EINT_NONAUTO_SOFT_ISR======\n");
-	pr_debug("EINT %d, in %s\n", eint_num, __func__);
-	mt_eint_revert_polarity(eint_num);
-	disable_irq_nosync(irq);
-	pr_debug("======EINT_NONAUTO_SOFT_ISR_END======\n");
-	return IRQ_HANDLED;
-}
-
-#define EINT_IN     0
-#define EINT_OUT    1
-/* these 2 arrays are for EINT HW debounce test
-   refer to designer / SA for detail */
-int eint_debounce[] = { 30, 31 };
-int gpio_debounce[] = { 58, 59 };
-
-int eint_num = 3;
-
-static irqreturn_t mt_eint_hw_debounce_isr(unsigned irq, struct irq_desc *desc)
-{
-	int eint_num;
-
-	eint_num = DEMUX_EINT_IRQ(irq);
-	hw_debounce_end = sched_clock();
-	EINT_waiting = 0;
-	pr_debug("======EINT_HW_DEBOUNCE_ISR======\n");
-	pr_debug("EINT %d, in %s\n", eint_num, __func__);
-	pr_debug("======EINT_HW_DEBOUNCE_ISR_END======\n");
-	mt_set_gpio_out(gpio_debounce[EINT_OUT], 0);
-	return IRQ_HANDLED;
-}
-
-typedef void (*EINT_FUNC_PTR) (void);
-
-void setup_level_trigger_env(unsigned int eint)
-{
-	unsigned long base, pol_base, raw_base;
-
-	if (eint >= EINT_MAX_CHANNEL) {
-		pr_err("%s: eint %d >= %d\n", __func__, eint, EINT_MAX_CHANNEL);
-		return;
-	}
-
-	base = eint / 32;
-	raw_base = EINT_RAW_STA_BASE + base * 4;
-	pol_base = EINT_POL_SET_BASE + base * 4;
-
-	mt_eint_mask(eint);
-	mt_eint_set_sens(eint, MT_LEVEL_SENSITIVE);
-	mt_eint_set_polarity(eint, MT_EINT_POL_NEG);
-	writel(readl(IOMEM(raw_base)) & 0xFFFFFFFF, IOMEM(pol_base));
-}
-
-static void mt_eint_autounmask_test(void)
-{
-	int ret = 0;
-	struct irq_desc *desc;
-
-	pr_debug("%s for EINT %d\n", __func__, eint_num);
-	setup_level_trigger_env(eint_num);
-	ret =
-	    request_irq(EINT_IRQ(eint_num),
-			(irq_handler_t) mt_eint_soft_revert_isr,
-			mt_eint_get_polarity(eint_num), "EINT-AUTOUNMASK", NULL);
-	if (ret > 0) {
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-		return;
-	}
-	desc = irq_to_desc(EINT_IRQ(eint_num));
-	pr_debug("EINT %d request_irq done\n", eint_num);
-	mt_eint_revert_polarity(eint_num);
-	pr_debug("trigger EINT %d done\n", eint_num);
-	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
-	free_irq(EINT_IRQ(eint_num), NULL);
-}
-
-static irqreturn_t mt_deint_soft_revert_isr(unsigned irq, struct irq_desc *desc)
-{
-	pr_debug("======DEINT_SOFT_REVERT_ISR======\n");
-	pr_debug("irq = %d\n", irq);
-	irq_set_irq_type(irq, IRQF_TRIGGER_HIGH);
-	pr_debug("======DEINT_SOFT_REVERT_ISR_END======\n");
-	return IRQ_HANDLED;
-}
-
-static void mt_deint_test(void)
-{
-	int ret = 0;
-
-	pr_debug("%s for EINT %d\n", __func__, eint_num);
-
-	ret = mt_eint_set_deint(eint_num, 189);
-	if (ret == 0) {
-		pr_debug("mt_eint_set_deint done\n");
-	} else {
-		pr_err("mt_eint_set_deint fail\n");
-		return;
-	}
-
-	ret =
-	    request_irq(189, (irq_handler_t) mt_deint_soft_revert_isr,
-			IRQF_TRIGGER_HIGH, "EINT-AUTOUNMASK", NULL);
-	if (ret > 0) {
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-		return;
-	}
-	pr_debug("EINT %d request_irq done\n", eint_num);
-	irq_set_irq_type(189, IRQF_TRIGGER_LOW);
-
-	pr_debug("trigger EINT %d done\n", eint_num);
-	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
-
-	free_irq(189, NULL);
-	mt_eint_clr_deint(eint_num);
-}
-
-static int mt_eint_non_autounmask_test(void)
-{
-	int ret = 0;
-
-	setup_level_trigger_env(eint_num);
-	pr_debug("%s for EINT %d\n", __func__, eint_num);
-	ret =
-	    request_irq(EINT_IRQ(eint_num),
-			(irq_handler_t) mt_eint_soft_nonauto_unmask_isr,
-			mt_eint_get_polarity(eint_num), "EINT-NONAUTOUNMASK", NULL);
-	if (ret > 0) {
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-		return -1;
-	}
-	pr_debug("EINT %d request_irq done\n", eint_num);
-	mt_eint_revert_polarity(eint_num);
-	pr_debug("trigger EINT %d done\n", eint_num);
-	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
-	free_irq(EINT_IRQ(eint_num), NULL);
-	return 1;
-}
-
-void mt_eint_normal_test_based_on_sw_debounce(void)
-{
-	int eint_num = 36;
-	int ret = 0;
-	unsigned int debounce_time = 30;
-
-	setup_level_trigger_env(eint_num);
-	pr_debug("%s for EINT %d\n", __func__, eint_num);
-	gpio_set_debounce(EINT_GPIO(eint_num), debounce_time);
-	pr_debug("EINT %d debounce enable %d\n", eint_num, mt_eint_is_debounce_en(eint_num));
-	ret =
-	    request_irq(EINT_IRQ(eint_num),
-			(irq_handler_t) mt_eint_soft_debounce_isr,
-			mt_eint_get_polarity(eint_num), "EINT-SWDEBOUNCE", NULL);
-	if (ret > 0)
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-	pr_debug("EINT %d request_irq done\n", eint_num);
-	mt_eint_revert_polarity(eint_num);
-	pr_debug("trigger EINT %d done\n", eint_num);
-	pr_debug("start waiting sw_debounce\n");
-	while (!sw_debounce)
-		;
-	sw_debounce = 0;
-	pr_debug("EINT %d, MASK 0x%d\n", eint_num, mt_eint_get_mask(eint_num));
-	free_irq(EINT_IRQ(eint_num), NULL);
-}
-
-void mt_eint_normal_test_based_on_hw_debounce(void)
-{
-	int ret = 0;
-	unsigned int debounce_time = 16;
-	unsigned long long delay_start;
-
-	pr_debug("%s for EINT %d\n", __func__, eint_debounce[EINT_IN]);
-	gpio_set_debounce(EINT_GPIO(eint_debounce[EINT_IN]), debounce_time);
-
-	/* GPIO setting */
-	mt_set_gpio_mode(gpio_debounce[EINT_OUT], GPIO_MODE_00);
-	mt_set_gpio_dir(gpio_debounce[EINT_OUT], GPIO_DIR_OUT);
-	mt_set_gpio_pull_enable(gpio_debounce[EINT_OUT], 1);
-	mt_set_gpio_out(gpio_debounce[EINT_OUT], 0);
-	mt_set_gpio_mode(gpio_debounce[EINT_IN], GPIO_MODE_04);
-	mt_set_gpio_dir(gpio_debounce[EINT_IN], GPIO_DIR_IN);
-
-	pr_debug("before request_irq for EINT %d\n", eint_debounce[EINT_IN]);
-	EINT_waiting = 1;
-	ret =
-	    request_irq(EINT_IRQ(eint_debounce[EINT_IN]),
-			(irq_handler_t) mt_eint_hw_debounce_isr,
-			IRQF_TRIGGER_HIGH, "EINT-HWDEBOUNCE", NULL);
-	if (ret > 0)
-		pr_err("EINT IRQ LINE NOT AVAILABLE!!\n");
-	pr_debug("EINT %d request_irq done\n", eint_debounce[EINT_IN]);
-	mt_set_gpio_out(gpio_debounce[EINT_OUT], 1);
-	pr_debug("trigger EINT %d done\n", eint_debounce[EINT_IN]);
-	hw_debounce_start = delay_start = sched_clock();
-	pr_debug("waiting for EINT %d\n", eint_debounce[EINT_IN]);
-
-	while (EINT_waiting) {
-		delay_start = sched_clock();
-		if (!EINT_waiting)
-			break;
-	}
-	pr_debug("hw_debounce time t1=%llu ,t2=%llu, %llu ns\n",
-		  hw_debounce_start, hw_debounce_end, (hw_debounce_end - hw_debounce_start));
-	pr_debug("duration time t1=%llu ,t2=%llu, %llu ns\n", hw_debounce_start,
-		  delay_start, (delay_start - hw_debounce_start));
-
-	/* divide by 1m => ns to ms */
-	if (!EINT_waiting && (hw_debounce_start - hw_debounce_end) / 1000000 > debounce_time)
-		pr_debug("...pass\n");
-	else
-		pr_debug("...failed\n");
-
-	pr_debug("EINT %d, MASK 0x%d\n", eint_debounce[EINT_IN],
-		  mt_eint_get_mask(eint_debounce[EINT_IN]));
-	free_irq(EINT_IRQ(eint_debounce[EINT_IN]), NULL);
-}
-
-static ssize_t test_show(struct device_driver *driver, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "==EINT test==\n"
-			"1.EINT new design test\n"
-			"2.EINT new design hw debounce test\n"
-			"3.EINT new design sw debounce test\n"
-			"4.EINT new design without auto-unmask\n" "5.EINT new design deint test\n");
-}
-
-static ssize_t test_store(struct device_driver *driver, const char *buf, size_t count)
-{
-	char *p = (char *)buf;
-	unsigned long num;
-
-	if (kstrtoul(p, 10, &num) != 0) {
-		pr_err("[EIC] can not kstrtoul for %s\n", p);
-		return -1;
-	}
-
-	switch (num) {
-	case 1:
-		mt_eint_autounmask_test();
-		break;
-	case 2:
-		mt_eint_normal_test_based_on_hw_debounce();
-		break;
-	case 3:
-		mt_eint_normal_test_based_on_sw_debounce();
-		break;
-	case 4:
-		mt_eint_non_autounmask_test();
-		break;
-	case 5:
-		mt_deint_test();
-		break;
-	default:
-		break;
-	}
-
-	return count;
-}
-
-DRIVER_ATTR(eint_test_suit, 0644, test_show, test_store);
-
-#endif
-
-#ifdef EINT_TEST_V2
-static void gpio_set_debounce(unsigned gpio, unsigned debounce)
-{
-	mt_eint_set_hw_debounce(gpio, debounce);
-}
-#endif
-
 int mt_gpio_set_debounce(unsigned gpio, unsigned debounce)
 {
 	if (gpio >= EINT_MAX_CHANNEL)
@@ -1782,19 +1335,6 @@ static void pin_init(void)
 		}
 	}
 }
-
-#ifdef EINT_TEST_V2
-static void pin_traverse(void)
-{
-	struct pin_node *p;
-	struct rb_node *r;
-
-	for (r = rb_first(&root); r; r = rb_next(r)) {
-		p = rb_entry(r, struct pin_node, node);
-		pr_debug("gpio = %d, eint = %d\n", p->gpio_pin, p->eint_pin);
-	}
-}
-#endif
 
 unsigned int mt_gpio_to_irq(unsigned int gpio)
 {
@@ -1955,15 +1495,8 @@ static int __init mt_eint_init(void)
 	int irq_base;
 	struct irq_domain *domain;
 	struct device_node *node;
-#if defined(EINT_TEST_V2)
-	struct pin_node *p;
-#endif
 	const __be32 *spec;
 	u32 len;
-
-#if defined(EINT_TEST_V2)
-	int ret;
-#endif
 
 	/* DTS version */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-eic");
@@ -2084,26 +1617,8 @@ static int __init mt_eint_init(void)
 	}
 
 	/* gpio to eint structure init */
-	if (mapping_table_entry > 0) {
+	if (mapping_table_entry > 0)
 		pin_init();
-
-#if defined(EINT_TEST_V2)
-		pin_traverse();
-		p = pin_search(31);
-		if (p)
-			pr_debug("gpio 31 = eint %d\n", p->eint_pin);
-
-		p = pin_search(37);
-		if (p)
-			pr_debug("gpio 37 = eint %d\n", p->eint_pin);
-
-		p = pin_search(GPIO_MAX);
-		if (p)
-			pr_debug("gpio GPIO_MAX = eint %d\n", p->eint_pin);
-		else
-			pr_debug("can't find for GPIO %d\n", GPIO_MAX);
-#endif
-	}
 
 	/* Register Linux IRQ interface */
 	EINT_IRQ_BASE = mt_get_supported_irq_num();
@@ -2132,32 +1647,6 @@ static int __init mt_eint_init(void)
 
 	irq_set_chained_handler(irq, (irq_flow_handler_t) mt_eint_demux);
 	irq_set_handler_data(irq, mt_eint_chip);
-
-#if defined(EINT_TEST_V2)
-	ret = platform_driver_register(&eint_driver);
-	if (ret)
-		pr_err("Fail to register eint_driver");
-
-	ret |= driver_create_file(&eint_driver.driver, &driver_attr_eint_test_suit);
-	if (ret)
-		pr_err("Fail to create eint_driver sysfs files");
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek, ACCDET-eint");
-	if (node) {
-		i = irq_of_parse_and_map(node, 0);
-		pr_debug("virq for ACCDET = %d\n", i);
-	} else {
-		pr_err("can't find compatible node for ACCDET\n");
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek, TOUCH_PANEL-eint");
-	if (node) {
-		i = irq_of_parse_and_map(node, 0);
-		pr_debug("virq for TOUCH = %d\n", i);
-	} else {
-		pr_err("can't find compatible node for TOUCH\n");
-	}
-#endif
 
 	return 0;
 }
