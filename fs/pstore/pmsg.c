@@ -19,7 +19,7 @@
 #include "internal.h"
 
 static DEFINE_MUTEX(pmsg_lock);
-#define PMSG_MAX_BOUNCE_BUFFER_SIZE (2*PAGE_SIZE)
+#define PMSG_MAX_BOUNCE_BUFFER_SIZE (1*PAGE_SIZE)
 
 static ssize_t write_pmsg(struct file *file, const char __user *buf,
 			  size_t count, loff_t *ppos)
@@ -36,7 +36,7 @@ static ssize_t write_pmsg(struct file *file, const char __user *buf,
 	buffer_size = count;
 	if (buffer_size > PMSG_MAX_BOUNCE_BUFFER_SIZE)
 		buffer_size = PMSG_MAX_BOUNCE_BUFFER_SIZE;
-	buffer = vmalloc(buffer_size);
+	buffer = (char *)__get_free_pages(GFP_KERNEL, get_order(buffer_size));
 	if (!buffer)
 		return -ENOMEM;
 
@@ -49,7 +49,7 @@ static ssize_t write_pmsg(struct file *file, const char __user *buf,
 		ret = __copy_from_user(buffer, buf + i, c);
 		if (unlikely(ret != 0)) {
 			mutex_unlock(&pmsg_lock);
-			vfree(buffer);
+			free_pages((unsigned long)buffer, get_order(buffer_size));
 			return -EFAULT;
 		}
 		psinfo->write_buf(PSTORE_TYPE_PMSG, 0, &id, 0, buffer, 0, c,
@@ -59,7 +59,7 @@ static ssize_t write_pmsg(struct file *file, const char __user *buf,
 	}
 
 	mutex_unlock(&pmsg_lock);
-	vfree(buffer);
+	free_pages((unsigned long)buffer, get_order(buffer_size));
 	return count;
 }
 
