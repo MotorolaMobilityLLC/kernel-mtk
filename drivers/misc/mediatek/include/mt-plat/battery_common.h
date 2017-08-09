@@ -231,6 +231,7 @@ struct battery_custom_data {
 	int usb_charger_current_unconfigured;
 	int usb_charger_current_configured;
 	int usb_charger_current;
+	int ac_charger_input_current;
 	int ac_charger_current;
 	int non_std_ac_charger_current;
 	int charging_host_charger_current;

@@ -539,11 +539,10 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 	} else if (g_temp_status == TEMP_POS_45_TO_POS_60) {
 		cv_voltage = JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_10_TO_POS_45) {
-#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+		if (batt_cust_data.high_battery_voltage_support)
 			cv_voltage = BATTERY_VOLT_04_340000_V;
-#else
+		else
 			cv_voltage = JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE;
-#endif
 	} else if (g_temp_status == TEMP_POS_0_TO_POS_10) {
 		cv_voltage = JEITA_TEMP_POS_0_TO_POS_10_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_NEG_10_TO_POS_0) {
@@ -688,7 +687,7 @@ void set_usb_current_unlimited(bool enable)
 	usb_unlimited = enable;
 }
 
-void select_charging_curret_bcct(void)
+void select_charging_current_bcct(void)
 {
 /*BQ25896 is the first switch chrager separating input and charge current
 * any switch charger can use this compile option which may be generalized
@@ -920,8 +919,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 	return g_bcct_flag;
 }
 
-#ifdef BAT_CUST
-void select_charging_curret(void)
+void select_charging_current(void)
 {
 	if (g_ftm_battery_flag) {
 		battery_log(BAT_LOG_CRTI, "[BATTERY] FTM charging : %d\r\n",
@@ -965,7 +963,11 @@ void select_charging_curret(void)
 			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			if (batt_cust_data.ac_charger_input_current != 0)
+				g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+			else
+				g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 			if (is_ta_connect == KAL_TRUE)
@@ -1001,95 +1003,6 @@ void select_charging_curret(void)
 	}
 
 }
-#else
-void select_charging_curret(void)
-{
-	if (g_ftm_battery_flag) {
-		battery_log(BAT_LOG_CRTI, "[BATTERY] FTM charging : %d\r\n",
-			    charging_level_data[0]);
-		g_temp_CC_value = charging_level_data[0];
-
-		if (g_temp_CC_value == CHARGE_CURRENT_450_00_MA) {
-			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
-		} else {
-			g_temp_input_CC_value = CHARGE_CURRENT_MAX;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
-
-			battery_log(BAT_LOG_CRTI, "[BATTERY] set_ac_current \r\n");
-		}
-	} else {
-		if (BMT_status.charger_type == STANDARD_HOST) {
-#ifdef CONFIG_USB_IF
-			{
-				g_temp_input_CC_value = CHARGE_CURRENT_MAX;
-				if (g_usb_state == USB_SUSPEND)
-					g_temp_CC_value = USB_CHARGER_CURRENT_SUSPEND;
-				else if (g_usb_state == USB_UNCONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
-				else if (g_usb_state == USB_CONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_CONFIGURED;
-				else
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
-
-
-				battery_log(BAT_LOG_CRTI,
-					    "[BATTERY] STANDARD_HOST CC mode charging : %d on %d state\r\n",
-					    g_temp_CC_value, g_usb_state);
-			}
-#else
-			{
-				g_temp_input_CC_value = USB_CHARGER_CURRENT;
-				g_temp_CC_value = USB_CHARGER_CURRENT;
-			}
-#endif
-		} else if (BMT_status.charger_type == NONSTANDARD_CHARGER) {
-			g_temp_input_CC_value = NON_STD_AC_CHARGER_CURRENT;
-			g_temp_CC_value = NON_STD_AC_CHARGER_CURRENT;
-
-		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-#if defined(AC_CHARGER_INPUT_CURRENT)
-			g_temp_input_CC_value = AC_CHARGER_INPUT_CURRENT;
-#else
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-#endif
-			g_temp_CC_value = AC_CHARGER_CURRENT;
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-			if (is_ta_connect == KAL_TRUE)
-				set_ta_charging_current();
-#endif
-		} else if (BMT_status.charger_type == CHARGING_HOST) {
-			g_temp_input_CC_value = CHARGING_HOST_CHARGER_CURRENT;
-			g_temp_CC_value = CHARGING_HOST_CHARGER_CURRENT;
-		} else if (BMT_status.charger_type == APPLE_2_1A_CHARGER) {
-			g_temp_input_CC_value = APPLE_2_1A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_2_1A_CHARGER_CURRENT;
-		} else if (BMT_status.charger_type == APPLE_1_0A_CHARGER) {
-			g_temp_input_CC_value = APPLE_1_0A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_1_0A_CHARGER_CURRENT;
-		} else if (BMT_status.charger_type == APPLE_0_5A_CHARGER) {
-			g_temp_input_CC_value = APPLE_0_5A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_0_5A_CHARGER_CURRENT;
-		} else {
-			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
-			g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
-		}
-
-
-#if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-		if (DISO_data.diso_state.cur_vdc_state == DISO_ONLINE) {
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
-		}
-#endif
-
-#if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-		set_jeita_charging_current();
-#endif
-	}
-
-
-}
-#endif
 
 static unsigned int charging_full_check(void)
 {
@@ -1109,7 +1022,6 @@ static unsigned int charging_full_check(void)
 }
 
 
-#ifdef BAT_CUST
 static void pchr_turn_on_charging(void)
 {
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
@@ -1145,19 +1057,34 @@ static void pchr_turn_on_charging(void)
 
 		/* Set Charging Current */
 		if (get_usb_current_unlimited()) {
-			g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			if (batt_cust_data.ac_charger_input_current != 0)
+				g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+			else
+				g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 			battery_log(BAT_LOG_FULL,
 				    "USB_CURRENT_UNLIMITED, use batt_cust_data.ac_charger_current\n");
+#ifndef CONFIG_MTK_BQ25896_SUPPORT
 		} else if (g_bcct_flag == 1) {
-			select_charging_curret_bcct();
+			select_charging_current_bcct();
 
+			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current_bcct !\n");
+		} else {
+			select_charging_current();
+
+			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
+		}
+#else
+		} else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
+			select_charging_current();
+			select_charging_current_bcct();
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret_bcct !\n");
 		} else {
-			select_charging_curret();
-
+			select_charging_current();
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret !\n");
 		}
+#endif
 		battery_log(BAT_LOG_CRTI,
 			    "[BATTERY] Default CC mode charging : %d, input current = %d\r\n",
 			    g_temp_CC_value, g_temp_input_CC_value);
@@ -1180,6 +1107,11 @@ static void pchr_turn_on_charging(void)
 			else
 				cv_voltage = BATTERY_VOLT_04_200000_V;
 
+			#ifdef CONFIG_MTK_BIF_SUPPORT
+			cv_voltage = get_constant_voltage() * 1000;
+			battery_log(BAT_LOG_CRTI, "[BATTERY][BIF] Setting CV to %d\n", cv_voltage / 1000);
+			#endif
+
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 			#if defined(CONFIG_MTK_HAFG_20)
@@ -1196,109 +1128,6 @@ static void pchr_turn_on_charging(void)
 		    charging_enable);
 }
 
-#else
-
-static void pchr_turn_on_charging(void)
-{
-#if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-	BATTERY_VOLTAGE_ENUM cv_voltage;
-#endif
-	unsigned int charging_enable;
-
-	charging_enable = KAL_TRUE;
-
-#if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	if (KAL_TRUE == BMT_status.charger_exist)
-		charging_enable = KAL_TRUE;
-	else
-		charging_enable = KAL_FALSE;
-#endif
-
-	if (BMT_status.bat_charging_state == CHR_ERROR) {
-		battery_log(BAT_LOG_CRTI, "[BATTERY] Charger Error, turn OFF charging !\n");
-
-		charging_enable = KAL_FALSE;
-
-	} else if ((g_platform_boot_mode == META_BOOT) || (g_platform_boot_mode == ADVMETA_BOOT)) {
-		battery_log(BAT_LOG_CRTI,
-			    "[BATTERY] In meta or advanced meta mode, disable charging.\n");
-		charging_enable = KAL_FALSE;
-	} else {
-		/*HW initialization */
-		battery_charging_control(CHARGING_CMD_INIT, NULL);
-
-		battery_log(BAT_LOG_FULL, "charging_hw_init\n");
-
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-		battery_pump_express_algorithm_start();
-#endif
-
-		/* Set Charging Current */
-		if (get_usb_current_unlimited()) {
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
-			battery_log(BAT_LOG_FULL,
-				    "USB_CURRENT_UNLIMITED, use AC_CHARGER_CURRENT\n");
-#ifndef CONFIG_MTK_BQ25896_SUPPORT
-		} else if (g_bcct_flag == 1) {
-			select_charging_curret_bcct();
-
-			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret_bcct !\n");
-		} else {
-			select_charging_curret();
-
-			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret !\n");
-		}
-
-#else
-		} else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
-			select_charging_curret();
-			select_charging_curret_bcct();
-			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret_bcct !\n");
-		} else {
-			select_charging_curret();
-			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret !\n");
-		}
-#endif
-		battery_log(BAT_LOG_CRTI,
-			    "[BATTERY] Default CC mode charging : %d, input current = %d\r\n",
-			    g_temp_CC_value, g_temp_input_CC_value);
-		if (g_temp_CC_value == CHARGE_CURRENT_0_00_MA
-		    || g_temp_input_CC_value == CHARGE_CURRENT_0_00_MA) {
-
-			charging_enable = KAL_FALSE;
-
-			battery_log(BAT_LOG_CRTI,
-				    "[BATTERY] charging current is set 0mA, turn off charging !\r\n");
-		} else {
-			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
-						 &g_temp_input_CC_value);
-			battery_charging_control(CHARGING_CMD_SET_CURRENT, &g_temp_CC_value);
-
-			/*Set CV Voltage */
-#if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-			cv_voltage = BATTERY_VOLT_04_340000_V;
-#else
-			cv_voltage = BATTERY_VOLT_04_200000_V;
-#endif
-
-#ifdef CONFIG_MTK_BIF_SUPPORT
-			cv_voltage = get_constant_voltage() * 1000;
-			battery_log(BAT_LOG_CRTI, "[BATTERY][BIF] Setting CV to %d\n", cv_voltage / 1000);
-#endif
-			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
-#endif
-		}
-	}
-
-	/* enable/disable charging */
-	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
-
-	battery_log(BAT_LOG_FULL, "[BATTERY] pchr_turn_on_charging(), enable =%d !\r\n",
-		    charging_enable);
-}
-#endif
 
 PMU_STATUS BAT_PreChargeModeAction(void)
 {

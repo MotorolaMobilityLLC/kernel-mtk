@@ -3784,6 +3784,9 @@ int __batt_init_cust_data_from_cust_header(void)
 #if defined(USB_CHARGER_CURRENT)
 	batt_cust_data.usb_charger_current = USB_CHARGER_CURRENT;
 #endif
+#if defined(AC_CHARGER_INPUT_CURRENT)
+	batt_cust_data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
+#endif
 #if defined(AC_CHARGER_CURRENT)
 	batt_cust_data.ac_charger_current = AC_CHARGER_CURRENT;
 #endif
@@ -3932,6 +3935,9 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "usb_charger_current",
 		&batt_cust_data.usb_charger_current);
+
+	__batt_parse_node(np, "ac_charger_input_current",
+		&batt_cust_data.ac_charger_input_current);
 
 	__batt_parse_node(np, "ac_charger_current",
 		&batt_cust_data.ac_charger_current);
