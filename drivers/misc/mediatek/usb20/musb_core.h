@@ -90,6 +90,7 @@ struct musb_ep;
 extern volatile bool usb_is_host;
 extern int musb_skip_charge_detect;
 extern int musb_is_shutting;
+extern int musb_connect_legacy;
 extern int musb_removed;
 
 extern unsigned musb_uart_debug;

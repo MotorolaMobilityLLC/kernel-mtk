@@ -116,6 +116,8 @@
 struct device_node *dts_np;
 #endif
 
+int musb_connect_legacy = 1;
+module_param(musb_connect_legacy, int, 0644);
 int musb_is_shutting = 0;
 int musb_skip_charge_detect = 0;
 int musb_removed = 0;
@@ -1269,17 +1271,30 @@ void musb_start(struct musb *musb)
 
 	musb_writeb(regs, MUSB_INTRUSBE, intrusbe);
 
-	if (musb_speed) {
-		/* put into basic highspeed mode and start session */
-		musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN | MUSB_POWER_HSENAB
-			    /* ENSUSPEND wedges tusb */
-			    | MUSB_POWER_ENSUSPEND);
+	if (musb_connect_legacy) {
+		if (musb_speed) {
+			/* put into basic highspeed mode and start session */
+			musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN | MUSB_POWER_HSENAB
+					/* ENSUSPEND wedges tusb */
+					| MUSB_POWER_ENSUSPEND);
+		} else {
+			/* put into basic fullspeed mode and start session */
+			musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN
+					/* ENSUSPEND wedges tusb */
+					| MUSB_POWER_ENSUSPEND);
+		}
 	} else {
-		/* put into basic fullspeed mode and start session */
-		musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN
-			    /* ENSUSPEND wedges tusb */
-			    | MUSB_POWER_ENSUSPEND);
+		u8 val = MUSB_POWER_ENSUSPEND;
+
+		if (musb_speed)
+			val |= MUSB_POWER_HSENAB;
+		if (musb->softconnect) {
+			DBG(0, "add softconn\n");
+			val |= MUSB_POWER_SOFTCONN;
+		}
+		musb_writeb(regs, MUSB_POWER, val);
 	}
+
 	musb->is_active = 1;
 }
 
@@ -1315,10 +1330,21 @@ static void gadget_stop(struct musb *musb)
 	power &= ~MUSB_POWER_SOFTCONN;
 	musb_writeb(musb->mregs, MUSB_POWER, power);
 
-	/* notify gadget driver */
+	/* notify gadget driver, g.speed judge is very important */
 	if (musb->g.speed != USB_SPEED_UNKNOWN) {
-		if (musb->gadget_driver && musb->gadget_driver->disconnect)
+		DBG(0, "musb->gadget_driver:%p\n", musb->gadget_driver);
+		if (musb->gadget_driver && musb->gadget_driver->disconnect) {
+			DBG(0, "musb->gadget_driver->disconnect:%p\n", musb->gadget_driver->disconnect);
+			/* align musb_g_disconnect */
+			if (!musb_connect_legacy)
+				spin_unlock(&musb->lock);
+
 			musb->gadget_driver->disconnect(&musb->g);
+
+			/* align musb_g_disconnect */
+			if (!musb_connect_legacy)
+				spin_lock(&musb->lock);
+		}
 		musb->g.speed = USB_SPEED_UNKNOWN;
 	}
 }

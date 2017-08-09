@@ -2074,7 +2074,7 @@ static int musb_gadget_set_self_powered(struct usb_gadget *gadget, int is_selfpo
 static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 {
 	u8 power;
-	DBG(0, "MUSB: gadget pull up %d start\n", is_on);
+	DBG(0, "MUSB: gadget pull up %d start, musb->power:%d\n", is_on, musb->power);
 	if (musb->power) {
 		power = musb_readb(musb->mregs, MUSB_POWER);
 		if (is_on)
@@ -2082,7 +2082,7 @@ static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 		else
 			power &= ~MUSB_POWER_SOFTCONN;
 		musb_writeb(musb->mregs, MUSB_POWER, power);
-	} else {
+	} else if (musb_connect_legacy) {
 		if (!usb_in && is_on)
 			DBG(0, "no USB cable, don't need to turn on USB\n");
 		else if (musb->is_host)
@@ -2122,58 +2122,42 @@ static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
 
 int first_connect = 1;
 int check_delay_done = 1;
-static unsigned long target_jffy;
-#define ENUM_GAP_DELAY 50
-#define ENUM_GAP_SEC 2
 static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct musb *musb = gadget_to_musb(gadget);
-	/* unsigned long        flags; */
-	bool usb_in;
+	unsigned long        flags;
+	bool usb_in = false;
+
+	if (musb_connect_legacy)
+		flags = 0;
 
 	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
 
 	is_on = !!is_on;
-
-	/* delay peform at most once to avoid pmic cocurrency with init */
-	if (!check_delay_done && musb->is_ready && !first_connect) {
-		/* perform delay*/
-		DBG(0, "check perform delay needed\n");
-		while (time_before_eq(jiffies, target_jffy)) {
-			DBG(0, "sleep %d ms\n", ENUM_GAP_DELAY);
-			msleep(ENUM_GAP_DELAY);
-			if (first_connect) {
-				DBG(0, "got first_conn in loop\n");
-				break;
-			}
-		}
-		DBG(0, "delay done, check_delay_done to 1\n");
-		check_delay_done = 1;
-	}
-
-
-	/* only set once when user space function is ready */
-	if (is_on && !musb->is_ready) {
-		musb->is_ready = true;
-		target_jffy = jiffies + ENUM_GAP_SEC*HZ;
-	}
-
 	pm_runtime_get_sync(musb->controller);
 
-	/* NOTE: pmic would enable irq internally */
-	usb_in = usb_cable_connected();
 
 	/* NOTE: this assumes we are sensing vbus; we'd rather
 	 * not pullup unless the B-session is active.
 	 */
 
-	/* Remove spin_lock to prevent dead lock */
-	/* spin_lock_irqsave(&musb->lock, flags); */
+	/* Remove spin_lock to prevent dead lock for musb_connect_legacy = 1*/
+	if (!musb_connect_legacy)
+		spin_lock_irqsave(&musb->lock, flags);
+	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
+	if (!musb->is_ready && is_on)
+		musb->is_ready = true;
+
+	/* NOTE: pmic would enable irq internally */
+	usb_in = usb_cable_connected();
+
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;
 		musb_pullup(musb, is_on, usb_in);
 	}
-	/* spin_unlock_irqrestore(&musb->lock, flags); */
+
+	if (!musb_connect_legacy)
+		spin_unlock_irqrestore(&musb->lock, flags);
 
 	pm_runtime_put(musb->controller);
 
@@ -2451,6 +2435,7 @@ static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driv
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_get_sync(musb->controller);
 
+	DBG(0, "musb_gadget_stop\n");
 	/*
 	 * REVISIT always use otg_set_peripheral() here too;
 	 * this needs to shut down the OTG engine.
@@ -2466,7 +2451,7 @@ static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driv
 	stop_activity(musb, driver);
 	otg_set_peripheral(musb->xceiv->otg, NULL);
 
-	DBG(2, "unregistering driver %s\n", driver->function);
+	DBG(0, "unregistering driver %s\n", driver->function);
 
 	musb->is_active = 0;
 	musb_platform_try_idle(musb, 0);

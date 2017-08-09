@@ -42,18 +42,21 @@ struct clk *musb_clk;
 #include "musb_qmu.h"
 #endif
 
+/* #define FOR_BRING_UP */
 #ifdef FPGA_PLATFORM
-static int usb_rdy = 1;
-#else
+#define FOR_BRING_UP
+#endif
+
 /* default value 0 */
 static int usb_rdy;
 void set_usb_rdy(void)
 {
 	DBG(0, "set usb_rdy, wake up bat\n");
 	usb_rdy = 1;
+#ifdef CONFIG_MTK_SMART_BATTERY
 	wake_up_bat();
-}
 #endif
+}
 kal_bool is_usb_rdy(void)
 {
 	if (usb_rdy)
@@ -120,8 +123,6 @@ static struct musb_fifo_cfg fifo_cfg[] __initdata = {
 	 MUSB_BUF_DOUBLE},
 };
 
-static DEFINE_SPINLOCK(musb_connect_lock);
-static bool usb_connected;
 
 /*=======================================================================*/
 /* MT6589 USB GADGET                                                     */
@@ -143,18 +144,39 @@ MODULE_DEVICE_TABLE(of, apusb_of_ids);
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_ARCH_MT6735
 #include "mt_vcore_dvfs.h"
-static int vcore_releasing;
+
 static struct workqueue_struct *vcore_wq;
 static struct work_struct vcore_work;
+static DEFINE_SPINLOCK(vcore_req_lock);
+static int vcore_state;
+static int vcore_req_num;
+static int vcore_enable_cnt;
+static int vcore_disable_cnt;
 
+struct list_head vcore_req_free_pool;
+struct list_head vcore_req_execute_pool;
+struct vcore_req_wrapper {
+	struct list_head list;
+	int vcore_req;
+};
+static inline void put_req(struct vcore_req_wrapper *req, struct list_head *head)
+{
+	list_add_tail(&req->list, head);
+}
+
+static inline struct vcore_req_wrapper *get_req(struct list_head *head)
+{
+	struct vcore_req_wrapper *req = NULL;
+
+	if (!list_empty(head)) {
+		req = list_first_entry(head, struct vcore_req_wrapper, list);
+		list_del(&req->list);
+	}
+	return req;
+}
 void vcore_hold(void)
 {
 	int vcore_ret;
-
-	DBG(0, "before releasing\n");
-	while (vcore_releasing)
-		;
-	DBG(0, "after releasing\n");
 
 	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_0);
 	if (vcore_ret)
@@ -163,45 +185,73 @@ void vcore_hold(void)
 		DBG(0, "hold VCORE ok\n");
 
 }
-
-void vcore_workqueue(struct work_struct *work)
-{
-	int vcore_ret;
-
-	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_OFF);
-	if (vcore_ret)
-		DBG(0, "workqueue release VCORE fail(%d)\n", vcore_ret);
-	else
-		DBG(0, "workqueue release VCORE ok\n");
-}
-
 void vcore_release(void)
 {
 	int vcore_ret;
-	int lock_ret;
-	unsigned long flags;
 
-	vcore_releasing = 1;
-
-	if (mtk_musb) {
-		lock_ret = spin_trylock_irqsave(&mtk_musb->lock, flags);
-		if (!lock_ret) {
-			DBG(0, "musb lock fail, mtk_musb:%p\n", mtk_musb);
-			/* lock fail, spin lock case, should schedule work */
-			queue_work(vcore_wq, &vcore_work);
-			vcore_releasing = 0;
-			return;
-		}
-		DBG(0, "musb lock get, release it, mtk_musb:%p\n", mtk_musb);
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-	}
 	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_OFF);
 	if (vcore_ret)
 		DBG(0, "release VCORE fail(%d)\n", vcore_ret);
 	else
 		DBG(0, "release VCORE ok\n");
+}
 
-	vcore_releasing = 0;
+static void do_vcore_work(struct work_struct *work)
+{
+	DBG(0, "%s begin\n", __func__);
+	while (1) {
+		unsigned long	flags;
+		struct vcore_req_wrapper *req;
+		int vcore_req;
+
+		spin_lock_irqsave(&vcore_req_lock, flags);
+		req = get_req(&vcore_req_execute_pool);
+		if (!req) {
+			spin_unlock_irqrestore(&vcore_req_lock, flags);
+			break;
+		}
+		vcore_req = req->vcore_req;
+		put_req(req, &vcore_req_free_pool);
+		spin_unlock_irqrestore(&vcore_req_lock, flags);
+
+		DBG(0, "vcore_state:%d, vcore_req:%d\n", vcore_state, vcore_req);
+		if (!vcore_state && vcore_req) {
+			vcore_hold();
+			vcore_state = 1;
+			vcore_enable_cnt++;
+		} else if (vcore_state && !vcore_req) {
+			vcore_release();
+			vcore_state = 0;
+			vcore_disable_cnt++;
+		}
+
+	}
+	DBG(0, "end, state:%d, num:%d, cnt<%d, %d>\n",
+			vcore_state, vcore_req_num, vcore_enable_cnt, vcore_disable_cnt);
+}
+
+void request_vcore(int on)
+{
+	unsigned long flags;
+	struct vcore_req_wrapper *req;
+
+	spin_lock_irqsave(&vcore_req_lock, flags);
+	req = get_req(&vcore_req_free_pool);
+	if (!req) {
+		req = kmalloc(sizeof(struct vcore_req_wrapper), GFP_ATOMIC);
+		if (!req) {
+			DBG(0, "vcore_req_wrapper alloc fail, directly return !!!!\n");
+			return;
+		}
+		vcore_req_num++;
+		DBG(0, "vcore_req_wrapper alloc done<%d>\n", vcore_req_num);
+	}
+	req->vcore_req = on;
+	put_req(req, &vcore_req_execute_pool);
+	queue_work(vcore_wq, &vcore_work);
+	spin_unlock_irqrestore(&vcore_req_lock, flags);
+	DBG(0, "req:%d, end\n", on);
+
 }
 #endif
 #endif
@@ -214,12 +264,12 @@ static void musb_do_idle(unsigned long _musb)
 	unsigned long flags;
 	u8 devctl;
 
+	spin_lock_irqsave(&musb->lock, flags);
 	if (musb->is_active) {
 		DBG(0, "%s active, igonre do_idle\n", otg_state_string(musb->xceiv->state));
+		spin_unlock_irqrestore(&musb->lock, flags);
 		return;
 	}
-
-	spin_lock_irqsave(&musb->lock, flags);
 
 	switch (musb->xceiv->state) {
 	case OTG_STATE_B_PERIPHERAL:
@@ -288,89 +338,56 @@ static void mt_usb_enable(struct musb *musb)
 	unsigned long flags;
 
 	virt_enable++;
-	DBG(0, "<%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
-	    real_enable, real_disable);
-
+	DBG(0, "begin <%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
+			real_enable, real_disable);
 	if (musb->power == true)
 		return;
+#ifndef FPGA_PLATFORM
+#ifdef CONFIG_ARCH_MT6735
+	request_vcore(1);
+#endif
+#endif
 
 	flags = musb_readl(musb->mregs, USB_L1INTM);
 
-	/* mask ID pin, so "open clock" and "set flag" won't be interrupted. ISR may call clock_disable. */
-	musb_writel(mtk_musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS) & flags);
+	mdelay(10);
 
-	/* Mark by ALPS01262215
-	   if (platform_init_first) {
-	   DBG(0,"usb init first\n\r");
-	   musb->is_host = true;
-	   } */
+	usb_phy_recover();
 
-	if (!mtk_usb_power) {
-
-#ifndef FPGA_PLATFORM
-#ifdef CONFIG_ARCH_MT6735
-		/* enable_pll(UNIVPLL, "USB_PLL"); */
-		DBG(0, "enable UPLL before connect\n");
-		vcore_hold();
-#endif
-#endif
-		mdelay(10);
-
-		usb_phy_recover();
-
-		mtk_usb_power = true;
-		real_enable++;
-		if (in_interrupt()) {
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-		}
-		DBG(0, "<%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
-
-	}
+	/* update musb->power & mtk_usb_power in the same time */
 	musb->power = true;
-
+	mtk_usb_power = true;
+	real_enable++;
+	if (in_interrupt()) {
+		DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
+		DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
+		DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
+	}
+	DBG(0, "end, <%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
 	musb_writel(mtk_musb->mregs, USB_L1INTM, flags);
 }
 
 static void mt_usb_disable(struct musb *musb)
 {
 	virt_disable++;
-	DBG(0, "<%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
-	    real_enable, real_disable);
 
+	DBG(0, "begin, <%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
+	    real_enable, real_disable);
 	if (musb->power == false)
 		return;
 
-	/* Mark by ALPS01262215
-	   if (platform_init_first) {
-	   DBG(0,"usb init first\n\r");
-	   musb->is_host = false;
-	   platform_init_first = false;
-	   } */
+	usb_phy_savecurrent();
+	real_disable++;
+	DBG(0, "end, <%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
 
-	if (mtk_usb_power) {
-
-		usb_phy_savecurrent();
-
-		mtk_usb_power = false;
-		real_disable++;
-		DBG(0, "<%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
-
+	/* update musb->power & mtk_usb_power in the same time */
+	musb->power = 0;
+	mtk_usb_power = false;
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_ARCH_MT6735
-		if (in_interrupt()) {
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-			DBG(0, "in interrupt !!!!!!!!!!!!!!!\n");
-		}
-		vcore_release();
+	request_vcore(0);
 #endif
 #endif
-
-	}
-
-	musb->power = false;
 }
 
 /* ================================ */
@@ -405,198 +422,154 @@ bool mt_usb_is_device(void)
 	return !mtk_musb->is_host;
 }
 
-void mt_usb_connect(void)
+#define CONN_WORK_DELAY 50
+static struct delayed_work connection_work;
+void do_connection_work(struct work_struct *data)
 {
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+	CHARGER_TYPE charger_type = STANDARD_HOST;
+	unsigned long flags;
+	bool usb_in = false;
+	bool cmode_effect_on = false;
+
 
 	if (mtk_musb) {
 		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
-		    mtk_musb->power);
+				mtk_musb->power);
 	} else {
-		DBG(0, "!mtk_musb\n");
-	}
-
-	if (musb_removed) {
-		DBG(0, "musb_removed, direct return\n");
+		/* re issue delay work */
+		if (__ratelimit(&ratelimit))
+			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
+		schedule_delayed_work(&connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	}
 
-	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || mtk_musb->power) {
-		DBG(0, "first_connect to 1\n");
-		first_connect = 1;
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
+	if (mtk_musb->is_host) {
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (usb_phy_check_in_uart_mode()) {
 		DBG(0, "CHECK In UART Mode, not enable USB.\n");
-		DBG(0, "first_connect to 1\n");
-		first_connect = 1;
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
 #endif
 
-	DBG(0, "cable_mode=%d\n", cable_mode);
-/*
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		int chgr_type;
+	if (!mtk_musb->is_ready) {
+		/* re issue work */
+		if (__ratelimit(&ratelimit))
+			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
+		schedule_delayed_work(&connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+		return;
+	}
+#ifdef FOR_BRING_UP
+	DBG(0, "BRING_UP case, type(%d)\n", charger_type);
+	charger_type = STANDARD_HOST;
+#else
+	charger_type = mt_get_charger_type();
+#endif
+	DBG(0, "type(%d)\n", charger_type);
+	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST)
+		usb_in = true;
 
-		chgr_type = mt_get_charger_type();
-		DBG(0, "chgr_type(%d)\n", chgr_type);
-		if (chgr_type == STANDARD_HOST) {
-			cable_mode = CABLE_MODE_CHRG_ONLY;
-			DBG(0, "KPOC & STANDARD_HOST, fake cable mode to %d\n", cable_mode);
+
+	if (cable_mode != CABLE_MODE_NORMAL)
+		cmode_effect_on = true;
+
+	/* revert cmode_effect for this case to make CDP connect */
+	if (cable_mode == CABLE_MODE_HOST_ONLY && charger_type == CHARGING_HOST)
+		cmode_effect_on = false;
+
+	if (!mtk_musb->power && ((usb_in == true) && !cmode_effect_on)) {
+		/* enable usb */
+		if (!wake_lock_active(&mtk_musb->usb_lock)) {
+			wake_lock(&mtk_musb->usb_lock);
+			DBG(0, "lock\n");
+		} else {
+			DBG(0, "already lock\n");
 		}
-	}
-#endif
-*/
 
-	spin_lock(&musb_connect_lock);
-	if (cable_mode != CABLE_MODE_NORMAL) {
-#ifndef FPGA_PLATFORM
-		int charger_type;
+		/* note this already put SOFTCON */
+		musb_start(mtk_musb);
 
-		charger_type = mt_get_charger_type();
-		DBG(0, "cable mode change, type(%d), skip(%d)\n", charger_type,
-		    musb_skip_charge_detect);
-		if (!musb_skip_charge_detect
-		    && (charger_type == STANDARD_HOST || cable_mode == CABLE_MODE_CHRG_ONLY)) {
-#endif
-			DBG(0, "musb_sync_with_bat, USB_CONFIGURED\n");
-			musb_sync_with_bat(mtk_musb, USB_CONFIGURED);
-			mtk_musb->power = true;
-			spin_unlock(&musb_connect_lock);
-			DBG(0, "first_connect to 1\n");
-			first_connect = 1;
-			return;
-#ifndef FPGA_PLATFORM
+	} else if ((mtk_musb->power && (usb_in == false || cmode_effect_on))) {
+		/* disable usb */
+		musb_stop(mtk_musb);
+		if (wake_lock_active(&mtk_musb->usb_lock)) {
+			DBG(0, "unlock\n");
+			wake_unlock(&mtk_musb->usb_lock);
+		} else {
+			DBG(0, "lock not active\n");
 		}
-#endif
-	}
 
-	if (!wake_lock_active(&mtk_musb->usb_lock)) {
-		wake_lock(&mtk_musb->usb_lock);
-		DBG(0, "lock\n");
-	} else {
-		DBG(0, "already lock\n");
-	}
+	} else
+		DBG(0, "do nothing, usb_in:%d, power:%d, cmode_effect_on:%d\n",
+				usb_in, mtk_musb->power, cmode_effect_on);
 
+	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
-	usb_connected = true;
-	spin_unlock(&musb_connect_lock);
-	musb_start(mtk_musb);
-	DBG(0, "first_connect to 1\n");
-	first_connect = 1;
+}
 
+void mt_usb_connect(void)
+{
+#ifdef FOR_BRING_UP
+	DBG(0, "BRING_UP, SKIP issue work !!!\n");
+#else
+	/* issue connection work */
+	DBG(0, "issue work\n");
+	schedule_delayed_work(&connection_work, 0);
 	DBG(0, "[MUSB] USB connect\n");
+#endif
+
 }
 
 void mt_usb_disconnect(void)
 {
-
-	if (mtk_musb) {
-		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
-		    mtk_musb->power);
-	} else {
-		DBG(0, "!mtk_musb\n");
-	}
-
-	if (musb_removed) {
-		DBG(0, "musb_removed, direct return\n");
-		return;
-	}
-
-	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || !mtk_musb->power)
-		return;
-
-#if defined(CONFIG_USBIF_COMPLIANCE)
-	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || !mtk_musb->power
-	    || polling_vbus) {
-		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
-		    mtk_musb->power);
-		if (polling_vbus)
-			DBG(0, "[MUSB] polling_vbus!! return\n");
-
-		return;
-	}
+#ifdef FOR_BRING_UP
+	DBG(0, "BRING_UP, SKIP issue work !!!\n");
+#else
+	/* issue connection work */
+	DBG(0, "issue work\n");
+	schedule_delayed_work(&connection_work, 0);
+	DBG(0, "[MUSB] USB disconnect\n");
 #endif
 
-	musb_stop(mtk_musb);
-	spin_lock(&musb_connect_lock);
-	usb_connected = false;
-
-	if (wake_lock_active(&mtk_musb->usb_lock)) {
-		DBG(0, "unlock\n");
-		wake_unlock(&mtk_musb->usb_lock);
-	} else {
-		DBG(0, "lock not active\n");
-	}
-
-	DBG(0, "cable_mode=%d\n", cable_mode);
-
-	if (cable_mode != CABLE_MODE_NORMAL) {
-		DBG(0, "musb_sync_with_bat, USB_SUSPEND\n");
-		musb_sync_with_bat(mtk_musb, USB_SUSPEND);
-		mtk_musb->power = false;
-	}
-	spin_unlock(&musb_connect_lock);
-
-	DBG(0, "[MUSB] USB disconnect\n");
-}
-
-void mt_usb_check_reconnect(void)
-{
-	/* ALPS01688604, noise caused by MHL init
-	 * There are two ways to connect USB
-	 * 1. Battery Thread call mt_usb_connect
-	 * 2. musb_id_pin_work check if need reconnect.
-	 */
-	DBG(0, "%s, %d, %d\n", __func__, mtk_usb_power, mtk_musb->power);
-
-	spin_lock(&musb_connect_lock);
-	if (usb_connected) {
-		musb_stop(mtk_musb);
-		musb_start(mtk_musb);
-		DBG(0, "[MUSB] USB check reconnect: RECONNECT, IDDIG noise\n");
-	} else {
-		musb_stop(mtk_musb);
-		DBG(0, "[MUSB] USB check reconnect: STOP\n");
-	}
-	spin_unlock(&musb_connect_lock);
 }
 
 
 bool usb_cable_connected(void)
 {
-
-#ifdef FPGA_PLATFORM
-	return true;
+	CHARGER_TYPE charger_type;
+	int delay_time;
+#ifdef FOR_BRING_UP
+	charger_type = STANDARD_HOST;
+	DBG(0, "BRING_UP case, type(%d)\n", charger_type);
 #else
-	int charger_type;
-
-#ifdef CONFIG_USB_MTK_OTG
-	/* ALPS00775710 */
-#if 0
-	int iddig_state = 1;
-
-	iddig_state = mt_get_gpio_in(GPIO_OTG_IDDIG_EINT_PIN);
-	DBG(0, "iddig_state = %d\n", iddig_state);
-
-	if (!iddig_state)
-		return false;
-#endif
-	/* ALPS00775710 */
-#endif
-
 	charger_type = mt_get_charger_type();
+#endif
 	DBG(0, "type(%d)\n", charger_type);
-	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready)
+	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
 		set_usb_rdy();
+#ifdef FOR_BRING_UP
+		delay_time = 0;    /* directly issue connection */
+#else
+		delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
+#endif
+
+		DBG(0, "issue work on is_ready begin, delay_time:%d ms\n", delay_time);
+		schedule_delayed_work(&connection_work, msecs_to_jiffies(delay_time));
+		DBG(0, "issue work on is_ready end, delay_time:%d ms\n", delay_time);
+
+	}
 	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
 		return true;
 	}
 	return false;
-#endif				/* end FPGA_PLATFORM */
 }
 
 void musb_platform_reset(struct musb *musb)
@@ -638,8 +611,10 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 #ifndef FPGA_PLATFORM
 
 	DBG(0, "BATTERY_SetUSBState, state=%d\n", usb_state);
+#ifdef CONFIG_MTK_SMART_BATTERY
 	BATTERY_SetUSBState(usb_state);
 	wake_up_bat();
+#endif
 #endif
 }
 
@@ -744,23 +719,22 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 {
 	unsigned int cmode;
 	long tmp_val;
+	unsigned long flags = 0;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return count;
 	/* } else if (1 == sscanf(buf, "%d", &cmode)) { */
 	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
+		if (mtk_musb)
+			spin_lock_irqsave(&mtk_musb->lock, flags);
+
 		cmode = tmp_val;
 		DBG(0, "cmode=%d, cable_mode=%d\n", cmode, cable_mode);
 		if (cmode >= CABLE_MODE_MAX)
 			cmode = CABLE_MODE_NORMAL;
 
 		if (cable_mode != cmode) {
-			if (mtk_musb) {
-				if (down_interruptible(&mtk_musb->musb_lock))
-					DBG(0, "USB20: %s: busy, Couldn't get power_clock_lock\n",
-					    __func__);
-			}
 			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
 				if (mtk_musb)
 					mtk_musb->in_ipo_off = true;
@@ -799,9 +773,9 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 				switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
 			}
 #endif
-			if (mtk_musb)
-				up(&mtk_musb->musb_lock);
 		}
+		if (mtk_musb)
+			spin_unlock_irqrestore(&mtk_musb->lock, flags);
 	}
 	return count;
 }
@@ -1165,8 +1139,10 @@ static int mt_usb_init(struct musb *musb)
 
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_ARCH_MT6735
-	INIT_WORK(&vcore_work, vcore_workqueue);
-	vcore_wq = create_freezable_workqueue("usb20_vcore_work");
+	INIT_WORK(&vcore_work, do_vcore_work);
+	vcore_wq  = create_singlethread_workqueue("usb20_vcore_work");
+	INIT_LIST_HEAD(&vcore_req_free_pool);
+	INIT_LIST_HEAD(&vcore_req_execute_pool);
 #endif
 #endif
 
@@ -1214,8 +1190,6 @@ static int mt_usb_init(struct musb *musb)
 #endif
 
 	setup_timer(&musb_idle_timer, musb_do_idle, (unsigned long)musb);
-	if (usb_cable_connected())
-		usb_connected = true;
 
 #ifdef CONFIG_USB_MTK_OTG
 	mt_usb_otg_init(musb);
@@ -1390,6 +1364,13 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	DBG(0, "first_connect, check_delay_done to 0\n");
 	first_connect = 0;
 	check_delay_done = 0;
+
+	DBG(0, "set musb_connect_legacy to 0\n");
+	musb_connect_legacy = 0;
+	DBG(0, "init connection_work\n");
+	INIT_DELAYED_WORK(&connection_work, do_connection_work);
+	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
+	mtk_usb_power = false;
 
 #ifndef CONFIG_MTK_CLKMGR
 	musb_clk = devm_clk_get(&pdev->dev, "usb0");

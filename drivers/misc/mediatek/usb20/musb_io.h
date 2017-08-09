@@ -46,7 +46,7 @@ static inline u16 musb_readw(const void __iomem *addr, unsigned offset)
 {
 	u16 rc = 0;
 
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		rc = readw(addr + offset);
 	} else {
 		unsigned long flags = 0;
@@ -65,7 +65,7 @@ static inline u32 musb_readl(const void __iomem *addr, unsigned offset)
 {
 	u32 rc = 0;
 
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		rc = readl(addr + offset);
 	} else {
 		unsigned long flags = 0;
@@ -83,7 +83,7 @@ static inline u32 musb_readl(const void __iomem *addr, unsigned offset)
 
 static inline void musb_writew(void __iomem *addr, unsigned offset, u16 data)
 {
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		writew(data, addr + offset);
 	} else {
 		unsigned long flags = 0;
@@ -99,7 +99,7 @@ static inline void musb_writew(void __iomem *addr, unsigned offset, u16 data)
 
 static inline void musb_writel(void __iomem *addr, unsigned offset, u32 data)
 {
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		writel(data, addr + offset);
 	} else {
 		unsigned long flags = 0;
@@ -117,7 +117,7 @@ static inline u8 musb_readb(const void __iomem *addr, unsigned offset)
 {
 	u8 rc = 0;
 
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		rc = readb(addr + offset);
 	} else {
 		unsigned long flags = 0;
@@ -134,7 +134,7 @@ static inline u8 musb_readb(const void __iomem *addr, unsigned offset)
 
 static inline void musb_writeb(void __iomem *addr, unsigned offset, u8 data)
 {
-	if (mtk_usb_power) {
+	if (likely(mtk_usb_power)) {
 		writeb(data, addr + offset);
 	} else {
 		unsigned long flags = 0;
