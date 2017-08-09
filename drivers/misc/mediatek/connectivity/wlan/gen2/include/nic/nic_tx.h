@@ -304,7 +304,7 @@
 #define NIC_TX_BUFF_COUNT_TC5       1	/* First connection: 0 */
 #elif (CFG_SRAM_SIZE_OPTION == 2)
 #define NIC_TX_BUFF_COUNT_TC0       1	/* First connection: 0 */
-#define NIC_TX_BUFF_COUNT_TC1       20	/* First connection: 32 */
+#define NIC_TX_BUFF_COUNT_TC1       48	/* First connection: 32 */
 #define NIC_TX_BUFF_COUNT_TC2       1	/* First connection: 0 */
 #define NIC_TX_BUFF_COUNT_TC3       1	/* First connection: 0 */
 #define NIC_TX_BUFF_COUNT_TC4       4	/* First connection: 2 */
