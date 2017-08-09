@@ -44,3 +44,9 @@ config MTK_MUSB_CARPLAY_SUPPORT
     default n
 	help
 	  Say Y here if your want to use carplay.
+
+config MTK_MUSB_SW_WITCH_MODE
+    	bool "MediaTek MUSB provide user space interface to switch usb role without id pin"
+    	help
+	  Usb host/device/idle mode switch through command, not only depend on ID pin.
+	  Say Y here if your want to use software to switch usb mode.
