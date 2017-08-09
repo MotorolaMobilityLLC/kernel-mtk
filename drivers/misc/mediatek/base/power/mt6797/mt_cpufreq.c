@@ -56,10 +56,6 @@
 #include "mt_idvfs.h"
 /* #include "mach/mt_cpufreq_hybrid.h" */
 
-#define MCU_FH_PLL0  0
-#define MCU_FH_PLL1  1
-#define MCU_FH_PLL2  2
-
 /*=============================================================*/
 /* Macro definition                                            */
 /*=============================================================*/
@@ -610,6 +606,9 @@ bool is_in_cpufreq = 0;
 /*
  * EFUSE
  */
+
+int dvfs_disable_flag = 0;
+
 #define CPUFREQ_EFUSE_INDEX     (3)
 #define FUNC_CODE_EFUSE_INDEX	(28)
 
@@ -3081,6 +3080,9 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	if ((p->idx_opp_ppm_base == p->idx_opp_ppm_limit) && p->idx_opp_ppm_base != -1)
 		new_opp_idx = p->idx_opp_ppm_base;
 
+	if (new_opp_idx < 8)
+		new_opp_idx = 8;
+
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
 		aee_rr_rec_cpu_dvfs_oppidx((aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | new_opp_idx);
@@ -3268,8 +3270,13 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	if (do_dvfs_stress_test != 1)
+	/*if (do_dvfs_stress_test != 1)
+		return 0;*/
+
+#if 1
+	if (dvfs_disable_flag == 1)
 		return 0;
+#endif
 
 	if (policy->cpu >= num_possible_cpus()
 	    || cpufreq_frequency_table_target(policy, id_to_cpu_dvfs(id)->freq_tbl_for_cpufreq,
@@ -4388,11 +4395,18 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	int ret = 0;
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
+	unsigned int dvfs_efuse = 0;
 	int i;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 	mt_cpufreq_dts_map();
+
+	dvfs_efuse = BigiDVFSSRAMLDOEFUSE();
+
+	if (dvfs_efuse == 0)
+		dvfs_disable_flag = 1;
+
 	cluster_num = (unsigned int)arch_get_nr_clusters();
 	for (i = 0; i < cluster_num; i++) {
 		arch_get_cluster_cpus(&cpu_mask, i);
@@ -4400,6 +4414,8 @@ static int __init _mt_cpufreq_pdrv_init(void)
 		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n",
 	       i, cpu_dvfs[i].cpu_id);
 	}
+
+	cpufreq_dbg("EFUSE = 0x%x , disable_flag = %d\n", dvfs_efuse, dvfs_disable_flag);
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */

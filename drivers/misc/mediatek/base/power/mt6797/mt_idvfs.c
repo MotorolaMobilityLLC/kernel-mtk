@@ -888,6 +888,11 @@ int	BigiDVFSPllDisable(void)
 	return 0;
 }
 
+unsigned int BigiDVFSSRAMLDOEFUSE(void)
+{
+	return (idvfs_read(0x1020666C) & 0xffff);
+}
+
 int	BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 {
 	int	rc = 0;
