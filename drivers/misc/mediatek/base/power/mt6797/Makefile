@@ -1,5 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
 ifeq ($(CONFIG_ARCH_MT6797),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
@@ -48,6 +49,8 @@ endif
 #obj-$(CONFIG_ARCH_MT6797M) += mt_spm_vcore_dvfs_2.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_vcore_dvfs_3.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_spm_vcore_dvfs_3.o
+obj-y += mt_vcorefs_manager.o
+obj-y += mt_vcorefs_governor.o
 #obj-y += mt_ptp.o
 #obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
