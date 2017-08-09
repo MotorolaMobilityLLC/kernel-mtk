@@ -47,6 +47,7 @@ static struct dentry *mtkfb_dbgfs;
 static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
 int lcm_mode_status = 0;
 LCM_DSI_MODE_CON vdo_mode_type;
+int bypass_blank = 0;
 #if 0
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -288,6 +289,20 @@ static void process_dbg_opt(const char *opt)
 			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, false, 0);
 			primary_display_manual_unlock();
 			return;
+		}
+	} else if (0 == strncmp(opt, "bypass_blank:", 13)) {
+		char *p = (char *)opt + 13;
+		unsigned int blank;
+
+		ret = kstrtouint(p, 0, &blank);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+		if (blank) {
+			bypass_blank = 1;
+		} else {
+			bypass_blank = 0;
 		}
 	} else if (0 == strncmp(opt, "force_fps:", 9)) {
 		unsigned int keep;

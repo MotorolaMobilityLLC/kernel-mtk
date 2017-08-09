@@ -6,6 +6,7 @@ void DBG_Deinit(void);
 
 #include "mmprofile.h"
 extern int lcm_mode_status;
+extern int bypass_blank;
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"

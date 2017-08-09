@@ -230,13 +230,12 @@ static void process_dbg_opt(const char *opt)
 			goto Error;
 		}
 	} else if (0 == strncmp(opt, "rdma_color:", 11)) {
-		if (0 == strncmp(opt + 11, "on", 2)) {
 			unsigned int red, green, blue;
 			rdma_color_matrix matrix;
 			rdma_color_pre pre = { 0 };
 			rdma_color_post post = { 255, 0, 0 };
 
-			ret = sscanf(opt, "%d,%d,%d\n", &red, &green, &blue);
+			ret = sscanf(opt, "rdma_color:%d,%d,%d\n", &red, &green, &blue);
 			if (ret != 3) {
 				snprintf(buf, 50, "error to parse cmd %s\n", opt);
 				return;
@@ -247,9 +246,8 @@ static void process_dbg_opt(const char *opt)
 			post.ADD2 = blue;
 			rdma_set_color_matrix(DISP_MODULE_RDMA0, &matrix, &pre, &post);
 			rdma_enable_color_transform(DISP_MODULE_RDMA0);
-		} else if (0 == strncmp(opt + 11, "off", 3)) {
-			rdma_disable_color_transform(DISP_MODULE_RDMA0);
-		}
+	} else if (0 == strncmp(opt, "rdma_color:off", 14)) {
+		rdma_disable_color_transform(DISP_MODULE_RDMA0);
 	} else if (0 == strncmp(opt, "aal_dbg:", 8)) {
 		int i;
 

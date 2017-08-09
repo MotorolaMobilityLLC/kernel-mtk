@@ -275,16 +275,24 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
+		if (bypass_blank) {
+			DISPERR("FB_BLANK_UNBLANK bypass_blank %d\n", bypass_blank);
+			break;
+		}
 		mtkfb_blank_resume();
-		if (!lcd_fps)
+		/*if (!lcd_fps)
 			msleep(30);
 		else
-			msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
-		break;
+			msleep(2 * 100000 / lcd_fps);
+		break;*/
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
+		if (bypass_blank) {
+			DISPERR("FB_BLANK_POWERDOWN bypass_blank %d\n", bypass_blank);
+			break;
+		}
 		mtkfb_blank_suspend();
 		break;
 	default:
