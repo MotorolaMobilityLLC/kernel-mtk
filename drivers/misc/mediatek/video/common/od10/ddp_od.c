@@ -152,9 +152,12 @@ static volatile struct {
 	unsigned int rdma_normal;
 } g_od_debug_cnt = { 0 };
 
-
 static void od_dump_all(void);
 static ddp_module_notify g_od_ddp_notify;
+
+#if defined(CONFIG_MTK_OD_SUPPORT)
+
+static int od_start(DISP_MODULE_ENUM module, void *cmdq);
 
 static void _od_reg_init(void *cmdq)
 {
@@ -196,6 +199,7 @@ static void _od_reg_init(void *cmdq)
 	DISP_REG_SET(cmdq, OD_REG69, 0x000200C0);
 }
 
+#endif /* defined(CONFIG_MTK_OD_SUPPORT) */
 
 static void od_refresh_screen(void)
 {
@@ -645,7 +649,6 @@ void disp_config_od(unsigned int width, unsigned int height, void *cmdq, unsigne
 		BUG();
 	}
 
-	_od_reg_init(cmdq);
 	_od_set_table(cmdq, od_table_select, od_table, 0);
 	_od_set_dram_buffer_addr(cmdq, manual_cpr, width, height);
 	_od_set_frame_protect_init(cmdq, width, height);
@@ -918,6 +921,7 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 
 		if (od_table != NULL) {
 			/* spm_enable_sodi(0); */
+			od_start(module, cmdq);
 			disp_config_od(pConfig->dst_w, pConfig->dst_h, cmdq, od_table_size, od_table);
 	#if 0
 			/* For debug */
@@ -963,10 +967,12 @@ static void od_set_debug_function(void *cmdq)
 }
 
 
+#if defined(CONFIG_MTK_OD_SUPPORT)
 static int od_start(DISP_MODULE_ENUM module, void *cmdq)
 {
-#if defined(CONFIG_MTK_OD_SUPPORT)
 	ODDBG(OD_LOG_ALWAYS, "od_start()");
+
+	_od_reg_init(cmdq);
 
 	/* OD on/off align to vsync */
 	DISP_REG_SET(cmdq, OD_REG53, 0x6BFB7E00);
@@ -1064,10 +1070,10 @@ static int od_start(DISP_MODULE_ENUM module, void *cmdq)
 	mutex_lock(&g_od_global_lock);
 	_od_core_set_enabled(cmdq, g_od_is_enabled);
 	mutex_unlock(&g_od_global_lock);
-#endif
 
 	return 0;
 }
+#endif /* defined(CONFIG_MTK_OD_SUPPORT) */
 
 
 static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
@@ -1145,7 +1151,6 @@ DDP_MODULE_DRIVER ddp_driver_od = {
 	.init            = od_clock_on,
 	.deinit          = od_clock_off,
 	.config          = od_config_od,
-	.start           = od_start,
 	.trigger         = NULL,
 	.stop            = NULL,
 	.reset           = NULL,
