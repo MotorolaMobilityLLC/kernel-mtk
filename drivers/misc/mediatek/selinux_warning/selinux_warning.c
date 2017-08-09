@@ -33,7 +33,7 @@ static int mtk_check_filter(char *scontext)
 	int i = 0;
 
 	/*check whether scontext in filter list */
-	for (i = 0; aee_filter_list[i] != NULL && i < AEE_FILTER_NUM; i++) {
+	for (i = 0; i < AEE_FILTER_NUM && aee_filter_list[i] != NULL; i++) {
 		if (strcmp(scontext, aee_filter_list[i]) == 0)
 			return i;
 	}
@@ -72,11 +72,12 @@ static char *mtk_get_process(char *in)
 	int i;
 
 	/*Omit two ':' */
-	for (i = 0; i < 2; i++)
-		out = strchr(out, ':') + 1;
-
-	if (out == NULL)
-		return 0;
+	for (i = 0; i < 2; i++) {
+		out = strchr(out, ':');
+		if (NULL == out)
+			return 0;
+		out = out + 1;
+	}
 
 	tmp = strchr(out, ':');
 
