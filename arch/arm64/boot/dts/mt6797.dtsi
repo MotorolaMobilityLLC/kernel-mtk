@@ -754,6 +754,12 @@
 			#clock-cells = <1>;
 		};
 
+		power_gs@10000000 {
+			compatible = "mediatek,mt6797-power_gs";
+			reg = <0x10000000 0x20000>,    /*clock top and infra*/
+			      <0x12000000 0x8001011>;  /*MDP, DISP, SMI, IMG, and VDEC */
+		};
+
 		usb2jtag: usb2jtag@10001000 {
 			compatible = "mediatek,usb2jtag_v1";
 			reg = <0x10001000 0x1000>, <0x11290000 0x1000>;

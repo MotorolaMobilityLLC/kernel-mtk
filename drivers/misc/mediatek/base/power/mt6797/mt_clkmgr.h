@@ -291,4 +291,5 @@ extern void enable_armpll_l(void);
 extern void disable_armpll_l(void);
 extern void switch_armpll_l_hwmode(int enable);
 extern void switch_armpll_ll_hwmode(int enable);
+extern int subsys_is_on(int id);
 #endif
