@@ -57,7 +57,7 @@ static int mtk_mux_upd_enable(struct clk_hw *hw)
 	if (val != orig) {
 		clk_writel(val, mux->base + mux->mux_ofs);
 
-		if (mux->upd_shift > 0)
+		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
 
@@ -83,7 +83,7 @@ static void mtk_mux_upd_disable(struct clk_hw *hw)
 	if (val != orig) {
 		clk_writel(val, mux->base + mux->mux_ofs);
 
-		if (mux->upd_shift > 0)
+		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
 
@@ -136,7 +136,7 @@ static int mtk_mux_upd_set_parent(struct clk_hw *hw, u8 index)
 	if (val != orig) {
 		clk_writel(val, mux->base + mux->mux_ofs);
 
-		if (mux->upd_shift > 0)
+		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
 
