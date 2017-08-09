@@ -875,7 +875,46 @@ CCORR_COEF : /* ccorr feature */
 	 {0x0, 0x400, 0x0},
 	 {0x0, 0x0, 0x400},
 	 },
-	}
+	},
+#if defined(CONFIG_ARCH_MT6797)
+S_GAIN_BY_Y :
+{
+	{0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80},
+
+	{0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80},
+
+	{0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80},
+
+	{0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80},
+
+	{0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80,
+	 0x80, 0x80, 0x80, 0x80}
+
+},
+
+S_GAIN_BY_Y_EN:0,
+
+LSP_EN:0
+#endif
 };
 
 static DEFINE_MUTEX(g_color_reg_lock);
@@ -1020,22 +1059,6 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 	if (DISP_MODULE_COLOR1 == module)
 		offset = C1_OFFSET;
 
-	if (g_color_bypass == 0) {
-#if defined(CONFIG_ARCH_MT6797)
-		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
-						| (g_Color_Index.LSP_EN << 20)
-						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8));
-#else
-		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
-#endif
-		_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000001);	/* color start */
-	} else {
-		_color_reg_set_field(cmdq, CFG_MAIN_FLD_COLOR_DBUF_EN, DISP_COLOR_CFG_MAIN + offset,
-				     0x1);
-		_color_reg_set_field(cmdq, START_FLD_DISP_COLOR_START, DISP_COLOR_START + offset,
-				     0x1);
-	}
-
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	COLOR_DBG("DpEngine_COLORonInit(), en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
 		  g_split_window_x, g_split_window_y);
@@ -1072,7 +1095,6 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	int i, j, reg_index;
 #endif
 
-
 	if (DISP_MODULE_COLOR1 == module) {
 		offset = C1_OFFSET;
 		pq_param_p = &g_Color_Param[COLOR_ID_1];
@@ -1092,17 +1114,27 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	}
 	/* COLOR_ERR("DpEngine_COLORonConfig(%d)", module); */
 
-
-
-
 	if (g_color_bypass == 0) {
+#if defined(CONFIG_ARCH_MT6797)
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
+						| (g_Color_Index.LSP_EN << 20)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8));
+#else
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
+#endif
+		_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000001);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
 		_color_reg_set(cmdq, DISP_COLOR_CM1_EN + offset, 0x01);
-	#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x01);
-	#else
+#else
 		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x11); /* also set no rounding on Y2R */
-	#endif
+#endif
+	} else {
+		_color_reg_set_field(cmdq, CFG_MAIN_FLD_COLOR_DBUF_EN, DISP_COLOR_CFG_MAIN + offset,
+					 0x1);
+		_color_reg_set_field(cmdq, START_FLD_DISP_COLOR_START, DISP_COLOR_START + offset,
+					 0x1);
 	}
 
 	/* for partial Y contour issue */
@@ -1365,13 +1397,26 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 		offset = C1_OFFSET;
 
 	if (g_color_bypass == 0) {
+#if defined(CONFIG_ARCH_MT6797)
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
+						| (g_Color_Index.LSP_EN << 20)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8));
+#else
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
+#endif
+		_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000001);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
 		_color_reg_set(cmdq, DISP_COLOR_CM1_EN + offset, 0x01);
-	#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x01);
-	#else
+#else
 		_color_reg_set(cmdq, DISP_COLOR_CM2_EN + offset, 0x11); /* also set no rounding on Y2R */
-	#endif
+#endif
+	} else {
+		_color_reg_set_field(cmdq, CFG_MAIN_FLD_COLOR_DBUF_EN, DISP_COLOR_CFG_MAIN + offset,
+					 0x1);
+		_color_reg_set_field(cmdq, START_FLD_DISP_COLOR_START, DISP_COLOR_START + offset,
+					 0x1);
 	}
 
 	/* for partial Y contour issue */
