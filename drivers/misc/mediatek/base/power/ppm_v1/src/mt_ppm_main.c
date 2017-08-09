@@ -75,9 +75,9 @@ struct ppm_data ppm_main_info = {
 void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-	unsigned int index, i;
+	int index, i;
 
-	index = ppm_hica_get_table_idx_by_pwr(new_state, req->power_budget);
+	index = ppm_get_table_idx_by_pwr(new_state, req->power_budget);
 	if (index != -1) {
 		for (i = 0; i < req->cluster_num; i++) {
 			req->limit[i].max_cpu_core =

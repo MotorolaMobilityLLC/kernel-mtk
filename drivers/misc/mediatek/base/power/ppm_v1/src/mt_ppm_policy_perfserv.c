@@ -56,7 +56,7 @@ static enum ppm_power_state ppm_perfserv_get_power_state_cb(enum ppm_power_state
 
 static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)
 {
-	unsigned int index, i;
+	int index, i;
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 
 	FUNC_ENTER(FUNC_LV_POLICY);
@@ -69,7 +69,7 @@ static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)
 		ppm_hica_set_default_limit_by_state(new_state, &perfserv_policy);
 
 		/* get limit according to perf idx */
-		index = ppm_hica_get_table_idx_by_perf(new_state, perfserv_policy.req.perf_idx);
+		index = ppm_get_table_idx_by_perf(new_state, perfserv_policy.req.perf_idx);
 		if (index != -1) {
 			for (i = 0; i < perfserv_policy.req.cluster_num; i++) {
 				perfserv_policy.req.limit[i].min_cpu_core =

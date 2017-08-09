@@ -333,6 +333,7 @@ struct ppm_power_state_data {
 /* Global variables						*/
 /*==============================================================*/
 extern struct ppm_data ppm_main_info;
+extern struct ppm_hica_algo_data ppm_hica_algo_data;
 extern struct proc_dir_entry *policy_dir;
 extern unsigned int ppm_func_lv_mask;
 extern unsigned int ppm_debug;
@@ -346,8 +347,8 @@ extern int ppm_procfs_init(void);
 extern char *ppm_copy_from_user_for_proc(const char __user *buffer, size_t count);
 
 /* hica */
-extern unsigned int ppm_hica_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx);
-extern unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
+extern int ppm_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx);
+extern int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
 extern void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 					struct ppm_policy_data *policy);
 extern enum ppm_power_state ppm_hica_get_state_by_perf_idx(enum ppm_power_state state, unsigned int perf_idx);

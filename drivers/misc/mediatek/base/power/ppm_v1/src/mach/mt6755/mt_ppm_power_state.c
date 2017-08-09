@@ -464,6 +464,74 @@ enum ppm_power_state ppm_change_state_with_fix_root_cluster(enum ppm_power_state
 	return new_state;
 }
 
+int ppm_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx)
+{
+	int i;
+	struct ppm_power_state_data *state_info;
+	const struct ppm_state_sorted_pwr_tbl_data *tbl;
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+
+	if (state > NR_PPM_POWER_STATE || (perf_idx == -1)) {
+		ppm_warn("Invalid argument: state = %d, pwr_idx = %d\n", state, perf_idx);
+		return -1;
+	}
+
+	/* search whole tlp table */
+	if (state == PPM_POWER_STATE_NONE) {
+		for (i = 1; i < power_table.nr_power_tbl; i++) {
+			if (power_table.power_tbl[i].perf_idx < perf_idx)
+				return power_table.power_tbl[i-1].index;
+		}
+	} else {
+		state_info = ppm_get_power_state_info();
+		tbl = state_info[state].perf_sorted_tbl;
+
+		/* return -1 (not found) if input is larger than max perf_idx in table */
+		if (tbl->sorted_tbl[0].value < perf_idx)
+			return -1;
+
+		for (i = 1; i < tbl->size; i++) {
+			if (tbl->sorted_tbl[i].value < perf_idx)
+				return tbl->sorted_tbl[i-1].index;
+		}
+	}
+
+	/* not found */
+	return -1;
+}
+
+int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx)
+{
+	int i;
+	struct ppm_power_state_data *state_info;
+	const struct ppm_state_sorted_pwr_tbl_data *tbl;
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+
+	if (state > NR_PPM_POWER_STATE || (pwr_idx == ~0)) {
+		ppm_warn("Invalid argument: state = %d, pwr_idx = %d\n", state, pwr_idx);
+		return -1;
+	}
+
+	/* search whole tlp table */
+	if (state == PPM_POWER_STATE_NONE) {
+		for_each_pwr_tbl_entry(i, power_table) {
+			if (power_table.power_tbl[i].power_idx <= pwr_idx)
+				return i;
+		}
+	} else {
+		state_info = ppm_get_power_state_info();
+		tbl = state_info[state].pwr_sorted_tbl;
+
+		for (i = 0; i < tbl->size; i++) {
+			if (tbl->sorted_tbl[i].value <= pwr_idx)
+				return tbl->sorted_tbl[i].advise_index;
+		}
+	}
+
+	/* not found */
+	return -1;
+}
+
 enum ppm_power_state ppm_find_next_state(enum ppm_power_state state,
 			unsigned int *level, enum power_state_search_policy policy)
 {

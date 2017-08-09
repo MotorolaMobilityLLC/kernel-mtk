@@ -151,128 +151,6 @@ end:
 	FUNC_EXIT(FUNC_LV_HICA);
 }
 
-unsigned int ppm_hica_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx)
-{
-	int i;
-	struct ppm_power_state_data *state_info;
-#ifdef PPM_POWER_TABLE_CALIBRATION
-	struct ppm_state_sorted_pwr_tbl_data *tbl;
-#else
-	const struct ppm_state_sorted_pwr_tbl_data *tbl;
-#endif
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-
-	if (state > NR_PPM_POWER_STATE || (perf_idx == -1)) {
-		ppm_warn("Invalid argument: state = %d, pwr_idx = %d\n", state, perf_idx);
-		return -1;
-	}
-
-	/* search whole tlp table */
-	if (state == PPM_POWER_STATE_NONE) {
-		for (i = 1; i < power_table.nr_power_tbl; i++) {
-			if (power_table.power_tbl[i].perf_idx < perf_idx)
-				return power_table.power_tbl[i-1].index;
-		}
-	} else {
-		state_info = ppm_get_power_state_info();
-		tbl = state_info[state].perf_sorted_tbl;
-
-		/* return -1 (not found) if input is larger than max perf_idx in table */
-		if (tbl->sorted_tbl[0].value < perf_idx)
-			return -1;
-
-		for (i = 1; i < tbl->size; i++) {
-			if (tbl->sorted_tbl[i].value < perf_idx)
-				return tbl->sorted_tbl[i-1].index;
-		}
-	}
-
-	/* not found */
-	return -1;
-}
-
-unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx)
-{
-	int i;
-	struct ppm_power_state_data *state_info;
-#ifdef PPM_POWER_TABLE_CALIBRATION
-	struct ppm_state_sorted_pwr_tbl_data *tbl;
-#else
-	const struct ppm_state_sorted_pwr_tbl_data *tbl;
-#endif
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-
-	if (state > NR_PPM_POWER_STATE || (pwr_idx == ~0)) {
-		ppm_warn("Invalid argument: state = %d, pwr_idx = %d\n", state, pwr_idx);
-		return -1;
-	}
-
-	/* search whole tlp table */
-	if (state == PPM_POWER_STATE_NONE) {
-		for_each_pwr_tbl_entry(i, power_table) {
-			if (power_table.power_tbl[i].power_idx <= pwr_idx)
-				return i;
-		}
-	} else {
-#ifdef PPM_FAST_ATM_SUPPORT
-		struct cpumask cluster_cpu[NR_PPM_CLUSTERS];
-		struct cpumask online_cpu[NR_PPM_CLUSTERS];
-		unsigned int online_core_num[NR_PPM_CLUSTERS];
-		int i, j, idx = -1, best_idx = -1;
-
-		for_each_ppm_clusters(i) {
-			arch_get_cluster_cpus(&cluster_cpu[i], i);
-			cpumask_and(&online_cpu[i], &cluster_cpu[i], cpu_online_mask);
-			online_core_num[i] = cpumask_weight(&online_cpu[i]);
-		}
-
-		state_info = ppm_get_power_state_info();
-		tbl = state_info[state].pwr_sorted_tbl;
-
-		for (i = 0; i < tbl->size; i++) {
-			idx = tbl->sorted_tbl[i].advise_index;
-
-			/* ignore inefficiency combination */
-			if (power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_B].core_num > 0
-				&& power_table.power_tbl[idx].cluster_cfg[PPM_CLUSTER_B].opp_lv > BIG_MIN_FREQ_IDX
-				&& ppm_hica_algo_data.ppm_cur_tlp < 800)
-				continue;
-
-			if (tbl->sorted_tbl[i].value <= pwr_idx) {
-				if (best_idx == -1)
-					best_idx = idx;
-
-				for_each_ppm_clusters(j) {
-					if (power_table.power_tbl[idx].cluster_cfg[j].core_num
-						< online_core_num[j])
-						break;
-				}
-				if (j == NR_PPM_CLUSTERS) {
-					if (best_idx != idx)
-						ppm_ver("pwr_idx change from %d to %d for thermal enhancement\n",
-							best_idx, idx);
-					return idx;
-				}
-			}
-		}
-
-		if (best_idx != -1)
-			return best_idx;
-#else
-		state_info = ppm_get_power_state_info();
-		tbl = state_info[state].pwr_sorted_tbl;
-
-		for (i = 0; i < tbl->size; i++) {
-			if (tbl->sorted_tbl[i].value <= pwr_idx)
-				return tbl->sorted_tbl[i].advise_index;
-		}
-#endif
-	}
-
-	/* not found */
-	return -1;
-}
-
 void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 					struct ppm_policy_data *policy)
 {
@@ -314,7 +192,8 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 enum ppm_power_state ppm_hica_get_state_by_perf_idx(enum ppm_power_state state, unsigned int perf_idx)
 {
 	enum ppm_power_state new_state = state;
-	unsigned int index = 0, level = 0, found = 0;
+	unsigned int level = 0, found = 0;
+	int index = 0;
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
@@ -323,7 +202,7 @@ enum ppm_power_state ppm_hica_get_state_by_perf_idx(enum ppm_power_state state, 
 		return fix_power_state;
 
 	while (1) {
-		index = ppm_hica_get_table_idx_by_perf(new_state, perf_idx);
+		index = ppm_get_table_idx_by_perf(new_state, perf_idx);
 		ppm_ver("@%s: index = %d\n", __func__, index);
 		if (index != -1) {
 			found = 1;
@@ -348,7 +227,8 @@ enum ppm_power_state ppm_hica_get_state_by_perf_idx(enum ppm_power_state state, 
 enum ppm_power_state ppm_hica_get_state_by_pwr_budget(enum ppm_power_state state, unsigned int budget)
 {
 	enum ppm_power_state new_state = state;
-	unsigned int index = 0, level = 0, found = 0;
+	unsigned int level = 0, found = 0;
+	int index = 0;
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
@@ -360,7 +240,7 @@ enum ppm_power_state ppm_hica_get_state_by_pwr_budget(enum ppm_power_state state
 		return PPM_POWER_STATE_NONE;
 
 	while (1) {
-		index = ppm_hica_get_table_idx_by_pwr(new_state, budget);
+		index = ppm_get_table_idx_by_pwr(new_state, budget);
 		ppm_ver("@%s: index = %d\n", __func__, index);
 		if (index != -1) {
 			found = 1;
