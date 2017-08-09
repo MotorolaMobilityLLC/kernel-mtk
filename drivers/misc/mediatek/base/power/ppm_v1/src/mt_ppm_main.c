@@ -108,9 +108,9 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 	struct ppm_cluster_status cluster_status_rebase[3];
 	int LxLLisLimited = 0;
 #ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
-	int B_limit = Core_limit[2];
-	int L_limit = Core_limit[1];
-	int LL_limit = Core_limit[0];
+	int B_limit;
+	int L_limit;
+	int LL_limit;
 #endif
 
 	/* skip if DVFS is not ready (we cannot get current freq...) */
@@ -143,6 +143,8 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 	for (i = 0; i <= 2; i++) {
 		if (cluster_status_rebase[i].core_num > Core_limit[i])
 			cluster_status_rebase[i].core_num = Core_limit[i];
+		if (req->limit[i].max_cpu_core < Core_limit[i])
+			Core_limit[i] = req->limit[i].max_cpu_core;
 	}
 #endif
 	if (cluster_status_rebase[0].core_num == 0 && cluster_status_rebase[1].core_num == 0) {
@@ -196,6 +198,9 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 		LxLL = 2;
 
 #ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+	B_limit = Core_limit[2];
+	L_limit = Core_limit[1];
+	LL_limit = Core_limit[0];
 	req->limit[0].max_cpu_core = LL_limit;
 	req->limit[1].max_cpu_core = L_limit;
 	req->limit[2].max_cpu_core = B_limit;
@@ -245,22 +250,33 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 			/* exceed power budget or all active core is highest freq. */
 			if (ChoosenCluster == -1) {
 #ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
-				if (opp[LxLL] == 0) {
+				if (opp[LxLL] != 0)
+					goto end;
+
+				/* PPM state L_ONLY --> LL core remain turned off */
+				if (new_state != PPM_POWER_STATE_L_ONLY) {
 					while (LL_limit < 4 && delta_power >
-						delta_power_LxLL[activeCoreNumL][LL_limit+1][7]) {
+							delta_power_LxLL[activeCoreNumL][LL_limit+1][7]) {
 						delta_power -= delta_power_LxLL[activeCoreNumL][LL_limit + 1][7];
 						req->limit[0].max_cpu_core = ++LL_limit;
 					}
+				}
+				/* PPM state LL_ONLY --> L core remain turned off */
+				if (new_state != PPM_POWER_STATE_LL_ONLY) {
 					while (L_limit < 4 && delta_power >
-						delta_power_LxLL[L_limit+1][activeCoreNumLL][7]) {
+							delta_power_LxLL[L_limit+1][activeCoreNumLL][7]) {
 						delta_power -= delta_power_LxLL[L_limit+1][activeCoreNumLL][7];
 						req->limit[1].max_cpu_core = ++L_limit;
 					}
+				}
+				/* PPM state L_ONLY or LL_ONLY--> B core remain turned off */
+				if (new_state != PPM_POWER_STATE_LL_ONLY && new_state != PPM_POWER_STATE_L_ONLY) {
 					while (B_limit < 2 && delta_power > delta_power_B[B_limit+1][7]) {
 						delta_power -= delta_power_B[B_limit+1][7];
 						req->limit[2].max_cpu_core = ++B_limit;
 					}
 				}
+end:
 #endif
 				break;
 			}
@@ -681,7 +697,10 @@ static void ppm_main_calc_new_limit(void)
 	list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
 		ppm_lock(&pos->lock);
 
-		if ((pos->is_enabled && pos->is_activated) || pos->policy == PPM_POLICY_HICA) {
+		if ((pos->is_enabled && pos->is_activated && pos->is_limit_updated)
+				|| pos->policy == PPM_POLICY_HICA) {
+			pos->is_limit_updated = false;
+
 			for_each_ppm_clusters(i) {
 				ppm_ver("@%s: applying policy %s cluster %d limit...\n", __func__, pos->name, i);
 				ppm_main_update_limit(pos,
@@ -910,6 +929,7 @@ int mt_ppm_main(void)
 			ppm_lock(&pos->lock);
 			policy_mask |= 1 << pos->policy;
 			pos->update_limit_cb(next_state);
+			pos->is_limit_updated = true;
 			ppm_unlock(&pos->lock);
 		}
 	}

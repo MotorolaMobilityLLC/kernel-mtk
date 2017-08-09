@@ -210,6 +210,7 @@ struct ppm_policy_data {
 	/* status */
 	bool is_enabled;
 	bool is_activated;
+	bool is_limit_updated;
 	/* lock */
 	struct mutex lock;
 	/* list link */
